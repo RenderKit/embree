@@ -26,6 +26,14 @@ struct ISPCTriangle
   int materialID;        /*< material of triangle */
 };
 
+struct ISPCQuad
+{
+  int v0;                /*< first triangle vertex */
+  int v1;                /*< second triangle vertex */
+  int v2;                /*< third triangle vertex */
+  int v4;                /*< fourth triangle vertex */
+};
+
 struct ISPCMaterial
 {
   int type;
@@ -49,8 +57,10 @@ struct ISPCMesh
   uniform Vec3fa* normals;       //!< vertex normal array
   uniform Vec2f* texcoords;     //!< vertex texcoord array
   uniform ISPCTriangle* triangles;  //!< list of triangles
+  uniform ISPCQuad* quads;  //!< list of triangles
   int numVertices;
   int numTriangles;
+  int numQuads;
   Vec3f dir;
   float offset;
 };
@@ -129,6 +139,7 @@ export void device_init (uniform int8* uniform cfg)
   renderPixel = renderPixelStandard;
   //renderPixel = renderPixelEyeLight;	
 }
+
 
 #define VERTICES 8
 #define EDGES    24
@@ -248,7 +259,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const unifo
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return make_Vec3f(0.0f);
   
   /* shade all rays that hit something */
-  Vec3f color = make_Vec3f(1.0f);
+  Vec3f color = make_Vec3f(0,0,1.0f);
 #if 0
     color = rndColor(ray.geomID);
 #else

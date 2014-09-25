@@ -245,15 +245,18 @@ namespace embree
    template<typename Primitive>
    void BVH4SubdivBuilderFast<Primitive>::build(size_t threadIndex, size_t threadCount)
     {
-      PING;
+      size_t numPatches = 0;
       for (size_t i=0; i<this->scene->size(); i++) 
       {
 	const Geometry* geom = this->scene->get(i);
         if (geom == NULL || !geom->isEnabled()) continue;
-	if (!(geom->type != SUBDIV_MESH)) continue;
+	if (geom->type != SUBDIV_MESH) continue;
         SubdivMesh* subdiv_mesh = (SubdivMesh*)geom;
         subdiv_mesh->initializeHalfEdgeStructures();
+	numPatches += subdiv_mesh->size();
       }
+      this->scene->numSubdivPatches = numPatches; // is it ok to initialize this here?
+
       BVH4BuilderFast::build(threadIndex,threadCount);
     }
  

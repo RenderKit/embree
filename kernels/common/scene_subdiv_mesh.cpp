@@ -164,8 +164,6 @@ namespace embree
 
     halfEdges = (HalfEdge*)os_malloc(numHalfEdges * sizeof(HalfEdge));
 
-    DBG_PRINT( halfEdges );
-
     /*! initialize all four half-edges for each face */
     for (size_t i=0;i<numFaces;i++)
       {
@@ -199,8 +197,11 @@ namespace embree
           }
       }
 
+#if 0
     for (size_t i=0;i<numHalfEdges;i++)
       std::cout << "Half-Edge " << i << " " << halfEdges[i] << std::endl;
+#endif
+
   }
 
   bool SubdivMesh::verify () 

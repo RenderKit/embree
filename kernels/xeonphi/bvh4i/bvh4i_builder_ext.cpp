@@ -1016,7 +1016,7 @@ PRINT(CORRECT_numPrims);
   }
 
 
-#define SUBDIVISION_LEVEL 1
+#define SUBDIVISION_LEVEL 3
 
   void BVH4iBuilderSubdivMesh::createSubdivMeshAccel(const size_t threadID, const size_t numThreads)
   {

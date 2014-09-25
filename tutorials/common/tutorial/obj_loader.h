@@ -53,15 +53,14 @@ namespace embree
     };
 
     /*! OBJ Quad */
-
     struct Quad 
     {
     public:
-      Quad (int v0, int v1, int v2, int v3, int materialID) 
-      : v0(v0), v1(v1), v2(v2), v3(v3), materialID(materialID) {}
+      Quad (int v0, int v1, int v2, int v3) 
+      : v0(v0), v1(v1), v2(v2), v3(v3) {}
 
     public:
-      int v0, v1, v2, v3, materialID;
+      int v0, v1, v2, v3;
     };
 
 

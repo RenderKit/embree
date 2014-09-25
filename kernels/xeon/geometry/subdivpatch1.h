@@ -48,7 +48,7 @@ namespace embree
 				const unsigned int subdivision_level,
 				const unsigned int flags,
 				const bool last)
-      : first_half_edge(edge), vertices(vertices), geom(geom), prim(prim | (last << 31)), subdivision_level(subdivision_level), flags(flags) {  PING; }
+      : first_half_edge(edge), vertices(vertices), geom(geom), prim(prim | (last << 31)), subdivision_level(subdivision_level), flags(flags) { }
 
     /*! returns required number of primitive blocks for N primitives */
     static __forceinline size_t blocks(size_t N) { return N; }

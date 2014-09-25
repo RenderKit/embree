@@ -137,7 +137,6 @@ namespace embree
   }
 
   void main(int argc, char **argv) {
-
     /*! Parse command line options. */  
     parseCommandLine(new ParseStream(new CommandLineStream(argc, argv)), FileName());
 
@@ -151,11 +150,10 @@ namespace embree
 
     /* load scene */
     if (filename.str() != "")
-      loadOBJ(filename,one,g_obj_scene);
+      loadOBJ(filename,one,g_obj_scene,true);
 
     /*! Initialize Embree state. */
     init(g_rtcore.c_str());
-
 
     /* send model */
     set_scene(&g_obj_scene);

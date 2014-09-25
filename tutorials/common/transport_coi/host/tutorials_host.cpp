@@ -170,6 +170,7 @@ namespace embree
       COIBUFFER normal;        //!< vertex normal array
       COIBUFFER texcoord;      //!< vertex texcoord array
       COIBUFFER triangle;      //!< list of triangles
+      COIBUFFER quad;      //!< list of triangles
     } buffers;
 
     assert( mesh->v.size() );
@@ -182,9 +183,16 @@ namespace embree
     if (mesh->vt.size() == 0)
       for (size_t i=0;i<2;i++)
 	mesh->vt.push_back(Vec2f(0.0f,0.0f));
+
+    if (mesh->quads.size() == 0)
+      {
+	OBJScene::Quad dummy(0,0,0,0);
+	mesh->quads.push_back(dummy);
+      }
     
     assert( mesh->vn.size() );
     assert( mesh->vt.size() );
+    assert( mesh->quads.size() );
     
     size_t positionBytes = max(size_t(16),mesh->v.size()*sizeof(Vec3fa));
 
@@ -215,18 +223,26 @@ namespace embree
 
     if (result != COI_SUCCESS) THROW_RUNTIME_ERROR("COIBufferCreate failed: " + std::string(COIResultGetName(result)));
 
+    size_t quadBytes = max(size_t(16),mesh->quads.size()*sizeof(OBJScene::Quad));
+    void* quadPtr = mesh->quads.size() ? &mesh->quads.front() : NULL;
+    //result = COIBufferCreate(quadBytes,COI_BUFFER_STREAMING_TO_SINK,0,quadPtr,1,&process,&buffers.quad);
+    result = COIBufferCreateFromMemory(quadBytes,COI_BUFFER_NORMAL,0,quadPtr,1,&process,&buffers.quad);
+
+    if (result != COI_SUCCESS) THROW_RUNTIME_ERROR("COIBufferCreate failed: " + std::string(COIResultGetName(result)));
+
     CreateMeshData parms;
     parms.numVertices = mesh->v.size();
     parms.numTriangles = mesh->triangles.size();
+    parms.numQuads = mesh->quads.size();
     parms.dir = normalize(Vec3f(drand48(),drand48(),drand48())-Vec3f(0.5f));
     parms.offset = 5.0f*drand48();
-    COI_ACCESS_FLAGS flags[4] = { COI_SINK_READ, COI_SINK_READ, COI_SINK_READ, COI_SINK_READ };
+    COI_ACCESS_FLAGS flags[5] = { COI_SINK_READ, COI_SINK_READ, COI_SINK_READ, COI_SINK_READ, COI_SINK_READ };
 
     COIEVENT event;
     memset(&event,0,sizeof(event));
 
     /* run set scene runfunction */
-    result = COIPipelineRunFunction (pipeline, runCreateMesh, 4, &buffers.position, flags, 0, NULL, &parms, sizeof(parms), NULL, 0, &event);
+    result = COIPipelineRunFunction (pipeline, runCreateMesh, 5, &buffers.position, flags, 0, NULL, &parms, sizeof(parms), NULL, 0, &event);
     if (result != COI_SUCCESS) THROW_RUNTIME_ERROR("COIPipelineRunFunction failed: "+std::string(COIResultGetName(result)));
  
     result = COIEventWait(1,&event,-1,1,NULL,NULL);
@@ -240,6 +256,8 @@ namespace embree
     result = COIBufferDestroy(buffers.texcoord);
     if (result != COI_SUCCESS) THROW_RUNTIME_ERROR("COIPipelineRunFunction failed: "+std::string(COIResultGetName(result)));
     result = COIBufferDestroy(buffers.triangle);
+    if (result != COI_SUCCESS) THROW_RUNTIME_ERROR("COIPipelineRunFunction failed: "+std::string(COIResultGetName(result)));
+    result = COIBufferDestroy(buffers.quad);
     if (result != COI_SUCCESS) THROW_RUNTIME_ERROR("COIPipelineRunFunction failed: "+std::string(COIResultGetName(result)));
   }
 

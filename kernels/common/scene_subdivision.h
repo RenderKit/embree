@@ -173,15 +173,6 @@ namespace embree
 
 
       init_regular(patch[0].ring[0],patch[1].ring[1],patch[0].ring[1],patch[1].ring[0]);
-
-      /* DBG_PRINT(patch[0].ring[0]); */
-      /* DBG_PRINT(patch[1].ring[1]); */
-      /* DBG_PRINT(patch[2].ring[2]); */
-      /* DBG_PRINT(patch[3].ring[3]); */
-      /* DBG_PRINT(patch[0].ring[1]); */
-      /* DBG_PRINT(patch[1].ring[0]); */
-      /* exit(0); */
-
       init_regular(patch[1].ring[1],patch[2].ring[2],patch[1].ring[2],patch[2].ring[1]);
       init_regular(patch[2].ring[2],patch[3].ring[3],patch[2].ring[3],patch[3].ring[2]);
       init_regular(patch[3].ring[3],patch[0].ring[0],patch[3].ring[0],patch[0].ring[3]);
@@ -190,20 +181,19 @@ namespace embree
       __aligned(64) Vec3fa center_ring[8];
 
       // counter-clockwise
-      center_ring[0] = ring[3].ring[0];
-      center_ring[1] = ring[3].vtx;
-      center_ring[2] = ring[2].ring[0];
-      center_ring[3] = ring[2].vtx;
-      center_ring[4] = ring[1].ring[0];
-      center_ring[5] = ring[1].vtx;
-      center_ring[6] = ring[0].ring[0];
-      center_ring[7] = ring[0].vtx;
+      center_ring[0] = patch[3].ring[3].ring[0];
+      center_ring[1] = patch[3].ring[3].vtx;
+      center_ring[2] = patch[2].ring[2].ring[0];
+      center_ring[3] = patch[2].ring[2].vtx;
+      center_ring[4] = patch[1].ring[1].ring[0];
+      center_ring[5] = patch[1].ring[1].vtx;
+      center_ring[6] = patch[0].ring[0].ring[0];
+      center_ring[7] = patch[0].ring[0].vtx;
 
       init_regular(center,center_ring,0,patch[0].ring[2]);
       init_regular(center,center_ring,2,patch[3].ring[1]);
       init_regular(center,center_ring,4,patch[2].ring[0]);
       init_regular(center,center_ring,6,patch[1].ring[3]);
-
     }
 
     __forceinline void init( FinalQuad& quad ) const
