@@ -43,7 +43,6 @@ namespace embree
                      ray,
                      finalQuad.geomID,
                      finalQuad.primID,NULL); 
-
       }
     else
       {

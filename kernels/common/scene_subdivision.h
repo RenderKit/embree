@@ -194,6 +194,11 @@ namespace embree
       init_regular(center,center_ring,2,patch[3].ring[1]);
       init_regular(center,center_ring,4,patch[2].ring[0]);
       init_regular(center,center_ring,6,patch[1].ring[3]);
+
+      patch[0].geomID = geomID; patch[0].primID = primID;
+      patch[1].geomID = geomID; patch[1].primID = primID;
+      patch[2].geomID = geomID; patch[2].primID = primID;
+      patch[3].geomID = geomID; patch[3].primID = primID;
     }
 
     __forceinline void init( FinalQuad& quad ) const
