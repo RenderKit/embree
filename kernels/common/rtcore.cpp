@@ -94,6 +94,12 @@ namespace embree
   size_t g_benchmark = 0;
   size_t g_subdivision_level = 0;
 
+
+  RTCORE_API void setSubdivisionLevel(unsigned int v)
+  {
+    g_subdivision_level = v;
+  }
+
   void initSettings()
   {
     g_tri_accel = "default";

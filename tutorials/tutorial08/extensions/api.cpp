@@ -24,7 +24,7 @@
 unsigned int meshID;
 
 /*! Requested level of subdivision set in tutorial08.cpp. */
-extern int subdivisionLevel;
+int subdivisionLevel = 1;
 
 /*! Subdivision mesh. */
 SubdivisionMesh subdivisionMesh;
