@@ -181,7 +181,7 @@ uniform unsigned int convertScene(uniform ISPCScene* uniform scene_in)
   {
     /* get ith mesh */
     uniform ISPCMesh* uniform mesh = scene_in->meshes[i];
-
+    print("mesh->numQuads %\n",mesh->numQuads);
     if (mesh->numQuads)
       {   
 	totalNumQuads += mesh->numQuads;

@@ -1025,8 +1025,6 @@ PRINT(CORRECT_numPrims);
 
     SubdivPatch1 *acc = (SubdivPatch1*)accel + startID;
 
-    DBG_PRINT(sizeof(SubdivPatch1));
-
     const PrimRef* __restrict__  bptr = prims + startID;
 
     for (size_t j=startID; j<endID; j++, bptr++, acc++)
