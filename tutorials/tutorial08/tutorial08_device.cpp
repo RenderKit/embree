@@ -293,6 +293,12 @@ void constructScene() {
 								  mesh->numQuads*4, 
 								  mesh->numVertices);
 
+#if 0
+
+		rtcSetBuffer(g_scene, subdivMeshID, RTC_VERTEX_BUFFER, mesh->positions, 0, sizeof(Vec3fa  ));
+		rtcSetBuffer(g_scene, subdivMeshID, RTC_INDEX_BUFFER,  mesh->quads    , 0, sizeof(ISPCQuad));
+		rtcSetBuffer(g_scene, subdivMeshID, RTC_OFFSET_BUFFER, offset_buffer  , 0, sizeof(unsigned int));
+#else
 		void *vtx_data_ptr = rtcMapBuffer(g_scene, subdivMeshID, RTC_VERTEX_BUFFER);
 		assert( vtx_data_ptr );
 		memcpy( vtx_data_ptr , mesh->positions, sizeof(Vec3fa) * mesh->numVertices);
@@ -307,8 +313,8 @@ void constructScene() {
 		assert( vtx_offset_ptr );
 		memcpy( vtx_offset_ptr , offset_buffer, sizeof(unsigned int) * mesh->numQuads);
 		rtcUnmapBuffer(g_scene, subdivMeshID, RTC_OFFSET_BUFFER);
-
-		delete offset_buffer;
+#endif
+		//delete offset_buffer;
 	      }
 	  }       
       }

@@ -196,8 +196,10 @@ RTCScene convertSubdivScene(uniform ISPCScene* uniform scene_in)
     /* get ith mesh */
     uniform ISPCMesh* uniform mesh = scene_in->meshes[i];
 
-    /* create a triangle mesh */
-    uniform unsigned int geometry = rtcNewTriangleMesh (scene_out, RTC_GEOMETRY_STATIC, mesh->numTriangles, mesh->numVertices);
+    if (mesh->numQuads)
+      {   
+       /* create a triangle mesh */
+       uniform unsigned int geometry = rtcNewSubdivisionMesh (scene_out, RTC_GEOMETRY_STATIC, mesh->numQuads, mesh->numQuads*4, mesh->numVertices);
 
 #if !defined(__XEON_PHI__)
     /* share vertex buffer */
@@ -223,6 +225,8 @@ RTCScene convertSubdivScene(uniform ISPCScene* uniform scene_in)
     }
     rtcUnmapBuffer(scene_out,geometry,RTC_INDEX_BUFFER);
 #endif
+
+}
   }
 
   /* commit changes to scene */
@@ -256,10 +260,10 @@ Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const unifo
   rtcIntersect(g_scene,ray);
   
   /* shade background black */
-  if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return make_Vec3f(0.0f);
+  if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return make_Vec3f(0.0f,0.0f,1.0f);
   
   /* shade all rays that hit something */
-  Vec3f color = make_Vec3f(0,0,1.0f);
+  Vec3f color = make_Vec3f(1.0f);
 #if 0
     color = rndColor(ray.geomID);
 #else

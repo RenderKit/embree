@@ -174,7 +174,12 @@ namespace embree
     } buffers;
 
     assert( mesh->v.size() );
-    assert( mesh->triangles.size() );
+
+    if (mesh->triangles.size() == 0)
+      {
+	OBJScene::Triangle dummy(0,0,0,0);
+	mesh->triangles.push_back(dummy);
+      }
 
     if (mesh->vn.size() == 0)
       for (size_t i=0;i<4;i++)
