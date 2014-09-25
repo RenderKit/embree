@@ -150,9 +150,13 @@ namespace embree
       IrregularSubdividedCatmullClarkPatch (const SubdivMesh::HalfEdge* h, const Vec3fa *const vertices)
       {
         points.init(3,3);
+        PRINT(h);
         ring00.init(h,vertices); h = h->next();
+        PRINT(h);
         ring01.init(h,vertices); h = h->next();
+        PRINT(h);
         ring11.init(h,vertices); h = h->next();
+        PRINT(h);
         ring10.init(h,vertices); h = h->next();
         handle_corners();
       }

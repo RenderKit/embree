@@ -194,7 +194,7 @@ namespace embree
 
   __forceinline std::ostream &operator<<(std::ostream &o, const SubdivMesh::HalfEdge &h)
     {
-      o << "start_vtx_index " << h.vtx_index << "end_vtx_index " << h.next()->vtx_index << " start_halfedge_id " << h.getStartHalfEdgeID() << " local_halfedge_id " << h.getLocalHalfEdgeID() << " opposite_index " << h.opposite_index;
+      o << "start_vtx_index " << h.vtx_index << " end_vtx_index " << h.next()->vtx_index << " start_halfedge_id " << h.getStartHalfEdgeID() << " local_halfedge_id " << h.getLocalHalfEdgeID() << " opposite_index " << h.opposite_index;
       return o;
     } 
 
