@@ -18,6 +18,7 @@
 
 #include "common/default.h"
 #include "common/scene_subdivision.h"
+#include <iomanip>
 
 namespace embree
 {
@@ -67,15 +68,25 @@ namespace embree
         Vec3fa vtx;
         Vec3fa ring[2*MAX_VALENCE]; //!< two vertices per face
         unsigned int N;             //!< number of vertices
-        
-        __forceinline Vec3fa& first() {
-          assert(N>2);
-          return ring[2];
+
+        __forceinline Vec3fa& get(size_t i) {
+          assert(i<N);
+          return ring[i];
         }
 
-        __forceinline Vec3fa& last() {
+        __forceinline const Vec3fa& get(size_t i) const {
+          assert(i<N);
+          return ring[i];
+        }
+        
+        __forceinline const Vec3fa& first() const {
           assert(N>=4);
-          return ring[N-4];
+          return ring[4];
+        }
+
+        __forceinline const Vec3fa& last() const {
+          assert(N>=2);
+          return ring[N-2];
         }
 
         __forceinline void init(const SubdivMesh::HalfEdge* const h, const Vec3fa *const vertices)
@@ -84,12 +95,18 @@ namespace embree
           vtx = vertices[ h->getStartVertexIndex() ];
           SubdivMesh::HalfEdge* p = (SubdivMesh::HalfEdge*)h;
           do {
-            p = p->opposite();
+            //p = p->opposite();
+            p = p->next();
+            assert( i < 2*MAX_VALENCE );
             ring[i++] = vertices[ p->getStartVertexIndex() ];
-            ring[i++] = vertices[ p->prev()->getStartVertexIndex() ];
+            p = p->next();
+            assert( i < 2*MAX_VALENCE );
+            ring[i++] = vertices[ p->getStartVertexIndex() ];
+            //ring[i++] = vertices[ p->prev()->getStartVertexIndex() ];
             
             /*! continue with next adjacent edge. */
             p = p->next();
+            p = p->opposite();
           } while( p != h);
           N = i;
           assert( N < MAX_VALENCE );
@@ -99,23 +116,28 @@ namespace embree
         {
           dest.N = N;
 
+          for (size_t i=0; i<N; i++) dest.ring[i] = Vec3fa(nan);
+
           /* compute face points */
           Vec3fa F(zero);
           for (size_t i=1; i<N; i+=2) {
-            const Vec3fa f = 0.25f*(vtx+ring[i-1]+ring[i]+ring[i+1]); F += f;
-            dest.ring[i] = f;
+            const Vec3fa f = 0.25f*(vtx+get(i-1)+get(i)+get((i+1)%N)); F += f; // FIXME: optimize %N
+            dest.get(i) = f;
           }
-
+          
           /* compute edge points */
           Vec3fa R(zero);
-          const Vec3fa r = 0.5f*(vtx+ring[0]); R += r;
-          const Vec3fa f = 0.5f*(dest.ring[N-1] + dest.ring[1]);
-          dest.ring[0] = 0.5f*(f+r); 
-          for (size_t i=1; i<N; i+=2) {
-            const Vec3fa r = 0.5f*(vtx+ring[i]); R += r;
-            const Vec3fa f = 0.5f*(dest.ring[i-1] + dest.ring[i+1]);
-            dest.ring[i] = 0.5f*(f+r); 
+          //const Vec3fa r = 0.5f*(vtx+ring[0]); R += r;
+          //const Vec3fa f = 0.5f*(dest.ring[N-1] + dest.ring[1]);
+          //dest.ring[0] = 0.5f*(f+r); 
+          for (size_t i=0; i<N; i+=2) {
+            const Vec3fa r = 0.5f*(vtx+get(i)); R += r;
+            const Vec3fa f = 0.5f*(dest.get((i-1)%N) + dest.get(i+1)); // FIXME: optimize %N
+            dest.get(i) = 0.5f*(f+r); 
           }
+
+          //PRINT("second");
+          //for (size_t i=0; i<N; i++) PRINT2(i,dest.get(i));
 
           /* compute new point */
           const size_t valence = N/2;
@@ -123,6 +145,14 @@ namespace embree
           R /= (float)valence; 
           dest.vtx = (F + 2.0f * R + (float)(valence-3)*vtx) / valence;
         }
+
+        friend __forceinline std::ostream &operator<<(std::ostream &o, const Ring& h)
+        {
+          o << "vtx = " << h.vtx << ", ring = [";
+          for (size_t i=0; i<h.N; i++) o << h.get(i) << " ";
+          o << "], first = " << h.first() << ", last = " << h.last();
+          return o;
+        } 
     };
 
     public:
@@ -149,14 +179,10 @@ namespace embree
 
       IrregularSubdividedCatmullClarkPatch (const SubdivMesh::HalfEdge* h, const Vec3fa *const vertices)
       {
-        points.init(3,3);
-        PRINT(h);
+        points.init(4,4);
         ring00.init(h,vertices); h = h->next();
-        PRINT(h);
         ring01.init(h,vertices); h = h->next();
-        PRINT(h);
         ring11.init(h,vertices); h = h->next();
-        PRINT(h);
         ring10.init(h,vertices); h = h->next();
         handle_corners();
       }
@@ -193,6 +219,9 @@ namespace embree
         const size_t width  = points.width();
         const size_t height = points.height();
         out->init(2*width-3, 2*height-3);
+        for (size_t y=0; y<2*height-3; y++)
+          for (size_t x=0; x<2*width-3; x++)
+            out->points(x,y) = Vec3fa(1E10);
 
         /* subdivide corner rings first */
         ring00.subdivide(out->ring00);
@@ -224,8 +253,8 @@ namespace embree
         /* calculate base points */
         for (size_t y=1; y<height-1; y++) {
           for (size_t x=1; x<width-1; x++) {
-            const Vec3fa F = 0.25f*(face(x-1,y-1)+face(x-1,y)+face(x,y-1)+face(x,y));
-            const Vec3fa R = 0.25f*(hedge(x-1,y)+hedge(x,y)+vedge(x,y-1)+vedge(x,y));
+            const Vec3fa F = 0.25f*(out->face(x-1,y-1)+out->face(x-1,y)+out->face(x,y-1)+out->face(x,y));
+            const Vec3fa R = 0.25f*(out->hedge(x-1,y)+out->hedge(x,y)+out->vedge(x,y-1)+out->vedge(x,y));
             const Vec3fa P = get(x,y);
             out->point(x,y) = 0.25*F + 0.5*R + 0.25*P;
           }
@@ -234,20 +263,36 @@ namespace embree
         /* calculate vertical edge points */
         for (size_t y=0; y<height-1; y++) {
           for (size_t x=1; x<width-1; x++) {
-            out->vedge(x,y) = 0.5f*(vedge(x,y) + (face(x-1,y)+face(x,y)));
+            out->vedge(x,y) = 0.5f*(out->vedge(x,y) + 0.5f*(out->face(x-1,y)+out->face(x,y)));
           }
         }
 
         /* calculate horizontal edge points */
         for (size_t y=1; y<height-1; y++) {
           for (size_t x=0; x<width-1; x++) {
-            out->hedge(x,y) = 0.25f*(hedge(x,y) + (face(x,y-1)+face(x,y)));
+            out->hedge(x,y) = 0.5f*(out->hedge(x,y) + 0.5f*(out->face(x,y-1)+out->face(x,y)));
           }
         }
 
         /* copy invalid corner points from corner rings */
         out->handle_corners();
       }
+
+      friend __forceinline std::ostream &operator<<(std::ostream &o, const IrregularSubdividedCatmullClarkPatch& patch)
+      {
+        o << "ring00 = " << patch.ring00 << std::endl;
+        o << "ring01 = " << patch.ring01 << std::endl;
+        o << "ring10 = " << patch.ring10 << std::endl;
+        o << "ring11 = " << patch.ring11 << std::endl;
+        for (size_t y=0; y<patch.points.height(); y++) {
+          for (size_t x=0; x<patch.points.width(); x++) {
+            //o << patch.points(x,y) << " ";
+            o << std::setw(10) << patch.points(x,y).z << " ";
+          }
+          o << std::endl;
+        }
+        return o;
+      } 
     };
 //}
 }

@@ -32,7 +32,6 @@ namespace embree
        vertices[i].init(numVertices,sizeof(Vec3fa));
      }
 
-    PING;
     DBG_PRINT(numFaces);
     DBG_PRINT(numEdges);
     DBG_PRINT(numVertices);
@@ -159,7 +158,6 @@ namespace embree
 
   void SubdivMesh::initializeHalfEdgeStructures ()
   {
-    PING;
     numHalfEdges = numFaces * 4;
 
     halfEdges = (HalfEdge*)os_malloc(numHalfEdges * sizeof(HalfEdge));

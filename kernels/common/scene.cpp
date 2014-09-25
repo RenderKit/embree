@@ -315,24 +315,27 @@ namespace embree
     const size_t width  = patch->points.width();
     const size_t height = patch->points.height();
     TriangleMesh* mesh = new TriangleMesh (this, RTC_GEOMETRY_STATIC, (width-1)*(height-1)*2, width*height, 1);
+    Vec3fa* vertices = (Vec3fa*) mesh->map(RTC_VERTEX_BUFFER);
     for (size_t y=0; y<height; y++) {
       for (size_t x=0; x<width; x++) {
-        mesh->vertex(y*width+x) = patch->points(x,y);
+        vertices[y*width+x] = patch->points(x,y);
       }
     }
+    mesh->unmap(RTC_VERTEX_BUFFER);
+    TriangleMesh::Triangle* triangles = (TriangleMesh::Triangle*) mesh->map(RTC_INDEX_BUFFER);
     for (size_t y=0; y<height-1; y++) {
       for (size_t x=0; x<width-1; x++) {
-        TriangleMesh::Triangle& tri0 = mesh->triangle(2*(y*width+x)+0);
+        TriangleMesh::Triangle& tri0 = triangles[2*(y*(width-1)+x)+0];
         tri0.v[0] = (y+0)*width + (x+0);
         tri0.v[1] = (y+0)*width + (x+1);
         tri0.v[2] = (y+1)*width + (x+1);
-        TriangleMesh::Triangle& tri1 = mesh->triangle(2*(y*width+x)+1);
+        TriangleMesh::Triangle& tri1 = triangles[2*(y*(width-1)+x)+1];
         tri1.v[0] = (y+0)*width + (x+0);
         tri1.v[1] = (y+1)*width + (x+1);
         tri1.v[2] = (y+1)*width + (x+0);
       }
     }
-    geometries.push_back(mesh);
+    mesh->unmap(RTC_INDEX_BUFFER);
 #endif
 
     /* all user worker threads properly enter and leave the tasking system */
