@@ -51,4 +51,34 @@ namespace embree
      }
    
  }
+
+
+ void subdivide_intersect1(const size_t rayIndex, 
+			   const mic_f &dir_xyz,
+			   const mic_f &org_xyz,
+			   Ray16& ray16,
+			   const RegularCatmullClarkPatch &patch,
+			   const unsigned int subdiv_level)
+ {
+   if (subdiv_level == 0)
+     {
+       __aligned(64) FinalQuad finalQuad;
+       patch.init( finalQuad );
+       intersect1_quad(rayIndex,dir_xyz,org_xyz,ray16,finalQuad);      
+     }
+   else
+     {
+       RegularCatmullClarkPatch subpatches[4];
+       patch.subdivide(subpatches);
+       for (size_t i=0;i<4;i++)
+	 subdivide_intersect1(rayIndex, 
+			      dir_xyz,
+			      org_xyz,
+			      ray16,
+			      subpatches[i],
+			      subdiv_level - 1);	    
+     }
+   
+ }
+
 };

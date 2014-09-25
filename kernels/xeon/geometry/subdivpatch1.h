@@ -59,6 +59,12 @@ namespace embree
 	flags |= REGULAR_PATCH;      
     }
 
+    __forceinline bool isRegular() const
+    {
+      return (flags & REGULAR_PATCH) == REGULAR_PATCH;
+    }
+
+
     /*! returns required number of primitive blocks for N primitives */
     static __forceinline size_t blocks(size_t N) { return N; }
 
@@ -124,6 +130,52 @@ namespace embree
       patch.primID = prim;
     }
 
+    __forceinline void init( RegularCatmullClarkPatch& cc_patch) const
+    {
+      // quad(0,0)
+      const SubdivMesh::HalfEdge *e11 = first_half_edge->half_circle();
+      const SubdivMesh::HalfEdge *e10 = e11->next();
+      const SubdivMesh::HalfEdge *e00 = e10->next();
+      const SubdivMesh::HalfEdge *e01 = e10->next();
+
+      cc_patch.v[1][1] = vertices[e11->getStartVertexIndex()];
+      cc_patch.v[1][0] = vertices[e10->getStartVertexIndex()];
+      cc_patch.v[0][0] = vertices[e00->getStartVertexIndex()];
+      cc_patch.v[0][1] = vertices[e01->getStartVertexIndex()];
+
+      // quad(0,2)
+      const SubdivMesh::HalfEdge *e12 = first_half_edge->opposite()->half_circle();
+      const SubdivMesh::HalfEdge *e13 = e12->next();
+      const SubdivMesh::HalfEdge *e03 = e13->next();
+      const SubdivMesh::HalfEdge *e02 = e03->next();
+
+      cc_patch.v[1][2] = vertices[e12->getStartVertexIndex()];
+      cc_patch.v[1][3] = vertices[e13->getStartVertexIndex()];
+      cc_patch.v[0][3] = vertices[e03->getStartVertexIndex()];
+      cc_patch.v[0][2] = vertices[e02->getStartVertexIndex()];
+
+      // quad(2,0)
+      const SubdivMesh::HalfEdge *e21 = first_half_edge->prev()->half_circle();
+      const SubdivMesh::HalfEdge *e31 = e21->next();
+      const SubdivMesh::HalfEdge *e30 = e31->next();
+      const SubdivMesh::HalfEdge *e20 = e30->next();
+
+      cc_patch.v[2][1] = vertices[e21->getStartVertexIndex()];
+      cc_patch.v[3][1] = vertices[e31->getStartVertexIndex()];
+      cc_patch.v[3][0] = vertices[e30->getStartVertexIndex()];
+      cc_patch.v[2][0] = vertices[e20->getStartVertexIndex()];
+
+      // quad(2,2)
+      const SubdivMesh::HalfEdge *e22 = first_half_edge->next()->opposite()->half_circle();
+      const SubdivMesh::HalfEdge *e32 = e22->next();
+      const SubdivMesh::HalfEdge *e33 = e32->next();
+      const SubdivMesh::HalfEdge *e23 = e33->next();
+
+      cc_patch.v[2][2] = vertices[e22->getStartVertexIndex()];
+      cc_patch.v[3][2] = vertices[e32->getStartVertexIndex()];
+      cc_patch.v[3][3] = vertices[e33->getStartVertexIndex()];
+      cc_patch.v[2][3] = vertices[e23->getStartVertexIndex()];      
+    }
     
   public:
     const SubdivMesh::HalfEdge* first_half_edge;  //!< pointer to first half edge of this patch

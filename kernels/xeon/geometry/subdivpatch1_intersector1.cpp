@@ -90,4 +90,74 @@ namespace embree
     return false;
   }
 
+
+  void subdivide_intersect1(Ray& ray,
+			   const RegularCatmullClarkPatch &patch,
+			   const unsigned int subdiv_level)
+ {
+   if (subdiv_level == 0)
+     {
+       __aligned(64) FinalQuad finalQuad;
+       patch.init( finalQuad );
+
+       intersectTri(finalQuad.vtx[0],
+		    finalQuad.vtx[1],
+		    finalQuad.vtx[2],
+		    ray,
+		    finalQuad.geomID,
+		    finalQuad.primID,NULL); 
+       
+       intersectTri(finalQuad.vtx[2],
+		    finalQuad.vtx[3],
+		    finalQuad.vtx[0],
+		    ray,
+		    finalQuad.geomID,
+		    finalQuad.primID,NULL); 
+     }
+   else
+     {
+       RegularCatmullClarkPatch subpatches[4];
+       patch.subdivide(subpatches);
+       for (size_t i=0;i<4;i++)
+	 subdivide_intersect1(ray,
+			      subpatches[i],
+			      subdiv_level - 1);	    
+     } 
+ }
+
+  bool subdivide_occluded1(Ray& ray,
+			   const RegularCatmullClarkPatch &patch,
+			   const unsigned int subdiv_level)
+  {
+    if (subdiv_level == 0)
+      {
+	__aligned(64) FinalQuad finalQuad;
+	patch.init( finalQuad );
+        
+	if (occludedTri(finalQuad.vtx[0],
+			finalQuad.vtx[1],
+			finalQuad.vtx[2],
+			ray,
+			finalQuad.geomID,
+			finalQuad.primID,NULL)) return true; 
+
+	if (occludedTri(finalQuad.vtx[2],
+			finalQuad.vtx[3],
+			finalQuad.vtx[0],
+			ray,
+			finalQuad.geomID,
+			finalQuad.primID,NULL)) return false;
+      }
+    else
+      {
+	RegularCatmullClarkPatch subpatches[4];
+	patch.subdivide(subpatches);
+	for (size_t i=0;i<4;i++)
+	  if (subdivide_occluded1(ray,
+				  subpatches[i],
+				  subdiv_level - 1)) return true;
+      }   
+    return false;
+  }
+
 };

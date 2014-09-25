@@ -285,10 +285,10 @@ namespace embree
 				  const T newQuadVertex[2][2],
 				  RegularCatmullClarkPatchT child[4]) const
       {
-	GeneralCatmullClarkRegularPatch &subTL = child[0];
-	GeneralCatmullClarkRegularPatch &subTR = child[1];
-	GeneralCatmullClarkRegularPatch &subBR = child[2];
-	GeneralCatmullClarkRegularPatch &subBL = child[3];
+	RegularCatmullClarkPatchT &subTL = child[0];
+	RegularCatmullClarkPatchT &subTR = child[1];
+	RegularCatmullClarkPatchT &subBR = child[2];
+	RegularCatmullClarkPatchT &subBL = child[3];
 
 	// top-left
 	subTL.v[0][0] = face[0][0];
@@ -415,6 +415,18 @@ namespace embree
   class RegularCatmullClarkPatch : public RegularCatmullClarkPatchT<Vec3fa> 
   {
   public:
+
+    __forceinline void init( FinalQuad& quad ) const
+    {
+      quad.vtx[0] = v[1][1];
+      quad.vtx[1] = v[1][2];
+      quad.vtx[2] = v[2][2];
+      quad.vtx[3] = v[2][1];
+      // uv[0] = 
+      // uv[1] = 
+      quad.geomID = 0;
+      quad.primID = 0;
+    };
     
   };
 

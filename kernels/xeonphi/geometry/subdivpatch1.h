@@ -48,7 +48,14 @@ namespace embree
     {
       flags = 0;
       if (first_half_edge->isFaceRegular()) 
-	flags |= REGULAR_PATCH;
+	{
+	  flags |= REGULAR_PATCH;
+	}
+    }
+
+    __forceinline bool isRegular() const
+    {
+      return (flags & REGULAR_PATCH) == REGULAR_PATCH;
     }
 
     __forceinline const Vec3fa &getQuadVertex(const unsigned int i=0) const { 
@@ -78,12 +85,6 @@ namespace embree
 
     __forceinline void init( RegularCatmullClarkPatch& cc_patch) const
     {
-      DBG_PRINT( first_half_edge->halfedge_id );
-      DBG_PRINT( first_half_edge->next()->halfedge_id );
-      DBG_PRINT( first_half_edge->next()->next()->halfedge_id );
-      DBG_PRINT( first_half_edge->next()->next()->next()->halfedge_id );
-      exit(0);
-
       // quad(0,0)
       const SubdivMesh::HalfEdge *e11 = first_half_edge->half_circle();
       const SubdivMesh::HalfEdge *e10 = e11->next();

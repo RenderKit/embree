@@ -126,12 +126,21 @@ namespace embree
     return false;      
   };
 
+  extern size_t g_subdivision_level;
+
 
   void subdivide_intersect1(const size_t rayIndex, 
 			    const mic_f &dir_xyz,
 			    const mic_f &org_xyz,
 			    Ray16& ray16,
 			    const IrregularCatmullClarkPatch &patch,
+			    const unsigned int subdiv_level = 0);
+
+  void subdivide_intersect1(const size_t rayIndex, 
+			    const mic_f &dir_xyz,
+			    const mic_f &org_xyz,
+			    Ray16& ray16,
+			    const RegularCatmullClarkPatch &patch,
 			    const unsigned int subdiv_level = 0);
 
 
@@ -148,20 +157,24 @@ namespace embree
 					   const SubdivPatch1& subdiv_patch)
       {
 	STAT3(normal.trav_prims,1,1,1);
-	__aligned(64) FinalQuad finalQuad;
 
-	IrregularCatmullClarkPatch irregular_patch;
-	subdiv_patch.init( irregular_patch );
 
 	bool hit = false;
       
-#if 0
-	irregular_patch.init( finalQuad );
-
-	hit |= intersect1_quad(rayIndex,dir_xyz,org_xyz,and_mask,ray16,finalQuad);      
-#else
-	subdivide_intersect1(rayIndex,dir_xyz,org_xyz,ray16,irregular_patch,subdiv_patch.subdivision_level);
+#if 1
+	if (subdiv_patch.isRegular())
+	  {
+	    RegularCatmullClarkPatch regular_patch;
+	    subdiv_patch.init( regular_patch );
+	    subdivide_intersect1(rayIndex,dir_xyz,org_xyz,ray16,regular_patch,g_subdivision_level);
+	  }
+	else
 #endif
+	{
+	  IrregularCatmullClarkPatch irregular_patch;
+	  subdiv_patch.init( irregular_patch );
+	  subdivide_intersect1(rayIndex,dir_xyz,org_xyz,ray16,irregular_patch,g_subdivision_level);
+	}
 
 	return hit;
       };

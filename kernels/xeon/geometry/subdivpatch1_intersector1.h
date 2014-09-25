@@ -183,6 +183,14 @@ namespace embree
 			   const IrregularCatmullClarkPatch &patch,
 			   const unsigned int subdiv_level = 0);
 
+  void subdivide_intersect1(Ray& ray,
+			    const RegularCatmullClarkPatch &patch,
+			    const unsigned int subdiv_level = 0);
+
+  bool subdivide_occluded1(Ray& ray,
+			   const RegularCatmullClarkPatch &patch,
+			   const unsigned int subdiv_level = 0);
+
   extern size_t g_subdivision_level;
 
   template<bool list>
@@ -199,10 +207,20 @@ namespace embree
     {
       STAT3(normal.trav_prims,1,1,1);
 
-      IrregularCatmullClarkPatch irregular_patch;
-      subdiv_patch.init( irregular_patch );
-
-      subdivide_intersect1(ray,irregular_patch,g_subdivision_level);
+#if 0 // not working properly, disabled for now
+      if (subdiv_patch.isRegular())
+	{
+	  RegularCatmullClarkPatch regular_patch;
+	  subdiv_patch.init( regular_patch );
+	  subdivide_intersect1(ray,regular_patch,g_subdivision_level);
+	}
+      else
+#endif
+	{
+	  IrregularCatmullClarkPatch irregular_patch;
+	  subdiv_patch.init( irregular_patch );
+	  subdivide_intersect1(ray,irregular_patch,g_subdivision_level);
+	}
     }
 
     /*! Test if the ray is occluded by the primitive */
