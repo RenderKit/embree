@@ -184,7 +184,7 @@ RTCScene convertTestSubdivScene()
   return scene_out;
 }
 
-RTCScene convertScene(uniform ISPCScene* uniform scene_in)
+RTCScene convertSubdivScene(uniform ISPCScene* uniform scene_in)
 {
   /* create scene */
   RTCScene scene_out = rtcNewScene(RTC_SCENE_STATIC,RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING);

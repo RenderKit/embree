@@ -102,9 +102,88 @@ namespace embree
       ray.primID = primID;
     }
 
+  static __forceinline bool occludedTri(const Vec3fa& tri_v0,
+					const Vec3fa& tri_v1,
+					const Vec3fa& tri_v2,
+					Ray& ray, 
+					const unsigned int geomID,
+					const unsigned int primID,
+					const void* geom)
+    {
+      /* load triangle */
+      STAT3(normal.trav_prims,1,1,1);
+ 
+      /* calculate vertices relative to ray origin */
+      const Vec3fa O = ray.org;
+      const Vec3fa D = ray.dir;
+      const Vec3fa v0 = tri_v0-O;
+      const Vec3fa v1 = tri_v1-O;
+      const Vec3fa v2 = tri_v2-O;
+
+      /* calculate triangle edges */
+      const Vec3fa e0 = v2-v0;
+      const Vec3fa e1 = v0-v1;
+      const Vec3fa e2 = v1-v2;
+
+      /* calculate geometry normal and denominator */
+      const Vec3fa Ng1 = cross(e1,e0);
+      const Vec3fa Ng = Ng1+Ng1;
+      const float den = dot(Ng,D);
+      const float absDen = abs(den);
+      const float sgnDen = signmsk(den);
+
+      /* perform edge tests */
+      const float U = xorf(dot(cross(v2+v0,e0),D),sgnDen);
+      if (unlikely(U < 0.0f)) return false;
+      const float V = xorf(dot(cross(v0+v1,e1),D),sgnDen);
+      if (unlikely(V < 0.0f)) return false;
+      const float W = xorf(dot(cross(v1+v2,e2),D),sgnDen);
+      if (unlikely(W < 0.0f)) return false;
+      
+      /* perform depth test */
+      const float T = xorf(dot(v0,Ng),sgnDen);
+      if (unlikely(absDen*float(ray.tfar) < T)) return false;
+      if (unlikely(T < absDen*float(ray.tnear))) return false;
+
+      /* perform backface culling */
+#if defined(__BACKFACE_CULLING__)
+      if (unlikely(den <= 0.0f)) return false;
+#else
+      if (unlikely(den == 0.0f)) return false;
+#endif
+
+      /* ray masking test */
+#if defined(__USE_RAY_MASK__)
+      if (unlikely((tri.mask() & ray.mask) == 0)) return false;
+#endif
+
+      /* intersection filter test */
+#if defined(__INTERSECTION_FILTER__)
+      const int geomID = tri.geomID<list>();
+      Geometry* geometry = ((Scene*)geom)->get(geomID);
+      if (unlikely(geometry->hasOcclusionFilter1()))
+      {
+        /* calculate hit information */
+        const float rcpAbsDen = rcp(absDen);
+        const float u = U*rcpAbsDen;
+        const float v = V*rcpAbsDen;
+        const float t = T*rcpAbsDen;
+        const int primID = tri.primID<list>();
+        return runOcclusionFilter1(geometry,ray,u,v,t,Ng,geomID,primID);
+      }
+#endif
+      return true;
+    }
+
   void subdivide_intersect1(Ray& ray,
 			    const IrregularCatmullClarkPatch &patch,
 			    const unsigned int subdiv_level = 0);
+
+  bool subdivide_occluded1(Ray& ray,
+			   const IrregularCatmullClarkPatch &patch,
+			   const unsigned int subdiv_level = 0);
+
+  extern size_t g_subdivision_level;
 
   template<bool list>
   struct SubdivPatch1Intersector1
@@ -123,9 +202,7 @@ namespace embree
       IrregularCatmullClarkPatch irregular_patch;
       subdiv_patch.init( irregular_patch );
 
-      subdivide_intersect1(ray,irregular_patch,subdiv_patch.subdivision_level);
-      //subdivide_intersect1(ray,irregular_patch,0);
-
+      subdivide_intersect1(ray,irregular_patch,g_subdivision_level);
     }
 
     /*! Test if the ray is occluded by the primitive */
@@ -136,10 +213,7 @@ namespace embree
       IrregularCatmullClarkPatch irregular_patch;
       subdiv_patch.init( irregular_patch );
 
-      subdivide_intersect1(ray,irregular_patch,subdiv_patch.subdivision_level);
-      PING;
-      FATAL("NOT IMPLEMENTED YET");
-      return false;
+      return subdivide_occluded1(ray,irregular_patch,g_subdivision_level);
     }
   };
 }

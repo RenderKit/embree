@@ -55,4 +55,40 @@ namespace embree
 			       subdiv_level - 1);	    
       }   
   }
+
+  bool subdivide_occluded1(Ray& ray,
+			    const IrregularCatmullClarkPatch &patch,
+			    const unsigned int subdiv_level)
+  {
+    if (subdiv_level == 0)
+      {
+	__aligned(64) FinalQuad finalQuad;
+	patch.init( finalQuad );
+        
+	if (occludedTri(finalQuad.vtx[0],
+			finalQuad.vtx[1],
+			finalQuad.vtx[2],
+			ray,
+			finalQuad.geomID,
+			finalQuad.primID,NULL)) return true; 
+
+	if (occludedTri(finalQuad.vtx[2],
+			finalQuad.vtx[3],
+			finalQuad.vtx[0],
+			ray,
+			finalQuad.geomID,
+			finalQuad.primID,NULL)) return false;
+      }
+    else
+      {
+	IrregularCatmullClarkPatch subpatches[4];
+	patch.subdivide(subpatches);
+	for (size_t i=0;i<4;i++)
+	  if (subdivide_occluded1(ray,
+				  subpatches[i],
+				  subdiv_level - 1)) return true;
+      }   
+    return false;
+  }
+
 };
