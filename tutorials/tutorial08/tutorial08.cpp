@@ -19,10 +19,11 @@
 #include "sys/taskscheduler.h"
 #include "image/image.h"
 
-int subdivisionLevel = 0;
+extern "C" void setSubdivisionLevel(unsigned int); // for now hidden fct in the core 
 
 namespace embree 
 {
+
   /* name of the tutorial */
   const char* tutorialName = "tutorial08";
 
@@ -41,11 +42,13 @@ namespace embree
   OBJScene g_obj_scene;
   static FileName filename = "";
 
+  unsigned int subdivision_level = 0;
+
   static void decreaseSubdivisionLevel(unsigned char key, int x, int y) {
-
     /*! Decrease the level of subdivision surface refinement. */
-    subdivisionLevel = (subdivisionLevel > 0) ? subdivisionLevel - 1 : 0;
-
+    subdivision_level = (subdivision_level > 0) ? subdivision_level - 1 : 0;
+    DBG_PRINT( subdivision_level );
+    setSubdivisionLevel( subdivision_level );
   }
 
   static std::string getParameterString(Ref<ParseStream> &cin, std::string &term) {
@@ -58,8 +61,9 @@ namespace embree
   static void increaseSubdivisionLevel(unsigned char key, int x, int y) {
 
     /*! Increase the level of subdivision surface refinement. */
-    subdivisionLevel++;
-
+    subdivision_level++;
+    DBG_PRINT( subdivision_level );
+    setSubdivisionLevel( subdivision_level );
   }
 
   static void initEmbreeState(std::string configuration) {
