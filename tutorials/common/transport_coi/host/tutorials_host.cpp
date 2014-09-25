@@ -199,6 +199,7 @@ namespace embree
     assert( mesh->vt.size() );
     assert( mesh->quads.size() );
     
+    
     size_t positionBytes = max(size_t(16),mesh->v.size()*sizeof(Vec3fa));
 
     void* positionPtr = mesh->v.size() ? &mesh->v.front() : NULL;

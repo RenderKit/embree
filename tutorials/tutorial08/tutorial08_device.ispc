@@ -54,6 +54,7 @@ struct ISPCMaterial
 struct ISPCMesh
 {
   uniform Vec3fa* positions;    //!< vertex position array
+  uniform Vec3fa* positions2;    //!< vertex position array
   uniform Vec3fa* normals;       //!< vertex normal array
   uniform Vec2f* texcoords;     //!< vertex texcoord array
   uniform ISPCTriangle* triangles;  //!< list of triangles
@@ -166,9 +167,9 @@ void convertTestSubdivScene()
   /* create scene */
   uniform unsigned int subdivMeshID = rtcNewSubdivisionMesh(g_scene, RTC_GEOMETRY_STATIC, FACES, EDGES, VERTICES);
 
-  rtcSetBuffer(g_scene, subdivMeshID, RTC_VERTEX_BUFFER, test_vertices, 0, sizeof(Vec3fa  ));
-  rtcSetBuffer(g_scene, subdivMeshID, RTC_INDEX_BUFFER,  test_indices , 0, sizeof(unsigned int));
-  rtcSetBuffer(g_scene, subdivMeshID, RTC_OFFSET_BUFFER, test_offsets , 0, sizeof(unsigned int));
+  rtcSetBuffer(g_scene, subdivMeshID, RTC_VERTEX_BUFFER, test_vertices, 0, sizeof(uniform Vec3fa  ));
+  rtcSetBuffer(g_scene, subdivMeshID, RTC_INDEX_BUFFER,  test_indices , 0, sizeof(uniform unsigned int));
+  rtcSetBuffer(g_scene, subdivMeshID, RTC_OFFSET_BUFFER, test_offsets , 0, sizeof(uniform unsigned int));
 }
 
 uniform unsigned int convertScene(uniform ISPCScene* uniform scene_in)
@@ -190,9 +191,9 @@ uniform unsigned int convertScene(uniform ISPCScene* uniform scene_in)
        /* create a triangle mesh */
        uniform unsigned int subdivMeshID = rtcNewSubdivisionMesh (g_scene, RTC_GEOMETRY_STATIC, mesh->numQuads, mesh->numQuads*4, mesh->numVertices);
 
-	rtcSetBuffer(g_scene, subdivMeshID, RTC_VERTEX_BUFFER, mesh->positions, 0, sizeof(Vec3fa  ));
-	rtcSetBuffer(g_scene, subdivMeshID, RTC_INDEX_BUFFER,  mesh->quads    , 0, sizeof(unsigned int));
-	rtcSetBuffer(g_scene, subdivMeshID, RTC_OFFSET_BUFFER, offset_buffer  , 0, sizeof(unsigned int));
+	rtcSetBuffer(g_scene, subdivMeshID, RTC_VERTEX_BUFFER, mesh->positions, 0, sizeof(uniform Vec3fa  ));
+	rtcSetBuffer(g_scene, subdivMeshID, RTC_INDEX_BUFFER,  mesh->quads    , 0, sizeof(uniform unsigned int));
+	rtcSetBuffer(g_scene, subdivMeshID, RTC_OFFSET_BUFFER, offset_buffer  , 0, sizeof(uniform unsigned int));
        }
   }
 

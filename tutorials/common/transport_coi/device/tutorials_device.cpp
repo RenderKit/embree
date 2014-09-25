@@ -49,6 +49,7 @@ namespace embree
     }
 
     ~ISPCMesh () {
+      PING;
       if (positions)  os_free(positions ,sizePositions);
       if (positions2) os_free(positions2,sizePositions);
       if (normals)    os_free(normals   ,sizeNormals);
@@ -231,9 +232,13 @@ namespace embree
                                   uint16_t         in_ReturnValueLength)
   {
     size_t meshID = g_meshID++;
-    // DBG_PRINT( in_pMiscData->numTriangles );
-    // DBG_PRINT( in_pMiscData->numQuads );
-    // DBG_PRINT( in_pMiscData->numVertices );
+
+#if 0
+    DBG_PRINT( in_pMiscData->numTriangles );
+    DBG_PRINT( in_pMiscData->numQuads );
+    DBG_PRINT( in_pMiscData->numVertices );
+#endif
+
     ISPCMesh* mesh = new ISPCMesh(in_pMiscData->numTriangles,in_pMiscData->numQuads,in_pMiscData->numVertices);
     assert( mesh );
     assert( in_pMiscData->numTriangles*sizeof(OBJScene::Triangle) == in_pBufferLengths[3] );
