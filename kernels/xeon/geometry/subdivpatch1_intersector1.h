@@ -158,7 +158,7 @@ namespace embree
 #endif
 
       /* intersection filter test */
-#if defined(__INTERSECTION_FILTER__)
+#if 0 && defined(__INTERSECTION_FILTER__) // FIXME: enable
       const int geomID = tri.geomID<list>();
       Geometry* geometry = ((Scene*)geom)->get(geomID);
       if (unlikely(geometry->hasOcclusionFilter1()))
