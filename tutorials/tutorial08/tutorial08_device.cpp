@@ -293,27 +293,9 @@ void constructScene() {
 								  mesh->numQuads*4, 
 								  mesh->numVertices);
 
-#if 0
-
 		rtcSetBuffer(g_scene, subdivMeshID, RTC_VERTEX_BUFFER, mesh->positions, 0, sizeof(Vec3fa  ));
-		rtcSetBuffer(g_scene, subdivMeshID, RTC_INDEX_BUFFER,  mesh->quads    , 0, sizeof(ISPCQuad));
+		rtcSetBuffer(g_scene, subdivMeshID, RTC_INDEX_BUFFER,  mesh->quads    , 0, sizeof(unsigned int));
 		rtcSetBuffer(g_scene, subdivMeshID, RTC_OFFSET_BUFFER, offset_buffer  , 0, sizeof(unsigned int));
-#else
-		void *vtx_data_ptr = rtcMapBuffer(g_scene, subdivMeshID, RTC_VERTEX_BUFFER);
-		assert( vtx_data_ptr );
-		memcpy( vtx_data_ptr , mesh->positions, sizeof(Vec3fa) * mesh->numVertices);
-		rtcUnmapBuffer(g_scene, subdivMeshID, RTC_VERTEX_BUFFER);
-
-		void *vtx_index_ptr = rtcMapBuffer(g_scene, subdivMeshID, RTC_INDEX_BUFFER);
-		assert( vtx_index_ptr );
-		memcpy( vtx_index_ptr , mesh->quads, sizeof(unsigned int) * mesh->numQuads*4);
-		rtcUnmapBuffer(g_scene, subdivMeshID, RTC_INDEX_BUFFER);
-
-		void *vtx_offset_ptr = rtcMapBuffer(g_scene, subdivMeshID, RTC_OFFSET_BUFFER);
-		assert( vtx_offset_ptr );
-		memcpy( vtx_offset_ptr , offset_buffer, sizeof(unsigned int) * mesh->numQuads);
-		rtcUnmapBuffer(g_scene, subdivMeshID, RTC_OFFSET_BUFFER);
-#endif
 		//delete offset_buffer;
 	      }
 	  }       
@@ -325,20 +307,9 @@ void constructScene() {
 	std::cout << "Loading dummy cube..." << std::endl;
 	unsigned int subdivMeshID = rtcNewSubdivisionMesh(g_scene, RTC_GEOMETRY_STATIC, FACES, EDGES, VERTICES);
 
-	void *vtx_data_ptr = rtcMapBuffer(g_scene, subdivMeshID, RTC_VERTEX_BUFFER);
-	assert( vtx_data_ptr );
-	memcpy( vtx_data_ptr , test_vertices, sizeof(Vec3fa) * VERTICES);
-	rtcUnmapBuffer(g_scene, subdivMeshID, RTC_VERTEX_BUFFER);
-
-	void *vtx_index_ptr = rtcMapBuffer(g_scene, subdivMeshID, RTC_INDEX_BUFFER);
-	assert( vtx_index_ptr );
-	memcpy( vtx_index_ptr , test_indices, sizeof(unsigned int) * EDGES);
-	rtcUnmapBuffer(g_scene, subdivMeshID, RTC_INDEX_BUFFER);
-
-	void *vtx_offset_ptr = rtcMapBuffer(g_scene, subdivMeshID, RTC_OFFSET_BUFFER);
-	assert( vtx_offset_ptr );
-	memcpy( vtx_offset_ptr , test_offsets, sizeof(unsigned int) * FACES);
-	rtcUnmapBuffer(g_scene, subdivMeshID, RTC_OFFSET_BUFFER);
+	rtcSetBuffer(g_scene, subdivMeshID, RTC_VERTEX_BUFFER, test_vertices, 0, sizeof(Vec3fa  ));
+	rtcSetBuffer(g_scene, subdivMeshID, RTC_INDEX_BUFFER,  test_indices , 0, sizeof(unsigned int));
+	rtcSetBuffer(g_scene, subdivMeshID, RTC_OFFSET_BUFFER, test_offsets , 0, sizeof(unsigned int));
       }
     
     rtcCommit(g_scene);
@@ -445,7 +416,7 @@ extern "C" void device_render(int *pixels, int width, int height, float time, co
       constructScene();
     }
     /*! Refine the subdivision mesh as needed. */
-    static int currentLevel = 0;  if (currentLevel != subdivisionLevel) rtcDeleteScene(g_scene), constructScene(), currentLevel = subdivisionLevel;
+  //static int currentLevel = 0;  if (currentLevel != subdivisionLevel) rtcDeleteScene(g_scene), constructScene(), currentLevel = subdivisionLevel;
 
     /*! Number of tiles spanning the window in width and height. */
     const Vec2i tileCount((width + TILE_SIZE_X - 1) / TILE_SIZE_X, (height + TILE_SIZE_Y - 1) / TILE_SIZE_Y);

@@ -161,34 +161,19 @@ uniform unsigned int test_indices[EDGES] = {0, 1, 5, 4,  1, 2, 6, 5,  2, 3, 7, 6
 uniform unsigned int test_offsets[FACES] = {0, 4, 8, 12, 16, 20};
 
 
-RTCScene convertTestSubdivScene()
+void convertTestSubdivScene()
 {
   /* create scene */
-  RTCScene scene_out = rtcNewScene(RTC_SCENE_STATIC,RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING);
-  uniform unsigned int subdivMeshID = rtcNewSubdivisionMesh(scene_out, RTC_GEOMETRY_STATIC, FACES, EDGES, VERTICES);
+  uniform unsigned int subdivMeshID = rtcNewSubdivisionMesh(g_scene, RTC_GEOMETRY_STATIC, FACES, EDGES, VERTICES);
 
-  void *vtx_data_ptr = rtcMapBuffer(scene_out, subdivMeshID, RTC_VERTEX_BUFFER);
-  assert( vtx_data_ptr );
-  memcpy( vtx_data_ptr , test_vertices, sizeof(uniform Vec3fa) * VERTICES);
-  rtcUnmapBuffer(scene_out, subdivMeshID, RTC_VERTEX_BUFFER);
-
-  void *vtx_index_ptr = rtcMapBuffer(scene_out, subdivMeshID, RTC_INDEX_BUFFER);
-  assert( vtx_index_ptr );
-  memcpy( vtx_index_ptr , test_indices, sizeof(uniform unsigned int) * EDGES);
-  rtcUnmapBuffer(scene_out, subdivMeshID, RTC_INDEX_BUFFER);
-
-  void *vtx_offset_ptr = rtcMapBuffer(scene_out, subdivMeshID, RTC_OFFSET_BUFFER);
-  assert( vtx_offset_ptr );
-  memcpy( vtx_offset_ptr , test_offsets, sizeof(uniform unsigned int) * FACES);
-  rtcUnmapBuffer(scene_out, subdivMeshID, RTC_OFFSET_BUFFER);
-  return scene_out;
+  rtcSetBuffer(g_scene, subdivMeshID, RTC_VERTEX_BUFFER, test_vertices, 0, sizeof(Vec3fa  ));
+  rtcSetBuffer(g_scene, subdivMeshID, RTC_INDEX_BUFFER,  test_indices , 0, sizeof(unsigned int));
+  rtcSetBuffer(g_scene, subdivMeshID, RTC_OFFSET_BUFFER, test_offsets , 0, sizeof(unsigned int));
 }
 
-RTCScene convertSubdivScene(uniform ISPCScene* uniform scene_in)
+uniform unsigned int convertScene(uniform ISPCScene* uniform scene_in)
 {
-  /* create scene */
-  RTCScene scene_out = rtcNewScene(RTC_SCENE_STATIC,RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING);
-
+  uniform unsigned int totalNumQuads = 0;
 
   /* add all meshes to the scene */
   for (uniform int i=0; i<scene_in->numMeshes; i++)
@@ -198,39 +183,20 @@ RTCScene convertSubdivScene(uniform ISPCScene* uniform scene_in)
 
     if (mesh->numQuads)
       {   
+	totalNumQuads += mesh->numQuads;
+	uniform int * uniform offset_buffer = uniform new uniform int[mesh->numQuads];
+	for (size_t i=0;i<mesh->numQuads;i++) offset_buffer[i] = i*4;
+
        /* create a triangle mesh */
-       uniform unsigned int geometry = rtcNewSubdivisionMesh (scene_out, RTC_GEOMETRY_STATIC, mesh->numQuads, mesh->numQuads*4, mesh->numVertices);
+       uniform unsigned int subdivMeshID = rtcNewSubdivisionMesh (g_scene, RTC_GEOMETRY_STATIC, mesh->numQuads, mesh->numQuads*4, mesh->numVertices);
 
-#if !defined(__XEON_PHI__)
-    /* share vertex buffer */
-    rtcSetBuffer(scene_out, geometry, RTC_VERTEX_BUFFER, mesh->positions, 0, sizeof(uniform Vec3fa      ));
-    rtcSetBuffer(scene_out, geometry, RTC_INDEX_BUFFER,  mesh->triangles, 0, sizeof(uniform ISPCTriangle));
-#else
-
-    /* set vertices */
-    uniform Vertex* uniform vertices = (uniform Vertex* uniform) rtcMapBuffer(scene_out,geometry,RTC_VERTEX_BUFFER); 
-    for (uniform int j=0; j<mesh->numVertices; j++) {
-      vertices[j].x = mesh->positions[j].x;
-      vertices[j].y = mesh->positions[j].y;
-      vertices[j].z = mesh->positions[j].z;
-    }
-    rtcUnmapBuffer(scene_out,geometry,RTC_VERTEX_BUFFER); 
-
-    /* set triangles */
-    uniform Triangle* uniform triangles = (uniform Triangle* uniform) rtcMapBuffer(scene_out,geometry,RTC_INDEX_BUFFER);
-    for (uniform int j=0; j<mesh->numTriangles; j++) {
-      triangles[j].v0 = mesh->triangles[j].v0;
-      triangles[j].v1 = mesh->triangles[j].v1;
-      triangles[j].v2 = mesh->triangles[j].v2;
-    }
-    rtcUnmapBuffer(scene_out,geometry,RTC_INDEX_BUFFER);
-#endif
-
-}
+	rtcSetBuffer(g_scene, subdivMeshID, RTC_VERTEX_BUFFER, mesh->positions, 0, sizeof(Vec3fa  ));
+	rtcSetBuffer(g_scene, subdivMeshID, RTC_INDEX_BUFFER,  mesh->quads    , 0, sizeof(unsigned int));
+	rtcSetBuffer(g_scene, subdivMeshID, RTC_OFFSET_BUFFER, offset_buffer  , 0, sizeof(unsigned int));
+       }
   }
 
-  /* commit changes to scene */
-  return scene_out;
+  return totalNumQuads;
 }
 
 Vec3f rndColor(const int ID) 
@@ -326,8 +292,11 @@ export void device_render (uniform int* uniform pixels,
   /* create scene */
   if (g_scene == NULL)
   { 
-   //g_scene = convertScene(g_ispc_scene);
-   g_scene = convertTestSubdivScene();
+   //
+   g_scene = rtcNewScene(RTC_SCENE_STATIC,RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING);
+   uniform unsigned int numQuads = convertScene(g_ispc_scene);
+   if (numQuads == 0)
+    convertTestSubdivScene();
 
 #if !defined(PARALLEL_COMMIT)
   rtcCommit (g_scene);
