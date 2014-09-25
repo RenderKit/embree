@@ -305,37 +305,43 @@ namespace embree
   void Scene::build (size_t threadIndex, size_t threadCount) 
   {
 #if 0 // FIXME: remove
-    getSubdivMesh(0)->initializeHalfEdgeStructures();
-    IrregularSubdividedCatmullClarkPatch* patch = new IrregularSubdividedCatmullClarkPatch(getSubdivMesh(0)->halfEdges, getSubdivMesh(0)->getVertexPositionPtr(0));
-    for (size_t i=0; i<2; i++) {
-      IrregularSubdividedCatmullClarkPatch* patch1 = new IrregularSubdividedCatmullClarkPatch(); 
-      patch->subdivide(patch1);
-      delete patch; patch = patch1;
-    }
-    const size_t width  = patch->points.width();
-    const size_t height = patch->points.height();
-    TriangleMesh* mesh = new TriangleMesh (this, RTC_GEOMETRY_STATIC, (width-1)*(height-1)*2, width*height, 1);
-    Vec3fa* vertices = (Vec3fa*) mesh->map(RTC_VERTEX_BUFFER);
-    for (size_t y=0; y<height; y++) {
-      for (size_t x=0; x<width; x++) {
-        vertices[y*width+x] = patch->points(x,y);
+    SubdivMesh* subdivmesh = getSubdivMesh(0);
+    subdivmesh->initializeHalfEdgeStructures();
+    size_t N = subdivmesh->numHalfEdges;
+    for (size_t i=0; i<N; i++)
+    {
+      IrregularSubdividedCatmullClarkPatch* patch = new IrregularSubdividedCatmullClarkPatch(&subdivmesh->halfEdges[i], subdivmesh->getVertexPositionPtr(0));
+      for (size_t i=0; i<1; i++) {
+        IrregularSubdividedCatmullClarkPatch* patch1 = new IrregularSubdividedCatmullClarkPatch(); 
+        patch->subdivide(patch1);
+        delete patch; patch = patch1;
       }
-    }
-    mesh->unmap(RTC_VERTEX_BUFFER);
-    TriangleMesh::Triangle* triangles = (TriangleMesh::Triangle*) mesh->map(RTC_INDEX_BUFFER);
-    for (size_t y=0; y<height-1; y++) {
-      for (size_t x=0; x<width-1; x++) {
-        TriangleMesh::Triangle& tri0 = triangles[2*(y*(width-1)+x)+0];
-        tri0.v[0] = (y+0)*width + (x+0);
-        tri0.v[1] = (y+0)*width + (x+1);
-        tri0.v[2] = (y+1)*width + (x+1);
-        TriangleMesh::Triangle& tri1 = triangles[2*(y*(width-1)+x)+1];
-        tri1.v[0] = (y+0)*width + (x+0);
-        tri1.v[1] = (y+1)*width + (x+1);
-        tri1.v[2] = (y+1)*width + (x+0);
+      const size_t width  = patch->points.width()-2;
+      const size_t height = patch->points.height()-2;
+      TriangleMesh* mesh = new TriangleMesh (this, RTC_GEOMETRY_STATIC, (width-1)*(height-1)*2, width*height, 1);
+      Vec3fa* vertices = (Vec3fa*) mesh->map(RTC_VERTEX_BUFFER);
+      for (size_t y=0; y<height; y++) {
+        for (size_t x=0; x<width; x++) {
+          vertices[y*width+x] = patch->points(x+1,y+1);
+        }
       }
+      mesh->unmap(RTC_VERTEX_BUFFER);
+      TriangleMesh::Triangle* triangles = (TriangleMesh::Triangle*) mesh->map(RTC_INDEX_BUFFER);
+      for (size_t y=0; y<height-1; y++) {
+        for (size_t x=0; x<width-1; x++) {
+          TriangleMesh::Triangle& tri0 = triangles[2*(y*(width-1)+x)+0];
+          tri0.v[0] = (y+0)*width + (x+0);
+          tri0.v[1] = (y+0)*width + (x+1);
+          tri0.v[2] = (y+1)*width + (x+1);
+          TriangleMesh::Triangle& tri1 = triangles[2*(y*(width-1)+x)+1];
+          tri1.v[0] = (y+0)*width + (x+0);
+          tri1.v[1] = (y+1)*width + (x+1);
+          tri1.v[2] = (y+1)*width + (x+0);
+        }
+      }
+      mesh->unmap(RTC_INDEX_BUFFER);
     }
-    mesh->unmap(RTC_INDEX_BUFFER);
+    remove(subdivmesh);
 #endif
 
     /* all user worker threads properly enter and leave the tasking system */
@@ -388,7 +394,7 @@ namespace embree
     {
       accels.immutable();
       for (size_t i=0; i<geometries.size(); i++)
-        geometries[i]->immutable();
+        if (geometries[i]) geometries[i]->immutable();
     }
 
     /* delete geometry that is scheduled for delete */
