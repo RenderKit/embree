@@ -92,6 +92,7 @@ namespace embree
   size_t g_verbose = 0;                                 //!< verbosity of output
   size_t g_numThreads = 0;                              //!< number of threads to use in builders
   size_t g_benchmark = 0;
+  size_t g_subdivision_level = 0;
 
   void initSettings()
   {
@@ -115,6 +116,7 @@ namespace embree
     g_verbose = 0;
     g_numThreads = 0;
     g_benchmark = 0;
+    g_subdivision_level = 0;
   }
 
   void printSettings()
