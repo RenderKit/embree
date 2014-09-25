@@ -307,10 +307,10 @@ namespace embree
 #if 0 // FIXME: remove
     SubdivMesh* subdivmesh = getSubdivMesh(0);
     subdivmesh->initializeHalfEdgeStructures();
-    size_t N = subdivmesh->numHalfEdges;
+    size_t N = subdivmesh->numFaces;
     for (size_t i=0; i<N; i++)
     {
-      IrregularSubdividedCatmullClarkPatch* patch = new IrregularSubdividedCatmullClarkPatch(&subdivmesh->halfEdges[i], subdivmesh->getVertexPositionPtr(0));
+      IrregularSubdividedCatmullClarkPatch* patch = new IrregularSubdividedCatmullClarkPatch(&subdivmesh->halfEdges[4*i], subdivmesh->getVertexPositionPtr(0));
       for (size_t i=0; i<1; i++) {
         IrregularSubdividedCatmullClarkPatch* patch1 = new IrregularSubdividedCatmullClarkPatch(); 
         patch->subdivide(patch1);
