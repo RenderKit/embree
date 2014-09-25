@@ -80,13 +80,13 @@ namespace embree
         }
         
         __forceinline const Vec3fa& first() const {
-          assert(N>=4);
-          return ring[4];
+          assert(N>=2);
+          return ring[2];
         }
 
         __forceinline const Vec3fa& last() const {
-          assert(N>=2);
-          return ring[N-2];
+          assert(N>=4);
+          return ring[N-4];
         }
 
         __forceinline void init(const SubdivMesh::HalfEdge* const h, const Vec3fa *const vertices)
@@ -95,21 +95,17 @@ namespace embree
           vtx = vertices[ h->getStartVertexIndex() ];
           SubdivMesh::HalfEdge* p = (SubdivMesh::HalfEdge*)h;
           do {
-            //p = p->opposite();
-            p = p->next();
-            assert( i < 2*MAX_VALENCE );
+            p = p->opposite();
+            assert(i<2*MAX_VALENCE);
             ring[i++] = vertices[ p->getStartVertexIndex() ];
-            p = p->next();
-            assert( i < 2*MAX_VALENCE );
-            ring[i++] = vertices[ p->getStartVertexIndex() ];
-            //ring[i++] = vertices[ p->prev()->getStartVertexIndex() ];
+            assert(i<2*MAX_VALENCE);
+            ring[i++] = vertices[ p->prev()->getStartVertexIndex() ];
             
             /*! continue with next adjacent edge. */
             p = p->next();
-            p = p->opposite();
           } while( p != h);
           N = i;
-          assert( N < MAX_VALENCE );
+          assert( N < 2*MAX_VALENCE );
         }
 
         __forceinline void subdivide (Ring& dest) const
