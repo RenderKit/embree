@@ -41,6 +41,16 @@ namespace embree
     unsigned int num_vtx;
 
     CatmullClark1Ring() {}
+
+    __forceinline const Vec3fa& first() const {
+      assert(num_vtx>=2);
+      return ring[2];
+    }
+    
+    __forceinline const Vec3fa& last() const {
+      assert(num_vtx>=4);
+      return ring[num_vtx-4];
+    }
     
     __forceinline void init(const SubdivMesh::HalfEdge *const h,
 			    const Vec3fa *const vertices)
@@ -50,15 +60,16 @@ namespace embree
       SubdivMesh::HalfEdge *p = (SubdivMesh::HalfEdge*)h;
       do {
 	p = p->opposite();
+        assert( i < 2*MAX_VALENCE );
 	ring[i++] = vertices[ p->getStartVertexIndex() ];
+        assert( i < 2*MAX_VALENCE );
 	ring[i++] = vertices[ p->prev()->getStartVertexIndex() ];
-
+        
 	/*! continue with next adjacent edge. */
 	p = p->next();
       } while( p != h);
       num_vtx = i;
       valence = i >> 1;
-      assert( i+1 < MAX_VALENCE );
     }
 
 
@@ -66,51 +77,47 @@ namespace embree
     {
       dest.valence = valence;
       dest.num_vtx = num_vtx;
-      // new face vtx
-      Vec3fa avg_faces(0.0f,0.0f,0.0f);
-      Vec3fa avg_edges(0.0f,0.0f,0.0f);
+      Vec3fa F(0.0f,0.0f,0.0f);
+      Vec3fa R(0.0f,0.0f,0.0f);
 
-      for (size_t i=0;i<valence-1;i++)
-	{
-	  const Vec3fa new_face = (vtx + ring[2*i] + ring[2*i+1] + ring[2*i+2]) * 0.25f;
-	  avg_faces += new_face;
-	  avg_edges += (vtx + ring[2*i]) * 0.5f;
-	  dest.ring[2*i + 1] = new_face;
-	}
+      for (size_t i=0; i<valence-1; i++)
+      {
+        const Vec3fa new_face = (vtx + ring[2*i] + ring[2*i+1] + ring[2*i+2]) * 0.25f;
+        F += new_face;
+        R += (vtx + ring[2*i]) * 0.5f;
+        dest.ring[2*i + 1] = new_face;
+      }
+
       {
         const Vec3fa new_face = (vtx + ring[num_vtx-2] + ring[num_vtx-1] + ring[0]) * 0.25f;
-        avg_faces += new_face;
-        avg_edges += (vtx + ring[num_vtx-2]) * 0.5f;
+        F += new_face;
+        R += (vtx + ring[num_vtx-2]) * 0.5f;
         dest.ring[num_vtx-1] = new_face;
       }
+      
       // new edge vertices
-      for (size_t i=1;i<valence;i++)
-	{
-	  const Vec3fa new_edge = (vtx + ring[2*i] + dest.ring[2*i-1] + dest.ring[2*i+1]) * 0.25f;
-	  dest.ring[2*i + 0] = new_edge;
-	}
+      for (size_t i=1; i<valence; i++)
+      {
+        const Vec3fa new_edge = (vtx + ring[2*i] + dest.ring[2*i-1] + dest.ring[2*i+1]) * 0.25f;
+        dest.ring[2*i + 0] = new_edge;
+      }
       dest.ring[0] = (vtx + ring[0] + dest.ring[num_vtx-1] + dest.ring[1]) * 0.25f;
 
       // new vtx
       const float inv_valence = 1.0f / (float)valence;
-
-      avg_faces *= inv_valence;
-      avg_edges *= inv_valence; 
-      
-      dest.vtx = (avg_faces + 2.0f * avg_edges + (float)(valence-3)*vtx) * inv_valence;
+      F *= inv_valence;
+      R *= inv_valence; 
+      dest.vtx = (F + 2.0f * R + (float)(valence-3)*vtx) * inv_valence;
     }
 
-  };
-
-  __forceinline std::ostream &operator<<(std::ostream &o, const CatmullClark1Ring &c)
+    friend __forceinline std::ostream &operator<<(std::ostream &o, const CatmullClark1Ring &c)
     {
       o << "vtx " << c.vtx << " valence " << c.valence << " num_vtx " << c.num_vtx << " ring: " << std::endl;
       for (size_t i=0;i<c.num_vtx;i++)
 	o << i << " -> " << c.ring[i] << std::endl;
       return o;
     } 
-
-
+  };
 
   class __aligned(64) IrregularCatmullClarkPatch
   {
