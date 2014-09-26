@@ -76,25 +76,25 @@ namespace embree
       void init(size_t N, CatmullClark1Ring& r0, CatmullClark1Ring& r1)
       {
         v.init(N,3);
-        this->N = 2;
+        this->K = 1;
         init(r0,r1);
       }
 
       __forceinline void subdivide(CatmullClark1Ring& r0, CatmullClark1Ring& r1) 
       {
-        assert(2*N-1 < v.width());
-        size_t N0 = N;
-        size_t N1 = 2*N-1;
+        assert(2*K+1 <= v.width());
+        size_t K0 = K;
+        size_t K1 = 2*K;
         
         Vec3fa v20 = zero;
         Vec3fa v21 = zero;
         Vec3fa v22 = zero;
 
-        Vec3fa v10 = v(N-1,0);
-        Vec3fa v11 = v(N-1,1);
-        Vec3fa v12 = v(N-1,2);
+        Vec3fa v10 = v((K+1)-1,0);
+        Vec3fa v11 = v((K+1)-1,1);
+        Vec3fa v12 = v((K+1)-1,2);
 
-        for (ssize_t x=N-2; x>=0; x--) 
+        for (ssize_t x=K-1; x>=0; x--) 
         {
           PRINT(x);
 
@@ -139,9 +139,9 @@ namespace embree
           v21 = v11; v11 = v01;
           v22 = v12; v12 = v02;
         }        
-        N = N1; PRINT(*this); N = N0;
+        K = K1; PRINT(*this); K = K0;
         
-        N=2*N-1;
+        K = 2*K;
         init(r0,r1);
       }
 
@@ -150,16 +150,16 @@ namespace embree
         v(0,0) = ring0.first();
         v(0,1) = ring0.vtx;
         v(0,2) = ring0.end();
-        v(N-1,0) = ring1.last();
-        v(N-1,1) = ring1.vtx;
-        v(N-1,2) = ring1.begin();
+        v(K,0) = ring1.last();
+        v(K,1) = ring1.vtx;
+        v(K,2) = ring1.begin();
       }
 
       friend __forceinline std::ostream &operator<<(std::ostream& out, const CatmullClark1Edge& edge)
       {
         out << std::endl;
         for (size_t y=0; y<3; y++) {
-          for (size_t x=0; x<edge.N; x++) {
+          for (size_t x=0; x<edge.K+1; x++) {
             //out << patch.v(x,y) << " ";
             out << std::setw(10) << edge.v(x,y).z << " ";
           }
@@ -170,7 +170,7 @@ namespace embree
 
     public:
       Array2D<Vec3fa> v;
-      size_t N;
+      size_t K;
     };
 
     class __aligned(64) IrregularSubdividedCatmullClarkPatch2

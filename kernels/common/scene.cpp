@@ -304,7 +304,7 @@ namespace embree
 
   void Scene::build (size_t threadIndex, size_t threadCount) 
   {
-#if 0 // FIXME: remove
+#if 1 // FIXME: remove
     SubdivMesh* subdivmesh = getSubdivMesh(0);
     subdivmesh->initializeHalfEdgeStructures();
     size_t N = subdivmesh->numFaces;
