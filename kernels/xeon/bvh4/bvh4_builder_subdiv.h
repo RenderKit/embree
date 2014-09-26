@@ -180,7 +180,7 @@ namespace embree
       IrregularSubdividedCatmullClarkPatch2 (const SubdivMesh::HalfEdge* h, const Vec3fa* const vertices, size_t level)
         : N(2)
       {
-        size_t M = (1<<level)+3;
+        size_t M = (1<<level)+1;
         v.init(M,M,Vec3fa(nan));
         
         ring00.init(h,vertices); h = h->next();
@@ -206,12 +206,13 @@ namespace embree
 
       void subdivide_points()
       {
-        assert(2*N < v.width());
-        assert(2*N < v.height());
+        assert(2*N-1 <= v.width());
+        assert(2*N-1 <= v.height());
 
-        for (size_t y=1; y<N; y++)
+        for (size_t y=1; y<N-1; y++)
         {
           //Vec3fa v20 = zero;
+          Vec3fa c20 = zero;
           Vec3fa v21 = zero;
           Vec3fa v22 = zero;
 
@@ -221,6 +222,8 @@ namespace embree
 
           for (ssize_t x=N-2; x>=0; x--) 
           {
+            PRINT(x);
+
             /* load next column */
             //Vec3fa v00 = v(x,y-1);
             Vec3fa v01 = v(x,y+0);
@@ -229,7 +232,7 @@ namespace embree
             /* calculate face points and edge centers */
             const Vec3fa c00 = v(2*x+1,2*y-1);
             const Vec3fa c10 = v(2*x+2,2*y-1);
-            const Vec3fa c20 = v(2*x+3,2*y-1);
+            //const Vec3fa c20 = v(2*x+3,2*y-1);
             const Vec3fa c01 = 0.50f*(v01+v11);
             const Vec3fa c21 = 0.50f*(v11+v21);
             const Vec3fa c02 = 0.25f*(v01+v11+v02+v12);
@@ -240,7 +243,7 @@ namespace embree
             //v(2*x+1,2*y-1) = c00;
             v(2*x+1,2*y+0) = 0.5f*(c01+0.5f*(c00+c02));
             v(2*x+1,2*y+1) = c02;
-            
+
             /* store face points and edge point at 2*x+2 */
             const Vec3fa F = 0.25f*(c00+c20+c02+c22);
             const Vec3fa R = 0.25f*(c10+c01+c21+c12);
@@ -253,6 +256,7 @@ namespace embree
             //v20 = v10; v10 = v00;
             v21 = v11; v11 = v01;
             v22 = v12; v12 = v02;
+            c20 = c00;
           }        
         }
 
