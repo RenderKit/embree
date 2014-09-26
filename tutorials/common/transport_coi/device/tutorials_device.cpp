@@ -220,7 +220,6 @@ namespace embree
                                   void*            in_pReturnValue,
                                   uint16_t         in_ReturnValueLength)
   {
-    PING;
     device_key_pressed(in_pMiscData->key);
   }
 
