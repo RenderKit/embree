@@ -76,6 +76,7 @@ namespace embree
       void init(size_t N, CatmullClark1Ring& r0, CatmullClark1Ring& r1)
       {
         v.init(N,3);
+        for (size_t i=0; i<N; i++) v(i,0) = v(i,1) = v(i,2) = Vec3fa(nan);
         this->K = 1;
         init(r0,r1);
       }
@@ -93,13 +94,26 @@ namespace embree
         Vec3fa v10 = v((K+1)-1,0);
         Vec3fa v11 = v((K+1)-1,1);
         Vec3fa v12 = v((K+1)-1,2);
+        PRINT(K);
+        K = K1; PRINT(*this); K = K0;
 
         for (ssize_t x=K-1; x>=0; x--) 
         {
+          PRINT(x);
           /* load next column */
           Vec3fa v00 = v(x,0);
           Vec3fa v01 = v(x,1);
           Vec3fa v02 = v(x,2);
+
+          PRINT(v00.x);
+          PRINT(v10.x);
+          PRINT(v20.x);
+          PRINT(v01.x);
+          PRINT(v11.x);
+          PRINT(v21.x);
+          PRINT(v02.x);
+          PRINT(v12.x);
+          PRINT(v22.x);
 
           /* calculate face points and edge centers */
           const Vec3fa c00 = 0.25f*(v00+v10+v01+v11);
@@ -110,14 +124,14 @@ namespace embree
           const Vec3fa c02 = 0.25f*(v01+v11+v02+v12);
           const Vec3fa c12 = 0.50f*(v11+v12);
           const Vec3fa c22 = 0.25f*(v11+v21+v12+v22);
-          /*PRINT(c00.z);
-          PRINT(c10.z);
-          PRINT(c20.z);
-          PRINT(c01.z);
-          PRINT(c21.z);
-          PRINT(c02.z);
-          PRINT(c12.z);
-          PRINT(c22.z);*/
+          PRINT(c00.x);
+          PRINT(c10.x);
+          PRINT(c20.x);
+          PRINT(c01.x);
+          PRINT(c21.x);
+          PRINT(c02.x);
+          PRINT(c12.x);
+          PRINT(c22.x);
 
           /* store face points and edge point at 2*x+1 */
           v(2*x+1,0) = c00;
@@ -131,6 +145,8 @@ namespace embree
           v(2*x+2,0) = 0.5f*(c10+0.5f*(c00+c20));
           v(2*x+2,1) = 0.25*F + 0.5*R + 0.25*P;
           v(2*x+2,2) = 0.5f*(c12+0.5f*(c02+c22));
+
+          K = K1; PRINT(*this); K = K0;
 
           /* propagate points to next iteration */
           v20 = v10; v10 = v00;
@@ -159,7 +175,7 @@ namespace embree
         for (size_t y=0; y<3; y++) {
           for (size_t x=0; x<edge.K+1; x++) {
             //out << patch.v(x,y) << " ";
-            out << std::setw(10) << edge.v(x,y).z << " ";
+            out << std::setw(10) << edge.v(x,y).x << " ";
           }
           out << std::endl;
         }
@@ -182,9 +198,9 @@ namespace embree
         v.init(M,M,Vec3fa(nan));
         
         ring00.init(h,vertices); h = h->next();
-        ring01.init(h,vertices); h = h->next();
-        ring11.init(h,vertices); h = h->next();
         ring10.init(h,vertices); h = h->next();
+        ring11.init(h,vertices); h = h->next();
+        ring01.init(h,vertices); h = h->next();
         edgeT.init(M,ring00,ring10);
         edgeR.init(M,ring10,ring11);
         edgeB.init(M,ring11,ring01);
@@ -238,6 +254,9 @@ namespace embree
         //v(0,1) = 0.5f*(v(2,0)+v(2,2));
         print(std::cout,*this,K1);
 
+        PING;
+        PRINT(K);
+
         for (size_t y=1; y<K; y++)
         {
           PRINT(y);
@@ -258,10 +277,10 @@ namespace embree
             //Vec3fa v00 = v(2*x,2*y-2);
             Vec3fa v01 = v(2*x,2*y+0);
             Vec3fa v02 = v(2*x,2*y+2);
-            PRINT(v01.z);
-            PRINT(v11.z);
-            PRINT(v02.z);
-            PRINT(v12.z);
+            PRINT(v01.x);
+            PRINT(v11.x);
+            PRINT(v02.x);
+            PRINT(v12.x);
             
             /* calculate face points and edge centers */
             const Vec3fa c00 = v(2*x+1,2*y-1);
@@ -354,18 +373,18 @@ namespace embree
         size_t N = K+1;
         out << std::endl;
         out << "              ";
-        for (size_t x=0; x<N; x++) out << std::setw(10) << patch.edgeT.v(x,0).z << " ";
+        for (size_t x=0; x<N; x++) out << std::setw(10) << patch.edgeT.v(x,0).x << " ";
         out << std::endl;
         out << std::endl;
         for (size_t y=0; y<N; y++) {
-          out << std::setw(10) << patch.edgeL.v(N-1-y,0).z << "    ";
-          for (size_t x=0; x<N; x++) out << std::setw(10) << patch.v(x,y).z << " ";
-          out << std::setw(10) << "    " << patch.edgeR.v(y,0).z;
+          out << std::setw(10) << patch.edgeL.v(N-1-y,0).x << "    ";
+          for (size_t x=0; x<N; x++) out << std::setw(10) << patch.v(x,y).x << " ";
+          out << std::setw(10) << "    " << patch.edgeR.v(y,0).x;
           out << std::endl;
         }
         out << std::endl;
         out << "              ";
-        for (size_t x=0; x<N; x++) out << std::setw(10) << patch.edgeB.v(N-1-x,0).z << " ";
+        for (size_t x=0; x<N; x++) out << std::setw(10) << patch.edgeB.v(N-1-x,0).x << " ";
         out << std::endl;
         return out;
       } 
@@ -384,18 +403,18 @@ namespace embree
 
         out << std::endl;
         out << "              ";
-        for (size_t x=0; x<N; x++) out << std::setw(10) << patch.edgeT.v(x,0).z << " ";
+        for (size_t x=0; x<N; x++) out << std::setw(10) << patch.edgeT.v(x,0).x << " ";
         out << std::endl;
         out << std::endl;
         for (size_t y=0; y<N; y++) {
-          out << std::setw(10) << patch.edgeL.v(N-1-y,0).z << "    ";
-          for (size_t x=0; x<N; x++) out << std::setw(10) << patch.v(x,y).z << " ";
-          out << std::setw(10) << "    " << patch.edgeR.v(y,0).z;
+          out << std::setw(10) << patch.edgeL.v(N-1-y,0).x << "    ";
+          for (size_t x=0; x<N; x++) out << std::setw(10) << patch.v(x,y).x << " ";
+          out << std::setw(10) << "    " << patch.edgeR.v(y,0).x;
           out << std::endl;
         }
         out << std::endl;
         out << "              ";
-        for (size_t x=0; x<N; x++) out << std::setw(10) << patch.edgeB.v(N-1-x,0).z << " ";
+        for (size_t x=0; x<N; x++) out << std::setw(10) << patch.edgeB.v(N-1-x,0).x << " ";
         out << std::endl;
         return out;
       } 
@@ -529,22 +548,32 @@ namespace embree
 
         /* copy invalid corner points from corner rings */
         out->handle_corners();
+
+        PRINT(*out);
       }
 
-      friend __forceinline std::ostream &operator<<(std::ostream &o, const IrregularSubdividedCatmullClarkPatch& patch)
+      friend __forceinline std::ostream &operator<<(std::ostream &out, const IrregularSubdividedCatmullClarkPatch& patch)
       {
-        o << "ring00 = " << patch.ring00 << std::endl;
-        o << "ring01 = " << patch.ring01 << std::endl;
-        o << "ring10 = " << patch.ring10 << std::endl;
-        o << "ring11 = " << patch.ring11 << std::endl;
-        for (size_t y=0; y<patch.points.height(); y++) {
+        out << std::endl;
+        /*out << "ring00 = " << patch.ring00 << std::endl;
+        out << "ring01 = " << patch.ring01 << std::endl;
+        out << "ring10 = " << patch.ring10 << std::endl;
+        out << "ring11 = " << patch.ring11 << std::endl;*/
+        /*for (size_t y=0; y<patch.points.height(); y++) {
           for (size_t x=0; x<patch.points.width(); x++) {
             o << patch.points(x,y) << " ";
-            //o << std::setw(10) << patch.points(x,y).z << " ";
+            //o << std::setw(10) << patch.points(x,y).x << " ";
           }
           o << std::endl;
+          }*/
+
+        for (size_t y=0; y<patch.points.height(); y++) {
+          for (size_t x=0; x<patch.points.width(); x++) 
+            out << std::setw(10) << patch.points(x,y).x << " ";
+          out << std::endl;
         }
-        return o;
+
+        return out;
       } 
     };
 //}
