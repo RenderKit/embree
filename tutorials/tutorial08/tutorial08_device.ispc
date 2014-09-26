@@ -95,7 +95,7 @@ struct ISPCScene
 extern uniform ISPCScene* uniform g_ispc_scene;
 RTCScene g_scene = NULL;
 uniform unsigned int g_threads = 0;
-
+extern uniform unsigned int g_subdivision_levels;
 
 /* render function to use */
 renderPixelFunc renderPixel;

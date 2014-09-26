@@ -19,6 +19,9 @@
 /* the scene to render */
 extern RTCScene g_scene;
 
+/* global subdivision level for subdivision geometry */
+unsigned int g_subdivision_levels = 0;
+
 /* intensity scaling for traversal cost visualization */
 float scale = 0.001f;
 extern "C" bool g_changed = false;
@@ -316,6 +319,16 @@ extern "C" void device_key_pressed(int key)
     renderPixel = renderPixelCycles;
     g_changed = true;
   }
+  else if (key == GLUT_KEY_F11) {
+  if (g_subdivision_levels > 0)	
+    g_subdivision_levels--;
+    g_changed = true;
+  }
+  else if (key == GLUT_KEY_F12) {
+      g_subdivision_levels++;
+    g_changed = true;
+  }
+
 }
 
 void renderTile(int taskIndex,

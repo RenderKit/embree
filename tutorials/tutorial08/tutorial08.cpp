@@ -42,28 +42,11 @@ namespace embree
   OBJScene g_obj_scene;
   static FileName filename = "";
 
-  unsigned int subdivision_level = 0;
-
-  static void decreaseSubdivisionLevel(unsigned char key, int x, int y) {
-    /*! Decrease the level of subdivision surface refinement. */
-    subdivision_level = (subdivision_level > 0) ? subdivision_level - 1 : 0;
-    DBG_PRINT( subdivision_level );
-    setSubdivisionLevel( subdivision_level );
-  }
-
   static std::string getParameterString(Ref<ParseStream> &cin, std::string &term) {
 
     /*! Parameter name and options. */
     std::string parameter = term + " ";  while (cin->peek() != "" && cin->peek()[0] != '-') parameter += cin->getString();  return(parameter);
 
-  }
-
-  static void increaseSubdivisionLevel(unsigned char key, int x, int y) {
-
-    /*! Increase the level of subdivision surface refinement. */
-    subdivision_level++;
-    DBG_PRINT( subdivision_level );
-    setSubdivisionLevel( subdivision_level );
   }
 
   static void initEmbreeState(std::string configuration) {
@@ -171,11 +154,6 @@ namespace embree
     /* interactive mode */
     if (g_interactive) {
       initWindowState(argc,argv,tutorialName, g_width, g_height, g_fullscreen);
-
-      /*! Keyboard bindings. */
-      mapKeyToFunction('+', increaseSubdivisionLevel);  
-      mapKeyToFunction('=', increaseSubdivisionLevel);  
-      mapKeyToFunction('-', decreaseSubdivisionLevel);
 
       enterWindowRunLoop();
     }

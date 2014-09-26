@@ -93,16 +93,16 @@ struct ISPCMesh
 
 struct ISPCHair
 {
- int vertex,id;  //!< index of first control point and hair ID
+  int vertex,id;  //!< index of first control point and hair ID
 };
 
 struct ISPCHairSet
 {
- Vec3fa* positions;   //!< hair control points (x,y,z,r)
- Vec3fa* positions2;   //!< hair control points (x,y,z,r)
- ISPCHair* hairs;    //!< list of hairs
- int numVertices;
- int numHairs;
+  Vec3fa* positions;   //!< hair control points (x,y,z,r)
+  Vec3fa* positions2;   //!< hair control points (x,y,z,r)
+  ISPCHair* hairs;    //!< list of hairs
+  int numVertices;
+  int numHairs;
 };
 
 struct ISPCScene
@@ -130,25 +130,25 @@ extern int subdivisionLevel;
 
 __forceinline RTCRay constructRay(const Vec3fa &origin, const Vec3fa &direction, float near, float far, int originGeomID, int originPrimID) {
 
-    RTCRay ray;
-    ray.org = origin;
-    ray.dir = direction;
-    ray.tnear = near;
-    ray.tfar = far;
-    ray.geomID = originGeomID;
-    ray.primID = originPrimID;
-    ray.mask = -1;
-    ray.time = 0;
-    return(ray);
+  RTCRay ray;
+  ray.org = origin;
+  ray.dir = direction;
+  ray.tnear = near;
+  ray.tfar = far;
+  ray.geomID = originGeomID;
+  ray.primID = originPrimID;
+  ray.mask = -1;
+  ray.time = 0;
+  return(ray);
 
 }
 
 unsigned int packPixel(const Vec3f &color) {
 
-    unsigned int r = (unsigned int) (255.0f * clamp(color.x, 0.0f, 1.0f));
-    unsigned int g = (unsigned int) (255.0f * clamp(color.y, 0.0f, 1.0f));
-    unsigned int b = (unsigned int) (255.0f * clamp(color.z, 0.0f, 1.0f));
-    return((b << 16) + (g << 8) + r);
+  unsigned int r = (unsigned int) (255.0f * clamp(color.x, 0.0f, 1.0f));
+  unsigned int g = (unsigned int) (255.0f * clamp(color.y, 0.0f, 1.0f));
+  unsigned int b = (unsigned int) (255.0f * clamp(color.z, 0.0f, 1.0f));
+  return((b << 16) + (g << 8) + r);
 
 }
 
@@ -267,111 +267,111 @@ unsigned int test_indices[EDGES] = {0, 1, 5, 4,  1, 2, 6, 5,  2, 3, 7, 6,  0, 4,
 unsigned int test_offsets[FACES] = {0, 4, 8, 12, 16, 20};
 
 void constructScene() {
-    /*! Create an Embree object to hold scene state. */
-    g_scene = rtcNewScene(RTC_SCENE_STATIC, RTC_INTERSECT1);
+  /*! Create an Embree object to hold scene state. */
+  g_scene = rtcNewScene(RTC_SCENE_STATIC, RTC_INTERSECT1);
 
-    unsigned int totalNumQuads = 0;
-    if (g_ispc_scene)
-      {
-	DBG_PRINT(g_ispc_scene->numMeshes);
+  unsigned int totalNumQuads = 0;
+  if (g_ispc_scene)
+    {
+      DBG_PRINT(g_ispc_scene->numMeshes);
 
-	for (int i=0; i<g_ispc_scene->numMeshes; i++)
-	  {
-	    /* get ith mesh */
-	    ISPCMesh* mesh = g_ispc_scene->meshes[i];
-	    DBG_PRINT(mesh->quads);
+      for (int i=0; i<g_ispc_scene->numMeshes; i++)
+	{
+	  /* get ith mesh */
+	  ISPCMesh* mesh = g_ispc_scene->meshes[i];
+	  DBG_PRINT(mesh->quads);
 
-	    if (mesh->numQuads)
-	      {
-		totalNumQuads += mesh->numQuads;
-		unsigned int *offset_buffer = new unsigned int[mesh->numQuads];
-		for (size_t i=0;i<mesh->numQuads;i++) offset_buffer[i] = i*4;
+	  if (mesh->numQuads)
+	    {
+	      totalNumQuads += mesh->numQuads;
+	      unsigned int *offset_buffer = new unsigned int[mesh->numQuads];
+	      for (size_t i=0;i<mesh->numQuads;i++) offset_buffer[i] = i*4;
 
-		unsigned int subdivMeshID = rtcNewSubdivisionMesh(g_scene, 
-								  RTC_GEOMETRY_STATIC, 
-								  mesh->numQuads, 
-								  mesh->numQuads*4, 
-								  mesh->numVertices);
+	      unsigned int subdivMeshID = rtcNewSubdivisionMesh(g_scene, 
+								RTC_GEOMETRY_STATIC, 
+								mesh->numQuads, 
+								mesh->numQuads*4, 
+								mesh->numVertices);
 
-		rtcSetBuffer(g_scene, subdivMeshID, RTC_VERTEX_BUFFER, mesh->positions, 0, sizeof(Vec3fa  ));
-		rtcSetBuffer(g_scene, subdivMeshID, RTC_INDEX_BUFFER,  mesh->quads    , 0, sizeof(unsigned int));
-		rtcSetBuffer(g_scene, subdivMeshID, RTC_OFFSET_BUFFER, offset_buffer  , 0, sizeof(unsigned int));
-		//delete offset_buffer;
-	      }
-	  }       
-      }
+	      rtcSetBuffer(g_scene, subdivMeshID, RTC_VERTEX_BUFFER, mesh->positions, 0, sizeof(Vec3fa  ));
+	      rtcSetBuffer(g_scene, subdivMeshID, RTC_INDEX_BUFFER,  mesh->quads    , 0, sizeof(unsigned int));
+	      rtcSetBuffer(g_scene, subdivMeshID, RTC_OFFSET_BUFFER, offset_buffer  , 0, sizeof(unsigned int));
+	      //delete offset_buffer;
+	    }
+	}       
+    }
     
 
-    if (totalNumQuads == 0)
-      {
-	std::cout << "Loading dummy cube..." << std::endl;
-	unsigned int subdivMeshID = rtcNewSubdivisionMesh(g_scene, RTC_GEOMETRY_STATIC, FACES, EDGES, VERTICES);
+  if (totalNumQuads == 0)
+    {
+      std::cout << "Loading dummy cube..." << std::endl;
+      unsigned int subdivMeshID = rtcNewSubdivisionMesh(g_scene, RTC_GEOMETRY_STATIC, FACES, EDGES, VERTICES);
 
-	rtcSetBuffer(g_scene, subdivMeshID, RTC_VERTEX_BUFFER, test_vertices, 0, sizeof(Vec3fa  ));
-	rtcSetBuffer(g_scene, subdivMeshID, RTC_INDEX_BUFFER,  test_indices , 0, sizeof(unsigned int));
-	rtcSetBuffer(g_scene, subdivMeshID, RTC_OFFSET_BUFFER, test_offsets , 0, sizeof(unsigned int));
-      }
+      rtcSetBuffer(g_scene, subdivMeshID, RTC_VERTEX_BUFFER, test_vertices, 0, sizeof(Vec3fa  ));
+      rtcSetBuffer(g_scene, subdivMeshID, RTC_INDEX_BUFFER,  test_indices , 0, sizeof(unsigned int));
+      rtcSetBuffer(g_scene, subdivMeshID, RTC_OFFSET_BUFFER, test_offsets , 0, sizeof(unsigned int));
+    }
     
-    rtcCommit(g_scene);
+  rtcCommit(g_scene);
 
-    //g_scene = rtcNewScene(RTC_SCENE_STATIC, RTC_INTERSECT1);
+  //g_scene = rtcNewScene(RTC_SCENE_STATIC, RTC_INTERSECT1);
 
-    /*! Construct a cube shaped subdivision mesh. */
-    //constructCubeMesh();
+  /*! Construct a cube shaped subdivision mesh. */
+  //constructCubeMesh();
 
-    /*! Construct a triangle mesh object for the ground plane. */
-    //constructGroundPlane();
+  /*! Construct a triangle mesh object for the ground plane. */
+  //constructGroundPlane();
 
-    /*! Commit the changes to the scene state. */
-    //rtcxCommit(g_scene);
+  /*! Commit the changes to the scene state. */
+  //rtcxCommit(g_scene);
 
 }
 
 Vec3fa renderPixelStandard(float x, float y, const Vec3fa &vx, const Vec3fa &vy, const Vec3fa &vz, const Vec3fa &p) {
 
-    /*! Colors of the subdivision mesh and ground plane. */
-    Vec3f colors[2];  colors[0] = Vec3f(1.0f, 0.0f, 0.0f);  colors[1] = Vec3f(0.5f, 0.5f, 0.5f);
+  /*! Colors of the subdivision mesh and ground plane. */
+  Vec3f colors[2];  colors[0] = Vec3f(1.0f, 0.0f, 0.0f);  colors[1] = Vec3f(0.5f, 0.5f, 0.5f);
 
-    /*! Initialize a ray and intersect with the scene. */
-    RTCRay ray = constructRay(p, normalize(x * vx + y * vy + vz), 0.0f, inf, RTC_INVALID_GEOMETRY_ID, RTC_INVALID_GEOMETRY_ID);  rtcIntersect(g_scene, ray);
+  /*! Initialize a ray and intersect with the scene. */
+  RTCRay ray = constructRay(p, normalize(x * vx + y * vy + vz), 0.0f, inf, RTC_INVALID_GEOMETRY_ID, RTC_INVALID_GEOMETRY_ID);  rtcIntersect(g_scene, ray);
   
-    /*! The ray may not have hit anything. */
-    if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return(Vec3f(0.0f));
+  /*! The ray may not have hit anything. */
+  if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return(Vec3f(0.0f));
 
-    /*! Compute a vector parallel to a directional light. */
-    Vec3f lightVector = normalize(Vec3f(-1.0f, -1.0f, -1.0f));
+  /*! Compute a vector parallel to a directional light. */
+  Vec3f lightVector = normalize(Vec3f(-1.0f, -1.0f, -1.0f));
 
-    /*! Initialize a shadow ray and intersect with the scene. */
-    RTCRay shadow = constructRay(ray.org + ray.tfar * ray.dir, neg(lightVector), 0.001f, inf, 1, 0);  rtcOccluded(g_scene, shadow);
+  /*! Initialize a shadow ray and intersect with the scene. */
+  RTCRay shadow = constructRay(ray.org + ray.tfar * ray.dir, neg(lightVector), 0.001f, inf, 1, 0);  rtcOccluded(g_scene, shadow);
 
-    /*! Compute a color at the ray hit point. */
-    Vec3f color = Vec3f(0.0f), diffuse = colors[ray.geomID % 2];  color = color + diffuse * 0.5f;
+  /*! Compute a color at the ray hit point. */
+  Vec3f color = Vec3f(0.0f), diffuse = colors[ray.geomID % 2];  color = color + diffuse * 0.5f;
 
-    /*! Add contribution from the light. */
-    if (shadow.geomID) color = color + diffuse * clamp(-dot(lightVector, (Vec3f)normalize(ray.Ng)), 0.0f, 1.0f);  return(color);
+  /*! Add contribution from the light. */
+  if (shadow.geomID) color = color + diffuse * clamp(-dot(lightVector, (Vec3f)normalize(ray.Ng)), 0.0f, 1.0f);  return(color);
 
 }
 
 void renderTile(int taskIndex, int *pixels, int width, int height, float time, const Vec3fa &vx, const Vec3fa &vy, const Vec3fa &vz, const Vec3fa &p, int tileCountX, int tileCountY) {
 
-    /*! 2D indices of the tile in the window. */
-    const Vec2i tileIndex(taskIndex % tileCountX, taskIndex / tileCountX);
+  /*! 2D indices of the tile in the window. */
+  const Vec2i tileIndex(taskIndex % tileCountX, taskIndex / tileCountX);
 
-    /*! 2D indices of the pixel in the lower left of the tile corner. */
-    const int x0 = tileIndex.x * TILE_SIZE_X, y0 = tileIndex.y * TILE_SIZE_Y;
+  /*! 2D indices of the pixel in the lower left of the tile corner. */
+  const int x0 = tileIndex.x * TILE_SIZE_X, y0 = tileIndex.y * TILE_SIZE_Y;
 
-    /*! 2D indices of the pixel in the upper right of the tile corner. */
-    const int x1 = min(x0 + TILE_SIZE_X, width), y1 = min(y0 + TILE_SIZE_Y, height);
+  /*! 2D indices of the pixel in the upper right of the tile corner. */
+  const int x1 = min(x0 + TILE_SIZE_X, width), y1 = min(y0 + TILE_SIZE_Y, height);
 
-    /*! Compute the color of each pixel in the tile. */
-    for (int y=y0 ; y < y1 ; y++) for (int x=x0 ; x < x1 ; x++) pixels[y * width + x] = packPixel(renderPixel(x, y, vx, vy, vz, p));
+  /*! Compute the color of each pixel in the tile. */
+  for (int y=y0 ; y < y1 ; y++) for (int x=x0 ; x < x1 ; x++) pixels[y * width + x] = packPixel(renderPixel(x, y, vx, vy, vz, p));
 
 }
 
 extern "C" void device_cleanup() {
 
-    rtcDeleteScene(g_scene);
-    rtcExit();
+  rtcDeleteScene(g_scene);
+  rtcExit();
 
 }
 
@@ -397,35 +397,39 @@ Vec3fa renderPixelEyeLightTest(float x, float y, const Vec3fa& vx, const Vec3fa&
 }
 
 extern "C" void device_init(int8 *configuration) {
-    /*! Initialize Embree ray tracing state. */
-    rtcInit(configuration);
+  /*! Initialize Embree ray tracing state. */
+  rtcInit(configuration);
 
-    /* set error handler */
-    rtcSetErrorFunction(error_handler);
+  /* set error handler */
+  rtcSetErrorFunction(error_handler);
 
-    /*! Set the render mode to use on entry into the run loop. */
-    //renderPixel = renderPixelStandard;
-    renderPixel = renderPixelEyeLightTest;
+  /*! Set the render mode to use on entry into the run loop. */
+  //renderPixel = renderPixelStandard;
+  renderPixel = renderPixelEyeLightTest;
 
 
 }
+
+extern "C" void setSubdivisionLevel(unsigned int); // for now hidden fct in the core 
+extern unsigned int g_subdivision_levels;
 
 extern "C" void device_render(int *pixels, int width, int height, float time, const Vec3fa &vx, const Vec3fa &vy, const Vec3fa &vz, const Vec3fa &p) {
   if (g_scene == NULL)
     {
       constructScene();
     }
-    /*! Refine the subdivision mesh as needed. */
-  //static int currentLevel = 0;  if (currentLevel != subdivisionLevel) rtcDeleteScene(g_scene), constructScene(), currentLevel = subdivisionLevel;
 
-    /*! Number of tiles spanning the window in width and height. */
-    const Vec2i tileCount((width + TILE_SIZE_X - 1) / TILE_SIZE_X, (height + TILE_SIZE_Y - 1) / TILE_SIZE_Y);
+  /*! Refine the subdivision mesh as needed. */
+  setSubdivisionLevel( g_subdivision_levels );
 
-    /*! Render a tile at a time. */
-    launch_renderTile(tileCount.x * tileCount.y, pixels, width, height, time, vx, vy, vz, p, tileCount.x, tileCount.y); 
+  /*! Number of tiles spanning the window in width and height. */
+  const Vec2i tileCount((width + TILE_SIZE_X - 1) / TILE_SIZE_X, (height + TILE_SIZE_Y - 1) / TILE_SIZE_Y);
 
-    /*! Debugging information. */
-    rtcDebug();
+  /*! Render a tile at a time. */
+  launch_renderTile(tileCount.x * tileCount.y, pixels, width, height, time, vx, vy, vz, p, tileCount.x, tileCount.y); 
+
+  /*! Debugging information. */
+  rtcDebug();
 
 }
 
