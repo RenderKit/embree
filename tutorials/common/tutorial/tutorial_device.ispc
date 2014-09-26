@@ -19,6 +19,9 @@
 /* the scene to render */
 extern RTCScene g_scene;
 
+uniform unsigned int g_numThreads = 0;
+uniform unsigned int g_subdivision_levels = 0;
+
 /* intensity scaling for traversal cost visualization */
 uniform float scale = 0.0001f;
 uniform bool g_changed = false;
@@ -307,9 +310,18 @@ export void device_key_pressed(uniform int key)
     renderPixel = renderPixelCycles;
     g_changed = true;
   }
+  else if (key == GLUT_KEY_F11) {
+  if (g_subdivision_levels > 0)	
+    g_subdivision_levels--;
+    g_changed = true;
+  }
+  else if (key == GLUT_KEY_F12) {
+      g_subdivision_levels++;
+    g_changed = true;
+  }
+
 }
 
-uniform unsigned int g_numThreads = 0;
 
 task void task_getNumHWThreads()
 {

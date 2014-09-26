@@ -95,7 +95,7 @@ struct ISPCScene
 extern uniform ISPCScene* uniform g_ispc_scene;
 RTCScene g_scene = NULL;
 uniform unsigned int g_threads = 0;
-
+extern uniform unsigned int g_subdivision_levels;
 
 /* render function to use */
 renderPixelFunc renderPixel;
@@ -280,6 +280,8 @@ task void parallelCommit(RTCScene scene)
   rtcCommitThread (scene,threadIndex,threadCount); 
 }
 
+extern "C" void setSubdivisionLevel(uniform unsigned int); // for now hidden fct in the core 
+
 /* called by the C++ code to render */
 export void device_render (uniform int* uniform pixels,
                            const uniform int width,
@@ -305,6 +307,8 @@ export void device_render (uniform int* uniform pixels,
   launch[  g_threads ] parallelCommit(g_scene); sync;
 #endif
   }
+
+  setSubdivisionLevel(g_subdivision_levels);
 
   /* render image */
   const uniform int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;

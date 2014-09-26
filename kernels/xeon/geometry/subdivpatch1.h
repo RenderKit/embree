@@ -133,48 +133,49 @@ namespace embree
     __forceinline void init( RegularCatmullClarkPatch& cc_patch) const
     {
       // quad(0,0)
-      const SubdivMesh::HalfEdge *e11 = first_half_edge->half_circle();
-      const SubdivMesh::HalfEdge *e10 = e11->next();
-      const SubdivMesh::HalfEdge *e00 = e10->next();
-      const SubdivMesh::HalfEdge *e01 = e10->next();
+      const SubdivMesh::HalfEdge *v11 = first_half_edge;
+      const SubdivMesh::HalfEdge *v01 = v11->nextAdjacentEdge()->opposite();
+      const SubdivMesh::HalfEdge *v00 = v01->prev();
+      const SubdivMesh::HalfEdge *v10 = v00->prev();
 
-      cc_patch.v[1][1] = vertices[e11->getStartVertexIndex()];
-      cc_patch.v[1][0] = vertices[e10->getStartVertexIndex()];
-      cc_patch.v[0][0] = vertices[e00->getStartVertexIndex()];
-      cc_patch.v[0][1] = vertices[e01->getStartVertexIndex()];
+      cc_patch.v[1][1] = vertices[v11->getStartVertexIndex()];
+      cc_patch.v[1][0] = vertices[v10->getStartVertexIndex()];
+      cc_patch.v[0][0] = vertices[v00->getStartVertexIndex()];
+      cc_patch.v[0][1] = vertices[v01->getStartVertexIndex()];
 
       // quad(0,2)
-      const SubdivMesh::HalfEdge *e12 = first_half_edge->opposite()->half_circle();
-      const SubdivMesh::HalfEdge *e13 = e12->next();
-      const SubdivMesh::HalfEdge *e03 = e13->next();
-      const SubdivMesh::HalfEdge *e02 = e03->next();
+      const SubdivMesh::HalfEdge *v12 = v11->next();
+      const SubdivMesh::HalfEdge *v13 = v12->nextAdjacentEdge()->opposite();
+      const SubdivMesh::HalfEdge *v03 = v13->prev();
+      const SubdivMesh::HalfEdge *v02 = v03->prev();
+      
 
-      cc_patch.v[1][2] = vertices[e12->getStartVertexIndex()];
-      cc_patch.v[1][3] = vertices[e13->getStartVertexIndex()];
-      cc_patch.v[0][3] = vertices[e03->getStartVertexIndex()];
-      cc_patch.v[0][2] = vertices[e02->getStartVertexIndex()];
-
-      // quad(2,0)
-      const SubdivMesh::HalfEdge *e21 = first_half_edge->prev()->half_circle();
-      const SubdivMesh::HalfEdge *e31 = e21->next();
-      const SubdivMesh::HalfEdge *e30 = e31->next();
-      const SubdivMesh::HalfEdge *e20 = e30->next();
-
-      cc_patch.v[2][1] = vertices[e21->getStartVertexIndex()];
-      cc_patch.v[3][1] = vertices[e31->getStartVertexIndex()];
-      cc_patch.v[3][0] = vertices[e30->getStartVertexIndex()];
-      cc_patch.v[2][0] = vertices[e20->getStartVertexIndex()];
+      cc_patch.v[1][2] = vertices[v12->getStartVertexIndex()];
+      cc_patch.v[1][3] = vertices[v13->getStartVertexIndex()];
+      cc_patch.v[0][3] = vertices[v03->getStartVertexIndex()];
+      cc_patch.v[0][2] = vertices[v02->getStartVertexIndex()];
 
       // quad(2,2)
-      const SubdivMesh::HalfEdge *e22 = first_half_edge->next()->opposite()->half_circle();
-      const SubdivMesh::HalfEdge *e32 = e22->next();
-      const SubdivMesh::HalfEdge *e33 = e32->next();
-      const SubdivMesh::HalfEdge *e23 = e33->next();
+      const SubdivMesh::HalfEdge *v22 = v12->next();
+      const SubdivMesh::HalfEdge *v32 = v22->nextAdjacentEdge()->opposite();
+      const SubdivMesh::HalfEdge *v33 = v32->prev();
+      const SubdivMesh::HalfEdge *v23 = v33->prev();
 
-      cc_patch.v[2][2] = vertices[e22->getStartVertexIndex()];
-      cc_patch.v[3][2] = vertices[e32->getStartVertexIndex()];
-      cc_patch.v[3][3] = vertices[e33->getStartVertexIndex()];
-      cc_patch.v[2][3] = vertices[e23->getStartVertexIndex()];      
+      cc_patch.v[2][2] = vertices[v22->getStartVertexIndex()];
+      cc_patch.v[3][2] = vertices[v32->getStartVertexIndex()];
+      cc_patch.v[3][3] = vertices[v33->getStartVertexIndex()];
+      cc_patch.v[2][3] = vertices[v23->getStartVertexIndex()];      
+
+      // quad(2,0)
+      const SubdivMesh::HalfEdge *v21 = v22->next();
+      const SubdivMesh::HalfEdge *v20 = v21->nextAdjacentEdge()->opposite();
+      const SubdivMesh::HalfEdge *v30 = v20->prev();
+      const SubdivMesh::HalfEdge *v31 = v30->prev();
+
+      cc_patch.v[2][0] = vertices[v20->getStartVertexIndex()];
+      cc_patch.v[3][0] = vertices[v30->getStartVertexIndex()];
+      cc_patch.v[3][1] = vertices[v31->getStartVertexIndex()];
+      cc_patch.v[2][1] = vertices[v21->getStartVertexIndex()];
     }
     
   public:

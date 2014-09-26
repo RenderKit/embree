@@ -42,28 +42,11 @@ namespace embree
   OBJScene g_obj_scene;
   static FileName filename = "";
 
-  unsigned int subdivision_level = 0;
-
-  static void decreaseSubdivisionLevel(unsigned char key, int x, int y) {
-    /*! Decrease the level of subdivision surface refinement. */
-    subdivision_level = (subdivision_level > 0) ? subdivision_level - 1 : 0;
-    DBG_PRINT( subdivision_level );
-    setSubdivisionLevel( subdivision_level );
-  }
-
   static std::string getParameterString(Ref<ParseStream> &cin, std::string &term) {
 
     /*! Parameter name and options. */
     std::string parameter = term + " ";  while (cin->peek() != "" && cin->peek()[0] != '-') parameter += cin->getString();  return(parameter);
 
-  }
-
-  static void increaseSubdivisionLevel(unsigned char key, int x, int y) {
-
-    /*! Increase the level of subdivision surface refinement. */
-    subdivision_level++;
-    DBG_PRINT( subdivision_level );
-    setSubdivisionLevel( subdivision_level );
   }
 
   static void initEmbreeState(std::string configuration) {
@@ -101,7 +84,7 @@ namespace embree
       else if (term == "-size") { g_width = cin->getInt();  g_height = cin->getInt(); }
 
       /*! Thread count. */
-      else if (term == "-threads") g_numThreads = cin->getInt();
+      else if (term == "-threads") { g_numThreads = cin->getInt(); }
 
       /*! Camera view direction. */
       else if (term == "-vd") g_camera.to = g_camera.from + cin->getVec3fa();
@@ -147,6 +130,8 @@ namespace embree
     /*! Set the thread count in the Embree configuration string. */
     if (g_numThreads) g_rtcore += ",threads=" + std::stringOf(g_numThreads);
 
+    DBG_PRINT(g_numThreads);
+
     /*! Initialize the task scheduler. */
 #if !defined(__EXPORT_ALL_SYMBOLS__)
     TaskScheduler::create(g_numThreads);
@@ -169,11 +154,6 @@ namespace embree
     /* interactive mode */
     if (g_interactive) {
       initWindowState(argc,argv,tutorialName, g_width, g_height, g_fullscreen);
-
-      /*! Keyboard bindings. */
-      mapKeyToFunction('+', increaseSubdivisionLevel);  
-      mapKeyToFunction('=', increaseSubdivisionLevel);  
-      mapKeyToFunction('-', decreaseSubdivisionLevel);
 
       enterWindowRunLoop();
     }

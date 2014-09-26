@@ -207,12 +207,21 @@ namespace embree
     {
       STAT3(normal.trav_prims,1,1,1);
 
-#if 0 // not working properly, disabled for now
+#if 1 // not working properly, disabled for now
       if (subdiv_patch.isRegular())
 	{
+	   /* IrregularCatmullClarkPatch irregular_patch;  */
+	   /* subdiv_patch.init( irregular_patch );  */
+
+	   /* std::cout << irregular_patch.ring[0] << std::endl;  */
+
 	  RegularCatmullClarkPatch regular_patch;
 	  subdiv_patch.init( regular_patch );
 	  subdivide_intersect1(ray,regular_patch,g_subdivision_level);
+
+	  /* std::cout << regular_patch << std::endl;  */
+
+	  /*  FATAL("COMPARE 1-RINGS");  */
 	}
       else
 #endif
