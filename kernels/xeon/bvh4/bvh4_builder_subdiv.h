@@ -36,6 +36,15 @@ namespace embree
         delete[] array; array = new T[width*height];
       }
 
+      void init(size_t width, size_t height, const T& v) 
+      {
+        size_x = width; size_y = height;
+        delete[] array; array = new T[width*height];
+        for (size_t y=0; y<height; y++)
+          for (size_t x=0; x<width; x++)
+            array[y*size_x+x] = v;
+      }
+
       __forceinline size_t width() const { 
         return size_x;
       }
@@ -134,6 +143,17 @@ namespace embree
         v(2*N-1,2) = ring1.begin();
       }
 
+      friend __forceinline std::ostream &operator<<(std::ostream& out, const CatmullClark1Edge& edge)
+      {
+        for (size_t y=0; y<3; y++) {
+          for (size_t x=0; x<edge.N; x++) {
+            //out << patch.v(x,y) << " ";
+            out << std::setw(10) << edge.v(x,y).z << " ";
+          }
+        }
+        return out;
+      } 
+
     public:
       Array2D<Vec3fa> v;
       size_t N;
@@ -147,7 +167,7 @@ namespace embree
         : N(2)
       {
         size_t M = (1<<level)+3;
-        v.init(M,M);
+        v.init(M,M,Vec3fa(nan));
 
         ring00.init(h,vertices); h = h->next();
         ring01.init(h,vertices); h = h->next();
@@ -159,9 +179,16 @@ namespace embree
         edgeL.init(M,ring01,ring00);
         init();
         
-        for (size_t l=0; l<level; l++) 
+        std::cout << *this << std::endl;
+        for (size_t l=0; l<level; l++) {
           subdivide();
+          PRINT(l+1);
+          std::cout << *this << std::endl;
+        }
       }
+
+      __forceinline size_t size() const { return N; }
+      __forceinline Vec3fa& get(size_t x, size_t y) { return v(x,y); }
 
       void subdivide_points()
       {
@@ -242,6 +269,36 @@ namespace embree
         edgeL.subdivide(ring01,ring00);
         subdivide_points();
       }
+
+      friend __forceinline std::ostream &operator<<(std::ostream& out, const IrregularSubdividedCatmullClarkPatch2& patch)
+      {
+        size_t N = patch.N;
+        out << "ring00 = " << patch.ring00 << std::endl;
+        out << "ring01 = " << patch.ring01 << std::endl;
+        out << "ring10 = " << patch.ring10 << std::endl;
+        out << "ring11 = " << patch.ring11 << std::endl;
+        out << "edgeT  = " << patch.edgeT << std::endl;
+        out << "edgeR  = " << patch.edgeR << std::endl;
+        out << "edgeB  = " << patch.edgeB << std::endl;
+        out << "edgeL  = " << patch.edgeL << std::endl;
+
+        out << std::endl;
+        out << "              ";
+        for (size_t x=0; x<N; x++) out << std::setw(10) << patch.edgeT.v(x,1).z << " ";
+        out << std::endl;
+        out << std::endl;
+        for (size_t y=0; y<N; y++) {
+          out << std::setw(10) << patch.edgeL.v(N-1-y,1).z << "    ";
+          for (size_t x=0; x<N; x++) out << std::setw(10) << patch.v(x,y).z << " ";
+          out << std::setw(10) << "    " << patch.edgeR.v(y,1).z;
+          out << std::endl;
+        }
+        out << std::endl;
+        out << "              ";
+        for (size_t x=0; x<N; x++) out << std::setw(10) << patch.edgeB.v(N-1-x,1).z << " ";
+        out << std::endl;
+        return out;
+      } 
 
     private:
       size_t N;

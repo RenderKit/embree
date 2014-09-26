@@ -312,13 +312,13 @@ namespace embree
     {
 #if 1
       IrregularSubdividedCatmullClarkPatch2* patch = new IrregularSubdividedCatmullClarkPatch2(&subdivmesh->halfEdges[4*i], subdivmesh->getVertexPositionPtr(0), 1);
-      const size_t width  = patch->v.width();
-      const size_t height = patch->v.height();
+      const size_t width  = patch->size();
+      const size_t height = patch->size();
       TriangleMesh* mesh = new TriangleMesh (this, RTC_GEOMETRY_STATIC, (width-1)*(height-1)*2, width*height, 1);
       Vec3fa* vertices = (Vec3fa*) mesh->map(RTC_VERTEX_BUFFER);
       for (size_t y=0; y<height; y++) {
         for (size_t x=0; x<width; x++) {
-          vertices[y*width+x] = patch->v(x,y);
+          vertices[y*width+x] = patch->get(x,y);
         }
       }
       mesh->unmap(RTC_VERTEX_BUFFER);
