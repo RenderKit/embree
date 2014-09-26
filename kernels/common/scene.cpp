@@ -304,11 +304,11 @@ namespace embree
 
   void Scene::build (size_t threadIndex, size_t threadCount) 
   {
-#if 1 // FIXME: remove
+#if 0 // FIXME: remove
     SubdivMesh* subdivmesh = getSubdivMesh(0);
     subdivmesh->initializeHalfEdgeStructures();
     size_t N = subdivmesh->numFaces;
-    for (size_t i=0; i<1; i++)
+    for (size_t i=0; i<N; i++)
     {
 #if 1
       IrregularSubdividedCatmullClarkPatch2* patch = new IrregularSubdividedCatmullClarkPatch2(&subdivmesh->halfEdges[4*i], subdivmesh->getVertexPositionPtr(0), 4);
