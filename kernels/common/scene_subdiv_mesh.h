@@ -118,6 +118,10 @@ namespace embree
 	return i;
       };
 
+      __forceinline HalfEdge *nextAdjacentEdge() const {
+	return opposite()->next();
+      };
+
       __forceinline bool isFaceRegular() const {
 	HalfEdge *p = (HalfEdge*)this;
 	if (p->getEdgeValence() != 4) return false;

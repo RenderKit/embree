@@ -101,7 +101,7 @@ namespace embree
       else if (term == "-size") { g_width = cin->getInt();  g_height = cin->getInt(); }
 
       /*! Thread count. */
-      else if (term == "-threads") g_numThreads = cin->getInt();
+      else if (term == "-threads") { g_numThreads = cin->getInt(); }
 
       /*! Camera view direction. */
       else if (term == "-vd") g_camera.to = g_camera.from + cin->getVec3fa();
@@ -146,6 +146,8 @@ namespace embree
 
     /*! Set the thread count in the Embree configuration string. */
     if (g_numThreads) g_rtcore += ",threads=" + std::stringOf(g_numThreads);
+
+    DBG_PRINT(g_numThreads);
 
     /*! Initialize the task scheduler. */
 #if !defined(__EXPORT_ALL_SYMBOLS__)

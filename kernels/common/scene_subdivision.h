@@ -430,6 +430,14 @@ namespace embree
     
   };
 
+  __forceinline std::ostream &operator<<(std::ostream &o, const RegularCatmullClarkPatch &p)
+    {
+      for (size_t y=0;y<4;y++)
+	for (size_t x=0;x<4;x++)
+	  o << "[" << y << "][" << x << "] " << p.v[y][x] << std::endl;
+      return o;
+    } 
+
 
 
 };
