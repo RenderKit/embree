@@ -178,7 +178,7 @@ namespace embree
     public:
 
       IrregularSubdividedCatmullClarkPatch2 (const SubdivMesh::HalfEdge* h, const Vec3fa* const vertices, size_t level)
-        : N(2)
+        : K(1)
       {
         size_t M = (1<<level)+1;
         v.init(M,M,Vec3fa(nan));
@@ -201,26 +201,26 @@ namespace embree
         }
       }
 
-      __forceinline size_t size() const { return N; }
-      __forceinline Vec3fa& get(size_t x, size_t y) { return v(x,y); }
+      __forceinline size_t size() const { return K+1; }
+      __forceinline Vec3fa& get(size_t x, size_t y) { assert(x<=K); assert(y<=K); return v(x,y); }
 
       void subdivide_points()
       {
-        assert(2*N-1 <= v.width());
-        assert(2*N-1 <= v.height());
+        assert(2*(K+1)-1 <= v.width());
+        assert(2*(K+1)-1 <= v.height());
 
-        for (size_t y=1; y<N-1; y++)
+        for (size_t y=1; y<(K+1)-1; y++)
         {
           //Vec3fa v20 = zero;
           Vec3fa c20 = zero;
           Vec3fa v21 = zero;
           Vec3fa v22 = zero;
 
-          //Vec3fa v10 = v(N-1,0);
-          Vec3fa v11 = v(N-1,1);
-          Vec3fa v12 = v(N-1,2);
+          //Vec3fa v10 = v((K+1)-1,0);
+          Vec3fa v11 = v((K+1)-1,1);
+          Vec3fa v12 = v((K+1)-1,2);
 
-          for (ssize_t x=N-2; x>=0; x--) 
+          for (ssize_t x=(K+1)-2; x>=0; x--) 
           {
             PRINT(x);
 
@@ -260,18 +260,18 @@ namespace embree
           }        
         }
 
-        N=2*N-1;
+        K=2*K;
         init();
       }
 
       void init()
       {
-        for (size_t i=0; i<N; i++)
+        for (size_t i=0; i<(K+1); i++)
         {
           v(i,0) = edgeT.v(i,1);
-          v(N-1,i) = edgeR.v(i,1);
-          v(i,N-1) = edgeB.v(N-1-i,1);
-          v(0,i) = edgeL.v(N-1-i,1);
+          v((K+1)-1,i) = edgeR.v(i,1);
+          v(i,(K+1)-1) = edgeB.v((K+1)-1-i,1);
+          v(0,i) = edgeL.v((K+1)-1-i,1);
         }
       }
 
@@ -295,7 +295,7 @@ namespace embree
 
       friend __forceinline std::ostream &operator<<(std::ostream& out, const IrregularSubdividedCatmullClarkPatch2& patch)
       {
-        size_t N = patch.N;
+        size_t N = patch.K+1;
         out << "ring00 = " << patch.ring00 << std::endl;
         out << "ring01 = " << patch.ring01 << std::endl;
         out << "ring10 = " << patch.ring10 << std::endl;
@@ -324,7 +324,7 @@ namespace embree
       } 
 
     private:
-      size_t N;
+      size_t K;
       CatmullClark1Ring ring00,ring01,ring10,ring11;
       CatmullClark1Edge edgeT, edgeB, edgeL, edgeR; 
       Array2D<Vec3fa> v;
