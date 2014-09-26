@@ -308,10 +308,10 @@ namespace embree
     SubdivMesh* subdivmesh = getSubdivMesh(0);
     subdivmesh->initializeHalfEdgeStructures();
     size_t N = subdivmesh->numFaces;
-    for (size_t i=0; i<N; i++)
+    for (size_t i=0; i<1; i++)
     {
 #if 1
-      IrregularSubdividedCatmullClarkPatch2* patch = new IrregularSubdividedCatmullClarkPatch2(&subdivmesh->halfEdges[4*i], subdivmesh->getVertexPositionPtr(0), 1);
+      IrregularSubdividedCatmullClarkPatch2* patch = new IrregularSubdividedCatmullClarkPatch2(&subdivmesh->halfEdges[4*i], subdivmesh->getVertexPositionPtr(0), 2);
       const size_t width  = patch->size();
       const size_t height = patch->size();
       TriangleMesh* mesh = new TriangleMesh (this, RTC_GEOMETRY_STATIC, (width-1)*(height-1)*2, width*height, 1);
