@@ -96,8 +96,6 @@ namespace embree
 
         for (ssize_t x=K-1; x>=0; x--) 
         {
-          PRINT(x);
-
           /* load next column */
           Vec3fa v00 = v(x,0);
           Vec3fa v01 = v(x,1);
@@ -112,14 +110,14 @@ namespace embree
           const Vec3fa c02 = 0.25f*(v01+v11+v02+v12);
           const Vec3fa c12 = 0.50f*(v11+v12);
           const Vec3fa c22 = 0.25f*(v11+v21+v12+v22);
-          PRINT(c00.z);
+          /*PRINT(c00.z);
           PRINT(c10.z);
           PRINT(c20.z);
           PRINT(c01.z);
           PRINT(c21.z);
           PRINT(c02.z);
           PRINT(c12.z);
-          PRINT(c22.z);
+          PRINT(c22.z);*/
 
           /* store face points and edge point at 2*x+1 */
           v(2*x+1,0) = c00;
@@ -139,7 +137,7 @@ namespace embree
           v21 = v11; v11 = v01;
           v22 = v12; v12 = v02;
         }        
-        K = K1; PRINT(*this); K = K0;
+        //K = K1; PRINT(*this); K = K0;
         
         K = 2*K;
         init(r0,r1);
@@ -206,28 +204,64 @@ namespace embree
 
       void subdivide_points()
       {
-        assert(2*(K+1)-1 <= v.width());
-        assert(2*(K+1)-1 <= v.height());
+        size_t K0 = K;
+        size_t K1 = 2*K;
 
-        for (size_t y=1; y<(K+1)-1; y++)
+        assert(2*K+1 <= v.width());
+        assert(2*K+1 <= v.height());
+
+        print(std::cout,*this,K1);
+
+        for (ssize_t y=K; y>=0; y--) {
+          for (ssize_t x=K; x>=0; x--) {
+            v(2*x+0,2*y+0) = v(x,y);
+          }
+        }
+        for (ssize_t y=0; y<K; y++) {
+          for (ssize_t x=0; x<K; x++) {
+            v(2*x+1,2*y+0) = Vec3fa(nan);
+            v(2*x+0,2*y+1) = Vec3fa(nan);
+            v(2*x+1,2*y+1) = Vec3fa(nan);
+          }
+        }
+        print(std::cout,*this,K1);
+        
+        for (ssize_t x=K-1; x>=0; x--) 
         {
+          const Vec3fa c00 = v(2*x+0,0);
+          const Vec3fa c10 = v(2*x+2,0);
+          const Vec3fa c01 = v(2*x+0,2);
+          const Vec3fa c11 = v(2*x+2,2);
+          v(2*x+1,1) = 0.25f*(c00+c01+c10+c11);
+          v(2*x+2,1) = 0.50f*(c10+c11);
+        }
+        //v(0,1) = 0.5f*(v(2,0)+v(2,2));
+        print(std::cout,*this,K1);
+
+        for (size_t y=1; y<K; y++)
+        {
+          PRINT(y);
+          print(std::cout,*this,K1);
           //Vec3fa v20 = zero;
           Vec3fa c20 = zero;
           Vec3fa v21 = zero;
           Vec3fa v22 = zero;
 
-          //Vec3fa v10 = v((K+1)-1,0);
-          Vec3fa v11 = v((K+1)-1,1);
-          Vec3fa v12 = v((K+1)-1,2);
+          //Vec3fa v10 = v(2*K,0);
+          Vec3fa v11 = v(2*K,2*y);
+          Vec3fa v12 = v(2*K,2*y+2);
 
-          for (ssize_t x=(K+1)-2; x>=0; x--) 
+          for (ssize_t x=K-1; x>=0; x--) 
           {
-            PRINT(x);
-
+            PRINT2(x,y);
             /* load next column */
-            //Vec3fa v00 = v(x,y-1);
-            Vec3fa v01 = v(x,y+0);
-            Vec3fa v02 = v(x,y+1);
+            //Vec3fa v00 = v(2*x,2*y-2);
+            Vec3fa v01 = v(2*x,2*y+0);
+            Vec3fa v02 = v(2*x,2*y+2);
+            PRINT(v01.z);
+            PRINT(v11.z);
+            PRINT(v02.z);
+            PRINT(v12.z);
             
             /* calculate face points and edge centers */
             const Vec3fa c00 = v(2*x+1,2*y-1);
@@ -238,18 +272,34 @@ namespace embree
             const Vec3fa c02 = 0.25f*(v01+v11+v02+v12);
             const Vec3fa c12 = 0.50f*(v11+v12);
             const Vec3fa c22 = 0.25f*(v11+v21+v12+v22);
-            
+            PRINT(c00);
+            PRINT(c10);
+            PRINT(c20);
+            PRINT(c01);
+            PRINT(c21);
+            PRINT(c02);
+            PRINT(c12);
+            PRINT(c22);
+
             /* store face points and edge point at 2*x+1 */
             //v(2*x+1,2*y-1) = c00;
+            PRINT3(2*x+1,2*y+0,0.5f*(c01+0.5f*(c00+c02)));
             v(2*x+1,2*y+0) = 0.5f*(c01+0.5f*(c00+c02));
+            PRINT3(2*x+1,2*y+1,c02);
             v(2*x+1,2*y+1) = c02;
 
             /* store face points and edge point at 2*x+2 */
             const Vec3fa F = 0.25f*(c00+c20+c02+c22);
+            PRINT(F);
             const Vec3fa R = 0.25f*(c10+c01+c21+c12);
+            PRINT(R);
             const Vec3fa P = v11;
+            PRINT(P);
+            PRINT3(2*x+2,2*y-1,0.5f*(c10+0.5f*(c00+c20)));
             v(2*x+2,2*y-1) = 0.5f*(c10+0.5f*(c00+c20));
+            PRINT3(2*x+2,2*y+0,0.25*F + 0.5*R + 0.25*P);
             v(2*x+2,2*y+0) = 0.25*F + 0.5*R + 0.25*P;
+            PRINT3(2*x+2,2*y+1,c12);
             v(2*x+2,2*y+1) = c12;
             
             /* propagate points to next iteration */
@@ -257,11 +307,21 @@ namespace embree
             v21 = v11; v11 = v01;
             v22 = v12; v12 = v02;
             c20 = c00;
+
+            print(std::cout,*this,K1);
           }        
         }
 
+        PING;
+        for (ssize_t x=1; x<K; x++) 
+          v(2*x,2*K-1) = 0.5f*(v(2*x,2*K-1)+0.5f*(v(2*x-1,2*K-1)+v(2*x+1,2*K-1)));
+
+        print(std::cout,*this,K1);
+
         K=2*K;
         init();
+
+        print(std::cout,*this,K1);
       }
 
       void init()
@@ -269,9 +329,9 @@ namespace embree
         for (size_t i=0; i<(K+1); i++)
         {
           v(i,0) = edgeT.v(i,1);
-          v((K+1)-1,i) = edgeR.v(i,1);
-          v(i,(K+1)-1) = edgeB.v((K+1)-1-i,1);
-          v(0,i) = edgeL.v((K+1)-1-i,1);
+          v(K,i) = edgeR.v(i,1);
+          v(i,K) = edgeB.v(K-i,1);
+          v(0,i) = edgeL.v(K-i,1);
         }
       }
 
@@ -282,16 +342,33 @@ namespace embree
         CatmullClark1Ring ring01a; ring01.update(ring01a); ring01 = ring01a;
         CatmullClark1Ring ring10a; ring10.update(ring10a); ring10 = ring10a;
         CatmullClark1Ring ring11a; ring11.update(ring11a); ring11 = ring11a;
-        PING;
-        PRINT(edgeT);
         edgeT.subdivide(ring00,ring10);
-        PRINT(edgeT);
-
         edgeR.subdivide(ring10,ring11);
         edgeB.subdivide(ring11,ring01);
         edgeL.subdivide(ring01,ring00);
         subdivide_points();
       }
+
+      friend __forceinline std::ostream& print(std::ostream& out, const IrregularSubdividedCatmullClarkPatch2& patch, size_t K)
+      {
+        size_t N = K+1;
+        out << std::endl;
+        out << "              ";
+        for (size_t x=0; x<N; x++) out << std::setw(10) << patch.edgeT.v(x,0).z << " ";
+        out << std::endl;
+        out << std::endl;
+        for (size_t y=0; y<N; y++) {
+          out << std::setw(10) << patch.edgeL.v(N-1-y,0).z << "    ";
+          for (size_t x=0; x<N; x++) out << std::setw(10) << patch.v(x,y).z << " ";
+          out << std::setw(10) << "    " << patch.edgeR.v(y,0).z;
+          out << std::endl;
+        }
+        out << std::endl;
+        out << "              ";
+        for (size_t x=0; x<N; x++) out << std::setw(10) << patch.edgeB.v(N-1-x,0).z << " ";
+        out << std::endl;
+        return out;
+      } 
 
       friend __forceinline std::ostream &operator<<(std::ostream& out, const IrregularSubdividedCatmullClarkPatch2& patch)
       {
