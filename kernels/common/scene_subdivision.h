@@ -42,14 +42,24 @@ namespace embree
 
     CatmullClark1Ring() {}
 
+    __forceinline const Vec3fa& begin() const {
+      assert(num_vtx>0);
+      return ring[0];
+    }
+
     __forceinline const Vec3fa& first() const {
-      assert(num_vtx>=2);
+      assert(num_vtx>2);
       return ring[2];
     }
     
     __forceinline const Vec3fa& last() const {
       assert(num_vtx>=4);
       return ring[num_vtx-4];
+    }
+
+    __forceinline const Vec3fa& end() const {
+      assert(num_vtx>=2);
+      return ring[num_vtx-2];
     }
     
     __forceinline void init(const SubdivMesh::HalfEdge *const h,
