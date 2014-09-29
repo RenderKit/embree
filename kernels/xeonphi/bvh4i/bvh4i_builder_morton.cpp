@@ -1110,9 +1110,6 @@ namespace embree
   {    
     if (unlikely(ref.isLeaf()))
       {
-#if DEBUG
-	FATAL("refit");
-#endif
 	return BBox3fa( empty );
       }
 
@@ -1143,9 +1140,6 @@ namespace embree
   {    
     if (unlikely(ref.isLeaf()))
       {
-#if DEBUG
-	FATAL("refit_toplevel");
-#endif
 	return BBox3fa( empty );
       }
 
