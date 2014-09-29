@@ -90,7 +90,7 @@ namespace embree
       /* load triangle */
       STAT3(normal.trav_prims,1,1,1);
       SubTree& prim = *prim_i.subtree;
-      
+
       /*! load the ray into SIMD registers */
       const Vec3fa ray_rdir = rcp_safe(ray.dir);
       const Vec3fa ray_org_rdir = ray.org*ray_rdir;
@@ -112,7 +112,8 @@ namespace embree
         __forceinline StackItem(unsigned x, unsigned y) : x(x), y(y) {}
         unsigned x,y;
       };
-      StackItem stack[128*128];
+      const size_t N = 128*128; // FIXME: this is unsafe
+      StackItem stack[N];
       size_t begin = 0, end = 1;
       stack[0] = StackItem(0,0);
       const Node* base = prim.nodes;
@@ -123,22 +124,23 @@ namespace embree
         size_t w = 1<<l;
         for (size_t i=begin; i<end; i++) 
         {
-          const size_t x = stack[i].x, y = stack[i].y;
+          const size_t x = stack[i].x;
+          const size_t y = stack[i].y;
           ssef dist;
           size_t mask = base[y*w+x].intersect<false>(nearX, nearY, nearZ, org, rdir, org_rdir, ray_tnear, ray_tfar, dist);
           if (mask & 1) stack[tail++] = StackItem(2*x+0,2*y+0);
           if (mask & 2) stack[tail++] = StackItem(2*x+1,2*y+0);
           if (mask & 4) stack[tail++] = StackItem(2*x+0,2*y+1);
           if (mask & 8) stack[tail++] = StackItem(2*x+1,2*y+1);
-          begin = end; end = tail; 
         }
+        begin = end; end = tail; 
         base += w*w;
       }
       
       for (size_t i=begin; i<end; i++) 
       {
-        const size_t x = stack[i].x;
-        const size_t y = stack[i].y;
+        const size_t x = 2*stack[i].x;
+        const size_t y = 2*stack[i].y;
         intersectTriangle(ray,prim.vertices(x+0,y+0),prim.vertices(x+1,y+0),prim.vertices(x+0,y+1),prim.geomID,prim.primID);
         intersectTriangle(ray,prim.vertices(x+1,y+1),prim.vertices(x+0,y+1),prim.vertices(x+1,y+0),prim.geomID,prim.primID);
         intersectTriangle(ray,prim.vertices(x+1,y+0),prim.vertices(x+2,y+0),prim.vertices(x+1,y+1),prim.geomID,prim.primID);

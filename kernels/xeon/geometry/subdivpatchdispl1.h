@@ -19,6 +19,8 @@
 #include "primitive.h"
 #include "common/scene_subdivision.h"
 
+#define SUBDIVISION_LEVEL_DISPL 4
+
 namespace embree
 {
   struct SubdivPatchDispl1
@@ -51,6 +53,15 @@ namespace embree
         upper_x[i] = bounds.upper.x; upper_y[i] = bounds.upper.y; upper_z[i] = bounds.upper.z;
       }
       
+      /*! Returns bounds of specified child. */
+      __forceinline BBox3fa bounds(size_t i) const 
+      {
+        assert(i < N);
+        const Vec3fa lower(lower_x[i],lower_y[i],lower_z[i]);
+        const Vec3fa upper(upper_x[i],upper_y[i],upper_z[i]);
+        return BBox3fa(lower,upper);
+      }
+
       /*! intersection with single rays */
       template<bool robust>
       __forceinline size_t intersect(size_t nearX, size_t nearY, size_t nearZ,
@@ -119,10 +130,11 @@ namespace embree
         build(nodes,0,0,0);
       }
       
-      __forceinline BBox3fa build(Node* node, unsigned x, unsigned y, unsigned l)
+      __forceinline const BBox3fa build(Node* node, unsigned x, unsigned y, unsigned l)
       {
         if (l == levels) {
           BBox3fa bounds = empty;
+          x *= 2; y *= 2;
           bounds.extend(vertices(bx+x+0,by+y+0));
           bounds.extend(vertices(bx+x+1,by+y+0));
           bounds.extend(vertices(bx+x+2,by+y+0));
@@ -227,7 +239,7 @@ namespace embree
                                    subdiv_mesh->getVertexPositionPtr(),
                                    geomID,
                                    primID,
-                                   4,     //SUBDIVISION_LEVEL,
+                                   SUBDIVISION_LEVEL_DISPL,
                                    last); 
     }
 
@@ -245,7 +257,7 @@ namespace embree
                                    subdiv_mesh->getVertexPositionPtr(),
                                    geomID,
                                    primID,
-                                   4,  //SUBDIVISION_LEVEL,
+                                   SUBDIVISION_LEVEL_DISPL,
                                    last); 
     }
     

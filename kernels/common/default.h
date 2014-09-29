@@ -101,6 +101,8 @@ namespace embree
   extern std::string g_hair_traverser;
   extern double g_hair_builder_replication_factor;
 
+  extern std::string g_subdiv_accel;
+
   extern int g_scene_flags;
   extern size_t g_benchmark;
   extern float g_memory_preallocation_factor;

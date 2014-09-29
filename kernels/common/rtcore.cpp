@@ -88,6 +88,8 @@ namespace embree
   double      g_hair_builder_replication_factor = 3.0f; //!< maximally factor*N many primitives in accel
   float       g_memory_preallocation_factor = 1.0f; 
 
+  std::string g_subdiv_accel = "default";               //!< acceleration structure to use for subdivision surfaces
+
   int g_scene_flags = -1;                               //!< scene flags to use
   size_t g_verbose = 0;                                 //!< verbosity of output
   size_t g_numThreads = 0;                              //!< number of threads to use in builders
@@ -115,8 +117,9 @@ namespace embree
     g_hair_builder = "default";
     g_hair_traverser = "default";
     g_hair_builder_replication_factor = 3.0f;
-    
     g_memory_preallocation_factor = 1.0f;
+
+    g_subdiv_accel = "default";
 
     g_scene_flags = -1;
     g_verbose = 0;
@@ -147,6 +150,9 @@ namespace embree
     std::cout << "  builder       = " << g_hair_builder << std::endl;
     std::cout << "  traverser     = " << g_hair_traverser << std::endl;
     std::cout << "  replications  = " << g_hair_builder_replication_factor << std::endl;
+
+    std::cout << "subdivision surfaces:" << std::endl;
+    std::cout << "  accel         = " << g_subdiv_accel << std::endl;
 
 #if defined(__MIC__)
     std::cout << "memory allocation:" << std::endl;
@@ -296,6 +302,9 @@ namespace embree
             g_hair_traverser = parseIdentifier (cfg,pos);
 	else if (tok == "hair_builder_replication_factor" && parseSymbol (cfg,'=',pos))
             g_hair_builder_replication_factor = parseInt (cfg,pos);
+
+        else if (tok == "subdiv_accel" && parseSymbol (cfg,'=',pos))
+            g_subdiv_accel = parseIdentifier (cfg,pos);
 	
         else if (tok == "verbose" && parseSymbol (cfg,'=',pos))
             g_verbose = parseInt (cfg,pos);

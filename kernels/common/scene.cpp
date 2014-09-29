@@ -113,8 +113,12 @@ namespace embree
     accels.add(BVH4::BVH4UserGeometry(this));
     createHairAccel();
     accels.add(BVH4::BVH4OBBBezier1iMB(this,false));
-    accels.add(BVH4::BVH4SubdivPatch1(this));
-    //accels.add(BVH4::BVH4SubdivPatchDispl1(this));
+
+    if      (g_subdiv_accel == "default"               ) accels.add(BVH4::BVH4SubdivPatch1(this));
+    else if (g_subdiv_accel == "bvh4.subdivpatch1"     ) accels.add(BVH4::BVH4SubdivPatch1(this));
+    else if (g_subdiv_accel == "bvh4.subdivpatchdispl1") accels.add(BVH4::BVH4SubdivPatchDispl1(this));
+    else THROW_RUNTIME_ERROR("unknown accel "+g_subdiv_accel);
+
 #endif
   }
 

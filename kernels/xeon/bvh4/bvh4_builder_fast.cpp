@@ -259,7 +259,7 @@ namespace embree
         subdiv_mesh->initializeHalfEdgeStructures();
 	numPatches += subdiv_mesh->size();
       }
-      this->scene->numSubdivPatches = numPatches; // is it ok to initialize this here?
+      this->scene->numSubdivPatches = numPatches; // FIXME: is it ok to initialize this here?
 
       BVH4BuilderFast::build(threadIndex,threadCount);
     }
