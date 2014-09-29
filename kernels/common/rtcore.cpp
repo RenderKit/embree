@@ -543,15 +543,13 @@ namespace embree
 #if defined(__ENABLE_RAYSTREAM_LOGGER__)
     RayStreamLogger::rayStreamLogger.logRay1Intersect(scene,old_ray,ray);
 #endif
-
-
   }
   
   RTCORE_API void rtcIntersect4 (const void* valid, RTCScene scene, RTCRay4& ray) 
   {
     TRACE(rtcIntersect4);
-#if defined(__MIC__)
-    process_error(RTC_INVALID_OPERATION,"rtcIntersect4 not supported on Xeon Phi");    
+#if !defined(__TARGET_SIMD4__)
+    process_error(RTC_INVALID_OPERATION,"rtcIntersect4 not supported");    
 #else
 #if defined(DEBUG)
     if (!((Scene*)scene)->is_build) process_error(RTC_INVALID_OPERATION,"scene got not committed");
@@ -577,8 +575,8 @@ namespace embree
   RTCORE_API void rtcIntersect8 (const void* valid, RTCScene scene, RTCRay8& ray) 
   {
     TRACE(rtcIntersect8);
-#if defined(__MIC__)
-    process_error(RTC_INVALID_OPERATION,"rtcIntersect8 not supported on Xeon Phi");                                    
+#if !defined(__TARGET_SIMD8__)
+    process_error(RTC_INVALID_OPERATION,"rtcIntersect8 not supported");                                    
 #else
 #if defined(DEBUG)
     if (!((Scene*)scene)->is_build) process_error(RTC_INVALID_OPERATION,"scene got not committed");
@@ -604,8 +602,8 @@ namespace embree
   RTCORE_API void rtcIntersect16 (const void* valid, RTCScene scene, RTCRay16& ray) 
   {
     TRACE(rtcIntersect16);
-#if !defined(__MIC__)
-    process_error(RTC_INVALID_OPERATION,"rtcIntersect16 only supported on Xeon Phi");
+#if !defined(__TARGET_SIMD16__)
+    process_error(RTC_INVALID_OPERATION,"rtcIntersect16 not supported");
 #else
 #if defined(DEBUG)
     if (!((Scene*)scene)->is_build) process_error(RTC_INVALID_OPERATION,"scene got not committed");
@@ -652,8 +650,8 @@ namespace embree
   RTCORE_API void rtcOccluded4 (const void* valid, RTCScene scene, RTCRay4& ray) 
   {
     TRACE(rtcOccluded4);
-#if defined(__MIC__)
-    process_error(RTC_INVALID_OPERATION,"rtcOccluded4 not supported on Xeon Phi");
+#if !defined(__TARGET_SIMD4__)
+    process_error(RTC_INVALID_OPERATION,"rtcOccluded4 not supported");
 #else
 #if defined(DEBUG)
     if (!((Scene*)scene)->is_build) process_error(RTC_INVALID_OPERATION,"scene got not committed");
@@ -679,8 +677,8 @@ namespace embree
   RTCORE_API void rtcOccluded8 (const void* valid, RTCScene scene, RTCRay8& ray) 
   {
     TRACE(rtcOccluded8);
-#if defined(__MIC__)
-    process_error(RTC_INVALID_OPERATION,"rtcOccluded8 not supported on Xeon Phi");
+#if !defined(__TARGET_SIMD8__)
+    process_error(RTC_INVALID_OPERATION,"rtcOccluded8 not supported");
 #else
 #if defined(DEBUG)
     if (!((Scene*)scene)->is_build) process_error(RTC_INVALID_OPERATION,"scene got not committed");
@@ -706,8 +704,8 @@ namespace embree
   RTCORE_API void rtcOccluded16 (const void* valid, RTCScene scene, RTCRay16& ray) 
   {
     TRACE(rtcOccluded16);
-#if !defined(__MIC__)
-    process_error(RTC_INVALID_OPERATION,"rtcOccluded16 only supported on Xeon Phi");
+#if !defined(__TARGET_SIMD16__)
+    process_error(RTC_INVALID_OPERATION,"rtcOccluded16 not supported");
 #else
 #if defined(DEBUG)
     if (!((Scene*)scene)->is_build) process_error(RTC_INVALID_OPERATION,"scene got not committed");
