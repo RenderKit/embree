@@ -23,6 +23,7 @@
 #include "sys/sync/atomic.h"
 #include "sys/stl/vector.h"
 #include "sys/stl/string.h"
+#include "sys/stl/array2d.h"
 #include "sys/taskscheduler.h"
 
 #include "math/math.h"
@@ -41,6 +42,7 @@
 #include <set>
 #include <vector>
 #include <algorithm>
+#include <iomanip>
 
 #include "../version.h"
 

@@ -129,6 +129,98 @@ namespace embree
     } 
   };
 
+  class CatmullClark1Edge
+  {
+  public:
+    void init(size_t N, CatmullClark1Ring& r0, CatmullClark1Ring& r1)
+    {
+      v.init(N,3);
+      for (size_t i=0; i<N; i++) v(i,0) = v(i,1) = v(i,2) = Vec3fa(nan);
+      this->K = 1;
+      init(r0,r1);
+    }
+
+    __forceinline void subdivide(CatmullClark1Ring& r0, CatmullClark1Ring& r1) 
+    {
+      assert(2*K+1 <= v.width());
+      size_t K0 = K;
+      size_t K1 = 2*K;
+      
+      Vec3fa v20 = zero;
+      Vec3fa v21 = zero;
+      Vec3fa v22 = zero;
+      
+      Vec3fa v10 = v((K+1)-1,0);
+      Vec3fa v11 = v((K+1)-1,1);
+      Vec3fa v12 = v((K+1)-1,2);
+      
+      for (ssize_t x=K-1; x>=0; x--) 
+      {
+        /* load next column */
+        Vec3fa v00 = v(x,0);
+        Vec3fa v01 = v(x,1);
+        Vec3fa v02 = v(x,2);
+        
+        /* calculate face points and edge centers */
+        const Vec3fa c00 = 0.25f*(v00+v10+v01+v11);
+        const Vec3fa c10 = 0.50f*(v10+v11);
+        const Vec3fa c20 = 0.25f*(v10+v20+v11+v21);
+        const Vec3fa c01 = 0.50f*(v01+v11);
+        const Vec3fa c21 = 0.50f*(v11+v21);
+        const Vec3fa c02 = 0.25f*(v01+v11+v02+v12);
+        const Vec3fa c12 = 0.50f*(v11+v12);
+        const Vec3fa c22 = 0.25f*(v11+v21+v12+v22);
+        
+        /* store face points and edge point at 2*x+1 */
+        v(2*x+1,0) = c00;
+        v(2*x+1,1) = 0.5f*(c01+0.5f*(c00+c02));
+        v(2*x+1,2) = c02;
+        
+        /* store face points and edge point at 2*x+2 */
+        const Vec3fa F = 0.25f*(c00+c20+c02+c22);
+        const Vec3fa R = 0.25f*(c10+c01+c21+c12);
+        const Vec3fa P = v11;
+        v(2*x+2,0) = 0.5f*(c10+0.5f*(c00+c20));
+        v(2*x+2,1) = 0.25*F + 0.5*R + 0.25*P;
+        v(2*x+2,2) = 0.5f*(c12+0.5f*(c02+c22));
+        
+        /* propagate points to next iteration */
+        v20 = v10; v10 = v00;
+        v21 = v11; v11 = v01;
+        v22 = v12; v12 = v02;
+      }        
+      K = 2*K;
+      init(r0,r1);
+    }
+    
+    __forceinline void init(CatmullClark1Ring& ring0, CatmullClark1Ring& ring1) 
+    {
+      v(0,0) = ring0.first();
+      v(0,1) = ring0.vtx;
+      v(0,2) = ring0.end();
+      v(K,0) = ring1.last();
+      v(K,1) = ring1.vtx;
+      v(K,2) = ring1.begin();
+    }
+    
+    friend __forceinline std::ostream &operator<<(std::ostream& out, const CatmullClark1Edge& edge)
+    {
+      out << std::endl;
+      for (size_t y=0; y<3; y++) {
+        for (size_t x=0; x<edge.K+1; x++) {
+          //out << patch.v(x,y) << " ";
+          out << std::setw(10) << edge.v(x,y).x << " ";
+        }
+        out << std::endl;
+      }
+      return out;
+    } 
+    
+  public:
+    Array2D<Vec3fa> v;
+    size_t K;
+  };
+  
   class __aligned(64) IrregularCatmullClarkPatch
   {
   public:

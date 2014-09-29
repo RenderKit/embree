@@ -304,14 +304,13 @@ namespace embree
 
   void Scene::build (size_t threadIndex, size_t threadCount) 
   {
-#if 0 // FIXME: remove
+#if 1 // FIXME: remove
     SubdivMesh* subdivmesh = getSubdivMesh(0);
     subdivmesh->initializeHalfEdgeStructures();
     size_t N = subdivmesh->numFaces;
     for (size_t i=0; i<N; i++)
     {
-#if 1
-      IrregularSubdividedCatmullClarkPatch2* patch = new IrregularSubdividedCatmullClarkPatch2(&subdivmesh->halfEdges[4*i], subdivmesh->getVertexPositionPtr(0), 4);
+      IrregularSubdividedCatmullClarkPatch* patch = new IrregularSubdividedCatmullClarkPatch(&subdivmesh->halfEdges[4*i], subdivmesh->getVertexPositionPtr(0), 4);
       const size_t width  = patch->size();
       const size_t height = patch->size();
       TriangleMesh* mesh = new TriangleMesh (this, RTC_GEOMETRY_STATIC, (width-1)*(height-1)*2, width*height, 1);
@@ -336,38 +335,6 @@ namespace embree
         }
       }
       mesh->unmap(RTC_INDEX_BUFFER);
-#else
-      IrregularSubdividedCatmullClarkPatch* patch = new IrregularSubdividedCatmullClarkPatch(&subdivmesh->halfEdges[4*i], subdivmesh->getVertexPositionPtr(0));
-      for (size_t i=0; i<1; i++) {
-        IrregularSubdividedCatmullClarkPatch* patch1 = new IrregularSubdividedCatmullClarkPatch(); 
-        patch->subdivide(patch1);
-        delete patch; patch = patch1;
-      }
-      const size_t width  = patch->points.width()-2;
-      const size_t height = patch->points.height()-2;
-      TriangleMesh* mesh = new TriangleMesh (this, RTC_GEOMETRY_STATIC, (width-1)*(height-1)*2, width*height, 1);
-      Vec3fa* vertices = (Vec3fa*) mesh->map(RTC_VERTEX_BUFFER);
-      for (size_t y=0; y<height; y++) {
-        for (size_t x=0; x<width; x++) {
-          vertices[y*width+x] = patch->points(x+1,y+1);
-        }
-      }
-      mesh->unmap(RTC_VERTEX_BUFFER);
-      TriangleMesh::Triangle* triangles = (TriangleMesh::Triangle*) mesh->map(RTC_INDEX_BUFFER);
-      for (size_t y=0; y<height-1; y++) {
-        for (size_t x=0; x<width-1; x++) {
-          TriangleMesh::Triangle& tri0 = triangles[2*(y*(width-1)+x)+0];
-          tri0.v[0] = (y+0)*width + (x+0);
-          tri0.v[1] = (y+0)*width + (x+1);
-          tri0.v[2] = (y+1)*width + (x+1);
-          TriangleMesh::Triangle& tri1 = triangles[2*(y*(width-1)+x)+1];
-          tri1.v[0] = (y+0)*width + (x+0);
-          tri1.v[1] = (y+1)*width + (x+1);
-          tri1.v[2] = (y+1)*width + (x+0);
-        }
-      }
-      mesh->unmap(RTC_INDEX_BUFFER);
-#endif
     }
     remove(subdivmesh);
 #endif
