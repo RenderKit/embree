@@ -23,6 +23,7 @@
 #include "sys/sync/atomic.h"
 #include "sys/stl/vector.h"
 #include "sys/stl/string.h"
+#include "sys/stl/array2d.h"
 #include "sys/taskscheduler.h"
 
 #include "math/math.h"
@@ -41,6 +42,7 @@
 #include <set>
 #include <vector>
 #include <algorithm>
+#include <iomanip>
 
 #include "../version.h"
 
@@ -98,6 +100,8 @@ namespace embree
   extern std::string g_hair_builder;
   extern std::string g_hair_traverser;
   extern double g_hair_builder_replication_factor;
+
+  extern std::string g_subdiv_accel;
 
   extern int g_scene_flags;
   extern size_t g_benchmark;

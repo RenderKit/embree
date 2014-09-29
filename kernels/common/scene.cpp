@@ -19,7 +19,7 @@
 #if !defined(__MIC__)
 #include "bvh4/bvh4.h"
 #include "bvh8/bvh8.h"
-#include "bvh4/bvh4_builder_subdiv.h"
+#include "geometry/subdivpatchdispl1.h"
 #else
 #include "xeonphi/bvh4i/bvh4i.h"
 #include "xeonphi/bvh4mb/bvh4mb.h"
@@ -113,7 +113,12 @@ namespace embree
     accels.add(BVH4::BVH4UserGeometry(this));
     createHairAccel();
     accels.add(BVH4::BVH4OBBBezier1iMB(this,false));
-    accels.add(BVH4::BVH4SubdivPatch1(this));
+
+    if      (g_subdiv_accel == "default"               ) accels.add(BVH4::BVH4SubdivPatch1(this));
+    else if (g_subdiv_accel == "bvh4.subdivpatch1"     ) accels.add(BVH4::BVH4SubdivPatch1(this));
+    else if (g_subdiv_accel == "bvh4.subdivpatchdispl1") accels.add(BVH4::BVH4SubdivPatchDispl1(this));
+    else THROW_RUNTIME_ERROR("unknown accel "+g_subdiv_accel);
+
 #endif
   }
 
@@ -310,19 +315,14 @@ namespace embree
     size_t N = subdivmesh->numFaces;
     for (size_t i=0; i<N; i++)
     {
-      IrregularSubdividedCatmullClarkPatch* patch = new IrregularSubdividedCatmullClarkPatch(&subdivmesh->halfEdges[4*i], subdivmesh->getVertexPositionPtr(0));
-      for (size_t i=0; i<1; i++) {
-        IrregularSubdividedCatmullClarkPatch* patch1 = new IrregularSubdividedCatmullClarkPatch(); 
-        patch->subdivide(patch1);
-        delete patch; patch = patch1;
-      }
-      const size_t width  = patch->points.width()-2;
-      const size_t height = patch->points.height()-2;
+      SubdivPatchDispl1* patch = new SubdivPatchDispl1(&subdivmesh->halfEdges[4*i], subdivmesh->getVertexPositionPtr(0), 0, i, 4, true); // FIXME: wrong geomID
+      const size_t width  = patch->size();
+      const size_t height = patch->size();
       TriangleMesh* mesh = new TriangleMesh (this, RTC_GEOMETRY_STATIC, (width-1)*(height-1)*2, width*height, 1);
       Vec3fa* vertices = (Vec3fa*) mesh->map(RTC_VERTEX_BUFFER);
       for (size_t y=0; y<height; y++) {
         for (size_t x=0; x<width; x++) {
-          vertices[y*width+x] = patch->points(x+1,y+1);
+          vertices[y*width+x] = patch->get(x,y);
         }
       }
       mesh->unmap(RTC_VERTEX_BUFFER);
