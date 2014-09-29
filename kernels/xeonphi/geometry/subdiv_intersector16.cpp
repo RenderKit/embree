@@ -19,6 +19,7 @@
 #include "common/ray16.h"
 #include "geometry/filter.h"
 #include "subdiv_intersector16.h"
+#include "bicubic_bezier_patch.h"
 
 namespace embree
 {
