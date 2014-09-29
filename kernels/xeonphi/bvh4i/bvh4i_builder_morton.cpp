@@ -338,30 +338,31 @@ namespace embree
       if (unlikely(!mesh->isEnabled())) continue;
       if (unlikely(mesh->numTimeSteps != 1)) continue;
 
-
-      const char* __restrict__ cptr_tri = (char*)&mesh->triangle(offset);
-      const unsigned int stride = mesh->triangles.getBufferStride();
-      
-      for (size_t i=offset; i<mesh->numTriangles && currentID < endID; i++, currentID++,cptr_tri+=stride)	 
+      if (offset < mesh->numTriangles)
 	{
-	  const TriangleMesh::Triangle& tri = *(TriangleMesh::Triangle*)cptr_tri;
-	  prefetch<PFHINT_L1>(&tri + L1_PREFETCH_ITEMS);
-	  prefetch<PFHINT_L2>(&tri + L2_PREFETCH_ITEMS);
-
-	  assert( tri.v[0] < mesh->numVertices );
-	  assert( tri.v[1] < mesh->numVertices );
-	  assert( tri.v[2] < mesh->numVertices );
-
-	  const mic3f v = mesh->getTriangleVertices<PFHINT_L2>(tri);
-
-	  const mic_f bmin  = min(min(v[0],v[1]),v[2]);
-	  const mic_f bmax  = max(max(v[0],v[1]),v[2]);
-
-	  const mic_f centroid2 = bmin+bmax;
-	  bounds_centroid_min = min(bounds_centroid_min,centroid2);
-	  bounds_centroid_max = max(bounds_centroid_max,centroid2);
-	}
+	  const char* __restrict__ cptr_tri = (char*)&mesh->triangle(offset);
+	  const unsigned int stride = mesh->triangles.getBufferStride();
       
+	  for (size_t i=offset; i<mesh->numTriangles && currentID < endID; i++, currentID++,cptr_tri+=stride)	 
+	    {
+	      const TriangleMesh::Triangle& tri = *(TriangleMesh::Triangle*)cptr_tri;
+	      prefetch<PFHINT_L1>(&tri + L1_PREFETCH_ITEMS);
+	      prefetch<PFHINT_L2>(&tri + L2_PREFETCH_ITEMS);
+
+	      assert( tri.v[0] < mesh->numVertices );
+	      assert( tri.v[1] < mesh->numVertices );
+	      assert( tri.v[2] < mesh->numVertices );
+
+	      const mic3f v = mesh->getTriangleVertices<PFHINT_L2>(tri);
+
+	      const mic_f bmin  = min(min(v[0],v[1]),v[2]);
+	      const mic_f bmax  = max(max(v[0],v[1]),v[2]);
+
+	      const mic_f centroid2 = bmin+bmax;
+	      bounds_centroid_min = min(bounds_centroid_min,centroid2);
+	      bounds_centroid_max = max(bounds_centroid_max,centroid2);
+	    }
+	}      
       if (unlikely(currentID == endID)) break;
       offset = 0;
     }
@@ -412,40 +413,42 @@ namespace embree
        
       const unsigned int groupCode = (group << encodeShift);
 
-      const char* __restrict__ cptr_tri = (char*)&mesh->triangle(offset);
-      const unsigned int stride = mesh->triangles.getBufferStride();
+      if (offset < numTriangles)
+	{
+	  const char* __restrict__ cptr_tri = (char*)&mesh->triangle(offset);
+	  const unsigned int stride = mesh->triangles.getBufferStride();
       
-      for (size_t i=0; i<numTriangles; i++,cptr_tri+=stride)	  
-      {
-	//const TriangleMesh::Triangle& tri = mesh->triangle(offset+i);
-	const TriangleMesh::Triangle& tri = *(TriangleMesh::Triangle*)cptr_tri;
+	  for (size_t i=0; i<numTriangles; i++,cptr_tri+=stride)	  
+	    {
+	      //const TriangleMesh::Triangle& tri = mesh->triangle(offset+i);
+	      const TriangleMesh::Triangle& tri = *(TriangleMesh::Triangle*)cptr_tri;
 
-	prefetch<PFHINT_NT>(&tri + 16);
+	      prefetch<PFHINT_NT>(&tri + 16);
 
-	const mic3f v = mesh->getTriangleVertices<PFHINT_L2>(tri);
-	const mic_f bmin  = min(min(v[0],v[1]),v[2]);
-	const mic_f bmax  = max(max(v[0],v[1]),v[2]);
+	      const mic3f v = mesh->getTriangleVertices<PFHINT_L2>(tri);
+	      const mic_f bmin  = min(min(v[0],v[1]),v[2]);
+	      const mic_f bmax  = max(max(v[0],v[1]),v[2]);
 
-	const mic_f cent  = bmin+bmax;
-	const mic_i binID = mic_i((cent-base)*scale);
+	      const mic_f cent  = bmin+bmax;
+	      const mic_i binID = mic_i((cent-base)*scale);
 
-	mID[2*slot+1] = groupCode | (offset+i);
-	compactustore16i_low(0x1,&binID3_x[2*slot+0],binID); // extract
-	compactustore16i_low(0x2,&binID3_y[2*slot+0],binID);
-	compactustore16i_low(0x4,&binID3_z[2*slot+0],binID);
-	slot++;
-	if (unlikely(slot == NUM_MORTON_IDS_PER_BLOCK))
-	  {
-	    const mic_i code  = bitInterleave(binID3_x,binID3_y,binID3_z);
-	    const mic_i final = select(0x5555,code,mID);      
-	    assert((size_t)dest % 64 == 0);
-	    store16i_ngo(dest,final);	    
-	    slot = 0;
-	    dest += 8;
-	  }
-        currentID++;
-      }
-
+	      mID[2*slot+1] = groupCode | (offset+i);
+	      compactustore16i_low(0x1,&binID3_x[2*slot+0],binID); // extract
+	      compactustore16i_low(0x2,&binID3_y[2*slot+0],binID);
+	      compactustore16i_low(0x4,&binID3_z[2*slot+0],binID);
+	      slot++;
+	      if (unlikely(slot == NUM_MORTON_IDS_PER_BLOCK))
+		{
+		  const mic_i code  = bitInterleave(binID3_x,binID3_y,binID3_z);
+		  const mic_i final = select(0x5555,code,mID);      
+		  assert((size_t)dest % 64 == 0);
+		  store16i_ngo(dest,final);	    
+		  slot = 0;
+		  dest += 8;
+		}
+	      currentID++;
+	    }
+	}
       offset = 0;
       if (currentID == endID) break;
     }

@@ -292,44 +292,47 @@ PRINT(CORRECT_numPrims);
 	  if (unlikely(!mesh->isEnabled())) continue;
 	  if (unlikely(mesh->numTimeSteps != 1)) continue;
 
-	  const char* __restrict__ cptr_tri = (char*)&mesh->triangle(offset);
-	  const unsigned int stride = mesh->triangles.getBufferStride();
+	  if (offset < mesh->numTriangles)
+	    {
+	      const char* __restrict__ cptr_tri = (char*)&mesh->triangle(offset);
+	      const unsigned int stride = mesh->triangles.getBufferStride();
 
-	  for (unsigned int i=offset; i<mesh->numTriangles && currentID < endID; i++, currentID++,cptr_tri+=stride)	 
-	    { 			    
-	      const TriangleMesh::Triangle& tri = *(TriangleMesh::Triangle*)cptr_tri;
-	      //const TriangleMesh::Triangle& tri = mesh->triangle(i);
-	      prefetch<PFHINT_L2>(&tri + L2_PREFETCH_ITEMS);
-	      prefetch<PFHINT_L1>(&tri + L1_PREFETCH_ITEMS);
+	      for (unsigned int i=offset; i<mesh->numTriangles && currentID < endID; i++, currentID++,cptr_tri+=stride)	 
+		{ 			    
+		  const TriangleMesh::Triangle& tri = *(TriangleMesh::Triangle*)cptr_tri;
+		  //const TriangleMesh::Triangle& tri = mesh->triangle(i);
+		  prefetch<PFHINT_L2>(&tri + L2_PREFETCH_ITEMS);
+		  prefetch<PFHINT_L1>(&tri + L1_PREFETCH_ITEMS);
 
-	      const mic3f v = mesh->getTriangleVertices<PFHINT_L2>(tri);
+		  const mic3f v = mesh->getTriangleVertices<PFHINT_L2>(tri);
 
-	      mic_f bmin = min(min(v[0],v[1]),v[2]);
-	      mic_f bmax = max(max(v[0],v[1]),v[2]);
+		  mic_f bmin = min(min(v[0],v[1]),v[2]);
+		  mic_f bmax = max(max(v[0],v[1]),v[2]);
 
-	      const mic_f area_tri = tri_sah(v[0],v[1],v[2]);
-	      const mic_f area_box = box_sah(bmin,bmax);
-	      const mic_f factor = area_box * rcp(area_tri);
+		  const mic_f area_tri = tri_sah(v[0],v[1],v[2]);
+		  const mic_f area_box = box_sah(bmin,bmax);
+		  const mic_f factor = area_box * rcp(area_tri);
 
-	      DBG(
-		  DBG_PRINT(area_tri);
-		  DBG_PRINT(area_box);
-		  DBG_PRINT(factor);
-		  );
+		  DBG(
+		      DBG_PRINT(area_tri);
+		      DBG_PRINT(area_box);
+		      DBG_PRINT(factor);
+		      );
 
-	      const mic_m m_factor = factor > PRESPLIT_AREA_THRESHOLD;
-	      const mic_m m_sah_zero = area_box > PRESPLIT_MIN_AREA;
+		  const mic_m m_factor = factor > PRESPLIT_AREA_THRESHOLD;
+		  const mic_m m_sah_zero = area_box > PRESPLIT_MIN_AREA;
 
-	      if (any(m_factor & m_sah_zero)) 
-		numTrisPreSplit++;
-	      else
-		numTrisNoPreSplit++;   
+		  if (any(m_factor & m_sah_zero)) 
+		    numTrisPreSplit++;
+		  else
+		    numTrisNoPreSplit++;   
 
-	      bounds_scene_min = min(bounds_scene_min,bmin);
-	      bounds_scene_max = max(bounds_scene_max,bmax);
-	      const mic_f centroid2 = bmin+bmax;
-	      bounds_centroid_min = min(bounds_centroid_min,centroid2);
-	      bounds_centroid_max = max(bounds_centroid_max,centroid2);
+		  bounds_scene_min = min(bounds_scene_min,bmin);
+		  bounds_scene_max = max(bounds_scene_max,bmax);
+		  const mic_f centroid2 = bmin+bmax;
+		  bounds_centroid_min = min(bounds_centroid_min,centroid2);
+		  bounds_centroid_max = max(bounds_centroid_max,centroid2);
+		}
 	    }
 	  if (currentID == endID) break;
 	  offset = 0;
@@ -368,57 +371,60 @@ PRINT(CORRECT_numPrims);
 	  if (unlikely(!mesh->isEnabled())) continue;
 	  if (unlikely(mesh->numTimeSteps != 1)) continue;
 
-	  const char* __restrict__ cptr_tri = (char*)&mesh->triangle(offset);
-	  const unsigned int stride = mesh->triangles.getBufferStride();
+	  if (offset < mesh->numTriangles)
+	    {
+	      const char* __restrict__ cptr_tri = (char*)&mesh->triangle(offset);
+	      const unsigned int stride = mesh->triangles.getBufferStride();
 
-	  for (unsigned int i=offset; i<mesh->numTriangles && currentID < endID; i++, currentID++,cptr_tri+=stride)	 
-	    { 			    
-	      //const TriangleMesh::Triangle& tri = mesh->triangle(i);
-	      const TriangleMesh::Triangle& tri = *(TriangleMesh::Triangle*)cptr_tri;
+	      for (unsigned int i=offset; i<mesh->numTriangles && currentID < endID; i++, currentID++,cptr_tri+=stride)	 
+		{ 			    
+		  //const TriangleMesh::Triangle& tri = mesh->triangle(i);
+		  const TriangleMesh::Triangle& tri = *(TriangleMesh::Triangle*)cptr_tri;
 
-	      prefetch<PFHINT_L2>(&tri + L2_PREFETCH_ITEMS);
-	      prefetch<PFHINT_L1>(&tri + L1_PREFETCH_ITEMS);
+		  prefetch<PFHINT_L2>(&tri + L2_PREFETCH_ITEMS);
+		  prefetch<PFHINT_L1>(&tri + L1_PREFETCH_ITEMS);
 
-	      const mic3f v = mesh->getTriangleVertices<PFHINT_L2>(tri);
+		  const mic3f v = mesh->getTriangleVertices<PFHINT_L2>(tri);
 
-	      mic_f bmin = min(min(v[0],v[1]),v[2]);
-	      mic_f bmax = max(max(v[0],v[1]),v[2]);
+		  mic_f bmin = min(min(v[0],v[1]),v[2]);
+		  mic_f bmax = max(max(v[0],v[1]),v[2]);
 
-	      const mic_f area_tri = tri_sah(v[0],v[1],v[2]);
-	      const mic_f area_box = box_sah(bmin,bmax);
-	      const mic_f factor = area_box * rcp(area_tri);
+		  const mic_f area_tri = tri_sah(v[0],v[1],v[2]);
+		  const mic_f area_box = box_sah(bmin,bmax);
+		  const mic_f factor = area_box * rcp(area_tri);
 
-	      DBG(
-		  DBG_PRINT(area_tri);
-		  DBG_PRINT(area_box);
-		  DBG_PRINT(factor);
-		  );
+		  DBG(
+		      DBG_PRINT(area_tri);
+		      DBG_PRINT(area_box);
+		      DBG_PRINT(factor);
+		      );
 
-	      const mic_m m_factor = factor > PRESPLIT_AREA_THRESHOLD;
-	      const mic_m m_sah_zero = area_box > PRESPLIT_MIN_AREA;
+		  const mic_m m_factor = factor > PRESPLIT_AREA_THRESHOLD;
+		  const mic_m m_sah_zero = area_box > PRESPLIT_MIN_AREA;
 
-	      if (any(m_factor & m_sah_zero)) 
-		{
-		  prefetch<PFHINT_L2EX>(presplitIDs + 4*4);
+		  if (any(m_factor & m_sah_zero)) 
+		    {
+		      prefetch<PFHINT_L2EX>(presplitIDs + 4*4);
 
-		  store1f(&presplitIDs->code,area_box);
-		  store1f(&presplitIDs->sah,factor);
-		  presplitIDs->groupID = g;
-		  presplitIDs->primID  = i;
-		  presplitIDs++;
+		      store1f(&presplitIDs->code,area_box);
+		      store1f(&presplitIDs->sah,factor);
+		      presplitIDs->groupID = g;
+		      presplitIDs->primID  = i;
+		      presplitIDs++;
+		    }
+		  else
+		    {
+		      prefetch<PFHINT_L2EX>(no_presplit_prims + L2_PREFETCH_ITEMS);
+
+		      store4f(&no_presplit_prims->lower,bmin);
+		      store4f(&no_presplit_prims->upper,bmax);	
+		      no_presplit_prims->lower.a = g; 
+		      no_presplit_prims->upper.a = i;
+		      no_presplit_prims++;
+
+		    }
+
 		}
-	      else
-		{
-		  prefetch<PFHINT_L2EX>(no_presplit_prims + L2_PREFETCH_ITEMS);
-
-		  store4f(&no_presplit_prims->lower,bmin);
-		  store4f(&no_presplit_prims->upper,bmax);	
-		  no_presplit_prims->lower.a = g; 
-		  no_presplit_prims->upper.a = i;
-		  no_presplit_prims++;
-
-		}
-
 	    }
 	  if (currentID == endID) break;
 	  offset = 0;
