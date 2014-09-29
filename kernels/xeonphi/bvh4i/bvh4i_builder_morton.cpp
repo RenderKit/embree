@@ -1228,8 +1228,19 @@ namespace embree
     scene->lockstep_scheduler.dispatchTask( task_radixsort, this, threadIndex, threadCount );
 
 #if defined(DEBUG)
+    DBG_PRINT(numPrimitives);
+    DBG_PRINT(((numPrimitives+7)&(-8)));
     for (size_t i=1; i<((numPrimitives+7)&(-8)); i++)
-      assert(morton[i-1].code <= morton[i].code);
+      {
+	if (morton[i-1].code > morton[i].code)
+	  {
+	    DBG_PRINT( i );
+	    DBG_PRINT( morton[i-1].code );
+	    DBG_PRINT( morton[i].code );
+	  }
+
+	assert(morton[i-1].code <= morton[i].code);
+      }
 
     for (size_t i=numPrimitives; i<((numPrimitives+7)&(-8)); i++) {
       assert(dest[i].code  == 0xffffffff); 

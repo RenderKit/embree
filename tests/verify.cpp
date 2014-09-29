@@ -2763,8 +2763,11 @@ namespace embree
 
     POSITIVE("regression_static",         rtcore_regression_static());
     POSITIVE("regression_dynamic",        rtcore_regression_dynamic());
+
+#if !defined(__MIC__)
     POSITIVE("regression_dynamic_thread",rtcore_regression_dynamic_thread_main());
     POSITIVE("regression_garbage_geom",   rtcore_regression_garbage());
+#endif
 
     rtcExit();
     return numFailedTests;
