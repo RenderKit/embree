@@ -28,6 +28,7 @@
 #include "geometry/triangle4v.h"
 #include "geometry/triangle4i.h"
 #include "geometry/subdivpatch1.h"
+#include "geometry/subdivpatchdispl1.h"
 #include "geometry/virtual_accel.h"
 
 #include <algorithm>
@@ -102,6 +103,9 @@ namespace embree
       : geom(NULL), BVH4BuilderFastT<SubdivPatch1>(bvh,scene,listMode,0,0,false,sizeof(SubdivPatch1),1,1,true) {}
     template<> BVH4SubdivBuilderFast<SubdivPatch1>::BVH4SubdivBuilderFast (BVH4* bvh, SubdivMesh* geom, size_t listMode) 
       : geom(geom), BVH4BuilderFastT<SubdivPatch1>(bvh,geom->parent,listMode,0,0,false,sizeof(SubdivPatch1),1,1,geom->size() > THRESHOLD_FOR_SINGLE_THREADED) {}
+
+    template<> BVH4SubdivBuilderFast<SubdivPatchDispl1>::BVH4SubdivBuilderFast (BVH4* bvh, Scene* scene, size_t listMode) 
+      : geom(NULL), BVH4BuilderFastT<SubdivPatchDispl1>(bvh,scene,listMode,0,0,false,sizeof(SubdivPatchDispl1),1,1,true) {}
     
     BVH4TopLevelBuilderFastT::BVH4TopLevelBuilderFastT (LockStepTaskScheduler* scheduler, BVH4* bvh) 
       : prims_i(NULL), N(0), BVH4BuilderFast(scheduler,bvh,0,0,0,false,0,1,1) {}
@@ -653,6 +657,7 @@ namespace embree
     Builder* BVH4UserGeometryMeshBuilderFast   (void* bvh, UserGeometryBase* geom, size_t mode) { return new class BVH4UserGeometryBuilderFastT<AccelSetItem>((BVH4*)bvh,geom,mode); }
 
     Builder* BVH4SubdivPatch1BuilderFast(void* bvh, Scene* scene, size_t mode) { return new class BVH4SubdivBuilderFast<SubdivPatch1>((BVH4*)bvh,scene,mode); }
+    Builder* BVH4SubdivPatchDispl1BuilderFast(void* bvh, Scene* scene, size_t mode) { return new class BVH4SubdivBuilderFast<SubdivPatchDispl1>((BVH4*)bvh,scene,mode); }
 
   }
 }

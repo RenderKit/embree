@@ -19,7 +19,7 @@
 #if !defined(__MIC__)
 #include "bvh4/bvh4.h"
 #include "bvh8/bvh8.h"
-#include "bvh4/bvh4_builder_subdiv.h"
+#include "geometry/subdivpatchdispl1.h"
 #else
 #include "xeonphi/bvh4i/bvh4i.h"
 #include "xeonphi/bvh4mb/bvh4mb.h"
@@ -114,6 +114,7 @@ namespace embree
     createHairAccel();
     accels.add(BVH4::BVH4OBBBezier1iMB(this,false));
     accels.add(BVH4::BVH4SubdivPatch1(this));
+    //accels.add(BVH4::BVH4SubdivPatchDispl1(this));
 #endif
   }
 
@@ -310,7 +311,7 @@ namespace embree
     size_t N = subdivmesh->numFaces;
     for (size_t i=0; i<N; i++)
     {
-      IrregularSubdividedCatmullClarkPatch* patch = new IrregularSubdividedCatmullClarkPatch(&subdivmesh->halfEdges[4*i], subdivmesh->getVertexPositionPtr(0), 4, 0, i); // FIXME: wrong geomID
+      SubdivPatchDispl1* patch = new SubdivPatchDispl1(&subdivmesh->halfEdges[4*i], subdivmesh->getVertexPositionPtr(0), 0, i, 4, true); // FIXME: wrong geomID
       const size_t width  = patch->size();
       const size_t height = patch->size();
       TriangleMesh* mesh = new TriangleMesh (this, RTC_GEOMETRY_STATIC, (width-1)*(height-1)*2, width*height, 1);
