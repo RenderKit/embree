@@ -250,6 +250,9 @@ typedef void (*ErrorFunc) ();
   intersector = isa::intersector2;
 
 #if defined(__TARGET_SSE41__)
+#if !defined(__TARGET_SIMD4__)
+#define __TARGET_SIMD4__
+#endif
 #define SELECT_SYMBOL_SSE41(features,intersector) \
   if ((features & SSE41) == SSE41) intersector = sse41::intersector;
 #else
@@ -257,6 +260,9 @@ typedef void (*ErrorFunc) ();
 #endif
 
 #if defined(__TARGET_SSE42__)
+#if !defined(__TARGET_SIMD4__)
+#define __TARGET_SIMD4__
+#endif
 #define SELECT_SYMBOL_SSE42(features,intersector) \
   if ((features & SSE42) == SSE42) intersector = sse42::intersector;
 #else
@@ -264,6 +270,9 @@ typedef void (*ErrorFunc) ();
 #endif
 
 #if defined(__TARGET_AVX__)
+#if !defined(__TARGET_SIMD8__)
+#define __TARGET_SIMD8__
+#endif
 #define SELECT_SYMBOL_AVX(features,intersector) \
   if ((features & AVX) == AVX) intersector = avx::intersector;
 #else
@@ -271,6 +280,9 @@ typedef void (*ErrorFunc) ();
 #endif
 
 #if defined(__TARGET_AVX2__)
+#if !defined(__TARGET_SIMD8__)
+#define __TARGET_SIMD8__
+#endif
 #define SELECT_SYMBOL_AVX2(features,intersector) \
   if ((features & AVX2) == AVX2) intersector = avx2::intersector;
 #else
@@ -278,6 +290,9 @@ typedef void (*ErrorFunc) ();
 #endif
 
 #if defined(__MIC__)
+#if !defined(__TARGET_SIMD4__)
+#define __TARGET_SIMD16__
+#endif
 #define SELECT_SYMBOL_KNC(features,intersector) \
   intersector = knc::intersector;
 #else
