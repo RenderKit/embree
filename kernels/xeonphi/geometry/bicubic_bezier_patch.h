@@ -266,16 +266,12 @@ namespace embree
     }
 
 
-    // ===================================================================
-    // ======== init bicubic patch from regular catmull clark patch ======
-    // ===================================================================
-
-    __forceinline void init(BicubicBezierPatch &patch)
+    __forceinline void init(const Vec3fa cc_patch[4][4])
     {
-      const mic_f b11 = (bc(patch.cp[1][1]) * 4.0f + (bc(patch.cp[1][2]) + bc(patch.cp[2][1])) * 2.0f + bc(patch.cp[2][2])) * 1.0f / 9.0f;
-      const mic_f b12 = (bc(patch.cp[1][2]) * 4.0f + (bc(patch.cp[1][1]) + bc(patch.cp[2][2])) * 2.0f + bc(patch.cp[2][1])) * 1.0f / 9.0f;
-      const mic_f b22 = (bc(patch.cp[2][2]) * 4.0f + (bc(patch.cp[2][1]) + bc(patch.cp[1][2])) * 2.0f + bc(patch.cp[1][1])) * 1.0f / 9.0f;
-      const mic_f b21 = (bc(patch.cp[2][1]) * 4.0f + (bc(patch.cp[1][1]) + bc(patch.cp[2][2])) * 2.0f + bc(patch.cp[1][2])) * 1.0f / 9.0f;
+      const mic_f b11 = (bc(cc_patch[1][1]) * 4.0f + (bc(cc_patch[1][2]) + bc(cc_patch[2][1])) * 2.0f + bc(cc_patch[2][2])) * 1.0f / 9.0f;
+      const mic_f b12 = (bc(cc_patch[1][2]) * 4.0f + (bc(cc_patch[1][1]) + bc(cc_patch[2][2])) * 2.0f + bc(cc_patch[2][1])) * 1.0f / 9.0f;
+      const mic_f b22 = (bc(cc_patch[2][2]) * 4.0f + (bc(cc_patch[2][1]) + bc(cc_patch[1][2])) * 2.0f + bc(cc_patch[1][1])) * 1.0f / 9.0f;
+      const mic_f b21 = (bc(cc_patch[2][1]) * 4.0f + (bc(cc_patch[1][1]) + bc(cc_patch[2][2])) * 2.0f + bc(cc_patch[1][2])) * 1.0f / 9.0f;
 
       store4f((float*)&cp[1][1],b11);
       store4f((float*)&cp[1][2],b12);
@@ -284,40 +280,40 @@ namespace embree
 
       // --- edges ---
 
-      const mic_f b01 = (bc(patch.cp[1][1]) * 8.0f + bc(patch.cp[1][2]) * 4.0f + (bc(patch.cp[0][1]) + bc(patch.cp[2][1])) * 2.0f + bc(patch.cp[0][2]) + bc(patch.cp[2][2])) * 1.0f / 18.0f;
-      const mic_f b02 = (bc(patch.cp[1][2]) * 8.0f + bc(patch.cp[1][1]) * 4.0f + (bc(patch.cp[0][2]) + bc(patch.cp[2][2])) * 2.0f + bc(patch.cp[0][1]) + bc(patch.cp[2][1])) * 1.0f / 18.0f;
+      const mic_f b01 = (bc(cc_patch[1][1]) * 8.0f + bc(cc_patch[1][2]) * 4.0f + (bc(cc_patch[0][1]) + bc(cc_patch[2][1])) * 2.0f + bc(cc_patch[0][2]) + bc(cc_patch[2][2])) * 1.0f / 18.0f;
+      const mic_f b02 = (bc(cc_patch[1][2]) * 8.0f + bc(cc_patch[1][1]) * 4.0f + (bc(cc_patch[0][2]) + bc(cc_patch[2][2])) * 2.0f + bc(cc_patch[0][1]) + bc(cc_patch[2][1])) * 1.0f / 18.0f;
 
       store4f((float*)&cp[0][1],b01);
       store4f((float*)&cp[0][2],b02);
 
-      const mic_f b13 = (bc(patch.cp[1][2]) * 8.0f + bc(patch.cp[2][2]) * 4.0f + (bc(patch.cp[1][1]) + bc(patch.cp[1][3])) * 2.0f + bc(patch.cp[2][1]) + bc(patch.cp[2][3])) * 1.0f / 18.0f;
-      const mic_f b23 = (bc(patch.cp[2][2]) * 8.0f + bc(patch.cp[1][2]) * 4.0f + (bc(patch.cp[2][1]) + bc(patch.cp[2][3])) * 2.0f + bc(patch.cp[1][1]) + bc(patch.cp[1][3])) * 1.0f / 18.0f;
+      const mic_f b13 = (bc(cc_patch[1][2]) * 8.0f + bc(cc_patch[2][2]) * 4.0f + (bc(cc_patch[1][1]) + bc(cc_patch[1][3])) * 2.0f + bc(cc_patch[2][1]) + bc(cc_patch[2][3])) * 1.0f / 18.0f;
+      const mic_f b23 = (bc(cc_patch[2][2]) * 8.0f + bc(cc_patch[1][2]) * 4.0f + (bc(cc_patch[2][1]) + bc(cc_patch[2][3])) * 2.0f + bc(cc_patch[1][1]) + bc(cc_patch[1][3])) * 1.0f / 18.0f;
 
       store4f((float*)&cp[1][3],b13);
       store4f((float*)&cp[2][3],b23);
 
-      const mic_f b32 = (bc(patch.cp[2][2]) * 8.0f + bc(patch.cp[2][1]) * 4.0f + (bc(patch.cp[1][2]) + bc(patch.cp[3][2])) * 2.0f + bc(patch.cp[1][1]) + bc(patch.cp[3][1])) * 1.0f / 18.0f;
-      const mic_f b31 = (bc(patch.cp[2][1]) * 8.0f + bc(patch.cp[2][2]) * 4.0f + (bc(patch.cp[1][1]) + bc(patch.cp[3][1])) * 2.0f + bc(patch.cp[1][2]) + bc(patch.cp[3][2])) * 1.0f / 18.0f;
+      const mic_f b32 = (bc(cc_patch[2][2]) * 8.0f + bc(cc_patch[2][1]) * 4.0f + (bc(cc_patch[1][2]) + bc(cc_patch[3][2])) * 2.0f + bc(cc_patch[1][1]) + bc(cc_patch[3][1])) * 1.0f / 18.0f;
+      const mic_f b31 = (bc(cc_patch[2][1]) * 8.0f + bc(cc_patch[2][2]) * 4.0f + (bc(cc_patch[1][1]) + bc(cc_patch[3][1])) * 2.0f + bc(cc_patch[1][2]) + bc(cc_patch[3][2])) * 1.0f / 18.0f;
 
       store4f((float*)&cp[3][2],b32);
       store4f((float*)&cp[3][1],b31);
 
-      const mic_f b20 = (bc(patch.cp[2][1]) * 8.0f + bc(patch.cp[1][1]) * 4.0f + (bc(patch.cp[2][0]) + bc(patch.cp[2][2])) * 2.0f + bc(patch.cp[1][0]) + bc(patch.cp[1][2])) * 1.0f / 18.0f;
-      const mic_f b10 = (bc(patch.cp[1][1]) * 8.0f + bc(patch.cp[2][1]) * 4.0f + (bc(patch.cp[1][0]) + bc(patch.cp[1][2])) * 2.0f + bc(patch.cp[2][0]) + bc(patch.cp[2][2])) * 1.0f / 18.0f;
+      const mic_f b20 = (bc(cc_patch[2][1]) * 8.0f + bc(cc_patch[1][1]) * 4.0f + (bc(cc_patch[2][0]) + bc(cc_patch[2][2])) * 2.0f + bc(cc_patch[1][0]) + bc(cc_patch[1][2])) * 1.0f / 18.0f;
+      const mic_f b10 = (bc(cc_patch[1][1]) * 8.0f + bc(cc_patch[2][1]) * 4.0f + (bc(cc_patch[1][0]) + bc(cc_patch[1][2])) * 2.0f + bc(cc_patch[2][0]) + bc(cc_patch[2][2])) * 1.0f / 18.0f;
 
       store4f((float*)&cp[2][0],b20);
       store4f((float*)&cp[1][0],b10);
 
       // --- corner ----
 
-      const mic_f b00 = (bc(patch.cp[1][1]) * 16.0f + (bc(patch.cp[0][1]) + bc(patch.cp[1][2]) + bc(patch.cp[2][1]) + bc(patch.cp[1][0])) * 4.0f + 
-			 (bc(patch.cp[0][0]) + bc(patch.cp[0][2]) + bc(patch.cp[2][2]) + bc(patch.cp[2][0]))) * 1.0f / 36.0f;
-      const mic_f b03 = (bc(patch.cp[1][2]) * 16.0f + (bc(patch.cp[0][2]) + bc(patch.cp[1][3]) + bc(patch.cp[2][2]) + bc(patch.cp[1][1])) * 4.0f + 
-			 (bc(patch.cp[0][1]) + bc(patch.cp[0][3]) + bc(patch.cp[2][3]) + bc(patch.cp[2][1]))) * 1.0f / 36.0f;
-      const mic_f b33 = (bc(patch.cp[2][2]) * 16.0f + (bc(patch.cp[1][2]) + bc(patch.cp[2][3]) + bc(patch.cp[3][2]) + bc(patch.cp[2][1])) * 4.0f + 
-			 (bc(patch.cp[1][1]) + bc(patch.cp[1][3]) + bc(patch.cp[3][3]) + bc(patch.cp[3][1]))) * 1.0f / 36.0f;
-      const mic_f b30 = (bc(patch.cp[2][1]) * 16.0f + (bc(patch.cp[1][1]) + bc(patch.cp[2][2]) + bc(patch.cp[3][1]) + bc(patch.cp[2][0])) * 4.0f + 
-			 (bc(patch.cp[1][0]) + bc(patch.cp[1][2]) + bc(patch.cp[3][2]) + bc(patch.cp[3][0]))) * 1.0f / 36.0f;
+      const mic_f b00 = (bc(cc_patch[1][1]) * 16.0f + (bc(cc_patch[0][1]) + bc(cc_patch[1][2]) + bc(cc_patch[2][1]) + bc(cc_patch[1][0])) * 4.0f + 
+			 (bc(cc_patch[0][0]) + bc(cc_patch[0][2]) + bc(cc_patch[2][2]) + bc(cc_patch[2][0]))) * 1.0f / 36.0f;
+      const mic_f b03 = (bc(cc_patch[1][2]) * 16.0f + (bc(cc_patch[0][2]) + bc(cc_patch[1][3]) + bc(cc_patch[2][2]) + bc(cc_patch[1][1])) * 4.0f + 
+			 (bc(cc_patch[0][1]) + bc(cc_patch[0][3]) + bc(cc_patch[2][3]) + bc(cc_patch[2][1]))) * 1.0f / 36.0f;
+      const mic_f b33 = (bc(cc_patch[2][2]) * 16.0f + (bc(cc_patch[1][2]) + bc(cc_patch[2][3]) + bc(cc_patch[3][2]) + bc(cc_patch[2][1])) * 4.0f + 
+			 (bc(cc_patch[1][1]) + bc(cc_patch[1][3]) + bc(cc_patch[3][3]) + bc(cc_patch[3][1]))) * 1.0f / 36.0f;
+      const mic_f b30 = (bc(cc_patch[2][1]) * 16.0f + (bc(cc_patch[1][1]) + bc(cc_patch[2][2]) + bc(cc_patch[3][1]) + bc(cc_patch[2][0])) * 4.0f + 
+			 (bc(cc_patch[1][0]) + bc(cc_patch[1][2]) + bc(cc_patch[3][2]) + bc(cc_patch[3][0]))) * 1.0f / 36.0f;
 
       store4f((float*)&cp[0][0],b00);
       store4f((float*)&cp[0][3],b03);
