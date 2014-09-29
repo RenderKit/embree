@@ -953,7 +953,7 @@ namespace embree
 
       const size_t numTriangles = min(mesh->numTriangles-offset,endID-currentID);
        
-      if (offset < numTriangles)
+      if (offset < mesh->numTriangles)
 	{
 
 	  const char* __restrict__ cptr_tri = (char*)&mesh->triangle(offset);

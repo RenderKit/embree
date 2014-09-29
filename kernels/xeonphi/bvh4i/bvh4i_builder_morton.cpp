@@ -413,7 +413,7 @@ namespace embree
        
       const unsigned int groupCode = (group << encodeShift);
 
-      if (offset < numTriangles)
+      if (offset < mesh->numTriangles)
 	{
 	  const char* __restrict__ cptr_tri = (char*)&mesh->triangle(offset);
 	  const unsigned int stride = mesh->triangles.getBufferStride();
