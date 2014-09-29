@@ -49,7 +49,6 @@ namespace embree
     }
 
     ~ISPCMesh () {
-      PING;
       if (positions)  os_free(positions ,sizePositions);
       if (positions2) os_free(positions2,sizePositions);
       if (normals)    os_free(normals   ,sizeNormals);

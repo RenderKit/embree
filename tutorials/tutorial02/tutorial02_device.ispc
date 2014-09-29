@@ -19,7 +19,7 @@
 const uniform int numPhi = 5;
 const uniform int numTheta = 2*numPhi;
 
-#define PARALLEL_COMMIT
+//#define PARALLEL_COMMIT
 
 /* render function to use */
 renderPixelFunc renderPixel;
