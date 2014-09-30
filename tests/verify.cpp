@@ -48,6 +48,10 @@ namespace embree
   std::vector<thread_t> g_threads;
   size_t numFailedTests = 0;
 
+  atomic_t errorCounter = 0;
+
+#define CountErrors() \
+  if (rtcGetError() != RTC_NO_ERROR) atomic_add(&errorCounter,1);
 #define AssertNoError() \
   if (rtcGetError() != RTC_NO_ERROR) return false;
 #define AssertAnyError() \
@@ -2279,17 +2283,71 @@ namespace embree
 #endif
   }
 
-  bool rtcore_regression_static()
+  struct RegressionTask
   {
-    for (size_t i=0; i<regressionN; i++) 
+    RegressionTask (size_t sceneIndex, size_t sceneCount, size_t threadCount)
+      : sceneIndex(sceneIndex), sceneCount(sceneCount), scene(NULL), numActiveThreads(0) { barrier.init(threadCount); }
+
+    size_t sceneIndex;
+    size_t sceneCount;
+    RTCScene scene;
+    BarrierSys barrier;
+    volatile size_t numActiveThreads;
+  };
+
+  struct ThreadRegressionTask
+  {
+    ThreadRegressionTask (size_t threadIndex, size_t threadCount, RegressionTask* task)
+      : threadIndex(threadIndex), threadCount(threadCount), task(task) {}
+
+    size_t threadIndex;
+    size_t threadCount;
+    RegressionTask* task;
+  };
+
+  void rtcore_regression_static_thread(void* ptr)
+  {
+    ThreadRegressionTask* thread = (ThreadRegressionTask*) ptr;
+    RegressionTask* task = thread->task;
+    if (thread->threadIndex > 0) 
     {
-      srand(i*23565);
+      for (size_t i=0; i<task->sceneCount; i++) 
+      {
+	task->barrier.wait();
+	if (thread->threadIndex < task->numActiveThreads) 
+	{
+	  rtcCommitThread(task->scene,thread->threadIndex,task->numActiveThreads);
+	  CountErrors();
+	  
+	  for (size_t i=0; i<100; i++)
+	    shootRays(task->scene);
+	}
+	task->barrier.wait();
+      }
+      delete thread; thread = NULL;
+      return;
+    }
+    task->scene = rtcNewScene(RTC_SCENE_DYNAMIC,aflags);
+    CountErrors();
+    int geom[1024];
+    int types[1024];
+    Sphere spheres[1024];
+    size_t numVertices[1024];
+    for (size_t i=0; i<1024; i++)  {
+      geom[i] = -1;
+      types[i] = 0;
+      numVertices[i] = 0;
+    }
+
+    for (size_t i=0; i<task->sceneCount; i++) 
+    {
+      srand(task->sceneIndex*23565+i*3242);
       if (i%20 == 0) std::cout << "." << std::flush;
 
       RTCSceneFlags sflag = getSceneFlag(i); 
       RTCScene scene = rtcNewScene(sflag,aflags);
       vector_t<Sphere*> spheres;
-      AssertNoError();
+      CountErrors();
 
       for (size_t j=0; j<20; j++) 
       {
@@ -2315,150 +2373,32 @@ namespace embree
 	  addUserGeometryEmpty(scene,sphere); break;
         }
 	}
-        AssertNoError();
+        CountErrors();
       }
 
-      rtcCommit(scene);
-      AssertNoError();
+      if (thread->threadCount) {
+	task->numActiveThreads = max(size_t(1),rand() % thread->threadCount);
+	task->barrier.wait();
+	rtcCommitThread(task->scene,thread->threadIndex,task->numActiveThreads);
+      } else {
+	rtcCommit(task->scene);
+      }
+      CountErrors();
 
       for (size_t i=0; i<100; i++)
-        shootRays(scene);
+        shootRays(task->scene);
+
+      if (thread->threadCount) 
+	task->barrier.wait();
 
       rtcDeleteScene (scene);
-      AssertNoError();
+      CountErrors();
 
       for (size_t i=0; i<spheres.size(); i++)
 	delete spheres[i];
     }
-    return true;
+    return;
   }
-
-  bool rtcore_regression_dynamic()
-  {
-    RTCScene scene = rtcNewScene(RTC_SCENE_DYNAMIC,aflags);
-    AssertNoError();
-    int geom[1024];
-    int types[1024];
-    Sphere spheres[1024];
-    size_t numVertices[1024];
-    for (size_t i=0; i<1024; i++)  {
-      geom[i] = -1;
-      types[i] = 0;
-      numVertices[i] = 0;
-    }
-
-    for (size_t i=0; i<regressionN; i++) 
-    {
-      srand(i*23565);
-      if (i%20 == 0) std::cout << "." << std::flush;
-
-      for (size_t j=0; j<20; j++) 
-      {
-        int index = rand()%1024;
-        Vec3fa pos = 100.0f*Vec3fa(drand48(),drand48(),drand48());
-#if !defined(__MIC__)
-	switch (rand()%16) {
-	case 0: pos = Vec3fa(nan); break;
-	case 1: pos = Vec3fa(inf); break;
-	case 2: pos = Vec3fa(1E30f); break;
-	default: break;
-	};
-#endif
-        if (geom[index] == -1) 
-        {
-          int type = rand()%3;
-          size_t numPhi = rand()%100;
-          size_t numTriangles = 2*2*numPhi*(numPhi-1);
-          numTriangles = rand()%(numTriangles+1);
-          types[index] = type;
-          numVertices[index] = 2*numPhi*(numPhi+1);
-          switch (type) {
-          case 0: geom[index] = addSphere(scene,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles,0.0f); break;
-          case 1: geom[index] = addSphere(scene,RTC_GEOMETRY_DEFORMABLE,pos,2.0f,numPhi,numTriangles,0.0f); break;
-          case 2: geom[index] = addSphere(scene,RTC_GEOMETRY_DYNAMIC,pos,2.0f,numPhi,numTriangles,0.0f); break;
-
-          case 3: geom[index] = addSphere(scene,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles,1.0f); break;
-          case 4: geom[index] = addSphere(scene,RTC_GEOMETRY_DEFORMABLE,pos,2.0f,numPhi,numTriangles,1.0f); break;
-          case 5: geom[index] = addSphere(scene,RTC_GEOMETRY_DYNAMIC,pos,2.0f,numPhi,numTriangles,1.0f); break;
-            
-          case 6: spheres[index] = Sphere(pos,2.0f); geom[index] = addUserGeometryEmpty(scene,&spheres[index]); break;
-          }; 
-          AssertNoError();
-        }
-        else 
-        {
-          switch (types[index]) {
-          case 0:
-          case 3:
-          case 6: {
-            rtcDeleteGeometry(scene,geom[index]);     
-            AssertNoError();
-            geom[index] = -1; 
-            break;
-          }
-          case 1: 
-          case 2:
-          case 4: 
-          case 5: {
-            int op = rand()%2;
-            switch (op) {
-            case 0: {
-              rtcDeleteGeometry(scene,geom[index]);     
-              AssertNoError();
-              geom[index] = -1; 
-              break;
-            }
-            case 1: {
-              Vec3fa* vertices = (Vec3fa*) rtcMapBuffer(scene,geom[index],RTC_VERTEX_BUFFER);
-              for (size_t i=0; i<numVertices[index]; i++) vertices[i] += Vec3fa(0.1f);
-              rtcUnmapBuffer(scene,geom[index],RTC_VERTEX_BUFFER);
-
-              if (types[index] == 4 || types[index] == 5) {
-                Vec3fa* vertices = (Vec3fa*) rtcMapBuffer(scene,geom[index],RTC_VERTEX_BUFFER1);
-                for (size_t i=0; i<numVertices[index]; i++) vertices[i] += Vec3fa(0.1f);
-                rtcUnmapBuffer(scene,geom[index],RTC_VERTEX_BUFFER1);
-              }
-              break;
-            }
-            }
-            break;
-          }
-          }
-        }
-      }
-
-      rtcCommit(scene);
-      AssertNoError();
-
-      for (size_t i=0; i<100; i++)
-        shootRays(scene);
-    }
-    rtcDeleteScene (scene);
-    AssertNoError();
-    return true;
-  }
-
-  struct RegressionTask
-  {
-    RegressionTask (size_t sceneIndex, size_t sceneCount, size_t threadCount)
-      : sceneIndex(sceneIndex), sceneCount(sceneCount), scene(NULL), numActiveThreads(0) { barrier.init(threadCount); }
-
-    size_t sceneIndex;
-    size_t sceneCount;
-    RTCScene scene;
-    BarrierSys barrier;
-    volatile size_t numActiveThreads;
-  };
-
-  struct ThreadRegressionTask
-  {
-    ThreadRegressionTask (size_t threadIndex, size_t threadCount, RegressionTask* task)
-      : threadIndex(threadIndex), threadCount(threadCount), task(task) {}
-
-    size_t threadIndex;
-    size_t threadCount;
-    RegressionTask* task;
-  };
 
   void rtcore_regression_dynamic_thread(void* ptr)
   {
@@ -2472,6 +2412,7 @@ namespace embree
 	if (thread->threadIndex < task->numActiveThreads) 
 	{
 	  rtcCommitThread(task->scene,thread->threadIndex,task->numActiveThreads);
+	  CountErrors();
 	  
 	  for (size_t i=0; i<100; i++)
 	    shootRays(task->scene);
@@ -2482,7 +2423,7 @@ namespace embree
       return;
     }
     task->scene = rtcNewScene(RTC_SCENE_DYNAMIC,aflags);
-    //AssertNoError();
+    CountErrors();
     int geom[1024];
     int types[1024];
     Sphere spheres[1024];
@@ -2529,7 +2470,7 @@ namespace embree
             
           case 6: spheres[index] = Sphere(pos,2.0f); geom[index] = addUserGeometryEmpty(task->scene,&spheres[index]); break;
           }; 
-          //AssertNoError();
+	  CountErrors();
         }
         else 
         {
@@ -2538,7 +2479,7 @@ namespace embree
           case 3:
           case 6: {
             rtcDeleteGeometry(task->scene,geom[index]);     
-            //AssertNoError();
+	    CountErrors();
             geom[index] = -1; 
             break;
           }
@@ -2550,7 +2491,7 @@ namespace embree
             switch (op) {
             case 0: {
               rtcDeleteGeometry(task->scene,geom[index]);     
-              //AssertNoError();
+	      CountErrors();
               geom[index] = -1; 
               break;
             }
@@ -2573,50 +2514,63 @@ namespace embree
         }
       }
 
-      task->numActiveThreads = max(size_t(1),rand() % thread->threadCount);
-      task->barrier.wait();
-      rtcCommitThread(task->scene,thread->threadIndex,task->numActiveThreads);
-      //AssertNoError();
+      if (thread->threadCount) {
+	task->numActiveThreads = max(size_t(1),rand() % thread->threadCount);
+	task->barrier.wait();
+	rtcCommitThread(task->scene,thread->threadIndex,task->numActiveThreads);
+      } else {
+	rtcCommit(task->scene);
+      }
+      CountErrors();
 
       for (size_t i=0; i<100; i++)
         shootRays(task->scene);
 
-      task->barrier.wait();
+      if (thread->threadCount) 
+	task->barrier.wait();
     }
 
     rtcDeleteScene (task->scene);
-    //AssertNoError();
+    CountErrors();
 
     delete thread; thread = NULL;
     delete task; task = NULL;
     return;
   }
 
-  bool rtcore_regression_dynamic_thread_main ()
+  bool rtcore_regression (thread_func func, bool userThreads)
   {
+    errorCounter = 0;
     size_t sceneIndex = 0;
     while (sceneIndex < regressionN/5) 
     {
-      size_t numThreads = getNumberOfLogicalThreads();
+      if (userThreads)
+      {
+	size_t numThreads = getNumberOfLogicalThreads();
 #if defined (__MIC__)
-      numThreads -= 4;
+	numThreads -= 4;
 #endif
       
-      while (numThreads) 
-      {
-	size_t N = max(size_t(1),rand()%numThreads); numThreads -= N;
-	RegressionTask* task = new RegressionTask(sceneIndex++,5,N);
+	while (numThreads) 
+	{
+	  size_t N = max(size_t(1),rand()%numThreads); numThreads -= N;
+	  RegressionTask* task = new RegressionTask(sceneIndex++,5,N);
+	  
+	  for (size_t i=0; i<N; i++) 
+	    g_threads.push_back(createThread(func,new ThreadRegressionTask(i,N,task),1000000,numThreads+i));
+	}
 	
-	for (size_t i=0; i<N; i++) 
-	  g_threads.push_back(createThread(rtcore_regression_dynamic_thread,new ThreadRegressionTask(i,N,task),1000000,numThreads+i));
+	for (size_t i=0; i<g_threads.size(); i++)
+	  join(g_threads[i]);
+	
+	g_threads.clear();
       }
-      
-      for (size_t i=0; i<g_threads.size(); i++)
-	join(g_threads[i]);
-      
-      g_threads.clear();
+      else
+      {
+	func(new ThreadRegressionTask(0,0,new RegressionTask(sceneIndex++,5,0)));
+      }	
     }
-    return true;
+    return errorCounter == 0;
   }
 
   bool rtcore_regression_garbage()
@@ -2662,7 +2616,7 @@ namespace embree
 
     /* perform tests */
     rtcInit(g_rtcore.c_str());
-    
+
     POSITIVE("mutex_sys",                 test_mutex_sys());
 #if !defined(__MIC__)  // FIXME: hangs on MIC 
     POSITIVE("barrier_sys",               test_barrier_sys());
@@ -2761,11 +2715,13 @@ namespace embree
 #endif
 #endif
 
-    POSITIVE("regression_static",         rtcore_regression_static());
-    POSITIVE("regression_dynamic",        rtcore_regression_dynamic());
+    POSITIVE("regression_static",         rtcore_regression(rtcore_regression_static_thread,false));
+    POSITIVE("regression_dynamic",        rtcore_regression(rtcore_regression_dynamic_thread,false));
+
+    POSITIVE("regression_static_user_threads", rtcore_regression(rtcore_regression_static_thread,true));
+    POSITIVE("regression_dynamic_user_threads", rtcore_regression(rtcore_regression_dynamic_thread,true));
 
 #if !defined(__MIC__)
-    POSITIVE("regression_dynamic_thread",rtcore_regression_dynamic_thread_main());
     POSITIVE("regression_garbage_geom",   rtcore_regression_garbage());
 #endif
 
