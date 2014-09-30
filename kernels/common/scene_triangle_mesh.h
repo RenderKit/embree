@@ -60,6 +60,7 @@ namespace embree
 
     /*! returns i'th triangle*/
     __forceinline const Triangle& triangle(size_t i) const {
+      if ( i >= numTriangles ) { DBG_PRINT(numTriangles); DBG_PRINT(i); }
       assert(i < numTriangles);
       return triangles[i];
     }

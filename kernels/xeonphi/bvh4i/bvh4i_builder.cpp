@@ -381,60 +381,62 @@ namespace embree
 	if (unlikely(!mesh->isEnabled())) continue;
 	if (unlikely(mesh->numTimeSteps != 1)) continue;
 
-	//const Vec3fa *__restrict__ const vertex = &mesh->vertex(0);
-	const char *__restrict cptr = (char*)&mesh->triangle(offset);
-	const size_t stride = mesh->getTriangleBufferStride();
+	if (offset < mesh->numTriangles)
+	  {
+	    const char *__restrict cptr = (char*)&mesh->triangle(offset);
+	    const size_t stride = mesh->getTriangleBufferStride();
 	
-	for (unsigned int i=offset; i<mesh->numTriangles && currentID < endID; i++, currentID++,cptr+=stride)	 
-	  { 			    
-	    const TriangleMesh::Triangle& tri = *(TriangleMesh::Triangle*)cptr;
-	    prefetch<PFHINT_L2>(cptr + L2_PREFETCH_ITEMS);
-	    prefetch<PFHINT_L1>(cptr + L1_PREFETCH_ITEMS);
+	    for (unsigned int i=offset; i<mesh->numTriangles && (currentID < endID); i++, currentID++,cptr+=stride)	 
+	      { 			    
+		const TriangleMesh::Triangle& tri = *(TriangleMesh::Triangle*)cptr;
+		prefetch<PFHINT_L2>(cptr + L2_PREFETCH_ITEMS);
+		prefetch<PFHINT_L1>(cptr + L1_PREFETCH_ITEMS);
 
-	    assert( tri.v[0] < mesh->numVertices );
-	    assert( tri.v[1] < mesh->numVertices );
-	    assert( tri.v[2] < mesh->numVertices );
+		assert( tri.v[0] < mesh->numVertices );
+		assert( tri.v[1] < mesh->numVertices );
+		assert( tri.v[2] < mesh->numVertices );
 
 #if DEBUG
-	    for (size_t k=0;k<3;k++)
-	      if (!(isfinite( mesh->vertex( tri.v[k] ).x) && isfinite( mesh->vertex( tri.v[k] ).y) && isfinite( mesh->vertex( tri.v[k] ).z)))
-		FATAL("!isfinite in vertex for tri.v[k]");
+		for (size_t k=0;k<3;k++)
+		  if (!(isfinite( mesh->vertex( tri.v[k] ).x) && isfinite( mesh->vertex( tri.v[k] ).y) && isfinite( mesh->vertex( tri.v[k] ).z)))
+		    FATAL("!isfinite in vertex for tri.v[k]");
 
 #endif
 
-	    const mic3f v = mesh->getTriangleVertices(tri);
+		const mic3f v = mesh->getTriangleVertices(tri);
 
-	    const mic_f bmin  = min(min(v[0],v[1]),v[2]);
-	    const mic_f bmax  = max(max(v[0],v[1]),v[2]);
+		const mic_f bmin  = min(min(v[0],v[1]),v[2]);
+		const mic_f bmax  = max(max(v[0],v[1]),v[2]);
 
-	    bounds_scene_min = min(bounds_scene_min,bmin);
-	    bounds_scene_max = max(bounds_scene_max,bmax);
-	    const mic_f centroid2 = bmin+bmax;
-	    bounds_centroid_min = min(bounds_centroid_min,centroid2);
-	    bounds_centroid_max = max(bounds_centroid_max,centroid2);
+		bounds_scene_min = min(bounds_scene_min,bmin);
+		bounds_scene_max = max(bounds_scene_max,bmax);
+		const mic_f centroid2 = bmin+bmax;
+		bounds_centroid_min = min(bounds_centroid_min,centroid2);
+		bounds_centroid_max = max(bounds_centroid_max,centroid2);
 
-	    store4f(&local_prims[numLocalPrims].lower,bmin);
-	    store4f(&local_prims[numLocalPrims].upper,bmax);	
-	    local_prims[numLocalPrims].lower.a = g;
-	    local_prims[numLocalPrims].upper.a = i;
+		store4f(&local_prims[numLocalPrims].lower,bmin);
+		store4f(&local_prims[numLocalPrims].upper,bmax);	
+		local_prims[numLocalPrims].lower.a = g;
+		local_prims[numLocalPrims].upper.a = i;
 
-	    numLocalPrims++;
-	    if (unlikely(((size_t)dest % 64) != 0) && numLocalPrims == 1)
-	      {
-		*dest = local_prims[0];
-		dest++;
-		numLocalPrims--;
-	      }
-	    else
-	      {
-		const mic_f twoAABBs = load16f(local_prims);
-		if (numLocalPrims == 2)
+		numLocalPrims++;
+		if (unlikely(((size_t)dest % 64) != 0) && numLocalPrims == 1)
 		  {
-		    numLocalPrims = 0;
-		    store16f_ngo(dest,twoAABBs);
-		    dest+=2;
+		    *dest = local_prims[0];
+		    dest++;
+		    numLocalPrims--;
 		  }
-	      }	
+		else
+		  {
+		    const mic_f twoAABBs = load16f(local_prims);
+		    if (numLocalPrims == 2)
+		      {
+			numLocalPrims = 0;
+			store16f_ngo(dest,twoAABBs);
+			dest+=2;
+		      }
+		  }	
+	      }
 	  }
 	if (currentID == endID) break;
 	offset = 0;
@@ -1686,6 +1688,7 @@ namespace embree
     TIMER(msec = getSeconds()-msec);    
     TIMER(std::cout << "task_computePrimRefs " << 1000. * msec << " ms" << std::endl << std::flush);
     TIMER(msec = getSeconds());
+
 
     /* initialize atomic node counter */
     atomicID.reset(0);

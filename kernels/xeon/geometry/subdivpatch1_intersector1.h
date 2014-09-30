@@ -74,7 +74,7 @@ namespace embree
 #endif
 
       /* ray masking test */
-#if defined(__USE_RAY_MASK__)
+#if 0 && defined(__USE_RAY_MASK__) // FIXME: enable
       if (unlikely((tri.mask() & ray.mask) == 0)) return;
 #endif
 
@@ -153,7 +153,7 @@ namespace embree
 #endif
 
       /* ray masking test */
-#if defined(__USE_RAY_MASK__)
+#if 0 && defined(__USE_RAY_MASK__) // FIXME: enable
       if (unlikely((tri.mask() & ray.mask) == 0)) return false;
 #endif
 

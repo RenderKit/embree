@@ -889,24 +889,26 @@ namespace embree
       if (unlikely(mesh->numTimeSteps != 1)) continue;
 
 
-      const char* __restrict__ cptr_tri = (char*)&mesh->triangle(offset);
-      const unsigned int stride = mesh->triangles.getBufferStride();
-      
-      for (size_t i=offset; i<mesh->numTriangles && currentID < endID; i++, currentID++,cptr_tri+=stride)	 
+      if (offset < mesh->numTriangles)
 	{
-	  const TriangleMesh::Triangle& tri = *(TriangleMesh::Triangle*)cptr_tri;
-	  prefetch<PFHINT_L1>(&tri + L1_PREFETCH_ITEMS);
-	  prefetch<PFHINT_L2>(&tri + L2_PREFETCH_ITEMS);
-
-	  const mic3f v = mesh->getTriangleVertices<PFHINT_L2>(tri);
-	  const mic_f bmin  = min(min(v[0],v[1]),v[2]);
-	  const mic_f bmax  = max(max(v[0],v[1]),v[2]);
-
-	  const mic_f centroid2 = bmin+bmax;
-	  bounds_centroid_min = min(bounds_centroid_min,centroid2);
-	  bounds_centroid_max = max(bounds_centroid_max,centroid2);
-	}
+	  const char* __restrict__ cptr_tri = (char*)&mesh->triangle(offset);
+	  const unsigned int stride = mesh->triangles.getBufferStride();
       
+	  for (size_t i=offset; i<mesh->numTriangles && currentID < endID; i++, currentID++,cptr_tri+=stride)	 
+	    {
+	      const TriangleMesh::Triangle& tri = *(TriangleMesh::Triangle*)cptr_tri;
+	      prefetch<PFHINT_L1>(&tri + L1_PREFETCH_ITEMS);
+	      prefetch<PFHINT_L2>(&tri + L2_PREFETCH_ITEMS);
+
+	      const mic3f v = mesh->getTriangleVertices<PFHINT_L2>(tri);
+	      const mic_f bmin  = min(min(v[0],v[1]),v[2]);
+	      const mic_f bmax  = max(max(v[0],v[1]),v[2]);
+
+	      const mic_f centroid2 = bmin+bmax;
+	      bounds_centroid_min = min(bounds_centroid_min,centroid2);
+	      bounds_centroid_max = max(bounds_centroid_max,centroid2);
+	    }
+	}
       if (unlikely(currentID == endID)) break;
       offset = 0;
     }
@@ -951,52 +953,56 @@ namespace embree
 
       const size_t numTriangles = min(mesh->numTriangles-offset,endID-currentID);
        
-      const char* __restrict__ cptr_tri = (char*)&mesh->triangle(offset);
-      const unsigned int stride = mesh->triangles.getBufferStride();
+      if (offset < mesh->numTriangles)
+	{
+
+	  const char* __restrict__ cptr_tri = (char*)&mesh->triangle(offset);
+	  const unsigned int stride = mesh->triangles.getBufferStride();
       
-      for (size_t i=0; i<numTriangles; i++,cptr_tri+=stride)	  
-      {
-	//prefetch<PFHINT_NTEX>(dest);
+	  for (size_t i=0; i<numTriangles; i++,cptr_tri+=stride)	  
+	    {
+	      //prefetch<PFHINT_NTEX>(dest);
 
-	const TriangleMesh::Triangle& tri = *(TriangleMesh::Triangle*)cptr_tri;
+	      const TriangleMesh::Triangle& tri = *(TriangleMesh::Triangle*)cptr_tri;
 
-	prefetch<PFHINT_NT>(&tri + 16);
+	      prefetch<PFHINT_NT>(&tri + 16);
 
-	const mic3f v = mesh->getTriangleVertices<PFHINT_L2>(tri);
-	const mic_f bmin  = min(min(v[0],v[1]),v[2]);
-	const mic_f bmax  = max(max(v[0],v[1]),v[2]);
+	      const mic3f v = mesh->getTriangleVertices<PFHINT_L2>(tri);
+	      const mic_f bmin  = min(min(v[0],v[1]),v[2]);
+	      const mic_f bmax  = max(max(v[0],v[1]),v[2]);
 
-	const mic_f cent  = bmin+bmax;
-	const mic_i binID = convert_uint32((cent-base)*scale);
+	      const mic_f cent  = bmin+bmax;
+	      const mic_i binID = convert_uint32((cent-base)*scale);
 
-	// dest->primID  = offset+i;
-	// dest->groupID = group;
+	      // dest->primID  = offset+i;
+	      // dest->groupID = group;
 
-	local[slot].primID  = offset+i;
-	local[slot].groupID = group;
+	      local[slot].primID  = offset+i;
+	      local[slot].groupID = group;
 
-	const unsigned int binIDx = binID[0];
-	const unsigned int binIDy = binID[1];
-	const unsigned int binIDz = binID[2];
+	      const unsigned int binIDx = binID[0];
+	      const unsigned int binIDy = binID[1];
+	      const unsigned int binIDz = binID[2];
 
-	const size_t code  = bitInterleave64_LUT(binIDx,binIDy,binIDz); 
-	local[slot].code   = code;
-	slot++;
+	      const size_t code  = bitInterleave64_LUT(binIDx,binIDy,binIDz); 
+	      local[slot].code   = code;
+	      slot++;
 
-	if (unlikely(slot == NUM_MORTON_IDS_PER_BLOCK))
-	  {
-	    mic_i m64 = load16i((int*)local);
-	    assert((size_t)dest % 64 == 0);
-	    store16i_ngo(dest,m64);	    
-	    slot = 0;
-	    dest += NUM_MORTON_IDS_PER_BLOCK;
-	  }
+	      if (unlikely(slot == NUM_MORTON_IDS_PER_BLOCK))
+		{
+		  mic_i m64 = load16i((int*)local);
+		  assert((size_t)dest % 64 == 0);
+		  store16i_ngo(dest,m64);	    
+		  slot = 0;
+		  dest += NUM_MORTON_IDS_PER_BLOCK;
+		}
 
-	// dest->code = code;
-	// dest++;
-	// prefetch<PFHINT_L2EX>(dest + 4*4);
-        currentID++;
-      }
+	      // dest->code = code;
+	      // dest++;
+	      // prefetch<PFHINT_L2EX>(dest + 4*4);
+	      currentID++;
+	    }
+	}
 
       offset = 0;
       if (currentID == endID) break;

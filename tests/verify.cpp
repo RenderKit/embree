@@ -2687,13 +2687,18 @@ namespace embree
     POSITIVE("buffer_stride",             rtcore_buffer_stride());
 #endif
 
+
     POSITIVE("dynamic_enable_disable",    rtcore_dynamic_enable_disable());
+
     POSITIVE("update_deformable",         rtcore_update(RTC_GEOMETRY_DEFORMABLE));
     POSITIVE("update_dynamic",            rtcore_update(RTC_GEOMETRY_DYNAMIC));
     POSITIVE("overlapping_triangles",     rtcore_overlapping_triangles(100000));
     POSITIVE("overlapping_hair",          rtcore_overlapping_hair(100000));
+
     rtcore_build();
+
     POSITIVE("new_delete_geometry",       rtcore_new_delete_geometry());
+
 
 #if defined(__USE_RAY_MASK__)
     rtcore_ray_masks_all();
@@ -2758,8 +2763,11 @@ namespace embree
 
     POSITIVE("regression_static",         rtcore_regression_static());
     POSITIVE("regression_dynamic",        rtcore_regression_dynamic());
+
+#if !defined(__MIC__)
     POSITIVE("regression_dynamic_thread",rtcore_regression_dynamic_thread_main());
     POSITIVE("regression_garbage_geom",   rtcore_regression_garbage());
+#endif
 
     rtcExit();
     return numFailedTests;
