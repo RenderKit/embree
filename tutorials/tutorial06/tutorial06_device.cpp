@@ -83,7 +83,7 @@ struct Medium
   float eta;             //!< Refraction index of medium.
 };
 
-inline Medium make_Medium(const Vec3fa transmission, const float eta)
+inline Medium make_Medium(const Vec3fa& transmission, const float eta)
 {
   Medium m;
   m.transmission = transmission;
@@ -254,13 +254,13 @@ inline Vec3fa Minneart__sample(const Minneart* This,
   return Minneart__eval(This, wo, dg, wi.v);
 }
 
-inline void Minneart__Constructor(Minneart* This, const Vec3fa R, const float b) 
+inline void Minneart__Constructor(Minneart* This, const Vec3fa& R, const float b) 
 {
   This->R = R;
   This->b = b;
 }
 
-inline Minneart make_Minneart(const Vec3fa R, const float f) { 
+inline Minneart make_Minneart(const Vec3fa& R, const float f) { 
   Minneart m; Minneart__Constructor(&m,R,f); return m; 
 }
 
@@ -301,13 +301,13 @@ inline Vec3fa Velvety__sample(const Velvety* This,
   return Velvety__eval(This, wo, dg, wi.v);
 }
 
-inline void Velvety__Constructor(Velvety* This, const Vec3fa R, const float f) 
+inline void Velvety__Constructor(Velvety* This, const Vec3fa& R, const float f) 
 {
   This->R = R;
   This->f = f;
 }
 
-inline Velvety make_Velvety(const Vec3fa R, const float f) { 
+inline Velvety make_Velvety(const Vec3fa& R, const float f) { 
   Velvety m; Velvety__Constructor(&m,R,f); return m; 
 }
 
@@ -367,12 +367,12 @@ inline Vec3fa Lambertian__sample(const Lambertian* This,
   return Lambertian__eval(This, wo, dg, wi.v);
 }
 
-inline void Lambertian__Constructor(Lambertian* This, const Vec3fa R)
+inline void Lambertian__Constructor(Lambertian* This, const Vec3fa& R)
 {
   This->R = R;
 }
 
-inline Lambertian make_Lambertian(const Vec3fa R) {
+inline Lambertian make_Lambertian(const Vec3fa& R) {
   Lambertian v; Lambertian__Constructor(&v,R); return v;
 }
 
@@ -437,10 +437,10 @@ inline Vec3fa DielectricLayerLambertian__sample(const DielectricLayerLambertian*
 }
 
 inline void DielectricLayerLambertian__Constructor(DielectricLayerLambertian* This,
-                                                   const Vec3fa T, 
+                                                   const Vec3fa& T, 
                                                    const float etai, 
                                                    const float etat, 
-                                                   const Lambertian ground)
+                                                   const Lambertian& ground)
 {
   This->T = T;
   This->etait = etai*rcp(etat);
@@ -448,10 +448,10 @@ inline void DielectricLayerLambertian__Constructor(DielectricLayerLambertian* Th
   This->ground = ground;
 }
 
-inline DielectricLayerLambertian make_DielectricLayerLambertian(const Vec3fa T, 
+inline DielectricLayerLambertian make_DielectricLayerLambertian(const Vec3fa& T, 
                                                                         const float etai, 
                                                                         const float etat, 
-                                                                        const Lambertian ground)
+                                                                        const Lambertian& ground)
 {
   DielectricLayerLambertian m; 
   DielectricLayerLambertian__Constructor(&m,T,etai,etat,ground);
@@ -1402,7 +1402,8 @@ extern "C" void device_render (int* pixels,
 
   /* create accumulator */
   if (g_accu_width != width || g_accu_height != height) {
-    g_accu = new Vec3fa[width*height];
+    //g_accu = new Vec3fa[width*height];
+	g_accu = (Vec3fa*)alignedMalloc(width*height*sizeof(Vec3fa));
     g_accu_width = width;
     g_accu_height = height;
     memset(g_accu,0,width*height*sizeof(Vec3fa));
