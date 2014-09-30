@@ -40,7 +40,7 @@ namespace embree
     struct NodeSingleSpaceMB;
     struct NodeDualSpaceMB;
     struct NodeConeMB;
-#define BVH4HAIR_MB_VERSION 1
+#define BVH4HAIR_MB_VERSION 0
 
 #if BVH4HAIR_MB_VERSION == 0
     typedef NodeSingleSpaceMB UnalignedNodeMB;
