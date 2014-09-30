@@ -30,14 +30,14 @@ namespace embree
     void init(size_t width, size_t height) {
       size_x = width; size_y = height;
       //delete[] array; array = new T[width*height];
-	  alignedFree(array); array = (Vec3fa*)alignedMalloc(width*height*sizeof(T));
+	  alignedFree(array); array = (T*)alignedMalloc(width*height*sizeof(T));
     }
     
     void init(size_t width, size_t height, const T& v) 
     {
       size_x = width; size_y = height;
       //delete[] array; array = new T[width*height];
-	  alignedFree(array); array = (Vec3fa*)alignedMalloc(width*height*sizeof(T));
+	  alignedFree(array); array = (T*)alignedMalloc(width*height*sizeof(T));
       for (size_t y=0; y<height; y++)
         for (size_t x=0; x<width; x++)
           array[y*size_x+x] = v;
