@@ -130,7 +130,7 @@ namespace embree
         build(nodes,0,0,0);
       }
       
-      __forceinline const BBox3fa build(Node* node, unsigned x, unsigned y, unsigned l)
+      const BBox3fa build(Node* node, unsigned x, unsigned y, unsigned l)
       {
         if (l == levels) {
           BBox3fa bounds = empty;

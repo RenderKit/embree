@@ -231,6 +231,7 @@ namespace embree
       const sse3f C = v0 - O;
       const sse3f e1 = v0-v1;
       const sse3f e2 = v2-v0;
+      const sse3f Ng = cross(e1,e2);
       const sse3f R = cross(D,C);
       const ssef den = dot(sse3f(Ng),D);
       const ssef absDen = abs(den);
@@ -289,8 +290,8 @@ namespace embree
           return;
         }
 
-        const Vec3fa Ng(Ng.x[i],Ng.y[i],Ng.z[i]);
-        if (runIntersectionFilter4(geometry,ray,k,u[i],v[i],t[i],Ng,geomID,tri.primID<list>(i))) return;
+        const Vec3fa _Ng(Ng.x[i],Ng.y[i],Ng.z[i]);
+        if (runIntersectionFilter4(geometry,ray,k,u[i],v[i],t[i],_Ng,geomID,tri.primID<list>(i))) return;
         valid[i] = 0;
         if (unlikely(none(valid))) return;
         i = select_min(valid,t);
@@ -313,6 +314,7 @@ namespace embree
       const sse3f C = v0 - O;
       const sse3f e1 = v0-v1;
       const sse3f e2 = v2-v0;
+      const sse3f Ng = cross(e1,e2);
       const sse3f R = cross(D,C);
       const ssef den = dot(sse3f(Ng),D);
       const ssef absDen = abs(den);
@@ -361,8 +363,8 @@ namespace embree
         const ssef u = U * rcpAbsDen;
         const ssef v = V * rcpAbsDen;
         const ssef t = T * rcpAbsDen;
-        const Vec3fa Ng(Ng.x[i],Ng.y[i],Ng.z[i]);
-        if (runOcclusionFilter4(geometry,ray,k,u[i],v[i],t[i],Ng,geomID,tri.primID<list>(i))) break;
+        const Vec3fa _Ng(Ng.x[i],Ng.y[i],Ng.z[i]);
+        if (runOcclusionFilter4(geometry,ray,k,u[i],v[i],t[i],_Ng,geomID,tri.primID<list>(i))) break;
         valid[i] = 0;
         if (unlikely(none(valid))) return false;
         i = select_min(valid,T);
