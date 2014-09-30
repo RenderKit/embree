@@ -29,7 +29,7 @@ namespace embree
   }
   
   void UserGeometryBase::disabling() { 
-    atomic_add(&parent->numUserGeometries1,-numItems); 
+    atomic_add(&parent->numUserGeometries1,-(ssize_t)numItems); 
   }
 
   UserGeometry::UserGeometry (Scene* parent, size_t items) 

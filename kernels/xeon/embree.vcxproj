@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -483,8 +483,10 @@
     <ClInclude Include="..\common\ray16.h" />
     <ClInclude Include="..\common\ray4.h" />
     <ClInclude Include="..\common\ray8.h" />
+    <ClInclude Include="..\common\raystream_log.h" />
     <ClInclude Include="..\common\scene.h" />
     <ClInclude Include="..\common\scene_bezier_curves.h" />
+    <ClInclude Include="..\common\scene_subdiv_mesh.h" />
     <ClInclude Include="..\common\scene_triangle_mesh.h" />
     <ClInclude Include="..\common\scene_user_geometry.h" />
     <ClInclude Include="..\common\stack_item.h" />
@@ -556,6 +558,7 @@
     <ClInclude Include="geometry\instance_intersector4.h" />
     <ClInclude Include="geometry\mailbox.h" />
     <ClInclude Include="geometry\primitive.h" />
+    <ClInclude Include="geometry\subdivpatchdispl1.h" />
     <ClInclude Include="geometry\triangle1.h" />
     <ClInclude Include="geometry\triangle1_intersector1_moeller.h" />
     <ClInclude Include="geometry\triangle1_intersector4_moeller.h" />
@@ -590,10 +593,12 @@
     <ClCompile Include="..\common\buffer.cpp" />
     <ClCompile Include="..\common\geometry.cpp" />
     <ClCompile Include="..\common\globals.cpp" />
+    <ClCompile Include="..\common\raystream_log.cpp" />
     <ClCompile Include="..\common\rtcore.cpp" />
     <ClCompile Include="..\common\rtcore_ispc.cpp" />
     <ClCompile Include="..\common\scene.cpp" />
     <ClCompile Include="..\common\scene_bezier_curves.cpp" />
+    <ClCompile Include="..\common\scene_subdiv_mesh.cpp" />
     <ClCompile Include="..\common\scene_triangle_mesh.cpp" />
     <ClCompile Include="..\common\scene_user_geometry.cpp" />
     <ClCompile Include="..\common\stat.cpp" />
@@ -624,6 +629,8 @@
     <ClCompile Include="geometry\bezier1i.cpp" />
     <ClCompile Include="geometry\instance_intersector1.cpp" />
     <ClCompile Include="geometry\instance_intersector4.cpp" />
+    <ClCompile Include="geometry\subdivpatch1_intersector1.cpp" />
+    <ClCompile Include="geometry\subdivpatchdispl1.cpp" />
     <ClCompile Include="geometry\triangle1.cpp" />
     <ClCompile Include="geometry\triangle1v.cpp" />
     <ClCompile Include="geometry\triangle4.cpp" />

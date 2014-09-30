@@ -148,3 +148,7 @@ rtcExit___avx
 rtcGetError___avx
 rtcSetErrorFunction___un_3C____Cunenum[RTCError]un_3C_Cunt_3E__3E_avx
 rtcDebug___avx
+rtcCommitThread___un_3C_s[un__RTCScene]_3E_unuunusse2
+rtcCommitThread___un_3C_s[un__RTCScene]_3E_unuunusse4
+rtcCommitThread___un_3C_s[un__RTCScene]_3E_unuunuavx
+rtcCommitThread___un_3C_s[un__RTCScene]_3E_unuunuavx2

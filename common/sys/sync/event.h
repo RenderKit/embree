@@ -55,7 +55,7 @@ namespace embree
     }
 
   protected:
-    __aligned(64) volatile bool event;
+    volatile bool event;
 #if !defined(__MIC__)
     MutexSys mutex;
     ConditionSys condition;

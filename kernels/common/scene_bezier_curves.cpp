@@ -38,8 +38,8 @@ namespace embree
   
   void BezierCurves::disabling() 
   { 
-    if (numTimeSteps == 1) atomic_add(&parent->numBezierCurves ,-numCurves); 
-    else                   atomic_add(&parent->numBezierCurves2,-numCurves); 
+    if (numTimeSteps == 1) atomic_add(&parent->numBezierCurves ,-(ssize_t)numCurves); 
+	else                   atomic_add(&parent->numBezierCurves2,-(ssize_t)numCurves);
   }
   
   void BezierCurves::setMask (unsigned mask) 

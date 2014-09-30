@@ -67,7 +67,7 @@ namespace embree
     }
     
     /*! fill from list */
-    __forceinline void fill(typename atomic_set<PrimRefBlockT<BezierPrim> >::block_iterator_unsafe& iter, Scene* scene, const bool list)
+    __forceinline void fill(atomic_set<PrimRefBlockT<BezierPrim> >::block_iterator_unsafe& iter, Scene* scene, const bool list)
     {
       const BezierPrim& curve = *iter; iter++;
       const unsigned geomID = curve.geomID<0>();
@@ -128,7 +128,7 @@ namespace embree
     }
 
     /*! fill from list */
-    __forceinline void fill(typename atomic_set<PrimRefBlockT<BezierPrim> >::block_iterator_unsafe& iter, Scene* scene, const bool list)
+    __forceinline void fill(atomic_set<PrimRefBlockT<BezierPrim> >::block_iterator_unsafe& iter, Scene* scene, const bool list)
     {
       const BezierPrim& curve = *iter; iter++;
       const unsigned geomID = curve.geomID<0>();
