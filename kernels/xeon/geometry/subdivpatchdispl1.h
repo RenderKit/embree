@@ -19,7 +19,7 @@
 #include "primitive.h"
 #include "common/scene_subdivision.h"
 
-#define SUBDIVISION_LEVEL_DISPL 4
+#define SUBDIVISION_LEVEL_DISPL 8
 
 namespace embree
 {
@@ -194,6 +194,14 @@ namespace embree
       
       for (size_t l=0; l<level; l++)
         subdivide();
+
+      /* displace points */
+      for (size_t y=0; y<M; y++) {
+        for (size_t x=0; x<M; x++) {
+          const Vec3fa p = v(x,y);
+          v(x,y) += 0.05f*Vec3fa(1.0f+sinf(40.0f*p.z),1.0f+sinf(40.0f*p.x),1.0f+sinf(40.0f*p.y));
+        }
+      }
 
       size_t S = 0;
       for (size_t i=0; i<level; i++) S += (1<<i)*(1<<i);
