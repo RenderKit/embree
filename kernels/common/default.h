@@ -249,10 +249,13 @@ typedef void (*ErrorFunc) ();
 #define SELECT_SYMBOL_DEFAULT2(features,intersector,intersector2) \
   intersector = isa::intersector2;
 
-#if defined(__TARGET_SSE41__)
+#if defined(__SSE__)
 #if !defined(__TARGET_SIMD4__)
 #define __TARGET_SIMD4__
 #endif
+#endif
+
+#if defined(__TARGET_SSE41__)
 #define SELECT_SYMBOL_SSE41(features,intersector) \
   if ((features & SSE41) == SSE41) intersector = sse41::intersector;
 #else
@@ -260,9 +263,6 @@ typedef void (*ErrorFunc) ();
 #endif
 
 #if defined(__TARGET_SSE42__)
-#if !defined(__TARGET_SIMD4__)
-#define __TARGET_SIMD4__
-#endif
 #define SELECT_SYMBOL_SSE42(features,intersector) \
   if ((features & SSE42) == SSE42) intersector = sse42::intersector;
 #else

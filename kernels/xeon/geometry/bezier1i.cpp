@@ -49,7 +49,7 @@ namespace embree
   {
     BBox3fa bounds = empty;
     Scene* scene = (Scene*) geom;
-    Bezier1i* prim = (Bezier1i*) prim;
+    Bezier1i* prim = (Bezier1i*) prim_i;
 
     if (num == -1)
     {

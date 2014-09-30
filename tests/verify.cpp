@@ -50,6 +50,14 @@ namespace embree
 
   atomic_t errorCounter = 0;
 
+#if defined(__WIN32__)
+#  define GREEN(x) x
+#  define RED(x) x
+#else
+#  define GREEN(x) "\033[32m" x "\033[0m"
+#  define RED(x) "\033[31m" x "\033[0m"
+#endif
+
 #define CountErrors() \
   if (rtcGetError() != RTC_NO_ERROR) atomic_add(&errorCounter,1);
 #define AssertNoError() \
@@ -61,14 +69,14 @@ namespace embree
 #define POSITIVE(name,test) {                                               \
     printf("%30s ...",name);                                            \
     bool ok = test;                                                     \
-    printf(" %s\n",ok ? "\033[32m[PASSED]\033[0m" : "\033[31m[FAILED]\033[0m");          \
+    printf(" %s\n",ok ? GREEN("[PASSED]") : RED("[FAILED]"));          \
     fflush(stdout);                                                     \
     numFailedTests += !ok;                                              \
   }
 #define NEGATIVE(name,test) {                                       \
     printf("%30s ... ",name);                                           \
     bool notok = test;                                                  \
-    printf(" %s\n",notok ? "\033[31m[FAILED]\033[0m" : "\033[32m[PASSED]\033[0m"); \
+    printf(" %s\n",notok ? RED("[FAILED]") : GREEN("[PASSED]")); \
     fflush(stdout);                                                     \
     numFailedTests += notok;                                              \
   }
@@ -1384,13 +1392,13 @@ namespace embree
     {
       RTCSceneFlags flag = getSceneFlag(i);
       bool ok0 = rtcore_ray_masks_intersect(flag,RTC_GEOMETRY_STATIC);
-      if (ok0) printf("\033[32m+\033[0m"); else printf("\033[31m-\033[0m");
+      if (ok0) printf(GREEN("+")); else printf(RED("-"));
       passed &= ok0;
       bool ok1 = rtcore_ray_masks_occluded(flag,RTC_GEOMETRY_STATIC);
-      if (ok1) printf("\033[32m+\033[0m"); else printf("\033[31m-\033[0m");
+      if (ok1) printf(GREEN("+")); else printf(RED("-"));
       passed &= ok1;
     }
-    printf(" %s\n",passed ? "\033[32m[PASSED]\033[0m" : "\033[31m[FAILED]\033[0m");
+    printf(" %s\n",passed ? GREEN("[PASSED]") : RED("[FAILED]"));
     fflush(stdout);
     numFailedTests += !passed;
   }
@@ -1416,9 +1424,9 @@ namespace embree
       RTCSceneFlags sflags; RTCGeometryFlags gflags;
       getSceneGeomFlag(i,sflags,gflags);
       bool ok = rtcore_build(sflags,gflags);
-      if (ok) printf("\033[32m+\033[0m"); else printf("\033[31m-\033[0m");
+      if (ok) printf(GREEN("+")); else printf(RED("-"));
     }
-    printf(" %s\n",true ? "\033[32m[PASSED]\033[0m" : "\033[31m[FAILED]\033[0m");
+    printf(" %s\n",true ? GREEN("[PASSED]") : RED("[FAILED]"));
     fflush(stdout);
     numFailedTests += !passed;
   }
@@ -1621,14 +1629,14 @@ namespace embree
     {
       RTCSceneFlags flag = getSceneFlag(i);
       bool ok0 = rtcore_filter_intersect(flag,RTC_GEOMETRY_STATIC);
-      if (ok0) printf("\033[32m+\033[0m"); else printf("\033[31m-\033[0m");
+      if (ok0) printf(GREEN("+")); else printf(RED("-"));
       passed &= ok0;
       bool ok1 = rtcore_filter_occluded(flag,RTC_GEOMETRY_STATIC);
-      if (ok1) printf("\033[32m+\033[0m"); else printf("\033[31m-\033[0m");
+      if (ok1) printf(GREEN("+")); else printf(RED("-"));
       passed &= ok1;
 
     }
-    printf(" %s\n",passed ? "\033[32m[PASSED]\033[0m" : "\033[31m[FAILED]\033[0m");
+    printf(" %s\n",passed ? GREEN("[PASSED]") : RED("[FAILED]"));
     fflush(stdout);
     numFailedTests += !passed;
   }
@@ -1712,10 +1720,10 @@ namespace embree
       ok &= rtcore_packet_write_test(flag,RTC_GEOMETRY_STATIC,1);
       ok &= rtcore_packet_write_test(flag,RTC_GEOMETRY_STATIC,2);
       ok &= rtcore_packet_write_test(flag,RTC_GEOMETRY_STATIC,3);
-      if (ok) printf("\033[32m+\033[0m"); else printf("\033[31m-\033[0m");
+      if (ok) printf(GREEN("+")); else printf(RED("-"));
       passed &= ok;
     }
-    printf(" %s\n",passed ? "\033[32m[PASSED]\033[0m" : "\033[31m[FAILED]\033[0m");
+    printf(" %s\n",passed ? GREEN("[PASSED]") : RED("[FAILED]"));
     fflush(stdout);
     numFailedTests += !passed;
   }
@@ -1739,7 +1747,7 @@ namespace embree
     double failRate = double(numFailures) / double(testN);
     bool failed = failRate > 0.00002;
 
-    printf("%30s ... %s (%f%%)\n", ("watertight_"+type+"1").c_str(), failed ? "\033[31m[FAILED]\033[0m" : "\033[32m[PASSED]\033[0m", 100.0f*failRate);
+    printf("%30s ... %s (%f%%)\n", ("watertight_"+type+"1").c_str(), failed ? RED("[FAILED]") : GREEN("[PASSED]"), 100.0f*failRate);
     fflush(stdout);
     numFailedTests += failed;
   }
@@ -1769,7 +1777,7 @@ namespace embree
     double failRate = double(numFailures) / double(testN);
     bool failed = failRate > 0.00002;
 
-    printf("%30s ... %s (%f%%)\n", ("watertight_"+type+"4").c_str(), failed ? "\033[31m[FAILED]\033[0m" : "\033[32m[PASSED]\033[0m", 100.0f*failRate);
+    printf("%30s ... %s (%f%%)\n", ("watertight_"+type+"4").c_str(), failed ? RED("[FAILED]") : GREEN("[PASSED]"), 100.0f*failRate);
     fflush(stdout);
     numFailedTests += failed;
   }
@@ -1799,7 +1807,7 @@ namespace embree
     double failRate = double(numFailures) / double(testN);
     bool failed = failRate > 0.00002;
 
-    printf("%30s ... %s (%f%%)\n", ("watertight_"+type+"8").c_str(), failed ? "\033[31m[FAILED]\033[0m" : "\033[32m[PASSED]\033[0m", 100.0f*failRate);
+    printf("%30s ... %s (%f%%)\n", ("watertight_"+type+"8").c_str(), failed ? RED("[FAILED]") : GREEN("[PASSED]"), 100.0f*failRate);
     fflush(stdout);
     numFailedTests += failed;
   }
@@ -1829,7 +1837,7 @@ namespace embree
     double failRate = double(numFailures) / double(testN);
     bool failed = failRate > 0.00002;
 
-    printf("%30s ... %s (%f%%)\n", ("watertight_"+type+"16").c_str(), failed ? "\033[31m[FAILED]\033[0m" : "\033[32m[PASSED]\033[0m", 100.0f*failRate);
+    printf("%30s ... %s (%f%%)\n", ("watertight_"+type+"16").c_str(), failed ? RED("[FAILED]") : GREEN("[PASSED]"), 100.0f*failRate);
     fflush(stdout);
     numFailedTests += failed;
   }
@@ -1851,7 +1859,7 @@ namespace embree
     double failRate = double(numFailures) / double(testN);
     bool failed = failRate > 0.00002;
 
-    printf("%30s ... %s (%f%%)\n","watertight_plane1", failed ? "\033[31m[FAILED]\033[0m" : "\033[32m[PASSED]\033[0m", 100.0f*failRate);
+    printf("%30s ... %s (%f%%)\n","watertight_plane1", failed ? RED("[FAILED]") : GREEN("[PASSED]"), 100.0f*failRate);
     fflush(stdout);
     numFailedTests += failed;
   }
@@ -1879,7 +1887,7 @@ namespace embree
     double failRate = double(numFailures) / double(testN);
     bool failed = failRate > 0.00002;
 
-    printf("%30s ... %s (%f%%)\n","watertight_plane4", failed ? "\033[31m[FAILED]\033[0m" : "\033[32m[PASSED]\033[0m", 100.0f*failRate);
+    printf("%30s ... %s (%f%%)\n","watertight_plane4", failed ? RED("[FAILED]") : GREEN("[PASSED]"), 100.0f*failRate);
     fflush(stdout);
     numFailedTests += failed;
   }
@@ -1907,7 +1915,7 @@ namespace embree
     double failRate = double(numFailures) / double(testN);
     bool failed = failRate > 0.00002;
 
-    printf("%30s ... %s (%f%%)\n","watertight_plane8",failed ? "\033[31m[FAILED]\033[0m" : "\033[32m[PASSED]\033[0m", 100.0f*failRate);
+    printf("%30s ... %s (%f%%)\n","watertight_plane8",failed ? RED("[FAILED]") : GREEN("[PASSED]"), 100.0f*failRate);
     fflush(stdout);
     numFailedTests += failed;
   }
@@ -1935,7 +1943,7 @@ namespace embree
     double failRate = double(numFailures) / double(testN);
     bool failed = failRate > 0.00002;
 
-    printf("%30s ... %s (%f%%)\n","watertight_plane16", failed ? "\033[31m[FAILED]\033[0m" : "\033[32m[PASSED]\033[0m", 100.0f*failRate);
+    printf("%30s ... %s (%f%%)\n","watertight_plane16", failed ? RED("[FAILED]") : GREEN("[PASSED]"), 100.0f*failRate);
     fflush(stdout);
     numFailedTests += failed;
   }
@@ -1995,7 +2003,7 @@ namespace embree
 
     bool ok = (d2 < 2.5*d1) && (d3 < 2.5*d1) && (d4 < 2.5*d1);
     float f = max(d2/d1,d3/d1,d4/d1);
-    printf("%30s ... %s (%3.2fx)\n",name,ok ? "\033[32m[PASSED]\033[0m" : "\033[31m[FAILED]\033[0m",f);
+    printf("%30s ... %s (%3.2fx)\n",name,ok ? GREEN("[PASSED]") : RED("[FAILED]"),f);
     fflush(stdout);
     numFailedTests += !ok;
   }
@@ -2066,7 +2074,7 @@ namespace embree
 
     bool ok = (d2 < 2.5*d1) && (d3 < 2.5*d1) && (d4 < 2.5*d1) && (d5 < 2.5*d1);
     float f = max(d2/d1,d3/d1,d4/d1,d5/d1);
-    printf("%30s ... %s (%3.2fx)\n",name,ok ? "\033[32m[PASSED]\033[0m" : "\033[31m[FAILED]\033[0m",f);
+    printf("%30s ... %s (%3.2fx)\n",name,ok ? GREEN("[PASSED]") : RED("[FAILED]"),f);
     fflush(stdout);
     numFailedTests += !ok;
   }
@@ -2184,10 +2192,10 @@ namespace embree
     {
       RTCSceneFlags flag = getSceneFlag(i);
       bool ok0 = rtcore_backface_culling(flag,RTC_GEOMETRY_STATIC);
-      if (ok0) printf("\033[32m+\033[0m"); else printf("\033[31m-\033[0m");
+      if (ok0) printf(GREEN("+")); else printf(RED("-"));
       passed &= ok0;
     }
-    printf(" %s\n",passed ? "\033[32m[PASSED]\033[0m" : "\033[31m[FAILED]\033[0m");
+    printf(" %s\n",passed ? GREEN("[PASSED]") : RED("[FAILED]"));
     fflush(stdout);
     numFailedTests += !passed;
   }
@@ -2718,10 +2726,10 @@ namespace embree
     POSITIVE("regression_static",         rtcore_regression(rtcore_regression_static_thread,false));
     POSITIVE("regression_dynamic",        rtcore_regression(rtcore_regression_dynamic_thread,false));
 
+#if !defined(__MIC__)
     POSITIVE("regression_static_user_threads", rtcore_regression(rtcore_regression_static_thread,true));
     POSITIVE("regression_dynamic_user_threads", rtcore_regression(rtcore_regression_dynamic_thread,true));
 
-#if !defined(__MIC__)
     POSITIVE("regression_garbage_geom",   rtcore_regression_garbage());
 #endif
 

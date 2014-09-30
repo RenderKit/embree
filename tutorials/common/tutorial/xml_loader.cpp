@@ -229,7 +229,7 @@ namespace embree
 
   private:
     template<typename T> T load(const Ref<XML>& xml) { return T(zero); }
-    template<typename T> T load(const Ref<XML>& xml, T opt) { return T(zero); }
+    template<typename T> T load(const Ref<XML>& xml, const T& opt) { return T(zero); }
     char* loadBinary(const Ref<XML>& xml, size_t eltSize, size_t& size);
 
     std::vector<Vec2f> loadVec2fArray(const Ref<XML>& xml);
@@ -258,7 +258,7 @@ namespace embree
     return xml->body[0].String();
   }
 
-  template<> bool XMLLoader::load<bool>(const Ref<XML>& xml, bool opt) {
+  template<> bool XMLLoader::load<bool>(const Ref<XML>& xml, const bool& opt) {
     if (xml == null) return opt;
     if (xml->body.size() != 1) THROW_RUNTIME_ERROR(xml->loc.str()+": wrong bool body");
     return xml->body[0].Int() != 0;
@@ -289,7 +289,7 @@ namespace embree
     return xml->body[0].Float();
   }
 
-  template<> float XMLLoader::load<float>(const Ref<XML>& xml, float opt) {
+  template<> float XMLLoader::load<float>(const Ref<XML>& xml, const float& opt) {
     if (xml == null) return opt;
     if (xml->body.size() != 1) THROW_RUNTIME_ERROR(xml->loc.str()+": wrong float body");
     return xml->body[0].Float();
@@ -305,7 +305,7 @@ namespace embree
     return Vec3f(xml->body[0].Float(),xml->body[1].Float(),xml->body[2].Float());
   }
 
-  template<> Vec3fa XMLLoader::load<Vec3fa>(const Ref<XML>& xml, Vec3fa opt) {
+  template<> Vec3fa XMLLoader::load<Vec3fa>(const Ref<XML>& xml, const Vec3fa& opt) {
     if (xml == null) return opt;
     if (xml->body.size() != 3) THROW_RUNTIME_ERROR(xml->loc.str()+": wrong float3 body");
     return Vec3fa(xml->body[0].Float(),xml->body[1].Float(),xml->body[2].Float());

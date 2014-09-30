@@ -48,8 +48,8 @@ namespace embree
   
   void SubdivMesh::disabling() 
   { 
-    if (numTimeSteps == 1) { atomic_add(&parent->numSubdivPatches ,-numFaces); }
-    else                   { atomic_add(&parent->numSubdivPatches2,-numFaces); }
+    if (numTimeSteps == 1) { atomic_add(&parent->numSubdivPatches ,-(ssize_t)numFaces); }
+	else                   { atomic_add(&parent->numSubdivPatches2, -(ssize_t)numFaces); }
   }
 
   void SubdivMesh::setMask (unsigned mask) 
