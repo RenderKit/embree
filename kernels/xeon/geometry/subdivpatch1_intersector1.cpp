@@ -14,8 +14,6 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#pragma once
-
 #include "subdivpatch1_intersector1.h"
 #include "bicubic_bezier_patch.h"
 

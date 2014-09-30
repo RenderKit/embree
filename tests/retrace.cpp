@@ -32,7 +32,7 @@
 
 #define DBG(x) 
 
-#define SSC_MARK(mark_value)     \ 
+#define SSC_MARK(mark_value)     \
         {__asm  mov ebx, mark_value} \
         {__asm  _emit 0x64}          \
         {__asm  _emit 0x67}          \
