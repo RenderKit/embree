@@ -628,7 +628,7 @@ setting the number of time steps to 2 at geometry construction
 time. Specifying a number of time steps of 0 or larger than 2 is invalid. For
 a triangle mesh or hair geometry with linear motion blur, the user has to set the
 <code>RTC_VERTEX_BUFFER0</code> and <code>RTC_VERTEX_BUFFER1</code>
-vertex arrays, one for each time step. If a scene contains geometris
+vertex arrays, one for each time step. If a scene contains geometries
 with linear motion blur, the user has to set the
 <code>time</code> member of the ray to a value in the range [0,1]. The
 ray will intersect the scene with the vertices of the two time steps
@@ -660,8 +660,7 @@ occlusion filter functions. The filter functions can be used to
 implement various useful features, such as rejecting a hit to
 implement backface culling, accumulating opacity for shadow shadows,
 counting the number of surfaces along a ray, collecting all hits along
-a ray, etc. The filter functions are only supported for triangle mesh
-geometry, including triangle meshes with motion blur.</p>
+a ray, etc. </p>
 
 <p>The filter functions provided by the user have to have the
 following signature:</p>
