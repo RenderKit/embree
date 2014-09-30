@@ -265,6 +265,8 @@ namespace embree
 
 #if defined(__MIC__)
     __aligned(64) QuadTreeBarrier taskBarrier;
+    //__aligned(64) LinearBarrierActive taskBarrier; //FIXME
+
 #else
     __aligned(64) Barrier taskBarrier;
 #endif

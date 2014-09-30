@@ -222,35 +222,36 @@ namespace embree
     {
       /* calculate denominator */
       STAT3(normal.trav_prims,1,1,1);
-      const avx3f O = broadcast8f(ray.org,k);
-      const avx3f D = broadcast8f(ray.dir,k);
-      const avxf time = broadcast8f(ray.time,k);
-      const avx3f v0 = tri.v0 + time*tri.d0;
-      const avx3f v1 = tri.v1 + time*tri.d1;
-      const avx3f v2 = tri.v2 + time*tri.d2;
-      const avx3f C = v0 - O;
-      const avx3f e1 = v0-v1;
-      const avx3f e2 = v2-v0;
-      const avx3f R = cross(D,C);
-      const avxf den = dot(avx3f(Ng),D);
-      const avxf absDen = abs(den);
-      const avxf sgnDen = signmsk(den);
+      const sse3f O = broadcast4f(ray.org,k);
+      const sse3f D = broadcast4f(ray.dir,k);
+      const ssef time = broadcast4f(ray.time,k);
+      const sse3f v0 = tri.v0 + time*tri.d0;
+      const sse3f v1 = tri.v1 + time*tri.d1;
+      const sse3f v2 = tri.v2 + time*tri.d2;
+      const sse3f C = v0 - O;
+      const sse3f e1 = v0-v1;
+      const sse3f e2 = v2-v0;
+      const sse3f Ng = cross(e1,e2);
+      const sse3f R = cross(D,C);
+      const ssef den = dot(sse3f(Ng),D);
+      const ssef absDen = abs(den);
+      const ssef sgnDen = signmsk(den);
 
       /* perform edge tests */
-      const avxf U = dot(R,avx3f(e2)) ^ sgnDen;
-      const avxf V = dot(R,avx3f(e1)) ^ sgnDen;
+      const ssef U = dot(R,sse3f(e2)) ^ sgnDen;
+      const ssef V = dot(R,sse3f(e1)) ^ sgnDen;
 
       /* perform backface culling */
 #if defined(__BACKFACE_CULLING__)
-      avxb valid = (den > avxf(zero)) & (U >= 0.0f) & (V >= 0.0f) & (U+V<=absDen);
+      sseb valid = (den > ssef(zero)) & (U >= 0.0f) & (V >= 0.0f) & (U+V<=absDen);
 #else
-      avxb valid = (den != avxf(zero)) & (U >= 0.0f) & (V >= 0.0f) & (U+V<=absDen);
+      sseb valid = (den != ssef(zero)) & (U >= 0.0f) & (V >= 0.0f) & (U+V<=absDen);
 #endif
       if (likely(none(valid))) return;
       
       /* perform depth test */
-      const avxf T = dot(avx3f(Ng),C) ^ sgnDen;
-      valid &= (T > absDen*avxf(ray.tnear[k])) & (T < absDen*avxf(ray.tfar[k]));
+      const ssef T = dot(sse3f(Ng),C) ^ sgnDen;
+      valid &= (T > absDen*ssef(ray.tnear[k])) & (T < absDen*ssef(ray.tfar[k]));
       if (likely(none(valid))) return;
 
       /* ray masking test */
@@ -260,10 +261,10 @@ namespace embree
 #endif
 
       /* calculate hit information */
-      const avxf rcpAbsDen = rcp(absDen);
-      const avxf u = U * rcpAbsDen;
-      const avxf v = V * rcpAbsDen;
-      const avxf t = T * rcpAbsDen;
+      const ssef rcpAbsDen = rcp(absDen);
+      const ssef u = U * rcpAbsDen;
+      const ssef v = V * rcpAbsDen;
+      const ssef t = T * rcpAbsDen;
       size_t i = select_min(valid,t);
       int geomID = tri.geomID<list>(i);
       
@@ -289,8 +290,8 @@ namespace embree
           return;
         }
 
-        const Vec3fa Ng(Ng.x[i],Ng.y[i],Ng.z[i]);
-        if (runIntersectionFilter8(geometry,ray,k,u[i],v[i],t[i],Ng,geomID,tri.primID<list>(i))) return;
+        const Vec3fa _Ng(Ng.x[i],Ng.y[i],Ng.z[i]);
+        if (runIntersectionFilter8(geometry,ray,k,u[i],v[i],t[i],_Ng,geomID,tri.primID<list>(i))) return;
         valid[i] = 0;
         if (unlikely(none(valid))) return;
         i = select_min(valid,t);
@@ -304,38 +305,39 @@ namespace embree
     {
       /* calculate denominator */
       STAT3(shadow.trav_prims,1,1,1);
-      const avx3f O = broadcast8f(ray.org,k);
-      const avx3f D = broadcast8f(ray.dir,k);
-      const avxf time = broadcast8f(ray.time,k);
-      const avx3f v0 = tri.v0 + time*tri.d0;
-      const avx3f v1 = tri.v1 + time*tri.d1;
-      const avx3f v2 = tri.v2 + time*tri.d2;
-      const avx3f C = v0 - O;
-      const avx3f e1 = v0-v1;
-      const avx3f e2 = v2-v0;
-      const avx3f R = cross(D,C);
-      const avxf den = dot(avx3f(Ng),D);
-      const avxf absDen = abs(den);
-      const avxf sgnDen = signmsk(den);
+      const sse3f O = broadcast4f(ray.org,k);
+      const sse3f D = broadcast4f(ray.dir,k);
+      const ssef time = broadcast4f(ray.time,k);
+      const sse3f v0 = tri.v0 + time*tri.d0;
+      const sse3f v1 = tri.v1 + time*tri.d1;
+      const sse3f v2 = tri.v2 + time*tri.d2;
+      const sse3f C = v0 - O;
+      const sse3f e1 = v0-v1;
+      const sse3f e2 = v2-v0;
+      const sse3f Ng = cross(e1,e2);
+      const sse3f R = cross(D,C);
+      const ssef den = dot(sse3f(Ng),D);
+      const ssef absDen = abs(den);
+      const ssef sgnDen = signmsk(den);
 
       /* perform edge tests */
-      const avxf U = dot(R,avx3f(e2)) ^ sgnDen;
-      const avxf V = dot(R,avx3f(e1)) ^ sgnDen;
-      const avxf W = absDen-U-V;
-      avxb valid = (U >= 0.0f) & (V >= 0.0f) & (W >= 0.0f);
+      const ssef U = dot(R,sse3f(e2)) ^ sgnDen;
+      const ssef V = dot(R,sse3f(e1)) ^ sgnDen;
+      const ssef W = absDen-U-V;
+      sseb valid = (U >= 0.0f) & (V >= 0.0f) & (W >= 0.0f);
       if (unlikely(none(valid))) return false;
       
       /* perform depth test */
-      const avxf T = dot(avx3f(Ng),C) ^ sgnDen;
-      valid &= (T >= absDen*avxf(ray.tnear[k])) & (absDen*avxf(ray.tfar[k]) >= T);
+      const ssef T = dot(sse3f(Ng),C) ^ sgnDen;
+      valid &= (T >= absDen*ssef(ray.tnear[k])) & (absDen*ssef(ray.tfar[k]) >= T);
       if (unlikely(none(valid))) return false;
 
       /* perform backface culling */
 #if defined(__BACKFACE_CULLING__)
-      valid &= den > avxf(zero);
+      valid &= den > ssef(zero);
       if (unlikely(none(valid))) return false;
 #else
-      valid &= den != avxf(zero);
+      valid &= den != ssef(zero);
       if (unlikely(none(valid))) return false;
 #endif
 
@@ -357,12 +359,12 @@ namespace embree
         if (likely(!enableIntersectionFilter || !geometry->hasOcclusionFilter8())) break;
 
         /* calculate hit information */
-        const avxf rcpAbsDen = rcp(absDen);
-        const avxf u = U * rcpAbsDen;
-        const avxf v = V * rcpAbsDen;
-        const avxf t = T * rcpAbsDen;
-        const Vec3fa Ng(Ng.x[i],Ng.y[i],Ng.z[i]);
-        if (runOcclusionFilter8(geometry,ray,k,u[i],v[i],t[i],Ng,geomID,tri.primID<list>(i))) break;
+        const ssef rcpAbsDen = rcp(absDen);
+        const ssef u = U * rcpAbsDen;
+        const ssef v = V * rcpAbsDen;
+        const ssef t = T * rcpAbsDen;
+        const Vec3fa _Ng(Ng.x[i],Ng.y[i],Ng.z[i]);
+        if (runOcclusionFilter8(geometry,ray,k,u[i],v[i],t[i],_Ng,geomID,tri.primID<list>(i))) break;
         valid[i] = 0;
         if (unlikely(none(valid))) return false;
         i = select_min(valid,T);

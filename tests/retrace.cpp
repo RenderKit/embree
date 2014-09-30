@@ -195,7 +195,7 @@ namespace embree
   static AlignedAtomicCounter32 g_counter = 0;
   static bool g_check = false;
   static bool g_sde = false;
-  static size_t g_numThreads = 1;
+  static size_t g_threadCount = 1;
   static size_t g_frames = 1;
   static size_t g_simd_width = 0;
   static AlignedAtomicCounter32 g_rays_traced = 0;
@@ -241,7 +241,7 @@ namespace embree
           g_check = true;
         }      
         else if (tag == "-threads" && i+1<argc) {
-          g_numThreads = atoi(argv[++i]);
+          g_threadCount = atoi(argv[++i]);
         }
         else if (tag == "-frames" && i+1<argc) {
           g_frames = atoi(argv[++i]);
@@ -588,13 +588,13 @@ namespace embree
 
     while(1)
       {
-        g_barrier.wait(id,g_numThreads);
+        g_barrier.wait(id,g_threadCount);
     
         if (g_exitThreads) break;
 
         renderMainLoop(id);
 
-        g_barrier.wait(id,g_numThreads);
+        g_barrier.wait(id,g_threadCount);
       }
   }
 
@@ -607,9 +607,9 @@ namespace embree
   /* main function in embree namespace */
   int main(int argc, char** argv) 
   {
-    g_numThreads = getNumberOfLogicalThreads(); 
+    g_threadCount = getNumberOfLogicalThreads(); 
 #if defined (__MIC__)
-    g_numThreads -= 4;
+    g_threadCount -= 4;
 #endif
 
     setAffinity(0);
@@ -620,7 +620,7 @@ namespace embree
     DBG_PRINT(g_rtcore.c_str());
     rtcInit(g_rtcore.c_str());
 
-    DBG_PRINT(g_numThreads);
+    DBG_PRINT(g_threadCount);
 
     /* binary file path */
     g_binaries_path += "/";
@@ -736,7 +736,7 @@ namespace embree
 
 
     /* init global tasking barrier */
-    g_barrier.init( g_numThreads );
+    g_barrier.init( g_threadCount );
 
 
     g_retraceTask.scene                   = scene;
@@ -746,12 +746,12 @@ namespace embree
     g_retraceTask.check                   = g_check;
 
 
-    std::cout << "using " << g_numThreads << " threads for retracing rays" << std::endl << std::flush;
-    createThreads(g_numThreads);
+    std::cout << "using " << g_threadCount << " threads for retracing rays" << std::endl << std::flush;
+    createThreads(g_threadCount);
 
 
     /* retrace ray packets */
-    DBG_PRINT( g_numThreads );
+    DBG_PRINT( g_threadCount );
 
     std::cout << "Retracing logged rays:" << std::endl << std::flush;
     
@@ -769,11 +769,13 @@ namespace embree
 
 	if (g_sde)
 	  {
+#if defined(__INTEL_COMPILER)
 	    __asm { int 3 };
 	    SSC_MARK(111);
+#endif
 	  }
 
-        g_barrier.wait(0,g_numThreads);
+        g_barrier.wait(0,g_threadCount);
         renderMainLoop(0);
 
 	dt = getSeconds()-dt;
@@ -782,12 +784,14 @@ namespace embree
 	std::cout << "frame " << i << " => time " << 1000. * dt << " " << 1. / dt << " fps " << "ms " << g_rays_traced / dt / 1000000. << " mrays/sec" << std::endl;
 #endif
 
-        g_barrier.wait(0,g_numThreads);
+        g_barrier.wait(0,g_threadCount);
 
 	if (g_sde)
 	  {
+#if defined(__INTEL_COMPILER)
 	    __asm { int 3 };
 	    SSC_MARK(222);
+#endif
 	  }
 
         if (unlikely(g_check))
@@ -797,7 +801,7 @@ namespace embree
 
     std::cout << "freeing threads..." << std::flush;
     g_exitThreads = true;
-    g_barrier.wait(0,g_numThreads);
+    g_barrier.wait(0,g_threadCount);
     std::cout << "done" << std::endl << std::flush;
 
 
