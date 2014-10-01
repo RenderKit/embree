@@ -20,7 +20,7 @@ Perform the following steps for each Embree release.
 
   cd embree-bin-folder
   git checkout --orphan v2.3.3_macosx
-  git clean -d -x -f
+  clean directory
   cd embree-src-folder
   ./scripts/release_macos.sh embree-bin-folder
 
@@ -28,7 +28,7 @@ Perform the following steps for each Embree release.
 
   cd embree-bin-folder
   git checkout --orphan v2.3.3_linux
-  git clean -d -x -f
+  clean directory
   cd embree-src-folder
   ./scripts/release_linux.sh embree-bin-folder
 
@@ -36,7 +36,7 @@ Perform the following steps for each Embree release.
 
   cd embree-bin-folder
   git checkout --orphan v2.3.3_win
-  git clean -d -x -f
+  clean directory
   cd embree-src-folder
   ./scripts/release_win.sh embree-bin-folder
 
