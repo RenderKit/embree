@@ -89,7 +89,6 @@ struct ISPCScene
   int numMaterials;
   ISPCHairSet** hairsets;
   int numHairSets;
-  bool animate;
 };
 
 /* scene data */

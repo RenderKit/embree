@@ -936,7 +936,6 @@ struct ISPCScene {
 
   void** hairsets;
   int numHairSets;
-  bool animate;
 
   uniform ISPCAmbientLight* ambientLights; //!< list of ambient lights
   int numAmbientLights;                    //!< number of ambient lights
