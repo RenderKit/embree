@@ -91,12 +91,12 @@ namespace embree
       Vec3fa R(0.0f,0.0f,0.0f);
 
       for (size_t i=0; i<valence-1; i++)
-      {
-        const Vec3fa new_face = (vtx + ring[2*i] + ring[2*i+1] + ring[2*i+2]) * 0.25f;
-        F += new_face;
-        R += (vtx + ring[2*i]) * 0.5f;
-        dest.ring[2*i + 1] = new_face;
-      }
+	{
+	  const Vec3fa new_face = (vtx + ring[2*i] + ring[2*i+1] + ring[2*i+2]) * 0.25f;
+	  F += new_face;
+	  R += (vtx + ring[2*i]) * 0.5f;
+	  dest.ring[2*i + 1] = new_face;
+	}
 
       {
         const Vec3fa new_face = (vtx + ring[num_vtx-2] + ring[num_vtx-1] + ring[0]) * 0.25f;
@@ -107,10 +107,10 @@ namespace embree
       
       // new edge vertices
       for (size_t i=1; i<valence; i++)
-      {
-        const Vec3fa new_edge = (vtx + ring[2*i] + dest.ring[2*i-1] + dest.ring[2*i+1]) * 0.25f;
-        dest.ring[2*i + 0] = new_edge;
-      }
+	{
+	  const Vec3fa new_edge = (vtx + ring[2*i] + dest.ring[2*i-1] + dest.ring[2*i+1]) * 0.25f;
+	  dest.ring[2*i + 0] = new_edge;
+	}
       dest.ring[0] = (vtx + ring[0] + dest.ring[num_vtx-1] + dest.ring[1]) * 0.25f;
 
       // new vtx
@@ -121,12 +121,12 @@ namespace embree
     }
 
     friend __forceinline std::ostream &operator<<(std::ostream &o, const CatmullClark1Ring &c)
-    {
-      o << "vtx " << c.vtx << " valence " << c.valence << " num_vtx " << c.num_vtx << " ring: " << std::endl;
-      for (size_t i=0;i<c.num_vtx;i++)
-	o << i << " -> " << c.ring[i] << std::endl;
-      return o;
-    } 
+      {
+	o << "vtx " << c.vtx << " valence " << c.valence << " num_vtx " << c.num_vtx << " ring: " << std::endl;
+	for (size_t i=0;i<c.num_vtx;i++)
+	  o << i << " -> " << c.ring[i] << std::endl;
+	return o;
+      } 
   };
 
   class CatmullClark1Edge
@@ -155,40 +155,40 @@ namespace embree
       Vec3fa v12 = v((K+1)-1,2);
       
       for (ssize_t x=K-1; x>=0; x--) 
-      {
-        /* load next column */
-        Vec3fa v00 = v(x,0);
-        Vec3fa v01 = v(x,1);
-        Vec3fa v02 = v(x,2);
+	{
+	  /* load next column */
+	  Vec3fa v00 = v(x,0);
+	  Vec3fa v01 = v(x,1);
+	  Vec3fa v02 = v(x,2);
         
-        /* calculate face points and edge centers */
-        const Vec3fa c00 = 0.25f*(v00+v10+v01+v11);
-        const Vec3fa c10 = 0.50f*(v10+v11);
-        const Vec3fa c20 = 0.25f*(v10+v20+v11+v21);
-        const Vec3fa c01 = 0.50f*(v01+v11);
-        const Vec3fa c21 = 0.50f*(v11+v21);
-        const Vec3fa c02 = 0.25f*(v01+v11+v02+v12);
-        const Vec3fa c12 = 0.50f*(v11+v12);
-        const Vec3fa c22 = 0.25f*(v11+v21+v12+v22);
+	  /* calculate face points and edge centers */
+	  const Vec3fa c00 = 0.25f*(v00+v10+v01+v11);
+	  const Vec3fa c10 = 0.50f*(v10+v11);
+	  const Vec3fa c20 = 0.25f*(v10+v20+v11+v21);
+	  const Vec3fa c01 = 0.50f*(v01+v11);
+	  const Vec3fa c21 = 0.50f*(v11+v21);
+	  const Vec3fa c02 = 0.25f*(v01+v11+v02+v12);
+	  const Vec3fa c12 = 0.50f*(v11+v12);
+	  const Vec3fa c22 = 0.25f*(v11+v21+v12+v22);
         
-        /* store face points and edge point at 2*x+1 */
-        v(2*x+1,0) = c00;
-        v(2*x+1,1) = 0.5f*(c01+0.5f*(c00+c02));
-        v(2*x+1,2) = c02;
+	  /* store face points and edge point at 2*x+1 */
+	  v(2*x+1,0) = c00;
+	  v(2*x+1,1) = 0.5f*(c01+0.5f*(c00+c02));
+	  v(2*x+1,2) = c02;
         
-        /* store face points and edge point at 2*x+2 */
-        const Vec3fa F = 0.25f*(c00+c20+c02+c22);
-        const Vec3fa R = 0.25f*(c10+c01+c21+c12);
-        const Vec3fa P = v11;
-        v(2*x+2,0) = 0.5f*(c10+0.5f*(c00+c20));
-        v(2*x+2,1) = 0.25*F + 0.5*R + 0.25*P;
-        v(2*x+2,2) = 0.5f*(c12+0.5f*(c02+c22));
+	  /* store face points and edge point at 2*x+2 */
+	  const Vec3fa F = 0.25f*(c00+c20+c02+c22);
+	  const Vec3fa R = 0.25f*(c10+c01+c21+c12);
+	  const Vec3fa P = v11;
+	  v(2*x+2,0) = 0.5f*(c10+0.5f*(c00+c20));
+	  v(2*x+2,1) = 0.25*F + 0.5*R + 0.25*P;
+	  v(2*x+2,2) = 0.5f*(c12+0.5f*(c02+c22));
         
-        /* propagate points to next iteration */
-        v20 = v10; v10 = v00;
-        v21 = v11; v11 = v01;
-        v22 = v12; v12 = v02;
-      }        
+	  /* propagate points to next iteration */
+	  v20 = v10; v10 = v00;
+	  v21 = v11; v11 = v01;
+	  v22 = v12; v12 = v02;
+	}        
       K = 2*K;
       init(r0,r1);
     }
@@ -204,17 +204,17 @@ namespace embree
     }
     
     friend __forceinline std::ostream &operator<<(std::ostream& out, const CatmullClark1Edge& edge)
-    {
-      out << std::endl;
-      for (size_t y=0; y<3; y++) {
-        for (size_t x=0; x<edge.K+1; x++) {
-          //out << patch.v(x,y) << " ";
-          out << std::setw(10) << edge.v(x,y).x << " ";
-        }
-        out << std::endl;
-      }
-      return out;
-    } 
+      {
+	out << std::endl;
+	for (size_t y=0; y<3; y++) {
+	  for (size_t x=0; x<edge.K+1; x++) {
+	    //out << patch.v(x,y) << " ";
+	    out << std::setw(10) << edge.v(x,y).x << " ";
+	  }
+	  out << std::endl;
+	}
+	return out;
+      } 
     
   public:
     Array2D<Vec3fa> v;
@@ -333,6 +333,30 @@ namespace embree
       return o;
     } 
 
+  class CubicBSpline
+  {
+  public:
+
+    static __forceinline Vec4f getCubicBSplineEvalCoefficients(const float u) // for watertight eval
+    {
+      const float t  = u;
+      const float s  = 1.0f - u;
+      const float n0 = s*s*s;
+      const float n1 = (4.0f*s*s*s+t*t*t) + (12.0f*s*t*s + 6.0*t*s*t);
+      const float n2 = (4.0f*t*t*t+s*s*s) + (12.0f*t*s*t + 6.0*s*t*s);
+      const float n3 = t*t*t;
+      return Vec4f(n0,n1,n2,n3)*1.0f/6.0f;
+    }
+
+    static __forceinline Vec3fa eval(const float u, const Vec3fa &p0, const Vec3fa &p1, const Vec3fa &p2, const Vec3fa &p3)
+    {
+      const Vec4f n = getCubicBSplineEvalCoefficients(u);
+      return p0 * n[0] + p1 * n[1] + p2 * n[2] + p3 * n[3];
+    }
+    
+
+  };
+
 
   template<typename T>
     class RegularCatmullClarkPatchT
@@ -357,7 +381,7 @@ namespace embree
       }
 
       __forceinline T computeLimitVertex(const int y,
-				   const int x) const
+					 const int x) const
       {
 	const T P = v[y][x];
 	const T Q = v[y-1][x-1] + v[y-1][x+1] + v[y+1][x-1] + v[y+1][x+1];
@@ -367,7 +391,7 @@ namespace embree
       }
 
       __forceinline T computeLimitNormal(const int y,
-				   const int x) const
+					 const int x) const
       {
 	/* --- tangent X --- */
 	const T Qx = v[y-1][x+1] - v[y-1][x-1] + v[y+1][x+1] - v[y+1][x-1];
@@ -383,9 +407,9 @@ namespace embree
       }
 
       __forceinline void initSubPatches(const T edge[12],
-				  const T face[3][3],
-				  const T newQuadVertex[2][2],
-				  RegularCatmullClarkPatchT child[4]) const
+					const T face[3][3],
+					const T newQuadVertex[2][2],
+					RegularCatmullClarkPatchT child[4]) const
       {
 	RegularCatmullClarkPatchT &subTL = child[0];
 	RegularCatmullClarkPatchT &subTR = child[1];
@@ -529,8 +553,20 @@ namespace embree
       quad.geomID = 0;
       quad.primID = 0;
     };
-    
+
+    __forceinline Vec3fa evalCubicBSplinePatch(const float uu, const float vv)
+    {
+      __aligned(64) Vec3fa curve[4];
+
+#pragma unroll(4)
+      for (size_t i=0;i<4;i++)
+	curve[i] = CubicBSpline::eval(vv,v[0][i],v[1][i],v[2][i],v[3][i]);
+
+      return CubicBSpline::eval(uu,curve[0],curve[1],curve[2],curve[3]);
+    }
   };
+
+
 
   __forceinline std::ostream &operator<<(std::ostream &o, const RegularCatmullClarkPatch &p)
     {
