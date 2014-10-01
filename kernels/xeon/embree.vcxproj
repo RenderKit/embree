@@ -586,6 +586,7 @@
     <ClInclude Include="..\..\include\embree2\rtcore_geometry_user.h" />
     <ClInclude Include="..\..\include\embree2\rtcore_ray.h" />
     <ClInclude Include="..\..\include\embree2\rtcore_scene.h" />
+    <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\common\acceln.cpp" />
@@ -673,6 +674,9 @@
       <Project>{2d858c9a-c161-4036-8df7-eb1694cb81bf}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="embree.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
