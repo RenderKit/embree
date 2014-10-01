@@ -1,0 +1,53 @@
+
+Perform the following steps for each Embree release.
+
+[ ] Check Embree version in kernels/version.h
+[ ] Check Embree version in kernels/xeon/embree.rc
+[ ] Check Embree version in kernels/xeon/CMakeLists.txt
+[ ] Check Embree version in kernels/xeonphi/CMakeLists.txt
+[ ] Check Embree Library version in scripts/release_linux.sh
+[ ] Check Embree Library version in scripts/release_macos.sh
+[ ] Check Embree Library version in scripts/install_linux/install.sh
+[ ] Check Embree Library version in scripts/install_macos/install.sh
+
+[ ] Make sure all regression tests pass under Linux  : ./scripts/regression.py render linux   log models/embree/ | tee log/log.txt
+[ ] Make sure all regression tests pass under MacOSX : ./scripts/regression.py render macosx  log models/embree/ | tee log/log.txt
+[ ] Make sure all regression tests pass under Windows: .\scripts\regression.py render windows log models/embree/ | tee log\log.txt
+
+[ ] Update Embree version and download links in doc/src/downloading.html
+[ ] Regenerate documentation: cd doc && make
+[ ] Copy generated webpage at doc/www to embree.github.com git repository
+
+[ ] Create binary distribution under MacOSX:
+
+  cd embree-bin-folder
+  git checkout --orphan v2.3.3_macosx
+  clean directory
+  cd embree-src-folder
+  ./scripts/release_macos.sh embree-bin-folder
+
+[ ] Create binary distribution under Linux:
+
+  cd embree-bin-folder
+  git checkout --orphan v2.3.3_linux
+  clean directory
+  cd embree-src-folder
+  ./scripts/release_linux.sh embree-bin-folder
+
+[ ] Create binary distribution under Windows:
+
+  cd embree-bin-folder
+  git checkout --orphan v2.3.3_win
+  clean directory
+  cd embree-src-folder
+  ./scripts/release_win.sh embree-bin-folder
+
+  Compile Embree in x64 mode with VS2013 and ICC Compiler and copy the binaries to:
+    embree-bin-folder/bin/x64
+    embree-bin-folder/lib/x64
+
+  Compile Embree in Win32 mode with VS2013 and Microsoft Compiler and copy the binaries to:
+    embree-bin-folder/bin/win32
+    embree-bin-folder/lib/win32
+
+

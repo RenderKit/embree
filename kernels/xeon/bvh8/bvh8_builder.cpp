@@ -35,6 +35,8 @@ namespace embree
 {
   namespace isa
   {
+    static const size_t THRESHOLD_FOR_SINGLE_THREADED = 50000; // FIXME: measure if this is really optimal, maybe disable only parallel splits
+
     template<> BVH8BuilderT<Triangle4 >::BVH8BuilderT (BVH8* bvh, Scene* scene, size_t mode) 
       : BVH8Builder(bvh,scene,NULL,mode,2,2,1.0f,false,sizeof(Triangle4),4,inf) {}
 
@@ -62,7 +64,7 @@ namespace embree
     {
       /* allocate leaf node */
       size_t N = blocks(pinfo.size());
-      Triangle* leaf = (Triangle*) bvh->allocPrimitiveBlocks(leafAlloc,N);
+      Triangle* leaf = (Triangle*) bvh->allocPrimitiveBlocks(nodeAlloc,N); // FIXME: should be leafAlloc?
       assert(N <= (size_t)BVH8::maxLeafBlocks);
       
       /* insert all triangles */
@@ -73,11 +75,12 @@ namespace embree
       /* free all primitive blocks */
       while (PrimRefList::item* block = prims.take())
 	alloc.free(threadIndex,block);
-      
+
       return bvh->encodeLeaf(leaf,listMode ? listMode : N);
     }
     
-    BVH8Builder::NodeRef BVH8Builder::createLargeLeaf(size_t threadIndex, Allocator& nodeAlloc, Allocator& leafAlloc, PrimRefList& prims, const PrimInfo& pinfo, size_t depth)
+    BVH8Builder::NodeRef BVH8Builder::createLargeLeaf(size_t threadIndex, Allocator& nodeAlloc, Allocator& leafAlloc,
+                                                      PrimRefList& prims, const PrimInfo& pinfo, size_t depth)
     {
 #if defined(_DEBUG)
       if (depth >= BVH8::maxBuildDepthLeaf) 
@@ -105,7 +108,7 @@ namespace embree
 	if (cinfo[i].size())
 	  node->set(i,cinfo[i].geomBounds,createLargeLeaf(threadIndex,nodeAlloc,leafAlloc,cprims[i],cinfo[i],depth+1));
 
-      BVH8::compact(node); // move empty nodes to the end
+      BVH8::compact(node); // moves empty nodes to the end
       return bvh->encodeNode(node);
     }  
 
@@ -122,17 +125,17 @@ namespace embree
 	if (osplit.sah == float(inf)) return Split();
 	else return osplit;
       }
-      SpatialSplit   ::Split ssplit = SpatialSplit   ::find<PARALLEL>(threadIndex,threadCount,scheduler,scene,prims,pinfo,logSAHBlockSize);
+      SpatialSplit::Split ssplit = SpatialSplit::find<PARALLEL>(threadIndex,threadCount,scheduler,scene,prims,pinfo,logSAHBlockSize);
       const float bestSAH = min(osplit.sah,ssplit.sah);
       
       if      (bestSAH == float(inf)) return Split();
       else if (bestSAH == osplit.sah) return osplit; 
       else if (bestSAH == ssplit.sah) return ssplit;
-      else THROW_RUNTIME_ERROR("internal error");     
+      else THROW_RUNTIME_ERROR("internal error");      
     }
     
     template<bool PARALLEL>
-    __forceinline size_t BVH8Builder::createNode(size_t threadIndex, size_t threadCount, Allocator& nodeAlloc, Allocator& leafAlloc, 
+    __forceinline size_t BVH8Builder::createNode(size_t threadIndex, size_t threadCount, Allocator& nodeAlloc, Allocator& leafAlloc,
                                                  BVH8Builder* parent, BuildRecord& record, BuildRecord records_o[BVH8::N])
     {
       /*! compute leaf and split cost */
@@ -212,7 +215,7 @@ namespace embree
 
     void BVH8Builder::finish_build(size_t threadIndex, size_t threadCount, Allocator& nodeAlloc, Allocator& leafAlloc, BuildRecord& record)
     {
-      BuildRecord children[BVH8::N];
+      BuildRecord children[BVH8::N]; 
       size_t N = createNode<false>(threadIndex,threadCount,nodeAlloc,leafAlloc,this,record,children);
       for (size_t i=0; i<N; i++)
 	finish_build(threadIndex,threadCount,nodeAlloc,leafAlloc,children[i]);
@@ -263,9 +266,10 @@ namespace embree
 	continue_build(threadIndex,threadCount,nodeAlloc,leafAlloc,record);
 	atomic_add(&activeBuildRecords,-1);
       }
+      _mm_sfence(); // make written leaves globally visible
     }
 
-    BVH8::NodeRef BVH8Builder::layout_top_nodes(size_t threadIndex, Allocator& nodeAlloc, Allocator& leafAlloc, NodeRef node)
+    BVH8::NodeRef BVH8Builder::layout_top_nodes(size_t threadIndex, Allocator& nodeAlloc, NodeRef node)
     {
       if (node.isBarrier()) {
 	node.clearBarrier();
@@ -276,7 +280,7 @@ namespace embree
 	Node* src = node.node();
 	Node* dst = bvh->allocNode(nodeAlloc);
 	for (size_t i=0; i<BVH8::N; i++) {
-	  dst->set(i,src->bounds(i),layout_top_nodes(threadIndex,nodeAlloc,leafAlloc,src->child(i)));
+	  dst->set(i,src->bounds(i),layout_top_nodes(threadIndex,nodeAlloc,src->child(i)));
 	}
 	return bvh->encodeNode(dst);
       }
@@ -286,18 +290,24 @@ namespace embree
     
     void BVH8Builder::build(size_t threadIndex, size_t threadCount) 
     {
+      //size_t threadCount = min(threadCountOld,getNumberOfCores()); 
+      //TaskScheduler::enableThreads(threadCount); // FIXME: enable
+
       /*! calculate number of primitives */
       size_t numPrimitives = 0;
       if (mesh) numPrimitives = mesh->numTriangles;
       else      numPrimitives = scene->numTriangles;
 
       /*! set maximal amount of primitive replications for spatial split mode */
-      if (enableSpatialSplits)
-	remainingReplications = numPrimitives;
+      size_t maxPrimitives = numPrimitives;
+      if (enableSpatialSplits) {
+        maxPrimitives = max(numPrimitives,(size_t)(g_tri_builder_replication_factor*numPrimitives));
+	remainingReplications = maxPrimitives-numPrimitives;
+      }
 
       /*! initialize internal buffers of BVH */
-      bvh->init(numPrimitives+remainingReplications);
-      
+      bvh->init(sizeof(BVH8::Node),maxPrimitives,threadCount);
+
       /*! skip build for empty scene */
       if (numPrimitives == 0) 
 	return;
@@ -314,57 +324,81 @@ namespace embree
       if (g_verbose >= 2 || g_benchmark)
 	t0 = getSeconds();
       
-      Allocator nodeAlloc(&bvh->alloc);
-      Allocator leafAlloc(&bvh->alloc);
-
       /* generate list of build primitives */
       PrimRefList prims; PrimInfo pinfo(empty);
       if (mesh) PrimRefListGenFromGeometry<TriangleMesh>::generate(threadIndex,threadCount,scheduler,&alloc,mesh ,prims,pinfo);
       else      PrimRefListGen                          ::generate(threadIndex,threadCount,scheduler,&alloc,scene,TRIANGLE_MESH,1,prims,pinfo);
       
-      /* perform initial split */
-      const Split split = find<true>(threadIndex,threadCount,1,prims,pinfo,enableSpatialSplits);
-      const BuildRecord record(1,prims,pinfo,split,&bvh->root);
-      tasks.push_back(record); 
-      activeBuildRecords=1;
+      Allocator nodeAlloc(&bvh->alloc);
+      Allocator leafAlloc(&bvh->alloc);
 
-      /* work in multithreaded toplevel mode until sufficient subtasks got generated */
-      while (tasks.size() > 0 && tasks.size() < threadCount)
+      /* single threaded path */
+      if (pinfo.size() <= THRESHOLD_FOR_SINGLE_THREADED)
       {
-	/* pop largest item for better load balancing */
-	BuildRecord task = tasks.front();
-	std::pop_heap(tasks.begin(),tasks.end());
-	tasks.pop_back();
-	activeBuildRecords--;
-	
-	/* process this item in parallel */
-	BuildRecord children[BVH8::N];
-	size_t N = createNode<true>(threadIndex,threadCount,nodeAlloc,leafAlloc,this,task,children);
-	for (size_t i=0; i<N; i++) {
-	  tasks.push_back(children[i]);
-	  std::push_heap(tasks.begin(),tasks.end());
-	  activeBuildRecords++;
-	}
+	const Split split = find<false>(threadIndex,threadCount,1,prims,pinfo,enableSpatialSplits);
+	BuildRecord record(1,prims,pinfo,split,&bvh->root);
+	finish_build(threadIndex,threadCount,nodeAlloc,leafAlloc,record);
+	_mm_sfence(); // make written leaves globally visible
       }
-      
-      /*! process each generated subtask in its own thread */
-      scheduler->dispatchTask(threadIndex,threadCount,_build_parallel,this,threadCount,"BVH8Builder::build");
-                  
+
+      /* multithreaded path */
+      else
+      {
+	/* perform initial split */
+	const Split split = find<true>(threadIndex,threadCount,1,prims,pinfo,enableSpatialSplits);
+	BuildRecord record(1,prims,pinfo,split,&bvh->root);
+	tasks.push_back(record); 
+	activeBuildRecords=1;
+
+	/* work in multithreaded toplevel mode until sufficient subtasks got generated */
+	while (tasks.size() > 0 && tasks.size() < threadCount)
+	{
+	  /* pop largest item for better load balancing */
+	  BuildRecord task = tasks.front();
+	  std::pop_heap(tasks.begin(),tasks.end());
+	  tasks.pop_back();
+	  activeBuildRecords--;
+	  
+	  /* do not generate too small subtasks */
+	  if (task.pinfo.size() <= THRESHOLD_FOR_SINGLE_THREADED) {
+	    tasks.push_back(task);
+	    activeBuildRecords++;
+	    break;
+	  }
+	  
+	  /* process this item in parallel */
+	  BuildRecord children[BVH8::N];
+	  size_t N = createNode<true>(threadIndex,threadCount,nodeAlloc,leafAlloc,this,task,children);
+	  for (size_t i=0; i<N; i++) {
+	    tasks.push_back(children[i]);
+	    std::push_heap(tasks.begin(),tasks.end());
+	    activeBuildRecords++;
+	  }
+	}
+	_mm_sfence(); // make written leaves globally visible
+	
+	/*! process each generated subtask in its own thread */
+	scheduler->dispatchTask(threadIndex,threadCount,_build_parallel,this,threadCount,"BVH8Builder::build");
+
+        tasks.clear();
+      }
+
       /* perform tree rotations of top part of the tree */
 #if ROTATE_TREE
       for (int i=0; i<5; i++) 
 	BVH8Rotate::rotate(bvh,bvh->root);
 #endif
-
+      
       /* layout top nodes */
-      bvh->root = layout_top_nodes(threadIndex,nodeAlloc,leafAlloc,bvh->root);
+      bvh->root = layout_top_nodes(threadIndex,nodeAlloc,bvh->root);
       //bvh->clearBarrier(bvh->root);
       bvh->numPrimitives = pinfo.size();
       bvh->bounds = pinfo.geomBounds;
       
       /* free all temporary memory blocks */
       Alloc::global.clear();
-
+      //TaskScheduler::enableThreads(threadCountOld); // FIXME: enable
+      
       if (g_verbose >= 2 || g_benchmark) 
 	t1 = getSeconds();
 
@@ -372,7 +406,7 @@ namespace embree
       if (g_verbose >= 2) {
       	std::cout << "[DONE]" << std::endl;
 	std::cout << "  dt = " << 1000.0f*(t1-t0) << "ms, perf = " << 1E-6*double(numPrimitives)/(t1-t0) << " Mprim/s" << std::endl;
-	std::cout << BVH8Statistics(bvh).str();
+        std::cout << BVH8Statistics(bvh).str();
       }
 
       /* benchmark mode */

@@ -1,7 +1,15 @@
 #!/bin/bash
+
+if [ "$#" -ne 1 ]; then
+  echo "Usage: ./release_win.sh path-to-bin-folder"
+  exit 1
+fi
+
 mkdir -p $1/bin/x64
+mkdir -p $1/bin/win32
 
 mkdir -p $1/lib/x64
+mkdir -p $1/lib/win32
 
 mkdir -p $1/include
 cp -r include/embree2 $1/include

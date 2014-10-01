@@ -74,13 +74,13 @@ namespace embree
       delete objects[i];
   }
 
-  void BVH8::init(size_t numPrimitives, size_t numThreads)
+  void BVH8::init(size_t nodeSize, size_t numPrimitives, size_t numThreads)
   {
     /* allocate as much memory as likely needed and reserve conservative amounts of memory */
     size_t blockSize = LinearAllocatorPerThread::allocBlockSize;
     
     size_t numPrimBlocks = primTy.blocks(numPrimitives);
-    size_t numAllocatedNodes = min(size_t(0.6*numPrimBlocks),numPrimitives);
+    size_t numAllocatedNodes      = min(size_t(0.6*numPrimBlocks),numPrimitives);
     size_t numAllocatedPrimitives = min(size_t(1.2*numPrimBlocks),numPrimitives);
 #if defined(__X86_64__)
     size_t numReservedNodes = 2*numPrimitives;
@@ -90,11 +90,12 @@ namespace embree
     size_t numReservedPrimitives = 1.5*numAllocatedPrimitives;
 #endif
     
-    size_t bytesAllocated = numAllocatedNodes * sizeof(BVH8::Node) + numAllocatedPrimitives * primTy.bytes;
-    size_t bytesReserved  = numReservedNodes  * sizeof(BVH8::Node) + numReservedPrimitives  * primTy.bytes;
-    bytesReserved         = (bytesReserved+blockSize-1)/blockSize*blockSize + numThreads*blockSize*2;
+    size_t bytesAllocated = numAllocatedNodes * nodeSize + numAllocatedPrimitives * primTy.bytes; // required also for parallel split stage in BVH4BuilderFast
+    size_t bytesReserved  = numReservedNodes  * nodeSize + numReservedPrimitives  * primTy.bytes;
+    if (numPrimitives) bytesReserved = (bytesReserved+blockSize-1)/blockSize*blockSize + numThreads*blockSize*2;
 
     root = emptyNode;
+    bounds = empty;
     alloc.init(bytesAllocated,bytesReserved);
   }
 

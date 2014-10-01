@@ -66,14 +66,16 @@ compilers_unix = ['GCC', 'ICC']
 #compilers_unix = ['GCC', 'CLANG', 'ICC']
 compilers      = []
 
-supported_builds = {}
-supported_builds['V90']  = [ 'Debug', 'Release']
-supported_builds['V100'] = [ 'Debug', 'Release' ]
-supported_builds['V110'] = [ 'Debug', 'Release', 'ReleaseAVX']
-supported_builds['V120'] = [ 'Debug', 'Release', 'ReleaseAVX']
-supported_builds['ICC']  = [ 'Debug', 'Release', 'ReleaseAVX', 'ReleaseAVX2']
-supported_builds['GCC']  = [ 'Debug', 'Release', 'ReleaseAVX', 'ReleaseAVX2']
-supported_builds['CLANG']= [ 'Debug', 'Release', 'ReleaseAVX', 'ReleaseAVX2']
+supported_configurations = [
+  'V100_x64_Debug', 'V100_x64_Release',
+  'V110_x64_Debug', 'V110_x64_Release', 'V110_x64_ReleaseAVX', 
+  'V120_x64_Debug', 'V120_x64_Release', 'V120_x64_ReleaseAVX', 'V120_x64_ReleaseAVX2', 
+  'ICC_x64_Debug', 'ICC_x64_Release', 'ICC_x64_ReleaseAVX', 'ICC_x64_ReleaseAVX2', 
+  'GCC_x64_Debug', 'GCC_x64_Release', 'GCC_x64_ReleaseAVX', 'GCC_x64_ReleaseAVX2', 
+  'CLANG_x64_Debug', 'CLANG_x64_Release', 'CLANG_x64_ReleaseAVX', 'CLANG_x64_ReleaseAVX2', 
+  #'V120_win32_Debug',
+  'V120_win32_Release', 'V120_win32_ReleaseAVX', 'V120_win32_ReleaseAVX2'
+  ]
 
 #builds_win = ['Debug']
 #builds_win = ['Release']
@@ -85,10 +87,10 @@ builds_win = ['Release', 'Debug', 'ReleaseAVX', 'ReleaseAVX2']
 builds_unix = ['Release', 'Debug', 'ReleaseAVX', 'ReleaseAVX2']
 builds = []
 
-#platforms_win  = ['win32']
-platforms_win  = ['x64']
-platforms_win  = ['win32', 'x64']
-#platforms_unix = ['x64']
+platforms_win  = ['win32']
+#platforms_win  = ['x64']
+#platforms_win  = ['win32', 'x64']
+platforms_unix = ['x64']
 platforms      = []
 
 models = {}
@@ -250,7 +252,7 @@ def renderLoop(OS):
     for compiler in compilers:
       for platform in platforms:
         for build in builds:
-          if build in supported_builds[compiler]:
+          if compiler + '_' + platform + '_' + build in supported_configurations:
             processConfiguration(OS, compiler, platform, build, models[platform])
 
 ########################## command line parsing ##########################
@@ -281,6 +283,7 @@ else:
 if mode == 'render':
   if len(sys.argv) < 4: printUsage()
   testDir = sys.argv[3]
+  os.system('mkdir '+testDir)
   if len(sys.argv) > 4: 
     modelDir = sys.argv[4]
   renderLoop(OS)

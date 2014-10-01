@@ -14,7 +14,7 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-= Embree: High Performance Ray Tracing Kernels 2.3.2  =
+= Embree: High Performance Ray Tracing Kernels 2.3.3  =
 
 == Embree Overview  ==
 
@@ -55,12 +55,12 @@ separate GIT repository (see Embree Example Renderer).
 
 == Supported Platforms  ==
 
-Embree supports Windows, Linux and Mac OS X, each in 32bit and 64bit modes. The
-code compiles with the Intel Compiler, the Microsoft Compiler, GCC and CLANG.
-Using the Intel Compiler improves performance by approximately 10%. Performance
-also varies across different operating systems. Embree is optimized for Intel
-CPUs supporting SSE, AVX, and AVX2 instructions, and requires at least a CPU
-with support for SSE2.
+Embree supports Windows (32bit and 64bit), Linux (64 bit) and Mac OS X (64
+bit). The code compiles with the Intel Compiler, the Microsoft Compiler, GCC
+and CLANG. Using the Intel Compiler improves performance by approximately 10%.
+Performance also varies across different operating systems. Embree is optimized
+for Intel CPUs supporting SSE, AVX, and AVX2 instructions, and requires at
+least a CPU with support for SSE2.
 
 The Xeon Phi[TM] version of Embree only works under Linux in 64bit mode. For
 compilation of the the Xeon Phi[TM] code the Intel Compiler is required. The
@@ -126,42 +126,37 @@ most usages. The following table described all parameters that can be
 configured:
 
 
-Parameter                  Description               Default Value
+Parameter                  Description                           Default Value
 
-BUILD_TUTORIALS            Builds the C++ version of ON
-                           the Embree tutorials.
+BUILD_TUTORIALS            Builds the C++ version of the Embree  ON
+                           tutorials.
 
-BUILD_TUTORIALS_ISPC       Builds the ISPC version   ON
-                           of the Embree tutorials.
+BUILD_TUTORIALS_ISPC       Builds the ISPC version of the Embree ON
+                           tutorials.
 
-                           Can be used to switch
-CMAKE_BUILD_TYPE           between Debug mode        Release
-                           (Debug) and Release mode
+                           Can be used to switch between Debug
+CMAKE_BUILD_TYPE           mode (Debug) and Release mode         Release
                            (Release)
 
-COMPILER                   Select either GCC, ICC,   GCC
-                           or CLANG as compiler.
+COMPILER                   Select either GCC, ICC, or CLANG as   GCC
+                           compiler.
 
-RTCORE_INTERSECTION_FILTER Enables the intersection  ON
-                           filter feature.
-
-RTCORE_BUFFER_STRIDE       Enables buffer stride     ON
+RTCORE_INTERSECTION_FILTER Enables the intersection filter       ON
                            feature.
 
-RTCORE_RAY_MASK            Enables the ray masking   OFF
-                           feature.
+RTCORE_BUFFER_STRIDE       Enables buffer stride feature.        ON
 
-RTCORE_SPINLOCKS           Enables faster spinlocks  ON (Linux), OFF (Mac OS X,
-                           for some builders.        Windows)
+RTCORE_RAY_MASK            Enables the ray masking feature.      OFF
 
-                           Select highest ISA on
-XEON_ISA                   Xeon[TM] CPUs (SSE2,      AVX2
-                           SSE3, SSSE3, SSE4.1,
-                           SSE4.2, AVX, AVX-I, AVX2)
+RTCORE_SPINLOCKS           Enables faster spinlocks for some     OFF
+                           builders.
 
-                           Enables generation of
-XEON_PHI_ISA               Xeon Phi[TM] version of   OFF
-                           kernels and tutorials.
+                           Select highest ISA on Xeon[TM] CPUs
+XEON_ISA                   (SSE2, SSE3, SSSE3, SSE4.1, SSE4.2,   AVX2
+                           AVX, AVX-I, AVX2)
+
+XEON_PHI_ISA               Enables generation of Xeon Phi[TM]    OFF
+                           version of kernels and tutorials.
 
 
 You need at least Intel Compiler 11.1 or GCC 4.4 to enable AVX and Intel
@@ -178,9 +173,9 @@ can download and install the ISPC binaries from ispc.github.com. After
 installation, put the path to ispc.exe permanently into your PATH environment
 variable. You have to restart Visual Studio for this change to take effect.
 
-For compilation of Embree under Windows use the Visual Studio 2010 solution
-file embree.sln. The project compiles in 32 bit and 64 bit mode. The solution
-is by default setup to use the Microsoft Compiler. You can switch to the Intel
+For compilation of Embree under Windows use the Visual Studio solution file
+embree.sln. The project compiles in 32 bit and 64 bit mode. The solution is by
+default setup to use the Microsoft Compiler. You can switch to the Intel
 Compiler by right clicking onto the solution in the Solution Explorer and then
 selecting the Intel Compiler. We recommend using 64 bit mode and the Intel
 Compiler for best performance.
@@ -799,7 +794,7 @@ setting the number of time steps to 2 at geometry construction time. Specifying
 a number of time steps of 0 or larger than 2 is invalid. For a triangle mesh or
 hair geometry with linear motion blur, the user has to set the
 RTC_VERTEX_BUFFER0 and RTC_VERTEX_BUFFER1 vertex arrays, one for each time
-step. If a scene contains geometris with linear motion blur, the user has to
+step. If a scene contains geometries with linear motion blur, the user has to
 set the time member of the ray to a value in the range [0,1]. The ray will
 intersect the scene with the vertices of the two time steps linearly
 interpolated to this specified time. Each ray can specify a different time,
@@ -827,8 +822,7 @@ former ones are called intersection filter functions, the latter ones occlusion
 filter functions. The filter functions can be used to implement various useful
 features, such as rejecting a hit to implement backface culling, accumulating
 opacity for shadow shadows, counting the number of surfaces along a ray,
-collecting all hits along a ray, etc. The filter functions are only supported
-for triangle mesh geometry, including triangle meshes with motion blur.
+collecting all hits along a ray, etc.
 
 The filter functions provided by the user have to have the following signature:
 
@@ -881,6 +875,24 @@ following API functions:
 
 See tutorial05 for an example of how to use the filter functions.
 
+=== Sharing Threads with Embree  ===
+
+Embree supports using the application threads when building internal data
+structures, by using the
+ void
+ rtcCommitThread(RTCScene scene, unsigned int threadIndex, unsigned int
+ threadCount);
+API call to commit the scene. This function has to get called by all threads
+that want to cooperate in the scene commit. Each call is provided the scene to
+commit, the index of the calling thread in the range [0,threadCount-1], and the
+number of threads that will call into this commit operation for the scene.
+Multiple such scene commit operations can also be running at the same time,
+e.g. it is possible to commit many small scenes in parallel using one thread
+per commit operation. Subsequent commit operations for the same scene can use
+different number of threads or the Embree internal threads using the
+ void rtcCommitThread()
+call.
+
 == Embree Tutorials  ==
 
 Embree comes with a set of tutorials aimed at helping users understand how
@@ -920,7 +932,7 @@ You can use the following keys:
   F2
       Gray EyeLight shading
   F3
-      Ambient occlusion shading
+      Wireframe shading
   F4
       UV Coordinate visualization
   F5

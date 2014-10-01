@@ -667,7 +667,7 @@ setting the number of time steps to 2 at geometry construction
 time. Specifying a number of time steps of 0 or larger than 2 is invalid. For
 a triangle mesh or hair geometry with linear motion blur, the user has to set the
 <code>RTC_VERTEX_BUFFER0</code> and <code>RTC_VERTEX_BUFFER1</code>
-vertex arrays, one for each time step. If a scene contains geometris
+vertex arrays, one for each time step. If a scene contains geometries
 with linear motion blur, the user has to set the
 <code>time</code> member of the ray to a value in the range [0,1]. The
 ray will intersect the scene with the vertices of the two time steps
@@ -699,8 +699,7 @@ occlusion filter functions. The filter functions can be used to
 implement various useful features, such as rejecting a hit to
 implement backface culling, accumulating opacity for shadow shadows,
 counting the number of surfaces along a ray, collecting all hits along
-a ray, etc. The filter functions are only supported for triangle mesh
-geometry, including triangle meshes with motion blur.</p>
+a ray, etc. </p>
 
 <p>The filter functions provided by the user have to have the
 following signature:</p>
@@ -753,6 +752,23 @@ void rtcSetOcclusionFilterFunction16 (RTCScene scene, unsigned geomID, RTCFilter
 </code></pre></p>
 
 <p>See tutorial05 for an example of how to use the filter functions.</p>
+
+<h3>Sharing Threads with Embree</h3>
+
+<p>Embree supports using the application threads when building
+internal data structures, by using the <pre><code>void
+rtcCommitThread(RTCScene scene, unsigned int threadIndex, unsigned int
+threadCount);</code></pre> API call to commit the scene. This function
+has to get called by all threads that want to cooperate in the scene
+commit. Each call is provided the scene to commit, the index of the
+calling thread in the range [0,threadCount-1], and the number of
+threads that will call into this commit operation for the
+scene. Multiple such scene commit operations can also be running at the same
+time, e.g. it is possible to commit many small scenes in parallel using
+one thread per commit operation. Subsequent commit operations for the
+same scene can use different number of threads or the Embree internal
+threads using the <pre><code>void rtcCommitThread()</code></pre>
+call.</p>
 
       </div>
     </div>

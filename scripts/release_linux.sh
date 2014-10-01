@@ -1,5 +1,10 @@
 #!/bin/bash
 
+if [ "$#" -ne 1 ]; then
+  echo "Usage: ./release_linux.sh path-to-bin-folder"
+  exit 1
+fi
+
 mkdir -p build
 cd build
 cmake \
@@ -68,10 +73,10 @@ cp build/tutorial06_xeonphi_device $1/bin/x64
 cp build/tutorial07_xeonphi_device $1/bin/x64
 
 mkdir -p $1/lib/x64
-cp build/libembree.so.2.3.2 $1/lib/x64
-ln -sf libembree.so.2.3.2 $1/lib/x64/libembree.so.2 
-cp build/libembree_xeonphi.so.2.3.2 $1/lib/x64
-ln -sf libembree_xeonphi.so.2.3.2 $1/lib/x64/libembree_xeonphi.so.2 
+cp build/libembree.so.2.3.3 $1/lib/x64
+ln -sf libembree.so.2.3.3 $1/lib/x64/libembree.so.2 
+cp build/libembree_xeonphi.so.2.3.3 $1/lib/x64
+ln -sf libembree_xeonphi.so.2.3.3 $1/lib/x64/libembree_xeonphi.so.2 
 
 mkdir -p $1/include
 cp -r include/embree2 $1/include
