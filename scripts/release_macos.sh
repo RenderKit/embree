@@ -1,5 +1,10 @@
 #!/bin/bash
 
+if [ "$#" -ne 1 ]; then
+  echo "Usage: ./release_macos.sh path-to-bin-folder"
+  exit 1
+fi
+
 mkdir -p build
 cd build
 cmake \
