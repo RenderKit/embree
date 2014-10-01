@@ -208,7 +208,7 @@ namespace embree
     struct Block 
     {
       Block () 
-      : ptr(NULL), cur(0), end(0), bytesAllocated(bytesAllocated), next(NULL) {}
+      : ptr(NULL), cur(0), end(0), bytesAllocated(0), next(NULL) {}
       
       Block (size_t bytes, Block* next = NULL) 
       : ptr(NULL), cur(0), end(bytes), bytesAllocated(0), next(next) {}

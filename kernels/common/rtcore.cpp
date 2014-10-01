@@ -519,9 +519,14 @@ namespace embree
     CATCH_BEGIN;
     TRACE(rtcCommitMT);
     VERIFY_HANDLE(scene);
-    if (numThreads == 0) 
+    if (unlikely(numThreads == 0)) 
       process_error(RTC_INVALID_OPERATION,"invalid number of threads specified");
 
+#if defined(__MIC__)
+    if (unlikely(numThreads % 4 != 0)) 
+      FATAL("MIC requires numThreads % 4 == 0 in rtcCommitThread");
+#endif
+    
     ((Scene*)scene)->build(threadID,numThreads);
 
     CATCH_END;

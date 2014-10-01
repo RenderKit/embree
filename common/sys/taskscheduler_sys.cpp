@@ -150,7 +150,7 @@ namespace embree
   {
     /* wait for available task */
     mutex.lock();
-    while ((end-begin) == 0 && !terminateThreads || !isEnabled(threadIndex)) {
+    while (((end-begin) == 0 && !terminateThreads) || !isEnabled(threadIndex)) {
       if (wait) condition.wait(mutex);
       else { mutex.unlock(); return; }
     }
