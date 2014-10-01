@@ -281,6 +281,7 @@ else:
 if mode == 'render':
   if len(sys.argv) < 4: printUsage()
   testDir = sys.argv[3]
+  os.system('mkdir '+testDir)
   if len(sys.argv) > 4: 
     modelDir = sys.argv[4]
   renderLoop(OS)
