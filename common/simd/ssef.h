@@ -294,6 +294,10 @@ __forceinline const ssef select(const int mask, const ssef& t, const ssef& f) {
   template<size_t dst>             __forceinline const ssef insert( const ssef& a, const float b ) { ssef c = a; c[dst] = b; return c; }
 #endif
 
+  __forceinline ssef broadcast4f( const ssef& a, const size_t k ) {  
+    return ssef::broadcast(&a[k]);
+  }
+
   ////////////////////////////////////////////////////////////////////////////////
   /// Transpose
   ////////////////////////////////////////////////////////////////////////////////

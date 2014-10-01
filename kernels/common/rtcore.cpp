@@ -272,7 +272,9 @@ namespace embree
 	  else if (isa == "sse3") cpu_features = SSE3;
 	  else if (isa == "ssse3") cpu_features = SSSE3;
 	  else if (isa == "sse41") cpu_features = SSE41;
+	  else if (isa == "sse4.1") cpu_features = SSE41;
 	  else if (isa == "sse42") cpu_features = SSE42;
+	  else if (isa == "sse4.2") cpu_features = SSE42;
 	  else if (isa == "avx") cpu_features = AVX;
 	  else if (isa == "avxi") cpu_features = AVXI;
 	  else if (isa == "avx2") cpu_features = AVX2;
