@@ -52,8 +52,8 @@ cp build/tutorial06_ispc $1/bin/x64
 cp build/tutorial07_ispc $1/bin/x64
 
 mkdir -p $1/lib/x64
-cp build/libembree.2.3.2.dylib $1/lib/x64
-ln -sf libembree.2.3.2.dylib $1/lib/x64/libembree.2.dylib 
+cp build/libembree.2.3.3.dylib $1/lib/x64
+ln -sf libembree.2.3.3.dylib $1/lib/x64/libembree.2.dylib 
 
 mkdir -p $1/include
 cp -r include/embree2 $1/include
