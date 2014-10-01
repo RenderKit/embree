@@ -84,7 +84,7 @@ namespace embree
       NodeRef createLargeLeaf(size_t threadIndex, Allocator& nodeAlloc, Allocator& leafAlloc, PrimRefList& prims, const PrimInfo& pinfo, size_t depth);
       
       /*! copies topmost nodes to improve memory layout */
-      NodeRef layout_top_nodes(size_t threadIndex, Allocator& nodeAlloc, Allocator& leafAlloc, NodeRef node);
+      NodeRef layout_top_nodes(size_t threadIndex, Allocator& nodeAlloc, NodeRef node);
 
       /*! finds best possible split for a list of triangles */
       template<bool PARALLEL>
@@ -92,20 +92,26 @@ namespace embree
 
       /*! creates a node from some build record */
       template<bool PARALLEL>
-      static size_t createNode(size_t threadIndex, size_t threadCount, Allocator& nodeAlloc, Allocator& leafAlloc, BVH8Builder* parent, BuildRecord& record, BuildRecord records_o[BVH8::N]);
+        static size_t createNode(size_t threadIndex, size_t threadCount, Allocator& nodeAlloc, Allocator& leafAlloc, 
+                                 BVH8Builder* parent, BuildRecord& record, BuildRecord records_o[BVH8::N]);
 
       /*! continues build */
-      void continue_build(size_t threadIndex, size_t threadCount, Allocator& nodeAlloc, Allocator& leafAlloc, BuildRecord& record);
+      void continue_build(size_t threadIndex, size_t threadCount, Allocator& nodeAlloc, Allocator& leafAlloc,
+                          BuildRecord& record);
 
       /*! recursively finishes build */
-      void finish_build(size_t threadIndex, size_t threadCount, Allocator& nodeAlloc, Allocator& leafAlloc, BuildRecord& record);
+      void finish_build(size_t threadIndex, size_t threadCount, Allocator& nodeAlloc, Allocator& leafAlloc,
+                        BuildRecord& record);
+
+      /*! performs some brute force restructuring of the tree */
+      void restructureTree(NodeRef& ref, size_t depth);
 
     protected:
       Scene* scene;                       //!< input geometry
-      LockStepTaskScheduler* scheduler;
       TriangleMesh* mesh;                 //!< input triangle mesh
       PrimRefBlockAlloc<PrimRef> alloc;   //!< Allocator for primitive blocks
       BVH8* bvh;                          //!< Output BVH8
+      LockStepTaskScheduler* scheduler;
 
       /*! build record task list */
     private:
@@ -115,10 +121,10 @@ namespace embree
      
       /*! builder configuration*/
     protected:
+      size_t listMode;
       size_t minLeafSize;                 //!< minimal size of a leaf
       size_t maxLeafSize;                 //!< maximal size of a leaf
       bool enableSpatialSplits;
-      size_t listMode;
       size_t logSAHBlockSize;             //!< set to the logarithm of block size to use for SAH
       atomic_t remainingReplications;     //!< remaining replications allowed by spatial splits
       

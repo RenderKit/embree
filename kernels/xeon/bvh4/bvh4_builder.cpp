@@ -76,7 +76,7 @@ namespace embree
     {
       /* allocate leaf node */
       size_t N = blocks(pinfo.size());
-      Triangle* leaf = (Triangle*) bvh->allocPrimitiveBlocks(nodeAlloc,N);
+      Triangle* leaf = (Triangle*) bvh->allocPrimitiveBlocks(nodeAlloc,N); // FIMXE: should be leafAlloc?
       assert(N <= (size_t)BVH4::maxLeafBlocks);
       
       /* insert all triangles */
