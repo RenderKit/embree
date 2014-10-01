@@ -73,7 +73,8 @@ supported_configurations = [
   'ICC_x64_Debug', 'ICC_x64_Release', 'ICC_x64_ReleaseAVX', 'ICC_x64_ReleaseAVX2', 
   'GCC_x64_Debug', 'GCC_x64_Release', 'GCC_x64_ReleaseAVX', 'GCC_x64_ReleaseAVX2', 
   'CLANG_x64_Debug', 'CLANG_x64_Release', 'CLANG_x64_ReleaseAVX', 'CLANG_x64_ReleaseAVX2', 
-  'V120_win32_Debug', 'V120_win32_Release', 'V120_win32_ReleaseAVX', 'V120_win32_ReleaseAVX2'
+  #'V120_win32_Debug',
+  'V120_win32_Release', 'V120_win32_ReleaseAVX', 'V120_win32_ReleaseAVX2'
   ]
 
 #builds_win = ['Debug']
