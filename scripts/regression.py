@@ -87,12 +87,13 @@ builds = []
 
 #platforms_win  = ['win32']
 platforms_win  = ['x64']
-#platforms_win  = ['win32', 'x64']
-platforms_unix = ['x64']
+platforms_win  = ['win32', 'x64']
+#platforms_unix = ['x64']
 platforms      = []
 
-#models = [ 'conference' ]
-models = [ 'conference', 'sponza', 'headlight', 'crown', 'bentley', 'xyz_dragon', 'powerplant' ]
+models = {}
+models['win32'] = [ 'conference', 'sponza', 'headlight', 'crown', 'bentley' ]
+models['x64'  ] = [ 'conference', 'sponza', 'headlight', 'crown', 'bentley', 'xyz_dragon', 'powerplant' ]
 
 modelDir  = ''
 testDir = ''
@@ -205,7 +206,7 @@ def render(OS, compiler, platform, build, tutorial, scene, flags):
     if ret == 0: sys.stdout.write(" [passed]\n")
     else       : sys.stdout.write(" [failed]\n")
 
-def processConfiguration(OS, compiler, platform, build):
+def processConfiguration(OS, compiler, platform, build, models):
   sys.stdout.write('compiling configuration ' + compiler + ' ' + platform + ' ' + build)
   sys.stdout.flush()
   ret = compile(OS,compiler,platform,build)
@@ -250,7 +251,7 @@ def renderLoop(OS):
       for platform in platforms:
         for build in builds:
           if build in supported_builds[compiler]:
-            processConfiguration(OS, compiler, platform, build)
+            processConfiguration(OS, compiler, platform, build, models[platform])
 
 ########################## command line parsing ##########################
 
