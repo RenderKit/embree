@@ -41,32 +41,40 @@
 <h2>Embree Tutorials</h2>
 
 <p>Embree comes with a set of tutorials aimed at helping users
-understand how embree can be used and extended. All tutorials exist in
+understand how Embree can be used and extended. All tutorials exist in
 an ISPC and C version to demonstrate the two versions of the API. Look
-for files names <code>tutorialXX_device.ispc</code> for the ISPC
+for files named <code>tutorialXX_device.ispc</code> for the ISPC
 implementation of the tutorial, and files named
-<code>tutorialXX_device.cpp</code> for the single ray C version of the
+<code>tutorialXX_device.cpp</code> for the single ray C++ version of the
 tutorial. To start the C++ version
 use the <code>tutorialXX</code> executables, to start the ISPC version
-use the <code>tutorialXX_ispc</code> executables.
+use the <code>tutorialXX_ispc</code> executables.</p>
 
-You can select an initial camera using the -vp (camera position), -vi
-(camera lookat point), -vu (camera up vector), and -fov (vertical
-field of view) command line parameters:
+<p>Under Linux Embree also comes with an ISPC version of all tutorials
+for the Xeon Phi&trade; Coprocessor. The executables of this version of
+the tutorials are named <code>tutorialXX_xeonphi</code> and only work
+if a Xeon Phi&trade; Coprocessor is present in the system. The Xeon
+Phi&trade; version of the tutorials get started on the host CPU, just
+like all other tutorials, and will connect automatically to one
+installed Xeon Phi&trade; Coprocessor in the system.</p>
+
+<p>For all tutorials, you can select an initial camera using the -vp
+(camera position), -vi (camera lookat point), -vu (camera up vector),
+and -fov (vertical field of view) command line parameters:</p>
 
 <p><pre><code>./tutorial00 -vp 10 10 10 -vi 0 0 0
 </code></pre></p>
 
-You can select the initial windows size using the -size command line
+<p>You can select the initial windows size using the -size command line
 parameter, or start the tutorials in fullscreen using the -fullscreen
-parameter:
+parameter:</p>
 
 <p><pre><code>./tutorial00 -size 1024 1024
 ./tutorial00 -fullscreen
 </code></pre></p>
 
-Implementation specific parameters can be passed to the ray tracing
-core through the -rtcore command line parameter, e.g.:
+<p>Implementation specific parameters can be passed to the ray tracing
+core through the -rtcore command line parameter, e.g.:</p>
 
 <p><pre><code>./tutorial00 -rtcore verbose=2,threads=1,accel=bvh4.triangle1
 </code></pre></p>
