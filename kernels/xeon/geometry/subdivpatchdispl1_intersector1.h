@@ -163,12 +163,9 @@ namespace embree
     /*! Intersect a ray with the triangle and updates the hit. */
     static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Primitive& prim, const void* geom)
     {
+      STAT3(normal.trav_prims,1,1,1);
       size_t bx = prim.bx;
       size_t by = prim.by;
-
-      /* load triangle */
-      STAT3(normal.trav_prims,1,1,1);
-      //SubTree& prim = *prim_i.subtree;
 
       /*! load the ray into SIMD registers */
       const Vec3fa ray_rdir = rcp_safe(ray.dir);
@@ -185,48 +182,19 @@ namespace embree
       const size_t nearY = ray_rdir.y >= 0.0f ? 2*sizeof(ssef) : 3*sizeof(ssef);
       const size_t nearZ = ray_rdir.z >= 0.0f ? 4*sizeof(ssef) : 5*sizeof(ssef);
 
-      /*! stack handling */
-      struct StackItem {
-        __forceinline StackItem() {}
-        __forceinline StackItem(unsigned x, unsigned y) : x(x), y(y) {}
-        unsigned x,y;
-      };
-      StackItem stack[16];
-      size_t end = 0;
-      
+      /* perform box tests */
       ssef dist;
-      size_t x = 0, y = 0;
-      size_t mask = prim.n00.intersect<false>(nearX, nearY, nearZ, org, rdir, org_rdir, ray_tnear, ray_tfar, dist);
-      if (mask & 1) stack[end++] = StackItem(0,0);
-      if (mask & 2) stack[end++] = StackItem(1,0);
-      if (mask & 4) stack[end++] = StackItem(0,1);
-      if (mask & 8) stack[end++] = StackItem(1,1);
-      
-      x = 0, y = 1;
-      mask = prim.n01.intersect<false>(nearX, nearY, nearZ, org, rdir, org_rdir, ray_tnear, ray_tfar, dist);
-      if (mask & 1) stack[end++] = StackItem(0,2);
-      if (mask & 2) stack[end++] = StackItem(1,2);
-      if (mask & 4) stack[end++] = StackItem(0,3);
-      if (mask & 8) stack[end++] = StackItem(1,3);
+      const size_t mask0 = prim.n00.intersect<false>(nearX, nearY, nearZ, org, rdir, org_rdir, ray_tnear, ray_tfar, dist);
+      const size_t mask1 = prim.n10.intersect<false>(nearX, nearY, nearZ, org, rdir, org_rdir, ray_tnear, ray_tfar, dist);
+      const size_t mask2 = prim.n01.intersect<false>(nearX, nearY, nearZ, org, rdir, org_rdir, ray_tnear, ray_tfar, dist);
+      const size_t mask3 = prim.n11.intersect<false>(nearX, nearY, nearZ, org, rdir, org_rdir, ray_tnear, ray_tfar, dist);
+      size_t mask = mask0 | (mask1 << 4) | (mask2 << 8) | (mask3 << 12);
 
-      x = 1, y = 0;
-      mask = prim.n10.intersect<false>(nearX, nearY, nearZ, org, rdir, org_rdir, ray_tnear, ray_tfar, dist);
-      if (mask & 1) stack[end++] = StackItem(2,0);
-      if (mask & 2) stack[end++] = StackItem(3,0);
-      if (mask & 4) stack[end++] = StackItem(2,1);
-      if (mask & 8) stack[end++] = StackItem(3,1);
-
-      x = 1, y = 1;
-      mask = prim.n11.intersect<false>(nearX, nearY, nearZ, org, rdir, org_rdir, ray_tnear, ray_tfar, dist);
-      if (mask & 1) stack[end++] = StackItem(2,2);
-      if (mask & 2) stack[end++] = StackItem(3,2);
-      if (mask & 4) stack[end++] = StackItem(2,3);
-      if (mask & 8) stack[end++] = StackItem(3,3);
-      
-      for (size_t i=0; i<end; i++) 
-      {
-        const size_t x = 2*stack[i].x;
-        const size_t y = 2*stack[i].y;
+      /* intersect quad-quads */
+      while (mask) {
+        size_t i = __bscf(mask);
+        const size_t x = 2*(i&1) + (i&4);
+        const size_t y = (i&2) + ((i&8) >> 1); 
         const Vec3fa& v00 = prim.vertices(bx+x+0,by+y+0);
         const Vec3fa& v10 = prim.vertices(bx+x+1,by+y+0);
         const Vec3fa& v20 = prim.vertices(bx+x+2,by+y+0);
