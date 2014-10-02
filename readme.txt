@@ -119,7 +119,7 @@ finally install the Embree library and header files on your system:
 If you cannot install Embree on your system (e.g. when you don't have
 administrator rights) you need to add embree_root_directory/build to your
 LD_LIBRARY_PATH (and SINK_LD_LIBRARY_PATH in case you want to use Embree on
-Xeon Phi).
+Xeon Phi[TM]).
 
 The default configuration in the configuration dialog should be appropiate for
 most usages. The following table described all parameters that can be
@@ -162,6 +162,7 @@ XEON_PHI_ISA               Enables generation of Xeon Phi[TM]    OFF
 You need at least Intel Compiler 11.1 or GCC 4.4 to enable AVX and Intel
 Compiler 12.1 or GCC 4.7 to enable AVX2.
 
+If you want to compile Embree for Xeon Phi[TM] you need the Intel Compiler.
 Enabling the buffer stride feature reduces performance for building spatial
 hierarchies on Xeon Phi[TM].
 
@@ -199,19 +200,23 @@ C++" editor.
 == Embree Tutorials  ==
 
 Embree comes with a set of tutorials aimed at helping users understand how
-embree can be used and extended. All tutorials exist in an ISPC and C version
+Embree can be used and extended. All tutorials exist in an ISPC and C version
 to demonstrate the two versions of the API. Look for files named
 tutorialXX_device.ispc for the ISPC implementation of the tutorial, and files
-named tutorialXX_device.cpp for the single ray C version of the tutorial. To
+named tutorialXX_device.cpp for the single ray C++ version of the tutorial. To
 start the C++ version use the tutorialXX executables, to start the ISPC version
-use the tutorialXX_ispc executables. Under Linux Embree also comes with an ISPC
-version of all tutorials for the Xeon Phi[TM] Coprocessor. The executables of
-these tutorials are named tutorialXX_knc and will only work if a Xeon Phi[TM]
-Coprocessor is present in the system.
+use the tutorialXX_ispc executables.
 
-You can select an initial camera using the -vp (camera position), -vi (camera
-lookat point), -vu (camera up vector), and -fov (vertical field of view)
-command line parameters:
+Under Linux Embree also comes with an ISPC version of all tutorials for the
+Xeon Phi[TM] Coprocessor. The executables of this version of the tutorials are
+named tutorialXX_xeonphi and only work if a Xeon Phi[TM] Coprocessor is present
+in the system. The Xeon Phi[TM] version of the tutorials get started on the
+host CPU, just like all other tutorials, and will connect automatically to one
+installed Xeon Phi[TM] Coprocessor in the system.
+
+For all tutorials, you can select an initial camera using the -vp (camera
+position), -vi (camera lookat point), -vu (camera up vector), and -fov
+(vertical field of view) command line parameters:
 
  ./tutorial00 -vp 10 10 10 -vi 0 0 0
 
