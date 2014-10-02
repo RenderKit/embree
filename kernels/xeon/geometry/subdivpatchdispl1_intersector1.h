@@ -25,7 +25,7 @@ namespace embree
   template<bool list>
   struct SubdivPatchDispl1Intersector1
   {
-    typedef SubdivPatchDispl1::Leaf Primitive;
+    typedef SubdivPatchDispl1::QuadQuad4x4 Primitive;
     typedef SubdivPatchDispl1::SmallNode Node;
 
     struct Precalculations {

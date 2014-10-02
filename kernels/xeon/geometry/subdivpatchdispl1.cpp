@@ -22,7 +22,8 @@ namespace embree
   SubdivPatchDispl1::Type SubdivPatchDispl1::type;
   
   SubdivPatchDispl1::Type::Type () 
-    : PrimitiveType("subdivpatchdispl1",sizeof(SubdivPatchDispl1),1,false,1) {} 
+  : PrimitiveType("subdivpatchdispl1",sizeof(SubdivPatchDispl1),1,false,1) {} 
+  //: PrimitiveType("quadquad4x4",sizeof(SubdivPatchDispl1::QuadQuad4x4),1,false,1) {} 
   
   size_t SubdivPatchDispl1::Type::blocks(size_t x) const {
     return x;

@@ -121,15 +121,12 @@ namespace embree
       ssef upper_z;           //!< Z dimension of upper bounds of all 4 children.
     };
     
-    struct Leaf
+    struct QuadQuad4x4
     {
     public:
       
-      __forceinline Leaf(unsigned x, unsigned y, Array2D<Vec3fa>& vertices, unsigned levels, unsigned geomID, unsigned primID)
-        : bx(x), by(y), vertices(vertices), levels(levels-1), geomID(geomID), primID(primID)
-      {
-        //build(&n0,0,0,0);
-      }
+      __forceinline QuadQuad4x4(unsigned x, unsigned y, Array2D<Vec3fa>& vertices, unsigned levels, unsigned geomID, unsigned primID)
+        : bx(x), by(y), vertices(vertices), levels(levels-1), geomID(geomID), primID(primID) {}
 
       const BBox3fa leafBounds(size_t x, size_t y)
       {
@@ -180,14 +177,13 @@ namespace embree
       unsigned levels;           //!< number of stored levels
       unsigned primID;
       unsigned geomID;
-      //SmallNode n0;                  //!< root node
       SmallNode n00, n10, n01, n11;  //!< child nodes
     };
     
     const std::pair<BBox3fa,BVH4::NodeRef> build(LinearAllocatorPerThread::ThreadAllocator& alloc, unsigned x, unsigned y, unsigned l, unsigned maxDepth)
     {
       if (l == maxDepth) {
-        new (&leaves(x,y)) Leaf(8*x,8*y,v,3,geomID<true>(),primID<true>());
+        new (&leaves(x,y)) QuadQuad4x4(8*x,8*y,v,3,geomID<true>(),primID<true>());
         const BBox3fa bounds = leaves(x,y).build();
         return std::pair<BBox3fa,BVH4::NodeRef>(bounds,bvh.encodeLeaf(&leaves(x,y),1));
       }
@@ -454,20 +450,17 @@ namespace embree
       } 
 
   public:
-    //const SubdivMesh::HalfEdge* first_half_edge;  //!< pointer to first half edge of this patch
-    //const Vec3fa* vertices;                       //!< pointer to vertex array
-    //unsigned int subdivision_level;
-    //unsigned int flags;
-    //unsigned int geom;                            //!< geometry ID of the subdivision mesh this patch belongs to
-    //unsigned int prim;                            //!< primitive ID of this subdivision patch
-
     size_t K;
+    size_t levels;
     CatmullClark1Ring ring00,ring01,ring10,ring11;
     CatmullClark1Edge edgeT, edgeB, edgeL, edgeR; 
-    Array2D<Vec3fa> v;
-    size_t levels;
-    Array2D<Leaf> leaves;
+
+  public:
     BVH4 bvh;
+    Array2D<QuadQuad4x4> leaves;
+    Array2D<Vec3fa> v;
+
+  public:
     unsigned geom;
     unsigned prim;
   };
