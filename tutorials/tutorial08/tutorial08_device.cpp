@@ -393,7 +393,10 @@ Vec3fa renderPixelEyeLightTest(float x, float y, const Vec3fa& vx, const Vec3fa&
 
   /* shade pixel */
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return Vec3fa(0,0,1.0f);
-  else return Vec3fa(embree::abs(dot(ray.dir,normalize(ray.Ng))));
+  else {
+    //DBG_PRINT( embree::abs(dot(ray.dir,normalize(ray.Ng))) );
+    return Vec3fa(embree::abs(dot(ray.dir,normalize(ray.Ng))));
+  }
 }
 
 extern "C" void device_init(int8 *configuration) {

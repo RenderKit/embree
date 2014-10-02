@@ -580,13 +580,11 @@ namespace embree
     }
     __forceinline Vec3fa evalCubicBSplinePatch(const float uu, const float vv) const
     {
-      __aligned(64) Vec3fa curve[4];
-
-#pragma unroll(4)
-      for (size_t i=0;i<4;i++)
-	curve[i] = CubicBSpline::eval(vv,v[0][i],v[1][i],v[2][i],v[3][i]);
-
-      return CubicBSpline::eval(uu,curve[0],curve[1],curve[2],curve[3]);
+      const Vec3fa curve0 = CubicBSpline::eval(vv,v[0][0],v[1][0],v[2][0],v[3][0]);
+      const Vec3fa curve1 = CubicBSpline::eval(vv,v[0][1],v[1][1],v[2][1],v[3][1]);
+      const Vec3fa curve2 = CubicBSpline::eval(vv,v[0][2],v[1][2],v[2][2],v[3][2]);
+      const Vec3fa curve3 = CubicBSpline::eval(vv,v[0][3],v[1][3],v[2][3],v[3][3]);
+      return CubicBSpline::eval(uu,curve0,curve1,curve2,curve3);
     }
   };
 

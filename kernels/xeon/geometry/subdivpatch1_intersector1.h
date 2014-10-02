@@ -244,7 +244,10 @@ namespace embree
 	{
 	  RegularCatmullClarkPatch regular_patch;
 	  subdiv_patch.init( regular_patch );
-	  subdivide_intersect1(pre, ray,regular_patch,g_subdivision_level);
+	  //subdivide_intersect1(pre, ray,regular_patch,g_subdivision_level);
+	  Vec2f s(0.0f,1.0f);
+	  Vec2f t(0.0f,1.0f);
+	  subdivide_intersect1_bspline(pre, ray,regular_patch,s,t,g_subdivision_level);
 	}
       else
 	{
