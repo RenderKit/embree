@@ -554,6 +554,14 @@ namespace embree
       quad.primID = 0;
     };
 
+    __forceinline BBox3fa getBounds() const
+    {
+      const Vec3fa *const cv = &v[0][0];
+      BBox3fa bounds ( cv[0] );
+      for (size_t i = 1; i<16 ; i++)
+	bounds.extend( cv[i] );
+      return bounds;
+    }
     __forceinline Vec3fa evalCubicBSplinePatch(const float uu, const float vv)
     {
       __aligned(64) Vec3fa curve[4];
