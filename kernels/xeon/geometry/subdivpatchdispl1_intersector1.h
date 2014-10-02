@@ -113,9 +113,9 @@ namespace embree
       const Vec3fa O = ray.org;
       const Vec3fa D = ray.dir;
       
-      const Vec3fa q00 = v00-O, q01 = v01-O, q02 = v02-O;
-      const Vec3fa q10 = v10-O, q11 = v11-O, q12 = v12-O;
-      const Vec3fa q20 = v20-O, q21 = v21-O, q22 = v22-O;
+      const Vec3fa q00 = v00-O, q10 = v10-O, q20 = v20-O;
+      const Vec3fa q01 = v01-O, q11 = v11-O, q21 = v21-O;
+      const Vec3fa q02 = v02-O, q12 = v12-O, q22 = v22-O;
 
       const Vec3fa e0001 = q01-q00; const float u0001 = dot(cross(q01+q00,e0001),D);
       const Vec3fa e0102 = q02-q01; const float u0102 = dot(cross(q02+q01,e0102),D);
