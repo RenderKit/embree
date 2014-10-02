@@ -116,47 +116,47 @@ namespace embree
       const Vec3fa q10 = v10-O, q11 = v11-O, q12 = v12-O;
       const Vec3fa q20 = v20-O, q21 = v21-O, q22 = v22-O;
 
-      const Vec3fa e0001 = q00-q01; const float u0001 = dot(cross(q00,e0001),D);
-      const Vec3fa e0102 = q01-q02; const float u0102 = dot(cross(q01,e0102),D);
-      const Vec3fa e1011 = q10-q11; const float u1011 = dot(cross(q10,e1011),D);
-      const Vec3fa e1112 = q11-q12; const float u1112 = dot(cross(q11,e1112),D);
-      const Vec3fa e2021 = q20-q21; const float u2021 = dot(cross(q20,e2021),D);
-      const Vec3fa e2122 = q21-q22; const float u2122 = dot(cross(q21,e2122),D);
+      const Vec3fa e0001 = q01-q00; const float u0001 = dot(cross(q00,e0001),D);
+      const Vec3fa e0102 = q02-q01; const float u0102 = dot(cross(q01,e0102),D);
+      const Vec3fa e1011 = q11-q10; const float u1011 = dot(cross(q10,e1011),D);
+      const Vec3fa e1112 = q12-q11; const float u1112 = dot(cross(q11,e1112),D);
+      const Vec3fa e2021 = q21-q20; const float u2021 = dot(cross(q20,e2021),D);
+      const Vec3fa e2122 = q22-q21; const float u2122 = dot(cross(q21,e2122),D);
       
-      const Vec3fa e0010 = q00-q10; const float u0010 = dot(cross(q00,e0010),D);
-      const Vec3fa e1020 = q10-q20; const float u1020 = dot(cross(q10,e1020),D);
-      const Vec3fa e0111 = q01-q11; const float u0111 = dot(cross(q01,e0111),D);
-      const Vec3fa e1121 = q11-q21; const float u1121 = dot(cross(q11,e1121),D);
-      const Vec3fa e0212 = q02-q12; const float u0212 = dot(cross(q02,e0212),D);
-      const Vec3fa e1222 = q12-q22; const float u1222 = dot(cross(q12,e1222),D);
+      const Vec3fa e0010 = q10-q00; const float u0010 = dot(cross(q00,e0010),D);
+      const Vec3fa e1020 = q20-q10; const float u1020 = dot(cross(q10,e1020),D);
+      const Vec3fa e0111 = q11-q01; const float u0111 = dot(cross(q01,e0111),D);
+      const Vec3fa e1121 = q21-q11; const float u1121 = dot(cross(q11,e1121),D);
+      const Vec3fa e0212 = q12-q02; const float u0212 = dot(cross(q02,e0212),D);
+      const Vec3fa e1222 = q22-q12; const float u1222 = dot(cross(q12,e1222),D);
       
-      const Vec3fa e0011 = q00-q11; const float u0011 = dot(cross(q00,e0011),D);
-      const Vec3fa e0112 = q01-q12; const float u0112 = dot(cross(q01,e0112),D);
-      const Vec3fa e1021 = q10-q21; const float u1021 = dot(cross(q10,e1021),D);
-      const Vec3fa e1122 = q11-q22; const float u1122 = dot(cross(q11,e1122),D);
+      const Vec3fa e0011 = q11-q00; const float u0011 = dot(cross(q00,e0011),D);
+      const Vec3fa e0112 = q12-q01; const float u0112 = dot(cross(q01,e0112),D);
+      const Vec3fa e1021 = q21-q10; const float u1021 = dot(cross(q10,e1021),D);
+      const Vec3fa e1122 = q22-q11; const float u1122 = dot(cross(q11,e1122),D);
 
-      if (u0011 <= 0.0f) {
-        if (u0001 >= 0.0f && u0111 >= 0.0f) intersectFinish(ray,q00,+e0001,+e0111,-e0011,+u0001,+u0111,-u0011,geomID,primID);
+      if (u0011 >= 0.0f) {
+        if (u0001 <= 0.0f && u0111 <= 0.0f) intersectFinish(ray,q00,-e0001,-e0111,+e0011,-u0001,-u0111,+u0011,geomID,primID);
       } else {
-        if (u1011 <= 0.0f && u0010 <= 0.0f) intersectFinish(ray,q00,+e0011,-e1011,-e0010,+u0011,-u1011,-u0010,geomID,primID);
+        if (u1011 >= 0.0f && u0010 >= 0.0f) intersectFinish(ray,q00,-e0011,+e1011,+e0010,-u0011,+u1011,+u0010,geomID,primID);
       }
       
-      if (u0112 <= 0.0f) {
-        if (u0102 >= 0.0f && u0212 >= 0.0f) intersectFinish(ray,q01,+e0102,+e0212,-e0112,+u0102,+u0212,-u0112,geomID,primID);
+      if (u0112 >= 0.0f) {
+        if (u0102 <= 0.0f && u0212 <= 0.0f) intersectFinish(ray,q01,-e0102,-e0212,+e0112,-u0102,-u0212,+u0112,geomID,primID);
       } else {
-        if (u1112 <= 0.0f && u0111 <= 0.0f) intersectFinish(ray,q01,+e0112,-e1112,-e0111,+u0112,-u1112,-u0111,geomID,primID);
+        if (u1112 >= 0.0f && u0111 >= 0.0f) intersectFinish(ray,q01,-e0112,+e1112,+e0111,-u0112,+u1112,+u0111,geomID,primID);
       }
       
-      if (u1021 <= 0.0f) {
-        if (u1011 >= 0.0f && u1121 >= 0.0f) intersectFinish(ray,q10,+e1011,+e1121,-e1021,+u1011,+u1121,-u1021,geomID,primID);
+      if (u1021 >= 0.0f) {
+        if (u1011 <= 0.0f && u1121 <= 0.0f) intersectFinish(ray,q10,-e1011,-e1121,+e1021,-u1011,-u1121,+u1021,geomID,primID);
       } else {
-        if (u2021 <= 0.0f && u1020 <= 0.0f) intersectFinish(ray,q10,+e1021,-e2021,-e1020,+u1021,-u2021,-u1020,geomID,primID);
+        if (u2021 >= 0.0f && u1020 >= 0.0f) intersectFinish(ray,q10,-e1021,+e2021,+e1020,-u1021,+u2021,+u1020,geomID,primID);
       }
       
-      if (u1122 <= 0.0f) {
-        if (u1112 >= 0.0f && u1222 >= 0.0f) intersectFinish(ray,q11,+e1112,+e1222,-e1122,+u1112,+u1222,-u1122,geomID,primID);
+      if (u1122 >= 0.0f) {
+        if (u1112 <= 0.0f && u1222 <= 0.0f) intersectFinish(ray,q11,-e1112,-e1222,+e1122,-u1112,-u1222,+u1122,geomID,primID);
       } else {
-        if (u2122 <= 0.0f && u1121 <= 0.0f) intersectFinish(ray,q11,+e1122,-e2122,-e1121,+u1122,-u2122,-u1121,geomID,primID);
+        if (u2122 >= 0.0f && u1121 >= 0.0f) intersectFinish(ray,q11,-e1122,+e2122,+e1121,-u1122,+u2122,+u1121,geomID,primID);
       }
     }
     
