@@ -105,9 +105,9 @@ namespace embree
       }
 
     static __forceinline void intersectQuadQuad (Ray& ray, 
-                                                 const Vec3fa& v00, const Vec3fa& v01, const Vec3fa& v02,
-                                                 const Vec3fa& v10, const Vec3fa& v11, const Vec3fa& v12,
-                                                 const Vec3fa& v20, const Vec3fa& v21, const Vec3fa& v22,
+                                                 const Vec3fa& v00, const Vec3fa& v10, const Vec3fa& v20,
+                                                 const Vec3fa& v01, const Vec3fa& v11, const Vec3fa& v21,
+                                                 const Vec3fa& v02, const Vec3fa& v12, const Vec3fa& v22,
                                                  const unsigned geomID, const unsigned primID)
     {
       const Vec3fa O = ray.org;
@@ -237,7 +237,7 @@ namespace embree
         intersectTriangle(ray,v11,v22,v21,prim.geomID,prim.primID);
         intersectTriangle(ray,v11,v12,v22,prim.geomID,prim.primID);
 #else
-        intersectQuadQuad(ray,v00,v01,v02,v10,v11,v12,v20,v21,v22,prim.geomID,prim.primID);
+        intersectQuadQuad(ray,v00,v10,v20,v01,v11,v21,v02,v12,v22,prim.geomID,prim.primID);
 #endif
       }
       ray_tfar = ray.tfar;
