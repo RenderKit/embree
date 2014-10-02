@@ -136,8 +136,6 @@ namespace embree
         if (l == levels) {
           BBox3fa bounds = empty;
           x *= 2; y *= 2;
-          PRINT2(bx,by);
-          PRINT2(x,y);
           bounds.extend(vertices(bx+x+0,by+y+0));
           bounds.extend(vertices(bx+x+1,by+y+0));
           bounds.extend(vertices(bx+x+2,by+y+0));
@@ -164,7 +162,7 @@ namespace embree
       unsigned primID;
       unsigned geomID;
       SmallNode n0;                  //!< root node
-      SmallNode n00, n01, n10, n11;  //!< child nodes
+      SmallNode n00, n10, n01, n11;  //!< child nodes
     };
     
     const std::pair<BBox3fa,BVH4::NodeRef> build(LinearAllocatorPerThread::ThreadAllocator& alloc, unsigned x, unsigned y, unsigned l, unsigned maxDepth)

@@ -184,39 +184,46 @@ namespace embree
       const size_t nearX = ray_rdir.x >= 0.0f ? 0*sizeof(ssef) : 1*sizeof(ssef);
       const size_t nearY = ray_rdir.y >= 0.0f ? 2*sizeof(ssef) : 3*sizeof(ssef);
       const size_t nearZ = ray_rdir.z >= 0.0f ? 4*sizeof(ssef) : 5*sizeof(ssef);
-      
+
       /*! stack handling */
       struct StackItem {
         __forceinline StackItem() {}
         __forceinline StackItem(unsigned x, unsigned y) : x(x), y(y) {}
         unsigned x,y;
       };
-      const size_t N = 128*128; // FIXME: this is unsafe
-      StackItem stack[N];
-      size_t begin = 0, end = 1;
-      stack[0] = StackItem(0,0);
-      const Node* base = &prim.n0;
+      StackItem stack[16];
+      size_t end = 0;
       
-      for (size_t l=0; l<prim.levels; l++)
-      {
-        size_t tail = end;
-        size_t w = 1<<l;
-        for (size_t i=begin; i<end; i++) 
-        {
-          const size_t x = stack[i].x;
-          const size_t y = stack[i].y;
-          ssef dist;
-          size_t mask = base[y*w+x].intersect<false>(nearX, nearY, nearZ, org, rdir, org_rdir, ray_tnear, ray_tfar, dist);
-          if (mask & 1) stack[tail++] = StackItem(2*x+0,2*y+0);
-          if (mask & 2) stack[tail++] = StackItem(2*x+1,2*y+0);
-          if (mask & 4) stack[tail++] = StackItem(2*x+0,2*y+1);
-          if (mask & 8) stack[tail++] = StackItem(2*x+1,2*y+1);
-        }
-        begin = end; end = tail; 
-        base += w*w;
-      }
+      ssef dist;
+      size_t x = 0, y = 0;
+      size_t mask = prim.n00.intersect<false>(nearX, nearY, nearZ, org, rdir, org_rdir, ray_tnear, ray_tfar, dist);
+      if (mask & 1) stack[end++] = StackItem(0,0);
+      if (mask & 2) stack[end++] = StackItem(1,0);
+      if (mask & 4) stack[end++] = StackItem(0,1);
+      if (mask & 8) stack[end++] = StackItem(1,1);
       
-      for (size_t i=begin; i<end; i++) 
+      x = 0, y = 1;
+      mask = prim.n01.intersect<false>(nearX, nearY, nearZ, org, rdir, org_rdir, ray_tnear, ray_tfar, dist);
+      if (mask & 1) stack[end++] = StackItem(0,2);
+      if (mask & 2) stack[end++] = StackItem(1,2);
+      if (mask & 4) stack[end++] = StackItem(0,3);
+      if (mask & 8) stack[end++] = StackItem(1,3);
+
+      x = 1, y = 0;
+      mask = prim.n10.intersect<false>(nearX, nearY, nearZ, org, rdir, org_rdir, ray_tnear, ray_tfar, dist);
+      if (mask & 1) stack[end++] = StackItem(2,0);
+      if (mask & 2) stack[end++] = StackItem(3,0);
+      if (mask & 4) stack[end++] = StackItem(2,1);
+      if (mask & 8) stack[end++] = StackItem(3,1);
+
+      x = 1, y = 1;
+      mask = prim.n11.intersect<false>(nearX, nearY, nearZ, org, rdir, org_rdir, ray_tnear, ray_tfar, dist);
+      if (mask & 1) stack[end++] = StackItem(2,2);
+      if (mask & 2) stack[end++] = StackItem(3,2);
+      if (mask & 4) stack[end++] = StackItem(2,3);
+      if (mask & 8) stack[end++] = StackItem(3,3);
+      
+      for (size_t i=0; i<end; i++) 
       {
         const size_t x = 2*stack[i].x;
         const size_t y = 2*stack[i].y;
@@ -229,20 +236,8 @@ namespace embree
         const Vec3fa& v02 = prim.vertices(bx+x+0,by+y+2);
         const Vec3fa& v12 = prim.vertices(bx+x+1,by+y+2);
         const Vec3fa& v22 = prim.vertices(bx+x+2,by+y+2);
-#if 0
-        intersectTriangle(ray,v00,v11,v10,prim.geomID,prim.primID);
-        intersectTriangle(ray,v00,v01,v11,prim.geomID,prim.primID);
-        intersectTriangle(ray,v10,v21,v20,prim.geomID,prim.primID);
-        intersectTriangle(ray,v10,v11,v21,prim.geomID,prim.primID);
-        intersectTriangle(ray,v01,v12,v11,prim.geomID,prim.primID);
-        intersectTriangle(ray,v01,v02,v12,prim.geomID,prim.primID);
-        intersectTriangle(ray,v11,v22,v21,prim.geomID,prim.primID);
-        intersectTriangle(ray,v11,v12,v22,prim.geomID,prim.primID);
-#else
         intersectQuadQuad(ray,v00,v10,v20,v01,v11,v21,v02,v12,v22,prim.geomID,prim.primID);
-#endif
       }
-      ray_tfar = ray.tfar;
     }
     
     /*! Test if the ray is occluded by the primitive */

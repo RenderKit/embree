@@ -315,7 +315,7 @@ namespace embree
     size_t N = subdivmesh->numFaces;
     for (size_t i=0; i<N; i++)
     {
-      SubdivPatchDispl1* patch = new SubdivPatchDispl1(&subdivmesh->halfEdges[4*i], subdivmesh->getVertexPositionPtr(0), 0, i, 8, true); // FIXME: wrong geomID
+      SubdivPatchDispl1* patch = new SubdivPatchDispl1(this,&subdivmesh->halfEdges[4*i], subdivmesh->getVertexPositionPtr(0), 0, i, 8, true); // FIXME: wrong geomID
       const size_t width  = patch->size();
       const size_t height = patch->size();
       TriangleMesh* mesh = new TriangleMesh (this, RTC_GEOMETRY_STATIC, (width-1)*(height-1)*2, width*height, 1);
