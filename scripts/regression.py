@@ -87,9 +87,9 @@ builds_win = ['Release', 'Debug', 'ReleaseAVX', 'ReleaseAVX2']
 builds_unix = ['Release', 'Debug', 'ReleaseAVX', 'ReleaseAVX2']
 builds = []
 
-platforms_win  = ['win32']
+#platforms_win  = ['win32']
 #platforms_win  = ['x64']
-#platforms_win  = ['win32', 'x64']
+platforms_win  = ['win32', 'x64']
 platforms_unix = ['x64']
 platforms      = []
 

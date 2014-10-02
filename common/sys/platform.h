@@ -99,7 +99,6 @@
 
 #if defined(__WIN32__) 
 #if defined(CONFIG_AVX)
-  #define __TARGET_AVX__
   #if defined(_MSC_VER) && !defined(__INTEL_COMPILER)
     #define __SSE3__
     #define __SSSE3__
@@ -111,8 +110,6 @@
   #endif
 #endif
 #if defined(CONFIG_AVX2)
-  #define __TARGET_AVX__
-  #define __TARGET_AVX2__
   #if defined(_MSC_VER) && !defined(__INTEL_COMPILER)
     #define __SSE3__
     #define __SSSE3__
