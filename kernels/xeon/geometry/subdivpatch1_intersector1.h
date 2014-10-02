@@ -222,6 +222,13 @@ namespace embree
 				     const RegularCatmullClarkPatch &patch,
 				     const unsigned int subdiv_level = 0);
 
+    static void subdivide_intersect1_bspline(const Precalculations& pre,
+					     Ray& ray,
+					     const RegularCatmullClarkPatch &patch,
+					     const Vec2f &s,
+					     const Vec2f &t,
+					     const unsigned int subdiv_level = 0);
+
     static bool subdivide_occluded1(const Precalculations& pre,
 				    Ray& ray,
 				    const RegularCatmullClarkPatch &patch,

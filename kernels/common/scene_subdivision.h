@@ -578,7 +578,7 @@ namespace embree
 	bounds.extend( cv[i] );
       return bounds;
     }
-    __forceinline Vec3fa evalCubicBSplinePatch(const float uu, const float vv)
+    __forceinline Vec3fa evalCubicBSplinePatch(const float uu, const float vv) const
     {
       __aligned(64) Vec3fa curve[4];
 
