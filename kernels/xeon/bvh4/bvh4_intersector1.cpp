@@ -297,7 +297,7 @@ namespace embree
     DEFINE_INTERSECTOR1(BVH4Triangle4vIntersector1Pluecker,BVH4Intersector1<0x1 COMMA true COMMA LeafIterator1<Triangle4vIntersector1Pluecker<LeafMode> > >);
     DEFINE_INTERSECTOR1(BVH4Triangle4iIntersector1Pluecker,BVH4Intersector1<0x1 COMMA true COMMA LeafIterator1<Triangle4iIntersector1Pluecker<LeafMode> > >);
 
-    DEFINE_INTERSECTOR1(BVH4Subdivpatch1Intersector1,BVH4Intersector1<0x1 COMMA false COMMA LeafIterator1<SubdivPatch1Intersector1<LeafMode> > >);
+    DEFINE_INTERSECTOR1(BVH4Subdivpatch1Intersector1,BVH4Intersector1<0x1 COMMA false COMMA LeafIterator1<SubdivPatch1Intersector1 > >);
     DEFINE_INTERSECTOR1(BVH4SubdivpatchDispl1Intersector1,BVH4Intersector1<0x1 COMMA false COMMA LeafIterator1<SubdivPatchDispl1Intersector1<LeafMode> > >);
 
     DEFINE_INTERSECTOR1(BVH4VirtualIntersector1,BVH4Intersector1<0x1 COMMA false COMMA LeafIterator1<VirtualAccelIntersector1> >);

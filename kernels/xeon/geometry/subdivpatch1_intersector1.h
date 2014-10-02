@@ -175,32 +175,58 @@ namespace embree
       return true;
     }
 
-  void subdivide_intersect1(Ray& ray,
-			    const IrregularCatmullClarkPatch &patch,
-			    const unsigned int subdiv_level = 0);
-
-  bool subdivide_occluded1(Ray& ray,
-			   const IrregularCatmullClarkPatch &patch,
-			   const unsigned int subdiv_level = 0);
-
-  void subdivide_intersect1(Ray& ray,
-			    const RegularCatmullClarkPatch &patch,
-			    const unsigned int subdiv_level = 0);
-
-  bool subdivide_occluded1(Ray& ray,
-			   const RegularCatmullClarkPatch &patch,
-			   const unsigned int subdiv_level = 0);
 
   extern size_t g_subdivision_level;
 
-  template<bool list>
+  //template<bool list>
   struct SubdivPatch1Intersector1
   {
     typedef SubdivPatch1 Primitive;
 
     struct Precalculations {
-      __forceinline Precalculations (const Ray& ray) {}
+      Vec3fa ray_rdir, ray_org_rdir;
+
+      __forceinline Precalculations (const Ray& ray) 
+      {
+	ray_rdir     = rcp_safe(ray.dir);
+	ray_org_rdir = ray.org*ray_rdir;	
+      }
     };
+
+    static __forceinline bool intersectBounds(const Precalculations& pre,
+					      const Ray& ray,
+					      const BBox3fa &bounds)
+    {
+      Vec3fa b_lower = bounds.lower * pre.ray_rdir - pre.ray_org_rdir;
+      Vec3fa b_upper = bounds.upper * pre.ray_rdir - pre.ray_org_rdir;
+      Vec3fa b_min = min(b_lower,b_upper);
+      Vec3fa b_max = max(b_lower,b_upper);
+      const float tnear = max(b_min.x,b_min.y,b_min.z,ray.tnear);
+      const float tfar = min(b_max.x,b_max.y,b_max.z,ray.tfar);
+      return tnear <= tfar;
+    }
+
+
+    static void subdivide_intersect1(const Precalculations& pre,
+				     Ray& ray,
+				     const IrregularCatmullClarkPatch &patch,
+				     const unsigned int subdiv_level = 0);
+
+    static bool subdivide_occluded1(const Precalculations& pre,
+				    Ray& ray,
+				    const IrregularCatmullClarkPatch &patch,
+				    const unsigned int subdiv_level = 0);
+
+    static void subdivide_intersect1(const Precalculations& pre,
+				     Ray& ray,
+				     const RegularCatmullClarkPatch &patch,
+				     const unsigned int subdiv_level = 0);
+
+    static bool subdivide_occluded1(const Precalculations& pre,
+				    Ray& ray,
+				    const RegularCatmullClarkPatch &patch,
+				    const unsigned int subdiv_level = 0);
+
 
     /*! Intersect a ray with the primitive. */
     static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Primitive& subdiv_patch, const void* geom)
@@ -211,13 +237,13 @@ namespace embree
 	{
 	  RegularCatmullClarkPatch regular_patch;
 	  subdiv_patch.init( regular_patch );
-	  subdivide_intersect1(ray,regular_patch,g_subdivision_level);
+	  subdivide_intersect1(pre, ray,regular_patch,g_subdivision_level);
 	}
       else
 	{
 	  IrregularCatmullClarkPatch irregular_patch;
 	  subdiv_patch.init( irregular_patch );
-	  subdivide_intersect1(ray,irregular_patch,g_subdivision_level);
+	  subdivide_intersect1(pre, ray,irregular_patch,g_subdivision_level);
 	}
     }
 
@@ -230,13 +256,13 @@ namespace embree
 	{
 	  RegularCatmullClarkPatch regular_patch;
 	  subdiv_patch.init( regular_patch );
-	  return subdivide_occluded1(ray,regular_patch,g_subdivision_level);
+	  return subdivide_occluded1(pre, ray,regular_patch,g_subdivision_level);
 	}
       else
 	{
 	  IrregularCatmullClarkPatch irregular_patch;
 	  subdiv_patch.init( irregular_patch );
-	  return subdivide_occluded1(ray,irregular_patch,g_subdivision_level);
+	  return subdivide_occluded1(pre, ray,irregular_patch,g_subdivision_level);
 	}
     }
   };
