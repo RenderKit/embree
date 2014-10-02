@@ -18,6 +18,7 @@
 
 #include "primitive.h"
 #include "common/scene_subdivision.h"
+#include "bvh4/bvh4.h"
 
 #define SUBDIVISION_LEVEL_DISPL 8
 
@@ -37,7 +38,7 @@ namespace embree
     /*! branching width of the tree */
     static const size_t N = 4;
 
-    struct Node
+    struct SmallNode
     {
       /*! Clears the node. */
       __forceinline void clear() {
@@ -120,21 +121,23 @@ namespace embree
       ssef upper_z;           //!< Z dimension of upper bounds of all 4 children.
     };
     
-    struct SubTree
+    struct Leaf
     {
     public:
       
-      __forceinline SubTree(unsigned x, unsigned y, Array2D<Vec3fa>& vertices, unsigned levels, unsigned geomID, unsigned primID)
+      __forceinline Leaf(unsigned x, unsigned y, Array2D<Vec3fa>& vertices, unsigned levels, unsigned geomID, unsigned primID)
         : bx(x), by(y), vertices(vertices), levels(levels-1), geomID(geomID), primID(primID)
       {
-        build(nodes,0,0,0);
+        //build(&n0,0,0,0);
       }
       
-      const BBox3fa build(Node* node, unsigned x, unsigned y, unsigned l)
+      const BBox3fa build(SmallNode* node, unsigned x, unsigned y, unsigned l)
       {
         if (l == levels) {
           BBox3fa bounds = empty;
           x *= 2; y *= 2;
+          PRINT2(bx,by);
+          PRINT2(x,y);
           bounds.extend(vertices(bx+x+0,by+y+0));
           bounds.extend(vertices(bx+x+1,by+y+0));
           bounds.extend(vertices(bx+x+2,by+y+0));
@@ -160,26 +163,40 @@ namespace embree
       unsigned levels;           //!< number of stored levels
       unsigned primID;
       unsigned geomID;
-      Node nodes[];
-      //Node n0;                  //!< root node
-      //Node n00, n01, n10, n11;  //!< child nodes
+      SmallNode n0;                  //!< root node
+      SmallNode n00, n01, n10, n11;  //!< child nodes
     };
     
+    const std::pair<BBox3fa,BVH4::NodeRef> build(LinearAllocatorPerThread::ThreadAllocator& alloc, unsigned x, unsigned y, unsigned l, unsigned maxDepth)
+    {
+      if (l == maxDepth) {
+        new (&leaves(x,y)) Leaf(8*x,8*y,v,3,geomID<true>(),primID<true>());
+        const BBox3fa bounds = leaves(x,y).build(&leaves(x,y).n0,0,0,0);
+        return std::pair<BBox3fa,BVH4::NodeRef>(bounds,bvh.encodeLeaf(&leaves(x,y),1));
+      }
+      BVH4::Node* node = bvh.allocNode(alloc);
+      const std::pair<BBox3fa,BVH4::NodeRef> b00 = build(alloc,2*x+0,2*y+0,l+1,maxDepth); node->set(0,b00.first,b00.second);
+      const std::pair<BBox3fa,BVH4::NodeRef> b10 = build(alloc,2*x+1,2*y+0,l+1,maxDepth); node->set(1,b10.first,b10.second);
+      const std::pair<BBox3fa,BVH4::NodeRef> b01 = build(alloc,2*x+0,2*y+1,l+1,maxDepth); node->set(2,b01.first,b01.second);
+      const std::pair<BBox3fa,BVH4::NodeRef> b11 = build(alloc,2*x+1,2*y+1,l+1,maxDepth); node->set(3,b11.first,b11.second);
+      const BBox3fa bounds = merge(b00.first,b10.first,b01.first,b11.first);
+      return std::pair<BBox3fa,BVH4::NodeRef>(bounds,bvh.encodeNode(node));
+    }
+
   public:
     
-    /*! Default constructor. */
-    __forceinline SubdivPatchDispl1 () {}
-
     /*! Construction from vertices and IDs. */
-    __forceinline SubdivPatchDispl1 (const SubdivMesh::HalfEdge* h, 
+    __forceinline SubdivPatchDispl1 (Scene* scene,
+                                     const SubdivMesh::HalfEdge* h, 
                                      const Vec3fa* vertices, 
                                      const unsigned int geom, 
                                      const unsigned int prim, 
                                      const unsigned int level,
                                      const bool last)
-      : K(1), geom(geom), prim(prim | (last << 31)), levels(level)
+      : bvh(SubdivPatchDispl1::type,scene,false), K(1), geom(geom), prim(prim | (last << 31)), levels(level) // FIXME: set list mode
     {
-      size_t M = (1<<level)+1;
+      size_t N = 1<<level;
+      size_t M = N+1;
       v.init(M,M,Vec3fa(nan));
         
       ring00.init(h,vertices); h = h->next();
@@ -204,10 +221,14 @@ namespace embree
       }
 
       size_t S = 0;
-      for (size_t i=0; i<level; i++) S += (1<<i)*(1<<i);
-      
-      subtree = (SubTree*) malloc(sizeof(SubTree)+S*sizeof(Node));
-      new (subtree) SubTree(0,0,v,level,geomID<true>(),primID<true>());
+      for (ssize_t i=0; i<level-3; i++) S += (1<<i)*(1<<i);
+
+      leaves.init(N/8,N/8);
+      bvh.init(sizeof(BVH4::Node),(N/8)*(N/8), 1);
+      LinearAllocatorPerThread::ThreadAllocator nodeAlloc(&bvh.alloc);
+      const std::pair<BBox3fa,BVH4::NodeRef> root = build(nodeAlloc,0,0,0,level-3);
+      bvh.bounds = root.first;
+      bvh.root   = root.second;
     }
 
     // FIXME: destruction
@@ -243,7 +264,8 @@ namespace embree
       const unsigned int geomID = prim.geomID();
       const unsigned int primID = prim.primID();
       const SubdivMesh* const subdiv_mesh = scene->getSubdivMesh(geomID);
-      new (this) SubdivPatchDispl1(&subdiv_mesh->getHalfEdgeForQuad( primID ),
+      new (this) SubdivPatchDispl1(scene,
+                                   &subdiv_mesh->getHalfEdgeForQuad( primID ),
                                    subdiv_mesh->getVertexPositionPtr(),
                                    geomID,
                                    primID,
@@ -261,7 +283,8 @@ namespace embree
       const unsigned int geomID = prim.geomID();
       const unsigned int primID = prim.primID();
       const SubdivMesh* const subdiv_mesh = scene->getSubdivMesh(geomID);
-      new (this) SubdivPatchDispl1(&subdiv_mesh->getHalfEdgeForQuad( primID ),
+      new (this) SubdivPatchDispl1(scene,
+                                   &subdiv_mesh->getHalfEdgeForQuad( primID ),
                                    subdiv_mesh->getVertexPositionPtr(),
                                    geomID,
                                    primID,
@@ -383,7 +406,7 @@ namespace embree
         subdivide_points();
       }
 
-    friend __forceinline std::ostream &operator<<(std::ostream& out, const SubdivPatchDispl1& patch)
+      friend __forceinline std::ostream &operator<<(std::ostream& out, const SubdivPatchDispl1& patch)
       {
         size_t N = patch.K+1;
         out << "ring00 = " << patch.ring00 << std::endl;
@@ -426,7 +449,8 @@ namespace embree
     CatmullClark1Edge edgeT, edgeB, edgeL, edgeR; 
     Array2D<Vec3fa> v;
     size_t levels;
-    SubTree* subtree;
+    Array2D<Leaf> leaves;
+    BVH4 bvh;
     unsigned geom;
     unsigned prim;
   };

@@ -335,6 +335,32 @@ namespace embree
 	accel[i].fill(prims,start,current.end,scene,listMode);
     }
 
+    template<>
+    void BVH4BuilderFastT<SubdivPatchDispl1>::createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID)
+    {
+      size_t items = current.size();
+      size_t start = current.begin;
+      if (items != 1) THROW_RUNTIME_ERROR("SubdivPatchDispl1: internal error");
+            
+      /* allocate leaf node */
+      SubdivPatchDispl1* accel = (SubdivPatchDispl1*) leafAlloc.malloc(sizeof(SubdivPatchDispl1));
+      //*current.parent = bvh->encodeLeaf((char*)accel,listMode ? listMode : items);
+      
+      const PrimRef& prim = prims[start];
+      const unsigned int last   = listMode && !prims;
+      const unsigned int geomID = prim.geomID();
+      const unsigned int primID = prim.primID();
+      const SubdivMesh* const subdiv_mesh = scene->getSubdivMesh(geomID);
+      new (accel) SubdivPatchDispl1(scene, 
+                                    &subdiv_mesh->getHalfEdgeForQuad( primID ),
+                                    subdiv_mesh->getVertexPositionPtr(),
+                                    geomID,
+                                    primID,
+                                    SUBDIVISION_LEVEL_DISPL,
+                                    last); 
+      *current.parent = accel->bvh.root;
+    }
+
     void BVH4BuilderFast::createLeaf(BuildRecord& current, Allocator& nodeAlloc, Allocator& leafAlloc, size_t threadIndex, size_t threadCount)
     {
       if (current.depth > BVH4::maxBuildDepthLeaf) 

@@ -25,9 +25,8 @@ namespace embree
   template<bool list>
   struct SubdivPatchDispl1Intersector1
   {
-    typedef SubdivPatchDispl1 Primitive;
-    typedef SubdivPatchDispl1::Node Node;
-    typedef SubdivPatchDispl1::SubTree SubTree;
+    typedef SubdivPatchDispl1::Leaf Primitive;
+    typedef SubdivPatchDispl1::SmallNode Node;
 
     struct Precalculations {
       __forceinline Precalculations (const Ray& ray) {}
@@ -162,11 +161,14 @@ namespace embree
     }
     
     /*! Intersect a ray with the triangle and updates the hit. */
-    static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Primitive& prim_i, const void* geom)
+    static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Primitive& prim, const void* geom)
     {
+      size_t bx = prim.bx;
+      size_t by = prim.by;
+
       /* load triangle */
       STAT3(normal.trav_prims,1,1,1);
-      SubTree& prim = *prim_i.subtree;
+      //SubTree& prim = *prim_i.subtree;
 
       /*! load the ray into SIMD registers */
       const Vec3fa ray_rdir = rcp_safe(ray.dir);
@@ -193,7 +195,7 @@ namespace embree
       StackItem stack[N];
       size_t begin = 0, end = 1;
       stack[0] = StackItem(0,0);
-      const Node* base = prim.nodes;
+      const Node* base = &prim.n0;
       
       for (size_t l=0; l<prim.levels; l++)
       {
@@ -218,15 +220,15 @@ namespace embree
       {
         const size_t x = 2*stack[i].x;
         const size_t y = 2*stack[i].y;
-        const Vec3fa& v00 = prim.vertices(x+0,y+0);
-        const Vec3fa& v10 = prim.vertices(x+1,y+0);
-        const Vec3fa& v20 = prim.vertices(x+2,y+0);
-        const Vec3fa& v01 = prim.vertices(x+0,y+1);
-        const Vec3fa& v11 = prim.vertices(x+1,y+1);
-        const Vec3fa& v21 = prim.vertices(x+2,y+1);
-        const Vec3fa& v02 = prim.vertices(x+0,y+2);
-        const Vec3fa& v12 = prim.vertices(x+1,y+2);
-        const Vec3fa& v22 = prim.vertices(x+2,y+2);
+        const Vec3fa& v00 = prim.vertices(bx+x+0,by+y+0);
+        const Vec3fa& v10 = prim.vertices(bx+x+1,by+y+0);
+        const Vec3fa& v20 = prim.vertices(bx+x+2,by+y+0);
+        const Vec3fa& v01 = prim.vertices(bx+x+0,by+y+1);
+        const Vec3fa& v11 = prim.vertices(bx+x+1,by+y+1);
+        const Vec3fa& v21 = prim.vertices(bx+x+2,by+y+1);
+        const Vec3fa& v02 = prim.vertices(bx+x+0,by+y+2);
+        const Vec3fa& v12 = prim.vertices(bx+x+1,by+y+2);
+        const Vec3fa& v22 = prim.vertices(bx+x+2,by+y+2);
 #if 0
         intersectTriangle(ray,v00,v11,v10,prim.geomID,prim.primID);
         intersectTriangle(ray,v00,v01,v11,prim.geomID,prim.primID);
