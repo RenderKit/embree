@@ -130,29 +130,48 @@ namespace embree
       {
         //build(&n0,0,0,0);
       }
-      
-      const BBox3fa build(SmallNode* node, unsigned x, unsigned y, unsigned l)
+
+      const BBox3fa leafBounds(size_t x, size_t y)
       {
-        if (l == levels) {
-          BBox3fa bounds = empty;
-          x *= 2; y *= 2;
-          bounds.extend(vertices(bx+x+0,by+y+0));
-          bounds.extend(vertices(bx+x+1,by+y+0));
-          bounds.extend(vertices(bx+x+2,by+y+0));
-          bounds.extend(vertices(bx+x+0,by+y+1));
-          bounds.extend(vertices(bx+x+1,by+y+1));
-          bounds.extend(vertices(bx+x+2,by+y+1));
-          bounds.extend(vertices(bx+x+0,by+y+2));
-          bounds.extend(vertices(bx+x+1,by+y+2));
-          bounds.extend(vertices(bx+x+2,by+y+2));
-          return bounds;
-        }
-        const size_t w = 1<<l;
-        const BBox3fa b00 = build(node+w*w,2*x+0,2*y+0,l+1); node[y*w+x].set(0,b00);
-        const BBox3fa b10 = build(node+w*w,2*x+1,2*y+0,l+1); node[y*w+x].set(1,b10);
-        const BBox3fa b01 = build(node+w*w,2*x+0,2*y+1,l+1); node[y*w+x].set(2,b01);
-        const BBox3fa b11 = build(node+w*w,2*x+1,2*y+1,l+1); node[y*w+x].set(3,b11);
-        return merge(b00,b10,b01,b11);
+        BBox3fa bounds = empty;
+        x *= 2; y *= 2;
+        bounds.extend(vertices(bx+x+0,by+y+0));
+        bounds.extend(vertices(bx+x+1,by+y+0));
+        bounds.extend(vertices(bx+x+2,by+y+0));
+        bounds.extend(vertices(bx+x+0,by+y+1));
+        bounds.extend(vertices(bx+x+1,by+y+1));
+        bounds.extend(vertices(bx+x+2,by+y+1));
+        bounds.extend(vertices(bx+x+0,by+y+2));
+        bounds.extend(vertices(bx+x+1,by+y+2));
+        bounds.extend(vertices(bx+x+2,by+y+2));
+        return bounds;
+      }
+      
+      const BBox3fa build()
+      {
+        BBox3fa bounds = empty;
+
+        const BBox3fa bounds00_0 = leafBounds(0,0); n00.set(0,bounds00_0); bounds.extend(bounds00_0);
+        const BBox3fa bounds00_1 = leafBounds(1,0); n00.set(1,bounds00_1); bounds.extend(bounds00_1);
+        const BBox3fa bounds00_2 = leafBounds(0,1); n00.set(2,bounds00_2); bounds.extend(bounds00_2);
+        const BBox3fa bounds00_3 = leafBounds(1,1); n00.set(3,bounds00_3); bounds.extend(bounds00_3);
+
+        const BBox3fa bounds10_0 = leafBounds(2,0); n10.set(0,bounds10_0); bounds.extend(bounds10_0);
+        const BBox3fa bounds10_1 = leafBounds(3,0); n10.set(1,bounds10_1); bounds.extend(bounds10_1);
+        const BBox3fa bounds10_2 = leafBounds(2,1); n10.set(2,bounds10_2); bounds.extend(bounds10_2);
+        const BBox3fa bounds10_3 = leafBounds(3,1); n10.set(3,bounds10_3); bounds.extend(bounds10_3);
+
+        const BBox3fa bounds01_0 = leafBounds(0,2); n01.set(0,bounds01_0); bounds.extend(bounds01_0);
+        const BBox3fa bounds01_1 = leafBounds(1,2); n01.set(1,bounds01_1); bounds.extend(bounds01_1);
+        const BBox3fa bounds01_2 = leafBounds(0,3); n01.set(2,bounds01_2); bounds.extend(bounds01_2);
+        const BBox3fa bounds01_3 = leafBounds(1,3); n01.set(3,bounds01_3); bounds.extend(bounds01_3);
+
+        const BBox3fa bounds11_0 = leafBounds(2,2); n11.set(0,bounds11_0); bounds.extend(bounds11_0);
+        const BBox3fa bounds11_1 = leafBounds(3,2); n11.set(1,bounds11_1); bounds.extend(bounds11_1);
+        const BBox3fa bounds11_2 = leafBounds(2,3); n11.set(2,bounds11_2); bounds.extend(bounds11_2);
+        const BBox3fa bounds11_3 = leafBounds(3,3); n11.set(3,bounds11_3); bounds.extend(bounds11_3);
+
+        return bounds;
       }
       
     public:
@@ -161,7 +180,7 @@ namespace embree
       unsigned levels;           //!< number of stored levels
       unsigned primID;
       unsigned geomID;
-      SmallNode n0;                  //!< root node
+      //SmallNode n0;                  //!< root node
       SmallNode n00, n10, n01, n11;  //!< child nodes
     };
     
@@ -169,7 +188,7 @@ namespace embree
     {
       if (l == maxDepth) {
         new (&leaves(x,y)) Leaf(8*x,8*y,v,3,geomID<true>(),primID<true>());
-        const BBox3fa bounds = leaves(x,y).build(&leaves(x,y).n0,0,0,0);
+        const BBox3fa bounds = leaves(x,y).build();
         return std::pair<BBox3fa,BVH4::NodeRef>(bounds,bvh.encodeLeaf(&leaves(x,y),1));
       }
       BVH4::Node* node = bvh.allocNode(alloc);

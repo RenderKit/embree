@@ -164,8 +164,8 @@ namespace embree
     static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Primitive& prim, const void* geom)
     {
       STAT3(normal.trav_prims,1,1,1);
-      size_t bx = prim.bx;
-      size_t by = prim.by;
+      const size_t bx = prim.bx;
+      const size_t by = prim.by;
 
       /*! load the ray into SIMD registers */
       const Vec3fa ray_rdir = rcp_safe(ray.dir);
@@ -175,7 +175,7 @@ namespace embree
       const sse3f rdir(ray_rdir.x,ray_rdir.y,ray_rdir.z);
       const sse3f org_rdir(ray_org_rdir.x,ray_org_rdir.y,ray_org_rdir.z);
       const ssef  ray_tnear(ray.tnear);
-      ssef ray_tfar(ray.tfar);
+      const ssef  ray_tfar(ray.tfar);
       
       /*! offsets to select the side that becomes the lower or upper bound */
       const size_t nearX = ray_rdir.x >= 0.0f ? 0*sizeof(ssef) : 1*sizeof(ssef);

@@ -41,8 +41,8 @@ namespace embree
     /// Extending Bounds
     ////////////////////////////////////////////////////////////////////////////////
 
-    __forceinline void extend(const BBox& other) { lower = min(lower,other.lower); upper = max(upper,other.upper); }
-    __forceinline void extend(const T   & other) { lower = min(lower,other      ); upper = max(upper,other      ); }
+    __forceinline const BBox& extend(const BBox& other) { lower = min(lower,other.lower); upper = max(upper,other.upper); return *this; }
+    __forceinline const BBox& extend(const T   & other) { lower = min(lower,other      ); upper = max(upper,other      ); return *this; }
 
     __forceinline void extend_atomic(const BBox& other) { 
       atomic_min_f32(&lower.x,other.lower.x);
