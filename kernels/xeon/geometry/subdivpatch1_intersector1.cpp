@@ -20,7 +20,8 @@
 namespace embree
 {
 
-  void subdivide_intersect1(Ray& ray,
+  void SubdivPatch1Intersector1::subdivide_intersect1(const Precalculations& pre,
+			    Ray& ray,
 			    const IrregularCatmullClarkPatch &patch,
 			    const unsigned int subdiv_level)
   {
@@ -48,15 +49,18 @@ namespace embree
 	IrregularCatmullClarkPatch subpatches[4];
 	patch.subdivide(subpatches);
 	for (size_t i=0;i<4;i++)
-	  subdivide_intersect1(ray,
-			       subpatches[i],
-			       subdiv_level - 1);	    
+	  if (intersectBounds(pre,ray,subpatches[i].bounds()))
+	    subdivide_intersect1(pre,
+				 ray,
+				 subpatches[i],
+				 subdiv_level - 1);	    
       }   
   }
 
-  bool subdivide_occluded1(Ray& ray,
-			    const IrregularCatmullClarkPatch &patch,
-			    const unsigned int subdiv_level)
+  bool SubdivPatch1Intersector1::subdivide_occluded1(const Precalculations& pre,
+			   Ray& ray,
+			   const IrregularCatmullClarkPatch &patch,
+			   const unsigned int subdiv_level)
   {
     if (subdiv_level == 0)
       {
@@ -82,17 +86,21 @@ namespace embree
 	IrregularCatmullClarkPatch subpatches[4];
 	patch.subdivide(subpatches);
 	for (size_t i=0;i<4;i++)
-	  if (subdivide_occluded1(ray,
-				  subpatches[i],
-				  subdiv_level - 1)) return true;
+	  if (intersectBounds(pre,ray,subpatches[i].bounds()))
+	    if (subdivide_occluded1(pre,
+				    ray,
+				    subpatches[i],
+				    subdiv_level - 1)) return true;
       }   
     return false;
   }
 
+						      
 
-  void subdivide_intersect1(Ray& ray,
-			   const RegularCatmullClarkPatch &patch,
-			   const unsigned int subdiv_level)
+  void SubdivPatch1Intersector1::subdivide_intersect1(const Precalculations& pre,
+						      Ray& ray,
+						      const RegularCatmullClarkPatch &patch,
+						      const unsigned int subdiv_level)
  {
    if (subdiv_level == 0)
      {
@@ -118,15 +126,19 @@ namespace embree
        RegularCatmullClarkPatch subpatches[4];
        patch.subdivide(subpatches);
        for (size_t i=0;i<4;i++)
-	 subdivide_intersect1(ray,
-			      subpatches[i],
-			      subdiv_level - 1);	    
+	 if (intersectBounds(pre,ray,subpatches[i].bounds()))
+	   subdivide_intersect1(pre,
+				ray,
+				subpatches[i],
+				subdiv_level - 1);	    
+       
      } 
  }
 
-  bool subdivide_occluded1(Ray& ray,
-			   const RegularCatmullClarkPatch &patch,
-			   const unsigned int subdiv_level)
+  bool SubdivPatch1Intersector1::subdivide_occluded1(const Precalculations& pre,
+						     Ray& ray,
+						     const RegularCatmullClarkPatch &patch,
+						     const unsigned int subdiv_level)
   {
     if (subdiv_level == 0)
       {
@@ -152,9 +164,11 @@ namespace embree
 	RegularCatmullClarkPatch subpatches[4];
 	patch.subdivide(subpatches);
 	for (size_t i=0;i<4;i++)
-	  if (subdivide_occluded1(ray,
-				  subpatches[i],
-				  subdiv_level - 1)) return true;
+	  if (intersectBounds(pre,ray,subpatches[i].bounds()))
+	    if (subdivide_occluded1(pre,
+				    ray,
+				    subpatches[i],
+				    subdiv_level - 1)) return true;
       }   
     return false;
   }

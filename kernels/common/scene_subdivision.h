@@ -61,6 +61,14 @@ namespace embree
       assert(num_vtx>=2);
       return ring[num_vtx-2];
     }
+
+    __forceinline BBox3fa bounds() const
+    {
+      BBox3fa bounds ( vtx );
+      for (size_t i = 0; i<num_vtx ; i++)
+	bounds.extend( ring[i] );
+      return bounds;
+    }
     
     __forceinline void init(const SubdivMesh::HalfEdge *const h,
 			    const Vec3fa *const vertices)
@@ -228,6 +236,14 @@ namespace embree
 
     unsigned int geomID;
     unsigned int primID;
+
+    __forceinline BBox3fa bounds() const
+    {
+      BBox3fa bounds ( ring[0].bounds() );
+      for (size_t i=1;i<4;i++)
+	bounds.extend( ring[i].bounds() );
+      return bounds;
+    }
 
     static __forceinline void init_regular(const CatmullClark1Ring &p0,
 					   const CatmullClark1Ring &p1,
@@ -554,6 +570,14 @@ namespace embree
       quad.primID = 0;
     };
 
+    __forceinline BBox3fa bounds() const
+    {
+      const Vec3fa *const cv = &v[0][0];
+      BBox3fa bounds ( cv[0] );
+      for (size_t i = 1; i<16 ; i++)
+	bounds.extend( cv[i] );
+      return bounds;
+    }
     __forceinline Vec3fa evalCubicBSplinePatch(const float uu, const float vv)
     {
       __aligned(64) Vec3fa curve[4];

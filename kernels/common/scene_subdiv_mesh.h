@@ -134,6 +134,18 @@ namespace embree
 	return true;
       }
 
+      __forceinline bool faceHasEdges() const {
+	HalfEdge *p = (HalfEdge*)this;
+	if (p->hasOpposite() == false) return true;
+	p = p->next();
+	if (p->hasOpposite() == false) return true;
+	p = p->next();
+	if (p->hasOpposite() == false) return true;
+	p = p->next();
+	if (p->hasOpposite() == false) return true;
+	return false;
+      }
+
     };
 
   public: // FIXME: make private

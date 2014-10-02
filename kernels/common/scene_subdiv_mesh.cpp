@@ -195,6 +195,31 @@ namespace embree
           }
       }
 
+    size_t numRegularPatches = 0;
+    size_t numIrregularPatches = 0;
+    size_t numPatchesWithEdges = 0;
+
+    assert(numHalfEdges % 4 == 0);
+    for (size_t i=0;i<numHalfEdges;i+=4)
+      {
+	if (halfEdges[i].isFaceRegular())
+	  numRegularPatches++;
+	else
+	  {
+	    numIrregularPatches++;
+	    if (halfEdges[i].faceHasEdges())
+	      numPatchesWithEdges++;
+	  }
+      }
+    
+    size_t numPatches = numRegularPatches + numIrregularPatches;
+
+    std::cout << "numPatches " << numPatches 
+	      << " : regular " << numRegularPatches << " (" << 100.0f * numRegularPatches / numPatches << "%)" 
+	      << " irregular " << numIrregularPatches << " (" << 100.0f * numIrregularPatches / numPatches << "%) " 
+	      << " irregular with edges " << numPatchesWithEdges << " (" << 100.0f * numPatchesWithEdges / numPatches << "%) " << std::endl;
+      
+      
 #if 0
     for (size_t i=0;i<numHalfEdges;i++)
       std::cout << "Half-Edge " << i << " " << halfEdges[i] << std::endl;
