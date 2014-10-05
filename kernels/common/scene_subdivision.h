@@ -599,6 +599,42 @@ namespace embree
     } 
 
 
+  class GregoryPatch : public RegularCatmullClarkPatchT<Vec3fa> 
+  {
+  public:
+    Vec3fa f[2][2]; // need 16 + 4 = 20 control points
+
+    GregoryPatch() {}
+
+   __forceinline BBox3fa bounds() const
+    {
+      const Vec3fa *const cv = &v[0][0];
+      BBox3fa bounds ( cv[0] );
+      for (size_t i = 1; i<16 ; i++)
+	bounds.extend( cv[i] );
+      bounds.extend(f[0][0]);
+      bounds.extend(f[1][0]);
+      bounds.extend(f[1][1]);
+      bounds.extend(f[1][1]);
+      return bounds;
+    }
+ 
+    
+  };
+
+
+ __forceinline std::ostream &operator<<(std::ostream &o, const GregoryPatch &p)
+    {
+      for (size_t y=0;y<4;y++)
+	for (size_t x=0;x<4;x++)
+	  o << "v[" << y << "][" << x << "] " << p.v[y][x] << std::endl;
+
+     for (size_t y=0;y<2;y++)
+	for (size_t x=0;x<2;x++)
+	  o << "f[" << y << "][" << x << "] " << p.f[y][x] << std::endl;
+      return o;
+    } 
+
 
 };
 
