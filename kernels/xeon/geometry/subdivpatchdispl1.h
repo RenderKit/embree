@@ -39,52 +39,45 @@ namespace embree
     /*! branching width of the tree */
     static const size_t N = 4;
 
-    struct SmallNode
+    struct SmallNode4
     {
       /*! Clears the node. */
       __forceinline void clear() {
-        lower_x = lower_y = lower_z = pos_inf; 
-        upper_x = upper_y = upper_z = neg_inf;
+        for (size_t i=0; i<4; i++) {
+          lower_x[i] = lower_y[i] = lower_z[i] = pos_inf; 
+          upper_x[i] = upper_y[i] = upper_z[i] = neg_inf;
+        }
       }
       
       /*! Sets bounding box of child. */
-      __forceinline void set(size_t i, const BBox3fa& bounds) 
+      __forceinline void set(size_t j, size_t i, const BBox3fa& bounds) 
       {
         assert(i < N);
-        lower_x[i] = bounds.lower.x; lower_y[i] = bounds.lower.y; lower_z[i] = bounds.lower.z;
-        upper_x[i] = bounds.upper.x; upper_y[i] = bounds.upper.y; upper_z[i] = bounds.upper.z;
+        lower_x[j][i] = bounds.lower.x; lower_y[j][i] = bounds.lower.y; lower_z[j][i] = bounds.lower.z;
+        upper_x[j][i] = bounds.upper.x; upper_y[j][i] = bounds.upper.y; upper_z[j][i] = bounds.upper.z;
       }
       
-      /*! Returns bounds of specified child. */
-      __forceinline BBox3fa bounds(size_t i) const 
-      {
-        assert(i < N);
-        const Vec3fa lower(lower_x[i],lower_y[i],lower_z[i]);
-        const Vec3fa upper(upper_x[i],upper_y[i],upper_z[i]);
-        return BBox3fa(lower,upper);
-      }
-
       /*! intersection with single rays */
       template<bool robust>
-      __forceinline size_t intersect(size_t nearX, size_t nearY, size_t nearZ,
-                                     const sse3f& org, const sse3f& rdir, const sse3f& org_rdir, const ssef& tnear, const ssef& tfar, 
-                                     ssef& dist) const
+      __forceinline size_t intersect(size_t i, size_t _nearX, size_t _nearY, size_t _nearZ,
+                                     const sse3f& org, const sse3f& rdir, const sse3f& org_rdir, const ssef& tnear, const ssef& tfar) const
       {
-        const size_t farX  = nearX ^ sizeof(ssef), farY  = nearY ^ sizeof(ssef), farZ  = nearZ ^ sizeof(ssef);
+        const size_t nearX = 4*_nearX, nearY = 4*_nearY, nearZ = 4*_nearZ; 
+        const size_t farX  = nearX ^ (4*sizeof(ssef)), farY  = nearY ^ (4*sizeof(ssef)), farZ  = nearZ ^ (4*sizeof(ssef));
 #if defined (__AVX2__)
-        const ssef tNearX = msub(load4f((const char*)&lower_x+nearX), rdir.x, org_rdir.x);
-        const ssef tNearY = msub(load4f((const char*)&lower_x+nearY), rdir.y, org_rdir.y);
-        const ssef tNearZ = msub(load4f((const char*)&lower_x+nearZ), rdir.z, org_rdir.z);
-        const ssef tFarX  = msub(load4f((const char*)&lower_x+farX ), rdir.x, org_rdir.x);
-        const ssef tFarY  = msub(load4f((const char*)&lower_x+farY ), rdir.y, org_rdir.y);
-        const ssef tFarZ  = msub(load4f((const char*)&lower_x+farZ ), rdir.z, org_rdir.z);
+        const ssef tNearX = msub(load4f((const char*)&lower_x[i]+nearX), rdir.x, org_rdir.x);
+        const ssef tNearY = msub(load4f((const char*)&lower_x[i]+nearY), rdir.y, org_rdir.y);
+        const ssef tNearZ = msub(load4f((const char*)&lower_x[i]+nearZ), rdir.z, org_rdir.z);
+        const ssef tFarX  = msub(load4f((const char*)&lower_x[i]+farX ), rdir.x, org_rdir.x);
+        const ssef tFarY  = msub(load4f((const char*)&lower_x[i]+farY ), rdir.y, org_rdir.y);
+        const ssef tFarZ  = msub(load4f((const char*)&lower_x[i]+farZ ), rdir.z, org_rdir.z);
 #else
-        const ssef tNearX = (load4f((const char*)&lower_x+nearX) - org.x) * rdir.x;
-        const ssef tNearY = (load4f((const char*)&lower_x+nearY) - org.y) * rdir.y;
-        const ssef tNearZ = (load4f((const char*)&lower_x+nearZ) - org.z) * rdir.z;
-        const ssef tFarX  = (load4f((const char*)&lower_x+farX ) - org.x) * rdir.x;
-        const ssef tFarY  = (load4f((const char*)&lower_x+farY ) - org.y) * rdir.y;
-        const ssef tFarZ  = (load4f((const char*)&lower_x+farZ ) - org.z) * rdir.z;
+        const ssef tNearX = (load4f((const char*)&lower_x[i]+nearX) - org.x) * rdir.x;
+        const ssef tNearY = (load4f((const char*)&lower_x[i]+nearY) - org.y) * rdir.y;
+        const ssef tNearZ = (load4f((const char*)&lower_x[i]+nearZ) - org.z) * rdir.z;
+        const ssef tFarX  = (load4f((const char*)&lower_x[i]+farX ) - org.x) * rdir.x;
+        const ssef tFarY  = (load4f((const char*)&lower_x[i]+farY ) - org.y) * rdir.y;
+        const ssef tFarZ  = (load4f((const char*)&lower_x[i]+farZ ) - org.z) * rdir.z;
 #endif
 
         if (robust) {
@@ -94,7 +87,6 @@ namespace embree
           const ssef tFar  = min(tFarX ,tFarY ,tFarZ ,tfar);
           const sseb vmask = round_down*tNear <= round_up*tFar;
           const size_t mask = movemask(vmask);
-          dist = tNear;
           return mask;
         }
         
@@ -109,17 +101,27 @@ namespace embree
         const sseb vmask = tNear <= tFar;
         const size_t mask = movemask(vmask);
 #endif
-        dist = tNear;
         return mask;
+      }
+
+      template<bool robust>
+      __forceinline size_t intersect(size_t nearX, size_t nearY, size_t nearZ,
+                                     const sse3f& org, const sse3f& rdir, const sse3f& org_rdir, const ssef& tnear, const ssef& tfar) const
+      {
+        const size_t mask0 = intersect<robust>(0, nearX, nearY, nearZ, org, rdir, org_rdir, tnear, tfar);
+        const size_t mask1 = intersect<robust>(1, nearX, nearY, nearZ, org, rdir, org_rdir, tnear, tfar);
+        const size_t mask2 = intersect<robust>(2, nearX, nearY, nearZ, org, rdir, org_rdir, tnear, tfar);
+        const size_t mask3 = intersect<robust>(3, nearX, nearY, nearZ, org, rdir, org_rdir, tnear, tfar);
+        return mask0 | (mask1 << 4) | (mask2 << 8) | (mask3 << 12);
       }
       
     public:
-      ssef lower_x;           //!< X dimension of lower bounds of all 4 children.
-      ssef upper_x;           //!< X dimension of upper bounds of all 4 children.
-      ssef lower_y;           //!< Y dimension of lower bounds of all 4 children.
-      ssef upper_y;           //!< Y dimension of upper bounds of all 4 children.
-      ssef lower_z;           //!< Z dimension of lower bounds of all 4 children.
-      ssef upper_z;           //!< Z dimension of upper bounds of all 4 children.
+      ssef lower_x[4];           //!< X dimension of lower bounds of all 4 children.
+      ssef upper_x[4];           //!< X dimension of upper bounds of all 4 children.
+      ssef lower_y[4];           //!< Y dimension of lower bounds of all 4 children.
+      ssef upper_y[4];           //!< Y dimension of upper bounds of all 4 children.
+      ssef lower_z[4];           //!< Z dimension of lower bounds of all 4 children.
+      ssef upper_z[4];           //!< Z dimension of upper bounds of all 4 children.
     };
     
     struct QuadQuad4x4
@@ -149,25 +151,25 @@ namespace embree
       {
         BBox3fa bounds = empty;
 
-        const BBox3fa bounds00_0 = leafBounds(0,0); n00.set(0,bounds00_0); bounds.extend(bounds00_0);
-        const BBox3fa bounds00_1 = leafBounds(1,0); n00.set(1,bounds00_1); bounds.extend(bounds00_1);
-        const BBox3fa bounds00_2 = leafBounds(0,1); n00.set(2,bounds00_2); bounds.extend(bounds00_2);
-        const BBox3fa bounds00_3 = leafBounds(1,1); n00.set(3,bounds00_3); bounds.extend(bounds00_3);
+        const BBox3fa bounds00_0 = leafBounds(0,0); n.set(0,0,bounds00_0); bounds.extend(bounds00_0);
+        const BBox3fa bounds00_1 = leafBounds(1,0); n.set(0,1,bounds00_1); bounds.extend(bounds00_1);
+        const BBox3fa bounds00_2 = leafBounds(0,1); n.set(0,2,bounds00_2); bounds.extend(bounds00_2);
+        const BBox3fa bounds00_3 = leafBounds(1,1); n.set(0,3,bounds00_3); bounds.extend(bounds00_3);
 
-        const BBox3fa bounds10_0 = leafBounds(2,0); n10.set(0,bounds10_0); bounds.extend(bounds10_0);
-        const BBox3fa bounds10_1 = leafBounds(3,0); n10.set(1,bounds10_1); bounds.extend(bounds10_1);
-        const BBox3fa bounds10_2 = leafBounds(2,1); n10.set(2,bounds10_2); bounds.extend(bounds10_2);
-        const BBox3fa bounds10_3 = leafBounds(3,1); n10.set(3,bounds10_3); bounds.extend(bounds10_3);
+        const BBox3fa bounds10_0 = leafBounds(2,0); n.set(1,0,bounds10_0); bounds.extend(bounds10_0);
+        const BBox3fa bounds10_1 = leafBounds(3,0); n.set(1,1,bounds10_1); bounds.extend(bounds10_1);
+        const BBox3fa bounds10_2 = leafBounds(2,1); n.set(1,2,bounds10_2); bounds.extend(bounds10_2);
+        const BBox3fa bounds10_3 = leafBounds(3,1); n.set(1,3,bounds10_3); bounds.extend(bounds10_3);
 
-        const BBox3fa bounds01_0 = leafBounds(0,2); n01.set(0,bounds01_0); bounds.extend(bounds01_0);
-        const BBox3fa bounds01_1 = leafBounds(1,2); n01.set(1,bounds01_1); bounds.extend(bounds01_1);
-        const BBox3fa bounds01_2 = leafBounds(0,3); n01.set(2,bounds01_2); bounds.extend(bounds01_2);
-        const BBox3fa bounds01_3 = leafBounds(1,3); n01.set(3,bounds01_3); bounds.extend(bounds01_3);
+        const BBox3fa bounds01_0 = leafBounds(0,2); n.set(2,0,bounds01_0); bounds.extend(bounds01_0);
+        const BBox3fa bounds01_1 = leafBounds(1,2); n.set(2,1,bounds01_1); bounds.extend(bounds01_1);
+        const BBox3fa bounds01_2 = leafBounds(0,3); n.set(2,2,bounds01_2); bounds.extend(bounds01_2);
+        const BBox3fa bounds01_3 = leafBounds(1,3); n.set(2,3,bounds01_3); bounds.extend(bounds01_3);
 
-        const BBox3fa bounds11_0 = leafBounds(2,2); n11.set(0,bounds11_0); bounds.extend(bounds11_0);
-        const BBox3fa bounds11_1 = leafBounds(3,2); n11.set(1,bounds11_1); bounds.extend(bounds11_1);
-        const BBox3fa bounds11_2 = leafBounds(2,3); n11.set(2,bounds11_2); bounds.extend(bounds11_2);
-        const BBox3fa bounds11_3 = leafBounds(3,3); n11.set(3,bounds11_3); bounds.extend(bounds11_3);
+        const BBox3fa bounds11_0 = leafBounds(2,2); n.set(3,0,bounds11_0); bounds.extend(bounds11_0);
+        const BBox3fa bounds11_1 = leafBounds(3,2); n.set(3,1,bounds11_1); bounds.extend(bounds11_1);
+        const BBox3fa bounds11_2 = leafBounds(2,3); n.set(3,2,bounds11_2); bounds.extend(bounds11_2);
+        const BBox3fa bounds11_3 = leafBounds(3,3); n.set(3,3,bounds11_3); bounds.extend(bounds11_3);
 
         return bounds;
       }
@@ -178,7 +180,8 @@ namespace embree
       unsigned levels;           //!< number of stored levels
       unsigned primID;
       unsigned geomID;
-      SmallNode n00, n10, n01, n11;  //!< child nodes
+      SmallNode4 n;  //!< child nodes
+      //SmallNode n00, n10, n01, n11;  //!< child nodes
     };
     
     const std::pair<BBox3fa,BVH4::NodeRef> build(LinearAllocatorPerThread::ThreadAllocator& alloc, unsigned x, unsigned y, unsigned l, unsigned maxDepth)

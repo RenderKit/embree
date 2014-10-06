@@ -281,6 +281,9 @@ namespace embree
       AVX_ZERO_UPPER();
     }
 
+#if 0
+    DEFINE_INTERSECTOR1(BVH4SubdivpatchDispl1Intersector1,BVH4Intersector1<0x1 COMMA false COMMA LeafIterator1<SubdivPatchDispl1Intersector1<LeafMode> > >);
+#else
     DEFINE_INTERSECTOR1(BVH4Bezier1vIntersector1,BVH4Intersector1<0x1 COMMA false COMMA LeafIterator1<Bezier1vIntersector1<LeafMode> > >);
     DEFINE_INTERSECTOR1(BVH4Bezier1iIntersector1,BVH4Intersector1<0x1 COMMA false COMMA LeafIterator1<Bezier1iIntersector1<LeafMode> > >);
     
@@ -304,5 +307,6 @@ namespace embree
 
     DEFINE_INTERSECTOR1(BVH4Triangle1vMBIntersector1Moeller,BVH4Intersector1<0x10 COMMA false COMMA LeafIterator1<Triangle1vIntersector1MoellerTrumboreMB<LeafMode> > >);
     DEFINE_INTERSECTOR1(BVH4Triangle4vMBIntersector1Moeller,BVH4Intersector1<0x10 COMMA false COMMA LeafIterator1<Triangle4vMBIntersector1MoellerTrumbore<LeafMode> > >);
+#endif
   }
 }

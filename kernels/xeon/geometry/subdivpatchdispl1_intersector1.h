@@ -26,7 +26,6 @@ namespace embree
   struct SubdivPatchDispl1Intersector1
   {
     typedef SubdivPatchDispl1::QuadQuad4x4 Primitive;
-    typedef SubdivPatchDispl1::SmallNode Node;
 
     struct Precalculations {
       __forceinline Precalculations (const Ray& ray) {}
@@ -183,12 +182,7 @@ namespace embree
       const size_t nearZ = ray_rdir.z >= 0.0f ? 4*sizeof(ssef) : 5*sizeof(ssef);
 
       /* perform box tests */
-      ssef dist;
-      const size_t mask0 = prim.n00.intersect<false>(nearX, nearY, nearZ, org, rdir, org_rdir, ray_tnear, ray_tfar, dist);
-      const size_t mask1 = prim.n10.intersect<false>(nearX, nearY, nearZ, org, rdir, org_rdir, ray_tnear, ray_tfar, dist);
-      const size_t mask2 = prim.n01.intersect<false>(nearX, nearY, nearZ, org, rdir, org_rdir, ray_tnear, ray_tfar, dist);
-      const size_t mask3 = prim.n11.intersect<false>(nearX, nearY, nearZ, org, rdir, org_rdir, ray_tnear, ray_tfar, dist);
-      size_t mask = mask0 | (mask1 << 4) | (mask2 << 8) | (mask3 << 12);
+      size_t mask = prim.n.intersect<false>(nearX, nearY, nearZ, org, rdir, org_rdir, ray_tnear, ray_tfar);
 
       /* intersect quad-quads */
       while (mask) {
