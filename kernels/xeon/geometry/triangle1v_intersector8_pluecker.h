@@ -121,7 +121,7 @@ namespace embree
 
     static __forceinline avxb occluded(const avxb& valid_i, Precalculations& pre, Ray8& ray, const Primitive& tri, const void* geom)
     {
-      STAT3(shadow.trav_prims,1,popcnt(valid0),8);
+      STAT3(shadow.trav_prims,1,popcnt(valid_i),8);
 
       /* calculate vertices relative to ray origin */
       avxb valid = valid_i;

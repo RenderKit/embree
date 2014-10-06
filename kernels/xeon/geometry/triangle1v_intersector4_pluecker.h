@@ -121,7 +121,7 @@ namespace embree
 
     static __forceinline sseb occluded(const sseb& valid_i, Precalculations& pre, Ray4& ray, const Primitive& tri, const void* geom)
     {
-      STAT3(shadow.trav_prims,1,popcnt(valid0),4);
+      STAT3(shadow.trav_prims,1,popcnt(valid_i),4);
       
       /* calculate vertices relative to ray origin */
       sseb valid = valid_i;
