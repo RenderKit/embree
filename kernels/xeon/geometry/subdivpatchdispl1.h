@@ -39,7 +39,7 @@ namespace embree
     /*! branching width of the tree */
     static const size_t N = 4;
 
-    struct SmallNode4
+    struct Node16
     {
       /*! Clears the node. */
       __forceinline void clear() {
@@ -240,8 +240,7 @@ namespace embree
       unsigned levels;           //!< number of stored levels
       unsigned primID;
       unsigned geomID;
-      SmallNode4 n;  //!< child nodes
-      //SmallNode n00, n10, n01, n11;  //!< child nodes
+      Node16 n;  //!< child nodes
     };
     
     const std::pair<BBox3fa,BVH4::NodeRef> build(LinearAllocatorPerThread::ThreadAllocator& alloc, unsigned x, unsigned y, unsigned l, unsigned maxDepth)
