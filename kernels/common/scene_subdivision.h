@@ -344,6 +344,38 @@ namespace embree
       dest1.ring[ 7] = p1.ring[0];
     }
 
+
+    static __forceinline void init_border(const CatmullClark1Ring &p0,
+                                          const CatmullClark1Ring &p1,
+                                          CatmullClark1Ring &dest0,
+                                          CatmullClark1Ring &dest1) 
+    {
+      dest0.valence = 3;
+      dest0.num_vtx = 6;
+      dest0.hard_edge_index = 2;
+      dest0.vtx     = p0.ring[0];
+
+      dest1.valence = 3;
+      dest1.num_vtx = 6;
+      dest1.vtx     = p0.ring[0];
+      dest1.hard_edge_index = 0;
+
+      // 1-ring for patch0
+      dest0.ring[ 0] = p0.ring[p0.num_vtx-1];
+      dest0.ring[ 1] = p1.ring[0];
+      dest0.ring[ 2] = p1.vtx;
+      dest1.ring[ 3] = p0.ring[p0.hard_edge_index+1]; // dummy
+      dest0.ring[ 4] = p0.vtx;
+      dest0.ring[ 5] = p0.ring[p0.num_vtx-2];
+      // 1-ring for patch1
+      dest1.ring[ 0] = p1.vtx;
+      dest1.ring[ 1] = p0.ring[p0.hard_edge_index+1]; // dummy
+      dest1.ring[ 2] = p0.vtx;
+      dest1.ring[ 3] = p0.ring[p0.num_vtx-2];
+      dest1.ring[ 4] = p0.ring[p0.num_vtx-1];
+      dest1.ring[ 5] = p1.ring[0];
+    }
+
     static __forceinline void init_regular(const Vec3fa &center, const Vec3fa center_ring[8], const size_t offset, CatmullClark1Ring &dest)
     {
       dest.valence = 4;
@@ -362,10 +394,25 @@ namespace embree
       ring[2].update(patch[2].ring[2]);
       ring[3].update(patch[3].ring[3]);
 
-      init_regular(patch[0].ring[0],patch[1].ring[1],patch[0].ring[1],patch[1].ring[0]);
-      init_regular(patch[1].ring[1],patch[2].ring[2],patch[1].ring[2],patch[2].ring[1]);
-      init_regular(patch[2].ring[2],patch[3].ring[3],patch[2].ring[3],patch[3].ring[2]);
-      init_regular(patch[3].ring[3],patch[0].ring[0],patch[3].ring[0],patch[0].ring[3]);
+      if (likely(ring[0].hard_edge_index != 0))
+        init_regular(patch[0].ring[0],patch[1].ring[1],patch[0].ring[1],patch[1].ring[0]);
+      else
+        init_border(patch[0].ring[0],patch[1].ring[1],patch[0].ring[1],patch[1].ring[0]);
+
+      if (likely(ring[1].hard_edge_index != 0))
+        init_regular(patch[1].ring[1],patch[2].ring[2],patch[1].ring[2],patch[2].ring[1]);
+      else
+        init_border(patch[1].ring[1],patch[2].ring[2],patch[1].ring[2],patch[2].ring[1]);
+
+      if (likely(ring[2].hard_edge_index != 0))
+        init_regular(patch[2].ring[2],patch[3].ring[3],patch[2].ring[3],patch[3].ring[2]);
+      else
+        init_border(patch[2].ring[2],patch[3].ring[3],patch[2].ring[3],patch[3].ring[2]);
+
+      if (likely(ring[3].hard_edge_index != 0))
+        init_regular(patch[3].ring[3],patch[0].ring[0],patch[3].ring[0],patch[0].ring[3]);
+      else
+        init_border(patch[3].ring[3],patch[0].ring[0],patch[3].ring[0],patch[0].ring[3]);
 
       __aligned(64) Vec3fa center = (ring[0].vtx + ring[1].vtx + ring[2].vtx + ring[3].vtx) * 0.25f;
       __aligned(64) Vec3fa center_ring[8];
