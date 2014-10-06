@@ -99,7 +99,7 @@ namespace embree
         return &b[ getStartHalfEdgeID() + ((getLocalHalfEdgeID()+3)%4) ];
       };
 
-      __forceinline HalfEdge *half_circle() const { 
+      __forceinline HalfEdge *half_circle() const { 	
         return prev()->opposite()->prev()->opposite();
       };      
 
@@ -110,11 +110,23 @@ namespace embree
       __forceinline unsigned int getEdgeValence() const {
 	unsigned int i=0;
 	HalfEdge *p = (HalfEdge*)this;
+	bool foundEdge = false;
+
 	do {
-	  i ++;
+	  i++;
+	  if (unlikely(!p->hasOpposite()))
+	    {
+	      foundEdge = true;
+	      break;
+	    }
+
 	  p = p->opposite();
 	  p = p->next();
 	} while( p != this);
+
+	if (unlikely(foundEdge)) //FIXME
+	  return (unsigned int)-1;
+
 	return i;
       };
 
@@ -202,8 +214,9 @@ namespace embree
       BBox3fa b = empty;
       HalfEdge *p = &e;
       bool foundEdge = false;
+      /*! cycle counter clock-wise */     
       do {
-	/*! get bounds for the adjacent vertex */
+	/*! get bounds for the adjacent quad */
 	b.extend( bounds_quad( *p ) );
 	/*! continue with next adjacent edge. */
 	if (unlikely(!p->hasOpposite()))
@@ -214,16 +227,24 @@ namespace embree
 	assert( p->hasOpposite() );
 
 	p = p->opposite();
-
-	/*! get bounds for the diagonal vertex */
-	b.extend( bounds_quad( *p->prev() ) );
-	
 	p = p->next();
       } while( p != &e);
-            
+
+      /*! found edge cycle clock-wise */                 
       if (unlikely(foundEdge))
-	{
-	  // FIXME:
+	{	 
+	  p = &e;
+	  p = p->prev();
+	/*! get bounds for the adjacent quad */
+	  b.extend( bounds_quad( *p ) );
+
+	  while(p->hasOpposite())
+	    {
+	      p = p->opposite();
+	      /*! get bounds for the adjacent quad */
+	      b.extend( bounds_quad( *p ) );
+	      p = p->prev();	      
+	    }
 	}
       return b;
     }
