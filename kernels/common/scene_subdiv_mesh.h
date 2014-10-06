@@ -124,8 +124,18 @@ namespace embree
 	  p = p->next();
 	} while( p != this);
 
-	if (unlikely(foundEdge)) //FIXME
-	  return (unsigned int)-1;
+	if (unlikely(foundEdge))
+	  {
+	    p = (HalfEdge*)this;
+	    p = p->prev();
+	    i++;
+	    while(p->hasOpposite())
+	      {
+		p = p->opposite();
+		p = p->prev();	      
+		i++;
+	      }
+	  }
 
 	return i;
       };
@@ -235,7 +245,7 @@ namespace embree
 	{	 
 	  p = &e;
 	  p = p->prev();
-	/*! get bounds for the adjacent quad */
+	  /*! get bounds for the adjacent quad */
 	  b.extend( bounds_quad( *p ) );
 
 	  while(p->hasOpposite())
