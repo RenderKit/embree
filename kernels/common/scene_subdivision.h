@@ -97,9 +97,6 @@ namespace embree
 	p = p->next();
       } while( p != h);
 
-      PING;
-      DBG_PRINT(i);
-
       if (unlikely(foundEdge))
 	{
 	  /*! mark first hard edge */
@@ -151,8 +148,10 @@ namespace embree
 
     __forceinline void update(CatmullClark1Ring &dest) const
     {
-      dest.valence = valence;
-      dest.num_vtx = num_vtx;
+      dest.valence         = valence;
+      dest.num_vtx         = num_vtx;
+      dest.hard_edge_index = hard_edge_index;
+
       Vec3fa F(0.0f,0.0f,0.0f);
       Vec3fa R(0.0f,0.0f,0.0f);
 
@@ -184,6 +183,14 @@ namespace embree
       F *= inv_valence;
       R *= inv_valence; 
       dest.vtx = (F + 2.0f * R + (float)(valence-3)*vtx) * inv_valence;
+      
+      if (hard_edge_index != -1)
+	{
+	  dest.ring[ hard_edge_index + 0 ] = 0.5f * (vtx + ring[hard_edge_index+0]);
+	  dest.ring[ hard_edge_index + 1 ] = ring[hard_edge_index+1];
+	  dest.ring[ hard_edge_index + 2 ] = 0.5f * (vtx + ring[hard_edge_index+2]);
+	  dest.vtx = (dest.ring[ hard_edge_index + 0 ] + dest.ring[ hard_edge_index + 2 ] + 6.0f * vtx) * 1.0f / 8.0f;
+	}
     }
 
     friend __forceinline std::ostream &operator<<(std::ostream &o, const CatmullClark1Ring &c)
@@ -310,10 +317,12 @@ namespace embree
     {
       dest0.valence = 4;
       dest0.num_vtx = 8;
+      dest0.hard_edge_index = -1;
       dest0.vtx     = p0.ring[0];
       dest1.valence = 4;
       dest1.num_vtx = 8;
       dest1.vtx     = p0.ring[0];
+      dest1.hard_edge_index = -1;
 
       // 1-ring for patch0
       dest0.ring[ 0] = p0.ring[p0.num_vtx-1];
@@ -339,6 +348,7 @@ namespace embree
     {
       dest.valence = 4;
       dest.num_vtx = 8;
+      dest.hard_edge_index = -1;
       dest.vtx     = center;
       for (size_t i=0;i<8;i++)
 	dest.ring[i] = center_ring[(offset+i)%8];
@@ -351,9 +361,6 @@ namespace embree
       ring[1].update(patch[1].ring[1]);
       ring[2].update(patch[2].ring[2]);
       ring[3].update(patch[3].ring[3]);
-
-
-
 
       init_regular(patch[0].ring[0],patch[1].ring[1],patch[0].ring[1],patch[1].ring[0]);
       init_regular(patch[1].ring[1],patch[2].ring[2],patch[1].ring[2],patch[2].ring[1]);
