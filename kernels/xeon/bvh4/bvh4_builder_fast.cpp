@@ -589,6 +589,7 @@ namespace embree
       /* create initial build record */
       BuildRecord br;
       br.init(pinfo,0,pinfo.size());
+      //br.init(pinfo,0,1);
       br.depth = 1;
       br.parent = &bvh->root;
 

@@ -196,14 +196,14 @@ namespace embree
         const size_t x = 2*(i&1) + (i&4);
         const size_t y = (i&2) + ((i&8) >> 1); 
         const Vec3fa& v00 = prim.vertices(bx+x+0,by+y+0);
-        const Vec3fa& v10 = prim.vertices(bx+x+1,by+y+0);
-        const Vec3fa& v20 = prim.vertices(bx+x+2,by+y+0);
+        const Vec3fa& v10 = (&v00)[1]; //prim.vertices(bx+x+1,by+y+0);
+        const Vec3fa& v20 = (&v00)[2]; //prim.vertices(bx+x+2,by+y+0);
         const Vec3fa& v01 = prim.vertices(bx+x+0,by+y+1);
-        const Vec3fa& v11 = prim.vertices(bx+x+1,by+y+1);
-        const Vec3fa& v21 = prim.vertices(bx+x+2,by+y+1);
+        const Vec3fa& v11 = (&v01)[1]; //prim.vertices(bx+x+1,by+y+1);
+        const Vec3fa& v21 = (&v01)[2]; //prim.vertices(bx+x+2,by+y+1);
         const Vec3fa& v02 = prim.vertices(bx+x+0,by+y+2);
-        const Vec3fa& v12 = prim.vertices(bx+x+1,by+y+2);
-        const Vec3fa& v22 = prim.vertices(bx+x+2,by+y+2);
+        const Vec3fa& v12 = (&v02)[1]; //prim.vertices(bx+x+1,by+y+2);
+        const Vec3fa& v22 = (&v02)[2]; //prim.vertices(bx+x+2,by+y+2);
         intersectQuadQuad(ray,v00,v10,v20,v01,v11,v21,v02,v12,v22,prim.geomID,prim.primID);
       }
     }
