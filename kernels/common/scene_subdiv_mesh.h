@@ -201,14 +201,30 @@ namespace embree
     {
       BBox3fa b = empty;
       HalfEdge *p = &e;
+      bool foundEdge = false;
       do {
-	/*! get bounds for the adjacent quad */
+	/*! get bounds for the adjacent vertex */
 	b.extend( bounds_quad( *p ) );
 	/*! continue with next adjacent edge. */
+	if (unlikely(!p->hasOpposite()))
+	  {
+	    foundEdge = true;
+	    break;
+	  }
+	assert( p->hasOpposite() );
+
 	p = p->opposite();
+
+	/*! get bounds for the diagonal vertex */
+	b.extend( bounds_quad( *p->prev() ) );
+	
 	p = p->next();
       } while( p != &e);
             
+      if (unlikely(foundEdge))
+	{
+	  // FIXME:
+	}
       return b;
     }
 

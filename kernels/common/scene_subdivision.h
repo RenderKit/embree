@@ -77,6 +77,7 @@ namespace embree
       vtx = vertices[ h->getStartVertexIndex() ];
       SubdivMesh::HalfEdge *p = (SubdivMesh::HalfEdge*)h;
       do {
+	assert( p->hasOpposite() );
 	p = p->opposite();
         assert( i < 2*MAX_VALENCE );
 	ring[i++] = vertices[ p->getStartVertexIndex() ];
