@@ -23,6 +23,7 @@
 namespace embree
 {
 
+
 #define MAX_VALENCE 16
 
   struct __aligned(64) FinalQuad
@@ -39,6 +40,7 @@ namespace embree
     Vec3fa ring[2*MAX_VALENCE]; // two vertices per face
     unsigned int valence;
     unsigned int num_vtx;
+    int hard_edge_index;
 
     CatmullClark1Ring() {}
 
@@ -73,31 +75,38 @@ namespace embree
     __forceinline void init(const SubdivMesh::HalfEdge *const h,
 			    const Vec3fa *const vertices)
     {
+      hard_edge_index= -1;
+
       size_t i=0;
       vtx = vertices[ h->getStartVertexIndex() ];
       SubdivMesh::HalfEdge *p = (SubdivMesh::HalfEdge*)h;
       bool foundEdge = false;
       do {
-	if (unlikely(!p->hasOpposite())) { foundEdge = false; break; }
+        assert( i < 2*MAX_VALENCE );
+	ring[i]   = vertices[ p->next()->getStartVertexIndex() ];
+	i++;
+	if (unlikely(!p->hasOpposite())) { foundEdge = true; break; }
 	assert( p->hasOpposite() );
 	p = p->opposite();
-        assert( i < 2*MAX_VALENCE );
-	ring[i]   = vertices[ p->getStartVertexIndex() ];
-	ring[i].w = 0.0f;
-	i++;
+
         assert( i < 2*MAX_VALENCE );
 	ring[i] = vertices[ p->prev()->getStartVertexIndex() ];
-	ring[i].w = 0.0f;
 	i++;
         
 	/*! continue with next adjacent edge */
 	p = p->next();
       } while( p != h);
 
+      PING;
+      DBG_PRINT(i);
+
       if (unlikely(foundEdge))
 	{
-	  /*! mark first edge */
-	  ring[i-1].w = 1.0f; 
+	  /*! mark first hard edge */
+	  hard_edge_index = i-1;
+	  /*! store dummy vertex for the face between the two hard edges */	  
+	  ring[i] = Vec3fa(0.0f,0.0f,0.0f);
+	  i++;
 
 	  /*! first cycle clock-wise until we found the second edge */	  
 	  p = (SubdivMesh::HalfEdge*)h;
@@ -108,31 +117,23 @@ namespace embree
 	      p = p->prev();	      
 	    }
 
-	  /*! store dummy vertex for the face between the two hard edges */	  
-	  ring[i] = Vec3fa(0.0f,0.0f,0.0f);
-	  ring[i].w = 1.0f;
-	  i++;
 
 	  /*! store second hard edge and diagonal vertex*/	  
 	  ring[i] = vertices[ p->getStartVertexIndex() ];
-	  ring[i].w = 1.0f;
 	  i++;
 	  ring[i] = vertices[ p->prev()->getStartVertexIndex() ];
-	  ring[i].w = 1.0f;
 	  i++;
 	  p = p->next();
 	  
 	  /*! continue counter-clockwise */	  
 	  while (p != h ) {
 	    assert( p->hasOpposite() );
+	    assert( i < 2*MAX_VALENCE );
+	    ring[i]   = vertices[ p->next()->getStartVertexIndex() ];
+	    i++;
 	    p = p->opposite();
 	    assert( i < 2*MAX_VALENCE );
-	    ring[i]   = vertices[ p->getStartVertexIndex() ];
-	    ring[i].w = 0.0f;
-	    i++;
-	    assert( i < 2*MAX_VALENCE );
 	    ring[i] = vertices[ p->prev()->getStartVertexIndex() ];
-	    ring[i].w = 0.0f;
 	    i++;
         
 	    /*! continue with next adjacent edge */
@@ -187,7 +188,7 @@ namespace embree
 
     friend __forceinline std::ostream &operator<<(std::ostream &o, const CatmullClark1Ring &c)
       {
-	o << "vtx " << c.vtx << " valence " << c.valence << " num_vtx " << c.num_vtx << " ring: " << std::endl;
+	o << "vtx " << c.vtx << " valence " << c.valence << " num_vtx " << c.num_vtx << " hard_edge_index " << c.hard_edge_index << " ring: " << std::endl;
 	for (size_t i=0;i<c.num_vtx;i++)
 	  o << i << " -> " << c.ring[i] << std::endl;
 	return o;
