@@ -96,6 +96,11 @@ namespace embree
       
       __forceinline PrimInfo (size_t begin, size_t end, const BBox3fa& geomBounds, const BBox3fa& centBounds) 
 	: begin(begin), end(end), CentGeomBBox3fa(geomBounds,centBounds) {}
+
+      __forceinline void add(const BBox3fa& geomBounds_) {
+	CentGeomBBox3fa::extend(geomBounds_,center2(geomBounds_));
+	end++;
+      }
       
       __forceinline void add(const BBox3fa& geomBounds_, const BBox3fa& centBounds_, size_t num_ = 1) {
 	CentGeomBBox3fa::extend(geomBounds_,centBounds_);

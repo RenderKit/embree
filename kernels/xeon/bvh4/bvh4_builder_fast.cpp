@@ -657,6 +657,56 @@ namespace embree
       /* stop measurement */
       if (g_verbose >= 2) dt = getSeconds()-t0;
     }
+
+    // =======================================================================================================
+    // =======================================================================================================
+    // =======================================================================================================
+
+    BVH4BuilderFastGeneric::BVH4BuilderFastGeneric (BVH4* bvh, PrimRef* prims, size_t N, const MakeLeaf& makeLeaf, size_t listMode, 
+                                                    size_t logBlockSize, size_t logSAHBlockSize, bool needVertices, size_t primBytes, const size_t minLeafSize, const size_t maxLeafSize)
+      : makeLeaf(makeLeaf), BVH4BuilderFast(NULL,bvh,listMode,logBlockSize,logSAHBlockSize,needVertices,primBytes,minLeafSize,maxLeafSize)
+    {
+      this->prims = prims;
+      this->N = N;
+    }
+
+    BVH4BuilderFastGeneric::~BVH4BuilderFastGeneric () {
+      prims = NULL;
+    }
+
+    void BVH4BuilderFastGeneric::build(size_t threadIndex, size_t threadCount)
+    {
+      bvh->init(sizeof(BVH4::Node),N*N,1);
+      
+      /* initialize node and leaf allocator */
+      bvh->alloc.clear();
+      __aligned(64) Allocator nodeAlloc(&bvh->alloc);
+      __aligned(64) Allocator leafAlloc(&bvh->alloc);
+     
+      /* calculate bounding box */
+      PrimInfo pinfo(empty);
+      for (size_t i=0; i<N; i++) pinfo.add(prims[i].bounds());
+      bvh->bounds = pinfo.geomBounds;
+
+      /* create initial build record */
+      BuildRecord br;
+      br.init(pinfo,0,pinfo.size());
+      br.depth = 1;
+      br.parent = &bvh->root;
+
+      /* build BVH in single thread */
+      recurse(br,nodeAlloc,leafAlloc,RECURSE_SEQUENTIAL,threadIndex,threadCount);
+      _mm_sfence(); // make written leaves globally visible
+    }
+
+    void BVH4BuilderFastGeneric::createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID) 
+    {
+      *current.parent = makeLeaf(leafAlloc, &prims[current.begin], current.size());
+    }
+
+    // =======================================================================================================
+    // =======================================================================================================
+    // =======================================================================================================
     
     Builder* BVH4Bezier1vBuilderFast    (void* bvh, Scene* scene, size_t mode) { return new class BVH4BezierBuilderFast<Bezier1v>  ((BVH4*)bvh,scene,mode); }
     Builder* BVH4Bezier1iBuilderFast   (void* bvh, Scene* scene, size_t mode) { return new class BVH4BezierBuilderFast<Bezier1i>((BVH4*)bvh,scene,mode); }

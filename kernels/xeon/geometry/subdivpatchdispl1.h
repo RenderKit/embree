@@ -19,6 +19,7 @@
 #include "primitive.h"
 #include "common/scene_subdivision.h"
 #include "bvh4/bvh4.h"
+#include "bvh4/bvh4_builder_fast.h"
 
 #define SUBDIVISION_LEVEL_DISPL 8
 
@@ -196,6 +197,40 @@ namespace embree
       return std::pair<BBox3fa,BVH4::NodeRef>(bounds,bvh.encodeNode(node));
     }
 
+    struct MakeLeaf : public isa::BVH4BuilderFastGeneric::MakeLeaf
+    {
+      MakeLeaf (SubdivPatchDispl1* This) 
+        : This(This) {}
+
+      BVH4::NodeRef operator() (LinearAllocatorPerThread::ThreadAllocator& alloc, const PrimRef* prims, size_t N) const
+      {
+        assert(N == 1);
+        const size_t x = prims->geomID();
+        const size_t y = prims->primID();
+        return This->bvh.encodeLeaf(&This->leaves(x,y),1);
+      }
+
+      SubdivPatchDispl1* This;
+    };
+
+    void build(unsigned levels)
+    {
+      size_t N = 1<<levels;
+      size_t K = N/8;
+      std::vector<PrimRef> prims;
+      prims.resize(K*K);
+      for (size_t y=0; y<K; y++) {
+        for (size_t x=0; x<K; x++) {
+          QuadQuad4x4& leaf = leaves(x,y);
+          new (&leaf) QuadQuad4x4(8*x,8*y,v,3,geomID<true>(),primID<true>());
+          prims[y*K+x] = PrimRef(leaf.build(),x,y);
+        }
+      }
+      bool listMode = true; // FIXME
+      isa::BVH4BuilderFastGeneric builder(&bvh,&prims[0],K*K,MakeLeaf(this),listMode,4,4,false,0,1,1);
+      builder.build(0,0);
+    }
+
   public:
     
     /*! Construction from vertices and IDs. */
@@ -237,11 +272,14 @@ namespace embree
       for (ssize_t i=0; i<level-3; i++) S += (1<<i)*(1<<i);
 
       leaves.init(N/8,N/8);
-      bvh.init(sizeof(BVH4::Node),(N/8)*(N/8), 1);
+#if 0
       LinearAllocatorPerThread::ThreadAllocator nodeAlloc(&bvh.alloc);
       const std::pair<BBox3fa,BVH4::NodeRef> root = build(nodeAlloc,0,0,0,level-3);
       bvh.bounds = root.first;
       bvh.root   = root.second;
+#else
+      build(level);
+#endif
     }
 
     // FIXME: destruction

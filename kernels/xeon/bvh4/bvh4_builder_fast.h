@@ -118,13 +118,13 @@ namespace embree
     public:
 
       /*! compute number of primitives */
-      virtual size_t number_of_primitives() = 0;
+      virtual size_t number_of_primitives() { return 0; } // FIXME: create base class without these functions
     
       /*! creates build primitive array (sequential version) */
-      virtual void create_primitive_array_sequential(size_t threadIndex, size_t threadCount, PrimInfo& pinfo) = 0;
+      virtual void create_primitive_array_sequential(size_t threadIndex, size_t threadCount, PrimInfo& pinfo) {};
     
       /*! creates build primitive array (parallel version) */
-      virtual void create_primitive_array_parallel(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, PrimInfo& pinfo) = 0;
+      virtual void create_primitive_array_parallel(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, PrimInfo& pinfo) {};
     
       /*! build mode */
       enum { RECURSE_SEQUENTIAL = 1, RECURSE_PARALLEL = 2, BUILD_TOP_LEVEL = 3 };
@@ -260,5 +260,23 @@ namespace embree
       SubdivMesh* geom;   //!< input mesh
     };
 
+    class BVH4BuilderFastGeneric : public BVH4BuilderFast
+    {
+    public:
+      struct MakeLeaf {
+        virtual BVH4::NodeRef operator() (Allocator& alloc, const PrimRef* prims, size_t N) const = 0;
+      };
+
+    public:
+      BVH4BuilderFastGeneric (BVH4* bvh, PrimRef* prims, size_t N, const MakeLeaf& makeLeaf, size_t listMode, 
+                              size_t logBlockSize, size_t logSAHBlockSize, bool needVertices, size_t primBytes, const size_t minLeafSize, const size_t maxLeafSize);
+      ~BVH4BuilderFastGeneric();
+      virtual void build(size_t threadIndex, size_t threadCount);
+      void createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID);
+
+    public:
+      size_t N;
+      const MakeLeaf& makeLeaf;
+    };
   }
 }
