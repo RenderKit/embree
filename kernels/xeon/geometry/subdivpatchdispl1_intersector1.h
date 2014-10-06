@@ -164,6 +164,71 @@ namespace embree
                                                  const Vec3fa& v02, const Vec3fa& v12, const Vec3fa& v22,
                                                  const unsigned geomID, const unsigned primID)
     {
+#if 0
+      const Vec3fa O = ray.org;
+      const Vec3fa D = ray.dir;
+      
+      const Vec3fa q00 = v00-O, q10 = v10-O, q20 = v20-O;
+      const Vec3fa q01 = v01-O, q11 = v11-O, q21 = v21-O;
+      const Vec3fa q02 = v02-O, q12 = v12-O, q22 = v22-O;
+
+      sse3f q_x0_y0120; transpose(q00,q01,q02,q01,q_x0_y0120.x,q_x0_y0120.y,q_x0_y0120.z);
+      sse3f q_x1_y0120; transpose(q00,q01,q02,q01,q_x1_y0120.x,q_x1_y0120.y,q_x1_y0120.z);
+      sse3f q_x2_y0120; transpose(q00,q01,q02,q01,q_x2_y0120.x,q_x2_y0120.y,q_x2_y0120.z);
+
+      const sse3f DDDD(D.x,D.y,D.z);
+
+      const sse3f e0010_e0011_e0001_e1222 = v10_v11_v01_v22 - v00_v00_v00_v12;
+      const sse3f s0010_s0011_s0001_e1222 = v10_v11_v01_v22 + v00_v00_v00_v12;
+      const ssef  u0010_u0011_u0001_e1222 = dot(cross(s0010_s0011_s0001_e1222,e0010_e0011_e0001_e1222),DDDD);
+
+      const sse3f e1020_e1021_e1011_e2021 = v20_v21_v11_v21 - v10_v10_v10_v20;
+      const sse3f s0010_s0011_s0001_e1222 = v20_v21_v11_v21 + v10_v10_v10_v20;
+      const ssef  u1020_u1021_u1011_e2021 = dot(cross(s0010_s0011_s0001_e1222,e1020_e1021_e1011_e2021),DDDD);
+
+      const sse3f e0111_e0112_e0102_e0212 = v11_v12_v02_v12 - v01_v01_v01_v02;
+      const sse3f s0111_s0112_s0102_s0212 = v11_v12_v02_v12 + v01_v01_v01_v02;
+      const ssef  u0111_u0112_u0102_u0212 = dot(cross(s0111_s0112_s0102_s0212,e0111_e0112_e0102_e0212),DDDD);
+
+      const sse3f e1121_e1122_e1112_e1222 = v21_v22_v12_v22 - v11_v11_v11_v12;
+      const sse3f s1121_s1122_s1112_s1222 = v21_v22_v12_v22 + v11_v11_v11_v12;
+      const ssef  u1121_u1122_u1112_u1222 = dot(cross(s1121_s1122_s1112_s1222,e1121_e1122_e1112_e1222),DDDD);
+
+      const avxf U0 = avxf(-u0001,-u0011,-u0102,-u0112,-u1011,-u1021,-u1112,-u1122);
+      const avxf U1 = avxf(-u0111,+u1011,-u0212,+u1112,-u1121,+u2021,-u1222,+u2122);
+      const avxf U2 = avxf(+u0011,+u0010,+u0112,+u0111,+u1021,+u1020,+u1122,+u1121);
+
+      const avx3f q(avxf(q00.x,q00.x,q01.x,q01.x,q10.x,q10.x,q11.x,q11.x),
+                    avxf(q00.y,q00.y,q01.y,q01.y,q10.y,q10.y,q11.y,q11.y),
+                    avxf(q00.z,q00.z,q01.z,q01.z,q10.z,q10.z,q11.z,q11.z));
+      
+      const avx3f e0(avxf(-e0001.x,-e0011.x,-e0102.x,-e0112.x,-e1011.x,-e1021.x,-e1112.x,-e1122.x),
+                     avxf(-e0001.y,-e0011.y,-e0102.y,-e0112.y,-e1011.y,-e1021.y,-e1112.y,-e1122.y),
+                     avxf(-e0001.z,-e0011.z,-e0102.z,-e0112.z,-e1011.z,-e1021.z,-e1112.z,-e1122.z));
+
+      const avx3f e1(avxf(-e0111.x,+e1011.x,-e0212.x,+e1112.x,-e1121.x,+e2021.x,-e1222.x,+e2122.x),
+                     avxf(-e0111.y,+e1011.y,-e0212.y,+e1112.y,-e1121.y,+e2021.y,-e1222.y,+e2122.y),
+                     avxf(-e0111.z,+e1011.z,-e0212.z,+e1112.z,-e1121.z,+e2021.z,-e1222.z,+e2122.z));
+
+      const avx3f Ng0 = cross(e1,e0);
+      const avx3f Ng = Ng0+Ng0;
+      const avxf det = dot(D8,Ng);
+      const avxf T   = dot(q,Ng);
+      
+      avxb mask = (U0 >= 0.0f) && (U1 >= 0.0f) && (U2 >= 0.0f) && (det*ray.tnear <= T) && (T <= det*ray.tfar);
+
+      while (mask) {
+        size_t i = __bscf(mask);
+        const float rcpDet = rcp(det);
+        ray.u    = U0[i] * rcpDet;
+        ray.v    = U1[i] * rcpDet;
+        ray.tfar = T[i] * rcpDet;
+        ray.Ng   = Vec3fa(Ng.x[i],Ng.y[i],Ng.z[i]);
+        ray.geomID  = geomID;
+        ray.primID  = primID;
+      }
+
+#else
       const Vec3fa O = ray.org;
       const Vec3fa D = ray.dir;
       
@@ -213,6 +278,7 @@ namespace embree
       } else {
         if (u2122 >= 0.0f && u1121 >= 0.0f) intersectFinish(ray,q11,-e1122,+e2122,+e1121,-u1122,+u2122,+u1121,geomID,primID);
       }
+#endif
     }
     
     /*! Intersect a ray with the triangle and updates the hit. */
