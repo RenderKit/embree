@@ -114,7 +114,67 @@ namespace embree
         const size_t mask3 = intersect<robust>(3, nearX, nearY, nearZ, org, rdir, org_rdir, tnear, tfar);
         return mask0 | (mask1 << 4) | (mask2 << 8) | (mask3 << 12);
       }
+
+#if defined (__AVX__)
+
+      /*! intersection with single rays */
+      template<bool robust>
+      __forceinline size_t intersect(size_t i, size_t _nearX, size_t _nearY, size_t _nearZ,
+                                     const avx3f& org, const avx3f& rdir, const avx3f& org_rdir, const avxf& tnear, const avxf& tfar) const
+      {
+        const size_t nearX = 4*_nearX, nearY = 4*_nearY, nearZ = 4*_nearZ; 
+        const size_t farX  = nearX ^ (4*sizeof(ssef)), farY  = nearY ^ (4*sizeof(ssef)), farZ  = nearZ ^ (4*sizeof(ssef));
+#if defined (__AVX2__)
+        const avxf tNearX = msub(load8f((const char*)&lower_x[i]+nearX), rdir.x, org_rdir.x);
+        const avxf tNearY = msub(load8f((const char*)&lower_x[i]+nearY), rdir.y, org_rdir.y);
+        const avxf tNearZ = msub(load8f((const char*)&lower_x[i]+nearZ), rdir.z, org_rdir.z);
+        const avxf tFarX  = msub(load8f((const char*)&lower_x[i]+farX ), rdir.x, org_rdir.x);
+        const avxf tFarY  = msub(load8f((const char*)&lower_x[i]+farY ), rdir.y, org_rdir.y);
+        const avxf tFarZ  = msub(load8f((const char*)&lower_x[i]+farZ ), rdir.z, org_rdir.z);
+#else
+        const avxf tNearX = (load8f((const char*)&lower_x[i]+nearX) - org.x) * rdir.x;
+        const avxf tNearY = (load8f((const char*)&lower_x[i]+nearY) - org.y) * rdir.y;
+        const avxf tNearZ = (load8f((const char*)&lower_x[i]+nearZ) - org.z) * rdir.z;
+        const avxf tFarX  = (load8f((const char*)&lower_x[i]+farX ) - org.x) * rdir.x;
+        const avxf tFarY  = (load8f((const char*)&lower_x[i]+farY ) - org.y) * rdir.y;
+        const avxf tFarZ  = (load8f((const char*)&lower_x[i]+farZ ) - org.z) * rdir.z;
+#endif
+
+        if (robust) {
+          const float round_down = 1.0f-2.0f*float(ulp);
+          const float round_up   = 1.0f+2.0f*float(ulp);
+          const avxf tNear = max(tNearX,tNearY,tNearZ,tnear);
+          const avxf tFar  = min(tFarX ,tFarY ,tFarZ ,tfar);
+          const avxb vmask = round_down*tNear <= round_up*tFar;
+          const size_t mask = movemask(vmask);
+          return mask;
+        }
+        
+#if defined(__AVX2__)
+        const avxf tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,tnear));
+        const avxf tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,tfar ));
+        const avxb vmask = cast(tNear) > cast(tFar);
+        const size_t mask = movemask(vmask)^0xf;
+#else
+        const avxf tNear = max(tNearX,tNearY,tNearZ,tnear);
+        const avxf tFar  = min(tFarX ,tFarY ,tFarZ ,tfar);
+        const avxb vmask = tNear <= tFar;
+        const size_t mask = movemask(vmask);
+#endif
+        return mask;
+      }
+
+      template<bool robust>
+      __forceinline size_t intersect(size_t nearX, size_t nearY, size_t nearZ,
+                                     const avx3f& org, const avx3f& rdir, const avx3f& org_rdir, const avxf& tnear, const avxf& tfar) const
+      {
+        const size_t mask01 = intersect<robust>(0, nearX, nearY, nearZ, org, rdir, org_rdir, tnear, tfar);
+        const size_t mask23 = intersect<robust>(2, nearX, nearY, nearZ, org, rdir, org_rdir, tnear, tfar);
+        return mask01 | (mask23 << 8);
+      }
       
+#endif
+
     public:
       ssef lower_x[4];           //!< X dimension of lower bounds of all 4 children.
       ssef upper_x[4];           //!< X dimension of upper bounds of all 4 children.

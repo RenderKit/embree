@@ -166,6 +166,28 @@ namespace embree
       const size_t bx = prim.bx;
       const size_t by = prim.by;
 
+#if defined (__AVX__)
+
+      /*! load the ray into SIMD registers */
+      const Vec3fa ray_rdir = rcp_safe(ray.dir);
+      const Vec3fa ray_org_rdir = ray.org*ray_rdir;
+      const avx3f org(ray.org.x,ray.org.y,ray.org.z);
+      const avx3f dir(ray.dir.x,ray.dir.y,ray.dir.z);
+      const avx3f rdir(ray_rdir.x,ray_rdir.y,ray_rdir.z);
+      const avx3f org_rdir(ray_org_rdir.x,ray_org_rdir.y,ray_org_rdir.z);
+      const avxf  ray_tnear(ray.tnear);
+      const avxf  ray_tfar(ray.tfar);
+      
+      /*! offsets to select the side that becomes the lower or upper bound */
+      const size_t nearX = ray_rdir.x >= 0.0f ? 0*sizeof(ssef) : 1*sizeof(ssef);
+      const size_t nearY = ray_rdir.y >= 0.0f ? 2*sizeof(ssef) : 3*sizeof(ssef);
+      const size_t nearZ = ray_rdir.z >= 0.0f ? 4*sizeof(ssef) : 5*sizeof(ssef);
+
+      /* perform box tests */
+      size_t mask = prim.n.intersect<false>(nearX, nearY, nearZ, org, rdir, org_rdir, ray_tnear, ray_tfar);
+
+#else
+
       /*! load the ray into SIMD registers */
       const Vec3fa ray_rdir = rcp_safe(ray.dir);
       const Vec3fa ray_org_rdir = ray.org*ray_rdir;
@@ -183,6 +205,8 @@ namespace embree
 
       /* perform box tests */
       size_t mask = prim.n.intersect<false>(nearX, nearY, nearZ, org, rdir, org_rdir, ray_tnear, ray_tfar);
+
+#endif
 
       /* intersect quad-quads */
       while (mask) {
