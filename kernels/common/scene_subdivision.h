@@ -419,7 +419,7 @@ namespace embree
 	const T Ry = v[y-1][x] - v[y+1][x];
 	const T tangentY = (Ry * 4.0f + Qy) * 1.0f / 12.0f;
     
-	return lnormal_xyz(tangentX,tangentY);
+	return cross(tangentX,tangentY);
       }
 
       __forceinline void initSubPatches(const T edge[12],
@@ -569,6 +569,30 @@ namespace embree
       quad.geomID = 0;
       quad.primID = 0;
     };
+
+    __forceinline void init_limit( FinalQuad& quad ) const
+    {
+
+      const Vec3fa limit_v0 = computeLimitVertex(1,1);
+      const Vec3fa limit_v1 = computeLimitVertex(1,2);
+      const Vec3fa limit_v2 = computeLimitVertex(2,2);
+      const Vec3fa limit_v3 = computeLimitVertex(2,1);
+      
+      const Vec3fa limit_normal0 = computeLimitNormal(1,1);
+      const Vec3fa limit_normal1 = computeLimitNormal(1,2);
+      const Vec3fa limit_normal2 = computeLimitNormal(2,2);
+      const Vec3fa limit_normal3 = computeLimitNormal(2,1);
+
+      quad.vtx[0] = limit_v0;
+      quad.vtx[1] = limit_v1;
+      quad.vtx[2] = limit_v2;
+      quad.vtx[3] = limit_v3;
+
+      quad.geomID = 0;
+      quad.primID = 0;
+    };
+
+
 
     __forceinline BBox3fa bounds() const
     {
