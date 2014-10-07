@@ -162,9 +162,9 @@ XEON_PHI_ISA               Enables generation of Xeon Phi[TM]    OFF
 You need at least Intel Compiler 11.1 or GCC 4.4 to enable AVX and Intel
 Compiler 12.1 or GCC 4.7 to enable AVX2.
 
-If you want to compile Embree for Xeon Phi[TM] you need the Intel Compiler.
-Enabling the buffer stride feature reduces performance for building spatial
-hierarchies on Xeon Phi[TM].
+If you want to compile Embree for Xeon Phi[TM] you need the Intel Compiler and
+have to enable the XEON_PHI_ISA option in CMake. Enabling the buffer stride
+feature reduces performance for building spatial hierarchies on Xeon Phi[TM].
 
 == Compiling Embree on Windows  ==
 
