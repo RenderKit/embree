@@ -183,8 +183,9 @@ parameters that can be configured:</p>
 Intel Compiler 12.1 or GCC 4.7 to enable AVX2.</p>
 
 <p>If you want to compile Embree for Xeon Phi&trade; you need the
-Intel Compiler. Enabling the buffer stride feature reduces performance
-for building spatial hierarchies on Xeon Phi&trade;.</p>
+Intel Compiler and have to enable the XEON_PHI_ISA option in
+CMake. Enabling the buffer stride feature reduces performance for
+building spatial hierarchies on Xeon Phi&trade;.</p>
 
  <h2>Compiling Embree on Windows</h2>
 
