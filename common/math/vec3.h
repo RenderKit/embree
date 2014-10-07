@@ -231,6 +231,11 @@ namespace embree
   __forceinline Vec3<ssef> broadcast4f( const Vec3<ssef>& a, const size_t k ) {  
     return Vec3<ssef>(ssef::broadcast(&a.x[k]), ssef::broadcast(&a.y[k]), ssef::broadcast(&a.z[k]));
   }
+
+  template<size_t i0, size_t i1, size_t i2, size_t i3> __forceinline const Vec3<ssef> shuffle( const Vec3<ssef>& b ) {
+    return Vec3<ssef>(shuffle<i0,i1,i2,i3>(b.x),shuffle<i0,i1,i2,i3>(b.y),shuffle<i0,i1,i2,i3>(b.z));
+  }
+
 #endif
 
 #if defined(__AVX__)
