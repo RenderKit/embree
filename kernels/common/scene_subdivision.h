@@ -23,6 +23,7 @@
 namespace embree
 {
 
+
 #define MAX_VALENCE 16
 
   struct __aligned(64) FinalQuad
@@ -39,6 +40,7 @@ namespace embree
     Vec3fa ring[2*MAX_VALENCE]; // two vertices per face
     unsigned int valence;
     unsigned int num_vtx;
+    int hard_edge_index;
 
     CatmullClark1Ring() {}
 
@@ -73,21 +75,22 @@ namespace embree
     __forceinline void init(const SubdivMesh::HalfEdge *const h,
 			    const Vec3fa *const vertices)
     {
+      hard_edge_index= -1;
+
       size_t i=0;
       vtx = vertices[ h->getStartVertexIndex() ];
       SubdivMesh::HalfEdge *p = (SubdivMesh::HalfEdge*)h;
       bool foundEdge = false;
       do {
-	if (unlikely(!p->hasOpposite())) { foundEdge = false; break; }
+        assert( i < 2*MAX_VALENCE );
+	ring[i]   = vertices[ p->next()->getStartVertexIndex() ];
+	i++;
+	if (unlikely(!p->hasOpposite())) { foundEdge = true; break; }
 	assert( p->hasOpposite() );
 	p = p->opposite();
-        assert( i < 2*MAX_VALENCE );
-	ring[i]   = vertices[ p->getStartVertexIndex() ];
-	ring[i].w = 0.0f;
-	i++;
+
         assert( i < 2*MAX_VALENCE );
 	ring[i] = vertices[ p->prev()->getStartVertexIndex() ];
-	ring[i].w = 0.0f;
 	i++;
         
 	/*! continue with next adjacent edge */
@@ -96,8 +99,11 @@ namespace embree
 
       if (unlikely(foundEdge))
 	{
-	  /*! mark first edge */
-	  ring[i-1].w = 1.0f; 
+	  /*! mark first hard edge */
+	  hard_edge_index = i-1;
+	  /*! store dummy vertex for the face between the two hard edges */	  
+	  ring[i] = Vec3fa(0.0f,0.0f,0.0f);
+	  i++;
 
 	  /*! first cycle clock-wise until we found the second edge */	  
 	  p = (SubdivMesh::HalfEdge*)h;
@@ -108,31 +114,23 @@ namespace embree
 	      p = p->prev();	      
 	    }
 
-	  /*! store dummy vertex for the face between the two hard edges */	  
-	  ring[i] = Vec3fa(0.0f,0.0f,0.0f);
-	  ring[i].w = 1.0f;
-	  i++;
 
 	  /*! store second hard edge and diagonal vertex*/	  
 	  ring[i] = vertices[ p->getStartVertexIndex() ];
-	  ring[i].w = 1.0f;
 	  i++;
 	  ring[i] = vertices[ p->prev()->getStartVertexIndex() ];
-	  ring[i].w = 1.0f;
 	  i++;
 	  p = p->next();
 	  
 	  /*! continue counter-clockwise */	  
 	  while (p != h ) {
 	    assert( p->hasOpposite() );
+	    assert( i < 2*MAX_VALENCE );
+	    ring[i]   = vertices[ p->next()->getStartVertexIndex() ];
+	    i++;
 	    p = p->opposite();
 	    assert( i < 2*MAX_VALENCE );
-	    ring[i]   = vertices[ p->getStartVertexIndex() ];
-	    ring[i].w = 0.0f;
-	    i++;
-	    assert( i < 2*MAX_VALENCE );
 	    ring[i] = vertices[ p->prev()->getStartVertexIndex() ];
-	    ring[i].w = 0.0f;
 	    i++;
         
 	    /*! continue with next adjacent edge */
@@ -150,8 +148,10 @@ namespace embree
 
     __forceinline void update(CatmullClark1Ring &dest) const
     {
-      dest.valence = valence;
-      dest.num_vtx = num_vtx;
+      dest.valence         = valence;
+      dest.num_vtx         = num_vtx;
+      dest.hard_edge_index = hard_edge_index;
+
       Vec3fa F(0.0f,0.0f,0.0f);
       Vec3fa R(0.0f,0.0f,0.0f);
 
@@ -183,11 +183,19 @@ namespace embree
       F *= inv_valence;
       R *= inv_valence; 
       dest.vtx = (F + 2.0f * R + (float)(valence-3)*vtx) * inv_valence;
+      
+      if (hard_edge_index != -1)
+	{
+	  dest.ring[ hard_edge_index + 0 ] = 0.5f * (vtx + ring[hard_edge_index+0]);
+	  dest.ring[ hard_edge_index + 1 ] = ring[hard_edge_index+1];
+	  dest.ring[ hard_edge_index + 2 ] = 0.5f * (vtx + ring[hard_edge_index+2]);
+	  dest.vtx = (dest.ring[ hard_edge_index + 0 ] + dest.ring[ hard_edge_index + 2 ] + 6.0f * vtx) * 1.0f / 8.0f;
+	}
     }
 
     friend __forceinline std::ostream &operator<<(std::ostream &o, const CatmullClark1Ring &c)
       {
-	o << "vtx " << c.vtx << " valence " << c.valence << " num_vtx " << c.num_vtx << " ring: " << std::endl;
+	o << "vtx " << c.vtx << " valence " << c.valence << " num_vtx " << c.num_vtx << " hard_edge_index " << c.hard_edge_index << " ring: " << std::endl;
 	for (size_t i=0;i<c.num_vtx;i++)
 	  o << i << " -> " << c.ring[i] << std::endl;
 	return o;
@@ -309,10 +317,12 @@ namespace embree
     {
       dest0.valence = 4;
       dest0.num_vtx = 8;
+      dest0.hard_edge_index = -1;
       dest0.vtx     = p0.ring[0];
       dest1.valence = 4;
       dest1.num_vtx = 8;
       dest1.vtx     = p0.ring[0];
+      dest1.hard_edge_index = -1;
 
       // 1-ring for patch0
       dest0.ring[ 0] = p0.ring[p0.num_vtx-1];
@@ -334,10 +344,43 @@ namespace embree
       dest1.ring[ 7] = p1.ring[0];
     }
 
+
+    static __forceinline void init_border(const CatmullClark1Ring &p0,
+                                          const CatmullClark1Ring &p1,
+                                          CatmullClark1Ring &dest0,
+                                          CatmullClark1Ring &dest1) 
+    {
+      dest0.valence = 3;
+      dest0.num_vtx = 6;
+      dest0.hard_edge_index = 2;
+      dest0.vtx     = p0.ring[0];
+
+      dest1.valence = 3;
+      dest1.num_vtx = 6;
+      dest1.vtx     = p0.ring[0];
+      dest1.hard_edge_index = 0;
+
+      // 1-ring for patch0
+      dest0.ring[ 0] = p0.ring[p0.num_vtx-1];
+      dest0.ring[ 1] = p1.ring[0];
+      dest0.ring[ 2] = p1.vtx;
+      dest1.ring[ 3] = p0.ring[p0.hard_edge_index+1]; // dummy
+      dest0.ring[ 4] = p0.vtx;
+      dest0.ring[ 5] = p0.ring[p0.num_vtx-2];
+      // 1-ring for patch1
+      dest1.ring[ 0] = p1.vtx;
+      dest1.ring[ 1] = p0.ring[p0.hard_edge_index+1]; // dummy
+      dest1.ring[ 2] = p0.vtx;
+      dest1.ring[ 3] = p0.ring[p0.num_vtx-2];
+      dest1.ring[ 4] = p0.ring[p0.num_vtx-1];
+      dest1.ring[ 5] = p1.ring[0];
+    }
+
     static __forceinline void init_regular(const Vec3fa &center, const Vec3fa center_ring[8], const size_t offset, CatmullClark1Ring &dest)
     {
       dest.valence = 4;
       dest.num_vtx = 8;
+      dest.hard_edge_index = -1;
       dest.vtx     = center;
       for (size_t i=0;i<8;i++)
 	dest.ring[i] = center_ring[(offset+i)%8];
@@ -351,13 +394,25 @@ namespace embree
       ring[2].update(patch[2].ring[2]);
       ring[3].update(patch[3].ring[3]);
 
+      if (likely(ring[0].hard_edge_index != 0))
+        init_regular(patch[0].ring[0],patch[1].ring[1],patch[0].ring[1],patch[1].ring[0]);
+      else
+        init_border(patch[0].ring[0],patch[1].ring[1],patch[0].ring[1],patch[1].ring[0]);
 
+      if (likely(ring[1].hard_edge_index != 0))
+        init_regular(patch[1].ring[1],patch[2].ring[2],patch[1].ring[2],patch[2].ring[1]);
+      else
+        init_border(patch[1].ring[1],patch[2].ring[2],patch[1].ring[2],patch[2].ring[1]);
 
+      if (likely(ring[2].hard_edge_index != 0))
+        init_regular(patch[2].ring[2],patch[3].ring[3],patch[2].ring[3],patch[3].ring[2]);
+      else
+        init_border(patch[2].ring[2],patch[3].ring[3],patch[2].ring[3],patch[3].ring[2]);
 
-      init_regular(patch[0].ring[0],patch[1].ring[1],patch[0].ring[1],patch[1].ring[0]);
-      init_regular(patch[1].ring[1],patch[2].ring[2],patch[1].ring[2],patch[2].ring[1]);
-      init_regular(patch[2].ring[2],patch[3].ring[3],patch[2].ring[3],patch[3].ring[2]);
-      init_regular(patch[3].ring[3],patch[0].ring[0],patch[3].ring[0],patch[0].ring[3]);
+      if (likely(ring[3].hard_edge_index != 0))
+        init_regular(patch[3].ring[3],patch[0].ring[0],patch[3].ring[0],patch[0].ring[3]);
+      else
+        init_border(patch[3].ring[3],patch[0].ring[0],patch[3].ring[0],patch[0].ring[3]);
 
       __aligned(64) Vec3fa center = (ring[0].vtx + ring[1].vtx + ring[2].vtx + ring[3].vtx) * 0.25f;
       __aligned(64) Vec3fa center_ring[8];
