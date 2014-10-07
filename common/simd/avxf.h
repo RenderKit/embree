@@ -309,7 +309,7 @@ namespace embree
   /// Transpose
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline void transpose4(const avxf& r0, const avxf& r1, const avxf& r2, const avxf& r3, avxf& c0, avxf& c1, avxf& c2, avxf& c3)
+  __forceinline void transpose(const avxf& r0, const avxf& r1, const avxf& r2, const avxf& r3, avxf& c0, avxf& c1, avxf& c2, avxf& c3)
   {
     avxf l02 = unpacklo(r0,r2);
     avxf h02 = unpackhi(r0,r2);
@@ -321,11 +321,22 @@ namespace embree
     c3 = unpackhi(h02,h13);
   }
 
+  __forceinline void transpose(const avxf& r0, const avxf& r1, const avxf& r2, const avxf& r3, avxf& c0, avxf& c1, avxf& c2)
+  {
+    avxf l02 = unpacklo(r0,r2);
+    avxf h02 = unpackhi(r0,r2);
+    avxf l13 = unpacklo(r1,r3);
+    avxf h13 = unpackhi(r1,r3);
+    c0 = unpacklo(l02,l13);
+    c1 = unpackhi(l02,l13);
+    c2 = unpacklo(h02,h13);
+  }
+
   __forceinline void transpose(const avxf& r0, const avxf& r1, const avxf& r2, const avxf& r3, const avxf& r4, const avxf& r5, const avxf& r6, const avxf& r7,
                                avxf& c0, avxf& c1, avxf& c2, avxf& c3, avxf& c4, avxf& c5, avxf& c6, avxf& c7)
   {
-    avxf h0,h1,h2,h3; transpose4(r0,r1,r2,r3,h0,h1,h2,h3);
-    avxf h4,h5,h6,h7; transpose4(r4,r5,r6,r7,h4,h5,h6,h7);
+    avxf h0,h1,h2,h3; transpose(r0,r1,r2,r3,h0,h1,h2,h3);
+    avxf h4,h5,h6,h7; transpose(r4,r5,r6,r7,h4,h5,h6,h7);
     c0 = shuffle<0,2>(h0,h4);
     c1 = shuffle<0,2>(h1,h5);
     c2 = shuffle<0,2>(h2,h6);

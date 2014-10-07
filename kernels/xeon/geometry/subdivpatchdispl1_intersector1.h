@@ -87,57 +87,6 @@ namespace embree
 #endif
     };
 
-    /*! Intersect a ray with the triangle and updates the hit. */
-    static __forceinline void intersectTriangle(Ray& ray, const Vec3fa& tri_v0, const Vec3fa& tri_v1, const Vec3fa& tri_v2, const unsigned geomID, const unsigned primID)
-    {
-      /* calculate vertices relative to ray origin */
-      STAT3(normal.trav_prims,1,1,1);
-      const Vec3fa O = ray.org;
-      const Vec3fa D = ray.dir;
-      const Vec3fa v0 = tri_v0-O;
-      const Vec3fa v1 = tri_v1-O;
-      const Vec3fa v2 = tri_v2-O;
-        
-      /* calculate triangle edges */
-      const Vec3fa e0 = v2-v0;
-      const Vec3fa e1 = v0-v1;
-      const Vec3fa e2 = v1-v2;
-      
-      /* calculate geometry normal and denominator */
-      const Vec3fa Ng1 = cross(e1,e0);
-      const Vec3fa Ng = Ng1+Ng1;
-      const float den = dot(Ng,D);
-      const float absDen = abs(den);
-      const float sgnDen = signmsk(den);
-      
-      /* perform edge tests */
-      const float U = xorf(dot(cross(v2+v0,e0),D),sgnDen);
-      if (unlikely(U < 0.0f)) return;
-      const float V = xorf(dot(cross(v0+v1,e1),D),sgnDen);
-      if (unlikely(V < 0.0f)) return;
-      const float W = xorf(dot(cross(v1+v2,e2),D),sgnDen);
-      if (unlikely(W < 0.0f)) return;
-      
-      /* perform depth test */
-      const float T = xorf(dot(v0,Ng),sgnDen);
-      if (unlikely(absDen*float(ray.tfar) < T)) return;
-      if (unlikely(T < absDen*float(ray.tnear))) return;
-
-      /* calculate hit information */
-      const float rcpAbsDen = rcp(absDen);
-      const float u = U * rcpAbsDen;
-      const float v = V * rcpAbsDen;
-      const float t = T * rcpAbsDen;
-      
-      /* update hit information */
-      ray.u = u;
-      ray.v = v;
-      ray.tfar = t;
-      ray.Ng  = Ng;
-      ray.geomID = geomID;
-      ray.primID = primID;
-    }
-
     static __forceinline void intersectFinish (Ray& ray, 
                                                const Vec3fa& q, const Vec3fa& e0, const Vec3fa& e1, const Vec3fa& e2, 
                                                const float U0, const float U1, const float U2,
@@ -191,9 +140,11 @@ namespace embree
     {
       const avx3f D8(D.x,D.y,D.z);
 
-      sse3f p00; transpose((ssef)q00,(ssef)q01,(ssef)q11,(ssef)q10,p00.x,p00.y,p00.z);
-      sse3f p10; transpose((ssef)q10,(ssef)q11,(ssef)q21,(ssef)q20,p10.x,p10.y,p10.z);
-      const avx3f p00_p10(avxf(p00.x,p10.x),avxf(p00.y,p10.y),avxf(p00.z,p10.z));
+      const avxf q00_q10((ssef)q00,(ssef)q10);
+      const avxf q01_q11((ssef)q01,(ssef)q11);
+      const avxf q11_q21((ssef)q11,(ssef)q21);
+      const avxf q10_q20((ssef)q10,(ssef)q20);
+      avx3f p00_p10; transpose(q00_q10,q01_q11,q11_q21,q10_q20,p00_p10.x,p00_p10.y,p00_p10.z);
 
       const avx3f t000_t100_start = shuffle<0,1,2,0>(p00_p10), t000_t100_end = shuffle<1,2,0,0>(p00_p10);
       const avx3f e000_e100 = t000_t100_end - t000_t100_start;
