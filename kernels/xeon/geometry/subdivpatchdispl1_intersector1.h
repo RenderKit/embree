@@ -206,6 +206,9 @@ namespace embree
       const sse3f s1121_s1122_s1112_s2122 = q21_q22_q12_q22 + q11_q11_q11_q21;
       const ssef  u1121_u1122_u1112_u2122 = dot(cross(s1121_s1122_s1112_s2122,e1121_e1122_e1112_e2122),DDDD);
 
+      const avxf mp = avxf(-1,1,-1,1,-1,1,-1,1);
+
+#if 0
       const float u0010 = extract<0>(u0010_u0011_u0001_u1222);
       const float u0011 = extract<1>(u0010_u0011_u0001_u1222);
       const float u0001 = extract<2>(u0010_u0011_u0001_u1222);
@@ -227,13 +230,24 @@ namespace embree
       const float u2122 = extract<3>(u1121_u1122_u1112_u2122);
 
       const avxf U0 = avxf(-u0001,-u0011,-u0102,-u0112,-u1011,-u1021,-u1112,-u1122);
-      const avxf U1 = avxf(-u0111,+u1011,-u0212,+u1112,-u1121,+u2021,-u1222,+u2122);
+      const avxf U1 = avxf(-u0111,+u1011,-u0212,+u1112, -u1121,+u2021,-u1222,+u2122);
       const avxf U2 = avxf(+u0011,+u0010,+u0112,+u0111,+u1021,+u1020,+u1122,+u1121);
+#else
+
+      const avxf U0 = -avxf(shuffle<2,1,2,1>(u0010_u0011_u0001_u1222,u0111_u0112_u0102_u0212),shuffle<2,1,2,1>(u1020_u1021_u1011_u2021,u1121_u1122_u1112_u2122));
+      const avxf U1 = mp*avxf(insert<3,2>(insert<1,2>(shuffle<0,1,3,2>(u0111_u0112_u0102_u0212),u1020_u1021_u1011_u2021),u1121_u1122_u1112_u2122),
+                              insert<2,3>(insert<1,3>(u1121_u1122_u1112_u2122,u1020_u1021_u1011_u2021),u0010_u0011_u0001_u1222));
+      const avxf U2 = avxf(shuffle<1,0,1,0>(u0010_u0011_u0001_u1222,u0111_u0112_u0102_u0212),shuffle<1,0,1,0>(u1020_u1021_u1011_u2021,u1121_u1122_u1112_u2122));
+
+#endif
 
       const avx3f q(avxf(q00.x,q00.x,q01.x,q01.x,q10.x,q10.x,q11.x,q11.x),
                     avxf(q00.y,q00.y,q01.y,q01.y,q10.y,q10.y,q11.y,q11.y),
                     avxf(q00.z,q00.z,q01.z,q01.z,q10.z,q10.z,q11.z,q11.z));
 
+      const avx3f D8(avxf(D.x),avxf(D.y),avxf(D.z));
+
+#if 0
       const float e0010_x = extract<0>(e0010_e0011_e0001_e1222.x), e0010_y = extract<0>(e0010_e0011_e0001_e1222.y), e0010_z = extract<0>(e0010_e0011_e0001_e1222.z);
       const float e0011_x = extract<1>(e0010_e0011_e0001_e1222.x), e0011_y = extract<1>(e0010_e0011_e0001_e1222.y), e0011_z = extract<1>(e0010_e0011_e0001_e1222.z);
       const float e0001_x = extract<2>(e0010_e0011_e0001_e1222.x), e0001_y = extract<2>(e0010_e0011_e0001_e1222.y), e0001_z = extract<2>(e0010_e0011_e0001_e1222.z);
@@ -262,9 +276,22 @@ namespace embree
                      avxf(-e0111_y,+e1011_y,-e0212_y,+e1112_y,-e1121_y,+e2021_y,-e1222_y,+e2122_y),
                      avxf(-e0111_z,+e1011_z,-e0212_z,+e1112_z,-e1121_z,+e2021_z,-e1222_z,+e2122_z));
 
-      const avx3f D8(avxf(D.x),avxf(D.y),avxf(D.z));
-
       const avx3f Ng0 = cross(e1,e0);
+
+#else
+
+      const avx3f e0(-avxf(shuffle<2,1,2,1>(e0010_e0011_e0001_e1222.x,e0111_e0112_e0102_e0212.x),shuffle<2,1,2,1>(e1020_e1021_e1011_e2021.x,e1121_e1122_e1112_e2122.x)),
+                     -avxf(shuffle<2,1,2,1>(e0010_e0011_e0001_e1222.y,e0111_e0112_e0102_e0212.y),shuffle<2,1,2,1>(e1020_e1021_e1011_e2021.y,e1121_e1122_e1112_e2122.y)),
+                     -avxf(shuffle<2,1,2,1>(e0010_e0011_e0001_e1222.z,e0111_e0112_e0102_e0212.z),shuffle<2,1,2,1>(e1020_e1021_e1011_e2021.z,e1121_e1122_e1112_e2122.z)));
+        
+      const avx3f e2(avxf(shuffle<1,0,1,0>(e0010_e0011_e0001_e1222.x,e0111_e0112_e0102_e0212.x),shuffle<1,0,1,0>(e1020_e1021_e1011_e2021.x,e1121_e1122_e1112_e2122.x)),
+                     avxf(shuffle<1,0,1,0>(e0010_e0011_e0001_e1222.y,e0111_e0112_e0102_e0212.y),shuffle<1,0,1,0>(e1020_e1021_e1011_e2021.y,e1121_e1122_e1112_e2122.y)),
+                     avxf(shuffle<1,0,1,0>(e0010_e0011_e0001_e1222.z,e0111_e0112_e0102_e0212.z),shuffle<1,0,1,0>(e1020_e1021_e1011_e2021.z,e1121_e1122_e1112_e2122.z)));
+
+      const avx3f Ng0 = cross(e0,e2);
+
+#endif
+
       const avx3f Ng = Ng0+Ng0;
       const avxf det = dot(D8,Ng);
       const avxf T   = dot(q,Ng);
