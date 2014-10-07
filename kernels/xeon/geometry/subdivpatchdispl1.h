@@ -334,7 +334,8 @@ namespace embree
       for (ssize_t i=0; i<level-3; i++) S += (1<<i)*(1<<i);
 
       leaves.init(N/8,N/8);
-#if 0
+#if 1
+      bvh.init(sizeof(BVH4::Node),(N/8)*(N/8),1);
       LinearAllocatorPerThread::ThreadAllocator nodeAlloc(&bvh.alloc);
       const std::pair<BBox3fa,BVH4::NodeRef> root = build(nodeAlloc,0,0,0,level-3);
       bvh.bounds = root.first;

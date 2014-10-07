@@ -164,7 +164,7 @@ namespace embree
                                                  const Vec3fa& v02, const Vec3fa& v12, const Vec3fa& v22,
                                                  const unsigned geomID, const unsigned primID)
     {
-#if 0 && defined(__AVX__)
+#if 1 && defined(__AVX__)
 
       const Vec3fa O = ray.org;
       const Vec3fa D = ray.dir;
