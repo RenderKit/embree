@@ -29,7 +29,9 @@ namespace embree
 					    const mic_f &dir_xyz,
 					    const mic_f &org_xyz,
 					    Ray16& ray16,
-					    const FinalQuad &quad)
+					    const FinalQuad &quad,
+					    const unsigned int geomID,
+					    const unsigned int primID)
   {
     const mic_i and_mask = broadcast4to16i(_zlc4);
 
@@ -118,8 +120,8 @@ namespace embree
 	compactustore16f_low(m_tri,&ray16.Ng.y[rayIndex],gnormaly); 
 	compactustore16f_low(m_tri,&ray16.Ng.z[rayIndex],gnormalz); 
 
-	ray16.geomID[rayIndex] = quad.geomID;
-	ray16.primID[rayIndex] = quad.primID;
+	ray16.geomID[rayIndex] = geomID;
+	ray16.primID[rayIndex] = primID;
 	return true;
       
       }
@@ -134,6 +136,8 @@ namespace embree
 			    const mic_f &org_xyz,
 			    Ray16& ray16,
 			    const IrregularCatmullClarkPatch &patch,
+			    const unsigned int geomID,
+			    const unsigned int primID,			    
 			    const unsigned int subdiv_level = 0);
 
   void subdivide_intersect1(const size_t rayIndex, 
@@ -141,6 +145,8 @@ namespace embree
 			    const mic_f &org_xyz,
 			    Ray16& ray16,
 			    const RegularCatmullClarkPatch &patch,
+			    const unsigned int geomID,
+			    const unsigned int primID,
 			    const unsigned int subdiv_level = 0);
 
 
@@ -166,14 +172,14 @@ namespace embree
 	  {
 	    RegularCatmullClarkPatch regular_patch;
 	    subdiv_patch.init( regular_patch );
-	    subdivide_intersect1(rayIndex,dir_xyz,org_xyz,ray16,regular_patch,g_subdivision_level);
+	    subdivide_intersect1(rayIndex,dir_xyz,org_xyz,ray16,regular_patch,subdiv_patch.geomID,subdiv_patch.primID,g_subdivision_level);
 	  }
 	else
 #endif
 	{
 	  IrregularCatmullClarkPatch irregular_patch;
 	  subdiv_patch.init( irregular_patch );
-	  subdivide_intersect1(rayIndex,dir_xyz,org_xyz,ray16,irregular_patch,g_subdivision_level);
+	  subdivide_intersect1(rayIndex,dir_xyz,org_xyz,ray16,irregular_patch,subdiv_patch.geomID,subdiv_patch.primID,g_subdivision_level);
 	}
 
 	return hit;

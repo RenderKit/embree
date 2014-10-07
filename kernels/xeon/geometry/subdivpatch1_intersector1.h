@@ -210,21 +210,29 @@ namespace embree
     static void subdivide_intersect1(const Precalculations& pre,
 				     Ray& ray,
 				     const IrregularCatmullClarkPatch &patch,
+				     const unsigned int geomID,
+				     const unsigned int primID,
 				     const unsigned int subdiv_level = 0);
 
     static bool subdivide_occluded1(const Precalculations& pre,
 				    Ray& ray,
 				    const IrregularCatmullClarkPatch &patch,
+				    const unsigned int geomID,
+				    const unsigned int primID,
 				    const unsigned int subdiv_level = 0);
 
     static void subdivide_intersect1(const Precalculations& pre,
 				     Ray& ray,
 				     const RegularCatmullClarkPatch &patch,
+				     const unsigned int geomID,
+				     const unsigned int primID,
 				     const unsigned int subdiv_level = 0);
 
     static void subdivide_intersect1_bspline(const Precalculations& pre,
 					     Ray& ray,
 					     const RegularCatmullClarkPatch &patch,
+					     const unsigned int geomID,
+					     const unsigned int primID,
 					     const Vec2f &s,
 					     const Vec2f &t,
 					     const unsigned int subdiv_level = 0);
@@ -232,6 +240,8 @@ namespace embree
     static bool subdivide_occluded1(const Precalculations& pre,
 				    Ray& ray,
 				    const RegularCatmullClarkPatch &patch,
+				    const unsigned int geomID,
+				    const unsigned int primID,
 				    const unsigned int subdiv_level = 0);
 
 
@@ -245,18 +255,18 @@ namespace embree
 	  RegularCatmullClarkPatch regular_patch;
 	  subdiv_patch.init( regular_patch );
 #if 1
-	  subdivide_intersect1(pre, ray,regular_patch,g_subdivision_level);
+	  subdivide_intersect1(pre, ray,regular_patch,subdiv_patch.geom,subdiv_patch.prim,g_subdivision_level);
 #else
 	  Vec2f s(0.0f,1.0f);
 	  Vec2f t(0.0f,1.0f);
-	  subdivide_intersect1_bspline(pre, ray,regular_patch,s,t,g_subdivision_level);
+	  subdivide_intersect1_bspline(pre, ray,regular_patch,subdiv_patch.geom,subdiv_patch.prim,s,t,g_subdivision_level);
 #endif
 	}
       else
 	{
 	  IrregularCatmullClarkPatch irregular_patch;
 	  subdiv_patch.init( irregular_patch );
-	  subdivide_intersect1(pre, ray,irregular_patch,g_subdivision_level);
+	  subdivide_intersect1(pre, ray,irregular_patch,subdiv_patch.geom,subdiv_patch.prim,g_subdivision_level);
 	}
     }
 
@@ -269,13 +279,13 @@ namespace embree
 	{
 	  RegularCatmullClarkPatch regular_patch;
 	  subdiv_patch.init( regular_patch );
-	  return subdivide_occluded1(pre, ray,regular_patch,g_subdivision_level);
+	  return subdivide_occluded1(pre, ray,regular_patch,subdiv_patch.geom,subdiv_patch.prim,g_subdivision_level);
 	}
       else
 	{
 	  IrregularCatmullClarkPatch irregular_patch;
 	  subdiv_patch.init( irregular_patch );
-	  return subdivide_occluded1(pre, ray,irregular_patch,g_subdivision_level);
+	  return subdivide_occluded1(pre, ray,irregular_patch,subdiv_patch.geom,subdiv_patch.prim,g_subdivision_level);
 	}
     }
   };

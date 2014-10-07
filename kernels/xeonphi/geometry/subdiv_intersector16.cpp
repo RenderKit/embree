@@ -30,13 +30,15 @@ namespace embree
 			   const mic_f &org_xyz,
 			   Ray16& ray16,
 			   const IrregularCatmullClarkPatch &patch,
+			   const unsigned int geomID,
+			   const unsigned int primID,
 			   const unsigned int subdiv_level)
  {
    if (subdiv_level == 0)
      {
        __aligned(64) FinalQuad finalQuad;
        patch.init( finalQuad );
-       intersect1_quad(rayIndex,dir_xyz,org_xyz,ray16,finalQuad);      
+       intersect1_quad(rayIndex,dir_xyz,org_xyz,ray16,finalQuad,geomID,primID);      
      }
    else
      {
@@ -48,6 +50,8 @@ namespace embree
 			      org_xyz,
 			      ray16,
 			      subpatches[i],
+			      geomID,
+			      primID,
 			      subdiv_level - 1);	    
      }
    
@@ -59,13 +63,15 @@ namespace embree
 			   const mic_f &org_xyz,
 			   Ray16& ray16,
 			   const RegularCatmullClarkPatch &patch,
+			   const unsigned int geomID,
+			   const unsigned int primID,
 			   const unsigned int subdiv_level)
  {
    if (subdiv_level == 0)
      {
        __aligned(64) FinalQuad finalQuad;
        patch.init( finalQuad );
-       intersect1_quad(rayIndex,dir_xyz,org_xyz,ray16,finalQuad);      
+       intersect1_quad(rayIndex,dir_xyz,org_xyz,ray16,finalQuad,geomID,primID);      
      }
    else
      {
@@ -77,6 +83,8 @@ namespace embree
 			      org_xyz,
 			      ray16,
 			      subpatches[i],
+			      geomID,
+			      primID,
 			      subdiv_level - 1);	    
      }
    

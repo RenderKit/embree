@@ -23,6 +23,8 @@ namespace embree
   void SubdivPatch1Intersector1::subdivide_intersect1_bspline(const Precalculations& pre,
 							      Ray& ray,
 							      const RegularCatmullClarkPatch &patch,
+							      const unsigned int geomID,
+							      const unsigned int primID,
 							      const Vec2f &s,
 							      const Vec2f &t,
 							      const unsigned int subdiv_level)
@@ -35,10 +37,6 @@ namespace embree
 	vtx[1] = patch.evalCubicBSplinePatch(s[1],t[0]);
 	vtx[2] = patch.evalCubicBSplinePatch(s[1],t[1]);
 	vtx[3] = patch.evalCubicBSplinePatch(s[0],t[1]);
-	unsigned int geomID = 0;
-	unsigned int primID = 0;
-
-
 	intersectTri(vtx[0],
 		     vtx[1],
 		     vtx[2],
@@ -61,16 +59,18 @@ namespace embree
 	Vec2f s_right(mid_s,s[1]);
 	Vec2f t_left(t[0],mid_t);
 	Vec2f t_right(mid_t,t[1]);
-	subdivide_intersect1_bspline(pre,ray,patch,s_left ,t_left,subdiv_level - 1);
-	subdivide_intersect1_bspline(pre,ray,patch,s_right,t_left,subdiv_level - 1);
-	subdivide_intersect1_bspline(pre,ray,patch,s_right,t_right,subdiv_level - 1);
-	subdivide_intersect1_bspline(pre,ray,patch,s_left ,t_right,subdiv_level - 1);
+	subdivide_intersect1_bspline(pre,ray,patch,geomID,primID,s_left ,t_left,subdiv_level - 1);
+	subdivide_intersect1_bspline(pre,ray,patch,geomID,primID,s_right,t_left,subdiv_level - 1);
+	subdivide_intersect1_bspline(pre,ray,patch,geomID,primID,s_right,t_right,subdiv_level - 1);
+	subdivide_intersect1_bspline(pre,ray,patch,geomID,primID,s_left ,t_right,subdiv_level - 1);
       }
   }
 
   void SubdivPatch1Intersector1::subdivide_intersect1(const Precalculations& pre,
 						      Ray& ray,
 						      const IrregularCatmullClarkPatch &patch,
+						      const unsigned int geomID,
+						      const unsigned int primID,
 						      const unsigned int subdiv_level)
   {
     if (subdiv_level == 0)
@@ -82,15 +82,15 @@ namespace embree
                      finalQuad.vtx[1],
                      finalQuad.vtx[2],
                      ray,
-                     finalQuad.geomID,
-                     finalQuad.primID,NULL); 
+                     geomID,
+                     primID,NULL); 
 
 	intersectTri(finalQuad.vtx[2],
                      finalQuad.vtx[3],
                      finalQuad.vtx[0],
                      ray,
-                     finalQuad.geomID,
-                     finalQuad.primID,NULL); 
+                     geomID,
+                     primID,NULL); 
       }
     else
       {
@@ -101,6 +101,8 @@ namespace embree
 	    subdivide_intersect1(pre,
 				 ray,
 				 subpatches[i],
+				 geomID,
+				 primID,
 				 subdiv_level - 1);	    
       }   
   }
@@ -108,6 +110,8 @@ namespace embree
   bool SubdivPatch1Intersector1::subdivide_occluded1(const Precalculations& pre,
 						     Ray& ray,
 						     const IrregularCatmullClarkPatch &patch,
+						     const unsigned int geomID,
+						     const unsigned int primID,						     
 						     const unsigned int subdiv_level)
   {
     if (subdiv_level == 0)
@@ -119,15 +123,15 @@ namespace embree
 			finalQuad.vtx[1],
 			finalQuad.vtx[2],
 			ray,
-			finalQuad.geomID,
-			finalQuad.primID,NULL)) return true; 
+			geomID,
+			primID,NULL)) return true; 
 
 	if (occludedTri(finalQuad.vtx[2],
 			finalQuad.vtx[3],
 			finalQuad.vtx[0],
 			ray,
-			finalQuad.geomID,
-			finalQuad.primID,NULL)) return false;
+			geomID,
+			primID,NULL)) return false;
       }
     else
       {
@@ -138,6 +142,8 @@ namespace embree
 	    if (subdivide_occluded1(pre,
 				    ray,
 				    subpatches[i],
+				    geomID,
+				    primID,
 				    subdiv_level - 1)) return true;
       }   
     return false;
@@ -148,6 +154,8 @@ namespace embree
   void SubdivPatch1Intersector1::subdivide_intersect1(const Precalculations& pre,
 						      Ray& ray,
 						      const RegularCatmullClarkPatch &patch,
+						      const unsigned int geomID,
+						      const unsigned int primID,
 						      const unsigned int subdiv_level)
   {
     if (subdiv_level == 0)
@@ -159,15 +167,15 @@ namespace embree
 		     finalQuad.vtx[1],
 		     finalQuad.vtx[2],
 		     ray,
-		     finalQuad.geomID,
-		     finalQuad.primID,NULL); 
+		     geomID,
+		     primID,NULL); 
        
 	intersectTri(finalQuad.vtx[2],
 		     finalQuad.vtx[3],
 		     finalQuad.vtx[0],
 		     ray,
-		     finalQuad.geomID,
-		     finalQuad.primID,NULL); 
+		     geomID,
+		     primID,NULL); 
       }
     else
       {
@@ -178,6 +186,8 @@ namespace embree
 	    subdivide_intersect1(pre,
 				 ray,
 				 subpatches[i],
+				 geomID,
+				 primID,
 				 subdiv_level - 1);	    
        
       } 
@@ -186,6 +196,8 @@ namespace embree
   bool SubdivPatch1Intersector1::subdivide_occluded1(const Precalculations& pre,
 						     Ray& ray,
 						     const RegularCatmullClarkPatch &patch,
+						     const unsigned int geomID,
+						     const unsigned int primID,
 						     const unsigned int subdiv_level)
   {
     if (subdiv_level == 0)
@@ -197,15 +209,15 @@ namespace embree
 			finalQuad.vtx[1],
 			finalQuad.vtx[2],
 			ray,
-			finalQuad.geomID,
-			finalQuad.primID,NULL)) return true; 
+			geomID,
+			primID,NULL)) return true; 
 
 	if (occludedTri(finalQuad.vtx[2],
 			finalQuad.vtx[3],
 			finalQuad.vtx[0],
 			ray,
-			finalQuad.geomID,
-			finalQuad.primID,NULL)) return false;
+			geomID,
+			primID,NULL)) return false;
       }
     else
       {
@@ -216,6 +228,8 @@ namespace embree
 	    if (subdivide_occluded1(pre,
 				    ray,
 				    subpatches[i],
+				    geomID,
+				    primID,
 				    subdiv_level - 1)) return true;
       }   
     return false;

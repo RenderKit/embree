@@ -29,9 +29,6 @@ namespace embree
   struct __aligned(64) FinalQuad
   {
     Vec3fa vtx[4];
-    Vec2f uv[2];
-    unsigned int geomID;
-    unsigned int primID;
   };
 
   struct __aligned(64) CatmullClark1Ring
@@ -506,10 +503,6 @@ namespace embree
       quad.vtx[1] = ring[1].vtx;
       quad.vtx[2] = ring[2].vtx;
       quad.vtx[3] = ring[3].vtx;
-      // uv[0] = 
-      // uv[1] = 
-      quad.geomID = geomID;
-      quad.primID = primID;
     };
 
   };
@@ -738,10 +731,6 @@ namespace embree
       quad.vtx[1] = v[1][2];
       quad.vtx[2] = v[2][2];
       quad.vtx[3] = v[2][1];
-      // uv[0] = 
-      // uv[1] = 
-      quad.geomID = 0;
-      quad.primID = 0;
     };
 
     __forceinline void init_limit( FinalQuad& quad ) const
@@ -761,12 +750,57 @@ namespace embree
       quad.vtx[1] = limit_v1;
       quad.vtx[2] = limit_v2;
       quad.vtx[3] = limit_v3;
-
-      quad.geomID = 0;
-      quad.primID = 0;
     };
 
 
+    __forceinline void init(const SubdivMesh::HalfEdge *const first_half_edge,
+			    const Vec3fa *const vertices)
+    {
+      // quad(0,0)
+      const SubdivMesh::HalfEdge *v11 = first_half_edge;
+      const SubdivMesh::HalfEdge *v01 = v11->nextAdjacentEdge()->opposite();
+      const SubdivMesh::HalfEdge *v00 = v01->prev();
+      const SubdivMesh::HalfEdge *v10 = v00->prev();
+
+      v[1][1] = vertices[v11->getStartVertexIndex()];
+      v[1][0] = vertices[v10->getStartVertexIndex()];
+      v[0][0] = vertices[v00->getStartVertexIndex()];
+      v[0][1] = vertices[v01->getStartVertexIndex()];
+
+      // quad(0,2)
+      const SubdivMesh::HalfEdge *v12 = v11->next();
+      const SubdivMesh::HalfEdge *v13 = v12->nextAdjacentEdge()->opposite();
+      const SubdivMesh::HalfEdge *v03 = v13->prev();
+      const SubdivMesh::HalfEdge *v02 = v03->prev();
+      
+
+      v[1][2] = vertices[v12->getStartVertexIndex()];
+      v[1][3] = vertices[v13->getStartVertexIndex()];
+      v[0][3] = vertices[v03->getStartVertexIndex()];
+      v[0][2] = vertices[v02->getStartVertexIndex()];
+
+      // quad(2,2)
+      const SubdivMesh::HalfEdge *v22 = v12->next();
+      const SubdivMesh::HalfEdge *v32 = v22->nextAdjacentEdge()->opposite();
+      const SubdivMesh::HalfEdge *v33 = v32->prev();
+      const SubdivMesh::HalfEdge *v23 = v33->prev();
+
+      v[2][2] = vertices[v22->getStartVertexIndex()];
+      v[3][2] = vertices[v32->getStartVertexIndex()];
+      v[3][3] = vertices[v33->getStartVertexIndex()];
+      v[2][3] = vertices[v23->getStartVertexIndex()];      
+
+      // quad(2,0)
+      const SubdivMesh::HalfEdge *v21 = v22->next();
+      const SubdivMesh::HalfEdge *v20 = v21->nextAdjacentEdge()->opposite();
+      const SubdivMesh::HalfEdge *v30 = v20->prev();
+      const SubdivMesh::HalfEdge *v31 = v30->prev();
+
+      v[2][0] = vertices[v20->getStartVertexIndex()];
+      v[3][0] = vertices[v30->getStartVertexIndex()];
+      v[3][1] = vertices[v31->getStartVertexIndex()];
+      v[2][1] = vertices[v21->getStartVertexIndex()];
+    }
 
     __forceinline BBox3fa bounds() const
     {
