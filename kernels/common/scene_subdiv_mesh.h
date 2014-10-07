@@ -107,6 +107,18 @@ namespace embree
         return next()->vtx_index;
       };
 
+      __forceinline bool hasIrregularEdge() const {
+	HalfEdge *p = (HalfEdge*)this;
+	do {
+	  if (unlikely(!p->hasOpposite()))
+	    return true;
+	  p = p->opposite();
+	  p = p->next();
+	} while( p != this);
+
+        return false;
+      };
+
       __forceinline unsigned int getEdgeValence() const {
 	unsigned int i=0;
 	HalfEdge *p = (HalfEdge*)this;
@@ -147,12 +159,16 @@ namespace embree
       __forceinline bool isFaceRegular() const {
 	HalfEdge *p = (HalfEdge*)this;
 	if (p->getEdgeValence() != 4) return false;
+        if (p->hasIrregularEdge()) return false;
 	p = p->next();
 	if (p->getEdgeValence() != 4) return false;
+        if (p->hasIrregularEdge()) return false;
 	p = p->next();
 	if (p->getEdgeValence() != 4) return false;
+        if (p->hasIrregularEdge()) return false;
 	p = p->next();
 	if (p->getEdgeValence() != 4) return false;
+        if (p->hasIrregularEdge()) return false;
 	return true;
       }
 
