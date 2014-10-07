@@ -71,6 +71,62 @@ namespace embree
 	bounds.extend( ring[i] );
       return bounds;
     }
+
+#if !defined(__MIC__)
+    __forceinline void setRingVtx(const size_t i, const Vec3fa &v)   
+    {
+      ring[i] = v;
+    }
+
+    __forceinline void setCenterVtx(const Vec3fa &v)   
+    {
+      vtx = v;
+    }
+
+   __forceinline Vec3fa centerVtx() const
+    {
+      return vtx;
+    }
+
+    __forceinline Vec3fa ringVtx(const size_t i) const
+    {
+      return ring[i];
+    }
+ 
+    __forceinline Vec3fa loadVtx(const Vec3fa &v)
+    {
+      return v;
+    }
+
+#else
+    __forceinline void setRingVtx(const size_t i, const mic_f &v)   
+    {
+      store4f(&ring[i],v);
+    }
+
+   __forceinline void setCenterVtx(const mic_f &v)   
+    {
+      store4f(&vtx,v);
+    }
+
+   __forceinline mic_f centerVtx() const
+    {
+      return broadcast4to16f(&vtx);
+    }
+
+    __forceinline mic_f ringVtx(const size_t i) const
+    {
+      return broadcast4to16f(&ring[i]);
+    }
+
+    __forceinline mic_f loadVtx(const Vec3fa &v)
+    {
+      return broadcast4to16f(&v);
+    }
+ 
+#endif
+
+
     
     __forceinline void init(const SubdivMesh::HalfEdge *const h,
 			    const Vec3fa *const vertices)
@@ -78,19 +134,19 @@ namespace embree
       hard_edge_index= -1;
 
       size_t i=0;
-      vtx = vertices[ h->getStartVertexIndex() ];
+      setCenterVtx( loadVtx(vertices[ h->getStartVertexIndex() ]) );
       SubdivMesh::HalfEdge *p = (SubdivMesh::HalfEdge*)h;
       bool foundEdge = false;
       do {
         assert( i < 2*MAX_VALENCE );
-	ring[i]   = vertices[ p->next()->getStartVertexIndex() ];
+	setRingVtx(i, loadVtx(vertices[ p->next()->getStartVertexIndex() ]));
 	i++;
 	if (unlikely(!p->hasOpposite())) { foundEdge = true; break; }
 	assert( p->hasOpposite() );
 	p = p->opposite();
 
         assert( i < 2*MAX_VALENCE );
-	ring[i] = vertices[ p->prev()->getStartVertexIndex() ];
+	setRingVtx(i, loadVtx(vertices[ p->prev()->getStartVertexIndex() ]));
 	i++;
         
 	/*! continue with next adjacent edge */
@@ -102,7 +158,7 @@ namespace embree
 	  /*! mark first hard edge */
 	  hard_edge_index = i-1;
 	  /*! store dummy vertex for the face between the two hard edges */	  
-	  ring[i] = Vec3fa(0.0f,0.0f,0.0f);
+	  setRingVtx(i, zero );
 	  i++;
 
 	  /*! first cycle clock-wise until we found the second edge */	  
@@ -116,9 +172,9 @@ namespace embree
 
 
 	  /*! store second hard edge and diagonal vertex*/	  
-	  ring[i] = vertices[ p->getStartVertexIndex() ];
+	  setRingVtx(i,loadVtx(vertices[ p->getStartVertexIndex() ]));
 	  i++;
-	  ring[i] = vertices[ p->prev()->getStartVertexIndex() ];
+	  setRingVtx(i,loadVtx(vertices[ p->prev()->getStartVertexIndex() ]));
 	  i++;
 	  p = p->next();
 	  
@@ -126,11 +182,11 @@ namespace embree
 	  while (p != h ) {
 	    assert( p->hasOpposite() );
 	    assert( i < 2*MAX_VALENCE );
-	    ring[i]   = vertices[ p->next()->getStartVertexIndex() ];
+	    setRingVtx(i, loadVtx(vertices[ p->next()->getStartVertexIndex() ]) );
 	    i++;
 	    p = p->opposite();
 	    assert( i < 2*MAX_VALENCE );
-	    ring[i] = vertices[ p->prev()->getStartVertexIndex() ];
+	    setRingVtx(i, loadVtx(vertices[ p->prev()->getStartVertexIndex() ]) );
 	    i++;
         
 	    /*! continue with next adjacent edge */
@@ -152,44 +208,50 @@ namespace embree
       dest.num_vtx         = num_vtx;
       dest.hard_edge_index = hard_edge_index;
 
-      Vec3fa F(0.0f,0.0f,0.0f);
-      Vec3fa R(0.0f,0.0f,0.0f);
+#if !defined(__MIC__)
+      typedef Vec3fa Vertex;
+#else
+      typedef mic_f Vertex;      
+#endif
+
+      Vertex F( zero );
+      Vertex R( zero );
 
       for (size_t i=0; i<valence-1; i++)
 	{
-	  const Vec3fa new_face = (vtx + ring[2*i] + ring[2*i+1] + ring[2*i+2]) * 0.25f;
+	  const Vertex new_face = (centerVtx() + ringVtx(2*i) + ringVtx(2*i+1) + ringVtx(2*i+2)) * 0.25f;
 	  F += new_face;
-	  R += (vtx + ring[2*i]) * 0.5f;
-	  dest.ring[2*i + 1] = new_face;
+	  R += (centerVtx() + ringVtx(2*i)) * 0.5f;
+	  dest.setRingVtx(2*i + 1,new_face);
 	}
 
       {
-        const Vec3fa new_face = (vtx + ring[num_vtx-2] + ring[num_vtx-1] + ring[0]) * 0.25f;
+        const Vertex new_face = (centerVtx() + ringVtx(num_vtx-2) + ringVtx(num_vtx-1) + ringVtx(0)) * 0.25f;
         F += new_face;
-        R += (vtx + ring[num_vtx-2]) * 0.5f;
-        dest.ring[num_vtx-1] = new_face;
+        R += (centerVtx() + ringVtx(num_vtx-2)) * 0.5f;
+        dest.setRingVtx(num_vtx-1,new_face);
       }
       
       // new edge vertices
       for (size_t i=1; i<valence; i++)
 	{
-	  const Vec3fa new_edge = (vtx + ring[2*i] + dest.ring[2*i-1] + dest.ring[2*i+1]) * 0.25f;
-	  dest.ring[2*i + 0] = new_edge;
+	  const Vertex new_edge = (centerVtx() + ringVtx(2*i) + dest.ringVtx(2*i-1) + dest.ringVtx(2*i+1)) * 0.25f;
+	  dest.setRingVtx(2*i + 0,new_edge);
 	}
-      dest.ring[0] = (vtx + ring[0] + dest.ring[num_vtx-1] + dest.ring[1]) * 0.25f;
+      dest.setRingVtx(0, (centerVtx() + ringVtx(0) + dest.ringVtx(num_vtx-1) + dest.ringVtx(1)) * 0.25f );
 
       // new vtx
       const float inv_valence = 1.0f / (float)valence;
       F *= inv_valence;
       R *= inv_valence; 
-      dest.vtx = (F + 2.0f * R + (float)(valence-3)*vtx) * inv_valence;
+      dest.setCenterVtx( (F + 2.0f * R + (float)(valence-3)*centerVtx()) * inv_valence );
       
-      if (hard_edge_index != -1)
+      if (unlikely(hard_edge_index != -1))
 	{
-	  dest.ring[ hard_edge_index + 0 ] = 0.5f * (vtx + ring[hard_edge_index+0]);
-	  dest.ring[ hard_edge_index + 1 ] = ring[hard_edge_index+1];
-	  dest.ring[ hard_edge_index + 2 ] = 0.5f * (vtx + ring[hard_edge_index+2]);
-	  dest.vtx = (ring[ hard_edge_index + 0 ] + ring[ hard_edge_index + 2 ] + 6.0f * vtx) * 1.0f / 8.0f;
+	  dest.setRingVtx( hard_edge_index + 0, 0.5f * (centerVtx() + ringVtx(hard_edge_index+0)) );
+	  dest.setRingVtx( hard_edge_index + 1, ringVtx(hard_edge_index+1) );
+	  dest.setRingVtx( hard_edge_index + 2, 0.5f * (centerVtx() + ringVtx(hard_edge_index+2)) );
+	  dest.setCenterVtx( (ringVtx(hard_edge_index + 0) + ringVtx(hard_edge_index + 2) + 6.0f * centerVtx()) * 1.0f / 8.0f );
 	}
     }
 
