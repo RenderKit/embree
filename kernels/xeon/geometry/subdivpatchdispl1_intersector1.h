@@ -164,7 +164,8 @@ namespace embree
                                                  const Vec3fa& v02, const Vec3fa& v12, const Vec3fa& v22,
                                                  const unsigned geomID, const unsigned primID)
     {
-#if 0
+#if defined(__AVX__)
+
       const Vec3fa O = ray.org;
       const Vec3fa D = ray.dir;
       
@@ -172,27 +173,58 @@ namespace embree
       const Vec3fa q01 = v01-O, q11 = v11-O, q21 = v21-O;
       const Vec3fa q02 = v02-O, q12 = v12-O, q22 = v22-O;
 
-      sse3f q_x0_y0120; transpose(q00,q01,q02,q01,q_x0_y0120.x,q_x0_y0120.y,q_x0_y0120.z);
-      sse3f q_x1_y0120; transpose(q00,q01,q02,q01,q_x1_y0120.x,q_x1_y0120.y,q_x1_y0120.z);
-      sse3f q_x2_y0120; transpose(q00,q01,q02,q01,q_x2_y0120.x,q_x2_y0120.y,q_x2_y0120.z);
+      sse3f q10_q11_q01_q22; transpose((ssef)q10,(ssef)q11,(ssef)q01,(ssef)q22,q10_q11_q01_q22.x,q10_q11_q01_q22.y,q10_q11_q01_q22.z);
+      sse3f q20_q21_q11_q21; transpose((ssef)q20,(ssef)q21,(ssef)q11,(ssef)q21,q20_q21_q11_q21.x,q20_q21_q11_q21.y,q20_q21_q11_q21.z);
+      sse3f q11_q12_q02_q12; transpose((ssef)q11,(ssef)q12,(ssef)q02,(ssef)q12,q11_q12_q02_q12.x,q11_q12_q02_q12.y,q11_q12_q02_q12.z);
+      sse3f q21_q22_q12_q22; transpose((ssef)q21,(ssef)q22,(ssef)q12,(ssef)q22,q21_q22_q12_q22.x,q21_q22_q12_q22.y,q21_q22_q12_q22.z);
+
+      //sse3f q00_q00_q00_q12(shuffle<0,0,0,4>((ssef)q00,(ssef)q12), shuffle<1,1,1,5>((ssef)q00,(ssef)q12), shuffle<2,2,2,6>((ssef)q00,(ssef)q12));
+      //sse3f q10_q10_q10_q20(shuffle<0,0,0,4>((ssef)q10,(ssef)q20), shuffle<1,1,1,5>((ssef)q10,(ssef)q20), shuffle<2,2,2,6>((ssef)q10,(ssef)q20));
+      //sse3f q01_q01_q01_q02(shuffle<0,0,0,4>((ssef)q01,(ssef)q02), shuffle<1,1,1,5>((ssef)q01,(ssef)q02), shuffle<2,2,2,6>((ssef)q01,(ssef)q02));
+      //sse3f q11_q11_q11_q21(shuffle<0,0,0,4>((ssef)q11,(ssef)q21), shuffle<1,1,1,5>((ssef)q11,(ssef)q21), shuffle<2,2,2,6>((ssef)q11,(ssef)q21));
+
+      sse3f q00_q00_q00_q12(insert<3,0>(shuffle<0>((ssef)q00),(ssef)q12), insert<3,1>(shuffle<1>((ssef)q00),(ssef)q12), insert<3,2>(shuffle<2>((ssef)q00),(ssef)q12));
+      sse3f q10_q10_q10_q20(insert<3,0>(shuffle<0>((ssef)q10),(ssef)q20), insert<3,1>(shuffle<1>((ssef)q10),(ssef)q20), insert<3,2>(shuffle<2>((ssef)q10),(ssef)q20));
+      sse3f q01_q01_q01_q02(insert<3,0>(shuffle<0>((ssef)q01),(ssef)q02), insert<3,1>(shuffle<1>((ssef)q01),(ssef)q02), insert<3,2>(shuffle<2>((ssef)q01),(ssef)q02));
+      sse3f q11_q11_q11_q21(insert<3,0>(shuffle<0>((ssef)q11),(ssef)q21), insert<3,1>(shuffle<1>((ssef)q11),(ssef)q21), insert<3,2>(shuffle<2>((ssef)q11),(ssef)q21));
 
       const sse3f DDDD(D.x,D.y,D.z);
 
-      const sse3f e0010_e0011_e0001_e1222 = v10_v11_v01_v22 - v00_v00_v00_v12;
-      const sse3f s0010_s0011_s0001_e1222 = v10_v11_v01_v22 + v00_v00_v00_v12;
-      const ssef  u0010_u0011_u0001_e1222 = dot(cross(s0010_s0011_s0001_e1222,e0010_e0011_e0001_e1222),DDDD);
+      const sse3f e0010_e0011_e0001_e1222 = q10_q11_q01_q22 - q00_q00_q00_q12;
+      const sse3f s0010_s0011_s0001_s1222 = q10_q11_q01_q22 + q00_q00_q00_q12;
+      const ssef  u0010_u0011_u0001_u1222 = dot(cross(s0010_s0011_s0001_s1222,e0010_e0011_e0001_e1222),DDDD);
 
-      const sse3f e1020_e1021_e1011_e2021 = v20_v21_v11_v21 - v10_v10_v10_v20;
-      const sse3f s0010_s0011_s0001_e1222 = v20_v21_v11_v21 + v10_v10_v10_v20;
-      const ssef  u1020_u1021_u1011_e2021 = dot(cross(s0010_s0011_s0001_e1222,e1020_e1021_e1011_e2021),DDDD);
+      const sse3f e1020_e1021_e1011_e2021 = q20_q21_q11_q21 - q10_q10_q10_q20;
+      const sse3f s1020_s1021_s1011_s2021 = q20_q21_q11_q21 + q10_q10_q10_q20;
+      const ssef  u1020_u1021_u1011_u2021 = dot(cross(s1020_s1021_s1011_s2021,e1020_e1021_e1011_e2021),DDDD);
 
-      const sse3f e0111_e0112_e0102_e0212 = v11_v12_v02_v12 - v01_v01_v01_v02;
-      const sse3f s0111_s0112_s0102_s0212 = v11_v12_v02_v12 + v01_v01_v01_v02;
+      const sse3f e0111_e0112_e0102_e0212 = q11_q12_q02_q12 - q01_q01_q01_q02;
+      const sse3f s0111_s0112_s0102_s0212 = q11_q12_q02_q12 + q01_q01_q01_q02;
       const ssef  u0111_u0112_u0102_u0212 = dot(cross(s0111_s0112_s0102_s0212,e0111_e0112_e0102_e0212),DDDD);
 
-      const sse3f e1121_e1122_e1112_e1222 = v21_v22_v12_v22 - v11_v11_v11_v12;
-      const sse3f s1121_s1122_s1112_s1222 = v21_v22_v12_v22 + v11_v11_v11_v12;
-      const ssef  u1121_u1122_u1112_u1222 = dot(cross(s1121_s1122_s1112_s1222,e1121_e1122_e1112_e1222),DDDD);
+      const sse3f e1121_e1122_e1112_e2122 = q21_q22_q12_q22 - q11_q11_q11_q21;
+      const sse3f s1121_s1122_s1112_s2122 = q21_q22_q12_q22 + q11_q11_q11_q21;
+      const ssef  u1121_u1122_u1112_u2122 = dot(cross(s1121_s1122_s1112_s2122,e1121_e1122_e1112_e2122),DDDD);
+
+      const float u0010 = extract<0>(u0010_u0011_u0001_u1222);
+      const float u0011 = extract<1>(u0010_u0011_u0001_u1222);
+      const float u0001 = extract<2>(u0010_u0011_u0001_u1222);
+      const float u1222 = extract<3>(u0010_u0011_u0001_u1222);
+
+      const float u1020 = extract<0>(u1020_u1021_u1011_u2021);
+      const float u1021 = extract<1>(u1020_u1021_u1011_u2021);
+      const float u1011 = extract<2>(u1020_u1021_u1011_u2021);
+      const float u2021 = extract<3>(u1020_u1021_u1011_u2021);
+
+      const float u0111 = extract<0>(u0111_u0112_u0102_u0212);
+      const float u0112 = extract<1>(u0111_u0112_u0102_u0212);
+      const float u0102 = extract<2>(u0111_u0112_u0102_u0212);
+      const float u0212 = extract<3>(u0111_u0112_u0102_u0212);
+
+      const float u1121 = extract<0>(u1121_u1122_u1112_u2122);
+      const float u1122 = extract<1>(u1121_u1122_u1112_u2122);
+      const float u1112 = extract<2>(u1121_u1122_u1112_u2122);
+      const float u2122 = extract<3>(u1121_u1122_u1112_u2122);
 
       const avxf U0 = avxf(-u0001,-u0011,-u0102,-u0112,-u1011,-u1021,-u1112,-u1122);
       const avxf U1 = avxf(-u0111,+u1011,-u0212,+u1112,-u1121,+u2021,-u1222,+u2122);
@@ -201,25 +233,48 @@ namespace embree
       const avx3f q(avxf(q00.x,q00.x,q01.x,q01.x,q10.x,q10.x,q11.x,q11.x),
                     avxf(q00.y,q00.y,q01.y,q01.y,q10.y,q10.y,q11.y,q11.y),
                     avxf(q00.z,q00.z,q01.z,q01.z,q10.z,q10.z,q11.z,q11.z));
-      
-      const avx3f e0(avxf(-e0001.x,-e0011.x,-e0102.x,-e0112.x,-e1011.x,-e1021.x,-e1112.x,-e1122.x),
-                     avxf(-e0001.y,-e0011.y,-e0102.y,-e0112.y,-e1011.y,-e1021.y,-e1112.y,-e1122.y),
-                     avxf(-e0001.z,-e0011.z,-e0102.z,-e0112.z,-e1011.z,-e1021.z,-e1112.z,-e1122.z));
 
-      const avx3f e1(avxf(-e0111.x,+e1011.x,-e0212.x,+e1112.x,-e1121.x,+e2021.x,-e1222.x,+e2122.x),
-                     avxf(-e0111.y,+e1011.y,-e0212.y,+e1112.y,-e1121.y,+e2021.y,-e1222.y,+e2122.y),
-                     avxf(-e0111.z,+e1011.z,-e0212.z,+e1112.z,-e1121.z,+e2021.z,-e1222.z,+e2122.z));
+      const float e0010_x = extract<0>(e0010_e0011_e0001_e1222.x), e0010_y = extract<0>(e0010_e0011_e0001_e1222.y), e0010_z = extract<0>(e0010_e0011_e0001_e1222.z);
+      const float e0011_x = extract<1>(e0010_e0011_e0001_e1222.x), e0011_y = extract<1>(e0010_e0011_e0001_e1222.y), e0011_z = extract<1>(e0010_e0011_e0001_e1222.z);
+      const float e0001_x = extract<2>(e0010_e0011_e0001_e1222.x), e0001_y = extract<2>(e0010_e0011_e0001_e1222.y), e0001_z = extract<2>(e0010_e0011_e0001_e1222.z);
+      const float e1222_x = extract<3>(e0010_e0011_e0001_e1222.x), e1222_y = extract<3>(e0010_e0011_e0001_e1222.y), e1222_z = extract<3>(e0010_e0011_e0001_e1222.z);
+
+      const float e1020_x = extract<0>(e1020_e1021_e1011_e2021.x), e1020_y = extract<0>(e1020_e1021_e1011_e2021.y), e1020_z = extract<0>(e1020_e1021_e1011_e2021.z);
+      const float e1021_x = extract<1>(e1020_e1021_e1011_e2021.x), e1021_y = extract<1>(e1020_e1021_e1011_e2021.y), e1021_z = extract<1>(e1020_e1021_e1011_e2021.z);
+      const float e1011_x = extract<2>(e1020_e1021_e1011_e2021.x), e1011_y = extract<2>(e1020_e1021_e1011_e2021.y), e1011_z = extract<2>(e1020_e1021_e1011_e2021.z);
+      const float e2021_x = extract<3>(e1020_e1021_e1011_e2021.x), e2021_y = extract<3>(e1020_e1021_e1011_e2021.y), e2021_z = extract<3>(e1020_e1021_e1011_e2021.z);
+
+      const float e0111_x = extract<0>(e0111_e0112_e0102_e0212.x), e0111_y = extract<0>(e0111_e0112_e0102_e0212.y), e0111_z = extract<0>(e0111_e0112_e0102_e0212.z);
+      const float e0112_x = extract<1>(e0111_e0112_e0102_e0212.x), e0112_y = extract<1>(e0111_e0112_e0102_e0212.y), e0112_z = extract<1>(e0111_e0112_e0102_e0212.z);
+      const float e0102_x = extract<2>(e0111_e0112_e0102_e0212.x), e0102_y = extract<2>(e0111_e0112_e0102_e0212.y), e0102_z = extract<2>(e0111_e0112_e0102_e0212.z);
+      const float e0212_x = extract<3>(e0111_e0112_e0102_e0212.x), e0212_y = extract<3>(e0111_e0112_e0102_e0212.y), e0212_z = extract<3>(e0111_e0112_e0102_e0212.z);
+
+      const float e1121_x = extract<0>(e1121_e1122_e1112_e2122.x), e1121_y = extract<0>(e1121_e1122_e1112_e2122.y), e1121_z = extract<0>(e1121_e1122_e1112_e2122.z);
+      const float e1122_x = extract<1>(e1121_e1122_e1112_e2122.x), e1122_y = extract<1>(e1121_e1122_e1112_e2122.y), e1122_z = extract<1>(e1121_e1122_e1112_e2122.z);
+      const float e1112_x = extract<2>(e1121_e1122_e1112_e2122.x), e1112_y = extract<2>(e1121_e1122_e1112_e2122.y), e1112_z = extract<2>(e1121_e1122_e1112_e2122.z);
+      const float e2122_x = extract<3>(e1121_e1122_e1112_e2122.x), e2122_y = extract<3>(e1121_e1122_e1112_e2122.y), e2122_z = extract<3>(e1121_e1122_e1112_e2122.z);
+      
+      const avx3f e0(avxf(-e0001_x,-e0011_x,-e0102_x,-e0112_x,-e1011_x,-e1021_x,-e1112_x,-e1122_x),
+                     avxf(-e0001_y,-e0011_y,-e0102_y,-e0112_y,-e1011_y,-e1021_y,-e1112_y,-e1122_y),
+                     avxf(-e0001_z,-e0011_z,-e0102_z,-e0112_z,-e1011_z,-e1021_z,-e1112_z,-e1122_z));
+
+      const avx3f e1(avxf(-e0111_x,+e1011_x,-e0212_x,+e1112_x,-e1121_x,+e2021_x,-e1222_x,+e2122_x),
+                     avxf(-e0111_y,+e1011_y,-e0212_y,+e1112_y,-e1121_y,+e2021_y,-e1222_y,+e2122_y),
+                     avxf(-e0111_z,+e1011_z,-e0212_z,+e1112_z,-e1121_z,+e2021_z,-e1222_z,+e2122_z));
+
+      const avx3f D8(avxf(D.x),avxf(D.y),avxf(D.z));
 
       const avx3f Ng0 = cross(e1,e0);
       const avx3f Ng = Ng0+Ng0;
       const avxf det = dot(D8,Ng);
       const avxf T   = dot(q,Ng);
       
-      avxb mask = (U0 >= 0.0f) && (U1 >= 0.0f) && (U2 >= 0.0f) && (det*ray.tnear <= T) && (T <= det*ray.tfar);
+      avxb maskb = (U0 >= 0.0f) & (U1 >= 0.0f) & (U2 >= 0.0f) & (det*ray.tnear <= T) & (T <= det*ray.tfar);
+      size_t mask = movemask(maskb);
 
       while (mask) {
         size_t i = __bscf(mask);
-        const float rcpDet = rcp(det);
+        const float rcpDet = rcp(det[i]);
         ray.u    = U0[i] * rcpDet;
         ray.v    = U1[i] * rcpDet;
         ray.tfar = T[i] * rcpDet;
