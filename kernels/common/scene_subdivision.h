@@ -721,6 +721,7 @@ namespace embree
       }
     };
 
+
   class RegularCatmullClarkPatch : public RegularCatmullClarkPatchT<Vec3fa> 
   {
   public:
@@ -741,10 +742,10 @@ namespace embree
       const Vec3fa limit_v2 = computeLimitVertex(2,2);
       const Vec3fa limit_v3 = computeLimitVertex(2,1);
       
-      const Vec3fa limit_normal0 = computeLimitNormal(1,1);
-      const Vec3fa limit_normal1 = computeLimitNormal(1,2);
-      const Vec3fa limit_normal2 = computeLimitNormal(2,2);
-      const Vec3fa limit_normal3 = computeLimitNormal(2,1);
+      /* const Vec3fa limit_normal0 = computeLimitNormal(1,1); */
+      /* const Vec3fa limit_normal1 = computeLimitNormal(1,2); */
+      /* const Vec3fa limit_normal2 = computeLimitNormal(2,2); */
+      /* const Vec3fa limit_normal3 = computeLimitNormal(2,1); */
 
       quad.vtx[0] = limit_v0;
       quad.vtx[1] = limit_v1;
@@ -752,6 +753,34 @@ namespace embree
       quad.vtx[3] = limit_v3;
     };
 
+#if !defined(__MIC__)
+
+    __forceinline Vec3fa loadVtx(const Vec3fa &v)
+    {
+      return v;
+    }
+
+    __forceinline void storeVtx(const unsigned int y,
+				const unsigned int x, 
+				const Vec3fa &vtx)
+    {
+      v[y][x] = vtx;
+    }
+#else
+
+    __forceinline mic_f loadVtx(const Vec3fa &v)
+    {
+      return broadcast4to16f(&v);
+    }
+
+    __forceinline void storeVtx(const unsigned int y,
+				const unsigned int x, 
+				const mic_f &vtx)
+    {
+      store4f(&v[y][x],vtx);
+    }
+
+#endif
 
     __forceinline void init(const SubdivMesh::HalfEdge *const first_half_edge,
 			    const Vec3fa *const vertices)
@@ -762,10 +791,10 @@ namespace embree
       const SubdivMesh::HalfEdge *v00 = v01->prev();
       const SubdivMesh::HalfEdge *v10 = v00->prev();
 
-      v[1][1] = vertices[v11->getStartVertexIndex()];
-      v[1][0] = vertices[v10->getStartVertexIndex()];
-      v[0][0] = vertices[v00->getStartVertexIndex()];
-      v[0][1] = vertices[v01->getStartVertexIndex()];
+      storeVtx(1,1, loadVtx( vertices[v11->getStartVertexIndex()] ));
+      storeVtx(1,0, loadVtx( vertices[v10->getStartVertexIndex()] ));
+      storeVtx(0,0, loadVtx( vertices[v00->getStartVertexIndex()] ));
+      storeVtx(0,1, loadVtx( vertices[v01->getStartVertexIndex()] ));
 
       // quad(0,2)
       const SubdivMesh::HalfEdge *v12 = v11->next();
@@ -774,10 +803,10 @@ namespace embree
       const SubdivMesh::HalfEdge *v02 = v03->prev();
       
 
-      v[1][2] = vertices[v12->getStartVertexIndex()];
-      v[1][3] = vertices[v13->getStartVertexIndex()];
-      v[0][3] = vertices[v03->getStartVertexIndex()];
-      v[0][2] = vertices[v02->getStartVertexIndex()];
+      storeVtx(1,2, loadVtx( vertices[v12->getStartVertexIndex()] ) );
+      storeVtx(1,3, loadVtx( vertices[v13->getStartVertexIndex()] ) );
+      storeVtx(0,3, loadVtx( vertices[v03->getStartVertexIndex()] ) );
+      storeVtx(0,2, loadVtx( vertices[v02->getStartVertexIndex()] ) );
 
       // quad(2,2)
       const SubdivMesh::HalfEdge *v22 = v12->next();
@@ -785,10 +814,10 @@ namespace embree
       const SubdivMesh::HalfEdge *v33 = v32->prev();
       const SubdivMesh::HalfEdge *v23 = v33->prev();
 
-      v[2][2] = vertices[v22->getStartVertexIndex()];
-      v[3][2] = vertices[v32->getStartVertexIndex()];
-      v[3][3] = vertices[v33->getStartVertexIndex()];
-      v[2][3] = vertices[v23->getStartVertexIndex()];      
+      storeVtx(2,2, loadVtx( vertices[v22->getStartVertexIndex()] ) );
+      storeVtx(3,2, loadVtx( vertices[v32->getStartVertexIndex()] ) );
+      storeVtx(3,3, loadVtx( vertices[v33->getStartVertexIndex()] ) );
+      storeVtx(2,3, loadVtx( vertices[v23->getStartVertexIndex()] ) );      
 
       // quad(2,0)
       const SubdivMesh::HalfEdge *v21 = v22->next();
@@ -796,10 +825,10 @@ namespace embree
       const SubdivMesh::HalfEdge *v30 = v20->prev();
       const SubdivMesh::HalfEdge *v31 = v30->prev();
 
-      v[2][0] = vertices[v20->getStartVertexIndex()];
-      v[3][0] = vertices[v30->getStartVertexIndex()];
-      v[3][1] = vertices[v31->getStartVertexIndex()];
-      v[2][1] = vertices[v21->getStartVertexIndex()];
+      storeVtx(2,0, loadVtx( vertices[v20->getStartVertexIndex()] ) );
+      storeVtx(3,0, loadVtx( vertices[v30->getStartVertexIndex()] ) );
+      storeVtx(3,1, loadVtx( vertices[v31->getStartVertexIndex()] ) );
+      storeVtx(2,1, loadVtx( vertices[v21->getStartVertexIndex()] ) );
     }
 
     __forceinline BBox3fa bounds() const
