@@ -189,7 +189,7 @@ namespace embree
 	  dest.ring[ hard_edge_index + 0 ] = 0.5f * (vtx + ring[hard_edge_index+0]);
 	  dest.ring[ hard_edge_index + 1 ] = ring[hard_edge_index+1];
 	  dest.ring[ hard_edge_index + 2 ] = 0.5f * (vtx + ring[hard_edge_index+2]);
-	  dest.vtx = (dest.ring[ hard_edge_index + 0 ] + dest.ring[ hard_edge_index + 2 ] + 6.0f * vtx) * 1.0f / 8.0f;
+	  dest.vtx = (ring[ hard_edge_index + 0 ] + ring[ hard_edge_index + 2 ] + 6.0f * vtx) * 1.0f / 8.0f;
 	}
     }
 
