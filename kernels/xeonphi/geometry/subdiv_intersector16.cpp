@@ -191,7 +191,8 @@ namespace embree
    else
      {
        RegularCatmullClarkPatch subpatches[4];
-       patch.subdivide(subpatches);
+       //patch.subdivide(subpatches);
+       subdivide(patch,subpatches);
        for (size_t i=0;i<4;i++)
 	 subdivide_intersect1(rayIndex, 
 			      dir_xyz,
