@@ -397,8 +397,12 @@ namespace embree
   /// Euclidian Space Operators
   ////////////////////////////////////////////////////////////////////////////////
 
+  //__forceinline avxf dot ( const avxf& a, const avxf& b ) {
+  //  return vreduce_add4(a*b);
+  //}
+
   __forceinline avxf dot ( const avxf& a, const avxf& b ) {
-    return vreduce_add4(a*b);
+    return _mm256_dp_ps(a,b,0x7F);
   }
 
   __forceinline avxf cross ( const avxf& a, const avxf& b ) 

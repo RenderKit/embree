@@ -164,7 +164,7 @@ namespace embree
                                                  const Vec3fa& v02, const Vec3fa& v12, const Vec3fa& v22,
                                                  const unsigned geomID, const unsigned primID)
     {
-#if defined(__AVX__)
+#if 0 && defined(__AVX__)
 
       const Vec3fa O = ray.org;
       const Vec3fa D = ray.dir;
@@ -318,6 +318,67 @@ namespace embree
       const Vec3fa q01 = v01-O, q11 = v11-O, q21 = v21-O;
       const Vec3fa q02 = v02-O, q12 = v12-O, q22 = v22-O;
 
+#if defined (__AVX__)
+
+      const avxf DD = avxf(ssef(D),ssef(D));
+
+      const avxf q00_q01((ssef)q00,(ssef)q01);
+      const avxf q01_q02((ssef)q01,(ssef)q02);
+      const avxf e0001_e0102 = q01_q02 - q00_q01; 
+      const avxf _u0001_u0102 = dot(cross(q01_q02 + q00_q01, e0001_e0102), DD);
+      const Vec3fa e0001 = (Vec3fa)  extract<0>( e0001_e0102),  e0102 = (Vec3fa)   extract<1>( e0001_e0102);
+      const float u0001 = extract<0>(extract<0>(_u0001_u0102)), u0102 = extract<0>(extract<1>(_u0001_u0102));
+
+      const avxf q10_q11((ssef)q10,(ssef)q11);
+      const avxf q11_q12((ssef)q11,(ssef)q12);
+      const avxf e1011_e1112 = q11_q12-q10_q11;
+      const avxf _u1011_u1112 = dot(cross(q10_q11 + q11_q12, e1011_e1112), DD);
+      const Vec3fa e1011 = (Vec3fa)  extract<0>( e1011_e1112),  e1112 = (Vec3fa)   extract<1>( e1011_e1112);
+      const float u1011 = extract<0>(extract<0>(_u1011_u1112)), u1112 = extract<0>(extract<1>(_u1011_u1112));
+      
+      const avxf q20_q21((ssef)q20,(ssef)q21);
+      const avxf q21_q22((ssef)q21,(ssef)q22);
+      const avxf e2021_e2122 = q21_q22 - q20_q21;
+      const avxf _u2021_u2122 = dot(cross(q20_q21 + q21_q22, e2021_e2122), DD);
+      const Vec3fa e2021 = (Vec3fa)  extract<0>( e2021_e2122),  e2122 = (Vec3fa)   extract<1>( e2021_e2122);
+      const float u2021 = extract<0>(extract<0>(_u2021_u2122)), u2122 = extract<0>(extract<1>(_u2021_u2122));
+
+      const avxf q00_q10((ssef)q00,(ssef)q10);
+      const avxf q10_q20((ssef)q10,(ssef)q20);
+      const avxf e0010_e1020 = q10_q20 - q00_q10;
+      const avxf _u0010_u1020 = dot(cross(q10_q20 + q00_q10, e0010_e1020), DD);
+      const Vec3fa e0010 = (Vec3fa)  extract<0>( e0010_e1020),  e1020 = (Vec3fa)   extract<1>( e0010_e1020);
+      const float u0010 = extract<0>(extract<0>(_u0010_u1020)), u1020 = extract<0>(extract<1>(_u0010_u1020));
+
+      const avxf q01_q11((ssef)q01,(ssef)q11);
+      const avxf q11_q21((ssef)q11,(ssef)q21);
+      const avxf e0111_e1121 = q11_q21 - q01_q11;
+      const avxf _u0111_u1121 = dot(cross(q11_q21 + q01_q11, e0111_e1121), DD);
+      const Vec3fa e0111 = (Vec3fa)  extract<0>( e0111_e1121),  e1121 = (Vec3fa)   extract<1>( e0111_e1121);
+      const float u0111 = extract<0>(extract<0>(_u0111_u1121)), u1121 = extract<0>(extract<1>(_u0111_u1121));
+
+      const avxf q02_q12((ssef)q02,(ssef)q12);
+      const avxf q12_q22((ssef)q12,(ssef)q22);
+      const avxf e0212_e1222 = q12_q22 - q02_q12;
+      const avxf _u0212_u1222 = dot(cross(q12_q22 + q02_q12, e0212_e1222), DD);
+      const Vec3fa e0212 = (Vec3fa)  extract<0>( e0212_e1222),  e1222 = (Vec3fa)   extract<1>( e0212_e1222);
+      const float u0212 = extract<0>(extract<0>(_u0212_u1222)), u1222 = extract<0>(extract<1>(_u0212_u1222));
+      
+      //const avxf q00_q01((ssef)q00,(ssef)q01);
+      //const avxf q11_q12((ssef)q11,(ssef)q12);
+      const avxf e0011_e0112 = q11_q12 - q00_q01;
+      const avxf _u0011_u0112 = dot(cross(q11_q12 + q00_q01, e0011_e0112), DD);
+      const Vec3fa e0011 = (Vec3fa)  extract<0>( e0011_e0112),  e0112 = (Vec3fa)   extract<1>( e0011_e0112);
+      const float u0011 = extract<0>(extract<0>(_u0011_u0112)), u0112 = extract<0>(extract<1>(_u0011_u0112));
+
+      //const avxf q10_q11((ssef)q10,(ssef)q11);
+      //const avxf q21_q22((ssef)q21,(ssef)q22);
+      const avxf e1021_e1122 = q21_q22 - q10_q11;
+      const avxf _u1021_u1122 = dot(cross(q21_q22 + q10_q11, e1021_e1122), DD);
+      const Vec3fa e1021 = (Vec3fa)  extract<0>( e1021_e1122),  e1122 = (Vec3fa)   extract<1>( e1021_e1122);
+      const float u1021 = extract<0>(extract<0>(_u1021_u1122)), u1122 = extract<0>(extract<1>(_u1021_u1122));
+
+#else
       const Vec3fa e0001 = q01-q00; const float u0001 = dot(cross(q01+q00,e0001),D);
       const Vec3fa e0102 = q02-q01; const float u0102 = dot(cross(q02+q01,e0102),D);
       const Vec3fa e1011 = q11-q10; const float u1011 = dot(cross(q11+q10,e1011),D);
@@ -336,6 +397,7 @@ namespace embree
       const Vec3fa e0112 = q12-q01; const float u0112 = dot(cross(q12+q01,e0112),D);
       const Vec3fa e1021 = q21-q10; const float u1021 = dot(cross(q21+q10,e1021),D);
       const Vec3fa e1122 = q22-q11; const float u1122 = dot(cross(q22+q11,e1122),D);
+#endif
 
       if (u0011 >= 0.0f) {
         if (u0001 <= 0.0f && u0111 <= 0.0f) intersectFinish(ray,q00,-e0001,-e0111,+e0011,-u0001,-u0111,+u0011,geomID,primID);
