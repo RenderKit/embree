@@ -164,7 +164,56 @@ namespace embree
                                                  const Vec3fa& v02, const Vec3fa& v12, const Vec3fa& v22,
                                                  const unsigned geomID, const unsigned primID)
     {
-#if 1 && defined(__AVX__)
+#if 1 
+
+#if defined(__AVX__)
+
+      const Vec3fa O = ray.org;
+      const Vec3fa D = ray.dir;
+      const avx3f D8(D.x,D.y,D.z);
+      
+      const Vec3fa q00 = v00-O, q10 = v10-O, q20 = v20-O;
+      const Vec3fa q01 = v01-O, q11 = v11-O, q21 = v21-O;
+      const Vec3fa q02 = v02-O, q12 = v12-O, q22 = v22-O;
+      
+      sse3f p00; transpose((ssef)q00,(ssef)q01,(ssef)q11,(ssef)q10,p00.x,p00.y,p00.z);
+      sse3f p10; transpose((ssef)q10,(ssef)q11,(ssef)q21,(ssef)q20,p10.x,p10.y,p10.z);
+      const avx3f p00_p10(avxf(p00.x,p10.x),avxf(p00.y,p10.y),avxf(p00.z,p10.z));
+      
+      const avx3f t000_t100_start = shuffle<0,1,2,0>(p00_p10), t000_t100_end = shuffle<1,2,0,0>(p00_p10);
+      const avx3f e000_e100 = t000_t100_end - t000_t100_start;
+      const avx3f s000_s100 = t000_t100_end + t000_t100_start;
+      const avxf  u000_u100 = dot(cross(e000_e100,s000_s100),D8);
+      if (all(ge_mask(Vec3fa(extract<0>(u000_u100)),Vec3fa(0.0f)))) intersectFinish(ray,q00,q01-q00,q11-q01,q00-q11,u000_u100[0],u000_u100[1],u000_u100[2],geomID,primID);
+      if (all(ge_mask(Vec3fa(extract<1>(u000_u100)),Vec3fa(0.0f)))) intersectFinish(ray,q10,q11-q10,q21-q11,q10-q21,u000_u100[3],u000_u100[4],u000_u100[5],geomID,primID);
+
+      const avx3f t001_t101_start = shuffle<0,2,3,0>(p00_p10), t001_t101_end = shuffle<2,3,0,0>(p00_p10);
+      const avx3f e001_e101 = t001_t101_end - t001_t101_start;
+      const avx3f s001_s101 = t001_t101_end + t001_t101_start;
+      const avxf  u001_u101 = dot(cross(e001_e101,s001_s101),D8);
+      if (all(ge_mask(Vec3fa(extract<0>(u001_u101)),Vec3fa(0.0f)))) intersectFinish(ray,q00,q11-q00,q10-q11,q00-q10,u000_u100[0],u000_u100[1],u000_u100[2],geomID,primID);
+      if (all(ge_mask(Vec3fa(extract<1>(u001_u101)),Vec3fa(0.0f)))) intersectFinish(ray,q10,q21-q10,q20-q21,q10-q20,u000_u100[3],u000_u100[4],u000_u100[5],geomID,primID);
+
+
+      sse3f p01; transpose((ssef)q01,(ssef)q02,(ssef)q12,(ssef)q11,p01.x,p01.y,p01.z);
+      sse3f p11; transpose((ssef)q11,(ssef)q12,(ssef)q22,(ssef)q21,p11.x,p11.y,p11.z);
+      const avx3f p01_p11(avxf(p01.x,p11.x),avxf(p01.y,p11.y),avxf(p01.z,p11.z));
+      
+      const avx3f t010_t110_start = shuffle<0,1,2,0>(p01_p11), t010_t110_end = shuffle<1,2,0,0>(p01_p11);
+      const avx3f e010_e110 = t010_t110_end - t010_t110_start;
+      const avx3f s010_s110 = t010_t110_end + t010_t110_start;
+      const avxf  u010_u110 = dot(cross(e010_e110,s010_s110),D8);
+      if (all(ge_mask(Vec3fa(extract<0>(u010_u110)),Vec3fa(0.0f)))) intersectFinish(ray,q01,q02-q01,q12-q02,q01-q12,u010_u110[0],u010_u110[1],u010_u110[2],geomID,primID);
+      if (all(ge_mask(Vec3fa(extract<1>(u010_u110)),Vec3fa(0.0f)))) intersectFinish(ray,q11,q12-q11,q22-q12,q11-q22,u010_u110[3],u010_u110[4],u010_u110[5],geomID,primID);
+
+      const avx3f t011_t111_start = shuffle<0,2,3,0>(p01_p11), t011_t111_end = shuffle<2,3,0,0>(p01_p11);
+      const avx3f e011_e111 = t011_t111_end - t011_t111_start;
+      const avx3f s011_s111 = t011_t111_end + t011_t111_start;
+      const avxf  u011_u111 = dot(cross(e011_e111,s011_s111),D8);
+      if (all(ge_mask(Vec3fa(extract<0>(u011_u111)),Vec3fa(0.0f)))) intersectFinish(ray,q01,q12-q01,q11-q12,q01-q11,u010_u110[0],u010_u110[1],u010_u110[2],geomID,primID);
+      if (all(ge_mask(Vec3fa(extract<1>(u011_u111)),Vec3fa(0.0f)))) intersectFinish(ray,q11,q22-q11,q21-q22,q11-q21,u010_u110[3],u010_u110[4],u010_u110[5],geomID,primID);
+
+#else
 
       const Vec3fa O = ray.org;
       const Vec3fa D = ray.dir;
@@ -230,19 +279,8 @@ namespace embree
       ssef  u111 = dot(cross(e111,s111),DDDD);
       if (all(ge_mask(Vec3fa(u111),Vec3fa(0.0f)))) intersectFinish(ray,q11,q22-q11,q21-q22,q11-q21,u111[0],u111[1],u111[2],geomID,primID);
 
-/*
-      sse3f t100_start = shuffle<0,1,2,0>(p10), t10_end = shuffle<1,2,0,0>(p10);
-      sse3f e100 = t100_end - t100_start;
-      sse3f s100 = t100_end + t100_start;
-      ssef  u100 = dot(cross(s100,e100),D);
-      if (all(ge_mask(u100,0.0f))) intersectFinish(ray,q00,q10-q00,q11-q10,q00-q11,u100[0],u100[1],u100[2],geomID,primID);
+#endif
 
-      sse3f t101_start = shuffle<0,2,3,0>(p10), t10_end = shuffle<2,3,0,0>(p10);
-      sse3f e101 = t101_end - t101_start;
-      sse3f s101 = t101_end + t101_start;
-      ssef  u101 = dot(cross(s101,e101),D);
-      if (all(ge_mask(u101,0.0f))) intersectFinish(ray,q00,q11-q00,q01-q11,q00-q01,u101[0],u101[1],u101[2],geomID,primID);
-*/    
 
 #endif
 

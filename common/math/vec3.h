@@ -251,6 +251,11 @@ namespace embree
   __forceinline Vec3<avxf> broadcast8f( const Vec3<avxf>& a, const size_t k ) {  
     return Vec3<avxf>(avxf::broadcast(&a.x[k]), avxf::broadcast(&a.y[k]), avxf::broadcast(&a.z[k]));
   }
+
+  template<size_t i0, size_t i1, size_t i2, size_t i3> __forceinline const Vec3<avxf> shuffle( const Vec3<avxf>& b ) {
+    return Vec3<avxf>(shuffle<i0,i1,i2,i3>(b.x),shuffle<i0,i1,i2,i3>(b.y),shuffle<i0,i1,i2,i3>(b.z));
+  }
+
 #endif
 
 #if defined(__MIC__)
