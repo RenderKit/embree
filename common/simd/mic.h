@@ -18,7 +18,7 @@
 
 #include "sys/platform.h"
 #include "sys/intrinsics.h"
-#include "sse_mic.h"
+//#include "sse_mic.h"
 
 #include <zmmintrin.h>
 
@@ -125,10 +125,10 @@ namespace embree
       return t;
     }
 
-  __forceinline mic_f convert(const ssef &v)
-  {
-    return broadcast4to16f(&v);
-  }
+  /* __forceinline mic_f convert(const ssef &v) */
+  /* { */
+  /*   return broadcast4to16f(&v); */
+  /* } */
 
   __forceinline mic_i mul_uint64( const mic_i& a, const mic_i& b) { 
     const mic_i low  = _mm512_mullo_epi32(a, b);
