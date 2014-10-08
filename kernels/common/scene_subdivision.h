@@ -89,7 +89,6 @@ namespace embree
 			    const Vec3fa *const vertices)
     {
       hard_edge_index= -1;
-
       const Vertex zero( 0.0f );
       size_t i=0;
       vtx = (Vertex)vertices[ h->getStartVertexIndex() ];
@@ -317,8 +316,11 @@ namespace embree
   public:
     CatmullClark1Ring ring[4];
 
-    unsigned int geomID;
-    unsigned int primID;
+#if !defined(__MIC__)
+    typedef Vec3fa Vertex;
+#else
+    typedef Vec3fa_t Vertex;      
+#endif
 
     __forceinline BBox3fa bounds() const
     {
@@ -336,30 +338,30 @@ namespace embree
       dest0.valence = 4;
       dest0.num_vtx = 8;
       dest0.hard_edge_index = -1;
-      dest0.vtx     = p0.ring[0];
+      dest0.vtx     = (Vertex)p0.ring[0];
       dest1.valence = 4;
       dest1.num_vtx = 8;
-      dest1.vtx     = p0.ring[0];
+      dest1.vtx     = (Vertex)p0.ring[0];
       dest1.hard_edge_index = -1;
 
       // 1-ring for patch0
-      dest0.ring[ 0] = p0.ring[p0.num_vtx-1];
-      dest0.ring[ 1] = p1.ring[0];
-      dest0.ring[ 2] = p1.vtx;
-      dest0.ring[ 3] = p1.ring[p1.num_vtx-4];
-      dest0.ring[ 4] = p0.ring[1];
-      dest0.ring[ 5] = p0.ring[2];
-      dest0.ring[ 6] = p0.vtx;
-      dest0.ring[ 7] = p0.ring[p0.num_vtx-2];
+      dest0.ring[ 0] = (Vertex)p0.ring[p0.num_vtx-1];
+      dest0.ring[ 1] = (Vertex)p1.ring[0];
+      dest0.ring[ 2] = (Vertex)p1.vtx;
+      dest0.ring[ 3] = (Vertex)p1.ring[p1.num_vtx-4];
+      dest0.ring[ 4] = (Vertex)p0.ring[1];
+      dest0.ring[ 5] = (Vertex)p0.ring[2];
+      dest0.ring[ 6] = (Vertex)p0.vtx;
+      dest0.ring[ 7] = (Vertex)p0.ring[p0.num_vtx-2];
       // 1-ring for patch1
-      dest1.ring[ 0] = p1.vtx;
-      dest1.ring[ 1] = p1.ring[p1.num_vtx-4];
-      dest1.ring[ 2] = p0.ring[1];
-      dest1.ring[ 3] = p0.ring[2];
-      dest1.ring[ 4] = p0.vtx;
-      dest1.ring[ 5] = p0.ring[p0.num_vtx-2];
-      dest1.ring[ 6] = p0.ring[p0.num_vtx-1];
-      dest1.ring[ 7] = p1.ring[0];
+      dest1.ring[ 0] = (Vertex)p1.vtx;
+      dest1.ring[ 1] = (Vertex)p1.ring[p1.num_vtx-4];
+      dest1.ring[ 2] = (Vertex)p0.ring[1];
+      dest1.ring[ 3] = (Vertex)p0.ring[2];
+      dest1.ring[ 4] = (Vertex)p0.vtx;
+      dest1.ring[ 5] = (Vertex)p0.ring[p0.num_vtx-2];
+      dest1.ring[ 6] = (Vertex)p0.ring[p0.num_vtx-1];
+      dest1.ring[ 7] = (Vertex)p1.ring[0];
     }
 
 
@@ -368,40 +370,46 @@ namespace embree
                                           CatmullClark1Ring &dest0,
                                           CatmullClark1Ring &dest1) 
     {
+#if !defined(__MIC__)
+    typedef Vec3fa Vertex;
+#else
+    typedef Vec3fa_t Vertex;      
+#endif
+
       dest0.valence = 3;
       dest0.num_vtx = 6;
       dest0.hard_edge_index = 2;
-      dest0.vtx     = p0.ring[0];
+      dest0.vtx     = (Vertex)p0.ring[0];
 
       dest1.valence = 3;
       dest1.num_vtx = 6;
-      dest1.vtx     = p0.ring[0];
       dest1.hard_edge_index = 0;
+      dest1.vtx     = (Vertex)p0.ring[0];
 
       // 1-ring for patch0
-      dest0.ring[ 0] = p0.ring[p0.num_vtx-1];
-      dest0.ring[ 1] = p1.ring[0];
-      dest0.ring[ 2] = p1.vtx;
-      dest1.ring[ 3] = p0.ring[p0.hard_edge_index+1]; // dummy
-      dest0.ring[ 4] = p0.vtx;
-      dest0.ring[ 5] = p0.ring[p0.num_vtx-2];
+      dest0.ring[ 0] = (Vertex)p0.ring[p0.num_vtx-1];
+      dest0.ring[ 1] = (Vertex)p1.ring[0];
+      dest0.ring[ 2] = (Vertex)p1.vtx;
+      dest1.ring[ 3] = (Vertex)p0.ring[p0.hard_edge_index+1]; // dummy
+      dest0.ring[ 4] = (Vertex)p0.vtx;
+      dest0.ring[ 5] = (Vertex)p0.ring[p0.num_vtx-2];
       // 1-ring for patch1
-      dest1.ring[ 0] = p1.vtx;
-      dest1.ring[ 1] = p0.ring[p0.hard_edge_index+1]; // dummy
-      dest1.ring[ 2] = p0.vtx;
-      dest1.ring[ 3] = p0.ring[p0.num_vtx-2];
-      dest1.ring[ 4] = p0.ring[p0.num_vtx-1];
-      dest1.ring[ 5] = p1.ring[0];
+      dest1.ring[ 0] = (Vertex)p1.vtx;
+      dest1.ring[ 1] = (Vertex)p0.ring[p0.hard_edge_index+1]; // dummy
+      dest1.ring[ 2] = (Vertex)p0.vtx;
+      dest1.ring[ 3] = (Vertex)p0.ring[p0.num_vtx-2];
+      dest1.ring[ 4] = (Vertex)p0.ring[p0.num_vtx-1];
+      dest1.ring[ 5] = (Vertex)p1.ring[0];
     }
 
-    static __forceinline void init_regular(const Vec3fa &center, const Vec3fa center_ring[8], const size_t offset, CatmullClark1Ring &dest)
+    static __forceinline void init_regular(const Vertex &center, const Vertex center_ring[8], const size_t offset, CatmullClark1Ring &dest)
     {
       dest.valence = 4;
       dest.num_vtx = 8;
       dest.hard_edge_index = -1;
-      dest.vtx     = center;
+      dest.vtx     = (Vertex)center;
       for (size_t i=0;i<8;i++)
-	dest.ring[i] = center_ring[(offset+i)%8];
+	dest.ring[i] = (Vertex)center_ring[(offset+i)%8];
     }
  
 
@@ -411,6 +419,7 @@ namespace embree
       ring[1].update(patch[1].ring[1]);
       ring[2].update(patch[2].ring[2]);
       ring[3].update(patch[3].ring[3]);
+
 
       if (likely(ring[0].hard_edge_index != 0))
         init_regular(patch[0].ring[0],patch[1].ring[1],patch[0].ring[1],patch[1].ring[0]);
@@ -432,28 +441,23 @@ namespace embree
       else
         init_border(patch[3].ring[3],patch[0].ring[0],patch[3].ring[0],patch[0].ring[3]);
 
-      __aligned(64) Vec3fa center = (ring[0].vtx + ring[1].vtx + ring[2].vtx + ring[3].vtx) * 0.25f;
-      __aligned(64) Vec3fa center_ring[8];
+      Vertex center = (ring[0].vtx + ring[1].vtx + ring[2].vtx + ring[3].vtx) * 0.25f;
+      Vertex center_ring[8];
 
       // counter-clockwise
-      center_ring[0] = patch[3].ring[3].ring[0];
-      center_ring[1] = patch[3].ring[3].vtx;
-      center_ring[2] = patch[2].ring[2].ring[0];
-      center_ring[3] = patch[2].ring[2].vtx;
-      center_ring[4] = patch[1].ring[1].ring[0];
-      center_ring[5] = patch[1].ring[1].vtx;
-      center_ring[6] = patch[0].ring[0].ring[0];
-      center_ring[7] = patch[0].ring[0].vtx;
+      center_ring[0] = (Vertex)patch[3].ring[3].ring[0];
+      center_ring[1] = (Vertex)patch[3].ring[3].vtx;
+      center_ring[2] = (Vertex)patch[2].ring[2].ring[0];
+      center_ring[3] = (Vertex)patch[2].ring[2].vtx;
+      center_ring[4] = (Vertex)patch[1].ring[1].ring[0];
+      center_ring[5] = (Vertex)patch[1].ring[1].vtx;
+      center_ring[6] = (Vertex)patch[0].ring[0].ring[0];
+      center_ring[7] = (Vertex)patch[0].ring[0].vtx;
 
       init_regular(center,center_ring,0,patch[0].ring[2]);
       init_regular(center,center_ring,2,patch[3].ring[1]);
       init_regular(center,center_ring,4,patch[2].ring[0]);
       init_regular(center,center_ring,6,patch[1].ring[3]);
-
-      patch[0].geomID = geomID; patch[0].primID = primID;
-      patch[1].geomID = geomID; patch[1].primID = primID;
-      patch[2].geomID = geomID; patch[2].primID = primID;
-      patch[3].geomID = geomID; patch[3].primID = primID;
     }
 
     __forceinline void init( FinalQuad& quad ) const
@@ -469,7 +473,7 @@ namespace embree
 
   __forceinline std::ostream &operator<<(std::ostream &o, const IrregularCatmullClarkPatch &p)
     {
-      o << "geomID " << p.geomID << " primID " << p.primID << "rings: " << std::endl;
+      o << "rings: " << std::endl;
       for (size_t i=0;i<4;i++)
 	o << i << " -> " << p.ring[i] << std::endl;
       return o;

@@ -124,17 +124,10 @@ namespace embree
 
     __forceinline void init( IrregularCatmullClarkPatch& patch) const
     {
-
-      /* for (size_t i=0;i<4;i++) */
-      /* 	DBG_PRINT(vertices[first_half_edge[i].getStartVertexIndex()]); */
-
       for (size_t i=0;i<4;i++)
 	{
 	  patch.ring[i].init(first_half_edge + i,vertices);
-	  /* DBG_PRINT( patch.ring[i] ); */
 	}
-      patch.geomID = geom;
-      patch.primID = prim;
     }
 
     __forceinline void init( RegularCatmullClarkPatch& cc_patch) const

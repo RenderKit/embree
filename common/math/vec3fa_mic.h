@@ -73,6 +73,7 @@ namespace embree
     ////////////////////////////////////////////////////////////////////////////////
     /// Constructors, Assignment & Cast Operators
     ////////////////////////////////////////////////////////////////////////////////
+    __forceinline Vec3fa_t( ) { m512 = _mm512_undefined(); }
 
     __forceinline Vec3fa_t( const __m512 a ) : m512(a) {}
     __forceinline Vec3fa_t            ( const Vec3fa_t& other ) { m512 = other.m512; }
