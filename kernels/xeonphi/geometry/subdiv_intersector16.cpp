@@ -20,6 +20,7 @@
 #include "geometry/filter.h"
 #include "subdiv_intersector16.h"
 #include "bicubic_bezier_patch.h"
+#include "bvh4i/bvh4i.h"
 
 namespace embree
 {
@@ -284,6 +285,42 @@ namespace embree
 
   }
 
+
+  __forceinline void init_bvh4node(BVH4i::Node &node,RegularCatmullClarkPatch dest[4])
+  {
+#pragma unroll(4)
+    for (size_t i=0;i<4;i++)
+      {
+	const mic_f r0 = dest[i].getRow(0);
+	const mic_f r1 = dest[i].getRow(1);
+	const mic_f r2 = dest[i].getRow(2);
+	const mic_f r3 = dest[i].getRow(3);       
+	const mic_f r_min = min(min(r0,r1),min(r2,r3));
+	const mic_f r_max = max(max(r0,r1),max(r2,r3));	
+	const mic_f b_min = set_min_lanes(r_min);
+	const mic_f b_max = set_max_lanes(r_max);
+	store4f(&node.lower[i],b_min);
+	store4f(&node.upper[i],b_max);
+      }
+  }
+
+  __forceinline mic_m intersect(const BVH4i::Node &node,
+				const mic_f &rdir_xyz,
+				const mic_f &org_rdir_xyz,
+				const mic_f &min_dist,
+				const mic_f &max_dist)
+  {
+    const float* __restrict const plower = (float*)&node.lower;
+    const float* __restrict const pupper = (float*)&node.upper;
+    const mic_f tLowerXYZ = rdir_xyz * load16f(plower) - org_rdir_xyz;
+    const mic_f tUpperXYZ = rdir_xyz * load16f(pupper) - org_rdir_xyz;
+    const mic_f tLower = select(0x7777,min(tLowerXYZ,tUpperXYZ),min_dist);
+    const mic_f tUpper = select(0x7777,max(tLowerXYZ,tUpperXYZ),max_dist);
+    const mic_f tNear = vreduce_max4(tLower);
+    const mic_f tFar  = vreduce_min4(tUpper);  
+    return le(0x1111,tNear,tFar);    
+  }
+
  void subdivide_intersect1(const size_t rayIndex, 
 			   const mic_f &dir_xyz,
 			   const mic_f &org_xyz,
@@ -336,9 +373,6 @@ namespace embree
  {
    if (subdiv_level == 0)
      {
-       //__aligned(64) FinalQuad finalQuad;
-       //patch.init( finalQuad );
-       //intersect1_quad(rayIndex,dir_xyz,org_xyz,ray16,finalQuad,geomID,primID);      
        intersect1_quad(rayIndex,
 		       dir_xyz,
 		       org_xyz,
@@ -353,8 +387,36 @@ namespace embree
    else
      {
        RegularCatmullClarkPatch subpatches[4];
-       //patch.subdivide(subpatches);
        subdivide(patch,subpatches);
+       
+       const mic_f rdir_xyz     = rcp(dir_xyz);
+       const mic_f org_rdir_xyz = rdir_xyz * org_xyz;
+       const mic_f min_dist     = ray16.tnear[rayIndex];
+       const mic_f max_dist     = ray16.tfar[rayIndex];
+
+#if 1
+       BVH4i::Node node;
+       init_bvh4node(node,subpatches);
+       const mic_m m_hit = intersect(node,
+				     rdir_xyz,
+				     org_rdir_xyz,
+				     min_dist,
+				     max_dist);
+       long index = -1;
+       while((index = bitscan64(index,m_hit)) != BITSCAN_NO_BIT_SET_64) 
+	 {
+	   const unsigned int i = (unsigned int)index >> 2;
+	   subdivide_intersect1(rayIndex, 
+				dir_xyz,
+				org_xyz,
+				ray16,
+				subpatches[i],
+				geomID,
+				primID,
+				subdiv_level - 1);	    
+	 }
+#else				     
+
        for (size_t i=0;i<4;i++)
 	 subdivide_intersect1(rayIndex, 
 			      dir_xyz,
@@ -364,6 +426,7 @@ namespace embree
 			      geomID,
 			      primID,
 			      subdiv_level - 1);	    
+#endif
      }
    
  }

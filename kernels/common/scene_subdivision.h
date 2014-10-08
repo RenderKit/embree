@@ -778,6 +778,16 @@ namespace embree
 	bounds.extend( cv[i] );
       return bounds;
     }
+
+#if defined(__MIC__)
+
+    __forceinline mic_f getRow(const size_t i) const
+    {
+      return load16f(&v[i][0]);
+    }
+    
+#endif
+
     __forceinline Vec3fa evalCubicBSplinePatch(const float uu, const float vv) const
     {
       const Vec3fa curve0 = CubicBSpline::eval(vv,v[0][0],v[1][0],v[2][0],v[3][0]);

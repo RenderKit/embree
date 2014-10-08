@@ -61,10 +61,8 @@ namespace embree
 	STAT3(normal.trav_prims,1,1,1);
 
 
-	bool hit = false;
-      
 #if 1
-	if (subdiv_patch.isRegular())
+	if (likely(subdiv_patch.isRegular()))
 	  {
 	    RegularCatmullClarkPatch regular_patch;
 	    subdiv_patch.init( regular_patch );
@@ -78,73 +76,9 @@ namespace embree
 	  subdivide_intersect1(rayIndex,dir_xyz,org_xyz,ray16,irregular_patch,subdiv_patch.geomID,subdiv_patch.primID,g_subdivision_level);
 	}
 
-	return hit;
+	return true;
       };
 
-      static __forceinline bool occluded1_quad(const size_t rayIndex, 
-					       const mic_f &dir_xyz,
-					       const mic_f &org_xyz,
-					       const Ray16& ray16,
-					       mic_m &m_terminated,
-					       const FinalQuad &quad)
-      {
-	const mic_i and_mask = broadcast4to16i(_zlc4);
-
-	const mic_f v0 = gather_4f_zlc(and_mask,
-				       &quad.vtx[0],
-				       &quad.vtx[0],
-				       &quad.vtx[2],
-				       &quad.vtx[2]);
-	      
-	const mic_f v1 = gather_4f_zlc(and_mask,
-				       &quad.vtx[1],
-				       &quad.vtx[1],
-				       &quad.vtx[3],
-				       &quad.vtx[3]);
-	      
-	const mic_f v2 = gather_4f_zlc(and_mask,
-				       &quad.vtx[2],
-				       &quad.vtx[2],
-				       &quad.vtx[0],
-				       &quad.vtx[0]);
-
-	const mic_f e1 = v1 - v0;
-	const mic_f e2 = v0 - v2;	     
-	const mic_f normal = lcross_zxy(e1,e2);
-
-	const mic_f org = v0 - org_xyz;
-	const mic_f odzxy = msubr231(org * swizzle(dir_xyz,_MM_SWIZ_REG_DACB), dir_xyz, swizzle(org,_MM_SWIZ_REG_DACB));
-	const mic_f den = ldot3_zxy(dir_xyz,normal);	      
-	const mic_f rcp_den = rcp(den);
-	const mic_f uu = ldot3_zxy(e2,odzxy); 
-	const mic_f vv = ldot3_zxy(e1,odzxy); 
-	const mic_f u = uu * rcp_den;
-	const mic_f v = vv * rcp_den;
-
-#if defined(__BACKFACE_CULLING__)
-	const mic_m m_init = (mic_m)0x1111 & (den > zero);
-#else
-	const mic_m m_init = 0x1111;
-#endif
-
-	const mic_m valid_u = ge((mic_m)m_init,u,zero);
-	const mic_m valid_v = ge(valid_u,v,zero);
-	const mic_m m_aperture = le(valid_v,u+v,mic_f::one()); 
-
-	const mic_f nom = ldot3_zxy(org,normal);
-	const mic_f t = rcp_den*nom;
-	if (unlikely(none(m_aperture))) return false;
-
-	mic_m m_final  = lt(lt(m_aperture,mic_f(ray16.tnear[rayIndex]),t),t,mic_f(ray16.tfar[rayIndex]));
-
-	if (unlikely(any(m_final)))
-	  {
-	    STAT3(shadow.trav_prim_hits,1,1,1);
-	    m_terminated |= mic_m::shift1[rayIndex];
-	    return true;
-	  }
-	return false;
-      }
 
       static __forceinline bool occluded1(const size_t rayIndex, 
 					  const mic_f &dir_xyz,
@@ -161,7 +95,8 @@ namespace embree
 	subdiv_patch.init( irregular_patch );
       
 	irregular_patch.init( finalQuad );
-	return occluded1_quad(rayIndex,dir_xyz,org_xyz,ray16,m_terminated,finalQuad);
+	FATAL("not yet implemented");
+	return false;
       };
     };
 
