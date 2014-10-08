@@ -19,7 +19,7 @@
 #include "common/default.h"
 #include "common/scene.h"
 #include "builders/primrefblock.h"
-
+#include <typeinfo>
 #include "common/ray.h"
 
 #if defined(__SSE__)
