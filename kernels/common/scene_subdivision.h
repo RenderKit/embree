@@ -250,7 +250,7 @@ namespace embree
       const float inv_valence = 1.0f / (float)valence;
       F *= inv_valence;
       R *= inv_valence; 
-      dest.setCenterVtx( (F + 2.0f * R + (float)(valence-3)*centerVtx()) * inv_valence );
+      dest.setCenterVtx( (F + 2.0f * R + (float(valence)-3.0f)*centerVtx()) * inv_valence );
       
       if (unlikely(hard_edge_index != -1))
 	{

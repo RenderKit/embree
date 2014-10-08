@@ -36,7 +36,7 @@
 #define DBG(x) 
 
 //#define PROFILE
-#define SUBDIVISION_LEVEL_DISPL 8 // FIXME: remove
+#define SUBDIVISION_LEVEL_DISPL 4 // FIXME: remove
 
 namespace embree
 {

@@ -107,6 +107,7 @@ namespace embree
         while (!initialized) __pause();
         return (size_t)parent;
       }
+
       size_t N = 1<<levels;
       size_t M = N+1;
       v.init(M,M,Vec3fa(nan));
@@ -121,9 +122,8 @@ namespace embree
       edgeL.init(M,ring01,ring00);
       init();
 
-      for (size_t l=0; l<levels; l++) {
+      for (size_t l=0; l<levels; l++)
         subdivide();
-      }
 
       /* displace points */
 #if 0
