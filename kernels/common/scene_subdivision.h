@@ -867,6 +867,32 @@ namespace embree
 
     GregoryPatch() {}
 
+    Vec3fa initCornerVertex(const SubdivMesh::HalfEdge *const h,
+			    const Vec3fa *const vertices)
+    {
+      Vec3fa sum_edge_midpoints( zero );
+      Vec3fa sum_face_midpoints( zero );
+      SubdivMesh::HalfEdge *p = (SubdivMesh::HalfEdge*)h;
+      float n = 0.0f;
+       do 
+         {
+           sum_edge_midpoints += p->getEdgeMidPointVertex(vertices);
+           sum_face_midpoints += p->getFaceMidPointVertex(vertices);
+           assert( p->hasOpposite() );
+           p = p->opposite();
+           /*! continue with next adjacent edge */
+           p = p->next();
+           n += 1.0f;
+         } while( p != h);
+       return (n-3.0f)/(n+5.0f) * h->getStartVertex(vertices) + 4.0f/(n*(n+5.0f)) * (sum_edge_midpoints + sum_face_midpoints);   
+    }
+
+    __forceinline void init(const SubdivMesh::HalfEdge *const first_half_edge,
+			    const Vec3fa *const vertices)
+    {
+      
+    }
+
    __forceinline BBox3fa bounds() const
     {
       const Vec3fa *const cv = &v[0][0];
