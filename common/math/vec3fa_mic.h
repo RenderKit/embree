@@ -17,6 +17,7 @@
 #pragma once
 
 #include "math.h"
+#include "simd/mic.h"
 
 namespace embree
 {
@@ -169,7 +170,6 @@ namespace embree
   __forceinline Vec3fa& operator -=( Vec3fa& a, const Vec3fa_t& b ) { return a = a - b; }
   __forceinline Vec3fa& operator *=( Vec3fa& a, const float    b ) { return a = a * b; }
   __forceinline Vec3fa& operator /=( Vec3fa& a, const float    b ) { return a = a / b; }
-
   ////////////////////////////////////////////////////////////////////////////////
   /// Reductions
   ////////////////////////////////////////////////////////////////////////////////
