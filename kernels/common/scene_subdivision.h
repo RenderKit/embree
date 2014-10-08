@@ -873,7 +873,7 @@ namespace embree
       Vec3fa sum_edge_midpoints( zero );
       Vec3fa sum_face_midpoints( zero );
       SubdivMesh::HalfEdge *p = (SubdivMesh::HalfEdge*)h;
-      float n = 0.0f;
+      unsigned int valence = 0;
        do 
          {
            sum_edge_midpoints += p->getEdgeMidPointVertex(vertices);
@@ -882,9 +882,38 @@ namespace embree
            p = p->opposite();
            /*! continue with next adjacent edge */
            p = p->next();
-           n += 1.0f;
          } while( p != h);
+       const float n = (float)valence;
        return (n-3.0f)/(n+5.0f) * h->getStartVertex(vertices) + 4.0f/(n*(n+5.0f)) * (sum_edge_midpoints + sum_face_midpoints);   
+    }
+
+
+    void getEdgeVertices(const SubdivMesh::HalfEdge *const h,
+                         const Vec3fa *const vertices,
+                         const Vec3fa &p0,
+                         Vec3fa &e_pos,
+                         Vec3fa &e_neg)
+    {
+      Vec3fa q( zero );
+      const unsigned int valence = h->getEdgeValence();
+      const float n = (float)valence;
+      const float sigma = -sqrtf((4.0f + cosf(M_PI/n) * cosf(M_PI/n)));
+      SubdivMesh::HalfEdge *p = (SubdivMesh::HalfEdge*)h;
+      unsigned int i=0;
+      do 
+        {
+          const Vec3fa m_i = p->getEdgeMidPointVertex(vertices);
+          const Vec3fa c_i = p->getFaceMidPointVertex(vertices);
+          q+= (1.0f-sigma*cosf(M_PI/n))*cosf((2.0f*M_PI*(float)i)/n) * m_i + 2.0f*sigma*cosf((2.0f*M_PI*(float)i+M_PI)/n) * c_i; 
+          assert( p->hasOpposite() );
+          p = p->opposite();
+           /*! continue with next adjacent edge */
+           p = p->next();
+        } while( p != h);
+      q *= 2.0f/n;
+      const float lambda = 1.0f/16.0f*(5.0f+cosf((2.0f*M_PI)/n)+cosf(M_PI/n)*sqrtf(18.0f+2.0f*cosf((2.0f*M_PI)/n)));
+      e_pos = p0 + 2.0f/3.0f*lambda*q;
+      e_neg = p0 - 2.0f/3.0f*lambda*q;
     }
 
     __forceinline void init(const SubdivMesh::HalfEdge *const first_half_edge,
