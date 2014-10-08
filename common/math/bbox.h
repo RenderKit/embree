@@ -77,6 +77,9 @@ namespace embree
   }
 #endif
 
+  /*! test if point contained in box */
+  __forceinline bool inside ( const BBox<Vec3fa>& b, const Vec3fa& p ) { return all(ge_mask(p,b.lower) & le_mask(p,b.upper)); }
+
   /*! computes the center of the box */
   template<typename T> __forceinline const T center (const BBox<T>& box) { return T(.5f)*(box.lower + box.upper); }
   template<typename T> __forceinline const T center2(const BBox<T>& box) { return box.lower + box.upper; }

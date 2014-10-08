@@ -266,6 +266,13 @@ unsigned int test_indices[EDGES] = {0, 1, 5, 4,  1, 2, 6, 5,  2, 3, 7, 6,  0, 4,
 
 unsigned int test_offsets[FACES] = {0, 4, 8, 12, 16, 20};
 
+void DisplacementFunc(void* ptr, unsigned geomID, unsigned primID, RTCFloat2* uv, RTCFloat3a* dP, size_t N)
+{
+  for (size_t i=0; i<N; i++) {
+    (Vec3fa&)dP[i] = 0.1f*Vec3fa(sin(10.0f*uv[i].x),sin(10.0f*uv[i].y),0.0f);
+  }
+}
+
 void constructScene() {
   /*! Create an Embree object to hold scene state. */
   g_scene = rtcNewScene(RTC_SCENE_STATIC, RTC_INTERSECT1);
@@ -311,6 +318,9 @@ void constructScene() {
       rtcSetBuffer(g_scene, subdivMeshID, RTC_VERTEX_BUFFER, test_vertices, 0, sizeof(Vec3fa  ));
       rtcSetBuffer(g_scene, subdivMeshID, RTC_INDEX_BUFFER,  test_indices , 0, sizeof(unsigned int));
       rtcSetBuffer(g_scene, subdivMeshID, RTC_OFFSET_BUFFER, test_offsets , 0, sizeof(unsigned int));
+
+      BBox3fa bounds(Vec3fa(-0.1f,-0.1f,-0.1f),Vec3fa(0.1f,0.1f,0.1f));
+      rtcSetDisplacementFunction(g_scene, subdivMeshID, (RTCDisplacementFunc)DisplacementFunc,(RTCBounds&)bounds);
     }
     
   rtcCommit(g_scene);

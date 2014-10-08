@@ -50,6 +50,19 @@ enum RTCGeometryFlags
   RTC_GEOMETRY_DYNAMIC    = 2,    //!< specifies dynamic geometry with arbitrary motion (BVH refit not possible)
 };
 
+/*! Axis aligned bounding box representation */
+struct RTCORE_ALIGN(16) RTCBounds
+{
+  float lower_x, lower_y, lower_z, align0;
+  float upper_x, upper_y, upper_z, align1;
+};
+
+/*! Vector of 2 floats */
+struct RTCFloat2  { float x,y; };
+
+/*! Vector of 3 floats aligned to 16 bytes */
+struct RTCFloat3a { float x,y,z,a; };
+
 /*! Intersection filter function for single rays. */
 typedef void (*RTCFilterFunc)(void* ptr,           /*!< pointer to user data */
                               RTCRay& ray          /*!< intersection to filter */);
@@ -68,6 +81,14 @@ typedef void (*RTCFilterFunc8)(const void* valid,  /*!< pointer to valid mask */
 typedef void (*RTCFilterFunc16)(const void* valid, /*!< pointer to valid mask */
                                 void* ptr,         /*!< pointer to user data */
                                 RTCRay16& ray      /*!< intersection to filter */);
+
+/*! Displacement mapping function. */
+typedef void (*RTCDisplacementFunc)(void* ptr,           /*!< pointer to user data of geometry */
+                                    unsigned geomID,       /*!< ID of geometry to displace */
+                                    unsigned primID,       /*!< ID of primitive of geometry to displace */
+                                    RTCFloat2* uv,       /*!< source array for UV coordinates to evaluate displacement function on */
+                                    RTCFloat3a* dP,      /*!< output array to store displacements */
+                                    size_t N             /*!< number of points to displace */ );
 
 /*! \brief Creates a new scene instance. 
 
@@ -133,6 +154,15 @@ RTCORE_API unsigned rtcNewHairGeometry (RTCScene scene,                    //!< 
 					size_t numTimeSteps = 1            //!< number of motion blur time steps
   );
 
+/*! \brief Creates a new subdivision mesh.  */
+RTCORE_API unsigned rtcNewSubdivisionMesh (RTCScene scene,                //!< the scene the mesh belongs to
+					   RTCGeometryFlags flags,        //!< geometry flags
+					   size_t numFaces,               //!< number of faces
+					   size_t numEdges,               //!< number of edges
+					   size_t numVertices,            //!< number of vertices
+					   size_t numTimeSteps = 1        //!< number of motion blur time steps
+  );
+
 /*! \brief Sets 32 bit ray mask. */
 RTCORE_API void rtcSetMask (RTCScene scene, unsigned geomID, int mask);
 
@@ -178,6 +208,9 @@ RTCORE_API void rtcUpdate (RTCScene scene, unsigned geomID);
   geometry. */
 RTCORE_API void rtcDisable (RTCScene scene, unsigned geomID);
 
+/*! \brief Sets the displacement function. */
+RTCORE_API void rtcSetDisplacementFunction (RTCScene scene, unsigned geomID, RTCDisplacementFunc func, const RTCBounds& bounds);
+
 /*! \brief Sets the intersection filter function for single rays. */
 RTCORE_API void rtcSetIntersectionFilterFunction (RTCScene scene, unsigned geomID, RTCFilterFunc func);
 
@@ -204,17 +237,6 @@ RTCORE_API void rtcSetOcclusionFilterFunction16 (RTCScene scene, unsigned geomID
 
 /*! \brief Deletes the geometry. */
 RTCORE_API void rtcDeleteGeometry (RTCScene scene, unsigned geomID);
-
-
-/*! \brief Creates a new subdivision mesh.  */
-
-RTCORE_API unsigned rtcNewSubdivisionMesh (RTCScene scene,                //!< the scene the mesh belongs to
-					   RTCGeometryFlags flags,        //!< geometry flags
-					   size_t numFaces,               //!< number of faces
-					   size_t numEdges,               //!< number of edges
-					   size_t numVertices,            //!< number of vertices
-					   size_t numTimeSteps = 1        //!< number of motion blur time steps
-  );
 
 
 /*! @} */

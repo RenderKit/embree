@@ -20,13 +20,6 @@
 /*! \ingroup embree_kernel_api */
 /*! \{ */
 
-/*! Axis aligned bounding box representation */
-struct RTCORE_ALIGN(16) RTCBounds
-{
-  float lower_x, lower_y, lower_z, align0;
-  float upper_x, upper_y, upper_z, align1;
-};
-
 /*! Type of bounding function. */
 typedef void (*RTCBoundsFunc)(void* ptr,              /*!< pointer to user data */
                               size_t item,            /*!< item to calculate bounds for */

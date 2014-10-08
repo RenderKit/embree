@@ -99,7 +99,7 @@ namespace embree
                                      const unsigned int prim, 
                                      const unsigned int level,
                                      const bool last)
-      : initializing(0), initialized(0), parent(parent), bvh(PrimitiveType2<QuadQuad4x4,SubdivPatchDispl1>::type,scene,false), h(h), vertices(vertices), K(1), geom(geom), prim(prim), levels(level) { assert(last); }
+      : initializing(0), initialized(0), scene(scene), parent(parent), bvh(PrimitiveType2<QuadQuad4x4,SubdivPatchDispl1>::type,scene,false), h(h), vertices(vertices), K(1), geom(geom), prim(prim), levels(level) { assert(last); }
 
     size_t initialize()
     {
@@ -132,6 +132,31 @@ namespace embree
           const Vec3fa p = v(x,y);
           v(x,y) += 0.05f*Vec3fa(1.0f+sinf(40.0f*p.z),1.0f+sinf(40.0f*p.x),1.0f+sinf(40.0f*p.y));
         }
+      }
+#else
+      SubdivMesh* mesh = (SubdivMesh*) scene->get(geom);
+      if (mesh->displFunc) 
+      {
+        Vec2f* uv = new Vec2f[M];
+        Vec3fa* displ = new Vec3fa[M];
+        for (size_t y=0; y<M; y++) {
+          float fy = float(y)/float(M);
+          for (size_t x=0; x<M; x++) {
+            float fx = float(x)/float(M);
+            uv[x] = Vec2f(fx,fy);
+          }
+          mesh->displFunc(mesh->userPtr,geom,prim,(RTCFloat2*)uv,(RTCFloat3a*)displ,M);
+          for (size_t x=0; x<M; x++) {
+            const Vec3fa dP = displ[x];
+#if defined(DEBUG)
+            if (!inside(mesh->displBounds,dP))
+              THROW_RUNTIME_ERROR("displacement out of bounds");
+#endif
+            v(x,y) += dP;
+          }
+        }
+        delete uv;
+        delete displ;
       }
 #endif
 
@@ -339,6 +364,7 @@ namespace embree
     Array2D<Vec3fa> v;
 
   public:
+    Scene* scene;
     unsigned geom;
     unsigned prim;
   };

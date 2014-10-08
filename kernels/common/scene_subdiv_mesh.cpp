@@ -26,6 +26,7 @@ namespace embree
       numFaces(numFaces), 
       numEdges(numEdges), 
       numVertices(numVertices),
+      displFunc(NULL), displBounds(empty),
       halfEdges(NULL)
   {
     for (size_t i=0; i<numTimeSteps; i++) {
@@ -147,6 +148,16 @@ namespace embree
 
   void SubdivMesh::setUserData (void* ptr, bool ispc) {
     userPtr = ptr;
+  }
+
+  void SubdivMesh::setDisplacementFunction (RTCDisplacementFunc func, const RTCBounds& bounds) 
+  {
+    if (parent->isStatic() && parent->isBuild()) {
+      process_error(RTC_INVALID_OPERATION,"static geometries cannot get modified");
+      return;
+    }
+    this->displFunc   = func;
+    this->displBounds = (BBox3fa&)bounds; 
   }
 
   void SubdivMesh::immutable () 

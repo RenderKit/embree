@@ -127,6 +127,11 @@ namespace embree
       process_error(RTC_INVALID_OPERATION,"operation not supported for this geometry"); 
     }
 
+    /*! Set displacement function. */
+    virtual void setDisplacementFunction (RTCDisplacementFunc filter, const RTCBounds& bounds) {
+      process_error(RTC_INVALID_OPERATION,"operation not supported for this geometry"); 
+    }
+
     /*! Set intersection filter function for single rays. */
     virtual void setIntersectionFilterFunction (RTCFilterFunc filter, bool ispc = false);
     

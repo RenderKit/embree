@@ -40,6 +40,7 @@ namespace embree
     void setUserData (void* ptr, bool ispc);
     void immutable ();
     bool verify ();
+    void setDisplacementFunction (RTCDisplacementFunc func, const RTCBounds& bounds);
 
     unsigned int mask;                //!< for masking out geometry
     unsigned int numTimeSteps;        //!< number of time steps (1 or 2)  
@@ -48,6 +49,9 @@ namespace embree
     size_t numEdges;                  //!< number of edges
     size_t numVertices;               //!< number of vertices
     size_t numHalfEdges;              //!< number of half-edges
+
+    RTCDisplacementFunc displFunc;    //!< displacement function
+    BBox3fa             displBounds;  //!< bounds for displacement
 
     size_t size() const { return numFaces; };
 
