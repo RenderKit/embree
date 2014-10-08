@@ -162,6 +162,7 @@ namespace embree
   __forceinline Vec3fa_t nmadd ( const Vec3fa_t& a, const Vec3fa_t& b, const Vec3fa_t& c) { return _mm512_fnmadd_ps(a,b,c); }
   __forceinline Vec3fa_t nmsub ( const Vec3fa_t& a, const Vec3fa_t& b, const Vec3fa_t& c) { return _mm512_fnmsub_ps(a,b,c); }
 
+
   ////////////////////////////////////////////////////////////////////////////////
   /// Assignment Operators
   ////////////////////////////////////////////////////////////////////////////////
@@ -170,6 +171,10 @@ namespace embree
   __forceinline Vec3fa& operator -=( Vec3fa& a, const Vec3fa_t& b ) { return a = a - b; }
   __forceinline Vec3fa& operator *=( Vec3fa& a, const float    b ) { return a = a * b; }
   __forceinline Vec3fa& operator /=( Vec3fa& a, const float    b ) { return a = a / b; }
+
+  __forceinline Vec3fa_t& operator +=( Vec3fa_t& a, const Vec3fa_t& b ) { return a = a + b; }
+  __forceinline Vec3fa_t& operator *=( Vec3fa_t& a, const float    b )  { return a = a * b; }
+
   ////////////////////////////////////////////////////////////////////////////////
   /// Reductions
   ////////////////////////////////////////////////////////////////////////////////
