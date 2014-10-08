@@ -304,6 +304,32 @@ namespace embree
       }
   }
 
+
+  __forceinline void init_bvh4node(BVH4i::Node &node,IrregularCatmullClarkPatch dest[4])
+  {
+    for (size_t i=0;i<4;i++)
+      {
+	Vec3fa_t r0 = dest[i].ring[0].vtx;
+	Vec3fa_t r1 = dest[i].ring[1].vtx;
+	Vec3fa_t r2 = dest[i].ring[2].vtx;
+	Vec3fa_t r3 = dest[i].ring[3].vtx;
+
+	Vec3fa_t b_min = min(min(r0,r1),min(r2,r3));
+	Vec3fa_t b_max = max(max(r0,r1),max(r2,r3));
+
+	for (size_t r=0;r<4;r++)
+	  {
+	    for (size_t n=0;n<dest[i].ring[r].num_vtx;n++)
+	      {
+		b_min = min(b_min,dest[i].ring[r].ring[n]);
+		b_max = max(b_max,dest[i].ring[r].ring[n]);
+	      }
+	  }
+	*(Vec3fa*)&node.lower[i] = b_min;
+	*(Vec3fa*)&node.upper[i] = b_max;
+      }
+  }
+
   __forceinline mic_m intersect(const BVH4i::Node &node,
 				const mic_f &rdir_xyz,
 				const mic_f &org_rdir_xyz,
@@ -348,6 +374,34 @@ namespace embree
      {
        IrregularCatmullClarkPatch subpatches[4];
        patch.subdivide(subpatches);
+
+       const mic_f rdir_xyz     = rcp(dir_xyz);
+       const mic_f org_rdir_xyz = rdir_xyz * org_xyz;
+       const mic_f min_dist     = ray16.tnear[rayIndex];
+       const mic_f max_dist     = ray16.tfar[rayIndex];
+
+#if 1
+       BVH4i::Node node;
+       init_bvh4node(node,subpatches);
+       const mic_m m_hit = intersect(node,
+				     rdir_xyz,
+				     org_rdir_xyz,
+				     min_dist,
+				     max_dist);
+       long index = -1;
+       while((index = bitscan64(index,m_hit)) != BITSCAN_NO_BIT_SET_64) 
+	 {
+	   const unsigned int i = (unsigned int)index >> 2;
+	   subdivide_intersect1(rayIndex, 
+				dir_xyz,
+				org_xyz,
+				ray16,
+				subpatches[i],
+				geomID,
+				primID,
+				subdiv_level - 1);	    
+	 }
+#else				     
        for (size_t i=0;i<4;i++)
 	 subdivide_intersect1(rayIndex, 
 			      dir_xyz,
@@ -357,6 +411,7 @@ namespace embree
 			      geomID,
 			      primID,
 			      subdiv_level - 1);	    
+#endif
      }
    
  }
