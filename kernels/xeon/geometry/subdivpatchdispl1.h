@@ -126,7 +126,7 @@ namespace embree
       }
 
       /* displace points */
-#if 1
+#if 0
       for (size_t y=0; y<M; y++) {
         for (size_t x=0; x<M; x++) {
           const Vec3fa p = v(x,y);
