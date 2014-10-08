@@ -119,7 +119,7 @@ finally install the Embree library and header files on your system:
 If you cannot install Embree on your system (e.g. when you don't have
 administrator rights) you need to add embree_root_directory/build to your
 LD_LIBRARY_PATH (and SINK_LD_LIBRARY_PATH in case you want to use Embree on
-Xeon Phi).
+Xeon Phi[TM]).
 
 The default configuration in the configuration dialog should be appropiate for
 most usages. The following table described all parameters that can be
@@ -162,6 +162,13 @@ XEON_PHI_ISA               Enables generation of Xeon Phi[TM]    OFF
 You need at least Intel Compiler 11.1 or GCC 4.4 to enable AVX and Intel
 Compiler 12.1 or GCC 4.7 to enable AVX2.
 
+== Compiling Embree for Xeon Phi  ==
+
+Embree supports the Xeon Phi[TM] coprocessor under Linux. To compile Embree for
+Xeon Phi[TM] you need to enable the XEON_PHI_ISA option in CMake and have the
+Intel Compiler and the Intel[TM] Manycore Platform Software Stack (MPSS)
+installed.
+
 Enabling the buffer stride feature reduces performance for building spatial
 hierarchies on Xeon Phi[TM].
 
@@ -195,6 +202,159 @@ We recommend enabling syntax highlighting for the .ispc source and .isph header
 files. To do so open Visual Studio 2008, go to Tools -> Options -> Text Editor
 -> File Extension and add the isph and ispc extension for the "Microsoft Visual
 C++" editor.
+
+== Embree Tutorials  ==
+
+Embree comes with a set of tutorials aimed at helping users understand how
+Embree can be used and extended. All tutorials exist in an ISPC and C version
+to demonstrate the two versions of the API. Look for files named
+tutorialXX_device.ispc for the ISPC implementation of the tutorial, and files
+named tutorialXX_device.cpp for the single ray C++ version of the tutorial. To
+start the C++ version use the tutorialXX executables, to start the ISPC version
+use the tutorialXX_ispc executables.
+
+Under Linux Embree also comes with an ISPC version of all tutorials for the
+Xeon Phi[TM] Coprocessor. The executables of this version of the tutorials are
+named tutorialXX_xeonphi and only work if a Xeon Phi[TM] Coprocessor is present
+in the system. The Xeon Phi[TM] version of the tutorials get started on the
+host CPU, just like all other tutorials, and will connect automatically to one
+installed Xeon Phi[TM] Coprocessor in the system.
+
+For all tutorials, you can select an initial camera using the -vp (camera
+position), -vi (camera lookat point), -vu (camera up vector), and -fov
+(vertical field of view) command line parameters:
+
+ ./tutorial00 -vp 10 10 10 -vi 0 0 0
+
+You can select the initial windows size using the -size command line parameter,
+or start the tutorials in fullscreen using the -fullscreen parameter:
+
+ ./tutorial00 -size 1024 1024
+ ./tutorial00 -fullscreen
+
+Implementation specific parameters can be passed to the ray tracing core
+through the -rtcore command line parameter, e.g.:
+
+ ./tutorial00 -rtcore verbose=2,threads=1,accel=bvh4.triangle1
+
+The navigation in the interactive display mode follows the camera orbit model,
+where the camera revolves around the current center of interest. With the left
+mouse button you can rotate around the center of interest (the point initially
+set with -vi). Holding Control pressed while klicking the left mouse button
+rotates the camera around its location. You can also use the arrow keys for
+navigation.
+
+You can use the following keys:
+
+  F1
+      Default shading
+  F2
+      Gray EyeLight shading
+  F3
+      Wireframe shading
+  F4
+      UV Coordinate visualization
+  F5
+      Geometry normal visualization
+  F6
+      Geometry ID visualization
+  F7
+      Geometry ID and Primitive ID visualization
+  F8
+      Simple shading with 16 rays per pixel for benchmarking.
+  F9
+      Switches to render cost visualization. Pressing again reduces brightness.
+  F10
+      Switches to render cost visualization. Pressing again increases
+      brightness.
+  f
+      Enters or leaves full screen mode.
+  c
+      Prints camera parameters.
+  ESC
+      Exists the tutorial.
+  q
+      Exists the tutorial.
+=== Tutorial00  ===
+
+
+ This tutorial demonstrates the creation of a static cube and ground plane
+ using triangle meshes. It also demonstrates the use of the rtcIntersect and
+ rtcOccluded functions to render primary visibility and hard shadows. The cube
+ sides are colored based on the ID of the hit primitive.
+
+
+=== Tutorial01  ===
+
+
+ This tutorial demonstrates the creation of a dynamic scene, consisting of
+ several deformed spheres. Half of the spheres use the RTC_GEOMETRY_DEFORMABLE
+ flag, which allows Embree to use a refitting strategy for these spheres, the
+ other half uses the RTC_GEOMETRY_DYNAMIC flag, causing a rebuild of their
+ spatial data structure each frame. The spheres are colored based on the ID of
+ the hit sphere geometry.
+
+
+=== Tutorial02  ===
+
+
+ This tutorial shows the use of user defined geometry, to re-implement
+ instancing and to add analytic spheres. A two level scene is created, with a
+ triangle mesh as ground plane, and several user geometries, that instance
+ other scenes with a small number of spheres of different kind. The spheres are
+ colored using the instance ID and geometry ID of the hit sphere, to
+ demonstrate how the same geometry, instanced in different ways can be
+ distinguished.
+
+
+=== Tutorial03  ===
+
+
+ This tutorial demonstrates a simple OBJ viewer that traces primary visibility
+ rays only. A scene consisting of multiple meshes is created, each mesh sharing
+ the index and vertex buffer with the application. Demonstrated is also how to
+ support additional per vertex data, such as shading normals.
+
+ You need to specify an OBJ file at the command line for this tutorial to work:
+ ./tutorial03 -i model.obj
+
+
+=== Tutorial04  ===
+
+
+ This tutorial demonstrates the in-build instancing feature of Embree, by
+ instancing a number of other scenes build from triangulated spheres. The
+ spheres are again colored using the instance ID and geometry ID of the hit
+ sphere, to demonstrate how the same geometry, instanced in different ways can
+ be distinguished.
+
+
+=== Tutorial05  ===
+
+
+ This tutorial demonstrates the use of filter callback functions to efficiently
+ implement transparent objects. The filter function used for primary rays, lets
+ the ray pass through the geometry if it is entirely transparent. Otherwise the
+ shading loop handles the transparency properly, by potentially shooting
+ secondary rays. The filter function used for shadow rays accumulates the
+ transparency of all surfaces along the ray, and terminates traversal if an
+ opaque occluder is hit.
+
+
+=== Tutorial06  ===
+
+
+ This tutorial is a simple path tracer, building on tutorial03.
+
+ You need to specify an OBJ file and light source at the command line for this
+ tutorial to work: ./tutorial06 -i model.obj -ambientlight 1 1 1
+
+
+=== Tutorial07  ===
+
+
+ This tutorial demonstrates the use of the hair geometry to render a hairball.
+
 
 == Embree API  ==
 
@@ -892,150 +1052,6 @@ per commit operation. Subsequent commit operations for the same scene can use
 different number of threads or the Embree internal threads using the
  void rtcCommitThread()
 call.
-
-== Embree Tutorials  ==
-
-Embree comes with a set of tutorials aimed at helping users understand how
-embree can be used and extended. All tutorials exist in an ISPC and C version
-to demonstrate the two versions of the API. Look for files names
-tutorialXX_device.ispc for the ISPC implementation of the tutorial, and files
-named tutorialXX_device.cpp for the single ray C version of the tutorial. To
-start the C++ version use the tutorialXX executables, to start the ISPC version
-use the tutorialXX_ispc executables. You can select an initial camera using the
--vp (camera position), -vi (camera lookat point), -vu (camera up vector), and -
-fov (vertical field of view) command line parameters:
-
- ./tutorial00 -vp 10 10 10 -vi 0 0 0
-
-You can select the initial windows size using the -size command line parameter,
-or start the tutorials in fullscreen using the -fullscreen parameter:
-
- ./tutorial00 -size 1024 1024
- ./tutorial00 -fullscreen
-
-Implementation specific parameters can be passed to the ray tracing core
-through the -rtcore command line parameter, e.g.:
-
- ./tutorial00 -rtcore verbose=2,threads=1,accel=bvh4.triangle1
-
-The navigation in the interactive display mode follows the camera orbit model,
-where the camera revolves around the current center of interest. With the left
-mouse button you can rotate around the center of interest (the point initially
-set with -vi). Holding Control pressed while klicking the left mouse button
-rotates the camera around its location. You can also use the arrow keys for
-navigation.
-
-You can use the following keys:
-
-  F1
-      Default shading
-  F2
-      Gray EyeLight shading
-  F3
-      Wireframe shading
-  F4
-      UV Coordinate visualization
-  F5
-      Geometry normal visualization
-  F6
-      Geometry ID visualization
-  F7
-      Geometry ID and Primitive ID visualization
-  F8
-      Simple shading with 16 rays per pixel for benchmarking.
-  F9
-      Switches to render cost visualization. Pressing again reduces brightness.
-  F10
-      Switches to render cost visualization. Pressing again increases
-      brightness.
-  f
-      Enters or leaves full screen mode.
-  c
-      Prints camera parameters.
-  ESC
-      Exists the tutorial.
-  q
-      Exists the tutorial.
-=== Tutorial00  ===
-
-
- This tutorial demonstrates the creation of a static cube and ground plane
- using triangle meshes. It also demonstrates the use of the rtcIntersect and
- rtcOccluded functions to render primary visibility and hard shadows. The cube
- sides are colored based on the ID of the hit primitive.
-
-
-=== Tutorial01  ===
-
-
- This tutorial demonstrates the creation of a dynamic scene, consisting of
- several deformed spheres. Half of the spheres use the RTC_GEOMETRY_DEFORMABLE
- flag, which allows Embree to use a refitting strategy for these spheres, the
- other half uses the RTC_GEOMETRY_DYNAMIC flag, causing a rebuild of their
- spatial data structure each frame. The spheres are colored based on the ID of
- the hit sphere geometry.
-
-
-=== Tutorial02  ===
-
-
- This tutorial shows the use of user defined geometry, to re-implement
- instancing and to add analytic spheres. A two level scene is created, with a
- triangle mesh as ground plane, and several user geometries, that instance
- other scenes with a small number of spheres of different kind. The spheres are
- colored using the instance ID and geometry ID of the hit sphere, to
- demonstrate how the same geometry, instanced in different ways can be
- distinguished.
-
-
-=== Tutorial03  ===
-
-
- This tutorial demonstrates a simple OBJ viewer that traces primary visibility
- rays only. A scene consisting of multiple meshes is created, each mesh sharing
- the index and vertex buffer with the application. Demonstrated is also how to
- support additional per vertex data, such as shading normals.
-
- You need to specify an OBJ file at the command line for this tutorial to work:
- ./tutorial03 -i model.obj
-
-
-=== Tutorial04  ===
-
-
- This tutorial demonstrates the in-build instancing feature of Embree, by
- instancing a number of other scenes build from triangulated spheres. The
- spheres are again colored using the instance ID and geometry ID of the hit
- sphere, to demonstrate how the same geometry, instanced in different ways can
- be distinguished.
-
-
-=== Tutorial05  ===
-
-
- This tutorial demonstrates the use of filter callback functions to efficiently
- implement transparent objects. The filter function used for primary rays, lets
- the ray pass through the geometry if it is entirely transparent. Otherwise the
- shading loop handles the transparency properly, by potentially shooting
- secondary rays. The filter function used for shadow rays accumulates the
- transparency of all surfaces along the ray, and terminates traversal if an
- opaque occluder is hit.
-
-
-=== Tutorial06  ===
-
-
- This tutorial is a simple path tracer, building on tutorial03.
-
- You need to specify an OBJ file and light source at the command line for this
- tutorial to work: ./tutorial06 -i model.obj -ambientlight 1 1 1
-
-
-=== Tutorial07  ===
-
-
- This tutorial demonstrates the use of the hair geometry to render a hairball.
-
 
 === Embree Support and Contact  ===
 

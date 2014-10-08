@@ -7,6 +7,8 @@ Perform the following steps for each Embree release.
 [ ] Check Embree version in kernels/xeonphi/CMakeLists.txt
 [ ] Check Embree Library version in scripts/release_linux.sh
 [ ] Check Embree Library version in scripts/release_macos.sh
+[ ] Check Embree Library version in scripts/install_linux/install.sh
+[ ] Check Embree Library version in scripts/install_macos/install.sh
 
 [ ] Make sure all regression tests pass under Linux  : ./scripts/regression.py render linux   log models/embree/ | tee log/log.txt
 [ ] Make sure all regression tests pass under MacOSX : ./scripts/regression.py render macosx  log models/embree/ | tee log/log.txt
