@@ -89,7 +89,6 @@ namespace embree
 			    const Vec3fa *const vertices)
     {
       hard_edge_index= -1;
-      const Vertex zero( 0.0f );
       size_t i=0;
       vtx = (Vertex)vertices[ h->getStartVertexIndex() ];
       SubdivMesh::HalfEdge *p = (SubdivMesh::HalfEdge*)h;
@@ -115,7 +114,7 @@ namespace embree
 	  /*! mark first hard edge */
 	  hard_edge_index = i-1;
 	  /*! store dummy vertex for the face between the two hard edges */	  
-	  ring[i] = zero;
+	  ring[i] = (Vertex)vtx;
 	  i++;
 
 	  /*! first cycle clock-wise until we found the second edge */	  
@@ -189,20 +188,20 @@ namespace embree
 	  const Vertex new_edge = (vtx + ring[2*i] + dest.ring[2*i-1] + dest.ring[2*i+1]) * 0.25f;
 	  dest.ring[2*i + 0] = new_edge;
 	}
-      dest.ring[0] = (vtx + ring[0] + dest.ring[num_vtx-1] + dest.ring[1]) * 0.25f;
+      dest.ring[0] = (Vertex)(vtx + ring[0] + dest.ring[num_vtx-1] + dest.ring[1]) * 0.25f;
 
       // new vtx
       const float inv_valence = 1.0f / (float)valence;
       F *= inv_valence;
       R *= inv_valence; 
-      dest.vtx = (F + 2.0f * R + (float(valence)-3.0f)*vtx) * inv_valence;
+      dest.vtx = (Vertex)(F + 2.0f * R + (float(valence)-3.0f)*vtx) * inv_valence;
       
       if (unlikely(hard_edge_index != -1))
 	{
-	  dest.ring[ hard_edge_index + 0 ] = 0.5f * (vtx + ring[ hard_edge_index+0 ]);
-	  dest.ring[ hard_edge_index + 1 ] = ring[ hard_edge_index+1 ];
-	  dest.ring[ hard_edge_index + 2 ] = 0.5f * (vtx + ring[ hard_edge_index+2 ]);
-	  dest.vtx =  (ring[hard_edge_index + 0] + ring[hard_edge_index + 2] + 6.0f * vtx) * 1.0f / 8.0f;
+	  dest.ring[ hard_edge_index + 0 ] = 0.5f * (Vertex)(vtx + ring[ hard_edge_index+0 ]);
+	  dest.ring[ hard_edge_index + 1 ] = (Vertex)ring[ hard_edge_index+1 ];
+	  dest.ring[ hard_edge_index + 2 ] = 0.5f * (Vertex)(vtx + ring[ hard_edge_index+2 ]);
+	  dest.vtx =  (Vertex)(ring[hard_edge_index + 0] + ring[hard_edge_index + 2] + 6.0f * vtx) * 1.0f / 8.0f;
 	}
     }
 
@@ -462,10 +461,10 @@ namespace embree
 
     __forceinline void init( FinalQuad& quad ) const
     {
-      quad.vtx[0] = ring[0].vtx;
-      quad.vtx[1] = ring[1].vtx;
-      quad.vtx[2] = ring[2].vtx;
-      quad.vtx[3] = ring[3].vtx;
+      quad.vtx[0] = (Vertex)ring[0].vtx;
+      quad.vtx[1] = (Vertex)ring[1].vtx;
+      quad.vtx[2] = (Vertex)ring[2].vtx;
+      quad.vtx[3] = (Vertex)ring[3].vtx;
     };
 
   };
