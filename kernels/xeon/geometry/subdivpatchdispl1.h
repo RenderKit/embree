@@ -22,8 +22,6 @@
 #include "bvh4/bvh4.h"
 #include "bvh4/bvh4_builder_fast.h"
 
-#define SUBDIVISION_LEVEL_DISPL 8
-
 namespace embree
 {
   struct SubdivPatchDispl1
@@ -109,7 +107,6 @@ namespace embree
         while (!initialized) __pause();
         return (size_t)parent;
       }
-      PING;
       size_t N = 1<<levels;
       size_t M = N+1;
       v.init(M,M,Vec3fa(nan));
@@ -123,17 +120,20 @@ namespace embree
       edgeB.init(M,ring11,ring01);
       edgeL.init(M,ring01,ring00);
       init();
-      
-      for (size_t l=0; l<levels; l++)
+
+      for (size_t l=0; l<levels; l++) {
         subdivide();
+      }
 
       /* displace points */
+#if 1
       for (size_t y=0; y<M; y++) {
         for (size_t x=0; x<M; x++) {
           const Vec3fa p = v(x,y);
           v(x,y) += 0.05f*Vec3fa(1.0f+sinf(40.0f*p.z),1.0f+sinf(40.0f*p.x),1.0f+sinf(40.0f*p.y));
         }
       }
+#endif
 
       size_t S = 0;
       for (ssize_t i=0; i<levels-3; i++) S += (1<<i)*(1<<i);

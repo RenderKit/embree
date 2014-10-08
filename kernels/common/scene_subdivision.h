@@ -50,10 +50,19 @@ namespace embree
       assert(num_vtx>2);
       return ring[2];
     }
+
+    __forceinline bool has_first() const {
+      return hard_edge_index != 0;
+    }
     
     __forceinline const Vec3fa& last() const {
       assert(num_vtx>=4);
       return ring[num_vtx-4];
+    }
+
+    __forceinline bool has_last() const {
+      assert(num_vtx>=2);
+      return (hard_edge_index == -1) || ((num_vtx-4) >= hard_edge_index+2);
     }
 
     __forceinline const Vec3fa& end() const {
@@ -321,6 +330,7 @@ namespace embree
 	  v21 = v11; v11 = v01;
 	  v22 = v12; v12 = v02;
 	}        
+
       K = 2*K;
       init(r0,r1);
     }
@@ -330,9 +340,12 @@ namespace embree
       v(0,0) = ring0.first();
       v(0,1) = ring0.vtx;
       v(0,2) = ring0.end();
+      if (!ring0.has_first()) v(0,0) = 2*v(0,1) - v(0,2);
+
       v(K,0) = ring1.last();
       v(K,1) = ring1.vtx;
       v(K,2) = ring1.begin();
+      if (!ring1.has_last()) v(K,0) = 2*v(K,1) - v(K,2);
     }
     
     friend __forceinline std::ostream &operator<<(std::ostream& out, const CatmullClark1Edge& edge)
