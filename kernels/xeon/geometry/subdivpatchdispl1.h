@@ -109,7 +109,7 @@ namespace embree
         while (!initialized) __pause();
         return (size_t)parent;
       }
-
+      PING;
       size_t N = 1<<levels;
       size_t M = N+1;
       v.init(M,M,Vec3fa(nan));

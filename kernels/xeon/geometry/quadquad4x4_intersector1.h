@@ -94,12 +94,13 @@ namespace embree
         const Vec3fa Ng0 = cross(e1,e0);
         const Vec3fa Ng = Ng0+Ng0;
         const float det = dot(ray.dir,Ng);
+        const float rcpDet = rcp(det);
         const float T   = dot(q,Ng);
-        if (unlikely(det*ray.tnear <= T && T <= det*ray.tfar)) {
-          const float rcpDet = rcp(det);
+        const float t = T*rcpDet;
+        if (unlikely(ray.tnear <= t && t <= ray.tfar)) {
           ray.u    = U0 * rcpDet;
           ray.v    = U1 * rcpDet;
-          ray.tfar = T * rcpDet;
+          ray.tfar = t;
           ray.Ng   = Ng;
           ray.geomID  = geomID;
           ray.primID  = primID;
@@ -118,14 +119,14 @@ namespace embree
       const sse3f e000 = t000_end - t000_start;
       const sse3f s000 = t000_end + t000_start;
       const ssef  u000 = dot(cross(e000,s000),DDDD);
-      if (all(ge_mask(Vec3fa(u000),Vec3fa(0.0f)))) 
+      if (all(ge_mask(Vec3fa(u000),Vec3fa(0.0f))) || all(le_mask(Vec3fa(u000),Vec3fa(0.0f)))) 
         intersectFinish(ray,q00,q01-q00,q11-q01,q00-q11,u000[0],u000[1],u000[2],geomID,primID);
 
       const sse3f t001_start = shuffle<0,2,3,0>(p00), t001_end = shuffle<2,3,0,0>(p00);
       const sse3f e001 = t001_end - t001_start;
       const sse3f s001 = t001_end + t001_start;
       const ssef  u001 = dot(cross(e001,s001),DDDD);
-      if (all(ge_mask(Vec3fa(u001),Vec3fa(0.0f)))) 
+      if (all(ge_mask(Vec3fa(u001),Vec3fa(0.0f))) || all(le_mask(Vec3fa(u001),Vec3fa(0.0f)))) 
         intersectFinish(ray,q00,q11-q00,q10-q11,q00-q10,u001[0],u001[1],u001[2],geomID,primID);
     }
 
@@ -149,18 +150,18 @@ namespace embree
       const avx3f e000_e100 = t000_t100_end - t000_t100_start;
       const avx3f s000_s100 = t000_t100_end + t000_t100_start;
       const avxf  u000_u100 = dot(cross(e000_e100,s000_s100),D8);
-      if (all(ge_mask(Vec3fa(extract<0>(u000_u100)),Vec3fa(0.0f)))) 
+      if (all(ge_mask(Vec3fa(extract<0>(u000_u100)),Vec3fa(0.0f))) || all(le_mask(Vec3fa(extract<0>(u000_u100)),Vec3fa(0.0f)))) 
         intersectFinish(ray,q00,q01-q00,q11-q01,q00-q11,u000_u100[0],u000_u100[1],u000_u100[2],geomID,primID);
-      if (all(ge_mask(Vec3fa(extract<1>(u000_u100)),Vec3fa(0.0f)))) 
+      if (all(ge_mask(Vec3fa(extract<1>(u000_u100)),Vec3fa(0.0f))) || all(le_mask(Vec3fa(extract<1>(u000_u100)),Vec3fa(0.0f)))) 
         intersectFinish(ray,q10,q11-q10,q21-q11,q10-q21,u000_u100[3],u000_u100[4],u000_u100[5],geomID,primID);
 
       const avx3f t001_t101_start = shuffle<0,2,3,0>(p00_p10), t001_t101_end = shuffle<2,3,0,0>(p00_p10);
       const avx3f e001_e101 = t001_t101_end - t001_t101_start;
       const avx3f s001_s101 = t001_t101_end + t001_t101_start;
       const avxf  u001_u101 = dot(cross(e001_e101,s001_s101),D8);
-      if (all(ge_mask(Vec3fa(extract<0>(u001_u101)),Vec3fa(0.0f)))) 
+      if (all(ge_mask(Vec3fa(extract<0>(u001_u101)),Vec3fa(0.0f))) || all(le_mask(Vec3fa(extract<0>(u001_u101)),Vec3fa(0.0f)))) 
         intersectFinish(ray,q00,q11-q00,q10-q11,q00-q10,u000_u100[0],u000_u100[1],u000_u100[2],geomID,primID);
-      if (all(ge_mask(Vec3fa(extract<1>(u001_u101)),Vec3fa(0.0f)))) 
+      if (all(ge_mask(Vec3fa(extract<1>(u001_u101)),Vec3fa(0.0f))) || all(le_mask(Vec3fa(extract<1>(u001_u101)),Vec3fa(0.0f)))) 
         intersectFinish(ray,q10,q21-q10,q20-q21,q10-q20,u000_u100[3],u000_u100[4],u000_u100[5],geomID,primID);
     }
 
