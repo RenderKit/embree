@@ -34,8 +34,8 @@ namespace embree
 {
   struct PrimitiveType
   {
-    /*! constructs the triangle type */
-    PrimitiveType (const char* name, size_t bytes, size_t blockSize, bool needVertices, int intCost) 
+    /*! constructs the primitive type */
+    PrimitiveType (const std::string& name, size_t bytes, size_t blockSize, bool needVertices, int intCost) 
       : name(name), bytes(bytes), blockSize(blockSize), needVertices(needVertices), intCost(intCost) {}
 
     /*! Computes the number of blocks required to store a number of triangles. */
@@ -58,13 +58,25 @@ namespace embree
     int    intCost;         //!< cost of one ray/primitive intersection
   };
 
+  template<typename Primitive1, typename Primitive2>
+    struct PrimitiveType2 : public PrimitiveType
+  {
+    PrimitiveType2 () 
+      : PrimitiveType(std::string(typeid(Primitive1).name()) + ", " + std::string(typeid(Primitive2).name()), 0, 0, 0, 0) {}
+
+    size_t blocks(size_t x) const { return x; }
+    size_t size(const char* This) const { return 0; } // FIXME
+
+    static PrimitiveType2 type;
+  };
+
   template<typename Intersector>
   struct ListIntersector1
   {
     typedef typename Intersector::Primitive Primitive;
     typedef typename Intersector::Precalculations Precalculations;
 
-    static __forceinline void intersect(Precalculations& pre, Ray& ray, const Primitive* prim, size_t num, void* geom)
+    static __forceinline void intersect(Precalculations& pre, Ray& ray, const Primitive* prim, size_t num, void* geom, size_t& lazy_node)
     {
       while (true) {
         Intersector::intersect(pre,ray,*prim,geom);
@@ -73,7 +85,7 @@ namespace embree
       }
     }
 
-    static __forceinline bool occluded(Precalculations& pre, Ray& ray, const Primitive* prim, size_t num, void* geom) 
+    static __forceinline bool occluded(Precalculations& pre, Ray& ray, const Primitive* prim, size_t num, void* geom, size_t& lazy_node) 
     {
       while (true) {
 	if (Intersector::occluded(pre,ray,*prim,geom))
@@ -91,19 +103,48 @@ namespace embree
     typedef typename Intersector::Primitive Primitive;
     typedef typename Intersector::Precalculations Precalculations;
 
-    static __forceinline void intersect(Precalculations& pre, Ray& ray, const Primitive* prim, size_t num, void* geom)
+    static __forceinline void intersect(Precalculations& pre, Ray& ray, const Primitive* prim, size_t num, void* geom, size_t& lazy_node)
     {
       for (size_t i=0; i<num; i++)
         Intersector::intersect(pre,ray,prim[i],geom);
     }
 
-    static __forceinline bool occluded(Precalculations& pre, Ray& ray, const Primitive* prim, size_t num, void* geom) 
+    static __forceinline bool occluded(Precalculations& pre, Ray& ray, const Primitive* prim, size_t num, void* geom, size_t& lazy_node) 
     {
       for (size_t i=0; i<num; i++) {
 	if (Intersector::occluded(pre,ray,prim[i],geom))
 	  return true;
       }
       return false;
+    }
+  };
+
+  template<typename Intersector1, typename Intersector2>
+  struct Switch2Intersector1
+  {
+    typedef typename Intersector1::Primitive Primitive1;
+    typedef typename Intersector2::Primitive Primitive2;
+    typedef void Primitive;
+
+    struct Precalculations 
+    {
+      __forceinline Precalculations (const Ray& ray) 
+        : pre1(ray), pre2(ray) {}
+
+      typename Intersector1::Precalculations pre1;
+      typename Intersector2::Precalculations pre2;
+    };
+
+    static __forceinline void intersect(Precalculations& pre, Ray& ray, Primitive* prim, size_t ty, void* geom, size_t& lazy_node)
+    {
+      if (ty == 0) Intersector1::intersect(pre.pre1,ray,*(Primitive1*)prim,geom,lazy_node);
+      else         Intersector2::intersect(pre.pre2,ray,*(Primitive2*)prim,geom,lazy_node);
+    }
+
+    static __forceinline bool occluded(Precalculations& pre, Ray& ray, Primitive* prim, size_t ty, void* geom, size_t& lazy_node) 
+    {
+      if (ty == 0) return Intersector1::occluded(pre.pre1,ray,*(Primitive1*)prim,geom,lazy_node);
+      else         return Intersector2::occluded(pre.pre2,ray,*(Primitive2*)prim,geom,lazy_node);
     }
   };
 

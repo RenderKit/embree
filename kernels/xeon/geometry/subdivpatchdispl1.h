@@ -17,6 +17,7 @@
 #pragma once
 
 #include "primitive.h"
+#include "quadquad4x4.h"
 #include "common/scene_subdivision.h"
 #include "bvh4/bvh4.h"
 #include "bvh4/bvh4_builder_fast.h"
@@ -39,216 +40,12 @@ namespace embree
     /*! branching width of the tree */
     static const size_t N = 4;
 
-    struct Node16
-    {
-      /*! Clears the node. */
-      __forceinline void clear() {
-        for (size_t i=0; i<4; i++) {
-          lower_x[i] = lower_y[i] = lower_z[i] = pos_inf; 
-          upper_x[i] = upper_y[i] = upper_z[i] = neg_inf;
-        }
-      }
-      
-      /*! Sets bounding box of child. */
-      __forceinline void set(size_t j, size_t i, const BBox3fa& bounds) 
-      {
-        assert(i < N);
-        lower_x[j][i] = bounds.lower.x; lower_y[j][i] = bounds.lower.y; lower_z[j][i] = bounds.lower.z;
-        upper_x[j][i] = bounds.upper.x; upper_y[j][i] = bounds.upper.y; upper_z[j][i] = bounds.upper.z;
-      }
-      
-      /*! intersection with single rays */
-      template<bool robust>
-      __forceinline size_t intersect(size_t i, size_t _nearX, size_t _nearY, size_t _nearZ,
-                                     const sse3f& org, const sse3f& rdir, const sse3f& org_rdir, const ssef& tnear, const ssef& tfar) const
-      {
-        const size_t nearX = 4*_nearX, nearY = 4*_nearY, nearZ = 4*_nearZ; 
-        const size_t farX  = nearX ^ (4*sizeof(ssef)), farY  = nearY ^ (4*sizeof(ssef)), farZ  = nearZ ^ (4*sizeof(ssef));
-#if defined (__AVX2__)
-        const ssef tNearX = msub(load4f((const char*)&lower_x[i]+nearX), rdir.x, org_rdir.x);
-        const ssef tNearY = msub(load4f((const char*)&lower_x[i]+nearY), rdir.y, org_rdir.y);
-        const ssef tNearZ = msub(load4f((const char*)&lower_x[i]+nearZ), rdir.z, org_rdir.z);
-        const ssef tFarX  = msub(load4f((const char*)&lower_x[i]+farX ), rdir.x, org_rdir.x);
-        const ssef tFarY  = msub(load4f((const char*)&lower_x[i]+farY ), rdir.y, org_rdir.y);
-        const ssef tFarZ  = msub(load4f((const char*)&lower_x[i]+farZ ), rdir.z, org_rdir.z);
-#else
-        const ssef tNearX = (load4f((const char*)&lower_x[i]+nearX) - org.x) * rdir.x;
-        const ssef tNearY = (load4f((const char*)&lower_x[i]+nearY) - org.y) * rdir.y;
-        const ssef tNearZ = (load4f((const char*)&lower_x[i]+nearZ) - org.z) * rdir.z;
-        const ssef tFarX  = (load4f((const char*)&lower_x[i]+farX ) - org.x) * rdir.x;
-        const ssef tFarY  = (load4f((const char*)&lower_x[i]+farY ) - org.y) * rdir.y;
-        const ssef tFarZ  = (load4f((const char*)&lower_x[i]+farZ ) - org.z) * rdir.z;
-#endif
-
-        if (robust) {
-          const float round_down = 1.0f-2.0f*float(ulp);
-          const float round_up   = 1.0f+2.0f*float(ulp);
-          const ssef tNear = max(tNearX,tNearY,tNearZ,tnear);
-          const ssef tFar  = min(tFarX ,tFarY ,tFarZ ,tfar);
-          const sseb vmask = round_down*tNear <= round_up*tFar;
-          const size_t mask = movemask(vmask);
-          return mask;
-        }
-        
-#if defined(__SSE4_1__)
-        const ssef tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,tnear));
-        const ssef tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,tfar ));
-        const sseb vmask = cast(tNear) > cast(tFar);
-        const size_t mask = movemask(vmask)^0xf;
-#else
-        const ssef tNear = max(tNearX,tNearY,tNearZ,tnear);
-        const ssef tFar  = min(tFarX ,tFarY ,tFarZ ,tfar);
-        const sseb vmask = tNear <= tFar;
-        const size_t mask = movemask(vmask);
-#endif
-        return mask;
-      }
-
-      template<bool robust>
-      __forceinline size_t intersect(size_t nearX, size_t nearY, size_t nearZ,
-                                     const sse3f& org, const sse3f& rdir, const sse3f& org_rdir, const ssef& tnear, const ssef& tfar) const
-      {
-        const size_t mask0 = intersect<robust>(0, nearX, nearY, nearZ, org, rdir, org_rdir, tnear, tfar);
-        const size_t mask1 = intersect<robust>(1, nearX, nearY, nearZ, org, rdir, org_rdir, tnear, tfar);
-        const size_t mask2 = intersect<robust>(2, nearX, nearY, nearZ, org, rdir, org_rdir, tnear, tfar);
-        const size_t mask3 = intersect<robust>(3, nearX, nearY, nearZ, org, rdir, org_rdir, tnear, tfar);
-        return mask0 | (mask1 << 4) | (mask2 << 8) | (mask3 << 12);
-      }
-
-#if defined (__AVX__)
-
-      /*! intersection with single rays */
-      template<bool robust>
-      __forceinline size_t intersect(size_t i, size_t _nearX, size_t _nearY, size_t _nearZ,
-                                     const avx3f& org, const avx3f& rdir, const avx3f& org_rdir, const avxf& tnear, const avxf& tfar) const
-      {
-        const size_t nearX = 4*_nearX, nearY = 4*_nearY, nearZ = 4*_nearZ; 
-        const size_t farX  = nearX ^ (4*sizeof(ssef)), farY  = nearY ^ (4*sizeof(ssef)), farZ  = nearZ ^ (4*sizeof(ssef));
-#if defined (__AVX2__)
-        const avxf tNearX = msub(load8f((const char*)&lower_x[i]+nearX), rdir.x, org_rdir.x);
-        const avxf tNearY = msub(load8f((const char*)&lower_x[i]+nearY), rdir.y, org_rdir.y);
-        const avxf tNearZ = msub(load8f((const char*)&lower_x[i]+nearZ), rdir.z, org_rdir.z);
-        const avxf tFarX  = msub(load8f((const char*)&lower_x[i]+farX ), rdir.x, org_rdir.x);
-        const avxf tFarY  = msub(load8f((const char*)&lower_x[i]+farY ), rdir.y, org_rdir.y);
-        const avxf tFarZ  = msub(load8f((const char*)&lower_x[i]+farZ ), rdir.z, org_rdir.z);
-#else
-        const avxf tNearX = (load8f((const char*)&lower_x[i]+nearX) - org.x) * rdir.x;
-        const avxf tNearY = (load8f((const char*)&lower_x[i]+nearY) - org.y) * rdir.y;
-        const avxf tNearZ = (load8f((const char*)&lower_x[i]+nearZ) - org.z) * rdir.z;
-        const avxf tFarX  = (load8f((const char*)&lower_x[i]+farX ) - org.x) * rdir.x;
-        const avxf tFarY  = (load8f((const char*)&lower_x[i]+farY ) - org.y) * rdir.y;
-        const avxf tFarZ  = (load8f((const char*)&lower_x[i]+farZ ) - org.z) * rdir.z;
-#endif
-
-        if (robust) {
-          const float round_down = 1.0f-2.0f*float(ulp);
-          const float round_up   = 1.0f+2.0f*float(ulp);
-          const avxf tNear = max(tNearX,tNearY,tNearZ,tnear);
-          const avxf tFar  = min(tFarX ,tFarY ,tFarZ ,tfar);
-          const avxb vmask = round_down*tNear <= round_up*tFar;
-          const size_t mask = movemask(vmask);
-          return mask;
-        }
-        
-#if defined(__AVX2__)
-        const avxf tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,tnear));
-        const avxf tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,tfar ));
-        const avxb vmask = cast(tNear) > cast(tFar);
-        const size_t mask = movemask(vmask)^0xf;
-#else
-        const avxf tNear = max(tNearX,tNearY,tNearZ,tnear);
-        const avxf tFar  = min(tFarX ,tFarY ,tFarZ ,tfar);
-        const avxb vmask = tNear <= tFar;
-        const size_t mask = movemask(vmask);
-#endif
-        return mask;
-      }
-
-      template<bool robust>
-      __forceinline size_t intersect(size_t nearX, size_t nearY, size_t nearZ,
-                                     const avx3f& org, const avx3f& rdir, const avx3f& org_rdir, const avxf& tnear, const avxf& tfar) const
-      {
-        const size_t mask01 = intersect<robust>(0, nearX, nearY, nearZ, org, rdir, org_rdir, tnear, tfar);
-        const size_t mask23 = intersect<robust>(2, nearX, nearY, nearZ, org, rdir, org_rdir, tnear, tfar);
-        return mask01 | (mask23 << 8);
-      }
-      
-#endif
-
-    public:
-      ssef lower_x[4];           //!< X dimension of lower bounds of all 4 children.
-      ssef upper_x[4];           //!< X dimension of upper bounds of all 4 children.
-      ssef lower_y[4];           //!< Y dimension of lower bounds of all 4 children.
-      ssef upper_y[4];           //!< Y dimension of upper bounds of all 4 children.
-      ssef lower_z[4];           //!< Z dimension of lower bounds of all 4 children.
-      ssef upper_z[4];           //!< Z dimension of upper bounds of all 4 children.
-    };
-    
-    struct QuadQuad4x4
-    {
-    public:
-      
-      __forceinline QuadQuad4x4(unsigned x, unsigned y, Array2D<Vec3fa>& vertices, unsigned levels, unsigned geomID, unsigned primID)
-        : bx(x), by(y), vertices(vertices), levels(levels-1), geomID(geomID), primID(primID) {}
-
-      const BBox3fa leafBounds(size_t x, size_t y)
-      {
-        BBox3fa bounds = empty;
-        x *= 2; y *= 2;
-        bounds.extend(vertices(bx+x+0,by+y+0));
-        bounds.extend(vertices(bx+x+1,by+y+0));
-        bounds.extend(vertices(bx+x+2,by+y+0));
-        bounds.extend(vertices(bx+x+0,by+y+1));
-        bounds.extend(vertices(bx+x+1,by+y+1));
-        bounds.extend(vertices(bx+x+2,by+y+1));
-        bounds.extend(vertices(bx+x+0,by+y+2));
-        bounds.extend(vertices(bx+x+1,by+y+2));
-        bounds.extend(vertices(bx+x+2,by+y+2));
-        return bounds;
-      }
-      
-      const BBox3fa build()
-      {
-        BBox3fa bounds = empty;
-
-        const BBox3fa bounds00_0 = leafBounds(0,0); n.set(0,0,bounds00_0); bounds.extend(bounds00_0);
-        const BBox3fa bounds00_1 = leafBounds(1,0); n.set(0,1,bounds00_1); bounds.extend(bounds00_1);
-        const BBox3fa bounds00_2 = leafBounds(0,1); n.set(0,2,bounds00_2); bounds.extend(bounds00_2);
-        const BBox3fa bounds00_3 = leafBounds(1,1); n.set(0,3,bounds00_3); bounds.extend(bounds00_3);
-
-        const BBox3fa bounds10_0 = leafBounds(2,0); n.set(1,0,bounds10_0); bounds.extend(bounds10_0);
-        const BBox3fa bounds10_1 = leafBounds(3,0); n.set(1,1,bounds10_1); bounds.extend(bounds10_1);
-        const BBox3fa bounds10_2 = leafBounds(2,1); n.set(1,2,bounds10_2); bounds.extend(bounds10_2);
-        const BBox3fa bounds10_3 = leafBounds(3,1); n.set(1,3,bounds10_3); bounds.extend(bounds10_3);
-
-        const BBox3fa bounds01_0 = leafBounds(0,2); n.set(2,0,bounds01_0); bounds.extend(bounds01_0);
-        const BBox3fa bounds01_1 = leafBounds(1,2); n.set(2,1,bounds01_1); bounds.extend(bounds01_1);
-        const BBox3fa bounds01_2 = leafBounds(0,3); n.set(2,2,bounds01_2); bounds.extend(bounds01_2);
-        const BBox3fa bounds01_3 = leafBounds(1,3); n.set(2,3,bounds01_3); bounds.extend(bounds01_3);
-
-        const BBox3fa bounds11_0 = leafBounds(2,2); n.set(3,0,bounds11_0); bounds.extend(bounds11_0);
-        const BBox3fa bounds11_1 = leafBounds(3,2); n.set(3,1,bounds11_1); bounds.extend(bounds11_1);
-        const BBox3fa bounds11_2 = leafBounds(2,3); n.set(3,2,bounds11_2); bounds.extend(bounds11_2);
-        const BBox3fa bounds11_3 = leafBounds(3,3); n.set(3,3,bounds11_3); bounds.extend(bounds11_3);
-
-        return bounds;
-      }
-      
-    public:
-      unsigned bx,by;            //!< coordinates of subtree
-      Array2D<Vec3fa>& vertices; //!< pointer to vertices
-      unsigned levels;           //!< number of stored levels
-      unsigned primID;
-      unsigned geomID;
-      Node16 n;  //!< child nodes
-    };
-    
     const std::pair<BBox3fa,BVH4::NodeRef> build(LinearAllocatorPerThread::ThreadAllocator& alloc, unsigned x, unsigned y, unsigned l, unsigned maxDepth)
     {
       if (l == maxDepth) {
         new (&leaves(x,y)) QuadQuad4x4(8*x,8*y,v,3,geomID<true>(),primID<true>());
         const BBox3fa bounds = leaves(x,y).build();
-        return std::pair<BBox3fa,BVH4::NodeRef>(bounds,bvh.encodeLeaf(&leaves(x,y),1));
+        return std::pair<BBox3fa,BVH4::NodeRef>(bounds,bvh.encodeLeaf(&leaves(x,y),0));
       }
       BVH4::Node* node = bvh.allocNode(alloc);
       const std::pair<BBox3fa,BVH4::NodeRef> b00 = build(alloc,2*x+0,2*y+0,l+1,maxDepth); node->set(0,b00.first,b00.second);
@@ -269,7 +66,7 @@ namespace embree
         assert(N == 1);
         const size_t x = prims->geomID();
         const size_t y = prims->primID();
-        return This->bvh.encodeLeaf(&This->leaves(x,y),1);
+        return This->bvh.encodeLeaf(&This->leaves(x,y),0);
       }
 
       SubdivPatchDispl1* This;
@@ -296,16 +93,24 @@ namespace embree
   public:
     
     /*! Construction from vertices and IDs. */
-    __forceinline SubdivPatchDispl1 (Scene* scene,
+    __forceinline SubdivPatchDispl1 (BVH4::NodeRef& parent,
+                                     Scene* scene,
                                      const SubdivMesh::HalfEdge* h, 
                                      const Vec3fa* vertices, 
                                      const unsigned int geom, 
                                      const unsigned int prim, 
                                      const unsigned int level,
                                      const bool last)
-      : bvh(SubdivPatchDispl1::type,scene,false), K(1), geom(geom), prim(prim | (last << 31)), levels(level) // FIXME: set list mode
+      : initializing(0), initialized(0), parent(parent), bvh(PrimitiveType2<QuadQuad4x4,SubdivPatchDispl1>::type,scene,false), h(h), vertices(vertices), K(1), geom(geom), prim(prim), levels(level) { assert(last); }
+
+    size_t initialize()
     {
-      size_t N = 1<<level;
+      if (atomic_add(&initializing,1) != 0) {
+        while (!initialized) __pause();
+        return (size_t)parent;
+      }
+
+      size_t N = 1<<levels;
       size_t M = N+1;
       v.init(M,M,Vec3fa(nan));
         
@@ -319,7 +124,7 @@ namespace embree
       edgeL.init(M,ring01,ring00);
       init();
       
-      for (size_t l=0; l<level; l++)
+      for (size_t l=0; l<levels; l++)
         subdivide();
 
       /* displace points */
@@ -331,18 +136,23 @@ namespace embree
       }
 
       size_t S = 0;
-      for (ssize_t i=0; i<level-3; i++) S += (1<<i)*(1<<i);
+      for (ssize_t i=0; i<levels-3; i++) S += (1<<i)*(1<<i);
 
       leaves.init(N/8,N/8);
 #if 1
       bvh.init(sizeof(BVH4::Node),(N/8)*(N/8),1);
       LinearAllocatorPerThread::ThreadAllocator nodeAlloc(&bvh.alloc);
-      const std::pair<BBox3fa,BVH4::NodeRef> root = build(nodeAlloc,0,0,0,level-3);
+      const std::pair<BBox3fa,BVH4::NodeRef> root = build(nodeAlloc,0,0,0,levels-3);
       bvh.bounds = root.first;
       bvh.root   = root.second;
 #else
-      build(level);
+      build(levels);
 #endif
+
+      parent = bvh.root;
+      __memory_barrier();
+      initialized = 1;
+      return (size_t)bvh.root;
     }
 
     // FIXME: destruction
@@ -368,44 +178,6 @@ namespace embree
       return prim & 0x80000000; 
     }
 
-    /*! builder interface to fill primitive */
-    __forceinline void fill(atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, Scene* scene, const bool list)
-    {
-      const PrimRef& prim = *prims;
-      prims++;
-
-      const unsigned int last   = list && !prims;
-      const unsigned int geomID = prim.geomID();
-      const unsigned int primID = prim.primID();
-      const SubdivMesh* const subdiv_mesh = scene->getSubdivMesh(geomID);
-      new (this) SubdivPatchDispl1(scene,
-                                   &subdiv_mesh->getHalfEdgeForQuad( primID ),
-                                   subdiv_mesh->getVertexPositionPtr(),
-                                   geomID,
-                                   primID,
-                                   SUBDIVISION_LEVEL_DISPL,
-                                   last); 
-    }
-
-    /*! builder interface to fill primitive */
-    __forceinline void fill(const PrimRef* prims, size_t& i, size_t end, Scene* scene, const bool list)
-    {
-      const PrimRef& prim = prims[i];
-      i++;
-
-      const unsigned int last = list && i >= end;
-      const unsigned int geomID = prim.geomID();
-      const unsigned int primID = prim.primID();
-      const SubdivMesh* const subdiv_mesh = scene->getSubdivMesh(geomID);
-      new (this) SubdivPatchDispl1(scene,
-                                   &subdiv_mesh->getHalfEdgeForQuad( primID ),
-                                   subdiv_mesh->getVertexPositionPtr(),
-                                   geomID,
-                                   primID,
-                                   SUBDIVISION_LEVEL_DISPL,
-                                   last); 
-    }
-    
       __forceinline size_t size() const { return K+1; }
       __forceinline Vec3fa& get(size_t x, size_t y) { assert(x<=K); assert(y<=K); return v(x,y); }
 
@@ -551,6 +323,11 @@ namespace embree
       } 
 
   public:
+    volatile atomic_t initializing;
+    volatile size_t initialized;
+    BVH4::NodeRef& parent;
+    const SubdivMesh::HalfEdge* h;
+    const Vec3fa* vertices;
     size_t K;
     size_t levels;
     CatmullClark1Ring ring00,ring01,ring10,ring11;

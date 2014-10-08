@@ -59,6 +59,7 @@ ADD_ISPC_LIBRARY(embree SHARED
   builders/heuristic_strand_partition.cpp
   builders/heuristic_fallback.cpp
     
+  geometry/primitive.cpp
   geometry/bezier1v.cpp
   geometry/bezier1i.cpp
   geometry/triangle1.cpp

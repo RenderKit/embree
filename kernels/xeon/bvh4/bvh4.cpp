@@ -927,7 +927,7 @@ namespace embree
 
   Accel* BVH4::BVH4SubdivPatchDispl1(Scene* scene)
   {
-    BVH4* accel = new BVH4(SubdivPatchDispl1::type,NULL,LeafMode);
+    BVH4* accel = new BVH4(PrimitiveType2<QuadQuad4x4,SubdivPatchDispl1>::type,NULL,LeafMode);
     Accel::Intersectors intersectors;
     intersectors.ptr = accel; 
     intersectors.intersector1 = BVH4SubdivpatchDispl1Intersector1;
