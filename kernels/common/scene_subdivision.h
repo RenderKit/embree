@@ -29,9 +29,6 @@ namespace embree
   struct __aligned(64) FinalQuad
   {
     Vec3fa vtx[4];
-    Vec2f uv[2];
-    unsigned int geomID;
-    unsigned int primID;
   };
 
   struct __aligned(64) CatmullClark1Ring
@@ -71,6 +68,62 @@ namespace embree
 	bounds.extend( ring[i] );
       return bounds;
     }
+
+#if !defined(__MIC__)
+    __forceinline void setRingVtx(const size_t i, const Vec3fa &v)   
+    {
+      ring[i] = v;
+    }
+
+    __forceinline void setCenterVtx(const Vec3fa &v)   
+    {
+      vtx = v;
+    }
+
+   __forceinline Vec3fa centerVtx() const
+    {
+      return vtx;
+    }
+
+    __forceinline Vec3fa ringVtx(const size_t i) const
+    {
+      return ring[i];
+    }
+ 
+    __forceinline Vec3fa loadVtx(const Vec3fa &v)
+    {
+      return v;
+    }
+
+#else
+    __forceinline void setRingVtx(const size_t i, const mic_f &v)   
+    {
+      store4f(&ring[i],v);
+    }
+
+   __forceinline void setCenterVtx(const mic_f &v)   
+    {
+      store4f(&vtx,v);
+    }
+
+   __forceinline mic_f centerVtx() const
+    {
+      return broadcast4to16f(&vtx);
+    }
+
+    __forceinline mic_f ringVtx(const size_t i) const
+    {
+      return broadcast4to16f(&ring[i]);
+    }
+
+    __forceinline mic_f loadVtx(const Vec3fa &v)
+    {
+      return broadcast4to16f(&v);
+    }
+ 
+#endif
+
+
     
     __forceinline void init(const SubdivMesh::HalfEdge *const h,
 			    const Vec3fa *const vertices)
@@ -78,19 +131,19 @@ namespace embree
       hard_edge_index= -1;
 
       size_t i=0;
-      vtx = vertices[ h->getStartVertexIndex() ];
+      setCenterVtx( loadVtx(vertices[ h->getStartVertexIndex() ]) );
       SubdivMesh::HalfEdge *p = (SubdivMesh::HalfEdge*)h;
       bool foundEdge = false;
       do {
         assert( i < 2*MAX_VALENCE );
-	ring[i]   = vertices[ p->next()->getStartVertexIndex() ];
+	setRingVtx(i, loadVtx(vertices[ p->next()->getStartVertexIndex() ]));
 	i++;
 	if (unlikely(!p->hasOpposite())) { foundEdge = true; break; }
 	assert( p->hasOpposite() );
 	p = p->opposite();
 
         assert( i < 2*MAX_VALENCE );
-	ring[i] = vertices[ p->prev()->getStartVertexIndex() ];
+	setRingVtx(i, loadVtx(vertices[ p->prev()->getStartVertexIndex() ]));
 	i++;
         
 	/*! continue with next adjacent edge */
@@ -102,7 +155,7 @@ namespace embree
 	  /*! mark first hard edge */
 	  hard_edge_index = i-1;
 	  /*! store dummy vertex for the face between the two hard edges */	  
-	  ring[i] = Vec3fa(0.0f,0.0f,0.0f);
+	  setRingVtx(i, zero );
 	  i++;
 
 	  /*! first cycle clock-wise until we found the second edge */	  
@@ -116,9 +169,9 @@ namespace embree
 
 
 	  /*! store second hard edge and diagonal vertex*/	  
-	  ring[i] = vertices[ p->getStartVertexIndex() ];
+	  setRingVtx(i,loadVtx(vertices[ p->getStartVertexIndex() ]));
 	  i++;
-	  ring[i] = vertices[ p->prev()->getStartVertexIndex() ];
+	  setRingVtx(i,loadVtx(vertices[ p->prev()->getStartVertexIndex() ]));
 	  i++;
 	  p = p->next();
 	  
@@ -126,11 +179,11 @@ namespace embree
 	  while (p != h ) {
 	    assert( p->hasOpposite() );
 	    assert( i < 2*MAX_VALENCE );
-	    ring[i]   = vertices[ p->next()->getStartVertexIndex() ];
+	    setRingVtx(i, loadVtx(vertices[ p->next()->getStartVertexIndex() ]) );
 	    i++;
 	    p = p->opposite();
 	    assert( i < 2*MAX_VALENCE );
-	    ring[i] = vertices[ p->prev()->getStartVertexIndex() ];
+	    setRingVtx(i, loadVtx(vertices[ p->prev()->getStartVertexIndex() ]) );
 	    i++;
         
 	    /*! continue with next adjacent edge */
@@ -152,44 +205,50 @@ namespace embree
       dest.num_vtx         = num_vtx;
       dest.hard_edge_index = hard_edge_index;
 
-      Vec3fa F(0.0f,0.0f,0.0f);
-      Vec3fa R(0.0f,0.0f,0.0f);
+#if !defined(__MIC__)
+      typedef Vec3fa Vertex;
+#else
+      typedef mic_f Vertex;      
+#endif
+
+      Vertex F( zero );
+      Vertex R( zero );
 
       for (size_t i=0; i<valence-1; i++)
 	{
-	  const Vec3fa new_face = (vtx + ring[2*i] + ring[2*i+1] + ring[2*i+2]) * 0.25f;
+	  const Vertex new_face = (centerVtx() + ringVtx(2*i) + ringVtx(2*i+1) + ringVtx(2*i+2)) * 0.25f;
 	  F += new_face;
-	  R += (vtx + ring[2*i]) * 0.5f;
-	  dest.ring[2*i + 1] = new_face;
+	  R += (centerVtx() + ringVtx(2*i)) * 0.5f;
+	  dest.setRingVtx(2*i + 1,new_face);
 	}
 
       {
-        const Vec3fa new_face = (vtx + ring[num_vtx-2] + ring[num_vtx-1] + ring[0]) * 0.25f;
+        const Vertex new_face = (centerVtx() + ringVtx(num_vtx-2) + ringVtx(num_vtx-1) + ringVtx(0)) * 0.25f;
         F += new_face;
-        R += (vtx + ring[num_vtx-2]) * 0.5f;
-        dest.ring[num_vtx-1] = new_face;
+        R += (centerVtx() + ringVtx(num_vtx-2)) * 0.5f;
+        dest.setRingVtx(num_vtx-1,new_face);
       }
       
       // new edge vertices
       for (size_t i=1; i<valence; i++)
 	{
-	  const Vec3fa new_edge = (vtx + ring[2*i] + dest.ring[2*i-1] + dest.ring[2*i+1]) * 0.25f;
-	  dest.ring[2*i + 0] = new_edge;
+	  const Vertex new_edge = (centerVtx() + ringVtx(2*i) + dest.ringVtx(2*i-1) + dest.ringVtx(2*i+1)) * 0.25f;
+	  dest.setRingVtx(2*i + 0,new_edge);
 	}
-      dest.ring[0] = (vtx + ring[0] + dest.ring[num_vtx-1] + dest.ring[1]) * 0.25f;
+      dest.setRingVtx(0, (centerVtx() + ringVtx(0) + dest.ringVtx(num_vtx-1) + dest.ringVtx(1)) * 0.25f );
 
       // new vtx
       const float inv_valence = 1.0f / (float)valence;
       F *= inv_valence;
       R *= inv_valence; 
-      dest.vtx = (F + 2.0f * R + (float)(valence-3)*vtx) * inv_valence;
+      dest.setCenterVtx( (F + 2.0f * R + (float)(valence-3)*centerVtx()) * inv_valence );
       
-      if (hard_edge_index != -1)
+      if (unlikely(hard_edge_index != -1))
 	{
-	  dest.ring[ hard_edge_index + 0 ] = 0.5f * (vtx + ring[hard_edge_index+0]);
-	  dest.ring[ hard_edge_index + 1 ] = ring[hard_edge_index+1];
-	  dest.ring[ hard_edge_index + 2 ] = 0.5f * (vtx + ring[hard_edge_index+2]);
-	  dest.vtx = (ring[ hard_edge_index + 0 ] + ring[ hard_edge_index + 2 ] + 6.0f * vtx) * 1.0f / 8.0f;
+	  dest.setRingVtx( hard_edge_index + 0, 0.5f * (centerVtx() + ringVtx(hard_edge_index+0)) );
+	  dest.setRingVtx( hard_edge_index + 1, ringVtx(hard_edge_index+1) );
+	  dest.setRingVtx( hard_edge_index + 2, 0.5f * (centerVtx() + ringVtx(hard_edge_index+2)) );
+	  dest.setCenterVtx( (ringVtx(hard_edge_index + 0) + ringVtx(hard_edge_index + 2) + 6.0f * centerVtx()) * 1.0f / 8.0f );
 	}
     }
 
@@ -444,10 +503,6 @@ namespace embree
       quad.vtx[1] = ring[1].vtx;
       quad.vtx[2] = ring[2].vtx;
       quad.vtx[3] = ring[3].vtx;
-      // uv[0] = 
-      // uv[1] = 
-      quad.geomID = geomID;
-      quad.primID = primID;
     };
 
   };
@@ -666,6 +721,7 @@ namespace embree
       }
     };
 
+
   class RegularCatmullClarkPatch : public RegularCatmullClarkPatchT<Vec3fa> 
   {
   public:
@@ -676,10 +732,6 @@ namespace embree
       quad.vtx[1] = v[1][2];
       quad.vtx[2] = v[2][2];
       quad.vtx[3] = v[2][1];
-      // uv[0] = 
-      // uv[1] = 
-      quad.geomID = 0;
-      quad.primID = 0;
     };
 
     __forceinline void init_limit( FinalQuad& quad ) const
@@ -690,21 +742,94 @@ namespace embree
       const Vec3fa limit_v2 = computeLimitVertex(2,2);
       const Vec3fa limit_v3 = computeLimitVertex(2,1);
       
-      const Vec3fa limit_normal0 = computeLimitNormal(1,1);
-      const Vec3fa limit_normal1 = computeLimitNormal(1,2);
-      const Vec3fa limit_normal2 = computeLimitNormal(2,2);
-      const Vec3fa limit_normal3 = computeLimitNormal(2,1);
+      /* const Vec3fa limit_normal0 = computeLimitNormal(1,1); */
+      /* const Vec3fa limit_normal1 = computeLimitNormal(1,2); */
+      /* const Vec3fa limit_normal2 = computeLimitNormal(2,2); */
+      /* const Vec3fa limit_normal3 = computeLimitNormal(2,1); */
 
       quad.vtx[0] = limit_v0;
       quad.vtx[1] = limit_v1;
       quad.vtx[2] = limit_v2;
       quad.vtx[3] = limit_v3;
-
-      quad.geomID = 0;
-      quad.primID = 0;
     };
 
+#if !defined(__MIC__)
 
+    __forceinline Vec3fa loadVtx(const Vec3fa &v)
+    {
+      return v;
+    }
+
+    __forceinline void storeVtx(const unsigned int y,
+				const unsigned int x, 
+				const Vec3fa &vtx)
+    {
+      v[y][x] = vtx;
+    }
+#else
+
+    __forceinline mic_f loadVtx(const Vec3fa &v)
+    {
+      return broadcast4to16f(&v);
+    }
+
+    __forceinline void storeVtx(const unsigned int y,
+				const unsigned int x, 
+				const mic_f &vtx)
+    {
+      store4f(&v[y][x],vtx);
+    }
+
+#endif
+
+    __forceinline void init(const SubdivMesh::HalfEdge *const first_half_edge,
+			    const Vec3fa *const vertices)
+    {
+      // quad(0,0)
+      const SubdivMesh::HalfEdge *v11 = first_half_edge;
+      const SubdivMesh::HalfEdge *v01 = v11->nextAdjacentEdge()->opposite();
+      const SubdivMesh::HalfEdge *v00 = v01->prev();
+      const SubdivMesh::HalfEdge *v10 = v00->prev();
+
+      storeVtx(1,1, loadVtx( vertices[v11->getStartVertexIndex()] ));
+      storeVtx(1,0, loadVtx( vertices[v10->getStartVertexIndex()] ));
+      storeVtx(0,0, loadVtx( vertices[v00->getStartVertexIndex()] ));
+      storeVtx(0,1, loadVtx( vertices[v01->getStartVertexIndex()] ));
+
+      // quad(0,2)
+      const SubdivMesh::HalfEdge *v12 = v11->next();
+      const SubdivMesh::HalfEdge *v13 = v12->nextAdjacentEdge()->opposite();
+      const SubdivMesh::HalfEdge *v03 = v13->prev();
+      const SubdivMesh::HalfEdge *v02 = v03->prev();
+      
+
+      storeVtx(1,2, loadVtx( vertices[v12->getStartVertexIndex()] ) );
+      storeVtx(1,3, loadVtx( vertices[v13->getStartVertexIndex()] ) );
+      storeVtx(0,3, loadVtx( vertices[v03->getStartVertexIndex()] ) );
+      storeVtx(0,2, loadVtx( vertices[v02->getStartVertexIndex()] ) );
+
+      // quad(2,2)
+      const SubdivMesh::HalfEdge *v22 = v12->next();
+      const SubdivMesh::HalfEdge *v32 = v22->nextAdjacentEdge()->opposite();
+      const SubdivMesh::HalfEdge *v33 = v32->prev();
+      const SubdivMesh::HalfEdge *v23 = v33->prev();
+
+      storeVtx(2,2, loadVtx( vertices[v22->getStartVertexIndex()] ) );
+      storeVtx(3,2, loadVtx( vertices[v32->getStartVertexIndex()] ) );
+      storeVtx(3,3, loadVtx( vertices[v33->getStartVertexIndex()] ) );
+      storeVtx(2,3, loadVtx( vertices[v23->getStartVertexIndex()] ) );      
+
+      // quad(2,0)
+      const SubdivMesh::HalfEdge *v21 = v22->next();
+      const SubdivMesh::HalfEdge *v20 = v21->nextAdjacentEdge()->opposite();
+      const SubdivMesh::HalfEdge *v30 = v20->prev();
+      const SubdivMesh::HalfEdge *v31 = v30->prev();
+
+      storeVtx(2,0, loadVtx( vertices[v20->getStartVertexIndex()] ) );
+      storeVtx(3,0, loadVtx( vertices[v30->getStartVertexIndex()] ) );
+      storeVtx(3,1, loadVtx( vertices[v31->getStartVertexIndex()] ) );
+      storeVtx(2,1, loadVtx( vertices[v21->getStartVertexIndex()] ) );
+    }
 
     __forceinline BBox3fa bounds() const
     {

@@ -167,7 +167,7 @@ namespace embree
 { 
   template<> __forceinline Vec4<float>::Vec4( const Vec3fa& a ) { x = a.x; y = a.y; z = a.z; w = a.w; }
 
-#if defined (__SSE__)
+#if defined (__SSE__) 
   template<> __forceinline Vec4<ssef>::Vec4( const Vec3fa& a ) { 
     const ssef v = ssef(a); x = shuffle<0,0,0,0>(v); y = shuffle<1,1,1,1>(v); z = shuffle<2,2,2,2>(v); w = shuffle<3,3,3,3>(v); 
   }
@@ -192,7 +192,7 @@ namespace embree
 #endif
 
 #if defined(__MIC__)
-  template<> __forceinline Vec4<ssef>::Vec4( const Vec3fa& a ) : x(a.x), y(a.y), z(a.z), w(a.w) {}
+  //template<> __forceinline Vec4<ssef>::Vec4( const Vec3fa& a ) : x(a.x), y(a.y), z(a.z), w(a.w) {}
   template<> __forceinline Vec4<mic_f>::Vec4( const Vec3fa& a ) : x(a.x), y(a.y), z(a.z), w(a.w) {}
 #endif
 }

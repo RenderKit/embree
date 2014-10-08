@@ -20,7 +20,7 @@
 
 /* include SSE emulation for Xeon Phi */
 #if defined (__MIC__)
-#  include "simd/sse_mic.h"
+//#  include "simd/sse_mic.h"
 #  include "simd/mic.h"
 #endif
 

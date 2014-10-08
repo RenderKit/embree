@@ -67,8 +67,6 @@ namespace embree
     {
       for (size_t i=0;i<4;i++)
 	patch.ring[i].init(first_half_edge + i,vertices);
-      patch.geomID = geomID;
-      patch.primID = primID;
     }
 
     __forceinline void init( FinalQuad& quad ) const
@@ -77,10 +75,6 @@ namespace embree
       quad.vtx[1] = getQuadVertex(1);
       quad.vtx[2] = getQuadVertex(2);
       quad.vtx[3] = getQuadVertex(3);
-      // uv[0] = 
-      // uv[1] = 
-      quad.geomID = geomID;
-      quad.primID = primID;
     };
 
     __forceinline void init( RegularCatmullClarkPatch& cc_patch) const

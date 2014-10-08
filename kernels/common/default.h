@@ -192,7 +192,7 @@ namespace embree
     return "UNKNOWN";
   }
 
-#if defined (__SSE__) || defined (__MIC__)
+#if defined (__SSE__) // || defined (__MIC__)
   typedef Vec2<sseb> sse2b;
   typedef Vec3<sseb> sse3b;
   typedef Vec2<ssei> sse2i;
