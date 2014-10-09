@@ -853,7 +853,7 @@ namespace embree
       Vec3fa q( zero );
       const unsigned int valence = h->getEdgeValence();
       const float n = (float)valence;
-      const float sigma = -sqrtf((4.0f + cosf(M_PI/n) * cosf(M_PI/n)));
+      const float sigma = 1.0f / sqrtf((4.0f + cosf(M_PI/n) * cosf(M_PI/n)));
       SubdivMesh::HalfEdge *p = (SubdivMesh::HalfEdge*)h;
       unsigned int i=0;
       do 
