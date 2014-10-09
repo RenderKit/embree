@@ -312,11 +312,13 @@ namespace embree
 #if 0 // FIXME: remove
     SubdivMesh* subdivmesh = getSubdivMesh(0);
     subdivmesh->initializeHalfEdgeStructures();
-    //size_t N = subdivmesh->numFaces;
-    size_t N = 1;
+    size_t N = subdivmesh->numFaces;
+    //size_t N = 1;
     for (size_t i=0; i<N; i++)
     {
-      SubdivPatchDispl1* patch = new SubdivPatchDispl1(this,&subdivmesh->halfEdges[4*i], subdivmesh->getVertexPositionPtr(0), 0, i, 8, true); // FIXME: wrong geomID
+      BVH4::NodeRef root;
+      SubdivPatchDispl1* patch = new SubdivPatchDispl1(root,this,&subdivmesh->halfEdges[4*i], subdivmesh->getVertexPositionPtr(0), 0, i, 8, true); // FIXME: wrong geomID
+      patch->initialize();
       const size_t width  = patch->size();
       const size_t height = patch->size();
       TriangleMesh* mesh = new TriangleMesh (this, RTC_GEOMETRY_STATIC, (width-1)*(height-1)*2, width*height, 1);
