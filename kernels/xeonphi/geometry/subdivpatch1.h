@@ -50,6 +50,7 @@ namespace embree
       if (first_half_edge->isFaceRegular()) 
 	{
 	  flags |= REGULAR_PATCH;
+	  init( patch );
 	}
     }
 
@@ -88,6 +89,10 @@ namespace embree
     unsigned int subdivision_level;
     unsigned int geomID;                          //!< geometry ID of the subdivision mesh this patch belongs to
     unsigned int primID;                          //!< primitive ID of this subdivision patch
+
+    unsigned int dummy[8];
+
+    RegularCatmullClarkPatch patch;
   };
 
   __forceinline std::ostream &operator<<(std::ostream &o, const SubdivPatch1 &p)

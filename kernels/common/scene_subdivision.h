@@ -785,7 +785,14 @@ namespace embree
     {
       return load16f(&v[i][0]);
     }
-    
+
+    __forceinline void prefetchData() const
+    {
+      prefetch<PFHINT_L1>(&v[0][0]);
+      prefetch<PFHINT_L1>(&v[1][0]);
+      prefetch<PFHINT_L1>(&v[2][0]);
+      prefetch<PFHINT_L1>(&v[3][0]);
+    }
 #endif
 
     __forceinline Vec3fa evalCubicBSplinePatch(const float uu, const float vv) const

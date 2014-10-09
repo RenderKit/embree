@@ -64,8 +64,10 @@ namespace embree
 #if 1
 	if (likely(subdiv_patch.isRegular()))
 	  {
-	    RegularCatmullClarkPatch regular_patch;
-	    subdiv_patch.init( regular_patch );
+	    //RegularCatmullClarkPatch regular_patch;
+	    //subdiv_patch.init( regular_patch );
+	    const RegularCatmullClarkPatch &regular_patch = subdiv_patch.patch;
+	    regular_patch.prefetchData();
 	    subdivide_intersect1(rayIndex,dir_xyz,org_xyz,ray16,regular_patch,subdiv_patch.geomID,subdiv_patch.primID,g_subdivision_level);
 	  }
 	else
