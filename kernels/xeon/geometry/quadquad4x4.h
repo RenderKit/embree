@@ -117,7 +117,7 @@ namespace embree
         const avxf tFarX  = msub(load8f((const char*)&lower_x[i]+farX ), rdir.x, org_rdir.x);
         const avxf tFarY  = msub(load8f((const char*)&lower_x[i]+farY ), rdir.y, org_rdir.y);
         const avxf tFarZ  = msub(load8f((const char*)&lower_x[i]+farZ ), rdir.z, org_rdir.z);
-#else
+	#else
         const avxf tNearX = (load8f((const char*)&lower_x[i]+nearX) - org.x) * rdir.x;
         const avxf tNearY = (load8f((const char*)&lower_x[i]+nearY) - org.y) * rdir.y;
         const avxf tNearZ = (load8f((const char*)&lower_x[i]+nearZ) - org.z) * rdir.z;
@@ -136,17 +136,17 @@ namespace embree
           return mask;
         }
         
-#if defined(__AVX2__)
+/*#if defined(__AVX2__) // FIXME: not working for cube
         const avxf tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,tnear));
         const avxf tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,tfar ));
         const avxb vmask = cast(tNear) > cast(tFar);
         const size_t mask = movemask(vmask)^0xf;
-#else
+	#else*/
         const avxf tNear = max(tNearX,tNearY,tNearZ,tnear);
         const avxf tFar  = min(tFarX ,tFarY ,tFarZ ,tfar);
         const avxb vmask = tNear <= tFar;
         const size_t mask = movemask(vmask);
-#endif
+//#endif
         return mask;
       }
 

@@ -917,6 +917,7 @@ PRINT(CORRECT_numPrims);
 	const size_t minAllocNodes = (threadCount+1) * ALLOCATOR_NODE_BLOCK_SIZE; 
 	const size_t numNodes = (size_t)((numPrims+3)/4) + minAllocNodes;
 	allocateMemoryPools(numPrims,numNodes,sizeof(BVH4i::Node),sizeof(SubdivPatch1));
+	DBG_PRINT( sizeof(SubdivPatch1) );
       }
   }
 

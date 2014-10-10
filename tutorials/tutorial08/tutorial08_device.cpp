@@ -269,7 +269,7 @@ unsigned int test_offsets[FACES] = {0, 4, 8, 12, 16, 20};
 void DisplacementFunc(void* ptr, unsigned geomID, unsigned primID, RTCFloat2* uv, RTCFloat3a* dP, size_t N)
 {
   for (size_t i=0; i<N; i++) {
-    (Vec3fa&)dP[i] = 0.1f*Vec3fa(sin(10.0f*uv[i].x),sin(10.0f*uv[i].y),0.0f);
+    (Vec3fa&)dP[i] = 0.02f*Vec3fa(sin(100.0f*uv[i].x),sin(100.0f*uv[i].y),0.0f);
   }
 }
 
