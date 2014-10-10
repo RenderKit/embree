@@ -205,6 +205,34 @@ namespace embree
 	}
     }
 
+
+    __forceinline Vec3fa getLimitVtx() const
+    {
+      Vertex F( 0.0f );
+      Vertex E( 0.0f );
+
+      for (size_t i=0; i<valence-1; i++)
+	{
+	  const Vertex new_face = (vtx + ring[2*i] + ring[2*i+1] + ring[2*i+2]) * 0.25f;
+	  F += new_face;
+	  E += (vtx + ring[2*i]) * 0.5f;
+	}
+
+      {
+        const Vertex new_face = (vtx + ring[num_vtx-2] + ring[num_vtx-1] + ring[0]) * 0.25f;
+        F += new_face;
+        E += (vtx + ring[num_vtx-2]) * 0.5f;
+      }
+
+      DBG_PRINT(E);
+
+      DBG_PRINT(F);
+
+      const float n = (float)valence;
+      return (Vertex)(n*n*vtx+4*E+F) / ((n+5.0f)*n);
+      
+    }
+
     friend __forceinline std::ostream &operator<<(std::ostream &o, const CatmullClark1Ring &c)
       {
 	o << "vtx " << c.vtx << " valence " << c.valence << " num_vtx " << c.num_vtx << " hard_edge_index " << c.hard_edge_index << " ring: " << std::endl;
@@ -874,9 +902,7 @@ namespace embree
        do 
          {
 	   valence++;
-           //sum_edge_midpoints += p->getAvgEdgeAndFacePointVertex(vertices);
-           sum_edge_midpoints += p->getEndVertex(vertices); // p->getEdgeMidPointVertex(vertices);
-
+           sum_edge_midpoints += p->getEdgeMidPointVertex(vertices);
            sum_face_midpoints += p->getFaceMidPointVertex(vertices);
            assert( p->hasOpposite() );
            p = p->opposite();
@@ -954,6 +980,7 @@ namespace embree
       DBG_PRINT( p1() );
       DBG_PRINT( p2() );
       DBG_PRINT( p3() );
+
 
       const SubdivMesh::HalfEdge *const h_e0_p = h_p0;
       const SubdivMesh::HalfEdge *const h_e1_p = h_p1;

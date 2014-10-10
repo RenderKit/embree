@@ -261,4 +261,11 @@ namespace embree
   inline std::ostream& operator<<(std::ostream& cout, const Vec3fa& a) {
     return cout << "(" << a.x << ", " << a.y << ", " << a.z << ", " << a.w << ")";
   }
+
+  inline std::ostream& operator<<(std::ostream& cout, const Vec3fa_t& a) {
+    const float * const f = (float*)&a.m512;
+    return cout << "(" << f[0] << ", " << f[1] << ", " << f[2] << ", " << f[3] << ")";
+
+  }
+
 }
