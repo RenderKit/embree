@@ -684,7 +684,7 @@ namespace embree
     };
 
 
-  class RegularCatmullClarkPatch : public RegularCatmullClarkPatchT<Vec3fa> 
+  class __aligned(64) RegularCatmullClarkPatch : public RegularCatmullClarkPatchT<Vec3fa> 
   {
   public:
 
@@ -695,6 +695,11 @@ namespace embree
       quad.vtx[2] = v[2][2];
       quad.vtx[3] = v[2][1];
     };
+
+    __forceinline Vec3fa limitVtx0() const { return computeLimitVertex(1,1); }
+    __forceinline Vec3fa limitVtx1() const { return computeLimitVertex(1,2); }
+    __forceinline Vec3fa limitVtx2() const { return computeLimitVertex(2,2); }
+    __forceinline Vec3fa limitVtx3() const { return computeLimitVertex(2,1); }
 
     __forceinline void init_limit( FinalQuad& quad ) const
     {
@@ -816,9 +821,16 @@ namespace embree
     } 
 
 
-  class GregoryPatch : public RegularCatmullClarkPatchT<Vec3fa> 
+  class __aligned(64) GregoryPatch : public RegularCatmullClarkPatchT<Vec3fa> 
   {
   public:
+
+#if !defined(__MIC__)
+    typedef Vec3fa Vertex;
+#else
+    typedef Vec3fa_t Vertex;      
+#endif
+
     Vec3fa f[2][2]; // need 16 + 4 = 20 control points
 
     GregoryPatch() {
@@ -855,13 +867,16 @@ namespace embree
     Vec3fa initCornerVertex(const SubdivMesh::HalfEdge *const h,
 			    const Vec3fa *const vertices)
     {
-      Vec3fa sum_edge_midpoints( zero );
-      Vec3fa sum_face_midpoints( zero );
+      Vertex sum_edge_midpoints( 0.0f );
+      Vertex sum_face_midpoints( 0.0f );
       SubdivMesh::HalfEdge *p = (SubdivMesh::HalfEdge*)h;
       unsigned int valence = 0;
        do 
          {
-           sum_edge_midpoints += p->getEdgeMidPointVertex(vertices);
+	   valence++;
+           //sum_edge_midpoints += p->getAvgEdgeAndFacePointVertex(vertices);
+           sum_edge_midpoints += p->getEndVertex(vertices); // p->getEdgeMidPointVertex(vertices);
+
            sum_face_midpoints += p->getFaceMidPointVertex(vertices);
            assert( p->hasOpposite() );
            p = p->opposite();
@@ -869,7 +884,7 @@ namespace embree
            p = p->next();
          } while( p != h);
        const float n = (float)valence;
-       return (n-3.0f)/(n+5.0f) * h->getStartVertex(vertices) + 4.0f/(n*(n+5.0f)) * (sum_edge_midpoints + sum_face_midpoints);   
+       return (n*n * h->getStartVertex(vertices) + 4.0f * sum_edge_midpoints + sum_face_midpoints) / (n*(n+5.0f)); // only quads
     }
 
 
@@ -877,7 +892,7 @@ namespace embree
                           const Vec3fa *const vertices,
                           const Vec3fa &p_vtx)
     {
-      Vec3fa q( zero );
+      Vertex q( 0.0f );
       const unsigned int valence = h->getEdgeValence();
       const float n = (float)valence;
       const float sigma = 1.0f / sqrtf((4.0f + cosf(M_PI/n) * cosf(M_PI/n)));
@@ -885,8 +900,8 @@ namespace embree
       unsigned int i=0;
       do 
         {
-          const Vec3fa m_i = p->getEdgeMidPointVertex(vertices);
-          const Vec3fa c_i = p->getFaceMidPointVertex(vertices);
+          const Vertex m_i = p->getEdgeMidPointVertex(vertices);
+          const Vertex c_i = p->getFaceMidPointVertex(vertices);
           q+= (1.0f-sigma*cosf(M_PI/n))*cosf((2.0f*M_PI*(float)i)/n) * m_i + 2.0f*sigma*cosf((2.0f*M_PI*(float)i+M_PI)/n) * c_i; 
           assert( p->hasOpposite() );
           p = p->opposite();
@@ -935,6 +950,11 @@ namespace embree
       p2() = initCornerVertex(h_p2,vertices);
       p3() = initCornerVertex(h_p3,vertices);
 
+      DBG_PRINT( p0() );
+      DBG_PRINT( p1() );
+      DBG_PRINT( p2() );
+      DBG_PRINT( p3() );
+
       const SubdivMesh::HalfEdge *const h_e0_p = h_p0;
       const SubdivMesh::HalfEdge *const h_e1_p = h_p1;
       const SubdivMesh::HalfEdge *const h_e2_p = h_p2;
@@ -944,6 +964,11 @@ namespace embree
       e1_p() = initEdgeVertex(h_e1_p, vertices, p1());
       e2_p() = initEdgeVertex(h_e2_p, vertices, p2());
       e3_p() = initEdgeVertex(h_e3_p, vertices, p3());
+
+      DBG_PRINT( e0_p() );
+      DBG_PRINT( e1_p() );
+      DBG_PRINT( e2_p() );
+      DBG_PRINT( e3_p() );
 
       const SubdivMesh::HalfEdge *const h_e0_m = h_p3->opposite();
       const SubdivMesh::HalfEdge *const h_e1_m = h_p0->opposite();
