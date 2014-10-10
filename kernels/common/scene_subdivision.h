@@ -864,7 +864,7 @@ namespace embree
           assert( p->hasOpposite() );
           p = p->opposite();
            /*! continue with next adjacent edge */
-           p = p->next();
+	  p = p->next();
         } while( p != h);
       q *= 2.0f/n;
       const float lambda = 1.0f/16.0f*(5.0f+cosf((2.0f*M_PI)/n)+cosf(M_PI/n)*sqrtf(18.0f+2.0f*cosf((2.0f*M_PI)/n)));
