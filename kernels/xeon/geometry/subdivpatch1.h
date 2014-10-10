@@ -56,7 +56,34 @@ namespace embree
     {
       flags = 0;
       if (first_half_edge->isFaceRegular()) 
-	flags |= REGULAR_PATCH;      
+        {
+          flags |= REGULAR_PATCH;
+#if 0
+          RegularCatmullClarkPatch patch;
+
+          init( patch );
+	  DBG_PRINT( patch );
+
+	  DBG_PRINT( patch.limitVtx0() );
+	  DBG_PRINT( patch.limitVtx1() );
+	  DBG_PRINT( patch.limitVtx2() );
+	  DBG_PRINT( patch.limitVtx3() );
+
+	  DBG_PRINT( patch.evalCubicBSplinePatch(0.0f,0.0f) );
+	  DBG_PRINT( patch.evalCubicBSplinePatch(1.0f,0.0f) );
+	  DBG_PRINT( patch.evalCubicBSplinePatch(1.0f,1.0f) );
+	  DBG_PRINT( patch.evalCubicBSplinePatch(0.0f,1.0f) );
+
+	  DBG_PRINT( patch.evalCubicBSplinePatch(0.5f,0.0f) );
+	  DBG_PRINT( patch.evalCubicBSplinePatch(0.0f,0.5f) );
+
+	  GregoryPatch gpatch;
+	  gpatch.init( first_half_edge, vertices );
+
+	  DBG_PRINT(gpatch);
+	  exit(0);
+#endif
+        }     
     }
 
     __forceinline bool isRegular() const
