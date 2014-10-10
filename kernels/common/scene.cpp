@@ -133,7 +133,7 @@ namespace embree
         switch (mode) {
         case /*0b00*/ 0: 
 #if defined (__TARGET_AVX__)
-          if (has_feature(AVX)) // on AVX machines BVH8 gives lower performance, only enable on AVX2!
+          if (has_feature(AVX))
 	  {
             if (isHighQuality()) accels.add(BVH8::BVH8Triangle4SpatialSplit(this)); 
             else                 accels.add(BVH8::BVH8Triangle4ObjectSplit(this)); 

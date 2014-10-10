@@ -821,7 +821,36 @@ namespace embree
   public:
     Vec3fa f[2][2]; // need 16 + 4 = 20 control points
 
-    GregoryPatch() {}
+    GregoryPatch() {
+      memset(this,0,sizeof(GregoryPatch));
+    }
+
+    Vec3fa& p0() { return v[0][0]; }
+    Vec3fa& p1() { return v[0][3]; }
+    Vec3fa& p2() { return v[3][3]; }
+    Vec3fa& p3() { return v[3][0]; }
+
+    Vec3fa& e0_p() { return v[0][1]; }
+    Vec3fa& e0_m() { return v[1][0]; }
+
+    Vec3fa& e1_p() { return v[1][3]; }
+    Vec3fa& e1_m() { return v[0][2]; }
+
+    Vec3fa& e2_p() { return v[3][2]; }
+    Vec3fa& e2_m() { return v[2][3]; }
+ 
+    Vec3fa& e3_p() { return v[2][0]; }
+    Vec3fa& e3_m() { return v[3][1]; }
+
+    Vec3fa& f0_p() { return v[1][1]; }
+    Vec3fa& f1_p() { return v[1][2]; }
+    Vec3fa& f2_p() { return v[2][2]; }
+    Vec3fa& f3_p() { return v[2][1]; }
+
+    Vec3fa& f0_m() { return f[0][0]; }
+    Vec3fa& f1_m() { return f[0][1]; }
+    Vec3fa& f2_m() { return f[1][1]; }
+    Vec3fa& f3_m() { return f[1][0]; }
 
     Vec3fa initCornerVertex(const SubdivMesh::HalfEdge *const h,
 			    const Vec3fa *const vertices)
@@ -844,11 +873,9 @@ namespace embree
     }
 
 
-    void getEdgeVertices(const SubdivMesh::HalfEdge *const h,
-                         const Vec3fa *const vertices,
-                         const Vec3fa &p0,
-                         Vec3fa &e_pos,
-                         Vec3fa &e_neg)
+    Vec3fa initEdgeVertex(const SubdivMesh::HalfEdge *const h,
+                          const Vec3fa *const vertices,
+                          const Vec3fa &p_vtx)
     {
       Vec3fa q( zero );
       const unsigned int valence = h->getEdgeValence();
@@ -868,14 +895,77 @@ namespace embree
         } while( p != h);
       q *= 2.0f/n;
       const float lambda = 1.0f/16.0f*(5.0f+cosf((2.0f*M_PI)/n)+cosf(M_PI/n)*sqrtf(18.0f+2.0f*cosf((2.0f*M_PI)/n)));
-      e_pos = p0 + 2.0f/3.0f*lambda*q;
-      e_neg = p0 - 2.0f/3.0f*lambda*q;
+      return p_vtx + 2.0f/3.0f*lambda*q;
+    }
+
+    Vec3fa initFaceVertex(const SubdivMesh::HalfEdge *const h,
+                          const Vec3fa *const vertices,
+                          const Vec3fa &p_vtx,
+			  const Vec3fa &e_p_vtx,
+			  const Vec3fa &e_m_vtx,
+			  const unsigned int valence0,
+			  const unsigned int valence1)
+    {
+      const Vec3fa center_i       = h->getFaceMidPointVertex(vertices);
+      const Vec3fa center_i_m_1   = h->opposite()->getFaceMidPointVertex(vertices);
+      const Vec3fa midpoint_i_p_1 = h->prev()->getEdgeMidPointVertex(vertices);
+      const Vec3fa midpoint_i_m_1 = h->opposite()->next()->getEdgeMidPointVertex(vertices);
+      const Vec3fa r0 = 1.0f/3.0f * (midpoint_i_p_1 - midpoint_i_m_1) + 2.0f/3.0f * (center_i - center_i_m_1);
+      const float d = 3.0f;
+      const float c0 = cosf(2.0*M_PI/(float)valence0);
+      const float c1 = cosf(2.0*M_PI/(float)valence1);
+      return 1.0f / d * (c1 * p_vtx + (d - 2.0f*c0 - c1) * e_p_vtx + 2.0f*c0* e_m_vtx + r0);     
     }
 
     __forceinline void init(const SubdivMesh::HalfEdge *const first_half_edge,
 			    const Vec3fa *const vertices)
     {
-      
+      const SubdivMesh::HalfEdge *const h_p0 = first_half_edge;
+      const SubdivMesh::HalfEdge *const h_p1 = h_p0->next();
+      const SubdivMesh::HalfEdge *const h_p2 = h_p1->next();
+      const SubdivMesh::HalfEdge *const h_p3 = h_p2->next();
+
+      const unsigned int valence_p0 = h_p0->getEdgeValence();
+      const unsigned int valence_p1 = h_p1->getEdgeValence();
+      const unsigned int valence_p2 = h_p2->getEdgeValence();
+      const unsigned int valence_p3 = h_p3->getEdgeValence();
+
+      p0() = initCornerVertex(h_p0,vertices);
+      p1() = initCornerVertex(h_p1,vertices);
+      p2() = initCornerVertex(h_p2,vertices);
+      p3() = initCornerVertex(h_p3,vertices);
+
+      const SubdivMesh::HalfEdge *const h_e0_p = h_p0;
+      const SubdivMesh::HalfEdge *const h_e1_p = h_p1;
+      const SubdivMesh::HalfEdge *const h_e2_p = h_p2;
+      const SubdivMesh::HalfEdge *const h_e3_p = h_p3;
+
+      e0_p() = initEdgeVertex(h_e0_p, vertices, p0());
+      e1_p() = initEdgeVertex(h_e1_p, vertices, p1());
+      e2_p() = initEdgeVertex(h_e2_p, vertices, p2());
+      e3_p() = initEdgeVertex(h_e3_p, vertices, p3());
+
+      const SubdivMesh::HalfEdge *const h_e0_m = h_p3->opposite();
+      const SubdivMesh::HalfEdge *const h_e1_m = h_p0->opposite();
+      const SubdivMesh::HalfEdge *const h_e2_m = h_p1->opposite();
+      const SubdivMesh::HalfEdge *const h_e3_m = h_p2->opposite();
+
+      e0_m() = initEdgeVertex(h_e0_m, vertices, p0());
+      e1_m() = initEdgeVertex(h_e1_m, vertices, p1());
+      e2_m() = initEdgeVertex(h_e2_m, vertices, p2());
+      e3_m() = initEdgeVertex(h_e3_m, vertices, p3());
+
+      f0_p() = initFaceVertex(h_e0_p,vertices,p0(),e0_p(),e0_m(),valence_p0,valence_p1);
+      f0_m() = initFaceVertex(h_e0_m,vertices,p0(),e0_p(),e0_m(),valence_p0,valence_p3); // switch e0_p and e0_m ?
+
+      f1_p() = initFaceVertex(h_e1_p,vertices,p1(),e1_p(),e1_m(),valence_p1,valence_p2);
+      f1_m() = initFaceVertex(h_e1_m,vertices,p1(),e1_p(),e1_m(),valence_p1,valence_p0);
+
+      f2_p() = initFaceVertex(h_e2_p,vertices,p2(),e2_p(),e2_m(),valence_p2,valence_p3);
+      f2_m() = initFaceVertex(h_e2_m,vertices,p2(),e2_p(),e2_m(),valence_p2,valence_p1);
+
+      f3_p() = initFaceVertex(h_e3_p,vertices,p3(),e3_p(),e3_m(),valence_p3,valence_p2);
+      f3_m() = initFaceVertex(h_e3_m,vertices,p3(),e3_p(),e3_m(),valence_p3,valence_p0);
     }
 
    __forceinline BBox3fa bounds() const
