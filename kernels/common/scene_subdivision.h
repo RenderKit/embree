@@ -223,15 +223,29 @@ namespace embree
         F += new_face;
         E += (vtx + ring[num_vtx-2]) * 0.5f;
       }
+      const float n = (float)valence;
+      return (Vertex)(n*n*vtx+4*E+F) / ((n+5.0f)*n);      
+    }
 
-      DBG_PRINT(E);
-
-      DBG_PRINT(F);
+    __forceinline Vec3fa getLimitTangent() const
+    {
+      Vertex beta( 0.0f );
+      Vertex gamma( 0.0f );
 
       const float n = (float)valence;
-      return (Vertex)(n*n*vtx+4*E+F) / ((n+5.0f)*n);
-      
+      const float a_k = 1.0f + cosf(2.0f*M_PI/n) + cosf(M_PI/n) * sqrtf(18.0+2.0f*cosf(2.0f*M_PI/n)); 
+      for (size_t i=0; i<valence; i++)
+	{
+	  beta += cosf(2.0f*M_PI*(float)(i+1)/n) * ring[2*i];
+          gamma += ( cosf(2.0f*M_PI*(float)(i+1)/n) + cosf(2.0f*M_PI*(float)(i+2)/n) ) * ring[2*i+1];
+	}
+
+      DBG_PRINT( beta );
+      DBG_PRINT( gamma );
+
+      return a_k * beta + gamma;      
     }
+
 
     friend __forceinline std::ostream &operator<<(std::ostream &o, const CatmullClark1Ring &c)
       {
@@ -561,6 +575,26 @@ namespace embree
 	const T R = v[y-1][x] + v[y+1][x] + v[y][x-1] + v[y][x+1];
 	const T res = (P * 16.0f + R * 4.0f + Q) * 1.0f / 36.0f;
 	return res;
+      }
+
+      __forceinline T computeLimitTangentX(const int y,
+                                           const int x) const
+      {
+	/* --- tangent X --- */
+	const T Qx = v[y-1][x+1] - v[y-1][x-1] + v[y+1][x+1] - v[y+1][x-1];
+	const T Rx = v[y][x-1] - v[y][x+1];
+	const T tangentX = (Rx * 4.0f + Qx) * 1.0f / 12.0f;
+        return tangentX;
+      };
+
+      __forceinline T computeLimitTangentY(const int y,
+                                           const int x) const
+      {
+	const T Qy = v[y-1][x-1] - v[y+1][x-1] + v[y-1][x+1] - v[y+1][x+1];
+	const T Ry = v[y-1][x] - v[y+1][x];
+	const T tangentY = (Ry * 4.0f + Qy) * 1.0f / 12.0f;
+    
+	return tangentY;
       }
 
       __forceinline T computeLimitNormal(const int y,
