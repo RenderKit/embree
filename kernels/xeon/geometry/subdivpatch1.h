@@ -79,13 +79,13 @@ namespace embree
           DBG_PRINT( ring.getLimitTangent() );
 
 
-	  DBG_PRINT( patch.evalCubicBSplinePatch(0.0f,0.0f) );
-	  DBG_PRINT( patch.evalCubicBSplinePatch(1.0f,0.0f) );
-	  DBG_PRINT( patch.evalCubicBSplinePatch(1.0f,1.0f) );
-	  DBG_PRINT( patch.evalCubicBSplinePatch(0.0f,1.0f) );
+	  DBG_PRINT( patch.eval(0.0f,0.0f) );
+	  DBG_PRINT( patch.eval(1.0f,0.0f) );
+	  DBG_PRINT( patch.eval(1.0f,1.0f) );
+	  DBG_PRINT( patch.eval(0.0f,1.0f) );
 
-	  DBG_PRINT( patch.evalCubicBSplinePatch(0.5f,0.0f) );
-	  DBG_PRINT( patch.evalCubicBSplinePatch(0.0f,0.5f) );
+	  DBG_PRINT( patch.eval(0.5f,0.0f) );
+	  DBG_PRINT( patch.eval(0.0f,0.5f) );
 
 	  GregoryPatch gpatch;
 	  gpatch.init( first_half_edge, vertices );

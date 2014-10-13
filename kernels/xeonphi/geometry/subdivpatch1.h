@@ -51,23 +51,23 @@ namespace embree
 	{
 	  flags |= REGULAR_PATCH;
 	  init( patch );
-	  DBG_PRINT( patch );
+	  /* DBG_PRINT( patch ); */
 
-	  DBG_PRINT( patch.limitVtx0() );
-	  DBG_PRINT( patch.limitVtx1() );
-	  DBG_PRINT( patch.limitVtx2() );
-	  DBG_PRINT( patch.limitVtx3() );
+	  /* DBG_PRINT( patch.limitVtx0() ); */
+	  /* DBG_PRINT( patch.limitVtx1() ); */
+	  /* DBG_PRINT( patch.limitVtx2() ); */
+	  /* DBG_PRINT( patch.limitVtx3() ); */
 
-	  DBG_PRINT( patch.evalCubicBSplinePatch(0.0f,0.0f) );
-	  DBG_PRINT( patch.evalCubicBSplinePatch(1.0f,0.0f) );
-	  DBG_PRINT( patch.evalCubicBSplinePatch(1.0f,1.0f) );
-	  DBG_PRINT( patch.evalCubicBSplinePatch(0.0f,1.0f) );
+	  /* DBG_PRINT( patch.evalCubicBSplinePatch(0.0f,0.0f) ); */
+	  /* DBG_PRINT( patch.evalCubicBSplinePatch(1.0f,0.0f) ); */
+	  /* DBG_PRINT( patch.evalCubicBSplinePatch(1.0f,1.0f) ); */
+	  /* DBG_PRINT( patch.evalCubicBSplinePatch(0.0f,1.0f) ); */
 
-	  GregoryPatch gpatch;
-	  gpatch.init( first_half_edge, vertices );
+	  /* GregoryPatch gpatch; */
+	  /* gpatch.init( first_half_edge, vertices ); */
 
-	  DBG_PRINT(gpatch);
-	  exit(0);
+	  /* DBG_PRINT(gpatch); */
+	  /* exit(0); */
 	  
 	}
     }

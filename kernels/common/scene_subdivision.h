@@ -667,21 +667,24 @@ namespace embree
   {
   public:
 
-    static __forceinline Vec4f getCubicBSplineEvalCoefficients(const float u) // for watertight eval
+#if !defined(__MIC__)
+    typedef Vec3fa Vertex;
+#else
+    typedef Vec3fa_t Vertex;      
+#endif
+
+    static __forceinline Vertex eval(const float u, const Vec3fa &p0, const Vec3fa &p1, const Vec3fa &p2, const Vec3fa &p3)
     {
+      // FIXME: lookup
       const float t  = u;
       const float s  = 1.0f - u;
       const float n0 = s*s*s;
       const float n1 = (4.0f*s*s*s+t*t*t) + (12.0f*s*t*s + 6.0*t*s*t);
       const float n2 = (4.0f*t*t*t+s*s*s) + (12.0f*t*s*t + 6.0*s*t*s);
       const float n3 = t*t*t;
-      return Vec4f(n0,n1,n2,n3)*1.0f/6.0f;
-    }
-
-    static __forceinline Vec3fa eval(const float u, const Vec3fa &p0, const Vec3fa &p1, const Vec3fa &p2, const Vec3fa &p3)
-    {
-      const Vec4f n = getCubicBSplineEvalCoefficients(u);
-      return p0 * n[0] + p1 * n[1] + p2 * n[2] + p3 * n[3];
+      const float c  = 1.0f/6.0f;
+      const Vertex n = c * (p0 * n0 + p1 * n1 + p2 * n2 + p3 * n3);
+      return n;
     }
     
 
@@ -893,6 +896,12 @@ namespace embree
   {
   public:
 
+#if !defined(__MIC__)
+      typedef Vec3fa Vertex;
+#else
+      typedef Vec3fa_t Vertex;
+#endif
+
     __forceinline void init( FinalQuad& quad ) const
     {
       quad.vtx[0] = v[1][1];
@@ -928,12 +937,6 @@ namespace embree
     __forceinline void init(const SubdivMesh::HalfEdge *const first_half_edge,
 			    const Vec3fa *const vertices)
     {
-#if !defined(__MIC__)
-      typedef Vec3fa Vertex;
-#else
-      typedef Vec3fa_t Vertex;
-#endif
-
       // quad(0,0)
       const SubdivMesh::HalfEdge *v11 = first_half_edge;
       const SubdivMesh::HalfEdge *v01 = v11->nextAdjacentEdge()->opposite();
@@ -1005,12 +1008,12 @@ namespace embree
     }
 #endif
 
-    __forceinline Vec3fa evalCubicBSplinePatch(const float uu, const float vv) const
+    __forceinline Vec3fa eval(const float uu, const float vv) const
     {
-      const Vec3fa curve0 = CubicBSpline::eval(vv,v[0][0],v[1][0],v[2][0],v[3][0]);
-      const Vec3fa curve1 = CubicBSpline::eval(vv,v[0][1],v[1][1],v[2][1],v[3][1]);
-      const Vec3fa curve2 = CubicBSpline::eval(vv,v[0][2],v[1][2],v[2][2],v[3][2]);
-      const Vec3fa curve3 = CubicBSpline::eval(vv,v[0][3],v[1][3],v[2][3],v[3][3]);
+      const Vertex curve0 = CubicBSpline::eval(vv,v[0][0],v[1][0],v[2][0],v[3][0]);
+      const Vertex curve1 = CubicBSpline::eval(vv,v[0][1],v[1][1],v[2][1],v[3][1]);
+      const Vertex curve2 = CubicBSpline::eval(vv,v[0][2],v[1][2],v[2][2],v[3][2]);
+      const Vertex curve3 = CubicBSpline::eval(vv,v[0][3],v[1][3],v[2][3],v[3][3]);
       return CubicBSpline::eval(uu,curve0,curve1,curve2,curve3);
     }
   };
@@ -1099,7 +1102,6 @@ namespace embree
       CatmullClark1Ring ring;
       ring.init(h,vertices);
       Vec3fa tangent = ring.getLimitTangent();
-      DBG_PRINT(tangent);
       return 1.0f/3.0f * tangent + p_vtx;
     }
 #else
@@ -1152,28 +1154,9 @@ namespace embree
       const Vec3fa midpoint_i_m_1 = h->opposite()->next()->getEdgeMidPointVertex(vertices);
       const Vec3fa r0 = 1.0f/3.0f * sign*(midpoint_i_p_1 - midpoint_i_m_1) + 2.0f/3.0f * sign*(center_i - center_i_m_1);
 
-      DBG_PRINT( center_i );
-      DBG_PRINT( center_i_m_1 );
-      DBG_PRINT( midpoint_i_p_1 );
-      DBG_PRINT( midpoint_i_m_1 );
-
-      DBG_PRINT(r0);
-
       const float d = 3.0f;
       const float c0 = cosf(2.0*M_PI/(float)valence0);
       const float c1 = cosf(2.0*M_PI/(float)valence1);
-
-      DBG_PRINT( c0 );
-      DBG_PRINT( c1 );
-      DBG_PRINT( (d - 2.0f*c0 - c1) * e_p_vtx);
-      DBG_PRINT( 2.0f*c0*e_m_vtx );
-      DBG_PRINT( c1 * p_vtx);
-
-      DBG_PRINT( p_vtx );
-      DBG_PRINT( e_p_vtx );
-      DBG_PRINT( e_m_vtx );
-      DBG_PRINT( r0 * 1.0f / d );
-
 
       return 1.0f / d * (c1 * p_vtx + (d - 2.0f*c0 - c1) * e_p_vtx + 2.0f*c0* e_m_vtx + r0);     
     }
@@ -1232,7 +1215,7 @@ namespace embree
       f3_p() = initFaceVertex(h_e3_p,vertices,p3(),e3_p(),e3_m(),valence_p3,valence_p2);
       f3_m() = initFaceVertex(h_e3_m,vertices,p3(),e3_m(),e3_p(),valence_p3,valence_p0,-1.0f);
 
-
+#if 0
       DBG_PRINT( p0() );
       DBG_PRINT( p1() );
       DBG_PRINT( p2() );
@@ -1262,7 +1245,7 @@ namespace embree
       DBG_PRINT( f1_m() );
       DBG_PRINT( f2_m() );
       DBG_PRINT( f3_m() );
-
+#endif
     }
 
    __forceinline BBox3fa bounds() const
