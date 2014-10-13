@@ -206,23 +206,17 @@ namespace embree
     }
 
 
-    __forceinline Vec3fa getLimitVtx() const
+    __forceinline Vec3fa getLimitVertex() const
     {
       Vertex F( 0.0f );
       Vertex E( 0.0f );
 
-      for (size_t i=0; i<valence-1; i++)
+      for (size_t i=0; i<valence; i++)
 	{
-	  const Vertex new_face = (vtx + ring[2*i] + ring[2*i+1] + ring[2*i+2]) * 0.25f;
-	  F += new_face;
-	  E += (vtx + ring[2*i]) * 0.5f;
+	  F += ring[2*i+1];
+	  E += ring[2*i];
 	}
 
-      {
-        const Vertex new_face = (vtx + ring[num_vtx-2] + ring[num_vtx-1] + ring[0]) * 0.25f;
-        F += new_face;
-        E += (vtx + ring[num_vtx-2]) * 0.5f;
-      }
       const float n = (float)valence;
       return (Vertex)(n*n*vtx+4*E+F) / ((n+5.0f)*n);      
     }
@@ -1132,22 +1126,9 @@ namespace embree
     Vec3fa initCornerVertex(const SubdivMesh::HalfEdge *const h,
 			    const Vec3fa *const vertices)
     {
-      Vertex sum_edge_midpoints( 0.0f );
-      Vertex sum_face_midpoints( 0.0f );
-      SubdivMesh::HalfEdge *p = (SubdivMesh::HalfEdge*)h;
-      unsigned int valence = 0;
-       do 
-         {
-	   valence++;
-           sum_edge_midpoints += p->getEdgeMidPointVertex(vertices);
-           sum_face_midpoints += p->getFaceMidPointVertex(vertices);
-           assert( p->hasOpposite() );
-           p = p->opposite();
-           /*! continue with next adjacent edge */
-           p = p->next();
-         } while( p != h);
-       const float n = (float)valence;
-       return (n*n * h->getStartVertex(vertices) + 4.0f * sum_edge_midpoints + sum_face_midpoints) / (n*(n+5.0f)); // only quads
+      CatmullClark1Ring ring;
+      ring.init(h,vertices);
+      return ring.getLimitVertex();
     }
 
 
@@ -1190,7 +1171,6 @@ namespace embree
         } while( p != h);
       assert( i == n );
       q *= 2.0f/n;
-      DBG_PRINT( q );
       const float lambda = 1.0f/16.0f*(5.0f+cosf((2.0f*M_PI)/n)+cosf(M_PI/n)*sqrtf(18.0f+2.0f*cosf((2.0f*M_PI)/n)));
       return p_vtx + 2.0f/3.0f*lambda*q;
     }
@@ -1334,6 +1314,8 @@ namespace embree
      for (size_t y=0;y<4;y++)
        for (size_t x=0;x<4;x++)
 	 matrix[y][x] = (Vertex)v[y][x];
+
+     if (uu == 0.0f || uu == 1.0f || vv == 0.0f || vv == 1.0f) return;
 
      const Vertex F0 = (      uu  * f0_p() +       vv  * f0_m()) * 1.0f/(uu+vv);
      const Vertex F1 = ((1.0f-uu) * f1_p() +       vv  * f1_m()) * 1.0f/(1.0f-uu+vv);

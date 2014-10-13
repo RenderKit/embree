@@ -409,21 +409,23 @@ namespace embree
     if (subdiv_level == 0)
       {
 	Vec3fa vtx[4];
+
 	vtx[0] = patch.eval(s[0],t[0]);
 	vtx[1] = patch.eval(s[1],t[0]);
 	vtx[2] = patch.eval(s[1],t[1]);
 	vtx[3] = patch.eval(s[0],t[1]);
-
-       intersect1_quad(rayIndex,
-		       dir_xyz,
-		       org_xyz,
-		       ray16,
-		       vtx[0],
-		       vtx[1],
-		       vtx[2],
-		       vtx[3],
-		       geomID,
-		       primID);      
+	
+	
+	intersect1_quad(rayIndex,
+			dir_xyz,
+			org_xyz,
+			ray16,
+			vtx[0],
+			vtx[1],
+			vtx[2],
+			vtx[3],
+			geomID,
+			primID);      
       }
     else
       {

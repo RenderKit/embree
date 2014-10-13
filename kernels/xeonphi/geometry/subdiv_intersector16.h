@@ -95,8 +95,27 @@ namespace embree
 	    Vec2f t_val(0.0f,1.0f);
 	    subdivide_intersect1_eval(rayIndex,dir_xyz,org_xyz,ray16,regular_patch,subdiv_patch.geomID,subdiv_patch.primID,s_val,t_val,g_subdivision_level);
 	  }
-	else
 #endif
+#if 0
+	if (likely(subdiv_patch.isGregoryPatch()))
+	  {
+	    const RegularCatmullClarkPatch &regular_patch = subdiv_patch.patch;
+	    regular_patch.prefetchData();
+	    __aligned(64) GregoryPatch gpatch( regular_patch.v, subdiv_patch.f_m );
+
+	    Vec2f s_val(0.0f,1.0f);
+	    Vec2f t_val(0.0f,1.0f);
+	    subdivide_intersect1_eval(rayIndex,dir_xyz,org_xyz,ray16,gpatch,
+				      subdiv_patch.geomID,
+				      subdiv_patch.primID,
+				      s_val,
+				      t_val,
+				      g_subdivision_level);
+
+	  }
+	  
+#endif
+	else
 	{
 	  IrregularCatmullClarkPatch irregular_patch;
 	  subdiv_patch.init( irregular_patch );
