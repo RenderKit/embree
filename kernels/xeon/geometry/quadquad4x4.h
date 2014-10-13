@@ -371,7 +371,7 @@ namespace embree
       
       /* call displacement shader */
       Vec3fa displ[9][9];
-      mesh->displFunc(mesh->userPtr,geomID,primID,(RTCFloat2*)uv,(RTCFloat3a*)displ,9*9);
+      mesh->displFunc(mesh->userPtr,geomID,primID,(RTCFloat2*)uv,(RTCFloat3a*)displ,9*9); // FIXME: change to SOA layout
 
       /* add displacements */
       for (size_t y=0; y<9; y++) {
