@@ -240,9 +240,6 @@ namespace embree
           beta += c * cosf((2.0f*M_PI*(float)i+M_PI)/n) * ring[2*i+1];
 	}
 
-      DBG_PRINT( alpha );
-      DBG_PRINT( beta );
-
       return alpha +  beta;      
     }
 
@@ -1094,6 +1091,20 @@ namespace embree
     }
 
 
+#if 1
+    Vec3fa initEdgeVertex(const SubdivMesh::HalfEdge *const h,
+                          const Vec3fa *const vertices,
+                          const Vec3fa &p_vtx)
+    {
+      CatmullClark1Ring ring;
+      ring.init(h,vertices);
+      Vec3fa tangent = ring.getLimitTangent();
+      DBG_PRINT(tangent);
+      return 1.0f/3.0f * tangent + p_vtx;
+    }
+#else
+    // this version seems to produce incorrect tangents
+
     Vec3fa initEdgeVertex(const SubdivMesh::HalfEdge *const h,
                           const Vec3fa *const vertices,
                           const Vec3fa &p_vtx)
@@ -1101,10 +1112,8 @@ namespace embree
       Vertex q( 0.0f );
       const unsigned int valence = h->getEdgeValence();
       const float n = (float)valence;
-      //DBG_PRINT( n );
       const float sigma = 1.0f / sqrtf((4.0f + cosf(M_PI/n) * cosf(M_PI/n)));
 
-      //DBG_PRINT( sigma );
       const float b = (1.0f-sigma*cosf(M_PI/n));
       SubdivMesh::HalfEdge *p = (SubdivMesh::HalfEdge*)h;
       unsigned int i=0;
@@ -1112,14 +1121,7 @@ namespace embree
         {
           const Vertex m_i = p->getEdgeMidPointVertex(vertices);
           const Vertex c_i = p->getFaceMidPointVertex(vertices);
-
-          //DBG_PRINT( m_i );
-          //DBG_PRINT( c_i );
-
           const Vertex q_i = b * cosf((2.0f*M_PI*(float)i)/n) * m_i + 2.0f*sigma*cosf((2.0f*M_PI*(float)i+M_PI)/n) * c_i; 
-          //          DBG_PRINT( q_i );
-          //DBG_PRINT( b*cosf((2.0f*M_PI*(float)i)/n) );
-          //DBG_PRINT( 2.0f*sigma*cosf((2.0f*M_PI*(float)i+M_PI)/n) );
           q += q_i;
           assert( p->hasOpposite() );
           p = p->opposite();
@@ -1131,10 +1133,9 @@ namespace embree
       q *= 2.0f/n;
       DBG_PRINT( q );
       const float lambda = 1.0f/16.0f*(5.0f+cosf((2.0f*M_PI)/n)+cosf(M_PI/n)*sqrtf(18.0f+2.0f*cosf((2.0f*M_PI)/n)));
-      //DBG_PRINT( lambda );
-      //DBG_PRINT( 2.0f/3.0f*lambda*q );
       return p_vtx + 2.0f/3.0f*lambda*q;
     }
+#endif
 
     Vec3fa initFaceVertex(const SubdivMesh::HalfEdge *const h,
                           const Vec3fa *const vertices,
@@ -1185,14 +1186,11 @@ namespace embree
       const SubdivMesh::HalfEdge *const h_e3_p = h_p3;
 
       e0_p() = initEdgeVertex(h_e0_p, vertices, p0());
-
-     DBG_PRINT( e0_p() );
-     exit(0);
-
-       e1_p() = initEdgeVertex(h_e1_p, vertices, p1());
+      e1_p() = initEdgeVertex(h_e1_p, vertices, p1());
       e2_p() = initEdgeVertex(h_e2_p, vertices, p2());
       e3_p() = initEdgeVertex(h_e3_p, vertices, p3());
 
+      DBG_PRINT( e0_p() );
       DBG_PRINT( e1_p() );
       DBG_PRINT( e2_p() );
       DBG_PRINT( e3_p() );
@@ -1213,8 +1211,7 @@ namespace embree
       DBG_PRINT( e2_m() );
       DBG_PRINT( e3_m() );
 
-      exit( 0 );
-
+ 
       f0_p() = initFaceVertex(h_e0_p,vertices,p0(),e0_p(),e0_m(),valence_p0,valence_p1);
       f0_m() = initFaceVertex(h_e0_m,vertices,p0(),e0_p(),e0_m(),valence_p0,valence_p3); // switch e0_p and e0_m ?
 
@@ -1229,6 +1226,8 @@ namespace embree
 
       DBG_PRINT( f0_p() );
       DBG_PRINT( f0_m() );
+
+      exit( 0 );
 
     }
 
