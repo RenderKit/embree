@@ -58,7 +58,7 @@ namespace embree
       if (first_half_edge->isFaceRegular()) 
         {
           flags |= REGULAR_PATCH;
-#if 0
+#if 1
           RegularCatmullClarkPatch patch;
 
           init( patch );

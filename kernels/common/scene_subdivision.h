@@ -229,21 +229,21 @@ namespace embree
 
     __forceinline Vec3fa getLimitTangent() const
     {
+      Vertex alpha( 0.0f );
       Vertex beta( 0.0f );
-      Vertex gamma( 0.0f );
 
       const float n = (float)valence;
-      const float a_k = 1.0f + cosf(2.0f*M_PI/n) + cosf(M_PI/n) * sqrtf(18.0+2.0f*cosf(2.0f*M_PI/n)); 
+      const float c = 1.0f/n * 1.0f / sqrtf(4.0f + cos(M_PI/n)*cos(M_PI/n));  
       for (size_t i=0; i<valence; i++)
 	{
-	  beta += cosf(2.0f*M_PI*(float)(i+1)/n) * ring[2*i];
-          gamma += ( cosf(2.0f*M_PI*(float)(i+1)/n) + cosf(2.0f*M_PI*(float)(i+2)/n) ) * ring[2*i+1];
+	  alpha += (1.0f/n + cosf(M_PI/n) * c) * cosf(2.0f*M_PI*(float)i/n) * ring[2*i];
+          beta += c * cosf((2.0f*M_PI*(float)i+M_PI)/n) * ring[2*i+1];
 	}
 
+      DBG_PRINT( alpha );
       DBG_PRINT( beta );
-      DBG_PRINT( gamma );
 
-      return a_k * beta + gamma;      
+      return alpha +  beta;      
     }
 
 
