@@ -35,9 +35,6 @@ namespace embree
 
     static Type type;
 
-    /*! branching width of the tree */
-    //static const size_t N = 4;
-
     void displace(unsigned x0, unsigned y0, unsigned l, Array2D<Vec3fa>& v)
     {
       SubdivMesh* mesh = (SubdivMesh*) scene->get(geom);
@@ -81,11 +78,17 @@ namespace embree
                                                  unsigned x, unsigned y, unsigned l, unsigned maxDepth)
     {
       if (l == maxDepth) {
-        new (&leaves(x,y)) QuadQuad4x4(0,0,3,geomID(),primID());
-        SubdivideIrregularCatmullClarkPatch(patch,3,leaves(x,y).vertices);
-        displace(8*x,8*y,l+3,leaves(x,y).vertices);
-        const BBox3fa bounds = leaves(x,y).build();
-        return std::pair<BBox3fa,BVH4::NodeRef>(bounds,bvh.encodeLeaf(&leaves(x,y),0));
+        QuadQuad4x4& leaf = leaves(x,y);
+        new (&leaf) QuadQuad4x4(3,geomID(),primID());
+        SubdivideIrregularCatmullClarkPatch subdivided(patch,3);
+        displace(8*x,8*y,l+3,subdivided.v);
+
+        for (size_t y=0; y<=8; y++)
+          for (size_t x=0; x<=8; x++)
+            leaf.v[y][x] = subdivided.v(x,y);
+
+        const BBox3fa bounds = leaf.build();
+        return std::pair<BBox3fa,BVH4::NodeRef>(bounds,bvh.encodeLeaf(&leaf,0));
       }
 
       IrregularCatmullClarkPatch patches[4]; 
