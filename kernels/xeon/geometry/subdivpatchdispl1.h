@@ -35,9 +35,6 @@ namespace embree
 
     static Type type;
 
-    /*! branching width of the tree */
-    //static const size_t N = 4;
-
     void displace(unsigned x0, unsigned y0, unsigned l, Array2D<Vec3fa>& v)
     {
       SubdivMesh* mesh = (SubdivMesh*) scene->get(geom);
@@ -81,7 +78,7 @@ namespace embree
                                                  unsigned x, unsigned y, unsigned l, unsigned maxDepth)
     {
       if (l == maxDepth) {
-        new (&leaves(x,y)) QuadQuad4x4(0,0,3,geomID(),primID());
+        new (&leaves(x,y)) QuadQuad4x4(3,geomID(),primID());
         SubdivideIrregularCatmullClarkPatch(patch,3,leaves(x,y).vertices);
         displace(8*x,8*y,l+3,leaves(x,y).vertices);
         const BBox3fa bounds = leaves(x,y).build();

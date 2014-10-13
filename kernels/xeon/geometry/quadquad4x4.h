@@ -172,22 +172,22 @@ namespace embree
 
   public:
       
-    __forceinline QuadQuad4x4(unsigned x, unsigned y, unsigned levels, unsigned geomID, unsigned primID)
-      : bx(x), by(y), levels(levels-1), geomID(geomID), primID(primID) {}
+    __forceinline QuadQuad4x4(unsigned levels, unsigned geomID, unsigned primID)
+      : levels(levels-1), geomID(geomID), primID(primID) {}
     
     const BBox3fa leafBounds(size_t x, size_t y)
     {
       BBox3fa bounds = empty;
       x *= 2; y *= 2;
-      bounds.extend(vertices(bx+x+0,by+y+0));
-      bounds.extend(vertices(bx+x+1,by+y+0));
-      bounds.extend(vertices(bx+x+2,by+y+0));
-      bounds.extend(vertices(bx+x+0,by+y+1));
-      bounds.extend(vertices(bx+x+1,by+y+1));
-      bounds.extend(vertices(bx+x+2,by+y+1));
-      bounds.extend(vertices(bx+x+0,by+y+2));
-      bounds.extend(vertices(bx+x+1,by+y+2));
-      bounds.extend(vertices(bx+x+2,by+y+2));
+      bounds.extend(vertices(x+0,y+0));
+      bounds.extend(vertices(x+1,y+0));
+      bounds.extend(vertices(x+2,y+0));
+      bounds.extend(vertices(x+0,y+1));
+      bounds.extend(vertices(x+1,y+1));
+      bounds.extend(vertices(x+2,y+1));
+      bounds.extend(vertices(x+0,y+2));
+      bounds.extend(vertices(x+1,y+2));
+      bounds.extend(vertices(x+2,y+2));
       return bounds;
     }
     
@@ -219,7 +219,6 @@ namespace embree
     }
     
   public:
-    unsigned bx,by;            //!< coordinates of subtree
     Array2D<Vec3fa> vertices; //!< pointer to vertices
     unsigned levels;           //!< number of stored levels
     unsigned primID;
