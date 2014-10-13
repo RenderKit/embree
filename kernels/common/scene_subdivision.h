@@ -1101,10 +1101,8 @@ namespace embree
       Vertex q( 0.0f );
       const unsigned int valence = h->getEdgeValence();
       const float n = (float)valence;
-      //DBG_PRINT( n );
       const float sigma = 1.0f / sqrtf((4.0f + cosf(M_PI/n) * cosf(M_PI/n)));
 
-      //DBG_PRINT( sigma );
       const float b = (1.0f-sigma*cosf(M_PI/n));
       SubdivMesh::HalfEdge *p = (SubdivMesh::HalfEdge*)h;
       unsigned int i=0;
@@ -1112,14 +1110,7 @@ namespace embree
         {
           const Vertex m_i = p->getEdgeMidPointVertex(vertices);
           const Vertex c_i = p->getFaceMidPointVertex(vertices);
-
-          //DBG_PRINT( m_i );
-          //DBG_PRINT( c_i );
-
           const Vertex q_i = b * cosf((2.0f*M_PI*(float)i)/n) * m_i + 2.0f*sigma*cosf((2.0f*M_PI*(float)i+M_PI)/n) * c_i; 
-          //          DBG_PRINT( q_i );
-          //DBG_PRINT( b*cosf((2.0f*M_PI*(float)i)/n) );
-          //DBG_PRINT( 2.0f*sigma*cosf((2.0f*M_PI*(float)i+M_PI)/n) );
           q += q_i;
           assert( p->hasOpposite() );
           p = p->opposite();
@@ -1131,8 +1122,6 @@ namespace embree
       q *= 2.0f/n;
       DBG_PRINT( q );
       const float lambda = 1.0f/16.0f*(5.0f+cosf((2.0f*M_PI)/n)+cosf(M_PI/n)*sqrtf(18.0f+2.0f*cosf((2.0f*M_PI)/n)));
-      //DBG_PRINT( lambda );
-      //DBG_PRINT( 2.0f/3.0f*lambda*q );
       return p_vtx + 2.0f/3.0f*lambda*q;
     }
 
