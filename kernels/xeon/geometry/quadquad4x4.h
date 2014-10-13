@@ -172,9 +172,41 @@ namespace embree
 
   public:
       
-    __forceinline QuadQuad4x4(unsigned levels, unsigned geomID, unsigned primID)
-      : levels(levels-1), geomID(geomID), primID(primID) {}
+    __forceinline QuadQuad4x4(unsigned px, unsigned py, unsigned width, unsigned geomID, unsigned primID)
+      : px(px), py(py), width(width), geomID(geomID), primID(primID) {}
     
+    void displace(Scene* scene)
+    {
+      SubdivMesh* mesh = (SubdivMesh*) scene->get(geomID);
+      if (mesh->displFunc == NULL) return;
+
+      /* calculate uv coordinates */
+      Vec2f uv[9][9];
+      for (size_t y=0; y<9; y++) {
+        float fy = float(py+y)/float(width+1);
+        for (size_t x=0; x<9; x++) {
+          float fx = float(px+x)/float(width+1);
+          uv[y][x] = Vec2f(fx,fy);
+        }
+      }
+      
+      /* call displacement shader */
+      Vec3fa displ[9][9];
+      mesh->displFunc(mesh->userPtr,geomID,primID,(RTCFloat2*)uv,(RTCFloat3a*)displ,9*9);
+
+      /* add displacements */
+      for (size_t y=0; y<9; y++) {
+        for (size_t x=0; x<9; x++) {
+          const Vec3fa dP = displ[y][x];
+#if defined(DEBUG)
+          if (!inside(mesh->displBounds,dP))
+            THROW_RUNTIME_ERROR("displacement out of bounds");
+#endif
+          v[y][x] += dP;
+        }
+      }
+    }
+
     const BBox3fa leafBounds(size_t x, size_t y)
     {
       BBox3fa bounds = empty;
@@ -219,10 +251,11 @@ namespace embree
     }
 
   public:
-    unsigned levels;           //!< number of stored levels
+    Node16 n;                 //!< child nodes
+    Vec3fa v[9][9];           //!< pointer to vertices
+    unsigned px, py;          //!< position inside subdivpatch
+    unsigned width;           //!< subdivision width of subdivpatch
     unsigned primID;
     unsigned geomID;
-    Node16 n;  //!< child nodes
-    Vec3fa v[9][9]; //!< pointer to vertices
   };
 }

@@ -35,57 +35,21 @@ namespace embree
 
     static Type type;
 
-    void displace(unsigned x0, unsigned y0, unsigned l, Array2D<Vec3fa>& v)
-    {
-      SubdivMesh* mesh = (SubdivMesh*) scene->get(geom);
-      if (mesh->displFunc == NULL) return;
-
-      size_t M = (1<<l)+1;
-      size_t width = v.width();
-      size_t height = v.height();
-
-      Vec2f* uv = new Vec2f[width];
-      Vec3fa* displ = new Vec3fa[width];
-      
-      for (size_t y=0; y<height; y++) 
-      {
-        float fy = float(y0+y)/float(M);
-        for (size_t x=0; x<width; x++) 
-        {
-          float fx = float(x0+x)/float(M);
-          uv[x] = Vec2f(fx,fy);
-        }
-
-        /* call displacement shader */
-        mesh->displFunc(mesh->userPtr,geom,prim,(RTCFloat2*)uv,(RTCFloat3a*)displ,width);
-
-        for (size_t x=0; x<width; x++) 
-        {
-          const Vec3fa dP = displ[x];
-#if defined(DEBUG)
-          if (!inside(mesh->displBounds,dP))
-            THROW_RUNTIME_ERROR("displacement out of bounds");
-#endif
-          v(x,y) += dP;
-        }
-      }
-      delete uv;
-      delete displ;
-    }
-
     const std::pair<BBox3fa,BVH4::NodeRef> build(LinearAllocatorPerThread::ThreadAllocator& alloc, 
                                                  const IrregularCatmullClarkPatch& patch,
                                                  unsigned x, unsigned y, unsigned l, unsigned maxDepth)
     {
-      if (l == maxDepth) {
+      if (l == maxDepth) 
+      {
         QuadQuad4x4& leaf = leaves(x,y);
-        new (&leaf) QuadQuad4x4(3,geomID(),primID());
+        new (&leaf) QuadQuad4x4(8*x,8*y,8*(1<<l),geomID(),primID());
         SubdivideIrregularCatmullClarkPatch subdivided(patch,3);
-        displace(8*x,8*y,l+3,subdivided.v);
 
         for (size_t y=0; y<=8; y++)
           for (size_t x=0; x<=8; x++)
             leaf.v[y][x] = subdivided.v(x,y);
+
+        leaf.displace(scene);
 
         const BBox3fa bounds = leaf.build();
         return std::pair<BBox3fa,BVH4::NodeRef>(bounds,bvh.encodeLeaf(&leaf,0));
