@@ -56,24 +56,17 @@ namespace embree
       f_m[1][0] = 0.0f;
 
       flags = 0;
-      if (first_half_edge->isFaceRegular() && 0) 
+      if (first_half_edge->isFaceRegular()) 
 	{
 	  flags |= REGULAR_PATCH;
 	  init( patch );
-	  /* DBG_PRINT( patch ); */
-
-
-
-
-	  /* DBG_PRINT(gpatch); */
-	  /* exit(0); */	  
 	}
 #if 1
-      else if (!first_half_edge->faceHasEdges() || 1)
+      else if (!first_half_edge->faceHasEdges())
 	{
 	  flags |= GREGORY_PATCH;
 
-#if 1
+#if 0
 	  RegularCatmullClarkPatch rpatch;
 
 	  init( rpatch );

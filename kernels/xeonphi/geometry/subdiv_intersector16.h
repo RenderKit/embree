@@ -96,8 +96,8 @@ namespace embree
 	    subdivide_intersect1_eval(rayIndex,dir_xyz,org_xyz,ray16,regular_patch,subdiv_patch.geomID,subdiv_patch.primID,s_val,t_val,g_subdivision_level);
 	  }
 #endif
-#if 0
-	if (likely(subdiv_patch.isGregoryPatch()))
+#if 1
+	else if (likely(subdiv_patch.isGregoryPatch()))
 	  {
 	    const RegularCatmullClarkPatch &regular_patch = subdiv_patch.patch;
 	    regular_patch.prefetchData();
