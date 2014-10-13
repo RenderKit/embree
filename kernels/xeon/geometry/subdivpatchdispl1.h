@@ -41,7 +41,7 @@ namespace embree
     const std::pair<BBox3fa,BVH4::NodeRef> build(LinearAllocatorPerThread::ThreadAllocator& alloc, unsigned x, unsigned y, unsigned l, unsigned maxDepth)
     {
       if (l == maxDepth) {
-        new (&leaves(x,y)) QuadQuad4x4(8*x,8*y,v,3,geomID<true>(),primID<true>());
+        new (&leaves(x,y)) QuadQuad4x4(8*x,8*y,v,3,geomID(),primID());
         const BBox3fa bounds = leaves(x,y).build();
         return std::pair<BBox3fa,BVH4::NodeRef>(bounds,bvh.encodeLeaf(&leaves(x,y),0));
       }
@@ -79,7 +79,7 @@ namespace embree
       for (size_t y=0; y<K; y++) {
         for (size_t x=0; x<K; x++) {
           QuadQuad4x4& leaf = leaves(x,y);
-          new (&leaf) QuadQuad4x4(8*x,8*y,v,3,geomID<true>(),primID<true>());
+          new (&leaf) QuadQuad4x4(8*x,8*y,v,3,geomID(),primID());
           prims[y*K+x] = PrimRef(leaf.build(),x,y);
         }
       }
@@ -166,22 +166,10 @@ namespace embree
     static __forceinline size_t blocks(size_t N) { return N; }
 
     /*! return geometry ID */
-    template<bool list>
-    __forceinline unsigned int geomID() const { 
-      return geom; 
-    }
+    __forceinline unsigned int geomID() const { return geom; }
 
     /*! return primitive ID */
-    template<bool list>
-    __forceinline unsigned int primID() const { 
-      if (list) return prim & 0x7FFFFFFF; 
-      else      return prim; 
-    }
-
-    /*! checks if this is the last primitive in list leaf mode */
-    __forceinline int last() const { 
-      return prim & 0x80000000; 
-    }
+    __forceinline unsigned int primID() const { return prim; }
 
   public:
     volatile atomic_t initializing;
