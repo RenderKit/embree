@@ -45,6 +45,17 @@ namespace embree
 			    const unsigned int primID,
 			    const unsigned int subdiv_level = 0);
 
+  void subdivide_intersect1_eval(const size_t rayIndex, 
+				 const mic_f &dir_xyz,
+				 const mic_f &org_xyz,
+				 Ray16& ray16,
+				 const RegularCatmullClarkPatch &patch,
+				 const unsigned int geomID,
+				 const unsigned int primID,
+				 const Vec2f &s,
+				 const Vec2f &t,
+				 const unsigned int subdiv_level);
+  
 
   template< bool ENABLE_INTERSECTION_FILTER>
     struct SubdivPatchIntersector16
@@ -68,7 +79,10 @@ namespace embree
 	    //subdiv_patch.init( regular_patch );
 	    const RegularCatmullClarkPatch &regular_patch = subdiv_patch.patch;
 	    regular_patch.prefetchData();
-	    subdivide_intersect1(rayIndex,dir_xyz,org_xyz,ray16,regular_patch,subdiv_patch.geomID,subdiv_patch.primID,g_subdivision_level);
+	    //subdivide_intersect1(rayIndex,dir_xyz,org_xyz,ray16,regular_patch,subdiv_patch.geomID,subdiv_patch.primID,g_subdivision_level);
+	    Vec2f s_val(0.0f,1.0f);
+	    Vec2f t_val(0.0f,1.0f);
+	    subdivide_intersect1_eval(rayIndex,dir_xyz,org_xyz,ray16,regular_patch,subdiv_patch.geomID,subdiv_patch.primID,s_val,t_val,g_subdivision_level);
 	  }
 	else
 #endif

@@ -31,7 +31,8 @@ namespace embree
     enum {
       REGULAR_PATCH = 1,
       HAS_BORDERS   = 2,
-      HAS_CREASES   = 4
+      HAS_CREASES   = 4,
+      GREGORY_PATCH = 8
     };
 
     /*! Default constructor. */
@@ -46,6 +47,13 @@ namespace embree
       primID(primID),
       subdivision_level(subdivision_level)
     {
+      u_val = Vec2f(0.0f,1.0f);
+      v_val = Vec2f(0.0f,1.0f);
+      f_m[0][0] = 0.0f;
+      f_m[0][1] = 0.0f;
+      f_m[1][1] = 0.0f;
+      f_m[1][0] = 0.0f;
+
       flags = 0;
       if (first_half_edge->isFaceRegular()) 
 	{
@@ -63,12 +71,23 @@ namespace embree
 	  /* DBG_PRINT( patch.evalCubicBSplinePatch(1.0f,1.0f) ); */
 	  /* DBG_PRINT( patch.evalCubicBSplinePatch(0.0f,1.0f) ); */
 
-	  /* GregoryPatch gpatch; */
-	  /* gpatch.init( first_half_edge, vertices ); */
 
 	  /* DBG_PRINT(gpatch); */
-	  /* exit(0); */
+	  /* exit(0); */	  
+	}
+#if 1
+      else if (!first_half_edge->faceHasEdges())
+	{
+	  flags |= GREGORY_PATCH;
+
+	  GregoryPatch gpatch; 
+	  gpatch.init( first_half_edge, vertices ); 
 	  
+	  gpatch.exportConrolPoints( patch.v, f_m );
+	}
+#endif
+      else
+	{
 	}
     }
 
@@ -108,9 +127,10 @@ namespace embree
     unsigned int geomID;                          //!< geometry ID of the subdivision mesh this patch belongs to
     unsigned int primID;                          //!< primitive ID of this subdivision patch
 
-    unsigned int dummy[8];
-
+    Vec2f u_val;
+    Vec2f v_val;
     RegularCatmullClarkPatch patch;
+    Vec3fa f_m[2][2];    
   };
 
   __forceinline std::ostream &operator<<(std::ostream &o, const SubdivPatch1 &p)

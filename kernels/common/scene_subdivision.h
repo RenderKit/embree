@@ -1045,6 +1045,18 @@ namespace embree
       memset(this,0,sizeof(GregoryPatch));
     }
 
+    GregoryPatch(const Vec3fa matrix[4][4],
+		 const Vec3fa f_m[2][2]) 
+      {
+	for (size_t y=0;y<4;y++)
+	  for (size_t x=0;x<4;x++)
+	    v[y][x] = (Vertex)matrix[y][x];
+
+	for (size_t y=0;y<2;y++)
+	  for (size_t x=0;x<2;x++)
+	    f[y][x] = (Vertex)f_m[y][x];
+      }
+
     Vec3fa& p0() { return v[0][0]; }
     Vec3fa& p1() { return v[0][3]; }
     Vec3fa& p2() { return v[3][3]; }
@@ -1261,7 +1273,17 @@ namespace embree
       return bounds;
     }
  
-    
+   __forceinline void exportConrolPoints( Vec3fa matrix[4][4], Vec3fa f_m[2][2] ) const
+   {
+     for (size_t y=0;y<4;y++)
+       for (size_t x=0;x<4;x++)
+	 matrix[y][x] = (Vertex)v[y][x];
+
+     for (size_t y=0;y<2;y++)
+       for (size_t x=0;x<2;x++)
+	 f_m[y][x] = (Vertex)f[y][x];
+   }
+
   };
 
 

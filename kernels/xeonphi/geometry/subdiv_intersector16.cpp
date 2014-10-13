@@ -348,7 +348,7 @@ namespace embree
   }
 
 
-
+  
   void subdivide_intersect1_eval(const size_t rayIndex, 
 				 const mic_f &dir_xyz,
 				 const mic_f &org_xyz,
