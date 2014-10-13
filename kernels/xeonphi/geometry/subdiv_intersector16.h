@@ -55,6 +55,17 @@ namespace embree
 				 const Vec2f &s,
 				 const Vec2f &t,
 				 const unsigned int subdiv_level);
+
+  void subdivide_intersect1_eval(const size_t rayIndex, 
+				 const mic_f &dir_xyz,
+				 const mic_f &org_xyz,
+				 Ray16& ray16,
+				 const GregoryPatch &patch,
+				 const unsigned int geomID,
+				 const unsigned int primID,
+				 const Vec2f &s,
+				 const Vec2f &t,
+				 const unsigned int subdiv_level);
   
 
   template< bool ENABLE_INTERSECTION_FILTER>

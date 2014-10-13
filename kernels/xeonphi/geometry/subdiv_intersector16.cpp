@@ -394,6 +394,52 @@ namespace embree
       }
   }
 
+
+  void subdivide_intersect1_eval(const size_t rayIndex, 
+				 const mic_f &dir_xyz,
+				 const mic_f &org_xyz,
+				 Ray16& ray16,
+				 const GregoryPatch &patch,
+				 const unsigned int geomID,
+				 const unsigned int primID,
+				 const Vec2f &s,
+				 const Vec2f &t,
+				 const unsigned int subdiv_level)
+  {
+    if (subdiv_level == 0)
+      {
+	Vec3fa vtx[4];
+	vtx[0] = patch.eval(s[0],t[0]);
+	vtx[1] = patch.eval(s[1],t[0]);
+	vtx[2] = patch.eval(s[1],t[1]);
+	vtx[3] = patch.eval(s[0],t[1]);
+
+       intersect1_quad(rayIndex,
+		       dir_xyz,
+		       org_xyz,
+		       ray16,
+		       vtx[0],
+		       vtx[1],
+		       vtx[2],
+		       vtx[3],
+		       geomID,
+		       primID);      
+      }
+    else
+      {
+	const float mid_s = 0.5f * (s[0]+s[1]);
+	const float mid_t = 0.5f * (t[0]+t[1]);
+	Vec2f s_left(s[0],mid_s);
+	Vec2f s_right(mid_s,s[1]);
+	Vec2f t_left(t[0],mid_t);
+	Vec2f t_right(mid_t,t[1]);
+	subdivide_intersect1_eval(rayIndex,dir_xyz,org_xyz,ray16,patch,geomID,primID,s_left ,t_left,subdiv_level - 1);
+	subdivide_intersect1_eval(rayIndex,dir_xyz,org_xyz,ray16,patch,geomID,primID,s_right,t_left,subdiv_level - 1);
+	subdivide_intersect1_eval(rayIndex,dir_xyz,org_xyz,ray16,patch,geomID,primID,s_right,t_right,subdiv_level - 1);
+	subdivide_intersect1_eval(rayIndex,dir_xyz,org_xyz,ray16,patch,geomID,primID,s_left ,t_right,subdiv_level - 1);
+      }
+  }
+
  void subdivide_intersect1(const size_t rayIndex, 
 			   const mic_f &dir_xyz,
 			   const mic_f &org_xyz,
