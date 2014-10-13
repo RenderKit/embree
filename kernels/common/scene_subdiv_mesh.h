@@ -126,13 +126,17 @@ namespace embree
         return (vertices[ getStartVertexIndex() ] + vertices[ getEndVertexIndex() ]) * 0.5f;
       }
 
+
       __forceinline Vec3fa getFaceMidPointVertex(const Vec3fa *const vertices) const
       {
-	HalfEdge *b = base();
-        const Vec3fa &v0 = vertices[ b[0].getStartVertexIndex() ];
-        const Vec3fa &v1 = vertices[ b[1].getStartVertexIndex() ];
-        const Vec3fa &v2 = vertices[ b[2].getStartVertexIndex() ];
-        const Vec3fa &v3 = vertices[ b[3].getStartVertexIndex() ];
+	HalfEdge *b = (HalfEdge *)this;
+        const Vec3fa &v0 = vertices[ b->getStartVertexIndex() ];
+	b = b->next();
+        const Vec3fa &v1 = vertices[ b->getStartVertexIndex() ];
+	b = b->next();
+        const Vec3fa &v2 = vertices[ b->getStartVertexIndex() ];
+	b = b->next();
+        const Vec3fa &v3 = vertices[ b->getStartVertexIndex() ];
         return (v0+v1+v2+v3) * 0.25f;
       }
 
