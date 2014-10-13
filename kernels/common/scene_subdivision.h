@@ -667,7 +667,7 @@ namespace embree
     typedef Vec3fa_t Vertex;      
 #endif
 
-    static __forceinline Vertex eval(const float u, const Vec3fa &p0, const Vec3fa &p1, const Vec3fa &p2, const Vec3fa &p3)
+    static __forceinline Vertex eval(const float u, const Vertex &p0, const Vertex &p1, const Vertex &p2, const Vertex &p3)
     {
       // FIXME: lookup
       const float t  = u;
@@ -693,7 +693,7 @@ namespace embree
     typedef Vec3fa_t Vertex;      
 #endif
 
-    static __forceinline Vertex eval(const float u, const Vec3fa &p0, const Vec3fa &p1, const Vec3fa &p2, const Vec3fa &p3)
+    static __forceinline Vertex eval(const float u, const Vertex &p0, const Vertex &p1, const Vertex &p2, const Vertex &p3)
     {
       // FIXME: lookup
       const float t  = u;
@@ -1318,25 +1318,42 @@ namespace embree
      if (uu == 0.0f || uu == 1.0f || vv == 0.0f || vv == 1.0f) return;
 
      const Vertex F0 = (      uu  * f0_p() +       vv  * f0_m()) * 1.0f/(uu+vv);
-     const Vertex F1 = ((1.0f-uu) * f1_p() +       vv  * f1_m()) * 1.0f/(1.0f-uu+vv);
+     const Vertex F1 = ((1.0f-uu) * f1_m() +       vv  * f1_p()) * 1.0f/(1.0f-uu+vv);
      const Vertex F2 = ((1.0f-uu) * f2_p() + (1.0f-vv) * f2_m()) * 1.0f/(2.0f-uu-vv);
-     const Vertex F3 = (      uu  * f3_p() + (1.0f-vv) * f3_m()) * 1.0f/(1.0f+uu-vv);
+     const Vertex F3 = (      uu  * f3_m() + (1.0f-vv) * f3_p()) * 1.0f/(1.0f+uu-vv);
 
      matrix[1][1] = F0;
      matrix[1][2] = F1;
      matrix[2][2] = F2;
      matrix[2][1] = F3;     
+
    }
 
     __forceinline Vec3fa eval(const float uu, const float vv) const
     {
-      Vec3fa matrix[4][4];
+      __aligned(64) Vec3fa matrix[4][4];
       exportBicubicBezierPatch(matrix,uu,vv);
-      const Vertex curve0 = CubicBezierCurve::eval(vv,matrix[0][0],matrix[1][0],matrix[2][0],matrix[3][0]);
-      const Vertex curve1 = CubicBezierCurve::eval(vv,matrix[0][1],matrix[1][1],matrix[2][1],matrix[3][1]);
-      const Vertex curve2 = CubicBezierCurve::eval(vv,matrix[0][2],matrix[1][2],matrix[2][2],matrix[3][2]);
-      const Vertex curve3 = CubicBezierCurve::eval(vv,matrix[0][3],matrix[1][3],matrix[2][3],matrix[3][3]);
-      return CubicBezierCurve::eval(uu,curve0,curve1,curve2,curve3);
+
+      const float one_minus_uu = 1.0f - uu;
+      const float one_minus_vv = 1.0f - vv;      
+
+      const float B0_u = one_minus_uu * one_minus_uu * one_minus_uu;
+      const float B0_v = one_minus_vv * one_minus_vv * one_minus_vv;
+      const float B1_u = 3.0f * one_minus_uu * one_minus_uu * uu;
+      const float B1_v = 3.0f * one_minus_vv * one_minus_vv * vv;
+      const float B2_u = 3.0f * one_minus_uu * uu * uu;
+      const float B2_v = 3.0f * one_minus_vv * vv * vv;
+      const float B3_u = uu * uu * uu;
+      const float B3_v = vv * vv * vv;
+
+      const Vertex res = 
+	(B0_u * matrix[0][0] + B1_u * matrix[0][1] + B2_u * matrix[0][2] + B3_u * matrix[0][3]) * B0_v + 
+	(B0_u * matrix[1][0] + B1_u * matrix[1][1] + B2_u * matrix[1][2] + B3_u * matrix[1][3]) * B1_v + 
+	(B0_u * matrix[2][0] + B1_u * matrix[2][1] + B2_u * matrix[2][2] + B3_u * matrix[2][3]) * B2_v + 
+	(B0_u * matrix[3][0] + B1_u * matrix[3][1] + B2_u * matrix[3][2] + B3_u * matrix[3][3]) * B3_v; 
+      
+      return res;
+
     }
 
   };

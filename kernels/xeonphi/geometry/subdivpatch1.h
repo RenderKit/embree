@@ -19,6 +19,7 @@
 #include "primitive.h"
 #include "common/scene_subdiv_mesh.h"
 #include "common/scene_subdivision.h"
+#include "bicubic_bezier_patch.h"
 
 // right now everything is shared between xeon and xeon phi, so moved all stuff to common/scene_subdivision.h
 
@@ -72,33 +73,58 @@ namespace embree
 	{
 	  flags |= GREGORY_PATCH;
 
-#if 0
-	  init( patch );
+#if 1
+	  RegularCatmullClarkPatch rpatch;
 
-	  DBG_PRINT( patch.limitVtx0() ); 
-	  DBG_PRINT( patch.limitVtx1() ); 
-	  DBG_PRINT( patch.limitVtx2() ); 
-	  DBG_PRINT( patch.limitVtx3() ); 
+	  init( rpatch );
 
-	  DBG_PRINT( patch.eval(0.0f,0.0f) ); 
-	  DBG_PRINT( patch.eval(1.0f,0.0f) ); 
-	  DBG_PRINT( patch.eval(1.0f,1.0f) ); 
-	  DBG_PRINT( patch.eval(0.0f,1.0f) ); 
-	  DBG_PRINT( patch.eval(0.5f,0.5f) ); 
+	  BicubicBezierPatch bpatch;
+
+	  bpatch.init( rpatch.v );
+
+
 #endif
 
 	  GregoryPatch gpatch; 
 	  gpatch.init( first_half_edge, vertices ); 
 	  
+	  //DBG_PRINT(gpatch);
+
 	  gpatch.exportConrolPoints( patch.v, f_m );
 #if 0
-	  DBG_PRINT(gpatch);
 
+	  DBG_PRINT( rpatch.eval(0.0f,0.0f) ); 
 	  DBG_PRINT( gpatch.eval(0.0f,0.0f) );
-	  DBG_PRINT( gpatch.eval(1.0f,0.0f) );
-	  DBG_PRINT( gpatch.eval(1.0f,1.0f) );
+
+	  DBG_PRINT( rpatch.eval(0.0f,1.0f) ); 
 	  DBG_PRINT( gpatch.eval(0.0f,1.0f) );
-	  DBG_PRINT( gpatch.eval(0.5f,0.5f) ); 
+
+	  DBG_PRINT( rpatch.eval(1.0f,1.0f) ); 
+	  DBG_PRINT( gpatch.eval(1.0f,1.0f) );
+
+	  DBG_PRINT( rpatch.eval(1.0f,0.0f) ); 
+	  DBG_PRINT( gpatch.eval(1.0f,0.0f) );
+
+	  DBG_PRINT( rpatch.eval(0.5f,0.5f) ); 
+	  DBG_PRINT( gpatch.eval(0.5f,0.5f) );
+
+	  DBG_PRINT( rpatch.eval(0.25f,0.25f) ); 
+	  DBG_PRINT( gpatch.eval(0.25f,0.25f) );
+	  DBG_PRINT( bpatch.eval(0.25f,0.25f) );
+
+	  DBG_PRINT(bpatch);
+
+	  exit(0);
+
+	  DBG_PRINT( rpatch.eval(0.75f,0.75f) ); 
+	  DBG_PRINT( gpatch.eval(0.75f,0.75f) );
+
+	  DBG_PRINT( rpatch.eval(0.25f,0.75f) ); 
+	  DBG_PRINT( gpatch.eval(0.25f,0.75f) );
+
+	  DBG_PRINT( rpatch.eval(0.75f,0.25f) ); 
+	  DBG_PRINT( gpatch.eval(0.75f,0.25f) );
+
 #endif
 
 	}

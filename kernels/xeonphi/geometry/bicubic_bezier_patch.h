@@ -38,6 +38,15 @@ namespace embree
   public:
     Vec3fa cp[4][4];
 
+    BicubicBezierPatch() {}
+
+    BicubicBezierPatch(Vec3fa matrix[4][4]) 
+      {
+	for (size_t y=0;y<4;y++)
+	  for (size_t x=0;x<4;x++)
+	    cp[y][x] = matrix[y][x];
+	
+      }
 
     // ==================================================
     // ======== evaluate using the full 4x4 matrix ======
@@ -238,35 +247,35 @@ namespace embree
 
       const mic_f B0_u = one_minus_u * one_minus_u * one_minus_u;
       const mic_f B0_v = one_minus_v * one_minus_v * one_minus_v;
-      const mic_f B1_u = one_minus_u * one_minus_u * u;
-      const mic_f B1_v = one_minus_v * one_minus_v * v;
-      const mic_f B2_u = one_minus_u * u * u;
-      const mic_f B2_v = one_minus_v * v * v;
+      const mic_f B1_u = 3.0f * one_minus_u * one_minus_u * u;
+      const mic_f B1_v = 3.0f * one_minus_v * one_minus_v * v;
+      const mic_f B2_u = 3.0f * one_minus_u * u * u;
+      const mic_f B2_v = 3.0f * one_minus_v * v * v;
       const mic_f B3_u = u * u * u;
       const mic_f B3_v = v * v * v;
 
       const mic_f x = \
-	(B0_u * cp[0][0].x + B1_u * cp[0][1].x + B2_u * cp[0][2].x + B3_u * cp[0][3].x) * B0_v + 
-	(B0_u * cp[1][0].x + B1_u * cp[1][1].x + B2_u * cp[1][2].x + B3_u * cp[1][3].x) * B1_v + 
-	(B0_u * cp[2][0].x + B1_u * cp[2][1].x + B2_u * cp[2][2].x + B3_u * cp[2][3].x) * B2_v + 
-	(B0_u * cp[3][0].x + B1_u * cp[3][1].x + B2_u * cp[3][2].x + B3_u * cp[3][3].x) * B3_v; 
+	(B0_u * cp[0][0].x + B1_u * cp[0][1].x + B2_u * cp[0][2].x + B3_u * cp[0][3].x) * B3_v + 
+	(B0_u * cp[1][0].x + B1_u * cp[1][1].x + B2_u * cp[1][2].x + B3_u * cp[1][3].x) * B2_v + 
+	(B0_u * cp[2][0].x + B1_u * cp[2][1].x + B2_u * cp[2][2].x + B3_u * cp[2][3].x) * B1_v + 
+	(B0_u * cp[3][0].x + B1_u * cp[3][1].x + B2_u * cp[3][2].x + B3_u * cp[3][3].x) * B0_v; 
 
       const mic_f y = \
-	(B0_u * cp[0][0].y + B1_u * cp[0][1].y + B2_u * cp[0][2].y + B3_u * cp[0][3].y) * B0_v + 
-	(B0_u * cp[1][0].y + B1_u * cp[1][1].y + B2_u * cp[1][2].y + B3_u * cp[1][3].y) * B1_v + 
-	(B0_u * cp[2][0].y + B1_u * cp[2][1].y + B2_u * cp[2][2].y + B3_u * cp[2][3].y) * B2_v + 
-	(B0_u * cp[3][0].y + B1_u * cp[3][1].y + B2_u * cp[3][2].y + B3_u * cp[3][3].y) * B3_v; 
+	(B0_u * cp[0][0].y + B1_u * cp[0][1].y + B2_u * cp[0][2].y + B3_u * cp[0][3].y) * B3_v + 
+	(B0_u * cp[1][0].y + B1_u * cp[1][1].y + B2_u * cp[1][2].y + B3_u * cp[1][3].y) * B2_v + 
+	(B0_u * cp[2][0].y + B1_u * cp[2][1].y + B2_u * cp[2][2].y + B3_u * cp[2][3].y) * B1_v + 
+	(B0_u * cp[3][0].y + B1_u * cp[3][1].y + B2_u * cp[3][2].y + B3_u * cp[3][3].y) * B0_v; 
 
       const mic_f z = \
-	(B0_u * cp[0][0].z + B1_u * cp[0][1].z + B2_u * cp[0][2].z + B3_u * cp[0][3].z) * B0_v + 
-	(B0_u * cp[1][0].z + B1_u * cp[1][1].z + B2_u * cp[1][2].z + B3_u * cp[1][3].z) * B1_v + 
-	(B0_u * cp[2][0].z + B1_u * cp[2][1].z + B2_u * cp[2][2].z + B3_u * cp[2][3].z) * B2_v + 
-	(B0_u * cp[3][0].z + B1_u * cp[3][1].z + B2_u * cp[3][2].z + B3_u * cp[3][3].z) * B3_v; 
+	(B0_u * cp[0][0].z + B1_u * cp[0][1].z + B2_u * cp[0][2].z + B3_u * cp[0][3].z) * B3_v + 
+	(B0_u * cp[1][0].z + B1_u * cp[1][1].z + B2_u * cp[1][2].z + B3_u * cp[1][3].z) * B2_v + 
+	(B0_u * cp[2][0].z + B1_u * cp[2][1].z + B2_u * cp[2][2].z + B3_u * cp[2][3].z) * B1_v + 
+	(B0_u * cp[3][0].z + B1_u * cp[3][1].z + B2_u * cp[3][2].z + B3_u * cp[3][3].z) * B0_v; 
       return mic3f(x,y,z);
     }
 
 
-    __forceinline void init(const Vec3fa cc_patch[4][4])
+    __forceinline void init(const Vec3fa cc_patch[4][4]) // from a b-spline patch
     {
       const mic_f b11 = (bc(cc_patch[1][1]) * 4.0f + (bc(cc_patch[1][2]) + bc(cc_patch[2][1])) * 2.0f + bc(cc_patch[2][2])) * 1.0f / 9.0f;
       const mic_f b12 = (bc(cc_patch[1][2]) * 4.0f + (bc(cc_patch[1][1]) + bc(cc_patch[2][2])) * 2.0f + bc(cc_patch[2][1])) * 1.0f / 9.0f;
