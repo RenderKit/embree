@@ -161,10 +161,8 @@ namespace embree
 
     __forceinline void init( IrregularCatmullClarkPatch& patch) const
     {
-      for (size_t i=0;i<4;i++)
-	{
-	  patch.ring[i].init(first_half_edge + i,vertices);
-	}
+      for (size_t i=0; i<4; i++)
+        patch.ring[i].init(first_half_edge + i,vertices);
     }
 
     __forceinline void init( RegularCatmullClarkPatch& cc_patch) const

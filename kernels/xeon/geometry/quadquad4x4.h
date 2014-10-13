@@ -172,8 +172,8 @@ namespace embree
 
   public:
       
-    __forceinline QuadQuad4x4(unsigned x, unsigned y, Array2D<Vec3fa>& vertices, unsigned levels, unsigned geomID, unsigned primID)
-      : bx(x), by(y), vertices(vertices), levels(levels-1), geomID(geomID), primID(primID) {}
+    __forceinline QuadQuad4x4(unsigned x, unsigned y, unsigned levels, unsigned geomID, unsigned primID)
+      : bx(x), by(y), levels(levels-1), geomID(geomID), primID(primID) {}
     
     const BBox3fa leafBounds(size_t x, size_t y)
     {
@@ -220,7 +220,7 @@ namespace embree
     
   public:
     unsigned bx,by;            //!< coordinates of subtree
-    Array2D<Vec3fa>& vertices; //!< pointer to vertices
+    Array2D<Vec3fa> vertices; //!< pointer to vertices
     unsigned levels;           //!< number of stored levels
     unsigned primID;
     unsigned geomID;

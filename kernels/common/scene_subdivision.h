@@ -335,17 +335,17 @@ namespace embree
     }
     
     friend __forceinline std::ostream &operator<<(std::ostream& out, const CatmullClark1Edge& edge)
-      {
-	out << std::endl;
-	for (size_t y=0; y<3; y++) {
-	  for (size_t x=0; x<edge.K+1; x++) {
-	    //out << patch.v(x,y) << " ";
-	    out << std::setw(10) << edge.v(x,y).x << " ";
-	  }
-	  out << std::endl;
-	}
-	return out;
-      } 
+    {
+      out << std::endl;
+      for (size_t y=0; y<3; y++) {
+        for (size_t x=0; x<edge.K+1; x++) {
+          //out << patch.v(x,y) << " ";
+          out << std::setw(10) << edge.v(x,y).x << " ";
+        }
+        out << std::endl;
+      }
+      return out;
+    } 
     
   public:
     Array2D<Vec3fa> v;
@@ -363,18 +363,26 @@ namespace embree
     typedef Vec3fa_t Vertex;      
 #endif
 
+    __forceinline IrregularCatmullClarkPatch () {}
+
+    __forceinline IrregularCatmullClarkPatch (const SubdivMesh::HalfEdge* first_half_edge, const Vec3fa* vertices) 
+    {
+      for (size_t i=0; i<4; i++)
+        ring[i].init(first_half_edge+i,vertices);
+    }
+
     __forceinline BBox3fa bounds() const
     {
-      BBox3fa bounds ( ring[0].bounds() );
-      for (size_t i=1;i<4;i++)
-	bounds.extend( ring[i].bounds() );
+      BBox3fa bounds (ring[0].bounds());
+      for (size_t i=1; i<4; i++)
+	bounds.extend(ring[i].bounds());
       return bounds;
     }
 
-    static __forceinline void init_regular(const CatmullClark1Ring &p0,
-					   const CatmullClark1Ring &p1,
-					   CatmullClark1Ring &dest0,
-					   CatmullClark1Ring &dest1) 
+    static __forceinline void init_regular(const CatmullClark1Ring& p0,
+					   const CatmullClark1Ring& p1,
+					   CatmullClark1Ring& dest0,
+					   CatmullClark1Ring& dest1) 
     {
       dest0.valence = 4;
       dest0.num_vtx = 8;
@@ -509,16 +517,154 @@ namespace embree
       quad.vtx[3] = (Vertex)ring[3].vtx;
     };
 
-  };
-
-
-  __forceinline std::ostream &operator<<(std::ostream &o, const IrregularCatmullClarkPatch &p)
+    friend __forceinline std::ostream &operator<<(std::ostream &o, const IrregularCatmullClarkPatch &p)
     {
       o << "rings: " << std::endl;
       for (size_t i=0;i<4;i++)
 	o << i << " -> " << p.ring[i] << std::endl;
       return o;
     } 
+  };
+
+  struct SubdivideIrregularCatmullClarkPatch
+  {
+    SubdivideIrregularCatmullClarkPatch (const IrregularCatmullClarkPatch& patch, const unsigned int levels, Array2D<Vec3fa>& v)
+    : K(1), v(v)
+    {
+      size_t N = 1<<levels;
+      size_t M = N+1;
+      v.init(M,M,Vec3fa(nan));
+      ring00 = patch.ring[0];
+      ring10 = patch.ring[1];
+      ring11 = patch.ring[2];
+      ring01 = patch.ring[3];
+      edgeT.init(M,ring00,ring10);
+      edgeR.init(M,ring10,ring11);
+      edgeB.init(M,ring11,ring01);
+      edgeL.init(M,ring01,ring00);
+      init();
+
+      for (size_t l=0; l<levels; l++)
+      subdivide();
+    }
+
+      void subdivide_points()
+      {
+        size_t K0 = K;
+        size_t K1 = 2*K;
+
+        assert(2*K+1 <= v.width());
+        assert(2*K+1 <= v.height());
+
+        for (ssize_t y=K; y>=0; y--) {
+          for (ssize_t x=K; x>=0; x--) {
+            v(2*x+0,2*y+0) = v(x,y);
+          }
+        }
+        for (ssize_t y=0; y<K; y++) {
+          for (ssize_t x=0; x<K; x++) {
+            v(2*x+1,2*y+0) = Vec3fa(nan);
+            v(2*x+0,2*y+1) = Vec3fa(nan);
+            v(2*x+1,2*y+1) = Vec3fa(nan);
+          }
+        }
+
+        for (ssize_t x=K-1; x>=0; x--) 
+        {
+          const Vec3fa c00 = v(2*x+0,0);
+          const Vec3fa c10 = v(2*x+2,0);
+          const Vec3fa c01 = v(2*x+0,2);
+          const Vec3fa c11 = v(2*x+2,2);
+          v(2*x+1,1) = 0.25f*(c00+c01+c10+c11);
+          v(2*x+2,1) = 0.50f*(c10+c11);
+        }
+        
+        for (size_t y=1; y<K; y++)
+        {
+          //Vec3fa v20 = zero;
+          Vec3fa c20 = zero;
+          Vec3fa v21 = zero;
+          Vec3fa v22 = zero;
+
+          //Vec3fa v10 = v(2*K,0);
+          Vec3fa v11 = v(2*K,2*y);
+          Vec3fa v12 = v(2*K,2*y+2);
+
+          for (ssize_t x=K-1; x>=0; x--) 
+          {
+            /* load next column */
+            //Vec3fa v00 = v(2*x,2*y-2);
+            Vec3fa v01 = v(2*x,2*y+0);
+            Vec3fa v02 = v(2*x,2*y+2);
+            
+            /* calculate face points and edge centers */
+            const Vec3fa c00 = v(2*x+1,2*y-1);
+            const Vec3fa c10 = v(2*x+2,2*y-1);
+            //const Vec3fa c20 = v(2*x+3,2*y-1);
+            const Vec3fa c01 = 0.50f*(v01+v11);
+            const Vec3fa c21 = 0.50f*(v11+v21);
+            const Vec3fa c02 = 0.25f*(v01+v11+v02+v12);
+            const Vec3fa c12 = 0.50f*(v11+v12);
+            const Vec3fa c22 = 0.25f*(v11+v21+v12+v22);
+
+            /* store face points and edge point at 2*x+1 */
+            //v(2*x+1,2*y-1) = c00;
+            v(2*x+1,2*y+0) = 0.5f*(c01+0.5f*(c00+c02));
+            v(2*x+1,2*y+1) = c02;
+
+            /* store face points and edge point at 2*x+2 */
+            const Vec3fa F = 0.25f*(c00+c20+c02+c22);
+            const Vec3fa R = 0.25f*(c10+c01+c21+c12);
+            const Vec3fa P = v11;
+            v(2*x+2,2*y-1) = 0.5f*(c10+0.5f*(c00+c20));
+            v(2*x+2,2*y+0) = 0.25*F + 0.5*R + 0.25*P;
+            v(2*x+2,2*y+1) = c12;
+            
+            /* propagate points to next iteration */
+            //v20 = v10; v10 = v00;
+            v21 = v11; v11 = v01;
+            v22 = v12; v12 = v02;
+            c20 = c00;
+          }        
+        }
+
+        for (ssize_t x=1; x<K; x++) 
+          v(2*x,2*K-1) = 0.5f*(v(2*x,2*K-1)+0.5f*(v(2*x-1,2*K-1)+v(2*x+1,2*K-1)));
+
+        K=2*K;
+        init();
+      }
+
+      void init()
+      {
+        for (size_t i=0; i<(K+1); i++)
+        {
+          v(i,0) = edgeT.v(i,1);
+          v(K,i) = edgeR.v(i,1);
+          v(i,K) = edgeB.v(K-i,1);
+          v(0,i) = edgeL.v(K-i,1);
+        }
+      }
+
+      void subdivide()
+      {
+        CatmullClark1Ring ring00a; ring00.update(ring00a); ring00 = ring00a;
+        CatmullClark1Ring ring01a; ring01.update(ring01a); ring01 = ring01a;
+        CatmullClark1Ring ring10a; ring10.update(ring10a); ring10 = ring10a;
+        CatmullClark1Ring ring11a; ring11.update(ring11a); ring11 = ring11a;
+        edgeT.subdivide(ring00,ring10);
+        edgeR.subdivide(ring10,ring11);
+        edgeB.subdivide(ring11,ring01);
+        edgeL.subdivide(ring01,ring00);
+        subdivide_points();
+      }
+
+  public:
+    size_t K;
+    CatmullClark1Ring ring00,ring01,ring10,ring11;
+    CatmullClark1Edge edgeT, edgeB, edgeL, edgeR; 
+    Array2D<Vec3fa>& v;
+  };
 
   class CubicBSpline
   {
