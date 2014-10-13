@@ -218,30 +218,6 @@ namespace embree
 	return false;
       }
 
-      __forceinline Vec3fa getLimitTangent() const {
-
-	do {
-	  i++;
-	  if (unlikely(!p->hasOpposite()))
-	    {
-	      foundEdge = true;
-	      break;
-	    }
-
-	  p = p->opposite();
-	  p = p->next();
-	} while( p != this);
-
-	if (unlikely(foundEdge))
-	  {
-	    FATAL("NOT YET IMPLEMENTED");
-	  }
-
-	return i;
-      };
-	
-      }
-
     };
 
   public: // FIXME: make private

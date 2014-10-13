@@ -240,9 +240,6 @@ namespace embree
           beta += c * cosf((2.0f*M_PI*(float)i+M_PI)/n) * ring[2*i+1];
 	}
 
-      DBG_PRINT( alpha );
-      DBG_PRINT( beta );
-
       return alpha +  beta;      
     }
 
@@ -1094,6 +1091,20 @@ namespace embree
     }
 
 
+#if 1
+    Vec3fa initEdgeVertex(const SubdivMesh::HalfEdge *const h,
+                          const Vec3fa *const vertices,
+                          const Vec3fa &p_vtx)
+    {
+      CatmullClark1Ring ring;
+      ring.init(h,vertices);
+      Vec3fa tangent = ring.getLimitTangent();
+      DBG_PRINT(tangent);
+      return 1.0f/3.0f * tangent + p_vtx;
+    }
+#else
+    // this version seems to produce incorrect tangents
+
     Vec3fa initEdgeVertex(const SubdivMesh::HalfEdge *const h,
                           const Vec3fa *const vertices,
                           const Vec3fa &p_vtx)
@@ -1124,6 +1135,7 @@ namespace embree
       const float lambda = 1.0f/16.0f*(5.0f+cosf((2.0f*M_PI)/n)+cosf(M_PI/n)*sqrtf(18.0f+2.0f*cosf((2.0f*M_PI)/n)));
       return p_vtx + 2.0f/3.0f*lambda*q;
     }
+#endif
 
     Vec3fa initFaceVertex(const SubdivMesh::HalfEdge *const h,
                           const Vec3fa *const vertices,
@@ -1174,14 +1186,11 @@ namespace embree
       const SubdivMesh::HalfEdge *const h_e3_p = h_p3;
 
       e0_p() = initEdgeVertex(h_e0_p, vertices, p0());
-
-     DBG_PRINT( e0_p() );
-     exit(0);
-
-       e1_p() = initEdgeVertex(h_e1_p, vertices, p1());
+      e1_p() = initEdgeVertex(h_e1_p, vertices, p1());
       e2_p() = initEdgeVertex(h_e2_p, vertices, p2());
       e3_p() = initEdgeVertex(h_e3_p, vertices, p3());
 
+      DBG_PRINT( e0_p() );
       DBG_PRINT( e1_p() );
       DBG_PRINT( e2_p() );
       DBG_PRINT( e3_p() );
@@ -1202,8 +1211,7 @@ namespace embree
       DBG_PRINT( e2_m() );
       DBG_PRINT( e3_m() );
 
-      exit( 0 );
-
+ 
       f0_p() = initFaceVertex(h_e0_p,vertices,p0(),e0_p(),e0_m(),valence_p0,valence_p1);
       f0_m() = initFaceVertex(h_e0_m,vertices,p0(),e0_p(),e0_m(),valence_p0,valence_p3); // switch e0_p and e0_m ?
 
@@ -1218,6 +1226,8 @@ namespace embree
 
       DBG_PRINT( f0_p() );
       DBG_PRINT( f0_m() );
+
+      exit( 0 );
 
     }
 
