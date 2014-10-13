@@ -528,8 +528,8 @@ namespace embree
 
   struct SubdivideIrregularCatmullClarkPatch
   {
-    SubdivideIrregularCatmullClarkPatch (const IrregularCatmullClarkPatch& patch, const unsigned int levels, Array2D<Vec3fa>& v)
-    : K(1), v(v)
+    SubdivideIrregularCatmullClarkPatch (const IrregularCatmullClarkPatch& patch, const unsigned int levels)
+    : K(1)
     {
       size_t N = 1<<levels;
       size_t M = N+1;
@@ -545,7 +545,7 @@ namespace embree
       init();
 
       for (size_t l=0; l<levels; l++)
-      subdivide();
+        subdivide();
     }
 
       void subdivide_points()
@@ -663,7 +663,7 @@ namespace embree
     size_t K;
     CatmullClark1Ring ring00,ring01,ring10,ring11;
     CatmullClark1Edge edgeT, edgeB, edgeL, edgeR; 
-    Array2D<Vec3fa>& v;
+    Array2D<Vec3fa> v;
   };
 
   class CubicBSpline
