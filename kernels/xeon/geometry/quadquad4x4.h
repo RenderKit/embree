@@ -179,15 +179,15 @@ namespace embree
     {
       BBox3fa bounds = empty;
       x *= 2; y *= 2;
-      bounds.extend(vertices(x+0,y+0));
-      bounds.extend(vertices(x+1,y+0));
-      bounds.extend(vertices(x+2,y+0));
-      bounds.extend(vertices(x+0,y+1));
-      bounds.extend(vertices(x+1,y+1));
-      bounds.extend(vertices(x+2,y+1));
-      bounds.extend(vertices(x+0,y+2));
-      bounds.extend(vertices(x+1,y+2));
-      bounds.extend(vertices(x+2,y+2));
+      bounds.extend(v[y+0][x+0]);
+      bounds.extend(v[y+0][x+1]);
+      bounds.extend(v[y+0][x+2]);
+      bounds.extend(v[y+1][x+0]);
+      bounds.extend(v[y+1][x+1]);
+      bounds.extend(v[y+1][x+2]);
+      bounds.extend(v[y+2][x+0]);
+      bounds.extend(v[y+2][x+1]);
+      bounds.extend(v[y+2][x+2]);
       return bounds;
     }
     
@@ -217,12 +217,12 @@ namespace embree
       
       return bounds;
     }
-    
+
   public:
-    Array2D<Vec3fa> vertices; //!< pointer to vertices
     unsigned levels;           //!< number of stored levels
     unsigned primID;
     unsigned geomID;
     Node16 n;  //!< child nodes
+    Vec3fa v[9][9]; //!< pointer to vertices
   };
 }

@@ -83,10 +83,9 @@ namespace embree
         SubdivideIrregularCatmullClarkPatch subdivided(patch,3);
         displace(8*x,8*y,l+3,subdivided.v);
 
-        leaf.vertices.init(9,9);
         for (size_t y=0; y<=8; y++)
           for (size_t x=0; x<=8; x++)
-            leaf.vertices(x,y) = subdivided.v(x,y);
+            leaf.v[y][x] = subdivided.v(x,y);
 
         const BBox3fa bounds = leaf.build();
         return std::pair<BBox3fa,BVH4::NodeRef>(bounds,bvh.encodeLeaf(&leaf,0));
