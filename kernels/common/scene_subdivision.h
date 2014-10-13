@@ -528,7 +528,7 @@ namespace embree
 
   struct SubdivideIrregularCatmullClarkPatch
   {
-    SubdivideIrregularCatmullClarkPatch (IrregularCatmullClarkPatch& patch, const unsigned int levels, Array2D<Vec3fa>& v)
+    SubdivideIrregularCatmullClarkPatch (const IrregularCatmullClarkPatch& patch, const unsigned int levels, Array2D<Vec3fa>& v)
     : K(1), v(v)
     {
       size_t N = 1<<levels;

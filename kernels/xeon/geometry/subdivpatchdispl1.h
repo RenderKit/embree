@@ -36,23 +36,151 @@ namespace embree
     static Type type;
 
     /*! branching width of the tree */
-    static const size_t N = 4;
+    //static const size_t N = 4;
 
-    const std::pair<BBox3fa,BVH4::NodeRef> build(LinearAllocatorPerThread::ThreadAllocator& alloc, unsigned x, unsigned y, unsigned l, unsigned maxDepth)
+    void displace(unsigned x0, unsigned y0, unsigned l, Array2D<Vec3fa>& v)
+    {
+      SubdivMesh* mesh = (SubdivMesh*) scene->get(geom);
+      if (mesh->displFunc == NULL) return;
+
+      size_t M = (1<<l)+1;
+      size_t width = v.width();
+      size_t height = v.height();
+
+      Vec2f* uv = new Vec2f[width];
+      Vec3fa* displ = new Vec3fa[width];
+      
+      for (size_t y=0; y<height; y++) 
+      {
+        float fy = float(y0+y)/float(M);
+        for (size_t x=0; x<width; x++) 
+        {
+          float fx = float(x0+x)/float(M);
+          uv[x] = Vec2f(fx,fy);
+        }
+
+        /* call displacement shader */
+        mesh->displFunc(mesh->userPtr,geom,prim,(RTCFloat2*)uv,(RTCFloat3a*)displ,width);
+
+        for (size_t x=0; x<width; x++) 
+        {
+          const Vec3fa dP = displ[x];
+#if defined(DEBUG)
+          if (!inside(mesh->displBounds,dP))
+            THROW_RUNTIME_ERROR("displacement out of bounds");
+#endif
+          v(x,y) += dP;
+        }
+      }
+      delete uv;
+      delete displ;
+    }
+
+    const std::pair<BBox3fa,BVH4::NodeRef> build(LinearAllocatorPerThread::ThreadAllocator& alloc, 
+                                                 const IrregularCatmullClarkPatch& patch,
+                                                 unsigned x, unsigned y, unsigned l, unsigned maxDepth)
     {
       if (l == maxDepth) {
-        new (&leaves(x,y)) QuadQuad4x4(8*x,8*y,v,3,geomID(),primID());
+        new (&leaves(x,y)) QuadQuad4x4(0,0,3,geomID(),primID());
+        SubdivideIrregularCatmullClarkPatch(patch,3,leaves(x,y).vertices);
+        displace(8*x,8*y,l+3,leaves(x,y).vertices);
         const BBox3fa bounds = leaves(x,y).build();
         return std::pair<BBox3fa,BVH4::NodeRef>(bounds,bvh.encodeLeaf(&leaves(x,y),0));
       }
+
+      IrregularCatmullClarkPatch patches[4]; 
+      patch.subdivide(patches);
+
       BVH4::Node* node = bvh.allocNode(alloc);
-      const std::pair<BBox3fa,BVH4::NodeRef> b00 = build(alloc,2*x+0,2*y+0,l+1,maxDepth); node->set(0,b00.first,b00.second);
-      const std::pair<BBox3fa,BVH4::NodeRef> b10 = build(alloc,2*x+1,2*y+0,l+1,maxDepth); node->set(1,b10.first,b10.second);
-      const std::pair<BBox3fa,BVH4::NodeRef> b01 = build(alloc,2*x+0,2*y+1,l+1,maxDepth); node->set(2,b01.first,b01.second);
-      const std::pair<BBox3fa,BVH4::NodeRef> b11 = build(alloc,2*x+1,2*y+1,l+1,maxDepth); node->set(3,b11.first,b11.second);
+      const std::pair<BBox3fa,BVH4::NodeRef> b00 = build(alloc,patches[0],2*x+0,2*y+0,l+1,maxDepth); node->set(0,b00.first,b00.second);
+      const std::pair<BBox3fa,BVH4::NodeRef> b10 = build(alloc,patches[1],2*x+1,2*y+0,l+1,maxDepth); node->set(1,b10.first,b10.second);
+      const std::pair<BBox3fa,BVH4::NodeRef> b01 = build(alloc,patches[3],2*x+0,2*y+1,l+1,maxDepth); node->set(2,b01.first,b01.second);
+      const std::pair<BBox3fa,BVH4::NodeRef> b11 = build(alloc,patches[2],2*x+1,2*y+1,l+1,maxDepth); node->set(3,b11.first,b11.second);
       const BBox3fa bounds = merge(b00.first,b10.first,b01.first,b11.first);
       return std::pair<BBox3fa,BVH4::NodeRef>(bounds,bvh.encodeNode(node));
     }
+
+  public:
+    
+    /*! Construction from vertices and IDs. */
+    __forceinline SubdivPatchDispl1 (BVH4::NodeRef& parent,
+                                     Scene* scene,
+                                     const SubdivMesh::HalfEdge* h, 
+                                     const Vec3fa* vertices, 
+                                     const unsigned int geom, 
+                                     const unsigned int prim, 
+                                     const unsigned int level,
+                                     const bool last)
+      : initializing(0), initialized(0), scene(scene), parent(parent), bvh(PrimitiveType2<QuadQuad4x4,SubdivPatchDispl1>::type,scene,false), 
+        h(h), vertices(vertices), geom(geom), prim(prim), levels(level) { assert(last); }
+
+    size_t initialize()
+    {
+      if (atomic_add(&initializing,1) != 0) {
+        while (!initialized) __pause();
+        return (size_t)parent;
+      }
+
+      /* create patch */
+      IrregularCatmullClarkPatch patch(h,vertices);
+
+      /* build sub-BVH */
+      size_t N = 1<<levels;
+      leaves.init(N/8,N/8);
+      bvh.init(sizeof(BVH4::Node),(N/8)*(N/8),1);
+      LinearAllocatorPerThread::ThreadAllocator nodeAlloc(&bvh.alloc);
+      const std::pair<BBox3fa,BVH4::NodeRef> root = build(nodeAlloc,patch,0,0,0,levels-3);
+      bvh.bounds = root.first;
+      bvh.root   = root.second;
+
+      /* link to sub-BVH */
+      parent = bvh.root;
+      __memory_barrier();
+      initialized = 1;
+      return (size_t)bvh.root;
+    }
+
+    // FIXME: destructor gets never called !
+
+    /*! return geometry ID */
+    __forceinline unsigned int geomID() const { return geom; }
+
+    /*! return primitive ID */
+    __forceinline unsigned int primID() const { return prim; }
+
+  public:
+    volatile atomic_t initializing;
+    volatile size_t initialized;
+    BVH4::NodeRef& parent;
+
+  public:
+    const SubdivMesh::HalfEdge* h;
+    const Vec3fa* vertices;
+    size_t levels;
+
+  public:
+    BVH4 bvh;
+    Array2D<QuadQuad4x4> leaves;
+    //Array2D<Vec3fa> v;
+
+  public:
+    Scene* scene;
+    unsigned geom;
+    unsigned prim;
+  };
+}
+
+//////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////
+//  FIXME: old code
+
+#if 0
 
     struct MakeLeaf : public isa::BVH4BuilderFastGeneric::MakeLeaf
     {
@@ -88,104 +216,4 @@ namespace embree
       builder.build(0,0);
     }
 
-  public:
-    
-    /*! Construction from vertices and IDs. */
-    __forceinline SubdivPatchDispl1 (BVH4::NodeRef& parent,
-                                     Scene* scene,
-                                     const SubdivMesh::HalfEdge* h, 
-                                     const Vec3fa* vertices, 
-                                     const unsigned int geom, 
-                                     const unsigned int prim, 
-                                     const unsigned int level,
-                                     const bool last)
-      : initializing(0), initialized(0), scene(scene), parent(parent), bvh(PrimitiveType2<QuadQuad4x4,SubdivPatchDispl1>::type,scene,false), 
-        h(h), vertices(vertices), geom(geom), prim(prim), levels(level) { assert(last); }
-
-    size_t initialize()
-    {
-      if (atomic_add(&initializing,1) != 0) {
-        while (!initialized) __pause();
-        return (size_t)parent;
-      }
-
-      /* create subdivided patch */
-      IrregularCatmullClarkPatch patch(h,vertices);
-      SubdivideIrregularCatmullClarkPatch(patch,levels,v);
-
-      /* displace points */
-      size_t N = 1<<levels;
-      size_t M = N+1;
-      SubdivMesh* mesh = (SubdivMesh*) scene->get(geom);
-      if (mesh->displFunc) 
-      {
-        Vec2f* uv = new Vec2f[M];
-        Vec3fa* displ = new Vec3fa[M];
-        for (size_t y=0; y<M; y++) {
-          float fy = float(y)/float(M);
-          for (size_t x=0; x<M; x++) {
-            float fx = float(x)/float(M);
-            uv[x] = Vec2f(fx,fy);
-          }
-          mesh->displFunc(mesh->userPtr,geom,prim,(RTCFloat2*)uv,(RTCFloat3a*)displ,M);
-          for (size_t x=0; x<M; x++) {
-            const Vec3fa dP = displ[x];
-#if defined(DEBUG)
-            if (!inside(mesh->displBounds,dP))
-              THROW_RUNTIME_ERROR("displacement out of bounds");
 #endif
-            v(x,y) += dP;
-          }
-        }
-        delete uv;
-        delete displ;
-      }
-
-      /* build sub-BVH */
-      leaves.init(N/8,N/8);
-#if 1
-      bvh.init(sizeof(BVH4::Node),(N/8)*(N/8),1);
-      LinearAllocatorPerThread::ThreadAllocator nodeAlloc(&bvh.alloc);
-      const std::pair<BBox3fa,BVH4::NodeRef> root = build(nodeAlloc,0,0,0,levels-3);
-      bvh.bounds = root.first;
-      bvh.root   = root.second;
-#else
-      build(levels);
-#endif
-
-      /* link to sub-BVH */
-      parent = bvh.root;
-      __memory_barrier();
-      initialized = 1;
-      return (size_t)bvh.root;
-    }
-
-    // FIXME: destructor gets never called !
-
-    /*! return geometry ID */
-    __forceinline unsigned int geomID() const { return geom; }
-
-    /*! return primitive ID */
-    __forceinline unsigned int primID() const { return prim; }
-
-  public:
-    volatile atomic_t initializing;
-    volatile size_t initialized;
-    BVH4::NodeRef& parent;
-
-  public:
-    const SubdivMesh::HalfEdge* h;
-    const Vec3fa* vertices;
-    size_t levels;
-
-  public:
-    BVH4 bvh;
-    Array2D<QuadQuad4x4> leaves;
-    Array2D<Vec3fa> v;
-
-  public:
-    Scene* scene;
-    unsigned geom;
-    unsigned prim;
-  };
-}
