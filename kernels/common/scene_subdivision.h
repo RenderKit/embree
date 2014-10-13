@@ -321,18 +321,26 @@ namespace embree
     typedef Vec3fa_t Vertex;      
 #endif
 
+    __forceinline IrregularCatmullClarkPatch () {}
+
+    __forceinline IrregularCatmullClarkPatch (const SubdivMesh::HalfEdge* first_half_edge, const Vec3fa* vertices) 
+    {
+      for (size_t i=0; i<4; i++)
+        ring[i].init(first_half_edge+i,vertices);
+    }
+
     __forceinline BBox3fa bounds() const
     {
-      BBox3fa bounds ( ring[0].bounds() );
-      for (size_t i=1;i<4;i++)
-	bounds.extend( ring[i].bounds() );
+      BBox3fa bounds (ring[0].bounds());
+      for (size_t i=1; i<4; i++)
+	bounds.extend(ring[i].bounds());
       return bounds;
     }
 
-    static __forceinline void init_regular(const CatmullClark1Ring &p0,
-					   const CatmullClark1Ring &p1,
-					   CatmullClark1Ring &dest0,
-					   CatmullClark1Ring &dest1) 
+    static __forceinline void init_regular(const CatmullClark1Ring& p0,
+					   const CatmullClark1Ring& p1,
+					   CatmullClark1Ring& dest0,
+					   CatmullClark1Ring& dest1) 
     {
       dest0.valence = 4;
       dest0.num_vtx = 8;
