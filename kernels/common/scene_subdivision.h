@@ -206,23 +206,17 @@ namespace embree
     }
 
 
-    __forceinline Vec3fa getLimitVtx() const
+    __forceinline Vec3fa getLimitVertex() const
     {
       Vertex F( 0.0f );
       Vertex E( 0.0f );
 
-      for (size_t i=0; i<valence-1; i++)
+      for (size_t i=0; i<valence; i++)
 	{
-	  const Vertex new_face = (vtx + ring[2*i] + ring[2*i+1] + ring[2*i+2]) * 0.25f;
-	  F += new_face;
-	  E += (vtx + ring[2*i]) * 0.5f;
+	  F += ring[2*i+1];
+	  E += ring[2*i];
 	}
 
-      {
-        const Vertex new_face = (vtx + ring[num_vtx-2] + ring[num_vtx-1] + ring[0]) * 0.25f;
-        F += new_face;
-        E += (vtx + ring[num_vtx-2]) * 0.5f;
-      }
       const float n = (float)valence;
       return (Vertex)(n*n*vtx+4*E+F) / ((n+5.0f)*n);      
     }
@@ -663,29 +657,58 @@ namespace embree
     Array2D<Vec3fa> v;
   };
 
-  class CubicBSpline
+  class CubicBSplineCurve
   {
   public:
 
-    static __forceinline Vec4f getCubicBSplineEvalCoefficients(const float u) // for watertight eval
+#if !defined(__MIC__)
+    typedef Vec3fa Vertex;
+#else
+    typedef Vec3fa_t Vertex;      
+#endif
+
+    static __forceinline Vertex eval(const float u, const Vec3fa &p0, const Vec3fa &p1, const Vec3fa &p2, const Vec3fa &p3)
     {
+      // FIXME: lookup
       const float t  = u;
       const float s  = 1.0f - u;
       const float n0 = s*s*s;
       const float n1 = (4.0f*s*s*s+t*t*t) + (12.0f*s*t*s + 6.0*t*s*t);
       const float n2 = (4.0f*t*t*t+s*s*s) + (12.0f*t*s*t + 6.0*s*t*s);
       const float n3 = t*t*t;
-      return Vec4f(n0,n1,n2,n3)*1.0f/6.0f;
-    }
-
-    static __forceinline Vec3fa eval(const float u, const Vec3fa &p0, const Vec3fa &p1, const Vec3fa &p2, const Vec3fa &p3)
-    {
-      const Vec4f n = getCubicBSplineEvalCoefficients(u);
-      return p0 * n[0] + p1 * n[1] + p2 * n[2] + p3 * n[3];
+      const float c  = 1.0f/6.0f;
+      const Vertex n = c * (p0 * n0 + p1 * n1 + p2 * n2 + p3 * n3);
+      return n;
     }
     
-
   };
+
+  class CubicBezierCurve
+  {
+  public:
+
+#if !defined(__MIC__)
+    typedef Vec3fa Vertex;
+#else
+    typedef Vec3fa_t Vertex;      
+#endif
+
+    static __forceinline Vertex eval(const float u, const Vec3fa &p0, const Vec3fa &p1, const Vec3fa &p2, const Vec3fa &p3)
+    {
+      // FIXME: lookup
+      const float t  = u;
+      const float s  = 1.0f - u;
+      const float n0 = s*s*s;
+      const float n1 = 3.0f*t*s*t;
+      const float n2 = 3.0f*s*t*s;
+      const float n3 = t*t*t;
+      const Vertex n = p0 * n0 + p1 * n1 + p2 * n2 + p3 * n3;
+      return n;
+    }
+    
+  };
+
+
 
 
   template<typename T>
@@ -893,6 +916,12 @@ namespace embree
   {
   public:
 
+#if !defined(__MIC__)
+      typedef Vec3fa Vertex;
+#else
+      typedef Vec3fa_t Vertex;
+#endif
+
     __forceinline void init( FinalQuad& quad ) const
     {
       quad.vtx[0] = v[1][1];
@@ -928,12 +957,6 @@ namespace embree
     __forceinline void init(const SubdivMesh::HalfEdge *const first_half_edge,
 			    const Vec3fa *const vertices)
     {
-#if !defined(__MIC__)
-      typedef Vec3fa Vertex;
-#else
-      typedef Vec3fa_t Vertex;
-#endif
-
       // quad(0,0)
       const SubdivMesh::HalfEdge *v11 = first_half_edge;
       const SubdivMesh::HalfEdge *v01 = v11->nextAdjacentEdge()->opposite();
@@ -1005,13 +1028,13 @@ namespace embree
     }
 #endif
 
-    __forceinline Vec3fa evalCubicBSplinePatch(const float uu, const float vv) const
+    __forceinline Vec3fa eval(const float uu, const float vv) const
     {
-      const Vec3fa curve0 = CubicBSpline::eval(vv,v[0][0],v[1][0],v[2][0],v[3][0]);
-      const Vec3fa curve1 = CubicBSpline::eval(vv,v[0][1],v[1][1],v[2][1],v[3][1]);
-      const Vec3fa curve2 = CubicBSpline::eval(vv,v[0][2],v[1][2],v[2][2],v[3][2]);
-      const Vec3fa curve3 = CubicBSpline::eval(vv,v[0][3],v[1][3],v[2][3],v[3][3]);
-      return CubicBSpline::eval(uu,curve0,curve1,curve2,curve3);
+      const Vertex curve0 = CubicBSplineCurve::eval(vv,v[0][0],v[1][0],v[2][0],v[3][0]);
+      const Vertex curve1 = CubicBSplineCurve::eval(vv,v[0][1],v[1][1],v[2][1],v[3][1]);
+      const Vertex curve2 = CubicBSplineCurve::eval(vv,v[0][2],v[1][2],v[2][2],v[3][2]);
+      const Vertex curve3 = CubicBSplineCurve::eval(vv,v[0][3],v[1][3],v[2][3],v[3][3]);
+      return CubicBSplineCurve::eval(uu,curve0,curve1,curve2,curve3);
     }
   };
 
@@ -1042,6 +1065,18 @@ namespace embree
       memset(this,0,sizeof(GregoryPatch));
     }
 
+    GregoryPatch(const Vec3fa matrix[4][4],
+		 const Vec3fa f_m[2][2]) 
+      {
+	for (size_t y=0;y<4;y++)
+	  for (size_t x=0;x<4;x++)
+	    v[y][x] = (Vertex)matrix[y][x];
+
+	for (size_t y=0;y<2;y++)
+	  for (size_t x=0;x<2;x++)
+	    f[y][x] = (Vertex)f_m[y][x];
+      }
+
     Vec3fa& p0() { return v[0][0]; }
     Vec3fa& p1() { return v[0][3]; }
     Vec3fa& p2() { return v[3][3]; }
@@ -1049,13 +1084,10 @@ namespace embree
 
     Vec3fa& e0_p() { return v[0][1]; }
     Vec3fa& e0_m() { return v[1][0]; }
-
     Vec3fa& e1_p() { return v[1][3]; }
     Vec3fa& e1_m() { return v[0][2]; }
-
     Vec3fa& e2_p() { return v[3][2]; }
     Vec3fa& e2_m() { return v[2][3]; }
- 
     Vec3fa& e3_p() { return v[2][0]; }
     Vec3fa& e3_m() { return v[3][1]; }
 
@@ -1063,31 +1095,40 @@ namespace embree
     Vec3fa& f1_p() { return v[1][2]; }
     Vec3fa& f2_p() { return v[2][2]; }
     Vec3fa& f3_p() { return v[2][1]; }
-
     Vec3fa& f0_m() { return f[0][0]; }
     Vec3fa& f1_m() { return f[0][1]; }
     Vec3fa& f2_m() { return f[1][1]; }
     Vec3fa& f3_m() { return f[1][0]; }
 
+    const Vec3fa& p0() const { return v[0][0]; }
+    const Vec3fa& p1() const { return v[0][3]; }
+    const Vec3fa& p2() const { return v[3][3]; }
+    const Vec3fa& p3() const { return v[3][0]; }
+
+    const Vec3fa& e0_p() const { return v[0][1]; }
+    const Vec3fa& e0_m() const { return v[1][0]; }
+    const Vec3fa& e1_p() const { return v[1][3]; }
+    const Vec3fa& e1_m() const { return v[0][2]; }
+    const Vec3fa& e2_p() const { return v[3][2]; }
+    const Vec3fa& e2_m() const { return v[2][3]; }
+    const Vec3fa& e3_p() const { return v[2][0]; }
+    const Vec3fa& e3_m() const { return v[3][1]; }
+
+    const Vec3fa& f0_p() const { return v[1][1]; }
+    const Vec3fa& f1_p() const { return v[1][2]; }
+    const Vec3fa& f2_p() const { return v[2][2]; }
+    const Vec3fa& f3_p() const { return v[2][1]; }
+    const Vec3fa& f0_m() const { return f[0][0]; }
+    const Vec3fa& f1_m() const { return f[0][1]; }
+    const Vec3fa& f2_m() const { return f[1][1]; }
+    const Vec3fa& f3_m() const { return f[1][0]; }
+
     Vec3fa initCornerVertex(const SubdivMesh::HalfEdge *const h,
 			    const Vec3fa *const vertices)
     {
-      Vertex sum_edge_midpoints( 0.0f );
-      Vertex sum_face_midpoints( 0.0f );
-      SubdivMesh::HalfEdge *p = (SubdivMesh::HalfEdge*)h;
-      unsigned int valence = 0;
-       do 
-         {
-	   valence++;
-           sum_edge_midpoints += p->getEdgeMidPointVertex(vertices);
-           sum_face_midpoints += p->getFaceMidPointVertex(vertices);
-           assert( p->hasOpposite() );
-           p = p->opposite();
-           /*! continue with next adjacent edge */
-           p = p->next();
-         } while( p != h);
-       const float n = (float)valence;
-       return (n*n * h->getStartVertex(vertices) + 4.0f * sum_edge_midpoints + sum_face_midpoints) / (n*(n+5.0f)); // only quads
+      CatmullClark1Ring ring;
+      ring.init(h,vertices);
+      return ring.getLimitVertex();
     }
 
 
@@ -1099,7 +1140,6 @@ namespace embree
       CatmullClark1Ring ring;
       ring.init(h,vertices);
       Vec3fa tangent = ring.getLimitTangent();
-      DBG_PRINT(tangent);
       return 1.0f/3.0f * tangent + p_vtx;
     }
 #else
@@ -1131,7 +1171,6 @@ namespace embree
         } while( p != h);
       assert( i == n );
       q *= 2.0f/n;
-      DBG_PRINT( q );
       const float lambda = 1.0f/16.0f*(5.0f+cosf((2.0f*M_PI)/n)+cosf(M_PI/n)*sqrtf(18.0f+2.0f*cosf((2.0f*M_PI)/n)));
       return p_vtx + 2.0f/3.0f*lambda*q;
     }
@@ -1152,28 +1191,9 @@ namespace embree
       const Vec3fa midpoint_i_m_1 = h->opposite()->next()->getEdgeMidPointVertex(vertices);
       const Vec3fa r0 = 1.0f/3.0f * sign*(midpoint_i_p_1 - midpoint_i_m_1) + 2.0f/3.0f * sign*(center_i - center_i_m_1);
 
-      DBG_PRINT( center_i );
-      DBG_PRINT( center_i_m_1 );
-      DBG_PRINT( midpoint_i_p_1 );
-      DBG_PRINT( midpoint_i_m_1 );
-
-      DBG_PRINT(r0);
-
       const float d = 3.0f;
       const float c0 = cosf(2.0*M_PI/(float)valence0);
       const float c1 = cosf(2.0*M_PI/(float)valence1);
-
-      DBG_PRINT( c0 );
-      DBG_PRINT( c1 );
-      DBG_PRINT( (d - 2.0f*c0 - c1) * e_p_vtx);
-      DBG_PRINT( 2.0f*c0*e_m_vtx );
-      DBG_PRINT( c1 * p_vtx);
-
-      DBG_PRINT( p_vtx );
-      DBG_PRINT( e_p_vtx );
-      DBG_PRINT( e_m_vtx );
-      DBG_PRINT( r0 * 1.0f / d );
-
 
       return 1.0f / d * (c1 * p_vtx + (d - 2.0f*c0 - c1) * e_p_vtx + 2.0f*c0* e_m_vtx + r0);     
     }
@@ -1232,7 +1252,7 @@ namespace embree
       f3_p() = initFaceVertex(h_e3_p,vertices,p3(),e3_p(),e3_m(),valence_p3,valence_p2);
       f3_m() = initFaceVertex(h_e3_m,vertices,p3(),e3_m(),e3_p(),valence_p3,valence_p0,-1.0f);
 
-
+#if 0
       DBG_PRINT( p0() );
       DBG_PRINT( p1() );
       DBG_PRINT( p2() );
@@ -1262,7 +1282,7 @@ namespace embree
       DBG_PRINT( f1_m() );
       DBG_PRINT( f2_m() );
       DBG_PRINT( f3_m() );
-
+#endif
     }
 
    __forceinline BBox3fa bounds() const
@@ -1278,7 +1298,47 @@ namespace embree
       return bounds;
     }
  
-    
+   __forceinline void exportConrolPoints( Vec3fa matrix[4][4], Vec3fa f_m[2][2] ) const
+   {
+     for (size_t y=0;y<4;y++)
+       for (size_t x=0;x<4;x++)
+	 matrix[y][x] = (Vertex)v[y][x];
+
+     for (size_t y=0;y<2;y++)
+       for (size_t x=0;x<2;x++)
+	 f_m[y][x] = (Vertex)f[y][x];
+   }
+
+   __forceinline void exportBicubicBezierPatch( Vec3fa matrix[4][4], const float uu, const float vv ) const
+   {
+     for (size_t y=0;y<4;y++)
+       for (size_t x=0;x<4;x++)
+	 matrix[y][x] = (Vertex)v[y][x];
+
+     if (uu == 0.0f || uu == 1.0f || vv == 0.0f || vv == 1.0f) return;
+
+     const Vertex F0 = (      uu  * f0_p() +       vv  * f0_m()) * 1.0f/(uu+vv);
+     const Vertex F1 = ((1.0f-uu) * f1_p() +       vv  * f1_m()) * 1.0f/(1.0f-uu+vv);
+     const Vertex F2 = ((1.0f-uu) * f2_p() + (1.0f-vv) * f2_m()) * 1.0f/(2.0f-uu-vv);
+     const Vertex F3 = (      uu  * f3_p() + (1.0f-vv) * f3_m()) * 1.0f/(1.0f+uu-vv);
+
+     matrix[1][1] = F0;
+     matrix[1][2] = F1;
+     matrix[2][2] = F2;
+     matrix[2][1] = F3;     
+   }
+
+    __forceinline Vec3fa eval(const float uu, const float vv) const
+    {
+      Vec3fa matrix[4][4];
+      exportBicubicBezierPatch(matrix,uu,vv);
+      const Vertex curve0 = CubicBezierCurve::eval(vv,matrix[0][0],matrix[1][0],matrix[2][0],matrix[3][0]);
+      const Vertex curve1 = CubicBezierCurve::eval(vv,matrix[0][1],matrix[1][1],matrix[2][1],matrix[3][1]);
+      const Vertex curve2 = CubicBezierCurve::eval(vv,matrix[0][2],matrix[1][2],matrix[2][2],matrix[3][2]);
+      const Vertex curve3 = CubicBezierCurve::eval(vv,matrix[0][3],matrix[1][3],matrix[2][3],matrix[3][3]);
+      return CubicBezierCurve::eval(uu,curve0,curve1,curve2,curve3);
+    }
+
   };
 
 

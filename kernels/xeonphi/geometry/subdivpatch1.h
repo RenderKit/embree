@@ -31,7 +31,8 @@ namespace embree
     enum {
       REGULAR_PATCH = 1,
       HAS_BORDERS   = 2,
-      HAS_CREASES   = 4
+      HAS_CREASES   = 4,
+      GREGORY_PATCH = 8
     };
 
     /*! Default constructor. */
@@ -46,35 +47,75 @@ namespace embree
       primID(primID),
       subdivision_level(subdivision_level)
     {
+      u_val = Vec2f(0.0f,1.0f);
+      v_val = Vec2f(0.0f,1.0f);
+      f_m[0][0] = 0.0f;
+      f_m[0][1] = 0.0f;
+      f_m[1][1] = 0.0f;
+      f_m[1][0] = 0.0f;
+
       flags = 0;
-      if (first_half_edge->isFaceRegular()) 
+      if (first_half_edge->isFaceRegular() && 0) 
 	{
 	  flags |= REGULAR_PATCH;
 	  init( patch );
-	  DBG_PRINT( patch );
+	  /* DBG_PRINT( patch ); */
 
-	  DBG_PRINT( patch.limitVtx0() );
-	  DBG_PRINT( patch.limitVtx1() );
-	  DBG_PRINT( patch.limitVtx2() );
-	  DBG_PRINT( patch.limitVtx3() );
 
-	  DBG_PRINT( patch.evalCubicBSplinePatch(0.0f,0.0f) );
-	  DBG_PRINT( patch.evalCubicBSplinePatch(1.0f,0.0f) );
-	  DBG_PRINT( patch.evalCubicBSplinePatch(1.0f,1.0f) );
-	  DBG_PRINT( patch.evalCubicBSplinePatch(0.0f,1.0f) );
 
-	  GregoryPatch gpatch;
-	  gpatch.init( first_half_edge, vertices );
 
-	  DBG_PRINT(gpatch);
-	  exit(0);
+	  /* DBG_PRINT(gpatch); */
+	  /* exit(0); */	  
+	}
+#if 1
+      else if (!first_half_edge->faceHasEdges() || 1)
+	{
+	  flags |= GREGORY_PATCH;
+
+#if 0
+	  init( patch );
+
+	  DBG_PRINT( patch.limitVtx0() ); 
+	  DBG_PRINT( patch.limitVtx1() ); 
+	  DBG_PRINT( patch.limitVtx2() ); 
+	  DBG_PRINT( patch.limitVtx3() ); 
+
+	  DBG_PRINT( patch.eval(0.0f,0.0f) ); 
+	  DBG_PRINT( patch.eval(1.0f,0.0f) ); 
+	  DBG_PRINT( patch.eval(1.0f,1.0f) ); 
+	  DBG_PRINT( patch.eval(0.0f,1.0f) ); 
+	  DBG_PRINT( patch.eval(0.5f,0.5f) ); 
+#endif
+
+	  GregoryPatch gpatch; 
+	  gpatch.init( first_half_edge, vertices ); 
 	  
+	  gpatch.exportConrolPoints( patch.v, f_m );
+#if 0
+	  DBG_PRINT(gpatch);
+
+	  DBG_PRINT( gpatch.eval(0.0f,0.0f) );
+	  DBG_PRINT( gpatch.eval(1.0f,0.0f) );
+	  DBG_PRINT( gpatch.eval(1.0f,1.0f) );
+	  DBG_PRINT( gpatch.eval(0.0f,1.0f) );
+	  DBG_PRINT( gpatch.eval(0.5f,0.5f) ); 
+#endif
+
+	}
+#endif
+      else
+	{
 	}
     }
 
     __forceinline bool isRegular() const
     {
       return (flags & REGULAR_PATCH) == REGULAR_PATCH;
+    }
+
+    __forceinline bool isGregoryPatch() const
+    {
+      return (flags & GREGORY_PATCH) == GREGORY_PATCH;
     }
 
     __forceinline const Vec3fa &getQuadVertex(const unsigned int i=0) const { 
@@ -108,9 +149,10 @@ namespace embree
     unsigned int geomID;                          //!< geometry ID of the subdivision mesh this patch belongs to
     unsigned int primID;                          //!< primitive ID of this subdivision patch
 
-    unsigned int dummy[8];
-
+    Vec2f u_val;
+    Vec2f v_val;
     RegularCatmullClarkPatch patch;
+    Vec3fa f_m[2][2];    
   };
 
   __forceinline std::ostream &operator<<(std::ostream &o, const SubdivPatch1 &p)
