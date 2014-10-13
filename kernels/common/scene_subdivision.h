@@ -1103,7 +1103,7 @@ namespace embree
       return 1.0f/3.0f * tangent + p_vtx;
     }
 #else
-    // this version seems to produce incorrect tangents
+    // the version from the paper seems to produce incorrect tangents
 
     Vec3fa initEdgeVertex(const SubdivMesh::HalfEdge *const h,
                           const Vec3fa *const vertices,
@@ -1143,16 +1143,38 @@ namespace embree
 			  const Vec3fa &e_p_vtx,
 			  const Vec3fa &e_m_vtx,
 			  const unsigned int valence0,
-			  const unsigned int valence1)
+			  const unsigned int valence1,
+			  const float sign = 1.0f)
     {
       const Vec3fa center_i       = h->getFaceMidPointVertex(vertices);
       const Vec3fa center_i_m_1   = h->opposite()->getFaceMidPointVertex(vertices);
       const Vec3fa midpoint_i_p_1 = h->prev()->getEdgeMidPointVertex(vertices);
       const Vec3fa midpoint_i_m_1 = h->opposite()->next()->getEdgeMidPointVertex(vertices);
-      const Vec3fa r0 = 1.0f/3.0f * (midpoint_i_p_1 - midpoint_i_m_1) + 2.0f/3.0f * (center_i - center_i_m_1);
+      const Vec3fa r0 = 1.0f/3.0f * sign*(midpoint_i_p_1 - midpoint_i_m_1) + 2.0f/3.0f * sign*(center_i - center_i_m_1);
+
+      DBG_PRINT( center_i );
+      DBG_PRINT( center_i_m_1 );
+      DBG_PRINT( midpoint_i_p_1 );
+      DBG_PRINT( midpoint_i_m_1 );
+
+      DBG_PRINT(r0);
+
       const float d = 3.0f;
       const float c0 = cosf(2.0*M_PI/(float)valence0);
       const float c1 = cosf(2.0*M_PI/(float)valence1);
+
+      DBG_PRINT( c0 );
+      DBG_PRINT( c1 );
+      DBG_PRINT( (d - 2.0f*c0 - c1) * e_p_vtx);
+      DBG_PRINT( 2.0f*c0*e_m_vtx );
+      DBG_PRINT( c1 * p_vtx);
+
+      DBG_PRINT( p_vtx );
+      DBG_PRINT( e_p_vtx );
+      DBG_PRINT( e_m_vtx );
+      DBG_PRINT( r0 * 1.0f / d );
+
+
       return 1.0f / d * (c1 * p_vtx + (d - 2.0f*c0 - c1) * e_p_vtx + 2.0f*c0* e_m_vtx + r0);     
     }
 
@@ -1174,12 +1196,6 @@ namespace embree
       p2() = initCornerVertex(h_p2,vertices);
       p3() = initCornerVertex(h_p3,vertices);
 
-      DBG_PRINT( p0() );
-      DBG_PRINT( p1() );
-      DBG_PRINT( p2() );
-      DBG_PRINT( p3() );
-
-
       const SubdivMesh::HalfEdge *const h_e0_p = h_p0;
       const SubdivMesh::HalfEdge *const h_e1_p = h_p1;
       const SubdivMesh::HalfEdge *const h_e2_p = h_p2;
@@ -1190,10 +1206,6 @@ namespace embree
       e2_p() = initEdgeVertex(h_e2_p, vertices, p2());
       e3_p() = initEdgeVertex(h_e3_p, vertices, p3());
 
-      DBG_PRINT( e0_p() );
-      DBG_PRINT( e1_p() );
-      DBG_PRINT( e2_p() );
-      DBG_PRINT( e3_p() );
 
       const SubdivMesh::HalfEdge *const h_e0_m = h_p3->opposite();
       const SubdivMesh::HalfEdge *const h_e1_m = h_p0->opposite();
@@ -1206,28 +1218,50 @@ namespace embree
       e3_m() = initEdgeVertex(h_e3_m, vertices, p3());
 
 
+
+
+      f0_p() = initFaceVertex(h_e0_p,vertices,p0(),e0_p(),e0_m(),valence_p0,valence_p1);
+      f0_m() = initFaceVertex(h_e0_m,vertices,p0(),e0_m(),e0_p(),valence_p0,valence_p3,-1.0f); 
+
+      f1_p() = initFaceVertex(h_e1_p,vertices,p1(),e1_p(),e1_m(),valence_p1,valence_p2);
+      f1_m() = initFaceVertex(h_e1_m,vertices,p1(),e1_m(),e1_p(),valence_p1,valence_p0,-1.0f);
+
+      f2_p() = initFaceVertex(h_e2_p,vertices,p2(),e2_p(),e2_m(),valence_p2,valence_p3);
+      f2_m() = initFaceVertex(h_e2_m,vertices,p2(),e2_m(),e2_p(),valence_p2,valence_p1,-1.0f);
+
+      f3_p() = initFaceVertex(h_e3_p,vertices,p3(),e3_p(),e3_m(),valence_p3,valence_p2);
+      f3_m() = initFaceVertex(h_e3_m,vertices,p3(),e3_m(),e3_p(),valence_p3,valence_p0,-1.0f);
+
+
+      DBG_PRINT( p0() );
+      DBG_PRINT( p1() );
+      DBG_PRINT( p2() );
+      DBG_PRINT( p3() );
+
+      DBG_PRINT( e0_p() );
+      DBG_PRINT( e1_p() );
+      DBG_PRINT( e2_p() );
+      DBG_PRINT( e3_p() );
+
       DBG_PRINT( e0_m() );
       DBG_PRINT( e1_m() );
       DBG_PRINT( e2_m() );
       DBG_PRINT( e3_m() );
-
  
-      f0_p() = initFaceVertex(h_e0_p,vertices,p0(),e0_p(),e0_m(),valence_p0,valence_p1);
-      f0_m() = initFaceVertex(h_e0_m,vertices,p0(),e0_p(),e0_m(),valence_p0,valence_p3); // switch e0_p and e0_m ?
-
-      f1_p() = initFaceVertex(h_e1_p,vertices,p1(),e1_p(),e1_m(),valence_p1,valence_p2);
-      f1_m() = initFaceVertex(h_e1_m,vertices,p1(),e1_p(),e1_m(),valence_p1,valence_p0);
-
-      f2_p() = initFaceVertex(h_e2_p,vertices,p2(),e2_p(),e2_m(),valence_p2,valence_p3);
-      f2_m() = initFaceVertex(h_e2_m,vertices,p2(),e2_p(),e2_m(),valence_p2,valence_p1);
-
-      f3_p() = initFaceVertex(h_e3_p,vertices,p3(),e3_p(),e3_m(),valence_p3,valence_p2);
-      f3_m() = initFaceVertex(h_e3_m,vertices,p3(),e3_p(),e3_m(),valence_p3,valence_p0);
+      DBG_PRINT( valence_p0 );
+      DBG_PRINT( valence_p1 );
+      DBG_PRINT( valence_p2 );
+      DBG_PRINT( valence_p3 );
 
       DBG_PRINT( f0_p() );
-      DBG_PRINT( f0_m() );
+      DBG_PRINT( f1_p() );
+      DBG_PRINT( f2_p() );
+      DBG_PRINT( f3_p() );
 
-      exit( 0 );
+      DBG_PRINT( f0_m() );
+      DBG_PRINT( f1_m() );
+      DBG_PRINT( f2_m() );
+      DBG_PRINT( f3_m() );
 
     }
 
