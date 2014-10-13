@@ -526,20 +526,18 @@ namespace embree
     } 
   };
 
-  // FIXME: use IrregularCatmullClarkPatch as initializer
-  struct SubdivideCatmullClarkPatch
+  struct SubdivideIrregularCatmullClarkPatch
   {
-    SubdivideCatmullClarkPatch (const SubdivMesh::HalfEdge* h, const Vec3fa* vertices, const unsigned int levels, Array2D<Vec3fa>& v)
+    SubdivideIrregularCatmullClarkPatch (IrregularCatmullClarkPatch& patch, const unsigned int levels, Array2D<Vec3fa>& v)
     : K(1), v(v)
     {
       size_t N = 1<<levels;
       size_t M = N+1;
       v.init(M,M,Vec3fa(nan));
-        
-      ring00.init(h,vertices); h = h->next();
-      ring10.init(h,vertices); h = h->next();
-      ring11.init(h,vertices); h = h->next();
-      ring01.init(h,vertices); h = h->next();
+      ring00 = patch.ring[0];
+      ring10 = patch.ring[1];
+      ring11 = patch.ring[2];
+      ring01 = patch.ring[3];
       edgeT.init(M,ring00,ring10);
       edgeR.init(M,ring10,ring11);
       edgeB.init(M,ring11,ring01);

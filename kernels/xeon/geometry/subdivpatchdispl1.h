@@ -110,7 +110,8 @@ namespace embree
       }
 
       /* create subdivided patch */
-      SubdivideCatmullClarkPatch(h,vertices,levels,v);
+      IrregularCatmullClarkPatch patch(h,vertices);
+      SubdivideIrregularCatmullClarkPatch(patch,levels,v);
 
       /* displace points */
       size_t N = 1<<levels;
