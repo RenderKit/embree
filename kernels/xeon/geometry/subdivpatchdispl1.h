@@ -140,9 +140,7 @@ namespace embree
         delete displ;
       }
 
-      size_t S = 0;
-      for (ssize_t i=0; i<levels-3; i++) S += (1<<i)*(1<<i);
-
+      /* build sub-BVH */
       leaves.init(N/8,N/8);
 #if 1
       bvh.init(sizeof(BVH4::Node),(N/8)*(N/8),1);
@@ -154,16 +152,14 @@ namespace embree
       build(levels);
 #endif
 
+      /* link to sub-BVH */
       parent = bvh.root;
       __memory_barrier();
       initialized = 1;
       return (size_t)bvh.root;
     }
 
-    // FIXME: destruction
-
-    /*! returns required number of primitive blocks for N primitives */
-    static __forceinline size_t blocks(size_t N) { return N; }
+    // FIXME: destructor gets never called !
 
     /*! return geometry ID */
     __forceinline unsigned int geomID() const { return geom; }
