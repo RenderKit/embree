@@ -124,6 +124,7 @@ namespace embree
 #endif
       else
 	{
+	  PING;
 	}
     }
 

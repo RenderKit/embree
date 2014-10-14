@@ -20,10 +20,87 @@
 #include "geometry/filter.h"
 #include "subdiv_intersector16.h"
 #include "bicubic_bezier_patch.h"
+#include "geometry/subdiv_cache.h"
 #include "bvh4i/bvh4i.h"
+#include "bvh4i/bvh4i_traversal.h"
 
 namespace embree
 {
+
+  static SubdivCache subdivCache;
+
+  static unsigned int BVH4I_LEAF_MASK = BVH4i::leaf_mask; // needed due to compiler efficiency bug
+
+  static void recursiveFillSubdivCacheEntry(SubdivCache::Entry &entry,
+					    const size_t bvh4i_parent_index,
+					    const size_t bvh4i_parent_local_index,
+					    size_t &bvh4i_node_index,
+					    size_t &leaf_index,
+					    const Vec2f &s,
+					    const Vec2f &t,
+					    const RegularCatmullClarkPatch &patch,
+					    const unsigned int subdiv_level = 0)
+  {
+     if (subdiv_level == 0)
+      {
+	Vec3fa vtx[4];
+	vtx[0] = patch.eval(s[0],t[0]);
+	vtx[1] = patch.eval(s[1],t[0]);
+	vtx[2] = patch.eval(s[1],t[1]);
+	vtx[3] = patch.eval(s[0],t[1]);
+	
+	BBox3fa bounds( vtx[0] );
+	bounds.extend( vtx[1] );
+	bounds.extend( vtx[2] );
+	bounds.extend( vtx[3] );
+
+	entry.bvh4i_node[bvh4i_parent_index].setBounds(bvh4i_parent_local_index,bounds);
+	createBVH4iLeaf( entry.bvh4i_node[bvh4i_parent_index].child( bvh4i_parent_local_index ), leaf_index, 0 );
+
+	entry.uv_interval[leaf_index] = Vec4f(s.x,s.y,t.x,t.y);
+
+	leaf_index++;
+      }
+    else
+      {
+	const float mid_s = 0.5f * (s[0]+s[1]);
+	const float mid_t = 0.5f * (t[0]+t[1]);
+	Vec2f s_left(s[0],mid_s);
+	Vec2f s_right(mid_s,s[1]);
+	Vec2f t_left(t[0],mid_t);
+	Vec2f t_right(mid_t,t[1]);
+	const size_t currentIndex = bvh4i_node_index++;
+	createBVH4iNode<2>(*(BVH4i::NodeRef*)&entry.bvh4i_node[bvh4i_parent_index].child( bvh4i_parent_local_index ),currentIndex);
+
+	recursiveFillSubdivCacheEntry(entry, currentIndex, 0, bvh4i_node_index, leaf_index, s_left ,t_left ,patch,subdiv_level-1);
+	recursiveFillSubdivCacheEntry(entry, currentIndex, 1, bvh4i_node_index, leaf_index, s_right,t_left ,patch,subdiv_level-1);
+	recursiveFillSubdivCacheEntry(entry, currentIndex, 2, bvh4i_node_index, leaf_index, s_right,t_right,patch,subdiv_level-1);
+	recursiveFillSubdivCacheEntry(entry, currentIndex, 3, bvh4i_node_index, leaf_index, s_left ,t_right,patch,subdiv_level-1);
+
+	BBox3fa bounds( empty );
+	for (size_t i=0;i<4;i++)
+	  bounds.extend( entry.bvh4i_node[currentIndex].bounds( i ) );
+
+	entry.bvh4i_node[bvh4i_parent_index].setBounds(bvh4i_parent_local_index, bounds);	    
+      }   
+  }
+
+  static void fillSubdivCacheEntry(SubdivCache::Entry &entry,
+				   const Vec2f &s,
+				   const Vec2f &t,
+				   const RegularCatmullClarkPatch &patch,
+				   const unsigned int subdiv_level = 0)
+  {
+    entry.bvh4i_node[0].setInvalid();
+    size_t bvh4i_parent_index = 0;
+    size_t bvh4i_parent_local_index = 0;
+    size_t bvh4i_node_index = 1;
+    size_t leaf_index = 0;
+
+    recursiveFillSubdivCacheEntry(entry, bvh4i_parent_index, bvh4i_parent_local_index, bvh4i_node_index, leaf_index, s , t, patch, subdiv_level);
+    
+  }
+
 
   static __forceinline bool intersect1_quad(const size_t rayIndex, 
 					    const mic_f &dir_xyz,
@@ -360,6 +437,81 @@ namespace embree
 				 const Vec2f &t,
 				 const unsigned int subdiv_level)
   {
+
+#if 1
+    __aligned(64) BVH4i::NodeRef stack_node[32];
+    __aligned(64) float stack_dist[32];
+
+    SubdivCache::Tag &tag     = subdivCache.lookupEntry(geomID,primID,subdiv_level);
+    SubdivCache::Entry &entry = subdivCache.getEntry(tag);
+
+    if (unlikely(!tag.inCache(geomID,primID,subdiv_level)))
+      {
+	fillSubdivCacheEntry(entry,s,t,patch,subdiv_level);	
+	tag = SubdivCache::Tag(geomID,primID,subdiv_level);
+      }
+
+    const mic_f rdir_xyz      = rcp(dir_xyz);
+    const mic_f org_rdir_xyz  = rdir_xyz * org_xyz;
+    const mic_f min_dist_xyz  = ray16.tnear[rayIndex];
+    const mic_f max_dist_xyz  = ray16.tfar[rayIndex];
+
+    stack_node[0] = BVH4i::invalidNode;
+    stack_node[1] = entry.getRoot();
+
+    size_t sindex = 2;
+    const BVH4i::Node * __restrict__ const nodes = entry.bvh4i_node;
+
+    const unsigned int leaf_mask = BVH4I_LEAF_MASK;
+
+    while(1)
+      {
+	BVH4i::NodeRef curNode = stack_node[sindex-1];
+	sindex--;
+
+	traverse_single_intersect<false>(curNode,
+					 sindex,
+					 rdir_xyz,
+					 org_rdir_xyz,
+					 min_dist_xyz,
+					 max_dist_xyz,
+					 stack_node,
+					 stack_dist,
+					 nodes,
+					 leaf_mask);            		    
+
+	/* return if stack is empty */
+	if (unlikely(curNode == BVH4i::invalidNode)) break;
+
+	unsigned int leafIndex = curNode.offsetIndex();
+
+	const Vec4f &uv = entry.uv_interval[leafIndex];
+	const float u_min = uv[0];
+	const float u_max = uv[1];
+	const float v_min = uv[2];
+	const float v_max = uv[3];
+
+	Vec3fa vtx[4];
+	vtx[0] = patch.eval(u_min,v_min);
+	vtx[1] = patch.eval(u_max,v_min);
+	vtx[2] = patch.eval(u_max,v_max);
+	vtx[3] = patch.eval(u_min,v_max);
+
+	intersect1_quad(rayIndex,
+			dir_xyz,
+			org_xyz,
+			ray16,
+			vtx[0],
+			vtx[1],
+			vtx[2],
+			vtx[3],
+			geomID,
+			primID);      	
+      }
+
+
+#else
+
     if (subdiv_level == 0)
       {
 	Vec3fa vtx[4];
@@ -392,6 +544,7 @@ namespace embree
 	subdivide_intersect1_eval(rayIndex,dir_xyz,org_xyz,ray16,patch,geomID,primID,s_right,t_right,subdiv_level - 1);
 	subdivide_intersect1_eval(rayIndex,dir_xyz,org_xyz,ray16,patch,geomID,primID,s_left ,t_right,subdiv_level - 1);
       }
+#endif
   }
 
 

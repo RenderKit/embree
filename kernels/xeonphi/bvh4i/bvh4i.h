@@ -230,6 +230,12 @@ namespace embree
 	upper[i].child = NodeRef(0);
       }
 
+      __forceinline void setInvalid() 
+      {
+	for (size_t i=0;i<4;i++)
+	  setInvalid(i);
+      }
+
       /*! Returns reference to specified child */
       __forceinline       NodeRef& child(size_t i)       { return lower[i].child; }
       __forceinline const NodeRef& child(size_t i) const { return lower[i].child; }
@@ -537,8 +543,8 @@ namespace embree
 
 
   __forceinline void createBVH4iLeaf(BVH4i::NodeRef &ref,
-				const unsigned int offset,
-				const unsigned int entries) 
+				     const unsigned int offset,
+				     const unsigned int entries) 
   {
     assert(entries <= 4);
     ref = (offset << BVH4i::encodingBits) | BVH4i::leaf_mask | (entries-1);
