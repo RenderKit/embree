@@ -43,6 +43,9 @@ namespace embree
   {
      if (subdiv_level == 0)
       {
+	// DBG_PRINT(s);
+	// DBG_PRINT(t);
+
 	Vec3fa vtx[4];
 	vtx[0] = patch.eval(s[0],t[0]);
 	vtx[1] = patch.eval(s[1],t[0]);
@@ -54,9 +57,21 @@ namespace embree
 	bounds.extend( vtx[2] );
 	bounds.extend( vtx[3] );
 
-	entry.bvh4i_node[bvh4i_parent_index].setBounds(bvh4i_parent_local_index,bounds);
-	createBVH4iLeaf( entry.bvh4i_node[bvh4i_parent_index].child( bvh4i_parent_local_index ), leaf_index, 0 );
+	//DBG_PRINT(bounds);
 
+	entry.bvh4i_node[bvh4i_parent_index].setBounds(bvh4i_parent_local_index,bounds);
+
+	// DBG_PRINT(leaf_index);
+	// DBG_PRINT(bvh4i_parent_index);
+	// DBG_PRINT(bvh4i_parent_local_index);
+
+	BVH4i::NodeRef &parent_ref = entry.bvh4i_node[bvh4i_parent_index].child( bvh4i_parent_local_index );
+	// DBG_PRINT( parent_ref );
+
+	//createBVH4iLeaf( parent_ref, (unsigned int)leaf_index, 0 );
+	parent_ref = (leaf_index << BVH4i::encodingBits) | BVH4i::leaf_mask;
+
+	// DBG_PRINT( parent_ref );
 	entry.uv_interval[leaf_index] = Vec4f(s.x,s.y,t.x,t.y);
 
 	leaf_index++;
@@ -445,10 +460,19 @@ namespace embree
     SubdivCache::Tag &tag     = subdivCache.lookupEntry(geomID,primID,subdiv_level);
     SubdivCache::Entry &entry = subdivCache.getEntry(tag);
 
+    //DBG_PRINT(tag);
+
     if (unlikely(!tag.inCache(geomID,primID,subdiv_level)))
       {
+	//DBG_PRINT("FILL");
+
 	fillSubdivCacheEntry(entry,s,t,patch,subdiv_level);	
 	tag = SubdivCache::Tag(geomID,primID,subdiv_level);
+
+	//DBG_PRINT(tag);
+
+	//DBG_PRINT(subdivCache);
+
       }
 
     const mic_f rdir_xyz      = rcp(dir_xyz);
@@ -486,6 +510,9 @@ namespace embree
 	unsigned int leafIndex = curNode.offsetIndex();
 
 	const Vec4f &uv = entry.uv_interval[leafIndex];
+
+	//DBG_PRINT(uv);
+
 	const float u_min = uv[0];
 	const float u_max = uv[1];
 	const float v_min = uv[2];

@@ -21,9 +21,9 @@
 #include "geometry/filter.h"
 #include "bvh4i/bvh4i.h"
 
-#define SUBDIV_CACHE_ENTRIES 4
-#define SUBDIV_CACHE_BVH_NODES_PER_ENTRY 1+4+16
-#define SUBDIV_CACHE_LEAVES_PER_ENTRY 16
+#define SUBDIV_CACHE_ENTRIES 2
+#define SUBDIV_CACHE_BVH_NODES_PER_ENTRY 1+4
+#define SUBDIV_CACHE_LEAVES_PER_ENTRY 4
 
 namespace embree
 {
