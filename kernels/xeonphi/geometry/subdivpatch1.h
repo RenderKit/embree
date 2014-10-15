@@ -48,7 +48,8 @@ namespace embree
       primID(primID),
       subdivision_level(subdivision_level),
       bvh4i_noderef_backptr(NULL),
-      bvh4i_noderef_org(0)
+      bvh4i_noderef_org(0),
+      dummy(0)
     {
       u_val = Vec2f(0.0f,1.0f);
       v_val = Vec2f(0.0f,1.0f);
@@ -174,6 +175,39 @@ namespace embree
 	  b.extend( f_m[1][0] );
 	  b.extend( f_m[1][1] );
 	}
+      return b;
+    }
+
+    __forceinline BBox3fa evalQuadBounds() const
+    {
+      Vec3fa vtx[4];
+      Vec2f s(0.0f,1.0f);
+      Vec2f t(0.0f,1.0f);
+
+      if (likely(isRegular()))
+	{
+	  vtx[0] = patch.eval(s[0],t[0]);
+	  vtx[1] = patch.eval(s[1],t[0]);
+	  vtx[2] = patch.eval(s[1],t[1]);
+	  vtx[3] = patch.eval(s[0],t[1]);
+
+	}
+      else if (likely(isGregoryPatch()))
+	{
+	  __aligned(64) GregoryPatch gpatch(patch.v, f_m );
+	  vtx[0] = gpatch.eval(s[0],t[0]);
+	  vtx[1] = gpatch.eval(s[1],t[0]);
+	  vtx[2] = gpatch.eval(s[1],t[1]);
+	  vtx[3] = gpatch.eval(s[0],t[1]);
+	}
+      else
+	FATAL("not implemented");
+
+      BBox3fa b( empty );
+      b.extend( vtx[0] );
+      b.extend( vtx[1] );
+      b.extend( vtx[2] );
+      b.extend( vtx[3] );
       return b;
     }
    

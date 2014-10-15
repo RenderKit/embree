@@ -22,6 +22,8 @@ namespace embree
 {
   extern size_t g_subdivision_level;
 
+  static size_t numLazyBuildPatches = 0;
+
   namespace isa
   {
   __forceinline void createSubPatchBVH4iLeaf(BVH4i::NodeRef &ref,
@@ -34,12 +36,12 @@ namespace embree
     BVH4i::NodeRef initLazySubdivTree(BVH4i::NodeRef &curNode,
 				      AlignedAtomicCounter32 &lazyNodeID,
 				      BVH4i::Node  * __restrict__ nodes,
-				      const SubdivPatch1 * __restrict__ const subdivpatch1,
+				      SubdivPatch1 * __restrict__ const subdivpatch1,
 				      const unsigned int subdiv_level)
     {
       unsigned int items = curNode.items();
       unsigned int patchIndex = curNode.offsetIndex();
-      const SubdivPatch1 *__restrict__ const patch_ptr = &subdivpatch1[patchIndex];
+      SubdivPatch1 *__restrict__ const patch_ptr = &subdivpatch1[patchIndex];
 	
 
       assert(patch_ptr->bvh4i_noderef_backptr != NULL);
@@ -51,7 +53,6 @@ namespace embree
       const size_t num64BytesBlocksPerNode = 2;
       const size_t currentIndex = lazyNodeID.add(num64BytesBlocksPerNode);
 
-      DBG_PRINT(currentIndex);
 
       //*backRefNode = backRefNode->id() | BVH4i::aux_flag_mask;
 
@@ -65,14 +66,24 @@ namespace embree
       node.setInvalid();
       //node.setValid();
 
-      DBG_PRINT(patchIndex);
       for (size_t i=0;i<items;i++)
 	{
-	  node.setBounds( i,  patch_ptr[i].bounds() );
+	  //node.setBounds( i,  patch_ptr[i].bounds() );
+	  node.setBounds( i,  patch_ptr[i].evalQuadBounds() );
+
+	  // assert( patch_ptr[i].dummy != (unsigned int)-1);
+	  // patch_ptr[i].dummy = (unsigned int)-1;
+
 	  createSubPatchBVH4iLeaf( node.child(i), patchIndex + i, 0);
 	  node.data(i) = 0;
 	  assert( node.child(i).isAuxFlagSet() );
+	  numLazyBuildPatches++;
 	}      
+
+      DBG_PRINT(patchIndex);
+      DBG_PRINT(currentIndex);
+      DBG_PRINT( numLazyBuildPatches );
+
       return newNodeRef;
     }
     
@@ -268,9 +279,6 @@ namespace embree
 	      NodeRef curNode = stack_node[sindex-1];
 	      sindex--;
 
-	      // std::cout << "STACK" << std::endl;
-	      // DBG_PRINT(curNode);
-
 	      traverse_single_intersect<ENABLE_COMPRESSED_BVH4I_NODES>(curNode,
 								      sindex,
 								      rdir_xyz,
@@ -283,32 +291,22 @@ namespace embree
 								      leaf_mask);
 		   
 
-	      // std::cout << "LEAF" << std::endl;
-	      // DBG_PRINT(curNode);
-	      // DBG_PRINT( curNode.isAuxFlagSet() );
 	      /* return if stack is empty */
 	      if (unlikely(curNode == BVH4i::invalidNode)) break;
 
 	      STAT3(normal.trav_leaves,1,1,1);
 	      STAT3(normal.trav_prims,4,4,4);
 
-	      /* intersect one ray against four triangles */
-
 	      //////////////////////////////////////////////////////////////////////////////////////////////////
-	      // PING;
 
 #if 1
-
-	      bool hit = false;
 
 	      if (unlikely(!curNode.isAuxFlagSet()))
 		{
 		  BVH4i::NodeRef newNodeRef = initLazySubdivTree(curNode,bvh->lazyNodeID,nodes,(SubdivPatch1*)accel,g_subdivision_level);
 
-		  DBG_PRINT(newNodeRef);
-
 		  stack_node[sindex] = newNodeRef;
-		  stack_dist[sindex] = 1E10;
+		  stack_dist[sindex] = pos_inf;
 		  sindex++;
 		}
 	      else
@@ -316,12 +314,16 @@ namespace embree
 		  // PING;
 		  // DBG_PRINT(curNode);
 
-		  hit = intersectEval(curNode,
-				      rayIndex,
-				      dir_xyz,
-				      org_xyz,
-				      ray16,
-				      (SubdivPatch1*)accel);
+		  bool hit = intersectEval(curNode,
+					   rayIndex,
+					   dir_xyz,
+					   org_xyz,
+					   ray16,
+					   (SubdivPatch1*)accel);
+
+		  if (hit)
+		    compactStack(stack_node,stack_dist,sindex,mic_f(ray16.tfar[rayIndex]));
+
 		}
 #else
 	      const bool hit = LeafIntersector::intersect(curNode,
@@ -335,10 +337,6 @@ namespace embree
 							  (Scene*)bvh->geometry);
 #endif	
 
-#if 1								   
-	      if (hit)
-		compactStack(stack_node,stack_dist,sindex,max_dist_xyz);
-#endif
 	      // ------------------------
 	    }
 	}
