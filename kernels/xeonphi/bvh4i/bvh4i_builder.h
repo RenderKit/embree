@@ -255,11 +255,14 @@ namespace embree
     BVH4iBuilderSubdivMesh (BVH4i* bvh, void* geometry) : BVH4iBuilder(bvh,geometry) {}
 
     virtual void build            (const size_t threadIndex, const size_t threadCount);
-    virtual void allocateData(const size_t threadCount, const size_t totalNumPrimitives);
+    virtual void allocateData     (const size_t threadCount, const size_t totalNumPrimitives);
     virtual size_t getNumPrimitives();
-    virtual void computePrimRefs(const size_t threadIndex, const size_t threadCount);
-    virtual void createAccel    (const size_t threadIndex, const size_t threadCount);
+    virtual void computePrimRefs  (const size_t threadIndex, const size_t threadCount);
+    virtual void createAccel      (const size_t threadIndex, const size_t threadCount);
     virtual void printBuilderName();
+    virtual void finalize         (const size_t threadIndex, const size_t threadCount);
+
+    void initializeParentPointers(const BVH4i::NodeRef &ref);
 
   protected:
     TASK_FUNCTION(BVH4iBuilderSubdivMesh,computePrimRefsSubdivMesh);

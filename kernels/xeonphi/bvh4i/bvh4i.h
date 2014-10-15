@@ -230,15 +230,39 @@ namespace embree
 	upper[i].child = NodeRef(0);
       }
 
+      __forceinline void setValid(size_t i) 
+      {
+	lower[i].x = neg_inf;
+	lower[i].y = neg_inf;
+	lower[i].z = neg_inf;
+	lower[i].child = invalidNode; 
+
+	upper[i].x = pos_inf;
+	upper[i].y = pos_inf;
+	upper[i].z = pos_inf;
+	upper[i].child = NodeRef(0);
+      }
+
       __forceinline void setInvalid() 
       {
 	for (size_t i=0;i<4;i++)
 	  setInvalid(i);
       }
 
+      __forceinline void setValid() 
+      {
+	for (size_t i=0;i<4;i++)
+	  setValid(i);
+      }
+
       /*! Returns reference to specified child */
       __forceinline       NodeRef& child(size_t i)       { return lower[i].child; }
       __forceinline const NodeRef& child(size_t i) const { return lower[i].child; }
+
+
+      /*! Returns reference to specified child */
+      __forceinline       NodeRef& data(size_t i)       { return upper[i].child; }
+      __forceinline const NodeRef& data(size_t i) const { return upper[i].child; }
 
       template<int PFHINT>
 	__forceinline void prefetchNode() const
@@ -409,7 +433,8 @@ namespace embree
       qbvh(NULL), 
       accel(NULL),
       size_node(0),
-      size_accel(0)
+      size_accel(0),
+      lazyNodeID(0)
     {
     }
 
@@ -454,6 +479,9 @@ namespace embree
 
     Node *qbvh;
     void *accel;
+    
+
+    __aligned(64) AlignedAtomicCounter32 lazyNodeID;
 
 
     struct Helper { float x,y,z; int a; }; 

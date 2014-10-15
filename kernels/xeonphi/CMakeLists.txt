@@ -55,6 +55,7 @@ ADD_ISPC_LIBRARY(embree_xeonphi SHARED
   bvh4i/bvh4i_intersector16_single.cpp
   bvh4i/bvh4i_intersector16_hybrid.cpp
   bvh4i/bvh4i_intersector16_test.cpp
+  bvh4i/bvh4i_intersector16_subdiv.cpp
   bvh4i/bvh4i_intersector1.cpp
   bvh4i/bvh4i_statistics.cpp
   bvh4i/bvh4i_rotate.cpp

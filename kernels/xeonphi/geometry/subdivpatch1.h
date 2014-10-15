@@ -46,7 +46,9 @@ namespace embree
       vertices(vertices),
       geomID(geomID),
       primID(primID),
-      subdivision_level(subdivision_level)
+      subdivision_level(subdivision_level),
+      bvh4i_noderef_backptr(NULL),
+      bvh4i_noderef_org(0)
     {
       u_val = Vec2f(0.0f,1.0f);
       v_val = Vec2f(0.0f,1.0f);
@@ -161,6 +163,19 @@ namespace embree
     {
       cc_patch.init(first_half_edge, vertices);
     }
+
+    __forceinline BBox3fa bounds() const
+    {
+      BBox3fa b = patch.bounds();
+      if (unlikely(isGregoryPatch()))
+	{
+	  b.extend( f_m[0][0] );
+	  b.extend( f_m[0][1] );
+	  b.extend( f_m[1][0] );
+	  b.extend( f_m[1][1] );
+	}
+      return b;
+    }
    
     const SubdivMesh::HalfEdge * first_half_edge; //!< pointer to first half edge of corresponding quad in the subdivision mesh
     const Vec3fa *vertices;                       //!< pointer to the vertex positions in the subdivison mesh
@@ -171,6 +186,9 @@ namespace embree
 
     Vec2f u_val;
     Vec2f v_val;
+    unsigned int *bvh4i_noderef_backptr;
+    unsigned int  bvh4i_noderef_org;
+    unsigned int dummy;
     RegularCatmullClarkPatch patch;
     Vec3fa f_m[2][2];    
   };

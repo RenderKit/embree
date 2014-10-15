@@ -916,8 +916,11 @@ PRINT(CORRECT_numPrims);
 	const size_t numPrims = numPrimitives+4;
 	const size_t minAllocNodes = (threadCount+1) * ALLOCATOR_NODE_BLOCK_SIZE; 
 	const size_t numNodes = (size_t)((numPrims+3)/4) + minAllocNodes;
-	allocateMemoryPools(numPrims,numNodes,sizeof(BVH4i::Node),sizeof(SubdivPatch1));
+	const size_t additionalLazyNodes = numPrims;
+	DBG_PRINT(additionalLazyNodes);
+	allocateMemoryPools(numPrims,numNodes + additionalLazyNodes,sizeof(BVH4i::Node),sizeof(SubdivPatch1));
 	DBG_PRINT( sizeof(SubdivPatch1) );
+	DBG_PRINT( numAllocated64BytesBlocks );
       }
   }
 
@@ -1047,5 +1050,40 @@ PRINT(CORRECT_numPrims);
 			    SUBDIVISION_LEVEL);
       }
   }
+
+  void BVH4iBuilderSubdivMesh::finalize(const size_t threadIndex, const size_t threadCount)
+  {
+    PING;
+    if (threadIndex == 0)
+      bvh->lazyNodeID = atomicID;
+    DBG_PRINT(bvh->lazyNodeID);
+    DBG_PRINT(bvh->root);
+    std::cout << "initializing back pointers" << std::endl;
+    initializeParentPointers(bvh->root);
+  }
+
+  void BVH4iBuilderSubdivMesh::initializeParentPointers(const BVH4i::NodeRef &ref)
+  {    
+    if (unlikely(ref.isLeaf()))
+      {
+	unsigned int items = ref.items();
+	unsigned int index = ref.offsetIndex();
+	assert(index < numPrimitives);
+	SubdivPatch1 *__restrict__ const patch_ptr = (SubdivPatch1*)accel + index;
+	patch_ptr->bvh4i_noderef_backptr = (unsigned int*)&ref;
+	patch_ptr->bvh4i_noderef_org     = ref;	
+
+	return;
+      }
+
+    BVH4i::Node *n = (BVH4i::Node*)ref.node(node);
+
+    for (size_t i=0;i<BVH4i::N;i++)
+      {
+	if (n->child(i) == BVH4i::invalidNode) break;
+	initializeParentPointers( n->child(i) );
+      }
+  }    
+
 
 };

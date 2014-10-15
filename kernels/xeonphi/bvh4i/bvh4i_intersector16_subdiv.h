@@ -24,9 +24,23 @@ namespace embree
 {
   namespace isa
   {
+    /*! BVH4i traverser. Single ray traversal implementation for a BVH4i. */
+    template<typename LeafIntersector, bool ENABLE_COMPRESSED_BVH4I_NODES>
+    class BVH4iIntersector16Subdiv
+    {
+      /* shortcuts for frequently used types */
+      typedef typename BVH4i::NodeRef NodeRef;
+      typedef typename BVH4i::Node Node;
+      
+
+    public:
+      static void intersect(mic_i* valid, BVH4i* bvh, Ray16& ray);
+      static void occluded (mic_i* valid, BVH4i* bvh, Ray16& ray);
+    };
+
     /*! BVH4i single ray traverser */
     template<typename LeafIntersector, bool ENABLE_COMPRESSED_BVH4I_NODES>
-    class BVH4iIntersector1
+    class BVH4iIntersector1Subdiv
     {
       /* shortcuts for frequently used types */
       typedef typename BVH4i::NodeRef NodeRef;
@@ -36,6 +50,6 @@ namespace embree
       static void intersect(BVH4i* bvh, Ray& ray);
       static void occluded (BVH4i* bvh, Ray& ray);
     };
+
   }
 }
-  
