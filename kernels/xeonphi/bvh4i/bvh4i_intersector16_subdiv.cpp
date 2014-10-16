@@ -24,6 +24,9 @@ namespace embree
 
   static size_t numLazyBuildPatches = 0;
 
+  static AtomicMutex mtx;
+  std::vector<unsigned int> patchids;
+
   namespace isa
   {
   __forceinline void createSubPatchBVH4iLeaf(BVH4i::NodeRef &ref,
@@ -42,27 +45,33 @@ namespace embree
       unsigned int items = curNode.items();
       unsigned int patchIndex = curNode.offsetIndex();
       SubdivPatch1 *__restrict__ const patch_ptr = &subdivpatch1[patchIndex];
-	
-      /* check whether another thread currently builds this patch */
-      while (patch_ptr->under_construction != 0)
-	{
-	  __pause(512);
-	}
 
       const unsigned int build_state = atomic_add((atomic_t*)&patch_ptr->under_construction,+1);
-      
-      if (build_state != 0) /* somebody else builds the subtree */
+	
+      /* check whether another thread currently builds this patch */
+      if (build_state != 0)
 	{
-	  /* what until the subtree is built */
+	  atomic_add((atomic_t*)&patch_ptr->under_construction,-1);
+
 	  while (patch_ptr->under_construction != 0)
 	    __pause(512);
+	  
+	  while (*(BVH4i::NodeRef*)patch_ptr->bvh4i_noderef_backptr == curNode)
+	    __pause(512);
 
-	  /* get new node ref */
 	  BVH4i::NodeRef newNodeRef = *(BVH4i::NodeRef*)patch_ptr->bvh4i_noderef_backptr;
 	  return newNodeRef;	  
 	}
 
       /* got the lock lets build the tree */
+
+#if 0
+      for (size_t i=0;i<patchids.size();i++)
+	if (patchIndex == patchids[i])
+	  FATAL("already build");
+
+      patchids.push_back(patchIndex);
+#endif
 
       assert(patch_ptr->bvh4i_noderef_backptr != NULL);
 
@@ -92,16 +101,19 @@ namespace embree
 	  numLazyBuildPatches++;
 	}      
 
+#if 1
       DBG_PRINT(patchIndex);
       DBG_PRINT(currentIndex);
       DBG_PRINT( numLazyBuildPatches );
-
+#endif
       /* new node index is valid now */
 
       *backRefNode = newNodeRef;
 
+      __memory_barrier();
+
       /* release lock */
-      patch_ptr->under_construction = 0;
+      atomic_add((atomic_t*)&patch_ptr->under_construction,-1);
 
       /* return new node ref */
       return newNodeRef;
