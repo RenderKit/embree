@@ -82,6 +82,9 @@ namespace embree
     __forceinline operator const __m512&( void ) const { return m512; }
     __forceinline operator       __m512&( void )       { return m512; }
 
+    __forceinline operator const mic_f( void ) const { return mic_f(m512); }
+    __forceinline operator       mic_f( void )       { return mic_f(m512); }
+
   public:
     __forceinline explicit Vec3fa_t ( float a ) 
       : m512(_mm512_set1_ps(a)) {}

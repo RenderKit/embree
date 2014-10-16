@@ -1047,6 +1047,8 @@ namespace embree
 
     __forceinline Vec3fa eval(const float uu, const float vv) const
     {
+      // FIXME: merge u,v and extract after computation
+
       const Vec4f v_n = CubicBSplineCurve::eval(vv);
 
       const Vertex curve0 = v_n[0] * v[0][0] + v_n[1] * v[1][0] + v_n[2] * v[2][0] + v_n[3] * v[3][0];
@@ -1063,6 +1065,8 @@ namespace embree
 
     __forceinline mic_f eval4(const mic_f uu, const mic_f vv) const
     {
+      // FIXME: merge u,v and extract after computation
+
       const mic4f v_n = CubicBSplineCurve::eval(vv); //FIXME: precompute in table
 
       const mic_f curve0 = v_n[0] * broadcast4to16f(&v[0][0]) + v_n[1] * broadcast4to16f(&v[1][0]) + v_n[2] * broadcast4to16f(&v[2][0]) + v_n[3] * broadcast4to16f(&v[3][0]);
@@ -1358,6 +1362,8 @@ namespace embree
 
      if (uu == 0.0f || uu == 1.0f || vv == 0.0f || vv == 1.0f) return;
 
+     // FIXME: merge u,v and extract after computation
+
      const Vertex F0 = (      uu  * f0_p() +       vv  * f0_m()) * 1.0f/(uu+vv);
      const Vertex F1 = ((1.0f-uu) * f1_m() +       vv  * f1_p()) * 1.0f/(1.0f-uu+vv);
      const Vertex F2 = ((1.0f-uu) * f2_p() + (1.0f-vv) * f2_m()) * 1.0f/(2.0f-uu-vv);
@@ -1370,6 +1376,54 @@ namespace embree
 
    }
 
+   
+#if defined(__MIC__)
+   static __forceinline mic_f eval4(const Vec3fa matrix[4][4],
+				    const Vec3fa f[2][2],
+				    const mic_f uu,
+				    const mic_f vv) 
+   {
+     const mic_m m_border = (uu == 0.0f) | (uu == 1.0f) | (vv == 0.0f) | (vv == 1.0f);
+
+     const mic_f f0_p = (Vertex)matrix[1][1];
+     const mic_f f0_m = (Vertex)f[0][0];
+
+     const mic_f f1_p = (Vertex)matrix[1][2];
+     const mic_f f1_m = (Vertex)f[0][1];
+
+     const mic_f f2_p = (Vertex)matrix[2][2];
+     const mic_f f2_m = (Vertex)f[1][1];
+
+     const mic_f f3_p = (Vertex)matrix[2][1];
+     const mic_f f3_m = (Vertex)f[1][0];
+
+     const mic_f F0 = select(m_border,f0_p, (      uu  * f0_p +       vv  * f0_m) * 1.0f/(uu+vv)      );
+     const mic_f F1 = select(m_border,f1_p, ((1.0f-uu) * f1_m +       vv  * f1_p) * 1.0f/(1.0f-uu+vv) );
+     const mic_f F2 = select(m_border,f2_p, ((1.0f-uu) * f2_p + (1.0f-vv) * f2_m) * 1.0f/(2.0f-uu-vv) );
+     const mic_f F3 = select(m_border,f3_p, (      uu  * f3_m + (1.0f-vv) * f3_p) * 1.0f/(1.0f+uu-vv) );
+
+     const mic_f one_minus_uu = mic_f(1.0f) - uu;
+     const mic_f one_minus_vv = mic_f(1.0f) - vv;      
+
+     // FIXME: merge u,v and extract after computation
+     const mic_f B0_u = one_minus_uu * one_minus_uu * one_minus_uu;
+     const mic_f B0_v = one_minus_vv * one_minus_vv * one_minus_vv;
+     const mic_f B1_u = 3.0f * one_minus_uu * one_minus_uu * uu;
+     const mic_f B1_v = 3.0f * one_minus_vv * one_minus_vv * vv;
+     const mic_f B2_u = 3.0f * one_minus_uu * uu * uu;
+     const mic_f B2_v = 3.0f * one_minus_vv * vv * vv;
+     const mic_f B3_u = uu * uu * uu;
+     const mic_f B3_v = vv * vv * vv;
+
+     const mic_f res = 
+	(B0_u * (Vertex)matrix[0][0] + B1_u * (Vertex)matrix[0][1] + B2_u * (Vertex)matrix[0][2] + B3_u * (Vertex)matrix[0][3]) * B0_v + 
+	(B0_u * (Vertex)matrix[1][0] + B1_u * F0 + B2_u * F1 + B3_u * (Vertex)matrix[1][3]) * B1_v + 
+	(B0_u * (Vertex)matrix[2][0] + B1_u * F3 + B2_u * F2 + B3_u * (Vertex)matrix[2][3]) * B2_v + 
+	(B0_u * (Vertex)matrix[3][0] + B1_u * (Vertex)matrix[3][1] + B2_u * (Vertex)matrix[3][2] + B3_u * (Vertex)matrix[3][3]) * B3_v; 
+     return res;
+   }
+#endif
+
     __forceinline Vec3fa eval(const float uu, const float vv) const
     {
       __aligned(64) Vec3fa matrix[4][4];
@@ -1377,6 +1431,8 @@ namespace embree
 
       const float one_minus_uu = 1.0f - uu;
       const float one_minus_vv = 1.0f - vv;      
+
+     // FIXME: merge u,v and extract after computation
 
       const float B0_u = one_minus_uu * one_minus_uu * one_minus_uu;
       const float B0_v = one_minus_vv * one_minus_vv * one_minus_vv;

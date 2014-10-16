@@ -88,6 +88,7 @@ namespace embree
     }
     
 
+
     __aligned(64) float u_start[16] = { 0,0,0,0,1,1,1,1,1,1,1,1,0,0,0,0 };
     __aligned(64) float v_start[16] = { 0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1 };
 
@@ -104,41 +105,31 @@ namespace embree
       regular_patch.prefetchData();
 
       __aligned(64) Vec3fa vtx[4];
-      Vec2f s(0.0f,1.0f);
-      Vec2f t(0.0f,1.0f);
+
+      const mic_f uu = load16f(u_start);
+      const mic_f vv = load16f(v_start);
+
 
       if (likely(subdiv_patch.isRegular()))
 	{
-	  //asm nop;
-
-#if 1
-	  vtx[0] = regular_patch.eval(s[0],t[0]);
-	  vtx[1] = regular_patch.eval(s[1],t[0]);
-	  vtx[2] = regular_patch.eval(s[1],t[1]);
-	  vtx[3] = regular_patch.eval(s[0],t[1]);
-#else
-	  
-	  const mic_f _vtx = regular_patch.eval4(load16f(u_start),load16f(v_start));
+	  // vtx[0] = regular_patch.eval(s[0],t[0]);
+	  // vtx[1] = regular_patch.eval(s[1],t[0]);
+	  // vtx[2] = regular_patch.eval(s[1],t[1]);
+	  // vtx[3] = regular_patch.eval(s[0],t[1]);
+	  const mic_f _vtx = regular_patch.eval4(uu,vv);
 	  store16f(vtx,_vtx);
-#endif
-
-	  //asm nop;
-#if 0
-	  DBG_PRINT(vtx[0]);
-	  DBG_PRINT(vtx[1]);
-	  DBG_PRINT(vtx[2]);
-	  DBG_PRINT(vtx[3]);
-
-	  DBG_PRINT( regular_patch.eval4(load16f(u_start),load16f(v_start)) );
-#endif
 	}
       else if (likely(subdiv_patch.isGregoryPatch()))
 	{
-	  __aligned(64) GregoryPatch gpatch( regular_patch.v, subdiv_patch.f_m );
-	  vtx[0] = gpatch.eval(s[0],t[0]);
-	  vtx[1] = gpatch.eval(s[1],t[0]);
-	  vtx[2] = gpatch.eval(s[1],t[1]);
-	  vtx[3] = gpatch.eval(s[0],t[1]);
+	  // Vec2f s(0.0f,1.0f);
+	  // Vec2f t(0.0f,1.0f);
+	  // __aligned(64) GregoryPatch gpatch( regular_patch.v, subdiv_patch.f_m );
+	  // vtx[0] = gpatch.eval(s[0],t[0]);
+	  // vtx[1] = gpatch.eval(s[1],t[0]);
+	  // vtx[2] = gpatch.eval(s[1],t[1]);
+	  // vtx[3] = gpatch.eval(s[0],t[1]);
+	  const mic_f _vtx = GregoryPatch::eval4( regular_patch.v, subdiv_patch.f_m, uu, vv );
+	  store16f(vtx,_vtx);
 	}
       else
 	FATAL("not implemented");
