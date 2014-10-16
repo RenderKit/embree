@@ -153,10 +153,12 @@ namespace embree
 	unsigned int items = curNode.items();
 	unsigned int index = curNode.offsetIndex();
 	const SubdivPatch1 *__restrict__ const patch_ptr = (SubdivPatch1*)accel + index;
-	return SubdivPatchIntersector1<ENABLE_INTERSECTION_FILTER>::intersect1(dir_xyz,
-									       org_xyz,
-									       ray,
-									       *patch_ptr);	
+	FATAL("NOT IMPLEMENTED");
+
+	// return SubdivPatchIntersector1<ENABLE_INTERSECTION_FILTER>::intersect1(dir_xyz,
+	// 								       org_xyz,
+	// 								       ray,
+	// 								       *patch_ptr);	
       }
 
       static __forceinline bool occluded(BVH4i::NodeRef curNode,
@@ -171,64 +173,14 @@ namespace embree
 	unsigned int items = curNode.items();
 	unsigned int index = curNode.offsetIndex();
 	const SubdivPatch1 *__restrict__ const patch_ptr = (SubdivPatch1*)accel + index;
-	return SubdivPatchIntersector1<ENABLE_INTERSECTION_FILTER>::occluded1(dir_xyz,
-									      org_xyz,
-									      ray,
-									      *patch_ptr);	
-      }
-
-      // ============================================
-      // ==== single ray mode for 16-wide packets ===
-      // ============================================
-      static __forceinline bool intersect(BVH4i::NodeRef curNode,
-					  const size_t rayIndex, 
-					  const mic_f &dir_xyz,
-					  const mic_f &org_xyz,
-					  const mic_f &min_dist_xyz,
-					  mic_f &max_dist_xyz,
-					  Ray16& ray16, 
-					  const void *__restrict__ const accel,
-					  const Scene*__restrict__ const geometry)
-      {
-	unsigned int items = curNode.items();
-	unsigned int index = curNode.offsetIndex();
-	const SubdivPatch1 *__restrict__ const patch_ptr = (SubdivPatch1*)accel + index;
-	
-	bool hit = false;
-	for (size_t i=0;i<items;i++)
-	  hit |= SubdivPatchIntersector16<ENABLE_INTERSECTION_FILTER>::intersect1(rayIndex,
-										  dir_xyz,
-										  org_xyz,
-										  ray16,
-										  patch_ptr[i]);
-	return hit;
+	FATAL("NOT IMPLEMENTED");
+	// return SubdivPatchIntersector1<ENABLE_INTERSECTION_FILTER>::occluded1(dir_xyz,
+	// 								      org_xyz,
+	// 								      ray,
+	// 								      *patch_ptr);	
       }
 
 
-      static __forceinline bool occluded(BVH4i::NodeRef curNode,
-					 const size_t rayIndex, 
-					 const mic_f &dir_xyz,
-					 const mic_f &org_xyz,
-					 const mic_f &min_dist_xyz,
-					 const mic_f &max_dist_xyz,
-					 const Ray16& ray16, 
-					 mic_m &m_terminated,
-					 const void *__restrict__ const accel,
-					 const Scene*__restrict__ const geometry)
-      {
-	unsigned int items = curNode.items();
-	unsigned int index = curNode.offsetIndex();
-	const SubdivPatch1 *__restrict__ const patch_ptr = (SubdivPatch1*)accel + index;
-
-	for (size_t i=0;i<items;i++)
-	  if (SubdivPatchIntersector16<ENABLE_INTERSECTION_FILTER>::occluded1(rayIndex,
-									      dir_xyz,
-									      org_xyz,
-									      ray16,
-									      m_terminated,
-									      patch_ptr[i])) return true;
-	return false;
-      }
     };
 
     static unsigned int BVH4I_LEAF_MASK = BVH4i::leaf_mask; // needed due to compiler efficiency bug
@@ -299,7 +251,7 @@ namespace embree
 
 	      //////////////////////////////////////////////////////////////////////////////////////////////////
 
-#if 1
+#if 0
 
 	      if (unlikely(!curNode.isAuxFlagSet()))
 		{
@@ -326,15 +278,21 @@ namespace embree
 
 		}
 #else
-	      const bool hit = LeafIntersector::intersect(curNode,
-							  rayIndex,
-							  dir_xyz,
-							  org_xyz,
-							  min_dist_xyz,
-							  max_dist_xyz,
-							  ray16,
-							  accel,
-							  (Scene*)bvh->geometry);
+	      unsigned int items = curNode.items();
+	      unsigned int index = curNode.offsetIndex();
+	      const SubdivPatch1 *__restrict__ const patch_ptr = (SubdivPatch1*)accel + index;
+	
+	      bool hit = false;
+	      for (size_t i=0;i<items;i++)
+	       	hit |= subdivide_intersect1(rayIndex,
+					    dir_xyz,
+					    org_xyz,
+					    ray16,
+					    patch_ptr[i]);
+
+	      if (hit)
+		compactStack(stack_node,stack_dist,sindex,mic_f(ray16.tfar[rayIndex]));
+
 #endif	
 
 	      // ------------------------
@@ -400,16 +358,9 @@ namespace embree
 
 	      //////////////////////////////////////////////////////////////////////////////////////////////////
 
-	      const bool hit = LeafIntersector::occluded(curNode,
-							 rayIndex,
-							 dir_xyz,
-							 org_xyz,
-							 min_dist_xyz,
-							 max_dist_xyz,
-							 ray16,
-							 terminated,
-							 accel,
-							 (Scene*)bvh->geometry);
+	      const bool hit = false;
+
+	      FATAL("NOT YET IMPLEMENTED");
 
 	      if (unlikely(hit)) break;
 	      //////////////////////////////////////////////////////////////////////////////////////////////////
