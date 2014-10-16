@@ -1256,6 +1256,22 @@ namespace embree
       const unsigned int valence_p2 = h_p2->getEdgeValence();
       const unsigned int valence_p3 = h_p3->getEdgeValence();
 
+      const bool border_p0 = h_p0->hasIrregularEdge();
+      const bool border_p1 = h_p0->hasIrregularEdge();
+      const bool border_p2 = h_p0->hasIrregularEdge();
+      const bool border_p3 = h_p0->hasIrregularEdge();
+
+      /* DBG_PRINT( irreg_p0 ); */
+      /* DBG_PRINT( irreg_p1 ); */
+      /* DBG_PRINT( irreg_p2 ); */
+      /* DBG_PRINT( irreg_p3 ); */
+
+      if (border_p0 || 
+	  border_p1 || 
+	  border_p2 || 
+	  border_p3)
+	FATAL("initialization of gregory patches for border patches not yet implemented");
+
       p0() = initCornerVertex(h_p0,vertices);
       p1() = initCornerVertex(h_p1,vertices);
       p2() = initCornerVertex(h_p2,vertices);
@@ -1271,32 +1287,40 @@ namespace embree
       e2_p() = initEdgeVertex(h_e2_p, vertices, p2());
       e3_p() = initEdgeVertex(h_e3_p, vertices, p3());
 
+     
 
-      const SubdivMesh::HalfEdge *const h_e0_m = h_p3->opposite();
-      const SubdivMesh::HalfEdge *const h_e1_m = h_p0->opposite();
-      const SubdivMesh::HalfEdge *const h_e2_m = h_p1->opposite();
-      const SubdivMesh::HalfEdge *const h_e3_m = h_p2->opposite();
+      
+      if (h_p3->hasOpposite())
+	{
+	  const SubdivMesh::HalfEdge *const h_e0_m = h_p3->opposite();
+	  e0_m() = initEdgeVertex(h_e0_m, vertices, p0());
+	  f0_p() = initFaceVertex(h_e0_p,vertices,p0(),e0_p(),e0_m(),valence_p0,valence_p1);
+	  f0_m() = initFaceVertex(h_e0_m,vertices,p0(),e0_m(),e0_p(),valence_p0,valence_p3,-1.0f); 
+	}
 
-      e0_m() = initEdgeVertex(h_e0_m, vertices, p0());
-      e1_m() = initEdgeVertex(h_e1_m, vertices, p1());
-      e2_m() = initEdgeVertex(h_e2_m, vertices, p2());
-      e3_m() = initEdgeVertex(h_e3_m, vertices, p3());
+      if (h_p0->hasOpposite())
+	{
+	  const SubdivMesh::HalfEdge *const h_e1_m = h_p0->opposite();
+	  e1_m() = initEdgeVertex(h_e1_m, vertices, p1());
+	  f1_p() = initFaceVertex(h_e1_p,vertices,p1(),e1_p(),e1_m(),valence_p1,valence_p2);
+	  f1_m() = initFaceVertex(h_e1_m,vertices,p1(),e1_m(),e1_p(),valence_p1,valence_p0,-1.0f);
+	}
 
+      if (h_p1->hasOpposite())
+	{
+	  const SubdivMesh::HalfEdge *const h_e2_m = h_p1->opposite();
+	  e2_m() = initEdgeVertex(h_e2_m, vertices, p2());
+	  f2_p() = initFaceVertex(h_e2_p,vertices,p2(),e2_p(),e2_m(),valence_p2,valence_p3);
+	  f2_m() = initFaceVertex(h_e2_m,vertices,p2(),e2_m(),e2_p(),valence_p2,valence_p1,-1.0f);
+	}
 
-
-
-      f0_p() = initFaceVertex(h_e0_p,vertices,p0(),e0_p(),e0_m(),valence_p0,valence_p1);
-      f0_m() = initFaceVertex(h_e0_m,vertices,p0(),e0_m(),e0_p(),valence_p0,valence_p3,-1.0f); 
-
-      f1_p() = initFaceVertex(h_e1_p,vertices,p1(),e1_p(),e1_m(),valence_p1,valence_p2);
-      f1_m() = initFaceVertex(h_e1_m,vertices,p1(),e1_m(),e1_p(),valence_p1,valence_p0,-1.0f);
-
-      f2_p() = initFaceVertex(h_e2_p,vertices,p2(),e2_p(),e2_m(),valence_p2,valence_p3);
-      f2_m() = initFaceVertex(h_e2_m,vertices,p2(),e2_m(),e2_p(),valence_p2,valence_p1,-1.0f);
-
-      f3_p() = initFaceVertex(h_e3_p,vertices,p3(),e3_p(),e3_m(),valence_p3,valence_p2);
-      f3_m() = initFaceVertex(h_e3_m,vertices,p3(),e3_m(),e3_p(),valence_p3,valence_p0,-1.0f);
-
+      if (h_p2->hasOpposite())
+	{
+	  const SubdivMesh::HalfEdge *const h_e3_m = h_p2->opposite();
+	  e3_m() = initEdgeVertex(h_e3_m, vertices, p3());
+	  f3_p() = initFaceVertex(h_e3_p,vertices,p3(),e3_p(),e3_m(),valence_p3,valence_p2);
+	  f3_m() = initFaceVertex(h_e3_m,vertices,p3(),e3_m(),e3_p(),valence_p3,valence_p0,-1.0f);
+	}
 #if 0
       DBG_PRINT( p0() );
       DBG_PRINT( p1() );

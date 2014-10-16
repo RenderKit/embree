@@ -49,7 +49,7 @@ namespace embree
       subdivision_level(subdivision_level),
       bvh4i_noderef_backptr(NULL),
       bvh4i_noderef_org(0),
-      dummy(0)
+      under_construction(0)
     {
       u_val = Vec2f(0.0f,1.0f);
       v_val = Vec2f(0.0f,1.0f);
@@ -127,7 +127,13 @@ namespace embree
 #endif
       else
 	{
-	  PING;
+	  flags |= GREGORY_PATCH;
+
+	  GregoryPatch gpatch; 
+	  gpatch.init( first_half_edge, vertices ); 
+	  
+	  gpatch.exportConrolPoints( patch.v, f_m );
+
 	}
     }
 
@@ -222,7 +228,7 @@ namespace embree
     Vec2f v_val;
     unsigned int *bvh4i_noderef_backptr;
     unsigned int  bvh4i_noderef_org;
-    unsigned int dummy;
+    volatile unsigned int under_construction; // 0 = not build yet, 1 = under construction, 2 = built
     RegularCatmullClarkPatch patch;
     Vec3fa f_m[2][2];    
   };

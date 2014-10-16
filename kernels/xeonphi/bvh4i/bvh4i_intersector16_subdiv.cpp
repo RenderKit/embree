@@ -43,21 +43,36 @@ namespace embree
       unsigned int patchIndex = curNode.offsetIndex();
       SubdivPatch1 *__restrict__ const patch_ptr = &subdivpatch1[patchIndex];
 	
+      /* check whether another thread currently builds this patch */
+      while (patch_ptr->under_construction != 0)
+	{
+	  __pause(512);
+	}
+
+      const unsigned int build_state = atomic_add((atomic_t*)&patch_ptr->under_construction,+1);
+      
+      if (build_state != 0) /* somebody else builds the subtree */
+	{
+	  /* what until the subtree is built */
+	  while (patch_ptr->under_construction != 0)
+	    __pause(512);
+
+	  /* get new node ref */
+	  BVH4i::NodeRef newNodeRef = *(BVH4i::NodeRef*)patch_ptr->bvh4i_noderef_backptr;
+	  return newNodeRef;	  
+	}
+
+      /* got the lock lets build the tree */
 
       assert(patch_ptr->bvh4i_noderef_backptr != NULL);
 
       BVH4i::NodeRef *backRefNode = (BVH4i::NodeRef*)patch_ptr->bvh4i_noderef_backptr;
 
-
       
       const size_t num64BytesBlocksPerNode = 2;
       const size_t currentIndex = lazyNodeID.add(num64BytesBlocksPerNode);
 
-
-      //*backRefNode = backRefNode->id() | BVH4i::aux_flag_mask;
-
       BVH4i::NodeRef newNodeRef = ((currentIndex*2) << BVH4i::encodingBits);
-      *backRefNode = newNodeRef;
 
       //createBVH4iNode<2>(*(BVH4i::NodeRef*)backRefNode,currentIndex);
 
@@ -71,9 +86,6 @@ namespace embree
 	  //node.setBounds( i,  patch_ptr[i].bounds() );
 	  node.setBounds( i,  patch_ptr[i].evalQuadBounds() );
 
-	  // assert( patch_ptr[i].dummy != (unsigned int)-1);
-	  // patch_ptr[i].dummy = (unsigned int)-1;
-
 	  createSubPatchBVH4iLeaf( node.child(i), patchIndex + i, 0);
 	  node.data(i) = 0;
 	  assert( node.child(i).isAuxFlagSet() );
@@ -84,6 +96,14 @@ namespace embree
       DBG_PRINT(currentIndex);
       DBG_PRINT( numLazyBuildPatches );
 
+      /* new node index is valid now */
+
+      *backRefNode = newNodeRef;
+
+      /* release lock */
+      patch_ptr->under_construction = 0;
+
+      /* return new node ref */
       return newNodeRef;
     }
     
