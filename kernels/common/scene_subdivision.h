@@ -667,7 +667,7 @@ namespace embree
     typedef Vec3fa_t Vertex;      
 #endif
 
-    static __forceinline Vertex eval(const float u, const Vertex &p0, const Vertex &p1, const Vertex &p2, const Vertex &p3)
+    static __forceinline Vec4f eval(const float u)
     {
       // FIXME: lookup
       const float t  = u;
@@ -676,10 +676,27 @@ namespace embree
       const float n1 = (4.0f*s*s*s+t*t*t) + (12.0f*s*t*s + 6.0*t*s*t);
       const float n2 = (4.0f*t*t*t+s*s*s) + (12.0f*t*s*t + 6.0*s*t*s);
       const float n3 = t*t*t;
-      const float c  = 1.0f/6.0f;
-      const Vertex n = c * (p0 * n0 + p1 * n1 + p2 * n2 + p3 * n3);
-      return n;
+      //const float c  = 1.0f/6.0f; // do this later
+      return Vec4f(n0,n1,n2,n3);
     }
+
+#if defined(__MIC__)
+
+    static __forceinline mic4f eval(const mic_f u)
+    {
+      // FIXME: lookup
+      const mic_f t  = u;
+      const mic_f s  = 1.0f - u;
+      const mic_f n0 = s*s*s;
+      const mic_f n1 = (4.0f*s*s*s+t*t*t) + (12.0f*s*t*s + 6.0*t*s*t);
+      const mic_f n2 = (4.0f*t*t*t+s*s*s) + (12.0f*t*s*t + 6.0*s*t*s);
+      const mic_f n3 = t*t*t;
+      //const mic_f c  = 1.0f/6.0f; // do this later
+      return mic4f(n0,n1,n2,n3);
+    }
+
+
+#endif
     
   };
 
@@ -1030,12 +1047,36 @@ namespace embree
 
     __forceinline Vec3fa eval(const float uu, const float vv) const
     {
-      const Vertex curve0 = CubicBSplineCurve::eval(vv,v[0][0],v[1][0],v[2][0],v[3][0]);
-      const Vertex curve1 = CubicBSplineCurve::eval(vv,v[0][1],v[1][1],v[2][1],v[3][1]);
-      const Vertex curve2 = CubicBSplineCurve::eval(vv,v[0][2],v[1][2],v[2][2],v[3][2]);
-      const Vertex curve3 = CubicBSplineCurve::eval(vv,v[0][3],v[1][3],v[2][3],v[3][3]);
-      return CubicBSplineCurve::eval(uu,curve0,curve1,curve2,curve3);
+      const Vec4f v_n = CubicBSplineCurve::eval(vv);
+
+      const Vertex curve0 = v_n[0] * v[0][0] + v_n[1] * v[1][0] + v_n[2] * v[2][0] + v_n[3] * v[3][0];
+      const Vertex curve1 = v_n[0] * v[0][1] + v_n[1] * v[1][1] + v_n[2] * v[2][1] + v_n[3] * v[3][1];
+      const Vertex curve2 = v_n[0] * v[0][2] + v_n[1] * v[1][2] + v_n[2] * v[2][2] + v_n[3] * v[3][2];
+      const Vertex curve3 = v_n[0] * v[0][3] + v_n[1] * v[1][3] + v_n[2] * v[2][3] + v_n[3] * v[3][3];
+
+      const Vec4f u_n = CubicBSplineCurve::eval(uu);
+
+      return (u_n[0] * curve0 + u_n[1] * curve1 + u_n[2] * curve2 + u_n[3] * curve3) * 1.0f/36.0f;
     }
+
+#if defined(__MIC__)
+
+    __forceinline mic_f eval4(const mic_f uu, const mic_f vv) const
+    {
+      const mic4f v_n = CubicBSplineCurve::eval(vv); //FIXME: precompute in table
+
+      const mic_f curve0 = v_n[0] * broadcast4to16f(&v[0][0]) + v_n[1] * broadcast4to16f(&v[1][0]) + v_n[2] * broadcast4to16f(&v[2][0]) + v_n[3] * broadcast4to16f(&v[3][0]);
+      const mic_f curve1 = v_n[0] * broadcast4to16f(&v[0][1]) + v_n[1] * broadcast4to16f(&v[1][1]) + v_n[2] * broadcast4to16f(&v[2][1]) + v_n[3] * broadcast4to16f(&v[3][1]);
+      const mic_f curve2 = v_n[0] * broadcast4to16f(&v[0][2]) + v_n[1] * broadcast4to16f(&v[1][2]) + v_n[2] * broadcast4to16f(&v[2][2]) + v_n[3] * broadcast4to16f(&v[3][2]);
+      const mic_f curve3 = v_n[0] * broadcast4to16f(&v[0][3]) + v_n[1] * broadcast4to16f(&v[1][3]) + v_n[2] * broadcast4to16f(&v[2][3]) + v_n[3] * broadcast4to16f(&v[3][3]);
+
+      const mic4f u_n = CubicBSplineCurve::eval(uu); //FIXME: precompute in table
+
+      return (u_n[0] * curve0 + u_n[1] * curve1 + u_n[2] * curve2 + u_n[3] * curve3) * mic_f(1.0f/36.0f);
+    }
+    
+#endif
+
   };
 
 

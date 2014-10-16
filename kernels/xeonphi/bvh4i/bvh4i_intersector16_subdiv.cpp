@@ -88,7 +88,10 @@ namespace embree
     }
     
 
-    bool intersectEval(const BVH4i::NodeRef &curNode,
+    __aligned(64) float u_start[16] = { 0,0,0,0,1,1,1,1,1,1,1,1,0,0,0,0 };
+    __aligned(64) float v_start[16] = { 0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1 };
+
+    bool intersect1Eval(const BVH4i::NodeRef &curNode,
 		       const size_t rayIndex, 
 		       const mic_f &dir_xyz,
 		       const mic_f &org_xyz,
@@ -100,17 +103,34 @@ namespace embree
       const RegularCatmullClarkPatch &regular_patch = subdiv_patch.patch;
       regular_patch.prefetchData();
 
-      Vec3fa vtx[4];
+      __aligned(64) Vec3fa vtx[4];
       Vec2f s(0.0f,1.0f);
       Vec2f t(0.0f,1.0f);
 
       if (likely(subdiv_patch.isRegular()))
 	{
+	  //asm nop;
+
+#if 1
 	  vtx[0] = regular_patch.eval(s[0],t[0]);
 	  vtx[1] = regular_patch.eval(s[1],t[0]);
 	  vtx[2] = regular_patch.eval(s[1],t[1]);
 	  vtx[3] = regular_patch.eval(s[0],t[1]);
+#else
+	  
+	  const mic_f _vtx = regular_patch.eval4(load16f(u_start),load16f(v_start));
+	  store16f(vtx,_vtx);
+#endif
 
+	  //asm nop;
+#if 0
+	  DBG_PRINT(vtx[0]);
+	  DBG_PRINT(vtx[1]);
+	  DBG_PRINT(vtx[2]);
+	  DBG_PRINT(vtx[3]);
+
+	  DBG_PRINT( regular_patch.eval4(load16f(u_start),load16f(v_start)) );
+#endif
 	}
       else if (likely(subdiv_patch.isGregoryPatch()))
 	{
@@ -251,7 +271,7 @@ namespace embree
 
 	      //////////////////////////////////////////////////////////////////////////////////////////////////
 
-#if 0
+#if 1
 
 	      if (unlikely(!curNode.isAuxFlagSet()))
 		{
@@ -266,12 +286,12 @@ namespace embree
 		  // PING;
 		  // DBG_PRINT(curNode);
 
-		  bool hit = intersectEval(curNode,
-					   rayIndex,
-					   dir_xyz,
-					   org_xyz,
-					   ray16,
-					   (SubdivPatch1*)accel);
+		  bool hit = intersect1Eval(curNode,
+					    rayIndex,
+					    dir_xyz,
+					    org_xyz,
+					    ray16,
+					    (SubdivPatch1*)accel);
 
 		  if (hit)
 		    compactStack(stack_node,stack_dist,sindex,mic_f(ray16.tfar[rayIndex]));
