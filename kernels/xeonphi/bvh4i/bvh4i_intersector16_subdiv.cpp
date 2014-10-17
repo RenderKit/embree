@@ -42,19 +42,15 @@ namespace embree
     }
 
     BBox3fa createSubTree(BVH4i::NodeRef &curNode,
-			  BVH4i::NodeRef &curData,
 			  BVH4i *bvh,
 			  BVH4i::Node  * __restrict__ nodes,
-			  SubdivPatch1 * __restrict__ const subdivpatch1,
-			  const unsigned int patchIndex,
+			  const SubdivPatch1 &patch,
 			  const unsigned int u_start,
 			  const unsigned int u_end,
 			  const unsigned int v_start,
 			  const unsigned int v_end,
 			  const unsigned int subdiv_level)
     {
-      const SubdivPatch1 &patch = subdivpatch1[patchIndex];
-
       if (u_end-u_start <= 1)
 	{
 	  assert(u_end-u_start==1);
@@ -70,13 +66,14 @@ namespace embree
 	  const float v0 = gridLookUpTables.lookUp(subdiv_level,v_start);
 	  const float v1 = gridLookUpTables.lookUp(subdiv_level,v_end);
 
+	  // DBG_PRINT( u0 );
+	  // DBG_PRINT( u1 );
+	  // DBG_PRINT( v0 );
+	  // DBG_PRINT( v1 );
+
 	  BBox3fa quadBounds = patch.evalQuadBounds(u0,u1,v0,v1);
-	  unsigned char* iptr = (unsigned char*)&curData;
-	  iptr[0] = u_start;
-	  iptr[1] = u_end;
-	  iptr[2] = v_start;
-	  iptr[3] = v_end;	  
-	  createSubPatchBVH4iLeaf( curNode, patchIndex, 0);
+	  const unsigned int data = (v_start << 8) | u_start;
+	  createSubPatchBVH4iLeaf( curNode, data, 0);
 
 	  assert( curNode.isAuxFlagSet() );
 	  return quadBounds;
@@ -93,9 +90,9 @@ namespace embree
 
       DBG_PRINT(currentIndex);
 
-      curNode = ((currentIndex*2) << BVH4i::encodingBits);
-      //createBVH4iNode<2>(*(BVH4i::NodeRef*)backRefNode,currentIndex);
-      BVH4i::Node &node = *(BVH4i::Node*)&((mic_i*)nodes)[currentIndex];
+      createBVH4iNode<2>(curNode,currentIndex);
+
+      BVH4i::Node &node = *(BVH4i::Node*)curNode.node(nodes);
 
       node.setInvalid();
 
@@ -104,18 +101,17 @@ namespace embree
 
       /* create four subtrees */
 
-      BBox3fa bounds0 = createSubTree( node.child(0), node.data(0), bvh, nodes, subdivpatch1, patchIndex, u_start, u_mid, v_start, v_mid,  subdiv_level);
+      BBox3fa bounds0 = createSubTree( node.child(0), bvh, nodes, patch, u_start, u_mid, v_start, v_mid,  subdiv_level);
       node.setBounds(0, bounds0);
 
-      BBox3fa bounds1 = createSubTree( node.child(1), node.data(1), bvh, nodes, subdivpatch1, patchIndex,   u_mid, u_end, v_start, v_mid,  subdiv_level);
+      BBox3fa bounds1 = createSubTree( node.child(1), bvh, nodes, patch, u_mid, u_end, v_start, v_mid,  subdiv_level);
       node.setBounds(1, bounds1);
 
-      BBox3fa bounds2 = createSubTree( node.child(2), node.data(2), bvh, nodes, subdivpatch1, patchIndex,   u_mid, u_end, v_mid, v_end,  subdiv_level);
+      BBox3fa bounds2 = createSubTree( node.child(2), bvh, nodes, patch, u_mid, u_end, v_mid, v_end,  subdiv_level);
       node.setBounds(2, bounds2);
 
-      BBox3fa bounds3 = createSubTree( node.child(3), node.data(3), bvh, nodes, subdivpatch1, patchIndex,   u_start, u_mid, v_mid, v_end,  subdiv_level);
+      BBox3fa bounds3 = createSubTree( node.child(3), bvh, nodes, patch, u_start, u_mid, v_mid, v_end,  subdiv_level);
       node.setBounds(3, bounds3);
-
 
       BBox3fa bounds( empty );
       bounds.extend( bounds0 );
@@ -126,35 +122,29 @@ namespace embree
       return bounds;
     }
 
-    BVH4i::NodeRef initLazySubdivTree(BVH4i::NodeRef &curNode,
+    BVH4i::NodeRef initLazySubdivTree(SubdivPatch1 &subdiv_patch,
 				      BVH4i *bvh,
 				      BVH4i::Node  * __restrict__ nodes,
-				      SubdivPatch1 * __restrict__ const subdivpatch1,
 				      const unsigned int subdiv_level)
     {
-      unsigned int items = curNode.items();
-      assert(items == 1);
-      unsigned int patchIndex = curNode.offsetIndex();
-
-      SubdivPatch1 *__restrict__ const patch_ptr = &subdivpatch1[patchIndex];
-
-      const unsigned int build_state = atomic_add((atomic_t*)&patch_ptr->under_construction,+1);
-
+      const unsigned int build_state = atomic_add((atomic_t*)&subdiv_patch.under_construction,+1);
       /* parent ptr */
 
-      BVH4i::NodeRef parent_ref = patch_ptr->bvh4i_parent_ref;
-      BVH4i::Node *  parent_ptr = (BVH4i::Node*)parent_ref.node(nodes);
-      volatile unsigned int *p  = (unsigned int *)&parent_ptr->child( patch_ptr->bvh4i_parent_local_index );
-	
+      // BVH4i::NodeRef parent_ref = subdiv_patch.bvh4i_parent_ref;
+      // BVH4i::Node *  parent_ptr = (BVH4i::Node*)parent_ref.node(nodes);
+      // volatile unsigned int *p  = (unsigned int *)&parent_ptr->child( subdiv_patch.bvh4i_parent_local_index );
+
+      volatile unsigned int *p  = (unsigned int *)&subdiv_patch.bvh4i_subtree_root;
+
       /* check whether another thread currently builds this patch */
       if (build_state != 0)
 	{
-	  atomic_add((atomic_t*)&patch_ptr->under_construction,-1);
+	  atomic_add((atomic_t*)&subdiv_patch.under_construction,-1);
 
-	  while (patch_ptr->under_construction != 0)
+	  while (subdiv_patch.under_construction != 0)
 	    __pause(512);	  
 
-	  while ( *p == curNode)
+	  while ( *p == BVH4i::invalidNode)
 	    __pause(512);
 
 	  return *p;	  
@@ -172,49 +162,11 @@ namespace embree
       mtx.unlock();
 #endif
 
-
-      // const size_t num64BytesBlocksPerNode = 2;
-      // const size_t currentIndex = bvh->used64BytesBlocks.add(num64BytesBlocksPerNode);
-
-      // if (currentIndex + num64BytesBlocksPerNode >= bvh->numAllocated64BytesBlocks)
-      // 	FATAL("not enough bvh node space allocated");
-
-      // BVH4i::NodeRef newNodeRef;
-      // createBVH4iNode<2>(newNodeRef,currentIndex);
-      // BVH4i::Node *node = (BVH4i::Node *)newNodeRef.node(nodes);
-      // node->setInvalid();
-
       numLazyBuildPatches++;
       const unsigned int grid_size = ((unsigned int)1 << subdiv_level)+1;
 
-#if 0
-
-      for (size_t i=0;i<items;i++)
-	{
-	  BBox3fa bounds = createSubTree( node->child( i ),
-					  node->data ( i ),
-					  bvh,
-					  nodes,
-					  subdivpatch1,
-					  patchIndex+i,
-					  0,grid_size-1,
-					  0,grid_size-1,
-					  subdiv_level);
-	  node->setBounds(i,bounds);
-	}
-      for (size_t i=0;i<items;i++)
-	{
-	  node->setBounds( i,  patch_ptr[i].evalQuadBounds() );
-	  createSubPatchBVH4iLeaf( node->child(i), patchIndex + i, subdiv_level);
-	  node->data(i) = 0;
-	  assert( node->child(i).isAuxFlagSet() );
-	}      
-#endif
-
 #if 1
       mtx.lock();
-      DBG_PRINT(patchIndex);
-      //DBG_PRINT(currentIndex);
       DBG_PRINT( numLazyBuildPatches );
       DBG_PRINT( bvh->numAllocated64BytesBlocks );
       mtx.unlock();
@@ -222,27 +174,20 @@ namespace embree
       /* new node index is valid now */
 
 
-      BBox3fa bounds = createSubTree( parent_ptr->child( patch_ptr->bvh4i_parent_local_index ),
-				      parent_ptr->data ( patch_ptr->bvh4i_parent_local_index ),
+      BBox3fa bounds = createSubTree( *(BVH4i::NodeRef*)&subdiv_patch.bvh4i_subtree_root,
 				      bvh,
 				      nodes,
-				      subdivpatch1,
-				      patchIndex,
+				      subdiv_patch,
 				      0,grid_size-1,
 				      0,grid_size-1,
 				      subdiv_level);
 
 
-      //*p = newNodeRef;
-
-      //__memory_barrier();
 
       /* release lock */
-      const unsigned int last_index = atomic_add((atomic_t*)&patch_ptr->under_construction,-1);
+      const unsigned int last_index = atomic_add((atomic_t*)&subdiv_patch.under_construction,-1);
 
       BVH4i::NodeRef newNodeRef = *p;
-      // DBG_PRINT(newNodeRef.items());
-      // DBG_PRINT(newNodeRef.offsetIndex());
 
       /* return new node ref */
       return newNodeRef; // 
@@ -253,23 +198,23 @@ namespace embree
     __aligned(64) float u_start[16] = { 0,0,0,0,1,1,1,1,1,1,1,1,0,0,0,0 };
     __aligned(64) float v_start[16] = { 0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1 };
 
-    bool intersect1Eval(const BVH4i::NodeRef &curNode,
-		       const size_t rayIndex, 
-		       const mic_f &dir_xyz,
-		       const mic_f &org_xyz,
-		       Ray16& ray16,
-		       const SubdivPatch1 * __restrict__ const subdivpatch1)
+    bool intersect1Eval(const SubdivPatch1 &subdiv_patch,
+			const float u_start,
+			const float u_end,
+			const float v_start,
+			const float v_end,
+			const size_t rayIndex, 
+			const mic_f &dir_xyz,
+			const mic_f &org_xyz,
+			Ray16& ray16)
     {
-      unsigned int patchIndex = curNode.offsetIndex();
-      const SubdivPatch1& subdiv_patch = subdivpatch1[patchIndex];
       const RegularCatmullClarkPatch &regular_patch = subdiv_patch.patch;
       regular_patch.prefetchData();
 
       __aligned(64) Vec3fa vtx[4];
 
-      const mic_f uu = load16f(u_start);
-      const mic_f vv = load16f(v_start);
-
+      const mic_f uu = select(0x0ff0,mic_f(u_end),mic_f(u_start));
+      const mic_f vv = select(0xff00,mic_f(v_end),mic_f(v_start));
 
       if (likely(subdiv_patch.isRegular()))
 	{
@@ -424,32 +369,81 @@ namespace embree
 	      //////////////////////////////////////////////////////////////////////////////////////////////////
 
 #if 1
-	      if (unlikely(!curNode.isAuxFlagSet()))
+	      const unsigned int patchIndex = curNode.offsetIndex();
+	      SubdivPatch1& subdiv_patch = ((SubdivPatch1*)accel)[patchIndex];
+
+	      const unsigned int subdiv_level = 2; // g_subdivision_level; cannot use g_subdivision_level with a working "free" for sub-trees
+
+	      if (unlikely(subdiv_patch.bvh4i_subtree_root == BVH4i::invalidNode))
 		{
-		  BVH4i::NodeRef newNodeRef = initLazySubdivTree(curNode,
+		  BVH4i::NodeRef newNodeRef = initLazySubdivTree(subdiv_patch,
 								 bvh,
 								 nodes,
-								 (SubdivPatch1*)accel,
-								 g_subdivision_level);
+								 subdiv_level);
 
-		  assert( newNodeRef.isAuxFlagSet() );
-		  stack_node[sindex] = newNodeRef;
-		  stack_dist[sindex] = pos_inf;
-		  sindex++;
 		}
-	      else
+
+	      assert(subdiv_patch.bvh4i_subtree_root != BVH4i::invalidNode);
+
+	      // -------------------------------------
+	      // -------------------------------------
+	      // -------------------------------------
+
+	      __aligned(64) float   sub_stack_dist[64];
+	      __aligned(64) NodeRef sub_stack_node[64];
+	      sub_stack_node[0] = BVH4i::invalidNode;
+	      sub_stack_node[1] = subdiv_patch.bvh4i_subtree_root;
+	      store16f(sub_stack_dist,inf);
+	      size_t sub_sindex = 2;
+	      bool hit = false;
+
+	      while (1)
 		{
-		  bool hit = intersect1Eval(curNode,
-					    rayIndex,
-					    dir_xyz,
-					    org_xyz,
-					    ray16,
-					    (SubdivPatch1*)accel);
+		  curNode = sub_stack_node[sub_sindex-1];
+		  sub_sindex--;
 
-		  if (hit)
-		    compactStack(stack_node,stack_dist,sindex,mic_f(ray16.tfar[rayIndex]));
+		  traverse_single_intersect<ENABLE_COMPRESSED_BVH4I_NODES>(curNode,
+									   sub_sindex,
+									   rdir_xyz,
+									   org_rdir_xyz,
+									   min_dist_xyz,
+									   max_dist_xyz,
+									   sub_stack_node,
+									   sub_stack_dist,
+									   nodes,
+									   leaf_mask);
+		 		   
 
+		  /* return if stack is empty */
+		  if (unlikely(curNode == BVH4i::invalidNode)) break;
+
+		  assert(curNode.isAuxFlagSet());
+		  const unsigned int uv = curNode.offsetIndex();
+		  const unsigned int u  = uv & 0xff;
+		  const unsigned int v  = uv >> 8;
+	      
+		  const float u_start = gridLookUpTables.lookUp(subdiv_level,u);
+		  const float u_end   = gridLookUpTables.lookUp(subdiv_level,u+1);
+		  const float v_start = gridLookUpTables.lookUp(subdiv_level,v);
+		  const float v_end   = gridLookUpTables.lookUp(subdiv_level,v+1);
+	      
+		  hit |= intersect1Eval(subdiv_patch,
+					u_start,
+					u_end,
+					v_start,
+					v_end,
+					rayIndex,
+					dir_xyz,
+					org_xyz,
+					ray16);
 		}
+	      // -------------------------------------
+	      // -------------------------------------
+	      // -------------------------------------
+
+	      if (hit)
+		compactStack(stack_node,stack_dist,sindex,mic_f(ray16.tfar[rayIndex]));
+
 #else
 	      unsigned int items = curNode.items();
 	      assert(items == 1);

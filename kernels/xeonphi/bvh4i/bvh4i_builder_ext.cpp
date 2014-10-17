@@ -916,7 +916,7 @@ PRINT(CORRECT_numPrims);
 	const size_t numPrims = numPrimitives+4;
 	const size_t minAllocNodes = (threadCount+1) * ALLOCATOR_NODE_BLOCK_SIZE; 
 	const size_t numNodes = (size_t)((numPrims+3)/4) + minAllocNodes;
-	const size_t additionalLazyNodes = 4*numPrims;
+	const size_t additionalLazyNodes = 4*4*numPrims; // two levels of subdivision
 	DBG_PRINT(additionalLazyNodes);
 	allocateMemoryPools(numPrims,numNodes + additionalLazyNodes,sizeof(BVH4i::Node),sizeof(SubdivPatch1));
 	DBG_PRINT( sizeof(SubdivPatch1) );
@@ -1092,8 +1092,8 @@ PRINT(CORRECT_numPrims);
 
 	for (size_t i=0;i<items;i++)
 	  {
-	    //n->setBounds( i, patch_ptr[i].bounds() );
-	    n->setBounds( i, patch_ptr[i].evalQuadBounds() );
+	    n->setBounds( i, patch_ptr[i].bounds() );
+	    //n->setBounds( i, patch_ptr[i].evalQuadBounds() );
 
 	    assert( patch_ptr[i].under_construction == 0);
 	    patch_ptr[i].bvh4i_parent_ref         = newNodeRef;

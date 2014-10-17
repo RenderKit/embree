@@ -49,10 +49,9 @@ namespace embree
       subdivision_level(subdivision_level),
       bvh4i_parent_ref(0),
       bvh4i_parent_local_index(0),
-      under_construction(0)
+      under_construction(0),
+      bvh4i_subtree_root((unsigned int)-1)
     {
-      u_val = Vec2f(0.0f,1.0f);
-      v_val = Vec2f(0.0f,1.0f);
       f_m[0][0] = 0.0f;
       f_m[0][1] = 0.0f;
       f_m[1][1] = 0.0f;
@@ -224,12 +223,11 @@ namespace embree
     unsigned int geomID;                          //!< geometry ID of the subdivision mesh this patch belongs to
     unsigned int primID;                          //!< primitive ID of this subdivision patch
 
-    Vec2f u_val;
-    Vec2f v_val;
+    unsigned int bvh4i_subtree_root;
     unsigned int bvh4i_parent_ref;
     unsigned int bvh4i_parent_local_index;
     volatile unsigned int under_construction; // 0 = not build yet, 1 = under construction, 2 = built
-    RegularCatmullClarkPatch patch;
+    __aligned(64) RegularCatmullClarkPatch patch;
     Vec3fa f_m[2][2];    
   };
 
