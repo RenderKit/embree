@@ -22,22 +22,107 @@ namespace embree
 {
   extern size_t g_subdivision_level;
 
-  static size_t numLazyBuildPatches = 0;
+  static AtomicCounter numLazyBuildPatches = 0;
 
   static AtomicMutex mtx;
   std::vector<unsigned int> patchids;
 
   namespace isa
   {
-  __forceinline void createSubPatchBVH4iLeaf(BVH4i::NodeRef &ref,
-					     const unsigned int patchIndex,
-					     const unsigned int subdiv_level) 
-  {
-    ref = (patchIndex << BVH4i::encodingBits) | BVH4i::leaf_mask | BVH4i::aux_flag_mask | subdiv_level;
-  }
+    __forceinline void createSubPatchBVH4iLeaf(BVH4i::NodeRef &ref,
+					       const unsigned int patchIndex,
+					       const unsigned int subdiv_level) 
+    {
+      ref = (patchIndex << BVH4i::encodingBits) | BVH4i::leaf_mask | BVH4i::aux_flag_mask | subdiv_level;
+    }
+
+    BBox3fa createSubTree(BVH4i::NodeRef &curNode,
+			  BVH4i::NodeRef &curData,
+			  BVH4i *bvh,
+			  BVH4i::Node  * __restrict__ nodes,
+			  SubdivPatch1 * __restrict__ const subdivpatch1,
+			  const unsigned int patchIndex,
+			  const unsigned int u_start,
+			  const unsigned int u_end,
+			  const unsigned int v_start,
+			  const unsigned int v_end,
+			  const unsigned int grid_size)
+    {
+      const SubdivPatch1 &patch = subdivpatch1[patchIndex];
+
+      if (u_end-u_start <= 1)
+	{
+	  assert(u_end-u_start==1);
+	  assert(v_end-v_start==1);
+	  const float inv_grid_size = 1.0f / (float)grid_size;
+	  const float u0 = (float)u_start * inv_grid_size;
+	  const float u1 = (float)u_end   * inv_grid_size;
+	  const float v0 = (float)v_start * inv_grid_size;
+	  const float v1 = (float)v_end   * inv_grid_size;
+
+	  DBG_PRINT(u0);
+	  DBG_PRINT(u1);
+	  DBG_PRINT(v0);
+	  DBG_PRINT(v1);
+
+	  BBox3fa quadBounds = patch.evalQuadBounds(u0,u1,v0,v1);
+	  unsigned char* iptr = (unsigned char*)&curData;
+	  iptr[0] = u_start;
+	  iptr[1] = u_end;
+	  iptr[2] = v_start;
+	  iptr[3] = v_end;	  
+	  createSubPatchBVH4iLeaf( curNode, patchIndex, 0);
+
+	  assert( curNode.isAuxFlagSet() );
+	  return quadBounds;
+	}
+
+      /* allocate new bvh4i node */
+      const size_t num64BytesBlocksPerNode = 2;
+      const size_t currentIndex = bvh->used64BytesBlocks.add(num64BytesBlocksPerNode);
+
+      if (currentIndex + num64BytesBlocksPerNode >= bvh->numAllocated64BytesBlocks)
+	{
+	  FATAL("not enough bvh node space allocated");
+	}
+
+      DBG_PRINT(currentIndex);
+
+      curNode = ((currentIndex*2) << BVH4i::encodingBits);
+      //createBVH4iNode<2>(*(BVH4i::NodeRef*)backRefNode,currentIndex);
+      BVH4i::Node &node = *(BVH4i::Node*)&((mic_i*)nodes)[currentIndex];
+
+      node.setInvalid();
+
+      const unsigned int u_mid = (u_start+u_end)/2;
+      const unsigned int v_mid = (v_start+v_end)/2;
+
+      /* create four subtrees */
+
+      BBox3fa bounds0 = createSubTree( node.child(0), node.data(0), bvh, nodes, subdivpatch1, patchIndex, u_start, u_mid, v_start, v_mid,  grid_size);
+      node.setBounds(0, bounds0);
+
+      BBox3fa bounds1 = createSubTree( node.child(1), node.data(1), bvh, nodes, subdivpatch1, patchIndex,   u_mid, u_end, v_start, v_mid,  grid_size);
+      node.setBounds(1, bounds1);
+
+      BBox3fa bounds2 = createSubTree( node.child(2), node.data(2), bvh, nodes, subdivpatch1, patchIndex,   u_mid, u_end, v_mid, v_end,  grid_size);
+      node.setBounds(2, bounds2);
+
+      BBox3fa bounds3 = createSubTree( node.child(3), node.data(3), bvh, nodes, subdivpatch1, patchIndex,   u_start, u_mid, v_mid, v_end,  grid_size);
+      node.setBounds(3, bounds3);
+
+
+      BBox3fa bounds( empty );
+      bounds.extend( bounds0 );
+      bounds.extend( bounds1 );
+      bounds.extend( bounds2 );
+      bounds.extend( bounds3 );
+
+      return bounds;
+    }
 
     BVH4i::NodeRef initLazySubdivTree(BVH4i::NodeRef &curNode,
-				      AlignedAtomicCounter32 &lazyNodeID,
+				      BVH4i *bvh,
 				      BVH4i::Node  * __restrict__ nodes,
 				      SubdivPatch1 * __restrict__ const subdivpatch1,
 				      const unsigned int subdiv_level)
@@ -47,6 +132,12 @@ namespace embree
       SubdivPatch1 *__restrict__ const patch_ptr = &subdivpatch1[patchIndex];
 
       const unsigned int build_state = atomic_add((atomic_t*)&patch_ptr->under_construction,+1);
+
+      /* parent ptr */
+
+      BVH4i::NodeRef parent_ref = patch_ptr->bvh4i_parent_ref;
+      BVH4i::Node *  parent_ptr = (BVH4i::Node*)parent_ref.node(nodes);
+      volatile unsigned int *p  = (unsigned int *)&parent_ptr->child( patch_ptr->bvh4i_parent_local_index );
 	
       /* check whether another thread currently builds this patch */
       if (build_state != 0)
@@ -54,66 +145,83 @@ namespace embree
 	  atomic_add((atomic_t*)&patch_ptr->under_construction,-1);
 
 	  while (patch_ptr->under_construction != 0)
-	    __pause(512);
-	  
-	  while (*(BVH4i::NodeRef*)patch_ptr->bvh4i_noderef_backptr == curNode)
+	    __pause(512);	  
+
+	  while ( *p == curNode)
 	    __pause(512);
 
-	  BVH4i::NodeRef newNodeRef = *(BVH4i::NodeRef*)patch_ptr->bvh4i_noderef_backptr;
-	  return newNodeRef;	  
+	  return *p;	  
 	}
 
       /* got the lock lets build the tree */
 
 #if 0
+      mtx.lock();
       for (size_t i=0;i<patchids.size();i++)
 	if (patchIndex == patchids[i])
 	  FATAL("already build");
 
       patchids.push_back(patchIndex);
+      mtx.unlock();
 #endif
 
-      assert(patch_ptr->bvh4i_noderef_backptr != NULL);
-
-      BVH4i::NodeRef *backRefNode = (BVH4i::NodeRef*)patch_ptr->bvh4i_noderef_backptr;
-
-      
       const size_t num64BytesBlocksPerNode = 2;
-      const size_t currentIndex = lazyNodeID.add(num64BytesBlocksPerNode);
+      const size_t currentIndex = bvh->used64BytesBlocks.add(num64BytesBlocksPerNode);
 
-      BVH4i::NodeRef newNodeRef = ((currentIndex*2) << BVH4i::encodingBits);
+      if (currentIndex + num64BytesBlocksPerNode >= bvh->numAllocated64BytesBlocks)
+	FATAL("not enough bvh node space allocated");
 
-      //createBVH4iNode<2>(*(BVH4i::NodeRef*)backRefNode,currentIndex);
+      BVH4i::NodeRef newNodeRef;
+      createBVH4iNode<2>(newNodeRef,currentIndex);
+      BVH4i::Node *node = (BVH4i::Node *)newNodeRef.node(nodes);
+      node->setInvalid();
 
-      BVH4i::Node &node = *(BVH4i::Node*)&((mic_i*)nodes)[currentIndex];
+      numLazyBuildPatches++;
 
-      node.setInvalid();
-      //node.setValid();
+#if 1
+
+      const unsigned int grid_size = (unsigned int)1 << subdiv_level;
 
       for (size_t i=0;i<items;i++)
 	{
-	  //node.setBounds( i,  patch_ptr[i].bounds() );
-	  node.setBounds( i,  patch_ptr[i].evalQuadBounds() );
-
-	  createSubPatchBVH4iLeaf( node.child(i), patchIndex + i, 0);
-	  node.data(i) = 0;
-	  assert( node.child(i).isAuxFlagSet() );
-	  numLazyBuildPatches++;
+	  BBox3fa bounds = createSubTree( node->child( i ),
+					  node->data ( i ),
+					  bvh,
+					  nodes,
+					  subdivpatch1,
+					  patchIndex+i,
+					  0,grid_size,
+					  0,grid_size,
+					  grid_size);
+	  node->setBounds(i,bounds);
+	}
+#else
+      for (size_t i=0;i<items;i++)
+	{
+	  node->setBounds( i,  patch_ptr[i].evalQuadBounds() );
+	  createSubPatchBVH4iLeaf( node->child(i), patchIndex + i, subdiv_level);
+	  node->data(i) = 0;
+	  assert( node->child(i).isAuxFlagSet() );
 	}      
+#endif
 
 #if 1
+      mtx.lock();
       DBG_PRINT(patchIndex);
-      DBG_PRINT(currentIndex);
+      //DBG_PRINT(currentIndex);
       DBG_PRINT( numLazyBuildPatches );
+      DBG_PRINT( bvh->numAllocated64BytesBlocks );
+      mtx.unlock();
 #endif
       /* new node index is valid now */
 
-      *backRefNode = newNodeRef;
+      *p = newNodeRef;
 
       __memory_barrier();
 
       /* release lock */
-      atomic_add((atomic_t*)&patch_ptr->under_construction,-1);
+      const unsigned int last_index = atomic_add((atomic_t*)&patch_ptr->under_construction,-1);
+      assert(last_index == 1);
 
       /* return new node ref */
       return newNodeRef;
@@ -298,7 +406,11 @@ namespace embree
 
 	      if (unlikely(!curNode.isAuxFlagSet()))
 		{
-		  BVH4i::NodeRef newNodeRef = initLazySubdivTree(curNode,bvh->lazyNodeID,nodes,(SubdivPatch1*)accel,g_subdivision_level);
+		  BVH4i::NodeRef newNodeRef = initLazySubdivTree(curNode,
+								 bvh,
+								 nodes,
+								 (SubdivPatch1*)accel,
+								 g_subdivision_level);
 
 		  stack_node[sindex] = newNodeRef;
 		  stack_dist[sindex] = pos_inf;

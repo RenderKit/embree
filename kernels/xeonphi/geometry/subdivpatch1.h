@@ -47,8 +47,8 @@ namespace embree
       geomID(geomID),
       primID(primID),
       subdivision_level(subdivision_level),
-      bvh4i_noderef_backptr(NULL),
-      bvh4i_noderef_org(0),
+      bvh4i_parent_ref(0),
+      bvh4i_parent_local_index(0),
       under_construction(0)
     {
       u_val = Vec2f(0.0f,1.0f);
@@ -184,27 +184,27 @@ namespace embree
       return b;
     }
 
-    __forceinline BBox3fa evalQuadBounds() const
+    __forceinline BBox3fa evalQuadBounds(const float s0 = 0.0f,
+					 const float s1 = 1.0f,
+					 const float t0 = 0.0f,
+					 const float t1 = 1.0f) const
     {
       Vec3fa vtx[4];
-      Vec2f s(0.0f,1.0f);
-      Vec2f t(0.0f,1.0f);
-
       if (likely(isRegular()))
 	{
-	  vtx[0] = patch.eval(s[0],t[0]);
-	  vtx[1] = patch.eval(s[1],t[0]);
-	  vtx[2] = patch.eval(s[1],t[1]);
-	  vtx[3] = patch.eval(s[0],t[1]);
+	  vtx[0] = patch.eval(s0,t0);
+	  vtx[1] = patch.eval(s1,t0);
+	  vtx[2] = patch.eval(s1,t1);
+	  vtx[3] = patch.eval(s0,t1);
 
 	}
       else if (likely(isGregoryPatch()))
 	{
 	  __aligned(64) GregoryPatch gpatch(patch.v, f_m );
-	  vtx[0] = gpatch.eval(s[0],t[0]);
-	  vtx[1] = gpatch.eval(s[1],t[0]);
-	  vtx[2] = gpatch.eval(s[1],t[1]);
-	  vtx[3] = gpatch.eval(s[0],t[1]);
+	  vtx[0] = gpatch.eval(s0,t0);
+	  vtx[1] = gpatch.eval(s1,t0);
+	  vtx[2] = gpatch.eval(s1,t1);
+	  vtx[3] = gpatch.eval(s0,t1);
 	}
       else
 	FATAL("not implemented");
@@ -226,8 +226,8 @@ namespace embree
 
     Vec2f u_val;
     Vec2f v_val;
-    unsigned int *bvh4i_noderef_backptr;
-    unsigned int  bvh4i_noderef_org;
+    unsigned int bvh4i_parent_ref;
+    unsigned int bvh4i_parent_local_index;
     volatile unsigned int under_construction; // 0 = not build yet, 1 = under construction, 2 = built
     RegularCatmullClarkPatch patch;
     Vec3fa f_m[2][2];    

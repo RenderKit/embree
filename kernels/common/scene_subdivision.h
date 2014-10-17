@@ -23,6 +23,16 @@
 namespace embree
 {
 
+  struct __aligned(64) SubdivLookUpTables
+  {
+    float u[16];
+    float v[16];
+
+    SubdivLookUpTables()
+      {
+      }
+  };
+
 
 #define MAX_VALENCE 16
 

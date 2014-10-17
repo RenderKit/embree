@@ -434,7 +434,8 @@ namespace embree
       accel(NULL),
       size_node(0),
       size_accel(0),
-      lazyNodeID(0)
+      used64BytesBlocks(0),
+      numAllocated64BytesBlocks(0)
     {
     }
 
@@ -481,8 +482,8 @@ namespace embree
     void *accel;
     
 
-    __aligned(64) AlignedAtomicCounter32 lazyNodeID;
-
+    __aligned(64) AlignedAtomicCounter32 used64BytesBlocks;
+    size_t numAllocated64BytesBlocks;
 
     struct Helper { float x,y,z; int a; }; 
 

@@ -1055,14 +1055,21 @@ PRINT(CORRECT_numPrims);
   {
     PING;
     if (threadIndex == 0)
-      bvh->lazyNodeID = atomicID;
-    DBG_PRINT(bvh->lazyNodeID);
+      {
+	bvh->used64BytesBlocks = atomicID;
+	bvh->numAllocated64BytesBlocks = numAllocated64BytesBlocks;
+      }
+    DBG_PRINT(bvh->used64BytesBlocks);
+    DBG_PRINT(bvh->numAllocated64BytesBlocks);
     DBG_PRINT(bvh->root);
     std::cout << "initializing back pointers" << std::endl;
-    initializeParentPointers(bvh->root);
+    if (bvh->root != BVH4i::BVH4i::invalidNode)
+      initializeParentPointers(bvh->root,0,0);
   }
 
-  void BVH4iBuilderSubdivMesh::initializeParentPointers(const BVH4i::NodeRef &ref)
+  void BVH4iBuilderSubdivMesh::initializeParentPointers(const BVH4i::NodeRef &ref,
+							const BVH4i::NodeRef parent,
+							const unsigned int local_index)
   {    
     if (unlikely(ref.isLeaf()))
       {
@@ -1070,8 +1077,8 @@ PRINT(CORRECT_numPrims);
 	unsigned int index = ref.offsetIndex();
 	assert(index < numPrimitives);
 	SubdivPatch1 *__restrict__ const patch_ptr = (SubdivPatch1*)accel + index;
-	patch_ptr->bvh4i_noderef_backptr = (unsigned int*)&ref;
-	patch_ptr->bvh4i_noderef_org     = ref;	
+	patch_ptr->bvh4i_parent_ref         = parent;
+	patch_ptr->bvh4i_parent_local_index = local_index;	
 
 	return;
       }
@@ -1081,7 +1088,7 @@ PRINT(CORRECT_numPrims);
     for (size_t i=0;i<BVH4i::N;i++)
       {
 	if (n->child(i) == BVH4i::invalidNode) break;
-	initializeParentPointers( n->child(i) );
+	initializeParentPointers( n->child(i), ref, i );
       }
   }    
 

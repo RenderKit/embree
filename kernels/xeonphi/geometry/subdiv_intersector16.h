@@ -23,6 +23,7 @@
 namespace embree
 {
 
+
   static __forceinline bool intersect1_quad(const size_t rayIndex, 
 					    const mic_f &dir_xyz,
 					    const mic_f &org_xyz,
