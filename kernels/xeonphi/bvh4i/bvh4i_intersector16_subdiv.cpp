@@ -27,13 +27,18 @@ namespace embree
   static AtomicMutex mtx;
   std::vector<unsigned int> patchids;
 
+
+
   namespace isa
   {
+
+    static __aligned(64) RegularGridLookUpTables gridLookUpTables;
+
     __forceinline void createSubPatchBVH4iLeaf(BVH4i::NodeRef &ref,
 					       const unsigned int patchIndex,
 					       const unsigned int subdiv_level) 
     {
-      ref = (patchIndex << BVH4i::encodingBits) | BVH4i::leaf_mask | BVH4i::aux_flag_mask | subdiv_level;
+      *(volatile unsigned int*)&ref = (patchIndex << BVH4i::encodingBits) | BVH4i::leaf_mask | BVH4i::aux_flag_mask | subdiv_level;
     }
 
     BBox3fa createSubTree(BVH4i::NodeRef &curNode,
@@ -46,7 +51,7 @@ namespace embree
 			  const unsigned int u_end,
 			  const unsigned int v_start,
 			  const unsigned int v_end,
-			  const unsigned int grid_size)
+			  const unsigned int subdiv_level)
     {
       const SubdivPatch1 &patch = subdivpatch1[patchIndex];
 
@@ -54,16 +59,16 @@ namespace embree
 	{
 	  assert(u_end-u_start==1);
 	  assert(v_end-v_start==1);
-	  const float inv_grid_size = 1.0f / (float)grid_size;
-	  const float u0 = (float)u_start * inv_grid_size;
-	  const float u1 = (float)u_end   * inv_grid_size;
-	  const float v0 = (float)v_start * inv_grid_size;
-	  const float v1 = (float)v_end   * inv_grid_size;
+	  //const float inv_grid_size = 1.0f / (float)grid_size;
+	  // const float u0 = (float)u_start * inv_grid_size;
+	  // const float u1 = (float)u_end   * inv_grid_size;
+	  // const float v0 = (float)v_start * inv_grid_size;
+	  // const float v1 = (float)v_end   * inv_grid_size;
 
-	  DBG_PRINT(u0);
-	  DBG_PRINT(u1);
-	  DBG_PRINT(v0);
-	  DBG_PRINT(v1);
+	  const float u0 = gridLookUpTables.lookUp(subdiv_level,u_start);
+	  const float u1 = gridLookUpTables.lookUp(subdiv_level,u_end);
+	  const float v0 = gridLookUpTables.lookUp(subdiv_level,v_start);
+	  const float v1 = gridLookUpTables.lookUp(subdiv_level,v_end);
 
 	  BBox3fa quadBounds = patch.evalQuadBounds(u0,u1,v0,v1);
 	  unsigned char* iptr = (unsigned char*)&curData;
@@ -99,16 +104,16 @@ namespace embree
 
       /* create four subtrees */
 
-      BBox3fa bounds0 = createSubTree( node.child(0), node.data(0), bvh, nodes, subdivpatch1, patchIndex, u_start, u_mid, v_start, v_mid,  grid_size);
+      BBox3fa bounds0 = createSubTree( node.child(0), node.data(0), bvh, nodes, subdivpatch1, patchIndex, u_start, u_mid, v_start, v_mid,  subdiv_level);
       node.setBounds(0, bounds0);
 
-      BBox3fa bounds1 = createSubTree( node.child(1), node.data(1), bvh, nodes, subdivpatch1, patchIndex,   u_mid, u_end, v_start, v_mid,  grid_size);
+      BBox3fa bounds1 = createSubTree( node.child(1), node.data(1), bvh, nodes, subdivpatch1, patchIndex,   u_mid, u_end, v_start, v_mid,  subdiv_level);
       node.setBounds(1, bounds1);
 
-      BBox3fa bounds2 = createSubTree( node.child(2), node.data(2), bvh, nodes, subdivpatch1, patchIndex,   u_mid, u_end, v_mid, v_end,  grid_size);
+      BBox3fa bounds2 = createSubTree( node.child(2), node.data(2), bvh, nodes, subdivpatch1, patchIndex,   u_mid, u_end, v_mid, v_end,  subdiv_level);
       node.setBounds(2, bounds2);
 
-      BBox3fa bounds3 = createSubTree( node.child(3), node.data(3), bvh, nodes, subdivpatch1, patchIndex,   u_start, u_mid, v_mid, v_end,  grid_size);
+      BBox3fa bounds3 = createSubTree( node.child(3), node.data(3), bvh, nodes, subdivpatch1, patchIndex,   u_start, u_mid, v_mid, v_end,  subdiv_level);
       node.setBounds(3, bounds3);
 
 
@@ -128,7 +133,9 @@ namespace embree
 				      const unsigned int subdiv_level)
     {
       unsigned int items = curNode.items();
+      assert(items == 1);
       unsigned int patchIndex = curNode.offsetIndex();
+
       SubdivPatch1 *__restrict__ const patch_ptr = &subdivpatch1[patchIndex];
 
       const unsigned int build_state = atomic_add((atomic_t*)&patch_ptr->under_construction,+1);
@@ -153,7 +160,7 @@ namespace embree
 	  return *p;	  
 	}
 
-      /* got the lock lets build the tree */
+      /* got the lock, lets build the tree */
 
 #if 0
       mtx.lock();
@@ -165,22 +172,22 @@ namespace embree
       mtx.unlock();
 #endif
 
-      const size_t num64BytesBlocksPerNode = 2;
-      const size_t currentIndex = bvh->used64BytesBlocks.add(num64BytesBlocksPerNode);
 
-      if (currentIndex + num64BytesBlocksPerNode >= bvh->numAllocated64BytesBlocks)
-	FATAL("not enough bvh node space allocated");
+      // const size_t num64BytesBlocksPerNode = 2;
+      // const size_t currentIndex = bvh->used64BytesBlocks.add(num64BytesBlocksPerNode);
 
-      BVH4i::NodeRef newNodeRef;
-      createBVH4iNode<2>(newNodeRef,currentIndex);
-      BVH4i::Node *node = (BVH4i::Node *)newNodeRef.node(nodes);
-      node->setInvalid();
+      // if (currentIndex + num64BytesBlocksPerNode >= bvh->numAllocated64BytesBlocks)
+      // 	FATAL("not enough bvh node space allocated");
+
+      // BVH4i::NodeRef newNodeRef;
+      // createBVH4iNode<2>(newNodeRef,currentIndex);
+      // BVH4i::Node *node = (BVH4i::Node *)newNodeRef.node(nodes);
+      // node->setInvalid();
 
       numLazyBuildPatches++;
+      const unsigned int grid_size = ((unsigned int)1 << subdiv_level)+1;
 
-#if 1
-
-      const unsigned int grid_size = (unsigned int)1 << subdiv_level;
+#if 0
 
       for (size_t i=0;i<items;i++)
 	{
@@ -190,12 +197,11 @@ namespace embree
 					  nodes,
 					  subdivpatch1,
 					  patchIndex+i,
-					  0,grid_size,
-					  0,grid_size,
-					  grid_size);
+					  0,grid_size-1,
+					  0,grid_size-1,
+					  subdiv_level);
 	  node->setBounds(i,bounds);
 	}
-#else
       for (size_t i=0;i<items;i++)
 	{
 	  node->setBounds( i,  patch_ptr[i].evalQuadBounds() );
@@ -215,16 +221,32 @@ namespace embree
 #endif
       /* new node index is valid now */
 
-      *p = newNodeRef;
 
-      __memory_barrier();
+      BBox3fa bounds = createSubTree( parent_ptr->child( patch_ptr->bvh4i_parent_local_index ),
+				      parent_ptr->data ( patch_ptr->bvh4i_parent_local_index ),
+				      bvh,
+				      nodes,
+				      subdivpatch1,
+				      patchIndex,
+				      0,grid_size-1,
+				      0,grid_size-1,
+				      subdiv_level);
+
+
+      //*p = newNodeRef;
+
+      //__memory_barrier();
 
       /* release lock */
       const unsigned int last_index = atomic_add((atomic_t*)&patch_ptr->under_construction,-1);
       assert(last_index == 1);
 
+      BVH4i::NodeRef newNodeRef = *p;
+      // DBG_PRINT(newNodeRef.items());
+      // DBG_PRINT(newNodeRef.offsetIndex());
+
       /* return new node ref */
-      return newNodeRef;
+      return newNodeRef; // 
     }
     
 
@@ -402,8 +424,7 @@ namespace embree
 
 	      //////////////////////////////////////////////////////////////////////////////////////////////////
 
-#if 1
-
+#if 0
 	      if (unlikely(!curNode.isAuxFlagSet()))
 		{
 		  BVH4i::NodeRef newNodeRef = initLazySubdivTree(curNode,
@@ -412,15 +433,13 @@ namespace embree
 								 (SubdivPatch1*)accel,
 								 g_subdivision_level);
 
+		  assert( newNodeRef.isAuxFlagSet() );
 		  stack_node[sindex] = newNodeRef;
 		  stack_dist[sindex] = pos_inf;
 		  sindex++;
 		}
 	      else
 		{
-		  // PING;
-		  // DBG_PRINT(curNode);
-
 		  bool hit = intersect1Eval(curNode,
 					    rayIndex,
 					    dir_xyz,
@@ -434,6 +453,7 @@ namespace embree
 		}
 #else
 	      unsigned int items = curNode.items();
+	      assert(items == 1);
 	      unsigned int index = curNode.offsetIndex();
 	      const SubdivPatch1 *__restrict__ const patch_ptr = (SubdivPatch1*)accel + index;
 	

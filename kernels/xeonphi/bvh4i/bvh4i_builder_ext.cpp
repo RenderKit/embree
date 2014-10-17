@@ -916,7 +916,7 @@ PRINT(CORRECT_numPrims);
 	const size_t numPrims = numPrimitives+4;
 	const size_t minAllocNodes = (threadCount+1) * ALLOCATOR_NODE_BLOCK_SIZE; 
 	const size_t numNodes = (size_t)((numPrims+3)/4) + minAllocNodes;
-	const size_t additionalLazyNodes = numPrims;
+	const size_t additionalLazyNodes = 4*numPrims;
 	DBG_PRINT(additionalLazyNodes);
 	allocateMemoryPools(numPrims,numNodes + additionalLazyNodes,sizeof(BVH4i::Node),sizeof(SubdivPatch1));
 	DBG_PRINT( sizeof(SubdivPatch1) );
@@ -1056,15 +1056,16 @@ PRINT(CORRECT_numPrims);
     PING;
     if (threadIndex == 0)
       {
+	std::cout << "initializing back pointers" << std::endl;
+	if (bvh->root != BVH4i::BVH4i::invalidNode)
+	  initializeParentPointers(bvh->root,0,0);
+
 	bvh->used64BytesBlocks = atomicID;
 	bvh->numAllocated64BytesBlocks = numAllocated64BytesBlocks;
       }
     DBG_PRINT(bvh->used64BytesBlocks);
     DBG_PRINT(bvh->numAllocated64BytesBlocks);
     DBG_PRINT(bvh->root);
-    std::cout << "initializing back pointers" << std::endl;
-    if (bvh->root != BVH4i::BVH4i::invalidNode)
-      initializeParentPointers(bvh->root,0,0);
   }
 
   void BVH4iBuilderSubdivMesh::initializeParentPointers(const BVH4i::NodeRef &ref,
@@ -1073,12 +1074,33 @@ PRINT(CORRECT_numPrims);
   {    
     if (unlikely(ref.isLeaf()))
       {
+
+	const unsigned int currentIndex = atomicID.add(2);
+	if (currentIndex + 2 >= numAllocated64BytesBlocks)
+	  FATAL("not enough bvh node space allocated");
+	BVH4i::NodeRef newNodeRef;
+	createBVH4iNode<2>(newNodeRef,currentIndex);
+
+	BVH4i::Node *n = (BVH4i::Node*)newNodeRef.node((BVH4i::Node*)node);
+	n->setInvalid();
+
 	unsigned int items = ref.items();
 	unsigned int index = ref.offsetIndex();
 	assert(index < numPrimitives);
+
 	SubdivPatch1 *__restrict__ const patch_ptr = (SubdivPatch1*)accel + index;
-	patch_ptr->bvh4i_parent_ref         = parent;
-	patch_ptr->bvh4i_parent_local_index = local_index;	
+
+	for (size_t i=0;i<items;i++)
+	  {
+	    n->setBounds( i, patch_ptr[i].bounds() );
+	    assert( patch_ptr[i].under_construction == 0);
+	    patch_ptr->bvh4i_parent_ref         = newNodeRef;
+	    patch_ptr->bvh4i_parent_local_index = i;	
+	    createBVH4iLeaf( n->child(i), index + i, 1);
+	  }
+
+	BVH4i::Node* p = (BVH4i::Node*)parent.node((BVH4i::Node*)node);
+	p->child(local_index) = newNodeRef;
 
 	return;
       }

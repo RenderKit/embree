@@ -23,13 +23,51 @@
 namespace embree
 {
 
-  struct __aligned(64) SubdivLookUpTables
-  {
-    float u[16];
-    float v[16];
+  /* int->float lookup table for single axis of a regular grid, grid dimension would be (2^l+1)*(2^l+1) */
 
-    SubdivLookUpTables()
+  struct __aligned(64) RegularGridLookUpTables
+  {
+  private:
+    const static size_t MAX_SUBDIVISION_LEVEL = 8;
+    const static size_t MAX_TABLE_ENTRIES = 2*(((unsigned int)1 << MAX_SUBDIVISION_LEVEL)+1);
+    unsigned int offset[MAX_SUBDIVISION_LEVEL];
+
+    float table[ MAX_TABLE_ENTRIES ];
+
+  public:
+
+    __forceinline float lookUp(const size_t level,
+			       const size_t index) const
+    {
+      assert(level < MAX_SUBDIVISION_LEVEL);
+      assert(offset[level]+index < MAX_TABLE_ENTRIES); 
+      return table[offset[level]+index];
+    }
+
+    RegularGridLookUpTables()
       {
+	size_t index = 0;
+	for (size_t l=0;l<MAX_SUBDIVISION_LEVEL;l++)
+	  {
+	    const unsigned int grid_size = (1 << l) + 1;
+	    offset[l] = index;
+	    for (size_t i=0;i<grid_size;i++)
+	      table[index++] = (float)i / (float)(grid_size-1);
+	  }	
+	assert(index < MAX_TABLE_ENTRIES );
+
+	/* for (size_t l=0;l<MAX_SUBDIVISION_LEVEL;l++) */
+	/*   { */
+	/*     DBG_PRINT(l); */
+	/*     const unsigned int grid_size = (1 << l) + 1; */
+	/*     DBG_PRINT(grid_size); */
+
+	/*     for (size_t i=0;i<grid_size;i++) */
+	/*       { */
+	/* 	DBG_PRINT(i); */
+	/* 	DBG_PRINT(lookUp(l,i)); */
+	/*       } */
+	/*   }	 */
       }
   };
 
