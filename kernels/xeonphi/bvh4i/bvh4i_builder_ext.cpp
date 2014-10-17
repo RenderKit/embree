@@ -1092,7 +1092,9 @@ PRINT(CORRECT_numPrims);
 
 	for (size_t i=0;i<items;i++)
 	  {
-	    n->setBounds( i, patch_ptr[i].bounds() );
+	    //n->setBounds( i, patch_ptr[i].bounds() );
+	    n->setBounds( i, patch_ptr[i].evalQuadBounds() );
+
 	    assert( patch_ptr[i].under_construction == 0);
 	    patch_ptr[i].bvh4i_parent_ref         = newNodeRef;
 	    patch_ptr[i].bvh4i_parent_local_index = i;	
