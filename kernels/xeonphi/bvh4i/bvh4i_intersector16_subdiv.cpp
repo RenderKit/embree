@@ -239,7 +239,6 @@ namespace embree
 
       /* release lock */
       const unsigned int last_index = atomic_add((atomic_t*)&patch_ptr->under_construction,-1);
-      assert(last_index == 1);
 
       BVH4i::NodeRef newNodeRef = *p;
       // DBG_PRINT(newNodeRef.items());
@@ -424,7 +423,7 @@ namespace embree
 
 	      //////////////////////////////////////////////////////////////////////////////////////////////////
 
-#if 0
+#if 1
 	      if (unlikely(!curNode.isAuxFlagSet()))
 		{
 		  BVH4i::NodeRef newNodeRef = initLazySubdivTree(curNode,

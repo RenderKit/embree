@@ -1094,9 +1094,9 @@ PRINT(CORRECT_numPrims);
 	  {
 	    n->setBounds( i, patch_ptr[i].bounds() );
 	    assert( patch_ptr[i].under_construction == 0);
-	    patch_ptr->bvh4i_parent_ref         = newNodeRef;
-	    patch_ptr->bvh4i_parent_local_index = i;	
-	    createBVH4iLeaf( n->child(i), index + i, 1);
+	    patch_ptr[i].bvh4i_parent_ref         = newNodeRef;
+	    patch_ptr[i].bvh4i_parent_local_index = i;	
+	    createBVH4iLeaf( n->child(i), index + i, 1);	    
 	  }
 
 	BVH4i::Node* p = (BVH4i::Node*)parent.node((BVH4i::Node*)node);
