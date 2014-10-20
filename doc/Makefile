@@ -18,6 +18,11 @@ replace=sed \
 -e '/<EMBREE_VERSION>/{r version' -e 'd' -e '};' \
 $(1) > $(2)
 
+replacelinks=sed -i\
+-e 's/href="api.html"/href="\#api"/' \
+-e 's@href="renderer.html"@href="http://embree.github.io/renderer.html"@' \
+$(1)
+
 version: ../kernels/version.h
 	sed 's/.*\"\(.*\)\".*/\1/g' $< > $@
 
@@ -55,7 +60,8 @@ images/tutorial06.jpg:
 	rm images/`basename -s .jpg $@`.tga
 
 readme.html: version src/*.html
-	$(call replace,src/readme.html,readme.html)
+	$(call replace,src/readme.html,$@)
+	$(call replacelinks,$@)
 
 ../readme.txt: readme.html
 	html2text -nobs -rcfile html2text.conf readme.html > readme.txt
@@ -68,7 +74,8 @@ readme.html: version src/*.html
 	cp readme.pdf ..
 
 readme_bin.html: version src/*.html
-	$(call replace,src/readme_bin.html,readme_bin.html)
+	$(call replace,src/readme_bin.html,$@)
+	$(call replacelinks,$@)
 
 readme_bin.txt: readme_bin.html
 	html2text -nobs -rcfile html2text.conf readme_bin.html > readme_bin_temp.txt
