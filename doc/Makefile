@@ -63,6 +63,7 @@ readme.html: version src/*.html
 
 ../readme.pdf: readme.html
 	html2ps -t -f html2ps.conf readme.html > readme.ps
+	sed -i -e 's/\\240\\240/ /' readme.ps
 	ps2pdf readme.ps 
 	cp readme.pdf ..
 
@@ -75,6 +76,7 @@ readme_bin.txt: readme_bin.html
 
 readme_bin.pdf: readme_bin.html
 	html2ps -t -f html2ps.conf readme_bin.html > readme_bin.ps
+	sed -i -e 's/\\240\\240/ /' readme_bin.ps
 	ps2pdf readme_bin.ps 
 
 clean:
