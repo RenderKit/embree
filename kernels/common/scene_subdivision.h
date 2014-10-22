@@ -86,6 +86,7 @@ namespace embree
     unsigned int valence;
     unsigned int num_vtx;
     int hard_edge_index;
+    float level;                 // per vertex subdivision level
 
 #if !defined(__MIC__)
     typedef Vec3fa Vertex;
@@ -134,8 +135,10 @@ namespace embree
 
     
     __forceinline void init(const SubdivMesh::HalfEdge *const h,
-			    const Vec3fa *const vertices)
+			    const Vec3fa *const vertices,
+                            const float l = 0.0f)
     {
+      level = l;
       hard_edge_index= -1;
       size_t i=0;
       vtx = (Vertex)vertices[ h->getStartVertexIndex() ];
@@ -211,6 +214,7 @@ namespace embree
       dest.valence         = valence;
       dest.num_vtx         = num_vtx;
       dest.hard_edge_index = hard_edge_index;
+      dest.level           = level - 1.0f;
 
       Vertex F( 0.0f );
       Vertex R( 0.0f );

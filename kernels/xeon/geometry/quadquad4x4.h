@@ -409,8 +409,14 @@ namespace embree
       return bounds;
     }
     
-    const BBox3fa build()
+    const BBox3fa build(Array2D<Vec3fa>& points, Scene* scene)
     {
+      for (size_t y=0; y<=8; y++)
+        for (size_t x=0; x<=8; x++)
+          v[y][x] = points(x,y);
+      
+      displace(scene);
+
 #if QUADQUAD4X4_COMPRESS_BOUNDS
       n.set(fullBounds());
 #endif
