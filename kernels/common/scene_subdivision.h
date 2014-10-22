@@ -142,6 +142,7 @@ namespace embree
       hard_edge_index= -1;
       size_t i=0;
       vtx = (Vertex)vertices[ h->getStartVertexIndex() ];
+      level = vtx.w;
       SubdivMesh::HalfEdge *p = (SubdivMesh::HalfEdge*)h;
       bool foundEdge = false;
       do {
@@ -422,19 +423,31 @@ namespace embree
       return bounds;
     }
 
+    __forceinline bool leafLevel(size_t l) const 
+    {
+      const float minLevel = min(ring[0].level,ring[1].level,ring[2].level,ring[3].level);
+      const float maxLevel = max(ring[0].level,ring[1].level,ring[2].level,ring[3].level);
+      return (maxLevel-minLevel <= 1.0f) && (maxLevel < l);
+    }
+
     static __forceinline void init_regular(const CatmullClark1Ring& p0,
 					   const CatmullClark1Ring& p1,
 					   CatmullClark1Ring& dest0,
 					   CatmullClark1Ring& dest1) 
     {
+      float centerLevel = min(max(p0.level,p1.level),min(p0.level,p1.level)+1.0f);
+
       dest0.valence = 4;
       dest0.num_vtx = 8;
       dest0.hard_edge_index = -1;
       dest0.vtx     = (Vertex)p0.ring[0];
+      dest0.level   = centerLevel;
+
       dest1.valence = 4;
       dest1.num_vtx = 8;
       dest1.vtx     = (Vertex)p0.ring[0];
       dest1.hard_edge_index = -1;
+      dest1.level   = centerLevel;
 
       // 1-ring for patch0
       dest0.ring[ 0] = (Vertex)p0.ring[p0.num_vtx-1];
@@ -445,6 +458,7 @@ namespace embree
       dest0.ring[ 5] = (Vertex)p0.ring[2];
       dest0.ring[ 6] = (Vertex)p0.vtx;
       dest0.ring[ 7] = (Vertex)p0.ring[p0.num_vtx-2];
+
       // 1-ring for patch1
       dest1.ring[ 0] = (Vertex)p1.vtx;
       dest1.ring[ 1] = (Vertex)p1.ring[p1.num_vtx-4];
@@ -462,6 +476,8 @@ namespace embree
                                           CatmullClark1Ring &dest0,
                                           CatmullClark1Ring &dest1) 
     {
+      float centerLevel = min(max(p0.level,p1.level),min(p0.level,p1.level)+1.0f);
+
 #if !defined(__MIC__)
     typedef Vec3fa Vertex;
 #else
@@ -472,11 +488,13 @@ namespace embree
       dest0.num_vtx = 6;
       dest0.hard_edge_index = 2;
       dest0.vtx     = (Vertex)p0.ring[0];
+      dest0.level   = centerLevel;
 
       dest1.valence = 3;
       dest1.num_vtx = 6;
       dest1.hard_edge_index = 0;
       dest1.vtx     = (Vertex)p0.ring[0];
+      dest1.level   = centerLevel;
 
       // 1-ring for patch0
       dest0.ring[ 0] = (Vertex)p0.ring[p0.num_vtx-1];
@@ -485,6 +503,7 @@ namespace embree
       dest1.ring[ 3] = (Vertex)p0.ring[p0.hard_edge_index+1]; // dummy
       dest0.ring[ 4] = (Vertex)p0.vtx;
       dest0.ring[ 5] = (Vertex)p0.ring[p0.num_vtx-2];
+
       // 1-ring for patch1
       dest1.ring[ 0] = (Vertex)p1.vtx;
       dest1.ring[ 1] = (Vertex)p0.ring[p0.hard_edge_index+1]; // dummy
@@ -494,11 +513,12 @@ namespace embree
       dest1.ring[ 5] = (Vertex)p1.ring[0];
     }
 
-    static __forceinline void init_regular(const Vertex &center, const Vertex center_ring[8], const size_t offset, CatmullClark1Ring &dest)
+    static __forceinline void init_regular(const Vertex &center, const Vertex center_ring[8], const float center_level, const size_t offset, CatmullClark1Ring &dest)
     {
       dest.valence = 4;
       dest.num_vtx = 8;
       dest.hard_edge_index = -1;
+      dest.level = center_level;
       dest.vtx     = (Vertex)center;
       for (size_t i=0;i<8;i++)
 	dest.ring[i] = (Vertex)center_ring[(offset+i)%8];
@@ -511,8 +531,7 @@ namespace embree
       ring[1].update(patch[1].ring[1]);
       ring[2].update(patch[2].ring[2]);
       ring[3].update(patch[3].ring[3]);
-
-
+      
       if (likely(ring[0].hard_edge_index != 0))
         init_regular(patch[0].ring[0],patch[1].ring[1],patch[0].ring[1],patch[1].ring[0]);
       else
@@ -533,6 +552,9 @@ namespace embree
       else
         init_border(patch[3].ring[3],patch[0].ring[0],patch[3].ring[0],patch[0].ring[3]);
 
+      const float minLevel = min(patch[0].ring[0].level,patch[1].ring[1].level,patch[2].ring[2].level,patch[3].ring[3].level);
+      const float maxLevel = min(patch[0].ring[0].level,patch[1].ring[1].level,patch[2].ring[2].level,patch[3].ring[3].level);
+      const float center_level = min(maxLevel,minLevel+1.0f);
       Vertex center = (ring[0].vtx + ring[1].vtx + ring[2].vtx + ring[3].vtx) * 0.25f;
       Vertex center_ring[8];
 
@@ -546,10 +568,10 @@ namespace embree
       center_ring[6] = (Vertex)patch[0].ring[0].ring[0];
       center_ring[7] = (Vertex)patch[0].ring[0].vtx;
 
-      init_regular(center,center_ring,0,patch[0].ring[2]);
-      init_regular(center,center_ring,2,patch[3].ring[1]);
-      init_regular(center,center_ring,4,patch[2].ring[0]);
-      init_regular(center,center_ring,6,patch[1].ring[3]);
+      init_regular(center,center_ring,center_level,0,patch[0].ring[2]);
+      init_regular(center,center_ring,center_level,2,patch[3].ring[1]);
+      init_regular(center,center_ring,center_level,4,patch[2].ring[0]);
+      init_regular(center,center_ring,center_level,6,patch[1].ring[3]);
     }
 
     __forceinline void init( FinalQuad& quad ) const

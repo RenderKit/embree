@@ -252,14 +252,14 @@ unsigned int packPixel(const Vec3f &color) {
 #define FACES    (EDGES/4)
 
 Vec3fa test_vertices[] = {
-  Vec3fa(-1.0f, -1.0f, -1.0f),
-  Vec3fa( 1.0f, -1.0f, -1.0f),
-  Vec3fa( 1.0f, -1.0f,  1.0f),
-  Vec3fa(-1.0f, -1.0f,  1.0f),
-  Vec3fa(-1.0f,  1.0f, -1.0f),
-  Vec3fa( 1.0f,  1.0f, -1.0f),
-  Vec3fa( 1.0f,  1.0f,  1.0f),
-  Vec3fa(-1.0f,  1.0f,  1.0f)
+  Vec3fa(-1.0f, -1.0f, -1.0f, 4.0f),
+  Vec3fa( 1.0f, -1.0f, -1.0f, 4.0f),
+  Vec3fa( 1.0f, -1.0f,  1.0f, 4.0f),
+  Vec3fa(-1.0f, -1.0f,  1.0f, 4.0f),
+  Vec3fa(-1.0f,  1.0f, -1.0f, 4.0f),
+  Vec3fa( 1.0f,  1.0f, -1.0f, 4.0f),
+  Vec3fa( 1.0f,  1.0f,  1.0f, 4.0f),
+  Vec3fa(-1.0f,  1.0f,  1.0f, 4.0f)
 };
 
 unsigned int test_indices[EDGES] = {0, 1, 5, 4,  1, 2, 6, 5,  2, 3, 7, 6,  0, 4, 7, 3,  4, 5, 6, 7,  0, 3, 2, 1};
@@ -269,8 +269,8 @@ unsigned int test_offsets[FACES] = {0, 4, 8, 12, 16, 20};
 void DisplacementFunc(void* ptr, unsigned geomID, unsigned primID, float* u, float* v, float* x, float* y, float* z, size_t N)
 {
   for (size_t i=0; i<N; i++) {
-    const Vec3fa dp = 0.02f*Vec3fa(sin(100.0f*x[i]+0.5f),sin(100.0f*z[i]+1.5f),cos(100.0f*y[i]));
-    x[i] += dp.x; y[i] += dp.y; z[i] += dp.z;
+    //const Vec3fa dp = 0.02f*Vec3fa(sin(100.0f*x[i]+0.5f),sin(100.0f*z[i]+1.5f),cos(100.0f*y[i]));
+    //x[i] += dp.x; y[i] += dp.y; z[i] += dp.z;
   }
 }
 
@@ -302,6 +302,7 @@ void constructScene() {
 								mesh->numVertices);
 
 	      rtcSetBuffer(g_scene, subdivMeshID, RTC_VERTEX_BUFFER, mesh->positions, 0, sizeof(Vec3fa  ));
+              for (size_t i=0; i<mesh->numQuads; i++) mesh->positions[i].w = 4.0f;
 	      rtcSetBuffer(g_scene, subdivMeshID, RTC_INDEX_BUFFER,  mesh->quads    , 0, sizeof(unsigned int));
 	      rtcSetBuffer(g_scene, subdivMeshID, RTC_OFFSET_BUFFER, offset_buffer  , 0, sizeof(unsigned int));
 	      //delete offset_buffer;

@@ -43,8 +43,10 @@ namespace embree
       {
         QuadQuad4x4& leaf = leaves(x,y);
         new (&leaf) QuadQuad4x4(8*x,8*y,8*(1<<l),geomID(),primID());
+        SubdivideIrregularCatmullClarkPatch subdivided2(patch,2);
         SubdivideIrregularCatmullClarkPatch subdivided3(patch,3);
-        const BBox3fa bounds = leaf.build(subdivided3.v,scene);
+        const BBox3fa bounds = leaf.build(scene,subdivided2.v,subdivided3.v,
+                                          patch.ring[0].level,patch.ring[1].level,patch.ring[2].level,patch.ring[3].level);
         return std::pair<BBox3fa,BVH4::NodeRef>(bounds,bvh.encodeLeaf(&leaf,0));
       }
 
