@@ -18,7 +18,7 @@
 
 #include "primitive.h"
 
-#define QUADQUAD4X4_COMPRESS_BOUNDS 0
+#define QUADQUAD4X4_COMPRESS_BOUNDS 1
 
 namespace embree
 {
@@ -179,7 +179,7 @@ namespace embree
 
       __forceinline void set(const BBox3fa& bounds) {
         offset = bounds.lower;
-        scale = 255.0f/bounds.size(); // FIXME: potential division by zero
+        scale = max(Vec3fa(1E-20f),bounds.size()/255.0f);
       }
 
       /*! Sets bounding box of child. */
@@ -187,8 +187,8 @@ namespace embree
       {
         assert(j < 4);
         assert(i < N);
-        const Vec3fa lower = clamp((bounds.lower-offset)*scale,Vec3fa(0.0f),Vec3fa(255.0f));
-        const Vec3fa upper = clamp((bounds.upper-offset)*scale,Vec3fa(0.0f),Vec3fa(255.0f));
+        const Vec3fa lower = clamp(floor((bounds.lower-offset)/scale),Vec3fa(0.0f),Vec3fa(255.0f));
+        const Vec3fa upper = clamp(ceil ((bounds.upper-offset)/scale),Vec3fa(0.0f),Vec3fa(255.0f));
         lower_x[j*4+i] = (unsigned char) lower.x;
         lower_y[j*4+i] = (unsigned char) lower.y;
         lower_z[j*4+i] = (unsigned char) lower.z;
@@ -204,20 +204,20 @@ namespace embree
       {
         const size_t farX  = nearX ^ 16, farY  = nearY ^ 16, farZ  = nearZ ^ 16;
 
-        const ssef near_x = ssef(_mm_cvtepu8_epi32(*(ssei*)(&this->lower_x[i]+nearX)));
-        const ssef near_y = ssef(_mm_cvtepu8_epi32(*(ssei*)(&this->lower_x[i]+nearY)));
-        const ssef near_z = ssef(_mm_cvtepu8_epi32(*(ssei*)(&this->lower_x[i]+nearZ)));
-        const ssef far_x  = ssef(_mm_cvtepu8_epi32(*(ssei*)(&this->lower_x[i]+farX)));
-        const ssef far_y  = ssef(_mm_cvtepu8_epi32(*(ssei*)(&this->lower_x[i]+farY)));
-        const ssef far_z  = ssef(_mm_cvtepu8_epi32(*(ssei*)(&this->lower_x[i]+farZ)));
+        const ssef near_x = ssef(_mm_cvtepu8_epi32(*(ssei*)(&this->lower_x[i]+nearX)))*ssef(scale.x)+ssef(offset.x);
+        const ssef near_y = ssef(_mm_cvtepu8_epi32(*(ssei*)(&this->lower_x[i]+nearY)))*ssef(scale.y)+ssef(offset.y);
+        const ssef near_z = ssef(_mm_cvtepu8_epi32(*(ssei*)(&this->lower_x[i]+nearZ)))*ssef(scale.z)+ssef(offset.z);
+        const ssef far_x  = ssef(_mm_cvtepu8_epi32(*(ssei*)(&this->lower_x[i]+farX)))*ssef(scale.x)+ssef(offset.x);
+        const ssef far_y  = ssef(_mm_cvtepu8_epi32(*(ssei*)(&this->lower_x[i]+farY)))*ssef(scale.y)+ssef(offset.y);
+        const ssef far_z  = ssef(_mm_cvtepu8_epi32(*(ssei*)(&this->lower_x[i]+farZ)))*ssef(scale.z)+ssef(offset.z);
 
 #if defined (__AVX2__)
-        const ssef tNearX = msub(near_x), rdir.x, org_rdir.x);
-        const ssef tNearY = msub(near_y), rdir.y, org_rdir.y);
-        const ssef tNearZ = msub(near_z), rdir.z, org_rdir.z);
-        const ssef tFarX  = msub(far_x ), rdir.x, org_rdir.x);
-        const ssef tFarY  = msub(far_y ), rdir.y, org_rdir.y);
-        const ssef tFarZ  = msub(far_z ), rdir.z, org_rdir.z);
+        const ssef tNearX = msub(near_x, rdir.x, org_rdir.x);
+        const ssef tNearY = msub(near_y, rdir.y, org_rdir.y);
+        const ssef tNearZ = msub(near_z, rdir.z, org_rdir.z);
+        const ssef tFarX  = msub(far_x , rdir.x, org_rdir.x);
+        const ssef tFarY  = msub(far_y , rdir.y, org_rdir.y);
+        const ssef tFarZ  = msub(far_z , rdir.z, org_rdir.z);
 #else
         const ssef tNearX = (near_x - org.x) * rdir.x;
         const ssef tNearY = (near_y - org.y) * rdir.y;
@@ -273,12 +273,12 @@ namespace embree
 
 #if defined (__AVX2__)
 
-        const avxf near_x = avxf(_mm256_cvtepu8_epi32(*(ssei*)(&this->lower_x[i]+nearX)));
-        const avxf near_y = avxf(_mm256_cvtepu8_epi32(*(ssei*)(&this->lower_x[i]+nearY)));
-        const avxf near_z = avxf(_mm256_cvtepu8_epi32(*(ssei*)(&this->lower_x[i]+nearZ)));
-        const avxf far_x  = avxf(_mm256_cvtepu8_epi32(*(ssei*)(&this->lower_x[i]+farX)));
-        const avxf far_y  = avxf(_mm256_cvtepu8_epi32(*(ssei*)(&this->lower_x[i]+farY)));
-        const avxf far_z  = avxf(_mm256_cvtepu8_epi32(*(ssei*)(&this->lower_x[i]+farZ)));
+        const avxf near_x = avxf(_mm256_cvtepu8_epi32(*(ssei*)(&this->lower_x[i]+nearX)))*avxf(scale.x)+avxf(offset.x);
+        const avxf near_y = avxf(_mm256_cvtepu8_epi32(*(ssei*)(&this->lower_x[i]+nearY)))*avxf(scale.y)+avxf(offset.y);
+        const avxf near_z = avxf(_mm256_cvtepu8_epi32(*(ssei*)(&this->lower_x[i]+nearZ)))*avxf(scale.z)+avxf(offset.z);
+        const avxf far_x  = avxf(_mm256_cvtepu8_epi32(*(ssei*)(&this->lower_x[i]+farX)))*avxf(scale.x)+avxf(offset.x);
+        const avxf far_y  = avxf(_mm256_cvtepu8_epi32(*(ssei*)(&this->lower_x[i]+farY)))*avxf(scale.y)+avxf(offset.y);
+        const avxf far_z  = avxf(_mm256_cvtepu8_epi32(*(ssei*)(&this->lower_x[i]+farZ)))*avxf(scale.z)+avxf(offset.z);
 
         const avxf tNearX = msub(near_x, rdir.x, org_rdir.x);
         const avxf tNearY = msub(near_y, rdir.y, org_rdir.y);
@@ -288,12 +288,19 @@ namespace embree
         const avxf tFarZ  = msub(far_z , rdir.z, org_rdir.z);
 #else
 
-        const avxf near_x = avxf(ssef(_mm_cvtepu8_epi32(*(ssei*)(&this->lower_x[i]+nearX))), ssef(_mm_cvtepu8_epi32(*(ssei*)(&this->lower_x[i+4]+nearX))));
-        const avxf near_y = avxf(ssef(_mm_cvtepu8_epi32(*(ssei*)(&this->lower_x[i]+nearY))), ssef(_mm_cvtepu8_epi32(*(ssei*)(&this->lower_x[i+4]+nearY))));
-        const avxf near_z = avxf(ssef(_mm_cvtepu8_epi32(*(ssei*)(&this->lower_x[i]+nearZ))), ssef(_mm_cvtepu8_epi32(*(ssei*)(&this->lower_x[i+4]+nearZ))));
-        const avxf far_x  = avxf(ssef(_mm_cvtepu8_epi32(*(ssei*)(&this->lower_x[i]+farX ))), ssef(_mm_cvtepu8_epi32(*(ssei*)(&this->lower_x[i+4]+farX ))));
-        const avxf far_y  = avxf(ssef(_mm_cvtepu8_epi32(*(ssei*)(&this->lower_x[i]+farY ))), ssef(_mm_cvtepu8_epi32(*(ssei*)(&this->lower_x[i+4]+farY ))));
-        const avxf far_z  = avxf(ssef(_mm_cvtepu8_epi32(*(ssei*)(&this->lower_x[i]+farZ ))), ssef(_mm_cvtepu8_epi32(*(ssei*)(&this->lower_x[i+4]+farZ ))));
+        avxf near_x = avxf(ssef(_mm_cvtepu8_epi32(*(ssei*)(&this->lower_x[i]+nearX))), ssef(_mm_cvtepu8_epi32(*(ssei*)(&this->lower_x[i+4]+nearX))));
+        avxf near_y = avxf(ssef(_mm_cvtepu8_epi32(*(ssei*)(&this->lower_x[i]+nearY))), ssef(_mm_cvtepu8_epi32(*(ssei*)(&this->lower_x[i+4]+nearY))));
+        avxf near_z = avxf(ssef(_mm_cvtepu8_epi32(*(ssei*)(&this->lower_x[i]+nearZ))), ssef(_mm_cvtepu8_epi32(*(ssei*)(&this->lower_x[i+4]+nearZ))));
+        avxf far_x  = avxf(ssef(_mm_cvtepu8_epi32(*(ssei*)(&this->lower_x[i]+farX ))), ssef(_mm_cvtepu8_epi32(*(ssei*)(&this->lower_x[i+4]+farX ))));
+        avxf far_y  = avxf(ssef(_mm_cvtepu8_epi32(*(ssei*)(&this->lower_x[i]+farY ))), ssef(_mm_cvtepu8_epi32(*(ssei*)(&this->lower_x[i+4]+farY ))));
+        avxf far_z  = avxf(ssef(_mm_cvtepu8_epi32(*(ssei*)(&this->lower_x[i]+farZ ))), ssef(_mm_cvtepu8_epi32(*(ssei*)(&this->lower_x[i+4]+farZ ))));
+        
+        near_x = near_x*avxf(scale.x)+avxf(offset.x);
+        near_y = near_y*avxf(scale.y)+avxf(offset.y);
+        near_z = near_z*avxf(scale.z)+avxf(offset.z);
+        far_x = far_x*avxf(scale.x)+avxf(offset.x);
+        far_y = far_y*avxf(scale.y)+avxf(offset.y);
+        far_z = far_z*avxf(scale.z)+avxf(offset.z);
 
         const avxf tNearX = (near_x - org.x) * rdir.x;
         const avxf tNearY = (near_y - org.y) * rdir.y;
