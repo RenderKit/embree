@@ -418,7 +418,12 @@ namespace embree
         for (size_t x=0; x<=8; x++)
           v[y][x] = p3(x,y);
 
-#if 0
+      PRINT(pointLevel00);
+      PRINT(pointLevel10);
+      PRINT(pointLevel11);
+      PRINT(pointLevel01);
+
+#if 1
       float maxLevel = max(pointLevel00,pointLevel10,pointLevel11,pointLevel01);
       assert(pointLevel00+1.0f >= maxLevel);
       assert(pointLevel10+1.0f >= maxLevel);
