@@ -57,12 +57,6 @@ struct RTCORE_ALIGN(16) RTCBounds
   float upper_x, upper_y, upper_z, align1;
 };
 
-/*! Vector of 2 floats */
-struct RTCFloat2  { float x,y; };
-
-/*! Vector of 3 floats aligned to 16 bytes */
-struct RTCFloat3a { float x,y,z,a; };
-
 /*! Intersection filter function for single rays. */
 typedef void (*RTCFilterFunc)(void* ptr,           /*!< pointer to user data */
                               RTCRay& ray          /*!< intersection to filter */);
@@ -84,10 +78,13 @@ typedef void (*RTCFilterFunc16)(const void* valid, /*!< pointer to valid mask */
 
 /*! Displacement mapping function. */
 typedef void (*RTCDisplacementFunc)(void* ptr,           /*!< pointer to user data of geometry */
-                                    unsigned geomID,       /*!< ID of geometry to displace */
-                                    unsigned primID,       /*!< ID of primitive of geometry to displace */
-                                    RTCFloat2* uv,       /*!< source array for UV coordinates to evaluate displacement function on */
-                                    RTCFloat3a* dP,      /*!< output array to store displacements */
+                                    unsigned geomID,     /*!< ID of geometry to displace */
+                                    unsigned primID,     /*!< ID of primitive of geometry to displace */
+                                    float* u,            /*!< U coordinates (source) */
+                                    float* v,            /*!< V coordinates (source) */
+                                    float* x,            /*!< x coordinates of points to displace (source and target) */
+                                    float* y,            /*!< y coordinates of points to displace (source and target) */
+                                    float* z,            /*!< z coordinates of points to displace (source and target) */
                                     size_t N             /*!< number of points to displace */ );
 
 /*! \brief Creates a new scene instance. 

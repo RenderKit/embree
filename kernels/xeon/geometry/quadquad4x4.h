@@ -360,28 +360,33 @@ namespace embree
       if (mesh->displFunc == NULL) return;
 
       /* calculate uv coordinates */
-      Vec2f uv[9][9];
+      __aligned(64) float qu[9][9], qv[9][9];
+      __aligned(64) float qx[9][9], qy[9][9], qz[9][9];
       for (size_t y=0; y<9; y++) {
         float fy = float(py+y)/float(width+1);
         for (size_t x=0; x<9; x++) {
           float fx = float(px+x)/float(width+1);
-          uv[y][x] = Vec2f(fx,fy);
+          qu[y][x] = fx;
+          qv[y][x] = fy;
+          qx[y][x] = v[y][x].x;
+          qy[y][x] = v[y][x].y;
+          qz[y][x] = v[y][x].z;
         }
       }
       
       /* call displacement shader */
-      Vec3fa displ[9][9];
-      mesh->displFunc(mesh->userPtr,geomID,primID,(RTCFloat2*)uv,(RTCFloat3a*)displ,9*9); // FIXME: change to SOA layout
+      mesh->displFunc(mesh->userPtr,geomID,primID,(float*)qu,(float*)qv,(float*)qx,(float*)qy,(float*)qz,9*9);
 
       /* add displacements */
       for (size_t y=0; y<9; y++) {
         for (size_t x=0; x<9; x++) {
-          const Vec3fa dP = displ[y][x];
+          const Vec3fa P0 = v[y][x];
+          const Vec3fa P1 = Vec3fa(qx[y][x],qy[y][x],qz[y][x]);
 #if defined(DEBUG)
-          if (!inside(mesh->displBounds,dP))
+          if (!inside(mesh->displBounds,P1-P0))
             THROW_RUNTIME_ERROR("displacement out of bounds");
 #endif
-          v[y][x] += dP;
+          v[y][x] = P1;
         }
       }
     }

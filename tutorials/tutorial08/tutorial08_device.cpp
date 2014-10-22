@@ -266,10 +266,11 @@ unsigned int test_indices[EDGES] = {0, 1, 5, 4,  1, 2, 6, 5,  2, 3, 7, 6,  0, 4,
 
 unsigned int test_offsets[FACES] = {0, 4, 8, 12, 16, 20};
 
-void DisplacementFunc(void* ptr, unsigned geomID, unsigned primID, RTCFloat2* uv, RTCFloat3a* dP, size_t N)
+void DisplacementFunc(void* ptr, unsigned geomID, unsigned primID, float* u, float* v, float* x, float* y, float* z, size_t N)
 {
   for (size_t i=0; i<N; i++) {
-    (Vec3fa&)dP[i] = 0.02f*Vec3fa(sin(100.0f*uv[i].x),sin(100.0f*uv[i].y),0.0f);
+    const Vec3fa dp = 0.02f*Vec3fa(sin(100.0f*u[i]),sin(100.0f*v[i]),0.0f);
+    x[i] += dp.x; y[i] += dp.y; z[i] += dp.z;
   }
 }
 
