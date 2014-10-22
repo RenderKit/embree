@@ -269,7 +269,7 @@ unsigned int test_offsets[FACES] = {0, 4, 8, 12, 16, 20};
 void DisplacementFunc(void* ptr, unsigned geomID, unsigned primID, float* u, float* v, float* x, float* y, float* z, size_t N)
 {
   for (size_t i=0; i<N; i++) {
-    const Vec3fa dp = 0.02f*Vec3fa(sin(100.0f*u[i]),sin(100.0f*v[i]),0.0f);
+    const Vec3fa dp = 0.02f*Vec3fa(sin(100.0f*x[i]+0.5f),sin(100.0f*z[i]+1.5f),cos(100.0f*y[i]));
     x[i] += dp.x; y[i] += dp.y; z[i] += dp.z;
   }
 }
