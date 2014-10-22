@@ -204,12 +204,13 @@ namespace embree
       {
         const size_t farX  = nearX ^ 16, farY  = nearY ^ 16, farZ  = nearZ ^ 16;
 
-        const ssef near_x = ssef(_mm_cvtepu8_epi32(*(ssei*)(&this->lower_x[i]+nearX)))*ssef(scale.x)+ssef(offset.x);
-        const ssef near_y = ssef(_mm_cvtepu8_epi32(*(ssei*)(&this->lower_x[i]+nearY)))*ssef(scale.y)+ssef(offset.y);
-        const ssef near_z = ssef(_mm_cvtepu8_epi32(*(ssei*)(&this->lower_x[i]+nearZ)))*ssef(scale.z)+ssef(offset.z);
-        const ssef far_x  = ssef(_mm_cvtepu8_epi32(*(ssei*)(&this->lower_x[i]+farX)))*ssef(scale.x)+ssef(offset.x);
-        const ssef far_y  = ssef(_mm_cvtepu8_epi32(*(ssei*)(&this->lower_x[i]+farY)))*ssef(scale.y)+ssef(offset.y);
-        const ssef far_z  = ssef(_mm_cvtepu8_epi32(*(ssei*)(&this->lower_x[i]+farZ)))*ssef(scale.z)+ssef(offset.z);
+        const sse3f vscale(scale), voffset(offset);
+        const ssef near_x = madd(ssef::load(&this->lower_x[i]+nearX),vscale.x,voffset.x);
+        const ssef near_y = madd(ssef::load(&this->lower_x[i]+nearY),vscale.y,voffset.y);
+        const ssef near_z = madd(ssef::load(&this->lower_x[i]+nearZ),vscale.z,voffset.z);
+        const ssef far_x  = madd(ssef::load(&this->lower_x[i]+farX),vscale.x,voffset.x);
+        const ssef far_y  = madd(ssef::load(&this->lower_x[i]+farY),vscale.y,voffset.y);
+        const ssef far_z  = madd(ssef::load(&this->lower_x[i]+farZ),vscale.z,voffset.z);
 
 #if defined (__AVX2__)
         const ssef tNearX = msub(near_x, rdir.x, org_rdir.x);
@@ -271,14 +272,15 @@ namespace embree
       {
         const size_t farX  = nearX ^ 16, farY  = nearY ^ 16, farZ  = nearZ ^ 16;
 
-#if defined (__AVX2__)
+        const avx3f vscale(scale), voffset(offset);
+        const avxf near_x = madd(avxf::load(&this->lower_x[i]+nearX),vscale.x,voffset.x);
+        const avxf near_y = madd(avxf::load(&this->lower_x[i]+nearY),vscale.y,voffset.y);
+        const avxf near_z = madd(avxf::load(&this->lower_x[i]+nearZ),vscale.z,voffset.z);
+        const avxf far_x  = madd(avxf::load(&this->lower_x[i]+farX),vscale.x,voffset.x);
+        const avxf far_y  = madd(avxf::load(&this->lower_x[i]+farY),vscale.y,voffset.y);
+        const avxf far_z  = madd(avxf::load(&this->lower_x[i]+farZ),vscale.z,voffset.z);
 
-        const avxf near_x = avxf(_mm256_cvtepu8_epi32(*(ssei*)(&this->lower_x[i]+nearX)))*avxf(scale.x)+avxf(offset.x);
-        const avxf near_y = avxf(_mm256_cvtepu8_epi32(*(ssei*)(&this->lower_x[i]+nearY)))*avxf(scale.y)+avxf(offset.y);
-        const avxf near_z = avxf(_mm256_cvtepu8_epi32(*(ssei*)(&this->lower_x[i]+nearZ)))*avxf(scale.z)+avxf(offset.z);
-        const avxf far_x  = avxf(_mm256_cvtepu8_epi32(*(ssei*)(&this->lower_x[i]+farX)))*avxf(scale.x)+avxf(offset.x);
-        const avxf far_y  = avxf(_mm256_cvtepu8_epi32(*(ssei*)(&this->lower_x[i]+farY)))*avxf(scale.y)+avxf(offset.y);
-        const avxf far_z  = avxf(_mm256_cvtepu8_epi32(*(ssei*)(&this->lower_x[i]+farZ)))*avxf(scale.z)+avxf(offset.z);
+#if defined (__AVX2__)
 
         const avxf tNearX = msub(near_x, rdir.x, org_rdir.x);
         const avxf tNearY = msub(near_y, rdir.y, org_rdir.y);
@@ -287,20 +289,6 @@ namespace embree
         const avxf tFarY  = msub(far_y , rdir.y, org_rdir.y);
         const avxf tFarZ  = msub(far_z , rdir.z, org_rdir.z);
 #else
-
-        avxf near_x = avxf(ssef(_mm_cvtepu8_epi32(*(ssei*)(&this->lower_x[i]+nearX))), ssef(_mm_cvtepu8_epi32(*(ssei*)(&this->lower_x[i+4]+nearX))));
-        avxf near_y = avxf(ssef(_mm_cvtepu8_epi32(*(ssei*)(&this->lower_x[i]+nearY))), ssef(_mm_cvtepu8_epi32(*(ssei*)(&this->lower_x[i+4]+nearY))));
-        avxf near_z = avxf(ssef(_mm_cvtepu8_epi32(*(ssei*)(&this->lower_x[i]+nearZ))), ssef(_mm_cvtepu8_epi32(*(ssei*)(&this->lower_x[i+4]+nearZ))));
-        avxf far_x  = avxf(ssef(_mm_cvtepu8_epi32(*(ssei*)(&this->lower_x[i]+farX ))), ssef(_mm_cvtepu8_epi32(*(ssei*)(&this->lower_x[i+4]+farX ))));
-        avxf far_y  = avxf(ssef(_mm_cvtepu8_epi32(*(ssei*)(&this->lower_x[i]+farY ))), ssef(_mm_cvtepu8_epi32(*(ssei*)(&this->lower_x[i+4]+farY ))));
-        avxf far_z  = avxf(ssef(_mm_cvtepu8_epi32(*(ssei*)(&this->lower_x[i]+farZ ))), ssef(_mm_cvtepu8_epi32(*(ssei*)(&this->lower_x[i+4]+farZ ))));
-        
-        near_x = near_x*avxf(scale.x)+avxf(offset.x);
-        near_y = near_y*avxf(scale.y)+avxf(offset.y);
-        near_z = near_z*avxf(scale.z)+avxf(offset.z);
-        far_x = far_x*avxf(scale.x)+avxf(offset.x);
-        far_y = far_y*avxf(scale.y)+avxf(offset.y);
-        far_z = far_z*avxf(scale.z)+avxf(offset.z);
 
         const avxf tNearX = (near_x - org.x) * rdir.x;
         const avxf tNearY = (near_y - org.y) * rdir.y;

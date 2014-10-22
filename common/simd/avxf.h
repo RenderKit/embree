@@ -63,11 +63,19 @@ namespace embree
     __forceinline avxf( NaNTy    ) : m256(_mm256_set1_ps(nan)) {}
 
     ////////////////////////////////////////////////////////////////////////////////
-    /// Constants
+    /// Loads and Stores
     ////////////////////////////////////////////////////////////////////////////////
 
     static __forceinline avxf broadcast( const void* const a ) { 
       return _mm256_broadcast_ss((float*)a); 
+    }
+
+    static __forceinline avxf load( const unsigned char* const ptr ) { 
+#if defined(__AVX2__)
+      return _mm256_cvtepi32_ps(_mm256_cvtepu8_epi32(_mm_load_si128((__m128i*)ptr)));
+#else
+      return avxf(ssef::load(ptr),ssef::load(ptr+4));
+#endif
     }
 
     ////////////////////////////////////////////////////////////////////////////////
