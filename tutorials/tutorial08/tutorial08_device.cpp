@@ -160,7 +160,11 @@ void DisplacementFunc(void* ptr, unsigned geomID, unsigned primID, float* u, flo
   for (size_t i=0; i<N; i++) {
     //const Vec3fa dp = 0.02f*Vec3fa(sin(100.0f*x[i]+0.5f),sin(100.0f*z[i]+1.5f),cos(100.0f*y[i]));
     const Vec3fa P(x[i],y[i],z[i]);
-    const float dN = 0.04f*noise(10.0f*P);
+    float dN = 0.0f;
+    for (float freq = 10.0f; freq<400.0f; freq*= 2) {
+      float n = fabs(noise(freq*P));
+      dN += 1.4f*n*n/freq;
+    }
     const Vec3fa dP = dN*P;
     x[i] += dP.x; y[i] += dP.y; z[i] += dP.z;
   }
@@ -194,7 +198,7 @@ unsigned int createSphere (RTCGeometryFlags flags, const Vec3fa& pos, const floa
       v.x = pos.x + r*sin(phif)*sin(thetaf);
       v.y = pos.y + r*cos(phif);
       v.z = pos.z + r*sin(phif)*cos(thetaf);
-      v.r = 6.0f;
+      v.r = 8.0f;
     }
     if (phi == 0) continue;
 
