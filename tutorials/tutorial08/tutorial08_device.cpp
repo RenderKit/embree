@@ -22,6 +22,9 @@
 /*! Function used to render a pixel. */
 renderPixelFunc renderPixel;
 
+const int numPhi = 10; 
+const int numTheta = 2*numPhi;
+
 /* error reporting function */
 void error_handler(const RTCError code, const char* str)
 {
@@ -151,6 +154,69 @@ unsigned int packPixel(const Vec3f &color) {
   return((b << 16) + (g << 8) + r);
 
 }
+
+void DisplacementFunc(void* ptr, unsigned geomID, unsigned primID, float* u, float* v, float* x, float* y, float* z, size_t N)
+{
+  for (size_t i=0; i<N; i++) {
+    const Vec3fa dp = 0.02f*Vec3fa(sin(100.0f*x[i]+0.5f),sin(100.0f*z[i]+1.5f),cos(100.0f*y[i]));
+    x[i] += dp.x; y[i] += dp.y; z[i] += dp.z;
+  }
+}
+
+/* adds a sphere to the scene */
+unsigned int createSphere (RTCGeometryFlags flags, const Vec3fa& pos, const float r)
+{
+  /* create a triangulated sphere */
+  unsigned int mesh = rtcNewSubdivisionMesh(g_scene, flags, numTheta*numPhi, 4*numTheta*numPhi, numTheta*(numPhi+1));
+
+  BBox3fa bounds(Vec3fa(-0.1f,-0.1f,-0.1f),Vec3fa(0.1f,0.1f,0.1f));
+  rtcSetDisplacementFunction(g_scene, mesh, (RTCDisplacementFunc)DisplacementFunc,(RTCBounds&)bounds);
+  
+  /* map buffers */
+  Vertex* vertices = (Vertex*  ) rtcMapBuffer(g_scene,mesh,RTC_VERTEX_BUFFER); 
+  int*    indices  = (int     *) rtcMapBuffer(g_scene,mesh,RTC_INDEX_BUFFER);
+  int*    offsets  = (int     *) rtcMapBuffer(g_scene,mesh,RTC_OFFSET_BUFFER);
+  
+  /* create sphere geometry */
+  int tri = 0;
+  const float rcpNumTheta = rcp((float)numTheta);
+  const float rcpNumPhi   = rcp((float)numPhi);
+  for (int phi=0; phi<=numPhi; phi++)
+  {
+    for (int theta=0; theta<numTheta; theta++)
+    {
+      const float phif   = phi*float(pi)*rcpNumPhi;
+      const float thetaf = theta*2.0f*float(pi)*rcpNumTheta;
+      Vertex& v = vertices[phi*numTheta+theta];
+      v.x = pos.x + r*sin(phif)*sin(thetaf);
+      v.y = pos.y + r*cos(phif);
+      v.z = pos.z + r*sin(phif)*cos(thetaf);
+      v.r = 5.0f;
+    }
+    if (phi == 0) continue;
+
+    for (int theta=1; theta<=numTheta; theta++) 
+    {
+      int p00 = (phi-1)*numTheta+theta-1;
+      int p01 = (phi-1)*numTheta+theta%numTheta;
+      int p10 = phi*numTheta+theta-1;
+      int p11 = phi*numTheta+theta%numTheta;
+
+      indices[4*tri+0] = p10; 
+      indices[4*tri+1] = p00; 
+      indices[4*tri+2] = p01; 
+      indices[4*tri+3] = p11; 
+      offsets[tri] = 4*tri;
+      tri++;
+    }
+  }
+  rtcUnmapBuffer(g_scene,mesh,RTC_VERTEX_BUFFER); 
+  rtcUnmapBuffer(g_scene,mesh,RTC_INDEX_BUFFER);
+  rtcUnmapBuffer(g_scene,mesh,RTC_OFFSET_BUFFER);
+
+  return mesh;
+}
+
 
 // void constructCubeFaces(OpenSubdiv::HbrMesh<Vec3f> *mesh) {
 
@@ -288,14 +354,6 @@ unsigned int test_offsets[FACES] = {0, 4};
 
 #endif
 
-void DisplacementFunc(void* ptr, unsigned geomID, unsigned primID, float* u, float* v, float* x, float* y, float* z, size_t N)
-{
-  for (size_t i=0; i<N; i++) {
-    //const Vec3fa dp = 0.02f*Vec3fa(sin(100.0f*x[i]+0.5f),sin(100.0f*z[i]+1.5f),cos(100.0f*y[i]));
-    //x[i] += dp.x; y[i] += dp.y; z[i] += dp.z;
-  }
-}
-
 void constructScene() {
   /*! Create an Embree object to hold scene state. */
   g_scene = rtcNewScene(RTC_SCENE_STATIC, RTC_INTERSECT1);
@@ -335,6 +393,7 @@ void constructScene() {
 
   if (totalNumQuads == 0)
     {
+#if 0
       std::cout << "Loading dummy cube..." << std::endl;
       //unsigned int subdivMeshID = rtcNewSubdivisionMesh(g_scene, RTC_GEOMETRY_STATIC, 1, EDGES, VERTICES);
       unsigned int subdivMeshID = rtcNewSubdivisionMesh(g_scene, RTC_GEOMETRY_STATIC, FACES, EDGES, VERTICES);
@@ -345,6 +404,9 @@ void constructScene() {
 
       BBox3fa bounds(Vec3fa(-0.1f,-0.1f,-0.1f),Vec3fa(0.1f,0.1f,0.1f));
       rtcSetDisplacementFunction(g_scene, subdivMeshID, (RTCDisplacementFunc)DisplacementFunc,(RTCBounds&)bounds);
+#else
+      createSphere (RTC_GEOMETRY_STATIC, Vec3fa(0.0f,0.0f,0.0f), 1.0f);
+#endif
     }
     
   rtcCommit(g_scene);

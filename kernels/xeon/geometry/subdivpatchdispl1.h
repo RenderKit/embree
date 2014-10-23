@@ -104,9 +104,7 @@ namespace embree
       leaves.init(N/8,N/8);
       bvh.init(sizeof(BVH4::Node),(N/8)*(N/8),1);
       LinearAllocatorPerThread::ThreadAllocator nodeAlloc(&bvh.alloc);
-      PING;
       const std::pair<BBox3fa,BVH4::NodeRef> root = build(nodeAlloc,patch,0,0,0,levels-3);
-      PING;
       bvh.bounds = root.first;
       bvh.root   = root.second;
 
