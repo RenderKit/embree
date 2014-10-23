@@ -1245,6 +1245,7 @@ namespace embree
     std::pair<BBox3fa,BBox3fa> refit(void* geom, NodeRef node);
 
     LinearAllocatorPerThread alloc;
+    FastAllocator alloc2;
 
     __forceinline Node* allocNode(LinearAllocatorPerThread::ThreadAllocator& thread) {
       Node* node = (Node*) thread.malloc(sizeof(Node),1 << alignment); node->clear(); return node; // FIXME: why 16 bytes aligned and not 64 bytes?
@@ -1266,6 +1267,12 @@ namespace embree
 
     __forceinline char* allocPrimitiveBlocks(LinearAllocatorPerThread::ThreadAllocator& thread, size_t num) {
       return (char*) thread.malloc(num*primTy.bytes,1 << alignment);
+    }
+
+    /*! Encodes a node */
+    static __forceinline NodeRef encodeNode2(Node* node) {  // FIXME: make all static
+      assert(!((size_t)node & align_mask)); 
+      return NodeRef((size_t) node);
     }
 
     /*! Encodes a node */
@@ -1294,6 +1301,12 @@ namespace embree
     __forceinline NodeRef encodeLeaf(void* tri, size_t num) {
       assert(!((size_t)tri & align_mask)); 
       return NodeRef((size_t)tri | (tyLeaf+min(num,(size_t)maxLeafBlocks)));
+    }
+
+    /*! Encodes a leaf */
+    static __forceinline NodeRef encodeTypedLeaf(void* ptr, size_t ty) {
+      assert(!((size_t)ptr & align_mask)); 
+      return NodeRef((size_t)ptr | (tyLeaf+ty));
     }
     
   public:

@@ -239,7 +239,7 @@ namespace embree
       void* malloc(size_t bytes) 
       {
 	ssize_t i = atomic_add(&cur,bytes);
-	if (unlikely(i > end)) THROW_RUNTIME_ERROR("build out of memory");
+	if (unlikely(i+(ssize_t)bytes > end)) THROW_RUNTIME_ERROR("build out of memory");
 	void* p = &ptr[i];
 	if (i+(ssize_t)bytes > bytesAllocated)
 	  os_commit(p,bytes);
@@ -263,5 +263,90 @@ namespace embree
 
   private:
     Block block;
+  };
+
+
+
+  class FastAllocator 
+  {
+  public:
+
+     /*! each thread handles block of that many bytes locally */
+    enum { allocBlockSize = 4096 };
+
+    /*! Allocator default construction. */
+    FastAllocator () 
+      : block(NULL) {}
+
+    void init(size_t allocSize = 4096) {
+      block = new Block(allocSize);
+    }
+
+    /*! clears the allocator */
+    void clear () {
+      delete block; block = NULL;
+    }
+
+    void shrink () {
+      block->shrink();
+    }
+
+    void* malloc(size_t bytes, size_t align) 
+    {
+      while (true) 
+      {
+        void* ptr = block->malloc(bytes,align);
+        if (ptr) return ptr;
+        mutex.lock();
+        block = new Block(2*block->end);
+        mutex.unlock();
+      }
+    }
+
+  private:
+
+    struct Block 
+    {
+      Block (size_t bytes, Block* next = NULL) 
+      : ptr(NULL), cur(0), end(bytes), next(next) 
+      {
+        ptr = (char*) os_reserve(bytes);
+        os_commit(ptr,bytes);
+      }
+
+      ~Block () {
+	if (ptr) os_free(ptr,end); ptr = NULL;
+	cur = end = 0;
+	if (next) delete next; next = NULL;
+      }
+
+      void* malloc(size_t bytes, size_t align) 
+      {
+        //cur += bytes + ((align - cur) & (align-1));
+        bytes = (bytes+(align-1)) & ~(align-1); // FIXME: works only if all alignments are equal
+	ssize_t i = atomic_add(&cur,bytes);
+	if (unlikely(i+bytes > end)) return NULL;
+	return &ptr[i];
+      }
+
+      void shrink () {
+	if (ptr) {
+          os_shrink(ptr,cur,end);
+          end = cur;
+        }
+        if (next) next->shrink();
+      }
+
+    public:
+      char*  ptr;                //!< pointer to memory
+      atomic_t cur;              //!< Current location of the allocator.
+      atomic_t end;              //!< End of the memory block.
+      Block* next;
+      // FIXME: store data at end of block
+    };
+
+  private:
+    AtomicMutex mutex;
+    Block* block;
   };
 }

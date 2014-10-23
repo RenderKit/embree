@@ -35,51 +35,40 @@ namespace embree
 
     static Type type;
 
-    const std::pair<BBox3fa,BVH4::NodeRef> build(LinearAllocatorPerThread::ThreadAllocator& alloc, 
+    const std::pair<BBox3fa,BVH4::NodeRef> build(FastAllocator& alloc,
                                                  const IrregularCatmullClarkPatch& patch,
                                                  unsigned x, unsigned y, unsigned l, unsigned maxDepth)
     {
-      //PRINT(l);
-      /*PRINT(patch.ring[0].level);
-      PRINT(patch.ring[1].level);
-      PRINT(patch.ring[2].level);
-      PRINT(patch.ring[3].level);*/
       //if (l == maxDepth) 
-      //PRINT(l);
       if (patch.leafLevel(3))
       {
-        QuadQuad4x4& leaf = leaves(x,y);
-        new (&leaf) QuadQuad4x4(8*x,8*y,8*(1<<l),geomID(),primID());
+        //QuadQuad4x4& leaf = leaves(x,y);
+        QuadQuad4x4* leaf = (QuadQuad4x4*) alloc.malloc(sizeof(QuadQuad4x4),16);
+        new (leaf) QuadQuad4x4(8*x,8*y,8*(1<<l),geomID(),primID());
         SubdivideIrregularCatmullClarkPatch subdivided2(patch,2);
         SubdivideIrregularCatmullClarkPatch subdivided3(patch,3);
-        const BBox3fa bounds = leaf.build(scene,subdivided2.v,subdivided3.v,
-                                          patch.ring[0].level,patch.ring[1].level,patch.ring[2].level,patch.ring[3].level);
-        return std::pair<BBox3fa,BVH4::NodeRef>(bounds,bvh.encodeLeaf(&leaf,0));
+        const BBox3fa bounds = leaf->build(scene,subdivided2.v,subdivided3.v,
+                                           patch.ring[0].level,patch.ring[1].level,patch.ring[2].level,patch.ring[3].level);
+        return std::pair<BBox3fa,BVH4::NodeRef>(bounds,BVH4::encodeTypedLeaf(leaf,0));
       }
 
       IrregularCatmullClarkPatch patches[4]; 
       patch.subdivide(patches);
-      /*for (size_t i=0; i<4; i++) {
-        PRINT(i);
-        PRINT(patches[i].ring[0].level);
-        PRINT(patches[i].ring[1].level);
-        PRINT(patches[i].ring[2].level);
-        PRINT(patches[i].ring[3].level);
-        }*/
 
-      BVH4::Node* node = bvh.allocNode(alloc);
+      BVH4::Node* node = (BVH4::Node*) alloc.malloc(sizeof(BVH4::Node),16); node->clear();
       const std::pair<BBox3fa,BVH4::NodeRef> b00 = build(alloc,patches[0],2*x+0,2*y+0,l+1,maxDepth); node->set(0,b00.first,b00.second);
       const std::pair<BBox3fa,BVH4::NodeRef> b10 = build(alloc,patches[1],2*x+1,2*y+0,l+1,maxDepth); node->set(1,b10.first,b10.second);
       const std::pair<BBox3fa,BVH4::NodeRef> b01 = build(alloc,patches[3],2*x+0,2*y+1,l+1,maxDepth); node->set(2,b01.first,b01.second);
       const std::pair<BBox3fa,BVH4::NodeRef> b11 = build(alloc,patches[2],2*x+1,2*y+1,l+1,maxDepth); node->set(3,b11.first,b11.second);
       const BBox3fa bounds = merge(b00.first,b10.first,b01.first,b11.first);
-      return std::pair<BBox3fa,BVH4::NodeRef>(bounds,bvh.encodeNode(node));
+      return std::pair<BBox3fa,BVH4::NodeRef>(bounds,BVH4::encodeNode2(node));
     }
 
   public:
     
     /*! Construction from vertices and IDs. */
-    __forceinline SubdivPatchDispl1 (BVH4::NodeRef& parent,
+    __forceinline SubdivPatchDispl1 (FastAllocator& alloc,
+                                     BVH4::NodeRef& parent,
                                      Scene* scene,
                                      const SubdivMesh::HalfEdge* h, 
                                      const Vec3fa* vertices, 
@@ -87,33 +76,26 @@ namespace embree
                                      const unsigned int prim, 
                                      const unsigned int level,
                                      const bool last)
-      : initializing(0), initialized(0), scene(scene), parent(parent), bvh(PrimitiveType2<QuadQuad4x4,SubdivPatchDispl1>::type,scene,false), 
+    : initializing(0), initialized(0), scene(scene), alloc(alloc), parent(parent),
         h(h), vertices(vertices), geom(geom), prim(prim), levels(level) { assert(last); }
 
     size_t initialize()
     {
+      /* let only one thread lazily build this object */
       if (atomic_add(&initializing,1) != 0) {
         while (!initialized) __pause();
         return (size_t)parent;
       }
 
-      /* create patch */
+      /* create patch and build sub-BVH */
       IrregularCatmullClarkPatch patch(h,vertices);
-
-      /* build sub-BVH */
-      size_t N = 1<<levels;
-      leaves.init(N/8,N/8);
-      bvh.init(sizeof(BVH4::Node),(N/8)*(N/8),1);
-      LinearAllocatorPerThread::ThreadAllocator nodeAlloc(&bvh.alloc);
-      const std::pair<BBox3fa,BVH4::NodeRef> root = build(nodeAlloc,patch,0,0,0,levels-3);
-      bvh.bounds = root.first;
-      bvh.root   = root.second;
+      const std::pair<BBox3fa,BVH4::NodeRef> root = build(alloc,patch,0,0,0,levels-3);
 
       /* link to sub-BVH */
-      parent = bvh.root;
+      parent = root.second;
       __memory_barrier();
       initialized = 1;
-      return (size_t)bvh.root;
+      return (size_t)root.second;
     }
 
     // FIXME: destructor gets never called !
@@ -132,14 +114,10 @@ namespace embree
   public:
     const SubdivMesh::HalfEdge* h;
     const Vec3fa* vertices;
-    size_t levels;
+    size_t levels; // FIXME: not required
 
   public:
-    BVH4 bvh;
-    Array2D<QuadQuad4x4> leaves;
-    //Array2D<Vec3fa> v;
-
-  public:
+    FastAllocator& alloc;
     Scene* scene;
     unsigned geom;
     unsigned prim;

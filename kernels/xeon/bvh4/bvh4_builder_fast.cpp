@@ -250,6 +250,7 @@ namespace embree
    template<typename Primitive>
    void BVH4SubdivBuilderFast<Primitive>::build(size_t threadIndex, size_t threadCount)
     {
+      this->bvh->alloc2.init();
       size_t numPatches = 0;
       for (size_t i=0; i<this->scene->size(); i++) 
       {
@@ -352,14 +353,15 @@ namespace embree
       const unsigned int geomID = prim.geomID();
       const unsigned int primID = prim.primID();
       const SubdivMesh* const subdiv_mesh = scene->getSubdivMesh(geomID);
-      SubdivPatchDispl1* accel = new SubdivPatchDispl1(*current.parent, // FIXME: delete again
-                                    scene, 
-                                    &subdiv_mesh->getHalfEdgeForQuad( primID ),
-                                    subdiv_mesh->getVertexPositionPtr(),
-                                    geomID,
-                                    primID,
-                                    SUBDIVISION_LEVEL_DISPL,
-                                    true); 
+      SubdivPatchDispl1* accel = new SubdivPatchDispl1(bvh->alloc2,
+                                                       *current.parent, // FIXME: delete again
+                                                       scene, 
+                                                       &subdiv_mesh->getHalfEdgeForQuad( primID ),
+                                                       subdiv_mesh->getVertexPositionPtr(),
+                                                       geomID,
+                                                       primID,
+                                                       SUBDIVISION_LEVEL_DISPL,
+                                                       true); 
       //*current.parent = accel->bvh.root;
       *current.parent = bvh->encodeLeaf((char*)accel,1);
     }
