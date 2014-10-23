@@ -269,20 +269,22 @@ unsigned int test_offsets[FACES] = {0, 4, 8, 12, 16, 20};
 
 #else
 
-#define VERTICES 4
-#define EDGES    4
+#define VERTICES 8
+#define EDGES    8
 #define FACES    (EDGES/4)
 
 Vec3fa test_vertices[] = {
-  Vec3fa( 1.0f,  1.0f, 0.0f, 0.0f),
-  Vec3fa( 1.0f, -1.0f, 0.0f, 0.0f),
-  Vec3fa(-1.0f, -1.0f, 0.0f, 0.0f),
-  Vec3fa(-1.0f,  1.0f, 0.0f, 0.0f),
+  Vec3fa( 3.0f,  1.0f, 0.0f, 4.0f),
+  Vec3fa( 3.0f, -1.0f, 0.0f, 4.0f),
+  Vec3fa( 1.0f,  1.0f, 0.0f, 3.0f),
+  Vec3fa( 1.0f, -1.0f, 0.0f, 3.0f),
+  Vec3fa(-1.0f,  1.0f, 0.0f, 3.0f),
+  Vec3fa(-1.0f, -1.0f, 0.0f, 3.0f),
 };
 
-unsigned int test_indices[EDGES] = {0, 3, 2, 1};
+unsigned int test_indices[EDGES] = {0, 2, 3, 1,  2, 4, 5, 3};
 
-unsigned int test_offsets[FACES] = {0};
+unsigned int test_offsets[FACES] = {0, 4};
 
 #endif
 

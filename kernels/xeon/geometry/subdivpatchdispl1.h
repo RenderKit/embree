@@ -44,8 +44,8 @@ namespace embree
       PRINT(patch.ring[1].level);
       PRINT(patch.ring[2].level);
       PRINT(patch.ring[3].level);*/
-      if (l == maxDepth) 
-      //if (patch.leafLevel(3))
+      //if (l == maxDepth) 
+      if (patch.leafLevel(3))
       {
         QuadQuad4x4& leaf = leaves(x,y);
         new (&leaf) QuadQuad4x4(8*x,8*y,8*(1<<l),geomID(),primID());

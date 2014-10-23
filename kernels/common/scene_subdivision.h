@@ -215,7 +215,7 @@ namespace embree
       dest.valence         = valence;
       dest.num_vtx         = num_vtx;
       dest.hard_edge_index = hard_edge_index;
-      //dest.level           = level - 1.0f;
+      dest.level           = level - 1.0f;
 
       Vertex F( 0.0f );
       Vertex R( 0.0f );
@@ -428,6 +428,10 @@ namespace embree
       const float minLevel = min(ring[0].level,ring[1].level,ring[2].level,ring[3].level);
       const float maxLevel = max(ring[0].level,ring[1].level,ring[2].level,ring[3].level);
       assert(maxLevel >= l);
+      if (maxLevel == l) {
+        assert(maxLevel-minLevel <= 1.0f);
+        return true;
+      }
       return (maxLevel-minLevel <= 1.0f) && (maxLevel == l);
     }
 
@@ -442,13 +446,13 @@ namespace embree
       dest0.num_vtx = 8;
       dest0.hard_edge_index = -1;
       dest0.vtx     = (Vertex)p0.ring[0];
-      //dest0.level   = centerLevel;
+      dest0.level   = centerLevel;
 
       dest1.valence = 4;
       dest1.num_vtx = 8;
       dest1.vtx     = (Vertex)p0.ring[0];
       dest1.hard_edge_index = -1;
-      //dest1.level   = centerLevel;
+      dest1.level   = centerLevel;
 
       // 1-ring for patch0
       dest0.ring[ 0] = (Vertex)p0.ring[p0.num_vtx-1];
@@ -489,13 +493,13 @@ namespace embree
       dest0.num_vtx = 6;
       dest0.hard_edge_index = 2;
       dest0.vtx     = (Vertex)p0.ring[0];
-      //dest0.level   = centerLevel;
+      dest0.level   = centerLevel;
 
       dest1.valence = 3;
       dest1.num_vtx = 6;
       dest1.hard_edge_index = 0;
       dest1.vtx     = (Vertex)p0.ring[0];
-      //dest1.level   = centerLevel;
+      dest1.level   = centerLevel;
 
       // 1-ring for patch0
       dest0.ring[ 0] = (Vertex)p0.ring[p0.num_vtx-1];
@@ -519,7 +523,7 @@ namespace embree
       dest.valence = 4;
       dest.num_vtx = 8;
       dest.hard_edge_index = -1;
-      //dest.level = center_level;
+      dest.level = center_level;
       dest.vtx     = (Vertex)center;
       for (size_t i=0;i<8;i++)
 	dest.ring[i] = (Vertex)center_ring[(offset+i)%8];
