@@ -427,12 +427,11 @@ namespace embree
     {
       const float minLevel = min(ring[0].level,ring[1].level,ring[2].level,ring[3].level);
       const float maxLevel = max(ring[0].level,ring[1].level,ring[2].level,ring[3].level);
-      assert(maxLevel >= l);
-      if (maxLevel == l) {
+      if (maxLevel <= l) {
         assert(maxLevel-minLevel <= 1.0f);
         return true;
       }
-      return (maxLevel-minLevel <= 1.0f) && (maxLevel == l);
+      return (maxLevel-minLevel <= 1.0f) && (maxLevel <= l);
     }
 
     static __forceinline void init_regular(const CatmullClark1Ring& p0,

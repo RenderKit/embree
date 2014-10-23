@@ -171,7 +171,7 @@ void DisplacementFunc(void* ptr, unsigned geomID, unsigned primID, float* u, flo
 }
 
 /* adds a sphere to the scene */
-unsigned int createSphere (RTCGeometryFlags flags, const Vec3fa& pos, const float r)
+unsigned int createSphere (RTCGeometryFlags flags, const Vec3fa& pos, const float r, const Vec3fa& cam_pos)
 {
   /* create a triangulated sphere */
   unsigned int mesh = rtcNewSubdivisionMesh(g_scene, flags, numTheta*numPhi, 4*numTheta*numPhi, numTheta*(numPhi+1));
@@ -195,10 +195,14 @@ unsigned int createSphere (RTCGeometryFlags flags, const Vec3fa& pos, const floa
       const float phif   = phi*float(pi)*rcpNumPhi;
       const float thetaf = theta*2.0f*float(pi)*rcpNumTheta;
       Vertex& v = vertices[phi*numTheta+theta];
-      v.x = pos.x + r*sin(phif)*sin(thetaf);
-      v.y = pos.y + r*cos(phif);
-      v.z = pos.z + r*sin(phif)*cos(thetaf);
-      v.r = 8.0f;
+      Vec3fa P(pos.x + r*sin(phif)*sin(thetaf),
+               pos.y + r*cos(phif),
+               pos.z + r*sin(phif)*cos(thetaf));
+      v.x = P.x;
+      v.y = P.y;
+      v.z = P.z;
+      //v.r = 8.0f;
+      v.r = floor(log(100.0f/length(cam_pos-P))/log(2.0f));
     }
     if (phi == 0) continue;
 
@@ -361,7 +365,8 @@ unsigned int test_offsets[FACES] = {0, 4};
 
 #endif
 
-void constructScene() {
+void constructScene(const Vec3fa& cam_pos) 
+{
   /*! Create an Embree object to hold scene state. */
   g_scene = rtcNewScene(RTC_SCENE_STATIC, RTC_INTERSECT1);
 
@@ -412,7 +417,7 @@ void constructScene() {
       BBox3fa bounds(Vec3fa(-0.1f,-0.1f,-0.1f),Vec3fa(0.1f,0.1f,0.1f));
       rtcSetDisplacementFunction(g_scene, subdivMeshID, (RTCDisplacementFunc)DisplacementFunc,(RTCBounds&)bounds);
 #else
-      createSphere (RTC_GEOMETRY_STATIC, Vec3fa(0.0f,0.0f,0.0f), 1.0f);
+      createSphere (RTC_GEOMETRY_STATIC, Vec3fa(0.0f,0.0f,0.0f), 1.0f, cam_pos);
 #endif
     }
     
@@ -520,12 +525,11 @@ extern "C" void device_init(int8 *configuration) {
 extern "C" void setSubdivisionLevel(unsigned int); // for now hidden fct in the core 
 extern unsigned int g_subdivision_levels;
 
-extern "C" void device_render(int *pixels, int width, int height, float time, const Vec3fa &vx, const Vec3fa &vy, const Vec3fa &vz, const Vec3fa &p) {
+extern "C" void device_render(int *pixels, int width, int height, float time, const Vec3fa &vx, const Vec3fa &vy, const Vec3fa &vz, const Vec3fa &p) 
+{
   if (g_scene == NULL)
-    {
-      constructScene();
-    }
-
+      constructScene(p);
+  
   /*! Refine the subdivision mesh as needed. */
   setSubdivisionLevel( g_subdivision_levels );
 

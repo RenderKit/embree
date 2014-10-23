@@ -45,6 +45,7 @@ namespace embree
       PRINT(patch.ring[2].level);
       PRINT(patch.ring[3].level);*/
       //if (l == maxDepth) 
+      //PRINT(l);
       if (patch.leafLevel(3))
       {
         QuadQuad4x4& leaf = leaves(x,y);
