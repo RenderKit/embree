@@ -39,9 +39,13 @@ namespace embree
                                                  const IrregularCatmullClarkPatch& patch,
                                                  unsigned x, unsigned y, unsigned l, unsigned maxDepth)
     {
-      PRINT(l);
-      //if (l == maxDepth) 
-      if (patch.leafLevel(3))
+      //PRINT(l);
+      /*PRINT(patch.ring[0].level);
+      PRINT(patch.ring[1].level);
+      PRINT(patch.ring[2].level);
+      PRINT(patch.ring[3].level);*/
+      if (l == maxDepth) 
+      //if (patch.leafLevel(3))
       {
         QuadQuad4x4& leaf = leaves(x,y);
         new (&leaf) QuadQuad4x4(8*x,8*y,8*(1<<l),geomID(),primID());
@@ -54,6 +58,13 @@ namespace embree
 
       IrregularCatmullClarkPatch patches[4]; 
       patch.subdivide(patches);
+      /*for (size_t i=0; i<4; i++) {
+        PRINT(i);
+        PRINT(patches[i].ring[0].level);
+        PRINT(patches[i].ring[1].level);
+        PRINT(patches[i].ring[2].level);
+        PRINT(patches[i].ring[3].level);
+        }*/
 
       BVH4::Node* node = bvh.allocNode(alloc);
       const std::pair<BBox3fa,BVH4::NodeRef> b00 = build(alloc,patches[0],2*x+0,2*y+0,l+1,maxDepth); node->set(0,b00.first,b00.second);

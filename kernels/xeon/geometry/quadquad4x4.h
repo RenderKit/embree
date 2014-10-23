@@ -18,7 +18,7 @@
 
 #include "primitive.h"
 
-#define QUADQUAD4X4_COMPRESS_BOUNDS 1
+#define QUADQUAD4X4_COMPRESS_BOUNDS 0 // FIXME: not working yet in SSE mode
 
 namespace embree
 {
@@ -418,12 +418,12 @@ namespace embree
         for (size_t x=0; x<=8; x++)
           v[y][x] = p3(x,y);
 
-      PRINT(pointLevel00);
+      /*PRINT(pointLevel00);
       PRINT(pointLevel10);
       PRINT(pointLevel11);
-      PRINT(pointLevel01);
+      PRINT(pointLevel01);*/
 
-#if 1
+#if 0
       float maxLevel = max(pointLevel00,pointLevel10,pointLevel11,pointLevel01);
       assert(pointLevel00+1.0f >= maxLevel);
       assert(pointLevel10+1.0f >= maxLevel);
