@@ -83,7 +83,6 @@ namespace embree
   public:
 
     /*! access to the ith element of the buffer stream */
-    //__forceinline T& operator[](size_t i) 
     __forceinline T& operator[](size_t i) 
     {
       assert(i<num);

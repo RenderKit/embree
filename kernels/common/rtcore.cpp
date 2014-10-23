@@ -788,7 +788,7 @@ namespace embree
       break;
 
     default: 
-      ERROR("Unknown matrix type");
+      process_error(RTC_INVALID_OPERATION,"Unknown matrix type");
       break;
     }
     ((Scene*) scene)->get_locked(geomID)->setTransform(transform);

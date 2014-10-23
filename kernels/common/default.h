@@ -46,9 +46,6 @@
 
 #include "../version.h"
 
-#define ERROR(x) \
-  THROW_RUNTIME_ERROR(x)
-
 namespace embree
 {
   /* we consider floating point numbers in that range as valid input numbers */
