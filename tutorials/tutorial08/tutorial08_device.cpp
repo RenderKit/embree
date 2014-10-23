@@ -158,8 +158,11 @@ unsigned int packPixel(const Vec3f &color) {
 void DisplacementFunc(void* ptr, unsigned geomID, unsigned primID, float* u, float* v, float* x, float* y, float* z, size_t N)
 {
   for (size_t i=0; i<N; i++) {
-    const Vec3fa dp = 0.02f*Vec3fa(sin(100.0f*x[i]+0.5f),sin(100.0f*z[i]+1.5f),cos(100.0f*y[i]));
-    x[i] += dp.x; y[i] += dp.y; z[i] += dp.z;
+    //const Vec3fa dp = 0.02f*Vec3fa(sin(100.0f*x[i]+0.5f),sin(100.0f*z[i]+1.5f),cos(100.0f*y[i]));
+    const Vec3fa P(x[i],y[i],z[i]);
+    const float dN = 0.04f*noise(10.0f*P);
+    const Vec3fa dP = dN*P;
+    x[i] += dP.x; y[i] += dP.y; z[i] += dP.z;
   }
 }
 
@@ -191,7 +194,7 @@ unsigned int createSphere (RTCGeometryFlags flags, const Vec3fa& pos, const floa
       v.x = pos.x + r*sin(phif)*sin(thetaf);
       v.y = pos.y + r*cos(phif);
       v.z = pos.z + r*sin(phif)*cos(thetaf);
-      v.r = 5.0f;
+      v.r = 6.0f;
     }
     if (phi == 0) continue;
 

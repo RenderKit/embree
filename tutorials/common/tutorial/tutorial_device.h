@@ -98,5 +98,9 @@ struct Sample3f
   float pdf;
 };
 
+/* noise functions */
+float noise(const Vec3fa& p);
+Vec3fa noise3D(const Vec3fa& p);
+
 
 
