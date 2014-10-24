@@ -301,7 +301,7 @@ namespace embree
 
         /* get new partial block if allocation failed */
         size_t blockSize = allocBlockSize;
-        ptr = (char*) alloc->block->malloc_some(blockSize,maxAlignment);
+        ptr = (char*) alloc->usedBlocks->malloc_some(blockSize,maxAlignment);
         end = blockSize;
 
         /* retry allocation */
@@ -336,23 +336,40 @@ namespace embree
       size_t allocBlockSize; //!< block size for allocations
     };
 
-    /*! Allocator default construction. */
     FastAllocator () 
-      : block(NULL) {}
+      : usedBlocks(NULL), freeBlocks(NULL) {}
+
+    ~FastAllocator () { 
+      delete usedBlocks; usedBlocks = NULL;
+      delete freeBlocks; freeBlocks = NULL;
+    }
 
     /*! initializes the allocator */
     void init(size_t bytesAllocate, size_t bytesReserve) {
-      block = new Block(bytesAllocate,bytesReserve);
+      usedBlocks = new Block(bytesAllocate,bytesReserve);
     }
 
-    /*! clears the allocator */
-    void clear () {
-      delete block; block = NULL;
+    /*! resets the allocator, memory blocks get reused */
+    void reset () 
+    {
+      /* first reset all used blocks */
+      if (usedBlocks) usedBlocks->reset();
+
+      /* find end of free block list */
+      Block*& freeBlocksEnd = freeBlocks;
+      if (freeBlocksEnd) {
+        while (freeBlocksEnd->next) freeBlocksEnd = freeBlocksEnd->next;
+      }
+
+      /* add previously used blocks to end of free block list */
+      freeBlocksEnd = usedBlocks;
+      usedBlocks = NULL;
     }
 
     /*! shrinks all memory blocks to the actually used size */
     void shrink () {
-      block->shrink();
+      usedBlocks->shrink();
+      delete freeBlocks; freeBlocks = NULL;
     }
 
     /*! thread safe allocation of memory */
@@ -362,10 +379,17 @@ namespace embree
 
       while (true) 
       {
-        void* ptr = block->malloc(bytes,align);
+        void* ptr = usedBlocks->malloc(bytes,align);
         if (ptr) return ptr;
         mutex.lock();
-        block = new Block(2*block->allocEnd, 2*block->reserveEnd);
+        if (freeBlocks) {
+          Block* nextFreeBlock = freeBlocks->next;
+          freeBlocks->next = usedBlocks;
+          usedBlocks = freeBlocks;
+          freeBlocks = nextFreeBlock;
+        } else {
+          usedBlocks = new Block(2*usedBlocks->allocEnd, 2*usedBlocks->reserveEnd, usedBlocks);
+        }
         mutex.unlock();
       }
     }
@@ -408,6 +432,13 @@ namespace embree
 	return &ptr[i];
       }
 
+      void reset () 
+      {
+        allocEnd = max(allocEnd,(size_t)cur);
+        cur = 0;
+        if (next) next->reset();
+      }
+
       void shrink () 
       {
 	if (ptr) {
@@ -428,6 +459,7 @@ namespace embree
 
   private:
     AtomicMutex mutex;
-    Block* block;
+    Block* usedBlocks;
+    Block* freeBlocks;
   };
 }
