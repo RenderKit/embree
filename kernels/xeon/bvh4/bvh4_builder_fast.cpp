@@ -250,7 +250,7 @@ namespace embree
    template<typename Primitive>
    void BVH4SubdivBuilderFast<Primitive>::build(size_t threadIndex, size_t threadCount)
     {
-      this->bvh->alloc2.init();
+      this->bvh->alloc2.init(4096,4096);
       size_t numPatches = 0;
       for (size_t i=0; i<this->scene->size(); i++) 
       {
