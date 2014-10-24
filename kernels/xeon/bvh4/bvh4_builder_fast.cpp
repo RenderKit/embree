@@ -345,7 +345,7 @@ namespace embree
       if (items != 1) THROW_RUNTIME_ERROR("SubdivPatchDispl1: internal error");
             
       /* allocate leaf node */
-      //SubdivPatchDispl1* accel = (SubdivPatchDispl1*) leafAlloc.malloc(sizeof(SubdivPatchDispl1));
+      SubdivPatchDispl1* accel = (SubdivPatchDispl1*) leafAlloc.malloc(sizeof(SubdivPatchDispl1));
       //*current.parent = bvh->encodeLeaf((char*)accel,listMode ? listMode : items);
       
       const PrimRef& prim = prims[start];
@@ -353,15 +353,16 @@ namespace embree
       const unsigned int geomID = prim.geomID();
       const unsigned int primID = prim.primID();
       const SubdivMesh* const subdiv_mesh = scene->getSubdivMesh(geomID);
-      SubdivPatchDispl1* accel = new SubdivPatchDispl1(bvh->alloc2,
-                                                       *current.parent, // FIXME: delete again
-                                                       scene, 
-                                                       &subdiv_mesh->getHalfEdgeForQuad( primID ),
-                                                       subdiv_mesh->getVertexPositionPtr(),
-                                                       geomID,
-                                                       primID,
-                                                       SUBDIVISION_LEVEL_DISPL,
-                                                       true); 
+      //SubdivPatchDispl1* accel = new SubdivPatchDispl1(bvh->alloc2,
+      new (accel) SubdivPatchDispl1(bvh->alloc2,
+                                    *current.parent,
+                                    scene, 
+                                    &subdiv_mesh->getHalfEdgeForQuad( primID ),
+                                    subdiv_mesh->getVertexPositionPtr(),
+                                    geomID,
+                                    primID,
+                                    SUBDIVISION_LEVEL_DISPL,
+                                    true); 
       //*current.parent = accel->bvh.root;
       *current.parent = bvh->encodeLeaf((char*)accel,1);
     }
