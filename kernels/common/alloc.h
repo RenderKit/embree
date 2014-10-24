@@ -392,16 +392,17 @@ namespace embree
           THROW_RUNTIME_ERROR("allocation is too large");
 
         /* if this fails allocate new block */
-        if (freeBlocks) {
+        {
           Lock<AtomicMutex> lock(mutex);
-          Block* nextFreeBlock = freeBlocks->next;
-          freeBlocks->next = usedBlocks;
-          usedBlocks = freeBlocks;
-          freeBlocks = nextFreeBlock;
-        } else {
-          Lock<AtomicMutex> lock(mutex);
-          growSize = min(2*growSize,size_t(maxAllocationSize+maxAlignment));
-          usedBlocks = Block::create(growSize-maxAlignment, growSize-maxAlignment, usedBlocks);
+          if (freeBlocks) {
+            Block* nextFreeBlock = freeBlocks->next;
+            freeBlocks->next = usedBlocks;
+            usedBlocks = freeBlocks;
+            freeBlocks = nextFreeBlock;
+          } else {
+            growSize = min(2*growSize,size_t(maxAllocationSize+maxAlignment));
+            usedBlocks = Block::create(growSize-maxAlignment, growSize-maxAlignment, usedBlocks);
+          }
         }
       }
     }
