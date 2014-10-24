@@ -340,13 +340,13 @@ namespace embree
       : usedBlocks(NULL), freeBlocks(NULL) {}
 
     ~FastAllocator () { 
-      delete usedBlocks; usedBlocks = NULL;
-      delete freeBlocks; freeBlocks = NULL;
+      if (usedBlocks) usedBlocks->~Block(); usedBlocks = NULL;
+      if (freeBlocks) freeBlocks->~Block(); freeBlocks = NULL;
     }
 
     /*! initializes the allocator */
     void init(size_t bytesAllocate, size_t bytesReserve) {
-      usedBlocks = new Block(bytesAllocate,bytesReserve);
+      usedBlocks = Block::create(bytesAllocate,bytesReserve);
     }
 
     /*! resets the allocator, memory blocks get reused */
@@ -369,7 +369,7 @@ namespace embree
     /*! shrinks all memory blocks to the actually used size */
     void shrink () {
       usedBlocks->shrink();
-      delete freeBlocks; freeBlocks = NULL;
+      if (freeBlocks) freeBlocks->~Block(); freeBlocks = NULL;
     }
 
     /*! thread safe allocation of memory */
@@ -388,7 +388,7 @@ namespace embree
           usedBlocks = freeBlocks;
           freeBlocks = nextFreeBlock;
         } else {
-          usedBlocks = new Block(2*usedBlocks->allocEnd, 2*usedBlocks->reserveEnd, usedBlocks);
+          usedBlocks = Block::create(2*usedBlocks->allocEnd, 2*usedBlocks->reserveEnd, usedBlocks);
         }
         mutex.unlock();
       }
@@ -398,17 +398,21 @@ namespace embree
 
     struct Block 
     {
-      Block (size_t bytesAllocate, size_t bytesReserve, Block* next = NULL) 
-      : ptr(NULL), cur(0), allocEnd(bytesAllocate), reserveEnd(bytesReserve), next(next) 
+      static Block* create(size_t bytesAllocate, size_t bytesReserve, Block* next = NULL)
       {
-        ptr = (char*) os_reserve(bytesReserve);
+        bytesAllocate = max(bytesAllocate,sizeof(Block));
+        bytesReserve  = max(bytesReserve ,sizeof(Block));
+        void* ptr = os_reserve(bytesReserve);
         os_commit(ptr,bytesAllocate);
+        return new (ptr) Block(bytesAllocate,bytesReserve,next);
       }
 
+      Block (size_t bytesAllocate, size_t bytesReserve, Block* next) 
+      : cur(0), allocEnd(bytesAllocate), reserveEnd(bytesReserve), next(next) {}
+
       ~Block () {
-	if (ptr) os_free(ptr,reserveEnd); ptr = NULL;
-	cur = allocEnd = reserveEnd = 0;
-	if (next) delete next; next = NULL;
+	if (next) next->~Block(); next = NULL;
+        os_free(this,reserveEnd);
       }
 
       void* malloc(size_t bytes, size_t align = 16) 
@@ -418,8 +422,8 @@ namespace embree
 	if (unlikely(cur+bytes > reserveEnd)) return NULL;
 	const size_t i = atomic_add(&cur,bytes);
 	if (unlikely(i+bytes > reserveEnd)) return NULL;
-	if (i+bytes > allocEnd) os_commit(&ptr[i],bytes); // FIXME: optimize, may get called frequently
-	return &ptr[i];
+	if (i+bytes > allocEnd) os_commit(&data[i],bytes); // FIXME: optimize, may get called frequently
+	return &data[i];
       }
 
       void* malloc_some(size_t& bytes, size_t align = 16) 
@@ -428,8 +432,8 @@ namespace embree
         bytes = (bytes+(align-1)) & ~(align-1); // FIXME: works only if all alignments are equal
 	const size_t i = atomic_add(&cur,bytes);
 	if (unlikely(i+bytes > reserveEnd)) bytes = reserveEnd-i;
-	if (i+bytes > allocEnd) os_commit(&ptr[i],bytes); // FIXME: optimize, may get called frequently
-	return &ptr[i];
+	if (i+bytes > allocEnd) os_commit(&data[i],bytes); // FIXME: optimize, may get called frequently
+	return &data[i];
       }
 
       void reset () 
@@ -441,20 +445,18 @@ namespace embree
 
       void shrink () 
       {
-	if (ptr) {
-          os_shrink(ptr,cur,reserveEnd);
-          reserveEnd = allocEnd = cur;
-        }
+        os_shrink(&data[0],cur,reserveEnd);
+        reserveEnd = allocEnd = cur;
         if (next) next->shrink();
       }
 
     public:
-      char*  ptr;                //!< pointer to memory
       atomic_t cur;              //!< current location of the allocator
       size_t allocEnd;           //!< end of the allocated memory region
       size_t reserveEnd;         //!< end of the reserved memory region
-      Block* next;
-      // FIXME: store data at end of block
+      Block* next;               //!< pointer to next block in list
+      char align[maxAlignment-4*sizeof(size_t)]; //!< align data to maxAlignment
+      char data[];               //!< here starts memory to use for allocations
     };
 
   private:
