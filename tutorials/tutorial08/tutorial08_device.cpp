@@ -546,9 +546,12 @@ extern unsigned int g_subdivision_levels;
 extern "C" void device_render(int *pixels, int width, int height, float time, const Vec3fa &vx, const Vec3fa &vy, const Vec3fa &vz, const Vec3fa &p) 
 {
   if (g_scene == NULL)
-    constructScene(p);
-  else
-    updateSphere (p);
+      constructScene(p);
+  else {
+    static Vec3fa oldP = zero;
+    if (oldP != p) updateSphere (p);
+    oldP = p;
+  }
   
   /*! Refine the subdivision mesh as needed. */
   setSubdivisionLevel( g_subdivision_levels );
