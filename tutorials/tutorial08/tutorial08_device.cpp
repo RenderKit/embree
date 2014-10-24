@@ -170,11 +170,14 @@ void DisplacementFunc(void* ptr, unsigned geomID, unsigned primID, float* u, flo
   }
 }
 
+unsigned int g_sphere = -1;
+
 /* adds a sphere to the scene */
-unsigned int createSphere (RTCGeometryFlags flags, const Vec3fa& pos, const float r, const Vec3fa& cam_pos)
+unsigned int createSphere (RTCGeometryFlags flags, const Vec3fa& pos, const float r)
 {
   /* create a triangulated sphere */
   unsigned int mesh = rtcNewSubdivisionMesh(g_scene, flags, numTheta*numPhi, 4*numTheta*numPhi, numTheta*(numPhi+1));
+  g_sphere = mesh;
 
   BBox3fa bounds(Vec3fa(-0.1f,-0.1f,-0.1f),Vec3fa(0.1f,0.1f,0.1f));
   rtcSetDisplacementFunction(g_scene, mesh, (RTCDisplacementFunc)DisplacementFunc,(RTCBounds&)bounds);
@@ -201,8 +204,7 @@ unsigned int createSphere (RTCGeometryFlags flags, const Vec3fa& pos, const floa
       v.x = P.x;
       v.y = P.y;
       v.z = P.z;
-      //v.r = 8.0f;
-      v.r = floor(log(100.0f/length(cam_pos-P))/log(2.0f));
+      v.r = 3.0f;
     }
     if (phi == 0) continue;
 
@@ -228,6 +230,18 @@ unsigned int createSphere (RTCGeometryFlags flags, const Vec3fa& pos, const floa
   return mesh;
 }
 
+void updateSphere(const Vec3fa& cam_pos)
+{
+  if (g_sphere == -1) return;
+  Vertex* vertices = (Vertex*  ) rtcMapBuffer(g_scene,g_sphere,RTC_VERTEX_BUFFER); 
+  for (size_t i=0; i<numTheta*(numPhi+1); i++) {
+    Vec3fa P(vertices[i].x,vertices[i].y,vertices[i].z);
+    vertices[i].r = floor(log(100.0f/length(cam_pos-P))/log(2.0f));
+  }
+  rtcUnmapBuffer(g_scene,g_sphere,RTC_VERTEX_BUFFER); 
+  rtcUpdate(g_scene,g_sphere);
+  rtcCommit(g_scene);
+}
 
 // void constructCubeFaces(OpenSubdiv::HbrMesh<Vec3f> *mesh) {
 
@@ -367,13 +381,13 @@ unsigned int test_offsets[FACES] = {0, 4};
 
 void constructScene(const Vec3fa& cam_pos) 
 {
-  /*! Create an Embree object to hold scene state. */
-  g_scene = rtcNewScene(RTC_SCENE_STATIC, RTC_INTERSECT1);
-
   unsigned int totalNumQuads = 0;
   if (g_ispc_scene)
     {
       DBG_PRINT(g_ispc_scene->numMeshes);
+
+      /*! Create an Embree object to hold scene state. */
+      g_scene = rtcNewScene(RTC_SCENE_STATIC, RTC_INTERSECT1);
 
       for (int i=0; i<g_ispc_scene->numMeshes; i++)
 	{
@@ -405,6 +419,9 @@ void constructScene(const Vec3fa& cam_pos)
 
   if (totalNumQuads == 0)
     {
+      /*! Create an Embree object to hold scene state. */
+      g_scene = rtcNewScene(RTC_SCENE_DYNAMIC, RTC_INTERSECT1);
+
 #if 0
       std::cout << "Loading dummy cube..." << std::endl;
       //unsigned int subdivMeshID = rtcNewSubdivisionMesh(g_scene, RTC_GEOMETRY_STATIC, 1, EDGES, VERTICES);
@@ -417,7 +434,8 @@ void constructScene(const Vec3fa& cam_pos)
       BBox3fa bounds(Vec3fa(-0.1f,-0.1f,-0.1f),Vec3fa(0.1f,0.1f,0.1f));
       rtcSetDisplacementFunction(g_scene, subdivMeshID, (RTCDisplacementFunc)DisplacementFunc,(RTCBounds&)bounds);
 #else
-      createSphere (RTC_GEOMETRY_STATIC, Vec3fa(0.0f,0.0f,0.0f), 1.0f, cam_pos);
+      createSphere (RTC_GEOMETRY_STATIC, Vec3fa(0.0f,0.0f,0.0f), 1.0f);
+      updateSphere (cam_pos);
 #endif
     }
     
@@ -528,7 +546,9 @@ extern unsigned int g_subdivision_levels;
 extern "C" void device_render(int *pixels, int width, int height, float time, const Vec3fa &vx, const Vec3fa &vy, const Vec3fa &vz, const Vec3fa &p) 
 {
   if (g_scene == NULL)
-      constructScene(p);
+    constructScene(p);
+  else
+    updateSphere (p);
   
   /*! Refine the subdivision mesh as needed. */
   setSubdivisionLevel( g_subdivision_levels );
