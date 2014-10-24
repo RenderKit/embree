@@ -229,11 +229,12 @@ namespace embree
     
     size_t numPatches = numRegularPatches + numIrregularPatches;
 
-    std::cout << "numPatches " << numPatches 
-	      << " : regular " << numRegularPatches << " (" << 100.0f * numRegularPatches / numPatches << "%)" 
-	      << " irregular " << numIrregularPatches << " (" << 100.0f * numIrregularPatches / numPatches << "%) " 
-	      << " irregular with edges " << numPatchesWithEdges << " (" << 100.0f * numPatchesWithEdges / numPatches << "%) " << std::endl;
-    
+    if (g_verbose >= 1) {
+      std::cout << "numPatches " << numPatches 
+                << " : regular " << numRegularPatches << " (" << 100.0f * numRegularPatches / numPatches << "%)" 
+                << " irregular " << numIrregularPatches << " (" << 100.0f * numIrregularPatches / numPatches << "%) " 
+                << " irregular with edges " << numPatchesWithEdges << " (" << 100.0f * numPatchesWithEdges / numPatches << "%) " << std::endl;
+    }
       
 #if 0
     for (size_t i=0;i<numHalfEdges;i++)
