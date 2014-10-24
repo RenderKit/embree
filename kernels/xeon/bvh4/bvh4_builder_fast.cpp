@@ -106,7 +106,7 @@ namespace embree
       : geom(geom), BVH4BuilderFastT<SubdivPatch1>(bvh,geom->parent,listMode,0,0,false,sizeof(SubdivPatch1),1,1,geom->size() > THRESHOLD_FOR_SINGLE_THREADED) {}
 
     template<> BVH4SubdivBuilderFast<SubdivPatchDispl1>::BVH4SubdivBuilderFast (BVH4* bvh, Scene* scene, size_t listMode) 
-      : geom(NULL), BVH4BuilderFastT<SubdivPatchDispl1>(bvh,scene,listMode,0,0,false,sizeof(SubdivPatchDispl1),1,1,true) {}
+      : geom(NULL), BVH4BuilderFastT<SubdivPatchDispl1>(bvh,scene,listMode,0,0,false,sizeof(SubdivPatchDispl1),1,1,true) { this->bvh->alloc2.init(4096,4096); }
     
     BVH4TopLevelBuilderFastT::BVH4TopLevelBuilderFastT (LockStepTaskScheduler* scheduler, BVH4* bvh) 
       : prims_i(NULL), N(0), BVH4BuilderFast(scheduler,bvh,0,0,0,false,0,1,1) {}
@@ -250,7 +250,7 @@ namespace embree
    template<typename Primitive>
    void BVH4SubdivBuilderFast<Primitive>::build(size_t threadIndex, size_t threadCount)
     {
-      this->bvh->alloc2.init(4096,4096);
+      this->bvh->alloc2.reset();
       size_t numPatches = 0;
       for (size_t i=0; i<this->scene->size(); i++) 
       {

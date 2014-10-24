@@ -272,6 +272,9 @@ namespace embree
     /*! maximal supported alignment */
     static const size_t maxAlignment = 64;
 
+    /*! maximal allocation size */
+    static const size_t maxAllocationSize = 2*1024*1024-maxAlignment;
+
   public:
 
     /*! Per thread structure holding the current memory block. */
@@ -337,7 +340,7 @@ namespace embree
     };
 
     FastAllocator () 
-      : usedBlocks(NULL), freeBlocks(NULL) {}
+      : growSize(4096), usedBlocks(NULL), freeBlocks(NULL) {}
 
     ~FastAllocator () { 
       if (usedBlocks) usedBlocks->~Block(); usedBlocks = NULL;
@@ -347,6 +350,7 @@ namespace embree
     /*! initializes the allocator */
     void init(size_t bytesAllocate, size_t bytesReserve) {
       usedBlocks = Block::create(bytesAllocate,bytesReserve);
+      growSize = bytesReserve;
     }
 
     /*! resets the allocator, memory blocks get reused */
@@ -357,9 +361,7 @@ namespace embree
 
       /* find end of free block list */
       Block*& freeBlocksEnd = freeBlocks;
-      if (freeBlocksEnd) {
-        while (freeBlocksEnd->next) freeBlocksEnd = freeBlocksEnd->next;
-      }
+      while (freeBlocksEnd) freeBlocksEnd = freeBlocksEnd->next;
 
       /* add previously used blocks to end of free block list */
       freeBlocksEnd = usedBlocks;
@@ -379,18 +381,28 @@ namespace embree
 
       while (true) 
       {
-        void* ptr = usedBlocks->malloc(bytes,align);
-        if (ptr) return ptr;
-        mutex.lock();
+        /* allocate using current block */
+        if (usedBlocks) {
+          void* ptr = usedBlocks->malloc(bytes,align);
+          if (ptr) return ptr;
+        }
+
+        /* throw error if allocation is too large */
+        if (bytes > maxAllocationSize)
+          THROW_RUNTIME_ERROR("allocation is too large");
+
+        /* if this fails allocate new block */
         if (freeBlocks) {
+          Lock<AtomicMutex> lock(mutex);
           Block* nextFreeBlock = freeBlocks->next;
           freeBlocks->next = usedBlocks;
           usedBlocks = freeBlocks;
           freeBlocks = nextFreeBlock;
         } else {
-          usedBlocks = Block::create(2*usedBlocks->allocEnd, 2*usedBlocks->reserveEnd, usedBlocks);
+          Lock<AtomicMutex> lock(mutex);
+          growSize = min(2*growSize,size_t(maxAllocationSize+maxAlignment));
+          usedBlocks = Block::create(growSize-maxAlignment, growSize-maxAlignment, usedBlocks);
         }
-        mutex.unlock();
       }
     }
 
@@ -400,10 +412,10 @@ namespace embree
     {
       static Block* create(size_t bytesAllocate, size_t bytesReserve, Block* next = NULL)
       {
-        bytesAllocate = max(bytesAllocate,sizeof(Block));
-        bytesReserve  = max(bytesReserve ,sizeof(Block));
-        void* ptr = os_reserve(bytesReserve);
-        os_commit(ptr,bytesAllocate);
+        void* ptr = os_reserve(sizeof(Block)+bytesReserve);
+        os_commit(ptr,sizeof(Block)+bytesAllocate);
+        bytesAllocate = ((sizeof(Block)+bytesAllocate+4095) & ~(4095)) - sizeof(Block); // always comsume full pages
+        bytesReserve  = ((sizeof(Block)+bytesReserve +4095) & ~(4095)) - sizeof(Block); // always comsume full pages
         return new (ptr) Block(bytesAllocate,bytesReserve,next);
       }
 
@@ -412,7 +424,7 @@ namespace embree
 
       ~Block () {
 	if (next) next->~Block(); next = NULL;
-        os_free(this,reserveEnd);
+        os_free(this,sizeof(Block)+reserveEnd);
       }
 
       void* malloc(size_t bytes, size_t align = 16) 
@@ -463,5 +475,6 @@ namespace embree
     AtomicMutex mutex;
     Block* usedBlocks;
     Block* freeBlocks;
+    size_t growSize;
   };
 }
