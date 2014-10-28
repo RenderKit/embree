@@ -239,19 +239,40 @@ namespace embree
       Vertex crease_edge = 0.0f;
       for (size_t i=1; i<valence; i++)
       {
-        if (unlikely(crease_weight[i] > 0.0f)) {
+        const Vertex v = vtx + ring[2*i];
+        const Vertex f = dest.ring[2*i-1] + dest.ring[2*i+1];
+        
+        if (unlikely(crease_weight[i] <= 0.0f)) {
+          dest.ring[2*i] = (v+f) * 0.25f;
+        }
+        else if (unlikely(crease_weight[i] < 1.0f)) {
           crease_edge += ring[2*i]; crease_id[num_creases++] = i;
-          dest.ring[2*i] = (vtx + ring[2*i]) * 0.5f;
+          const float w0 = 1.0f-crease_weight[i], w1 = crease_weight[i];
+          dest.ring[2*i] = w0*((v+f)*0.25f) + w1*(v*0.5f);
         }
-        else
-          dest.ring[2*i] = (vtx + ring[2*i] + dest.ring[2*i-1] + dest.ring[2*i+1]) * 0.25f;
+        else {
+          crease_edge += ring[2*i]; crease_id[num_creases++] = i;
+          dest.ring[2*i] = v * 0.5f;
+        }
       }
-      if (unlikely(crease_weight[0] > 0.0f)) {
-        crease_edge += ring[0]; crease_id[num_creases++] = 0;
-        dest.ring[0] = (vtx + ring[0]) * 0.5f;
+      {
+        const size_t i=0;
+        const Vertex v = vtx + ring[2*i];
+        const Vertex f = dest.ring[num_vtx-1] + dest.ring[2*i+1];
+        
+        if (unlikely(crease_weight[i] <= 0.0f)) {
+          dest.ring[2*i] = (v+f) * 0.25f;
         }
-      else 
-        dest.ring[0] = (vtx + ring[0] + dest.ring[num_vtx-1] + dest.ring[1]) * 0.25f;
+        else if (unlikely(crease_weight[i] < 1.0f)) {
+          crease_edge += ring[2*i]; crease_id[num_creases++] = i;
+          const float w0 = 1.0f-crease_weight[i], w1 = crease_weight[i];
+          dest.ring[2*i] = w0*((v+f)*0.25f) + w1*(v*0.5f);
+        }
+        else {
+          crease_edge += ring[2*i]; crease_id[num_creases++] = i;
+          dest.ring[2*i] = v * 0.5f;
+        }
+      }
 
       for (size_t i=0; i<valence; i++) {
         dest.crease_weight[i] = crease_weight[i];
@@ -261,11 +282,21 @@ namespace embree
       if (num_creases > 2) {
         dest.vtx = vtx;
       } else if (num_creases > 1) {
-        dest.vtx = (Vertex)(crease_edge + 6.0f * vtx) * (1.0f / 8.0f);
+        const Vertex v_sharp = (Vertex)(crease_edge + 6.0f * vtx) * (1.0f / 8.0f);
         const float crease_weight0 = crease_weight[crease_id[0]];
         const float crease_weight1 = crease_weight[crease_id[1]];
+        const float t0 = 0.5f*(crease_weight0+crease_weight1), t1 = 1.0f-t0;
         dest.crease_weight[crease_id[0]] = max(0.25f*(3.0f*crease_weight0 + crease_weight1)-1.0f,0.0f);
         dest.crease_weight[crease_id[1]] = max(0.25f*(3.0f*crease_weight1 + crease_weight0)-1.0f,0.0f);
+        if (t0 < 1.0f) {
+          const float inv_valence = 1.0f / (float)valence;
+          F *= inv_valence;
+          R *= inv_valence; 
+          const Vertex v_smooth = (Vertex)(F + 2.0f * R + (float(valence)-3.0f)*vtx) * inv_valence;
+          dest.vtx = t0*v_sharp + t1*v_smooth;
+        }
+        else 
+          dest.vtx = v_sharp;
       } else {
         const float inv_valence = 1.0f / (float)valence;
         F *= inv_valence;
