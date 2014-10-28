@@ -261,27 +261,31 @@ namespace embree
       for (size_t i=0; i<valence; i++) {
         dest.crease_weight[i] = crease_weight[i];
       }
+      const float inv_valence = 1.0f / (float)valence;
 
-      // new vtx
-      if (num_creases > 2) {
-        dest.vtx = vtx;
-      } else if (num_creases > 1) {
+      /* compute new vertex using smooth rule */
+      const Vertex v_smooth = (Vertex)(FR*inv_valence + (float(valence)-2.0f)*vtx)*inv_valence;
+      if (likely(num_creases <= 1)) {
+        dest.vtx = v_smooth;
+      }
+      
+      /* compute new vertex using crease rule */
+      else if (likely(num_creases == 2)) {
         const Vertex v_sharp = (Vertex)(crease_edge + 6.0f * vtx) * (1.0f / 8.0f);
         const float crease_weight0 = crease_weight[crease_id[0]];
         const float crease_weight1 = crease_weight[crease_id[1]];
-        const float t0 = 0.5f*(crease_weight0+crease_weight1), t1 = 1.0f-t0;
+        dest.vtx = v_sharp;
         dest.crease_weight[crease_id[0]] = max(0.25f*(3.0f*crease_weight0 + crease_weight1)-1.0f,0.0f);
         dest.crease_weight[crease_id[1]] = max(0.25f*(3.0f*crease_weight1 + crease_weight0)-1.0f,0.0f);
-        if (t0 < 1.0f) {
-          const float inv_valence = 1.0f / (float)valence;
-          const Vertex v_smooth = (Vertex)(FR*inv_valence + (float(valence)-2.0f)*vtx)*inv_valence;
+        const float t0 = 0.5f*(crease_weight0+crease_weight1), t1 = 1.0f-t0;
+        if (unlikely(t0 < 1.0f)) {
           dest.vtx = t0*v_sharp + t1*v_smooth;
         }
-        else 
-          dest.vtx = v_sharp;
-      } else {
-        const float inv_valence = 1.0f / (float)valence;
-        dest.vtx = (Vertex)(FR*inv_valence + (float(valence)-2.0f)*vtx)*inv_valence;
+      }
+      
+      /* compute new vertex using corner rule */
+      else {
+        dest.vtx = vtx;
       }
     }
 
