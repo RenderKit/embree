@@ -235,47 +235,42 @@ namespace embree
       
       // new edge vertices
       size_t num_creases = 0;
+      size_t crease_id[MAX_VALENCE];
       Vertex crease_edge = 0.0f;
       for (size_t i=1; i<valence; i++)
       {
         if (unlikely(crease_weight[i] > 0.0f)) {
-          crease_edge += ring[2*i]; num_creases++;
+          crease_edge += ring[2*i]; crease_id[num_creases++] = i;
           dest.ring[2*i] = (vtx + ring[2*i]) * 0.5f;
         }
         else
           dest.ring[2*i] = (vtx + ring[2*i] + dest.ring[2*i-1] + dest.ring[2*i+1]) * 0.25f;
       }
       if (unlikely(crease_weight[0] > 0.0f)) {
-        crease_edge += ring[0]; num_creases++;
+        crease_edge += ring[0]; crease_id[num_creases++] = 0;
         dest.ring[0] = (vtx + ring[0]) * 0.5f;
         }
       else 
         dest.ring[0] = (vtx + ring[0] + dest.ring[num_vtx-1] + dest.ring[1]) * 0.25f;
+
+      for (size_t i=0; i<valence; i++) {
+        dest.crease_weight[i] = crease_weight[i];
+      }
 
       // new vtx
       if (num_creases > 2) {
         dest.vtx = vtx;
       } else if (num_creases > 1) {
         dest.vtx = (Vertex)(crease_edge + 6.0f * vtx) * (1.0f / 8.0f);
+        const float crease_weight0 = crease_weight[crease_id[0]];
+        const float crease_weight1 = crease_weight[crease_id[1]];
+        dest.crease_weight[crease_id[0]] = max(0.25f*(3.0f*crease_weight0 + crease_weight1)-1.0f,0.0f);
+        dest.crease_weight[crease_id[1]] = max(0.25f*(3.0f*crease_weight1 + crease_weight0)-1.0f,0.0f);
       } else {
         const float inv_valence = 1.0f / (float)valence;
         F *= inv_valence;
         R *= inv_valence; 
         dest.vtx = (Vertex)(F + 2.0f * R + (float(valence)-3.0f)*vtx) * inv_valence;
-      }
-
-      if (unlikely(hard_edge_index != -1))
-      {
-        //dest.ring[ hard_edge_index + 0 ] = 0.5f * (Vertex)(vtx + ring[ hard_edge_index+0 ]);
-        //dest.ring[ hard_edge_index + 1 ] = (Vertex)ring[ hard_edge_index+1 ];
-        //dest.ring[ hard_edge_index + 2 ] = 0.5f * (Vertex)(vtx + ring[ hard_edge_index+2 ]);
-        //dest.vtx =  (Vertex)(ring[hard_edge_index + 0] + ring[hard_edge_index + 2] + 6.0f * vtx) * 1.0f / 8.0f;
-        assert(crease_weight[hard_edge_index/2+0] > 0.0f);
-        assert(crease_weight[hard_edge_index/2+1] > 0.0f);
-      }
-
-      for (size_t i=0; i<valence; i++) {
-        dest.crease_weight[i] = crease_weight[i];
       }
     }
 
