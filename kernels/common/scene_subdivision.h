@@ -219,7 +219,7 @@ namespace embree
       /* calculate new edge points */
       size_t num_creases = 0;
       size_t crease_id[MAX_VALENCE];
-      Vertex crease_edge = 0.0f;
+      Vertex C = 0.0f;
       for (size_t i=1; i<valence; i++)
       {
         const Vertex v = vtx + ring[2*i];
@@ -227,16 +227,21 @@ namespace embree
         S += ring[2*i];
         dest.crease_weight[i] = crease_weight[i];
         
+        /* fast path for regular edge points */
         if (likely(crease_weight[i] <= 0.0f)) {
           dest.ring[2*i] = (v+f) * 0.25f;
         }
-        else if (likely(crease_weight[i] >= 1.0f)) {
-          crease_edge += ring[2*i]; crease_id[num_creases++] = i;
-          dest.ring[2*i] = v * 0.5f;
-        } else {
-          crease_edge += ring[2*i]; crease_id[num_creases++] = i;
-          const float w0 = crease_weight[i], w1 = 1.0f-w0;
-          dest.ring[2*i] = w1*((v+f)*0.25f) + w0*(v*0.5f);
+        
+        /* slower path for hard edge rule */
+        else {
+          C += ring[2*i]; crease_id[num_creases++] = i;
+          dest.ring[2*i] = v*0.5f;
+
+          /* even slower path for blended edge rule */
+          if (unlikely(crease_weight[i] < 1.0f)) {
+            const float w0 = crease_weight[i], w1 = 1.0f-w0;
+            dest.ring[2*i] = w1*((v+f)*0.25f) + w0*(v*0.5f);
+          }
         }
       }
       {
@@ -246,16 +251,21 @@ namespace embree
         S += ring[2*i];
         dest.crease_weight[i] = crease_weight[i];
 
+        /* fast path for regular edge points */
         if (likely(crease_weight[i] <= 0.0f)) {
           dest.ring[2*i] = (v+f) * 0.25f;
         }
-        else if (likely(crease_weight[i] >= 1.0f)) {
-          crease_edge += ring[2*i]; crease_id[num_creases++] = i;
-          dest.ring[2*i] = v * 0.5f;
-        } else {
-          crease_edge += ring[2*i]; crease_id[num_creases++] = i;
-          const float w0 = crease_weight[i], w1 = 1.0f-w0;
-          dest.ring[2*i] = w1*((v+f)*0.25f) + w0*(v*0.5f);
+        
+        /* slower path for hard edge rule */
+        else {
+          C += ring[2*i]; crease_id[num_creases++] = i;
+          dest.ring[2*i] = v*0.5f;
+
+          /* even slower path for blended edge rule */
+          if (unlikely(crease_weight[i] < 1.0f)) {
+            const float w0 = crease_weight[i], w1 = 1.0f-w0;
+            dest.ring[2*i] = w1*((v+f)*0.25f) + w0*(v*0.5f);
+          }
         }
       }
 
@@ -268,7 +278,7 @@ namespace embree
       
       /* compute new vertex using crease rule */
       if (likely(num_creases == 2)) {
-        const Vertex v_sharp = (Vertex)(crease_edge + 6.0f * vtx) * (1.0f / 8.0f);
+        const Vertex v_sharp = (Vertex)(C + 6.0f * vtx) * (1.0f / 8.0f);
         const float crease_weight0 = crease_weight[crease_id[0]];
         const float crease_weight1 = crease_weight[crease_id[1]];
         dest.vtx = v_sharp;
@@ -292,11 +302,10 @@ namespace embree
       Vertex F( 0.0f );
       Vertex E( 0.0f );
 
-      for (size_t i=0; i<valence; i++)
-	{
-	  F += ring[2*i+1];
-	  E += ring[2*i];
-	}
+      for (size_t i=0; i<valence; i++) {
+        F += ring[2*i+1];
+        E += ring[2*i];
+      }
 
       const float n = (float)valence;
       return (Vertex)(n*n*vtx+4*E+F) / ((n+5.0f)*n);      
