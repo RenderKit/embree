@@ -523,41 +523,23 @@ namespace embree
     typedef Vec3fa_t Vertex;      
 #endif
 
-      dest0.valence = 3;
-      dest0.num_vtx = 6;
+      dest1.valence = dest0.valence = 3;
+      dest1.num_vtx = dest0.num_vtx = 6;
       dest0.hard_edge_index = 2;
-      dest0.vtx     = (Vertex)p0.ring[0];
-      dest0.level   = centerLevel;
-
-      dest1.valence = 3;
-      dest1.num_vtx = 6;
       dest1.hard_edge_index = 0;
-      dest1.vtx     = (Vertex)p0.ring[0];
-      dest1.level   = centerLevel;
+      dest1.vtx  = dest0.vtx = (Vertex)p0.ring[0];
+      dest1.level = dest0.level = centerLevel;
 
-      // 1-ring for patch0
-      dest0.ring[ 0] = (Vertex)p0.ring[p0.num_vtx-1];
-      dest0.ring[ 1] = (Vertex)p1.ring[0];
-      dest0.ring[ 2] = (Vertex)p1.vtx;
-      dest1.ring[ 3] = (Vertex)p0.ring[p0.hard_edge_index+1]; // dummy
-      dest0.ring[ 4] = (Vertex)p0.vtx;
-      dest0.ring[ 5] = (Vertex)p0.ring[p0.num_vtx-2];
+      dest1.ring[ 4] = dest0.ring[ 0] = (Vertex)p0.ring[p0.num_vtx-1];
+      dest1.ring[ 5] = dest0.ring[ 1] = (Vertex)p1.ring[0];
+      dest1.ring[ 0] = dest0.ring[ 2] = (Vertex)p1.vtx;
+      dest1.ring[ 1] = dest1.ring[ 3] = (Vertex)p0.ring[p0.hard_edge_index+1]; // dummy
+      dest1.ring[ 2] = dest0.ring[ 4] = (Vertex)p0.vtx;
+      dest1.ring[ 3] = dest0.ring[ 5] = (Vertex)p0.ring[p0.num_vtx-2];
 
-      dest0.crease_weight[0] = 0.0f;
-      dest0.crease_weight[1] = p1.crease_weight[p1.valence-1];
-      dest0.crease_weight[2] = p0.crease_weight[0];
-
-      // 1-ring for patch1
-      dest1.ring[ 0] = (Vertex)p1.vtx;
-      dest1.ring[ 1] = (Vertex)p0.ring[p0.hard_edge_index+1]; // dummy
-      dest1.ring[ 2] = (Vertex)p0.vtx;
-      dest1.ring[ 3] = (Vertex)p0.ring[p0.num_vtx-2];
-      dest1.ring[ 4] = (Vertex)p0.ring[p0.num_vtx-1];
-      dest1.ring[ 5] = (Vertex)p1.ring[0];
-
-      dest1.crease_weight[0] = p1.crease_weight[p1.valence-1];
-      dest1.crease_weight[1] = p0.crease_weight[0];
-      dest1.crease_weight[2] = 0.0f;
+      dest1.crease_weight[2] = dest0.crease_weight[0] = 0.0f;
+      dest1.crease_weight[0] = dest0.crease_weight[1] = p1.crease_weight[p1.valence-1];
+      dest1.crease_weight[1] = dest0.crease_weight[2] = p0.crease_weight[0];
     }
 
     static __forceinline void init_regular(const Vertex &center, const Vertex center_ring[8], const float center_level, const size_t offset, CatmullClark1Ring &dest)
