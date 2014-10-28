@@ -211,20 +211,13 @@ namespace embree
 
       Vertex FR( 0.0f );
 
-      for (size_t i=0; i<valence-1; i++)
-      {
-        const Vertex new_face = (vtx + ring[2*i] + ring[2*i+1] + ring[2*i+2]) * 0.25f;
-        FR += new_face;
-        dest.ring[2*i+1] = new_face;
+      /* calculate face points */
+      for (size_t i=0; i<valence-1; i++) {
+        FR += dest.ring[2*i+1] = ((vtx + ring[2*i]) + (ring[2*i+1] + ring[2*i+2])) * 0.25f;
       }
-
-      {
-        const Vertex new_face = (vtx + ring[num_vtx-2] + ring[num_vtx-1] + ring[0]) * 0.25f;
-        FR += new_face;
-        dest.ring[num_vtx-1] = new_face;
-      }
+      FR += dest.ring[num_vtx-1] = (vtx + ring[num_vtx-2] + ring[num_vtx-1] + ring[0]) * 0.25f;
       
-      // new edge vertices
+      /* calculate new edge points */
       size_t num_creases = 0;
       size_t crease_id[MAX_VALENCE];
       Vertex crease_edge = 0.0f;
@@ -234,17 +227,16 @@ namespace embree
         const Vertex f = dest.ring[2*i-1] + dest.ring[2*i+1];
         FR += ring[2*i];
         
-        if (unlikely(crease_weight[i] <= 0.0f)) {
+        if (likely(crease_weight[i] <= 0.0f)) {
           dest.ring[2*i] = (v+f) * 0.25f;
         }
-        else if (unlikely(crease_weight[i] < 1.0f)) {
-          crease_edge += ring[2*i]; crease_id[num_creases++] = i;
-          const float w0 = 1.0f-crease_weight[i], w1 = crease_weight[i];
-          dest.ring[2*i] = w0*((v+f)*0.25f) + w1*(v*0.5f);
-        }
-        else {
+        else if (likely(crease_weight[i] >= 1.0f)) {
           crease_edge += ring[2*i]; crease_id[num_creases++] = i;
           dest.ring[2*i] = v * 0.5f;
+        } else {
+          crease_edge += ring[2*i]; crease_id[num_creases++] = i;
+          const float w0 = crease_weight[i], w1 = 1.0f-w0;
+          dest.ring[2*i] = w1*((v+f)*0.25f) + w0*(v*0.5f);
         }
       }
       {
@@ -253,17 +245,16 @@ namespace embree
         const Vertex f = dest.ring[num_vtx-1] + dest.ring[2*i+1];
         FR += ring[2*i];
 
-        if (unlikely(crease_weight[i] <= 0.0f)) {
+        if (likely(crease_weight[i] <= 0.0f)) {
           dest.ring[2*i] = (v+f) * 0.25f;
         }
-        else if (unlikely(crease_weight[i] < 1.0f)) {
-          crease_edge += ring[2*i]; crease_id[num_creases++] = i;
-          const float w0 = 1.0f-crease_weight[i], w1 = crease_weight[i];
-          dest.ring[2*i] = w0*((v+f)*0.25f) + w1*(v*0.5f);
-        }
-        else {
+        else if (likely(crease_weight[i] >= 1.0f)) {
           crease_edge += ring[2*i]; crease_id[num_creases++] = i;
           dest.ring[2*i] = v * 0.5f;
+        } else {
+          crease_edge += ring[2*i]; crease_id[num_creases++] = i;
+          const float w0 = crease_weight[i], w1 = 1.0f-w0;
+          dest.ring[2*i] = w1*((v+f)*0.25f) + w0*(v*0.5f);
         }
       }
 
