@@ -189,7 +189,10 @@ namespace embree
         halfEdges[4*i+j].vtx_index      = vertexIndices[halfEdgeIndex + j];
         halfEdges[4*i+j].halfedge_id    = 4*i+j;
         halfEdges[4*i+j].opposite_index = (unsigned int)-1;
-        halfEdges[4*i+j].crease_weight  = creases[4*i+j];
+        if (creases)
+          halfEdges[4*i+j].crease_weight  = creases[4*i+j];
+        else 
+          halfEdges[4*i+j].crease_weight = 0.0f;
       }
     }
 

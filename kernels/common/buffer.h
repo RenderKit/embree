@@ -61,6 +61,8 @@ namespace embree
 
     size_t size() { return bytes; }
 
+    __forceinline operator bool() { return ptr; }
+
   protected:
     char* ptr;       //!< pointer to buffer data
     size_t bytes;    //!< size of buffer in bytes
