@@ -63,6 +63,7 @@ namespace embree
       unsigned int vtx_index;
       unsigned int halfedge_id;
       unsigned int opposite_index;
+      float crease_weight;
 
       __forceinline HalfEdge *base() const { 
 	return (HalfEdge *)this - halfedge_id;
@@ -219,6 +220,11 @@ namespace embree
 	return false;
       }
 
+      friend __forceinline std::ostream &operator<<(std::ostream &o, const SubdivMesh::HalfEdge &h)
+      {
+        o << "start_vtx_index " << h.vtx_index << " end_vtx_index " << h.next()->vtx_index << " start_halfedge_id " << h.getStartHalfEdgeID() << " local_halfedge_id " << h.getLocalHalfEdgeID() << " opposite_index " << h.opposite_index;
+        return o;
+      } 
     };
 
   public: // FIXME: make private
@@ -241,7 +247,9 @@ namespace embree
   public:
 
     /*! Coordinates of the vertex at the given index in the mesh. */
-    __forceinline const Vec3fa &getVertexPosition(unsigned int index, const unsigned int t = 0) const { return vertices[t][index]; }
+    __forceinline const Vec3fa &getVertexPosition(unsigned int index, const unsigned int t = 0) const { 
+      return vertices[t][index]; 
+    }
 
     __forceinline const Vec3fa *getVertexPositionPtr(const unsigned int t = 0) const { return &vertices[t][0]; }
 
@@ -306,6 +314,7 @@ namespace embree
 	  while(p->hasOpposite())
 	    {
 	      p = p->opposite();
+
 	      /*! get bounds for the adjacent quad */
 	      b.extend( bounds_quad( *p ) );
 	      p = p->prev();	      
@@ -318,8 +327,9 @@ namespace embree
     __forceinline BBox3fa bounds(size_t i) const 
     {
       BBox3fa b = empty;
-      for (size_t j=0;j<4;j++)
+      for (size_t j=0; j<4; j++) {
 	b.extend( bounds_1ring(halfEdges[i*4+j]) );
+      }
       return b;
     }
 
@@ -330,12 +340,4 @@ namespace embree
     }
 
   };
-
-  __forceinline std::ostream &operator<<(std::ostream &o, const SubdivMesh::HalfEdge &h)
-    {
-      o << "start_vtx_index " << h.vtx_index << " end_vtx_index " << h.next()->vtx_index << " start_halfedge_id " << h.getStartHalfEdgeID() << " local_halfedge_id " << h.getLocalHalfEdgeID() << " opposite_index " << h.opposite_index;
-      return o;
-    } 
-
-
 };

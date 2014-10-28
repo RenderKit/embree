@@ -83,6 +83,7 @@ namespace embree
   {
     Vec3fa vtx;
     Vec3fa ring[2*MAX_VALENCE]; // two vertices per face
+    float crease_weight[MAX_VALENCE];
     unsigned int valence;
     unsigned int num_vtx;
     int hard_edge_index;
@@ -134,79 +135,76 @@ namespace embree
     }
 
     
-    __forceinline void init(const SubdivMesh::HalfEdge *const h,
+    __forceinline void init(const SubdivMesh::HalfEdge* const h,
 			    const Vec3fa *const vertices,
                             const float l = 0.0f)
     {
       level = l;
-      hard_edge_index= -1;
-      size_t i=0;
+      hard_edge_index = -1;
       vtx = (Vertex)vertices[ h->getStartVertexIndex() ];
       level = vtx.w;
+
       SubdivMesh::HalfEdge *p = (SubdivMesh::HalfEdge*)h;
       bool foundEdge = false;
+
+      size_t i=0;
       do {
-        assert( i < 2*MAX_VALENCE );
-	ring[i] = (Vertex)vertices[ p->next()->getStartVertexIndex() ];
-	i++;
-	if (unlikely(!p->hasOpposite())) { foundEdge = true; break; }
-	assert( p->hasOpposite() );
+        assert(i < 2*MAX_VALENCE);
+        crease_weight[i/2] = p->crease_weight;
+	ring[i++] = (Vertex) vertices[ p->next()->getStartVertexIndex() ];
+	if (unlikely(!p->hasOpposite())) { crease_weight[i/2] = inf; foundEdge = true; break; }
+        assert(p->crease_weight == p->opposite()->crease_weight);
 	p = p->opposite();
 
-        assert( i < 2*MAX_VALENCE );
-	ring[i] = (Vertex)vertices[ p->prev()->getStartVertexIndex() ];
-	i++;
+        assert(i < 2*MAX_VALENCE);
+	ring[i++] = (Vertex) vertices[ p->prev()->getStartVertexIndex() ];
         
 	/*! continue with next adjacent edge */
 	p = p->next();
-      } while( p != h);
+        
+      } while (p != h);
 
       if (unlikely(foundEdge))
-	{
-	  /*! mark first hard edge */
-	  hard_edge_index = i-1;
-	  /*! store dummy vertex for the face between the two hard edges */	  
-	  ring[i] = (Vertex)vtx;
-	  i++;
-
-	  /*! first cycle clock-wise until we found the second edge */	  
-	  p = (SubdivMesh::HalfEdge*)h;
-	  p = p->prev();	  
-	  while(p->hasOpposite())
-	    {
-	      p = p->opposite();
-	      p = p->prev();	      
-	    }
-
-
-	  /*! store second hard edge and diagonal vertex*/	  
-	  ring[i] = (Vertex)vertices[ p->getStartVertexIndex() ];
-	  i++;
-	  ring[i] = (Vertex)vertices[ p->prev()->getStartVertexIndex() ];
-	  i++;
-	  p = p->next();
-	  
-	  /*! continue counter-clockwise */	  
-	  while (p != h ) {
-	    assert( p->hasOpposite() );
-	    assert( i < 2*MAX_VALENCE );
-	    ring[i] = (Vertex)vertices[ p->next()->getStartVertexIndex() ];
-	    i++;
-	    p = p->opposite();
-	    assert( i < 2*MAX_VALENCE );
-	    ring[i] = (Vertex)vertices[ p->prev()->getStartVertexIndex() ];
-	    i++;
+      {
+        /*! mark first hard edge */
+        hard_edge_index = i-1;
         
-	    /*! continue with next adjacent edge */
-	    p = p->next();	    
-	  };
+        /*! store dummy vertex for the face between the two hard edges */	  
+        ring[i] = (Vertex)vtx;
+        i++;
+        
+        /*! first cycle clock-wise until we found the second edge */	  
+        p = (SubdivMesh::HalfEdge*)h;
+        p = p->prev();	  
+        while(p->hasOpposite()) {
+          p = p->opposite();
+          p = p->prev();	      
+        }
+        
+        /*! store second hard edge and diagonal vertex */
+        crease_weight[i/2] = inf; //p->crease_weight;
+        ring[i++] = (Vertex)vertices[ p->getStartVertexIndex() ];
+        ring[i++] = (Vertex)vertices[ p->prev()->getStartVertexIndex() ];
+        p = p->next();
 	  
-	  
-	}
+        /*! continue counter-clockwise */	  
+        while (p != h) 
+        {
+          assert( p->hasOpposite() );
+          assert( i < 2*MAX_VALENCE );
+          ring[i++] = (Vertex)vertices[ p->next()->getStartVertexIndex() ];
+          p = p->opposite();
+          
+          assert( i < 2*MAX_VALENCE );
+          ring[i++] = (Vertex)vertices[ p->prev()->getStartVertexIndex() ];
+          
+          /*! continue with next adjacent edge */
+          p = p->next();	    
+        }
+      }
 
       num_vtx = i;
       valence = i >> 1;
-
     }
 
 
@@ -221,12 +219,12 @@ namespace embree
       Vertex R( 0.0f );
 
       for (size_t i=0; i<valence-1; i++)
-	{
-	  const Vertex new_face = (vtx + ring[2*i] + ring[2*i+1] + ring[2*i+2]) * 0.25f;
-	  F += new_face;
-	  R += (vtx + ring[2*i]) * 0.5f;
-	  dest.ring[2*i + 1] = new_face;
-	}
+      {
+        const Vertex new_face = (vtx + ring[2*i] + ring[2*i+1] + ring[2*i+2]) * 0.25f;
+        F += new_face;
+        R += (vtx + ring[2*i]) * 0.5f;
+        dest.ring[2*i+1] = new_face;
+      }
 
       {
         const Vertex new_face = (vtx + ring[num_vtx-2] + ring[num_vtx-1] + ring[0]) * 0.25f;
@@ -236,26 +234,49 @@ namespace embree
       }
       
       // new edge vertices
+      size_t num_creases = 0;
+      Vertex crease_edge = 0.0f;
       for (size_t i=1; i<valence; i++)
-	{
-	  const Vertex new_edge = (vtx + ring[2*i] + dest.ring[2*i-1] + dest.ring[2*i+1]) * 0.25f;
-	  dest.ring[2*i + 0] = new_edge;
-	}
-      dest.ring[0] = (Vertex)(vtx + ring[0] + dest.ring[num_vtx-1] + dest.ring[1]) * 0.25f;
+      {
+        if (unlikely(crease_weight[i] > 0.0f)) {
+          crease_edge += ring[2*i]; num_creases++;
+          dest.ring[2*i] = (vtx + ring[2*i]) * 0.5f;
+        }
+        else
+          dest.ring[2*i] = (vtx + ring[2*i] + dest.ring[2*i-1] + dest.ring[2*i+1]) * 0.25f;
+      }
+      if (unlikely(crease_weight[0] > 0.0f)) {
+        crease_edge += ring[0]; num_creases++;
+        dest.ring[0] = (vtx + ring[0]) * 0.5f;
+        }
+      else 
+        dest.ring[0] = (vtx + ring[0] + dest.ring[num_vtx-1] + dest.ring[1]) * 0.25f;
 
       // new vtx
-      const float inv_valence = 1.0f / (float)valence;
-      F *= inv_valence;
-      R *= inv_valence; 
-      dest.vtx = (Vertex)(F + 2.0f * R + (float(valence)-3.0f)*vtx) * inv_valence;
-      
+      if (num_creases > 2) {
+        dest.vtx = vtx;
+      } else if (num_creases > 1) {
+        dest.vtx = (Vertex)(crease_edge + 6.0f * vtx) * (1.0f / 8.0f);
+      } else {
+        const float inv_valence = 1.0f / (float)valence;
+        F *= inv_valence;
+        R *= inv_valence; 
+        dest.vtx = (Vertex)(F + 2.0f * R + (float(valence)-3.0f)*vtx) * inv_valence;
+      }
+
       if (unlikely(hard_edge_index != -1))
-	{
-	  dest.ring[ hard_edge_index + 0 ] = 0.5f * (Vertex)(vtx + ring[ hard_edge_index+0 ]);
-	  dest.ring[ hard_edge_index + 1 ] = (Vertex)ring[ hard_edge_index+1 ];
-	  dest.ring[ hard_edge_index + 2 ] = 0.5f * (Vertex)(vtx + ring[ hard_edge_index+2 ]);
-	  dest.vtx =  (Vertex)(ring[hard_edge_index + 0] + ring[hard_edge_index + 2] + 6.0f * vtx) * 1.0f / 8.0f;
-	}
+      {
+        //dest.ring[ hard_edge_index + 0 ] = 0.5f * (Vertex)(vtx + ring[ hard_edge_index+0 ]);
+        //dest.ring[ hard_edge_index + 1 ] = (Vertex)ring[ hard_edge_index+1 ];
+        //dest.ring[ hard_edge_index + 2 ] = 0.5f * (Vertex)(vtx + ring[ hard_edge_index+2 ]);
+        //dest.vtx =  (Vertex)(ring[hard_edge_index + 0] + ring[hard_edge_index + 2] + 6.0f * vtx) * 1.0f / 8.0f;
+        assert(crease_weight[hard_edge_index/2+0] > 0.0f);
+        assert(crease_weight[hard_edge_index/2+1] > 0.0f);
+      }
+
+      for (size_t i=0; i<valence; i++) {
+        dest.crease_weight[i] = crease_weight[i];
+      }
     }
 
 
@@ -454,14 +475,19 @@ namespace embree
       dest1.level   = centerLevel;
 
       // 1-ring for patch0
-      dest0.ring[ 0] = (Vertex)p0.ring[p0.num_vtx-1];
-      dest0.ring[ 1] = (Vertex)p1.ring[0];
-      dest0.ring[ 2] = (Vertex)p1.vtx;
-      dest0.ring[ 3] = (Vertex)p1.ring[p1.num_vtx-4];
-      dest0.ring[ 4] = (Vertex)p0.ring[1];
-      dest0.ring[ 5] = (Vertex)p0.ring[2];
-      dest0.ring[ 6] = (Vertex)p0.vtx;
-      dest0.ring[ 7] = (Vertex)p0.ring[p0.num_vtx-2];
+      dest0.ring[0] = (Vertex)p0.ring[p0.num_vtx-1];
+      dest0.ring[1] = (Vertex)p1.ring[0];
+      dest0.ring[2] = (Vertex)p1.vtx;
+      dest0.ring[3] = (Vertex)p1.ring[p1.num_vtx-4];
+      dest0.ring[4] = (Vertex)p0.ring[1];
+      dest0.ring[5] = (Vertex)p0.ring[2];
+      dest0.ring[6] = (Vertex)p0.vtx;
+      dest0.ring[7] = (Vertex)p0.ring[p0.num_vtx-2];
+
+      dest0.crease_weight[0] = 0.0f;
+      dest0.crease_weight[1] = p1.crease_weight[p1.valence-1];
+      dest0.crease_weight[2] = 0.0f;
+      dest0.crease_weight[3] = p0.crease_weight[0];
 
       // 1-ring for patch1
       dest1.ring[ 0] = (Vertex)p1.vtx;
@@ -472,6 +498,11 @@ namespace embree
       dest1.ring[ 5] = (Vertex)p0.ring[p0.num_vtx-2];
       dest1.ring[ 6] = (Vertex)p0.ring[p0.num_vtx-1];
       dest1.ring[ 7] = (Vertex)p1.ring[0];
+
+      dest1.crease_weight[0] = p1.crease_weight[p1.valence-1];
+      dest1.crease_weight[1] = 0.0f;
+      dest1.crease_weight[2] = p0.crease_weight[0];
+      dest1.crease_weight[3] = 0.0f;
     }
 
 
@@ -508,6 +539,10 @@ namespace embree
       dest0.ring[ 4] = (Vertex)p0.vtx;
       dest0.ring[ 5] = (Vertex)p0.ring[p0.num_vtx-2];
 
+      dest0.crease_weight[0] = 0.0f;
+      dest0.crease_weight[1] = p1.crease_weight[p1.valence-1];
+      dest0.crease_weight[2] = p0.crease_weight[0];
+
       // 1-ring for patch1
       dest1.ring[ 0] = (Vertex)p1.vtx;
       dest1.ring[ 1] = (Vertex)p0.ring[p0.hard_edge_index+1]; // dummy
@@ -515,6 +550,10 @@ namespace embree
       dest1.ring[ 3] = (Vertex)p0.ring[p0.num_vtx-2];
       dest1.ring[ 4] = (Vertex)p0.ring[p0.num_vtx-1];
       dest1.ring[ 5] = (Vertex)p1.ring[0];
+
+      dest1.crease_weight[0] = p1.crease_weight[p1.valence-1];
+      dest1.crease_weight[1] = p0.crease_weight[0];
+      dest1.crease_weight[2] = 0.0f;
     }
 
     static __forceinline void init_regular(const Vertex &center, const Vertex center_ring[8], const float center_level, const size_t offset, CatmullClark1Ring &dest)
@@ -524,8 +563,10 @@ namespace embree
       dest.hard_edge_index = -1;
       dest.level = center_level;
       dest.vtx     = (Vertex)center;
-      for (size_t i=0;i<8;i++)
+      for (size_t i=0; i<8; i++) 
 	dest.ring[i] = (Vertex)center_ring[(offset+i)%8];
+      for (size_t i=0; i<8; i++) 
+        dest.crease_weight[i] = 0.0f;
     }
  
 

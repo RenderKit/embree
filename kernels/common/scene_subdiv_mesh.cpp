@@ -34,6 +34,7 @@ namespace embree
 
     vertexIndices.init(numEdges,sizeof(unsigned int));
     vertexOffsets.init(numFaces,sizeof(unsigned int));
+    creases.init(numEdges,sizeof(float));
   }
 
   SubdivMesh::~SubdivMesh () {
@@ -176,25 +177,26 @@ namespace embree
 
   void SubdivMesh::initializeHalfEdgeStructures ()
   {
-    //numHalfEdges = numFaces * 4;
-    halfEdges = new HalfEdge[numEdges];
+    numHalfEdges = 4*numFaces;
+    halfEdges = new HalfEdge[numHalfEdges];
 
     /*! initialize all four half-edges for each face */
     for (size_t i=0; i<numFaces; i++) 
     {
       const unsigned int halfEdgeIndex = vertexOffsets[i];
-      for (size_t j=0;j<4;j++)
+      for (size_t j=0; j<4; j++)
       {
-        halfEdges[i*4+j].vtx_index      = vertexIndices[halfEdgeIndex + j];
-        halfEdges[i*4+j].halfedge_id    = i*4+j;
-        halfEdges[i*4+j].opposite_index = (unsigned int)-1;
+        halfEdges[4*i+j].vtx_index      = vertexIndices[halfEdgeIndex + j];
+        halfEdges[4*i+j].halfedge_id    = 4*i+j;
+        halfEdges[4*i+j].opposite_index = (unsigned int)-1;
+        halfEdges[4*i+j].crease_weight  = creases[4*i+j];
       }
     }
 
     /*! find opposite half-edges */
     std::map<size_t,unsigned int> edgeMap;
 
-    for (size_t i=0; i<numEdges; i++)
+    for (size_t i=0; i<numHalfEdges; i++)
     {
       unsigned int start = halfEdges[i].getStartVertexIndex();
       unsigned int end   = halfEdges[i].getEndVertexIndex();
@@ -218,8 +220,8 @@ namespace embree
       size_t numIrregularPatches = 0;
       size_t numPatchesWithEdges = 0;
 
-      assert(numEdges % 4 == 0);
-      for (size_t i=0; i<numEdges; i+=4)
+      assert(numHalfEdges % 4 == 0);
+      for (size_t i=0; i<numHalfEdges; i+=4)
       {
         if (halfEdges[i].faceHasEdges())
         {
