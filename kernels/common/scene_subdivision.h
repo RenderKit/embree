@@ -157,8 +157,6 @@ namespace embree
 
         assert(i < 2*MAX_VALENCE);
 	ring[i++] = (Vertex) vertices[ p->prev()->getStartVertexIndex() ];
-        
-	/*! continue with next adjacent edge */
 	p = p->next();
         
       } while (p != h);
@@ -191,15 +189,12 @@ namespace embree
       /*! continue counter-clockwise */	  
       while (p != h) 
       {
-        assert( p->hasOpposite() );
         assert( i < 2*MAX_VALENCE );
         ring[i++] = (Vertex)vertices[ p->next()->getStartVertexIndex() ];
         p = p->opposite();
         
         assert( i < 2*MAX_VALENCE );
         ring[i++] = (Vertex)vertices[ p->prev()->getStartVertexIndex() ];
-        
-        /*! continue with next adjacent edge */
         p = p->next();	    
       }
 
@@ -207,28 +202,25 @@ namespace embree
       valence = i >> 1;
     }
 
-    __forceinline void update(CatmullClark1Ring &dest) const
+    __forceinline void update(CatmullClark1Ring& dest) const
     {
       dest.valence         = valence;
       dest.num_vtx         = num_vtx;
       dest.hard_edge_index = hard_edge_index;
       dest.level           = level - 1.0f;
 
-      Vertex F( 0.0f );
-      Vertex R( 0.0f );
+      Vertex FR( 0.0f );
 
       for (size_t i=0; i<valence-1; i++)
       {
         const Vertex new_face = (vtx + ring[2*i] + ring[2*i+1] + ring[2*i+2]) * 0.25f;
-        F += new_face;
-        R += (vtx + ring[2*i]) * 0.5f;
+        FR += new_face;
         dest.ring[2*i+1] = new_face;
       }
 
       {
         const Vertex new_face = (vtx + ring[num_vtx-2] + ring[num_vtx-1] + ring[0]) * 0.25f;
-        F += new_face;
-        R += (vtx + ring[num_vtx-2]) * 0.5f;
+        FR += new_face;
         dest.ring[num_vtx-1] = new_face;
       }
       
@@ -240,6 +232,7 @@ namespace embree
       {
         const Vertex v = vtx + ring[2*i];
         const Vertex f = dest.ring[2*i-1] + dest.ring[2*i+1];
+        FR += ring[2*i];
         
         if (unlikely(crease_weight[i] <= 0.0f)) {
           dest.ring[2*i] = (v+f) * 0.25f;
@@ -258,7 +251,8 @@ namespace embree
         const size_t i=0;
         const Vertex v = vtx + ring[2*i];
         const Vertex f = dest.ring[num_vtx-1] + dest.ring[2*i+1];
-        
+        FR += ring[2*i];
+
         if (unlikely(crease_weight[i] <= 0.0f)) {
           dest.ring[2*i] = (v+f) * 0.25f;
         }
@@ -289,18 +283,14 @@ namespace embree
         dest.crease_weight[crease_id[1]] = max(0.25f*(3.0f*crease_weight1 + crease_weight0)-1.0f,0.0f);
         if (t0 < 1.0f) {
           const float inv_valence = 1.0f / (float)valence;
-          F *= inv_valence;
-          R *= inv_valence; 
-          const Vertex v_smooth = (Vertex)(F + 2.0f * R + (float(valence)-3.0f)*vtx) * inv_valence;
+          const Vertex v_smooth = (Vertex)(FR*inv_valence + (float(valence)-2.0f)*vtx)*inv_valence;
           dest.vtx = t0*v_sharp + t1*v_smooth;
         }
         else 
           dest.vtx = v_sharp;
       } else {
         const float inv_valence = 1.0f / (float)valence;
-        F *= inv_valence;
-        R *= inv_valence; 
-        dest.vtx = (Vertex)(F + 2.0f * R + (float(valence)-3.0f)*vtx) * inv_valence;
+        dest.vtx = (Vertex)(FR*inv_valence + (float(valence)-2.0f)*vtx)*inv_valence;
       }
     }
 
