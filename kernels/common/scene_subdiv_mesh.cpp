@@ -29,16 +29,15 @@ namespace embree
       displFunc(NULL), displBounds(empty),
       halfEdges(NULL)
   {
-    for (size_t i=0; i<numTimeSteps; i++) {
+    for (size_t i=0; i<numTimeSteps; i++)
        vertices[i].init(numVertices,sizeof(Vec3fa));
-     }
-
-    DBG_PRINT(numFaces);
-    DBG_PRINT(numEdges);
-    DBG_PRINT(numVertices);
 
     vertexIndices.init(numEdges,sizeof(unsigned int));
     vertexOffsets.init(numFaces,sizeof(unsigned int));
+  }
+
+  SubdivMesh::~SubdivMesh () {
+    delete[] halfEdges;
   }
   
   void SubdivMesh::enabling() 
@@ -101,6 +100,7 @@ namespace embree
         volatile int w = *((int*)&vertices[0][numVertices-1]+3); // FIXME: is failing hard avoidable?
       }
       break;
+
     case RTC_VERTEX_BUFFER1: 
       vertices[1].set(ptr,offset,stride); 
       if (numVertices) {
@@ -108,6 +108,11 @@ namespace embree
         volatile int w = *((int*)&vertices[1][numVertices-1]+3); // FIXME: is failing hard avoidable?
       }
       break;
+
+    case RTC_CREASE_BUFFER: 
+      creases.set(ptr,offset,stride);
+      break;
+
     default: 
       process_error(RTC_INVALID_ARGUMENT,"unknown buffer type");
       break;
@@ -126,6 +131,7 @@ namespace embree
     case RTC_OFFSET_BUFFER  : return vertexOffsets.map(parent->numMappedBuffers);
     case RTC_VERTEX_BUFFER0 : return vertices[0].map(parent->numMappedBuffers);
     case RTC_VERTEX_BUFFER1 : return vertices[1].map(parent->numMappedBuffers);
+    case RTC_CREASE_BUFFER  : return creases.map(parent->numMappedBuffers); 
     default                 : process_error(RTC_INVALID_ARGUMENT,"unknown buffer type"); return NULL;
     }
   }
@@ -142,6 +148,7 @@ namespace embree
     case RTC_OFFSET_BUFFER  : vertexOffsets.unmap(parent->numMappedBuffers); break;
     case RTC_VERTEX_BUFFER0 : vertices[0].unmap(parent->numMappedBuffers); break;
     case RTC_VERTEX_BUFFER1 : vertices[1].unmap(parent->numMappedBuffers); break;
+    case RTC_CREASE_BUFFER  : creases.unmap(parent->numMappedBuffers); break;
     default                 : process_error(RTC_INVALID_ARGUMENT,"unknown buffer type"); break;
     }
   }
@@ -169,79 +176,69 @@ namespace embree
 
   void SubdivMesh::initializeHalfEdgeStructures ()
   {
-    numHalfEdges = numFaces * 4;
-
-    halfEdges = (HalfEdge*)os_malloc(numHalfEdges * sizeof(HalfEdge));
+    //numHalfEdges = numFaces * 4;
+    halfEdges = new HalfEdge[numEdges];
 
     /*! initialize all four half-edges for each face */
-    for (size_t i=0;i<numFaces;i++)
+    for (size_t i=0; i<numFaces; i++) 
+    {
+      const unsigned int halfEdgeIndex = vertexOffsets[i];
+      for (size_t j=0;j<4;j++)
       {
-        const unsigned int halfEdgeIndex = vertexOffsets[i];
-        for (size_t j=0;j<4;j++)
-          {
-            halfEdges[i*4+j].vtx_index      = vertexIndices[halfEdgeIndex + j];
-            halfEdges[i*4+j].halfedge_id    = i*4+j;
-            halfEdges[i*4+j].opposite_index = (unsigned int)-1;
-          }
+        halfEdges[i*4+j].vtx_index      = vertexIndices[halfEdgeIndex + j];
+        halfEdges[i*4+j].halfedge_id    = i*4+j;
+        halfEdges[i*4+j].opposite_index = (unsigned int)-1;
       }
+    }
 
     /*! find opposite half-edges */
     std::map<size_t,unsigned int> edgeMap;
 
-    for (size_t i=0;i<numHalfEdges;i++)
-      {
-        unsigned int start = halfEdges[i].getStartVertexIndex();
-        unsigned int end   = halfEdges[i].getEndVertexIndex();
-        if (end < start) std::swap(start,end);
-        size_t value = ((size_t)start << 32) | (size_t)end; // FIXME: does not work in 32 bit mode
-        std::map<size_t,unsigned int>::iterator found = edgeMap.find(value);
-        if (found != edgeMap.end())
-          {
-            halfEdges[i].opposite_index = found->second;
-            halfEdges[ found->second ].opposite_index = i;
-          }
-        else
-          {
-            edgeMap[value] = i;
-          }
+    for (size_t i=0; i<numEdges; i++)
+    {
+      unsigned int start = halfEdges[i].getStartVertexIndex();
+      unsigned int end   = halfEdges[i].getEndVertexIndex();
+      if (end < start) std::swap(start,end);
+      size_t value = ((size_t)start << 32) | (size_t)end; // FIXME: does not work in 32 bit mode
+
+      std::map<size_t,unsigned int>::iterator found = edgeMap.find(value);
+      if (found != edgeMap.end()) {
+        halfEdges[i].opposite_index = found->second;
+        halfEdges[ found->second ].opposite_index = i;
       }
+      else {
+        edgeMap[value] = i;
+      }
+    }
 
-    size_t numRegularPatches = 0;
-    size_t numIrregularPatches = 0;
-    size_t numPatchesWithEdges = 0;
+    /* print statistics in verbose mode */
+    if (g_verbose >= 1) 
+    {
+      size_t numRegularPatches = 0;
+      size_t numIrregularPatches = 0;
+      size_t numPatchesWithEdges = 0;
 
-    assert(numHalfEdges % 4 == 0);
-    for (size_t i=0;i<numHalfEdges;i+=4)
+      assert(numEdges % 4 == 0);
+      for (size_t i=0; i<numEdges; i+=4)
       {
-	if (halfEdges[i].faceHasEdges())
-	  {
-	    numIrregularPatches++;
-	    numPatchesWithEdges++;
-	  }
-	else
-	  if (halfEdges[i].isFaceRegular())
-	    numRegularPatches++;
-	  else
-	    {
-	      numIrregularPatches++;
-	    }
+        if (halfEdges[i].faceHasEdges())
+        {
+          numIrregularPatches++;
+          numPatchesWithEdges++;
+        }
+        else if (halfEdges[i].isFaceRegular())
+          numRegularPatches++;
+        else
+          numIrregularPatches++;
       }
     
-    size_t numPatches = numRegularPatches + numIrregularPatches;
+      size_t numPatches = numRegularPatches + numIrregularPatches;
 
-    if (g_verbose >= 1) {
       std::cout << "numPatches " << numPatches 
                 << " : regular " << numRegularPatches << " (" << 100.0f * numRegularPatches / numPatches << "%)" 
                 << " irregular " << numIrregularPatches << " (" << 100.0f * numIrregularPatches / numPatches << "%) " 
                 << " irregular with edges " << numPatchesWithEdges << " (" << 100.0f * numPatchesWithEdges / numPatches << "%) " << std::endl;
     }
-      
-#if 0
-    for (size_t i=0;i<numHalfEdges;i++)
-      std::cout << "Half-Edge " << i << " " << halfEdges[i] << std::endl;
-#endif
-    
-
   }
 
   bool SubdivMesh::verify () 

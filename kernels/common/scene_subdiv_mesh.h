@@ -30,6 +30,7 @@ namespace embree
   {
   public:
     SubdivMesh(Scene* parent, RTCGeometryFlags flags, size_t numFaces, size_t numEdges, size_t numVertices, size_t numTimeSteps);
+    ~SubdivMesh();
 
     void enabling();
     void disabling();
@@ -221,16 +222,20 @@ namespace embree
     };
 
   public: // FIXME: make private
-    BufferT<Vec3fa> vertices[2];      //!< vertex array
-
-    
-    /*! Indices of the vertices composing each face, provided by the application */
-    BufferT<unsigned int> vertexIndices;
 
     /*! Offsets into the vertexIndices array indexed by face, provided by the application */
     BufferT<unsigned int> vertexOffsets;
 
+    /*! Indices of the vertices composing each face, provided by the application */
+    BufferT<unsigned int> vertexIndices;
 
+    /*! Vertex buffer, provided by the application */
+    BufferT<Vec3fa> vertices[2];      //!< vertex array
+
+    /*! Crease buffer, provided by the application */
+    BufferT<float> creases;
+
+    /*! Half edge structure. */
     HalfEdge *halfEdges;
 
   public:
