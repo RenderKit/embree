@@ -209,13 +209,12 @@ namespace embree
       dest.hard_edge_index = hard_edge_index;
       dest.level           = level - 1.0f;
 
-      Vertex FR( 0.0f );
-
       /* calculate face points */
+      Vertex S = zero;
       for (size_t i=0; i<valence-1; i++) {
-        FR += dest.ring[2*i+1] = ((vtx + ring[2*i]) + (ring[2*i+1] + ring[2*i+2])) * 0.25f;
+        S += dest.ring[2*i+1] = ((vtx + ring[2*i]) + (ring[2*i+1] + ring[2*i+2])) * 0.25f;
       }
-      FR += dest.ring[num_vtx-1] = (vtx + ring[num_vtx-2] + ring[num_vtx-1] + ring[0]) * 0.25f;
+      S += dest.ring[num_vtx-1] = ((vtx + ring[num_vtx-2]) + (ring[num_vtx-1] + ring[0])) * 0.25f;
       
       /* calculate new edge points */
       size_t num_creases = 0;
@@ -225,7 +224,8 @@ namespace embree
       {
         const Vertex v = vtx + ring[2*i];
         const Vertex f = dest.ring[2*i-1] + dest.ring[2*i+1];
-        FR += ring[2*i];
+        S += ring[2*i];
+        dest.crease_weight[i] = crease_weight[i];
         
         if (likely(crease_weight[i] <= 0.0f)) {
           dest.ring[2*i] = (v+f) * 0.25f;
@@ -243,7 +243,8 @@ namespace embree
         const size_t i=0;
         const Vertex v = vtx + ring[2*i];
         const Vertex f = dest.ring[num_vtx-1] + dest.ring[2*i+1];
-        FR += ring[2*i];
+        S += ring[2*i];
+        dest.crease_weight[i] = crease_weight[i];
 
         if (likely(crease_weight[i] <= 0.0f)) {
           dest.ring[2*i] = (v+f) * 0.25f;
@@ -258,19 +259,15 @@ namespace embree
         }
       }
 
-      for (size_t i=0; i<valence; i++) {
-        dest.crease_weight[i] = crease_weight[i];
-      }
-      const float inv_valence = 1.0f / (float)valence;
-
       /* compute new vertex using smooth rule */
-      const Vertex v_smooth = (Vertex)(FR*inv_valence + (float(valence)-2.0f)*vtx)*inv_valence;
-      if (likely(num_creases <= 1)) {
-        dest.vtx = v_smooth;
-      }
+      const float inv_valence = 1.0f / (float)valence;
+      const Vertex v_smooth = (Vertex)(S*inv_valence + (float(valence)-2.0f)*vtx)*inv_valence;
+      dest.vtx = v_smooth;
+      if (likely(num_creases <= 1)) 
+        return;
       
       /* compute new vertex using crease rule */
-      else if (likely(num_creases == 2)) {
+      if (likely(num_creases == 2)) {
         const Vertex v_sharp = (Vertex)(crease_edge + 6.0f * vtx) * (1.0f / 8.0f);
         const float crease_weight0 = crease_weight[crease_id[0]];
         const float crease_weight1 = crease_weight[crease_id[1]];
