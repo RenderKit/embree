@@ -488,47 +488,25 @@ namespace embree
     {
       float centerLevel = min(max(p0.level,p1.level),min(p0.level,p1.level)+1.0f);
 
-      dest0.valence = 4;
-      dest0.num_vtx = 8;
-      dest0.hard_edge_index = -1;
-      dest0.vtx     = (Vertex)p0.ring[0];
-      dest0.level   = centerLevel;
+      dest1.valence = dest0.valence = 4;
+      dest1.num_vtx = dest0.num_vtx = 8;
+      dest1.hard_edge_index = dest0.hard_edge_index = -1;
+      dest1.vtx = dest0.vtx = (Vertex)p0.ring[0];
+      dest1.level = dest0.level = centerLevel;
 
-      dest1.valence = 4;
-      dest1.num_vtx = 8;
-      dest1.vtx     = (Vertex)p0.ring[0];
-      dest1.hard_edge_index = -1;
-      dest1.level   = centerLevel;
+      dest1.ring[6] = dest0.ring[0] = (Vertex)p0.ring[p0.num_vtx-1];
+      dest1.ring[7] = dest0.ring[1] = (Vertex)p1.ring[0];
+      dest1.ring[0] = dest0.ring[2] = (Vertex)p1.vtx;
+      dest1.ring[1] = dest0.ring[3] = (Vertex)p1.ring[p1.num_vtx-4];
+      dest1.ring[2] = dest0.ring[4] = (Vertex)p0.ring[1];
+      dest1.ring[3] = dest0.ring[5] = (Vertex)p0.ring[2];
+      dest1.ring[4] = dest0.ring[6] = (Vertex)p0.vtx;
+      dest1.ring[5] = dest0.ring[7] = (Vertex)p0.ring[p0.num_vtx-2];
 
-      // 1-ring for patch0
-      dest0.ring[0] = (Vertex)p0.ring[p0.num_vtx-1];
-      dest0.ring[1] = (Vertex)p1.ring[0];
-      dest0.ring[2] = (Vertex)p1.vtx;
-      dest0.ring[3] = (Vertex)p1.ring[p1.num_vtx-4];
-      dest0.ring[4] = (Vertex)p0.ring[1];
-      dest0.ring[5] = (Vertex)p0.ring[2];
-      dest0.ring[6] = (Vertex)p0.vtx;
-      dest0.ring[7] = (Vertex)p0.ring[p0.num_vtx-2];
-
-      dest0.crease_weight[0] = 0.0f;
-      dest0.crease_weight[1] = p1.crease_weight[p1.valence-1];
-      dest0.crease_weight[2] = 0.0f;
-      dest0.crease_weight[3] = p0.crease_weight[0];
-
-      // 1-ring for patch1
-      dest1.ring[ 0] = (Vertex)p1.vtx;
-      dest1.ring[ 1] = (Vertex)p1.ring[p1.num_vtx-4];
-      dest1.ring[ 2] = (Vertex)p0.ring[1];
-      dest1.ring[ 3] = (Vertex)p0.ring[2];
-      dest1.ring[ 4] = (Vertex)p0.vtx;
-      dest1.ring[ 5] = (Vertex)p0.ring[p0.num_vtx-2];
-      dest1.ring[ 6] = (Vertex)p0.ring[p0.num_vtx-1];
-      dest1.ring[ 7] = (Vertex)p1.ring[0];
-
-      dest1.crease_weight[0] = p1.crease_weight[p1.valence-1];
-      dest1.crease_weight[1] = 0.0f;
-      dest1.crease_weight[2] = p0.crease_weight[0];
-      dest1.crease_weight[3] = 0.0f;
+      dest1.crease_weight[3] = dest0.crease_weight[0] = 0.0f;
+      dest1.crease_weight[0] = dest0.crease_weight[1] = p1.crease_weight[p1.valence-1];
+      dest1.crease_weight[1] = dest0.crease_weight[2] = 0.0f;
+      dest1.crease_weight[2] = dest0.crease_weight[3] = p0.crease_weight[0];
     }
 
 
