@@ -135,25 +135,24 @@ namespace embree
     }
 
     
-    __forceinline void init(const SubdivMesh::HalfEdge* const h,
-			    const Vec3fa *const vertices,
-                            const float l = 0.0f)
+    __forceinline void init(const SubdivMesh::HalfEdge* const h, const Vec3fa* const vertices)
     {
-      level = l;
       hard_edge_index = -1;
       vtx = (Vertex)vertices[ h->getStartVertexIndex() ];
       level = vtx.w;
 
-      SubdivMesh::HalfEdge *p = (SubdivMesh::HalfEdge*)h;
-      bool foundEdge = false;
+      SubdivMesh::HalfEdge* p = (SubdivMesh::HalfEdge*) h;
 
       size_t i=0;
       do {
         assert(i < 2*MAX_VALENCE);
         crease_weight[i/2] = p->crease_weight;
 	ring[i++] = (Vertex) vertices[ p->next()->getStartVertexIndex() ];
-	if (unlikely(!p->hasOpposite())) { crease_weight[i/2] = inf; foundEdge = true; break; }
-        assert(p->crease_weight == p->opposite()->crease_weight);
+        
+	if (unlikely(!p->hasOpposite())) { 
+          init_clockwise(h,vertices,i);
+          return;
+        }
 	p = p->opposite();
 
         assert(i < 2*MAX_VALENCE);
@@ -164,49 +163,49 @@ namespace embree
         
       } while (p != h);
 
-      if (unlikely(foundEdge))
-      {
-        /*! mark first hard edge */
-        hard_edge_index = i-1;
-        
-        /*! store dummy vertex for the face between the two hard edges */	  
-        ring[i] = (Vertex)vtx;
-        i++;
-        
-        /*! first cycle clock-wise until we found the second edge */	  
-        p = (SubdivMesh::HalfEdge*)h;
-        p = p->prev();	  
-        while(p->hasOpposite()) {
-          p = p->opposite();
-          p = p->prev();	      
-        }
-        
-        /*! store second hard edge and diagonal vertex */
-        crease_weight[i/2] = inf; //p->crease_weight;
-        ring[i++] = (Vertex)vertices[ p->getStartVertexIndex() ];
-        ring[i++] = (Vertex)vertices[ p->prev()->getStartVertexIndex() ];
-        p = p->next();
+      num_vtx = i;
+      valence = i >> 1;
+    }
+
+    __forceinline void init_clockwise(const SubdivMesh::HalfEdge* const h, const Vec3fa* const vertices, size_t i)
+    {
+      /*! mark first hard edge and store dummy vertex for face between the two hard edges*/
+      hard_edge_index = i-1;
+      crease_weight[i/2] = inf; 
+      ring[i++] = Vec3fa(nan);
+      
+      /*! first cycle clock-wise until we found the second edge */	  
+      SubdivMesh::HalfEdge* p = (SubdivMesh::HalfEdge*) h;
+      p = p->prev();	  
+      while(p->hasOpposite()) {
+        p = p->opposite();
+        p = p->prev();	      
+      }
+      
+      /*! store second hard edge and diagonal vertex */
+      crease_weight[i/2] = inf;
+      ring[i++] = (Vertex)vertices[ p->getStartVertexIndex() ];
+      ring[i++] = (Vertex)vertices[ p->prev()->getStartVertexIndex() ];
+      p = p->next();
 	  
-        /*! continue counter-clockwise */	  
-        while (p != h) 
-        {
-          assert( p->hasOpposite() );
-          assert( i < 2*MAX_VALENCE );
-          ring[i++] = (Vertex)vertices[ p->next()->getStartVertexIndex() ];
-          p = p->opposite();
-          
-          assert( i < 2*MAX_VALENCE );
-          ring[i++] = (Vertex)vertices[ p->prev()->getStartVertexIndex() ];
-          
-          /*! continue with next adjacent edge */
-          p = p->next();	    
-        }
+      /*! continue counter-clockwise */	  
+      while (p != h) 
+      {
+        assert( p->hasOpposite() );
+        assert( i < 2*MAX_VALENCE );
+        ring[i++] = (Vertex)vertices[ p->next()->getStartVertexIndex() ];
+        p = p->opposite();
+        
+        assert( i < 2*MAX_VALENCE );
+        ring[i++] = (Vertex)vertices[ p->prev()->getStartVertexIndex() ];
+        
+        /*! continue with next adjacent edge */
+        p = p->next();	    
       }
 
       num_vtx = i;
       valence = i >> 1;
     }
-
 
     __forceinline void update(CatmullClark1Ring &dest) const
     {
