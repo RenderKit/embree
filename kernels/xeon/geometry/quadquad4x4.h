@@ -411,14 +411,13 @@ namespace embree
 
     __forceinline Vec3fa& point(const size_t x, const size_t y) { return v[y][x]; }
     
-    const BBox3fa build(Scene* scene, const Array2D<Vec3fa>& p2, const Array2D<Vec3fa>& p3, 
-                        float pointLevel00, float pointLevel10, float pointLevel11, float pointLevel01)
+    const BBox3fa build(Scene* scene, const Array2D<Vec3fa>& p3)
     {
       for (size_t y=0; y<=8; y++)
         for (size_t x=0; x<=8; x++)
           v[y][x] = p3(x,y);
 
-#if 1
+#if 0
       float maxLevel = max(pointLevel00,pointLevel10,pointLevel11,pointLevel01);
       assert(pointLevel00+1.0f >= maxLevel);
       assert(pointLevel10+1.0f >= maxLevel);
