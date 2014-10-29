@@ -145,8 +145,10 @@ namespace embree
     }
 
     
-    __forceinline void init(const SubdivMesh::HalfEdge* const h, const Vec3fa* const vertices)
+    __forceinline void init(const SubdivMesh::HalfEdge* const h, const Vec3fa* const vertices) // FIXME: should get buffer as vertex array input!!!!
     {
+      for (size_t i=0; i<MAX_VALENCE; i++) crease_weight[i] = nan;
+
       hard_edge_index = -1;
       vtx = (Vertex)vertices[ h->getStartVertexIndex() ];
 
@@ -199,6 +201,7 @@ namespace embree
       while (p != h) 
       {
         assert( i < 2*MAX_VALENCE );
+        crease_weight[i/2] = p->crease_weight;
         ring[i++] = (Vertex)vertices[ p->next()->getStartVertexIndex() ];
         p = p->opposite();
         
@@ -348,12 +351,15 @@ namespace embree
 
 
     friend __forceinline std::ostream &operator<<(std::ostream &o, const CatmullClark1Ring &c)
-      {
-	o << "vtx " << c.vtx << " valence " << c.valence << " num_vtx " << c.num_vtx << " hard_edge_index " << c.hard_edge_index << " ring: " << std::endl;
-	for (size_t i=0;i<c.num_vtx;i++)
-	  o << i << " -> " << c.ring[i] << std::endl;
-	return o;
-      } 
+    {
+      o << "vtx " << c.vtx << " size = " << c.num_vtx << ", hard_edge = " << c.hard_edge_index << ", ring: " << std::endl;
+      for (size_t i=0; i<c.num_vtx; i++) {
+        o << i << " -> " << c.ring[i];
+        if (i % 2 == 0) o << " crease = " << c.crease_weight[i/2];
+        o << std::endl;
+      }
+      return o;
+    } 
   };
 
   class CatmullClark1Edge
@@ -631,11 +637,14 @@ namespace embree
 
     friend __forceinline std::ostream &operator<<(std::ostream &o, const IrregularCatmullClarkPatch &p)
     {
-      o << "rings: " << std::endl;
-      for (size_t i=0;i<4;i++)
-	o << i << " -> " << p.ring[i] << std::endl;
+      o << "IrregularCatmullClarkPatch { " << std::endl;
+      for (size_t i=0; i<4; i++)
+	o << "level" << i << ": " << p.level[i] << std::endl;
+      for (size_t i=0; i<4; i++)
+	o << "ring" << i << ": " << p.ring[i] << std::endl;
+      o << "}" << std::endl;
       return o;
-    } 
+    }
   };
 
   struct SubdivideIrregularCatmullClarkPatch

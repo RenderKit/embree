@@ -16,6 +16,7 @@
 
 #include "scene_subdiv_mesh.h"
 #include "scene.h"
+#include "scene_subdivision.h"
 
 namespace embree
 {
@@ -251,6 +252,10 @@ namespace embree
                 << " irregular " << numIrregularPatches << " (" << 100.0f * numIrregularPatches / numPatches << "%) " 
                 << " irregular with edges " << numPatchesWithEdges << " (" << 100.0f * numPatchesWithEdges / numPatches << "%) " << std::endl;
     }
+
+    //IrregularCatmullClarkPatch patch0(halfEdges,&vertices[0][0]); // FIXME: remove
+    //PRINT(patch0);
+    //exit(1);
   }
 
   bool SubdivMesh::verify () 

@@ -344,6 +344,8 @@ void updateSphere(const Vec3fa& cam_pos)
 
 // }
 
+#if 0
+
 #define VERTICES 8
 #define EDGES    24
 #define FACES    (EDGES/4)
@@ -364,6 +366,26 @@ float        test_creases[EDGES] = { s, 0, 0, 0,  s, 0, 0, 0,  s, 0, 0, 0,  0, 0
 unsigned int test_indices[EDGES] = { 0, 1, 5, 4,  1, 2, 6, 5,  2, 3, 7, 6,  0, 4, 7, 3,  4, 5, 6, 7,  0, 3, 2, 1 };
 
 unsigned int test_offsets[FACES] = { 0, 4, 8, 12, 16, 20 };
+
+#else
+
+#define VERTICES 9
+#define EDGES    16
+#define FACES    (EDGES/4)
+
+Vec3fa test_vertices[] = {
+  Vec3fa(-1.0f, -1.0f, 0.0f), Vec3fa( 0.0f, -1.0f, 0.0f), Vec3fa(+1.0f, -1.0f, 0.0f),
+  Vec3fa(-1.0f,  0.0f, 1.0f), Vec3fa( 0.0f,  0.0f, 1.0f), Vec3fa(+1.0f,  0.0f, 1.0f),
+  Vec3fa(-1.0f, +1.0f, 0.0f), Vec3fa( 0.0f, +1.0f, 0.0f), Vec3fa(+1.0f, +1.0f, 0.0f),
+};
+
+float s = 1.0f;
+float        test_creases[EDGES] = { 0, 0, s, 0,  0, 0, s, 0,  s, 0, 0, 0,  s, 0, 0, 0 };
+unsigned int test_indices[EDGES] = { 0, 1, 4, 3,  1, 2, 5, 4,  3, 4, 7, 6,  4, 5, 8, 7 };
+
+unsigned int test_offsets[FACES] = { 0, 4, 8, 12 };
+
+#endif
 
 void constructScene(const Vec3fa& cam_pos) 
 {
