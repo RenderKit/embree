@@ -418,21 +418,27 @@ namespace embree
         for (size_t x=0; x<=8; x++)
           v[y][x] = p3(x,y);
 
+#if 1
       if (Tt) {
         for (size_t i=0; i<4; i++) point(2*i,0) = point(2*i+1,0) = p2(i,0);
+        point(8,0) = p2(4,0);
       }
 
       if (Tr) {
         for (size_t i=0; i<4; i++) point(8,2*i) = point(8,2*i+1) = p2(4,i);
+        point(8,8) = p2(4,4);
       }
 
       if (Tb) {
         for (size_t i=0; i<4; i++) point(2*i,8) = point(2*i+1,8) = p2(i,4);
+        point(8,8) = p2(4,4);
       }
 
       if (Tl) {
         for (size_t i=0; i<4; i++) point(0,2*i) = point(0,2*i+1) = p2(0,i);
+        point(0,8) = p2(0,4);
       }
+#endif
 
       displace(scene); // FIXME: stick u/v
 

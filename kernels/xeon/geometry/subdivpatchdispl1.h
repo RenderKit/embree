@@ -70,7 +70,7 @@ namespace embree
       const bool subdivide2 = noleaf && !patches[2].dicable();
       const bool subdivide3 = noleaf && !patches[3].dicable();
 
-      BVH4::Node* node = (BVH4::Node*) alloc.malloc(sizeof(BVH4::Node),16); //node->clear();
+      BVH4::Node* node = (BVH4::Node*) alloc.malloc(sizeof(BVH4::Node),16);
 
       std::pair<BBox3fa,BVH4::NodeRef> b00;
       if (subdivide0) b00 = build(alloc,patches[0],2*x+0,2*y+0,l+1,maxDepth,false,!subdivide1,!subdivide3,false);
