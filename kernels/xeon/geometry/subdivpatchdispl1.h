@@ -42,9 +42,10 @@ namespace embree
     {
       QuadQuad4x4* leaf = (QuadQuad4x4*) alloc.malloc(sizeof(QuadQuad4x4),16);
       new (leaf) QuadQuad4x4(8*x,8*y,8*(1<<l),geomID(),primID());
-#if 0
+#if 1
+      SubdivideIrregularCatmullClarkPatch subdivided2(patch,2);
       SubdivideIrregularCatmullClarkPatch subdivided3(patch,3);
-      const BBox3fa bounds = leaf->build(scene,subdivided3.v);
+      const BBox3fa bounds = leaf->build(scene,subdivided2.v,subdivided3.v,Tt,Tr,Tb,Tl);
 #else
       const RegularCatmullClarkPatch regular(patch);
       const BBox3fa bounds = leaf->build(scene,regular);
@@ -54,7 +55,8 @@ namespace embree
 
     const std::pair<BBox3fa,BVH4::NodeRef> build(FastAllocator& alloc,
                                                   const IrregularCatmullClarkPatch& patch,
-                                                  unsigned x, unsigned y, int l, int maxDepth)
+                                                 unsigned x, unsigned y, int l, int maxDepth,
+                                                 bool Tt, bool Tr, bool Tb, bool Tl) // tagged transition edges
     {
       if (unlikely(l == maxDepth))
         return leaf(alloc,patch,x,y,l,false,false,false,false);
@@ -71,23 +73,23 @@ namespace embree
       BVH4::Node* node = (BVH4::Node*) alloc.malloc(sizeof(BVH4::Node),16); //node->clear();
 
       std::pair<BBox3fa,BVH4::NodeRef> b00;
-      if (subdivide0) b00 = build(alloc,patches[0],2*x+0,2*y+0,l+1,maxDepth);
-      else            b00 = leaf  (alloc,patches[0],2*x+0,2*y+0,l+1,false,subdivide1,subdivide3,false);
+      if (subdivide0) b00 = build(alloc,patches[0],2*x+0,2*y+0,l+1,maxDepth,false,!subdivide1,!subdivide3,false);
+      else            b00 = leaf (alloc,patches[0],2*x+0,2*y+0,l+1,Tt,false,false,Tl);
       node->set(0,b00.first,b00.second);
 
       std::pair<BBox3fa,BVH4::NodeRef> b10;
-      if (subdivide1) b10 = build(alloc,patches[1],2*x+1,2*y+0,l+1,maxDepth); 
-      else            b10 = leaf  (alloc,patches[1],2*x+1,2*y+0,l+1,false,false,subdivide2,subdivide0);
+      if (subdivide1) b10 = build(alloc,patches[1],2*x+1,2*y+0,l+1,maxDepth,false,false,!subdivide2,!subdivide0); 
+      else            b10 = leaf (alloc,patches[1],2*x+1,2*y+0,l+1,Tt,Tr,false,false);
       node->set(1,b10.first,b10.second);
 
       std::pair<BBox3fa,BVH4::NodeRef> b11;
-      if (subdivide2) b11 = build(alloc,patches[2],2*x+1,2*y+1,l+1,maxDepth); 
-      else            b11 = leaf  (alloc,patches[2],2*x+1,2*y+1,l+1,subdivide1,false,false,subdivide3);
+      if (subdivide2) b11 = build(alloc,patches[2],2*x+1,2*y+1,l+1,maxDepth,!subdivide1,false,false,!subdivide3); 
+      else            b11 = leaf (alloc,patches[2],2*x+1,2*y+1,l+1,false,Tr,Tb,false);
       node->set(2,b11.first,b11.second);
 
       std::pair<BBox3fa,BVH4::NodeRef> b01;
-      if (subdivide3) b01 = build(alloc,patches[3],2*x+0,2*y+1,l+1,maxDepth); 
-      else            b01 = leaf  (alloc,patches[3],2*x+0,2*y+1,l+1,subdivide0,subdivide2,false,false);
+      if (subdivide3) b01 = build(alloc,patches[3],2*x+0,2*y+1,l+1,maxDepth,!subdivide0,!subdivide2,false,false); 
+      else            b01 = leaf (alloc,patches[3],2*x+0,2*y+1,l+1,false,false,Tb,Tl);
       node->set(3,b01.first,b01.second);
 
       const BBox3fa bounds = merge(b00.first,b10.first,b01.first,b11.first);
@@ -119,7 +121,7 @@ namespace embree
 
       /* create patch and build sub-BVH */
       IrregularCatmullClarkPatch patch(h,vertices);
-      const std::pair<BBox3fa,BVH4::NodeRef> root = build(alloc,patch,0,0,0,(int)levels-3);
+      const std::pair<BBox3fa,BVH4::NodeRef> root = build(alloc,patch,0,0,0,(int)levels-3,false,false,false,false);
 
       /* link to sub-BVH */
       parent = root.second;

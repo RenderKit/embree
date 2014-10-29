@@ -412,48 +412,27 @@ namespace embree
 
     __forceinline Vec3fa& point(const size_t x, const size_t y) { return v[y][x]; }
     
-    const BBox3fa build(Scene* scene, const Array2D<Vec3fa>& p3)
+    const BBox3fa build(Scene* scene, const Array2D<Vec3fa>& p2, const Array2D<Vec3fa>& p3, bool Tt, bool Tr, bool Tb, bool Tl)
     {
       for (size_t y=0; y<=8; y++)
         for (size_t x=0; x<=8; x++)
           v[y][x] = p3(x,y);
 
-#if 0
-      float maxLevel = max(pointLevel00,pointLevel10,pointLevel11,pointLevel01);
-      assert(pointLevel00+1.0f >= maxLevel);
-      assert(pointLevel10+1.0f >= maxLevel);
-      assert(pointLevel11+1.0f >= maxLevel);
-      assert(pointLevel01+1.0f >= maxLevel);
-      float edgeLevel0 = max(pointLevel00,pointLevel10);
-      float edgeLevel1 = max(pointLevel10,pointLevel11);
-      float edgeLevel2 = max(pointLevel11,pointLevel01);
-      float edgeLevel3 = max(pointLevel01,pointLevel00);
-
-      if (pointLevel00 < 3.0f) point(0,0) = p2(0,0);
-      if (pointLevel10 < 3.0f) point(8,0) = p2(4,0);
-      if (pointLevel01 < 3.0f) point(0,8) = p2(0,4);
-      if (pointLevel11 < 3.0f) point(8,8) = p2(4,4);
-
-      if (edgeLevel0 < 3.0f) {
-        point(1,0) = point(0,0);
-        for (size_t i=1; i<4; i++) point(2*i,0) = point(2*i+1,0) = p2(i,0);
+      if (Tt) {
+        for (size_t i=0; i<4; i++) point(2*i,0) = point(2*i+1,0) = p2(i,0);
       }
 
-      if (edgeLevel1 < 3.0f) {
-        point(8,1) = point(8,0);
-        for (size_t i=1; i<4; i++) point(8,2*i) = point(8,2*i+1) = p2(4,i);
+      if (Tr) {
+        for (size_t i=0; i<4; i++) point(8,2*i) = point(8,2*i+1) = p2(4,i);
       }
 
-      if (edgeLevel2 < 3.0f) {
-        point(1,8) = point(0,8);
-        for (size_t i=1; i<4; i++) point(2*i,8) = point(2*i+1,8) = p2(i,4);
+      if (Tb) {
+        for (size_t i=0; i<4; i++) point(2*i,8) = point(2*i+1,8) = p2(i,4);
       }
 
-      if (edgeLevel3 < 3.0f) {
-        point(0,1) = point(0,0);
-        for (size_t i=1; i<4; i++) point(0,2*i) = point(0,2*i+1) = p2(0,i);
+      if (Tl) {
+        for (size_t i=0; i<4; i++) point(0,2*i) = point(0,2*i+1) = p2(0,i);
       }
-#endif
 
       displace(scene); // FIXME: stick u/v
 
