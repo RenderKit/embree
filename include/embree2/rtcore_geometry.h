@@ -31,8 +31,9 @@ enum RTCBufferType {
   RTC_VERTEX_BUFFER1  = 0x02000001,
 
   RTC_OFFSET_BUFFER   = 0x03000000,
-  RTC_CREASE_BUFFER   = 0x04000000,
-  RTC_HOLE_BUFFER     = 0x04000001,
+  RTC_LEVEL_BUFFER    = 0x04000001,
+  RTC_CREASE_BUFFER   = 0x05000000,
+  RTC_HOLE_BUFFER     = 0x06000001,
 };
 
 /*! \brief Supported types of matrix layout for functions involving matrices */

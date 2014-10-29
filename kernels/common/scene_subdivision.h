@@ -446,6 +446,7 @@ namespace embree
   {
   public:
     CatmullClark1Ring ring[4];
+    float level[4];
 
 #if !defined(__MIC__)
     typedef Vec3fa Vertex;
@@ -457,8 +458,10 @@ namespace embree
 
     __forceinline IrregularCatmullClarkPatch (const SubdivMesh::HalfEdge* first_half_edge, const Vec3fa* vertices) 
     {
-      for (size_t i=0; i<4; i++)
+      for (size_t i=0; i<4; i++) {
         ring[i].init(first_half_edge+i,vertices);
+        level[i] = first_half_edge[i].level;
+      }
     }
 
     __forceinline BBox3fa bounds() const
@@ -548,6 +551,26 @@ namespace embree
       ring[1].update(patch[1].ring[1]);
       ring[2].update(patch[2].ring[2]);
       ring[3].update(patch[3].ring[3]);
+
+      patch[0].level[0] = 0.5f*level[0];
+      patch[0].level[1] = 0.25f*(level[1]+level[3]);
+      patch[0].level[2] = 0.25f*(level[0]+level[2]);
+      patch[0].level[3] = 0.5f*level[3];
+
+      patch[1].level[0] = 0.5f*level[0];
+      patch[1].level[1] = 0.5f*level[1];
+      patch[1].level[2] = 0.25f*(level[0]+level[2]);
+      patch[1].level[3] = 0.25f*(level[1]+level[3]);
+
+      patch[2].level[0] = 0.25f*(level[0]+level[2]);
+      patch[2].level[1] = 0.5f*level[1];
+      patch[2].level[2] = 0.5f*level[2];
+      patch[2].level[3] = 0.25f*(level[1]+level[3]);
+
+      patch[3].level[0] = 0.25f*(level[0]+level[2]);
+      patch[3].level[1] = 0.25f*(level[1]+level[3]);
+      patch[3].level[2] = 0.5f*level[2];
+      patch[3].level[3] = 0.5f*level[3];
       
       if (likely(ring[0].hard_edge_index != 0))
         init_regular(patch[0].ring[0],patch[1].ring[1],patch[0].ring[1],patch[1].ring[0]);

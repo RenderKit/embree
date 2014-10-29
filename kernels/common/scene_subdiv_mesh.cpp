@@ -35,6 +35,7 @@ namespace embree
     vertexIndices.init(numEdges,sizeof(unsigned int));
     vertexOffsets.init(numFaces,sizeof(unsigned int));
     creases.init(numEdges,sizeof(float));
+    levels.init(numEdges,sizeof(float));
   }
 
   SubdivMesh::~SubdivMesh () {
@@ -114,6 +115,10 @@ namespace embree
       creases.set(ptr,offset,stride);
       break;
 
+    case RTC_LEVEL_BUFFER: 
+      levels.set(ptr,offset,stride);
+      break;
+
     default: 
       process_error(RTC_INVALID_ARGUMENT,"unknown buffer type");
       break;
@@ -133,6 +138,7 @@ namespace embree
     case RTC_VERTEX_BUFFER0 : return vertices[0].map(parent->numMappedBuffers);
     case RTC_VERTEX_BUFFER1 : return vertices[1].map(parent->numMappedBuffers);
     case RTC_CREASE_BUFFER  : return creases.map(parent->numMappedBuffers); 
+    case RTC_LEVEL_BUFFER   : return levels.map(parent->numMappedBuffers); 
     default                 : process_error(RTC_INVALID_ARGUMENT,"unknown buffer type"); return NULL;
     }
   }
@@ -150,6 +156,7 @@ namespace embree
     case RTC_VERTEX_BUFFER0 : vertices[0].unmap(parent->numMappedBuffers); break;
     case RTC_VERTEX_BUFFER1 : vertices[1].unmap(parent->numMappedBuffers); break;
     case RTC_CREASE_BUFFER  : creases.unmap(parent->numMappedBuffers); break;
+    case RTC_LEVEL_BUFFER   : levels.unmap(parent->numMappedBuffers); break;
     default                 : process_error(RTC_INVALID_ARGUMENT,"unknown buffer type"); break;
     }
   }
@@ -189,10 +196,10 @@ namespace embree
         halfEdges[4*i+j].vtx_index      = vertexIndices[halfEdgeIndex + j];
         halfEdges[4*i+j].halfedge_id    = 4*i+j;
         halfEdges[4*i+j].opposite_index = (unsigned int)-1;
-        if (creases)
-          halfEdges[4*i+j].crease_weight  = creases[4*i+j];
-        else 
-          halfEdges[4*i+j].crease_weight = 0.0f;
+        if (creases) halfEdges[4*i+j].crease_weight  = creases[4*i+j];
+        else         halfEdges[4*i+j].crease_weight = 0.0f;
+        if (levels)  halfEdges[4*i+j].level = levels[4*i+j];
+        else         halfEdges[4*i+j].level = 3.0f;
       }
     }
 

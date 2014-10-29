@@ -64,6 +64,7 @@ namespace embree
       unsigned int halfedge_id;
       unsigned int opposite_index;
       float crease_weight;
+      float level;
 
       __forceinline HalfEdge *base() const { 
 	return (HalfEdge *)this - halfedge_id;
@@ -240,6 +241,9 @@ namespace embree
 
     /*! Crease buffer, provided by the application */
     BufferT<float> creases;
+
+    /*! Subdivision level per edge, provided by the application */
+    BufferT<float> levels;
 
     /*! Half edge structure. */
     HalfEdge *halfEdges;
