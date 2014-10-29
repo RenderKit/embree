@@ -35,55 +35,56 @@ namespace embree
 
     static Type type;
 
-    const std::pair<BBox3fa,BVH4::NodeRef> build(FastAllocator& alloc,
-                                                 const IrregularCatmullClarkPatch& patch,
-                                                 unsigned x, unsigned y, unsigned l, unsigned maxDepth)
+    const std::pair<BBox3fa,BVH4::NodeRef> leaf(FastAllocator& alloc,
+                                                const IrregularCatmullClarkPatch& patch,
+                                                unsigned x, unsigned y, unsigned l,
+                                                bool Tt, bool Tr, bool Tb, bool Tl) // tagged transition edges
     {
-      if (l == maxDepth) 
-      //if (patch.leafLevel(3))
-      {
-        //QuadQuad4x4& leaf = leaves(x,y);
-        QuadQuad4x4* leaf = (QuadQuad4x4*) alloc.malloc(sizeof(QuadQuad4x4),16);
-        new (leaf) QuadQuad4x4(8*x,8*y,8*(1<<l),geomID(),primID());
-        //SubdivideIrregularCatmullClarkPatch subdivided2(patch,2);
-        SubdivideIrregularCatmullClarkPatch subdivided3(patch,3);
-        const BBox3fa bounds = leaf->build(scene,subdivided3.v);
-        return std::pair<BBox3fa,BVH4::NodeRef>(bounds,BVH4::encodeTypedLeaf(leaf,0));
-      }
-
-      IrregularCatmullClarkPatch patches[4]; 
-      patch.subdivide(patches);
-
-      BVH4::Node* node = (BVH4::Node*) alloc.malloc(sizeof(BVH4::Node),16); node->clear();
-      const std::pair<BBox3fa,BVH4::NodeRef> b00 = build(alloc,patches[0],2*x+0,2*y+0,l+1,maxDepth); node->set(0,b00.first,b00.second);
-      const std::pair<BBox3fa,BVH4::NodeRef> b10 = build(alloc,patches[1],2*x+1,2*y+0,l+1,maxDepth); node->set(1,b10.first,b10.second);
-      const std::pair<BBox3fa,BVH4::NodeRef> b01 = build(alloc,patches[3],2*x+0,2*y+1,l+1,maxDepth); node->set(2,b01.first,b01.second);
-      const std::pair<BBox3fa,BVH4::NodeRef> b11 = build(alloc,patches[2],2*x+1,2*y+1,l+1,maxDepth); node->set(3,b11.first,b11.second);
-      const BBox3fa bounds = merge(b00.first,b10.first,b01.first,b11.first);
-      return std::pair<BBox3fa,BVH4::NodeRef>(bounds,BVH4::encodeNode2(node));
+      QuadQuad4x4* leaf = (QuadQuad4x4*) alloc.malloc(sizeof(QuadQuad4x4),16);
+      new (leaf) QuadQuad4x4(8*x,8*y,8*(1<<l),geomID(),primID());
+      SubdivideIrregularCatmullClarkPatch subdivided3(patch,3);
+      const BBox3fa bounds = leaf->build(scene,subdivided3.v);
+      return std::pair<BBox3fa,BVH4::NodeRef>(bounds,BVH4::encodeTypedLeaf(leaf,0));
     }
 
-    const std::pair<BBox3fa,BVH4::NodeRef> build2(FastAllocator& alloc,
-                                                 const IrregularCatmullClarkPatch& patch,
-                                                 unsigned x, unsigned y, unsigned l, unsigned maxDepth)
+    const std::pair<BBox3fa,BVH4::NodeRef> build(FastAllocator& alloc,
+                                                  const IrregularCatmullClarkPatch& patch,
+                                                  unsigned x, unsigned y, int l, int maxDepth)
     {
-      if (l == maxDepth) 
-      {
-        QuadQuad4x4* leaf = (QuadQuad4x4*) alloc.malloc(sizeof(QuadQuad4x4),16);
-        new (leaf) QuadQuad4x4(8*x,8*y,8*(1<<l),geomID(),primID());
-        SubdivideIrregularCatmullClarkPatch subdivided3(patch,3);
-        const BBox3fa bounds = leaf->build(scene,subdivided3.v);
-        return std::pair<BBox3fa,BVH4::NodeRef>(bounds,BVH4::encodeTypedLeaf(leaf,0));
-      }
+      if (unlikely(l == maxDepth))
+        return leaf(alloc,patch,x,y,l,false,false,false,false);
 
       IrregularCatmullClarkPatch patches[4]; 
       patch.subdivide(patches);
 
-      BVH4::Node* node = (BVH4::Node*) alloc.malloc(sizeof(BVH4::Node),16); node->clear();
-      const std::pair<BBox3fa,BVH4::NodeRef> b00 = build2(alloc,patches[0],2*x+0,2*y+0,l+1,maxDepth); node->set(0,b00.first,b00.second);
-      const std::pair<BBox3fa,BVH4::NodeRef> b10 = build2(alloc,patches[1],2*x+1,2*y+0,l+1,maxDepth); node->set(1,b10.first,b10.second);
-      const std::pair<BBox3fa,BVH4::NodeRef> b01 = build2(alloc,patches[3],2*x+0,2*y+1,l+1,maxDepth); node->set(2,b01.first,b01.second);
-      const std::pair<BBox3fa,BVH4::NodeRef> b11 = build2(alloc,patches[2],2*x+1,2*y+1,l+1,maxDepth); node->set(3,b11.first,b11.second);
+      const bool noleaf = (l+1) < maxDepth;
+      const bool subdivide0 = noleaf && !patches[0].dicable();
+      const bool subdivide1 = noleaf && !patches[1].dicable();
+      const bool subdivide2 = noleaf && !patches[2].dicable();
+      const bool subdivide3 = noleaf && !patches[3].dicable();
+
+      BVH4::Node* node = (BVH4::Node*) alloc.malloc(sizeof(BVH4::Node),16); //node->clear();
+
+      std::pair<BBox3fa,BVH4::NodeRef> b00;
+      if (subdivide0) b00 = build(alloc,patches[0],2*x+0,2*y+0,l+1,maxDepth);
+      else            b00 = leaf  (alloc,patches[0],2*x+0,2*y+0,l+1,false,subdivide1,subdivide3,false);
+      node->set(0,b00.first,b00.second);
+
+      std::pair<BBox3fa,BVH4::NodeRef> b10;
+      if (subdivide1) b10 = build(alloc,patches[1],2*x+1,2*y+0,l+1,maxDepth); 
+      else            b10 = leaf  (alloc,patches[1],2*x+1,2*y+0,l+1,false,false,subdivide2,subdivide0);
+      node->set(1,b10.first,b10.second);
+
+      std::pair<BBox3fa,BVH4::NodeRef> b11;
+      if (subdivide2) b11 = build(alloc,patches[2],2*x+1,2*y+1,l+1,maxDepth); 
+      else            b11 = leaf  (alloc,patches[2],2*x+1,2*y+1,l+1,subdivide1,false,false,subdivide3);
+      node->set(2,b11.first,b11.second);
+
+      std::pair<BBox3fa,BVH4::NodeRef> b01;
+      if (subdivide3) b01 = build(alloc,patches[3],2*x+0,2*y+1,l+1,maxDepth); 
+      else            b01 = leaf  (alloc,patches[3],2*x+0,2*y+1,l+1,subdivide0,subdivide2,false,false);
+      node->set(3,b01.first,b01.second);
+
       const BBox3fa bounds = merge(b00.first,b10.first,b01.first,b11.first);
       return std::pair<BBox3fa,BVH4::NodeRef>(bounds,BVH4::encodeNode2(node));
     }
@@ -113,7 +114,7 @@ namespace embree
 
       /* create patch and build sub-BVH */
       IrregularCatmullClarkPatch patch(h,vertices);
-      const std::pair<BBox3fa,BVH4::NodeRef> root = build(alloc,patch,0,0,0,levels-3);
+      const std::pair<BBox3fa,BVH4::NodeRef> root = build(alloc,patch,0,0,0,(int)levels-3);
 
       /* link to sub-BVH */
       parent = root.second;

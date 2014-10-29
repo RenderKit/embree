@@ -359,7 +359,7 @@ Vec3fa test_vertices[] = {
   Vec3fa(-1.0f,  1.0f,  1.0f, 4.0f)
 };
 
-float s = 1.3f;
+float s = 3.3f;
 float        test_creases[EDGES] = { s, 0, 0, 0,  s, 0, 0, 0,  s, 0, 0, 0,  0, 0, 0, s,  0, 0, 0, 0,  s, s, s, s };
 unsigned int test_indices[EDGES] = { 0, 1, 5, 4,  1, 2, 6, 5,  2, 3, 7, 6,  0, 4, 7, 3,  4, 5, 6, 7,  0, 3, 2, 1 };
 
