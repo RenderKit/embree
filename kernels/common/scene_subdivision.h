@@ -304,6 +304,10 @@ namespace embree
       /* compute new vertex using corner rule */
       else {
         dest.vtx = vtx;
+        for (size_t i=0; i<num_creases; i++) {
+          size_t id = crease_id[i];
+          dest.crease_weight[id] = max(dest.crease_weight[id]-1.0f,0.0f);
+        }
       }
     }
 

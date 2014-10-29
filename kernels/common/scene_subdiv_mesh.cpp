@@ -253,9 +253,13 @@ namespace embree
                 << " irregular with edges " << numPatchesWithEdges << " (" << 100.0f * numPatchesWithEdges / numPatches << "%) " << std::endl;
     }
 
-    //IrregularCatmullClarkPatch patch0(halfEdges,&vertices[0][0]); // FIXME: remove
-    //PRINT(patch0);
-    //exit(1);
+    /*IrregularCatmullClarkPatch patch0(halfEdges,&vertices[0][0]); // FIXME: remove
+    PRINT(patch0);
+
+    IrregularCatmullClarkPatch patch1[4];
+    patch0.subdivide(patch1);
+    PRINT(patch1[3]);
+    exit(1);*/ // FIXME: remove
   }
 
   bool SubdivMesh::verify () 
