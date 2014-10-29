@@ -236,7 +236,7 @@ namespace embree
         const Vertex v = vtx + ring[2*i];
         const Vertex f = dest.ring[2*i-1] + dest.ring[2*i+1];
         S += ring[2*i];
-        dest.crease_weight[i] = crease_weight[i];
+        dest.crease_weight[i] = max(crease_weight[i]-1.0f,0.0f);
         
         /* fast path for regular edge points */
         if (likely(crease_weight[i] <= 0.0f)) {
@@ -260,7 +260,7 @@ namespace embree
         const Vertex v = vtx + ring[2*i];
         const Vertex f = dest.ring[num_vtx-1] + dest.ring[2*i+1];
         S += ring[2*i];
-        dest.crease_weight[i] = crease_weight[i];
+        dest.crease_weight[i] = max(crease_weight[i]-1.0f,0.0f);
 
         /* fast path for regular edge points */
         if (likely(crease_weight[i] <= 0.0f)) {
@@ -284,7 +284,7 @@ namespace embree
       const float inv_valence = 1.0f / (float)valence;
       const Vertex v_smooth = (Vertex)(S*inv_valence + (float(valence)-2.0f)*vtx)*inv_valence;
       dest.vtx = v_smooth;
-      if (likely(num_creases <= 1)) 
+      if (likely(num_creases <= 1))
         return;
       
       /* compute new vertex using crease rule */
@@ -304,10 +304,6 @@ namespace embree
       /* compute new vertex using corner rule */
       else {
         dest.vtx = vtx;
-        for (size_t i=0; i<num_creases; i++) {
-          size_t id = crease_id[i];
-          dest.crease_weight[id] = max(dest.crease_weight[id]-1.0f,0.0f);
-        }
       }
     }
 
