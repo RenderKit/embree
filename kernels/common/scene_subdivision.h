@@ -97,31 +97,41 @@ namespace embree
 
     CatmullClark1Ring() {}
 
-    __forceinline const Vec3fa& begin() const {
+    __forceinline const Vec3fa& front(size_t i) const {
+      assert(num_vtx>i);
+      return ring[i];
+    }
+
+    __forceinline const Vec3fa& back(size_t i) const {
+      assert(num_vtx-1>=i);
+      return ring[num_vtx-1-i];
+    }
+
+    __forceinline const Vec3fa& begin() const { // FIXME: remove
       assert(num_vtx>0);
       return ring[0];
     }
 
-    __forceinline const Vec3fa& first() const {
+    __forceinline const Vec3fa& first() const { // FIXME: remove
       assert(num_vtx>2);
       return ring[2];
     }
 
-    __forceinline bool has_first() const {
+    __forceinline bool has_first() const { // FIXME: remove
       return hard_edge_index != 0;
     }
     
-    __forceinline const Vec3fa& last() const {
+    __forceinline const Vec3fa& last() const { // FIXME: remove
       assert(num_vtx>=4);
       return ring[num_vtx-4];
     }
 
-    __forceinline bool has_last() const {
+    __forceinline bool has_last() const { // FIXME: remove
       assert(num_vtx>=2);
       return (hard_edge_index == -1) || ((num_vtx-4) >= hard_edge_index+2);
     }
 
-    __forceinline const Vec3fa& end() const {
+    __forceinline const Vec3fa& end() const { // FIXME: remove
       assert(num_vtx>=2);
       return ring[num_vtx-2];
     }
@@ -1049,6 +1059,43 @@ namespace embree
 #else
       typedef Vec3fa_t Vertex;
 #endif
+
+    RegularCatmullClarkPatch () {}
+
+    RegularCatmullClarkPatch (const IrregularCatmullClarkPatch& in) 
+    {
+      v[0][0] = in.ring[0].front(3);
+      v[0][1] = in.ring[0].front(2);
+      v[1][0] = in.ring[0].back(3);
+      v[1][1] = in.ring[0].vtx;
+
+      v[0][3] = in.ring[1].front(3);
+      v[1][3] = in.ring[1].front(2);
+      v[0][2] = in.ring[1].back(3);
+      v[1][2] = in.ring[1].vtx;
+
+      v[3][3] = in.ring[2].front(3);
+      v[3][2] = in.ring[2].front(2);
+      v[2][3] = in.ring[2].back(3);
+      v[2][2] = in.ring[2].vtx;
+
+      v[3][0] = in.ring[3].front(3);
+      v[2][0] = in.ring[3].front(2);
+      v[3][1] = in.ring[3].back(3);
+      v[2][1] = in.ring[3].vtx;
+
+      if (in.ring[0].hard_edge_index == 0)
+        for (size_t i=0; i<4; i++) v[0][i] = 2*v[1][i] - v[2][i];
+
+      if (in.ring[1].hard_edge_index == 0)
+        for (size_t i=0; i<4; i++) v[i][3] = 2*v[i][2] - v[i][1];
+
+      if (in.ring[2].hard_edge_index == 0)
+        for (size_t i=0; i<4; i++) v[3][i] = 2*v[2][i] - v[1][i];
+
+      if (in.ring[3].hard_edge_index == 0)
+        for (size_t i=0; i<4; i++) v[i][0] = 2*v[i][1] - v[i][2];
+    }
 
     __forceinline void init( FinalQuad& quad ) const
     {

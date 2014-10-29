@@ -17,6 +17,7 @@
 #pragma once
 
 #include "primitive.h"
+#include "common/scene_subdivision.h"
 
 #define QUADQUAD4X4_COMPRESS_BOUNDS 0 // FIXME: not working yet in SSE mode
 
@@ -453,6 +454,45 @@ namespace embree
         for (size_t i=1; i<4; i++) point(0,2*i) = point(0,2*i+1) = p2(0,i);
       }
 #endif
+
+      displace(scene); // FIXME: stick u/v
+
+#if QUADQUAD4X4_COMPRESS_BOUNDS
+      n.set(fullBounds());
+#endif
+
+      BBox3fa bounds = empty;
+      
+      const BBox3fa bounds00_0 = leafBounds(0,0); n.set(0,0,bounds00_0); bounds.extend(bounds00_0);
+      const BBox3fa bounds00_1 = leafBounds(1,0); n.set(0,1,bounds00_1); bounds.extend(bounds00_1);
+      const BBox3fa bounds00_2 = leafBounds(0,1); n.set(0,2,bounds00_2); bounds.extend(bounds00_2);
+      const BBox3fa bounds00_3 = leafBounds(1,1); n.set(0,3,bounds00_3); bounds.extend(bounds00_3);
+      
+      const BBox3fa bounds10_0 = leafBounds(2,0); n.set(1,0,bounds10_0); bounds.extend(bounds10_0);
+      const BBox3fa bounds10_1 = leafBounds(3,0); n.set(1,1,bounds10_1); bounds.extend(bounds10_1);
+      const BBox3fa bounds10_2 = leafBounds(2,1); n.set(1,2,bounds10_2); bounds.extend(bounds10_2);
+      const BBox3fa bounds10_3 = leafBounds(3,1); n.set(1,3,bounds10_3); bounds.extend(bounds10_3);
+      
+      const BBox3fa bounds01_0 = leafBounds(0,2); n.set(2,0,bounds01_0); bounds.extend(bounds01_0);
+      const BBox3fa bounds01_1 = leafBounds(1,2); n.set(2,1,bounds01_1); bounds.extend(bounds01_1);
+      const BBox3fa bounds01_2 = leafBounds(0,3); n.set(2,2,bounds01_2); bounds.extend(bounds01_2);
+      const BBox3fa bounds01_3 = leafBounds(1,3); n.set(2,3,bounds01_3); bounds.extend(bounds01_3);
+      
+      const BBox3fa bounds11_0 = leafBounds(2,2); n.set(3,0,bounds11_0); bounds.extend(bounds11_0);
+      const BBox3fa bounds11_1 = leafBounds(3,2); n.set(3,1,bounds11_1); bounds.extend(bounds11_1);
+      const BBox3fa bounds11_2 = leafBounds(2,3); n.set(3,2,bounds11_2); bounds.extend(bounds11_2);
+      const BBox3fa bounds11_3 = leafBounds(3,3); n.set(3,3,bounds11_3); bounds.extend(bounds11_3);
+      
+      return bounds;
+    }
+
+    const BBox3fa build(Scene* scene, const RegularCatmullClarkPatch& patch)
+    {
+      for (size_t y=0; y<=8; y++) {
+        for (size_t x=0; x<=8; x++) {
+          v[y][x] = patch.eval(0.125f*float(x),0.125*float(y));
+        }
+      }
 
       displace(scene); // FIXME: stick u/v
 
