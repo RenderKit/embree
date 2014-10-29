@@ -204,7 +204,7 @@ namespace embree
       unsigned int start = halfEdges[i].getStartVertexIndex();
       unsigned int end   = halfEdges[i].getEndVertexIndex();
       if (end < start) std::swap(start,end);
-      size_t value = ((size_t)start << 32) | (size_t)end; // FIXME: does not work in 32 bit mode
+      int64 value = ((int64)start << 32) | (size_t)end;
 
       std::map<size_t,unsigned int>::iterator found = edgeMap.find(value);
       if (found != edgeMap.end()) {
