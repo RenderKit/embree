@@ -84,6 +84,18 @@ namespace embree
       std::vector<Quad> quads;
     };
 
+    /*! Subdivision Mesh. */
+    struct SubdivMesh 
+    {
+      std::vector<Vec3fa> vertices;        //!< vertex positions
+      std::vector<int> indices;            //!< indices for all faces
+      std::vector<int> verticesPerFace;    //!< number of indices of each face
+      std::vector<Vec2i> creases;          //!< crease index pairs
+      std::vector<float> creaseWeights;    //!< weight for each crease
+      std::vector<int> corners;            //!< corner indices
+      std::vector<float> cornerWeights;    //!< weight for each corner
+    };
+
     struct Hair
     {
     public:
@@ -310,6 +322,7 @@ namespace embree
     vector_t<Material> materials;                      //!< material list
     std::vector<Mesh*> meshes;                         //!< list of meshes
     std::vector<HairSet*> hairsets;                    //!< list of hair sets
+    std::vector<SubdivMesh*> subdiv;                  //!< list of subdivision meshes
     vector_t<AmbientLight> ambientLights;           //!< list of ambient lights
     vector_t<PointLight> pointLights;               //!< list of point lights
     vector_t<DirectionalLight> directionalLights;   //!< list of directional lights

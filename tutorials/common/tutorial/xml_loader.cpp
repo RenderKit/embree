@@ -220,6 +220,7 @@ namespace embree
     Parms loadMaterialParms(const Ref<XML>& parms);
     int loadMaterial(const Ref<XML>& xml, std::string* name = NULL);
     void loadTriangleMesh(const Ref<XML>& xml, const AffineSpace3f& space);
+    void loadSubdivMesh(const Ref<XML>& xml, const AffineSpace3f& space);
     void loadSphere(const Ref<XML>& xml, const AffineSpace3f& space);
     void loadDisk(const Ref<XML>& xml, const AffineSpace3f& space);
     void loadQuadLight(const Ref<XML>& xml, const AffineSpace3f& space);
@@ -232,8 +233,11 @@ namespace embree
     template<typename T> T load(const Ref<XML>& xml, const T& opt) { return T(zero); }
     char* loadBinary(const Ref<XML>& xml, size_t eltSize, size_t& size);
 
+    std::vector<float> loadFloatArray(const Ref<XML>& xml);
     std::vector<Vec2f> loadVec2fArray(const Ref<XML>& xml);
     std::vector<Vec3f> loadVec3fArray(const Ref<XML>& xml);
+    std::vector<int>   loadIntArray(const Ref<XML>& xml);
+    std::vector<Vec2i> loadVec2iArray(const Ref<XML>& xml);
     std::vector<Vec3i> loadVec3iArray(const Ref<XML>& xml);
 
   private:
@@ -363,6 +367,28 @@ namespace embree
     return data;
   }
 
+  std::vector<float> XMLLoader::loadFloatArray(const Ref<XML>& xml)
+  {
+    /*! do not fail of array does not exist */
+    if (!xml) { return std::vector<float>(); }
+
+    size_t size = 0;
+    float* data = NULL;
+    if (xml->parm("ofs") != "") {
+      data = (float*)loadBinary(xml,sizeof(float),size);
+    } else {
+      size_t elts = xml->body.size();
+      size = elts;
+      data = (float*) alignedMalloc(size*sizeof(float));
+      for (size_t i=0; i<size; i++) 
+        data[i] = xml->body[i].Float();
+    }
+    std::vector<float> res;
+    for (size_t i=0; i<size; i++) res.push_back(data[i]);
+    alignedFree(data);
+    return res;
+  }
+
   std::vector<Vec2f> XMLLoader::loadVec2fArray(const Ref<XML>& xml)
   {
     /*! do not fail of array does not exist */
@@ -405,6 +431,52 @@ namespace embree
         data[i] = Vec3f(xml->body[3*i+0].Float(),xml->body[3*i+1].Float(),xml->body[3*i+2].Float());
     }
     std::vector<Vec3f> res;
+    for (size_t i=0; i<size; i++) res.push_back(data[i]);
+    alignedFree(data);
+    return res;
+  }
+
+  std::vector<int> XMLLoader::loadIntArray(const Ref<XML>& xml)
+  {
+    /*! do not fail of array does not exist */
+    if (!xml) { return std::vector<int>(); }
+
+    size_t size = 0;
+    int* data = NULL;
+    if (xml->parm("ofs") != "") {
+      data = (int*)loadBinary(xml,sizeof(int),size);
+    } else {
+      size_t elts = xml->body.size();
+      size = elts;
+      data = (int*) alignedMalloc(size*sizeof(int));
+      for (size_t i=0; i<size; i++) 
+        data[i] = xml->body[i].Int();
+    }
+    std::vector<int> res;
+    for (size_t i=0; i<size; i++) res.push_back(data[i]);
+    alignedFree(data);
+    return res;
+  }
+
+  std::vector<Vec2i> XMLLoader::loadVec2iArray(const Ref<XML>& xml)
+  {
+    /*! do not fail of array does not exist */
+    if (!xml) { return std::vector<Vec2i>(); }
+    
+    size_t size = 0;
+    Vec2i* data = NULL;
+    if (xml->parm("ofs") != "") {
+      data = (Vec2i*) loadBinary(xml,2*sizeof(int),size);
+    }
+    else {
+      size_t elts = xml->body.size();
+      if (elts % 2 != 0) THROW_RUNTIME_ERROR(xml->loc.str()+": wrong vector<int2> body");
+      size = elts/2;
+      data = (Vec2i*) alignedMalloc(size*sizeof(Vec2i));
+      for (size_t i=0; i<size; i++) 
+        data[i] = Vec2i(xml->body[2*i+0].Int(),xml->body[2*i+1].Int());
+    }
+    std::vector<Vec2i> res;
     for (size_t i=0; i<size; i++) res.push_back(data[i]);
     alignedFree(data);
     return res;
@@ -622,6 +694,23 @@ namespace embree
     scene.materials.push_back(material);
     materialCache[parameters] = materialID;
     return materialID;
+  }
+
+  void XMLLoader::loadSubdivMesh(const Ref<XML>& xml, const AffineSpace3f& space) 
+  {
+    std::string materialName;
+    int materialID = loadMaterial(xml->child("material"),&materialName);
+
+    OBJScene::SubdivMesh* mesh = new OBJScene::SubdivMesh;
+    std::vector<Vec3f> positions = loadVec3fArray(xml->childOpt("positions"));
+    for (size_t i=0; i<positions.size(); i++) mesh->vertices.push_back(xfmPoint(space,positions[i]));
+    mesh->indices         = loadIntArray(xml->childOpt("indices"));
+    mesh->verticesPerFace = loadIntArray(xml->childOpt("faces"));
+    mesh->creases         = loadVec2iArray(xml->childOpt("creases"));
+    mesh->creaseWeights   = loadFloatArray(xml->childOpt("crease_weights"));
+    mesh->corners         = loadIntArray(xml->childOpt("corners"));
+    mesh->cornerWeights   = loadFloatArray(xml->childOpt("corner_weights"));
+    scene.subdiv.push_back(mesh);
   }
 
   void XMLLoader::loadTriangleMesh(const Ref<XML>& xml, const AffineSpace3f& space) 
