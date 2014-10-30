@@ -237,6 +237,7 @@ namespace embree
         const Vertex f = dest.ring[2*i-1] + dest.ring[2*i+1];
         S += ring[2*i];
         dest.crease_weight[i] = max(crease_weight[i]-1.0f,0.0f);
+        //dest.crease_weight[i] = crease_weight[i] < 1.0f ? 0.0f : 0.5f*crease_weight[i];
         
         /* fast path for regular edge points */
         if (likely(crease_weight[i] <= 0.0f)) {
@@ -261,6 +262,7 @@ namespace embree
         const Vertex f = dest.ring[num_vtx-1] + dest.ring[2*i+1];
         S += ring[2*i];
         dest.crease_weight[i] = max(crease_weight[i]-1.0f,0.0f);
+        //dest.crease_weight[i] = crease_weight[i] < 1.0f ? 0.0f : 0.5f*crease_weight[i];
 
         /* fast path for regular edge points */
         if (likely(crease_weight[i] <= 0.0f)) {
@@ -295,7 +297,11 @@ namespace embree
         dest.vtx = v_sharp;
         dest.crease_weight[crease_id[0]] = max(0.25f*(3.0f*crease_weight0 + crease_weight1)-1.0f,0.0f);
         dest.crease_weight[crease_id[1]] = max(0.25f*(3.0f*crease_weight1 + crease_weight0)-1.0f,0.0f);
+        //dest.crease_weight[crease_id[0]] = max(0.5f*(crease_weight0 + crease_weight1)-1.0f,0.0f);
+        //dest.crease_weight[crease_id[1]] = max(0.5f*(crease_weight1 + crease_weight0)-1.0f,0.0f);
         const float t0 = 0.5f*(crease_weight0+crease_weight1), t1 = 1.0f-t0;
+        //dest.crease_weight[crease_id[0]] = t0 < 1.0f ? 0.0f : 0.5f*t0;
+        //dest.crease_weight[crease_id[1]] = t0 < 1.0f ? 0.0f : 0.5f*t0;
         if (unlikely(t0 < 1.0f)) {
           dest.vtx = t0*v_sharp + t1*v_smooth;
         }
