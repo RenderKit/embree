@@ -317,49 +317,47 @@ float        test_corner_weights[4] = { 0, 0, 0, 0 };
 //float        test_creases[EDGES] = { 0, 0, a, 0,  0, 0, b, 0,  a, 0, 0, 0,  b, 0, 0, 0 };
 unsigned int test_indices[EDGES] = { 0, 1, 4, 3,  1, 2, 5, 4,  3, 4, 7, 6,  4, 5, 8, 7 };
 
-unsigned int test_offsets[FACES] = { 4, 4, 4, 4 };
+unsigned int test_faces[FACES] = { 4, 4, 4, 4 };
 
 #endif
 
 void constructScene(const Vec3fa& cam_pos) 
 {
-  unsigned int totalNumQuads = 0;
   if (g_ispc_scene)
-    {
-      DBG_PRINT(g_ispc_scene->numMeshes);
-
-      /*! Create an Embree object to hold scene state. */
-      g_scene = rtcNewScene(RTC_SCENE_STATIC, RTC_INTERSECT1);
-
-      for (int i=0; i<g_ispc_scene->numMeshes; i++)
-	{
-	  /* get ith mesh */
-	  ISPCMesh* mesh = g_ispc_scene->meshes[i];
-	  DBG_PRINT(mesh->quads);
-
-	  if (mesh->numQuads)
-	    {
-	      totalNumQuads += mesh->numQuads;
-	      unsigned int *offset_buffer = new unsigned int[mesh->numQuads];
-	      for (size_t i=0;i<mesh->numQuads;i++) offset_buffer[i] = 4;
-
-	      unsigned int subdivMeshID = rtcNewSubdivisionMesh(g_scene, 
-								RTC_GEOMETRY_STATIC, 
-								mesh->numQuads, 
-								mesh->numQuads*4, 
-								mesh->numVertices,
-                                                                0,0);
-
-	      rtcSetBuffer(g_scene, subdivMeshID, RTC_VERTEX_BUFFER, mesh->positions, 0, sizeof(Vec3fa  ));
-              for (size_t i=0; i<mesh->numQuads; i++) mesh->positions[i].w = 4.0f;
-	      rtcSetBuffer(g_scene, subdivMeshID, RTC_INDEX_BUFFER,  mesh->quads    , 0, sizeof(unsigned int));
-	      rtcSetBuffer(g_scene, subdivMeshID, RTC_FACE_BUFFER, offset_buffer  , 0, sizeof(unsigned int));
-	      //delete offset_buffer;
-	    }
-	}       
-    }
+  {
+    /*! Create an Embree object to hold scene state. */
+    g_scene = rtcNewScene(RTC_SCENE_STATIC, RTC_INTERSECT1);
     
+    for (size_t i=0; i<g_ispc_scene->numMeshes; i++)
+    {
+      ISPCMesh* mesh = g_ispc_scene->meshes[i];
+      if (mesh->numQuads == 0) continue;
+      
+      unsigned int subdivMeshID = rtcNewSubdivisionMesh(g_scene, RTC_GEOMETRY_STATIC, mesh->numQuads, mesh->numQuads*4, mesh->numVertices, 0,0);
+      rtcSetBuffer(g_scene, subdivMeshID, RTC_VERTEX_BUFFER, mesh->positions, 0, sizeof(Vec3fa  ));
+      rtcSetBuffer(g_scene, subdivMeshID, RTC_INDEX_BUFFER,  mesh->quads    , 0, sizeof(unsigned int));
+      
+      unsigned int* face_buffer = new unsigned int[mesh->numQuads];
+      for (size_t i=0;i<mesh->numQuads;i++) face_buffer[i] = 4;
+      rtcSetBuffer(g_scene, subdivMeshID, RTC_FACE_BUFFER, face_buffer    , 0, sizeof(unsigned int));
+      //delete face_buffer; // FIXME: never deleted
+    }       
 
+    for (size_t i=0; i<g_ispc_scene->numSubdivMeshes; i++)
+    {
+      ISPCSubdivMesh* mesh = g_ispc_scene->subdiv[i];
+      unsigned int subdivMeshID = rtcNewSubdivisionMesh(g_scene, RTC_GEOMETRY_STATIC, mesh->numFaces, mesh->numEdges, mesh->numVertices, mesh->numCreases, mesh->numCorners);
+      rtcSetBuffer(g_scene, subdivMeshID, RTC_VERTEX_BUFFER, mesh->vertices , 0, sizeof(Vec3fa  ));
+      rtcSetBuffer(g_scene, subdivMeshID, RTC_INDEX_BUFFER,  mesh->indices  , 0, sizeof(unsigned int));
+      rtcSetBuffer(g_scene, subdivMeshID, RTC_FACE_BUFFER,   mesh->verticesPerFace, 0, sizeof(unsigned int));
+      rtcSetBuffer(g_scene, subdivMeshID, RTC_CREASE_BUFFER, mesh->creases, 0, 2*sizeof(unsigned int));
+      rtcSetBuffer(g_scene, subdivMeshID, RTC_CREASE_WEIGHT_BUFFER, mesh->creaseWeights, 0, sizeof(float));
+      rtcSetBuffer(g_scene, subdivMeshID, RTC_CORNER_BUFFER, mesh->corners, 0, sizeof(unsigned int));
+      rtcSetBuffer(g_scene, subdivMeshID, RTC_CORNER_WEIGHT_BUFFER, mesh->cornerWeights, 0, sizeof(float));
+    }       
+  }
+    
+#if 0
   if (totalNumQuads == 0)
   {
     /*! Create an Embree object to hold scene state. */
@@ -372,7 +370,7 @@ void constructScene(const Vec3fa& cam_pos)
  
     rtcSetBuffer(g_scene, subdivMeshID, RTC_VERTEX_BUFFER, test_vertices, 0, sizeof(Vec3fa  ));
     rtcSetBuffer(g_scene, subdivMeshID, RTC_INDEX_BUFFER,  test_indices , 0, sizeof(unsigned int));
-    rtcSetBuffer(g_scene, subdivMeshID, RTC_FACE_BUFFER, test_offsets , 0, sizeof(unsigned int));
+    rtcSetBuffer(g_scene, subdivMeshID, RTC_FACE_BUFFER, test_faces , 0, sizeof(unsigned int));
     rtcSetBuffer(g_scene, subdivMeshID, RTC_CREASE_BUFFER, test_creases , 0, 2*sizeof(unsigned int));
     rtcSetBuffer(g_scene, subdivMeshID, RTC_CREASE_WEIGHT_BUFFER, test_crease_weights , 0, sizeof(float));
     rtcSetBuffer(g_scene, subdivMeshID, RTC_CORNER_BUFFER, test_corners , 0, sizeof(unsigned int));
@@ -385,6 +383,7 @@ void constructScene(const Vec3fa& cam_pos)
     updateSphere (cam_pos);
 #endif
   }
+#endif
     
   rtcCommit(g_scene);
 

@@ -802,6 +802,7 @@ namespace embree
       else if (xml->name == "HDRILight"       ) loadHDRILight       (xml,space);
 
       else if (xml->name == "TriangleMesh"    ) loadTriangleMesh    (xml,space);
+      else if (xml->name == "SubdivisionMesh" ) loadSubdivMesh      (xml,space);
       else if (xml->name == "Sphere"          ) loadSphere          (xml,space);
       else if (xml->name == "Disk"            ) loadDisk            (xml,space);
       else if (xml->name == "Group"           ) loadGroupNode       (xml,space);

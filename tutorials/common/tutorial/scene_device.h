@@ -72,6 +72,8 @@ struct ISPCSubdivMesh
   int numVertices;
   int numFaces;
   int numEdges;
+  int numCreases;
+  int numCorners;
 };
 
 struct ISPCAmbientLight

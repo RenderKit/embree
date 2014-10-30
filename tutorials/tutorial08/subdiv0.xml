@@ -1,0 +1,54 @@
+<?xml version="1.0"?>
+
+<scene>
+  <Group>
+    <SubdivisionMesh>
+
+      <positions>
+        -1.0 -1.0 0.0 
+         0.0 -1.0 0.0 
+        +1.0 -1.0 0.0
+        -1.0  0.0 1.0 
+         0.0  0.0 1.0 
+        +1.0  0.0 1.0
+        -1.0 +1.0 0.0 
+         0.0 +1.0 0.0 
+        +1.0 +1.0 0.0
+      </positions>
+
+      <indices>
+        0 1 4 3  
+        1 2 5 4  
+        3 4 7 6  
+        4 5 8 7
+      </indices>
+
+      <faces>
+        4 4 4 4
+      </faces>
+
+      <creases>
+        3 4 4 5
+      </creases>
+
+      <crease_weights>
+        0 0
+      </crease_weights>
+
+      <corners>
+        0 2 6 8
+      </corners>
+
+      <corner_weights>
+        4 4 4 4
+      </corner_weights>
+
+      <material>
+        <code>"Matte"</code>
+        <parameters>
+          <float3 name="reflectance">0.5 0.5 0.5</float3>
+        </parameters>
+      </material>
+    </SubdivisionMesh>
+  </Group>
+</scene>

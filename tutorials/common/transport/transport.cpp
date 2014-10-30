@@ -73,6 +73,8 @@ namespace embree
     out->numVertices = in->vertices.size();
     out->numFaces = in->verticesPerFace.size();
     out->numEdges = in->indices.size();   
+    out->numCreases = in->creases.size();
+    out->numCorners = in->corners.size();
     return out;
   }
 
@@ -122,6 +124,7 @@ namespace embree
     out->distantLights = (ISPCDistantLight*) (in->distantLights.size() ? &in->distantLights[0] : NULL);
     out->numDistantLights = in->distantLights.size();
 
+    out->subdiv = new ISPCSubdivMesh*[in->subdiv.size()];
     for (size_t i=0; i<in->subdiv.size(); i++) out->subdiv[i] = convertSubdivMesh(in->subdiv[i]);
     out->numSubdivMeshes = in->subdiv.size();
 

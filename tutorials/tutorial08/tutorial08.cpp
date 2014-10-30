@@ -16,6 +16,7 @@
 
 #include "tutorial/tutorial.h"
 #include "tutorial/obj_loader.h"
+#include "tutorial/xml_loader.h"
 #include "sys/taskscheduler.h"
 #include "image/image.h"
 
@@ -23,7 +24,6 @@ extern "C" void setSubdivisionLevel(unsigned int); // for now hidden fct in the 
 
 namespace embree 
 {
-
   /* name of the tutorial */
   const char* tutorialName = "tutorial08";
 
@@ -134,16 +134,18 @@ namespace embree
     /*! Set the thread count in the Embree configuration string. */
     if (g_numThreads) g_rtcore += ",threads=" + std::stringOf(g_numThreads);
 
-    DBG_PRINT(g_numThreads);
-
     /*! Initialize the task scheduler. */
 #if !defined(__EXPORT_ALL_SYMBOLS__)
     TaskScheduler::create(g_numThreads);
 #endif
 
     /* load scene */
-    if (filename.str() != "")
-      loadOBJ(filename,one,g_obj_scene,true);
+    if (strlwr(filename.ext()) == "obj")
+      loadOBJ(filename,one,g_obj_scene);
+    else if (strlwr(filename.ext()) == "xml")
+      loadXML(filename,one,g_obj_scene);
+    else
+      THROW_RUNTIME_ERROR("invalid scene type: "+strlwr(filename.ext()));
 
     /*! Initialize Embree state. */
     init(g_rtcore.c_str());

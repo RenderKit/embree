@@ -211,8 +211,9 @@ namespace embree
     full_corner_weights.resize(numVertices);
     for (size_t i=0; i<numVertices; i++)
       full_corner_weights[i] = 0.0f;
-    for (size_t i=0; i<corners.size(); i++)
+    for (size_t i=0; i<corners.size(); i++) {
       full_corner_weights[corners[i]] = corner_weights[i];
+    }
     
     /* initialize all four half-edges for each face */
     for (size_t i=0; i<numFaces; i++) 
