@@ -60,6 +60,20 @@ struct ISPCMesh
   int numQuads;
 };
 
+struct ISPCSubdivMesh
+{
+  Vec3fa* vertices;        //!< vertex positions
+  int* indices;            //!< indices for all faces
+  int* verticesPerFace;    //!< number of indices of each face
+  Vec2i* creases;          //!< crease index pairs
+  float* creaseWeights;    //!< weight for each crease
+  int* corners;            //!< corner indices
+  float* cornerWeights;    //!< weight for each corner
+  int numVertices;
+  int numFaces;
+  int numEdges;
+};
+
 struct ISPCAmbientLight
 {
   Vec3fa L;                  //!< radiance of ambient light
@@ -202,6 +216,10 @@ struct ISPCScene {
 
   ISPCDistantLight* distantLights; //!< list of distant lights
   int numDistantLights;                    //!< number of distant lights
+
+  ISPCSubdivMesh** subdiv;                   //!< list of subdiv meshes
+  int numSubdivMeshes;                       //!< number of subdiv meshes
+
 }; // ISPCScene
 
 

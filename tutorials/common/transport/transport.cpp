@@ -60,6 +60,22 @@ namespace embree
     return out;
   }
 
+  ISPCSubdivMesh* convertSubdivMesh (OBJScene::SubdivMesh* in)
+  {
+    ISPCSubdivMesh* out = new ISPCSubdivMesh;
+    out->vertices = in->vertices.size() ? &in->vertices[0] : NULL;
+    out->indices = in->indices.size()   ? &in->indices[0] : NULL;
+    out->verticesPerFace = in->verticesPerFace.size() ? &in->verticesPerFace[0] : NULL;
+    out->creases = in->creases.size() ? &in->creases[0] : NULL;
+    out->creaseWeights = in->creaseWeights.size() ? &in->creaseWeights[0] : NULL;
+    out->corners = in->corners.size() ? &in->corners[0] : NULL;
+    out->cornerWeights = in->cornerWeights.size() ? &in->cornerWeights[0] : NULL;
+    out->numVertices = in->vertices.size();
+    out->numFaces = in->verticesPerFace.size();
+    out->numEdges = in->indices.size();   
+    return out;
+  }
+
   void init(const char* cfg) {
     device_init(cfg);
   }
@@ -105,6 +121,9 @@ namespace embree
 
     out->distantLights = (ISPCDistantLight*) (in->distantLights.size() ? &in->distantLights[0] : NULL);
     out->numDistantLights = in->distantLights.size();
+
+    for (size_t i=0; i<in->subdiv.size(); i++) out->subdiv[i] = convertSubdivMesh(in->subdiv[i]);
+    out->numSubdivMeshes = in->subdiv.size();
 
     g_ispc_scene = out;
   }

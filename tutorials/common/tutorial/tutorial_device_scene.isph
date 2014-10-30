@@ -209,4 +209,5 @@ struct ISPCScene {
 
   uniform ISPCDistantLight* distantLights; //!< list of distant lights
   int numDistantLights;                    //!< number of distant lights
+
 }; // ISPCScene
