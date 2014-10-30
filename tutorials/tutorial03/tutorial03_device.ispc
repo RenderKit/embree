@@ -15,81 +15,9 @@
 // ======================================================================== //
 
 #include "../common/tutorial/tutorial_device.isph"
+#include "../common/tutorial/tutorial_device_scene.h"
 
 #define PARALLEL_COMMIT
-
-struct ISPCTriangle 
-{
-  int v0;                /*< first triangle vertex */
-  int v1;                /*< second triangle vertex */
-  int v2;                /*< third triangle vertex */
-  int materialID;        /*< material of triangle */
-};
-
-struct ISPCQuad
-{
-  int v0;                /*< first triangle vertex */
-  int v1;                /*< second triangle vertex */
-  int v2;                /*< third triangle vertex */
-  int v4;                /*< fourth triangle vertex */
-};
-
-struct ISPCMaterial
-{
-  int type;
-  int align[3];
-
-  int illum;             /*< illumination model */
-  float d;               /*< dissolve factor, 1=opaque, 0=transparent */
-  float Ns;              /*< specular exponent */
-  float Ni;              /*< optical density for the surface (index of refraction) */
-  
-  Vec3fa Ka;              /*< ambient reflectivity */
-  Vec3fa Kd;              /*< diffuse reflectivity */
-  Vec3fa Ks;              /*< specular reflectivity */
-  Vec3fa Tf;              /*< transmission filter */
-  Vec3fa v[2];
-};
-
-struct ISPCMesh
-{
-  uniform Vec3fa* positions;    //!< vertex position array
-  uniform Vec3fa* positions2;    //!< vertex position array
-  uniform Vec3fa* normals;       //!< vertex normal array
-  uniform Vec2f* texcoords;     //!< vertex texcoord array
-  uniform ISPCTriangle* triangles;  //!< list of triangles
-  uniform ISPCQuad* quads;  //!< list of triangles
-  int numVertices;
-  int numTriangles;
-  int numQuads;
-
-  Vec3f dir;
-  float offset;
-};
-
-struct ISPCHair
-{
- int vertex,id;  //!< index of first control point and hair ID
-};
-
-struct ISPCHairSet
-{
- uniform Vec3fa* positions;   //!< hair control points (x,y,z,r)
- uniform Vec3fa* positions2;   //!< hair control points (x,y,z,r)
- uniform ISPCHair* hairs;    //!< list of hairs
- int numVertices;
- int numHairs;
-};
-
-struct ISPCScene
-{
-  uniform ISPCMesh* uniform* meshes;         //!< list of meshes
-  uniform ISPCMaterial* materials;  //!< material list
-  int numMeshes;
-  int numMaterials;
-  uniform ISPCHairSet** hairsets;
-  int numHairSets;
-};
 
 /* scene data */
 extern uniform ISPCScene* uniform g_ispc_scene;
@@ -250,7 +178,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const unifo
   }
   Ns = normalize(Ns);
 #endif
-  uniform ISPCMaterial* material = &g_ispc_scene->materials[materialID];
+  uniform OBJMaterial* material = (uniform OBJMaterial*) &g_ispc_scene->materials[materialID];
   color = make_Vec3f(material->Kd);
 
   /* apply ambient light */

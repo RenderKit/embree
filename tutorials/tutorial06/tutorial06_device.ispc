@@ -15,6 +15,7 @@
 // ======================================================================== //
 
 #include "../common/tutorial/tutorial_device.isph"
+#include "../common/tutorial/tutorial_device_scene.isph"
 #include "shapesampler.isph"
 #include "optics.isph"
 
@@ -29,24 +30,6 @@ struct DifferentialGeometry
   Vec3f Ns;
 };
 
-struct ISPCTriangle 
-{
-  int v0;                /*< first triangle vertex */
-  int v1;                /*< second triangle vertex */
-  int v2;                /*< third triangle vertex */
-  int materialID;        /*< material of triangle */
-};
-
-struct ISPCQuad
-{
-  int v0;                /*< first triangle vertex */
-  int v1;                /*< second triangle vertex */
-  int v2;                /*< third triangle vertex */
-  int v4;                /*< fourth triangle vertex */
-};
-
-enum MaterialTy { MATERIAL_OBJ, MATERIAL_THIN_DIELECTRIC, MATERIAL_METAL, MATERIAL_VELVET, MATERIAL_DIELECTRIC, MATERIAL_METALLIC_PAINT, MATERIAL_MATTE, MATERIAL_MIRROR, MATERIAL_REFLECTIVE_METAL };
-
 struct BRDF
 {
   float Ns;               /*< specular exponent */
@@ -55,26 +38,6 @@ struct BRDF
   Vec3f Kd;              /*< diffuse reflectivity */
   Vec3f Ks;              /*< specular reflectivity */
   Vec3f Kt;              /*< transmission filter */
-};
-
-struct ISPCMaterial
-{
-  int ty;
-  int align0,align1,align2;
-  Vec3fa v[7];
-};
-
-struct ISPCMesh
-{
-  uniform Vec3fa* positions;    //!< vertex position array
-  uniform Vec3fa* positions2;    //!< vertex position array
-  uniform Vec3fa* normals;       //!< vertex normal array
-  uniform Vec2f* texcoords;     //!< vertex texcoord array
-  uniform ISPCTriangle* triangles;  //!< list of triangles
-  uniform ISPCQuad* quads;  //!< list of triangles
-  int numVertices;
-  int numTriangles;
-  int numQuads;
 };
 
 struct Medium
@@ -131,11 +94,6 @@ inline Vec3f sample_component2(const Vec3f& c0, const Sample3f& wi0, const Mediu
 //                             Ambient Light                                  //
 ////////////////////////////////////////////////////////////////////////////////
 
-struct ISPCAmbientLight
-{
-  Vec3fa L;                  //!< radiance of ambient light
-};
-
 inline Vec3f AmbientLight__eval(const uniform ISPCAmbientLight& light, const Vec3f& wo) {
   return make_Vec3f(light.L);
 }
@@ -150,12 +108,6 @@ inline Vec3f AmbientLight__sample(const uniform ISPCAmbientLight& light, const D
 ////////////////////////////////////////////////////////////////////////////////
 //                             Point Light                                    //
 ////////////////////////////////////////////////////////////////////////////////
-
-struct ISPCPointLight
-{
-  Vec3fa P;                  //!< position of point light
-  Vec3fa I;                  //!< radiant intensity of point light
-};
 
 inline varying Vec3f PointLight__sample(const uniform ISPCPointLight& light, 
 					varying const DifferentialGeometry& dg, 
@@ -174,12 +126,6 @@ inline varying Vec3f PointLight__sample(const uniform ISPCPointLight& light,
 //                        Directional Light                                   //
 ////////////////////////////////////////////////////////////////////////////////
 
-struct ISPCDirectionalLight
-{
-  Vec3fa D;                  //!< Light direction
-  Vec3fa E;                  //!< Irradiance (W/m^2)
-};
-
 inline varying Vec3f DirectionalLight__sample(const uniform ISPCDirectionalLight& light, 
 					      varying const DifferentialGeometry& dg, 
 					      varying Sample3f& wi,
@@ -194,15 +140,6 @@ inline varying Vec3f DirectionalLight__sample(const uniform ISPCDirectionalLight
 ////////////////////////////////////////////////////////////////////////////////
 //                          Distant Light                                     //
 ////////////////////////////////////////////////////////////////////////////////
-
-struct ISPCDistantLight
-{
-  Vec3fa D;             //!< Light direction
-  Vec3fa L;             //!< Radiance (W/(m^2*sr))
-  float halfAngle;     //!< Half illumination angle
-  float radHalfAngle;  //!< Half illumination angle in radians
-  float cosHalfAngle;  //!< Cosine of half illumination angle
-};
 
 inline varying Vec3f DistantLight__eval(const uniform ISPCDistantLight& light, varying const Vec3f& wo) 
 {
@@ -462,14 +399,6 @@ inline varying DielectricLayerLambertian make_DielectricLayerLambertian(const va
 //                          Matte Material                                    //
 ////////////////////////////////////////////////////////////////////////////////
 
-struct MatteMaterial
-{
-  int ty;
-  int align[3];
-
-  Vec3fa reflectance;
-};
-
 __device__ void MatteMaterial__preprocess(uniform MatteMaterial* uniform material, BRDF& brdf, const Vec3f& wo, const DifferentialGeometry& dg, const Medium& medium)  
 {
 }
@@ -490,13 +419,6 @@ __device__ Vec3f MatteMaterial__sample(MatteMaterial* uniform This, const BRDF& 
 //                          Mirror Material                                    //
 ////////////////////////////////////////////////////////////////////////////////
 
-struct MirrorMaterial
-{
-  int ty;
-  int align[3];
-  Vec3fa reflectance;
-};
-
 __device__ void MirrorMaterial__preprocess(uniform MirrorMaterial* uniform material, BRDF& brdf, const Vec3f& wo, const DifferentialGeometry& dg, const Medium& medium)  
 {
 }
@@ -514,23 +436,6 @@ __device__ Vec3f MirrorMaterial__sample(MirrorMaterial* uniform This, const BRDF
 ////////////////////////////////////////////////////////////////////////////////
 //                          OBJ Material                                      //
 ////////////////////////////////////////////////////////////////////////////////
-
-struct OBJMaterial
-{
-  int ty;
-  int align[3];
-
-  int illum;             /*< illumination model */
-  float d;               /*< dissolve factor, 1=opaque, 0=transparent */
-  float Ns;              /*< specular exponent */
-  float Ni;              /*< optical density for the surface (index of refraction) */
-  
-  Vec3fa Ka;              /*< ambient reflectivity */
-  Vec3fa Kd;              /*< diffuse reflectivity */
-  Vec3fa Ks;              /*< specular reflectivity */
-  Vec3fa Kt;              /*< transmission filter */
-  Vec3fa v[2];
-};
 
 __device__ void OBJMaterial__preprocess(uniform OBJMaterial* uniform material, BRDF& brdf, const Vec3f& wo, const DifferentialGeometry& dg, const Medium& medium)  
 {
@@ -631,17 +536,6 @@ __device__ Vec3f OBJMaterial__sample(OBJMaterial* uniform material, const BRDF& 
 //                        Metal Material                                      //
 ////////////////////////////////////////////////////////////////////////////////
 
-struct MetalMaterial
-{
-  int ty;
-  int align[3];
-
-  Vec3fa reflectance;
-  Vec3fa eta;
-  Vec3fa k;
-  float roughness;
-};
-
 __device__ void MetalMaterial__preprocess(uniform MetalMaterial* uniform material, BRDF& brdf, const Vec3f& wo, const DifferentialGeometry& dg, const Medium& medium)  
 {
 }
@@ -678,17 +572,6 @@ __device__ Vec3f MetalMaterial__sample(MetalMaterial* uniform This, const BRDF& 
 //                        ReflectiveMetal Material                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-struct ReflectiveMetalMaterial
-{
-  int ty;
-  int align[3];
-
-  Vec3fa reflectance;
-  Vec3fa eta;
-  Vec3fa k;
-  float roughness;
-};
-
 __device__ void ReflectiveMetalMaterial__preprocess(uniform ReflectiveMetalMaterial* uniform material, BRDF& brdf, const Vec3f& wo, const DifferentialGeometry& dg, const Medium& medium)  {
 }
 
@@ -705,17 +588,6 @@ __device__ Vec3f ReflectiveMetalMaterial__sample(ReflectiveMetalMaterial* unifor
 ////////////////////////////////////////////////////////////////////////////////
 //                        Velvet Material                                     //
 ////////////////////////////////////////////////////////////////////////////////
-
-struct VelvetMaterial
-{
-  int ty;
-  int align[3];
-
-  Vec3fa reflectance;
-  Vec3fa horizonScatteringColor;
-  float backScattering;
-  float horizonScatteringFallOff;
-};
 
 __device__ void VelvetMaterial__preprocess(uniform VelvetMaterial* uniform material, BRDF& brdf, const Vec3f& wo, const DifferentialGeometry& dg, const Medium& medium)  
 {
@@ -741,16 +613,6 @@ __device__ Vec3f VelvetMaterial__sample(VelvetMaterial* uniform This, const BRDF
 ////////////////////////////////////////////////////////////////////////////////
 //                          Dielectric Material                               //
 ////////////////////////////////////////////////////////////////////////////////
-
-struct DielectricMaterial
-{
-  int ty;
-  int align[3];
-  Vec3fa transmissionOutside;
-  Vec3fa transmissionInside;
-  float etaOutside;
-  float etaInside;
-};
 
 __device__ void DielectricMaterial__preprocess(uniform DielectricMaterial* uniform material, BRDF& brdf, const Vec3f& wo, const DifferentialGeometry& dg, const Medium& medium)  
 {
@@ -790,14 +652,6 @@ __device__ Vec3f DielectricMaterial__sample(DielectricMaterial* uniform material
 //                          ThinDielectric Material                               //
 ////////////////////////////////////////////////////////////////////////////////
 
-struct ThinDielectricMaterial
-{
-  int ty;
-  int align[3];
-  Vec3fa transmission;
-  float eta;
-};
-
 __device__ void ThinDielectricMaterial__preprocess(uniform ThinDielectricMaterial* uniform This, BRDF& brdf, const Vec3f& wo, const DifferentialGeometry& dg, const Medium& medium)  
 {
 }
@@ -821,16 +675,6 @@ __device__ Vec3f ThinDielectricMaterial__sample(ThinDielectricMaterial* uniform 
 ////////////////////////////////////////////////////////////////////////////////
 //                     MetallicPaint Material                                 //
 ////////////////////////////////////////////////////////////////////////////////
-
-struct MetallicPaintMaterial
-{
-  int ty;
-  int align[3];
-  Vec3fa shadeColor;
-  Vec3fa glitterColor;
-  float glitterSpread;
-  float eta;
-};
 
 __device__ void MetallicPaintMaterial__preprocess(uniform MetallicPaintMaterial* uniform material, BRDF& brdf, const Vec3f& wo, const DifferentialGeometry& dg, const Medium& medium)  
 {
@@ -926,29 +770,6 @@ inline Vec3f Material__sample(ISPCMaterial* uniform uniform materials, int mater
 ////////////////////////////////////////////////////////////////////////////////
 //                               Scene                                        //
 ////////////////////////////////////////////////////////////////////////////////
-
-struct ISPCScene {
-
-  uniform ISPCMesh* uniform* meshes;   //!< list of meshes
-  uniform ISPCMaterial* materials;     //!< material list
-  int numMeshes;                       //!< number of meshes
-  int numMaterials;                    //!< number of materials
-
-  void** hairsets;
-  int numHairSets;
-
-  uniform ISPCAmbientLight* ambientLights; //!< list of ambient lights
-  int numAmbientLights;                    //!< number of ambient lights
-  
-  uniform ISPCPointLight* pointLights;     //!< list of point lights
-  int numPointLights;                      //!< number of point lights
-  
-  uniform ISPCDirectionalLight* dirLights; //!< list of directional lights
-  int numDirectionalLights;                //!< number of directional lights
-
-  uniform ISPCDistantLight* distantLights; //!< list of distant lights
-  int numDistantLights;                    //!< number of distant lights
-}; // ISPCScene
 
 /* scene data */
 extern uniform ISPCScene* uniform g_ispc_scene;

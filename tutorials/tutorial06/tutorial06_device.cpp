@@ -15,12 +15,9 @@
 // ======================================================================== //
 
 #include "../common/tutorial/tutorial_device.h"
+#include "../common/tutorial/tutorial_device_scene.h"
 #include "shapesampler.h"
 #include "optics.h"
-
-
-
-
 
 struct DifferentialGeometry
 {
@@ -28,24 +25,6 @@ struct DifferentialGeometry
   Vec3fa Ng;
   Vec3fa Ns;
 };
-
-struct ISPCTriangle 
-{
-  int v0;                /*< first triangle vertex */
-  int v1;                /*< second triangle vertex */
-  int v2;                /*< third triangle vertex */
-  int materialID;        /*< material of triangle */
-};
-
-struct ISPCQuad
-{
-  int v0;                /*< first triangle vertex */
-  int v1;                /*< second triangle vertex */
-  int v2;                /*< third triangle vertex */
-  int v4;                /*< fourth triangle vertex */
-};
-
-enum MaterialTy { MATERIAL_OBJ, MATERIAL_THIN_DIELECTRIC, MATERIAL_METAL, MATERIAL_VELVET, MATERIAL_DIELECTRIC, MATERIAL_METALLIC_PAINT, MATERIAL_MATTE, MATERIAL_MIRROR, MATERIAL_REFLECTIVE_METAL };
 
 struct BRDF
 {
@@ -55,26 +34,6 @@ struct BRDF
   Vec3fa Kd;              /*< diffuse reflectivity */
   Vec3fa Ks;              /*< specular reflectivity */
   Vec3fa Kt;              /*< transmission filter */
-};
-
-struct ISPCMaterial
-{
-  int ty;
-  int align0,align1,align2;
-  Vec3fa v[7];
-};
-
-struct ISPCMesh
-{
-  Vec3fa* positions;    //!< vertex position array
-  Vec3fa* positions2;    //!< vertex position array
-  Vec3fa* normals;       //!< vertex normal array
-  Vec2f* texcoords;     //!< vertex texcoord array
-  ISPCTriangle* triangles;  //!< list of triangles
-  ISPCQuad* quads;  //!< list of triangles
-  int numVertices;
-  int numTriangles;
-  int numQuads;
 };
 
 struct Medium
@@ -131,11 +90,6 @@ inline Vec3fa sample_component2(const Vec3fa& c0, const Sample3f& wi0, const Med
 //                             Ambient Light                                  //
 ////////////////////////////////////////////////////////////////////////////////
 
-struct ISPCAmbientLight
-{
-  Vec3fa L;                  //!< radiance of ambient light
-};
-
 inline Vec3fa AmbientLight__eval(const ISPCAmbientLight& light, const Vec3fa& wo) {
   return Vec3fa(light.L);
 }
@@ -150,12 +104,6 @@ inline Vec3fa AmbientLight__sample(const ISPCAmbientLight& light, const Differen
 ////////////////////////////////////////////////////////////////////////////////
 //                             Point Light                                    //
 ////////////////////////////////////////////////////////////////////////////////
-
-struct ISPCPointLight
-{
-  Vec3fa P;                  //!< position of point light
-  Vec3fa I;                  //!< radiant intensity of point light
-};
 
 inline Vec3fa PointLight__sample(const ISPCPointLight& light, 
 					const DifferentialGeometry& dg, 
@@ -174,12 +122,6 @@ inline Vec3fa PointLight__sample(const ISPCPointLight& light,
 //                        Directional Light                                   //
 ////////////////////////////////////////////////////////////////////////////////
 
-struct ISPCDirectionalLight
-{
-  Vec3fa D;                  //!< Light direction
-  Vec3fa E;                  //!< Irradiance (W/m^2)
-};
-
 inline Vec3fa DirectionalLight__sample(const ISPCDirectionalLight& light, 
 					      const DifferentialGeometry& dg, 
 					      Sample3f& wi,
@@ -194,15 +136,6 @@ inline Vec3fa DirectionalLight__sample(const ISPCDirectionalLight& light,
 ////////////////////////////////////////////////////////////////////////////////
 //                          Distant Light                                     //
 ////////////////////////////////////////////////////////////////////////////////
-
-struct ISPCDistantLight
-{
-  Vec3fa D;             //!< Light direction
-  Vec3fa L;             //!< Radiance (W/(m^2*sr))
-  float halfAngle;     //!< Half illumination angle
-  float radHalfAngle;  //!< Half illumination angle in radians
-  float cosHalfAngle;  //!< Cosine of half illumination angle
-};
 
 inline Vec3fa DistantLight__eval(const ISPCDistantLight& light, const Vec3fa& wo) 
 {
@@ -490,13 +423,6 @@ struct MatteMaterial
 //                          Mirror Material                                    //
 ////////////////////////////////////////////////////////////////////////////////
 
-struct MirrorMaterial
-{
-  int ty;
-  int align[3];
-  Vec3fa reflectance;
-};
-
  void MirrorMaterial__preprocess(MirrorMaterial* material, BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Medium& medium)  
 {
 }
@@ -514,23 +440,6 @@ struct MirrorMaterial
 ////////////////////////////////////////////////////////////////////////////////
 //                          OBJ Material                                      //
 ////////////////////////////////////////////////////////////////////////////////
-
-struct OBJMaterial
-{
-  int ty;
-  int align[3];
-
-  int illum;             /*< illumination model */
-  float d;               /*< dissolve factor, 1=opaque, 0=transparent */
-  float Ns;              /*< specular exponent */
-  float Ni;              /*< optical density for the surface (index of refraction) */
-  
-  Vec3fa Ka;              /*< ambient reflectivity */
-  Vec3fa Kd;              /*< diffuse reflectivity */
-  Vec3fa Ks;              /*< specular reflectivity */
-  Vec3fa Kt;              /*< transmission filter */
-  Vec3fa v[2];
-};
 
  void OBJMaterial__preprocess(OBJMaterial* material, BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Medium& medium)  
 {
@@ -631,17 +540,6 @@ struct OBJMaterial
 //                        Metal Material                                      //
 ////////////////////////////////////////////////////////////////////////////////
 
-struct MetalMaterial
-{
-  int ty;
-  int align[3];
-
-  Vec3fa reflectance;
-  Vec3fa eta;
-  Vec3fa k;
-  float roughness;
-};
-
  void MetalMaterial__preprocess(MetalMaterial* material, BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Medium& medium)  
 {
 }
@@ -678,18 +576,7 @@ struct MetalMaterial
 //                        ReflectiveMetal Material                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-struct ReflectiveMetalMaterial
-{
-  int ty;
-  int align[3];
-
-  Vec3fa reflectance;
-  Vec3fa eta;
-  Vec3fa k;
-  float roughness;
-};
-
- void ReflectiveMetalMaterial__preprocess(ReflectiveMetalMaterial* material, BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Medium& medium)  {
+void ReflectiveMetalMaterial__preprocess(ReflectiveMetalMaterial* material, BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Medium& medium)  {
 }
 
  Vec3fa ReflectiveMetalMaterial__eval(ReflectiveMetalMaterial* This, const BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Vec3fa& wi) {
@@ -705,17 +592,6 @@ struct ReflectiveMetalMaterial
 ////////////////////////////////////////////////////////////////////////////////
 //                        Velvet Material                                     //
 ////////////////////////////////////////////////////////////////////////////////
-
-struct VelvetMaterial
-{
-  int ty;
-  int align[3];
-
-  Vec3fa reflectance;
-  Vec3fa horizonScatteringColor;
-  float backScattering;
-  float horizonScatteringFallOff;
-};
 
  void VelvetMaterial__preprocess(VelvetMaterial* material, BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Medium& medium)  
 {
@@ -742,17 +618,7 @@ struct VelvetMaterial
 //                          Dielectric Material                               //
 ////////////////////////////////////////////////////////////////////////////////
 
-struct DielectricMaterial
-{
-  int ty;
-  int align[3];
-  Vec3fa transmissionOutside;
-  Vec3fa transmissionInside;
-  float etaOutside;
-  float etaInside;
-};
-
- void DielectricMaterial__preprocess(DielectricMaterial* material, BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Medium& medium)  
+void DielectricMaterial__preprocess(DielectricMaterial* material, BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Medium& medium)  
 {
 }
 
@@ -790,15 +656,7 @@ struct DielectricMaterial
 //                          ThinDielectric Material                               //
 ////////////////////////////////////////////////////////////////////////////////
 
-struct ThinDielectricMaterial
-{
-  int ty;
-  int align[3];
-  Vec3fa transmission;
-  float eta;
-};
-
- void ThinDielectricMaterial__preprocess(ThinDielectricMaterial* This, BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Medium& medium)  
+void ThinDielectricMaterial__preprocess(ThinDielectricMaterial* This, BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Medium& medium)  
 {
 }
  
@@ -821,16 +679,6 @@ struct ThinDielectricMaterial
 ////////////////////////////////////////////////////////////////////////////////
 //                     MetallicPaint Material                                 //
 ////////////////////////////////////////////////////////////////////////////////
-
-struct MetallicPaintMaterial
-{
-  int ty;
-  int align[3];
-  Vec3fa shadeColor;
-  Vec3fa glitterColor;
-  float glitterSpread;
-  float eta;
-};
 
  void MetallicPaintMaterial__preprocess(MetallicPaintMaterial* material, BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Medium& medium)  
 {
@@ -926,29 +774,6 @@ inline Vec3fa Material__sample(ISPCMaterial* materials, int materialID, int numM
 ////////////////////////////////////////////////////////////////////////////////
 //                               Scene                                        //
 ////////////////////////////////////////////////////////////////////////////////
-
-struct ISPCScene {
-
-  ISPCMesh** meshes;   //!< list of meshes
-  ISPCMaterial* materials;     //!< material list
-  int numMeshes;                       //!< number of meshes
-  int numMaterials;                    //!< number of materials
-
-  void** hairsets;
-  int numHairSets;
-
-  ISPCAmbientLight* ambientLights; //!< list of ambient lights
-  int numAmbientLights;                    //!< number of ambient lights
-  
-  ISPCPointLight* pointLights;     //!< list of point lights
-  int numPointLights;                      //!< number of point lights
-  
-  ISPCDirectionalLight* dirLights; //!< list of directional lights
-  int numDirectionalLights;                //!< number of directional lights
-
-  ISPCDistantLight* distantLights; //!< list of distant lights
-  int numDistantLights;                    //!< number of distant lights
-}; // ISPCScene
 
 /* scene data */
 extern "C" ISPCScene* g_ispc_scene;
