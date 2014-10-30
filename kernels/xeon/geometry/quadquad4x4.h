@@ -174,6 +174,8 @@ namespace embree
       ssef upper_z[4];           //!< Z dimension of upper bounds of all 4 children.
     };
 
+#if defined (__SSE4_1__)
+
     struct CompressedBounds16
     {
       static const size_t N = 4;
@@ -344,6 +346,8 @@ namespace embree
       unsigned char lower_z[16]; 
       unsigned char upper_z[16]; 
     };
+
+#endif
 
   public:
       

@@ -65,9 +65,11 @@ namespace embree
     /// Loads and Stores
     ////////////////////////////////////////////////////////////////////////////////
 
+#if defined(__SSE4_1__)
     static __forceinline ssei load( const unsigned char* const ptr ) { 
       return _mm_cvtepu8_epi32(_mm_load_si128((__m128i*)ptr));
     }
+#endif
 
     ////////////////////////////////////////////////////////////////////////////////
     /// Array Access

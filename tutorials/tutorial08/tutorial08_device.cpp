@@ -14,6 +14,50 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
+#if defined(__USE_OPENSUBDIV__)
+#include <opensubdiv/far/topologyRefinerFactory.h>
+using namespace OpenSubdiv;
+
+struct Vertex {
+
+    // Minimal required interface ----------------------
+    Vertex() { }
+
+    Vertex(Vertex const & src) {
+        _position[0] = src._position[0];
+        _position[1] = src._position[1];
+        _position[1] = src._position[1];
+    }
+
+    void Clear( void * =0 ) {
+        _position[0]=_position[1]=_position[2]=0.0f;
+    }
+
+    void AddWithWeight(Vertex const & src, float weight) {
+        _position[0]+=weight*src._position[0];
+        _position[1]+=weight*src._position[1];
+        _position[2]+=weight*src._position[2];
+    }
+
+    void AddVaryingWithWeight(Vertex const &, float) { }
+
+    // Public interface ------------------------------------
+    void SetPosition(float x, float y, float z) {
+        _position[0]=x;
+        _position[1]=y;
+        _position[2]=z;
+    }
+
+    const float * GetPosition() const {
+        return _position;
+    }
+
+private:
+    float _position[3];
+};
+#define __NO_VERTEX__
+#endif
+
 #include "tutorial/tutorial_device.h"
 #include "../common/tutorial/scene_device.h"
 
@@ -112,7 +156,7 @@ unsigned int createSphere (RTCGeometryFlags flags, const Vec3fa& pos, const floa
   rtcSetDisplacementFunction(g_scene, mesh, (RTCDisplacementFunc)DisplacementFunc,(RTCBounds&)bounds);
   
   /* map buffers */
-  Vertex* vertices = (Vertex*  ) rtcMapBuffer(g_scene,mesh,RTC_VERTEX_BUFFER); 
+  Vec3fa* vertices = (Vec3fa*  ) rtcMapBuffer(g_scene,mesh,RTC_VERTEX_BUFFER); 
   int*    indices  = (int     *) rtcMapBuffer(g_scene,mesh,RTC_INDEX_BUFFER);
   int*    offsets  = (int     *) rtcMapBuffer(g_scene,mesh,RTC_FACE_BUFFER);
   
@@ -126,14 +170,13 @@ unsigned int createSphere (RTCGeometryFlags flags, const Vec3fa& pos, const floa
     {
       const float phif   = phi*float(pi)*rcpNumPhi;
       const float thetaf = theta*2.0f*float(pi)*rcpNumTheta;
-      Vertex& v = vertices[phi*numTheta+theta];
+      Vec3fa& v = vertices[phi*numTheta+theta];
       Vec3fa P(pos.x + r*sin(phif)*sin(thetaf),
                pos.y + r*cos(phif),
                pos.z + r*sin(phif)*cos(thetaf));
       v.x = P.x;
       v.y = P.y;
       v.z = P.z;
-      v.r = 3.0f;
     }
     if (phi == 0) continue;
 
@@ -162,10 +205,10 @@ unsigned int createSphere (RTCGeometryFlags flags, const Vec3fa& pos, const floa
 void updateSphere(const Vec3fa& cam_pos)
 {
   if (g_sphere == -1) return;
-  Vertex* vertices = (Vertex*  ) rtcMapBuffer(g_scene,g_sphere,RTC_VERTEX_BUFFER); 
+  Vec3fa* vertices = (Vec3fa*  ) rtcMapBuffer(g_scene,g_sphere,RTC_VERTEX_BUFFER); 
   for (size_t i=0; i<numTheta*(numPhi+1); i++) {
     Vec3fa P(vertices[i].x,vertices[i].y,vertices[i].z);
-    vertices[i].r = floor(log(100.0f/length(cam_pos-P))/log(2.0f));
+    //vertices[i].a = floor(log(100.0f/length(cam_pos-P))/log(2.0f));
   }
   rtcUnmapBuffer(g_scene,g_sphere,RTC_VERTEX_BUFFER); 
   rtcUpdate(g_scene,g_sphere);
@@ -210,6 +253,86 @@ void constructScene(const Vec3fa& cam_pos)
     
   rtcCommit(g_scene);
 }
+
+#if defined(__USE_OPENSUBDIV__)
+
+void constructSceneOpenSubdiv() 
+{
+  typedef Far::TopologyRefinerFactoryBase::TopologyDescriptor Descriptor;
+
+  Sdc::Options options;
+  options.SetVVarBoundaryInterpolation(Sdc::Options::VVAR_BOUNDARY_EDGE_ONLY);
+
+  if (g_ispc_scene)
+  {
+    /*! Create an Embree object to hold scene state. */
+    g_scene = rtcNewScene(RTC_SCENE_STATIC, RTC_INTERSECT1);
+    
+    for (size_t i=0; i<g_ispc_scene->numSubdivMeshes; i++)
+    {
+      ISPCSubdivMesh* mesh = g_ispc_scene->subdiv[i];
+
+      PRINT(mesh->numVertices);
+      PRINT(mesh->numFaces);
+      PRINT(mesh->verticesPerFace);
+      PRINT(mesh->numCreases);
+      PRINT(mesh->numCorners);
+
+      Descriptor desc;
+      desc.numVertices  = mesh->numVertices;
+      desc.numFaces     = mesh->numFaces;
+      desc.vertsPerFace = mesh->verticesPerFace;
+      desc.vertIndices  = mesh->indices;
+      desc.numCreases   = mesh->numCreases;
+      desc.creaseVertexIndexPairs = (int*) mesh->creases;
+      desc.creaseWeights = mesh->creaseWeights;
+      desc.numCorners    = mesh->numCorners;
+      desc.cornerVertexIndices = mesh->corners;
+      desc.cornerWeights = mesh->cornerWeights;
+      
+      size_t maxlevel = 4;
+      Far::TopologyRefiner* refiner = Far::TopologyRefinerFactory<Descriptor>::Create(OpenSubdiv::Sdc::TYPE_CATMARK, options, desc);
+      refiner->RefineUniform(maxlevel);
+
+      std::vector<Vertex> vbuffer(refiner->GetNumVerticesTotal());
+      Vertex* verts = &vbuffer[0];
+
+      int nCoarseVerts = mesh->numVertices;
+      for (int i=0; i<nCoarseVerts; ++i) {
+        verts[i].SetPosition(mesh->vertices[i].x,mesh->vertices[i].y,mesh->vertices[i].z);
+      }
+
+      refiner->Interpolate(verts, verts + nCoarseVerts);
+
+      // Print vertex positions
+      int firstVert = 0;
+      for (int level=0; level<=maxlevel; ++level) {
+        if (level==maxlevel)
+          break;
+        else
+          firstVert += refiner->GetNumVertices(level);
+      }
+
+      const size_t numVertices = refiner->GetNumVertices(maxlevel);
+      const size_t numFaces = refiner->GetNumFaces(maxlevel);
+
+      unsigned int meshID = rtcNewTriangleMesh(g_scene, RTC_GEOMETRY_STATIC, 2*numFaces, numVertices);
+      rtcSetBuffer(g_scene, meshID, RTC_VERTEX_BUFFER, &verts[firstVert], 0, sizeof(Vec3f));
+      
+      Vec3i* tris = (Vec3i*) rtcMapBuffer(g_scene, meshID, RTC_INDEX_BUFFER);
+      for (size_t i=0; i<numFaces; i++) {
+        Far::IndexArray fverts = refiner->GetFaceVertices(maxlevel, i);
+        assert(fverts.size() == 4);
+        tris[2*i+0] = Vec3i(fverts[0],fverts[1],fverts[2]);
+        tris[2*i+1] = Vec3i(fverts[2],fverts[3],fverts[0]);
+      }
+      rtcUnmapBuffer(g_scene,meshID,RTC_INDEX_BUFFER);
+    }
+    rtcCommit(g_scene);
+  }
+}
+
+#endif
 
 Vec3fa renderPixelStandard(float x, float y, const Vec3fa &vx, const Vec3fa &vy, const Vec3fa &vz, const Vec3fa &p) {
 
@@ -303,7 +426,11 @@ extern unsigned int g_subdivision_levels;
 extern "C" void device_render(int *pixels, int width, int height, float time, const Vec3fa &vx, const Vec3fa &vy, const Vec3fa &vz, const Vec3fa &p) 
 {
   if (g_scene == NULL)
+#if defined(__USE_OPENSUBDIV__)
+  constructSceneOpenSubdiv();
+#else
       constructScene(p);
+#endif
   else {
     static Vec3fa oldP = zero;
     if (oldP != p) updateSphere (p);

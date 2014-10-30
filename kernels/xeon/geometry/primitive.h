@@ -58,11 +58,12 @@ namespace embree
     int    intCost;         //!< cost of one ray/primitive intersection
   };
 
-  template<typename Primitive1, typename Primitive2>
+  //template<typename Primitive1, typename Primitive2>
     struct PrimitiveType2 : public PrimitiveType
   {
     PrimitiveType2 () 
-      : PrimitiveType(std::string(typeid(Primitive1).name()) + ", " + std::string(typeid(Primitive2).name()), 0, 0, 0, 0) {}
+      // : PrimitiveType(std::string(typeid(Primitive1).name()) + ", " + std::string(typeid(Primitive2).name()), 0, 0, 0, 0) {}
+      : PrimitiveType("unknown", 0, 0, 0, 0) {}
 
     size_t blocks(size_t x) const { return x; }
     size_t size(const char* This) const { return 0; } // FIXME

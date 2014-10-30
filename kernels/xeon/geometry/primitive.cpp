@@ -20,5 +20,6 @@
 
 namespace embree
 {
-  PrimitiveType2<QuadQuad4x4,SubdivPatchDispl1> PrimitiveType2<QuadQuad4x4,SubdivPatchDispl1>::type; 
+  PrimitiveType2 PrimitiveType2::type; 
+  //PrimitiveType2<QuadQuad4x4,SubdivPatchDispl1> PrimitiveType2<QuadQuad4x4,SubdivPatchDispl1>::type; 
 }

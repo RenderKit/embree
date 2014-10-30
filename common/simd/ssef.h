@@ -66,9 +66,11 @@ namespace embree
     static __forceinline ssef broadcast( const void* const a ) { return _mm_set1_ps(*(float*)a); }
 #endif
 
+#if defined(__SSE4_1__)
     static __forceinline ssef load( const unsigned char* const ptr ) { 
       return _mm_cvtepi32_ps(_mm_cvtepu8_epi32(_mm_load_si128((__m128i*)ptr)));
     }
+#endif
 
     ////////////////////////////////////////////////////////////////////////////////
     /// Array Access
