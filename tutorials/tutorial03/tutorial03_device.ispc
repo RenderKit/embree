@@ -15,7 +15,7 @@
 // ======================================================================== //
 
 #include "../common/tutorial/tutorial_device.isph"
-#include "../common/tutorial/tutorial_device_scene.h"
+#include "../common/tutorial/scene_device.h"
 
 #define PARALLEL_COMMIT
 

@@ -18,7 +18,7 @@
 #include "transport_device.h"
 #include "tutorial/obj_loader.h"
 #include "tutorial/tutorial_device.h"
-#include "tutorial/tutorial_device_scene.h"
+#include "tutorial/scene_device.h"
 
 extern "C" int64 get_tsc() {
   return __rdtsc();

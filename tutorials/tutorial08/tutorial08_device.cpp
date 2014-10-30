@@ -15,7 +15,7 @@
 // ======================================================================== //
 
 #include "tutorial/tutorial_device.h"
-#include "../common/tutorial/tutorial_device_scene.h"
+#include "../common/tutorial/scene_device.h"
 // #include "opensubdiv/hbr/mesh.h"
 // #include "extensions/triangulatemesh.h"
 // #include "extensions/subdivisionmesh.h"

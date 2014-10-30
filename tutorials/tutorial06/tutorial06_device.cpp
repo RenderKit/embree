@@ -15,7 +15,7 @@
 // ======================================================================== //
 
 #include "../common/tutorial/tutorial_device.h"
-#include "../common/tutorial/tutorial_device_scene.h"
+#include "../common/tutorial/scene_device.h"
 #include "shapesampler.h"
 #include "optics.h"
 

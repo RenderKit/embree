@@ -15,7 +15,7 @@
 // ======================================================================== //
 
 #include "../common/tutorial/tutorial_device.isph"
-#include "../common/tutorial/tutorial_device_scene.isph"
+#include "../common/tutorial/scene_device.isph"
 #include "shapesampler.isph"
 #include "optics.isph"
 
