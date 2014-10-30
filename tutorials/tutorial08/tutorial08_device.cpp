@@ -270,57 +270,6 @@ void updateSphere(const Vec3fa& cam_pos)
 
 // }
 
-#if 0
-
-#define VERTICES 8
-#define EDGES    24
-#define FACES    (EDGES/4)
-
-Vec3fa test_vertices[] = {
-  Vec3fa(-1.0f, -1.0f, -1.0f, 4.0f),
-  Vec3fa( 1.0f, -1.0f, -1.0f, 4.0f),
-  Vec3fa( 1.0f, -1.0f,  1.0f, 4.0f),
-  Vec3fa(-1.0f, -1.0f,  1.0f, 4.0f),
-  Vec3fa(-1.0f,  1.0f, -1.0f, 4.0f),
-  Vec3fa( 1.0f,  1.0f, -1.0f, 4.0f),
-  Vec3fa( 1.0f,  1.0f,  1.0f, 4.0f),
-  Vec3fa(-1.0f,  1.0f,  1.0f, 4.0f)
-};
-
-float s = 3.3f;
-float        test_creases[EDGES] = { s, 0, 0, 0,  s, 0, 0, 0,  s, 0, 0, 0,  0, 0, 0, s,  0, 0, 0, 0,  s, s, s, s };
-unsigned int test_indices[EDGES] = { 0, 1, 5, 4,  1, 2, 6, 5,  2, 3, 7, 6,  0, 4, 7, 3,  4, 5, 6, 7,  0, 3, 2, 1 };
-
-unsigned int test_offsets[FACES] = { 4, 4, 4, 4, 4, 4 };
-
-#else
-
-#define VERTICES 9
-#define EDGES    16
-#define FACES    (EDGES/4)
-
-Vec3fa test_vertices[] = {
-  Vec3fa(-1.0f, -1.0f, 0.0f), Vec3fa( 0.0f, -1.0f, 0.0f), Vec3fa(+1.0f, -1.0f, 0.0f),
-  Vec3fa(-1.0f,  0.0f, 1.0f), Vec3fa( 0.0f,  0.0f, 1.0f), Vec3fa(+1.0f,  0.0f, 1.0f),
-  Vec3fa(-1.0f, +1.0f, 0.0f), Vec3fa( 0.0f, +1.0f, 0.0f), Vec3fa(+1.0f, +1.0f, 0.0f),
-};
-
-float a = 1.0f;
-float b = 4.0f;
-//float b = 16.0f;
-int          test_creases[4] = { 3, 4, 4, 5 };
-float        test_crease_weights[2] = { a, b };
-
-int          test_corners[4] = { 0, 2, 6, 8 };
-float        test_corner_weights[4] = { 0, 0, 0, 0 };
-
-//float        test_creases[EDGES] = { 0, 0, a, 0,  0, 0, b, 0,  a, 0, 0, 0,  b, 0, 0, 0 };
-unsigned int test_indices[EDGES] = { 0, 1, 4, 3,  1, 2, 5, 4,  3, 4, 7, 6,  4, 5, 8, 7 };
-
-unsigned int test_faces[FACES] = { 4, 4, 4, 4 };
-
-#endif
-
 void constructScene(const Vec3fa& cam_pos) 
 {
   if (g_ispc_scene)
@@ -356,34 +305,6 @@ void constructScene(const Vec3fa& cam_pos)
       rtcSetBuffer(g_scene, subdivMeshID, RTC_CORNER_WEIGHT_BUFFER, mesh->cornerWeights, 0, sizeof(float));
     }       
   }
-    
-#if 0
-  if (totalNumQuads == 0)
-  {
-    /*! Create an Embree object to hold scene state. */
-    g_scene = rtcNewScene(RTC_SCENE_DYNAMIC, RTC_INTERSECT1);
-
-#if 1
-    std::cout << "Loading dummy cube..." << std::endl;
-    //unsigned int subdivMeshID = rtcNewSubdivisionMesh(g_scene, RTC_GEOMETRY_STATIC, 1, EDGES, VERTICES);
-    unsigned int subdivMeshID = rtcNewSubdivisionMesh(g_scene, RTC_GEOMETRY_STATIC, FACES, EDGES, VERTICES, 2, 4);
- 
-    rtcSetBuffer(g_scene, subdivMeshID, RTC_VERTEX_BUFFER, test_vertices, 0, sizeof(Vec3fa  ));
-    rtcSetBuffer(g_scene, subdivMeshID, RTC_INDEX_BUFFER,  test_indices , 0, sizeof(unsigned int));
-    rtcSetBuffer(g_scene, subdivMeshID, RTC_FACE_BUFFER, test_faces , 0, sizeof(unsigned int));
-    rtcSetBuffer(g_scene, subdivMeshID, RTC_CREASE_BUFFER, test_creases , 0, 2*sizeof(unsigned int));
-    rtcSetBuffer(g_scene, subdivMeshID, RTC_CREASE_WEIGHT_BUFFER, test_crease_weights , 0, sizeof(float));
-    rtcSetBuffer(g_scene, subdivMeshID, RTC_CORNER_BUFFER, test_corners , 0, sizeof(unsigned int));
-    rtcSetBuffer(g_scene, subdivMeshID, RTC_CORNER_WEIGHT_BUFFER, test_corner_weights , 0, sizeof(float));
-    
-    //BBox3fa bounds(Vec3fa(-0.1f,-0.1f,-0.1f),Vec3fa(0.1f,0.1f,0.1f));
-    //rtcSetDisplacementFunction(g_scene, subdivMeshID, (RTCDisplacementFunc)DisplacementFunc,(RTCBounds&)bounds);
-#else
-    createSphere (RTC_GEOMETRY_STATIC, Vec3fa(0.0f,0.0f,0.0f), 1.0f);
-    updateSphere (cam_pos);
-#endif
-  }
-#endif
     
   rtcCommit(g_scene);
 
