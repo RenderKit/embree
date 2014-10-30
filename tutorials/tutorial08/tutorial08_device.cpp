@@ -15,6 +15,7 @@
 // ======================================================================== //
 
 #include "tutorial/tutorial_device.h"
+#include "../common/tutorial/tutorial_device_scene.h"
 // #include "opensubdiv/hbr/mesh.h"
 // #include "extensions/triangulatemesh.h"
 // #include "extensions/subdivisionmesh.h"
@@ -45,83 +46,8 @@ void error_handler(const RTCError code, const char* str)
   exit(code);
 }
 
-struct ISPCTriangle 
-{
-  int v0;                /*< first triangle vertex */
-  int v1;                /*< second triangle vertex */
-  int v2;                /*< third triangle vertex */
-  int materialID;        /*< material of triangle */
-};
-
-struct ISPCQuad
-{
-  int v0;                /*< first triangle vertex */
-  int v1;                /*< second triangle vertex */
-  int v2;                /*< third triangle vertex */
-  int v4;                /*< fourth triangle vertex */
-};
-
-struct ISPCMaterial
-{
-  int type;
-  int align[3];
-
-  int illum;             /*< illumination model */
-  float d;               /*< dissolve factor, 1=opaque, 0=transparent */
-  float Ns;              /*< specular exponent */
-  float Ni;              /*< optical density for the surface (index of refraction) */
-  
-  Vec3fa Ka;              /*< ambient reflectivity */
-  Vec3fa Kd;              /*< diffuse reflectivity */
-  Vec3fa Ks;              /*< specular reflectivity */
-  Vec3fa Tf;              /*< transmission filter */
-  Vec3fa v[2];
-};
-
-struct ISPCMesh
-{
-  Vec3fa* positions;    //!< vertex position array
-  Vec3fa* positions2;    //!< vertex position array
-  Vec3fa* normals;       //!< vertex normal array
-  Vec2f* texcoords;     //!< vertex texcoord array
-  ISPCTriangle* triangles;  //!< list of triangles
-  ISPCQuad* quads;  //!< list of triangles
-  int numVertices;
-  int numTriangles;
-  int numQuads;
-
-  Vec3fa dir;
-  float offset;
-};
-
-struct ISPCHair
-{
-  int vertex,id;  //!< index of first control point and hair ID
-};
-
-struct ISPCHairSet
-{
-  Vec3fa* positions;   //!< hair control points (x,y,z,r)
-  Vec3fa* positions2;   //!< hair control points (x,y,z,r)
-  ISPCHair* hairs;    //!< list of hairs
-  int numVertices;
-  int numHairs;
-};
-
-struct ISPCScene
-{
-  ISPCMesh** meshes;         //!< list of meshes
-  ISPCMaterial* materials;  //!< material list
-  int numMeshes;
-  int numMaterials;
-  ISPCHairSet** hairsets;
-  int numHairSets;
-  bool animate;
-};
-
 /* scene data */
 extern "C" ISPCScene* g_ispc_scene;
-
 
 /*! Embree state identifier for the scene. */
 RTCScene g_scene = NULL;

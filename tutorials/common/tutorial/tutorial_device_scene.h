@@ -34,16 +34,17 @@ struct ISPCQuad
 
 struct ISPCHair
 {
- int vertex,id;  //!< index of first control point and hair ID
+  int vertex;
+  int id;
 };
 
 struct ISPCHairSet
 {
- Vec3fa* positions;   //!< hair control points (x,y,z,r)
- Vec3fa* positions2;   //!< hair control points (x,y,z,r)
- ISPCHair* hairs;    //!< list of hairs
- int numVertices;
- int numHairs;
+  Vec3fa* v;       //!< hair control points (x,y,z,r)
+  Vec3fa* v2;       //!< hair control points (x,y,z,r)
+  ISPCHair* hairs; //!< for each hair, index to first control point
+  int numVertices;
+  int numHairs;
 };
 
 struct ISPCMesh
@@ -187,7 +188,7 @@ struct ISPCScene {
   int numMeshes;                       //!< number of meshes
   int numMaterials;                    //!< number of materials
 
-  ISPCHairSet** hairsets;
+  ISPCHairSet** hairs;
   int numHairSets;
 
   ISPCAmbientLight* ambientLights; //!< list of ambient lights

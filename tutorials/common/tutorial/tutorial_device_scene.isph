@@ -47,18 +47,18 @@ struct ISPCMesh
 
 struct ISPCHair
 {
- int vertex,id;  //!< index of first control point and hair ID
+  int vertex;
+  int id;
 };
 
 struct ISPCHairSet
 {
- uniform Vec3fa* positions;   //!< hair control points (x,y,z,r)
- uniform Vec3fa* positions2;   //!< hair control points (x,y,z,r)
- uniform ISPCHair* hairs;    //!< list of hairs
- int numVertices;
- int numHairs;
+  Vec3fa* v;       //!< hair control points (x,y,z,r)
+  Vec3fa* v2;       //!< hair control points (x,y,z,r)
+  ISPCHair* hairs; //!< for each hair, index to first control point
+  int numVertices;
+  int numHairs;
 };
-
 
 struct ISPCAmbientLight
 {
@@ -195,7 +195,7 @@ struct ISPCScene {
   int numMeshes;                       //!< number of meshes
   int numMaterials;                    //!< number of materials
 
-  uniform ISPCHairSet* uniform* hairsets;
+  uniform ISPCHairSet* uniform* hairs;
   int numHairSets;
 
   uniform ISPCAmbientLight* ambientLights; //!< list of ambient lights

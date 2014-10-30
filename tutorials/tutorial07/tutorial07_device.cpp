@@ -15,7 +15,7 @@
 // ======================================================================== //
 
 #include "../common/tutorial/tutorial_device.h"
-
+#include "../common/tutorial/tutorial_device_scene.h"
 
 
 #if defined(__XEON_PHI__) // FIXME: gather of pointers not working in ISPC for Xeon Phi
@@ -47,74 +47,6 @@ Vec3fa hair_Kr;    //!< reflectivity of hair
 Vec3fa hair_Kt;    //!< transparency of hair
 
 void filterDispatch(void* ptr, struct RTCRay2& ray);
-
-struct ISPCTriangle 
-{
-  int v0;                /*< first triangle vertex */
-  int v1;                /*< second triangle vertex */
-  int v2;                /*< third triangle vertex */
-  int materialID;        /*< material of triangle */
-};
-
-struct ISPCQuad
-{
-  int v0;                /*< first triangle vertex */
-  int v1;                /*< second triangle vertex */
-  int v2;                /*< third triangle vertex */
-  int v4;                /*< fourth triangle vertex */
-};
-
-struct ISPCMaterial
-{
-  int illum;             /*< illumination model */
-  
-  float d;               /*< dissolve factor, 1=opaque, 0=transparent */
-  float Ns;              /*< specular exponent */
-  float Ni;              /*< optical density for the surface (index of refraction) */
-  
-  Vec3fa Ka;              /*< ambient reflectivity */
-  Vec3fa Kd;              /*< diffuse reflectivity */
-  Vec3fa Ks;              /*< specular reflectivity */
-  Vec3fa Tf;              /*< transmission filter */
-};
-
-struct ISPCHair
-{
-  int vertex;
-  int id;
-};
-
-struct ISPCHairSet
-{
-  Vec3fa* v;       //!< hair control points (x,y,z,r)
-  Vec3fa* v2;       //!< hair control points (x,y,z,r)
-  ISPCHair* hairs; //!< for each hair, index to first control point
-  int numVertices;
-  int numHairs;
-};
-
-struct ISPCMesh
-{
-  Vec3fa* positions;    //!< vertex position array
-  Vec3fa* positions2;    //!< vertex position array
-  Vec3fa* normals;       //!< vertex normal array
-  Vec2f* texcoords;     //!< vertex texcoord array
-  ISPCTriangle* triangles;  //!< list of triangles
-  ISPCQuad* quads;  //!< list of triangles
-  int numVertices;
-  int numTriangles;
-  int numQuads;
-};
-
-struct ISPCScene
-{
-  ISPCMesh** meshes;         //!< list of meshes
-  ISPCMaterial* materials;  //!< material list
-  int numMeshes;
-  int numMaterials;
-  ISPCHairSet** hairs;
-  int numHairSets;
-};
 
 /* scene data */
 extern "C" ISPCScene* g_ispc_scene;
@@ -483,7 +415,7 @@ Vec3fa renderPixelPathTrace(float x, float y, const Vec3fa& vx, const Vec3fa& vy
       int meshID = ray.geomID-g_ispc_scene->numHairSets;
       ISPCMesh* mesh = g_ispc_scene->meshes[meshID];
       ISPCTriangle* triangle = &mesh->triangles[ray.primID];
-      ISPCMaterial* material = &g_ispc_scene->materials[triangle->materialID];
+      OBJMaterial* material = (OBJMaterial*) &g_ispc_scene->materials[triangle->materialID];
       if (material->illum == 1)
       {
         /* calculate tangent space */

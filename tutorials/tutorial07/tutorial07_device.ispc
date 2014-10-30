@@ -15,6 +15,7 @@
 // ======================================================================== //
 
 #include "../common/tutorial/tutorial_device.isph"
+#include "../common/tutorial/tutorial_device_scene.isph"
 
 #define PARALLEL_COMMIT
 
@@ -47,74 +48,6 @@ uniform Vec3f hair_Kr;    //!< reflectivity of hair
 uniform Vec3f hair_Kt;    //!< transparency of hair
 
 void filterDispatch(void* uniform ptr, struct RTCRay2& ray);
-
-struct ISPCTriangle 
-{
-  int v0;                /*< first triangle vertex */
-  int v1;                /*< second triangle vertex */
-  int v2;                /*< third triangle vertex */
-  int materialID;        /*< material of triangle */
-};
-
-struct ISPCQuad
-{
-  int v0;                /*< first triangle vertex */
-  int v1;                /*< second triangle vertex */
-  int v2;                /*< third triangle vertex */
-  int v4;                /*< fourth triangle vertex */
-};
-
-struct ISPCMaterial
-{
-  int illum;             /*< illumination model */
-  
-  float d;               /*< dissolve factor, 1=opaque, 0=transparent */
-  float Ns;              /*< specular exponent */
-  float Ni;              /*< optical density for the surface (index of refraction) */
-  
-  Vec3f Ka;              /*< ambient reflectivity */
-  Vec3f Kd;              /*< diffuse reflectivity */
-  Vec3f Ks;              /*< specular reflectivity */
-  Vec3f Tf;              /*< transmission filter */
-};
-
-struct ISPCHair
-{
-  int vertex;
-  int id;
-};
-
-struct ISPCHairSet
-{
-  Vec3fa* v;       //!< hair control points (x,y,z,r)
-  Vec3fa* v2;       //!< hair control points (x,y,z,r)
-  ISPCHair* hairs; //!< for each hair, index to first control point
-  int numVertices;
-  int numHairs;
-};
-
-struct ISPCMesh
-{
-  uniform Vec3fa* positions;    //!< vertex position array
-  uniform Vec3fa* positions2;    //!< vertex position array
-  uniform Vec3fa* normals;       //!< vertex normal array
-  uniform Vec2f* texcoords;     //!< vertex texcoord array
-  uniform ISPCTriangle* triangles;  //!< list of triangles
-  uniform ISPCQuad* quads;  //!< list of triangles
-  int numVertices;
-  int numTriangles;
-  int numQuads;
-};
-
-struct ISPCScene
-{
-  ISPCMesh** meshes;         //!< list of meshes
-  ISPCMaterial* materials;  //!< material list
-  int numMeshes;
-  int numMaterials;
-  ISPCHairSet** hairs;
-  int numHairSets;
-};
 
 /* scene data */
 extern uniform ISPCScene* uniform g_ispc_scene;
@@ -483,7 +416,7 @@ Vec3f renderPixelPathTrace(float x, float y, const uniform Vec3f& vx, const unif
       int meshID = ray.geomID-g_ispc_scene->numHairSets;
       ISPCMesh* mesh = g_ispc_scene->meshes[meshID];
       ISPCTriangle* triangle = &mesh->triangles[ray.primID];
-      ISPCMaterial* material = &g_ispc_scene->materials[triangle->materialID];
+      OBJMaterial* material = (OBJMaterial*) &g_ispc_scene->materials[triangle->materialID];
       if (material->illum == 1)
       {
         /* calculate tangent space */
