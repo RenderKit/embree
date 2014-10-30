@@ -245,7 +245,7 @@ namespace embree
     return geom->id;
   }
 
-  unsigned Scene::newSubdivisionMesh (RTCGeometryFlags gflags, size_t numFaces, size_t numEdges, size_t numVertices, size_t numTimeSteps) 
+  unsigned Scene::newSubdivisionMesh (RTCGeometryFlags gflags, size_t numFaces, size_t numEdges, size_t numVertices, size_t numCreases, size_t numCorners, size_t numTimeSteps) 
   {
     if (isStatic() && (gflags != RTC_GEOMETRY_STATIC)) {
       process_error(RTC_INVALID_OPERATION,"static scenes can only contain static geometries");
@@ -257,7 +257,7 @@ namespace embree
       return -1;
     }
     
-    Geometry* geom = new SubdivMesh(this,gflags,numFaces,numEdges,numVertices,numTimeSteps);
+    Geometry* geom = new SubdivMesh(this,gflags,numFaces,numEdges,numVertices,numCreases,numCorners,numTimeSteps);
     return geom->id;
   }
 

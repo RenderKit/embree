@@ -108,7 +108,7 @@ unsigned int g_sphere = -1;
 unsigned int createSphere (RTCGeometryFlags flags, const Vec3fa& pos, const float r)
 {
   /* create a triangulated sphere */
-  unsigned int mesh = rtcNewSubdivisionMesh(g_scene, flags, numTheta*numPhi, 4*numTheta*numPhi, numTheta*(numPhi+1));
+  unsigned int mesh = rtcNewSubdivisionMesh(g_scene, flags, numTheta*numPhi, 4*numTheta*numPhi, numTheta*(numPhi+1), 0, 0);
   g_sphere = mesh;
 
   BBox3fa bounds(Vec3fa(-0.1f,-0.1f,-0.1f),Vec3fa(0.1f,0.1f,0.1f));
@@ -117,7 +117,7 @@ unsigned int createSphere (RTCGeometryFlags flags, const Vec3fa& pos, const floa
   /* map buffers */
   Vertex* vertices = (Vertex*  ) rtcMapBuffer(g_scene,mesh,RTC_VERTEX_BUFFER); 
   int*    indices  = (int     *) rtcMapBuffer(g_scene,mesh,RTC_INDEX_BUFFER);
-  int*    offsets  = (int     *) rtcMapBuffer(g_scene,mesh,RTC_OFFSET_BUFFER);
+  int*    offsets  = (int     *) rtcMapBuffer(g_scene,mesh,RTC_FACE_BUFFER);
   
   /* create sphere geometry */
   int tri = 0;
@@ -151,13 +151,13 @@ unsigned int createSphere (RTCGeometryFlags flags, const Vec3fa& pos, const floa
       indices[4*tri+1] = p00; 
       indices[4*tri+2] = p01; 
       indices[4*tri+3] = p11; 
-      offsets[tri] = 4*tri;
+      offsets[tri] = 4;//*tri;
       tri++;
     }
   }
   rtcUnmapBuffer(g_scene,mesh,RTC_VERTEX_BUFFER); 
   rtcUnmapBuffer(g_scene,mesh,RTC_INDEX_BUFFER);
-  rtcUnmapBuffer(g_scene,mesh,RTC_OFFSET_BUFFER);
+  rtcUnmapBuffer(g_scene,mesh,RTC_FACE_BUFFER);
 
   return mesh;
 }
@@ -291,7 +291,7 @@ float s = 3.3f;
 float        test_creases[EDGES] = { s, 0, 0, 0,  s, 0, 0, 0,  s, 0, 0, 0,  0, 0, 0, s,  0, 0, 0, 0,  s, s, s, s };
 unsigned int test_indices[EDGES] = { 0, 1, 5, 4,  1, 2, 6, 5,  2, 3, 7, 6,  0, 4, 7, 3,  4, 5, 6, 7,  0, 3, 2, 1 };
 
-unsigned int test_offsets[FACES] = { 0, 4, 8, 12, 16, 20 };
+unsigned int test_offsets[FACES] = { 4, 4, 4, 4, 4, 4 };
 
 #else
 
@@ -308,10 +308,16 @@ Vec3fa test_vertices[] = {
 float a = 1.0f;
 float b = 4.0f;
 //float b = 16.0f;
-float        test_creases[EDGES] = { 0, 0, a, 0,  0, 0, b, 0,  a, 0, 0, 0,  b, 0, 0, 0 };
+int          test_creases[4] = { 3, 4, 4, 5 };
+float        test_crease_weights[2] = { a, b };
+
+int          test_corners[4] = { 0, 2, 6, 8 };
+float        test_corner_weights[4] = { 0, 0, 0, 0 };
+
+//float        test_creases[EDGES] = { 0, 0, a, 0,  0, 0, b, 0,  a, 0, 0, 0,  b, 0, 0, 0 };
 unsigned int test_indices[EDGES] = { 0, 1, 4, 3,  1, 2, 5, 4,  3, 4, 7, 6,  4, 5, 8, 7 };
 
-unsigned int test_offsets[FACES] = { 0, 4, 8, 12 };
+unsigned int test_offsets[FACES] = { 4, 4, 4, 4 };
 
 #endif
 
@@ -335,18 +341,19 @@ void constructScene(const Vec3fa& cam_pos)
 	    {
 	      totalNumQuads += mesh->numQuads;
 	      unsigned int *offset_buffer = new unsigned int[mesh->numQuads];
-	      for (size_t i=0;i<mesh->numQuads;i++) offset_buffer[i] = i*4;
+	      for (size_t i=0;i<mesh->numQuads;i++) offset_buffer[i] = 4;
 
 	      unsigned int subdivMeshID = rtcNewSubdivisionMesh(g_scene, 
 								RTC_GEOMETRY_STATIC, 
 								mesh->numQuads, 
 								mesh->numQuads*4, 
-								mesh->numVertices);
+								mesh->numVertices,
+                                                                0,0);
 
 	      rtcSetBuffer(g_scene, subdivMeshID, RTC_VERTEX_BUFFER, mesh->positions, 0, sizeof(Vec3fa  ));
               for (size_t i=0; i<mesh->numQuads; i++) mesh->positions[i].w = 4.0f;
 	      rtcSetBuffer(g_scene, subdivMeshID, RTC_INDEX_BUFFER,  mesh->quads    , 0, sizeof(unsigned int));
-	      rtcSetBuffer(g_scene, subdivMeshID, RTC_OFFSET_BUFFER, offset_buffer  , 0, sizeof(unsigned int));
+	      rtcSetBuffer(g_scene, subdivMeshID, RTC_FACE_BUFFER, offset_buffer  , 0, sizeof(unsigned int));
 	      //delete offset_buffer;
 	    }
 	}       
@@ -354,27 +361,30 @@ void constructScene(const Vec3fa& cam_pos)
     
 
   if (totalNumQuads == 0)
-    {
-      /*! Create an Embree object to hold scene state. */
-      g_scene = rtcNewScene(RTC_SCENE_DYNAMIC, RTC_INTERSECT1);
+  {
+    /*! Create an Embree object to hold scene state. */
+    g_scene = rtcNewScene(RTC_SCENE_DYNAMIC, RTC_INTERSECT1);
 
 #if 1
-      std::cout << "Loading dummy cube..." << std::endl;
-      //unsigned int subdivMeshID = rtcNewSubdivisionMesh(g_scene, RTC_GEOMETRY_STATIC, 1, EDGES, VERTICES);
-      unsigned int subdivMeshID = rtcNewSubdivisionMesh(g_scene, RTC_GEOMETRY_STATIC, FACES, EDGES, VERTICES);
+    std::cout << "Loading dummy cube..." << std::endl;
+    //unsigned int subdivMeshID = rtcNewSubdivisionMesh(g_scene, RTC_GEOMETRY_STATIC, 1, EDGES, VERTICES);
+    unsigned int subdivMeshID = rtcNewSubdivisionMesh(g_scene, RTC_GEOMETRY_STATIC, FACES, EDGES, VERTICES, 2, 4);
  
-      rtcSetBuffer(g_scene, subdivMeshID, RTC_VERTEX_BUFFER, test_vertices, 0, sizeof(Vec3fa  ));
-      rtcSetBuffer(g_scene, subdivMeshID, RTC_INDEX_BUFFER,  test_indices , 0, sizeof(unsigned int));
-      rtcSetBuffer(g_scene, subdivMeshID, RTC_OFFSET_BUFFER, test_offsets , 0, sizeof(unsigned int));
-      rtcSetBuffer(g_scene, subdivMeshID, RTC_CREASE_BUFFER, test_creases , 0, sizeof(unsigned int));
-
-      //BBox3fa bounds(Vec3fa(-0.1f,-0.1f,-0.1f),Vec3fa(0.1f,0.1f,0.1f));
-      //rtcSetDisplacementFunction(g_scene, subdivMeshID, (RTCDisplacementFunc)DisplacementFunc,(RTCBounds&)bounds);
+    rtcSetBuffer(g_scene, subdivMeshID, RTC_VERTEX_BUFFER, test_vertices, 0, sizeof(Vec3fa  ));
+    rtcSetBuffer(g_scene, subdivMeshID, RTC_INDEX_BUFFER,  test_indices , 0, sizeof(unsigned int));
+    rtcSetBuffer(g_scene, subdivMeshID, RTC_FACE_BUFFER, test_offsets , 0, sizeof(unsigned int));
+    rtcSetBuffer(g_scene, subdivMeshID, RTC_CREASE_BUFFER, test_creases , 0, 2*sizeof(unsigned int));
+    rtcSetBuffer(g_scene, subdivMeshID, RTC_CREASE_WEIGHT_BUFFER, test_crease_weights , 0, sizeof(float));
+    rtcSetBuffer(g_scene, subdivMeshID, RTC_CORNER_BUFFER, test_corners , 0, sizeof(unsigned int));
+    rtcSetBuffer(g_scene, subdivMeshID, RTC_CORNER_WEIGHT_BUFFER, test_corner_weights , 0, sizeof(float));
+    
+    //BBox3fa bounds(Vec3fa(-0.1f,-0.1f,-0.1f),Vec3fa(0.1f,0.1f,0.1f));
+    //rtcSetDisplacementFunction(g_scene, subdivMeshID, (RTCDisplacementFunc)DisplacementFunc,(RTCBounds&)bounds);
 #else
-      createSphere (RTC_GEOMETRY_STATIC, Vec3fa(0.0f,0.0f,0.0f), 1.0f);
-      updateSphere (cam_pos);
+    createSphere (RTC_GEOMETRY_STATIC, Vec3fa(0.0f,0.0f,0.0f), 1.0f);
+    updateSphere (cam_pos);
 #endif
-    }
+  }
     
   rtcCommit(g_scene);
 

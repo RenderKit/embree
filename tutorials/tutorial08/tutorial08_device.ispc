@@ -159,17 +159,17 @@ uniform float test_vertices[8][4] = {
 
 uniform unsigned int test_indices[EDGES] = {0, 1, 5, 4,  1, 2, 6, 5,  2, 3, 7, 6,  0, 4, 7, 3,  4, 5, 6, 7,  0, 3, 2, 1};
 
-uniform unsigned int test_offsets[FACES] = {0, 4, 8, 12, 16, 20};
+uniform unsigned int test_offsets[FACES] = {4, 4, 4, 4, 4, 4};
 
 
 void convertTestSubdivScene()
 {
   /* create scene */
-  uniform unsigned int subdivMeshID = rtcNewSubdivisionMesh(g_scene, RTC_GEOMETRY_STATIC, FACES, EDGES, VERTICES);
+  uniform unsigned int subdivMeshID = rtcNewSubdivisionMesh(g_scene, RTC_GEOMETRY_STATIC, FACES, EDGES, VERTICES, 0, 0);
 
   rtcSetBuffer(g_scene, subdivMeshID, RTC_VERTEX_BUFFER, test_vertices, 0, sizeof(uniform Vec3fa  ));
   rtcSetBuffer(g_scene, subdivMeshID, RTC_INDEX_BUFFER,  test_indices , 0, sizeof(uniform unsigned int));
-  rtcSetBuffer(g_scene, subdivMeshID, RTC_OFFSET_BUFFER, test_offsets , 0, sizeof(uniform unsigned int));
+  rtcSetBuffer(g_scene, subdivMeshID, RTC_FACE_BUFFER, test_offsets , 0, sizeof(uniform unsigned int));
 }
 
 uniform unsigned int convertScene(uniform ISPCScene* uniform scene_in)
@@ -186,14 +186,14 @@ uniform unsigned int convertScene(uniform ISPCScene* uniform scene_in)
       {   
 	totalNumQuads += mesh->numQuads;
 	uniform int * uniform offset_buffer = uniform new uniform int[mesh->numQuads];
-	for (size_t i=0;i<mesh->numQuads;i++) offset_buffer[i] = i*4;
+	for (size_t i=0;i<mesh->numQuads;i++) offset_buffer[i] = 4;
 
        /* create a triangle mesh */
-       uniform unsigned int subdivMeshID = rtcNewSubdivisionMesh (g_scene, RTC_GEOMETRY_STATIC, mesh->numQuads, mesh->numQuads*4, mesh->numVertices);
+        uniform unsigned int subdivMeshID = rtcNewSubdivisionMesh (g_scene, RTC_GEOMETRY_STATIC, mesh->numQuads, mesh->numQuads*4, mesh->numVertices, 0, 0);
 
 	rtcSetBuffer(g_scene, subdivMeshID, RTC_VERTEX_BUFFER, mesh->positions, 0, sizeof(uniform Vec3fa  ));
 	rtcSetBuffer(g_scene, subdivMeshID, RTC_INDEX_BUFFER,  mesh->quads    , 0, sizeof(uniform unsigned int));
-	rtcSetBuffer(g_scene, subdivMeshID, RTC_OFFSET_BUFFER, offset_buffer  , 0, sizeof(uniform unsigned int));
+	rtcSetBuffer(g_scene, subdivMeshID, RTC_FACE_BUFFER, offset_buffer  , 0, sizeof(uniform unsigned int));
        }
   }
 

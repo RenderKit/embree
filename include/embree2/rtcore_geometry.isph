@@ -30,7 +30,7 @@ enum RTCBufferType {
   RTC_VERTEX_BUFFER0  = 0x02000000,
   RTC_VERTEX_BUFFER1  = 0x02000001,
 
-  RTC_OFFSET_BUFFER   = 0x03000000,
+  RTC_FACE_BUFFER   = 0x03000000,
   RTC_DATA_BUFFER0    = 0x04000000,
   RTC_DATA_BUFFER1    = 0x04000001,
 };
@@ -185,11 +185,13 @@ void rtcDeleteGeometry (RTCScene scene, uniform unsigned int geomID);
 /*! \brief Creates a new subdivision mesh.  */
 
 uniform unsigned int rtcNewSubdivisionMesh (RTCScene scene,                //!< the scene the mesh belongs to
-		 			   uniform RTCGeometryFlags flags,        //!< geometry flags
-					   uniform size_t numFaces,               //!< number of faces
-					   uniform size_t numEdges,               //!< number of edges
-					   uniform size_t numVertices,            //!< number of vertices
-					   uniform size_t numTimeSteps = 1        //!< number of motion blur time steps
+                                            uniform RTCGeometryFlags flags,        //!< geometry flags
+                                            uniform size_t numFaces,               //!< number of faces
+                                            uniform size_t numEdges,               //!< number of edges
+                                            uniform size_t numVertices,            //!< number of vertices
+                                            uniform size_t numCreases,             //!< number of creases
+                                            uniform size_t numCorners,             //!< number of corners
+                                            uniform size_t numTimeSteps = 1        //!< number of motion blur time steps
   );
 
 /*! @} */

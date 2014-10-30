@@ -29,7 +29,7 @@ namespace embree
   class SubdivMesh : public Geometry
   {
   public:
-    SubdivMesh(Scene* parent, RTCGeometryFlags flags, size_t numFaces, size_t numEdges, size_t numVertices, size_t numTimeSteps);
+    SubdivMesh(Scene* parent, RTCGeometryFlags flags, size_t numFaces, size_t numEdges, size_t numVertices, size_t numCreases, size_t numCorners, size_t numTimeSteps);
     ~SubdivMesh();
 
     void enabling();
@@ -231,7 +231,9 @@ namespace embree
   public: // FIXME: make private
 
     /*! Offsets into the vertexIndices array indexed by face, provided by the application */
-    BufferT<unsigned int> vertexOffsets;
+    //BufferT<unsigned int> vertexOffsets;
+    std::vector<unsigned int> vertexOffsets;
+    BufferT<int> faceVertices;
 
     /*! Indices of the vertices composing each face, provided by the application */
     BufferT<unsigned int> vertexIndices;
@@ -240,7 +242,12 @@ namespace embree
     BufferT<Vec3fa> vertices[2];      //!< vertex array
 
     /*! Crease buffer, provided by the application */
-    BufferT<float> creases;
+    BufferT<Vec2i> creases;
+    BufferT<float> crease_weights;
+
+    /*! Corner buffer, provided by the application */
+    BufferT<int> corners;
+    BufferT<float> corner_weights;
 
     /*! Subdivision level per edge, provided by the application */
     BufferT<float> levels;

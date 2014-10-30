@@ -59,7 +59,7 @@ namespace embree
       return mapped; 
     }
 
-    size_t size() { return bytes; }
+    size_t size() { return num; }
 
     __forceinline operator bool() { return ptr; }
 

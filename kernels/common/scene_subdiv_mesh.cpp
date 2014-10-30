@@ -20,7 +20,7 @@
 
 namespace embree
 {
-  SubdivMesh::SubdivMesh (Scene* parent, RTCGeometryFlags flags, size_t numFaces, size_t numEdges, size_t numVertices, size_t numTimeSteps)
+  SubdivMesh::SubdivMesh (Scene* parent, RTCGeometryFlags flags, size_t numFaces, size_t numEdges, size_t numVertices, size_t numCreases, size_t numCorners, size_t numTimeSteps)
     : Geometry(parent,SUBDIV_MESH,numFaces,flags), 
       mask(-1), 
       numTimeSteps(numTimeSteps),
@@ -34,8 +34,11 @@ namespace embree
        vertices[i].init(numVertices,sizeof(Vec3fa));
 
     vertexIndices.init(numEdges,sizeof(unsigned int));
-    vertexOffsets.init(numFaces,sizeof(unsigned int));
-    creases.init(numEdges,sizeof(float));
+    faceVertices.init(numFaces,sizeof(unsigned int));
+    creases.init(numCreases,2*sizeof(unsigned int));
+    crease_weights.init(numCreases,sizeof(float));
+    corners.init(numCorners,sizeof(unsigned int));
+    corner_weights.init(numCorners,sizeof(float));
     levels.init(numEdges,sizeof(float));
   }
 
@@ -88,13 +91,13 @@ namespace embree
 #endif
 
     switch (type) {
-    case RTC_INDEX_BUFFER  : 
-      vertexIndices.set(ptr,offset,stride); 
-      break;
-
-    case RTC_OFFSET_BUFFER  : 
-      vertexOffsets.set(ptr,offset,stride); 
-      break;
+    case RTC_INDEX_BUFFER          : vertexIndices.set(ptr,offset,stride); break;
+    case RTC_FACE_BUFFER           : faceVertices.set(ptr,offset,stride); break;
+    case RTC_CREASE_BUFFER         : creases.set(ptr,offset,stride); break;
+    case RTC_CREASE_WEIGHT_BUFFER  : crease_weights.set(ptr,offset,stride); break;
+    case RTC_CORNER_BUFFER         : corners.set(ptr,offset,stride); break;
+    case RTC_CORNER_WEIGHT_BUFFER  : corner_weights.set(ptr,offset,stride); break;
+    case RTC_LEVEL_BUFFER          : levels.set(ptr,offset,stride); break;
 
     case RTC_VERTEX_BUFFER0: 
       vertices[0].set(ptr,offset,stride); 
@@ -112,14 +115,6 @@ namespace embree
       }
       break;
 
-    case RTC_CREASE_BUFFER: 
-      creases.set(ptr,offset,stride);
-      break;
-
-    case RTC_LEVEL_BUFFER: 
-      levels.set(ptr,offset,stride);
-      break;
-
     default: 
       process_error(RTC_INVALID_ARGUMENT,"unknown buffer type");
       break;
@@ -134,13 +129,16 @@ namespace embree
     }
 
     switch (type) {
-    case RTC_INDEX_BUFFER   : return vertexIndices.map(parent->numMappedBuffers);
-    case RTC_OFFSET_BUFFER  : return vertexOffsets.map(parent->numMappedBuffers);
-    case RTC_VERTEX_BUFFER0 : return vertices[0].map(parent->numMappedBuffers);
-    case RTC_VERTEX_BUFFER1 : return vertices[1].map(parent->numMappedBuffers);
-    case RTC_CREASE_BUFFER  : return creases.map(parent->numMappedBuffers); 
-    case RTC_LEVEL_BUFFER   : return levels.map(parent->numMappedBuffers); 
-    default                 : process_error(RTC_INVALID_ARGUMENT,"unknown buffer type"); return NULL;
+    case RTC_INDEX_BUFFER          : return vertexIndices.map(parent->numMappedBuffers);
+    case RTC_FACE_BUFFER           : return faceVertices.map(parent->numMappedBuffers);
+    case RTC_VERTEX_BUFFER0        : return vertices[0].map(parent->numMappedBuffers);
+    case RTC_VERTEX_BUFFER1        : return vertices[1].map(parent->numMappedBuffers);
+    case RTC_CREASE_BUFFER         : return creases.map(parent->numMappedBuffers); 
+    case RTC_CREASE_WEIGHT_BUFFER  : return crease_weights.map(parent->numMappedBuffers); 
+    case RTC_CORNER_BUFFER         : return corners.map(parent->numMappedBuffers); 
+    case RTC_CORNER_WEIGHT_BUFFER  : return corner_weights.map(parent->numMappedBuffers); 
+    case RTC_LEVEL_BUFFER          : return levels.map(parent->numMappedBuffers); 
+    default                        : process_error(RTC_INVALID_ARGUMENT,"unknown buffer type"); return NULL;
     }
   }
 
@@ -152,13 +150,16 @@ namespace embree
     }
 
     switch (type) {
-    case RTC_INDEX_BUFFER   : vertexIndices.unmap(parent->numMappedBuffers); break;
-    case RTC_OFFSET_BUFFER  : vertexOffsets.unmap(parent->numMappedBuffers); break;
-    case RTC_VERTEX_BUFFER0 : vertices[0].unmap(parent->numMappedBuffers); break;
-    case RTC_VERTEX_BUFFER1 : vertices[1].unmap(parent->numMappedBuffers); break;
-    case RTC_CREASE_BUFFER  : creases.unmap(parent->numMappedBuffers); break;
-    case RTC_LEVEL_BUFFER   : levels.unmap(parent->numMappedBuffers); break;
-    default                 : process_error(RTC_INVALID_ARGUMENT,"unknown buffer type"); break;
+    case RTC_INDEX_BUFFER          : vertexIndices.unmap(parent->numMappedBuffers); break;
+    case RTC_FACE_BUFFER           : faceVertices.unmap(parent->numMappedBuffers); break;
+    case RTC_VERTEX_BUFFER0        : vertices[0].unmap(parent->numMappedBuffers); break;
+    case RTC_VERTEX_BUFFER1        : vertices[1].unmap(parent->numMappedBuffers); break;
+    case RTC_CREASE_BUFFER         : creases.unmap(parent->numMappedBuffers); break;
+    case RTC_CREASE_WEIGHT_BUFFER  : crease_weights.unmap(parent->numMappedBuffers); break;
+    case RTC_CORNER_BUFFER         : corners.unmap(parent->numMappedBuffers); break;
+    case RTC_CORNER_WEIGHT_BUFFER  : corner_weights.unmap(parent->numMappedBuffers); break;
+    case RTC_LEVEL_BUFFER          : levels.unmap(parent->numMappedBuffers); break;
+    default                        : process_error(RTC_INVALID_ARGUMENT,"unknown buffer type"); break;
     }
   }
 
@@ -183,12 +184,37 @@ namespace embree
     if (freeVertices ) vertices[1].free();
   }
 
+  __forceinline int64 pair64(unsigned x, unsigned y) {
+    if (x<y) std::swap(x,y);
+    return (((int64)x) << 32) | (int64)y;
+  }
+
   void SubdivMesh::initializeHalfEdgeStructures ()
   {
     numHalfEdges = 4*numFaces;
     halfEdges = new HalfEdge[numHalfEdges];
 
-    /*! initialize all four half-edges for each face */
+    /* calculate offset buffer */
+    vertexOffsets.resize(numFaces);
+    size_t ofs = 0;
+    for (size_t i=0; i<numFaces; i++) {
+      vertexOffsets[i] = ofs; ofs += faceVertices[i];
+    }
+
+    /* create map containing all creases */
+    std::map<size_t,float> creaseMap;
+    for (size_t i=0; i<creases.size(); i++)
+      creaseMap[pair64(creases[i].x,creases[i].y)] = crease_weights[i];
+
+    /* calculate corner weight for each vertex */
+    std::vector<float> full_corner_weights;
+    full_corner_weights.resize(numVertices);
+    for (size_t i=0; i<numVertices; i++)
+      full_corner_weights[i] = 0.0f;
+    for (size_t i=0; i<corners.size(); i++)
+      full_corner_weights[corners[i]] = corner_weights[i];
+    
+    /* initialize all four half-edges for each face */
     for (size_t i=0; i<numFaces; i++) 
     {
       const unsigned int halfEdgeIndex = vertexOffsets[i];
@@ -197,22 +223,24 @@ namespace embree
         halfEdges[4*i+j].vtx_index      = vertexIndices[halfEdgeIndex + j];
         halfEdges[4*i+j].halfedge_id    = 4*i+j;
         halfEdges[4*i+j].opposite_index = (unsigned int)-1;
-        if (creases) halfEdges[4*i+j].crease_weight  = creases[4*i+j];
-        else         halfEdges[4*i+j].crease_weight = 0.0f;
+        halfEdges[4*i+j].crease_weight  = 0.0f;
         if (levels)  halfEdges[4*i+j].level = levels[4*i+j];
         else         halfEdges[4*i+j].level = 3.0f;
       }
     }
 
-    /*! find opposite half-edges */
+    /* find opposite half-edges */
     std::map<size_t,unsigned int> edgeMap;
 
     for (size_t i=0; i<numHalfEdges; i++)
     {
       unsigned int start = halfEdges[i].getStartVertexIndex();
       unsigned int end   = halfEdges[i].getEndVertexIndex();
-      if (end < start) std::swap(start,end);
-      int64 value = ((int64)start << 32) | (size_t)end;
+      int64 value = pair64(start,end);
+      
+      if (creaseMap.find(value) != creaseMap.end()) {
+        halfEdges[i].crease_weight = creaseMap[value];
+      }
 
       std::map<size_t,unsigned int>::iterator found = edgeMap.find(value);
       if (found != edgeMap.end()) {

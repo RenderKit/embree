@@ -50,11 +50,13 @@ extern "C" uniform unsigned int ispcNewBezierCurves (RTCScene scene,
                                                               uniform size_tt numTimeSteps);
 
 extern "C" uniform unsigned int ispcNewSubdivisionMesh (RTCScene scene,
-                                                 uniform RTCGeometryFlags flags,
-                                                 uniform size_tt numFaces,
-                                                 uniform size_tt numEdges,
-                                                 uniform size_tt numVertices,
-                                                 uniform size_tt numTimeSteps);
+                                                        uniform RTCGeometryFlags flags,
+                                                        uniform size_tt numFaces,
+                                                        uniform size_tt numEdges,
+                                                        uniform size_tt numVertices,
+                                                        uniform size_tt numCreases,
+                                                        uniform size_tt numCorners,
+                                                        uniform size_tt numTimeSteps);
 
 extern "C" void ispcSetRayMask (RTCScene scene, uniform unsigned int geomID, uniform int mask);
 extern "C" void* uniform ispcMapBuffer(RTCScene scene, uniform unsigned int geomID, uniform RTCBufferType type);
@@ -202,13 +204,15 @@ uniform unsigned int rtcNewHairGeometry (RTCScene scene,
 }
 
 uniform unsigned int rtcNewSubdivisionMesh (RTCScene scene,
-                                       uniform RTCGeometryFlags flags,
-                                       uniform size_t numFaces,
-                                       uniform size_t numEdges,
-                                       uniform size_t numVertices,
-                                       uniform size_t numTimeSteps)
+                                            uniform RTCGeometryFlags flags,
+                                            uniform size_t numFaces,
+                                            uniform size_t numEdges,
+                                            uniform size_t numVertices,
+                                            uniform size_t numCreases,             //!< number of creases
+                                            uniform size_t numCorners,             //!< number of corners
+                                            uniform size_t numTimeSteps)
 {
-  return ispcNewSubdivisionMesh(scene,flags,numFaces,numEdges,numVertices,numTimeSteps);
+  return ispcNewSubdivisionMesh(scene,flags,numFaces,numEdges,numVertices,numCreases,numCorners,numTimeSteps);
 }
 
 
