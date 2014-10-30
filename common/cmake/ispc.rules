@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <VisualStudioToolFile
 	Name="ISPC"
 	Version="8,00"
@@ -29,40 +29,6 @@
 							Value="1"
 							Switch="--arch=x86-64"
 							DisplayName="x86-64"
-						/>
-					</Values>
-				</EnumProperty>
-				<EnumProperty
-					Name="Processor"
-					DisplayName="Target Processor"
-					Description="Select Target Processor."
-					DefaultValue="1"
-					>
-					<Values>
-						<EnumValue
-							Value="0"
-							Switch="--cpu=atom"
-							DisplayName="Atom"
-						/>
-						<EnumValue
-							Value="1"
-							Switch="--cpu=penryn"
-							DisplayName="Penryn"
-						/>
-						<EnumValue
-							Value="2"
-							Switch="--cpu=core2"
-							DisplayName="Core 2"
-						/>
-						<EnumValue
-							Value="3"
-							Switch="--cpu=corei7"
-							DisplayName="Core i7"
-						/>
-						<EnumValue
-							Value="4"
-							Switch="--cpu=corei7-avx"
-							DisplayName="Core i7 AVX"
 						/>
 					</Values>
 				</EnumProperty>

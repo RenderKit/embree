@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <ProjectSchemaDefinitions xmlns="clr-namespace:Microsoft.Build.Framework.XamlTypes;assembly=Microsoft.Build.Framework" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:sys="clr-namespace:System;assembly=mscorlib" xmlns:transformCallback="Microsoft.Cpp.Dev10.ConvertPropertyCallback">
   <Rule
     Name="ISPC"
@@ -114,32 +114,6 @@
         Name="1"
         DisplayName="x86-64"
         Switch="--arch=x86-64" />
-    </EnumProperty>
-    <EnumProperty
-      Name="Processor"
-      HelpContext="0"
-      DisplayName="Target Processor"
-      Description="Select Target Processor.">
-      <EnumValue
-        Name="0"
-        DisplayName="Atom"
-        Switch="--cpu=atom" />
-      <EnumValue
-        Name="1"
-        DisplayName="Penryn"
-        Switch="--cpu=penryn" />
-      <EnumValue
-        Name="2"
-        DisplayName="Core 2"
-        Switch="--cpu=core2" />
-      <EnumValue
-        Name="3"
-        DisplayName="Core i7"
-        Switch="--cpu=corei7" />
-      <EnumValue
-        Name="4"
-        DisplayName="Core i7 AVX"
-        Switch="--cpu=corei7-avx" />
     </EnumProperty>
     <EnumProperty
       Name="TargetISA"
