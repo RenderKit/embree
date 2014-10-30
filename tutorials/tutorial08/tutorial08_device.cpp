@@ -263,6 +263,7 @@ RTCScene constructSceneOpenSubdiv()
 
   Sdc::Options options;
   options.SetVVarBoundaryInterpolation(Sdc::Options::VVAR_BOUNDARY_EDGE_ONLY);
+  options.SetCreasingMethod(Sdc::Options::CREASE_CHAIKIN);
 
   RTCScene scene = rtcNewScene(RTC_SCENE_STATIC, RTC_INTERSECT1);
   
