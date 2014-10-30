@@ -21,6 +21,7 @@
 #include "image/image.h"
 
 extern "C" void setSubdivisionLevel(unsigned int); // for now hidden fct in the core 
+extern void toggleOpenSubdiv(unsigned char key, int x, int y);
 
 namespace embree 
 {
@@ -56,7 +57,7 @@ namespace embree
     init(configuration.c_str());
 
   }
-
+  
   static void parseCommandLine(Ref<ParseStream> cin, const FileName &path) {
 
     for (std::string term = cin->getString() ; term != "" ; term = cin->getString()) {
@@ -127,7 +128,10 @@ namespace embree
     cleanup();
   }
 
-  void main(int argc, char **argv) {
+  void main(int argc, char **argv) 
+  {
+    mapKeyToFunction('t', toggleOpenSubdiv);
+
     /*! Parse command line options. */  
     parseCommandLine(new ParseStream(new CommandLineStream(argc, argv)), FileName());
 

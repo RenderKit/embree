@@ -14,50 +14,6 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#if defined(__USE_OPENSUBDIV__)
-#include <opensubdiv/far/topologyRefinerFactory.h>
-using namespace OpenSubdiv;
-
-struct Vertex {
-
-    // Minimal required interface ----------------------
-    Vertex() { }
-
-    Vertex(Vertex const & src) {
-        _position[0] = src._position[0];
-        _position[1] = src._position[1];
-        _position[1] = src._position[1];
-    }
-
-    void Clear( void * =0 ) {
-        _position[0]=_position[1]=_position[2]=0.0f;
-    }
-
-    void AddWithWeight(Vertex const & src, float weight) {
-        _position[0]+=weight*src._position[0];
-        _position[1]+=weight*src._position[1];
-        _position[2]+=weight*src._position[2];
-    }
-
-    void AddVaryingWithWeight(Vertex const &, float) { }
-
-    // Public interface ------------------------------------
-    void SetPosition(float x, float y, float z) {
-        _position[0]=x;
-        _position[1]=y;
-        _position[2]=z;
-    }
-
-    const float * GetPosition() const {
-        return _position;
-    }
-
-private:
-    float _position[3];
-};
-#define __NO_VERTEX__
-#endif
-
 #include "tutorial/tutorial_device.h"
 #include "../common/tutorial/scene_device.h"
 
@@ -92,6 +48,8 @@ extern "C" ISPCScene* g_ispc_scene;
 
 /*! Embree state identifier for the scene. */
 RTCScene g_scene = NULL;
+RTCScene g_embree_scene = NULL;
+RTCScene g_osd_scene = NULL;
 
 /* scene data */
 
@@ -215,115 +173,147 @@ void updateSphere(const Vec3fa& cam_pos)
   rtcCommit(g_scene);
 }
 
-void constructScene(const Vec3fa& cam_pos) 
+RTCScene constructScene(const Vec3fa& cam_pos) 
 {
-  if (g_ispc_scene)
-  {
-    /*! Create an Embree object to hold scene state. */
-    g_scene = rtcNewScene(RTC_SCENE_STATIC, RTC_INTERSECT1);
-    
-    for (size_t i=0; i<g_ispc_scene->numMeshes; i++)
-    {
-      ISPCMesh* mesh = g_ispc_scene->meshes[i];
-      if (mesh->numQuads == 0) continue;
-      
-      unsigned int subdivMeshID = rtcNewSubdivisionMesh(g_scene, RTC_GEOMETRY_STATIC, mesh->numQuads, mesh->numQuads*4, mesh->numVertices, 0,0);
-      rtcSetBuffer(g_scene, subdivMeshID, RTC_VERTEX_BUFFER, mesh->positions, 0, sizeof(Vec3fa  ));
-      rtcSetBuffer(g_scene, subdivMeshID, RTC_INDEX_BUFFER,  mesh->quads    , 0, sizeof(unsigned int));
-      
-      unsigned int* face_buffer = new unsigned int[mesh->numQuads];
-      for (size_t i=0;i<mesh->numQuads;i++) face_buffer[i] = 4;
-      rtcSetBuffer(g_scene, subdivMeshID, RTC_FACE_BUFFER, face_buffer    , 0, sizeof(unsigned int));
-      //delete face_buffer; // FIXME: never deleted
-    }       
+  if (!g_ispc_scene) return NULL;
 
-    for (size_t i=0; i<g_ispc_scene->numSubdivMeshes; i++)
-    {
-      ISPCSubdivMesh* mesh = g_ispc_scene->subdiv[i];
-      unsigned int subdivMeshID = rtcNewSubdivisionMesh(g_scene, RTC_GEOMETRY_STATIC, mesh->numFaces, mesh->numEdges, mesh->numVertices, mesh->numCreases, mesh->numCorners);
-      rtcSetBuffer(g_scene, subdivMeshID, RTC_VERTEX_BUFFER, mesh->vertices , 0, sizeof(Vec3fa  ));
-      rtcSetBuffer(g_scene, subdivMeshID, RTC_INDEX_BUFFER,  mesh->indices  , 0, sizeof(unsigned int));
-      rtcSetBuffer(g_scene, subdivMeshID, RTC_FACE_BUFFER,   mesh->verticesPerFace, 0, sizeof(unsigned int));
-      rtcSetBuffer(g_scene, subdivMeshID, RTC_CREASE_BUFFER, mesh->creases, 0, 2*sizeof(unsigned int));
-      rtcSetBuffer(g_scene, subdivMeshID, RTC_CREASE_WEIGHT_BUFFER, mesh->creaseWeights, 0, sizeof(float));
-      rtcSetBuffer(g_scene, subdivMeshID, RTC_CORNER_BUFFER, mesh->corners, 0, sizeof(unsigned int));
-      rtcSetBuffer(g_scene, subdivMeshID, RTC_CORNER_WEIGHT_BUFFER, mesh->cornerWeights, 0, sizeof(float));
-    }       
-  }
+  /*! Create an Embree object to hold scene state. */
+  RTCScene scene = rtcNewScene(RTC_SCENE_STATIC, RTC_INTERSECT1);
+  
+  for (size_t i=0; i<g_ispc_scene->numMeshes; i++)
+  {
+    ISPCMesh* mesh = g_ispc_scene->meshes[i];
+    if (mesh->numQuads == 0) continue;
     
-  rtcCommit(g_scene);
+    unsigned int subdivMeshID = rtcNewSubdivisionMesh(scene, RTC_GEOMETRY_STATIC, mesh->numQuads, mesh->numQuads*4, mesh->numVertices, 0,0);
+    rtcSetBuffer(scene, subdivMeshID, RTC_VERTEX_BUFFER, mesh->positions, 0, sizeof(Vec3fa  ));
+    rtcSetBuffer(scene, subdivMeshID, RTC_INDEX_BUFFER,  mesh->quads    , 0, sizeof(unsigned int));
+    
+    unsigned int* face_buffer = new unsigned int[mesh->numQuads];
+    for (size_t i=0;i<mesh->numQuads;i++) face_buffer[i] = 4;
+    rtcSetBuffer(scene, subdivMeshID, RTC_FACE_BUFFER, face_buffer    , 0, sizeof(unsigned int));
+    //delete face_buffer; // FIXME: never deleted
+  }       
+  
+  for (size_t i=0; i<g_ispc_scene->numSubdivMeshes; i++)
+  {
+    ISPCSubdivMesh* mesh = g_ispc_scene->subdiv[i];
+    unsigned int subdivMeshID = rtcNewSubdivisionMesh(scene, RTC_GEOMETRY_STATIC, mesh->numFaces, mesh->numEdges, mesh->numVertices, mesh->numCreases, mesh->numCorners);
+    rtcSetBuffer(scene, subdivMeshID, RTC_VERTEX_BUFFER, mesh->vertices , 0, sizeof(Vec3fa  ));
+    rtcSetBuffer(scene, subdivMeshID, RTC_INDEX_BUFFER,  mesh->indices  , 0, sizeof(unsigned int));
+    rtcSetBuffer(scene, subdivMeshID, RTC_FACE_BUFFER,   mesh->verticesPerFace, 0, sizeof(unsigned int));
+    rtcSetBuffer(scene, subdivMeshID, RTC_CREASE_BUFFER, mesh->creases, 0, 2*sizeof(unsigned int));
+    rtcSetBuffer(scene, subdivMeshID, RTC_CREASE_WEIGHT_BUFFER, mesh->creaseWeights, 0, sizeof(float));
+    rtcSetBuffer(scene, subdivMeshID, RTC_CORNER_BUFFER, mesh->corners, 0, sizeof(unsigned int));
+    rtcSetBuffer(scene, subdivMeshID, RTC_CORNER_WEIGHT_BUFFER, mesh->cornerWeights, 0, sizeof(float));
+  }       
+  
+  rtcCommit(scene);  
+  return scene;
 }
 
 #if defined(__USE_OPENSUBDIV__)
 
-void constructSceneOpenSubdiv() 
+#include <opensubdiv/far/topologyRefinerFactory.h>
+using namespace OpenSubdiv;
+
+struct OSDVertex {
+
+    // Minimal required interface ----------------------
+    OSDVertex() { }
+
+    OSDVertex(OSDVertex const & src) {
+        _position[0] = src._position[0];
+        _position[1] = src._position[1];
+        _position[1] = src._position[1];
+    }
+
+    void Clear( void * =0 ) {
+        _position[0]=_position[1]=_position[2]=0.0f;
+    }
+
+    void AddWithWeight(OSDVertex const & src, float weight) {
+        _position[0]+=weight*src._position[0];
+        _position[1]+=weight*src._position[1];
+        _position[2]+=weight*src._position[2];
+    }
+
+    void AddVaryingWithWeight(OSDVertex const &, float) { }
+
+    // Public interface ------------------------------------
+    void SetPosition(float x, float y, float z) {
+        _position[0]=x;
+        _position[1]=y;
+        _position[2]=z;
+    }
+
+    const float * GetPosition() const {
+        return _position;
+    }
+
+private:
+    float _position[3];
+};
+
+RTCScene constructSceneOpenSubdiv() 
 {
+  if (!g_ispc_scene) return NULL;
+
   typedef Far::TopologyRefinerFactoryBase::TopologyDescriptor Descriptor;
 
   Sdc::Options options;
   options.SetVVarBoundaryInterpolation(Sdc::Options::VVAR_BOUNDARY_EDGE_ONLY);
 
-  if (g_ispc_scene)
+  RTCScene scene = rtcNewScene(RTC_SCENE_STATIC, RTC_INTERSECT1);
+  
+  for (size_t i=0; i<g_ispc_scene->numSubdivMeshes; i++)
   {
-    /*! Create an Embree object to hold scene state. */
-    g_scene = rtcNewScene(RTC_SCENE_STATIC, RTC_INTERSECT1);
+    ISPCSubdivMesh* mesh = g_ispc_scene->subdiv[i];
     
-    for (size_t i=0; i<g_ispc_scene->numSubdivMeshes; i++)
-    {
-      ISPCSubdivMesh* mesh = g_ispc_scene->subdiv[i];
-
-      Descriptor desc;
-      desc.numVertices  = mesh->numVertices;
-      desc.numFaces     = mesh->numFaces;
-      desc.vertsPerFace = mesh->verticesPerFace;
-      desc.vertIndices  = mesh->indices;
-      desc.numCreases   = mesh->numCreases;
-      desc.creaseVertexIndexPairs = (int*) mesh->creases;
-      desc.creaseWeights = mesh->creaseWeights;
-      desc.numCorners    = mesh->numCorners;
-      desc.cornerVertexIndices = mesh->corners;
-      desc.cornerWeights = mesh->cornerWeights;
-      
-      size_t maxlevel = 4;
-      Far::TopologyRefiner* refiner = Far::TopologyRefinerFactory<Descriptor>::Create(OpenSubdiv::Sdc::TYPE_CATMARK, options, desc);
-      refiner->RefineUniform(maxlevel);
-
-      std::vector<Vertex> vbuffer(refiner->GetNumVerticesTotal());
-      Vertex* verts = &vbuffer[0];
-
-      int nCoarseVerts = mesh->numVertices;
-      for (int i=0; i<nCoarseVerts; ++i) {
-        verts[i].SetPosition(mesh->vertices[i].x,mesh->vertices[i].y,mesh->vertices[i].z);
-      }
-
-      refiner->Interpolate(verts, verts + nCoarseVerts);
-
-      // Print vertex positions
-      int firstVert = 0;
-      for (int level=0; level<=maxlevel; ++level) {
-        if (level==maxlevel)
-          break;
-        else
-          firstVert += refiner->GetNumVertices(level);
-      }
-
-      const size_t numVertices = refiner->GetNumVertices(maxlevel);
-      const size_t numFaces = refiner->GetNumFaces(maxlevel);
-
-      unsigned int meshID = rtcNewTriangleMesh(g_scene, RTC_GEOMETRY_STATIC, 2*numFaces, numVertices);
-      rtcSetBuffer(g_scene, meshID, RTC_VERTEX_BUFFER, &verts[firstVert], 0, sizeof(Vec3f));
-
-      Vec3i* tris = (Vec3i*) rtcMapBuffer(g_scene, meshID, RTC_INDEX_BUFFER);
-      for (size_t i=0; i<numFaces; i++) {
-        Far::IndexArray fverts = refiner->GetFaceVertices(maxlevel, i);
-        assert(fverts.size() == 4);
-        tris[2*i+0] = Vec3i(fverts[0],fverts[1],fverts[2]);
-        tris[2*i+1] = Vec3i(fverts[2],fverts[3],fverts[0]);
-      }
-      rtcUnmapBuffer(g_scene,meshID,RTC_INDEX_BUFFER);
+    Descriptor desc;
+    desc.numVertices  = mesh->numVertices;
+    desc.numFaces     = mesh->numFaces;
+    desc.vertsPerFace = mesh->verticesPerFace;
+    desc.vertIndices  = mesh->indices;
+    desc.numCreases   = mesh->numCreases;
+    desc.creaseVertexIndexPairs = (int*) mesh->creases;
+    desc.creaseWeights = mesh->creaseWeights;
+    desc.numCorners    = mesh->numCorners;
+    desc.cornerVertexIndices = mesh->corners;
+    desc.cornerWeights = mesh->cornerWeights;
+    
+    size_t maxlevel = 5;
+    Far::TopologyRefiner* refiner = Far::TopologyRefinerFactory<Descriptor>::Create(OpenSubdiv::Sdc::TYPE_CATMARK, options, desc);
+    refiner->RefineUniform(maxlevel);
+    
+    std::vector<OSDVertex> vbuffer(refiner->GetNumVerticesTotal());
+    OSDVertex* verts = &vbuffer[0];
+    
+    for (int i=0; i<mesh->numVertices; ++i)
+      verts[i].SetPosition(mesh->vertices[i].x,mesh->vertices[i].y,mesh->vertices[i].z);
+    
+    refiner->Interpolate(verts, verts + mesh->numVertices);
+    
+    for (int level=0; level<maxlevel; ++level)
+        verts += refiner->GetNumVertices(level);
+    
+    const size_t numVertices = refiner->GetNumVertices(maxlevel);
+    const size_t numFaces    = refiner->GetNumFaces(maxlevel);
+    
+    unsigned int meshID = rtcNewTriangleMesh(scene, RTC_GEOMETRY_STATIC, 2*numFaces, numVertices);
+    rtcSetBuffer(scene, meshID, RTC_VERTEX_BUFFER, verts, 0, sizeof(Vec3f));
+    
+    Vec3i* tris = (Vec3i*) rtcMapBuffer(scene, meshID, RTC_INDEX_BUFFER);
+    for (size_t i=0; i<numFaces; i++) {
+      Far::IndexArray fverts = refiner->GetFaceVertices(maxlevel, i);
+      assert(fverts.size() == 4);
+      tris[2*i+0] = Vec3i(fverts[0],fverts[1],fverts[2]);
+      tris[2*i+1] = Vec3i(fverts[2],fverts[3],fverts[0]);
     }
-    rtcCommit(g_scene);
+    rtcUnmapBuffer(scene,meshID,RTC_INDEX_BUFFER);
   }
+  rtcCommit(scene);
+  return scene;
 }
 
 #endif
@@ -409,22 +399,28 @@ extern "C" void device_init(int8 *configuration) {
   /*! Set the render mode to use on entry into the run loop. */
   //renderPixel = renderPixelStandard;
   renderPixel = renderPixelEyeLightTest;
-
-
 }
 
 extern "C" void setSubdivisionLevel(unsigned int); // for now hidden fct in the core 
 extern unsigned int g_subdivision_levels;
 
+void toggleOpenSubdiv(unsigned char key, int x, int y)
+{
+#if defined(__USE_OPENSUBDIV__)
+  if (g_osd_scene == NULL) {
+    g_osd_scene = constructSceneOpenSubdiv();
+    g_embree_scene = g_scene;
+  }
+  if (g_scene == g_embree_scene) g_scene = g_osd_scene;
+  else                           g_scene = g_embree_scene;
+#endif
+}
+
 extern "C" void device_render(int *pixels, int width, int height, float time, const Vec3fa &vx, const Vec3fa &vy, const Vec3fa &vz, const Vec3fa &p) 
 {
-  if (g_scene == NULL)
-#if defined(__USE_OPENSUBDIV__)
-  constructSceneOpenSubdiv();
-#else
-      constructScene(p);
-#endif
-  else {
+  if (g_scene == NULL) {
+    g_scene = constructScene(p);
+  } else {
     static Vec3fa oldP = zero;
     if (oldP != p) updateSphere (p);
     oldP = p;
