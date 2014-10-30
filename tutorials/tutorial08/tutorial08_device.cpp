@@ -272,12 +272,6 @@ void constructSceneOpenSubdiv()
     {
       ISPCSubdivMesh* mesh = g_ispc_scene->subdiv[i];
 
-      PRINT(mesh->numVertices);
-      PRINT(mesh->numFaces);
-      PRINT(mesh->verticesPerFace);
-      PRINT(mesh->numCreases);
-      PRINT(mesh->numCorners);
-
       Descriptor desc;
       desc.numVertices  = mesh->numVertices;
       desc.numFaces     = mesh->numFaces;
@@ -318,7 +312,7 @@ void constructSceneOpenSubdiv()
 
       unsigned int meshID = rtcNewTriangleMesh(g_scene, RTC_GEOMETRY_STATIC, 2*numFaces, numVertices);
       rtcSetBuffer(g_scene, meshID, RTC_VERTEX_BUFFER, &verts[firstVert], 0, sizeof(Vec3f));
-      
+
       Vec3i* tris = (Vec3i*) rtcMapBuffer(g_scene, meshID, RTC_INDEX_BUFFER);
       for (size_t i=0; i<numFaces; i++) {
         Far::IndexArray fverts = refiner->GetFaceVertices(maxlevel, i);
@@ -401,7 +395,6 @@ Vec3fa renderPixelEyeLightTest(float x, float y, const Vec3fa& vx, const Vec3fa&
   /* shade pixel */
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return Vec3fa(0,0,1.0f);
   else {
-    //DBG_PRINT( embree::abs(dot(ray.dir,normalize(ray.Ng))) );
     return Vec3fa(embree::abs(dot(ray.dir,normalize(ray.Ng))));
   }
 }
