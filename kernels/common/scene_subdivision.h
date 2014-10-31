@@ -216,7 +216,7 @@ namespace embree
       dest.valence         = valence;
       dest.num_vtx         = num_vtx;
       dest.hard_edge_index = hard_edge_index;
-      dest.corner_weight   = max(0.0f,dest.corner_weight-1.0f);
+      dest.corner_weight   = max(0.0f,corner_weight-1.0f);
 
       /* calculate face points */
       Vec3fa_t S = Vec3fa_t(0.0f);
