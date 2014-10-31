@@ -1,0 +1,45 @@
+<?xml version="1.0"?>
+
+<scene>
+  <Group>
+    <SubdivisionMesh>
+
+      <positions>
+
+        0.0 0.0 +1.0  
+        0.0 0.0 -1.0  
+
+        +1.0 0.0 +1.0  
+        +1.0 0.0 -1.0  
+
+        -1.0 0.0 +1.0  
+        -1.0 0.0 -1.0  
+
+        0.0 +1.0 +1.0  
+        0.0 +1.0 -1.0  
+
+        0.0 -1.0 +1.0  
+        0.0 -1.0 -1.0  
+        
+      </positions>
+
+      <indices>
+        0 1 3 2  
+        0 1 5 4  
+        0 1 7 6  
+        0 1 9 8  
+      </indices>
+
+      <faces>
+        4 4 4 4
+      </faces>
+
+      <material>
+        <code>"Matte"</code>
+        <parameters>
+          <float3 name="reflectance">0.5 0.5 0.5</float3>
+        </parameters>
+      </material>
+    </SubdivisionMesh>
+  </Group>
+</scene>

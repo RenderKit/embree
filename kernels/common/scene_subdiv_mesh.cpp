@@ -225,6 +225,7 @@ namespace embree
     
     /* initialize all half-edges for each face */
     std::map<size_t,unsigned int> edgeMap;
+    std::map<size_t,bool> nonManifoldEdges;
 
     for (size_t i=0; i<numFaces; i++) 
     {
@@ -250,6 +251,27 @@ namespace embree
         std::map<size_t,unsigned int>::iterator found = edgeMap.find(value);
         if (found == edgeMap.end()) {
           edgeMap[value] = 4*i+j;
+          continue;
+        }
+
+        HalfEdge& edge0 = halfEdges[ found->second ];
+        if (edge0.opposite_index != -1) 
+        {
+          nonManifoldEdges[value] = true;
+          HalfEdge& edge1 = halfEdges[ edge0.opposite_index ];
+          edge0.opposite_index = -1;
+          edge1.opposite_index = -1;
+
+          full_corner_weights[edge0.getStartVertexIndex()] = inf;
+          full_corner_weights[edge0.getEndVertexIndex()  ] = inf;
+          full_corner_weights[edge1.getStartVertexIndex()] = inf;
+          full_corner_weights[edge1.getEndVertexIndex()  ] = inf;
+          continue;
+        }
+
+        if (nonManifoldEdges.find(value) != nonManifoldEdges.end()) {
+          full_corner_weights[halfEdges[4*i+j].getStartVertexIndex()] = inf;
+          full_corner_weights[halfEdges[4*i+j].getEndVertexIndex()  ] = inf;
           continue;
         }
 
