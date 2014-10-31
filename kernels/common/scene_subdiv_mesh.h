@@ -235,6 +235,7 @@ namespace embree
     std::vector<unsigned int> vertexOffsets;
     BufferT<int> faceVertices;
     BufferT<int> holes;
+    std::vector<bool> full_holes;
 
     /*! Indices of the vertices composing each face, provided by the application */
     BufferT<unsigned int> vertexIndices;
@@ -348,7 +349,7 @@ namespace embree
     /*! check if the i'th primitive is valid */
     __forceinline bool valid(size_t i, BBox3fa* bbox = NULL) const {
       if (bbox) *bbox = bounds(i);
-      return true; // FIXME: implement valid test
+      return !full_holes[i];
     }
 
   };

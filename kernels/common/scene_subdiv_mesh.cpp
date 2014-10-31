@@ -220,7 +220,7 @@ namespace embree
     }
 
     /* calculate full hole vector */
-    std::vector<bool> full_holes(numFaces);
+    full_holes.resize(numFaces);
     for (size_t i=0; i<full_holes.size(); i++) full_holes[i] = 0;
     for (size_t i=0; i<holes.size()     ; i++) full_holes[holes[i]] = 1;
     
@@ -239,7 +239,7 @@ namespace embree
         if (levels)  halfEdges[4*i+j].level = levels[4*i+j];
         else         halfEdges[4*i+j].level = 3.0f;
 
-        if (full_holes[j]) continue;
+        if (full_holes[i]) continue;
         
         const unsigned int start = vertexIndices[halfEdgeIndex + j + 0];
         const unsigned int end   = vertexIndices[halfEdgeIndex + (j + 1) % 4];
