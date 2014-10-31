@@ -57,7 +57,7 @@ namespace embree
     __forceinline BBox3fa bounds() const 
     {
       sse3f p0 = v0;
-      sse3f p1 = v0+e1;
+      sse3f p1 = v0-e1;
       sse3f p2 = v0+e2;
       sse3f lower = min(p0,p1,p2);
       sse3f upper = max(p0,p1,p2);
