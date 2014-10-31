@@ -89,12 +89,6 @@ namespace embree
     int hard_edge_index;
     float level;                 // per vertex subdivision level
 
-#if !defined(__MIC__)
-    typedef Vec3fa Vertex;
-#else
-    typedef Vec3fa_t Vertex;      
-#endif
-
     CatmullClark1Ring() {}
 
     __forceinline const Vec3fa& front(size_t i) const {
@@ -150,7 +144,7 @@ namespace embree
       for (size_t i=0; i<MAX_VALENCE; i++) crease_weight[i] = nan;
 
       hard_edge_index = -1;
-      vtx = (Vertex)vertices[ h->getStartVertexIndex() ];
+      vtx = (Vec3fa_t)vertices[ h->getStartVertexIndex() ];
 
       SubdivMesh::HalfEdge* p = (SubdivMesh::HalfEdge*) h;
 
@@ -158,7 +152,7 @@ namespace embree
       do {
         assert(i < 2*MAX_VALENCE);
         crease_weight[i/2] = p->crease_weight;
-	ring[i++] = (Vertex) vertices[ p->next()->getStartVertexIndex() ];
+	ring[i++] = (Vec3fa_t) vertices[ p->next()->getStartVertexIndex() ];
         
 	if (unlikely(!p->hasOpposite())) { 
           init_clockwise(h,vertices,i);
@@ -167,7 +161,7 @@ namespace embree
 	p = p->opposite();
 
         assert(i < 2*MAX_VALENCE);
-	ring[i++] = (Vertex) vertices[ p->prev()->getStartVertexIndex() ];
+	ring[i++] = (Vec3fa_t) vertices[ p->prev()->getStartVertexIndex() ];
 	p = p->next();
         
       } while (p != h);
@@ -193,8 +187,8 @@ namespace embree
       
       /*! store second hard edge and diagonal vertex */
       crease_weight[i/2] = inf;
-      ring[i++] = (Vertex)vertices[ p->getStartVertexIndex() ];
-      ring[i++] = (Vertex)vertices[ p->prev()->getStartVertexIndex() ];
+      ring[i++] = (Vec3fa_t)vertices[ p->getStartVertexIndex() ];
+      ring[i++] = (Vec3fa_t)vertices[ p->prev()->getStartVertexIndex() ];
       p = p->next();
 	  
       /*! continue counter-clockwise */	  
@@ -202,11 +196,11 @@ namespace embree
       {
         assert( i < 2*MAX_VALENCE );
         crease_weight[i/2] = p->crease_weight;
-        ring[i++] = (Vertex)vertices[ p->next()->getStartVertexIndex() ];
+        ring[i++] = (Vec3fa_t)vertices[ p->next()->getStartVertexIndex() ];
         p = p->opposite();
         
         assert( i < 2*MAX_VALENCE );
-        ring[i++] = (Vertex)vertices[ p->prev()->getStartVertexIndex() ];
+        ring[i++] = (Vec3fa_t)vertices[ p->prev()->getStartVertexIndex() ];
         p = p->next();	    
       }
 
@@ -221,7 +215,7 @@ namespace embree
       dest.hard_edge_index = hard_edge_index;
 
       /* calculate face points */
-      Vertex S = zero;
+      Vec3fa_t S = Vec3fa_t(0.0f);
       for (size_t i=0; i<valence-1; i++) {
         S += dest.ring[2*i+1] = ((vtx + ring[2*i]) + (ring[2*i+1] + ring[2*i+2])) * 0.25f;
       }
@@ -230,11 +224,11 @@ namespace embree
       /* calculate new edge points */
       size_t num_creases = 0;
       size_t crease_id[MAX_VALENCE];
-      Vertex C = 0.0f;
+      Vec3fa_t C = Vec3fa_t(0.0f);
       for (size_t i=1; i<valence; i++)
       {
-        const Vertex v = vtx + ring[2*i];
-        const Vertex f = dest.ring[2*i-1] + dest.ring[2*i+1];
+        const Vec3fa_t v = vtx + ring[2*i];
+        const Vec3fa_t f = dest.ring[2*i-1] + dest.ring[2*i+1];
         S += ring[2*i];
         dest.crease_weight[i] = max(crease_weight[i]-1.0f,0.0f);
         //dest.crease_weight[i] = crease_weight[i] < 1.0f ? 0.0f : 0.5f*crease_weight[i];
@@ -258,8 +252,8 @@ namespace embree
       }
       {
         const size_t i=0;
-        const Vertex v = vtx + ring[2*i];
-        const Vertex f = dest.ring[num_vtx-1] + dest.ring[2*i+1];
+        const Vec3fa_t v = vtx + ring[2*i];
+        const Vec3fa_t f = dest.ring[num_vtx-1] + dest.ring[2*i+1];
         S += ring[2*i];
         dest.crease_weight[i] = max(crease_weight[i]-1.0f,0.0f);
         //dest.crease_weight[i] = crease_weight[i] < 1.0f ? 0.0f : 0.5f*crease_weight[i];
@@ -284,14 +278,14 @@ namespace embree
 
       /* compute new vertex using smooth rule */
       const float inv_valence = 1.0f / (float)valence;
-      const Vertex v_smooth = (Vertex)(S*inv_valence + (float(valence)-2.0f)*vtx)*inv_valence;
+      const Vec3fa_t v_smooth = (Vec3fa_t)(S*inv_valence + (float(valence)-2.0f)*vtx)*inv_valence;
       dest.vtx = v_smooth;
       if (likely(num_creases <= 1))
         return;
       
       /* compute new vertex using crease rule */
       if (likely(num_creases == 2)) {
-        const Vertex v_sharp = (Vertex)(C + 6.0f * vtx) * (1.0f / 8.0f);
+        const Vec3fa_t v_sharp = (Vec3fa_t)(C + 6.0f * vtx) * (1.0f / 8.0f);
         const float crease_weight0 = crease_weight[crease_id[0]];
         const float crease_weight1 = crease_weight[crease_id[1]];
         dest.vtx = v_sharp;
@@ -327,8 +321,8 @@ namespace embree
 
     __forceinline Vec3fa getLimitVertex() const
     {
-      Vertex F( 0.0f );
-      Vertex E( 0.0f );
+      Vec3fa_t F( 0.0f );
+      Vec3fa_t E( 0.0f );
 
       for (size_t i=0; i<valence; i++) {
         F += ring[2*i+1];
@@ -336,13 +330,13 @@ namespace embree
       }
 
       const float n = (float)valence;
-      return (Vertex)(n*n*vtx+4*E+F) / ((n+5.0f)*n);      
+      return (Vec3fa_t)(n*n*vtx+4*E+F) / ((n+5.0f)*n);      
     }
 
     __forceinline Vec3fa getLimitTangent() const // FIXME: what is this supposed to calclate? there should be 2 tangents
     {
-      Vertex alpha( 0.0f );
-      Vertex beta( 0.0f );
+      Vec3fa_t alpha( 0.0f );
+      Vec3fa_t beta( 0.0f );
 
       const float n = (float)valence;
       const float c = 1.0f/n * 1.0f / sqrtf(4.0f + cos(M_PI/n)*cos(M_PI/n));  
@@ -470,12 +464,6 @@ namespace embree
     CatmullClark1Ring ring[4];
     float level[4];
 
-#if !defined(__MIC__)
-    typedef Vec3fa Vertex;
-#else
-    typedef Vec3fa_t Vertex;      
-#endif
-
     __forceinline IrregularCatmullClarkPatch () {}
 
     __forceinline IrregularCatmullClarkPatch (const SubdivMesh::HalfEdge* first_half_edge, const Vec3fa* vertices) 
@@ -507,16 +495,16 @@ namespace embree
       dest1.valence = dest0.valence = 4;
       dest1.num_vtx = dest0.num_vtx = 8;
       dest1.hard_edge_index = dest0.hard_edge_index = -1;
-      dest1.vtx = dest0.vtx = (Vertex)p0.ring[0];
+      dest1.vtx = dest0.vtx = (Vec3fa_t)p0.ring[0];
 
-      dest1.ring[6] = dest0.ring[0] = (Vertex)p0.ring[p0.num_vtx-1];
-      dest1.ring[7] = dest0.ring[1] = (Vertex)p1.ring[0];
-      dest1.ring[0] = dest0.ring[2] = (Vertex)p1.vtx;
-      dest1.ring[1] = dest0.ring[3] = (Vertex)p1.ring[p1.num_vtx-4];
-      dest1.ring[2] = dest0.ring[4] = (Vertex)p0.ring[1];
-      dest1.ring[3] = dest0.ring[5] = (Vertex)p0.ring[2];
-      dest1.ring[4] = dest0.ring[6] = (Vertex)p0.vtx;
-      dest1.ring[5] = dest0.ring[7] = (Vertex)p0.ring[p0.num_vtx-2];
+      dest1.ring[6] = dest0.ring[0] = (Vec3fa_t)p0.ring[p0.num_vtx-1];
+      dest1.ring[7] = dest0.ring[1] = (Vec3fa_t)p1.ring[0];
+      dest1.ring[0] = dest0.ring[2] = (Vec3fa_t)p1.vtx;
+      dest1.ring[1] = dest0.ring[3] = (Vec3fa_t)p1.ring[p1.num_vtx-4];
+      dest1.ring[2] = dest0.ring[4] = (Vec3fa_t)p0.ring[1];
+      dest1.ring[3] = dest0.ring[5] = (Vec3fa_t)p0.ring[2];
+      dest1.ring[4] = dest0.ring[6] = (Vec3fa_t)p0.vtx;
+      dest1.ring[5] = dest0.ring[7] = (Vec3fa_t)p0.ring[p0.num_vtx-2];
 
       dest1.crease_weight[3] = dest0.crease_weight[0] = 0.0f;
       dest1.crease_weight[0] = dest0.crease_weight[1] = p1.crease_weight[p1.valence-1];
@@ -530,38 +518,32 @@ namespace embree
                                           CatmullClark1Ring &dest0,
                                           CatmullClark1Ring &dest1) 
     {
-#if !defined(__MIC__)
-    typedef Vec3fa Vertex;
-#else
-    typedef Vec3fa_t Vertex;      
-#endif
-
       dest1.valence = dest0.valence = 3;
       dest1.num_vtx = dest0.num_vtx = 6;
       dest0.hard_edge_index = 2;
       dest1.hard_edge_index = 0;
-      dest1.vtx  = dest0.vtx = (Vertex)p0.ring[0];
+      dest1.vtx  = dest0.vtx = (Vec3fa_t)p0.ring[0];
 
-      dest1.ring[ 4] = dest0.ring[ 0] = (Vertex)p0.ring[p0.num_vtx-1];
-      dest1.ring[ 5] = dest0.ring[ 1] = (Vertex)p1.ring[0];
-      dest1.ring[ 0] = dest0.ring[ 2] = (Vertex)p1.vtx;
-      dest1.ring[ 1] = dest1.ring[ 3] = (Vertex)p0.ring[p0.hard_edge_index+1]; // dummy
-      dest1.ring[ 2] = dest0.ring[ 4] = (Vertex)p0.vtx;
-      dest1.ring[ 3] = dest0.ring[ 5] = (Vertex)p0.ring[p0.num_vtx-2];
+      dest1.ring[ 4] = dest0.ring[ 0] = (Vec3fa_t)p0.ring[p0.num_vtx-1];
+      dest1.ring[ 5] = dest0.ring[ 1] = (Vec3fa_t)p1.ring[0];
+      dest1.ring[ 0] = dest0.ring[ 2] = (Vec3fa_t)p1.vtx;
+      dest1.ring[ 1] = dest1.ring[ 3] = (Vec3fa_t)p0.ring[p0.hard_edge_index+1]; // dummy
+      dest1.ring[ 2] = dest0.ring[ 4] = (Vec3fa_t)p0.vtx;
+      dest1.ring[ 3] = dest0.ring[ 5] = (Vec3fa_t)p0.ring[p0.num_vtx-2];
 
       dest1.crease_weight[2] = dest0.crease_weight[0] = 0.0f;
       dest1.crease_weight[0] = dest0.crease_weight[1] = p1.crease_weight[p1.valence-1];
       dest1.crease_weight[1] = dest0.crease_weight[2] = p0.crease_weight[0];
     }
 
-    static __forceinline void init_regular(const Vertex &center, const Vertex center_ring[8], const size_t offset, CatmullClark1Ring &dest)
+    static __forceinline void init_regular(const Vec3fa_t &center, const Vec3fa_t center_ring[8], const size_t offset, CatmullClark1Ring &dest)
     {
       dest.valence = 4;
       dest.num_vtx = 8;
       dest.hard_edge_index = -1;
-      dest.vtx     = (Vertex)center;
+      dest.vtx     = (Vec3fa_t)center;
       for (size_t i=0; i<8; i++) 
-	dest.ring[i] = (Vertex)center_ring[(offset+i)%8];
+	dest.ring[i] = (Vec3fa_t)center_ring[(offset+i)%8];
       for (size_t i=0; i<8; i++) 
         dest.crease_weight[i] = 0.0f;
     }
@@ -614,18 +596,18 @@ namespace embree
       else
         init_border(patch[3].ring[3],patch[0].ring[0],patch[3].ring[0],patch[0].ring[3]);
 
-      Vertex center = (ring[0].vtx + ring[1].vtx + ring[2].vtx + ring[3].vtx) * 0.25f;
-      Vertex center_ring[8];
+      Vec3fa_t center = (ring[0].vtx + ring[1].vtx + ring[2].vtx + ring[3].vtx) * 0.25f;
+      Vec3fa_t center_ring[8];
 
       // counter-clockwise
-      center_ring[0] = (Vertex)patch[3].ring[3].ring[0];
-      center_ring[1] = (Vertex)patch[3].ring[3].vtx;
-      center_ring[2] = (Vertex)patch[2].ring[2].ring[0];
-      center_ring[3] = (Vertex)patch[2].ring[2].vtx;
-      center_ring[4] = (Vertex)patch[1].ring[1].ring[0];
-      center_ring[5] = (Vertex)patch[1].ring[1].vtx;
-      center_ring[6] = (Vertex)patch[0].ring[0].ring[0];
-      center_ring[7] = (Vertex)patch[0].ring[0].vtx;
+      center_ring[0] = (Vec3fa_t)patch[3].ring[3].ring[0];
+      center_ring[1] = (Vec3fa_t)patch[3].ring[3].vtx;
+      center_ring[2] = (Vec3fa_t)patch[2].ring[2].ring[0];
+      center_ring[3] = (Vec3fa_t)patch[2].ring[2].vtx;
+      center_ring[4] = (Vec3fa_t)patch[1].ring[1].ring[0];
+      center_ring[5] = (Vec3fa_t)patch[1].ring[1].vtx;
+      center_ring[6] = (Vec3fa_t)patch[0].ring[0].ring[0];
+      center_ring[7] = (Vec3fa_t)patch[0].ring[0].vtx;
 
       init_regular(center,center_ring,0,patch[0].ring[2]);
       init_regular(center,center_ring,2,patch[3].ring[1]);
@@ -635,10 +617,10 @@ namespace embree
 
     __forceinline void init( FinalQuad& quad ) const
     {
-      quad.vtx[0] = (Vertex)ring[0].vtx;
-      quad.vtx[1] = (Vertex)ring[1].vtx;
-      quad.vtx[2] = (Vertex)ring[2].vtx;
-      quad.vtx[3] = (Vertex)ring[3].vtx;
+      quad.vtx[0] = (Vec3fa_t)ring[0].vtx;
+      quad.vtx[1] = (Vec3fa_t)ring[1].vtx;
+      quad.vtx[2] = (Vec3fa_t)ring[2].vtx;
+      quad.vtx[3] = (Vec3fa_t)ring[3].vtx;
     };
 
     friend __forceinline std::ostream &operator<<(std::ostream &o, const IrregularCatmullClarkPatch &p)
@@ -797,12 +779,6 @@ namespace embree
   {
   public:
 
-#if !defined(__MIC__)
-    typedef Vec3fa Vertex;
-#else
-    typedef Vec3fa_t Vertex;      
-#endif
-
     static __forceinline Vec4f eval(const float u)
     {
       // FIXME: lookup
@@ -840,13 +816,7 @@ namespace embree
   {
   public:
 
-#if !defined(__MIC__)
-    typedef Vec3fa Vertex;
-#else
-    typedef Vec3fa_t Vertex;      
-#endif
-
-    static __forceinline Vertex eval(const float u, const Vertex &p0, const Vertex &p1, const Vertex &p2, const Vertex &p3)
+    static __forceinline Vec3fa_t eval(const float u, const Vec3fa_t &p0, const Vec3fa_t &p1, const Vec3fa_t &p2, const Vec3fa_t &p3)
     {
       // FIXME: lookup
       const float t  = u;
@@ -855,7 +825,7 @@ namespace embree
       const float n1 = 3.0f*t*s*t;
       const float n2 = 3.0f*s*t*s;
       const float n3 = t*t*t;
-      const Vertex n = p0 * n0 + p1 * n1 + p2 * n2 + p3 * n3;
+      const Vec3fa_t n = p0 * n0 + p1 * n1 + p2 * n2 + p3 * n3;
       return n;
     }
     
@@ -1069,12 +1039,6 @@ namespace embree
   {
   public:
 
-#if !defined(__MIC__)
-      typedef Vec3fa Vertex;
-#else
-      typedef Vec3fa_t Vertex;
-#endif
-
     RegularCatmullClarkPatch () {}
 
     RegularCatmullClarkPatch (const IrregularCatmullClarkPatch& in) 
@@ -1153,10 +1117,10 @@ namespace embree
       const SubdivMesh::HalfEdge *v00 = v01->prev();
       const SubdivMesh::HalfEdge *v10 = v00->prev();
 
-      v[1][1] = (Vertex)vertices[v11->getStartVertexIndex()];
-      v[1][0] = (Vertex)vertices[v10->getStartVertexIndex()];
-      v[0][0] = (Vertex)vertices[v00->getStartVertexIndex()];
-      v[0][1] = (Vertex)vertices[v01->getStartVertexIndex()];
+      v[1][1] = (Vec3fa_t)vertices[v11->getStartVertexIndex()];
+      v[1][0] = (Vec3fa_t)vertices[v10->getStartVertexIndex()];
+      v[0][0] = (Vec3fa_t)vertices[v00->getStartVertexIndex()];
+      v[0][1] = (Vec3fa_t)vertices[v01->getStartVertexIndex()];
 
       // quad(0,2)
       const SubdivMesh::HalfEdge *v12 = v11->next();
@@ -1165,10 +1129,10 @@ namespace embree
       const SubdivMesh::HalfEdge *v02 = v03->prev();
       
 
-      v[1][2] = (Vertex)vertices[v12->getStartVertexIndex()];
-      v[1][3] = (Vertex)vertices[v13->getStartVertexIndex()];
-      v[0][3] = (Vertex)vertices[v03->getStartVertexIndex()];
-      v[0][2] = (Vertex)vertices[v02->getStartVertexIndex()];
+      v[1][2] = (Vec3fa_t)vertices[v12->getStartVertexIndex()];
+      v[1][3] = (Vec3fa_t)vertices[v13->getStartVertexIndex()];
+      v[0][3] = (Vec3fa_t)vertices[v03->getStartVertexIndex()];
+      v[0][2] = (Vec3fa_t)vertices[v02->getStartVertexIndex()];
 
       // quad(2,2)
       const SubdivMesh::HalfEdge *v22 = v12->next();
@@ -1176,10 +1140,10 @@ namespace embree
       const SubdivMesh::HalfEdge *v33 = v32->prev();
       const SubdivMesh::HalfEdge *v23 = v33->prev();
 
-      v[2][2] = (Vertex)vertices[v22->getStartVertexIndex()];
-      v[3][2] = (Vertex)vertices[v32->getStartVertexIndex()];
-      v[3][3] = (Vertex)vertices[v33->getStartVertexIndex()];
-      v[2][3] = (Vertex)vertices[v23->getStartVertexIndex()];
+      v[2][2] = (Vec3fa_t)vertices[v22->getStartVertexIndex()];
+      v[3][2] = (Vec3fa_t)vertices[v32->getStartVertexIndex()];
+      v[3][3] = (Vec3fa_t)vertices[v33->getStartVertexIndex()];
+      v[2][3] = (Vec3fa_t)vertices[v23->getStartVertexIndex()];
 
       // quad(2,0)
       const SubdivMesh::HalfEdge *v21 = v22->next();
@@ -1187,10 +1151,10 @@ namespace embree
       const SubdivMesh::HalfEdge *v30 = v20->prev();
       const SubdivMesh::HalfEdge *v31 = v30->prev();
 
-      v[2][0] = (Vertex)vertices[v20->getStartVertexIndex()];
-      v[3][0] = (Vertex)vertices[v30->getStartVertexIndex()];
-      v[3][1] = (Vertex)vertices[v31->getStartVertexIndex()];
-      v[2][1] = (Vertex)vertices[v21->getStartVertexIndex()];
+      v[2][0] = (Vec3fa_t)vertices[v20->getStartVertexIndex()];
+      v[3][0] = (Vec3fa_t)vertices[v30->getStartVertexIndex()];
+      v[3][1] = (Vec3fa_t)vertices[v31->getStartVertexIndex()];
+      v[2][1] = (Vec3fa_t)vertices[v21->getStartVertexIndex()];
     }
 
     __forceinline BBox3fa bounds() const
@@ -1224,10 +1188,10 @@ namespace embree
 
       const Vec4f v_n = CubicBSplineCurve::eval(vv);
 
-      const Vertex curve0 = v_n[0] * v[0][0] + v_n[1] * v[1][0] + v_n[2] * v[2][0] + v_n[3] * v[3][0];
-      const Vertex curve1 = v_n[0] * v[0][1] + v_n[1] * v[1][1] + v_n[2] * v[2][1] + v_n[3] * v[3][1];
-      const Vertex curve2 = v_n[0] * v[0][2] + v_n[1] * v[1][2] + v_n[2] * v[2][2] + v_n[3] * v[3][2];
-      const Vertex curve3 = v_n[0] * v[0][3] + v_n[1] * v[1][3] + v_n[2] * v[2][3] + v_n[3] * v[3][3];
+      const Vec3fa_t curve0 = v_n[0] * v[0][0] + v_n[1] * v[1][0] + v_n[2] * v[2][0] + v_n[3] * v[3][0];
+      const Vec3fa_t curve1 = v_n[0] * v[0][1] + v_n[1] * v[1][1] + v_n[2] * v[2][1] + v_n[3] * v[3][1];
+      const Vec3fa_t curve2 = v_n[0] * v[0][2] + v_n[1] * v[1][2] + v_n[2] * v[2][2] + v_n[3] * v[3][2];
+      const Vec3fa_t curve3 = v_n[0] * v[0][3] + v_n[1] * v[1][3] + v_n[2] * v[2][3] + v_n[3] * v[3][3];
 
       const Vec4f u_n = CubicBSplineCurve::eval(uu);
 
@@ -1271,12 +1235,6 @@ namespace embree
   {
   public:
 
-#if !defined(__MIC__)
-    typedef Vec3fa Vertex;
-#else
-    typedef Vec3fa_t Vertex;      
-#endif
-
     Vec3fa f[2][2]; // need 16 + 4 = 20 control points
 
     GregoryPatch() {
@@ -1288,11 +1246,11 @@ namespace embree
       {
 	for (size_t y=0;y<4;y++)
 	  for (size_t x=0;x<4;x++)
-	    v[y][x] = (Vertex)matrix[y][x];
+	    v[y][x] = (Vec3fa_t)matrix[y][x];
 
 	for (size_t y=0;y<2;y++)
 	  for (size_t x=0;x<2;x++)
-	    f[y][x] = (Vertex)f_m[y][x];
+	    f[y][x] = (Vec3fa_t)f_m[y][x];
       }
 
     Vec3fa& p0() { return v[0][0]; }
@@ -1367,7 +1325,7 @@ namespace embree
                           const Vec3fa *const vertices,
                           const Vec3fa &p_vtx)
     {
-      Vertex q( 0.0f );
+      Vec3fa_t q( 0.0f );
       const unsigned int valence = h->getEdgeValence();
       const float n = (float)valence;
       const float sigma = 1.0f / sqrtf((4.0f + cosf(M_PI/n) * cosf(M_PI/n)));
@@ -1377,9 +1335,9 @@ namespace embree
       unsigned int i=0;
       do 
         {
-          const Vertex m_i = p->getEdgeMidPointVertex(vertices);
-          const Vertex c_i = p->getFaceMidPointVertex(vertices);
-          const Vertex q_i = b * cosf((2.0f*M_PI*(float)i)/n) * m_i + 2.0f*sigma*cosf((2.0f*M_PI*(float)i+M_PI)/n) * c_i; 
+          const Vec3fa_t m_i = p->getEdgeMidPointVertex(vertices);
+          const Vec3fa_t c_i = p->getFaceMidPointVertex(vertices);
+          const Vec3fa_t q_i = b * cosf((2.0f*M_PI*(float)i)/n) * m_i + 2.0f*sigma*cosf((2.0f*M_PI*(float)i+M_PI)/n) * c_i; 
           q += q_i;
           assert( p->hasOpposite() );
           p = p->opposite();
@@ -1544,27 +1502,27 @@ namespace embree
    {
      for (size_t y=0;y<4;y++)
        for (size_t x=0;x<4;x++)
-	 matrix[y][x] = (Vertex)v[y][x];
+	 matrix[y][x] = (Vec3fa_t)v[y][x];
 
      for (size_t y=0;y<2;y++)
        for (size_t x=0;x<2;x++)
-	 f_m[y][x] = (Vertex)f[y][x];
+	 f_m[y][x] = (Vec3fa_t)f[y][x];
    }
 
    __forceinline void exportBicubicBezierPatch( Vec3fa matrix[4][4], const float uu, const float vv ) const
    {
      for (size_t y=0;y<4;y++)
        for (size_t x=0;x<4;x++)
-	 matrix[y][x] = (Vertex)v[y][x];
+	 matrix[y][x] = (Vec3fa_t)v[y][x];
 
      if (uu == 0.0f || uu == 1.0f || vv == 0.0f || vv == 1.0f) return;
 
      // FIXME: merge u,v and extract after computation
 
-     const Vertex F0 = (      uu  * f0_p() +       vv  * f0_m()) * 1.0f/(uu+vv);
-     const Vertex F1 = ((1.0f-uu) * f1_m() +       vv  * f1_p()) * 1.0f/(1.0f-uu+vv);
-     const Vertex F2 = ((1.0f-uu) * f2_p() + (1.0f-vv) * f2_m()) * 1.0f/(2.0f-uu-vv);
-     const Vertex F3 = (      uu  * f3_m() + (1.0f-vv) * f3_p()) * 1.0f/(1.0f+uu-vv);
+     const Vec3fa_t F0 = (      uu  * f0_p() +       vv  * f0_m()) * 1.0f/(uu+vv);
+     const Vec3fa_t F1 = ((1.0f-uu) * f1_m() +       vv  * f1_p()) * 1.0f/(1.0f-uu+vv);
+     const Vec3fa_t F2 = ((1.0f-uu) * f2_p() + (1.0f-vv) * f2_m()) * 1.0f/(2.0f-uu-vv);
+     const Vec3fa_t F3 = (      uu  * f3_m() + (1.0f-vv) * f3_p()) * 1.0f/(1.0f+uu-vv);
 
      matrix[1][1] = F0;
      matrix[1][2] = F1;
@@ -1582,17 +1540,17 @@ namespace embree
    {
      const mic_m m_border = (uu == 0.0f) | (uu == 1.0f) | (vv == 0.0f) | (vv == 1.0f);
 
-     const mic_f f0_p = (Vertex)matrix[1][1];
-     const mic_f f0_m = (Vertex)f[0][0];
+     const mic_f f0_p = (Vec3fa_t)matrix[1][1];
+     const mic_f f0_m = (Vec3fa_t)f[0][0];
 
-     const mic_f f1_p = (Vertex)matrix[1][2];
-     const mic_f f1_m = (Vertex)f[0][1];
+     const mic_f f1_p = (Vec3fa_t)matrix[1][2];
+     const mic_f f1_m = (Vec3fa_t)f[0][1];
 
-     const mic_f f2_p = (Vertex)matrix[2][2];
-     const mic_f f2_m = (Vertex)f[1][1];
+     const mic_f f2_p = (Vec3fa_t)matrix[2][2];
+     const mic_f f2_m = (Vec3fa_t)f[1][1];
 
-     const mic_f f3_p = (Vertex)matrix[2][1];
-     const mic_f f3_m = (Vertex)f[1][0];
+     const mic_f f3_p = (Vec3fa_t)matrix[2][1];
+     const mic_f f3_m = (Vec3fa_t)f[1][0];
 
      const mic_f F0 = select(m_border,f0_p, (      uu  * f0_p +       vv  * f0_m) * 1.0f/(uu+vv)      );
      const mic_f F1 = select(m_border,f1_p, ((1.0f-uu) * f1_m +       vv  * f1_p) * 1.0f/(1.0f-uu+vv) );
@@ -1613,10 +1571,10 @@ namespace embree
      const mic_f B3_v = vv * vv * vv;
 
      const mic_f res = 
-	(B0_u * (Vertex)matrix[0][0] + B1_u * (Vertex)matrix[0][1] + B2_u * (Vertex)matrix[0][2] + B3_u * (Vertex)matrix[0][3]) * B0_v + 
-	(B0_u * (Vertex)matrix[1][0] + B1_u * F0 + B2_u * F1 + B3_u * (Vertex)matrix[1][3]) * B1_v + 
-	(B0_u * (Vertex)matrix[2][0] + B1_u * F3 + B2_u * F2 + B3_u * (Vertex)matrix[2][3]) * B2_v + 
-	(B0_u * (Vertex)matrix[3][0] + B1_u * (Vertex)matrix[3][1] + B2_u * (Vertex)matrix[3][2] + B3_u * (Vertex)matrix[3][3]) * B3_v; 
+	(B0_u * (Vec3fa_t)matrix[0][0] + B1_u * (Vec3fa_t)matrix[0][1] + B2_u * (Vec3fa_t)matrix[0][2] + B3_u * (Vec3fa_t)matrix[0][3]) * B0_v + 
+	(B0_u * (Vec3fa_t)matrix[1][0] + B1_u * F0 + B2_u * F1 + B3_u * (Vec3fa_t)matrix[1][3]) * B1_v + 
+	(B0_u * (Vec3fa_t)matrix[2][0] + B1_u * F3 + B2_u * F2 + B3_u * (Vec3fa_t)matrix[2][3]) * B2_v + 
+	(B0_u * (Vec3fa_t)matrix[3][0] + B1_u * (Vec3fa_t)matrix[3][1] + B2_u * (Vec3fa_t)matrix[3][2] + B3_u * (Vec3fa_t)matrix[3][3]) * B3_v; 
      return res;
    }
 #endif
@@ -1640,7 +1598,7 @@ namespace embree
       const float B3_u = uu * uu * uu;
       const float B3_v = vv * vv * vv;
 
-      const Vertex res = 
+      const Vec3fa_t res = 
 	(B0_u * matrix[0][0] + B1_u * matrix[0][1] + B2_u * matrix[0][2] + B3_u * matrix[0][3]) * B0_v + 
 	(B0_u * matrix[1][0] + B1_u * matrix[1][1] + B2_u * matrix[1][2] + B3_u * matrix[1][3]) * B1_v + 
 	(B0_u * matrix[2][0] + B1_u * matrix[2][1] + B2_u * matrix[2][2] + B3_u * matrix[2][3]) * B2_v + 

@@ -20,9 +20,8 @@ IF (USE_OPENSUBDIV)
   FIND_PACKAGE(OpenSubdiv REQUIRED)
   INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR} ${OPENSUBDIV_INCLUDE_DIR})
   ADD_DEFINITIONS(-D__USE_OPENSUBDIV__)
+#  set (CMAKE_EXE_LINKER_FLAGS "-lc++")
 ENDIF()
-
-set (CMAKE_EXE_LINKER_FLAGS "-lc++")
 
 IF (__XEON__ AND BUILD_TUTORIALS)
   ADD_EXECUTABLE(tutorial08 extensions/api.cpp extensions/catmullclark.cpp extensions/subdivisionmesh.cpp extensions/triangulatemesh.cpp tutorial08_device.cpp tutorial08.cpp )

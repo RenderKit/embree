@@ -130,7 +130,9 @@ namespace embree
 
   void main(int argc, char **argv) 
   {
+#if defined(__USE_OPENSUBDIV__)
     mapKeyToFunction('t', toggleOpenSubdiv);
+#endif
 
     /*! Parse command line options. */  
     parseCommandLine(new ParseStream(new CommandLineStream(argc, argv)), FileName());
