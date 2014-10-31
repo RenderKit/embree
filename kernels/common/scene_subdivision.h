@@ -216,6 +216,7 @@ namespace embree
       dest.valence         = valence;
       dest.num_vtx         = num_vtx;
       dest.hard_edge_index = hard_edge_index;
+      dest.corner_weight   = max(0.0f,dest.corner_weight-1.0f);
 
       /* calculate face points */
       Vec3fa_t S = Vec3fa_t(0.0f);
@@ -283,6 +284,19 @@ namespace embree
       const float inv_valence = 1.0f / (float)valence;
       const Vec3fa_t v_smooth = (Vec3fa_t)(S*inv_valence + (float(valence)-2.0f)*vtx)*inv_valence;
       dest.vtx = v_smooth;
+
+      /* compute new vertex using corner_weight rule */
+      if (unlikely(corner_weight > 0.0f)) 
+      {
+        if (corner_weight >= 1.0f) {
+          dest.vtx = vtx;
+        } else {
+          const float t0 = corner_weight, t1 = 1.0f-t0;
+          dest.vtx = t0*vtx + t1*v_smooth;;
+        }
+        return;
+      }
+
       if (likely(num_creases <= 1))
         return;
       
@@ -314,6 +328,9 @@ namespace embree
     __forceinline bool dicable() const 
     {
       if (valence != 4) 
+        return false;
+
+      if (corner_weight > 0.0f)
         return false;
       
       for (size_t i=0; i<valence; i++) {
@@ -499,6 +516,7 @@ namespace embree
       dest1.num_vtx = dest0.num_vtx = 8;
       dest1.hard_edge_index = dest0.hard_edge_index = -1;
       dest1.vtx = dest0.vtx = (Vec3fa_t)p0.ring[0];
+      dest1.corner_weight = dest0.corner_weight = 0.0f;
 
       dest1.ring[6] = dest0.ring[0] = (Vec3fa_t)p0.ring[p0.num_vtx-1];
       dest1.ring[7] = dest0.ring[1] = (Vec3fa_t)p1.ring[0];
@@ -526,6 +544,7 @@ namespace embree
       dest0.hard_edge_index = 2;
       dest1.hard_edge_index = 0;
       dest1.vtx  = dest0.vtx = (Vec3fa_t)p0.ring[0];
+      dest1.corner_weight = dest0.corner_weight = 0.0f;
 
       dest1.ring[ 4] = dest0.ring[ 0] = (Vec3fa_t)p0.ring[p0.num_vtx-1];
       dest1.ring[ 5] = dest0.ring[ 1] = (Vec3fa_t)p1.ring[0];
@@ -545,6 +564,7 @@ namespace embree
       dest.num_vtx = 8;
       dest.hard_edge_index = -1;
       dest.vtx     = (Vec3fa_t)center;
+      dest.corner_weight = 0.0f;
       for (size_t i=0; i<8; i++) 
 	dest.ring[i] = (Vec3fa_t)center_ring[(offset+i)%8];
       for (size_t i=0; i<8; i++) 
