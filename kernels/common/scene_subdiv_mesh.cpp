@@ -211,7 +211,6 @@ namespace embree
       creaseMap[pair64(creases[i].x,creases[i].y)] = crease_weights[i];
 
     /* calculate corner weight for each vertex */
-    std::vector<float> full_corner_weights;
     full_corner_weights.resize(numVertices);
     for (size_t i=0; i<numVertices; i++)
       full_corner_weights[i] = 0.0f;

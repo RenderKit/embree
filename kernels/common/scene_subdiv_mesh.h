@@ -250,6 +250,7 @@ namespace embree
     /*! Corner buffer, provided by the application */
     BufferT<int> corners;
     BufferT<float> corner_weights;
+    std::vector<float> full_corner_weights;
 
     /*! Subdivision level per edge, provided by the application */
     BufferT<float> levels;

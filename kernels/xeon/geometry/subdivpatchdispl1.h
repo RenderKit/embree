@@ -104,12 +104,13 @@ namespace embree
                                      Scene* scene,
                                      const SubdivMesh::HalfEdge* h, 
                                      const Vec3fa* vertices, 
+                                     const float* corner_weights, 
                                      const unsigned int geom, 
                                      const unsigned int prim, 
                                      const unsigned int level,
                                      const bool last)
     : initializing(0), initialized(0), scene(scene), alloc(alloc), parent(parent),
-        h(h), vertices(vertices), geom(geom), prim(prim), levels(level) { assert(last); }
+      h(h), vertices(vertices), corner_weights(corner_weights), geom(geom), prim(prim), levels(level) { assert(last); }
 
     size_t initialize()
     {
@@ -120,7 +121,7 @@ namespace embree
       }
 
       /* create patch and build sub-BVH */
-      IrregularCatmullClarkPatch patch(h,vertices);
+      IrregularCatmullClarkPatch patch(h,vertices,corner_weights);
       const std::pair<BBox3fa,BVH4::NodeRef> root = build(alloc,patch,0,0,0,(int)levels-3,false,false,false,false);
 
       /* link to sub-BVH */
@@ -146,6 +147,7 @@ namespace embree
   public:
     const SubdivMesh::HalfEdge* h;
     const Vec3fa* vertices;
+    const float* corner_weights;                  //!< pointer to corner weights array
     size_t levels; // FIXME: not required
 
   public:

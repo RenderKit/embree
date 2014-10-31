@@ -87,7 +87,7 @@ namespace embree
     unsigned int valence;
     unsigned int num_vtx;
     int hard_edge_index;
-    float level;                 // per vertex subdivision level
+    float corner_weight;
 
     CatmullClark1Ring() {}
 
@@ -139,12 +139,15 @@ namespace embree
     }
 
     
-    __forceinline void init(const SubdivMesh::HalfEdge* const h, const Vec3fa* const vertices) // FIXME: should get buffer as vertex array input!!!!
+    __forceinline void init(const SubdivMesh::HalfEdge* const h, const Vec3fa* const vertices, const float* const corner_weights) // FIXME: should get buffer as vertex array input!!!!
     {
       for (size_t i=0; i<MAX_VALENCE; i++) crease_weight[i] = nan;
 
       hard_edge_index = -1;
       vtx = (Vec3fa_t)vertices[ h->getStartVertexIndex() ];
+
+      corner_weight = 0.0f;
+      if (corner_weights) corner_weight = corner_weights[ h->getStartVertexIndex() ];
 
       SubdivMesh::HalfEdge* p = (SubdivMesh::HalfEdge*) h;
 
@@ -466,10 +469,10 @@ namespace embree
 
     __forceinline IrregularCatmullClarkPatch () {}
 
-    __forceinline IrregularCatmullClarkPatch (const SubdivMesh::HalfEdge* first_half_edge, const Vec3fa* vertices) 
+    __forceinline IrregularCatmullClarkPatch (const SubdivMesh::HalfEdge* first_half_edge, const Vec3fa* vertices, const float* const corner_weights) 
     {
       for (size_t i=0; i<4; i++) {
-        ring[i].init(first_half_edge+i,vertices);
+        ring[i].init(first_half_edge+i,vertices,corner_weights);
         level[i] = first_half_edge[i].level;
       }
     }
@@ -1303,7 +1306,7 @@ namespace embree
 			    const Vec3fa *const vertices)
     {
       CatmullClark1Ring ring;
-      ring.init(h,vertices);
+      ring.init(h,vertices,NULL);
       return ring.getLimitVertex();
     }
 
@@ -1314,7 +1317,7 @@ namespace embree
                           const Vec3fa &p_vtx)
     {
       CatmullClark1Ring ring;
-      ring.init(h,vertices);
+      ring.init(h,vertices,NULL);
       Vec3fa tangent = ring.getLimitTangent();
       return 1.0f/3.0f * tangent + p_vtx;
     }

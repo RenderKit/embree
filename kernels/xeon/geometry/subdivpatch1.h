@@ -48,11 +48,12 @@ namespace embree
     /*! Construction from vertices and IDs. */
     __forceinline SubdivPatch1 (const SubdivMesh::HalfEdge* edge, 
 				const Vec3fa* vertices, 
+				const float* corner_weights, 
                                 const unsigned int geom, 
 				const unsigned int prim, 
 				const unsigned int subdivision_level,
 				const bool last)
-      : first_half_edge(edge), vertices(vertices), geom(geom), prim(prim | (last << 31)), subdivision_level(subdivision_level)
+      : first_half_edge(edge), vertices(vertices), corner_weights(corner_weights), geom(geom), prim(prim | (last << 31)), subdivision_level(subdivision_level)
     {
       flags = 0;
       if (first_half_edge->isFaceRegular()) 
@@ -105,6 +106,7 @@ namespace embree
       const SubdivMesh* const subdiv_mesh = scene->getSubdivMesh(geomID);
       new (this) SubdivPatch1(&subdiv_mesh->getHalfEdgeForQuad( primID ),
 			      subdiv_mesh->getVertexPositionPtr(),
+			      &subdiv_mesh->corner_weights[0], // FIXME: unsafe
 			      geomID,
 			      primID,
 			      SUBDIVISION_LEVEL,
@@ -123,6 +125,7 @@ namespace embree
       const SubdivMesh* const subdiv_mesh = scene->getSubdivMesh(geomID);
       new (this) SubdivPatch1(&subdiv_mesh->getHalfEdgeForQuad( primID ),
 			      subdiv_mesh->getVertexPositionPtr(),
+			      &subdiv_mesh->corner_weights[0], // FIXME: unsafe
 			      geomID,
 			      primID,
 			      SUBDIVISION_LEVEL,
@@ -132,7 +135,7 @@ namespace embree
     __forceinline void init( IrregularCatmullClarkPatch& patch) const
     {
       for (size_t i=0; i<4; i++)
-        patch.ring[i].init(first_half_edge + i,vertices);
+        patch.ring[i].init(first_half_edge + i,vertices,corner_weights);
     }
 
     __forceinline void init( RegularCatmullClarkPatch& cc_patch) const
@@ -143,6 +146,7 @@ namespace embree
   public:
     const SubdivMesh::HalfEdge* first_half_edge;  //!< pointer to first half edge of this patch
     const Vec3fa* vertices;                       //!< pointer to vertex array
+    const float* corner_weights;                  //!< pointer to corner weights array
     unsigned int subdivision_level;
     unsigned int flags;
     unsigned int geom;                            //!< geometry ID of the subdivision mesh this patch belongs to
