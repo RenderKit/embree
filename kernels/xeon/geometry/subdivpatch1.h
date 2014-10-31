@@ -106,7 +106,7 @@ namespace embree
       const SubdivMesh* const subdiv_mesh = scene->getSubdivMesh(geomID);
       new (this) SubdivPatch1(&subdiv_mesh->getHalfEdgeForQuad( primID ),
 			      subdiv_mesh->getVertexPositionPtr(),
-			      &subdiv_mesh->corner_weights[0], // FIXME: unsafe
+			      &subdiv_mesh->full_corner_weights[0], // FIXME: unsafe
 			      geomID,
 			      primID,
 			      SUBDIVISION_LEVEL,
@@ -125,7 +125,7 @@ namespace embree
       const SubdivMesh* const subdiv_mesh = scene->getSubdivMesh(geomID);
       new (this) SubdivPatch1(&subdiv_mesh->getHalfEdgeForQuad( primID ),
 			      subdiv_mesh->getVertexPositionPtr(),
-			      &subdiv_mesh->corner_weights[0], // FIXME: unsafe
+			      &subdiv_mesh->full_corner_weights[0], // FIXME: unsafe
 			      geomID,
 			      primID,
 			      SUBDIVISION_LEVEL,
