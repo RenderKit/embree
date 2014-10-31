@@ -706,6 +706,7 @@ namespace embree
     for (size_t i=0; i<positions.size(); i++) mesh->vertices.push_back(xfmPoint(space,positions[i]));
     mesh->indices         = loadIntArray(xml->childOpt("indices"));
     mesh->verticesPerFace = loadIntArray(xml->childOpt("faces"));
+    mesh->holes           = loadIntArray(xml->childOpt("holes"));
     mesh->creases         = loadVec2iArray(xml->childOpt("creases"));
     mesh->creaseWeights   = loadFloatArray(xml->childOpt("crease_weights"));
     mesh->corners         = loadIntArray(xml->childOpt("corners"));

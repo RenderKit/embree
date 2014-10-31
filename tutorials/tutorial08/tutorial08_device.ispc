@@ -282,6 +282,10 @@ task void parallelCommit(RTCScene scene)
 
 extern "C" void setSubdivisionLevel(uniform unsigned int); // for now hidden fct in the core 
 
+export void toggleOpenSubdiv(uniform int key, uniform int x, uniform int y)
+{
+}
+
 /* called by the C++ code to render */
 export void device_render (uniform int* uniform pixels,
                            const uniform int width,

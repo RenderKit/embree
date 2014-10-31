@@ -21,7 +21,7 @@
 #include "image/image.h"
 
 extern "C" void setSubdivisionLevel(unsigned int); // for now hidden fct in the core 
-extern void toggleOpenSubdiv(unsigned char key, int x, int y);
+extern "C" void toggleOpenSubdiv(unsigned char key, int x, int y);
 
 namespace embree 
 {
@@ -130,9 +130,7 @@ namespace embree
 
   void main(int argc, char **argv) 
   {
-#if defined(__USE_OPENSUBDIV__)
     mapKeyToFunction('t', toggleOpenSubdiv);
-#endif
 
     /*! Parse command line options. */  
     parseCommandLine(new ParseStream(new CommandLineStream(argc, argv)), FileName());

@@ -405,7 +405,7 @@ extern "C" void device_init(int8 *configuration) {
 extern "C" void setSubdivisionLevel(unsigned int); // for now hidden fct in the core 
 extern unsigned int g_subdivision_levels;
 
-void toggleOpenSubdiv(unsigned char key, int x, int y)
+extern "C" void toggleOpenSubdiv(unsigned char key, int x, int y)
 {
 #if defined(__USE_OPENSUBDIV__)
   if (g_osd_scene == NULL) {
