@@ -66,6 +66,7 @@ namespace embree
     out->vertices = in->vertices.size() ? &in->vertices[0] : NULL;
     out->indices = in->indices.size()   ? &in->indices[0] : NULL;
     out->verticesPerFace = in->verticesPerFace.size() ? &in->verticesPerFace[0] : NULL;
+    out->holes = in->holes.size() ? &in->holes[0] : NULL;
     out->creases = in->creases.size() ? &in->creases[0] : NULL;
     out->creaseWeights = in->creaseWeights.size() ? &in->creaseWeights[0] : NULL;
     out->corners = in->corners.size() ? &in->corners[0] : NULL;
@@ -75,6 +76,7 @@ namespace embree
     out->numEdges = in->indices.size();   
     out->numCreases = in->creases.size();
     out->numCorners = in->corners.size();
+    out->numHoles = in->holes.size();
     return out;
   }
 

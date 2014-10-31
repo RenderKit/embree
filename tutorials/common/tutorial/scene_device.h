@@ -65,6 +65,7 @@ struct ISPCSubdivMesh
   Vec3fa* vertices;        //!< vertex positions
   int* indices;            //!< indices for all faces
   int* verticesPerFace;    //!< number of indices of each face
+  int* holes;              //!< face ID of holes
   Vec2i* creases;          //!< crease index pairs
   float* creaseWeights;    //!< weight for each crease
   int* corners;            //!< corner indices
@@ -74,6 +75,7 @@ struct ISPCSubdivMesh
   int numEdges;
   int numCreases;
   int numCorners;
+  int numHoles;
 };
 
 struct ISPCAmbientLight

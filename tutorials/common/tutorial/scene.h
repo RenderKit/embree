@@ -89,7 +89,7 @@ namespace embree
       std::vector<Vec3fa> vertices;        //!< vertex positions
       std::vector<int> indices;            //!< indices for all faces
       std::vector<int> verticesPerFace;    //!< number of indices of each face
-      std::vector<int> holes;              //!< number of indices of each face
+      std::vector<int> holes;              //!< face ID of holes
       std::vector<Vec2i> creases;          //!< crease index pairs
       std::vector<float> creaseWeights;    //!< weight for each crease
       std::vector<int> corners;            //!< corner indices

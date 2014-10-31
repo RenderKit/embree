@@ -166,6 +166,7 @@ RTCORE_API unsigned rtcNewSubdivisionMesh (RTCScene scene,                //!< t
 					   size_t numVertices,            //!< number of vertices
 					   size_t numCreases,             //!< number of creases
 					   size_t numCorners,             //!< number of corners
+                                           size_t numHoles,               //!< number of holes
 					   size_t numTimeSteps = 1        //!< number of motion blur time steps
   );
 

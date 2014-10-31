@@ -20,7 +20,7 @@
 
 namespace embree
 {
-  SubdivMesh::SubdivMesh (Scene* parent, RTCGeometryFlags flags, size_t numFaces, size_t numEdges, size_t numVertices, size_t numCreases, size_t numCorners, size_t numTimeSteps)
+  SubdivMesh::SubdivMesh (Scene* parent, RTCGeometryFlags flags, size_t numFaces, size_t numEdges, size_t numVertices, size_t numCreases, size_t numCorners, size_t numHoles, size_t numTimeSteps)
     : Geometry(parent,SUBDIV_MESH,numFaces,flags), 
       mask(-1), 
       numTimeSteps(numTimeSteps),
@@ -35,6 +35,7 @@ namespace embree
 
     vertexIndices.init(numEdges,sizeof(unsigned int));
     faceVertices.init(numFaces,sizeof(unsigned int));
+    holes.init(numHoles,sizeof(int));
     creases.init(numCreases,2*sizeof(unsigned int));
     crease_weights.init(numCreases,sizeof(float));
     corners.init(numCorners,sizeof(unsigned int));
@@ -93,6 +94,7 @@ namespace embree
     switch (type) {
     case RTC_INDEX_BUFFER          : vertexIndices.set(ptr,offset,stride); break;
     case RTC_FACE_BUFFER           : faceVertices.set(ptr,offset,stride); break;
+    case RTC_HOLE_BUFFER           : holes.set(ptr,offset,stride); break;
     case RTC_CREASE_BUFFER         : creases.set(ptr,offset,stride); break;
     case RTC_CREASE_WEIGHT_BUFFER  : crease_weights.set(ptr,offset,stride); break;
     case RTC_CORNER_BUFFER         : corners.set(ptr,offset,stride); break;
@@ -131,6 +133,7 @@ namespace embree
     switch (type) {
     case RTC_INDEX_BUFFER          : return vertexIndices.map(parent->numMappedBuffers);
     case RTC_FACE_BUFFER           : return faceVertices.map(parent->numMappedBuffers);
+    case RTC_HOLE_BUFFER           : return holes.map(parent->numMappedBuffers);
     case RTC_VERTEX_BUFFER0        : return vertices[0].map(parent->numMappedBuffers);
     case RTC_VERTEX_BUFFER1        : return vertices[1].map(parent->numMappedBuffers);
     case RTC_CREASE_BUFFER         : return creases.map(parent->numMappedBuffers); 
@@ -152,6 +155,7 @@ namespace embree
     switch (type) {
     case RTC_INDEX_BUFFER          : vertexIndices.unmap(parent->numMappedBuffers); break;
     case RTC_FACE_BUFFER           : faceVertices.unmap(parent->numMappedBuffers); break;
+    case RTC_HOLE_BUFFER           : holes.unmap(parent->numMappedBuffers); break;
     case RTC_VERTEX_BUFFER0        : vertices[0].unmap(parent->numMappedBuffers); break;
     case RTC_VERTEX_BUFFER1        : vertices[1].unmap(parent->numMappedBuffers); break;
     case RTC_CREASE_BUFFER         : creases.unmap(parent->numMappedBuffers); break;
@@ -214,8 +218,15 @@ namespace embree
     for (size_t i=0; i<corners.size(); i++) {
       full_corner_weights[corners[i]] = corner_weights[i];
     }
+
+    /* calculate full hole vector */
+    std::vector<bool> full_holes(numFaces);
+    for (size_t i=0; i<full_holes.size(); i++) full_holes[i] = 0;
+    for (size_t i=0; i<holes.size()     ; i++) full_holes[holes[i]] = 1;
     
-    /* initialize all four half-edges for each face */
+    /* initialize all half-edges for each face */
+    std::map<size_t,unsigned int> edgeMap;
+
     for (size_t i=0; i<numFaces; i++) 
     {
       const unsigned int halfEdgeIndex = vertexOffsets[i];
@@ -227,29 +238,24 @@ namespace embree
         halfEdges[4*i+j].crease_weight  = 0.0f;
         if (levels)  halfEdges[4*i+j].level = levels[4*i+j];
         else         halfEdges[4*i+j].level = 3.0f;
-      }
-    }
 
-    /* find opposite half-edges */
-    std::map<size_t,unsigned int> edgeMap;
+        if (full_holes[j]) continue;
+        
+        const unsigned int start = vertexIndices[halfEdgeIndex + j + 0];
+        const unsigned int end   = vertexIndices[halfEdgeIndex + (j + 1) % 4];
+        const int64 value = pair64(start,end);
 
-    for (size_t i=0; i<numHalfEdges; i++)
-    {
-      unsigned int start = halfEdges[i].getStartVertexIndex();
-      unsigned int end   = halfEdges[i].getEndVertexIndex();
-      int64 value = pair64(start,end);
-      
-      if (creaseMap.find(value) != creaseMap.end()) {
-        halfEdges[i].crease_weight = creaseMap[value];
-      }
+        if (creaseMap.find(value) != creaseMap.end()) 
+          halfEdges[4*i+j].crease_weight = creaseMap[value];
 
-      std::map<size_t,unsigned int>::iterator found = edgeMap.find(value);
-      if (found != edgeMap.end()) {
-        halfEdges[i].opposite_index = found->second;
-        halfEdges[ found->second ].opposite_index = i;
-      }
-      else {
-        edgeMap[value] = i;
+        std::map<size_t,unsigned int>::iterator found = edgeMap.find(value);
+        if (found == edgeMap.end()) {
+          edgeMap[value] = 4*i+j;
+          continue;
+        }
+
+        halfEdges[4*i+j].opposite_index = found->second;
+        halfEdges[ found->second ].opposite_index = 4*i+j;
       }
     }
 

@@ -29,7 +29,7 @@ namespace embree
   class SubdivMesh : public Geometry
   {
   public:
-    SubdivMesh(Scene* parent, RTCGeometryFlags flags, size_t numFaces, size_t numEdges, size_t numVertices, size_t numCreases, size_t numCorners, size_t numTimeSteps);
+    SubdivMesh(Scene* parent, RTCGeometryFlags flags, size_t numFaces, size_t numEdges, size_t numVertices, size_t numCreases, size_t numCorners, size_t numHoles, size_t numTimeSteps);
     ~SubdivMesh();
 
     void enabling();
@@ -234,6 +234,7 @@ namespace embree
     //BufferT<unsigned int> vertexOffsets;
     std::vector<unsigned int> vertexOffsets;
     BufferT<int> faceVertices;
+    BufferT<int> holes;
 
     /*! Indices of the vertices composing each face, provided by the application */
     BufferT<unsigned int> vertexIndices;

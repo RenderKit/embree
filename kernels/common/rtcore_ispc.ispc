@@ -56,6 +56,7 @@ extern "C" uniform unsigned int ispcNewSubdivisionMesh (RTCScene scene,
                                                         uniform size_tt numVertices,
                                                         uniform size_tt numCreases,
                                                         uniform size_tt numCorners,
+                                                        uniform size_tt numHoles,
                                                         uniform size_tt numTimeSteps);
 
 extern "C" void ispcSetRayMask (RTCScene scene, uniform unsigned int geomID, uniform int mask);
@@ -210,9 +211,10 @@ uniform unsigned int rtcNewSubdivisionMesh (RTCScene scene,
                                             uniform size_t numVertices,
                                             uniform size_t numCreases,             //!< number of creases
                                             uniform size_t numCorners,             //!< number of corners
+                                            uniform size_t numHoles,
                                             uniform size_t numTimeSteps)
 {
-  return ispcNewSubdivisionMesh(scene,flags,numFaces,numEdges,numVertices,numCreases,numCorners,numTimeSteps);
+  return ispcNewSubdivisionMesh(scene,flags,numFaces,numEdges,numVertices,numCreases,numCorners,numHoles,numTimeSteps);
 }
 
 

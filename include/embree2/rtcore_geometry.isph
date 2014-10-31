@@ -191,6 +191,7 @@ uniform unsigned int rtcNewSubdivisionMesh (RTCScene scene,                //!< 
                                             uniform size_t numVertices,            //!< number of vertices
                                             uniform size_t numCreases,             //!< number of creases
                                             uniform size_t numCorners,             //!< number of corners
+                                            uniform size_t numHoles,               //!< number of holes
                                             uniform size_t numTimeSteps = 1        //!< number of motion blur time steps
   );
 
