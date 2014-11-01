@@ -139,7 +139,7 @@ namespace embree
     }
 
     
-    __forceinline void init(const SubdivMesh::HalfEdge* const h, const Vec3fa* const vertices, const float* const corner_weights) // FIXME: should get buffer as vertex array input!!!!
+    __forceinline void init(const SubdivMesh::HalfEdge* const h, const Vec3fa* const vertices, const float* const corner_weights = NULL) // FIXME: should get buffer as vertex array input!!!!
     {
       for (size_t i=0; i<MAX_VALENCE; i++) crease_weight[i] = nan;
 
