@@ -83,7 +83,7 @@ namespace embree
   {
     Vec3fa vtx;
     Vec3fa ring[2*MAX_VALENCE]; // two vertices per face
-    float crease_weight[MAX_VALENCE];
+    float crease_weight[MAX_VALENCE]; // FIXME: move into 4th component of ring entries
     unsigned int valence;
     unsigned int num_vtx;
     int hard_edge_index;

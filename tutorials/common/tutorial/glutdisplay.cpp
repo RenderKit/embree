@@ -25,7 +25,7 @@
 #if defined(__MACOSX__)
 #  include <OpenGL/gl.h>
 #  include <GLUT/glut.h>
-#  include <ApplicationServices/ApplicationServices.h>
+//#  include <ApplicationServices/ApplicationServices.h>
 #elif defined(__WIN32__)
 #  include <windows.h>
 #  include <GL/gl.h>   
