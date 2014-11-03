@@ -57,16 +57,12 @@ namespace embree
       f_m[1][1] = 0.0f;
       f_m[1][0] = 0.0f;
 
-      PING;
-
 
       flags = 0;
       if (first_half_edge->isFaceRegular()) 
 	{
 	  flags |= REGULAR_PATCH;
 	  init( patch );
-
-	  DBG_PRINT( patch );
 
 #if 0
 	  IrregularCatmullClarkPatch rpatch ( first_half_edge, vertices ); 
@@ -89,6 +85,14 @@ namespace embree
 	  DBG_PRINT( rpatch.getSecondLimitTangent( 3 ) );
 
 
+	  GregoryPatch gpatch; 
+	  gpatch.init( rpatch ); 
+	  DBG_PRINT( gpatch );
+
+	  gpatch.init( first_half_edge, vertices ); 
+	  DBG_PRINT( gpatch );
+
+	  exit(0);
 #endif
 
 	}

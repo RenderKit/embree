@@ -339,6 +339,7 @@ namespace embree
       return true;
     }
 
+    /* computes the limit vertex */
     __forceinline Vec3fa getLimitVertex() const
     {
       Vec3fa_t F( 0.0f );
@@ -357,14 +358,17 @@ namespace embree
     __forceinline Vec3fa getLimitTangent() const 
     {
       Vec3fa_t alpha( 0.0f );
-      Vec3fa_t beta( 0.0f );
+      Vec3fa_t beta ( 0.0f );
 
       const float n = (float)valence;
-      const float c = 1.0f/n * 1.0f / sqrtf(4.0f + cos(M_PI/n)*cos(M_PI/n));  
+      const float c0 = 1.0f/n * 1.0f / sqrtf(4.0f + cos(M_PI/n)*cos(M_PI/n));  
+      const float c1 = (1.0f/n + cosf(M_PI/n) * c0);
       for (size_t i=0; i<valence; i++)
 	{
-	  alpha += (1.0f/n + cosf(M_PI/n) * c) * cosf(2.0f*M_PI*(float)i/n) * ring[2*i];
-          beta += c * cosf((2.0f*M_PI*(float)i+M_PI)/n) * ring[2*i+1];
+	  const float a = c1 * cosf(2.0f*M_PI*(float)i/n);
+	  const float b = c0 * cosf((2.0f*M_PI*(float)i+M_PI)/n);
+	  alpha +=  a * ring[2*i];
+          beta  +=  b * ring[2*i+1];
 	}
       return alpha +  beta;      
     }
@@ -373,19 +377,38 @@ namespace embree
     __forceinline Vec3fa getSecondLimitTangent() const 
     {
       Vec3fa_t alpha( 0.0f );
-      Vec3fa_t beta( 0.0f );
+      Vec3fa_t beta ( 0.0f );
       const float n = (float)valence;
-      const float c = 1.0f/n * 1.0f / sqrtf(4.0f + cos(M_PI/n)*cos(M_PI/n));  
+      const float c0 = 1.0f/n * 1.0f / sqrtf(4.0f + cos(M_PI/n)*cos(M_PI/n));  
+      const float c1 = (1.0f/n + cosf(M_PI/n) * c0);
       size_t ring_index = valence-1;
-      for (size_t i=0; i<valence; i++,ring_index++)
+      for (size_t i=0; i<valence; i++,ring_index++) // FIXME: is this the right direction?
 	{
 	  if (unlikely(ring_index == valence)) ring_index = 0;
-	  alpha += (1.0f/n + cosf(M_PI/n) * c) * cosf(2.0f*M_PI*(float)i/n) * ring[2*ring_index];
-          beta += c * cosf((2.0f*M_PI*(float)i+M_PI)/n) * ring[2*ring_index+1];
+	  const float a = c1 * cosf(2.0f*M_PI*(float)i/n);
+	  const float b = c0 * cosf((2.0f*M_PI*(float)i+M_PI)/n);
+	  alpha += a * ring[2*ring_index];
+          beta  += b * ring[2*ring_index+1];
 	}
       return alpha +  beta;      
     }
 
+    /* returns center of the n-th quad in the 1-ring */
+    __forceinline Vec3fa getQuadCenter(const size_t index) const
+    {
+      const Vec3fa_t &p0 = vtx;
+      const Vec3fa_t &p1 = ring[2*index+0];
+      const Vec3fa_t &p2 = ring[2*index+1];
+      const Vec3fa_t &p3 = index == valence-1 ? ring[0] : ring[2*index+2];
+      const Vec3fa p = (p0+p1+p2+p3) * 0.25f;
+      return p;
+    }
+
+    /* returns center of the n-th edge in the 1-ring */
+    __forceinline Vec3fa getEdgeCenter(const size_t index) const
+    {
+      return (vtx + ring[index*2]) * 0.5f;
+    }
 
     friend __forceinline std::ostream &operator<<(std::ostream &o, const CatmullClark1Ring &c)
     {
@@ -1396,6 +1419,38 @@ namespace embree
       return 1.0f/3.0f * tangent + p_vtx;
     }
 
+    void initFaceVertex(const IrregularCatmullClarkPatch &irreg_patch,
+			const size_t index,
+			const Vec3fa &p_vtx,
+			const Vec3fa &e0_p_vtx,
+			const Vec3fa &e0_m_vtx,
+			const unsigned int valence_end_e0,
+			const Vec3fa &e1_p_vtx,
+			const Vec3fa &e1_m_vtx,
+			const unsigned int valence_end_e1,
+			Vec3fa &f_p_vtx,
+			Vec3fa &f_m_vtx)
+    {
+      const unsigned int valence = irreg_patch.ring[index].valence;
+      const Vec3fa quad_center_first = irreg_patch.ring[index].getQuadCenter( 0 );
+      const Vec3fa quad_center       = irreg_patch.ring[index].getQuadCenter( valence-1 );
+      const Vec3fa quad_center_last  = irreg_patch.ring[index].getQuadCenter( valence-2 );
+      const Vec3fa edge_midpoint_1   = irreg_patch.ring[index].getEdgeCenter( 1 );
+      const Vec3fa edge_midpoint_0   = irreg_patch.ring[index].getEdgeCenter( 0 );
+      const Vec3fa edge_midpoint_n_1 = irreg_patch.ring[index].getEdgeCenter( valence-1 );
+      const Vec3fa edge_midpoint_n_2 = irreg_patch.ring[index].getEdgeCenter( valence-2 );
+
+      const float d = 3.0f;
+      const float c     = cosf(2.0*M_PI/(float)valence);
+      const float c_e0 = cosf(2.0*M_PI/(float)valence_end_e0);
+      const float c_e1 = cosf(2.0*M_PI/(float)valence_end_e1);
+
+      const Vec3fa r_e0 = 1.0f/3.0f * (edge_midpoint_1 - edge_midpoint_n_1) + 2.0f/3.0f * (quad_center_first - quad_center);
+      f_p_vtx =  1.0f / d * (c_e0 * p_vtx + (d - 2.0f*c - c_e0) * e0_p_vtx + 2.0f*c* e0_m_vtx + r_e0);
+           
+
+    }
+
     Vec3fa initFaceVertex(const SubdivMesh::HalfEdge *const h,
                           const Vec3fa *const vertices,
                           const Vec3fa &p_vtx,
@@ -1410,6 +1465,9 @@ namespace embree
       const Vec3fa midpoint_i_p_1 = h->prev()->getEdgeMidPointVertex(vertices);
       const Vec3fa midpoint_i_m_1 = h->opposite()->next()->getEdgeMidPointVertex(vertices);
       const Vec3fa r0 = 1.0f/3.0f * sign*(midpoint_i_p_1 - midpoint_i_m_1) + 2.0f/3.0f * sign*(center_i - center_i_m_1);
+
+      DBG_PRINT( center_i );
+      DBG_PRINT( center_i_m_1 );
 
       const float d = 3.0f;
       const float c0 = cosf(2.0*M_PI/(float)valence0);
@@ -1434,6 +1492,19 @@ namespace embree
       e1_m() = initNegativeEdgeVertex(irreg_patch,1, p1());
       e2_m() = initNegativeEdgeVertex(irreg_patch,2, p2());
       e3_m() = initNegativeEdgeVertex(irreg_patch,3, p3());
+
+      const unsigned int valence_p0 = irreg_patch.ring[0].valence;
+      const unsigned int valence_p1 = irreg_patch.ring[1].valence;
+      const unsigned int valence_p2 = irreg_patch.ring[2].valence;
+      const unsigned int valence_p3 = irreg_patch.ring[3].valence;
+
+      initFaceVertex(irreg_patch,0,p0(),e0_p(),e1_m(),valence_p1,e0_m(),e3_p(),valence_p3,f0_p(),f0_m() );
+
+      initFaceVertex(irreg_patch,1,p1(),e1_p(),e2_m(),valence_p2,e1_m(),e0_p(),valence_p0,f1_p(),f1_m() );
+
+      initFaceVertex(irreg_patch,2,p2(),e2_p(),e3_m(),valence_p3,e2_m(),e1_p(),valence_p1,f2_p(),f2_m() );
+
+      initFaceVertex(irreg_patch,3,p3(),e3_p(),e0_m(),valence_p0,e3_m(),e2_p(),valence_p3,f3_p(),f3_m() );
 
     }
 
