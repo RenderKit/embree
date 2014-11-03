@@ -68,14 +68,8 @@ namespace embree
 	{
 	  flags |= GREGORY_PATCH;
 
-#if 0
-	  RegularCatmullClarkPatch rpatch;
-
-	  init( rpatch );
-
-	  BicubicBezierPatch bpatch;
-
-	  bpatch.init( rpatch.v );
+#if 1
+	  IrregularCatmullClarkPatch rpatch ( first_half_edge, vertices ); 
 
 
 #endif

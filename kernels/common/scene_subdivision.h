@@ -158,7 +158,7 @@ namespace embree
 	ring[i++] = (Vec3fa_t) vertices[ p->next()->getStartVertexIndex() ];
         
 	if (unlikely(!p->hasOpposite())) { 
-          init_clockwise(h,vertices,i);
+          init_secondhalf(h,vertices,i);
           return;
         }
 	p = p->opposite();
@@ -173,7 +173,7 @@ namespace embree
       valence = i >> 1;
     }
 
-    __forceinline void init_clockwise(const SubdivMesh::HalfEdge* const h, const Vec3fa* const vertices, size_t i)
+    __forceinline void init_secondhalf(const SubdivMesh::HalfEdge* const h, const Vec3fa* const vertices, size_t i)
     {
       /*! mark first hard edge and store dummy vertex for face between the two hard edges*/
       hard_edge_index = i-1;
@@ -486,7 +486,7 @@ namespace embree
 
     __forceinline IrregularCatmullClarkPatch () {}
 
-    __forceinline IrregularCatmullClarkPatch (const SubdivMesh::HalfEdge* first_half_edge, const Vec3fa* vertices, const float* const corner_weights) 
+    __forceinline IrregularCatmullClarkPatch (const SubdivMesh::HalfEdge* first_half_edge, const Vec3fa* vertices, const float* const corner_weights = NULL) 
     {
       for (size_t i=0; i<4; i++) {
         ring[i].init(first_half_edge+i,vertices,corner_weights);
@@ -1322,6 +1322,13 @@ namespace embree
     const Vec3fa& f2_m() const { return f[1][1]; }
     const Vec3fa& f3_m() const { return f[1][0]; }
 
+
+    Vec3fa initCornerVertex(const IrregularCatmullClarkPatch &irreg_patch,
+			    const size_t index)
+    {
+      return irreg_patch.ring[index].getLimitVertex();
+    }
+
     Vec3fa initCornerVertex(const SubdivMesh::HalfEdge *const h,
 			    const Vec3fa *const vertices)
     {
@@ -1330,8 +1337,15 @@ namespace embree
       return ring.getLimitVertex();
     }
 
+    Vec3fa initEdgeVertex(const IrregularCatmullClarkPatch &irreg_patch,
+			  const size_t index,
+			  const Vec3fa &p_vtx)
+    {
+      const Vec3fa tangent = irreg_patch.ring[index].getLimitTangent();
+      return 1.0f/3.0f * tangent + p_vtx;
+    }
 
-#if 1
+
     Vec3fa initEdgeVertex(const SubdivMesh::HalfEdge *const h,
                           const Vec3fa *const vertices,
                           const Vec3fa &p_vtx)
@@ -1341,39 +1355,6 @@ namespace embree
       Vec3fa tangent = ring.getLimitTangent();
       return 1.0f/3.0f * tangent + p_vtx;
     }
-#else
-    // the version from the paper seems to produce incorrect tangents
-
-    Vec3fa initEdgeVertex(const SubdivMesh::HalfEdge *const h,
-                          const Vec3fa *const vertices,
-                          const Vec3fa &p_vtx)
-    {
-      Vec3fa_t q( 0.0f );
-      const unsigned int valence = h->getEdgeValence();
-      const float n = (float)valence;
-      const float sigma = 1.0f / sqrtf((4.0f + cosf(M_PI/n) * cosf(M_PI/n)));
-
-      const float b = (1.0f-sigma*cosf(M_PI/n));
-      SubdivMesh::HalfEdge *p = (SubdivMesh::HalfEdge*)h;
-      unsigned int i=0;
-      do 
-        {
-          const Vec3fa_t m_i = p->getEdgeMidPointVertex(vertices);
-          const Vec3fa_t c_i = p->getFaceMidPointVertex(vertices);
-          const Vec3fa_t q_i = b * cosf((2.0f*M_PI*(float)i)/n) * m_i + 2.0f*sigma*cosf((2.0f*M_PI*(float)i+M_PI)/n) * c_i; 
-          q += q_i;
-          assert( p->hasOpposite() );
-          p = p->opposite();
-           /*! continue with next adjacent edge */
-	  p = p->next();
-          i++;
-        } while( p != h);
-      assert( i == n );
-      q *= 2.0f/n;
-      const float lambda = 1.0f/16.0f*(5.0f+cosf((2.0f*M_PI)/n)+cosf(M_PI/n)*sqrtf(18.0f+2.0f*cosf((2.0f*M_PI)/n)));
-      return p_vtx + 2.0f/3.0f*lambda*q;
-    }
-#endif
 
     Vec3fa initFaceVertex(const SubdivMesh::HalfEdge *const h,
                           const Vec3fa *const vertices,
@@ -1397,6 +1378,20 @@ namespace embree
       return 1.0f / d * (c1 * p_vtx + (d - 2.0f*c0 - c1) * e_p_vtx + 2.0f*c0* e_m_vtx + r0);     
     }
 
+    __forceinline void init(const IrregularCatmullClarkPatch &irreg_patch)
+    {
+      p0() = initCornerVertex(irreg_patch,0);
+      p1() = initCornerVertex(irreg_patch,1);
+      p2() = initCornerVertex(irreg_patch,2);
+      p3() = initCornerVertex(irreg_patch,3);
+
+      e0_p() = initEdgeVertex(irreg_patch,0, p0());
+      e1_p() = initEdgeVertex(irreg_patch,1, p1());
+      e2_p() = initEdgeVertex(irreg_patch,2, p2());
+      e3_p() = initEdgeVertex(irreg_patch,3, p3());
+    }
+
+
     __forceinline void init(const SubdivMesh::HalfEdge *const first_half_edge,
 			    const Vec3fa *const vertices)
     {
@@ -1414,15 +1409,6 @@ namespace embree
       const bool border_p1 = h_p0->hasIrregularEdge();
       const bool border_p2 = h_p0->hasIrregularEdge();
       const bool border_p3 = h_p0->hasIrregularEdge();
-
-      DBG_PRINT( valence_p0 );
-      DBG_PRINT( valence_p1 );
-      DBG_PRINT( valence_p2 );
-      DBG_PRINT( valence_p3 );
-
-      /* DBG_PRINT( irreg_p1 ); */
-      /* DBG_PRINT( irreg_p2 ); */
-      /* DBG_PRINT( irreg_p3 ); */
 
       if (border_p0 || 
 	  border_p1 || 
