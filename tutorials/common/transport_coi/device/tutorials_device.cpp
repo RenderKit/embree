@@ -179,7 +179,6 @@ namespace embree
 
     ISPCHairSet** hairsets;
     int numHairSets;
-    bool animate;
 
     OBJScene::AmbientLight* ambientLights;
     int numAmbientLights;

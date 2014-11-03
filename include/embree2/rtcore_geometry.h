@@ -25,21 +25,21 @@
 
 /*! \brief Specifies the type of buffers when mapping buffers */
 enum RTCBufferType {
-  RTC_INDEX_BUFFER    = 0x01000000,
-  RTC_VERTEX_BUFFER   = 0x02000000,
-  RTC_VERTEX_BUFFER0  = 0x02000000,
-  RTC_VERTEX_BUFFER1  = 0x02000001,
+  RTC_INDEX_BUFFER         = 0x01000000,
+  RTC_VERTEX_BUFFER        = 0x02000000,
+  RTC_VERTEX_BUFFER0       = 0x02000000,
+  RTC_VERTEX_BUFFER1       = 0x02000001,
 
-  RTC_FACE_BUFFER   = 0x03000000,
-  RTC_LEVEL_BUFFER    = 0x04000001,
+  RTC_FACE_BUFFER          = 0x03000000,
+  RTC_LEVEL_BUFFER         = 0x04000001,
 
-  RTC_CREASE_BUFFER   = 0x05000000,
+  RTC_CREASE_BUFFER        = 0x05000000,
   RTC_CREASE_WEIGHT_BUFFER = 0x06000000,
 
-  RTC_CORNER_BUFFER   = 0x07000000,
+  RTC_CORNER_BUFFER        = 0x07000000,
   RTC_CORNER_WEIGHT_BUFFER = 0x08000000,
 
-  RTC_HOLE_BUFFER     = 0x09000001,
+  RTC_HOLE_BUFFER          = 0x09000001,
 };
 
 /*! \brief Supported types of matrix layout for functions involving matrices */

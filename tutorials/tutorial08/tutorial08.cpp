@@ -147,7 +147,7 @@ namespace embree
 
     /* load scene */
     if (strlwr(filename.ext()) == "obj")
-      loadOBJ(filename,one,g_obj_scene);
+      loadOBJ(filename,one,g_obj_scene,true);
     else if (strlwr(filename.ext()) == "xml")
       loadXML(filename,one,g_obj_scene);
     else

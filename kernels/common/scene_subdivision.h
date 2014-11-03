@@ -1415,7 +1415,11 @@ namespace embree
       const bool border_p2 = h_p0->hasIrregularEdge();
       const bool border_p3 = h_p0->hasIrregularEdge();
 
-      /* DBG_PRINT( irreg_p0 ); */
+      DBG_PRINT( valence_p0 );
+      DBG_PRINT( valence_p1 );
+      DBG_PRINT( valence_p2 );
+      DBG_PRINT( valence_p3 );
+
       /* DBG_PRINT( irreg_p1 ); */
       /* DBG_PRINT( irreg_p2 ); */
       /* DBG_PRINT( irreg_p3 ); */
