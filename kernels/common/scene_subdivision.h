@@ -353,7 +353,8 @@ namespace embree
       return (Vec3fa_t)(n*n*vtx+4*E+F) / ((n+5.0f)*n);      
     }
 
-    __forceinline Vec3fa getLimitTangent() const // FIXME: what is this supposed to calclate? there should be 2 tangents
+    /* gets limit tangent in the direction of egde vtx -> ring[0] */
+    __forceinline Vec3fa getLimitTangent() const 
     {
       Vec3fa_t alpha( 0.0f );
       Vec3fa_t beta( 0.0f );
@@ -365,7 +366,23 @@ namespace embree
 	  alpha += (1.0f/n + cosf(M_PI/n) * c) * cosf(2.0f*M_PI*(float)i/n) * ring[2*i];
           beta += c * cosf((2.0f*M_PI*(float)i+M_PI)/n) * ring[2*i+1];
 	}
+      return alpha +  beta;      
+    }
 
+    /* gets limit tangent in the direction of egde vtx -> ring[num_vtx-2] */
+    __forceinline Vec3fa getSecondLimitTangent() const 
+    {
+      Vec3fa_t alpha( 0.0f );
+      Vec3fa_t beta( 0.0f );
+      const float n = (float)valence;
+      const float c = 1.0f/n * 1.0f / sqrtf(4.0f + cos(M_PI/n)*cos(M_PI/n));  
+      size_t ring_index = valence-1;
+      for (size_t i=0; i<valence; i++,ring_index++)
+	{
+	  if (unlikely(ring_index == valence)) ring_index = 0;
+	  alpha += (1.0f/n + cosf(M_PI/n) * c) * cosf(2.0f*M_PI*(float)i/n) * ring[2*ring_index];
+          beta += c * cosf((2.0f*M_PI*(float)i+M_PI)/n) * ring[2*ring_index+1];
+	}
       return alpha +  beta;      
     }
 
@@ -492,6 +509,21 @@ namespace embree
         ring[i].init(first_half_edge+i,vertices,corner_weights);
         level[i] = first_half_edge[i].level;
       }
+    }
+
+    __forceinline Vec3fa getLimitVertex(const size_t index) const
+    {
+      return ring[index].getLimitVertex();
+    }
+
+    __forceinline Vec3fa getLimitTangent(const size_t index) const
+    {
+      return ring[index].getLimitTangent();
+    }
+
+    __forceinline Vec3fa getSecondLimitTangent(const size_t index) const
+    {
+      return ring[index].getSecondLimitTangent();
     }
 
     __forceinline BBox3fa bounds() const
@@ -1337,11 +1369,19 @@ namespace embree
       return ring.getLimitVertex();
     }
 
-    Vec3fa initEdgeVertex(const IrregularCatmullClarkPatch &irreg_patch,
-			  const size_t index,
-			  const Vec3fa &p_vtx)
+    Vec3fa initPositiveEdgeVertex(const IrregularCatmullClarkPatch &irreg_patch,
+				  const size_t index,
+				  const Vec3fa &p_vtx)
     {
       const Vec3fa tangent = irreg_patch.ring[index].getLimitTangent();
+      return 1.0f/3.0f * tangent + p_vtx;
+    }
+
+    Vec3fa initNegativeEdgeVertex(const IrregularCatmullClarkPatch &irreg_patch,
+				  const size_t index,
+				  const Vec3fa &p_vtx)
+    {
+      const Vec3fa tangent = irreg_patch.ring[index].getSecondLimitTangent();
       return 1.0f/3.0f * tangent + p_vtx;
     }
 
@@ -1385,10 +1425,16 @@ namespace embree
       p2() = initCornerVertex(irreg_patch,2);
       p3() = initCornerVertex(irreg_patch,3);
 
-      e0_p() = initEdgeVertex(irreg_patch,0, p0());
-      e1_p() = initEdgeVertex(irreg_patch,1, p1());
-      e2_p() = initEdgeVertex(irreg_patch,2, p2());
-      e3_p() = initEdgeVertex(irreg_patch,3, p3());
+      e0_p() = initPositiveEdgeVertex(irreg_patch,0, p0());
+      e1_p() = initPositiveEdgeVertex(irreg_patch,1, p1());
+      e2_p() = initPositiveEdgeVertex(irreg_patch,2, p2());
+      e3_p() = initPositiveEdgeVertex(irreg_patch,3, p3());
+
+      e0_m() = initNegativeEdgeVertex(irreg_patch,0, p0());
+      e1_m() = initNegativeEdgeVertex(irreg_patch,1, p1());
+      e2_m() = initNegativeEdgeVertex(irreg_patch,2, p2());
+      e3_m() = initNegativeEdgeVertex(irreg_patch,3, p3());
+
     }
 
 

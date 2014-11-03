@@ -57,22 +57,46 @@ namespace embree
       f_m[1][1] = 0.0f;
       f_m[1][0] = 0.0f;
 
+      PING;
+
+
       flags = 0;
       if (first_half_edge->isFaceRegular()) 
 	{
 	  flags |= REGULAR_PATCH;
 	  init( patch );
+
+	  DBG_PRINT( patch );
+
+#if 0
+	  IrregularCatmullClarkPatch rpatch ( first_half_edge, vertices ); 
+
+	  DBG_PRINT( rpatch );
+
+	  DBG_PRINT( rpatch.getLimitVertex( 0 ) );
+	  DBG_PRINT( rpatch.getLimitVertex( 1 ) );
+	  DBG_PRINT( rpatch.getLimitVertex( 2 ) );
+	  DBG_PRINT( rpatch.getLimitVertex( 3 ) );
+
+	  DBG_PRINT( rpatch.getLimitTangent( 0 ) );
+	  DBG_PRINT( rpatch.getLimitTangent( 1 ) );
+	  DBG_PRINT( rpatch.getLimitTangent( 2 ) );
+	  DBG_PRINT( rpatch.getLimitTangent( 3 ) );
+
+	  DBG_PRINT( rpatch.getSecondLimitTangent( 0 ) );
+	  DBG_PRINT( rpatch.getSecondLimitTangent( 1 ) );
+	  DBG_PRINT( rpatch.getSecondLimitTangent( 2 ) );
+	  DBG_PRINT( rpatch.getSecondLimitTangent( 3 ) );
+
+
+#endif
+
 	}
 #if 1
       else if (!first_half_edge->faceHasEdges())
 	{
 	  flags |= GREGORY_PATCH;
 
-#if 1
-	  IrregularCatmullClarkPatch rpatch ( first_half_edge, vertices ); 
-
-
-#endif
 
 	  GregoryPatch gpatch; 
 	  gpatch.init( first_half_edge, vertices ); 
@@ -120,13 +144,14 @@ namespace embree
 #endif
       else
 	{
+#if 1
 	  flags |= GREGORY_PATCH;
 
 	  GregoryPatch gpatch; 
 	  gpatch.init( first_half_edge, vertices ); 
 	  
 	  gpatch.exportConrolPoints( patch.v, f_m );
-
+#endif
 	}
     }
 
