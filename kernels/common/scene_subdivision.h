@@ -1402,13 +1402,6 @@ namespace embree
       return irreg_patch.ring[index].getLimitVertex();
     }
 
-    Vec3fa initCornerVertex(const SubdivMesh::HalfEdge *const h,
-			    const Vec3fa *const vertices)
-    {
-      CatmullClark1Ring ring;
-      ring.init(h,vertices,NULL);
-      return ring.getLimitVertex();
-    }
 
     Vec3fa initPositiveEdgeVertex(const IrregularCatmullClarkPatch &irreg_patch,
 				  const size_t index,
@@ -1426,16 +1419,6 @@ namespace embree
       return 1.0f/3.0f * tangent + p_vtx;
     }
 
-
-    Vec3fa initEdgeVertex(const SubdivMesh::HalfEdge *const h,
-                          const Vec3fa *const vertices,
-                          const Vec3fa &p_vtx)
-    {
-      CatmullClark1Ring ring;
-      ring.init(h,vertices,NULL);
-      Vec3fa tangent = ring.getLimitTangent();
-      return 1.0f/3.0f * tangent + p_vtx;
-    }
 
     void initFaceVertex(const IrregularCatmullClarkPatch &irreg_patch,
 			const size_t index,
@@ -1501,28 +1484,6 @@ namespace embree
 
     }
 
-    Vec3fa initFaceVertex(const SubdivMesh::HalfEdge *const h,
-                          const Vec3fa *const vertices,
-                          const Vec3fa &p_vtx,
-			  const Vec3fa &e_p_vtx,
-			  const Vec3fa &e_m_vtx,
-			  const unsigned int valence0,
-			  const unsigned int valence1,
-			  const float sign = 1.0f)
-    {
-      const Vec3fa center_i       = h->getFaceMidPointVertex(vertices);
-      const Vec3fa center_i_m_1   = h->opposite()->getFaceMidPointVertex(vertices);
-      const Vec3fa midpoint_i_p_1 = h->prev()->getEdgeMidPointVertex(vertices);
-      const Vec3fa midpoint_i_m_1 = h->opposite()->next()->getEdgeMidPointVertex(vertices);
-      const Vec3fa r0 = 1.0f/3.0f * sign*(midpoint_i_p_1 - midpoint_i_m_1) + 2.0f/3.0f * sign*(center_i - center_i_m_1);
-
-      const float d = 3.0f;
-      const float c0 = cosf(2.0*M_PI/(float)valence0);
-      const float c1 = cosf(2.0*M_PI/(float)valence1);
-
-      return 1.0f / d * (c1 * p_vtx + (d - 2.0f*c0 - c1) * e_p_vtx + 2.0f*c0* e_m_vtx + r0);     
-    }
-
     __forceinline void init(const IrregularCatmullClarkPatch &irreg_patch)
     {
       p0() = initCornerVertex(irreg_patch,0);
@@ -1553,113 +1514,6 @@ namespace embree
 
       initFaceVertex(irreg_patch,3,p3(),e3_p(),e0_m(),valence_p0,e3_m(),e2_p(),valence_p3,f3_p(),f3_m() );
 
-    }
-
-
-    __forceinline void init(const SubdivMesh::HalfEdge *const first_half_edge,
-			    const Vec3fa *const vertices)
-    {
-      const SubdivMesh::HalfEdge *const h_p0 = first_half_edge;
-      const SubdivMesh::HalfEdge *const h_p1 = h_p0->next();
-      const SubdivMesh::HalfEdge *const h_p2 = h_p1->next();
-      const SubdivMesh::HalfEdge *const h_p3 = h_p2->next();
-
-      const unsigned int valence_p0 = h_p0->getEdgeValence();
-      const unsigned int valence_p1 = h_p1->getEdgeValence();
-      const unsigned int valence_p2 = h_p2->getEdgeValence();
-      const unsigned int valence_p3 = h_p3->getEdgeValence();
-
-      const bool border_p0 = h_p0->hasIrregularEdge();
-      const bool border_p1 = h_p0->hasIrregularEdge();
-      const bool border_p2 = h_p0->hasIrregularEdge();
-      const bool border_p3 = h_p0->hasIrregularEdge();
-
-      if (border_p0 || 
-	  border_p1 || 
-	  border_p2 || 
-	  border_p3)
-	FATAL("initialization of gregory patches for border patches not yet implemented");
-
-      p0() = initCornerVertex(h_p0,vertices);
-      p1() = initCornerVertex(h_p1,vertices);
-      p2() = initCornerVertex(h_p2,vertices);
-      p3() = initCornerVertex(h_p3,vertices);
-
-      const SubdivMesh::HalfEdge *const h_e0_p = h_p0;
-      const SubdivMesh::HalfEdge *const h_e1_p = h_p1;
-      const SubdivMesh::HalfEdge *const h_e2_p = h_p2;
-      const SubdivMesh::HalfEdge *const h_e3_p = h_p3;
-
-      e0_p() = initEdgeVertex(h_e0_p, vertices, p0());
-      e1_p() = initEdgeVertex(h_e1_p, vertices, p1());
-      e2_p() = initEdgeVertex(h_e2_p, vertices, p2());
-      e3_p() = initEdgeVertex(h_e3_p, vertices, p3());
-
-     
-
-      
-      if (h_p3->hasOpposite())
-	{
-	  const SubdivMesh::HalfEdge *const h_e0_m = h_p3->opposite();
-	  e0_m() = initEdgeVertex(h_e0_m, vertices, p0());
-	  f0_p() = initFaceVertex(h_e0_p,vertices,p0(),e0_p(),e0_m(),valence_p0,valence_p1);
-	  f0_m() = initFaceVertex(h_e0_m,vertices,p0(),e0_m(),e0_p(),valence_p0,valence_p3,-1.0f); 
-	}
-
-      if (h_p0->hasOpposite())
-	{
-	  const SubdivMesh::HalfEdge *const h_e1_m = h_p0->opposite();
-	  e1_m() = initEdgeVertex(h_e1_m, vertices, p1());
-	  f1_p() = initFaceVertex(h_e1_p,vertices,p1(),e1_p(),e1_m(),valence_p1,valence_p2);
-	  f1_m() = initFaceVertex(h_e1_m,vertices,p1(),e1_m(),e1_p(),valence_p1,valence_p0,-1.0f);
-	}
-
-      if (h_p1->hasOpposite())
-	{
-	  const SubdivMesh::HalfEdge *const h_e2_m = h_p1->opposite();
-	  e2_m() = initEdgeVertex(h_e2_m, vertices, p2());
-	  f2_p() = initFaceVertex(h_e2_p,vertices,p2(),e2_p(),e2_m(),valence_p2,valence_p3);
-	  f2_m() = initFaceVertex(h_e2_m,vertices,p2(),e2_m(),e2_p(),valence_p2,valence_p1,-1.0f);
-	}
-
-      if (h_p2->hasOpposite())
-	{
-	  const SubdivMesh::HalfEdge *const h_e3_m = h_p2->opposite();
-	  e3_m() = initEdgeVertex(h_e3_m, vertices, p3());
-	  f3_p() = initFaceVertex(h_e3_p,vertices,p3(),e3_p(),e3_m(),valence_p3,valence_p2);
-	  f3_m() = initFaceVertex(h_e3_m,vertices,p3(),e3_m(),e3_p(),valence_p3,valence_p0,-1.0f);
-	}
-#if 0
-      DBG_PRINT( p0() );
-      DBG_PRINT( p1() );
-      DBG_PRINT( p2() );
-      DBG_PRINT( p3() );
-
-      DBG_PRINT( e0_p() );
-      DBG_PRINT( e1_p() );
-      DBG_PRINT( e2_p() );
-      DBG_PRINT( e3_p() );
-
-      DBG_PRINT( e0_m() );
-      DBG_PRINT( e1_m() );
-      DBG_PRINT( e2_m() );
-      DBG_PRINT( e3_m() );
- 
-      DBG_PRINT( valence_p0 );
-      DBG_PRINT( valence_p1 );
-      DBG_PRINT( valence_p2 );
-      DBG_PRINT( valence_p3 );
-
-      DBG_PRINT( f0_p() );
-      DBG_PRINT( f1_p() );
-      DBG_PRINT( f2_p() );
-      DBG_PRINT( f3_p() );
-
-      DBG_PRINT( f0_m() );
-      DBG_PRINT( f1_m() );
-      DBG_PRINT( f2_m() );
-      DBG_PRINT( f3_m() );
-#endif
     }
 
    __forceinline BBox3fa bounds() const

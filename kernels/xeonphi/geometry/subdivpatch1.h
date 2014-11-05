@@ -64,14 +64,11 @@ namespace embree
 	  flags |= REGULAR_PATCH;
 	  init( patch );
 
-#if 1
+#if 0
 	  IrregularCatmullClarkPatch rpatch ( first_half_edge, vertices ); 
 
 	  GregoryPatch gpatch; 
 	  gpatch.init( rpatch ); 
-	  DBG_PRINT( gpatch );
-
-	  gpatch.init( first_half_edge, vertices ); 
 	  DBG_PRINT( gpatch );
 
 	  exit(0);
