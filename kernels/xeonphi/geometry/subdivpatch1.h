@@ -102,48 +102,12 @@ namespace embree
 	  flags |= GREGORY_PATCH;
 
 
+	  IrregularCatmullClarkPatch rpatch ( first_half_edge, vertices ); 
+
 	  GregoryPatch gpatch; 
-	  gpatch.init( first_half_edge, vertices ); 
-	  
-	  //DBG_PRINT(gpatch);
-
+	  //gpatch.init( first_half_edge, vertices ); 
+	  gpatch.init( rpatch ); 
 	  gpatch.exportConrolPoints( patch.v, f_m );
-#if 0
-
-	  DBG_PRINT( rpatch.eval(0.0f,0.0f) ); 
-	  DBG_PRINT( gpatch.eval(0.0f,0.0f) );
-
-	  DBG_PRINT( rpatch.eval(0.0f,1.0f) ); 
-	  DBG_PRINT( gpatch.eval(0.0f,1.0f) );
-
-	  DBG_PRINT( rpatch.eval(1.0f,1.0f) ); 
-	  DBG_PRINT( gpatch.eval(1.0f,1.0f) );
-
-	  DBG_PRINT( rpatch.eval(1.0f,0.0f) ); 
-	  DBG_PRINT( gpatch.eval(1.0f,0.0f) );
-
-	  DBG_PRINT( rpatch.eval(0.5f,0.5f) ); 
-	  DBG_PRINT( gpatch.eval(0.5f,0.5f) );
-
-	  DBG_PRINT( rpatch.eval(0.25f,0.25f) ); 
-	  DBG_PRINT( gpatch.eval(0.25f,0.25f) );
-	  DBG_PRINT( bpatch.eval(0.25f,0.25f) );
-
-	  DBG_PRINT(bpatch);
-
-	  exit(0);
-
-	  DBG_PRINT( rpatch.eval(0.75f,0.75f) ); 
-	  DBG_PRINT( gpatch.eval(0.75f,0.75f) );
-
-	  DBG_PRINT( rpatch.eval(0.25f,0.75f) ); 
-	  DBG_PRINT( gpatch.eval(0.25f,0.75f) );
-
-	  DBG_PRINT( rpatch.eval(0.75f,0.25f) ); 
-	  DBG_PRINT( gpatch.eval(0.75f,0.25f) );
-
-#endif
-
 	}
 #endif
       else

@@ -1423,31 +1423,64 @@ namespace embree
 			const size_t index,
 			const Vec3fa &p_vtx,
 			const Vec3fa &e0_p_vtx,
-			const Vec3fa &e0_m_vtx,
-			const unsigned int valence_end_e0,
-			const Vec3fa &e1_p_vtx,
 			const Vec3fa &e1_m_vtx,
-			const unsigned int valence_end_e1,
+			const unsigned int valence_p1,
+			const Vec3fa &e0_m_vtx,
+			const Vec3fa &e3_p_vtx,
+			const unsigned int valence_p3,
 			Vec3fa &f_p_vtx,
 			Vec3fa &f_m_vtx)
     {
       const unsigned int valence = irreg_patch.ring[index].valence;
-      const Vec3fa quad_center_first = irreg_patch.ring[index].getQuadCenter( 0 );
-      const Vec3fa quad_center       = irreg_patch.ring[index].getQuadCenter( valence-1 );
-      const Vec3fa quad_center_last  = irreg_patch.ring[index].getQuadCenter( valence-2 );
-      const Vec3fa edge_midpoint_1   = irreg_patch.ring[index].getEdgeCenter( 1 );
-      const Vec3fa edge_midpoint_0   = irreg_patch.ring[index].getEdgeCenter( 0 );
-      const Vec3fa edge_midpoint_n_1 = irreg_patch.ring[index].getEdgeCenter( valence-1 );
-      const Vec3fa edge_midpoint_n_2 = irreg_patch.ring[index].getEdgeCenter( valence-2 );
+      const Vec3fa c_i      = irreg_patch.ring[index].getQuadCenter( 0 );
+      const Vec3fa c_i_m_1  = irreg_patch.ring[index].getQuadCenter( valence-1 );
+      const Vec3fa c_i_m_2  = irreg_patch.ring[index].getQuadCenter( valence-2 );
+      const Vec3fa e_i_p_1  = irreg_patch.ring[index].getEdgeCenter( 1 );
+      const Vec3fa e_i      = irreg_patch.ring[index].getEdgeCenter( 0 );
+      const Vec3fa e_i_m_1  = irreg_patch.ring[index].getEdgeCenter( valence-1 );
+      const Vec3fa e_i_m_2  = irreg_patch.ring[index].getEdgeCenter( valence-2 );
 
       const float d = 3.0f;
       const float c     = cosf(2.0*M_PI/(float)valence);
-      const float c_e0 = cosf(2.0*M_PI/(float)valence_end_e0);
-      const float c_e1 = cosf(2.0*M_PI/(float)valence_end_e1);
+      const float c_e_p = cosf(2.0*M_PI/(float)valence_p1);
+      const float c_e_m = cosf(2.0*M_PI/(float)valence_p3);
 
-      const Vec3fa r_e0 = 1.0f/3.0f * (edge_midpoint_1 - edge_midpoint_n_1) + 2.0f/3.0f * (quad_center_first - quad_center);
-      f_p_vtx =  1.0f / d * (c_e0 * p_vtx + (d - 2.0f*c - c_e0) * e0_p_vtx + 2.0f*c* e0_m_vtx + r_e0);
-           
+      const Vec3fa r_e_p = 1.0f/3.0f * (e_i_m_1 - e_i_p_1) + 2.0f/3.0f * (c_i_m_1 - c_i);
+
+      f_p_vtx =  1.0f / d * (c_e_p * p_vtx + (d - 2.0f*c - c_e_p) * e0_p_vtx + 2.0f*c* e1_m_vtx + r_e_p);
+
+
+      const Vec3fa r_e_m = 1.0f/3.0f * (e_i - e_i_m_2) + 2.0f/3.0f * (c_i_m_1 - c_i_m_2);
+
+
+      f_m_vtx = 1.0f / d * (c_e_m * p_vtx + (d - 2.0f*c - c_e_m) * e0_m_vtx + 2.0f*c* e3_p_vtx + r_e_m);
+
+#if 0
+      DBG_PRINT( irreg_patch.ring[index].vtx );
+      DBG_PRINT( p_vtx );
+      
+      DBG_PRINT( e0_p_vtx );
+      DBG_PRINT( e1_m_vtx );
+
+      DBG_PRINT( e0_m_vtx );
+      DBG_PRINT( e3_p_vtx );
+
+      DBG_PRINT( c_i );
+      DBG_PRINT( c_i_m_1 );
+      DBG_PRINT( c_i_m_2 );
+
+      DBG_PRINT( e_i_p_1 );
+      DBG_PRINT( e_i );
+      DBG_PRINT( e_i_m_1 );
+      DBG_PRINT( e_i_m_2 );
+
+      DBG_PRINT( r_e_p );           
+      DBG_PRINT( r_e_m );           
+
+      DBG_PRINT(f_p_vtx);
+      DBG_PRINT(f_m_vtx);
+
+#endif
 
     }
 
@@ -1465,9 +1498,6 @@ namespace embree
       const Vec3fa midpoint_i_p_1 = h->prev()->getEdgeMidPointVertex(vertices);
       const Vec3fa midpoint_i_m_1 = h->opposite()->next()->getEdgeMidPointVertex(vertices);
       const Vec3fa r0 = 1.0f/3.0f * sign*(midpoint_i_p_1 - midpoint_i_m_1) + 2.0f/3.0f * sign*(center_i - center_i_m_1);
-
-      DBG_PRINT( center_i );
-      DBG_PRINT( center_i_m_1 );
 
       const float d = 3.0f;
       const float c0 = cosf(2.0*M_PI/(float)valence0);
