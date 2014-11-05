@@ -342,6 +342,12 @@ namespace embree
     /* computes the limit vertex */
     __forceinline Vec3fa getLimitVertex() const
     {
+      /* border vertex rule */
+      if (unlikely(hard_edge_index != -1))
+	{
+	  return (4.0f * vtx + ring[hard_edge_index] + ring[hard_edge_index+2]) * 1.0f/6.0f;
+	}
+
       Vec3fa_t F( 0.0f );
       Vec3fa_t E( 0.0f );
 
@@ -357,6 +363,12 @@ namespace embree
     /* gets limit tangent in the direction of egde vtx -> ring[0] */
     __forceinline Vec3fa getLimitTangent() const 
     {
+      /* border vertex rule */
+      if (unlikely(hard_edge_index != -1))
+	{
+	  return ring[0] - vtx;
+	}
+
       Vec3fa_t alpha( 0.0f );
       Vec3fa_t beta ( 0.0f );
 
@@ -376,6 +388,12 @@ namespace embree
     /* gets limit tangent in the direction of egde vtx -> ring[num_vtx-2] */
     __forceinline Vec3fa getSecondLimitTangent() const 
     {
+      /* border vertex rule */
+      if (unlikely(hard_edge_index != -1))
+	{
+	  return ring[hard_edge_index+2] - vtx;
+	}
+
       Vec3fa_t alpha( 0.0f );
       Vec3fa_t beta ( 0.0f );
       const float n = (float)valence;
@@ -1449,13 +1467,12 @@ namespace embree
 
       f_p_vtx =  1.0f / d * (c_e_p * p_vtx + (d - 2.0f*c - c_e_p) * e0_p_vtx + 2.0f*c* e1_m_vtx + r_e_p);
 
-
       const Vec3fa r_e_m = 1.0f/3.0f * (e_i - e_i_m_2) + 2.0f/3.0f * (c_i_m_1 - c_i_m_2);
 
 
       f_m_vtx = 1.0f / d * (c_e_m * p_vtx + (d - 2.0f*c - c_e_m) * e0_m_vtx + 2.0f*c* e3_p_vtx + r_e_m);
 
-#if 0
+#if 1
       DBG_PRINT( irreg_patch.ring[index].vtx );
       DBG_PRINT( p_vtx );
       
@@ -1479,7 +1496,7 @@ namespace embree
 
       DBG_PRINT(f_p_vtx);
       DBG_PRINT(f_m_vtx);
-
+      exit(0);
 #endif
 
     }

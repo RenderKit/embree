@@ -64,7 +64,41 @@ namespace embree
 	  flags |= REGULAR_PATCH;
 	  init( patch );
 
+#if 1
+	  IrregularCatmullClarkPatch rpatch ( first_half_edge, vertices ); 
+
+	  GregoryPatch gpatch; 
+	  gpatch.init( rpatch ); 
+	  DBG_PRINT( gpatch );
+
+	  gpatch.init( first_half_edge, vertices ); 
+	  DBG_PRINT( gpatch );
+
+	  exit(0);
+#endif
+
+	}
 #if 0
+      else if (!first_half_edge->faceHasEdges())
+	{
+	  flags |= GREGORY_PATCH;
+
+
+	  IrregularCatmullClarkPatch rpatch ( first_half_edge, vertices ); 
+
+
+
+	  GregoryPatch gpatch; 
+	  //gpatch.init( first_half_edge, vertices ); 
+	  gpatch.init( rpatch ); 
+	  gpatch.exportConrolPoints( patch.v, f_m );
+	}
+#endif
+      else
+	{
+#if 1
+	  flags |= GREGORY_PATCH;
+
 	  IrregularCatmullClarkPatch rpatch ( first_half_edge, vertices ); 
 
 	  DBG_PRINT( rpatch );
@@ -87,36 +121,6 @@ namespace embree
 
 	  GregoryPatch gpatch; 
 	  gpatch.init( rpatch ); 
-	  DBG_PRINT( gpatch );
-
-	  gpatch.init( first_half_edge, vertices ); 
-	  DBG_PRINT( gpatch );
-
-	  exit(0);
-#endif
-
-	}
-#if 1
-      else if (!first_half_edge->faceHasEdges())
-	{
-	  flags |= GREGORY_PATCH;
-
-
-	  IrregularCatmullClarkPatch rpatch ( first_half_edge, vertices ); 
-
-	  GregoryPatch gpatch; 
-	  //gpatch.init( first_half_edge, vertices ); 
-	  gpatch.init( rpatch ); 
-	  gpatch.exportConrolPoints( patch.v, f_m );
-	}
-#endif
-      else
-	{
-#if 1
-	  flags |= GREGORY_PATCH;
-
-	  GregoryPatch gpatch; 
-	  gpatch.init( first_half_edge, vertices ); 
 	  
 	  gpatch.exportConrolPoints( patch.v, f_m );
 #endif
