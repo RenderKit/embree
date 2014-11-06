@@ -180,8 +180,6 @@ RTCScene constructScene(const Vec3fa& cam_pos)
   /*! Create an Embree object to hold scene state. */
   RTCScene scene = rtcNewScene(RTC_SCENE_STATIC, RTC_INTERSECT1);
   
-  PING;
-  DBG_PRINT( g_ispc_scene->numSubdivMeshes );
   for (size_t i=0; i<g_ispc_scene->numMeshes; i++)
   {
     ISPCMesh* mesh = g_ispc_scene->meshes[i];

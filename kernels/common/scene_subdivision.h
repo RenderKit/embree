@@ -154,7 +154,7 @@ namespace embree
       size_t i=0;
       do {
         assert(i < 2*MAX_VALENCE);
-        crease_weight[i/2] = p->crease_weight;
+        crease_weight[i/2] = p->edge_crease_weight;
 	ring[i++] = (Vec3fa_t) vertices[ p->next()->getStartVertexIndex() ];
         
 	if (unlikely(!p->hasOpposite())) { 
@@ -198,7 +198,7 @@ namespace embree
       while (p != h) 
       {
         assert( i < 2*MAX_VALENCE );
-        crease_weight[i/2] = p->crease_weight;
+        crease_weight[i/2] = p->edge_crease_weight;
         ring[i++] = (Vec3fa_t)vertices[ p->next()->getStartVertexIndex() ];
         p = p->opposite();
         
@@ -548,7 +548,7 @@ namespace embree
     {
       for (size_t i=0; i<4; i++) {
         ring[i].init(first_half_edge+i,vertices,corner_weights);
-        level[i] = first_half_edge[i].level;
+        level[i] = first_half_edge[i].edge_level;
       }
     }
 
