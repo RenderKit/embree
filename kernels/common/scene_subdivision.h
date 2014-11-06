@@ -366,7 +366,10 @@ namespace embree
       /* border vertex rule */
       if (unlikely(hard_edge_index != -1))
 	{
-	  return ring[0] - vtx;
+	  if (hard_edge_index != 0)
+	    return ring[0] - vtx;
+	  else
+	    return 
 	}
 
       Vec3fa_t alpha( 0.0f );
@@ -1505,6 +1508,27 @@ namespace embree
       const unsigned int valence_p1 = irreg_patch.ring[1].valence;
       const unsigned int valence_p2 = irreg_patch.ring[2].valence;
       const unsigned int valence_p3 = irreg_patch.ring[3].valence;
+
+#if 1
+      DBG_PRINT( p0() );
+      DBG_PRINT( p1() );
+      DBG_PRINT( p2() );
+      DBG_PRINT( p3() );
+
+      DBG_PRINT( e0_p() );
+      DBG_PRINT( e1_p() );
+      DBG_PRINT( e2_p() );
+      DBG_PRINT( e3_p() );
+
+      DBG_PRINT( e0_m() );
+      DBG_PRINT( e1_m() );
+      DBG_PRINT( e2_m() );
+      DBG_PRINT( e3_m() );
+      exit(0);
+#endif
+
+
+
 
       initFaceVertex(irreg_patch,0,p0(),e0_p(),e1_m(),valence_p1,e0_m(),e3_p(),valence_p3,f0_p(),f0_m() );
 

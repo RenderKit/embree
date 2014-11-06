@@ -75,22 +75,6 @@ namespace embree
 #endif
 
 	}
-#if 0
-      else if (!first_half_edge->faceHasEdges())
-	{
-	  flags |= GREGORY_PATCH;
-
-
-	  IrregularCatmullClarkPatch rpatch ( first_half_edge, vertices ); 
-
-
-
-	  GregoryPatch gpatch; 
-	  //gpatch.init( first_half_edge, vertices ); 
-	  gpatch.init( rpatch ); 
-	  gpatch.exportConrolPoints( patch.v, f_m );
-	}
-#endif
       else
 	{
 #if 1
