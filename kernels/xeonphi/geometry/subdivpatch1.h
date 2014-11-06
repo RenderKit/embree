@@ -62,41 +62,45 @@ namespace embree
       if (first_half_edge->isFaceRegular()) 
 	{
 	  flags |= REGULAR_PATCH;
+#if 0
 	  init( patch );
-
+#else
+	  IrregularCatmullClarkPatch ipatch ( first_half_edge, vertices ); 
+	  patch.init( ipatch );
+#endif
 	}
       else
 	{
 	  flags |= GREGORY_PATCH;
 
-	  IrregularCatmullClarkPatch rpatch ( first_half_edge, vertices ); 
+	  IrregularCatmullClarkPatch ipatch ( first_half_edge, vertices ); 
 
 #if 0
-	  DBG_PRINT( rpatch );
+	  DBG_PRINT( ipatch );
 
-	  DBG_PRINT( rpatch.getLimitVertex( 0 ) );
-	  DBG_PRINT( rpatch.getLimitVertex( 1 ) );
-	  DBG_PRINT( rpatch.getLimitVertex( 2 ) );
-	  DBG_PRINT( rpatch.getLimitVertex( 3 ) );
+	  DBG_PRINT( ipatch.getLimitVertex( 0 ) );
+	  DBG_PRINT( ipatch.getLimitVertex( 1 ) );
+	  DBG_PRINT( ipatch.getLimitVertex( 2 ) );
+	  DBG_PRINT( ipatch.getLimitVertex( 3 ) );
 
-	  DBG_PRINT( rpatch.getLimitTangent( 0 ) );
-	  DBG_PRINT( rpatch.getSecondLimitTangent( 0 ) );
+	  DBG_PRINT( ipatch.getLimitTangent( 0 ) );
+	  DBG_PRINT( ipatch.getSecondLimitTangent( 0 ) );
 
-	  DBG_PRINT( rpatch.getLimitTangent( 1 ) );
-	  DBG_PRINT( rpatch.getSecondLimitTangent( 1 ) );
+	  DBG_PRINT( ipatch.getLimitTangent( 1 ) );
+	  DBG_PRINT( ipatch.getSecondLimitTangent( 1 ) );
 
-	  DBG_PRINT( rpatch.getLimitTangent( 2 ) );
-	  DBG_PRINT( rpatch.getSecondLimitTangent( 2 ) );
+	  DBG_PRINT( ipatch.getLimitTangent( 2 ) );
+	  DBG_PRINT( ipatch.getSecondLimitTangent( 2 ) );
 
-	  DBG_PRINT( rpatch.getLimitTangent( 3 ) );
-	  DBG_PRINT( rpatch.getSecondLimitTangent( 3 ) );
+	  DBG_PRINT( ipatch.getLimitTangent( 3 ) );
+	  DBG_PRINT( ipatch.getSecondLimitTangent( 3 ) );
 	  //exit(0);
 
 #endif
 
 
 	  GregoryPatch gpatch; 
-	  gpatch.init( rpatch ); 
+	  gpatch.init( ipatch ); 
 	  gpatch.exportConrolPoints( patch.v, f_m );
 
 	}

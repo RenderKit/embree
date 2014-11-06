@@ -1470,53 +1470,36 @@ namespace embree
       quad.vtx[3] = limit_v3;
     };
 
+    __forceinline void init(const IrregularCatmullClarkPatch &irreg_patch)
+    {
+      assert( irreg_patch.dicable() );
+
+      v[1][1] = irreg_patch.ring[0].vtx;
+      v[0][1] = irreg_patch.ring[0].ring[2];
+      v[0][0] = irreg_patch.ring[0].ring[3];
+      v[1][0] = irreg_patch.ring[0].ring[4];
+
+      v[1][2] = irreg_patch.ring[1].vtx;
+      v[1][3] = irreg_patch.ring[1].ring[2];
+      v[0][3] = irreg_patch.ring[1].ring[3];
+      v[0][2] = irreg_patch.ring[1].ring[4];
+
+      v[2][2] = irreg_patch.ring[2].vtx;
+      v[3][2] = irreg_patch.ring[2].ring[2];
+      v[3][3] = irreg_patch.ring[2].ring[3];
+      v[2][3] = irreg_patch.ring[2].ring[4];
+
+      v[2][1] = irreg_patch.ring[3].vtx;
+      v[2][0] = irreg_patch.ring[3].ring[2];
+      v[3][0] = irreg_patch.ring[3].ring[3];      
+      v[3][1] = irreg_patch.ring[3].ring[4];
+    }
+
     __forceinline void init(const SubdivMesh::HalfEdge *const first_half_edge,
 			    const Vec3fa *const vertices)
     {
-      // quad(0,0)
-      const SubdivMesh::HalfEdge *v11 = first_half_edge;
-      const SubdivMesh::HalfEdge *v01 = v11->rotate()->opposite();
-      const SubdivMesh::HalfEdge *v00 = v01->prev();
-      const SubdivMesh::HalfEdge *v10 = v00->prev();
-
-      v[1][1] = (Vec3fa_t)vertices[v11->getStartVertexIndex()];
-      v[1][0] = (Vec3fa_t)vertices[v10->getStartVertexIndex()];
-      v[0][0] = (Vec3fa_t)vertices[v00->getStartVertexIndex()];
-      v[0][1] = (Vec3fa_t)vertices[v01->getStartVertexIndex()];
-
-      // quad(0,2)
-      const SubdivMesh::HalfEdge *v12 = v11->next();
-      const SubdivMesh::HalfEdge *v13 = v12->rotate()->opposite();
-      const SubdivMesh::HalfEdge *v03 = v13->prev();
-      const SubdivMesh::HalfEdge *v02 = v03->prev();
-      
-
-      v[1][2] = (Vec3fa_t)vertices[v12->getStartVertexIndex()];
-      v[1][3] = (Vec3fa_t)vertices[v13->getStartVertexIndex()];
-      v[0][3] = (Vec3fa_t)vertices[v03->getStartVertexIndex()];
-      v[0][2] = (Vec3fa_t)vertices[v02->getStartVertexIndex()];
-
-      // quad(2,2)
-      const SubdivMesh::HalfEdge *v22 = v12->next();
-      const SubdivMesh::HalfEdge *v32 = v22->rotate()->opposite();
-      const SubdivMesh::HalfEdge *v33 = v32->prev();
-      const SubdivMesh::HalfEdge *v23 = v33->prev();
-
-      v[2][2] = (Vec3fa_t)vertices[v22->getStartVertexIndex()];
-      v[3][2] = (Vec3fa_t)vertices[v32->getStartVertexIndex()];
-      v[3][3] = (Vec3fa_t)vertices[v33->getStartVertexIndex()];
-      v[2][3] = (Vec3fa_t)vertices[v23->getStartVertexIndex()];
-
-      // quad(2,0)
-      const SubdivMesh::HalfEdge *v21 = v22->next();
-      const SubdivMesh::HalfEdge *v20 = v21->rotate()->opposite();
-      const SubdivMesh::HalfEdge *v30 = v20->prev();
-      const SubdivMesh::HalfEdge *v31 = v30->prev();
-
-      v[2][0] = (Vec3fa_t)vertices[v20->getStartVertexIndex()];
-      v[3][0] = (Vec3fa_t)vertices[v30->getStartVertexIndex()];
-      v[3][1] = (Vec3fa_t)vertices[v31->getStartVertexIndex()];
-      v[2][1] = (Vec3fa_t)vertices[v21->getStartVertexIndex()];
+      IrregularCatmullClarkPatch ipatch( first_half_edge, vertices );
+      init( ipatch );
     }
 
     __forceinline BBox3fa bounds() const
