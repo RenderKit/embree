@@ -136,7 +136,7 @@ namespace embree
 
     __forceinline const Vec3fa &getQuadVertex(const unsigned int i=0) const { 
       const SubdivMesh::HalfEdge *const h = first_half_edge + i;
-      return vertices[h->vtx_index];
+      return vertices[h->getStartVertexIndex()];
     }
 
     __forceinline void init( IrregularCatmullClarkPatch& patch) const
