@@ -372,7 +372,7 @@ namespace embree
 	      const unsigned int patchIndex = curNode.offsetIndex();
 	      SubdivPatch1& subdiv_patch = ((SubdivPatch1*)accel)[patchIndex];
 
-	      const unsigned int subdiv_level = 4; // g_subdivision_level; cannot use g_subdivision_level with a working "free" for sub-trees
+	      const unsigned int subdiv_level = 2; // g_subdivision_level; cannot use g_subdivision_level with a working "free" for sub-trees
 
 	      if (unlikely(subdiv_patch.bvh4i_subtree_root == BVH4i::invalidNode))
 		{

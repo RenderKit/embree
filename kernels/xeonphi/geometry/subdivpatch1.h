@@ -64,24 +64,14 @@ namespace embree
 	  flags |= REGULAR_PATCH;
 	  init( patch );
 
-#if 0
-	  IrregularCatmullClarkPatch rpatch ( first_half_edge, vertices ); 
-
-	  GregoryPatch gpatch; 
-	  gpatch.init( rpatch ); 
-	  DBG_PRINT( gpatch );
-
-	  exit(0);
-#endif
-
 	}
       else
 	{
-#if 1
 	  flags |= GREGORY_PATCH;
 
 	  IrregularCatmullClarkPatch rpatch ( first_half_edge, vertices ); 
 
+#if 0
 	  DBG_PRINT( rpatch );
 
 	  DBG_PRINT( rpatch.getLimitVertex( 0 ) );
@@ -100,17 +90,15 @@ namespace embree
 
 	  DBG_PRINT( rpatch.getLimitTangent( 3 ) );
 	  DBG_PRINT( rpatch.getSecondLimitTangent( 3 ) );
+	  //exit(0);
+
+#endif
 
 
 	  GregoryPatch gpatch; 
 	  gpatch.init( rpatch ); 
-
-	  DBG_PRINT( gpatch );
 	  gpatch.exportConrolPoints( patch.v, f_m );
 
-	  //exit(0);
-
-#endif
 	}
     }
 
