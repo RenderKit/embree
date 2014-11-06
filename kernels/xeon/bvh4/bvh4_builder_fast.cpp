@@ -359,7 +359,6 @@ namespace embree
                                     scene, 
                                     &subdiv_mesh->getHalfEdgeForQuad( primID ),
                                     subdiv_mesh->getVertexPositionPtr(),
-                                    &subdiv_mesh->full_corner_weights[0], // FIXME: unsafe
                                     geomID,
                                     primID,
                                     SUBDIVISION_LEVEL_DISPL,
