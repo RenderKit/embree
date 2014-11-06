@@ -203,10 +203,10 @@ RTCScene constructScene(const Vec3fa& cam_pos)
     rtcSetBuffer(scene, subdivMeshID, RTC_INDEX_BUFFER,  mesh->indices  , 0, sizeof(unsigned int));
     rtcSetBuffer(scene, subdivMeshID, RTC_FACE_BUFFER,   mesh->verticesPerFace, 0, sizeof(unsigned int));
     rtcSetBuffer(scene, subdivMeshID, RTC_HOLE_BUFFER,   mesh->holes, 0, sizeof(unsigned int));
-    rtcSetBuffer(scene, subdivMeshID, RTC_CREASE_BUFFER, mesh->creases, 0, 2*sizeof(unsigned int));
-    rtcSetBuffer(scene, subdivMeshID, RTC_CREASE_WEIGHT_BUFFER, mesh->creaseWeights, 0, sizeof(float));
-    rtcSetBuffer(scene, subdivMeshID, RTC_CORNER_BUFFER, mesh->corners, 0, sizeof(unsigned int));
-    rtcSetBuffer(scene, subdivMeshID, RTC_CORNER_WEIGHT_BUFFER, mesh->cornerWeights, 0, sizeof(float));
+    rtcSetBuffer(scene, subdivMeshID, RTC_EDGE_CREASE_BUFFER, mesh->creases, 0, 2*sizeof(unsigned int));
+    rtcSetBuffer(scene, subdivMeshID, RTC_EDGE_CREASE_WEIGHT_BUFFER, mesh->creaseWeights, 0, sizeof(float));
+    rtcSetBuffer(scene, subdivMeshID, RTC_VERTEX_CREASE_BUFFER, mesh->corners, 0, sizeof(unsigned int));
+    rtcSetBuffer(scene, subdivMeshID, RTC_VERTEX_CREASE_WEIGHT_BUFFER, mesh->cornerWeights, 0, sizeof(float));
   }       
   
   rtcCommit(scene);  
