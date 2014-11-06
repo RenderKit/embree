@@ -196,15 +196,16 @@ namespace embree
 
   void SubdivMesh::initializeHalfEdgeStructures ()
   {
-    numHalfEdges = 4*numFaces;
-    halfEdges = new HalfEdge[numHalfEdges];
+    /* allocate half edge array */
+    delete halfEdges;
+    halfEdges = new HalfEdge[numEdges];
 
     /* calculate offset buffer */
-    vertexOffsets.resize(numFaces);
+    /*vertexOffsets.resize(numFaces);
     size_t ofs = 0;
     for (size_t i=0; i<numFaces; i++) {
       vertexOffsets[i] = ofs; ofs += faceVertices[i];
-    }
+      }*/
 
     /* create map containing all edge_creases */
     std::map<size_t,float> creaseMap;
@@ -213,11 +214,10 @@ namespace embree
 
     /* calculate vertex_crease weight for each vertex */
     std::vector<float> full_vertex_crease_weights(numVertices);
-    for (size_t i=0; i<numVertices; i++)
+    for (size_t i=0; i<numVertices; i++) 
       full_vertex_crease_weights[i] = 0.0f;
-    for (size_t i=0; i<vertex_creases.size(); i++) {
+    for (size_t i=0; i<vertex_creases.size(); i++) 
       full_vertex_crease_weights[vertex_creases[i]] = vertex_crease_weights[i];
-    }
 
     /* calculate full hole vector */
     full_holes.resize(numFaces);
@@ -228,14 +228,15 @@ namespace embree
     std::map<size_t,HalfEdge*> edgeMap;
     std::map<size_t,bool> nonManifoldEdges;
 
-    for (size_t i=0; i<numFaces; i++) 
+    for (size_t i=0, j=0; i<numFaces; i++) 
     {
-      const unsigned int halfEdgeIndex = vertexOffsets[i];
-      for (size_t j=0; j<4; j++)
+      const ssize_t N = faceVertices[i];
+      
+      for (size_t dj=0; dj<N; dj++)
       {
-        HalfEdge* edge0 = &halfEdges[4*i+j];
-        const unsigned int startVertex = vertexIndices[halfEdgeIndex + j];
-        const unsigned int endVertex   = vertexIndices[halfEdgeIndex + (j + 1) % 4];
+        HalfEdge* edge0 = &halfEdges[j+dj];
+        const unsigned int startVertex = vertexIndices[j+dj];
+        const unsigned int endVertex   = vertexIndices[j + (dj+1) % N];
         const int64 value = pair64(startVertex,endVertex);
 
         float edge_crease_weight = 0.0f;
@@ -243,11 +244,11 @@ namespace embree
           edge_crease_weight = creaseMap[value];
 
         float edge_level = 3.0f;
-        if (levels) edge_level = levels[4*i+j];
+        if (levels) edge_level = levels[j+dj];
         
         edge0->vtx_index = startVertex;
-        edge0->next_half_edge_ofs = (j == 3) ? -3 : +1;
-        edge0->prev_half_edge_ofs = (j == 0) ? +3 : -1;
+        edge0->next_half_edge_ofs = (dj == (N-1)) ? -(N-1) : +1;
+        edge0->prev_half_edge_ofs = (dj ==     0) ? +(N-1) : -1;
         edge0->opposite_half_edge_ofs = 0;
         edge0->edge_crease_weight = edge_crease_weight;
         edge0->vertex_crease_weight = full_vertex_crease_weights[startVertex];
@@ -267,27 +268,27 @@ namespace embree
         edge0->opposite_half_edge_ofs = edge1 - edge0;
         edge1->opposite_half_edge_ofs = edge0 - edge1;
       }
+      j+=N;
     }
 
-    for (size_t i=0; i<numFaces; i++) 
+    for (size_t i=0, j=0; i<numFaces; i++) 
     {
-      const unsigned int halfEdgeIndex = vertexOffsets[i];
-      for (size_t j=0; j<4; j++)
+      ssize_t N = faceVertices[i];
+      for (size_t dj=0; dj<N; dj++)
       {
-        HalfEdge* edge = &halfEdges[4*i+j];
-        const unsigned int startVertex = vertexIndices[halfEdgeIndex + j];
-        const unsigned int endVertex   = vertexIndices[halfEdgeIndex + (j + 1) % 4];
+        HalfEdge* edge = &halfEdges[j+dj];
+        const unsigned int startVertex = vertexIndices[j+dj];
+        const unsigned int endVertex   = vertexIndices[j + (dj + 1) % N];
         const int64 value = pair64(startVertex,endVertex);
 
         if (nonManifoldEdges.find(value) != nonManifoldEdges.end()) {
-          full_vertex_crease_weights[edge->getStartVertexIndex()] = inf;
-          full_vertex_crease_weights[edge->getEndVertexIndex()  ] = inf;
           edge->opposite_half_edge_ofs = 0;
           edge->vertex_crease_weight = inf;
           edge->next()->vertex_crease_weight = inf;
           continue;
         }
       }
+      j+=N;
     }
 
     /* print statistics in verbose mode */
@@ -297,8 +298,8 @@ namespace embree
       size_t numIrregularPatches = 0;
       size_t numPatchesWithEdges = 0;
 
-      assert(numHalfEdges % 4 == 0);
-      for (size_t i=0; i<numHalfEdges; i+=4)
+      assert(numEdges % 4 == 0);
+      for (size_t i=0; i<numEdges; i+=4)
       {
         if (halfEdges[i].faceHasEdges())
         {

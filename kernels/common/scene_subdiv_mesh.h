@@ -46,7 +46,6 @@ namespace embree
     size_t numFaces;                  //!< number of faces
     size_t numEdges;                  //!< number of edges
     size_t numVertices;               //!< number of vertices
-    size_t numHalfEdges;              //!< number of half-edges
 
     RTCDisplacementFunc displFunc;    //!< displacement function
     BBox3fa             displBounds;  //!< bounds for displacement
@@ -184,7 +183,7 @@ namespace embree
 
     /*! Offsets into the vertexIndices array indexed by face, provided by the application */
     //BufferT<unsigned int> vertexOffsets;
-    std::vector<unsigned int> vertexOffsets;
+    //std::vector<unsigned int> vertexOffsets;
     BufferT<int> faceVertices;
     BufferT<int> holes;
     std::vector<bool> full_holes;
