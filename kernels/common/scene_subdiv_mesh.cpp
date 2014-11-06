@@ -225,7 +225,7 @@ namespace embree
     for (size_t i=0; i<holes.size()     ; i++) full_holes[holes[i]] = 1;
     
     /* initialize all half-edges for each face */
-    std::map<size_t,unsigned int> edgeMap;
+    std::map<size_t,HalfEdge*> edgeMap;
     std::map<size_t,bool> nonManifoldEdges;
 
     for (size_t i=0; i<numFaces; i++) 
@@ -233,51 +233,60 @@ namespace embree
       const unsigned int halfEdgeIndex = vertexOffsets[i];
       for (size_t j=0; j<4; j++)
       {
-        halfEdges[4*i+j].vtx_index      = vertexIndices[halfEdgeIndex + j];
-        halfEdges[4*i+j].halfedge_id    = 4*i+j;
-        halfEdges[4*i+j].opposite_index = (unsigned int)-1;
-        halfEdges[4*i+j].crease_weight  = 0.0f;
-        if (levels)  halfEdges[4*i+j].level = levels[4*i+j];
-        else         halfEdges[4*i+j].level = 3.0f;
+        HalfEdge* edge0 = &halfEdges[4*i+j];
+        const unsigned int startVertex = vertexIndices[halfEdgeIndex + j];
+        const unsigned int endVertex   = vertexIndices[halfEdgeIndex + (j + 1) % 4];
+        const int64 value = pair64(startVertex,endVertex);
 
+        float edge_crease_weight = 0.0f;
+        if (creaseMap.find(value) != creaseMap.end()) 
+          edge_crease_weight = creaseMap[value];
+
+        float edge_level = 3.0f;
+        if (levels) edge_level = levels[4*i+j];
+        
+        edge0->vtx_index = startVertex;
+        edge0->next_half_edge_ofs = (j == 3) ? -3 : +1;
+        edge0->prev_half_edge_ofs = (j == 0) ? +3 : -1;
+        edge0->opposite_half_edge_ofs = 0;
+        edge0->edge_crease_weight = edge_crease_weight;
+        edge0->vertex_crease_weight = full_corner_weights[startVertex];
+        edge0->edge_level = edge_level;
         if (full_holes[i]) continue;
         
-        const unsigned int start = vertexIndices[halfEdgeIndex + j + 0];
-        const unsigned int end   = vertexIndices[halfEdgeIndex + (j + 1) % 4];
-        const int64 value = pair64(start,end);
-
-        if (creaseMap.find(value) != creaseMap.end()) 
-          halfEdges[4*i+j].crease_weight = creaseMap[value];
-
-        std::map<size_t,unsigned int>::iterator found = edgeMap.find(value);
+        std::map<size_t,HalfEdge*>::iterator found = edgeMap.find(value);
         if (found == edgeMap.end()) {
-          edgeMap[value] = 4*i+j;
+          edgeMap[value] = edge0;
           continue;
         }
 
-        HalfEdge& edge0 = halfEdges[ found->second ];
-        if (edge0.opposite_index != -1) 
-        {
+        HalfEdge* edge1 = found->second;
+        if (unlikely(edge1->hasOpposite())) 
           nonManifoldEdges[value] = true;
-          HalfEdge& edge1 = halfEdges[ edge0.opposite_index ];
-          edge0.opposite_index = -1;
-          edge1.opposite_index = -1;
 
-          full_corner_weights[edge0.getStartVertexIndex()] = inf;
-          full_corner_weights[edge0.getEndVertexIndex()  ] = inf;
-          full_corner_weights[edge1.getStartVertexIndex()] = inf;
-          full_corner_weights[edge1.getEndVertexIndex()  ] = inf;
-          continue;
-        }
+        edge0->opposite_half_edge_ofs = edge1 - edge0;
+        edge1->opposite_half_edge_ofs = edge0 - edge1;
+      }
+    }
+
+    for (size_t i=0; i<numFaces; i++) 
+    {
+      const unsigned int halfEdgeIndex = vertexOffsets[i];
+      for (size_t j=0; j<4; j++)
+      {
+        HalfEdge* edge = &halfEdges[4*i+j];
+        const unsigned int startVertex = vertexIndices[halfEdgeIndex + j];
+        const unsigned int endVertex   = vertexIndices[halfEdgeIndex + (j + 1) % 4];
+        const int64 value = pair64(startVertex,endVertex);
 
         if (nonManifoldEdges.find(value) != nonManifoldEdges.end()) {
-          full_corner_weights[halfEdges[4*i+j].getStartVertexIndex()] = inf;
-          full_corner_weights[halfEdges[4*i+j].getEndVertexIndex()  ] = inf;
+          full_corner_weights[edge->getStartVertexIndex()] = inf;
+          full_corner_weights[edge->getEndVertexIndex()  ] = inf;
+          edge->opposite_half_edge_ofs = 0;
+          edge->vertex_crease_weight = inf;
+          edge->next()->vertex_crease_weight = inf;
           continue;
         }
-
-        halfEdges[4*i+j].opposite_index = found->second;
-        halfEdges[ found->second ].opposite_index = 4*i+j;
       }
     }
 

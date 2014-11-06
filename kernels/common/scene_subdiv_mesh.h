@@ -22,14 +22,11 @@
 
 namespace embree
 {
-  class SubdivFace;
-  class SubdivHalfEdge;
-  class SubdivVertex;
-
   class SubdivMesh : public Geometry
   {
   public:
-    SubdivMesh(Scene* parent, RTCGeometryFlags flags, size_t numFaces, size_t numEdges, size_t numVertices, size_t numCreases, size_t numCorners, size_t numHoles, size_t numTimeSteps);
+    SubdivMesh(Scene* parent, RTCGeometryFlags flags, size_t numFaces, size_t numEdges, size_t numVertices, 
+               size_t numCreases, size_t numCorners, size_t numHoles, size_t numTimeSteps);
     ~SubdivMesh();
 
     void enabling();
@@ -59,92 +56,32 @@ namespace embree
     
     class HalfEdge
     {
+      friend class SubdivMesh;
     public:
-      unsigned int vtx_index;
-      unsigned int halfedge_id;
-      unsigned int opposite_index;
-      float crease_weight;
-      float level;
 
-      __forceinline HalfEdge *base() const { 
-	return (HalfEdge *)this - halfedge_id;
-      };
+      HalfEdge () 
+        : vtx_index(-1), next_half_edge_ofs(0), prev_half_edge_ofs(0), opposite_half_edge_ofs(0), edge_crease_weight(0), 
+          vertex_crease_weight(0), edge_level(0), align(0) {}
 
-      __forceinline unsigned int getLocalHalfEdgeID() const {
-	return halfedge_id % 4;
-      };
+      __forceinline bool hasOpposite() const { return opposite_half_edge_ofs != 0; }
 
-      __forceinline unsigned int getStartHalfEdgeID() const {
-	return halfedge_id & (~3);
-      };
+      __forceinline       HalfEdge* next()       { assert( next_half_edge_ofs != 0 ); return &this[next_half_edge_ofs]; }
+      __forceinline const HalfEdge* next() const { assert( next_half_edge_ofs != 0 ); return &this[next_half_edge_ofs]; }
 
-      __forceinline unsigned int getFaceID() const {
-	return halfedge_id >> 2;
-      };
+      __forceinline       HalfEdge* prev()       { assert( prev_half_edge_ofs != 0 ); return &this[prev_half_edge_ofs]; }
+      __forceinline const HalfEdge* prev() const { assert( prev_half_edge_ofs != 0 ); return &this[prev_half_edge_ofs]; }
 
-      __forceinline bool hasOpposite() const {
-        return opposite_index != (unsigned int)-1;
-      };
+      __forceinline       HalfEdge* opposite()       { assert( opposite_half_edge_ofs != 0 ); return &this[opposite_half_edge_ofs]; }
+      __forceinline const HalfEdge* opposite() const { assert( opposite_half_edge_ofs != 0 ); return &this[opposite_half_edge_ofs]; }
 
-      __forceinline unsigned int getStartVertexIndex() const { 
-        return vtx_index; 
-      };
+      __forceinline       HalfEdge* rotate()       { return opposite()->next(); }
+      __forceinline const HalfEdge* rotate() const { return opposite()->next(); }
 
-      __forceinline HalfEdge *opposite() const { 
-        assert( opposite_index != (unsigned int)-1 );
-	HalfEdge *b = base();
-        return &b[opposite_index]; 
-      };
+      __forceinline unsigned int getStartVertexIndex() const { return vtx_index; }
+      __forceinline unsigned int getEndVertexIndex  () const { return next()->vtx_index; }
 
-      __forceinline HalfEdge *next() const {
-	HalfEdge *b = base();
-        return &b[ getStartHalfEdgeID() + ((getLocalHalfEdgeID()+1)%4) ];
-      };
-
-      __forceinline HalfEdge *prev() const {
-	HalfEdge *b = base();
-        return &b[ getStartHalfEdgeID() + ((getLocalHalfEdgeID()+3)%4) ];
-      };
-
-      __forceinline HalfEdge *half_circle() const { 	
-        return prev()->opposite()->prev()->opposite();
-      };      
-
-      __forceinline unsigned int getEndVertexIndex() const {
-        return next()->vtx_index;
-      };
-
-      __forceinline Vec3fa getStartVertex(const Vec3fa *const vertices) const
+      __forceinline bool hasIrregularEdge() const 
       {
-        return vertices[ getStartVertexIndex() ];
-      }
-
-      __forceinline Vec3fa getEndVertex(const Vec3fa *const vertices) const
-      {
-        return vertices[ getEndVertexIndex() ];
-      }
-
-      __forceinline Vec3fa getEdgeMidPointVertex(const Vec3fa *const vertices) const
-      {
-        return (vertices[ getStartVertexIndex() ] + vertices[ getEndVertexIndex() ]) * 0.5f;
-      }
-
-
-      __forceinline Vec3fa getFaceMidPointVertex(const Vec3fa *const vertices) const
-      {
-	HalfEdge *b = (HalfEdge *)this;
-        const Vec3fa &v0 = vertices[ b->getStartVertexIndex() ];
-	b = b->next();
-        const Vec3fa &v1 = vertices[ b->getStartVertexIndex() ];
-	b = b->next();
-        const Vec3fa &v2 = vertices[ b->getStartVertexIndex() ];
-	b = b->next();
-        const Vec3fa &v3 = vertices[ b->getStartVertexIndex() ];
-        return (v0+v1+v2+v3) * 0.25f;
-      }
-
-
-      __forceinline bool hasIrregularEdge() const {
 	HalfEdge *p = (HalfEdge*)this;
 	do {
 	  if (unlikely(!p->hasOpposite()))
@@ -154,9 +91,10 @@ namespace embree
 	} while( p != this);
 
         return false;
-      };
+      }
 
-      __forceinline unsigned int getEdgeValence() const {
+      __forceinline unsigned int getEdgeValence() const 
+      {
 	unsigned int i=0;
 	HalfEdge *p = (HalfEdge*)this;
 	bool foundEdge = false;
@@ -189,11 +127,8 @@ namespace embree
 	return i;
       };
 
-      __forceinline HalfEdge *nextAdjacentEdge() const {
-	return opposite()->next();
-      };
-
-      __forceinline bool isFaceRegular() const {
+      __forceinline bool isFaceRegular() const 
+      {
 	HalfEdge *p = (HalfEdge*)this;
 	if (p->getEdgeValence() != 4) return false;
         if (p->hasIrregularEdge()) return false;
@@ -209,7 +144,8 @@ namespace embree
 	return true;
       }
 
-      __forceinline bool faceHasEdges() const {
+      __forceinline bool faceHasEdges() const 
+      {
 	HalfEdge *p = (HalfEdge*)this;
 	if (p->hasOpposite() == false) return true;
 	p = p->next();
@@ -223,9 +159,25 @@ namespace embree
 
       friend __forceinline std::ostream &operator<<(std::ostream &o, const SubdivMesh::HalfEdge &h)
       {
-        o << "start_vtx_index " << h.vtx_index << " end_vtx_index " << h.next()->vtx_index << " start_halfedge_id " << h.getStartHalfEdgeID() << " local_halfedge_id " << h.getLocalHalfEdgeID() << " opposite_index " << h.opposite_index;
-        return o;
+        return o << "{ " << 
+          "edge = " << h.vtx_index << " -> " << h.next()->vtx_index << ", " << 
+          "edge_crease = " << h.edge_crease_weight << ", " << 
+          "vertex_crease = " << h.vertex_crease_weight << ", " << 
+          "edge_level = " << h.edge_level << 
+          "}";
       } 
+
+    private:
+      unsigned int vtx_index;         //!< index of edge start vertex
+      int next_half_edge_ofs;         //!< relative offset to next half edge of face
+      int prev_half_edge_ofs;         //!< relative offset to previous half edge of face
+      int opposite_half_edge_ofs;     //!< relative offset to opposite half edge
+
+    public:
+      float edge_crease_weight;       //!< crease weight attached to edge
+      float vertex_crease_weight;     //!< crease weight attached to start vertex
+      float edge_level;               //!< subdivision factor for edge
+      float align;                    //!< aligns the structure to 64 bytes
     };
 
   public: // FIXME: make private
