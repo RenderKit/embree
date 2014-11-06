@@ -90,21 +90,25 @@ namespace embree
 	  DBG_PRINT( rpatch.getLimitVertex( 3 ) );
 
 	  DBG_PRINT( rpatch.getLimitTangent( 0 ) );
-	  DBG_PRINT( rpatch.getLimitTangent( 1 ) );
-	  DBG_PRINT( rpatch.getLimitTangent( 2 ) );
-	  DBG_PRINT( rpatch.getLimitTangent( 3 ) );
-
 	  DBG_PRINT( rpatch.getSecondLimitTangent( 0 ) );
+
+	  DBG_PRINT( rpatch.getLimitTangent( 1 ) );
 	  DBG_PRINT( rpatch.getSecondLimitTangent( 1 ) );
+
+	  DBG_PRINT( rpatch.getLimitTangent( 2 ) );
 	  DBG_PRINT( rpatch.getSecondLimitTangent( 2 ) );
+
+	  DBG_PRINT( rpatch.getLimitTangent( 3 ) );
 	  DBG_PRINT( rpatch.getSecondLimitTangent( 3 ) );
 
-	  //exit(0);
 
 	  GregoryPatch gpatch; 
 	  gpatch.init( rpatch ); 
 	  
 	  gpatch.exportConrolPoints( patch.v, f_m );
+
+	  //exit(0);
+
 #endif
 	}
     }
