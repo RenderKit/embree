@@ -1209,7 +1209,7 @@ namespace embree
     {
       // quad(0,0)
       const SubdivMesh::HalfEdge *v11 = first_half_edge;
-      const SubdivMesh::HalfEdge *v01 = v11->nextAdjacentEdge()->opposite();
+      const SubdivMesh::HalfEdge *v01 = v11->rotate()->opposite();
       const SubdivMesh::HalfEdge *v00 = v01->prev();
       const SubdivMesh::HalfEdge *v10 = v00->prev();
 
@@ -1220,7 +1220,7 @@ namespace embree
 
       // quad(0,2)
       const SubdivMesh::HalfEdge *v12 = v11->next();
-      const SubdivMesh::HalfEdge *v13 = v12->nextAdjacentEdge()->opposite();
+      const SubdivMesh::HalfEdge *v13 = v12->rotate()->opposite();
       const SubdivMesh::HalfEdge *v03 = v13->prev();
       const SubdivMesh::HalfEdge *v02 = v03->prev();
       
@@ -1232,7 +1232,7 @@ namespace embree
 
       // quad(2,2)
       const SubdivMesh::HalfEdge *v22 = v12->next();
-      const SubdivMesh::HalfEdge *v32 = v22->nextAdjacentEdge()->opposite();
+      const SubdivMesh::HalfEdge *v32 = v22->rotate()->opposite();
       const SubdivMesh::HalfEdge *v33 = v32->prev();
       const SubdivMesh::HalfEdge *v23 = v33->prev();
 
@@ -1243,7 +1243,7 @@ namespace embree
 
       // quad(2,0)
       const SubdivMesh::HalfEdge *v21 = v22->next();
-      const SubdivMesh::HalfEdge *v20 = v21->nextAdjacentEdge()->opposite();
+      const SubdivMesh::HalfEdge *v20 = v21->rotate()->opposite();
       const SubdivMesh::HalfEdge *v30 = v20->prev();
       const SubdivMesh::HalfEdge *v31 = v30->prev();
 

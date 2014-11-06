@@ -63,61 +63,25 @@ namespace embree
         : vtx_index(-1), next_half_edge_ofs(0), prev_half_edge_ofs(0), opposite_half_edge_ofs(0), edge_crease_weight(0), 
           vertex_crease_weight(0), edge_level(0), align(0) {}
 
-      __forceinline bool hasOpposite() const {
-        return opposite_half_edge_ofs != 0;
-      };
+      __forceinline bool hasOpposite() const { return opposite_half_edge_ofs != 0; }
 
-      __forceinline       HalfEdge* next()       { assert( next_half_edge_ofs != 0 ); return &this[next_half_edge_ofs]; };
-      __forceinline const HalfEdge* next() const { assert( next_half_edge_ofs != 0 ); return &this[next_half_edge_ofs]; };
+      __forceinline       HalfEdge* next()       { assert( next_half_edge_ofs != 0 ); return &this[next_half_edge_ofs]; }
+      __forceinline const HalfEdge* next() const { assert( next_half_edge_ofs != 0 ); return &this[next_half_edge_ofs]; }
 
-      __forceinline       HalfEdge* prev()       { assert( prev_half_edge_ofs != 0 ); return &this[prev_half_edge_ofs]; };
-      __forceinline const HalfEdge* prev() const { assert( prev_half_edge_ofs != 0 ); return &this[prev_half_edge_ofs]; };
+      __forceinline       HalfEdge* prev()       { assert( prev_half_edge_ofs != 0 ); return &this[prev_half_edge_ofs]; }
+      __forceinline const HalfEdge* prev() const { assert( prev_half_edge_ofs != 0 ); return &this[prev_half_edge_ofs]; }
 
       __forceinline       HalfEdge* opposite()       { assert( opposite_half_edge_ofs != 0 ); return &this[opposite_half_edge_ofs]; }
       __forceinline const HalfEdge* opposite() const { assert( opposite_half_edge_ofs != 0 ); return &this[opposite_half_edge_ofs]; }
 
-      __forceinline const HalfEdge* nextAdjacentEdge() const {
-	return opposite()->next();
-      };
+      __forceinline       HalfEdge* rotate()       { return opposite()->next(); }
+      __forceinline const HalfEdge* rotate() const { return opposite()->next(); }
 
-      __forceinline const HalfEdge* half_circle() const { 	
-        return prev()->opposite()->prev()->opposite();
-      };
+      __forceinline unsigned int getStartVertexIndex() const { return vtx_index; }
+      __forceinline unsigned int getEndVertexIndex  () const { return next()->vtx_index; }
 
-      __forceinline unsigned int getStartVertexIndex() const { 
-        return vtx_index; 
-      };
-
-      __forceinline unsigned int getEndVertexIndex() const {
-        return next()->vtx_index;
-      };
-
-      __forceinline Vec3fa getStartVertex(const Vec3fa *const vertices) const {
-        return vertices[ getStartVertexIndex() ];
-      }
-
-      __forceinline Vec3fa getEndVertex(const Vec3fa *const vertices) const {
-        return vertices[ getEndVertexIndex() ];
-      }
-
-      __forceinline Vec3fa getEdgeMidPointVertex(const Vec3fa *const vertices) const {
-        return (vertices[ getStartVertexIndex() ] + vertices[ getEndVertexIndex() ]) * 0.5f;
-      }
-
-      __forceinline Vec3fa getFaceMidPointVertex(const Vec3fa *const vertices) const
+      __forceinline bool hasIrregularEdge() const 
       {
-	HalfEdge *b = (HalfEdge *)this;
-        const Vec3fa &v0 = vertices[ b->getStartVertexIndex() ];
-	b = b->next();
-        const Vec3fa &v1 = vertices[ b->getStartVertexIndex() ];
-	b = b->next();
-        const Vec3fa &v2 = vertices[ b->getStartVertexIndex() ];
-	b = b->next();
-        const Vec3fa &v3 = vertices[ b->getStartVertexIndex() ];
-        return (v0+v1+v2+v3) * 0.25f;
-      }
-
-      __forceinline bool hasIrregularEdge() const {
 	HalfEdge *p = (HalfEdge*)this;
 	do {
 	  if (unlikely(!p->hasOpposite()))
@@ -127,7 +91,7 @@ namespace embree
 	} while( p != this);
 
         return false;
-      };
+      }
 
       __forceinline unsigned int getEdgeValence() const 
       {
@@ -163,7 +127,8 @@ namespace embree
 	return i;
       };
 
-      __forceinline bool isFaceRegular() const {
+      __forceinline bool isFaceRegular() const 
+      {
 	HalfEdge *p = (HalfEdge*)this;
 	if (p->getEdgeValence() != 4) return false;
         if (p->hasIrregularEdge()) return false;
@@ -179,7 +144,8 @@ namespace embree
 	return true;
       }
 
-      __forceinline bool faceHasEdges() const {
+      __forceinline bool faceHasEdges() const 
+      {
 	HalfEdge *p = (HalfEdge*)this;
 	if (p->hasOpposite() == false) return true;
 	p = p->next();
@@ -202,16 +168,16 @@ namespace embree
       } 
 
     private:
-      unsigned int vtx_index;
-      int next_half_edge_ofs;
-      int prev_half_edge_ofs;
-      int opposite_half_edge_ofs;
+      unsigned int vtx_index;         //!< index of edge start vertex
+      int next_half_edge_ofs;         //!< relative offset to next half edge of face
+      int prev_half_edge_ofs;         //!< relative offset to previous half edge of face
+      int opposite_half_edge_ofs;     //!< relative offset to opposite half edge
 
     public:
-      float edge_crease_weight;
-      float vertex_crease_weight;
-      float edge_level;
-      float align;
+      float edge_crease_weight;       //!< crease weight attached to edge
+      float vertex_crease_weight;     //!< crease weight attached to start vertex
+      float edge_level;               //!< subdivision factor for edge
+      float align;                    //!< aligns the structure to 64 bytes
     };
 
   public: // FIXME: make private
