@@ -219,35 +219,38 @@ namespace embree
 
       size_t i=0;
       crease_weight[i/2] = p->edge_crease_weight;
-      while (true)
+      do 
       {
-        for (size_t j=0; j<2; j++) {
-          p = p->next();
-          assert(i < 2*MAX_VALENCE);
-          ring[i++] = (Vec3fa_t) vertices[ p->getStartVertexIndex() ];
-        }
+        /* store first two vertices of face */
+        p = p->next();
+        ring[i++] = (Vec3fa_t) vertices[ p->getStartVertexIndex() ];
+        p = p->next();
+        ring[i++] = (Vec3fa_t) vertices[ p->getStartVertexIndex() ];
         p = p->next();
         crease_weight[i/2] = p->edge_crease_weight;
+        
+        /* if there is no opposite go the long way to the other side of the border */
+        if (unlikely(!p->hasOpposite())) 
+        {
+          /*! mark first border edge and store dummy vertex for face between the two border edges */
+          hard_edge_index = i;
+          crease_weight[i/2] = inf; 
+          ring[i++] = (Vec3fa_t) vertices[ p->getEndVertexIndex() ];
+          ring[i++] = Vec3fa(nan);
+          
+          /*! goto other side of border */
+          p = (SubdivMesh::HalfEdge*) h;
+          if (p->hasOpposite()) 
+            p = p->opposite()->next();
 
-        if (p->hasOpposite()) {
-          p = p->opposite();
+          crease_weight[i/2] = inf;
           continue;
         }
+        
+        /* continue with next face */
+        p = p->opposite();
 
-        /*! mark first hard edge and store dummy vertex for face between the two hard edges */
-        hard_edge_index = i;
-        crease_weight[i/2] = inf; 
-        assert(i < 2*MAX_VALENCE);
-        ring[i++] = (Vec3fa_t) vertices[ p->getEndVertexIndex() ];
-        assert(i < 2*MAX_VALENCE);
-        ring[i++] = Vec3fa(nan);
-        crease_weight[i/2] = inf;
-
-        /*! goto other side of border */
-        p = (SubdivMesh::HalfEdge*) h;
-        if (p->hasOpposite()) 
-          p = p->opposite()->next();
-      }
+      } while (p != h); 
 
       num_vtx = i;
       valence = i >> 1;
