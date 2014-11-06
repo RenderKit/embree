@@ -1718,7 +1718,7 @@ namespace embree
 	}
 
       Vec3fa c_i_m_2, e_i_m_2;
-      if (unlikely(hard_edge_index == num_vtx-2) || valence == 2)
+      if (unlikely(hard_edge_index+2 == num_vtx-2) || valence == 2)
 	{
 	  /* mirror quad center and edge mid-point */
 	  c_i_m_2  = c_i_m_1 + 2 * (e_i_m_1 - c_i_m_1);
@@ -1745,7 +1745,7 @@ namespace embree
 
       f_m_vtx = 1.0f / d * (c_e_m * p_vtx + (d - 2.0f*c - c_e_m) * e0_m_vtx + 2.0f*c* e3_p_vtx + r_e_m);
 
-#if 1
+#if 0
       DBG_PRINT( irreg_patch.ring[index].vtx );
       DBG_PRINT( p_vtx );
       
@@ -1796,7 +1796,7 @@ namespace embree
       const unsigned int valence_p2 = irreg_patch.ring[2].valence;
       const unsigned int valence_p3 = irreg_patch.ring[3].valence;
 
-#if 1
+#if 0
       DBG_PRINT( p0() );
       DBG_PRINT( p1() );
       DBG_PRINT( p2() );

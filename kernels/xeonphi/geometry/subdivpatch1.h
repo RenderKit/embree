@@ -104,7 +104,8 @@ namespace embree
 
 	  GregoryPatch gpatch; 
 	  gpatch.init( rpatch ); 
-	  
+
+	  DBG_PRINT( gpatch );
 	  gpatch.exportConrolPoints( patch.v, f_m );
 
 	  //exit(0);
