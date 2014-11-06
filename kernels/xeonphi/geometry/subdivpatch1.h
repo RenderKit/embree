@@ -42,9 +42,7 @@ namespace embree
 				unsigned int geomID,
 				unsigned int primID,
 				unsigned int subdivision_level = 0) 
-      : first_half_edge(first_half_edge),
-      vertices(vertices),
-      geomID(geomID),
+      : geomID(geomID),
       primID(primID),
       subdivision_level(subdivision_level),
       bvh4i_parent_ref(0),
@@ -52,52 +50,49 @@ namespace embree
       under_construction(0),
       bvh4i_subtree_root((unsigned int)-1)
     {
+      u_range = Vec2f(0.0f,1.0f);
+      v_range = Vec2f(0.0f,1.0f);
+
       f_m[0][0] = 0.0f;
       f_m[0][1] = 0.0f;
       f_m[1][1] = 0.0f;
       f_m[1][0] = 0.0f;
 
 
+      IrregularCatmullClarkPatch ipatch ( first_half_edge, vertices ); 
+
+#if 0
+      DBG_PRINT( ipatch );
+
+      DBG_PRINT( ipatch.getLimitVertex( 0 ) );
+      DBG_PRINT( ipatch.getLimitVertex( 1 ) );
+      DBG_PRINT( ipatch.getLimitVertex( 2 ) );
+      DBG_PRINT( ipatch.getLimitVertex( 3 ) );
+
+      DBG_PRINT( ipatch.getLimitTangent( 0 ) );
+      DBG_PRINT( ipatch.getSecondLimitTangent( 0 ) );
+
+      DBG_PRINT( ipatch.getLimitTangent( 1 ) );
+      DBG_PRINT( ipatch.getSecondLimitTangent( 1 ) );
+
+      DBG_PRINT( ipatch.getLimitTangent( 2 ) );
+      DBG_PRINT( ipatch.getSecondLimitTangent( 2 ) );
+
+      DBG_PRINT( ipatch.getLimitTangent( 3 ) );
+      DBG_PRINT( ipatch.getSecondLimitTangent( 3 ) );
+      //exit(0);
+
+#endif
+
       flags = 0;
-      if (first_half_edge->isFaceRegular()) 
+      if (ipatch.dicable()) 
 	{
 	  flags |= REGULAR_PATCH;
-#if 0
-	  init( patch );
-#else
-	  IrregularCatmullClarkPatch ipatch ( first_half_edge, vertices ); 
 	  patch.init( ipatch );
-#endif
 	}
       else
 	{
 	  flags |= GREGORY_PATCH;
-
-	  IrregularCatmullClarkPatch ipatch ( first_half_edge, vertices ); 
-
-#if 0
-	  DBG_PRINT( ipatch );
-
-	  DBG_PRINT( ipatch.getLimitVertex( 0 ) );
-	  DBG_PRINT( ipatch.getLimitVertex( 1 ) );
-	  DBG_PRINT( ipatch.getLimitVertex( 2 ) );
-	  DBG_PRINT( ipatch.getLimitVertex( 3 ) );
-
-	  DBG_PRINT( ipatch.getLimitTangent( 0 ) );
-	  DBG_PRINT( ipatch.getSecondLimitTangent( 0 ) );
-
-	  DBG_PRINT( ipatch.getLimitTangent( 1 ) );
-	  DBG_PRINT( ipatch.getSecondLimitTangent( 1 ) );
-
-	  DBG_PRINT( ipatch.getLimitTangent( 2 ) );
-	  DBG_PRINT( ipatch.getSecondLimitTangent( 2 ) );
-
-	  DBG_PRINT( ipatch.getLimitTangent( 3 ) );
-	  DBG_PRINT( ipatch.getSecondLimitTangent( 3 ) );
-	  //exit(0);
-
-#endif
-
 
 	  GregoryPatch gpatch; 
 	  gpatch.init( ipatch ); 
@@ -114,30 +109,6 @@ namespace embree
     __forceinline bool isGregoryPatch() const
     {
       return (flags & GREGORY_PATCH) == GREGORY_PATCH;
-    }
-
-    __forceinline const Vec3fa &getQuadVertex(const unsigned int i=0) const { 
-      const SubdivMesh::HalfEdge *const h = first_half_edge + i;
-      return vertices[h->getStartVertexIndex()];
-    }
-
-    __forceinline void init( IrregularCatmullClarkPatch& patch) const
-    {
-      for (size_t i=0;i<4;i++)
-	patch.ring[i].init(first_half_edge + i,vertices);
-    }
-
-    __forceinline void init( FinalQuad& quad ) const
-    {
-      quad.vtx[0] = getQuadVertex(0);
-      quad.vtx[1] = getQuadVertex(1);
-      quad.vtx[2] = getQuadVertex(2);
-      quad.vtx[3] = getQuadVertex(3);
-    };
-
-    __forceinline void init( RegularCatmullClarkPatch& cc_patch) const
-    {
-      cc_patch.init(first_half_edge, vertices);
     }
 
     __forceinline BBox3fa bounds() const
@@ -186,8 +157,10 @@ namespace embree
       return b;
     }
    
-    const SubdivMesh::HalfEdge * first_half_edge; //!< pointer to first half edge of corresponding quad in the subdivision mesh
-    const Vec3fa *vertices;                       //!< pointer to the vertex positions in the subdivison mesh
+    //const SubdivMesh::HalfEdge * first_half_edge; //!< pointer to first half edge of corresponding quad in the subdivision mesh
+    //const Vec3fa *vertices;                       //!< pointer to the vertex positions in the subdivison mesh
+    Vec2f u_range;
+    Vec2f v_range;
     unsigned int flags;
     unsigned int subdivision_level;
     unsigned int geomID;                          //!< geometry ID of the subdivision mesh this patch belongs to
@@ -203,7 +176,7 @@ namespace embree
 
   __forceinline std::ostream &operator<<(std::ostream &o, const SubdivPatch1 &p)
     {
-      o << "first_half_edge " << p.first_half_edge << " vertices " << p.vertices << " flags " << p.flags << " geomID " << p.geomID << " primID " << p.primID;
+      o << " flags " << p.flags << " geomID " << p.geomID << " primID " << p.primID << " u_range << " << p.u_range << " v_range " << p.v_range;
 
       return o;
     } 

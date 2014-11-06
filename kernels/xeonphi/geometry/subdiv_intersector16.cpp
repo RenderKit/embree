@@ -613,58 +613,5 @@ namespace embree
    
  }
 
-  extern size_t g_subdivision_level;
-
-
-  bool subdivide_intersect1(const size_t rayIndex, 
-			    const mic_f &dir_xyz,
-			    const mic_f &org_xyz,
-			    Ray16& ray16,
-			    const SubdivPatch1& subdiv_patch)
-  {
-    STAT3(normal.trav_prims,1,1,1);
-
-#if 1
-    if (likely(subdiv_patch.isRegular()))
-      {
-	//RegularCatmullClarkPatch regular_patch;
-	//subdiv_patch.init( regular_patch );
-	const RegularCatmullClarkPatch &regular_patch = subdiv_patch.patch;
-	regular_patch.prefetchData();
-	subdivide_intersect1(rayIndex,dir_xyz,org_xyz,ray16,regular_patch,subdiv_patch.geomID,subdiv_patch.primID,g_subdivision_level);
-	// Vec2f s_val(0.0f,1.0f);
-	// Vec2f t_val(0.0f,1.0f);
-	// subdivide_intersect1_eval(rayIndex,dir_xyz,org_xyz,ray16,regular_patch,subdiv_patch.geomID,subdiv_patch.primID,s_val,t_val,g_subdivision_level);
-      }
-#endif
-#if 0
-    else if (likely(subdiv_patch.isGregoryPatch()))
-      {
-	const RegularCatmullClarkPatch &regular_patch = subdiv_patch.patch;
-	regular_patch.prefetchData();
-	__aligned(64) GregoryPatch gpatch( regular_patch.v, subdiv_patch.f_m );
-
-	Vec2f s_val(0.0f,1.0f);
-	Vec2f t_val(0.0f,1.0f);
-	subdivide_intersect1_eval(rayIndex,dir_xyz,org_xyz,ray16,gpatch,
-				  subdiv_patch.geomID,
-				  subdiv_patch.primID,
-				  s_val,
-				  t_val,
-				  g_subdivision_level);
-
-      }
-	  
-#endif
-    else
-      {
-	IrregularCatmullClarkPatch irregular_patch;
-	subdiv_patch.init( irregular_patch );
-	subdivide_intersect1(rayIndex,dir_xyz,org_xyz,ray16,irregular_patch,subdiv_patch.geomID,subdiv_patch.primID,g_subdivision_level);
-      }
-
-    return true;
-  };
-
 
 };
