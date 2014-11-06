@@ -181,9 +181,6 @@ namespace embree
 
   public: // FIXME: make private
 
-    /*! Offsets into the vertexIndices array indexed by face, provided by the application */
-    //BufferT<unsigned int> vertexOffsets;
-    //std::vector<unsigned int> vertexOffsets;
     BufferT<int> faceVertices;
     BufferT<int> holes;
     std::vector<bool> full_holes;

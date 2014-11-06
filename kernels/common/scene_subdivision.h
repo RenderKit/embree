@@ -141,7 +141,7 @@ namespace embree
     
     __forceinline void init(const SubdivMesh::HalfEdge* const h, const Vec3fa* const vertices) // FIXME: should get buffer as vertex array input!!!!
     {
-      for (size_t i=0; i<MAX_VALENCE; i++) crease_weight[i] = nan;
+      for (size_t i=0; i<MAX_VALENCE; i++) crease_weight[i] = nan; // FIXME: remove
 
       hard_edge_index = -1;
       vtx = (Vec3fa_t)vertices[ h->getStartVertexIndex() ];
@@ -428,6 +428,211 @@ namespace embree
     friend __forceinline std::ostream &operator<<(std::ostream &o, const CatmullClark1Ring &c)
     {
       o << "vtx " << c.vtx << " size = " << c.num_vtx << ", hard_edge = " << c.hard_edge_index << ", ring: " << std::endl;
+      for (size_t i=0; i<c.num_vtx; i++) {
+        o << i << " -> " << c.ring[i];
+        if (i % 2 == 0) o << " crease = " << c.crease_weight[i/2];
+        o << std::endl;
+      }
+      return o;
+    } 
+  };
+
+  struct __aligned(64) GeneralCatmullClark1Ring
+  {
+    Vec3fa vtx;
+    Vec3fa ring[2*MAX_VALENCE]; 
+    int face_size[MAX_VALENCE];       // number of vertices-2 of nth face in ring
+    float crease_weight[MAX_VALENCE]; // FIXME: move into 4th component of ring entries
+    unsigned int valence;
+    unsigned int num_vtx;
+    int hard_edge_face;
+    float vertex_crease_weight;
+
+    GeneralCatmullClark1Ring() {}
+
+    __forceinline void init(const SubdivMesh::HalfEdge* const h, const Vec3fa* const vertices) // FIXME: should get buffer as vertex array input!!!!
+    {
+      for (size_t i=0; i<MAX_VALENCE; i++) crease_weight[i] = nan; // FIXME: remove
+
+      hard_edge_face = -1;
+      vtx = (Vec3fa_t)vertices[ h->getStartVertexIndex() ];
+      vertex_crease_weight = h->vertex_crease_weight;
+      SubdivMesh::HalfEdge* p = (SubdivMesh::HalfEdge*) h;
+
+      size_t i=0, f=0;
+      do {
+        assert(f < MAX_VALENCE);
+        crease_weight[f] = p->edge_crease_weight;
+
+        size_t vn = 0;
+        assert(i < 2*MAX_VALENCE);
+	ring[i++] = (Vec3fa_t) vertices[ p->getEndVertexIndex() ];
+        vn++;
+        
+	if (unlikely(!p->hasOpposite())) { 
+          init_secondhalf(h,vertices,i,f);
+          return;
+        }
+	p = p->opposite();
+
+        SubdivMesh::HalfEdge* pnext2 = p->next()->next();
+        for (SubdivMesh::HalfEdge* v = p->prev(); v!=pnext2; v=v->prev()) {
+          assert(i < 2*MAX_VALENCE);
+          ring[i++] = (Vec3fa_t) vertices[ p->getStartVertexIndex() ];
+          vn++;
+        }
+        face_size[f++] = vn;
+        p = p->next();
+        
+      } while (p != h);
+
+      num_vtx = i;
+      valence = i >> 1;
+    }
+
+    __forceinline void init_secondhalf(const SubdivMesh::HalfEdge* const h, const Vec3fa* const vertices, size_t i, size_t f)
+    {
+      /*! mark first hard edge and store dummy vertex for face between the two hard edges */
+      hard_edge_face = f;
+      crease_weight[f] = inf; 
+      face_size[f++] = 1;
+      
+      /*! first cycle clock-wise until we found the second edge */	  
+      SubdivMesh::HalfEdge* p = (SubdivMesh::HalfEdge*) h;
+      p = p->prev();	  
+      while(p->hasOpposite()) {
+        p = p->opposite();
+        p = p->prev();	      
+      }
+      
+      /*! store second hard edge and diagonal vertex */
+      assert(f < MAX_VALENCE);
+      crease_weight[f] = inf;
+      
+      size_t vn = 0;
+      SubdivMesh::HalfEdge* pnext2 = p->next()->next();
+      for (SubdivMesh::HalfEdge* v = p; v!=pnext2; v=v->prev()) {
+        assert(i < 2*MAX_VALENCE);
+        ring[i++] = (Vec3fa_t) vertices[ p->getStartVertexIndex() ];
+        vn++;
+      }
+      face_size[f++] = vn;
+      p = p->next();
+      
+      /*! continue counter-clockwise */	  
+      while (p != h) 
+      {
+	p = p->opposite();
+
+        assert(f < MAX_VALENCE);
+        crease_weight[f] = p->edge_crease_weight;
+
+        size_t vn = 0;
+        SubdivMesh::HalfEdge* pnext2 = p->next()->next();
+        for (SubdivMesh::HalfEdge* v = p; v!=pnext2; v=v->prev()) {
+          assert(i < 2*MAX_VALENCE);
+          ring[i++] = (Vec3fa_t) vertices[ p->getStartVertexIndex() ];
+          vn++;
+        }
+        face_size[f++] = vn;
+        p = p->next();
+      }
+
+      num_vtx = i;
+      valence = f;
+    }
+
+    __forceinline void update(CatmullClark1Ring& dest) const
+    {
+      dest.valence         = valence;
+      dest.num_vtx         = 2*valence;
+      dest.hard_edge_index = 2*hard_edge_face;
+      dest.vertex_crease_weight   = max(0.0f,vertex_crease_weight-1.0f);
+
+      /* calculate face points */
+      Vec3fa_t S = Vec3fa_t(0.0f);
+      for (size_t i=0; i<valence; i++) {
+        Vec3fa_t F = vtx;
+        for (size_t j=0; j<=face_size[i]; j++) F += ring[(i+j)%num_vtx]; // FIXME: optimize
+        S += dest.ring[2*i+1] = F/float(face_size[i]+2);
+      }
+      
+      /* calculate new edge points */
+      size_t num_creases = 0;
+      size_t crease_id[MAX_VALENCE];
+      Vec3fa_t C = Vec3fa_t(0.0f);
+      for (size_t i=0, j=0; i<valence; j+=face_size[i++])
+      {
+        const Vec3fa_t v = vtx + ring[j];
+        const Vec3fa_t f = dest.ring[(2*i-1)%dest.num_vtx] + dest.ring[2*i+1];
+        S += ring[j];
+        dest.crease_weight[i] = max(crease_weight[i]-1.0f,0.0f);
+        
+        /* fast path for regular edge points */
+        if (likely(crease_weight[i] <= 0.0f)) {
+          dest.ring[2*i] = (v+f) * 0.25f;
+        }
+        
+        /* slower path for hard edge rule */
+        else {
+          C += ring[j]; crease_id[num_creases++] = i;
+          dest.ring[2*i] = v*0.5f;
+
+          /* even slower path for blended edge rule */
+          if (unlikely(crease_weight[i] < 1.0f)) {
+            const float w0 = crease_weight[i], w1 = 1.0f-w0;
+            dest.ring[2*i] = w1*((v+f)*0.25f) + w0*(v*0.5f);
+          }
+        }
+      }
+
+      /* compute new vertex using smooth rule */
+      const float inv_valence = 1.0f / (float)valence;
+      const Vec3fa_t v_smooth = (Vec3fa_t)(S*inv_valence + (float(valence)-2.0f)*vtx)*inv_valence;
+      dest.vtx = v_smooth;
+
+      /* compute new vertex using vertex_crease_weight rule */
+      if (unlikely(vertex_crease_weight > 0.0f)) 
+      {
+        if (vertex_crease_weight >= 1.0f) {
+          dest.vtx = vtx;
+        } else {
+          const float t0 = vertex_crease_weight, t1 = 1.0f-t0;
+          dest.vtx = t0*vtx + t1*v_smooth;;
+        }
+        return;
+      }
+
+      if (likely(num_creases <= 1))
+        return;
+      
+      /* compute new vertex using crease rule */
+      if (likely(num_creases == 2)) {
+        const Vec3fa_t v_sharp = (Vec3fa_t)(C + 6.0f * vtx) * (1.0f / 8.0f);
+        const float crease_weight0 = crease_weight[crease_id[0]];
+        const float crease_weight1 = crease_weight[crease_id[1]];
+        dest.vtx = v_sharp;
+        dest.crease_weight[crease_id[0]] = max(0.25f*(3.0f*crease_weight0 + crease_weight1)-1.0f,0.0f);
+        dest.crease_weight[crease_id[1]] = max(0.25f*(3.0f*crease_weight1 + crease_weight0)-1.0f,0.0f);
+        //dest.crease_weight[crease_id[0]] = max(0.5f*(crease_weight0 + crease_weight1)-1.0f,0.0f);
+        //dest.crease_weight[crease_id[1]] = max(0.5f*(crease_weight1 + crease_weight0)-1.0f,0.0f);
+        const float t0 = 0.5f*(crease_weight0+crease_weight1), t1 = 1.0f-t0;
+        //dest.crease_weight[crease_id[0]] = t0 < 1.0f ? 0.0f : 0.5f*t0;
+        //dest.crease_weight[crease_id[1]] = t0 < 1.0f ? 0.0f : 0.5f*t0;
+        if (unlikely(t0 < 1.0f)) {
+          dest.vtx = t0*v_sharp + t1*v_smooth;
+        }
+      }
+      
+      /* compute new vertex using corner rule */
+      else {
+        dest.vtx = vtx;
+      }
+    }
+
+    friend __forceinline std::ostream &operator<<(std::ostream &o, const GeneralCatmullClark1Ring &c)
+    {
+      o << "vtx " << c.vtx << " size = " << c.num_vtx << ", hard_edge = " << c.hard_edge_face << ", ring: " << std::endl;
       for (size_t i=0; i<c.num_vtx; i++) {
         o << i << " -> " << c.ring[i];
         if (i % 2 == 0) o << " crease = " << c.crease_weight[i/2];

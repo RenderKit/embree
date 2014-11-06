@@ -200,13 +200,6 @@ namespace embree
     delete halfEdges;
     halfEdges = new HalfEdge[numEdges];
 
-    /* calculate offset buffer */
-    /*vertexOffsets.resize(numFaces);
-    size_t ofs = 0;
-    for (size_t i=0; i<numFaces; i++) {
-      vertexOffsets[i] = ofs; ofs += faceVertices[i];
-      }*/
-
     /* create map containing all edge_creases */
     std::map<size_t,float> creaseMap;
     for (size_t i=0; i<edge_creases.size(); i++)
