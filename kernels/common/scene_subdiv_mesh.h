@@ -196,13 +196,12 @@ namespace embree
     BufferT<Vec3fa> vertices[2];      //!< vertex array
 
     /*! Crease buffer, provided by the application */
-    BufferT<Vec2i> creases;
-    BufferT<float> crease_weights;
+    BufferT<Vec2i> edge_creases;
+    BufferT<float> edge_crease_weights;
 
-    /*! Corner buffer, provided by the application */
-    BufferT<int> corners;
-    BufferT<float> corner_weights;
-    std::vector<float> full_corner_weights;
+    /*! Vertex_Crease buffer, provided by the application */
+    BufferT<int> vertex_creases;
+    BufferT<float> vertex_crease_weights;
 
     /*! Subdivision level per edge, provided by the application */
     BufferT<float> levels;
