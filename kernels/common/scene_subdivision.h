@@ -342,7 +342,8 @@ namespace embree
       /* border vertex rule */
       if (unlikely(hard_edge_index != -1))
 	{
-	  return (4.0f * vtx + ring[hard_edge_index] + ring[hard_edge_index+2]) * 1.0f/6.0f;
+	  const unsigned int second_hard_edge_index = hard_edge_index+2 >= num_vtx ? 0 : hard_edge_index+2;
+	  return (4.0f * vtx + ring[hard_edge_index] + ring[second_hard_edge_index]) * 1.0f/6.0f;
 	}
 
       Vec3fa_t F( 0.0f );
@@ -363,10 +364,14 @@ namespace embree
       /* border vertex rule */
       if (unlikely(hard_edge_index != -1))
 	{
-	  if (hard_edge_index != 0)
+	  if (hard_edge_index != 0 && valence != 2)
 	    return ring[0] - vtx;
 	  else
-	    return 
+	    {
+	      const unsigned int second_hard_edge_index = hard_edge_index+2;
+	      assert(second_hard_edge_index < num_vtx);
+	      return (ring[hard_edge_index] - ring[second_hard_edge_index]) * 0.5f;
+	    }
 	}
 
       Vec3fa_t alpha( 0.0f );
@@ -391,7 +396,14 @@ namespace embree
       /* border vertex rule */
       if (unlikely(hard_edge_index != -1))
 	{
-	  return ring[hard_edge_index+2] - vtx;
+	  if (hard_edge_index == 0 && valence != 2)
+	    return ring[num_vtx-2] - vtx;
+	  else
+	    {
+	      const unsigned int second_hard_edge_index = hard_edge_index+2;
+	      assert(second_hard_edge_index < num_vtx); 
+	      return (ring[second_hard_edge_index] - ring[hard_edge_index]) * 0.5f;
+	    }
 	}
 
       Vec3fa_t alpha( 0.0f );
@@ -430,7 +442,7 @@ namespace embree
 
     friend __forceinline std::ostream &operator<<(std::ostream &o, const CatmullClark1Ring &c)
     {
-      o << "vtx " << c.vtx << " size = " << c.num_vtx << ", hard_edge = " << c.hard_edge_index << ", ring: " << std::endl;
+      o << "vtx " << c.vtx << " size = " << c.num_vtx << ", hard_edge = " << c.hard_edge_index << ", valence " << c.valence << ", ring: " << std::endl;
       for (size_t i=0; i<c.num_vtx; i++) {
         o << i << " -> " << c.ring[i];
         if (i % 2 == 0) o << " crease = " << c.crease_weight[i/2];
@@ -1432,14 +1444,41 @@ namespace embree
 			Vec3fa &f_p_vtx,
 			Vec3fa &f_m_vtx)
     {
-      const unsigned int valence = irreg_patch.ring[index].valence;
-      const Vec3fa c_i      = irreg_patch.ring[index].getQuadCenter( 0 );
-      const Vec3fa c_i_m_1  = irreg_patch.ring[index].getQuadCenter( valence-1 );
-      const Vec3fa c_i_m_2  = irreg_patch.ring[index].getQuadCenter( valence-2 );
-      const Vec3fa e_i_p_1  = irreg_patch.ring[index].getEdgeCenter( 1 );
+      const unsigned int valence         = irreg_patch.ring[index].valence;
+      const unsigned int num_vtx         = irreg_patch.ring[index].num_vtx;
+      const unsigned int hard_edge_index = irreg_patch.ring[index].hard_edge_index;
+
+      const Vec3fa &vtx     = irreg_patch.ring[index].vtx;
       const Vec3fa e_i      = irreg_patch.ring[index].getEdgeCenter( 0 );
+      const Vec3fa c_i_m_1  = irreg_patch.ring[index].getQuadCenter( valence-1 );
       const Vec3fa e_i_m_1  = irreg_patch.ring[index].getEdgeCenter( valence-1 );
-      const Vec3fa e_i_m_2  = irreg_patch.ring[index].getEdgeCenter( valence-2 );
+
+      Vec3fa c_i, e_i_p_1;
+      if (unlikely(hard_edge_index == 0))
+	{
+	  /* mirror quad center and edge mid-point */
+	  c_i     = c_i_m_1 + 2 * (e_i - c_i_m_1);
+	  e_i_p_1 = e_i_m_1 + 2 * (vtx - e_i_m_1);
+	}
+      else
+	{
+	  c_i     = irreg_patch.ring[index].getQuadCenter( 0 );
+	  e_i_p_1 = irreg_patch.ring[index].getEdgeCenter( 1 );
+	}
+
+      Vec3fa c_i_m_2, e_i_m_2;
+      if (unlikely(hard_edge_index == num_vtx-2))
+	{
+	  /* mirror quad center and edge mid-point */
+	  c_i_m_2  = c_i_m_1 + 2 * (e_i_m_1 - c_i_m_1);
+	  e_i_m_2  = e_i + 2 * (vtx - e_i);	  
+	}
+      else
+	{
+	  c_i_m_2  = irreg_patch.ring[index].getQuadCenter( valence-2 );
+	  e_i_m_2  = irreg_patch.ring[index].getEdgeCenter( valence-2 );
+	}
+
 
       const float d = 3.0f;
       const float c     = cosf(2.0*M_PI/(float)valence);
@@ -1455,7 +1494,7 @@ namespace embree
 
       f_m_vtx = 1.0f / d * (c_e_m * p_vtx + (d - 2.0f*c - c_e_m) * e0_m_vtx + 2.0f*c* e3_p_vtx + r_e_m);
 
-#if 1
+#if 0
       DBG_PRINT( irreg_patch.ring[index].vtx );
       DBG_PRINT( p_vtx );
       
@@ -1506,7 +1545,7 @@ namespace embree
       const unsigned int valence_p2 = irreg_patch.ring[2].valence;
       const unsigned int valence_p3 = irreg_patch.ring[3].valence;
 
-#if 1
+#if 0
       DBG_PRINT( p0() );
       DBG_PRINT( p1() );
       DBG_PRINT( p2() );

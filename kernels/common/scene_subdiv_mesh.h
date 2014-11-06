@@ -177,7 +177,7 @@ namespace embree
       float edge_crease_weight;       //!< crease weight attached to edge
       float vertex_crease_weight;     //!< crease weight attached to start vertex
       float edge_level;               //!< subdivision factor for edge
-      float align;                    //!< aligns the structure to 64 bytes
+      float align;                    //!< aligns the structure to 32 bytes
     };
 
   public: // FIXME: make private

@@ -99,6 +99,7 @@ namespace embree
 	  DBG_PRINT( rpatch.getSecondLimitTangent( 2 ) );
 	  DBG_PRINT( rpatch.getSecondLimitTangent( 3 ) );
 
+	  //exit(0);
 
 	  GregoryPatch gpatch; 
 	  gpatch.init( rpatch ); 
