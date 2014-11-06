@@ -208,6 +208,52 @@ namespace embree
       valence = i >> 1;
     }
 
+    __forceinline void init2(const SubdivMesh::HalfEdge* const h, const Vec3fa* const vertices) // FIXME: should get buffer as vertex array input!!!!
+    {
+      for (size_t i=0; i<MAX_VALENCE; i++) crease_weight[i] = nan; // FIXME: remove
+
+      hard_edge_index = -1;
+      vtx = (Vec3fa_t)vertices[ h->getStartVertexIndex() ];
+      vertex_crease_weight = h->vertex_crease_weight;
+      SubdivMesh::HalfEdge* p = (SubdivMesh::HalfEdge*) h;
+
+      size_t i=0;
+      crease_weight[i/2] = p->edge_crease_weight;
+      while (true)
+      {
+        for (size_t j=0; j<2; j++) {
+          p = p->next();
+          assert(i < 2*MAX_VALENCE);
+          ring[i++] = (Vec3fa_t) vertices[ p->getStartVertexIndex() ];
+        }
+        p = p->next();
+        crease_weight[i/2] = p->edge_crease_weight;
+
+        if (p->hasOpposite()) {
+          p = p->opposite();
+          continue;
+        }
+
+        /*! mark first hard edge and store dummy vertex for face between the two hard edges */
+        hard_edge_index = i;
+        crease_weight[i/2] = inf; 
+        assert(i < 2*MAX_VALENCE);
+        ring[i++] = (Vec3fa_t) vertices[ p->getEndVertexIndex() ];
+        assert(i < 2*MAX_VALENCE);
+        ring[i++] = Vec3fa(nan);
+        crease_weight[i/2] = inf;
+
+        /*! goto other side of border */
+        p = (SubdivMesh::HalfEdge*) h;
+        if (p->hasOpposite()) 
+          p = p->opposite()->next();
+      }
+
+      num_vtx = i;
+      valence = i >> 1;
+    }
+
+
     __forceinline void update(CatmullClark1Ring& dest) const
     {
       dest.valence         = valence;
