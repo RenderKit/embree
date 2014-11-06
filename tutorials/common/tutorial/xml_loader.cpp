@@ -703,14 +703,19 @@ namespace embree
 
     OBJScene::SubdivMesh* mesh = new OBJScene::SubdivMesh;
     std::vector<Vec3f> positions = loadVec3fArray(xml->childOpt("positions"));
-    for (size_t i=0; i<positions.size(); i++) mesh->vertices.push_back(xfmPoint(space,positions[i]));
-    mesh->indices         = loadIntArray(xml->childOpt("indices"));
-    mesh->verticesPerFace = loadIntArray(xml->childOpt("faces"));
-    mesh->holes           = loadIntArray(xml->childOpt("holes"));
-    mesh->creases         = loadVec2iArray(xml->childOpt("creases"));
-    mesh->creaseWeights   = loadFloatArray(xml->childOpt("crease_weights"));
-    mesh->corners         = loadIntArray(xml->childOpt("corners"));
-    mesh->cornerWeights   = loadFloatArray(xml->childOpt("corner_weights"));
+    for (size_t i=0; i<positions.size(); i++) mesh->positions.push_back(xfmPoint(space,positions[i]));
+    std::vector<Vec3f> normals = loadVec3fArray(xml->childOpt("normals"));
+    for (size_t i=0; i<normals.size(); i++) mesh->normals.push_back(xfmNormal(space,normals[i]));
+    mesh->texcoords = loadVec2fArray(xml->childOpt("texcoords"));
+    mesh->position_indices = loadIntArray(xml->childOpt("position_indices"));
+    mesh->normal_indices   = loadIntArray(xml->childOpt("normal_indices"));
+    mesh->texcoord_indices = loadIntArray(xml->childOpt("texcoord_indices"));
+    mesh->verticesPerFace  = loadIntArray(xml->childOpt("faces"));
+    mesh->holes            = loadIntArray(xml->childOpt("holes"));
+    mesh->edge_creases     = loadVec2iArray(xml->childOpt("edge_creases"));
+    mesh->edge_crease_weights = loadFloatArray(xml->childOpt("edge_crease_weights"));
+    mesh->vertex_creases      = loadIntArray(xml->childOpt("vertex_creases"));
+    mesh->vertex_crease_weights = loadFloatArray(xml->childOpt("vertex_crease_weights"));
     scene.subdiv.push_back(mesh);
   }
 

@@ -86,14 +86,18 @@ namespace embree
     /*! Subdivision Mesh. */
     struct SubdivMesh 
     {
-      std::vector<Vec3fa> vertices;        //!< vertex positions
-      std::vector<int> indices;            //!< indices for all faces
-      std::vector<int> verticesPerFace;    //!< number of indices of each face
-      std::vector<int> holes;              //!< face ID of holes
-      std::vector<Vec2i> creases;          //!< crease index pairs
-      std::vector<float> creaseWeights;    //!< weight for each crease
-      std::vector<int> corners;            //!< corner indices
-      std::vector<float> cornerWeights;    //!< weight for each corner
+      std::vector<Vec3fa> positions;            //!< vertex positions
+      std::vector<Vec3fa> normals;              //!< face vertex normals
+      std::vector<Vec2f> texcoords;             //!< face texture coordinates
+      std::vector<int> position_indices;        //!< position indices for all faces
+      std::vector<int> normal_indices;          //!< normal indices for all faces
+      std::vector<int> texcoord_indices;        //!< texcoord indices for all faces
+      std::vector<int> verticesPerFace;         //!< number of indices of each face
+      std::vector<int> holes;                   //!< face ID of holes
+      std::vector<Vec2i> edge_creases;          //!< index pairs for edge crease 
+      std::vector<float> edge_crease_weights;   //!< weight for each edge crease
+      std::vector<int> vertex_creases;          //!< indices of vertex creases
+      std::vector<float> vertex_crease_weights; //!< weight for each vertex crease
     };
 
     struct Hair

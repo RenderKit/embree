@@ -209,12 +209,12 @@ uniform unsigned int rtcNewSubdivisionMesh (RTCScene scene,
                                             uniform size_t numFaces,
                                             uniform size_t numEdges,
                                             uniform size_t numVertices,
-                                            uniform size_t numCreases,             //!< number of creases
-                                            uniform size_t numCorners,             //!< number of corners
+                                            uniform size_t numEdgeCreases, 
+                                            uniform size_t numVertexCreases, 
                                             uniform size_t numHoles,
                                             uniform size_t numTimeSteps)
 {
-  return ispcNewSubdivisionMesh(scene,flags,numFaces,numEdges,numVertices,numCreases,numCorners,numHoles,numTimeSteps);
+  return ispcNewSubdivisionMesh(scene,flags,numFaces,numEdges,numVertices,numEdgeCreases,numVertexCreases,numHoles,numTimeSteps);
 }
 
 

@@ -1099,12 +1099,12 @@ namespace embree
 
   /* new support for subdivision surfaces */
   RTCORE_API unsigned rtcNewSubdivisionMesh (RTCScene scene, RTCGeometryFlags flags, size_t numFaces, size_t numEdges, size_t numVertices, 
-                                             size_t numCreases, size_t numCorners, size_t numHoles, size_t numTimeSteps) 
+                                             size_t numEdgeCreases, size_t numVertexCreases, size_t numHoles, size_t numTimeSteps) 
   {
     CATCH_BEGIN;
     TRACE(rtcNewSubdivisionMesh);
     VERIFY_HANDLE(scene);
-    return ((Scene*)scene)->newSubdivisionMesh(flags,numFaces,numEdges,numVertices,numCreases,numCorners,numHoles,numTimeSteps);
+    return ((Scene*)scene)->newSubdivisionMesh(flags,numFaces,numEdges,numVertices,numEdgeCreases,numVertexCreases,numHoles,numTimeSteps);
     CATCH_END;
     return -1;
   }

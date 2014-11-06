@@ -16,32 +16,32 @@
         +1.0 0.0 +1.0 
       </positions>
 
-      <indices>
+      <position_indices>
         0 1 4 3  
         1 2 5 4  
         3 4 7 6  
         4 5 8 7
-      </indices>
+      </position_indices>
 
       <faces>
         4 4 4 4
       </faces>
 
-      <creases>
+      <edge_creases>
         3 4 4 5
-      </creases>
+      </edge_creases>
 
-      <crease_weights>
+      <edge_crease_weights>
         1 4
-      </crease_weights>
+      </edge_crease_weights>
 
-      <corners>
+      <vertex_creases>
         0 2 6 8
-      </corners>
+      </vertex_creases>
 
-      <corner_weights>
+      <vertex_crease_weights>
         3 3 3 3
-      </corner_weights>
+      </vertex_crease_weights>
 
       <material>
         <code>"Matte"</code>

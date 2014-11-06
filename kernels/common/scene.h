@@ -56,7 +56,7 @@ namespace embree
     unsigned int newBezierCurves (RTCGeometryFlags flags, size_t maxCurves, size_t maxVertices, size_t numTimeSteps);
 
     /*! Creates a new subdivision mesh. */
-    unsigned int newSubdivisionMesh (RTCGeometryFlags flags, size_t numFaces, size_t numEdges, size_t numVertices, size_t numCreases, size_t numCorners, size_t numHoles, size_t numTimeSteps);
+    unsigned int newSubdivisionMesh (RTCGeometryFlags flags, size_t numFaces, size_t numEdges, size_t numVertices, size_t numEdgeCreases, size_t numVertexCreases, size_t numHoles, size_t numTimeSteps);
 
     /*! Builds acceleration structure for the scene. */
     void build (size_t threadIndex, size_t threadCount);

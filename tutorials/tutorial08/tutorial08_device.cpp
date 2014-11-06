@@ -198,15 +198,16 @@ RTCScene constructScene(const Vec3fa& cam_pos)
   for (size_t i=0; i<g_ispc_scene->numSubdivMeshes; i++)
   {
     ISPCSubdivMesh* mesh = g_ispc_scene->subdiv[i];
-    unsigned int subdivMeshID = rtcNewSubdivisionMesh(scene, RTC_GEOMETRY_STATIC, mesh->numFaces, mesh->numEdges, mesh->numVertices, mesh->numCreases, mesh->numCorners, mesh->numHoles);
-    rtcSetBuffer(scene, subdivMeshID, RTC_VERTEX_BUFFER, mesh->vertices , 0, sizeof(Vec3fa  ));
-    rtcSetBuffer(scene, subdivMeshID, RTC_INDEX_BUFFER,  mesh->indices  , 0, sizeof(unsigned int));
+    unsigned int subdivMeshID = rtcNewSubdivisionMesh(scene, RTC_GEOMETRY_STATIC, mesh->numFaces, mesh->numEdges, mesh->numVertices, 
+                                                      mesh->numEdgeCreases, mesh->numVertexCreases, mesh->numHoles);
+    rtcSetBuffer(scene, subdivMeshID, RTC_VERTEX_BUFFER, mesh->positions, 0, sizeof(Vec3fa  ));
+    rtcSetBuffer(scene, subdivMeshID, RTC_INDEX_BUFFER,  mesh->position_indices  , 0, sizeof(unsigned int));
     rtcSetBuffer(scene, subdivMeshID, RTC_FACE_BUFFER,   mesh->verticesPerFace, 0, sizeof(unsigned int));
     rtcSetBuffer(scene, subdivMeshID, RTC_HOLE_BUFFER,   mesh->holes, 0, sizeof(unsigned int));
-    rtcSetBuffer(scene, subdivMeshID, RTC_EDGE_CREASE_BUFFER, mesh->creases, 0, 2*sizeof(unsigned int));
-    rtcSetBuffer(scene, subdivMeshID, RTC_EDGE_CREASE_WEIGHT_BUFFER, mesh->creaseWeights, 0, sizeof(float));
-    rtcSetBuffer(scene, subdivMeshID, RTC_VERTEX_CREASE_BUFFER, mesh->corners, 0, sizeof(unsigned int));
-    rtcSetBuffer(scene, subdivMeshID, RTC_VERTEX_CREASE_WEIGHT_BUFFER, mesh->cornerWeights, 0, sizeof(float));
+    rtcSetBuffer(scene, subdivMeshID, RTC_EDGE_CREASE_BUFFER,          mesh->edge_creases,          0, 2*sizeof(unsigned int));
+    rtcSetBuffer(scene, subdivMeshID, RTC_EDGE_CREASE_WEIGHT_BUFFER,   mesh->edge_crease_weights,   0, sizeof(float));
+    rtcSetBuffer(scene, subdivMeshID, RTC_VERTEX_CREASE_BUFFER,        mesh->vertex_creases,        0, sizeof(unsigned int));
+    rtcSetBuffer(scene, subdivMeshID, RTC_VERTEX_CREASE_WEIGHT_BUFFER, mesh->vertex_crease_weights, 0, sizeof(float));
   }       
   
   rtcCommit(scene);  
@@ -276,13 +277,13 @@ RTCScene constructSceneOpenSubdiv()
     desc.numVertices  = mesh->numVertices;
     desc.numFaces     = mesh->numFaces;
     desc.vertsPerFace = mesh->verticesPerFace;
-    desc.vertIndices  = mesh->indices;
-    desc.numCreases   = mesh->numCreases;
-    desc.creaseVertexIndexPairs = (int*) mesh->creases;
-    desc.creaseWeights = mesh->creaseWeights;
-    desc.numCorners    = mesh->numCorners;
-    desc.cornerVertexIndices = mesh->corners;
-    desc.cornerWeights = mesh->cornerWeights;
+    desc.vertIndices  = mesh->position_indices;
+    desc.numCreases   = mesh->numEdgeCreases;
+    desc.creaseVertexIndexPairs = (int*) mesh->edge_creases;
+    desc.creaseWeights = mesh->edge_crease_weights;
+    desc.numCorners    = mesh->numVertexCreases;
+    desc.cornerVertexIndices = mesh->vertex_creases;
+    desc.cornerWeights = mesh->vertex_crease_weights;
     
     size_t maxlevel = 5;
     Far::TopologyRefiner* refiner = Far::TopologyRefinerFactory<Descriptor>::Create(OpenSubdiv::Sdc::TYPE_CATMARK, options, desc);
@@ -292,7 +293,7 @@ RTCScene constructSceneOpenSubdiv()
     OSDVertex* verts = &vbuffer[0];
     
     for (int i=0; i<mesh->numVertices; ++i)
-      verts[i].SetPosition(mesh->vertices[i].x,mesh->vertices[i].y,mesh->vertices[i].z);
+      verts[i].SetPosition(mesh->positions[i].x,mesh->positions[i].y,mesh->positions[i].z);
     
     refiner->Interpolate(verts, verts + mesh->numVertices);
     

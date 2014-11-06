@@ -62,19 +62,23 @@ struct ISPCMesh
 
 struct ISPCSubdivMesh
 {
-  Vec3fa* vertices;        //!< vertex positions
-  int* indices;            //!< indices for all faces
+  Vec3fa* positions;       //!< vertex positions
+  Vec3fa* normals;         //!< face vertex normals
+  Vec2f* texcoords;        //!< face texture coordinates
+  int* position_indices;   //!< position indices for all faces
+  int* normal_indices;     //!< normal indices for all faces
+  int* texcoord_indices;   //!< texcoord indices for all faces
   int* verticesPerFace;    //!< number of indices of each face
   int* holes;              //!< face ID of holes
-  Vec2i* creases;          //!< crease index pairs
-  float* creaseWeights;    //!< weight for each crease
-  int* corners;            //!< corner indices
-  float* cornerWeights;    //!< weight for each corner
+  Vec2i* edge_creases;          //!< crease index pairs
+  float* edge_crease_weights;   //!< weight for each crease
+  int* vertex_creases;          //!< indices of vertex creases
+  float* vertex_crease_weights; //!< weight for each vertex crease
   int numVertices;
   int numFaces;
   int numEdges;
-  int numCreases;
-  int numCorners;
+  int numEdgeCreases;
+  int numVertexCreases;
   int numHoles;
 };
 

@@ -63,19 +63,23 @@ namespace embree
   ISPCSubdivMesh* convertSubdivMesh (OBJScene::SubdivMesh* in)
   {
     ISPCSubdivMesh* out = new ISPCSubdivMesh;
-    out->vertices = in->vertices.size() ? &in->vertices[0] : NULL;
-    out->indices = in->indices.size()   ? &in->indices[0] : NULL;
+    out->positions = in->positions.size() ? &in->positions[0] : NULL;
+    out->normals = in->normals.size() ? &in->normals[0] : NULL;
+    out->texcoords = in->texcoords.size() ? &in->texcoords[0] : NULL;
+    out->position_indices = in->position_indices.size()   ? &in->position_indices[0] : NULL;
+    out->normal_indices = in->normal_indices.size()   ? &in->normal_indices[0] : NULL;
+    out->texcoord_indices = in->texcoord_indices.size()   ? &in->texcoord_indices[0] : NULL;
     out->verticesPerFace = in->verticesPerFace.size() ? &in->verticesPerFace[0] : NULL;
     out->holes = in->holes.size() ? &in->holes[0] : NULL;
-    out->creases = in->creases.size() ? &in->creases[0] : NULL;
-    out->creaseWeights = in->creaseWeights.size() ? &in->creaseWeights[0] : NULL;
-    out->corners = in->corners.size() ? &in->corners[0] : NULL;
-    out->cornerWeights = in->cornerWeights.size() ? &in->cornerWeights[0] : NULL;
-    out->numVertices = in->vertices.size();
+    out->edge_creases = in->edge_creases.size() ? &in->edge_creases[0] : NULL;
+    out->edge_crease_weights = in->edge_crease_weights.size() ? &in->edge_crease_weights[0] : NULL;
+    out->vertex_creases = in->vertex_creases.size() ? &in->vertex_creases[0] : NULL;
+    out->vertex_crease_weights = in->vertex_crease_weights.size() ? &in->vertex_crease_weights[0] : NULL;
+    out->numVertices = in->positions.size();
     out->numFaces = in->verticesPerFace.size();
-    out->numEdges = in->indices.size();   
-    out->numCreases = in->creases.size();
-    out->numCorners = in->corners.size();
+    out->numEdges = in->position_indices.size();   
+    out->numEdgeCreases = in->edge_creases.size();
+    out->numVertexCreases = in->vertex_creases.size();
     out->numHoles = in->holes.size();
     return out;
   }
