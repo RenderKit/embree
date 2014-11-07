@@ -968,19 +968,6 @@ namespace embree
       dest1.crease_weight[1] = dest0.crease_weight[2] = p0.crease_weight[0];
     }
 
-    static __forceinline void init_regular(const Vec3fa_t &center, const Vec3fa_t center_ring[8], const size_t offset, CatmullClark1Ring &dest)
-    {
-      dest.valence = 4;
-      dest.num_vtx = 8;
-      dest.hard_edge_index = -1;
-      dest.vtx     = (Vec3fa_t)center;
-      dest.vertex_crease_weight = 0.0f;
-      for (size_t i=0; i<8; i++) 
-	dest.ring[i] = (Vec3fa_t)center_ring[(offset+i)%8];
-      for (size_t i=0; i<8; i++) 
-        dest.crease_weight[i] = 0.0f;
-    }
-
     static __forceinline void init_regular(const Vec3fa_t &center, const Vec3fa_t center_ring[2*SIZE], const size_t N, const size_t offset, CatmullClark1Ring &dest)
     {
       assert(N<MAX_VALENCE);
@@ -995,11 +982,10 @@ namespace embree
         dest.crease_weight[i] = 0.0f;
     }
  
-
     __forceinline void subdivide(IrregularCatmullClarkPatch patch[SIZE], size_t& N_o) const
     {
       N_o = N;
-#if 1
+
       for (size_t i=0; i<N; i++) {
         size_t ip1 = (i+1)%N; // FIXME: %
         ring[i].update(patch[i].ring[0]);
@@ -1028,72 +1014,6 @@ namespace embree
       for (size_t i=0; i<N; i++) {
         init_regular(center,center_ring,N,2*i,patch[i].ring[2]);
       }
-      
-#else
-      N = 4;
-      ring[0].update(patch[0].ring[0]);
-      ring[1].update(patch[1].ring[1]);
-      ring[2].update(patch[2].ring[2]);
-      ring[3].update(patch[3].ring[3]);
-
-      patch[0].level[0] = 0.5f*level[0];
-      patch[0].level[1] = 0.25f*(level[1]+level[3]);
-      patch[0].level[2] = 0.25f*(level[0]+level[2]);
-      patch[0].level[3] = 0.5f*level[3];
-
-      patch[1].level[0] = 0.5f*level[0];
-      patch[1].level[1] = 0.5f*level[1];
-      patch[1].level[2] = 0.25f*(level[0]+level[2]);
-      patch[1].level[3] = 0.25f*(level[1]+level[3]);
-
-      patch[2].level[0] = 0.25f*(level[0]+level[2]);
-      patch[2].level[1] = 0.5f*level[1];
-      patch[2].level[2] = 0.5f*level[2];
-      patch[2].level[3] = 0.25f*(level[1]+level[3]);
-
-      patch[3].level[0] = 0.25f*(level[0]+level[2]);
-      patch[3].level[1] = 0.25f*(level[1]+level[3]);
-      patch[3].level[2] = 0.5f*level[2];
-      patch[3].level[3] = 0.5f*level[3];
-      
-      if (likely(ring[0].has_first_patch()))
-        init_regular(patch[0].ring[0],patch[1].ring[1],patch[0].ring[1],patch[1].ring[0]);
-      else
-        init_border(patch[0].ring[0],patch[1].ring[1],patch[0].ring[1],patch[1].ring[0]);
-
-      if (likely(ring[1].has_first_patch()))
-        init_regular(patch[1].ring[1],patch[2].ring[2],patch[1].ring[2],patch[2].ring[1]);
-      else
-        init_border(patch[1].ring[1],patch[2].ring[2],patch[1].ring[2],patch[2].ring[1]);
-
-      if (likely(ring[2].has_first_patch()))
-        init_regular(patch[2].ring[2],patch[3].ring[3],patch[2].ring[3],patch[3].ring[2]);
-      else
-        init_border(patch[2].ring[2],patch[3].ring[3],patch[2].ring[3],patch[3].ring[2]);
-
-      if (likely(ring[3].has_first_patch()))
-        init_regular(patch[3].ring[3],patch[0].ring[0],patch[3].ring[0],patch[0].ring[3]);
-      else
-        init_border(patch[3].ring[3],patch[0].ring[0],patch[3].ring[0],patch[0].ring[3]);
-
-      Vec3fa_t center = (ring[0].vtx + ring[1].vtx + ring[2].vtx + ring[3].vtx) * 0.25f;
-      Vec3fa_t center_ring[8];
-
-      // counter-clockwise
-      center_ring[0] = (Vec3fa_t)patch[3].ring[3].ring[0];
-      center_ring[1] = (Vec3fa_t)patch[3].ring[3].vtx;
-      center_ring[2] = (Vec3fa_t)patch[2].ring[2].ring[0];
-      center_ring[3] = (Vec3fa_t)patch[2].ring[2].vtx;
-      center_ring[4] = (Vec3fa_t)patch[1].ring[1].ring[0];
-      center_ring[5] = (Vec3fa_t)patch[1].ring[1].vtx;
-      center_ring[6] = (Vec3fa_t)patch[0].ring[0].ring[0];
-      center_ring[7] = (Vec3fa_t)patch[0].ring[0].vtx;
-
-      init_regular(center,center_ring,0,patch[0].ring[2]);
-      init_regular(center,center_ring,2,patch[3].ring[1]);
-      init_regular(center,center_ring,4,patch[2].ring[0]);
-      init_regular(center,center_ring,6,patch[1].ring[3]);
-#endif
     }
 
     friend __forceinline std::ostream &operator<<(std::ostream &o, const GeneralIrregularCatmullClarkPatch &p)
