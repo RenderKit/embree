@@ -1011,11 +1011,8 @@ PRINT(CORRECT_numPrims);
 	    acc[currentID] = SubdivPatch1(&subdiv_mesh->getHalfEdgeForQuad( i ),
 					  subdiv_mesh->getVertexPositionPtr(),
 					  g,
-					  i,
-					  0);
+					  i);
 	    	    
-	    //const BBox3fa bounds = subdiv_mesh->bounds(i);
-
 	    const BBox3fa bounds = acc[currentID].bounds();
 
 	    const mic_f bmin = broadcast4to16f(&bounds.lower); 
@@ -1045,33 +1042,6 @@ PRINT(CORRECT_numPrims);
     store4f(&bounds.geometry.upper,bounds_scene_max);
 
     global_bounds.extend_atomic(bounds);    
-  }
-
-
-#define SUBDIVISION_LEVEL 0
-
-  void BVH4iBuilderSubdivMesh::createSubdivMeshAccel(const size_t threadID, const size_t numThreads)
-  {
-    PING;
-    const size_t startID = (threadID+0)*numPrimitives/numThreads;
-    const size_t endID   = (threadID+1)*numPrimitives/numThreads;
-
-    SubdivPatch1 *acc = (SubdivPatch1*)accel + startID;
-
-    const PrimRef* __restrict__  bptr = prims + startID;
-
-    for (size_t j=startID; j<endID; j++, bptr++, acc++)
-      {
-    	prefetch<PFHINT_NT>(bptr + L1_PREFETCH_ITEMS);
-    	prefetch<PFHINT_L2>(bptr + L2_PREFETCH_ITEMS);
-    	assert(bptr->geomID() < scene->size() );
-        SubdivMesh* subdiv_mesh = (SubdivMesh *) scene->get( bptr->geomID() );
-    	*acc = SubdivPatch1(&subdiv_mesh->getHalfEdgeForQuad( bptr->primID() ),
-			    subdiv_mesh->getVertexPositionPtr(),
-			    bptr->geomID(),
-			    bptr->primID(),
-			    SUBDIVISION_LEVEL);
-      }
   }
 
   void BVH4iBuilderSubdivMesh::finalize(const size_t threadIndex, const size_t threadCount)
