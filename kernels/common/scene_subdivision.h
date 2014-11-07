@@ -980,10 +980,56 @@ namespace embree
       for (size_t i=0; i<8; i++) 
         dest.crease_weight[i] = 0.0f;
     }
+
+    static __forceinline void init_regular(const Vec3fa_t &center, const Vec3fa_t center_ring[2*SIZE], const size_t N, const size_t offset, CatmullClark1Ring &dest)
+    {
+      assert(N<MAX_VALENCE);
+      dest.valence = N;
+      dest.num_vtx = 2*N;
+      dest.hard_edge_index = -1;
+      dest.vtx     = (Vec3fa_t)center;
+      dest.vertex_crease_weight = 0.0f;
+      for (size_t i=0; i<2*N; i++) 
+	dest.ring[i] = (Vec3fa_t)center_ring[(2*N+offset-i-1)%(2*N)];
+      for (size_t i=0; i<2*N; i++) 
+        dest.crease_weight[i] = 0.0f;
+    }
  
 
-    __forceinline void subdivide(IrregularCatmullClarkPatch patch[SIZE], size_t& N) const
+    __forceinline void subdivide(IrregularCatmullClarkPatch patch[SIZE], size_t& N_o) const
     {
+      N_o = N;
+#if 1
+      for (size_t i=0; i<N; i++) {
+        size_t ip1 = (i+1)%N; // FIXME: %
+        ring[i].update(patch[i].ring[0]);
+        patch[i]  .level[0] = 0.5f*level[i];
+        patch[ip1].level[3] = 0.5f*level[i];
+      }
+
+      Vec3fa_t center = Vec3fa_t(0.0f);
+      Vec3fa_t center_ring[2*SIZE];
+
+      for (size_t i=0; i<N; i++)
+      {
+        size_t ip1 = (i+1)%N; // FIXME: %
+        size_t im1 = (i+N-1)%N; // FIXME: %
+        if (likely(ring[i].has_first_patch())) init_regular(patch[i].ring[0],patch[ip1].ring[0],patch[i].ring[1],patch[ip1].ring[3]); 
+        else                                   init_border (patch[i].ring[0],patch[ip1].ring[0],patch[i].ring[1],patch[ip1].ring[3]);
+
+        patch[i].level[1] = patch[ip1].level[2] = 0.25f*(level[im1]+level[ip1]);
+
+        center += ring[i].vtx;
+        center_ring[2*i+0] = (Vec3fa_t)patch[i].ring[0].vtx;
+        center_ring[2*i+1] = (Vec3fa_t)patch[i].ring[0].ring[0];
+      }
+      center /= float(N);
+
+      for (size_t i=0; i<N; i++) {
+        init_regular(center,center_ring,N,2*i,patch[i].ring[2]);
+      }
+      
+#else
       N = 4;
       ring[0].update(patch[0].ring[0]);
       ring[1].update(patch[1].ring[1]);
@@ -1047,6 +1093,7 @@ namespace embree
       init_regular(center,center_ring,2,patch[3].ring[1]);
       init_regular(center,center_ring,4,patch[2].ring[0]);
       init_regular(center,center_ring,6,patch[1].ring[3]);
+#endif
     }
 
     friend __forceinline std::ostream &operator<<(std::ostream &o, const GeneralIrregularCatmullClarkPatch &p)

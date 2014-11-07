@@ -215,8 +215,9 @@ namespace embree
 
     __forceinline const Vec3fa *getVertexPositionPtr(const unsigned int t = 0) const { return &vertices[t][0]; }
 
-    __forceinline const HalfEdge &getHalfEdgeForQuad(unsigned int q, const unsigned int i=0) const { return halfEdges[q*4+i]; }
-
+    __forceinline const HalfEdge &getHalfEdgeForQuad(unsigned int q, const unsigned int i=0) const { 
+      return *(faceStartEdge[q]+i);
+    }
 
     __forceinline const Vec3fa &getVertexPositionForHalfEdge(const HalfEdge &e) const { 
       return getVertexPosition( e.vtx_index );

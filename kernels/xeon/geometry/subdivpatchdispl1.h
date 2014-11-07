@@ -294,7 +294,7 @@ namespace embree
                                                  unsigned x, unsigned y, int l, int maxDepth,
                                                  bool Tt, bool Tr, bool Tb, bool Tl) // tagged transition edges
     {
-      if (unlikely(l == maxDepth))
+      //if (unlikely(l == maxDepth))
         return leaf(alloc,patch,x,y,l,false,false,false,false);
 
       IrregularCatmullClarkPatch patches[4]; 
@@ -338,12 +338,28 @@ namespace embree
       IrregularCatmullClarkPatch patches[GeneralIrregularCatmullClarkPatch::SIZE]; 
       patch.subdivide(patches,N);
 
+#if 1
+      BVH4::Node* node = (BVH4::Node*) alloc.malloc(sizeof(BVH4::Node),16);
+      BBox3fa bounds = empty;
+      for (size_t i=0, j=0; i<N; i++, j++) {
+        if (j == 4) {
+          BVH4::Node* node1 = (BVH4::Node*) alloc.malloc(sizeof(BVH4::Node),16);
+          node1->set(0,bounds,BVH4::encodeNode2(node));
+          node = node1;
+          j = 1;
+        }
+        std::pair<BBox3fa,BVH4::NodeRef> b = build(alloc,patches[i],0,0,1,maxDepth,false,false,false,false);
+        bounds.extend(b.first);
+        node->set(j,b.first,b.second);
+      }
+#else
       BVH4::Node* node = (BVH4::Node*) alloc.malloc(sizeof(BVH4::Node),16);
       std::pair<BBox3fa,BVH4::NodeRef> b00 = build(alloc,patches[0],0,0,1,maxDepth,false,false,false,false); node->set(0,b00.first,b00.second);
       std::pair<BBox3fa,BVH4::NodeRef> b10 = build(alloc,patches[1],0,0,1,maxDepth,false,false,false,false); node->set(1,b10.first,b10.second);
       std::pair<BBox3fa,BVH4::NodeRef> b11 = build(alloc,patches[2],0,0,1,maxDepth,false,false,false,false); node->set(2,b11.first,b11.second);
-      std::pair<BBox3fa,BVH4::NodeRef> b01 = build(alloc,patches[3],0,0,1,maxDepth,false,false,false,false); node->set(3,b01.first,b01.second);
-      const BBox3fa bounds = merge(b00.first,b10.first,b01.first,b11.first);
+      //std::pair<BBox3fa,BVH4::NodeRef> b01 = build(alloc,patches[3],0,0,1,maxDepth,false,false,false,false); node->set(3,b01.first,b01.second);
+      const BBox3fa bounds = merge(b00.first,b10.first,b11.first);
+#endif
       return std::pair<BBox3fa,BVH4::NodeRef>(bounds,BVH4::encodeNode2(node));
     }
 
@@ -370,16 +386,30 @@ namespace embree
         return (size_t)parent;
       }
 
+#if 0
+      IrregularCatmullClarkPatch patchNormal(h,vertices);
+      //PRINT(patchNormal);
+      IrregularCatmullClarkPatch patchesNormal[4]; 
+      patchNormal.subdivide(patchesNormal);
+      PRINT(patchesNormal[0]);
+
+      GeneralIrregularCatmullClarkPatch patchGeneral(h,vertices);
+      //PRINT(patchGeneral);
+      size_t N;
+      IrregularCatmullClarkPatch patchesGeneral[GeneralIrregularCatmullClarkPatch::SIZE]; 
+      patchGeneral.subdivide(patchesGeneral,N);
+      PRINT(patchesGeneral[0]);
+#endif
       /* create patch and build sub-BVH */
 #if 0
       IrregularCatmullClarkPatch patch(h,vertices);
       const std::pair<BBox3fa,BVH4::NodeRef> root = build(alloc,patch,0,0,0,(int)levels-3,false,false,false,false);
 #else
-      //PING;
+      PING;
       GeneralIrregularCatmullClarkPatch patch(h,vertices);
-      //PING;
+      PING;
       const std::pair<BBox3fa,BVH4::NodeRef> root = build(alloc,patch,(int)levels-3);
-      //PING;
+      PING;
 #endif
 
       /* link to sub-BVH */
