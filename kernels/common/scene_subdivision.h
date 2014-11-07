@@ -411,7 +411,7 @@ namespace embree
       /* border vertex rule */
       if (unlikely(hard_edge_index != -1))
 	{
-	  const unsigned int second_hard_edge_index = hard_edge_index+2 >= num_vtx ? 0 : hard_edge_index+2; // FIXME: wrap around required???
+	  const unsigned int second_hard_edge_index = hard_edge_index+2 >= num_vtx ? 0 : hard_edge_index+2;
 	  return (4.0f * vtx + ring[hard_edge_index] + ring[second_hard_edge_index]) * 1.0f/6.0f;
 	}
 
@@ -433,13 +433,15 @@ namespace embree
       /* border vertex rule */
       if (unlikely(hard_edge_index != -1))
 	{
-	  if (has_first_patch() && valence != 2)
-	    return ring[0] - vtx;
+	  //if (hard_edge_index != 0 && valence != 2) {
+          if (has_first_patch() && valence != 2) {
+	    return get_ring(0) - vtx;
+          }
 	  else
-            {
-              const unsigned int second_hard_edge_index = hard_edge_index+2 >= num_vtx ? 0 : hard_edge_index+2; // FIXME: wrap around required???
+	    {
+              const unsigned int second_hard_edge_index = hard_edge_index+2 >= num_vtx ? 0 : hard_edge_index+2;
 	      assert(second_hard_edge_index < num_vtx);
-	      return (ring[hard_edge_index]-ring[second_hard_edge_index]) * 0.5f;
+	      return (ring[second_hard_edge_index] - ring[hard_edge_index]) * 0.5f;
 	    }
 	}
 
@@ -456,7 +458,7 @@ namespace embree
 	  alpha +=  a * get_ring(2*i);
           beta  +=  b * get_ring(2*i+1);
 	}
-      return alpha +  beta;     
+      return alpha +  beta;      
     }
 
     /* gets limit tangent in the direction of egde vtx -> ring[num_vtx-2] */
@@ -465,13 +467,14 @@ namespace embree
       /* border vertex rule */
       if (unlikely(hard_edge_index != -1))
 	{
-	  if (hard_edge_index == 0 && valence != 2)
-	    return ring[num_vtx-2] - vtx;
+	  //if (hard_edge_index == 0 && valence != 2) {
+	  if (!has_first_patch() && valence != 2) {
+	    return get_ring(num_vtx-2) - vtx;
+          }
 	  else
 	    {
-              const unsigned int second_hard_edge_index = hard_edge_index+2 >= num_vtx ? 0 : hard_edge_index+2; // FIXME: wrap around required???
-	      assert(second_hard_edge_index < num_vtx); 
-	      return (ring[second_hard_edge_index] - ring[hard_edge_index]) * 0.5f;
+              const unsigned int second_hard_edge_index = hard_edge_index+2 >= num_vtx ? 0 : hard_edge_index+2;
+	      return (ring[hard_edge_index] - ring[second_hard_edge_index]) * 0.5f;
 	    }
 	}
 
@@ -493,23 +496,19 @@ namespace embree
     }
 
     /* returns center of the n-th quad in the 1-ring */
-    __forceinline Vec3fa getQuadCenter(size_t index) const
+    __forceinline Vec3fa getQuadCenter(const size_t index) const
     {
-      index = valence-1-index;
       const Vec3fa_t &p0 = vtx;
-      const Vec3fa_t &p1 = ring[2*index+0];
-      const Vec3fa_t &p2 = ring[2*index+1];
-      const Vec3fa_t &p3 = index == valence-1 ? ring[0] : ring[2*index+2];
+      const Vec3fa_t &p1 = get_ring(2*index+0);
+      const Vec3fa_t &p2 = get_ring(2*index+1);
+      const Vec3fa_t &p3 = index == valence-1 ? get_ring(0) : get_ring(2*index+2);
       const Vec3fa p = (p0+p1+p2+p3) * 0.25f;
       return p;
     }
 
     /* returns center of the n-th edge in the 1-ring */
-    __forceinline Vec3fa getEdgeCenter(size_t index) const
-    {
-      index *= 2;
-      if (index != 0) index = num_vtx-index;
-      return (vtx + ring[index]) * 0.5f;
+    __forceinline Vec3fa getEdgeCenter(const size_t index) const {
+      return (vtx + get_ring(index*2)) * 0.5f;
     }
 
     friend __forceinline std::ostream &operator<<(std::ostream &o, const CatmullClark1Ring &c)
