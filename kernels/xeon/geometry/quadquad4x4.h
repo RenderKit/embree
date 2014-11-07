@@ -415,35 +415,9 @@ namespace embree
     }
 
     __forceinline Vec3fa& point(const size_t x, const size_t y) { return v[y][x]; }
-    
-    const BBox3fa build(Scene* scene, const Array2D<Vec3fa>& p2, const Array2D<Vec3fa>& p3, bool Tt, bool Tr, bool Tb, bool Tl)
+
+    const BBox3fa build(Scene* scene)
     {
-      for (size_t y=0; y<=8; y++)
-        for (size_t x=0; x<=8; x++)
-          v[y][x] = p3(x,y);
-
-#if 1
-      if (Tt) {
-        for (size_t i=0; i<4; i++) point(2*i,0) = point(2*i+1,0) = p2(i,0);
-        point(8,0) = p2(4,0);
-      }
-
-      if (Tr) {
-        for (size_t i=0; i<4; i++) point(8,2*i) = point(8,2*i+1) = p2(4,i);
-        point(8,8) = p2(4,4);
-      }
-
-      if (Tb) {
-        for (size_t i=0; i<4; i++) point(2*i,8) = point(2*i+1,8) = p2(i,4);
-        point(8,8) = p2(4,4);
-      }
-
-      if (Tl) {
-        for (size_t i=0; i<4; i++) point(0,2*i) = point(0,2*i+1) = p2(0,i);
-        point(0,8) = p2(0,4);
-      }
-#endif
-
       displace(scene); // FIXME: stick u/v
 
 #if QUADQUAD4X4_COMPRESS_BOUNDS
@@ -475,6 +449,37 @@ namespace embree
       return bounds;
     }
 
+    const BBox3fa build(Scene* scene, const Array2D<Vec3fa>& p2, const Array2D<Vec3fa>& p3, bool Tt, bool Tr, bool Tb, bool Tl)
+    {
+      for (size_t y=0; y<=8; y++)
+        for (size_t x=0; x<=8; x++)
+          v[y][x] = p3(x,y);
+
+#if 1
+      if (Tt) {
+        for (size_t i=0; i<4; i++) point(2*i,0) = point(2*i+1,0) = p2(i,0);
+        point(8,0) = p2(4,0);
+      }
+
+      if (Tr) {
+        for (size_t i=0; i<4; i++) point(8,2*i) = point(8,2*i+1) = p2(4,i);
+        point(8,8) = p2(4,4);
+      }
+
+      if (Tb) {
+        for (size_t i=0; i<4; i++) point(2*i,8) = point(2*i+1,8) = p2(i,4);
+        point(8,8) = p2(4,4);
+      }
+
+      if (Tl) {
+        for (size_t i=0; i<4; i++) point(0,2*i) = point(0,2*i+1) = p2(0,i);
+        point(0,8) = p2(0,4);
+      }
+#endif
+
+      return build(scene);
+    }
+
     const BBox3fa build(Scene* scene, const RegularCatmullClarkPatch& patch)
     {
       for (size_t y=0; y<=8; y++) {
@@ -482,36 +487,17 @@ namespace embree
           v[y][x] = patch.eval(0.125f*float(x),0.125*float(y));
         }
       }
+      return build(scene);
+    }
 
-      displace(scene); // FIXME: stick u/v
-
-#if QUADQUAD4X4_COMPRESS_BOUNDS
-      n.set(fullBounds());
-#endif
-
-      BBox3fa bounds = empty;
-      
-      const BBox3fa bounds00_0 = leafBounds(0,0); n.set(0,0,bounds00_0); bounds.extend(bounds00_0);
-      const BBox3fa bounds00_1 = leafBounds(1,0); n.set(0,1,bounds00_1); bounds.extend(bounds00_1);
-      const BBox3fa bounds00_2 = leafBounds(0,1); n.set(0,2,bounds00_2); bounds.extend(bounds00_2);
-      const BBox3fa bounds00_3 = leafBounds(1,1); n.set(0,3,bounds00_3); bounds.extend(bounds00_3);
-      
-      const BBox3fa bounds10_0 = leafBounds(2,0); n.set(1,0,bounds10_0); bounds.extend(bounds10_0);
-      const BBox3fa bounds10_1 = leafBounds(3,0); n.set(1,1,bounds10_1); bounds.extend(bounds10_1);
-      const BBox3fa bounds10_2 = leafBounds(2,1); n.set(1,2,bounds10_2); bounds.extend(bounds10_2);
-      const BBox3fa bounds10_3 = leafBounds(3,1); n.set(1,3,bounds10_3); bounds.extend(bounds10_3);
-      
-      const BBox3fa bounds01_0 = leafBounds(0,2); n.set(2,0,bounds01_0); bounds.extend(bounds01_0);
-      const BBox3fa bounds01_1 = leafBounds(1,2); n.set(2,1,bounds01_1); bounds.extend(bounds01_1);
-      const BBox3fa bounds01_2 = leafBounds(0,3); n.set(2,2,bounds01_2); bounds.extend(bounds01_2);
-      const BBox3fa bounds01_3 = leafBounds(1,3); n.set(2,3,bounds01_3); bounds.extend(bounds01_3);
-      
-      const BBox3fa bounds11_0 = leafBounds(2,2); n.set(3,0,bounds11_0); bounds.extend(bounds11_0);
-      const BBox3fa bounds11_1 = leafBounds(3,2); n.set(3,1,bounds11_1); bounds.extend(bounds11_1);
-      const BBox3fa bounds11_2 = leafBounds(2,3); n.set(3,2,bounds11_2); bounds.extend(bounds11_2);
-      const BBox3fa bounds11_3 = leafBounds(3,3); n.set(3,3,bounds11_3); bounds.extend(bounds11_3);
-      
-      return bounds;
+    const BBox3fa build(Scene* scene, const GregoryPatch& patch)
+    {
+      for (size_t y=0; y<=8; y++) {
+        for (size_t x=0; x<=8; x++) {
+          v[y][x] = patch.eval(0.125f*float(x),0.125*float(y));
+        }
+      }
+      return build(scene);
     }
 
   public:
