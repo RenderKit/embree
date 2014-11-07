@@ -385,17 +385,6 @@ namespace embree
         return (size_t)parent;
       }
 
-      {
-        IrregularCatmullClarkPatch patch(h,vertices);
-        IrregularCatmullClarkPatch patches[4]; 
-        patch.subdivide(patches);
-        PRINT(patch);
-        PRINT(patches[0]);
-        PRINT(patches[1]);
-        PRINT(patches[2]);
-        PRINT(patches[3]);
-      }
-
       /* create patch and build sub-BVH */
 #if 1
       IrregularCatmullClarkPatch patch(h,vertices);
