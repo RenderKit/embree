@@ -207,9 +207,13 @@ namespace embree
         ring[i++] = (Vec3fa_t) vertices[ p->getStartVertexIndex() ];
         p = p->next();
         crease_weight[i/2] = p->edge_crease_weight;
+
+        /* continue with next face */
+        if (likely(p->hasOpposite())) 
+          p = p->opposite();
         
         /* if there is no opposite go the long way to the other side of the border */
-        if (unlikely(!p->hasOpposite())) 
+        else
         {
           /*! mark first border edge and store dummy vertex for face between the two border edges */
           hard_edge_index = i;
@@ -219,15 +223,11 @@ namespace embree
           
           /*! goto other side of border */
           p = (SubdivMesh::HalfEdge*) h;
-          if (p->hasOpposite()) 
+          while (p->hasOpposite()) 
             p = p->opposite()->next();
 
           crease_weight[i/2] = inf;
-          continue;
         }
-        
-        /* continue with next face */
-        p = p->opposite();
 
       } while (p != h); 
 

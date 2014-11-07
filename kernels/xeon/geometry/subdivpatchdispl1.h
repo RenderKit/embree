@@ -375,8 +375,11 @@ namespace embree
       IrregularCatmullClarkPatch patch(h,vertices);
       const std::pair<BBox3fa,BVH4::NodeRef> root = build(alloc,patch,0,0,0,(int)levels-3,false,false,false,false);
 #else
+      //PING;
       GeneralIrregularCatmullClarkPatch patch(h,vertices);
+      //PING;
       const std::pair<BBox3fa,BVH4::NodeRef> root = build(alloc,patch,(int)levels-3);
+      //PING;
 #endif
 
       /* link to sub-BVH */

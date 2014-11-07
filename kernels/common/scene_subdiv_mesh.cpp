@@ -200,6 +200,11 @@ namespace embree
     delete halfEdges;
     halfEdges = new HalfEdge[numEdges];
 
+    /* calculate start edge of each face */
+    faceStartEdge.resize(numFaces);
+    for (size_t f=0, ofs=0; f<numFaces; ofs+=faceVertices[f++])
+      faceStartEdge[f] = &halfEdges[ofs];
+
     /* create map containing all edge_creases */
     std::map<size_t,float> creaseMap;
     for (size_t i=0; i<edge_creases.size(); i++)

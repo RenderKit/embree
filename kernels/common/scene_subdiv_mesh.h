@@ -184,6 +184,7 @@ namespace embree
     BufferT<int> faceVertices;
     BufferT<int> holes;
     std::vector<bool> full_holes;
+    std::vector<HalfEdge*> faceStartEdge;
 
     /*! Indices of the vertices composing each face, provided by the application */
     BufferT<unsigned int> vertexIndices;
@@ -228,70 +229,50 @@ namespace embree
 
     void initializeHalfEdgeStructures ();
 
-    /*! calculates the bounds of the quad associated with the half-edge */
-    __forceinline BBox3fa bounds_quad(HalfEdge &e) const 
+    /*! calculates the bounds of the face associated with the half-edge */
+    __forceinline BBox3fa getFaceBounds(const HalfEdge* e) const 
     {
-      HalfEdge *p = &e;
-      BBox3fa b = getVertexPositionForHalfEdge(*p);
-      p = p->next();
-      b.extend( getVertexPositionForHalfEdge(*p) );
-      p = p->next();
-      b.extend( getVertexPositionForHalfEdge(*p) );
-      p = p->next();
-      b.extend( getVertexPositionForHalfEdge(*p) );
+      BBox3fa b = getVertexPosition(e->getStartVertexIndex());
+      for (const HalfEdge* p = e->next(); p!=e; p=p->next()) 
+        b.extend(getVertexPosition(p->getStartVertexIndex()));
       return b;
     }
 
     /*! calculates the bounds of the 1-ring associated with the vertex of the half-edge */
-    __forceinline BBox3fa bounds_1ring(HalfEdge &e) const 
+    __forceinline BBox3fa get1RingBounds(const HalfEdge* h) const 
     {
-      BBox3fa b = empty;
-      HalfEdge *p = &e;
-      bool foundEdge = false;
-      /*! cycle counter clock-wise */     
-      do {
-	/*! get bounds for the adjacent quad */
-	b.extend( bounds_quad( *p ) );
-	/*! continue with next adjacent edge. */
-	if (unlikely(!p->hasOpposite()))
-	  {
-	    foundEdge = true;
-	    break;
-	  }
-	assert( p->hasOpposite() );
+      BBox3fa bounds = empty;
+      const HalfEdge* p = h;
+      do 
+      {
+        /* calculate bounds of current face */
+        bounds.extend(getFaceBounds(p));
+        p = p->prev();
+                      
+        /* continue with next face */
+        if (likely(p->hasOpposite())) 
+          p = p->opposite();
+        
+        /* if there is no opposite go the long way to the other side of the border */
+        else {
+          p = h;
+          while (p->hasOpposite()) 
+            p = p->opposite()->next();
+        }
 
-	p = p->opposite();
-	p = p->next();
-      } while( p != &e);
-
-      /*! found edge cycle clock-wise */                 
-      if (unlikely(foundEdge))
-	{	 
-	  p = &e;
-	  p = p->prev();
-	  /*! get bounds for the adjacent quad */
-	  b.extend( bounds_quad( *p ) );
-
-	  while(p->hasOpposite())
-	    {
-	      p = p->opposite();
-
-	      /*! get bounds for the adjacent quad */
-	      b.extend( bounds_quad( *p ) );
-	      p = p->prev();	      
-	    }
-	}
-      return b;
+      } while (p != h); 
+      
+      return bounds;
     }
 
     /*! calculates the bounds of the i'th subdivision patch */
     __forceinline BBox3fa bounds(size_t i) const 
     {
-      BBox3fa b = empty;
-      for (size_t j=0; j<4; j++) {
-	b.extend( bounds_1ring(halfEdges[i*4+j]) );
-      }
-      return b;
+      const HalfEdge* h = faceStartEdge[i];
+      BBox3fa bounds = get1RingBounds(h);
+      for (const HalfEdge* p=h->next(); p!=h; p=p->next())
+        bounds.extend(get1RingBounds(p));
+      return bounds;
     }
 
     /*! check if the i'th primitive is valid */
