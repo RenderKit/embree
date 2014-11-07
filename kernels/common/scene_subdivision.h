@@ -128,6 +128,18 @@ namespace embree
       return bounds;
     }
 
+    void flip() 
+    {
+      Vec3fa ring_o[2*MAX_VALENCE]; // two vertices per face
+      float crease_weight_o[MAX_VALENCE]; // FIXME: move into 4th component of ring entries
+      for (size_t i=0; i<valence; i++) crease_weight_o[i] = crease_weight[i];
+      for (size_t i=0; i<num_vtx; i++) ring_o[i] = ring[i];
+
+      for (size_t i=1; i<valence; i++) crease_weight_o[i] = crease_weight[valence-i];
+      for (size_t i=1; i<num_vtx; i++) ring_o[i] = ring[num_vtx-i];
+      if (hard_edge_index != -1 && hard_edge_index != 0)
+          hard_edge_index = num_vtx-hard_edge_index;
+    }
     
     __forceinline void init(const SubdivMesh::HalfEdge* const h, const Vec3fa* const vertices) // FIXME: should get buffer as vertex array input!!!!
     {
@@ -381,7 +393,7 @@ namespace embree
       /* border vertex rule */
       if (unlikely(hard_edge_index != -1))
 	{
-	  const unsigned int second_hard_edge_index = hard_edge_index+2 >= num_vtx ? 0 : hard_edge_index+2;
+	  const unsigned int second_hard_edge_index = hard_edge_index+2 >= num_vtx ? 0 : hard_edge_index+2; // FIXME: wrap around required???
 	  return (4.0f * vtx + ring[hard_edge_index] + ring[second_hard_edge_index]) * 1.0f/6.0f;
 	}
 
@@ -403,7 +415,7 @@ namespace embree
       /* border vertex rule */
       if (unlikely(hard_edge_index != -1))
 	{
-	  if (hard_edge_index != 0 && valence != 2)
+	  if (has_first_patch() && valence != 2)
 	    return ring[0] - vtx;
 	  else
 	    {
@@ -843,22 +855,22 @@ namespace embree
       patch[3].level[2] = 0.5f*level[2];
       patch[3].level[3] = 0.5f*level[3];
       
-      if (likely(ring[0].hard_edge_index != 0))
+      if (likely(ring[0].has_first_patch()))
         init_regular(patch[0].ring[0],patch[1].ring[1],patch[0].ring[1],patch[1].ring[0]);
       else
         init_border(patch[0].ring[0],patch[1].ring[1],patch[0].ring[1],patch[1].ring[0]);
 
-      if (likely(ring[1].hard_edge_index != 0))
+      if (likely(ring[1].has_first_patch()))
         init_regular(patch[1].ring[1],patch[2].ring[2],patch[1].ring[2],patch[2].ring[1]);
       else
         init_border(patch[1].ring[1],patch[2].ring[2],patch[1].ring[2],patch[2].ring[1]);
 
-      if (likely(ring[2].hard_edge_index != 0))
+      if (likely(ring[2].has_first_patch()))
         init_regular(patch[2].ring[2],patch[3].ring[3],patch[2].ring[3],patch[3].ring[2]);
       else
         init_border(patch[2].ring[2],patch[3].ring[3],patch[2].ring[3],patch[3].ring[2]);
 
-      if (likely(ring[3].hard_edge_index != 0))
+      if (likely(ring[3].has_first_patch()))
         init_regular(patch[3].ring[3],patch[0].ring[0],patch[3].ring[0],patch[0].ring[3]);
       else
         init_border(patch[3].ring[3],patch[0].ring[0],patch[3].ring[0],patch[0].ring[3]);
