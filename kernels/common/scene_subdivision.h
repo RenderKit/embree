@@ -93,31 +93,35 @@ namespace embree
     unsigned int num_vtx;
     float vertex_crease_weight;
 
-    __forceinline       Vec3fa& get_ring(int i)       { return ring[i]; }
-    __forceinline const Vec3fa& get_ring(int i) const { return ring[i]; }
+    __forceinline       Vec3fa& get_ring(int i)       { if (i == 0) return ring[i]; else return ring[num_vtx-i]; }
+    __forceinline const Vec3fa& get_ring(int i) const { if (i == 0) return ring[i]; else return ring[num_vtx-i]; }
 
-    __forceinline       float& get_crease_weight(int i)       { return crease_weight[i]; }
-    __forceinline const float& get_crease_weight(int i) const { return crease_weight[i]; }
+    __forceinline       float& get_crease_weight(int i)       { if (i == 0) return crease_weight[i]; else return crease_weight[valence-i]; }
+    __forceinline const float& get_crease_weight(int i) const { if (i == 0) return crease_weight[i]; else return crease_weight[valence-i]; }
 
   public:
     CatmullClark1Ring() {}
 
     __forceinline const Vec3fa& front(size_t i) const {
       assert(num_vtx>i);
-      return ring[i];
+      //return ring[i];
+      return get_ring(i);
     }
 
     __forceinline const Vec3fa& back(size_t i) const {
       assert(num_vtx-1>=i);
-      return ring[num_vtx-1-i];
+      //return ring[num_vtx-1-i];
+      return get_ring(num_vtx-1-i);
     }
 
     __forceinline bool has_first_patch() const {
-      return hard_edge_index != 0;
+      //return hard_edge_index != 0;
+      return hard_edge_index != num_vtx-2;
     }
 
     __forceinline bool has_prelast_patch() const {
-      return (hard_edge_index == -1) || ((num_vtx-4) >= hard_edge_index+2);
+      //return (hard_edge_index == -1) || ((num_vtx-4) >= hard_edge_index+2);
+      return (hard_edge_index == -1) || (hard_edge_index >= 4);
     }
 
     __forceinline BBox3fa bounds() const
@@ -135,8 +139,8 @@ namespace embree
       for (size_t i=0; i<valence; i++) crease_weight_o[i] = crease_weight[i];
       for (size_t i=0; i<num_vtx; i++) ring_o[i] = ring[i];
 
-      for (size_t i=1; i<valence; i++) crease_weight_o[i] = crease_weight[valence-i];
-      for (size_t i=1; i<num_vtx; i++) ring_o[i] = ring[num_vtx-i];
+      for (size_t i=1; i<valence; i++) crease_weight[i] = crease_weight_o[valence-i];
+      for (size_t i=1; i<num_vtx; i++) ring[i] = ring_o[num_vtx-i];
       if (hard_edge_index != -1 && hard_edge_index != 0)
           hard_edge_index = num_vtx-hard_edge_index;
     }
@@ -170,6 +174,8 @@ namespace embree
 
       num_vtx = i;
       valence = i >> 1;
+
+      flip();
     }
 
     __forceinline void init_secondhalf(const SubdivMesh::HalfEdge* const h, const Vec3fa* const vertices, size_t i)
@@ -208,6 +214,8 @@ namespace embree
 
       num_vtx = i;
       valence = i >> 1;
+
+      flip();
     }
 
     __forceinline void init2(const SubdivMesh::HalfEdge* const h, const Vec3fa* const vertices) // FIXME: should get buffer as vertex array input!!!!
@@ -418,10 +426,10 @@ namespace embree
 	  if (has_first_patch() && valence != 2)
 	    return ring[0] - vtx;
 	  else
-	    {
-	      const unsigned int second_hard_edge_index = hard_edge_index+2;
+            {
+              const unsigned int second_hard_edge_index = hard_edge_index+2 >= num_vtx ? 0 : hard_edge_index+2; // FIXME: wrap around required???
 	      assert(second_hard_edge_index < num_vtx);
-	      return (ring[hard_edge_index] - ring[second_hard_edge_index]) * 0.5f;
+	      return (ring[second_hard_edge_index]-ring[hard_edge_index]) * 0.5f;
 	    }
 	}
 
@@ -433,8 +441,8 @@ namespace embree
       const float c1 = (1.0f/n + cosf(M_PI/n) * c0);
       for (size_t i=0; i<valence; i++)
 	{
-	  const float a = c1 * cosf(2.0f*M_PI*(float)i/n);
-	  const float b = c0 * cosf((2.0f*M_PI*(float)i+M_PI)/n);
+	  const float a = c1 * cosf(2.0f*M_PI*-(float)i/n);
+	  const float b = c0 * cosf((2.0f*M_PI*-(float)i+M_PI)/n);
 	  alpha +=  a * ring[2*i];
           beta  +=  b * ring[2*i+1];
 	}
@@ -453,7 +461,7 @@ namespace embree
 	    {
 	      const unsigned int second_hard_edge_index = hard_edge_index+2;
 	      assert(second_hard_edge_index < num_vtx); 
-	      return (ring[second_hard_edge_index] - ring[hard_edge_index]) * 0.5f;
+	      return (ring[hard_edge_index] - ring[second_hard_edge_index]) * 0.5f;
 	    }
 	}
 
@@ -466,8 +474,8 @@ namespace embree
       for (size_t i=0; i<valence; i++,ring_index++) // FIXME: is this the right direction?
 	{
 	  if (unlikely(ring_index == valence)) ring_index = 0;
-	  const float a = c1 * cosf(2.0f*M_PI*(float)i/n);
-	  const float b = c0 * cosf((2.0f*M_PI*(float)i+M_PI)/n);
+	  const float a = c1 * cosf(2.0f*M_PI*(float)-i/n);
+	  const float b = c0 * cosf((2.0f*M_PI*(float)-i+M_PI)/n);
 	  alpha += a * ring[2*ring_index];
           beta  += b * ring[2*ring_index+1];
 	}
@@ -475,8 +483,9 @@ namespace embree
     }
 
     /* returns center of the n-th quad in the 1-ring */
-    __forceinline Vec3fa getQuadCenter(const size_t index) const
+    __forceinline Vec3fa getQuadCenter(size_t index) const
     {
+      if (index != 0) index = valence-index;
       const Vec3fa_t &p0 = vtx;
       const Vec3fa_t &p1 = ring[2*index+0];
       const Vec3fa_t &p2 = ring[2*index+1];
@@ -486,8 +495,9 @@ namespace embree
     }
 
     /* returns center of the n-th edge in the 1-ring */
-    __forceinline Vec3fa getEdgeCenter(const size_t index) const
+    __forceinline Vec3fa getEdgeCenter(size_t index) const
     {
+      if (index != 0) index = num_vtx-index;
       return (vtx + ring[index*2]) * 0.5f;
     }
 
@@ -823,7 +833,7 @@ namespace embree
       dest.vertex_crease_weight = 0.0f;
       for (size_t i=0; i<8; i++) 
 	dest.get_ring(i) = (Vec3fa_t)center_ring[(offset+i)%8];
-      for (size_t i=0; i<8; i++) 
+      for (size_t i=0; i<4; i++) 
         dest.get_crease_weight(i) = 0.0f;
     }
  
@@ -1600,7 +1610,7 @@ namespace embree
     {
       const unsigned int valence         = irreg_patch.ring[index].valence;
       const unsigned int num_vtx         = irreg_patch.ring[index].num_vtx;
-      const unsigned int hard_edge_index = irreg_patch.ring[index].hard_edge_index;
+      //const unsigned int hard_edge_index = irreg_patch.ring[index].hard_edge_index;
 
       const Vec3fa &vtx     = irreg_patch.ring[index].vtx;
       const Vec3fa e_i      = irreg_patch.ring[index].getEdgeCenter( 0 );
@@ -1608,7 +1618,8 @@ namespace embree
       const Vec3fa e_i_m_1  = irreg_patch.ring[index].getEdgeCenter( valence-1 );
 
       Vec3fa c_i, e_i_p_1;
-      if (unlikely(hard_edge_index == 0))
+      //if (unlikely(hard_edge_index == 0))
+      if (unlikely(!irreg_patch.ring[index].has_first_patch()))
 	{
 	  /* mirror quad center and edge mid-point */
 	  c_i     = c_i_m_1 + 2 * (e_i - c_i_m_1);
@@ -1621,7 +1632,8 @@ namespace embree
 	}
 
       Vec3fa c_i_m_2, e_i_m_2;
-      if (unlikely(hard_edge_index+2 == num_vtx-2) || valence == 2)
+      //if (unlikely(hard_edge_index+2 == num_vtx-2) || valence == 2)
+      if (unlikely(!irreg_patch.ring[index].has_prelast_patch() || valence == 2))
 	{
 	  /* mirror quad center and edge mid-point */
 	  c_i_m_2  = c_i_m_1 + 2 * (e_i_m_1 - c_i_m_1);
