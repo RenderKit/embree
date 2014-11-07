@@ -385,8 +385,19 @@ namespace embree
         return (size_t)parent;
       }
 
+      {
+        IrregularCatmullClarkPatch patch(h,vertices);
+        IrregularCatmullClarkPatch patches[4]; 
+        patch.subdivide(patches);
+        PRINT(patch);
+        PRINT(patches[0]);
+        PRINT(patches[1]);
+        PRINT(patches[2]);
+        PRINT(patches[3]);
+      }
+
       /* create patch and build sub-BVH */
-#if 0
+#if 1
       IrregularCatmullClarkPatch patch(h,vertices);
       const std::pair<BBox3fa,BVH4::NodeRef> root = build(alloc,patch,0,0,0,(int)levels-3,false,false,false,false);
 #else

@@ -141,8 +141,8 @@ namespace embree
 
       for (size_t i=1; i<valence; i++) crease_weight[i] = crease_weight_o[valence-i];
       for (size_t i=1; i<num_vtx; i++) ring[i] = ring_o[num_vtx-i];
-      if (hard_edge_index != -1 && hard_edge_index != 0)
-          hard_edge_index = num_vtx-hard_edge_index;
+      if (hard_edge_index != -1)
+        hard_edge_index = (num_vtx+num_vtx-(hard_edge_index+2))%num_vtx;
     }
     
     __forceinline void init(const SubdivMesh::HalfEdge* const h, const Vec3fa* const vertices) // FIXME: should get buffer as vertex array input!!!!
@@ -175,7 +175,12 @@ namespace embree
       num_vtx = i;
       valence = i >> 1;
 
+      BBox3fa b0 = bounds();
       flip();
+      BBox3fa b1 = bounds();
+      if (b0 != b1) {
+        PRINT2(b0,b1);
+      }
     }
 
     __forceinline void init_secondhalf(const SubdivMesh::HalfEdge* const h, const Vec3fa* const vertices, size_t i)
@@ -183,7 +188,7 @@ namespace embree
       /*! mark first hard edge and store dummy vertex for face between the two hard edges*/
       hard_edge_index = i-1;
       crease_weight[i/2] = inf; 
-      ring[i++] = Vec3fa(nan);
+      ring[i++] = vtx; //Vec3fa(nan);
       
       /*! first cycle clock-wise until we found the second edge */	  
       SubdivMesh::HalfEdge* p = (SubdivMesh::HalfEdge*) h;
@@ -215,7 +220,12 @@ namespace embree
       num_vtx = i;
       valence = i >> 1;
 
+      BBox3fa b0 = bounds();
       flip();
+      BBox3fa b1 = bounds();
+      if (b0 != b1) {
+        PRINT2(b0,b1);
+      }
     }
 
     __forceinline void init2(const SubdivMesh::HalfEdge* const h, const Vec3fa* const vertices) // FIXME: should get buffer as vertex array input!!!!
@@ -250,7 +260,7 @@ namespace embree
           hard_edge_index = i;
           crease_weight[i/2] = inf; 
           ring[i++] = (Vec3fa_t) vertices[ p->getEndVertexIndex() ];
-          ring[i++] = Vec3fa(nan);
+          ring[i++] = vtx; //Vec3fa(nan);
           
           /*! goto other side of border */
           p = (SubdivMesh::HalfEdge*) h;
@@ -459,7 +469,7 @@ namespace embree
 	    return ring[num_vtx-2] - vtx;
 	  else
 	    {
-	      const unsigned int second_hard_edge_index = hard_edge_index+2;
+              const unsigned int second_hard_edge_index = hard_edge_index+2 >= num_vtx ? 0 : hard_edge_index+2; // FIXME: wrap around required???
 	      assert(second_hard_edge_index < num_vtx); 
 	      return (ring[hard_edge_index] - ring[second_hard_edge_index]) * 0.5f;
 	    }
@@ -579,7 +589,7 @@ namespace embree
       /*! mark first hard edge and store dummy vertex for face between the two hard edges */
       hard_edge_face = f;
       assert(e < 2*MAX_VALENCE);
-      ring[e++] = Vec3fa_t(nan);
+      ring[e++] = vtx; //Vec3fa_t(nan);
       crease_weight[f] = inf; 
       face_size[f++] = 2;
       
@@ -808,14 +818,14 @@ namespace embree
       dest1.valence = dest0.valence = 3;
       dest1.num_vtx = dest0.num_vtx = 6;
       dest0.hard_edge_index = 2;
-      dest1.hard_edge_index = 0;
+      dest1.hard_edge_index = 4;
       dest1.vtx  = dest0.vtx = (Vec3fa_t)p0.get_ring(0);
       dest1.vertex_crease_weight = dest0.vertex_crease_weight = 0.0f;
 
       dest1.get_ring( 4) = dest0.get_ring( 0) = (Vec3fa_t)p0.get_ring(p0.num_vtx-1);
       dest1.get_ring( 5) = dest0.get_ring( 1) = (Vec3fa_t)p1.get_ring(0);
       dest1.get_ring( 0) = dest0.get_ring( 2) = (Vec3fa_t)p1.vtx;
-      dest1.get_ring( 1) = dest1.get_ring( 3) = Vec3fa_t(nan); //(Vec3fa_t)p0.ring(p0.hard_edge_index+1); // dummy
+      dest1.get_ring( 1) = dest0.get_ring( 3) = (Vec3fa_t)p0.get_ring(p0.hard_edge_index+1); // dummy
       dest1.get_ring( 2) = dest0.get_ring( 4) = (Vec3fa_t)p0.vtx;
       dest1.get_ring( 3) = dest0.get_ring( 5) = (Vec3fa_t)p0.get_ring(p0.num_vtx-2);
 
@@ -992,7 +1002,7 @@ namespace embree
       dest1.get_ring( 4) = dest0.get_ring( 0) = (Vec3fa_t)p0.get_ring(p0.num_vtx-1);
       dest1.get_ring( 5) = dest0.get_ring( 1) = (Vec3fa_t)p1.get_ring(0);
       dest1.get_ring( 0) = dest0.get_ring( 2) = (Vec3fa_t)p1.vtx;
-      dest1.get_ring( 1) = dest1.get_ring( 3) = Vec3fa_t(nan); //(Vec3fa_t)p0.get_ring(p0.hard_edge_index+1); // dummy
+      dest1.get_ring( 1) = dest0.get_ring( 3) = (Vec3fa_t)p0.get_ring(p0.hard_edge_index+1); // dummy
       dest1.get_ring( 2) = dest0.get_ring( 4) = (Vec3fa_t)p0.vtx;
       dest1.get_ring( 3) = dest0.get_ring( 5) = (Vec3fa_t)p0.get_ring(p0.num_vtx-2);
 
