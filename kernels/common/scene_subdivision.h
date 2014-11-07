@@ -944,9 +944,9 @@ namespace embree
       dest.vtx     = (Vec3fa_t)center;
       dest.vertex_crease_weight = 0.0f;
       for (size_t i=0; i<2*N; i++) 
-	dest.get_ring(i) = (Vec3fa_t)center_ring[(2*N+offset-i-1)%(2*N)];
+	dest.ring[i] = (Vec3fa_t)center_ring[(2*N+offset+i-1)%(2*N)];
       for (size_t i=0; i<N; i++) 
-        dest.get_crease_weight(i) = 0.0f;
+        dest.crease_weight[i] = 0.0f;
     }
  
     __forceinline void subdivide(IrregularCatmullClarkPatch patch[SIZE], size_t& N_o) const
