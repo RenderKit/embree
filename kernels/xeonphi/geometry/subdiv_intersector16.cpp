@@ -304,93 +304,6 @@ namespace embree
 				 const Vec2f &t,
 				 const unsigned int subdiv_level)
   {
-
-#if 1
-    __aligned(64) BVH4i::NodeRef stack_node[32];
-    __aligned(64) float stack_dist[32];
-
-    SubdivCache::Tag &tag     = subdivCache.lookupEntry(geomID,primID,subdiv_level);
-    SubdivCache::Entry &entry = subdivCache.getEntry(tag);
-
-    //DBG_PRINT(tag);
-
-    if (unlikely(!tag.inCache(geomID,primID,subdiv_level)))
-      {
-	//DBG_PRINT("FILL");
-
-	fillSubdivCacheEntry(entry,s,t,patch,subdiv_level);	
-	tag = SubdivCache::Tag(geomID,primID,subdiv_level);
-
-	//DBG_PRINT(tag);
-
-	//DBG_PRINT(subdivCache);
-
-      }
-
-    const mic_f rdir_xyz      = rcp(dir_xyz);
-    const mic_f org_rdir_xyz  = rdir_xyz * org_xyz;
-    const mic_f min_dist_xyz  = ray16.tnear[rayIndex];
-    const mic_f max_dist_xyz  = ray16.tfar[rayIndex];
-
-    stack_node[0] = BVH4i::invalidNode;
-    stack_node[1] = entry.getRoot();
-
-    size_t sindex = 2;
-    const BVH4i::Node * __restrict__ const nodes = entry.bvh4i_node;
-
-    const unsigned int leaf_mask = BVH4I_LEAF_MASK;
-
-    while(1)
-      {
-	BVH4i::NodeRef curNode = stack_node[sindex-1];
-	sindex--;
-
-	traverse_single_intersect<false>(curNode,
-					 sindex,
-					 rdir_xyz,
-					 org_rdir_xyz,
-					 min_dist_xyz,
-					 max_dist_xyz,
-					 stack_node,
-					 stack_dist,
-					 nodes,
-					 leaf_mask);            		    
-
-	/* return if stack is empty */
-	if (unlikely(curNode == BVH4i::invalidNode)) break;
-
-	unsigned int leafIndex = curNode.offsetIndex();
-
-	const Vec4f &uv = entry.uv_interval[leafIndex];
-
-	//DBG_PRINT(uv);
-
-	const float u_min = uv[0];
-	const float u_max = uv[1];
-	const float v_min = uv[2];
-	const float v_max = uv[3];
-
-	Vec3fa vtx[4];
-	vtx[0] = patch.eval(u_min,v_min);
-	vtx[1] = patch.eval(u_max,v_min);
-	vtx[2] = patch.eval(u_max,v_max);
-	vtx[3] = patch.eval(u_min,v_max);
-
-	intersect1_quad(rayIndex,
-			dir_xyz,
-			org_xyz,
-			ray16,
-			vtx[0],
-			vtx[1],
-			vtx[2],
-			vtx[3],
-			geomID,
-			primID);      	
-      }
-
-
-#else
-
     if (subdiv_level == 0)
       {
 	Vec3fa vtx[4];
@@ -423,56 +336,8 @@ namespace embree
 	subdivide_intersect1_eval(rayIndex,dir_xyz,org_xyz,ray16,patch,geomID,primID,s_right,t_right,subdiv_level - 1);
 	subdivide_intersect1_eval(rayIndex,dir_xyz,org_xyz,ray16,patch,geomID,primID,s_left ,t_right,subdiv_level - 1);
       }
-#endif
   }
 
-
-  void subdivide_intersect1_eval(const size_t rayIndex, 
-				 const mic_f &dir_xyz,
-				 const mic_f &org_xyz,
-				 Ray16& ray16,
-				 const GregoryPatch &patch,
-				 const unsigned int geomID,
-				 const unsigned int primID,
-				 const Vec2f &s,
-				 const Vec2f &t,
-				 const unsigned int subdiv_level)
-  {
-    if (subdiv_level == 0)
-      {
-	Vec3fa vtx[4];
-
-	vtx[0] = patch.eval(s[0],t[0]);
-	vtx[1] = patch.eval(s[1],t[0]);
-	vtx[2] = patch.eval(s[1],t[1]);
-	vtx[3] = patch.eval(s[0],t[1]);
-	
-	
-	intersect1_quad(rayIndex,
-			dir_xyz,
-			org_xyz,
-			ray16,
-			vtx[0],
-			vtx[1],
-			vtx[2],
-			vtx[3],
-			geomID,
-			primID);      
-      }
-    else
-      {
-	const float mid_s = 0.5f * (s[0]+s[1]);
-	const float mid_t = 0.5f * (t[0]+t[1]);
-	Vec2f s_left(s[0],mid_s);
-	Vec2f s_right(mid_s,s[1]);
-	Vec2f t_left(t[0],mid_t);
-	Vec2f t_right(mid_t,t[1]);
-	subdivide_intersect1_eval(rayIndex,dir_xyz,org_xyz,ray16,patch,geomID,primID,s_left ,t_left,subdiv_level - 1);
-	subdivide_intersect1_eval(rayIndex,dir_xyz,org_xyz,ray16,patch,geomID,primID,s_right,t_left,subdiv_level - 1);
-	subdivide_intersect1_eval(rayIndex,dir_xyz,org_xyz,ray16,patch,geomID,primID,s_right,t_right,subdiv_level - 1);
-	subdivide_intersect1_eval(rayIndex,dir_xyz,org_xyz,ray16,patch,geomID,primID,s_left ,t_right,subdiv_level - 1);
-      }
-  }
 
  void subdivide_intersect1(const size_t rayIndex, 
 			   const mic_f &dir_xyz,
