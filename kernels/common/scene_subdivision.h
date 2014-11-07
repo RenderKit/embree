@@ -144,7 +144,8 @@ namespace embree
       if (hard_edge_index != -1)
         hard_edge_index = (num_vtx+num_vtx-(hard_edge_index+2))%num_vtx;
     }
-    
+
+#if 0    
     __forceinline void init(const SubdivMesh::HalfEdge* const h, const Vec3fa* const vertices) // FIXME: should get buffer as vertex array input!!!!
     {
       for (size_t i=0; i<MAX_VALENCE; i++) crease_weight[i] = nan; // FIXME: remove
@@ -227,8 +228,9 @@ namespace embree
         PRINT2(b0,b1);
       }
     }
+#endif
 
-    __forceinline void init2(const SubdivMesh::HalfEdge* const h, const Vec3fa* const vertices) // FIXME: should get buffer as vertex array input!!!!
+    __forceinline void init(const SubdivMesh::HalfEdge* const h, const Vec3fa* const vertices) // FIXME: should get buffer as vertex array input!!!!
     {
       for (size_t i=0; i<MAX_VALENCE; i++) crease_weight[i] = nan; // FIXME: remove
 
@@ -239,6 +241,8 @@ namespace embree
 
       size_t i=0;
       crease_weight[i/2] = p->edge_crease_weight;
+      if (!p->hasOpposite()) crease_weight[i/2] = inf;
+
       do 
       {
         /* store first two vertices of face */
@@ -259,15 +263,14 @@ namespace embree
           /*! mark first border edge and store dummy vertex for face between the two border edges */
           hard_edge_index = i;
           crease_weight[i/2] = inf; 
-          ring[i++] = (Vec3fa_t) vertices[ p->getEndVertexIndex() ];
+          ring[i++] = (Vec3fa_t) vertices[ p->getStartVertexIndex() ];
           ring[i++] = vtx; //Vec3fa(nan);
-          
+          crease_weight[i/2] = inf;
+  
           /*! goto other side of border */
           p = (SubdivMesh::HalfEdge*) h;
           while (p->hasOpposite()) 
             p = p->opposite()->next();
-
-          crease_weight[i/2] = inf;
         }
 
       } while (p != h); 
