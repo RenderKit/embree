@@ -727,10 +727,10 @@ namespace embree
       dest1.ring[4] = dest0.ring[2] = (Vec3fa_t)p0.vtx;
       dest1.ring[3] = dest0.ring[1] = (Vec3fa_t)p0.ring[2];
 
-      dest1.get_crease_weight(3) = dest0.get_crease_weight(0) = 0.0f;
-      dest1.get_crease_weight(0) = dest0.get_crease_weight(1) = p1.get_crease_weight(p1.valence-1);
-      dest1.get_crease_weight(1) = dest0.get_crease_weight(2) = 0.0f;
-      dest1.get_crease_weight(2) = dest0.get_crease_weight(3) = p0.get_crease_weight(0);
+      dest1.crease_weight[1] = dest0.crease_weight[0] = 0.0f;
+      dest1.crease_weight[0] = dest0.crease_weight[3] = p1.crease_weight[1];
+      dest1.crease_weight[3] = dest0.crease_weight[2] = 0.0f;
+      dest1.crease_weight[2] = dest0.crease_weight[1] = p0.crease_weight[0];
     }
 
 
@@ -753,9 +753,9 @@ namespace embree
       dest1.get_ring( 2) = dest0.get_ring( 4) = (Vec3fa_t)p0.vtx;
       dest1.get_ring( 3) = dest0.get_ring( 5) = (Vec3fa_t)p0.get_ring(p0.num_vtx-2);
 
-      dest1.get_crease_weight(2) = dest0.get_crease_weight(0) = 0.0f;
-      dest1.get_crease_weight(0) = dest0.get_crease_weight(1) = p1.get_crease_weight(p1.valence-1);
-      dest1.get_crease_weight(1) = dest0.get_crease_weight(2) = p0.get_crease_weight(0);
+      dest1.get_crease_weight(2) = dest0.crease_weight[0] = 0.0f;
+      dest1.crease_weight[0] = dest0.get_crease_weight(1) = p1.get_crease_weight(p1.valence-1);
+      dest1.get_crease_weight(1) = dest0.get_crease_weight(2) = p0.crease_weight[0];
     }
 
     static __forceinline void init_regular(const Vec3fa_t &center, const Vec3fa_t center_ring[8], const size_t offset, CatmullClark1Ring &dest)
@@ -904,10 +904,10 @@ namespace embree
       dest1.get_ring(4) = dest0.get_ring(6) = (Vec3fa_t)p0.vtx;
       dest1.get_ring(5) = dest0.get_ring(7) = (Vec3fa_t)p0.get_ring(p0.num_vtx-2);
 
-      dest1.get_crease_weight(3) = dest0.get_crease_weight(0) = 0.0f;
-      dest1.get_crease_weight(0) = dest0.get_crease_weight(1) = p1.get_crease_weight(p1.valence-1);
-      dest1.get_crease_weight(1) = dest0.get_crease_weight(2) = 0.0f;
-      dest1.get_crease_weight(2) = dest0.get_crease_weight(3) = p0.get_crease_weight(0);
+      dest1.crease_weight[1] = dest0.crease_weight[0] = 0.0f;
+      dest1.crease_weight[0] = dest0.crease_weight[3] = p1.crease_weight[1];
+      dest1.crease_weight[3] = dest0.crease_weight[2] = 0.0f;
+      dest1.crease_weight[2] = dest0.crease_weight[1] = p0.crease_weight[0];
     }
 
 
@@ -930,9 +930,9 @@ namespace embree
       dest1.get_ring( 2) = dest0.get_ring( 4) = (Vec3fa_t)p0.vtx;
       dest1.get_ring( 3) = dest0.get_ring( 5) = (Vec3fa_t)p0.get_ring(p0.num_vtx-2);
 
-      dest1.get_crease_weight(2) = dest0.get_crease_weight(0) = 0.0f;
-      dest1.get_crease_weight(0) = dest0.get_crease_weight(1) = p1.get_crease_weight(p1.valence-1);
-      dest1.get_crease_weight(1) = dest0.get_crease_weight(2) = p0.get_crease_weight(0);
+      dest1.get_crease_weight(2) = dest0.crease_weight[0] = 0.0f;
+      dest1.crease_weight[0] = dest0.get_crease_weight(1) = p1.get_crease_weight(p1.valence-1);
+      dest1.get_crease_weight(1) = dest0.get_crease_weight(2) = p0.crease_weight[0];
     }
 
     static __forceinline void init_regular(const Vec3fa_t &center, const Vec3fa_t center_ring[2*SIZE], const size_t N, const size_t offset, CatmullClark1Ring &dest)
