@@ -81,14 +81,25 @@ namespace embree
 
   struct __aligned(64) CatmullClark1Ring
   {
-    Vec3fa vtx;
+    friend class GeneralCatmullClark1Ring;
+  private:
     Vec3fa ring[2*MAX_VALENCE]; // two vertices per face
     float crease_weight[MAX_VALENCE]; // FIXME: move into 4th component of ring entries
+
+  public:
+    int hard_edge_index;
+    Vec3fa vtx;
     unsigned int valence;
     unsigned int num_vtx;
-    int hard_edge_index;
     float vertex_crease_weight;
 
+    __forceinline       Vec3fa& get_ring(int i)       { return ring[i]; }
+    __forceinline const Vec3fa& get_ring(int i) const { return ring[i]; }
+
+    __forceinline       float& get_crease_weight(int i)       { return crease_weight[i]; }
+    __forceinline const float& get_crease_weight(int i) const { return crease_weight[i]; }
+
+  public:
     CatmullClark1Ring() {}
 
     __forceinline const Vec3fa& front(size_t i) const {
@@ -748,22 +759,22 @@ namespace embree
       dest1.valence = dest0.valence = 4;
       dest1.num_vtx = dest0.num_vtx = 8;
       dest1.hard_edge_index = dest0.hard_edge_index = -1;
-      dest1.vtx = dest0.vtx = (Vec3fa_t)p0.ring[0];
+      dest1.vtx = dest0.vtx = (Vec3fa_t)p0.get_ring(0);
       dest1.vertex_crease_weight = dest0.vertex_crease_weight = 0.0f;
 
-      dest1.ring[6] = dest0.ring[0] = (Vec3fa_t)p0.ring[p0.num_vtx-1];
-      dest1.ring[7] = dest0.ring[1] = (Vec3fa_t)p1.ring[0];
-      dest1.ring[0] = dest0.ring[2] = (Vec3fa_t)p1.vtx;
-      dest1.ring[1] = dest0.ring[3] = (Vec3fa_t)p1.ring[p1.num_vtx-4];
-      dest1.ring[2] = dest0.ring[4] = (Vec3fa_t)p0.ring[1];
-      dest1.ring[3] = dest0.ring[5] = (Vec3fa_t)p0.ring[2];
-      dest1.ring[4] = dest0.ring[6] = (Vec3fa_t)p0.vtx;
-      dest1.ring[5] = dest0.ring[7] = (Vec3fa_t)p0.ring[p0.num_vtx-2];
+      dest1.get_ring(6) = dest0.get_ring(0) = (Vec3fa_t)p0.get_ring(p0.num_vtx-1);
+      dest1.get_ring(7) = dest0.get_ring(1) = (Vec3fa_t)p1.get_ring(0);
+      dest1.get_ring(0) = dest0.get_ring(2) = (Vec3fa_t)p1.vtx;
+      dest1.get_ring(1) = dest0.get_ring(3) = (Vec3fa_t)p1.get_ring(p1.num_vtx-4);
+      dest1.get_ring(2) = dest0.get_ring(4) = (Vec3fa_t)p0.get_ring(1);
+      dest1.get_ring(3) = dest0.get_ring(5) = (Vec3fa_t)p0.get_ring(2);
+      dest1.get_ring(4) = dest0.get_ring(6) = (Vec3fa_t)p0.vtx;
+      dest1.get_ring(5) = dest0.get_ring(7) = (Vec3fa_t)p0.get_ring(p0.num_vtx-2);
 
-      dest1.crease_weight[3] = dest0.crease_weight[0] = 0.0f;
-      dest1.crease_weight[0] = dest0.crease_weight[1] = p1.crease_weight[p1.valence-1];
-      dest1.crease_weight[1] = dest0.crease_weight[2] = 0.0f;
-      dest1.crease_weight[2] = dest0.crease_weight[3] = p0.crease_weight[0];
+      dest1.get_crease_weight(3) = dest0.get_crease_weight(0) = 0.0f;
+      dest1.get_crease_weight(0) = dest0.get_crease_weight(1) = p1.get_crease_weight(p1.valence-1);
+      dest1.get_crease_weight(1) = dest0.get_crease_weight(2) = 0.0f;
+      dest1.get_crease_weight(2) = dest0.get_crease_weight(3) = p0.get_crease_weight(0);
     }
 
 
@@ -776,19 +787,19 @@ namespace embree
       dest1.num_vtx = dest0.num_vtx = 6;
       dest0.hard_edge_index = 2;
       dest1.hard_edge_index = 0;
-      dest1.vtx  = dest0.vtx = (Vec3fa_t)p0.ring[0];
+      dest1.vtx  = dest0.vtx = (Vec3fa_t)p0.get_ring(0);
       dest1.vertex_crease_weight = dest0.vertex_crease_weight = 0.0f;
 
-      dest1.ring[ 4] = dest0.ring[ 0] = (Vec3fa_t)p0.ring[p0.num_vtx-1];
-      dest1.ring[ 5] = dest0.ring[ 1] = (Vec3fa_t)p1.ring[0];
-      dest1.ring[ 0] = dest0.ring[ 2] = (Vec3fa_t)p1.vtx;
-      dest1.ring[ 1] = dest1.ring[ 3] = Vec3fa_t(nan); //(Vec3fa_t)p0.ring[p0.hard_edge_index+1]; // dummy
-      dest1.ring[ 2] = dest0.ring[ 4] = (Vec3fa_t)p0.vtx;
-      dest1.ring[ 3] = dest0.ring[ 5] = (Vec3fa_t)p0.ring[p0.num_vtx-2];
+      dest1.get_ring( 4) = dest0.get_ring( 0) = (Vec3fa_t)p0.get_ring(p0.num_vtx-1);
+      dest1.get_ring( 5) = dest0.get_ring( 1) = (Vec3fa_t)p1.get_ring(0);
+      dest1.get_ring( 0) = dest0.get_ring( 2) = (Vec3fa_t)p1.vtx;
+      dest1.get_ring( 1) = dest1.get_ring( 3) = Vec3fa_t(nan); //(Vec3fa_t)p0.ring(p0.hard_edge_index+1); // dummy
+      dest1.get_ring( 2) = dest0.get_ring( 4) = (Vec3fa_t)p0.vtx;
+      dest1.get_ring( 3) = dest0.get_ring( 5) = (Vec3fa_t)p0.get_ring(p0.num_vtx-2);
 
-      dest1.crease_weight[2] = dest0.crease_weight[0] = 0.0f;
-      dest1.crease_weight[0] = dest0.crease_weight[1] = p1.crease_weight[p1.valence-1];
-      dest1.crease_weight[1] = dest0.crease_weight[2] = p0.crease_weight[0];
+      dest1.get_crease_weight(2) = dest0.get_crease_weight(0) = 0.0f;
+      dest1.get_crease_weight(0) = dest0.get_crease_weight(1) = p1.get_crease_weight(p1.valence-1);
+      dest1.get_crease_weight(1) = dest0.get_crease_weight(2) = p0.get_crease_weight(0);
     }
 
     static __forceinline void init_regular(const Vec3fa_t &center, const Vec3fa_t center_ring[8], const size_t offset, CatmullClark1Ring &dest)
@@ -799,9 +810,9 @@ namespace embree
       dest.vtx     = (Vec3fa_t)center;
       dest.vertex_crease_weight = 0.0f;
       for (size_t i=0; i<8; i++) 
-	dest.ring[i] = (Vec3fa_t)center_ring[(offset+i)%8];
+	dest.get_ring(i) = (Vec3fa_t)center_ring[(offset+i)%8];
       for (size_t i=0; i<8; i++) 
-        dest.crease_weight[i] = 0.0f;
+        dest.get_crease_weight(i) = 0.0f;
     }
  
 
@@ -856,13 +867,13 @@ namespace embree
       Vec3fa_t center_ring[8];
 
       // counter-clockwise
-      center_ring[0] = (Vec3fa_t)patch[3].ring[3].ring[0];
+      center_ring[0] = (Vec3fa_t)patch[3].ring[3].get_ring(0);
       center_ring[1] = (Vec3fa_t)patch[3].ring[3].vtx;
-      center_ring[2] = (Vec3fa_t)patch[2].ring[2].ring[0];
+      center_ring[2] = (Vec3fa_t)patch[2].ring[2].get_ring(0);
       center_ring[3] = (Vec3fa_t)patch[2].ring[2].vtx;
-      center_ring[4] = (Vec3fa_t)patch[1].ring[1].ring[0];
+      center_ring[4] = (Vec3fa_t)patch[1].ring[1].get_ring(0);
       center_ring[5] = (Vec3fa_t)patch[1].ring[1].vtx;
-      center_ring[6] = (Vec3fa_t)patch[0].ring[0].ring[0];
+      center_ring[6] = (Vec3fa_t)patch[0].ring[0].get_ring(0);
       center_ring[7] = (Vec3fa_t)patch[0].ring[0].vtx;
 
       init_regular(center,center_ring,0,patch[0].ring[2]);
@@ -925,22 +936,22 @@ namespace embree
       dest1.valence = dest0.valence = 4;
       dest1.num_vtx = dest0.num_vtx = 8;
       dest1.hard_edge_index = dest0.hard_edge_index = -1;
-      dest1.vtx = dest0.vtx = (Vec3fa_t)p0.ring[0];
+      dest1.vtx = dest0.vtx = (Vec3fa_t)p0.get_ring(0);
       dest1.vertex_crease_weight = dest0.vertex_crease_weight = 0.0f;
 
-      dest1.ring[6] = dest0.ring[0] = (Vec3fa_t)p0.ring[p0.num_vtx-1];
-      dest1.ring[7] = dest0.ring[1] = (Vec3fa_t)p1.ring[0];
-      dest1.ring[0] = dest0.ring[2] = (Vec3fa_t)p1.vtx;
-      dest1.ring[1] = dest0.ring[3] = (Vec3fa_t)p1.ring[p1.num_vtx-4];
-      dest1.ring[2] = dest0.ring[4] = (Vec3fa_t)p0.ring[1];
-      dest1.ring[3] = dest0.ring[5] = (Vec3fa_t)p0.ring[2];
-      dest1.ring[4] = dest0.ring[6] = (Vec3fa_t)p0.vtx;
-      dest1.ring[5] = dest0.ring[7] = (Vec3fa_t)p0.ring[p0.num_vtx-2];
+      dest1.get_ring(6) = dest0.get_ring(0) = (Vec3fa_t)p0.get_ring(p0.num_vtx-1);
+      dest1.get_ring(7) = dest0.get_ring(1) = (Vec3fa_t)p1.get_ring(0);
+      dest1.get_ring(0) = dest0.get_ring(2) = (Vec3fa_t)p1.vtx;
+      dest1.get_ring(1) = dest0.get_ring(3) = (Vec3fa_t)p1.get_ring(p1.num_vtx-4);
+      dest1.get_ring(2) = dest0.get_ring(4) = (Vec3fa_t)p0.get_ring(1);
+      dest1.get_ring(3) = dest0.get_ring(5) = (Vec3fa_t)p0.get_ring(2);
+      dest1.get_ring(4) = dest0.get_ring(6) = (Vec3fa_t)p0.vtx;
+      dest1.get_ring(5) = dest0.get_ring(7) = (Vec3fa_t)p0.get_ring(p0.num_vtx-2);
 
-      dest1.crease_weight[3] = dest0.crease_weight[0] = 0.0f;
-      dest1.crease_weight[0] = dest0.crease_weight[1] = p1.crease_weight[p1.valence-1];
-      dest1.crease_weight[1] = dest0.crease_weight[2] = 0.0f;
-      dest1.crease_weight[2] = dest0.crease_weight[3] = p0.crease_weight[0];
+      dest1.get_crease_weight(3) = dest0.get_crease_weight(0) = 0.0f;
+      dest1.get_crease_weight(0) = dest0.get_crease_weight(1) = p1.get_crease_weight(p1.valence-1);
+      dest1.get_crease_weight(1) = dest0.get_crease_weight(2) = 0.0f;
+      dest1.get_crease_weight(2) = dest0.get_crease_weight(3) = p0.get_crease_weight(0);
     }
 
 
@@ -953,19 +964,19 @@ namespace embree
       dest1.num_vtx = dest0.num_vtx = 6;
       dest0.hard_edge_index = 2;
       dest1.hard_edge_index = 0;
-      dest1.vtx  = dest0.vtx = (Vec3fa_t)p0.ring[0];
+      dest1.vtx  = dest0.vtx = (Vec3fa_t)p0.get_ring(0);
       dest1.vertex_crease_weight = dest0.vertex_crease_weight = 0.0f;
 
-      dest1.ring[ 4] = dest0.ring[ 0] = (Vec3fa_t)p0.ring[p0.num_vtx-1];
-      dest1.ring[ 5] = dest0.ring[ 1] = (Vec3fa_t)p1.ring[0];
-      dest1.ring[ 0] = dest0.ring[ 2] = (Vec3fa_t)p1.vtx;
-      dest1.ring[ 1] = dest1.ring[ 3] = Vec3fa_t(nan); //(Vec3fa_t)p0.ring[p0.hard_edge_index+1]; // dummy
-      dest1.ring[ 2] = dest0.ring[ 4] = (Vec3fa_t)p0.vtx;
-      dest1.ring[ 3] = dest0.ring[ 5] = (Vec3fa_t)p0.ring[p0.num_vtx-2];
+      dest1.get_ring( 4) = dest0.get_ring( 0) = (Vec3fa_t)p0.get_ring(p0.num_vtx-1);
+      dest1.get_ring( 5) = dest0.get_ring( 1) = (Vec3fa_t)p1.get_ring(0);
+      dest1.get_ring( 0) = dest0.get_ring( 2) = (Vec3fa_t)p1.vtx;
+      dest1.get_ring( 1) = dest1.get_ring( 3) = Vec3fa_t(nan); //(Vec3fa_t)p0.get_ring(p0.hard_edge_index+1); // dummy
+      dest1.get_ring( 2) = dest0.get_ring( 4) = (Vec3fa_t)p0.vtx;
+      dest1.get_ring( 3) = dest0.get_ring( 5) = (Vec3fa_t)p0.get_ring(p0.num_vtx-2);
 
-      dest1.crease_weight[2] = dest0.crease_weight[0] = 0.0f;
-      dest1.crease_weight[0] = dest0.crease_weight[1] = p1.crease_weight[p1.valence-1];
-      dest1.crease_weight[1] = dest0.crease_weight[2] = p0.crease_weight[0];
+      dest1.get_crease_weight(2) = dest0.get_crease_weight(0) = 0.0f;
+      dest1.get_crease_weight(0) = dest0.get_crease_weight(1) = p1.get_crease_weight(p1.valence-1);
+      dest1.get_crease_weight(1) = dest0.get_crease_weight(2) = p0.get_crease_weight(0);
     }
 
     static __forceinline void init_regular(const Vec3fa_t &center, const Vec3fa_t center_ring[2*SIZE], const size_t N, const size_t offset, CatmullClark1Ring &dest)
@@ -977,9 +988,9 @@ namespace embree
       dest.vtx     = (Vec3fa_t)center;
       dest.vertex_crease_weight = 0.0f;
       for (size_t i=0; i<2*N; i++) 
-	dest.ring[i] = (Vec3fa_t)center_ring[(2*N+offset-i-1)%(2*N)];
+	dest.get_ring(i) = (Vec3fa_t)center_ring[(2*N+offset-i-1)%(2*N)];
       for (size_t i=0; i<2*N; i++) 
-        dest.crease_weight[i] = 0.0f;
+        dest.get_crease_weight(i) = 0.0f;
     }
  
     __forceinline void subdivide(IrregularCatmullClarkPatch patch[SIZE], size_t& N_o) const
@@ -1007,7 +1018,7 @@ namespace embree
 
         center += ring[i].vtx;
         center_ring[2*i+0] = (Vec3fa_t)patch[i].ring[0].vtx;
-        center_ring[2*i+1] = (Vec3fa_t)patch[i].ring[0].ring[0];
+        center_ring[2*i+1] = (Vec3fa_t)patch[i].ring[0].get_ring(0);
       }
       center /= float(N);
 
@@ -1369,24 +1380,24 @@ namespace embree
       assert( irreg_patch.dicable() );
 
       v[1][1] = irreg_patch.ring[0].vtx;
-      v[0][1] = irreg_patch.ring[0].ring[2];
-      v[0][0] = irreg_patch.ring[0].ring[3];
-      v[1][0] = irreg_patch.ring[0].ring[4];
+      v[0][1] = irreg_patch.ring[0].get_ring(2);
+      v[0][0] = irreg_patch.ring[0].get_ring(3);
+      v[1][0] = irreg_patch.ring[0].get_ring(4);
 
       v[1][2] = irreg_patch.ring[1].vtx;
-      v[1][3] = irreg_patch.ring[1].ring[2];
-      v[0][3] = irreg_patch.ring[1].ring[3];
-      v[0][2] = irreg_patch.ring[1].ring[4];
+      v[1][3] = irreg_patch.ring[1].get_ring(2);
+      v[0][3] = irreg_patch.ring[1].get_ring(3);
+      v[0][2] = irreg_patch.ring[1].get_ring(4);
 
       v[2][2] = irreg_patch.ring[2].vtx;
-      v[3][2] = irreg_patch.ring[2].ring[2];
-      v[3][3] = irreg_patch.ring[2].ring[3];
-      v[2][3] = irreg_patch.ring[2].ring[4];
+      v[3][2] = irreg_patch.ring[2].get_ring(2);
+      v[3][3] = irreg_patch.ring[2].get_ring(3);
+      v[2][3] = irreg_patch.ring[2].get_ring(4);
 
       v[2][1] = irreg_patch.ring[3].vtx;
-      v[2][0] = irreg_patch.ring[3].ring[2];
-      v[3][0] = irreg_patch.ring[3].ring[3];      
-      v[3][1] = irreg_patch.ring[3].ring[4];
+      v[2][0] = irreg_patch.ring[3].get_ring(2);
+      v[3][0] = irreg_patch.ring[3].get_ring(3);      
+      v[3][1] = irreg_patch.ring[3].get_ring(4);
     }
 
     __forceinline void init(const SubdivMesh::HalfEdge *const first_half_edge,
