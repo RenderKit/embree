@@ -718,14 +718,14 @@ namespace embree
       dest1.vtx = dest0.vtx = (Vec3fa_t)p0.ring[0];
       dest1.vertex_crease_weight = dest0.vertex_crease_weight = 0.0f;
 
-      dest1.ring[2] = dest0.ring[0] = (Vec3fa_t)p0.get_ring(p0.num_vtx-1);
+      dest1.ring[2] = dest0.ring[0] = (Vec3fa_t)p0.ring[1];
       dest1.ring[1] = dest0.ring[7] = (Vec3fa_t)p1.ring[0];
       dest1.ring[0] = dest0.ring[6] = (Vec3fa_t)p1.vtx;
-      dest1.ring[7] = dest0.ring[5] = (Vec3fa_t)p1.get_ring(p1.num_vtx-4);
-      dest1.ring[6] = dest0.ring[4] = (Vec3fa_t)p0.get_ring(1);
-      dest1.ring[5] = dest0.ring[3] = (Vec3fa_t)p0.get_ring(2);
+      dest1.ring[7] = dest0.ring[5] = (Vec3fa_t)p1.ring[4];
+      dest1.ring[6] = dest0.ring[4] = (Vec3fa_t)p0.ring[p0.num_vtx-1];
+      dest1.ring[5] = dest0.ring[3] = (Vec3fa_t)p0.ring[p0.num_vtx-2];
       dest1.ring[4] = dest0.ring[2] = (Vec3fa_t)p0.vtx;
-      dest1.ring[3] = dest0.ring[1] = (Vec3fa_t)p0.get_ring(p0.num_vtx-2);
+      dest1.ring[3] = dest0.ring[1] = (Vec3fa_t)p0.ring[2];
 
       dest1.get_crease_weight(3) = dest0.get_crease_weight(0) = 0.0f;
       dest1.get_crease_weight(0) = dest0.get_crease_weight(1) = p1.get_crease_weight(p1.valence-1);
