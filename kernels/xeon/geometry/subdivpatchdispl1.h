@@ -94,12 +94,12 @@ namespace embree
       v(0,0) = ring0.front(2);
       v(0,1) = ring0.vtx;
       v(0,2) = ring0.back(1);
-      if (!ring0.has_front(2)) v(0,0) = 2*v(0,1) - v(0,2);
+      if (!ring0.has_first_patch()) v(0,0) = 2*v(0,1) - v(0,2);
 
       v(K,0) = ring1.back(3);
       v(K,1) = ring1.vtx;
       v(K,2) = ring1.front(0);
-      if (!ring1.has_back(2)) v(K,0) = 2*v(K,1) - v(K,2);
+      if (!ring1.has_prelast_patch()) v(K,0) = 2*v(K,1) - v(K,2);
     }
     
     friend __forceinline std::ostream &operator<<(std::ostream& out, const CatmullClark1Edge& edge)
@@ -332,6 +332,21 @@ namespace embree
       return std::pair<BBox3fa,BVH4::NodeRef>(bounds,BVH4::encodeNode2(node));
     }
 
+    const std::pair<BBox3fa,BVH4::NodeRef> build(FastAllocator& alloc, const GeneralIrregularCatmullClarkPatch& patch, int maxDepth)
+    {
+      size_t N;
+      IrregularCatmullClarkPatch patches[GeneralIrregularCatmullClarkPatch::SIZE]; 
+      patch.subdivide(patches,N);
+
+      BVH4::Node* node = (BVH4::Node*) alloc.malloc(sizeof(BVH4::Node),16);
+      std::pair<BBox3fa,BVH4::NodeRef> b00 = build(alloc,patches[0],0,0,1,maxDepth,false,false,false,false); node->set(0,b00.first,b00.second);
+      std::pair<BBox3fa,BVH4::NodeRef> b10 = build(alloc,patches[1],0,0,1,maxDepth,false,false,false,false); node->set(1,b10.first,b10.second);
+      std::pair<BBox3fa,BVH4::NodeRef> b11 = build(alloc,patches[2],0,0,1,maxDepth,false,false,false,false); node->set(2,b11.first,b11.second);
+      std::pair<BBox3fa,BVH4::NodeRef> b01 = build(alloc,patches[3],0,0,1,maxDepth,false,false,false,false); node->set(3,b01.first,b01.second);
+      const BBox3fa bounds = merge(b00.first,b10.first,b01.first,b11.first);
+      return std::pair<BBox3fa,BVH4::NodeRef>(bounds,BVH4::encodeNode2(node));
+    }
+
   public:
     
     /*! Construction from vertices and IDs. */
@@ -356,8 +371,13 @@ namespace embree
       }
 
       /* create patch and build sub-BVH */
+#if 0
       IrregularCatmullClarkPatch patch(h,vertices);
       const std::pair<BBox3fa,BVH4::NodeRef> root = build(alloc,patch,0,0,0,(int)levels-3,false,false,false,false);
+#else
+      GeneralIrregularCatmullClarkPatch patch(h,vertices);
+      const std::pair<BBox3fa,BVH4::NodeRef> root = build(alloc,patch,(int)levels-3);
+#endif
 
       /* link to sub-BVH */
       parent = root.second;

@@ -101,12 +101,12 @@ namespace embree
       return ring[num_vtx-1-i];
     }
 
-    __forceinline bool has_front(size_t i) const {
-      return (hard_edge_index == -1) || (hard_edge_index >= i);
+    __forceinline bool has_first_patch() const {
+      return hard_edge_index != 0;
     }
-    
-    __forceinline bool has_back(size_t i) const {
-      return (hard_edge_index == -1) || ((num_vtx-1-i) >= hard_edge_index+2);
+
+    __forceinline bool has_prelast_patch() const {
+      return (hard_edge_index == -1) || ((num_vtx-4) >= hard_edge_index+2);
     }
 
     __forceinline BBox3fa bounds() const
@@ -493,6 +493,14 @@ namespace embree
 
     GeneralCatmullClark1Ring() {}
 
+    __forceinline bool has_first_patch() const {
+      return hard_edge_face != 0;
+    }
+
+    __forceinline bool has_prelast_patch() const {
+      return (hard_edge_face == -1) || (valence-3 >= hard_edge_face);
+    }
+
     __forceinline void init(const SubdivMesh::HalfEdge* const h, const Vec3fa* const vertices) // FIXME: should get buffer as vertex array input!!!!
     {
       for (size_t i=0; i<MAX_VALENCE; i++) crease_weight[i] = nan; // FIXME: remove
@@ -502,26 +510,26 @@ namespace embree
       vertex_crease_weight = h->vertex_crease_weight;
       SubdivMesh::HalfEdge* p = (SubdivMesh::HalfEdge*) h;
 
-      size_t i=0, f=0;
+      size_t e=0, f=0;
       do {
         assert(f < MAX_VALENCE);
         crease_weight[f] = p->edge_crease_weight;
 
         size_t vn = 0;
-        assert(i < 2*MAX_VALENCE);
-	ring[i++] = (Vec3fa_t) vertices[ p->getEndVertexIndex() ];
+        assert(e < 2*MAX_VALENCE);
+	ring[e++] = (Vec3fa_t) vertices[ p->getEndVertexIndex() ];
         vn++;
         
 	if (unlikely(!p->hasOpposite())) { 
-          init_secondhalf(h,vertices,i,f);
+          init_secondhalf(h,vertices,e,f);
           return;
         }
 	p = p->opposite();
 
         SubdivMesh::HalfEdge* pnext2 = p->next()->next();
         for (SubdivMesh::HalfEdge* v = p->prev(); v!=pnext2; v=v->prev()) {
-          assert(i < 2*MAX_VALENCE);
-          ring[i++] = (Vec3fa_t) vertices[ p->getStartVertexIndex() ];
+          assert(e < 2*MAX_VALENCE);
+          ring[e++] = (Vec3fa_t) vertices[ v->getStartVertexIndex() ];
           vn++;
         }
         face_size[f++] = vn;
@@ -529,16 +537,18 @@ namespace embree
         
       } while (p != h);
 
-      num_vtx = i;
-      valence = i >> 1;
+      num_vtx = e;
+      valence = e >> 1;
     }
 
-    __forceinline void init_secondhalf(const SubdivMesh::HalfEdge* const h, const Vec3fa* const vertices, size_t i, size_t f)
+    __forceinline void init_secondhalf(const SubdivMesh::HalfEdge* const h, const Vec3fa* const vertices, size_t e, size_t f)
     {
       /*! mark first hard edge and store dummy vertex for face between the two hard edges */
       hard_edge_face = f;
+      assert(e < 2*MAX_VALENCE);
+      ring[e++] = Vec3fa_t(nan);
       crease_weight[f] = inf; 
-      face_size[f++] = 1;
+      face_size[f++] = 2;
       
       /*! first cycle clock-wise until we found the second edge */	  
       SubdivMesh::HalfEdge* p = (SubdivMesh::HalfEdge*) h;
@@ -555,8 +565,8 @@ namespace embree
       size_t vn = 0;
       SubdivMesh::HalfEdge* pnext2 = p->next()->next();
       for (SubdivMesh::HalfEdge* v = p; v!=pnext2; v=v->prev()) {
-        assert(i < 2*MAX_VALENCE);
-        ring[i++] = (Vec3fa_t) vertices[ p->getStartVertexIndex() ];
+        assert(e < 2*MAX_VALENCE);
+        ring[e++] = (Vec3fa_t) vertices[ v->getStartVertexIndex() ];
         vn++;
       }
       face_size[f++] = vn;
@@ -573,15 +583,15 @@ namespace embree
         size_t vn = 0;
         SubdivMesh::HalfEdge* pnext2 = p->next()->next();
         for (SubdivMesh::HalfEdge* v = p; v!=pnext2; v=v->prev()) {
-          assert(i < 2*MAX_VALENCE);
-          ring[i++] = (Vec3fa_t) vertices[ p->getStartVertexIndex() ];
+          assert(e < 2*MAX_VALENCE);
+          ring[e++] = (Vec3fa_t) vertices[ v->getStartVertexIndex() ];
           vn++;
         }
         face_size[f++] = vn;
         p = p->next();
       }
 
-      num_vtx = i;
+      num_vtx = e;
       valence = f;
     }
 
@@ -589,15 +599,15 @@ namespace embree
     {
       dest.valence         = valence;
       dest.num_vtx         = 2*valence;
-      dest.hard_edge_index = 2*hard_edge_face;
+      dest.hard_edge_index = hard_edge_face == -1 ? -1 : 2*hard_edge_face; // FIXME:
       dest.vertex_crease_weight   = max(0.0f,vertex_crease_weight-1.0f);
 
       /* calculate face points */
       Vec3fa_t S = Vec3fa_t(0.0f);
-      for (size_t i=0; i<valence; i++) {
+      for (size_t f=0, v=0; f<valence; v+=face_size[f++]) {
         Vec3fa_t F = vtx;
-        for (size_t j=0; j<=face_size[i]; j++) F += ring[(i+j)%num_vtx]; // FIXME: optimize
-        S += dest.ring[2*i+1] = F/float(face_size[i]+2);
+        for (size_t k=v; k<=v+face_size[f]; k++) F += ring[k%num_vtx]; // FIXME: optimize
+        S += dest.ring[2*f+1] = F/float(face_size[f]+2);
       }
       
       /* calculate new edge points */
@@ -607,7 +617,9 @@ namespace embree
       for (size_t i=0, j=0; i<valence; j+=face_size[i++])
       {
         const Vec3fa_t v = vtx + ring[j];
-        const Vec3fa_t f = dest.ring[(2*i-1)%dest.num_vtx] + dest.ring[2*i+1];
+        Vec3fa_t f = dest.ring[2*i+1];
+        if (i == 0) f += dest.ring[dest.num_vtx-1]; 
+        else        f += dest.ring[2*i-1];
         S += ring[j];
         dest.crease_weight[i] = max(crease_weight[i]-1.0f,0.0f);
         
@@ -675,11 +687,13 @@ namespace embree
 
     friend __forceinline std::ostream &operator<<(std::ostream &o, const GeneralCatmullClark1Ring &c)
     {
-      o << "vtx " << c.vtx << " size = " << c.num_vtx << ", hard_edge = " << c.hard_edge_face << ", ring: " << std::endl;
-      for (size_t i=0; i<c.num_vtx; i++) {
-        o << i << " -> " << c.ring[i];
-        if (i % 2 == 0) o << " crease = " << c.crease_weight[i/2];
-        o << std::endl;
+      o << "vtx " << c.vtx << " size = " << c.num_vtx << ", hard_edge_face = " << c.hard_edge_face << ", " << " valence = " << c.valence << ", ring: " << std::endl;
+      for (size_t v=0, f=0; f<c.valence; v+=c.face_size[f++]) {
+        for (size_t i=v; i<v+c.face_size[f]; i++) {
+          o << i << " -> " << c.ring[i];
+          if (i == v) o << " crease = " << c.crease_weight[f];
+          o << std::endl;
+        }
       }
       return o;
     } 
@@ -701,18 +715,15 @@ namespace embree
       }
     }
 
-    __forceinline Vec3fa getLimitVertex(const size_t index) const
-    {
+    __forceinline Vec3fa getLimitVertex(const size_t index) const {
       return ring[index].getLimitVertex();
     }
 
-    __forceinline Vec3fa getLimitTangent(const size_t index) const
-    {
+    __forceinline Vec3fa getLimitTangent(const size_t index) const {
       return ring[index].getLimitTangent();
     }
 
-    __forceinline Vec3fa getSecondLimitTangent(const size_t index) const
-    {
+    __forceinline Vec3fa getSecondLimitTangent(const size_t index) const {
       return ring[index].getSecondLimitTangent();
     }
 
@@ -771,7 +782,7 @@ namespace embree
       dest1.ring[ 4] = dest0.ring[ 0] = (Vec3fa_t)p0.ring[p0.num_vtx-1];
       dest1.ring[ 5] = dest0.ring[ 1] = (Vec3fa_t)p1.ring[0];
       dest1.ring[ 0] = dest0.ring[ 2] = (Vec3fa_t)p1.vtx;
-      dest1.ring[ 1] = dest1.ring[ 3] = (Vec3fa_t)p0.ring[p0.hard_edge_index+1]; // dummy
+      dest1.ring[ 1] = dest1.ring[ 3] = Vec3fa_t(nan); //(Vec3fa_t)p0.ring[p0.hard_edge_index+1]; // dummy
       dest1.ring[ 2] = dest0.ring[ 4] = (Vec3fa_t)p0.vtx;
       dest1.ring[ 3] = dest0.ring[ 5] = (Vec3fa_t)p0.ring[p0.num_vtx-2];
 
@@ -879,6 +890,179 @@ namespace embree
       return o;
     }
   };
+
+
+
+  class __aligned(64) GeneralIrregularCatmullClarkPatch
+  {
+  public:
+    enum { SIZE = 10 };
+    GeneralCatmullClark1Ring ring[SIZE];
+    float level[SIZE];
+    size_t N;
+
+    __forceinline GeneralIrregularCatmullClarkPatch () 
+      : N(0) {}
+
+    __forceinline GeneralIrregularCatmullClarkPatch (const SubdivMesh::HalfEdge* h, const Vec3fa* vertices) 
+    {
+      size_t i = 0;
+      const SubdivMesh::HalfEdge* edge = h; 
+      do {
+        ring[i].init(edge,vertices);
+        level[i] = edge->edge_level;
+        edge = edge->next();
+        i++;
+      } while ((edge != h) && (i < SIZE));
+      N = i;
+    }
+
+    static __forceinline void init_regular(const CatmullClark1Ring& p0,
+					   const CatmullClark1Ring& p1,
+					   CatmullClark1Ring& dest0,
+					   CatmullClark1Ring& dest1) 
+    {
+      dest1.valence = dest0.valence = 4;
+      dest1.num_vtx = dest0.num_vtx = 8;
+      dest1.hard_edge_index = dest0.hard_edge_index = -1;
+      dest1.vtx = dest0.vtx = (Vec3fa_t)p0.ring[0];
+      dest1.vertex_crease_weight = dest0.vertex_crease_weight = 0.0f;
+
+      dest1.ring[6] = dest0.ring[0] = (Vec3fa_t)p0.ring[p0.num_vtx-1];
+      dest1.ring[7] = dest0.ring[1] = (Vec3fa_t)p1.ring[0];
+      dest1.ring[0] = dest0.ring[2] = (Vec3fa_t)p1.vtx;
+      dest1.ring[1] = dest0.ring[3] = (Vec3fa_t)p1.ring[p1.num_vtx-4];
+      dest1.ring[2] = dest0.ring[4] = (Vec3fa_t)p0.ring[1];
+      dest1.ring[3] = dest0.ring[5] = (Vec3fa_t)p0.ring[2];
+      dest1.ring[4] = dest0.ring[6] = (Vec3fa_t)p0.vtx;
+      dest1.ring[5] = dest0.ring[7] = (Vec3fa_t)p0.ring[p0.num_vtx-2];
+
+      dest1.crease_weight[3] = dest0.crease_weight[0] = 0.0f;
+      dest1.crease_weight[0] = dest0.crease_weight[1] = p1.crease_weight[p1.valence-1];
+      dest1.crease_weight[1] = dest0.crease_weight[2] = 0.0f;
+      dest1.crease_weight[2] = dest0.crease_weight[3] = p0.crease_weight[0];
+    }
+
+
+    static __forceinline void init_border(const CatmullClark1Ring &p0,
+                                          const CatmullClark1Ring &p1,
+                                          CatmullClark1Ring &dest0,
+                                          CatmullClark1Ring &dest1) 
+    {
+      dest1.valence = dest0.valence = 3;
+      dest1.num_vtx = dest0.num_vtx = 6;
+      dest0.hard_edge_index = 2;
+      dest1.hard_edge_index = 0;
+      dest1.vtx  = dest0.vtx = (Vec3fa_t)p0.ring[0];
+      dest1.vertex_crease_weight = dest0.vertex_crease_weight = 0.0f;
+
+      dest1.ring[ 4] = dest0.ring[ 0] = (Vec3fa_t)p0.ring[p0.num_vtx-1];
+      dest1.ring[ 5] = dest0.ring[ 1] = (Vec3fa_t)p1.ring[0];
+      dest1.ring[ 0] = dest0.ring[ 2] = (Vec3fa_t)p1.vtx;
+      dest1.ring[ 1] = dest1.ring[ 3] = Vec3fa_t(nan); //(Vec3fa_t)p0.ring[p0.hard_edge_index+1]; // dummy
+      dest1.ring[ 2] = dest0.ring[ 4] = (Vec3fa_t)p0.vtx;
+      dest1.ring[ 3] = dest0.ring[ 5] = (Vec3fa_t)p0.ring[p0.num_vtx-2];
+
+      dest1.crease_weight[2] = dest0.crease_weight[0] = 0.0f;
+      dest1.crease_weight[0] = dest0.crease_weight[1] = p1.crease_weight[p1.valence-1];
+      dest1.crease_weight[1] = dest0.crease_weight[2] = p0.crease_weight[0];
+    }
+
+    static __forceinline void init_regular(const Vec3fa_t &center, const Vec3fa_t center_ring[8], const size_t offset, CatmullClark1Ring &dest)
+    {
+      dest.valence = 4;
+      dest.num_vtx = 8;
+      dest.hard_edge_index = -1;
+      dest.vtx     = (Vec3fa_t)center;
+      dest.vertex_crease_weight = 0.0f;
+      for (size_t i=0; i<8; i++) 
+	dest.ring[i] = (Vec3fa_t)center_ring[(offset+i)%8];
+      for (size_t i=0; i<8; i++) 
+        dest.crease_weight[i] = 0.0f;
+    }
+ 
+
+    __forceinline void subdivide(IrregularCatmullClarkPatch patch[SIZE], size_t& N) const
+    {
+      N = 4;
+      ring[0].update(patch[0].ring[0]);
+      ring[1].update(patch[1].ring[1]);
+      ring[2].update(patch[2].ring[2]);
+      ring[3].update(patch[3].ring[3]);
+
+      patch[0].level[0] = 0.5f*level[0];
+      patch[0].level[1] = 0.25f*(level[1]+level[3]);
+      patch[0].level[2] = 0.25f*(level[0]+level[2]);
+      patch[0].level[3] = 0.5f*level[3];
+
+      patch[1].level[0] = 0.5f*level[0];
+      patch[1].level[1] = 0.5f*level[1];
+      patch[1].level[2] = 0.25f*(level[0]+level[2]);
+      patch[1].level[3] = 0.25f*(level[1]+level[3]);
+
+      patch[2].level[0] = 0.25f*(level[0]+level[2]);
+      patch[2].level[1] = 0.5f*level[1];
+      patch[2].level[2] = 0.5f*level[2];
+      patch[2].level[3] = 0.25f*(level[1]+level[3]);
+
+      patch[3].level[0] = 0.25f*(level[0]+level[2]);
+      patch[3].level[1] = 0.25f*(level[1]+level[3]);
+      patch[3].level[2] = 0.5f*level[2];
+      patch[3].level[3] = 0.5f*level[3];
+      
+      if (likely(ring[0].has_first_patch()))
+        init_regular(patch[0].ring[0],patch[1].ring[1],patch[0].ring[1],patch[1].ring[0]);
+      else
+        init_border(patch[0].ring[0],patch[1].ring[1],patch[0].ring[1],patch[1].ring[0]);
+
+      if (likely(ring[1].has_first_patch()))
+        init_regular(patch[1].ring[1],patch[2].ring[2],patch[1].ring[2],patch[2].ring[1]);
+      else
+        init_border(patch[1].ring[1],patch[2].ring[2],patch[1].ring[2],patch[2].ring[1]);
+
+      if (likely(ring[2].has_first_patch()))
+        init_regular(patch[2].ring[2],patch[3].ring[3],patch[2].ring[3],patch[3].ring[2]);
+      else
+        init_border(patch[2].ring[2],patch[3].ring[3],patch[2].ring[3],patch[3].ring[2]);
+
+      if (likely(ring[3].has_first_patch()))
+        init_regular(patch[3].ring[3],patch[0].ring[0],patch[3].ring[0],patch[0].ring[3]);
+      else
+        init_border(patch[3].ring[3],patch[0].ring[0],patch[3].ring[0],patch[0].ring[3]);
+
+      Vec3fa_t center = (ring[0].vtx + ring[1].vtx + ring[2].vtx + ring[3].vtx) * 0.25f;
+      Vec3fa_t center_ring[8];
+
+      // counter-clockwise
+      center_ring[0] = (Vec3fa_t)patch[3].ring[3].ring[0];
+      center_ring[1] = (Vec3fa_t)patch[3].ring[3].vtx;
+      center_ring[2] = (Vec3fa_t)patch[2].ring[2].ring[0];
+      center_ring[3] = (Vec3fa_t)patch[2].ring[2].vtx;
+      center_ring[4] = (Vec3fa_t)patch[1].ring[1].ring[0];
+      center_ring[5] = (Vec3fa_t)patch[1].ring[1].vtx;
+      center_ring[6] = (Vec3fa_t)patch[0].ring[0].ring[0];
+      center_ring[7] = (Vec3fa_t)patch[0].ring[0].vtx;
+
+      init_regular(center,center_ring,0,patch[0].ring[2]);
+      init_regular(center,center_ring,2,patch[3].ring[1]);
+      init_regular(center,center_ring,4,patch[2].ring[0]);
+      init_regular(center,center_ring,6,patch[1].ring[3]);
+    }
+
+    friend __forceinline std::ostream &operator<<(std::ostream &o, const GeneralIrregularCatmullClarkPatch &p)
+    {
+      o << "GeneralIrregularCatmullClarkPatch { " << std::endl;
+      for (size_t i=0; i<p.N; i++)
+	o << "level" << i << ": " << p.level[i] << std::endl;
+      for (size_t i=0; i<p.N; i++)
+	o << "ring" << i << ": " << p.ring[i] << std::endl;
+      o << "}" << std::endl;
+      return o;
+    }
+  };
+
+
+
 
   class CubicBSplineCurve
   {
@@ -1168,16 +1352,16 @@ namespace embree
       v[3][1] = in.ring[3].back(3);
       v[2][1] = in.ring[3].vtx;
 
-      if (in.ring[0].hard_edge_index == 0)
+      if (in.ring[0].has_first_patch())
         for (size_t i=0; i<4; i++) v[0][i] = 2*v[1][i] - v[2][i];
 
-      if (in.ring[1].hard_edge_index == 0)
+      if (in.ring[1].has_first_patch())
         for (size_t i=0; i<4; i++) v[i][3] = 2*v[i][2] - v[i][1];
 
-      if (in.ring[2].hard_edge_index == 0)
+      if (in.ring[2].has_first_patch())
         for (size_t i=0; i<4; i++) v[3][i] = 2*v[2][i] - v[1][i];
 
-      if (in.ring[3].hard_edge_index == 0)
+      if (in.ring[3].has_first_patch())
         for (size_t i=0; i<4; i++) v[i][0] = 2*v[i][1] - v[i][2];
     }
 
