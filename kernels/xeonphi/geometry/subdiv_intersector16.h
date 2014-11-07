@@ -167,14 +167,7 @@ namespace embree
   }
 
 
-  
-
-  bool subdivide_intersect1(const size_t rayIndex, 
-			    const mic_f &dir_xyz,
-			    const mic_f &org_xyz,
-			    Ray16& ray16,
-			    const SubdivPatch1& subdiv_patch);
-
+ 
 
   static __forceinline bool occluded1(const size_t rayIndex, 
 				      const mic_f &dir_xyz,
@@ -186,35 +179,5 @@ namespace embree
     return false;
   };
 
-  /* template< bool ENABLE_INTERSECTION_FILTER> */
-  /*   struct SubdivPatchIntersector1 */
-  /*   { */
-  /*     typedef SubdivPatch1 Primitive; */
-
-  /*     // ================================================================== */
-  /*     // ================================================================== */
-  /*     // ================================================================== */
-
-
-  /*     static __forceinline bool intersect1(const mic_f &dir_xyz, */
-  /* 					   const mic_f &org_xyz, */
-  /* 					   Ray& ray,  */
-  /* 					   const SubdivPatch1& patch) */
-  /*     { */
-  /* 	STAT3(normal.trav_prims,1,1,1); */
-
-  /* 	return true; */
-  /*     } */
-
-  /*     static __forceinline bool occluded1(const mic_f &dir_xyz, */
-  /* 					  const mic_f &org_xyz, */
-  /* 					  Ray& ray,  */
-  /* 					  const SubdivPatch1& patch)  */
-  /*     { */
-  /* 	STAT3(shadow.trav_prims,1,1,1); */
-  /* 	return true; */
-  /*     } */
-
-  /*   }; */
 }
 

@@ -198,15 +198,15 @@ namespace embree
     __aligned(64) float u_start[16] = { 0,0,0,0,1,1,1,1,1,1,1,1,0,0,0,0 };
     __aligned(64) float v_start[16] = { 0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1 };
 
-    bool intersect1Eval(const SubdivPatch1 &subdiv_patch,
-			const float u_start,
-			const float u_end,
-			const float v_start,
-			const float v_end,
-			const size_t rayIndex, 
-			const mic_f &dir_xyz,
-			const mic_f &org_xyz,
-			Ray16& ray16)
+    __forceinline bool intersect1Eval(const SubdivPatch1 &subdiv_patch,
+				      const float u_start,
+				      const float u_end,
+				      const float v_start,
+				      const float v_end,
+				      const size_t rayIndex, 
+				      const mic_f &dir_xyz,
+				      const mic_f &org_xyz,
+				      Ray16& ray16)
     {
       const RegularCatmullClarkPatch &regular_patch = subdiv_patch.patch;
       regular_patch.prefetchData();
@@ -251,6 +251,44 @@ namespace embree
 			     subdiv_patch.geomID,
 			     subdiv_patch.primID);
     }
+
+    bool intersectEvalGrid1(const size_t rayIndex, 
+			    const mic_f &dir_xyz,
+			    const mic_f &org_xyz,
+			    Ray16& ray16,
+			    const SubdivPatch1& subdiv_patch)
+    {
+      assert( subdiv_patch.level[0] == subdiv_patch.level[1] );
+      assert( subdiv_patch.level[1] == subdiv_patch.level[2] );
+      assert( subdiv_patch.level[2] == subdiv_patch.level[3] );
+
+#if 0
+      const float u_res = ceilf(max( subdiv_patch.level[0], subdiv_patch.level[2] ));
+      const float v_res = ceilf(max( subdiv_patch.level[1], subdiv_patch.level[3] ));
+#else
+      const float u_res = 4.0f;
+      const float v_res = 4.0f;
+      
+#endif
+
+      const float u_step = (1.0f / u_res) * 1.00001f;
+      const float v_step = (1.0f / v_res) * 1.00001f;
+      
+      bool hit = false;
+      for (float v=0.0f;v<1.0f;v+=v_step)
+	for (float u=0.0f;u<1.0f;u+=u_step)
+	  {
+	    const float u0 = u;
+	    const float u1 = min(u + u_step,1.0f);
+	    const float v0 = v;
+	    const float v1 = min(v + v_step,1.0f);
+
+	    hit |= intersect1Eval(subdiv_patch,u0,u1,v0,v1,rayIndex,dir_xyz,org_xyz,ray16);
+	  }
+      return hit;
+    }
+
+    
 
   template<bool ENABLE_INTERSECTION_FILTER>
     struct SubdivLeafIntersector
@@ -368,11 +406,11 @@ namespace embree
 
 	      //////////////////////////////////////////////////////////////////////////////////////////////////
 
-#if 1
+	      const unsigned int subdiv_level = 2; // g_subdivision_level; cannot use g_subdivision_level with a working "free" for sub-trees
 	      const unsigned int patchIndex = curNode.offsetIndex();
 	      SubdivPatch1& subdiv_patch = ((SubdivPatch1*)accel)[patchIndex];
 
-	      const unsigned int subdiv_level = 2; // g_subdivision_level; cannot use g_subdivision_level with a working "free" for sub-trees
+#if 0
 
 	      if (unlikely(subdiv_patch.bvh4i_subtree_root == BVH4i::invalidNode))
 		{
@@ -445,18 +483,11 @@ namespace embree
 		compactStack(stack_node,stack_dist,sindex,mic_f(ray16.tfar[rayIndex]));
 
 #else
-	      unsigned int items = curNode.items();
-	      assert(items == 1);
-	      unsigned int index = curNode.offsetIndex();
-	      const SubdivPatch1 *__restrict__ const patch_ptr = (SubdivPatch1*)accel + index;
-	
-	      bool hit = false;
-	      for (size_t i=0;i<items;i++)
-	       	hit |= subdivide_intersect1(rayIndex,
-					    dir_xyz,
-					    org_xyz,
-					    ray16,
-					    patch_ptr[i]);
+	      const bool hit = intersectEvalGrid1(rayIndex,
+						  dir_xyz,
+						  org_xyz,
+						  ray16,
+						  subdiv_patch);
 
 	      if (hit)
 		compactStack(stack_node,stack_dist,sindex,mic_f(ray16.tfar[rayIndex]));
