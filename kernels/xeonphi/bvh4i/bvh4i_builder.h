@@ -251,8 +251,10 @@ namespace embree
   /*! derived binned-SAH builder supporting subdivision surface meshes */  
   class BVH4iBuilderSubdivMesh : public BVH4iBuilder
   {
+  protected:
+    void *org_accel;
   public:
-    BVH4iBuilderSubdivMesh (BVH4i* bvh, void* geometry) : BVH4iBuilder(bvh,geometry) {}
+    BVH4iBuilderSubdivMesh (BVH4i* bvh, void* geometry) : BVH4iBuilder(bvh,geometry),org_accel(NULL) {}
 
     virtual void build            (const size_t threadIndex, const size_t threadCount);
     virtual void allocateData     (const size_t threadCount, const size_t totalNumPrimitives);

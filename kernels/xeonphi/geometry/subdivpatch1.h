@@ -31,9 +31,7 @@ namespace embree
   public:
     enum {
       REGULAR_PATCH = 1,
-      HAS_BORDERS   = 2,
-      HAS_CREASES   = 4,
-      GREGORY_PATCH = 8
+      GREGORY_PATCH = 2
     };
 
     /*! Default constructor. */
@@ -45,8 +43,6 @@ namespace embree
       : geomID(geomID),
       primID(primID),
       subdivision_level(subdivision_level),
-      bvh4i_parent_ref(0),
-      bvh4i_parent_local_index(0),
       under_construction(0),
       bvh4i_subtree_root((unsigned int)-1)
     {
@@ -157,8 +153,6 @@ namespace embree
       return b;
     }
    
-    //const SubdivMesh::HalfEdge * first_half_edge; //!< pointer to first half edge of corresponding quad in the subdivision mesh
-    //const Vec3fa *vertices;                       //!< pointer to the vertex positions in the subdivison mesh
     Vec2f u_range;
     Vec2f v_range;
     unsigned int flags;
@@ -167,8 +161,7 @@ namespace embree
     unsigned int primID;                          //!< primitive ID of this subdivision patch
 
     unsigned int bvh4i_subtree_root;
-    unsigned int bvh4i_parent_ref;
-    unsigned int bvh4i_parent_local_index;
+    unsigned int dummy[2];
     volatile unsigned int under_construction; // 0 = not build yet, 1 = under construction, 2 = built
     __aligned(64) RegularCatmullClarkPatch patch;
     Vec3fa f_m[2][2];    

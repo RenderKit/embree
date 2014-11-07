@@ -916,11 +916,22 @@ PRINT(CORRECT_numPrims);
 	const size_t numPrims = numPrimitives+4;
 	const size_t minAllocNodes = (threadCount+1) * ALLOCATOR_NODE_BLOCK_SIZE; 
 	const size_t numNodes = (size_t)((numPrims+3)/4) + minAllocNodes;
+
+	DBG_PRINT( numNodes * sizeof(BVH4i::Node) );
+	DBG_PRINT(sizeof(BBox3fa) * numPrimitives + sizeof(BVH4i::Node) * 128);
+
+	if (numNodes * sizeof(BVH4i::Node) < (sizeof(BBox3fa) * numPrimitives + sizeof(BVH4i::Node) * 128))
+	  FATAL("node memory to small for temporary bounds storage");
+
 	const size_t additionalLazyNodes = 4*4*numPrims; // two levels of subdivision
-	DBG_PRINT(additionalLazyNodes);
 	allocateMemoryPools(numPrims,numNodes + additionalLazyNodes,sizeof(BVH4i::Node),sizeof(SubdivPatch1));
+
+	DBG_PRINT(additionalLazyNodes);
 	DBG_PRINT( sizeof(SubdivPatch1) );
 	DBG_PRINT( numAllocated64BytesBlocks );
+
+	org_accel = accel;
+	accel = (Triangle1*)((char*)node + sizeof(BVH4i::Node) * 128);
       }
   }
 
@@ -947,7 +958,7 @@ PRINT(CORRECT_numPrims);
 
   void BVH4iBuilderSubdivMesh::createAccel(const size_t threadIndex, const size_t threadCount)
   {
-    scene->lockstep_scheduler.dispatchTask( task_createSubdivMeshAccel, this, threadIndex, threadCount );
+    //scene->lockstep_scheduler.dispatchTask( task_createSubdivMeshAccel, this, threadIndex, threadCount );
   }
 
   void BVH4iBuilderSubdivMesh::computePrimRefsSubdivMesh(const size_t threadID, const size_t numThreads) 
@@ -983,6 +994,8 @@ PRINT(CORRECT_numPrims);
     unsigned int currentID = startID;
     unsigned int offset = startID - numSkipped;
 
+    SubdivPatch1 *acc = (SubdivPatch1*)org_accel;
+
     for (; g<numTotalGroups; g++) 
       {
 	if (unlikely(scene->get(g) == NULL)) continue;
@@ -993,8 +1006,17 @@ PRINT(CORRECT_numPrims);
 
         size_t N = subdiv_mesh->size();
         for (unsigned int i=offset; i<N && currentID < endID; i++, currentID++)	 
-	  { 			    
-	    const BBox3fa bounds = subdiv_mesh->bounds(i);
+	  { 		
+
+	    acc[currentID] = SubdivPatch1(&subdiv_mesh->getHalfEdgeForQuad( i ),
+					  subdiv_mesh->getVertexPositionPtr(),
+					  g,
+					  i,
+					  0);
+	    	    
+	    //const BBox3fa bounds = subdiv_mesh->bounds(i);
+
+	    const BBox3fa bounds = acc[currentID].bounds();
 
 	    const mic_f bmin = broadcast4to16f(&bounds.lower); 
 	    const mic_f bmax = broadcast4to16f(&bounds.upper);
@@ -1007,8 +1029,8 @@ PRINT(CORRECT_numPrims);
 
 	    store4f(&prims[currentID].lower,bmin);
 	    store4f(&prims[currentID].upper,bmax);	
-	    prims[currentID].lower.a = g;
-	    prims[currentID].upper.a = i;
+	    prims[currentID].lower.a = currentID;
+	    prims[currentID].upper.a = 0;
 	  }
         if (currentID == endID) break;
         offset = 0;
@@ -1030,6 +1052,7 @@ PRINT(CORRECT_numPrims);
 
   void BVH4iBuilderSubdivMesh::createSubdivMeshAccel(const size_t threadID, const size_t numThreads)
   {
+    PING;
     const size_t startID = (threadID+0)*numPrimitives/numThreads;
     const size_t endID   = (threadID+1)*numPrimitives/numThreads;
 
@@ -1062,10 +1085,12 @@ PRINT(CORRECT_numPrims);
 
 	bvh->used64BytesBlocks = atomicID;
 	bvh->numAllocated64BytesBlocks = numAllocated64BytesBlocks;
+	bvh->accel = org_accel;
+	accel = (Triangle1*)org_accel;
+	DBG_PRINT(bvh->used64BytesBlocks);
+	DBG_PRINT(bvh->numAllocated64BytesBlocks);
+	DBG_PRINT(bvh->root);
       }
-    DBG_PRINT(bvh->used64BytesBlocks);
-    DBG_PRINT(bvh->numAllocated64BytesBlocks);
-    DBG_PRINT(bvh->root);
   }
 
   void BVH4iBuilderSubdivMesh::initializeParentPointers(const BVH4i::NodeRef &ref,
@@ -1088,17 +1113,18 @@ PRINT(CORRECT_numPrims);
 	unsigned int index = ref.offsetIndex();
 	assert(index < numPrimitives);
 
-	SubdivPatch1 *__restrict__ const patch_ptr = (SubdivPatch1*)accel + index;
+	SubdivPatch1 *__restrict__ const patch_ptr = (SubdivPatch1*)org_accel;
 
+	PING;
 	for (size_t i=0;i<items;i++)
 	  {
-	    n->setBounds( i, patch_ptr[i].bounds() );
+	    const unsigned int patchIndex = prims[index+i].lower.a;
+	    DBG_PRINT(patchIndex);
+ 	    n->setBounds( i, patch_ptr[patchIndex].bounds() );
 	    //n->setBounds( i, patch_ptr[i].evalQuadBounds() );
 
-	    assert( patch_ptr[i].under_construction == 0);
-	    patch_ptr[i].bvh4i_parent_ref         = newNodeRef;
-	    patch_ptr[i].bvh4i_parent_local_index = i;	
-	    createBVH4iLeaf( n->child(i), index + i, 1);	    
+	    assert( patch_ptr[patchIndex].under_construction == 0);
+	    createBVH4iLeaf( n->child(i), patchIndex, 1);	    
 	  }
 
 	BVH4i::Node* p = (BVH4i::Node*)parent.node((BVH4i::Node*)node);
