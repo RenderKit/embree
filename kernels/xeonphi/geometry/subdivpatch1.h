@@ -138,7 +138,7 @@ namespace embree
 	  vtx[3] = patch.eval(s0,t1);
 
 	}
-      else if (likely(isGregoryPatch()))
+      else 
 	{
 	  __aligned(64) GregoryPatch gpatch(patch.v, f_m );
 	  vtx[0] = gpatch.eval(s0,t0);
@@ -146,8 +146,6 @@ namespace embree
 	  vtx[2] = gpatch.eval(s1,t1);
 	  vtx[3] = gpatch.eval(s0,t1);
 	}
-      else
-	FATAL("not implemented");
 
       BBox3fa b( empty );
       b.extend( vtx[0] );
