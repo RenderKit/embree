@@ -278,7 +278,7 @@ namespace embree
       };
 #else
       const float edge_levels[4] = {
-	2,4,4,4
+	1,1,1,1
       };
 
 #endif
@@ -288,7 +288,7 @@ namespace embree
 
       gridUVTessellator(edge_levels,grid_u_res,grid_v_res,u_array,v_array);
 
-#if 1
+#if 0
       DBG_PRINT("UV grid");
       DBG_PRINT( edge_levels[0] );
       DBG_PRINT( edge_levels[1] );
@@ -304,6 +304,7 @@ namespace embree
 	    std::cout << "(" << v_array[grid_v_res*y+x] << "," << u_array[grid_v_res*y+x] << ") ";
 	  std::cout << std::endl;
 	}
+      //exit(0);
 #endif
      
       bool hit = false;

@@ -1845,41 +1845,38 @@ namespace embree
       return o;
     } 
 
- __forceinline void stichEdges(const unsigned int low_rate,
-			       const unsigned int high_rate,
+ __forceinline void stichEdges(const unsigned int low_rate_segments,
+			       const unsigned int high_rate_segments,
 			       float * __restrict__ const uv_array,
 			       const unsigned int uv_array_step)
  {
-   const float low_rate_step = 1.0f / (float)low_rate;
-   const unsigned int dy = 2*low_rate;   
-   const unsigned int dx = 2*high_rate;
+   const float low_rate_step = 1.0f / (float)low_rate_segments;
+   const unsigned int dy = 2*low_rate_segments;   
+   const unsigned int dx = 2*high_rate_segments;
  
-   unsigned int x = 1; // just updates the inner values for [1;high-rate-1]
-   unsigned int y = 0;
+   unsigned int x = 1; 
    float low_rate_value = 0.0f;
 
    int error = dx-dy; // 1-step
    if(error < 0)
      {
-       y++;
        error += dx;
        low_rate_value += low_rate_step;
      }
-  unsigned int offset = uv_array_step;
+   unsigned int offset = uv_array_step;
 
-  for(; x<high_rate-1; x++)
-    {
-      std::cout << "x " << x << " y " << y << " value " << low_rate_value << std::endl;
-      uv_array[offset] = low_rate_value;
-      offset += uv_array_step;      
-      error -= dy;
-      if(error < 0)
-	{
-	  y++;
-	  error += dx;
-	  low_rate_value += low_rate_step;
-	}
-    }
+   for(; x<high_rate_segments; x++) // look at the starting point of the 'x' segment
+     {
+       //std::cout << "x " << x << " value " << low_rate_value << std::endl;
+       uv_array[offset] = low_rate_value;
+       offset += uv_array_step;      
+       error -= dy;
+       if(error < 0)
+	 {
+	   error += dx;
+	   low_rate_value += low_rate_step;
+	 }
+     }
  }
 
  __forceinline void gridUVTessellator(const float edge_levels[4],
@@ -1920,7 +1917,7 @@ namespace embree
      v_array[num_points-1-x] = 1.0f;
        
 
-#if 1
+#if 0
       DBG_PRINT("UV grid");
       DBG_PRINT( edge_levels[0] );
       DBG_PRINT( edge_levels[1] );
@@ -1939,12 +1936,11 @@ namespace embree
 #endif
 
    /* fixing different tessellation levels */
-   const unsigned int int_points_on_edge0 = (unsigned int)edge_levels[0] + 1;
+   const unsigned int int_level_edge0 = (unsigned int)edge_levels[0];
 
-   if (unlikely(int_points_on_edge0 < grid_u_res))
-     stichEdges(int_points_on_edge0,grid_u_res,u_array,1);
+   if (unlikely(int_level_edge0 < grid_u_res-1))
+     stichEdges(int_level_edge0,grid_u_res-1,u_array,1);
 
-   exit(0);
 #if 0
    if (unlikely(int_edge_level2 < grid_u_res))
      stichEdges(int_edge_level2,grid_u_res,&u_array[(grid_v_res-1)*grid_u_res],1);
