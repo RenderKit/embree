@@ -154,7 +154,7 @@ namespace embree
           hard_edge_index = i;
           crease_weight[i/2] = inf; 
           ring[i++] = (Vec3fa_t) vertices[ p->getStartVertexIndex() ];
-          ring[i++] = vtx; //Vec3fa(nan);
+          ring[i++] = vtx; // dummy vertex
           crease_weight[i/2] = inf;
   
           /*! goto other side of border */
@@ -433,24 +433,7 @@ namespace embree
 
     GeneralCatmullClark1Ring() {}
 
-    void flip() 
-    {
-      Vec3fa ring_o[2*MAX_VALENCE]; // two vertices per face
-      int face_size_o[MAX_VALENCE];       // number of vertices-2 of nth face in ring
-      float crease_weight_o[MAX_VALENCE]; // FIXME: move into 4th component of ring entries
-      for (size_t i=0; i<valence; i++) face_size_o[i] = face_size[i];
-      for (size_t i=0; i<valence; i++) crease_weight_o[i] = crease_weight[i];
-      for (size_t i=0; i<num_vtx; i++) ring_o[i] = ring[i];
-
-      for (size_t i=0; i<valence; i++) face_size[i] = face_size_o[valence-1-i];
-      for (size_t i=1; i<valence; i++) crease_weight[i] = crease_weight_o[valence-i];
-      for (size_t i=1; i<num_vtx; i++) ring[i] = ring_o[num_vtx-i];
-      if (hard_edge_face != -1)
-        hard_edge_face = valence-1-hard_edge_face;
-    }
-
     __forceinline bool has_last_face() const {
-      //return hard_edge_face != 0;
       return hard_edge_face != valence-1;
     }
 
@@ -468,92 +451,49 @@ namespace embree
       SubdivMesh::HalfEdge* p = (SubdivMesh::HalfEdge*) h;
 
       size_t e=0, f=0;
-      do {
-        assert(f < MAX_VALENCE);
-        crease_weight[f] = p->edge_crease_weight;
-
-        size_t vn = 0;
-        assert(e < 2*MAX_VALENCE);
-	ring[e++] = (Vec3fa_t) vertices[ p->getEndVertexIndex() ];
-        vn++;
-        
-	if (unlikely(!p->hasOpposite())) { 
-          init_secondhalf(h,vertices,e,f);
-          return;
-        }
-	p = p->opposite();
-
-        SubdivMesh::HalfEdge* pnext2 = p->next()->next();
-        for (SubdivMesh::HalfEdge* v = p->prev(); v!=pnext2; v=v->prev()) {
-          assert(e < 2*MAX_VALENCE);
-          ring[e++] = (Vec3fa_t) vertices[ v->getStartVertexIndex() ];
-          vn++;
-        }
-        face_size[f++] = vn;
-        p = p->next();
-        
-      } while (p != h);
-
-      num_vtx = e;
-      valence = e >> 1;
-
-      flip();
-    }
-
-    __forceinline void init_secondhalf(const SubdivMesh::HalfEdge* const h, const Vec3fa* const vertices, size_t e, size_t f)
-    {
-      /*! mark first hard edge and store dummy vertex for face between the two hard edges */
-      hard_edge_face = f;
-      assert(e < 2*MAX_VALENCE);
-      ring[e++] = vtx; //Vec3fa_t(nan);
-      crease_weight[f] = inf; 
-      face_size[f++] = 2;
+      crease_weight[f] = p->edge_crease_weight;
+      if (!p->hasOpposite()) crease_weight[f] = inf;
       
-      /*! first cycle clock-wise until we found the second edge */	  
-      SubdivMesh::HalfEdge* p = (SubdivMesh::HalfEdge*) h;
-      p = p->prev();	  
-      while(p->hasOpposite()) {
-        p = p->opposite();
-        p = p->prev();	      
-      }
-      
-      /*! store second hard edge and diagonal vertex */
-      assert(f < MAX_VALENCE);
-      crease_weight[f] = inf;
-      
-      size_t vn = 0;
-      SubdivMesh::HalfEdge* pnext2 = p->next()->next();
-      for (SubdivMesh::HalfEdge* v = p; v!=pnext2; v=v->prev()) {
-        assert(e < 2*MAX_VALENCE);
-        ring[e++] = (Vec3fa_t) vertices[ v->getStartVertexIndex() ];
-        vn++;
-      }
-      face_size[f++] = vn;
-      p = p->next();
-      
-      /*! continue counter-clockwise */	  
-      while (p != h) 
+      do 
       {
-	p = p->opposite();
-
-        assert(f < MAX_VALENCE);
-        crease_weight[f] = p->edge_crease_weight;
-
-        size_t vn = 0;
-        SubdivMesh::HalfEdge* pnext2 = p->next()->next();
-        for (SubdivMesh::HalfEdge* v = p; v!=pnext2; v=v->prev()) {
+	/* store first N-2 vertices of face */
+	size_t vn = 0;
+	SubdivMesh::HalfEdge* p_prev = p->prev();
+        for (SubdivMesh::HalfEdge* v = p->next(); v!=p_prev; v=v->next()) {
           assert(e < 2*MAX_VALENCE);
           ring[e++] = (Vec3fa_t) vertices[ v->getStartVertexIndex() ];
-          vn++;
+	  vn++;
+	  
         }
-        face_size[f++] = vn;
-        p = p->next();
-      }
+	face_size[f] = vn;
+	p = p_prev;
+	crease_weight[++f] = p->edge_crease_weight;
+
+        /* continue with next face */
+        if (likely(p->hasOpposite())) 
+          p = p->opposite();
+        
+        /* if there is no opposite go the long way to the other side of the border */
+        else
+        {
+          /*! mark first border edge and store dummy vertex for face between the two border edges */
+          hard_edge_face = f;
+	  face_size[f] = 2;
+          crease_weight[f] = inf; 
+          ring[e++] = (Vec3fa_t) vertices[ p->getStartVertexIndex() ];
+          ring[e++] = vtx; // dummy vertex
+          crease_weight[++f] = inf;
+  
+          /*! goto other side of border */
+          p = (SubdivMesh::HalfEdge*) h;
+          while (p->hasOpposite()) 
+            p = p->opposite()->next();
+        }
+
+      } while (p != h); 
 
       num_vtx = e;
       valence = f;
-
-      flip();
     }
 
     __forceinline void update(CatmullClark1Ring& dest) const
@@ -674,6 +614,7 @@ namespace embree
         ring[i].init(first_half_edge+i,vertices);
         level[i] = first_half_edge[i].edge_level;
       }
+      
     }
 
     __forceinline Vec3fa getLimitVertex(const size_t index) const {
@@ -870,7 +811,7 @@ namespace embree
       size_t i = 0;
       const SubdivMesh::HalfEdge* edge = h; 
       do {
-        ring[i].init(edge,vertices);
+	ring[i].init(edge,vertices);
         level[i] = edge->edge_level;
         edge = edge->next();
         i++;
