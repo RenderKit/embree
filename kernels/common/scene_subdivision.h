@@ -348,16 +348,19 @@ namespace embree
       Vec3fa_t beta ( 0.0f );
 
       const float n = (float)valence;
+      //const float delta = 1.0f / sqrtf(4.0f + cos(M_PI/n)*cos(M_PI/n));
+      //const float c0 = 2.0f/n * delta;
+      //const float c1 = 1.0f/n * (1.0f - delta*cosf(M_PI/n));
       const float c0 = 1.0f/n * 1.0f / sqrtf(4.0f + cos(M_PI/n)*cos(M_PI/n));  
       const float c1 = (1.0f/n + cosf(M_PI/n) * c0); // FIXME: plus or minus
       for (size_t i=0; i<valence; i++)
 	{
 	  const float a = c1 * cosf(2.0f*M_PI*i/n);
-	  const float b = c0 * cosf((2.0f*M_PI*i+M_PI)/n);
+	  const float b = c0 * cosf((2.0f*M_PI*i+M_PI)/n); // FIXME: factor of 2 missing?
 	  alpha +=  a * ring[2*i];
           beta  +=  b * ring[2*i+1];
 	}
-      return alpha +  beta;      // FIXME: scaling inconsistent with border case
+      return alpha +  beta;
     }
 
     /* gets limit tangent in the direction of egde vtx -> ring[num_vtx-2] */
@@ -380,6 +383,9 @@ namespace embree
       Vec3fa_t alpha( 0.0f );
       Vec3fa_t beta ( 0.0f );
       const float n = (float)valence;
+      //const float delta = 1.0f / sqrtf(4.0f + cos(M_PI/n)*cos(M_PI/n));
+      //const float c0 = 2.0f/n * delta;
+      //const float c1 = 1.0f/n * (1.0f - delta*cosf(M_PI/n));
       const float c0 = 1.0f/n * 1.0f / sqrtf(4.0f + cos(M_PI/n)*cos(M_PI/n));  
       const float c1 = (1.0f/n + cosf(M_PI/n) * c0);
       for (size_t i=0; i<valence; i++)
