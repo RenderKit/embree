@@ -112,13 +112,11 @@ namespace embree
       return get_ring(num_vtx-1-i);
     }
 
-    __forceinline bool has_first_patch() const {
-      //return hard_edge_index != 0;
+    __forceinline bool has_last_face() const {
       return hard_edge_index != num_vtx-2;
     }
 
-    __forceinline bool has_prelast_patch() const {
-      //return (hard_edge_index == -1) || ((num_vtx-4) >= hard_edge_index+2);
+    __forceinline bool has_second_face() const {
       return (hard_edge_index == -1) || (hard_edge_index >= 4);
     }
 
@@ -337,7 +335,7 @@ namespace embree
       if (unlikely(hard_edge_index != -1))
 	{
 	  //if (hard_edge_index != 0 && valence != 2) {
-          if (has_first_patch() && valence != 2) {
+          if (has_last_face() && valence != 2) {
 	    return ring[0] - vtx;
           }
 	  else
@@ -371,7 +369,7 @@ namespace embree
       if (unlikely(hard_edge_index != -1))
 	{
 	  //if (hard_edge_index == 0 && valence != 2) {
-	  if (!has_first_patch() && valence != 2) {
+	  if (!has_last_face() && valence != 2) {
 	    return get_ring(num_vtx-2) - vtx;
           }
 	  else
@@ -455,12 +453,12 @@ namespace embree
         hard_edge_face = valence-1-hard_edge_face;
     }
 
-    __forceinline bool has_first_patch() const {
+    __forceinline bool has_last_face() const {
       //return hard_edge_face != 0;
       return hard_edge_face != valence-1;
     }
 
-    __forceinline bool has_prelast_patch() const {
+    __forceinline bool has_second_face() const {
       return (hard_edge_face == -1) || (hard_edge_face >= 2);
     }
 
@@ -799,22 +797,22 @@ namespace embree
       patch[3].level[2] = 0.5f*level[2];
       patch[3].level[3] = 0.5f*level[3];
       
-      if (likely(ring[0].has_first_patch()))
+      if (likely(ring[0].has_last_face()))
         init_regular(patch[0].ring[0],patch[1].ring[1],patch[0].ring[1],patch[1].ring[0]);
       else
         init_border(patch[0].ring[0],patch[1].ring[1],patch[0].ring[1],patch[1].ring[0]);
 
-      if (likely(ring[1].has_first_patch()))
+      if (likely(ring[1].has_last_face()))
         init_regular(patch[1].ring[1],patch[2].ring[2],patch[1].ring[2],patch[2].ring[1]);
       else
         init_border(patch[1].ring[1],patch[2].ring[2],patch[1].ring[2],patch[2].ring[1]);
 
-      if (likely(ring[2].has_first_patch()))
+      if (likely(ring[2].has_last_face()))
         init_regular(patch[2].ring[2],patch[3].ring[3],patch[2].ring[3],patch[3].ring[2]);
       else
         init_border(patch[2].ring[2],patch[3].ring[3],patch[2].ring[3],patch[3].ring[2]);
 
-      if (likely(ring[3].has_first_patch()))
+      if (likely(ring[3].has_last_face()))
         init_regular(patch[3].ring[3],patch[0].ring[0],patch[3].ring[0],patch[0].ring[3]);
       else
         init_border(patch[3].ring[3],patch[0].ring[0],patch[3].ring[0],patch[0].ring[3]);
@@ -967,7 +965,7 @@ namespace embree
       {
         size_t ip1 = (i+1)%N; // FIXME: %
         size_t im1 = (i+N-1)%N; // FIXME: %
-        if (likely(ring[i].has_first_patch())) init_regular(patch[i].ring[0],patch[ip1].ring[0],patch[i].ring[1],patch[ip1].ring[3]); 
+        if (likely(ring[i].has_last_face())) init_regular(patch[i].ring[0],patch[ip1].ring[0],patch[i].ring[1],patch[ip1].ring[3]); 
         else                                   init_border (patch[i].ring[0],patch[ip1].ring[0],patch[i].ring[1],patch[ip1].ring[3]);
 
         patch[i].level[1] = patch[ip1].level[2] = 0.25f*(level[im1]+level[ip1]);
@@ -1286,16 +1284,16 @@ namespace embree
       v[3][1] = in.ring[3].back(3);
       v[2][1] = in.ring[3].vtx;
 
-      if (in.ring[0].has_first_patch())
+      if (in.ring[0].has_last_face())
         for (size_t i=0; i<4; i++) v[0][i] = 2*v[1][i] - v[2][i];
 
-      if (in.ring[1].has_first_patch())
+      if (in.ring[1].has_last_face())
         for (size_t i=0; i<4; i++) v[i][3] = 2*v[i][2] - v[i][1];
 
-      if (in.ring[2].has_first_patch())
+      if (in.ring[2].has_last_face())
         for (size_t i=0; i<4; i++) v[3][i] = 2*v[2][i] - v[1][i];
 
-      if (in.ring[3].has_first_patch())
+      if (in.ring[3].has_last_face())
         for (size_t i=0; i<4; i++) v[i][0] = 2*v[i][1] - v[i][2];
     }
 
@@ -1553,7 +1551,7 @@ namespace embree
 
       Vec3fa c_i, e_i_p_1;
       //if (unlikely(hard_edge_index == 0))
-      if (unlikely(!irreg_patch.ring[index].has_first_patch()))
+      if (unlikely(!irreg_patch.ring[index].has_last_face()))
 	{
 	  /* mirror quad center and edge mid-point */
 	  c_i     = c_i_m_1 + 2 * (e_i - c_i_m_1);
@@ -1567,7 +1565,7 @@ namespace embree
 
       Vec3fa c_i_m_2, e_i_m_2;
       //if (unlikely(hard_edge_index+2 == num_vtx-2) || valence == 2)
-      if (unlikely(!irreg_patch.ring[index].has_prelast_patch() || valence == 2))
+      if (unlikely(!irreg_patch.ring[index].has_second_face() || valence == 2))
 	{
 	  /* mirror quad center and edge mid-point */
 	  c_i_m_2  = c_i_m_1 + 2 * (e_i_m_1 - c_i_m_1);

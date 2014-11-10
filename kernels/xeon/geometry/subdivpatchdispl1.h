@@ -94,12 +94,12 @@ namespace embree
       v(0,0) = ring0.front(2);
       v(0,1) = ring0.vtx;
       v(0,2) = ring0.back(1);
-      if (!ring0.has_first_patch()) v(0,0) = 2*v(0,1) - v(0,2);
+      if (!ring0.has_last_face()) v(0,0) = 2*v(0,1) - v(0,2);
 
       v(K,0) = ring1.back(3);
       v(K,1) = ring1.vtx;
       v(K,2) = ring1.front(0);
-      if (!ring1.has_prelast_patch()) v(K,0) = 2*v(K,1) - v(K,2);
+      if (!ring1.has_second_face()) v(K,0) = 2*v(K,1) - v(K,2);
     }
     
     friend __forceinline std::ostream &operator<<(std::ostream& out, const CatmullClark1Edge& edge)
