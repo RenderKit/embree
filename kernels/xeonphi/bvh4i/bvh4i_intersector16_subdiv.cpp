@@ -262,6 +262,65 @@ namespace embree
       assert( subdiv_patch.level[1] == subdiv_patch.level[2] );
       assert( subdiv_patch.level[2] == subdiv_patch.level[3] );
 
+#if 1
+
+      #define MAX_GRID_SIZE 4*4
+
+      __aligned(64) float u_array[MAX_GRID_SIZE];
+      __aligned(64) float v_array[MAX_GRID_SIZE];
+
+#if 0
+      const float edge_levels[4] = {
+	ceilf(subdiv_patch.level[0]),
+	ceilf(subdiv_patch.level[1]),
+	ceilf(subdiv_patch.level[2]),
+	ceilf(subdiv_patch.level[3]),
+      };
+#else
+      const float edge_levels[4] = {
+	2,2,2,2
+      };
+
+#endif
+
+      const unsigned int grid_u_res = max(edge_levels[0],edge_levels[2])+1; // n segments -> n+1 points
+      const unsigned int grid_v_res = max(edge_levels[1],edge_levels[3])+1;
+
+      gridUVTessellator(edge_levels,grid_u_res,grid_v_res,u_array,v_array);
+
+#if 0
+      DBG_PRINT("UV grid");
+      DBG_PRINT( edge_levels[0] );
+      DBG_PRINT( edge_levels[1] );
+      DBG_PRINT( edge_levels[2] );
+      DBG_PRINT( edge_levels[3] );
+
+      DBG_PRINT( grid_u_res );
+      DBG_PRINT( grid_v_res );
+
+      for (unsigned int y=0;y<grid_v_res;y++)
+	{
+	  for (unsigned int x=0;x<grid_u_res;x++)
+	    std::cout << "(" << v_array[grid_v_res*y+x] << "," << u_array[grid_v_res*y+x] << ") ";
+	  std::cout << std::endl;
+	}
+#endif
+     
+      bool hit = false;
+      for (unsigned int y=0;y<grid_v_res-1;y++)
+	for (unsigned int x=0;x<grid_u_res-1;x++)
+	  {
+	    const float u0 = u_array[grid_v_res*y+x+0];
+	    const float u1 = u_array[grid_v_res*y+x+1];
+
+	    const float v0 = v_array[grid_v_res*(y+0)+x];
+	    const float v1 = v_array[grid_v_res*(y+1)+x];
+
+	    hit |= intersect1Eval(subdiv_patch,u0,u1,v0,v1,rayIndex,dir_xyz,org_xyz,ray16);	    
+	  }
+
+
+#else
 #if 0
       const float u_res = ceilf(max( subdiv_patch.level[0], subdiv_patch.level[2] ));
       const float v_res = ceilf(max( subdiv_patch.level[1], subdiv_patch.level[3] ));
@@ -285,6 +344,8 @@ namespace embree
 
 	    hit |= intersect1Eval(subdiv_patch,u0,u1,v0,v1,rayIndex,dir_xyz,org_xyz,ray16);
 	  }
+#endif
+
       return hit;
     }
 

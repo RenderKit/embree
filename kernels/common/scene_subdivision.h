@@ -1845,6 +1845,93 @@ namespace embree
       return o;
     } 
 
+ __forceinline void stichEdges(const unsigned int n,
+			       const unsigned int m,
+			       float * __restrict__ const uv_array,
+			       const unsigned int uv_step)
+ {
+   int q = m-n;
+   float current = uv_array[0];
+   for (unsigned int m_index=0,n_index=0;m_index<m;)
+     {
+       if (q >= 0)
+	 {
+	   q -= 2*n;
+	   m_index++;
+	 }
+       else /* q < 0 */
+	 {
+	   q += 2*m;
+	   while( q < 0 )
+	     {
+	       q += 2*m;
+	       uv_array[n_index] = current;
+	       n_index++;
+	     }
+	   current = uv_array[n_index];
+	   q -= 2*n;
+	   m_index++;
+	 }
+     }
+ }
+ __forceinline void gridUVTessellator(const float edge_levels[4],
+				      const unsigned int grid_u_res,
+				      const unsigned int grid_v_res,
+				      float * __restrict__ const u_array,
+				      float * __restrict__ const v_array)
+ {
+   assert( grid_u_res >= 1);
+   assert( grid_v_res >= 1);
+   assert( edge_levels[0] >= 1.0f );
+   assert( edge_levels[1] >= 1.0f );
+   assert( edge_levels[2] >= 1.0f );
+   assert( edge_levels[3] >= 1.0f );
+
+
+   const float u_step = (1.0f / (grid_u_res-1));
+   const float v_step = (1.0f / (grid_v_res-1));
+
+   /* initialize grid */
+   unsigned int index = 0;
+   float v = 0.0f;
+   for (unsigned int y=0;y<grid_v_res;y++,v+=v_step)
+     {
+       float u = 0.0f;
+       for (unsigned int x=0;x<grid_u_res;x++,index++,u+=u_step)
+	 {
+	   u_array[index] = u;
+	   v_array[index] = v;
+	 }
+     }
+   const unsigned int num_points = index;
+
+   /* set right and buttom border to exactly 1.0f */
+   for (unsigned int y=0,i=grid_u_res-1;y<grid_v_res;y++,i+=grid_u_res)
+     u_array[i] = 1.0f;
+   for (unsigned int x=0;x<grid_u_res;x++)
+     v_array[num_points-1-x] = 1.0f;
+       
+   /* fixing different tessellation levels */
+   const unsigned int int_edge_level0 = (unsigned int)edge_levels[0] + 1;
+   const unsigned int int_edge_level1 = (unsigned int)edge_levels[1] + 1;
+   const unsigned int int_edge_level2 = (unsigned int)edge_levels[2] + 1;
+   const unsigned int int_edge_level3 = (unsigned int)edge_levels[3] + 1;
+
+   if (unlikely(int_edge_level0 < grid_u_res))
+     stichEdges(int_edge_level0,grid_u_res,u_array,1);
+
+   if (unlikely(int_edge_level2 < grid_u_res))
+     stichEdges(int_edge_level2,grid_u_res,&u_array[(grid_v_res-1)*grid_u_res],1);
+
+   if (unlikely(int_edge_level1 < grid_v_res))
+     stichEdges(int_edge_level1,grid_v_res,&v_array[grid_u_res-1],grid_u_res);
+
+   if (unlikely(int_edge_level3 < grid_v_res))
+     stichEdges(int_edge_level3,grid_v_res,v_array,grid_u_res);
+
+ }
+
+
 
 };
 
