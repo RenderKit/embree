@@ -327,13 +327,12 @@ namespace embree
       if (unlikely(hard_edge_index != -1))
 	{
 	  //if (hard_edge_index != 0 && valence != 2) { 
-          if (has_last_face() && valence != 2) { // FIXME: probably wrong
+          if (hard_edge_index != num_vtx-2 && valence != 2) { // FIXME: why valence!=2?
 	    return ring[0] - vtx; 
           }
 	  else
 	    {
               const unsigned int second_hard_edge_index = hard_edge_index+2 >= num_vtx ? 0 : hard_edge_index+2;
-	      assert(second_hard_edge_index < num_vtx);
 	      return (ring[second_hard_edge_index] - ring[hard_edge_index]) * 0.5f;
 	    }
 	}
@@ -364,7 +363,7 @@ namespace embree
       if (unlikely(hard_edge_index != -1))
 	{
 	  //if (hard_edge_index == 0 && valence != 2) {
-	  if (!has_last_face() && valence != 2) {
+	  if (hard_edge_index == num_vtx-2 && valence != 2) {
 	    return ring[2] - vtx;
           }
 	  else
@@ -1444,7 +1443,7 @@ namespace embree
     {
       const unsigned int valence         = irreg_patch.ring[index].valence;
       const unsigned int num_vtx         = irreg_patch.ring[index].num_vtx;
-      //const unsigned int hard_edge_index = irreg_patch.ring[index].hard_edge_index;
+      const unsigned int hard_edge_index = irreg_patch.ring[index].hard_edge_index;
 
       const Vec3fa &vtx     = irreg_patch.ring[index].vtx;
       const Vec3fa e_i      = irreg_patch.ring[index].getEdgeCenter( 0 );
@@ -1453,7 +1452,8 @@ namespace embree
 
       Vec3fa c_i, e_i_p_1;
       //if (unlikely(hard_edge_index == 0))
-      if (unlikely(!irreg_patch.ring[index].has_last_face()))
+      //if (unlikely(!irreg_patch.ring[index].has_last_face()))
+      if (unlikely(hard_edge_index == num_vtx-2)) // FIXME: why not || valence == 2
 	{
 	  /* mirror quad center and edge mid-point */
 	  c_i     = c_i_m_1 + 2 * (e_i - c_i_m_1);
@@ -1467,7 +1467,8 @@ namespace embree
 
       Vec3fa c_i_m_2, e_i_m_2;
       //if (unlikely(hard_edge_index+2 == num_vtx-2) || valence == 2)
-      if (unlikely(!irreg_patch.ring[index].has_second_face() || valence == 2))
+      //if (unlikely(!irreg_patch.ring[index].has_second_face() || valence == 2))
+      if (unlikely(hard_edge_index == 2 || valence == 2))
 	{
 	  /* mirror quad center and edge mid-point */
 	  c_i_m_2  = c_i_m_1 + 2 * (e_i_m_1 - c_i_m_1);
@@ -1476,7 +1477,7 @@ namespace embree
       else
 	{
 	  c_i_m_2  = irreg_patch.ring[index].getQuadCenter( 1 );
-	  e_i_m_2  = irreg_patch.ring[index].getEdgeCenter( 2 ); //FIXME: is this correct?
+	  e_i_m_2  = irreg_patch.ring[index].getEdgeCenter( 2 );
 	}
 
 
