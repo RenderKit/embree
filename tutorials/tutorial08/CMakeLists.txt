@@ -14,20 +14,20 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-SET(USE_OPENSUBDIV OFF CACHE BOOL "Use OpenSubdiv for verification in tutorial08.")
+INCLUDE(CMakeDependentOption)
 
+FIND_PACKAGE(OpenSubdiv REQUIRED)
+CMAKE_DEPENDENT_OPTION(USE_OPENSUBDIV "Uses OpenSubdiv for verification in tutorial08." ON "OPENSUBDIV_FOUND;BUILD_TUTORIALS" OFF)
+SET(ADDITIONAL_LIBRARIES)
 IF (USE_OPENSUBDIV)
-  FIND_PACKAGE(OpenSubdiv REQUIRED)
-  INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR} ${OPENSUBDIV_INCLUDE_DIR})
+  INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR} ${OPENSUBDIV_INCLUDE_DIRS})
   ADD_DEFINITIONS(-D__USE_OPENSUBDIV__)
-#  set (CMAKE_EXE_LINKER_FLAGS "-lc++")
+  SET(ADDITIONAL_LIBRARIES ${ADDITIONAL_LIBRARIES} ${OPENSUBDIV_LIBRARIES})
 ENDIF()
 
 IF (__XEON__ AND BUILD_TUTORIALS)
   ADD_EXECUTABLE(tutorial08 extensions/api.cpp extensions/catmullclark.cpp extensions/subdivisionmesh.cpp extensions/triangulatemesh.cpp tutorial08_device.cpp tutorial08.cpp )
-
-  TARGET_LINK_LIBRARIES(tutorial08 embree tutorial image transport
-  tutorial_device ${OPENSUBDIV_LIBRARY})
+  TARGET_LINK_LIBRARIES(tutorial08 embree tutorial image transport tutorial_device ${ADDITIONAL_LIBRARIES})
 ENDIF()
 
 IF (__XEON__ AND BUILD_TUTORIALS_ISPC)
@@ -45,4 +45,3 @@ IF (NOT __XEON__ AND NOT __HOST__)
   ADD_ISPC_EXECUTABLE(tutorial08_xeonphi_device tutorial08_device.ispc)
   TARGET_LINK_LIBRARIES(tutorial08_xeonphi_device embree_xeonphi transport_device tutorial_xeonphi_device_ispc)
 ENDIF()
-
