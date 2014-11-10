@@ -332,9 +332,9 @@ namespace embree
       /* border vertex rule */
       if (unlikely(hard_edge_index != -1))
 	{
-	  //if (hard_edge_index != 0 && valence != 2) {
-          if (has_last_face() && valence != 2) {
-	    return ring[0] - vtx;
+	  //if (hard_edge_index != 0 && valence != 2) { 
+          if (has_last_face() && valence != 2) { // FIXME: probably wrong
+	    return ring[0] - vtx; 
           }
 	  else
 	    {
@@ -349,15 +349,15 @@ namespace embree
 
       const float n = (float)valence;
       const float c0 = 1.0f/n * 1.0f / sqrtf(4.0f + cos(M_PI/n)*cos(M_PI/n));  
-      const float c1 = (1.0f/n + cosf(M_PI/n) * c0);
+      const float c1 = (1.0f/n + cosf(M_PI/n) * c0); // FIXME: plus or minus
       for (size_t i=0; i<valence; i++)
 	{
-	  const float a = c1 * cosf(2.0f*M_PI*(float)i/n);
-	  const float b = c0 * cosf((2.0f*M_PI*(float)i+M_PI)/n);
-	  alpha +=  a * get_ring(2*i);
-          beta  +=  b * get_ring(2*i+1);
+	  const float a = c1 * cosf(2.0f*M_PI*i/n);
+	  const float b = c0 * cosf((2.0f*M_PI*i+M_PI)/n);
+	  alpha +=  a * ring[2*i];
+          beta  +=  b * ring[2*i+1];
 	}
-      return alpha +  beta;      
+      return alpha +  beta;      // FIXME: scaling inconsistent with border case
     }
 
     /* gets limit tangent in the direction of egde vtx -> ring[num_vtx-2] */
@@ -382,14 +382,12 @@ namespace embree
       const float n = (float)valence;
       const float c0 = 1.0f/n * 1.0f / sqrtf(4.0f + cos(M_PI/n)*cos(M_PI/n));  
       const float c1 = (1.0f/n + cosf(M_PI/n) * c0);
-      size_t ring_index = valence-1;
-      for (size_t i=0; i<valence; i++,ring_index++) // FIXME: is this the right direction?
+      for (size_t i=0; i<valence; i++)
 	{
-	  if (unlikely(ring_index == valence)) ring_index = 0;
-	  const float a = c1 * cosf(2.0f*M_PI*(float)i/n);
-	  const float b = c0 * cosf((2.0f*M_PI*(float)i+M_PI)/n);
-	  alpha += a * get_ring(2*ring_index);
-          beta  += b * get_ring(2*ring_index+1);
+	  const float a = c1 * cosf(2.0f*M_PI*(float(i)-1.0f)/n);
+	  const float b = c0 * cosf((2.0f*M_PI*(float(i)-1.0f)+M_PI)/n);
+	  alpha += a * ring[2*i];
+          beta  += b * ring[2*i+1];
 	}
       return alpha +  beta;      
     }

@@ -279,7 +279,7 @@ namespace embree
       QuadQuad4x4* leaf = (QuadQuad4x4*) alloc.malloc(sizeof(QuadQuad4x4),16);
       new (leaf) QuadQuad4x4(8*x,8*y,8*(1<<l),geomID(),primID());
 
-#if 1
+#if 0
       SubdivideIrregularCatmullClarkPatch subdivided2(patch,2);
       SubdivideIrregularCatmullClarkPatch subdivided3(patch,3);
       const BBox3fa bounds = leaf->build(scene,subdivided2.v,subdivided3.v,Tt,Tr,Tb,Tl);
@@ -290,7 +290,7 @@ namespace embree
       const BBox3fa bounds = leaf->build(scene,regular);
 #endif
 
-#if 0
+#if 1
       GregoryPatch gregory; gregory.init(patch);
       const BBox3fa bounds = leaf->build(scene,gregory);
 #endif
@@ -302,7 +302,7 @@ namespace embree
                                                  unsigned x, unsigned y, int l, int maxDepth,
                                                  bool Tt, bool Tr, bool Tb, bool Tl) // tagged transition edges
     {
-      if (unlikely(l == maxDepth))
+      //if (unlikely(l == maxDepth))
         return leaf(alloc,patch,x,y,l,false,false,false,false);
 
       IrregularCatmullClarkPatch patches[4]; 
