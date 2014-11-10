@@ -402,9 +402,9 @@ namespace embree
     __forceinline Vec3fa getQuadCenter(const size_t index) const
     {
       const Vec3fa_t &p0 = vtx;
-      const Vec3fa_t &p1 = get_ring(2*index+0);
-      const Vec3fa_t &p2 = get_ring(2*index+1);
-      const Vec3fa_t &p3 = index == valence-1 ? ring[0] : get_ring(2*index+2);
+      const Vec3fa_t &p1 = ring[2*index+0];
+      const Vec3fa_t &p2 = ring[2*index+1];
+      const Vec3fa_t &p3 = index == valence-1 ? ring[0] : ring[2*index+2];
       const Vec3fa p = (p0+p1+p2+p3) * 0.25f;
       return p;
     }
@@ -1548,7 +1548,7 @@ namespace embree
 
       const Vec3fa &vtx     = irreg_patch.ring[index].vtx;
       const Vec3fa e_i      = irreg_patch.ring[index].getEdgeCenter( 0 );
-      const Vec3fa c_i_m_1  = irreg_patch.ring[index].getQuadCenter( valence-1 );
+      const Vec3fa c_i_m_1  = irreg_patch.ring[index].getQuadCenter( 0 );
       const Vec3fa e_i_m_1  = irreg_patch.ring[index].getEdgeCenter( valence-1 );
 
       Vec3fa c_i, e_i_p_1;
@@ -1561,7 +1561,7 @@ namespace embree
 	}
       else
 	{
-	  c_i     = irreg_patch.ring[index].getQuadCenter( 0 );
+	  c_i     = irreg_patch.ring[index].getQuadCenter( valence-1 );
 	  e_i_p_1 = irreg_patch.ring[index].getEdgeCenter( 1 );
 	}
 
@@ -1575,7 +1575,7 @@ namespace embree
 	}
       else
 	{
-	  c_i_m_2  = irreg_patch.ring[index].getQuadCenter( valence-2 );
+	  c_i_m_2  = irreg_patch.ring[index].getQuadCenter( 1 );
 	  e_i_m_2  = irreg_patch.ring[index].getEdgeCenter( valence-2 );
 	}
 
