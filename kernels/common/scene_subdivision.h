@@ -1851,31 +1851,29 @@ namespace embree
 			       const unsigned int uv_array_step)
  {
    const float low_rate_step = 1.0f / (float)low_rate_segments;
-   const unsigned int dy = 2*low_rate_segments;   
-   const unsigned int dx = 2*high_rate_segments;
+   const unsigned int dy = low_rate_segments;   
+   const unsigned int dx = high_rate_segments;
+
+   int d  = 2*dy-dx;  
+   int ds = 2*dy;  
+   int dt = 2*(dy-dx);  
  
-   unsigned int x = 1; 
    float low_rate_value = 0.0f;
+   unsigned int offset = 0;
 
-   int error = dx-dy; // 1-step
-   if(error < 0)
+   for(unsigned int x=0; x<high_rate_segments; x++) // look at the starting point of the 'x' segment
      {
-       error += dx;
-       low_rate_value += low_rate_step;
-     }
-   unsigned int offset = uv_array_step;
-
-   for(; x<high_rate_segments; x++) // look at the starting point of the 'x' segment
-     {
-       //std::cout << "x " << x << " value " << low_rate_value << std::endl;
+       /* DBG_PRINT(d); */
+       /* std::cout << "x " << x << " value " << low_rate_value << std::endl; */
        uv_array[offset] = low_rate_value;
        offset += uv_array_step;      
-       error -= dy;
-       if(error < 0)
+       if(d >= 0)
 	 {
-	   error += dx;
+	   d += dt;
 	   low_rate_value += low_rate_step;
 	 }
+       else
+	 d += ds;
      }
  }
 
@@ -1917,7 +1915,7 @@ namespace embree
      v_array[num_points-1-x] = 1.0f;
        
 
-#if 0
+#if 1
       DBG_PRINT("UV grid");
       DBG_PRINT( edge_levels[0] );
       DBG_PRINT( edge_levels[1] );
@@ -1937,19 +1935,22 @@ namespace embree
 
    /* fixing different tessellation levels */
    const unsigned int int_level_edge0 = (unsigned int)edge_levels[0];
+   const unsigned int int_level_edge1 = (unsigned int)edge_levels[1];
+   const unsigned int int_level_edge2 = (unsigned int)edge_levels[2];
+   const unsigned int int_level_edge3 = (unsigned int)edge_levels[3];
 
    if (unlikely(int_level_edge0 < grid_u_res-1))
      stichEdges(int_level_edge0,grid_u_res-1,u_array,1);
 
 #if 0
-   if (unlikely(int_edge_level2 < grid_u_res))
-     stichEdges(int_edge_level2,grid_u_res,&u_array[(grid_v_res-1)*grid_u_res],1);
+   if (unlikely(int_edge_level2 < grid_u_res-1))
+     stichEdges(int_edge_level2,grid_u_res-1,&u_array[(grid_v_res-1)*grid_u_res],1);
 
-   if (unlikely(int_edge_level1 < grid_v_res))
-     stichEdges(int_edge_level1,grid_v_res,&v_array[grid_u_res-1],grid_u_res);
+   if (unlikely(int_edge_level1 < grid_v_res-1))
+     stichEdges(int_edge_level1,grid_v_res-1,&v_array[grid_u_res-1],grid_u_res);
 
-   if (unlikely(int_edge_level3 < grid_v_res))
-     stichEdges(int_edge_level3,grid_v_res,v_array,grid_u_res);
+   if (unlikely(int_edge_level3 < grid_v_res-1))
+     stichEdges(int_edge_level3,grid_v_res-1,v_array,grid_u_res);
 #endif
  }
 
