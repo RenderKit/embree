@@ -371,7 +371,7 @@ namespace embree
 	{
 	  //if (hard_edge_index == 0 && valence != 2) {
 	  if (!has_last_face() && valence != 2) {
-	    return get_ring(num_vtx-2) - vtx;
+	    return ring[2] - vtx;
           }
 	  else
 	    {
@@ -1301,24 +1301,24 @@ namespace embree
       assert( irreg_patch.dicable() );
 
       v[1][1] = irreg_patch.ring[0].vtx;
-      v[0][1] = irreg_patch.ring[0].get_ring(2);
-      v[0][0] = irreg_patch.ring[0].get_ring(3);
-      v[1][0] = irreg_patch.ring[0].get_ring(4);
+      v[0][1] = irreg_patch.ring[0].ring[6];
+      v[0][0] = irreg_patch.ring[0].ring[5];
+      v[1][0] = irreg_patch.ring[0].ring[4];
 
       v[1][2] = irreg_patch.ring[1].vtx;
-      v[1][3] = irreg_patch.ring[1].get_ring(2);
-      v[0][3] = irreg_patch.ring[1].get_ring(3);
-      v[0][2] = irreg_patch.ring[1].get_ring(4);
+      v[1][3] = irreg_patch.ring[1].ring[6];
+      v[0][3] = irreg_patch.ring[1].ring[5];
+      v[0][2] = irreg_patch.ring[1].ring[4];
 
       v[2][2] = irreg_patch.ring[2].vtx;
-      v[3][2] = irreg_patch.ring[2].get_ring(2);
-      v[3][3] = irreg_patch.ring[2].get_ring(3);
-      v[2][3] = irreg_patch.ring[2].get_ring(4);
+      v[3][2] = irreg_patch.ring[2].ring[6];
+      v[3][3] = irreg_patch.ring[2].ring[5];
+      v[2][3] = irreg_patch.ring[2].ring[4];
 
       v[2][1] = irreg_patch.ring[3].vtx;
-      v[2][0] = irreg_patch.ring[3].get_ring(2);
-      v[3][0] = irreg_patch.ring[3].get_ring(3);      
-      v[3][1] = irreg_patch.ring[3].get_ring(4);
+      v[2][0] = irreg_patch.ring[3].ring[6];
+      v[3][0] = irreg_patch.ring[3].ring[5];      
+      v[3][1] = irreg_patch.ring[3].ring[4];
     }
 
     __forceinline void init(const SubdivMesh::HalfEdge *const first_half_edge,

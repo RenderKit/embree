@@ -285,12 +285,12 @@ namespace embree
       const BBox3fa bounds = leaf->build(scene,subdivided2.v,subdivided3.v,Tt,Tr,Tb,Tl);
 #endif
 
-#if 0
-      const RegularCatmullClarkPatch regular(patch);
+#if 1
+      RegularCatmullClarkPatch regular; regular.init(patch);
       const BBox3fa bounds = leaf->build(scene,regular);
 #endif
 
-#if 1
+#if 0
       GregoryPatch gregory; gregory.init(patch);
       const BBox3fa bounds = leaf->build(scene,gregory);
 #endif
