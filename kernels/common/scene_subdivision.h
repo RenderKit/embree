@@ -1845,35 +1845,43 @@ namespace embree
       return o;
     } 
 
- __forceinline void stichEdges(const unsigned int n,
-			       const unsigned int m,
+ __forceinline void stichEdges(const unsigned int low_rate,
+			       const unsigned int high_rate,
 			       float * __restrict__ const uv_array,
-			       const unsigned int uv_step)
+			       const unsigned int uv_array_step)
  {
-   int q = m-n;
-   float current = uv_array[0];
-   for (unsigned int m_index=0,n_index=0;m_index<m;)
+   const float low_rate_step = 1.0f / (float)low_rate;
+   const unsigned int dy = 2*low_rate;   
+   const unsigned int dx = 2*high_rate;
+ 
+   unsigned int x = 1; // just updates the inner values for [1;high-rate-1]
+   unsigned int y = 0;
+   float low_rate_value = 0.0f;
+
+   int error = dx-dy; // 1-step
+   if(error < 0)
      {
-       if (q >= 0)
-	 {
-	   q -= 2*n;
-	   m_index++;
-	 }
-       else /* q < 0 */
-	 {
-	   q += 2*m;
-	   while( q < 0 )
-	     {
-	       q += 2*m;
-	       uv_array[n_index] = current;
-	       n_index++;
-	     }
-	   current = uv_array[n_index];
-	   q -= 2*n;
-	   m_index++;
-	 }
+       y++;
+       error += dx;
+       low_rate_value += low_rate_step;
      }
+  unsigned int offset = uv_array_step;
+
+  for(; x<high_rate-1; x++)
+    {
+      std::cout << "x " << x << " y " << y << " value " << low_rate_value << std::endl;
+      uv_array[offset] = low_rate_value;
+      offset += uv_array_step;      
+      error -= dy;
+      if(error < 0)
+	{
+	  y++;
+	  error += dx;
+	  low_rate_value += low_rate_step;
+	}
+    }
  }
+
  __forceinline void gridUVTessellator(const float edge_levels[4],
 				      const unsigned int grid_u_res,
 				      const unsigned int grid_v_res,
@@ -1911,15 +1919,33 @@ namespace embree
    for (unsigned int x=0;x<grid_u_res;x++)
      v_array[num_points-1-x] = 1.0f;
        
+
+#if 1
+      DBG_PRINT("UV grid");
+      DBG_PRINT( edge_levels[0] );
+      DBG_PRINT( edge_levels[1] );
+      DBG_PRINT( edge_levels[2] );
+      DBG_PRINT( edge_levels[3] );
+
+      DBG_PRINT( grid_u_res );
+      DBG_PRINT( grid_v_res );
+
+      for (unsigned int y=0;y<grid_v_res;y++)
+	{
+	  for (unsigned int x=0;x<grid_u_res;x++)
+	    std::cout << "(" << v_array[grid_v_res*y+x] << "," << u_array[grid_v_res*y+x] << ") ";
+	  std::cout << std::endl;
+	}
+#endif
+
    /* fixing different tessellation levels */
-   const unsigned int int_edge_level0 = (unsigned int)edge_levels[0] + 1;
-   const unsigned int int_edge_level1 = (unsigned int)edge_levels[1] + 1;
-   const unsigned int int_edge_level2 = (unsigned int)edge_levels[2] + 1;
-   const unsigned int int_edge_level3 = (unsigned int)edge_levels[3] + 1;
+   const unsigned int int_points_on_edge0 = (unsigned int)edge_levels[0] + 1;
 
-   if (unlikely(int_edge_level0 < grid_u_res))
-     stichEdges(int_edge_level0,grid_u_res,u_array,1);
+   if (unlikely(int_points_on_edge0 < grid_u_res))
+     stichEdges(int_points_on_edge0,grid_u_res,u_array,1);
 
+   exit(0);
+#if 0
    if (unlikely(int_edge_level2 < grid_u_res))
      stichEdges(int_edge_level2,grid_u_res,&u_array[(grid_v_res-1)*grid_u_res],1);
 
@@ -1928,7 +1954,7 @@ namespace embree
 
    if (unlikely(int_edge_level3 < grid_v_res))
      stichEdges(int_edge_level3,grid_v_res,v_array,grid_u_res);
-
+#endif
  }
 
 

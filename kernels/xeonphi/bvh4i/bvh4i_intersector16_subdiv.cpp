@@ -264,7 +264,7 @@ namespace embree
 
 #if 1
 
-      #define MAX_GRID_SIZE 4*4
+      #define MAX_GRID_SIZE 8*8
 
       __aligned(64) float u_array[MAX_GRID_SIZE];
       __aligned(64) float v_array[MAX_GRID_SIZE];
@@ -278,7 +278,7 @@ namespace embree
       };
 #else
       const float edge_levels[4] = {
-	2,2,2,2
+	2,4,4,4
       };
 
 #endif
@@ -288,7 +288,7 @@ namespace embree
 
       gridUVTessellator(edge_levels,grid_u_res,grid_v_res,u_array,v_array);
 
-#if 0
+#if 1
       DBG_PRINT("UV grid");
       DBG_PRINT( edge_levels[0] );
       DBG_PRINT( edge_levels[1] );
