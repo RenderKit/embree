@@ -91,15 +91,15 @@ namespace embree
     
     __forceinline void init(CatmullClark1Ring& ring0, CatmullClark1Ring& ring1) 
     {
-      v(0,0) = ring0.front(2);
       v(0,1) = ring0.vtx;
-      v(0,2) = ring0.back(1);
+      v(0,2) = ring0.front(2);
       if (!ring0.has_last_face()) v(0,0) = 2*v(0,1) - v(0,2);
+      else                        v(0,0) = ring0.back(2);
 
-      v(K,0) = ring1.back(3);
       v(K,1) = ring1.vtx;
       v(K,2) = ring1.front(0);
       if (!ring1.has_second_face()) v(K,0) = 2*v(K,1) - v(K,2);
+      else                          v(K,0) = ring1.front(4);
     }
     
     friend __forceinline std::ostream &operator<<(std::ostream& out, const CatmullClark1Edge& edge)
@@ -279,7 +279,7 @@ namespace embree
       QuadQuad4x4* leaf = (QuadQuad4x4*) alloc.malloc(sizeof(QuadQuad4x4),16);
       new (leaf) QuadQuad4x4(8*x,8*y,8*(1<<l),geomID(),primID());
 
-#if 0
+#if 1
       SubdivideIrregularCatmullClarkPatch subdivided2(patch,2);
       SubdivideIrregularCatmullClarkPatch subdivided3(patch,3);
       const BBox3fa bounds = leaf->build(scene,subdivided2.v,subdivided3.v,Tt,Tr,Tb,Tl);
@@ -290,7 +290,7 @@ namespace embree
       const BBox3fa bounds = leaf->build(scene,regular);
 #endif
 
-#if 1
+#if 0
       GregoryPatch gregory; gregory.init(patch);
       const BBox3fa bounds = leaf->build(scene,gregory);
 #endif
@@ -302,7 +302,7 @@ namespace embree
                                                  unsigned x, unsigned y, int l, int maxDepth,
                                                  bool Tt, bool Tr, bool Tb, bool Tl) // tagged transition edges
     {
-      //if (unlikely(l == maxDepth))
+      if (unlikely(l == maxDepth))
         return leaf(alloc,patch,x,y,l,false,false,false,false);
 
       IrregularCatmullClarkPatch patches[4]; 

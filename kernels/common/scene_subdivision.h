@@ -102,14 +102,12 @@ namespace embree
 
     __forceinline const Vec3fa& front(size_t i) const {
       assert(num_vtx>i);
-      //return ring[i];
-      return get_ring(i);
+      return ring[i];
     }
 
     __forceinline const Vec3fa& back(size_t i) const {
-      assert(num_vtx-1>=i);
-      //return ring[num_vtx-1-i];
-      return get_ring(num_vtx-1-i);
+      assert(i>0 && num_vtx>=i);
+      return ring[num_vtx-i];
     }
 
     __forceinline bool has_last_face() const {
@@ -1261,41 +1259,6 @@ namespace embree
   public:
 
     RegularCatmullClarkPatch () {}
-
-    RegularCatmullClarkPatch (const IrregularCatmullClarkPatch& in) 
-    {
-      v[0][0] = in.ring[0].front(3);
-      v[0][1] = in.ring[0].front(2);
-      v[1][0] = in.ring[0].back(3);
-      v[1][1] = in.ring[0].vtx;
-
-      v[0][3] = in.ring[1].front(3);
-      v[1][3] = in.ring[1].front(2);
-      v[0][2] = in.ring[1].back(3);
-      v[1][2] = in.ring[1].vtx;
-
-      v[3][3] = in.ring[2].front(3);
-      v[3][2] = in.ring[2].front(2);
-      v[2][3] = in.ring[2].back(3);
-      v[2][2] = in.ring[2].vtx;
-
-      v[3][0] = in.ring[3].front(3);
-      v[2][0] = in.ring[3].front(2);
-      v[3][1] = in.ring[3].back(3);
-      v[2][1] = in.ring[3].vtx;
-
-      if (in.ring[0].has_last_face())
-        for (size_t i=0; i<4; i++) v[0][i] = 2*v[1][i] - v[2][i];
-
-      if (in.ring[1].has_last_face())
-        for (size_t i=0; i<4; i++) v[i][3] = 2*v[i][2] - v[i][1];
-
-      if (in.ring[2].has_last_face())
-        for (size_t i=0; i<4; i++) v[3][i] = 2*v[2][i] - v[1][i];
-
-      if (in.ring[3].has_last_face())
-        for (size_t i=0; i<4; i++) v[i][0] = 2*v[i][1] - v[i][2];
-    }
 
     __forceinline void init( FinalQuad& quad ) const
     {
