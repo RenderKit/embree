@@ -411,7 +411,7 @@ namespace embree
 
     /* returns center of the n-th edge in the 1-ring */
     __forceinline Vec3fa getEdgeCenter(const size_t index) const {
-      return (vtx + get_ring(index*2)) * 0.5f;
+      return (vtx + ring[index*2]) * 0.5f;
     }
 
     friend __forceinline std::ostream &operator<<(std::ostream &o, const CatmullClark1Ring &c)
@@ -1549,7 +1549,7 @@ namespace embree
       const Vec3fa &vtx     = irreg_patch.ring[index].vtx;
       const Vec3fa e_i      = irreg_patch.ring[index].getEdgeCenter( 0 );
       const Vec3fa c_i_m_1  = irreg_patch.ring[index].getQuadCenter( 0 );
-      const Vec3fa e_i_m_1  = irreg_patch.ring[index].getEdgeCenter( valence-1 );
+      const Vec3fa e_i_m_1  = irreg_patch.ring[index].getEdgeCenter( 1 );
 
       Vec3fa c_i, e_i_p_1;
       //if (unlikely(hard_edge_index == 0))
@@ -1562,7 +1562,7 @@ namespace embree
       else
 	{
 	  c_i     = irreg_patch.ring[index].getQuadCenter( valence-1 );
-	  e_i_p_1 = irreg_patch.ring[index].getEdgeCenter( 1 );
+	  e_i_p_1 = irreg_patch.ring[index].getEdgeCenter( valence-1 );
 	}
 
       Vec3fa c_i_m_2, e_i_m_2;
@@ -1576,7 +1576,7 @@ namespace embree
       else
 	{
 	  c_i_m_2  = irreg_patch.ring[index].getQuadCenter( 1 );
-	  e_i_m_2  = irreg_patch.ring[index].getEdgeCenter( valence-2 );
+	  e_i_m_2  = irreg_patch.ring[index].getEdgeCenter( 2 ); //FIXME: is this correct?
 	}
 
 
