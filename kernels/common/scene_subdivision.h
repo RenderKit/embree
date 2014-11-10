@@ -91,12 +91,6 @@ namespace embree
     unsigned int num_vtx;
     float vertex_crease_weight;
 
-    __forceinline       Vec3fa& get_ring(int i)       { if (i == 0) return ring[i]; else return ring[num_vtx-i]; }
-    __forceinline const Vec3fa& get_ring(int i) const { if (i == 0) return ring[i]; else return ring[num_vtx-i]; }
-
-    __forceinline       float& get_crease_weight(int i)       { if (i == 0) return crease_weight[i]; else return crease_weight[valence-i]; }
-    __forceinline const float& get_crease_weight(int i) const { if (i == 0) return crease_weight[i]; else return crease_weight[valence-i]; }
-
   public:
     CatmullClark1Ring() {}
 
