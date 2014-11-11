@@ -1774,9 +1774,11 @@ namespace embree
    assert( edge_levels[2] >= 1.0f );
    assert( edge_levels[3] >= 1.0f );
 
+   const unsigned int grid_u_segments = grid_u_res-1;
+   const unsigned int grid_v_segments = grid_v_res-1;
 
-   const float u_step = (1.0f / (grid_u_res-1));
-   const float v_step = (1.0f / (grid_v_res-1));
+   const float u_step = 1.0f / grid_u_segments;
+   const float v_step = 1.0f / grid_v_segments;
 
    /* initialize grid */
    unsigned int index = 0;
@@ -1817,25 +1819,26 @@ namespace embree
 	}
 #endif
 
-   /* fixing different tessellation levels */
-   const unsigned int int_level_edge0 = (unsigned int)edge_levels[0];
-   const unsigned int int_level_edge1 = (unsigned int)edge_levels[1];
-   const unsigned int int_level_edge2 = (unsigned int)edge_levels[2];
-   const unsigned int int_level_edge3 = (unsigned int)edge_levels[3];
+   /* stich different tessellation levels in u/v grid */
+   const unsigned int int_edge_level0 = (unsigned int)edge_levels[0];
+   const unsigned int int_edge_level1 = (unsigned int)edge_levels[1];
+   const unsigned int int_edge_level2 = (unsigned int)edge_levels[2];
+   const unsigned int int_edge_level3 = (unsigned int)edge_levels[3];
 
-   if (unlikely(int_level_edge0 < grid_u_res-1))
-     stichEdges(int_level_edge0,grid_u_res-1,u_array,1);
+   if (unlikely(int_edge_level0 < grid_u_segments))
+     stichEdges(int_edge_level0,grid_u_segments,u_array,1);
 
-#if 0
-   if (unlikely(int_edge_level2 < grid_u_res-1))
-     stichEdges(int_edge_level2,grid_u_res-1,&u_array[(grid_v_res-1)*grid_u_res],1);
+   if (unlikely(int_edge_level2 < grid_u_segments))
+     stichEdges(int_edge_level2,grid_u_segments,&u_array[grid_v_segments*grid_u_res],1);
 
-   if (unlikely(int_edge_level1 < grid_v_res-1))
-     stichEdges(int_edge_level1,grid_v_res-1,&v_array[grid_u_res-1],grid_u_res);
+#if 1
+   if (unlikely(int_edge_level1 < grid_v_segments))
+     stichEdges(int_edge_level1,grid_v_segments,&v_array[grid_u_segments],grid_u_res);
 
-   if (unlikely(int_edge_level3 < grid_v_res-1))
-     stichEdges(int_edge_level3,grid_v_res-1,v_array,grid_u_res);
+   if (unlikely(int_edge_level3 < grid_v_segments))
+     stichEdges(int_edge_level3,grid_v_segments,v_array,grid_u_res);
 #endif
+
  }
 
 

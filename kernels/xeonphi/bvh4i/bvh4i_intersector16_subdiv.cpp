@@ -278,14 +278,19 @@ namespace embree
       };
 #else
       const float edge_levels[4] = {
-	2,4,4,4
+	2,2,2,2
       };
 
 #endif
 
+#if 0
       const unsigned int grid_u_res = max(edge_levels[0],edge_levels[2])+1; // n segments -> n+1 points
       const unsigned int grid_v_res = max(edge_levels[1],edge_levels[3])+1;
+#else
+      const unsigned int grid_u_res = 4;
+      const unsigned int grid_v_res = 4;
 
+#endif
       gridUVTessellator(edge_levels,grid_u_res,grid_v_res,u_array,v_array);
 
 #if 0
