@@ -81,14 +81,17 @@ namespace embree
 
   struct __aligned(64) CatmullClark1Ring
   {
-    Vec3fa vtx;
+
     Vec3fa ring[2*MAX_VALENCE]; // two vertices per face
     float crease_weight[MAX_VALENCE]; // FIXME: move into 4th component of ring entries
+
+    int hard_edge_index;
+    Vec3fa vtx;
     unsigned int valence;
     unsigned int num_vtx;
-    int hard_edge_index;
     float vertex_crease_weight;
 
+  public:
     CatmullClark1Ring() {}
 
     __forceinline const Vec3fa& front(size_t i) const {
@@ -97,16 +100,16 @@ namespace embree
     }
 
     __forceinline const Vec3fa& back(size_t i) const {
-      assert(num_vtx-1>=i);
-      return ring[num_vtx-1-i];
+      assert(i>0 && num_vtx>=i);
+      return ring[num_vtx-i];
     }
 
-    __forceinline bool has_first_patch() const {
-      return hard_edge_index != 0;
+    __forceinline bool has_last_face() const {
+      return hard_edge_index != num_vtx-2;
     }
 
-    __forceinline bool has_prelast_patch() const {
-      return (hard_edge_index == -1) || ((num_vtx-4) >= hard_edge_index+2);
+    __forceinline bool has_second_face() const {
+      return (hard_edge_index == -1) || (hard_edge_index >= 4);
     }
 
     __forceinline BBox3fa bounds() const
@@ -117,7 +120,6 @@ namespace embree
       return bounds;
     }
 
-    
     __forceinline void init(const SubdivMesh::HalfEdge* const h, const Vec3fa* const vertices) // FIXME: should get buffer as vertex array input!!!!
     {
       for (size_t i=0; i<MAX_VALENCE; i++) crease_weight[i] = nan; // FIXME: remove
@@ -128,76 +130,9 @@ namespace embree
       SubdivMesh::HalfEdge* p = (SubdivMesh::HalfEdge*) h;
 
       size_t i=0;
-      do {
-        assert(i < 2*MAX_VALENCE);
-        crease_weight[i/2] = p->edge_crease_weight;
-	ring[i++] = (Vec3fa_t) vertices[ p->next()->getStartVertexIndex() ];
-        
-	if (unlikely(!p->hasOpposite())) { 
-          init_secondhalf(h,vertices,i);
-          return;
-        }
-	p = p->opposite();
-
-        assert(i < 2*MAX_VALENCE);
-	ring[i++] = (Vec3fa_t) vertices[ p->prev()->getStartVertexIndex() ];
-	p = p->next();
-        
-      } while (p != h);
-
-      num_vtx = i;
-      valence = i >> 1;
-    }
-
-    __forceinline void init_secondhalf(const SubdivMesh::HalfEdge* const h, const Vec3fa* const vertices, size_t i)
-    {
-      /*! mark first hard edge and store dummy vertex for face between the two hard edges*/
-      hard_edge_index = i-1;
-      crease_weight[i/2] = inf; 
-      ring[i++] = Vec3fa(nan);
-      
-      /*! first cycle clock-wise until we found the second edge */	  
-      SubdivMesh::HalfEdge* p = (SubdivMesh::HalfEdge*) h;
-      p = p->prev();	  
-      while(p->hasOpposite()) {
-        p = p->opposite();
-        p = p->prev();	      
-      }
-      
-      /*! store second hard edge and diagonal vertex */
-      crease_weight[i/2] = inf;
-      ring[i++] = (Vec3fa_t)vertices[ p->getStartVertexIndex() ];
-      ring[i++] = (Vec3fa_t)vertices[ p->prev()->getStartVertexIndex() ];
-      p = p->next();
-	  
-      /*! continue counter-clockwise */	  
-      while (p != h) 
-      {
-        assert( i < 2*MAX_VALENCE );
-        crease_weight[i/2] = p->edge_crease_weight;
-        ring[i++] = (Vec3fa_t)vertices[ p->next()->getStartVertexIndex() ];
-        p = p->opposite();
-        
-        assert( i < 2*MAX_VALENCE );
-        ring[i++] = (Vec3fa_t)vertices[ p->prev()->getStartVertexIndex() ];
-        p = p->next();	    
-      }
-
-      num_vtx = i;
-      valence = i >> 1;
-    }
-
-    __forceinline void init2(const SubdivMesh::HalfEdge* const h, const Vec3fa* const vertices) // FIXME: should get buffer as vertex array input!!!!
-    {
-      for (size_t i=0; i<MAX_VALENCE; i++) crease_weight[i] = nan; // FIXME: remove
-
-      hard_edge_index = -1;
-      vtx = (Vec3fa_t)vertices[ h->getStartVertexIndex() ];
-      vertex_crease_weight = h->vertex_crease_weight;
-      SubdivMesh::HalfEdge* p = (SubdivMesh::HalfEdge*) h;
-
-      size_t i=0;
       crease_weight[i/2] = p->edge_crease_weight;
+      if (!p->hasOpposite()) crease_weight[i/2] = inf;
+
       do 
       {
         /* store first two vertices of face */
@@ -218,15 +153,14 @@ namespace embree
           /*! mark first border edge and store dummy vertex for face between the two border edges */
           hard_edge_index = i;
           crease_weight[i/2] = inf; 
-          ring[i++] = (Vec3fa_t) vertices[ p->getEndVertexIndex() ];
-          ring[i++] = Vec3fa(nan);
-          
+          ring[i++] = (Vec3fa_t) vertices[ p->getStartVertexIndex() ];
+          ring[i++] = vtx; // dummy vertex
+          crease_weight[i/2] = inf;
+  
           /*! goto other side of border */
           p = (SubdivMesh::HalfEdge*) h;
           while (p->hasOpposite()) 
             p = p->opposite()->next();
-
-          crease_weight[i/2] = inf;
         }
 
       } while (p != h); 
@@ -392,13 +326,14 @@ namespace embree
       /* border vertex rule */
       if (unlikely(hard_edge_index != -1))
 	{
-	  if (hard_edge_index != 0 && valence != 2)
-	    return ring[0] - vtx;
+	  //if (hard_edge_index != 0 && valence != 2) { 
+          if (hard_edge_index != num_vtx-2 && valence != 2) { // FIXME: why valence!=2?
+	    return ring[0] - vtx; 
+          }
 	  else
 	    {
-	      const unsigned int second_hard_edge_index = hard_edge_index+2;
-	      assert(second_hard_edge_index < num_vtx);
-	      return (ring[hard_edge_index] - ring[second_hard_edge_index]) * 0.5f;
+              const unsigned int second_hard_edge_index = hard_edge_index+2 >= num_vtx ? 0 : hard_edge_index+2;
+	      return (ring[second_hard_edge_index] - ring[hard_edge_index]) * 0.5f;
 	    }
 	}
 
@@ -406,16 +341,19 @@ namespace embree
       Vec3fa_t beta ( 0.0f );
 
       const float n = (float)valence;
+      //const float delta = 1.0f / sqrtf(4.0f + cos(M_PI/n)*cos(M_PI/n));
+      //const float c0 = 2.0f/n * delta;
+      //const float c1 = 1.0f/n * (1.0f - delta*cosf(M_PI/n));
       const float c0 = 1.0f/n * 1.0f / sqrtf(4.0f + cos(M_PI/n)*cos(M_PI/n));  
-      const float c1 = (1.0f/n + cosf(M_PI/n) * c0);
+      const float c1 = (1.0f/n + cosf(M_PI/n) * c0); // FIXME: plus or minus
       for (size_t i=0; i<valence; i++)
 	{
-	  const float a = c1 * cosf(2.0f*M_PI*(float)i/n);
-	  const float b = c0 * cosf((2.0f*M_PI*(float)i+M_PI)/n);
+	  const float a = c1 * cosf(2.0f*M_PI*i/n);
+	  const float b = c0 * cosf((2.0f*M_PI*i+M_PI)/n); // FIXME: factor of 2 missing?
 	  alpha +=  a * ring[2*i];
           beta  +=  b * ring[2*i+1];
 	}
-      return alpha +  beta;      
+      return alpha +  beta;
     }
 
     /* gets limit tangent in the direction of egde vtx -> ring[num_vtx-2] */
@@ -424,29 +362,31 @@ namespace embree
       /* border vertex rule */
       if (unlikely(hard_edge_index != -1))
 	{
-	  if (hard_edge_index == 0 && valence != 2)
-	    return ring[num_vtx-2] - vtx;
+	  //if (hard_edge_index == 0 && valence != 2) {
+	  if (hard_edge_index == num_vtx-2 && valence != 2) {
+	    return ring[2] - vtx;
+          }
 	  else
 	    {
-	      const unsigned int second_hard_edge_index = hard_edge_index+2;
-	      assert(second_hard_edge_index < num_vtx); 
-	      return (ring[second_hard_edge_index] - ring[hard_edge_index]) * 0.5f;
+              const unsigned int second_hard_edge_index = hard_edge_index+2 >= num_vtx ? 0 : hard_edge_index+2;
+	      return (ring[hard_edge_index] - ring[second_hard_edge_index]) * 0.5f;
 	    }
 	}
 
       Vec3fa_t alpha( 0.0f );
       Vec3fa_t beta ( 0.0f );
       const float n = (float)valence;
+      //const float delta = 1.0f / sqrtf(4.0f + cos(M_PI/n)*cos(M_PI/n));
+      //const float c0 = 2.0f/n * delta;
+      //const float c1 = 1.0f/n * (1.0f - delta*cosf(M_PI/n));
       const float c0 = 1.0f/n * 1.0f / sqrtf(4.0f + cos(M_PI/n)*cos(M_PI/n));  
       const float c1 = (1.0f/n + cosf(M_PI/n) * c0);
-      size_t ring_index = valence-1;
-      for (size_t i=0; i<valence; i++,ring_index++) // FIXME: is this the right direction?
+      for (size_t i=0; i<valence; i++)
 	{
-	  if (unlikely(ring_index == valence)) ring_index = 0;
-	  const float a = c1 * cosf(2.0f*M_PI*(float)i/n);
-	  const float b = c0 * cosf((2.0f*M_PI*(float)i+M_PI)/n);
-	  alpha += a * ring[2*ring_index];
-          beta  += b * ring[2*ring_index+1];
+	  const float a = c1 * cosf(2.0f*M_PI*(float(i)-1.0f)/n);
+	  const float b = c0 * cosf((2.0f*M_PI*(float(i)-1.0f)+M_PI)/n);
+	  alpha += a * ring[2*i];
+          beta  += b * ring[2*i+1];
 	}
       return alpha +  beta;      
     }
@@ -463,8 +403,7 @@ namespace embree
     }
 
     /* returns center of the n-th edge in the 1-ring */
-    __forceinline Vec3fa getEdgeCenter(const size_t index) const
-    {
+    __forceinline Vec3fa getEdgeCenter(const size_t index) const {
       return (vtx + ring[index*2]) * 0.5f;
     }
 
@@ -493,12 +432,12 @@ namespace embree
 
     GeneralCatmullClark1Ring() {}
 
-    __forceinline bool has_first_patch() const {
-      return hard_edge_face != 0;
+    __forceinline bool has_last_face() const {
+      return hard_edge_face != valence-1;
     }
 
-    __forceinline bool has_prelast_patch() const {
-      return (hard_edge_face == -1) || (valence-3 >= hard_edge_face);
+    __forceinline bool has_second_face() const {
+      return (hard_edge_face == -1) || (hard_edge_face >= 2);
     }
 
     __forceinline void init(const SubdivMesh::HalfEdge* const h, const Vec3fa* const vertices) // FIXME: should get buffer as vertex array input!!!!
@@ -511,85 +450,46 @@ namespace embree
       SubdivMesh::HalfEdge* p = (SubdivMesh::HalfEdge*) h;
 
       size_t e=0, f=0;
-      do {
-        assert(f < MAX_VALENCE);
-        crease_weight[f] = p->edge_crease_weight;
-
-        size_t vn = 0;
-        assert(e < 2*MAX_VALENCE);
-	ring[e++] = (Vec3fa_t) vertices[ p->getEndVertexIndex() ];
-        vn++;
-        
-	if (unlikely(!p->hasOpposite())) { 
-          init_secondhalf(h,vertices,e,f);
-          return;
-        }
-	p = p->opposite();
-
-        SubdivMesh::HalfEdge* pnext2 = p->next()->next();
-        for (SubdivMesh::HalfEdge* v = p->prev(); v!=pnext2; v=v->prev()) {
-          assert(e < 2*MAX_VALENCE);
-          ring[e++] = (Vec3fa_t) vertices[ v->getStartVertexIndex() ];
-          vn++;
-        }
-        face_size[f++] = vn;
-        p = p->next();
-        
-      } while (p != h);
-
-      num_vtx = e;
-      valence = e >> 1;
-    }
-
-    __forceinline void init_secondhalf(const SubdivMesh::HalfEdge* const h, const Vec3fa* const vertices, size_t e, size_t f)
-    {
-      /*! mark first hard edge and store dummy vertex for face between the two hard edges */
-      hard_edge_face = f;
-      assert(e < 2*MAX_VALENCE);
-      ring[e++] = Vec3fa_t(nan);
-      crease_weight[f] = inf; 
-      face_size[f++] = 2;
+      crease_weight[f] = p->edge_crease_weight;
+      if (!p->hasOpposite()) crease_weight[f] = inf;
       
-      /*! first cycle clock-wise until we found the second edge */	  
-      SubdivMesh::HalfEdge* p = (SubdivMesh::HalfEdge*) h;
-      p = p->prev();	  
-      while(p->hasOpposite()) {
-        p = p->opposite();
-        p = p->prev();	      
-      }
-      
-      /*! store second hard edge and diagonal vertex */
-      assert(f < MAX_VALENCE);
-      crease_weight[f] = inf;
-      
-      size_t vn = 0;
-      SubdivMesh::HalfEdge* pnext2 = p->next()->next();
-      for (SubdivMesh::HalfEdge* v = p; v!=pnext2; v=v->prev()) {
-        assert(e < 2*MAX_VALENCE);
-        ring[e++] = (Vec3fa_t) vertices[ v->getStartVertexIndex() ];
-        vn++;
-      }
-      face_size[f++] = vn;
-      p = p->next();
-      
-      /*! continue counter-clockwise */	  
-      while (p != h) 
+      do 
       {
-	p = p->opposite();
-
-        assert(f < MAX_VALENCE);
-        crease_weight[f] = p->edge_crease_weight;
-
-        size_t vn = 0;
-        SubdivMesh::HalfEdge* pnext2 = p->next()->next();
-        for (SubdivMesh::HalfEdge* v = p; v!=pnext2; v=v->prev()) {
+	/* store first N-2 vertices of face */
+	size_t vn = 0;
+	SubdivMesh::HalfEdge* p_prev = p->prev();
+        for (SubdivMesh::HalfEdge* v = p->next(); v!=p_prev; v=v->next()) {
           assert(e < 2*MAX_VALENCE);
           ring[e++] = (Vec3fa_t) vertices[ v->getStartVertexIndex() ];
-          vn++;
+	  vn++;
+	  
         }
-        face_size[f++] = vn;
-        p = p->next();
-      }
+	face_size[f] = vn;
+	p = p_prev;
+	crease_weight[++f] = p->edge_crease_weight;
+
+        /* continue with next face */
+        if (likely(p->hasOpposite())) 
+          p = p->opposite();
+        
+        /* if there is no opposite go the long way to the other side of the border */
+        else
+        {
+          /*! mark first border edge and store dummy vertex for face between the two border edges */
+          hard_edge_face = f;
+	  face_size[f] = 2;
+          crease_weight[f] = inf; 
+          ring[e++] = (Vec3fa_t) vertices[ p->getStartVertexIndex() ];
+          ring[e++] = vtx; // dummy vertex
+          crease_weight[++f] = inf;
+  
+          /*! goto other side of border */
+          p = (SubdivMesh::HalfEdge*) h;
+          while (p->hasOpposite()) 
+            p = p->opposite()->next();
+        }
+
+      } while (p != h); 
 
       num_vtx = e;
       valence = f;
@@ -713,6 +613,7 @@ namespace embree
         ring[i].init(first_half_edge+i,vertices);
         level[i] = first_half_edge[i].edge_level;
       }
+      
     }
 
     __forceinline Vec3fa getLimitVertex(const size_t index) const {
@@ -751,19 +652,19 @@ namespace embree
       dest1.vtx = dest0.vtx = (Vec3fa_t)p0.ring[0];
       dest1.vertex_crease_weight = dest0.vertex_crease_weight = 0.0f;
 
-      dest1.ring[6] = dest0.ring[0] = (Vec3fa_t)p0.ring[p0.num_vtx-1];
-      dest1.ring[7] = dest0.ring[1] = (Vec3fa_t)p1.ring[0];
-      dest1.ring[0] = dest0.ring[2] = (Vec3fa_t)p1.vtx;
-      dest1.ring[1] = dest0.ring[3] = (Vec3fa_t)p1.ring[p1.num_vtx-4];
-      dest1.ring[2] = dest0.ring[4] = (Vec3fa_t)p0.ring[1];
-      dest1.ring[3] = dest0.ring[5] = (Vec3fa_t)p0.ring[2];
-      dest1.ring[4] = dest0.ring[6] = (Vec3fa_t)p0.vtx;
-      dest1.ring[5] = dest0.ring[7] = (Vec3fa_t)p0.ring[p0.num_vtx-2];
+      dest1.ring[2] = dest0.ring[0] = (Vec3fa_t)p0.ring[1];
+      dest1.ring[1] = dest0.ring[7] = (Vec3fa_t)p1.ring[0];
+      dest1.ring[0] = dest0.ring[6] = (Vec3fa_t)p1.vtx;
+      dest1.ring[7] = dest0.ring[5] = (Vec3fa_t)p1.ring[4];
+      dest1.ring[6] = dest0.ring[4] = (Vec3fa_t)p0.ring[p0.num_vtx-1];
+      dest1.ring[5] = dest0.ring[3] = (Vec3fa_t)p0.ring[p0.num_vtx-2];
+      dest1.ring[4] = dest0.ring[2] = (Vec3fa_t)p0.vtx;
+      dest1.ring[3] = dest0.ring[1] = (Vec3fa_t)p0.ring[2];
 
-      dest1.crease_weight[3] = dest0.crease_weight[0] = 0.0f;
-      dest1.crease_weight[0] = dest0.crease_weight[1] = p1.crease_weight[p1.valence-1];
-      dest1.crease_weight[1] = dest0.crease_weight[2] = 0.0f;
-      dest1.crease_weight[2] = dest0.crease_weight[3] = p0.crease_weight[0];
+      dest1.crease_weight[1] = dest0.crease_weight[0] = 0.0f;
+      dest1.crease_weight[0] = dest0.crease_weight[3] = p1.crease_weight[1];
+      dest1.crease_weight[3] = dest0.crease_weight[2] = 0.0f;
+      dest1.crease_weight[2] = dest0.crease_weight[1] = p0.crease_weight[0];
     }
 
 
@@ -775,20 +676,20 @@ namespace embree
       dest1.valence = dest0.valence = 3;
       dest1.num_vtx = dest0.num_vtx = 6;
       dest0.hard_edge_index = 2;
-      dest1.hard_edge_index = 0;
+      dest1.hard_edge_index = 4;
       dest1.vtx  = dest0.vtx = (Vec3fa_t)p0.ring[0];
       dest1.vertex_crease_weight = dest0.vertex_crease_weight = 0.0f;
 
-      dest1.ring[ 4] = dest0.ring[ 0] = (Vec3fa_t)p0.ring[p0.num_vtx-1];
-      dest1.ring[ 5] = dest0.ring[ 1] = (Vec3fa_t)p1.ring[0];
-      dest1.ring[ 0] = dest0.ring[ 2] = (Vec3fa_t)p1.vtx;
-      dest1.ring[ 1] = dest1.ring[ 3] = Vec3fa_t(nan); //(Vec3fa_t)p0.ring[p0.hard_edge_index+1]; // dummy
-      dest1.ring[ 2] = dest0.ring[ 4] = (Vec3fa_t)p0.vtx;
-      dest1.ring[ 3] = dest0.ring[ 5] = (Vec3fa_t)p0.ring[p0.num_vtx-2];
+      dest1.ring[2] = dest0.ring[0] = (Vec3fa_t)p0.ring[1];
+      dest1.ring[1] = dest0.ring[5] = (Vec3fa_t)p1.ring[0];
+      dest1.ring[0] = dest0.ring[4] = (Vec3fa_t)p1.vtx;
+      dest1.ring[5] = dest0.ring[3] = (Vec3fa_t)p0.ring[p0.hard_edge_index+1]; // dummy
+      dest1.ring[4] = dest0.ring[2] = (Vec3fa_t)p0.vtx;
+      dest1.ring[3] = dest0.ring[1] = (Vec3fa_t)p0.ring[2];
 
-      dest1.crease_weight[2] = dest0.crease_weight[0] = 0.0f;
-      dest1.crease_weight[0] = dest0.crease_weight[1] = p1.crease_weight[p1.valence-1];
-      dest1.crease_weight[1] = dest0.crease_weight[2] = p0.crease_weight[0];
+      dest1.crease_weight[1] = dest0.crease_weight[0] = 0.0f;
+      dest1.crease_weight[0] = dest0.crease_weight[2] = p1.crease_weight[1];
+      dest1.crease_weight[2] = dest0.crease_weight[1] = p0.crease_weight[0];
     }
 
     static __forceinline void init_regular(const Vec3fa_t &center, const Vec3fa_t center_ring[8], const size_t offset, CatmullClark1Ring &dest)
@@ -800,7 +701,7 @@ namespace embree
       dest.vertex_crease_weight = 0.0f;
       for (size_t i=0; i<8; i++) 
 	dest.ring[i] = (Vec3fa_t)center_ring[(offset+i)%8];
-      for (size_t i=0; i<8; i++) 
+      for (size_t i=0; i<4; i++) 
         dest.crease_weight[i] = 0.0f;
     }
  
@@ -832,22 +733,22 @@ namespace embree
       patch[3].level[2] = 0.5f*level[2];
       patch[3].level[3] = 0.5f*level[3];
       
-      if (likely(ring[0].hard_edge_index != 0))
+      if (likely(ring[0].has_last_face()))
         init_regular(patch[0].ring[0],patch[1].ring[1],patch[0].ring[1],patch[1].ring[0]);
       else
         init_border(patch[0].ring[0],patch[1].ring[1],patch[0].ring[1],patch[1].ring[0]);
 
-      if (likely(ring[1].hard_edge_index != 0))
+      if (likely(ring[1].has_last_face()))
         init_regular(patch[1].ring[1],patch[2].ring[2],patch[1].ring[2],patch[2].ring[1]);
       else
         init_border(patch[1].ring[1],patch[2].ring[2],patch[1].ring[2],patch[2].ring[1]);
 
-      if (likely(ring[2].hard_edge_index != 0))
+      if (likely(ring[2].has_last_face()))
         init_regular(patch[2].ring[2],patch[3].ring[3],patch[2].ring[3],patch[3].ring[2]);
       else
         init_border(patch[2].ring[2],patch[3].ring[3],patch[2].ring[3],patch[3].ring[2]);
 
-      if (likely(ring[3].hard_edge_index != 0))
+      if (likely(ring[3].has_last_face()))
         init_regular(patch[3].ring[3],patch[0].ring[0],patch[3].ring[0],patch[0].ring[3]);
       else
         init_border(patch[3].ring[3],patch[0].ring[0],patch[3].ring[0],patch[0].ring[3]);
@@ -857,18 +758,18 @@ namespace embree
 
       // counter-clockwise
       center_ring[0] = (Vec3fa_t)patch[3].ring[3].ring[0];
-      center_ring[1] = (Vec3fa_t)patch[3].ring[3].vtx;
-      center_ring[2] = (Vec3fa_t)patch[2].ring[2].ring[0];
-      center_ring[3] = (Vec3fa_t)patch[2].ring[2].vtx;
+      center_ring[7] = (Vec3fa_t)patch[3].ring[3].vtx;
+      center_ring[6] = (Vec3fa_t)patch[2].ring[2].ring[0];
+      center_ring[5] = (Vec3fa_t)patch[2].ring[2].vtx;
       center_ring[4] = (Vec3fa_t)patch[1].ring[1].ring[0];
-      center_ring[5] = (Vec3fa_t)patch[1].ring[1].vtx;
-      center_ring[6] = (Vec3fa_t)patch[0].ring[0].ring[0];
-      center_ring[7] = (Vec3fa_t)patch[0].ring[0].vtx;
+      center_ring[3] = (Vec3fa_t)patch[1].ring[1].vtx;
+      center_ring[2] = (Vec3fa_t)patch[0].ring[0].ring[0];
+      center_ring[1] = (Vec3fa_t)patch[0].ring[0].vtx;
 
       init_regular(center,center_ring,0,patch[0].ring[2]);
-      init_regular(center,center_ring,2,patch[3].ring[1]);
+      init_regular(center,center_ring,2,patch[1].ring[3]);
       init_regular(center,center_ring,4,patch[2].ring[0]);
-      init_regular(center,center_ring,6,patch[1].ring[3]);
+      init_regular(center,center_ring,6,patch[3].ring[1]);
     }
 
     __forceinline void init( FinalQuad& quad ) const
@@ -909,7 +810,7 @@ namespace embree
       size_t i = 0;
       const SubdivMesh::HalfEdge* edge = h; 
       do {
-        ring[i].init(edge,vertices);
+	ring[i].init(edge,vertices);
         level[i] = edge->edge_level;
         edge = edge->next();
         i++;
@@ -928,19 +829,19 @@ namespace embree
       dest1.vtx = dest0.vtx = (Vec3fa_t)p0.ring[0];
       dest1.vertex_crease_weight = dest0.vertex_crease_weight = 0.0f;
 
-      dest1.ring[6] = dest0.ring[0] = (Vec3fa_t)p0.ring[p0.num_vtx-1];
-      dest1.ring[7] = dest0.ring[1] = (Vec3fa_t)p1.ring[0];
-      dest1.ring[0] = dest0.ring[2] = (Vec3fa_t)p1.vtx;
-      dest1.ring[1] = dest0.ring[3] = (Vec3fa_t)p1.ring[p1.num_vtx-4];
-      dest1.ring[2] = dest0.ring[4] = (Vec3fa_t)p0.ring[1];
-      dest1.ring[3] = dest0.ring[5] = (Vec3fa_t)p0.ring[2];
-      dest1.ring[4] = dest0.ring[6] = (Vec3fa_t)p0.vtx;
-      dest1.ring[5] = dest0.ring[7] = (Vec3fa_t)p0.ring[p0.num_vtx-2];
+      dest1.ring[2] = dest0.ring[0] = (Vec3fa_t)p0.ring[1];
+      dest1.ring[1] = dest0.ring[7] = (Vec3fa_t)p1.ring[0];
+      dest1.ring[0] = dest0.ring[6] = (Vec3fa_t)p1.vtx;
+      dest1.ring[7] = dest0.ring[5] = (Vec3fa_t)p1.ring[4];
+      dest1.ring[6] = dest0.ring[4] = (Vec3fa_t)p0.ring[p0.num_vtx-1];
+      dest1.ring[5] = dest0.ring[3] = (Vec3fa_t)p0.ring[p0.num_vtx-2];
+      dest1.ring[4] = dest0.ring[2] = (Vec3fa_t)p0.vtx;
+      dest1.ring[3] = dest0.ring[1] = (Vec3fa_t)p0.ring[2];
 
-      dest1.crease_weight[3] = dest0.crease_weight[0] = 0.0f;
-      dest1.crease_weight[0] = dest0.crease_weight[1] = p1.crease_weight[p1.valence-1];
-      dest1.crease_weight[1] = dest0.crease_weight[2] = 0.0f;
-      dest1.crease_weight[2] = dest0.crease_weight[3] = p0.crease_weight[0];
+      dest1.crease_weight[1] = dest0.crease_weight[0] = 0.0f;
+      dest1.crease_weight[0] = dest0.crease_weight[3] = p1.crease_weight[1];
+      dest1.crease_weight[3] = dest0.crease_weight[2] = 0.0f;
+      dest1.crease_weight[2] = dest0.crease_weight[1] = p0.crease_weight[0];
     }
 
 
@@ -952,20 +853,20 @@ namespace embree
       dest1.valence = dest0.valence = 3;
       dest1.num_vtx = dest0.num_vtx = 6;
       dest0.hard_edge_index = 2;
-      dest1.hard_edge_index = 0;
+      dest1.hard_edge_index = 4;
       dest1.vtx  = dest0.vtx = (Vec3fa_t)p0.ring[0];
       dest1.vertex_crease_weight = dest0.vertex_crease_weight = 0.0f;
 
-      dest1.ring[ 4] = dest0.ring[ 0] = (Vec3fa_t)p0.ring[p0.num_vtx-1];
-      dest1.ring[ 5] = dest0.ring[ 1] = (Vec3fa_t)p1.ring[0];
-      dest1.ring[ 0] = dest0.ring[ 2] = (Vec3fa_t)p1.vtx;
-      dest1.ring[ 1] = dest1.ring[ 3] = Vec3fa_t(nan); //(Vec3fa_t)p0.ring[p0.hard_edge_index+1]; // dummy
-      dest1.ring[ 2] = dest0.ring[ 4] = (Vec3fa_t)p0.vtx;
-      dest1.ring[ 3] = dest0.ring[ 5] = (Vec3fa_t)p0.ring[p0.num_vtx-2];
+      dest1.ring[2] = dest0.ring[0] = (Vec3fa_t)p0.ring[1];
+      dest1.ring[1] = dest0.ring[5] = (Vec3fa_t)p1.ring[0];
+      dest1.ring[0] = dest0.ring[4] = (Vec3fa_t)p1.vtx;
+      dest1.ring[5] = dest0.ring[3] = (Vec3fa_t)p0.ring[p0.hard_edge_index+1]; // dummy
+      dest1.ring[4] = dest0.ring[2] = (Vec3fa_t)p0.vtx;
+      dest1.ring[3] = dest0.ring[1] = (Vec3fa_t)p0.ring[2];
 
-      dest1.crease_weight[2] = dest0.crease_weight[0] = 0.0f;
-      dest1.crease_weight[0] = dest0.crease_weight[1] = p1.crease_weight[p1.valence-1];
-      dest1.crease_weight[1] = dest0.crease_weight[2] = p0.crease_weight[0];
+      dest1.crease_weight[1] = dest0.crease_weight[0] = 0.0f;
+      dest1.crease_weight[0] = dest0.crease_weight[2] = p1.crease_weight[1];
+      dest1.crease_weight[2] = dest0.crease_weight[1] = p0.crease_weight[0];
     }
 
     static __forceinline void init_regular(const Vec3fa_t &center, const Vec3fa_t center_ring[2*SIZE], const size_t N, const size_t offset, CatmullClark1Ring &dest)
@@ -977,8 +878,8 @@ namespace embree
       dest.vtx     = (Vec3fa_t)center;
       dest.vertex_crease_weight = 0.0f;
       for (size_t i=0; i<2*N; i++) 
-	dest.ring[i] = (Vec3fa_t)center_ring[(2*N+offset-i-1)%(2*N)];
-      for (size_t i=0; i<2*N; i++) 
+	dest.ring[i] = (Vec3fa_t)center_ring[(2*N+offset+i-1)%(2*N)];
+      for (size_t i=0; i<N; i++) 
         dest.crease_weight[i] = 0.0f;
     }
  
@@ -1000,7 +901,7 @@ namespace embree
       {
         size_t ip1 = (i+1)%N; // FIXME: %
         size_t im1 = (i+N-1)%N; // FIXME: %
-        if (likely(ring[i].has_first_patch())) init_regular(patch[i].ring[0],patch[ip1].ring[0],patch[i].ring[1],patch[ip1].ring[3]); 
+        if (likely(ring[i].has_last_face())) init_regular(patch[i].ring[0],patch[ip1].ring[0],patch[i].ring[1],patch[ip1].ring[3]); 
         else                                   init_border (patch[i].ring[0],patch[ip1].ring[0],patch[i].ring[1],patch[ip1].ring[3]);
 
         patch[i].level[1] = patch[ip1].level[2] = 0.25f*(level[im1]+level[ip1]);
@@ -1297,41 +1198,6 @@ namespace embree
 
     RegularCatmullClarkPatch () {}
 
-    RegularCatmullClarkPatch (const IrregularCatmullClarkPatch& in) 
-    {
-      v[0][0] = in.ring[0].front(3);
-      v[0][1] = in.ring[0].front(2);
-      v[1][0] = in.ring[0].back(3);
-      v[1][1] = in.ring[0].vtx;
-
-      v[0][3] = in.ring[1].front(3);
-      v[1][3] = in.ring[1].front(2);
-      v[0][2] = in.ring[1].back(3);
-      v[1][2] = in.ring[1].vtx;
-
-      v[3][3] = in.ring[2].front(3);
-      v[3][2] = in.ring[2].front(2);
-      v[2][3] = in.ring[2].back(3);
-      v[2][2] = in.ring[2].vtx;
-
-      v[3][0] = in.ring[3].front(3);
-      v[2][0] = in.ring[3].front(2);
-      v[3][1] = in.ring[3].back(3);
-      v[2][1] = in.ring[3].vtx;
-
-      if (in.ring[0].has_first_patch())
-        for (size_t i=0; i<4; i++) v[0][i] = 2*v[1][i] - v[2][i];
-
-      if (in.ring[1].has_first_patch())
-        for (size_t i=0; i<4; i++) v[i][3] = 2*v[i][2] - v[i][1];
-
-      if (in.ring[2].has_first_patch())
-        for (size_t i=0; i<4; i++) v[3][i] = 2*v[2][i] - v[1][i];
-
-      if (in.ring[3].has_first_patch())
-        for (size_t i=0; i<4; i++) v[i][0] = 2*v[i][1] - v[i][2];
-    }
-
     __forceinline void init( FinalQuad& quad ) const
     {
       quad.vtx[0] = v[1][1];
@@ -1369,23 +1235,23 @@ namespace embree
       assert( irreg_patch.dicable() );
 
       v[1][1] = irreg_patch.ring[0].vtx;
-      v[0][1] = irreg_patch.ring[0].ring[2];
-      v[0][0] = irreg_patch.ring[0].ring[3];
+      v[0][1] = irreg_patch.ring[0].ring[6];
+      v[0][0] = irreg_patch.ring[0].ring[5];
       v[1][0] = irreg_patch.ring[0].ring[4];
 
       v[1][2] = irreg_patch.ring[1].vtx;
-      v[1][3] = irreg_patch.ring[1].ring[2];
-      v[0][3] = irreg_patch.ring[1].ring[3];
+      v[1][3] = irreg_patch.ring[1].ring[6];
+      v[0][3] = irreg_patch.ring[1].ring[5];
       v[0][2] = irreg_patch.ring[1].ring[4];
 
       v[2][2] = irreg_patch.ring[2].vtx;
-      v[3][2] = irreg_patch.ring[2].ring[2];
-      v[3][3] = irreg_patch.ring[2].ring[3];
+      v[3][2] = irreg_patch.ring[2].ring[6];
+      v[3][3] = irreg_patch.ring[2].ring[5];
       v[2][3] = irreg_patch.ring[2].ring[4];
 
       v[2][1] = irreg_patch.ring[3].vtx;
-      v[2][0] = irreg_patch.ring[3].ring[2];
-      v[3][0] = irreg_patch.ring[3].ring[3];      
+      v[2][0] = irreg_patch.ring[3].ring[6];
+      v[3][0] = irreg_patch.ring[3].ring[5];      
       v[3][1] = irreg_patch.ring[3].ring[4];
     }
 
@@ -1581,11 +1447,13 @@ namespace embree
 
       const Vec3fa &vtx     = irreg_patch.ring[index].vtx;
       const Vec3fa e_i      = irreg_patch.ring[index].getEdgeCenter( 0 );
-      const Vec3fa c_i_m_1  = irreg_patch.ring[index].getQuadCenter( valence-1 );
-      const Vec3fa e_i_m_1  = irreg_patch.ring[index].getEdgeCenter( valence-1 );
+      const Vec3fa c_i_m_1  = irreg_patch.ring[index].getQuadCenter( 0 );
+      const Vec3fa e_i_m_1  = irreg_patch.ring[index].getEdgeCenter( 1 );
 
       Vec3fa c_i, e_i_p_1;
-      if (unlikely(hard_edge_index == 0))
+      //if (unlikely(hard_edge_index == 0))
+      //if (unlikely(!irreg_patch.ring[index].has_last_face()))
+      if (unlikely(hard_edge_index == num_vtx-2)) // FIXME: why not || valence == 2
 	{
 	  /* mirror quad center and edge mid-point */
 	  c_i     = c_i_m_1 + 2 * (e_i - c_i_m_1);
@@ -1593,12 +1461,14 @@ namespace embree
 	}
       else
 	{
-	  c_i     = irreg_patch.ring[index].getQuadCenter( 0 );
-	  e_i_p_1 = irreg_patch.ring[index].getEdgeCenter( 1 );
+	  c_i     = irreg_patch.ring[index].getQuadCenter( valence-1 );
+	  e_i_p_1 = irreg_patch.ring[index].getEdgeCenter( valence-1 );
 	}
 
       Vec3fa c_i_m_2, e_i_m_2;
-      if (unlikely(hard_edge_index+2 == num_vtx-2) || valence == 2)
+      //if (unlikely(hard_edge_index+2 == num_vtx-2) || valence == 2)
+      //if (unlikely(!irreg_patch.ring[index].has_second_face() || valence == 2))
+      if (unlikely(hard_edge_index == 2 || valence == 2))
 	{
 	  /* mirror quad center and edge mid-point */
 	  c_i_m_2  = c_i_m_1 + 2 * (e_i_m_1 - c_i_m_1);
@@ -1606,8 +1476,8 @@ namespace embree
 	}
       else
 	{
-	  c_i_m_2  = irreg_patch.ring[index].getQuadCenter( valence-2 );
-	  e_i_m_2  = irreg_patch.ring[index].getEdgeCenter( valence-2 );
+	  c_i_m_2  = irreg_patch.ring[index].getQuadCenter( 1 );
+	  e_i_m_2  = irreg_patch.ring[index].getEdgeCenter( 2 );
 	}
 
 

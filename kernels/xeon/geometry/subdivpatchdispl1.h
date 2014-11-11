@@ -91,15 +91,15 @@ namespace embree
     
     __forceinline void init(CatmullClark1Ring& ring0, CatmullClark1Ring& ring1) 
     {
-      v(0,0) = ring0.front(2);
       v(0,1) = ring0.vtx;
-      v(0,2) = ring0.back(1);
-      if (!ring0.has_first_patch()) v(0,0) = 2*v(0,1) - v(0,2);
+      v(0,2) = ring0.front(2);
+      if (!ring0.has_last_face()) v(0,0) = 2*v(0,1) - v(0,2);
+      else                        v(0,0) = ring0.back(2);
 
-      v(K,0) = ring1.back(3);
       v(K,1) = ring1.vtx;
       v(K,2) = ring1.front(0);
-      if (!ring1.has_prelast_patch()) v(K,0) = 2*v(K,1) - v(K,2);
+      if (!ring1.has_second_face()) v(K,0) = 2*v(K,1) - v(K,2);
+      else                          v(K,0) = ring1.front(4);
     }
     
     friend __forceinline std::ostream &operator<<(std::ostream& out, const CatmullClark1Edge& edge)
@@ -286,7 +286,7 @@ namespace embree
 #endif
 
 #if 0
-      const RegularCatmullClarkPatch regular(patch);
+      RegularCatmullClarkPatch regular; regular.init(patch);
       const BBox3fa bounds = leaf->build(scene,regular);
 #endif
 
@@ -437,6 +437,7 @@ namespace embree
 #if 0
       IrregularCatmullClarkPatch patch(h,vertices);
       const std::pair<BBox3fa,BVH4::NodeRef> root = build(alloc,patch,0,0,0,(int)levels-3,false,false,false,false);
+      //const std::pair<BBox3fa,BVH4::NodeRef> root = build(alloc,patch,0,0,0,1,false,false,false,false);
 #else
       GeneralIrregularCatmullClarkPatch patch(h,vertices);
       const std::pair<BBox3fa,BVH4::NodeRef> root = build(alloc,patch,(int)levels-3);
