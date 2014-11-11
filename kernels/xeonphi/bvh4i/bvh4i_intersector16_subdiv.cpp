@@ -288,7 +288,7 @@ namespace embree
 
       gridUVTessellator(edge_levels,grid_u_res,grid_v_res,u_array,v_array);
 
-#if 0
+#if 1
       DBG_PRINT("UV grid");
       DBG_PRINT( edge_levels[0] );
       DBG_PRINT( edge_levels[1] );

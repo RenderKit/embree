@@ -128,6 +128,10 @@ namespace embree
       vtx = (Vec3fa_t)vertices[ h->getStartVertexIndex() ];
       vertex_crease_weight = h->vertex_crease_weight;
 
+#if 1
+      vertex_crease_weight = inf;
+#endif
+
       SubdivMesh::HalfEdge* p = (SubdivMesh::HalfEdge*) h;
 
       size_t i=0;
@@ -1730,30 +1734,46 @@ namespace embree
 			       float * __restrict__ const uv_array,
 			       const unsigned int uv_array_step)
  {
-   const float low_rate_step = 1.0f / (float)low_rate_segments;
-   const unsigned int dy = low_rate_segments;   
-   const unsigned int dx = high_rate_segments;
+   assert(low_rate_segments < high_rate_segments);
+   assert(high_rate_segments >= 2);
 
-   int d  = 2*dy-dx;  
-   int ds = 2*dy;  
-   int dt = 2*(dy-dx);  
- 
-   float low_rate_value = 0.0f;
-   unsigned int offset = 0;
+   const float inv_low_rate_segments = 1.0f / (float)low_rate_segments;
+   const unsigned int high_rate_points = high_rate_segments+1;
+   const unsigned int dy = low_rate_segments+1; // [0,..,low_rate_segments]   
+   const unsigned int dx = high_rate_segments-1;
 
-   for(unsigned int x=0; x<high_rate_segments; x++) // look at the starting point of the 'x' segment
+   int p = 2*dy-dx;  
+
+   unsigned int offset = uv_array_step;
+
+   DBG_PRINT( inv_low_rate_segments );
+   DBG_PRINT(p);
+   DBG_PRINT(dx);
+   DBG_PRINT(dy);
+
+
+   for(unsigned int x=1, y=0; x<high_rate_segments; x++) // inner points [1,..,n-1]
      {
-       /* DBG_PRINT(d); */
-       /* std::cout << "x " << x << " value " << low_rate_value << std::endl; */
-       uv_array[offset] = low_rate_value;
+       std::cout << std::endl;
+       DBG_PRINT( x );
+       uv_array[offset] = (float)y * inv_low_rate_segments;
+
+       std::cout << "x " << x << " y " << y << " value " << uv_array[offset] << std::endl; 
+       DBG_PRINT(offset);
+
        offset += uv_array_step;      
-       if(d >= 0)
+       DBG_PRINT(p);
+
+       if(p > 0)
 	 {
-	   d += dt;
-	   low_rate_value += low_rate_step;
+	   y++;
+	   DBG_PRINT(y);
+	   p -= 2*dx;
 	 }
-       else
-	 d += ds;
+       p += 2*dy;
+
+       DBG_PRINT( p );
+
      }
  }
 
@@ -1795,7 +1815,7 @@ namespace embree
      v_array[num_points-1-x] = 1.0f;
        
 
-#if 0
+#if 1
       DBG_PRINT("UV grid");
       DBG_PRINT( edge_levels[0] );
       DBG_PRINT( edge_levels[1] );
