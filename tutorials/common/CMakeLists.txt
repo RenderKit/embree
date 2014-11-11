@@ -15,14 +15,19 @@
 ## ======================================================================== ##
 
 SET (__XEON__ 1)
-ADD_SUBDIRECTORY(image)
-ADD_SUBDIRECTORY(lexers)
-ADD_SUBDIRECTORY(transport)
-ADD_SUBDIRECTORY(tutorial)
 
-IF (XEON_PHI_ISA)
-  SET (__XEON__ 0)
-  ADD_SUBDIRECTORY(tutorial tutorial_xeonphi)
-  ADD_SUBDIRECTORY(transport_coi/host)
-  ADD_SUBDIRECTORY(transport_coi/device)
+# always add "image", because it has own logic to handle BUILD_TUTORIALS* flags 
+ADD_SUBDIRECTORY(image)
+
+IF (BUILD_TUTORIALS OR BUILD_TUTORIALS_ISPC)
+  ADD_SUBDIRECTORY(lexers)
+  ADD_SUBDIRECTORY(transport)
+  ADD_SUBDIRECTORY(tutorial)
+  
+  IF (XEON_PHI_ISA)
+    SET (__XEON__ 0)
+    ADD_SUBDIRECTORY(tutorial tutorial_xeonphi)
+    ADD_SUBDIRECTORY(transport_coi/host)
+    ADD_SUBDIRECTORY(transport_coi/device)
+  ENDIF()
 ENDIF()
