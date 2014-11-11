@@ -81,6 +81,11 @@ namespace embree
     out->numEdgeCreases = in->edge_creases.size();
     out->numVertexCreases = in->vertex_creases.size();
     out->numHoles = in->holes.size();
+    out->geomID = -1;
+
+    size_t numEdges = in->position_indices.size();
+    out->subdivlevel = new float[numEdges];
+    for (size_t i=0; i<numEdges; i++) out->subdivlevel[i] = 1.0f;
     return out;
   }
 

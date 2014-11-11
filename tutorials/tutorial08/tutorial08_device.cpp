@@ -160,16 +160,26 @@ unsigned int createSphere (RTCGeometryFlags flags, const Vec3fa& pos, const floa
   return mesh;
 }
 
-void updateSphere(const Vec3fa& cam_pos)
+void updateScene(const Vec3fa& cam_pos)
 {
-  if (g_sphere == -1) return;
-  Vec3fa* vertices = (Vec3fa*  ) rtcMapBuffer(g_scene,g_sphere,RTC_VERTEX_BUFFER); 
-  for (size_t i=0; i<numTheta*(numPhi+1); i++) {
-    Vec3fa P(vertices[i].x,vertices[i].y,vertices[i].z);
-    //vertices[i].a = floor(log(100.0f/length(cam_pos-P))/log(2.0f));
+  if (!g_ispc_scene) return;
+
+  for (size_t g=0; g<g_ispc_scene->numSubdivMeshes; g++)
+  {
+    ISPCSubdivMesh* mesh = g_ispc_scene->subdiv[g];
+    unsigned int geomID = mesh->geomID;
+    for (size_t f=0, e=0; f<mesh->numFaces; e+=mesh->verticesPerFace[f++]) {
+      const int N = mesh->verticesPerFace[f];
+      for (size_t i=0; i<N; i++) {
+        const Vec3fa v0 = mesh->positions[mesh->position_indices[e+(i+0)]];
+        const Vec3fa v1 = mesh->positions[mesh->position_indices[e+(i+1)%N]];
+        const Vec3fa edge = v1-v0;
+        const Vec3fa P = 0.5f*(v1+v0);
+        mesh->subdivlevel[e+i] = 10.0f*length(edge)/length(cam_pos-P);
+      }
+    }
+    rtcUpdate(g_scene,geomID);
   }
-  rtcUnmapBuffer(g_scene,g_sphere,RTC_VERTEX_BUFFER); 
-  rtcUpdate(g_scene,g_sphere);
   rtcCommit(g_scene);
 }
 
@@ -178,7 +188,8 @@ RTCScene constructScene(const Vec3fa& cam_pos)
   if (!g_ispc_scene) return NULL;
 
   /*! Create an Embree object to hold scene state. */
-  RTCScene scene = rtcNewScene(RTC_SCENE_STATIC, RTC_INTERSECT1);
+  //RTCScene scene = rtcNewScene(RTC_SCENE_STATIC, RTC_INTERSECT1);
+  RTCScene scene = rtcNewScene(RTC_SCENE_DYNAMIC, RTC_INTERSECT1);
   
   for (size_t i=0; i<g_ispc_scene->numMeshes; i++)
   {
@@ -201,6 +212,7 @@ RTCScene constructScene(const Vec3fa& cam_pos)
     unsigned int subdivMeshID = rtcNewSubdivisionMesh(scene, RTC_GEOMETRY_STATIC, mesh->numFaces, mesh->numEdges, mesh->numVertices, 
                                                       mesh->numEdgeCreases, mesh->numVertexCreases, mesh->numHoles);
     rtcSetBuffer(scene, subdivMeshID, RTC_VERTEX_BUFFER, mesh->positions, 0, sizeof(Vec3fa  ));
+    rtcSetBuffer(scene, subdivMeshID, RTC_LEVEL_BUFFER,  mesh->subdivlevel, 0, sizeof(float));
     rtcSetBuffer(scene, subdivMeshID, RTC_INDEX_BUFFER,  mesh->position_indices  , 0, sizeof(unsigned int));
     rtcSetBuffer(scene, subdivMeshID, RTC_FACE_BUFFER,   mesh->verticesPerFace, 0, sizeof(unsigned int));
     rtcSetBuffer(scene, subdivMeshID, RTC_HOLE_BUFFER,   mesh->holes, 0, sizeof(unsigned int));
@@ -208,6 +220,7 @@ RTCScene constructScene(const Vec3fa& cam_pos)
     rtcSetBuffer(scene, subdivMeshID, RTC_EDGE_CREASE_WEIGHT_BUFFER,   mesh->edge_crease_weights,   0, sizeof(float));
     rtcSetBuffer(scene, subdivMeshID, RTC_VERTEX_CREASE_BUFFER,        mesh->vertex_creases,        0, sizeof(unsigned int));
     rtcSetBuffer(scene, subdivMeshID, RTC_VERTEX_CREASE_WEIGHT_BUFFER, mesh->vertex_crease_weights, 0, sizeof(float));
+    mesh->geomID = subdivMeshID;
   }       
   
   rtcCommit(scene);  
@@ -425,7 +438,7 @@ extern "C" void device_render(int *pixels, int width, int height, float time, co
     g_scene = constructScene(p);
   } else {
     static Vec3fa oldP = zero;
-    if (oldP != p) updateSphere (p);
+    if (oldP != p) updateScene (p);
     oldP = p;
   }
   

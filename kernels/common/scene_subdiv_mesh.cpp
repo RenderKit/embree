@@ -241,7 +241,7 @@ namespace embree
         if (creaseMap.find(value) != creaseMap.end()) 
           edge_crease_weight = creaseMap[value];
 
-        float edge_level = 3.0f;
+        float edge_level = 1.0f;
         if (levels) edge_level = levels[j+dj];
         
         edge0->vtx_index = startVertex;

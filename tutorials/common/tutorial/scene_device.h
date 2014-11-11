@@ -70,6 +70,7 @@ struct ISPCSubdivMesh
   int* texcoord_indices;   //!< texcoord indices for all faces
   int* verticesPerFace;    //!< number of indices of each face
   int* holes;              //!< face ID of holes
+  float* subdivlevel;      //!< subdivision level
   Vec2i* edge_creases;          //!< crease index pairs
   float* edge_crease_weights;   //!< weight for each crease
   int* vertex_creases;          //!< indices of vertex creases
@@ -80,6 +81,7 @@ struct ISPCSubdivMesh
   int numEdgeCreases;
   int numVertexCreases;
   int numHoles;
+  int geomID;
 };
 
 struct ISPCAmbientLight

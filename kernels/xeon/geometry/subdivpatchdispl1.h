@@ -297,13 +297,57 @@ namespace embree
       return std::pair<BBox3fa,BVH4::NodeRef>(bounds,BVH4::encodeTypedLeaf(leaf,0));
     }
 
+    const std::pair<BBox3fa,BVH4::NodeRef> grid(FastAllocator& alloc, const IrregularCatmullClarkPatch& patch, unsigned x0, unsigned y0, unsigned level)
+    {
+      GregoryPatch patcheval; 
+      patcheval.init(patch);
+
+      const float l0 = patch.level[0];
+      const float l1 = patch.level[1];
+      const float l2 = patch.level[2];
+      const float l3 = patch.level[3];
+      const float lx = max(l1,l3);
+      const float ly = max(l0,l2);
+      const FractionalTessellationPattern pattern_x(lx);
+      const FractionalTessellationPattern pattern_y(ly);
+      const int nx = pattern_x.size();
+      const int ny = pattern_y.size();
+      
+      BBox3fa bounds = empty;
+      BVH4::Node* node = (BVH4::Node*) alloc.malloc(sizeof(BVH4::Node),16); node->clear();
+      int slot = 0;
+      
+      for (int y=0; y<ny; y+=8) 
+      {
+        for (int x=0; x<nx; x+=8) 
+        {
+          if (slot == 4) {
+            BVH4::Node* node1 = (BVH4::Node*) alloc.malloc(sizeof(BVH4::Node),16); node1->clear();
+            node1->set(0,bounds,BVH4::encodeNode2(node));
+            node = node1;
+            slot = 1;
+          }
+
+          QuadQuad4x4* leaf = (QuadQuad4x4*) alloc.malloc(sizeof(QuadQuad4x4),16);
+          new (leaf) QuadQuad4x4(8*x0+x,8*y0+y,8*(1<<level),geomID(),primID());
+          const BBox3fa leaf_bounds = leaf->build(scene,patcheval,
+                                                  pattern_x,x,min(8,nx-x),
+                                                  pattern_y,y,min(8,ny-y));
+          node->set(slot++,leaf_bounds,BVH4::encodeTypedLeaf(leaf,0));
+          bounds.extend(leaf_bounds);
+        }
+      }
+      return std::pair<BBox3fa,BVH4::NodeRef>(bounds,BVH4::encodeNode2(node));
+    }
+
     const std::pair<BBox3fa,BVH4::NodeRef> build(FastAllocator& alloc,
-                                                  const IrregularCatmullClarkPatch& patch,
+                                                 const IrregularCatmullClarkPatch& patch,
                                                  unsigned x, unsigned y, int l, int maxDepth,
                                                  bool Tt, bool Tr, bool Tb, bool Tl) // tagged transition edges
     {
       //if (unlikely(l == maxDepth))
-        return leaf(alloc,patch,x,y,l,false,false,false,false);
+      //return leaf(alloc,patch,x,y,l,false,false,false,false);
+      return grid(alloc,patch,x,y,l);
 
       IrregularCatmullClarkPatch patches[4]; 
       patch.subdivide(patches);
@@ -346,11 +390,11 @@ namespace embree
       IrregularCatmullClarkPatch patches[GeneralIrregularCatmullClarkPatch::SIZE]; 
       patch.subdivide(patches,N);
 
-      BVH4::Node* node = (BVH4::Node*) alloc.malloc(sizeof(BVH4::Node),16);
+      BVH4::Node* node = (BVH4::Node*) alloc.malloc(sizeof(BVH4::Node),16); node->clear();
       BBox3fa bounds = empty;
       for (size_t i=0, j=0; i<N; i++, j++) {
         if (j == 4) {
-          BVH4::Node* node1 = (BVH4::Node*) alloc.malloc(sizeof(BVH4::Node),16);
+          BVH4::Node* node1 = (BVH4::Node*) alloc.malloc(sizeof(BVH4::Node),16); node1->clear();
           node1->set(0,bounds,BVH4::encodeNode2(node));
           node = node1;
           j = 1;
