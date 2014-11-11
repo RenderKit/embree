@@ -128,7 +128,7 @@ namespace embree
       vtx = (Vec3fa_t)vertices[ h->getStartVertexIndex() ];
       vertex_crease_weight = h->vertex_crease_weight;
 
-#if 1
+#if 0 // test 
       vertex_crease_weight = inf;
 #endif
 
@@ -1746,34 +1746,18 @@ namespace embree
 
    unsigned int offset = uv_array_step;
 
-   DBG_PRINT( inv_low_rate_segments );
-   DBG_PRINT(p);
-   DBG_PRINT(dx);
-   DBG_PRINT(dy);
-
-
    for(unsigned int x=1, y=0; x<high_rate_segments; x++) // inner points [1,..,n-1]
      {
-       std::cout << std::endl;
-       DBG_PRINT( x );
        uv_array[offset] = (float)y * inv_low_rate_segments;
 
-       std::cout << "x " << x << " y " << y << " value " << uv_array[offset] << std::endl; 
-       DBG_PRINT(offset);
-
+       //std::cout << "x " << x << " y " << y << " value " << uv_array[offset] << std::endl; 
        offset += uv_array_step;      
-       DBG_PRINT(p);
-
        if(p > 0)
 	 {
 	   y++;
-	   DBG_PRINT(y);
 	   p -= 2*dx;
 	 }
        p += 2*dy;
-
-       DBG_PRINT( p );
-
      }
  }
 
@@ -1815,7 +1799,7 @@ namespace embree
      v_array[num_points-1-x] = 1.0f;
        
 
-#if 1
+#if 0
       DBG_PRINT("UV grid");
       DBG_PRINT( edge_levels[0] );
       DBG_PRINT( edge_levels[1] );
