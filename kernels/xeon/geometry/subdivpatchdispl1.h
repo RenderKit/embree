@@ -306,8 +306,12 @@ namespace embree
       const float l1 = patch.level[1];
       const float l2 = patch.level[2];
       const float l3 = patch.level[3];
-      const float lx = max(l1,l3);
-      const float ly = max(l0,l2);
+      const FractionalTessellationPattern pattern0(l0);
+      const FractionalTessellationPattern pattern1(l1);
+      const FractionalTessellationPattern pattern2(l2);
+      const FractionalTessellationPattern pattern3(l3);
+      const float ly = max(l1,l3);
+      const float lx = max(l0,l2);
       const FractionalTessellationPattern pattern_x(lx);
       const FractionalTessellationPattern pattern_y(ly);
       const int nx = pattern_x.size();
@@ -330,9 +334,9 @@ namespace embree
 
           QuadQuad4x4* leaf = (QuadQuad4x4*) alloc.malloc(sizeof(QuadQuad4x4),16);
           new (leaf) QuadQuad4x4(8*x0+x,8*y0+y,8*(1<<level),geomID(),primID());
-          const BBox3fa leaf_bounds = leaf->build(scene,patcheval,
-                                                  pattern_x,x,min(8,nx-x),
-                                                  pattern_y,y,min(8,ny-y));
+          const BBox3fa leaf_bounds = leaf->build(scene,patcheval,pattern0,pattern1,pattern2,pattern3,
+                                                  pattern_x,x,nx,
+                                                  pattern_y,y,ny);
           node->set(slot++,leaf_bounds,BVH4::encodeTypedLeaf(leaf,0));
           bounds.extend(leaf_bounds);
         }

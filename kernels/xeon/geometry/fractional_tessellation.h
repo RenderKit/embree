@@ -22,14 +22,18 @@ namespace embree
   {
     FractionalTessellationPattern (const float tess)
     : tess(tess), rcp_tess(1.0f/tess),
+      N(0),
       Nl(floor(tess)), 
       Nh(Nl+1), 
       th(tess-float(Nh)), 
-      tl(float(Nl)-tess) {}
+      tl(float(Nl)-tess) 
+      {
+        if (unlikely(tl > -16.0f*float(ulp))) N = Nl;
+        else N = Nl+1+(Nl % 2);
+      }
 
     __forceinline int size() const {
-      if (unlikely(tl > -16.0f*float(ulp))) return Nl;
-      else return Nl+1+(Nl % 2);
+      return N;
     }
 
     __forceinline float operator() (const int i) const
@@ -53,6 +57,7 @@ namespace embree
   private:
     const float tess, rcp_tess;
     const int   Nl, Nh;
+    int N;
     const float tl, th;
   };
 
