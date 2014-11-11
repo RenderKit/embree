@@ -434,7 +434,7 @@ namespace embree
       }
 
       /* create patch and build sub-BVH */
-#if 0
+#if 1
       IrregularCatmullClarkPatch patch(h,vertices);
       const std::pair<BBox3fa,BVH4::NodeRef> root = build(alloc,patch,0,0,0,(int)levels-3,false,false,false,false);
       //const std::pair<BBox3fa,BVH4::NodeRef> root = build(alloc,patch,0,0,0,1,false,false,false,false);

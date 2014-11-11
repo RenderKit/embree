@@ -509,9 +509,9 @@ namespace embree
                         const FractionalTessellationPattern& pattern_x, const int x0, const int Nx,
                         const FractionalTessellationPattern& pattern_y, const int y0, const int Ny)
     {
-      for (size_t y=0; y<=8; y++) {
+      for (int y=0; y<=8; y++) {
         const float fy = pattern_y(y0+y);
-        for (size_t x=0; x<=8; x++) {
+        for (int x=0; x<=8; x++) {
           const float fx = pattern_x(x0+x);
           v[y][x] = patch.eval(fx,fy);
         }
@@ -519,17 +519,23 @@ namespace embree
 
       if (unlikely(y0 == 0)) {
         const float fy = pattern_y(y0);
-        for (size_t x=0; x<=8; x++) {
-          const float fx = pattern0((x0+x)*pattern0.size()/pattern_x.size());
+        for (int x=0; x<=8; x++) {
+          int ix;
+          if (x0+x <= pattern_x.size()/2) ix = (x0+x)*pattern0.size()/pattern_x.size();
+          else                            ix = pattern0.size()-(pattern_x.size()-(x0+x))*pattern0.size()/pattern_x.size();
+          const float fx = pattern0(ix);
           v[0][x] = patch.eval(fx,fy);
         }
       }
 
       if (unlikely(y0+8 >= Ny)) {
-        for (size_t y=Ny-y0; y<=8; y++) {
+        for (int y=Ny-y0; y<=8; y++) {
           const float fy = pattern_y(y0+y);
-          for (size_t x=0; x<=8; x++) {
-            const float fx = pattern2((x0+x)*pattern2.size()/pattern_x.size());
+          for (int x=0; x<=8; x++) {
+          int ix;
+          if (x0+x <= pattern_x.size()/2) ix = (x0+x)*pattern2.size()/pattern_x.size();
+          else                            ix = pattern2.size()-(pattern_x.size()-(x0+x))*pattern2.size()/pattern_x.size();
+            const float fx = pattern2(ix);
             v[y][x] = patch.eval(fx,fy);
           }
         }
@@ -537,17 +543,23 @@ namespace embree
 
       if (unlikely(x0 == 0)) {
         const float fx = pattern_x(x0);
-        for (size_t y=0; y<=8; y++) {
-          const float fy = pattern3((y0+y)*pattern3.size()/pattern_y.size());
+        for (int y=0; y<=8; y++) {
+          int iy;
+          if (y0+y <= pattern_y.size()/2) iy = (y0+y)*pattern3.size()/pattern_y.size();
+          else                            iy = pattern3.size()-(pattern_y.size()-(y0+y))*pattern3.size()/pattern_y.size();
+          const float fy = pattern3(iy);
           v[y][0] = patch.eval(fx,fy);
         }
       }
 
       if (unlikely(x0+8 >= Nx)) {
-        for (size_t x=Nx-x0; x<=8; x++) {
+        for (int x=Nx-x0; x<=8; x++) {
           const float fx = pattern_x(x0+x);
-          for (size_t y=0; y<=8; y++) {
-            const float fy = pattern1((y0+y)*pattern1.size()/pattern_y.size());
+          for (int y=0; y<=8; y++) {
+            int iy;
+            if (y0+y <= pattern_y.size()/2) iy = (y0+y)*pattern1.size()/pattern_y.size();
+            else                            iy = pattern1.size()-(pattern_y.size()-(y0+y))*pattern1.size()/pattern_y.size();
+            const float fy = pattern1(iy);
             v[y][x] = patch.eval(fx,fy);
           }
         }

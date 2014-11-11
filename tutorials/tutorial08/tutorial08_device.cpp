@@ -23,6 +23,9 @@ renderPixelFunc renderPixel;
 const int numPhi = 10; 
 const int numTheta = 2*numPhi;
 
+extern "C" void setSubdivisionLevel(unsigned int); // for now hidden fct in the core 
+extern unsigned int g_subdivision_levels;
+
 /* error reporting function */
 void error_handler(const RTCError code, const char* str)
 {
@@ -163,6 +166,7 @@ unsigned int createSphere (RTCGeometryFlags flags, const Vec3fa& pos, const floa
 void updateScene(const Vec3fa& cam_pos)
 {
   if (!g_ispc_scene) return;
+  if (g_subdivision_levels % 2) return;
 
   for (size_t g=0; g<g_ispc_scene->numSubdivMeshes; g++)
   {
@@ -176,6 +180,7 @@ void updateScene(const Vec3fa& cam_pos)
         const Vec3fa edge = v1-v0;
         const Vec3fa P = 0.5f*(v1+v0);
         mesh->subdivlevel[e+i] = 10.0f*length(edge)/length(cam_pos-P);
+        //srand48(length(edge)/length(cam_pos-P)*12343.0f); mesh->subdivlevel[e+i] = 10.0f*drand48();
       }
     }
     rtcUpdate(g_scene,geomID);
@@ -209,18 +214,21 @@ RTCScene constructScene(const Vec3fa& cam_pos)
   for (size_t i=0; i<g_ispc_scene->numSubdivMeshes; i++)
   {
     ISPCSubdivMesh* mesh = g_ispc_scene->subdiv[i];
-    unsigned int subdivMeshID = rtcNewSubdivisionMesh(scene, RTC_GEOMETRY_STATIC, mesh->numFaces, mesh->numEdges, mesh->numVertices, 
+    unsigned int geomID = rtcNewSubdivisionMesh(scene, RTC_GEOMETRY_STATIC, mesh->numFaces, mesh->numEdges, mesh->numVertices, 
                                                       mesh->numEdgeCreases, mesh->numVertexCreases, mesh->numHoles);
-    rtcSetBuffer(scene, subdivMeshID, RTC_VERTEX_BUFFER, mesh->positions, 0, sizeof(Vec3fa  ));
-    rtcSetBuffer(scene, subdivMeshID, RTC_LEVEL_BUFFER,  mesh->subdivlevel, 0, sizeof(float));
-    rtcSetBuffer(scene, subdivMeshID, RTC_INDEX_BUFFER,  mesh->position_indices  , 0, sizeof(unsigned int));
-    rtcSetBuffer(scene, subdivMeshID, RTC_FACE_BUFFER,   mesh->verticesPerFace, 0, sizeof(unsigned int));
-    rtcSetBuffer(scene, subdivMeshID, RTC_HOLE_BUFFER,   mesh->holes, 0, sizeof(unsigned int));
-    rtcSetBuffer(scene, subdivMeshID, RTC_EDGE_CREASE_BUFFER,          mesh->edge_creases,          0, 2*sizeof(unsigned int));
-    rtcSetBuffer(scene, subdivMeshID, RTC_EDGE_CREASE_WEIGHT_BUFFER,   mesh->edge_crease_weights,   0, sizeof(float));
-    rtcSetBuffer(scene, subdivMeshID, RTC_VERTEX_CREASE_BUFFER,        mesh->vertex_creases,        0, sizeof(unsigned int));
-    rtcSetBuffer(scene, subdivMeshID, RTC_VERTEX_CREASE_WEIGHT_BUFFER, mesh->vertex_crease_weights, 0, sizeof(float));
-    mesh->geomID = subdivMeshID;
+    rtcSetBuffer(scene, geomID, RTC_VERTEX_BUFFER, mesh->positions, 0, sizeof(Vec3fa  ));
+    rtcSetBuffer(scene, geomID, RTC_LEVEL_BUFFER,  mesh->subdivlevel, 0, sizeof(float));
+    rtcSetBuffer(scene, geomID, RTC_INDEX_BUFFER,  mesh->position_indices  , 0, sizeof(unsigned int));
+    rtcSetBuffer(scene, geomID, RTC_FACE_BUFFER,   mesh->verticesPerFace, 0, sizeof(unsigned int));
+    rtcSetBuffer(scene, geomID, RTC_HOLE_BUFFER,   mesh->holes, 0, sizeof(unsigned int));
+    rtcSetBuffer(scene, geomID, RTC_EDGE_CREASE_BUFFER,          mesh->edge_creases,          0, 2*sizeof(unsigned int));
+    rtcSetBuffer(scene, geomID, RTC_EDGE_CREASE_WEIGHT_BUFFER,   mesh->edge_crease_weights,   0, sizeof(float));
+    rtcSetBuffer(scene, geomID, RTC_VERTEX_CREASE_BUFFER,        mesh->vertex_creases,        0, sizeof(unsigned int));
+    rtcSetBuffer(scene, geomID, RTC_VERTEX_CREASE_WEIGHT_BUFFER, mesh->vertex_crease_weights, 0, sizeof(float));
+    mesh->geomID = geomID;
+
+    //BBox3fa bounds(Vec3fa(-0.1f,-0.1f,-0.1f),Vec3fa(0.1f,0.1f,0.1f));
+    //rtcSetDisplacementFunction(g_scene, geomID, (RTCDisplacementFunc)DisplacementFunc,(RTCBounds&)bounds);
   }       
   
   rtcCommit(scene);  
@@ -416,9 +424,6 @@ extern "C" void device_init(int8 *configuration) {
   //renderPixel = renderPixelStandard;
   renderPixel = renderPixelEyeLightTest;
 }
-
-extern "C" void setSubdivisionLevel(unsigned int); // for now hidden fct in the core 
-extern unsigned int g_subdivision_levels;
 
 extern "C" void toggleOpenSubdiv(unsigned char key, int x, int y)
 {
