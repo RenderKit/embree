@@ -283,7 +283,7 @@ namespace embree
 
 #endif
 
-#if 0
+#if 1
       const unsigned int grid_u_res = max(edge_levels[0],edge_levels[2])+1; // n segments -> n+1 points
       const unsigned int grid_v_res = max(edge_levels[1],edge_levels[3])+1;
 #else
