@@ -127,6 +127,7 @@ namespace embree
       hard_edge_index = -1;
       vtx = (Vec3fa_t)vertices[ h->getStartVertexIndex() ];
       vertex_crease_weight = h->vertex_crease_weight;
+
       SubdivMesh::HalfEdge* p = (SubdivMesh::HalfEdge*) h;
 
       size_t i=0;
@@ -304,6 +305,9 @@ namespace embree
       /* border vertex rule */
       if (unlikely(hard_edge_index != -1))
 	{
+	  if (unlikely(isinf(vertex_crease_weight)))
+	    return vtx;
+
 	  const unsigned int second_hard_edge_index = hard_edge_index+2 >= num_vtx ? 0 : hard_edge_index+2;
 	  return (4.0f * vtx + ring[hard_edge_index] + ring[second_hard_edge_index]) * 1.0f/6.0f;
 	}
@@ -326,6 +330,9 @@ namespace embree
       /* border vertex rule */
       if (unlikely(hard_edge_index != -1))
 	{
+	  if (unlikely(isinf(vertex_crease_weight)))
+	    return ring[0] - vtx;
+
 	  //if (hard_edge_index != 0 && valence != 2) { 
           if (hard_edge_index != num_vtx-2 && valence != 2) { // FIXME: why valence!=2?
 	    return ring[0] - vtx; 
@@ -362,6 +369,9 @@ namespace embree
       /* border vertex rule */
       if (unlikely(hard_edge_index != -1))
 	{
+	  if (unlikely(isinf(vertex_crease_weight)))
+	    return ring[2] - vtx;
+
 	  //if (hard_edge_index == 0 && valence != 2) {
 	  if (hard_edge_index == num_vtx-2 && valence != 2) {
 	    return ring[2] - vtx;
@@ -1785,7 +1795,7 @@ namespace embree
      v_array[num_points-1-x] = 1.0f;
        
 
-#if 1
+#if 0
       DBG_PRINT("UV grid");
       DBG_PRINT( edge_levels[0] );
       DBG_PRINT( edge_levels[1] );
