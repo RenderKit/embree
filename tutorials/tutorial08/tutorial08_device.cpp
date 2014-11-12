@@ -166,7 +166,7 @@ unsigned int createSphere (RTCGeometryFlags flags, const Vec3fa& pos, const floa
 void updateScene(RTCScene scene, const Vec3fa& cam_pos)
 {
   if (!g_ispc_scene) return;
-  if (g_subdivision_levels % 2) return;
+  //if (g_subdivision_levels % 2) return;
 
   for (size_t g=0; g<g_ispc_scene->numSubdivMeshes; g++)
   {
@@ -184,6 +184,7 @@ void updateScene(RTCScene scene, const Vec3fa& cam_pos)
       }
     }
     /*for (size_t i=0; i<8; i++) mesh->subdivlevel[i] = 16.2;
+    //for (size_t i=0; i<8; i++) mesh->subdivlevel[i] = 17.2;
     float level = float(g_subdivision_levels)/16.0f;
     mesh->subdivlevel[0] = level;
     mesh->subdivlevel[1] = level;

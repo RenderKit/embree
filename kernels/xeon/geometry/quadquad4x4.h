@@ -501,6 +501,24 @@ namespace embree
       return build(scene);
     }
 
+    int stitch(int y, const FractionalTessellationPattern& fine, const FractionalTessellationPattern& coarse)
+    {
+      if (y == 0) return 0;
+      if (y == fine.size()) return fine.size();
+      if (y < coarse.size()/2 ) return y;
+      else if (fine.size()-(y) < coarse.size()/2) return coarse.size()-(fine.size()-(y));
+      else if (y <= fine.size()/2) return coarse.size()/2;
+      else return coarse.size()-coarse.size()/2; 
+    }
+
+    int stitch_old(int x, const FractionalTessellationPattern& fine, const FractionalTessellationPattern& coarse)
+    {
+      if (x == 0) return 0;
+      if (x == fine.size()) return fine.size();
+      if (x <= fine.size()/2) return (x)*coarse.size()/fine.size();
+      else                    return coarse.size()-(fine.size()-(x))*coarse.size()/fine.size();
+    }
+
     const BBox3fa build(Scene* scene, const GregoryPatch& patch,
                         const FractionalTessellationPattern& pattern0, 
                         const FractionalTessellationPattern& pattern1, 
@@ -520,10 +538,7 @@ namespace embree
       if (unlikely(y0 == 0)) {
         const float fy = pattern_y(y0);
         for (int x=0; x<=8; x++) {
-          int ix;
-          if (x0+x <= pattern_x.size()/2) ix = (x0+x)*pattern0.size()/pattern_x.size();
-          else                            ix = pattern0.size()-(pattern_x.size()-(x0+x))*pattern0.size()/pattern_x.size();
-          const float fx = pattern0(ix);
+          const float fx = pattern0(stitch(x0+x,pattern_x,pattern0));
           v[0][x] = patch.eval(fx,fy);
         }
       }
@@ -532,10 +547,7 @@ namespace embree
         for (int y=Ny-y0; y<=8; y++) {
           const float fy = pattern_y(y0+y);
           for (int x=0; x<=8; x++) {
-          int ix;
-          if (x0+x <= pattern_x.size()/2) ix = (x0+x)*pattern2.size()/pattern_x.size();
-          else                            ix = pattern2.size()-(pattern_x.size()-(x0+x))*pattern2.size()/pattern_x.size();
-            const float fx = pattern2(ix);
+            const float fx = pattern2(stitch(x0+x,pattern_x,pattern2));
             v[y][x] = patch.eval(fx,fy);
           }
         }
@@ -544,10 +556,7 @@ namespace embree
       if (unlikely(x0 == 0)) {
         const float fx = pattern_x(x0);
         for (int y=0; y<=8; y++) {
-          int iy;
-          if (y0+y <= pattern_y.size()/2) iy = (y0+y)*pattern3.size()/pattern_y.size();
-          else                            iy = pattern3.size()-(pattern_y.size()-(y0+y))*pattern3.size()/pattern_y.size();
-          const float fy = pattern3(iy);
+          const float fy = pattern3(stitch(y0+y,pattern_y,pattern3));
           v[y][0] = patch.eval(fx,fy);
         }
       }
@@ -556,10 +565,7 @@ namespace embree
         for (int x=Nx-x0; x<=8; x++) {
           const float fx = pattern_x(x0+x);
           for (int y=0; y<=8; y++) {
-            int iy;
-            if (y0+y <= pattern_y.size()/2) iy = (y0+y)*pattern1.size()/pattern_y.size();
-            else                            iy = pattern1.size()-(pattern_y.size()-(y0+y))*pattern1.size()/pattern_y.size();
-            const float fy = pattern1(iy);
+          const float fy = pattern1(stitch(y0+y,pattern_y,pattern1));
             v[y][x] = patch.eval(fx,fy);
           }
         }

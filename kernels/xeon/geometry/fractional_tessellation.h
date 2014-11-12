@@ -28,8 +28,9 @@ namespace embree
       th(tess-float(Nh)), 
       tl(float(Nl)-tess) 
       {
-        if (unlikely(tl > -16.0f*float(ulp))) N = Nl;
-        else N = Nl+1+(Nl % 2);
+        //if (unlikely(tl > -16.0f*float(ulp))) N = Nl;
+        //else 
+          N = Nl+1+(Nl % 2);
       }
 
     __forceinline int size() const {
@@ -39,8 +40,8 @@ namespace embree
     __forceinline float operator() (const int i) const
     {
       const int Nl2 = Nl/2;
-      if (unlikely(tl > -16.0f*float(ulp)))
-        return min(float(i)*rcp_tess,1.0f);
+      /*if (unlikely(tl > -16.0f*float(ulp)))
+        return min(float(i)*rcp_tess,1.0f);*/
 
       if (Nl % 2 == 0) {
         const float f0 = float(i > Nl2) * th;
