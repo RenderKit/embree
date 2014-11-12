@@ -264,10 +264,6 @@ namespace embree
 			    Ray16& ray16,
 			    const SubdivPatch1& subdiv_patch)
     {
-      assert( subdiv_patch.level[0] == subdiv_patch.level[1] );
-      assert( subdiv_patch.level[1] == subdiv_patch.level[2] );
-      assert( subdiv_patch.level[2] == subdiv_patch.level[3] );
-
       const float edge_levels[4] = {
 	ceilf(subdiv_patch.level[0]),
 	ceilf(subdiv_patch.level[1]),

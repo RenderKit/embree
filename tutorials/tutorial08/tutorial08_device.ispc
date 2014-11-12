@@ -100,7 +100,27 @@ void convertTestSubdivScene()
   rtcSetBuffer(g_scene, subdivMeshID, RTC_FACE_BUFFER, test_offsets , 0, sizeof(uniform unsigned int));
 }
 
-uniform unsigned int convertScene(uniform ISPCScene* uniform scene_in)
+void updateLevelBuffer( uniform float * uniform subdivlevel, 
+                        uniform ISPCMesh* uniform mesh,
+			const uniform Vec3fa& cam_pos )
+{
+    for (uniform size_t f=0, e=0; f<mesh->numQuads; e+=4,f++) {
+      const uniform int N = 4;
+      for (uniform size_t i=0; i<N; i++) {
+      	const uniform int * uniform index = (uniform int * uniform)&mesh->quads[f];
+        const uniform Vec3fa v0 = mesh->positions[index[i]];
+        const uniform Vec3fa v1 = mesh->positions[index[(i+1)%N]];
+        const uniform Vec3fa edge = v1-v0;
+        const uniform Vec3fa P = 0.5f*(v1+v0);
+	const uniform Vec3fa dist = cam_pos - P;
+        subdivlevel[e+i] = 20.0f*atan(0.5f*length(edge)/length(dist));
+	print( "index %\n", e+i );
+	print( "level %\n", subdivlevel[e+i] );
+      }
+    }
+}
+
+uniform unsigned int convertScene(uniform ISPCScene* uniform scene_in, const uniform Vec3fa& p)
 {
   uniform unsigned int totalNumQuads = 0;
 
@@ -117,7 +137,11 @@ uniform unsigned int convertScene(uniform ISPCScene* uniform scene_in)
 	uniform float * uniform level_buffer  = uniform new uniform float[mesh->numQuads*4];
 
 	for (size_t i=0;i<mesh->numQuads;i++) offset_buffer[i] = 4;
+#if 0
 	for (size_t i=0;i<mesh->numQuads*4;i++) level_buffer[i]  = 4;
+#else
+	updateLevelBuffer( level_buffer, mesh, p );	
+#endif
 
        /* create a triangle mesh */
         uniform unsigned int subdivMeshID = rtcNewSubdivisionMesh (g_scene, RTC_GEOMETRY_STATIC, mesh->numQuads, mesh->numQuads*4, mesh->numVertices, 0, 0, 0);
@@ -232,7 +256,8 @@ export void device_render (uniform int* uniform pixels,
   { 
    //
    g_scene = rtcNewScene(RTC_SCENE_STATIC,RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING);
-   uniform unsigned int numQuads = convertScene(g_ispc_scene);
+   const uniform Vec3fa cam_org = make_Vec3fa(p.x,p.y,p.z);
+   uniform unsigned int numQuads = convertScene(g_ispc_scene,cam_org);
    if (numQuads == 0)
     convertTestSubdivScene();
 
