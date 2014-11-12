@@ -269,13 +269,6 @@ namespace embree
       assert( subdiv_patch.level[1] == subdiv_patch.level[2] );
       assert( subdiv_patch.level[2] == subdiv_patch.level[3] );
 
-#if 1
-
-      #define MAX_GRID_SIZE 8*8
-
-      __aligned(64) float u_array[MAX_GRID_SIZE];
-      __aligned(64) float v_array[MAX_GRID_SIZE];
-
 #if 0
       const float edge_levels[4] = {
 	ceilf(subdiv_patch.level[0]),
@@ -290,14 +283,20 @@ namespace embree
 
 #endif
 
-#if 0
+#if 1
       const unsigned int grid_u_res = max(edge_levels[0],edge_levels[2])+1; // n segments -> n+1 points
       const unsigned int grid_v_res = max(edge_levels[1],edge_levels[3])+1;
 #else
-      const unsigned int grid_u_res = 4;
-      const unsigned int grid_v_res = 4;
+      const unsigned int grid_u_res = 5;
+      const unsigned int grid_v_res = 5;
 
 #endif
+
+      const size_t grid_size = (grid_u_res*grid_u_res+15)&(-16);
+
+      __aligned(64) float u_array[grid_size];
+      __aligned(64) float v_array[grid_size];
+
       gridUVTessellator(edge_levels,grid_u_res,grid_v_res,u_array,v_array);
 
 #if 0
@@ -337,52 +336,11 @@ namespace embree
 	    const float &u3 = u_array[offset_line1+0];
 	    const float &v3 = v_array[offset_line1+0];
 
-#if 0
-
-	    DBG_PRINT( u0 );
-	    DBG_PRINT( v0 );
-
-	    DBG_PRINT( u1 );
-	    DBG_PRINT( v1 );
-
-	    DBG_PRINT( u2 );
-	    DBG_PRINT( v2 );
-
-	    DBG_PRINT( u3 );
-	    DBG_PRINT( v3 );
-#endif
-
 	    hit |= intersect1Eval(subdiv_patch,u0,v0,u1,v1,u2,v2,u3,v3,rayIndex,dir_xyz,org_xyz,ray16);	    
 	  }
 
 #if 0
       exit(0);
-#endif
-
-#else
-#if 1
-      const float u_res = ceilf(max( subdiv_patch.level[0], subdiv_patch.level[2] ));
-      const float v_res = ceilf(max( subdiv_patch.level[1], subdiv_patch.level[3] ));
-#else
-      const float u_res = 4.0f;
-      const float v_res = 4.0f;
-      
-#endif
-
-      const float u_step = (1.0f / u_res) * 1.00001f;
-      const float v_step = (1.0f / v_res) * 1.00001f;
-      
-      bool hit = false;
-      for (float v=0.0f;v<1.0f;v+=v_step)
-	for (float u=0.0f;u<1.0f;u+=u_step)
-	  {
-	    const float u0 = u;
-	    const float u1 = min(u + u_step,1.0f);
-	    const float v0 = v;
-	    const float v1 = min(v + v_step,1.0f);
-
-	    hit |= intersect1Eval(subdiv_patch,u0,u1,v0,v1,rayIndex,dir_xyz,org_xyz,ray16);
-	  }
 #endif
 
       return hit;

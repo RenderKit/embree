@@ -121,7 +121,7 @@ uniform unsigned int convertScene(uniform ISPCScene* uniform scene_in)
 
 	rtcSetBuffer(g_scene, subdivMeshID, RTC_VERTEX_BUFFER, mesh->positions, 0, sizeof(uniform Vec3fa  ));
 	rtcSetBuffer(g_scene, subdivMeshID, RTC_INDEX_BUFFER,  mesh->quads    , 0, sizeof(uniform unsigned int));
-	rtcSetBuffer(g_scene, subdivMeshID, RTC_FACE_BUFFER, offset_buffer  , 0, sizeof(uniform unsigned int));
+	rtcSetBuffer(g_scene, subdivMeshID, RTC_FACE_BUFFER,   offset_buffer  , 0, sizeof(uniform unsigned int));
        }
   }
 
