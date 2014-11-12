@@ -170,7 +170,7 @@ namespace embree
       COIBUFFER normal;        //!< vertex normal array
       COIBUFFER texcoord;      //!< vertex texcoord array
       COIBUFFER triangle;      //!< list of triangles
-      COIBUFFER quad;      //!< list of triangles
+      COIBUFFER quad;          //!< list of quads
     } buffers;
 
     assert( mesh->v.size() );
@@ -240,8 +240,6 @@ namespace embree
     parms.numVertices = mesh->v.size();
     parms.numTriangles = mesh->triangles.size();
     parms.numQuads = mesh->quads.size();
-    parms.dir = normalize(Vec3f(drand48(),drand48(),drand48())-Vec3f(0.5f));
-    parms.offset = 5.0f*drand48();
     COI_ACCESS_FLAGS flags[5] = { COI_SINK_READ, COI_SINK_READ, COI_SINK_READ, COI_SINK_READ, COI_SINK_READ };
 
     COIEVENT event;

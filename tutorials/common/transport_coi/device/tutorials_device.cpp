@@ -39,7 +39,7 @@ namespace embree
   public:
     ISPCMesh (int numTriangles, int numQuads, int numVertices) 
       : numTriangles(numTriangles), numQuads(numQuads), numVertices(numVertices),
-        positions(NULL), positions2(NULL), normals(NULL), texcoords(NULL), triangles(NULL), quads(NULL), dir(zero), offset(zero) 
+        positions(NULL), positions2(NULL), normals(NULL), texcoords(NULL), triangles(NULL), quads(NULL), edge_level(NULL)
     {
       sizePositions = 0;
       sizeNormals   = 0;
@@ -65,17 +65,18 @@ namespace embree
     }
 
   public:
-    Vec3fa* positions;    //!< vertex position array
+    Vec3fa* positions;     //!< vertex position array
     Vec3fa* positions2;    //!< vertex position array
     Vec3fa* normals;       //!< vertex normal array
-    Vec2f* texcoords;     //!< vertex texcoord array
+    Vec2f*  texcoords;     //!< vertex texcoord array
     OBJScene::Triangle* triangles;  //!< list of triangles
-    OBJScene::Quad* quads;  //!< list of quads
+    OBJScene::Quad* quads;          //!< list of quads
+    float *edge_level;
+
     int numVertices;
     int numTriangles;
     int numQuads;
-    Vec3f dir;
-    float offset;
+    int geomID;
     size_t sizePositions;
     size_t sizeNormals;
     size_t sizeTexCoords;

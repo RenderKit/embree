@@ -40,9 +40,11 @@ struct ISPCMesh
   uniform Vec2f* texcoords;     //!< vertex texcoord array
   uniform ISPCTriangle* triangles;  //!< list of triangles
   uniform ISPCQuad* quads;  //!< list of triangles
+  uniform float *uniform edge_level;
   int numVertices;
   int numTriangles;
   int numQuads;
+  int geomID;
 };
 
 struct ISPCHair

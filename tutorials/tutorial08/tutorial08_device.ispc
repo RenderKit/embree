@@ -120,6 +120,22 @@ void updateLevelBuffer( uniform float * uniform subdivlevel,
     }
 }
 
+void updateEdgeLevels(uniform ISPCScene* uniform scene_in, const uniform Vec3fa& p)
+{
+  for (uniform int i=0; i<scene_in->numMeshes; i++)
+  {
+    uniform ISPCMesh* uniform mesh = scene_in->meshes[i];
+    if (mesh->edge_level)
+      {
+        uniform unsigned int geomID = mesh->geomID;
+	updateLevelBuffer( mesh->edge_level, mesh, p );	           
+        rtcUpdate(g_scene,geomID);
+      }
+
+  }
+}
+
+
 uniform unsigned int convertScene(uniform ISPCScene* uniform scene_in, const uniform Vec3fa& p)
 {
   uniform unsigned int totalNumQuads = 0;
@@ -134,22 +150,19 @@ uniform unsigned int convertScene(uniform ISPCScene* uniform scene_in, const uni
       {   
 	totalNumQuads += mesh->numQuads;
 	uniform int   * uniform offset_buffer = uniform new uniform int[mesh->numQuads];
-	uniform float * uniform level_buffer  = uniform new uniform float[mesh->numQuads*4];
+	mesh->edge_level  = uniform new uniform float[mesh->numQuads*4];
 
 	for (size_t i=0;i<mesh->numQuads;i++) offset_buffer[i] = 4;
-#if 0
-	for (size_t i=0;i<mesh->numQuads*4;i++) level_buffer[i]  = 4;
-#else
-	updateLevelBuffer( level_buffer, mesh, p );	
-#endif
+	for (size_t i=0;i<mesh->numQuads*4;i++) mesh->edge_level[i]  = 4;
 
        /* create a triangle mesh */
         uniform unsigned int subdivMeshID = rtcNewSubdivisionMesh (g_scene, RTC_GEOMETRY_STATIC, mesh->numQuads, mesh->numQuads*4, mesh->numVertices, 0, 0, 0);
 
-	rtcSetBuffer(g_scene, subdivMeshID, RTC_VERTEX_BUFFER, mesh->positions, 0, sizeof(uniform Vec3fa  ));
-	rtcSetBuffer(g_scene, subdivMeshID, RTC_INDEX_BUFFER,  mesh->quads    , 0, sizeof(uniform unsigned int));
-	rtcSetBuffer(g_scene, subdivMeshID, RTC_FACE_BUFFER,   offset_buffer  , 0, sizeof(uniform unsigned int));
-	rtcSetBuffer(g_scene, subdivMeshID, RTC_LEVEL_BUFFER,  level_buffer   , 0, sizeof(uniform float));
+	mesh->geomID = subdivMeshID;
+	rtcSetBuffer(g_scene, subdivMeshID, RTC_VERTEX_BUFFER, mesh->positions , 0, sizeof(uniform Vec3fa  ));
+	rtcSetBuffer(g_scene, subdivMeshID, RTC_INDEX_BUFFER,  mesh->quads     , 0, sizeof(uniform unsigned int));
+	rtcSetBuffer(g_scene, subdivMeshID, RTC_FACE_BUFFER,   offset_buffer   , 0, sizeof(uniform unsigned int));
+	rtcSetBuffer(g_scene, subdivMeshID, RTC_LEVEL_BUFFER,  mesh->edge_level, 0, sizeof(uniform float));
 
        }
   }
@@ -251,15 +264,17 @@ export void device_render (uniform int* uniform pixels,
                            const uniform Vec3f& vz, 
                            const uniform Vec3f& p)
 {
+   const uniform Vec3fa cam_org = make_Vec3fa(p.x,p.y,p.z);
+
   /* create scene */
   if (g_scene == NULL)
   { 
    //
-   g_scene = rtcNewScene(RTC_SCENE_STATIC,RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING);
-   const uniform Vec3fa cam_org = make_Vec3fa(p.x,p.y,p.z);
+   g_scene = rtcNewScene(RTC_SCENE_DYNAMIC,RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING);
    uniform unsigned int numQuads = convertScene(g_ispc_scene,cam_org);
    if (numQuads == 0)
     convertTestSubdivScene();
+
 
 #if !defined(PARALLEL_COMMIT)
   rtcCommit (g_scene);
@@ -267,6 +282,20 @@ export void device_render (uniform int* uniform pixels,
   launch[  g_threads ] parallelCommit(g_scene); sync;
 #endif
   }
+  else
+  {
+#if 1
+
+    updateEdgeLevels(g_ispc_scene, cam_org);
+#if !defined(PARALLEL_COMMIT)
+    rtcCommit (g_scene);
+#else
+    launch[  g_threads ] parallelCommit(g_scene); sync;
+#endif
+
+#endif
+}
+
 
   /* render image */
   const uniform int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;

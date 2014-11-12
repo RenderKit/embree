@@ -1085,11 +1085,11 @@ PRINT(CORRECT_numPrims);
 
 	SubdivPatch1 *__restrict__ const patch_ptr = (SubdivPatch1*)org_accel;
 
-	PING;
+	//PING;
 	for (size_t i=0;i<items;i++)
 	  {
 	    const unsigned int patchIndex = prims[index+i].lower.a;
-	    DBG_PRINT(patchIndex);
+	    //DBG_PRINT(patchIndex);
  	    n->setBounds( i, patch_ptr[patchIndex].bounds() );
 	    //n->setBounds( i, patch_ptr[i].evalQuadBounds() );
 
