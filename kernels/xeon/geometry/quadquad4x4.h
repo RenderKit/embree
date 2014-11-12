@@ -532,6 +532,7 @@ namespace embree
         }
       }
 
+#if 0
       if (unlikely(y0 == 0)) {
         const float fy = pattern_y(y0);
         for (int x=0; x<=8; x++) {
@@ -567,7 +568,7 @@ namespace embree
           }
         }
       }
-
+#endif
       return build(scene);
     }
 
