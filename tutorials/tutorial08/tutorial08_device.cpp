@@ -163,7 +163,7 @@ unsigned int createSphere (RTCGeometryFlags flags, const Vec3fa& pos, const floa
   return mesh;
 }
 
-void updateScene(const Vec3fa& cam_pos)
+void updateScene(RTCScene scene, const Vec3fa& cam_pos)
 {
   if (!g_ispc_scene) return;
   if (g_subdivision_levels % 2) return;
@@ -183,9 +183,9 @@ void updateScene(const Vec3fa& cam_pos)
         //srand48(length(edge)/length(cam_pos-P)*12343.0f); mesh->subdivlevel[e+i] = 10.0f*drand48();
       }
     }
-    rtcUpdate(g_scene,geomID);
+    rtcUpdate(scene,geomID);
   }
-  rtcCommit(g_scene);
+  rtcCommit(scene);
 }
 
 RTCScene constructScene(const Vec3fa& cam_pos) 
@@ -232,7 +232,7 @@ RTCScene constructScene(const Vec3fa& cam_pos)
     mesh->geomID = geomID;
   }       
   
-  rtcCommit(scene);  
+  updateScene(scene,cam_pos);
   return scene;
 }
 
@@ -444,7 +444,7 @@ extern "C" void device_render(int *pixels, int width, int height, float time, co
     g_scene = constructScene(p);
   } else {
     static Vec3fa oldP = zero;
-    if (oldP != p) updateScene (p);
+    if (oldP != p) updateScene (g_scene,p);
     oldP = p;
   }
   
