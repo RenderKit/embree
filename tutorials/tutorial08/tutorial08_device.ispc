@@ -113,8 +113,11 @@ uniform unsigned int convertScene(uniform ISPCScene* uniform scene_in)
     if (mesh->numQuads)
       {   
 	totalNumQuads += mesh->numQuads;
-	uniform int * uniform offset_buffer = uniform new uniform int[mesh->numQuads];
+	uniform int   * uniform offset_buffer = uniform new uniform int[mesh->numQuads];
+	uniform float * uniform level_buffer  = uniform new uniform float[mesh->numQuads*4];
+
 	for (size_t i=0;i<mesh->numQuads;i++) offset_buffer[i] = 4;
+	for (size_t i=0;i<mesh->numQuads*4;i++) level_buffer[i]  = 4;
 
        /* create a triangle mesh */
         uniform unsigned int subdivMeshID = rtcNewSubdivisionMesh (g_scene, RTC_GEOMETRY_STATIC, mesh->numQuads, mesh->numQuads*4, mesh->numVertices, 0, 0, 0);
@@ -122,6 +125,8 @@ uniform unsigned int convertScene(uniform ISPCScene* uniform scene_in)
 	rtcSetBuffer(g_scene, subdivMeshID, RTC_VERTEX_BUFFER, mesh->positions, 0, sizeof(uniform Vec3fa  ));
 	rtcSetBuffer(g_scene, subdivMeshID, RTC_INDEX_BUFFER,  mesh->quads    , 0, sizeof(uniform unsigned int));
 	rtcSetBuffer(g_scene, subdivMeshID, RTC_FACE_BUFFER,   offset_buffer  , 0, sizeof(uniform unsigned int));
+	rtcSetBuffer(g_scene, subdivMeshID, RTC_LEVEL_BUFFER,  level_buffer   , 0, sizeof(uniform float));
+
        }
   }
 

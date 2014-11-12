@@ -269,28 +269,15 @@ namespace embree
       assert( subdiv_patch.level[1] == subdiv_patch.level[2] );
       assert( subdiv_patch.level[2] == subdiv_patch.level[3] );
 
-#if 0
       const float edge_levels[4] = {
 	ceilf(subdiv_patch.level[0]),
 	ceilf(subdiv_patch.level[1]),
 	ceilf(subdiv_patch.level[2]),
 	ceilf(subdiv_patch.level[3]),
       };
-#else
-      const float edge_levels[4] = {
-	2,2,2,2
-      };
 
-#endif
-
-#if 1
       const unsigned int grid_u_res = max(edge_levels[0],edge_levels[2])+1; // n segments -> n+1 points
       const unsigned int grid_v_res = max(edge_levels[1],edge_levels[3])+1;
-#else
-      const unsigned int grid_u_res = 5;
-      const unsigned int grid_v_res = 5;
-
-#endif
 
       const size_t grid_size = (grid_u_res*grid_u_res+15)&(-16);
 
