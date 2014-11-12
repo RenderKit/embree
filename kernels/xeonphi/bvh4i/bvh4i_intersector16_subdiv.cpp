@@ -199,10 +199,14 @@ namespace embree
     __aligned(64) float v_start[16] = { 0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1 };
 
     __forceinline bool intersect1Eval(const SubdivPatch1 &subdiv_patch,
-				      const float u_start,
-				      const float u_end,
-				      const float v_start,
-				      const float v_end,
+				      const float &u0,
+				      const float &v0,
+				      const float &u1,
+				      const float &v1,
+				      const float &u2,
+				      const float &v2,
+				      const float &u3,
+				      const float &v3,
 				      const size_t rayIndex, 
 				      const mic_f &dir_xyz,
 				      const mic_f &org_xyz,
@@ -213,8 +217,11 @@ namespace embree
 
       __aligned(64) Vec3fa vtx[4];
 
-      const mic_f uu = select(0x0ff0,mic_f(u_end),mic_f(u_start));
-      const mic_f vv = select(0xff00,mic_f(v_end),mic_f(v_start));
+      const mic_f uu = gather16f_4f_align(mic_f(u0),mic_f(u1),mic_f(u2),mic_f(u3));
+      const mic_f vv = gather16f_4f_align(mic_f(v0),mic_f(v1),mic_f(v2),mic_f(v3));
+
+      // const mic_f uu = select(0x0ff0,mic_f(u_end),mic_f(u_start));
+      // const mic_f vv = select(0xff00,mic_f(v_end),mic_f(v_start));
 
       if (likely(subdiv_patch.isRegular()))
 	{
@@ -283,7 +290,7 @@ namespace embree
 
 #endif
 
-#if 1
+#if 0
       const unsigned int grid_u_res = max(edge_levels[0],edge_levels[2])+1; // n segments -> n+1 points
       const unsigned int grid_v_res = max(edge_levels[1],edge_levels[3])+1;
 #else
@@ -309,25 +316,51 @@ namespace embree
 	    std::cout << "(" << v_array[grid_v_res*y+x] << "," << u_array[grid_v_res*y+x] << ") ";
 	  std::cout << std::endl;
 	}
-      exit(0);
 #endif
      
       bool hit = false;
-      for (unsigned int y=0;y<grid_v_res-1;y++)
-	for (unsigned int x=0;x<grid_u_res-1;x++)
+      size_t offset_line0 = 0;
+      size_t offset_line1 = grid_u_res;
+
+      for (unsigned int y=0;y<grid_v_res-1;y++,offset_line0++,offset_line1++)
+	for (unsigned int x=0;x<grid_u_res-1;x++,offset_line0++,offset_line1++)
 	  {
-	    const float u0 = u_array[grid_v_res*y+x+0];
-	    const float u1 = u_array[grid_v_res*y+x+1];
+	    const float &u0 = u_array[offset_line0+0];
+	    const float &v0 = v_array[offset_line0+0];
 
-	    const float v0 = v_array[grid_v_res*(y+0)+x];
-	    const float v1 = v_array[grid_v_res*(y+1)+x];
+	    const float &u1 = u_array[offset_line0+1];
+	    const float &v1 = v_array[offset_line0+1];
 
-	    hit |= intersect1Eval(subdiv_patch,u0,u1,v0,v1,rayIndex,dir_xyz,org_xyz,ray16);	    
+	    const float &u2 = u_array[offset_line1+1];
+	    const float &v2 = v_array[offset_line1+1];
+
+	    const float &u3 = u_array[offset_line1+0];
+	    const float &v3 = v_array[offset_line1+0];
+
+#if 0
+
+	    DBG_PRINT( u0 );
+	    DBG_PRINT( v0 );
+
+	    DBG_PRINT( u1 );
+	    DBG_PRINT( v1 );
+
+	    DBG_PRINT( u2 );
+	    DBG_PRINT( v2 );
+
+	    DBG_PRINT( u3 );
+	    DBG_PRINT( v3 );
+#endif
+
+	    hit |= intersect1Eval(subdiv_patch,u0,v0,u1,v1,u2,v2,u3,v3,rayIndex,dir_xyz,org_xyz,ray16);	    
 	  }
 
+#if 0
+      exit(0);
+#endif
 
 #else
-#if 0
+#if 1
       const float u_res = ceilf(max( subdiv_patch.level[0], subdiv_patch.level[2] ));
       const float v_res = ceilf(max( subdiv_patch.level[1], subdiv_patch.level[3] ));
 #else

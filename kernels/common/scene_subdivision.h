@@ -1831,13 +1831,11 @@ namespace embree
    if (unlikely(int_edge_level2 < grid_u_segments))
      stichEdges(int_edge_level2,grid_u_segments,&u_array[grid_v_segments*grid_u_res],1);
 
-#if 1
    if (unlikely(int_edge_level1 < grid_v_segments))
      stichEdges(int_edge_level1,grid_v_segments,&v_array[grid_u_segments],grid_u_res);
 
    if (unlikely(int_edge_level3 < grid_v_segments))
      stichEdges(int_edge_level3,grid_v_segments,v_array,grid_u_res);
-#endif
 
  }
 
