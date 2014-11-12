@@ -22,6 +22,7 @@
 
 namespace embree
 {
+  const size_t g_subdivision_level = 0;
 
   static __forceinline void intersectTri(const Vec3fa& tri_v0,
                                          const Vec3fa& tri_v1,
@@ -176,7 +177,6 @@ namespace embree
     }
 
 
-  extern size_t g_subdivision_level;
 
   //template<bool list>
   struct SubdivPatch1Intersector1
@@ -254,6 +254,7 @@ namespace embree
 	{
 	  RegularCatmullClarkPatch regular_patch;
 	  subdiv_patch.init( regular_patch );
+
 #if 1
 	  subdivide_intersect1(pre, ray,regular_patch,subdiv_patch.geom,subdiv_patch.prim,g_subdivision_level);
 #else

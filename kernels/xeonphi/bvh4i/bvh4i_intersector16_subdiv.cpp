@@ -20,7 +20,6 @@
 
 namespace embree
 {
-  extern size_t g_subdivision_level;
 
   static AtomicCounter numLazyBuildPatches = 0;
 
@@ -451,7 +450,7 @@ namespace embree
 
 	      //////////////////////////////////////////////////////////////////////////////////////////////////
 
-	      const unsigned int subdiv_level = 2; // g_subdivision_level; cannot use g_subdivision_level with a working "free" for sub-trees
+	      const unsigned int subdiv_level = 2; 
 	      const unsigned int patchIndex = curNode.offsetIndex();
 	      SubdivPatch1& subdiv_patch = ((SubdivPatch1*)accel)[patchIndex];
 

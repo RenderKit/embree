@@ -23,8 +23,7 @@ renderPixelFunc renderPixel;
 const int numPhi = 10; 
 const int numTheta = 2*numPhi;
 
-extern "C" void setSubdivisionLevel(unsigned int); // for now hidden fct in the core 
-extern unsigned int g_subdivision_levels;
+//extern unsigned int g_subdivision_levels;
 
 /* error reporting function */
 void error_handler(const RTCError code, const char* str)
@@ -55,9 +54,6 @@ RTCScene g_embree_scene = NULL;
 RTCScene g_osd_scene = NULL;
 
 /* scene data */
-
-/*! Requested subdivision level set in tutorial08.cpp. */
-extern int subdivisionLevel;
 
 __forceinline RTCRay constructRay(const Vec3fa &origin, const Vec3fa &direction, float near, float far, int originGeomID, int originPrimID) {
 
@@ -166,7 +162,7 @@ unsigned int createSphere (RTCGeometryFlags flags, const Vec3fa& pos, const floa
 void updateScene(RTCScene scene, const Vec3fa& cam_pos)
 {
   if (!g_ispc_scene) return;
-  if (g_subdivision_levels % 2) return;
+  //if (g_subdivision_levels % 2) return;
 
   for (size_t g=0; g<g_ispc_scene->numSubdivMeshes; g++)
   {
@@ -459,9 +455,6 @@ extern "C" void device_render(int *pixels, int width, int height, float time, co
     oldP = p;
   }
   
-  /*! Refine the subdivision mesh as needed. */
-  setSubdivisionLevel( g_subdivision_levels );
-
   /*! Number of tiles spanning the window in width and height. */
   const Vec2i tileCount((width + TILE_SIZE_X - 1) / TILE_SIZE_X, (height + TILE_SIZE_Y - 1) / TILE_SIZE_Y);
 

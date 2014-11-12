@@ -20,8 +20,9 @@
 #include "sys/taskscheduler.h"
 #include "image/image.h"
 
-extern "C" void setSubdivisionLevel(unsigned int); // for now hidden fct in the core 
 extern "C" void toggleOpenSubdiv(unsigned char key, int x, int y);
+
+//extern unsigned int g_subdivision_levels;
 
 namespace embree 
 {
@@ -31,7 +32,6 @@ namespace embree
   /* configuration */
   static std::string g_rtcore = "";
   static size_t g_numThreads = 0;
-  extern unsigned int g_subdivision_levels = 0;
 
   /* output settings */
   static size_t g_width = 1024;
@@ -100,8 +100,7 @@ namespace embree
       /*! Camera up vector. */
       else if (term == "-vu") g_camera.up = cin->getVec3fa();
 
-      /*! Camera up vector. */
-      else if (term == "-subdiv_level") g_subdivision_levels = min(0,cin->getInt());
+      //else if (term == "-subdiv_level") g_subdivision_levels = min(0,cin->getInt());
 
       /*! Skip unknown command line parameters. */
       else std::cerr << "Unknown command line parameter: " << getParameterString(cin, term) << std::endl;

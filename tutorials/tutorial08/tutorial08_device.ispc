@@ -213,8 +213,6 @@ task void parallelCommit(RTCScene scene)
   rtcCommitThread (scene,threadIndex,threadCount); 
 }
 
-extern "C" void setSubdivisionLevel(uniform unsigned int); // for now hidden fct in the core 
-
 export void toggleOpenSubdiv(uniform int key, uniform int x, uniform int y)
 {
 }
@@ -244,8 +242,6 @@ export void device_render (uniform int* uniform pixels,
   launch[  g_threads ] parallelCommit(g_scene); sync;
 #endif
   }
-
-  setSubdivisionLevel(g_subdivision_levels);
 
   /* render image */
   const uniform int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
