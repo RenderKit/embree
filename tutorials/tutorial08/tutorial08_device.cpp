@@ -179,10 +179,18 @@ void updateScene(RTCScene scene, const Vec3fa& cam_pos)
         const Vec3fa v1 = mesh->positions[mesh->position_indices[e+(i+1)%N]];
         const Vec3fa edge = v1-v0;
         const Vec3fa P = 0.5f*(v1+v0);
-        mesh->subdivlevel[e+i] = 50.0f*length(edge)/length(cam_pos-P);
+        mesh->subdivlevel[e+i] = 5.0f*length(edge)/length(cam_pos-P);
         //srand48(length(edge)/length(cam_pos-P)*12343.0f); mesh->subdivlevel[e+i] = 10.0f*drand48();
       }
     }
+    /*for (size_t i=0; i<8; i++) mesh->subdivlevel[i] = 16.2;
+    float level = float(g_subdivision_levels)/16.0f;
+    mesh->subdivlevel[0] = level;
+    mesh->subdivlevel[1] = level;
+    mesh->subdivlevel[2] = level;
+    mesh->subdivlevel[3] = level;
+    mesh->subdivlevel[7] = level;*/
+
     rtcUpdate(scene,geomID);
   }
   rtcCommit(scene);
@@ -444,7 +452,8 @@ extern "C" void device_render(int *pixels, int width, int height, float time, co
     g_scene = constructScene(p);
   } else {
     static Vec3fa oldP = zero;
-    if (oldP != p) updateScene (g_scene,p);
+    //if (oldP != p) 
+    updateScene (g_scene,p);
     oldP = p;
   }
   
