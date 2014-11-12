@@ -127,6 +127,11 @@ namespace embree
       hard_edge_index = -1;
       vtx = (Vec3fa_t)vertices[ h->getStartVertexIndex() ];
       vertex_crease_weight = h->vertex_crease_weight;
+
+#if 0 // test 
+      vertex_crease_weight = inf;
+#endif
+
       SubdivMesh::HalfEdge* p = (SubdivMesh::HalfEdge*) h;
 
       size_t i=0;
@@ -304,6 +309,9 @@ namespace embree
       /* border vertex rule */
       if (unlikely(hard_edge_index != -1))
 	{
+	  if (unlikely(isinf(vertex_crease_weight)))
+	    return vtx;
+
 	  const unsigned int second_hard_edge_index = hard_edge_index+2 >= num_vtx ? 0 : hard_edge_index+2;
 	  return (4.0f * vtx + ring[hard_edge_index] + ring[second_hard_edge_index]) * 1.0f/6.0f;
 	}
@@ -326,6 +334,9 @@ namespace embree
       /* border vertex rule */
       if (unlikely(hard_edge_index != -1))
 	{
+	  if (unlikely(isinf(vertex_crease_weight)))
+	    return ring[0] - vtx;
+
 	  //if (hard_edge_index != 0 && valence != 2) { 
           if (hard_edge_index != num_vtx-2 && valence != 2) { // FIXME: why valence!=2?
 	    return ring[0] - vtx; 
@@ -362,6 +373,9 @@ namespace embree
       /* border vertex rule */
       if (unlikely(hard_edge_index != -1))
 	{
+	  if (unlikely(isinf(vertex_crease_weight)))
+	    return ring[2] - vtx;
+
 	  //if (hard_edge_index == 0 && valence != 2) {
 	  if (hard_edge_index == num_vtx-2 && valence != 2) {
 	    return ring[2] - vtx;
@@ -1720,30 +1734,30 @@ namespace embree
 			       float * __restrict__ const uv_array,
 			       const unsigned int uv_array_step)
  {
-   const float low_rate_step = 1.0f / (float)low_rate_segments;
-   const unsigned int dy = low_rate_segments;   
-   const unsigned int dx = high_rate_segments;
+   assert(low_rate_segments < high_rate_segments);
+   assert(high_rate_segments >= 2);
 
-   int d  = 2*dy-dx;  
-   int ds = 2*dy;  
-   int dt = 2*(dy-dx);  
- 
-   float low_rate_value = 0.0f;
-   unsigned int offset = 0;
+   const float inv_low_rate_segments = 1.0f / (float)low_rate_segments;
+   const unsigned int high_rate_points = high_rate_segments+1;
+   const unsigned int dy = low_rate_segments+1; // [0,..,low_rate_segments]   
+   const unsigned int dx = high_rate_segments-1;
 
-   for(unsigned int x=0; x<high_rate_segments; x++) // look at the starting point of the 'x' segment
+   int p = 2*dy-dx;  
+
+   unsigned int offset = uv_array_step;
+
+   for(unsigned int x=1, y=0; x<high_rate_segments; x++) // inner points [1,..,n-1]
      {
-       /* DBG_PRINT(d); */
-       /* std::cout << "x " << x << " value " << low_rate_value << std::endl; */
-       uv_array[offset] = low_rate_value;
+       uv_array[offset] = (float)y * inv_low_rate_segments;
+
+       //std::cout << "x " << x << " y " << y << " value " << uv_array[offset] << std::endl; 
        offset += uv_array_step;      
-       if(d >= 0)
+       if(p > 0)
 	 {
-	   d += dt;
-	   low_rate_value += low_rate_step;
+	   y++;
+	   p -= 2*dx;
 	 }
-       else
-	 d += ds;
+       p += 2*dy;
      }
  }
 
@@ -1760,9 +1774,11 @@ namespace embree
    assert( edge_levels[2] >= 1.0f );
    assert( edge_levels[3] >= 1.0f );
 
+   const unsigned int grid_u_segments = grid_u_res-1;
+   const unsigned int grid_v_segments = grid_v_res-1;
 
-   const float u_step = (1.0f / (grid_u_res-1));
-   const float v_step = (1.0f / (grid_v_res-1));
+   const float u_step = 1.0f / grid_u_segments;
+   const float v_step = 1.0f / grid_v_segments;
 
    /* initialize grid */
    unsigned int index = 0;
@@ -1785,7 +1801,7 @@ namespace embree
      v_array[num_points-1-x] = 1.0f;
        
 
-#if 1
+#if 0
       DBG_PRINT("UV grid");
       DBG_PRINT( edge_levels[0] );
       DBG_PRINT( edge_levels[1] );
@@ -1803,25 +1819,24 @@ namespace embree
 	}
 #endif
 
-   /* fixing different tessellation levels */
-   const unsigned int int_level_edge0 = (unsigned int)edge_levels[0];
-   const unsigned int int_level_edge1 = (unsigned int)edge_levels[1];
-   const unsigned int int_level_edge2 = (unsigned int)edge_levels[2];
-   const unsigned int int_level_edge3 = (unsigned int)edge_levels[3];
+   /* stich different tessellation levels in u/v grid */
+   const unsigned int int_edge_level0 = (unsigned int)edge_levels[0];
+   const unsigned int int_edge_level1 = (unsigned int)edge_levels[1];
+   const unsigned int int_edge_level2 = (unsigned int)edge_levels[2];
+   const unsigned int int_edge_level3 = (unsigned int)edge_levels[3];
 
-   if (unlikely(int_level_edge0 < grid_u_res-1))
-     stichEdges(int_level_edge0,grid_u_res-1,u_array,1);
+   if (unlikely(int_edge_level0 < grid_u_segments))
+     stichEdges(int_edge_level0,grid_u_segments,u_array,1);
 
-#if 0
-   if (unlikely(int_edge_level2 < grid_u_res-1))
-     stichEdges(int_edge_level2,grid_u_res-1,&u_array[(grid_v_res-1)*grid_u_res],1);
+   if (unlikely(int_edge_level2 < grid_u_segments))
+     stichEdges(int_edge_level2,grid_u_segments,&u_array[grid_v_segments*grid_u_res],1);
 
-   if (unlikely(int_edge_level1 < grid_v_res-1))
-     stichEdges(int_edge_level1,grid_v_res-1,&v_array[grid_u_res-1],grid_u_res);
+   if (unlikely(int_edge_level1 < grid_v_segments))
+     stichEdges(int_edge_level1,grid_v_segments,&v_array[grid_u_segments],grid_u_res);
 
-   if (unlikely(int_edge_level3 < grid_v_res-1))
-     stichEdges(int_edge_level3,grid_v_res-1,v_array,grid_u_res);
-#endif
+   if (unlikely(int_edge_level3 < grid_v_segments))
+     stichEdges(int_edge_level3,grid_v_segments,v_array,grid_u_res);
+
  }
 
 
