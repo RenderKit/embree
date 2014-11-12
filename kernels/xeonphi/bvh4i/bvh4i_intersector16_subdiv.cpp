@@ -231,7 +231,7 @@ namespace embree
 	  const mic_f _vtx = regular_patch.eval4(uu,vv);
 	  store16f(vtx,_vtx);
 	}
-      else if (likely(subdiv_patch.isGregoryPatch()))
+      else 
 	{
 	  // Vec2f s(0.0f,1.0f);
 	  // Vec2f t(0.0f,1.0f);
@@ -243,8 +243,6 @@ namespace embree
 	  const mic_f _vtx = GregoryPatch::eval4( regular_patch.v, subdiv_patch.f_m, uu, vv );
 	  store16f(vtx,_vtx);
 	}
-      else
-	FATAL("not implemented");
 
       return intersect1_quad(rayIndex, 
 			     dir_xyz,
@@ -265,16 +263,28 @@ namespace embree
 			    const SubdivPatch1& subdiv_patch)
     {
       const float edge_levels[4] = {
-	ceilf(subdiv_patch.level[0]),
-	ceilf(subdiv_patch.level[1]),
-	ceilf(subdiv_patch.level[2]),
-	ceilf(subdiv_patch.level[3]),
+	max(ceilf(subdiv_patch.level[0]),1.0f),
+	max(ceilf(subdiv_patch.level[1]),1.0f),
+	max(ceilf(subdiv_patch.level[2]),1.0f),
+	max(ceilf(subdiv_patch.level[3]),1.0f)
       };
 
+#if 0
+      for (int i=0;i<4;i++)
+	if (subdiv_patch.level[i] < 1.0f)
+	  {
+	    DBG_PRINT(i);
+	    DBG_PRINT( edge_levels[i] );
+	    DBG_PRINT( subdiv_patch.level[i] );
+	    exit(0);
+	  }
+#endif
       const unsigned int grid_u_res = max(edge_levels[0],edge_levels[2])+1; // n segments -> n+1 points
       const unsigned int grid_v_res = max(edge_levels[1],edge_levels[3])+1;
 
       const size_t grid_size = (grid_u_res*grid_u_res+15)&(-16);
+
+      assert(grid_size > 0);
 
       __aligned(64) float u_array[grid_size];
       __aligned(64) float v_array[grid_size];

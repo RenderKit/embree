@@ -100,7 +100,8 @@ void convertTestSubdivScene()
   rtcSetBuffer(g_scene, subdivMeshID, RTC_FACE_BUFFER, test_offsets , 0, sizeof(uniform unsigned int));
 }
 
-#define MAX_EDGE_LEVEL 16
+#define MAX_EDGE_LEVEL 16.0f
+#define MIN_EDGE_LEVEL 1.0f
 
 task void updateEdgeLevelBuffer(uniform ISPCMesh* uniform mesh,
 			        const uniform Vec3fa& cam_pos )
@@ -119,7 +120,8 @@ task void updateEdgeLevelBuffer(uniform ISPCMesh* uniform mesh,
         const uniform Vec3fa edge = v1-v0;
         const uniform Vec3fa P = 0.5f*(v1+v0);
 	const uniform Vec3fa dist = cam_pos - P;
-        mesh->edge_level[f*4+i] = min(20.0f*atan(0.5f*length(edge)/length(dist)),MAX_EDGE_LEVEL);
+        mesh->edge_level[f*4+i] = max(min(20.0f*atan(0.5f*length(edge)/length(dist)),MAX_EDGE_LEVEL),MIN_EDGE_LEVEL);
+	assert( mesh->edge_level[f*4+i] >= 1.0f );
       }
   }
 }
