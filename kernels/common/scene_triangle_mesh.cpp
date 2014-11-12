@@ -40,7 +40,7 @@ namespace embree
   void TriangleMesh::disabling() 
   { 
     if (numTimeSteps == 1) { atomic_add(&parent->numTriangles ,-(ssize_t)numTriangles); }
-	else                   { atomic_add(&parent->numTriangles2,-(ssize_t)numTriangles); }
+    else                   { atomic_add(&parent->numTriangles2,-(ssize_t)numTriangles); }
   }
 
   void TriangleMesh::setMask (unsigned mask) 

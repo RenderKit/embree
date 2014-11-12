@@ -289,12 +289,22 @@ namespace embree
         intersectQuadQuad(ray,v00,v10,v20,v01,v11,v21,v02,v12,v22,prim.geomID,prim.primID);
       }
     }
+
+    /*! Intersect a ray with the triangle and updates the hit. */
+    static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Primitive* prim, size_t ty, const void* geom, size_t& lazy_node) {
+      intersect(pre,ray,prim[0],geom,lazy_node);
+    }
     
     /*! Test if the ray is occluded by the primitive */
-    static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Primitive& subdiv_patch, const void* geom, size_t& lazy_node)
+    static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Primitive& prim, const void* geom, size_t& lazy_node)
     {
       STAT3(shadow.trav_prims,1,1,1);
       return false;
+    }
+
+    /*! Test if the ray is occluded by the primitive */
+    static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Primitive* prim, size_t ty, const void* geom, size_t& lazy_node) {
+      return occluded(pre,ray,prim[0],geom,lazy_node);
     }
   };
 }

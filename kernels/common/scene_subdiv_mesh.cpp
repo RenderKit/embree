@@ -41,6 +41,7 @@ namespace embree
     vertex_creases.init(numVertexCreases,sizeof(unsigned int));
     vertex_crease_weights.init(numVertexCreases,sizeof(float));
     levels.init(numEdges,sizeof(float));
+    enabling();
   }
 
   SubdivMesh::~SubdivMesh () {
@@ -57,7 +58,7 @@ namespace embree
   void SubdivMesh::disabling() 
   { 
     if (numTimeSteps == 1) { atomic_add(&parent->numSubdivPatches ,-(ssize_t)numFaces); }
-	else                   { atomic_add(&parent->numSubdivPatches2, -(ssize_t)numFaces); }
+    else                   { atomic_add(&parent->numSubdivPatches2, -(ssize_t)numFaces); }
   }
 
   void SubdivMesh::setMask (unsigned mask) 

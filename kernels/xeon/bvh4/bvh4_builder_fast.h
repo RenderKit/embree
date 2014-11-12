@@ -260,6 +260,17 @@ namespace embree
       SubdivMesh* geom;   //!< input mesh
     };
 
+    class BVH4SubdivQuadQuad4x4BuilderFast : public BVH4BuilderFastT<PrimRef>
+    {
+    public:
+      BVH4SubdivQuadQuad4x4BuilderFast (BVH4* bvh, Scene* scene, size_t listMode);
+      virtual void build(size_t threadIndex, size_t threadCount);
+
+      size_t number_of_primitives();
+      void create_primitive_array_sequential(size_t threadIndex, size_t threadCount, PrimInfo& pinfo);
+      void create_primitive_array_parallel  (size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, PrimInfo& pinfo);
+    };
+
     class BVH4BuilderFastGeneric : public BVH4BuilderFast
     {
     public:

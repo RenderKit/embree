@@ -29,6 +29,7 @@
 #include "geometry/triangle4i.h"
 #include "geometry/subdivpatch1.h"
 #include "geometry/subdivpatchdispl1.h"
+#include "geometry/quadquad4x4_subdiv.h"
 #include "geometry/virtual_accel.h"
 
 #include <algorithm>
@@ -107,6 +108,9 @@ namespace embree
 
     template<> BVH4SubdivBuilderFast<SubdivPatchDispl1>::BVH4SubdivBuilderFast (BVH4* bvh, Scene* scene, size_t listMode) 
       : geom(NULL), BVH4BuilderFastT<SubdivPatchDispl1>(bvh,scene,listMode,0,0,false,sizeof(SubdivPatchDispl1),1,1,true) { this->bvh->alloc2.init(4096,4096); }
+
+    BVH4SubdivQuadQuad4x4BuilderFast::BVH4SubdivQuadQuad4x4BuilderFast (BVH4* bvh, Scene* scene, size_t listMode) 
+      : BVH4BuilderFastT<PrimRef>(bvh,scene,listMode,0,0,false,sizeof(QuadQuad4x4),1,1,true) { this->bvh->alloc2.init(4096,4096); }
     
     BVH4TopLevelBuilderFastT::BVH4TopLevelBuilderFastT (LockStepTaskScheduler* scheduler, BVH4* bvh) 
       : prims_i(NULL), N(0), BVH4BuilderFast(scheduler,bvh,0,0,0,false,0,1,1) {}
@@ -261,8 +265,6 @@ namespace embree
         subdiv_mesh->initializeHalfEdgeStructures();
 	numPatches += subdiv_mesh->size();
       }
-      this->scene->numSubdivPatches = numPatches; // FIXME: is it ok to initialize this here?
-
       BVH4BuilderFast::build(threadIndex,threadCount);
     }
  
@@ -287,6 +289,47 @@ namespace embree
       else      PrimRefArrayGen                        ::generate_parallel(threadIndex, threadCount, scheduler, this->scene, SUBDIV_MESH, 1, this->prims, pinfo);
     }
     
+
+    // =======================================================================================================
+    // =======================================================================================================
+    // =======================================================================================================
+
+   void BVH4SubdivQuadQuad4x4BuilderFast::build(size_t threadIndex, size_t threadCount)
+    {
+      this->bvh->alloc2.reset();
+      BVH4BuilderFast::build(threadIndex,threadCount);
+    }
+
+    size_t BVH4SubdivQuadQuad4x4BuilderFast::number_of_primitives() {
+      //return 100*this->scene->numSubdivPatches; // FIXME:
+      return 100000;
+    }
+    
+    void BVH4SubdivQuadQuad4x4BuilderFast::create_primitive_array_sequential(size_t threadIndex, size_t threadCount, PrimInfo& pinfo)
+    {
+      size_t N = 0;
+      for (size_t i=0; i<this->scene->size(); i++) 
+      {
+	const Geometry* geom = this->scene->get(i);
+        if (geom == NULL || !geom->isEnabled()) continue;
+	if (geom->type != SUBDIV_MESH) continue;
+        SubdivMesh* mesh = (SubdivMesh*)geom;
+        mesh->initializeHalfEdgeStructures();
+        for (size_t f=0; f<mesh->numFaces; f++) {
+          std::vector<PrimRef> lprims;
+          QuadQuad4x4AdaptiveSubdivision (lprims,bvh->alloc2,this->scene,mesh->faceStartEdge[f],&mesh->getVertexPosition(0),mesh->id,f);
+          for (size_t i=0; i<lprims.size(); i++) {
+            assert(N<numPrimitives);
+            prims[N++] = lprims[i];
+            pinfo.add(lprims[i].bounds());
+          }
+        }
+      }
+    }
+    
+    void BVH4SubdivQuadQuad4x4BuilderFast::create_primitive_array_parallel  (size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, PrimInfo& pinfo) {
+      create_primitive_array_sequential(threadIndex, threadCount, pinfo);  // FIXME: parallelize
+    }
 
     // =======================================================================================================
     // =======================================================================================================
@@ -322,7 +365,7 @@ namespace embree
     // =======================================================================================================
     // =======================================================================================================
     // =======================================================================================================
-    
+
     template<typename Primitive>
     void BVH4BuilderFastT<Primitive>::createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID)
     {
@@ -335,6 +378,12 @@ namespace embree
       
       for (size_t i=0; i<items; i++) 
 	accel[i].fill(prims,start,current.end,scene,listMode);
+    }
+
+    template<>
+    void BVH4BuilderFastT<PrimRef>::createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID) {
+      if (current.size() != 1) THROW_RUNTIME_ERROR("bvh4_builder_fast: internal error");
+      *current.parent = (BVH4::NodeRef) prims[current.begin].ID();
     }
 
     template<>
@@ -741,6 +790,6 @@ namespace embree
 
     Builder* BVH4SubdivPatch1BuilderFast(void* bvh, Scene* scene, size_t mode) { return new class BVH4SubdivBuilderFast<SubdivPatch1>((BVH4*)bvh,scene,mode); }
     Builder* BVH4SubdivPatchDispl1BuilderFast(void* bvh, Scene* scene, size_t mode) { return new class BVH4SubdivBuilderFast<SubdivPatchDispl1>((BVH4*)bvh,scene,mode); }
-
+    Builder* BVH4SubdivQuadQuad4x4BuilderFast(void* bvh, Scene* scene, size_t mode) { return new class BVH4SubdivQuadQuad4x4BuilderFast((BVH4*)bvh,scene,mode); }
   }
 }
