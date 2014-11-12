@@ -271,6 +271,7 @@ namespace embree
 
     static Type type;
 
+#if 0
     const std::pair<BBox3fa,BVH4::NodeRef> leaf(FastAllocator& alloc,
                                                 const IrregularCatmullClarkPatch& patch,
                                                 unsigned x, unsigned y, unsigned l,
@@ -296,6 +297,7 @@ namespace embree
 #endif
       return std::pair<BBox3fa,BVH4::NodeRef>(bounds,BVH4::encodeTypedLeaf(leaf,0));
     }
+#endif
 
     const std::pair<BBox3fa,BVH4::NodeRef> grid(FastAllocator& alloc, const IrregularCatmullClarkPatch& patch, unsigned x0, unsigned y0, unsigned level)
     {
@@ -333,7 +335,10 @@ namespace embree
           }
 
           QuadQuad4x4* leaf = (QuadQuad4x4*) alloc.malloc(sizeof(QuadQuad4x4),16);
-          new (leaf) QuadQuad4x4(8*x0+x,8*y0+y,8*(1<<level),geomID(),primID());
+          const int pu0 = 8*x0+x, pu1 = pu0+8;
+          const int pv0 = 8*y0+y, pv1 = pv0+8;
+          const int ll = 8*(1<<level)+1;
+          new (leaf) QuadQuad4x4(pu0/float(ll),pu1/float(ll),pv0/float(ll),pv1/float(ll),geomID(),primID());
           const BBox3fa leaf_bounds = leaf->build(scene,patcheval,pattern0,pattern1,pattern2,pattern3,
                                                   pattern_x,x,nx,
                                                   pattern_y,y,ny);
@@ -353,6 +358,7 @@ namespace embree
       //return leaf(alloc,patch,x,y,l,false,false,false,false);
       return grid(alloc,patch,x,y,l);
 
+#if 0
       IrregularCatmullClarkPatch patches[4]; 
       patch.subdivide(patches);
 
@@ -386,6 +392,7 @@ namespace embree
 
       const BBox3fa bounds = merge(b00.first,b10.first,b01.first,b11.first);
       return std::pair<BBox3fa,BVH4::NodeRef>(bounds,BVH4::encodeNode2(node));
+#endif
     }
 
     const std::pair<BBox3fa,BVH4::NodeRef> build(FastAllocator& alloc, const GeneralIrregularCatmullClarkPatch& patch, int maxDepth)

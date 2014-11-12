@@ -352,8 +352,8 @@ namespace embree
 
   public:
       
-    __forceinline QuadQuad4x4(unsigned px, unsigned py, unsigned width, unsigned geomID, unsigned primID)
-      : px(px), py(py), width(width), geomID(geomID), primID(primID) {}
+    __forceinline QuadQuad4x4(float u0, float u1, float v0, float v1, unsigned geomID, unsigned primID)
+      : u0(u0), u1(u1), v0(v0), v1(v1), geomID(geomID), primID(primID) {}
     
     void displace(Scene* scene)
     {
@@ -364,9 +364,9 @@ namespace embree
       __aligned(64) float qu[9][9], qv[9][9];
       __aligned(64) float qx[9][9], qy[9][9], qz[9][9];
       for (size_t y=0; y<9; y++) {
-        float fy = float(py+y)/float(width+1);
+        float fy = v0 + (v1-v0)*float(y)*(1.0f/9.0f);
         for (size_t x=0; x<9; x++) {
-          float fx = float(px+x)/float(width+1);
+          float fx = u0 + (u1-u0)*float(x)*(1.0f/9.0f);
           qu[y][x] = fx;
           qv[y][x] = fy;
           qx[y][x] = v[y][x].x;
@@ -571,8 +571,8 @@ namespace embree
   public:
     Bounds16 n;               //!< bounds of all QuadQuads
     Vec3fa v[9][9];           //!< pointer to vertices
-    unsigned px, py;          //!< position inside subdivpatch
-    unsigned width;           //!< subdivision width of subdivpatch
+    float u0,u1;              //!< u coordinate range
+    float v0,v1;              //!< v coordinate range
     unsigned primID;
     unsigned geomID;
   };
