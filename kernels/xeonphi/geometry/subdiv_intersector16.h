@@ -23,6 +23,91 @@
 namespace embree
 {
 
+  static __forceinline bool intersect1_tri16(const size_t rayIndex, 
+					     const mic_f &dir_xyz,
+					     const mic_f &org_xyz,
+					     Ray16& ray16,
+					     const mic3f &v0,
+					     const mic3f &v1,
+					     const mic3f &v2,
+					     const mic_m &m_active,
+					     const unsigned int geomID,
+					     const unsigned int primID)
+  {
+    const mic3f ray_org(swAAAA(org_xyz),swBBBB(org_xyz),swCCCC(org_xyz));
+    const mic3f ray_dir(swAAAA(dir_xyz),swBBBB(dir_xyz),swCCCC(dir_xyz));
+
+    const mic3f e1      = v1 - v0;
+    const mic3f e2      = v0 - v2;	     
+    const mic3f normal  = cross(e1,e2);
+    const mic3f org     = v0 - ray_org;
+    const mic3f od      = cross(org,ray_dir); 
+    const mic_f den     = dot(normal,ray_dir);	      
+    const mic_f rcp_den = rcp(den);
+    const mic_f uu      = dot(e2,od); 
+    const mic_f vv      = dot(e1,od); 
+    const mic_f u       = uu * rcp_den;
+    const mic_f v       = vv * rcp_den;
+
+#if defined(__BACKFACE_CULLING__)
+    const mic_m m_init = m_active & (den > zero);
+#else
+    const mic_m m_init = m_active;
+#endif
+
+    const mic_m valid_u    = ge(m_init,u,zero);
+    const mic_m valid_v    = ge(valid_u,v,zero);
+    const mic_m m_aperture = le(valid_v,u+v,mic_f::one()); 
+
+    const mic_f nom = dot(org,normal);
+
+    if (unlikely(none(m_aperture))) return false;
+
+    const mic_f t      = rcp_den*nom;
+    mic_f max_dist_xyz = mic_f(ray16.tfar[rayIndex]);
+    mic_m m_final      = lt(lt(m_aperture,mic_f(ray16.tnear[rayIndex]),t),t,max_dist_xyz);
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////
+
+    /* did the ray hit one of the four triangles? */
+    if (unlikely(any(m_final)))
+      {
+	STAT3(normal.trav_prim_hits,1,1,1);
+	max_dist_xyz  = select(m_final,t,max_dist_xyz);
+	const mic_f min_dist = vreduce_min(max_dist_xyz);
+	const mic_m m_dist = eq(min_dist,max_dist_xyz);
+	const size_t index = bitscan(toInt(m_dist));
+
+	const mic_m m_tri = m_dist^(m_dist & (mic_m)((unsigned int)m_dist - 1));
+                
+	prefetch<PFHINT_L1EX>(&ray16.tfar);  
+	prefetch<PFHINT_L1EX>(&ray16.u);
+	prefetch<PFHINT_L1EX>(&ray16.v);
+	prefetch<PFHINT_L1EX>(&ray16.Ng.x); 
+	prefetch<PFHINT_L1EX>(&ray16.Ng.y); 
+	prefetch<PFHINT_L1EX>(&ray16.Ng.z); 
+	prefetch<PFHINT_L1EX>(&ray16.geomID);
+	prefetch<PFHINT_L1EX>(&ray16.primID);
+
+	const mic_f gnormalx(normal.x[index]);
+	const mic_f gnormaly(normal.y[index]);
+	const mic_f gnormalz(normal.z[index]);
+		  
+	compactustore16f_low(m_tri,&ray16.tfar[rayIndex],min_dist);
+	compactustore16f_low(m_tri,&ray16.u[rayIndex],u); 
+	compactustore16f_low(m_tri,&ray16.v[rayIndex],v); 
+	compactustore16f_low(m_tri,&ray16.Ng.x[rayIndex],gnormalx); 
+	compactustore16f_low(m_tri,&ray16.Ng.y[rayIndex],gnormaly); 
+	compactustore16f_low(m_tri,&ray16.Ng.z[rayIndex],gnormalz); 
+
+	ray16.geomID[rayIndex] = geomID;
+	ray16.primID[rayIndex] = primID;
+	return true;
+      
+      }
+    return false;      
+  };
+
 
   static __forceinline bool intersect1_quad(const size_t rayIndex, 
 					    const mic_f &dir_xyz,
