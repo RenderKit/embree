@@ -373,9 +373,9 @@ namespace embree
           float fx = u0 + (u1-u0)*float(x)*(1.0f/9.0f);
           qu[y][x] = fx;
           qv[y][x] = fy;
-          qx[y][x] = v[y][x].x;
-          qy[y][x] = v[y][x].y;
-          qz[y][x] = v[y][x].z;
+          qx[y][x] = p[y][x].x;
+          qy[y][x] = p[y][x].y;
+          qz[y][x] = p[y][x].z;
         }
       }
       
@@ -385,13 +385,13 @@ namespace embree
       /* add displacements */
       for (size_t y=0; y<9; y++) {
         for (size_t x=0; x<9; x++) {
-          const Vec3fa P0 = v[y][x];
+          const Vec3fa P0 = p[y][x];
           const Vec3fa P1 = Vec3fa(qx[y][x],qy[y][x],qz[y][x]);
 #if defined(DEBUG)
           if (!inside(mesh->displBounds,P1-P0))
             THROW_RUNTIME_ERROR("displacement out of bounds");
 #endif
-          v[y][x] = P1;
+          p[y][x] = P1;
         }
       }
     }
@@ -399,7 +399,7 @@ namespace embree
     const BBox3fa fullBounds() const
     {
       BBox3fa bounds = empty;
-      for (size_t i=0; i<9*9; i++) bounds.extend(v[0][i]);
+      for (size_t i=0; i<9*9; i++) bounds.extend(p[0][i]);
       return bounds;
     }
 
@@ -407,19 +407,19 @@ namespace embree
     {
       BBox3fa bounds = empty;
       x *= 2; y *= 2;
-      bounds.extend(v[y+0][x+0]);
-      bounds.extend(v[y+0][x+1]);
-      bounds.extend(v[y+0][x+2]);
-      bounds.extend(v[y+1][x+0]);
-      bounds.extend(v[y+1][x+1]);
-      bounds.extend(v[y+1][x+2]);
-      bounds.extend(v[y+2][x+0]);
-      bounds.extend(v[y+2][x+1]);
-      bounds.extend(v[y+2][x+2]);
+      bounds.extend(p[y+0][x+0]);
+      bounds.extend(p[y+0][x+1]);
+      bounds.extend(p[y+0][x+2]);
+      bounds.extend(p[y+1][x+0]);
+      bounds.extend(p[y+1][x+1]);
+      bounds.extend(p[y+1][x+2]);
+      bounds.extend(p[y+2][x+0]);
+      bounds.extend(p[y+2][x+1]);
+      bounds.extend(p[y+2][x+2]);
       return bounds;
     }
 
-    __forceinline Vec3fa& point(const size_t x, const size_t y) { return v[y][x]; }
+    __forceinline Vec3fa& point(const size_t x, const size_t y) { return p[y][x]; }
 
     const BBox3fa build(Scene* scene)
     {
@@ -458,7 +458,7 @@ namespace embree
     {
       for (size_t y=0; y<=8; y++)
         for (size_t x=0; x<=8; x++)
-          v[y][x] = p3(x,y);
+          p[y][x] = p3(x,y);
 
 #if 1
       if (Tt) {
@@ -489,7 +489,7 @@ namespace embree
     {
       for (size_t y=0; y<=8; y++) {
         for (size_t x=0; x<=8; x++) {
-          v[y][x] = patch.eval(0.125f*float(x),0.125*float(y));
+          p[y][x] = patch.eval(0.125f*float(x),0.125*float(y));
         }
       }
       return build(scene);
@@ -499,7 +499,7 @@ namespace embree
     {
       for (size_t y=0; y<=8; y++) {
         for (size_t x=0; x<=8; x++) {
-          v[y][x] = patch.eval(0.125f*float(x),0.125*float(y));
+          p[y][x] = patch.eval(0.125f*float(x),0.125*float(y));
         }
       }
       return build(scene);
@@ -532,11 +532,13 @@ namespace embree
                         const TessellationPattern& pattern_x, const int x0, const int Nx,
                         const TessellationPattern& pattern_y, const int y0, const int Ny)
     {
+      Vec2f uv[9][9];
+
       for (int y=0; y<=8; y++) {
         const float fy = pattern_y(y0+y);
         for (int x=0; x<=8; x++) {
           const float fx = pattern_x(x0+x);
-          v[y][x] = patch.eval(fx,fy);
+          uv[y][x] = Vec2f(fx,fy);
         }
       }
 
@@ -545,7 +547,7 @@ namespace embree
         const float fy = pattern_y(y0);
         for (int x=0; x<=8; x++) {
           const float fx = pattern0(stitch(x0+x,pattern_x.size(),pattern0.size()));
-          v[0][x] = patch.eval(fx,fy);
+          uv[0][x] = Vec2f(fx,fy);
         }
       }
 
@@ -554,7 +556,7 @@ namespace embree
           const float fy = pattern_y(y0+y);
           for (int x=0; x<=8; x++) {
             const float fx = pattern2(stitch(x0+x,pattern_x.size(),pattern2.size()));
-            v[y][x] = patch.eval(fx,fy);
+            uv[y][x] = Vec2f(fx,fy);
           }
         }
       }
@@ -563,7 +565,7 @@ namespace embree
         const float fx = pattern_x(x0);
         for (int y=0; y<=8; y++) {
           const float fy = pattern3(stitch(y0+y,pattern_y.size(),pattern3.size()));
-          v[y][0] = patch.eval(fx,fy);
+          uv[y][0] = Vec2f(fx,fy);
         }
       }
 
@@ -571,18 +573,25 @@ namespace embree
         for (int x=Nx-x0; x<=8; x++) {
           const float fx = pattern_x(x0+x);
           for (int y=0; y<=8; y++) {
-          const float fy = pattern1(stitch(y0+y,pattern_y.size(),pattern1.size()));
-            v[y][x] = patch.eval(fx,fy);
+            const float fy = pattern1(stitch(y0+y,pattern_y.size(),pattern1.size()));
+            uv[y][x] = Vec2f(fx,fy);
           }
         }
       }
 #endif
+
+      for (int y=0; y<=8; y++) {
+        for (int x=0; x<=8; x++) {
+          p[y][x] = patch.eval(uv[y][x].x,uv[y][x].y);
+        }
+      }
+
       return build(scene);
     }
 
   public:
     Bounds16 n;               //!< bounds of all QuadQuads
-    Vec3fa v[9][9];           //!< pointer to vertices
+    Vec3fa p[9][9];           //!< pointer to vertices
     float u0,u1;              //!< u coordinate range
     float v0,v1;              //!< v coordinate range
     unsigned primID;
