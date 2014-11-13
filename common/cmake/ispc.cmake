@@ -38,7 +38,7 @@ MACRO (ispc_compile targets)
   IF (__XEON__)
     SET (ISPC_TARGET_EXT ${CMAKE_CXX_OUTPUT_EXTENSION})
   ELSE()
-    SET (ISPC_TARGET_EXT ${CMAKE_CXX_SOURCE_FILE_EXTENSIONS})
+    SET (ISPC_TARGET_EXT .cpp)
     SET (ISPC_TARGET_ALIGNED_MEMORY --opt=force-aligned-memory)
   ENDIF()
 
