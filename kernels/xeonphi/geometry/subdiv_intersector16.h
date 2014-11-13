@@ -23,7 +23,7 @@
 namespace embree
 {
 
-  static __forceinline bool intersect1_tri16(const size_t rayIndex, 
+  static __forceinline void intersect1_tri16(const size_t rayIndex, 
 					     const mic_f &dir_xyz,
 					     const mic_f &org_xyz,
 					     Ray16& ray16,
@@ -61,7 +61,7 @@ namespace embree
 
     const mic_f nom = dot(org,normal);
 
-    if (unlikely(none(m_aperture))) return false;
+    if (unlikely(none(m_aperture))) return;
 
     const mic_f t      = rcp_den*nom;
     mic_f max_dist_xyz = mic_f(ray16.tfar[rayIndex]);
@@ -102,12 +102,25 @@ namespace embree
 
 	ray16.geomID[rayIndex] = geomID;
 	ray16.primID[rayIndex] = primID;
-	return true;
       
       }
-    return false;      
   };
 
+  static __forceinline void intersect1_quad16(const size_t rayIndex, 
+					      const mic_f &dir_xyz,
+					      const mic_f &org_xyz,
+					      Ray16& ray16,
+					      const mic3f &v0,
+					      const mic3f &v1,
+					      const mic3f &v2,
+					      const mic3f &v3,
+					      const mic_m &m_active,
+					      const unsigned int geomID,
+					      const unsigned int primID)
+  {
+    intersect1_tri16(rayIndex,dir_xyz,org_xyz,ray16,v0,v1,v2,m_active,geomID,primID);
+    intersect1_tri16(rayIndex,dir_xyz,org_xyz,ray16,v0,v2,v3,m_active,geomID,primID);
+  }
 
   static __forceinline bool intersect1_quad(const size_t rayIndex, 
 					    const mic_f &dir_xyz,

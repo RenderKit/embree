@@ -158,7 +158,7 @@ uniform unsigned int convertScene(uniform ISPCScene* uniform scene_in, const uni
 	mesh->edge_level  = uniform new uniform float[mesh->numQuads*4];
 
 	for (size_t i=0;i<mesh->numQuads;i++) offset_buffer[i] = 4;
-	for (size_t i=0;i<mesh->numQuads*4;i++) mesh->edge_level[i]  = 4;
+	for (size_t i=0;i<mesh->numQuads*4;i++) mesh->edge_level[i]  = 3;
 
        /* create a triangle mesh */
         uniform unsigned int subdivMeshID = rtcNewSubdivisionMesh (g_scene, RTC_GEOMETRY_STATIC, mesh->numQuads, mesh->numQuads*4, mesh->numVertices, 0, 0, 0);
@@ -282,7 +282,7 @@ export void device_render (uniform int* uniform pixels,
    if (numQuads == 0)
     convertTestSubdivScene();
 
-    updateEdgeLevels(g_ispc_scene, cam_org);
+    //updateEdgeLevels(g_ispc_scene, cam_org);
 
     old_p = p;
 
@@ -297,7 +297,7 @@ export void device_render (uniform int* uniform pixels,
     if (p.x != old_p.x | p.y != old_p.y | p.z != old_p.z)
     {
      old_p = p;
-     updateEdgeLevels(g_ispc_scene, cam_org);
+     //updateEdgeLevels(g_ispc_scene, cam_org);
 
 #if !defined(PARALLEL_COMMIT)
      rtcCommit (g_scene);

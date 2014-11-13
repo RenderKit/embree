@@ -219,27 +219,13 @@ namespace embree
       const mic_f uu = gather16f_4f_align(mic_f(u0),mic_f(u1),mic_f(u2),mic_f(u3));
       const mic_f vv = gather16f_4f_align(mic_f(v0),mic_f(v1),mic_f(v2),mic_f(v3));
 
-      // const mic_f uu = select(0x0ff0,mic_f(u_end),mic_f(u_start));
-      // const mic_f vv = select(0xff00,mic_f(v_end),mic_f(v_start));
-
       if (likely(subdiv_patch.isRegular()))
 	{
-	  // vtx[0] = regular_patch.eval(s[0],t[0]);
-	  // vtx[1] = regular_patch.eval(s[1],t[0]);
-	  // vtx[2] = regular_patch.eval(s[1],t[1]);
-	  // vtx[3] = regular_patch.eval(s[0],t[1]);
 	  const mic_f _vtx = regular_patch.eval4(uu,vv);
 	  store16f(vtx,_vtx);
 	}
       else 
 	{
-	  // Vec2f s(0.0f,1.0f);
-	  // Vec2f t(0.0f,1.0f);
-	  // __aligned(64) GregoryPatch gpatch( regular_patch.v, subdiv_patch.f_m );
-	  // vtx[0] = gpatch.eval(s[0],t[0]);
-	  // vtx[1] = gpatch.eval(s[1],t[0]);
-	  // vtx[2] = gpatch.eval(s[1],t[1]);
-	  // vtx[3] = gpatch.eval(s[0],t[1]);
 	  const mic_f _vtx = GregoryPatch::eval4( regular_patch.v, subdiv_patch.f_m, uu, vv );
 	  store16f(vtx,_vtx);
 	}
@@ -254,6 +240,54 @@ namespace embree
 			     vtx[3],
 			     subdiv_patch.geomID,
 			     subdiv_patch.primID);
+    }
+
+
+    __forceinline bool intersect1Eval16(const SubdivPatch1 &subdiv_patch,
+					const unsigned int grid_u_res,
+					const unsigned int grid_v_res,
+					const float *__restrict__ const u_array,
+					const float *__restrict__ const v_array,
+					const mic_m m_active,
+					const size_t rayIndex, 
+					const mic_f &dir_xyz,
+					const mic_f &org_xyz,
+					Ray16& ray16)
+    {
+      const RegularCatmullClarkPatch &regular_patch = subdiv_patch.patch;
+      regular_patch.prefetchData();
+
+      mic3f vtx;
+
+      const mic_f uu = load16f(u_array);
+      const mic_f vv = load16f(v_array);
+
+      if (likely(subdiv_patch.isRegular()))
+	{
+	  vtx = regular_patch.eval16(uu,vv);
+	}
+      else 
+	{
+	  vtx = GregoryPatch::eval16( regular_patch.v, subdiv_patch.f_m, uu, vv );
+	}
+
+      const mic3f v0 = vtx;
+      const mic3f v1( uload16f_low(&vtx.x[1])           , uload16f_low(&vtx.y[1])           , uload16f_low(&vtx.z[1]));
+      const mic3f v2( uload16f_low(&vtx.x[grid_u_res+1]), uload16f_low(&vtx.y[grid_u_res+1]), uload16f_low(&vtx.z[grid_u_res+1]));
+      const mic3f v3( uload16f_low(&vtx.x[grid_u_res+0]), uload16f_low(&vtx.y[grid_u_res+0]), uload16f_low(&vtx.z[grid_u_res+0]));
+
+      intersect1_quad16(rayIndex, 
+			dir_xyz,
+			org_xyz,
+			ray16,
+			v0,
+			v1,
+			v2,
+			v3,
+			m_active,
+			subdiv_patch.geomID,
+			subdiv_patch.primID);
+      return true;
     }
 
     __noinline bool intersectEvalGrid1(const size_t rayIndex, 
@@ -305,28 +339,45 @@ namespace embree
 	  std::cout << std::endl;
 	}
 #endif
-     
       bool hit = false;
-      size_t offset_line0 = 0;
-      size_t offset_line1 = grid_u_res;
 
-      for (unsigned int y=0;y<grid_v_res-1;y++,offset_line0++,offset_line1++)
-	for (unsigned int x=0;x<grid_u_res-1;x++,offset_line0++,offset_line1++)
-	  {
-	    const float &u0 = u_array[offset_line0+0];
-	    const float &v0 = v_array[offset_line0+0];
+      if (likely(grid_size <= 16))
+	{
+	  const mic_m m_active = 0x777;
+	  hit |= intersect1Eval16(subdiv_patch,
+				  grid_u_res,
+				  grid_v_res,
+				  u_array,
+				  v_array,
+				  m_active,
+				  rayIndex,
+				  dir_xyz,
+				  org_xyz,
+				  ray16);	    	  
+	}
+      else
+	{
+	  size_t offset_line0 = 0;
+	  size_t offset_line1 = grid_u_res;
+	  
+	  for (unsigned int y=0;y<grid_v_res-1;y++,offset_line0++,offset_line1++)
+	    for (unsigned int x=0;x<grid_u_res-1;x++,offset_line0++,offset_line1++)
+	      {
+		const float &u0 = u_array[offset_line0+0];
+		const float &v0 = v_array[offset_line0+0];
+		
+		const float &u1 = u_array[offset_line0+1];
+		const float &v1 = v_array[offset_line0+1];
+		
+		const float &u2 = u_array[offset_line1+1];
+		const float &v2 = v_array[offset_line1+1];
 
-	    const float &u1 = u_array[offset_line0+1];
-	    const float &v1 = v_array[offset_line0+1];
-
-	    const float &u2 = u_array[offset_line1+1];
-	    const float &v2 = v_array[offset_line1+1];
-
-	    const float &u3 = u_array[offset_line1+0];
-	    const float &v3 = v_array[offset_line1+0];
-
-	    hit |= intersect1Eval(subdiv_patch,u0,v0,u1,v1,u2,v2,u3,v3,rayIndex,dir_xyz,org_xyz,ray16);	    
-	  }
+		const float &u3 = u_array[offset_line1+0];
+		const float &v3 = v_array[offset_line1+0];
+		
+		hit |= intersect1Eval(subdiv_patch,u0,v0,u1,v1,u2,v2,u3,v3,rayIndex,dir_xyz,org_xyz,ray16);	    
+	      }
+	}
 
 #if 0
       exit(0);

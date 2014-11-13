@@ -567,6 +567,11 @@ namespace embree
   __forceinline mic_f uload16f_low(const mic_m& mask, const void* addr, const mic_f& v1) {
     return _mm512_mask_extloadunpacklo_ps(v1, mask, addr, _MM_UPCONV_PS_NONE, _MM_HINT_NONE);
   }
+
+  __forceinline mic_f uload16f_low(const mic_m& mask, const void* addr) {
+    mic_f v1 = mic_f::undefined();
+    return _mm512_mask_extloadunpacklo_ps(v1, mask, addr, _MM_UPCONV_PS_NONE, _MM_HINT_NONE);
+  }
   
   __forceinline void ustore16f(float *addr, const mic_f& reg) {
     _mm512_extpackstorelo_ps(addr+0 ,reg, _MM_DOWNCONV_PS_NONE , 0);
