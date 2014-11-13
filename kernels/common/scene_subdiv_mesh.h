@@ -81,7 +81,7 @@ namespace embree
 
       __forceinline bool hasIrregularEdge() const 
       {
-	HalfEdge *p = (HalfEdge*)this;
+	HalfEdge* p = (HalfEdge*)this;
 	do {
 	  if (unlikely(!p->hasOpposite()))
 	    return true;
@@ -145,7 +145,7 @@ namespace embree
 
       __forceinline bool faceHasEdges() const 
       {
-	HalfEdge *p = (HalfEdge*)this;
+	HalfEdge* p = (HalfEdge*)this;
 	if (p->hasOpposite() == false) return true;
 	p = p->next();
 	if (p->hasOpposite() == false) return true;
