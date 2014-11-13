@@ -282,7 +282,7 @@ export void device_render (uniform int* uniform pixels,
    if (numQuads == 0)
     convertTestSubdivScene();
 
-    updateEdgeLevels(g_ispc_scene, cam_org);
+    //updateEdgeLevels(g_ispc_scene, cam_org);
 
     old_p = p;
 
@@ -297,7 +297,7 @@ export void device_render (uniform int* uniform pixels,
     if (p.x != old_p.x | p.y != old_p.y | p.z != old_p.z)
     {
      old_p = p;
-     updateEdgeLevels(g_ispc_scene, cam_org);
+     //updateEdgeLevels(g_ispc_scene, cam_org);
 
 #if !defined(PARALLEL_COMMIT)
      rtcCommit (g_scene);

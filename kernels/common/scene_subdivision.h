@@ -1008,6 +1008,116 @@ namespace embree
   };
 
 
+ __forceinline void stichEdges(const unsigned int low_rate_segments,
+			       const unsigned int high_rate_segments,
+			       float * __restrict__ const uv_array,
+			       const unsigned int uv_array_step)
+ {
+   assert(low_rate_segments < high_rate_segments);
+   assert(high_rate_segments >= 2);
+
+   const float inv_low_rate_segments = 1.0f / (float)low_rate_segments;
+   const unsigned int high_rate_points = high_rate_segments+1;
+   const unsigned int dy = low_rate_segments+1; // [0,..,low_rate_segments]   
+   const unsigned int dx = high_rate_segments-1;
+
+   int p = 2*dy-dx;  
+
+   unsigned int offset = uv_array_step;
+
+   for(unsigned int x=1, y=0; x<high_rate_segments; x++) // inner points [1,..,n-1]
+     {
+       uv_array[offset] = (float)y * inv_low_rate_segments;
+
+       //std::cout << "x " << x << " y " << y << " value " << uv_array[offset] << std::endl; 
+       offset += uv_array_step;      
+       if(p > 0)
+	 {
+	   y++;
+	   p -= 2*dx;
+	 }
+       p += 2*dy;
+     }
+ }
+
+ __forceinline void gridUVTessellator(const float edge_levels[4],
+				      const unsigned int grid_u_res,
+				      const unsigned int grid_v_res,
+				      float * __restrict__ const u_array,
+				      float * __restrict__ const v_array)
+ {
+   assert( grid_u_res >= 1);
+   assert( grid_v_res >= 1);
+   assert( edge_levels[0] >= 1.0f );
+   assert( edge_levels[1] >= 1.0f );
+   assert( edge_levels[2] >= 1.0f );
+   assert( edge_levels[3] >= 1.0f );
+
+   const unsigned int grid_u_segments = grid_u_res-1;
+   const unsigned int grid_v_segments = grid_v_res-1;
+
+   const float u_step = 1.0f / grid_u_segments;
+   const float v_step = 1.0f / grid_v_segments;
+
+   /* initialize grid */
+   unsigned int index = 0;
+   float v = 0.0f;
+   for (unsigned int y=0;y<grid_v_res;y++,v+=v_step)
+     {
+       float u = 0.0f;
+       for (unsigned int x=0;x<grid_u_res;x++,index++,u+=u_step)
+	 {
+	   u_array[index] = u;
+	   v_array[index] = v;
+	 }
+     }
+   const unsigned int num_points = index;
+
+   /* set right and buttom border to exactly 1.0f */
+   for (unsigned int y=0,i=grid_u_res-1;y<grid_v_res;y++,i+=grid_u_res)
+     u_array[i] = 1.0f;
+   for (unsigned int x=0;x<grid_u_res;x++)
+     v_array[num_points-1-x] = 1.0f;
+       
+
+#if 0
+      DBG_PRINT("UV grid");
+      DBG_PRINT( edge_levels[0] );
+      DBG_PRINT( edge_levels[1] );
+      DBG_PRINT( edge_levels[2] );
+      DBG_PRINT( edge_levels[3] );
+
+      DBG_PRINT( grid_u_res );
+      DBG_PRINT( grid_v_res );
+
+      for (unsigned int y=0;y<grid_v_res;y++)
+	{
+	  std::cout << "row " << y << " ";
+	  for (unsigned int x=0;x<grid_u_res;x++)
+	    std::cout << "(" << v_array[grid_u_res*y+x] << "," << u_array[grid_u_res*y+x] << ") ";
+	  std::cout << std::endl;
+	}
+#endif
+
+   /* stich different tessellation levels in u/v grid */
+   const unsigned int int_edge_level0 = (unsigned int)edge_levels[0];
+   const unsigned int int_edge_level1 = (unsigned int)edge_levels[1];
+   const unsigned int int_edge_level2 = (unsigned int)edge_levels[2];
+   const unsigned int int_edge_level3 = (unsigned int)edge_levels[3];
+
+   if (unlikely(int_edge_level0 < grid_u_segments))
+     stichEdges(int_edge_level0,grid_u_segments,u_array,1);
+
+   if (unlikely(int_edge_level2 < grid_u_segments))
+     stichEdges(int_edge_level2,grid_u_segments,&u_array[grid_v_segments*grid_u_res],1);
+
+   if (unlikely(int_edge_level1 < grid_v_segments))
+     stichEdges(int_edge_level1,grid_v_segments,&v_array[grid_u_segments],grid_u_res);
+
+   if (unlikely(int_edge_level3 < grid_v_segments))
+     stichEdges(int_edge_level3,grid_v_segments,v_array,grid_u_res);
+
+ }
 
 
   template<typename T>
@@ -1370,6 +1480,29 @@ namespace embree
     
 #endif
 
+
+    __forceinline BBox3fa getDiscreteTessellationBounds(const float edge_levels[4]) const
+    {
+      const unsigned int grid_u_res = max(ceilf(edge_levels[0]),ceilf(edge_levels[2]))+1; // n segments -> n+1 points
+      const unsigned int grid_v_res = max(ceilf(edge_levels[1]),ceilf(edge_levels[3]))+1;
+
+      const size_t grid_size = (grid_u_res*grid_v_res+15)&(-16);
+
+      assert(grid_size > 0);
+      assert(grid_size % 16 == 0);
+
+      __aligned(64) float u_array[grid_size];
+      __aligned(64) float v_array[grid_size];
+
+      gridUVTessellator(edge_levels,grid_u_res,grid_v_res,u_array,v_array);
+
+      BBox3fa bounds ( empty );
+      
+      for (size_t i=0;i<grid_size;i++)
+	bounds.extend( eval( u_array[i], v_array[i] ) );
+      return bounds;      
+    }
+
   };
 
 
@@ -1604,18 +1737,6 @@ namespace embree
 
     }
 
-   __forceinline BBox3fa bounds() const
-    {
-      const Vec3fa *const cv = &v[0][0];
-      BBox3fa bounds ( cv[0] );
-      for (size_t i = 1; i<16 ; i++)
-	bounds.extend( cv[i] );
-      bounds.extend(f[0][0]);
-      bounds.extend(f[1][0]);
-      bounds.extend(f[1][1]);
-      bounds.extend(f[1][1]);
-      return bounds;
-    }
  
    __forceinline void exportConrolPoints( Vec3fa matrix[4][4], Vec3fa f_m[2][2] ) const
    {
@@ -1821,6 +1942,41 @@ namespace embree
 
     }
 
+    __forceinline BBox3fa getDiscreteTessellationBounds(const float edge_levels[4]) const
+    {
+      const unsigned int grid_u_res = max(ceilf(edge_levels[0]),ceilf(edge_levels[2]))+1; // n segments -> n+1 points
+      const unsigned int grid_v_res = max(ceilf(edge_levels[1]),ceilf(edge_levels[3]))+1;
+
+      const size_t grid_size = (grid_u_res*grid_v_res+15)&(-16);
+
+      assert(grid_size > 0);
+      assert(grid_size % 16 == 0);
+
+      __aligned(64) float u_array[grid_size];
+      __aligned(64) float v_array[grid_size];
+
+      gridUVTessellator(edge_levels,grid_u_res,grid_v_res,u_array,v_array);
+
+      BBox3fa bounds ( empty );
+      
+      for (size_t i=0;i<grid_size;i++)
+	bounds.extend( eval( u_array[i], v_array[i] ) );
+      return bounds;      
+    }
+
+   __forceinline BBox3fa bounds() const
+    {
+      const Vec3fa *const cv = &v[0][0];
+      BBox3fa bounds ( cv[0] );
+      for (size_t i = 1; i<16 ; i++)
+	bounds.extend( cv[i] );
+      bounds.extend(f[0][0]);
+      bounds.extend(f[1][0]);
+      bounds.extend(f[1][1]);
+      bounds.extend(f[1][1]);
+      return bounds;
+    }
+
   };
 
 
@@ -1836,116 +1992,6 @@ namespace embree
       return o;
     } 
 
- __forceinline void stichEdges(const unsigned int low_rate_segments,
-			       const unsigned int high_rate_segments,
-			       float * __restrict__ const uv_array,
-			       const unsigned int uv_array_step)
- {
-   assert(low_rate_segments < high_rate_segments);
-   assert(high_rate_segments >= 2);
-
-   const float inv_low_rate_segments = 1.0f / (float)low_rate_segments;
-   const unsigned int high_rate_points = high_rate_segments+1;
-   const unsigned int dy = low_rate_segments+1; // [0,..,low_rate_segments]   
-   const unsigned int dx = high_rate_segments-1;
-
-   int p = 2*dy-dx;  
-
-   unsigned int offset = uv_array_step;
-
-   for(unsigned int x=1, y=0; x<high_rate_segments; x++) // inner points [1,..,n-1]
-     {
-       uv_array[offset] = (float)y * inv_low_rate_segments;
-
-       //std::cout << "x " << x << " y " << y << " value " << uv_array[offset] << std::endl; 
-       offset += uv_array_step;      
-       if(p > 0)
-	 {
-	   y++;
-	   p -= 2*dx;
-	 }
-       p += 2*dy;
-     }
- }
-
- __forceinline void gridUVTessellator(const float edge_levels[4],
-				      const unsigned int grid_u_res,
-				      const unsigned int grid_v_res,
-				      float * __restrict__ const u_array,
-				      float * __restrict__ const v_array)
- {
-   assert( grid_u_res >= 1);
-   assert( grid_v_res >= 1);
-   assert( edge_levels[0] >= 1.0f );
-   assert( edge_levels[1] >= 1.0f );
-   assert( edge_levels[2] >= 1.0f );
-   assert( edge_levels[3] >= 1.0f );
-
-   const unsigned int grid_u_segments = grid_u_res-1;
-   const unsigned int grid_v_segments = grid_v_res-1;
-
-   const float u_step = 1.0f / grid_u_segments;
-   const float v_step = 1.0f / grid_v_segments;
-
-   /* initialize grid */
-   unsigned int index = 0;
-   float v = 0.0f;
-   for (unsigned int y=0;y<grid_v_res;y++,v+=v_step)
-     {
-       float u = 0.0f;
-       for (unsigned int x=0;x<grid_u_res;x++,index++,u+=u_step)
-	 {
-	   u_array[index] = u;
-	   v_array[index] = v;
-	 }
-     }
-   const unsigned int num_points = index;
-
-   /* set right and buttom border to exactly 1.0f */
-   for (unsigned int y=0,i=grid_u_res-1;y<grid_v_res;y++,i+=grid_u_res)
-     u_array[i] = 1.0f;
-   for (unsigned int x=0;x<grid_u_res;x++)
-     v_array[num_points-1-x] = 1.0f;
-       
-
-#if 0
-      DBG_PRINT("UV grid");
-      DBG_PRINT( edge_levels[0] );
-      DBG_PRINT( edge_levels[1] );
-      DBG_PRINT( edge_levels[2] );
-      DBG_PRINT( edge_levels[3] );
-
-      DBG_PRINT( grid_u_res );
-      DBG_PRINT( grid_v_res );
-
-      for (unsigned int y=0;y<grid_v_res;y++)
-	{
-	  std::cout << "row " << y << " ";
-	  for (unsigned int x=0;x<grid_u_res;x++)
-	    std::cout << "(" << v_array[grid_u_res*y+x] << "," << u_array[grid_u_res*y+x] << ") ";
-	  std::cout << std::endl;
-	}
-#endif
-
-   /* stich different tessellation levels in u/v grid */
-   const unsigned int int_edge_level0 = (unsigned int)edge_levels[0];
-   const unsigned int int_edge_level1 = (unsigned int)edge_levels[1];
-   const unsigned int int_edge_level2 = (unsigned int)edge_levels[2];
-   const unsigned int int_edge_level3 = (unsigned int)edge_levels[3];
-
-   if (unlikely(int_edge_level0 < grid_u_segments))
-     stichEdges(int_edge_level0,grid_u_segments,u_array,1);
-
-   if (unlikely(int_edge_level2 < grid_u_segments))
-     stichEdges(int_edge_level2,grid_u_segments,&u_array[grid_v_segments*grid_u_res],1);
-
-   if (unlikely(int_edge_level1 < grid_v_segments))
-     stichEdges(int_edge_level1,grid_v_segments,&v_array[grid_u_segments],grid_u_res);
-
-   if (unlikely(int_edge_level3 < grid_v_segments))
-     stichEdges(int_edge_level3,grid_v_segments,v_array,grid_u_res);
-
- }
 
 
 
