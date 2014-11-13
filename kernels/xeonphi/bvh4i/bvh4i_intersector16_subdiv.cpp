@@ -262,16 +262,6 @@ namespace embree
 			    Ray16& ray16,
 			    const SubdivPatch1& subdiv_patch)
     {
-#if 1
-      for (int i=0;i<4;i++)
-	if (subdiv_patch.level[i] < 1.0f)
-	  {
-	    DBG_PRINT(i);
-	    DBG_PRINT( subdiv_patch.level[i] );
-	    exit(0);
-	  }
-#endif
-
       const float edge_levels[4] = {
 	ceilf(subdiv_patch.level[0]),
 	ceilf(subdiv_patch.level[1]),
@@ -540,6 +530,17 @@ namespace embree
 		compactStack(stack_node,stack_dist,sindex,mic_f(ray16.tfar[rayIndex]));
 
 #else
+#if 1
+	      for (int i=0;i<4;i++)
+		if (subdiv_patch.level[i] < 1.0f)
+		  {
+		    DBG_PRINT( patchIndex );
+		    DBG_PRINT(i);
+		    DBG_PRINT( subdiv_patch.level[i] );
+		    exit(0);
+		  }
+#endif
+
 	      const bool hit = intersectEvalGrid1(rayIndex,
 						  dir_xyz,
 						  org_xyz,

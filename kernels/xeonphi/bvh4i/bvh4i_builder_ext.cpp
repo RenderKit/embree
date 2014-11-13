@@ -908,7 +908,6 @@ PRINT(CORRECT_numPrims);
 
   void BVH4iBuilderSubdivMesh::allocateData(const size_t threadCount, const size_t totalNumPrimitives)
   {
-    PING;
     size_t numPrimitivesOld = numPrimitives;
     numPrimitives = totalNumPrimitives;
     if (numPrimitivesOld != numPrimitives)
@@ -917,22 +916,24 @@ PRINT(CORRECT_numPrims);
 	const size_t minAllocNodes = (threadCount+1) * ALLOCATOR_NODE_BLOCK_SIZE; 
 	const size_t numNodes = (size_t)((numPrims+3)/4) + minAllocNodes;
 
+#if DEBUG
 	DBG_PRINT( numNodes * sizeof(BVH4i::Node) );
 	DBG_PRINT(sizeof(BBox3fa) * numPrimitives + sizeof(BVH4i::Node) * 128);
-
+	DBG_PRINT( sizeof(SubdivPatch1) );
+#endif
 	if (numNodes * sizeof(BVH4i::Node) < (sizeof(BBox3fa) * numPrimitives + sizeof(BVH4i::Node) * 128))
 	  FATAL("node memory to small for temporary bounds storage");
 
-	const size_t additionalLazyNodes = 4*4*numPrims; // two levels of subdivision
-	allocateMemoryPools(numPrims,numNodes + additionalLazyNodes,sizeof(BVH4i::Node),sizeof(SubdivPatch1));
+	allocateMemoryPools(numPrims,numNodes,sizeof(BVH4i::Node),sizeof(SubdivPatch1),1.0f);
 
-	DBG_PRINT(additionalLazyNodes);
-	DBG_PRINT( sizeof(SubdivPatch1) );
+#if DEBUG
 	DBG_PRINT( numAllocated64BytesBlocks );
-
-	org_accel = accel;
-	accel = (Triangle1*)((char*)node + sizeof(BVH4i::Node) * 128);
+#endif
       }
+
+    org_accel = accel;
+    accel = (Triangle1*)((char*)node + sizeof(BVH4i::Node) * 128);
+
   }
 
 
@@ -960,6 +961,8 @@ PRINT(CORRECT_numPrims);
   {
     //scene->lockstep_scheduler.dispatchTask( task_createSubdivMeshAccel, this, threadIndex, threadCount );
   }
+
+  static AtomicMutex mtx;
 
   void BVH4iBuilderSubdivMesh::computePrimRefsSubdivMesh(const size_t threadID, const size_t numThreads) 
   {
@@ -1007,7 +1010,7 @@ PRINT(CORRECT_numPrims);
         size_t N = subdiv_mesh->size();
         for (unsigned int i=offset; i<N && currentID < endID; i++, currentID++)	 
 	  { 		
-
+	    assert( currentID < numFaces );
 	    acc[currentID] = SubdivPatch1(subdiv_mesh->getHalfEdge(i),
 					  subdiv_mesh->getVertexPositionPtr(),
 					  g,
@@ -1049,6 +1052,8 @@ PRINT(CORRECT_numPrims);
     PING;
     if (threadIndex == 0)
       {
+	SubdivPatch1 *__restrict__ const patch_ptr = (SubdivPatch1*)org_accel;
+
 	std::cout << "initializing back pointers" << std::endl;
 	if (bvh->root != BVH4i::BVH4i::invalidNode)
 	  initializeParentPointers(bvh->root,0,0);
@@ -1057,9 +1062,11 @@ PRINT(CORRECT_numPrims);
 	bvh->numAllocated64BytesBlocks = numAllocated64BytesBlocks;
 	bvh->accel = org_accel;
 	accel = (Triangle1*)org_accel;
+
 	DBG_PRINT(bvh->used64BytesBlocks);
 	DBG_PRINT(bvh->numAllocated64BytesBlocks);
 	DBG_PRINT(bvh->root);
+
       }
   }
 
@@ -1085,7 +1092,6 @@ PRINT(CORRECT_numPrims);
 
 	SubdivPatch1 *__restrict__ const patch_ptr = (SubdivPatch1*)org_accel;
 
-	//PING;
 	for (size_t i=0;i<items;i++)
 	  {
 	    const unsigned int patchIndex = prims[index+i].lower.a;

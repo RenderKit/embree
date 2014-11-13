@@ -42,7 +42,8 @@ namespace embree
       : geomID(geomID),
       primID(primID),
       under_construction(0),
-      bvh4i_subtree_root((unsigned int)-1)
+      bvh4i_subtree_root((unsigned int)-1),
+      flags(0)
     {
 
       u_range = Vec2f(0.0f,1.0f);
@@ -155,7 +156,7 @@ namespace embree
 
   __forceinline std::ostream &operator<<(std::ostream &o, const SubdivPatch1 &p)
     {
-      o << " flags " << p.flags << " geomID " << p.geomID << " primID " << p.primID << " u_range << " << p.u_range << " v_range " << p.v_range;
+      o << " flags " << p.flags << " geomID " << p.geomID << " primID " << p.primID << " u_range << " << p.u_range << " v_range " << p.v_range << " levels: " << p.level[0] << "," << p.level[1] << "," << p.level[2] << "," << p.level[3];
 
       return o;
     } 
