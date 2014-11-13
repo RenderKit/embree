@@ -1668,10 +1668,15 @@ namespace embree
      const mic_f f3_p = (Vec3fa_t)matrix[2][1];
      const mic_f f3_m = (Vec3fa_t)f[1][0];
 
-     const mic_f F0 = select(m_border,f0_p, (      uu  * f0_p +       vv  * f0_m) * 1.0f/(uu+vv)      );
-     const mic_f F1 = select(m_border,f1_p, ((1.0f-uu) * f1_m +       vv  * f1_p) * 1.0f/(1.0f-uu+vv) );
-     const mic_f F2 = select(m_border,f2_p, ((1.0f-uu) * f2_p + (1.0f-vv) * f2_m) * 1.0f/(2.0f-uu-vv) );
-     const mic_f F3 = select(m_border,f3_p, (      uu  * f3_m + (1.0f-vv) * f3_p) * 1.0f/(1.0f+uu-vv) );
+     const mic_f inv0 = 1.0f/(uu+vv);
+     const mic_f inv1 = 1.0f/(1.0f-uu+vv);
+     const mic_f inv2 = 1.0f/(2.0f-uu-vv);
+     const mic_f inv3 = 1.0f/(1.0f+uu-vv);
+
+     const mic_f F0 = select(m_border,f0_p, (      uu  * f0_p +       vv  * f0_m) * inv0);
+     const mic_f F1 = select(m_border,f1_p, ((1.0f-uu) * f1_m +       vv  * f1_p) * inv1);
+     const mic_f F2 = select(m_border,f2_p, ((1.0f-uu) * f2_p + (1.0f-vv) * f2_m) * inv2);
+     const mic_f F3 = select(m_border,f3_p, (      uu  * f3_m + (1.0f-vv) * f3_p) * inv3);
 
      const mic_f one_minus_uu = mic_f(1.0f) - uu;
      const mic_f one_minus_vv = mic_f(1.0f) - vv;      
@@ -1694,6 +1699,69 @@ namespace embree
      return res;
    }
 
+
+   static __forceinline mic3f eval16(const Vec3fa matrix[4][4],
+				     const Vec3fa f[2][2],
+				     const mic_f uu,
+				     const mic_f vv) 
+   {
+     const mic_m m_border = (uu == 0.0f) | (uu == 1.0f) | (vv == 0.0f) | (vv == 1.0f);
+
+     const mic3f f0_p = mic3f(matrix[1][1].x,matrix[1][1].y,matrix[1][1].z);
+     const mic3f f0_m = mic3f(f[0][0].x,f[0][0].y,f[0][0].z);
+
+     const mic3f f1_p = mic3f(matrix[1][2].x,matrix[1][2].y,matrix[1][2].z);
+     const mic3f f1_m = mic3f(f[0][1].x,f[0][1].y,f[0][1].z);
+
+     const mic3f f2_p = mic3f(matrix[2][2].x,matrix[2][2].y,matrix[2][2].z);
+     const mic3f f2_m = mic3f(f[1][1].x,f[1][1].y,f[1][1].z);
+
+     const mic3f f3_p = mic3f(matrix[2][1].x,matrix[2][1].y,matrix[2][1].z);
+     const mic3f f3_m = mic3f(f[1][0].x,f[1][0].y,f[1][0].z);
+
+     const mic3f F0 = select(m_border,f0_p, (f0_p *      uu   + f0_m     * vv) * mic_f(1.0f)/(uu+vv)      );
+
+     const mic3f F1 = select(m_border,f1_p, (f1_m * (1.0f-uu) + f1_p     * vv) * mic_f(1.0f)/(1.0f-uu+vv) );
+     const mic3f F2 = select(m_border,f2_p, (f2_p * (1.0f-uu) + f2_m   * (1.0f-vv) ) * mic_f(1.0f)/(2.0f-uu-vv) );
+     const mic3f F3 = select(m_border,f3_p, (f3_m * uu        + f3_p   * (1.0f-vv) ) * mic_f(1.0f)/(1.0f+uu-vv) );
+
+     const mic_f one_minus_uu = mic_f(1.0f) - uu;
+     const mic_f one_minus_vv = mic_f(1.0f) - vv;      
+
+     // FIXME: merge u,v and extract after computation
+     const mic_f B0_u = one_minus_uu * one_minus_uu * one_minus_uu;
+     const mic_f B0_v = one_minus_vv * one_minus_vv * one_minus_vv;
+     const mic_f B1_u = 3.0f * one_minus_uu * one_minus_uu * uu;
+     const mic_f B1_v = 3.0f * one_minus_vv * one_minus_vv * vv;
+     const mic_f B2_u = 3.0f * one_minus_uu * uu * uu;
+     const mic_f B2_v = 3.0f * one_minus_vv * vv * vv;
+     const mic_f B3_u = uu * uu * uu;
+     const mic_f B3_v = vv * vv * vv;
+
+     const mic_f x = 
+	(B0_u * matrix[0][0].x + B1_u * matrix[0][1].x + B2_u * matrix[0][2].x + B3_u * matrix[0][3].x) * B0_v + 
+	(B0_u * matrix[1][0].x + B1_u * F0.x           + B2_u * F1.x           + B3_u * matrix[1][3].x) * B1_v + 
+	(B0_u * matrix[2][0].x + B1_u * F3.x           + B2_u * F2.x           + B3_u * matrix[2][3].x) * B2_v + 
+	(B0_u * matrix[3][0].x + B1_u * matrix[3][1].x + B2_u * matrix[3][2].x + B3_u * matrix[3][3].x) * B3_v; 
+
+     const mic_f y = 
+	(B0_u * matrix[0][0].y + B1_u * matrix[0][1].y + B2_u * matrix[0][2].y + B3_u * matrix[0][3].y) * B0_v + 
+	(B0_u * matrix[1][0].y + B1_u * F0.y           + B2_u * F1.y           + B3_u * matrix[1][3].y) * B1_v + 
+	(B0_u * matrix[2][0].y + B1_u * F3.y           + B2_u * F2.y           + B3_u * matrix[2][3].y) * B2_v + 
+	(B0_u * matrix[3][0].y + B1_u * matrix[3][1].y + B2_u * matrix[3][2].y + B3_u * matrix[3][3].y) * B3_v; 
+
+     const mic_f z = 
+	(B0_u * matrix[0][0].z + B1_u * matrix[0][1].z + B2_u * matrix[0][2].z + B3_u * matrix[0][3].z) * B0_v + 
+	(B0_u * matrix[1][0].z + B1_u * F0.z           + B2_u * F1.z           + B3_u * matrix[1][3].z) * B1_v + 
+	(B0_u * matrix[2][0].z + B1_u * F3.z           + B2_u * F2.z           + B3_u * matrix[2][3].z) * B2_v + 
+	(B0_u * matrix[3][0].z + B1_u * matrix[3][1].z + B2_u * matrix[3][2].z + B3_u * matrix[3][3].z) * B3_v; 
+
+
+     return mic3f(x,y,z);
+   }
+
+
+   
 #endif
 
     __forceinline Vec3fa eval(const float uu, const float vv) const
