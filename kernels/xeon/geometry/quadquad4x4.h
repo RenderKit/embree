@@ -511,9 +511,13 @@ namespace embree
       else return coarse-coarse/2; 
     }
 
-    int stitch(const int x, const int fine, const int coarse) {
+    int stitch2(const int x, const int fine, const int coarse) {
       if (x <= fine/2) return x*coarse/fine;
       else             return coarse-(fine-(x))*coarse/fine;
+    }
+
+    int stitch(const int x, const int fine, const int coarse) {
+      return x*coarse/fine;
     }
 
     const BBox3fa build(Scene* scene, const GregoryPatch& patch,
@@ -532,7 +536,7 @@ namespace embree
         }
       }
 
-#if 0
+#if 1
       if (unlikely(y0 == 0)) {
         const float fy = pattern_y(y0);
         for (int x=0; x<=8; x++) {
