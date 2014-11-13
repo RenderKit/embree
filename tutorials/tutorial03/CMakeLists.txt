@@ -14,23 +14,5 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-IF (__XEON__ AND BUILD_TUTORIALS)
-  ADD_EXECUTABLE(tutorial03 tutorial03.cpp tutorial03_device.cpp)
-  TARGET_LINK_LIBRARIES(tutorial03 embree tutorial image transport tutorial_device)
-ENDIF()
-
-IF (__XEON__ AND BUILD_TUTORIALS_ISPC)
-  ADD_ISPC_EXECUTABLE(tutorial03_ispc tutorial03.cpp tutorial03_device.ispc)
-  TARGET_LINK_LIBRARIES(tutorial03_ispc embree tutorial image transport tutorial_device_ispc)
-ENDIF()
-
-IF (NOT __XEON__ AND __HOST__)
-  ADD_EXECUTABLE(tutorial03_xeonphi tutorial03.cpp)
-  TARGET_LINK_LIBRARIES(tutorial03_xeonphi tutorial image transport_host )
-ENDIF()
-
-IF (NOT __XEON__ AND NOT __HOST__)
-  INCLUDE (icc_xeonphi)
-  ADD_ISPC_EXECUTABLE(tutorial03_xeonphi_device tutorial03_device.ispc)
-  TARGET_LINK_LIBRARIES(tutorial03_xeonphi_device embree_xeonphi transport_device tutorial_xeonphi_device_ispc)
-ENDIF()
+INCLUDE(tutorial)
+ADD_TUTORIAL(tutorial03)

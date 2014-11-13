@@ -98,6 +98,21 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #if defined(__WIN32__) 
+#if defined(CONFIG_SSE41)
+  #if defined(_MSC_VER) && !defined(__INTEL_COMPILER)
+    #define __SSE3__
+    #define __SSSE3__
+    #define __SSE4_1__
+  #endif
+#endif
+#if defined(CONFIG_SSE42)
+  #if defined(_MSC_VER) && !defined(__INTEL_COMPILER)
+    #define __SSE3__
+    #define __SSSE3__
+    #define __SSE4_1__
+    #define __SSE4_2__
+  #endif
+#endif
 #if defined(CONFIG_AVX)
   #if defined(_MSC_VER) && !defined(__INTEL_COMPILER)
     #define __SSE3__
@@ -121,13 +136,14 @@
     #if !defined(__AVX2__)
       #define __AVX2__
     #endif
+  #endif
 #endif
-#endif
+// these are now set via CMake:
 //#define __USE_RAY_MASK__
 //#define __USE_STAT_COUNTERS__
 //#define __BACKFACE_CULLING__
-#define __INTERSECTION_FILTER__
-#define __BUFFER_STRIDE__
+//#define __INTERSECTION_FILTER__
+//#define __BUFFER_STRIDE__
 //#define __SPINLOCKS__
 //#define __LOG_TASKS__
 #endif

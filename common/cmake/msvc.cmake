@@ -14,12 +14,14 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-IF (__XEON__)
-  ADD_LIBRARY(simd STATIC sse.cpp)
-  SET_PROPERTY(TARGET simd PROPERTY FOLDER kernels/xeon)
-ELSE ()
-  INCLUDE(icc_xeonphi)
-  ADD_LIBRARY(simd_xeonphi STATIC mic_i.cpp mic_f.cpp mic_m.cpp)
-  SET_PROPERTY(TARGET simd_xeonphi PROPERTY FOLDER kernels/xeonphi)
-ENDIF ()
+SET(FLAGS_SSE2  "")
+SET(FLAGS_SSE3  "")
+SET(FLAGS_SSSE3 "")
+SET(FLAGS_SSE41 " /DCONFIG_SSE41")
+SET(FLAGS_SSE42 " /DCONFIG_SSE42")
+SET(FLAGS_AVX   "/arch:AVX /DCONFIG_AVX")
+SET(FLAGS_AVX2  "/arch:AVX2 /DCONFIG_AVX2")
+SET(FLAGS_AVX512 "")
 
+SET(CMAKE_CXX_FLAGS_RELEASE        "${CMAKE_CXX_FLAGS_RELEASE} /Ox /fp:fast /Qpar /Oi /Gy /GR-")
+SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} /Ox /fp:fast /Qpar /Oi /Gy /GR-")

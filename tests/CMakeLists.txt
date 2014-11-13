@@ -32,12 +32,15 @@ IF (__XEON__)
 
   ADD_EXECUTABLE(verify verify.cpp)
   TARGET_LINK_LIBRARIES(verify sys embree)
+  SET_PROPERTY(TARGET verify PROPERTY FOLDER tests)
 
   ADD_EXECUTABLE(benchmark benchmark.cpp)
   TARGET_LINK_LIBRARIES(benchmark sys embree)
+  SET_PROPERTY(TARGET benchmark PROPERTY FOLDER tests)
 
   ADD_EXECUTABLE(retrace retrace.cpp)
   TARGET_LINK_LIBRARIES(retrace sys embree)
+  SET_PROPERTY(TARGET retrace PROPERTY FOLDER tests)
 
 ELSE ()
 
@@ -45,11 +48,14 @@ ELSE ()
 
   ADD_EXECUTABLE(verify_xeonphi verify.cpp)
   TARGET_LINK_LIBRARIES(verify_xeonphi sys_xeonphi embree_xeonphi)
+  SET_PROPERTY(TARGET verify_xeonphi PROPERTY FOLDER tests)
 
   ADD_EXECUTABLE(benchmark_xeonphi benchmark.cpp)
   TARGET_LINK_LIBRARIES(benchmark_xeonphi sys_xeonphi embree_xeonphi)
+  SET_PROPERTY(TARGET benchmark_xeonphi PROPERTY FOLDER tests)
 
   ADD_EXECUTABLE(retrace_xeonphi retrace.cpp)
   TARGET_LINK_LIBRARIES(retrace_xeonphi sys_xeonphi embree_xeonphi)
+  SET_PROPERTY(TARGET retrace_xeonphi PROPERTY FOLDER tests)
 
 ENDIF()

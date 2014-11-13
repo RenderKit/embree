@@ -14,6 +14,9 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
+SET(CMAKE_THREAD_PREFER_PTHREAD TRUE)
+FIND_PACKAGE(Threads REQUIRED)
+
 IF (__XEON__)
 
 IF (TARGET_AVX)
@@ -40,7 +43,8 @@ ADD_LIBRARY(sys STATIC
   stl/string.cpp
 )
 
-TARGET_LINK_LIBRARIES(sys pthread dl)
+TARGET_LINK_LIBRARIES(sys ${CMAKE_THREAD_LIBS_INIT} ${CMAKE_DL_LIBS})
+SET_PROPERTY(TARGET sys PROPERTY FOLDER kernels/xeon)
 
 ELSE ()
  
@@ -63,6 +67,7 @@ ADD_LIBRARY(sys_xeonphi STATIC
   stl/string.cpp
 )
 
-TARGET_LINK_LIBRARIES(sys_xeonphi pthread dl)
+TARGET_LINK_LIBRARIES(sys_xeonphi ${CMAKE_THREAD_LIBS_INIT} ${CMAKE_DL_LIBS})
+SET_PROPERTY(TARGET sys_xeonphi PROPERTY FOLDER kernels/xeonphi)
 
 ENDIF ()

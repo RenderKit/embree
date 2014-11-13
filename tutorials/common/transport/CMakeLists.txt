@@ -16,3 +16,4 @@
 
 ADD_LIBRARY(transport STATIC transport.cpp)
 TARGET_LINK_LIBRARIES(transport sys)
+SET_PROPERTY(TARGET transport PROPERTY FOLDER tutorials/common)

@@ -20,3 +20,4 @@ ADD_LIBRARY(lexers STATIC
 )
 
 TARGET_LINK_LIBRARIES(lexers sys)
+SET_PROPERTY(TARGET lexers PROPERTY FOLDER tutorials/common)
