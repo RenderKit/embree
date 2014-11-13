@@ -191,9 +191,9 @@ namespace embree
     if (freeVertices ) vertices[1].free();
   }
 
-  __forceinline int64 pair64(unsigned int x, unsigned int y) {
+  __forceinline uint64 pair64(unsigned int x, unsigned int y) {
     if (x<y) std::swap(x,y);
-    return (((int64)x) << 32) | (int64)y;
+    return (((uint64)x) << 32) | (uint64)y;
   }
 
   void SubdivMesh::initializeHalfEdgeStructures ()
@@ -226,6 +226,8 @@ namespace embree
     for (size_t i=0; i<full_holes.size(); i++) full_holes[i] = 0;
     for (size_t i=0; i<holes.size()     ; i++) full_holes[holes[i]] = 1;
     
+#if 1
+
     /* initialize all half-edges for each face */
     std::map<size_t,HalfEdge*> edgeMap;
     std::map<size_t,bool> nonManifoldEdges;
@@ -239,7 +241,7 @@ namespace embree
         HalfEdge* edge0 = &halfEdges[j+dj];
         const unsigned int startVertex = vertexIndices[j+dj];
         const unsigned int endVertex   = vertexIndices[j + (dj+1) % N];
-        const int64 value = pair64(startVertex,endVertex);
+        const uint64 value = pair64(startVertex,endVertex);
 
         float edge_crease_weight = 0.0f;
         if (creaseMap.find(value) != creaseMap.end()) 
@@ -247,7 +249,6 @@ namespace embree
 
         float edge_level = 1.0f;
         if (levels) edge_level = levels[j+dj];
-
 	assert( edge_level >= 0.0f );
         
         edge0->vtx_index = startVertex;
@@ -283,7 +284,7 @@ namespace embree
         HalfEdge* edge = &halfEdges[j+dj];
         const unsigned int startVertex = vertexIndices[j+dj];
         const unsigned int endVertex   = vertexIndices[j + (dj + 1) % N];
-        const int64 value = pair64(startVertex,endVertex);
+        const uint64 value = pair64(startVertex,endVertex);
 
         if (nonManifoldEdges.find(value) != nonManifoldEdges.end()) {
           edge->opposite_half_edge_ofs = 0;
@@ -294,6 +295,61 @@ namespace embree
       }
       j+=N;
     }
+
+#else
+
+    /* create all half edges */
+    std::vector<KeyHalfEdge> edges(numEdges);
+    for (size_t f=0; f<numFaces; f++) 
+    {
+      const size_t N = faceVertices[f];
+      const size_t e = (size_t)(faceStartEdge[f]-faceStartEdge[0]);
+
+      for (size_t de=0; de<N; de++)
+      {
+        HalfEdge* edge = &halfEdges[e+de];
+        const unsigned int startVertex = vertexIndices[e+de];
+        const unsigned int endVertex   = vertexIndices[e + (de + 1) % N]; // FIXME: optimize %
+        const uint64 key = pair64(startVertex,endVertex);
+
+        float edge_crease_weight = 0.0f;
+        if (creaseMap.find(key) != creaseMap.end()) 
+          edge_crease_weight = creaseMap[key];
+
+        float edge_level = 1.0f;
+        if (levels) edge_level = levels[e+de];
+	assert( edge_level >= 0.0f );
+
+        edge->vtx_index = startVertex;
+        edge->next_half_edge_ofs = (de == (N-1)) ? -(N-1) : +1;
+        edge->prev_half_edge_ofs = (de ==     0) ? +(N-1) : -1;
+        edge->opposite_half_edge_ofs = 0;
+        edge->edge_crease_weight = edge_crease_weight;
+        edge->vertex_crease_weight = full_vertex_crease_weights[startVertex];
+        edge->edge_level = edge_level;
+        if (full_holes[f]) edges[e+de] = KeyHalfEdge(-1,edge);
+        else               edges[e+de] = KeyHalfEdge(key,edge);
+      }
+    }
+
+    /* sort half edges to find adjacent edges */
+    std::sort(edges.begin(),edges.end());
+
+    /* link all adjacent edges */
+    size_t e=0; 
+    while (e<numEdges)
+    {
+      const uint64 key = edges[e].key;
+      if (key == -1) break;
+      int N=1; while (e+N<numEdges && edges[e+N].key == key) N++;
+      if (N == 2) {
+        edges[e+0].edge->setOpposite(edges[e+1].edge);
+        edges[e+1].edge->setOpposite(edges[e+0].edge);
+      }
+      e+=N;
+    }
+
+#endif
 
     /* print statistics in verbose mode */
     if (g_verbose >= 1) 

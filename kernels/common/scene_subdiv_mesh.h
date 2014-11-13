@@ -38,6 +38,7 @@ namespace embree
 	}
 
       __forceinline bool hasOpposite() const { return opposite_half_edge_ofs != 0; }
+      __forceinline void setOpposite(HalfEdge* opposite) { opposite_half_edge_ofs = opposite-this; }
 
       __forceinline       HalfEdge* next()       { assert( next_half_edge_ofs != 0 ); return &this[next_half_edge_ofs]; }
       __forceinline const HalfEdge* next() const { assert( next_half_edge_ofs != 0 ); return &this[next_half_edge_ofs]; }
@@ -107,11 +108,14 @@ namespace embree
       friend __forceinline std::ostream &operator<<(std::ostream &o, const SubdivMesh::HalfEdge &h)
       {
         return o << "{ " << 
-          "edge = " << h.vtx_index << " -> " << h.next()->vtx_index << ", " << 
-          "edge_crease = " << h.edge_crease_weight << ", " << 
-          "vertex_crease = " << h.vertex_crease_weight << ", " << 
-          "edge_level = " << h.edge_level << 
-          "}";
+          "vertex = " << h.vtx_index << ", " << //" -> " << h.next()->vtx_index << ", " << 
+          "prev = " << h.prev_half_edge_ofs << ", " << 
+          "next = " << h.next_half_edge_ofs << ", " << 
+          "opposite = " << h.opposite_half_edge_ofs << ", " << 
+          //"edge_crease = " << h.edge_crease_weight << ", " << 
+          //"vertex_crease = " << h.vertex_crease_weight << ", " << 
+          //"edge_level = " << h.edge_level << 
+          " }";
       } 
 
     private:
@@ -163,6 +167,22 @@ namespace embree
       float vertex_crease_weight;     //!< crease weight attached to start vertex
       float edge_level;               //!< subdivision factor for edge
       float align;                    //!< aligns the structure to 32 bytes
+    };
+
+    struct KeyHalfEdge 
+    {
+      KeyHalfEdge() {}
+      
+      KeyHalfEdge (uint64 key, HalfEdge* edge) 
+      : key(key), edge(edge) {}
+      
+      friend __forceinline bool operator<(const KeyHalfEdge& e0, const KeyHalfEdge& e1) {
+        return e0.key < e1.key;
+      }
+      
+    public:
+      uint64 key;
+      HalfEdge* edge;
     };
 
   public:

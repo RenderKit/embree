@@ -37,7 +37,7 @@ namespace embree
                                     const unsigned int primID)
     : prims_o(prims_o), alloc(alloc), scene(scene), geomID(geomID), primID(primID) 
       {
-#if 1
+#if 0
         const IrregularCatmullClarkPatch patch(h,vertices);
         const bool subdiv0 = !h->hasOpposite() || !h->opposite()->isRegularFace(); h = h->next();
         const bool subdiv1 = !h->hasOpposite() || !h->opposite()->isRegularFace(); h = h->next();
