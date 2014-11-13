@@ -1672,20 +1672,26 @@ namespace embree
      const mic_f f3_p = (Vec3fa_t)matrix[2][1];
      const mic_f f3_m = (Vec3fa_t)f[1][0];
 
-     const mic_f inv0 = 1.0f/(uu+vv);
-     const mic_f inv1 = 1.0f/(1.0f-uu+vv);
-     const mic_f inv2 = 1.0f/(2.0f-uu-vv);
-     const mic_f inv3 = 1.0f/(1.0f+uu-vv);
-
-     const mic_f F0 = select(m_border,f0_p, (      uu  * f0_p +       vv  * f0_m) * inv0);
-     const mic_f F1 = select(m_border,f1_p, ((1.0f-uu) * f1_m +       vv  * f1_p) * inv1);
-     const mic_f F2 = select(m_border,f2_p, ((1.0f-uu) * f2_p + (1.0f-vv) * f2_m) * inv2);
-     const mic_f F3 = select(m_border,f3_p, (      uu  * f3_m + (1.0f-vv) * f3_p) * inv3);
-
      const mic_f one_minus_uu = mic_f(1.0f) - uu;
      const mic_f one_minus_vv = mic_f(1.0f) - vv;      
 
-     // FIXME: merge u,v and extract after computation
+#if 1
+     const mic_f inv0 = rcp(uu+vv);
+     const mic_f inv1 = rcp(one_minus_uu+vv);
+     const mic_f inv2 = rcp(one_minus_uu+one_minus_vv);
+     const mic_f inv3 = rcp(uu+one_minus_vv);
+
+#else
+     const mic_f inv0 = 1.0f/(uu+vv);
+     const mic_f inv1 = 1.0f/(one_minus_uu+vv);
+     const mic_f inv2 = 1.0f/(one_minus_uu+one_minus_vv);
+     const mic_f inv3 = 1.0f/(uu+one_minus_vv);
+#endif
+     const mic_f F0 = select(m_border,f0_p, (          uu * f0_p +           vv * f0_m) * inv0);
+     const mic_f F1 = select(m_border,f1_p, (one_minus_uu * f1_m +           vv * f1_p) * inv1);
+     const mic_f F2 = select(m_border,f2_p, (one_minus_uu * f2_p + one_minus_vv * f2_m) * inv2);
+     const mic_f F3 = select(m_border,f3_p, (          uu * f3_m + one_minus_vv * f3_p) * inv3);
+
      const mic_f B0_u = one_minus_uu * one_minus_uu * one_minus_uu;
      const mic_f B0_v = one_minus_vv * one_minus_vv * one_minus_vv;
      const mic_f B1_u = 3.0f * one_minus_uu * one_minus_uu * uu;
@@ -1697,8 +1703,8 @@ namespace embree
 
      const mic_f res = 
 	(B0_u * (Vec3fa_t)matrix[0][0] + B1_u * (Vec3fa_t)matrix[0][1] + B2_u * (Vec3fa_t)matrix[0][2] + B3_u * (Vec3fa_t)matrix[0][3]) * B0_v + 
-	(B0_u * (Vec3fa_t)matrix[1][0] + B1_u * F0 + B2_u * F1 + B3_u * (Vec3fa_t)matrix[1][3]) * B1_v + 
-	(B0_u * (Vec3fa_t)matrix[2][0] + B1_u * F3 + B2_u * F2 + B3_u * (Vec3fa_t)matrix[2][3]) * B2_v + 
+	(B0_u * (Vec3fa_t)matrix[1][0] + B1_u *                     F0 + B2_u *                     F1 + B3_u * (Vec3fa_t)matrix[1][3]) * B1_v + 
+	(B0_u * (Vec3fa_t)matrix[2][0] + B1_u *                     F3 + B2_u *                     F2 + B3_u * (Vec3fa_t)matrix[2][3]) * B2_v + 
 	(B0_u * (Vec3fa_t)matrix[3][0] + B1_u * (Vec3fa_t)matrix[3][1] + B2_u * (Vec3fa_t)matrix[3][2] + B3_u * (Vec3fa_t)matrix[3][3]) * B3_v; 
      return res;
    }
@@ -1723,14 +1729,19 @@ namespace embree
      const mic3f f3_p = mic3f(matrix[2][1].x,matrix[2][1].y,matrix[2][1].z);
      const mic3f f3_m = mic3f(f[1][0].x,f[1][0].y,f[1][0].z);
 
-     const mic3f F0 = select(m_border,f0_p, (f0_p *      uu   + f0_m     * vv) * mic_f(1.0f)/(uu+vv)      );
-
-     const mic3f F1 = select(m_border,f1_p, (f1_m * (1.0f-uu) + f1_p     * vv) * mic_f(1.0f)/(1.0f-uu+vv) );
-     const mic3f F2 = select(m_border,f2_p, (f2_p * (1.0f-uu) + f2_m   * (1.0f-vv) ) * mic_f(1.0f)/(2.0f-uu-vv) );
-     const mic3f F3 = select(m_border,f3_p, (f3_m * uu        + f3_p   * (1.0f-vv) ) * mic_f(1.0f)/(1.0f+uu-vv) );
-
      const mic_f one_minus_uu = mic_f(1.0f) - uu;
      const mic_f one_minus_vv = mic_f(1.0f) - vv;      
+
+     const mic_f inv0 = 1.0f/(uu+vv);
+     const mic_f inv1 = 1.0f/(one_minus_uu+vv);
+     const mic_f inv2 = 1.0f/(one_minus_uu+one_minus_vv);
+     const mic_f inv3 = 1.0f/(uu+one_minus_vv);
+
+     const mic3f F0 = select(m_border,f0_p, (f0_p *           uu + f0_m   *           vv) * inv0 );
+     const mic3f F1 = select(m_border,f1_p, (f1_m * one_minus_uu + f1_p   *           vv) * inv1 );
+     const mic3f F2 = select(m_border,f2_p, (f2_p * one_minus_uu + f2_m   * one_minus_vv) * inv2 );
+     const mic3f F3 = select(m_border,f3_p, (f3_m *           uu + f3_p   * one_minus_vv) * inv3 );
+
 
      // FIXME: merge u,v and extract after computation
      const mic_f B0_u = one_minus_uu * one_minus_uu * one_minus_uu;
