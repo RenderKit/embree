@@ -341,7 +341,7 @@ namespace embree
 #endif
       bool hit = false;
 
-      if (likely(1 && grid_size <= 16))
+      if (likely(0 && grid_size <= 16))
 	{
 	  const mic_m m_active = 0x777;
 	  hit |= intersect1Eval16(subdiv_patch,

@@ -96,6 +96,16 @@ namespace embree
 
     __forceinline BBox3fa bounds() const
     {
+      //FIXME: always enable?
+#if 0 
+      if (unlikely(isGregoryPatch()))
+	{
+	  GregoryPatch gpatch( patch.v, f_m);
+	  return gpatch.getDiscreteTessellationBounds(level);
+	}
+      else
+	return patch.getDiscreteTessellationBounds(level);    
+#else
       BBox3fa b = patch.bounds();
       if (unlikely(isGregoryPatch()))
 	{
@@ -105,6 +115,7 @@ namespace embree
 	  b.extend( f_m[1][1] );
 	}
       return b;
+#endif
     }
 
     __forceinline BBox3fa evalQuadBounds(const float s0 = 0.0f,

@@ -1359,6 +1359,7 @@ namespace embree
       quad.vtx[3] = limit_v3;
     };
 
+
     __forceinline void init(const IrregularCatmullClarkPatch &irreg_patch)
     {
       assert( irreg_patch.dicable() );
