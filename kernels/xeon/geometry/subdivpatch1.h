@@ -103,7 +103,7 @@ namespace embree
       const unsigned int geomID = prim.geomID();
       const unsigned int primID = prim.primID();
       const SubdivMesh* const subdiv_mesh = scene->getSubdivMesh(geomID);
-      new (this) SubdivPatch1(&subdiv_mesh->getHalfEdgeForQuad( primID ),
+      new (this) SubdivPatch1(subdiv_mesh->getHalfEdge(primID),
 			      subdiv_mesh->getVertexPositionPtr(),
 			      geomID,
 			      primID,
@@ -121,7 +121,7 @@ namespace embree
       const unsigned int geomID = prim.geomID();
       const unsigned int primID = prim.primID();
       const SubdivMesh* const subdiv_mesh = scene->getSubdivMesh(geomID);
-      new (this) SubdivPatch1(&subdiv_mesh->getHalfEdgeForQuad( primID ),
+      new (this) SubdivPatch1(subdiv_mesh->getHalfEdge(primID),
 			      subdiv_mesh->getVertexPositionPtr(),
 			      geomID,
 			      primID,

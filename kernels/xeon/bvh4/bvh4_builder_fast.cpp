@@ -315,9 +315,9 @@ namespace embree
 	if (geom->type != SUBDIV_MESH) continue;
         SubdivMesh* mesh = (SubdivMesh*)geom;
         mesh->initializeHalfEdgeStructures();
-        for (size_t f=0; f<mesh->numFaces; f++) {
+        for (size_t f=0; f<mesh->size(); f++) {
           std::vector<PrimRef> lprims;
-          QuadQuad4x4AdaptiveSubdivision (lprims,bvh->alloc2,this->scene,mesh->faceStartEdge[f],&mesh->getVertexPosition(0),mesh->id,f);
+          QuadQuad4x4AdaptiveSubdivision (lprims,bvh->alloc2,this->scene,mesh->getHalfEdge(f),mesh->getVertexPositionPtr(),mesh->id,f);
           for (size_t i=0; i<lprims.size(); i++) {
             assert(N<numPrimitives);
             prims[N++] = lprims[i];
@@ -395,24 +395,22 @@ namespace embree
             
       /* allocate leaf node */
       SubdivPatchDispl1* accel = (SubdivPatchDispl1*) leafAlloc.malloc(sizeof(SubdivPatchDispl1));
-      //*current.parent = bvh->encodeLeaf((char*)accel,listMode ? listMode : items);
-      
+            
       const PrimRef& prim = prims[start];
       const unsigned int last   = listMode && !prims;
       const unsigned int geomID = prim.geomID();
       const unsigned int primID = prim.primID();
       const SubdivMesh* const subdiv_mesh = scene->getSubdivMesh(geomID);
-      //SubdivPatchDispl1* accel = new SubdivPatchDispl1(bvh->alloc2,
       new (accel) SubdivPatchDispl1(bvh->alloc2,
                                     *current.parent,
                                     scene, 
-                                    &subdiv_mesh->getHalfEdgeForQuad( primID ),
+                                    subdiv_mesh->getHalfEdge(primID),
                                     subdiv_mesh->getVertexPositionPtr(),
                                     geomID,
                                     primID,
                                     SUBDIVISION_LEVEL_DISPL,
                                     true); 
-      //*current.parent = accel->bvh.root;
+      
       *current.parent = bvh->encodeLeaf((char*)accel,1);
     }
 

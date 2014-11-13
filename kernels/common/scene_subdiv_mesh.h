@@ -179,30 +179,18 @@ namespace embree
     bool verify ();
     void setDisplacementFunction (RTCDisplacementFunc func, const RTCBounds& bounds);
 
-    size_t size() const { return numFaces; };
-
   public:
 
-    /*! Coordinates of the vertex at the given index in the mesh. */
-    __forceinline const Vec3fa &getVertexPosition(unsigned int index, const unsigned int t = 0) const { 
-      return vertices[t][index]; 
-    }
+    __forceinline const HalfEdge* getHalfEdge         ( unsigned int q           ) const { return faceStartEdge[q]; }    
+    __forceinline const Vec3fa*   getVertexPositionPtr( const unsigned int t = 0 ) const { return &vertices[t][0]; }
 
-    __forceinline const Vec3fa *getVertexPositionPtr(const unsigned int t = 0) const { return &vertices[t][0]; }
-
-    __forceinline const HalfEdge &getHalfEdgeForQuad(unsigned int q, const unsigned int i=0) const { 
-      return *(faceStartEdge[q]+i);
-    }
-
-    __forceinline const Vec3fa &getVertexPositionForHalfEdge(const HalfEdge &e) const { 
-      return getVertexPosition( e.vtx_index );
-    }
-
-    __forceinline const Vec3fa &getVertexPositionForQuad(unsigned int q, const unsigned int i=0) const { 
-      return getVertexPositionForHalfEdge( getHalfEdgeForQuad(q,i) );
-    }
-
+    /*! initializes the half edge data structure */
     void initializeHalfEdgeStructures ();
+
+    /*! return the number of faces */
+    size_t size() const { 
+      return numFaces; 
+    };
 
     /*! calculates the bounds of the i'th subdivision patch */
     __forceinline BBox3fa bounds(size_t i) const {
@@ -215,17 +203,17 @@ namespace embree
       return !full_holes[i];
     }
 
-  public: // FIXME: make private
-
+  public:
     unsigned int mask;                //!< for masking out geometry
     unsigned int numTimeSteps;        //!< number of time steps (1 or 2)  
 
+    RTCDisplacementFunc displFunc;    //!< displacement function
+    BBox3fa             displBounds;  //!< bounds for displacement
+
+  private:
     size_t numFaces;                  //!< number of faces
     size_t numEdges;                  //!< number of edges
     size_t numVertices;               //!< number of vertices
-
-    RTCDisplacementFunc displFunc;    //!< displacement function
-    BBox3fa             displBounds;  //!< bounds for displacement
 
     BufferT<int> faceVertices;
     BufferT<int> holes;

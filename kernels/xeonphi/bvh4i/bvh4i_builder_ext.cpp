@@ -1008,7 +1008,7 @@ PRINT(CORRECT_numPrims);
         for (unsigned int i=offset; i<N && currentID < endID; i++, currentID++)	 
 	  { 		
 
-	    acc[currentID] = SubdivPatch1(&subdiv_mesh->getHalfEdgeForQuad( i ),
+	    acc[currentID] = SubdivPatch1(subdiv_mesh->getHalfEdge(i),
 					  subdiv_mesh->getVertexPositionPtr(),
 					  g,
 					  i);
