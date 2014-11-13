@@ -61,28 +61,10 @@ namespace embree
       level[2] = ipatch.level[2];
       level[3] = ipatch.level[3];
 
-#if 0
-      DBG_PRINT( ipatch );
-
-      DBG_PRINT( ipatch.getLimitVertex( 0 ) );
-      DBG_PRINT( ipatch.getLimitVertex( 1 ) );
-      DBG_PRINT( ipatch.getLimitVertex( 2 ) );
-      DBG_PRINT( ipatch.getLimitVertex( 3 ) );
-
-      DBG_PRINT( ipatch.getLimitTangent( 0 ) );
-      DBG_PRINT( ipatch.getSecondLimitTangent( 0 ) );
-
-      DBG_PRINT( ipatch.getLimitTangent( 1 ) );
-      DBG_PRINT( ipatch.getSecondLimitTangent( 1 ) );
-
-      DBG_PRINT( ipatch.getLimitTangent( 2 ) );
-      DBG_PRINT( ipatch.getSecondLimitTangent( 2 ) );
-
-      DBG_PRINT( ipatch.getLimitTangent( 3 ) );
-      DBG_PRINT( ipatch.getSecondLimitTangent( 3 ) );
-      //exit(0);
-
-#endif
+      assert( level[0] >= 0.0f );
+      assert( level[1] >= 0.0f );
+      assert( level[2] >= 0.0f );
+      assert( level[3] >= 0.0f );
 
       flags = 0;
       if (ipatch.dicable()) 

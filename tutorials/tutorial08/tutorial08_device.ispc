@@ -280,6 +280,8 @@ export void device_render (uniform int* uniform pixels,
    if (numQuads == 0)
     convertTestSubdivScene();
 
+    updateEdgeLevels(g_ispc_scene, cam_org);
+
 
 #if !defined(PARALLEL_COMMIT)
   rtcCommit (g_scene);

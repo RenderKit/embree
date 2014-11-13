@@ -626,6 +626,7 @@ namespace embree
       for (size_t i=0; i<4; i++) {
         ring[i].init(first_half_edge+i,vertices);
         level[i] = first_half_edge[i].edge_level;
+	assert(level[i] >= 0.0f);
       }
       
     }
@@ -1813,8 +1814,9 @@ namespace embree
 
       for (unsigned int y=0;y<grid_v_res;y++)
 	{
+	  std::cout << "row " << y << " ";
 	  for (unsigned int x=0;x<grid_u_res;x++)
-	    std::cout << "(" << v_array[grid_v_res*y+x] << "," << u_array[grid_v_res*y+x] << ") ";
+	    std::cout << "(" << v_array[grid_u_res*y+x] << "," << u_array[grid_u_res*y+x] << ") ";
 	  std::cout << std::endl;
 	}
 #endif

@@ -86,7 +86,7 @@ namespace embree
     encodeMask = ((size_t)1 << encodeShift)-1;
     size_t maxGroups = ((size_t)1 << (31-encodeShift))-1;
 
-#if DEBUG
+#if 0
     DBG_PRINT(numGroups);
     DBG_PRINT(maxPrimsPerGroup);
     DBG_PRINT(numPrimitives);
