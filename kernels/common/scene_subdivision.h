@@ -128,7 +128,7 @@ namespace embree
       vtx = (Vec3fa_t)vertices[ h->getStartVertexIndex() ];
       vertex_crease_weight = h->vertex_crease_weight;
 
-#if 1 // test 
+#if 0 // test 
       vertex_crease_weight = inf;
 #endif
 
@@ -1745,10 +1745,15 @@ namespace embree
      const mic_f inv3 = 1.0f/(uu+one_minus_vv);
 #endif
 
-     const mic3f F0 = select(m_border,f0_p, (f0_p *           uu + f0_m   *           vv) * inv0 );
-     const mic3f F1 = select(m_border,f1_p, (f1_m * one_minus_uu + f1_p   *           vv) * inv1 );
-     const mic3f F2 = select(m_border,f2_p, (f2_p * one_minus_uu + f2_m   * one_minus_vv) * inv2 );
-     const mic3f F3 = select(m_border,f3_p, (f3_m *           uu + f3_p   * one_minus_vv) * inv3 );
+     const mic3f f0_i = (          uu * f0_p +           vv * f0_m) * inv0;
+     const mic3f f1_i = (one_minus_uu * f1_m +           vv * f1_p) * inv1;
+     const mic3f f2_i = (one_minus_uu * f2_p + one_minus_vv * f2_m) * inv2;
+     const mic3f f3_i = (          uu * f3_m + one_minus_vv * f3_p) * inv3;
+
+     const mic3f F0( select(m_border,f0_p.x,f0_i.x), select(m_border,f0_p.y,f0_i.y), select(m_border,f0_p.z,f0_i.z) );
+     const mic3f F1( select(m_border,f1_p.x,f1_i.x), select(m_border,f1_p.y,f1_i.y), select(m_border,f1_p.z,f1_i.z) );
+     const mic3f F2( select(m_border,f2_p.x,f2_i.x), select(m_border,f2_p.y,f2_i.y), select(m_border,f2_p.z,f2_i.z) );
+     const mic3f F3( select(m_border,f3_p.x,f3_i.x), select(m_border,f3_p.y,f3_i.y), select(m_border,f3_p.z,f3_i.z) );
 
 
      // FIXME: merge u,v and extract after computation
