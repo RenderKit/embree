@@ -191,7 +191,7 @@ namespace embree
     if (freeVertices ) vertices[1].free();
   }
 
-  __forceinline int64 pair64(unsigned x, unsigned y) {
+  __forceinline int64 pair64(unsigned int x, unsigned int y) {
     if (x<y) std::swap(x,y);
     return (((int64)x) << 32) | (int64)y;
   }
@@ -199,7 +199,9 @@ namespace embree
   void SubdivMesh::initializeHalfEdgeStructures ()
   {
     /* allocate half edge array */
-    delete halfEdges;
+    if (halfEdges)
+      delete []halfEdges;
+
     halfEdges = new HalfEdge[numEdges];
 
     /* calculate start edge of each face */
@@ -245,6 +247,8 @@ namespace embree
 
         float edge_level = 1.0f;
         if (levels) edge_level = levels[j+dj];
+
+	assert( edge_level >= 0.0f );
         
         edge0->vtx_index = startVertex;
         edge0->next_half_edge_ofs = (dj == (N-1)) ? -(N-1) : +1;

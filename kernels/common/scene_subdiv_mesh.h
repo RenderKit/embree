@@ -25,14 +25,17 @@ namespace embree
   {
   public:
 
-    class HalfEdge
+    class __aligned(32) HalfEdge
     {
       friend class SubdivMesh;
     public:
 
       HalfEdge () 
         : vtx_index(-1), next_half_edge_ofs(0), prev_half_edge_ofs(0), opposite_half_edge_ofs(0), edge_crease_weight(0), 
-          vertex_crease_weight(0), edge_level(0), align(0) {}
+          vertex_crease_weight(0), edge_level(0), align(0) 
+	{
+	  assert(sizeof(HalfEdge) == 32);
+	}
 
       __forceinline bool hasOpposite() const { return opposite_half_edge_ofs != 0; }
 

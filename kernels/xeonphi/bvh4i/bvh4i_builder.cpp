@@ -139,7 +139,8 @@ namespace embree
   void BVH4iBuilder::allocateMemoryPools(const size_t numPrims, 
 					 const size_t numNodes,
 					 const size_t sizeNodeInBytes,
-					 const size_t sizeAccelInBytes)
+					 const size_t sizeAccelInBytes,
+					 const float  bvh4iNodePreallocFactor)
   {
 #if MEASURE_MEMORY_ALLOCATION_TIME == 1
     double msec = 0.0;
@@ -166,8 +167,7 @@ namespace embree
       
     // === allocated memory for primrefs,nodes, and accel ===
     const size_t size_primrefs = numPrims * sizeof(PrimRef) + additional_size;
-    // const size_t size_node     = (numNodes * BVH4I_NODE_PREALLOC_FACTOR * sizeNodeInBytes + additional_size) * g_memory_preallocation_factor;
-    const size_t size_node     = (double)(numNodes * BVH4I_NODE_PREALLOC_FACTOR * sizeNodeInBytes + additional_size) * g_memory_preallocation_factor;
+    const size_t size_node     = (double)(numNodes * bvh4iNodePreallocFactor * sizeNodeInBytes + additional_size) * g_memory_preallocation_factor;
     const size_t size_accel    = numPrims * sizeAccelInBytes + additional_size;
 
     numAllocated64BytesBlocks = size_node / sizeof(mic_f);
@@ -244,7 +244,6 @@ namespace embree
     /* print builder name */
     if (unlikely(g_verbose >= 2)) {
       printBuilderName();
-      DBG_PRINT(totalNumPrimitives);
 
 #if DEBUG
       DBG_PRINT(totalNumPrimitives);

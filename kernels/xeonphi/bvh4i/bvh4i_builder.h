@@ -85,7 +85,8 @@ namespace embree
     void allocateMemoryPools(const size_t numPrims, 
 			     const size_t numNodes,
 			     const size_t sizeNodeInBytes  = sizeof(BVH4i::Node),
-			     const size_t sizeAccelInBytes = sizeof(Triangle1));
+			     const size_t sizeAccelInBytes = sizeof(Triangle1),
+			     const float  bvh4iNodePreallocFactor = BVH4I_NODE_PREALLOC_FACTOR);
 
     void checkBuildRecord(const BuildRecord &current);
     void checkLeafNode(const BVH4i::NodeRef &ref, const BBox3fa &bounds);

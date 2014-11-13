@@ -256,35 +256,26 @@ namespace embree
 			     subdiv_patch.primID);
     }
 
-    bool intersectEvalGrid1(const size_t rayIndex, 
+    __noinline bool intersectEvalGrid1(const size_t rayIndex, 
 			    const mic_f &dir_xyz,
 			    const mic_f &org_xyz,
 			    Ray16& ray16,
 			    const SubdivPatch1& subdiv_patch)
     {
       const float edge_levels[4] = {
-	max(ceilf(subdiv_patch.level[0]),1.0f),
-	max(ceilf(subdiv_patch.level[1]),1.0f),
-	max(ceilf(subdiv_patch.level[2]),1.0f),
-	max(ceilf(subdiv_patch.level[3]),1.0f)
+	ceilf(subdiv_patch.level[0]),
+	ceilf(subdiv_patch.level[1]),
+	ceilf(subdiv_patch.level[2]),
+	ceilf(subdiv_patch.level[3])
       };
 
-#if 0
-      for (int i=0;i<4;i++)
-	if (subdiv_patch.level[i] < 1.0f)
-	  {
-	    DBG_PRINT(i);
-	    DBG_PRINT( edge_levels[i] );
-	    DBG_PRINT( subdiv_patch.level[i] );
-	    exit(0);
-	  }
-#endif
       const unsigned int grid_u_res = max(edge_levels[0],edge_levels[2])+1; // n segments -> n+1 points
       const unsigned int grid_v_res = max(edge_levels[1],edge_levels[3])+1;
 
-      const size_t grid_size = (grid_u_res*grid_u_res+15)&(-16);
+      const size_t grid_size = (grid_u_res*grid_v_res+15)&(-16);
 
       assert(grid_size > 0);
+      assert(grid_size % 16 == 0);
 
       __aligned(64) float u_array[grid_size];
       __aligned(64) float v_array[grid_size];
@@ -293,6 +284,11 @@ namespace embree
 
 #if 0
       DBG_PRINT("UV grid");
+      DBG_PRINT( subdiv_patch.level[0] );
+      DBG_PRINT( subdiv_patch.level[1] );
+      DBG_PRINT( subdiv_patch.level[2] );
+      DBG_PRINT( subdiv_patch.level[3] );
+
       DBG_PRINT( edge_levels[0] );
       DBG_PRINT( edge_levels[1] );
       DBG_PRINT( edge_levels[2] );
@@ -303,8 +299,9 @@ namespace embree
 
       for (unsigned int y=0;y<grid_v_res;y++)
 	{
+	  std::cout << "row " << y << " ";
 	  for (unsigned int x=0;x<grid_u_res;x++)
-	    std::cout << "(" << v_array[grid_v_res*y+x] << "," << u_array[grid_v_res*y+x] << ") ";
+	    std::cout << "(" << v_array[grid_u_res*y+x] << "," << u_array[grid_u_res*y+x] << ") ";
 	  std::cout << std::endl;
 	}
 #endif
@@ -533,6 +530,17 @@ namespace embree
 		compactStack(stack_node,stack_dist,sindex,mic_f(ray16.tfar[rayIndex]));
 
 #else
+#if 1
+	      for (int i=0;i<4;i++)
+		if (subdiv_patch.level[i] < 1.0f)
+		  {
+		    DBG_PRINT( patchIndex );
+		    DBG_PRINT(i);
+		    DBG_PRINT( subdiv_patch.level[i] );
+		    exit(0);
+		  }
+#endif
+
 	      const bool hit = intersectEvalGrid1(rayIndex,
 						  dir_xyz,
 						  org_xyz,

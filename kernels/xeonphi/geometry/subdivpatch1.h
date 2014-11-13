@@ -42,7 +42,8 @@ namespace embree
       : geomID(geomID),
       primID(primID),
       under_construction(0),
-      bvh4i_subtree_root((unsigned int)-1)
+      bvh4i_subtree_root((unsigned int)-1),
+      flags(0)
     {
 
       u_range = Vec2f(0.0f,1.0f);
@@ -61,28 +62,10 @@ namespace embree
       level[2] = ipatch.level[2];
       level[3] = ipatch.level[3];
 
-#if 0
-      DBG_PRINT( ipatch );
-
-      DBG_PRINT( ipatch.getLimitVertex( 0 ) );
-      DBG_PRINT( ipatch.getLimitVertex( 1 ) );
-      DBG_PRINT( ipatch.getLimitVertex( 2 ) );
-      DBG_PRINT( ipatch.getLimitVertex( 3 ) );
-
-      DBG_PRINT( ipatch.getLimitTangent( 0 ) );
-      DBG_PRINT( ipatch.getSecondLimitTangent( 0 ) );
-
-      DBG_PRINT( ipatch.getLimitTangent( 1 ) );
-      DBG_PRINT( ipatch.getSecondLimitTangent( 1 ) );
-
-      DBG_PRINT( ipatch.getLimitTangent( 2 ) );
-      DBG_PRINT( ipatch.getSecondLimitTangent( 2 ) );
-
-      DBG_PRINT( ipatch.getLimitTangent( 3 ) );
-      DBG_PRINT( ipatch.getSecondLimitTangent( 3 ) );
-      //exit(0);
-
-#endif
+      assert( level[0] >= 0.0f );
+      assert( level[1] >= 0.0f );
+      assert( level[2] >= 0.0f );
+      assert( level[3] >= 0.0f );
 
       flags = 0;
       if (ipatch.dicable()) 
@@ -173,7 +156,7 @@ namespace embree
 
   __forceinline std::ostream &operator<<(std::ostream &o, const SubdivPatch1 &p)
     {
-      o << " flags " << p.flags << " geomID " << p.geomID << " primID " << p.primID << " u_range << " << p.u_range << " v_range " << p.v_range;
+      o << " flags " << p.flags << " geomID " << p.geomID << " primID " << p.primID << " u_range << " << p.u_range << " v_range " << p.v_range << " levels: " << p.level[0] << "," << p.level[1] << "," << p.level[2] << "," << p.level[3];
 
       return o;
     } 
