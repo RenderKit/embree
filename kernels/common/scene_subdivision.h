@@ -355,7 +355,7 @@ namespace embree
       //const float delta = 1.0f / sqrtf(4.0f + cos(M_PI/n)*cos(M_PI/n));
       //const float c0 = 2.0f/n * delta;
       //const float c1 = 1.0f/n * (1.0f - delta*cosf(M_PI/n));
-      const float c0 = 1.0f/n * 1.0f / sqrtf(4.0f + cos(M_PI/n)*cos(M_PI/n));  
+      const float c0 = 1.0f/n * 1.0f / sqrtf(4.0f + cosf(M_PI/n)*cosf(M_PI/n));  
       const float c1 = (1.0f/n + cosf(M_PI/n) * c0); // FIXME: plus or minus
       for (size_t i=0; i<valence; i++)
 	{
@@ -393,7 +393,7 @@ namespace embree
       //const float delta = 1.0f / sqrtf(4.0f + cos(M_PI/n)*cos(M_PI/n));
       //const float c0 = 2.0f/n * delta;
       //const float c1 = 1.0f/n * (1.0f - delta*cosf(M_PI/n));
-      const float c0 = 1.0f/n * 1.0f / sqrtf(4.0f + cos(M_PI/n)*cos(M_PI/n));  
+      const float c0 = 1.0f/n * 1.0f / sqrtf(4.0f + cosf(M_PI/n)*cosf(M_PI/n));  
       const float c1 = (1.0f/n + cosf(M_PI/n) * c0);
       for (size_t i=0; i<valence; i++)
 	{
