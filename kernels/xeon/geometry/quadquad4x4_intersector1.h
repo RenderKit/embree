@@ -88,7 +88,7 @@ namespace embree
 
     static __forceinline void intersectFinish (Ray& ray, 
                                                const Vec3fa& q, const Vec3fa& e0, const Vec3fa& e1, const Vec3fa& e2, 
-                                               const float U0, const float U1, const float U2,
+                                               const Vec2f uv,
                                                const Primitive& prim)
       {
         const Vec3fa Ng0 = cross(e1,e0);
@@ -98,8 +98,8 @@ namespace embree
         const float T   = dot(q,Ng);
         const float t = T*rcpDet;
         if (unlikely(ray.tnear <= t && t <= ray.tfar)) {
-          ray.u    = U0 * rcpDet;
-          ray.v    = U2 * rcpDet;
+          ray.u    = uv.x * rcpDet;
+          ray.v    = uv.y * rcpDet;
           ray.tfar = t;
           ray.Ng   = Ng;
           /*ray.Ng.x = ray.u;
@@ -109,35 +109,12 @@ namespace embree
           ray.primID  = prim.primID;
         }
       }
-
-    static __forceinline void intersectFinish2 (Ray& ray, 
-                                               const Vec3fa& q, const Vec3fa& e0, const Vec3fa& e1, const Vec3fa& e2, 
-                                               const float U0, const float U1, const float U2,
-                                               const Primitive& prim)
-      {
-        const Vec3fa Ng0 = cross(e1,e0);
-        const Vec3fa Ng = Ng0+Ng0;
-        const float det = dot(ray.dir,Ng);
-        const float rcpDet = rcp(det);
-        const float T   = dot(q,Ng);
-        const float t = T*rcpDet;
-        if (unlikely(ray.tnear <= t && t <= ray.tfar)) {
-          ray.u    = 1.0f - U0 * rcpDet;
-          ray.v    = 1.0f - U2 * rcpDet;
-          ray.tfar = t;
-          ray.Ng   = Ng;
-          /*ray.Ng.x = ray.u;
-          ray.Ng.y = ray.v;
-          ray.Ng.z = float(size_t(&prim)>>4 & 0xFF)/255.0f;*/
-          ray.geomID  = prim.geomID;
-          ray.primID  = prim.primID;
-        }
-      }
-
 
     __forceinline static void intersectQuadSOA(Ray& ray, const Vec3fa& O, const Vec3fa& D,
                                                const Vec3fa& q00, const Vec3fa& q01, 
                                                const Vec3fa& q10, const Vec3fa& q11,
+                                               const Vec2f& uv00, const Vec2f& uv01, 
+                                               const Vec2f& uv10, const Vec2f& uv11,
                                                const Primitive& prim)
     {
       const sse3f DDDD(D.x,D.y,D.z);
@@ -148,17 +125,17 @@ namespace embree
       const sse3f s000 = t000_end + t000_start;
       const ssef  u000 = dot(cross(e000,s000),DDDD);
       if (all(ge_mask(Vec3fa(u000),Vec3fa(0.0f))) || all(le_mask(Vec3fa(u000),Vec3fa(0.0f)))) 
-        intersectFinish(ray,q00,q01-q00,q10-q01,q00-q10,u000[0],u000[1],u000[2],prim);
+        intersectFinish(ray, q00,q01-q00,q10-q01,q00-q10,u000[0]*uv10+u000[1]*uv00+u000[2]*uv01,prim);
 
       const sse3f t001_start = shuffle<2,3,1,0>(p00), t001_end = shuffle<3,1,2,0>(p00);
       const sse3f e001 = t001_end - t001_start;
       const sse3f s001 = t001_end + t001_start;
       const ssef  u001 = dot(cross(e001,s001),DDDD);
       if (all(ge_mask(Vec3fa(u001),Vec3fa(0.0f))) || all(le_mask(Vec3fa(u001),Vec3fa(0.0f)))) 
-        intersectFinish2(ray,q11,q10-q11,q01-q10,q11-q01,u001[0],u001[1],u001[2],prim);
+      intersectFinish(ray,q11,q10-q11,q01-q10,q11-q01,u001[0]*uv01+u001[1]*uv11+u001[2]*uv10,prim);
     }
 
-#if defined(__AVX__) 
+#if defined(__AVX__) && 0
 
     __forceinline static void intersectDualQuadSOA(Ray& ray, const Vec3fa& O, const Vec3fa& D,
                                                    const Vec3fa& q00, const Vec3fa& q01, 
@@ -199,11 +176,15 @@ namespace embree
                                                  const Vec3fa& v00, const Vec3fa& v10, const Vec3fa& v20,
                                                  const Vec3fa& v01, const Vec3fa& v11, const Vec3fa& v21,
                                                  const Vec3fa& v02, const Vec3fa& v12, const Vec3fa& v22,
+
+                                                 const Vec2f& uv00, const Vec2f& uv10, const Vec2f& uv20,
+                                                 const Vec2f& uv01, const Vec2f& uv11, const Vec2f& uv21,
+                                                 const Vec2f& uv02, const Vec2f& uv12, const Vec2f& uv22,
                                                  const Primitive& prim)
     {
 #if 1
 
-#if defined(__AVX__)
+#if defined(__AVX__) && 0
 
       const Vec3fa O = ray.org;
       const Vec3fa D = ray.dir;
@@ -220,10 +201,10 @@ namespace embree
       const Vec3fa q00 = v00-O, q10 = v10-O, q20 = v20-O;
       const Vec3fa q01 = v01-O, q11 = v11-O, q21 = v21-O;
       const Vec3fa q02 = v02-O, q12 = v12-O, q22 = v22-O;
-      intersectQuadSOA(ray,O,D,q00,q01,q10,q11,prim);
-      intersectQuadSOA(ray,O,D,q01,q02,q11,q12,prim);
-      intersectQuadSOA(ray,O,D,q10,q11,q20,q21,prim);
-      intersectQuadSOA(ray,O,D,q11,q12,q21,q22,prim);
+      intersectQuadSOA(ray,O,D, q00,q01,q10,q11, uv00,uv01,uv10,uv11, prim);
+      intersectQuadSOA(ray,O,D, q01,q02,q11,q12, uv01,uv02,uv11,uv12, prim);
+      intersectQuadSOA(ray,O,D, q10,q11,q20,q21, uv10,uv11,uv20,uv21, prim);
+      intersectQuadSOA(ray,O,D, q11,q12,q21,q22, uv11,uv12,uv21,uv22, prim);
 
 #endif
 
@@ -306,15 +287,29 @@ namespace embree
         const size_t x = 2*(i&1) + (i&4);
         const size_t y = (i&2) + ((i&8) >> 1); 
         const Vec3fa& v00 = prim.p[y+0][x+0];
-        const Vec3fa& v10 = (&v00)[1]; //prim.p[y+0][x+1];
-        const Vec3fa& v20 = (&v00)[2]; //prim.p[y+0][x+2];
+        const Vec3fa& v10 = (&v00)[1];
+        const Vec3fa& v20 = (&v00)[2];
         const Vec3fa& v01 = prim.p[y+1][x+0];
-        const Vec3fa& v11 = (&v01)[1]; //prim.p[y+1][x+1];
-        const Vec3fa& v21 = (&v01)[2]; //prim.p[y+1][x+2];
+        const Vec3fa& v11 = (&v01)[1];
+        const Vec3fa& v21 = (&v01)[2];
         const Vec3fa& v02 = prim.p[y+2][x+0];
-        const Vec3fa& v12 = (&v02)[1]; //prim.p[y+2][x+1];
-        const Vec3fa& v22 = (&v02)[2]; //prim.p[y+2][x+2];
-        intersectQuadQuad(ray,v00,v10,v20,v01,v11,v21,v02,v12,v22,prim);
+        const Vec3fa& v12 = (&v02)[1];
+        const Vec3fa& v22 = (&v02)[2];
+
+        const Vec2f& uv00 = prim.uv[y+0][x+0];
+        const Vec2f& uv10 = (&uv00)[1];
+        const Vec2f& uv20 = (&uv00)[2];
+        const Vec2f& uv01 = prim.uv[y+1][x+0];
+        const Vec2f& uv11 = (&uv01)[1];
+        const Vec2f& uv21 = (&uv01)[2];
+        const Vec2f& uv02 = prim.uv[y+2][x+0];
+        const Vec2f& uv12 = (&uv02)[1];
+        const Vec2f& uv22 = (&uv02)[2];
+
+        intersectQuadQuad(ray,
+                          v00,v10,v20,v01,v11,v21,v02,v12,v22,
+                          uv00,uv10,uv20,uv01,uv11,uv21,uv02,uv12,uv22,
+                          prim);
       }
     }
 

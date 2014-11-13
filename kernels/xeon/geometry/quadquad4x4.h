@@ -356,8 +356,8 @@ namespace embree
 
   public:
       
-    __forceinline QuadQuad4x4(float u0, float u1, float v0, float v1, unsigned geomID, unsigned primID)
-      : u0(u0), u1(u1), v0(v0), v1(v1), geomID(geomID), primID(primID) {}
+    __forceinline QuadQuad4x4(unsigned geomID, unsigned primID)
+      : geomID(geomID), primID(primID) {}
     
     void displace(Scene* scene)
     {
@@ -367,12 +367,12 @@ namespace embree
       /* calculate uv coordinates */
       __aligned(64) float qu[9][9], qv[9][9];
       __aligned(64) float qx[9][9], qy[9][9], qz[9][9];
-      for (size_t y=0; y<9; y++) {
-        float fy = v0 + (v1-v0)*float(y)*(1.0f/9.0f);
-        for (size_t x=0; x<9; x++) {
-          float fx = u0 + (u1-u0)*float(x)*(1.0f/9.0f);
-          qu[y][x] = fx;
-          qv[y][x] = fy;
+      for (size_t y=0; y<9; y++) 
+      {
+        for (size_t x=0; x<9; x++) 
+        {
+          qu[y][x] = uv[y][x].x;
+          qv[y][x] = uv[y][x].y;
           qx[y][x] = p[y][x].x;
           qy[y][x] = p[y][x].y;
           qz[y][x] = p[y][x].z;
@@ -530,10 +530,10 @@ namespace embree
                         const TessellationPattern& pattern2, 
                         const TessellationPattern& pattern3, 
                         const TessellationPattern& pattern_x, const int x0, const int Nx,
-                        const TessellationPattern& pattern_y, const int y0, const int Ny)
+                        const TessellationPattern& pattern_y, const int y0, const int Ny,
+                        const float u0, const float u1,
+                        const float v0, const float v1)
     {
-      Vec2f uv[9][9];
-
       for (int y=0; y<=8; y++) {
         const float fy = pattern_y(y0+y);
         for (int x=0; x<=8; x++) {
@@ -586,14 +586,21 @@ namespace embree
         }
       }
 
+      for (int y=0; y<=8; y++) {
+        for (int x=0; x<=8; x++) {
+          uv[y][x] = (Vec2f(one)-uv[y][x]) * Vec2f(u0,v0) + uv[y][x]*Vec2f(u1,v1);
+        }
+      }
+
       return build(scene);
     }
 
   public:
     Bounds16 n;               //!< bounds of all QuadQuads
     Vec3fa p[9][9];           //!< pointer to vertices
-    float u0,u1;              //!< u coordinate range
-    float v0,v1;              //!< v coordinate range
+    Vec2f uv[9][9];
+    //float u0,u1;              //!< u coordinate range
+    //float v0,v1;              //!< v coordinate range
     unsigned primID;
     unsigned geomID;
   };

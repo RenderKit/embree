@@ -338,10 +338,11 @@ namespace embree
           const int pu0 = 8*x0+x, pu1 = pu0+8;
           const int pv0 = 8*y0+y, pv1 = pv0+8;
           const int ll = 8*(1<<level)+1;
-          new (leaf) QuadQuad4x4(pu0/float(ll),pu1/float(ll),pv0/float(ll),pv1/float(ll),geomID(),primID());
+          new (leaf) QuadQuad4x4(geomID(),primID());
           const BBox3fa leaf_bounds = leaf->build(scene,patcheval,pattern0,pattern1,pattern2,pattern3,
                                                   pattern_x,x,nx,
-                                                  pattern_y,y,ny);
+                                                  pattern_y,y,ny,
+                                                  pu0,pu1,pv0,pv1);
           node->set(slot++,leaf_bounds,BVH4::encodeTypedLeaf(leaf,0));
           bounds.extend(leaf_bounds);
         }

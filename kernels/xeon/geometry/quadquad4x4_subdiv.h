@@ -73,7 +73,7 @@ namespace embree
                    float u0, float u1, float v0, float v1,             // uv range
                    bool Tt, bool Tr, bool Tb, bool Tl)                 // tagged transition edges
     {
-      if (unlikely(depth <= 0))
+      //if (unlikely(depth <= 0))
         return tessellate(patch,u0,u1,v0,v1,Tt,Tr,Tb,Tl);
 
       IrregularCatmullClarkPatch patches[4]; 
@@ -121,15 +121,15 @@ namespace embree
       const int nx = pattern_x.size();
       const int ny = pattern_y.size();
       
-      const float du = (u1-u0)*(1.0f/8.0f);
-      const float dv = (v1-v0)*(1.0f/8.0f);
+      //const float du = (u1-u0)*(1.0f/8.0f);
+      //const float dv = (v1-v0)*(1.0f/8.0f);
       for (int y=0; y<ny; y+=8) 
       {
         for (int x=0; x<nx; x+=8) 
         {
           QuadQuad4x4* leaf = (QuadQuad4x4*) alloc.malloc(sizeof(QuadQuad4x4),16);
-          new (leaf) QuadQuad4x4(u0+float(x+0)*du,u0+float(x+1)*du,v0+float(y+0)*dv,v0+float(y+1)*dv,geomID,primID);
-          const BBox3fa bounds = leaf->build(scene,patcheval,pattern0,pattern1,pattern2,pattern3,pattern_x,x,nx,pattern_y,y,ny);
+          new (leaf) QuadQuad4x4(geomID,primID);
+          const BBox3fa bounds = leaf->build(scene,patcheval,pattern0,pattern1,pattern2,pattern3,pattern_x,x,nx,pattern_y,y,ny,u0,u1,v0,v1);
           prims_o.push_back(PrimRef(bounds,BVH4::encodeTypedLeaf(leaf,0)));
         }
       }

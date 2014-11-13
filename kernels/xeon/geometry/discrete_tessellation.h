@@ -23,9 +23,9 @@ namespace embree
     DiscreteTessellationPattern (float ftess, const bool sublevel = false)
     : sublevel(sublevel)
    {
-     if (sublevel) ftess *= 0.5f;
+     //if (sublevel) ftess *= 0.5f;
      int tess = ceil(ftess);
-     if (sublevel) tess *= 2;
+     //if (sublevel) tess *= 2;
      rcp_tess = 1.0f/float(tess);
      N = tess;
    }
