@@ -962,8 +962,6 @@ PRINT(CORRECT_numPrims);
     //scene->lockstep_scheduler.dispatchTask( task_createSubdivMeshAccel, this, threadIndex, threadCount );
   }
 
-  static AtomicMutex mtx;
-
   void BVH4iBuilderSubdivMesh::computePrimRefsSubdivMesh(const size_t threadID, const size_t numThreads) 
   {
     const size_t numTotalGroups = scene->size();

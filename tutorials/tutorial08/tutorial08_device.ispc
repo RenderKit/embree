@@ -259,6 +259,8 @@ export void toggleOpenSubdiv(uniform int key, uniform int x, uniform int y)
 {
 }
 
+uniform Vec3f old_p; 
+ 
 /* called by the C++ code to render */
 export void device_render (uniform int* uniform pixels,
                            const uniform int width,
@@ -282,6 +284,7 @@ export void device_render (uniform int* uniform pixels,
 
     updateEdgeLevels(g_ispc_scene, cam_org);
 
+    old_p = p;
 
 #if !defined(PARALLEL_COMMIT)
   rtcCommit (g_scene);
@@ -291,17 +294,18 @@ export void device_render (uniform int* uniform pixels,
   }
   else
   {
-#if 1
+    if (p.x != old_p.x | p.y != old_p.y | p.z != old_p.z)
+    {
+     old_p = p;
+     updateEdgeLevels(g_ispc_scene, cam_org);
 
-    updateEdgeLevels(g_ispc_scene, cam_org);
 #if !defined(PARALLEL_COMMIT)
-    rtcCommit (g_scene);
+     rtcCommit (g_scene);
 #else
-    launch[  g_threads ] parallelCommit(g_scene); sync;
+     launch[  g_threads ] parallelCommit(g_scene); sync;
 #endif
-
-#endif
-}
+    }
+   }
 
 
   /* render image */

@@ -1680,13 +1680,13 @@ namespace embree
      const mic_f inv1 = rcp(one_minus_uu+vv);
      const mic_f inv2 = rcp(one_minus_uu+one_minus_vv);
      const mic_f inv3 = rcp(uu+one_minus_vv);
-
 #else
      const mic_f inv0 = 1.0f/(uu+vv);
      const mic_f inv1 = 1.0f/(one_minus_uu+vv);
      const mic_f inv2 = 1.0f/(one_minus_uu+one_minus_vv);
      const mic_f inv3 = 1.0f/(uu+one_minus_vv);
 #endif
+
      const mic_f F0 = select(m_border,f0_p, (          uu * f0_p +           vv * f0_m) * inv0);
      const mic_f F1 = select(m_border,f1_p, (one_minus_uu * f1_m +           vv * f1_p) * inv1);
      const mic_f F2 = select(m_border,f2_p, (one_minus_uu * f2_p + one_minus_vv * f2_m) * inv2);
@@ -1732,10 +1732,18 @@ namespace embree
      const mic_f one_minus_uu = mic_f(1.0f) - uu;
      const mic_f one_minus_vv = mic_f(1.0f) - vv;      
 
+
+#if 1
+     const mic_f inv0 = rcp(uu+vv);
+     const mic_f inv1 = rcp(one_minus_uu+vv);
+     const mic_f inv2 = rcp(one_minus_uu+one_minus_vv);
+     const mic_f inv3 = rcp(uu+one_minus_vv);
+#else
      const mic_f inv0 = 1.0f/(uu+vv);
      const mic_f inv1 = 1.0f/(one_minus_uu+vv);
      const mic_f inv2 = 1.0f/(one_minus_uu+one_minus_vv);
      const mic_f inv3 = 1.0f/(uu+one_minus_vv);
+#endif
 
      const mic3f F0 = select(m_border,f0_p, (f0_p *           uu + f0_m   *           vv) * inv0 );
      const mic3f F1 = select(m_border,f1_p, (f1_m * one_minus_uu + f1_p   *           vv) * inv1 );
