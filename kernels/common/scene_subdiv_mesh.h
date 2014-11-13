@@ -91,17 +91,6 @@ namespace embree
 	return true;
       }
 
-      /*! tests if the face is a quad face */
-      __forceinline bool isQuad() const 
-      {
-	const HalfEdge* p = this;
-        if ((p = p->next()) == this) return false;
-        if ((p = p->next()) == this) return false;
-        if ((p = p->next()) == this) return false;
-        if ((p = p->next()) != this) return false;
-	return true;
-      }
-
       /*! calculates conservative bounds of a catmull clark subdivision face */
       __forceinline BBox3fa bounds(const BufferT<Vec3fa>& vertices) const
       {

@@ -37,21 +37,17 @@ namespace embree
                                     const unsigned int primID)
     : prims_o(prims_o), alloc(alloc), scene(scene), geomID(geomID), primID(primID) 
       {
-        /* handle quads */
-        if (h->isQuad()) {
-          IrregularCatmullClarkPatch patch(h,vertices);
-          const bool subdiv0 = !h->hasOpposite() || !h->opposite()->isRegularFace(); h = h->next();
-          const bool subdiv1 = !h->hasOpposite() || !h->opposite()->isRegularFace(); h = h->next();
-          const bool subdiv2 = !h->hasOpposite() || !h->opposite()->isRegularFace(); h = h->next();
-          const bool subdiv3 = !h->hasOpposite() || !h->opposite()->isRegularFace(); h = h->next();
-          subdivide(patch,5,0.0f,1.0f,0.0f,1.0f,subdiv0,subdiv1,subdiv2,subdiv3);
-        }
-        
-        /* handle all other faces */
-        else {
-          GeneralIrregularCatmullClarkPatch patch(h,vertices);
-          subdivide(patch,5);
-        }
+#if 1
+        const IrregularCatmullClarkPatch patch(h,vertices);
+        const bool subdiv0 = !h->hasOpposite() || !h->opposite()->isRegularFace(); h = h->next();
+        const bool subdiv1 = !h->hasOpposite() || !h->opposite()->isRegularFace(); h = h->next();
+        const bool subdiv2 = !h->hasOpposite() || !h->opposite()->isRegularFace(); h = h->next();
+        const bool subdiv3 = !h->hasOpposite() || !h->opposite()->isRegularFace(); h = h->next();
+        subdivide(patch,5,0.0f,1.0f,0.0f,1.0f,subdiv0,subdiv1,subdiv2,subdiv3);
+#else
+        const GeneralIrregularCatmullClarkPatch patch(h,vertices);
+        subdivide(patch,5);
+#endif
       }
 
     void subdivide(const GeneralIrregularCatmullClarkPatch& patch, int depth)
@@ -65,8 +61,8 @@ namespace embree
       for (size_t i=0; i<N; i++)
         csubdiv[i] = noleaf && !patches[i].dicable();
 
-      for (size_t i=0; i<N; i++)
-        subdivide(patches[i],depth-1,float(i)+0.0f,float(i)+1.0f,0.0f,1.0f,false,csubdiv[(i+1)%N],csubdiv[(i-1)%N],false);
+      for (size_t i=0; i<N; i++) 
+        subdivide(patches[i],depth-1,(float(i)+0.0f)/float(N),(float(i)+1.0f)/float(N),0.0f,1.0f,false,csubdiv[(i+1)%N],csubdiv[(i-1)%N],false);
     }
 
     void subdivide(const IrregularCatmullClarkPatch& patch, int depth,
