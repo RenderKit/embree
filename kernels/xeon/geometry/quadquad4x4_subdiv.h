@@ -44,13 +44,13 @@ namespace embree
           const bool subdiv1 = !h->hasOpposite() || !h->opposite()->isRegularFace(); h = h->next();
           const bool subdiv2 = !h->hasOpposite() || !h->opposite()->isRegularFace(); h = h->next();
           const bool subdiv3 = !h->hasOpposite() || !h->opposite()->isRegularFace(); h = h->next();
-          subdivide(patch,3,0.0f,1.0f,0.0f,1.0f,subdiv0,subdiv1,subdiv2,subdiv3);
+          subdivide(patch,5,0.0f,1.0f,0.0f,1.0f,subdiv0,subdiv1,subdiv2,subdiv3);
         }
         
         /* handle all other faces */
         else {
           GeneralIrregularCatmullClarkPatch patch(h,vertices);
-          subdivide(patch,3);
+          subdivide(patch,5);
         }
       }
 
@@ -112,12 +112,12 @@ namespace embree
       const float l1 = patch.level[1];
       const float l2 = patch.level[2];
       const float l3 = patch.level[3];
-      const FractionalTessellationPattern pattern0(l0,Tt);
-      const FractionalTessellationPattern pattern1(l1,Tr);
-      const FractionalTessellationPattern pattern2(l2,Tb);
-      const FractionalTessellationPattern pattern3(l3,Tl);
-      const FractionalTessellationPattern pattern_x = pattern0.size() > pattern2.size() ? pattern0 : pattern2;
-      const FractionalTessellationPattern pattern_y = pattern1.size() > pattern3.size() ? pattern1 : pattern3;
+      const TessellationPattern pattern0(l0,Tt);
+      const TessellationPattern pattern1(l1,Tr);
+      const TessellationPattern pattern2(l2,Tb);
+      const TessellationPattern pattern3(l3,Tl);
+      const TessellationPattern pattern_x = pattern0.size() > pattern2.size() ? pattern0 : pattern2;
+      const TessellationPattern pattern_y = pattern1.size() > pattern3.size() ? pattern1 : pattern3;
       const int nx = pattern_x.size();
       const int ny = pattern_y.size();
       

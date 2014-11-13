@@ -18,7 +18,11 @@
 
 #include "primitive.h"
 #include "fractional_tessellation.h"
+#include "discrete_tessellation.h"
 #include "common/scene_subdivision.h"
+
+#define TessellationPattern DiscreteTessellationPattern
+//#define TessellationPattern FractionalTessellationPattern
 
 #define QUADQUAD4X4_COMPRESS_BOUNDS 0 // FIXME: not working yet in SSE mode
 
@@ -521,12 +525,12 @@ namespace embree
     }
 
     const BBox3fa build(Scene* scene, const GregoryPatch& patch,
-                        const FractionalTessellationPattern& pattern0, 
-                        const FractionalTessellationPattern& pattern1, 
-                        const FractionalTessellationPattern& pattern2, 
-                        const FractionalTessellationPattern& pattern3, 
-                        const FractionalTessellationPattern& pattern_x, const int x0, const int Nx,
-                        const FractionalTessellationPattern& pattern_y, const int y0, const int Ny)
+                        const TessellationPattern& pattern0, 
+                        const TessellationPattern& pattern1, 
+                        const TessellationPattern& pattern2, 
+                        const TessellationPattern& pattern3, 
+                        const TessellationPattern& pattern_x, const int x0, const int Nx,
+                        const TessellationPattern& pattern_y, const int y0, const int Ny)
     {
       for (int y=0; y<=8; y++) {
         const float fy = pattern_y(y0+y);

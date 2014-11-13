@@ -101,10 +101,10 @@ namespace embree
           ray.u    = U0 * rcpDet;
           ray.v    = U2 * rcpDet;
           ray.tfar = t;
-          //ray.Ng   = Ng;
-          ray.Ng.x = ray.u;
+          ray.Ng   = Ng;
+          /*ray.Ng.x = ray.u;
           ray.Ng.y = ray.v;
-          ray.Ng.z = float(size_t(&prim)>>4 & 0xFF)/255.0f;
+          ray.Ng.z = float(size_t(&prim)>>4 & 0xFF)/255.0f;*/
           ray.geomID  = prim.geomID;
           ray.primID  = prim.primID;
         }
@@ -125,10 +125,10 @@ namespace embree
           ray.u    = 1.0f - U0 * rcpDet;
           ray.v    = 1.0f - U2 * rcpDet;
           ray.tfar = t;
-          //ray.Ng   = Ng;
-          ray.Ng.x = ray.u;
+          ray.Ng   = Ng;
+          /*ray.Ng.x = ray.u;
           ray.Ng.y = ray.v;
-          ray.Ng.z = float(size_t(&prim)>>4 & 0xFF)/255.0f;
+          ray.Ng.z = float(size_t(&prim)>>4 & 0xFF)/255.0f;*/
           ray.geomID  = prim.geomID;
           ray.primID  = prim.primID;
         }

@@ -308,14 +308,14 @@ namespace embree
       const float l1 = patch.level[1];
       const float l2 = patch.level[2];
       const float l3 = patch.level[3];
-      const FractionalTessellationPattern pattern0(l0);
-      const FractionalTessellationPattern pattern1(l1);
-      const FractionalTessellationPattern pattern2(l2);
-      const FractionalTessellationPattern pattern3(l3);
+      const TessellationPattern pattern0(l0);
+      const TessellationPattern pattern1(l1);
+      const TessellationPattern pattern2(l2);
+      const TessellationPattern pattern3(l3);
       const float ly = max(l1,l3);
       const float lx = max(l0,l2);
-      const FractionalTessellationPattern pattern_x(lx);
-      const FractionalTessellationPattern pattern_y(ly);
+      const TessellationPattern pattern_x(lx);
+      const TessellationPattern pattern_y(ly);
       const int nx = pattern_x.size();
       const int ny = pattern_y.size();
       
