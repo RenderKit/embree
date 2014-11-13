@@ -316,6 +316,7 @@ namespace embree
         SubdivMesh* mesh = (SubdivMesh*)geom;
         mesh->initializeHalfEdgeStructures();
         for (size_t f=0; f<mesh->size(); f++) {
+          if (!mesh->valid(f)) continue;
           std::vector<PrimRef> lprims;
           QuadQuad4x4AdaptiveSubdivision (lprims,bvh->alloc2,this->scene,mesh->getHalfEdge(f),mesh->getVertexPositionPtr(),mesh->id,f);
           for (size_t i=0; i<lprims.size(); i++) {

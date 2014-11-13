@@ -308,14 +308,14 @@ namespace embree
       const float l1 = patch.level[1];
       const float l2 = patch.level[2];
       const float l3 = patch.level[3];
-      const FractionalTessellationPattern pattern0(l0);
-      const FractionalTessellationPattern pattern1(l1);
-      const FractionalTessellationPattern pattern2(l2);
-      const FractionalTessellationPattern pattern3(l3);
+      const TessellationPattern pattern0(l0);
+      const TessellationPattern pattern1(l1);
+      const TessellationPattern pattern2(l2);
+      const TessellationPattern pattern3(l3);
       const float ly = max(l1,l3);
       const float lx = max(l0,l2);
-      const FractionalTessellationPattern pattern_x(lx);
-      const FractionalTessellationPattern pattern_y(ly);
+      const TessellationPattern pattern_x(lx);
+      const TessellationPattern pattern_y(ly);
       const int nx = pattern_x.size();
       const int ny = pattern_y.size();
       
@@ -338,10 +338,11 @@ namespace embree
           const int pu0 = 8*x0+x, pu1 = pu0+8;
           const int pv0 = 8*y0+y, pv1 = pv0+8;
           const int ll = 8*(1<<level)+1;
-          new (leaf) QuadQuad4x4(pu0/float(ll),pu1/float(ll),pv0/float(ll),pv1/float(ll),geomID(),primID());
+          new (leaf) QuadQuad4x4(geomID(),primID());
           const BBox3fa leaf_bounds = leaf->build(scene,patcheval,pattern0,pattern1,pattern2,pattern3,
                                                   pattern_x,x,nx,
-                                                  pattern_y,y,ny);
+                                                  pattern_y,y,ny,
+                                                  pu0,pu1,pv0,pv1);
           node->set(slot++,leaf_bounds,BVH4::encodeTypedLeaf(leaf,0));
           bounds.extend(leaf_bounds);
         }
@@ -441,7 +442,7 @@ namespace embree
       }
 
       /* create patch and build sub-BVH */
-#if 1
+#if 0
       IrregularCatmullClarkPatch patch(h,vertices);
       const std::pair<BBox3fa,BVH4::NodeRef> root = build(alloc,patch,0,0,0,(int)levels-3,false,false,false,false);
       //const std::pair<BBox3fa,BVH4::NodeRef> root = build(alloc,patch,0,0,0,1,false,false,false,false);

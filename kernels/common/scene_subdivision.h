@@ -820,6 +820,10 @@ namespace embree
     __forceinline GeneralIrregularCatmullClarkPatch () 
       : N(0) {}
 
+    __forceinline size_t size() const { 
+      return N; 
+    }
+
     __forceinline GeneralIrregularCatmullClarkPatch (const SubdivMesh::HalfEdge* h, const Vec3fa* vertices) 
     {
       size_t i = 0;
