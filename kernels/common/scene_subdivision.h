@@ -1335,6 +1335,34 @@ namespace embree
 
       return (u_n[0] * curve0 + u_n[1] * curve1 + u_n[2] * curve2 + u_n[3] * curve3) * mic_f(1.0f/36.0f);
     }
+
+    __forceinline mic3f eval16(const mic_f uu, const mic_f vv) const
+    {
+      const mic4f v_n = CubicBSplineCurve::eval(vv); //FIXME: precompute in table
+      const mic4f u_n = CubicBSplineCurve::eval(uu); //FIXME: precompute in table
+
+      const mic_f curve0_x = v_n[0] * mic_f(v[0][0].x) + v_n[1] * mic_f(v[1][0].x) + v_n[2] * mic_f(v[2][0].x) + v_n[3] * mic_f(v[3][0].x);
+      const mic_f curve1_x = v_n[0] * mic_f(v[0][1].x) + v_n[1] * mic_f(v[1][1].x) + v_n[2] * mic_f(v[2][1].x) + v_n[3] * mic_f(v[3][1].x);
+      const mic_f curve2_x = v_n[0] * mic_f(v[0][2].x) + v_n[1] * mic_f(v[1][2].x) + v_n[2] * mic_f(v[2][2].x) + v_n[3] * mic_f(v[3][2].x);
+      const mic_f curve3_x = v_n[0] * mic_f(v[0][3].x) + v_n[1] * mic_f(v[1][3].x) + v_n[2] * mic_f(v[2][3].x) + v_n[3] * mic_f(v[3][3].x);
+      const mic_f x = (u_n[0] * curve0_x + u_n[1] * curve1_x + u_n[2] * curve2_x + u_n[3] * curve3_x) * mic_f(1.0f/36.0f);
+
+
+      const mic_f curve0_y = v_n[0] * mic_f(v[0][0].y) + v_n[1] * mic_f(v[1][0].y) + v_n[2] * mic_f(v[2][0].y) + v_n[3] * mic_f(v[3][0].y);
+      const mic_f curve1_y = v_n[0] * mic_f(v[0][1].y) + v_n[1] * mic_f(v[1][1].y) + v_n[2] * mic_f(v[2][1].y) + v_n[3] * mic_f(v[3][1].y);
+      const mic_f curve2_y = v_n[0] * mic_f(v[0][2].y) + v_n[1] * mic_f(v[1][2].y) + v_n[2] * mic_f(v[2][2].y) + v_n[3] * mic_f(v[3][2].y);
+      const mic_f curve3_y = v_n[0] * mic_f(v[0][3].y) + v_n[1] * mic_f(v[1][3].y) + v_n[2] * mic_f(v[2][3].y) + v_n[3] * mic_f(v[3][3].y);
+      const mic_f y = (u_n[0] * curve0_y + u_n[1] * curve1_y + u_n[2] * curve2_y + u_n[3] * curve3_y) * mic_f(1.0f/36.0f);
+      
+
+      const mic_f curve0_z = v_n[0] * mic_f(v[0][0].z) + v_n[1] * mic_f(v[1][0].z) + v_n[2] * mic_f(v[2][0].z) + v_n[3] * mic_f(v[3][0].z);
+      const mic_f curve1_z = v_n[0] * mic_f(v[0][1].z) + v_n[1] * mic_f(v[1][1].z) + v_n[2] * mic_f(v[2][1].z) + v_n[3] * mic_f(v[3][1].z);
+      const mic_f curve2_z = v_n[0] * mic_f(v[0][2].z) + v_n[1] * mic_f(v[1][2].z) + v_n[2] * mic_f(v[2][2].z) + v_n[3] * mic_f(v[3][2].z);
+      const mic_f curve3_z = v_n[0] * mic_f(v[0][3].z) + v_n[1] * mic_f(v[1][3].z) + v_n[2] * mic_f(v[2][3].z) + v_n[3] * mic_f(v[3][3].z);
+      const mic_f z = (u_n[0] * curve0_z + u_n[1] * curve1_z + u_n[2] * curve2_z + u_n[3] * curve3_z) * mic_f(1.0f/36.0f);
+
+      return mic3f(x,y,z);
+    }
     
 #endif
 
@@ -1561,26 +1589,6 @@ namespace embree
       const unsigned int valence_p2 = irreg_patch.ring[2].valence;
       const unsigned int valence_p3 = irreg_patch.ring[3].valence;
 
-#if 0
-      DBG_PRINT( p0() );
-      DBG_PRINT( p1() );
-      DBG_PRINT( p2() );
-      DBG_PRINT( p3() );
-
-      DBG_PRINT( e0_p() );
-      DBG_PRINT( e1_p() );
-      DBG_PRINT( e2_p() );
-      DBG_PRINT( e3_p() );
-
-      DBG_PRINT( e0_m() );
-      DBG_PRINT( e1_m() );
-      DBG_PRINT( e2_m() );
-      DBG_PRINT( e3_m() );
-      //exit(0);
-#endif
-
-
-
 
       initFaceVertex(irreg_patch,0,p0(),e0_p(),e1_m(),valence_p1,e0_m(),e3_p(),valence_p3,f0_p(),f0_m() );
 
@@ -1640,6 +1648,7 @@ namespace embree
 
    
 #if defined(__MIC__)
+
    static __forceinline mic_f eval4(const Vec3fa matrix[4][4],
 				    const Vec3fa f[2][2],
 				    const mic_f uu,
@@ -1684,6 +1693,7 @@ namespace embree
 	(B0_u * (Vec3fa_t)matrix[3][0] + B1_u * (Vec3fa_t)matrix[3][1] + B2_u * (Vec3fa_t)matrix[3][2] + B3_u * (Vec3fa_t)matrix[3][3]) * B3_v; 
      return res;
    }
+
 #endif
 
     __forceinline Vec3fa eval(const float uu, const float vv) const
