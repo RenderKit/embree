@@ -159,10 +159,12 @@ unsigned int createSphere (RTCGeometryFlags flags, const Vec3fa& pos, const floa
   return mesh;
 }
 
+extern float g_debug;
+
 void updateScene(RTCScene scene, const Vec3fa& cam_pos)
 {
   if (!g_ispc_scene) return;
-  //if (g_subdivision_levels % 2) return;
+  if (g_debug != 0.0f) return;
 
   for (size_t g=0; g<g_ispc_scene->numSubdivMeshes; g++)
   {

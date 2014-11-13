@@ -35,7 +35,7 @@
 #  include <GL/glut.h>
 #endif
 
-float g_debug = 0.5f;
+float g_debug = 0.0f;
 
 namespace embree
 {

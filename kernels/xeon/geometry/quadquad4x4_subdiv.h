@@ -37,13 +37,21 @@ namespace embree
                                     const unsigned int primID)
     : prims_o(prims_o), alloc(alloc), scene(scene), geomID(geomID), primID(primID) 
       {
-#if 1
-        IrregularCatmullClarkPatch patch(h,vertices);
-        subdivide(patch,4,0.0f,1.0f,0.0f,1.0f,false,false,false,false);
-#else
-        GeneralIrregularCatmullClarkPatch patch(h,vertices);
-        subdivide(patch,4);
-#endif
+        /* handle quads */
+        if (h->isQuad()) {
+          IrregularCatmullClarkPatch patch(h,vertices);
+          const bool subdiv0 = !h->hasOpposite() || !h->opposite()->isRegularFace(); h = h->next();
+          const bool subdiv1 = !h->hasOpposite() || !h->opposite()->isRegularFace(); h = h->next();
+          const bool subdiv2 = !h->hasOpposite() || !h->opposite()->isRegularFace(); h = h->next();
+          const bool subdiv3 = !h->hasOpposite() || !h->opposite()->isRegularFace(); h = h->next();
+          subdivide(patch,4,0.0f,1.0f,0.0f,1.0f,subdiv0,subdiv1,subdiv2,subdiv3);
+        }
+        
+        /* handle all other faces */
+        else {
+          GeneralIrregularCatmullClarkPatch patch(h,vertices);
+          subdivide(patch,4);
+        }
       }
 
     void subdivide(const GeneralIrregularCatmullClarkPatch& patch, int depth)
@@ -52,15 +60,20 @@ namespace embree
       IrregularCatmullClarkPatch patches[GeneralIrregularCatmullClarkPatch::SIZE]; 
       patch.subdivide(patches,N);
 
+      const bool noleaf = depth > 1;
+      bool csubdiv[GeneralIrregularCatmullClarkPatch::SIZE];
       for (size_t i=0; i<N; i++)
-        subdivide(patches[i],depth-1,float(i)+0.0f,float(i)+1.0f,0.0f,1.0f,false,false,false,false);
+        csubdiv[i] = noleaf && !patches[i].dicable();
+
+      for (size_t i=0; i<N; i++)
+        subdivide(patches[i],depth-1,float(i)+0.0f,float(i)+1.0f,0.0f,1.0f,false,csubdiv[(i+1)%N],csubdiv[(i-1)%N],false);
     }
 
     void subdivide(const IrregularCatmullClarkPatch& patch, int depth,
                    float u0, float u1, float v0, float v1,             // uv range
                    bool Tt, bool Tr, bool Tb, bool Tl)                 // tagged transition edges
     {
-      //if (unlikely(depth <= 0))
+      if (unlikely(depth <= 0))
         return tessellate(patch,u0,u1,v0,v1,Tt,Tr,Tb,Tl);
 
       IrregularCatmullClarkPatch patches[4]; 
@@ -99,14 +112,12 @@ namespace embree
       const float l1 = patch.level[1];
       const float l2 = patch.level[2];
       const float l3 = patch.level[3];
-      const FractionalTessellationPattern pattern0(l0);
-      const FractionalTessellationPattern pattern1(l1);
-      const FractionalTessellationPattern pattern2(l2);
-      const FractionalTessellationPattern pattern3(l3);
-      const float ly = max(l1,l3);
-      const float lx = max(l0,l2);
-      const FractionalTessellationPattern pattern_x(lx);
-      const FractionalTessellationPattern pattern_y(ly);
+      const FractionalTessellationPattern pattern0(l0,Tt);
+      const FractionalTessellationPattern pattern1(l1,Tr);
+      const FractionalTessellationPattern pattern2(l2,Tb);
+      const FractionalTessellationPattern pattern3(l3,Tl);
+      const FractionalTessellationPattern pattern_x = pattern0.size() > pattern2.size() ? FractionalTessellationPattern(l0) : FractionalTessellationPattern(l2);
+      const FractionalTessellationPattern pattern_y = pattern1.size() > pattern3.size() ? FractionalTessellationPattern(l1) : FractionalTessellationPattern(l2);
       const int nx = pattern_x.size();
       const int ny = pattern_y.size();
       

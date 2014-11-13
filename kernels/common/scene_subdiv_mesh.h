@@ -19,7 +19,6 @@
 #include "common/geometry.h"
 #include "common/buffer.h"
 
-
 namespace embree
 {
   class SubdivMesh : public Geometry
@@ -89,6 +88,17 @@ namespace embree
         if (!p->isRegularVertex()) return false;
         if ((p = p->next()) != this) return false;
 
+	return true;
+      }
+
+      /*! tests if the face is a quad face */
+      __forceinline bool isQuad() const 
+      {
+	const HalfEdge* p = this;
+        if ((p = p->next()) == this) return false;
+        if ((p = p->next()) == this) return false;
+        if ((p = p->next()) == this) return false;
+        if ((p = p->next()) != this) return false;
 	return true;
       }
 
