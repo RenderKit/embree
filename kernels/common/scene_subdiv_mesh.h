@@ -25,34 +25,7 @@ namespace embree
   class SubdivMesh : public Geometry
   {
   public:
-    SubdivMesh(Scene* parent, RTCGeometryFlags flags, size_t numFaces, size_t numEdges, size_t numVertices, 
-               size_t numCreases, size_t numCorners, size_t numHoles, size_t numTimeSteps);
-    ~SubdivMesh();
 
-    void enabling();
-    void disabling();
-    void setMask (unsigned mask);
-    void setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride);
-    void* map(RTCBufferType type);
-    void unmap(RTCBufferType type);
-    void setUserData (void* ptr, bool ispc);
-    void immutable ();
-    bool verify ();
-    void setDisplacementFunction (RTCDisplacementFunc func, const RTCBounds& bounds);
-
-    unsigned int mask;                //!< for masking out geometry
-    unsigned int numTimeSteps;        //!< number of time steps (1 or 2)  
-
-    size_t numFaces;                  //!< number of faces
-    size_t numEdges;                  //!< number of edges
-    size_t numVertices;               //!< number of vertices
-
-    RTCDisplacementFunc displFunc;    //!< displacement function
-    BBox3fa             displBounds;  //!< bounds for displacement
-
-    size_t size() const { return numFaces; };
-
-    
     class HalfEdge
     {
       friend class SubdivMesh;
@@ -79,83 +52,56 @@ namespace embree
       __forceinline unsigned int getStartVertexIndex() const { return vtx_index; }
       __forceinline unsigned int getEndVertexIndex  () const { return next()->vtx_index; }
 
-      __forceinline bool hasIrregularEdge() const 
+      /*! tests if the start vertex of the edge is regular */
+      __forceinline bool isRegularVertex() const 
       {
-	HalfEdge* p = (HalfEdge*)this;
-	do {
-	  if (unlikely(!p->hasOpposite()))
-	    return true;
-	  p = p->opposite();
-	  p = p->next();
-	} while( p != this);
+	const HalfEdge* p = this;
 
-        return false;
+        if (!p->hasOpposite()) return false;
+        if ((p = p->rotate()) == this) return false;
+
+        if (!p->hasOpposite()) return false;
+        if ((p = p->rotate()) == this) return false;
+
+        if (!p->hasOpposite()) return false;
+        if ((p = p->rotate()) == this) return false;
+
+        if (!p->hasOpposite()) return false;
+        if ((p = p->rotate()) != this) return false;
+
+        return true;
       }
 
-      __forceinline unsigned int getEdgeValence() const 
+      /*! tests if the face is a regular face */
+      __forceinline bool isRegularFace() const 
       {
-	unsigned int i=0;
-	HalfEdge *p = (HalfEdge*)this;
-	bool foundEdge = false;
+	const HalfEdge* p = this;
 
-	do {
-	  i++;
-	  if (unlikely(!p->hasOpposite()))
-	    {
-	      foundEdge = true;
-	      break;
-	    }
+        if (!p->isRegularVertex()) return false;
+        if ((p = p->next()) == this) return false;
 
-	  p = p->opposite();
-	  p = p->next();
-	} while( p != this);
+        if (!p->isRegularVertex()) return false;
+        if ((p = p->next()) == this) return false;
 
-	if (unlikely(foundEdge))
-	  {
-	    p = (HalfEdge*)this;
-	    p = p->prev();
-	    i++;
-	    while(p->hasOpposite())
-	      {
-		p = p->opposite();
-		p = p->prev();	      
-		i++;
-	      }
-	  }
+        if (!p->isRegularVertex()) return false;
+        if ((p = p->next()) == this) return false;
+        
+        if (!p->isRegularVertex()) return false;
+        if ((p = p->next()) != this) return false;
 
-	return i;
-      };
-
-      __forceinline bool isFaceRegular() const 
-      {
-	HalfEdge *p = (HalfEdge*)this;
-	if (p->getEdgeValence() != 4) return false;
-        if (p->hasIrregularEdge()) return false;
-	p = p->next();
-	if (p->getEdgeValence() != 4) return false;
-        if (p->hasIrregularEdge()) return false;
-	p = p->next();
-	if (p->getEdgeValence() != 4) return false;
-        if (p->hasIrregularEdge()) return false;
-	p = p->next();
-	if (p->getEdgeValence() != 4) return false;
-        if (p->hasIrregularEdge()) return false;
 	return true;
       }
 
-      __forceinline bool faceHasEdges() const 
+      /*! calculates conservative bounds of a catmull clark subdivision face */
+      __forceinline BBox3fa bounds(const BufferT<Vec3fa>& vertices) const
       {
-	HalfEdge* p = (HalfEdge*)this;
-	if (p->hasOpposite() == false) return true;
-	p = p->next();
-	if (p->hasOpposite() == false) return true;
-	p = p->next();
-	if (p->hasOpposite() == false) return true;
-	p = p->next();
-	if (p->hasOpposite() == false) return true;
-	return false;
+        BBox3fa bounds = this->get1RingBounds(vertices);
+        for (const HalfEdge* p=this->next(); p!=this; p=p->next())
+          bounds.extend(p->get1RingBounds(vertices));
+        return bounds;
       }
 
+      /*! stream output */
       friend __forceinline std::ostream &operator<<(std::ostream &o, const SubdivMesh::HalfEdge &h)
       {
         return o << "{ " << 
@@ -165,6 +111,44 @@ namespace embree
           "edge_level = " << h.edge_level << 
           "}";
       } 
+
+    private:
+
+      /*! calculates the bounds of the face associated with the half-edge */
+      __forceinline BBox3fa getFaceBounds(const BufferT<Vec3fa>& vertices) const 
+      {
+        BBox3fa b = vertices[getStartVertexIndex()];
+        for (const HalfEdge* p = next(); p!=this; p=p->next()) 
+          b.extend(vertices[p->getStartVertexIndex()]);
+        return b;
+      }
+
+      /*! calculates the bounds of the 1-ring associated with the vertex of the half-edge */
+      __forceinline BBox3fa get1RingBounds(const BufferT<Vec3fa>& vertices) const 
+      {
+        BBox3fa bounds = empty;
+        const HalfEdge* p = this;
+        do 
+        {
+          /* calculate bounds of current face */
+          bounds.extend(p->getFaceBounds(vertices));
+          p = p->prev();
+          
+          /* continue with next face */
+          if (likely(p->hasOpposite())) 
+            p = p->opposite();
+          
+          /* if there is no opposite go the long way to the other side of the border */
+          else {
+            p = this;
+            while (p->hasOpposite()) 
+              p = p->opposite()->next();
+          }
+          
+        } while (p != this); 
+        
+        return bounds;
+      }
 
     private:
       unsigned int vtx_index;         //!< index of edge start vertex
@@ -179,7 +163,69 @@ namespace embree
       float align;                    //!< aligns the structure to 32 bytes
     };
 
+  public:
+    SubdivMesh(Scene* parent, RTCGeometryFlags flags, size_t numFaces, size_t numEdges, size_t numVertices, 
+               size_t numCreases, size_t numCorners, size_t numHoles, size_t numTimeSteps);
+    ~SubdivMesh();
+
+    void enabling();
+    void disabling();
+    void setMask (unsigned mask);
+    void setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride);
+    void* map(RTCBufferType type);
+    void unmap(RTCBufferType type);
+    void setUserData (void* ptr, bool ispc);
+    void immutable ();
+    bool verify ();
+    void setDisplacementFunction (RTCDisplacementFunc func, const RTCBounds& bounds);
+
+    size_t size() const { return numFaces; };
+
+  public:
+
+    /*! Coordinates of the vertex at the given index in the mesh. */
+    __forceinline const Vec3fa &getVertexPosition(unsigned int index, const unsigned int t = 0) const { 
+      return vertices[t][index]; 
+    }
+
+    __forceinline const Vec3fa *getVertexPositionPtr(const unsigned int t = 0) const { return &vertices[t][0]; }
+
+    __forceinline const HalfEdge &getHalfEdgeForQuad(unsigned int q, const unsigned int i=0) const { 
+      return *(faceStartEdge[q]+i);
+    }
+
+    __forceinline const Vec3fa &getVertexPositionForHalfEdge(const HalfEdge &e) const { 
+      return getVertexPosition( e.vtx_index );
+    }
+
+    __forceinline const Vec3fa &getVertexPositionForQuad(unsigned int q, const unsigned int i=0) const { 
+      return getVertexPositionForHalfEdge( getHalfEdgeForQuad(q,i) );
+    }
+
+    void initializeHalfEdgeStructures ();
+
+    /*! calculates the bounds of the i'th subdivision patch */
+    __forceinline BBox3fa bounds(size_t i) const {
+      return faceStartEdge[i]->bounds(vertices[0]);
+    }
+
+    /*! check if the i'th primitive is valid */
+    __forceinline bool valid(size_t i, BBox3fa* bbox = NULL) const {
+      if (bbox) *bbox = bounds(i);
+      return !full_holes[i];
+    }
+
   public: // FIXME: make private
+
+    unsigned int mask;                //!< for masking out geometry
+    unsigned int numTimeSteps;        //!< number of time steps (1 or 2)  
+
+    size_t numFaces;                  //!< number of faces
+    size_t numEdges;                  //!< number of edges
+    size_t numVertices;               //!< number of vertices
+
+    RTCDisplacementFunc displFunc;    //!< displacement function
+    BBox3fa             displBounds;  //!< bounds for displacement
 
     BufferT<int> faceVertices;
     BufferT<int> holes;
@@ -204,83 +250,6 @@ namespace embree
     BufferT<float> levels;
 
     /*! Half edge structure. */
-    HalfEdge *halfEdges;
-
-  public:
-
-    /*! Coordinates of the vertex at the given index in the mesh. */
-    __forceinline const Vec3fa &getVertexPosition(unsigned int index, const unsigned int t = 0) const { 
-      return vertices[t][index]; 
-    }
-
-    __forceinline const Vec3fa *getVertexPositionPtr(const unsigned int t = 0) const { return &vertices[t][0]; }
-
-    __forceinline const HalfEdge &getHalfEdgeForQuad(unsigned int q, const unsigned int i=0) const { 
-      return *(faceStartEdge[q]+i);
-    }
-
-    __forceinline const Vec3fa &getVertexPositionForHalfEdge(const HalfEdge &e) const { 
-      return getVertexPosition( e.vtx_index );
-    }
-
-    __forceinline const Vec3fa &getVertexPositionForQuad(unsigned int q, const unsigned int i=0) const { 
-      return getVertexPositionForHalfEdge( getHalfEdgeForQuad(q,i) );
-    }
-
-
-    void initializeHalfEdgeStructures ();
-
-    /*! calculates the bounds of the face associated with the half-edge */
-    __forceinline BBox3fa getFaceBounds(const HalfEdge* e) const 
-    {
-      BBox3fa b = getVertexPosition(e->getStartVertexIndex());
-      for (const HalfEdge* p = e->next(); p!=e; p=p->next()) 
-        b.extend(getVertexPosition(p->getStartVertexIndex()));
-      return b;
-    }
-
-    /*! calculates the bounds of the 1-ring associated with the vertex of the half-edge */
-    __forceinline BBox3fa get1RingBounds(const HalfEdge* h) const 
-    {
-      BBox3fa bounds = empty;
-      const HalfEdge* p = h;
-      do 
-      {
-        /* calculate bounds of current face */
-        bounds.extend(getFaceBounds(p));
-        p = p->prev();
-                      
-        /* continue with next face */
-        if (likely(p->hasOpposite())) 
-          p = p->opposite();
-        
-        /* if there is no opposite go the long way to the other side of the border */
-        else {
-          p = h;
-          while (p->hasOpposite()) 
-            p = p->opposite()->next();
-        }
-
-      } while (p != h); 
-      
-      return bounds;
-    }
-
-    /*! calculates the bounds of the i'th subdivision patch */
-    __forceinline BBox3fa bounds(size_t i) const 
-    {
-      const HalfEdge* h = faceStartEdge[i];
-      BBox3fa bounds = get1RingBounds(h);
-      for (const HalfEdge* p=h->next(); p!=h; p=p->next())
-        bounds.extend(get1RingBounds(p));
-      return bounds;
-    }
-
-    /*! check if the i'th primitive is valid */
-    __forceinline bool valid(size_t i, BBox3fa* bbox = NULL) const {
-      if (bbox) *bbox = bounds(i);
-      return !full_holes[i];
-    }
-
+    HalfEdge* halfEdges;
   };
 };

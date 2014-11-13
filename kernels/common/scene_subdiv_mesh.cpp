@@ -293,33 +293,20 @@ namespace embree
     /* print statistics in verbose mode */
     if (g_verbose >= 1) 
     {
-      size_t numRegularPatches = 0;
-      size_t numIrregularPatches = 0;
-      size_t numPatchesWithEdges = 0;
+      size_t numRegularFaces = 0;
+      size_t numIrregularFaces = 0;
 
-      assert(numEdges % 4 == 0);
-      for (size_t i=0; i<numEdges; i+=4)
+      for (size_t e=0, f=0; f<numFaces; e+=faceVertices[f++]) 
       {
-        if (halfEdges[i].faceHasEdges())
-        {
-          numIrregularPatches++;
-          numPatchesWithEdges++;
-        }
-        else if (halfEdges[i].isFaceRegular())
-          numRegularPatches++;
-        else
-          numIrregularPatches++;
+        if (halfEdges[e].isRegularFace()) numRegularFaces++;
+        else                              numIrregularFaces++;
       }
     
-      size_t numPatches = numRegularPatches + numIrregularPatches;
-
-      std::cout << "numPatches " << numPatches 
-                << " : regular " << numRegularPatches << " (" << 100.0f * numRegularPatches / numPatches << "%)" 
-                << " irregular " << numIrregularPatches << " (" << 100.0f * numIrregularPatches / numPatches << "%) " 
-                << " irregular with edges " << numPatchesWithEdges << " (" << 100.0f * numPatchesWithEdges / numPatches << "%) " << std::endl;
+      std::cout << "numFaces = " << numFaces << ", " 
+                << "numRegularFaces = " << numRegularFaces << " (" << 100.0f * numRegularFaces / numFaces << "%), " 
+                << "numIrregularFaces " << numIrregularFaces << " (" << 100.0f * numIrregularFaces / numFaces << "%) " << std::endl;
     }
-
-    }
+  }
 
   bool SubdivMesh::verify () 
   {

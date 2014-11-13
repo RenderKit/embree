@@ -55,7 +55,7 @@ namespace embree
       : first_half_edge(edge), vertices(vertices), geom(geom), prim(prim | (last << 31)), subdivision_level(subdivision_level)
     {
       flags = 0;
-      if (first_half_edge->isFaceRegular()) 
+      if (first_half_edge->isRegularFace()) 
         {
           flags |= REGULAR_PATCH;
 #if 1
