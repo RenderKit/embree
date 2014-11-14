@@ -32,8 +32,7 @@ namespace embree
   {
   public:
     enum {
-      REGULAR_PATCH = 1,
-      GREGORY_PATCH = 2
+      REGULAR_PATCH = 1 // = 0 => Gregory Patch 
     };
 
     /*! Default constructor. */
@@ -77,6 +76,9 @@ namespace embree
       grid_v_res = max(level[1],level[3])+1;
       grid_size = (grid_u_res*grid_v_res+15)&(-16);
 
+      assert(grid_size > 0);
+      assert(grid_size % 16 == 0);
+
       /* compute 16-bit quad mask for quad-tessellation */
 
       mic_m m_active = 0xffff;
@@ -95,13 +97,28 @@ namespace embree
 	}
       else
 	{
-	  flags |= GREGORY_PATCH;
-
 	  GregoryPatch gpatch; 
 	  gpatch.init( ipatch ); 
 	  gpatch.exportConrolPoints( patch.v, f_m );
 
 	}
+    }
+
+    __forceinline mic3f eval16(const mic_f &uu,
+			       const mic_f &vv) const
+    {
+      patch.prefetchData();
+
+      if (likely(isRegular()))
+	{
+	  return patch.eval16(uu,vv);
+	}
+      else 
+	{
+	  prefetch<PFHINT_L1>(f_m);
+	  return GregoryPatch::eval16( patch.v, f_m, uu, vv );
+	}
+      
     }
 
     __forceinline bool isRegular() const
@@ -111,7 +128,7 @@ namespace embree
 
     __forceinline bool isGregoryPatch() const
     {
-      return (flags & GREGORY_PATCH) == GREGORY_PATCH;
+      return !isRegular();
     }
 
     __forceinline BBox3fa bounds() const
@@ -147,37 +164,6 @@ namespace embree
 	  b.extend( f_m[1][1] );
 	}
 #endif
-      return b;
-    }
-
-    __forceinline BBox3fa evalQuadBounds(const float s0 = 0.0f,
-					 const float s1 = 1.0f,
-					 const float t0 = 0.0f,
-					 const float t1 = 1.0f) const
-    {
-      Vec3fa vtx[4];
-      if (likely(isRegular()))
-	{
-	  vtx[0] = patch.eval(s0,t0);
-	  vtx[1] = patch.eval(s1,t0);
-	  vtx[2] = patch.eval(s1,t1);
-	  vtx[3] = patch.eval(s0,t1);
-
-	}
-      else 
-	{
-	  __aligned(64) GregoryPatch gpatch(patch.v, f_m );
-	  vtx[0] = gpatch.eval(s0,t0);
-	  vtx[1] = gpatch.eval(s1,t0);
-	  vtx[2] = gpatch.eval(s1,t1);
-	  vtx[3] = gpatch.eval(s0,t1);
-	}
-
-      BBox3fa b( empty );
-      b.extend( vtx[0] );
-      b.extend( vtx[1] );
-      b.extend( vtx[2] );
-      b.extend( vtx[3] );
       return b;
     }
    
