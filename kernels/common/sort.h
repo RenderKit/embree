@@ -129,8 +129,9 @@ namespace embree
 	{
 	  Ty* const tmp = this->tmp;
 	  Ty* const dst = this->dst;
-	  radixIteration(0,src,tmp,startID,endID,threadIndex,numThreads);
-	  for (uint64 shift=BITS; shift<64; shift+=BITS) {
+	  radixIteration(0,src,dst,startID,endID,threadIndex,numThreads);
+	  radixIteration(BITS,dst,tmp,startID,endID,threadIndex,numThreads);
+	  for (uint64 shift=2*BITS; shift<64; shift+=BITS) {
 	    radixIteration(shift,tmp,dst,startID,endID,threadIndex,numThreads);
 	    std::swap(dst,tmp);
 	  }

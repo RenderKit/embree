@@ -338,7 +338,9 @@ namespace embree
 
     /* sort half edges to find adjacent edges */
     std::vector<KeyHalfEdge> sorted(numEdges);
-    radix_sort_u32(&edges[0],&edges[0],&sorted[0],numEdges);
+    radix_sort_u64(&edges[0],&edges[0],&sorted[0],numEdges);
+    //std::sort(edges.begin(),edges.end());
+    //memcpy(&sorted[0],&edges[0],edges.size()*sizeof(edges[0]));
 
     /* link all adjacent edges */
     size_t e=0; 

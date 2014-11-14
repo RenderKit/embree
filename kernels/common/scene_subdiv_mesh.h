@@ -176,7 +176,7 @@ namespace embree
       KeyHalfEdge (uint64 key, HalfEdge* edge) 
       : key(key), edge(edge) {}
       
-      __forceinline operator unsigned() const { 
+      __forceinline operator uint64() const { 
 	return key; 
       }
 
