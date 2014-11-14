@@ -19,6 +19,7 @@
 #include "sys/platform.h"
 #include "sys/sysinfo.h"
 #include "sys/taskscheduler.h"
+#include "math/math.h"
 #include <algorithm>
 
 namespace embree
@@ -26,23 +27,23 @@ namespace embree
   class ParallelRadixSortU32
   {
     static const size_t MAX_THREADS = 32;
-    static const size_t RADIX_BITS = 11;
-    static const size_t RADIX_BUCKETS = (1 << RADIX_BITS);
-    static const size_t RADIX_BUCKETS_MASK = (RADIX_BUCKETS-1);
-    typedef unsigned int TyRadixCount[MAX_THREADS][RADIX_BUCKETS];
+    static const size_t BITS = 11;
+    static const size_t BUCKETS = (1 << BITS);
+    typedef unsigned int TyRadixCount[MAX_THREADS][BUCKETS];
     
   private:
     
     template<typename Ty>
-      class ParallelTask
+      class Task
     {
     public:
-      ParallelTask (ParallelRadixSortU32* parent, Ty* src, Ty* tmp, Ty* dst, const size_t N)
+      Task (ParallelRadixSortU32* parent, Ty* src, Ty* tmp, Ty* dst, const size_t N)
 	: parent(parent), src(src), tmp(tmp), dst(dst), N(N) 
       {
 	LockStepTaskScheduler* scheduler = LockStepTaskScheduler::instance();
-	parent->barrier.init(scheduler->getNumThreads());
-	scheduler->dispatchTask( task_radixsort, this );
+	const size_t numThreads = min(scheduler->getNumThreads(),MAX_THREADS);
+	parent->barrier.init(numThreads);
+	scheduler->dispatchTask(task_radixsort,this,0,numThreads);
       }
       
     private:
@@ -53,11 +54,11 @@ namespace embree
 			  const size_t threadIndex, const size_t threadCount)
       {
 	/* shift and mask to extract some number of bits */
-	const unsigned mask = RADIX_BUCKETS_MASK;
-	const unsigned shift = b * RADIX_BITS;
+	const unsigned mask = BUCKETS-1;
+	const unsigned shift = b * BITS;
         
 	/* count how many items go into the buckets */
-	for (size_t i=0; i<RADIX_BUCKETS; i++)
+	for (size_t i=0; i<BUCKETS; i++)
 	  parent->radixCount[threadIndex][i] = 0;
 	
 	for (size_t i=startID; i<endID; i++) {
@@ -67,23 +68,23 @@ namespace embree
 	parent->barrier.wait(threadIndex,threadCount);
 	
 	/* calculate total number of items for each bucket */
-	__aligned(64) size_t total[RADIX_BUCKETS];
-	for (size_t i=0; i<RADIX_BUCKETS; i++)
+	__aligned(64) size_t total[BUCKETS];
+	for (size_t i=0; i<BUCKETS; i++)
 	  total[i] = 0;
 	
 	for (size_t i=0; i<threadCount; i++)
-	  for (size_t j=0; j<RADIX_BUCKETS; j++)
+	  for (size_t j=0; j<BUCKETS; j++)
 	    total[j] += parent->radixCount[i][j];
 	
 	/* calculate start offset of each bucket */
-	__aligned(64) size_t offset[RADIX_BUCKETS];
+	__aligned(64) size_t offset[BUCKETS];
 	offset[0] = 0;
-	for (size_t i=1; i<RADIX_BUCKETS; i++)    
+	for (size_t i=1; i<BUCKETS; i++)    
 	  offset[i] = offset[i-1] + total[i-1];
 	
 	/* calculate start offset of each bucket for this thread */
 	for (size_t i=0; i<threadIndex; i++)
-	  for (size_t j=0; j<RADIX_BUCKETS; j++)
+	  for (size_t j=0; j<BUCKETS; j++)
 	    offset[j] += parent->radixCount[i][j];
 	
 	/* copy items into their buckets */
@@ -106,7 +107,7 @@ namespace embree
       }
       
       static void task_radixsort (void* data, const size_t threadIndex, const size_t threadCount) { 
-	((ParallelTask*)data)->radixsort(threadIndex,threadCount);                          
+	((Task*)data)->radixsort(threadIndex,threadCount);                          
       }
       
     private:
@@ -140,7 +141,7 @@ namespace embree
       
       /* perform parallel sort for large N */
       else        
-	ParallelTask<Ty>(this,src,tmp,dst,N);
+	Task<Ty>(this,src,tmp,dst,N);
     }
     
   private:
@@ -148,5 +149,6 @@ namespace embree
     LinearBarrierActive barrier;
   };
   
+  /*! global radix sort instance */
   extern ParallelRadixSortU32 radix_sort_u32;
 }

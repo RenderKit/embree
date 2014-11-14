@@ -39,7 +39,7 @@ namespace embree
           std::vector<unsigned> src(N); memset(&src[0],0,N*sizeof(unsigned));
           std::vector<unsigned> tmp(N); memset(&tmp[0],0,N*sizeof(unsigned));
           std::vector<unsigned> dst(N); memset(&dst[0],0,N*sizeof(unsigned));
-          for (size_t i=0; i<N; i++) src[i] = random();
+          for (size_t i=0; i<N; i++) src[i] = ::random();
 	  
           /* calculate checksum */
           size_t sum0 = 0; for (size_t i=0; i<N; i++) sum0 += src[i];
