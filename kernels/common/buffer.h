@@ -59,9 +59,14 @@ namespace embree
       return mapped; 
     }
 
-    size_t size() { return num; }
+    /*! returns the number of elements of the buffer */
+    size_t size() const { 
+      return num; 
+    }
 
-    __forceinline operator bool() { return ptr; }
+    __forceinline operator bool() { 
+      return ptr; 
+    }
 
   protected:
     char* ptr;       //!< pointer to buffer data

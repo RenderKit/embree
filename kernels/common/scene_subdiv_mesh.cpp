@@ -201,6 +201,8 @@ namespace embree
     halfEdges.resize(numEdges);
     halfEdges0.resize(numEdges);
     halfEdges1.resize(numEdges);
+    
+#if 0
 
     /* calculate start edge of each face */
     faceStartEdge.resize(numFaces);
@@ -208,7 +210,7 @@ namespace embree
       faceStartEdge[f] = &halfEdges[ofs];
 
     /* create map containing all edge_creases */
-    std::map<size_t,float> creaseMap;
+    std::map<uint64,float> creaseMap;
     for (size_t i=0; i<edge_creases.size(); i++)
       creaseMap[pair64(edge_creases[i].x,edge_creases[i].y)] = edge_crease_weights[i];
 
@@ -225,8 +227,6 @@ namespace embree
     for (size_t i=0; i<holes.size()     ; i++) full_holes[holes[i]] = 1;
 
     double t0 = getSeconds();
-    
-#if 0
 
     /* initialize all half-edges for each face */
     std::map<size_t,HalfEdge*> edgeMap;
@@ -298,9 +298,34 @@ namespace embree
 
 #else
 
+    /* calculate start edge of each face */
+    faceStartEdge.resize(numFaces);
+    for (size_t f=0, ofs=0; f<numFaces; ofs+=faceVertices[f++])
+      faceStartEdge[f] = &halfEdges[ofs];
+
+    /* create map containing all edge_creases */
+    std::map<uint64,float> creaseMap;
+    for (size_t i=0; i<edge_creases.size(); i++)
+      creaseMap[pair64(edge_creases[i].x,edge_creases[i].y)] = edge_crease_weights[i];
+
+    /* calculate vertex_crease weight for each vertex */
+    std::vector<float> full_vertex_crease_weights(numVertices);
+    for (size_t i=0; i<numVertices; i++) 
+      full_vertex_crease_weights[i] = 0.0f;
+    for (size_t i=0; i<vertex_creases.size(); i++) 
+      full_vertex_crease_weights[vertex_creases[i]] = vertex_crease_weights[i];
+
+    /* calculate full hole vector */
+    full_holes.resize(numFaces);
+    for (size_t i=0; i<full_holes.size(); i++) full_holes[i] = 0;
+    for (size_t i=0; i<holes.size()     ; i++) full_holes[holes[i]] = 1;
+
+    /* calculate set of holes */
+    holeSet.init(holes);
+
+    double t0 = getSeconds();
+
     /* create all half edges */
-    //std::vector<KeyHalfEdge> edges(numEdges);
-    
     for (size_t f=0; f<numFaces; f++) 
     {
       const size_t N = faceVertices[f];
@@ -334,11 +359,8 @@ namespace embree
     }
 
     /* sort half edges to find adjacent edges */
-    //std::vector<KeyHalfEdge> halfEdges1(numEdges);
     radix_sort_u64(&halfEdges0[0],&halfEdges0[0],&halfEdges1[0],numEdges);
-    //std::sort(edges.begin(),edges.end());
-    //memcpy(&halfEdges1[0],&edges[0],edges.size()*sizeof(edges[0]));
-
+    
     /* link all adjacent edges */
     size_t e=0; 
     while (e<numEdges)
