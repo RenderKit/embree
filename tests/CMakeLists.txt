@@ -39,7 +39,7 @@ IF (__XEON__)
   SET_PROPERTY(TARGET benchmark PROPERTY FOLDER tests)
 
   ADD_EXECUTABLE(retrace retrace.cpp)
-  TARGET_LINK_LIBRARIES(retrace sys embree)
+  TARGET_LINK_LIBRARIES(retrace sys simd embree)
   SET_PROPERTY(TARGET retrace PROPERTY FOLDER tests)
 
 ELSE ()
