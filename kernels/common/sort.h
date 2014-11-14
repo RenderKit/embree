@@ -39,11 +39,10 @@ namespace embree
       }
 
     public:
-      ParallelSortUInt32 () {} // FIXME: remove
 
-      ParallelSortUInt32 (LockStepTaskScheduler* scheduler) : scheduler(scheduler), N(0) 
+      ParallelSortUInt32 () : N(0) 
       {
-        const size_t numThreads = scheduler->getNumThreads();
+        const size_t numThreads = getNumberOfLogicalThreads();
         radixCount = (ThreadRadixCountTy*) alignedMalloc(numThreads*sizeof(ThreadRadixCountTy));
       }
 
@@ -131,6 +130,7 @@ namespace embree
         this->tmp = tmp;
         this->dst = dst;
         this->N = N;
+	LockStepTaskScheduler* scheduler = LockStepTaskScheduler::instance();
         barrier.init(scheduler->getNumThreads());
         scheduler->dispatchTask( task_radixsort, this );
       }
@@ -146,8 +146,7 @@ namespace embree
       size_t numThreads;
       ThreadRadixCountTy* radixCount;
       LinearBarrierActive barrier;
-      LockStepTaskScheduler* scheduler;
-
+      
       /* temporary state for each sort */
     private:
       Ty* src;
