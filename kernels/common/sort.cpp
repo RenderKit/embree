@@ -18,23 +18,21 @@
 
 namespace embree
 {
-//  namespace isa
-//  {
-    struct ParallelSortRegressionTest : public RegressionTest
-    {
-      ParallelSortRegressionTest() {
-        registerRegressionTest(this);
-      }
-
-      bool operator() ()
+  /* instantiate global radix sort */
+  ParallelRadixSortU32 radix_sort_u32;
+  
+  struct ParallelSortRegressionTest : public RegressionTest
+  {
+    ParallelSortRegressionTest() {
+      registerRegressionTest(this);
+    }
+    
+    bool operator() ()
       {
         bool passed = true;
         printf("%s::ParallelSortRegressionTest ... ",TOSTRING(isa));
         fflush(stdout);
-
-        /* instantiate parallel sort */
-        ParallelSortUInt32 sort;
-
+	
 	const size_t M = 10;
         for (size_t N=10; N<10000000; N*=2.1f)
         {
@@ -42,17 +40,17 @@ namespace embree
           std::vector<unsigned> tmp(N); memset(&tmp[0],0,N*sizeof(unsigned));
           std::vector<unsigned> dst(N); memset(&dst[0],0,N*sizeof(unsigned));
           for (size_t i=0; i<N; i++) src[i] = random();
-
+	  
           /* calculate checksum */
           size_t sum0 = 0; for (size_t i=0; i<N; i++) sum0 += src[i];
           
           /* sort numbers */
           double t0 = getSeconds();
 	  for (size_t i=0; i<M; i++)
-	    sort(&src[0],&tmp[0],&dst[0],N);
+	    radix_sort_u32(&src[0],&tmp[0],&dst[0],N);
           double t1 = getSeconds();
           printf("%zu/%3.2fM ",N,1E-6*double(N*M)/(t1-t0));
-
+	  
           /* calculate checksum */
           size_t sum1 = 0; for (size_t i=0; i<N; i++) sum1 += dst[i];
           if (sum0 != sum1) {
@@ -67,13 +65,12 @@ namespace embree
             break;
           }
         }
-
+	
         /* output if test passed or not */
         if (passed) printf("[passed]\n");
         else        printf("[failed]\n");
         
         return passed;
       }
-    } ParallelSortRegressionTest;
-//  }
+  } ParallelSortRegressionTest;
 }

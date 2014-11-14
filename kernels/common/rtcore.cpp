@@ -34,7 +34,7 @@
 
 namespace embree
 {
-  ParallelSortUInt32 bla; // FIXME: remove
+  ParallelRadixSortU32 bla; // FIXME: remove
 
 #define CATCH_BEGIN try {
 #define CATCH_END                                                       \
