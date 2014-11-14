@@ -32,37 +32,44 @@ namespace embree
         printf("%s::ParallelSortRegressionTest ... ",TOSTRING(isa));
         fflush(stdout);
 
-        const size_t N = 1024;
-        std::vector<unsigned> src(N); memset(&src[0],0,N*sizeof(unsigned));
-        std::vector<unsigned> tmp(N); memset(&tmp[0],0,N*sizeof(unsigned));
-        std::vector<unsigned> dst(N); memset(&dst[0],0,N*sizeof(unsigned));
-        for (size_t i=0; i<N; i++) src[i] = random();
-
-        /* calculate checksum */
-        size_t sum0 = 0; for (size_t i=0; i<N; i++) sum0 += src[i];
-
-        /* sort numbers */
+        /* instantiate parallel sort */
         ParallelSortUInt32<unsigned> sort(&g_regression_task_scheduler);
-        sort(&src[0],&tmp[0],&dst[0],N);
 
-        /* calculate checksum */
-        size_t sum1 = 0; for (size_t i=0; i<N; i++) sum1 += dst[i];
-        if (sum0 != sum1) {
-          printf("c");
-          passed = false;
-        }
+        for (size_t N=10; N<10000000; N*=2.1f)
+        {
+          std::vector<unsigned> src(N); memset(&src[0],0,N*sizeof(unsigned));
+          std::vector<unsigned> tmp(N); memset(&tmp[0],0,N*sizeof(unsigned));
+          std::vector<unsigned> dst(N); memset(&dst[0],0,N*sizeof(unsigned));
+          for (size_t i=0; i<N; i++) src[i] = random();
 
-        /* check if numbers are sorted */
-        for (size_t i=1; i<N; i++) {
-          if (dst[i-1] <= dst[i]) continue;
-          printf("s");
-          break;
+          /* calculate checksum */
+          size_t sum0 = 0; for (size_t i=0; i<N; i++) sum0 += src[i];
+          
+          /* sort numbers */
+          double t0 = getSeconds();
+          sort(&src[0],&tmp[0],&dst[0],N);
+          double t1 = getSeconds();
+          printf("%zu/%3.2fM ",N,1E-6*double(N)/(t1-t0));
+
+          /* calculate checksum */
+          size_t sum1 = 0; for (size_t i=0; i<N; i++) sum1 += dst[i];
+          if (sum0 != sum1) {
+            printf("c");
+            passed = false;
+          }
+          
+          /* check if numbers are sorted */
+          for (size_t i=1; i<N; i++) {
+            if (dst[i-1] <= dst[i]) continue;
+            printf("s");
+            break;
+          }
         }
 
         /* output if test passed or not */
         if (passed) printf("[passed]\n");
         else        printf("[failed]\n");
-
+        
         return passed;
       }
     } ParallelSortRegressionTest;
