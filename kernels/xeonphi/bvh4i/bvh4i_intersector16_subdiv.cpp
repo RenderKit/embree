@@ -70,7 +70,7 @@ namespace embree
 	  // DBG_PRINT( v0 );
 	  // DBG_PRINT( v1 );
 
-	  BBox3fa quadBounds = patch.evalQuadBounds(u0,u1,v0,v1);
+	  BBox3fa quadBounds = patch.bounds(); // FIXME
 	  const unsigned int data = (v_start << 8) | u_start;
 	  createSubPatchBVH4iLeaf( curNode, data, 0);
 
@@ -254,24 +254,11 @@ namespace embree
 					const mic_f &org_xyz,
 					Ray16& ray16)
     {
-      const RegularCatmullClarkPatch &regular_patch = subdiv_patch.patch;
-      regular_patch.prefetchData();
-
-      mic3f vtx;
-
       const mic_f uu = load16f(u_array);
       const mic_f vv = load16f(v_array);
 
-      if (likely(subdiv_patch.isRegular()))
-	{
-	  vtx = regular_patch.eval16(uu,vv);
-	}
-      else 
-	{
-	  vtx = GregoryPatch::eval16( regular_patch.v, subdiv_patch.f_m, uu, vv );
-	}
-
-      const mic3f v0 = vtx;
+      const mic3f vtx = subdiv_patch.eval16(uu,vv);
+      
       const mic3f v1( uload16f_low(&vtx.x[1])           , uload16f_low(&vtx.y[1])           , uload16f_low(&vtx.z[1]));
       const mic3f v2( uload16f_low(&vtx.x[grid_u_res+1]), uload16f_low(&vtx.y[grid_u_res+1]), uload16f_low(&vtx.z[grid_u_res+1]));
       const mic3f v3( uload16f_low(&vtx.x[grid_u_res+0]), uload16f_low(&vtx.y[grid_u_res+0]), uload16f_low(&vtx.z[grid_u_res+0]));
@@ -280,7 +267,7 @@ namespace embree
 			dir_xyz,
 			org_xyz,
 			ray16,
-			v0,
+			vtx,
 			v1,
 			v2,
 			v3,
@@ -296,28 +283,11 @@ namespace embree
 			    Ray16& ray16,
 			    const SubdivPatch1& subdiv_patch)
     {
-#if 1
       const float * const edge_levels = subdiv_patch.level;
       const unsigned int grid_u_res   = subdiv_patch.grid_u_res;
       const unsigned int grid_v_res   = subdiv_patch.grid_v_res;
       const unsigned int grid_size    = subdiv_patch.grid_size;
-#else
 
-      const float edge_levels[4] = {
-	ceilf(subdiv_patch.level[0]),
-	ceilf(subdiv_patch.level[1]),
-	ceilf(subdiv_patch.level[2]),
-	ceilf(subdiv_patch.level[3])
-      };
-
-      const unsigned int grid_u_res = max(edge_levels[0],edge_levels[2])+1; // n segments -> n+1 points
-      const unsigned int grid_v_res = max(edge_levels[1],edge_levels[3])+1;
-
-      const size_t grid_size = (grid_u_res*grid_v_res+15)&(-16);
-
-      assert(grid_size > 0);
-      assert(grid_size % 16 == 0);
-#endif
       __aligned(64) float u_array[grid_size];
       __aligned(64) float v_array[grid_size];
 
@@ -325,10 +295,6 @@ namespace embree
 
 #if 0
       DBG_PRINT("UV grid");
-      DBG_PRINT( subdiv_patch.level[0] );
-      DBG_PRINT( subdiv_patch.level[1] );
-      DBG_PRINT( subdiv_patch.level[2] );
-      DBG_PRINT( subdiv_patch.level[3] );
 
       DBG_PRINT( edge_levels[0] );
       DBG_PRINT( edge_levels[1] );
@@ -348,7 +314,7 @@ namespace embree
 #endif
       bool hit = false;
 
-      if (likely(1 && grid_size <= 16))
+      if (likely(grid_size <= 16))
 	{
 	  const mic_m m_active = subdiv_patch.grid_mask;
 
