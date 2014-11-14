@@ -172,6 +172,14 @@ namespace embree
 
     ParallelRadixSort& state;
   };
+
+  template<typename Ty, typename Key = Ty>
+    void radix_sort(Ty* src, Ty* tmp, Ty* dst, const size_t N)
+  {
+    ParallelRadixSortT<Key> sort(shared_radix_sort_state);
+    sort(src,tmp,dst,N);
+  }
+
   extern ParallelRadixSortT<uint32> radix_sort_u32;
   extern ParallelRadixSortT<uint64> radix_sort_u64;
 }
