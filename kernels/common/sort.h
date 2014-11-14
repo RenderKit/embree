@@ -19,6 +19,7 @@
 #include "sys/platform.h"
 #include "sys/sysinfo.h"
 #include "sys/taskscheduler.h"
+#include <algorithm>
 
 namespace embree
 {
@@ -32,6 +33,10 @@ namespace embree
       static const size_t RADIX_BUCKETS_MASK = (RADIX_BUCKETS-1);
 
       typedef unsigned int ThreadRadixCountTy[RADIX_BUCKETS];
+
+      static bool compare(const Ty& v0, const Ty& v1) {
+	return (unsigned)v0 < (unsigned)v1;
+      }
 
     public:
       ParallelSortUInt32 () {} // FIXME: remove
@@ -83,8 +88,8 @@ namespace embree
           offset[i] = offset[i-1] + total[i-1];
         
         /* calculate start offset of each bucket for this thread */
-        for (size_t j=0; j<RADIX_BUCKETS; j++)
-          for (size_t i=0; i<threadID; i++) // FIXME: switch order of loops?
+        for (size_t i=0; i<threadID; i++)
+	  for (size_t j=0; j<RADIX_BUCKETS; j++)
             offset[j] += radixCount[i][j];
           
         /* copy items into their buckets */
@@ -110,22 +115,30 @@ namespace embree
         ((ParallelSortUInt32*)data)->radixsort(threadID,numThreads);                          
       }
 
-      void operator() (Ty* src, Ty* tmp, Ty* dst, const size_t N)
+      void sort_sequential(Ty* src, Ty* tmp, Ty* dst, const size_t N)
+      {
+	/* copy data to destination array */
+	for (size_t i=0; i<N; i++)
+	  dst[i] = src[i];
+
+	/* do inplace sort inside destination array */
+	std::sort(dst,dst+N,compare);
+      }
+
+      void sort_parallel (Ty* src, Ty* tmp, Ty* dst, const size_t N)
       {
         this->src = src;
         this->tmp = tmp;
         this->dst = dst;
         this->N = N;
-
-        /* sort morton codes */
         barrier.init(scheduler->getNumThreads());
         scheduler->dispatchTask( task_radixsort, this );
-        
-        /* verify that array is sorted */
-#if defined(DEBUG)
-        for (size_t i=1; i<N; i++)
-          assert(morton[i-1].code <= morton[i].code);
-#endif	    
+      }
+
+      void operator() (Ty* src, Ty* tmp, Ty* dst, const size_t N)
+      {
+	if (N<3000) sort_sequential(src,tmp,dst,N);
+	else        sort_parallel  (src,tmp,dst,N);
       }
       
       /* state shared over multiple sorts */
@@ -137,10 +150,10 @@ namespace embree
 
       /* temporary state for each sort */
     private:
-      size_t N;
       Ty* src;
       Ty* tmp;
       Ty* dst;
+      size_t N;
     };
     //}
 }

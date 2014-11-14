@@ -35,6 +35,7 @@ namespace embree
         /* instantiate parallel sort */
         ParallelSortUInt32<unsigned> sort(&g_regression_task_scheduler);
 
+	const size_t M = 10;
         for (size_t N=10; N<10000000; N*=2.1f)
         {
           std::vector<unsigned> src(N); memset(&src[0],0,N*sizeof(unsigned));
@@ -47,9 +48,10 @@ namespace embree
           
           /* sort numbers */
           double t0 = getSeconds();
-          sort(&src[0],&tmp[0],&dst[0],N);
+	  for (size_t i=0; i<M; i++)
+	    sort(&src[0],&tmp[0],&dst[0],N);
           double t1 = getSeconds();
-          printf("%zu/%3.2fM ",N,1E-6*double(N)/(t1-t0));
+          printf("%zu/%3.2fM ",N,1E-6*double(N*M)/(t1-t0));
 
           /* calculate checksum */
           size_t sum1 = 0; for (size_t i=0; i<N; i++) sum1 += dst[i];
