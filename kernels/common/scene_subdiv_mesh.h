@@ -176,6 +176,10 @@ namespace embree
       KeyHalfEdge (uint64 key, HalfEdge* edge) 
       : key(key), edge(edge) {}
       
+      __forceinline operator unsigned() const { 
+	return key; 
+      }
+
       friend __forceinline bool operator<(const KeyHalfEdge& e0, const KeyHalfEdge& e1) {
         return e0.key < e1.key;
       }

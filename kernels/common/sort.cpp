@@ -18,59 +18,68 @@
 
 namespace embree
 {
-  /* instantiate global radix sort */
-  ParallelRadixSortU32 radix_sort_u32;
+  ParallelRadixSort shared_radix_sort_state;
+  ParallelRadixSortT<uint32> radix_sort_u32(shared_radix_sort_state);
+  ParallelRadixSortT<uint64> radix_sort_u64(shared_radix_sort_state);
   
-  struct ParallelSortRegressionTest : public RegressionTest
+  template<typename Key>
+  struct RadixSortRegressionTest : public RegressionTest
   {
-    ParallelSortRegressionTest() {
+    RadixSortRegressionTest(const char* name) : name(name) {
       registerRegressionTest(this);
     }
     
     bool operator() ()
+    {
+      bool passed = true;
+      printf("%s::%s ... ",TOSTRING(isa),name);
+      fflush(stdout);
+
+      ParallelRadixSortT<Key> radix_sort(shared_radix_sort_state);
+      
+      const size_t M = 10;
+      for (size_t N=10; N<10000000; N*=2.1f)
       {
-        bool passed = true;
-        printf("%s::ParallelSortRegressionTest ... ",TOSTRING(isa));
-        fflush(stdout);
+	std::vector<Key> src(N); memset(&src[0],0,N*sizeof(Key));
+	std::vector<Key> tmp(N); memset(&tmp[0],0,N*sizeof(Key));
+	std::vector<Key> dst(N); memset(&dst[0],0,N*sizeof(Key));
+	for (size_t i=0; i<N; i++) src[i] = uint64(::random())*uint64(::random());
 	
-	const size_t M = 10;
-        for (size_t N=10; N<10000000; N*=2.1f)
-        {
-          std::vector<unsigned> src(N); memset(&src[0],0,N*sizeof(unsigned));
-          std::vector<unsigned> tmp(N); memset(&tmp[0],0,N*sizeof(unsigned));
-          std::vector<unsigned> dst(N); memset(&dst[0],0,N*sizeof(unsigned));
-          for (size_t i=0; i<N; i++) src[i] = ::random();
-	  
-          /* calculate checksum */
-          size_t sum0 = 0; for (size_t i=0; i<N; i++) sum0 += src[i];
-          
-          /* sort numbers */
-          double t0 = getSeconds();
-	  for (size_t i=0; i<M; i++)
-	    radix_sort_u32(&src[0],&tmp[0],&dst[0],N);
-          double t1 = getSeconds();
-          printf("%zu/%3.2fM ",N,1E-6*double(N*M)/(t1-t0));
-	  
-          /* calculate checksum */
-          size_t sum1 = 0; for (size_t i=0; i<N; i++) sum1 += dst[i];
-          if (sum0 != sum1) {
-            printf("c");
-            passed = false;
-          }
-          
-          /* check if numbers are sorted */
-          for (size_t i=1; i<N; i++) {
-            if (dst[i-1] <= dst[i]) continue;
-            printf("s");
-            break;
-          }
-        }
-	
-        /* output if test passed or not */
-        if (passed) printf("[passed]\n");
-        else        printf("[failed]\n");
+	/* calculate checksum */
+	Key sum0 = 0; for (size_t i=0; i<N; i++) sum0 += src[i];
         
-        return passed;
+	/* sort numbers */
+	double t0 = getSeconds();
+	for (size_t i=0; i<M; i++)
+	  radix_sort(&src[0],&tmp[0],&dst[0],N);
+	double t1 = getSeconds();
+	printf("%zu/%3.2fM ",N,1E-6*double(N*M)/(t1-t0));
+	
+	/* calculate checksum */
+	Key sum1 = 0; for (size_t i=0; i<N; i++) sum1 += dst[i];
+	if (sum0 != sum1) {
+	  printf("c");
+	  passed = false;
+	}
+        
+	/* check if numbers are sorted */
+	for (size_t i=1; i<N; i++) {
+	  if (dst[i-1] <= dst[i]) continue;
+	  printf("s");
+	  break;
+	}
       }
-  } ParallelSortRegressionTest;
+      
+      /* output if test passed or not */
+      if (passed) printf("[passed]\n");
+      else        printf("[failed]\n");
+      
+      return passed;
+    }
+
+    const char* name;
+  };
+
+  RadixSortRegressionTest<uint32> test_u32("RadixSortRegressionTestU32");
+  RadixSortRegressionTest<uint64> test_u64("RadixSortRegressionTestU64");
 }

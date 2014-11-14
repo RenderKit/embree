@@ -24,45 +24,63 @@
 
 namespace embree
 {
-  class ParallelRadixSortU32
+  class ParallelRadixSort
   {
+  public:
+
     static const size_t MAX_THREADS = 32;
     static const size_t BITS = 11;
     static const size_t BUCKETS = (1 << BITS);
     typedef unsigned int TyRadixCount[MAX_THREADS][BUCKETS];
     
-  private:
-    
-    template<typename Ty>
+    template<typename Ty, typename Key>
       class Task
     {
+      template<typename Ty>
+	static bool compare(const Ty& v0, const Ty& v1) {
+	return (Key)v0 < (Key)v1;
+      }
+
     public:
-      Task (ParallelRadixSortU32* parent, Ty* src, Ty* tmp, Ty* dst, const size_t N)
+      Task (ParallelRadixSort* parent, Ty* src, Ty* tmp, Ty* dst, const size_t N)
 	: parent(parent), src(src), tmp(tmp), dst(dst), N(N) 
       {
-	LockStepTaskScheduler* scheduler = LockStepTaskScheduler::instance();
-	const size_t numThreads = min(scheduler->getNumThreads(),MAX_THREADS);
-	parent->barrier.init(numThreads);
-	scheduler->dispatchTask(task_radixsort,this,0,numThreads);
+	/* perform single threaded sort for small N */
+	if (N<3000) 
+	{
+	  /* copy data to destination array */
+	  for (size_t i=0; i<N; i++)
+	    dst[i] = src[i];
+	  
+	  /* do inplace sort inside destination array */
+	  std::sort(dst,dst+N,compare<Ty>);
+	}
+	
+	/* perform parallel sort for large N */
+	else {
+	  LockStepTaskScheduler* scheduler = LockStepTaskScheduler::instance();
+	  const size_t numThreads = min(scheduler->getNumThreads(),MAX_THREADS);
+	  parent->barrier.init(numThreads);
+	  scheduler->dispatchTask(task_radixsort,this,0,numThreads);
+	}
       }
       
     private:
       
-      void radixIteration(const unsigned b, 
+      void radixIteration(const Key shift, 
 			  const Ty* __restrict src, Ty* __restrict dst, 
 			  const size_t startID, const size_t endID, 
 			  const size_t threadIndex, const size_t threadCount)
       {
-	/* shift and mask to extract some number of bits */
-	const unsigned mask = BUCKETS-1;
-	const unsigned shift = b * BITS;
+	/* mask to extract some number of bits */
+	const Key mask = BUCKETS-1;
         
 	/* count how many items go into the buckets */
 	for (size_t i=0; i<BUCKETS; i++)
 	  parent->radixCount[threadIndex][i] = 0;
 	
 	for (size_t i=startID; i<endID; i++) {
-	  const unsigned int index = ((unsigned)src[i] >> shift) & mask;
+	  const Key index = ((Key)src[i] >> shift) & mask;
 	  parent->radixCount[threadIndex][index]++;
 	}
 	parent->barrier.wait(threadIndex,threadCount);
@@ -90,65 +108,69 @@ namespace embree
 	/* copy items into their buckets */
 	for (size_t i=startID; i<endID; i++) {
 	  const Ty elt = src[i];
-	  const unsigned int index = ((unsigned)elt >> shift) & mask;
+	  const Key index = ((Key)src[i] >> shift) & mask;
 	  dst[offset[index]++] = elt;
 	}
-	if (b < 2) 
-	  parent->barrier.wait(threadIndex,threadCount);
+	//if (b < 2) 
+	parent->barrier.wait(threadIndex,threadCount); // FIXME: optimize
       }
       
       void radixsort(const size_t threadIndex, const size_t numThreads)
       {
 	const size_t startID = (threadIndex+0)*N/numThreads;
 	const size_t endID   = (threadIndex+1)*N/numThreads;
-	radixIteration(0,src,dst,startID,endID,threadIndex,numThreads);
-	radixIteration(1,dst,tmp,startID,endID,threadIndex,numThreads);
-	radixIteration(2,tmp,dst,startID,endID,threadIndex,numThreads);
+
+	if (sizeof(Key) == sizeof(uint32)) {
+	  radixIteration(0*BITS,src,dst,startID,endID,threadIndex,numThreads);
+	  radixIteration(1*BITS,dst,tmp,startID,endID,threadIndex,numThreads);
+	  radixIteration(2*BITS,tmp,dst,startID,endID,threadIndex,numThreads);
+	}
+	else if (sizeof(Key) == sizeof(uint64))
+	{
+	  Ty* const tmp = this->tmp;
+	  Ty* const dst = this->dst;
+	  radixIteration(0,src,tmp,startID,endID,threadIndex,numThreads);
+	  for (uint64 shift=BITS; shift<64; shift+=BITS) {
+	    radixIteration(shift,tmp,dst,startID,endID,threadIndex,numThreads);
+	    std::swap(dst,tmp);
+	  }
+	}
       }
       
       static void task_radixsort (void* data, const size_t threadIndex, const size_t threadCount) { 
 	((Task*)data)->radixsort(threadIndex,threadCount);                          
       }
-      
+
     private:
-      ParallelRadixSortU32* const parent;
+      ParallelRadixSort* const parent;
       Ty* const src;
       Ty* const tmp;
       Ty* const dst;
       const size_t N;
     };
     
-    template<typename Ty>
-      static bool compare(const Ty& v0, const Ty& v1) {
-      return (unsigned)v0 < (unsigned)v1;
-    }
-    
-  public:
-    
-    template<typename Ty>
-      void operator() (Ty* src, Ty* tmp, Ty* dst, const size_t N)
-    {
-      /* perform single threaded sort for small N */
-      if (N<3000) 
-      {
-	/* copy data to destination array */
-	for (size_t i=0; i<N; i++)
-	  dst[i] = src[i];
-	
-	/* do inplace sort inside destination array */
-	std::sort(dst,dst+N,compare<Ty>);
-      }
-      
-      /* perform parallel sort for large N */
-      else        
-	Task<Ty>(this,src,tmp,dst,N);
-    }
-    
   private:
     TyRadixCount radixCount;
     LinearBarrierActive barrier;
   };
-  
-  /*! global radix sort instance */
-  extern ParallelRadixSortU32 radix_sort_u32;
+
+  /*! shared state for parallel radix sort */
+  extern ParallelRadixSort shared_radix_sort_state;
+
+  /*! parallel radix sort */
+  template<typename Key>
+  struct ParallelRadixSortT
+  {
+    ParallelRadixSortT (ParallelRadixSort& state) 
+      : state(state) {} 
+
+    template<typename Ty>
+    void operator() (Ty* src, Ty* tmp, Ty* dst, const size_t N) {
+      ParallelRadixSort::Task<Ty,Key>(&state,src,tmp,dst,N);
+    }
+
+    ParallelRadixSort& state;
+  };
+  extern ParallelRadixSortT<uint32> radix_sort_u32;
+  extern ParallelRadixSortT<uint64> radix_sort_u64;
 }

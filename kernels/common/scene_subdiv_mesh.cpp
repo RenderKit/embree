@@ -226,8 +226,10 @@ namespace embree
     full_holes.resize(numFaces);
     for (size_t i=0; i<full_holes.size(); i++) full_holes[i] = 0;
     for (size_t i=0; i<holes.size()     ; i++) full_holes[holes[i]] = 1;
+
+    double t0 = getSeconds();
     
-#if 1
+#if 0
 
     /* initialize all half-edges for each face */
     std::map<size_t,HalfEdge*> edgeMap;
@@ -301,6 +303,7 @@ namespace embree
 
     /* create all half edges */
     std::vector<KeyHalfEdge> edges(numEdges);
+    
     for (size_t f=0; f<numFaces; f++) 
     {
       const size_t N = faceVertices[f];
@@ -334,23 +337,28 @@ namespace embree
     }
 
     /* sort half edges to find adjacent edges */
-    std::sort(edges.begin(),edges.end());
+    std::vector<KeyHalfEdge> sorted(numEdges);
+    radix_sort_u32(&edges[0],&edges[0],&sorted[0],numEdges);
 
     /* link all adjacent edges */
     size_t e=0; 
     while (e<numEdges)
     {
-      const uint64 key = edges[e].key;
+      const uint64 key = sorted[e].key;
       if (key == -1) break;
-      int N=1; while (e+N<numEdges && edges[e+N].key == key) N++;
+      int N=1; while (e+N<numEdges && sorted[e+N].key == key) N++;
       if (N == 2) {
-        edges[e+0].edge->setOpposite(edges[e+1].edge);
-        edges[e+1].edge->setOpposite(edges[e+0].edge);
+        sorted[e+0].edge->setOpposite(sorted[e+1].edge);
+        sorted[e+1].edge->setOpposite(sorted[e+0].edge);
       }
       e+=N;
     }
 
 #endif
+
+    double t1 = getSeconds();
+    PRINT(numEdges);
+    std::cout << "half edge generation = " << 1E-6*double(numEdges)/(t1-t0) << "M/s" << std::endl;
 
     /* print statistics in verbose mode */
     if (g_verbose >= 1) 
