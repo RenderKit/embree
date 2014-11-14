@@ -296,6 +296,13 @@ namespace embree
 			    Ray16& ray16,
 			    const SubdivPatch1& subdiv_patch)
     {
+#if 1
+      const float * const edge_levels = subdiv_patch.level;
+      const unsigned int grid_u_res   = subdiv_patch.grid_u_res;
+      const unsigned int grid_v_res   = subdiv_patch.grid_v_res;
+      const unsigned int grid_size    = subdiv_patch.grid_size;
+#else
+
       const float edge_levels[4] = {
 	ceilf(subdiv_patch.level[0]),
 	ceilf(subdiv_patch.level[1]),
@@ -310,7 +317,7 @@ namespace embree
 
       assert(grid_size > 0);
       assert(grid_size % 16 == 0);
-
+#endif
       __aligned(64) float u_array[grid_size];
       __aligned(64) float v_array[grid_size];
 
@@ -341,9 +348,10 @@ namespace embree
 #endif
       bool hit = false;
 
-      if (likely(0 && grid_size <= 16))
+      if (likely(1 && grid_size <= 16))
 	{
-	  const mic_m m_active = 0x777;
+	  const mic_m m_active = subdiv_patch.grid_mask;
+
 	  hit |= intersect1Eval16(subdiv_patch,
 				  grid_u_res,
 				  grid_v_res,

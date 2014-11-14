@@ -19,11 +19,13 @@
 
 //#define PARALLEL_COMMIT
 
+//#define FORCE_FIXED_EDGE_TESSELLATION
+#define EDGE_TESSELLATION_VALUE 3
+
 /* scene data */
 extern uniform ISPCScene* uniform g_ispc_scene;
 RTCScene g_scene = NULL;
 uniform unsigned int g_threads = 0;
-extern uniform unsigned int g_subdivision_levels;
 
 /* render function to use */
 renderPixelFunc renderPixel;
@@ -158,7 +160,7 @@ uniform unsigned int convertScene(uniform ISPCScene* uniform scene_in, const uni
 	mesh->edge_level  = uniform new uniform float[mesh->numQuads*4];
 
 	for (size_t i=0;i<mesh->numQuads;i++) offset_buffer[i] = 4;
-	for (size_t i=0;i<mesh->numQuads*4;i++) mesh->edge_level[i]  = 3;
+	for (size_t i=0;i<mesh->numQuads*4;i++) mesh->edge_level[i] = EDGE_TESSELLATION_VALUE;
 
        /* create a triangle mesh */
         uniform unsigned int subdivMeshID = rtcNewSubdivisionMesh (g_scene, RTC_GEOMETRY_STATIC, mesh->numQuads, mesh->numQuads*4, mesh->numVertices, 0, 0, 0);
@@ -282,9 +284,11 @@ export void device_render (uniform int* uniform pixels,
    if (numQuads == 0)
     convertTestSubdivScene();
 
+#if !defined(FORCE_FIXED_EDGE_TESSELLATION)
     updateEdgeLevels(g_ispc_scene, cam_org);
+#endif
 
-    //old_p = p;
+    old_p = p;
 
 #if !defined(PARALLEL_COMMIT)
   rtcCommit (g_scene);
@@ -297,7 +301,10 @@ export void device_render (uniform int* uniform pixels,
     if (p.x != old_p.x | p.y != old_p.y | p.z != old_p.z)
     {
      old_p = p;
-     updateEdgeLevels(g_ispc_scene, cam_org);
+
+#if !defined(FORCE_FIXED_EDGE_TESSELLATION)
+   updateEdgeLevels(g_ispc_scene, cam_org);
+#endif
 
 #if !defined(PARALLEL_COMMIT)
      rtcCommit (g_scene);
