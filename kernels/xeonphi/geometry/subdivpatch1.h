@@ -23,6 +23,8 @@
 
 // right now everything is shared between xeon and xeon phi, so moved all stuff to common/scene_subdivision.h
 
+#define FORCE_TESSELLATION_BOUNDS 0
+
 namespace embree
 {
 
@@ -45,6 +47,7 @@ namespace embree
       bvh4i_subtree_root((unsigned int)-1),
       flags(0)
     {
+      assert(sizeof(SubdivPatch1) == 6 * 64);
 
       u_range = Vec2f(0.0f,1.0f);
       v_range = Vec2f(0.0f,1.0f);
@@ -54,18 +57,35 @@ namespace embree
       f_m[1][1] = 0.0f;
       f_m[1][0] = 0.0f;
 
+      /* init irregular patch */
 
       IrregularCatmullClarkPatch ipatch ( first_half_edge, vertices ); 
 
-      level[0] = ipatch.level[0];
-      level[1] = ipatch.level[1];
-      level[2] = ipatch.level[2];
-      level[3] = ipatch.level[3];
+      /* init discrete edge tessellation levels and grid resolution */
 
-      assert( level[0] >= 0.0f );
-      assert( level[1] >= 0.0f );
-      assert( level[2] >= 0.0f );
-      assert( level[3] >= 0.0f );
+      assert( ipatch.level[0] >= 0.0f );
+      assert( ipatch.level[1] >= 0.0f );
+      assert( ipatch.level[2] >= 0.0f );
+      assert( ipatch.level[3] >= 0.0f );
+
+      level[0] = max(ceilf(ipatch.level[0]),1.0f);
+      level[1] = max(ceilf(ipatch.level[1]),1.0f);
+      level[2] = max(ceilf(ipatch.level[2]),1.0f);
+      level[3] = max(ceilf(ipatch.level[3]),1.0f);
+
+      grid_u_res = max(level[0],level[2])+1; // n segments -> n+1 points
+      grid_v_res = max(level[1],level[3])+1;
+      grid_size = (grid_u_res*grid_v_res+15)&(-16);
+
+      /* compute 16-bit quad mask for quad-tessellation */
+
+      mic_m m_active = 0xffff;
+      for (unsigned int i=grid_u_res-1;i<16;i+=grid_u_res)
+	m_active ^= (unsigned int)1 << i;
+      m_active &= ((unsigned int)1 << (grid_u_res * (grid_v_res-1)))-1;
+      grid_mask = m_active;
+
+      /* determine whether patch is regular or not */
 
       flags = 0;
       if (ipatch.dicable()) 
@@ -97,14 +117,26 @@ namespace embree
     __forceinline BBox3fa bounds() const
     {
       //FIXME: always enable?
-#if 0 
+#if FORCE_TESSELLATION_BOUNDS == 1
+      BBox3fa b;
       if (unlikely(isGregoryPatch()))
 	{
 	  GregoryPatch gpatch( patch.v, f_m);
-	  return gpatch.getDiscreteTessellationBounds(level);
+	  b = gpatch.getDiscreteTessellationBounds(level);
 	}
       else
-	return patch.getDiscreteTessellationBounds(level);    
+	b = patch.getDiscreteTessellationBounds(level);    
+
+#if DEBUG
+      isfinite(b.lower.x);
+      isfinite(b.lower.y);
+      isfinite(b.lower.z);
+
+      isfinite(b.upper.x);
+      isfinite(b.upper.y);
+      isfinite(b.upper.z);
+#endif
+      
 #else
       BBox3fa b = patch.bounds();
       if (unlikely(isGregoryPatch()))
@@ -114,8 +146,8 @@ namespace embree
 	  b.extend( f_m[1][0] );
 	  b.extend( f_m[1][1] );
 	}
-      return b;
 #endif
+      return b;
     }
 
     __forceinline BBox3fa evalQuadBounds(const float s0 = 0.0f,
@@ -158,7 +190,10 @@ namespace embree
     unsigned int primID;                          //!< primitive ID of this subdivision patch
     unsigned int bvh4i_subtree_root;
 
-    unsigned int dummy[3];
+    unsigned short grid_u_res;
+    unsigned short grid_v_res;
+    unsigned int   grid_size;
+    unsigned int   grid_mask;
     volatile unsigned int under_construction; // 0 = not build yet, 1 = under construction, 2 = built
 
     __aligned(64) RegularCatmullClarkPatch patch;
