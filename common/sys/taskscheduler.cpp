@@ -167,6 +167,8 @@ namespace embree
     terminateThreads = false;
   }
 
+  __aligned(64) LockStepTaskScheduler g_regression_task_scheduler;
+
   void LockStepTaskScheduler::syncThreads(const size_t threadID, const size_t numThreads) {
     taskBarrier.wait(threadID,numThreads);
   }

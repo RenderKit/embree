@@ -226,6 +226,8 @@ namespace embree
 
 namespace embree
 {
+  std::vector<RegressionTest*>* regression_tests;
+
   void* alignedMalloc(size_t size, size_t align)
   {
     if (size == 0) return NULL;

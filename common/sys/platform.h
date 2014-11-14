@@ -28,6 +28,7 @@
 #include <fstream>
 #include <string>
 #include <string.h>
+#include <vector>
 
 ////////////////////////////////////////////////////////////////////////////////
 /// detect platform
@@ -332,6 +333,16 @@ namespace embree
 
   /*! returns performance counter in seconds */
   double getSeconds();
+
+  /*! functions for regression testing */
+  struct RegressionTest { 
+    virtual bool operator()() = 0;
+  };
+  extern std::vector<RegressionTest*>* regression_tests;
+  inline void registerRegressionTest(RegressionTest* test) {
+    if (regression_tests == NULL) regression_tests = new std::vector<RegressionTest*>;
+    regression_tests->push_back(test);
+  }
 }
 
 #if defined(__MIC__)

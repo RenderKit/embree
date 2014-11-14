@@ -27,11 +27,15 @@
 #include "sys/taskscheduler.h"
 #include "sys/thread.h"
 #include "raystream_log.h"
+#include "common/sort.h" // FIXME: remove
+
 
 #define TRACE(x) //std::cout << #x << std::endl;
 
 namespace embree
 {
+  ParallelSortUInt32<unsigned> bla; // FIXME: remove
+
 #define CATCH_BEGIN try {
 #define CATCH_END                                                       \
   } catch (std::bad_alloc&) {                                           \
@@ -94,6 +98,7 @@ namespace embree
   size_t g_verbose = 0;                                 //!< verbosity of output
   size_t g_numThreads = 0;                              //!< number of threads to use in builders
   size_t g_benchmark = 0;
+  size_t g_regression_testing = 0;                      //!< enables regression tests at startup
 
   void initSettings()
   {
@@ -221,6 +226,15 @@ namespace embree
 #endif
   }
 
+  void task_regression_testing(void* This, size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* taskGroup) 
+  {
+    if (regression_tests == NULL) return;
+    LockStepTaskScheduler::Init init(threadIndex,threadCount,&g_regression_task_scheduler);
+    if (threadIndex != 0) return;
+    for (size_t i=0; i<regression_tests->size(); i++) 
+      (*(*regression_tests)[i])();
+  }
+
   RTCORE_API void rtcInit(const char* cfg) 
   {
     Lock<MutexSys> lock(g_mutex);
@@ -325,6 +339,10 @@ namespace embree
 	    g_memory_preallocation_factor = parseFloat (cfg,pos);
 	    DBG_PRINT( g_memory_preallocation_factor );
 	  }
+
+        else if (tok == "regression" && parseSymbol (cfg,'=',pos)) {
+          g_regression_testing = parseInt (cfg,pos);
+        }
         
       } while (findNext (cfg,',',pos));
     }
@@ -392,6 +410,15 @@ namespace embree
       printSettings();
     
     TaskScheduler::create(g_numThreads);
+
+    /* execute regression tests */
+    if (g_regression_testing) 
+    {
+      TaskScheduler::EventSync event;
+      TaskScheduler::Task task(&event,task_regression_testing,NULL,TaskScheduler::getNumThreads(),NULL,NULL,"regression_testing");
+      TaskScheduler::addTask(-1,TaskScheduler::GLOBAL_FRONT,&task);
+      event.sync();
+    }
 
     CATCH_END;
   }

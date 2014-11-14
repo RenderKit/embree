@@ -366,7 +366,7 @@ namespace embree
     }
 
     /* verify geometry in debug mode  */
-#if 0 && defined(DEBUG)
+#if 0 && defined(DEBUG) // FIXME: enable
     for (size_t i=0; i<geometries.size(); i++) {
       if (geometries[i]) {
         if (!geometries[i]->verify()) {

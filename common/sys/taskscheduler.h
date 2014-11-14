@@ -232,7 +232,10 @@ namespace embree
       {
 	if (threadCount) 
 	{
-	  if (threadIndex == 0) scheduler->taskBarrier.init(threadCount);
+	  if (threadIndex == 0) {
+            scheduler->taskBarrier.init(threadCount);
+            scheduler->threadCount = threadCount;
+          }
 	  scheduler->barrier.wait(threadCount);
 	  scheduler->enter(threadIndex,threadCount);
 	}
@@ -260,7 +263,10 @@ namespace embree
     __aligned(64) runFunction taskPtr;
     __aligned(64) runFunction2 taskPtr2;
     size_t numTasks;
-    size_t numThreads;
+    size_t numThreads; 
+
+    size_t getNumThreads() const { return threadCount; }
+    size_t threadCount;
     __aligned(64) void* volatile data;
 
 #if defined(__MIC__)
@@ -278,6 +284,10 @@ namespace embree
 
     void dispatchTaskMainLoop(const size_t threadID, const size_t numThreads);
     void releaseThreads(const size_t numThreads);
+
+    __forceinline bool dispatchTask(runFunction task, void* data) {
+      return dispatchTask(task, data, 0, threadCount);
+    }
   
     __forceinline bool dispatchTask(runFunction task, void* data, const size_t threadID, const size_t numThreads)
     {
@@ -308,6 +318,8 @@ namespace embree
 
 
   };
+
+  extern __aligned(64) LockStepTaskScheduler g_regression_task_scheduler;
   
   class __aligned(64) LockStepTaskScheduler4ThreadsLocalCore
   {

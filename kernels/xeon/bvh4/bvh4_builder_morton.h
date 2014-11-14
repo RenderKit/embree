@@ -86,6 +86,8 @@ namespace embree
           };
           //int64 all;
         };
+
+        __forceinline operator unsigned() const { return code; }
         
         __forceinline unsigned int get(const unsigned int shift, const unsigned and_mask) const {
           return (code >> shift) & and_mask;
