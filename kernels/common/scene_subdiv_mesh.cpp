@@ -17,6 +17,7 @@
 #include "scene_subdiv_mesh.h"
 #include "scene.h"
 #include "scene_subdivision.h"
+#include "common/sort.h"
 
 namespace embree
 {

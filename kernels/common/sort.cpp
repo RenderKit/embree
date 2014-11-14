@@ -33,7 +33,7 @@ namespace embree
         fflush(stdout);
 
         /* instantiate parallel sort */
-        ParallelSortUInt32<unsigned> sort;
+        ParallelSortUInt32 sort;
 
 	const size_t M = 10;
         for (size_t N=10; N<10000000; N*=2.1f)
