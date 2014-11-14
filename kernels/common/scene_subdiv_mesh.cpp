@@ -226,7 +226,7 @@ namespace embree
 
     double t0 = getSeconds();
     
-#if 0
+#if defined(__MIC__)
 
     /* initialize all half-edges for each face */
     std::map<size_t,HalfEdge*> edgeMap;

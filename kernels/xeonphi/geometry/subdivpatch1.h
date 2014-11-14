@@ -121,6 +121,23 @@ namespace embree
       
     }
 
+    __forceinline mic_f eval4(const mic_f &uu,
+			      const mic_f &vv) const
+    {
+      patch.prefetchData();
+
+      if (likely(isRegular()))
+	{
+	  return patch.eval4(uu,vv);
+	}
+      else 
+	{
+	  prefetch<PFHINT_L1>(f_m);
+	  return GregoryPatch::eval4( patch.v, f_m, uu, vv );
+	}
+      
+    }
+
     __forceinline bool isRegular() const
     {
       return (flags & REGULAR_PATCH) == REGULAR_PATCH;

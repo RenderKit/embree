@@ -19,7 +19,7 @@
 
 //#define PARALLEL_COMMIT
 
-//#define FORCE_FIXED_EDGE_TESSELLATION
+#define FORCE_FIXED_EDGE_TESSELLATION
 #define EDGE_TESSELLATION_VALUE 3
 
 /* scene data */
@@ -296,15 +296,14 @@ export void device_render (uniform int* uniform pixels,
   launch[  g_threads ] parallelCommit(g_scene); sync;
 #endif
   }
-  //else
+#if !defined(FORCE_FIXED_EDGE_TESSELLATION)
+
   {
     if (p.x != old_p.x | p.y != old_p.y | p.z != old_p.z)
     {
      old_p = p;
 
-#if !defined(FORCE_FIXED_EDGE_TESSELLATION)
    updateEdgeLevels(g_ispc_scene, cam_org);
-#endif
 
 #if !defined(PARALLEL_COMMIT)
      rtcCommit (g_scene);
@@ -313,6 +312,8 @@ export void device_render (uniform int* uniform pixels,
 #endif
     }
    }
+#endif
+
 
 
   /* render image */

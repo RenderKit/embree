@@ -211,24 +211,13 @@ namespace embree
 				      const mic_f &org_xyz,
 				      Ray16& ray16)
     {
-      const RegularCatmullClarkPatch &regular_patch = subdiv_patch.patch;
-      regular_patch.prefetchData();
-
       __aligned(64) Vec3fa vtx[4];
 
       const mic_f uu = gather16f_4f_align(mic_f(u0),mic_f(u1),mic_f(u2),mic_f(u3));
       const mic_f vv = gather16f_4f_align(mic_f(v0),mic_f(v1),mic_f(v2),mic_f(v3));
 
-      if (likely(subdiv_patch.isRegular()))
-	{
-	  const mic_f _vtx = regular_patch.eval4(uu,vv);
-	  store16f(vtx,_vtx);
-	}
-      else 
-	{
-	  const mic_f _vtx = GregoryPatch::eval4( regular_patch.v, subdiv_patch.f_m, uu, vv );
-	  store16f(vtx,_vtx);
-	}
+      const mic_f _vtx = subdiv_patch.eval4(uu,vv);
+      store16f(vtx,_vtx);
 
       return intersect1_quad(rayIndex, 
 			     dir_xyz,
