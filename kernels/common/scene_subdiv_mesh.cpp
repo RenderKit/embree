@@ -47,8 +47,6 @@ namespace embree
   }
 
   SubdivMesh::~SubdivMesh () {
-    if (halfEdges)
-      delete[] halfEdges;
   }
   
   void SubdivMesh::enabling() 
@@ -200,10 +198,7 @@ namespace embree
   void SubdivMesh::initializeHalfEdgeStructures ()
   {
     /* allocate half edge array */
-    if (halfEdges)
-      delete []halfEdges;
-
-    halfEdges = new HalfEdge[numEdges];
+    halfEdges.resize(numEdges);
 
     /* calculate start edge of each face */
     faceStartEdge.resize(numFaces);

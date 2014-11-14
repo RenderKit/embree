@@ -279,7 +279,7 @@ namespace embree
     std::vector<HalfEdge*> faceStartEdge;
 
     /*! Half edge structure. */
-    HalfEdge* halfEdges;
+    std::vector<HalfEdge> halfEdges;
 
     /*! fast lookup table to check of a face is a hole */
     std::vector<bool> full_holes;
