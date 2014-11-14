@@ -199,6 +199,8 @@ namespace embree
   {
     /* allocate half edge array */
     halfEdges.resize(numEdges);
+    halfEdges0.resize(numEdges);
+    halfEdges1.resize(numEdges);
 
     /* calculate start edge of each face */
     faceStartEdge.resize(numFaces);
@@ -297,7 +299,7 @@ namespace embree
 #else
 
     /* create all half edges */
-    std::vector<KeyHalfEdge> edges(numEdges);
+    //std::vector<KeyHalfEdge> edges(numEdges);
     
     for (size_t f=0; f<numFaces; f++) 
     {
@@ -326,27 +328,27 @@ namespace embree
         edge->edge_crease_weight = edge_crease_weight;
         edge->vertex_crease_weight = full_vertex_crease_weights[startVertex];
         edge->edge_level = edge_level;
-        if (full_holes[f]) edges[e+de] = KeyHalfEdge(-1,edge);
-        else               edges[e+de] = KeyHalfEdge(key,edge);
+        if (full_holes[f]) halfEdges0[e+de] = KeyHalfEdge(-1,edge);
+        else               halfEdges0[e+de] = KeyHalfEdge(key,edge);
       }
     }
 
     /* sort half edges to find adjacent edges */
-    std::vector<KeyHalfEdge> sorted(numEdges);
-    radix_sort_u64(&edges[0],&edges[0],&sorted[0],numEdges);
+    //std::vector<KeyHalfEdge> halfEdges1(numEdges);
+    radix_sort_u64(&halfEdges0[0],&halfEdges0[0],&halfEdges1[0],numEdges);
     //std::sort(edges.begin(),edges.end());
-    //memcpy(&sorted[0],&edges[0],edges.size()*sizeof(edges[0]));
+    //memcpy(&halfEdges1[0],&edges[0],edges.size()*sizeof(edges[0]));
 
     /* link all adjacent edges */
     size_t e=0; 
     while (e<numEdges)
     {
-      const uint64 key = sorted[e].key;
+      const uint64 key = halfEdges1[e].key;
       if (key == -1) break;
-      int N=1; while (e+N<numEdges && sorted[e+N].key == key) N++;
+      int N=1; while (e+N<numEdges && halfEdges1[e+N].key == key) N++;
       if (N == 2) {
-        sorted[e+0].edge->setOpposite(sorted[e+1].edge);
-        sorted[e+1].edge->setOpposite(sorted[e+0].edge);
+        halfEdges1[e+0].edge->setOpposite(halfEdges1[e+1].edge);
+        halfEdges1[e+1].edge->setOpposite(halfEdges1[e+0].edge);
       }
       e+=N;
     }

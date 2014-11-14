@@ -281,6 +281,10 @@ namespace embree
     /*! Half edge structure. */
     std::vector<HalfEdge> halfEdges;
 
+    /*! two arrays used to sort the half edges */
+    std::vector<KeyHalfEdge> halfEdges0;
+    std::vector<KeyHalfEdge> halfEdges1;
+    
     /*! fast lookup table to check of a face is a hole */
     std::vector<bool> full_holes;
   };
