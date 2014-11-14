@@ -235,18 +235,13 @@ namespace embree
     __forceinline bool intersect1Eval16(const SubdivPatch1 &subdiv_patch,
 					const unsigned int grid_u_res,
 					const unsigned int grid_v_res,
-					const float *__restrict__ const u_array,
-					const float *__restrict__ const v_array,
+					const mic3f &vtx,
 					const mic_m m_active,
 					const size_t rayIndex, 
 					const mic_f &dir_xyz,
 					const mic_f &org_xyz,
 					Ray16& ray16)
     {
-      const mic_f uu = load16f(u_array);
-      const mic_f vv = load16f(v_array);
-
-      const mic3f vtx = subdiv_patch.eval16(uu,vv);
       
       const mic3f v1( uload16f_low(&vtx.x[1])           , uload16f_low(&vtx.y[1])           , uload16f_low(&vtx.z[1]));
       const mic3f v2( uload16f_low(&vtx.x[grid_u_res+1]), uload16f_low(&vtx.y[grid_u_res+1]), uload16f_low(&vtx.z[grid_u_res+1]));
@@ -277,8 +272,8 @@ namespace embree
       const unsigned int grid_v_res   = subdiv_patch.grid_v_res;
       const unsigned int grid_size    = subdiv_patch.grid_size;
 
-      __aligned(64) float u_array[grid_size];
-      __aligned(64) float v_array[grid_size];
+      __aligned(64) float u_array[grid_size+16]; // for unaligned access
+      __aligned(64) float v_array[grid_size+16];
 
       gridUVTessellator(edge_levels,grid_u_res,grid_v_res,u_array,v_array);
 
@@ -307,11 +302,15 @@ namespace embree
 	{
 	  const mic_m m_active = subdiv_patch.grid_mask;
 
+	  const mic_f uu = load16f(u_array);
+	  const mic_f vv = load16f(v_array);
+
+	  const mic3f vtx = subdiv_patch.eval16(uu,vv);
+	  	  
 	  hit |= intersect1Eval16(subdiv_patch,
 				  grid_u_res,
 				  grid_v_res,
-				  u_array,
-				  v_array,
+				  vtx,
 				  m_active,
 				  rayIndex,
 				  dir_xyz,
@@ -322,6 +321,42 @@ namespace embree
 	{
 	  size_t offset_line0 = 0;
 	  size_t offset_line1 = grid_u_res;
+
+#if 1
+	  for (unsigned int y=0;y<grid_v_res-1;y++,offset_line0+=grid_u_res,offset_line1+=grid_u_res)
+	    {
+	      for (unsigned int x=0;x<grid_u_res-1;x+=7)
+		{
+		  const mic_f u8_line0 = uload16f(&u_array[offset_line0+x]);
+		  const mic_f u8_line1 = uload16f(&u_array[offset_line1+x]);
+		  const mic_f v8_line0 = uload16f(&v_array[offset_line0+x]);
+		  const mic_f v8_line1 = uload16f(&v_array[offset_line1+x]);
+
+		  const mic_f uu = select(0xff,u8_line0,align_shift_right<8>(u8_line1,u8_line1));
+		  const mic_f vv = select(0xff,v8_line0,align_shift_right<8>(v8_line1,v8_line1));
+
+		  __aligned(64) const mic3f vtx = subdiv_patch.eval16(uu,vv);
+	  	  unsigned int m_active = 0x7f;
+		  if (unlikely(x + 7 >= grid_u_res-1)) 
+		    {
+		      const unsigned int shift = x + 7 - (grid_u_res-1);
+		      m_active >>= shift;
+		    }
+
+		  hit |= intersect1Eval16(subdiv_patch,
+					  8,
+					  2,
+					  vtx,
+					  m_active,
+					  rayIndex,
+					  dir_xyz,
+					  org_xyz,
+					  ray16);	    	  
+
+		}
+	      
+	    }	  
+#else
 	  
 	  for (unsigned int y=0;y<grid_v_res-1;y++,offset_line0++,offset_line1++)
 	    for (unsigned int x=0;x<grid_u_res-1;x++,offset_line0++,offset_line1++)
@@ -340,6 +375,7 @@ namespace embree
 		
 		hit |= intersect1Eval(subdiv_patch,u0,v0,u1,v1,u2,v2,u3,v3,rayIndex,dir_xyz,org_xyz,ray16);	    
 	      }
+#endif
 	}
 
 #if 0

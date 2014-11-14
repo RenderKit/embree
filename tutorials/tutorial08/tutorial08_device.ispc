@@ -17,9 +17,9 @@
 #include "../common/tutorial/tutorial_device.isph"
 #include "../common/tutorial/scene_device.isph"
 
-//#define PARALLEL_COMMIT
+#define PARALLEL_COMMIT
 
-#define FORCE_FIXED_EDGE_TESSELLATION
+//#define FORCE_FIXED_EDGE_TESSELLATION
 #define EDGE_TESSELLATION_VALUE 3
 
 /* scene data */
@@ -170,6 +170,7 @@ uniform unsigned int convertScene(uniform ISPCScene* uniform scene_in, const uni
 	rtcSetBuffer(g_scene, subdivMeshID, RTC_INDEX_BUFFER,  mesh->quads     , 0, sizeof(uniform unsigned int));
 	rtcSetBuffer(g_scene, subdivMeshID, RTC_FACE_BUFFER,   offset_buffer   , 0, sizeof(uniform unsigned int));
 	rtcSetBuffer(g_scene, subdivMeshID, RTC_LEVEL_BUFFER,  mesh->edge_level, 0, sizeof(uniform float));
+
 
        }
   }
