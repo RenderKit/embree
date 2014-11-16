@@ -24,7 +24,6 @@ namespace embree
   static AtomicCounter numLazyBuildPatches = 0;
 
   static AtomicMutex mtx;
-  std::vector<unsigned int> patchids;
 
 
 
@@ -42,40 +41,52 @@ namespace embree
 
     BBox3fa createSubTree(BVH4i::NodeRef &curNode,
 			  BVH4i *bvh,
-			  BVH4i::Node  * __restrict__ nodes,
 			  const SubdivPatch1 &patch,
+			  const float *const grid_u_array,
+			  const float *const grid_v_array,
+			  const unsigned int grid_u_res,
+			  const unsigned int grid_v_res,
 			  const unsigned int u_start,
 			  const unsigned int u_end,
 			  const unsigned int v_start,
-			  const unsigned int v_end,
-			  const unsigned int subdiv_level)
+			  const unsigned int v_end)
     {
-      if (u_end-u_start <= 1)
+      const unsigned int u_size = u_end - u_start;
+      const unsigned int v_size = v_end - v_start;
+      const unsigned int uv_size = u_size*v_size;
+      
+      if (uv_size <= 16)
 	{
-	  assert(u_end-u_start==1);
-	  assert(v_end-v_start==1);
-	  //const float inv_grid_size = 1.0f / (float)grid_size;
-	  // const float u0 = (float)u_start * inv_grid_size;
-	  // const float u1 = (float)u_end   * inv_grid_size;
-	  // const float v0 = (float)v_start * inv_grid_size;
-	  // const float v1 = (float)v_end   * inv_grid_size;
+	  assert(u_size <= 8);
+	  assert(v_size <= 8);
 
-	  const float u0 = gridLookUpTables.lookUp(subdiv_level,u_start);
-	  const float u1 = gridLookUpTables.lookUp(subdiv_level,u_end);
-	  const float v0 = gridLookUpTables.lookUp(subdiv_level,v_start);
-	  const float v1 = gridLookUpTables.lookUp(subdiv_level,v_end);
+	  const unsigned int currentIndex = bvh->used64BytesBlocks.add(2);
+	  if (currentIndex + 4 >= bvh->numAllocated64BytesBlocks) FATAL("alloc");
 
-	  // DBG_PRINT( u0 );
-	  // DBG_PRINT( u1 );
-	  // DBG_PRINT( v0 );
-	  // DBG_PRINT( v1 );
+	  mic_f &leaf_u_array = bvh->lazymem[currentIndex+0];
+	  mic_f &leaf_v_array = bvh->lazymem[currentIndex+1];
 
-	  BBox3fa quadBounds = patch.bounds(); // FIXME
-	  const unsigned int data = (v_start << 8) | u_start;
+	  unsigned int index = 0;
+	  for (unsigned int v=v_start;v<v_end;v++)
+	    for (unsigned int u=u_start;u<u_end;u++)
+	      {
+		leaf_u_array[index] = grid_u_array[ v * grid_u_res + u ];
+		leaf_v_array[index] = grid_v_array[ v * grid_u_res + u ];
+		index++;
+	      }
+
+	  // FIXME: padding to 16
+	  // ...
+
+	  const mic3f leafGridVtx = patch.eval16(leaf_u_array,leaf_v_array);
+	  
+	  // FIXME: reduce to get leafGridBounds
+	  BBox3fa leafGridBounds( empty );
+
+	  const unsigned int data = currentIndex;
 	  createSubPatchBVH4iLeaf( curNode, data, 0);
 
-	  assert( curNode.isAuxFlagSet() );
-	  return quadBounds;
+	  return leafGridBounds;
 	}
 
       /* allocate new bvh4i node */
@@ -91,36 +102,44 @@ namespace embree
 
       createBVH4iNode<2>(curNode,currentIndex);
 
-      BVH4i::Node &node = *(BVH4i::Node*)curNode.node(nodes);
+      BVH4i::Node &node = *(BVH4i::Node*)curNode.node((BVH4i::Node*)bvh->lazymem);
 
       node.setInvalid();
 
-      const unsigned int u_mid = (u_start+u_end)/2;
+      const unsigned int u_mid = (u_start+u_end)/2; // FIXME: just split in two
       const unsigned int v_mid = (v_start+v_end)/2;
 
+      const unsigned int subtree_u_start[4] = { u_start,u_mid,u_mid,u_start };
+      const unsigned int subtree_u_end  [4] = { u_mid  ,u_end,u_end,u_mid   };
+
+      const unsigned int subtree_v_start[4] = { v_start,v_start,v_mid,v_mid };
+      const unsigned int subtree_v_end[4]   = { v_mid  ,v_mid  ,v_end,v_end };
+
+
       /* create four subtrees */
-
-      BBox3fa bounds0 = createSubTree( node.child(0), bvh, nodes, patch, u_start, u_mid, v_start, v_mid,  subdiv_level);
-      node.setBounds(0, bounds0);
-
-      BBox3fa bounds1 = createSubTree( node.child(1), bvh, nodes, patch, u_mid, u_end, v_start, v_mid,  subdiv_level);
-      node.setBounds(1, bounds1);
-
-      BBox3fa bounds2 = createSubTree( node.child(2), bvh, nodes, patch, u_mid, u_end, v_mid, v_end,  subdiv_level);
-      node.setBounds(2, bounds2);
-
-      BBox3fa bounds3 = createSubTree( node.child(3), bvh, nodes, patch, u_start, u_mid, v_mid, v_end,  subdiv_level);
-      node.setBounds(3, bounds3);
-
       BBox3fa bounds( empty );
-      bounds.extend( bounds0 );
-      bounds.extend( bounds1 );
-      bounds.extend( bounds2 );
-      bounds.extend( bounds3 );
+
+      for (unsigned int i=0;i<4;i++)
+	{
+	  BBox3fa bounds_subtree = createSubTree( node.child(i), 
+						  bvh, 
+						  patch, 
+						  grid_u_array,
+						  grid_v_array,
+						  grid_u_res,
+						  grid_v_res,
+						  subtree_u_start[i], 
+						  subtree_u_end[i],
+						  subtree_v_start[i],
+						  subtree_v_end[i]);
+	  node.setBounds(i, bounds_subtree);
+	  bounds.extend( bounds_subtree );
+	}
 
       return bounds;
     }
 
+#if 0
     BVH4i::NodeRef initLazySubdivTree(SubdivPatch1 &subdiv_patch,
 				      BVH4i *bvh,
 				      BVH4i::Node  * __restrict__ nodes,
@@ -151,15 +170,6 @@ namespace embree
 
       /* got the lock, lets build the tree */
 
-#if 0
-      mtx.lock();
-      for (size_t i=0;i<patchids.size();i++)
-	if (patchIndex == patchids[i])
-	  FATAL("already build");
-
-      patchids.push_back(patchIndex);
-      mtx.unlock();
-#endif
 
       numLazyBuildPatches++;
       const unsigned int grid_size = ((unsigned int)1 << subdiv_level)+1;
@@ -191,7 +201,7 @@ namespace embree
       /* return new node ref */
       return newNodeRef; // 
     }
-    
+#endif    
 
 
     __aligned(64) float u_start[16] = { 0,0,0,0,1,1,1,1,1,1,1,1,0,0,0,0 };
