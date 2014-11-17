@@ -1056,11 +1056,15 @@ PRINT(CORRECT_numPrims);
 	if (bvh->root != BVH4i::invalidNode)
 	  initializeParentPointers(bvh->root,0,0);
 
-	if (bvh->lazymem) os_free(bvh->lazymem, bvh->numAllocated64BytesBlocks * sizeof(mic_f));
-	bvh->used64BytesBlocks = 0;
-	bvh->numAllocated64BytesBlocks = numPrimitives * 500; // FIXME: HACK
-	bvh->lazymem = (mic_f*)os_reserve(sizeof(mic_f) * bvh->numAllocated64BytesBlocks);
-	
+	const size_t new_numAllocated64BytesBlocks = numPrimitives * 500; // FIXME: HACK	
+	if (new_numAllocated64BytesBlocks > bvh->numAllocated64BytesBlocks)
+	  {
+	    if (bvh->lazymem) os_free(bvh->lazymem, bvh->numAllocated64BytesBlocks * sizeof(mic_f));
+	    bvh->used64BytesBlocks = 0;
+	    bvh->numAllocated64BytesBlocks = numAllocated64BytesBlocks; 
+	    bvh->lazymem = (mic_f*)os_reserve(sizeof(mic_f) * bvh->numAllocated64BytesBlocks);
+	  }
+
 	bvh->accel = org_accel;
 	accel = (Triangle1*)org_accel;
 

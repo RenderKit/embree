@@ -52,7 +52,7 @@ namespace embree
       const unsigned int u_size = u_end - u_start;
       const unsigned int v_size = v_end - v_start;
       
-#if 1
+#if 0
       DBG_PRINT(u_start);
       DBG_PRINT(u_end);
 
@@ -115,7 +115,7 @@ namespace embree
 
 	  const BBox3fa leafGridBounds( b_min, b_max );
 
-#if 1
+#if 0
 	  DBG_PRINT(leafGridVtx.x);
 	  DBG_PRINT(leafGridVtx.y);
 	  DBG_PRINT(leafGridVtx.z);
@@ -135,8 +135,6 @@ namespace embree
 	{
 	  FATAL("not enough bvh node space allocated");
 	}
-
-      DBG_PRINT(currentIndex);
 
       createBVH4iNode<2>(curNode,currentIndex);
 
@@ -205,12 +203,6 @@ namespace embree
       /* got the lock, lets build the tree */
 #endif
 
-      numLazyBuildPatches++;
-
-#if 1
-      DBG_PRINT( numLazyBuildPatches );
-      DBG_PRINT( bvh->numAllocated64BytesBlocks );
-#endif
 
       __aligned(64) float u_array[patch.grid_size+16]; // for unaligned access
       __aligned(64) float v_array[patch.grid_size+16];
@@ -572,6 +564,15 @@ namespace embree
 		      /* build sub-patch bvh4i */
 		      mtx.lock();
 		      initLazySubdivTree(subdiv_patch,bvh);
+
+		      numLazyBuildPatches++;
+
+#if 1
+		      DBG_PRINT( numLazyBuildPatches );
+		      DBG_PRINT( bvh->used64BytesBlocks);
+		      DBG_PRINT( bvh->numAllocated64BytesBlocks );
+#endif
+
 		      mtx.unlock();
 
 		    }
