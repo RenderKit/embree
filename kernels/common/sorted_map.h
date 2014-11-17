@@ -76,6 +76,14 @@ namespace embree
       return &i->val;
     }
 
+    __forceinline Val lookup(const Key& key, const Val& def) const 
+    {
+      typename std::vector<KeyValue>::const_iterator i = std::lower_bound(vec.begin(), vec.end(), key);
+      if (i == vec.end()) return def;
+      if (i->key != key) return def;
+      return i->val;
+    }
+
   private:
     std::vector<KeyValue> vec;
     std::vector<KeyValue> temp;
