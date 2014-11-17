@@ -25,7 +25,7 @@ SET(FLAGS_AVX512 "-mavx512f -mavx512pf -mavx512er -mavx512cd")
 
 SET(CMAKE_CXX_COMPILER "g++")
 SET(CMAKE_C_COMPILER "gcc")
-SET(CMAKE_CXX_FLAGS "-fPIC")
+SET(CMAKE_CXX_FLAGS "-fPIC -std=c++11")
 SET(CMAKE_CXX_FLAGS_DEBUG          "-DDEBUG  -g -O2 -Wstrict-aliasing=0")
 SET(CMAKE_CXX_FLAGS_RELEASE        "-DNDEBUG    -O3 -Wstrict-aliasing=0")
 SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-DNDEBUG -g -O3 -Wstrict-aliasing=0")
@@ -36,7 +36,7 @@ IF (NOT RTCORE_EXPORT_ALL_SYMBOLS)
 ENDIF()
 
 IF (APPLE)
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mmacosx-version-min=10.7")
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mmacosx-version-min=10.7 -stdlib=libc++")
   IF (TARGET_AVX OR TARGET_AVX2)
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wa,-q") # use clang assembler if user needs AVX
   ENDIF()

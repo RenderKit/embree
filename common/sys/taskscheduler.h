@@ -315,6 +315,15 @@ namespace embree
       return LockStepTaskScheduler::dispatchTask(threadID, numThreads);
     }
 
+    __forceinline bool dispatchTaskSet(runFunction2 task, void* data, const size_t numTasks)
+    {
+      LockStepTaskScheduler::taskPtr = NULL;
+      LockStepTaskScheduler::taskPtr2 = task;
+      LockStepTaskScheduler::data = data;
+      LockStepTaskScheduler::numTasks = numTasks;
+      return LockStepTaskScheduler::dispatchTask(0, threadCount);
+    }
+
     void syncThreads(const size_t threadID, const size_t numThreads);
 
     void syncThreadsWithReduction(const size_t threadID, 
