@@ -146,8 +146,8 @@ namespace embree
 
       node.setInvalid();
 
-      unsigned int u_mid = (u_start+u_end)/2;
-      unsigned int v_mid = (v_start+v_end)/2;
+      const unsigned int u_mid = (u_start+u_end)/2;
+      const unsigned int v_mid = (v_start+v_end)/2;
 
 
       const unsigned int subtree_u_start[4] = { u_start ,u_mid ,u_mid ,u_start };
@@ -185,7 +185,7 @@ namespace embree
       if (unlikely(patch.bvh4i_subtree_root != BVH4i::invalidNode)) return;
 
       
-#if 1
+#if 0
       DBG_PRINT(patch.grid_u_res);
       DBG_PRINT(patch.grid_v_res);
 #endif

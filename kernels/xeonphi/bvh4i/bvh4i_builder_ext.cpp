@@ -916,7 +916,7 @@ PRINT(CORRECT_numPrims);
       {
 	const size_t numPrims = numPrimitives+4;
 	const size_t minAllocNodes = (threadCount+1) * ALLOCATOR_NODE_BLOCK_SIZE; 
-	const size_t numNodes = (size_t)((numPrims+3)/4) + minAllocNodes;
+	const size_t numNodes = (size_t)((numPrims+3)/2) + minAllocNodes;
 
 #if DEBUG
 	DBG_PRINT( numNodes * sizeof(BVH4i::Node) );
@@ -935,7 +935,6 @@ PRINT(CORRECT_numPrims);
 
     org_accel = accel;
     accel = (Triangle1*)((char*)node + sizeof(BVH4i::Node) * 128);
-
   }
 
 
