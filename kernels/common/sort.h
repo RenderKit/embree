@@ -42,7 +42,7 @@ namespace embree
       }
 
     public:
-      Task (ParallelRadixSort* parent, Ty* src, Ty* tmp, Ty* dst, const size_t N)
+      Task (ParallelRadixSort* parent, const Ty* src, Ty* tmp, Ty* dst, const size_t N)
 	: parent(parent), src(src), tmp(tmp), dst(dst), N(N) 
       {
 	/* perform single threaded sort for small N */
@@ -144,7 +144,7 @@ namespace embree
 
     private:
       ParallelRadixSort* const parent;
-      Ty* const src;
+      const Ty* const src;
       Ty* const tmp;
       Ty* const dst;
       const size_t N;
@@ -166,7 +166,7 @@ namespace embree
       : state(state) {} 
 
     template<typename Ty>
-    void operator() (Ty* src, Ty* tmp, Ty* dst, const size_t N) {
+    void operator() (const Ty* src, Ty* tmp, Ty* dst, const size_t N) {
       ParallelRadixSort::Task<Ty,Key>(&state,src,tmp,dst,N);
     }
 
@@ -174,7 +174,7 @@ namespace embree
   };
 
   template<typename Ty, typename Key = Ty>
-    void radix_sort(Ty* src, Ty* tmp, Ty* dst, const size_t N)
+    void radix_sort(const Ty* src, Ty* tmp, Ty* dst, const size_t N)
   {
     ParallelRadixSortT<Key> sort(shared_radix_sort_state);
     sort(src,tmp,dst,N);
