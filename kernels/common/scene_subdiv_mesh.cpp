@@ -368,9 +368,16 @@ namespace embree
       const uint64 key = halfEdges1[e].key;
       if (key == -1) break;
       int N=1; while (e+N<numEdges && halfEdges1[e+N].key == key) N++;
-      if (N == 2) {
+      if (N == 1) {
+      }
+      else if (N == 2) {
         halfEdges1[e+0].edge->setOpposite(halfEdges1[e+1].edge);
         halfEdges1[e+1].edge->setOpposite(halfEdges1[e+0].edge);
+      } else {
+	for (size_t i=0; i<N; i++) {
+	  halfEdges1[e+i].edge->vertex_crease_weight = inf;
+	  halfEdges1[e+i].edge->next()->vertex_crease_weight = inf;
+	}
       }
       e+=N;
     }
