@@ -51,8 +51,8 @@ ADD_ISPC_LIBRARY(embree SHARED
   ../common/raystream_log.cpp
 
   ../algorithms/sort.cpp
-  ../algorithms/sorted_vector.cpp
-  ../algorithms/sorted_map.cpp
+  ../algorithms/pset.cpp
+  ../algorithms/pmap.cpp
 
   builders/bezierrefgen.cpp
   builders/primrefgen.cpp

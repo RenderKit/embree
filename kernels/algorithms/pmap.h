@@ -23,7 +23,7 @@
 namespace embree
 {
   template<typename Key, typename Val>
-  class sorted_map
+  class pmap
   {
     struct KeyValue
     {
@@ -42,7 +42,7 @@ namespace embree
     };
 
   public:
-    sorted_map () {}
+    pmap () {}
 
     template<typename SourceKey>
     __forceinline void init(const std::vector<SourceKey>& keys, const std::vector<Val>& values) 

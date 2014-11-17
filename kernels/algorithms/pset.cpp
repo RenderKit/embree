@@ -14,44 +14,50 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#pragma once
-
-#include "common/default.h"
-#include "common/buffer.h"
-#include "sort.h"
+#include "pset.h"
 
 namespace embree
 {
-  template<typename T>
-  class sorted_vector
+  struct pset_regression_test : public RegressionTest
   {
-  public:
-    sorted_vector () {}
-
-    __forceinline void init(const std::vector<T>& in) 
+    pset_regression_test(const char* name) : name(name) {
+      registerRegressionTest(this);
+    }
+    
+    bool operator() ()
     {
-      vec.resize(in.size());
-      temp.resize(in.size());
-      radix_sort<T>(&in[0],&temp[0],&vec[0],in.size());
+      bool passed = true;
+      printf("%s::%s ... ",TOSTRING(isa),name);
+      fflush(stdout);
+
+      /* create vector with random numbers */
+      const size_t N = 10000;
+      std::vector<uint32> unsorted(N);
+      for (size_t i=0; i<N; i++) unsorted[i] = 2*::random();
+      
+      /* created set from numbers */
+      pset<uint32> sorted;
+      sorted.init(unsorted);
+
+      /* check that all elements are in the set */
+      for (size_t i=0; i<N; i++) {
+	passed &= sorted.lookup(unsorted[i]);
+      }
+
+      /* check that these elements are not in the set */
+      for (size_t i=0; i<N; i++) {
+	passed &= !sorted.lookup(unsorted[i]+1);
+      }
+
+      /* output if test passed or not */
+      if (passed) printf("[passed]\n");
+      else        printf("[failed]\n");
+      
+      return passed;
     }
 
-    __forceinline void init(const BufferT<T>& in) 
-    {
-      vec.resize(in.size());
-      temp.resize(in.size());
-      for (size_t i=0; i<in.size(); i++) temp[i] = in[i]; // FIXME: parallel copy
-      radix_sort<T>(&temp[0],&temp[0],&vec[0],in.size()); // FIXME: support BufferT in radix sort source
-    }
-
-    __forceinline bool lookup(const T& elt) const
-    {
-      typename std::vector<T>::const_iterator i = std::lower_bound(vec.begin(), vec.end(), elt);
-      if (i == vec.end()) return false;
-      return *i == elt;
-    }
-
-  private:
-    std::vector<T> vec;
-    std::vector<T> temp;
+    const char* name;
   };
+
+  pset_regression_test pset_regression("pset_regression_test");
 }

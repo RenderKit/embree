@@ -40,8 +40,8 @@ ADD_ISPC_LIBRARY(embree_xeonphi SHARED
   ../common/raystream_log.cpp
 
   ../algorithms/sort.cpp
-  ../algorithms/sorted_vector.cpp
-  ../algorithms/sorted_map.cpp
+  ../algorithms/pset.cpp
+  ../algorithms/pmap.cpp
   
   geometry/triangle1.cpp
   geometry/instance_intersector1.cpp

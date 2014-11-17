@@ -14,13 +14,13 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "sorted_vector.h"
+#include "pmap.h"
 
 namespace embree
 {
-  struct SortedVectorRegressionTest : public RegressionTest
+  struct pmap_regression_test : public RegressionTest
   {
-    SortedVectorRegressionTest(const char* name) : name(name) {
+    pmap_regression_test(const char* name) : name(name) {
       registerRegressionTest(this);
     }
     
@@ -30,23 +30,28 @@ namespace embree
       printf("%s::%s ... ",TOSTRING(isa),name);
       fflush(stdout);
 
-      /* create vector with random numbers */
+      /* create key/value vectors with random numbers */
       const size_t N = 10000;
-      std::vector<uint32> unsorted(N);
-      for (size_t i=0; i<N; i++) unsorted[i] = 2*::random();
-      
-      /* created set from numbers */
-      sorted_vector<uint32> sorted;
-      sorted.init(unsorted);
-
-      /* check that all elements are in the set */
+      std::vector<uint32> keys(N);
+      std::vector<uint32> vals(N);
       for (size_t i=0; i<N; i++) {
-	passed &= sorted.lookup(unsorted[i]);
+	keys[i] = 2*::random();
+	vals[i] = 2*::random();
+      }
+      
+      /* create map */
+      pmap<uint32,uint32> map;
+      map.init(keys,vals);
+
+      /* check that all keys are properly mapped */
+      for (size_t i=0; i<N; i++) {
+	const uint32* val = map.lookup(keys[i]);
+	passed &= val && (*val == vals[i]);
       }
 
-      /* check that these elements are not in the set */
+      /* check that these keys are not in the map */
       for (size_t i=0; i<N; i++) {
-	passed &= !sorted.lookup(unsorted[i]+1);
+	passed &= !map.lookup(keys[i]+1);
       }
 
       /* output if test passed or not */
@@ -59,5 +64,5 @@ namespace embree
     const char* name;
   };
 
-  SortedVectorRegressionTest sorted_vector_regression_test("SortedVectorRegressionTest");
+  pmap_regression_test pmap_regression("pmap_regression_test");
 }

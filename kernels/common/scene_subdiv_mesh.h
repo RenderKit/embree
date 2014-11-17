@@ -18,8 +18,8 @@
 
 #include "common/geometry.h"
 #include "common/buffer.h"
-#include "algorithms/sorted_map.h"
-#include "algorithms/sorted_vector.h"
+#include "algorithms/pmap.h"
+#include "algorithms/pset.h"
 
 namespace embree
 {
@@ -307,13 +307,13 @@ namespace embree
     std::vector<KeyHalfEdge> halfEdges1;
 
     /*! set with all holes */
-    sorted_vector<uint32> holeSet;
+    pset<uint32> holeSet;
 
     /*! map with all vertex creases */
-    sorted_map<uint32,float> vertexCreaseMap;
+    pmap<uint32,float> vertexCreaseMap;
 
     /*! map with all edge creases */
-    sorted_map<uint64,float> edgeCreaseMap;
+    pmap<uint64,float> edgeCreaseMap;
     
     /*! fast lookup table to check of a face is a hole */
     std::vector<bool> full_holes;
