@@ -20,7 +20,7 @@
 #define PARALLEL_COMMIT
 
 //#define FORCE_FIXED_EDGE_TESSELLATION
-#define EDGE_TESSELLATION_VALUE 3
+#define EDGE_TESSELLATION_VALUE 5
 
 /* scene data */
 extern uniform ISPCScene* uniform g_ispc_scene;

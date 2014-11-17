@@ -1053,16 +1053,20 @@ PRINT(CORRECT_numPrims);
 	SubdivPatch1 *__restrict__ const patch_ptr = (SubdivPatch1*)org_accel;
 
 	std::cout << "initializing back pointers" << std::endl;
-	if (bvh->root != BVH4i::BVH4i::invalidNode)
+	if (bvh->root != BVH4i::invalidNode)
 	  initializeParentPointers(bvh->root,0,0);
 
-	bvh->used64BytesBlocks = atomicID;
-	bvh->numAllocated64BytesBlocks = numAllocated64BytesBlocks;
+	if (bvh->lazymem) os_free(bvh->lazymem, bvh->numAllocated64BytesBlocks * sizeof(mic_f));
+	bvh->used64BytesBlocks = 0;
+	bvh->numAllocated64BytesBlocks = numPrimitives * 500; // FIXME: HACK
+	bvh->lazymem = (mic_f*)os_reserve(sizeof(mic_f) * bvh->numAllocated64BytesBlocks);
+	
 	bvh->accel = org_accel;
 	accel = (Triangle1*)org_accel;
 
 	DBG_PRINT(bvh->used64BytesBlocks);
 	DBG_PRINT(bvh->numAllocated64BytesBlocks);
+	DBG_PRINT(bvh->numAllocated64BytesBlocks * sizeof(mic_f));
 	DBG_PRINT(bvh->root);
 
       }
