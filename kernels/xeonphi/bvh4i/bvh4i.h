@@ -432,7 +432,7 @@ namespace embree
       root(emptyNode), 
       qbvh(NULL), 
       accel(NULL),
-      patches(NULL),
+      lazymem(NULL),
       size_node(0),
       size_accel(0),
       used64BytesBlocks(0),
@@ -485,7 +485,7 @@ namespace embree
 
     __aligned(64) AlignedAtomicCounter32 used64BytesBlocks;
     size_t numAllocated64BytesBlocks;
-    void *patches;
+    mic_f *lazymem;
 
     struct Helper { float x,y,z; int a; }; 
 

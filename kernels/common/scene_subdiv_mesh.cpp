@@ -200,8 +200,9 @@ namespace embree
     halfEdges.resize(numEdges);
     halfEdges0.resize(numEdges);
     halfEdges1.resize(numEdges);
+
+#if defined(__MIC__)
     
-#if 0
 
     /* calculate start edge of each face */
     faceStartEdge.resize(numFaces);
@@ -226,6 +227,7 @@ namespace embree
     for (size_t i=0; i<holes.size()     ; i++) full_holes[holes[i]] = 1;
 
     double t0 = getSeconds();
+    
 
     /* initialize all half-edges for each face */
     std::map<size_t,HalfEdge*> edgeMap;

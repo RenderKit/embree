@@ -17,7 +17,7 @@
 #include "../common/tutorial/tutorial_device.isph"
 #include "../common/tutorial/scene_device.isph"
 
-//#define PARALLEL_COMMIT
+#define PARALLEL_COMMIT
 
 //#define FORCE_FIXED_EDGE_TESSELLATION
 #define EDGE_TESSELLATION_VALUE 3
@@ -171,6 +171,7 @@ uniform unsigned int convertScene(uniform ISPCScene* uniform scene_in, const uni
 	rtcSetBuffer(g_scene, subdivMeshID, RTC_FACE_BUFFER,   offset_buffer   , 0, sizeof(uniform unsigned int));
 	rtcSetBuffer(g_scene, subdivMeshID, RTC_LEVEL_BUFFER,  mesh->edge_level, 0, sizeof(uniform float));
 
+
        }
   }
 
@@ -296,15 +297,14 @@ export void device_render (uniform int* uniform pixels,
   launch[  g_threads ] parallelCommit(g_scene); sync;
 #endif
   }
-  //else
+#if !defined(FORCE_FIXED_EDGE_TESSELLATION)
+
   {
     if (p.x != old_p.x | p.y != old_p.y | p.z != old_p.z)
     {
      old_p = p;
 
-#if !defined(FORCE_FIXED_EDGE_TESSELLATION)
    updateEdgeLevels(g_ispc_scene, cam_org);
-#endif
 
 #if !defined(PARALLEL_COMMIT)
      rtcCommit (g_scene);
@@ -313,6 +313,8 @@ export void device_render (uniform int* uniform pixels,
 #endif
     }
    }
+#endif
+
 
 
   /* render image */
