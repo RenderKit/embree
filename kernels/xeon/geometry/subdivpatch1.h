@@ -19,7 +19,7 @@
 #include "primitive.h"
 #include "common/scene_subdivision.h"
 
-#define SUBDIVISION_LEVEL 0
+#define SUBDIVISION_LEVEL 3 // FIXME: remove
 
 namespace embree
 {

@@ -22,7 +22,7 @@
 
 namespace embree
 {
-  const size_t g_subdivision_level = 0;
+  const size_t g_subdivision_level = 3;
 
   static __forceinline void intersectTri(const Vec3fa& tri_v0,
                                          const Vec3fa& tri_v1,
