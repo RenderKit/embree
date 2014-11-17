@@ -309,7 +309,7 @@ namespace embree
       /* border vertex rule */
       if (unlikely(border_index != -1))
 	{
-	  if (unlikely(isinf(vertex_crease_weight)))
+	  if (unlikely(std::isinf(vertex_crease_weight)))
 	    return vtx;
 
 	  const unsigned int second_border_index = border_index+2 >= num_vtx ? 0 : border_index+2;
@@ -334,7 +334,7 @@ namespace embree
       /* border vertex rule */
       if (unlikely(border_index != -1))
 	{
-	  if (unlikely(isinf(vertex_crease_weight)))
+	  if (unlikely(std::isinf(vertex_crease_weight)))
 	    return ring[0] - vtx;
 
 	  //if (border_index != 0 && valence != 2) { 
@@ -372,20 +372,19 @@ namespace embree
     {
       /* border vertex rule */
       if (unlikely(border_index != -1))
-	{
-	  if (unlikely(isinf(vertex_crease_weight)))
-	    return ring[2] - vtx;
-
-	  //if (border_index == 0 && valence != 2) {
-	  if (border_index == num_vtx-2 && valence != 2) {
-	    return ring[2] - vtx;
-          }
-	  else
-	    {
-              const unsigned int second_border_index = border_index+2 >= num_vtx ? 0 : border_index+2;
-	      return (ring[border_index] - ring[second_border_index]) * 0.5f;
-	    }
-	}
+      {
+        if (unlikely(std::isinf(vertex_crease_weight)))
+          return ring[2] - vtx;
+        
+        //if (border_index == 0 && valence != 2) {
+        if (border_index == num_vtx-2 && valence != 2) {
+          return ring[2] - vtx;
+        }
+        else {
+          const unsigned int second_border_index = border_index+2 >= num_vtx ? 0 : border_index+2;
+          return (ring[border_index] - ring[second_border_index]) * 0.5f;
+        }
+      }
 
       Vec3fa_t alpha( 0.0f );
       Vec3fa_t beta ( 0.0f );

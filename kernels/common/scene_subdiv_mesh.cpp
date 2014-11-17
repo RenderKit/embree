@@ -29,8 +29,7 @@ namespace embree
       numFaces(numFaces), 
       numEdges(numEdges), 
       numVertices(numVertices),
-      displFunc(NULL), displBounds(empty),
-      halfEdges(NULL)
+      displFunc(NULL), displBounds(empty)
   {
     for (size_t i=0; i<numTimeSteps; i++)
        vertices[i].init(numVertices,sizeof(Vec3fa));

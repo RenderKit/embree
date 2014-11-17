@@ -254,7 +254,8 @@ namespace embree
       LockStepTaskScheduler* scheduler;
     };
 
-    static __thread LockStepTaskScheduler* scheduler;
+    //static __thread LockStepTaskScheduler* scheduler;
+    static LockStepTaskScheduler* scheduler;
 
     __forceinline static LockStepTaskScheduler* instance() {
       return scheduler;

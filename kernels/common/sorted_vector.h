@@ -43,7 +43,7 @@ namespace embree
 
     __forceinline bool lookup(const T& elt) 
     {
-      std::vector<T>::iterator i = std::lower_bound(vec.begin(), vec.end(), elt);
+      typename std::vector<T>::iterator i = std::lower_bound(vec.begin(), vec.end(), elt);
       if (i == vec.end()) return false;
       return *i == elt;
     }

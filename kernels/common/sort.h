@@ -36,8 +36,8 @@ namespace embree
     template<typename Ty, typename Key>
       class Task
     {
-      template<typename Ty>
-	static bool compare(const Ty& v0, const Ty& v1) {
+      template<typename T>
+	static bool compare(const T& v0, const T& v1) {
 	return (Key)v0 < (Key)v1;
       }
 
@@ -127,8 +127,8 @@ namespace embree
 	}
 	else if (sizeof(Key) == sizeof(uint64))
 	{
-	  Ty* const tmp = this->tmp;
-	  Ty* const dst = this->dst;
+	  Ty* tmp = this->tmp;
+	  Ty* dst = this->dst;
 	  radixIteration(0,src,dst,startID,endID,threadIndex,numThreads);
 	  radixIteration(BITS,dst,tmp,startID,endID,threadIndex,numThreads);
 	  for (uint64 shift=2*BITS; shift<64; shift+=BITS) {

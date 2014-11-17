@@ -309,6 +309,10 @@ namespace embree
   }
 #endif
 
+  __forceinline ssef broadcast4f( const avxf& a, const size_t k ) {  
+    return ssef::broadcast(&a[k]);
+  }
+
   __forceinline avxf broadcast8f( const avxf& a, const size_t k ) {  
     return avxf::broadcast(&a[k]);
   }
