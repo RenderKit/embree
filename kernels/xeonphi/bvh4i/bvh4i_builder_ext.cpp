@@ -1059,7 +1059,6 @@ PRINT(CORRECT_numPrims);
       {
 	SubdivPatch1 *__restrict__ const patch_ptr = (SubdivPatch1*)org_accel;
 
-	std::cout << "initializing back pointers" << std::endl;
 	if (bvh->root != BVH4i::invalidNode)
 	  initializeParentPointers(bvh->root,0,0);
 

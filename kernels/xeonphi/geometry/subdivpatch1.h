@@ -23,7 +23,7 @@
 
 // right now everything is shared between xeon and xeon phi, so moved all stuff to common/scene_subdivision.h
 
-#define FORCE_TESSELLATION_BOUNDS 0
+#define FORCE_TESSELLATION_BOUNDS 1
 
 namespace embree
 {
@@ -148,19 +148,35 @@ namespace embree
       return !isRegular();
     }
 
-    __forceinline BBox3fa bounds() const
+    BBox3fa bounds() const
     {
-      //FIXME: always enable?
+      //FIXME: process in 16-wide blocks
 #if FORCE_TESSELLATION_BOUNDS == 1
-      BBox3fa b;
-      if (unlikely(isGregoryPatch()))
+
+      __aligned(64) float u_array[grid_size+16];
+      __aligned(64) float v_array[grid_size+16];
+
+      const unsigned int real_grid_size = grid_u_res*grid_v_res;
+      gridUVTessellator(level,grid_u_res,grid_v_res,u_array,v_array);
+
+      BBox3fa b ( empty );
+
+      if (isRegular())
+	for (size_t i=0;i<real_grid_size;i++)
+	  {
+	    const Vec3fa vtx = patch.eval( u_array[i], v_array[i] );
+	    b.extend( vtx );
+	  }
+      else
 	{
 	  GregoryPatch gpatch( patch.v, f_m);
-	  b = gpatch.getDiscreteTessellationBounds(level);
+	  for (size_t i=0;i<real_grid_size;i++)
+	    {
+	      const Vec3fa vtx = gpatch.eval( u_array[i], v_array[i] );
+	      b.extend( vtx );
+	    }
 	}
-      else
-	b = patch.getDiscreteTessellationBounds(level);    
-
+      
 #if DEBUG
       isfinite(b.lower.x);
       isfinite(b.lower.y);
