@@ -69,7 +69,7 @@ namespace embree
                    float u0, float u1, float v0, float v1,             // uv range
                    bool Tt, bool Tr, bool Tb, bool Tl)                 // tagged transition edges
     {
-      //if (unlikely(depth <= 0))
+      if (unlikely(depth <= 0))
         return tessellate(patch,u0,u1,v0,v1,Tt,Tr,Tb,Tl);
 
       IrregularCatmullClarkPatch patches[4]; 
