@@ -234,7 +234,7 @@ namespace embree
 
     /*! calculates the bounds of the i'th subdivision patch */
     __forceinline BBox3fa bounds(size_t i) const {
-      return faceStartEdge[i]->bounds(vertices[0]);
+      return halfEdges[faceStartEdge[i]].bounds(vertices[0]);
     }
 
     /*! check if the i'th primitive is valid */
@@ -248,7 +248,7 @@ namespace embree
     void initializeHalfEdgeStructures ();
 
     /*! returns the start half edge for some face */
-    __forceinline const HalfEdge* getHalfEdge         ( const unsigned f     ) const { return faceStartEdge[f]; }    
+    __forceinline const HalfEdge* getHalfEdge         ( const unsigned f     ) const { return &halfEdges[faceStartEdge[f]]; }    
     __forceinline const Vec3fa*   getVertexPositionPtr( const unsigned t = 0 ) const { return &vertices[t][0]; } // FIXME: this function should never get used, always pass BufferT<Vec3fa> object
 
   public:
@@ -297,7 +297,7 @@ namespace embree
   private:
 
     /*! fast lookup table to find the first half edge for some face */
-    std::vector<HalfEdge*> faceStartEdge;
+    std::vector<uint32> faceStartEdge;
 
     /*! Half edge structure. */
     std::vector<HalfEdge> halfEdges;

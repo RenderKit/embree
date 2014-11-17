@@ -203,12 +203,12 @@ namespace embree
     halfEdges0.resize(numEdges);
     halfEdges1.resize(numEdges);
 
-#if defined(__MIC__)
+#if 1 || defined(__MIC__)
     
     /* calculate start edge of each face */
     faceStartEdge.resize(numFaces);
     for (size_t f=0, ofs=0; f<numFaces; ofs+=faceVertices[f++])
-      faceStartEdge[f] = &halfEdges[ofs];
+      faceStartEdge[f] = ofs;
 
     /* create map containing all edge_creases */
     std::map<uint64,float> creaseMap;
@@ -302,7 +302,7 @@ namespace embree
     /* calculate start edge of each face */
     faceStartEdge.resize(numFaces);
     for (size_t f=0, ofs=0; f<numFaces; ofs+=faceVertices[f++])
-      faceStartEdge[f] = &halfEdges[ofs];
+      faceStartEdge[f] = ofs;
 
     double t0 = getSeconds();
     
