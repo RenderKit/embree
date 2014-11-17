@@ -203,7 +203,6 @@ namespace embree
 
 #if defined(__MIC__)
     
-
     /* calculate start edge of each face */
     faceStartEdge.resize(numFaces);
     for (size_t f=0, ofs=0; f<numFaces; ofs+=faceVertices[f++])
@@ -212,7 +211,7 @@ namespace embree
     /* create map containing all edge_creases */
     std::map<uint64,float> creaseMap;
     for (size_t i=0; i<edge_creases.size(); i++)
-      creaseMap[pair64(edge_creases[i].x,edge_creases[i].y)] = edge_crease_weights[i];
+      creaseMap[pair64(edge_creases[i].v0,edge_creases[i].v1)] = edge_crease_weights[i];
 
     /* calculate vertex_crease weight for each vertex */
     std::vector<float> full_vertex_crease_weights(numVertices);
@@ -228,7 +227,6 @@ namespace embree
 
     double t0 = getSeconds();
     
-
     /* initialize all half-edges for each face */
     std::map<size_t,HalfEdge*> edgeMap;
     std::map<size_t,bool> nonManifoldEdges;
@@ -307,7 +305,7 @@ namespace embree
     /* create map containing all edge_creases */
     std::map<uint64,float> creaseMap;
     for (size_t i=0; i<edge_creases.size(); i++)
-      creaseMap[pair64(edge_creases[i].x,edge_creases[i].y)] = edge_crease_weights[i];
+      creaseMap[pair64(edge_creases[i].v0,edge_creases[i].v1)] = edge_crease_weights[i];
 
     /* calculate vertex_crease weight for each vertex */
     std::vector<float> full_vertex_crease_weights(numVertices);
@@ -318,8 +316,14 @@ namespace embree
 
     double t0 = getSeconds();
 
-    /* calculate set of holes */
+    /* create set with all */
     holeSet.init(holes);
+
+    /* create set with all vertex creases */
+    vertexCreaseMap.init(vertex_creases,vertex_crease_weights);
+    
+    /* create map with all edge creases */
+    edgeCreaseMap.init(edge_creases,edge_crease_weights);
 
     /* create all half edges */
     for (size_t f=0; f<numFaces; f++) 

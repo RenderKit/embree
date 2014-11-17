@@ -18,6 +18,7 @@
 
 #include "common/geometry.h"
 #include "common/buffer.h"
+#include "common/sorted_map.h"
 #include "common/sorted_vector.h"
 
 namespace embree
@@ -25,6 +26,24 @@ namespace embree
   class SubdivMesh : public Geometry
   {
   public:
+
+    struct Edge 
+    {
+      /*! edge constructor */
+      __forceinline Edge(const uint32 v0, const uint32 v1)
+	: v0(v0), v1(v1) {}
+
+      /*! create an 64 bit identifier that is unique for the not oriented edge */
+      __forceinline operator uint64() const       
+      {
+	uint32 p0 = v0, p1 = v1;
+	if (p0<p1) std::swap(p0,p1);
+	return (((uint64)p0) << 32) | (uint64)p1;
+      }
+
+    public:
+      uint32 v0,v1;    //!< start and end vertex of the edge
+    };
 
     class __aligned(32) HalfEdge
     {
@@ -257,7 +276,7 @@ namespace embree
     BufferT<Vec3fa> vertices[2];
 
     /*! edge crease buffer containing edges (pairs of vertices) that carry edge crease weights */
-    BufferT<Vec2i> edge_creases;
+    BufferT<Edge> edge_creases;
 
     /*! edge crease weights for each edge of the edge_creases buffer */
     BufferT<float> edge_crease_weights;
@@ -287,8 +306,14 @@ namespace embree
     std::vector<KeyHalfEdge> halfEdges0;
     std::vector<KeyHalfEdge> halfEdges1;
 
-    /*! sorted array with all holes */
+    /*! set with all holes */
     sorted_vector<uint32> holeSet;
+
+    /*! map with all vertex creases */
+    sorted_map<uint32,float> vertexCreaseMap;
+
+    /*! map with all edge creases */
+    sorted_map<uint64,float> edgeCreaseMap;
     
     /*! fast lookup table to check of a face is a hole */
     std::vector<bool> full_holes;

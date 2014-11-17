@@ -44,24 +44,26 @@ namespace embree
   public:
     sorted_map () {}
 
-    __forceinline void init(const std::vector<Key>& keys, const std::vector<Val>& values) 
+    template<typename SourceKey>
+    __forceinline void init(const std::vector<SourceKey>& keys, const std::vector<Val>& values) 
     {
       assert(keys.size() == values.size());
       vec.resize(keys.size());
       temp.resize(keys.size());
       for (size_t i=0; i<keys.size(); i++) {
-	temp[i] = KeyValue(keys[i],values[i]); // FIXME: parallel copy
+	temp[i] = KeyValue((Key)keys[i],values[i]); // FIXME: parallel copy
       }
       radix_sort<KeyValue,Key>(&temp[0],&temp[0],&vec[0],keys.size());
     }
 
-    __forceinline void init(const BufferT<Key>& keys, const BufferT<Val>& values) 
+    template<typename SourceKey>
+    __forceinline void init(const BufferT<SourceKey>& keys, const BufferT<Val>& values) 
     {
       assert(keys.size() == values.size());
       vec.resize(keys.size());
       temp.resize(keys.size());
       for (size_t i=0; i<keys.size(); i++) {
-	temp[i] = KeyValue(keys[i],values[i]); // FIXME: parallel copy
+	temp[i] = KeyValue((Key)keys[i],values[i]); // FIXME: parallel copy
       }
       radix_sort<KeyValue,Key>(&temp[0],&temp[0],&vec[0],keys.size());
     }
