@@ -152,7 +152,7 @@ namespace embree
     
   private:
     TyRadixCount radixCount;
-    LinearBarrierActive barrier;
+    LinearBarrierActive barrier; // FIXME: should be able to speficy number of threads here
   };
 
   /*! shared state for parallel radix sort */

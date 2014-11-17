@@ -14,18 +14,13 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "sort.h"
+#include "prefix.h"
 
 namespace embree
 {
-  ParallelRadixSort shared_radix_sort_state;
-  ParallelRadixSortT<uint32> radix_sort_u32(shared_radix_sort_state);
-  ParallelRadixSortT<uint64> radix_sort_u64(shared_radix_sort_state);
-  
-  template<typename Key>
-  struct RadixSortRegressionTest : public RegressionTest
+  struct prefix_sum_regression_test : public RegressionTest
   {
-    RadixSortRegressionTest(const char* name) : name(name) {
+    prefix_sum_regression_test(const char* name) : name(name) {
       registerRegressionTest(this);
     }
     
@@ -35,45 +30,39 @@ namespace embree
       printf("%s::%s ... ",TOSTRING(isa),name);
       fflush(stdout);
 
-      ParallelRadixSortT<Key> radix_sort(shared_radix_sort_state);
-      
       const size_t M = 10;
+      
       for (size_t N=10; N<10000000; N*=2.1f)
       {
-	std::vector<Key> src(N); memset(&src[0],0,N*sizeof(Key));
-	std::vector<Key> tmp(N); memset(&tmp[0],0,N*sizeof(Key));
-	std::vector<Key> dst(N); memset(&dst[0],0,N*sizeof(Key));
-	for (size_t i=0; i<N; i++) src[i] = uint64(::random())*uint64(::random());
+	/* initialize array with random numbers */
+	std::vector<uint32> src(N);
+	for (size_t i=0; i<N; i++) 
+	  src[i] = ::random();
 	
-	/* calculate checksum */
-	Key sum0 = 0; for (size_t i=0; i<N; i++) sum0 += src[i];
-        
-	/* sort numbers */
+	/* calculate parallel prefix sum */
+	std::vector<uint32> dst(N);
+	memset(&dst[0],0,N*sizeof(uint32));
+	
 	double t0 = getSeconds();
 	for (size_t i=0; i<M; i++)
-	  radix_sort(&src[0],&tmp[0],&dst[0],N);
+	  parallel_prefix_sum(&src[0],&dst[0],N);
 	double t1 = getSeconds();
 	printf("%zu/%3.2fM ",N,1E-6*double(N*M)/(t1-t0));
 	
-	/* calculate checksum */
-	Key sum1 = 0; for (size_t i=0; i<N; i++) sum1 += dst[i];
-	if (sum0 != sum1) passed = false;
-        
-	/* check if numbers are sorted */
-	for (size_t i=1; i<N; i++)
-	  passed &= dst[i-1] <= dst[i];
+	/* check if prefix sum is correct */
+	for (size_t i=0, sum=0; i<N; sum+=src[i++])
+	  passed &= ((uint32)sum == dst[i]);
       }
       
       /* output if test passed or not */
       if (passed) printf("[passed]\n");
       else        printf("[failed]\n");
-      
+
       return passed;
     }
 
     const char* name;
   };
 
-  RadixSortRegressionTest<uint32> test_u32("RadixSortRegressionTestU32");
-  RadixSortRegressionTest<uint64> test_u64("RadixSortRegressionTestU64");
+  prefix_sum_regression_test prefix_sum_regression("prefix_sum_regression");
 }

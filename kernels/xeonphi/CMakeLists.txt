@@ -42,6 +42,7 @@ ADD_ISPC_LIBRARY(embree_xeonphi SHARED
   ../algorithms/sort.cpp
   ../algorithms/pset.cpp
   ../algorithms/pmap.cpp
+  ../algorithms/prefix.cpp
   
   geometry/triangle1.cpp
   geometry/instance_intersector1.cpp

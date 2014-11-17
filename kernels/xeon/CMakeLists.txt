@@ -53,6 +53,7 @@ ADD_ISPC_LIBRARY(embree SHARED
   ../algorithms/sort.cpp
   ../algorithms/pset.cpp
   ../algorithms/pmap.cpp
+  ../algorithms/prefix.cpp
 
   builders/bezierrefgen.cpp
   builders/primrefgen.cpp
