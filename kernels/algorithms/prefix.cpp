@@ -45,7 +45,7 @@ namespace embree
 	
 	double t0 = getSeconds();
 	for (size_t i=0; i<M; i++)
-	  parallel_prefix_sum(&src[0],&dst[0],N);
+	  parallel_prefix_sum(src,dst,N);
 	double t1 = getSeconds();
 	printf("%zu/%3.2fM ",N,1E-6*double(N*M)/(t1-t0));
 	

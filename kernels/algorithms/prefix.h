@@ -20,7 +20,7 @@
 
 namespace embree
 {
-  template<typename Ty, typename Op>
+  template<typename SrcArray, typename DstArray, typename Ty, typename Op>
   class ParallelPrefixOp
   {
     static const size_t MAX_THREADS = 32;
@@ -31,7 +31,7 @@ namespace embree
     class Task
     {
     public:
-      Task (ParallelPrefixOp* parent, const Ty* src, Ty* dst, const size_t N, const Op op, const Ty id)
+      Task (ParallelPrefixOp* parent, const SrcArray& src, DstArray& dst, const size_t N, const Op op, const Ty id)
 	: parent(parent), src(src), dst(dst), N(N), op(op), id(id)
       {
 	/* perform single threaded prefix operation for small N */
@@ -95,14 +95,14 @@ namespace embree
 
     private:
       ParallelPrefixOp* const parent;
-      const Ty* const src;
-      Ty* const dst;
+      const SrcArray& src;
+      DstArray& dst;
       const size_t N;
       const Op op;
       const Ty id;
     };
 
-    void operator() (const Ty* src, Ty* dst, const size_t N, const Op op, const Ty id) {
+    void operator() (const SrcArray src, DstArray& dst, const size_t N, const Op op, const Ty id) {
       Task(this,src,dst,N,op,id);
     }
 
@@ -115,7 +115,11 @@ namespace embree
     Ty operator()(const Ty& a, const Ty& b) const { return a+b; }
   };
 
-  __forceinline void parallel_prefix_sum(const uint32* src, uint32* dst, size_t N) {
-    ParallelPrefixOp<uint32,my_add<uint32> > op; op(src,dst,N,my_add<uint32>(),0);
+
+  template<typename SrcArray, typename DstArray>
+  __forceinline void parallel_prefix_sum(const SrcArray& src, DstArray& dst, size_t N) 
+  {
+    typedef typename SrcArray::value_type Value;
+    ParallelPrefixOp<SrcArray,DstArray,Value,my_add<Value> > op; op(src,dst,N,my_add<Value>(),0);
   }
 }

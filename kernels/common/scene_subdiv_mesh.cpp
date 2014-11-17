@@ -203,7 +203,7 @@ namespace embree
     halfEdges0.resize(numEdges);
     halfEdges1.resize(numEdges);
 
-#if 1 || defined(__MIC__)
+#if defined(__MIC__)
     
     /* calculate start edge of each face */
     faceStartEdge.resize(numFaces);
@@ -299,13 +299,12 @@ namespace embree
 
 #else
 
+    double t0 = getSeconds();
+
     /* calculate start edge of each face */
     faceStartEdge.resize(numFaces);
-    for (size_t f=0, ofs=0; f<numFaces; ofs+=faceVertices[f++])
-      faceStartEdge[f] = ofs;
-
-    double t0 = getSeconds();
-    
+    parallel_prefix_sum(faceVertices,faceStartEdge,numFaces);
+        
     /* create set with all */
     holeSet.init(holes);
 

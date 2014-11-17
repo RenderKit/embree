@@ -89,6 +89,8 @@ namespace embree
   {
   public:
 
+    typedef T value_type;
+
     /*! access to the ith element of the buffer stream */
     __forceinline T& operator[](size_t i) 
     {
