@@ -128,7 +128,7 @@ namespace embree
       vtx = (Vec3fa_t)vertices[ h->getStartVertexIndex() ];
       vertex_crease_weight = h->vertex_crease_weight;
 
-#if 0// test 
+#if 1// test 
       vertex_crease_weight = inf;
 #endif
 

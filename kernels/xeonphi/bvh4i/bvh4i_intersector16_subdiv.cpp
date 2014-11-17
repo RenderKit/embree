@@ -33,10 +33,10 @@ namespace embree
     static __aligned(64) RegularGridLookUpTables gridLookUpTables;
 
     __forceinline void createSubPatchBVH4iLeaf(BVH4i::NodeRef &ref,
-					       const unsigned int patchIndex,
-					       const unsigned int subdiv_level) 
+					       const unsigned int patchIndex) 
     {
-      *(volatile unsigned int*)&ref = (patchIndex << BVH4i::encodingBits) | BVH4i::leaf_mask | BVH4i::aux_flag_mask | subdiv_level;
+      *(volatile unsigned int*)&ref = (patchIndex << BVH4i::encodingBits) | BVH4i::leaf_mask;
+      // | BVH4i::aux_flag_mask | subdiv_level;
     }
 
     BBox3fa createSubTree(BVH4i::NodeRef &curNode,
@@ -44,8 +44,6 @@ namespace embree
 			  const SubdivPatch1 &patch,
 			  const float *const grid_u_array,
 			  const float *const grid_v_array,
-			  const unsigned int grid_u_res,
-			  const unsigned int grid_v_res,
 			  const unsigned int u_start,
 			  const unsigned int u_end,
 			  const unsigned int v_start,
@@ -53,38 +51,78 @@ namespace embree
     {
       const unsigned int u_size = u_end - u_start;
       const unsigned int v_size = v_end - v_start;
-      const unsigned int uv_size = u_size*v_size;
       
-      if (uv_size <= 16)
+#if 1
+      DBG_PRINT(u_start);
+      DBG_PRINT(u_end);
+
+      DBG_PRINT(v_start);
+      DBG_PRINT(v_end);
+
+      DBG_PRINT(u_size);
+      DBG_PRINT(v_size);
+#endif
+      if (u_size <= 4 && v_size <= 4)
 	{
-	  assert(u_size <= 8);
-	  assert(v_size <= 8);
+	  assert(u_size*v_size <= 16);
+
+	  assert(u_size >= 1);
+	  assert(v_size >= 1);
 
 	  const unsigned int currentIndex = bvh->used64BytesBlocks.add(2);
-	  if (currentIndex + 4 >= bvh->numAllocated64BytesBlocks) FATAL("alloc");
+	  if (currentIndex + 2 > bvh->numAllocated64BytesBlocks) 
+	    {
+	      DBG_PRINT(currentIndex);
+	      DBG_PRINT(bvh->numAllocated64BytesBlocks);
+	      FATAL("alloc");
+	    }
 
 	  mic_f &leaf_u_array = bvh->lazymem[currentIndex+0];
 	  mic_f &leaf_v_array = bvh->lazymem[currentIndex+1];
 
-	  unsigned int index = 0;
+	  leaf_u_array = mic_f::inf();
+	  leaf_v_array = mic_f::inf();
+
 	  for (unsigned int v=v_start;v<v_end;v++)
 	    for (unsigned int u=u_start;u<u_end;u++)
 	      {
-		leaf_u_array[index] = grid_u_array[ v * grid_u_res + u ];
-		leaf_v_array[index] = grid_v_array[ v * grid_u_res + u ];
-		index++;
+		const unsigned int local_v = v - v_start;
+		const unsigned int local_u = u - u_start;
+		leaf_u_array[4 * local_v + local_u] = grid_u_array[ v * patch.grid_u_res + u ];
+		leaf_v_array[4 * local_v + local_u] = grid_v_array[ v * patch.grid_u_res + u ];
 	      }
 
-	  // FIXME: padding to 16
-	  // ...
+	  /* set invalid grid u,v value to border elements */
 
-	  const mic3f leafGridVtx = patch.eval16(leaf_u_array,leaf_v_array);
+	  for (unsigned int y=0;y<4;y++)
+	    for (unsigned int x=u_size-1;x<4;x++)
+	      {
+		leaf_u_array[4 * y + x] = leaf_u_array[4 * y + u_size-1];
+		leaf_v_array[4 * y + x] = leaf_v_array[4 * y + u_size-1];
+	      }
+
+	  for (unsigned int x=0;x<4;x++)
+	    for (unsigned int y=v_size-1;y<4;y++)
+	      {
+		leaf_u_array[4 * y + x] = leaf_u_array[4 * (v_size-1) + x];
+		leaf_v_array[4 * y + x] = leaf_v_array[4 * (v_size-1) + x];
+	      }
 	  
-	  // FIXME: reduce to get leafGridBounds
-	  BBox3fa leafGridBounds( empty );
+	  const mic3f leafGridVtx = patch.eval16(leaf_u_array,leaf_v_array);
 
-	  const unsigned int data = currentIndex;
-	  createSubPatchBVH4iLeaf( curNode, data, 0);
+	  const Vec3fa b_min( reduce_min(leafGridVtx.x), reduce_min(leafGridVtx.y), reduce_min(leafGridVtx.z) );
+	  const Vec3fa b_max( reduce_max(leafGridVtx.x), reduce_max(leafGridVtx.y), reduce_max(leafGridVtx.z) );
+
+	  const BBox3fa leafGridBounds( b_min, b_max );
+
+#if 1
+	  DBG_PRINT(leafGridVtx.x);
+	  DBG_PRINT(leafGridVtx.y);
+	  DBG_PRINT(leafGridVtx.z);
+	  DBG_PRINT(leafGridBounds);
+
+#endif
+	  createSubPatchBVH4iLeaf( curNode, currentIndex);
 
 	  return leafGridBounds;
 	}
@@ -109,11 +147,12 @@ namespace embree
       const unsigned int u_mid = (u_start+u_end)/2; // FIXME: just split in two
       const unsigned int v_mid = (v_start+v_end)/2;
 
+
       const unsigned int subtree_u_start[4] = { u_start,u_mid,u_mid,u_start };
-      const unsigned int subtree_u_end  [4] = { u_mid  ,u_end,u_end,u_mid   };
+      const unsigned int subtree_u_end  [4] = { u_mid+1,u_end,u_end,u_mid+1 };
 
       const unsigned int subtree_v_start[4] = { v_start,v_start,v_mid,v_mid };
-      const unsigned int subtree_v_end[4]   = { v_mid  ,v_mid  ,v_end,v_end };
+      const unsigned int subtree_v_end[4]   = { v_mid+1,v_mid+1,v_end,v_end };
 
 
       /* create four subtrees */
@@ -126,8 +165,6 @@ namespace embree
 						  patch, 
 						  grid_u_array,
 						  grid_v_array,
-						  grid_u_res,
-						  grid_v_res,
 						  subtree_u_start[i], 
 						  subtree_u_end[i],
 						  subtree_v_start[i],
@@ -139,27 +176,24 @@ namespace embree
       return bounds;
     }
 
-#if 0
-    BVH4i::NodeRef initLazySubdivTree(SubdivPatch1 &subdiv_patch,
-				      BVH4i *bvh,
-				      BVH4i::Node  * __restrict__ nodes,
-				      const unsigned int subdiv_level)
+    void initLazySubdivTree(SubdivPatch1 &patch,
+			    BVH4i *bvh)
     {
-      const unsigned int build_state = atomic_add((atomic_t*)&subdiv_patch.under_construction,+1);
+
+      if (unlikely(patch.bvh4i_subtree_root != BVH4i::invalidNode)) return;
+
+#if 0
+      const unsigned int build_state = atomic_add((atomic_t*)&patch.under_construction,+1);
       /* parent ptr */
 
-      // BVH4i::NodeRef parent_ref = subdiv_patch.bvh4i_parent_ref;
-      // BVH4i::Node *  parent_ptr = (BVH4i::Node*)parent_ref.node(nodes);
-      // volatile unsigned int *p  = (unsigned int *)&parent_ptr->child( subdiv_patch.bvh4i_parent_local_index );
-
-      volatile unsigned int *p  = (unsigned int *)&subdiv_patch.bvh4i_subtree_root;
+      volatile unsigned int *p  = (unsigned int *)&patch.bvh4i_subtree_root;
 
       /* check whether another thread currently builds this patch */
       if (build_state != 0)
 	{
-	  atomic_add((atomic_t*)&subdiv_patch.under_construction,-1);
+	  atomic_add((atomic_t*)&patch.under_construction,-1);
 
-	  while (subdiv_patch.under_construction != 0)
+	  while (patch.under_construction != 0)
 	    __pause(512);	  
 
 	  while ( *p == BVH4i::invalidNode)
@@ -169,39 +203,41 @@ namespace embree
 	}
 
       /* got the lock, lets build the tree */
-
+#endif
 
       numLazyBuildPatches++;
-      const unsigned int grid_size = ((unsigned int)1 << subdiv_level)+1;
 
 #if 1
-      mtx.lock();
       DBG_PRINT( numLazyBuildPatches );
       DBG_PRINT( bvh->numAllocated64BytesBlocks );
-      mtx.unlock();
 #endif
-      /* new node index is valid now */
+
+      __aligned(64) float u_array[patch.grid_size+16]; // for unaligned access
+      __aligned(64) float v_array[patch.grid_size+16];
+
+      gridUVTessellator(patch.level,
+			patch.grid_u_res,
+			patch.grid_v_res,
+			u_array,
+			v_array);
 
 
-      BBox3fa bounds = createSubTree( *(BVH4i::NodeRef*)&subdiv_patch.bvh4i_subtree_root,
+      BBox3fa bounds = createSubTree( *(BVH4i::NodeRef*)&patch.bvh4i_subtree_root,
 				      bvh,
-				      nodes,
-				      subdiv_patch,
-				      0,grid_size-1,
-				      0,grid_size-1,
-				      subdiv_level);
+				      patch,
+				      u_array,
+				      v_array,
+				      0,
+				      patch.grid_u_res,
+				      0,
+				      patch.grid_v_res);
 
 
 
       /* release lock */
-      const unsigned int last_index = atomic_add((atomic_t*)&subdiv_patch.under_construction,-1);
+      //const unsigned int last_index = atomic_add((atomic_t*)&patch.under_construction,-1);
 
-      BVH4i::NodeRef newNodeRef = *p;
-
-      /* return new node ref */
-      return newNodeRef; // 
     }
-#endif    
 
 
     __aligned(64) float u_start[16] = { 0,0,0,0,1,1,1,1,1,1,1,1,0,0,0,0 };
@@ -468,8 +504,9 @@ namespace embree
 
       store16f(stack_dist,inf);
 
-      Node      * __restrict__ nodes       = (Node     *)bvh->nodePtr();
-      const Triangle1 * __restrict__ accel = (Triangle1*)bvh->triPtr();
+      mic_f     * const __restrict__ lazymem     = bvh->lazymem;
+      const Node      * __restrict__ const nodes = (Node     *)bvh->nodePtr();
+      Triangle1 * __restrict__ const accel       = (Triangle1*)bvh->triPtr();
 
       stack_node[0] = BVH4i::invalidNode;
       long rayIndex = -1;
@@ -517,100 +554,92 @@ namespace embree
 	      const unsigned int patchIndex = curNode.offsetIndex();
 	      SubdivPatch1& subdiv_patch = ((SubdivPatch1*)accel)[patchIndex];
 
-#if 0
-
-	      if (unlikely(subdiv_patch.bvh4i_subtree_root == BVH4i::invalidNode))
+	      /* fast patch for grid with <= 16 points */
+	      if (likely(subdiv_patch.grid_size <= 16))
+		intersectEvalGrid1(rayIndex,
+				   dir_xyz,
+				   org_xyz,
+				   ray16,
+				   subdiv_patch);
+	      else
 		{
-		  BVH4i::NodeRef newNodeRef = initLazySubdivTree(subdiv_patch,
-								 bvh,
-								 nodes,
-								 subdiv_level);
+		  /* traverse sub-patch bvh4i for grids with > 16 points */
 
-		}
+		  assert(subdiv_patch.grid_size > 16);
 
-	      assert(subdiv_patch.bvh4i_subtree_root != BVH4i::invalidNode);
+		  if (unlikely(subdiv_patch.bvh4i_subtree_root == BVH4i::invalidNode))
+		    {
+		      /* build sub-patch bvh4i */
+		      mtx.lock();
+		      initLazySubdivTree(subdiv_patch,bvh);
+		      mtx.unlock();
 
-	      // -------------------------------------
-	      // -------------------------------------
-	      // -------------------------------------
+		    }
 
-	      __aligned(64) float   sub_stack_dist[64];
-	      __aligned(64) NodeRef sub_stack_node[64];
-	      sub_stack_node[0] = BVH4i::invalidNode;
-	      sub_stack_node[1] = subdiv_patch.bvh4i_subtree_root;
-	      store16f(sub_stack_dist,inf);
-	      size_t sub_sindex = 2;
-	      bool hit = false;
+		  assert(subdiv_patch.bvh4i_subtree_root != BVH4i::invalidNode);
 
-	      while (1)
-		{
-		  curNode = sub_stack_node[sub_sindex-1];
-		  sub_sindex--;
+		  // -------------------------------------
+		  // -------------------------------------
+		  // -------------------------------------
 
-		  traverse_single_intersect<ENABLE_COMPRESSED_BVH4I_NODES>(curNode,
-									   sub_sindex,
-									   rdir_xyz,
-									   org_rdir_xyz,
-									   min_dist_xyz,
-									   max_dist_xyz,
-									   sub_stack_node,
-									   sub_stack_dist,
-									   nodes,
-									   leaf_mask);
+		  __aligned(64) float   sub_stack_dist[64];
+		  __aligned(64) NodeRef sub_stack_node[64];
+		  sub_stack_node[0] = BVH4i::invalidNode;
+		  sub_stack_node[1] = subdiv_patch.bvh4i_subtree_root;
+		  store16f(sub_stack_dist,inf);
+		  size_t sub_sindex = 2;
+
+		  while (1)
+		    {
+		      curNode = sub_stack_node[sub_sindex-1];
+		      sub_sindex--;
+
+		      traverse_single_intersect<ENABLE_COMPRESSED_BVH4I_NODES>(curNode,
+									       sub_sindex,
+									       rdir_xyz,
+									       org_rdir_xyz,
+									       min_dist_xyz,
+									       max_dist_xyz,
+									       sub_stack_node,
+									       sub_stack_dist,
+									       (BVH4i::Node*)lazymem,
+									       leaf_mask);
 		 		   
 
-		  /* return if stack is empty */
-		  if (unlikely(curNode == BVH4i::invalidNode)) break;
+		      /* return if stack is empty */
+		      if (unlikely(curNode == BVH4i::invalidNode)) break;
 
-		  assert(curNode.isAuxFlagSet());
-		  const unsigned int uv = curNode.offsetIndex();
-		  const unsigned int u  = uv & 0xff;
-		  const unsigned int v  = uv >> 8;
-	      
-		  const float u_start = gridLookUpTables.lookUp(subdiv_level,u);
-		  const float u_end   = gridLookUpTables.lookUp(subdiv_level,u+1);
-		  const float v_start = gridLookUpTables.lookUp(subdiv_level,v);
-		  const float v_end   = gridLookUpTables.lookUp(subdiv_level,v+1);
-	      
-		  hit |= intersect1Eval(subdiv_patch,
-					u_start,
-					u_end,
-					v_start,
-					v_end,
-					rayIndex,
+		      const unsigned int uvIndex = curNode.offsetIndex();
+		      const mic_f uu = lazymem[uvIndex + 0];
+		      const mic_f vv = lazymem[uvIndex + 1];
+		  
+		      const mic_m m_active = 0x777;
+		  
+		      const mic3f vtx = subdiv_patch.eval16(uu,vv);
+
+		      const mic3f v0 = vtx;
+		      const mic3f v1( uload16f_low(&vtx.x[1])  , uload16f_low(&vtx.y[1])  , uload16f_low(&vtx.z[1]));
+		      const mic3f v2( uload16f_low(&vtx.x[4+1]), uload16f_low(&vtx.y[4+1]), uload16f_low(&vtx.z[4+1]));
+		      const mic3f v3( uload16f_low(&vtx.x[4+0]), uload16f_low(&vtx.y[4+0]), uload16f_low(&vtx.z[4+0]));
+		  
+		      intersect1_quad16(rayIndex, 
 					dir_xyz,
 					org_xyz,
-					ray16);
+					ray16,
+					v0,
+					v1,
+					v2,
+					v3,
+					m_active,
+					subdiv_patch.geomID,
+					subdiv_patch.primID);
+		    }
 		}
 	      // -------------------------------------
 	      // -------------------------------------
 	      // -------------------------------------
 
-	      if (hit)
-		compactStack(stack_node,stack_dist,sindex,mic_f(ray16.tfar[rayIndex]));
-
-#else
-#if 1
-	      for (int i=0;i<4;i++)
-		if (subdiv_patch.level[i] < 1.0f)
-		  {
-		    DBG_PRINT( patchIndex );
-		    DBG_PRINT(i);
-		    DBG_PRINT( subdiv_patch.level[i] );
-		    exit(0);
-		  }
-#endif
-
-	      const bool hit = intersectEvalGrid1(rayIndex,
-						  dir_xyz,
-						  org_xyz,
-						  ray16,
-						  subdiv_patch);
-
-	      if (hit)
-		compactStack(stack_node,stack_dist,sindex,mic_f(ray16.tfar[rayIndex]));
-
-#endif	
+	      compactStack(stack_node,stack_dist,sindex,mic_f(ray16.tfar[rayIndex]));
 
 	      // ------------------------
 	    }

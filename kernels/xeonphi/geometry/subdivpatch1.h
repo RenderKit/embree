@@ -43,7 +43,7 @@ namespace embree
       : geomID(geomID),
       primID(primID),
       under_construction(0),
-      bvh4i_subtree_root((unsigned int)-1),
+      bvh4i_subtree_root(-1),
       flags(0)
     {
       assert(sizeof(SubdivPatch1) == 6 * 64);
@@ -191,7 +191,7 @@ namespace embree
     unsigned int flags;
     unsigned int geomID;                          //!< geometry ID of the subdivision mesh this patch belongs to
     unsigned int primID;                          //!< primitive ID of this subdivision patch
-    unsigned int bvh4i_subtree_root;
+    volatile unsigned int bvh4i_subtree_root;
 
     unsigned short grid_u_res;
     unsigned short grid_v_res;

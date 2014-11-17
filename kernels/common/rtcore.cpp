@@ -538,7 +538,7 @@ namespace embree
       process_error(RTC_INVALID_OPERATION,"invalid number of threads specified");
 
 #if defined(__MIC__)
-    if (unlikely(numThreads % 4 != 0)) 
+    if (unlikely(numThreads % 4 != 0 && numThreads != 1)) 
       FATAL("MIC requires numThreads % 4 == 0 in rtcCommitThread");
 #endif
     
