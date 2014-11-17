@@ -435,8 +435,9 @@ namespace embree
       lazymem(NULL),
       size_node(0),
       size_accel(0),
-      used64BytesBlocks(0),
-      numAllocated64BytesBlocks(0)
+      numAllocated64BytesBlocks(0),
+      lazyMemUsed64BytesBlocks(0),
+      lazyMemAllocated64BytesBlocks(0)
     {
     }
 
@@ -483,9 +484,12 @@ namespace embree
     void *accel;
     
 
-    __aligned(64) AlignedAtomicCounter32 used64BytesBlocks;
     size_t numAllocated64BytesBlocks;
+
+
     mic_f *lazymem;
+    __aligned(64) AlignedAtomicCounter32 lazyMemUsed64BytesBlocks;
+    size_t lazyMemAllocated64BytesBlocks;
 
     struct Helper { float x,y,z; int a; }; 
 

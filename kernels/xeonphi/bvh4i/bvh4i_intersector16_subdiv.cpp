@@ -73,11 +73,11 @@ namespace embree
 	  assert(u_size*v_size <= 16);
 
 
-	  const unsigned int currentIndex = bvh->used64BytesBlocks.add(2);
-	  if (currentIndex + 2 > bvh->numAllocated64BytesBlocks) 
+	  const unsigned int currentIndex = bvh->lazyMemUsed64BytesBlocks.add(2);
+	  if (currentIndex + 2 > bvh->lazyMemAllocated64BytesBlocks) 
 	    {
 	      DBG_PRINT(currentIndex);
-	      DBG_PRINT(bvh->numAllocated64BytesBlocks);
+	      DBG_PRINT(bvh->lazyMemUsed64BytesBlocks);
 	      FATAL("alloc");
 	    }
 
@@ -133,9 +133,9 @@ namespace embree
 
       /* allocate new bvh4i node */
       const size_t num64BytesBlocksPerNode = 2;
-      const size_t currentIndex = bvh->used64BytesBlocks.add(num64BytesBlocksPerNode);
+      const size_t currentIndex = bvh->lazyMemUsed64BytesBlocks.add(num64BytesBlocksPerNode);
 
-      if (currentIndex + num64BytesBlocksPerNode >= bvh->numAllocated64BytesBlocks)
+      if (currentIndex + num64BytesBlocksPerNode >= bvh->lazyMemAllocated64BytesBlocks)
 	{
 	  FATAL("not enough bvh node space allocated");
 	}
@@ -185,6 +185,10 @@ namespace embree
       if (unlikely(patch.bvh4i_subtree_root != BVH4i::invalidNode)) return;
 
       
+#if 1
+      DBG_PRINT(patch.grid_u_res);
+      DBG_PRINT(patch.grid_v_res);
+#endif
 
 #if 0
       const unsigned int build_state = atomic_add((atomic_t*)&patch.under_construction,+1);
@@ -241,8 +245,8 @@ namespace embree
       DBG_PRINT( patch.grid_u_res );
       DBG_PRINT( patch.grid_v_res );
       DBG_PRINT( numLazyBuildPatches );
-      DBG_PRINT( bvh->used64BytesBlocks);
-      DBG_PRINT( bvh->numAllocated64BytesBlocks );
+      DBG_PRINT( bvh->lazyMemUsed64BytesBlocks);
+      DBG_PRINT( bvh->lazyMemAllocated64BytesBlocks );
 #endif
 
     }

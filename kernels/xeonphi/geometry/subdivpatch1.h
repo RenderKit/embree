@@ -183,6 +183,40 @@ namespace embree
 #endif
       return b;
     }
+
+    size_t get64BytesBlocksForGridSubTree(const unsigned int u_start,
+					  const unsigned int u_end,
+					  const unsigned int v_start,
+					  const unsigned int v_end)
+    {
+      const unsigned int u_size = u_end-u_start+1;
+      const unsigned int v_size = v_end-v_start+1;
+      if (u_size <= 4 && v_size <= 4)
+	return 2;
+
+      const unsigned int u_mid = (u_start+u_end)/2;
+      const unsigned int v_mid = (v_start+v_end)/2;
+
+      const unsigned int subtree_u_start[4] = { u_start ,u_mid ,u_mid ,u_start };
+      const unsigned int subtree_u_end  [4] = { u_mid   ,u_end ,u_end ,u_mid };
+      const unsigned int subtree_v_start[4] = { v_start ,v_start ,v_mid ,v_mid};
+      const unsigned int subtree_v_end  [4] = { v_mid   ,v_mid   ,v_end ,v_end };
+      
+      size_t blocks = 2;
+      for (unsigned int i=0;i<4;i++)
+	blocks += get64BytesBlocksForGridSubTree(subtree_u_start[i], 
+						 subtree_u_end[i],
+						 subtree_v_start[i],
+						 subtree_v_end[i]);
+      return blocks;    
+    }
+
+    __forceinline unsigned int getSubTreeSize()
+    {
+      if (grid_size <= 16) return 0;
+
+      return get64BytesBlocksForGridSubTree(0,grid_u_res-1,0,grid_v_res-1);
+    }
    
     Vec2f u_range;
     Vec2f v_range;

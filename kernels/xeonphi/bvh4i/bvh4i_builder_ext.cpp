@@ -903,6 +903,8 @@ PRINT(CORRECT_numPrims);
 	geom->initializeHalfEdgeStructures();
       }
 
+    global_lazyMem64BytesBlocks = 0;
+
     BVH4iBuilder::build(threadIndex,threadCount);
   }
 
@@ -997,6 +999,8 @@ PRINT(CORRECT_numPrims);
 
     SubdivPatch1 *acc = (SubdivPatch1*)org_accel;
 
+    unsigned int local_lazyMem64BytesBlocks = 0;
+
     for (; g<numTotalGroups; g++) 
       {
 	if (unlikely(scene->get(g) == NULL)) continue;
@@ -1015,6 +1019,8 @@ PRINT(CORRECT_numPrims);
 					  i);
 	    	    
 	    const BBox3fa bounds = acc[currentID].bounds();
+	    
+	    local_lazyMem64BytesBlocks += acc[currentID].getSubTreeSize();
 
 	    const mic_f bmin = broadcast4to16f(&bounds.lower); 
 	    const mic_f bmax = broadcast4to16f(&bounds.upper);
@@ -1043,11 +1049,12 @@ PRINT(CORRECT_numPrims);
     store4f(&bounds.geometry.upper,bounds_scene_max);
 
     global_bounds.extend_atomic(bounds);    
+
+    global_lazyMem64BytesBlocks += local_lazyMem64BytesBlocks;
   }
 
   void BVH4iBuilderSubdivMesh::finalize(const size_t threadIndex, const size_t threadCount)
   {
-    PING;
     if (threadIndex == 0)
       {
 	SubdivPatch1 *__restrict__ const patch_ptr = (SubdivPatch1*)org_accel;
@@ -1056,21 +1063,24 @@ PRINT(CORRECT_numPrims);
 	if (bvh->root != BVH4i::invalidNode)
 	  initializeParentPointers(bvh->root,0,0);
 
-	const size_t new_numAllocated64BytesBlocks = numPrimitives * 500; // FIXME: HACK	
-	if (new_numAllocated64BytesBlocks > bvh->numAllocated64BytesBlocks)
+	const size_t new_lazyMem64BytesBlocks = global_lazyMem64BytesBlocks; 
+	DBG_PRINT(global_lazyMem64BytesBlocks);
+
+	if (new_lazyMem64BytesBlocks > bvh->lazyMemAllocated64BytesBlocks)
 	  {
-	    if (bvh->lazymem) os_free(bvh->lazymem, bvh->numAllocated64BytesBlocks * sizeof(mic_f));
-	    bvh->used64BytesBlocks = 0;
-	    bvh->numAllocated64BytesBlocks = numAllocated64BytesBlocks; 
-	    bvh->lazymem = (mic_f*)os_reserve(sizeof(mic_f) * bvh->numAllocated64BytesBlocks);
+	    if (bvh->lazymem) os_free(bvh->lazymem, bvh->lazyMemAllocated64BytesBlocks * sizeof(mic_f));
+	    bvh->lazyMemAllocated64BytesBlocks = new_lazyMem64BytesBlocks; 
+	    bvh->lazymem = (mic_f*)os_reserve(sizeof(mic_f) * bvh->lazyMemAllocated64BytesBlocks);
 	  }
 
 	bvh->accel = org_accel;
 	accel = (Triangle1*)org_accel;
 
-	DBG_PRINT(bvh->used64BytesBlocks);
-	DBG_PRINT(bvh->numAllocated64BytesBlocks);
-	DBG_PRINT(bvh->numAllocated64BytesBlocks * sizeof(mic_f));
+	bvh->lazyMemUsed64BytesBlocks = 0;
+
+	DBG_PRINT(bvh->lazyMemUsed64BytesBlocks);
+	DBG_PRINT(bvh->lazyMemAllocated64BytesBlocks);
+	DBG_PRINT(bvh->lazyMemAllocated64BytesBlocks * sizeof(mic_f));
 	DBG_PRINT(bvh->root);
 
       }

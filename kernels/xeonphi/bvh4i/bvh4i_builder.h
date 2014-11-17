@@ -254,8 +254,9 @@ namespace embree
   {
   protected:
     void *org_accel;
+    AtomicCounter global_lazyMem64BytesBlocks;
   public:
-    BVH4iBuilderSubdivMesh (BVH4i* bvh, void* geometry) : BVH4iBuilder(bvh,geometry),org_accel(NULL) {}
+    BVH4iBuilderSubdivMesh (BVH4i* bvh, void* geometry) : BVH4iBuilder(bvh,geometry),org_accel(NULL),global_lazyMem64BytesBlocks(0) {}
 
     virtual void build            (const size_t threadIndex, const size_t threadCount);
     virtual void allocateData     (const size_t threadCount, const size_t totalNumPrimitives);
