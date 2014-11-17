@@ -316,11 +316,6 @@ namespace embree
     for (size_t i=0; i<vertex_creases.size(); i++) 
       full_vertex_crease_weights[vertex_creases[i]] = vertex_crease_weights[i];
 
-    /* calculate full hole vector */
-    full_holes.resize(numFaces);
-    for (size_t i=0; i<full_holes.size(); i++) full_holes[i] = 0;
-    for (size_t i=0; i<holes.size()     ; i++) full_holes[holes[i]] = 1;
-
     double t0 = getSeconds();
 
     /* calculate set of holes */

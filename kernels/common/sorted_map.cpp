@@ -14,44 +14,55 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#pragma once
-
-#include "default.h"
-#include "sort.h"
-#include "common/buffer.h"
+#include "sorted_map.h"
 
 namespace embree
 {
-  template<typename T>
-  class sorted_vector
+  struct SortedMapRegressionTest : public RegressionTest
   {
-  public:
-    sorted_vector () {}
-
-    __forceinline void init(const std::vector<T>& in) 
+    SortedMapRegressionTest(const char* name) : name(name) {
+      registerRegressionTest(this);
+    }
+    
+    bool operator() ()
     {
-      vec.resize(in.size());
-      temp.resize(in.size());
-      radix_sort<T>(&in[0],&temp[0],&vec[0],in.size());
+      bool passed = true;
+      printf("%s::%s ... ",TOSTRING(isa),name);
+      fflush(stdout);
+
+      /* create key/value vectors with random numbers */
+      const size_t N = 10000;
+      std::vector<uint32> keys(N);
+      std::vector<uint32> vals(N);
+      for (size_t i=0; i<N; i++) {
+	keys[i] = 2*::random();
+	vals[i] = 2*::random();
+      }
+      
+      /* create map */
+      sorted_map<uint32,uint32> map;
+      map.init(keys,vals);
+
+      /* check that all keys are properly mapped */
+      for (size_t i=0; i<N; i++) {
+	const uint32* val = map.lookup(keys[i]);
+	passed &= val && (*val == vals[i]);
+      }
+
+      /* check that these keys are not in the map */
+      for (size_t i=0; i<N; i++) {
+	passed &= !map.lookup(keys[i]+1);
+      }
+
+      /* output if test passed or not */
+      if (passed) printf("[passed]\n");
+      else        printf("[failed]\n");
+      
+      return passed;
     }
 
-    __forceinline void init(const BufferT<T>& in) 
-    {
-      vec.resize(in.size());
-      temp.resize(in.size());
-      for (size_t i=0; i<in.size(); i++) temp[i] = in[i]; // FIXME: parallel copy
-      radix_sort<T>(&temp[0],&temp[0],&vec[0],in.size()); // FIXME: support BufferT in radix sort source
-    }
-
-    __forceinline bool lookup(const T& elt) const
-    {
-      typename std::vector<T>::const_iterator i = std::lower_bound(vec.begin(), vec.end(), elt);
-      if (i == vec.end()) return false;
-      return *i == elt;
-    }
-
-  private:
-    std::vector<T> vec;
-    std::vector<T> temp;
+    const char* name;
   };
+
+  SortedMapRegressionTest sorted_map_regression_test("SortedMapRegressionTest");
 }
