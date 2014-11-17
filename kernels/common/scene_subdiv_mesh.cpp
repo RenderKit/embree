@@ -321,10 +321,10 @@ namespace embree
     for (size_t i=0; i<full_holes.size(); i++) full_holes[i] = 0;
     for (size_t i=0; i<holes.size()     ; i++) full_holes[holes[i]] = 1;
 
+    double t0 = getSeconds();
+
     /* calculate set of holes */
     holeSet.init(holes);
-
-    double t0 = getSeconds();
 
     /* create all half edges */
     for (size_t f=0; f<numFaces; f++) 
@@ -354,8 +354,8 @@ namespace embree
         edge->edge_crease_weight = edge_crease_weight;
         edge->vertex_crease_weight = full_vertex_crease_weights[startVertex];
         edge->edge_level = edge_level;
-        if (full_holes[f]) halfEdges0[e+de] = KeyHalfEdge(-1,edge);
-        else               halfEdges0[e+de] = KeyHalfEdge(key,edge);
+        if (holeSet.lookup(f)) halfEdges0[e+de] = KeyHalfEdge(-1,edge);
+        else                   halfEdges0[e+de] = KeyHalfEdge(key,edge);
       }
     }
 
@@ -379,8 +379,6 @@ namespace embree
 #endif
 
     double t1 = getSeconds();
-    PRINT(numEdges);
-    std::cout << "half edge generation = " << 1E-6*double(numEdges)/(t1-t0) << "M/s" << std::endl;
 
     /* print statistics in verbose mode */
     if (g_verbose >= 1) 
@@ -394,6 +392,7 @@ namespace embree
         else                              numIrregularFaces++;
       }
     
+      std::cout << "half edge generation = " << 1E-6*double(numEdges)/(t1-t0) << "M/s" << std::endl;
       std::cout << "numFaces = " << numFaces << ", " 
                 << "numRegularFaces = " << numRegularFaces << " (" << 100.0f * numRegularFaces / numFaces << "%), " 
                 << "numIrregularFaces " << numIrregularFaces << " (" << 100.0f * numIrregularFaces / numFaces << "%) " << std::endl;
