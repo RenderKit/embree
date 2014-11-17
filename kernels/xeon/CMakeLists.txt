@@ -34,9 +34,6 @@ ENDIF()
 
 ADD_ISPC_LIBRARY(embree SHARED
   ../common/stat.cpp
-  ../common/sort.cpp
-  ../common/sorted_vector.cpp
-  ../common/sorted_map.cpp
   ../common/globals.cpp
   ../common/alloc.cpp
   ../common/tasksys.cpp
@@ -52,6 +49,10 @@ ADD_ISPC_LIBRARY(embree SHARED
   ../common/scene_bezier_curves.cpp
   ../common/scene_subdiv_mesh.cpp
   ../common/raystream_log.cpp
+
+  ../algorithms/sort.cpp
+  ../algorithms/sorted_vector.cpp
+  ../algorithms/sorted_map.cpp
 
   builders/bezierrefgen.cpp
   builders/primrefgen.cpp

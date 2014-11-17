@@ -18,8 +18,8 @@
 
 #include "common/geometry.h"
 #include "common/buffer.h"
-#include "common/sorted_map.h"
-#include "common/sorted_vector.h"
+#include "algorithms/sorted_map.h"
+#include "algorithms/sorted_vector.h"
 
 namespace embree
 {

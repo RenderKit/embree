@@ -27,15 +27,11 @@
 #include "sys/taskscheduler.h"
 #include "sys/thread.h"
 #include "raystream_log.h"
-#include "common/sort.h" // FIXME: remove
-
 
 #define TRACE(x) //std::cout << #x << std::endl;
 
 namespace embree
 {
-  ParallelRadixSort bla; // FIXME: remove
-
 #define CATCH_BEGIN try {
 #define CATCH_END                                                       \
   } catch (std::bad_alloc&) {                                           \

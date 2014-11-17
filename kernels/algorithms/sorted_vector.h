@@ -16,9 +16,9 @@
 
 #pragma once
 
-#include "default.h"
-#include "sort.h"
+#include "common/default.h"
 #include "common/buffer.h"
+#include "sort.h"
 
 namespace embree
 {

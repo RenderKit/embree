@@ -38,9 +38,10 @@ ADD_ISPC_LIBRARY(embree_xeonphi SHARED
   ../common/scene_bezier_curves.cpp
   ../common/scene_subdiv_mesh.cpp
   ../common/raystream_log.cpp
-  ../common/sort.cpp
-  ../common/sorted_vector.cpp
-  ../common/sorted_map.cpp
+
+  ../algorithms/sort.cpp
+  ../algorithms/sorted_vector.cpp
+  ../algorithms/sorted_map.cpp
   
   geometry/triangle1.cpp
   geometry/instance_intersector1.cpp
