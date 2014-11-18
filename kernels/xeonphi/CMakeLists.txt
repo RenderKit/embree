@@ -47,7 +47,6 @@ ADD_ISPC_LIBRARY(embree_xeonphi SHARED
   geometry/triangle1.cpp
   geometry/instance_intersector1.cpp
   geometry/instance_intersector16.cpp
-  geometry/subdiv_intersector16.cpp
 
   builders/parallel_builder.cpp
 
