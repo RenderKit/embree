@@ -18,10 +18,12 @@
 
 #include "common/default.h"
 #include "common/buffer.h"
-#include "sort.h"
+#include "algorithms/sort.h"
+#include "algorithms/parallel_for.h"
 
 namespace embree
 {
+  /*! implementation of a map key/value map with parallel construction */
   template<typename Key, typename Val>
   class pmap
   {
@@ -42,32 +44,55 @@ namespace embree
     };
 
   public:
+    
+    /*! parallel map constructors */
     pmap () {}
 
     template<typename SourceKey>
-    __forceinline void init(const std::vector<SourceKey>& keys, const std::vector<Val>& values) 
-    {
-      assert(keys.size() == values.size());
-      vec.resize(keys.size());
-      temp.resize(keys.size());
-      for (size_t i=0; i<keys.size(); i++) {
-	temp[i] = KeyValue((Key)keys[i],values[i]); // FIXME: parallel copy
-      }
-      radix_sort<KeyValue,Key>(&temp[0],&temp[0],&vec[0],keys.size());
-    }
+      pmap (const std::vector<SourceKey>& keys, const std::vector<Val>& values) { init(keys,values); }
 
     template<typename SourceKey>
-    __forceinline void init(const BufferT<SourceKey>& keys, const BufferT<Val>& values) 
+      pmap (const BufferT<SourceKey>& keys, const BufferT<Val>& values) { init(keys,values); }
+
+    /*! initialized the parallel map from a vector with keys and values */
+    template<typename SourceKey>
+      void init(const std::vector<SourceKey>& keys, const std::vector<Val>& values) 
     {
+      /* reserve sufficient space for all data */
       assert(keys.size() == values.size());
       vec.resize(keys.size());
       temp.resize(keys.size());
-      for (size_t i=0; i<keys.size(); i++) {
-	temp[i] = KeyValue((Key)keys[i],values[i]); // FIXME: parallel copy
-      }
+
+      /* generate key/value pairs */
+      parallel_for( size_t(0), keys.size(), size_t(4*4096), [=](const range<size_t>& r) {
+	for (size_t i=r.begin(); i<r.end(); i++)
+	  temp[i] = KeyValue((Key)keys[i],values[i]);
+      });
+
+      /* perform parallel radix sort of the key/value pairs */
       radix_sort<KeyValue,Key>(&temp[0],&temp[0],&vec[0],keys.size());
     }
 
+    /*! initialized the parallel map from user buffers with keys and values */
+    template<typename SourceKey>
+      void init(const BufferT<SourceKey>& keys, const BufferT<Val>& values) 
+    {
+      /* reserve sufficient space for all data */
+      assert(keys.size() == values.size());
+      vec.resize(keys.size());
+      temp.resize(keys.size());
+      
+      /* generate key/value pairs */
+      parallel_for( size_t(0), keys.size(), size_t(4*4096), [=](const range<size_t>& r) {
+	for (size_t i=r.begin(); i<r.end(); i++)
+	  temp[i] = KeyValue((Key)keys[i],values[i]);
+      });
+
+      /* perform parallel radix sort of the key/value pairs */
+      radix_sort<KeyValue,Key>(&temp[0],&temp[0],&vec[0],keys.size());
+    }
+
+    /*! Returns a pointer to the value associated with the specified key. The pointer will be NULL of the key is not contained in the map. */
     __forceinline const Val* lookup(const Key& key) const 
     {
       typename std::vector<KeyValue>::const_iterator i = std::lower_bound(vec.begin(), vec.end(), key);
@@ -76,6 +101,7 @@ namespace embree
       return &i->val;
     }
 
+    /*! If the key is in the map, the function returns the value associated with the key, otherwise it returns the default value. */
     __forceinline Val lookup(const Key& key, const Val& def) const 
     {
       typename std::vector<KeyValue>::const_iterator i = std::lower_bound(vec.begin(), vec.end(), key);
@@ -84,8 +110,13 @@ namespace embree
       return i->val;
     }
 
+    /*! cleans temporary state required for re-construction */
+    void cleanup() {
+      temp.clear();
+    }
+
   private:
-    std::vector<KeyValue> vec;
-    std::vector<KeyValue> temp;
+    std::vector<KeyValue> vec;    //!< vector containing sorted elements
+    std::vector<KeyValue> temp;   //!< temporary vector required during construction only
   };
 }

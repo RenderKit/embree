@@ -72,7 +72,7 @@ namespace embree
       return *i == elt;
     }
 
-    /*! cleans temporary state required for construction */
+    /*! cleans temporary state required for re-construction */
     void cleanup() {
       temp.clear();
     }

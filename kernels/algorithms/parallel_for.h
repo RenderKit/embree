@@ -76,4 +76,16 @@ namespace embree
   {
     ParallelForTask<Index,Func>(first,last,step,f);
   }
+
+  template<typename Index, typename Func>
+    __forceinline void sequential_for( const Index first, const Index last, const Func& f) 
+  {
+    f(range<Index>(first,last));
+  }
+
+  template<typename Index, typename Func>
+    __forceinline void sequential_for( const Index first, const Index last, const Index step, const Func& f)
+  {
+    f(range<Index>(first,last));
+  }
 }
