@@ -20,6 +20,9 @@
 
 namespace embree
 {
+  /*! Implementation of parallel prefix operations (e.g. parallel
+   *  prefix sums). The prefix operations start with the identity
+   *  (e.g. zero for prefix sums). */
   template<typename SrcArray, typename DstArray, typename Ty, typename Op>
   class ParallelPrefixOp
   {
@@ -31,6 +34,7 @@ namespace embree
     class Task
     {
     public:
+
       Task (ParallelPrefixOp* parent, const SrcArray& src, DstArray& dst, const size_t N, const Op op, const Ty id)
 	: parent(parent), src(src), dst(dst), N(N), op(op), id(id)
       {
@@ -47,25 +51,27 @@ namespace embree
 	  const size_t numThreads = min(scheduler->getNumThreads(),MAX_THREADS);
 	  
 	  /* first calculate range for each block */
-	  scheduler->dispatchTask(task_count,this,0,numThreads);
+	  scheduler->dispatchTask(task_sum,this,0,numThreads);
 	  
 	  /* now calculate prefix_op for each block */
 	  scheduler->dispatchTask(task_prefix_op,this,0,numThreads);
 	}
       }
       
-      void count(const size_t threadIndex, const size_t threadCount)
+      /* task that sums up a block of elements */
+      void sum(const size_t threadIndex, const size_t threadCount)
       {
 	const size_t start = (threadIndex+0)*N/threadCount;
 	const size_t end   = (threadIndex+1)*N/threadCount;
 	
-	Ty count = id;
+	Ty sum = id;
 	for (size_t i=start; i<end; i++) 
-	  count = op(count,src[i]);
+	  sum = op(sum,src[i]);
 	
-	parent->state[threadIndex] = count;
+	parent->state[threadIndex] = sum;
       }
 
+      /* task that calculates the prefix operation for a block of elements */
       void prefix_op(const size_t threadIndex, const size_t threadCount)
       {
 	const size_t start = (threadIndex+0)*N/threadCount;
@@ -85,8 +91,8 @@ namespace embree
 	}
       }
       
-      static void task_count (void* data, const size_t threadIndex, const size_t threadCount) { 
-	((Task*)data)->count(threadIndex,threadCount);                          
+      static void task_sum (void* data, const size_t threadIndex, const size_t threadCount) { 
+	((Task*)data)->sum(threadIndex,threadCount);                          
       }
       
       static void task_prefix_op (void* data, const size_t threadIndex, const size_t threadCount) { 
@@ -95,11 +101,11 @@ namespace embree
 
     private:
       ParallelPrefixOp* const parent;
-      const SrcArray& src;
-      DstArray& dst;
-      const size_t N;
-      const Op op;
-      const Ty id;
+      const SrcArray& src;               //!< source array
+      DstArray& dst;                     //!< destination array
+      const size_t N;                    //!< number of elements in the arrays
+      const Op op;                       //!< operation to use for prefix sum
+      const Ty id;                       //!< identity of the operation
     };
 
     void operator() (const SrcArray src, DstArray& dst, const size_t N, const Op op, const Ty id) {
@@ -115,7 +121,7 @@ namespace embree
     Ty operator()(const Ty& a, const Ty& b) const { return a+b; }
   };
 
-
+  /*! parallel calculation of prefix sums */
   template<typename SrcArray, typename DstArray>
   __forceinline void parallel_prefix_sum(const SrcArray& src, DstArray& dst, size_t N) 
   {
