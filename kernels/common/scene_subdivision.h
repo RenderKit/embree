@@ -1481,28 +1481,6 @@ namespace embree
 #endif
 
 
-    __forceinline BBox3fa getDiscreteTessellationBounds(const float edge_levels[4]) const
-    {
-      const unsigned int grid_u_res = max(ceilf(edge_levels[0]),ceilf(edge_levels[2]))+1; // n segments -> n+1 points
-      const unsigned int grid_v_res = max(ceilf(edge_levels[1]),ceilf(edge_levels[3]))+1;
-
-      const size_t grid_size = (grid_u_res*grid_v_res+15)&(-16);
-
-      assert(grid_size > 0);
-      assert(grid_size % 16 == 0);
-
-      __aligned(64) float u_array[grid_size];
-      __aligned(64) float v_array[grid_size];
-
-      gridUVTessellator(edge_levels,grid_u_res,grid_v_res,u_array,v_array);
-
-      BBox3fa bounds ( empty );
-      
-      for (size_t i=0;i<grid_size;i++)
-	bounds.extend( eval( u_array[i], v_array[i] ) );
-      return bounds;      
-    }
-
   };
 
 
@@ -1940,28 +1918,6 @@ namespace embree
       
       return res;
 
-    }
-
-    __forceinline BBox3fa getDiscreteTessellationBounds(const float edge_levels[4]) const
-    {
-      const unsigned int grid_u_res = max(ceilf(edge_levels[0]),ceilf(edge_levels[2]))+1; // n segments -> n+1 points
-      const unsigned int grid_v_res = max(ceilf(edge_levels[1]),ceilf(edge_levels[3]))+1;
-
-      const size_t grid_size = (grid_u_res*grid_v_res+15)&(-16);
-
-      assert(grid_size > 0);
-      assert(grid_size % 16 == 0);
-
-      __aligned(64) float u_array[grid_size];
-      __aligned(64) float v_array[grid_size];
-
-      gridUVTessellator(edge_levels,grid_u_res,grid_v_res,u_array,v_array);
-
-      BBox3fa bounds ( empty );
-      
-      for (size_t i=0;i<grid_size;i++)
-	bounds.extend( eval( u_array[i], v_array[i] ) );
-      return bounds;      
     }
 
    __forceinline BBox3fa bounds() const

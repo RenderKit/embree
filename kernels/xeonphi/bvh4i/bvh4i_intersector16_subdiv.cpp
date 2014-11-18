@@ -49,9 +49,13 @@ namespace embree
 			  const unsigned int v_start,
 			  const unsigned int v_end)
     {
-      const unsigned int u_size = u_end - u_start;
-      const unsigned int v_size = v_end - v_start;
+      const unsigned int u_size = u_end-u_start+1;
+      const unsigned int v_size = v_end-v_start+1;
+
       
+      assert(u_size >= 1);
+      assert(v_size >= 1);
+
 #if 0
       DBG_PRINT(u_start);
       DBG_PRINT(u_end);
@@ -61,19 +65,19 @@ namespace embree
 
       DBG_PRINT(u_size);
       DBG_PRINT(v_size);
+
 #endif
       if (u_size <= 4 && v_size <= 4)
 	{
+
 	  assert(u_size*v_size <= 16);
 
-	  assert(u_size >= 1);
-	  assert(v_size >= 1);
 
-	  const unsigned int currentIndex = bvh->used64BytesBlocks.add(2);
-	  if (currentIndex + 2 > bvh->numAllocated64BytesBlocks) 
+	  const unsigned int currentIndex = bvh->lazyMemUsed64BytesBlocks.add(2);
+	  if (currentIndex + 2 > bvh->lazyMemAllocated64BytesBlocks) 
 	    {
 	      DBG_PRINT(currentIndex);
-	      DBG_PRINT(bvh->numAllocated64BytesBlocks);
+	      DBG_PRINT(bvh->lazyMemUsed64BytesBlocks);
 	      FATAL("alloc");
 	    }
 
@@ -83,8 +87,8 @@ namespace embree
 	  leaf_u_array = mic_f::inf();
 	  leaf_v_array = mic_f::inf();
 
-	  for (unsigned int v=v_start;v<v_end;v++)
-	    for (unsigned int u=u_start;u<u_end;u++)
+	  for (unsigned int v=v_start;v<=v_end;v++)
+	    for (unsigned int u=u_start;u<=u_end;u++)
 	      {
 		const unsigned int local_v = v - v_start;
 		const unsigned int local_u = u - u_start;
@@ -114,8 +118,8 @@ namespace embree
 	  const Vec3fa b_max( reduce_max(leafGridVtx.x), reduce_max(leafGridVtx.y), reduce_max(leafGridVtx.z) );
 
 	  const BBox3fa leafGridBounds( b_min, b_max );
+#if 0	      
 
-#if 0
 	  DBG_PRINT(leafGridVtx.x);
 	  DBG_PRINT(leafGridVtx.y);
 	  DBG_PRINT(leafGridVtx.z);
@@ -123,15 +127,15 @@ namespace embree
 
 #endif
 	  createSubPatchBVH4iLeaf( curNode, currentIndex);
-
+	  
 	  return leafGridBounds;
 	}
 
       /* allocate new bvh4i node */
       const size_t num64BytesBlocksPerNode = 2;
-      const size_t currentIndex = bvh->used64BytesBlocks.add(num64BytesBlocksPerNode);
+      const size_t currentIndex = bvh->lazyMemUsed64BytesBlocks.add(num64BytesBlocksPerNode);
 
-      if (currentIndex + num64BytesBlocksPerNode >= bvh->numAllocated64BytesBlocks)
+      if (currentIndex + num64BytesBlocksPerNode >= bvh->lazyMemAllocated64BytesBlocks)
 	{
 	  FATAL("not enough bvh node space allocated");
 	}
@@ -142,15 +146,15 @@ namespace embree
 
       node.setInvalid();
 
-      const unsigned int u_mid = (u_start+u_end)/2; // FIXME: just split in two
+      const unsigned int u_mid = (u_start+u_end)/2;
       const unsigned int v_mid = (v_start+v_end)/2;
 
 
-      const unsigned int subtree_u_start[4] = { u_start,u_mid,u_mid,u_start };
-      const unsigned int subtree_u_end  [4] = { u_mid+1,u_end,u_end,u_mid+1 };
+      const unsigned int subtree_u_start[4] = { u_start ,u_mid ,u_mid ,u_start };
+      const unsigned int subtree_u_end  [4] = { u_mid   ,u_end ,u_end ,u_mid };
 
-      const unsigned int subtree_v_start[4] = { v_start,v_start,v_mid,v_mid };
-      const unsigned int subtree_v_end[4]   = { v_mid+1,v_mid+1,v_end,v_end };
+      const unsigned int subtree_v_start[4] = { v_start ,v_start ,v_mid ,v_mid};
+      const unsigned int subtree_v_end  [4] = { v_mid   ,v_mid   ,v_end ,v_end };
 
 
       /* create four subtrees */
@@ -179,6 +183,12 @@ namespace embree
     {
 
       if (unlikely(patch.bvh4i_subtree_root != BVH4i::invalidNode)) return;
+
+      
+#if 0
+      DBG_PRINT(patch.grid_u_res);
+      DBG_PRINT(patch.grid_v_res);
+#endif
 
 #if 0
       const unsigned int build_state = atomic_add((atomic_t*)&patch.under_construction,+1);
@@ -220,14 +230,26 @@ namespace embree
 				      u_array,
 				      v_array,
 				      0,
-				      patch.grid_u_res,
+				      patch.grid_u_res-1,
 				      0,
-				      patch.grid_v_res);
+				      patch.grid_v_res-1);
 
 
 
       /* release lock */
       //const unsigned int last_index = atomic_add((atomic_t*)&patch.under_construction,-1);
+
+
+#if 1
+      //numLazyBuildPatches++;
+      //DBG_PRINT( patch.grid_u_res );
+      //DBG_PRINT( patch.grid_v_res );
+      //DBG_PRINT( numLazyBuildPatches );
+      DBG_PRINT( bvh->lazyMemUsed64BytesBlocks);
+      DBG_PRINT( bvh->lazyMemAllocated64BytesBlocks );
+      DBG_PRINT( 100.0f * bvh->lazyMemUsed64BytesBlocks / bvh->lazyMemAllocated64BytesBlocks );
+
+#endif
 
     }
 
@@ -564,14 +586,6 @@ namespace embree
 		      /* build sub-patch bvh4i */
 		      mtx.lock();
 		      initLazySubdivTree(subdiv_patch,bvh);
-
-		      numLazyBuildPatches++;
-
-#if 1
-		      DBG_PRINT( numLazyBuildPatches );
-		      DBG_PRINT( bvh->used64BytesBlocks);
-		      DBG_PRINT( bvh->numAllocated64BytesBlocks );
-#endif
 
 		      mtx.unlock();
 
