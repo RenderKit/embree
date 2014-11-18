@@ -520,8 +520,12 @@ namespace embree
       else             return coarse-(fine-(x))*coarse/fine;
     }
 
-    int stitch(const int x, const int fine, const int coarse) {
+    int stitch3(const int x, const int fine, const int coarse) {
       return x*coarse/fine;
+    }
+
+    int stitch(const int x, const int fine, const int coarse) {
+      return (2*x+1)*coarse/(2*fine);
     }
 
     const BBox3fa build(Scene* scene, const GregoryPatch& patch,
