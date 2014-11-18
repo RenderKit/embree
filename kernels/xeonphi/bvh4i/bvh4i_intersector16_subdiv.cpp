@@ -215,13 +215,7 @@ namespace embree
 				      0,
 				      patch.grid_v_res-1);
 
-
-
-      /* release lock */
-      //const unsigned int last_index = atomic_add((atomic_t*)&patch.under_construction,-1);
-
-
-#if 1
+#if DEBUG
       //numLazyBuildPatches++;
       //DBG_PRINT( patch.grid_u_res );
       //DBG_PRINT( patch.grid_v_res );
@@ -229,11 +223,17 @@ namespace embree
       mtx.lock();
       DBG_PRINT( bvh->lazyMemUsed64BytesBlocks);
       DBG_PRINT( bvh->lazyMemAllocated64BytesBlocks );
-      DBG_PRINT( 100.0f * bvh->lazyMemUsed64BytesBlocks / bvh->lazyMemAllocated64BytesBlocks );
+      const size_t size_allocated_lazymem = bvh->lazyMemAllocated64BytesBlocks * sizeof(mic_f);
+      const size_t size_used_lazymem      = bvh->lazyMemUsed64BytesBlocks * sizeof(mic_f);
+
+      std::cout << "lazymem: " << 100.0f * size_used_lazymem / size_allocated_lazymem << "% used of " <<  size_allocated_lazymem << " bytes allocated" << std::endl;
+
       mtx.unlock();
 #endif
       /* build done */
       patch.bvh4i_subtree_root = subtree_root;
+
+      /* release lock */
       atomic_add((volatile atomic_t*)&patch.under_construction,-1);
     }
 
