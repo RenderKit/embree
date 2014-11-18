@@ -77,6 +77,12 @@ namespace embree
       temp.clear();
     }
 
+    /*! clears all state */
+    void clear() {
+      vec.clear();
+      temp.clear();
+    }
+
   private:
     std::vector<T> vec;   //!< vector containing sorted elements
     std::vector<T> temp;  //!< temporary vector required during construction only

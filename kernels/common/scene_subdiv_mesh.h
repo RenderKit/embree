@@ -302,12 +302,16 @@ namespace embree
     /*! Half edge structure. */
     std::vector<HalfEdge> halfEdges;
 
+    /*! set with all holes */
+    pset<uint32> holeSet;
+
+    /*! the following data is only required during construction of the
+     *  half edge structure and can be cleared for static scenes */
+  private:
+
     /*! two arrays used to sort the half edges */
     std::vector<KeyHalfEdge> halfEdges0;
     std::vector<KeyHalfEdge> halfEdges1;
-
-    /*! set with all holes */
-    pset<uint32> holeSet;
 
     /*! map with all vertex creases */
     pmap<uint32,float> vertexCreaseMap;
@@ -315,6 +319,8 @@ namespace embree
     /*! map with all edge creases */
     pmap<uint64,float> edgeCreaseMap;
     
+  private: // FIXME: remove all these
+
     /*! fast lookup table to check of a face is a hole */
     std::vector<bool> full_holes;
   };

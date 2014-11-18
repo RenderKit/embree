@@ -347,8 +347,6 @@ namespace embree
     /* sort half edges to find adjacent edges */
     radix_sort_u64(&halfEdges0[0],&halfEdges0[0],&halfEdges1[0],numEdges);
 
-#if 1
-    
     /* link all adjacent pairs of edges */
     parallel_for( size_t(0), numEdges, size_t(4096), [=](const range<size_t>& r) 
     {
@@ -377,30 +375,16 @@ namespace embree
 	e+=N;
       }
     });
-    
-#else
 
-    /* link all adjacent edges */
-    size_t e=0; 
-    while (e<numEdges)
+    /* cleanup some state for static scenes */
+    if (parent->isStatic()) 
     {
-      const uint64 key = halfEdges1[e].key;
-      if (key == -1) break;
-      int N=1; while (e+N<numEdges && halfEdges1[e+N].key == key) N++;
-      if (N == 1) {
-      }
-      else if (N == 2) {
-        halfEdges1[e+0].edge->setOpposite(halfEdges1[e+1].edge);
-        halfEdges1[e+1].edge->setOpposite(halfEdges1[e+0].edge);
-      } else {
-	for (size_t i=0; i<N; i++) {
-	  halfEdges1[e+i].edge->vertex_crease_weight = inf;
-	  halfEdges1[e+i].edge->next()->vertex_crease_weight = inf;
-	}
-      }
-      e+=N;
+      holeSet.cleanup();
+      halfEdges0.clear();
+      halfEdges1.clear();
+      vertexCreaseMap.clear();
+      edgeCreaseMap.clear();
     }
-#endif
 
 #endif
 
