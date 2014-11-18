@@ -241,12 +241,14 @@ namespace embree
 
 
 #if 1
-      numLazyBuildPatches++;
-      DBG_PRINT( patch.grid_u_res );
-      DBG_PRINT( patch.grid_v_res );
-      DBG_PRINT( numLazyBuildPatches );
+      //numLazyBuildPatches++;
+      //DBG_PRINT( patch.grid_u_res );
+      //DBG_PRINT( patch.grid_v_res );
+      //DBG_PRINT( numLazyBuildPatches );
       DBG_PRINT( bvh->lazyMemUsed64BytesBlocks);
       DBG_PRINT( bvh->lazyMemAllocated64BytesBlocks );
+      DBG_PRINT( 100.0f * bvh->lazyMemUsed64BytesBlocks / bvh->lazyMemAllocated64BytesBlocks );
+
 #endif
 
     }

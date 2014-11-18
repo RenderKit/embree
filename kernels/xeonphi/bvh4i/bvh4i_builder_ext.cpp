@@ -910,13 +910,16 @@ PRINT(CORRECT_numPrims);
 
   void BVH4iBuilderSubdivMesh::allocateData(const size_t threadCount, const size_t totalNumPrimitives)
   {
+    /* per core filling requires second array for paritioning -> disabled */
+    enablePerCoreWorkQueueFill = false; 
+
     size_t numPrimitivesOld = numPrimitives;
     numPrimitives = totalNumPrimitives;
     if (numPrimitivesOld != numPrimitives)
       {
 	const size_t numPrims = numPrimitives+4;
 	const size_t minAllocNodes = (threadCount+1) * ALLOCATOR_NODE_BLOCK_SIZE; 
-	const size_t numNodes = (size_t)((numPrims+3)/2) + minAllocNodes;
+	const size_t numNodes = (size_t)((numPrims+3)/4) + minAllocNodes;
 
 #if DEBUG
 	DBG_PRINT( numNodes * sizeof(BVH4i::Node) );
@@ -934,7 +937,7 @@ PRINT(CORRECT_numPrims);
       }
 
     org_accel = accel;
-    accel = (Triangle1*)((char*)node + sizeof(BVH4i::Node) * 128);
+    accel = (Triangle1*)((char*)node + sizeof(BVH4i::Node) * 128 * 2);
   }
 
 
@@ -1059,7 +1062,7 @@ PRINT(CORRECT_numPrims);
 	SubdivPatch1 *__restrict__ const patch_ptr = (SubdivPatch1*)org_accel;
 
 	if (bvh->root != BVH4i::invalidNode)
-	  initializeParentPointers(bvh->root,0,0);
+	  processLeaves(bvh->root,0,0);
 
 	const size_t new_lazyMem64BytesBlocks = global_lazyMem64BytesBlocks; 
 	DBG_PRINT(global_lazyMem64BytesBlocks);
@@ -1076,6 +1079,9 @@ PRINT(CORRECT_numPrims);
 
 	bvh->lazyMemUsed64BytesBlocks = 0;
 
+	DBG_PRINT(atomicID);
+	DBG_PRINT(bvh->numAllocated64BytesBlocks);
+
 	DBG_PRINT(bvh->lazyMemUsed64BytesBlocks);
 	DBG_PRINT(bvh->lazyMemAllocated64BytesBlocks);
 	DBG_PRINT(bvh->lazyMemAllocated64BytesBlocks * sizeof(mic_f));
@@ -1084,16 +1090,20 @@ PRINT(CORRECT_numPrims);
       }
   }
 
-  void BVH4iBuilderSubdivMesh::initializeParentPointers(const BVH4i::NodeRef &ref,
-							const BVH4i::NodeRef parent,
-							const unsigned int local_index)
+  void BVH4iBuilderSubdivMesh::processLeaves(const BVH4i::NodeRef &ref,
+					     const BVH4i::NodeRef parent,
+					     const unsigned int local_index)
   {    
     if (unlikely(ref.isLeaf()))
       {
 
 	const unsigned int currentIndex = atomicID.add(2);
 	if (currentIndex + 2 >= numAllocated64BytesBlocks)
-	  FATAL("not enough bvh node space allocated");
+	  {
+	    DBG_PRINT(currentIndex);
+	    DBG_PRINT(numAllocated64BytesBlocks);
+	    FATAL("not enough bvh node space allocated");
+	  }
 	BVH4i::NodeRef newNodeRef;
 	createBVH4iNode<2>(newNodeRef,currentIndex);
 
@@ -1128,7 +1138,7 @@ PRINT(CORRECT_numPrims);
     for (size_t i=0;i<BVH4i::N;i++)
       {
 	if (n->child(i) == BVH4i::invalidNode) break;
-	initializeParentPointers( n->child(i), ref, i );
+	processLeaves( n->child(i), ref, i );
       }
   }    
 
