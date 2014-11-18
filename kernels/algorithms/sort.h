@@ -67,7 +67,7 @@ namespace embree
       
     private:
       
-      void radixIteration(const Key shift, 
+      void radixIteration(const Key shift, const bool last,
 			  const Ty* __restrict src, Ty* __restrict dst, 
 			  const size_t startID, const size_t endID, 
 			  const size_t threadIndex, const size_t threadCount)
@@ -111,8 +111,8 @@ namespace embree
 	  const Key index = ((Key)src[i] >> shift) & mask;
 	  dst[offset[index]++] = elt;
 	}
-	//if (b < 2) 
-	parent->barrier.wait(threadIndex,threadCount); // FIXME: optimize
+	if (!last) 
+	  parent->barrier.wait(threadIndex,threadCount);
       }
       
       void radixsort(const size_t threadIndex, const size_t numThreads)
@@ -121,20 +121,20 @@ namespace embree
 	const size_t endID   = (threadIndex+1)*N/numThreads;
 
 	if (sizeof(Key) == sizeof(uint32)) {
-	  radixIteration(0*BITS,src,dst,startID,endID,threadIndex,numThreads);
-	  radixIteration(1*BITS,dst,tmp,startID,endID,threadIndex,numThreads);
-	  radixIteration(2*BITS,tmp,dst,startID,endID,threadIndex,numThreads);
+	  radixIteration(0*BITS,0,src,dst,startID,endID,threadIndex,numThreads);
+	  radixIteration(1*BITS,0,dst,tmp,startID,endID,threadIndex,numThreads);
+	  radixIteration(2*BITS,1,tmp,dst,startID,endID,threadIndex,numThreads);
 	}
 	else if (sizeof(Key) == sizeof(uint64))
 	{
 	  Ty* tmp = this->tmp;
 	  Ty* dst = this->dst;
-	  radixIteration(0*BITS,src,dst,startID,endID,threadIndex,numThreads);
+	  radixIteration(0*BITS,0,src,dst,startID,endID,threadIndex,numThreads);
 	  for (uint64 shift=1*BITS; shift<64; shift+=BITS) {
-	    radixIteration(shift,dst,tmp,startID,endID,threadIndex,numThreads);
+	    radixIteration(shift,0,dst,tmp,startID,endID,threadIndex,numThreads);
 	    std::swap(dst,tmp);
 	  }
-	  radixIteration(5*BITS,dst,tmp,startID,endID,threadIndex,numThreads); // required to copy into destination buffer
+	  radixIteration(5*BITS,1,dst,tmp,startID,endID,threadIndex,numThreads); // required to copy into destination buffer
 	}
       }
       
