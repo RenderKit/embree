@@ -129,12 +129,12 @@ namespace embree
 	{
 	  Ty* tmp = this->tmp;
 	  Ty* dst = this->dst;
-	  radixIteration(0,src,dst,startID,endID,threadIndex,numThreads);
-	  radixIteration(BITS,dst,tmp,startID,endID,threadIndex,numThreads);
-	  for (uint64 shift=2*BITS; shift<64; shift+=BITS) {
-	    radixIteration(shift,tmp,dst,startID,endID,threadIndex,numThreads);
+	  radixIteration(0*BITS,src,dst,startID,endID,threadIndex,numThreads);
+	  for (uint64 shift=1*BITS; shift<64; shift+=BITS) {
+	    radixIteration(shift,dst,tmp,startID,endID,threadIndex,numThreads);
 	    std::swap(dst,tmp);
 	  }
+	  radixIteration(5*BITS,dst,tmp,startID,endID,threadIndex,numThreads); // required to copy into destination buffer
 	}
       }
       
