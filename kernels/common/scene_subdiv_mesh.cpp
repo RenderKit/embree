@@ -316,33 +316,36 @@ namespace embree
     edgeCreaseMap.init(edge_creases,edge_crease_weights);
 
     /* create all half edges */
-    for (size_t f=0; f<numFaces; f++) 
+    parallel_for( size_t(0), numFaces, size_t(4096), [=](const range<size_t>& r) 
     {
-      const size_t N = faceVertices[f];
-      const size_t e = (size_t)(faceStartEdge[f]-faceStartEdge[0]);
-
-      for (size_t de=0; de<N; de++)
+      for (size_t f=r.begin(); f<r.end(); f++) 
       {
-        HalfEdge* edge = &halfEdges[e+de];
-        const unsigned int startVertex = vertexIndices[e+de];
-        const unsigned int endVertex   = vertexIndices[e + (de + 1) % N]; // FIXME: optimize %
-        const uint64 key = Edge(startVertex,endVertex);
-
-        float edge_level = 1.0f;
-        if (levels) edge_level = levels[e+de];
-	assert( edge_level >= 0.0f );
-
-        edge->vtx_index = startVertex;
-        edge->next_half_edge_ofs = (de == (N-1)) ? -(N-1) : +1;
-        edge->prev_half_edge_ofs = (de ==     0) ? +(N-1) : -1;
-        edge->opposite_half_edge_ofs = 0;
-        edge->edge_crease_weight = edgeCreaseMap.lookup(key,0.0f);
-        edge->vertex_crease_weight = vertexCreaseMap.lookup(startVertex,0.0f);
-        edge->edge_level = edge_level;
-        if (holeSet.lookup(f)) halfEdges0[e+de] = KeyHalfEdge(-1,edge);
-        else                   halfEdges0[e+de] = KeyHalfEdge(key,edge);
+	const size_t N = faceVertices[f];
+	const size_t e = faceStartEdge[f];
+	
+	for (size_t de=0; de<N; de++)
+	{
+	  HalfEdge* edge = &halfEdges[e+de];
+	  const unsigned int startVertex = vertexIndices[e+de];
+	  const unsigned int endVertex   = vertexIndices[e + (de + 1) % N]; // FIXME: optimize %
+	  const uint64 key = Edge(startVertex,endVertex);
+	  
+	  float edge_level = 1.0f;
+	  if (levels) edge_level = levels[e+de];
+	  assert( edge_level >= 0.0f );
+	  
+	  edge->vtx_index = startVertex;
+	  edge->next_half_edge_ofs = (de == (N-1)) ? -(N-1) : +1;
+	  edge->prev_half_edge_ofs = (de ==     0) ? +(N-1) : -1;
+	  edge->opposite_half_edge_ofs = 0;
+	  edge->edge_crease_weight = edgeCreaseMap.lookup(key,0.0f);
+	  edge->vertex_crease_weight = vertexCreaseMap.lookup(startVertex,0.0f);
+	  edge->edge_level = edge_level;
+	  if (holeSet.lookup(f)) halfEdges0[e+de] = KeyHalfEdge(-1,edge);
+	  else                   halfEdges0[e+de] = KeyHalfEdge(key,edge);
+	}
       }
-    }
+    });
 
     /* sort half edges to find adjacent edges */
     radix_sort_u64(&halfEdges0[0],&halfEdges0[0],&halfEdges1[0],numEdges);
