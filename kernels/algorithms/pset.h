@@ -18,31 +18,53 @@
 
 #include "common/default.h"
 #include "common/buffer.h"
-#include "sort.h"
+#include "algorithms/sort.h"
+#include "algorithms/parallel_for.h"
 
 namespace embree
 {
+  /* implementation of a set of values with parallel construction */
   template<typename T>
   class pset
   {
   public:
-    pset () {}
 
-    __forceinline void init(const std::vector<T>& in) 
+    /*! constructors for the parallel set */
+    pset () {}
+    pset (const std::vector<T>& in) { init(in); }
+    pset (const BufferT<T>    & in) { init(in); }
+
+    /*! initialized the parallel set from a vector */
+    void init(const std::vector<T>& in) 
     {
+      /* reserve sufficient space for all data */
       vec.resize(in.size());
       temp.resize(in.size());
+
+      /* sort the data */
       radix_sort<T>(&in[0],&temp[0],&vec[0],in.size());
     }
 
-    __forceinline void init(const BufferT<T>& in) 
+
+    /*! initialized the parallel set from a user buffer */
+    void init(const BufferT<T>& in) 
     {
+      /* reserve sufficient space for all data */
       vec.resize(in.size());
       temp.resize(in.size());
-      for (size_t i=0; i<in.size(); i++) temp[i] = in[i]; // FIXME: parallel copy
-      radix_sort<T>(&temp[0],&temp[0],&vec[0],in.size()); // FIXME: support BufferT in radix sort source
+
+      /* copy data to temporary array */
+      parallel_for( size_t(0), in.size(), size_t(4*4096), [=](const range<size_t>& r) 
+      {
+	for (size_t i=r.begin(); i<r.end(); i++) 
+	  temp[i] = in[i];
+      });
+
+      /* parallel radix sort of the data */
+      radix_sort<T>(&temp[0],&temp[0],&vec[0],in.size());
     }
 
+    /*! tests if some element is in the set */
     __forceinline bool lookup(const T& elt) const
     {
       typename std::vector<T>::const_iterator i = std::lower_bound(vec.begin(), vec.end(), elt);
@@ -50,8 +72,13 @@ namespace embree
       return *i == elt;
     }
 
+    /*! cleans temporary state required for construction */
+    void cleanup() {
+      temp.clear();
+    }
+
   private:
-    std::vector<T> vec;
-    std::vector<T> temp;
+    std::vector<T> vec;   //!< vector containing sorted elements
+    std::vector<T> temp;  //!< temporary vector required during construction only
   };
 }
