@@ -405,7 +405,7 @@ namespace embree
         else                              numIrregularFaces++;
       }
     
-      std::cout << "half edge generation = " << 1E-6*double(numEdges)/(t1-t0) << "M/s" << std::endl;
+      std::cout << "half edge generation = " << 1000.0*(t1-t0) << "ms, " << 1E-6*double(numEdges)/(t1-t0) << "M/s" << std::endl;
       std::cout << "numFaces = " << numFaces << ", " 
                 << "numRegularFaces = " << numRegularFaces << " (" << 100.0f * numRegularFaces / numFaces << "%), " 
                 << "numIrregularFaces " << numIrregularFaces << " (" << 100.0f * numIrregularFaces / numFaces << "%) " << std::endl;
