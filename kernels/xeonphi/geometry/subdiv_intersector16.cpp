@@ -20,7 +20,6 @@
 #include "geometry/filter.h"
 #include "subdiv_intersector16.h"
 #include "bicubic_bezier_patch.h"
-#include "geometry/subdiv_cache.h"
 #include "bvh4i/bvh4i.h"
 #include "bvh4i/bvh4i_traversal.h"
 
