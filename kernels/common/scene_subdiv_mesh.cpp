@@ -204,7 +204,7 @@ namespace embree
     halfEdges0.resize(numEdges);
     halfEdges1.resize(numEdges);
 
-#if defined(__MIC__)
+#if 0 // defined(__MIC__)
     
     /* calculate start edge of each face */
     faceStartEdge.resize(numFaces);

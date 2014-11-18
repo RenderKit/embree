@@ -158,7 +158,7 @@ namespace embree
     };
     
   private:
-    TyRadixCount radixCount;
+    __aligned(64) TyRadixCount radixCount;
     LinearBarrierActive barrier; // FIXME: should be able to speficy number of threads here
   };
 

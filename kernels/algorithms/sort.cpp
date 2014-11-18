@@ -69,7 +69,7 @@ namespace embree
       /* output if test passed or not */
       if (passed) printf("[passed]\n");
       else        printf("[failed]\n");
-      
+
       return passed;
     }
 
