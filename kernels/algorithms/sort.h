@@ -28,7 +28,14 @@ namespace embree
   {
   public:
 
+#if defined(__MIC__)
+    static const size_t MAX_THREADS = MAX_MIC_THREADS;
+    static const size_t SINGLE_THREAD_THRESHOLD = 150000;
+#else
     static const size_t MAX_THREADS = 32;
+    static const size_t SINGLE_THREAD_THRESHOLD = 3000;
+#endif
+
     static const size_t BITS = 11;
     static const size_t BUCKETS = (1 << BITS);
     typedef unsigned int TyRadixCount[MAX_THREADS][BUCKETS];
@@ -46,7 +53,7 @@ namespace embree
 	: parent(parent), src(src), tmp(tmp), dst(dst), N(N) 
       {
 	/* perform single threaded sort for small N */
-	if (N<3000) 
+	if (N<SINGLE_THREAD_THRESHOLD) 
 	{
 	  /* copy data to destination array */
 	  for (size_t i=0; i<N; i++)

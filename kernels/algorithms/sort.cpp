@@ -51,7 +51,9 @@ namespace embree
 	/* sort numbers */
 	double t0 = getSeconds();
 	for (size_t i=0; i<M; i++)
-	  radix_sort(&src[0],&tmp[0],&dst[0],N);
+	  {
+	    radix_sort(&src[0],&tmp[0],&dst[0],N);
+	  }
 	double t1 = getSeconds();
 	printf("%zu/%3.2fM ",N,1E-6*double(N*M)/(t1-t0));
 	

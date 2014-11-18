@@ -71,8 +71,7 @@ namespace embree
 	const size_t end   = (threadIndex+1)*N/threadCount;
 	
 	Ty sum = id;
-#pragma prefetch 
-	for (size_t i=start; i<end; i++) 
+	for (size_t i=start; i<end; i++)
 	  sum = op(sum,src[i]);
 	
 	parent->state[threadIndex] = sum;
@@ -90,7 +89,6 @@ namespace embree
 	  count += parent->state[i];
 	
 	/* calculate prefix sums for the block */
-#pragma prefetch 
 	for (size_t i=start; i<end; i++) 
 	{
 	  const Ty v = src[i];
