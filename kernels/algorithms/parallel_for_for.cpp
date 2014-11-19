@@ -32,22 +32,22 @@ namespace embree
 
       /* create vector with random numbers */
       size_t sum0 = 0;
-      const size_t M = 4;
-      std::vector<std::vector<size_t> > array2(M);
+      const size_t M = 1000;
+      std::vector<std::unique_ptr<std::vector<size_t> > > array2(M);
       for (size_t i=0; i<M; i++) {
         const size_t N = ::random() % 1024;
-        array2[i].resize(N);
+        array2[i] = std::unique_ptr<std::vector<size_t> >(new std::vector<size_t>(N));
         for (size_t j=0; j<N; j++) 
-          sum0 += array2[i][j] = ::random() % 1024;
+          sum0 += (*array2[i])[j] = ::random();
       }
 
       /* add all numbers using parallel_for_for */
       AtomicCounter sum1 = 0;
-      parallel_for_for( array2, size_t(1), [&](const std::vector<size_t>& v, const range<size_t>& r) 
+      parallel_for_for( array2, size_t(1), [&](std::unique_ptr<std::vector<size_t> >& v, const range<size_t>& r) 
       {
         size_t s = 0;
 	for (size_t i=r.begin(); i<r.end(); i++) 
-	  s += v[i];
+	  s += (*v)[i];
         sum1 += s;
       });
       passed = sum0 == sum1;

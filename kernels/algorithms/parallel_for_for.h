@@ -45,7 +45,7 @@ namespace embree
       size_t sum=0;
       for (size_t i=0; i<M; i++) 
       {
-        const size_t N = array2[i].size();
+        const size_t N = array2[i] ? array2[i]->size() : 0;
         prefix_sum[i] = sum;
         sizes[i] = N;
         sum += N;
@@ -57,8 +57,6 @@ namespace embree
       const size_t threads = scheduler->getNumThreads();
       const size_t blocks  = (K+minStepSize-1)/minStepSize;
       scheduler->dispatchTaskSet(task_for_for,this,min(threads,blocks));
-      //for (size_t i=0; i<min(threads,blocks); i++)
-      //for_for(i,min(threads,blocks),i,min(threads,blocks));
     }
 
     void for_for(const size_t threadIndex, const size_t threadCount, const size_t taskIndex, const size_t taskCount) 

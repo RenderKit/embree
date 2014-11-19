@@ -32,6 +32,32 @@ namespace embree
   class Scene : public Accel
   {
     ALIGNED_CLASS;
+
+  public:
+    template<typename Ty> // FIXME: give motion blur meshes different type to iterate over them here
+    class Iterator
+    {
+    public:
+      Iterator (Scene* scene) 
+        : scene(scene) {}
+
+      __forceinline Ty* operator[] (const size_t i) 
+      {
+        Geometry* geom = scene->geometries[i];
+        if (geom == NULL) return NULL;
+        if (!geom->isEnabled()) return NULL;
+        if (geom->ty != Ty::type) return NULL;
+        return (Ty*) geom;
+      }
+
+      __forceinline size_t size() const {
+        return scene->size();
+      }
+      
+    private:
+      Scene* scene;
+    };
+
   public:
     
     /*! Scene construction */

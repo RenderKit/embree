@@ -24,6 +24,8 @@ namespace embree
   /*! Triangle Mesh */
   struct TriangleMesh : public Geometry
   {
+    static const GeometryTy type = TRIANGLE_MESH;
+
     struct Triangle {
       unsigned int v[3];
     };

@@ -29,6 +29,8 @@ namespace embree
         float x,y,z,r;
       };
 
+      static const GeometryTy type = BEZIER_CURVES;
+
     public:
       BezierCurves (Scene* parent, RTCGeometryFlags flags, size_t numCurves, size_t numVertices, size_t numTimeSteps); 
     

@@ -25,6 +25,7 @@ namespace embree
 {
   struct UserGeometryBase : public Geometry, public AccelSet
   {
+    static const GeometryTy type = USER_GEOMETRY;
     
   public:
     UserGeometryBase (Scene* parent, GeometryTy ty, size_t items);
