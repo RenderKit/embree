@@ -33,11 +33,11 @@ namespace embree
       /* create vector with random numbers */
       const size_t M = 10;
       std::vector<atomic_t> flattened;
-      typedef std::vector<std::unique_ptr<std::vector<size_t> > > ArrayArray;
+      typedef std::vector<std::vector<size_t>* > ArrayArray;
       ArrayArray array2(M);
       for (size_t i=0; i<M; i++) {
         const size_t N = ::random() % 10;
-        array2[i] = std::unique_ptr<std::vector<size_t> >(new std::vector<size_t>(N));
+        array2[i] = new std::vector<size_t>(N);
         for (size_t j=0; j<N; j++) 
           (*array2[i])[j] = ::random() % 10;
       }
@@ -45,7 +45,7 @@ namespace embree
       ParallelForForPrefixSumState<ArrayArray> state(array2,size_t(1));
   
       /* dry run only counts */
-      parallel_for_for_prefix_sum( state, [&](std::unique_ptr<std::vector<size_t> >& v, const range<size_t>& r, const size_t base) 
+      parallel_for_for_prefix_sum( state, [&](std::vector<size_t>* v, const range<size_t>& r, const size_t base) 
       {
         size_t s = 0;
 	for (size_t i=r.begin(); i<r.end(); i++) s += (*v)[i];
@@ -57,7 +57,7 @@ namespace embree
       memset(&flattened[0],0,sizeof(atomic_t)*flattened.size());
 
       /* now we actually fill the flattened array */
-      parallel_for_for_prefix_sum( state, [&](std::unique_ptr<std::vector<size_t> >& v, const range<size_t>& r, const size_t base) 
+      parallel_for_for_prefix_sum( state, [&](std::vector<size_t>* v, const range<size_t>& r, const size_t base) 
       {
         size_t s = 0;
 	for (size_t i=r.begin(); i<r.end(); i++) {
@@ -73,6 +73,10 @@ namespace embree
       for (size_t i=0; i<flattened.size(); i++)
         passed &= (flattened[i] == 1);
       
+      /* delete arrays again */
+      for (size_t i=0; i<array2.size(); i++)
+	delete array2[i];
+
       /* output if test passed or not */
       if (passed) printf("[passed]\n");
       else        printf("[failed]\n");
