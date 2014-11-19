@@ -34,12 +34,14 @@ SET(EMBREE_ISPC_ADDRESSING 32 CACHE INT "32vs64 bit addressing in ispc")
 MARK_AS_ADVANCED(EMBREE_ISPC_ADDRESSING)
 
 
-MACRO (ispc_compile targets)
+MACRO (ispc_compile)
+  SET(ISPC_ADDITIONAL_ARGS "")
+
   IF (__XEON__)
     SET (ISPC_TARGET_EXT ${CMAKE_CXX_OUTPUT_EXTENSION})
   ELSE()
     SET (ISPC_TARGET_EXT .cpp)
-    SET (ISPC_TARGET_ALIGNED_MEMORY --opt=force-aligned-memory)
+    SET (ISPC_ADDITIONAL_ARGS ${ISPC_ADDITIONAL_ARGS} --opt=force-aligned-memory)
   ENDIF()
 
   IF (CMAKE_SIZEOF_VOID_P EQUAL 8)
@@ -52,15 +54,15 @@ MACRO (ispc_compile targets)
   INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR} ${ISPC_TARGET_DIR})
 
   IF(ISPC_INCLUDE_DIR)
-    STRING(REGEX REPLACE ";" ";-I;" ISPC_INCLUDE_DIR_PARMS "${ISPC_INCLUDE_DIR}")
+    STRING(REPLACE ";" ";-I;" ISPC_INCLUDE_DIR_PARMS "${ISPC_INCLUDE_DIR}")
     SET(ISPC_INCLUDE_DIR_PARMS "-I" ${ISPC_INCLUDE_DIR_PARMS})
   ENDIF()
 
   IF (__XEON__)
-    STRING(REGEX REPLACE "," ";" target_list "${targets}")
-    SET(ISPC_TARGETS ${targets})
+    STRING(REPLACE ";" "," ISPC_TARGET_ARGS "${ISPC_TARGETS}")
   ELSE()
-    SET(ISPC_TARGETS generic-16 --emit-c++ -D__XEON_PHI__ --c++-include-file=${ISPC_DIR}/examples/intrinsics/knc.h)
+    SET(ISPC_TARGET_ARGS generic-16)
+    SET(ISPC_ADDITIONAL_ARGS ${ISPC_ADDITIONAL_ARGS} --emit-c++ -D__XEON_PHI__ --c++-include-file=${ISPC_DIR}/examples/intrinsics/knc.h)
   ENDIF()
 
   SET(ISPC_OBJECTS "")
@@ -79,9 +81,9 @@ MACRO (ispc_compile targets)
     SET(deps "")
     IF (EXISTS ${outdir}/${fname}.dev.idep)
       FILE(READ ${outdir}/${fname}.dev.idep contents)
-      STRING(REGEX REPLACE " " ";"     contents "${contents}")
-      STRING(REGEX REPLACE ";" "\\\\;" contents "${contents}")
-      STRING(REGEX REPLACE "\n" ";"    contents "${contents}")
+      STRING(REPLACE " " ";"     contents "${contents}")
+      STRING(REPLACE ";" "\\\\;" contents "${contents}")
+      STRING(REPLACE "\n" ";"    contents "${contents}")
       FOREACH(dep ${contents})
         IF (EXISTS ${dep})
           SET(deps ${deps} ${dep})
@@ -93,18 +95,17 @@ MACRO (ispc_compile targets)
 
     # if we have multiple targets add additional object files
     IF (__XEON__)
-      IF (${targets} MATCHES ".*,.*")
-        FOREACH(target ${target_list})
+      LIST(LENGTH ISPC_TARGETS NUM_TARGETS)
+      IF (NUM_TARGETS GREATER 1)
+        FOREACH(target ${ISPC_TARGETS})
           SET(results ${results} "${outdir}/${fname}.dev_${target}${ISPC_TARGET_EXT}")
         ENDFOREACH()
       ENDIF()
     ENDIF()
 
-    IF (WIN32)
-      SET(ISPC_ARGS "")
-    ELSE (WIN32)
-      SET(ISPC_ARGS --pic)
-    ENDIF (WIN32)
+    IF (NOT WIN32)
+      SET(ISPC_ADDITIONAL_ARGS ${ISPC_ADDITIONAL_ARGS} --pic)
+    ENDIF()
 
     ADD_CUSTOM_COMMAND(
       OUTPUT ${results} ${outdirh}/${fname}_ispc.h
@@ -114,14 +115,12 @@ MACRO (ispc_compile targets)
       ${ISPC_INCLUDE_DIR_PARMS}
       --arch=${ISPC_ARCHITECTURE}
       --addressing=${EMBREE_ISPC_ADDRESSING}
-      ${ISPC_ARGS}
       -O3
-      --target=${ISPC_TARGETS}
+      --target=${ISPC_TARGET_ARGS}
       --woff
 #      --wno-perf
       --opt=fast-math
-      ${ISPC_TARGET_ALIGNED_MEMORY}
-#      --opt=force-aligned-memory
+      ${ISPC_ADDITIONAL_ARGS}
       -h ${outdirh}/${fname}_ispc.h
       -MMM  ${outdir}/${fname}.dev.idep
       -o ${outdir}/${fname}.dev${ISPC_TARGET_EXT}
@@ -147,7 +146,7 @@ MACRO (add_ispc_executable name)
       SET(OTHER_SOURCES ${OTHER_SOURCES} ${src})
     ENDIF ()
   ENDFOREACH()
-  ISPC_COMPILE (${ISPC_TARGETS} ${ISPC_SOURCES})
+  ISPC_COMPILE(${ISPC_SOURCES})
   ADD_EXECUTABLE(${name} ${ISPC_OBJECTS} ${OTHER_SOURCES})
 
   IF (NOT __XEON__)
@@ -170,7 +169,7 @@ MACRO (add_ispc_library name type)
       SET(OTHER_SOURCES ${OTHER_SOURCES} ${src})
     ENDIF ()
   ENDFOREACH()
-  ISPC_COMPILE (${ISPC_TARGETS} ${ISPC_SOURCES})
+  ISPC_COMPILE(${ISPC_SOURCES})
   ADD_LIBRARY(${name} ${type} ${ISPC_OBJECTS} ${OTHER_SOURCES})
 
   IF (NOT __XEON__)

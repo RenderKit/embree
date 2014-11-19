@@ -181,37 +181,17 @@ namespace embree
     void initLazySubdivTree(SubdivPatch1 &patch,
 			    BVH4i *bvh)
     {
-
-      if (unlikely(patch.bvh4i_subtree_root != BVH4i::invalidNode)) return;
-
-      
-#if 0
-      DBG_PRINT(patch.grid_u_res);
-      DBG_PRINT(patch.grid_v_res);
-#endif
-
-#if 0
-      const unsigned int build_state = atomic_add((atomic_t*)&patch.under_construction,+1);
-      /* parent ptr */
-
-      volatile unsigned int *p  = (unsigned int *)&patch.bvh4i_subtree_root;
-
-      /* check whether another thread currently builds this patch */
+      unsigned int build_state = atomic_add((volatile atomic_t*)&patch.under_construction,+1);
       if (build_state != 0)
 	{
-	  atomic_add((atomic_t*)&patch.under_construction,-1);
-
-	  while (patch.under_construction != 0)
+	  while(patch.bvh4i_subtree_root == BVH4i::invalidNode)
 	    __pause(512);	  
 
-	  while ( *p == BVH4i::invalidNode)
-	    __pause(512);
-
-	  return *p;	  
+	  atomic_add((volatile atomic_t*)&patch.under_construction,-1);
 	}
 
-      /* got the lock, lets build the tree */
-#endif
+
+      if (unlikely(patch.bvh4i_subtree_root != BVH4i::invalidNode)) return;
 
 
       __aligned(64) float u_array[patch.grid_size+16]; // for unaligned access
@@ -223,8 +203,9 @@ namespace embree
 			u_array,
 			v_array);
 
+      BVH4i::NodeRef subtree_root = 0;
 
-      BBox3fa bounds = createSubTree( *(BVH4i::NodeRef*)&patch.bvh4i_subtree_root,
+      BBox3fa bounds = createSubTree( subtree_root,
 				      bvh,
 				      patch,
 				      u_array,
@@ -234,23 +215,26 @@ namespace embree
 				      0,
 				      patch.grid_v_res-1);
 
-
-
-      /* release lock */
-      //const unsigned int last_index = atomic_add((atomic_t*)&patch.under_construction,-1);
-
-
-#if 1
+#if DEBUG
       //numLazyBuildPatches++;
       //DBG_PRINT( patch.grid_u_res );
       //DBG_PRINT( patch.grid_v_res );
       //DBG_PRINT( numLazyBuildPatches );
+      mtx.lock();
       DBG_PRINT( bvh->lazyMemUsed64BytesBlocks);
       DBG_PRINT( bvh->lazyMemAllocated64BytesBlocks );
-      DBG_PRINT( 100.0f * bvh->lazyMemUsed64BytesBlocks / bvh->lazyMemAllocated64BytesBlocks );
+      const size_t size_allocated_lazymem = bvh->lazyMemAllocated64BytesBlocks * sizeof(mic_f);
+      const size_t size_used_lazymem      = bvh->lazyMemUsed64BytesBlocks * sizeof(mic_f);
 
+      std::cout << "lazymem: " << 100.0f * size_used_lazymem / size_allocated_lazymem << "% used of " <<  size_allocated_lazymem << " bytes allocated" << std::endl;
+
+      mtx.unlock();
 #endif
+      /* build done */
+      patch.bvh4i_subtree_root = subtree_root;
 
+      /* release lock */
+      atomic_add((volatile atomic_t*)&patch.under_construction,-1);
     }
 
 
@@ -584,10 +568,10 @@ namespace embree
 		  if (unlikely(subdiv_patch.bvh4i_subtree_root == BVH4i::invalidNode))
 		    {
 		      /* build sub-patch bvh4i */
-		      mtx.lock();
+		      //mtx.lock();
 		      initLazySubdivTree(subdiv_patch,bvh);
 
-		      mtx.unlock();
+		      //mtx.unlock();
 
 		    }
 

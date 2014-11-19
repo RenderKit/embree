@@ -26,7 +26,13 @@ namespace embree
   template<typename SrcArray, typename DstArray, typename Ty, typename Op>
   class ParallelPrefixOp
   {
+#if defined(__MIC__)
+    static const size_t MAX_THREADS = MAX_MIC_THREADS;
+    static const size_t SINGLE_THREAD_THRESHOLD = 50000;
+#else
     static const size_t MAX_THREADS = 32;
+    static const size_t SINGLE_THREAD_THRESHOLD = 3000000;
+#endif
 
   public:
     ParallelPrefixOp () {}
@@ -39,7 +45,7 @@ namespace embree
 	: parent(parent), src(src), dst(dst), N(N), op(op), id(id)
       {
 	/* perform single threaded prefix operation for small N */
-	if (N < 3000000) {
+	if (N < SINGLE_THREAD_THRESHOLD) {
 	  for (size_t i=0, sum=0; i<N; sum+=src[i++])
 	    dst[i] = sum;
 	}
@@ -49,7 +55,7 @@ namespace embree
 	{
 	  LockStepTaskScheduler* scheduler = LockStepTaskScheduler::instance();
 	  const size_t numThreads = min(scheduler->getNumThreads(),MAX_THREADS);
-	  
+
 	  /* first calculate range for each block */
 	  scheduler->dispatchTask(task_sum,this,0,numThreads);
 	  
@@ -65,7 +71,7 @@ namespace embree
 	const size_t end   = (threadIndex+1)*N/threadCount;
 	
 	Ty sum = id;
-	for (size_t i=start; i<end; i++) 
+	for (size_t i=start; i<end; i++)
 	  sum = op(sum,src[i]);
 	
 	parent->state[threadIndex] = sum;

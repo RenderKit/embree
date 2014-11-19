@@ -14,13 +14,15 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-SET(FLAGS_SSE2  "")
-SET(FLAGS_SSE3  "")
-SET(FLAGS_SSSE3 "")
-SET(FLAGS_SSE41 " /DCONFIG_SSE41")
-SET(FLAGS_SSE42 " /DCONFIG_SSE42")
+# the /QxXXX flags are meant for the Intel Compiler, MSVC ignores them
+SET(FLAGS_SSE2  "/QxSSE2")
+SET(FLAGS_SSE3  "/QxSSE3")
+SET(FLAGS_SSSE3 "/QxSSEE3")
+SET(FLAGS_SSE41 "/DCONFIG_SSE41 /QxSSE4.1")
+SET(FLAGS_SSE42 "/DCONFIG_SSE42 /QxSSE4.2")
 SET(FLAGS_AVX   "/arch:AVX /DCONFIG_AVX")
-SET(FLAGS_AVX2  "/arch:AVX2 /DCONFIG_AVX2")
+# Intel Compiler 15, Update 1 unfortunately cannot handle /arch:AVX2
+SET(FLAGS_AVX2  "/arch:AVX2 /DCONFIG_AVX2 /QxCORE-AVX2")
 SET(FLAGS_AVX512 "")
 
 SET(CMAKE_CXX_FLAGS_RELEASE        "${CMAKE_CXX_FLAGS_RELEASE} /Ox /fp:fast /Qpar /Oi /Gy /GR-")

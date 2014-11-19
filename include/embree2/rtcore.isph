@@ -17,11 +17,6 @@
 #ifndef __RTCORE_ISPH__
 #define __RTCORE_ISPH__
 
-#ifdef _WIN32
-#  define RTCORE_API extern "C"
-#else
-#  define RTCORE_API extern "C"
-#endif
 
 #ifdef _WIN32
 #  define RTCORE_ALIGN(...) // FIXME: need to specify alignment
