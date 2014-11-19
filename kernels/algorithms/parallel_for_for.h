@@ -29,12 +29,12 @@ namespace embree
     }
   }
 
-  template<typename ArrayArray, typename Func>
-    class ParallelForForTask
+  template<typename ArrayArray>
+    class ParallelForForState
   {
   public:
-    ParallelForForTask ( ArrayArray& array2, const size_t minStepSize, const Func& f)
-      : array2(array2), minStepSize(minStepSize), f(f)
+    ParallelForForState ( ArrayArray& array2, const size_t minStepSize)
+      : array2(array2), minStepSize(minStepSize)
     {
       /* initialize arrays */
       const size_t M = array2.size();
@@ -51,32 +51,51 @@ namespace embree
         sum += N;
       }
       K = sum;
+    }
 
-      /* start parallel processing */
+    __forceinline void start_indices(const size_t k0, size_t& i0, size_t& j0) const
+    {
+      auto iter = std::upper_bound(prefix_sum.begin(), prefix_sum.end(), k0);
+      i0 = iter-prefix_sum.begin()-1;
+      j0 = k0-prefix_sum[i0];
+    }
+    
+  protected:
+    ArrayArray& array2;
+    const size_t minStepSize;
+    
+  protected:
+    std::vector<size_t> prefix_sum;
+    std::vector<size_t> sizes;
+    size_t K;
+  };
+
+  template<typename ArrayArray, typename Func>
+    class ParallelForForTask : public ParallelForForState<ArrayArray>
+  {
+  public:
+    ParallelForForTask ( ArrayArray& array2, const size_t minStepSize, const Func& f)
+      : ParallelForForState<ArrayArray>(array2, minStepSize), f(f)
+    {
       LockStepTaskScheduler* scheduler = LockStepTaskScheduler::instance();
       const size_t threads = scheduler->getNumThreads();
-      const size_t blocks  = (K+minStepSize-1)/minStepSize;
+      const size_t blocks  = (this->K+minStepSize-1)/minStepSize;
       scheduler->dispatchTaskSet(task_for_for,this,min(threads,blocks));
     }
 
     void for_for(const size_t threadIndex, const size_t threadCount, const size_t taskIndex, const size_t taskCount) 
     {
       /* calculate range */
-      const size_t k0 = (taskIndex+0)*K/taskCount;
-      const size_t k1 = (taskIndex+1)*K/taskCount;
-
-      /* find start position */
-      auto iter = std::upper_bound(prefix_sum.begin(), prefix_sum.end(), k0);
-      size_t i0 = iter-prefix_sum.begin()-1;
-      size_t j0 = k0-prefix_sum[i0];
+      const size_t k0 = (taskIndex+0)*this->K/taskCount;
+      const size_t k1 = (taskIndex+1)*this->K/taskCount;
+      size_t i0, j0; this->start_indices(k0,i0,j0);
 
       /* iterate over arrays */
       size_t k=k0;
       for (size_t i=i0; k<k1; i++) {
-        const size_t N = sizes[i];
-        const size_t r0 = j0;
-        const size_t r1 = min(N,r0+k1-k);
-        if (r1 > r0) f(array2[i],range<size_t>(r0,r1));
+        const size_t N = this->sizes[i];
+        const size_t r0 = j0, r1 = min(N,r0+k1-k);
+        if (r1 > r0) f(this->array2[i],range<size_t>(r0,r1));
         k+=r1-r0; j0 = 0;
       }
     }
@@ -86,14 +105,7 @@ namespace embree
     }
     
     private:
-      ArrayArray& array2;
-      const size_t minStepSize;
       const Func& f;
-
-    private:
-      std::vector<size_t> prefix_sum;
-      std::vector<size_t> sizes;
-      size_t K;
   };
 
   template<typename ArrayArray, typename Func>
