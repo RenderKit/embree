@@ -66,11 +66,11 @@ namespace embree
       /* generate key/value pairs */
       parallel_for( size_t(0), keys.size(), size_t(4*4096), [=](const range<size_t>& r) {
 	for (size_t i=r.begin(); i<r.end(); i++)
-	  temp[i] = KeyValue((Key)keys[i],values[i]);
+	  vec[i] = KeyValue((Key)keys[i],values[i]);
       });
 
       /* perform parallel radix sort of the key/value pairs */
-      radix_sort<KeyValue,Key>(&temp[0],&temp[0],&vec[0],keys.size());
+      radix_sort<KeyValue,Key>(&vec[0],&temp[0],keys.size());
     }
 
     /*! initialized the parallel map from user buffers with keys and values */
@@ -85,11 +85,11 @@ namespace embree
       /* generate key/value pairs */
       parallel_for( size_t(0), keys.size(), size_t(4*4096), [=](const range<size_t>& r) {
 	for (size_t i=r.begin(); i<r.end(); i++)
-	  temp[i] = KeyValue((Key)keys[i],values[i]);
+	  vec[i] = KeyValue((Key)keys[i],values[i]);
       });
 
       /* perform parallel radix sort of the key/value pairs */
-      radix_sort<KeyValue,Key>(&temp[0],&temp[0],&vec[0],keys.size());
+      radix_sort<KeyValue,Key>(&vec[0],&temp[0],keys.size());
     }
 
     /*! Returns a pointer to the value associated with the specified key. The pointer will be NULL of the key is not contained in the map. */

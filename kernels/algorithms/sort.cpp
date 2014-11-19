@@ -42,7 +42,6 @@ namespace embree
       {
 	std::vector<Key> src(N); memset(&src[0],0,N*sizeof(Key));
 	std::vector<Key> tmp(N); memset(&tmp[0],0,N*sizeof(Key));
-	std::vector<Key> dst(N); memset(&dst[0],0,N*sizeof(Key));
 	for (size_t i=0; i<N; i++) src[i] = uint64(::random())*uint64(::random());
 	
 	/* calculate checksum */
@@ -51,18 +50,18 @@ namespace embree
 	/* sort numbers */
 	double t0 = getSeconds();
 	for (size_t i=0; i<M; i++) {
-          radix_sort(&src[0],&tmp[0],&dst[0],N);
+          radix_sort(&src[0],&tmp[0],N);
         }
 	double t1 = getSeconds();
 	printf("%zu/%3.2fM ",N,1E-6*double(N*M)/(t1-t0));
 	
 	/* calculate checksum */
-	Key sum1 = 0; for (size_t i=0; i<N; i++) sum1 += dst[i];
+	Key sum1 = 0; for (size_t i=0; i<N; i++) sum1 += src[i];
 	if (sum0 != sum1) passed = false;
         
 	/* check if numbers are sorted */
 	for (size_t i=1; i<N; i++)
-	  passed &= dst[i-1] <= dst[i];
+	  passed &= src[i-1] <= src[i];
       }
       
       /* output if test passed or not */

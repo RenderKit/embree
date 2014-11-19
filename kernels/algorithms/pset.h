@@ -41,8 +41,15 @@ namespace embree
       vec.resize(in.size());
       temp.resize(in.size());
 
+      /* copy data to temporary array */
+      parallel_for( size_t(0), in.size(), size_t(4*4096), [=](const range<size_t>& r) 
+      {
+	for (size_t i=r.begin(); i<r.end(); i++) 
+	  vec[i] = in[i];
+      });
+
       /* sort the data */
-      radix_sort<T>(&in[0],&temp[0],&vec[0],in.size());
+      radix_sort<T>(&vec[0],&temp[0],vec.size());
     }
 
 
@@ -57,11 +64,11 @@ namespace embree
       parallel_for( size_t(0), in.size(), size_t(4*4096), [=](const range<size_t>& r) 
       {
 	for (size_t i=r.begin(); i<r.end(); i++) 
-	  temp[i] = in[i];
+	  vec[i] = in[i];
       });
 
       /* parallel radix sort of the data */
-      radix_sort<T>(&temp[0],&temp[0],&vec[0],in.size());
+      radix_sort<T>(&vec[0],&temp[0],vec.size());
     }
 
     /*! tests if some element is in the set */

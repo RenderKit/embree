@@ -341,14 +341,14 @@ namespace embree
 	  edge->edge_crease_weight = edgeCreaseMap.lookup(key,0.0f);
 	  edge->vertex_crease_weight = vertexCreaseMap.lookup(startVertex,0.0f);
 	  edge->edge_level = edge_level;
-	  if (holeSet.lookup(f)) halfEdges0[e+de] = KeyHalfEdge(-1,edge);
-	  else                   halfEdges0[e+de] = KeyHalfEdge(key,edge);
+	  if (holeSet.lookup(f)) halfEdges1[e+de] = KeyHalfEdge(-1,edge);
+	  else                   halfEdges1[e+de] = KeyHalfEdge(key,edge);
 	}
       }
     });
 
     /* sort half edges to find adjacent edges */
-    radix_sort_u64(&halfEdges0[0],&halfEdges0[0],&halfEdges1[0],numEdges);
+    radix_sort_u64(&halfEdges1[0],&halfEdges0[0],numEdges);
 
     /* link all adjacent pairs of edges */
     parallel_for( size_t(0), numEdges, size_t(4096), [=](const range<size_t>& r) 
