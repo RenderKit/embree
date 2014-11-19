@@ -18,6 +18,22 @@ PROJECT(embree)
 
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8.12)
 
+##############################################################
+# Embree version
+##############################################################
+
+SET(EMBREE_VERSION_MAJOR 2)
+SET(EMBREE_VERSION_MINOR 4)
+SET(EMBREE_VERSION_PATCH 0)
+SET(EMBREE_VERSION_NOTE " (devel)")
+
+CONFIGURE_FILE(
+  "${PROJECT_SOURCE_DIR}/kernels/version.h.in"
+  "${PROJECT_BINARY_DIR}/kernels/version.h"
+)
+INCLUDE_DIRECTORIES("${PROJECT_BINARY_DIR}/kernels")
+
+ 
 IF(COMMAND cmake_policy)
   cmake_policy(SET CMP0003 NEW)
 ENDIF(COMMAND cmake_policy)

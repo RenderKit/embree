@@ -44,7 +44,7 @@
 #include <algorithm>
 #include <iomanip>
 
-#include "../version.h"
+#include "version.h"
 
 namespace embree
 {
