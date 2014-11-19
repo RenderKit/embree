@@ -374,7 +374,7 @@ namespace embree
 
   };
 
-
+#if 0
   template<class T>
     __forceinline void insertionsort_ascending(T *__restrict__ array, const size_t length)
   {
@@ -541,6 +541,7 @@ namespace embree
 	    }
 	}
     }
+#endif
 
   template<size_t LOCAL_NODE_IDS>
   class AtomicIDBlock

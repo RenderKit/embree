@@ -24,6 +24,174 @@
 
 namespace embree
 {
+  template<class T>
+    __forceinline void insertionsort_ascending(T *__restrict__ array, const size_t length)
+  {
+    for(size_t i = 1;i<length;++i)
+    {
+      T v = array[i];
+      size_t j = i;
+      while(j > 0 && v < array[j-1])
+      {
+        array[j] = array[j-1];
+        --j;
+      }
+      array[j] = v;
+    }
+  }
+  
+  template<class T>
+    __forceinline void insertionsort_decending(T *__restrict__ array, const size_t length)
+  {
+    for(size_t i = 1;i<length;++i)
+    {
+      T v = array[i];
+      size_t j = i;
+      while(j > 0 && v > array[j-1])
+      {
+        array[j] = array[j-1];
+        --j;
+      }
+      array[j] = v;
+    }
+  }
+  
+  template<class T> 
+    void quicksort_ascending(T *__restrict__ t, 
+			     const ssize_t begin, 
+			     const ssize_t end)
+  {
+    if (likely(begin < end)) 
+    {      
+      const T pivotvalue = t[begin];
+      ssize_t left  = begin - 1;
+      ssize_t right = end   + 1;
+      
+      while(1) 
+      {
+        while (t[--right] > pivotvalue);
+        while (t[++left] < pivotvalue);
+        
+        if (left >= right) break;
+        
+        const T temp = t[right];
+        t[right] = t[left];
+        t[left] = temp;
+      }
+      
+      const int pivot = right;
+      quicksort_ascending(t, begin, pivot);
+      quicksort_ascending(t, pivot + 1, end);
+    }
+  }
+  
+  template<class T> 
+    void quicksort_decending(T *__restrict__ t, 
+			     const ssize_t begin, 
+			     const ssize_t end)
+    {
+      if (likely(begin < end)) 
+	{
+	  const T pivotvalue = t[begin];
+	  ssize_t left  = begin - 1;
+	  ssize_t right = end   + 1;
+      
+	  while(1) 
+	    {
+	      while (t[--right] < pivotvalue);
+	      while (t[++left] > pivotvalue);
+        
+	      if (left >= right) break;
+        
+	      const T temp = t[right];
+	      t[right] = t[left];
+	      t[left] = temp;
+	    }
+      
+	  const int pivot = right;
+	  quicksort_decending(t, begin, pivot);
+	  quicksort_decending(t, pivot + 1, end);
+	}
+    }
+
+
+  template<class T, ssize_t THRESHOLD> 
+    void quicksort_insertionsort_ascending(T *__restrict__ t, 
+					   const ssize_t begin, 
+					   const ssize_t end)
+    {
+      if (likely(begin < end)) 
+	{      
+	  const ssize_t size = end-begin+1;
+	  if (likely(size <= THRESHOLD))
+	    {
+	      insertionsort_ascending<T>(&t[begin],size);
+	    }
+	  else
+	    {
+	      const T pivotvalue = t[begin];
+	      ssize_t left  = begin - 1;
+	      ssize_t right = end   + 1;
+      
+	      while(1) 
+		{
+		  while (t[--right] > pivotvalue);
+		  while (t[++left] < pivotvalue);
+        
+		  if (left >= right) break;
+        
+		  const T temp = t[right];
+		  t[right] = t[left];
+		  t[left] = temp;
+		}
+      
+	      const ssize_t pivot = right;
+	      quicksort_insertionsort_ascending<T,THRESHOLD>(t, begin, pivot);
+	      quicksort_insertionsort_ascending<T,THRESHOLD>(t, pivot + 1, end);
+	    }
+	}
+    }
+    
+  
+  template<class T, ssize_t THRESHOLD> 
+    void quicksort_insertionsort_decending(T *__restrict__ t, 
+					   const ssize_t begin, 
+					   const ssize_t end)
+    {
+      if (likely(begin < end)) 
+	{
+	  const ssize_t size = end-begin+1;
+	  if (likely(size <= THRESHOLD))
+	    {
+	      insertionsort_decending<T>(&t[begin],size);
+	    }
+	  else
+	    {
+
+	      const T pivotvalue = t[begin];
+	      ssize_t left  = begin - 1;
+	      ssize_t right = end   + 1;
+      
+	      while(1) 
+		{
+		  while (t[--right] < pivotvalue);
+		  while (t[++left] > pivotvalue);
+        
+		  if (left >= right) break;
+        
+		  const T temp = t[right];
+		  t[right] = t[left];
+		  t[left] = temp;
+		}
+      
+	      const ssize_t pivot = right;
+	      quicksort_insertionsort_decending<T,THRESHOLD>(t, begin, pivot);
+	      quicksort_insertionsort_decending<T,THRESHOLD>(t, pivot + 1, end);
+	    }
+	}
+    }
+
+
   class ParallelRadixSort
   {
   public:
@@ -60,7 +228,11 @@ namespace embree
 	    dst[i] = src[i];
 	  
 	  /* do inplace sort inside destination array */
+#if 1
 	  std::sort(dst,dst+N,compare<Ty>);
+#else
+	  quicksort_insertionsort_ascending<T,16>(dst,0,N-1);
+#endif
 	}
 	
 	/* perform parallel sort for large N */
