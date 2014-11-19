@@ -27,7 +27,7 @@ namespace embree
   }
 
   template<typename Index, typename Func>
-    __forceinline void sequential_for( const Index first, const Index last, const Index step, const Func& f)
+    __forceinline void sequential_for( const Index first, const Index last, const Index minStepSize, const Func& f)
   {
     f(range<Index>(first,last));
   }
@@ -36,24 +36,37 @@ namespace embree
     class ParallelForTask
   {
   public:
-    ParallelForTask (const Index first, const Index last, const Index step, const Func& f)
-      : first(first), last(last), step(step), f(f)
+    ParallelForTask (const Index first, const Index last, const Index minStepSize, const Func& f)
+      : first(first), last(last), minStepSize(minStepSize), f(f)
     {
-      LockStepTaskScheduler::instance()->dispatchTaskSet(task_function,this,(last-first+step-1)/step);
+      const size_t blocks  = (last-first+minStepSize-1)/minStepSize;
+      if (blocks == 1) {
+        f(range<Index>(first,last));
+      }
+      else
+      {
+        LockStepTaskScheduler* scheduler = LockStepTaskScheduler::instance();
+        const size_t threads = scheduler->getNumThreads();
+        const size_t N = min(threads,blocks);
+        scheduler->dispatchTaskSet(task_for,this,N);
+      }
+    }
+
+    void _for(const size_t taskIndex, const size_t taskCount) 
+    {
+      const size_t k0 = first+(taskIndex+0)*(last-first)/taskCount;
+      const size_t k1 = first+(taskIndex+1)*(last-first)/taskCount;
+      f(range<Index>(k0,k1));
     }
       
-    static void task_function(void* data, const size_t threadIndex, const size_t threadCount, const size_t taskIndex, const size_t taskCount) 
-    {
-      ParallelForTask* This = (ParallelForTask*)data;
-      const size_t i0 = This->first+taskIndex*This->step;
-      const size_t i1 = min(i0+This->step,This->last);
-      This->f(range<Index>(i0,i1));
+    static void task_for(void* data, const size_t threadIndex, const size_t threadCount, const size_t taskIndex, const size_t taskCount) {
+      ((ParallelForTask*)data)->_for(taskIndex,taskCount);
     }
     
     private:
       const Index first;
       const Index last; 
-      const Index step;
+      const Index minStepSize;
       const Func& f;
   };
 
@@ -64,8 +77,8 @@ namespace embree
   }
 
   template<typename Index, typename Func>
-    __forceinline void parallel_for( const Index first, const Index last, const Index step, const Func& f)
+    __forceinline void parallel_for( const Index first, const Index last, const Index minStepSize, const Func& f)
   {
-    ParallelForTask<Index,Func>(first,last,step,f);
+    ParallelForTask<Index,Func>(first,last,minStepSize,f);
   }
 }

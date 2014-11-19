@@ -39,11 +39,12 @@ ADD_ISPC_LIBRARY(embree_xeonphi SHARED
   ../common/scene_subdiv_mesh.cpp
   ../common/raystream_log.cpp
 
+  ../algorithms/parallel_for.cpp
+  ../algorithms/parallel_for_for.cpp
   ../algorithms/sort.cpp
   ../algorithms/pset.cpp
   ../algorithms/pmap.cpp
   ../algorithms/prefix.cpp
-  ../algorithms/parallel_for_for.cpp
 
   geometry/triangle1.cpp
   geometry/instance_intersector1.cpp
