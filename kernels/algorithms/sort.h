@@ -227,11 +227,7 @@ namespace embree
 	if (N<SINGLE_THREAD_THRESHOLD) 
 	{	  
 	  /* do inplace sort inside destination array */
-#if 1
 	  std::sort(src,src+N,compare<Ty>);
-#else
-	  quicksort_insertionsort_ascending<T,16>(src,0,N-1);
-#endif
 	}
 	
 	/* perform parallel sort for large N */
@@ -317,15 +313,6 @@ namespace embree
 	  radixIteration(5*BITS,0,tmp,src,startID,endID,threadIndex,numThreads);
 	  radixIteration(6*BITS,0,src,tmp,startID,endID,threadIndex,numThreads);
 	  radixIteration(7*BITS,1,tmp,src,startID,endID,threadIndex,numThreads);
-	  
-	  /* Ty* tmp = this->tmp; */
-	  /* Ty* dst = this->dst; */
-	  /* radixIteration(0*BITS,0,src,dst,startID,endID,threadIndex,numThreads); */
-	  /* for (uint64 shift=1*BITS; shift<64; shift+=BITS) { */
-	  /*   radixIteration(shift,0,dst,tmp,startID,endID,threadIndex,numThreads); */
-	  /*   std::swap(dst,tmp); */
-	  /* } */
-	  /* radixIteration(5*BITS,1,dst,tmp,startID,endID,threadIndex,numThreads); // required to copy into destination buffer */
 	}
       }
       

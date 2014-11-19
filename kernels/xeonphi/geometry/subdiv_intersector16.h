@@ -31,8 +31,7 @@ namespace embree
 					     const mic3f &v1,
 					     const mic3f &v2,
 					     const mic_m &m_active,
-					     const unsigned int geomID,
-					     const unsigned int primID)
+					     const unsigned int subdiv_patch_index)
   {
     const mic3f ray_org(swAAAA(org_xyz),swBBBB(org_xyz),swCCCC(org_xyz));
     const mic3f ray_dir(swAAAA(dir_xyz),swBBBB(dir_xyz),swCCCC(dir_xyz));
@@ -100,9 +99,8 @@ namespace embree
 	compactustore16f_low(m_tri,&ray16.Ng.y[rayIndex],gnormaly); 
 	compactustore16f_low(m_tri,&ray16.Ng.z[rayIndex],gnormalz); 
 
-	ray16.geomID[rayIndex] = geomID;
-	ray16.primID[rayIndex] = primID;
-      
+	ray16.geomID[rayIndex] = -1;
+	ray16.primID[rayIndex] = subdiv_patch_index;      
       }
   };
 
@@ -115,11 +113,10 @@ namespace embree
 					      const mic3f &v2,
 					      const mic3f &v3,
 					      const mic_m &m_active,
-					      const unsigned int geomID,
-					      const unsigned int primID)
+					      const unsigned int subdiv_patch_index)
   {
-    intersect1_tri16(rayIndex,dir_xyz,org_xyz,ray16,v0,v1,v2,m_active,geomID,primID);
-    intersect1_tri16(rayIndex,dir_xyz,org_xyz,ray16,v0,v2,v3,m_active,geomID,primID);
+    intersect1_tri16(rayIndex,dir_xyz,org_xyz,ray16,v0,v1,v3,m_active,subdiv_patch_index);
+    intersect1_tri16(rayIndex,dir_xyz,org_xyz,ray16,v3,v1,v2,m_active,subdiv_patch_index);
   }
 
   static __forceinline bool intersect1_quad(const size_t rayIndex, 
@@ -130,8 +127,7 @@ namespace embree
 					    const Vec3fa &vtx1,
 					    const Vec3fa &vtx2,
 					    const Vec3fa &vtx3,
-					    const unsigned int geomID,
-					    const unsigned int primID)
+					    const unsigned int subdiv_patch_index)
   {
     const mic_f v0 = broadcast4to16f(&vtx0);
     const mic_f v1 = select(0x00ff,broadcast4to16f(&vtx1),broadcast4to16f(&vtx2));
@@ -203,8 +199,8 @@ namespace embree
 	compactustore16f_low(m_tri,&ray16.Ng.y[rayIndex],gnormaly); 
 	compactustore16f_low(m_tri,&ray16.Ng.z[rayIndex],gnormalz); 
 
-	ray16.geomID[rayIndex] = geomID;
-	ray16.primID[rayIndex] = primID;
+	ray16.geomID[rayIndex] = -1;
+	ray16.primID[rayIndex] = subdiv_patch_index;
 	return true;
       
       }

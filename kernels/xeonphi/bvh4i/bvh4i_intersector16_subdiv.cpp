@@ -242,6 +242,7 @@ namespace embree
     __aligned(64) float v_start[16] = { 0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1 };
 
     __forceinline bool intersect1Eval(const SubdivPatch1 &subdiv_patch,
+				      const unsigned int subdiv_patch_index,
 				      const float &u0,
 				      const float &v0,
 				      const float &u1,
@@ -271,12 +272,12 @@ namespace embree
 			     vtx[1],
 			     vtx[2],
 			     vtx[3],
-			     subdiv_patch.geomID,
-			     subdiv_patch.primID);
+			     subdiv_patch_index);
     }
 
 
     __forceinline bool intersect1Eval16(const SubdivPatch1 &subdiv_patch,
+					const unsigned int subdiv_patch_index,					
 					const unsigned int grid_u_res,
 					const unsigned int grid_v_res,
 					const mic3f &vtx,
@@ -300,16 +301,16 @@ namespace embree
 			v2,
 			v3,
 			m_active,
-			subdiv_patch.geomID,
-			subdiv_patch.primID);
+			subdiv_patch_index);
       return true;
     }
 
     __noinline bool intersectEvalGrid1(const size_t rayIndex, 
-			    const mic_f &dir_xyz,
-			    const mic_f &org_xyz,
-			    Ray16& ray16,
-			    const SubdivPatch1& subdiv_patch)
+				       const mic_f &dir_xyz,
+				       const mic_f &org_xyz,
+				       Ray16& ray16,
+				       const SubdivPatch1& subdiv_patch,
+				       const unsigned int subdiv_patch_index)
     {
       const float * const edge_levels = subdiv_patch.level;
       const unsigned int grid_u_res   = subdiv_patch.grid_u_res;
@@ -352,6 +353,7 @@ namespace embree
 	  const mic3f vtx = subdiv_patch.eval16(uu,vv);
 	  	  
 	  hit |= intersect1Eval16(subdiv_patch,
+				  subdiv_patch_index,
 				  grid_u_res,
 				  grid_v_res,
 				  vtx,
@@ -388,6 +390,7 @@ namespace embree
 		    }
 
 		  hit |= intersect1Eval16(subdiv_patch,
+					  subdiv_patch_index,
 					  8,
 					  2,
 					  vtx,
@@ -417,14 +420,10 @@ namespace embree
 		const float &u3 = u_array[offset_line1+0];
 		const float &v3 = v_array[offset_line1+0];
 		
-		hit |= intersect1Eval(subdiv_patch,u0,v0,u1,v1,u2,v2,u3,v3,rayIndex,dir_xyz,org_xyz,ray16);	    
+		hit |= intersect1Eval(subdiv_patch,subdiv_patch_index,u0,v0,u1,v1,u2,v2,u3,v3,rayIndex,dir_xyz,org_xyz,ray16);	    
 	      }
 #endif
 	}
-
-#if 0
-      exit(0);
-#endif
 
       return hit;
     }
@@ -501,6 +500,8 @@ namespace embree
       const mic_f zero       = mic_f::zero();
 
       store16f(stack_dist,inf);
+      ray16.primID = select(m_valid,mic_i(-1),ray16.primID);
+      ray16.geomID = select(m_valid,mic_i(-1),ray16.geomID);
 
       mic_f     * const __restrict__ lazymem     = bvh->lazymem;
       const Node      * __restrict__ const nodes = (Node     *)bvh->nodePtr();
@@ -558,7 +559,8 @@ namespace embree
 				   dir_xyz,
 				   org_xyz,
 				   ray16,
-				   subdiv_patch);
+				   subdiv_patch,
+				   patchIndex);
 	      else
 		{
 		  /* traverse sub-patch bvh4i for grids with > 16 points */
@@ -630,8 +632,7 @@ namespace embree
 					v2,
 					v3,
 					m_active,
-					subdiv_patch.geomID,
-					subdiv_patch.primID);
+					patchIndex);
 		    }
 		}
 	      // -------------------------------------
@@ -643,6 +644,19 @@ namespace embree
 	      // ------------------------
 	    }
 	}
+
+      /* update primID/geomID and compute normals */
+#if 1
+      mic_m m_hit = (ray16.primID != -1) & m_valid;
+      rayIndex = -1;
+      while((rayIndex = bitscan64(rayIndex,toInt(m_hit))) != BITSCAN_NO_BIT_SET_64)	    
+        {
+	  SubdivPatch1& subdiv_patch = ((SubdivPatch1*)accel)[ray16.primID[rayIndex]];
+	  ray16.primID[rayIndex] = subdiv_patch.primID;
+	  ray16.geomID[rayIndex] = subdiv_patch.geomID;
+	}
+#endif
+
     }
 
     template<typename LeafIntersector,bool ENABLE_COMPRESSED_BVH4I_NODES>    

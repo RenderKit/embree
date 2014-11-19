@@ -956,7 +956,6 @@ namespace embree
 
     static __forceinline Vec4f eval(const float u)
     {
-      // FIXME: lookup
       const float t  = u;
       const float s  = 1.0f - u;
       const float n0 = s*s*s;
@@ -967,11 +966,22 @@ namespace embree
       return Vec4f(n0,n1,n2,n3);
     }
 
+    static __forceinline Vec4f derivative(const float u)
+    {
+      const float t  =  u;
+      const float s  =  1.0f - u;
+      const float n0 = -s*s;
+      const float n1 = -t*t - 4.0f*t*s;
+      const float n2 =  s*s + 4.0f*s*t;
+      const float n3 =  t*t;
+      //const float c  = 1.0f/6.0f; // do this later
+      return Vec4f(n0,n1,n2,n3);
+    }
+
 #if defined(__MIC__)
 
     static __forceinline mic4f eval(const mic_f u)
     {
-      // FIXME: lookup
       const mic_f t  = u;
       const mic_f s  = 1.0f - u;
       const mic_f n0 = s*s*s;
@@ -982,6 +992,18 @@ namespace embree
       return mic4f(n0,n1,n2,n3);
     }
 
+
+    static __forceinline mic4f derivative(const mic_f u)
+    {
+      const mic_f t  =  u;
+      const mic_f s  =  1.0f - u;
+      const mic_f n0 = -s*s;
+      const mic_f n1 = -t*t - 4.0f*t*s;
+      const mic_f n2 =  s*s + 4.0f*s*t;
+      const mic_f n3 =  t*t;
+      //const mic_f c  = 1.0f/6.0f; // do this later
+      return mic4f(n0,n1,n2,n3);
+    }
 
 #endif
     
@@ -1418,8 +1440,6 @@ namespace embree
 
     __forceinline Vec3fa eval(const float uu, const float vv) const
     {
-      // FIXME: merge u,v and extract after computation
-
       const Vec4f v_n = CubicBSplineCurve::eval(vv);
 
       const Vec3fa_t curve0 = v_n[0] * v[0][0] + v_n[1] * v[1][0] + v_n[2] * v[2][0] + v_n[3] * v[3][0];
@@ -1431,6 +1451,42 @@ namespace embree
 
       return (u_n[0] * curve0 + u_n[1] * curve1 + u_n[2] * curve2 + u_n[3] * curve3) * 1.0f/36.0f;
     }
+
+
+    __forceinline Vec3fa tangentU(const float uu, const float vv) const
+    {
+      const Vec4f v_n = CubicBSplineCurve::eval(vv);
+
+      const Vec3fa_t curve0 = v_n[0] * v[0][0] + v_n[1] * v[1][0] + v_n[2] * v[2][0] + v_n[3] * v[3][0];
+      const Vec3fa_t curve1 = v_n[0] * v[0][1] + v_n[1] * v[1][1] + v_n[2] * v[2][1] + v_n[3] * v[3][1];
+      const Vec3fa_t curve2 = v_n[0] * v[0][2] + v_n[1] * v[1][2] + v_n[2] * v[2][2] + v_n[3] * v[3][2];
+      const Vec3fa_t curve3 = v_n[0] * v[0][3] + v_n[1] * v[1][3] + v_n[2] * v[2][3] + v_n[3] * v[3][3];
+
+      const Vec4f u_n = CubicBSplineCurve::derivative(uu);
+
+      return (u_n[0] * curve0 + u_n[1] * curve1 + u_n[2] * curve2 + u_n[3] * curve3); // * 1.0f/36.0f;
+    }
+
+    __forceinline Vec3fa tangentV(const float uu, const float vv) const
+    {
+      const Vec4f v_n = CubicBSplineCurve::derivative(vv);
+
+      const Vec3fa_t curve0 = v_n[0] * v[0][0] + v_n[1] * v[1][0] + v_n[2] * v[2][0] + v_n[3] * v[3][0];
+      const Vec3fa_t curve1 = v_n[0] * v[0][1] + v_n[1] * v[1][1] + v_n[2] * v[2][1] + v_n[3] * v[3][1];
+      const Vec3fa_t curve2 = v_n[0] * v[0][2] + v_n[1] * v[1][2] + v_n[2] * v[2][2] + v_n[3] * v[3][2];
+      const Vec3fa_t curve3 = v_n[0] * v[0][3] + v_n[1] * v[1][3] + v_n[2] * v[2][3] + v_n[3] * v[3][3];
+
+      const Vec4f u_n = CubicBSplineCurve::eval(uu);
+
+      return (u_n[0] * curve0 + u_n[1] * curve1 + u_n[2] * curve2 + u_n[3] * curve3); // * 1.0f/36.0f;
+    }
+
+    __forceinline Vec3fa normal(const float uu, const float vv) const
+    {
+      const Vec3fa tu = tangentU(uu,vv);
+      const Vec3fa tv = tangentV(uu,vv);
+      return cross(tu,tv);
+    }    
 
 #if defined(__MIC__)
 
