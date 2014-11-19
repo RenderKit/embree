@@ -43,7 +43,8 @@ ADD_ISPC_LIBRARY(embree_xeonphi SHARED
   ../algorithms/pset.cpp
   ../algorithms/pmap.cpp
   ../algorithms/prefix.cpp
-  
+  ../algorithms/parallel_for_for.cpp
+
   geometry/triangle1.cpp
   geometry/instance_intersector1.cpp
   geometry/instance_intersector16.cpp

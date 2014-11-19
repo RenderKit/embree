@@ -21,8 +21,8 @@
 #include "discrete_tessellation.h"
 #include "common/scene_subdivision.h"
 
-#define TessellationPattern DiscreteTessellationPattern
-//#define TessellationPattern FractionalTessellationPattern
+//#define TessellationPattern DiscreteTessellationPattern
+#define TessellationPattern FractionalTessellationPattern
 
 #define QUADQUAD4X4_COMPRESS_BOUNDS 0 // FIXME: not working yet in SSE mode
 

@@ -39,7 +39,7 @@ namespace embree
       {
 #if 0
         const IrregularCatmullClarkPatch patch(h,vertices);
-        const bool subdiv0 = !h->hasOpposite() || !h->opposite()->isRegularFace(); h = h->next();
+        const bool subdiv0 = !h->hasOpposite() || !h->opposite()->isRegularFace(); h = h->next(); // FIXME: should be false if no neighbour?
         const bool subdiv1 = !h->hasOpposite() || !h->opposite()->isRegularFace(); h = h->next();
         const bool subdiv2 = !h->hasOpposite() || !h->opposite()->isRegularFace(); h = h->next();
         const bool subdiv3 = !h->hasOpposite() || !h->opposite()->isRegularFace(); h = h->next();

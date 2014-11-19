@@ -88,7 +88,7 @@ namespace embree
 
     static __forceinline void intersectFinish (Ray& ray, 
                                                const Vec3fa& q, const Vec3fa& e0, const Vec3fa& e1, const Vec3fa& e2, 
-                                               const Vec2f uv,
+                                               const Vec2f uv, const float U, const float V, const float W,
                                                const Primitive& prim)
       {
         const Vec3fa Ng0 = cross(e1,e0);
@@ -98,12 +98,14 @@ namespace embree
         const float T   = dot(q,Ng);
         const float t = T*rcpDet;
         if (unlikely(ray.tnear <= t && t <= ray.tfar)) {
-          ray.u    = uv.x * rcpDet;
-          ray.v    = uv.y * rcpDet;
+          ray.u    = U * rcpDet;
+          ray.v    = V * rcpDet;
+          //ray.u    = uv.x * rcpDet;
+          //ray.v    = uv.y * rcpDet;
           ray.tfar = t;
           ray.Ng   = Ng;
-          /*ray.Ng.x = ray.u;
-          ray.Ng.y = ray.v;
+          /*ray.Ng.x = U*rcpDet;
+          ray.Ng.y = V*rcpDet;
           ray.Ng.z = float(size_t(&prim)>>4 & 0xFF)/255.0f;*/
           ray.geomID  = prim.geomID;
           ray.primID  = prim.primID;
@@ -125,14 +127,14 @@ namespace embree
       const sse3f s000 = t000_end + t000_start;
       const ssef  u000 = dot(cross(e000,s000),DDDD);
       if (all(ge_mask(Vec3fa(u000),Vec3fa(0.0f))) || all(le_mask(Vec3fa(u000),Vec3fa(0.0f)))) 
-        intersectFinish(ray, q00,q01-q00,q10-q01,q00-q10,u000[0]*uv10+u000[1]*uv00+u000[2]*uv01,prim);
+        intersectFinish(ray, q00,q01-q00,q10-q01,q00-q10,u000[0]*uv10+u000[1]*uv00+u000[2]*uv01,u000[0],u000[1],u000[2],prim);
 
       const sse3f t001_start = shuffle<2,3,1,0>(p00), t001_end = shuffle<3,1,2,0>(p00);
       const sse3f e001 = t001_end - t001_start;
       const sse3f s001 = t001_end + t001_start;
       const ssef  u001 = dot(cross(e001,s001),DDDD);
       if (all(ge_mask(Vec3fa(u001),Vec3fa(0.0f))) || all(le_mask(Vec3fa(u001),Vec3fa(0.0f)))) 
-      intersectFinish(ray,q11,q10-q11,q01-q10,q11-q01,u001[0]*uv01+u001[1]*uv11+u001[2]*uv10,prim);
+        intersectFinish(ray,q11,q10-q11,q01-q10,q11-q01,u001[0]*uv01+u001[1]*uv11+u001[2]*uv10,u001[0],u001[1],u001[2],prim);
     }
 
 #if defined(__AVX__) && 0

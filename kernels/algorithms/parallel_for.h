@@ -16,30 +16,22 @@
 
 #pragma once
 
-#include "common/default.h"
+#include "range.h"
 
 namespace embree
 {
-  template<typename Ty>
-    struct range 
-    {
-      range(const Ty& begin) 
-      : _begin(begin), _end(begin+1) {}
+  template<typename Index, typename Func>
+    __forceinline void sequential_for( const Index first, const Index last, const Func& f) 
+  {
+    f(range<Index>(first,last));
+  }
 
-      range(const Ty& begin, const Ty& end) 
-      : _begin(begin), _end(end) {}
+  template<typename Index, typename Func>
+    __forceinline void sequential_for( const Index first, const Index last, const Index step, const Func& f)
+  {
+    f(range<Index>(first,last));
+  }
 
-      __forceinline Ty begin() const {
-	return _begin;
-      }
-
-      __forceinline Ty end() const {
-	return _end;
-      }
-
-      Ty _begin, _end;
-    };
-  
   template<typename Index, typename Func>
     class ParallelForTask
   {
@@ -75,17 +67,5 @@ namespace embree
     __forceinline void parallel_for( const Index first, const Index last, const Index step, const Func& f)
   {
     ParallelForTask<Index,Func>(first,last,step,f);
-  }
-
-  template<typename Index, typename Func>
-    __forceinline void sequential_for( const Index first, const Index last, const Func& f) 
-  {
-    f(range<Index>(first,last));
-  }
-
-  template<typename Index, typename Func>
-    __forceinline void sequential_for( const Index first, const Index last, const Index step, const Func& f)
-  {
-    f(range<Index>(first,last));
   }
 }
