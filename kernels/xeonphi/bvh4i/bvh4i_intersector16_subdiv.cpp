@@ -645,6 +645,7 @@ namespace embree
 
       /* update primID/geomID and compute normals */
 #if 1
+      // FIXME: test all rays with the same primID
       mic_m m_hit = (ray16.primID != -1) & m_valid;
       rayIndex = -1;
       while((rayIndex = bitscan64(rayIndex,toInt(m_hit))) != BITSCAN_NO_BIT_SET_64)	    
@@ -652,6 +653,14 @@ namespace embree
 	  SubdivPatch1& subdiv_patch = ((SubdivPatch1*)accel)[ray16.primID[rayIndex]];
 	  ray16.primID[rayIndex] = subdiv_patch.primID;
 	  ray16.geomID[rayIndex] = subdiv_patch.geomID;
+	  ray16.geomID[rayIndex] = subdiv_patch.geomID;
+	  ray16.u[rayIndex]      = (1.0f-ray16.u[rayIndex]) * subdiv_patch.u_range.x + ray16.u[rayIndex] * subdiv_patch.u_range.y;
+	  ray16.v[rayIndex]      = (1.0f-ray16.v[rayIndex]) * subdiv_patch.v_range.x + ray16.v[rayIndex] * subdiv_patch.v_range.y;
+	  Vec3fa normal          = subdiv_patch.normal(ray16.u[rayIndex],ray16.v[rayIndex]);
+	  ray16.Ng.x[rayIndex]   = normal.x;
+	  ray16.Ng.y[rayIndex]   = normal.y;
+	  ray16.Ng.z[rayIndex]   = normal.z;
+
 	}
 #endif
 
