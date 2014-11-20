@@ -21,11 +21,13 @@
 namespace embree
 {
   template<typename ArrayArray, typename Func>
-    __forceinline void sequential_for_for( ArrayArray& array2, const size_t minStepSize, const Func& f ) 
+    __forceinline void sequential_for_for( ArrayArray& array2, const size_t minStepSize, const Func& func ) 
   {
+    size_t k=0;
     for (size_t i=0; i!=array2.size(); ++i) {
-      const size_t N = array2[i].size();
-      if (N) f(array2[i],range<size_t>(0,N));
+      const size_t N = array2[i]->size();
+      if (N) func(array2[i],range<size_t>(0,N),k);
+      k+=N;
     }
   }
 
@@ -95,7 +97,7 @@ namespace embree
       for (size_t i=i0; k<k1; i++) {
         const size_t N = this->sizes[i];
         const size_t r0 = j0, r1 = min(N,r0+k1-k);
-        if (r1 > r0) f(this->array2[i],range<size_t>(r0,r1));
+        if (r1 > r0) f(this->array2[i],range<size_t>(r0,r1),k);
         k+=r1-r0; j0 = 0;
       }
     }

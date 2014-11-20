@@ -32,25 +32,37 @@ namespace embree
 
       /* create vector with random numbers */
       size_t sum0 = 0;
+      size_t K = 0;
       const size_t M = 1000;
       std::vector<std::vector<size_t>* > array2(M);
       for (size_t i=0; i<M; i++) {
         const size_t N = ::random() % 1024;
+        K+=N;
         array2[i] = new std::vector<size_t>(N);
         for (size_t j=0; j<N; j++) 
           sum0 += (*array2[i])[j] = ::random();
       }
 
+      /* array to test global index */
+      std::vector<atomic_t> verify(K);
+      for (size_t i=0; i<K; i++) verify[i] = 0;
+
       /* add all numbers using parallel_for_for */
       AtomicCounter sum1 = 0;
-      parallel_for_for( array2, size_t(1), [&](std::vector<size_t>* v, const range<size_t>& r) 
+      parallel_for_for( array2, size_t(1), [&](std::vector<size_t>* v, const range<size_t>& r, size_t k) 
       {
         size_t s = 0;
-	for (size_t i=r.begin(); i<r.end(); i++) 
+	for (size_t i=r.begin(); i<r.end(); i++) {
 	  s += (*v)[i];
+          atomic_add(&verify[k++],1);
+        }
         sum1 += s;
       });
-      passed = sum0 == sum1;
+      passed &= (sum0 == sum1);
+
+      /* check global index */
+      for (size_t i=0; i<K; i++) 
+        passed &= (verify[i] == 1);
 
       /* delete vectors again */
       for (size_t i=0; i<array2.size(); i++)
