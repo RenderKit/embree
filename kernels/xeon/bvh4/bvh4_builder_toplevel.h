@@ -74,7 +74,6 @@ namespace embree
       void open_sequential();
       
     public:
-      BVH4* bvh;      //!< Output BVH4
       std::vector<BVH4*>& objects;
       std::vector<Builder*> builders;
       std::vector<size_t> allThreadBuilds;    

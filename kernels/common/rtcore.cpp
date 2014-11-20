@@ -101,7 +101,7 @@ namespace embree
     g_tri_accel = "default";
     g_tri_builder = "default";
     g_tri_traverser = "default";
-    g_hair_builder_replication_factor = 2.0f;
+    g_tri_builder_replication_factor = 2.0f;
 
     g_tri_accel_mb = "default";
     g_tri_builder_mb = "default";
