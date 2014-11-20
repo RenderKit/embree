@@ -1542,12 +1542,6 @@ namespace embree
       return (u_n[0] * curve0 + u_n[1] * curve1 + u_n[2] * curve2 + u_n[3] * curve3); 
     }
 
-    __forceinline Vec3fa normal(const float uu, const float vv) const
-    {
-      const Vec3fa tu = tangentU(uu,vv);
-      const Vec3fa tv = tangentV(uu,vv);
-      return cross(tu,tv);
-    }    
 
 
 #if defined(__MIC__)
@@ -1566,8 +1560,13 @@ namespace embree
 
       const mic_f tangentUV = (u_e_d[0] * curve0 + u_e_d[1] * curve1 + u_e_d[2] * curve2 + u_e_d[3] * curve3); // tu, tu, tv, tv
       
-      const mic_f tangentU = permute<0,0,0,0>(tangentU);
-      const mic_f tangentV = permute<2,2,2,2>(tangentV);
+      const mic_f tangentU = permute<0,0,0,0>(tangentUV);
+      const mic_f tangentV = permute<2,2,2,2>(tangentUV);
+
+      /* DBG_PRINT( tangentUV ); */
+      /* DBG_PRINT( tangentU ); */
+      /* DBG_PRINT( tangentV ); */
+
       const mic_f n = lcross_xyz(tangentU,tangentV);
       return n;
     }
@@ -1615,6 +1614,22 @@ namespace embree
     }
     
 #endif
+
+    __forceinline Vec3fa normal(const float uu, const float vv) const
+    {
+      const Vec3fa tu = tangentU(uu,vv);
+      const Vec3fa tv = tangentV(uu,vv);
+
+/*       DBG_PRINT(tu); */
+/*       DBG_PRINT(tv); */
+/*       DBG_PRINT( cross(tu,tv) ); */
+/* #if defined(__MIC__) */
+/*       DBG_PRINT( normal4(uu,vv) ); */
+/* #endif */
+/*       exit(0); */
+
+      return cross(tu,tv);
+    }    
 
 
   };
