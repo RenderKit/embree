@@ -76,7 +76,7 @@ namespace embree
       size_t k=k0, N=0;
       for (size_t i=i0; k<k1; i++) {
         const size_t r0 = j0, r1 = min(state.sizes[i],r0+k1-k);
-        if (r1 > r0) N += f(state.array2[i],range<size_t>(r0,r1),state.sums[taskIndex]+N);
+        if (r1 > r0) N += f(state.array2[i],range<size_t>(r0,r1),k,state.sums[taskIndex]+N);
         k+=r1-r0; j0 = 0;
       }
       state.counts[taskIndex] = N;

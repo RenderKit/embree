@@ -35,20 +35,29 @@ namespace embree
       std::vector<atomic_t> flattened;
       typedef std::vector<std::vector<size_t>* > ArrayArray;
       ArrayArray array2(M);
+      size_t K = 0;
       for (size_t i=0; i<M; i++) {
         const size_t N = ::random() % 10;
+        K += N;
         array2[i] = new std::vector<size_t>(N);
         for (size_t j=0; j<N; j++) 
           (*array2[i])[j] = ::random() % 10;
       }
   
+      /* array to test global index */
+      std::vector<atomic_t> verify_k(K);
+      for (size_t i=0; i<K; i++) verify_k[i] = 0;
+
       ParallelForForPrefixSumState<ArrayArray> state(array2,size_t(1));
   
       /* dry run only counts */
-      parallel_for_for_prefix_sum( state, [&](std::vector<size_t>* v, const range<size_t>& r, const size_t base) 
+      parallel_for_for_prefix_sum( state, [&](std::vector<size_t>* v, const range<size_t>& r, size_t k, const size_t base) 
       {
         size_t s = 0;
-	for (size_t i=r.begin(); i<r.end(); i++) s += (*v)[i];
+	for (size_t i=r.begin(); i<r.end(); i++) {
+          s += (*v)[i];
+          atomic_add(&verify_k[k++],1);
+        }
         return s;
       });
       
@@ -57,7 +66,7 @@ namespace embree
       memset(&flattened[0],0,sizeof(atomic_t)*flattened.size());
 
       /* now we actually fill the flattened array */
-      parallel_for_for_prefix_sum( state, [&](std::vector<size_t>* v, const range<size_t>& r, const size_t base) 
+      parallel_for_for_prefix_sum( state, [&](std::vector<size_t>* v, const range<size_t>& r, size_t k, const size_t base) 
       {
         size_t s = 0;
 	for (size_t i=r.begin(); i<r.end(); i++) {
@@ -65,9 +74,14 @@ namespace embree
             atomic_add(&flattened[base+s+j],1);
           }
           s += (*v)[i];
+          atomic_add(&verify_k[k++],1);
         }
         return s;
       });
+
+      /* check global index */
+      for (size_t i=0; i<K; i++) 
+        passed &= (verify_k[i] == 2);
 
       /* check if each element was assigned exactly once */
       for (size_t i=0; i<flattened.size(); i++)

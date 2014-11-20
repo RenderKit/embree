@@ -44,8 +44,8 @@ namespace embree
       }
 
       /* array to test global index */
-      std::vector<atomic_t> verify(K);
-      for (size_t i=0; i<K; i++) verify[i] = 0;
+      std::vector<atomic_t> verify_k(K);
+      for (size_t i=0; i<K; i++) verify_k[i] = 0;
 
       /* add all numbers using parallel_for_for */
       AtomicCounter sum1 = 0;
@@ -54,7 +54,7 @@ namespace embree
         size_t s = 0;
 	for (size_t i=r.begin(); i<r.end(); i++) {
 	  s += (*v)[i];
-          atomic_add(&verify[k++],1);
+          atomic_add(&verify_k[k++],1);
         }
         sum1 += s;
       });
@@ -62,7 +62,7 @@ namespace embree
 
       /* check global index */
       for (size_t i=0; i<K; i++) 
-        passed &= (verify[i] == 1);
+        passed &= (verify_k[i] == 1);
 
       /* delete vectors again */
       for (size_t i=0; i<array2.size(); i++)
