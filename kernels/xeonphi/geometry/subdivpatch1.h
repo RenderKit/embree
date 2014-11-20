@@ -138,6 +138,21 @@ namespace embree
       
     }
 
+    __forceinline Vec3fa normal(const float &uu,
+				const float &vv) const
+    {
+      if (likely(isRegular()))
+	{
+	  return patch.normal(uu,vv);
+	}
+      else 
+	{
+	  FATAL("not yet implemented");
+	}
+      
+    }
+
+
     __forceinline bool isRegular() const
     {
       return (flags & REGULAR_PATCH) == REGULAR_PATCH;

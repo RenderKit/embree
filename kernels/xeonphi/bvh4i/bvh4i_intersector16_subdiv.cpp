@@ -281,6 +281,8 @@ namespace embree
 					const unsigned int grid_u_res,
 					const unsigned int grid_v_res,
 					const mic3f &vtx,
+					const mic_f &u,
+					const mic_f &v,
 					const mic_m m_active,
 					const size_t rayIndex, 
 					const mic_f &dir_xyz,
@@ -288,18 +290,15 @@ namespace embree
 					Ray16& ray16)
     {
       
-      const mic3f v1( uload16f_low(&vtx.x[1])           , uload16f_low(&vtx.y[1])           , uload16f_low(&vtx.z[1]));
-      const mic3f v2( uload16f_low(&vtx.x[grid_u_res+1]), uload16f_low(&vtx.y[grid_u_res+1]), uload16f_low(&vtx.z[grid_u_res+1]));
-      const mic3f v3( uload16f_low(&vtx.x[grid_u_res+0]), uload16f_low(&vtx.y[grid_u_res+0]), uload16f_low(&vtx.z[grid_u_res+0]));
 
       intersect1_quad16(rayIndex, 
 			dir_xyz,
 			org_xyz,
 			ray16,
 			vtx,
-			v1,
-			v2,
-			v3,
+			u,
+			v,
+			grid_u_res,
 			m_active,
 			subdiv_patch_index);
       return true;
@@ -357,6 +356,8 @@ namespace embree
 				  grid_u_res,
 				  grid_v_res,
 				  vtx,
+				  uu,
+				  vv,
 				  m_active,
 				  rayIndex,
 				  dir_xyz,
@@ -394,6 +395,8 @@ namespace embree
 					  8,
 					  2,
 					  vtx,
+					  uu,
+					  vv,
 					  m_active,
 					  rayIndex,
 					  dir_xyz,
@@ -617,20 +620,15 @@ namespace embree
 		      const mic_m m_active = 0x777;
 		  
 		      const mic3f vtx = subdiv_patch.eval16(uu,vv);
-
-		      const mic3f v0 = vtx;
-		      const mic3f v1( uload16f_low(&vtx.x[1])  , uload16f_low(&vtx.y[1])  , uload16f_low(&vtx.z[1]));
-		      const mic3f v2( uload16f_low(&vtx.x[4+1]), uload16f_low(&vtx.y[4+1]), uload16f_low(&vtx.z[4+1]));
-		      const mic3f v3( uload16f_low(&vtx.x[4+0]), uload16f_low(&vtx.y[4+0]), uload16f_low(&vtx.z[4+0]));
 		  
 		      intersect1_quad16(rayIndex, 
 					dir_xyz,
 					org_xyz,
 					ray16,
-					v0,
-					v1,
-					v2,
-					v3,
+					vtx,
+					uu,
+					vv,
+					4,
 					m_active,
 					patchIndex);
 		    }
@@ -647,6 +645,7 @@ namespace embree
 
       /* update primID/geomID and compute normals */
 #if 1
+      // FIXME: test all rays with the same primID
       mic_m m_hit = (ray16.primID != -1) & m_valid;
       rayIndex = -1;
       while((rayIndex = bitscan64(rayIndex,toInt(m_hit))) != BITSCAN_NO_BIT_SET_64)	    
@@ -654,6 +653,14 @@ namespace embree
 	  SubdivPatch1& subdiv_patch = ((SubdivPatch1*)accel)[ray16.primID[rayIndex]];
 	  ray16.primID[rayIndex] = subdiv_patch.primID;
 	  ray16.geomID[rayIndex] = subdiv_patch.geomID;
+	  ray16.geomID[rayIndex] = subdiv_patch.geomID;
+	  ray16.u[rayIndex]      = (1.0f-ray16.u[rayIndex]) * subdiv_patch.u_range.x + ray16.u[rayIndex] * subdiv_patch.u_range.y;
+	  ray16.v[rayIndex]      = (1.0f-ray16.v[rayIndex]) * subdiv_patch.v_range.x + ray16.v[rayIndex] * subdiv_patch.v_range.y;
+	  Vec3fa normal          = subdiv_patch.normal(ray16.u[rayIndex],ray16.v[rayIndex]);
+	  ray16.Ng.x[rayIndex]   = normal.x;
+	  ray16.Ng.y[rayIndex]   = normal.y;
+	  ray16.Ng.z[rayIndex]   = normal.z;
+
 	}
 #endif
 
