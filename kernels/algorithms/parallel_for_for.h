@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "range.h"
+#include "parallel_for.h"
 
 namespace embree
 {
@@ -73,46 +73,39 @@ namespace embree
   };
 
   template<typename ArrayArray, typename Func>
-    class ParallelForForTask : public ParallelForForState<ArrayArray>
+    __forceinline void parallel_for_for( ArrayArray& array2, const size_t minStepSize, const Func& f)
   {
-  public:
-    ParallelForForTask ( ArrayArray& array2, const size_t minStepSize, const Func& f)
-      : ParallelForForState<ArrayArray>(array2, minStepSize), f(f)
-    {
-      LockStepTaskScheduler* scheduler = LockStepTaskScheduler::instance();
-      const size_t threads = scheduler->getNumThreads();
-      const size_t blocks  = (this->K+minStepSize-1)/minStepSize;
-      scheduler->dispatchTaskSet(task_for_for,this,min(threads,blocks));
-    }
+    ParallelForForState<ArrayArray> state(array2,minStepSize);
 
-    void for_for(const size_t threadIndex, const size_t threadCount, const size_t taskIndex, const size_t taskCount) 
+    /* fast path for small number of iterations */
+    size_t taskCount = (state.K+minStepSize-1)/minStepSize;
+    if (taskCount == 1) {
+      return sequential_for_for(array2,minStepSize,f);
+    }
+    taskCount = min(taskCount,LockStepTaskScheduler::instance()->getNumThreads());
+
+    /* parallel invokation of all tasks */
+    parallel_for(taskCount, [&](const size_t taskIndex) 
     {
       /* calculate range */
-      const size_t k0 = (taskIndex+0)*this->K/taskCount;
-      const size_t k1 = (taskIndex+1)*this->K/taskCount;
-      size_t i0, j0; this->start_indices(k0,i0,j0);
+      const size_t k0 = (taskIndex+0)*state.K/taskCount;
+      const size_t k1 = (taskIndex+1)*state.K/taskCount;
+      size_t i0, j0; state.start_indices(k0,i0,j0);
 
       /* iterate over arrays */
       size_t k=k0;
       for (size_t i=i0; k<k1; i++) {
-        const size_t N = this->sizes[i];
+        const size_t N = state.sizes[i];
         const size_t r0 = j0, r1 = min(N,r0+k1-k);
-        if (r1 > r0) f(this->array2[i],range<size_t>(r0,r1),k);
+        if (r1 > r0) f(array2[i],range<size_t>(r0,r1),k);
         k+=r1-r0; j0 = 0;
       }
-    }
-      
-    static void task_for_for(void* data, const size_t threadIndex, const size_t threadCount, const size_t taskIndex, const size_t taskCount) {
-      ((ParallelForForTask*)data)->for_for(threadIndex,threadCount,taskIndex,taskCount);
-    }
-    
-    private:
-      const Func& f;
-  };
+    });
+  }
 
   template<typename ArrayArray, typename Func>
-    __forceinline void parallel_for_for( ArrayArray& array2, const size_t minStepSize, const Func& f)
+    __forceinline void parallel_for_for( ArrayArray& array2, const Func& f)
   {
-    ParallelForForTask<ArrayArray,Func>(array2,minStepSize,f);
+    parallel_for_for(array2,1,f);
   }
 }
