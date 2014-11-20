@@ -21,11 +21,11 @@
 namespace embree
 {
   template<typename ArrayArray, typename Value>
-    class ParallelForForPrefixSumState : public ParallelForForState<ArrayArray>
+    class ParallelForForPrefixSumState : public ParallelForForHeapState
   {
   public:
     ParallelForForPrefixSumState ( ArrayArray& array2, const size_t minStepSize, const Value& identity ) 
-      : ParallelForForState<ArrayArray>(array2), array2(array2), minStepSize(minStepSize), value(identity), _blocks(0), scheduler(LockStepTaskScheduler::instance())
+      : ParallelForForHeapState(array2), array2(array2), minStepSize(minStepSize), value(identity), _blocks(0), scheduler(LockStepTaskScheduler::instance())
     {
       _blocks  = min((this->K+this->minStepSize-1)/this->minStepSize,scheduler->getNumThreads());
       counts.resize(_blocks);

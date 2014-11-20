@@ -31,23 +31,18 @@ namespace embree
     }
   }
 
-  template<typename ArrayArray>
-    class ParallelForForState
+  class ParallelForForState
   {
-  public:
-    ParallelForForState ( ArrayArray& array2 )
-    {
-      const size_t M = array2.size();
-      prefix_sum.resize(M);
-      sizes.resize(M);
-      init(array2);
-    }
+  protected:
 
-    __forceinline void init (ArrayArray& array2)
+    ParallelForForState ()
+      : K(0), M(0), sizes(NULL), prefix_sum(NULL) {}
+
+    template<typename ArrayArray>
+      __forceinline void init (ArrayArray& array2)
     {
       /* compute prefix sum of number of elements of sub arrays */
       size_t sum=0;
-      const size_t M = array2.size();
       for (size_t i=0; i<M; i++) 
       {
         const size_t N = array2[i] ? array2[i]->size() : 0;
@@ -58,27 +53,77 @@ namespace embree
       K = sum;
     }
 
+  public:
+
     __forceinline size_t size() const {
       return K;
     }
 
     __forceinline void start_indices(const size_t k0, size_t& i0, size_t& j0) const
     {
-      auto iter = std::upper_bound(prefix_sum.begin(), prefix_sum.end(), k0);
-      i0 = iter-prefix_sum.begin()-1;
+      auto iter = std::upper_bound(&prefix_sum[0], &prefix_sum[M], k0);
+      i0 = iter-&prefix_sum[0]-1;
       j0 = k0-prefix_sum[i0];
     }
-        
-  public:
-    std::vector<size_t> prefix_sum;
-    std::vector<size_t> sizes;
+    
+  public: // FIXME: make private
+    size_t* sizes;
+    size_t* prefix_sum;
     size_t K;
+    size_t M;
+  };
+
+  class ParallelForForStackState : public ParallelForForState
+  {
+  public:
+
+    template<typename ArrayArray>
+      __forceinline ParallelForForStackState ( ArrayArray& array2 )
+    {
+      M = array2.size();
+      prefix_sum = (size_t*) alloca(M*sizeof(size_t)); // FIXME: is alloca safe here when function has __forceinline
+      sizes = (size_t*) alloca(M*sizeof(size_t));
+      ParallelForForState::init(array2);
+    }
+
+    ~ParallelForForStackState() {
+    }
+  };
+
+  class ParallelForForHeapState : public ParallelForForState
+  {
+  public:
+
+    template<typename ArrayArray>
+      __forceinline ParallelForForHeapState ( ArrayArray& array2 )
+    {
+      init(array2);
+    }
+
+    template<typename ArrayArray>
+      __forceinline void init( ArrayArray& array2 )
+    {
+      if (M != array2.size()) 
+      {
+        delete[] prefix_sum;
+        delete[] sizes;
+        M = array2.size();
+        prefix_sum = new size_t[M];
+        sizes = new size_t[M];
+      }
+      ParallelForForState::init(array2);
+    }
+
+    ~ParallelForForHeapState() {
+      delete[] prefix_sum;
+      delete[] sizes;
+    }
   };
 
   template<typename ArrayArray, typename Func>
     __forceinline void parallel_for_for( ArrayArray& array2, const size_t minStepSize, const Func& f)
   {
-    ParallelForForState<ArrayArray> state(array2);
+    ParallelForForStackState state(array2);
 
     /* fast path for small number of iterations */
     size_t N = state.size();
