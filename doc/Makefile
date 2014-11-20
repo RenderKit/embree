@@ -23,8 +23,8 @@ replacelinks=sed -i\
 -e 's@href="renderer.html"@href="http://embree.github.io/renderer.html"@' \
 $(1)
 
-version: ../kernels/version.h
-	sed 's/.*\"\(.*\)\".*/\1/g' $< > $@
+version: ../build/kernels/version.h
+	sed ':a;N;s/.*\"\(.*\)\".*/\1/;ba' $< > $@
 
 www/index.html: version src/*.html src/www/index.html
 	$(call replace,src/www/index.html,www/index.html)
