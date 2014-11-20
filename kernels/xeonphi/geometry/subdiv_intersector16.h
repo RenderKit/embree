@@ -30,6 +30,11 @@ namespace embree
 					     const mic3f &v0,
 					     const mic3f &v1,
 					     const mic3f &v2,
+					     const mic_f &u_grid,
+					     const mic_f &v_grid,
+					     const unsigned int offset_v0,
+					     const unsigned int offset_v1,
+					     const unsigned int offset_v2,
 					     const mic_m &m_active,
 					     const unsigned int subdiv_patch_index)
   {
@@ -77,6 +82,17 @@ namespace embree
 	const mic_m m_dist = eq(min_dist,max_dist_xyz);
 	const size_t index = bitscan(toInt(m_dist));
 
+	const mic_f u0 = uload16f_low(&u_grid[offset_v0]);
+	const mic_f u1 = uload16f_low(&u_grid[offset_v1]);
+	const mic_f u2 = uload16f_low(&u_grid[offset_v2]);
+	const mic_f u_final = u * u1 + v * u2 + (1.0f-u-v) * u0;
+
+	const mic_f v0 = uload16f_low(&v_grid[offset_v0]);
+	const mic_f v1 = uload16f_low(&v_grid[offset_v1]);
+	const mic_f v2 = uload16f_low(&v_grid[offset_v2]);
+	const mic_f v_final = u * v1 + v * v2 + (1.0f-u-v) * v0;
+
+
 	const mic_m m_tri = m_dist^(m_dist & (mic_m)((unsigned int)m_dist - 1));
                 
 	prefetch<PFHINT_L1EX>(&ray16.tfar);  
@@ -93,8 +109,8 @@ namespace embree
 	const mic_f gnormalz(normal.z[index]);
 		  
 	compactustore16f_low(m_tri,&ray16.tfar[rayIndex],min_dist);
-	compactustore16f_low(m_tri,&ray16.u[rayIndex],u); 
-	compactustore16f_low(m_tri,&ray16.v[rayIndex],v); 
+	compactustore16f_low(m_tri,&ray16.u[rayIndex],u_final); 
+	compactustore16f_low(m_tri,&ray16.v[rayIndex],v_final); 
 	compactustore16f_low(m_tri,&ray16.Ng.x[rayIndex],gnormalx); 
 	compactustore16f_low(m_tri,&ray16.Ng.y[rayIndex],gnormaly); 
 	compactustore16f_low(m_tri,&ray16.Ng.z[rayIndex],gnormalz); 
@@ -108,15 +124,25 @@ namespace embree
 					      const mic_f &dir_xyz,
 					      const mic_f &org_xyz,
 					      Ray16& ray16,
-					      const mic3f &v0,
-					      const mic3f &v1,
-					      const mic3f &v2,
-					      const mic3f &v3,
+					      const mic3f &vtx,
+					      const mic_f &u,
+					      const mic_f &v,
+					      const unsigned int grid_res,
 					      const mic_m &m_active,
 					      const unsigned int subdiv_patch_index)
   {
-    intersect1_tri16(rayIndex,dir_xyz,org_xyz,ray16,v0,v1,v3,m_active,subdiv_patch_index);
-    intersect1_tri16(rayIndex,dir_xyz,org_xyz,ray16,v3,v1,v2,m_active,subdiv_patch_index);
+    const unsigned int offset_v0 = 0;
+    const unsigned int offset_v1 = 1;
+    const unsigned int offset_v2 = grid_res+1;
+    const unsigned int offset_v3 = grid_res+0;
+
+    const mic3f &v0 = vtx;
+    const mic3f  v1( uload16f_low(&vtx.x[offset_v1]), uload16f_low(&vtx.y[offset_v1]), uload16f_low(&vtx.z[offset_v1]));
+    const mic3f  v2( uload16f_low(&vtx.x[offset_v2]), uload16f_low(&vtx.y[offset_v2]), uload16f_low(&vtx.z[offset_v2]));
+    const mic3f  v3( uload16f_low(&vtx.x[offset_v3]), uload16f_low(&vtx.y[offset_v3]), uload16f_low(&vtx.z[offset_v3]));
+
+    intersect1_tri16(rayIndex,dir_xyz,org_xyz,ray16,v0,v1,v3,u,v,offset_v0,offset_v1,offset_v3,m_active,subdiv_patch_index);
+    intersect1_tri16(rayIndex,dir_xyz,org_xyz,ray16,v3,v1,v2,u,v,offset_v3,offset_v1,offset_v2,m_active,subdiv_patch_index);
   }
 
   static __forceinline bool intersect1_quad(const size_t rayIndex, 
