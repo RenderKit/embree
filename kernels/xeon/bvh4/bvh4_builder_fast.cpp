@@ -307,8 +307,9 @@ namespace embree
       for (size_t i=0; i<iter.size(); i++)
         if (iter[i]) iter[i]->initializeHalfEdgeStructures();
       
-      parallel_for_for_prefix_sum for_for_prefix_sum;
-      for_for_prefix_sum.count( iter, size_t(1), [&](SubdivMesh* mesh, const range<size_t>& r)  // FIXME: adjust granularity
+      ParallelForForPrefixSumState<Scene::Iterator<SubdivMesh>,size_t> state(iter,size_t(1024),size_t(0));
+
+      size_t S = parallel_for_for_prefix_sum( state, size_t(0), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const size_t base) 
       {
         size_t s = 0;
         for (size_t f=r.begin(); f!=r.end(); ++f) {
@@ -316,11 +317,11 @@ namespace embree
           s+=subdiv.size();
         }
         return s;
-      });
+      }, [](size_t a, size_t b) { return a+b; });
 
       /* calculate size of scene */
       size_t numPrimitivesOld = numPrimitives;
-      bvh->numPrimitives = numPrimitives = for_for_prefix_sum.size(); //number_of_primitives();
+      bvh->numPrimitives = numPrimitives = S; //number_of_primitives();
       bool parallel = needAllThreads && numPrimitives > THRESHOLD_FOR_SINGLE_THREADED;
 	  
       /* initialize BVH */
@@ -329,19 +330,6 @@ namespace embree
       /* skip build for empty scene */
       if (numPrimitives == 0) 
 	return;
-
-      for_for_prefix_sum.execute(iter, [&](SubdivMesh* mesh, const range<size_t>& r, const range<size_t>& sum)  // FIXME: adjust granularity
-      {
-        const size_t dst = sum.begin();
-        for (size_t f=r.begin(); f!=r.end(); ++f) 
-        {
-          QuadQuad4x4AdaptiveSubdivision subdiv(&prims[psum.begin()],bvh->alloc2,this->scene,mesh->getHalfEdge(f),mesh->getVertexPositionPtr(),mesh->id,f);
-          dst+=subdiv.size();
-          assert(dst == sum.end());
-          for (size_t i=sum.begin(); i<sum.end(); i++)
-            pinfo.add(prims[i].bounds());
-        }
-      });
       
       /* verbose mode */
       if (g_verbose >= 1)
@@ -354,6 +342,19 @@ namespace embree
 	bytesPrims = numPrimitives * sizeof(PrimRef);
         prims = (PrimRef* ) os_malloc(bytesPrims);  memset(prims,0,bytesPrims);
       }
+
+      parallel_for_for_prefix_sum( state, size_t(0), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, size_t base) 
+      {
+        const size_t s = 0;
+        for (size_t f=r.begin(); f!=r.end(); ++f) {
+          QuadQuad4x4AdaptiveSubdivision subdiv(&prims[base],bvh->alloc2,this->scene,mesh->getHalfEdge(f),mesh->getVertexPositionPtr(),mesh->id,f);
+          s+=subdiv.size();
+        }
+        return s;
+      }, [](size_t a, size_t b) { return a+b; });
+
+      for (size_t i=0; i<S; i++) // FIXME: parallelize
+        pinfo.add(prims[i].bounds());
       
       if (!parallel) {
 	build_sequential(threadIndex,threadCount);
@@ -397,8 +398,9 @@ namespace embree
         mesh->initializeHalfEdgeStructures();
         for (size_t f=0; f<mesh->size(); f++) {
           if (!mesh->valid(f)) continue;
-          std::vector<PrimRef> lprims;
-          QuadQuad4x4AdaptiveSubdivision (lprims,bvh->alloc2,this->scene,mesh->getHalfEdge(f),mesh->getVertexPositionPtr(),mesh->id,f);
+          QuadQuad4x4AdaptiveSubdivision count((PrimRef*)NULL,bvh->alloc2,this->scene,mesh->getHalfEdge(f),mesh->getVertexPositionPtr(),mesh->id,f);
+          std::vector<PrimRef> lprims(count.size());
+          QuadQuad4x4AdaptiveSubdivision (&lprims[0],bvh->alloc2,this->scene,mesh->getHalfEdge(f),mesh->getVertexPositionPtr(),mesh->id,f);
           for (size_t i=0; i<lprims.size(); i++) {
             assert(N<numPrimitives);
             prims[N++] = lprims[i];

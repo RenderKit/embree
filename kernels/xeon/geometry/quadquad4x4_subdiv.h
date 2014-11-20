@@ -22,20 +22,21 @@ namespace embree
 {
   struct QuadQuad4x4AdaptiveSubdivision
   {
-    std::vector<PrimRef>& prims_o;
+    PrimRef* prims_o;
     FastAllocator& alloc;
     Scene* scene;
     const unsigned int geomID;
     const unsigned int primID;
+    size_t count;
 
-    QuadQuad4x4AdaptiveSubdivision (std::vector<PrimRef>& prims_o,
+    QuadQuad4x4AdaptiveSubdivision (PrimRef* prims_o,
                                     FastAllocator& alloc,
                                     Scene* scene, // FIXME: pass displacement shader instead
                                     const SubdivMesh::HalfEdge* h, 
                                     const Vec3fa* vertices, 
                                     const unsigned int geomID, 
                                     const unsigned int primID)
-    : prims_o(prims_o), alloc(alloc), scene(scene), geomID(geomID), primID(primID) 
+    : prims_o(prims_o), alloc(alloc), scene(scene), geomID(geomID), primID(primID), count(0)
       {
 #if 0
         const IrregularCatmullClarkPatch patch(h,vertices);
@@ -49,6 +50,10 @@ namespace embree
         subdivide(patch,5);
 #endif
       }
+
+    __forceinline size_t size() const {
+      return count;
+    }
 
     void subdivide(const GeneralIrregularCatmullClarkPatch& patch, int depth)
     {
@@ -123,10 +128,13 @@ namespace embree
       {
         for (int x=0; x<nx; x+=8) 
         {
+          count++;
+          if (prims_o == NULL) continue;
           QuadQuad4x4* leaf = (QuadQuad4x4*) alloc.malloc(sizeof(QuadQuad4x4),16);
           new (leaf) QuadQuad4x4(geomID,primID);
           const BBox3fa bounds = leaf->build(scene,patcheval,pattern0,pattern1,pattern2,pattern3,pattern_x,x,nx,pattern_y,y,ny,u0,u1,v0,v1);
-          prims_o.push_back(PrimRef(bounds,BVH4::encodeTypedLeaf(leaf,0)));
+          *prims_o = PrimRef(bounds,BVH4::encodeTypedLeaf(leaf,0));
+          prims_o++;
         }
       }
     }
