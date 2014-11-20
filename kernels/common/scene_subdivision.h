@@ -1709,33 +1709,6 @@ namespace embree
 
       f_m_vtx = 1.0f / d * (c_e_m * p_vtx + (d - 2.0f*c - c_e_m) * e0_m_vtx + 2.0f*c* e3_p_vtx + r_e_m);
 
-#if 0
-      DBG_PRINT( irreg_patch.ring[index].vtx );
-      DBG_PRINT( p_vtx );
-      
-      DBG_PRINT( e0_p_vtx );
-      DBG_PRINT( e1_m_vtx );
-
-      DBG_PRINT( e0_m_vtx );
-      DBG_PRINT( e3_p_vtx );
-
-      DBG_PRINT( c_i );
-      DBG_PRINT( c_i_m_1 );
-      DBG_PRINT( c_i_m_2 );
-
-      DBG_PRINT( e_i_p_1 );
-      DBG_PRINT( e_i );
-      DBG_PRINT( e_i_m_1 );
-      DBG_PRINT( e_i_m_2 );
-
-      DBG_PRINT( r_e_p );           
-      DBG_PRINT( r_e_m );           
-
-      DBG_PRINT(f_p_vtx);
-      DBG_PRINT(f_m_vtx);
-      //exit(0);
-#endif
-
     }
 
     __forceinline void init(const IrregularCatmullClarkPatch &irreg_patch)
@@ -1783,28 +1756,133 @@ namespace embree
 	 f_m[y][x] = (Vec3fa_t)f[y][x];
    }
 
-   __forceinline void exportBicubicBezierPatch( Vec3fa matrix[4][4], const float uu, const float vv ) const
+   /* __forceinline void exportBicubicBezierPatch( Vec3fa matrix[4][4], const float uu, const float vv ) const */
+   /* { */
+   /*   for (size_t y=0;y<4;y++) */
+   /*     for (size_t x=0;x<4;x++) */
+   /* 	 matrix[y][x] = (Vec3fa_t)v[y][x]; */
+
+   /*   if (uu == 0.0f || uu == 1.0f || vv == 0.0f || vv == 1.0f) return; */
+
+   /*   // FIXME: merge u,v and extract after computation */
+
+   /*   const Vec3fa_t F0 = (      uu  * f0_p() +       vv  * f0_m()) * 1.0f/(uu+vv); */
+   /*   const Vec3fa_t F1 = ((1.0f-uu) * f1_m() +       vv  * f1_p()) * 1.0f/(1.0f-uu+vv); */
+   /*   const Vec3fa_t F2 = ((1.0f-uu) * f2_p() + (1.0f-vv) * f2_m()) * 1.0f/(2.0f-uu-vv); */
+   /*   const Vec3fa_t F3 = (      uu  * f3_m() + (1.0f-vv) * f3_p()) * 1.0f/(1.0f+uu-vv); */
+
+   /*   matrix[1][1] = F0; */
+   /*   matrix[1][2] = F1; */
+   /*   matrix[2][2] = F2; */
+   /*   matrix[2][1] = F3;      */
+
+   /* } */
+   
+   static __forceinline Vec3fa_t deCasteljau(const float uu, const Vec3fa_t &v0, const Vec3fa_t &v1, const Vec3fa_t &v2, const Vec3fa_t &v3)
    {
-     for (size_t y=0;y<4;y++)
-       for (size_t x=0;x<4;x++)
-	 matrix[y][x] = (Vec3fa_t)v[y][x];
+      const float one_minus_uu = 1.0f - uu;
 
-     if (uu == 0.0f || uu == 1.0f || vv == 0.0f || vv == 1.0f) return;
+      const Vec3fa_t v0_1 = one_minus_uu * v0 + uu * v1;
+      const Vec3fa_t v1_1 = one_minus_uu * v1 + uu * v2;
+      const Vec3fa_t v2_1 = one_minus_uu * v2 + uu * v3;
 
-     // FIXME: merge u,v and extract after computation
+      const Vec3fa_t v0_2 = one_minus_uu * v0_1 + uu * v1_1;
+      const Vec3fa_t v1_2 = one_minus_uu * v1_1 + uu * v2_1;
 
-     const Vec3fa_t F0 = (      uu  * f0_p() +       vv  * f0_m()) * 1.0f/(uu+vv);
-     const Vec3fa_t F1 = ((1.0f-uu) * f1_m() +       vv  * f1_p()) * 1.0f/(1.0f-uu+vv);
-     const Vec3fa_t F2 = ((1.0f-uu) * f2_p() + (1.0f-vv) * f2_m()) * 1.0f/(2.0f-uu-vv);
-     const Vec3fa_t F3 = (      uu  * f3_m() + (1.0f-vv) * f3_p()) * 1.0f/(1.0f+uu-vv);
-
-     matrix[1][1] = F0;
-     matrix[1][2] = F1;
-     matrix[2][2] = F2;
-     matrix[2][1] = F3;     
-
+      const Vec3fa_t v0_3 = one_minus_uu * v0_2 + uu * v1_2;
+      return v0_3;
    }
 
+   static __forceinline Vec3fa_t deCasteljau_tangent(const float uu, const Vec3fa_t &v0, const Vec3fa_t &v1, const Vec3fa_t &v2, const Vec3fa_t &v3)
+   {
+      const float one_minus_uu = 1.0f - uu;
+
+      const Vec3fa_t v0_1 = one_minus_uu * v0 + uu * v1;
+      const Vec3fa_t v1_1 = one_minus_uu * v1 + uu * v2;
+      const Vec3fa_t v2_1 = one_minus_uu * v2 + uu * v3;
+
+      const Vec3fa_t v0_2 = one_minus_uu * v0_1 + uu * v1_1;
+      const Vec3fa_t v1_2 = one_minus_uu * v1_1 + uu * v2_1;
+
+      return v1_2 - v0_2;
+   }
+
+   static __forceinline void computeInnerVertices(const Vec3fa matrix[4][4],
+						  const Vec3fa f_m[2][2],
+						  const float uu,
+						  const float vv,
+						  Vec3fa_t &matrix_11,
+						  Vec3fa_t &matrix_12,
+						  Vec3fa_t &matrix_22,
+						  Vec3fa_t &matrix_21)
+   {
+     if (uu == 0.0f || uu == 1.0f || vv == 0.0f || vv == 1.0f) 
+       {
+	 matrix_11 = matrix[1][1];
+	 matrix_12 = matrix[1][2];
+	 matrix_22 = matrix[2][2];
+	 matrix_21 = matrix[2][1];	 
+       }
+     else
+       {
+	 const Vec3fa_t f0_p = matrix[1][1];
+	 const Vec3fa_t f1_p = matrix[1][2];
+	 const Vec3fa_t f2_p = matrix[2][2];
+	 const Vec3fa_t f3_p = matrix[2][1];
+
+	 const Vec3fa_t f0_m = f_m[0][0];
+	 const Vec3fa_t f1_m = f_m[0][1];
+	 const Vec3fa_t f2_m = f_m[1][1];
+	 const Vec3fa_t f3_m = f_m[1][0];
+
+	 const Vec3fa_t F0 = (      uu  * f0_p +       vv  * f0_m) * 1.0f/(uu+vv);
+	 const Vec3fa_t F1 = ((1.0f-uu) * f1_m +       vv  * f1_p) * 1.0f/(1.0f-uu+vv);
+	 const Vec3fa_t F2 = ((1.0f-uu) * f2_p + (1.0f-vv) * f2_m) * 1.0f/(2.0f-uu-vv);
+	 const Vec3fa_t F3 = (      uu  * f3_m + (1.0f-vv) * f3_p) * 1.0f/(1.0f+uu-vv);
+
+	 matrix_11 = F0;
+	 matrix_12 = F1;
+	 matrix_22 = F2;
+	 matrix_21 = F3;     
+       }
+   } 
+
+   static __forceinline Vec3fa normal(const Vec3fa matrix[4][4],
+				      const Vec3fa f_m[2][2],
+				      const float uu,
+				      const float vv) 
+   {
+
+     Vec3fa_t matrix_11, matrix_12, matrix_22, matrix_21;
+     computeInnerVertices(matrix,f_m,uu,vv,matrix_11, matrix_12, matrix_22, matrix_21);
+
+     /* tangentU */
+      const Vec3fa_t col0 = deCasteljau(vv, matrix[0][0], matrix[1][0], matrix[2][0], matrix[3][0]);
+      const Vec3fa_t col1 = deCasteljau(vv, matrix[0][1], matrix_11   , matrix_21   , matrix[3][1]);
+      const Vec3fa_t col2 = deCasteljau(vv, matrix[0][2], matrix_12   , matrix_22   , matrix[3][2]);
+      const Vec3fa_t col3 = deCasteljau(vv, matrix[0][3], matrix[1][3], matrix[2][3], matrix[3][3]);
+
+      const Vec3fa_t tangentU = deCasteljau_tangent(uu, col0, col1, col2, col3);
+
+     /* tangentV */
+      const Vec3fa_t row0 = deCasteljau(uu, matrix[0][0], matrix[0][1], matrix[0][2], matrix[0][3]);
+      const Vec3fa_t row1 = deCasteljau(uu, matrix[1][0], matrix_11   , matrix_12   , matrix[1][3]);
+      const Vec3fa_t row2 = deCasteljau(uu, matrix[2][0], matrix_21   , matrix_22   , matrix[2][3]);
+      const Vec3fa_t row3 = deCasteljau(uu, matrix[3][0], matrix[3][1], matrix[3][2], matrix[3][3]);
+
+      const Vec3fa_t tangentV = deCasteljau_tangent(vv, row0, row1, row2, row3);
+
+      /* normal = tangentU x tangentV */
+      const Vec3fa_t n = cross(tangentU,tangentV);
+
+      return n;     
+   }
+
+   __forceinline Vec3fa normal( const float uu,
+				const float vv) 
+   {
+     return normal(v,f,uu,vv);
+   }
    
 #if defined(__MIC__)
 
@@ -1949,13 +2027,11 @@ namespace embree
 
     __forceinline Vec3fa eval(const float uu, const float vv) const
     {
-      __aligned(64) Vec3fa matrix[4][4];
-      exportBicubicBezierPatch(matrix,uu,vv);
+      Vec3fa_t v_11, v_12, v_22, v_21;
+      computeInnerVertices(v,f,uu,vv,v_11, v_12, v_22, v_21);
 
       const float one_minus_uu = 1.0f - uu;
       const float one_minus_vv = 1.0f - vv;      
-
-     // FIXME: merge u,v and extract after computation
 
       const float B0_u = one_minus_uu * one_minus_uu * one_minus_uu;
       const float B0_v = one_minus_vv * one_minus_vv * one_minus_vv;
@@ -1967,10 +2043,10 @@ namespace embree
       const float B3_v = vv * vv * vv;
 
       const Vec3fa_t res = 
-	(B0_u * matrix[0][0] + B1_u * matrix[0][1] + B2_u * matrix[0][2] + B3_u * matrix[0][3]) * B0_v + 
-	(B0_u * matrix[1][0] + B1_u * matrix[1][1] + B2_u * matrix[1][2] + B3_u * matrix[1][3]) * B1_v + 
-	(B0_u * matrix[2][0] + B1_u * matrix[2][1] + B2_u * matrix[2][2] + B3_u * matrix[2][3]) * B2_v + 
-	(B0_u * matrix[3][0] + B1_u * matrix[3][1] + B2_u * matrix[3][2] + B3_u * matrix[3][3]) * B3_v; 
+	(B0_u * v[0][0] + B1_u * v[0][1] + B2_u * v[0][2] + B3_u * v[0][3]) * B0_v + 
+	(B0_u * v[1][0] + B1_u * v_11    + B2_u * v_12    + B3_u * v[1][3]) * B1_v + 
+	(B0_u * v[2][0] + B1_u * v_21    + B2_u * v_22    + B3_u * v[2][3]) * B2_v + 
+	(B0_u * v[3][0] + B1_u * v[3][1] + B2_u * v[3][2] + B3_u * v[3][3]) * B3_v; 
       
       return res;
 

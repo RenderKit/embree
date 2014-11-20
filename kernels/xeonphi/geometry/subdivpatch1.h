@@ -147,7 +147,7 @@ namespace embree
 	}
       else 
 	{
-	  FATAL("not yet implemented");
+	 return GregoryPatch::normal( patch.v, f_m, uu, vv );
 	}
       
     }
