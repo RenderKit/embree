@@ -1078,21 +1078,20 @@ namespace embree
 
    unsigned int offset = 0;
    unsigned int y = 0;
-   for(unsigned int x=0;x<=high_rate-1; x++) // inner points [1,..,n-1]
+   float value = 0.0f;
+   for(unsigned int x=0;x<high_rate-1; x++) // '<=' would be correct but we will leave the 1.0f at the end
      {
-       uv_array[offset] = (float)y * inv_low_rate;
-
-       //if (x == high_rate-1) break;
+       uv_array[offset] = value;
 
        offset += uv_array_step;      
-       if(p > 0)
+       if(unlikely(p > 0))
 	 {
 	   y++;
+	   value = (float)y * inv_low_rate;
 	   p -= 2*dx;
 	 }
        p += 2*dy;
      }
-   //assert(y == low_rate-1);
  }
 
  __forceinline void gridUVTessellator(const float edge_levels[4],
