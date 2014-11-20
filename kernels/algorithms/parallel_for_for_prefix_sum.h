@@ -25,10 +25,25 @@ namespace embree
   {
   public:
 
+    ParallelForForPrefixSumState () 
+    : ParallelForForHeapState(), minStepSize(0), _blocks(0), scheduler(NULL) {}
+
   template<typename ArrayArray>
     ParallelForForPrefixSumState ( ArrayArray& array2, const size_t minStepSize) 
     : ParallelForForHeapState(array2), minStepSize(minStepSize), _blocks(0), scheduler(LockStepTaskScheduler::instance())
     {
+      _blocks  = min((this->K+this->minStepSize-1)/this->minStepSize,scheduler->getNumThreads());
+      counts.resize(_blocks);
+      sums.resize(_blocks);
+    }
+
+    template<typename ArrayArray>
+      void init(ArrayArray& array2, const size_t minStepSize)
+    {
+      ParallelForForHeapState::init(array2);
+      this->minStepSize = minStepSize;
+      this->scheduler = LockStepTaskScheduler::instance();
+
       _blocks  = min((this->K+this->minStepSize-1)/this->minStepSize,scheduler->getNumThreads());
       counts.resize(_blocks);
       sums.resize(_blocks);

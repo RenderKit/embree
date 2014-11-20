@@ -94,6 +94,8 @@ namespace embree
   {
   public:
 
+    __forceinline ParallelForForHeapState () {}
+
     template<typename ArrayArray>
       __forceinline ParallelForForHeapState ( ArrayArray& array2 )
     {
