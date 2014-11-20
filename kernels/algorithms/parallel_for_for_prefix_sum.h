@@ -25,7 +25,7 @@ namespace embree
   {
   public:
     ParallelForForPrefixSumState ( ArrayArray& array2, const size_t minStepSize, const Value& identity ) 
-      : ParallelForForState<ArrayArray>(array2,minStepSize), value(identity), _blocks(0), scheduler(LockStepTaskScheduler::instance())
+      : ParallelForForState<ArrayArray>(array2), array2(array2), minStepSize(minStepSize), value(identity), _blocks(0), scheduler(LockStepTaskScheduler::instance())
     {
       _blocks  = min((this->K+this->minStepSize-1)/this->minStepSize,scheduler->getNumThreads());
       counts.resize(_blocks);
@@ -35,6 +35,10 @@ namespace embree
     /*size_t size() const {
       return value;
       }*/
+
+  public:
+    ArrayArray& array2;
+    const size_t minStepSize;
 
   public:
     Value value;

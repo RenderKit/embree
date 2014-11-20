@@ -35,8 +35,7 @@ namespace embree
     class ParallelForForState
   {
   public:
-    ParallelForForState ( ArrayArray& array2, const size_t minStepSize)
-      : array2(array2), minStepSize(minStepSize)
+    ParallelForForState ( ArrayArray& array2)
     {
       /* initialize arrays */
       const size_t M = array2.size();
@@ -61,11 +60,7 @@ namespace embree
       i0 = iter-prefix_sum.begin()-1;
       j0 = k0-prefix_sum[i0];
     }
-    
-  public:
-    ArrayArray& array2;
-    const size_t minStepSize;
-    
+        
   public:
     std::vector<size_t> prefix_sum;
     std::vector<size_t> sizes;
@@ -75,7 +70,7 @@ namespace embree
   template<typename ArrayArray, typename Func>
     __forceinline void parallel_for_for( ArrayArray& array2, const size_t minStepSize, const Func& f)
   {
-    ParallelForForState<ArrayArray> state(array2,minStepSize);
+    ParallelForForState<ArrayArray> state(array2);
 
     /* fast path for small number of iterations */
     size_t taskCount = (state.K+minStepSize-1)/minStepSize;
