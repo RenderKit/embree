@@ -296,7 +296,7 @@ namespace embree
 
    void BVH4SubdivQuadQuad4x4BuilderFast::build(size_t threadIndex, size_t threadCount)
     {
-#if 1
+#if 0
       this->bvh->alloc2.reset();
       BVH4BuilderFast::build(threadIndex,threadCount);
 #else
@@ -315,15 +315,16 @@ namespace embree
 
     size_t BVH4SubdivQuadQuad4x4BuilderFast::number_of_primitives() 
     {
-#if 1
+#if 0
       //return 100*this->scene->numSubdivPatches; // FIXME:
       return 100000;
 
 #else
-      size_t S = parallel_for_for_prefix_sum( pstate, size_t(0), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const size_t base) 
+      size_t S = parallel_for_for_prefix_sum( pstate, iter, size_t(0), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const size_t base) 
       {
         size_t s = 0;
         for (size_t f=r.begin(); f!=r.end(); ++f) {
+          if (!mesh->valid(f)) continue;
           QuadQuad4x4AdaptiveSubdivision subdiv(NULL,bvh->alloc2,this->scene,mesh->getHalfEdge(f),mesh->getVertexPositionPtr(),mesh->id,f);
           s+=subdiv.size();
         }
@@ -336,7 +337,7 @@ namespace embree
     
     void BVH4SubdivQuadQuad4x4BuilderFast::create_primitive_array_sequential(size_t threadIndex, size_t threadCount, PrimInfo& pinfo)
     {
-#if 1
+#if 0
       size_t N = 0;
       for (size_t i=0; i<this->scene->size(); i++) 
       {
@@ -359,17 +360,18 @@ namespace embree
       }
 #else
 
-      parallel_for_for_prefix_sum( pstate, size_t(0), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, size_t base) 
+      parallel_for_for_prefix_sum( pstate, iter, size_t(0), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, size_t base) 
       {
         size_t s = 0;
         for (size_t f=r.begin(); f!=r.end(); ++f) {
-          QuadQuad4x4AdaptiveSubdivision subdiv(&prims[base],bvh->alloc2,this->scene,mesh->getHalfEdge(f),mesh->getVertexPositionPtr(),mesh->id,f);
+          if (!mesh->valid(f)) continue;
+          QuadQuad4x4AdaptiveSubdivision subdiv(&prims[base+s],bvh->alloc2,this->scene,mesh->getHalfEdge(f),mesh->getVertexPositionPtr(),mesh->id,f);
           s+=subdiv.size();
         }
         return s;
       }, [](size_t a, size_t b) { return a+b; });
 
-      for (size_t i=0; i<S; i++) // FIXME: parallelize
+      for (size_t i=0; i<numPrimitives; i++) // FIXME: parallelize
         pinfo.add(prims[i].bounds());
 
 #endif

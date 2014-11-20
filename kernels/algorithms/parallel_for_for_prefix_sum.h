@@ -55,7 +55,7 @@ namespace embree
 
   public:
     //ArrayArray& array2;
-    const size_t minStepSize;
+    size_t minStepSize;
 
   public:
     //Value value;
