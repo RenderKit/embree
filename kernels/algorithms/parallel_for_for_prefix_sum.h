@@ -20,18 +20,6 @@
 
 namespace embree
 {
-  /*template<typename ArrayArray, typename Value, typename Func, typename Reduction>
-    __forceinline void sequential_for_for_prefix_sum( ParallelForForPrefixSumState<ArrayArray,Value>& state, const Func& func, const Reduction& reduction)
-  {
-    for (size_t i=0; i<state.array2.size(); i++) {
-      auto arr = state.array2[i];
-      
-      for (size_t j=0; j<arr->size(); j++) {
-        
-      }
-    }
-    }*/
-
   template<typename ArrayArray, typename Value>
     class ParallelForForPrefixSumState : public ParallelForForState<ArrayArray>
   {

@@ -21,64 +21,64 @@
 namespace embree
 {
   template<typename Index, typename Func>
+    class ParallelForTask
+  {
+  public:
+    __forceinline ParallelForTask (const Index taskCount, const Func& func)
+      : func(func)
+    {
+      if (taskCount == 0) return;
+      else if (taskCount == 1) func(0);
+      else LockStepTaskScheduler::instance()->dispatchTaskSet(task_set,this,taskCount);
+    }
+
+    static void task_set(void* data, const size_t threadIndex, const size_t threadCount, const size_t taskIndex, const size_t taskCount) {
+      ((ParallelForTask*)data)->func(taskIndex);
+    }
+    
+    private:
+      const Func& func;
+  };
+
+  /* simple parallel_for without range optimization (similar to a task set) */
+  template<typename Index, typename Func>
+    __forceinline void parallel_for( const Index N, const Func& func)
+  {
+    ParallelForTask<Index,Func>(N,func);
+  }
+
+  /* sequential for with range optimization */
+  template<typename Index, typename Func>
     __forceinline void sequential_for( const Index first, const Index last, const Func& func) 
   {
     func(range<Index>(first,last));
   }
 
+  /* sequential for with range optimization and minimal granularity per thread */
   template<typename Index, typename Func>
     __forceinline void sequential_for( const Index first, const Index last, const Index minStepSize, const Func& func)
   {
     func(range<Index>(first,last));
   }
 
-  template<typename Index, typename Func>
-    class ParallelForTask
-  {
-  public:
-    __forceinline ParallelForTask (const Index first, const Index last, const Index minStepSize, const Func& func)
-      : first(first), last(last), minStepSize(minStepSize), func(func)
-    {
-      const size_t blocks  = (last-first+minStepSize-1)/minStepSize;
-      if (blocks == 1) {
-        func(range<Index>(first,last));
-      }
-      else
-      {
-        LockStepTaskScheduler* scheduler = LockStepTaskScheduler::instance();
-        const size_t threads = scheduler->getNumThreads();
-        const size_t N = min(threads,blocks);
-        scheduler->dispatchTaskSet(task_for,this,N);
-      }
-    }
-
-    __forceinline void _for(const size_t taskIndex, const size_t taskCount) 
-    {
-      const size_t k0 = first+(taskIndex+0)*(last-first)/taskCount;
-      const size_t k1 = first+(taskIndex+1)*(last-first)/taskCount;
-      func(range<Index>(k0,k1));
-    }
-      
-    static void task_for(void* data, const size_t threadIndex, const size_t threadCount, const size_t taskIndex, const size_t taskCount) {
-      ((ParallelForTask*)data)->_for(taskIndex,taskCount);
-    }
-    
-    private:
-      const Index first;
-      const Index last; 
-      const Index minStepSize;
-      const Func& func;
-  };
-
-  template<typename Index, typename Func>
-    __forceinline void parallel_for( const Index first, const Index last, const Func& func)
-  {
-    ParallelForTask<Index,Func>(first,last,1,func);
-  }
-
+  /* parallel for with range optimization */
   template<typename Index, typename Func>
     __forceinline void parallel_for( const Index first, const Index last, const Index minStepSize, const Func& func)
   {
-    ParallelForTask<Index,Func>(first,last,minStepSize,func);
+    size_t taskCount = (last-first+minStepSize-1)/minStepSize;
+    if (taskCount > 1) taskCount = min(taskCount,LockStepTaskScheduler::instance()->getNumThreads());
+
+    parallel_for(taskCount, [&](const size_t taskIndex) {
+        const size_t k0 = first+(taskIndex+0)*(last-first)/taskCount;
+        const size_t k1 = first+(taskIndex+1)*(last-first)/taskCount;
+        func(range<Index>(k0,k1));
+      });
+  }
+
+  /* parallel for with range optimization and minimal granularity per thread */
+  template<typename Index, typename Func>
+    __forceinline void parallel_for( const Index first, const Index last, const Func& func)
+  {
+    parallel_for(first,last,1,func);
   }
 }
