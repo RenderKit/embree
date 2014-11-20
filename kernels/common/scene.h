@@ -38,6 +38,8 @@ namespace embree
     class Iterator
     {
     public:
+      Iterator ()  {}
+
       Iterator (Scene* scene) 
         : scene(scene) {}
 

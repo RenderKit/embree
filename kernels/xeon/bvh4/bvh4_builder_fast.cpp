@@ -32,8 +32,6 @@
 #include "geometry/quadquad4x4_subdiv.h"
 #include "geometry/virtual_accel.h"
 
-#include "algorithms/parallel_for_for.h"
-#include "algorithms/parallel_for_for_prefix_sum.h"
 #include <algorithm>
 
 #define DBG(x) 
@@ -301,17 +299,27 @@ namespace embree
 #if 1
       this->bvh->alloc2.reset();
       BVH4BuilderFast::build(threadIndex,threadCount);
-
 #else
-      this->bvh->alloc2.reset();
-
       /* initialize all half edge structures */
-      Scene::Iterator<SubdivMesh> iter(this->scene);
+      new (&iter) Scene::Iterator<SubdivMesh>(this->scene);
       for (size_t i=0; i<iter.size(); i++)
         if (iter[i]) iter[i]->initializeHalfEdgeStructures();
-      
-      ParallelForForPrefixSumState<Scene::Iterator<SubdivMesh>,size_t> pstate(iter,size_t(1024),size_t(0));
 
+      this->bvh->alloc2.reset();
+
+      pstate.init(iter,size_t(1024));
+
+      BVH4BuilderFast::build(threadIndex,threadCount);
+#endif
+    }
+
+    size_t BVH4SubdivQuadQuad4x4BuilderFast::number_of_primitives() 
+    {
+#if 1
+      //return 100*this->scene->numSubdivPatches; // FIXME:
+      return 100000;
+
+#else
       size_t S = parallel_for_for_prefix_sum( pstate, size_t(0), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const size_t base) 
       {
         size_t s = 0;
@@ -322,127 +330,13 @@ namespace embree
         return s;
       }, [](size_t a, size_t b) { return a+b; });
 
-      /* calculate size of scene */
-      size_t numPrimitivesOld = numPrimitives;
-      bvh->numPrimitives = numPrimitives = S; //number_of_primitives();
-      bool parallel = needAllThreads && numPrimitives > THRESHOLD_FOR_SINGLE_THREADED;
-	  
-      /* initialize BVH */
-      bvh->init(sizeof(BVH4::Node),numPrimitives, parallel ? (threadCount+1) : 1); // threadCount+1 for toplevel build
-
-      /* skip build for empty scene */
-      if (numPrimitives == 0) 
-	return;
-      
-      /* verbose mode */
-      if (g_verbose >= 1)
-        std::cout << "building BVH4<" << bvh->primTy.name << "> with " << TOSTRING(isa) "::BVH4BuilderFast ... " << std::flush;
-      
-      /* allocate build primitive array */
-      if (numPrimitivesOld != numPrimitives)
-      {
-	if (prims) os_free(prims,bytesPrims);
-	bytesPrims = numPrimitives * sizeof(PrimRef);
-        prims = (PrimRef* ) os_malloc(bytesPrims);  memset(prims,0,bytesPrims);
-      }
-      
-      state.reset(new GlobalState());
-	//size_t numActiveThreads = threadCount;
-	//size_t numActiveThreads = min(threadCount,getNumberOfCores());
-	//build_parallel(threadIndex,numActiveThreads,0,1);
-
-      /* start measurement */
-      double t0 = 0.0f;
-      if (g_verbose >= 2) t0 = getSeconds();
-
-      /* calculate list of primrefs */
-      PrimInfo pinfo(empty);
-      //create_primitive_array_parallel(threadIndex, threadCount, scheduler, pinfo);
-
-      parallel_for_for_prefix_sum( pstate, size_t(0), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, size_t base) 
-      {
-        size_t s = 0;
-        for (size_t f=r.begin(); f!=r.end(); ++f) {
-          QuadQuad4x4AdaptiveSubdivision subdiv(&prims[base],bvh->alloc2,this->scene,mesh->getHalfEdge(f),mesh->getVertexPositionPtr(),mesh->id,f);
-          s+=subdiv.size();
-        }
-        return s;
-      }, [](size_t a, size_t b) { return a+b; });
-
-      for (size_t i=0; i<S; i++) // FIXME: parallelize
-        pinfo.add(prims[i].bounds());
-
-      bvh->bounds = pinfo.geomBounds;
-
-      /* initialize node and leaf allocator */
-      bvh->alloc.clear();
-      __aligned(64) Allocator nodeAlloc(&bvh->alloc);
-      __aligned(64) Allocator leafAlloc(&bvh->alloc);
-
-      /* create initial build record */
-      BuildRecord br;
-      br.init(pinfo,0,pinfo.size());
-      br.depth = 1;
-      br.parent = &bvh->root;
-      
-      /* initialize thread-local work stacks */
-      for (size_t i=0; i<threadCount; i++)
-        state->threadStack[i].reset();
-      
-      /* push initial build record to global work stack */
-      state->heap.reset();
-      state->heap.push(br);
-
-      /* work in multithreaded toplevel mode until sufficient subtasks got generated */
-      while (state->heap.size() < 2*threadCount)
-      {
-        BuildRecord br;
-
-        /* pop largest item for better load balancing */
-	if (!state->heap.pop(br)) 
-          break;
-        
-        /* guarantees to create no leaves in this stage */
-        if (br.size() <= max(minLeafSize,THRESHOLD_FOR_SINGLE_THREADED)) {
-	  state->heap.push(br);
-          break;
-	}
-
-        recurse(br,nodeAlloc,leafAlloc,BUILD_TOP_LEVEL,threadIndex,threadCount);
-      }
-      _mm_sfence(); // make written leaves globally visible
-
-      std::sort(state->heap.begin(),state->heap.end(),BuildRecord::Greater());
-
-      /* now process all created subtasks on multiple threads */
-      scheduler->dispatchTask(task_buildSubTrees, this, threadIndex, threadCount );
-      
-      /* stop measurement */
-      if (g_verbose >= 2) dt = getSeconds()-t0;
-
-      state.reset(NULL);
-      
-      /* verbose mode */
-      if (g_verbose >= 2) {
-	std::cout << "[DONE] " << 1000.0f*dt << "ms (" << numPrimitives/dt*1E-6 << " Mtris/s)" << std::endl;
-	std::cout << BVH4Statistics(bvh).str();
-      }
-
-      /* benchmark mode */
-      if (g_benchmark) {
-	BVH4Statistics stat(bvh);
-	std::cout << "BENCHMARK_BUILD " << dt << " " << double(numPrimitives)/dt << " " << stat.sah() << " " << stat.bytesUsed() << std::endl;
-      }
+      return S;
 #endif
-    }
-
-    size_t BVH4SubdivQuadQuad4x4BuilderFast::number_of_primitives() {
-      //return 100*this->scene->numSubdivPatches; // FIXME:
-      return 100000;
     }
     
     void BVH4SubdivQuadQuad4x4BuilderFast::create_primitive_array_sequential(size_t threadIndex, size_t threadCount, PrimInfo& pinfo)
     {
+#if 1
       size_t N = 0;
       for (size_t i=0; i<this->scene->size(); i++) 
       {
@@ -463,6 +357,22 @@ namespace embree
           }
         }
       }
+#else
+
+      parallel_for_for_prefix_sum( pstate, size_t(0), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, size_t base) 
+      {
+        size_t s = 0;
+        for (size_t f=r.begin(); f!=r.end(); ++f) {
+          QuadQuad4x4AdaptiveSubdivision subdiv(&prims[base],bvh->alloc2,this->scene,mesh->getHalfEdge(f),mesh->getVertexPositionPtr(),mesh->id,f);
+          s+=subdiv.size();
+        }
+        return s;
+      }, [](size_t a, size_t b) { return a+b; });
+
+      for (size_t i=0; i<S; i++) // FIXME: parallelize
+        pinfo.add(prims[i].bounds());
+
+#endif
     }
     
     void BVH4SubdivQuadQuad4x4BuilderFast::create_primitive_array_parallel  (size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, PrimInfo& pinfo) {
