@@ -33,6 +33,7 @@
 #include "geometry/virtual_accel.h"
 
 #include "algorithms/parallel_for_for.h"
+#include "algorithms/parallel_for_for_prefix_sum.h"
 #include <algorithm>
 
 #define DBG(x) 
@@ -302,18 +303,20 @@ namespace embree
       BVH4BuilderFast::build(threadIndex,threadCount);
 
 #else
+      this->bvh->alloc2.reset();
+
       /* initialize all half edge structures */
-      Scene::Iterator<SubdivMesh> iter(g_scene);
+      Scene::Iterator<SubdivMesh> iter(this->scene);
       for (size_t i=0; i<iter.size(); i++)
         if (iter[i]) iter[i]->initializeHalfEdgeStructures();
       
-      ParallelForForPrefixSumState<Scene::Iterator<SubdivMesh>,size_t> state(iter,size_t(1024),size_t(0));
+      ParallelForForPrefixSumState<Scene::Iterator<SubdivMesh>,size_t> pstate(iter,size_t(1024),size_t(0));
 
-      size_t S = parallel_for_for_prefix_sum( state, size_t(0), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const size_t base) 
+      size_t S = parallel_for_for_prefix_sum( pstate, size_t(0), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const size_t base) 
       {
         size_t s = 0;
         for (size_t f=r.begin(); f!=r.end(); ++f) {
-          QuadQuad4x4AdaptiveSubdivision subdiv(NULL,NULL,this->scene,mesh->getHalfEdge(f),mesh->getVertexPositionPtr(),mesh->id,f);
+          QuadQuad4x4AdaptiveSubdivision subdiv(NULL,bvh->alloc2,this->scene,mesh->getHalfEdge(f),mesh->getVertexPositionPtr(),mesh->id,f);
           s+=subdiv.size();
         }
         return s;
@@ -342,10 +345,23 @@ namespace embree
 	bytesPrims = numPrimitives * sizeof(PrimRef);
         prims = (PrimRef* ) os_malloc(bytesPrims);  memset(prims,0,bytesPrims);
       }
+      
+      state.reset(new GlobalState());
+	//size_t numActiveThreads = threadCount;
+	//size_t numActiveThreads = min(threadCount,getNumberOfCores());
+	//build_parallel(threadIndex,numActiveThreads,0,1);
 
-      parallel_for_for_prefix_sum( state, size_t(0), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, size_t base) 
+      /* start measurement */
+      double t0 = 0.0f;
+      if (g_verbose >= 2) t0 = getSeconds();
+
+      /* calculate list of primrefs */
+      PrimInfo pinfo(empty);
+      //create_primitive_array_parallel(threadIndex, threadCount, scheduler, pinfo);
+
+      parallel_for_for_prefix_sum( pstate, size_t(0), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, size_t base) 
       {
-        const size_t s = 0;
+        size_t s = 0;
         for (size_t f=r.begin(); f!=r.end(); ++f) {
           QuadQuad4x4AdaptiveSubdivision subdiv(&prims[base],bvh->alloc2,this->scene,mesh->getHalfEdge(f),mesh->getVertexPositionPtr(),mesh->id,f);
           s+=subdiv.size();
@@ -355,17 +371,56 @@ namespace embree
 
       for (size_t i=0; i<S; i++) // FIXME: parallelize
         pinfo.add(prims[i].bounds());
+
+      bvh->bounds = pinfo.geomBounds;
+
+      /* initialize node and leaf allocator */
+      bvh->alloc.clear();
+      __aligned(64) Allocator nodeAlloc(&bvh->alloc);
+      __aligned(64) Allocator leafAlloc(&bvh->alloc);
+
+      /* create initial build record */
+      BuildRecord br;
+      br.init(pinfo,0,pinfo.size());
+      br.depth = 1;
+      br.parent = &bvh->root;
       
-      if (!parallel) {
-	build_sequential(threadIndex,threadCount);
-      } 
-      else {
-        state.reset(new GlobalState());
-	//size_t numActiveThreads = threadCount;
-	size_t numActiveThreads = min(threadCount,getNumberOfCores());
-	build_parallel(threadIndex,numActiveThreads,0,1);
-        state.reset(NULL);
+      /* initialize thread-local work stacks */
+      for (size_t i=0; i<threadCount; i++)
+        state->threadStack[i].reset();
+      
+      /* push initial build record to global work stack */
+      state->heap.reset();
+      state->heap.push(br);
+
+      /* work in multithreaded toplevel mode until sufficient subtasks got generated */
+      while (state->heap.size() < 2*threadCount)
+      {
+        BuildRecord br;
+
+        /* pop largest item for better load balancing */
+	if (!state->heap.pop(br)) 
+          break;
+        
+        /* guarantees to create no leaves in this stage */
+        if (br.size() <= max(minLeafSize,THRESHOLD_FOR_SINGLE_THREADED)) {
+	  state->heap.push(br);
+          break;
+	}
+
+        recurse(br,nodeAlloc,leafAlloc,BUILD_TOP_LEVEL,threadIndex,threadCount);
       }
+      _mm_sfence(); // make written leaves globally visible
+
+      std::sort(state->heap.begin(),state->heap.end(),BuildRecord::Greater());
+
+      /* now process all created subtasks on multiple threads */
+      scheduler->dispatchTask(task_buildSubTrees, this, threadIndex, threadCount );
+      
+      /* stop measurement */
+      if (g_verbose >= 2) dt = getSeconds()-t0;
+
+      state.reset(NULL);
       
       /* verbose mode */
       if (g_verbose >= 2) {

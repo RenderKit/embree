@@ -20,12 +20,14 @@
 
 namespace embree
 {
-  template<typename ArrayArray, typename Value>
-    class ParallelForForPrefixSumState : public ParallelForForHeapState
+  template<typename Value>
+  class ParallelForForPrefixSumState : public ParallelForForHeapState
   {
   public:
-    ParallelForForPrefixSumState ( ArrayArray& array2, const size_t minStepSize, const Value& identity ) 
-      : ParallelForForHeapState(array2), array2(array2), minStepSize(minStepSize), value(identity), _blocks(0), scheduler(LockStepTaskScheduler::instance())
+
+  template<typename ArrayArray>
+    ParallelForForPrefixSumState ( ArrayArray& array2, const size_t minStepSize) 
+    : ParallelForForHeapState(array2), minStepSize(minStepSize), _blocks(0), scheduler(LockStepTaskScheduler::instance())
     {
       _blocks  = min((this->K+this->minStepSize-1)/this->minStepSize,scheduler->getNumThreads());
       counts.resize(_blocks);
@@ -37,11 +39,11 @@ namespace embree
       }*/
 
   public:
-    ArrayArray& array2;
+    //ArrayArray& array2;
     const size_t minStepSize;
 
   public:
-    Value value;
+    //Value value;
     size_t _blocks;
     std::vector<Value> counts;
     std::vector<Value> sums;
@@ -53,8 +55,8 @@ namespace embree
   {
   public:
     
-    ParallelForForPrefixSumTask (ParallelForForPrefixSumState<ArrayArray,Value>& state, const Value& identity, const Func& func, const Reduction& reduction) 
-      : state(state), func(func), reduction(reduction)
+    ParallelForForPrefixSumTask (ParallelForForPrefixSumState<Value>& state, ArrayArray& array2, const Value& identity, const Func& func, const Reduction& reduction) 
+      : state(state), array2(array2), func(func), reduction(reduction), value(identity)
     {
       const size_t blocks = state._blocks;
       state.scheduler->dispatchTaskSet(task_execute,this,blocks);
@@ -67,7 +69,7 @@ namespace embree
         state.sums[i] = sum;
         sum=reduction(sum,c);
       }
-      state.value = sum;
+      value = sum;
     }
     
     void execute(const size_t threadIndex, const size_t threadCount, const size_t taskIndex, const size_t taskCount) 
@@ -81,7 +83,7 @@ namespace embree
       size_t k=k0, N=0;
       for (size_t i=i0; k<k1; i++) {
         const size_t r0 = j0, r1 = min(state.sizes[i],r0+k1-k);
-        if (r1 > r0) N = reduction(N, func(state.array2[i],range<size_t>(r0,r1),k,reduction(state.sums[taskIndex],N)));
+        if (r1 > r0) N = reduction(N, func(array2[i],range<size_t>(r0,r1),k,reduction(state.sums[taskIndex],N)));
         k+=r1-r0; j0 = 0;
       }
       state.counts[taskIndex] = N;
@@ -92,16 +94,18 @@ namespace embree
     }
     
   public:
-    ParallelForForPrefixSumState<ArrayArray,Value>& state;
+    ParallelForForPrefixSumState<Value>& state;
+    Value value;
   private:
+    ArrayArray& array2;
     const Func& func;
     const Reduction& reduction;
   };
   
   template<typename ArrayArray, typename Value, typename Func, typename Reduction>
-    __forceinline Value parallel_for_for_prefix_sum( ParallelForForPrefixSumState<ArrayArray,Value>& state, const Value& identity, const Func& func, const Reduction& reduction)
+    __forceinline Value parallel_for_for_prefix_sum( ParallelForForPrefixSumState<Value>& state, ArrayArray& array2, const Value& identity, const Func& func, const Reduction& reduction)
   {
-    ParallelForForPrefixSumTask<ArrayArray,Value,Func,Reduction> task(state,identity,func,reduction);
-    return task.state.value;
+    ParallelForForPrefixSumTask<ArrayArray,Value,Func,Reduction> task(state,array2,identity,func,reduction);
+    return task.value;
   }
 }
