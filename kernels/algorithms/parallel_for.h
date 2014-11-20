@@ -21,27 +21,27 @@
 namespace embree
 {
   template<typename Index, typename Func>
-    __forceinline void sequential_for( const Index first, const Index last, const Func& f) 
+    __forceinline void sequential_for( const Index first, const Index last, const Func& func) 
   {
-    f(range<Index>(first,last));
+    func(range<Index>(first,last));
   }
 
   template<typename Index, typename Func>
-    __forceinline void sequential_for( const Index first, const Index last, const Index minStepSize, const Func& f)
+    __forceinline void sequential_for( const Index first, const Index last, const Index minStepSize, const Func& func)
   {
-    f(range<Index>(first,last));
+    func(range<Index>(first,last));
   }
 
   template<typename Index, typename Func>
     class ParallelForTask
   {
   public:
-    ParallelForTask (const Index first, const Index last, const Index minStepSize, const Func& f)
-      : first(first), last(last), minStepSize(minStepSize), f(f)
+    __forceinline ParallelForTask (const Index first, const Index last, const Index minStepSize, const Func& func)
+      : first(first), last(last), minStepSize(minStepSize), func(func)
     {
       const size_t blocks  = (last-first+minStepSize-1)/minStepSize;
       if (blocks == 1) {
-        f(range<Index>(first,last));
+        func(range<Index>(first,last));
       }
       else
       {
@@ -52,11 +52,11 @@ namespace embree
       }
     }
 
-    void _for(const size_t taskIndex, const size_t taskCount) 
+    __forceinline void _for(const size_t taskIndex, const size_t taskCount) 
     {
       const size_t k0 = first+(taskIndex+0)*(last-first)/taskCount;
       const size_t k1 = first+(taskIndex+1)*(last-first)/taskCount;
-      f(range<Index>(k0,k1));
+      func(range<Index>(k0,k1));
     }
       
     static void task_for(void* data, const size_t threadIndex, const size_t threadCount, const size_t taskIndex, const size_t taskCount) {
@@ -67,18 +67,18 @@ namespace embree
       const Index first;
       const Index last; 
       const Index minStepSize;
-      const Func& f;
+      const Func& func;
   };
 
   template<typename Index, typename Func>
-    __forceinline void parallel_for( const Index first, const Index last, const Func& f)
+    __forceinline void parallel_for( const Index first, const Index last, const Func& func)
   {
-    ParallelForTask<Index,Func>(first,last,1,f);
+    ParallelForTask<Index,Func>(first,last,1,func);
   }
 
   template<typename Index, typename Func>
-    __forceinline void parallel_for( const Index first, const Index last, const Index minStepSize, const Func& f)
+    __forceinline void parallel_for( const Index first, const Index last, const Index minStepSize, const Func& func)
   {
-    ParallelForTask<Index,Func>(first,last,minStepSize,f);
+    ParallelForTask<Index,Func>(first,last,minStepSize,func);
   }
 }
