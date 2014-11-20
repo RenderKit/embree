@@ -35,15 +35,19 @@ namespace embree
     class ParallelForForState
   {
   public:
-    ParallelForForState ( ArrayArray& array2)
+    ParallelForForState ( ArrayArray& array2 )
     {
-      /* initialize arrays */
       const size_t M = array2.size();
       prefix_sum.resize(M);
       sizes.resize(M);
+      init(array2);
+    }
 
+    __forceinline void init (ArrayArray& array2)
+    {
       /* compute prefix sum of number of elements of sub arrays */
       size_t sum=0;
+      const size_t M = array2.size();
       for (size_t i=0; i<M; i++) 
       {
         const size_t N = array2[i] ? array2[i]->size() : 0;
@@ -52,6 +56,10 @@ namespace embree
         sum += N;
       }
       K = sum;
+    }
+
+    __forceinline size_t size() const {
+      return K;
     }
 
     __forceinline void start_indices(const size_t k0, size_t& i0, size_t& j0) const
@@ -73,18 +81,19 @@ namespace embree
     ParallelForForState<ArrayArray> state(array2);
 
     /* fast path for small number of iterations */
-    size_t taskCount = (state.K+minStepSize-1)/minStepSize;
-    if (taskCount == 1) {
+    size_t N = state.size();
+    size_t taskCount = (N+minStepSize-1)/minStepSize;
+    if (taskCount == 1) 
       return sequential_for_for(array2,minStepSize,f);
-    }
-    taskCount = min(taskCount,LockStepTaskScheduler::instance()->getNumThreads());
 
+    taskCount = min(taskCount,LockStepTaskScheduler::instance()->getNumThreads());
+    
     /* parallel invokation of all tasks */
     parallel_for(taskCount, [&](const size_t taskIndex) 
     {
       /* calculate range */
-      const size_t k0 = (taskIndex+0)*state.K/taskCount;
-      const size_t k1 = (taskIndex+1)*state.K/taskCount;
+      const size_t k0 = (taskIndex+0)*N/taskCount;
+      const size_t k1 = (taskIndex+1)*N/taskCount;
       size_t i0, j0; state.start_indices(k0,i0,j0);
 
       /* iterate over arrays */
