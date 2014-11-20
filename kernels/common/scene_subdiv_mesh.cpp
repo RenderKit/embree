@@ -305,7 +305,6 @@ namespace embree
     /* calculate start edge of each face */
     faceStartEdge.resize(numFaces);
     size_t numHalfEdges = parallel_prefix_sum(faceVertices,faceStartEdge,numFaces);
-    PRINT(numHalfEdges);
         
     /* create set with all */
     holeSet.init(holes);
