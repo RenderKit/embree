@@ -46,8 +46,9 @@ namespace embree
       {
 	/* perform single threaded prefix operation for small N */
 	if (N < SINGLE_THREAD_THRESHOLD) {
-	  for (size_t i=0, sum=0; i<N; sum+=src[i++])
-	    dst[i] = sum;
+          size_t sum=0;
+	  for (size_t i=0; i<N; sum+=src[i++]) dst[i] = sum;
+          parent->value = sum;
 	}
 
 	/* perform parallel prefix operation for large N */
@@ -95,6 +96,9 @@ namespace embree
 	  dst[i] = count;
 	  count = op(count,v);
 	}
+
+        if (threadIndex == threadCount-1) 
+          parent->value = count;
       }
       
       static void task_sum (void* data, const size_t threadIndex, const size_t threadCount) { 
@@ -118,8 +122,9 @@ namespace embree
       Task(this,src,dst,N,op,id);
     }
 
-  private:
+  public:
     Ty state[MAX_THREADS];
+    Ty value;
   };
 
   template<typename Ty>
@@ -129,9 +134,9 @@ namespace embree
 
   /*! parallel calculation of prefix sums */
   template<typename SrcArray, typename DstArray>
-  __forceinline void parallel_prefix_sum(const SrcArray& src, DstArray& dst, size_t N) 
+    __forceinline typename SrcArray::value_type parallel_prefix_sum(const SrcArray& src, DstArray& dst, size_t N) 
   {
     typedef typename SrcArray::value_type Value;
-    ParallelPrefixOp<SrcArray,DstArray,Value,my_add<Value> > op; op(src,dst,N,my_add<Value>(),0);
+    ParallelPrefixOp<SrcArray,DstArray,Value,my_add<Value> > op; op(src,dst,N,my_add<Value>(),0); return op.value;
   }
 }

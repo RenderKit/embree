@@ -35,17 +35,21 @@ namespace embree
       for (size_t N=10; N<10000000; N*=2.1f)
       {
 	/* initialize array with random numbers */
+        uint32 sum0 = 0;
 	std::vector<uint32> src(N);
-	for (size_t i=0; i<N; i++) 
-	  src[i] = ::random();
-	
+	for (size_t i=0; i<N; i++) {
+	  sum0 += src[i] = ::random();
+        }
+        
 	/* calculate parallel prefix sum */
 	std::vector<uint32> dst(N);
 	memset(&dst[0],0,N*sizeof(uint32));
 	
 	double t0 = getSeconds();
-	for (size_t i=0; i<M; i++)
-	  parallel_prefix_sum(src,dst,N);
+	for (size_t i=0; i<M; i++) {
+	  uint32 sum1 = parallel_prefix_sum(src,dst,N);
+          passed &= (sum0 == sum1);
+        }
 	double t1 = getSeconds();
 	printf("%zu/%3.2fM ",N,1E-6*double(N*M)/(t1-t0));
 	
