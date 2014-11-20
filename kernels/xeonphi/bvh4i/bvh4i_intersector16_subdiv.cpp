@@ -18,6 +18,8 @@
 #include "bvh4i_leaf_intersector.h"
 #include "geometry/subdivpatch1.h"
 
+#define TIMER(x) x
+
 namespace embree
 {
 
@@ -193,6 +195,8 @@ namespace embree
 
       if (unlikely(patch.bvh4i_subtree_root != BVH4i::invalidNode)) return;
 
+      TIMER(double msec = 0.0);
+      TIMER(msec = getSeconds());
 
       __aligned(64) float u_array[patch.grid_size+16]; // for unaligned access
       __aligned(64) float v_array[patch.grid_size+16];
@@ -215,6 +219,8 @@ namespace embree
 				      0,
 				      patch.grid_v_res-1);
 
+    TIMER(msec = getSeconds()-msec);    
+
 #if DEBUG
       //numLazyBuildPatches++;
       //DBG_PRINT( numLazyBuildPatches );
@@ -225,6 +231,8 @@ namespace embree
       const size_t size_used_lazymem      = bvh->lazyMemUsed64BytesBlocks * sizeof(mic_f);
 
       std::cout << "lazymem: " << 100.0f * size_used_lazymem / size_allocated_lazymem << "% used of " <<  size_allocated_lazymem << " bytes allocated" << std::endl;
+
+      TIMER(std::cout << "build patch subtree in  " << 1000. * msec << " ms" << std::endl);
 
       mtx.unlock();
 #endif
