@@ -20,7 +20,7 @@
 #define PARALLEL_COMMIT
 
 //#define FORCE_FIXED_EDGE_TESSELLATION
-#define EDGE_TESSELLATION_VALUE 3
+#define EDGE_TESSELLATION_VALUE 7
 
 #define MAX_EDGE_LEVEL 32.0f
 #define MIN_EDGE_LEVEL 1.0f
@@ -71,7 +71,7 @@ export void device_init (uniform int8* uniform cfg)
 
   /* set start render mode */
   renderPixel = renderPixelStandard;
-  //renderPixel = renderPixelEyeLight;	
+  //  renderPixel = renderPixelUV;	
 }
 
 
@@ -275,7 +275,14 @@ export void device_render (uniform int* uniform pixels,
                            const uniform Vec3f& vz, 
                            const uniform Vec3f& p)
 {
-   const uniform Vec3fa cam_org = make_Vec3fa(p.x,p.y,p.z);
+   uniform Vec3fa cam_org = make_Vec3fa(p.x,p.y,p.z);
+
+#if 0
+   print("vx % % %\n", vx.x,vx.y,vz.z);
+   print("vy % % %\n", vy.x,vy.y,vy.z);
+   print("vz % % %\n", vz.x,vz.y,vz.z);
+   print("p % % %\n", p.x,p.y,p.z);
+#endif
 
   /* create scene */
   if (g_scene == NULL)
@@ -298,10 +305,10 @@ export void device_render (uniform int* uniform pixels,
   launch[  g_threads ] parallelCommit(g_scene); sync;
 #endif
   }
-#if !defined(FORCE_FIXED_EDGE_TESSELLATION)
 
+#if !defined(FORCE_FIXED_EDGE_TESSELLATION)
   {
-    if (p.x != old_p.x | p.y != old_p.y | p.z != old_p.z)
+    if ((p.x != old_p.x | p.y != old_p.y | p.z != old_p.z))
     {
      old_p = p;
 
@@ -317,11 +324,11 @@ export void device_render (uniform int* uniform pixels,
 #endif
 
 
-
   /* render image */
   const uniform int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   const uniform int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
   launch[numTilesX*numTilesY] renderTile(pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY); sync;
+
   rtcDebug();
 }
 

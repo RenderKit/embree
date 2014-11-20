@@ -217,8 +217,6 @@ namespace embree
 
 #if DEBUG
       //numLazyBuildPatches++;
-      //DBG_PRINT( patch.grid_u_res );
-      //DBG_PRINT( patch.grid_v_res );
       //DBG_PRINT( numLazyBuildPatches );
       mtx.lock();
       DBG_PRINT( bvh->lazyMemUsed64BytesBlocks);
@@ -321,25 +319,6 @@ namespace embree
 
       gridUVTessellator(edge_levels,grid_u_res,grid_v_res,u_array,v_array);
 
-#if 0
-      DBG_PRINT("UV grid");
-
-      DBG_PRINT( edge_levels[0] );
-      DBG_PRINT( edge_levels[1] );
-      DBG_PRINT( edge_levels[2] );
-      DBG_PRINT( edge_levels[3] );
-
-      DBG_PRINT( grid_u_res );
-      DBG_PRINT( grid_v_res );
-
-      for (unsigned int y=0;y<grid_v_res;y++)
-	{
-	  std::cout << "row " << y << " ";
-	  for (unsigned int x=0;x<grid_u_res;x++)
-	    std::cout << "(" << v_array[grid_u_res*y+x] << "," << u_array[grid_u_res*y+x] << ") ";
-	  std::cout << std::endl;
-	}
-#endif
       bool hit = false;
 
       if (likely(grid_size <= 16))
@@ -407,7 +386,8 @@ namespace embree
 	      
 	    }	  
 #else
-	  
+
+	  /* 8x2 grid scan-line intersector */
 	  for (unsigned int y=0;y<grid_v_res-1;y++,offset_line0++,offset_line1++)
 	    for (unsigned int x=0;x<grid_u_res-1;x++,offset_line0++,offset_line1++)
 	      {
@@ -573,11 +553,7 @@ namespace embree
 		  if (unlikely(subdiv_patch.bvh4i_subtree_root == BVH4i::invalidNode))
 		    {
 		      /* build sub-patch bvh4i */
-		      //mtx.lock();
 		      initLazySubdivTree(subdiv_patch,bvh);
-
-		      //mtx.unlock();
-
 		    }
 
 		  assert(subdiv_patch.bvh4i_subtree_root != BVH4i::invalidNode);
@@ -643,6 +619,17 @@ namespace embree
 	    }
 	}
 
+#if 0
+      DBG_PRINT( ray16.primID );
+      DBG_PRINT( ray16.geomID );
+      DBG_PRINT( ray16.u );
+      DBG_PRINT( ray16.v );
+      DBG_PRINT( ray16.Ng.x );
+      DBG_PRINT( ray16.Ng.y );
+      DBG_PRINT( ray16.Ng.z );
+      exit(0);
+#endif
+
       /* update primID/geomID and compute normals */
 #if 1
       // FIXME: test all rays with the same primID
@@ -652,7 +639,6 @@ namespace embree
         {
 	  const SubdivPatch1& subdiv_patch = ((SubdivPatch1*)accel)[ray16.primID[rayIndex]];
 	  ray16.primID[rayIndex] = subdiv_patch.primID;
-	  ray16.geomID[rayIndex] = subdiv_patch.geomID;
 	  ray16.geomID[rayIndex] = subdiv_patch.geomID;
 	  ray16.u[rayIndex]      = (1.0f-ray16.u[rayIndex]) * subdiv_patch.u_range.x + ray16.u[rayIndex] * subdiv_patch.u_range.y;
 	  ray16.v[rayIndex]      = (1.0f-ray16.v[rayIndex]) * subdiv_patch.v_range.x + ray16.v[rayIndex] * subdiv_patch.v_range.y;

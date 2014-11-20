@@ -212,6 +212,7 @@ namespace embree
 	  b.extend( f_m[1][1] );
 	}
 #endif
+
       return b;
     }
 

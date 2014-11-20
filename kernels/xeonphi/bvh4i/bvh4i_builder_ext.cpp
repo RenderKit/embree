@@ -918,7 +918,7 @@ PRINT(CORRECT_numPrims);
     if (numPrimitivesOld != numPrimitives)
       {
 	const size_t numPrims = numPrimitives+4;
-	const size_t minAllocNodes = (threadCount+1) * ALLOCATOR_NODE_BLOCK_SIZE; 
+	const size_t minAllocNodes =  ALLOCATOR_NODE_BLOCK_SIZE * MAX_MIC_THREADS; // (threadCount+1) 
 	const size_t numNodes = (size_t)((numPrims+3)/4) + minAllocNodes;
 
 	if (numNodes * sizeof(BVH4i::Node) < (sizeof(BBox3fa) * numPrimitives + sizeof(BVH4i::Node) * 128))
