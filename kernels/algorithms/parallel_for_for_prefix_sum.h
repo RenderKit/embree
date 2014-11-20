@@ -20,49 +20,62 @@
 
 namespace embree
 {
-  template<typename ArrayArray>
+  /*template<typename ArrayArray, typename Value, typename Func, typename Reduction>
+    __forceinline void sequential_for_for_prefix_sum( ParallelForForPrefixSumState<ArrayArray,Value>& state, const Func& func, const Reduction& reduction)
+  {
+    for (size_t i=0; i<state.array2.size(); i++) {
+      auto arr = state.array2[i];
+      
+      for (size_t j=0; j<arr->size(); j++) {
+        
+      }
+    }
+    }*/
+
+  template<typename ArrayArray, typename Value>
     class ParallelForForPrefixSumState : public ParallelForForState<ArrayArray>
   {
   public:
-    ParallelForForPrefixSumState ( ArrayArray& array2, const size_t minStepSize ) 
-      : ParallelForForState<ArrayArray>(array2,minStepSize), _size(0), _blocks(0), scheduler(LockStepTaskScheduler::instance())
+    ParallelForForPrefixSumState ( ArrayArray& array2, const size_t minStepSize, const Value& identity ) 
+      : ParallelForForState<ArrayArray>(array2,minStepSize), value(identity), _blocks(0), scheduler(LockStepTaskScheduler::instance())
     {
       _blocks  = min((this->K+this->minStepSize-1)/this->minStepSize,scheduler->getNumThreads());
       counts.resize(_blocks);
       sums.resize(_blocks);
     }
 
-    size_t size() const {
-      return _size;
-    }
+    /*size_t size() const {
+      return value;
+      }*/
 
   public:
-    size_t _size, _blocks;
-    std::vector<size_t> counts;
-    std::vector<size_t> sums;
+    Value value;
+    size_t _blocks;
+    std::vector<Value> counts;
+    std::vector<Value> sums;
     LockStepTaskScheduler* scheduler;
   };
 
-  template<typename ArrayArray, typename Func>
+  template<typename ArrayArray, typename Value, typename Func, typename Reduction>
     class ParallelForForPrefixSumTask
   {
   public:
     
-    ParallelForForPrefixSumTask (ParallelForForPrefixSumState<ArrayArray>& state, const Func& f) 
-      : state(state), f(f)
+    ParallelForForPrefixSumTask (ParallelForForPrefixSumState<ArrayArray,Value>& state, const Value& identity, const Func& func, const Reduction& reduction) 
+      : state(state), func(func), reduction(reduction)
     {
       const size_t blocks = state._blocks;
       state.scheduler->dispatchTaskSet(task_execute,this,blocks);
       
       /* calculate prefix sum */
-      size_t sum=0;
+      Value sum=0;
       for (size_t i=0; i<blocks; i++)
       {
-        const size_t c = state.counts[i];
+        const Value c = state.counts[i];
         state.sums[i] = sum;
-        sum+=c;
+        sum=reduction(sum,c);
       }
-      state._size = sum;
+      state.value = sum;
     }
     
     void execute(const size_t threadIndex, const size_t threadCount, const size_t taskIndex, const size_t taskCount) 
@@ -76,7 +89,7 @@ namespace embree
       size_t k=k0, N=0;
       for (size_t i=i0; k<k1; i++) {
         const size_t r0 = j0, r1 = min(state.sizes[i],r0+k1-k);
-        if (r1 > r0) N += f(state.array2[i],range<size_t>(r0,r1),k,state.sums[taskIndex]+N);
+        if (r1 > r0) N = reduction(N, func(state.array2[i],range<size_t>(r0,r1),k,reduction(state.sums[taskIndex],N)));
         k+=r1-r0; j0 = 0;
       }
       state.counts[taskIndex] = N;
@@ -86,14 +99,17 @@ namespace embree
       ((ParallelForForPrefixSumTask*)data)->execute(threadIndex,threadCount,taskIndex,taskCount);
     }
     
+  public:
+    ParallelForForPrefixSumState<ArrayArray,Value>& state;
   private:
-    ParallelForForPrefixSumState<ArrayArray>& state;
-    const Func& f;
+    const Func& func;
+    const Reduction& reduction;
   };
   
-  template<typename ArrayArray, typename Func>
-    __forceinline void parallel_for_for_prefix_sum( ParallelForForPrefixSumState<ArrayArray>& state, const Func& f)
+  template<typename ArrayArray, typename Value, typename Func, typename Reduction>
+    __forceinline Value parallel_for_for_prefix_sum( ParallelForForPrefixSumState<ArrayArray,Value>& state, const Value& identity, const Func& func, const Reduction& reduction)
   {
-    ParallelForForPrefixSumTask<ArrayArray,Func>(state,f);
+    ParallelForForPrefixSumTask<ArrayArray,Value,Func,Reduction> task(state,identity,func,reduction);
+    return task.state.value;
   }
 }

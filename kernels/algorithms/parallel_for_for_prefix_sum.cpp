@@ -48,10 +48,10 @@ namespace embree
       std::vector<atomic_t> verify_k(K);
       for (size_t i=0; i<K; i++) verify_k[i] = 0;
 
-      ParallelForForPrefixSumState<ArrayArray> state(array2,size_t(1));
+      ParallelForForPrefixSumState<ArrayArray,size_t> state(array2,size_t(1),size_t(0));
   
       /* dry run only counts */
-      parallel_for_for_prefix_sum( state, [&](std::vector<size_t>* v, const range<size_t>& r, size_t k, const size_t base) 
+      size_t S = parallel_for_for_prefix_sum( state, size_t(0), [&](std::vector<size_t>* v, const range<size_t>& r, size_t k, const size_t base) 
       {
         size_t s = 0;
 	for (size_t i=r.begin(); i<r.end(); i++) {
@@ -59,14 +59,14 @@ namespace embree
           atomic_add(&verify_k[k++],1);
         }
         return s;
-      });
+      }, [](size_t v0, size_t v1) { return v0+v1; });
       
       /* create properly sized output array */
-      flattened.resize(state.size());
-      memset(&flattened[0],0,sizeof(atomic_t)*flattened.size());
+      flattened.resize(S);
+      memset(&flattened[0],0,sizeof(atomic_t)*S);
 
       /* now we actually fill the flattened array */
-      parallel_for_for_prefix_sum( state, [&](std::vector<size_t>* v, const range<size_t>& r, size_t k, const size_t base) 
+      parallel_for_for_prefix_sum( state, size_t(0), [&](std::vector<size_t>* v, const range<size_t>& r, size_t k, const size_t base) 
       {
         size_t s = 0;
 	for (size_t i=r.begin(); i<r.end(); i++) {
@@ -77,7 +77,7 @@ namespace embree
           atomic_add(&verify_k[k++],1);
         }
         return s;
-      });
+      }, [](size_t v0, size_t v1) { return v0+v1; });
 
       /* check global index */
       for (size_t i=0; i<K; i++) 
