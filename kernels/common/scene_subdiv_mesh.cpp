@@ -304,7 +304,8 @@ namespace embree
 
     /* calculate start edge of each face */
     faceStartEdge.resize(numFaces);
-    parallel_prefix_sum(faceVertices,faceStartEdge,numFaces);
+    size_t numHalfEdges = parallel_prefix_sum(faceVertices,faceStartEdge,numFaces);
+    PRINT(numHalfEdges);
         
     /* create set with all */
     holeSet.init(holes);
@@ -348,22 +349,22 @@ namespace embree
     });
 
     /* sort half edges to find adjacent edges */
-    radix_sort_u64(&halfEdges1[0],&halfEdges0[0],numEdges);
+    radix_sort_u64(&halfEdges1[0],&halfEdges0[0],numHalfEdges);
 
     /* link all adjacent pairs of edges */
-    parallel_for( size_t(0), numEdges, size_t(4096), [=](const range<size_t>& r) 
+    parallel_for( size_t(0), numHalfEdges, size_t(4096), [=](const range<size_t>& r) 
     {
       size_t e=r.begin();
       if (e && (halfEdges1[e].key == halfEdges1[e-1].key)) {
 	const uint64 key = halfEdges1[e].key;
-	while (e<numEdges && halfEdges1[e].key == key) e++;
+	while (e<numHalfEdges && halfEdges1[e].key == key) e++;
       }
 
       while (e<r.end())
       {
 	const uint64 key = halfEdges1[e].key;
 	if (key == -1) break;
-	int N=1; while (e+N<numEdges && halfEdges1[e+N].key == key) N++;
+	int N=1; while (e+N<numHalfEdges && halfEdges1[e+N].key == key) N++;
 	if (N == 1) {
 	}
 	else if (N == 2) {
@@ -405,7 +406,7 @@ namespace embree
         else                              numIrregularFaces++;
       }
     
-      std::cout << "half edge generation = " << 1000.0*(t1-t0) << "ms, " << 1E-6*double(numEdges)/(t1-t0) << "M/s" << std::endl;
+      std::cout << "half edge generation = " << 1000.0*(t1-t0) << "ms, " << 1E-6*double(numHalfEdges)/(t1-t0) << "M/s" << std::endl;
       std::cout << "numFaces = " << numFaces << ", " 
                 << "numRegularFaces = " << numRegularFaces << " (" << 100.0f * numRegularFaces / numFaces << "%), " 
                 << "numIrregularFaces " << numIrregularFaces << " (" << 100.0f * numIrregularFaces / numFaces << "%) " << std::endl;
