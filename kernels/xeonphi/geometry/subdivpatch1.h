@@ -143,7 +143,12 @@ namespace embree
     {
       if (likely(isRegular()))
 	{
+#if 1
+	  const mic_f n = patch.normal4(uu,vv);
+	  return Vec3fa(n[0],n[1],n[2]);
+#else
 	  return patch.normal(uu,vv);
+#endif
 	}
       else 
 	{
@@ -212,6 +217,7 @@ namespace embree
 	  b.extend( f_m[1][1] );
 	}
 #endif
+
       return b;
     }
 

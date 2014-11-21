@@ -23,6 +23,9 @@
 namespace embree
 {
 
+#define FORCE_TRIANGLE_UV 0
+
+
   static __forceinline void intersect1_tri16(const size_t rayIndex, 
 					     const mic_f &dir_xyz,
 					     const mic_f &org_xyz,
@@ -82,6 +85,7 @@ namespace embree
 	const mic_m m_dist = eq(min_dist,max_dist_xyz);
 	const size_t index = bitscan(toInt(m_dist));
 
+#if FORCE_TRIANGLE_UV == 0
 	const mic_f u0 = uload16f_low(&u_grid[offset_v0]);
 	const mic_f u1 = uload16f_low(&u_grid[offset_v1]);
 	const mic_f u2 = uload16f_low(&u_grid[offset_v2]);
@@ -91,7 +95,10 @@ namespace embree
 	const mic_f v1 = uload16f_low(&v_grid[offset_v1]);
 	const mic_f v2 = uload16f_low(&v_grid[offset_v2]);
 	const mic_f v_final = u * v1 + v * v2 + (1.0f-u-v) * v0;
-
+#else
+	const mic_f u_final = u;
+	const mic_f v_final = v;
+#endif
 
 	const mic_m m_tri = m_dist^(m_dist & (mic_m)((unsigned int)m_dist - 1));
                 

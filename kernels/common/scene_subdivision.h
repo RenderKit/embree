@@ -1005,6 +1005,13 @@ namespace embree
       return mic4f(n0,n1,n2,n3);
     }
 
+    static __forceinline mic4f eval_derivative(const mic_f u, const mic_m m_mask)
+    {
+      const mic4f e = eval(u);
+      const mic4f d = derivative(u);
+      return mic4f(select(m_mask,e[0],d[0]),select(m_mask,e[1],d[1]),select(m_mask,e[2],d[2]),select(m_mask,e[3],d[3]));
+    }    
+
 #endif
     
   };
@@ -1029,6 +1036,7 @@ namespace embree
   };
 
 
+  /* old buggy version */
  __forceinline void stichEdges(const unsigned int low_rate_segments,
 			       const unsigned int high_rate_segments,
 			       float * __restrict__ const uv_array,
@@ -1050,11 +1058,43 @@ namespace embree
      {
        uv_array[offset] = (float)y * inv_low_rate_segments;
 
-       //std::cout << "x " << x << " y " << y << " value " << uv_array[offset] << std::endl; 
        offset += uv_array_step;      
        if(p > 0)
 	 {
 	   y++;
+	   p -= 2*dx;
+	 }
+       p += 2*dy;
+     }
+ }
+
+
+ __forceinline void stichGridEdges(const unsigned int low_rate,
+				   const unsigned int high_rate,
+				   float * __restrict__ const uv_array,
+				   const unsigned int uv_array_step)
+ {
+   assert(low_rate < high_rate);
+   assert(high_rate >= 2);
+
+   const float inv_low_rate = 1.0f / (float)(low_rate-1);
+   const unsigned int dy = low_rate  - 1; 
+   const unsigned int dx = high_rate - 1;
+
+   int p = 2*dy-dx;  
+
+   unsigned int offset = 0;
+   unsigned int y = 0;
+   float value = 0.0f;
+   for(unsigned int x=0;x<high_rate-1; x++) // '<=' would be correct but we will leave the 1.0f at the end
+     {
+       uv_array[offset] = value;
+
+       offset += uv_array_step;      
+       if(unlikely(p > 0))
+	 {
+	   y++;
+	   value = (float)y * inv_low_rate;
 	   p -= 2*dx;
 	 }
        p += 2*dy;
@@ -1126,6 +1166,7 @@ namespace embree
    const unsigned int int_edge_level2 = (unsigned int)edge_levels[2];
    const unsigned int int_edge_level3 = (unsigned int)edge_levels[3];
 
+#if 0
    if (unlikely(int_edge_level0 < grid_u_segments))
      stichEdges(int_edge_level0,grid_u_segments,u_array,1);
 
@@ -1137,6 +1178,26 @@ namespace embree
 
    if (unlikely(int_edge_level3 < grid_v_segments))
      stichEdges(int_edge_level3,grid_v_segments,v_array,grid_u_res);
+#else
+
+   const unsigned int int_edge_points0 = int_edge_level0 + 1;
+   const unsigned int int_edge_points1 = int_edge_level1 + 1;
+   const unsigned int int_edge_points2 = int_edge_level2 + 1;
+   const unsigned int int_edge_points3 = int_edge_level3 + 1;
+
+   if (unlikely(int_edge_points0 < grid_u_res))
+     stichGridEdges(int_edge_points0,grid_u_res,u_array,1);
+
+   if (unlikely(int_edge_points2 < grid_u_res))
+     stichGridEdges(int_edge_points2,grid_u_res,&u_array[(grid_v_res-1)*grid_u_res],1);
+
+   if (unlikely(int_edge_points1 < grid_v_res))
+     stichGridEdges(int_edge_points1,grid_v_res,&v_array[grid_u_res-1],grid_u_res);
+
+   if (unlikely(int_edge_points3 < grid_v_res))
+     stichGridEdges(int_edge_points3,grid_v_res,v_array,grid_u_res);
+
+#endif
 
  }
 
@@ -1464,7 +1525,7 @@ namespace embree
 
       const Vec4f u_n = CubicBSplineCurve::derivative(uu);
 
-      return (u_n[0] * curve0 + u_n[1] * curve1 + u_n[2] * curve2 + u_n[3] * curve3); // * 1.0f/36.0f;
+      return (u_n[0] * curve0 + u_n[1] * curve1 + u_n[2] * curve2 + u_n[3] * curve3); 
     }
 
     __forceinline Vec3fa tangentV(const float uu, const float vv) const
@@ -1478,22 +1539,40 @@ namespace embree
 
       const Vec4f u_n = CubicBSplineCurve::eval(uu);
 
-      return (u_n[0] * curve0 + u_n[1] * curve1 + u_n[2] * curve2 + u_n[3] * curve3); // * 1.0f/36.0f;
+      return (u_n[0] * curve0 + u_n[1] * curve1 + u_n[2] * curve2 + u_n[3] * curve3); 
     }
 
-    __forceinline Vec3fa normal(const float uu, const float vv) const
-    {
-      const Vec3fa tu = tangentU(uu,vv);
-      const Vec3fa tv = tangentV(uu,vv);
-      return cross(tu,tv);
-    }    
+
 
 #if defined(__MIC__)
 
+
+    __forceinline mic_f normal4(const float uu, const float vv) const
+    {
+      const mic4f v_e_d = CubicBSplineCurve::eval_derivative(mic_f(vv),0x00ff);       // ev,ev,dv,dv
+
+      const mic_f curve0 = v_e_d[0] * broadcast4to16f(&v[0][0]) + v_e_d[1] * broadcast4to16f(&v[1][0]) + v_e_d[2] * broadcast4to16f(&v[2][0]) + v_e_d[3] * broadcast4to16f(&v[3][0]);
+      const mic_f curve1 = v_e_d[0] * broadcast4to16f(&v[0][1]) + v_e_d[1] * broadcast4to16f(&v[1][1]) + v_e_d[2] * broadcast4to16f(&v[2][1]) + v_e_d[3] * broadcast4to16f(&v[3][1]);
+      const mic_f curve2 = v_e_d[0] * broadcast4to16f(&v[0][2]) + v_e_d[1] * broadcast4to16f(&v[1][2]) + v_e_d[2] * broadcast4to16f(&v[2][2]) + v_e_d[3] * broadcast4to16f(&v[3][2]);
+      const mic_f curve3 = v_e_d[0] * broadcast4to16f(&v[0][3]) + v_e_d[1] * broadcast4to16f(&v[1][3]) + v_e_d[2] * broadcast4to16f(&v[2][3]) + v_e_d[3] * broadcast4to16f(&v[3][3]);
+
+      const mic4f u_e_d = CubicBSplineCurve::eval_derivative(mic_f(uu),0xff00);       // du,du,eu,eu
+
+      const mic_f tangentUV = (u_e_d[0] * curve0 + u_e_d[1] * curve1 + u_e_d[2] * curve2 + u_e_d[3] * curve3); // tu, tu, tv, tv
+      
+      const mic_f tangentU = permute<0,0,0,0>(tangentUV);
+      const mic_f tangentV = permute<2,2,2,2>(tangentUV);
+
+      /* DBG_PRINT( tangentUV ); */
+      /* DBG_PRINT( tangentU ); */
+      /* DBG_PRINT( tangentV ); */
+
+      const mic_f n = lcross_xyz(tangentU,tangentV);
+      return n;
+    }
+
     __forceinline mic_f eval4(const mic_f uu, const mic_f vv) const
     {
-      // FIXME: merge u,v and extract after computation
-
       const mic4f v_n = CubicBSplineCurve::eval(vv); //FIXME: precompute in table
 
       const mic_f curve0 = v_n[0] * broadcast4to16f(&v[0][0]) + v_n[1] * broadcast4to16f(&v[1][0]) + v_n[2] * broadcast4to16f(&v[2][0]) + v_n[3] * broadcast4to16f(&v[3][0]);
@@ -1535,6 +1614,22 @@ namespace embree
     }
     
 #endif
+
+    __forceinline Vec3fa normal(const float uu, const float vv) const
+    {
+      const Vec3fa tu = tangentU(uu,vv);
+      const Vec3fa tv = tangentV(uu,vv);
+
+/*       DBG_PRINT(tu); */
+/*       DBG_PRINT(tv); */
+/*       DBG_PRINT( cross(tu,tv) ); */
+/* #if defined(__MIC__) */
+/*       DBG_PRINT( normal4(uu,vv) ); */
+/* #endif */
+/*       exit(0); */
+
+      return cross(tu,tv);
+    }    
 
 
   };
