@@ -101,7 +101,8 @@ namespace embree
       node(NULL), 
       accel(NULL), 
       size_prims(0),
-      num64BytesBlocksPerNode(bvh4iNodeSize / 64)
+      num64BytesBlocksPerNode(bvh4iNodeSize / 64),
+      leafItemThreshold(BVH4i::N)
   {
     DBG(PING);
   }
@@ -1036,7 +1037,7 @@ namespace embree
 #endif
 
     /* mark as leaf if leaf threshold reached */
-    if (current.items() <= BVH4i::N) {
+    if (current.items() <= leafItemThreshold) {
       current.createLeaf();
       return false;
     }
@@ -1147,8 +1148,8 @@ namespace embree
     checkBuildRecord(rightChild);
 #endif
 
-    if (leftChild.items()  <= BVH4i::N) leftChild.createLeaf();
-    if (rightChild.items() <= BVH4i::N) rightChild.createLeaf();	
+    if (leftChild.items()  <= leafItemThreshold) leftChild.createLeaf();
+    if (rightChild.items() <= leafItemThreshold) rightChild.createLeaf();	
     return true;
   }
 
@@ -1167,7 +1168,7 @@ namespace embree
 #endif
   
     /* mark as leaf if leaf threshold reached */
-    if (items <= BVH4i::N) {
+    if (items <= leafItemThreshold) {
       current.createLeaf();
       return false;
     }
@@ -1213,8 +1214,8 @@ namespace embree
     checkBuildRecord(rightChild);
 #endif
      
-    if (leftChild.items()  <= BVH4i::N) leftChild.createLeaf();
-    if (rightChild.items() <= BVH4i::N) rightChild.createLeaf();
+    if (leftChild.items()  <= leafItemThreshold) leftChild.createLeaf();
+    if (rightChild.items() <= leafItemThreshold) rightChild.createLeaf();
     return true;
   }
 
@@ -1237,7 +1238,7 @@ namespace embree
 #endif
   
     /* mark as leaf if leaf threshold reached */
-    if (items <= BVH4i::N) {
+    if (items <= leafItemThreshold) {
       current.createLeaf();
       return false;
     }
@@ -1287,8 +1288,8 @@ namespace embree
     checkBuildRecord(rightChild);
 #endif
      
-    if (leftChild.items()  <= BVH4i::N) leftChild.createLeaf();
-    if (rightChild.items() <= BVH4i::N) rightChild.createLeaf();
+    if (leftChild.items()  <= leafItemThreshold) leftChild.createLeaf();
+    if (rightChild.items() <= leafItemThreshold) rightChild.createLeaf();
     return true;
   }
 
@@ -1358,7 +1359,7 @@ namespace embree
 #endif
     
     /* create leaf */
-    if (current.items() <= BVH4i::N) {
+    if (current.items() <= leafItemThreshold) {
       createBVH4iLeaf(*(BVH4i::NodeRef*)current.parentPtr,current.begin,current.items());
 
 #if defined(DEBUG)

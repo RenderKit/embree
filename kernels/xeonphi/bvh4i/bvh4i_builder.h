@@ -139,15 +139,16 @@ namespace embree
   protected:
     BVH4i* bvh;                   //!< Output BVH
 
-
     /* work record handling */
-  protected:
     PrimRef  *    prims;
     mic_i    *    node;  // node array in 64 byte blocks
     Triangle1*    accel;
 
-    size_t size_prims;
+    /* threshold for leaf generation */
+    size_t leafItemThreshold;
 
+    /* memory allocation */
+    size_t size_prims;
     const size_t num64BytesBlocksPerNode;
 
 
