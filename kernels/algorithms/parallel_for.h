@@ -27,9 +27,14 @@ namespace embree
     __forceinline ParallelForTask (const Index taskCount, const Func& func)
       : func(func)
     {
+#if 0
+    for (size_t taskIndex=0; taskIndex<taskCount; taskIndex++)
+      func(taskIndex);
+#else
       if (taskCount == 0) return;
       else if (taskCount == 1) func(0);
       else LockStepTaskScheduler::instance()->dispatchTaskSet(task_set,this,taskCount);
+#endif
     }
 
     static void task_set(void* data, const size_t threadIndex, const size_t threadCount, const size_t taskIndex, const size_t taskCount) {
@@ -68,19 +73,11 @@ namespace embree
     size_t taskCount = (last-first+minStepSize-1)/minStepSize;
     if (taskCount > 1) taskCount = min(taskCount,LockStepTaskScheduler::instance()->getNumThreads());
 
-#if 0
-    for (size_t taskIndex=0; taskIndex<taskCount; taskIndex++) {
-      const size_t k0 = first+(taskIndex+0)*(last-first)/taskCount;
-      const size_t k1 = first+(taskIndex+1)*(last-first)/taskCount;
-      func(range<Index>(k0,k1));
-    }
-#else
     parallel_for(taskCount, [&](const size_t taskIndex) {
         const size_t k0 = first+(taskIndex+0)*(last-first)/taskCount;
         const size_t k1 = first+(taskIndex+1)*(last-first)/taskCount;
         func(range<Index>(k0,k1));
       });
-#endif
   }
 
   /* parallel for with range optimization and minimal granularity per thread */
