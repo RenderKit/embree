@@ -36,10 +36,10 @@ namespace embree
     };
 
     /*! Default constructor. */
-    __forceinline SubdivPatch1 (const SubdivMesh::HalfEdge * first_half_edge,
-				const Vec3fa *vertices,
-				unsigned int geomID,
-				unsigned int primID) 
+    SubdivPatch1 (const SubdivMesh::HalfEdge * first_half_edge,
+		  const Vec3fa *vertices,
+		  unsigned int geomID,
+		  unsigned int primID) 
       : geomID(geomID),
       primID(primID),
       under_construction(0),
@@ -112,6 +112,8 @@ namespace embree
 	  GregoryPatch gpatch; 
 	  gpatch.init( ipatch ); 
 	  gpatch.exportConrolPoints( patch.v, f_m );
+
+	  gpatch.exportDenseConrolPoints( patch.v);
 
 	}
     }

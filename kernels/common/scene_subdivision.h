@@ -1851,27 +1851,33 @@ namespace embree
 	 f_m[y][x] = (Vec3fa_t)f[y][x];
    }
 
-   /* __forceinline void exportBicubicBezierPatch( Vec3fa matrix[4][4], const float uu, const float vv ) const */
-   /* { */
-   /*   for (size_t y=0;y<4;y++) */
-   /*     for (size_t x=0;x<4;x++) */
-   /* 	 matrix[y][x] = (Vec3fa_t)v[y][x]; */
+   __forceinline void exportDenseConrolPoints( Vec3fa matrix[4][4] ) const //store all f_m into 4th component of Vec3fa matrix
+   {
+     for (size_t y=0;y<4;y++)
+       for (size_t x=0;x<4;x++)
+	 matrix[y][x] = (Vec3fa_t)v[y][x];
 
-   /*   if (uu == 0.0f || uu == 1.0f || vv == 0.0f || vv == 1.0f) return; */
+     matrix[0][0].w = f[0][0].x;
+     matrix[0][1].w = f[0][0].y;
+     matrix[0][2].w = f[0][0].z;
+     matrix[0][3].w = 0.0f;
 
-   /*   // FIXME: merge u,v and extract after computation */
+     matrix[1][0].w = f[0][1].x;
+     matrix[1][1].w = f[0][1].y;
+     matrix[1][2].w = f[0][1].z;
+     matrix[1][3].w = 0.0f;
 
-   /*   const Vec3fa_t F0 = (      uu  * f0_p() +       vv  * f0_m()) * 1.0f/(uu+vv); */
-   /*   const Vec3fa_t F1 = ((1.0f-uu) * f1_m() +       vv  * f1_p()) * 1.0f/(1.0f-uu+vv); */
-   /*   const Vec3fa_t F2 = ((1.0f-uu) * f2_p() + (1.0f-vv) * f2_m()) * 1.0f/(2.0f-uu-vv); */
-   /*   const Vec3fa_t F3 = (      uu  * f3_m() + (1.0f-vv) * f3_p()) * 1.0f/(1.0f+uu-vv); */
+     matrix[2][0].w = f[1][1].x;
+     matrix[2][1].w = f[1][1].y;
+     matrix[2][2].w = f[1][1].z;
+     matrix[2][3].w = 0.0f;
 
-   /*   matrix[1][1] = F0; */
-   /*   matrix[1][2] = F1; */
-   /*   matrix[2][2] = F2; */
-   /*   matrix[2][1] = F3;      */
+     matrix[3][0].w = f[1][0].x;
+     matrix[3][1].w = f[1][0].y;
+     matrix[3][2].w = f[1][0].z;
+     matrix[3][3].w = 0.0f;
+   }
 
-   /* } */
    
    static __forceinline Vec3fa_t deCasteljau(const float uu, const Vec3fa_t &v0, const Vec3fa_t &v1, const Vec3fa_t &v2, const Vec3fa_t &v3)
    {
