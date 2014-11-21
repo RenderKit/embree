@@ -50,8 +50,9 @@ namespace embree
     {
       /* first calculate total number of elements */
       size_t N = 0;
-      for (size_t i=0; i<array2.size(); i++) 
+      for (size_t i=0; i<array2.size(); i++) {
 	N += array2[i] ? array2[i]->size() : 0;
+      }
       this->N = N;
 
       /* calculate number of tasks to use */
@@ -65,11 +66,11 @@ namespace embree
       i0[taskIndex] = 0;
       j0[taskIndex] = 0;
       size_t k0 = (++taskIndex)*N/taskCount;
-      for (size_t i=0, k=0; taskIndex != taskCount; i++) 
+      for (size_t i=0, k=0; taskIndex < taskCount; i++) 
       {
 	assert(i<array2.size());
 	size_t j=0, M = array2[i] ? array2[i]->size() : 0;
-	while (j<M && k+M-j >= k0) {
+	while (j<M && k+M-j >= k0 && taskIndex < taskCount) {
 	  assert(taskIndex<taskCount);
 	  i0[taskIndex] = i;
 	  j0[taskIndex] = j += k0-k;
