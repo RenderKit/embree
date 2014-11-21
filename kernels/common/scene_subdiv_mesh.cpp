@@ -300,58 +300,123 @@ namespace embree
 
 #else
 
+#define TIMER(x) 
+
     double t0 = getSeconds();
 
+
+    TIMER(double msec = 0.0);
+
     /* calculate start edge of each face */
+
+    TIMER(msec = getSeconds());
+
     faceStartEdge.resize(numFaces);
     size_t numHalfEdges = parallel_prefix_sum(faceVertices,faceStartEdge,numFaces);
         
-    /* create set with all */
+    TIMER(msec = getSeconds()-msec);    
+    TIMER(std::cout << "calculate start edge  " << 1000. * msec << " ms" << std::endl);
+
+    /* create set with all holes */
+    TIMER(msec = getSeconds());
+
     holeSet.init(holes);
 
+    TIMER(msec = getSeconds()-msec);    
+    TIMER(std::cout << "holes  " << 1000. * msec << " ms" << std::endl);
+
     /* create set with all vertex creases */
+    TIMER(msec = getSeconds());
+
     vertexCreaseMap.init(vertex_creases,vertex_crease_weights);
+
+    TIMER(msec = getSeconds()-msec);    
+    TIMER(std::cout << "creases  " << 1000. * msec << " ms" << std::endl);
     
     /* create map with all edge creases */
+    TIMER(msec = getSeconds());
+
     edgeCreaseMap.init(edge_creases,edge_crease_weights);
 
+    TIMER(msec = getSeconds()-msec);    
+    TIMER(std::cout << "edge map  " << 1000. * msec << " ms" << std::endl);
+
     /* create all half edges */
+    TIMER(msec = getSeconds());
+
+#if defined(__MIC__)
+    parallel_for( size_t(0), numFaces, [&](const range<size_t>& r) 
+#else
     parallel_for( size_t(0), numFaces, size_t(4096), [&](const range<size_t>& r) 
+#endif
     {
       for (size_t f=r.begin(); f<r.end(); f++) 
       {
+	//FIXME: use 'stride' to reduce imuls on MIC !!!
+
+#if defined(__MIC__)
+	prefetch<PFHINT_L2>((char*)&faceVertices[f]  + 4*64);
+	prefetch<PFHINT_L2>((char*)&faceStartEdge[f] + 4*64);
+#endif
+
 	const size_t N = faceVertices[f];
 	const size_t e = faceStartEdge[f];
 	
 	for (size_t de=0; de<N; de++)
 	{
 	  HalfEdge* edge = &halfEdges[e+de];
+
+#if defined(__MIC__)
+	  prefetch<PFHINT_L1>(edge + 2);
+	  prefetch<PFHINT_L1EX>(&halfEdges1[e+de+2]);
+#endif
+
 	  const unsigned int startVertex = vertexIndices[e+de];
-	  const unsigned int endVertex   = vertexIndices[e + (de + 1) % N]; // FIXME: optimize %
+	  unsigned int nextIndex = de + 1;
+	  if (unlikely(nextIndex >= N)) nextIndex -=N; 
+	  //const unsigned int endVertex = vertexIndices[e + (de + 1) % N]; // FIXME: optimize %
+	  const unsigned int endVertex   = vertexIndices[e + nextIndex]; 
 	  const uint64 key = Edge(startVertex,endVertex);
 	  
 	  float edge_level = 1.0f;
 	  if (levels) edge_level = levels[e+de];
 	  assert( edge_level >= 0.0f );
 	  
-	  edge->vtx_index = startVertex;
-	  edge->next_half_edge_ofs = (de == (N-1)) ? -(N-1) : +1;
-	  edge->prev_half_edge_ofs = (de ==     0) ? +(N-1) : -1;
+	  edge->vtx_index              = startVertex;
+	  edge->next_half_edge_ofs     = (de == (N-1)) ? -(N-1) : +1;
+	  edge->prev_half_edge_ofs     = (de ==     0) ? +(N-1) : -1;
 	  edge->opposite_half_edge_ofs = 0;
-	  edge->edge_crease_weight = edgeCreaseMap.lookup(key,0.0f);
-	  edge->vertex_crease_weight = vertexCreaseMap.lookup(startVertex,0.0f);
-	  edge->edge_level = edge_level;
-	  if (holeSet.lookup(f)) halfEdges1[e+de] = KeyHalfEdge(-1,edge);
-	  else                   halfEdges1[e+de] = KeyHalfEdge(key,edge);
+	  edge->edge_crease_weight     = edgeCreaseMap.lookup(key,0.0f);
+	  edge->vertex_crease_weight   = vertexCreaseMap.lookup(startVertex,0.0f);
+	  edge->edge_level             = edge_level;
+
+	  if (unlikely(holeSet.lookup(f))) 
+	    halfEdges1[e+de] = KeyHalfEdge(-1,edge);
+	  else
+	    halfEdges1[e+de] = KeyHalfEdge(key,edge);
 	}
       }
     });
 
+    TIMER(msec = getSeconds()-msec);    
+    TIMER(std::cout << "create half edges  " << 1000. * msec << " ms" << std::endl);
+
     /* sort half edges to find adjacent edges */
+    TIMER(msec = getSeconds());
+
     radix_sort_u64(&halfEdges1[0],&halfEdges0[0],numHalfEdges);
 
+    TIMER(msec = getSeconds()-msec);    
+    TIMER(std::cout << "sort edges  " << 1000. * msec << " ms" << std::endl);
+
     /* link all adjacent pairs of edges */
+    TIMER(msec = getSeconds());
+
+#if defined(__MIC__)
+    parallel_for( size_t(0), numHalfEdges, [&](const range<size_t>& r) 
+#else
     parallel_for( size_t(0), numHalfEdges, size_t(4096), [&](const range<size_t>& r) 
+#endif
     {
       size_t e=r.begin();
       if (e && (halfEdges1[e].key == halfEdges1[e-1].key)) {
@@ -378,6 +443,9 @@ namespace embree
 	e+=N;
       }
     });
+
+    TIMER(msec = getSeconds()-msec);    
+    TIMER(std::cout << "link edge pairs  " << 1000. * msec << " ms" << std::endl);
 
     /* cleanup some state for static scenes */
     if (parent->isStatic()) 

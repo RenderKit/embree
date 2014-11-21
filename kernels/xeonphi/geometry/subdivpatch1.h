@@ -136,7 +136,7 @@ namespace embree
 	  return patch.eval4(uu,vv);
 	}
       else 
-	{
+	{	  
 	  return GregoryPatch::eval4( patch.v, uu, vv );
 	}
       
@@ -147,17 +147,14 @@ namespace embree
     {
       if (likely(isRegular()))
 	{
-#if 1
 	  const mic_f n = patch.normal4(uu,vv);
 	  return Vec3fa(n[0],n[1],n[2]);
-#else
-	  return patch.normal(uu,vv);
-#endif
+	  //return patch.normal(uu,vv);
 	}
       else 
 	{
-	 return GregoryPatch::normal( patch.v, uu, vv );
-
+	  // FIXME: fast "lane" code for gregory patch normal
+	  return GregoryPatch::normal( patch.v, uu, vv );
 	}
       
     }
