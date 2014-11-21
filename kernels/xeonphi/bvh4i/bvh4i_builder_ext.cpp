@@ -904,6 +904,7 @@ PRINT(CORRECT_numPrims);
       }
 
     global_lazyMem64BytesBlocks = 0;
+    leafItemThreshold = 1;
 
     BVH4iBuilder::build(threadIndex,threadCount);
   }
@@ -1056,9 +1057,10 @@ PRINT(CORRECT_numPrims);
       {
 	SubdivPatch1 *__restrict__ const patch_ptr = (SubdivPatch1*)org_accel;
 
+#if 1
 	if (bvh->root != BVH4i::invalidNode)
 	  processLeaves(bvh->root,0,0);
-
+#endif
 	const size_t new_lazyMem64BytesBlocks = global_lazyMem64BytesBlocks; 
 	DBG_PRINT(global_lazyMem64BytesBlocks);
 
@@ -1090,6 +1092,22 @@ PRINT(CORRECT_numPrims);
 					     const BVH4i::NodeRef parent,
 					     const unsigned int local_index)
   {    
+#if 1
+    if (unlikely(ref.isLeaf()))
+      {
+	unsigned int items = ref.items();
+	unsigned int index = ref.offsetIndex();
+	assert(items == 1);
+
+	const unsigned int patchIndex = prims[index].lower.a;
+	  
+	BVH4i::Node* p = (BVH4i::Node*)parent.node((BVH4i::Node*)node);
+
+	createBVH4iLeaf( p->child(local_index) , patchIndex, 1);	    
+
+	return;
+      }
+#else
     if (unlikely(ref.isLeaf()))
       {
 
@@ -1128,7 +1146,7 @@ PRINT(CORRECT_numPrims);
 
 	return;
       }
-
+#endif
     BVH4i::Node *n = (BVH4i::Node*)ref.node(node);
 
     for (size_t i=0;i<BVH4i::N;i++)

@@ -1327,6 +1327,10 @@ namespace embree
     unsigned int blocks4 = (current.items()+3)/4;
     unsigned int center = current.begin + (blocks4/2)*4; // (current.begin + current.end)/2;
 
+    if (unlikely(current.items() <= 4))
+      {
+	center = current.begin + 1;
+      }
     assert(center != current.begin);
     assert(center != current.end);
     
@@ -1380,6 +1384,9 @@ namespace embree
 
     /* allocate next four nodes */
     size_t numChildren = 4;
+    if (current.items() <= 4 )
+      numChildren = current.items();
+
     for (size_t i=0; i<numChildren; i++) 
       children[i].depth = current.depth+1;
 
