@@ -199,7 +199,7 @@ namespace embree
 
   void SubdivMesh::initializeHalfEdgeStructures ()
   {
-#define TIMER(x) 
+#define TIMER(x) x
     TIMER(double msec = 0.0);
 
     double t0 = getSeconds();

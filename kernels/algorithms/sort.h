@@ -305,8 +305,7 @@ namespace embree
 			  const size_t threadCount,
 			  const size_t byte_iteration)
       {
-	const size_t L1_PREFETCH_ITEMS = 8;
-        const size_t L2_PREFETCH_ITEMS = 44;
+	const size_t L1_PREFETCH_ITEMS = 4;
 
 	for (size_t b=0; b<byte_iteration; b++)
 	  {
@@ -314,11 +313,12 @@ namespace embree
 	    for (size_t i=0; i<16; i++)
 	      store16i(&parent->radixCount[threadIndex][i*16],mic_i::zero());
 	    
-	    __assume_aligned(&radixCount[threadIndex][0],64);
+	    __assume_aligned(&parent->radixCount[threadIndex][0],64);
 
 	    for (size_t i=startID; i<endID; i++) {
 	      const Key &key = src[i];
 	      const unsigned char *__restrict const byte = (const unsigned char*)&key;
+	      prefetch<PFHINT_NT>(byte + 64*4);
 	      parent->radixCount[threadIndex][(unsigned int)byte[b]]++;
 	    }
 
@@ -371,7 +371,10 @@ namespace embree
 	    
 	    for (size_t i=startID; i<endID; i++) {
 	      const Key &key = src[i];
+
 	      const unsigned char *__restrict const byte = (const unsigned char*)&key;
+	      prefetch<PFHINT_NT>((char*)byte + 2*64);
+
 	      const unsigned int index = byte[b];
 
 	      assert(index < BUCKETS);
@@ -433,7 +436,11 @@ namespace embree
     
   private:
     __aligned(64) TyRadixCount radixCount;
+/* #if defined(__MIC__) */
+/*     __aligned(64) QuadTreeBarrier barrier; */
+/* #else */
     LinearBarrierActive barrier; // FIXME: should be able to speficy number of threads here
+/* #endif */
   };
 
   /*! shared state for parallel radix sort */
