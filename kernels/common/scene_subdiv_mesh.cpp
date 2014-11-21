@@ -199,10 +199,23 @@ namespace embree
 
   void SubdivMesh::initializeHalfEdgeStructures ()
   {
+#define TIMER(x) 
+    TIMER(double msec = 0.0);
+
+    double t0 = getSeconds();
+
     /* allocate half edge array */
+
+    TIMER(msec = getSeconds());
+
     halfEdges.resize(numEdges);
     halfEdges0.resize(numEdges);
     halfEdges1.resize(numEdges);
+        
+    TIMER(msec = getSeconds()-msec);    
+    TIMER(std::cout << "allocate half edge arrays  " << 1000. * msec << " ms" << std::endl);
+
+
 
 #if 0 // defined(__MIC__)
     
@@ -300,12 +313,6 @@ namespace embree
 
 #else
 
-#define TIMER(x) 
-
-    double t0 = getSeconds();
-
-
-    TIMER(double msec = 0.0);
 
     /* calculate start edge of each face */
 
