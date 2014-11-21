@@ -49,7 +49,7 @@ namespace embree
 
       /* add all numbers using parallel_for_for */
       AtomicCounter sum1 = 0;
-      parallel_for_for( array2, size_t(1), [&](std::vector<size_t>* v, const range<size_t>& r, size_t k) 
+      parallel_for_for( array2, size_t(1), [&](std::vector<size_t>* v, const range<size_t>& r, size_t k) -> size_t
       {
         size_t s = 0;
 	for (size_t i=r.begin(); i<r.end(); i++) {
