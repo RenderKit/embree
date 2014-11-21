@@ -1735,6 +1735,15 @@ namespace embree
       {
 	BuildRecord br;
 	if (!global_workStack.pop_nolock_largest(br)) break;
+
+#if 0
+	if (unlikely(br.items() < 4096)) 
+	  {
+	    global_workStack.push_nolock(br);
+	    break;
+	  }
+#endif
+	
 	DBG(DBG_PRINT(br));
 	recurseSAH(br,alloc,BUILD_TOP_LEVEL,threadIndex,threadCount);      
       }

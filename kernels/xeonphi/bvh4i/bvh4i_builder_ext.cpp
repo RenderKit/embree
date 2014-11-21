@@ -1059,7 +1059,7 @@ PRINT(CORRECT_numPrims);
 
 #if 1
 	if (bvh->root != BVH4i::invalidNode)
-	  processLeaves(bvh->root,0,0);
+	  processLeaves(bvh->root);
 #endif
 	const size_t new_lazyMem64BytesBlocks = global_lazyMem64BytesBlocks; 
 	DBG_PRINT(global_lazyMem64BytesBlocks);
@@ -1088,11 +1088,8 @@ PRINT(CORRECT_numPrims);
       }
   }
 
-  void BVH4iBuilderSubdivMesh::processLeaves(const BVH4i::NodeRef &ref,
-					     const BVH4i::NodeRef parent,
-					     const unsigned int local_index)
+  void BVH4iBuilderSubdivMesh::processLeaves(BVH4i::NodeRef &ref)
   {    
-#if 1
     if (unlikely(ref.isLeaf()))
       {
 	unsigned int items = ref.items();
@@ -1101,58 +1098,17 @@ PRINT(CORRECT_numPrims);
 
 	const unsigned int patchIndex = prims[index].lower.a;
 	  
-	BVH4i::Node* p = (BVH4i::Node*)parent.node((BVH4i::Node*)node);
-
-	createBVH4iLeaf( p->child(local_index) , patchIndex, 1);	    
+	createBVH4iLeaf( ref , patchIndex, 1);	    
 
 	return;
       }
-#else
-    if (unlikely(ref.isLeaf()))
-      {
 
-	const unsigned int currentIndex = atomicID.add(2);
-	if (currentIndex + 2 >= numAllocated64BytesBlocks)
-	  {
-	    DBG_PRINT(currentIndex);
-	    DBG_PRINT(numAllocated64BytesBlocks);
-	    FATAL("not enough bvh node space allocated");
-	  }
-	BVH4i::NodeRef newNodeRef;
-	createBVH4iNode<2>(newNodeRef,currentIndex);
-
-	BVH4i::Node *n = (BVH4i::Node*)newNodeRef.node((BVH4i::Node*)node);
-	n->setInvalid();
-
-	unsigned int items = ref.items();
-	unsigned int index = ref.offsetIndex();
-	assert(index < numPrimitives);
-
-	SubdivPatch1 *__restrict__ const patch_ptr = (SubdivPatch1*)org_accel;
-
-	for (size_t i=0;i<items;i++)
-	  {
-	    const unsigned int patchIndex = prims[index+i].lower.a;
-	    //DBG_PRINT(patchIndex);
- 	    n->setBounds( i, patch_ptr[patchIndex].bounds() );
-	    //n->setBounds( i, patch_ptr[i].evalQuadBounds() );
-
-	    assert( patch_ptr[patchIndex].under_construction == 0);
-	    createBVH4iLeaf( n->child(i), patchIndex, 1);	    
-	  }
-
-	BVH4i::Node* p = (BVH4i::Node*)parent.node((BVH4i::Node*)node);
-	p->child(local_index) = newNodeRef;
-
-	return;
-      }
-#endif
     BVH4i::Node *n = (BVH4i::Node*)ref.node(node);
 
     for (size_t i=0;i<BVH4i::N;i++)
       {
 	if (n->child(i) == BVH4i::invalidNode) break;
-	processLeaves( n->child(i), ref, i );
+	processLeaves( n->child(i) );
       }
   }    
 
