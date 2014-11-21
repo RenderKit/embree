@@ -127,6 +127,116 @@ namespace embree
       }
   };
 
+
+  static __forceinline void intersect1_tri16_precise(const size_t rayIndex, 
+						     const mic_f &dir_xyz,
+						     const mic_f &org_xyz,
+						     Ray16& ray16,
+						     const mic3f &vtx0,
+						     const mic3f &vtx1,
+						     const mic3f &vtx2,
+						     const mic_f &u_grid,
+						     const mic_f &v_grid,
+						     const unsigned int offset_v0,
+						     const unsigned int offset_v1,
+						     const unsigned int offset_v2,
+						     const mic_m &m_active,
+						     const unsigned int subdiv_patch_index)
+  {
+    const mic3f ray_org(swAAAA(org_xyz),swBBBB(org_xyz),swCCCC(org_xyz));
+    const mic3f ray_dir(swAAAA(dir_xyz),swBBBB(dir_xyz),swCCCC(dir_xyz));
+    
+    const mic3f v0 = vtx0 - ray_org;
+    const mic3f v1 = vtx1 - ray_org;
+    const mic3f v2 = vtx2 - ray_org;
+   
+    const mic3f e0 = v2 - v0;
+    const mic3f e1 = v0 - v1;	     
+
+    const mic3f Ng1     = cross(e1,e0);
+    const mic3f Ng      = Ng1+Ng1;
+    const mic_f den     = dot(Ng,ray_dir);	      
+    const mic_f rcp_den = rcp(den);
+
+#if defined(__BACKFACE_CULLING__)
+    mic_m m_valid = m_active & (den > zero);
+#else
+    mic_m m_valid = m_active;
+#endif
+
+    const mic_f u = dot(cross(v2+v0,e0),ray_dir) * rcp_den; 
+    m_valid       = ge( m_valid, u, zero);
+
+    const mic_f v       = dot(cross(v0+v1,e1),ray_dir) * rcp_den; 
+    m_valid       = ge( m_valid, v, zero);
+
+    if (unlikely(none(m_valid))) return;
+
+    const mic3f e2 = v1 - v2;	     
+    const mic_f w       = dot(cross(v1+v2,e2),ray_dir) * rcp_den;  
+    m_valid       = ge( m_valid, w, zero);
+
+    if (unlikely(none(m_valid))) return;
+    
+    const mic_m m_den = gt(m_valid,den,zero);
+    const mic_f t = dot(v0,Ng) * rcp_den;
+    mic_f max_dist_xyz = mic_f(ray16.tfar[rayIndex]);
+    mic_m m_final      = lt(lt(m_den,mic_f(ray16.tnear[rayIndex]),t),t,max_dist_xyz);
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////
+
+    /* did the ray hit one of the four triangles? */
+    if (unlikely(any(m_final)))
+      {
+	STAT3(normal.trav_prim_hits,1,1,1);
+	max_dist_xyz  = select(m_final,t,max_dist_xyz);
+	const mic_f min_dist = vreduce_min(max_dist_xyz);
+	const mic_m m_dist = eq(min_dist,max_dist_xyz);
+	const size_t index = bitscan(toInt(m_dist));
+
+#if FORCE_TRIANGLE_UV == 0
+	const mic_f u0 = uload16f_low(&u_grid[offset_v0]);
+	const mic_f u1 = uload16f_low(&u_grid[offset_v1]);
+	const mic_f u2 = uload16f_low(&u_grid[offset_v2]);
+	const mic_f u_final = u * u1 + v * u2 + (1.0f-u-v) * u0;
+
+	const mic_f v0 = uload16f_low(&v_grid[offset_v0]);
+	const mic_f v1 = uload16f_low(&v_grid[offset_v1]);
+	const mic_f v2 = uload16f_low(&v_grid[offset_v2]);
+	const mic_f v_final = u * v1 + v * v2 + (1.0f-u-v) * v0;
+#else
+	const mic_f u_final = u;
+	const mic_f v_final = v;
+#endif
+
+	const mic_m m_tri = m_dist^(m_dist & (mic_m)((unsigned int)m_dist - 1));
+                
+	prefetch<PFHINT_L1EX>(&ray16.tfar);  
+	prefetch<PFHINT_L1EX>(&ray16.u);
+	prefetch<PFHINT_L1EX>(&ray16.v);
+	prefetch<PFHINT_L1EX>(&ray16.Ng.x); 
+	prefetch<PFHINT_L1EX>(&ray16.Ng.y); 
+	prefetch<PFHINT_L1EX>(&ray16.Ng.z); 
+	prefetch<PFHINT_L1EX>(&ray16.geomID);
+	prefetch<PFHINT_L1EX>(&ray16.primID);
+
+	const mic_f gnormalx(Ng.x[index]);
+	const mic_f gnormaly(Ng.y[index]);
+	const mic_f gnormalz(Ng.z[index]);
+		  
+	compactustore16f_low(m_tri,&ray16.tfar[rayIndex],min_dist);
+	compactustore16f_low(m_tri,&ray16.u[rayIndex],u_final); 
+	compactustore16f_low(m_tri,&ray16.v[rayIndex],v_final); 
+	compactustore16f_low(m_tri,&ray16.Ng.x[rayIndex],gnormalx); 
+	compactustore16f_low(m_tri,&ray16.Ng.y[rayIndex],gnormaly); 
+	compactustore16f_low(m_tri,&ray16.Ng.z[rayIndex],gnormalz); 
+
+	ray16.geomID[rayIndex] = -1;
+	ray16.primID[rayIndex] = subdiv_patch_index;      
+      }
+  };
+
+
   static __forceinline void intersect1_quad16(const size_t rayIndex, 
 					      const mic_f &dir_xyz,
 					      const mic_f &org_xyz,
@@ -148,8 +258,14 @@ namespace embree
     const mic3f  v2( uload16f_low(&vtx.x[offset_v2]), uload16f_low(&vtx.y[offset_v2]), uload16f_low(&vtx.z[offset_v2]));
     const mic3f  v3( uload16f_low(&vtx.x[offset_v3]), uload16f_low(&vtx.y[offset_v3]), uload16f_low(&vtx.z[offset_v3]));
 
+#if 0
     intersect1_tri16(rayIndex,dir_xyz,org_xyz,ray16,v0,v1,v3,u,v,offset_v0,offset_v1,offset_v3,m_active,subdiv_patch_index);
     intersect1_tri16(rayIndex,dir_xyz,org_xyz,ray16,v3,v1,v2,u,v,offset_v3,offset_v1,offset_v2,m_active,subdiv_patch_index);
+#else
+    intersect1_tri16_precise(rayIndex,dir_xyz,org_xyz,ray16,v0,v1,v3,u,v,offset_v0,offset_v1,offset_v3,m_active,subdiv_patch_index);
+    intersect1_tri16_precise(rayIndex,dir_xyz,org_xyz,ray16,v3,v1,v2,u,v,offset_v3,offset_v1,offset_v2,m_active,subdiv_patch_index);
+
+#endif
   }
 
   static __forceinline bool intersect1_quad(const size_t rayIndex, 

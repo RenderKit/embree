@@ -23,7 +23,7 @@
 #define FIXED_EDGE_TESSELLATION_VALUE 7
 
 #define MAX_EDGE_LEVEL 32.0f
-#define MIN_EDGE_LEVEL 1.0f
+#define MIN_EDGE_LEVEL 2.0f
 
 /* scene data */
 extern uniform ISPCScene* uniform g_ispc_scene;
