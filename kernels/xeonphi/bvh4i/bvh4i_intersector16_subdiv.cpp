@@ -38,7 +38,6 @@ namespace embree
 					       const unsigned int patchIndex) 
     {
       *(volatile unsigned int*)&ref = (patchIndex << BVH4i::encodingBits) | BVH4i::leaf_mask;
-      // | BVH4i::aux_flag_mask | subdiv_level;
     }
 
     BBox3fa createSubTree(BVH4i::NodeRef &curNode,
@@ -49,39 +48,22 @@ namespace embree
 			  const unsigned int u_start,
 			  const unsigned int u_end,
 			  const unsigned int v_start,
-			  const unsigned int v_end)
+			  const unsigned int v_end,
+			  size_t &localCounter)
     {
       const unsigned int u_size = u_end-u_start+1;
       const unsigned int v_size = v_end-v_start+1;
-
       
       assert(u_size >= 1);
       assert(v_size >= 1);
 
-#if 0
-      DBG_PRINT(u_start);
-      DBG_PRINT(u_end);
-
-      DBG_PRINT(v_start);
-      DBG_PRINT(v_end);
-
-      DBG_PRINT(u_size);
-      DBG_PRINT(v_size);
-
-#endif
       if (u_size <= 4 && v_size <= 4)
 	{
 
 	  assert(u_size*v_size <= 16);
 
-
-	  const unsigned int currentIndex = bvh->lazyMemUsed64BytesBlocks.add(2);
-	  if (currentIndex + 2 > bvh->lazyMemAllocated64BytesBlocks) 
-	    {
-	      DBG_PRINT(currentIndex);
-	      DBG_PRINT(bvh->lazyMemUsed64BytesBlocks);
-	      FATAL("alloc");
-	    }
+	  const unsigned int currentIndex = localCounter;
+	  localCounter += 2;
 
 	  mic_f &leaf_u_array = bvh->lazymem[currentIndex+0];
 	  mic_f &leaf_v_array = bvh->lazymem[currentIndex+1];
@@ -120,14 +102,7 @@ namespace embree
 	  const Vec3fa b_max( reduce_max(leafGridVtx.x), reduce_max(leafGridVtx.y), reduce_max(leafGridVtx.z) );
 
 	  const BBox3fa leafGridBounds( b_min, b_max );
-#if 0	      
 
-	  DBG_PRINT(leafGridVtx.x);
-	  DBG_PRINT(leafGridVtx.y);
-	  DBG_PRINT(leafGridVtx.z);
-	  DBG_PRINT(leafGridBounds);
-
-#endif
 	  createSubPatchBVH4iLeaf( curNode, currentIndex);
 	  
 	  return leafGridBounds;
@@ -135,12 +110,8 @@ namespace embree
 
       /* allocate new bvh4i node */
       const size_t num64BytesBlocksPerNode = 2;
-      const size_t currentIndex = bvh->lazyMemUsed64BytesBlocks.add(num64BytesBlocksPerNode);
-
-      if (currentIndex + num64BytesBlocksPerNode >= bvh->lazyMemAllocated64BytesBlocks)
-	{
-	  FATAL("not enough bvh node space allocated");
-	}
+      const size_t currentIndex = localCounter;
+      localCounter += num64BytesBlocksPerNode;
 
       createBVH4iNode<2>(curNode,currentIndex);
 
@@ -172,7 +143,8 @@ namespace embree
 						  subtree_u_start[i], 
 						  subtree_u_end[i],
 						  subtree_v_start[i],
-						  subtree_v_end[i]);
+						  subtree_v_end[i],
+						  localCounter);
 	  node.setBounds(i, bounds_subtree);
 	  bounds.extend( bounds_subtree );
 	}
@@ -198,8 +170,9 @@ namespace embree
       TIMER(double msec = 0.0);
       TIMER(msec = getSeconds());
 
-      __aligned(64) float u_array[patch.grid_size+16]; // for unaligned access
-      __aligned(64) float v_array[patch.grid_size+16];
+      assert( patch.grid_size_64b_blocks > 1 );
+      __aligned(64) float u_array[(patch.grid_size_64b_blocks+1)*16]; // for unaligned access
+      __aligned(64) float v_array[(patch.grid_size_64b_blocks+1)*16];
 
       gridUVTessellator(patch.level,
 			patch.grid_u_res,
@@ -208,6 +181,14 @@ namespace embree
 			v_array);
 
       BVH4i::NodeRef subtree_root = 0;
+      size_t localCounter = bvh->lazyMemUsed64BytesBlocks.add( patch.grid_size_64b_blocks );
+      const size_t oldCounter = localCounter;
+      if (localCounter + patch.grid_size_64b_blocks > bvh->lazyMemAllocated64BytesBlocks) 
+	{
+	  DBG_PRINT(localCounter);
+	  DBG_PRINT(bvh->lazyMemUsed64BytesBlocks);
+	  FATAL("alloc");
+	}
 
       BBox3fa bounds = createSubTree( subtree_root,
 				      bvh,
@@ -217,11 +198,13 @@ namespace embree
 				      0,
 				      patch.grid_u_res-1,
 				      0,
-				      patch.grid_v_res-1);
+				      patch.grid_v_res-1,
+				      localCounter);
 
+      assert( localCounter - oldCounter == patch.grid_size_64b_blocks );
     TIMER(msec = getSeconds()-msec);    
 
-#if DEBUG
+#if 0 // DEBUG
       //numLazyBuildPatches++;
       //DBG_PRINT( numLazyBuildPatches );
       mtx.lock();
@@ -320,16 +303,15 @@ namespace embree
       const float * const edge_levels = subdiv_patch.level;
       const unsigned int grid_u_res   = subdiv_patch.grid_u_res;
       const unsigned int grid_v_res   = subdiv_patch.grid_v_res;
-      const unsigned int grid_size    = subdiv_patch.grid_size;
 
-      __aligned(64) float u_array[grid_size+16]; // for unaligned access
-      __aligned(64) float v_array[grid_size+16];
+      __aligned(64) float u_array[(subdiv_patch.grid_size_64b_blocks+1)]; // for unaligned access
+      __aligned(64) float v_array[(subdiv_patch.grid_size_64b_blocks+1)];
 
       gridUVTessellator(edge_levels,grid_u_res,grid_v_res,u_array,v_array);
 
       bool hit = false;
 
-      if (likely(grid_size <= 16))
+      if (likely(subdiv_patch.grid_size_64b_blocks==1))
 	{
 	  const mic_m m_active = subdiv_patch.grid_mask;
 
@@ -545,7 +527,7 @@ namespace embree
 	      SubdivPatch1& subdiv_patch = ((SubdivPatch1*)accel)[patchIndex];
 
 	      /* fast patch for grid with <= 16 points */
-	      if (likely(subdiv_patch.grid_size <= 16))
+	      if (likely(subdiv_patch.grid_size_64b_blocks == 1))
 		intersectEvalGrid1(rayIndex,
 				   dir_xyz,
 				   org_xyz,
@@ -555,8 +537,6 @@ namespace embree
 	      else
 		{
 		  /* traverse sub-patch bvh4i for grids with > 16 points */
-
-		  assert(subdiv_patch.grid_size > 16);
 
 		  if (unlikely(subdiv_patch.bvh4i_subtree_root == BVH4i::invalidNode))
 		    {

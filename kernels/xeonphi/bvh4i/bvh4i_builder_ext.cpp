@@ -919,7 +919,7 @@ PRINT(CORRECT_numPrims);
       {
 	const size_t numPrims = numPrimitives+4;
 	const size_t minAllocNodes =  ALLOCATOR_NODE_BLOCK_SIZE * MAX_MIC_THREADS; // (threadCount+1) 
-	const size_t numNodes = (size_t)((numPrims+3)/4) + minAllocNodes;
+	const size_t numNodes = (size_t)((float)(numPrims+2)/2) + minAllocNodes;
 
 	if (numNodes * sizeof(BVH4i::Node) < (sizeof(BBox3fa) * numPrimitives + sizeof(BVH4i::Node) * 128))
 	  FATAL("node memory to small for temporary bounds storage");
@@ -1017,7 +1017,7 @@ PRINT(CORRECT_numPrims);
 	    	    
 	    const BBox3fa bounds = acc[currentID].bounds();
 	    
-	    local_lazyMem64BytesBlocks += acc[currentID].getSubTreeSize();
+	    local_lazyMem64BytesBlocks += acc[currentID].grid_size_64b_blocks;
 
 	    const mic_f bmin = broadcast4to16f(&bounds.lower); 
 	    const mic_f bmax = broadcast4to16f(&bounds.upper);
@@ -1066,7 +1066,7 @@ PRINT(CORRECT_numPrims);
 	  {
 	    if (bvh->lazymem) os_free(bvh->lazymem, bvh->lazyMemAllocated64BytesBlocks * sizeof(mic_f));
 	    bvh->lazyMemAllocated64BytesBlocks = new_lazyMem64BytesBlocks; 
-	    bvh->lazymem = (mic_f*)os_reserve(sizeof(mic_f) * bvh->lazyMemAllocated64BytesBlocks);
+	    bvh->lazymem = (mic_f*)os_malloc(sizeof(mic_f) * bvh->lazyMemAllocated64BytesBlocks);
 	  }
 
 	bvh->accel = org_accel;
@@ -1075,6 +1075,9 @@ PRINT(CORRECT_numPrims);
 	bvh->lazyMemUsed64BytesBlocks = 0;
 
 #if DEBUG
+	DBG_PRINT(atomicID);
+	DBG_PRINT(numAllocated64BytesBlocks);
+
 	DBG_PRINT(bvh->lazyMemUsed64BytesBlocks);
 	DBG_PRINT(bvh->lazyMemAllocated64BytesBlocks);
 	DBG_PRINT(bvh->lazyMemAllocated64BytesBlocks * sizeof(mic_f));

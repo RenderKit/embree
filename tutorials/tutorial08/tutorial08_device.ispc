@@ -20,10 +20,10 @@
 #define PARALLEL_COMMIT
 
 //#define FORCE_FIXED_EDGE_TESSELLATION
-#define EDGE_TESSELLATION_VALUE 7
+#define FIXED_EDGE_TESSELLATION_VALUE 7
 
 #define MAX_EDGE_LEVEL 32.0f
-#define MIN_EDGE_LEVEL 2.0f
+#define MIN_EDGE_LEVEL 1.0f
 
 /* scene data */
 extern uniform ISPCScene* uniform g_ispc_scene;
@@ -161,7 +161,7 @@ uniform unsigned int convertScene(uniform ISPCScene* uniform scene_in, const uni
 	mesh->edge_level  = uniform new uniform float[mesh->numQuads*4];
 
 	for (size_t i=0;i<mesh->numQuads;i++) offset_buffer[i] = 4;
-	for (size_t i=0;i<mesh->numQuads*4;i++) mesh->edge_level[i] = EDGE_TESSELLATION_VALUE;
+	for (size_t i=0;i<mesh->numQuads*4;i++) mesh->edge_level[i] = FIXED_EDGE_TESSELLATION_VALUE;
 
        /* create a triangle mesh */
         uniform unsigned int subdivMeshID = rtcNewSubdivisionMesh (g_scene, RTC_GEOMETRY_STATIC, mesh->numQuads, mesh->numQuads*4, mesh->numVertices, 0, 0, 0);
