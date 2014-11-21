@@ -46,15 +46,10 @@ namespace embree
       bvh4i_subtree_root(-1),
       flags(0)
     {
-      assert(sizeof(SubdivPatch1) == 6 * 64);
+      assert(sizeof(SubdivPatch1) == 5 * 64);
 
       u_range = Vec2f(0.0f,1.0f);
       v_range = Vec2f(0.0f,1.0f);
-
-      f_m[0][0] = 0.0f;
-      f_m[0][1] = 0.0f;
-      f_m[1][1] = 0.0f;
-      f_m[1][0] = 0.0f;
 
       /* init irregular patch */
 
@@ -111,10 +106,7 @@ namespace embree
 	{
 	  GregoryPatch gpatch; 
 	  gpatch.init( ipatch ); 
-	  gpatch.exportConrolPoints( patch.v, f_m );
-
-	  gpatch.exportDenseConrolPoints( patch.v);
-
+	  gpatch.exportDenseConrolPoints( patch.v );
 	}
     }
 
@@ -129,8 +121,7 @@ namespace embree
 	}
       else 
 	{
-	  prefetch<PFHINT_L1>(f_m);
-	  return GregoryPatch::eval16( patch.v, f_m, uu, vv );
+	  return GregoryPatch::eval16( patch.v, uu, vv );
 	}
       
     }
@@ -146,8 +137,7 @@ namespace embree
 	}
       else 
 	{
-	  prefetch<PFHINT_L1>(f_m);
-	  return GregoryPatch::eval4( patch.v, f_m, uu, vv );
+	  return GregoryPatch::eval4( patch.v, uu, vv );
 	}
       
     }
@@ -166,7 +156,8 @@ namespace embree
 	}
       else 
 	{
-	 return GregoryPatch::normal( patch.v, f_m, uu, vv );
+	 return GregoryPatch::normal( patch.v, uu, vv );
+
 	}
       
     }
@@ -203,6 +194,12 @@ namespace embree
 	  }
       else
 	{
+	  Vec3fa f_m[2][2];
+	  f_m[0][0] = GregoryPatch::extract_f_m_Vec3fa(patch.v,0);
+	  f_m[0][1] = GregoryPatch::extract_f_m_Vec3fa(patch.v,1);
+	  f_m[1][1] = GregoryPatch::extract_f_m_Vec3fa(patch.v,2);
+	  f_m[1][0] = GregoryPatch::extract_f_m_Vec3fa(patch.v,3);
+
 	  GregoryPatch gpatch( patch.v, f_m);
 	  for (size_t i=0;i<real_grid_size;i++)
 	    {
@@ -225,10 +222,10 @@ namespace embree
       BBox3fa b = patch.bounds();
       if (unlikely(isGregoryPatch()))
 	{
-	  b.extend( f_m[0][0] );
-	  b.extend( f_m[0][1] );
-	  b.extend( f_m[1][0] );
-	  b.extend( f_m[1][1] );
+	  b.extend( extract_f_m_Vec3fa(patch.v,0) );
+	  b.extend( extract_f_m_Vec3fa(patch.v,1) );
+	  b.extend( extract_f_m_Vec3fa(patch.v,2) );
+	  b.extend( extract_f_m_Vec3fa(patch.v,3) );
 	}
 #endif
 
@@ -287,7 +284,6 @@ namespace embree
     volatile unsigned int under_construction; // 0 = not build yet, 1 = under construction, 2 = built
 
     __aligned(64) RegularCatmullClarkPatch patch;
-    Vec3fa f_m[2][2];    
   };
 
   __forceinline std::ostream &operator<<(std::ostream &o, const SubdivPatch1 &p)
