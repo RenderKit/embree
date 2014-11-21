@@ -316,7 +316,7 @@ namespace embree
     edgeCreaseMap.init(edge_creases,edge_crease_weights);
 
     /* create all half edges */
-    parallel_for( size_t(0), numFaces, size_t(4096), [=](const range<size_t>& r) 
+    parallel_for( size_t(0), numFaces, size_t(4096), [&](const range<size_t>& r) 
     {
       for (size_t f=r.begin(); f<r.end(); f++) 
       {
@@ -351,7 +351,7 @@ namespace embree
     radix_sort_u64(&halfEdges1[0],&halfEdges0[0],numHalfEdges);
 
     /* link all adjacent pairs of edges */
-    parallel_for( size_t(0), numHalfEdges, size_t(4096), [=](const range<size_t>& r) 
+    parallel_for( size_t(0), numHalfEdges, size_t(4096), [&](const range<size_t>& r) 
     {
       size_t e=r.begin();
       if (e && (halfEdges1[e].key == halfEdges1[e-1].key)) {

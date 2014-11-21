@@ -42,7 +42,7 @@ namespace embree
       temp.resize(in.size());
 
       /* copy data to temporary array */
-      parallel_for( size_t(0), in.size(), size_t(4*4096), [=](const range<size_t>& r) 
+      parallel_for( size_t(0), in.size(), size_t(4*4096), [&](const range<size_t>& r) 
       {
 	for (size_t i=r.begin(); i<r.end(); i++) 
 	  vec[i] = in[i];
@@ -61,7 +61,7 @@ namespace embree
       temp.resize(in.size());
 
       /* copy data to temporary array */
-      parallel_for( size_t(0), in.size(), size_t(4*4096), [=](const range<size_t>& r) 
+      parallel_for( size_t(0), in.size(), size_t(4*4096), [&](const range<size_t>& r) 
       {
 	for (size_t i=r.begin(); i<r.end(); i++) 
 	  vec[i] = in[i];

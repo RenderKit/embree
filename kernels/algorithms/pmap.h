@@ -64,7 +64,7 @@ namespace embree
       temp.resize(keys.size());
 
       /* generate key/value pairs */
-      parallel_for( size_t(0), keys.size(), size_t(4*4096), [=](const range<size_t>& r) {
+      parallel_for( size_t(0), keys.size(), size_t(4*4096), [&](const range<size_t>& r) {
 	for (size_t i=r.begin(); i<r.end(); i++)
 	  vec[i] = KeyValue((Key)keys[i],values[i]);
       });
@@ -83,7 +83,7 @@ namespace embree
       temp.resize(keys.size());
       
       /* generate key/value pairs */
-      parallel_for( size_t(0), keys.size(), size_t(4*4096), [=](const range<size_t>& r) {
+      parallel_for( size_t(0), keys.size(), size_t(4*4096), [&](const range<size_t>& r) {
 	for (size_t i=r.begin(); i<r.end(); i++)
 	  vec[i] = KeyValue((Key)keys[i],values[i]);
       });

@@ -143,7 +143,7 @@ namespace embree
     
     Builder* builder = NULL;
     if      (g_tri_builder == "default"     ) builder = BVH8Triangle4Builder(accel,scene,0);
-    else if (g_tri_builder == "spatialsplit") builder = BVH8Triangle4Builder(accel,scene,1);
+    else if (g_tri_builder == "spatialsplit") builder = BVH8Triangle4Builder(accel,scene,MODE_HIGH_QUALITY);
     else if (g_tri_builder == "objectsplit" ) builder = BVH8Triangle4Builder(accel,scene,0);
     else THROW_RUNTIME_ERROR("unknown builder "+g_tri_builder+" for BVH8<Triangle4>");
     
@@ -162,7 +162,7 @@ namespace embree
   {
     BVH8* accel = new BVH8(Triangle4Type::type,scene);
     Accel::Intersectors intersectors= BVH8Triangle4Intersectors(accel);
-    Builder* builder = BVH8Triangle4Builder(accel,scene,1);
+    Builder* builder = BVH8Triangle4Builder(accel,scene,MODE_HIGH_QUALITY);
     return new AccelInstance(accel,builder,intersectors);
   }
 
@@ -173,7 +173,7 @@ namespace embree
     
     Builder* builder = NULL;
     if      (g_tri_builder == "default"     ) builder = BVH8Triangle8Builder(accel,scene,0);
-    else if (g_tri_builder == "spatialsplit") builder = BVH8Triangle8Builder(accel,scene,1);
+    else if (g_tri_builder == "spatialsplit") builder = BVH8Triangle8Builder(accel,scene,MODE_HIGH_QUALITY);
     else if (g_tri_builder == "objectsplit" ) builder = BVH8Triangle8Builder(accel,scene,0);
     else THROW_RUNTIME_ERROR("unknown builder "+g_tri_builder+" for BVH8<Triangle8>");
     
@@ -192,7 +192,7 @@ namespace embree
   {
     BVH8* accel = new BVH8(Triangle8Type::type,scene);
     Accel::Intersectors intersectors= BVH8Triangle8Intersectors(accel);
-    Builder* builder = BVH8Triangle8Builder(accel,scene,1);
+    Builder* builder = BVH8Triangle8Builder(accel,scene,MODE_HIGH_QUALITY);
     return new AccelInstance(accel,builder,intersectors);
   }
 }
