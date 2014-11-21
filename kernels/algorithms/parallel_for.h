@@ -27,7 +27,7 @@ namespace embree
     __forceinline ParallelForTask (const Index taskCount, const Func& func)
       : func(func)
     {
-#if 0
+#if 1 // FIXME:
     for (size_t taskIndex=0; taskIndex<taskCount; taskIndex++)
       func(taskIndex);
 #else
