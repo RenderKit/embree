@@ -24,6 +24,7 @@ namespace embree
 {
 
 #define FORCE_TRIANGLE_UV 0
+#define PRECISE_TRI_INTERSECTION 1
 
 
   static __forceinline void intersect1_tri16(const size_t rayIndex, 
@@ -132,9 +133,9 @@ namespace embree
 						     const mic_f &dir_xyz,
 						     const mic_f &org_xyz,
 						     Ray16& ray16,
-						     const mic3f &vtx0,
-						     const mic3f &vtx1,
-						     const mic3f &vtx2,
+						     const mic3f &v0_org,
+						     const mic3f &v1_org,
+						     const mic3f &v2_org,
 						     const mic_f &u_grid,
 						     const mic_f &v_grid,
 						     const unsigned int offset_v0,
@@ -143,15 +144,15 @@ namespace embree
 						     const mic_m &m_active,
 						     const unsigned int subdiv_patch_index)
   {
-    const mic3f ray_org(swAAAA(org_xyz),swBBBB(org_xyz),swCCCC(org_xyz));
     const mic3f ray_dir(swAAAA(dir_xyz),swBBBB(dir_xyz),swCCCC(dir_xyz));
     
-    const mic3f v0 = vtx0 - ray_org;
-    const mic3f v1 = vtx1 - ray_org;
-    const mic3f v2 = vtx2 - ray_org;
+    const mic3f v0 = v0_org; // - ray_org;
+    const mic3f v1 = v1_org; // - ray_org;
+    const mic3f v2 = v2_org; // - ray_org;
    
     const mic3f e0 = v2 - v0;
     const mic3f e1 = v0 - v1;	     
+    const mic3f e2 = v1 - v2;	     
 
     const mic3f Ng1     = cross(e1,e0);
     const mic3f Ng      = Ng1+Ng1;
@@ -170,9 +171,6 @@ namespace embree
     const mic_f v       = dot(cross(v0+v1,e1),ray_dir) * rcp_den; 
     m_valid       = ge( m_valid, v, zero);
 
-    if (unlikely(none(m_valid))) return;
-
-    const mic3f e2 = v1 - v2;	     
     const mic_f w       = dot(cross(v1+v2,e2),ray_dir) * rcp_den;  
     m_valid       = ge( m_valid, w, zero);
 
@@ -253,15 +251,26 @@ namespace embree
     const unsigned int offset_v2 = grid_res+1;
     const unsigned int offset_v3 = grid_res+0;
 
+
+#if PRECISE_TRI_INTERSECTION == 0
     const mic3f &v0 = vtx;
     const mic3f  v1( uload16f_low(&vtx.x[offset_v1]), uload16f_low(&vtx.y[offset_v1]), uload16f_low(&vtx.z[offset_v1]));
     const mic3f  v2( uload16f_low(&vtx.x[offset_v2]), uload16f_low(&vtx.y[offset_v2]), uload16f_low(&vtx.z[offset_v2]));
     const mic3f  v3( uload16f_low(&vtx.x[offset_v3]), uload16f_low(&vtx.y[offset_v3]), uload16f_low(&vtx.z[offset_v3]));
 
-#if 0
     intersect1_tri16(rayIndex,dir_xyz,org_xyz,ray16,v0,v1,v3,u,v,offset_v0,offset_v1,offset_v3,m_active,subdiv_patch_index);
     intersect1_tri16(rayIndex,dir_xyz,org_xyz,ray16,v3,v1,v2,u,v,offset_v3,offset_v1,offset_v2,m_active,subdiv_patch_index);
 #else
+
+    const mic3f ray_org(swAAAA(org_xyz),swBBBB(org_xyz),swCCCC(org_xyz));
+    
+    mic3f vtx_org = vtx - ray_org;
+
+    const mic3f &v0 = vtx_org;
+    const mic3f  v1( uload16f_low(&vtx_org.x[offset_v1]), uload16f_low(&vtx_org.y[offset_v1]), uload16f_low(&vtx_org.z[offset_v1]));
+    const mic3f  v2( uload16f_low(&vtx_org.x[offset_v2]), uload16f_low(&vtx_org.y[offset_v2]), uload16f_low(&vtx_org.z[offset_v2]));
+    const mic3f  v3( uload16f_low(&vtx_org.x[offset_v3]), uload16f_low(&vtx_org.y[offset_v3]), uload16f_low(&vtx_org.z[offset_v3]));
+
     intersect1_tri16_precise(rayIndex,dir_xyz,org_xyz,ray16,v0,v1,v3,u,v,offset_v0,offset_v1,offset_v3,m_active,subdiv_patch_index);
     intersect1_tri16_precise(rayIndex,dir_xyz,org_xyz,ray16,v3,v1,v2,u,v,offset_v3,offset_v1,offset_v2,m_active,subdiv_patch_index);
 
