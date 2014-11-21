@@ -21,32 +21,32 @@
 namespace embree
 {
   template<typename Value>
-  class ParallelForForPrefixSumState : public ParallelForForHeapState
+  class ParallelForForPrefixSumState : public ParallelForForState
   {
   public:
 
     ParallelForForPrefixSumState () 
-    : ParallelForForHeapState(), minStepSize(0), _blocks(0), scheduler(NULL) {}
+    : ParallelForForState(), minStepSize(0) {}
 
   template<typename ArrayArray>
     ParallelForForPrefixSumState ( ArrayArray& array2, const size_t minStepSize) 
-    : ParallelForForHeapState(array2), minStepSize(minStepSize), _blocks(0), scheduler(LockStepTaskScheduler::instance())
+    : ParallelForForState(array2,minStepSize), minStepSize(minStepSize)
     {
-      _blocks  = min((this->K+this->minStepSize-1)/this->minStepSize,scheduler->getNumThreads());
-      counts.resize(_blocks);
-      sums.resize(_blocks);
+      //_blocks  = min((this->K+this->minStepSize-1)/this->minStepSize,scheduler->getNumThreads());
+      counts.resize(taskCount);
+      sums.resize(taskCount);
     }
 
     template<typename ArrayArray>
       void init(ArrayArray& array2, const size_t minStepSize)
     {
-      ParallelForForHeapState::init(array2);
+      ParallelForForState::init(array2,minStepSize);
       this->minStepSize = minStepSize;
-      this->scheduler = LockStepTaskScheduler::instance();
+      //this->scheduler = LockStepTaskScheduler::instance();
 
-      _blocks  = min((this->K+this->minStepSize-1)/this->minStepSize,scheduler->getNumThreads());
-      counts.resize(_blocks);
-      sums.resize(_blocks);
+      //_blocks  = min((this->K+this->minStepSize-1)/this->minStepSize,scheduler->getNumThreads());
+      counts.resize(taskCount);
+      sums.resize(taskCount);
     }
 
     /*size_t size() const {
@@ -59,10 +59,10 @@ namespace embree
 
   public:
     //Value value;
-    size_t _blocks;
+    //size_t _blocks;
     std::vector<Value> counts;
     std::vector<Value> sums;
-    LockStepTaskScheduler* scheduler;
+    //LockStepTaskScheduler* scheduler;
   };
 
   template<typename ArrayArray, typename Value, typename Func, typename Reduction>
@@ -73,8 +73,8 @@ namespace embree
     ParallelForForPrefixSumTask (ParallelForForPrefixSumState<Value>& state, ArrayArray& array2, const Value& identity, const Func& func, const Reduction& reduction) 
       : state(state), array2(array2), func(func), reduction(reduction), value(identity)
     {
-      const size_t blocks = state._blocks;
-      state.scheduler->dispatchTaskSet(task_execute,this,blocks);
+      const size_t blocks = state.taskCount;
+      LockStepTaskScheduler::instance()->dispatchTaskSet(task_execute,this,blocks);
       
       /* calculate prefix sum */
       Value sum=0;
@@ -90,14 +90,16 @@ namespace embree
     void execute(const size_t threadIndex, const size_t threadCount, const size_t taskIndex, const size_t taskCount) 
     {
       /* calculate range */
-      const size_t k0 = (taskIndex+0)*state.K/taskCount;
-      const size_t k1 = (taskIndex+1)*state.K/taskCount;
-      size_t i0, j0; state.start_indices(k0,i0,j0);
-      
+      const size_t k0 = (taskIndex+0)*state.size()/taskCount;
+      const size_t k1 = (taskIndex+1)*state.size()/taskCount;
+      size_t i0 = state.i0[taskIndex];
+      size_t j0 = state.j0[taskIndex];
+            
       /* iterate over arrays */
       size_t k=k0, N=0;
       for (size_t i=i0; k<k1; i++) {
-        const size_t r0 = j0, r1 = min(state.sizes[i],r0+k1-k);
+	const size_t size = array2[i] ? array2[i]->size() : 0;
+        const size_t r0 = j0, r1 = min(size,r0+k1-k);
         if (r1 > r0) N = reduction(N, func(array2[i],range<size_t>(r0,r1),k,reduction(state.sums[taskIndex],N)));
         k+=r1-r0; j0 = 0;
       }
