@@ -98,10 +98,12 @@ namespace embree
 	  
 	  const mic3f leafGridVtx = patch.eval16(leaf_u_array,leaf_v_array);
 
-	  const Vec3fa b_min( reduce_min(leafGridVtx.x), reduce_min(leafGridVtx.y), reduce_min(leafGridVtx.z) );
-	  const Vec3fa b_max( reduce_max(leafGridVtx.x), reduce_max(leafGridVtx.y), reduce_max(leafGridVtx.z) );
+	  //const Vec3fa b_min( reduce_min(leafGridVtx.x), reduce_min(leafGridVtx.y), reduce_min(leafGridVtx.z) );
+	  //const Vec3fa b_max( reduce_max(leafGridVtx.x), reduce_max(leafGridVtx.y), reduce_max(leafGridVtx.z) );
 
-	  const BBox3fa leafGridBounds( b_min, b_max );
+	  //const BBox3fa leafGridBounds( b_min, b_max );
+
+	  const BBox3fa leafGridBounds = getBBox3fa(leafGridVtx, 0xffff);
 
 	  createSubPatchBVH4iLeaf( curNode, currentIndex);
 	  

@@ -1109,10 +1109,11 @@ PRINT(CORRECT_numPrims);
 	// if (bvh->root != BVH4i::invalidNode)
 	//   processLeaves(bvh->root);
 
-	const size_t new_lazyMem64BytesBlocks = global_lazyMem64BytesBlocks; 
+	const size_t new_lazyMem64BytesBlocks = global_lazyMem64BytesBlocks * 1.1f; 
 
 	if (new_lazyMem64BytesBlocks > bvh->lazyMemAllocated64BytesBlocks)
 	  {
+	    DBG_PRINT("REALLOC!");
 	    if (bvh->lazymem) os_free(bvh->lazymem, bvh->lazyMemAllocated64BytesBlocks * sizeof(mic_f));
 	    bvh->lazyMemAllocated64BytesBlocks = new_lazyMem64BytesBlocks; 
 	    bvh->lazymem = (mic_f*)os_malloc(sizeof(mic_f) * bvh->lazyMemAllocated64BytesBlocks);

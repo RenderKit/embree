@@ -57,6 +57,7 @@ namespace embree
           atomic_add(&verify_k[k++],1);
         }
         sum1 += s;
+	return sum1;
       });
       passed &= (sum0 == sum1);
 

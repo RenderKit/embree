@@ -28,6 +28,21 @@
 namespace embree
 {
 
+  __forceinline BBox3fa getBBox3fa(const mic3f &v, const mic_m &m_valid)
+  {
+    const mic_f x_min = select(m_valid,v.x,mic_f::inf());
+    const mic_f y_min = select(m_valid,v.y,mic_f::inf());
+    const mic_f z_min = select(m_valid,v.z,mic_f::inf());
+
+    const mic_f x_max = select(m_valid,v.x,mic_f::minus_inf());
+    const mic_f y_max = select(m_valid,v.y,mic_f::minus_inf());
+    const mic_f z_max = select(m_valid,v.z,mic_f::minus_inf());
+
+    const Vec3fa b_min( reduce_min(x_min), reduce_min(y_min), reduce_min(z_min) );
+    const Vec3fa b_max( reduce_max(x_max), reduce_max(y_max), reduce_max(z_max) );
+    return BBox3fa( b_min, b_max );
+  }
+
   struct SubdivPatch1
   {
   public:
@@ -181,12 +196,21 @@ namespace embree
       const unsigned int real_grid_size = grid_u_res*grid_v_res;
       gridUVTessellator(level,grid_u_res,grid_v_res,u_array,v_array);
 
+      DBG_PRINT(real_grid_size);
+
+      for (size_t i=real_grid_size;i<grid_size_64b_blocks*16;i++)
+	{
+	  u_array[i] = 0.0f;
+	  v_array[i] = 0.0f;
+	}
+
       BBox3fa b ( empty );
 
+#if 0
       if (isRegular())
 	for (size_t i=0;i<real_grid_size;i++)
 	  {
-	    const Vec3fa vtx = patch.eval( u_array[i], v_array[i] );
+	    const Vec3fa vtx = patch.eval( u_array[i], v_array[i] );	    
 	    b.extend( vtx );
 	  }
       else
@@ -201,10 +225,20 @@ namespace embree
 	  for (size_t i=0;i<real_grid_size;i++)
 	    {
 	      const Vec3fa vtx = gpatch.eval( u_array[i], v_array[i] );
+	      DBG_PRINT( vtx );
 	      b.extend( vtx );
 	    }
 	}
-      
+#else
+      assert( grid_size_64b_blocks >= 1 );
+      for (size_t i=0;i<grid_size_64b_blocks;i++)
+	{
+	  const mic3f vtx = eval16( load16f(&u_array[i*16]), load16f(&v_array[i*16]) );
+	  b.extend( getBBox3fa(vtx,0xffff) );
+	}
+
+#endif
+     
 #if DEBUG
       isfinite(b.lower.x);
       isfinite(b.lower.y);
@@ -285,7 +319,8 @@ namespace embree
 
   __forceinline std::ostream &operator<<(std::ostream &o, const SubdivPatch1 &p)
     {
-      o << " flags " << p.flags << " geomID " << p.geomID << " primID " << p.primID << " u_range << " << p.u_range << " v_range " << p.v_range << " levels: " << p.level[0] << "," << p.level[1] << "," << p.level[2] << "," << p.level[3];
+      o << " flags " << p.flags << " geomID " << p.geomID << " primID " << p.primID << " u_range << " << p.u_range << " v_range " << p.v_range << " levels: " << p.level[0] << "," << p.level[1] << "," << p.level[2] << "," << p.level[3] << std::endl;
+      o << " patch " << p.patch;
 
       return o;
     } 

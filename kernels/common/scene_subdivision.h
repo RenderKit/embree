@@ -2106,7 +2106,6 @@ namespace embree
      const mic_f one_minus_uu = mic_f(1.0f) - uu;
      const mic_f one_minus_vv = mic_f(1.0f) - vv;      
 
-
 #if 1
      const mic_f inv0 = rcp(uu+vv);
      const mic_f inv1 = rcp(one_minus_uu+vv);
