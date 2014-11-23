@@ -271,6 +271,7 @@ namespace embree
 
   protected:
     TASK_FUNCTION(BVH4iBuilderSubdivMesh,computePrimRefsSubdivMesh);
+    TASK_FUNCTION(BVH4iBuilderSubdivMesh,updateLeaves);
     
   };
 

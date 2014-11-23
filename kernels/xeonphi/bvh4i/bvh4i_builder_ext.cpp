@@ -1051,18 +1051,65 @@ PRINT(CORRECT_numPrims);
     global_lazyMem64BytesBlocks += local_lazyMem64BytesBlocks;
   }
 
+  void BVH4iBuilderSubdivMesh::updateLeaves(const size_t threadIndex, const size_t threadCount)
+  {    
+    const size_t nodes  = atomicID/2;
+
+    const size_t startID   = (threadIndex+0)*nodes/threadCount;
+    const size_t endID     = (threadIndex+1)*nodes/threadCount; 
+
+    for (size_t j=startID; j<endID; j++)
+      {
+	BVH4i::Node *n = (BVH4i::Node*)&node[j*2];
+
+	for (size_t i=0;i<4;i++)
+	  {
+	    if (n->child(i) == BVH4i::invalidNode) break;
+	    BVH4i::NodeRef &ref = n->child(i);
+	    if (ref.isLeaf())
+	      {
+		unsigned int items = ref.items();
+		unsigned int index = ref.offsetIndex();
+		if (items == 1 && index < numPrimitives)
+		  prefetch<PFHINT_NT>(&prims[index]);
+	      }
+	  }
+
+	for (size_t i=0;i<4;i++)
+	  {
+	    if (n->child(i) == BVH4i::invalidNode) break;
+
+	    BVH4i::NodeRef &ref = n->child(i);
+	    if (ref.isLeaf())
+	      {
+		unsigned int items = ref.items();
+		unsigned int index = ref.offsetIndex();
+		if (items == 1 && index < numPrimitives)
+		  {
+		    const unsigned int patchIndex = prims[index].lower.a;
+
+		    createBVH4iLeaf( ref , patchIndex, 1);	    
+		    assert( n->child(i).isLeaf() );
+		    assert( n->child(i).items() == 1 );
+		  }
+	      }
+	  }
+      }
+  }
+
   void BVH4iBuilderSubdivMesh::finalize(const size_t threadIndex, const size_t threadCount)
-  {
+  {    
+
+    scene->lockstep_scheduler.dispatchTask( task_updateLeaves, this, threadIndex, threadCount );   
+
     if (threadIndex == 0)
       {
 	SubdivPatch1 *__restrict__ const patch_ptr = (SubdivPatch1*)org_accel;
 
-#if 1
-	if (bvh->root != BVH4i::invalidNode)
-	  processLeaves(bvh->root);
-#endif
+	// if (bvh->root != BVH4i::invalidNode)
+	//   processLeaves(bvh->root);
+
 	const size_t new_lazyMem64BytesBlocks = global_lazyMem64BytesBlocks; 
-	DBG_PRINT(global_lazyMem64BytesBlocks);
 
 	if (new_lazyMem64BytesBlocks > bvh->lazyMemAllocated64BytesBlocks)
 	  {
@@ -1077,6 +1124,7 @@ PRINT(CORRECT_numPrims);
 	bvh->lazyMemUsed64BytesBlocks = 0;
 
 #if DEBUG
+	DBG_PRINT(global_lazyMem64BytesBlocks);
 	DBG_PRINT(atomicID);
 	DBG_PRINT(numAllocated64BytesBlocks);
 
@@ -1086,6 +1134,7 @@ PRINT(CORRECT_numPrims);
 #endif
 
       }
+
   }
 
   void BVH4iBuilderSubdivMesh::processLeaves(BVH4i::NodeRef &ref)
@@ -1097,7 +1146,10 @@ PRINT(CORRECT_numPrims);
 	assert(items == 1);
 
 	const unsigned int patchIndex = prims[index].lower.a;
-	  
+
+	DBG_PRINT(index);
+	DBG_PRINT(patchIndex);
+
 	createBVH4iLeaf( ref , patchIndex, 1);	    
 
 	return;

@@ -39,6 +39,8 @@
 
 #define MEASURE_MEMORY_ALLOCATION_TIME 0
 
+//#define CHECK_BUILD_RECORD_IN_DEBUG_MODE
+
 //#define MERGE_TRIANGLE_PAIRS
 
 namespace embree
@@ -1519,6 +1521,7 @@ namespace embree
   
   void BVH4iBuilder::checkBuildRecord(const BuildRecord &current)
   {
+#if defined(CHECK_BUILD_RECORD_IN_DEBUG_MODE)
     BBox3fa check_box;
     BBox3fa box;
     check_box = empty;
@@ -1546,6 +1549,7 @@ namespace embree
 	DBG_PRINT(box);
 	FATAL("check build record => subset(check_box,box) && subset(box,check_box)");
       }
+#endif
   }
 
   
