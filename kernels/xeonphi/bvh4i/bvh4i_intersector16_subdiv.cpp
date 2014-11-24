@@ -337,6 +337,7 @@ namespace embree
 	}
       else
 	{
+	  FATAL("HERE");
 	  size_t offset_line0 = 0;
 	  size_t offset_line1 = grid_u_res;
 
@@ -580,11 +581,13 @@ namespace embree
 		      if (unlikely(curNode == BVH4i::invalidNode)) break;
 
 		      const unsigned int uvIndex = curNode.offsetIndex();
-		      const mic_f uu = lazymem[uvIndex + 0];
-		      const mic_f vv = lazymem[uvIndex + 1];
+		      prefetch<PFHINT_NT>(&lazymem[uvIndex + 0]);
+		      prefetch<PFHINT_NT>(&lazymem[uvIndex + 1]);
+
 		  
 		      const mic_m m_active = 0x777;
-		  
+		      const mic_f &uu = lazymem[uvIndex + 0];
+		      const mic_f &vv = lazymem[uvIndex + 1];		  
 		      const mic3f vtx = subdiv_patch.eval16(uu,vv);
 		  
 		      intersect1_quad16(rayIndex, 
