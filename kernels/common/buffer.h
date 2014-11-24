@@ -92,7 +92,7 @@ namespace embree
     typedef T value_type;
 
     /*! access to the ith element of the buffer stream */
-    __forceinline T& operator[](size_t i) 
+    __forceinline const T& operator[](size_t i) const 
     {
       assert(i<num);
 #if defined(__BUFFER_STRIDE__)
@@ -102,32 +102,14 @@ namespace embree
 #endif
     }
 
-    /*! access to the ith element of the buffer stream */
-#if !defined(__MIC__)
-
-    __forceinline const T& operator[](size_t i) const 
+    __forceinline char* getPtr( size_t i = 0 ) const 
     {
-      assert(i<num);
 #if defined(__BUFFER_STRIDE__)
-      return *(T*)(ptr_ofs + i*stride);
+      return ptr_ofs + i*stride;
 #else
-      return *(const T*)(ptr_ofs + i*sizeof(T));
+      return ptr_ofs + i*sizeof(T);
 #endif
     }
-
-#else
-
-    __forceinline const T& operator[](size_t i) const 
-    {
-      assert(i<num);
-#if defined(__BUFFER_STRIDE__)
-      return *(T*)(ptr_ofs + i*stride);
-#else
-      return *(const T*)(ptr_ofs + i*sizeof(T));
-#endif
-    }
-
-#endif
 
     __forceinline unsigned int getBufferStride() const {
 #if defined(__BUFFER_STRIDE__)
@@ -136,20 +118,46 @@ namespace embree
       return sizeof(T);
 #endif
     }
+  };
 
-#if defined(__MIC__)
-    __forceinline mic_i getStride() const {
+  /*! Implements a data stream inside a data buffer. */
+  template<>
+    class BufferT<Vec3fa> : public Buffer
+  {
+  public:
+
+    typedef Vec3fa value_type;
+
+    /*! access to the ith element of the buffer stream */
+    __forceinline const Vec3fa operator[](size_t i) const
+    {
+      assert(i<num);
 #if defined(__BUFFER_STRIDE__)
-      return mic_i(stride);
+#if defined(__MIC__)
+      return *(Vec3fa*)(ptr_ofs + i*stride);
 #else
-      return mic_i(sizeof(T));
+      return Vec3fa(ssef::loadu(ptr_ofs + i*stride));
 #endif
-    }    
+#else
+      return *(Vec3fa*)(ptr_ofs + i*sizeof(Vec3fa));
 #endif
-
-    __forceinline char* getPtr() const {
-      return ptr;
     }
 
+    __forceinline char* getPtr( size_t i = 0 ) const 
+    {
+#if defined(__BUFFER_STRIDE__)
+      return ptr_ofs + i*stride;
+#else
+      return ptr_ofs + i*sizeof(Vec3fa);
+#endif
+    }
+
+    __forceinline unsigned int getBufferStride() const {
+#if defined(__BUFFER_STRIDE__)
+      return stride;
+#else
+      return sizeof(T);
+#endif
+    }
   };
 }

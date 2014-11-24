@@ -42,12 +42,13 @@ namespace embree
   static size_t regressionN = 200;
 
   /* vertex and triangle layout */
+  struct Vertex  { float x,y,z,a; };
 #if defined(__MIC__)
-  struct Vertex3f   { float x,y,z,a; };
-  struct Vertex3fa  { float x,y,z,a; };
+  typedef Vec3fa Vertex3f;
+  typedef Vec3fa Vertex3fa;
 #else
-  struct Vertex3f   { float x,y,z; };
-  struct Vertex3fa  { float x,y,z,a; };
+  typedef Vec3f  Vertex3f;
+  typedef Vec3fa Vertex3fa;
 #endif
   struct Triangle { int v0, v1, v2; };
 
@@ -90,9 +91,12 @@ namespace embree
   const size_t numSceneFlags = 64;
 
   std::vector<void*> buffers;
+  MutexSys g_mutex2;
   void* allocBuffer(size_t size) { 
+    g_mutex2.lock();
     void* ptr = alignedMalloc(size);
     buffers.push_back(ptr); 
+    g_mutex2.unlock();
     return ptr; 
   }
   void clearBuffers() {
@@ -1071,10 +1075,18 @@ namespace embree
     return true;
   }
 
-  void move_mesh(RTCScene scene, unsigned mesh, size_t numVertices, Vec3fa& pos) 
+  void move_mesh_vec3f(RTCScene scene, unsigned mesh, size_t numVertices, Vec3fa& pos) 
   {
-    Vec3fa* vertices = (Vec3fa*) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER); 
-    for (size_t i=0; i<numVertices; i++) vertices[i] += pos;
+    Vertex3f* vertices = (Vertex3f*) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER); 
+    for (size_t i=0; i<numVertices; i++) vertices[i] += Vertex3f(pos);
+    rtcUnmapBuffer(scene,mesh,RTC_VERTEX_BUFFER);
+    rtcUpdate(scene,mesh);
+  }
+
+  void move_mesh_vec3fa(RTCScene scene, unsigned mesh, size_t numVertices, Vec3fa& pos) 
+  {
+    Vertex3fa* vertices = (Vertex3fa*) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER); 
+    for (size_t i=0; i<numVertices; i++) vertices[i] += Vertex3fa(pos);
     rtcUnmapBuffer(scene,mesh,RTC_VERTEX_BUFFER);
     rtcUpdate(scene,mesh);
   }
@@ -1090,10 +1102,8 @@ namespace embree
     Vec3fa pos2 = Vec3fa(+10,0,-10);
     Vec3fa pos3 = Vec3fa(+10,0,+10);
     unsigned geom0 = addSphere(scene,flags,pos0,1.0f,numPhi);
-    //unsigned geom1 = addSphere(scene,flags,pos1,1.0f,numPhi);
     unsigned geom1 = addHair  (scene,flags,pos1,1.0f,1.0f,1);
     unsigned geom2 = addSphere(scene,flags,pos2,1.0f,numPhi);
-    //unsigned geom3 = addSphere(scene,flags,pos3,1.0f,numPhi);
     unsigned geom3 = addHair  (scene,flags,pos3,1.0f,1.0f,1);
     AssertNoError();
     
@@ -1101,12 +1111,10 @@ namespace embree
     {
       bool move0 = i & 1, move1 = i & 2, move2 = i & 4, move3 = i & 8;
       Vec3fa ds(2,0.1f,2);
-      if (move0) { move_mesh(scene,geom0,numVertices,ds); pos0 += ds; }
-      //if (move1) { move_mesh(scene,geom1,numVertices,ds); pos1 += ds; }
-      if (move1) { move_mesh(scene,geom1,4,ds); pos1 += ds; }
-      if (move2) { move_mesh(scene,geom2,numVertices,ds); pos2 += ds; }
-      //if (move3) { move_mesh(scene,geom3,numVertices,ds); pos3 += ds; }
-      if (move3) { move_mesh(scene,geom3,4,ds); pos3 += ds; }
+      if (move0) { move_mesh_vec3f (scene,geom0,numVertices,ds); pos0 += ds; }
+      if (move1) { move_mesh_vec3fa(scene,geom1,4,ds); pos1 += ds; }
+      if (move2) { move_mesh_vec3f (scene,geom2,numVertices,ds); pos2 += ds; }
+      if (move3) { move_mesh_vec3fa(scene,geom3,4,ds); pos3 += ds; }
       rtcCommit (scene);
       AssertNoError();
       {
@@ -2444,7 +2452,6 @@ namespace embree
 	task->barrier.wait();
 
       rtcDeleteScene (scene);
-      clearBuffers();
       CountErrors();
 
       for (size_t i=0; i<spheres.size(); i++)
@@ -2549,13 +2556,13 @@ namespace embree
               break;
             }
             case 1: {
-              Vec3fa* vertices = (Vec3fa*) rtcMapBuffer(task->scene,geom[index],RTC_VERTEX_BUFFER);
-              for (size_t i=0; i<numVertices[index]; i++) vertices[i] += Vec3fa(0.1f);
+              Vertex3f* vertices = (Vertex3f*) rtcMapBuffer(task->scene,geom[index],RTC_VERTEX_BUFFER);
+              for (size_t i=0; i<numVertices[index]; i++) vertices[i] += Vertex3f(0.1f);
               rtcUnmapBuffer(task->scene,geom[index],RTC_VERTEX_BUFFER);
 
               if (types[index] == 4 || types[index] == 5) {
-                Vec3fa* vertices = (Vec3fa*) rtcMapBuffer(task->scene,geom[index],RTC_VERTEX_BUFFER1);
-                for (size_t i=0; i<numVertices[index]; i++) vertices[i] += Vec3fa(0.1f);
+                Vertex3f* vertices = (Vertex3f*) rtcMapBuffer(task->scene,geom[index],RTC_VERTEX_BUFFER1);
+                for (size_t i=0; i<numVertices[index]; i++) vertices[i] += Vertex3f(0.1f);
                 rtcUnmapBuffer(task->scene,geom[index],RTC_VERTEX_BUFFER1);
               }
               break;
@@ -2584,7 +2591,6 @@ namespace embree
     }
 
     rtcDeleteScene (task->scene);
-    clearBuffers();
     CountErrors();
 
     delete thread; thread = NULL;
@@ -2618,10 +2624,12 @@ namespace embree
 	  join(g_threads[i]);
 	
 	g_threads.clear();
+	clearBuffers();
       }
       else
       {
 	func(new ThreadRegressionTask(0,0,new RegressionTask(sceneIndex++,5,0)));
+	clearBuffers();
       }	
     }
     return errorCounter == 0;

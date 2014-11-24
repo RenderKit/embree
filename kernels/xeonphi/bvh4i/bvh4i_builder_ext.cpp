@@ -866,9 +866,9 @@ PRINT(CORRECT_numPrims);
 
 	const TriangleMesh::Triangle & tri = mesh->triangle(primID);
 
-	Vec3fa *vptr0 = (Vec3fa*)&mesh->vertex(tri.v[0]);
-	Vec3fa *vptr1 = (Vec3fa*)&mesh->vertex(tri.v[1]);
-	Vec3fa *vptr2 = (Vec3fa*)&mesh->vertex(tri.v[2]);
+	Vec3fa *vptr0 = (Vec3fa*)mesh->vertexPtr(tri.v[0]);
+	Vec3fa *vptr1 = (Vec3fa*)mesh->vertexPtr(tri.v[1]);
+	Vec3fa *vptr2 = (Vec3fa*)mesh->vertexPtr(tri.v[2]);
 
 	acc->v0 = vptr0;
 	acc->v1 = vptr1;

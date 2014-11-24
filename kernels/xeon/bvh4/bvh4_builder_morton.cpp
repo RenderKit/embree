@@ -681,9 +681,9 @@ namespace embree
         upper = max(upper,(ssef)p0,(ssef)p1,(ssef)p2);
 	vgeomID[i] = geomID;
 	vprimID[i] = primID;
-	v0[i] = (Vec3f*) &mesh->vertex(tri.v[0]); 
-	v1[i] = (int*)&mesh->vertex(tri.v[1])-(int*)v0[i]; 
-	v2[i] = (int*)&mesh->vertex(tri.v[2])-(int*)v0[i]; 
+	v0[i] = (Vec3f*) mesh->vertexPtr(tri.v[0]); 
+	v1[i] = (int*)   mesh->vertexPtr(tri.v[1])-(int*)v0[i]; 
+	v2[i] = (int*)   mesh->vertexPtr(tri.v[2])-(int*)v0[i]; 
       }
 
       for (size_t i=items; i<4; i++)
