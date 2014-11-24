@@ -918,6 +918,9 @@ PRINT(CORRECT_numPrims);
     numPrimitives = totalNumPrimitives;
     if (numPrimitivesOld != numPrimitives)
       {
+#if DEBUG
+	std::cout << "REALLOC node/accel arrays!" << std::endl;
+#endif      
 	const size_t numPrims = numPrimitives+4;
 	const size_t minAllocNodes =  ALLOCATOR_NODE_BLOCK_SIZE * MAX_MIC_THREADS; // (threadCount+1) 
 	const size_t numNodes = (size_t)((float)(numPrims+2)/2) + minAllocNodes;
