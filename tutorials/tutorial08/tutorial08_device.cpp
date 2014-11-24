@@ -79,23 +79,33 @@ unsigned int packPixel(const Vec3f &color) {
 
 }
 
-void DisplacementFunc(void* ptr, unsigned geomID, unsigned primID, float* u, float* v, float* x, float* y, float* z, size_t N)
+void DisplacementFunc(void* ptr, unsigned geomID, unsigned primID, 
+                      const float* u,      /*!< u coordinates (source) */
+                      const float* v,      /*!< v coordinates (source) */
+                      const float* nx,     /*!< x coordinates of normal at point to displace (source) */
+                      const float* ny,     /*!< y coordinates of normal at point to displace (source) */
+                      const float* nz,     /*!< z coordinates of normal at point to displace (source) */
+                      float* px,           /*!< x coordinates of points to displace (source and target) */
+                      float* py,           /*!< y coordinates of points to displace (source and target) */
+                      float* pz,           /*!< z coordinates of points to displace (source and target) */
+                      size_t N)
 {
-#if 1
+#if 0
   for (size_t i=0; i<N; i++) {
-    const Vec3fa dP = 0.02f*Vec3fa(sin(100.0f*x[i]+0.5f),sin(100.0f*z[i]+1.5f),cos(100.0f*y[i]));
-    x[i] += dP.x; y[i] += dP.y; z[i] += dP.z;
+    const Vec3fa dP = 0.02f*Vec3fa(sin(100.0f*px[i]+0.5f),sin(100.0f*pz[i]+1.5f),cos(100.0f*py[i]));
+    px[i] += dP.x; py[i] += dP.y; pz[i] += dP.z;
   }
 #else
   for (size_t i=0; i<N; i++) {
-    const Vec3fa P(x[i],y[i],z[i]);
+    const Vec3fa P(px[i],py[i],pz[i]);
+    const Vec3fa N = normalize(Vec3fa(nx[i],ny[i],nz[i]));
     float dN = 0.0f;
     for (float freq = 10.0f; freq<400.0f; freq*= 2) {
       float n = fabs(noise(freq*P));
       dN += 1.4f*n*n/freq;
     }
-    const Vec3fa dP = dN*P;
-    x[i] += dP.x; y[i] += dP.y; z[i] += dP.z;
+    const Vec3fa dP = dN*N;
+    px[i] += dP.x; py[i] += dP.y; pz[i] += dP.z;
   }
 #endif
 }
@@ -178,7 +188,7 @@ void updateScene(RTCScene scene, const Vec3fa& cam_pos)
         const Vec3fa edge = v1-v0;
         const Vec3fa P = 0.5f*(v1+v0);
         //mesh->subdivlevel[e+i] = float(g_subdivision_levels)/16.0f;
-        mesh->subdivlevel[e+i] = 50.0f*atan(0.5f*length(edge)/length(cam_pos-P));
+        mesh->subdivlevel[e+i] = 600.0f*atan(0.5f*length(edge)/length(cam_pos-P));
         //srand48(length(edge)/length(cam_pos-P)*12343.0f); mesh->subdivlevel[e+i] = 10.0f*drand48();
       }
     }
@@ -225,8 +235,8 @@ RTCScene constructScene(const Vec3fa& cam_pos)
     unsigned int geomID = rtcNewSubdivisionMesh(scene, RTC_GEOMETRY_STATIC, mesh->numFaces, mesh->numEdges, mesh->numVertices, 
                                                       mesh->numEdgeCreases, mesh->numVertexCreases, mesh->numHoles);
 
-    //BBox3fa bounds(Vec3fa(-0.1f,-0.1f,-0.1f),Vec3fa(0.1f,0.1f,0.1f));
-    //rtcSetDisplacementFunction(scene, geomID, (RTCDisplacementFunc)DisplacementFunc,(RTCBounds&)bounds);
+    BBox3fa bounds(Vec3fa(-0.1f,-0.1f,-0.1f),Vec3fa(0.1f,0.1f,0.1f));
+    rtcSetDisplacementFunction(scene, geomID, (RTCDisplacementFunc)DisplacementFunc,(RTCBounds&)bounds);
 
     rtcSetBuffer(scene, geomID, RTC_VERTEX_BUFFER, mesh->positions, 0, sizeof(Vec3fa  ));
     rtcSetBuffer(scene, geomID, RTC_LEVEL_BUFFER,  mesh->subdivlevel, 0, sizeof(float));
