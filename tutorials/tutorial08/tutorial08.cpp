@@ -145,11 +145,11 @@ namespace embree
 #endif
 
     /* load scene */
-    if (strlwr(filename.ext()) == "obj")
+    if (strlwr(filename.ext()) == std::string("obj"))
       loadOBJ(filename,one,g_obj_scene,true);
-    else if (strlwr(filename.ext()) == "xml")
+    else if (strlwr(filename.ext()) == std::string("xml"))
       loadXML(filename,one,g_obj_scene);
-    else
+    else if (filename.ext() == "")
       THROW_RUNTIME_ERROR("invalid scene type: "+strlwr(filename.ext()));
 
     /*! Initialize Embree state. */
