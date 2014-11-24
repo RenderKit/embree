@@ -309,7 +309,32 @@ namespace embree
       __aligned(64) float u_array[(subdiv_patch.grid_size_64b_blocks+1)]; // for unaligned access
       __aligned(64) float v_array[(subdiv_patch.grid_size_64b_blocks+1)];
 
+#if 0
       gridUVTessellator(edge_levels,grid_u_res,grid_v_res,u_array,v_array);
+#else
+      gridUVTessellator16f(edge_levels,grid_u_res,grid_v_res,u_array,v_array);
+
+#endif
+
+#if 0
+      DBG_PRINT("UV grid");
+      DBG_PRINT( edge_levels[0] );
+      DBG_PRINT( edge_levels[1] );
+      DBG_PRINT( edge_levels[2] );
+      DBG_PRINT( edge_levels[3] );
+
+      DBG_PRINT( grid_u_res );
+      DBG_PRINT( grid_v_res );
+
+      for (unsigned int y=0;y<grid_v_res;y++)
+	{
+	  std::cout << "row " << y << " ";
+	  for (unsigned int x=0;x<grid_u_res;x++)
+	    std::cout << "(" << v_array[grid_u_res*y+x] << "," << u_array[grid_u_res*y+x] << ") ";
+	  std::cout << std::endl;
+	}
+      exit(0);
+#endif
 
       bool hit = false;
 

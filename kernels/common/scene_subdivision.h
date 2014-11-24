@@ -1180,7 +1180,7 @@ namespace embree
      stichGridEdges(int_edge_points3,grid_v_res,v_array,grid_u_res);
  }
 
-#if 0 // defined(__MIC__)
+#if defined(__MIC__)
  __forceinline void gridUVTessellator16f(const float edge_levels[4],
 					 const unsigned int grid_u_res,
 					 const unsigned int grid_v_res,
@@ -1197,11 +1197,16 @@ namespace embree
    const mic_i grid_u_segments = mic_i(grid_u_res)-1;
    const mic_i grid_v_segments = mic_i(grid_v_res)-1;
 
+   const mic_m m_u = mic_i( step ) < grid_u_segments;
+   const mic_m m_v = mic_i( step ) < grid_v_segments;
+
    const mic_f inv_grid_u_segments = rcp(mic_f(grid_u_segments));
    const mic_f inv_grid_v_segments = rcp(mic_f(grid_v_segments));
 
-   const mic_f u_values = mic_f::identity() * inv_grid_u_segments;
-   const mic_f v_values = mic_f::identity() * inv_grid_v_segments;
+   const mic_f identity( step );
+
+   const mic_f u_values = select(m_u, identity * inv_grid_u_segments, 1.0f);
+   const mic_f v_values = select(m_v, identity * inv_grid_v_segments, 1.0f);
 
    /* initialize grid */
    unsigned int index = 0;
@@ -1209,8 +1214,8 @@ namespace embree
      {
        const mic_f v = v_values[y];
        const mic_f u = u_values;
-       ustore16f(&u_array[index],u);
-       ustore16f(&v_array[index],v);
+       ustore16f_low(&u_array[index],u);
+       ustore16f_low(&v_array[index],v);
      }       
 
    /* stich different tessellation levels in u/v grid */
