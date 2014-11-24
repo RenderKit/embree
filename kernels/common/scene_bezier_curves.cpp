@@ -80,17 +80,9 @@ namespace embree
       break;
     case RTC_VERTEX_BUFFER0: 
       vertices[0].set(ptr,offset,stride); 
-      if (numVertices) {
-        /* test if array is properly padded */
-        volatile int w = *((int*)&vertices[0][numVertices-1]+3); // FIXME: is failing hard avoidable?
-      }
       break;
     case RTC_VERTEX_BUFFER1: 
       vertices[1].set(ptr,offset,stride); 
-      if (numVertices) {
-        /* test if array is properly padded */
-        volatile int w = *((int*)&vertices[1][numVertices-1]+3); // FIXME: is failing hard avoidable?
-      }
       break;
     default: 
       process_error(RTC_INVALID_ARGUMENT,"unknown buffer type");

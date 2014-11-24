@@ -42,7 +42,14 @@ namespace embree
   static size_t regressionN = 200;
 
   /* vertex and triangle layout */
-  struct Vertex   { float x,y,z,a; };
+  struct Vertex  { float x,y,z,a; };
+#if defined(__MIC__)
+  typedef Vec3fa Vertex3f;
+  typedef Vec3fa Vertex3fa;
+#else
+  typedef Vec3f  Vertex3f;
+  typedef Vec3fa Vertex3fa;
+#endif
   struct Triangle { int v0, v1, v2; };
 
   std::vector<thread_t> g_threads;
@@ -82,6 +89,22 @@ namespace embree
   }
 
   const size_t numSceneFlags = 64;
+
+  std::vector<void*> buffers;
+  MutexSys g_mutex2;
+  void* allocBuffer(size_t size) { 
+    g_mutex2.lock();
+    void* ptr = alignedMalloc(size);
+    buffers.push_back(ptr); 
+    g_mutex2.unlock();
+    return ptr; 
+  }
+  void clearBuffers() {
+    for (size_t i=0; i<buffers.size(); i++) {
+      alignedFree(buffers[i]);
+    }
+    buffers.clear();
+  }
 
   RTCSceneFlags getSceneFlag(size_t i) 
   {
@@ -369,7 +392,7 @@ namespace embree
   unsigned addPlane (RTCScene scene, RTCGeometryFlags flag, size_t num, const Vec3fa& p0, const Vec3fa& dx, const Vec3fa& dy)
   {
     unsigned mesh = rtcNewTriangleMesh (scene, flag, 2*num*num, (num+1)*(num+1));
-    Vertex*   vertices  = (Vertex*  ) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER); 
+    Vertex3fa*   vertices  = (Vertex3fa*) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER); 
     Triangle* triangles = (Triangle*) rtcMapBuffer(scene,mesh,RTC_INDEX_BUFFER);
     for (size_t y=0; y<=num; y++) {
       for (size_t x=0; x<=num; x++) {
@@ -402,14 +425,15 @@ namespace embree
     size_t numTheta = 2*numPhi;
     size_t numTriangles = min(maxTriangles,2*numTheta*(numPhi-1));
     size_t numTimeSteps = motion == 0.0f ? 1 : 2;
-
-    unsigned mesh = rtcNewTriangleMesh (scene, flag, numTriangles, numTheta*(numPhi+1),numTimeSteps);
+    size_t numVertices = numTheta*(numPhi+1);
+    
+    unsigned mesh = rtcNewTriangleMesh (scene, flag, numTriangles, numVertices,numTimeSteps);
     
     /* map triangle and vertex buffer */
-    Vertex* vertices0 = NULL;
-    Vertex* vertices1 = NULL;
-    if (numTimeSteps >= 1) vertices0 = (Vertex*  ) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER0); 
-    if (numTimeSteps >= 2) vertices1 = (Vertex*  ) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER1); 
+    Vertex3f* vertices0 = NULL;
+    Vertex3f* vertices1 = NULL;
+    if (numTimeSteps >= 1) rtcSetBuffer(scene,mesh,RTC_VERTEX_BUFFER0,vertices0 = (Vertex3f*) allocBuffer(numVertices*sizeof(Vertex3f)), 0, sizeof(Vertex3f)); 
+    if (numTimeSteps >= 2) rtcSetBuffer(scene,mesh,RTC_VERTEX_BUFFER1,vertices1 = (Vertex3f*) allocBuffer(numVertices*sizeof(Vertex3f)), 0, sizeof(Vertex3f)); 
     Triangle* triangles = (Triangle*) rtcMapBuffer(scene,mesh,RTC_INDEX_BUFFER);
 
     /* create sphere geometry */
@@ -422,14 +446,14 @@ namespace embree
       {
         const float phif   = phi*float(pi)*rcpNumPhi;
         const float thetaf = theta*2.0f*float(pi)*rcpNumTheta;
-        Vertex* v = &vertices0[phi*numTheta+theta];
+        Vertex3f* v = &vertices0[phi*numTheta+theta];
         const float cosThetaf = cos(thetaf);
         v->x = pos.x + r*sin(phif)*sin(thetaf);
         v->y = pos.y + r*cos(phif);
         v->z = pos.z + r*sin(phif)*cosThetaf;
 
         if (vertices1) {
-          Vertex* v1 = &vertices1[phi*numTheta+theta];
+          Vertex3f* v1 = &vertices1[phi*numTheta+theta];
           const float cosThetaf = cos(thetaf);
           v1->x = motion + pos.x + r*sin(phif)*sin(thetaf);
           v1->y = motion + pos.y + r*cos(phif);
@@ -465,8 +489,8 @@ namespace embree
       }
     }
 
-    if (numTimeSteps >= 1) rtcUnmapBuffer(scene,mesh,RTC_VERTEX_BUFFER0); 
-    if (numTimeSteps >= 2) rtcUnmapBuffer(scene,mesh,RTC_VERTEX_BUFFER1); 
+    //if (numTimeSteps >= 1) rtcUnmapBuffer(scene,mesh,RTC_VERTEX_BUFFER0); 
+    //if (numTimeSteps >= 2) rtcUnmapBuffer(scene,mesh,RTC_VERTEX_BUFFER1); 
     rtcUnmapBuffer(scene,mesh,RTC_INDEX_BUFFER);
     return mesh;
   }
@@ -880,6 +904,7 @@ namespace embree
     rtcCommit (scene);
     AssertNoError();
     rtcDeleteScene (scene);
+    clearBuffers();
     AssertNoError();
     return true;
   }
@@ -895,6 +920,7 @@ namespace embree
     rtcCommit (scene);
     AssertNoError();
     rtcDeleteScene (scene);
+    clearBuffers();
     AssertNoError();
     return true;
   }
@@ -914,6 +940,7 @@ namespace embree
     rtcDisable(scene,geom0); // static scene cannot get modified anymore after commit
     AssertAnyError();
     rtcDeleteScene (scene);
+    clearBuffers();
     AssertNoError();
     return true;
   }
@@ -935,6 +962,7 @@ namespace embree
     rtcUnmapBuffer(scene,geom,RTC_VERTEX_BUFFER);
     AssertNoError();
     rtcDeleteScene (scene);
+    clearBuffers();
     AssertNoError();
     return true;
   }
@@ -952,6 +980,7 @@ namespace embree
     rtcCommit (scene);
     AssertError(RTC_INVALID_OPERATION); // error, buffers still mapped
     rtcDeleteScene (scene);
+    clearBuffers();
     AssertNoError();
     return true;
   }
@@ -995,6 +1024,7 @@ namespace embree
     AssertNoError();
 
     rtcDeleteScene (scene);
+    clearBuffers();
     AssertNoError();
 
     alignedFree(indexBuffer);
@@ -1040,14 +1070,23 @@ namespace embree
       }
     }
     rtcDeleteScene (scene);
+    clearBuffers();
     AssertNoError();
     return true;
   }
 
-  void move_mesh(RTCScene scene, unsigned mesh, size_t numVertices, Vec3fa& pos) 
+  void move_mesh_vec3f(RTCScene scene, unsigned mesh, size_t numVertices, Vec3fa& pos) 
   {
-    Vec3fa* vertices = (Vec3fa*) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER); 
-    for (size_t i=0; i<numVertices; i++) vertices[i] += pos;
+    Vertex3f* vertices = (Vertex3f*) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER); 
+    for (size_t i=0; i<numVertices; i++) vertices[i] += Vertex3f(pos);
+    rtcUnmapBuffer(scene,mesh,RTC_VERTEX_BUFFER);
+    rtcUpdate(scene,mesh);
+  }
+
+  void move_mesh_vec3fa(RTCScene scene, unsigned mesh, size_t numVertices, Vec3fa& pos) 
+  {
+    Vertex3fa* vertices = (Vertex3fa*) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER); 
+    for (size_t i=0; i<numVertices; i++) vertices[i] += Vertex3fa(pos);
     rtcUnmapBuffer(scene,mesh,RTC_VERTEX_BUFFER);
     rtcUpdate(scene,mesh);
   }
@@ -1063,10 +1102,8 @@ namespace embree
     Vec3fa pos2 = Vec3fa(+10,0,-10);
     Vec3fa pos3 = Vec3fa(+10,0,+10);
     unsigned geom0 = addSphere(scene,flags,pos0,1.0f,numPhi);
-    //unsigned geom1 = addSphere(scene,flags,pos1,1.0f,numPhi);
     unsigned geom1 = addHair  (scene,flags,pos1,1.0f,1.0f,1);
     unsigned geom2 = addSphere(scene,flags,pos2,1.0f,numPhi);
-    //unsigned geom3 = addSphere(scene,flags,pos3,1.0f,numPhi);
     unsigned geom3 = addHair  (scene,flags,pos3,1.0f,1.0f,1);
     AssertNoError();
     
@@ -1074,12 +1111,10 @@ namespace embree
     {
       bool move0 = i & 1, move1 = i & 2, move2 = i & 4, move3 = i & 8;
       Vec3fa ds(2,0.1f,2);
-      if (move0) { move_mesh(scene,geom0,numVertices,ds); pos0 += ds; }
-      //if (move1) { move_mesh(scene,geom1,numVertices,ds); pos1 += ds; }
-      if (move1) { move_mesh(scene,geom1,4,ds); pos1 += ds; }
-      if (move2) { move_mesh(scene,geom2,numVertices,ds); pos2 += ds; }
-      //if (move3) { move_mesh(scene,geom3,numVertices,ds); pos3 += ds; }
-      if (move3) { move_mesh(scene,geom3,4,ds); pos3 += ds; }
+      if (move0) { move_mesh_vec3f (scene,geom0,numVertices,ds); pos0 += ds; }
+      if (move1) { move_mesh_vec3fa(scene,geom1,4,ds); pos1 += ds; }
+      if (move2) { move_mesh_vec3f (scene,geom2,numVertices,ds); pos2 += ds; }
+      if (move3) { move_mesh_vec3fa(scene,geom3,4,ds); pos3 += ds; }
       rtcCommit (scene);
       AssertNoError();
       {
@@ -1144,6 +1179,7 @@ namespace embree
       }
     }
     rtcDeleteScene (scene);
+    clearBuffers();
     AssertNoError();
     return true;
   }
@@ -1263,6 +1299,7 @@ namespace embree
 
     }
     rtcDeleteScene (scene);
+    clearBuffers();
     return passed;
   }
 
@@ -1381,6 +1418,7 @@ namespace embree
 #endif
     }
     rtcDeleteScene (scene);
+    clearBuffers();
     return passed;
   }
   
@@ -1412,6 +1450,7 @@ namespace embree
     addHair(scene,gflags,zero,1E-24f,1E-26f,100,1E-26f);
     rtcCommit (scene);
     rtcDeleteScene (scene);
+    clearBuffers();
     return true;
   }
   
@@ -1546,6 +1585,7 @@ namespace embree
       }
     }
     rtcDeleteScene (scene);
+    clearBuffers();
     return passed;
   }
 
@@ -1618,6 +1658,7 @@ namespace embree
       }
     }
     rtcDeleteScene (scene);
+    clearBuffers();
     return passed;
   }
 
@@ -1744,6 +1785,7 @@ namespace embree
       numFailures += ray.primID == -1;
     }
     rtcDeleteScene (scene);
+    clearBuffers();
     double failRate = double(numFailures) / double(testN);
     bool failed = failRate > 0.00002;
 
@@ -1774,6 +1816,7 @@ namespace embree
         numFailures += ray4.primID[j] == -1;
     }
     rtcDeleteScene (scene);
+    clearBuffers();
     double failRate = double(numFailures) / double(testN);
     bool failed = failRate > 0.00002;
 
@@ -1804,6 +1847,7 @@ namespace embree
         numFailures += ray8.primID[j] == -1;
     }
     rtcDeleteScene (scene);
+    clearBuffers();
     double failRate = double(numFailures) / double(testN);
     bool failed = failRate > 0.00002;
 
@@ -1834,6 +1878,7 @@ namespace embree
         numFailures += ray16.primID[j] == -1;
     }
     rtcDeleteScene (scene);
+    clearBuffers();
     double failRate = double(numFailures) / double(testN);
     bool failed = failRate > 0.00002;
 
@@ -1856,6 +1901,7 @@ namespace embree
       numFailures += ray.primID == -1;
     }
     rtcDeleteScene (scene);
+    clearBuffers();
     double failRate = double(numFailures) / double(testN);
     bool failed = failRate > 0.00002;
 
@@ -1884,6 +1930,7 @@ namespace embree
         numFailures += ray4.primID[j] == -1;
     }
     rtcDeleteScene (scene);
+    clearBuffers();
     double failRate = double(numFailures) / double(testN);
     bool failed = failRate > 0.00002;
 
@@ -1912,6 +1959,7 @@ namespace embree
         numFailures += ray8.primID[j] == -1;
     }
     rtcDeleteScene (scene);
+    clearBuffers();
     double failRate = double(numFailures) / double(testN);
     bool failed = failRate > 0.00002;
 
@@ -1940,6 +1988,7 @@ namespace embree
         numFailures += ray16.primID[j] == -1;
     }
     rtcDeleteScene (scene);
+    clearBuffers();
     double failRate = double(numFailures) / double(testN);
     bool failed = failRate > 0.00002;
 
@@ -2000,6 +2049,7 @@ namespace embree
     double d3 = c3-c2;
     double d4 = c4-c3;
     rtcDeleteScene (scene);
+    clearBuffers();
 
     bool ok = (d2 < 2.5*d1) && (d3 < 2.5*d1) && (d4 < 2.5*d1);
     float f = max(d2/d1,d3/d1,d4/d1);
@@ -2071,6 +2121,7 @@ namespace embree
     double d5 = c5-c4;
 
     rtcDeleteScene (scene);
+    clearBuffers();
 
     bool ok = (d2 < 2.5*d1) && (d3 < 2.5*d1) && (d4 < 2.5*d1) && (d5 < 2.5*d1);
     float f = max(d2/d1,d3/d1,d4/d1,d5/d1);
@@ -2086,7 +2137,7 @@ namespace embree
     rtcNewTriangleMesh (scene, RTC_GEOMETRY_STATIC, N, 3);
     AssertNoError();
 
-    Vertex* vertices = (Vertex*) rtcMapBuffer(scene,0,RTC_VERTEX_BUFFER);
+    Vertex3fa* vertices = (Vertex3fa*) rtcMapBuffer(scene,0,RTC_VERTEX_BUFFER);
     vertices[0].x = 0.0f; vertices[0].y = 0.0f; vertices[0].z = 0.0f;
     vertices[1].x = 1.0f; vertices[1].y = 0.0f; vertices[1].z = 0.0f;
     vertices[2].x = 0.0f; vertices[2].y = 1.0f; vertices[2].z = 0.0f;
@@ -2142,7 +2193,7 @@ namespace embree
      coordinate system if looking along the z direction */
     RTCScene scene = rtcNewScene(sflags,aflags);
     unsigned mesh = rtcNewTriangleMesh (scene, gflags, 1, 3);
-    Vertex*   vertices  = (Vertex*  ) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER); 
+    Vertex3fa*   vertices  = (Vertex3fa*  ) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER); 
     Triangle* triangles = (Triangle*) rtcMapBuffer(scene,mesh,RTC_INDEX_BUFFER);
     vertices[0].x = 0; vertices[0].y = 0; vertices[0].z = 0;
     vertices[1].x = 0; vertices[1].y = 1; vertices[1].z = 0;
@@ -2237,6 +2288,7 @@ namespace embree
     rtcCommit (scene);
     AssertNoError();
     rtcDeleteScene (scene);
+    clearBuffers();
     AssertNoError();
     return true;
   }
@@ -2504,13 +2556,13 @@ namespace embree
               break;
             }
             case 1: {
-              Vec3fa* vertices = (Vec3fa*) rtcMapBuffer(task->scene,geom[index],RTC_VERTEX_BUFFER);
-              for (size_t i=0; i<numVertices[index]; i++) vertices[i] += Vec3fa(0.1f);
+              Vertex3f* vertices = (Vertex3f*) rtcMapBuffer(task->scene,geom[index],RTC_VERTEX_BUFFER);
+              for (size_t i=0; i<numVertices[index]; i++) vertices[i] += Vertex3f(0.1f);
               rtcUnmapBuffer(task->scene,geom[index],RTC_VERTEX_BUFFER);
 
               if (types[index] == 4 || types[index] == 5) {
-                Vec3fa* vertices = (Vec3fa*) rtcMapBuffer(task->scene,geom[index],RTC_VERTEX_BUFFER1);
-                for (size_t i=0; i<numVertices[index]; i++) vertices[i] += Vec3fa(0.1f);
+                Vertex3f* vertices = (Vertex3f*) rtcMapBuffer(task->scene,geom[index],RTC_VERTEX_BUFFER1);
+                for (size_t i=0; i<numVertices[index]; i++) vertices[i] += Vertex3f(0.1f);
                 rtcUnmapBuffer(task->scene,geom[index],RTC_VERTEX_BUFFER1);
               }
               break;
@@ -2572,10 +2624,12 @@ namespace embree
 	  join(g_threads[i]);
 	
 	g_threads.clear();
+	clearBuffers();
       }
       else
       {
 	func(new ThreadRegressionTask(0,0,new RegressionTask(sceneIndex++,5,0)));
+	clearBuffers();
       }	
     }
     return errorCounter == 0;
@@ -2607,6 +2661,7 @@ namespace embree
       rtcCommit(scene);
       AssertNoError();
       rtcDeleteScene (scene);
+      clearBuffers();
       AssertNoError();
     }
     return true;

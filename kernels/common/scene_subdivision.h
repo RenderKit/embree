@@ -720,7 +720,7 @@ namespace embree
     }
  
 
-    __forceinline void subdivide(IrregularCatmullClarkPatch patch[4]) const
+    void subdivide(IrregularCatmullClarkPatch patch[4]) const
     {
       ring[0].update(patch[0].ring[0]);
       ring[1].update(patch[1].ring[1]);
@@ -901,7 +901,7 @@ namespace embree
         dest.crease_weight[i] = 0.0f;
     }
  
-    __forceinline void subdivide(IrregularCatmullClarkPatch patch[SIZE], size_t& N_o) const
+    void subdivide(IrregularCatmullClarkPatch patch[SIZE], size_t& N_o) const
     {
       N_o = N;
 
@@ -1840,7 +1840,7 @@ namespace embree
 
     }
 
-    __forceinline void init(const IrregularCatmullClarkPatch &irreg_patch)
+    void init(const IrregularCatmullClarkPatch &irreg_patch)
     {
       p0() = initCornerVertex(irreg_patch,0);
       p1() = initCornerVertex(irreg_patch,1);

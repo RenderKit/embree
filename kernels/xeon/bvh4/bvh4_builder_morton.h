@@ -219,7 +219,7 @@ namespace embree
     public:
       BVH4* bvh;               //!< Output BVH
       LockStepTaskScheduler* scheduler;
-      std::auto_ptr<MortonBuilderState> state;
+      std::unique_ptr<MortonBuilderState> state;
 
       Scene* scene;
       TriangleMesh* mesh;

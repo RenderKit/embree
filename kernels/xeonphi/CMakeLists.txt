@@ -40,9 +40,10 @@ ADD_ISPC_LIBRARY(embree_xeonphi SHARED
   ../common/raystream_log.cpp
 
   ../algorithms/parallel_for.cpp
+  ../algorithms/parallel_reduce.cpp
+  ../algorithms/parallel_prefix_sum.cpp
   ../algorithms/parallel_for_for.cpp
   ../algorithms/parallel_for_for_prefix_sum.cpp
-  ../algorithms/parallel_reduce.cpp
   ../algorithms/sort.cpp
   ../algorithms/pset.cpp
   ../algorithms/pmap.cpp

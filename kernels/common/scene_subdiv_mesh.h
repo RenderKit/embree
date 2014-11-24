@@ -251,7 +251,7 @@ namespace embree
 
     /*! returns the start half edge for some face */
     __forceinline const HalfEdge* getHalfEdge         ( const unsigned f     ) const { return &halfEdges[faceStartEdge[f]]; }    
-    __forceinline const Vec3fa*   getVertexPositionPtr( const unsigned t = 0 ) const { return &vertices[t][0]; } // FIXME: this function should never get used, always pass BufferT<Vec3fa> object
+    __forceinline const Vec3fa*   getVertexPositionPtr( const unsigned t = 0 ) const { return (Vec3fa*)vertices[t].getPtr(); } // FIXME: this function should never get used, always pass BufferT<Vec3fa> object
 
   public:
     unsigned int mask;                //!< for masking out geometry

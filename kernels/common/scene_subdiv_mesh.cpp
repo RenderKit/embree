@@ -109,7 +109,7 @@ namespace embree
       vertices[0].set(ptr,offset,stride); 
       if (numVertices) {
         /* test if array is properly padded */
-        volatile int w = *((int*)&vertices[0][numVertices-1]+3); // FIXME: is failing hard avoidable?
+        volatile int w = *((int*)vertices[0].getPtr(numVertices-1)+3); // FIXME: is failing hard avoidable?
       }
       break;
 
@@ -117,7 +117,7 @@ namespace embree
       vertices[1].set(ptr,offset,stride); 
       if (numVertices) {
         /* test if array is properly padded */
-        volatile int w = *((int*)&vertices[1][numVertices-1]+3); // FIXME: is failing hard avoidable?
+        volatile int w = *((int*)vertices[1].getPtr(numVertices-1)+3); // FIXME: is failing hard avoidable?
       }
       break;
 
