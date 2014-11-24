@@ -314,6 +314,10 @@ namespace embree
 #else
       gridUVTessellator16f(edge_levels,grid_u_res,grid_v_res,u_array,v_array);
 
+      /* if necessary stich different tessellation levels in u/v grid */
+      if (unlikely(subdiv_patch.needsStiching()))
+	stichUVGrid(edge_levels,grid_u_res,grid_v_res,u_array,v_array);
+	
 #endif
 
 #if 0
@@ -362,7 +366,6 @@ namespace embree
 	}
       else
 	{
-	  FATAL("HERE");
 	  size_t offset_line0 = 0;
 	  size_t offset_line1 = grid_u_res;
 

@@ -1101,6 +1101,30 @@ namespace embree
      }
  }
 
+__forceinline void stichUVGrid(const float edge_levels[4],
+			       const unsigned int grid_u_res,
+			       const unsigned int grid_v_res,
+			       float * __restrict__ const u_array,
+			       float * __restrict__ const v_array)
+{
+   const unsigned int int_edge_points0 = (unsigned int)edge_levels[0] + 1;
+   const unsigned int int_edge_points1 = (unsigned int)edge_levels[1] + 1;
+   const unsigned int int_edge_points2 = (unsigned int)edge_levels[2] + 1;
+   const unsigned int int_edge_points3 = (unsigned int)edge_levels[3] + 1;
+
+   if (unlikely(int_edge_points0 < grid_u_res))
+     stichGridEdges(int_edge_points0,grid_u_res,u_array,1);
+
+   if (unlikely(int_edge_points2 < grid_u_res))
+     stichGridEdges(int_edge_points2,grid_u_res,&u_array[(grid_v_res-1)*grid_u_res],1);
+
+   if (unlikely(int_edge_points1 < grid_v_res))
+     stichGridEdges(int_edge_points1,grid_v_res,&v_array[grid_u_res-1],grid_u_res);
+
+   if (unlikely(int_edge_points3 < grid_v_res))
+     stichGridEdges(int_edge_points3,grid_v_res,v_array,grid_u_res);  
+}
+
  __forceinline void gridUVTessellator(const float edge_levels[4],
 				      const unsigned int grid_u_res,
 				      const unsigned int grid_v_res,
@@ -1117,18 +1141,17 @@ namespace embree
    const unsigned int grid_u_segments = grid_u_res-1;
    const unsigned int grid_v_segments = grid_v_res-1;
 
-   const float u_step = 1.0f / grid_u_segments;
-   const float v_step = 1.0f / grid_v_segments;
+   const float inv_grid_u_segments = 1.0f / grid_u_segments;
+   const float inv_grid_v_segments = 1.0f / grid_v_segments;
 
    /* initialize grid */
    unsigned int index = 0;
-   float v = 0.0f;
-   for (unsigned int y=0;y<grid_v_res;y++,v+=v_step)
+   for (unsigned int y=0;y<grid_v_res;y++)
      {
-       float u = 0.0f;
-       for (unsigned int x=0;x<grid_u_res;x++,index++,u+=u_step)
+       const float v = (float)y * inv_grid_v_segments;
+       for (unsigned int x=0;x<grid_u_res;x++,index++)
 	 {
-	   u_array[index] = u;
+	   u_array[index] = (float)x * inv_grid_u_segments;
 	   v_array[index] = v;
 	 }
      }
@@ -1140,44 +1163,27 @@ namespace embree
    for (unsigned int x=0;x<grid_u_res;x++)
      v_array[num_points-1-x] = 1.0f;
        
-
 #if 0
-      DBG_PRINT("UV grid");
-      DBG_PRINT( edge_levels[0] );
-      DBG_PRINT( edge_levels[1] );
-      DBG_PRINT( edge_levels[2] );
-      DBG_PRINT( edge_levels[3] );
-
-      DBG_PRINT( grid_u_res );
-      DBG_PRINT( grid_v_res );
-
-      for (unsigned int y=0;y<grid_v_res;y++)
-	{
-	  std::cout << "row " << y << " ";
-	  for (unsigned int x=0;x<grid_u_res;x++)
-	    std::cout << "(" << v_array[grid_u_res*y+x] << "," << u_array[grid_u_res*y+x] << ") ";
-	  std::cout << std::endl;
-	}
+   DBG_PRINT("UV grid");
+   DBG_PRINT( edge_levels[0] );
+   DBG_PRINT( edge_levels[1] );
+   DBG_PRINT( edge_levels[2] );
+   DBG_PRINT( edge_levels[3] );
+   
+   DBG_PRINT( grid_u_res );
+   DBG_PRINT( grid_v_res );
+   
+   for (unsigned int y=0;y<grid_v_res;y++)
+     {
+       std::cout << "row " << y << " ";
+       for (unsigned int x=0;x<grid_u_res;x++)
+	 std::cout << "(" << v_array[grid_u_res*y+x] << "," << u_array[grid_u_res*y+x] << ") ";
+       std::cout << std::endl;
+     }
 #endif
-
+   
    /* stich different tessellation levels in u/v grid */
-
-   const unsigned int int_edge_points0 = (unsigned int)edge_levels[0] + 1;
-   const unsigned int int_edge_points1 = (unsigned int)edge_levels[1] + 1;
-   const unsigned int int_edge_points2 = (unsigned int)edge_levels[2] + 1;
-   const unsigned int int_edge_points3 = (unsigned int)edge_levels[3] + 1;
-
-   if (unlikely(int_edge_points0 < grid_u_res))
-     stichGridEdges(int_edge_points0,grid_u_res,u_array,1);
-
-   if (unlikely(int_edge_points2 < grid_u_res))
-     stichGridEdges(int_edge_points2,grid_u_res,&u_array[(grid_v_res-1)*grid_u_res],1);
-
-   if (unlikely(int_edge_points1 < grid_v_res))
-     stichGridEdges(int_edge_points1,grid_v_res,&v_array[grid_u_res-1],grid_u_res);
-
-   if (unlikely(int_edge_points3 < grid_v_res))
-     stichGridEdges(int_edge_points3,grid_v_res,v_array,grid_u_res);
+   stichUVGrid(edge_levels,grid_u_res,grid_v_res,u_array,v_array);
  }
 
 #if defined(__MIC__)
@@ -1197,16 +1203,22 @@ namespace embree
    const mic_i grid_u_segments = mic_i(grid_u_res)-1;
    const mic_i grid_v_segments = mic_i(grid_v_res)-1;
 
-   const mic_m m_u = mic_i( step ) < grid_u_segments;
-   const mic_m m_v = mic_i( step ) < grid_v_segments;
+   prefetch<PFHINT_L1EX>(u_array);
+   prefetch<PFHINT_L1EX>(v_array);
+
+   const mic_i identity ( step );
+
+   const mic_m m_u = identity < grid_u_segments;
+   const mic_m m_v = identity < grid_v_segments;
 
    const mic_f inv_grid_u_segments = rcp(mic_f(grid_u_segments));
    const mic_f inv_grid_v_segments = rcp(mic_f(grid_v_segments));
 
-   const mic_f identity( step );
+   //const mic_f identity( step );
 
-   const mic_f u_values = select(m_u, identity * inv_grid_u_segments, 1.0f);
-   const mic_f v_values = select(m_v, identity * inv_grid_v_segments, 1.0f);
+
+   const mic_f u_values = select(m_u, mic_f(identity) * inv_grid_u_segments, 1.0f);
+   const mic_f v_values = select(m_v, mic_f(identity) * inv_grid_v_segments, 1.0f);
 
    /* initialize grid */
    unsigned int index = 0;
@@ -1217,25 +1229,6 @@ namespace embree
        ustore16f_low(&u_array[index],u);
        ustore16f_low(&v_array[index],v);
      }       
-
-   /* stich different tessellation levels in u/v grid */
-
-   const unsigned int int_edge_points0 = (unsigned int)edge_levels[0] + 1;
-   const unsigned int int_edge_points1 = (unsigned int)edge_levels[1] + 1;
-   const unsigned int int_edge_points2 = (unsigned int)edge_levels[2] + 1;
-   const unsigned int int_edge_points3 = (unsigned int)edge_levels[3] + 1;
-
-   if (unlikely(int_edge_points0 < grid_u_res))
-     stichGridEdges(int_edge_points0,grid_u_res,u_array,1);
-
-   if (unlikely(int_edge_points2 < grid_u_res))
-     stichGridEdges(int_edge_points2,grid_u_res,&u_array[(grid_v_res-1)*grid_u_res],1);
-
-   if (unlikely(int_edge_points1 < grid_v_res))
-     stichGridEdges(int_edge_points1,grid_v_res,&v_array[grid_u_res-1],grid_u_res);
-
-   if (unlikely(int_edge_points3 < grid_v_res))
-     stichGridEdges(int_edge_points3,grid_v_res,v_array,grid_u_res);   
  }
 
 #endif
