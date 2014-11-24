@@ -320,7 +320,7 @@ namespace embree
       return 100000;
 
 #else
-      size_t S = parallel_for_for_prefix_sum( pstate, iter, size_t(0), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const size_t base) 
+      size_t S = parallel_for_for_prefix_sum( pstate, iter, size_t(0), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const size_t base) -> size_t
       {
         size_t s = 0;
         for (size_t f=r.begin(); f!=r.end(); ++f) {
@@ -360,7 +360,7 @@ namespace embree
       }
 #else
 
-      parallel_for_for_prefix_sum( pstate, iter, size_t(0), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, size_t base) 
+      parallel_for_for_prefix_sum( pstate, iter, size_t(0), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, size_t base) -> size_t
       {
         size_t s = 0;
         for (size_t f=r.begin(); f!=r.end(); ++f) {

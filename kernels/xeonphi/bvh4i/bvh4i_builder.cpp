@@ -31,13 +31,15 @@
 #define L1_PREFETCH_ITEMS 2
 #define L2_PREFETCH_ITEMS 16
 
-#define TIMER(x)  
+#define TIMER(x)  x
 #define DBG(x) 
 
 //#define PROFILE
 #define PROFILE_ITERATIONS 100
 
 #define MEASURE_MEMORY_ALLOCATION_TIME 0
+
+//#define CHECK_BUILD_RECORD_IN_DEBUG_MODE
 
 //#define MERGE_TRIANGLE_PAIRS
 
@@ -101,7 +103,8 @@ namespace embree
       node(NULL), 
       accel(NULL), 
       size_prims(0),
-      num64BytesBlocksPerNode(bvh4iNodeSize / 64)
+      num64BytesBlocksPerNode(bvh4iNodeSize / 64),
+      leafItemThreshold(BVH4i::N)
   {
     DBG(PING);
   }
@@ -1036,7 +1039,7 @@ namespace embree
 #endif
 
     /* mark as leaf if leaf threshold reached */
-    if (current.items() <= BVH4i::N) {
+    if (current.items() <= leafItemThreshold) {
       current.createLeaf();
       return false;
     }
@@ -1147,8 +1150,8 @@ namespace embree
     checkBuildRecord(rightChild);
 #endif
 
-    if (leftChild.items()  <= BVH4i::N) leftChild.createLeaf();
-    if (rightChild.items() <= BVH4i::N) rightChild.createLeaf();	
+    if (leftChild.items()  <= leafItemThreshold) leftChild.createLeaf();
+    if (rightChild.items() <= leafItemThreshold) rightChild.createLeaf();	
     return true;
   }
 
@@ -1167,7 +1170,7 @@ namespace embree
 #endif
   
     /* mark as leaf if leaf threshold reached */
-    if (items <= BVH4i::N) {
+    if (items <= leafItemThreshold) {
       current.createLeaf();
       return false;
     }
@@ -1213,8 +1216,8 @@ namespace embree
     checkBuildRecord(rightChild);
 #endif
      
-    if (leftChild.items()  <= BVH4i::N) leftChild.createLeaf();
-    if (rightChild.items() <= BVH4i::N) rightChild.createLeaf();
+    if (leftChild.items()  <= leafItemThreshold) leftChild.createLeaf();
+    if (rightChild.items() <= leafItemThreshold) rightChild.createLeaf();
     return true;
   }
 
@@ -1237,7 +1240,7 @@ namespace embree
 #endif
   
     /* mark as leaf if leaf threshold reached */
-    if (items <= BVH4i::N) {
+    if (items <= leafItemThreshold) {
       current.createLeaf();
       return false;
     }
@@ -1287,8 +1290,8 @@ namespace embree
     checkBuildRecord(rightChild);
 #endif
      
-    if (leftChild.items()  <= BVH4i::N) leftChild.createLeaf();
-    if (rightChild.items() <= BVH4i::N) rightChild.createLeaf();
+    if (leftChild.items()  <= leafItemThreshold) leftChild.createLeaf();
+    if (rightChild.items() <= leafItemThreshold) rightChild.createLeaf();
     return true;
   }
 
@@ -1326,6 +1329,10 @@ namespace embree
     unsigned int blocks4 = (current.items()+3)/4;
     unsigned int center = current.begin + (blocks4/2)*4; // (current.begin + current.end)/2;
 
+    if (unlikely(current.items() <= 4))
+      {
+	center = current.begin + 1;
+      }
     assert(center != current.begin);
     assert(center != current.end);
     
@@ -1358,7 +1365,7 @@ namespace embree
 #endif
     
     /* create leaf */
-    if (current.items() <= BVH4i::N) {
+    if (current.items() <= leafItemThreshold) {
       createBVH4iLeaf(*(BVH4i::NodeRef*)current.parentPtr,current.begin,current.items());
 
 #if defined(DEBUG)
@@ -1379,6 +1386,9 @@ namespace embree
 
     /* allocate next four nodes */
     size_t numChildren = 4;
+    if (current.items() <= 4 )
+      numChildren = current.items();
+
     for (size_t i=0; i<numChildren; i++) 
       children[i].depth = current.depth+1;
 
@@ -1511,6 +1521,7 @@ namespace embree
   
   void BVH4iBuilder::checkBuildRecord(const BuildRecord &current)
   {
+#if defined(CHECK_BUILD_RECORD_IN_DEBUG_MODE)
     BBox3fa check_box;
     BBox3fa box;
     check_box = empty;
@@ -1538,6 +1549,7 @@ namespace embree
 	DBG_PRINT(box);
 	FATAL("check build record => subset(check_box,box) && subset(box,check_box)");
       }
+#endif
   }
 
   
@@ -1727,6 +1739,15 @@ namespace embree
       {
 	BuildRecord br;
 	if (!global_workStack.pop_nolock_largest(br)) break;
+
+#if 0
+	if (unlikely(br.items() < 4096)) 
+	  {
+	    global_workStack.push_nolock(br);
+	    break;
+	  }
+#endif
+	
 	DBG(DBG_PRINT(br));
 	recurseSAH(br,alloc,BUILD_TOP_LEVEL,threadIndex,threadCount);      
       }

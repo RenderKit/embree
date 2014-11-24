@@ -1851,27 +1851,33 @@ namespace embree
 	 f_m[y][x] = (Vec3fa_t)f[y][x];
    }
 
-   /* __forceinline void exportBicubicBezierPatch( Vec3fa matrix[4][4], const float uu, const float vv ) const */
-   /* { */
-   /*   for (size_t y=0;y<4;y++) */
-   /*     for (size_t x=0;x<4;x++) */
-   /* 	 matrix[y][x] = (Vec3fa_t)v[y][x]; */
+   __forceinline void exportDenseConrolPoints( Vec3fa matrix[4][4] ) const //store all f_m into 4th component of Vec3fa matrix
+   {
+     for (size_t y=0;y<4;y++)
+       for (size_t x=0;x<4;x++)
+	 matrix[y][x] = (Vec3fa_t)v[y][x];
 
-   /*   if (uu == 0.0f || uu == 1.0f || vv == 0.0f || vv == 1.0f) return; */
+     matrix[0][0].w = f[0][0].x;
+     matrix[0][1].w = f[0][0].y;
+     matrix[0][2].w = f[0][0].z;
+     matrix[0][3].w = 0.0f;
 
-   /*   // FIXME: merge u,v and extract after computation */
+     matrix[1][0].w = f[0][1].x;
+     matrix[1][1].w = f[0][1].y;
+     matrix[1][2].w = f[0][1].z;
+     matrix[1][3].w = 0.0f;
 
-   /*   const Vec3fa_t F0 = (      uu  * f0_p() +       vv  * f0_m()) * 1.0f/(uu+vv); */
-   /*   const Vec3fa_t F1 = ((1.0f-uu) * f1_m() +       vv  * f1_p()) * 1.0f/(1.0f-uu+vv); */
-   /*   const Vec3fa_t F2 = ((1.0f-uu) * f2_p() + (1.0f-vv) * f2_m()) * 1.0f/(2.0f-uu-vv); */
-   /*   const Vec3fa_t F3 = (      uu  * f3_m() + (1.0f-vv) * f3_p()) * 1.0f/(1.0f+uu-vv); */
+     matrix[2][0].w = f[1][1].x;
+     matrix[2][1].w = f[1][1].y;
+     matrix[2][2].w = f[1][1].z;
+     matrix[2][3].w = 0.0f;
 
-   /*   matrix[1][1] = F0; */
-   /*   matrix[1][2] = F1; */
-   /*   matrix[2][2] = F2; */
-   /*   matrix[2][1] = F3;      */
+     matrix[3][0].w = f[1][0].x;
+     matrix[3][1].w = f[1][0].y;
+     matrix[3][2].w = f[1][0].z;
+     matrix[3][3].w = 0.0f;
+   }
 
-   /* } */
    
    static __forceinline Vec3fa_t deCasteljau(const float uu, const Vec3fa_t &v0, const Vec3fa_t &v1, const Vec3fa_t &v2, const Vec3fa_t &v3)
    {
@@ -1973,33 +1979,69 @@ namespace embree
       return n;     
    }
 
+
+
    __forceinline Vec3fa normal( const float uu,
 				const float vv) 
    {
      return normal(v,f,uu,vv);
    }
+
+   static __forceinline float extract_f_m(const Vec3fa matrix[4][4],
+					  const size_t y,
+					  const size_t x)
+   {
+     return matrix[y][x].w;
+   }
+
+   static __forceinline Vec3fa extract_f_m_Vec3fa(const Vec3fa matrix[4][4],
+						  const size_t n)
+   {
+     return Vec3fa( extract_f_m(matrix,n,0), extract_f_m(matrix,n,1), extract_f_m(matrix,n,2) );
+   }
+
    
 #if defined(__MIC__)
 
+
+   static __forceinline mic_f extract_f_m_mic_f(const Vec3fa matrix[4][4],
+						const size_t n)
+   {
+     const mic_f row = load16f(&matrix[n][0]);
+     __aligned(64) float xyzw[16];
+     compactustore16f_low(0x8888,xyzw,row);
+     return broadcast4to16f(xyzw);
+   }
+
+   static __forceinline mic3f extract_f_m_mic3f(const Vec3fa matrix[4][4],
+						const size_t n)
+   {
+     return mic3f( extract_f_m(matrix,n,0), extract_f_m(matrix,n,1), extract_f_m(matrix,n,2) );
+   }
+
    static __forceinline mic_f eval4(const Vec3fa matrix[4][4],
-				    const Vec3fa f[2][2],
 				    const mic_f uu,
 				    const mic_f vv) 
    {
      const mic_m m_border = (uu == 0.0f) | (uu == 1.0f) | (vv == 0.0f) | (vv == 1.0f);
 
      const mic_f f0_p = (Vec3fa_t)matrix[1][1];
-     const mic_f f0_m = (Vec3fa_t)f[0][0];
-
      const mic_f f1_p = (Vec3fa_t)matrix[1][2];
-     const mic_f f1_m = (Vec3fa_t)f[0][1];
-
      const mic_f f2_p = (Vec3fa_t)matrix[2][2];
-     const mic_f f2_m = (Vec3fa_t)f[1][1];
-
      const mic_f f3_p = (Vec3fa_t)matrix[2][1];
-     const mic_f f3_m = (Vec3fa_t)f[1][0];
 
+#if 0
+     const mic_f f0_m = (Vec3fa_t)f[0][0];
+     const mic_f f1_m = (Vec3fa_t)f[0][1];
+     const mic_f f2_m = (Vec3fa_t)f[1][1];
+     const mic_f f3_m = (Vec3fa_t)f[1][0];
+#else
+     const mic_f f0_m = extract_f_m_mic_f(matrix,0);
+     const mic_f f1_m = extract_f_m_mic_f(matrix,1);
+     const mic_f f2_m = extract_f_m_mic_f(matrix,2);
+     const mic_f f3_m = extract_f_m_mic_f(matrix,3);
+
+#endif
      const mic_f one_minus_uu = mic_f(1.0f) - uu;
      const mic_f one_minus_vv = mic_f(1.0f) - vv;      
 
@@ -2036,30 +2078,33 @@ namespace embree
 	(B0_u * (Vec3fa_t)matrix[3][0] + B1_u * (Vec3fa_t)matrix[3][1] + B2_u * (Vec3fa_t)matrix[3][2] + B3_u * (Vec3fa_t)matrix[3][3]) * B3_v; 
      return res;
    }
-
+   
 
    static __forceinline mic3f eval16(const Vec3fa matrix[4][4],
-				     const Vec3fa f[2][2],
 				     const mic_f uu,
 				     const mic_f vv) 
    {
      const mic_m m_border = (uu == 0.0f) | (uu == 1.0f) | (vv == 0.0f) | (vv == 1.0f);
 
      const mic3f f0_p = mic3f(matrix[1][1].x,matrix[1][1].y,matrix[1][1].z);
-     const mic3f f0_m = mic3f(f[0][0].x,f[0][0].y,f[0][0].z);
-
      const mic3f f1_p = mic3f(matrix[1][2].x,matrix[1][2].y,matrix[1][2].z);
-     const mic3f f1_m = mic3f(f[0][1].x,f[0][1].y,f[0][1].z);
-
      const mic3f f2_p = mic3f(matrix[2][2].x,matrix[2][2].y,matrix[2][2].z);
-     const mic3f f2_m = mic3f(f[1][1].x,f[1][1].y,f[1][1].z);
-
      const mic3f f3_p = mic3f(matrix[2][1].x,matrix[2][1].y,matrix[2][1].z);
-     const mic3f f3_m = mic3f(f[1][0].x,f[1][0].y,f[1][0].z);
 
+#if 0
+     const mic3f f0_m = mic3f(f[0][0].x,f[0][0].y,f[0][0].z);
+     const mic3f f1_m = mic3f(f[0][1].x,f[0][1].y,f[0][1].z);
+     const mic3f f2_m = mic3f(f[1][1].x,f[1][1].y,f[1][1].z);
+     const mic3f f3_m = mic3f(f[1][0].x,f[1][0].y,f[1][0].z);
+#else
+     const mic3f f0_m = extract_f_m_mic3f(matrix,0);
+     const mic3f f1_m = extract_f_m_mic3f(matrix,1);
+     const mic3f f2_m = extract_f_m_mic3f(matrix,2);
+     const mic3f f3_m = extract_f_m_mic3f(matrix,3);
+
+#endif
      const mic_f one_minus_uu = mic_f(1.0f) - uu;
      const mic_f one_minus_vv = mic_f(1.0f) - vv;      
-
 
 #if 1
      const mic_f inv0 = rcp(uu+vv);
@@ -2116,6 +2161,24 @@ namespace embree
      return mic3f(x,y,z);
    }
 
+
+   static __forceinline Vec3fa normal(const Vec3fa matrix[4][4],
+				      const float uu,
+				      const float vv) 
+   {
+     const mic_f row0 = load16f(&matrix[0][0]);
+     const mic_f row1 = load16f(&matrix[1][0]);
+     const mic_f row2 = load16f(&matrix[2][0]);
+     const mic_f row3 = load16f(&matrix[3][0]);
+
+     __aligned(64) Vec3fa f_m[2][2];
+     compactustore16f_low(0x8888,(float*)&f_m[0][0],row0);
+     compactustore16f_low(0x8888,(float*)&f_m[0][1],row1);
+     compactustore16f_low(0x8888,(float*)&f_m[1][1],row2);
+     compactustore16f_low(0x8888,(float*)&f_m[1][0],row3);
+
+     return normal(matrix,f_m,uu,vv);
+   }
 
    
 #endif

@@ -84,6 +84,6 @@ namespace embree
   template<typename Index, typename Func>
     __forceinline void parallel_for( const Index first, const Index last, const Func& func)
   {
-    parallel_for(first,last,1,func);
+    parallel_for(first,last,(Index)1,func);
   }
 }

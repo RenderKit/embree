@@ -27,6 +27,7 @@
           <li><a href="downloads.html">Downloads</a></li>
           <li id="selected"><a href="api.html">API</a></li>
           <li><a href="tutorials.html">Tutorials</a></li>
+          <li><a href="gallery.html">Gallery</a></li>
           <li><a href="renderer.html">Renderer</a></li>
         </ul>
       </div>
@@ -228,7 +229,8 @@ query.</p>
 <p>Geometries are always contained in the scene they are created
 in. Each geometry is assigned an integer ID at creation time, which is
 unique for that scene. The current version of the API supports
-triangle meshes (<code>rtcNewTriangleMesh</code>), single level
+triangle meshes (<code>rtcNewTriangleMesh</code>), hair geometries
+(<code>rtcNewHairGeometry</code>), single level
 instances of other scenes (<code>rtcNewInstance</code>), and user
 defined geometries (<code>rtcNewUserGeometry</code>). The API is
 designed in a way that easily allows adding new geometry types in
@@ -304,8 +306,6 @@ rtcUnmapBuffer(scene,geomID,RTC_INDEX_BUFFER);
 <p>Also see tutorial00 for an example of how to create triangle meshes.</p>
 
 <h4>Hair Geometry</h4>
-
-<p>Creates a new hair geometry, 
 
 <p>Hair geometries are supported, which consist of multiple hairs
 represented as cubic bezier curves with varying radius per control
@@ -490,7 +490,7 @@ homogenous matrix is layed out in column major form, use the
 Embree will ignore the last row of the matrix.</p>
 
 <p>The transformation passed to <code>rtcSetTransform</code>
-transforms from the local space of the instantiated scene, to world
+transforms from the local space of the instantiated scene to world
 space.</code>
 
 <p>See tutorial04 for an example of how to use instances.</p>
@@ -554,7 +554,7 @@ the valid mask and the ray. To operate on packets of 4 rays, the CPU
 has to support SSE, to operate on packets of 8 rays, the CPU has to
 support AVX-256, and to operate on packets of 16 rays, the CPU has to
 support the Xeon Phi instructions. Additionally, the required ISA has
-to be enabled in Embree at compile time, to use the desired packet
+to be enabled in Embree at compile time to use the desired packet
 size.</p>
 
 <p>Finding the closest hit distance is done through the
@@ -697,7 +697,7 @@ invoked for each intersection found during the
 former ones are called intersection filter functions, the latter ones
 occlusion filter functions. The filter functions can be used to
 implement various useful features, such as rejecting a hit to
-implement backface culling, accumulating opacity for shadow shadows,
+implement backface culling, accumulating opacity for transparent shadows,
 counting the number of surfaces along a ray, collecting all hits along
 a ray, etc. </p>
 

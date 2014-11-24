@@ -139,15 +139,16 @@ namespace embree
   protected:
     BVH4i* bvh;                   //!< Output BVH
 
-
     /* work record handling */
-  protected:
     PrimRef  *    prims;
     mic_i    *    node;  // node array in 64 byte blocks
     Triangle1*    accel;
 
-    size_t size_prims;
+    /* threshold for leaf generation */
+    size_t leafItemThreshold;
 
+    /* memory allocation */
+    size_t size_prims;
     const size_t num64BytesBlocksPerNode;
 
 
@@ -266,12 +267,11 @@ namespace embree
     virtual void printBuilderName();
     virtual void finalize         (const size_t threadIndex, const size_t threadCount);
 
-    void processLeaves(const BVH4i::NodeRef &ref,
-		       const BVH4i::NodeRef parent,
-		       const unsigned int local_index);
+    void processLeaves(BVH4i::NodeRef &ref);
 
   protected:
     TASK_FUNCTION(BVH4iBuilderSubdivMesh,computePrimRefsSubdivMesh);
+    TASK_FUNCTION(BVH4iBuilderSubdivMesh,updateLeaves);
     
   };
 

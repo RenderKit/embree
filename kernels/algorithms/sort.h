@@ -22,6 +22,10 @@
 #include "math/math.h"
 #include <algorithm>
 
+#if defined(__MIC__)
+ #include "simd/mic.h"
+#endif
+
 namespace embree
 {
   template<class T>
@@ -192,13 +196,13 @@ namespace embree
     }
 
 
-  class ParallelRadixSort
+  class __aligned(64) ParallelRadixSort
   {
   public:
 
 #if defined(__MIC__)
     static const size_t MAX_THREADS = MAX_MIC_THREADS;
-    static const size_t SINGLE_THREAD_THRESHOLD = 150000;
+    static const size_t SINGLE_THREAD_THRESHOLD = MAX_MIC_THREADS*16;
 #else
     static const size_t MAX_THREADS = 32;
     static const size_t SINGLE_THREAD_THRESHOLD = 3000;
@@ -291,17 +295,113 @@ namespace embree
 	  parent->barrier.wait(threadIndex,threadCount);
       }
       
+#if defined(__MIC__)
+
+      void radixIteration(Ty* __restrict const src, 
+			  Ty* __restrict const dst, 
+			  const size_t startID, 
+			  const size_t endID, 
+			  const size_t threadIndex, 
+			  const size_t threadCount,
+			  const size_t byte_iteration)
+      {
+	const size_t L1_PREFETCH_ITEMS = 4;
+
+	for (size_t b=0; b<byte_iteration; b++)
+	  {
+#pragma unroll(16)
+	    for (size_t i=0; i<16; i++)
+	      store16i(&parent->radixCount[threadIndex][i*16],mic_i::zero());
+	    
+	    __assume_aligned(&parent->radixCount[threadIndex][0],64);
+
+	    for (size_t i=startID; i<endID; i++) {
+	      const Key &key = src[i];
+	      const unsigned char *__restrict const byte = (const unsigned char*)&key;
+	      prefetch<PFHINT_NT>(byte + 64*4);
+	      parent->radixCount[threadIndex][(unsigned int)byte[b]]++;
+	    }
+
+	    parent->barrier.wait(threadIndex,threadCount);
+
+	    mic_i count[16];
+#pragma unroll(16)
+	    for (size_t i=0; i<16; i++)
+	      count[i] = mic_i::zero();
+
+
+	    for (size_t i=0; i<threadIndex; i++)
+#pragma unroll(16)
+	      for (size_t j=0; j<16; j++)
+		count[j] += load16i((int*)&parent->radixCount[i][j*16]);
+      
+	    __aligned(64) unsigned int inner_offset[BUCKETS];
+
+#pragma unroll(16)
+	    for (size_t i=0; i<16; i++)
+	      store16i(&inner_offset[i*16],count[i]);
+
+#pragma unroll(16)
+	    for (size_t i=0; i<16; i++)
+	      count[i] = load16i((int*)&inner_offset[i*16]);
+
+	    for (size_t i=threadIndex; i<threadCount; i++)
+#pragma unroll(16)
+	      for (size_t j=0; j<16; j++)
+		count[j] += load16i((int*)&parent->radixCount[i][j*16]);	  
+
+	    __aligned(64) unsigned int total[BUCKETS];
+
+#pragma unroll(16)
+	    for (size_t i=0; i<16; i++)
+	      store16i(&total[i*16],count[i]);
+
+	    __aligned(64) unsigned int offset[BUCKETS];
+
+	    /* calculate start offset of each bucket */
+	    offset[0] = 0;
+	    for (size_t i=1; i<BUCKETS; i++)    
+	      offset[i] = offset[i-1] + total[i-1];
+      
+	    /* calculate start offset of each bucket for this thread */
+
+#pragma unroll(BUCKETS)
+	    for (size_t j=0; j<BUCKETS; j++)
+	      offset[j] += inner_offset[j];
+	    
+	    for (size_t i=startID; i<endID; i++) {
+	      const Key &key = src[i];
+
+	      const unsigned char *__restrict const byte = (const unsigned char*)&key;
+	      prefetch<PFHINT_NT>((char*)byte + 2*64);
+
+	      const unsigned int index = byte[b];
+
+	      assert(index < BUCKETS);
+	      dst[offset[index]] = src[i];
+	      prefetch<PFHINT_L2EX>(&dst[offset[index]+L1_PREFETCH_ITEMS]);
+	      offset[index]++;
+	    }
+
+	    if (b<byte_iteration-1) parent->barrier.wait(threadIndex,threadCount);
+	    std::swap(src,dst);
+	  }
+	
+      }
+
+      
+#endif
       void radixsort(const size_t threadIndex, const size_t numThreads)
       {
 	const size_t startID = (threadIndex+0)*N/numThreads;
 	const size_t endID   = (threadIndex+1)*N/numThreads;
 
+#if !defined(__MIC__)
 	if (sizeof(Key) == sizeof(uint32)) {
 	  radixIteration(0*BITS,0,src,tmp,startID,endID,threadIndex,numThreads);
 	  radixIteration(1*BITS,0,tmp,src,startID,endID,threadIndex,numThreads);
 	  radixIteration(2*BITS,0,src,tmp,startID,endID,threadIndex,numThreads);
 	  radixIteration(3*BITS,1,tmp,src,startID,endID,threadIndex,numThreads);
-
 	}
 	else if (sizeof(Key) == sizeof(uint64))
 	{
@@ -314,6 +414,13 @@ namespace embree
 	  radixIteration(6*BITS,0,src,tmp,startID,endID,threadIndex,numThreads);
 	  radixIteration(7*BITS,1,tmp,src,startID,endID,threadIndex,numThreads);
 	}
+#else
+	if (sizeof(Key) == sizeof(uint32)) 
+	  radixIteration(src,tmp,startID,endID,threadIndex,numThreads,4);
+	else if (sizeof(Key) == sizeof(uint64)) 
+	  radixIteration(src,tmp,startID,endID,threadIndex,numThreads,8);
+#endif
+
       }
       
       static void task_radixsort (void* data, const size_t threadIndex, const size_t threadCount) { 
@@ -329,7 +436,11 @@ namespace embree
     
   private:
     __aligned(64) TyRadixCount radixCount;
+/* #if defined(__MIC__) */
+/*     __aligned(64) QuadTreeBarrier barrier; */
+/* #else */
     LinearBarrierActive barrier; // FIXME: should be able to speficy number of threads here
+/* #endif */
   };
 
   /*! shared state for parallel radix sort */
