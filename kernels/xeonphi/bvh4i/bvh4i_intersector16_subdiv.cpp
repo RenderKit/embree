@@ -176,11 +176,20 @@ namespace embree
       __aligned(64) float u_array[(patch.grid_size_64b_blocks+1)*16]; // for unaligned access
       __aligned(64) float v_array[(patch.grid_size_64b_blocks+1)*16];
 
+#if 0
       gridUVTessellator(patch.level,
 			patch.grid_u_res,
 			patch.grid_v_res,
 			u_array,
 			v_array);
+#else
+      gridUVTessellatorMIC(patch.level,
+			   patch.grid_u_res,
+			   patch.grid_v_res,
+			   u_array,
+			   v_array);
+#endif
+
 
       BVH4i::NodeRef subtree_root = 0;
       size_t localCounter = bvh->lazyMemUsed64BytesBlocks.add( patch.grid_size_64b_blocks );

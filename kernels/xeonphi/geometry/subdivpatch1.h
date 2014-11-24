@@ -224,8 +224,9 @@ namespace embree
       else
 	{
 	  const unsigned int real_grid_size = grid_u_res*grid_v_res;
-	  gridUVTessellator(level,grid_u_res,grid_v_res,u_array,v_array);
+	  gridUVTessellatorMIC(level,grid_u_res,grid_v_res,u_array,v_array);
 
+	  // FIXME: remove
 	  for (size_t i=real_grid_size;i<grid_size_64b_blocks*16;i++)
 	    {
 	      u_array[i] = 1.0f;
