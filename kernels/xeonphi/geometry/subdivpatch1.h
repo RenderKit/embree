@@ -187,7 +187,6 @@ namespace embree
 
     BBox3fa bounds() const
     {
-      //FIXME: process in 16-wide blocks
 #if FORCE_TESSELLATION_BOUNDS == 1
 
       __aligned(64) float u_array[(grid_size_64b_blocks+1)*16];
@@ -259,10 +258,10 @@ namespace embree
       BBox3fa b = patch.bounds();
       if (unlikely(isGregoryPatch()))
 	{
-	  b.extend( extract_f_m_Vec3fa(patch.v,0) );
-	  b.extend( extract_f_m_Vec3fa(patch.v,1) );
-	  b.extend( extract_f_m_Vec3fa(patch.v,2) );
-	  b.extend( extract_f_m_Vec3fa(patch.v,3) );
+	  b.extend( GregoryPatch::extract_f_m_Vec3fa(patch.v,0) );
+	  b.extend( GregoryPatch::extract_f_m_Vec3fa(patch.v,1) );
+	  b.extend( GregoryPatch::extract_f_m_Vec3fa(patch.v,2) );
+	  b.extend( GregoryPatch::extract_f_m_Vec3fa(patch.v,3) );
 	}
 #endif
 
