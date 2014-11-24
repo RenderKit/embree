@@ -108,10 +108,10 @@ namespace embree
 
     template<> BVH4SubdivBuilderFast<SubdivPatchDispl1>::BVH4SubdivBuilderFast (BVH4* bvh, Scene* scene, size_t listMode) 
       : geom(NULL), BVH4BuilderFastT<SubdivPatchDispl1>(bvh,scene,listMode,0,0,false,sizeof(SubdivPatchDispl1),1,1,true) { this->bvh->alloc2.init(4096,4096); }
-
-    BVH4SubdivQuadQuad4x4BuilderFast::BVH4SubdivQuadQuad4x4BuilderFast (BVH4* bvh, Scene* scene, size_t listMode) 
-      : BVH4BuilderFastT<PrimRef>(bvh,scene,listMode,0,0,false,sizeof(QuadQuad4x4),1,1,true) { this->bvh->alloc2.init(4096,4096); }
     
+    BVH4SubdivQuadQuad4x4BuilderFast::BVH4SubdivQuadQuad4x4BuilderFast (BVH4* bvh, Scene* scene, size_t listMode) 
+    : BVH4BuilderFastT<PrimRef>(bvh,scene,listMode,0,0,false,sizeof(QuadQuad4x4),1,1,true) { this->bvh->alloc2.init(4096,4096); }
+  
     BVH4TopLevelBuilderFastT::BVH4TopLevelBuilderFastT (LockStepTaskScheduler* scheduler, BVH4* bvh) 
       : prims_i(NULL), N(0), BVH4BuilderFast(scheduler,bvh,0,0,0,false,0,1,1) {}
 
@@ -296,10 +296,6 @@ namespace embree
 
    void BVH4SubdivQuadQuad4x4BuilderFast::build(size_t threadIndex, size_t threadCount)
     {
-#if 0
-      this->bvh->alloc2.reset();
-      BVH4BuilderFast::build(threadIndex,threadCount);
-#else
       /* initialize all half edge structures */
       new (&iter) Scene::Iterator<SubdivMesh>(this->scene);
       for (size_t i=0; i<iter.size(); i++)
@@ -310,16 +306,10 @@ namespace embree
       pstate.init(iter,size_t(1024));
 
       BVH4BuilderFast::build(threadIndex,threadCount);
-#endif
     }
 
     size_t BVH4SubdivQuadQuad4x4BuilderFast::number_of_primitives() 
     {
-#if 0
-      //return 100*this->scene->numSubdivPatches; // FIXME:
-      return 100000;
-
-#else
       size_t S = parallel_for_for_prefix_sum( pstate, iter, size_t(0), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const size_t base) -> size_t
       {
         size_t s = 0;
@@ -332,34 +322,10 @@ namespace embree
       }, [](size_t a, size_t b) { return a+b; });
 
       return S;
-#endif
     }
     
     void BVH4SubdivQuadQuad4x4BuilderFast::create_primitive_array_sequential(size_t threadIndex, size_t threadCount, PrimInfo& pinfo)
     {
-#if 0
-      size_t N = 0;
-      for (size_t i=0; i<this->scene->size(); i++) 
-      {
-	const Geometry* geom = this->scene->get(i);
-        if (geom == NULL || !geom->isEnabled()) continue;
-	if (geom->type != SUBDIV_MESH) continue;
-        SubdivMesh* mesh = (SubdivMesh*)geom;
-        mesh->initializeHalfEdgeStructures();
-        for (size_t f=0; f<mesh->size(); f++) {
-          if (!mesh->valid(f)) continue;
-          QuadQuad4x4AdaptiveSubdivision count((PrimRef*)NULL,bvh->alloc2,this->scene,mesh->getHalfEdge(f),mesh->getVertexPositionPtr(),mesh->id,f);
-          std::vector<PrimRef> lprims(count.size());
-          QuadQuad4x4AdaptiveSubdivision (&lprims[0],bvh->alloc2,this->scene,mesh->getHalfEdge(f),mesh->getVertexPositionPtr(),mesh->id,f);
-          for (size_t i=0; i<lprims.size(); i++) {
-            assert(N<numPrimitives);
-            prims[N++] = lprims[i];
-            pinfo.add(lprims[i].bounds());
-          }
-        }
-      }
-#else
-
       parallel_for_for_prefix_sum( pstate, iter, size_t(0), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, size_t base) -> size_t
       {
         size_t s = 0;
@@ -373,8 +339,6 @@ namespace embree
 
       for (size_t i=0; i<numPrimitives; i++) // FIXME: parallelize
         pinfo.add(prims[i].bounds());
-
-#endif
     }
     
     void BVH4SubdivQuadQuad4x4BuilderFast::create_primitive_array_parallel  (size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, PrimInfo& pinfo) {
