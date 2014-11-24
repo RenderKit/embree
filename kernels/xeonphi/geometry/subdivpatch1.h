@@ -43,7 +43,7 @@ namespace embree
     return BBox3fa( b_min, b_max );
   }
 
-  struct SubdivPatch1
+  struct __aligned(64) SubdivPatch1
   {
   public:
     enum {
@@ -267,6 +267,16 @@ namespace embree
 #endif
 
       return b;
+    }
+
+    __forceinline void store(void *mem)
+    {
+      const mic_f *const src = (mic_f*)this;
+      assert(sizeof(SubdivPatch1) % 64 == 0);
+      mic_f *const dst = (mic_f*)mem;
+#pragma unroll
+      for (size_t i=0;i<sizeof(SubdivPatch1) / 64;i++)
+	store16f_ngo(&dst[i],src[i]);
     }
 
   private:

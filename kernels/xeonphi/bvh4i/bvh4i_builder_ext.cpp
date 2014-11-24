@@ -1014,14 +1014,20 @@ PRINT(CORRECT_numPrims);
         for (unsigned int i=offset; i<N && currentID < endID; i++, currentID++)	 
 	  { 		
 	    assert( currentID < numFaces );
-	    acc[currentID] = SubdivPatch1(subdiv_mesh->getHalfEdge(i),
-					  subdiv_mesh->getVertexPositionPtr(),
-					  g,
-					  i);
+
+	    prefetch<PFHINT_L2EX>(&prims[currentID]);
+	    SubdivPatch1 tmp = SubdivPatch1(subdiv_mesh->getHalfEdge(i),
+					    subdiv_mesh->getVertexPositionPtr(),
+					    g,
+					    i);
 	    	    
-	    const BBox3fa bounds = acc[currentID].bounds();
+	    const BBox3fa bounds = tmp.bounds();
 	    
-	    local_lazyMem64BytesBlocks += acc[currentID].grid_size_64b_blocks;
+	    local_lazyMem64BytesBlocks += tmp.grid_size_64b_blocks;
+
+	    tmp.store(&acc[currentID]);
+
+	    prefetch<PFHINT_L1EX>(&prims[currentID]);
 
 	    const mic_f bmin = broadcast4to16f(&bounds.lower); 
 	    const mic_f bmax = broadcast4to16f(&bounds.upper);
@@ -1112,7 +1118,7 @@ PRINT(CORRECT_numPrims);
 	// if (bvh->root != BVH4i::invalidNode)
 	//   processLeaves(bvh->root);
 
-	const size_t new_lazyMem64BytesBlocks = global_lazyMem64BytesBlocks * 1.1f; 
+	const size_t new_lazyMem64BytesBlocks = global_lazyMem64BytesBlocks * 1.5f; 
 
 	if (new_lazyMem64BytesBlocks > bvh->lazyMemAllocated64BytesBlocks)
 	  {
