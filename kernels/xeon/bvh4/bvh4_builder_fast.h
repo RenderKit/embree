@@ -158,7 +158,7 @@ namespace embree
     
     public:
       LockStepTaskScheduler* scheduler;
-      std::auto_ptr<GlobalState> state;
+      std::unique_ptr<GlobalState> state;
 
       BVH4* bvh;                               //!< Output BVH
       size_t listMode;
