@@ -28,7 +28,7 @@
 namespace embree
 {
 
-  __forceinline BBox3fa getBBox3fa(const mic3f &v, const mic_m &m_valid)
+  __forceinline BBox3fa getBBox3fa(const mic3f &v, const mic_m m_valid = 0xffff)
   {
     const mic_f x_min = select(m_valid,v.x,mic_f::inf());
     const mic_f y_min = select(m_valid,v.y,mic_f::inf());
@@ -43,7 +43,7 @@ namespace embree
     return BBox3fa( b_min, b_max );
   }
 
-  struct SubdivPatch1
+  struct __aligned(64) SubdivPatch1
   {
   public:
     enum {
@@ -187,7 +187,6 @@ namespace embree
 
     BBox3fa bounds() const
     {
-      //FIXME: process in 16-wide blocks
 #if FORCE_TESSELLATION_BOUNDS == 1
 
       __aligned(64) float u_array[(grid_size_64b_blocks+1)*16];
@@ -196,17 +195,16 @@ namespace embree
       const unsigned int real_grid_size = grid_u_res*grid_v_res;
       gridUVTessellator(level,grid_u_res,grid_v_res,u_array,v_array);
 
-      DBG_PRINT(real_grid_size);
-
       for (size_t i=real_grid_size;i<grid_size_64b_blocks*16;i++)
 	{
 	  u_array[i] = 0.0f;
 	  v_array[i] = 0.0f;
 	}
 
-      BBox3fa b ( empty );
 
 #if 0
+      BBox3fa b ( empty );
+
       if (isRegular())
 	for (size_t i=0;i<real_grid_size;i++)
 	  {
@@ -225,18 +223,25 @@ namespace embree
 	  for (size_t i=0;i<real_grid_size;i++)
 	    {
 	      const Vec3fa vtx = gpatch.eval( u_array[i], v_array[i] );
-	      DBG_PRINT( vtx );
 	      b.extend( vtx );
 	    }
 	}
+
+      b.lower.a = 0.0f;
+      b.upper.a = 0.0f;
+
 #else
+      BBox3fa b ( empty );
+      
       assert( grid_size_64b_blocks >= 1 );
       for (size_t i=0;i<grid_size_64b_blocks;i++)
 	{
 	  const mic3f vtx = eval16( load16f(&u_array[i*16]), load16f(&v_array[i*16]) );
-	  b.extend( getBBox3fa(vtx,0xffff) );
+	  b.extend( getBBox3fa(vtx) );
 	}
 
+      b.lower.a = 0.0f;
+      b.upper.a = 0.0f;
 #endif
      
 #if DEBUG
@@ -253,14 +258,24 @@ namespace embree
       BBox3fa b = patch.bounds();
       if (unlikely(isGregoryPatch()))
 	{
-	  b.extend( extract_f_m_Vec3fa(patch.v,0) );
-	  b.extend( extract_f_m_Vec3fa(patch.v,1) );
-	  b.extend( extract_f_m_Vec3fa(patch.v,2) );
-	  b.extend( extract_f_m_Vec3fa(patch.v,3) );
+	  b.extend( GregoryPatch::extract_f_m_Vec3fa(patch.v,0) );
+	  b.extend( GregoryPatch::extract_f_m_Vec3fa(patch.v,1) );
+	  b.extend( GregoryPatch::extract_f_m_Vec3fa(patch.v,2) );
+	  b.extend( GregoryPatch::extract_f_m_Vec3fa(patch.v,3) );
 	}
 #endif
 
       return b;
+    }
+
+    __forceinline void store(void *mem)
+    {
+      const mic_f *const src = (mic_f*)this;
+      assert(sizeof(SubdivPatch1) % 64 == 0);
+      mic_f *const dst = (mic_f*)mem;
+#pragma unroll
+      for (size_t i=0;i<sizeof(SubdivPatch1) / 64;i++)
+	store16f_ngo(&dst[i],src[i]);
     }
 
   private:
