@@ -87,11 +87,14 @@ typedef void (*RTCFilterFunc16)(const void* valid, /*!< pointer to valid mask */
 typedef void (*RTCDisplacementFunc)(void* ptr,           /*!< pointer to user data of geometry */
                                     unsigned geomID,     /*!< ID of geometry to displace */
                                     unsigned primID,     /*!< ID of primitive of geometry to displace */
-                                    float* u,            /*!< U coordinates (source) */
-                                    float* v,            /*!< V coordinates (source) */
-                                    float* x,            /*!< x coordinates of points to displace (source and target) */
-                                    float* y,            /*!< y coordinates of points to displace (source and target) */
-                                    float* z,            /*!< z coordinates of points to displace (source and target) */
+                                    const float* u,      /*!< u coordinates (source) */
+                                    const float* v,      /*!< v coordinates (source) */
+                                    const float* nx,     /*!< x coordinates of normal at point to displace (source) */
+                                    const float* ny,     /*!< y coordinates of normal at point to displace (source) */
+                                    const float* nz,     /*!< z coordinates of normal at point to displace (source) */
+                                    float* px,           /*!< x coordinates of points to displace (source and target) */
+                                    float* py,           /*!< y coordinates of points to displace (source and target) */
+                                    float* pz,           /*!< z coordinates of points to displace (source and target) */
                                     size_t N             /*!< number of points to displace */ );
 
 /*! \brief Creates a new scene instance. 

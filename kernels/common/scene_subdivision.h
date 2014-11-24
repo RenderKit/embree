@@ -2015,8 +2015,7 @@ namespace embree
 
 
 
-   __forceinline Vec3fa normal( const float uu,
-				const float vv) 
+   __forceinline Vec3fa normal( const float uu, const float vv) const
    {
      return normal(v,f,uu,vv);
    }

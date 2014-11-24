@@ -359,7 +359,7 @@ namespace embree
     __forceinline QuadQuad4x4(unsigned geomID, unsigned primID)
       : geomID(geomID), primID(primID) {}
     
-    void displace(Scene* scene)
+    void displace(Scene* scene, const GregoryPatch& patch, const Vec2f luv[9][9])
     {
       SubdivMesh* mesh = (SubdivMesh*) scene->get(geomID);
       if (mesh->displFunc == NULL) return;
@@ -367,6 +367,7 @@ namespace embree
       /* calculate uv coordinates */
       __aligned(64) float qu[9][9], qv[9][9];
       __aligned(64) float qx[9][9], qy[9][9], qz[9][9];
+      __aligned(64) float nx[9][9], ny[9][9], nz[9][9];
       for (size_t y=0; y<9; y++) 
       {
         for (size_t x=0; x<9; x++) 
@@ -376,11 +377,19 @@ namespace embree
           qx[y][x] = p[y][x].x;
           qy[y][x] = p[y][x].y;
           qz[y][x] = p[y][x].z;
+          const Vec3fa N = patch.normal(luv[y][x].x, luv[y][x].y);
+          nx[y][x] = N.x;
+          ny[y][x] = N.y;
+          nz[y][x] = N.z;
         }
       }
       
       /* call displacement shader */
-      mesh->displFunc(mesh->userPtr,geomID,primID,(float*)qu,(float*)qv,(float*)qx,(float*)qy,(float*)qz,9*9);
+      mesh->displFunc(mesh->userPtr,geomID,primID,
+                      (float*)qu,(float*)qv,
+                      (float*)nx,(float*)ny,(float*)nz,
+                      (float*)qx,(float*)qy,(float*)qz,
+                      9*9);
 
       /* add displacements */
       for (size_t y=0; y<9; y++) {
@@ -423,8 +432,6 @@ namespace embree
 
     const BBox3fa build(Scene* scene)
     {
-      displace(scene); // FIXME: stick u/v
-
 #if QUADQUAD4X4_COMPRESS_BOUNDS
       n.set(fullBounds());
 #endif
@@ -538,11 +545,13 @@ namespace embree
                         const float u0, const float u1,
                         const float v0, const float v1)
     {
+      Vec2f luv[9][9];
+
       for (int y=0; y<=8; y++) {
         const float fy = pattern_y(y0+y);
         for (int x=0; x<=8; x++) {
           const float fx = pattern_x(x0+x);
-          uv[y][x] = Vec2f(fx,fy);
+          luv[y][x] = Vec2f(fx,fy);
         }
       }
 
@@ -551,7 +560,7 @@ namespace embree
         const float fy = pattern_y(y0);
         for (int x=0; x<=8; x++) {
           const float fx = pattern0(stitch(x0+x,pattern_x.size(),pattern0.size()));
-          uv[0][x] = Vec2f(fx,fy);
+          luv[0][x] = Vec2f(fx,fy);
         }
       }
 
@@ -560,7 +569,7 @@ namespace embree
           const float fy = pattern_y(y0+y);
           for (int x=0; x<=8; x++) {
             const float fx = pattern2(stitch(x0+x,pattern_x.size(),pattern2.size()));
-            uv[y][x] = Vec2f(fx,fy);
+            luv[y][x] = Vec2f(fx,fy);
           }
         }
       }
@@ -569,7 +578,7 @@ namespace embree
         const float fx = pattern_x(x0);
         for (int y=0; y<=8; y++) {
           const float fy = pattern3(stitch(y0+y,pattern_y.size(),pattern3.size()));
-          uv[y][0] = Vec2f(fx,fy);
+          luv[y][0] = Vec2f(fx,fy);
         }
       }
 
@@ -578,7 +587,7 @@ namespace embree
           const float fx = pattern_x(x0+x);
           for (int y=0; y<=8; y++) {
             const float fy = pattern1(stitch(y0+y,pattern_y.size(),pattern1.size()));
-            uv[y][x] = Vec2f(fx,fy);
+            luv[y][x] = Vec2f(fx,fy);
           }
         }
       }
@@ -586,16 +595,17 @@ namespace embree
 
       for (int y=0; y<=8; y++) {
         for (int x=0; x<=8; x++) {
-          p[y][x] = patch.eval(uv[y][x].x,uv[y][x].y);
+          p[y][x] = patch.eval(luv[y][x].x,luv[y][x].y);
         }
       }
 
       for (int y=0; y<=8; y++) {
         for (int x=0; x<=8; x++) {
-          uv[y][x] = (Vec2f(one)-uv[y][x]) * Vec2f(u0,v0) + uv[y][x]*Vec2f(u1,v1);
+          uv[y][x] = (Vec2f(one)-luv[y][x]) * Vec2f(u0,v0) + luv[y][x]*Vec2f(u1,v1);
         }
       }
 
+      displace(scene,patch,luv);
       return build(scene);
     }
 
