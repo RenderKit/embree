@@ -19,6 +19,7 @@
 #include "geometry/subdivpatch1.h"
 
 #define TIMER(x) x
+#define ENABLE_PER_THREAD_TESSELLATION_CACHE
 
 namespace embree
 {
@@ -32,6 +33,101 @@ namespace embree
   namespace isa
   {
 
+    AtomicCounter thread_cache_allocs = 0;
+
+    class __aligned(64) TessellationCache {
+
+    private:
+      static const size_t DEFAULT_64B_BLOCKS = 4096;
+      mic_i prim_tag;
+      mic_i bvh4i_ref;
+      mic_f *lazymem;
+      size_t allocated64BytesBlocks;
+      size_t blockCounter;
+
+    public:
+
+      __forceinline void clear()
+      {
+	blockCounter = 0;	  
+	prim_tag  = -1;
+	bvh4i_ref = -1;	
+      }
+
+      __forceinline mic_f *getPtr()
+      {
+	return lazymem;
+      }
+
+      TessellationCache() {}
+
+      __forceinline void init()
+      {
+	clear();
+	allocated64BytesBlocks = DEFAULT_64B_BLOCKS;
+	lazymem = (mic_f*)_mm_malloc(sizeof(mic_f) * allocated64BytesBlocks,64);
+	assert((size_t)lazymem % 64 == 0);
+      }
+
+
+      __forceinline BVH4i::NodeRef lookup(const unsigned int primID)
+      {
+#if 0
+	PING;
+	DBG_PRINT( primID );
+	DBG_PRINT( prim_tag );
+	DBG_PRINT( bvh4i_ref );
+#endif
+	mic_m m_in_cache = prim_tag == primID;
+	//DBG_PRINT( m_in_cache );
+	unsigned int index = bitscan(toInt(m_in_cache));
+	if (likely(m_in_cache))
+	  {
+	    assert(countbits(m_in_cache) == 1);
+	    const BVH4i::NodeRef ref = bvh4i_ref[index];
+	    /* move most recently accessed entry to the beginning of the array */
+	    const mic_m m_rest = ~m_in_cache;
+	    const mic_i rest_tag = prim_tag;
+	    const mic_i rest_ref = bvh4i_ref;
+	    compactustore16i_low(m_rest,&prim_tag[1],rest_tag);
+	    compactustore16i_low(m_rest,&bvh4i_ref[1],rest_ref);
+	    prim_tag[0] = primID;
+	    bvh4i_ref[0] = ref;
+
+#if 0
+	    DBG_PRINT( "new" );
+	    DBG_PRINT( prim_tag );
+	    DBG_PRINT( bvh4i_ref );
+#endif
+	    return ref;
+	  }
+	return BVH4i::invalidNode;
+      }
+
+      __forceinline unsigned int insert(const unsigned int primID, const unsigned int neededBlocks)
+      {
+	if (blockCounter + neededBlocks >= allocated64BytesBlocks)
+	  clear();
+
+	assert(blockCounter + neededBlocks < allocated64BytesBlocks);
+
+	const unsigned int currentIndex = blockCounter;
+	blockCounter += neededBlocks;
+	BVH4i::NodeRef curNode;
+	createBVH4iNode<2>(curNode,currentIndex);
+
+	prim_tag  = align_shift_right<15>(prim_tag,prim_tag);
+	bvh4i_ref = align_shift_right<15>(bvh4i_ref,bvh4i_ref);
+	
+	prim_tag[0]  = primID;
+	bvh4i_ref[0] = curNode;
+
+	return currentIndex;
+      }
+
+    };
+
+
     static __aligned(64) RegularGridLookUpTables gridLookUpTables;
 
     __forceinline void createSubPatchBVH4iLeaf(BVH4i::NodeRef &ref,
@@ -40,8 +136,9 @@ namespace embree
       *(volatile unsigned int*)&ref = (patchIndex << BVH4i::encodingBits) | BVH4i::leaf_mask;
     }
 
+
     BBox3fa createSubTree(BVH4i::NodeRef &curNode,
-			  BVH4i *bvh,
+			  mic_f *const lazymem,
 			  const SubdivPatch1 &patch,
 			  const float *const grid_u_array,
 			  const float *const grid_v_array,
@@ -49,7 +146,7 @@ namespace embree
 			  const unsigned int u_end,
 			  const unsigned int v_start,
 			  const unsigned int v_end,
-			  size_t &localCounter)
+			  unsigned int &localCounter)
     {
       const unsigned int u_size = u_end-u_start+1;
       const unsigned int v_size = v_end-v_start+1;
@@ -65,8 +162,8 @@ namespace embree
 	  const unsigned int currentIndex = localCounter;
 	  localCounter += 2;
 
-	  mic_f &leaf_u_array = bvh->lazymem[currentIndex+0];
-	  mic_f &leaf_v_array = bvh->lazymem[currentIndex+1];
+	  mic_f &leaf_u_array = lazymem[currentIndex+0];
+	  mic_f &leaf_v_array = lazymem[currentIndex+1];
 
 	  leaf_u_array = mic_f::inf();
 	  leaf_v_array = mic_f::inf();
@@ -117,7 +214,7 @@ namespace embree
 
       createBVH4iNode<2>(curNode,currentIndex);
 
-      BVH4i::Node &node = *(BVH4i::Node*)curNode.node((BVH4i::Node*)bvh->lazymem);
+      BVH4i::Node &node = *(BVH4i::Node*)curNode.node((BVH4i::Node*)lazymem);
 
       node.setInvalid();
 
@@ -138,7 +235,7 @@ namespace embree
       for (unsigned int i=0;i<4;i++)
 	{
 	  BBox3fa bounds_subtree = createSubTree( node.child(i), 
-						  bvh, 
+						  lazymem, 
 						  patch, 
 						  grid_u_array,
 						  grid_v_array,
@@ -176,15 +273,22 @@ namespace embree
       __aligned(64) float u_array[(patch.grid_size_64b_blocks+1)*16]; // for unaligned access
       __aligned(64) float v_array[(patch.grid_size_64b_blocks+1)*16];
 
-      gridUVTessellator(patch.level,
-			patch.grid_u_res,
-			patch.grid_v_res,
-			u_array,
-			v_array);
+      // gridUVTessellator(patch.level,
+      // 			patch.grid_u_res,
+      // 			patch.grid_v_res,
+      // 			u_array,
+      // 			v_array);
+
+      gridUVTessellatorMIC(patch.level,
+			   patch.grid_u_res,
+			   patch.grid_v_res,
+			   u_array,
+			   v_array);
+
 
       BVH4i::NodeRef subtree_root = 0;
-      size_t localCounter = bvh->lazyMemUsed64BytesBlocks.add( patch.grid_size_64b_blocks );
-      const size_t oldCounter = localCounter;
+      unsigned int localCounter = bvh->lazyMemUsed64BytesBlocks.add( patch.grid_size_64b_blocks );
+      const unsigned int oldCounter = localCounter;
       if (localCounter + patch.grid_size_64b_blocks > bvh->lazyMemAllocated64BytesBlocks) 
 	{
 	  DBG_PRINT(localCounter);
@@ -193,7 +297,7 @@ namespace embree
 	}
 
       BBox3fa bounds = createSubTree( subtree_root,
-				      bvh,
+				      bvh->lazymem,
 				      patch,
 				      u_array,
 				      v_array,
@@ -226,6 +330,43 @@ namespace embree
 
       /* release lock */
       atomic_add((volatile atomic_t*)&patch.under_construction,-1);
+    }
+
+
+    void initLocalLazySubdivTree(const SubdivPatch1 &patch,
+				 unsigned int currentIndex,
+				 mic_f *lazymem)
+    {
+
+      TIMER(double msec = 0.0);
+      TIMER(msec = getSeconds());
+
+      assert( patch.grid_size_64b_blocks > 1 );
+      __aligned(64) float u_array[(patch.grid_size_64b_blocks+1)*16]; // for unaligned access
+      __aligned(64) float v_array[(patch.grid_size_64b_blocks+1)*16];
+
+
+      gridUVTessellatorMIC(patch.level,
+			   patch.grid_u_res,
+			   patch.grid_v_res,
+			   u_array,
+			   v_array);
+
+
+      BVH4i::NodeRef subtree_root = 0;
+
+      BBox3fa bounds = createSubTree( subtree_root,
+				      lazymem,
+				      patch,
+				      u_array,
+				      v_array,
+				      0,
+				      patch.grid_u_res-1,
+				      0,
+				      patch.grid_v_res-1,
+				      currentIndex);
+
+      TIMER(msec = getSeconds()-msec);    
     }
 
 
@@ -309,8 +450,13 @@ namespace embree
       __aligned(64) float u_array[(subdiv_patch.grid_size_64b_blocks+1)]; // for unaligned access
       __aligned(64) float v_array[(subdiv_patch.grid_size_64b_blocks+1)];
 
-      gridUVTessellator(edge_levels,grid_u_res,grid_v_res,u_array,v_array);
+      //gridUVTessellator(edge_levels,grid_u_res,grid_v_res,u_array,v_array);
+      gridUVTessellator16f(edge_levels,grid_u_res,grid_v_res,u_array,v_array);
 
+      /* if necessary stich different tessellation levels in u/v grid */
+      if (unlikely(subdiv_patch.needsStiching()))
+	stichUVGrid(edge_levels,grid_u_res,grid_v_res,u_array,v_array);
+	
       bool hit = false;
 
       if (likely(subdiv_patch.grid_size_64b_blocks==1))
@@ -460,6 +606,9 @@ namespace embree
     // ============================================================================================
     // ============================================================================================
 
+    __thread TessellationCache *thread_cache = NULL;
+
+
     template<typename LeafIntersector, bool ENABLE_COMPRESSED_BVH4I_NODES>
     void BVH4iIntersector16Subdiv<LeafIntersector,ENABLE_COMPRESSED_BVH4I_NODES>::intersect(mic_i* valid_i, BVH4i* bvh, Ray16& ray16)
     {
@@ -467,6 +616,25 @@ namespace embree
       __aligned(64) float   stack_dist[3*BVH4i::maxDepth+1];
       __aligned(64) NodeRef stack_node[3*BVH4i::maxDepth+1];
 
+#if defined(ENABLE_PER_THREAD_TESSELLATION_CACHE)
+      TessellationCache *local_cache = NULL;
+
+      if (!thread_cache)
+	{
+	  thread_cache_allocs++;	  
+	  thread_cache = (TessellationCache *)_mm_malloc(sizeof(TessellationCache),64);
+	  thread_cache->init();
+	  
+	  mtx.lock();
+	  DBG_PRINT("Alloc");
+	  DBG_PRINT(thread_cache_allocs);
+	  DBG_PRINT(thread_cache);
+	  DBG_PRINT((size_t)thread_cache % 64);
+	  mtx.unlock();
+	}
+
+      local_cache = thread_cache;
+#endif
 
       /* setup */
       const mic_m m_valid    = *(mic_i*)valid_i != mic_i(0);
@@ -478,7 +646,6 @@ namespace embree
       ray16.primID = select(m_valid,mic_i(-1),ray16.primID);
       ray16.geomID = select(m_valid,mic_i(-1),ray16.geomID);
 
-      mic_f     * const __restrict__ lazymem     = bvh->lazymem;
       const Node      * __restrict__ const nodes = (Node     *)bvh->nodePtr();
       Triangle1 * __restrict__ const accel       = (Triangle1*)bvh->triPtr();
 
@@ -524,7 +691,199 @@ namespace embree
 
 	      //////////////////////////////////////////////////////////////////////////////////////////////////
 
-	      const unsigned int subdiv_level = 2; 
+	      const unsigned int patchIndex = curNode.offsetIndex();
+	      SubdivPatch1& subdiv_patch = ((SubdivPatch1*)accel)[patchIndex];
+
+	      /* fast patch for grid with <= 16 points */
+	      if (likely(subdiv_patch.grid_size_64b_blocks == 1))
+		intersectEvalGrid1(rayIndex,
+				   dir_xyz,
+				   org_xyz,
+				   ray16,
+				   subdiv_patch,
+				   patchIndex);
+	      else
+		{
+		  /* traverse sub-patch bvh4i for grids with > 16 points */
+
+#if !defined(ENABLE_PER_THREAD_TESSELLATION_CACHE)
+		  if (unlikely(subdiv_patch.bvh4i_subtree_root == BVH4i::invalidNode))
+		    {
+		      /* build sub-patch bvh4i */
+		      initLazySubdivTree(subdiv_patch,bvh);
+		    }
+
+		  assert(subdiv_patch.bvh4i_subtree_root != BVH4i::invalidNode);
+		  const BVH4i::NodeRef subtree_root = subdiv_patch.bvh4i_subtree_root;
+		  mic_f     * const __restrict__ lazymem     = bvh->lazymem;
+#else
+		  mic_f     * const __restrict__ lazymem     = local_cache->getPtr();
+
+		  //DBG_PRINT( patchIndex );
+		  BVH4i::NodeRef subtree_root = local_cache->lookup(patchIndex);
+		  //DBG_PRINT( subtree_root );
+
+		  if (subtree_root == BVH4i::invalidNode)
+		    {
+		      //DBG_PRINT("NOT IN CACHE");
+		      unsigned int currentIndex = local_cache->insert(patchIndex,subdiv_patch.grid_size_64b_blocks);
+		      //DBG_PRINT( currentIndex );
+		      initLocalLazySubdivTree(subdiv_patch,currentIndex,lazymem);		      
+		      subtree_root = local_cache->lookup(patchIndex);
+		      //DBG_PRINT( subtree_root );
+		      assert( subtree_root != BVH4i::invalidNode);
+
+		    }
+		    
+#endif
+		  // -------------------------------------
+		  // -------------------------------------
+		  // -------------------------------------
+
+		  __aligned(64) float   sub_stack_dist[64];
+		  __aligned(64) NodeRef sub_stack_node[64];
+		  sub_stack_node[0] = BVH4i::invalidNode;
+		  sub_stack_node[1] = subtree_root;
+		  store16f(sub_stack_dist,inf);
+		  size_t sub_sindex = 2;
+
+		  while (1)
+		    {
+		      curNode = sub_stack_node[sub_sindex-1];
+		      sub_sindex--;
+
+		      traverse_single_intersect<ENABLE_COMPRESSED_BVH4I_NODES>(curNode,
+									       sub_sindex,
+									       rdir_xyz,
+									       org_rdir_xyz,
+									       min_dist_xyz,
+									       max_dist_xyz,
+									       sub_stack_node,
+									       sub_stack_dist,
+									       (BVH4i::Node*)lazymem,
+									       leaf_mask);
+		 		   
+
+		      /* return if stack is empty */
+		      if (unlikely(curNode == BVH4i::invalidNode)) break;
+
+		      const unsigned int uvIndex = curNode.offsetIndex();
+		      prefetch<PFHINT_NT>(&lazymem[uvIndex + 0]);
+		      prefetch<PFHINT_NT>(&lazymem[uvIndex + 1]);
+
+		  
+		      const mic_m m_active = 0x777;
+		      const mic_f &uu = lazymem[uvIndex + 0];
+		      const mic_f &vv = lazymem[uvIndex + 1];		  
+		      const mic3f vtx = subdiv_patch.eval16(uu,vv);
+		  
+		      intersect1_quad16(rayIndex, 
+					dir_xyz,
+					org_xyz,
+					ray16,
+					vtx,
+					uu,
+					vv,
+					4,
+					m_active,
+					patchIndex);
+		    }
+		}
+	      // -------------------------------------
+	      // -------------------------------------
+	      // -------------------------------------
+
+	      compactStack(stack_node,stack_dist,sindex,mic_f(ray16.tfar[rayIndex]));
+
+	      // ------------------------
+	    }
+	}
+
+
+      /* update primID/geomID and compute normals */
+#if 1
+      mic_m m_hit = (ray16.primID != -1) & m_valid;
+      rayIndex = -1;
+      while((rayIndex = bitscan64(rayIndex,toInt(m_hit))) != BITSCAN_NO_BIT_SET_64)	    
+        {
+	  const SubdivPatch1& subdiv_patch = ((SubdivPatch1*)accel)[ray16.primID[rayIndex]];
+	  ray16.primID[rayIndex] = subdiv_patch.primID;
+	  ray16.geomID[rayIndex] = subdiv_patch.geomID;
+	  ray16.u[rayIndex]      = (1.0f-ray16.u[rayIndex]) * subdiv_patch.u_range.x + ray16.u[rayIndex] * subdiv_patch.u_range.y;
+	  ray16.v[rayIndex]      = (1.0f-ray16.v[rayIndex]) * subdiv_patch.v_range.x + ray16.v[rayIndex] * subdiv_patch.v_range.y;
+	  const Vec3fa normal    = subdiv_patch.normal(ray16.u[rayIndex],ray16.v[rayIndex]);
+	  ray16.Ng.x[rayIndex]   = normal.x;
+	  ray16.Ng.y[rayIndex]   = normal.y;
+	  ray16.Ng.z[rayIndex]   = normal.z;
+
+	}
+#endif
+
+    }
+
+    template<typename LeafIntersector,bool ENABLE_COMPRESSED_BVH4I_NODES>    
+    void BVH4iIntersector16Subdiv<LeafIntersector,ENABLE_COMPRESSED_BVH4I_NODES>::occluded(mic_i* valid_i, BVH4i* bvh, Ray16& ray16)
+    {
+      /* near and node stack */
+      __aligned(64) NodeRef stack_node[3*BVH4i::maxDepth+1];
+
+      /* setup */
+      const mic_m m_valid = *(mic_i*)valid_i != mic_i(0);
+      const mic3f rdir16  = rcp_safe(ray16.dir);
+      mic_m terminated    = !m_valid;
+      const mic_f inf     = mic_f(pos_inf);
+      const mic_f zero    = mic_f::zero();
+
+      mic_f     * const __restrict__ lazymem     = bvh->lazymem;
+      const Node      * __restrict__ nodes = (Node     *)bvh->nodePtr();
+      const Triangle1 * __restrict__ accel = (Triangle1*)bvh->triPtr();
+
+      stack_node[0] = BVH4i::invalidNode;
+      ray16.primID = select(m_valid,mic_i(-1),ray16.primID);
+      ray16.geomID = select(m_valid,mic_i(-1),ray16.geomID);
+
+      long rayIndex = -1;
+      while((rayIndex = bitscan64(rayIndex,toInt(m_valid))) != BITSCAN_NO_BIT_SET_64)	    
+        {
+	  stack_node[1] = bvh->root;
+	  size_t sindex = 2;
+
+	  const mic_f org_xyz      = loadAOS4to16f(rayIndex,ray16.org.x,ray16.org.y,ray16.org.z);
+	  const mic_f dir_xyz      = loadAOS4to16f(rayIndex,ray16.dir.x,ray16.dir.y,ray16.dir.z);
+	  const mic_f rdir_xyz     = loadAOS4to16f(rayIndex,rdir16.x,rdir16.y,rdir16.z);
+	  const mic_f org_rdir_xyz = org_xyz * rdir_xyz;
+	  const mic_f min_dist_xyz = broadcast1to16f(&ray16.tnear[rayIndex]);
+	  const mic_f max_dist_xyz = broadcast1to16f(&ray16.tfar[rayIndex]);
+	  const mic_i v_invalidNode(BVH4i::invalidNode);
+	  const unsigned int leaf_mask = BVH4I_LEAF_MASK;
+
+	  while (1)
+	    {
+	      NodeRef curNode = stack_node[sindex-1];
+	      sindex--;
+
+	      traverse_single_occluded< ENABLE_COMPRESSED_BVH4I_NODES >(curNode,
+								       sindex,
+								       rdir_xyz,
+								       org_rdir_xyz,
+								       min_dist_xyz,
+								       max_dist_xyz,
+								       stack_node,
+								       nodes,
+								       leaf_mask);
+
+	      /* return if stack is empty */
+	      if (unlikely(curNode == BVH4i::invalidNode)) break;
+
+	      STAT3(shadow.trav_leaves,1,1,1);
+	      STAT3(shadow.trav_prims,4,4,4);
+
+	      /* intersect one ray against four triangles */
+
+	      //////////////////////////////////////////////////////////////////////////////////////////////////
+
+	      
+
 	      const unsigned int patchIndex = curNode.offsetIndex();
 	      SubdivPatch1& subdiv_patch = ((SubdivPatch1*)accel)[patchIndex];
 
@@ -580,11 +939,12 @@ namespace embree
 		      if (unlikely(curNode == BVH4i::invalidNode)) break;
 
 		      const unsigned int uvIndex = curNode.offsetIndex();
-		      const mic_f uu = lazymem[uvIndex + 0];
-		      const mic_f vv = lazymem[uvIndex + 1];
+		      prefetch<PFHINT_NT>(&lazymem[uvIndex + 0]);
+		      prefetch<PFHINT_NT>(&lazymem[uvIndex + 1]);
 		  
 		      const mic_m m_active = 0x777;
-		  
+		      const mic_f &uu = lazymem[uvIndex + 0];
+		      const mic_f &vv = lazymem[uvIndex + 1];		  
 		      const mic3f vtx = subdiv_patch.eval16(uu,vv);
 		  
 		      intersect1_quad16(rayIndex, 
@@ -599,111 +959,8 @@ namespace embree
 					patchIndex);
 		    }
 		}
-	      // -------------------------------------
-	      // -------------------------------------
-	      // -------------------------------------
 
-	      compactStack(stack_node,stack_dist,sindex,mic_f(ray16.tfar[rayIndex]));
-
-	      // ------------------------
-	    }
-	}
-
-#if 0
-      DBG_PRINT( ray16.primID );
-      DBG_PRINT( ray16.geomID );
-      DBG_PRINT( ray16.u );
-      DBG_PRINT( ray16.v );
-      DBG_PRINT( ray16.Ng.x );
-      DBG_PRINT( ray16.Ng.y );
-      DBG_PRINT( ray16.Ng.z );
-      exit(0);
-#endif
-
-      /* update primID/geomID and compute normals */
-#if 1
-      // FIXME: test all rays with the same primID
-      mic_m m_hit = (ray16.primID != -1) & m_valid;
-      rayIndex = -1;
-      while((rayIndex = bitscan64(rayIndex,toInt(m_hit))) != BITSCAN_NO_BIT_SET_64)	    
-        {
-	  const SubdivPatch1& subdiv_patch = ((SubdivPatch1*)accel)[ray16.primID[rayIndex]];
-	  ray16.primID[rayIndex] = subdiv_patch.primID;
-	  ray16.geomID[rayIndex] = subdiv_patch.geomID;
-	  ray16.u[rayIndex]      = (1.0f-ray16.u[rayIndex]) * subdiv_patch.u_range.x + ray16.u[rayIndex] * subdiv_patch.u_range.y;
-	  ray16.v[rayIndex]      = (1.0f-ray16.v[rayIndex]) * subdiv_patch.v_range.x + ray16.v[rayIndex] * subdiv_patch.v_range.y;
-	  const Vec3fa normal    = subdiv_patch.normal(ray16.u[rayIndex],ray16.v[rayIndex]);
-	  ray16.Ng.x[rayIndex]   = normal.x;
-	  ray16.Ng.y[rayIndex]   = normal.y;
-	  ray16.Ng.z[rayIndex]   = normal.z;
-
-	}
-#endif
-
-    }
-
-    template<typename LeafIntersector,bool ENABLE_COMPRESSED_BVH4I_NODES>    
-    void BVH4iIntersector16Subdiv<LeafIntersector,ENABLE_COMPRESSED_BVH4I_NODES>::occluded(mic_i* valid_i, BVH4i* bvh, Ray16& ray16)
-    {
-      /* near and node stack */
-      __aligned(64) NodeRef stack_node[3*BVH4i::maxDepth+1];
-
-      /* setup */
-      const mic_m m_valid = *(mic_i*)valid_i != mic_i(0);
-      const mic3f rdir16  = rcp_safe(ray16.dir);
-      mic_m terminated    = !m_valid;
-      const mic_f inf     = mic_f(pos_inf);
-      const mic_f zero    = mic_f::zero();
-
-      const Node      * __restrict__ nodes = (Node     *)bvh->nodePtr();
-      const Triangle1 * __restrict__ accel = (Triangle1*)bvh->triPtr();
-
-      stack_node[0] = BVH4i::invalidNode;
-
-      long rayIndex = -1;
-      while((rayIndex = bitscan64(rayIndex,toInt(m_valid))) != BITSCAN_NO_BIT_SET_64)	    
-        {
-	  stack_node[1] = bvh->root;
-	  size_t sindex = 2;
-
-	  const mic_f org_xyz      = loadAOS4to16f(rayIndex,ray16.org.x,ray16.org.y,ray16.org.z);
-	  const mic_f dir_xyz      = loadAOS4to16f(rayIndex,ray16.dir.x,ray16.dir.y,ray16.dir.z);
-	  const mic_f rdir_xyz     = loadAOS4to16f(rayIndex,rdir16.x,rdir16.y,rdir16.z);
-	  const mic_f org_rdir_xyz = org_xyz * rdir_xyz;
-	  const mic_f min_dist_xyz = broadcast1to16f(&ray16.tnear[rayIndex]);
-	  const mic_f max_dist_xyz = broadcast1to16f(&ray16.tfar[rayIndex]);
-	  const mic_i v_invalidNode(BVH4i::invalidNode);
-	  const unsigned int leaf_mask = BVH4I_LEAF_MASK;
-
-	  while (1)
-	    {
-	      NodeRef curNode = stack_node[sindex-1];
-	      sindex--;
-
-	      traverse_single_occluded< ENABLE_COMPRESSED_BVH4I_NODES >(curNode,
-								       sindex,
-								       rdir_xyz,
-								       org_rdir_xyz,
-								       min_dist_xyz,
-								       max_dist_xyz,
-								       stack_node,
-								       nodes,
-								       leaf_mask);
-
-	      /* return if stack is empty */
-	      if (unlikely(curNode == BVH4i::invalidNode)) break;
-
-	      STAT3(shadow.trav_leaves,1,1,1);
-	      STAT3(shadow.trav_prims,4,4,4);
-
-	      /* intersect one ray against four triangles */
-
-	      //////////////////////////////////////////////////////////////////////////////////////////////////
-
-	      const bool hit = false;
-
-	      FATAL("NOT YET IMPLEMENTED");
-
+	      bool hit = ray16.primID[rayIndex] != -1;
 	      if (unlikely(hit)) break;
 	      //////////////////////////////////////////////////////////////////////////////////////////////////
 

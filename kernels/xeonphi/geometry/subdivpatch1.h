@@ -47,7 +47,8 @@ namespace embree
   {
   public:
     enum {
-      REGULAR_PATCH = 1 // = 0 => Gregory Patch 
+      REGULAR_PATCH    = 1, // = 0 => Gregory Patch 
+      TRANSITION_PATCH = 2 // needs stiching?
     };
 
     /*! Default constructor. */
@@ -84,6 +85,21 @@ namespace embree
 
       grid_u_res = max(level[0],level[2])+1; // n segments -> n+1 points
       grid_v_res = max(level[1],level[3])+1;
+
+
+      /* need stiching? */
+
+      const unsigned int int_edge_points0 = (unsigned int)level[0] + 1;
+      const unsigned int int_edge_points1 = (unsigned int)level[1] + 1;
+      const unsigned int int_edge_points2 = (unsigned int)level[2] + 1;
+      const unsigned int int_edge_points3 = (unsigned int)level[3] + 1;
+
+      if (int_edge_points0 < (unsigned int)grid_u_res ||
+	  int_edge_points2 < (unsigned int)grid_u_res ||
+	  int_edge_points1 < (unsigned int)grid_v_res ||
+	  int_edge_points3 < (unsigned int)grid_v_res)
+	flags |= TRANSITION_PATCH;
+      
       //grid_size = (grid_u_res*grid_v_res+15)&(-16);
 
       grid_size_64b_blocks = 1;
@@ -94,7 +110,7 @@ namespace embree
 
       assert(grid_size_64b_blocks >= 1);
 
-      /* compute 16-bit quad mask for quad-tessellation */
+      /* compute 16-bit quad mask for <= 16 points case */
 
       if (grid_u_res*grid_v_res <= 16)
 	{
@@ -111,7 +127,6 @@ namespace embree
 
       /* determine whether patch is regular or not */
 
-      flags = 0;
       if (ipatch.dicable()) 
 	{
 	  flags |= REGULAR_PATCH;
@@ -124,6 +139,12 @@ namespace embree
 	  gpatch.exportDenseConrolPoints( patch.v );
 	}
     }
+
+    __forceinline bool needsStiching() const
+    {
+      return (flags & TRANSITION_PATCH) == TRANSITION_PATCH;      
+    }
+
 
     __forceinline mic3f eval16(const mic_f &uu,
 			       const mic_f &vv) const
@@ -192,13 +213,25 @@ namespace embree
       __aligned(64) float u_array[(grid_size_64b_blocks+1)*16];
       __aligned(64) float v_array[(grid_size_64b_blocks+1)*16];
 
-      const unsigned int real_grid_size = grid_u_res*grid_v_res;
-      gridUVTessellator(level,grid_u_res,grid_v_res,u_array,v_array);
+      if (grid_size_64b_blocks == 1)
+      	{
+      	  gridUVTessellator16f(level,grid_u_res,grid_v_res,u_array,v_array);
 
-      for (size_t i=real_grid_size;i<grid_size_64b_blocks*16;i++)
+      	  /* if necessary stich different tessellation levels in u/v grid */
+      	  if (unlikely(needsStiching()))
+      	    stichUVGrid(level,grid_u_res,grid_v_res,u_array,v_array);
+      	}
+      else
 	{
-	  u_array[i] = 0.0f;
-	  v_array[i] = 0.0f;
+	  const unsigned int real_grid_size = grid_u_res*grid_v_res;
+	  gridUVTessellatorMIC(level,grid_u_res,grid_v_res,u_array,v_array);
+
+	  // FIXME: remove
+	  for (size_t i=real_grid_size;i<grid_size_64b_blocks*16;i++)
+	    {
+	      u_array[i] = 1.0f;
+	      v_array[i] = 1.0f;
+	    }
 	}
 
 
