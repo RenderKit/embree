@@ -156,7 +156,7 @@ namespace embree
 #if defined(RTCORE_BUFFER_STRIDE)
       return stride;
 #else
-      return sizeof(T);
+      return sizeof(Vec3fa);
 #endif
     }
   };
