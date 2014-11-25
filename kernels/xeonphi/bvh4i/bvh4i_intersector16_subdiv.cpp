@@ -42,14 +42,20 @@ namespace embree
       size_t allocated64BytesBlocks;
       size_t blockCounter;
 
+      __forceinline void clear()
+      {
+	blockCounter = 0;	  
+	prim_tag  = -1;
+	bvh4i_ref = -1;	
+      }
+
       TessellationCache() 
 	{
 	  lazymem = (mic_f*)os_malloc(sizeof(mic_f) * DEFAULT_64B_BLOCKS);
 	  allocated64BytesBlocks = DEFAULT_64B_BLOCKS;
-	  blockCounter = 0;	  
-	  prim_tag  = -1;
-	  bvh4i_ref = -1;
+	  clear();
 	}
+
 
       __forceinline BVH4i::NodeRef lookup(const unsigned int primID)
       {
@@ -57,9 +63,10 @@ namespace embree
 	unsigned int index = bitscan(toInt(m_in_cache));
 	if (likely(m_in_cache))
 	  {
+	    assert(countbits(m_in_cache) == 1);
 	    const BVH4i::NodeRef ref = bvh4i_ref[primID];
-	    /* move most recently hit entry to front */
-	    const mic_m m_rest = m_in_cache^(m_in_cache & (mic_m)((unsigned int)m_in_cache - 1));	   
+	    /* move most recently accessed entry to the beginning of the array */
+	    const mic_m m_rest = ~m_in_cache;
 	    const mic_i rest_tag = prim_tag;
 	    const mic_i rest_ref = bvh4i_ref;
 	    ustore16i_low(&prim_tag[1],rest_tag);
@@ -69,6 +76,27 @@ namespace embree
 	    return ref;
 	  }
 	return BVH4i::invalidNode;
+      }
+
+      __forceinline unsigned int insert(const unsigned int primID, const unsigned int neededBlocks)
+      {
+	if (blockCounter + neededBlocks >= allocated64BytesBlocks)
+	  clear();
+
+	assert(blockCounter + neededBlocks < allocated64BytesBlocks);
+
+	const unsigned int currentIndex = blockCounter;
+	blockCounter += neededBlocks;
+	BVH4i::NodeRef curNode;
+	createBVH4iNode<2>(curNode,currentIndex);
+
+	prim_tag  = align_shift_right<15>(prim_tag,prim_tag);
+	bvh4i_ref = align_shift_right<15>(bvh4i_ref,bvh4i_ref);
+	
+	prim_tag[0]  = primID;
+	bvh4i_ref[0] = curNode;
+
+	return currentIndex;
       }
 
     };
@@ -437,37 +465,13 @@ namespace embree
       __aligned(64) float u_array[(subdiv_patch.grid_size_64b_blocks+1)]; // for unaligned access
       __aligned(64) float v_array[(subdiv_patch.grid_size_64b_blocks+1)];
 
-#if 0
-      gridUVTessellator(edge_levels,grid_u_res,grid_v_res,u_array,v_array);
-#else
+      //gridUVTessellator(edge_levels,grid_u_res,grid_v_res,u_array,v_array);
       gridUVTessellator16f(edge_levels,grid_u_res,grid_v_res,u_array,v_array);
 
       /* if necessary stich different tessellation levels in u/v grid */
       if (unlikely(subdiv_patch.needsStiching()))
 	stichUVGrid(edge_levels,grid_u_res,grid_v_res,u_array,v_array);
 	
-#endif
-
-#if 0
-      DBG_PRINT("UV grid");
-      DBG_PRINT( edge_levels[0] );
-      DBG_PRINT( edge_levels[1] );
-      DBG_PRINT( edge_levels[2] );
-      DBG_PRINT( edge_levels[3] );
-
-      DBG_PRINT( grid_u_res );
-      DBG_PRINT( grid_v_res );
-
-      for (unsigned int y=0;y<grid_v_res;y++)
-	{
-	  std::cout << "row " << y << " ";
-	  for (unsigned int x=0;x<grid_u_res;x++)
-	    std::cout << "(" << v_array[grid_u_res*y+x] << "," << u_array[grid_u_res*y+x] << ") ";
-	  std::cout << std::endl;
-	}
-      exit(0);
-#endif
-
       bool hit = false;
 
       if (likely(subdiv_patch.grid_size_64b_blocks==1))
@@ -654,7 +658,6 @@ namespace embree
       ray16.primID = select(m_valid,mic_i(-1),ray16.primID);
       ray16.geomID = select(m_valid,mic_i(-1),ray16.geomID);
 
-      mic_f     * const __restrict__ lazymem     = bvh->lazymem;
       const Node      * __restrict__ const nodes = (Node     *)bvh->nodePtr();
       Triangle1 * __restrict__ const accel       = (Triangle1*)bvh->triPtr();
 
@@ -722,6 +725,8 @@ namespace embree
 		    }
 
 		  assert(subdiv_patch.bvh4i_subtree_root != BVH4i::invalidNode);
+		  const BVH4i::NodeRef subtree_root = subdiv_patch.bvh4i_subtree_root;
+		  mic_f     * const __restrict__ lazymem     = bvh->lazymem;
 
 		  // -------------------------------------
 		  // -------------------------------------
@@ -730,7 +735,7 @@ namespace embree
 		  __aligned(64) float   sub_stack_dist[64];
 		  __aligned(64) NodeRef sub_stack_node[64];
 		  sub_stack_node[0] = BVH4i::invalidNode;
-		  sub_stack_node[1] = subdiv_patch.bvh4i_subtree_root;
+		  sub_stack_node[1] = subtree_root;
 		  store16f(sub_stack_dist,inf);
 		  size_t sub_sindex = 2;
 
