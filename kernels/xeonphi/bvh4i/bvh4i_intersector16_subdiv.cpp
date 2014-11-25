@@ -19,6 +19,7 @@
 #include "geometry/subdivpatch1.h"
 
 #define TIMER(x) x
+#define ENABLE_PER_THREAD_TESSELLATION_CACHE
 
 namespace embree
 {
@@ -34,13 +35,17 @@ namespace embree
 
     AtomicCounter thread_cache_allocs = 0;
 
-    struct __aligned(64) TessellationCache {
-      const size_t DEFAULT_64B_BLOCKS = 32768;
+    class __aligned(64) TessellationCache {
+
+    private:
+      const size_t DEFAULT_64B_BLOCKS = 256;
       mic_i prim_tag;
       mic_i bvh4i_ref;
       mic_f *lazymem;
       size_t allocated64BytesBlocks;
       size_t blockCounter;
+
+    public:
 
       __forceinline void clear()
       {
@@ -49,8 +54,12 @@ namespace embree
 	bvh4i_ref = -1;	
       }
 
-      TessellationCache() 
-	{
+      __forceinline mic_f *getPtr()
+      {
+	return lazymem;
+      }
+
+      TessellationCache() {
 	  lazymem = (mic_f*)os_malloc(sizeof(mic_f) * DEFAULT_64B_BLOCKS);
 	  allocated64BytesBlocks = DEFAULT_64B_BLOCKS;
 	  clear();
@@ -59,20 +68,33 @@ namespace embree
 
       __forceinline BVH4i::NodeRef lookup(const unsigned int primID)
       {
+#if 0
+	PING;
+	DBG_PRINT( primID );
+	DBG_PRINT( prim_tag );
+	DBG_PRINT( bvh4i_ref );
+#endif
 	mic_m m_in_cache = prim_tag == primID;
+	//DBG_PRINT( m_in_cache );
 	unsigned int index = bitscan(toInt(m_in_cache));
 	if (likely(m_in_cache))
 	  {
 	    assert(countbits(m_in_cache) == 1);
-	    const BVH4i::NodeRef ref = bvh4i_ref[primID];
+	    const BVH4i::NodeRef ref = bvh4i_ref[index];
 	    /* move most recently accessed entry to the beginning of the array */
 	    const mic_m m_rest = ~m_in_cache;
 	    const mic_i rest_tag = prim_tag;
 	    const mic_i rest_ref = bvh4i_ref;
-	    ustore16i_low(&prim_tag[1],rest_tag);
-	    ustore16i_low(&bvh4i_ref[1],rest_ref);
+	    compactustore16i_low(m_rest,&prim_tag[1],rest_tag);
+	    compactustore16i_low(m_rest,&bvh4i_ref[1],rest_ref);
 	    prim_tag[0] = primID;
 	    bvh4i_ref[0] = ref;
+
+#if 0
+	    DBG_PRINT( "new" );
+	    DBG_PRINT( prim_tag );
+	    DBG_PRINT( bvh4i_ref );
+#endif
 	    return ref;
 	  }
 	return BVH4i::invalidNode;
@@ -121,7 +143,7 @@ namespace embree
 			  const unsigned int u_end,
 			  const unsigned int v_start,
 			  const unsigned int v_end,
-			  size_t &localCounter)
+			  unsigned int &localCounter)
     {
       const unsigned int u_size = u_end-u_start+1;
       const unsigned int v_size = v_end-v_start+1;
@@ -262,8 +284,8 @@ namespace embree
 
 
       BVH4i::NodeRef subtree_root = 0;
-      size_t localCounter = bvh->lazyMemUsed64BytesBlocks.add( patch.grid_size_64b_blocks );
-      const size_t oldCounter = localCounter;
+      unsigned int localCounter = bvh->lazyMemUsed64BytesBlocks.add( patch.grid_size_64b_blocks );
+      const unsigned int oldCounter = localCounter;
       if (localCounter + patch.grid_size_64b_blocks > bvh->lazyMemAllocated64BytesBlocks) 
 	{
 	  DBG_PRINT(localCounter);
@@ -308,20 +330,10 @@ namespace embree
     }
 
 
-    void initLocalLazySubdivTree(SubdivPatch1 &patch,
-				 BVH4i *bvh)
+    void initLocalLazySubdivTree(const SubdivPatch1 &patch,
+				 unsigned int currentIndex,
+				 mic_f *lazymem)
     {
-      unsigned int build_state = atomic_add((volatile atomic_t*)&patch.under_construction,+1);
-      if (build_state != 0)
-	{
-	  while(patch.bvh4i_subtree_root == BVH4i::invalidNode)
-	    __pause(512);	  
-
-	  atomic_add((volatile atomic_t*)&patch.under_construction,-1);
-	}
-
-
-      if (unlikely(patch.bvh4i_subtree_root != BVH4i::invalidNode)) return;
 
       TIMER(double msec = 0.0);
       TIMER(msec = getSeconds());
@@ -339,17 +351,9 @@ namespace embree
 
 
       BVH4i::NodeRef subtree_root = 0;
-      size_t localCounter = bvh->lazyMemUsed64BytesBlocks.add( patch.grid_size_64b_blocks );
-      const size_t oldCounter = localCounter;
-      if (localCounter + patch.grid_size_64b_blocks > bvh->lazyMemAllocated64BytesBlocks) 
-	{
-	  DBG_PRINT(localCounter);
-	  DBG_PRINT(bvh->lazyMemUsed64BytesBlocks);
-	  FATAL("alloc");
-	}
 
       BBox3fa bounds = createSubTree( subtree_root,
-				      bvh->lazymem,
+				      lazymem,
 				      patch,
 				      u_array,
 				      v_array,
@@ -357,31 +361,9 @@ namespace embree
 				      patch.grid_u_res-1,
 				      0,
 				      patch.grid_v_res-1,
-				      localCounter);
+				      currentIndex);
 
-      assert( localCounter - oldCounter == patch.grid_size_64b_blocks );
-    TIMER(msec = getSeconds()-msec);    
-
-#if 0 // DEBUG
-      //numLazyBuildPatches++;
-      //DBG_PRINT( numLazyBuildPatches );
-      mtx.lock();
-      DBG_PRINT( bvh->lazyMemUsed64BytesBlocks);
-      DBG_PRINT( bvh->lazyMemAllocated64BytesBlocks );
-      const size_t size_allocated_lazymem = bvh->lazyMemAllocated64BytesBlocks * sizeof(mic_f);
-      const size_t size_used_lazymem      = bvh->lazyMemUsed64BytesBlocks * sizeof(mic_f);
-
-      std::cout << "lazymem: " << 100.0f * size_used_lazymem / size_allocated_lazymem << "% used of " <<  size_allocated_lazymem << " bytes allocated" << std::endl;
-
-      TIMER(std::cout << "build patch subtree in  " << 1000. * msec << " ms" << std::endl);
-
-      mtx.unlock();
-#endif
-      /* build done */
-      patch.bvh4i_subtree_root = subtree_root;
-
-      /* release lock */
-      atomic_add((volatile atomic_t*)&patch.under_construction,-1);
+      TIMER(msec = getSeconds()-msec);    
     }
 
 
@@ -629,7 +611,7 @@ namespace embree
       __aligned(64) float   stack_dist[3*BVH4i::maxDepth+1];
       __aligned(64) NodeRef stack_node[3*BVH4i::maxDepth+1];
 
-#if 0
+#if defined(ENABLE_PER_THREAD_TESSELLATION_CACHE)
       TessellationCache *local_cache = NULL;
 
       if (!thread_cache)
@@ -640,12 +622,12 @@ namespace embree
 	  DBG_PRINT("Alloc");
 	  DBG_PRINT(thread_cache_allocs);
 	  DBG_PRINT(thread_cache);
+	  DBG_PRINT((size_t)thread_cache % 64);
 	  mtx.unlock();
 	}
-      else
-	{
-	  local_cache = thread_cache;
-	}
+
+      local_cache = thread_cache;
+      //DBG_PRINT(local_cache);
 #endif
 
       /* setup */
@@ -718,6 +700,7 @@ namespace embree
 		{
 		  /* traverse sub-patch bvh4i for grids with > 16 points */
 
+#if !defined(ENABLE_PER_THREAD_TESSELLATION_CACHE)
 		  if (unlikely(subdiv_patch.bvh4i_subtree_root == BVH4i::invalidNode))
 		    {
 		      /* build sub-patch bvh4i */
@@ -727,7 +710,26 @@ namespace embree
 		  assert(subdiv_patch.bvh4i_subtree_root != BVH4i::invalidNode);
 		  const BVH4i::NodeRef subtree_root = subdiv_patch.bvh4i_subtree_root;
 		  mic_f     * const __restrict__ lazymem     = bvh->lazymem;
+#else
+		  mic_f     * const __restrict__ lazymem     = local_cache->getPtr();
 
+		  //DBG_PRINT( patchIndex );
+		  BVH4i::NodeRef subtree_root = local_cache->lookup(patchIndex);
+		  //DBG_PRINT( subtree_root );
+
+		  if (subtree_root == BVH4i::invalidNode)
+		    {
+		      //DBG_PRINT("NOT IN CACHE");
+		      unsigned int currentIndex = local_cache->insert(patchIndex,subdiv_patch.grid_size_64b_blocks);
+		      //DBG_PRINT( currentIndex );
+		      initLocalLazySubdivTree(subdiv_patch,currentIndex,lazymem);		      
+		      subtree_root = local_cache->lookup(patchIndex);
+		      //DBG_PRINT( subtree_root );
+		      assert( subtree_root != BVH4i::invalidNode);
+
+		    }
+		    
+#endif
 		  // -------------------------------------
 		  // -------------------------------------
 		  // -------------------------------------
