@@ -36,7 +36,7 @@ namespace embree
     class __aligned(64) TessellationCache {
 
     private:
-      static const size_t DEFAULT_64B_BLOCKS = 4096;
+      static const size_t DEFAULT_64B_BLOCKS = 8192;
       mic_i prim_tag;
       mic_i bvh4i_ref;
       mic_f *lazymem;
@@ -664,6 +664,7 @@ namespace embree
       ray16.primID = select(m_valid,mic_i(-1),ray16.primID);
       ray16.geomID = select(m_valid,mic_i(-1),ray16.geomID);
 
+      Scene *const scene                         = (Scene*)bvh->geometry;
       const Node      * __restrict__ const nodes = (Node     *)bvh->nodePtr();
       Triangle1 * __restrict__ const accel       = (Triangle1*)bvh->triPtr();
 
@@ -711,6 +712,15 @@ namespace embree
 
 	      const unsigned int patchIndex = curNode.offsetIndex();
 	      SubdivPatch1& subdiv_patch = ((SubdivPatch1*)accel)[patchIndex];
+
+	      const SubdivMesh* geom = (SubdivMesh*)scene->get(subdiv_patch.geomID);
+	      if (unlikely(geom->displFunc != NULL))
+		{
+		  // geom->displFunc(geom->userPtr,
+		  // 		  subdiv_patch.geomID,
+		  // 		  subdiv_patch.primID,
+				  
+		}
 
 	      /* fast patch for grid with <= 16 points */
 	      if (likely(subdiv_patch.grid_size_64b_blocks == 1))

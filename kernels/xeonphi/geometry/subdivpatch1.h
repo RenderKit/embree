@@ -139,6 +139,7 @@ namespace embree
 	  gpatch.init( ipatch ); 
 	  gpatch.exportDenseConrolPoints( patch.v );
 	}
+      
     }
 
     __forceinline bool needsStiching() const
