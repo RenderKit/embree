@@ -53,6 +53,15 @@ namespace embree
       return bitscan(~movemask(valid()));
     }
 
+    /*! Returns a hash number for the geometry */
+    __forceinline size_t hash() const 
+    {
+      size_t hash = 0x3636;
+      for (size_t i=0; i<sizeof(Triangle4)/4; i++)
+	hash += ((uint32*)this)[i];
+      return hash;
+    }
+
     /*! calculate the bounds of the triangle */
     __forceinline BBox3fa bounds() const 
     {
@@ -195,6 +204,7 @@ namespace embree
     Triangle4Type ();
     size_t blocks(size_t x) const;
     size_t size(const char* This) const;
+    size_t hash(const char* This, size_t num) const;
   };
 
   struct TriangleMeshTriangle4 : public Triangle4Type

@@ -44,6 +44,9 @@ namespace embree
     /*! Returns the number of stored primitives in a block. */
     virtual size_t size(const char* This) const = 0;
 
+    /*! Returns a hash number for the leaf. */
+    virtual size_t hash(const char* This, size_t num) const { return 0; }
+
     /*! Updates all primitives stored in a leaf */
     virtual BBox3fa update(char* prim, size_t num, void* geom) const { return BBox3fa(empty); } // FIXME: remove
 

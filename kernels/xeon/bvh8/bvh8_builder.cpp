@@ -66,7 +66,21 @@ namespace embree
       size_t N = blocks(pinfo.size());
       Triangle* leaf = (Triangle*) bvh->allocPrimitiveBlocks(nodeAlloc,N); // FIXME: should be leafAlloc?
       assert(N <= (size_t)BVH8::maxLeafBlocks);
-      
+
+      /* make order of primitives deterministic */
+      PrimRefList::item* block = prims.take();
+      if (block) {
+	while (PrimRefList::item* block1 = prims.take()) {
+	  for (size_t i=0; i<block1->size(); i++) {
+	    bool ok = block->insert(block1->at(i));
+	    assert(ok);
+	  }
+	  alloc.free(threadIndex,block1);
+	}
+	std::sort(&block->at(0),&block->at(block->size()));
+	prims.insert(block);
+      }
+
       /* insert all triangles */
       PrimRefList::block_iterator_unsafe iter(prims);
       for (size_t i=0; i<N; i++) leaf[i].fill(iter,scene,listMode);

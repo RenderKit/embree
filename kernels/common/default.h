@@ -51,6 +51,7 @@
 
 namespace embree
 {
+
   /* we consider floating point numbers in that range as valid input numbers */
 #define VALID_FLOAT_RANGE  1.844E18f
 
