@@ -20,7 +20,7 @@
 #include <stddef.h>
 
 #ifndef RTCORE_API
-#ifdef _WIN32
+#if defined(_WIN32) && defined(BUILD_EMBREE_SHARED_LIB)
 #  define RTCORE_API extern "C" __declspec(dllimport) 
 #else
 #  define RTCORE_API extern "C"

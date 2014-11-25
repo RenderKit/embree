@@ -32,7 +32,7 @@ IF (TARGET_AVX2)
  ADD_DEFINITIONS(-D__TARGET_AVX2__)
 ENDIF()
 
-ADD_ISPC_LIBRARY(embree SHARED
+ADD_ISPC_LIBRARY(embree ${EMBREE_LIB_TYPE}
   embree.rc
   ../common/stat.cpp
   ../common/globals.cpp

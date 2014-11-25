@@ -25,6 +25,7 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.8.12)
 SET(EMBREE_VERSION_MAJOR 2)
 SET(EMBREE_VERSION_MINOR 4)
 SET(EMBREE_VERSION_PATCH 0)
+# comment out for release builds:
 SET(EMBREE_VERSION_NOTE " (devel)")
 
 CONFIGURE_FILE(
@@ -53,6 +54,14 @@ SET(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/common/cmake ${CMAKE_MODULE_PA
 ##############################################################
 # Embree configuration
 ##############################################################
+
+OPTION(BUILD_EMBREE_SHARED_LIB "Build Embree as a shared library." ON)
+IF (BUILD_EMBREE_SHARED_LIB)
+  SET(EMBREE_LIB_TYPE SHARED)
+  ADD_DEFINITIONS(-DBUILD_EMBREE_SHARED_LIB)
+ELSE()
+  SET(EMBREE_LIB_TYPE STATIC)
+ENDIF()
 
 SET(RTCORE_RAY_MASK OFF CACHE BOOL "Enables ray mask support.")
 IF (RTCORE_RAY_MASK)
@@ -93,7 +102,7 @@ IF (RTCORE_TASKLOGGER)
  ADD_DEFINITIONS(-D__LOG_TASKS__)
 ENDIF()
 
-SET(RTCORE_EXPORT_ALL_SYMBOLS OFF CACHE BOOL "Lets Embree shared library export all symbols.")
+SET(RTCORE_EXPORT_ALL_SYMBOLS OFF CACHE BOOL "Lets Embree library export all symbols.")
 IF (RTCORE_EXPORT_ALL_SYMBOLS)
  ADD_DEFINITIONS(-D__EXPORT_ALL_SYMBOLS__)
 ENDIF()
@@ -280,9 +289,9 @@ ENDIF ()
 INSTALL(DIRECTORY include/embree2 DESTINATION include FILES_MATCHING PATTERN "*.h")
 INSTALL(DIRECTORY include/embree2 DESTINATION include FILES_MATCHING PATTERN "*.isph")
 
-# ##################################################################
+##############################################################
 # Create Documentation. Call via 'make doc'
-# ##################################################################
+##############################################################
 
 IF (NOT WIN32)
 ADD_CUSTOM_TARGET(doc
