@@ -47,7 +47,7 @@ namespace embree
     /* marks begin of task */
     __forceinline static size_t beginTask(size_t threadIndex, const char* name, size_t elt) 
     {
-#if defined(__LOG_TASKS__)
+#if defined(RTCORE_TASKLOGGER)
       assert(threadIndex < threads.size());
       return threads[threadIndex]->beginTask(name,elt);
 #else
@@ -58,7 +58,7 @@ namespace embree
     /* marks end of task */
     __forceinline static void endTask(size_t threadIndex, size_t id) 
     {
-#if defined(__LOG_TASKS__)
+#if defined(RTCORE_TASKLOGGER)
       assert(threadIndex < threads.size());
       threads[threadIndex]->endTask(id);
 #endif

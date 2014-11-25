@@ -160,7 +160,7 @@ namespace embree
       STAT3(normal.trav_prim_hits,1,1,1);
 
       /* ray masking test */
-#if defined(__USE_RAY_MASK__)
+#if defined(RTCORE_RAY_MASK)
       BezierCurves* g = ((Scene*)geom)->getBezierCurves(curve_in.geomID);
       if (unlikely(g->mask & ray.mask[k]) == 0) return false;
 #endif  
@@ -269,7 +269,7 @@ namespace embree
       STAT3(shadow.trav_prim_hits,1,1,1);
 
       /* ray masking test */
-#if defined(__USE_RAY_MASK__)
+#if defined(RTCORE_RAY_MASK)
       BezierCurves* g = ((Scene*)geom)->getBezierCurves(curve_in.geomID);
       if (unlikely(g->mask & ray.mask[k]) == 0) return false;
 #endif  
@@ -368,7 +368,7 @@ namespace embree
       STAT3(normal.trav_prim_hits,1,1,1);
 
       /* ray masking test */
-#if defined(__USE_RAY_MASK__)
+#if defined(RTCORE_RAY_MASK)
       BezierCurves* g = ((Scene*)geom)->getBezierCurves(curve_in.geomID);
       if (unlikely(g->mask & ray.mask) == 0) return false;
 #endif  
@@ -466,7 +466,7 @@ namespace embree
       STAT3(shadow.trav_prim_hits,1,1,1);
 
       /* ray masking test */
-#if defined(__USE_RAY_MASK__)
+#if defined(RTCORE_RAY_MASK)
       BezierCurves* g = ((Scene*)geom)->getBezierCurves(curve_in.geomID);
       if (unlikely(g->mask & ray.mask) == 0) return false;
 #endif  

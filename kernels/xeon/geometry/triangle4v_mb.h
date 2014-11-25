@@ -45,7 +45,7 @@ namespace embree
 				const ssei& geomIDs, const ssei& primIDs, const ssei& mask, const bool last)
       : v0(a0), v1(b0), v2(c0), d0(a1-a0), d1(b1-b0), d2(c1-c0), geomIDs(geomIDs), primIDs(primIDs | (last << 31))
     {
-#if defined(__USE_RAY_MASK__)
+#if defined(RTCORE_RAY_MASK)
       this->mask = mask;
 #endif
     }
@@ -205,7 +205,7 @@ namespace embree
     sse3f d2;      //!< difference vector between time steps t0 and t1 for third vertex
     ssei geomIDs;  //!< user geometry ID
     ssei primIDs;  //!< primitive ID
-#if defined(__USE_RAY_MASK__)
+#if defined(RTCORE_RAY_MASK)
     ssei mask;     //!< geometry mask
 #endif
   };

@@ -75,14 +75,14 @@ namespace embree
       if (unlikely(T < absDen*ray.tnear)) return;
 
       /* perform backface culling */
-#if defined(__BACKFACE_CULLING__)
+#if defined(RTCORE_BACKFACE_CULLING)
       if (unlikely(den <= 0.0f)) return;
 #else
       if (unlikely(den == 0.0f)) return;
 #endif
 
       /* ray masking test */
-#if defined(__USE_RAY_MASK__)
+#if defined(RTCORE_RAY_MASK)
       if (unlikely((tri.mask() & ray.mask) == 0)) return;
 #endif
 
@@ -95,7 +95,7 @@ namespace embree
       const int primID = tri.primID<list>();
       
       /* intersection filter test */
-#if defined(__INTERSECTION_FILTER__)
+#if defined(RTCORE_INTERSECTION_FILTER)
       Geometry* geometry = ((Scene*)geom)->get(geomID);
       if (unlikely(geometry->hasIntersectionFilter1())) {
         runIntersectionFilter1(geometry,ray,u,v,t,tri_Ng,geomID,primID);
@@ -147,19 +147,19 @@ namespace embree
       if (unlikely(T < absDen*ray.tnear)) return false;
 
       /* perform backface culling */
-#if defined(__BACKFACE_CULLING__)
+#if defined(RTCORE_BACKFACE_CULLING)
       if (unlikely(den <= 0.0f)) return false;
 #else
       if (unlikely(den == 0.0f)) return false;
 #endif
 
       /* ray masking test */
-#if defined(__USE_RAY_MASK__)
+#if defined(RTCORE_RAY_MASK)
       if (unlikely((tri.mask() & ray.mask) == 0)) return false;
 #endif
 
       /* intersection filter test */
-#if defined(__INTERSECTION_FILTER__)
+#if defined(RTCORE_INTERSECTION_FILTER)
       const int geomID = tri.geomID<list>();
       Geometry* geometry = ((Scene*)geom)->get(geomID);
       if (unlikely(geometry->hasOcclusionFilter1()))

@@ -77,7 +77,7 @@ namespace embree
 	const mic_f u = uu * rcp_den;
 	const mic_f v = vv * rcp_den;
 
-#if defined(__BACKFACE_CULLING__)
+#if defined(RTCORE_BACKFACE_CULLING)
 	const mic_m m_init = (mic_m)0x1111 & (den > zero);
 #else
 	const mic_m m_init = 0x1111;
@@ -94,7 +94,7 @@ namespace embree
 
 	mic_m m_final  = lt(lt(m_aperture,min_dist_xyz,t),t,max_dist_xyz);
 
-#if defined(__USE_RAY_MASK__)
+#if defined(RTCORE_RAY_MASK)
 	const mic_i rayMask(ray.mask);
 	const mic_i triMask0( scene->getTriangleMesh( tptr[0].geomID() )->mask );
 	const mic_i triMask1( scene->getTriangleMesh( tptr[1].geomID() )->mask );
@@ -239,7 +239,7 @@ namespace embree
 	const mic_f u = uu * rcp_den;
 	const mic_f v = vv * rcp_den;
 
-#if defined(__BACKFACE_CULLING__)
+#if defined(RTCORE_BACKFACE_CULLING)
 	const mic_m m_init = (mic_m)0x1111 & (den > zero);
 #else
 	const mic_m m_init = 0x1111;
@@ -255,7 +255,7 @@ namespace embree
 
 	mic_m m_final  = lt(lt(m_aperture,min_dist_xyz,t),t,max_dist_xyz);
 
-#if defined(__USE_RAY_MASK__)
+#if defined(RTCORE_RAY_MASK)
 	const mic_i rayMask(ray.mask);
 	const mic_i triMask0( scene->getTriangleMesh( tptr[0].geomID() )->mask );
 	const mic_i triMask1( scene->getTriangleMesh( tptr[1].geomID() )->mask );

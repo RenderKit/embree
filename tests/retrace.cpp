@@ -729,7 +729,7 @@ namespace embree
 
     stats.print(g_simd_width);
 
-#if defined(__ENABLE_RAYSTREAM_LOGGER__)
+#if defined(RTCORE_ENABLE_RAYSTREAM_LOGGER)
     FATAL("ray stream logger still active, must be disabled to run 'retrace'");
 #endif
 

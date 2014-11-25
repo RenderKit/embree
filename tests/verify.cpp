@@ -2700,7 +2700,7 @@ namespace embree
     //POSITIVE("deformable_geometry",       rtcore_deformable_geometry()); // FIXME
     POSITIVE("unmapped_before_commit",    rtcore_unmapped_before_commit());
 
-#if defined(__BUFFER_STRIDE__)
+#if defined(RTCORE_BUFFER_STRIDE)
     POSITIVE("buffer_stride",             rtcore_buffer_stride());
 #endif
 
@@ -2717,15 +2717,15 @@ namespace embree
     POSITIVE("new_delete_geometry",       rtcore_new_delete_geometry());
 
 
-#if defined(__USE_RAY_MASK__)
+#if defined(RTCORE_RAY_MASK)
     rtcore_ray_masks_all();
 #endif
 
-#if defined(__INTERSECTION_FILTER__)
+#if defined(RTCORE_INTERSECTION_FILTER)
     rtcore_filter_all();
 #endif
 
-#if defined(__BACKFACE_CULLING__)
+#if defined(RTCORE_BACKFACE_CULLING)
     rtcore_backface_culling_all();
 #endif
 

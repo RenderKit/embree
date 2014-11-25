@@ -95,7 +95,7 @@ namespace embree
     __forceinline const T& operator[](size_t i) const 
     {
       assert(i<num);
-#if defined(__BUFFER_STRIDE__)
+#if defined(RTCORE_BUFFER_STRIDE)
       return *(T*)(ptr_ofs + i*stride);
 #else
       return *(T*)(ptr_ofs + i*sizeof(T));
@@ -104,7 +104,7 @@ namespace embree
 
     __forceinline char* getPtr( size_t i = 0 ) const 
     {
-#if defined(__BUFFER_STRIDE__)
+#if defined(RTCORE_BUFFER_STRIDE)
       return ptr_ofs + i*stride;
 #else
       return ptr_ofs + i*sizeof(T);
@@ -112,7 +112,7 @@ namespace embree
     }
 
     __forceinline unsigned int getBufferStride() const {
-#if defined(__BUFFER_STRIDE__)
+#if defined(RTCORE_BUFFER_STRIDE)
       return stride;
 #else
       return sizeof(T);
@@ -132,7 +132,7 @@ namespace embree
     __forceinline const Vec3fa operator[](size_t i) const
     {
       assert(i<num);
-#if defined(__BUFFER_STRIDE__)
+#if defined(RTCORE_BUFFER_STRIDE)
 #if defined(__MIC__)
       return *(Vec3fa*)(ptr_ofs + i*stride);
 #else
@@ -145,7 +145,7 @@ namespace embree
 
     __forceinline char* getPtr( size_t i = 0 ) const 
     {
-#if defined(__BUFFER_STRIDE__)
+#if defined(RTCORE_BUFFER_STRIDE)
       return ptr_ofs + i*stride;
 #else
       return ptr_ofs + i*sizeof(Vec3fa);
@@ -153,7 +153,7 @@ namespace embree
     }
 
     __forceinline unsigned int getBufferStride() const {
-#if defined(__BUFFER_STRIDE__)
+#if defined(RTCORE_BUFFER_STRIDE)
       return stride;
 #else
       return sizeof(T);

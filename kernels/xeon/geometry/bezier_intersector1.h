@@ -94,13 +94,13 @@ namespace embree
       size_t i = select_min(valid,t);
 
       /* ray masking test */
-#if defined(__USE_RAY_MASK__)
+#if defined(RTCORE_RAY_MASK)
       BezierCurves* g = ((Scene*)geom)->getBezierCurves(geomID);
       if (unlikely(g->mask & ray.mask) == 0) return;
 #endif  
 
       /* intersection filter test */
-#if defined(__INTERSECTION_FILTER__)
+#if defined(RTCORE_INTERSECTION_FILTER)
       Geometry* geometry = ((Scene*)geom)->get(geomID);
       if (!likely(geometry->hasIntersectionFilter1())) 
       {
@@ -116,7 +116,7 @@ namespace embree
         ray.Ng = T;
         ray.geomID = geomID;
         ray.primID = primID;
-#if defined(__INTERSECTION_FILTER__)
+#if defined(RTCORE_INTERSECTION_FILTER)
           return;
       }
 
@@ -193,13 +193,13 @@ namespace embree
       STAT3(shadow.trav_prim_hits,1,1,1);
 
       /* ray masking test */
-#if defined(__USE_RAY_MASK__)
+#if defined(RTCORE_RAY_MASK)
       BezierCurves* g = ((Scene*)geom)->getBezierCurves(geomID);
       if (unlikely(g->mask & ray.mask) == 0) return false;
 #endif  
 
       /* intersection filter test */
-#if defined(__INTERSECTION_FILTER__)
+#if defined(RTCORE_INTERSECTION_FILTER)
 
       size_t i = select_min(valid,t);
       Geometry* geometry = ((Scene*)geom)->get(geomID);
