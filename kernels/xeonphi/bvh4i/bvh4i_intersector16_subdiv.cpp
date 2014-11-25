@@ -38,7 +38,7 @@ namespace embree
     class __aligned(64) TessellationCache {
 
     private:
-      const size_t DEFAULT_64B_BLOCKS = 256;
+      static const size_t DEFAULT_64B_BLOCKS = 4096;
       mic_i prim_tag;
       mic_i bvh4i_ref;
       mic_f *lazymem;
@@ -59,11 +59,15 @@ namespace embree
 	return lazymem;
       }
 
-      TessellationCache() {
-	  lazymem = (mic_f*)os_malloc(sizeof(mic_f) * DEFAULT_64B_BLOCKS);
-	  allocated64BytesBlocks = DEFAULT_64B_BLOCKS;
-	  clear();
-	}
+      TessellationCache() {}
+
+      __forceinline void init()
+      {
+	clear();
+	allocated64BytesBlocks = DEFAULT_64B_BLOCKS;
+	lazymem = (mic_f*)_mm_malloc(sizeof(mic_f) * allocated64BytesBlocks,64);
+	assert((size_t)lazymem % 64 == 0);
+      }
 
 
       __forceinline BVH4i::NodeRef lookup(const unsigned int primID)
@@ -123,7 +127,6 @@ namespace embree
 
     };
 
-    static __thread TessellationCache *thread_cache;
 
     static __aligned(64) RegularGridLookUpTables gridLookUpTables;
 
@@ -603,6 +606,8 @@ namespace embree
     // ============================================================================================
     // ============================================================================================
 
+    __thread TessellationCache *thread_cache = NULL;
+
 
     template<typename LeafIntersector, bool ENABLE_COMPRESSED_BVH4I_NODES>
     void BVH4iIntersector16Subdiv<LeafIntersector,ENABLE_COMPRESSED_BVH4I_NODES>::intersect(mic_i* valid_i, BVH4i* bvh, Ray16& ray16)
@@ -617,7 +622,9 @@ namespace embree
       if (!thread_cache)
 	{
 	  thread_cache_allocs++;	  
-	  thread_cache = new TessellationCache;
+	  thread_cache = (TessellationCache *)_mm_malloc(sizeof(TessellationCache),64);
+	  thread_cache->init();
+	  
 	  mtx.lock();
 	  DBG_PRINT("Alloc");
 	  DBG_PRINT(thread_cache_allocs);
@@ -627,7 +634,6 @@ namespace embree
 	}
 
       local_cache = thread_cache;
-      //DBG_PRINT(local_cache);
 #endif
 
       /* setup */
