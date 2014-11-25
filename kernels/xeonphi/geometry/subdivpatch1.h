@@ -108,6 +108,7 @@ namespace embree
       if (grid_u_res*grid_v_res > 16)
 	grid_size_64b_blocks = getSubTreeSize64bBlocks();
 
+
       assert(grid_size_64b_blocks >= 1);
 
       /* compute 16-bit quad mask for <= 16 points case */
