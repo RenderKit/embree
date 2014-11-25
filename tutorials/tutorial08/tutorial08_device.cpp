@@ -100,7 +100,7 @@ void DisplacementFunc(void* ptr, unsigned geomID, unsigned primID,
     const Vec3fa P(px[i],py[i],pz[i]);
     const Vec3fa N = normalize(Vec3fa(nx[i],ny[i],nz[i]));
     float dN = 0.0f;
-    for (float freq = 10.0f; freq<400.0f; freq*= 2) {
+    for (float freq = 1.0f; freq<40.0f; freq*= 2) {
       float n = fabs(noise(freq*P));
       dN += 1.4f*n*n/freq;
     }
@@ -227,6 +227,13 @@ RTCScene constructScene(const Vec3fa& cam_pos)
     for (size_t i=0;i<mesh->numQuads;i++) face_buffer[i] = 4;
     rtcSetBuffer(scene, subdivMeshID, RTC_FACE_BUFFER, face_buffer    , 0, sizeof(unsigned int));
     //delete face_buffer; // FIXME: never deleted
+
+    float* level = (float*) rtcMapBuffer(scene, subdivMeshID, RTC_LEVEL_BUFFER);
+    for (size_t i=0; i<4*mesh->numQuads; i++) level[i] = 32;
+    rtcUnmapBuffer(scene,subdivMeshID, RTC_LEVEL_BUFFER);
+
+    BBox3fa bounds(Vec3fa(-0.1f,-0.1f,-0.1f),Vec3fa(0.1f,0.1f,0.1f));
+    rtcSetDisplacementFunction(scene, subdivMeshID, (RTCDisplacementFunc)DisplacementFunc,(RTCBounds&)bounds);
   }       
   
   for (size_t i=0; i<g_ispc_scene->numSubdivMeshes; i++)
