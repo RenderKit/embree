@@ -26,6 +26,7 @@ namespace embree
     childrenAlignedNodes = childrenUnalignedNodes = 0;
     childrenAlignedNodesMB = childrenUnalignedNodesMB = 0;
     bvhSAH = 0.0f;
+    hash = 0;
     float A = max(0.0f,halfArea(bvh->bounds));
     statistics(bvh->root,A,depth);
     bvhSAH /= area(bvh->bounds);
@@ -57,7 +58,7 @@ namespace embree
     size_t bytesTotal = bytesAlignedNodes+bytesUnalignedNodes+bytesAlignedNodesMB+bytesUnalignedNodesMB+bytesPrims+bytesVertices;
     //size_t bytesTotalAllocated = bvh->alloc.bytes();
     stream.setf(std::ios::fixed, std::ios::floatfield);
-    stream << "  primitives = " << bvh->numPrimitives << ", vertices = " << bvh->numVertices << std::endl;
+    stream << "  primitives = " << bvh->numPrimitives << ", vertices = " << bvh->numVertices << ", hash= " << hash << std::endl;
     stream.precision(4);
     stream << "  sah = " << bvhSAH;
     stream.setf(std::ios::fixed, std::ios::floatfield);
@@ -109,6 +110,7 @@ namespace embree
   {
     if (node.isNode())
     {
+      hash += 0x1234;
       numAlignedNodes++;
       AlignedNode* n = node.node();
       bvhSAH += A*BVH4::travCostAligned;
@@ -121,9 +123,11 @@ namespace embree
         depth=max(depth,cdepth);
       }
       depth++;
+      hash += 0x76767*depth;
     }
     else if (node.isUnalignedNode())
     {
+      hash += 0x1232344;
       numUnalignedNodes++;
       UnalignedNode* n = node.unalignedNode();
       bvhSAH += A*BVH4::travCostUnaligned;
@@ -136,9 +140,11 @@ namespace embree
         depth=max(depth,cdepth);
       }
       depth++;
+      hash += 0x76767*depth;
     }
     else if (node.isNodeMB())
     {
+      hash += 0xEF343;
       numAlignedNodesMB++;
       BVH4::NodeMB* n = node.nodeMB();
       bvhSAH += A*BVH4::travCostAligned;
@@ -151,9 +157,11 @@ namespace embree
         depth=max(depth,cdepth);
       }
       depth++;
+      hash += 0x76767*depth;
     }
     else if (node.isUnalignedNodeMB())
     {
+      hash += 0x1EEF4;
       numUnalignedNodesMB++;
       BVH4::UnalignedNodeMB* n = node.unalignedNodeMB();
       bvhSAH += A*BVH4::travCostUnaligned;
@@ -166,12 +174,16 @@ namespace embree
         depth=max(depth,cdepth);
       }
       depth++;
+      hash += 0x76767*depth;
     }
     else
     {
       depth = 0;
       size_t num; const char* tri = node.leaf(num);
+      hash += 0xDD776*num+0x878;
       if (!num) return;
+
+      hash += bvh->primTy.hash(tri,num);
       
       numLeaves++;
       numPrims += num;

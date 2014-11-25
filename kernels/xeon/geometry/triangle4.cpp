@@ -44,6 +44,14 @@ namespace embree
     return ((Triangle4*)This)->size();
   }
   
+  size_t Triangle4Type::hash(const char* This, size_t num) const 
+  {
+    size_t hash = 0;
+    for (size_t i=0; i<num; i++)
+      hash += (i+1)*((Triangle4*)This)[i].hash();
+    return hash;
+  }
+  
   BBox3fa TriangleMeshTriangle4::update(char* prim_i, size_t num, void* geom) const 
   {
     BBox3fa bounds = empty;
