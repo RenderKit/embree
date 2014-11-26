@@ -168,6 +168,7 @@ namespace embree
       if      (button == GLUT_LEFT_BUTTON && modifiers == GLUT_ACTIVE_SHIFT) mouseMode = 1;
       else if (button == GLUT_MIDDLE_BUTTON) mouseMode = 2;
       else if (button == GLUT_RIGHT_BUTTON ) mouseMode = 3;
+      else if (button == GLUT_LEFT_BUTTON && modifiers == GLUT_ACTIVE_CTRL ) mouseMode = 3;
       else if (button == GLUT_LEFT_BUTTON  ) mouseMode = 4;
 
       if (flip14) {

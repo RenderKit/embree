@@ -24,7 +24,7 @@ namespace embree
   {
   public:
     CatmullClark1Ring ring[4];
-    float level[4];
+    //float level[4];
 
     __forceinline CatmullClarkPatch () {}
 
@@ -32,8 +32,8 @@ namespace embree
     {
       for (size_t i=0; i<4; i++) {
         ring[i].init(first_half_edge+i,vertices);
-        level[i] = first_half_edge[i].edge_level;
-	assert(level[i] >= 0.0f);
+        //level[i] = first_half_edge[i].edge_level;
+	//assert(level[i] >= 0.0f);
       }
       
     }
@@ -68,6 +68,7 @@ namespace embree
 					   CatmullClark1Ring& dest0,
 					   CatmullClark1Ring& dest1) 
     {
+      dest1.vertex_level = dest0.vertex_level = 0.0f;
       dest1.valence = dest0.valence = 4;
       dest1.num_vtx = dest0.num_vtx = 8;
       dest1.border_index = dest0.border_index = -1;
@@ -95,6 +96,7 @@ namespace embree
                                           CatmullClark1Ring &dest0,
                                           CatmullClark1Ring &dest1) 
     {
+      dest1.vertex_level = dest0.vertex_level = 0.0f;
       dest1.valence = dest0.valence = 3;
       dest1.num_vtx = dest0.num_vtx = 6;
       dest0.border_index = 2;
@@ -116,6 +118,7 @@ namespace embree
 
     static __forceinline void init_regular(const Vec3fa_t &center, const Vec3fa_t center_ring[8], const size_t offset, CatmullClark1Ring &dest)
     {
+      dest.vertex_level = 0.0f;
       dest.valence = 4;
       dest.num_vtx = 8;
       dest.border_index = -1;
@@ -126,35 +129,34 @@ namespace embree
       for (size_t i=0; i<4; i++) 
         dest.crease_weight[i] = 0.0f;
     }
- 
 
     void subdivide(CatmullClarkPatch patch[4]) const
     {
-      ring[0].update(patch[0].ring[0]);
-      ring[1].update(patch[1].ring[1]);
-      ring[2].update(patch[2].ring[2]);
-      ring[3].update(patch[3].ring[3]);
+      ring[0].subdivide(patch[0].ring[0]);
+      ring[1].subdivide(patch[1].ring[1]);
+      ring[2].subdivide(patch[2].ring[2]);
+      ring[3].subdivide(patch[3].ring[3]);
 
-      patch[0].level[0] = 0.5f*level[0];
-      patch[0].level[1] = 0.25f*(level[1]+level[3]);
-      patch[0].level[2] = 0.25f*(level[0]+level[2]);
-      patch[0].level[3] = 0.5f*level[3];
+      patch[0].ring[0].edge_level = 0.5f*ring[0].edge_level;
+      patch[0].ring[1].edge_level = 0.25f*(ring[1].edge_level+ring[3].edge_level);
+      patch[0].ring[2].edge_level = 0.25f*(ring[0].edge_level+ring[2].edge_level);
+      patch[0].ring[3].edge_level = 0.5f*ring[3].edge_level;
 
-      patch[1].level[0] = 0.5f*level[0];
-      patch[1].level[1] = 0.5f*level[1];
-      patch[1].level[2] = 0.25f*(level[0]+level[2]);
-      patch[1].level[3] = 0.25f*(level[1]+level[3]);
+      patch[1].ring[0].edge_level = 0.5f*ring[0].edge_level;
+      patch[1].ring[1].edge_level = 0.5f*ring[1].edge_level;
+      patch[1].ring[2].edge_level = 0.25f*(ring[0].edge_level+ring[2].edge_level);
+      patch[1].ring[3].edge_level = 0.25f*(ring[1].edge_level+ring[3].edge_level);
 
-      patch[2].level[0] = 0.25f*(level[0]+level[2]);
-      patch[2].level[1] = 0.5f*level[1];
-      patch[2].level[2] = 0.5f*level[2];
-      patch[2].level[3] = 0.25f*(level[1]+level[3]);
+      patch[2].ring[0].edge_level = 0.25f*(ring[0].edge_level+ring[2].edge_level);
+      patch[2].ring[1].edge_level = 0.5f*ring[1].edge_level;
+      patch[2].ring[2].edge_level = 0.5f*ring[2].edge_level;
+      patch[2].ring[3].edge_level = 0.25f*(ring[1].edge_level+ring[3].edge_level);
 
-      patch[3].level[0] = 0.25f*(level[0]+level[2]);
-      patch[3].level[1] = 0.25f*(level[1]+level[3]);
-      patch[3].level[2] = 0.5f*level[2];
-      patch[3].level[3] = 0.5f*level[3];
-      
+      patch[3].ring[0].edge_level = 0.25f*(ring[0].edge_level+ring[2].edge_level);
+      patch[3].ring[1].edge_level = 0.25f*(ring[1].edge_level+ring[3].edge_level);
+      patch[3].ring[2].edge_level = 0.5f*ring[2].edge_level;
+      patch[3].ring[3].edge_level = 0.5f*ring[3].edge_level;
+
       if (likely(ring[0].has_last_face()))
         init_regular(patch[0].ring[0],patch[1].ring[1],patch[0].ring[1],patch[1].ring[0]);
       else
@@ -206,22 +208,18 @@ namespace embree
     {
       o << "CatmullClarkPatch { " << std::endl;
       for (size_t i=0; i<4; i++)
-	o << "level" << i << ": " << p.level[i] << std::endl;
-      for (size_t i=0; i<4; i++)
 	o << "ring" << i << ": " << p.ring[i] << std::endl;
       o << "}" << std::endl;
       return o;
     }
   };
 
-
-
   class __aligned(64) GeneralCatmullClarkPatch
   {
   public:
     enum { SIZE = 10 };
     GeneralCatmullClark1Ring ring[SIZE];
-    float level[SIZE];
+    //float level[SIZE];
     size_t N;
 
     __forceinline GeneralCatmullClarkPatch () 
@@ -237,7 +235,7 @@ namespace embree
       const SubdivMesh::HalfEdge* edge = h; 
       do {
 	ring[i].init(edge,vertices);
-        level[i] = edge->edge_level;
+        //level[i] = edge->edge_level;
         edge = edge->next();
         i++;
       } while ((edge != h) && (i < SIZE));
@@ -249,6 +247,7 @@ namespace embree
 					   CatmullClark1Ring& dest0,
 					   CatmullClark1Ring& dest1) 
     {
+      dest1.vertex_level = dest0.vertex_level = 0.0f;
       dest1.valence = dest0.valence = 4;
       dest1.num_vtx = dest0.num_vtx = 8;
       dest1.border_index = dest0.border_index = -1;
@@ -276,6 +275,7 @@ namespace embree
                                           CatmullClark1Ring &dest0,
                                           CatmullClark1Ring &dest1) 
     {
+      dest1.vertex_level = dest0.vertex_level = 0.0f;
       dest1.valence = dest0.valence = 3;
       dest1.num_vtx = dest0.num_vtx = 6;
       dest0.border_index = 2;
@@ -297,7 +297,8 @@ namespace embree
 
     static __forceinline void init_regular(const Vec3fa_t &center, const Vec3fa_t center_ring[2*SIZE], const size_t N, const size_t offset, CatmullClark1Ring &dest)
     {
-      assert(N<MAX_VALENCE);
+      assert(N<CatmullClark1Ring::MAX_VALENCE);
+      dest.vertex_level = 0.0f;
       dest.valence = N;
       dest.num_vtx = 2*N;
       dest.border_index = -1;
@@ -315,9 +316,9 @@ namespace embree
 
       for (size_t i=0; i<N; i++) {
         size_t ip1 = (i+1)%N; // FIXME: %
-        ring[i].update(patch[i].ring[0]);
-        patch[i]  .level[0] = 0.5f*level[i];
-        patch[ip1].level[3] = 0.5f*level[i];
+        ring[i].subdivide(patch[i].ring[0]);
+        patch[i]  .ring[0].edge_level = 0.5f*ring[i].edge_level;
+        patch[ip1].ring[3].edge_level = 0.5f*ring[i].edge_level;
       }
 
       Vec3fa_t center = Vec3fa_t(0.0f);
@@ -328,9 +329,9 @@ namespace embree
         size_t ip1 = (i+1)%N; // FIXME: %
         size_t im1 = (i+N-1)%N; // FIXME: %
         if (likely(ring[i].has_last_face())) init_regular(patch[i].ring[0],patch[ip1].ring[0],patch[i].ring[1],patch[ip1].ring[3]); 
-        else                                   init_border (patch[i].ring[0],patch[ip1].ring[0],patch[i].ring[1],patch[ip1].ring[3]);
+        else                                 init_border (patch[i].ring[0],patch[ip1].ring[0],patch[i].ring[1],patch[ip1].ring[3]);
 
-        patch[i].level[1] = patch[ip1].level[2] = 0.25f*(level[im1]+level[ip1]);
+        patch[i].ring[1].edge_level = patch[ip1].ring[2].edge_level = 0.25f*(ring[im1].edge_level+ring[ip1].edge_level);
 
         center += ring[i].vtx;
         center_ring[2*i+0] = (Vec3fa_t)patch[i].ring[0].vtx;
@@ -343,11 +344,22 @@ namespace embree
       }
     }
 
+    void init(CatmullClarkPatch& patch) const
+    {
+      assert(size() == 4);
+      ring[0].convert(patch.ring[0]);
+      ring[1].convert(patch.ring[1]);
+      ring[2].convert(patch.ring[2]);
+      ring[3].convert(patch.ring[3]);
+      //patch.level[0] = level[0];
+      //patch.level[1] = level[1];
+      //patch.level[2] = level[2];
+      //patch.level[3] = level[3];
+    }
+
     friend __forceinline std::ostream &operator<<(std::ostream &o, const GeneralCatmullClarkPatch &p)
     {
       o << "GeneralCatmullClarkPatch { " << std::endl;
-      for (size_t i=0; i<p.N; i++)
-	o << "level" << i << ": " << p.level[i] << std::endl;
       for (size_t i=0; i<p.N; i++)
 	o << "ring" << i << ": " << p.ring[i] << std::endl;
       o << "}" << std::endl;

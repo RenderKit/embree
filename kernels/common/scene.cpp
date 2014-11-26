@@ -19,7 +19,6 @@
 #if !defined(__MIC__)
 #include "bvh4/bvh4.h"
 #include "bvh8/bvh8.h"
-#include "geometry/subdivpatchdispl1.h"
 #else
 #include "xeonphi/bvh4i/bvh4i.h"
 #include "xeonphi/bvh4mb/bvh4mb.h"
@@ -116,7 +115,6 @@ namespace embree
 
     if      (g_subdiv_accel == "default"               ) accels.add(BVH4::BVH4SubdivPatch1(this));
     else if (g_subdiv_accel == "bvh4.subdivpatch1"     ) accels.add(BVH4::BVH4SubdivPatch1(this));
-    else if (g_subdiv_accel == "bvh4.subdivpatchdispl1") accels.add(BVH4::BVH4SubdivPatchDispl1(this));
     else if (g_subdiv_accel == "bvh4.quadquad4x4"      ) accels.add(BVH4::BVH4DisplQuadQuad4x4(this));
     else THROW_RUNTIME_ERROR("unknown accel "+g_subdiv_accel);
 

@@ -83,7 +83,13 @@ CONFIGURE_FILE(
 
 SET(XEON_ISA "AVX2" CACHE STRING "Selects highest ISA to support.")
 SET_PROPERTY(CACHE XEON_ISA PROPERTY STRINGS SSE2 SSE3 SSSE3 SSE4.1 SSE4.2 AVX AVX-I AVX2 AVX512)
-OPTION(XEON_PHI_ISA "Generates code path for Xeon Phi.")
+
+# only support Xeon Phi on Linux
+IF (NOT WIN32 AND NOT APPLE)
+  OPTION(XEON_PHI_ISA "Generates code path for Xeon Phi.")
+ELSE()
+  SET(XEON_PHI_ISA OFF CACHE INTERNAL "Xeon Phi only supported on Linux.")
+ENDIF()
 
 IF (XEON_ISA STREQUAL "SSE2")
   SET(ISA  1)

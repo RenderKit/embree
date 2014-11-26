@@ -83,5 +83,4 @@ ADD_ISPC_LIBRARY(embree_xeonphi ${EMBREE_LIB_TYPE}
 
 TARGET_LINK_LIBRARIES(embree_xeonphi sys_xeonphi simd_xeonphi)
 SET_TARGET_PROPERTIES(embree_xeonphi PROPERTIES VERSION 2.4.0 SOVERSION 2)
-SET_PROPERTY(TARGET embree_xeonphi PROPERTY FOLDER kernels/xeonphi)
 INSTALL(TARGETS embree_xeonphi DESTINATION lib)

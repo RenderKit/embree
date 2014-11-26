@@ -397,10 +397,10 @@ namespace embree
         for (size_t x=0; x<9; x++) {
           const Vec3fa P0 = p[y][x];
           const Vec3fa P1 = Vec3fa(qx[y][x],qy[y][x],qz[y][x]);
-#if defined(DEBUG)
+/*#if defined(DEBUG) // FIXME: enable
           if (!inside(mesh->displBounds,P1-P0))
             THROW_RUNTIME_ERROR("displacement out of bounds");
-#endif
+	    #endif*/
           p[y][x] = P1;
         }
       }
@@ -543,8 +543,7 @@ namespace embree
                         const TessellationPattern& pattern3, 
                         const TessellationPattern& pattern_x, const int x0, const int Nx,
                         const TessellationPattern& pattern_y, const int y0, const int Ny,
-                        const float u0, const float u1,
-                        const float v0, const float v1)
+                        const Vec2f& uv0, const Vec2f& uv1, const Vec2f& uv2, const Vec2f& uv3)
     {
       Vec2f luv[9][9];
 
@@ -602,7 +601,10 @@ namespace embree
 
       for (int y=0; y<=8; y++) {
         for (int x=0; x<=8; x++) {
-          uv[y][x] = (Vec2f(one)-luv[y][x]) * Vec2f(u0,v0) + luv[y][x]*Vec2f(u1,v1);
+	  const Vec2f uv01 = (1.0f-luv[y][x].x) * uv0  + luv[y][x].x * uv1;
+	  const Vec2f uv32 = (1.0f-luv[y][x].x) * uv3  + luv[y][x].x * uv2;
+	  const Vec2f uvxy = (1.0f-luv[y][x].y) * uv01 + luv[y][x].y * uv32;
+          uv[y][x] = uvxy;
         }
       }
 
