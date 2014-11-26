@@ -200,7 +200,7 @@ namespace embree
 	  assert(u_size*v_size <= 16);
 
 	  const unsigned int currentIndex = localCounter;
-	  localCounter += 2;
+	  localCounter += geom->displFunc != NULL ? 5 : 2;
 
 	  mic_f &leaf_u_array = lazymem[currentIndex+0];
 	  mic_f &leaf_v_array = lazymem[currentIndex+1];
@@ -237,7 +237,15 @@ namespace embree
 
 	  if (unlikely(geom->displFunc != NULL))
 	    {
-	      mic3f normal = patch.normal16(leaf_u_array,leaf_v_array);
+	      mic3f normal      = patch.normal16(leaf_u_array,leaf_v_array);
+	      mic_f &leaf_vtx_x = lazymem[currentIndex+2];
+	      mic_f &leaf_vtx_y = lazymem[currentIndex+3];
+	      mic_f &leaf_vtx_z = lazymem[currentIndex+4];
+
+	      leaf_vtx_x = vtx.x;
+	      leaf_vtx_y = vtx.y;
+	      leaf_vtx_z = vtx.z;
+
 	      geom->displFunc(geom->userPtr,
 			      patch.geomID,
 			      patch.primID,
@@ -246,9 +254,9 @@ namespace embree
 			      (const float*)&normal.x,
 			      (const float*)&normal.y,
 			      (const float*)&normal.z,
-			      (float*)&vtx.x,
-			      (float*)&vtx.y,
-			      (float*)&vtx.z,
+			      (float*)&leaf_vtx_x,
+			      (float*)&leaf_vtx_y,
+			      (float*)&leaf_vtx_z,
 			      16);
 
 
@@ -314,7 +322,7 @@ namespace embree
 
     void initLazySubdivTree(SubdivPatch1 &patch,
 			    BVH4i *bvh,
-			    Scene *const scene)
+			    const SubdivMesh* const geom)
     {
       unsigned int build_state = atomic_add((volatile atomic_t*)&patch.under_construction,+1);
       if (build_state != 0)
@@ -358,8 +366,6 @@ namespace embree
 	  FATAL("alloc");
 	}
 
-      const SubdivMesh* const geom = (SubdivMesh*)scene->get(patch.geomID);
-
       BBox3fa bounds = createSubTree( subtree_root,
 				      bvh->lazymem,
 				      patch,
@@ -401,7 +407,7 @@ namespace embree
     void initLocalLazySubdivTree(const SubdivPatch1 &patch,
 				 unsigned int currentIndex,
 				 mic_f *lazymem,
-				 Scene *const scene)
+				 const SubdivMesh* const geom)
     {
 
       TIMER(double msec = 0.0);
@@ -418,8 +424,6 @@ namespace embree
 			   u_array,
 			   v_array);
 
-
-      const SubdivMesh* const geom = (SubdivMesh*)scene->get(patch.geomID);
 
       BVH4i::NodeRef subtree_root = 0;
 
@@ -759,6 +763,7 @@ namespace embree
 
 	      subdiv_patch.prefetchData();
 
+	      const SubdivMesh* const geom = (SubdivMesh*)scene->get(subdiv_patch.geomID); // FIXME: test flag first
 
 	      /* fast patch for grid with <= 16 points */
 	      if (likely(subdiv_patch.grid_size_64b_blocks == 1))
@@ -778,7 +783,7 @@ namespace embree
 		  if (unlikely(subdiv_patch.bvh4i_subtree_root == BVH4i::invalidNode))
 		    {
 		      /* build sub-patch bvh4i */
-		      initLazySubdivTree(subdiv_patch,bvh,scene);
+		      initLazySubdivTree(subdiv_patch,bvh,geom);
 		    }
 
 		  assert(subdiv_patch.bvh4i_subtree_root != BVH4i::invalidNode);
@@ -794,7 +799,7 @@ namespace embree
 
 		      unsigned int currentIndex = 0;
 		      subtree_root = local_cache->insert(patchIndex,blocks,currentIndex);
-		      initLocalLazySubdivTree(subdiv_patch,currentIndex,lazymem,scene);		      
+		      initLocalLazySubdivTree(subdiv_patch,currentIndex,lazymem,geom);		      
 		      assert( subtree_root != BVH4i::invalidNode);
 		    }
 		    
@@ -838,7 +843,15 @@ namespace embree
 		      const mic_m m_active = 0x777;
 		      const mic_f &uu = lazymem[uvIndex + 0];
 		      const mic_f &vv = lazymem[uvIndex + 1];		  
-		      const mic3f vtx = subdiv_patch.eval16(uu,vv);
+		      mic3f vtx;
+		      if (likely(geom->displFunc == NULL))
+			vtx = subdiv_patch.eval16(uu,vv);
+		      else
+			{
+			  vtx.x = lazymem[uvIndex + 2];
+			  vtx.y = lazymem[uvIndex + 3];
+			  vtx.z = lazymem[uvIndex + 4];
+			}
 		  
 		      intersect1_quad16(rayIndex, 
 					dir_xyz,
@@ -969,6 +982,8 @@ namespace embree
 
 	      subdiv_patch.prefetchData();
 
+	      const SubdivMesh* const geom = (SubdivMesh*)scene->get(subdiv_patch.geomID);
+
 	      /* fast patch for grid with <= 16 points */
 	      if (likely(subdiv_patch.grid_size_64b_blocks == 1))
 		intersectEvalGrid1(rayIndex,
@@ -986,7 +1001,7 @@ namespace embree
 		  if (unlikely(subdiv_patch.bvh4i_subtree_root == BVH4i::invalidNode))
 		    {
 		      /* build sub-patch bvh4i */
-		      initLazySubdivTree(subdiv_patch,bvh,scene);
+		      initLazySubdivTree(subdiv_patch,bvh,geom);
 		    }
 
 		  assert(subdiv_patch.bvh4i_subtree_root != BVH4i::invalidNode);
@@ -1001,7 +1016,7 @@ namespace embree
 		      const unsigned int blocks = subdiv_patch.grid_size_64b_blocks;
 		      unsigned int currentIndex = 0;
 		      subtree_root = local_cache->insert(patchIndex,blocks,currentIndex);
-		      initLocalLazySubdivTree(subdiv_patch,currentIndex,lazymem,scene);		      
+		      initLocalLazySubdivTree(subdiv_patch,currentIndex,lazymem,geom);		      
 		      assert( subtree_root != BVH4i::invalidNode);
 		    }
 		    
@@ -1044,8 +1059,16 @@ namespace embree
 		  
 		      const mic_m m_active = 0x777;
 		      const mic_f &uu = lazymem[uvIndex + 0];
-		      const mic_f &vv = lazymem[uvIndex + 1];		  
-		      const mic3f vtx = subdiv_patch.eval16(uu,vv);
+		      const mic_f &vv = lazymem[uvIndex + 1];
+		      mic3f vtx;
+		      if (likely(geom->displFunc == NULL))
+			vtx = subdiv_patch.eval16(uu,vv);
+		      else
+			{
+			  vtx.x = lazymem[uvIndex + 2];
+			  vtx.y = lazymem[uvIndex + 3];
+			  vtx.z = lazymem[uvIndex + 4];
+			}
 		  
 		      intersect1_quad16(rayIndex, 
 					dir_xyz,
