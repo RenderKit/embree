@@ -219,6 +219,13 @@ namespace embree
       initFaceVertex(patch,3,p3(),e3_p(),e0_m(),valence_p0,e3_m(),e2_p(),valence_p3,f3_p(),f3_m() );
     }
 
+    void init(const GeneralCatmullClarkPatch& patch)
+    {
+      assert(patch.size() == 4);
+      CatmullClarkPatch qpatch; patch.init(qpatch);
+      init(qpatch);
+    }
+
     __forceinline void exportConrolPoints( Vec3fa matrix[4][4], Vec3fa f_m[2][2] ) const
     {
       for (size_t y=0;y<4;y++)
@@ -357,8 +364,6 @@ namespace embree
       
       return n;     
     }
-    
-    
     
     __forceinline Vec3fa normal( const float uu, const float vv) const
     {

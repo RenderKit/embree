@@ -115,7 +115,7 @@ namespace embree
     }
     
     
-    __forceinline void update(CatmullClark1Ring& dest) const
+    __forceinline void subdivide(CatmullClark1Ring& dest) const
     {
       dest.valence         = valence;
       dest.num_vtx         = num_vtx;
@@ -449,7 +449,7 @@ namespace embree
       valence = f;
     }
     
-    __forceinline void update(CatmullClark1Ring& dest) const
+    __forceinline void subdivide(CatmullClark1Ring& dest) const
     {
       dest.valence         = valence;
       dest.num_vtx         = 2*valence;
@@ -507,7 +507,7 @@ namespace embree
           dest.vtx = vtx;
         } else {
           const float t0 = vertex_crease_weight, t1 = 1.0f-t0;
-          dest.vtx = t0*vtx + t1*v_smooth;;
+          dest.vtx = t0*vtx + t1*v_smooth;
         }
         return;
       }
@@ -536,6 +536,33 @@ namespace embree
       /* compute new vertex using corner rule */
       else {
         dest.vtx = vtx;
+      }
+    }
+
+    void convert(CatmullClark1Ring& dst) const
+    {
+      dst.vtx = vtx;
+      dst.valence = valence;
+      dst.num_vtx = 2*valence;
+      dst.border_index = border_face == -1 ? -1 : 2*border_face;
+      for (size_t i=0; i<valence; i++) 
+	dst.crease_weight[i] = crease_weight[i];
+      dst.vertex_crease_weight = vertex_crease_weight;
+
+      const bool quads = std::all_of(&face_size[0],&face_size[valence],[](int i) { return i == 2; });
+      if (quads) {
+	for (size_t i=0; i<num_vtx; i++) dst.ring[i] = ring[i];
+      }
+      else 
+      {
+	for (size_t i=0, j=0; i<valence; j+=face_size[i++])
+	{
+	  const size_t N = face_size[i];
+	  Vec3fa V = vtx + ring[j] + ring[(j+N)%num_vtx]; // FIXME: optimize %
+	  Vec3fa W = zero; for (size_t k=j+1; k<j+N; k++) W+=ring[k];
+	  dst.ring[2*i+0] = ring[j];
+	  dst.ring[2*i+1] = 4.0f*(V+W)/float(N+2)-V;
+	}
       }
     }
     

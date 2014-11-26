@@ -129,10 +129,10 @@ namespace embree
 
     void subdivide(CatmullClarkPatch patch[4]) const
     {
-      ring[0].update(patch[0].ring[0]);
-      ring[1].update(patch[1].ring[1]);
-      ring[2].update(patch[2].ring[2]);
-      ring[3].update(patch[3].ring[3]);
+      ring[0].subdivide(patch[0].ring[0]);
+      ring[1].subdivide(patch[1].ring[1]);
+      ring[2].subdivide(patch[2].ring[2]);
+      ring[3].subdivide(patch[3].ring[3]);
 
       patch[0].level[0] = 0.5f*level[0];
       patch[0].level[1] = 0.25f*(level[1]+level[3]);
@@ -314,7 +314,7 @@ namespace embree
 
       for (size_t i=0; i<N; i++) {
         size_t ip1 = (i+1)%N; // FIXME: %
-        ring[i].update(patch[i].ring[0]);
+        ring[i].subdivide(patch[i].ring[0]);
         patch[i]  .level[0] = 0.5f*level[i];
         patch[ip1].level[3] = 0.5f*level[i];
       }
@@ -340,6 +340,19 @@ namespace embree
       for (size_t i=0; i<N; i++) {
         init_regular(center,center_ring,N,2*i,patch[i].ring[2]);
       }
+    }
+
+    void init(CatmullClarkPatch& patch) const
+    {
+      assert(size() == 4);
+      ring[0].convert(patch.ring[0]);
+      ring[1].convert(patch.ring[1]);
+      ring[2].convert(patch.ring[2]);
+      ring[3].convert(patch.ring[3]);
+      patch.level[0] = level[0];
+      patch.level[1] = level[1];
+      patch.level[2] = level[2];
+      patch.level[3] = level[3];
     }
 
     friend __forceinline std::ostream &operator<<(std::ostream &o, const GeneralCatmullClarkPatch &p)

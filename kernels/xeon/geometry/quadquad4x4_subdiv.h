@@ -44,7 +44,7 @@ namespace embree
         const bool subdiv1 = !h->hasOpposite() || !h->opposite()->isRegularFace(); h = h->next();
         const bool subdiv2 = !h->hasOpposite() || !h->opposite()->isRegularFace(); h = h->next();
         const bool subdiv3 = !h->hasOpposite() || !h->opposite()->isRegularFace(); h = h->next();
-        subdivide(patch,5,Vec2f(0,0),Vec2f(0,1),Vec2f(1,1),Vec2f(1,0),subdiv0,subdiv1,subdiv2,subdiv3);
+        subdivide(patch,5,Vec2f(0.0f,0.0f),Vec2f(0.0f,1.0f),Vec2f(1.0f,1.0f),Vec2f(1.0f,0.0f),subdiv0,subdiv1,subdiv2,subdiv3);
 #else
         const GeneralCatmullClarkPatch patch(h,vertices);
         subdivide(patch,5);
@@ -57,6 +57,14 @@ namespace embree
 
     void subdivide(const GeneralCatmullClarkPatch& patch, int depth)
     {
+#if 1
+      if (patch.size() == 4) {
+	CatmullClarkPatch qpatch; patch.init(qpatch);
+	subdivide(qpatch,depth,Vec2f(0.0f,0.0f),Vec2f(0.0f,1.0f),Vec2f(1.0f,1.0f),Vec2f(1.0f,0.0f),false,false,false,false);
+	return;
+      }
+#endif
+
       size_t N;
       CatmullClarkPatch patches[GeneralCatmullClarkPatch::SIZE]; 
       patch.subdivide(patches,N);
