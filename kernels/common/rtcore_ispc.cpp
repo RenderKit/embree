@@ -343,4 +343,14 @@ namespace embree
     return rtcNewSubdivisionMesh((RTCScene)scene,flags,numFaces,numEdges,numVertices,numEdgeCreases,numVertexCreases,numHoles,numTimeSteps);
   }
 
+  extern "C" void ispcSetDisplacementFunction (RTCScene scene, unsigned int geomID, void* func, RTCBounds* bounds)
+  {
+    CATCH_BEGIN;
+    TRACE(rtcSetDisplacementFunction);
+    VERIFY_HANDLE(scene);
+    VERIFY_GEOMID(geomID);
+    ((Scene*)scene)->get(geomID)->setDisplacementFunction((RTCDisplacementFunc)func,*bounds);
+    CATCH_END;
+  }
+
 }

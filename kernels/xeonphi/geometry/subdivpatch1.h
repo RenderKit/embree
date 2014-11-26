@@ -47,15 +47,17 @@ namespace embree
   {
   public:
     enum {
-      REGULAR_PATCH    = 1, // = 0 => Gregory Patch 
-      TRANSITION_PATCH = 2 // needs stiching?
+      REGULAR_PATCH     = 1,  // 0 => Gregory Patch 
+      TRANSITION_PATCH  = 2,  // needs stiching?
+      HAS_DISPLACEMENTS = 4   // 0 => no displacments
     };
 
     /*! Default constructor. */
     SubdivPatch1 (const SubdivMesh::HalfEdge * first_half_edge,
 		  const Vec3fa *vertices,
 		  unsigned int geomID,
-		  unsigned int primID) 
+		  unsigned int primID,
+		  const SubdivMesh *const mesh) 
       : geomID(geomID),
       primID(primID),
       under_construction(0),
@@ -100,20 +102,25 @@ namespace embree
 	  int_edge_points3 < (unsigned int)grid_v_res)
 	flags |= TRANSITION_PATCH;
       
+
+      /* has displacements? */
+      if (mesh->displFunc != NULL)
+	flags |= HAS_DISPLACEMENTS;
+
       //grid_size = (grid_u_res*grid_v_res+15)&(-16);
 
+      /* count 64b blocks when tessellated */
       grid_size_64b_blocks = 1;
 
-      /* tessellate into 4x4 grid blocks */
-      if (grid_u_res*grid_v_res > 16)
-	grid_size_64b_blocks = getSubTreeSize64bBlocks();
-
+      /* tessellate into 4x4 grid blocks for larger grid resolutions or displaced patches*/
+      if (grid_u_res*grid_v_res > 16 || mesh->displFunc != NULL)
+	grid_size_64b_blocks = getSubTreeSize64bBlocks( mesh->displFunc != NULL ? 5 : 2); // u,v,x,y,z or just u,v
 
       assert(grid_size_64b_blocks >= 1);
 
-      /* compute 16-bit quad mask for <= 16 points case */
+      /* compute 16-bit quad mask for direct evaluation */
 
-      if (grid_u_res*grid_v_res <= 16)
+      if (grid_size_64b_blocks == 1)
 	{
 	  mic_m m_active = 0xffff;
 	  for (unsigned int i=grid_u_res-1;i<16;i+=grid_u_res)
@@ -147,12 +154,14 @@ namespace embree
       return (flags & TRANSITION_PATCH) == TRANSITION_PATCH;      
     }
 
+    __forceinline void prefetchData() const
+    {
+      patch.prefetchData();
+    }
 
     __forceinline mic3f eval16(const mic_f &uu,
 			       const mic_f &vv) const
     {
-      patch.prefetchData();
-
       if (likely(isRegular()))
 	{
 	  return patch.eval16(uu,vv);
@@ -167,8 +176,6 @@ namespace embree
     __forceinline mic_f eval4(const mic_f &uu,
 			      const mic_f &vv) const
     {
-      patch.prefetchData();
-
       if (likely(isRegular()))
 	{
 	  return patch.eval4(uu,vv);
@@ -193,9 +200,37 @@ namespace embree
 	{
 	  // FIXME: fast "lane" code for gregory patch normal
 	  return GregoryPatch::normal( patch.v, uu, vv );
-	}
-      
+	}      
     }
+
+    __forceinline mic3f normal16(const mic_f &uu,
+				 const mic_f &vv) const
+    {
+      mic3f n;
+      if (likely(isRegular()))
+	{
+	  for (size_t i=0;i<16;i++)
+	    {
+	      const mic_f n_i = patch.normal4(uu[i],vv[i]);
+	      n.x[i] = n_i[0];
+	      n.y[i] = n_i[1];
+	      n.z[i] = n_i[2];
+	    }
+	}
+      else 
+	{
+	  // FIXME: fast "lane" code for gregory patch normal
+	  for (size_t i=0;i<16;i++)
+	    {
+	      const Vec3fa n_i = GregoryPatch::normal( patch.v, uu[i], vv[i] );
+	      n.x[i] = n_i.x;
+	      n.y[i] = n_i.y;
+	      n.z[i] = n_i.z;
+	    }
+	}
+      return n;
+    }
+
 
 
     __forceinline bool isRegular() const
@@ -317,12 +352,13 @@ namespace embree
     size_t get64BytesBlocksForGridSubTree(const unsigned int u_start,
 					  const unsigned int u_end,
 					  const unsigned int v_start,
-					  const unsigned int v_end)
+					  const unsigned int v_end,
+					  const unsigned int leafBlocks)
     {
       const unsigned int u_size = u_end-u_start+1;
       const unsigned int v_size = v_end-v_start+1;
       if (u_size <= 4 && v_size <= 4)
-	return 2;/* 128 bytes for 16x 'u' and 'v' */
+	return leafBlocks;/* 128 bytes for 16x 'u' and 'v' plus 16x x,y,z for vtx with displacment*/
 
       const unsigned int u_mid = (u_start+u_end)/2;
       const unsigned int v_mid = (v_start+v_end)/2;
@@ -338,13 +374,14 @@ namespace embree
 	blocks += get64BytesBlocksForGridSubTree(subtree_u_start[i], 
 						 subtree_u_end[i],
 						 subtree_v_start[i],
-						 subtree_v_end[i]);
+						 subtree_v_end[i],
+						 leafBlocks);
       return blocks;    
     }
 
-    __forceinline unsigned int getSubTreeSize64bBlocks()
+    __forceinline unsigned int getSubTreeSize64bBlocks(const unsigned int leafBlocks = 2)
     {
-      return get64BytesBlocksForGridSubTree(0,grid_u_res-1,0,grid_v_res-1);
+      return get64BytesBlocksForGridSubTree(0,grid_u_res-1,0,grid_v_res-1,leafBlocks);
     }
 
   public:

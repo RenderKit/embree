@@ -91,6 +91,8 @@ extern "C" void ispcSetOcclusionFilterFunction4 (RTCScene scene, uniform unsigne
 extern "C" void ispcSetOcclusionFilterFunction8 (RTCScene scene, uniform unsigned int geomID, void* uniform filter);
 extern "C" void ispcSetOcclusionFilterFunction16 (RTCScene scene, uniform unsigned int geomID, void* uniform filter);
 
+extern "C" void ispcSetDisplacementFunction (RTCScene scene, uniform unsigned int geomID, void *uniform func, uniform RTCBounds* uniform bounds);
+
 void rtcInit(const uniform int8* uniform cfg) {
   ispcInit(cfg);
 }
@@ -312,4 +314,9 @@ void rtcSetOcclusionFilterFunction (RTCScene scene, uniform unsigned int geomID,
     ispcSetOcclusionFilterFunction8(scene,geomID,filter);
   else if (sizeof(varying float) == 64)
     ispcSetOcclusionFilterFunction16(scene,geomID,filter);
+}
+
+void rtcSetDisplacementFunction (RTCScene scene, uniform unsigned int geomID, uniform RTCDisplacementFunc func, uniform RTCBounds* uniform bounds)
+{
+  ispcSetDisplacementFunction(scene,geomID,func,bounds);
 }

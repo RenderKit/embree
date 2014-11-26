@@ -65,6 +65,7 @@ typedef void (*uniform RTCFilterFuncUniform)(void* uniform ptr,    /*!< pointer 
 typedef void (*uniform RTCFilterFuncVarying)(void* uniform ptr,   /*!< pointer to user data */
                                      varying RTCRay& ray  /*!< intersection to filter */);
 
+
 /*! \brief Creates a new scene instance. 
 
   A scene instance contains a reference to a scene to instantiate and
