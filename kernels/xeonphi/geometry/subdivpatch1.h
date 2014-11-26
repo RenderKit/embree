@@ -243,7 +243,7 @@ namespace embree
       return !isRegular();
     }
 
-    BBox3fa bounds() const
+    BBox3fa bounds(const SubdivMesh* const geom) const
     {
 #if FORCE_TESSELLATION_BOUNDS == 1
 
@@ -306,7 +306,31 @@ namespace embree
       assert( grid_size_64b_blocks >= 1 );
       for (size_t i=0;i<grid_size_64b_blocks;i++)
 	{
-	  const mic3f vtx = eval16( load16f(&u_array[i*16]), load16f(&v_array[i*16]) );
+	  const mic_f u = load16f(&u_array[i*16]);
+	  const mic_f v = load16f(&v_array[i*16]);
+	  mic3f vtx = eval16( u, v );
+
+	  /* eval displacement function */
+	  if (unlikely(geom->displFunc != NULL))
+	    {
+	      mic3f normal      = normal16(u,v);
+
+	      geom->displFunc(geom->userPtr,
+			      geomID,
+			      primID,
+			      (const float*)&u,
+			      (const float*)&v,
+			      (const float*)&normal,
+			      (const float*)&normal,
+			      (const float*)&normal,
+			      (float*)&vtx.x,
+			      (float*)&vtx.y,
+			      (float*)&vtx.z,
+			      16);
+
+	    }
+
+	  /* extend bounding box */
 	  b.extend( getBBox3fa(vtx) );
 	}
 

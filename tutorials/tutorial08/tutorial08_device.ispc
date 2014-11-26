@@ -18,7 +18,7 @@
 #include "../common/tutorial/scene_device.isph"
 
 #define PARALLEL_COMMIT
-//#define ENABLE_DISPLACEMENTS
+#define ENABLE_DISPLACEMENTS
 
 //#define FORCE_FIXED_EDGE_TESSELLATION
 #define FIXED_EDGE_TESSELLATION_VALUE 4
@@ -147,17 +147,26 @@ void updateEdgeLevels(uniform ISPCScene* uniform scene_in, const uniform Vec3fa&
 void displacementFunction(void* uniform ptr,               /*!< pointer to user data of geometry */
                           uniform unsigned int geomID,     /*!< ID of geometry to displace */	
                           uniform unsigned int primID,     /*!< ID of primitive of geometry to displace */
-                          uniform const float* u,          /*!< u coordinates (source) */
-                          uniform const float* v,          /*!< v coordinates (source) */
-                          uniform const float* nx,         /*!< x coordinates of normal at point to displace (source) */
-                          uniform const float* ny,         /*!< y coordinates of normal at point to displace (source) */
-                          uniform const float* nz,         /*!< z coordinates of normal at point to displace (source) */
-                          uniform float* px,               /*!< x coordinates of points to displace (source and target) */
-                          uniform float* py,               /*!< y coordinates of points to displace (source and target) */
-                          uniform float* pz,               /*!< z coordinates of points to displace (source and target) */
+                          uniform const float* uniform u,          /*!< u coordinates (source) */
+                          uniform const float* uniform v,          /*!< v coordinates (source) */
+                          uniform const float* uniform nx,         /*!< x coordinates of normal at point to displace (source) */
+                          uniform const float* uniform ny,         /*!< y coordinates of normal at point to displace (source) */
+                          uniform const float* uniform nz,         /*!< z coordinates of normal at point to displace (source) */
+                          uniform float* uniform px,               /*!< x coordinates of points to displace (source and target) */
+                          uniform float* uniform py,               /*!< y coordinates of points to displace (source and target) */
+                          uniform float* uniform pz,               /*!< z coordinates of points to displace (source and target) */
                           uniform size_t N                 /*!< number of points to displace */ )
 {
- print("HERE\n");
+#if 1
+ for (uniform size_t i=0; i<N; i++) {
+   const uniform float dP_x = 0.02f*(sin(100.0f*px[i]+0.5f));
+   const uniform float dP_y = 0.02f*(sin(100.0f*pz[i]+1.5f));
+   const uniform float dP_z = 0.02f*(cos(100.0f*py[i]));
+   px[i] += dP_x; 
+   py[i] += dP_y; 
+   pz[i] += dP_z;
+  }  
+#endif  
 }
 
 

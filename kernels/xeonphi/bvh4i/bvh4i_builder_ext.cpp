@@ -1022,7 +1022,7 @@ PRINT(CORRECT_numPrims);
 					    i,
 					    subdiv_mesh);
 	    	    
-	    const BBox3fa bounds = tmp.bounds();
+	    const BBox3fa bounds = tmp.bounds(subdiv_mesh);
 	    
 	    local_lazyMem64BytesBlocks += tmp.grid_size_64b_blocks;
 
