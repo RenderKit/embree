@@ -255,7 +255,7 @@ namespace embree
     void setUserData (void* ptr, bool ispc);
     void immutable ();
     bool verify ();
-    void setDisplacementFunction (RTCDisplacementFunc func, const RTCBounds& bounds);
+    void setDisplacementFunction (RTCDisplacementFunc func, RTCBounds* bounds);
 
   public:
 

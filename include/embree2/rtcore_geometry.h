@@ -219,7 +219,7 @@ RTCORE_API void rtcUpdate (RTCScene scene, unsigned geomID);
 RTCORE_API void rtcDisable (RTCScene scene, unsigned geomID);
 
 /*! \brief Sets the displacement function. */
-RTCORE_API void rtcSetDisplacementFunction (RTCScene scene, unsigned geomID, RTCDisplacementFunc func, const RTCBounds& bounds);
+RTCORE_API void rtcSetDisplacementFunction (RTCScene scene, unsigned geomID, RTCDisplacementFunc func, RTCBounds* bounds);
 
 /*! \brief Sets the intersection filter function for single rays. */
 RTCORE_API void rtcSetIntersectionFilterFunction (RTCScene scene, unsigned geomID, RTCFilterFunc func);

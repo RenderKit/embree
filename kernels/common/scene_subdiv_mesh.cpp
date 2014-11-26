@@ -174,14 +174,17 @@ namespace embree
     userPtr = ptr;
   }
 
-  void SubdivMesh::setDisplacementFunction (RTCDisplacementFunc func, const RTCBounds& bounds) 
+  void SubdivMesh::setDisplacementFunction (RTCDisplacementFunc func, RTCBounds* bounds) 
   {
     if (parent->isStatic() && parent->isBuild()) {
       process_error(RTC_INVALID_OPERATION,"static geometries cannot get modified");
       return;
     }
     this->displFunc   = func;
-    this->displBounds = (BBox3fa&)bounds; 
+    if (bounds)
+      this->displBounds = *(BBox3fa*)bounds; 
+    else
+      this->displBounds = BBox3fa( empty );
   }
 
   void SubdivMesh::immutable () 

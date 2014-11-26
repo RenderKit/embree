@@ -128,7 +128,7 @@ namespace embree
     }
 
     /*! Set displacement function. */
-    virtual void setDisplacementFunction (RTCDisplacementFunc filter, const RTCBounds& bounds) {
+    virtual void setDisplacementFunction (RTCDisplacementFunc filter, RTCBounds* bounds) {
       process_error(RTC_INVALID_OPERATION,"operation not supported for this geometry"); 
     }
 
