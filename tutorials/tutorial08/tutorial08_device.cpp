@@ -120,7 +120,7 @@ unsigned int createSphere (RTCGeometryFlags flags, const Vec3fa& pos, const floa
   g_sphere = mesh;
 
   BBox3fa bounds(Vec3fa(-0.1f,-0.1f,-0.1f),Vec3fa(0.1f,0.1f,0.1f));
-  rtcSetDisplacementFunction(g_scene, mesh, (RTCDisplacementFunc)DisplacementFunc,(RTCBounds&)bounds);
+  rtcSetDisplacementFunction(g_scene, mesh, (RTCDisplacementFunc)DisplacementFunc,(RTCBounds*)&bounds);
   
   /* map buffers */
   Vec3fa* vertices = (Vec3fa*  ) rtcMapBuffer(g_scene,mesh,RTC_VERTEX_BUFFER); 
@@ -233,7 +233,7 @@ RTCScene constructScene(const Vec3fa& cam_pos)
     rtcUnmapBuffer(scene,subdivMeshID, RTC_LEVEL_BUFFER);
 
     BBox3fa bounds(Vec3fa(-0.1f,-0.1f,-0.1f),Vec3fa(0.1f,0.1f,0.1f));
-    rtcSetDisplacementFunction(scene, subdivMeshID, (RTCDisplacementFunc)DisplacementFunc,(RTCBounds&)bounds);
+    rtcSetDisplacementFunction(scene, subdivMeshID, (RTCDisplacementFunc)DisplacementFunc,(RTCBounds*)&bounds);
   }       
   
   for (size_t i=0; i<g_ispc_scene->numSubdivMeshes; i++)
@@ -243,7 +243,7 @@ RTCScene constructScene(const Vec3fa& cam_pos)
                                                       mesh->numEdgeCreases, mesh->numVertexCreases, mesh->numHoles);
 
     BBox3fa bounds(Vec3fa(-0.1f,-0.1f,-0.1f),Vec3fa(0.1f,0.1f,0.1f));
-    rtcSetDisplacementFunction(scene, geomID, (RTCDisplacementFunc)DisplacementFunc,(RTCBounds&)bounds);
+    rtcSetDisplacementFunction(scene, geomID, (RTCDisplacementFunc)DisplacementFunc,(RTCBounds*)&bounds);
 
     rtcSetBuffer(scene, geomID, RTC_VERTEX_BUFFER, mesh->positions, 0, sizeof(Vec3fa  ));
     rtcSetBuffer(scene, geomID, RTC_LEVEL_BUFFER,  mesh->subdivlevel, 0, sizeof(float));

@@ -349,7 +349,7 @@ namespace embree
     TRACE(rtcSetDisplacementFunction);
     VERIFY_HANDLE(scene);
     VERIFY_GEOMID(geomID);
-    ((Scene*)scene)->get(geomID)->setDisplacementFunction((RTCDisplacementFunc)func,*bounds);
+    ((Scene*)scene)->get(geomID)->setDisplacementFunction((RTCDisplacementFunc)func,bounds);
     CATCH_END;
   }
 

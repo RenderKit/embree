@@ -18,6 +18,7 @@
 #include "../common/tutorial/scene_device.isph"
 
 #define PARALLEL_COMMIT
+//#define ENABLE_DISPLACEMENTS
 
 //#define FORCE_FIXED_EDGE_TESSELLATION
 #define FIXED_EDGE_TESSELLATION_VALUE 4
@@ -143,6 +144,22 @@ void updateEdgeLevels(uniform ISPCScene* uniform scene_in, const uniform Vec3fa&
   }
 }
 
+void displacementFunction(void* uniform ptr,               /*!< pointer to user data of geometry */
+                          uniform unsigned int geomID,     /*!< ID of geometry to displace */	
+                          uniform unsigned int primID,     /*!< ID of primitive of geometry to displace */
+                          uniform const float* u,          /*!< u coordinates (source) */
+                          uniform const float* v,          /*!< v coordinates (source) */
+                          uniform const float* nx,         /*!< x coordinates of normal at point to displace (source) */
+                          uniform const float* ny,         /*!< y coordinates of normal at point to displace (source) */
+                          uniform const float* nz,         /*!< z coordinates of normal at point to displace (source) */
+                          uniform float* px,               /*!< x coordinates of points to displace (source and target) */
+                          uniform float* py,               /*!< y coordinates of points to displace (source and target) */
+                          uniform float* pz,               /*!< z coordinates of points to displace (source and target) */
+                          uniform size_t N                 /*!< number of points to displace */ )
+{
+ print("HERE\n");
+}
+
 
 uniform unsigned int convertScene(uniform ISPCScene* uniform scene_in, const uniform Vec3fa& p)
 {
@@ -171,8 +188,10 @@ uniform unsigned int convertScene(uniform ISPCScene* uniform scene_in, const uni
 	rtcSetBuffer(g_scene, subdivMeshID, RTC_INDEX_BUFFER,  mesh->quads     , 0, sizeof(uniform unsigned int));
 	rtcSetBuffer(g_scene, subdivMeshID, RTC_FACE_BUFFER,   offset_buffer   , 0, sizeof(uniform unsigned int));
 	rtcSetBuffer(g_scene, subdivMeshID, RTC_LEVEL_BUFFER,  mesh->edge_level, 0, sizeof(uniform float));
-
-
+	
+#if defined(ENABLE_DISPLACEMENTS)
+        rtcSetDisplacementFunction(g_scene,subdivMeshID,(RTCDisplacementFunc)&displacementFunction,NULL);
+#endif
        }
   }
 
@@ -262,6 +281,8 @@ task void parallelCommit(RTCScene scene)
 export void toggleOpenSubdiv(uniform int key, uniform int x, uniform int y)
 {
 }
+
+
 
 uniform Vec3f old_p; 
  

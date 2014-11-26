@@ -944,7 +944,7 @@ namespace embree
     CATCH_END;
   }
 
-  RTCORE_API void rtcSetDisplacementFunction (RTCScene scene, unsigned geomID, RTCDisplacementFunc func, const RTCBounds& bounds)
+  RTCORE_API void rtcSetDisplacementFunction (RTCScene scene, unsigned geomID, RTCDisplacementFunc func, RTCBounds* bounds)
   {
     CATCH_BEGIN;
     TRACE(rtcSetDisplacementFunction);
