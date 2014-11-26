@@ -200,7 +200,7 @@ namespace embree
 	  assert(u_size*v_size <= 16);
 
 	  const unsigned int currentIndex = localCounter;
-	  localCounter += geom->displFunc != NULL ? 5 : 2;
+	  localCounter += 5; // u,v, x,y,z
 
 	  mic_f &leaf_u_array = lazymem[currentIndex+0];
 	  mic_f &leaf_v_array = lazymem[currentIndex+1];
@@ -235,16 +235,17 @@ namespace embree
 	  
 	  mic3f vtx = patch.eval16(leaf_u_array,leaf_v_array);
 
+	  mic_f &leaf_vtx_x = lazymem[currentIndex+2];
+	  mic_f &leaf_vtx_y = lazymem[currentIndex+3];
+	  mic_f &leaf_vtx_z = lazymem[currentIndex+4];
+
+	  leaf_vtx_x = vtx.x;
+	  leaf_vtx_y = vtx.y;
+	  leaf_vtx_z = vtx.z;
+
 	  if (unlikely(geom->displFunc != NULL))
 	    {
 	      mic3f normal      = patch.normal16(leaf_u_array,leaf_v_array);
-	      mic_f &leaf_vtx_x = lazymem[currentIndex+2];
-	      mic_f &leaf_vtx_y = lazymem[currentIndex+3];
-	      mic_f &leaf_vtx_z = lazymem[currentIndex+4];
-
-	      leaf_vtx_x = vtx.x;
-	      leaf_vtx_y = vtx.y;
-	      leaf_vtx_z = vtx.z;
 
 	      geom->displFunc(geom->userPtr,
 			      patch.geomID,
@@ -339,9 +340,9 @@ namespace embree
       TIMER(double msec = 0.0);
       TIMER(msec = getSeconds());
 
-      assert( patch.grid_size_64b_blocks > 1 );
-      __aligned(64) float u_array[(patch.grid_size_64b_blocks+1)*16]; // for unaligned access
-      __aligned(64) float v_array[(patch.grid_size_64b_blocks+1)*16];
+      assert( patch.grid_size_16wide_blocks > 1 );
+      __aligned(64) float u_array[(patch.grid_size_16wide_blocks+1)*16]; // for unaligned access
+      __aligned(64) float v_array[(patch.grid_size_16wide_blocks+1)*16];
 
       // gridUVTessellator(patch.level,
       // 			patch.grid_u_res,
@@ -357,9 +358,9 @@ namespace embree
 
 
       BVH4i::NodeRef subtree_root = 0;
-      unsigned int localCounter = bvh->lazyMemUsed64BytesBlocks.add( patch.grid_size_64b_blocks );
+      unsigned int localCounter = bvh->lazyMemUsed64BytesBlocks.add( patch.grid_subtree_size_64b_blocks );
       const unsigned int oldCounter = localCounter;
-      if (localCounter + patch.grid_size_64b_blocks > bvh->lazyMemAllocated64BytesBlocks) 
+      if (localCounter + patch.grid_subtree_size_64b_blocks > bvh->lazyMemAllocated64BytesBlocks) 
 	{
 	  DBG_PRINT(localCounter);
 	  DBG_PRINT(bvh->lazyMemUsed64BytesBlocks);
@@ -378,7 +379,7 @@ namespace embree
 				      localCounter,
 				      geom);
 
-      assert( localCounter - oldCounter == patch.grid_size_64b_blocks );
+      assert( localCounter - oldCounter == patch.grid_subtree_size_64b_blocks );
     TIMER(msec = getSeconds()-msec);    
 
 #if 0 // DEBUG
@@ -413,9 +414,9 @@ namespace embree
       TIMER(double msec = 0.0);
       TIMER(msec = getSeconds());
 
-      assert( patch.grid_size_64b_blocks > 1 );
-      __aligned(64) float u_array[(patch.grid_size_64b_blocks+1)*16]; // for unaligned access
-      __aligned(64) float v_array[(patch.grid_size_64b_blocks+1)*16];
+      assert( patch.grid_size_16wide_blocks > 1 );
+      __aligned(64) float u_array[(patch.grid_size_16wide_blocks+1)*16]; // for unaligned access
+      __aligned(64) float v_array[(patch.grid_size_16wide_blocks+1)*16];
 
 
       gridUVTessellatorMIC(patch.level,
@@ -426,6 +427,7 @@ namespace embree
 
 
       BVH4i::NodeRef subtree_root = 0;
+      const unsigned int oldIndex = currentIndex;
 
       BBox3fa bounds = createSubTree( subtree_root,
 				      lazymem,
@@ -439,6 +441,7 @@ namespace embree
 				      currentIndex,
 				      geom);
 
+      assert(currentIndex - oldIndex == patch.grid_subtree_size_64b_blocks);
       TIMER(msec = getSeconds()-msec);    
     }
 
@@ -520,8 +523,8 @@ namespace embree
       const unsigned int grid_u_res   = subdiv_patch.grid_u_res;
       const unsigned int grid_v_res   = subdiv_patch.grid_v_res;
 
-      __aligned(64) float u_array[(subdiv_patch.grid_size_64b_blocks+1)]; // for unaligned access
-      __aligned(64) float v_array[(subdiv_patch.grid_size_64b_blocks+1)];
+      __aligned(64) float u_array[(subdiv_patch.grid_size_16wide_blocks+1)]; // for unaligned access
+      __aligned(64) float v_array[(subdiv_patch.grid_size_16wide_blocks+1)];
 
       //gridUVTessellator(edge_levels,grid_u_res,grid_v_res,u_array,v_array);
       gridUVTessellator16f(edge_levels,grid_u_res,grid_v_res,u_array,v_array);
@@ -532,7 +535,7 @@ namespace embree
 	
       bool hit = false;
 
-      if (likely(subdiv_patch.grid_size_64b_blocks==1))
+      if (likely(subdiv_patch.grid_size_16wide_blocks==1))
 	{
 	  const mic_m m_active = subdiv_patch.grid_mask;
 
@@ -766,7 +769,7 @@ namespace embree
 	      const SubdivMesh* const geom = (SubdivMesh*)scene->get(subdiv_patch.geomID); // FIXME: test flag first
 
 	      /* fast patch for grid with <= 16 points */
-	      if (likely(subdiv_patch.grid_size_64b_blocks == 1))
+	      if (likely(subdiv_patch.grid_size_16wide_blocks == 1))
 		intersectEvalGrid1(rayIndex,
 				   dir_xyz,
 				   org_xyz,
@@ -795,7 +798,7 @@ namespace embree
 		  BVH4i::NodeRef subtree_root = local_cache->lookup(patchIndex);
 		  if (subtree_root == BVH4i::invalidNode)
 		    {
-		      const unsigned int blocks = subdiv_patch.grid_size_64b_blocks;
+		      const unsigned int blocks = subdiv_patch.grid_subtree_size_64b_blocks;
 
 		      unsigned int currentIndex = 0;
 		      subtree_root = local_cache->insert(patchIndex,blocks,currentIndex);
@@ -836,22 +839,19 @@ namespace embree
 		      if (unlikely(curNode == BVH4i::invalidNode)) break;
 
 		      const unsigned int uvIndex = curNode.offsetIndex();
+
 		      prefetch<PFHINT_NT>(&lazymem[uvIndex + 0]);
 		      prefetch<PFHINT_NT>(&lazymem[uvIndex + 1]);
-
+		      prefetch<PFHINT_NT>(&lazymem[uvIndex + 2]);
+		      prefetch<PFHINT_NT>(&lazymem[uvIndex + 3]);
+		      prefetch<PFHINT_NT>(&lazymem[uvIndex + 4]);
 		  
 		      const mic_m m_active = 0x777;
 		      const mic_f &uu = lazymem[uvIndex + 0];
 		      const mic_f &vv = lazymem[uvIndex + 1];		  
-		      mic3f vtx;
-		      if (likely(geom->displFunc == NULL))
-			vtx = subdiv_patch.eval16(uu,vv);
-		      else
-			{
-			  vtx.x = lazymem[uvIndex + 2];
-			  vtx.y = lazymem[uvIndex + 3];
-			  vtx.z = lazymem[uvIndex + 4];
-			}
+		      const mic3f vtx(lazymem[uvIndex + 2],
+				      lazymem[uvIndex + 3],
+				      lazymem[uvIndex + 4]);
 		  
 		      intersect1_quad16(rayIndex, 
 					dir_xyz,
@@ -985,7 +985,7 @@ namespace embree
 	      const SubdivMesh* const geom = (SubdivMesh*)scene->get(subdiv_patch.geomID);
 
 	      /* fast patch for grid with <= 16 points */
-	      if (likely(subdiv_patch.grid_size_64b_blocks == 1))
+	      if (likely(subdiv_patch.grid_size_16wide_blocks == 1))
 		intersectEvalGrid1(rayIndex,
 				   dir_xyz,
 				   org_xyz,
@@ -1013,7 +1013,7 @@ namespace embree
 		  BVH4i::NodeRef subtree_root = local_cache->lookup(patchIndex);
 		  if (subtree_root == BVH4i::invalidNode)
 		    {
-		      const unsigned int blocks = subdiv_patch.grid_size_64b_blocks;
+		      const unsigned int blocks = subdiv_patch.grid_subtree_size_64b_blocks;
 		      unsigned int currentIndex = 0;
 		      subtree_root = local_cache->insert(patchIndex,blocks,currentIndex);
 		      initLocalLazySubdivTree(subdiv_patch,currentIndex,lazymem,geom);		      
@@ -1054,21 +1054,19 @@ namespace embree
 		      if (unlikely(curNode == BVH4i::invalidNode)) break;
 
 		      const unsigned int uvIndex = curNode.offsetIndex();
+
 		      prefetch<PFHINT_NT>(&lazymem[uvIndex + 0]);
 		      prefetch<PFHINT_NT>(&lazymem[uvIndex + 1]);
+		      prefetch<PFHINT_NT>(&lazymem[uvIndex + 2]);
+		      prefetch<PFHINT_NT>(&lazymem[uvIndex + 3]);
+		      prefetch<PFHINT_NT>(&lazymem[uvIndex + 4]);
 		  
 		      const mic_m m_active = 0x777;
 		      const mic_f &uu = lazymem[uvIndex + 0];
-		      const mic_f &vv = lazymem[uvIndex + 1];
-		      mic3f vtx;
-		      if (likely(geom->displFunc == NULL))
-			vtx = subdiv_patch.eval16(uu,vv);
-		      else
-			{
-			  vtx.x = lazymem[uvIndex + 2];
-			  vtx.y = lazymem[uvIndex + 3];
-			  vtx.z = lazymem[uvIndex + 4];
-			}
+		      const mic_f &vv = lazymem[uvIndex + 1];		  
+		      const mic3f vtx(lazymem[uvIndex + 2],
+				      lazymem[uvIndex + 3],
+				      lazymem[uvIndex + 4]);
 		  
 		      intersect1_quad16(rayIndex, 
 					dir_xyz,

@@ -253,6 +253,13 @@ namespace embree
       
       return true;
     }
+
+    __forceinline bool isRegular() const 
+    {
+      if (valence == 4 && dicable()) return true;
+      return false;
+    }
+
     
     /* computes the limit vertex */
     __forceinline Vec3fa getLimitVertex() const
