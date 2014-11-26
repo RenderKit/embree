@@ -397,10 +397,10 @@ namespace embree
         for (size_t x=0; x<9; x++) {
           const Vec3fa P0 = p[y][x];
           const Vec3fa P1 = Vec3fa(qx[y][x],qy[y][x],qz[y][x]);
-#if defined(DEBUG)
+/*#if defined(DEBUG) // FIXME: enable
           if (!inside(mesh->displBounds,P1-P0))
             THROW_RUNTIME_ERROR("displacement out of bounds");
-#endif
+	    #endif*/
           p[y][x] = P1;
         }
       }
