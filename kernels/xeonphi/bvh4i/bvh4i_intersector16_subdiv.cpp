@@ -90,8 +90,17 @@ namespace embree
       {
 	mic_m m_in_cache = prim_tag == primID;
 	unsigned int index = bitscan(toInt(m_in_cache));
+
+#if DEBUG
+	cache_accesses++;
+#endif
+
 	if (likely(m_in_cache))
 	  {
+#if DEBUG
+	    cache_hits++;
+#endif
+
 	    assert(countbits(m_in_cache) == 1);
 	    const BVH4i::NodeRef ref = bvh4i_ref[index];
 	    /* move most recently accessed entry to the beginning of the array */
@@ -105,10 +114,15 @@ namespace embree
 
 	    return ref;
 	  }
+
+#if DEBUG
+	cache_misses++;
+#endif
+
 	return BVH4i::invalidNode;
       }
 
-      __forceinline unsigned int insert(const unsigned int primID, const unsigned int neededBlocks)
+      __forceinline BVH4i::NodeRef insert(const unsigned int primID, const unsigned int neededBlocks, unsigned int &currentIndex)
       {
 	if (unlikely(blockCounter + neededBlocks >= allocated64BytesBlocks))
 	  clear();
@@ -123,7 +137,7 @@ namespace embree
 	    std::cout << "REALLOCATING TESSELLATION CACHE TO " << allocated64BytesBlocks << " BLOCKS = " << allocated64BytesBlocks*sizeof(mic_f) << " BYTES" << std::endl;
 	  }
 
-	const unsigned int currentIndex = blockCounter;
+	currentIndex = blockCounter;
 	blockCounter += neededBlocks;
 	BVH4i::NodeRef curNode;
 	createBVH4iNode<2>(curNode,currentIndex);
@@ -134,7 +148,7 @@ namespace embree
 	prim_tag[0]  = primID;
 	bvh4i_ref[0] = curNode;
 
-	return currentIndex;
+	return curNode;
       }
 
       void printStats() const
@@ -743,6 +757,8 @@ namespace embree
 	      const unsigned int patchIndex = curNode.offsetIndex();
 	      SubdivPatch1& subdiv_patch = ((SubdivPatch1*)accel)[patchIndex];
 
+	      subdiv_patch.prefetchData();
+
 
 	      /* fast patch for grid with <= 16 points */
 	      if (likely(subdiv_patch.grid_size_64b_blocks == 1))
@@ -772,24 +788,15 @@ namespace embree
 
 		  mic_f     * const __restrict__ lazymem     = local_cache->getPtr();
 		  BVH4i::NodeRef subtree_root = local_cache->lookup(patchIndex);
-#if DEBUG
-		  local_cache->cache_accesses++;
-#endif
 		  if (subtree_root == BVH4i::invalidNode)
 		    {
-#if DEBUG
-		      local_cache->cache_misses++;
-#endif
 		      const unsigned int blocks = subdiv_patch.grid_size_64b_blocks;
 
-		      unsigned int currentIndex = local_cache->insert(patchIndex,blocks);
+		      unsigned int currentIndex = 0;
+		      subtree_root = local_cache->insert(patchIndex,blocks,currentIndex);
 		      initLocalLazySubdivTree(subdiv_patch,currentIndex,lazymem,scene);		      
-		      subtree_root = local_cache->lookup(patchIndex);
 		      assert( subtree_root != BVH4i::invalidNode);
 		    }
-#if DEBUG
-		  else local_cache->cache_hits++;
-#endif
 		    
 #endif
 		  // -------------------------------------
@@ -960,6 +967,8 @@ namespace embree
 	      const unsigned int patchIndex = curNode.offsetIndex();
 	      SubdivPatch1& subdiv_patch = ((SubdivPatch1*)accel)[patchIndex];
 
+	      subdiv_patch.prefetchData();
+
 	      /* fast patch for grid with <= 16 points */
 	      if (likely(subdiv_patch.grid_size_64b_blocks == 1))
 		intersectEvalGrid1(rayIndex,
@@ -987,24 +996,14 @@ namespace embree
 
 		  mic_f     * const __restrict__ lazymem     = local_cache->getPtr();
 		  BVH4i::NodeRef subtree_root = local_cache->lookup(patchIndex);
-#if DEBUG
-		  local_cache->cache_accesses++;
-#endif
 		  if (subtree_root == BVH4i::invalidNode)
 		    {
-#if DEBUG
-		      local_cache->cache_misses++;
-#endif
 		      const unsigned int blocks = subdiv_patch.grid_size_64b_blocks;
-
-		      unsigned int currentIndex = local_cache->insert(patchIndex,blocks);
+		      unsigned int currentIndex = 0;
+		      subtree_root = local_cache->insert(patchIndex,blocks,currentIndex);
 		      initLocalLazySubdivTree(subdiv_patch,currentIndex,lazymem,scene);		      
-		      subtree_root = local_cache->lookup(patchIndex);
 		      assert( subtree_root != BVH4i::invalidNode);
 		    }
-#if DEBUG
-		  else local_cache->cache_hits++;
-#endif
 		    
 #endif
 		  // -------------------------------------

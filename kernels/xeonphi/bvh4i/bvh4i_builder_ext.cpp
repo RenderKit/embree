@@ -1019,7 +1019,8 @@ PRINT(CORRECT_numPrims);
 	    SubdivPatch1 tmp = SubdivPatch1(subdiv_mesh->getHalfEdge(i),
 					    subdiv_mesh->getVertexPositionPtr(),
 					    g,
-					    i);
+					    i,
+					    subdiv_mesh);
 	    	    
 	    const BBox3fa bounds = tmp.bounds();
 	    
