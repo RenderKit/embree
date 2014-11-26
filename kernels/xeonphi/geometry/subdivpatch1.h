@@ -193,9 +193,37 @@ namespace embree
 	{
 	  // FIXME: fast "lane" code for gregory patch normal
 	  return GregoryPatch::normal( patch.v, uu, vv );
-	}
-      
+	}      
     }
+
+    __forceinline mic3f normal16(const mic_f &uu,
+				 const mic_f &vv) const
+    {
+      mic3f n;
+      if (likely(isRegular()))
+	{
+	  for (size_t i=0;i<16;i++)
+	    {
+	      const mic_f n_i = patch.normal4(uu[i],vv[i]);
+	      n.x[i] = n_i[0];
+	      n.y[i] = n_i[1];
+	      n.z[i] = n_i[2];
+	    }
+	}
+      else 
+	{
+	  // FIXME: fast "lane" code for gregory patch normal
+	  for (size_t i=0;i<16;i++)
+	    {
+	      const Vec3fa n_i = GregoryPatch::normal( patch.v, uu[i], vv[i] );
+	      n.x[i] = n_i.x;
+	      n.y[i] = n_i.y;
+	      n.z[i] = n_i.z;
+	    }
+	}
+      return n;
+    }
+
 
 
     __forceinline bool isRegular() const
