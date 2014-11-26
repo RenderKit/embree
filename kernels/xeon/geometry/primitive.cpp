@@ -15,11 +15,9 @@
 // ======================================================================== //
 
 #include "primitive.h"
-#include "subdivpatchdispl1.h"
 #include "quadquad4x4.h"
 
 namespace embree
 {
   PrimitiveType2 PrimitiveType2::type; 
-  //PrimitiveType2<QuadQuad4x4,SubdivPatchDispl1> PrimitiveType2<QuadQuad4x4,SubdivPatchDispl1>::type; 
 }
