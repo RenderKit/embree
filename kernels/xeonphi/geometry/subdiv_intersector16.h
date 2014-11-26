@@ -176,7 +176,7 @@ namespace embree
 
     if (unlikely(none(m_valid))) return;
     
-    const mic_m m_den = gt(m_valid,den,zero);
+    const mic_m m_den = ne(m_valid,den,zero);
     const mic_f t = dot(v0,Ng) * rcp_den;
     mic_f max_dist_xyz = mic_f(ray16.tfar[rayIndex]);
     mic_m m_final      = lt(lt(m_den,mic_f(ray16.tnear[rayIndex]),t),t,max_dist_xyz);

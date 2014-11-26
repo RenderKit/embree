@@ -205,7 +205,7 @@ namespace embree
     __forceinline mic3f normal16(const mic_f &uu,
 				 const mic_f &vv) const
     {
-      mic3f n;
+      mic3f n; //FIXME: OPTIMIZE
       if (likely(isRegular()))
 	{
 	  for (size_t i=0;i<16;i++)
