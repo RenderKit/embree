@@ -46,8 +46,12 @@ namespace embree
         const bool subdiv3 = !h->hasOpposite() || !h->opposite()->isRegularFace(); h = h->next();
         subdivide(patch,5,Vec2f(0.0f,0.0f),Vec2f(0.0f,1.0f),Vec2f(1.0f,1.0f),Vec2f(1.0f,0.0f),subdiv0,subdiv1,subdiv2,subdiv3);
 #else
+	bool subdiv[GeneralCatmullClarkPatch::SIZE];
         const GeneralCatmullClarkPatch patch(h,vertices);
-        subdivide(patch,5);
+	for (size_t i=0; i<patch.size(); i++) {
+	  subdiv[i] = !h->hasOpposite() || !h->opposite()->dicable(); h = h->next();
+	}
+        subdivide(patch,5,subdiv);
 #endif
       }
 
@@ -55,12 +59,12 @@ namespace embree
       return count;
     }
 
-    void subdivide(const GeneralCatmullClarkPatch& patch, int depth)
+    void subdivide(const GeneralCatmullClarkPatch& patch, int depth, bool subdiv[GeneralCatmullClarkPatch::SIZE])
     {
 #if 1
       if (patch.size() == 4) {
 	CatmullClarkPatch qpatch; patch.init(qpatch);
-	subdivide(qpatch,depth,Vec2f(0.0f,0.0f),Vec2f(0.0f,1.0f),Vec2f(1.0f,1.0f),Vec2f(1.0f,0.0f),false,false,false,false);
+	subdivide(qpatch,depth,Vec2f(0.0f,0.0f),Vec2f(0.0f,1.0f),Vec2f(1.0f,1.0f),Vec2f(1.0f,0.0f),subdiv[0],subdiv[1],subdiv[2],subdiv[3]);
 	return;
       }
 #endif
@@ -88,6 +92,7 @@ namespace embree
 	subdivide(patches[2],depth-1, uv_2,uv20,uvcc,uv12, false,csubdiv[0],csubdiv[1],false);
       } 
 
+#if 0
       /* parametrization for quads */
       else if (N == 4) {
 	const Vec2f uv_0(0.0f,0.0f);
@@ -104,6 +109,7 @@ namespace embree
 	subdivide(patches[2],depth-1, uv_2,uv23,uvcc,uv12, false,csubdiv[3],csubdiv[1],false);
 	subdivide(patches[3],depth-1, uv_3,uv30,uvcc,uv23, false,csubdiv[0],csubdiv[2],false);
       } 
+#endif
 
       /* parametrization for arbitrary polygons */
       else {
@@ -156,10 +162,10 @@ namespace embree
       GregoryPatch patcheval; 
       patcheval.init(patch);
 
-      const float l0 = patch.level[0];
-      const float l1 = patch.level[1];
-      const float l2 = patch.level[2];
-      const float l3 = patch.level[3];
+      const float l0 = patch.ring[0].edge_level;
+      const float l1 = patch.ring[1].edge_level;
+      const float l2 = patch.ring[2].edge_level;
+      const float l3 = patch.ring[3].edge_level;
       const TessellationPattern pattern0(l0,Tt);
       const TessellationPattern pattern1(l1,Tr);
       const TessellationPattern pattern2(l2,Tb);

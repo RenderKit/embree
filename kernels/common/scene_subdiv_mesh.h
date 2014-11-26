@@ -81,7 +81,8 @@ namespace embree
       __forceinline bool isRegularVertex() const 
       {
 	const HalfEdge* p = this;
-
+	if (p->hasCreases()) return false;
+	
         if (!p->hasOpposite()) return false;
         if ((p = p->rotate()) == this) return false;
 
@@ -112,6 +113,30 @@ namespace embree
         if ((p = p->next()) == this) return false;
         
         if (!p->isRegularVertex()) return false;
+        if ((p = p->next()) != this) return false;
+
+	return true;
+      }
+
+      /*! tests if the face can be diced (using bspline or gregory patch) */
+      __forceinline bool dicable() const 
+      {
+	const HalfEdge* p = this;
+
+        if (p->hasCreases()) return false;
+	if (!p->hasOpposite()) return false;
+        if ((p = p->next()) == this) return false;
+
+        if (p->hasCreases()) return false;
+	if (!p->hasOpposite()) return false;
+        if ((p = p->next()) == this) return false;
+
+        if (p->hasCreases()) return false;
+	if (!p->hasOpposite()) return false;
+        if ((p = p->next()) == this) return false;
+        
+        if (p->hasCreases()) return false;
+	if (!p->hasOpposite()) return false;
         if ((p = p->next()) != this) return false;
 
 	return true;
@@ -176,6 +201,11 @@ namespace embree
         } while (p != this); 
         
         return bounds;
+      }
+
+      /*! tests if the edge has creases */
+      __forceinline bool hasCreases() const {
+	return max(edge_crease_weight,vertex_crease_weight) != 0.0f;
       }
 
     private:

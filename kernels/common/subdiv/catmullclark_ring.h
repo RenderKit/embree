@@ -36,7 +36,9 @@ namespace embree
     unsigned int valence;
     unsigned int num_vtx;
     float vertex_crease_weight;
-    
+    float vertex_level; // maximal level of all adjacent edges
+    float edge_level; // level of first edge
+
   public:
     CatmullClark1Ring() {}
     
@@ -76,6 +78,7 @@ namespace embree
       
       size_t i=0;
       crease_weight[i/2] = p->edge_crease_weight;
+      edge_level = vertex_level = p->edge_level;
       if (!p->hasOpposite()) crease_weight[i/2] = inf;
       
       do 
@@ -87,6 +90,7 @@ namespace embree
         ring[i++] = (Vec3fa_t) vertices[ p->getStartVertexIndex() ];
         p = p->next();
         crease_weight[i/2] = p->edge_crease_weight;
+	vertex_level = max(vertex_level,p->edge_level);
 	
         /* continue with next face */
         if (likely(p->hasOpposite())) 
@@ -117,6 +121,8 @@ namespace embree
     
     __forceinline void subdivide(CatmullClark1Ring& dest) const
     {
+      dest.edge_level = 0.5f*edge_level;
+      dest.vertex_level = 0.5f*vertex_level;
       dest.valence         = valence;
       dest.num_vtx         = num_vtx;
       dest.border_index = border_index;
@@ -228,18 +234,23 @@ namespace embree
       }
     }
     
-    /* returns true if the vertex can be part of B-spline patch */
+    /* returns true if the vertex can be part of a dicable patch (using gregory patches) */
     __forceinline bool dicable() const 
     {
-      if (valence != 4) 
-        return false;
-      
-      if (vertex_crease_weight > 0.0f)
-        return false;
-      
-      for (size_t i=0; i<valence; i++) {
-        if (crease_weight[i] > 0.0f) return false;
+      //if (vertex_level > 1.0f) 
+      {
+	if (vertex_crease_weight > 0.0f) 
+	  return false;
+
+	for (size_t i=1; i<valence; i++)
+	  if (crease_weight[i] > 0.0f) 
+	    return false;
       }
+      
+      //if (edge_level > 1.0f)
+	if (crease_weight[0] > 0.0f) 
+	  return false;
+      
       return true;
     }
     
@@ -362,7 +373,8 @@ namespace embree
     friend __forceinline std::ostream &operator<<(std::ostream &o, const CatmullClark1Ring &c)
     {
       o << "vtx " << c.vtx << " size = " << c.num_vtx << ", " << 
-	"hard_edge = " << c.border_index << ", valence " << c.valence << ", ring: " << std::endl;
+	"hard_edge = " << c.border_index << ", valence " << c.valence << 
+	", edge_level = " << c.edge_level << ", vertex_level = " << c.vertex_level << ", ring: " << std::endl;
       
       for (size_t i=0; i<c.num_vtx; i++) {
         o << i << " -> " << c.ring[i];
@@ -385,7 +397,9 @@ namespace embree
     unsigned int num_vtx;
     int border_face;
     float vertex_crease_weight;
-    
+    float vertex_level;                      //!< maximal level of adjacent edges
+    float edge_level; // level of first edge
+
     GeneralCatmullClark1Ring() {}
     
     __forceinline bool has_last_face() const {
@@ -405,6 +419,7 @@ namespace embree
       
       size_t e=0, f=0;
       crease_weight[f] = p->edge_crease_weight;
+      edge_level = vertex_level = p->edge_level;
       if (!p->hasOpposite()) crease_weight[f] = inf;
       
       do 
@@ -421,6 +436,7 @@ namespace embree
 	face_size[f] = vn;
 	p = p_prev;
 	crease_weight[++f] = p->edge_crease_weight;
+	vertex_level = max(vertex_level,p->edge_level);
 	
         /* continue with next face */
         if (likely(p->hasOpposite())) 
@@ -451,8 +467,10 @@ namespace embree
     
     __forceinline void subdivide(CatmullClark1Ring& dest) const
     {
-      dest.valence         = valence;
-      dest.num_vtx         = 2*valence;
+      dest.edge_level = 0.5f*edge_level;
+      dest.vertex_level = 0.5f*vertex_level;
+      dest.valence = valence;
+      dest.num_vtx = 2*valence;
       dest.border_index = border_face == -1 ? -1 : 2*border_face; // FIXME:
       dest.vertex_crease_weight   = max(0.0f,vertex_crease_weight-1.0f);
       
@@ -541,6 +559,8 @@ namespace embree
 
     void convert(CatmullClark1Ring& dst) const
     {
+      dst.edge_level = edge_level;
+      dst.vertex_level = vertex_level;
       dst.vtx = vtx;
       dst.valence = valence;
       dst.num_vtx = 2*valence;
@@ -568,7 +588,8 @@ namespace embree
     
     friend __forceinline std::ostream &operator<<(std::ostream &o, const GeneralCatmullClark1Ring &c)
     {
-      o << "vtx " << c.vtx << " size = " << c.num_vtx << ", border_face = " << c.border_face << ", " << " valence = " << c.valence << ", ring: " << std::endl;
+      o << "vtx " << c.vtx << " size = " << c.num_vtx << ", border_face = " << c.border_face << ", " << " valence = " << c.valence << 
+	", edge_level = " << c.edge_level << ", vertex_level = " << c.vertex_level << ", ring: " << std::endl;
       for (size_t v=0, f=0; f<c.valence; v+=c.face_size[f++]) {
         for (size_t i=v; i<v+c.face_size[f]; i++) {
           o << i << " -> " << c.ring[i];
