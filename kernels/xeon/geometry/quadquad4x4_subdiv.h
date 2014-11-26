@@ -39,14 +39,14 @@ namespace embree
     : prims_o(prims_o), alloc(alloc), scene(scene), geomID(geomID), primID(primID), count(0)
       {
 #if 0
-        const IrregularCatmullClarkPatch patch(h,vertices);
+        const CatmullClarkPatch patch(h,vertices);
         const bool subdiv0 = !h->hasOpposite() || !h->opposite()->isRegularFace(); h = h->next(); // FIXME: should be false if no neighbour?
         const bool subdiv1 = !h->hasOpposite() || !h->opposite()->isRegularFace(); h = h->next();
         const bool subdiv2 = !h->hasOpposite() || !h->opposite()->isRegularFace(); h = h->next();
         const bool subdiv3 = !h->hasOpposite() || !h->opposite()->isRegularFace(); h = h->next();
         subdivide(patch,5,0.0f,1.0f,0.0f,1.0f,subdiv0,subdiv1,subdiv2,subdiv3);
 #else
-        const GeneralIrregularCatmullClarkPatch patch(h,vertices);
+        const GeneralCatmullClarkPatch patch(h,vertices);
         subdivide(patch,5);
 #endif
       }
@@ -55,14 +55,14 @@ namespace embree
       return count;
     }
 
-    void subdivide(const GeneralIrregularCatmullClarkPatch& patch, int depth)
+    void subdivide(const GeneralCatmullClarkPatch& patch, int depth)
     {
       size_t N;
-      IrregularCatmullClarkPatch patches[GeneralIrregularCatmullClarkPatch::SIZE]; 
+      CatmullClarkPatch patches[GeneralCatmullClarkPatch::SIZE]; 
       patch.subdivide(patches,N);
 
       const bool noleaf = depth > 1;
-      bool csubdiv[GeneralIrregularCatmullClarkPatch::SIZE];
+      bool csubdiv[GeneralCatmullClarkPatch::SIZE];
       for (size_t i=0; i<N; i++)
         csubdiv[i] = noleaf && !patches[i].dicable();
 
@@ -70,14 +70,14 @@ namespace embree
         subdivide(patches[i],depth-1,(float(i)+0.0f)/float(N),(float(i)+1.0f)/float(N),0.0f,1.0f,false,csubdiv[(i+1)%N],csubdiv[(i-1)%N],false);
     }
 
-    void subdivide(const IrregularCatmullClarkPatch& patch, int depth,
+    void subdivide(const CatmullClarkPatch& patch, int depth,
                    float u0, float u1, float v0, float v1,             // uv range
                    bool Tt, bool Tr, bool Tb, bool Tl)                 // tagged transition edges
     {
       if (unlikely(depth <= 0))
         return tessellate(patch,u0,u1,v0,v1,Tt,Tr,Tb,Tl);
 
-      IrregularCatmullClarkPatch patches[4]; 
+      CatmullClarkPatch patches[4]; 
       patch.subdivide(patches);
 
       const bool noleaf = depth > 1;
@@ -102,7 +102,7 @@ namespace embree
       else            tessellate(patches[3],         u0,u01,v01,v1, subdivide0,subdivide2,false,false);
     }
 
-    void tessellate(const IrregularCatmullClarkPatch& patch, 
+    void tessellate(const CatmullClarkPatch& patch, 
                     float u0, float u1, float v0, float v1, 
                     bool Tt, bool Tr, bool Tb, bool Tl)
     {

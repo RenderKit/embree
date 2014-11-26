@@ -18,7 +18,8 @@
 
 #include "primitive.h"
 #include "quadquad4x4.h"
-#include "common/scene_subdivision.h"
+#include "common/subdiv/bspline_patch.h"
+#include "common/subdiv/gregory_patch.h"
 #include "bvh4/bvh4.h"
 #include "bvh4/bvh4_builder_fast.h"
 
@@ -120,9 +121,9 @@ namespace embree
     size_t K;
   };
 
-  struct SubdivideIrregularCatmullClarkPatch
+  struct SubdivideCatmullClarkPatch
   {
-    SubdivideIrregularCatmullClarkPatch (const IrregularCatmullClarkPatch& patch, const unsigned int levels)
+    SubdivideCatmullClarkPatch (const CatmullClarkPatch& patch, const unsigned int levels)
     : K(1)
     {
       size_t N = 1<<levels;
@@ -273,7 +274,7 @@ namespace embree
 
 #if 0
     const std::pair<BBox3fa,BVH4::NodeRef> leaf(FastAllocator& alloc,
-                                                const IrregularCatmullClarkPatch& patch,
+                                                const CatmullClarkPatch& patch,
                                                 unsigned x, unsigned y, unsigned l,
                                                 bool Tt, bool Tr, bool Tb, bool Tl) // tagged transition edges
     {
@@ -281,8 +282,8 @@ namespace embree
       new (leaf) QuadQuad4x4(8*x,8*y,8*(1<<l),geomID(),primID());
 
 #if 0
-      SubdivideIrregularCatmullClarkPatch subdivided2(patch,2);
-      SubdivideIrregularCatmullClarkPatch subdivided3(patch,3);
+      SubdivideCatmullClarkPatch subdivided2(patch,2);
+      SubdivideCatmullClarkPatch subdivided3(patch,3);
       const BBox3fa bounds = leaf->build(scene,subdivided2.v,subdivided3.v,Tt,Tr,Tb,Tl);
 #endif
 
@@ -299,7 +300,7 @@ namespace embree
     }
 #endif
 
-    const std::pair<BBox3fa,BVH4::NodeRef> grid(FastAllocator& alloc, const IrregularCatmullClarkPatch& patch, unsigned x0, unsigned y0, unsigned level)
+    const std::pair<BBox3fa,BVH4::NodeRef> grid(FastAllocator& alloc, const CatmullClarkPatch& patch, unsigned x0, unsigned y0, unsigned level)
     {
       GregoryPatch patcheval; 
       patcheval.init(patch);
@@ -351,7 +352,7 @@ namespace embree
     }
 
     const std::pair<BBox3fa,BVH4::NodeRef> build(FastAllocator& alloc,
-                                                 const IrregularCatmullClarkPatch& patch,
+                                                 const CatmullClarkPatch& patch,
                                                  unsigned x, unsigned y, int l, int maxDepth,
                                                  bool Tt, bool Tr, bool Tb, bool Tl) // tagged transition edges
     {
@@ -360,7 +361,7 @@ namespace embree
       return grid(alloc,patch,x,y,l);
 
 #if 0
-      IrregularCatmullClarkPatch patches[4]; 
+      CatmullClarkPatch patches[4]; 
       patch.subdivide(patches);
 
       const bool noleaf = (l+1) < maxDepth;
@@ -396,10 +397,10 @@ namespace embree
 #endif
     }
 
-    const std::pair<BBox3fa,BVH4::NodeRef> build(FastAllocator& alloc, const GeneralIrregularCatmullClarkPatch& patch, int maxDepth)
+    const std::pair<BBox3fa,BVH4::NodeRef> build(FastAllocator& alloc, const GeneralCatmullClarkPatch& patch, int maxDepth)
     {
       size_t N;
-      IrregularCatmullClarkPatch patches[GeneralIrregularCatmullClarkPatch::SIZE]; 
+      CatmullClarkPatch patches[GeneralCatmullClarkPatch::SIZE]; 
       patch.subdivide(patches,N);
 
       BVH4::Node* node = (BVH4::Node*) alloc.malloc(sizeof(BVH4::Node),16); node->clear();
@@ -443,11 +444,11 @@ namespace embree
 
       /* create patch and build sub-BVH */
 #if 0
-      IrregularCatmullClarkPatch patch(h,vertices);
+      CatmullClarkPatch patch(h,vertices);
       const std::pair<BBox3fa,BVH4::NodeRef> root = build(alloc,patch,0,0,0,(int)levels-3,false,false,false,false);
       //const std::pair<BBox3fa,BVH4::NodeRef> root = build(alloc,patch,0,0,0,1,false,false,false,false);
 #else
-      GeneralIrregularCatmullClarkPatch patch(h,vertices);
+      GeneralCatmullClarkPatch patch(h,vertices);
       const std::pair<BBox3fa,BVH4::NodeRef> root = build(alloc,patch,(int)levels-3);
 #endif
 

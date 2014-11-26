@@ -16,7 +16,6 @@
 
 #include "scene_subdiv_mesh.h"
 #include "scene.h"
-#include "scene_subdivision.h"
 
 #include "algorithms/sort.h"
 #include "algorithms/prefix.h"

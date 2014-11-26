@@ -17,7 +17,8 @@
 #pragma once
 
 #include "primitive.h"
-#include "common/scene_subdivision.h"
+#include "common/subdiv/bspline_patch.h"
+#include "common/subdiv/gregory_patch.h"
 
 #define SUBDIVISION_LEVEL 3 // FIXME: remove
 
@@ -59,7 +60,7 @@ namespace embree
         {
           flags |= REGULAR_PATCH;
 #if 1
-          RegularCatmullClarkPatch patch;
+          BSplinePatch patch;
 
           init( patch );
 #endif
@@ -129,13 +130,13 @@ namespace embree
 			      last); 
     }
 
-    __forceinline void init( IrregularCatmullClarkPatch& patch) const
+    __forceinline void init( CatmullClarkPatch& patch) const
     {
       for (size_t i=0; i<4; i++)
         patch.ring[i].init(first_half_edge + i,vertices);
     }
 
-    __forceinline void init( RegularCatmullClarkPatch& cc_patch) const
+    __forceinline void init( BSplinePatch& cc_patch) const
     {
       cc_patch.init(first_half_edge,vertices);
     }

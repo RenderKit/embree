@@ -19,7 +19,8 @@
 #include "primitive.h"
 #include "fractional_tessellation.h"
 #include "discrete_tessellation.h"
-#include "common/scene_subdivision.h"
+#include "common/subdiv/bspline_patch.h"
+#include "common/subdiv/gregory_patch.h"
 
 //#define TessellationPattern DiscreteTessellationPattern
 #define TessellationPattern FractionalTessellationPattern
@@ -492,7 +493,7 @@ namespace embree
       return build(scene);
     }
 
-    const BBox3fa build(Scene* scene, const RegularCatmullClarkPatch& patch)
+    const BBox3fa build(Scene* scene, const BSplinePatch& patch)
     {
       for (size_t y=0; y<=8; y++) {
         for (size_t x=0; x<=8; x++) {

@@ -18,10 +18,10 @@
 
 #include "primitive.h"
 #include "common/scene_subdiv_mesh.h"
-#include "common/scene_subdivision.h"
+#include "common/subdiv/bspline_patch.h"
+#include "common/subdiv/gregory_patch.h"
+#include "common/subdiv/tessellation.h"
 #include "bicubic_bezier_patch.h"
-
-// right now everything is shared between xeon and xeon phi, so moved all stuff to common/scene_subdivision.h
 
 #define FORCE_TESSELLATION_BOUNDS 1
 
@@ -69,7 +69,7 @@ namespace embree
 
       /* init irregular patch */
 
-      IrregularCatmullClarkPatch ipatch ( first_half_edge, vertices ); 
+      CatmullClarkPatch ipatch ( first_half_edge, vertices ); 
 
       /* init discrete edge tessellation levels and grid resolution */
 
@@ -364,7 +364,7 @@ namespace embree
     unsigned int   grid_mask;
     volatile unsigned int under_construction; // 0 = not build yet, 1 = under construction, 2 = built
 
-    __aligned(64) RegularCatmullClarkPatch patch;
+    __aligned(64) BSplinePatch patch;
   };
 
   __forceinline std::ostream &operator<<(std::ostream &o, const SubdivPatch1 &p)
