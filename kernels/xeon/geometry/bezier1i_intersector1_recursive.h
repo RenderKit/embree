@@ -150,7 +150,7 @@ namespace embree
       STAT3(normal.trav_prim_hits,1,1,1);
 
       /* intersection filter test */
-#if defined(__INTERSECTION_FILTER__)
+#if defined(RTCORE_INTERSECTION_FILTER)
       int geomID = curve_in.geomID;
       Geometry* geometry = ((Scene*)geom)->get(geomID);
       if (!likely(geometry->hasIntersectionFilter1())) 
@@ -167,7 +167,7 @@ namespace embree
         ray.Ng = T;
         ray.geomID = curve_in.geomID;
         ray.primID = curve_in.primID;
-#if defined(__INTERSECTION_FILTER__)
+#if defined(RTCORE_INTERSECTION_FILTER)
           return;
       }
 
@@ -223,7 +223,7 @@ namespace embree
           if (T == Vec3fa(zero)) return; // { valid[i] = 0; goto retry; } // ignore denormalized curves */
 
           /* intersection filter test */
-#if defined(__INTERSECTION_FILTER__) && 0
+#if defined(RTCORE_INTERSECTION_FILTER) && 0
           Geometry* geometry = ((Scene*)geom)->get(geomID);
           if (!likely(geometry->hasIntersectionFilter1())) 
             {
@@ -311,7 +311,7 @@ namespace embree
       STAT3(normal.trav_prim_hits,1,1,1);
 
       /* intersection filter test */
-#if defined(__INTERSECTION_FILTER__)
+#if defined(RTCORE_INTERSECTION_FILTER)
       int geomID = curve_in.geomID;
       Geometry* geometry = ((Scene*)geom)->get(geomID);
       if (!likely(geometry->hasIntersectionFilter1())) 
@@ -328,7 +328,7 @@ namespace embree
         ray.Ng = T;
         ray.geomID = curve_in.geomID;
         ray.primID = curve_in.primID;
-#if defined(__INTERSECTION_FILTER__)
+#if defined(RTCORE_INTERSECTION_FILTER)
           return;
       }
 
@@ -404,7 +404,7 @@ namespace embree
       STAT3(shadow.trav_prim_hits,1,1,1);
 
       /* intersection filter test */
-#if defined(__INTERSECTION_FILTER__)
+#if defined(RTCORE_INTERSECTION_FILTER)
 
       size_t i = select_min(valid,t);
       int geomID = curve_in.geomID;
@@ -468,7 +468,7 @@ namespace embree
           if (T == Vec3fa(zero)) return false; // { valid[i] = 0; goto retry; } // ignore denormalized curves */
 
           /* intersection filter test */
-#if defined(__INTERSECTION_FILTER__) && 0
+#if defined(RTCORE_INTERSECTION_FILTER) && 0
           Geometry* geometry = ((Scene*)geom)->get(geomID);
           if (!likely(geometry->hasOcclusionFilter1())) 
             {

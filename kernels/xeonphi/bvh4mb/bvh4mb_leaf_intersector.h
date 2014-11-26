@@ -102,7 +102,7 @@ namespace embree
       const mic_f vv = ldot3_zxy(e1,odzxy); 
       const mic_f u = uu * rcp_den;
       const mic_f v = vv * rcp_den;
-#if defined(__BACKFACE_CULLING__)
+#if defined(RTCORE_BACKFACE_CULLING)
       const mic_m m_init = (mic_m)0x1111 & (den > zero);
 #else
       const mic_m m_init = 0x1111;
@@ -122,7 +122,7 @@ namespace embree
 		    
       //////////////////////////////////////////////////////////////////////////////////////////////////
 
-#if defined(__USE_RAY_MASK__)
+#if defined(RTCORE_RAY_MASK)
       const mic_i rayMask(ray.mask);
       const mic_i triMask = getTriMasks(tptr); 
       const mic_m m_ray_mask = (rayMask & triMask) != mic_i::zero();
@@ -243,7 +243,7 @@ namespace embree
       const mic_f u = uu * rcp_den;
       const mic_f v = vv * rcp_den;
 
-#if defined(__BACKFACE_CULLING__)
+#if defined(RTCORE_BACKFACE_CULLING)
       const mic_m m_init = (mic_m)0x1111 & (den > zero);
 #else
       const mic_m m_init = 0x1111;
@@ -259,7 +259,7 @@ namespace embree
 
       mic_m m_final  = lt(lt(m_aperture,min_dist_xyz,t),t,max_dist_xyz);
 
-#if defined(__USE_RAY_MASK__)
+#if defined(RTCORE_RAY_MASK)
       const mic_i rayMask(ray.mask);
       const mic_i triMask = getTriMasks(tptr); 
       const mic_m m_ray_mask = (rayMask & triMask) != mic_i::zero();
@@ -352,7 +352,7 @@ namespace embree
       const mic_f u = uu * rcp_den;
       const mic_f v = vv * rcp_den;
 
-#if defined(__BACKFACE_CULLING__)
+#if defined(RTCORE_BACKFACE_CULLING)
       const mic_m m_init = (mic_m)0x1111 & (den > zero);
 #else
       const mic_m m_init = 0x1111;
@@ -373,7 +373,7 @@ namespace embree
 		    
       //////////////////////////////////////////////////////////////////////////////////////////////////
 
-#if defined(__USE_RAY_MASK__)
+#if defined(RTCORE_RAY_MASK)
       const mic_i rayMask(ray16.mask[rayIndex]);
       const mic_i triMask = getTriMasks(tptr); 
       const mic_m m_ray_mask = (rayMask & triMask) != mic_i::zero();
@@ -506,7 +506,7 @@ namespace embree
       const mic_f u = uu * rcp_den;
       const mic_f v = vv * rcp_den;
 
-#if defined(__BACKFACE_CULLING__)
+#if defined(RTCORE_BACKFACE_CULLING)
       const mic_m m_init = (mic_m)0x1111 & (den > zero);
 #else
       const mic_m m_init = 0x1111;
@@ -522,7 +522,7 @@ namespace embree
 
       mic_m m_final  = lt(lt(m_aperture,min_dist_xyz,t),t,max_dist_xyz);
 
-#if defined(__USE_RAY_MASK__)
+#if defined(RTCORE_RAY_MASK)
       const mic_i rayMask(ray16.mask[rayIndex]);
       const mic_i triMask = getTriMasks(tptr); 
       const mic_m m_ray_mask = (rayMask & triMask) != mic_i::zero();
@@ -602,7 +602,7 @@ namespace embree
 
 	    mic_m valid = m_valid_leaf;
 
-#if defined(__BACKFACE_CULLING__)
+#if defined(RTCORE_BACKFACE_CULLING)
 	    
 	    valid &= den > zero;
 #endif
@@ -635,7 +635,7 @@ namespace embree
 	    prefetch<PFHINT_L1EX>(&ray16.Ng.z);      
 
 	    /* ray masking test */
-#if defined(__USE_RAY_MASK__)
+#if defined(RTCORE_RAY_MASK)
 	    valid &= (mic_i(tri_t0.mask()) & ray16.mask) != 0;
 #endif
 	    if (unlikely(none(valid))) continue;
@@ -713,7 +713,7 @@ namespace embree
 
 	    mic_m valid = m_valid_leaf;
 
-#if defined(__BACKFACE_CULLING__)
+#if defined(RTCORE_BACKFACE_CULLING)
 	    
 	    valid &= den > zero;
 #endif
@@ -735,7 +735,7 @@ namespace embree
 	    valid = ge(valid,ray16.tfar,t);
 
 	    /* ray masking test */
-#if defined(__USE_RAY_MASK__)
+#if defined(RTCORE_RAY_MASK)
 	    valid &= (mic_i(tri_t0.mask()) & ray16.mask) != 0;
 #endif
 	    if (unlikely(none(valid))) continue;

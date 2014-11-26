@@ -118,7 +118,7 @@ namespace embree
       g_rtcore += ",threads=" + std::stringOf(g_numThreads);
 
     /* initialize task scheduler */
-#if !defined(__EXPORT_ALL_SYMBOLS__)
+#if !defined(RTCORE_EXPORT_ALL_SYMBOLS)
     TaskScheduler::create(g_numThreads);
 #endif
 

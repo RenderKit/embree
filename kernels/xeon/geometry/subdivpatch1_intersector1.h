@@ -68,14 +68,14 @@ namespace embree
       if (unlikely(T < absDen*float(ray.tnear))) return;
 
       /* perform backface culling */
-#if defined(__BACKFACE_CULLING__)
+#if defined(RTCORE_BACKFACE_CULLING)
       if (unlikely(den <= 0.0f)) return;
 #else
       if (unlikely(den == 0.0f)) return;
 #endif
 
       /* ray masking test */
-#if 0 && defined(__USE_RAY_MASK__) // FIXME: enable
+#if 0 && defined(RTCORE_RAY_MASK) // FIXME: enable
       if (unlikely((tri.mask() & ray.mask) == 0)) return;
 #endif
 
@@ -86,7 +86,7 @@ namespace embree
       const float t = T * rcpAbsDen;
       
       /* intersection filter test */
-#if 0 && defined(__INTERSECTION_FILTER__) // FIXME: enable
+#if 0 && defined(RTCORE_INTERSECTION_FILTER) // FIXME: enable
       Geometry* geometry = ((Scene*)geom)->get(geomID);
       if (unlikely(geometry->hasIntersectionFilter1())) {
         runIntersectionFilter1(geometry,ray,u,v,t,Ng,geomID,primID);
@@ -147,19 +147,19 @@ namespace embree
       if (unlikely(T < absDen*float(ray.tnear))) return false;
 
       /* perform backface culling */
-#if defined(__BACKFACE_CULLING__)
+#if defined(RTCORE_BACKFACE_CULLING)
       if (unlikely(den <= 0.0f)) return false;
 #else
       if (unlikely(den == 0.0f)) return false;
 #endif
 
       /* ray masking test */
-#if 0 && defined(__USE_RAY_MASK__) // FIXME: enable
+#if 0 && defined(RTCORE_RAY_MASK) // FIXME: enable
       if (unlikely((tri.mask() & ray.mask) == 0)) return false;
 #endif
 
       /* intersection filter test */
-#if 0 && defined(__INTERSECTION_FILTER__) // FIXME: enable
+#if 0 && defined(RTCORE_INTERSECTION_FILTER) // FIXME: enable
       const int geomID = tri.geomID<list>();
       Geometry* geometry = ((Scene*)geom)->get(geomID);
       if (unlikely(geometry->hasOcclusionFilter1()))

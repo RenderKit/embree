@@ -21,7 +21,7 @@
 
 namespace embree
 {
-#if defined(__SPINLOCKS__)
+#if defined(RTCORE_SPINLOCKS)
 #define Barrier LinearBarrierActive
   //#define Barrier BarrierActive
 #else

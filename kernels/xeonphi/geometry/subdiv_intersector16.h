@@ -57,7 +57,7 @@ namespace embree
     const mic_f u       = uu * rcp_den;
     const mic_f v       = vv * rcp_den;
 
-#if defined(__BACKFACE_CULLING__)
+#if defined(RTCORE_BACKFACE_CULLING)
     const mic_m m_init = m_active & (den > zero);
 #else
     const mic_m m_init = m_active;
@@ -159,7 +159,7 @@ namespace embree
     const mic_f den     = dot(Ng,ray_dir);	      
     const mic_f rcp_den = rcp(den);
 
-#if defined(__BACKFACE_CULLING__)
+#if defined(RTCORE_BACKFACE_CULLING)
     mic_m m_valid = m_active & (den > zero);
 #else
     mic_m m_valid = m_active;
@@ -303,7 +303,7 @@ namespace embree
     const mic_f u = uu * rcp_den;
     const mic_f v = vv * rcp_den;
 
-#if defined(__BACKFACE_CULLING__)
+#if defined(RTCORE_BACKFACE_CULLING)
     const mic_m m_init = (mic_m)0x1111 & (den > zero);
 #else
     const mic_m m_init = 0x1111;
@@ -393,7 +393,7 @@ namespace embree
     const mic_f u = uu * rcp_den;
     const mic_f v = vv * rcp_den;
 
-#if defined(__BACKFACE_CULLING__)
+#if defined(RTCORE_BACKFACE_CULLING)
     const mic_m m_init = (mic_m)0x1111 & (den > zero);
 #else
     const mic_m m_init = 0x1111;

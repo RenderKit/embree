@@ -267,8 +267,6 @@ namespace embree
     virtual void printBuilderName();
     virtual void finalize         (const size_t threadIndex, const size_t threadCount);
 
-    void processLeaves(BVH4i::NodeRef &ref);
-
   protected:
     TASK_FUNCTION(BVH4iBuilderSubdivMesh,computePrimRefsSubdivMesh);
     TASK_FUNCTION(BVH4iBuilderSubdivMesh,updateLeaves);

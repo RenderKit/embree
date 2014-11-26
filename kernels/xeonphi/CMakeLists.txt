@@ -20,8 +20,7 @@ INCLUDE(icc_xeonphi)
 
 ADD_DEFINITIONS(-D__TARGET_XEON_PHI__)
 
-ADD_ISPC_LIBRARY(embree_xeonphi SHARED
-
+ADD_ISPC_LIBRARY(embree_xeonphi ${EMBREE_LIB_TYPE}
   ../common/stat.cpp 
   ../common/globals.cpp 
   ../common/alloc.cpp 

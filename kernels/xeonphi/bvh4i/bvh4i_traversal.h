@@ -93,7 +93,7 @@ namespace embree
 	sindex--;
 	curNode = stack_node[sindex];
 
-#ifdef __USE_STAT_COUNTERS__
+#ifdef RTCORE_STAT_COUNTERS
 	if (!curNode.isLeaf(leaf_mask))
 	  STAT3(normal.trav_stack_nodes,1,1,1);
 #endif
@@ -247,7 +247,7 @@ namespace embree
 	sindex--;
 	curNode = stack_node[sindex]; // early pop of next node
 
-#ifdef __USE_STAT_COUNTERS__
+#ifdef RTCORE_STAT_COUNTERS
 	if (!curNode.isLeaf(leaf_mask))
 	  STAT3(shadow.trav_stack_nodes,1,1,1);
 #endif

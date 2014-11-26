@@ -38,7 +38,7 @@ namespace embree
 
   void Buffer::set(void* ptr_in, size_t ofs_in, size_t stride_in)
   {
-#if !defined(__BUFFER_STRIDE__)
+#if !defined(RTCORE_BUFFER_STRIDE)
     if (stride_in != stride) {
       process_error(RTC_INVALID_OPERATION,"buffer stride feature disabled at compile time and specified stride does not match default stride");
       return;

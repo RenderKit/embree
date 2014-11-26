@@ -25,7 +25,7 @@ namespace embree
 
   Stat::~Stat () 
   {
-#ifdef __USE_STAT_COUNTERS__
+#ifdef RTCORE_STAT_COUNTERS
     Stat::print(std::cout);
 #endif
   }

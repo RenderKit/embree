@@ -1113,11 +1113,15 @@ PRINT(CORRECT_numPrims);
 
     if (threadIndex == 0)
       {
-	SubdivPatch1 *__restrict__ const patch_ptr = (SubdivPatch1*)org_accel;
+	bvh->accel = org_accel;
+	accel = (Triangle1*)org_accel;
+	bvh->lazyMemUsed64BytesBlocks = 0;
+      }
 
-	// if (bvh->root != BVH4i::invalidNode)
-	//   processLeaves(bvh->root);
-
+    //#define ENABLE_GLOBAL_TESSELLATION_CACHE
+#if defined(ENABLE_GLOBAL_TESSELLATION_CACHE)
+    if (threadIndex == 0)
+      {
 	const size_t new_lazyMem64BytesBlocks = global_lazyMem64BytesBlocks * 1.5f; 
 
 	if (new_lazyMem64BytesBlocks > bvh->lazyMemAllocated64BytesBlocks)
@@ -1128,10 +1132,6 @@ PRINT(CORRECT_numPrims);
 	    bvh->lazymem = (mic_f*)os_malloc(sizeof(mic_f) * bvh->lazyMemAllocated64BytesBlocks);
 	  }
 
-	bvh->accel = org_accel;
-	accel = (Triangle1*)org_accel;
-
-	bvh->lazyMemUsed64BytesBlocks = 0;
 
 #if DEBUG
 	DBG_PRINT(global_lazyMem64BytesBlocks);
@@ -1144,35 +1144,9 @@ PRINT(CORRECT_numPrims);
 #endif
 
       }
+#endif
 
   }
-
-  void BVH4iBuilderSubdivMesh::processLeaves(BVH4i::NodeRef &ref)
-  {    
-    if (unlikely(ref.isLeaf()))
-      {
-	unsigned int items = ref.items();
-	unsigned int index = ref.offsetIndex();
-	assert(items == 1);
-
-	const unsigned int patchIndex = prims[index].lower.a;
-
-	DBG_PRINT(index);
-	DBG_PRINT(patchIndex);
-
-	createBVH4iLeaf( ref , patchIndex, 1);	    
-
-	return;
-      }
-
-    BVH4i::Node *n = (BVH4i::Node*)ref.node(node);
-
-    for (size_t i=0;i<BVH4i::N;i++)
-      {
-	if (n->child(i) == BVH4i::invalidNode) break;
-	processLeaves( n->child(i) );
-      }
-  }    
 
 
 };

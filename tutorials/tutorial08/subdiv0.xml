@@ -17,10 +17,10 @@
       </positions>
 
       <position_indices>
-        0 1 4 3  
-        1 2 5 4  
-        3 4 7 6  
-        4 5 8 7
+        3 4 1 0
+        4 5 2 1
+        6 7 4 3
+        7 8 5 4
       </position_indices>
 
       <faces>

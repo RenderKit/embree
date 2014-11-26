@@ -225,7 +225,9 @@ namespace embree
   void task_regression_testing(void* This, size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* taskGroup) 
   {
     if (regression_tests == NULL) return;
-    LockStepTaskScheduler::Init init(threadIndex,threadCount,&g_regression_task_scheduler);
+    LockStepTaskScheduler task_scheduler;
+    LockStepTaskScheduler::setInstance(&task_scheduler);
+    LockStepTaskScheduler::Init init(threadIndex,threadCount,&task_scheduler);
     if (threadIndex != 0) return;
     for (size_t i=0; i<regression_tests->size(); i++) 
       (*(*regression_tests)[i])();
@@ -350,22 +352,22 @@ namespace embree
       std::cout << "  Platform : " << getPlatformName() << std::endl;
       std::cout << "  CPU      : " << stringOfCPUFeatures(getCPUFeatures()) << std::endl;
       std::cout << "  Features : ";
-#if defined(__USE_RAY_MASK__)
+#if defined(RTCORE_RAY_MASK)
       std::cout << "raymasks ";
 #endif
-#if defined (__BACKFACE_CULLING__)
+#if defined (RTCORE_BACKFACE_CULLING)
       std::cout << "backfaceculling ";
 #endif
-#if defined(__INTERSECTION_FILTER__)
+#if defined(RTCORE_INTERSECTION_FILTER)
       std::cout << "intersection_filter ";
 #endif
-#if defined(__BUFFER_STRIDE__)
+#if defined(RTCORE_BUFFER_STRIDE)
       std::cout << "bufferstride ";
 #endif
       std::cout << std::endl;
 
 #if defined (__MIC__)
-#if defined(__BUFFER_STRIDE__)
+#if defined(RTCORE_BUFFER_STRIDE)
       std::cout << "  WARNING: enabled 'bufferstride' support will lower BVH build performance" << std::endl;
 #endif
 #endif
@@ -499,7 +501,7 @@ namespace embree
     Lock<MutexSys> lock(g_mutex);
 
     TRACE(rtcDebug);
-#if defined(__USE_STAT_COUNTERS__)
+#if defined(RTCORE_STAT_COUNTERS)
     Stat::print(std::cout);
     Stat::clear();
 #endif
@@ -521,7 +523,7 @@ namespace embree
     TRACE(rtcCommit);
     VERIFY_HANDLE(scene);
 
-#if defined(__ENABLE_RAYSTREAM_LOGGER__)
+#if defined(RTCORE_ENABLE_RAYSTREAM_LOGGER)
     RayStreamLogger::rayStreamLogger.dumpGeometry(scene);
 #endif
 
@@ -556,13 +558,13 @@ namespace embree
     if (((size_t)&ray) & 0x0F) process_error(RTC_INVALID_ARGUMENT,"ray not aligned to 16 bytes");   
 #endif
 
-#if defined(__ENABLE_RAYSTREAM_LOGGER__)
+#if defined(RTCORE_ENABLE_RAYSTREAM_LOGGER)
     RTCRay old_ray = ray;
 #endif
 
     ((Scene*)scene)->intersect(ray);
 
-#if defined(__ENABLE_RAYSTREAM_LOGGER__)
+#if defined(RTCORE_ENABLE_RAYSTREAM_LOGGER)
     RayStreamLogger::rayStreamLogger.logRay1Intersect(scene,old_ray,ray);
 #endif
   }
@@ -581,13 +583,13 @@ namespace embree
     STAT(size_t cnt=0; for (size_t i=0; i<4; i++) cnt += ((int*)valid)[i] == -1;);
     STAT3(normal.travs,1,cnt,4);
 
-#if defined(__ENABLE_RAYSTREAM_LOGGER__)
+#if defined(RTCORE_ENABLE_RAYSTREAM_LOGGER)
     RTCRay4 old_ray = ray;
 #endif
 
     ((Scene*)scene)->intersect4(valid,ray);
 
-#if defined(__ENABLE_RAYSTREAM_LOGGER__)
+#if defined(RTCORE_ENABLE_RAYSTREAM_LOGGER)
     RayStreamLogger::rayStreamLogger.logRay4Intersect(valid,scene,old_ray,ray);
 #endif
 
@@ -608,13 +610,13 @@ namespace embree
     STAT(size_t cnt=0; for (size_t i=0; i<8; i++) cnt += ((int*)valid)[i] == -1;);
     STAT3(normal.travs,1,cnt,8);
 
-#if defined(__ENABLE_RAYSTREAM_LOGGER__)
+#if defined(RTCORE_ENABLE_RAYSTREAM_LOGGER)
     RTCRay8 old_ray = ray;
 #endif
 
     ((Scene*)scene)->intersect8(valid,ray);
 
-#if defined(__ENABLE_RAYSTREAM_LOGGER__)
+#if defined(RTCORE_ENABLE_RAYSTREAM_LOGGER)
     RayStreamLogger::rayStreamLogger.logRay8Intersect(valid,scene,old_ray,ray);
 #endif
 
@@ -635,13 +637,13 @@ namespace embree
     STAT(size_t cnt=0; for (size_t i=0; i<16; i++) cnt += ((int*)valid)[i] == -1;);
     STAT3(normal.travs,1,cnt,16);
 
-#if defined(__ENABLE_RAYSTREAM_LOGGER__)
+#if defined(RTCORE_ENABLE_RAYSTREAM_LOGGER)
     RTCRay16 old_ray = ray;
 #endif
 
     ((Scene*)scene)->intersect16(valid,ray);
 
-#if defined(__ENABLE_RAYSTREAM_LOGGER__)
+#if defined(RTCORE_ENABLE_RAYSTREAM_LOGGER)
     RayStreamLogger::rayStreamLogger.logRay16Intersect(valid,scene,old_ray,ray);
 #endif
 
@@ -657,13 +659,13 @@ namespace embree
     if (((size_t)&ray) & 0x0F) process_error(RTC_INVALID_ARGUMENT,"ray not aligned to 16 bytes");   
 #endif
 
-#if defined(__ENABLE_RAYSTREAM_LOGGER__)
+#if defined(RTCORE_ENABLE_RAYSTREAM_LOGGER)
     RTCRay old_ray = ray;
 #endif
 
     ((Scene*)scene)->occluded(ray);
 
-#if defined(__ENABLE_RAYSTREAM_LOGGER__)
+#if defined(RTCORE_ENABLE_RAYSTREAM_LOGGER)
     RayStreamLogger::rayStreamLogger.logRay1Occluded(scene,old_ray,ray);
 #endif
 
@@ -683,13 +685,13 @@ namespace embree
     STAT(size_t cnt=0; for (size_t i=0; i<4; i++) cnt += ((int*)valid)[i] == -1;);
     STAT3(shadow.travs,1,cnt,4);
 
-#if defined(__ENABLE_RAYSTREAM_LOGGER__)
+#if defined(RTCORE_ENABLE_RAYSTREAM_LOGGER)
     RTCRay4 old_ray = ray;
 #endif
 
     ((Scene*)scene)->occluded4(valid,ray);
 
-#if defined(__ENABLE_RAYSTREAM_LOGGER__)
+#if defined(RTCORE_ENABLE_RAYSTREAM_LOGGER)
     RayStreamLogger::rayStreamLogger.logRay4Occluded(valid,scene,old_ray,ray);
 #endif
 
@@ -710,13 +712,13 @@ namespace embree
     STAT(size_t cnt=0; for (size_t i=0; i<8; i++) cnt += ((int*)valid)[i] == -1;);
     STAT3(shadow.travs,1,cnt,8);
 
-#if defined(__ENABLE_RAYSTREAM_LOGGER__)
+#if defined(RTCORE_ENABLE_RAYSTREAM_LOGGER)
     RTCRay8 old_ray = ray;
 #endif
 
     ((Scene*)scene)->occluded8(valid,ray);
 
-#if defined(__ENABLE_RAYSTREAM_LOGGER__)
+#if defined(RTCORE_ENABLE_RAYSTREAM_LOGGER)
     RayStreamLogger::rayStreamLogger.logRay8Occluded(valid,scene,old_ray,ray);
 #endif
 
@@ -737,13 +739,13 @@ namespace embree
     STAT(size_t cnt=0; for (size_t i=0; i<16; i++) cnt += ((int*)valid)[i] == -1;);
     STAT3(shadow.travs,1,cnt,16);
 
-#if defined(__ENABLE_RAYSTREAM_LOGGER__)
+#if defined(RTCORE_ENABLE_RAYSTREAM_LOGGER)
     RTCRay16 old_ray = ray;
 #endif
 
     ((Scene*)scene)->occluded16(valid,ray);
 
-#if defined(__ENABLE_RAYSTREAM_LOGGER__)
+#if defined(RTCORE_ENABLE_RAYSTREAM_LOGGER)
   RayStreamLogger::rayStreamLogger.logRay16Occluded(valid,scene,old_ray,ray);
 #endif
 

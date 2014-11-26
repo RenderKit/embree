@@ -131,7 +131,7 @@ namespace embree
 	assert( tri.v[1] < numVertices );
 	assert( tri.v[2] < numVertices );
 
-#if !defined(__BUFFER_STRIDE__)
+#if !defined(RTCORE_BUFFER_STRIDE)
 	
 	const float *__restrict__ const vptr0 = (float*) vertices[dim].getPtr(tri.v[0]);
 	const float *__restrict__ const vptr1 = (float*) vertices[dim].getPtr(tri.v[1]);

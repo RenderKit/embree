@@ -254,12 +254,9 @@ namespace embree
       LockStepTaskScheduler* scheduler;
     };
 
-    //static __thread LockStepTaskScheduler* scheduler;
-    static LockStepTaskScheduler* scheduler;
-
-    __forceinline static LockStepTaskScheduler* instance() {
-      return scheduler;
-    }
+    static __thread LockStepTaskScheduler* scheduler;
+    static LockStepTaskScheduler* instance();
+    static void setInstance(LockStepTaskScheduler*);
 
     static const unsigned int CONTROL_THREAD_ID = 0;
 

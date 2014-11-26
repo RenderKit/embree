@@ -78,7 +78,7 @@ namespace embree
         if (unlikely(none(valid))) continue;
 
         /* perform backface culling */
-#if defined(__BACKFACE_CULLING__)
+#if defined(RTCORE_BACKFACE_CULLING)
         valid &= den > avxf(zero);
         if (unlikely(none(valid))) continue;
 #else
@@ -87,7 +87,7 @@ namespace embree
 #endif
         
         /* ray masking test */
-#if defined(__USE_RAY_MASK__)
+#if defined(RTCORE_RAY_MASK)
         valid &= (tri.mask[i] & ray.mask) != 0;
         if (unlikely(none(valid))) continue;
 #endif
@@ -101,7 +101,7 @@ namespace embree
         const int primID = tri.primID<list>(i);
 
         /* intersection filter test */
-#if defined(__INTERSECTION_FILTER__)
+#if defined(RTCORE_INTERSECTION_FILTER)
 	if (enableIntersectionFilter) {
 	  Geometry* geometry = ((Scene*)geom)->get(geomID);
 	  if (unlikely(geometry->hasIntersectionFilter8())) {
@@ -166,7 +166,7 @@ namespace embree
         if (unlikely(none(valid))) continue;
 
         /* perform backface culling */
-#if defined(__BACKFACE_CULLING__)
+#if defined(RTCORE_BACKFACE_CULLING)
         valid &= den > avxf(zero);
         if (unlikely(none(valid))) continue;
 #else
@@ -175,13 +175,13 @@ namespace embree
 #endif
 
         /* ray masking test */
-#if defined(__USE_RAY_MASK__)
+#if defined(RTCORE_RAY_MASK)
         valid &= (tri.mask[i] & ray.mask) != 0;
         if (unlikely(none(valid))) continue;
 #endif
 
         /* intersection filter test */
-#if defined(__INTERSECTION_FILTER__)
+#if defined(RTCORE_INTERSECTION_FILTER)
 	if (enableIntersectionFilter) 
 	{
 	  const int geomID = tri.geomID<list>(i);
@@ -231,7 +231,7 @@ namespace embree
       if (likely(none(valid))) return;
 
         /* perform backface culling */
-#if defined(__BACKFACE_CULLING__)
+#if defined(RTCORE_BACKFACE_CULLING)
       valid &= den > avxf(zero);
       if (unlikely(none(valid))) return;
 #else
@@ -240,7 +240,7 @@ namespace embree
 #endif
 
       /* ray masking test */
-#if defined(__USE_RAY_MASK__)
+#if defined(RTCORE_RAY_MASK)
       valid &= (tri.mask & ray.mask[k]) != 0;
       if (unlikely(none(valid))) return;
 #endif
@@ -254,7 +254,7 @@ namespace embree
       int geomID = tri.geomID<list>(i);
       
       /* intersection filter test */
-#if defined(__INTERSECTION_FILTER__)
+#if defined(RTCORE_INTERSECTION_FILTER)
       while (true) 
       {
         Geometry* geometry = ((Scene*)geom)->get(geomID);
@@ -271,7 +271,7 @@ namespace embree
           ray.geomID[k] = geomID;
           ray.primID[k] = tri.primID<list>(i);
 
-#if defined(__INTERSECTION_FILTER__)
+#if defined(RTCORE_INTERSECTION_FILTER)
           return;
         }
 
@@ -311,7 +311,7 @@ namespace embree
       if (unlikely(none(valid))) return false;
 
         /* perform backface culling */
-#if defined(__BACKFACE_CULLING__)
+#if defined(RTCORE_BACKFACE_CULLING)
         valid &= den > avxf(zero);
         if (unlikely(none(valid))) return false;
 #else
@@ -320,13 +320,13 @@ namespace embree
 #endif
 
       /* ray masking test */
-#if defined(__USE_RAY_MASK__)
+#if defined(RTCORE_RAY_MASK)
       valid &= (tri.mask & ray.mask[k]) != 0;
       if (unlikely(none(valid))) return false;
 #endif
 
       /* intersection filter test */
-#if defined(__INTERSECTION_FILTER__)
+#if defined(RTCORE_INTERSECTION_FILTER)
 
       size_t i = select_min(valid,T);
       int geomID = tri.geomID<list>(i);
