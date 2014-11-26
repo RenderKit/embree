@@ -89,7 +89,6 @@ namespace embree
       grid_v_res = max(level[1],level[3])+1;
 
       grid_size_16wide_blocks = ((grid_u_res*grid_v_res+15)&(-16)) / 16;
-      assert( grid_size_16wide_blocks == 1);
       grid_mask = 0;
       grid_subtree_size_64b_blocks = 5; // single leaf with u,v,x,y,z
 
