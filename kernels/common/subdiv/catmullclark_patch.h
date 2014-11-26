@@ -126,7 +126,6 @@ namespace embree
       for (size_t i=0; i<4; i++) 
         dest.crease_weight[i] = 0.0f;
     }
- 
 
     void subdivide(CatmullClarkPatch patch[4]) const
     {
@@ -297,7 +296,7 @@ namespace embree
 
     static __forceinline void init_regular(const Vec3fa_t &center, const Vec3fa_t center_ring[2*SIZE], const size_t N, const size_t offset, CatmullClark1Ring &dest)
     {
-      assert(N<MAX_VALENCE);
+      assert(N<CatmullClark1Ring::MAX_VALENCE);
       dest.valence = N;
       dest.num_vtx = 2*N;
       dest.border_index = -1;

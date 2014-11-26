@@ -108,24 +108,19 @@ namespace embree
     const Vec3fa& f3_m() const { return f[1][0]; }
     
     
-    Vec3fa initCornerVertex(const CatmullClarkPatch &irreg_patch,
-			    const size_t index)
+    Vec3fa initCornerVertex(const CatmullClarkPatch &irreg_patch, const size_t index)
     {
       return irreg_patch.ring[index].getLimitVertex();
     }
     
     
-    Vec3fa initPositiveEdgeVertex(const CatmullClarkPatch &irreg_patch,
-				  const size_t index,
-				  const Vec3fa &p_vtx)
+    Vec3fa initPositiveEdgeVertex(const CatmullClarkPatch &irreg_patch, const size_t index, const Vec3fa &p_vtx)
     {
       const Vec3fa tangent = irreg_patch.ring[index].getLimitTangent();
       return 1.0f/3.0f * tangent + p_vtx;
     }
     
-    Vec3fa initNegativeEdgeVertex(const CatmullClarkPatch &irreg_patch,
-				  const size_t index,
-				  const Vec3fa &p_vtx)
+    Vec3fa initNegativeEdgeVertex(const CatmullClarkPatch &irreg_patch, const size_t index, const Vec3fa &p_vtx)
     {
       const Vec3fa tangent = irreg_patch.ring[index].getSecondLimitTangent();
       return 1.0f/3.0f * tangent + p_vtx;
@@ -196,40 +191,34 @@ namespace embree
       
     }
     
-    void init(const CatmullClarkPatch &irreg_patch)
+    void init(const CatmullClarkPatch& patch)
     {
-      p0() = initCornerVertex(irreg_patch,0);
-      p1() = initCornerVertex(irreg_patch,1);
-      p2() = initCornerVertex(irreg_patch,2);
-      p3() = initCornerVertex(irreg_patch,3);
+      p0() = initCornerVertex(patch,0);
+      p1() = initCornerVertex(patch,1);
+      p2() = initCornerVertex(patch,2);
+      p3() = initCornerVertex(patch,3);
       
-      e0_p() = initPositiveEdgeVertex(irreg_patch,0, p0());
-      e1_p() = initPositiveEdgeVertex(irreg_patch,1, p1());
-      e2_p() = initPositiveEdgeVertex(irreg_patch,2, p2());
-      e3_p() = initPositiveEdgeVertex(irreg_patch,3, p3());
+      e0_p() = initPositiveEdgeVertex(patch,0, p0());
+      e1_p() = initPositiveEdgeVertex(patch,1, p1());
+      e2_p() = initPositiveEdgeVertex(patch,2, p2());
+      e3_p() = initPositiveEdgeVertex(patch,3, p3());
       
-      e0_m() = initNegativeEdgeVertex(irreg_patch,0, p0());
-      e1_m() = initNegativeEdgeVertex(irreg_patch,1, p1());
-      e2_m() = initNegativeEdgeVertex(irreg_patch,2, p2());
-      e3_m() = initNegativeEdgeVertex(irreg_patch,3, p3());
+      e0_m() = initNegativeEdgeVertex(patch,0, p0());
+      e1_m() = initNegativeEdgeVertex(patch,1, p1());
+      e2_m() = initNegativeEdgeVertex(patch,2, p2());
+      e3_m() = initNegativeEdgeVertex(patch,3, p3());
       
-      const unsigned int valence_p0 = irreg_patch.ring[0].valence;
-      const unsigned int valence_p1 = irreg_patch.ring[1].valence;
-      const unsigned int valence_p2 = irreg_patch.ring[2].valence;
-      const unsigned int valence_p3 = irreg_patch.ring[3].valence;
+      const unsigned int valence_p0 = patch.ring[0].valence;
+      const unsigned int valence_p1 = patch.ring[1].valence;
+      const unsigned int valence_p2 = patch.ring[2].valence;
+      const unsigned int valence_p3 = patch.ring[3].valence;
       
-      
-      initFaceVertex(irreg_patch,0,p0(),e0_p(),e1_m(),valence_p1,e0_m(),e3_p(),valence_p3,f0_p(),f0_m() );
-      
-      initFaceVertex(irreg_patch,1,p1(),e1_p(),e2_m(),valence_p2,e1_m(),e0_p(),valence_p0,f1_p(),f1_m() );
-      
-      initFaceVertex(irreg_patch,2,p2(),e2_p(),e3_m(),valence_p3,e2_m(),e1_p(),valence_p1,f2_p(),f2_m() );
-      
-      initFaceVertex(irreg_patch,3,p3(),e3_p(),e0_m(),valence_p0,e3_m(),e2_p(),valence_p3,f3_p(),f3_m() );
-      
+      initFaceVertex(patch,0,p0(),e0_p(),e1_m(),valence_p1,e0_m(),e3_p(),valence_p3,f0_p(),f0_m() );
+      initFaceVertex(patch,1,p1(),e1_p(),e2_m(),valence_p2,e1_m(),e0_p(),valence_p0,f1_p(),f1_m() );
+      initFaceVertex(patch,2,p2(),e2_p(),e3_m(),valence_p3,e2_m(),e1_p(),valence_p1,f2_p(),f2_m() );
+      initFaceVertex(patch,3,p3(),e3_p(),e0_m(),valence_p0,e3_m(),e2_p(),valence_p3,f3_p(),f3_m() );
     }
-    
-    
+
     __forceinline void exportConrolPoints( Vec3fa matrix[4][4], Vec3fa f_m[2][2] ) const
     {
       for (size_t y=0;y<4;y++)
