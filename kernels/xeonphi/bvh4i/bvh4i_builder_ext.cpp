@@ -965,9 +965,11 @@ PRINT(CORRECT_numPrims);
     //scene->lockstep_scheduler.dispatchTask( task_createSubdivMeshAccel, this, threadIndex, threadCount );
   }
 
+
   void BVH4iBuilderSubdivMesh::computePrimRefsSubdivMesh(const size_t threadID, const size_t numThreads) 
   {
     const size_t numTotalGroups = scene->size();
+
 
     /* count total number of virtual objects */
     const size_t numFaces  = numPrimitives;
@@ -1060,6 +1062,7 @@ PRINT(CORRECT_numPrims);
 
     global_lazyMem64BytesBlocks += local_lazyMem64BytesBlocks;
   }
+
 
   void BVH4iBuilderSubdivMesh::updateLeaves(const size_t threadIndex, const size_t threadCount)
   {    

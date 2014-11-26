@@ -161,6 +161,12 @@ namespace embree
     __forceinline mic3f eval16(const mic_f &uu,
 			       const mic_f &vv) const
     {
+#if DEBUG
+      const mic_m m_u = (uu >= 0.0f) & (uu <= 1.0f);
+      const mic_m m_v = (vv >= 0.0f) & (vv <= 1.0f);
+      assert( m_u == (mic_m)0xffff);
+      assert( m_v == (mic_m)0xffff);
+#endif      
       if (likely(isRegular()))
 	{
 	  return patch.eval16(uu,vv);

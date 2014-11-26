@@ -267,7 +267,6 @@ namespace embree
 
     /* allocate BVH data */
     allocateData(threadCount ,totalNumPrimitives);
-    
     if (likely(numPrimitives > SINGLE_THREADED_BUILD_THRESHOLD &&  threadCount > 1) )
       {
 	DBG(std::cout << "PARALLEL BUILD" << std::endl);

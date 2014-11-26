@@ -28,11 +28,6 @@ namespace embree
 
   static AtomicMutex mtx;
 
-
-
-  namespace isa
-  {
-
     class __aligned(64) TessellationCache {
 
     private:
@@ -135,6 +130,7 @@ namespace embree
 
 	    /* realloc */
 	    std::cout << "REALLOCATING TESSELLATION CACHE TO " << allocated64BytesBlocks << " BLOCKS = " << allocated64BytesBlocks*sizeof(mic_f) << " BYTES" << std::endl;
+	    exit(0);
 	  }
 
 	currentIndex = blockCounter;
@@ -165,6 +161,21 @@ namespace embree
 	  }
       }
     };
+
+    __thread TessellationCache *thread_cache = NULL;
+
+
+    void clearTessellationCache()
+    {
+#if defined(ENABLE_PER_THREAD_TESSELLATION_CACHE)
+      if (thread_cache)
+	thread_cache->clear();	  
+#endif
+    }
+
+  namespace isa
+  {
+
 
 
     static __aligned(64) RegularGridLookUpTables gridLookUpTables;
@@ -698,8 +709,6 @@ namespace embree
     // ============================================================================================
     // ============================================================================================
 
-    __thread TessellationCache *thread_cache = NULL;
-
 
     template<typename LeafIntersector, bool ENABLE_COMPRESSED_BVH4I_NODES>
     void BVH4iIntersector16Subdiv<LeafIntersector,ENABLE_COMPRESSED_BVH4I_NODES>::intersect(mic_i* valid_i, BVH4i* bvh, Ray16& ray16)
@@ -865,11 +874,14 @@ namespace embree
 		  
 		      const mic_m m_active = 0x777;
 		      const mic_f &uu = lazymem[uvIndex + 0];
-		      const mic_f &vv = lazymem[uvIndex + 1];		  
+		      const mic_f &vv = lazymem[uvIndex + 1];	
+#if 1  
 		      const mic3f vtx(lazymem[uvIndex + 2],
 				      lazymem[uvIndex + 3],
 				      lazymem[uvIndex + 4]);
-		  
+#else
+		      mic3f vtx = subdiv_patch.eval16(uu,vv);
+#endif		  
 		      intersect1_quad16(rayIndex, 
 					dir_xyz,
 					org_xyz,

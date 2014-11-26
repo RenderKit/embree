@@ -300,14 +300,23 @@ namespace embree
     delete geometry;
   }
 
+#if defined(__MIC__)
+  extern void clearTessellationCache();
+#endif
+
   void Scene::task_build_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
   {
+
     LockStepTaskScheduler::Init init(threadIndex,threadCount,&lockstep_scheduler);
     if (threadIndex == 0) accels.build(threadIndex,threadCount);
   }
 
   void Scene::build (size_t threadIndex, size_t threadCount) 
   {
+#if defined(__MIC__)
+    clearTessellationCache();    
+#endif
+
 #if 0 // FIXME: remove
     SubdivMesh* subdivmesh = getSubdivMesh(0);
     subdivmesh->initializeHalfEdgeStructures();
