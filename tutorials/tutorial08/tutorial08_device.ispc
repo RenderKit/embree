@@ -21,7 +21,7 @@
 //#define ENABLE_DISPLACEMENTS
 
 //#define FORCE_FIXED_EDGE_TESSELLATION
-#define FIXED_EDGE_TESSELLATION_VALUE 3
+#define FIXED_EDGE_TESSELLATION_VALUE 7
 
 #define MAX_EDGE_LEVEL 32.0f
 #define MIN_EDGE_LEVEL 2.0f
@@ -159,12 +159,13 @@ void displacementFunction(void* uniform ptr,               /*!< pointer to user 
 {
 #if 1
  for (uniform size_t i=0; i<N; i++) {
-   const uniform float dP_x = 0.02f*(sin(100.0f*px[i]+0.5f));
-   const uniform float dP_y = 0.02f*(sin(100.0f*pz[i]+1.5f));
-   const uniform float dP_z = 0.02f*(cos(100.0f*py[i]));
-   px[i] += dP_x; 
-   py[i] += dP_y; 
-   pz[i] += dP_z;
+   const uniform float dP_x = 0.02f*(sin(100.0f*u[i]+0.5f));
+   const uniform float dP_y = 0.02f*(sin(100.0f*v[i]+1.5f));
+   const uniform float dP_z = 0.02f*(cos(100.0f*(v[i]+v[i])));
+
+   px[i] += nx[i] * dP_x; 
+   py[i] += ny[i] * dP_y; 
+   pz[i] += nz[i] * dP_z;
   }  
 #endif  
 }

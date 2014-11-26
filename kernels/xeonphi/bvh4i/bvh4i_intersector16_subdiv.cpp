@@ -235,17 +235,10 @@ namespace embree
 	  
 	  mic3f vtx = patch.eval16(leaf_u_array,leaf_v_array);
 
-	  mic_f &leaf_vtx_x = lazymem[currentIndex+2];
-	  mic_f &leaf_vtx_y = lazymem[currentIndex+3];
-	  mic_f &leaf_vtx_z = lazymem[currentIndex+4];
-
-	  leaf_vtx_x = vtx.x;
-	  leaf_vtx_y = vtx.y;
-	  leaf_vtx_z = vtx.z;
-
 	  if (unlikely(geom->displFunc != NULL))
 	    {
 	      mic3f normal      = patch.normal16(leaf_u_array,leaf_v_array);
+	      normal = normalize(normal);
 
 	      geom->displFunc(geom->userPtr,
 			      patch.geomID,
@@ -255,13 +248,10 @@ namespace embree
 			      (const float*)&normal.x,
 			      (const float*)&normal.y,
 			      (const float*)&normal.z,
-			      (float*)&leaf_vtx_x,
-			      (float*)&leaf_vtx_y,
-			      (float*)&leaf_vtx_z,
+			      (float*)&vtx.x,
+			      (float*)&vtx.y,
+			      (float*)&vtx.z,
 			      16);
-
-
-
 	    }
 
 	  //const Vec3fa b_min( reduce_min(leafGridVtx.x), reduce_min(leafGridVtx.y), reduce_min(leafGridVtx.z) );
@@ -270,6 +260,14 @@ namespace embree
 	  //const BBox3fa leafGridBounds( b_min, b_max );
 
 	  const BBox3fa leafGridBounds = getBBox3fa(vtx);
+
+	  mic_f &leaf_vtx_x = lazymem[currentIndex+2];
+	  mic_f &leaf_vtx_y = lazymem[currentIndex+3];
+	  mic_f &leaf_vtx_z = lazymem[currentIndex+4];
+
+	  leaf_vtx_x = vtx.x;
+	  leaf_vtx_y = vtx.y;
+	  leaf_vtx_z = vtx.z;
 
 	  createSubPatchBVH4iLeaf( curNode, currentIndex);
 	  
@@ -517,7 +515,8 @@ namespace embree
 				       const mic_f &org_xyz,
 				       Ray16& ray16,
 				       const SubdivPatch1& subdiv_patch,
-				       const unsigned int subdiv_patch_index)
+				       const unsigned int subdiv_patch_index,
+				       const SubdivMesh* const geom)
     {
       const float * const edge_levels = subdiv_patch.level;
       const unsigned int grid_u_res   = subdiv_patch.grid_u_res;
@@ -542,7 +541,26 @@ namespace embree
 	  const mic_f uu = load16f(u_array);
 	  const mic_f vv = load16f(v_array);
 
-	  const mic3f vtx = subdiv_patch.eval16(uu,vv);
+	  mic3f vtx = subdiv_patch.eval16(uu,vv);
+
+	  if (unlikely(geom->displFunc != NULL))
+	    {
+	      mic3f normal = subdiv_patch.normal16(uu,vv);
+	      normal = normalize(normal);
+
+	      geom->displFunc(geom->userPtr,
+			      subdiv_patch.geomID,
+			      subdiv_patch.primID,
+			      (const float*)&uu,
+			      (const float*)&vv,
+			      (const float*)&normal.x,
+			      (const float*)&normal.y,
+			      (const float*)&normal.z,
+			      (float*)&vtx.x,
+			      (float*)&vtx.y,
+			      (float*)&vtx.z,
+			      16);
+	    }
 	  	  
 	  hit |= intersect1Eval16(subdiv_patch,
 				  subdiv_patch_index,
@@ -562,7 +580,6 @@ namespace embree
 	  size_t offset_line0 = 0;
 	  size_t offset_line1 = grid_u_res;
 
-#if 1
 	  for (unsigned int y=0;y<grid_v_res-1;y++,offset_line0+=grid_u_res,offset_line1+=grid_u_res)
 	    {
 	      for (unsigned int x=0;x<grid_u_res-1;x+=7)
@@ -575,7 +592,27 @@ namespace embree
 		  const mic_f uu = select(0xff,u8_line0,align_shift_right<8>(u8_line1,u8_line1));
 		  const mic_f vv = select(0xff,v8_line0,align_shift_right<8>(v8_line1,v8_line1));
 
-		  __aligned(64) const mic3f vtx = subdiv_patch.eval16(uu,vv);
+		  mic3f vtx = subdiv_patch.eval16(uu,vv);
+
+		  if (unlikely(geom->displFunc != NULL))
+		    {
+		      mic3f normal = subdiv_patch.normal16(uu,vv);
+		      normal = normalize(normal);
+
+		      geom->displFunc(geom->userPtr,
+				      subdiv_patch.geomID,
+				      subdiv_patch.primID,
+				      (const float*)&uu,
+				      (const float*)&vv,
+				      (const float*)&normal.x,
+				      (const float*)&normal.y,
+				      (const float*)&normal.z,
+				      (float*)&vtx.x,
+				      (float*)&vtx.y,
+				      (float*)&vtx.z,
+				      16);
+		    }
+
 	  	  unsigned int m_active = 0x7f;
 		  if (unlikely(x + 7 >= grid_u_res-1)) 
 		    {
@@ -599,27 +636,6 @@ namespace embree
 		}
 	      
 	    }	  
-#else
-
-	  /* 8x2 grid scan-line intersector */
-	  for (unsigned int y=0;y<grid_v_res-1;y++,offset_line0++,offset_line1++)
-	    for (unsigned int x=0;x<grid_u_res-1;x++,offset_line0++,offset_line1++)
-	      {
-		const float &u0 = u_array[offset_line0+0];
-		const float &v0 = v_array[offset_line0+0];
-		
-		const float &u1 = u_array[offset_line0+1];
-		const float &v1 = v_array[offset_line0+1];
-		
-		const float &u2 = u_array[offset_line1+1];
-		const float &v2 = v_array[offset_line1+1];
-
-		const float &u3 = u_array[offset_line1+0];
-		const float &v3 = v_array[offset_line1+0];
-		
-		hit |= intersect1Eval(subdiv_patch,subdiv_patch_index,u0,v0,u1,v1,u2,v2,u3,v3,rayIndex,dir_xyz,org_xyz,ray16);	    
-	      }
-#endif
 	}
 
       return hit;
@@ -775,7 +791,8 @@ namespace embree
 				   org_xyz,
 				   ray16,
 				   subdiv_patch,
-				   patchIndex);
+				   patchIndex,
+				   geom);
 	      else
 		{
 
@@ -887,6 +904,7 @@ namespace embree
 	  ray16.geomID[rayIndex] = subdiv_patch.geomID;
 	  ray16.u[rayIndex]      = (1.0f-ray16.u[rayIndex]) * subdiv_patch.u_range.x + ray16.u[rayIndex] * subdiv_patch.u_range.y;
 	  ray16.v[rayIndex]      = (1.0f-ray16.v[rayIndex]) * subdiv_patch.v_range.x + ray16.v[rayIndex] * subdiv_patch.v_range.y;
+	  if (unlikely(subdiv_patch.hasDisplacement())) continue;
 	  const Vec3fa normal    = subdiv_patch.normal(ray16.u[rayIndex],ray16.v[rayIndex]);
 	  ray16.Ng.x[rayIndex]   = normal.x;
 	  ray16.Ng.y[rayIndex]   = normal.y;
@@ -991,7 +1009,8 @@ namespace embree
 				   org_xyz,
 				   ray16,
 				   subdiv_patch,
-				   patchIndex);
+				   patchIndex,
+				   geom);
 	      else
 		{
 		  /* traverse sub-patch bvh4i for grids with > 16 points */

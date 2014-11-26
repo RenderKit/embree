@@ -49,7 +49,7 @@ namespace embree
     enum {
       REGULAR_PATCH     = 1,  // 0 => Gregory Patch 
       TRANSITION_PATCH  = 2,  // needs stiching?
-      HAS_DISPLACEMENTS = 4   // 0 => no displacments
+      HAS_DISPLACEMENT  = 4   // 0 => no displacments
     };
 
     /*! Default constructor. */
@@ -108,7 +108,7 @@ namespace embree
 
       /* has displacements? */
       if (mesh->displFunc != NULL)
-	flags |= HAS_DISPLACEMENTS;
+	flags |= HAS_DISPLACEMENT;
 
 
       /* tessellate into 4x4 grid blocks for larger grid resolutions, generate bvh4i subtree over 4x4 grid blocks*/
@@ -242,6 +242,11 @@ namespace embree
       return !isRegular();
     }
 
+    __forceinline bool hasDisplacement() const
+    {
+      return (flags & HAS_DISPLACEMENT) == HAS_DISPLACEMENT;
+    }
+
     BBox3fa bounds(const SubdivMesh* const geom) const
     {
 #if FORCE_TESSELLATION_BOUNDS == 1
@@ -313,8 +318,8 @@ namespace embree
 	  /* eval displacement function */
 	  if (unlikely(geom->displFunc != NULL))
 	    {
-	      PING;
-	      mic3f normal      = normal16(u,v);
+	      mic3f normal = normal16(u,v);
+	      normal = normalize(normal);
 
 	      geom->displFunc(geom->userPtr,
 			      geomID,
