@@ -24,19 +24,32 @@ namespace embree
   {
   public:
     CatmullClark1Ring ring[4];
-    //float level[4];
 
     __forceinline CatmullClarkPatch () {}
 
     __forceinline CatmullClarkPatch (const SubdivMesh::HalfEdge* first_half_edge, const Vec3fa* vertices) 
     {
-      for (size_t i=0; i<4; i++) {
+      for (size_t i=0; i<4; i++)
         ring[i].init(first_half_edge+i,vertices);
-        //level[i] = first_half_edge[i].edge_level;
-	//assert(level[i] >= 0.0f);
-      }
-      
     }
+
+    __forceinline Vec3fa normal(const float uu, const float vv) const
+    {
+      const int iu = (int) uu;
+      const int iv = (int) vv;
+      const int index = iv > 0 ? 3-iu : iu;
+      const Vec3fa tu = ring[index].getLimitTangent();
+      const Vec3fa tv = ring[index].getSecondLimitTangent();
+      return cross(tu,tv);
+    }   
+
+    __forceinline Vec3fa eval(const float uu, const float vv) const
+    {
+      const int iu = (int) uu;
+      const int iv = (int) vv;
+      const int index = iv > 0 ? 3-iu : iu;
+      return ring[index].getLimitVertex();
+    }   
 
     __forceinline Vec3fa getLimitVertex(const size_t index) const {
       return ring[index].getLimitVertex();

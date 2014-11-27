@@ -286,7 +286,7 @@ namespace embree
 
     __forceinline bool isRegular() const 
     {
-      if (valence == 4 && isGregory()) return true;
+      if (valence == 4/* && isGregory()*/) return true;
       return false;
     }
 

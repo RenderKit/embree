@@ -360,7 +360,8 @@ namespace embree
     __forceinline QuadQuad4x4(int id, unsigned geomID, unsigned primID)
       : id(id), geomID(geomID), primID(primID) {}
     
-    void displace(Scene* scene, const GregoryPatch& patch, const Vec2f luv[9][9])
+    template<typename Patch>
+    void displace(Scene* scene, const Patch& patch, const Vec2f luv[9][9])
     {
       SubdivMesh* mesh = (SubdivMesh*) scene->get(geomID);
       if (mesh->displFunc == NULL) return;
@@ -536,7 +537,8 @@ namespace embree
       return (2*x+1)*coarse/(2*fine);
     }
 
-    const BBox3fa build(Scene* scene, const GregoryPatch& patch,
+    template<typename Patch>
+    const BBox3fa build(Scene* scene, const Patch& patch,
                         const TessellationPattern& pattern0, 
                         const TessellationPattern& pattern1, 
                         const TessellationPattern& pattern2, 
@@ -612,6 +614,40 @@ namespace embree
       return build(scene);
     }
 
+    
+    template<typename Patch>
+    const BBox3fa quad(Scene* scene, const Patch& patch,
+                        const Vec2f& uv0, const Vec2f& uv1, const Vec2f& uv2, const Vec2f& uv3)
+    {
+      Vec2f luv[9][9];
+
+      for (int y=0; y<=8; y++) {
+        const float fy = min(1.0f,(float)y);
+        for (int x=0; x<=8; x++) {
+          const float fx = min(1.0f,(float)x);
+          luv[y][x] = Vec2f(fx,fy);
+        }
+      }
+
+      for (int y=0; y<=8; y++) {
+        for (int x=0; x<=8; x++) {
+          p[y][x] = patch.eval(luv[y][x].x,luv[y][x].y);
+        }
+      }
+
+      for (int y=0; y<=8; y++) {
+        for (int x=0; x<=8; x++) {
+	  const Vec2f uv01 = (1.0f-luv[y][x].x) * uv0  + luv[y][x].x * uv1;
+	  const Vec2f uv32 = (1.0f-luv[y][x].x) * uv3  + luv[y][x].x * uv2;
+	  const Vec2f uvxy = (1.0f-luv[y][x].y) * uv01 + luv[y][x].y * uv32;
+          uv[y][x] = uvxy;
+        }
+      }
+
+      displace(scene,patch,luv);
+      return build(scene);
+    }
+
   public:
     Bounds16 n;               //!< bounds of all QuadQuads
     Vec3fa p[9][9];           //!< pointer to vertices
@@ -622,4 +658,5 @@ namespace embree
     unsigned geomID;
     int id;
   };
+
 }
