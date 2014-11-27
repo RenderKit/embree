@@ -103,10 +103,13 @@ namespace embree
           //ray.u    = uv.x * rcpDet;
           //ray.v    = uv.y * rcpDet;
           ray.tfar = t;
-          ray.Ng   = Ng;
-          /*ray.Ng.x = U*rcpDet;
-          ray.Ng.y = V*rcpDet;
-          ray.Ng.z = float(size_t(&prim)>>4 & 0xFF)/255.0f;*/
+          //ray.Ng   = Ng;
+	  float u = U * rcpDet;
+	  float v = V * rcpDet;
+	  float w = 1.0f-u-v;
+          ray.Ng.x = float(size_t(prim.id)>>4 & 0xFF)/255.0f + 0.1f*u;
+          ray.Ng.y = float(size_t(prim.id)>>8 & 0xFF)/255.0f + 0.1f*v;
+          ray.Ng.z = float(size_t(prim.id)>>16 & 0xFF)/255.0f + 0.1f*w;
           ray.geomID  = prim.geomID;
           ray.primID  = prim.primID;
         }

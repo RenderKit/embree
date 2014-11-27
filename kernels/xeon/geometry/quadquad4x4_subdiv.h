@@ -40,10 +40,10 @@ namespace embree
       {
 #if 0
         const CatmullClarkPatch patch(h,vertices);
-        const bool subdiv0 = !h->hasOpposite() || !h->opposite()->isRegularFace(); h = h->next(); // FIXME: should be false if no neighbour?
-        const bool subdiv1 = !h->hasOpposite() || !h->opposite()->isRegularFace(); h = h->next();
-        const bool subdiv2 = !h->hasOpposite() || !h->opposite()->isRegularFace(); h = h->next();
-        const bool subdiv3 = !h->hasOpposite() || !h->opposite()->isRegularFace(); h = h->next();
+        const bool subdiv0 = !h->hasOpposite() || !h->opposite()->dicable(); h = h->next(); // FIXME: should be false if no neighbour?
+        const bool subdiv1 = !h->hasOpposite() || !h->opposite()->dicable(); h = h->next();
+        const bool subdiv2 = !h->hasOpposite() || !h->opposite()->dicable(); h = h->next();
+        const bool subdiv3 = !h->hasOpposite() || !h->opposite()->dicable(); h = h->next();
         subdivide(patch,5,Vec2f(0.0f,0.0f),Vec2f(0.0f,1.0f),Vec2f(1.0f,1.0f),Vec2f(1.0f,0.0f),subdiv0,subdiv1,subdiv2,subdiv3);
 #else
 	bool subdiv[GeneralCatmullClarkPatch::SIZE];
@@ -175,6 +175,8 @@ namespace embree
       const int nx = pattern_x.size();
       const int ny = pattern_y.size();
       
+      static int id = 0; id+=0x726849272;
+
       //const float du = (u1-u0)*(1.0f/8.0f);
       //const float dv = (v1-v0)*(1.0f/8.0f);
       for (int y=0; y<ny; y+=8) 
@@ -184,7 +186,7 @@ namespace embree
           count++;
           if (prims_o == NULL) continue;
           QuadQuad4x4* leaf = (QuadQuad4x4*) alloc.malloc(sizeof(QuadQuad4x4),16);
-          new (leaf) QuadQuad4x4(geomID,primID);
+          new (leaf) QuadQuad4x4(id,geomID,primID);
           const BBox3fa bounds = leaf->build(scene,patcheval,pattern0,pattern1,pattern2,pattern3,pattern_x,x,nx,pattern_y,y,ny,uv0,uv1,uv2,uv3);
           *prims_o = PrimRef(bounds,BVH4::encodeTypedLeaf(leaf,0));
           prims_o++;

@@ -357,8 +357,8 @@ namespace embree
 
   public:
       
-    __forceinline QuadQuad4x4(unsigned geomID, unsigned primID)
-      : geomID(geomID), primID(primID) {}
+    __forceinline QuadQuad4x4(int id, unsigned geomID, unsigned primID)
+      : id(id), geomID(geomID), primID(primID) {}
     
     void displace(Scene* scene, const GregoryPatch& patch, const Vec2f luv[9][9])
     {
@@ -620,5 +620,6 @@ namespace embree
     //float v0,v1;              //!< v coordinate range
     unsigned primID;
     unsigned geomID;
+    int id;
   };
 }
