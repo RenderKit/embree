@@ -333,12 +333,9 @@ namespace embree
 	    const TessellationPattern pattern3(l3,subdiv[3]);
 	    const TessellationPattern pattern_x = pattern0.size() > pattern2.size() ? pattern0 : pattern2;
 	    const TessellationPattern pattern_y = pattern1.size() > pattern3.size() ? pattern1 : pattern3;
-	    const int nx = pattern_x.size();
-	    const int ny = pattern_y.size();
-	    
-	    for (int y=0; y<ny; y+=8) 
-	      for (int x=0; x<nx; x+=8) 
-		s++;
+	    const int nx = (pattern_x.size()+7)/8;
+	    const int ny = (pattern_y.size()+7)/8;
+	    s += nx*ny;
 	  });
 	}
         return s;
@@ -358,6 +355,8 @@ namespace embree
 	  feature_adaptive_subdivision_bspline(mesh->getHalfEdge(f),mesh->getVertexPositionPtr(),
 					       [&](const CatmullClarkPatch& patch, const Vec2f uv[4], const int subdiv[4])
 	  {
+	    static int id = 0; id+=0x726849272;
+
 	    GregoryPatch patcheval; 
 	    patcheval.init(patch);
 	    
@@ -373,13 +372,9 @@ namespace embree
 	    const TessellationPattern pattern_y = pattern1.size() > pattern3.size() ? pattern1 : pattern3;
 	    const int nx = pattern_x.size();
 	    const int ny = pattern_y.size();
-	    
-	    static int id = 0; id+=0x726849272;
-	    
-	    for (int y=0; y<ny; y+=8) 
-	    {
-	      for (int x=0; x<nx; x+=8) 
-	      {
+	    	    
+	    for (int y=0; y<ny; y+=8) {
+	      for (int x=0; x<nx; x+=8) {
 		QuadQuad4x4* leaf = (QuadQuad4x4*) bvh->alloc2.malloc(sizeof(QuadQuad4x4),16);
 		new (leaf) QuadQuad4x4(id,mesh->id,f);
 		const BBox3fa bounds = leaf->build(scene,patcheval,pattern0,pattern1,pattern2,pattern3,pattern_x,x,nx,pattern_y,y,ny,uv[0],uv[1],uv[2],uv[3]);
