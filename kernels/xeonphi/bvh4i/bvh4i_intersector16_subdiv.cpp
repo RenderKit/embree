@@ -32,6 +32,7 @@ namespace embree
 
     private:
       static const size_t DEFAULT_64B_BLOCKS = 8192;
+      static const size_t CACHE_ENTRIES      = 16;
       mic_i prim_tag;
       mic_i bvh4i_ref;
       mic_f *lazymem;
@@ -40,9 +41,11 @@ namespace embree
 
       /* stats */
     public:
+#if DEBUG
       size_t cache_accesses;
       size_t cache_hits;
       size_t cache_misses;
+#endif
 
       __forceinline void clear()
       {
@@ -50,9 +53,11 @@ namespace embree
 	prim_tag  = -1;
 	bvh4i_ref = -1;	
 
+#if DEBUG
 	cache_accesses = 0;
 	cache_hits     = 0;
 	cache_misses   = 0;
+#endif
       }
 
       __forceinline mic_f *getPtr()
@@ -122,15 +127,19 @@ namespace embree
 	if (unlikely(blockCounter + neededBlocks >= allocated64BytesBlocks))
 	  clear();
 
-	if (unlikely(blockCounter + neededBlocks >= allocated64BytesBlocks))
+	if (unlikely(CACHE_ENTRIES*neededBlocks > allocated64BytesBlocks)) /* can the cache hold this entry in all entries? */
 	  {
+	    const unsigned int new_allocated64BytesBlocks = CACHE_ENTRIES*neededBlocks;
+
+	    std::cout << "EXTENDING TESSELLATION CACHE (PER THREAD) FROM " << allocated64BytesBlocks << "TO " << new_allocated64BytesBlocks << " BLOCKS = " << new_allocated64BytesBlocks*sizeof(mic_f) << " BYTES" << std::endl << std::flush;
+
 	    free_mem(lazymem);
-	    allocated64BytesBlocks = 2*neededBlocks;		   
-	    alloc_mem(allocated64BytesBlocks);
+	    allocated64BytesBlocks = new_allocated64BytesBlocks; 
+	    lazymem = alloc_mem(allocated64BytesBlocks);
+	    assert(lazymem);
 
 	    /* realloc */
-	    std::cout << "REALLOCATING TESSELLATION CACHE TO " << allocated64BytesBlocks << " BLOCKS = " << allocated64BytesBlocks*sizeof(mic_f) << " BYTES" << std::endl;
-	    exit(0);
+	    clear();
 	  }
 
 	currentIndex = blockCounter;
@@ -820,7 +829,6 @@ namespace embree
 		  mic_f     * const __restrict__ lazymem     = bvh->lazymem;
 #else
 
-		  mic_f     * const __restrict__ lazymem     = local_cache->getPtr();
 		  BVH4i::NodeRef subtree_root = local_cache->lookup(patchIndex);
 		  if (subtree_root == BVH4i::invalidNode)
 		    {
@@ -828,9 +836,10 @@ namespace embree
 
 		      unsigned int currentIndex = 0;
 		      subtree_root = local_cache->insert(patchIndex,blocks,currentIndex);
-		      initLocalLazySubdivTree(subdiv_patch,currentIndex,lazymem,geom);		      
+		      initLocalLazySubdivTree(subdiv_patch,currentIndex,local_cache->getPtr(),geom);		      
 		      assert( subtree_root != BVH4i::invalidNode);
 		    }
+		  mic_f     * const __restrict__ lazymem     = local_cache->getPtr(); /* lazymem could change to realloc */
 		    
 #endif
 		  // -------------------------------------
