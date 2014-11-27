@@ -288,7 +288,7 @@ namespace embree
     /* returns true if the vertex can be part of a dicable B-Spline patch or is a final Quad */
     __forceinline bool isRegularOrFinal() const 
     {
-      if (vertex_level > 1.0f) 
+      //if (vertex_level > 1.0f) 
       {
 	if (border_index == -1) 
 	{
@@ -308,7 +308,7 @@ namespace embree
 	    return false;
       }
       
-      if (edge_level > 1.0f)
+      //if (edge_level > 1.0f)
 	if (crease_weight[0] > 0.0f && (2*(valence-1) != border_index)) 
 	  return false;
       
