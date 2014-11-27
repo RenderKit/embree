@@ -157,7 +157,6 @@ void displacementFunction(void* uniform ptr,               /*!< pointer to user 
                           uniform float* uniform pz,               /*!< z coordinates of points to displace (source and target) */
                           uniform size_t N                 /*!< number of points to displace */ )
 {
- print("HERE\n");
 #if 1
  for (uniform size_t i=0; i<N; i++) {
    const uniform float dP_x = 0.02f*(sin(100.0f*u[i]+0.5f));

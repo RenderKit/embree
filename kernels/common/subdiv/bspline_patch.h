@@ -496,14 +496,36 @@ namespace embree
 
       return mic3f(x,y,z);
     }
-
+    
     __forceinline mic3f eval16(const mic_f uu, const mic_f vv) const
     {
       const mic4f v_n = CubicBSplineCurve::eval(vv); //FIXME: precompute in table
       const mic4f u_n = CubicBSplineCurve::eval(uu); //FIXME: precompute in table
       return eval16(uu,vv,u_n,v_n);
     }
+
     
+    __forceinline mic3f tangentU16(const mic_f uu, const mic_f vv) const
+    {
+      const mic4f v_n = CubicBSplineCurve::derivative(vv); 
+      const mic4f u_n = CubicBSplineCurve::eval(uu); 
+      return eval16(uu,vv,u_n,v_n);      
+    }
+
+    __forceinline mic3f tangentV16(const mic_f uu, const mic_f vv) const
+    {
+      const mic4f v_n = CubicBSplineCurve::eval(vv); 
+      const mic4f u_n = CubicBSplineCurve::derivative(uu); 
+      return eval16(uu,vv,u_n,v_n);      
+    }
+
+    __forceinline mic3f normal16(const mic_f uu, const mic_f vv) const
+    {
+      const mic3f tU = tangentU16(uu,vv);
+      const mic3f tV = tangentV16(uu,vv);
+      return cross(tU,tV);
+    }
+
 #endif
 
     __forceinline Vec3fa normal(const float uu, const float vv) const
