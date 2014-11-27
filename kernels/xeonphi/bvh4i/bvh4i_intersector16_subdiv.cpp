@@ -917,18 +917,10 @@ namespace embree
 	  ray16.u[rayIndex]      = (1.0f-ray16.u[rayIndex]) * subdiv_patch.u_range.x + ray16.u[rayIndex] * subdiv_patch.u_range.y;
 	  ray16.v[rayIndex]      = (1.0f-ray16.v[rayIndex]) * subdiv_patch.v_range.x + ray16.v[rayIndex] * subdiv_patch.v_range.y;
 	  if (unlikely(subdiv_patch.hasDisplacement())) continue;
-#if 1
 	  const Vec3fa normal    = subdiv_patch.normal(ray16.u[rayIndex],ray16.v[rayIndex]);
 	  ray16.Ng.x[rayIndex]   = normal.x;
 	  ray16.Ng.y[rayIndex]   = normal.y;
 	  ray16.Ng.z[rayIndex]   = normal.z;
-#else
-	  const mic3f normal = subdiv_patch.normal16(ray16.u,ray16.v);
-	  ray16.Ng.x[rayIndex]   = normal.x[rayIndex];
-	  ray16.Ng.y[rayIndex]   = normal.y[rayIndex];;
-	  ray16.Ng.z[rayIndex]   = normal.z[rayIndex];;
-
-#endif
 
 	}
 #endif
