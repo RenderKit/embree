@@ -107,9 +107,9 @@ namespace embree
 	  float u = U * rcpDet;
 	  float v = V * rcpDet;
 	  float w = 1.0f-u-v;
-          ray.Ng.x = float(size_t(prim.id)>>4 & 0xFF)/255.0f + 0.1f*u;
-          ray.Ng.y = float(size_t(prim.id)>>8 & 0xFF)/255.0f + 0.1f*v;
-          ray.Ng.z = float(size_t(prim.id)>>16 & 0xFF)/255.0f + 0.1f*w;
+          ray.Ng.x = float(size_t(prim.id)>>4  & 0xFF)/255.0f * (0.5f+0.5f*u);
+          ray.Ng.y = float(size_t(prim.id)>>8  & 0xFF)/255.0f * (0.5f+0.5f*v);
+          ray.Ng.z = float(size_t(prim.id)>>16 & 0xFF)/255.0f * (0.5f+0.5f*w);
           ray.geomID  = prim.geomID;
           ray.primID  = prim.primID;
         }

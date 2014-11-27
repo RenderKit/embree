@@ -38,7 +38,7 @@ namespace embree
                                     const unsigned int primID)
     : prims_o(prims_o), alloc(alloc), scene(scene), geomID(geomID), primID(primID), count(0)
       {
-#if 0
+#if 1
         const CatmullClarkPatch patch(h,vertices);
         const bool subdiv0 = !h->hasOpposite() || !h->opposite()->dicable(); h = h->next(); // FIXME: should be false if no neighbour?
         const bool subdiv1 = !h->hasOpposite() || !h->opposite()->dicable(); h = h->next();
@@ -124,7 +124,7 @@ namespace embree
                    const Vec2f& uv_0, const Vec2f& uv_1, const Vec2f& uv_2, const Vec2f& uv_3,              // uv range
                    bool Tt, bool Tr, bool Tb, bool Tl)                 // tagged transition edges
     {
-      if (unlikely(depth <= 0))
+      if (patch.dicable() || (depth <= 0))
         return tessellate(patch,uv_0,uv_1,uv_2,uv_3,Tt,Tr,Tb,Tl);
 
       CatmullClarkPatch patches[4]; 
