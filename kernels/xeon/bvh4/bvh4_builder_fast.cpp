@@ -321,7 +321,7 @@ namespace embree
           if (!mesh->valid(f)) continue;
 
 	  feature_adaptive_subdivision_bspline(mesh->getHalfEdge(f),mesh->getVertexPositionPtr(),
-					       [&](const CatmullClarkPatch& patch, const Vec2f uv[4], const bool subdiv[4])
+					       [&](const CatmullClarkPatch& patch, const Vec2f uv[4], const int subdiv[4])
 	  {
  	    const float l0 = patch.ring[0].edge_level;
 	    const float l1 = patch.ring[1].edge_level;
@@ -356,7 +356,7 @@ namespace embree
           if (!mesh->valid(f)) continue;
 	  
 	  feature_adaptive_subdivision_bspline(mesh->getHalfEdge(f),mesh->getVertexPositionPtr(),
-					       [&](const CatmullClarkPatch& patch, const Vec2f uv[4], const bool subdiv[4])
+					       [&](const CatmullClarkPatch& patch, const Vec2f uv[4], const int subdiv[4])
 	  {
 	    GregoryPatch patcheval; 
 	    patcheval.init(patch);

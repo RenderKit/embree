@@ -118,6 +118,27 @@ namespace embree
 	return true;
       }
 
+      /*! tests if the face is a no regular b-spline face (0=regular, 1=irregular quad, 2=non-quad) */
+      __forceinline int noRegularFace() const 
+      {
+	int ret = 0;
+	const HalfEdge* p = this;
+
+        if (!p->isRegularVertex()) ret = 1;
+        if ((p = p->next()) == this) return 2;
+
+        if (!p->isRegularVertex()) ret = 1;
+        if ((p = p->next()) == this) return 2;
+
+        if (!p->isRegularVertex()) ret = 1;
+        if ((p = p->next()) == this) return 2;
+        
+        if (!p->isRegularVertex()) ret = 1;
+        if ((p = p->next()) != this) return 2;
+
+	return ret;
+      }
+
       /*! tests if the face can be diced (using bspline or gregory patch) */
       __forceinline bool isGregoryFace() const 
       {
