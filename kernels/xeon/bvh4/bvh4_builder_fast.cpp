@@ -32,6 +32,7 @@
 //#include "geometry/quadquad4x4_subdiv.h"
 #include "geometry/quadquad4x4.h"
 #include "common/subdiv/feature_adaptive_gregory.h"
+#include "common/subdiv/feature_adaptive_bspline.h"
 #include "geometry/virtual_accel.h"
 
 #include <algorithm>

@@ -300,10 +300,10 @@ namespace embree
       dest1.crease_weight[2] = dest0.crease_weight[1] = p0.crease_weight[0];
     }
 
-    static __forceinline void init_regular(const Vec3fa_t &center, const Vec3fa_t center_ring[2*SIZE], const size_t N, const size_t offset, CatmullClark1Ring &dest)
+    static __forceinline void init_regular(const Vec3fa_t &center, const Vec3fa_t center_ring[2*SIZE], const float vertex_level, const size_t N, const size_t offset, CatmullClark1Ring &dest)
     {
       assert(N<CatmullClark1Ring::MAX_VALENCE);
-      dest.vertex_level = 0.0f;
+      dest.vertex_level = vertex_level;
       dest.valence = N;
       dest.num_vtx = 2*N;
       dest.border_index = -1;
@@ -328,6 +328,7 @@ namespace embree
 
       Vec3fa_t center = Vec3fa_t(0.0f);
       Vec3fa_t center_ring[2*SIZE];
+      float center_vertex_level = 0.0f;
 
       for (size_t i=0; i<N; i++)
       {
@@ -336,7 +337,9 @@ namespace embree
         if (likely(ring[i].has_last_face())) init_regular(patch[i].ring[0],patch[ip1].ring[0],patch[i].ring[1],patch[ip1].ring[3]); 
         else                                 init_border (patch[i].ring[0],patch[ip1].ring[0],patch[i].ring[1],patch[ip1].ring[3]);
 
-        patch[i].ring[1].edge_level = patch[ip1].ring[2].edge_level = 0.25f*(ring[im1].edge_level+ring[ip1].edge_level);
+	float level = 0.25f*(ring[im1].edge_level+ring[ip1].edge_level);
+        patch[i].ring[1].edge_level = patch[ip1].ring[2].edge_level = level;
+	center_vertex_level = max(center_vertex_level,level);
 
         center += ring[i].vtx;
         center_ring[2*i+0] = (Vec3fa_t)patch[i].ring[0].vtx;
@@ -345,7 +348,7 @@ namespace embree
       center /= float(N);
 
       for (size_t i=0; i<N; i++) {
-        init_regular(center,center_ring,N,2*i,patch[i].ring[2]);
+        init_regular(center,center_ring,center_vertex_level,N,2*i,patch[i].ring[2]);
       }
     }
 
