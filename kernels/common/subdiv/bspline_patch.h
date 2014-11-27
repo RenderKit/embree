@@ -326,29 +326,61 @@ namespace embree
     };
 
 
-    __forceinline void init(const CatmullClarkPatch &irreg_patch)
+    __forceinline void init(const CatmullClarkPatch& patch)
     {
-      assert( irreg_patch.isRegular() );
+      assert( patch.isRegular() );
 
-      v[1][1] = irreg_patch.ring[0].vtx;
-      v[0][1] = irreg_patch.ring[0].ring[6];
-      v[0][0] = irreg_patch.ring[0].ring[5];
-      v[1][0] = irreg_patch.ring[0].ring[4];
+      if (unlikely(patch.ring[0].hasBorder())) 
+      {
+	v[1][1] = patch.ring[0].vtx;
+	v[0][1] = patch.ring[0].regular_border_vertex_6();
+	v[0][0] = patch.ring[0].regular_border_vertex_5();
+	v[1][0] = patch.ring[0].regular_border_vertex_4();
+      } else {
+	v[1][1] = patch.ring[0].vtx;
+	v[0][1] = patch.ring[0].ring[6];
+	v[0][0] = patch.ring[0].ring[5];
+	v[1][0] = patch.ring[0].ring[4];
+      }
 
-      v[1][2] = irreg_patch.ring[1].vtx;
-      v[1][3] = irreg_patch.ring[1].ring[6];
-      v[0][3] = irreg_patch.ring[1].ring[5];
-      v[0][2] = irreg_patch.ring[1].ring[4];
+      if (unlikely(patch.ring[1].hasBorder())) 
+      {
+	v[1][2] = patch.ring[1].vtx;
+	v[1][3] = patch.ring[1].regular_border_vertex_6();
+	v[0][3] = patch.ring[1].regular_border_vertex_5();
+	v[0][2] = patch.ring[1].regular_border_vertex_4();
+      } else {
+	v[1][2] = patch.ring[1].vtx;
+	v[1][3] = patch.ring[1].ring[6];
+	v[0][3] = patch.ring[1].ring[5];
+	v[0][2] = patch.ring[1].ring[4];
+      }
 
-      v[2][2] = irreg_patch.ring[2].vtx;
-      v[3][2] = irreg_patch.ring[2].ring[6];
-      v[3][3] = irreg_patch.ring[2].ring[5];
-      v[2][3] = irreg_patch.ring[2].ring[4];
+      if (unlikely(patch.ring[2].hasBorder())) 
+      {
+	v[2][2] = patch.ring[2].vtx;
+	v[3][2] = patch.ring[2].regular_border_vertex_6();
+	v[3][3] = patch.ring[2].regular_border_vertex_5();
+	v[2][3] = patch.ring[2].regular_border_vertex_4();
+      } else {
+	v[2][2] = patch.ring[2].vtx;
+	v[3][2] = patch.ring[2].ring[6];
+	v[3][3] = patch.ring[2].ring[5];
+	v[2][3] = patch.ring[2].ring[4];
+      }
 
-      v[2][1] = irreg_patch.ring[3].vtx;
-      v[2][0] = irreg_patch.ring[3].ring[6];
-      v[3][0] = irreg_patch.ring[3].ring[5];      
-      v[3][1] = irreg_patch.ring[3].ring[4];
+      if (unlikely(patch.ring[3].hasBorder())) 
+      {
+	v[2][1] = patch.ring[3].vtx;
+	v[2][0] = patch.ring[3].regular_border_vertex_6();
+	v[3][0] = patch.ring[3].regular_border_vertex_5();
+	v[3][1] = patch.ring[3].regular_border_vertex_4();
+      } else {
+	v[2][1] = patch.ring[3].vtx;
+	v[2][0] = patch.ring[3].ring[6];
+	v[3][0] = patch.ring[3].ring[5];      
+	v[3][1] = patch.ring[3].ring[4];
+      }
     }
 
     __forceinline void init(const SubdivMesh::HalfEdge *const first_half_edge,

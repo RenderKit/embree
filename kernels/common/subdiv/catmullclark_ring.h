@@ -41,6 +41,10 @@ namespace embree
 
   public:
     CatmullClark1Ring() {}
+
+    __forceinline bool hasBorder() const {
+      return border_index != -1;
+    }
     
     __forceinline const Vec3fa& front(size_t i) const {
       assert(num_vtx>i);
@@ -60,6 +64,31 @@ namespace embree
       return (border_index == -1) || (border_index >= 4);
     }
     
+    __forceinline Vec3fa regular_border_vertex_4() const 
+    {
+      assert(border_index != -1);
+      assert(valence == 2 || valence == 3);
+      if (valence == 3 && border_index == 4) return ring[4];
+      else return 2.0f*vtx-ring[0];
+    }
+
+    __forceinline Vec3fa regular_border_vertex_5() const 
+    {
+      assert(border_index != -1);
+      assert(valence == 2 || valence == 3);
+      if (valence == 2) return 2.0f*vtx-ring[1];
+      else if (border_index == 2) return 2.0f*ring[4]-ring[5];
+      else { assert(border_index == 4); return 2.0f*ring[4]-ring[3]; }
+    }
+
+    __forceinline Vec3fa regular_border_vertex_6() const 
+    {
+      assert(border_index != -1);
+      assert(valence == 2 || valence == 3);
+      if (valence == 3 && border_index == 2) return ring[4];
+      else return 2.0f*vtx-ring[2];
+    }
+
     __forceinline BBox3fa bounds() const
     {
       BBox3fa bounds ( vtx );
@@ -265,7 +294,7 @@ namespace embree
 	  if (valence != 4)
 	    return false;
 	} else {
-	  if (valence > 4)
+	  if (valence >= 4)
 	    return false;
 	}
 
@@ -286,7 +315,11 @@ namespace embree
 
     __forceinline bool isRegular() const 
     {
-      if (valence == 4/* && isGregory()*/) return true;
+      if (border_index == -1) {
+	if (valence == 4/* && isGregory()*/) return true;
+      } else {
+	if (valence < 4) return true;
+      }
       return false;
     }
 
