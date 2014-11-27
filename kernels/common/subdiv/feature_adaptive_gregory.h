@@ -30,37 +30,41 @@ namespace embree
     {
 #if 0
       const Vec2f uv[4] = { Vec2f(0.0f,0.0f),Vec2f(0.0f,1.0f),Vec2f(1.0f,1.0f),Vec2f(1.0f,0.0f) };
-      bool subdiv[4];
+      bool neighborSubdiv[4];
       const CatmullClarkPatch patch(h,vertices);
       for (size_t i=0; i<4; i++) {
-	subdiv[i] = !h->hasOpposite() || !h->opposite()->isGregoryFace(); h = h->next();
+	neighborSubdiv[i] = !h->hasOpposite() || !h->opposite()->isGregoryFace(); h = h->next();
       }
-      subdivide(patch,5,uv,subdiv);
+      subdivide(patch,10,uv,neighborSubdiv);
 #else
-      bool subdiv[GeneralCatmullClarkPatch::SIZE];
+      bool neighborSubdiv[GeneralCatmullClarkPatch::SIZE];
       const GeneralCatmullClarkPatch patch(h,vertices);
       for (size_t i=0; i<patch.size(); i++) {
-	subdiv[i] = !h->hasOpposite() || !h->opposite()->isGregoryFace(); h = h->next();
+	neighborSubdiv[i] = !h->hasOpposite() || !h->opposite()->isGregoryFace(); h = h->next();
       }
-      subdivide(patch,5,subdiv);
+      subdivide(patch,10,neighborSubdiv);
 #endif
     }
 
-    void subdivide(const GeneralCatmullClarkPatch& patch, int depth, bool subdiv[GeneralCatmullClarkPatch::SIZE])
+    void subdivide(const GeneralCatmullClarkPatch& patch, int depth, bool neighborSubdiv[GeneralCatmullClarkPatch::SIZE])
     {
+#if 1
       /* convert into standard quad patch if possible */
       if (likely(patch.size() == 4)) 
       {
 	const Vec2f uv[4] = { Vec2f(0.0f,0.0f), Vec2f(0.0f,1.0f), Vec2f(1.0f,1.0f), Vec2f(1.0f,0.0f) };
 	CatmullClarkPatch qpatch; patch.init(qpatch);
-	subdivide(qpatch,depth,uv,subdiv);
+	subdivide(qpatch,depth,uv,neighborSubdiv);
 	return;
       }
+#endif
 
+      /* subdivide patch */
       size_t N;
       CatmullClarkPatch patches[GeneralCatmullClarkPatch::SIZE]; 
       patch.subdivide(patches,N);
 
+      /* check if subpatches need further subdivision */
       const bool noleaf = depth > 1;
       bool csubdiv[GeneralCatmullClarkPatch::SIZE];
       for (size_t i=0; i<N; i++)
@@ -78,12 +82,12 @@ namespace embree
 	const Vec2f uv0[4] = { uv_0,uv01,uvcc,uv20 };
 	const Vec2f uv1[4] = { uv_1,uv12,uvcc,uv01 };
 	const Vec2f uv2[4] = { uv_2,uv20,uvcc,uv12 };
-	const bool subdiv0[4] = { false,csubdiv[1],csubdiv[2],false };
-	const bool subdiv1[4] = { false,csubdiv[2],csubdiv[0],false };
-	const bool subdiv2[4] = { false,csubdiv[0],csubdiv[1],false };
-	subdivide(patches[0],depth-1, uv0, subdiv0);
-	subdivide(patches[1],depth-1, uv1, subdiv1);
-	subdivide(patches[2],depth-1, uv2, subdiv2);
+	const bool neighborSubdiv0[4] = { false,csubdiv[1],csubdiv[2],false };
+	const bool neighborSubdiv1[4] = { false,csubdiv[2],csubdiv[0],false };
+	const bool neighborSubdiv2[4] = { false,csubdiv[0],csubdiv[1],false };
+	subdivide(patches[0],depth-1, uv0, neighborSubdiv0);
+	subdivide(patches[1],depth-1, uv1, neighborSubdiv1);
+	subdivide(patches[2],depth-1, uv2, neighborSubdiv2);
       } 
 
 #if 0
@@ -102,14 +106,14 @@ namespace embree
 	const Vec2f uv1[4] = { uv_1,uv12,uvcc,uv01 };
 	const Vec2f uv2[4] = { uv_2,uv23,uvcc,uv12 };
 	const Vec2f uv3[4] = { uv_3,uv30,uvcc,uv23 };
-	const bool subdiv0[4] = { false,csubdiv[1],csubdiv[3],false };
-	const bool subdiv1[4] = { false,csubdiv[2],csubdiv[0],false };
-	const bool subdiv2[4] = { false,csubdiv[3],csubdiv[1],false };
-	const bool subdiv3[4] = { false,csubdiv[0],csubdiv[2],false };
-	subdivide(patches[0],depth-1, uv0, subdiv0);
-	subdivide(patches[1],depth-1, uv1, subdiv1);
-	subdivide(patches[2],depth-1, uv2, subdiv2);
-	subdivide(patches[3],depth-1, uv3, subdiv3);
+	const bool neighborSubdiv0[4] = { false,csubdiv[1],csubdiv[3],false };
+	const bool neighborSubdiv1[4] = { false,csubdiv[2],csubdiv[0],false };
+	const bool neighborSubdiv2[4] = { false,csubdiv[3],csubdiv[1],false };
+	const bool neighborSubdiv3[4] = { false,csubdiv[0],csubdiv[2],false };
+	subdivide(patches[0],depth-1, uv0, neighborSubdiv0);
+	subdivide(patches[1],depth-1, uv1, neighborSubdiv1);
+	subdivide(patches[2],depth-1, uv2, neighborSubdiv2);
+	subdivide(patches[3],depth-1, uv3, neighborSubdiv3);
       } 
 #endif
 
@@ -119,17 +123,17 @@ namespace embree
 	for (size_t i=0; i<N; i++) 
 	{
 	  const Vec2f uv[4] = { Vec2f(float(i)+0.0f,0.0f),Vec2f(float(i)+0.0f,1.0f),Vec2f(float(i)+1.0f,1.0f),Vec2f(float(i)+1.0f,0.0f) };
-	  const bool subdiv[4] = { false,csubdiv[(i+1)%N],csubdiv[(i-1)%N],false };
-	  subdivide(patches[i],depth-1,uv,subdiv);
+	  const bool neighborSubdiv[4] = { false,csubdiv[(i+1)%N],csubdiv[(i-1)%N],false };
+	  subdivide(patches[i],depth-1,uv,neighborSubdiv);
 	  
 	}
       }
     }
 
-    void subdivide(const CatmullClarkPatch& patch, int depth, const Vec2f uv[4], const bool subdiv[4])
+    void subdivide(const CatmullClarkPatch& patch, int depth, const Vec2f uv[4], const bool neighborSubdiv[4])
     {
       if (patch.isGregory() || (depth <= 0))
-        return tessellator(patch,uv,subdiv);
+        return tessellator(patch,uv,neighborSubdiv);
 
       CatmullClarkPatch patches[4]; 
       patch.subdivide(patches);
@@ -151,24 +155,23 @@ namespace embree
       const Vec2f uv2[4] = { uvcc,uv12,uv[2],uv23 };
       const Vec2f uv3[4] = { uv30,uvcc,uv23,uv[3] };
 
-      const bool subdivf[4] = { false,false,false,false };
-      const bool subdiv0[4] = { false,subdivide1,subdivide3,false };
-      const bool subdiv1[4] = { false,false,subdivide2,subdivide0 };
-      const bool subdiv2[4] = { subdivide1,false,false,subdivide3 };
-      const bool subdiv3[4] = { subdivide0,subdivide2,false,false };
+      const bool neighborSubdivf[4] = { false,false,false,false };
+      const bool neighborSubdiv0[4] = { false,subdivide1,subdivide3,false };
+      const bool neighborSubdiv1[4] = { false,false,subdivide2,subdivide0 };
+      const bool neighborSubdiv2[4] = { subdivide1,false,false,subdivide3 };
+      const bool neighborSubdiv3[4] = { subdivide0,subdivide2,false,false };
       
+      if (subdivide0) subdivide  (patches[0],depth-1, uv0, neighborSubdivf);
+      else            tessellator(patches[0],         uv0, neighborSubdiv0);
 
-      if (subdivide0) subdivide  (patches[0],depth-1, uv0, subdivf);
-      else            tessellator(patches[0],         uv0, subdiv0);
-
-      if (subdivide1) subdivide  (patches[1],depth-1, uv1, subdivf);
-      else            tessellator(patches[1],         uv1, subdiv1);
+      if (subdivide1) subdivide  (patches[1],depth-1, uv1, neighborSubdivf);
+      else            tessellator(patches[1],         uv1, neighborSubdiv1);
       
-      if (subdivide2) subdivide  (patches[2],depth-1, uv2, subdivf);
-      else            tessellator(patches[2],         uv2, subdiv2);
+      if (subdivide2) subdivide  (patches[2],depth-1, uv2, neighborSubdivf);
+      else            tessellator(patches[2],         uv2, neighborSubdiv2);
       
-      if (subdivide3) subdivide  (patches[3],depth-1, uv3, subdivf);
-      else            tessellator(patches[3],         uv3, subdiv3);
+      if (subdivide3) subdivide  (patches[3],depth-1, uv3, neighborSubdivf);
+      else            tessellator(patches[3],         uv3, neighborSubdiv3);
     }
   };
 
