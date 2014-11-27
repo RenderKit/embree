@@ -413,18 +413,11 @@ namespace embree
       const mic_f f2_p = (Vec3fa_t)matrix[2][2];
       const mic_f f3_p = (Vec3fa_t)matrix[2][1];
       
-#if 0
-      const mic_f f0_m = (Vec3fa_t)f[0][0];
-      const mic_f f1_m = (Vec3fa_t)f[0][1];
-      const mic_f f2_m = (Vec3fa_t)f[1][1];
-      const mic_f f3_m = (Vec3fa_t)f[1][0];
-#else
       const mic_f f0_m = extract_f_m_mic_f(matrix,0);
       const mic_f f1_m = extract_f_m_mic_f(matrix,1);
       const mic_f f2_m = extract_f_m_mic_f(matrix,2);
       const mic_f f3_m = extract_f_m_mic_f(matrix,3);
       
-#endif
       const mic_f one_minus_uu = mic_f(1.0f) - uu;
       const mic_f one_minus_vv = mic_f(1.0f) - vv;      
       
@@ -474,18 +467,11 @@ namespace embree
       const mic3f f2_p = mic3f(matrix[2][2].x,matrix[2][2].y,matrix[2][2].z);
       const mic3f f3_p = mic3f(matrix[2][1].x,matrix[2][1].y,matrix[2][1].z);
       
-#if 0
-      const mic3f f0_m = mic3f(f[0][0].x,f[0][0].y,f[0][0].z);
-      const mic3f f1_m = mic3f(f[0][1].x,f[0][1].y,f[0][1].z);
-      const mic3f f2_m = mic3f(f[1][1].x,f[1][1].y,f[1][1].z);
-      const mic3f f3_m = mic3f(f[1][0].x,f[1][0].y,f[1][0].z);
-#else
       const mic3f f0_m = extract_f_m_mic3f(matrix,0);
       const mic3f f1_m = extract_f_m_mic3f(matrix,1);
       const mic3f f2_m = extract_f_m_mic3f(matrix,2);
       const mic3f f3_m = extract_f_m_mic3f(matrix,3);
       
-#endif
       const mic_f one_minus_uu = mic_f(1.0f) - uu;
       const mic_f one_minus_vv = mic_f(1.0f) - vv;      
       
@@ -562,8 +548,109 @@ namespace embree
       
       return normal(matrix,f_m,uu,vv);
     }
-    
-    
+
+    static __forceinline mic3f deCasteljau(const mic_f uu, const mic3f &v0, const mic3f &v1, const mic3f &v2, const mic3f &v3)
+    {
+      const mic_f one_minus_uu = 1.0f - uu;
+      
+      const mic3f v0_1 = one_minus_uu * v0 + uu * v1;
+      const mic3f v1_1 = one_minus_uu * v1 + uu * v2;
+      const mic3f v2_1 = one_minus_uu * v2 + uu * v3;
+      
+      const mic3f v0_2 = one_minus_uu * v0_1 + uu * v1_1;
+      const mic3f v1_2 = one_minus_uu * v1_1 + uu * v2_1;
+      
+      const mic3f v0_3 = one_minus_uu * v0_2 + uu * v1_2;
+      return v0_3;
+    }
+
+    static __forceinline mic3f deCasteljau_tangent(const mic_f uu, const mic3f &v0, const mic3f &v1, const mic3f &v2, const mic3f &v3)
+    {
+      const mic_f one_minus_uu = 1.0f - uu;
+      
+      const mic3f v0_1 = one_minus_uu * v0 + uu * v1;
+      const mic3f v1_1 = one_minus_uu * v1 + uu * v2;
+      const mic3f v2_1 = one_minus_uu * v2 + uu * v3;
+      
+      const mic3f v0_2 = one_minus_uu * v0_1 + uu * v1_1;
+      const mic3f v1_2 = one_minus_uu * v1_1 + uu * v2_1;
+      
+      return v1_2 - v0_2;
+    }
+
+
+    static __forceinline mic3f normal16(const Vec3fa matrix[4][4],
+					const mic_f uu,
+					const mic_f vv) 
+    {
+      const mic_m m_border = (uu == 0.0f) | (uu == 1.0f) | (vv == 0.0f) | (vv == 1.0f);
+      
+      const mic3f f0_p = mic3f(matrix[1][1].x,matrix[1][1].y,matrix[1][1].z);
+      const mic3f f1_p = mic3f(matrix[1][2].x,matrix[1][2].y,matrix[1][2].z);
+      const mic3f f2_p = mic3f(matrix[2][2].x,matrix[2][2].y,matrix[2][2].z);
+      const mic3f f3_p = mic3f(matrix[2][1].x,matrix[2][1].y,matrix[2][1].z);
+      
+      const mic3f f0_m = extract_f_m_mic3f(matrix,0);
+      const mic3f f1_m = extract_f_m_mic3f(matrix,1);
+      const mic3f f2_m = extract_f_m_mic3f(matrix,2);
+      const mic3f f3_m = extract_f_m_mic3f(matrix,3);
+      
+      const mic_f one_minus_uu = mic_f(1.0f) - uu;
+      const mic_f one_minus_vv = mic_f(1.0f) - vv;      
+      
+      const mic_f inv0 = rcp(uu+vv);
+      const mic_f inv1 = rcp(one_minus_uu+vv);
+      const mic_f inv2 = rcp(one_minus_uu+one_minus_vv);
+      const mic_f inv3 = rcp(uu+one_minus_vv);
+      
+      const mic3f f0_i = (          uu * f0_p +           vv * f0_m) * inv0;
+      const mic3f f1_i = (one_minus_uu * f1_m +           vv * f1_p) * inv1;
+      const mic3f f2_i = (one_minus_uu * f2_p + one_minus_vv * f2_m) * inv2;
+      const mic3f f3_i = (          uu * f3_m + one_minus_vv * f3_p) * inv3;
+      
+      const mic3f matrix_11( select(m_border,f0_p.x,f0_i.x), select(m_border,f0_p.y,f0_i.y), select(m_border,f0_p.z,f0_i.z) );
+      const mic3f matrix_12( select(m_border,f1_p.x,f1_i.x), select(m_border,f1_p.y,f1_i.y), select(m_border,f1_p.z,f1_i.z) );
+      const mic3f matrix_22( select(m_border,f2_p.x,f2_i.x), select(m_border,f2_p.y,f2_i.y), select(m_border,f2_p.z,f2_i.z) );
+      const mic3f matrix_21( select(m_border,f3_p.x,f3_i.x), select(m_border,f3_p.y,f3_i.y), select(m_border,f3_p.z,f3_i.z) );
+
+      
+      const mic3f matrix_00 = mic3f(matrix[0][0].x,matrix[0][0].y,matrix[0][0].z);
+      const mic3f matrix_10 = mic3f(matrix[1][0].x,matrix[1][0].y,matrix[1][0].z);
+      const mic3f matrix_20 = mic3f(matrix[2][0].x,matrix[2][0].y,matrix[2][0].z);
+      const mic3f matrix_30 = mic3f(matrix[3][0].x,matrix[3][0].y,matrix[3][0].z);
+
+      const mic3f matrix_01 = mic3f(matrix[0][1].x,matrix[0][1].y,matrix[0][1].z);
+      const mic3f matrix_02 = mic3f(matrix[0][2].x,matrix[0][2].y,matrix[0][2].z);
+      const mic3f matrix_03 = mic3f(matrix[0][3].x,matrix[0][3].y,matrix[0][3].z);
+
+      const mic3f matrix_31 = mic3f(matrix[3][1].x,matrix[3][1].y,matrix[3][1].z);
+      const mic3f matrix_32 = mic3f(matrix[3][2].x,matrix[3][2].y,matrix[3][2].z);
+      const mic3f matrix_33 = mic3f(matrix[3][3].x,matrix[3][3].y,matrix[3][3].z);
+
+      const mic3f matrix_13 = mic3f(matrix[1][3].x,matrix[1][3].y,matrix[1][3].z);
+      const mic3f matrix_23 = mic3f(matrix[2][3].x,matrix[2][3].y,matrix[2][3].z);
+
+      /* tangentU */
+      const mic3f col0 = deCasteljau(vv, matrix_00, matrix_10, matrix_20, matrix_30);
+      const mic3f col1 = deCasteljau(vv, matrix_01, matrix_11, matrix_21, matrix_31);
+      const mic3f col2 = deCasteljau(vv, matrix_02, matrix_12, matrix_22, matrix_32);
+      const mic3f col3 = deCasteljau(vv, matrix_03, matrix_13, matrix_23, matrix_33);
+      
+      const mic3f tangentU = deCasteljau_tangent(uu, col0, col1, col2, col3);
+
+      
+      /* tangentV */
+      const mic3f row0 = deCasteljau(uu, matrix_00, matrix_01, matrix_02, matrix_03);
+      const mic3f row1 = deCasteljau(uu, matrix_10, matrix_11, matrix_12, matrix_13);
+      const mic3f row2 = deCasteljau(uu, matrix_20, matrix_21, matrix_22, matrix_23);
+      const mic3f row3 = deCasteljau(uu, matrix_30, matrix_31, matrix_32, matrix_33);
+      
+      const mic3f tangentV = deCasteljau_tangent(vv, row0, row1, row2, row3);
+      
+      /* normal = tangentU x tangentV */
+      const mic3f n = cross(tangentU,tangentV);
+      return n;
+    }
 #endif
     
     __forceinline Vec3fa eval(const float uu, const float vv) const

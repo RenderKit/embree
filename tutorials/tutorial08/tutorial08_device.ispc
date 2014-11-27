@@ -18,7 +18,7 @@
 #include "../common/tutorial/scene_device.isph"
 
 #define PARALLEL_COMMIT
-//#define ENABLE_DISPLACEMENTS
+#define ENABLE_DISPLACEMENTS
 
 //#define FORCE_FIXED_EDGE_TESSELLATION
 #define FIXED_EDGE_TESSELLATION_VALUE 7
@@ -157,17 +157,17 @@ void displacementFunction(void* uniform ptr,               /*!< pointer to user 
                           uniform float* uniform pz,               /*!< z coordinates of points to displace (source and target) */
                           uniform size_t N                 /*!< number of points to displace */ )
 {
-#if 1
- for (uniform size_t i=0; i<N; i++) {
-   const uniform float dP_x = 0.02f*(sin(100.0f*u[i]+0.5f));
-   const uniform float dP_y = 0.02f*(sin(100.0f*v[i]+1.5f));
-   const uniform float dP_z = 0.02f*(cos(100.0f*(v[i]+v[i])));
+ foreach (i = 0 ... 16) {
+
+   const float dP_x = 0.02f*(sin(100.0f*px[i]+0.5f));
+   const float dP_y = 0.02f*(sin(100.0f*py[i]+1.5f));
+   const float dP_z = 0.02f*(cos(100.0f*(pz[i])));
 
    px[i] += nx[i] * dP_x; 
    py[i] += ny[i] * dP_y; 
    pz[i] += nz[i] * dP_z;
-  }  
-#endif  
+
+}
 }
 
 

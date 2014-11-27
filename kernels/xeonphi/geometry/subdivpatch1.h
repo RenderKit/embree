@@ -161,12 +161,6 @@ namespace embree
     __forceinline mic3f eval16(const mic_f &uu,
 			       const mic_f &vv) const
     {
-#if DEBUG
-      const mic_m m_u = (uu >= 0.0f) & (uu <= 1.0f);
-      const mic_m m_v = (vv >= 0.0f) & (vv <= 1.0f);
-      assert( m_u == (mic_m)0xffff);
-      assert( m_v == (mic_m)0xffff);
-#endif      
       if (likely(isRegular()))
 	{
 	  return patch.eval16(uu,vv);
@@ -211,33 +205,23 @@ namespace embree
     __forceinline mic3f normal16(const mic_f &uu,
 				 const mic_f &vv) const
     {
-      mic3f n; //FIXME: OPTIMIZE
       if (likely(isRegular()))
-	{
+	return patch.normal16(uu,vv);
+      
 #if 0
-	  for (size_t i=0;i<16;i++)
-	    {
-	      const mic_f n_i = patch.normal4(uu[i],vv[i]);
-	      n.x[i] = n_i[0];
-	      n.y[i] = n_i[1];
-	      n.z[i] = n_i[2];
-	    }
-#else
-	  return patch.normal16(uu,vv);
-#endif
-	}
-      else 
+      mic3f n; //FIXME: OPTIMIZE
+
+      for (size_t i=0;i<16;i++)
 	{
-	  // FIXME: fast "lane" code for gregory patch normal
-	  for (size_t i=0;i<16;i++)
-	    {
-	      const Vec3fa n_i = GregoryPatch::normal( patch.v, uu[i], vv[i] );
-	      n.x[i] = n_i.x;
-	      n.y[i] = n_i.y;
-	      n.z[i] = n_i.z;
-	    }
+	  const Vec3fa n_i = GregoryPatch::normal( patch.v, uu[i], vv[i] );
+	  n.x[i] = n_i.x;
+	  n.y[i] = n_i.y;
+	  n.z[i] = n_i.z;
 	}
       return n;
+#else
+      return GregoryPatch::normal16( patch.v, uu, vv );
+#endif
     }
 
 
