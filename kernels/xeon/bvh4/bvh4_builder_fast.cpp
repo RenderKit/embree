@@ -29,7 +29,9 @@
 #include "geometry/triangle4i.h"
 #include "geometry/subdivpatch1.h"
 //#include "geometry/subdivpatchdispl1.h"
-#include "geometry/quadquad4x4_subdiv.h"
+//#include "geometry/quadquad4x4_subdiv.h"
+#include "geometry/quadquad4x4.h"
+#include "common/subdiv/feature_adaptive_gregory.h"
 #include "geometry/virtual_accel.h"
 
 #include <algorithm>
@@ -313,11 +315,34 @@ namespace embree
       size_t S = parallel_for_for_prefix_sum( pstate, iter, size_t(0), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const size_t base) -> size_t
       {
         size_t s = 0;
-        for (size_t f=r.begin(); f!=r.end(); ++f) {
+        for (size_t f=r.begin(); f!=r.end(); ++f) 
+	{
           if (!mesh->valid(f)) continue;
-          QuadQuad4x4AdaptiveSubdivision subdiv(NULL,bvh->alloc2,this->scene,mesh->getHalfEdge(f),mesh->getVertexPositionPtr(),mesh->id,f);
-          s+=subdiv.size();
-        }
+
+          //QuadQuad4x4AdaptiveSubdivision subdiv(NULL,bvh->alloc2,this->scene,mesh->getHalfEdge(f),mesh->getVertexPositionPtr(),mesh->id,f);
+	  feature_adaptive_subdivision_gregory(mesh->getHalfEdge(f),mesh->getVertexPositionPtr(),
+					       [&](const CatmullClarkPatch& patch, 
+						   const Vec2f& uv0, const Vec2f& uv1, const Vec2f& uv2, const Vec2f& uv3,  
+						   bool Tt, bool Tr, bool Tb, bool Tl)
+	  {
+ 	    const float l0 = patch.ring[0].edge_level;
+	    const float l1 = patch.ring[1].edge_level;
+	    const float l2 = patch.ring[2].edge_level;
+	    const float l3 = patch.ring[3].edge_level;
+	    const TessellationPattern pattern0(l0,Tt);
+	    const TessellationPattern pattern1(l1,Tr);
+	    const TessellationPattern pattern2(l2,Tb);
+	    const TessellationPattern pattern3(l3,Tl);
+	    const TessellationPattern pattern_x = pattern0.size() > pattern2.size() ? pattern0 : pattern2;
+	    const TessellationPattern pattern_y = pattern1.size() > pattern3.size() ? pattern1 : pattern3;
+	    const int nx = pattern_x.size();
+	    const int ny = pattern_y.size();
+	    
+	    for (int y=0; y<ny; y+=8) 
+	      for (int x=0; x<nx; x+=8) 
+		s++;
+	  });
+	}
         return s;
       }, [](size_t a, size_t b) { return a+b; });
 
@@ -331,8 +356,42 @@ namespace embree
         size_t s = 0;
         for (size_t f=r.begin(); f!=r.end(); ++f) {
           if (!mesh->valid(f)) continue;
-          QuadQuad4x4AdaptiveSubdivision subdiv(&prims[base+s],bvh->alloc2,this->scene,mesh->getHalfEdge(f),mesh->getVertexPositionPtr(),mesh->id,f);
-          s+=subdiv.size();
+          //QuadQuad4x4AdaptiveSubdivision subdiv(&prims[base+s],bvh->alloc2,this->scene,mesh->getHalfEdge(f),mesh->getVertexPositionPtr(),mesh->id,f);
+          //s+=subdiv.size();
+	  feature_adaptive_subdivision_gregory(mesh->getHalfEdge(f),mesh->getVertexPositionPtr(),
+					       [&](const CatmullClarkPatch& patch, 
+						   const Vec2f& uv0, const Vec2f& uv1, const Vec2f& uv2, const Vec2f& uv3,  
+						   bool Tt, bool Tr, bool Tb, bool Tl)
+	  {
+	    GregoryPatch patcheval; 
+	    patcheval.init(patch);
+	    
+	    const float l0 = patch.ring[0].edge_level;
+	    const float l1 = patch.ring[1].edge_level;
+	    const float l2 = patch.ring[2].edge_level;
+	    const float l3 = patch.ring[3].edge_level;
+	    const TessellationPattern pattern0(l0,Tt);
+	    const TessellationPattern pattern1(l1,Tr);
+	    const TessellationPattern pattern2(l2,Tb);
+	    const TessellationPattern pattern3(l3,Tl);
+	    const TessellationPattern pattern_x = pattern0.size() > pattern2.size() ? pattern0 : pattern2;
+	    const TessellationPattern pattern_y = pattern1.size() > pattern3.size() ? pattern1 : pattern3;
+	    const int nx = pattern_x.size();
+	    const int ny = pattern_y.size();
+	    
+	    static int id = 0; id+=0x726849272;
+	    
+	    for (int y=0; y<ny; y+=8) 
+	    {
+	      for (int x=0; x<nx; x+=8) 
+	      {
+		QuadQuad4x4* leaf = (QuadQuad4x4*) bvh->alloc2.malloc(sizeof(QuadQuad4x4),16);
+		new (leaf) QuadQuad4x4(id,mesh->id,f);
+		const BBox3fa bounds = leaf->build(scene,patcheval,pattern0,pattern1,pattern2,pattern3,pattern_x,x,nx,pattern_y,y,ny,uv0,uv1,uv2,uv3);
+		prims[base+(s++)] = PrimRef(bounds,BVH4::encodeTypedLeaf(leaf,0));
+	      }
+	    }
+	  });
         }
         return s;
       }, [](size_t a, size_t b) { return a+b; });

@@ -16,31 +16,21 @@
 
 #pragma once
 
-#include "quadquad4x4.h"
+#include "catmullclark_patch.h"
 
 namespace embree
 {
-  struct QuadQuad4x4AdaptiveSubdivision
+  template<typename Tessellator>
+  struct FeatureAdaptiveSubdivisionGregory
   {
-    PrimRef* prims_o;
-    FastAllocator& alloc;
-    Scene* scene;
-    const unsigned int geomID;
-    const unsigned int primID;
-    size_t count;
+    Tessellator& tessellator;
 
-    QuadQuad4x4AdaptiveSubdivision (PrimRef* prims_o,
-                                    FastAllocator& alloc,
-                                    Scene* scene, // FIXME: pass displacement shader instead
-                                    const SubdivMesh::HalfEdge* h, 
-                                    const Vec3fa* vertices, 
-                                    const unsigned int geomID, 
-                                    const unsigned int primID)
-    : prims_o(prims_o), alloc(alloc), scene(scene), geomID(geomID), primID(primID), count(0)
-      {
+    __forceinline FeatureAdaptiveSubdivisionGregory (const SubdivMesh::HalfEdge* h, const Vec3fa* vertices, Tessellator& tessellator)
+      : tessellator(tessellator)
+    {
 #if 1
         const CatmullClarkPatch patch(h,vertices);
-        const bool subdiv0 = !h->hasOpposite() || !h->opposite()->isGregoryFace(); h = h->next(); // FIXME: should be false if no neighbour?
+        const bool subdiv0 = !h->hasOpposite() || !h->opposite()->isGregoryFace(); h = h->next();
         const bool subdiv1 = !h->hasOpposite() || !h->opposite()->isGregoryFace(); h = h->next();
         const bool subdiv2 = !h->hasOpposite() || !h->opposite()->isGregoryFace(); h = h->next();
         const bool subdiv3 = !h->hasOpposite() || !h->opposite()->isGregoryFace(); h = h->next();
@@ -61,13 +51,12 @@ namespace embree
 
     void subdivide(const GeneralCatmullClarkPatch& patch, int depth, bool subdiv[GeneralCatmullClarkPatch::SIZE])
     {
-#if 1
-      if (patch.size() == 4) {
+      /* convert into standard quad patch if possible */
+      if (likely(patch.size() == 4)) {
 	CatmullClarkPatch qpatch; patch.init(qpatch);
 	subdivide(qpatch,depth,Vec2f(0.0f,0.0f),Vec2f(0.0f,1.0f),Vec2f(1.0f,1.0f),Vec2f(1.0f,0.0f),subdiv[0],subdiv[1],subdiv[2],subdiv[3]);
 	return;
       }
-#endif
 
       size_t N;
       CatmullClarkPatch patches[GeneralCatmullClarkPatch::SIZE]; 
@@ -125,7 +114,7 @@ namespace embree
                    bool Tt, bool Tr, bool Tb, bool Tl)                 // tagged transition edges
     {
       if (patch.isGregory() || (depth <= 0))
-        return tessellate(patch,uv_0,uv_1,uv_2,uv_3,Tt,Tr,Tb,Tl);
+        return tessellator(patch,uv_0,uv_1,uv_2,uv_3,Tt,Tr,Tb,Tl);
 
       CatmullClarkPatch patches[4]; 
       patch.subdivide(patches);
@@ -142,57 +131,23 @@ namespace embree
       const Vec2f uv30 = 0.5f*(uv_3+uv_0);
       const Vec2f uvcc = 0.25f*(uv_0+uv_1+uv_2+uv_3);
 
-      if (subdivide0) subdivide (patches[0],depth-1, uv_0,uv01,uvcc,uv30, false,false,false,false);
-      else            tessellate(patches[0],         uv_0,uv01,uvcc,uv30, false,subdivide1,subdivide3,false);
+      if (subdivide0) subdivide  (patches[0],depth-1, uv_0,uv01,uvcc,uv30, false,false,false,false);
+      else            tessellator(patches[0],         uv_0,uv01,uvcc,uv30, false,subdivide1,subdivide3,false);
 
-      if (subdivide1) subdivide (patches[1],depth-1, uv01,uv_1,uv12,uvcc, false,false,false,false); 
-      else            tessellate(patches[1],         uv01,uv_1,uv12,uvcc, false,false,subdivide2,subdivide0);
+      if (subdivide1) subdivide  (patches[1],depth-1, uv01,uv_1,uv12,uvcc, false,false,false,false); 
+      else            tessellator(patches[1],         uv01,uv_1,uv12,uvcc, false,false,subdivide2,subdivide0);
       
-      if (subdivide2) subdivide (patches[2],depth-1, uvcc,uv12,uv_2,uv23, false,false,false,false); 
-      else            tessellate(patches[2],         uvcc,uv12,uv_2,uv23, subdivide1,false,false,subdivide3);
+      if (subdivide2) subdivide  (patches[2],depth-1, uvcc,uv12,uv_2,uv23, false,false,false,false); 
+      else            tessellator(patches[2],         uvcc,uv12,uv_2,uv23, subdivide1,false,false,subdivide3);
       
-      if (subdivide3) subdivide (patches[3],depth-1, uv30,uvcc,uv23,uv_3, false,false,false,false); 
-      else            tessellate(patches[3],         uv30,uvcc,uv23,uv_3, subdivide0,subdivide2,false,false);
-    }
-
-    void tessellate(const CatmullClarkPatch& patch, 
-                    const Vec2f& uv0, const Vec2f& uv1, const Vec2f& uv2, const Vec2f& uv3,  
-                    bool Tt, bool Tr, bool Tb, bool Tl)
-    {
-      GregoryPatch patcheval; 
-      patcheval.init(patch);
-
-      const float l0 = patch.ring[0].edge_level;
-      const float l1 = patch.ring[1].edge_level;
-      const float l2 = patch.ring[2].edge_level;
-      const float l3 = patch.ring[3].edge_level;
-      const TessellationPattern pattern0(l0,Tt);
-      const TessellationPattern pattern1(l1,Tr);
-      const TessellationPattern pattern2(l2,Tb);
-      const TessellationPattern pattern3(l3,Tl);
-      const TessellationPattern pattern_x = pattern0.size() > pattern2.size() ? pattern0 : pattern2;
-      const TessellationPattern pattern_y = pattern1.size() > pattern3.size() ? pattern1 : pattern3;
-      const int nx = pattern_x.size();
-      const int ny = pattern_y.size();
-      
-      static int id = 0; id+=0x726849272;
-
-      //const float du = (u1-u0)*(1.0f/8.0f);
-      //const float dv = (v1-v0)*(1.0f/8.0f);
-      for (int y=0; y<ny; y+=8) 
-      {
-        for (int x=0; x<nx; x+=8) 
-        {
-          count++;
-          if (prims_o == NULL) continue;
-          QuadQuad4x4* leaf = (QuadQuad4x4*) alloc.malloc(sizeof(QuadQuad4x4),16);
-          new (leaf) QuadQuad4x4(id,geomID,primID);
-          const BBox3fa bounds = leaf->build(scene,patcheval,pattern0,pattern1,pattern2,pattern3,pattern_x,x,nx,pattern_y,y,ny,uv0,uv1,uv2,uv3);
-          *prims_o = PrimRef(bounds,BVH4::encodeTypedLeaf(leaf,0));
-          prims_o++;
-        }
-      }
+      if (subdivide3) subdivide  (patches[3],depth-1, uv30,uvcc,uv23,uv_3, false,false,false,false); 
+      else            tessellator(patches[3],         uv30,uvcc,uv23,uv_3, subdivide0,subdivide2,false,false);
     }
   };
-}
 
+   template<typename Tessellator>
+     inline void feature_adaptive_subdivision_gregory (const SubdivMesh::HalfEdge* h, const Vec3fa* vertices, Tessellator tessellator)
+   {
+     FeatureAdaptiveSubdivisionGregory<Tessellator>(h,vertices,tessellator);
+   }
+}
