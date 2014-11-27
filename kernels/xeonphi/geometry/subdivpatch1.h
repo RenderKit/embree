@@ -214,6 +214,7 @@ namespace embree
       mic3f n; //FIXME: OPTIMIZE
       if (likely(isRegular()))
 	{
+#if 0
 	  for (size_t i=0;i<16;i++)
 	    {
 	      const mic_f n_i = patch.normal4(uu[i],vv[i]);
@@ -221,6 +222,9 @@ namespace embree
 	      n.y[i] = n_i[1];
 	      n.z[i] = n_i[2];
 	    }
+#else
+	  return patch.normal16(uu,vv);
+#endif
 	}
       else 
 	{
