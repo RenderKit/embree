@@ -33,14 +33,14 @@ namespace embree
       int neighborSubdiv[4];
       const CatmullClarkPatch patch(h,vertices);
       for (size_t i=0; i<4; i++) {
-	neighborSubdiv[i] = !h->hasOpposite() || !h->opposite()->isGregoryFace(); h = h->next();
+	neighborSubdiv[i] = h->hasOpposite() ? !h->opposite()->isGregoryFace() : 0; h = h->next();
       }
       subdivide(patch,10,uv,neighborSubdiv);
 #else
       int neighborSubdiv[GeneralCatmullClarkPatch::SIZE];
       const GeneralCatmullClarkPatch patch(h,vertices);
       for (size_t i=0; i<patch.size(); i++) {
-	neighborSubdiv[i] = !h->hasOpposite() || !h->opposite()->isGregoryFace(); h = h->next();
+	neighborSubdiv[i] = h->hasOpposite() ? !h->opposite()->isGregoryFace() : 0; h = h->next();
       }
       subdivide(patch,10,neighborSubdiv);
 #endif

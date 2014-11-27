@@ -241,16 +241,18 @@ namespace embree
       {
 	if (vertex_crease_weight > 0.0f) 
 	  return false;
-
-	for (size_t i=1; i<valence; i++)
-	  if (crease_weight[i] > 0.0f) 
+	
+	for (size_t i=1; i<valence; i++) {
+	  if (crease_weight[i] > 0.0f && (2*i != border_index) && (2*(i-1) != border_index)) {
 	    return false;
+	  }
+	}
       }
       
       if (edge_level > 1.0f)
-	if (crease_weight[0] > 0.0f) 
+	if (crease_weight[0] > 0.0f && (2*(valence-1) != border_index)) 
 	  return false;
-      
+
       return true;
     }
 

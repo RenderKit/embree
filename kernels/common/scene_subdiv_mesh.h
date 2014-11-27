@@ -145,19 +145,19 @@ namespace embree
 	const HalfEdge* p = this;
 
         if (p->hasCreases()) return false;
-	if (!p->hasOpposite()) return false;
+	//if (!p->hasOpposite()) return false;
         if ((p = p->next()) == this) return false;
 
         if (p->hasCreases()) return false;
-	if (!p->hasOpposite()) return false;
+	//if (!p->hasOpposite()) return false;
         if ((p = p->next()) == this) return false;
 
         if (p->hasCreases()) return false;
-	if (!p->hasOpposite()) return false;
+	//if (!p->hasOpposite()) return false;
         if ((p = p->next()) == this) return false;
         
         if (p->hasCreases()) return false;
-	if (!p->hasOpposite()) return false;
+	//if (!p->hasOpposite()) return false;
         if ((p = p->next()) != this) return false;
 
 	return true;
