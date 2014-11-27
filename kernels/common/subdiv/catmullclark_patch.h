@@ -58,9 +58,13 @@ namespace embree
       return bounds;
     }
 
-    /* returns true if the patch is a B-spline patch */
     __forceinline bool dicable() const {
       return ring[0].dicable() && ring[1].dicable() && ring[2].dicable() && ring[3].dicable();
+    }
+
+    /* returns true if the patch is a B-spline patch */
+    __forceinline bool isRegular() const {
+      return ring[0].isRegular() && ring[1].isRegular() && ring[2].isRegular() && ring[3].isRegular();
     }
 
     static __forceinline void init_regular(const CatmullClark1Ring& p0,

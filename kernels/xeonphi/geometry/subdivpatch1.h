@@ -49,7 +49,7 @@ namespace embree
     enum {
       REGULAR_PATCH     = 1,  // 0 => Gregory Patch 
       TRANSITION_PATCH  = 2,  // needs stiching?
-      HAS_DISPLACEMENTS = 4   // 0 => no displacments
+      HAS_DISPLACEMENT  = 4   // 0 => no displacments
     };
 
     /*! Default constructor. */
@@ -88,6 +88,9 @@ namespace embree
       grid_u_res = max(level[0],level[2])+1; // n segments -> n+1 points
       grid_v_res = max(level[1],level[3])+1;
 
+      grid_size_16wide_blocks = ((grid_u_res*grid_v_res+15)&(-16)) / 16;
+      grid_mask = 0;
+      grid_subtree_size_64b_blocks = 5; // single leaf with u,v,x,y,z
 
       /* need stiching? */
 
@@ -105,22 +108,16 @@ namespace embree
 
       /* has displacements? */
       if (mesh->displFunc != NULL)
-	flags |= HAS_DISPLACEMENTS;
+	flags |= HAS_DISPLACEMENT;
 
-      //grid_size = (grid_u_res*grid_v_res+15)&(-16);
 
-      /* count 64b blocks when tessellated */
-      grid_size_64b_blocks = 1;
-
-      /* tessellate into 4x4 grid blocks for larger grid resolutions or displaced patches*/
-      if (grid_u_res*grid_v_res > 16 || mesh->displFunc != NULL)
-	grid_size_64b_blocks = getSubTreeSize64bBlocks( mesh->displFunc != NULL ? 5 : 2); // u,v,x,y,z or just u,v
-
-      assert(grid_size_64b_blocks >= 1);
+      /* tessellate into 4x4 grid blocks for larger grid resolutions, generate bvh4i subtree over 4x4 grid blocks*/
+      if (grid_size_16wide_blocks > 1)
+	grid_subtree_size_64b_blocks = getSubTreeSize64bBlocks( 5 ); // u,v,x,y,z 
 
       /* compute 16-bit quad mask for direct evaluation */
 
-      if (grid_size_64b_blocks == 1)
+      if (grid_size_16wide_blocks == 1)
 	{
 	  mic_m m_active = 0xffff;
 	  for (unsigned int i=grid_u_res-1;i<16;i+=grid_u_res)
@@ -128,14 +125,10 @@ namespace embree
 	  m_active &= ((unsigned int)1 << (grid_u_res * (grid_v_res-1)))-1;
 	  grid_mask = m_active;
 	}
-      else
-	{
-	  grid_mask = 0;
-	}
 
       /* determine whether patch is regular or not */
 
-      if (ipatch.dicable()) 
+      if (ipatch.isRegular()) 
 	{
 	  flags |= REGULAR_PATCH;
 	  patch.init( ipatch );
@@ -146,7 +139,13 @@ namespace embree
 	  gpatch.init( ipatch ); 
 	  gpatch.exportDenseConrolPoints( patch.v );
 	}
-      
+#if 0
+      DBG_PRINT( grid_u_res );
+      DBG_PRINT( grid_v_res );
+      DBG_PRINT( grid_size_16wide_blocks );
+      DBG_PRINT( grid_mask );
+      DBG_PRINT( grid_subtree_size_64b_blocks );
+#endif
     }
 
     __forceinline bool needsStiching() const
@@ -162,6 +161,12 @@ namespace embree
     __forceinline mic3f eval16(const mic_f &uu,
 			       const mic_f &vv) const
     {
+#if DEBUG
+      const mic_m m_u = (uu >= 0.0f) & (uu <= 1.0f);
+      const mic_m m_v = (vv >= 0.0f) & (vv <= 1.0f);
+      assert( m_u == (mic_m)0xffff);
+      assert( m_v == (mic_m)0xffff);
+#endif      
       if (likely(isRegular()))
 	{
 	  return patch.eval16(uu,vv);
@@ -206,7 +211,7 @@ namespace embree
     __forceinline mic3f normal16(const mic_f &uu,
 				 const mic_f &vv) const
     {
-      mic3f n;
+      mic3f n; //FIXME: OPTIMIZE
       if (likely(isRegular()))
 	{
 	  for (size_t i=0;i<16;i++)
@@ -243,14 +248,19 @@ namespace embree
       return !isRegular();
     }
 
-    BBox3fa bounds() const
+    __forceinline bool hasDisplacement() const
+    {
+      return (flags & HAS_DISPLACEMENT) == HAS_DISPLACEMENT;
+    }
+
+    BBox3fa bounds(const SubdivMesh* const geom) const
     {
 #if FORCE_TESSELLATION_BOUNDS == 1
 
-      __aligned(64) float u_array[(grid_size_64b_blocks+1)*16];
-      __aligned(64) float v_array[(grid_size_64b_blocks+1)*16];
+      __aligned(64) float u_array[(grid_size_16wide_blocks+1)*16];
+      __aligned(64) float v_array[(grid_size_16wide_blocks+1)*16];
 
-      if (grid_size_64b_blocks == 1)
+      if (grid_size_16wide_blocks == 1)
       	{
       	  gridUVTessellator16f(level,grid_u_res,grid_v_res,u_array,v_array);
 
@@ -264,7 +274,7 @@ namespace embree
 	  gridUVTessellatorMIC(level,grid_u_res,grid_v_res,u_array,v_array);
 
 	  // FIXME: remove
-	  for (size_t i=real_grid_size;i<grid_size_64b_blocks*16;i++)
+	  for (size_t i=real_grid_size;i<grid_size_16wide_blocks*16;i++)
 	    {
 	      u_array[i] = 1.0f;
 	      v_array[i] = 1.0f;
@@ -303,10 +313,36 @@ namespace embree
 #else
       BBox3fa b ( empty );
       
-      assert( grid_size_64b_blocks >= 1 );
-      for (size_t i=0;i<grid_size_64b_blocks;i++)
+      assert( grid_size_16wide_blocks >= 1 );
+      for (size_t i=0;i<grid_size_16wide_blocks;i++)
 	{
-	  const mic3f vtx = eval16( load16f(&u_array[i*16]), load16f(&v_array[i*16]) );
+	  const mic_f u = load16f(&u_array[i*16]);
+	  const mic_f v = load16f(&v_array[i*16]);
+
+	  mic3f vtx = eval16( u, v );
+
+	  /* eval displacement function */
+	  if (unlikely(geom->displFunc != NULL))
+	    {
+	      mic3f normal = normal16(u,v);
+	      normal = normalize(normal);
+
+	      geom->displFunc(geom->userPtr,
+			      geomID,
+			      primID,
+			      (const float*)&u,
+			      (const float*)&v,
+			      (const float*)&normal,
+			      (const float*)&normal,
+			      (const float*)&normal,
+			      (float*)&vtx.x,
+			      (float*)&vtx.y,
+			      (float*)&vtx.z,
+			      16);
+
+	    }
+
+	  /* extend bounding box */
 	  b.extend( getBBox3fa(vtx) );
 	}
 
@@ -397,8 +433,9 @@ namespace embree
 
     unsigned short grid_u_res;
     unsigned short grid_v_res;
-    unsigned int   grid_size_64b_blocks;
-    unsigned int   grid_mask;
+    unsigned short grid_size_16wide_blocks;
+    unsigned short grid_mask;
+    unsigned int   grid_subtree_size_64b_blocks;
     volatile unsigned int under_construction; // 0 = not build yet, 1 = under construction, 2 = built
 
     __aligned(64) BSplinePatch patch;

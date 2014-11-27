@@ -469,11 +469,11 @@ namespace embree
       return (u_n[0] * curve0 + u_n[1] * curve1 + u_n[2] * curve2 + u_n[3] * curve3) * mic_f(1.0f/36.0f);
     }
 
-    __forceinline mic3f eval16(const mic_f uu, const mic_f vv) const
+    __forceinline mic3f eval16(const mic_f &uu, 
+			       const mic_f &vv,
+			       const mic4f &u_n,
+			       const mic4f &v_n) const
     {
-      const mic4f v_n = CubicBSplineCurve::eval(vv); //FIXME: precompute in table
-      const mic4f u_n = CubicBSplineCurve::eval(uu); //FIXME: precompute in table
-
       const mic_f curve0_x = v_n[0] * mic_f(v[0][0].x) + v_n[1] * mic_f(v[1][0].x) + v_n[2] * mic_f(v[2][0].x) + v_n[3] * mic_f(v[3][0].x);
       const mic_f curve1_x = v_n[0] * mic_f(v[0][1].x) + v_n[1] * mic_f(v[1][1].x) + v_n[2] * mic_f(v[2][1].x) + v_n[3] * mic_f(v[3][1].x);
       const mic_f curve2_x = v_n[0] * mic_f(v[0][2].x) + v_n[1] * mic_f(v[1][2].x) + v_n[2] * mic_f(v[2][2].x) + v_n[3] * mic_f(v[3][2].x);
@@ -495,6 +495,13 @@ namespace embree
       const mic_f z = (u_n[0] * curve0_z + u_n[1] * curve1_z + u_n[2] * curve2_z + u_n[3] * curve3_z) * mic_f(1.0f/36.0f);
 
       return mic3f(x,y,z);
+    }
+
+    __forceinline mic3f eval16(const mic_f uu, const mic_f vv) const
+    {
+      const mic4f v_n = CubicBSplineCurve::eval(vv); //FIXME: precompute in table
+      const mic4f u_n = CubicBSplineCurve::eval(uu); //FIXME: precompute in table
+      return eval16(uu,vv,u_n,v_n);
     }
     
 #endif

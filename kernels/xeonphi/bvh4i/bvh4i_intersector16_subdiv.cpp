@@ -28,11 +28,6 @@ namespace embree
 
   static AtomicMutex mtx;
 
-
-
-  namespace isa
-  {
-
     class __aligned(64) TessellationCache {
 
     private:
@@ -135,6 +130,7 @@ namespace embree
 
 	    /* realloc */
 	    std::cout << "REALLOCATING TESSELLATION CACHE TO " << allocated64BytesBlocks << " BLOCKS = " << allocated64BytesBlocks*sizeof(mic_f) << " BYTES" << std::endl;
+	    exit(0);
 	  }
 
 	currentIndex = blockCounter;
@@ -165,6 +161,21 @@ namespace embree
 	  }
       }
     };
+
+    __thread TessellationCache *thread_cache = NULL;
+
+
+    void clearTessellationCache()
+    {
+#if defined(ENABLE_PER_THREAD_TESSELLATION_CACHE)
+      if (thread_cache)
+	thread_cache->clear();	  
+#endif
+    }
+
+  namespace isa
+  {
+
 
 
     static __aligned(64) RegularGridLookUpTables gridLookUpTables;
@@ -200,7 +211,7 @@ namespace embree
 	  assert(u_size*v_size <= 16);
 
 	  const unsigned int currentIndex = localCounter;
-	  localCounter += geom->displFunc != NULL ? 5 : 2;
+	  localCounter += 5; // u,v, x,y,z
 
 	  mic_f &leaf_u_array = lazymem[currentIndex+0];
 	  mic_f &leaf_v_array = lazymem[currentIndex+1];
@@ -238,13 +249,7 @@ namespace embree
 	  if (unlikely(geom->displFunc != NULL))
 	    {
 	      mic3f normal      = patch.normal16(leaf_u_array,leaf_v_array);
-	      mic_f &leaf_vtx_x = lazymem[currentIndex+2];
-	      mic_f &leaf_vtx_y = lazymem[currentIndex+3];
-	      mic_f &leaf_vtx_z = lazymem[currentIndex+4];
-
-	      leaf_vtx_x = vtx.x;
-	      leaf_vtx_y = vtx.y;
-	      leaf_vtx_z = vtx.z;
+	      normal = normalize(normal);
 
 	      geom->displFunc(geom->userPtr,
 			      patch.geomID,
@@ -254,13 +259,10 @@ namespace embree
 			      (const float*)&normal.x,
 			      (const float*)&normal.y,
 			      (const float*)&normal.z,
-			      (float*)&leaf_vtx_x,
-			      (float*)&leaf_vtx_y,
-			      (float*)&leaf_vtx_z,
+			      (float*)&vtx.x,
+			      (float*)&vtx.y,
+			      (float*)&vtx.z,
 			      16);
-
-
-
 	    }
 
 	  //const Vec3fa b_min( reduce_min(leafGridVtx.x), reduce_min(leafGridVtx.y), reduce_min(leafGridVtx.z) );
@@ -269,6 +271,14 @@ namespace embree
 	  //const BBox3fa leafGridBounds( b_min, b_max );
 
 	  const BBox3fa leafGridBounds = getBBox3fa(vtx);
+
+	  mic_f &leaf_vtx_x = lazymem[currentIndex+2];
+	  mic_f &leaf_vtx_y = lazymem[currentIndex+3];
+	  mic_f &leaf_vtx_z = lazymem[currentIndex+4];
+
+	  leaf_vtx_x = vtx.x;
+	  leaf_vtx_y = vtx.y;
+	  leaf_vtx_z = vtx.z;
 
 	  createSubPatchBVH4iLeaf( curNode, currentIndex);
 	  
@@ -339,9 +349,9 @@ namespace embree
       TIMER(double msec = 0.0);
       TIMER(msec = getSeconds());
 
-      assert( patch.grid_size_64b_blocks > 1 );
-      __aligned(64) float u_array[(patch.grid_size_64b_blocks+1)*16]; // for unaligned access
-      __aligned(64) float v_array[(patch.grid_size_64b_blocks+1)*16];
+      assert( patch.grid_size_16wide_blocks > 1 );
+      __aligned(64) float u_array[(patch.grid_size_16wide_blocks+1)*16]; // for unaligned access
+      __aligned(64) float v_array[(patch.grid_size_16wide_blocks+1)*16];
 
       // gridUVTessellator(patch.level,
       // 			patch.grid_u_res,
@@ -357,9 +367,9 @@ namespace embree
 
 
       BVH4i::NodeRef subtree_root = 0;
-      unsigned int localCounter = bvh->lazyMemUsed64BytesBlocks.add( patch.grid_size_64b_blocks );
+      unsigned int localCounter = bvh->lazyMemUsed64BytesBlocks.add( patch.grid_subtree_size_64b_blocks );
       const unsigned int oldCounter = localCounter;
-      if (localCounter + patch.grid_size_64b_blocks > bvh->lazyMemAllocated64BytesBlocks) 
+      if (localCounter + patch.grid_subtree_size_64b_blocks > bvh->lazyMemAllocated64BytesBlocks) 
 	{
 	  DBG_PRINT(localCounter);
 	  DBG_PRINT(bvh->lazyMemUsed64BytesBlocks);
@@ -378,7 +388,7 @@ namespace embree
 				      localCounter,
 				      geom);
 
-      assert( localCounter - oldCounter == patch.grid_size_64b_blocks );
+      assert( localCounter - oldCounter == patch.grid_subtree_size_64b_blocks );
     TIMER(msec = getSeconds()-msec);    
 
 #if 0 // DEBUG
@@ -413,9 +423,9 @@ namespace embree
       TIMER(double msec = 0.0);
       TIMER(msec = getSeconds());
 
-      assert( patch.grid_size_64b_blocks > 1 );
-      __aligned(64) float u_array[(patch.grid_size_64b_blocks+1)*16]; // for unaligned access
-      __aligned(64) float v_array[(patch.grid_size_64b_blocks+1)*16];
+      assert( patch.grid_size_16wide_blocks > 1 );
+      __aligned(64) float u_array[(patch.grid_size_16wide_blocks+1)*16]; // for unaligned access
+      __aligned(64) float v_array[(patch.grid_size_16wide_blocks+1)*16];
 
 
       gridUVTessellatorMIC(patch.level,
@@ -426,6 +436,7 @@ namespace embree
 
 
       BVH4i::NodeRef subtree_root = 0;
+      const unsigned int oldIndex = currentIndex;
 
       BBox3fa bounds = createSubTree( subtree_root,
 				      lazymem,
@@ -439,6 +450,7 @@ namespace embree
 				      currentIndex,
 				      geom);
 
+      assert(currentIndex - oldIndex == patch.grid_subtree_size_64b_blocks);
       TIMER(msec = getSeconds()-msec);    
     }
 
@@ -514,14 +526,15 @@ namespace embree
 				       const mic_f &org_xyz,
 				       Ray16& ray16,
 				       const SubdivPatch1& subdiv_patch,
-				       const unsigned int subdiv_patch_index)
+				       const unsigned int subdiv_patch_index,
+				       const SubdivMesh* const geom)
     {
       const float * const edge_levels = subdiv_patch.level;
       const unsigned int grid_u_res   = subdiv_patch.grid_u_res;
       const unsigned int grid_v_res   = subdiv_patch.grid_v_res;
 
-      __aligned(64) float u_array[(subdiv_patch.grid_size_64b_blocks+1)]; // for unaligned access
-      __aligned(64) float v_array[(subdiv_patch.grid_size_64b_blocks+1)];
+      __aligned(64) float u_array[(subdiv_patch.grid_size_16wide_blocks+1)]; // for unaligned access
+      __aligned(64) float v_array[(subdiv_patch.grid_size_16wide_blocks+1)];
 
       //gridUVTessellator(edge_levels,grid_u_res,grid_v_res,u_array,v_array);
       gridUVTessellator16f(edge_levels,grid_u_res,grid_v_res,u_array,v_array);
@@ -532,14 +545,33 @@ namespace embree
 	
       bool hit = false;
 
-      if (likely(subdiv_patch.grid_size_64b_blocks==1))
+      if (likely(subdiv_patch.grid_size_16wide_blocks==1))
 	{
 	  const mic_m m_active = subdiv_patch.grid_mask;
 
 	  const mic_f uu = load16f(u_array);
 	  const mic_f vv = load16f(v_array);
 
-	  const mic3f vtx = subdiv_patch.eval16(uu,vv);
+	  mic3f vtx = subdiv_patch.eval16(uu,vv);
+
+	  if (unlikely(geom->displFunc != NULL))
+	    {
+	      mic3f normal = subdiv_patch.normal16(uu,vv);
+	      normal = normalize(normal);
+
+	      geom->displFunc(geom->userPtr,
+			      subdiv_patch.geomID,
+			      subdiv_patch.primID,
+			      (const float*)&uu,
+			      (const float*)&vv,
+			      (const float*)&normal.x,
+			      (const float*)&normal.y,
+			      (const float*)&normal.z,
+			      (float*)&vtx.x,
+			      (float*)&vtx.y,
+			      (float*)&vtx.z,
+			      16);
+	    }
 	  	  
 	  hit |= intersect1Eval16(subdiv_patch,
 				  subdiv_patch_index,
@@ -559,7 +591,6 @@ namespace embree
 	  size_t offset_line0 = 0;
 	  size_t offset_line1 = grid_u_res;
 
-#if 1
 	  for (unsigned int y=0;y<grid_v_res-1;y++,offset_line0+=grid_u_res,offset_line1+=grid_u_res)
 	    {
 	      for (unsigned int x=0;x<grid_u_res-1;x+=7)
@@ -572,7 +603,27 @@ namespace embree
 		  const mic_f uu = select(0xff,u8_line0,align_shift_right<8>(u8_line1,u8_line1));
 		  const mic_f vv = select(0xff,v8_line0,align_shift_right<8>(v8_line1,v8_line1));
 
-		  __aligned(64) const mic3f vtx = subdiv_patch.eval16(uu,vv);
+		  mic3f vtx = subdiv_patch.eval16(uu,vv);
+
+		  if (unlikely(geom->displFunc != NULL))
+		    {
+		      mic3f normal = subdiv_patch.normal16(uu,vv);
+		      normal = normalize(normal);
+
+		      geom->displFunc(geom->userPtr,
+				      subdiv_patch.geomID,
+				      subdiv_patch.primID,
+				      (const float*)&uu,
+				      (const float*)&vv,
+				      (const float*)&normal.x,
+				      (const float*)&normal.y,
+				      (const float*)&normal.z,
+				      (float*)&vtx.x,
+				      (float*)&vtx.y,
+				      (float*)&vtx.z,
+				      16);
+		    }
+
 	  	  unsigned int m_active = 0x7f;
 		  if (unlikely(x + 7 >= grid_u_res-1)) 
 		    {
@@ -596,27 +647,6 @@ namespace embree
 		}
 	      
 	    }	  
-#else
-
-	  /* 8x2 grid scan-line intersector */
-	  for (unsigned int y=0;y<grid_v_res-1;y++,offset_line0++,offset_line1++)
-	    for (unsigned int x=0;x<grid_u_res-1;x++,offset_line0++,offset_line1++)
-	      {
-		const float &u0 = u_array[offset_line0+0];
-		const float &v0 = v_array[offset_line0+0];
-		
-		const float &u1 = u_array[offset_line0+1];
-		const float &v1 = v_array[offset_line0+1];
-		
-		const float &u2 = u_array[offset_line1+1];
-		const float &v2 = v_array[offset_line1+1];
-
-		const float &u3 = u_array[offset_line1+0];
-		const float &v3 = v_array[offset_line1+0];
-		
-		hit |= intersect1Eval(subdiv_patch,subdiv_patch_index,u0,v0,u1,v1,u2,v2,u3,v3,rayIndex,dir_xyz,org_xyz,ray16);	    
-	      }
-#endif
 	}
 
       return hit;
@@ -678,8 +708,6 @@ namespace embree
     // ============================================================================================
     // ============================================================================================
     // ============================================================================================
-
-    __thread TessellationCache *thread_cache = NULL;
 
 
     template<typename LeafIntersector, bool ENABLE_COMPRESSED_BVH4I_NODES>
@@ -766,13 +794,14 @@ namespace embree
 	      const SubdivMesh* const geom = (SubdivMesh*)scene->get(subdiv_patch.geomID); // FIXME: test flag first
 
 	      /* fast patch for grid with <= 16 points */
-	      if (likely(subdiv_patch.grid_size_64b_blocks == 1))
+	      if (likely(subdiv_patch.grid_size_16wide_blocks == 1))
 		intersectEvalGrid1(rayIndex,
 				   dir_xyz,
 				   org_xyz,
 				   ray16,
 				   subdiv_patch,
-				   patchIndex);
+				   patchIndex,
+				   geom);
 	      else
 		{
 
@@ -795,7 +824,7 @@ namespace embree
 		  BVH4i::NodeRef subtree_root = local_cache->lookup(patchIndex);
 		  if (subtree_root == BVH4i::invalidNode)
 		    {
-		      const unsigned int blocks = subdiv_patch.grid_size_64b_blocks;
+		      const unsigned int blocks = subdiv_patch.grid_subtree_size_64b_blocks;
 
 		      unsigned int currentIndex = 0;
 		      subtree_root = local_cache->insert(patchIndex,blocks,currentIndex);
@@ -836,23 +865,23 @@ namespace embree
 		      if (unlikely(curNode == BVH4i::invalidNode)) break;
 
 		      const unsigned int uvIndex = curNode.offsetIndex();
+
 		      prefetch<PFHINT_NT>(&lazymem[uvIndex + 0]);
 		      prefetch<PFHINT_NT>(&lazymem[uvIndex + 1]);
-
+		      prefetch<PFHINT_NT>(&lazymem[uvIndex + 2]);
+		      prefetch<PFHINT_NT>(&lazymem[uvIndex + 3]);
+		      prefetch<PFHINT_NT>(&lazymem[uvIndex + 4]);
 		  
 		      const mic_m m_active = 0x777;
 		      const mic_f &uu = lazymem[uvIndex + 0];
-		      const mic_f &vv = lazymem[uvIndex + 1];		  
-		      mic3f vtx;
-		      if (likely(geom->displFunc == NULL))
-			vtx = subdiv_patch.eval16(uu,vv);
-		      else
-			{
-			  vtx.x = lazymem[uvIndex + 2];
-			  vtx.y = lazymem[uvIndex + 3];
-			  vtx.z = lazymem[uvIndex + 4];
-			}
-		  
+		      const mic_f &vv = lazymem[uvIndex + 1];	
+#if 1  
+		      const mic3f vtx(lazymem[uvIndex + 2],
+				      lazymem[uvIndex + 3],
+				      lazymem[uvIndex + 4]);
+#else
+		      mic3f vtx = subdiv_patch.eval16(uu,vv);
+#endif		  
 		      intersect1_quad16(rayIndex, 
 					dir_xyz,
 					org_xyz,
@@ -887,6 +916,7 @@ namespace embree
 	  ray16.geomID[rayIndex] = subdiv_patch.geomID;
 	  ray16.u[rayIndex]      = (1.0f-ray16.u[rayIndex]) * subdiv_patch.u_range.x + ray16.u[rayIndex] * subdiv_patch.u_range.y;
 	  ray16.v[rayIndex]      = (1.0f-ray16.v[rayIndex]) * subdiv_patch.v_range.x + ray16.v[rayIndex] * subdiv_patch.v_range.y;
+	  if (unlikely(subdiv_patch.hasDisplacement())) continue;
 	  const Vec3fa normal    = subdiv_patch.normal(ray16.u[rayIndex],ray16.v[rayIndex]);
 	  ray16.Ng.x[rayIndex]   = normal.x;
 	  ray16.Ng.y[rayIndex]   = normal.y;
@@ -985,13 +1015,14 @@ namespace embree
 	      const SubdivMesh* const geom = (SubdivMesh*)scene->get(subdiv_patch.geomID);
 
 	      /* fast patch for grid with <= 16 points */
-	      if (likely(subdiv_patch.grid_size_64b_blocks == 1))
+	      if (likely(subdiv_patch.grid_size_16wide_blocks == 1))
 		intersectEvalGrid1(rayIndex,
 				   dir_xyz,
 				   org_xyz,
 				   ray16,
 				   subdiv_patch,
-				   patchIndex);
+				   patchIndex,
+				   geom);
 	      else
 		{
 		  /* traverse sub-patch bvh4i for grids with > 16 points */
@@ -1013,7 +1044,7 @@ namespace embree
 		  BVH4i::NodeRef subtree_root = local_cache->lookup(patchIndex);
 		  if (subtree_root == BVH4i::invalidNode)
 		    {
-		      const unsigned int blocks = subdiv_patch.grid_size_64b_blocks;
+		      const unsigned int blocks = subdiv_patch.grid_subtree_size_64b_blocks;
 		      unsigned int currentIndex = 0;
 		      subtree_root = local_cache->insert(patchIndex,blocks,currentIndex);
 		      initLocalLazySubdivTree(subdiv_patch,currentIndex,lazymem,geom);		      
@@ -1054,21 +1085,19 @@ namespace embree
 		      if (unlikely(curNode == BVH4i::invalidNode)) break;
 
 		      const unsigned int uvIndex = curNode.offsetIndex();
+
 		      prefetch<PFHINT_NT>(&lazymem[uvIndex + 0]);
 		      prefetch<PFHINT_NT>(&lazymem[uvIndex + 1]);
+		      prefetch<PFHINT_NT>(&lazymem[uvIndex + 2]);
+		      prefetch<PFHINT_NT>(&lazymem[uvIndex + 3]);
+		      prefetch<PFHINT_NT>(&lazymem[uvIndex + 4]);
 		  
 		      const mic_m m_active = 0x777;
 		      const mic_f &uu = lazymem[uvIndex + 0];
-		      const mic_f &vv = lazymem[uvIndex + 1];
-		      mic3f vtx;
-		      if (likely(geom->displFunc == NULL))
-			vtx = subdiv_patch.eval16(uu,vv);
-		      else
-			{
-			  vtx.x = lazymem[uvIndex + 2];
-			  vtx.y = lazymem[uvIndex + 3];
-			  vtx.z = lazymem[uvIndex + 4];
-			}
+		      const mic_f &vv = lazymem[uvIndex + 1];		  
+		      const mic3f vtx(lazymem[uvIndex + 2],
+				      lazymem[uvIndex + 3],
+				      lazymem[uvIndex + 4]);
 		  
 		      intersect1_quad16(rayIndex, 
 					dir_xyz,
