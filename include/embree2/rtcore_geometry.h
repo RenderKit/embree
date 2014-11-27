@@ -89,9 +89,9 @@ typedef void (*RTCDisplacementFunc)(void* ptr,           /*!< pointer to user da
                                     unsigned primID,     /*!< ID of primitive of geometry to displace */
                                     const float* u,      /*!< u coordinates (source) */
                                     const float* v,      /*!< v coordinates (source) */
-                                    const float* nx,     /*!< x coordinates of normal at point to displace (source) */
-                                    const float* ny,     /*!< y coordinates of normal at point to displace (source) */
-                                    const float* nz,     /*!< z coordinates of normal at point to displace (source) */
+                                    const float* nx,     /*!< x coordinates of normalized normal at point to displace (source) */
+                                    const float* ny,     /*!< y coordinates of normalized normal at point to displace (source) */
+                                    const float* nz,     /*!< z coordinates of normalized normal at point to displace (source) */
                                     float* px,           /*!< x coordinates of points to displace (source and target) */
                                     float* py,           /*!< y coordinates of points to displace (source and target) */
                                     float* pz,           /*!< z coordinates of points to displace (source and target) */
