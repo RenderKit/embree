@@ -63,6 +63,11 @@ namespace embree
       return ring[0].isGregory() && ring[1].isGregory() && ring[2].isGregory() && ring[3].isGregory();
     }
 
+    /*! returns true if the patch is a B-spline patch or final Quad */
+    __forceinline bool isRegularOrFinal() const {
+      return ring[0].isRegularOrFinal() && ring[1].isRegularOrFinal() && ring[2].isRegularOrFinal() && ring[3].isRegularOrFinal();
+    }
+
     /*! returns true if the patch is a B-spline patch */
     __forceinline bool isRegular() const {
       return ring[0].isRegular() && ring[1].isRegular() && ring[2].isRegular() && ring[3].isRegular();
@@ -328,7 +333,7 @@ namespace embree
 
       Vec3fa_t center = Vec3fa_t(0.0f);
       Vec3fa_t center_ring[2*SIZE];
-      float center_vertex_level = 0.0f;
+      float center_vertex_level = 2.0f; // guarantees that irregular vertices get always isolated also for non-quads
 
       for (size_t i=0; i<N; i++)
       {

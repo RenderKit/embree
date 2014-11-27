@@ -68,8 +68,14 @@ namespace embree
       const bool noleaf = depth > 1;
       bool childSubdiv[GeneralCatmullClarkPatch::SIZE];
       for (size_t i=0; i<N; i++)
-        childSubdiv[i] = noleaf && !patches[i].isRegular();
+        childSubdiv[i] = noleaf && !patches[i].isRegularOrFinal();
 
+      /*for (size_t i=0; i<N; i++) {
+	PRINT2(i,patches[i].isGregory());
+	PRINT2(i,patches[i].isRegular());
+	PRINT2(i,patches[i]);
+	}*/
+      
       /* parametrization for triangles */
       if (N == 3) {
 	const Vec2f uv_0(0.0f,0.0f);
@@ -132,17 +138,17 @@ namespace embree
 
     void subdivide(const CatmullClarkPatch& patch, int depth, const Vec2f uv[4], const bool neighborSubdiv[4])
     {
-      if (patch.isRegular() || (depth <= 0))
+      if (patch.isRegularOrFinal() || (depth <= 0))
         return tessellator(patch,uv,neighborSubdiv);
 
       CatmullClarkPatch patches[4]; 
       patch.subdivide(patches);
 
       const bool noleaf = depth > 1;
-      const bool childSubdiv0 = noleaf && !patches[0].isRegular();
-      const bool childSubdiv1 = noleaf && !patches[1].isRegular();
-      const bool childSubdiv2 = noleaf && !patches[2].isRegular();
-      const bool childSubdiv3 = noleaf && !patches[3].isRegular();
+      const bool childSubdiv0 = noleaf && !patches[0].isRegularOrFinal();
+      const bool childSubdiv1 = noleaf && !patches[1].isRegularOrFinal();
+      const bool childSubdiv2 = noleaf && !patches[2].isRegularOrFinal();
+      const bool childSubdiv3 = noleaf && !patches[3].isRegularOrFinal();
 
       const Vec2f uv01 = 0.5f*(uv[0]+uv[1]);
       const Vec2f uv12 = 0.5f*(uv[1]+uv[2]);

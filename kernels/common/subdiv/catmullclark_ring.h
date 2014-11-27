@@ -254,6 +254,29 @@ namespace embree
       return true;
     }
 
+    /* returns true if the vertex can be part of a dicable B-Spline patch or is a final Quad */
+    __forceinline bool isRegularOrFinal() const 
+    {
+      if (vertex_level > 1.0f) 
+      {
+	if (valence != 4)
+	  return false;
+
+	if (vertex_crease_weight > 0.0f) 
+	  return false;
+
+	for (size_t i=1; i<valence; i++)
+	  if (crease_weight[i] > 0.0f) 
+	    return false;
+      }
+      
+      if (edge_level > 1.0f)
+	if (crease_weight[0] > 0.0f) 
+	  return false;
+      
+      return true;
+    }
+
     __forceinline bool isRegular() const 
     {
       if (valence == 4 && isGregory()) return true;
