@@ -48,6 +48,32 @@ namespace embree
       return Vec4f(n0,n1,n2,n3);
     }
 
+#if defined(__AVX__)
+
+    static __forceinline avx4f eval8(const avxf u)
+    {
+      const avxf t  = u;
+      const avxf s  = 1.0f - u;
+      const avxf n0 = s*s*s;
+      const avxf n1 = (4.0f*s*s*s+t*t*t) + (12.0f*s*t*s + 6.0*t*s*t);
+      const avxf n2 = (4.0f*t*t*t+s*s*s) + (12.0f*t*s*t + 6.0*s*t*s);
+      const avxf n3 = t*t*t;
+      return avx4f(n0,n1,n2,n3);
+    }
+
+    static __forceinline avx4f derivative8(const float u)
+    {
+      const avxf t  =  u;
+      const avxf s  =  1.0f - u;
+      const avxf n0 = -s*s;
+      const avxf n1 = -t*t - 4.0f*t*s;
+      const avxf n2 =  s*s + 4.0f*s*t;
+      const avxf n3 =  t*t;
+      return avx4f(n0,n1,n2,n3);
+    }
+
+#endif
+
 #if defined(__MIC__)
 
     static __forceinline mic4f eval(const mic_f u)
