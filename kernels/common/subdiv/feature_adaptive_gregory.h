@@ -28,7 +28,7 @@ namespace embree
     __forceinline FeatureAdaptiveSubdivisionGregory (const SubdivMesh::HalfEdge* h, const Vec3fa* vertices, Tessellator& tessellator)
       : tessellator(tessellator)
     {
-#if 1
+#if 0
       const Vec2f uv[4] = { Vec2f(0.0f,0.0f),Vec2f(0.0f,1.0f),Vec2f(1.0f,1.0f),Vec2f(1.0f,0.0f) };
       bool subdiv[4];
       const CatmullClarkPatch patch(h,vertices);
