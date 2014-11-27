@@ -61,7 +61,7 @@ namespace embree
       return avx4f(n0,n1,n2,n3);
     }
 
-    static __forceinline avx4f derivative8(const float u)
+    static __forceinline avx4f derivative8(const avxf u)
     {
       const avxf t  =  u;
       const avxf s  =  1.0f - u;
@@ -549,6 +549,67 @@ namespace embree
     {
       const mic3f tU = tangentU16(uu,vv);
       const mic3f tV = tangentV16(uu,vv);
+      return cross(tU,tV);
+    }
+
+#endif
+
+
+#if defined(__AVX__)
+
+    __forceinline avx3f eval8(const avxf &uu, 
+                              const avxf &vv,
+                              const avx4f &u_n,
+                              const avx4f &v_n) const
+    {
+      const avxf curve0_x = v_n[0] * avxf(v[0][0].x) + v_n[1] * avxf(v[1][0].x) + v_n[2] * avxf(v[2][0].x) + v_n[3] * avxf(v[3][0].x);
+      const avxf curve1_x = v_n[0] * avxf(v[0][1].x) + v_n[1] * avxf(v[1][1].x) + v_n[2] * avxf(v[2][1].x) + v_n[3] * avxf(v[3][1].x);
+      const avxf curve2_x = v_n[0] * avxf(v[0][2].x) + v_n[1] * avxf(v[1][2].x) + v_n[2] * avxf(v[2][2].x) + v_n[3] * avxf(v[3][2].x);
+      const avxf curve3_x = v_n[0] * avxf(v[0][3].x) + v_n[1] * avxf(v[1][3].x) + v_n[2] * avxf(v[2][3].x) + v_n[3] * avxf(v[3][3].x);
+      const avxf x = (u_n[0] * curve0_x + u_n[1] * curve1_x + u_n[2] * curve2_x + u_n[3] * curve3_x) * avxf(1.0f/36.0f);
+
+
+      const avxf curve0_y = v_n[0] * avxf(v[0][0].y) + v_n[1] * avxf(v[1][0].y) + v_n[2] * avxf(v[2][0].y) + v_n[3] * avxf(v[3][0].y);
+      const avxf curve1_y = v_n[0] * avxf(v[0][1].y) + v_n[1] * avxf(v[1][1].y) + v_n[2] * avxf(v[2][1].y) + v_n[3] * avxf(v[3][1].y);
+      const avxf curve2_y = v_n[0] * avxf(v[0][2].y) + v_n[1] * avxf(v[1][2].y) + v_n[2] * avxf(v[2][2].y) + v_n[3] * avxf(v[3][2].y);
+      const avxf curve3_y = v_n[0] * avxf(v[0][3].y) + v_n[1] * avxf(v[1][3].y) + v_n[2] * avxf(v[2][3].y) + v_n[3] * avxf(v[3][3].y);
+      const avxf y = (u_n[0] * curve0_y + u_n[1] * curve1_y + u_n[2] * curve2_y + u_n[3] * curve3_y) * avxf(1.0f/36.0f);
+      
+
+      const avxf curve0_z = v_n[0] * avxf(v[0][0].z) + v_n[1] * avxf(v[1][0].z) + v_n[2] * avxf(v[2][0].z) + v_n[3] * avxf(v[3][0].z);
+      const avxf curve1_z = v_n[0] * avxf(v[0][1].z) + v_n[1] * avxf(v[1][1].z) + v_n[2] * avxf(v[2][1].z) + v_n[3] * avxf(v[3][1].z);
+      const avxf curve2_z = v_n[0] * avxf(v[0][2].z) + v_n[1] * avxf(v[1][2].z) + v_n[2] * avxf(v[2][2].z) + v_n[3] * avxf(v[3][2].z);
+      const avxf curve3_z = v_n[0] * avxf(v[0][3].z) + v_n[1] * avxf(v[1][3].z) + v_n[2] * avxf(v[2][3].z) + v_n[3] * avxf(v[3][3].z);
+      const avxf z = (u_n[0] * curve0_z + u_n[1] * curve1_z + u_n[2] * curve2_z + u_n[3] * curve3_z) * avxf(1.0f/36.0f);
+
+      return avx3f(x,y,z);
+    }
+
+    __forceinline avx3f eval8(const avxf uu, const avxf vv) const
+    {
+      const avx4f v_n = CubicBSplineCurve::eval8(vv); //FIXME: precompute in table
+      const avx4f u_n = CubicBSplineCurve::eval8(uu); //FIXME: precompute in table
+      return eval8(uu,vv,u_n,v_n);
+    }
+
+    __forceinline avx3f tangentU8(const avxf uu, const avxf vv) const
+    {
+      const avx4f v_n = CubicBSplineCurve::derivative8(vv); 
+      const avx4f u_n = CubicBSplineCurve::eval8(uu); 
+      return eval8(uu,vv,u_n,v_n);      
+    }
+
+    __forceinline avx3f tangentV8(const avxf uu, const avxf vv) const
+    {
+      const avx4f v_n = CubicBSplineCurve::eval8(vv); 
+      const avx4f u_n = CubicBSplineCurve::derivative8(uu); 
+      return eval8(uu,vv,u_n,v_n);      
+    }
+
+    __forceinline avx3f normal8(const avxf uu, const avxf vv) const
+    {
+      const avx3f tU = tangentU8(uu,vv);
+      const avx3f tV = tangentV8(uu,vv);
       return cross(tU,tV);
     }
 
