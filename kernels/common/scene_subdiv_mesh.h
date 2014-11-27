@@ -98,7 +98,7 @@ namespace embree
         return true;
       }
 
-      /*! tests if the face is a regular face */
+      /*! tests if the face is a regular b-spline face */
       __forceinline bool isRegularFace() const 
       {
 	const HalfEdge* p = this;
@@ -119,7 +119,7 @@ namespace embree
       }
 
       /*! tests if the face can be diced (using bspline or gregory patch) */
-      __forceinline bool dicable() const 
+      __forceinline bool isGregoryFace() const 
       {
 	const HalfEdge* p = this;
 

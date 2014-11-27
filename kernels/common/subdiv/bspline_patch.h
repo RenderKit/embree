@@ -328,7 +328,7 @@ namespace embree
 
     __forceinline void init(const CatmullClarkPatch &irreg_patch)
     {
-      assert( irreg_patch.dicable() );
+      assert( irreg_patch.isRegular() );
 
       v[1][1] = irreg_patch.ring[0].vtx;
       v[0][1] = irreg_patch.ring[0].ring[6];

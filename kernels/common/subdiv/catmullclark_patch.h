@@ -58,11 +58,12 @@ namespace embree
       return bounds;
     }
 
-    __forceinline bool dicable() const {
-      return ring[0].dicable() && ring[1].dicable() && ring[2].dicable() && ring[3].dicable();
+    /*! returns true of the patch is a Gregory patch */
+    __forceinline bool isGregory() const {
+      return ring[0].isGregory() && ring[1].isGregory() && ring[2].isGregory() && ring[3].isGregory();
     }
 
-    /* returns true if the patch is a B-spline patch */
+    /*! returns true if the patch is a B-spline patch */
     __forceinline bool isRegular() const {
       return ring[0].isRegular() && ring[1].isRegular() && ring[2].isRegular() && ring[3].isRegular();
     }

@@ -40,16 +40,16 @@ namespace embree
       {
 #if 1
         const CatmullClarkPatch patch(h,vertices);
-        const bool subdiv0 = !h->hasOpposite() || !h->opposite()->dicable(); h = h->next(); // FIXME: should be false if no neighbour?
-        const bool subdiv1 = !h->hasOpposite() || !h->opposite()->dicable(); h = h->next();
-        const bool subdiv2 = !h->hasOpposite() || !h->opposite()->dicable(); h = h->next();
-        const bool subdiv3 = !h->hasOpposite() || !h->opposite()->dicable(); h = h->next();
+        const bool subdiv0 = !h->hasOpposite() || !h->opposite()->isGregoryFace(); h = h->next(); // FIXME: should be false if no neighbour?
+        const bool subdiv1 = !h->hasOpposite() || !h->opposite()->isGregoryFace(); h = h->next();
+        const bool subdiv2 = !h->hasOpposite() || !h->opposite()->isGregoryFace(); h = h->next();
+        const bool subdiv3 = !h->hasOpposite() || !h->opposite()->isGregoryFace(); h = h->next();
         subdivide(patch,5,Vec2f(0.0f,0.0f),Vec2f(0.0f,1.0f),Vec2f(1.0f,1.0f),Vec2f(1.0f,0.0f),subdiv0,subdiv1,subdiv2,subdiv3);
 #else
 	bool subdiv[GeneralCatmullClarkPatch::SIZE];
         const GeneralCatmullClarkPatch patch(h,vertices);
 	for (size_t i=0; i<patch.size(); i++) {
-	  subdiv[i] = !h->hasOpposite() || !h->opposite()->dicable(); h = h->next();
+	  subdiv[i] = !h->hasOpposite() || !h->opposite()->isGregoryFace(); h = h->next();
 	}
         subdivide(patch,5,subdiv);
 #endif
@@ -76,7 +76,7 @@ namespace embree
       const bool noleaf = depth > 1;
       bool csubdiv[GeneralCatmullClarkPatch::SIZE];
       for (size_t i=0; i<N; i++)
-        csubdiv[i] = noleaf && !patches[i].dicable();
+        csubdiv[i] = noleaf && !patches[i].isGregory();
 
       /* parametrization for triangles */
       if (N == 3) {
@@ -124,17 +124,17 @@ namespace embree
                    const Vec2f& uv_0, const Vec2f& uv_1, const Vec2f& uv_2, const Vec2f& uv_3,              // uv range
                    bool Tt, bool Tr, bool Tb, bool Tl)                 // tagged transition edges
     {
-      if (patch.dicable() || (depth <= 0))
+      if (patch.isGregory() || (depth <= 0))
         return tessellate(patch,uv_0,uv_1,uv_2,uv_3,Tt,Tr,Tb,Tl);
 
       CatmullClarkPatch patches[4]; 
       patch.subdivide(patches);
 
       const bool noleaf = depth > 1;
-      const bool subdivide0 = noleaf && !patches[0].dicable();
-      const bool subdivide1 = noleaf && !patches[1].dicable();
-      const bool subdivide2 = noleaf && !patches[2].dicable();
-      const bool subdivide3 = noleaf && !patches[3].dicable();
+      const bool subdivide0 = noleaf && !patches[0].isGregory();
+      const bool subdivide1 = noleaf && !patches[1].isGregory();
+      const bool subdivide2 = noleaf && !patches[2].isGregory();
+      const bool subdivide3 = noleaf && !patches[3].isGregory();
 
       const Vec2f uv01 = 0.5f*(uv_0+uv_1);
       const Vec2f uv12 = 0.5f*(uv_1+uv_2);

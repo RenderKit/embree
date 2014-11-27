@@ -234,10 +234,10 @@ namespace embree
       }
     }
     
-    /* returns true if the vertex can be part of a dicable patch (using gregory patches) */
-    __forceinline bool dicable() const 
+    /* returns true if the vertex can be part of a dicable gregory patch (using gregory patches) */
+    __forceinline bool isGregory() const 
     {
-      //if (vertex_level > 1.0f) 
+      if (vertex_level > 1.0f) 
       {
 	if (vertex_crease_weight > 0.0f) 
 	  return false;
@@ -247,7 +247,7 @@ namespace embree
 	    return false;
       }
       
-      //if (edge_level > 1.0f)
+      if (edge_level > 1.0f)
 	if (crease_weight[0] > 0.0f) 
 	  return false;
       
@@ -256,7 +256,7 @@ namespace embree
 
     __forceinline bool isRegular() const 
     {
-      if (valence == 4 && dicable()) return true;
+      if (valence == 4 && isGregory()) return true;
       return false;
     }
 
