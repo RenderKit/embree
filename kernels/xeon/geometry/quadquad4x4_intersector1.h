@@ -98,10 +98,10 @@ namespace embree
         const float T   = dot(q,Ng);
         const float t = T*rcpDet;
         if (unlikely(ray.tnear <= t && t <= ray.tfar)) {
-          ray.u    = U * rcpDet;
-          ray.v    = V * rcpDet;
-          //ray.u    = uv.x * rcpDet;
-          //ray.v    = uv.y * rcpDet;
+          //ray.u    = U * rcpDet;
+          //ray.v    = V * rcpDet;
+          ray.u    = uv.x * rcpDet;
+          ray.v    = uv.y * rcpDet;
           ray.tfar = t;
           //ray.Ng   = Ng;
 	  float u = U * rcpDet;

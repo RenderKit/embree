@@ -319,20 +319,17 @@ namespace embree
 	{
           if (!mesh->valid(f)) continue;
 
-          //QuadQuad4x4AdaptiveSubdivision subdiv(NULL,bvh->alloc2,this->scene,mesh->getHalfEdge(f),mesh->getVertexPositionPtr(),mesh->id,f);
 	  feature_adaptive_subdivision_gregory(mesh->getHalfEdge(f),mesh->getVertexPositionPtr(),
-					       [&](const CatmullClarkPatch& patch, 
-						   const Vec2f& uv0, const Vec2f& uv1, const Vec2f& uv2, const Vec2f& uv3,  
-						   bool Tt, bool Tr, bool Tb, bool Tl)
+					       [&](const CatmullClarkPatch& patch, const Vec2f uv[4], const bool subdiv[4])
 	  {
  	    const float l0 = patch.ring[0].edge_level;
 	    const float l1 = patch.ring[1].edge_level;
 	    const float l2 = patch.ring[2].edge_level;
 	    const float l3 = patch.ring[3].edge_level;
-	    const TessellationPattern pattern0(l0,Tt);
-	    const TessellationPattern pattern1(l1,Tr);
-	    const TessellationPattern pattern2(l2,Tb);
-	    const TessellationPattern pattern3(l3,Tl);
+	    const TessellationPattern pattern0(l0,subdiv[0]);
+	    const TessellationPattern pattern1(l1,subdiv[1]);
+	    const TessellationPattern pattern2(l2,subdiv[2]);
+	    const TessellationPattern pattern3(l3,subdiv[3]);
 	    const TessellationPattern pattern_x = pattern0.size() > pattern2.size() ? pattern0 : pattern2;
 	    const TessellationPattern pattern_y = pattern1.size() > pattern3.size() ? pattern1 : pattern3;
 	    const int nx = pattern_x.size();
@@ -356,12 +353,9 @@ namespace embree
         size_t s = 0;
         for (size_t f=r.begin(); f!=r.end(); ++f) {
           if (!mesh->valid(f)) continue;
-          //QuadQuad4x4AdaptiveSubdivision subdiv(&prims[base+s],bvh->alloc2,this->scene,mesh->getHalfEdge(f),mesh->getVertexPositionPtr(),mesh->id,f);
-          //s+=subdiv.size();
+	  
 	  feature_adaptive_subdivision_gregory(mesh->getHalfEdge(f),mesh->getVertexPositionPtr(),
-					       [&](const CatmullClarkPatch& patch, 
-						   const Vec2f& uv0, const Vec2f& uv1, const Vec2f& uv2, const Vec2f& uv3,  
-						   bool Tt, bool Tr, bool Tb, bool Tl)
+					       [&](const CatmullClarkPatch& patch, const Vec2f uv[4], const bool subdiv[4])
 	  {
 	    GregoryPatch patcheval; 
 	    patcheval.init(patch);
@@ -370,10 +364,10 @@ namespace embree
 	    const float l1 = patch.ring[1].edge_level;
 	    const float l2 = patch.ring[2].edge_level;
 	    const float l3 = patch.ring[3].edge_level;
-	    const TessellationPattern pattern0(l0,Tt);
-	    const TessellationPattern pattern1(l1,Tr);
-	    const TessellationPattern pattern2(l2,Tb);
-	    const TessellationPattern pattern3(l3,Tl);
+	    const TessellationPattern pattern0(l0,subdiv[0]);
+	    const TessellationPattern pattern1(l1,subdiv[1]);
+	    const TessellationPattern pattern2(l2,subdiv[2]);
+	    const TessellationPattern pattern3(l3,subdiv[3]);
 	    const TessellationPattern pattern_x = pattern0.size() > pattern2.size() ? pattern0 : pattern2;
 	    const TessellationPattern pattern_y = pattern1.size() > pattern3.size() ? pattern1 : pattern3;
 	    const int nx = pattern_x.size();
@@ -387,7 +381,7 @@ namespace embree
 	      {
 		QuadQuad4x4* leaf = (QuadQuad4x4*) bvh->alloc2.malloc(sizeof(QuadQuad4x4),16);
 		new (leaf) QuadQuad4x4(id,mesh->id,f);
-		const BBox3fa bounds = leaf->build(scene,patcheval,pattern0,pattern1,pattern2,pattern3,pattern_x,x,nx,pattern_y,y,ny,uv0,uv1,uv2,uv3);
+		const BBox3fa bounds = leaf->build(scene,patcheval,pattern0,pattern1,pattern2,pattern3,pattern_x,x,nx,pattern_y,y,ny,uv[0],uv[1],uv[2],uv[3]);
 		prims[base+(s++)] = PrimRef(bounds,BVH4::encodeTypedLeaf(leaf,0));
 	      }
 	    }
