@@ -290,16 +290,18 @@ namespace embree
     {
       if (vertex_level > 1.0f) 
       {
-	if (border_index == -1) {
+	if (border_index == -1) 
+	{
 	  if (valence != 4)
 	    return false;
-	} else {
-	  if (valence >= 4)
+	  if (vertex_crease_weight > 0.0f) 
 	    return false;
+	} 
+	else {
+	  if (valence == 2 && vertex_crease_weight > 1E5); // FIXME: use inf
+	  else if (valence == 3 && vertex_crease_weight == 0.0f);
+	  else return false;
 	}
-
-	if (vertex_crease_weight > 0.0f) 
-	  return false;
 
 	for (size_t i=1; i<valence; i++)
 	  if (crease_weight[i] > 0.0f && (2*i != border_index) && (2*(i-1) != border_index)) 
