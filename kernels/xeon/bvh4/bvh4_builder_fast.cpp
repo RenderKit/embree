@@ -355,6 +355,8 @@ namespace embree
     
     void BVH4SubdivQuadQuad4x4BuilderFast::create_primitive_array_sequential(size_t threadIndex, size_t threadCount, PrimInfo& pinfo)
     {
+      atomic_t aid = 0x7678887; 
+
       parallel_for_for_prefix_sum( pstate, iter, size_t(0), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, size_t base) -> size_t
       {
         size_t s = 0;
@@ -364,7 +366,7 @@ namespace embree
 	  feature_adaptive_subdivision_bspline(f,mesh->getHalfEdge(f),mesh->getVertexPositionPtr(),
 					       [&](const CatmullClarkPatch& patch, const Vec2f uv[4], const int subdiv[4])
 	  {
-	    static int id = 0; id+=0x726849272;
+	    size_t id = atomic_add(&aid,0x676787);
 
 	    if (!patch.isRegular())
 	    {

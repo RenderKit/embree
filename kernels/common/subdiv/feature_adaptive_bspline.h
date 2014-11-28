@@ -36,7 +36,6 @@ namespace embree
     __forceinline FeatureAdaptiveSubdivisionBSpline (int primID, const SubdivMesh::HalfEdge* h, const Vec3fa* vertices, Tessellator& tessellator)
       : tessellator(tessellator)
     {
-      //if (primID != 1) return;
 #if 0
       const Vec2f uv[4] = { Vec2f(0.0f,0.0f),Vec2f(0.0f,1.0f),Vec2f(1.0f,1.0f),Vec2f(1.0f,0.0f) };
       int neighborSubdiv[4];

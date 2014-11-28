@@ -256,7 +256,7 @@ namespace embree
     }
 
     __forceinline bool isQuadPatch() const {
-      return size() == 4 && ring[0].only_quads && ring[1].only_quads && ring[2].only_quads && ring[3].only_quads;
+      return (N == 4) && ring[0].only_quads && ring[1].only_quads && ring[2].only_quads && ring[3].only_quads;
     }
 
     __forceinline GeneralCatmullClarkPatch (const SubdivMesh::HalfEdge* h, const Vec3fa* vertices) 
