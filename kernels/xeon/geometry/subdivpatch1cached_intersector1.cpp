@@ -216,21 +216,23 @@ namespace embree
 
     for (unsigned int y=0;y<grid_v_res-1;y++,offset_line0+=grid_u_res,offset_line1+=grid_u_res)
       {
-        for (unsigned int x=0;x<grid_u_res;x+=7)
+        for (unsigned int x=0;x<grid_u_res-1;x+=8)
           {
-            const size_t offset_v0 = offset_line0 + 0;
-            const size_t offset_v1 = offset_line0 + 1;
-            const size_t offset_v2 = offset_line1 + 1;
-            const size_t offset_v3 = offset_line1 + 0;
+            const size_t offset_v0 = offset_line0 + x + 0;
+            const size_t offset_v1 = offset_line0 + x + 1;
+            const size_t offset_v2 = offset_line1 + x + 1;
+            const size_t offset_v3 = offset_line1 + x + 0;
             
             avxb m_active ( true );
-            if (unlikely(x + 7 >= grid_u_res-1)) 
+            if (unlikely(x + 8 > (grid_u_res-1))) 
             {
-              const unsigned int shift = x + 7 - (grid_u_res-1);
-              for (size_t i=0;i<shift;i++)
-                m_active[7-i] = 0;
+              //DBG_PRINT( (grid_u_res-1)%8 );
+              //DBG_PRINT( grid_u_res-1 );
+              
+              for (size_t i=(grid_u_res-1)%8;i<8;i++)
+                m_active[i] = 0;
             }
-
+            //DBG_PRINT( m_active);
             intersect1_quad8(ray,vtx_x,vtx_y,vtx_z,
                              u_array,v_array,
                              offset_v0,offset_v1,offset_v2,offset_v3,
@@ -239,6 +241,7 @@ namespace embree
                              geom );
 
           }
+        //exit(0);
 	      
       }	  
 
