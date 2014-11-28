@@ -364,7 +364,7 @@ namespace embree
 	  feature_adaptive_subdivision_bspline(f,mesh->getHalfEdge(f),mesh->getVertexPositionPtr(),
 					       [&](const CatmullClarkPatch& patch, const Vec2f uv[4], const int subdiv[4])
 	  {
-	    static int id = 0; id+=0x726849272;
+	    size_t id = rand();
 
 	    if (!patch.isRegular())
 	    {

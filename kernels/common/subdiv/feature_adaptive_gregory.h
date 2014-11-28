@@ -25,7 +25,7 @@ namespace embree
   {
     Tessellator& tessellator;
 
-    __forceinline FeatureAdaptiveSubdivisionGregory (const SubdivMesh::HalfEdge* h, const Vec3fa* vertices, Tessellator& tessellator)
+    __forceinline FeatureAdaptiveSubdivisionGregory (int primID, const SubdivMesh::HalfEdge* h, const Vec3fa* vertices, Tessellator& tessellator)
       : tessellator(tessellator)
     {
 #if 0
@@ -35,29 +35,27 @@ namespace embree
       for (size_t i=0; i<4; i++) {
 	neighborSubdiv[i] = h->hasOpposite() ? !h->opposite()->isGregoryFace() : 0; h = h->next();
       }
-      subdivide(patch,10,uv,neighborSubdiv);
+      subdivide(patch,0,uv,neighborSubdiv);
 #else
       int neighborSubdiv[GeneralCatmullClarkPatch::SIZE];
       const GeneralCatmullClarkPatch patch(h,vertices);
       for (size_t i=0; i<patch.size(); i++) {
 	neighborSubdiv[i] = h->hasOpposite() ? !h->opposite()->isGregoryFace() : 0; h = h->next();
       }
-      subdivide(patch,10,neighborSubdiv);
+      subdivide(patch,0,neighborSubdiv);
 #endif
     }
 
     void subdivide(const GeneralCatmullClarkPatch& patch, int depth, int neighborSubdiv[GeneralCatmullClarkPatch::SIZE])
     {
-#if 1
       /* convert into standard quad patch if possible */
-      if (likely(patch.size() == 4)) 
+      if (likely(patch.isQuadPatch())) 
       {
 	const Vec2f uv[4] = { Vec2f(0.0f,0.0f), Vec2f(0.0f,1.0f), Vec2f(1.0f,1.0f), Vec2f(1.0f,0.0f) };
 	CatmullClarkPatch qpatch; patch.init(qpatch);
 	subdivide(qpatch,depth,uv,neighborSubdiv);
 	return;
       }
-#endif
 
       /* subdivide patch */
       size_t N;
@@ -65,10 +63,9 @@ namespace embree
       patch.subdivide(patches,N);
 
       /* check if subpatches need further subdivision */
-      const bool noleaf = depth > 1;
       bool childSubdiv[GeneralCatmullClarkPatch::SIZE];
       for (size_t i=0; i<N; i++)
-        childSubdiv[i] = noleaf && !patches[i].isGregory();
+        childSubdiv[i] = !patches[i].isGregoryOrFinal(depth);
 
       /* parametrization for triangles */
       if (N == 3) {
@@ -85,12 +82,11 @@ namespace embree
 	const int neighborSubdiv0[4] = { false,childSubdiv[1],childSubdiv[2],false };
 	const int neighborSubdiv1[4] = { false,childSubdiv[2],childSubdiv[0],false };
 	const int neighborSubdiv2[4] = { false,childSubdiv[0],childSubdiv[1],false };
-	subdivide(patches[0],depth-1, uv0, neighborSubdiv0);
-	subdivide(patches[1],depth-1, uv1, neighborSubdiv1);
-	subdivide(patches[2],depth-1, uv2, neighborSubdiv2);
+	subdivide(patches[0],depth+1, uv0, neighborSubdiv0);
+	subdivide(patches[1],depth+1, uv1, neighborSubdiv1);
+	subdivide(patches[2],depth+1, uv2, neighborSubdiv2);
       } 
 
-#if 0
       /* parametrization for quads */
       else if (N == 4) {
 	const Vec2f uv_0(0.0f,0.0f);
@@ -110,12 +106,11 @@ namespace embree
 	const int neighborSubdiv1[4] = { false,childSubdiv[2],childSubdiv[0],false };
 	const int neighborSubdiv2[4] = { false,childSubdiv[3],childSubdiv[1],false };
 	const int neighborSubdiv3[4] = { false,childSubdiv[0],childSubdiv[2],false };
-	subdivide(patches[0],depth-1, uv0, neighborSubdiv0);
-	subdivide(patches[1],depth-1, uv1, neighborSubdiv1);
-	subdivide(patches[2],depth-1, uv2, neighborSubdiv2);
-	subdivide(patches[3],depth-1, uv3, neighborSubdiv3);
+	subdivide(patches[0],depth+1, uv0, neighborSubdiv0);
+	subdivide(patches[1],depth+1, uv1, neighborSubdiv1);
+	subdivide(patches[2],depth+1, uv2, neighborSubdiv2);
+	subdivide(patches[3],depth+1, uv3, neighborSubdiv3);
       } 
-#endif
 
       /* parametrization for arbitrary polygons */
       else 
@@ -124,7 +119,7 @@ namespace embree
 	{
 	  const Vec2f uv[4] = { Vec2f(float(i)+0.0f,0.0f),Vec2f(float(i)+0.0f,1.0f),Vec2f(float(i)+1.0f,1.0f),Vec2f(float(i)+1.0f,0.0f) };
 	  const int neighborSubdiv[4] = { false,childSubdiv[(i+1)%N],childSubdiv[(i-1)%N],false };
-	  subdivide(patches[i],depth-1,uv,neighborSubdiv);
+	  subdivide(patches[i],depth+1,uv,neighborSubdiv);
 	  
 	}
       }
@@ -132,17 +127,17 @@ namespace embree
 
     void subdivide(const CatmullClarkPatch& patch, int depth, const Vec2f uv[4], const int neighborSubdiv[4])
     {
-      if (patch.isGregory() || (depth <= 0))
-        return tessellator(patch,uv,neighborSubdiv);
+      if (depth == 0)
+	if (patch.isGregoryOrFinal(depth))
+	  return tessellator(patch,uv,neighborSubdiv);
 
       CatmullClarkPatch patches[4]; 
       patch.subdivide(patches);
 
-      const bool noleaf = depth > 1;
-      const bool childSubdiv0 = noleaf && !patches[0].isGregory();
-      const bool childSubdiv1 = noleaf && !patches[1].isGregory();
-      const bool childSubdiv2 = noleaf && !patches[2].isGregory();
-      const bool childSubdiv3 = noleaf && !patches[3].isGregory();
+      const bool childSubdiv0 = !patches[0].isGregoryOrFinal(depth);
+      const bool childSubdiv1 = !patches[1].isGregoryOrFinal(depth);
+      const bool childSubdiv2 = !patches[2].isGregoryOrFinal(depth);
+      const bool childSubdiv3 = !patches[3].isGregoryOrFinal(depth);
 
       const Vec2f uv01 = 0.5f*(uv[0]+uv[1]);
       const Vec2f uv12 = 0.5f*(uv[1]+uv[2]);
@@ -161,23 +156,23 @@ namespace embree
       const int neighborSubdiv2[4] = { childSubdiv1,false,false,childSubdiv3 };
       const int neighborSubdiv3[4] = { childSubdiv0,childSubdiv2,false,false };
       
-      if (childSubdiv0) subdivide  (patches[0],depth-1, uv0, neighborSubdivf);
+      if (childSubdiv0) subdivide  (patches[0],depth+1, uv0, neighborSubdivf);
       else              tessellator(patches[0],         uv0, neighborSubdiv0);
 
-      if (childSubdiv1) subdivide  (patches[1],depth-1, uv1, neighborSubdivf);
+      if (childSubdiv1) subdivide  (patches[1],depth+1, uv1, neighborSubdivf);
       else              tessellator(patches[1],         uv1, neighborSubdiv1);
       
-      if (childSubdiv2) subdivide  (patches[2],depth-1, uv2, neighborSubdivf);
+      if (childSubdiv2) subdivide  (patches[2],depth+1, uv2, neighborSubdivf);
       else              tessellator(patches[2],         uv2, neighborSubdiv2);
       
-      if (childSubdiv3) subdivide  (patches[3],depth-1, uv3, neighborSubdivf);
+      if (childSubdiv3) subdivide  (patches[3],depth+1, uv3, neighborSubdivf);
       else              tessellator(patches[3],         uv3, neighborSubdiv3);
     }
   };
 
    template<typename Tessellator>
-     inline void feature_adaptive_subdivision_gregory (const SubdivMesh::HalfEdge* h, const Vec3fa* vertices, Tessellator tessellator)
+     inline void feature_adaptive_subdivision_gregory (int primID, const SubdivMesh::HalfEdge* h, const Vec3fa* vertices, Tessellator tessellator)
    {
-     FeatureAdaptiveSubdivisionGregory<Tessellator>(h,vertices,tessellator);
+     FeatureAdaptiveSubdivisionGregory<Tessellator>(primID,h,vertices,tessellator);
    }
 }

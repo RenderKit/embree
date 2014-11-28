@@ -71,19 +71,19 @@ namespace embree
       return bounds;
     }
 
-    /*! returns true of the patch is a Gregory patch */
-    __forceinline bool isGregory() const {
-      return ring[0].isGregory() && ring[1].isGregory() && ring[2].isGregory() && ring[3].isGregory();
-    }
-
-    /*! returns true if the patch is a B-spline patch or final Quad */
-    __forceinline bool isRegularOrFinal() const {
-      return ring[0].isRegularOrFinal() && ring[1].isRegularOrFinal() && ring[2].isRegularOrFinal() && ring[3].isRegularOrFinal();
-    }
-
     /*! returns true if the patch is a B-spline patch */
     __forceinline bool isRegular() const {
       return ring[0].isRegular() && ring[1].isRegular() && ring[2].isRegular() && ring[3].isRegular();
+    }
+
+    /*! returns true if the patch is a B-spline patch or final Quad */
+    __forceinline bool isRegularOrFinal(const size_t depth) const {
+      return ring[0].isRegularOrFinal(depth) && ring[1].isRegularOrFinal(depth) && ring[2].isRegularOrFinal(depth) && ring[3].isRegularOrFinal(depth);
+    }
+
+    /*! returns true of the patch is a Gregory patch */
+    __forceinline bool isGregoryOrFinal(const size_t depth) const {
+      return ring[0].isGregoryOrFinal(depth) && ring[1].isGregoryOrFinal(depth) && ring[2].isGregoryOrFinal(depth) && ring[3].isGregoryOrFinal(depth);
     }
 
     static __forceinline void init_regular(const CatmullClark1Ring& p0,
@@ -256,7 +256,7 @@ namespace embree
     }
 
     __forceinline bool isQuadPatch() const {
-      return size() == 4 && ring[0].only_quads && ring[1].only_quads && ring[2].only_quads && ring[3].only_quads;
+      return (N == 4) && ring[0].only_quads && ring[1].only_quads && ring[2].only_quads && ring[3].only_quads;
     }
 
     __forceinline GeneralCatmullClarkPatch (const SubdivMesh::HalfEdge* h, const Vec3fa* vertices) 
