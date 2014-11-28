@@ -85,7 +85,7 @@ ADD_ISPC_LIBRARY(embree ${EMBREE_LIB_TYPE}
   geometry/instance_intersector1.cpp
   geometry/instance_intersector4.cpp
   geometry/subdivpatch1_intersector1.cpp
-  # geometry/subdivpatch1cached_intersector1.cpp
+  geometry/subdivpatch1cached_intersector1.cpp
 
   bvh4/bvh4.cpp
   bvh4/bvh4_rotate.cpp

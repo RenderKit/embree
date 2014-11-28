@@ -483,18 +483,20 @@ namespace embree
           const unsigned int primID = f;
           const unsigned int geomID = mesh->id; /* HOW DO I GET THE MESH ID ??? */
 
+          const unsigned int patchIndex = base+s;
           const SubdivPatch1Cached patch = SubdivPatch1Cached(mesh->getHalfEdge(f),
                                                       mesh->getVertexPositionPtr(),
                                                       geomID, 
                                                       primID,
                                                       mesh);
           /* FIXME: use storent to write out subdivpatch data to memory */
-          subdiv_patches[base+s] = patch;
+          subdiv_patches[patchIndex] = patch;
 
           /* compute patch bounds */
           const BBox3fa bounds = patch.bounds(mesh);
-          prims[base+s] = PrimRef(bounds,geomID,primID);
-          
+          prims[base+s] = PrimRef(bounds,patchIndex,0); // geomID,primID);
+
+          DBG_PRINT( patchIndex );
           DBG_PRINT( s );
           DBG_PRINT( bounds );
           s++;
@@ -516,9 +518,14 @@ namespace embree
 
     void BVH4SubdivPatch1CachedBuilderFast::createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID)
     {
+      PING;
       size_t items = current.size();
       assert(items <= 1);
-      *current.parent = (BVH4::NodeRef) prims[current.begin].ID();
+      const unsigned int patchIndex = prims[current.begin].ID();
+      DBG_PRINT(patchIndex);
+      SubdivPatch1Cached *const subdiv_patches = (SubdivPatch1Cached *)this->bvh->data_mem;
+      DBG_PRINT( &subdiv_patches[patchIndex] );
+      *current.parent = bvh->encodeLeaf((char*)&subdiv_patches[patchIndex],1);
     }
 
     // =======================================================================================================

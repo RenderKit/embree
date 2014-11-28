@@ -20,4 +20,20 @@
 namespace embree
 {
   
+  void SubdivPatch1CachedIntersector1::intersect_subdiv_patch(const Precalculations& pre,
+                                                              Ray& ray,
+                                                              const Primitive& subdiv_patch,
+                                                              const void* geom)
+  {
+    PING;
+  }
+
+  bool SubdivPatch1CachedIntersector1::occluded_subdiv_patch(const Precalculations& pre,
+                                                             Ray& ray,
+                                                             const Primitive& subdiv_patch,
+                                                             const void* geom)
+  {
+    PING;
+  }
+
 };

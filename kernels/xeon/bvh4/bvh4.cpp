@@ -935,7 +935,7 @@ namespace embree
     BVH4* accel = new BVH4(SubdivPatch1Cached::type,NULL,LeafMode);
     Accel::Intersectors intersectors;
     intersectors.ptr = accel; 
-    intersectors.intersector1 = BVH4Subdivpatch1Intersector1;
+    intersectors.intersector1 = BVH4Subdivpatch1CachedIntersector1;
     intersectors.intersector4 = NULL;
     intersectors.intersector8 = NULL;
     intersectors.intersector16 = NULL;
