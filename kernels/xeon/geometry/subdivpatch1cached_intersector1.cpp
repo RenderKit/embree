@@ -21,7 +21,7 @@
 namespace embree
 {
 
-#define FORCE_TRIANGLE_UV 0
+#define FORCE_TRIANGLE_UV 1
 
 
 #if defined(__AVX__)
@@ -35,7 +35,7 @@ namespace embree
                                                     const size_t offset_v1,
                                                     const size_t offset_v2,
                                                     const avxb &m_active,
-                                                    const unsigned int subdiv_patch_index,
+                                                    const SubdivPatch1Cached *const sptr,
                                                     const void* geom)
   {
     const avx3f O = ray.org;
@@ -113,8 +113,8 @@ namespace embree
     ray.Ng.x = Ng.x[i];
     ray.Ng.y = Ng.y[i];
     ray.Ng.z = Ng.z[i];
-    ray.geomID = 0;
-    ray.primID = subdiv_patch_index;
+    ray.geomID = ((size_t)sptr)       & (unsigned int)-1; 
+    ray.primID = (((size_t)sptr)>>32) & (unsigned int)-1;
       
   };
 
@@ -124,23 +124,21 @@ namespace embree
                                              const float *__restrict__ const vtx_z,
                                              const float *__restrict__ const u,
                                              const float *__restrict__ const v,
-                                             const size_t grid_res,
+                                             const size_t offset_v0,
+                                             const size_t offset_v1,
+                                             const size_t offset_v2,
+                                             const size_t offset_v3,
                                              const avxb &m_active,
-                                             const unsigned int subdiv_patch_index,
+                                             const SubdivPatch1Cached *const sptr,
                                              const void* geom)
   {
-    const size_t offset_v0 = 0;
-    const size_t offset_v1 = 1;
-    const size_t offset_v2 = grid_res+1;
-    const size_t offset_v3 = grid_res+0;
-
     const avx3f v0( load8f(&vtx_x[offset_v0]), load8f(&vtx_y[offset_v0]), load8f(&vtx_z[offset_v0]));
     const avx3f v1( load8f(&vtx_x[offset_v1]), load8f(&vtx_y[offset_v1]), load8f(&vtx_z[offset_v1]));
     const avx3f v2( load8f(&vtx_x[offset_v2]), load8f(&vtx_y[offset_v2]), load8f(&vtx_z[offset_v2]));
     const avx3f v3( load8f(&vtx_x[offset_v3]), load8f(&vtx_y[offset_v3]), load8f(&vtx_z[offset_v3]));
 
-    intersect1_tri8_precise(ray,v0,v1,v3,u,v,offset_v0,offset_v1,offset_v3,m_active,subdiv_patch_index,geom);
-    intersect1_tri8_precise(ray,v3,v1,v2,u,v,offset_v3,offset_v1,offset_v2,m_active,subdiv_patch_index,geom);
+    intersect1_tri8_precise(ray,v0,v1,v3,u,v,offset_v0,offset_v1,offset_v3,m_active,sptr,geom);
+    intersect1_tri8_precise(ray,v3,v1,v2,u,v,offset_v3,offset_v1,offset_v2,m_active,sptr,geom);
 
   }
 #endif
@@ -151,17 +149,30 @@ namespace embree
                                                               const Primitive& subdiv_patch,
                                                               const void* geom) // geom == mesh or geom == scene?
   {
+
 #if defined(__AVX__)
+
     const float * const edge_levels = subdiv_patch.level;
     const unsigned int grid_u_res   = subdiv_patch.grid_u_res;
     const unsigned int grid_v_res   = subdiv_patch.grid_v_res;
 
-    __aligned(64) float u_array[(subdiv_patch.grid_size_8wide_blocks+1)]; // for unaligned access
-    __aligned(64) float v_array[(subdiv_patch.grid_size_8wide_blocks+1)];
+#if 0
+    DBG_PRINT(geom);
+    DBG_PRINT(subdiv_patch.grid_size_8wide_blocks);
+    DBG_PRINT(grid_u_res);
+    DBG_PRINT(grid_v_res);
+    DBG_PRINT(edge_levels[0]);
+    DBG_PRINT(edge_levels[1]);
+    DBG_PRINT(edge_levels[2]);
+    DBG_PRINT(edge_levels[3]);
+#endif
 
-    __aligned(64) float vtx_x[(subdiv_patch.grid_size_8wide_blocks+1)];
-    __aligned(64) float vtx_y[(subdiv_patch.grid_size_8wide_blocks+1)];
-    __aligned(64) float vtx_z[(subdiv_patch.grid_size_8wide_blocks+1)];
+    __aligned(64) float u_array[(subdiv_patch.grid_size_8wide_blocks+1)*8]; // for unaligned access
+    __aligned(64) float v_array[(subdiv_patch.grid_size_8wide_blocks+1)*8];
+
+    __aligned(64) float vtx_x[(subdiv_patch.grid_size_8wide_blocks+1)*8];
+    __aligned(64) float vtx_y[(subdiv_patch.grid_size_8wide_blocks+1)*8];
+    __aligned(64) float vtx_z[(subdiv_patch.grid_size_8wide_blocks+1)*8];
 
     gridUVTessellator(edge_levels,grid_u_res,grid_v_res,u_array,v_array);
 
@@ -174,29 +185,65 @@ namespace embree
         const avxf vv = load8f(&v_array[8*i]);
         const avx3f vtx = subdiv_patch.eval8(uu,vv);
 
-        if (unlikely(((SubdivMesh*)geom)->displFunc != NULL))
-          {
-            avx3f normal = subdiv_patch.normal8(uu,vv);
-            normal = normalize(normal);
-            
-            ((SubdivMesh*)geom)->displFunc(((SubdivMesh*)geom)->userPtr,
-                                           subdiv_patch.geom,
-                                           subdiv_patch.prim,
-                                           (const float*)&uu,
-                                           (const float*)&vv,
-                                           (const float*)&normal.x,
-                                           (const float*)&normal.y,
-                                           (const float*)&normal.z,
-                                           (float*)&vtx.x,
-                                           (float*)&vtx.y,
-                                           (float*)&vtx.z,
-                                           8);
-          }
+        if (unlikely(geom != NULL))
+          if (unlikely(((SubdivMesh*)geom)->displFunc != NULL))
+            {
+              avx3f normal = subdiv_patch.normal8(uu,vv);
+              normal = normalize(normal);
+              
+              ((SubdivMesh*)geom)->displFunc(((SubdivMesh*)geom)->userPtr,
+                                             subdiv_patch.geom,
+                                             subdiv_patch.prim,
+                                             (const float*)&uu,
+                                             (const float*)&vv,
+                                             (const float*)&normal.x,
+                                             (const float*)&normal.y,
+                                             (const float*)&normal.z,
+                                             (float*)&vtx.x,
+                                             (float*)&vtx.y,
+                                             (float*)&vtx.z,
+                                             8);
+            }
         
         *(avxf*)&vtx_x[8*i] = vtx.x;
         *(avxf*)&vtx_y[8*i] = vtx.y;
         *(avxf*)&vtx_z[8*i] = vtx.z;        
       }
+
+
+    size_t offset_line0 = 0;
+    size_t offset_line1 = grid_u_res;
+
+    for (unsigned int y=0;y<grid_v_res-1;y++,offset_line0+=grid_u_res,offset_line1+=grid_u_res)
+      {
+        for (unsigned int x=0;x<grid_u_res;x+=7)
+          {
+            const size_t offset_v0 = offset_line0 + 0;
+            const size_t offset_v1 = offset_line0 + 1;
+            const size_t offset_v2 = offset_line1 + 1;
+            const size_t offset_v3 = offset_line1 + 0;
+            
+            avxb m_active ( true );
+            if (unlikely(x + 7 >= grid_u_res-1)) 
+            {
+              const unsigned int shift = x + 7 - (grid_u_res-1);
+              for (size_t i=0;i<shift;i++)
+                m_active[7-i] = 0;
+            }
+
+            intersect1_quad8(ray,vtx_x,vtx_y,vtx_z,
+                             u_array,v_array,
+                             offset_v0,offset_v1,offset_v2,offset_v3,
+                             m_active,
+                             &subdiv_patch,
+                             geom );
+
+          }
+	      
+      }	  
+
+
+    
 #endif
   }
 

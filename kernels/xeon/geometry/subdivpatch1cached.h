@@ -87,10 +87,18 @@ namespace embree
       assert( ipatch.ring[2].edge_level >= 0.0f );
       assert( ipatch.ring[3].edge_level >= 0.0f );
 
+#if 0
       level[0] = max(ceilf(ipatch.ring[0].edge_level),1.0f);
       level[1] = max(ceilf(ipatch.ring[1].edge_level),1.0f);
       level[2] = max(ceilf(ipatch.ring[2].edge_level),1.0f);
       level[3] = max(ceilf(ipatch.ring[3].edge_level),1.0f);
+#else
+      /* debugging */
+      level[0] = 9;
+      level[1] = 9;
+      level[2] = 9;
+      level[3] = 9;
+#endif
 
       grid_u_res = max(level[0],level[2])+1; // n segments -> n+1 points
       grid_v_res = max(level[1],level[3])+1;
