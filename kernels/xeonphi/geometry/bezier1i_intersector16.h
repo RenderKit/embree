@@ -20,6 +20,8 @@
 #include "common/ray16.h"
 #include "geometry/filter.h"
 
+using namespace std;
+
 namespace embree
 {
   typedef LinearSpace3<mic3f> LinearSpace_mic3f;

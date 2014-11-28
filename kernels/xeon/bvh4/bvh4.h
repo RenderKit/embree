@@ -1209,6 +1209,7 @@ namespace embree
     static Accel* BVH4Triangle4v(Scene* scene);
     static Accel* BVH4Triangle4i(Scene* scene);
     static Accel* BVH4SubdivPatch1(Scene* scene);
+    static Accel* BVH4SubdivPatch1Cached(Scene* scene);
     static Accel* BVH4DisplQuadQuad4x4(Scene* scene);
     static Accel* BVH4UserGeometry(Scene* scene);
     
@@ -1245,7 +1246,11 @@ namespace embree
     std::pair<BBox3fa,BBox3fa> refit(void* geom, NodeRef node);
 
     LinearAllocatorPerThread alloc;
+
     FastAllocator alloc2;
+
+    void *data_mem; /* additional memory, currently used for subdivpatch1cached memory */
+    size_t size_data_mem;
 
     __forceinline Node* allocNode(LinearAllocatorPerThread::ThreadAllocator& thread) {
       Node* node = (Node*) thread.malloc(sizeof(Node),1 << alignment); node->clear(); return node; // FIXME: why 16 bytes aligned and not 64 bytes?

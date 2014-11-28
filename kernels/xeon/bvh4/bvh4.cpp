@@ -26,6 +26,7 @@
 #include "geometry/triangle4v_mb.h"
 #include "geometry/triangle4i.h"
 #include "geometry/subdivpatch1.h"
+#include "geometry/subdivpatch1cached.h"
 #include "geometry/virtual_accel.h"
 
 #include "common/accelinstance.h"
@@ -44,6 +45,7 @@ namespace embree
   DECLARE_SYMBOL(Accel::Intersector1,BVH4Triangle4vIntersector1Pluecker);
   DECLARE_SYMBOL(Accel::Intersector1,BVH4Triangle4iIntersector1Pluecker);
   DECLARE_SYMBOL(Accel::Intersector1,BVH4Subdivpatch1Intersector1);
+  DECLARE_SYMBOL(Accel::Intersector1,BVH4Subdivpatch1CachedIntersector1);
   DECLARE_SYMBOL(Accel::Intersector1,BVH4QuadQuad4x4Intersector1);
   DECLARE_SYMBOL(Accel::Intersector1,BVH4VirtualIntersector1);
   DECLARE_SYMBOL(Accel::Intersector1,BVH4Triangle1vMBIntersector1Moeller);
@@ -121,6 +123,7 @@ namespace embree
   DECLARE_SCENE_BUILDER(BVH4Triangle4vBuilderFast);
   DECLARE_SCENE_BUILDER(BVH4Triangle4iBuilderFast);
   DECLARE_SCENE_BUILDER(BVH4SubdivPatch1BuilderFast);
+  DECLARE_SCENE_BUILDER(BVH4SubdivPatch1CachedBuilderFast);
   DECLARE_SCENE_BUILDER(BVH4SubdivQuadQuad4x4BuilderFast);
   DECLARE_SCENE_BUILDER(BVH4UserGeometryBuilderFast);
 
@@ -196,6 +199,7 @@ namespace embree
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4vMeshBuilderFast);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4iMeshBuilderFast);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4SubdivPatch1BuilderFast);
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4SubdivPatch1CachedBuilderFast);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4SubdivQuadQuad4x4BuilderFast);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4UserGeometryMeshBuilderFast);
 
@@ -233,6 +237,7 @@ namespace embree
     SELECT_SYMBOL_DEFAULT_SSE41_AVX     (features,BVH4Triangle4vIntersector1Pluecker);
     SELECT_SYMBOL_DEFAULT_SSE41_AVX     (features,BVH4Triangle4iIntersector1Pluecker);
     SELECT_SYMBOL_DEFAULT_SSE41_AVX_AVX2(features,BVH4Subdivpatch1Intersector1);
+    SELECT_SYMBOL_DEFAULT_SSE41_AVX_AVX2(features,BVH4Subdivpatch1CachedIntersector1);
     SELECT_SYMBOL_DEFAULT_SSE41_AVX_AVX2(features,BVH4QuadQuad4x4Intersector1);
     SELECT_SYMBOL_DEFAULT_SSE41_AVX_AVX2(features,BVH4VirtualIntersector1);
     SELECT_SYMBOL_DEFAULT_SSE41_AVX_AVX2(features,BVH4Triangle1vMBIntersector1Moeller);
@@ -288,7 +293,7 @@ namespace embree
 
   BVH4::BVH4 (const PrimitiveType& primTy, void* geometry, bool listMode)
     : primTy(primTy), geometry(geometry), listMode(listMode),
-      root(emptyNode), numPrimitives(0), numVertices(0) {}
+      root(emptyNode), numPrimitives(0), numVertices(0), data_mem(NULL), size_data_mem(0) {}
 
   BVH4::~BVH4 () {
     for (size_t i=0; i<objects.size(); i++) 
@@ -921,6 +926,20 @@ namespace embree
     intersectors.intersector8 = NULL;
     intersectors.intersector16 = NULL;
     Builder* builder = BVH4SubdivPatch1BuilderFast(accel,scene,LeafMode);
+    return new AccelInstance(accel,builder,intersectors);
+  }
+
+
+  Accel* BVH4::BVH4SubdivPatch1Cached(Scene* scene)
+  {
+    BVH4* accel = new BVH4(SubdivPatch1Cached::type,NULL,LeafMode);
+    Accel::Intersectors intersectors;
+    intersectors.ptr = accel; 
+    intersectors.intersector1 = BVH4Subdivpatch1Intersector1;
+    intersectors.intersector4 = NULL;
+    intersectors.intersector8 = NULL;
+    intersectors.intersector16 = NULL;
+    Builder* builder = BVH4SubdivPatch1CachedBuilderFast(accel,scene,LeafMode);
     return new AccelInstance(accel,builder,intersectors);
   }
 

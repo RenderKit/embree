@@ -432,10 +432,14 @@ namespace embree
       for (size_t i=0; i<iter.size(); i++)
         if (iter[i]) iter[i]->initializeHalfEdgeStructures();
 
-      this->bvh->alloc2.reset();
-
       pstate.init(iter,size_t(1024));
 
+      if (this->bvh->data_mem != NULL) 
+        {
+          os_free( this->bvh->data_mem, this->bvh->size_data_mem );
+          this->bvh->data_mem      = NULL;
+          this->bvh->size_data_mem = 0;
+        }
       BVH4BuilderFast::build(threadIndex,threadCount);
     }
 
@@ -447,6 +451,7 @@ namespace embree
         for (size_t f=r.begin(); f!=r.end(); ++f) 
 	{          
           if (!mesh->valid(f)) continue;
+          /* do feature-adaptive-based counting here */
           s++;
 	}
         return s;
@@ -457,52 +462,39 @@ namespace embree
     
     void BVH4SubdivPatch1CachedBuilderFast::create_primitive_array_sequential(size_t threadIndex, size_t threadCount, PrimInfo& pinfo)
     {
+      PING;
+      DBG_PRINT(  bvh->numPrimitives );
+
+      assert( this->bvh->data_mem == NULL);
+
+      std::cout << "ALLOCATING SUBDIVPATCH1CACHED MEMORY FOR " << numPrimitives << " PRIMITIVES" << std::endl;
+
+      this->bvh->size_data_mem = sizeof(SubdivPatch1Cached) * numPrimitives;
+      this->bvh->data_mem      = os_malloc( this->bvh->size_data_mem );        
+        
+      SubdivPatch1Cached *const subdiv_patches = (SubdivPatch1Cached *)this->bvh->data_mem;
+
       parallel_for_for_prefix_sum( pstate, iter, size_t(0), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, size_t base) -> size_t
       {
         size_t s = 0;
         for (size_t f=r.begin(); f!=r.end(); ++f) {
           if (!mesh->valid(f)) continue;
 	  
-	  // feature_adaptive_subdivision_bspline(mesh->getHalfEdge(f),mesh->getVertexPositionPtr(),
-	  //       			       [&](const CatmullClarkPatch& patch, const Vec2f uv[4], const int subdiv[4])
-	  // {
-	  //   static int id = 0; id+=0x726849272;
+          const unsigned int primID = f;
+          const unsigned int geomID = 0; /* HOW DO I GET THE MESH ID ??? */
 
-	  //   if (!patch.isRegular())
-	  //   {
-	  //     QuadQuad4x4* leaf = (QuadQuad4x4*) bvh->alloc2.malloc(sizeof(QuadQuad4x4),16);
-	  //     new (leaf) QuadQuad4x4(id,mesh->id,f);
-	  //     const BBox3fa bounds = leaf->quad(scene,patch,uv[0],uv[1],uv[2],uv[3]);
-	  //     prims[base+(s++)] = PrimRef(bounds,BVH4::encodeTypedLeaf(leaf,0));
-	  //     return;
-	  //   }
+          const SubdivPatch1Cached patch = SubdivPatch1Cached(mesh->getHalfEdge(f),
+                                                      mesh->getVertexPositionPtr(),
+                                                      geomID, 
+                                                      primID,
+                                                      mesh);
+          /* FIXME: use storent to write out subdivpatch data to memory */
+          subdiv_patches[base+s] = patch;
 
-	  //   //GregoryPatch patcheval; 
-	  //   BSplinePatch patcheval;
-	  //   patcheval.init(patch);
-	    
-	  //   const float l0 = patch.ring[0].edge_level;
-	  //   const float l1 = patch.ring[1].edge_level;
-	  //   const float l2 = patch.ring[2].edge_level;
-	  //   const float l3 = patch.ring[3].edge_level;
-	  //   const TessellationPattern pattern0(l0,subdiv[0]);
-	  //   const TessellationPattern pattern1(l1,subdiv[1]);
-	  //   const TessellationPattern pattern2(l2,subdiv[2]);
-	  //   const TessellationPattern pattern3(l3,subdiv[3]);
-	  //   const TessellationPattern pattern_x = pattern0.size() > pattern2.size() ? pattern0 : pattern2;
-	  //   const TessellationPattern pattern_y = pattern1.size() > pattern3.size() ? pattern1 : pattern3;
-	  //   const int nx = pattern_x.size();
-	  //   const int ny = pattern_y.size();
-	    	    
-	  //   for (int y=0; y<ny; y+=8) {
-	  //     for (int x=0; x<nx; x+=8) {
-	  //       QuadQuad4x4* leaf = (QuadQuad4x4*) bvh->alloc2.malloc(sizeof(QuadQuad4x4),16);
-	  //       new (leaf) QuadQuad4x4(id,mesh->id,f);
-	  //       const BBox3fa bounds = leaf->build(scene,patcheval,pattern0,pattern1,pattern2,pattern3,pattern_x,x,nx,pattern_y,y,ny,uv[0],uv[1],uv[2],uv[3]);
-	  //       prims[base+(s++)] = PrimRef(bounds,BVH4::encodeTypedLeaf(leaf,0));
-	  //     }
-	  //   }
-	  // });
+          /* compute patch bounds */
+          const BBox3fa bounds = patch.bounds(mesh);
+          prims[base+s] = PrimRef(bounds,geomID,primID);
+          
           s++;
         }
         return s;
@@ -510,6 +502,7 @@ namespace embree
 
       for (size_t i=0; i<numPrimitives; i++) // FIXME: parallelize
         pinfo.add(prims[i].bounds());
+
     }
     
     void BVH4SubdivPatch1CachedBuilderFast::create_primitive_array_parallel  (size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, PrimInfo& pinfo) {
