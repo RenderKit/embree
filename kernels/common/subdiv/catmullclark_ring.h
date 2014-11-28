@@ -38,9 +38,10 @@ namespace embree
     float vertex_crease_weight;
     float vertex_level; // maximal level of all adjacent edges
     float edge_level; // level of first edge
+    bool forcedSubdivision; // varying edge crease weight stitching fix
 
   public:
-    CatmullClark1Ring() {}
+    CatmullClark1Ring () {}
 
     __forceinline bool hasBorder() const {
       return border_index != -1;
@@ -99,6 +100,7 @@ namespace embree
     
     __forceinline void init(const SubdivMesh::HalfEdge* const h, const Vec3fa* const vertices) // FIXME: should get buffer as vertex array input!!!!
     {
+      forcedSubdivision = false;
       border_index = -1;
       vtx = (Vec3fa_t)vertices[ h->getStartVertexIndex() ];
       vertex_crease_weight = h->vertex_crease_weight;
@@ -150,6 +152,7 @@ namespace embree
     
     __forceinline void subdivide(CatmullClark1Ring& dest) const
     {
+      dest.forcedSubdivision = false;
       dest.edge_level = 0.5f*edge_level;
       dest.vertex_level = 0.5f*vertex_level;
       dest.valence         = valence;
@@ -231,7 +234,7 @@ namespace embree
           dest.vtx = vtx;
         } else {
           const float t0 = vertex_crease_weight, t1 = 1.0f-t0;
-          dest.vtx = t0*vtx + t1*v_smooth;;
+          dest.vtx = t0*vtx + t1*v_smooth;
         }
         return;
       }
@@ -247,6 +250,7 @@ namespace embree
         dest.vtx = v_sharp;
         dest.crease_weight[crease_id[0]] = max(0.25f*(3.0f*crease_weight0 + crease_weight1)-1.0f,0.0f);
         dest.crease_weight[crease_id[1]] = max(0.25f*(3.0f*crease_weight1 + crease_weight0)-1.0f,0.0f);
+	dest.forcedSubdivision = (dest.crease_weight[crease_id[0]] == 0.0f) && (dest.crease_weight[crease_id[1]] == 0.0f);
         //dest.crease_weight[crease_id[0]] = max(0.5f*(crease_weight0 + crease_weight1)-1.0f,0.0f);
         //dest.crease_weight[crease_id[1]] = max(0.5f*(crease_weight1 + crease_weight0)-1.0f,0.0f);
         const float t0 = 0.5f*(crease_weight0+crease_weight1), t1 = 1.0f-t0;

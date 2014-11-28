@@ -23,26 +23,28 @@ namespace embree
   template<typename Tessellator>
   struct FeatureAdaptiveSubdivisionBSpline
   {
+    enum { MAX_DEPTH = 20 };
+
     Tessellator& tessellator;
 
     __forceinline FeatureAdaptiveSubdivisionBSpline (const SubdivMesh::HalfEdge* h, const Vec3fa* vertices, Tessellator& tessellator)
       : tessellator(tessellator)
     {
-#if 0
+#if 1
       const Vec2f uv[4] = { Vec2f(0.0f,0.0f),Vec2f(0.0f,1.0f),Vec2f(1.0f,1.0f),Vec2f(1.0f,0.0f) };
       int neighborSubdiv[4];
       const CatmullClarkPatch patch(h,vertices);
       for (size_t i=0; i<4; i++) {
 	neighborSubdiv[i] = h->hasOpposite() ? h->opposite()->noRegularFace() : 0; h = h->next();
       }
-      subdivide(patch,10,uv,neighborSubdiv);
+      subdivide(patch,MAX_DEPTH,uv,neighborSubdiv);
 #else
       int neighborSubdiv[GeneralCatmullClarkPatch::SIZE];
       const GeneralCatmullClarkPatch patch(h,vertices);
       for (size_t i=0; i<patch.size(); i++) {
 	neighborSubdiv[i] = h->hasOpposite() ? h->opposite()->noRegularFace() : 0; h = h->next();
       }
-      subdivide(patch,10,neighborSubdiv);
+      subdivide(patch,MAX_DEPTH,neighborSubdiv);
 #endif
     }
 
@@ -132,8 +134,9 @@ namespace embree
 
     void subdivide(const CatmullClarkPatch& patch, int depth, const Vec2f uv[4], const int neighborSubdiv_i[4])
     {
-      if (patch.isRegularOrFinal() || (depth <= 0))
-        return tessellator(patch,uv,neighborSubdiv_i);
+      if (depth == MAX_DEPTH)
+	if (patch.isRegularOrFinal() || (depth <= 0))
+	  return tessellator(patch,uv,neighborSubdiv_i);
 
       CatmullClarkPatch patches[4]; 
       patch.subdivide(patches);
@@ -143,10 +146,10 @@ namespace embree
 	neighborSubdiv[i] = max(0,neighborSubdiv_i[i]-1);
 
       const bool noleaf = depth > 1;
-      const int childSubdiv0 = noleaf && !patches[0].isRegularOrFinal();
-      const int childSubdiv1 = noleaf && !patches[1].isRegularOrFinal();
-      const int childSubdiv2 = noleaf && !patches[2].isRegularOrFinal();
-      const int childSubdiv3 = noleaf && !patches[3].isRegularOrFinal();
+      const int childSubdiv0 = noleaf && !patches[0].isRegularOrFinal() || patches[0].ring[0].forcedSubdivision;
+      const int childSubdiv1 = noleaf && !patches[1].isRegularOrFinal() || patches[1].ring[1].forcedSubdivision;
+      const int childSubdiv2 = noleaf && !patches[2].isRegularOrFinal() || patches[2].ring[2].forcedSubdivision;
+      const int childSubdiv3 = noleaf && !patches[3].isRegularOrFinal() || patches[3].ring[3].forcedSubdivision;
 
       const Vec2f uv01 = 0.5f*(uv[0]+uv[1]);
       const Vec2f uv12 = 0.5f*(uv[1]+uv[2]);

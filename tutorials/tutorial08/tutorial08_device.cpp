@@ -189,7 +189,7 @@ void updateScene(RTCScene scene, const Vec3fa& cam_pos)
         const Vec3fa P = 0.5f*(v1+v0);
         //mesh->subdivlevel[e+i] = float(g_subdivision_levels)/16.0f;
         //mesh->subdivlevel[e+i] = 60.0f*atan(0.5f*length(edge)/length(cam_pos-P));
-	mesh->subdivlevel[e+i] = 16;
+	mesh->subdivlevel[e+i] = 20;
         //srand48(length(edge)/length(cam_pos-P)*12343.0f); mesh->subdivlevel[e+i] = 10.0f*drand48();
       }
     }
@@ -230,7 +230,7 @@ RTCScene constructScene(const Vec3fa& cam_pos)
     //delete face_buffer; // FIXME: never deleted
 
     float* level = (float*) rtcMapBuffer(scene, subdivMeshID, RTC_LEVEL_BUFFER);
-    for (size_t i=0; i<4*mesh->numQuads; i++) level[i] = 32;
+    for (size_t i=0; i<4*mesh->numQuads; i++) level[i] = 16;
     rtcUnmapBuffer(scene,subdivMeshID, RTC_LEVEL_BUFFER);
 
     //BBox3fa bounds(Vec3fa(-0.1f,-0.1f,-0.1f),Vec3fa(0.1f,0.1f,0.1f));
@@ -470,8 +470,8 @@ extern "C" void device_render(int *pixels, int width, int height, float time, co
     g_scene = constructScene(p);
   } else {
     static Vec3fa oldP = zero;
-    //if (oldP != p) 
-    updateScene (g_scene,p);
+    if (oldP != p) 
+      updateScene (g_scene,p);
     oldP = p;
   }
   
