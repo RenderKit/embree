@@ -495,13 +495,18 @@ namespace embree
           const BBox3fa bounds = patch.bounds(mesh);
           prims[base+s] = PrimRef(bounds,geomID,primID);
           
+          DBG_PRINT( s );
+          DBG_PRINT( bounds );
           s++;
         }
         return s;
       }, [](size_t a, size_t b) { return a+b; });
 
+
       for (size_t i=0; i<numPrimitives; i++) // FIXME: parallelize
         pinfo.add(prims[i].bounds());
+
+      DBG_PRINT( pinfo );
 
     }
     
