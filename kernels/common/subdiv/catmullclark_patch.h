@@ -71,9 +71,9 @@ namespace embree
       return bounds;
     }
 
-    /*! returns true of the patch is a Gregory patch */
-    __forceinline bool isGregory() const {
-      return ring[0].isGregory() && ring[1].isGregory() && ring[2].isGregory() && ring[3].isGregory();
+    /*! returns true if the patch is a B-spline patch */
+    __forceinline bool isRegular() const {
+      return ring[0].isRegular() && ring[1].isRegular() && ring[2].isRegular() && ring[3].isRegular();
     }
 
     /*! returns true if the patch is a B-spline patch or final Quad */
@@ -81,9 +81,9 @@ namespace embree
       return ring[0].isRegularOrFinal(depth) && ring[1].isRegularOrFinal(depth) && ring[2].isRegularOrFinal(depth) && ring[3].isRegularOrFinal(depth);
     }
 
-    /*! returns true if the patch is a B-spline patch */
-    __forceinline bool isRegular() const {
-      return ring[0].isRegular() && ring[1].isRegular() && ring[2].isRegular() && ring[3].isRegular();
+    /*! returns true of the patch is a Gregory patch */
+    __forceinline bool isGregoryOrFinal(const size_t depth) const {
+      return ring[0].isGregoryOrFinal(depth) && ring[1].isGregoryOrFinal(depth) && ring[2].isGregoryOrFinal(depth) && ring[3].isGregoryOrFinal(depth);
     }
 
     static __forceinline void init_regular(const CatmullClark1Ring& p0,
