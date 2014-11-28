@@ -293,7 +293,7 @@ namespace embree
 
   BVH4::BVH4 (const PrimitiveType& primTy, void* geometry, bool listMode)
     : primTy(primTy), geometry(geometry), listMode(listMode),
-      root(emptyNode), numPrimitives(0), numVertices(0) {}
+      root(emptyNode), numPrimitives(0), numVertices(0), data_mem(NULL), size_data_mem(0) {}
 
   BVH4::~BVH4 () {
     for (size_t i=0; i<objects.size(); i++) 
