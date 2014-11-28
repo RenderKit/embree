@@ -308,6 +308,8 @@ namespace embree
       void create_primitive_array_sequential(size_t threadIndex, size_t threadCount, PrimInfo& pinfo);
       void create_primitive_array_parallel  (size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, PrimInfo& pinfo);
 
+      void createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID);
+
       Scene::Iterator<SubdivMesh> iter;
       ParallelForForPrefixSumState<size_t> pstate;
     };

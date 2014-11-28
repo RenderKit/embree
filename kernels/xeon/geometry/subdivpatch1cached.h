@@ -22,6 +22,7 @@
 #include "common/subdiv/tessellation.h"
 
 #define FORCE_TESSELLATION_BOUNDS 1
+#define USE_DISPLACEMENT_FOR_TESSELLATION_BOUNDS 0
 
 using namespace std;
 
@@ -262,6 +263,7 @@ namespace embree
 
 	  avx3f vtx = eval8( u, v );
 
+#if USE_DISPLACEMENT_FOR_TESSELLATION_BOUNDS == 1
 	  /* eval displacement function */
 	  if (unlikely(mesh->displFunc != NULL))
 	    {
@@ -282,7 +284,7 @@ namespace embree
 			      8);
 
 	    }
-
+#endif
 	  /* extend bounding box */
 	  b.extend( getBBox3fa(vtx) );
 	}

@@ -481,7 +481,7 @@ namespace embree
           if (!mesh->valid(f)) continue;
 	  
           const unsigned int primID = f;
-          const unsigned int geomID = 0; /* HOW DO I GET THE MESH ID ??? */
+          const unsigned int geomID = mesh->id; /* HOW DO I GET THE MESH ID ??? */
 
           const SubdivPatch1Cached patch = SubdivPatch1Cached(mesh->getHalfEdge(f),
                                                       mesh->getVertexPositionPtr(),
@@ -512,6 +512,13 @@ namespace embree
     
     void BVH4SubdivPatch1CachedBuilderFast::create_primitive_array_parallel  (size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, PrimInfo& pinfo) {
       create_primitive_array_sequential(threadIndex, threadCount, pinfo);  // FIXME: parallelize
+    }
+
+    void BVH4SubdivPatch1CachedBuilderFast::createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID)
+    {
+      size_t items = current.size();
+      assert(items <= 1);
+      *current.parent = (BVH4::NodeRef) prims[current.begin].ID();
     }
 
     // =======================================================================================================

@@ -158,6 +158,7 @@ namespace embree
 
       void printStats() const
       {
+#if DEBUG
 	if (cache_accesses)
 	  {
 	    mtx.lock();
@@ -168,6 +169,7 @@ namespace embree
 	    DBG_PRINT(100.0f * cache_hits / cache_accesses);
 	    mtx.unlock();
 	  }
+#endif
       }
     };
 
