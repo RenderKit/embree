@@ -328,10 +328,10 @@ namespace embree
 	{
           if (!mesh->valid(f)) continue;
 
-	  feature_adaptive_subdivision_bspline(f,mesh->getHalfEdge(f),mesh->getVertexPositionPtr(),
+	  feature_adaptive_subdivision_gregory(f,mesh->getHalfEdge(f),mesh->getVertexPositionPtr(),
 					       [&](const CatmullClarkPatch& patch, const Vec2f uv[4], const int subdiv[4])
 	  {
-	    if (!patch.isRegular()) { s++; return; }
+	    //if (!patch.isRegular()) { s++; return; }
  	    const float l0 = patch.ring[0].edge_level;
 	    const float l1 = patch.ring[1].edge_level;
 	    const float l2 = patch.ring[2].edge_level;
@@ -363,22 +363,22 @@ namespace embree
         for (size_t f=r.begin(); f!=r.end(); ++f) {
           if (!mesh->valid(f)) continue;
 	  
-	  feature_adaptive_subdivision_bspline(f,mesh->getHalfEdge(f),mesh->getVertexPositionPtr(),
+	  feature_adaptive_subdivision_gregory(f,mesh->getHalfEdge(f),mesh->getVertexPositionPtr(),
 					       [&](const CatmullClarkPatch& patch, const Vec2f uv[4], const int subdiv[4])
 	  {
 	    size_t id = atomic_add(&aid,0x676787);
 
-	    if (!patch.isRegular())
+	    /*if (!patch.isRegular())
 	    {
 	      QuadQuad4x4* leaf = (QuadQuad4x4*) bvh->alloc2.malloc(sizeof(QuadQuad4x4),16);
 	      new (leaf) QuadQuad4x4(id,mesh->id,f);
 	      const BBox3fa bounds = leaf->quad(scene,patch,uv[0],uv[1],uv[2],uv[3]);
 	      prims[base+(s++)] = PrimRef(bounds,BVH4::encodeTypedLeaf(leaf,0));
 	      return;
-	    }
+	      }*/
 
-	    //GregoryPatch patcheval; 
-	    BSplinePatch patcheval;
+	    GregoryPatch patcheval; 
+	    //BSplinePatch patcheval;
 	    patcheval.init(patch);
 	    
 	    const float l0 = patch.ring[0].edge_level;
