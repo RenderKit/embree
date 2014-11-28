@@ -154,10 +154,10 @@ namespace embree
 	neighborSubdiv[i] = max(0,neighborSubdiv_i[i]-1);
 
       const bool noleaf = depth > 1;
-      const int childSubdiv0 = noleaf && !patches[0].isRegularOrFinal() || !patches[0].ring[0].noForcedSubdivision;
-      const int childSubdiv1 = noleaf && !patches[1].isRegularOrFinal() || !patches[1].ring[1].noForcedSubdivision;
-      const int childSubdiv2 = noleaf && !patches[2].isRegularOrFinal() || !patches[2].ring[2].noForcedSubdivision;
-      const int childSubdiv3 = noleaf && !patches[3].isRegularOrFinal() || !patches[3].ring[3].noForcedSubdivision;
+      const int childSubdiv0 = noleaf && !patches[0].isRegularOrFinal();
+      const int childSubdiv1 = noleaf && !patches[1].isRegularOrFinal();
+      const int childSubdiv2 = noleaf && !patches[2].isRegularOrFinal();
+      const int childSubdiv3 = noleaf && !patches[3].isRegularOrFinal();
 
       const Vec2f uv01 = 0.5f*(uv[0]+uv[1]);
       const Vec2f uv12 = 0.5f*(uv[1]+uv[2]);

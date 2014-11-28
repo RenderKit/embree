@@ -41,7 +41,7 @@ namespace embree
     bool noForcedSubdivision; // varying edge crease weight stitching fix
 
   public:
-    CatmullClark1Ring () {}
+    CatmullClark1Ring () : noForcedSubdivision(true) {}
 
     __forceinline bool hasBorder() const {
       return border_index != -1;
@@ -310,13 +310,19 @@ namespace embree
 	}
 
 	for (size_t i=1; i<valence; i++)
-	  if (crease_weight[i] > 0.0f) // && (2*i != border_index) && (2*(i-1) != border_index)) 
+	  if (crease_weight[i] > 0.0f && (2*i != border_index) && (2*(i-1) != border_index)) 
 	    return false;
+
+	if (crease_weight[0] > 0.0f && (2*(valence-1) != border_index)) 
+	  return false;
+	
+	if (!noForcedSubdivision)
+	  return false;
       }
       
-      if (edge_level > 1.0f)
-	if (crease_weight[0] > 0.0f) // && (2*(valence-1) != border_index)) 
-	  return false;
+      //if (edge_level > 1.0f)
+      //if (crease_weight[0] > 0.0f && (2*(valence-1) != border_index)) 
+      //return false;
       
       return true;
     }
