@@ -57,7 +57,6 @@ namespace embree
 
     void subdivide(const GeneralCatmullClarkPatch& patch, int depth, int neighborSubdiv[GeneralCatmullClarkPatch::SIZE])
     {
-#if 1
       /* convert into standard quad patch if possible */
       if (likely(patch.isQuadPatch())) 
       {
@@ -66,7 +65,6 @@ namespace embree
 	subdivide(qpatch,depth,uv,neighborSubdiv);
 	return;
       }
-#endif
 
       /* subdivide patch */
       size_t N;
@@ -99,7 +97,6 @@ namespace embree
 	subdivide(patches[2],depth-1, uv2, neighborSubdiv2);
       } 
 
-#if 0
       /* parametrization for quads */
       else if (N == 4) {
 	const Vec2f uv_0(0.0f,0.0f);
@@ -124,7 +121,6 @@ namespace embree
 	subdivide(patches[2],depth-1, uv2, neighborSubdiv2);
 	subdivide(patches[3],depth-1, uv3, neighborSubdiv3);
       } 
-#endif
 
       /* parametrization for arbitrary polygons */
       else 
