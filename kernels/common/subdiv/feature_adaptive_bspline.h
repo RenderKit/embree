@@ -20,6 +20,12 @@
 
 namespace embree
 {
+  __forceinline std::ostream &operator<<(std::ostream &o, const std::vector<int> v)
+  {
+    for (size_t i=0; i<v.size(); i++) o << v[i] << ", ";
+    return o << std::endl;
+  } 
+
   template<typename Tessellator>
   struct FeatureAdaptiveSubdivisionBSpline
   {
@@ -27,7 +33,7 @@ namespace embree
 
     Tessellator& tessellator;
 
-    __forceinline FeatureAdaptiveSubdivisionBSpline (const SubdivMesh::HalfEdge* h, const Vec3fa* vertices, Tessellator& tessellator)
+    __forceinline FeatureAdaptiveSubdivisionBSpline (int primID, const SubdivMesh::HalfEdge* h, const Vec3fa* vertices, Tessellator& tessellator)
       : tessellator(tessellator)
     {
 #if 1
@@ -48,6 +54,7 @@ namespace embree
 #endif
     }
 
+#if 0
     void subdivide(const GeneralCatmullClarkPatch& patch, int depth, int neighborSubdiv[GeneralCatmullClarkPatch::SIZE])
     {
 #if 1
@@ -131,6 +138,7 @@ namespace embree
 	}
       }
     }
+#endif
 
     void subdivide(const CatmullClarkPatch& patch, int depth, const Vec2f uv[4], const int neighborSubdiv_i[4])
     {
@@ -146,10 +154,10 @@ namespace embree
 	neighborSubdiv[i] = max(0,neighborSubdiv_i[i]-1);
 
       const bool noleaf = depth > 1;
-      const int childSubdiv0 = noleaf && !patches[0].isRegularOrFinal() || patches[0].ring[0].forcedSubdivision;
-      const int childSubdiv1 = noleaf && !patches[1].isRegularOrFinal() || patches[1].ring[1].forcedSubdivision;
-      const int childSubdiv2 = noleaf && !patches[2].isRegularOrFinal() || patches[2].ring[2].forcedSubdivision;
-      const int childSubdiv3 = noleaf && !patches[3].isRegularOrFinal() || patches[3].ring[3].forcedSubdivision;
+      const int childSubdiv0 = noleaf && !patches[0].isRegularOrFinal() || !patches[0].ring[0].noForcedSubdivision;
+      const int childSubdiv1 = noleaf && !patches[1].isRegularOrFinal() || !patches[1].ring[1].noForcedSubdivision;
+      const int childSubdiv2 = noleaf && !patches[2].isRegularOrFinal() || !patches[2].ring[2].noForcedSubdivision;
+      const int childSubdiv3 = noleaf && !patches[3].isRegularOrFinal() || !patches[3].ring[3].noForcedSubdivision;
 
       const Vec2f uv01 = 0.5f*(uv[0]+uv[1]);
       const Vec2f uv12 = 0.5f*(uv[1]+uv[2]);
@@ -166,10 +174,10 @@ namespace embree
       const int neighborSubdiv1[4] = { neighborSubdiv[0],neighborSubdiv[1],childSubdiv2,childSubdiv0 };
       const int neighborSubdiv2[4] = { childSubdiv1,neighborSubdiv[1],neighborSubdiv[2],childSubdiv3 };
       const int neighborSubdiv3[4] = { childSubdiv0,childSubdiv2,neighborSubdiv[2],neighborSubdiv[3] };
-      
+
       if (childSubdiv0) subdivide  (patches[0],depth-1, uv0, neighborSubdiv0);
       else              tessellator(patches[0],         uv0, neighborSubdiv0);
-
+      
       if (childSubdiv1) subdivide  (patches[1],depth-1, uv1, neighborSubdiv1);
       else              tessellator(patches[1],         uv1, neighborSubdiv1);
       
@@ -182,8 +190,8 @@ namespace embree
   };
 
    template<typename Tessellator>
-     inline void feature_adaptive_subdivision_bspline (const SubdivMesh::HalfEdge* h, const Vec3fa* vertices, Tessellator tessellator)
+     inline void feature_adaptive_subdivision_bspline (int primID, const SubdivMesh::HalfEdge* h, const Vec3fa* vertices, Tessellator tessellator)
    {
-     FeatureAdaptiveSubdivisionBSpline<Tessellator>(h,vertices,tessellator);
+     FeatureAdaptiveSubdivisionBSpline<Tessellator>(primID,h,vertices,tessellator);
    }
 }

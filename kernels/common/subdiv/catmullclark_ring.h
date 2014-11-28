@@ -38,7 +38,7 @@ namespace embree
     float vertex_crease_weight;
     float vertex_level; // maximal level of all adjacent edges
     float edge_level; // level of first edge
-    bool forcedSubdivision; // varying edge crease weight stitching fix
+    bool noForcedSubdivision; // varying edge crease weight stitching fix
 
   public:
     CatmullClark1Ring () {}
@@ -100,7 +100,7 @@ namespace embree
     
     __forceinline void init(const SubdivMesh::HalfEdge* const h, const Vec3fa* const vertices) // FIXME: should get buffer as vertex array input!!!!
     {
-      forcedSubdivision = false;
+      noForcedSubdivision = true;
       border_index = -1;
       vtx = (Vec3fa_t)vertices[ h->getStartVertexIndex() ];
       vertex_crease_weight = h->vertex_crease_weight;
@@ -152,7 +152,7 @@ namespace embree
     
     __forceinline void subdivide(CatmullClark1Ring& dest) const
     {
-      dest.forcedSubdivision = false;
+      dest.noForcedSubdivision = true;
       dest.edge_level = 0.5f*edge_level;
       dest.vertex_level = 0.5f*vertex_level;
       dest.valence         = valence;
@@ -178,6 +178,7 @@ namespace embree
         S += ring[2*i];
         dest.crease_weight[i] = max(crease_weight[i]-1.0f,0.0f);
         //dest.crease_weight[i] = crease_weight[i] < 1.0f ? 0.0f : 0.5f*crease_weight[i];
+	dest.noForcedSubdivision &= crease_weight[i] == 0.0f || crease_weight[i] > 1.0f;
         
         /* fast path for regular edge points */
         if (likely(crease_weight[i] <= 0.0f)) {
@@ -203,7 +204,8 @@ namespace embree
         S += ring[2*i];
         dest.crease_weight[i] = max(crease_weight[i]-1.0f,0.0f);
         //dest.crease_weight[i] = crease_weight[i] < 1.0f ? 0.0f : 0.5f*crease_weight[i];
-	
+	dest.noForcedSubdivision &= crease_weight[i] == 0.0f || crease_weight[i] > 1.0f;
+
         /* fast path for regular edge points */
         if (likely(crease_weight[i] <= 0.0f)) {
           dest.ring[2*i] = (v+f) * 0.25f;
@@ -250,7 +252,7 @@ namespace embree
         dest.vtx = v_sharp;
         dest.crease_weight[crease_id[0]] = max(0.25f*(3.0f*crease_weight0 + crease_weight1)-1.0f,0.0f);
         dest.crease_weight[crease_id[1]] = max(0.25f*(3.0f*crease_weight1 + crease_weight0)-1.0f,0.0f);
-	dest.forcedSubdivision = (dest.crease_weight[crease_id[0]] == 0.0f) && (dest.crease_weight[crease_id[1]] == 0.0f);
+	dest.noForcedSubdivision = (dest.crease_weight[crease_id[0]] != 0.0f) || (dest.crease_weight[crease_id[1]] != 0.0f);
         //dest.crease_weight[crease_id[0]] = max(0.5f*(crease_weight0 + crease_weight1)-1.0f,0.0f);
         //dest.crease_weight[crease_id[1]] = max(0.5f*(crease_weight1 + crease_weight0)-1.0f,0.0f);
         const float t0 = 0.5f*(crease_weight0+crease_weight1), t1 = 1.0f-t0;
