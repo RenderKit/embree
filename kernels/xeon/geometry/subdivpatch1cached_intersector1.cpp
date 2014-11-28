@@ -16,6 +16,8 @@
 
 #include "subdivpatch1cached_intersector1.h"
 
+#include "common/subdiv/tessellation.h"
+
 namespace embree
 {
 
@@ -147,9 +149,55 @@ namespace embree
   void SubdivPatch1CachedIntersector1::intersect_subdiv_patch(const Precalculations& pre,
                                                               Ray& ray,
                                                               const Primitive& subdiv_patch,
-                                                              const void* geom)
+                                                              const void* geom) // geom == mesh or geom == scene?
   {
+#if defined(__AVX__)
+    const float * const edge_levels = subdiv_patch.level;
+    const unsigned int grid_u_res   = subdiv_patch.grid_u_res;
+    const unsigned int grid_v_res   = subdiv_patch.grid_v_res;
 
+    __aligned(64) float u_array[(subdiv_patch.grid_size_8wide_blocks+1)]; // for unaligned access
+    __aligned(64) float v_array[(subdiv_patch.grid_size_8wide_blocks+1)];
+
+    __aligned(64) float vtx_x[(subdiv_patch.grid_size_8wide_blocks+1)];
+    __aligned(64) float vtx_y[(subdiv_patch.grid_size_8wide_blocks+1)];
+    __aligned(64) float vtx_z[(subdiv_patch.grid_size_8wide_blocks+1)];
+
+    gridUVTessellator(edge_levels,grid_u_res,grid_v_res,u_array,v_array);
+
+    if (unlikely(subdiv_patch.needsStiching()))
+      stichUVGrid(edge_levels,grid_u_res,grid_v_res,u_array,v_array);
+
+    for (size_t i=0;i<subdiv_patch.grid_size_8wide_blocks;i++)
+      {
+        const avxf uu = load8f(&u_array[8*i]);
+        const avxf vv = load8f(&v_array[8*i]);
+        const avx3f vtx = subdiv_patch.eval8(uu,vv);
+
+        if (unlikely(((SubdivMesh*)geom)->displFunc != NULL))
+          {
+            avx3f normal = subdiv_patch.normal8(uu,vv);
+            normal = normalize(normal);
+            
+            ((SubdivMesh*)geom)->displFunc(((SubdivMesh*)geom)->userPtr,
+                                           subdiv_patch.geom,
+                                           subdiv_patch.prim,
+                                           (const float*)&uu,
+                                           (const float*)&vv,
+                                           (const float*)&normal.x,
+                                           (const float*)&normal.y,
+                                           (const float*)&normal.z,
+                                           (float*)&vtx.x,
+                                           (float*)&vtx.y,
+                                           (float*)&vtx.z,
+                                           8);
+          }
+        
+        *(avxf*)&vtx_x[8*i] = vtx.x;
+        *(avxf*)&vtx_y[8*i] = vtx.y;
+        *(avxf*)&vtx_z[8*i] = vtx.z;        
+      }
+#endif
   }
 
   bool SubdivPatch1CachedIntersector1::occluded_subdiv_patch(const Precalculations& pre,
