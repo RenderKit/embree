@@ -366,7 +366,7 @@ namespace embree
 	  feature_adaptive_subdivision_gregory(f,mesh->getHalfEdge(f),mesh->getVertexPositionPtr(),
 					       [&](const CatmullClarkPatch& patch, const Vec2f uv[4], const int subdiv[4])
 	  {
-	    size_t id = atomic_add(&aid,0x676787);
+	    size_t id = atomic_add(&aid,0x67128989);
 
 	    /*if (!patch.isRegular())
 	    {
