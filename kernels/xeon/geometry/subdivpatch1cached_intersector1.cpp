@@ -15,17 +15,141 @@
 // ======================================================================== //
 
 #include "subdivpatch1cached_intersector1.h"
-#include "bicubic_bezier_patch.h"
 
 namespace embree
 {
-  
+
+#define FORCE_TRIANGLE_UV 0
+
+
+#if defined(__AVX__)
+  static __forceinline void intersect1_tri8_precise(Ray& ray,
+                                                    const avx3f &v0_org,
+                                                    const avx3f &v1_org,
+                                                    const avx3f &v2_org,
+                                                    const float *__restrict__ const u_grid,
+                                                    const float *__restrict__ const v_grid,
+                                                    const size_t offset_v0,
+                                                    const size_t offset_v1,
+                                                    const size_t offset_v2,
+                                                    const avxb &m_active,
+                                                    const unsigned int subdiv_patch_index,
+                                                    const void* geom)
+  {
+    const avx3f O = ray.org;
+    const avx3f D = ray.dir;
+
+    const avx3f v0 = v0_org - O;
+    const avx3f v1 = v1_org - O;
+    const avx3f v2 = v2_org - O;
+   
+    const avx3f e0 = v2 - v0;
+    const avx3f e1 = v0 - v1;	     
+    const avx3f e2 = v1 - v2;	     
+
+    /* calculate geometry normal and denominator */
+    const avx3f Ng1 = cross(e1,e0);
+    const avx3f Ng = Ng1+Ng1;
+    const avxf den = dot(Ng,D);
+    const avxf absDen = abs(den);
+    const avxf sgnDen = signmsk(den);
+      
+    avxb valid = m_active;
+    /* perform edge tests */
+    const avxf U = dot(avx3f(cross(v2+v0,e0)),D) ^ sgnDen;
+    valid &= U >= 0.0f;
+    if (likely(none(valid))) return;
+    const avxf V = dot(avx3f(cross(v0+v1,e1)),D) ^ sgnDen;
+    valid &= V >= 0.0f;
+    if (likely(none(valid))) return;
+    const avxf W = dot(avx3f(cross(v1+v2,e2)),D) ^ sgnDen;
+    valid &= W >= 0.0f;
+    if (likely(none(valid))) return;
+      
+    /* perform depth test */
+    const avxf T = dot(v0,Ng) ^ sgnDen;
+    valid &= (T >= absDen*ray.tnear) & (absDen*ray.tfar >= T);
+    if (unlikely(none(valid))) return;
+      
+      /* perform backface culling */
+#if defined(RTCORE_BACKFACE_CULLING)
+    valid &= den > avxf(zero);
+    if (unlikely(none(valid))) return;
+#else
+    valid &= den != avxf(zero);
+    if (unlikely(none(valid))) return;
+#endif
+            
+      /* calculate hit information */
+    const avxf rcpAbsDen = rcp(absDen);
+    const avxf u = U*rcpAbsDen;
+    const avxf v = V*rcpAbsDen;
+    const avxf t = T*rcpAbsDen;
+
+#if FORCE_TRIANGLE_UV == 0
+    const avxf _u0 = load8f(&u_grid[offset_v0]);
+    const avxf _u1 = load8f(&u_grid[offset_v1]);
+    const avxf _u2 = load8f(&u_grid[offset_v2]);
+    const avxf u_final = u * _u1 + v * _u2 + (1.0f-u-v) * _u0;
+
+    const avxf _v0 = load8f(&v_grid[offset_v0]);
+    const avxf _v1 = load8f(&v_grid[offset_v1]);
+    const avxf _v2 = load8f(&v_grid[offset_v2]);
+    const avxf v_final = u * _v1 + v * _v2 + (1.0f-u-v) * _v0;
+#else
+    const avxf u_final = u;
+    const avxf v_final = v;
+#endif
+
+
+    size_t i = select_min(valid,t);
+
+    /* update hit information */
+    ray.u = u_final[i];
+    ray.v = v_final[i];
+    ray.tfar = t[i];
+    ray.Ng.x = Ng.x[i];
+    ray.Ng.y = Ng.y[i];
+    ray.Ng.z = Ng.z[i];
+    ray.geomID = 0;
+    ray.primID = subdiv_patch_index;
+      
+  };
+
+  static __forceinline void intersect1_quad8(Ray& ray,
+                                             const float *__restrict__ const vtx_x,
+                                             const float *__restrict__ const vtx_y,
+                                             const float *__restrict__ const vtx_z,
+                                             const float *__restrict__ const u,
+                                             const float *__restrict__ const v,
+                                             const size_t grid_res,
+                                             const avxb &m_active,
+                                             const unsigned int subdiv_patch_index,
+                                             const void* geom)
+  {
+    const size_t offset_v0 = 0;
+    const size_t offset_v1 = 1;
+    const size_t offset_v2 = grid_res+1;
+    const size_t offset_v3 = grid_res+0;
+
+    const avx3f v0( load8f(&vtx_x[offset_v0]), load8f(&vtx_y[offset_v0]), load8f(&vtx_z[offset_v0]));
+    const avx3f v1( load8f(&vtx_x[offset_v1]), load8f(&vtx_y[offset_v1]), load8f(&vtx_z[offset_v1]));
+    const avx3f v2( load8f(&vtx_x[offset_v2]), load8f(&vtx_y[offset_v2]), load8f(&vtx_z[offset_v2]));
+    const avx3f v3( load8f(&vtx_x[offset_v3]), load8f(&vtx_y[offset_v3]), load8f(&vtx_z[offset_v3]));
+
+    intersect1_tri8_precise(ray,v0,v1,v3,u,v,offset_v0,offset_v1,offset_v3,m_active,subdiv_patch_index,geom);
+    intersect1_tri8_precise(ray,v3,v1,v2,u,v,offset_v3,offset_v1,offset_v2,m_active,subdiv_patch_index,geom);
+
+  }
+#endif
+
+
   void SubdivPatch1CachedIntersector1::intersect_subdiv_patch(const Precalculations& pre,
                                                               Ray& ray,
                                                               const Primitive& subdiv_patch,
                                                               const void* geom)
   {
-    PING;
+
   }
 
   bool SubdivPatch1CachedIntersector1::occluded_subdiv_patch(const Precalculations& pre,
@@ -33,7 +157,7 @@ namespace embree
                                                              const Primitive& subdiv_patch,
                                                              const void* geom)
   {
-    PING;
+    return false;
   }
 
 };

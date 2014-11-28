@@ -143,6 +143,7 @@ IF (TARGET_AVX)
     geometry/instance_intersector1.cpp
     geometry/instance_intersector4.cpp
     geometry/instance_intersector8.cpp
+    geometry/subdivpatch1cached_intersector1.cpp
 
     bvh4/bvh4_rotate.cpp
     bvh4/bvh4_builder_toplevel.cpp
@@ -181,6 +182,7 @@ IF (TARGET_AVX2)
     geometry/instance_intersector1.cpp
     geometry/instance_intersector4.cpp
     geometry/instance_intersector8.cpp
+    geometry/subdivpatch1cached_intersector1.cpp
 
     bvh4/bvh4_intersector1.cpp
     bvh4/bvh4_intersector4_single.cpp
