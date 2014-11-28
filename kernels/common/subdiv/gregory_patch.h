@@ -716,24 +716,6 @@ namespace embree
     }
     
     
-    static __forceinline Vec3fa normal(const Vec3fa matrix[4][4],
-				       const float uu,
-				       const float vv) 
-    {
-      const mic_f row0 = load16f(&matrix[0][0]);
-      const mic_f row1 = load16f(&matrix[1][0]);
-      const mic_f row2 = load16f(&matrix[2][0]);
-      const mic_f row3 = load16f(&matrix[3][0]);
-      
-      __aligned(64) Vec3fa f_m[2][2];
-      compactustore16f_low(0x8888,(float*)&f_m[0][0],row0);
-      compactustore16f_low(0x8888,(float*)&f_m[0][1],row1);
-      compactustore16f_low(0x8888,(float*)&f_m[1][1],row2);
-      compactustore16f_low(0x8888,(float*)&f_m[1][0],row3);
-      
-      return normal(matrix,f_m,uu,vv);
-    }
-
     static __forceinline mic3f deCasteljau(const mic_f uu, const mic3f &v0, const mic3f &v1, const mic3f &v2, const mic3f &v3)
     {
       const mic_f one_minus_uu = 1.0f - uu;
@@ -837,6 +819,32 @@ namespace embree
       return n;
     }
 #endif
+
+
+    static __forceinline Vec3fa normal(const Vec3fa matrix[4][4],
+				       const float uu,
+				       const float vv) 
+    {
+#if defined(__MIC__)
+      const mic_f row0 = load16f(&matrix[0][0]);
+      const mic_f row1 = load16f(&matrix[1][0]);
+      const mic_f row2 = load16f(&matrix[2][0]);
+      const mic_f row3 = load16f(&matrix[3][0]);
+      
+      __aligned(64) Vec3fa f_m[2][2];
+      compactustore16f_low(0x8888,(float*)&f_m[0][0],row0);
+      compactustore16f_low(0x8888,(float*)&f_m[0][1],row1);
+      compactustore16f_low(0x8888,(float*)&f_m[1][1],row2);
+      compactustore16f_low(0x8888,(float*)&f_m[1][0],row3);
+#else
+      __aligned(64) Vec3fa f_m[2][2];
+      f_m[0][0] = extract_f_m_Vec3fa(matrix,0);
+      f_m[0][1] = extract_f_m_Vec3fa(matrix,1);
+      f_m[1][1] = extract_f_m_Vec3fa(matrix,2);
+      f_m[1][0] = extract_f_m_Vec3fa(matrix,3);      
+#endif      
+      return normal(matrix,f_m,uu,vv);
+    }
     
     __forceinline Vec3fa eval(const float uu, const float vv) const
     {
