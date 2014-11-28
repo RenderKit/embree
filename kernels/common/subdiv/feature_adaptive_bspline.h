@@ -29,8 +29,6 @@ namespace embree
   template<typename Tessellator>
   struct FeatureAdaptiveSubdivisionBSpline
   {
-    enum { MAX_DEPTH = 20 };
-
     Tessellator& tessellator;
 
     __forceinline FeatureAdaptiveSubdivisionBSpline (int primID, const SubdivMesh::HalfEdge* h, const Vec3fa* vertices, Tessellator& tessellator)
@@ -43,14 +41,14 @@ namespace embree
       for (size_t i=0; i<4; i++) {
 	neighborSubdiv[i] = h->hasOpposite() ? h->opposite()->noRegularFace() : 0; h = h->next();
       }
-      subdivide(patch,MAX_DEPTH,uv,neighborSubdiv);
+      subdivide(patch,0,uv,neighborSubdiv);
 #else
       int neighborSubdiv[GeneralCatmullClarkPatch::SIZE];
       const GeneralCatmullClarkPatch patch(h,vertices);
       for (size_t i=0; i<patch.size(); i++) {
 	neighborSubdiv[i] = h->hasOpposite() ? h->opposite()->noRegularFace() : 0; h = h->next();
       }
-      subdivide(patch,MAX_DEPTH,neighborSubdiv);
+      subdivide(patch,0,neighborSubdiv);
 #endif
     }
 
@@ -71,10 +69,10 @@ namespace embree
       patch.subdivide(patches,N);
 
       /* check if subpatches need further subdivision */
-      const bool noleaf = depth > 1;
+      //const bool noleaf = depth > 1;
       bool childSubdiv[GeneralCatmullClarkPatch::SIZE];
       for (size_t i=0; i<N; i++)
-        childSubdiv[i] = noleaf && !patches[i].isRegularOrFinal();
+        childSubdiv[i] = /*noleaf &&*/ !patches[i].isRegularOrFinal(depth);
 
       /* parametrization for triangles */
       if (N == 3) {
@@ -91,9 +89,9 @@ namespace embree
 	const int neighborSubdiv0[4] = { max(0,childSubdiv[0]-1),childSubdiv[1],childSubdiv[2],max(0,childSubdiv[2]-1) };
 	const int neighborSubdiv1[4] = { max(0,childSubdiv[1]-1),childSubdiv[2],childSubdiv[0],max(0,childSubdiv[0]-1) };
 	const int neighborSubdiv2[4] = { max(0,childSubdiv[2]-1),childSubdiv[0],childSubdiv[1],max(0,childSubdiv[1]-1) };
-	subdivide(patches[0],depth-1, uv0, neighborSubdiv0);
-	subdivide(patches[1],depth-1, uv1, neighborSubdiv1);
-	subdivide(patches[2],depth-1, uv2, neighborSubdiv2);
+	subdivide(patches[0],depth+1, uv0, neighborSubdiv0);
+	subdivide(patches[1],depth+1, uv1, neighborSubdiv1);
+	subdivide(patches[2],depth+1, uv2, neighborSubdiv2);
       } 
 
       /* parametrization for quads */
@@ -115,10 +113,10 @@ namespace embree
 	const int neighborSubdiv1[4] = { max(0,childSubdiv[1]-1),childSubdiv[2],childSubdiv[0],max(0,childSubdiv[0]-1) };
 	const int neighborSubdiv2[4] = { max(0,childSubdiv[2]-1),childSubdiv[3],childSubdiv[1],max(0,childSubdiv[1]-1) };
 	const int neighborSubdiv3[4] = { max(0,childSubdiv[3]-1),childSubdiv[0],childSubdiv[2],max(0,childSubdiv[2]-1) };
-	subdivide(patches[0],depth-1, uv0, neighborSubdiv0);
-	subdivide(patches[1],depth-1, uv1, neighborSubdiv1);
-	subdivide(patches[2],depth-1, uv2, neighborSubdiv2);
-	subdivide(patches[3],depth-1, uv3, neighborSubdiv3);
+	subdivide(patches[0],depth+1, uv0, neighborSubdiv0);
+	subdivide(patches[1],depth+1, uv1, neighborSubdiv1);
+	subdivide(patches[2],depth+1, uv2, neighborSubdiv2);
+	subdivide(patches[3],depth+1, uv3, neighborSubdiv3);
       } 
 
       /* parametrization for arbitrary polygons */
@@ -128,16 +126,20 @@ namespace embree
 	{
 	  const Vec2f uv[4] = { Vec2f(float(i)+0.0f,0.0f),Vec2f(float(i)+0.0f,1.0f),Vec2f(float(i)+1.0f,1.0f),Vec2f(float(i)+1.0f,0.0f) };
 	  const int neighborSubdiv[4] = { false,childSubdiv[(i+1)%N],childSubdiv[(i-1)%N],false };
-	  subdivide(patches[i],depth-1,uv,neighborSubdiv);
+	  subdivide(patches[i],depth+1,uv,neighborSubdiv);
 	  
 	}
       }
     }
 
+    __forceinline void tessellate(const CatmullClarkPatch& patch, int depth, const Vec2f uv[4], const int neighborSubdiv_i[4]) {
+      tessellator(patch,uv,neighborSubdiv_i);
+    }
+
     void subdivide(const CatmullClarkPatch& patch, int depth, const Vec2f uv[4], const int neighborSubdiv_i[4])
     {
-      if (depth == MAX_DEPTH)
-	if (patch.isRegularOrFinal() || (depth <= 0))
+      if (depth == 0)
+	if (patch.isRegularOrFinal(depth))
 	  return tessellator(patch,uv,neighborSubdiv_i);
 
       CatmullClarkPatch patches[4]; 
@@ -147,11 +149,10 @@ namespace embree
       for (size_t i=0; i<4; i++) 
 	neighborSubdiv[i] = max(0,neighborSubdiv_i[i]-1);
 
-      const bool noleaf = depth > 1;
-      const int childSubdiv0 = noleaf && !patches[0].isRegularOrFinal();
-      const int childSubdiv1 = noleaf && !patches[1].isRegularOrFinal();
-      const int childSubdiv2 = noleaf && !patches[2].isRegularOrFinal();
-      const int childSubdiv3 = noleaf && !patches[3].isRegularOrFinal();
+      const int childSubdiv0 = !patches[0].isRegularOrFinal(depth);
+      const int childSubdiv1 = !patches[1].isRegularOrFinal(depth);
+      const int childSubdiv2 = !patches[2].isRegularOrFinal(depth);
+      const int childSubdiv3 = !patches[3].isRegularOrFinal(depth);
 
       const Vec2f uv01 = 0.5f*(uv[0]+uv[1]);
       const Vec2f uv12 = 0.5f*(uv[1]+uv[2]);
@@ -169,17 +170,17 @@ namespace embree
       const int neighborSubdiv2[4] = { childSubdiv1,neighborSubdiv[1],neighborSubdiv[2],childSubdiv3 };
       const int neighborSubdiv3[4] = { childSubdiv0,childSubdiv2,neighborSubdiv[2],neighborSubdiv[3] };
 
-      if (childSubdiv0) subdivide  (patches[0],depth-1, uv0, neighborSubdiv0);
-      else              tessellator(patches[0],         uv0, neighborSubdiv0);
+      if (childSubdiv0) subdivide  (patches[0], depth+1, uv0, neighborSubdiv0);
+      else              tessellate (patches[0], depth+1, uv0, neighborSubdiv0);
       
-      if (childSubdiv1) subdivide  (patches[1],depth-1, uv1, neighborSubdiv1);
-      else              tessellator(patches[1],         uv1, neighborSubdiv1);
+      if (childSubdiv1) subdivide  (patches[1], depth+1, uv1, neighborSubdiv1);
+      else              tessellate (patches[1], depth+1, uv1, neighborSubdiv1);
       
-      if (childSubdiv2) subdivide  (patches[2],depth-1, uv2, neighborSubdiv2);
-      else              tessellator(patches[2],         uv2, neighborSubdiv2);
+      if (childSubdiv2) subdivide  (patches[2], depth+1, uv2, neighborSubdiv2);
+      else              tessellate (patches[2], depth+1, uv2, neighborSubdiv2);
       
-      if (childSubdiv3) subdivide  (patches[3],depth-1, uv3, neighborSubdiv3);
-      else              tessellator(patches[3],         uv3, neighborSubdiv3);
+      if (childSubdiv3) subdivide  (patches[3], depth+1, uv3, neighborSubdiv3);
+      else              tessellate (patches[3], depth+1, uv3, neighborSubdiv3);
     }
   };
 

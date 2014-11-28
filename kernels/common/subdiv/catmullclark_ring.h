@@ -292,9 +292,10 @@ namespace embree
     }
 
     /* returns true if the vertex can be part of a dicable B-Spline patch or is a final Quad */
-    __forceinline bool isRegularOrFinal() const 
+    __forceinline bool isRegularOrFinal(const size_t depth) const 
     {
-      if (vertex_level > 1.0f) 
+      if (depth < 10)
+      //if (vertex_level > 1.0f) 
       {
 	if (border_index == -1) 
 	{

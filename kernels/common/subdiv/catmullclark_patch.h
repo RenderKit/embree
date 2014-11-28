@@ -77,8 +77,8 @@ namespace embree
     }
 
     /*! returns true if the patch is a B-spline patch or final Quad */
-    __forceinline bool isRegularOrFinal() const {
-      return ring[0].isRegularOrFinal() && ring[1].isRegularOrFinal() && ring[2].isRegularOrFinal() && ring[3].isRegularOrFinal();
+    __forceinline bool isRegularOrFinal(const size_t depth) const {
+      return ring[0].isRegularOrFinal(depth) && ring[1].isRegularOrFinal(depth) && ring[2].isRegularOrFinal(depth) && ring[3].isRegularOrFinal(depth);
     }
 
     /*! returns true if the patch is a B-spline patch */
