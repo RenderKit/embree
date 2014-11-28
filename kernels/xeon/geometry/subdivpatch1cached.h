@@ -17,36 +17,40 @@
 #pragma once
 
 #include "primitive.h"
-#include "common/scene_subdiv_mesh.h"
 #include "common/subdiv/bspline_patch.h"
 #include "common/subdiv/gregory_patch.h"
 #include "common/subdiv/tessellation.h"
-#include "bicubic_bezier_patch.h"
 
 #define FORCE_TESSELLATION_BOUNDS 1
+
 using namespace std;
 
 namespace embree
 {
 
-  __forceinline BBox3fa getBBox3fa(const mic3f &v, const mic_m m_valid = 0xffff)
+#if defined(__AVX__)
+  __forceinline BBox3fa getBBox3fa(const avx3f &v)
   {
-    const mic_f x_min = select(m_valid,v.x,mic_f::inf());
-    const mic_f y_min = select(m_valid,v.y,mic_f::inf());
-    const mic_f z_min = select(m_valid,v.z,mic_f::inf());
-
-    const mic_f x_max = select(m_valid,v.x,mic_f::minus_inf());
-    const mic_f y_max = select(m_valid,v.y,mic_f::minus_inf());
-    const mic_f z_max = select(m_valid,v.z,mic_f::minus_inf());
-
-    const Vec3fa b_min( reduce_min(x_min), reduce_min(y_min), reduce_min(z_min) );
-    const Vec3fa b_max( reduce_max(x_max), reduce_max(y_max), reduce_max(z_max) );
+    const Vec3fa b_min( reduce_min(v.x), reduce_min(v.y), reduce_min(v.z) );
+    const Vec3fa b_max( reduce_max(v.x), reduce_max(v.z), reduce_max(v.z) );
     return BBox3fa( b_min, b_max );
   }
+#endif
 
-  struct __aligned(64) SubdivPatch1
+
+  struct __aligned(64) SubdivPatch1Cached
   {
+    struct Type : public PrimitiveType 
+    {
+      Type ();
+      size_t blocks(size_t x) const; 
+      size_t size(const char* This) const;
+    };
+
+    static Type type;
+
   public:
+
     enum {
       REGULAR_PATCH     = 1,  // 0 => Gregory Patch 
       TRANSITION_PATCH  = 2,  // needs stiching?
@@ -54,18 +58,19 @@ namespace embree
     };
 
     /*! Default constructor. */
-    SubdivPatch1 (const SubdivMesh::HalfEdge * first_half_edge,
-		  const Vec3fa *vertices,
-		  const unsigned int geomID,
-		  const unsigned int primID,
-		  const SubdivMesh *const mesh) 
-      : geomID(geomID),
-      primID(primID),
-      under_construction(0),
-      bvh4i_subtree_root(-1),
+    __forceinline SubdivPatch1Cached () {}
+
+    /*! Construction from vertices and IDs. */
+    __forceinline SubdivPatch1Cached (const SubdivMesh::HalfEdge * first_half_edge,
+                                      const Vec3fa *vertices,
+                                      const unsigned int gID,
+                                      const unsigned int pID,
+                                      const SubdivMesh *const mesh) 
+      : geom(gID),
+      prim(pID),
       flags(0)
     {
-      assert(sizeof(SubdivPatch1) == 5 * 64);
+      assert(sizeof(SubdivPatch1Cached) == 5 * 64);
 
       u_range = Vec2f(0.0f,1.0f);
       v_range = Vec2f(0.0f,1.0f);
@@ -89,9 +94,8 @@ namespace embree
       grid_u_res = max(level[0],level[2])+1; // n segments -> n+1 points
       grid_v_res = max(level[1],level[3])+1;
 
-      grid_size_16wide_blocks = ((grid_u_res*grid_v_res+15)&(-16)) / 16;
-      grid_mask = 0;
-      grid_subtree_size_64b_blocks = 5; // single leaf with u,v,x,y,z
+      grid_size_8wide_blocks       = ((grid_u_res*grid_v_res+7)&(-8)) / 8;
+      grid_subtree_size_64b_blocks = 5; // single leaf with 16-wide u,v,x,y,z
 
       /* need stiching? */
 
@@ -113,19 +117,8 @@ namespace embree
 
 
       /* tessellate into 4x4 grid blocks for larger grid resolutions, generate bvh4i subtree over 4x4 grid blocks*/
-      if (grid_size_16wide_blocks > 1)
+      if (grid_size_8wide_blocks > 2)
 	grid_subtree_size_64b_blocks = getSubTreeSize64bBlocks( 5 ); // u,v,x,y,z 
-
-      /* compute 16-bit quad mask for direct evaluation */
-
-      if (grid_size_16wide_blocks == 1)
-	{
-	  mic_m m_active = 0xffff;
-	  for (unsigned int i=grid_u_res-1;i<16;i+=grid_u_res)
-	    m_active ^= (unsigned int)1 << i;
-	  m_active &= ((unsigned int)1 << (grid_u_res * (grid_v_res-1)))-1;
-	  grid_mask = m_active;
-	}
 
       /* determine whether patch is regular or not */
 
@@ -149,52 +142,34 @@ namespace embree
 #endif
     }
 
+
     __forceinline bool needsStiching() const
     {
       return (flags & TRANSITION_PATCH) == TRANSITION_PATCH;      
     }
 
-    __forceinline void prefetchData() const
-    {
-      patch.prefetchData();
-    }
-
-    __forceinline mic3f eval16(const mic_f &uu,
-			       const mic_f &vv) const
+#if defined(__AVX__)
+    __forceinline avx3f eval8(const avxf &uu,
+        const avxf &vv) const
     {
       if (likely(isRegular()))
 	{
-	  return patch.eval16(uu,vv);
+	  return patch.eval8(uu,vv);
 	}
       else 
 	{
-	  return GregoryPatch::eval16( patch.v, uu, vv );
+	  return GregoryPatch::eval8( patch.v, uu, vv );
 	}
       
     }
-
-    __forceinline mic_f eval4(const mic_f &uu,
-			      const mic_f &vv) const
-    {
-      if (likely(isRegular()))
-	{
-	  return patch.eval4(uu,vv);
-	}
-      else 
-	{	  
-	  return GregoryPatch::eval4( patch.v, uu, vv );
-	}
-      
-    }
+#endif
 
     __forceinline Vec3fa normal(const float &uu,
 				const float &vv) const
     {
       if (likely(isRegular()))
 	{
-	  const mic_f n = patch.normal4(uu,vv);
-	  return Vec3fa(n[0],n[1],n[2]);
-	  //return patch.normal(uu,vv);
+      return patch.normal(uu,vv);
 	}
       else 
 	{
@@ -203,15 +178,16 @@ namespace embree
 	}      
     }
 
-    __forceinline mic3f normal16(const mic_f &uu,
-				 const mic_f &vv) const
+#if defined(__AVX__)
+    __forceinline avx3f normal8(const avxf &uu,
+                                const avxf &vv) const
     {
       if (likely(isRegular()))
-	return patch.normal16(uu,vv);
+	return patch.normal8(uu,vv);
       else
-        return GregoryPatch::normal16( patch.v, uu, vv );
+        return GregoryPatch::normal8( patch.v, uu, vv );
     }
-
+#endif
 
 
     __forceinline bool isRegular() const
@@ -229,36 +205,25 @@ namespace embree
       return (flags & HAS_DISPLACEMENT) == HAS_DISPLACEMENT;
     }
 
-    BBox3fa bounds(const SubdivMesh* const geom) const
+    BBox3fa bounds(const SubdivMesh* const mesh) const
     {
 #if FORCE_TESSELLATION_BOUNDS == 1
 
-      __aligned(64) float u_array[(grid_size_16wide_blocks+1)*16];
-      __aligned(64) float v_array[(grid_size_16wide_blocks+1)*16];
+      __aligned(64) float u_array[(grid_size_8wide_blocks+1)*8]; // +8 for unaligned access
+      __aligned(64) float v_array[(grid_size_8wide_blocks+1)*8]; // +8 for unaligned access
 
-      if (grid_size_16wide_blocks == 1)
-      	{
-      	  gridUVTessellator16f(level,grid_u_res,grid_v_res,u_array,v_array);
+      const unsigned int real_grid_size = grid_u_res*grid_v_res;
+      gridUVTessellator(level,grid_u_res,grid_v_res,u_array,v_array);
 
-      	  /* if necessary stich different tessellation levels in u/v grid */
-      	  if (unlikely(needsStiching()))
-      	    stichUVGrid(level,grid_u_res,grid_v_res,u_array,v_array);
-      	}
-      else
-	{
-	  const unsigned int real_grid_size = grid_u_res*grid_v_res;
-	  gridUVTessellatorMIC(level,grid_u_res,grid_v_res,u_array,v_array);
-
-	  // FIXME: remove
-	  for (size_t i=real_grid_size;i<grid_size_16wide_blocks*16;i++)
-	    {
-	      u_array[i] = 1.0f;
-	      v_array[i] = 1.0f;
-	    }
-	}
+      // FIXME: remove
+      for (size_t i=real_grid_size;i<grid_size_8wide_blocks*8;i++)
+        {
+          u_array[i] = 1.0f;
+          v_array[i] = 1.0f;
+        }
 
 
-#if 0
+#if !defined(__AVX__)
       BBox3fa b ( empty );
 
       if (isRegular())
@@ -289,23 +254,23 @@ namespace embree
 #else
       BBox3fa b ( empty );
       
-      assert( grid_size_16wide_blocks >= 1 );
-      for (size_t i=0;i<grid_size_16wide_blocks;i++)
+      assert( grid_size_8wide_blocks >= 1 );
+      for (size_t i=0;i<grid_size_8wide_blocks;i++)
 	{
-	  const mic_f u = load16f(&u_array[i*16]);
-	  const mic_f v = load16f(&v_array[i*16]);
+	  const avxf u = load8f(&u_array[i*8]);
+	  const avxf v = load8f(&v_array[i*8]);
 
-	  mic3f vtx = eval16( u, v );
+	  avx3f vtx = eval8( u, v );
 
 	  /* eval displacement function */
-	  if (unlikely(geom->displFunc != NULL))
+	  if (unlikely(mesh->displFunc != NULL))
 	    {
-	      mic3f normal = normal16(u,v);
+	      avx3f normal = normal8(u,v);
 	      normal = normalize(normal);
 
-	      geom->displFunc(geom->userPtr,
-			      geomID,
-			      primID,
+	      mesh->displFunc(mesh->userPtr,
+			      geom,
+			      prim,
 			      (const float*)&u,
 			      (const float*)&v,
 			      (const float*)&normal,
@@ -314,7 +279,7 @@ namespace embree
 			      (float*)&vtx.x,
 			      (float*)&vtx.y,
 			      (float*)&vtx.z,
-			      16);
+			      8);
 
 	    }
 
@@ -350,17 +315,9 @@ namespace embree
       return b;
     }
 
-    __forceinline void store(void *mem)
-    {
-      const mic_f *const src = (mic_f*)this;
-      assert(sizeof(SubdivPatch1) % 64 == 0);
-      mic_f *const dst = (mic_f*)mem;
-#pragma unroll
-      for (size_t i=0;i<sizeof(SubdivPatch1) / 64;i++)
-	store16f_ngo(&dst[i],src[i]);
-    }
 
   private:
+
     size_t get64BytesBlocksForGridSubTree(const unsigned int u_start,
 					  const unsigned int u_end,
 					  const unsigned int v_start,
@@ -396,34 +353,87 @@ namespace embree
       return get64BytesBlocksForGridSubTree(0,grid_u_res-1,0,grid_v_res-1,leafBlocks);
     }
 
+
+    /*! returns required number of primitive blocks for N primitives */
+    static __forceinline size_t blocks(size_t N) { return N; }
+
+    /*! return geometry ID */
+    template<bool list>
+    __forceinline unsigned int geomID() const { 
+      return geom; 
+    }
+
+    /*! return primitive ID */
+    template<bool list>
+    __forceinline unsigned int primID() const { 
+      if (list) return prim & 0x7FFFFFFF; 
+      else      return prim; 
+    }
+
+    /*! checks if this is the last primitive in list leaf mode */
+    __forceinline int last() const { 
+      return prim & 0x80000000; 
+    }
+
+    /*! builder interface to fill primitive */
+    __forceinline void fill(atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, Scene* scene, const bool list)
+    {
+      const PrimRef& prim = *prims;
+      prims++;
+
+      //const unsigned int last   = list && !prims;
+      const unsigned int geomID = prim.geomID();
+      const unsigned int primID = prim.primID();
+      const SubdivMesh* const subdiv_mesh = scene->getSubdivMesh(geomID);
+      new (this) SubdivPatch1Cached(subdiv_mesh->getHalfEdge(primID),
+                                    subdiv_mesh->getVertexPositionPtr(),
+                                    geomID,
+                                    primID,
+                                    subdiv_mesh); 
+    }
+
+    /*! builder interface to fill primitive */
+    __forceinline void fill(const PrimRef* prims, size_t& i, size_t end, Scene* scene, const bool list)
+    {
+      const PrimRef& prim = prims[i];
+      i++;
+
+      //const unsigned int last = list && i >= end;
+      const unsigned int geomID = prim.geomID();
+      const unsigned int primID = prim.primID();
+      const SubdivMesh* const subdiv_mesh = scene->getSubdivMesh(geomID);
+      new (this) SubdivPatch1Cached(subdiv_mesh->getHalfEdge(primID),
+                                    subdiv_mesh->getVertexPositionPtr(),
+                                    geomID,
+                                    primID,
+                                    subdiv_mesh); 
+    }
+
+    
   public:
-   
     Vec2f u_range;
     Vec2f v_range;
     float level[4];
 
     unsigned int flags;
-    unsigned int geomID;                          //!< geometry ID of the subdivision mesh this patch belongs to
-    unsigned int primID;                          //!< primitive ID of this subdivision patch
-    volatile unsigned int bvh4i_subtree_root;
+    unsigned int geom;                          //!< geometry ID of the subdivision mesh this patch belongs to
+    unsigned int prim;                          //!< primitive ID of this subdivision patch
+    unsigned int dummy;
 
-    unsigned short grid_u_res;
-    unsigned short grid_v_res;
-    unsigned short grid_size_16wide_blocks;
-    unsigned short grid_mask;
-    unsigned int   grid_subtree_size_64b_blocks;
-    volatile unsigned int under_construction; // 0 = not build yet, 1 = under construction, 2 = built
+    unsigned int grid_u_res;
+    unsigned int grid_v_res;
+    unsigned int grid_size_8wide_blocks;
+    unsigned int grid_subtree_size_64b_blocks;
 
     __aligned(64) BSplinePatch patch;
   };
 
-  __forceinline std::ostream &operator<<(std::ostream &o, const SubdivPatch1 &p)
+  __forceinline std::ostream &operator<<(std::ostream &o, const SubdivPatch1Cached &p)
     {
-      o << " flags " << p.flags << " geomID " << p.geomID << " primID " << p.primID << " u_range << " << p.u_range << " v_range " << p.v_range << " levels: " << p.level[0] << "," << p.level[1] << "," << p.level[2] << "," << p.level[3] << std::endl;
+      o << " flags " << p.flags << " geomID " << p.geom << " primID " << p.prim << " u_range << " << p.u_range << " v_range " << p.v_range << " levels: " << p.level[0] << "," << p.level[1] << "," << p.level[2] << "," << p.level[3] << std::endl;
       o << " patch " << p.patch;
 
       return o;
     } 
 
-};
-
+}

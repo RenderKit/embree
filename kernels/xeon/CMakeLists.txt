@@ -79,6 +79,7 @@ ADD_ISPC_LIBRARY(embree ${EMBREE_LIB_TYPE}
   geometry/triangle4v_mb.cpp
   geometry/triangle4i.cpp
   geometry/subdivpatch1.cpp
+  geometry/subdivpatch1cached.cpp
   geometry/subdivpatchdispl1.cpp
   geometry/virtual_accel.cpp
   geometry/instance_intersector1.cpp
