@@ -91,7 +91,7 @@ namespace embree
 					   CatmullClark1Ring& dest0,
 					   CatmullClark1Ring& dest1) 
     {
-      dest1.vertex_level = dest0.vertex_level = 0.0f;
+      dest1.vertex_level = dest0.vertex_level = p0.edge_level;
       dest1.valence = dest0.valence = 4;
       dest1.num_vtx = dest0.num_vtx = 8;
       dest1.border_index = dest0.border_index = -1;
@@ -119,7 +119,7 @@ namespace embree
                                           CatmullClark1Ring &dest0,
                                           CatmullClark1Ring &dest1) 
     {
-      dest1.vertex_level = dest0.vertex_level = 0.0f;
+      dest1.vertex_level = dest0.vertex_level = p0.edge_level;
       dest1.valence = dest0.valence = 3;
       dest1.num_vtx = dest0.num_vtx = 6;
       dest0.border_index = 2;
@@ -270,7 +270,7 @@ namespace embree
 					   CatmullClark1Ring& dest0,
 					   CatmullClark1Ring& dest1) 
     {
-      dest1.vertex_level = dest0.vertex_level = 0.0f;
+      dest1.vertex_level = dest0.vertex_level = p0.edge_level;
       dest1.valence = dest0.valence = 4;
       dest1.num_vtx = dest0.num_vtx = 8;
       dest1.border_index = dest0.border_index = -1;
@@ -298,7 +298,7 @@ namespace embree
                                           CatmullClark1Ring &dest0,
                                           CatmullClark1Ring &dest1) 
     {
-      dest1.vertex_level = dest0.vertex_level = 0.0f;
+      dest1.vertex_level = dest0.vertex_level = p0.edge_level;
       dest1.valence = dest0.valence = 3;
       dest1.num_vtx = dest0.num_vtx = 6;
       dest0.border_index = 2;
@@ -357,7 +357,7 @@ namespace embree
 
 	float level = 0.25f*(ring[im1].edge_level+ring[ip1].edge_level);
         patch[i].ring[1].edge_level = patch[ip1].ring[2].edge_level = level;
-	center_vertex_level = max(center_vertex_level,level);
+	//center_vertex_level = max(center_vertex_level,level);
 
         center += ring[i].vtx;
         center_ring[2*i+0] = (Vec3fa_t)patch[i].ring[0].vtx;
