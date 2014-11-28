@@ -41,7 +41,7 @@ namespace embree
     bool noForcedSubdivision; // varying edge crease weight stitching fix
 
   public:
-    CatmullClark1Ring () : noForcedSubdivision(true) {}
+    CatmullClark1Ring () {}
 
     __forceinline bool hasBorder() const {
       return border_index != -1;
@@ -483,6 +483,7 @@ namespace embree
     float vertex_crease_weight;
     float vertex_level;                      //!< maximal level of adjacent edges
     float edge_level; // level of first edge
+    bool only_quads;
 
     GeneralCatmullClark1Ring() {}
     
@@ -496,6 +497,7 @@ namespace embree
     
     __forceinline void init(const SubdivMesh::HalfEdge* const h, const Vec3fa* const vertices) // FIXME: should get buffer as vertex array input!!!!
     {
+      only_quads = true;
       border_face = -1;
       vtx = (Vec3fa_t)vertices[ h->getStartVertexIndex() ];
       vertex_crease_weight = h->vertex_crease_weight;
@@ -518,6 +520,7 @@ namespace embree
 	  
         }
 	face_size[f] = vn;
+	only_quads &= (vn == 2);
 	p = p_prev;
 	crease_weight[++f] = p->edge_crease_weight;
 	vertex_level = max(vertex_level,p->edge_level);
@@ -643,6 +646,9 @@ namespace embree
 
     void convert(CatmullClark1Ring& dst) const
     {
+      assert(only_quads);
+      assert(std::all_of(&face_size[0],&face_size[valence],[](int i) { return i == 2; }));
+      
       dst.edge_level = edge_level;
       dst.vertex_level = vertex_level;
       dst.vtx = vtx;
@@ -652,22 +658,8 @@ namespace embree
       for (size_t i=0; i<valence; i++) 
 	dst.crease_weight[i] = crease_weight[i];
       dst.vertex_crease_weight = vertex_crease_weight;
-
-      const bool quads = std::all_of(&face_size[0],&face_size[valence],[](int i) { return i == 2; });
-      if (quads) {
-	for (size_t i=0; i<num_vtx; i++) dst.ring[i] = ring[i];
-      }
-      else 
-      {
-	for (size_t i=0, j=0; i<valence; j+=face_size[i++])
-	{
-	  const size_t N = face_size[i];
-	  Vec3fa V = vtx + ring[j] + ring[(j+N)%num_vtx]; // FIXME: optimize %
-	  Vec3fa W = zero; for (size_t k=j+1; k<j+N; k++) W+=ring[k];
-	  dst.ring[2*i+0] = ring[j];
-	  dst.ring[2*i+1] = 4.0f*(V+W)/float(N+2)-V;
-	}
-      }
+      dst.noForcedSubdivision = true;
+      for (size_t i=0; i<num_vtx; i++) dst.ring[i] = ring[i];
     }
     
     friend __forceinline std::ostream &operator<<(std::ostream &o, const GeneralCatmullClark1Ring &c)

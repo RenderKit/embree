@@ -97,6 +97,7 @@ namespace embree
       dest1.border_index = dest0.border_index = -1;
       dest1.vtx = dest0.vtx = (Vec3fa_t)p0.ring[0];
       dest1.vertex_crease_weight = dest0.vertex_crease_weight = 0.0f;
+      dest1.noForcedSubdivision = dest0.noForcedSubdivision = true;
 
       dest1.ring[2] = dest0.ring[0] = (Vec3fa_t)p0.ring[1];
       dest1.ring[1] = dest0.ring[7] = (Vec3fa_t)p1.ring[0];
@@ -126,6 +127,7 @@ namespace embree
       dest1.border_index = 4;
       dest1.vtx  = dest0.vtx = (Vec3fa_t)p0.ring[0];
       dest1.vertex_crease_weight = dest0.vertex_crease_weight = 0.0f;
+      dest1.noForcedSubdivision = dest0.noForcedSubdivision = true;
 
       dest1.ring[2] = dest0.ring[0] = (Vec3fa_t)p0.ring[1];
       dest1.ring[1] = dest0.ring[5] = (Vec3fa_t)p1.ring[0];
@@ -147,6 +149,7 @@ namespace embree
       dest.border_index = -1;
       dest.vtx     = (Vec3fa_t)center;
       dest.vertex_crease_weight = 0.0f;
+      dest.noForcedSubdivision = true;
       for (size_t i=0; i<8; i++) 
 	dest.ring[i] = (Vec3fa_t)center_ring[(offset+i)%8];
       for (size_t i=0; i<4; i++) 
@@ -250,6 +253,10 @@ namespace embree
 
     __forceinline size_t size() const { 
       return N; 
+    }
+
+    __forceinline bool isQuadPatch() const {
+      return size() == 4 && ring[0].only_quads && ring[1].only_quads && ring[2].only_quads && ring[3].only_quads;
     }
 
     __forceinline GeneralCatmullClarkPatch (const SubdivMesh::HalfEdge* h, const Vec3fa* vertices) 
@@ -357,7 +364,7 @@ namespace embree
 
 	float level = 0.25f*(ring[im1].edge_level+ring[ip1].edge_level);
         patch[i].ring[1].edge_level = patch[ip1].ring[2].edge_level = level;
-	//center_vertex_level = max(center_vertex_level,level);
+	center_vertex_level = max(center_vertex_level,level);
 
         center += ring[i].vtx;
         center_ring[2*i+0] = (Vec3fa_t)patch[i].ring[0].vtx;
@@ -377,10 +384,6 @@ namespace embree
       ring[1].convert(patch.ring[1]);
       ring[2].convert(patch.ring[2]);
       ring[3].convert(patch.ring[3]);
-      //patch.level[0] = level[0];
-      //patch.level[1] = level[1];
-      //patch.level[2] = level[2];
-      //patch.level[3] = level[3];
     }
 
     friend __forceinline std::ostream &operator<<(std::ostream &o, const GeneralCatmullClarkPatch &p)
