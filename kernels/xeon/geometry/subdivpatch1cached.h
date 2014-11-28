@@ -22,6 +22,7 @@
 #include "common/subdiv/tessellation.h"
 
 #define FORCE_TESSELLATION_BOUNDS 1
+
 using namespace std;
 
 namespace embree
@@ -204,7 +205,7 @@ namespace embree
       return (flags & HAS_DISPLACEMENT) == HAS_DISPLACEMENT;
     }
 
-    BBox3fa bounds(const SubdivMesh* const geom) const
+    BBox3fa bounds(const SubdivMesh* const mesh) const
     {
 #if FORCE_TESSELLATION_BOUNDS == 1
 
@@ -262,14 +263,14 @@ namespace embree
 	  avx3f vtx = eval8( u, v );
 
 	  /* eval displacement function */
-	  if (unlikely(geom->displFunc != NULL))
+	  if (unlikely(mesh->displFunc != NULL))
 	    {
 	      avx3f normal = normal8(u,v);
 	      normal = normalize(normal);
 
-	      geom->displFunc(geom->userPtr,
-			      geomID,
-			      primID,
+	      mesh->displFunc(mesh->userPtr,
+			      geom,
+			      prim,
 			      (const float*)&u,
 			      (const float*)&v,
 			      (const float*)&normal,

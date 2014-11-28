@@ -28,8 +28,11 @@
 #include "geometry/triangle4v.h"
 #include "geometry/triangle4i.h"
 #include "geometry/subdivpatch1.h"
+#include "geometry/subdivpatch1cached.h"
+
 //#include "geometry/subdivpatchdispl1.h"
 //#include "geometry/quadquad4x4_subdiv.h"
+
 #include "geometry/quadquad4x4.h"
 #include "common/subdiv/feature_adaptive_gregory.h"
 #include "common/subdiv/feature_adaptive_bspline.h"
@@ -114,6 +117,11 @@ namespace embree
     
     BVH4SubdivQuadQuad4x4BuilderFast::BVH4SubdivQuadQuad4x4BuilderFast (BVH4* bvh, Scene* scene, size_t listMode) 
     : BVH4BuilderFastT<PrimRef>(bvh,scene,listMode,0,0,false,sizeof(QuadQuad4x4),1,1,true) { this->bvh->alloc2.init(4096,4096); }
+
+
+    BVH4SubdivPatch1CachedBuilderFast::BVH4SubdivPatch1CachedBuilderFast (BVH4* bvh, Scene* scene, size_t listMode) 
+    : BVH4BuilderFastT<PrimRef>(bvh,scene,listMode,0,0,false,sizeof(QuadQuad4x4),1,1,true) { this->bvh->alloc2.init(4096,4096); }
+  
   
     BVH4TopLevelBuilderFastT::BVH4TopLevelBuilderFastT (LockStepTaskScheduler* scheduler, BVH4* bvh) 
       : prims_i(NULL), N(0), BVH4BuilderFast(scheduler,bvh,0,0,0,false,0,1,1) {}
@@ -408,6 +416,120 @@ namespace embree
     // =======================================================================================================
     // =======================================================================================================
     // =======================================================================================================
+
+
+
+
+
+    // =======================================================================================================
+    // ============================ similar builder as for MIC ===============================================
+    // =======================================================================================================
+
+   void BVH4SubdivPatch1CachedBuilderFast::build(size_t threadIndex, size_t threadCount)
+    {
+      /* initialize all half edge structures */
+      new (&iter) Scene::Iterator<SubdivMesh>(this->scene);
+      for (size_t i=0; i<iter.size(); i++)
+        if (iter[i]) iter[i]->initializeHalfEdgeStructures();
+
+      this->bvh->alloc2.reset();
+
+      pstate.init(iter,size_t(1024));
+
+      BVH4BuilderFast::build(threadIndex,threadCount);
+    }
+
+    size_t BVH4SubdivPatch1CachedBuilderFast::number_of_primitives() 
+    {
+      size_t S = parallel_for_for_prefix_sum( pstate, iter, size_t(0), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const size_t base) -> size_t
+      {
+        size_t s = 0;
+        for (size_t f=r.begin(); f!=r.end(); ++f) 
+	{          
+          if (!mesh->valid(f)) continue;
+          s++;
+	}
+        return s;
+      }, [](size_t a, size_t b) { return a+b; });
+
+      return S;
+    }
+    
+    void BVH4SubdivPatch1CachedBuilderFast::create_primitive_array_sequential(size_t threadIndex, size_t threadCount, PrimInfo& pinfo)
+    {
+      parallel_for_for_prefix_sum( pstate, iter, size_t(0), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, size_t base) -> size_t
+      {
+        size_t s = 0;
+        for (size_t f=r.begin(); f!=r.end(); ++f) {
+          if (!mesh->valid(f)) continue;
+	  
+	  // feature_adaptive_subdivision_bspline(mesh->getHalfEdge(f),mesh->getVertexPositionPtr(),
+	  //       			       [&](const CatmullClarkPatch& patch, const Vec2f uv[4], const int subdiv[4])
+	  // {
+	  //   static int id = 0; id+=0x726849272;
+
+	  //   if (!patch.isRegular())
+	  //   {
+	  //     QuadQuad4x4* leaf = (QuadQuad4x4*) bvh->alloc2.malloc(sizeof(QuadQuad4x4),16);
+	  //     new (leaf) QuadQuad4x4(id,mesh->id,f);
+	  //     const BBox3fa bounds = leaf->quad(scene,patch,uv[0],uv[1],uv[2],uv[3]);
+	  //     prims[base+(s++)] = PrimRef(bounds,BVH4::encodeTypedLeaf(leaf,0));
+	  //     return;
+	  //   }
+
+	  //   //GregoryPatch patcheval; 
+	  //   BSplinePatch patcheval;
+	  //   patcheval.init(patch);
+	    
+	  //   const float l0 = patch.ring[0].edge_level;
+	  //   const float l1 = patch.ring[1].edge_level;
+	  //   const float l2 = patch.ring[2].edge_level;
+	  //   const float l3 = patch.ring[3].edge_level;
+	  //   const TessellationPattern pattern0(l0,subdiv[0]);
+	  //   const TessellationPattern pattern1(l1,subdiv[1]);
+	  //   const TessellationPattern pattern2(l2,subdiv[2]);
+	  //   const TessellationPattern pattern3(l3,subdiv[3]);
+	  //   const TessellationPattern pattern_x = pattern0.size() > pattern2.size() ? pattern0 : pattern2;
+	  //   const TessellationPattern pattern_y = pattern1.size() > pattern3.size() ? pattern1 : pattern3;
+	  //   const int nx = pattern_x.size();
+	  //   const int ny = pattern_y.size();
+	    	    
+	  //   for (int y=0; y<ny; y+=8) {
+	  //     for (int x=0; x<nx; x+=8) {
+	  //       QuadQuad4x4* leaf = (QuadQuad4x4*) bvh->alloc2.malloc(sizeof(QuadQuad4x4),16);
+	  //       new (leaf) QuadQuad4x4(id,mesh->id,f);
+	  //       const BBox3fa bounds = leaf->build(scene,patcheval,pattern0,pattern1,pattern2,pattern3,pattern_x,x,nx,pattern_y,y,ny,uv[0],uv[1],uv[2],uv[3]);
+	  //       prims[base+(s++)] = PrimRef(bounds,BVH4::encodeTypedLeaf(leaf,0));
+	  //     }
+	  //   }
+	  // });
+          s++;
+        }
+        return s;
+      }, [](size_t a, size_t b) { return a+b; });
+
+      for (size_t i=0; i<numPrimitives; i++) // FIXME: parallelize
+        pinfo.add(prims[i].bounds());
+    }
+    
+    void BVH4SubdivPatch1CachedBuilderFast::create_primitive_array_parallel  (size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, PrimInfo& pinfo) {
+      create_primitive_array_sequential(threadIndex, threadCount, pinfo);  // FIXME: parallelize
+    }
+
+    // =======================================================================================================
+    // =======================================================================================================
+    // =======================================================================================================
+
+
+
+
+
+
+
+
+
+
+
 
     size_t BVH4TopLevelBuilderFastT::number_of_primitives() {
       return N;
@@ -863,5 +985,7 @@ namespace embree
 
     Builder* BVH4SubdivPatch1BuilderFast(void* bvh, Scene* scene, size_t mode) { return new class BVH4SubdivBuilderFast<SubdivPatch1>((BVH4*)bvh,scene,mode); }
     Builder* BVH4SubdivQuadQuad4x4BuilderFast(void* bvh, Scene* scene, size_t mode) { return new class BVH4SubdivQuadQuad4x4BuilderFast((BVH4*)bvh,scene,mode); }
+    Builder* BVH4SubdivPatch1CachedBuilderFast(void* bvh, Scene* scene, size_t mode) { return new class BVH4SubdivPatch1CachedBuilderFast((BVH4*)bvh,scene,mode); }
+
   }
 }
