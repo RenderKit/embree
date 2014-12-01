@@ -17,6 +17,7 @@
 #include "subdivpatch1cached_intersector1.h"
 
 #include "common/subdiv/tessellation.h"
+#include "xeon/bvh4/bvh4.h"
 
 namespace embree
 {
@@ -71,7 +72,7 @@ namespace embree
     }
 
     /* init from 3x3 point grid */
-    Quad2x2( const float * const grid_x,
+    void init( const float * const grid_x,
              const float * const grid_y,
              const float * const grid_z,
              const float * const grid_u,
@@ -103,9 +104,151 @@ namespace embree
 
 #endif
 
+    __forceinline BBox3fa bounds() const 
+    {
+      BBox3fa b( empty );
+      for (size_t i=0;i<12;i++)
+        b.extend( Vec3fa(vtx_x[i],vtx_y[i],vtx_z[i]) );
+      return b;
+    }
   };
 
 #if defined(__AVX__)
+
+
+    BBox3fa createSubTree(BVH4::NodeRef &curNode,
+			  float *const lazymem,
+			  const SubdivPatch1Cached &patch,
+			  const float *const grid_x_array,
+			  const float *const grid_y_array,
+			  const float *const grid_z_array,
+			  const float *const grid_u_array,
+			  const float *const grid_v_array,
+			  const unsigned int u_start,
+			  const unsigned int u_end,
+			  const unsigned int v_start,
+			  const unsigned int v_end,
+			  unsigned int &localCounter,
+			  const SubdivMesh* const geom)
+    {
+      const unsigned int u_size = u_end-u_start+1;
+      const unsigned int v_size = v_end-v_start+1;
+      
+      assert(u_size >= 1);
+      assert(v_size >= 1);
+
+      if (u_size <= 3 && v_size <= 3)
+	{
+
+	  assert(u_size*v_size <= 16);
+
+	  const unsigned int currentIndex = localCounter;
+	  localCounter += 4*16; // 4 cachelines for Quad2x2
+
+          Quad2x2 *qquad = (Quad2x2*)&lazymem[currentIndex];
+
+	  float leaf_x_array[3][3];
+	  float leaf_y_array[3][3];
+	  float leaf_z_array[3][3];
+	  float leaf_u_array[3][3];
+	  float leaf_v_array[3][3];
+
+	  for (unsigned int v=v_start;v<=v_end;v++)
+	    for (unsigned int u=u_start;u<=u_end;u++)
+	      {
+		const unsigned int local_v = v - v_start;
+		const unsigned int local_u = u - u_start;
+		leaf_x_array[local_v][local_u] = grid_x_array[ v * patch.grid_u_res + u ];
+		leaf_y_array[local_v][local_u] = grid_y_array[ v * patch.grid_u_res + u ];
+		leaf_z_array[local_v][local_u] = grid_z_array[ v * patch.grid_u_res + u ];
+		leaf_u_array[local_v][local_u] = grid_u_array[ v * patch.grid_u_res + u ];
+		leaf_v_array[local_v][local_u] = grid_v_array[ v * patch.grid_u_res + u ];
+	      }
+
+	  /* set invalid grid u,v value to border elements */
+
+	  for (unsigned int y=0;y<3;y++)
+	    for (unsigned int x=u_size-1;x<3;x++)
+	      {
+		leaf_x_array[y][x] = leaf_x_array[y][u_size-1];
+		leaf_y_array[y][x] = leaf_y_array[y][u_size-1];
+		leaf_z_array[y][x] = leaf_z_array[y][u_size-1];
+		leaf_u_array[y][x] = leaf_u_array[y][u_size-1];
+		leaf_v_array[y][x] = leaf_v_array[y][u_size-1];
+	      }
+
+	  for (unsigned int x=0;x<3;x++)
+	    for (unsigned int y=v_size-1;y<3;y++)
+	      {
+		leaf_x_array[y][x] = leaf_x_array[v_size-1][x];
+		leaf_y_array[y][x] = leaf_y_array[v_size-1][x];
+		leaf_z_array[y][x] = leaf_z_array[v_size-1][x];
+		leaf_u_array[y][x] = leaf_u_array[v_size-1][x];
+		leaf_v_array[y][x] = leaf_v_array[v_size-1][x];
+	      }
+
+	  for (unsigned int y=0;y<3;y++)
+            for (unsigned int x=0;x<3;x++)
+              std::cout << y << " " << x 
+                        << " ->  x = " << leaf_x_array[y][x] << " y = " << leaf_v_array[y][x] << " z = " << leaf_z_array[y][x]
+                        << "   u = " << leaf_u_array[y][x] << " v = " << leaf_v_array[y][x] << std::endl;
+
+
+          qquad->init( (float*)leaf_x_array, (float*)leaf_y_array, (float*)leaf_z_array, (float*)leaf_u_array, (float*)leaf_v_array, 0, 3, 6 );
+          
+          BBox3fa bounds = qquad->bounds();
+          curNode = BVH4::encodeLeaf(qquad,0);
+
+	  return bounds;
+	}
+
+      /* allocate new bvh4i node */
+      const size_t currentIndex = localCounter;
+      localCounter += 2 * 16;
+
+      BVH4::Node *node = (BVH4::Node*)&lazymem[currentIndex];
+
+      curNode = BVH4::encodeNode( node );
+
+      node->clear();
+
+      const unsigned int u_mid = (u_start+u_end)/2;
+      const unsigned int v_mid = (v_start+v_end)/2;
+
+
+      const unsigned int subtree_u_start[4] = { u_start ,u_mid ,u_mid ,u_start };
+      const unsigned int subtree_u_end  [4] = { u_mid   ,u_end ,u_end ,u_mid };
+
+      const unsigned int subtree_v_start[4] = { v_start ,v_start ,v_mid ,v_mid};
+      const unsigned int subtree_v_end  [4] = { v_mid   ,v_mid   ,v_end ,v_end };
+
+
+      /* create four subtrees */
+      BBox3fa bounds( empty );
+
+      for (unsigned int i=0;i<4;i++)
+	{
+	  BBox3fa bounds_subtree = createSubTree( node->child(i), 
+						  lazymem, 
+						  patch, 
+						  grid_x_array,
+						  grid_y_array,
+						  grid_z_array,
+						  grid_u_array,
+						  grid_v_array,
+						  subtree_u_start[i], 
+						  subtree_u_end[i],
+						  subtree_v_start[i],
+						  subtree_v_end[i],						  
+						  localCounter,
+						  geom);
+	  node->set(i, bounds_subtree);
+	  bounds.extend( bounds_subtree );
+	}
+
+      return bounds;
+    }
+
   static __forceinline void intersect1_tri8_precise(Ray& ray,
                                                     const avx3f &v0_org,
                                                     const avx3f &v1_org,
