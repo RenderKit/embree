@@ -65,17 +65,19 @@ namespace embree
       level[3] = max(ceilf(ipatch.ring[3].edge_level),1.0f);
 #else
       /* debugging */
-      level[0] = 9;
-      level[1] = 9;
-      level[2] = 9;
-      level[3] = 9;
+      level[0] = 1;
+      level[1] = 1;
+      level[2] = 1;
+      level[3] = 1;
 #endif
 
       grid_u_res = max(level[0],level[2])+1; // n segments -> n+1 points
       grid_v_res = max(level[1],level[3])+1;
 
       grid_size_8wide_blocks       = ((grid_u_res*grid_v_res+7)&(-8)) / 8;
-      grid_subtree_size_64b_blocks = 5; // single leaf with 16-wide u,v,x,y,z
+
+      DBG_PRINT( grid_size_8wide_blocks );
+      grid_subtree_size_64b_blocks = 4; // single bvh4 leaf with 3x3 grid => 4 cachelines
 
       /* need stiching? */
 
@@ -96,9 +98,9 @@ namespace embree
 	flags |= HAS_DISPLACEMENT;
 
 
-      /* tessellate into 4x4 grid blocks for larger grid resolutions, generate bvh4i subtree over 4x4 grid blocks*/
+      /* tessellate into 3x3 grid blocks for larger grid resolutions, generate bvh4 subtree over 3x3 grid blocks*/
       if (grid_size_8wide_blocks > 2)
-	grid_subtree_size_64b_blocks = getSubTreeSize64bBlocks( 5 ); // u,v,x,y,z 
+	grid_subtree_size_64b_blocks = getSubTreeSize64bBlocks( 4 ); // u,v,x,y,z 
 
       /* determine whether patch is regular or not */
 

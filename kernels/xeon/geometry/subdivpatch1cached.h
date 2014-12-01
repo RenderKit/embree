@@ -247,7 +247,7 @@ namespace embree
     {
       const unsigned int u_size = u_end-u_start+1;
       const unsigned int v_size = v_end-v_start+1;
-      if (u_size <= 4 && v_size <= 4)
+      if (u_size <= 3 && v_size <= 3)
 	return leafBlocks;/* 128 bytes for 16x 'u' and 'v' plus 16x x,y,z for vtx with displacment*/
 
       const unsigned int u_mid = (u_start+u_end)/2;
@@ -258,7 +258,7 @@ namespace embree
       const unsigned int subtree_v_start[4] = { v_start ,v_start ,v_mid ,v_mid};
       const unsigned int subtree_v_end  [4] = { v_mid   ,v_mid   ,v_end ,v_end };
       
-      size_t blocks = 2; /* 128 bytes bvh4i node layout */
+      size_t blocks = 2; /* 128 bytes bvh4 node layout */
 
       for (unsigned int i=0;i<4;i++)
 	blocks += get64BytesBlocksForGridSubTree(subtree_u_start[i], 

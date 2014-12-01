@@ -23,6 +23,7 @@ namespace embree
 {
 
 #define FORCE_TRIANGLE_UV 1
+
 #define TIMER(x) 
 
   struct __aligned(64) Quad2x2
@@ -115,13 +116,87 @@ namespace embree
         b.extend( Vec3fa(vtx_x[i],vtx_y[i],vtx_z[i]) );
       return b;
     }
+    
+    __forceinline Vec3fa getVec3fa_xyz(const size_t i) const {
+      return Vec3fa( vtx_x[i], vtx_y[i], vtx_z[i] );
+    }
+
+    __forceinline Vec2f getVec2_uv(const size_t i) const {
+      return Vec2f( vtx_u[i], vtx_v[i] );
+    }
+
   };
+
+  /*! Outputs ray to stream. */
+  inline std::ostream& operator<<(std::ostream& cout, const Quad2x2& qquad) {
+    for (size_t i=0;i<12;i++)
+      cout << "i = " << i << " -> xyz = " << qquad.getVec3fa_xyz(i) << " uv = " << qquad.getVec2_uv(i) << std::endl;
+    return cout;
+  }
+
 
 #if defined(__AVX__)
 
+  __forceinline void evalGrid(const SubdivPatch1Cached &patch,
+                              float *__restrict__ const grid_x,
+                              float *__restrict__ const grid_y,
+                              float *__restrict__ const grid_z,
+                              float *__restrict__ const grid_u,
+                              float *__restrict__ const grid_v,
+                              const SubdivMesh* const geom)
+  {
+    gridUVTessellator(patch.level,
+                      patch.grid_u_res,
+                      patch.grid_v_res,
+                      grid_u,
+                      grid_v);
+
+    if (unlikely(patch.needsStiching()))
+      stichUVGrid(patch.level,patch.grid_u_res,patch.grid_v_res,grid_u,grid_v);
+
+
+    for (size_t i=0;i<patch.grid_size_8wide_blocks;i++)
+      {
+        const avxf uu = load8f(&grid_u[8*i]);
+        const avxf vv = load8f(&grid_v[8*i]);
+        const avx3f vtx = patch.eval8(uu,vv);
+
+        if (unlikely(geom != NULL))
+          if (unlikely(((SubdivMesh*)geom)->displFunc != NULL))
+            {
+              PING;
+              avx3f normal = patch.normal8(uu,vv);
+              normal = normalize(normal);
+              
+              ((SubdivMesh*)geom)->displFunc(((SubdivMesh*)geom)->userPtr,
+                                             patch.geom,
+                                             patch.prim,
+                                             (const float*)&uu,
+                                             (const float*)&vv,
+                                             (const float*)&normal.x,
+                                             (const float*)&normal.y,
+                                             (const float*)&normal.z,
+                                             (float*)&vtx.x,
+                                             (float*)&vtx.y,
+                                             (float*)&vtx.z,
+                                             8);
+            }
+
+        *(avxf*)&grid_x[8*i] = vtx.x;
+        *(avxf*)&grid_y[8*i] = vtx.y;
+        *(avxf*)&grid_z[8*i] = vtx.z;        
+        *(avxf*)&grid_u[8*i] = uu;
+        *(avxf*)&grid_v[8*i] = vv;
+
+      }
+    
+  }
+
+
+
 
     BBox3fa createSubTree(BVH4::NodeRef &curNode,
-			  BVH4::Node *const lazyNodeMem,
+			  float *const lazymem,
 			  const SubdivPatch1Cached &patch,
 			  const float *const grid_x_array,
 			  const float *const grid_y_array,
@@ -143,13 +218,12 @@ namespace embree
 
       if (u_size <= 3 && v_size <= 3)
 	{
-
-	  assert(u_size*v_size <= 16);
+	  assert(u_size*v_size <= 9);
 
 	  const unsigned int currentIndex = localCounter;
-	  localCounter += 2; // 4 cachelines for Quad2x2
+	  localCounter += 4; // 4 cachelines for Quad2x2
 
-          Quad2x2 *qquad = (Quad2x2*)&lazyNodeMem[currentIndex];
+          Quad2x2 *qquad = (Quad2x2*)&lazymem[currentIndex*16];
 
 	  float leaf_x_array[3][3];
 	  float leaf_y_array[3][3];
@@ -191,14 +265,25 @@ namespace embree
 		leaf_v_array[y][x] = leaf_v_array[v_size-1][x];
 	      }
 
+
+          qquad->init( (float*)leaf_x_array, (float*)leaf_y_array, (float*)leaf_z_array, (float*)leaf_u_array, (float*)leaf_v_array, 0, 3, 6 );
+
+#if 0
+          DBG_PRINT("LEAF");
+          DBG_PRINT(u_start);
+          DBG_PRINT(v_start);
+          DBG_PRINT(u_end);
+          DBG_PRINT(v_end);
+
 	  for (unsigned int y=0;y<3;y++)
             for (unsigned int x=0;x<3;x++)
               std::cout << y << " " << x 
                         << " ->  x = " << leaf_x_array[y][x] << " y = " << leaf_v_array[y][x] << " z = " << leaf_z_array[y][x]
                         << "   u = " << leaf_u_array[y][x] << " v = " << leaf_v_array[y][x] << std::endl;
 
+          DBG_PRINT( *qquad );
 
-          qquad->init( (float*)leaf_x_array, (float*)leaf_y_array, (float*)leaf_z_array, (float*)leaf_u_array, (float*)leaf_v_array, 0, 3, 6 );
+#endif          
           
           BBox3fa bounds = qquad->bounds();
           curNode = BVH4::encodeLeaf(qquad,0);
@@ -206,11 +291,12 @@ namespace embree
 	  return bounds;
 	}
 
-      /* allocate new bvh4i node */
+      /* allocate new bvh4 node */
       const size_t currentIndex = localCounter;
-      localCounter += 1;
+      /* 128 bytes == 2 x 64 bytes cachelines */
+      localCounter += 2; 
 
-      BVH4::Node *node = &lazyNodeMem[currentIndex];
+      BVH4::Node *node = (BVH4::Node *)&lazymem[currentIndex*16];
 
       curNode = BVH4::encodeNode( node );
 
@@ -233,7 +319,7 @@ namespace embree
       for (unsigned int i=0;i<4;i++)
 	{
 	  BBox3fa bounds_subtree = createSubTree( node->child(i), 
-						  lazyNodeMem, 
+						  lazymem, 
 						  patch, 
 						  grid_x_array,
 						  grid_y_array,
@@ -262,7 +348,7 @@ namespace embree
       TIMER(double msec = 0.0);
       TIMER(msec = getSeconds());
 
-      assert( patch.grid_size_8wide_blocks > 1 );
+      assert( patch.grid_size_8wide_blocks >= 1 );
       __aligned(64) float grid_x[(patch.grid_size_8wide_blocks+1)*8]; 
       __aligned(64) float grid_y[(patch.grid_size_8wide_blocks+1)*8];
       __aligned(64) float grid_z[(patch.grid_size_8wide_blocks+1)*8]; 
@@ -270,60 +356,13 @@ namespace embree
       __aligned(64) float grid_u[(patch.grid_size_8wide_blocks+1)*8]; 
       __aligned(64) float grid_v[(patch.grid_size_8wide_blocks+1)*8];
 
-
-      gridUVTessellator(patch.level,
-                        patch.grid_u_res,
-                        patch.grid_v_res,
-                        grid_u,
-                        grid_v);
-
-      if (unlikely(patch.needsStiching()))
-        stichUVGrid(patch.level,patch.grid_u_res,patch.grid_v_res,grid_u,grid_v);
-
-
-      for (size_t i=0;i<patch.grid_size_8wide_blocks;i++)
-        {
-          const avxf uu = load8f(&grid_u[8*i]);
-          const avxf vv = load8f(&grid_v[8*i]);
-          const avx3f vtx = patch.eval8(uu,vv);
-
-#if 1
-          if (unlikely(geom != NULL))
-            if (unlikely(((SubdivMesh*)geom)->displFunc != NULL))
-              {
-                avx3f normal = patch.normal8(uu,vv);
-                normal = normalize(normal);
-              
-                ((SubdivMesh*)geom)->displFunc(((SubdivMesh*)geom)->userPtr,
-                                               patch.geom,
-                                               patch.prim,
-                                               (const float*)&uu,
-                                               (const float*)&vv,
-                                               (const float*)&normal.x,
-                                               (const float*)&normal.y,
-                                               (const float*)&normal.z,
-                                               (float*)&vtx.x,
-                                               (float*)&vtx.y,
-                                               (float*)&vtx.z,
-                                               8);
-              }
-#endif        
-          *(avxf*)&grid_x[8*i] = vtx.x;
-          *(avxf*)&grid_y[8*i] = vtx.y;
-          *(avxf*)&grid_z[8*i] = vtx.z;        
-          *(avxf*)&grid_u[8*i] = uu;
-          *(avxf*)&grid_v[8*i] = vv;
-
-        }
-
+      evalGrid(patch,grid_x,grid_y,grid_z,grid_u,grid_v,geom);
 
       BVH4::NodeRef subtree_root = BVH4::encodeNode( (BVH4::Node*)lazymem );
       unsigned int currentIndex = 0;
 
-      const unsigned int oldIndex = currentIndex;
-
       BBox3fa bounds = createSubTree( subtree_root,
-				      (BVH4::Node*)lazymem,
+				      (float*)lazymem,
 				      patch,
 				      grid_x,
 				      grid_y,
@@ -337,7 +376,7 @@ namespace embree
 				      currentIndex,
 				      geom);
 
-      assert(currentIndex - oldIndex == patch.grid_subtree_size_64b_blocks);
+      assert(currentIndex == patch.grid_subtree_size_64b_blocks);
       TIMER(msec = getSeconds()-msec);    
       return subtree_root;
     }
@@ -461,16 +500,93 @@ namespace embree
   }
 
 
-  static __forceinline void intersect1_quad8(Ray& ray,
-                                             const Quad2x2 &quad,
-                                             const SubdivPatch1Cached *const sptr,
-                                             const void* geom)
+  static __forceinline void intersect1_tri8_precise(Ray& ray,
+                                                    const Quad2x2 &qquad,
+                                                    const void* geom)
   {
-    const avx3f v0 = quad.getVtx( 0 );
-    const avx3f v1 = quad.getVtx( 1 );
-    const avx3f v2 = quad.getVtx( 2 );
-    //intersect1_tri8_precise(ray,v0,v1,v2,u,v,offset_v0,offset_v1,offset_v3,m_active,sptr,geom);
-  }
+    const avx3f v0_org = qquad.getVtx( 0 );
+    const avx3f v1_org = qquad.getVtx( 1 );
+    const avx3f v2_org = qquad.getVtx( 2 );
+
+    const avx3f O = ray.org;
+    const avx3f D = ray.dir;
+
+    const avx3f v0 = v0_org - O;
+    const avx3f v1 = v1_org - O;
+    const avx3f v2 = v2_org - O;
+   
+    const avx3f e0 = v2 - v0;
+    const avx3f e1 = v0 - v1;	     
+    const avx3f e2 = v1 - v2;	     
+
+    /* calculate geometry normal and denominator */
+    const avx3f Ng1 = cross(e1,e0);
+    const avx3f Ng = Ng1+Ng1;
+    const avxf den = dot(Ng,D);
+    const avxf absDen = abs(den);
+    const avxf sgnDen = signmsk(den);
+      
+    avxb valid ( true );
+    /* perform edge tests */
+    const avxf U = dot(avx3f(cross(v2+v0,e0)),D) ^ sgnDen;
+    valid &= U >= 0.0f;
+    if (likely(none(valid))) return;
+    const avxf V = dot(avx3f(cross(v0+v1,e1)),D) ^ sgnDen;
+    valid &= V >= 0.0f;
+    if (likely(none(valid))) return;
+    const avxf W = dot(avx3f(cross(v1+v2,e2)),D) ^ sgnDen;
+    valid &= W >= 0.0f;
+    if (likely(none(valid))) return;
+      
+    /* perform depth test */
+    const avxf T = dot(v0,Ng) ^ sgnDen;
+    valid &= (T >= absDen*ray.tnear) & (absDen*ray.tfar >= T);
+    if (unlikely(none(valid))) return;
+      
+    /* perform backface culling */
+#if defined(RTCORE_BACKFACE_CULLING)
+    valid &= den > avxf(zero);
+    if (unlikely(none(valid))) return;
+#else
+    valid &= den != avxf(zero);
+    if (unlikely(none(valid))) return;
+#endif
+            
+    /* calculate hit information */
+    const avxf rcpAbsDen = rcp(absDen);
+    const avxf u = U*rcpAbsDen;
+    const avxf v = V*rcpAbsDen;
+    const avxf t = T*rcpAbsDen;
+
+#if FORCE_TRIANGLE_UV == 0
+    const avx2f uv0 = qquad.getUV( 0 );
+    const avx2f uv1 = qquad.getUV( 1 );
+    const avx2f uv2 = qquad.getUV( 2 );
+
+    const avx2f uv = u * uv1 + v * uv2 + (1.0f-u-v) * uv0;
+
+    const avxf u_final = uv[0];
+    const avxf v_final = uv[1];
+#else
+    const avxf u_final = u;
+    const avxf v_final = v;
+#endif
+
+
+    size_t i = select_min(valid,t);
+
+    /* update hit information */
+    ray.u = u_final[i];
+    ray.v = v_final[i];
+    ray.tfar = t[i];
+    ray.Ng.x = Ng.x[i];
+    ray.Ng.y = Ng.y[i];
+    ray.Ng.z = Ng.z[i];
+    ray.geomID = 0; //FIXME
+    ray.primID = 0;
+      
+  };
+
 
 #endif
 
@@ -498,50 +614,22 @@ namespace embree
     DBG_PRINT(edge_levels[3]);
 #endif
 
-    __aligned(64) float u_array[(subdiv_patch.grid_size_8wide_blocks+1)*8]; // for unaligned access
-    __aligned(64) float v_array[(subdiv_patch.grid_size_8wide_blocks+1)*8];
-
-    __aligned(64) float vtx_x[(subdiv_patch.grid_size_8wide_blocks+1)*8];
-    __aligned(64) float vtx_y[(subdiv_patch.grid_size_8wide_blocks+1)*8];
-    __aligned(64) float vtx_z[(subdiv_patch.grid_size_8wide_blocks+1)*8];
-
-    gridUVTessellator(edge_levels,grid_u_res,grid_v_res,u_array,v_array);
-
-    if (unlikely(subdiv_patch.needsStiching()))
-      stichUVGrid(edge_levels,grid_u_res,grid_v_res,u_array,v_array);
-
-    for (size_t i=0;i<subdiv_patch.grid_size_8wide_blocks;i++)
-      {
-        const avxf uu = load8f(&u_array[8*i]);
-        const avxf vv = load8f(&v_array[8*i]);
-        const avx3f vtx = subdiv_patch.eval8(uu,vv);
-
-        if (unlikely(geom != NULL))
-          if (unlikely(((SubdivMesh*)geom)->displFunc != NULL))
-            {
-              avx3f normal = subdiv_patch.normal8(uu,vv);
-              normal = normalize(normal);
-              
-              ((SubdivMesh*)geom)->displFunc(((SubdivMesh*)geom)->userPtr,
-                                             subdiv_patch.geom,
-                                             subdiv_patch.prim,
-                                             (const float*)&uu,
-                                             (const float*)&vv,
-                                             (const float*)&normal.x,
-                                             (const float*)&normal.y,
-                                             (const float*)&normal.z,
-                                             (float*)&vtx.x,
-                                             (float*)&vtx.y,
-                                             (float*)&vtx.z,
-                                             8);
-            }
-        
-        *(avxf*)&vtx_x[8*i] = vtx.x;
-        *(avxf*)&vtx_y[8*i] = vtx.y;
-        *(avxf*)&vtx_z[8*i] = vtx.z;        
-      }
+    __aligned(64) float grid_x[(subdiv_patch.grid_size_8wide_blocks+1)*8]; // for unaligned access
+    __aligned(64) float grid_y[(subdiv_patch.grid_size_8wide_blocks+1)*8];
+    __aligned(64) float grid_z[(subdiv_patch.grid_size_8wide_blocks+1)*8];
+    __aligned(64) float grid_u[(subdiv_patch.grid_size_8wide_blocks+1)*8]; 
+    __aligned(64) float grid_v[(subdiv_patch.grid_size_8wide_blocks+1)*8];
 
 
+    evalGrid(subdiv_patch,grid_x,grid_y,grid_z,grid_u,grid_v,(SubdivMesh*)geom);
+
+#if 1
+    BVH4::Node tmpNode[1024];
+    BVH4::NodeRef tmpRoot = initLocalLazySubdivTree(subdiv_patch,tmpNode,(SubdivMesh*)geom);
+    //std::cout << "DONE" << std::endl;
+    //exit(0);
+    intersect1_tri8_precise( ray, *(Quad2x2*)tmpNode, (SubdivMesh*)geom);
+#else
     size_t offset_line0 = 0;
     size_t offset_line1 = grid_u_res;
 
@@ -557,25 +645,19 @@ namespace embree
             avxb m_active ( true );
             if (unlikely(x + 8 > (grid_u_res-1))) 
               {
-                //DBG_PRINT( (grid_u_res-1)%8 );
-                //DBG_PRINT( grid_u_res-1 );
-              
                 for (size_t i=(grid_u_res-1)%8;i<8;i++)
                   m_active[i] = 0;
               }
-            //DBG_PRINT( m_active);
-            intersect1_quad8(ray,vtx_x,vtx_y,vtx_z,
-                             u_array,v_array,
+            intersect1_quad8(ray,grid_x,grid_y,grid_z,
+                             grid_u,grid_v,
                              offset_v0,offset_v1,offset_v2,offset_v3,
                              m_active,
                              &subdiv_patch,
                              geom );
 
           }
-        //exit(0);
-	      
       }	  
-
+#endif
 
     
 #endif
