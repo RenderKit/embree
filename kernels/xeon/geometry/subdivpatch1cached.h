@@ -22,7 +22,7 @@
 #include "common/subdiv/tessellation.h"
 
 #define FORCE_TESSELLATION_BOUNDS 1
-#define USE_DISPLACEMENT_FOR_TESSELLATION_BOUNDS 0
+#define USE_DISPLACEMENT_FOR_TESSELLATION_BOUNDS 1
 
 using namespace std;
 
@@ -186,6 +186,7 @@ namespace embree
 	  /* eval displacement function */
 	  if (unlikely(mesh->displFunc != NULL))
 	    {
+              std::cout << "USING DISPLACEMENTS" << std::endl;
 	      avx3f normal = normal8(u,v);
 	      normal = normalize(normal);
 

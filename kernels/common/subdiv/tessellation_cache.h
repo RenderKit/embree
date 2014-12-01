@@ -187,13 +187,11 @@ namespace embree
 #if DEBUG
       if (cache_accesses)
         {
-          mtx.lock();
           assert(cache_hits + cache_misses == cache_accesses);
           DBG_PRINT(cache_accesses);
           DBG_PRINT(cache_misses);
           DBG_PRINT(cache_hits);
           DBG_PRINT(100.0f * cache_hits / cache_accesses);
-          mtx.unlock();
         }
 #endif
     }

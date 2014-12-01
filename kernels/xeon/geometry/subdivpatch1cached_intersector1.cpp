@@ -26,7 +26,8 @@
 namespace embree
 {
 
-#define FORCE_TRIANGLE_UV 1
+#define FORCE_TRIANGLE_UV 0
+#define COMPUTE_SUBDIV_NORMALS_AFTER_PATCH_INTERSECTION 1
 
 #define TIMER(x) 
   
@@ -47,23 +48,33 @@ namespace embree
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
+  /* 3x3 point grid => 2x2 quad grid */
   struct __aligned(64) Quad2x2
   {
+   
     Quad2x2() 
       {
         assert( (sizeof(Quad2x2)+63)/64 == 4 ); /* need 4 cachelines */
       }
+
+    /*  v00 - v01 - v02 */
+    /*  v10 - v11 - v12 */
+    /*  v20 - v21 - v22 */
+
+    /* v00 - v10 - v01 - v11 - v02 - v12 */
+    /* v10 - v20 - v11 - v21 - v12 - v22 */
 
     float vtx_x[12];
     float vtx_y[12];
     float vtx_z[12];
     float vtx_u[12];
     float vtx_v[12];
-    float dummy[3];
 
-    /*  v00 - v01 - v02 */
-    /*  v10 - v11 - v12 */
-    /*  v20 - v21 - v22 */
+    /* back pointer to SubdivPatch1Cached patch */
+    const SubdivPatch1Cached *backPtr;
+
+    size_t reserved;
+
 
     __forceinline void initFrom3x3Grid( const float *const source,
                                         float *const dest,
@@ -71,6 +82,8 @@ namespace embree
                                         const size_t offset_line1,
                                         const size_t offset_line2)
     {
+      DBG_PRINT(sizeof(Quad2x2));
+
       const float v00 = source[offset_line0 + 0];
       const float v01 = source[offset_line0 + 1];
       const float v02 = source[offset_line0 + 2];
@@ -99,19 +112,21 @@ namespace embree
 
     /* init from 3x3 point grid */
     void init( const float * const grid_x,
-             const float * const grid_y,
-             const float * const grid_z,
-             const float * const grid_u,
-             const float * const grid_v,
-             const size_t offset_line0,
-             const size_t offset_line1,
-             const size_t offset_line2)
+               const float * const grid_y,
+               const float * const grid_z,
+               const float * const grid_u,
+               const float * const grid_v,
+               const size_t offset_line0,
+               const size_t offset_line1,
+               const size_t offset_line2,
+               const SubdivPatch1Cached *patch)
       {
         initFrom3x3Grid( grid_x, vtx_x, offset_line0, offset_line1, offset_line2 );
         initFrom3x3Grid( grid_y, vtx_y, offset_line0, offset_line1, offset_line2 );
         initFrom3x3Grid( grid_z, vtx_z, offset_line0, offset_line1, offset_line2 );
         initFrom3x3Grid( grid_u, vtx_u, offset_line0, offset_line1, offset_line2 );
         initFrom3x3Grid( grid_v, vtx_v, offset_line0, offset_line1, offset_line2 );
+        backPtr = patch;
       }
 
 #if defined(__AVX__)
@@ -185,7 +200,7 @@ namespace embree
         if (unlikely(geom != NULL))
           if (unlikely(((SubdivMesh*)geom)->displFunc != NULL))
             {
-              PING;
+              std::cout << "USING DISPLACEMENTS" << std::endl;
               avx3f normal = patch.normal8(uu,vv);
               normal = normalize(normal);
               
@@ -287,7 +302,15 @@ namespace embree
 	      }
 
 
-          qquad->init( (float*)leaf_x_array, (float*)leaf_y_array, (float*)leaf_z_array, (float*)leaf_u_array, (float*)leaf_v_array, 0, 3, 6 );
+          qquad->init( (float*)leaf_x_array, 
+                       (float*)leaf_y_array, 
+                       (float*)leaf_z_array, 
+                       (float*)leaf_u_array, 
+                       (float*)leaf_v_array, 
+                       0, 
+                       3, 
+                       6,
+                       &patch);
 
 #if 0
           DBG_PRINT("LEAF");
@@ -400,14 +423,98 @@ namespace embree
 				      currentIndex,
 				      geom);
 
-      // DBG_PRINT( currentIndex );
-      // DBG_PRINT( patch.grid_subtree_size_64b_blocks );
-
       assert(currentIndex == patch.grid_subtree_size_64b_blocks);
       TIMER(msec = getSeconds()-msec);    
       return subtree_root;
     }
 
+
+  /* intersect ray with Quad2x2 structure => 1 ray vs. 8 triangles */
+  static __forceinline void intersect1_tri8_precise(Ray& ray,
+                                                    const Quad2x2 &qquad,
+                                                    const void* geom)
+  {
+    const avx3f v0_org = qquad.getVtx( 0 );
+    const avx3f v1_org = qquad.getVtx( 1 );
+    const avx3f v2_org = qquad.getVtx( 2 );
+
+    const avx3f O = ray.org;
+    const avx3f D = ray.dir;
+
+    const avx3f v0 = v0_org - O;
+    const avx3f v1 = v1_org - O;
+    const avx3f v2 = v2_org - O;
+   
+    const avx3f e0 = v2 - v0;
+    const avx3f e1 = v0 - v1;	     
+    const avx3f e2 = v1 - v2;	     
+
+    /* calculate geometry normal and denominator */
+    const avx3f Ng1 = cross(e1,e0);
+    const avx3f Ng = Ng1+Ng1;
+    const avxf den = dot(Ng,D);
+    const avxf absDen = abs(den);
+    const avxf sgnDen = signmsk(den);
+      
+    avxb valid ( true );
+    /* perform edge tests */
+    const avxf U = dot(avx3f(cross(v2+v0,e0)),D) ^ sgnDen;
+    valid &= U >= 0.0f;
+    if (likely(none(valid))) return;
+    const avxf V = dot(avx3f(cross(v0+v1,e1)),D) ^ sgnDen;
+    valid &= V >= 0.0f;
+    if (likely(none(valid))) return;
+    const avxf W = dot(avx3f(cross(v1+v2,e2)),D) ^ sgnDen;
+    valid &= W >= 0.0f;
+    if (likely(none(valid))) return;
+      
+    /* perform depth test */
+    const avxf T = dot(v0,Ng) ^ sgnDen;
+    valid &= (T >= absDen*ray.tnear) & (absDen*ray.tfar >= T);
+    if (unlikely(none(valid))) return;
+      
+    /* perform backface culling */
+#if defined(RTCORE_BACKFACE_CULLING)
+    valid &= den > avxf(zero);
+    if (unlikely(none(valid))) return;
+#else
+    valid &= den != avxf(zero);
+    if (unlikely(none(valid))) return;
+#endif
+            
+    /* calculate hit information */
+    const avxf rcpAbsDen = rcp(absDen);
+    const avxf u = U*rcpAbsDen;
+    const avxf v = V*rcpAbsDen;
+    const avxf t = T*rcpAbsDen;
+
+#if FORCE_TRIANGLE_UV == 0
+    const avx2f uv0 = qquad.getUV( 0 );
+    const avx2f uv1 = qquad.getUV( 1 );
+    const avx2f uv2 = qquad.getUV( 2 );
+
+    const avx2f uv = u * uv1 + v * uv2 + (1.0f-u-v) * uv0;
+
+    const avxf u_final = uv[0];
+    const avxf v_final = uv[1];
+#else
+    const avxf u_final = u;
+    const avxf v_final = v;
+#endif
+
+    size_t i = select_min(valid,t);
+
+    /* update hit information */
+    ray.u = u_final[i];
+    ray.v = v_final[i];
+    ray.tfar = t[i];
+    ray.Ng.x = Ng.x[i];
+    ray.Ng.y = Ng.y[i];
+    ray.Ng.z = Ng.z[i];
+    ray.geomID = 0; //FIXME
+    ray.primID = 0;
+      
+  };
 
   static __forceinline void intersect1_tri8_precise(Ray& ray,
                                                     const avx3f &v0_org,
@@ -527,92 +634,6 @@ namespace embree
   }
 
 
-  static __forceinline void intersect1_tri8_precise(Ray& ray,
-                                                    const Quad2x2 &qquad,
-                                                    const void* geom)
-  {
-    const avx3f v0_org = qquad.getVtx( 0 );
-    const avx3f v1_org = qquad.getVtx( 1 );
-    const avx3f v2_org = qquad.getVtx( 2 );
-
-    const avx3f O = ray.org;
-    const avx3f D = ray.dir;
-
-    const avx3f v0 = v0_org - O;
-    const avx3f v1 = v1_org - O;
-    const avx3f v2 = v2_org - O;
-   
-    const avx3f e0 = v2 - v0;
-    const avx3f e1 = v0 - v1;	     
-    const avx3f e2 = v1 - v2;	     
-
-    /* calculate geometry normal and denominator */
-    const avx3f Ng1 = cross(e1,e0);
-    const avx3f Ng = Ng1+Ng1;
-    const avxf den = dot(Ng,D);
-    const avxf absDen = abs(den);
-    const avxf sgnDen = signmsk(den);
-      
-    avxb valid ( true );
-    /* perform edge tests */
-    const avxf U = dot(avx3f(cross(v2+v0,e0)),D) ^ sgnDen;
-    valid &= U >= 0.0f;
-    if (likely(none(valid))) return;
-    const avxf V = dot(avx3f(cross(v0+v1,e1)),D) ^ sgnDen;
-    valid &= V >= 0.0f;
-    if (likely(none(valid))) return;
-    const avxf W = dot(avx3f(cross(v1+v2,e2)),D) ^ sgnDen;
-    valid &= W >= 0.0f;
-    if (likely(none(valid))) return;
-      
-    /* perform depth test */
-    const avxf T = dot(v0,Ng) ^ sgnDen;
-    valid &= (T >= absDen*ray.tnear) & (absDen*ray.tfar >= T);
-    if (unlikely(none(valid))) return;
-      
-    /* perform backface culling */
-#if defined(RTCORE_BACKFACE_CULLING)
-    valid &= den > avxf(zero);
-    if (unlikely(none(valid))) return;
-#else
-    valid &= den != avxf(zero);
-    if (unlikely(none(valid))) return;
-#endif
-            
-    /* calculate hit information */
-    const avxf rcpAbsDen = rcp(absDen);
-    const avxf u = U*rcpAbsDen;
-    const avxf v = V*rcpAbsDen;
-    const avxf t = T*rcpAbsDen;
-
-#if FORCE_TRIANGLE_UV == 0
-    const avx2f uv0 = qquad.getUV( 0 );
-    const avx2f uv1 = qquad.getUV( 1 );
-    const avx2f uv2 = qquad.getUV( 2 );
-
-    const avx2f uv = u * uv1 + v * uv2 + (1.0f-u-v) * uv0;
-
-    const avxf u_final = uv[0];
-    const avxf v_final = uv[1];
-#else
-    const avxf u_final = u;
-    const avxf v_final = v;
-#endif
-
-
-    size_t i = select_min(valid,t);
-
-    /* update hit information */
-    ray.u = u_final[i];
-    ray.v = v_final[i];
-    ray.tfar = t[i];
-    ray.Ng.x = Ng.x[i];
-    ray.Ng.y = Ng.y[i];
-    ray.Ng.z = Ng.z[i];
-    ray.geomID = 0; //FIXME
-    ray.primID = 0;
-      
-  };
 
 
 #endif
@@ -623,37 +644,36 @@ namespace embree
                                                               const Primitive& subdiv_patch,
                                                               const void* geom) // geom == mesh or geom == scene?
   {
-#if defined(__AVX__)
+    /* only avx code for now */
+#if defined(__AVX__) 
 
 #if defined(ENABLE_PER_THREAD_TESSELLATION_CACHE)
-      TessellationCache *local_cache = NULL;
+    TessellationCache *local_cache = NULL;
 
-      if (!thread_cache)
-	{
-	  thread_cache = (TessellationCache *)_mm_malloc(sizeof(TessellationCache),64);
-	  assert( (size_t)thread_cache % 64 == 0 );
-	  thread_cache->init();	  
-	}
+    if (!thread_cache)
+      {
+        thread_cache = (TessellationCache *)_mm_malloc(sizeof(TessellationCache),64);
+        assert( (size_t)thread_cache % 64 == 0 );
+        thread_cache->init();	  
+      }
 
-      local_cache = thread_cache;
+    local_cache = thread_cache;
 
-   SubdivPatch1Cached* tag = (SubdivPatch1Cached*)&subdiv_patch;
+    SubdivPatch1Cached* tag = (SubdivPatch1Cached*)&subdiv_patch;
 
-      BVH4::NodeRef root = local_cache->lookup(tag);
+    BVH4::NodeRef root = local_cache->lookup(tag);
 
-      if (root == BVH4::invalidNode)
-	{
-	  const unsigned int blocks = subdiv_patch.grid_subtree_size_64b_blocks;
-	  root = local_cache->insert(tag,blocks);
-	  BVH4::Node* node = root.node();
+    if (root == BVH4::invalidNode)
+      {
+        const unsigned int blocks = subdiv_patch.grid_subtree_size_64b_blocks;
+        root = local_cache->insert(tag,blocks);
+        BVH4::Node* node = root.node();
 
-	  initLocalLazySubdivTree(subdiv_patch,root.node(),(SubdivMesh*)geom);		      
- 	  assert( root != BVH4::invalidNode);
-       }
+        initLocalLazySubdivTree(subdiv_patch,root.node(),(SubdivMesh*)geom);		      
+        assert( root != BVH4::invalidNode);
+      }
 
-    //BVH4::Node tmpNode[1024];
-    //BVH4::NodeRef root = initLocalLazySubdivTree(subdiv_patch,tmpNode,(SubdivMesh*)geom);
-    //intersect1_tri8_precise( ray, *(Quad2x2*)tmpNode, (SubdivMesh*)geom);
+    // FIXME: return lazy BVH4 node to original intersector
 
 #define STACK_SIZE 64
 
