@@ -385,6 +385,42 @@ namespace embree
       return Vec3fa( extract_f_m(matrix,n,0), extract_f_m(matrix,n,1), extract_f_m(matrix,n,2) );
     }
 
+
+
+    static __forceinline Vec3fa eval(const Vec3fa matrix[4][4],
+                                     const float &uu,
+                                     const float &vv) 
+    {
+      Vec3fa f[2][2];
+      f[0][0] = extract_f_m_Vec3fa( matrix, 0 );
+      f[0][1] = extract_f_m_Vec3fa( matrix, 1 );
+      f[1][1] = extract_f_m_Vec3fa( matrix, 2 );
+      f[1][0] = extract_f_m_Vec3fa( matrix, 3 );
+
+      Vec3fa_t v_11, v_12, v_22, v_21;
+      computeInnerVertices(matrix,f,uu,vv,v_11, v_12, v_22, v_21);
+      
+      const float one_minus_uu = 1.0f - uu;
+      const float one_minus_vv = 1.0f - vv;      
+      
+      const float B0_u = one_minus_uu * one_minus_uu * one_minus_uu;
+      const float B0_v = one_minus_vv * one_minus_vv * one_minus_vv;
+      const float B1_u = 3.0f * one_minus_uu * one_minus_uu * uu;
+      const float B1_v = 3.0f * one_minus_vv * one_minus_vv * vv;
+      const float B2_u = 3.0f * one_minus_uu * uu * uu;
+      const float B2_v = 3.0f * one_minus_vv * vv * vv;
+      const float B3_u = uu * uu * uu;
+      const float B3_v = vv * vv * vv;
+      
+      const Vec3fa_t res = 
+	(B0_u * matrix[0][0] + B1_u * matrix[0][1] + B2_u * matrix[0][2] + B3_u * matrix[0][3]) * B0_v + 
+	(B0_u * matrix[1][0] + B1_u * v_11    + B2_u * v_12    + B3_u * matrix[1][3]) * B1_v + 
+	(B0_u * matrix[2][0] + B1_u * v_21    + B2_u * v_22    + B3_u * matrix[2][3]) * B2_v + 
+	(B0_u * matrix[3][0] + B1_u * matrix[3][1] + B2_u * matrix[3][2] + B3_u * matrix[3][3]) * B3_v; 
+      
+      return res;
+    }
+
 #if defined(__AVX__)    
 
     static __forceinline avx3f deCasteljau8(const avxf &uu, const avx3f &v0, const avx3f &v1, const avx3f &v2, const avx3f &v3)

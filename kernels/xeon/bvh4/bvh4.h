@@ -1282,29 +1282,29 @@ namespace embree
     }
 
     /*! Encodes a node */
-    __forceinline NodeRef encodeNode(Node* node) {  // FIXME: template these functions
+    static __forceinline NodeRef encodeNode(Node* node) {  // FIXME: template these functions
       assert(!((size_t)node & align_mask)); 
       return NodeRef((size_t) node);
     }
 
     /*! Encodes a node */
-    __forceinline NodeRef encodeNode(NodeMB* node) { 
+    static __forceinline NodeRef encodeNode(NodeMB* node) { 
       assert(!((size_t)node & align_mask)); 
       return NodeRef((size_t) node | tyNodeMB);
     }
 
     /*! Encodes an unaligned node */
-    __forceinline NodeRef encodeNode(UnalignedNode* node) { 
+    static __forceinline NodeRef encodeNode(UnalignedNode* node) { 
       return NodeRef((size_t) node | tyUnalignedNode);
     }
 
     /*! Encodes an unaligned motion blur node */
-    __forceinline NodeRef encodeNode(UnalignedNodeMB* node) { 
+    static __forceinline NodeRef encodeNode(UnalignedNodeMB* node) { 
       return NodeRef((size_t) node |  tyUnalignedNodeMB);
     }
     
     /*! Encodes a leaf */
-    __forceinline NodeRef encodeLeaf(void* tri, size_t num) {
+    static __forceinline NodeRef encodeLeaf(void* tri, size_t num) {
       assert(!((size_t)tri & align_mask)); 
       return NodeRef((size_t)tri | (tyLeaf+min(num,(size_t)maxLeafBlocks)));
     }

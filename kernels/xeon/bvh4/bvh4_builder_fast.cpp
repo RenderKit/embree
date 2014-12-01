@@ -603,14 +603,14 @@ namespace embree
         return s;
       }, [](PrimInfo a, const PrimInfo& b) { a.merge(b); return a; });
 
-
+#if DEBUG
       for (size_t i=0; i<numPrimitives; i++) {
-	PRINT2(i,prims[i].bounds());
 	assert(prims[i].geomID() != -1);
 	assert(prims[i].bounds().lower.x <= prims[i].bounds().upper.x);
 	assert(prims[i].bounds().lower.y <= prims[i].bounds().upper.y);
 	assert(prims[i].bounds().lower.z <= prims[i].bounds().upper.z);
       }
+#endif
       //DBG_PRINT( pinfo );
     }
     

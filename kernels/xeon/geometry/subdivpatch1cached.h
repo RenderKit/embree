@@ -33,7 +33,7 @@ namespace embree
   __forceinline BBox3fa getBBox3fa(const avx3f &v)
   {
     const Vec3fa b_min( reduce_min(v.x), reduce_min(v.y), reduce_min(v.z) );
-    const Vec3fa b_max( reduce_max(v.x), reduce_max(v.z), reduce_max(v.z) );
+    const Vec3fa b_max( reduce_max(v.x), reduce_max(v.y), reduce_max(v.z) );
     return BBox3fa( b_min, b_max );
   }
 #endif
@@ -71,6 +71,18 @@ namespace embree
     __forceinline bool needsStiching() const
     {
       return (flags & TRANSITION_PATCH) == TRANSITION_PATCH;      
+    }
+
+    __forceinline Vec3fa eval(const float uu, const float vv)
+    {
+      if (likely(isRegular()))
+	{
+	  return patch.eval(uu,vv);
+	}
+      else 
+	{
+	  return GregoryPatch::eval( patch.v, uu, vv );
+	}      
     }
 
 #if defined(__AVX__)
@@ -130,7 +142,7 @@ namespace embree
       return (flags & HAS_DISPLACEMENT) == HAS_DISPLACEMENT;
     }
 
-    BBox3fa bounds(const SubdivMesh* const mesh) const
+    __forceinline BBox3fa bounds(const SubdivMesh* const mesh) const
     {
 #if FORCE_TESSELLATION_BOUNDS == 1
 
@@ -151,34 +163,17 @@ namespace embree
 #if !defined(__AVX__)
       BBox3fa b ( empty );
 
-      if (isRegular())
-	for (size_t i=0;i<real_grid_size;i++)
-	  {
-	    const Vec3fa vtx = patch.eval( u_array[i], v_array[i] );	    
-	    b.extend( vtx );
-	  }
-      else
-	{
-	  Vec3fa f_m[2][2];
-	  f_m[0][0] = GregoryPatch::extract_f_m_Vec3fa(patch.v,0);
-	  f_m[0][1] = GregoryPatch::extract_f_m_Vec3fa(patch.v,1);
-	  f_m[1][1] = GregoryPatch::extract_f_m_Vec3fa(patch.v,2);
-	  f_m[1][0] = GregoryPatch::extract_f_m_Vec3fa(patch.v,3);
-
-	  GregoryPatch gpatch( patch.v, f_m);
-	  for (size_t i=0;i<real_grid_size;i++)
-	    {
-	      const Vec3fa vtx = gpatch.eval( u_array[i], v_array[i] );
-	      b.extend( vtx );
-	    }
-	}
+      for (size_t i=0;i<real_grid_size;i++)
+        {
+          const Vec3fa vtx = patch.eval( u_array[i], v_array[i] );	    
+          b.extend( vtx );
+        }
 
       b.lower.a = 0.0f;
       b.upper.a = 0.0f;
 
 #else
       BBox3fa b ( empty );
-      
       assert( grid_size_8wide_blocks >= 1 );
       for (size_t i=0;i<grid_size_8wide_blocks;i++)
 	{
