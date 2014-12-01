@@ -64,39 +64,7 @@ namespace embree
       /*   }	 */
     }
   };
-  
-  /* old buggy version */
-  __forceinline void stichEdges(const unsigned int low_rate_segments,
-				const unsigned int high_rate_segments,
-				float * __restrict__ const uv_array,
-				const unsigned int uv_array_step)
-  {
-    assert(low_rate_segments < high_rate_segments);
-    assert(high_rate_segments >= 2);
     
-    const float inv_low_rate_segments = 1.0f / (float)low_rate_segments;
-    const unsigned int high_rate_points = high_rate_segments+1;
-    const unsigned int dy = low_rate_segments+1; // [0,..,low_rate_segments]   
-    const unsigned int dx = high_rate_segments-1;
-    
-    int p = 2*dy-dx;  
-    
-    unsigned int offset = uv_array_step;
-    
-    for(unsigned int x=1, y=0; x<high_rate_segments; x++) // inner points [1,..,n-1]
-    {
-      uv_array[offset] = (float)y * inv_low_rate_segments;
-      
-      offset += uv_array_step;      
-      if(p > 0)
-      {
-	y++;
-	p -= 2*dx;
-      }
-      p += 2*dy;
-    }
-  }
-  
   
   __forceinline void stichGridEdges(const unsigned int low_rate,
 				    const unsigned int high_rate,
