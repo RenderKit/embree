@@ -58,7 +58,7 @@ namespace embree
       assert( ipatch.ring[2].edge_level >= 0.0f );
       assert( ipatch.ring[3].edge_level >= 0.0f );
 
-#if 1
+#if 0
       level[0] = max(ceilf(ipatch.ring[0].edge_level),1.0f);
       level[1] = max(ceilf(ipatch.ring[1].edge_level),1.0f);
       level[2] = max(ceilf(ipatch.ring[2].edge_level),1.0f);
@@ -76,7 +76,6 @@ namespace embree
 
       grid_size_8wide_blocks       = ((grid_u_res*grid_v_res+7)&(-8)) / 8;
 
-      DBG_PRINT( grid_size_8wide_blocks );
       grid_subtree_size_64b_blocks = 4; // single bvh4 leaf with 3x3 grid => 4 cachelines
 
       /* need stiching? */
