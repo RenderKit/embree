@@ -188,9 +188,9 @@ void updateScene(RTCScene scene, const Vec3fa& cam_pos)
         const Vec3fa edge = v1-v0;
         const Vec3fa P = 0.5f*(v1+v0);
         //mesh->subdivlevel[e+i] = float(g_subdivision_levels)/16.0f;
-        mesh->subdivlevel[e+i] = 200.0f*atan(0.5f*length(edge)/length(cam_pos-P));
+        //mesh->subdivlevel[e+i] = 200.0f*atan(0.5f*length(edge)/length(cam_pos-P));
 	//mesh->subdivlevel[e+i] = 60.0f*atan(0.5f*length(edge)/length(Vec3fa(2.86598f, -0.784929f, -0.0090338f)-P));
-	//mesh->subdivlevel[e+i] = 64;
+	mesh->subdivlevel[e+i] = 9;
         //srand48(length(edge)/length(cam_pos-P)*12343.0f); mesh->subdivlevel[e+i] = 10.0f*drand48();
       }
     }
@@ -244,8 +244,8 @@ RTCScene constructScene(const Vec3fa& cam_pos)
     unsigned int geomID = rtcNewSubdivisionMesh(scene, RTC_GEOMETRY_STATIC, mesh->numFaces, mesh->numEdges, mesh->numVertices, 
                                                       mesh->numEdgeCreases, mesh->numVertexCreases, mesh->numHoles);
 
-    BBox3fa bounds(Vec3fa(-0.1f,-0.1f,-0.1f),Vec3fa(0.1f,0.1f,0.1f));
-    rtcSetDisplacementFunction(scene, geomID, (RTCDisplacementFunc)DisplacementFunc,(RTCBounds*)&bounds);
+    //BBox3fa bounds(Vec3fa(-0.1f,-0.1f,-0.1f),Vec3fa(0.1f,0.1f,0.1f));
+    //rtcSetDisplacementFunction(scene, geomID, (RTCDisplacementFunc)DisplacementFunc,(RTCBounds*)&bounds);
 
     rtcSetBuffer(scene, geomID, RTC_VERTEX_BUFFER, mesh->positions, 0, sizeof(Vec3fa  ));
     rtcSetBuffer(scene, geomID, RTC_LEVEL_BUFFER,  mesh->subdivlevel, 0, sizeof(float));
