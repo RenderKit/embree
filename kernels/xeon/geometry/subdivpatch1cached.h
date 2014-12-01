@@ -21,7 +21,7 @@
 #include "common/subdiv/gregory_patch.h"
 #include "common/subdiv/tessellation.h"
 
-#define FORCE_TESSELLATION_BOUNDS 0
+#define FORCE_TESSELLATION_BOUNDS 1
 #define USE_DISPLACEMENT_FOR_TESSELLATION_BOUNDS 0
 
 using namespace std;

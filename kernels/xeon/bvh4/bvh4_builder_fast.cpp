@@ -461,13 +461,10 @@ namespace embree
     
     void BVH4SubdivPatch1CachedBuilderFast::create_primitive_array_sequential(size_t threadIndex, size_t threadCount, PrimInfo& pinfo)
     {
-      PING;
-      DBG_PRINT(  bvh->numPrimitives );
+      //PING;
+      //DBG_PRINT(  bvh->numPrimitives );
 
       assert( this->bvh->data_mem == NULL);
-
-      for (size_t i=0; i<numPrimitives; i++) // FIXME: parallelize
-        prims[i] = PrimRef(empty,-1,-1);
 
       std::cout << "ALLOCATING SUBDIVPATCH1CACHED MEMORY FOR " << numPrimitives << " PRIMITIVES" << std::endl;
 
@@ -479,50 +476,31 @@ namespace embree
       pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
       {
         PrimInfo s(empty);
-        for (size_t f=r.begin(); f!=r.end(); ++f) {
+        for (size_t f=r.begin(); f!=r.end(); ++f) 
+	{
           if (!mesh->valid(f)) continue;
 	  
-          const unsigned int primID = f;
-          const unsigned int geomID = mesh->id; /* HOW DO I GET THE MESH ID ??? */
-
           const unsigned int patchIndex = base.size()+s.size();
-          const SubdivPatch1Cached patch = SubdivPatch1Cached(mesh->getHalfEdge(f),
-                                                      mesh->getVertexPositionPtr(),
-                                                      geomID, 
-                                                      primID,
-                                                      mesh);
-          /* FIXME: use storent to write out subdivpatch data to memory */
-          subdiv_patches[patchIndex] = patch;
+          const SubdivPatch1Cached patch = SubdivPatch1Cached(mesh->getHalfEdge(f), mesh->getVertexPositionPtr(), mesh->id, f, mesh);
+          subdiv_patches[patchIndex] = patch; /* FIXME: use storent to write out subdivpatch data to memory */
 
           /* compute patch bounds */
           const BBox3fa bounds = patch.bounds(mesh);
-	  prims[base.size()+s.size()] = PrimRef(bounds,patchIndex,0); // geomID,primID);
+	  prims[base.size()+s.size()] = PrimRef(bounds,patchIndex);
 	  s.add(bounds);
-
-          //DBG_PRINT( patchIndex );
-          //DBG_PRINT( s );
-          //DBG_PRINT( bounds );
-	  //PRINT2(base+s,bounds);
-          //s++;
         }
         return s;
       }, [](PrimInfo a, const PrimInfo& b) { a.merge(b); return a; });
 
 
-      for (size_t i=0; i<numPrimitives; i++) { // FIXME: parallelize
-        //pinfo.add(prims[i].bounds());
-	//if (prims[i].bounds().lower.y > prims[i].bounds().upper.y) {
-	//  PRINT(prims[i].bounds());
-	//}
+      for (size_t i=0; i<numPrimitives; i++) {
 	PRINT2(i,prims[i].bounds());
 	assert(prims[i].geomID() != -1);
 	assert(prims[i].bounds().lower.x <= prims[i].bounds().upper.x);
 	assert(prims[i].bounds().lower.y <= prims[i].bounds().upper.y);
 	assert(prims[i].bounds().lower.z <= prims[i].bounds().upper.z);
       }
-
-      DBG_PRINT( pinfo );
-
+      //DBG_PRINT( pinfo );
     }
     
     void BVH4SubdivPatch1CachedBuilderFast::create_primitive_array_parallel  (size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, PrimInfo& pinfo) {
@@ -531,13 +509,10 @@ namespace embree
 
     void BVH4SubdivPatch1CachedBuilderFast::createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID)
     {
-      PING;
       size_t items = current.size();
       assert(items <= 1);
       const unsigned int patchIndex = prims[current.begin].ID();
-      DBG_PRINT(patchIndex);
       SubdivPatch1Cached *const subdiv_patches = (SubdivPatch1Cached *)this->bvh->data_mem;
-      DBG_PRINT( &subdiv_patches[patchIndex] );
       *current.parent = bvh->encodeLeaf((char*)&subdiv_patches[patchIndex],1);
     }
 
