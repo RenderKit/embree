@@ -311,7 +311,7 @@ namespace embree
       void createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID);
 
       Scene::Iterator<SubdivMesh> iter;
-      ParallelForForPrefixSumState<size_t> pstate;
+      ParallelForForPrefixSumState<PrimInfo> pstate;
     };
 
   }

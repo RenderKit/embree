@@ -444,7 +444,7 @@ namespace embree
 
     size_t BVH4SubdivPatch1CachedBuilderFast::number_of_primitives() 
     {
-      size_t S = parallel_for_for_prefix_sum( pstate, iter, size_t(0), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const size_t base) -> size_t
+      PrimInfo pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
       {
         size_t s = 0;
         for (size_t f=r.begin(); f!=r.end(); ++f) 
@@ -453,10 +453,10 @@ namespace embree
           /* do feature-adaptive-based counting here */
           s++;
 	}
-        return s;
-      }, [](size_t a, size_t b) { return a+b; });
+        return PrimInfo(s,empty,empty);
+      }, [](const PrimInfo& a, const PrimInfo b) { return PrimInfo(a.size()+b.size(),empty,empty); });
 
-      return S;
+      return pinfo.size();
     }
     
     void BVH4SubdivPatch1CachedBuilderFast::create_primitive_array_sequential(size_t threadIndex, size_t threadCount, PrimInfo& pinfo)
@@ -476,16 +476,16 @@ namespace embree
         
       SubdivPatch1Cached *const subdiv_patches = (SubdivPatch1Cached *)this->bvh->data_mem;
 
-      parallel_for_for_prefix_sum( pstate, iter, size_t(0), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, size_t base) -> size_t
+      pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
       {
-        size_t s = 0;
+        PrimInfo s(empty);
         for (size_t f=r.begin(); f!=r.end(); ++f) {
           if (!mesh->valid(f)) continue;
 	  
           const unsigned int primID = f;
           const unsigned int geomID = mesh->id; /* HOW DO I GET THE MESH ID ??? */
 
-          const unsigned int patchIndex = base+s;
+          const unsigned int patchIndex = base.size()+s.size();
           const SubdivPatch1Cached patch = SubdivPatch1Cached(mesh->getHalfEdge(f),
                                                       mesh->getVertexPositionPtr(),
                                                       geomID, 
@@ -496,22 +496,21 @@ namespace embree
 
           /* compute patch bounds */
           const BBox3fa bounds = patch.bounds(mesh);
-	  //CatmullClarkPatch p(mesh->getHalfEdge(f),mesh->getVertexPositionPtr());
-	  //const BBox3fa bounds = p.bounds();
-          prims[base+s] = PrimRef(bounds,patchIndex,0); // geomID,primID);
+	  prims[base.size()+s.size()] = PrimRef(bounds,patchIndex,0); // geomID,primID);
+	  s.add(bounds);
 
           //DBG_PRINT( patchIndex );
           //DBG_PRINT( s );
           //DBG_PRINT( bounds );
 	  //PRINT2(base+s,bounds);
-          s++;
+          //s++;
         }
         return s;
-      }, [](size_t a, size_t b) { return a+b; });
+      }, [](PrimInfo a, const PrimInfo& b) { a.merge(b); return a; });
 
 
       for (size_t i=0; i<numPrimitives; i++) { // FIXME: parallelize
-        pinfo.add(prims[i].bounds());
+        //pinfo.add(prims[i].bounds());
 	//if (prims[i].bounds().lower.y > prims[i].bounds().upper.y) {
 	//  PRINT(prims[i].bounds());
 	//}
