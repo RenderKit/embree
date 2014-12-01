@@ -22,9 +22,169 @@
 namespace embree
 {
 
+  AtomicMutex mtx;
+
 #define FORCE_TRIANGLE_UV 1
 
 #define TIMER(x) 
+
+  class __aligned(64) TessellationCache {
+
+  private:
+    static const size_t DEFAULT_64B_BLOCKS = 8192;
+    static const size_t CACHE_ENTRIES      = 8;
+    avxi prim_tag;
+    BVH4::NodeRef bvh4_ref[CACHE_ENTRIES];
+
+    float *lazymem;
+    size_t allocated64BytesBlocks;
+    size_t blockCounter;
+
+    /* stats */
+  public:
+#if DEBUG
+    size_t cache_accesses;
+    size_t cache_hits;
+    size_t cache_misses;
+#endif
+
+    __forceinline void clear()
+    {
+      blockCounter =  0;	  
+      prim_tag     = -1;
+      for (size_t i=0;i<CACHE_ENTRIES;i++)
+        bvh4_ref[i] = 0;	
+
+#if DEBUG
+      cache_accesses = 0;
+      cache_hits     = 0;
+      cache_misses   = 0;
+#endif
+    }
+
+    __forceinline float *getPtr()
+    {
+      return lazymem;
+    }
+
+    __forceinline float *alloc_mem(const size_t blocks)
+    {
+      return (float*)_mm_malloc(64 * allocated64BytesBlocks,64);
+    }
+
+    __forceinline void free_mem(float *mem)
+    {
+      _mm_free(mem);
+    }
+
+    TessellationCache()  {}
+
+    __forceinline void init()
+    {
+      clear();
+      allocated64BytesBlocks = DEFAULT_64B_BLOCKS;	
+      lazymem = alloc_mem( allocated64BytesBlocks );
+      assert((size_t)lazymem % 64 == 0);
+    }
+
+
+    __forceinline BVH4::NodeRef lookup(const unsigned int primID)
+    {
+      avxb m_in_cache = prim_tag == primID;
+
+#if DEBUG
+      cache_accesses++;
+#endif
+
+      if (likely(any(m_in_cache)))
+        {
+          unsigned int index = bitscan(movemask(m_in_cache));
+
+#if DEBUG
+          cache_hits++;
+#endif
+
+          assert(popcnt(m_in_cache) == 1);
+          const BVH4::NodeRef ref = bvh4_ref[index];
+          /* move most recently accessed entry to the beginning of the array */
+          // FIXME
+          std::swap(bvh4_ref[index],bvh4_ref[0]);
+          std::swap(prim_tag[index],prim_tag[0]);
+          return ref;
+        }
+
+#if DEBUG
+      cache_misses++;
+#endif
+
+      return BVH4::invalidNode;
+    }
+
+    __forceinline BVH4::NodeRef insert(const unsigned int primID, const unsigned int neededBlocks)
+    {
+      if (unlikely(blockCounter + neededBlocks >= allocated64BytesBlocks))
+        clear();
+
+      if (unlikely(CACHE_ENTRIES*neededBlocks > allocated64BytesBlocks)) /* can the cache hold this entry in all entries? */
+        {
+          const unsigned int new_allocated64BytesBlocks = CACHE_ENTRIES*neededBlocks;
+
+          std::cout << "EXTENDING TESSELLATION CACHE (PER THREAD) FROM " << allocated64BytesBlocks << "TO " << new_allocated64BytesBlocks << " BLOCKS = " << new_allocated64BytesBlocks*64 << " BYTES" << std::endl << std::flush;
+
+          free_mem(lazymem);
+          allocated64BytesBlocks = new_allocated64BytesBlocks; 
+          lazymem = alloc_mem(allocated64BytesBlocks);
+          assert(lazymem);
+
+          /* realloc */
+          clear();
+        }
+
+      const size_t currentIndex = blockCounter;
+      blockCounter += neededBlocks;
+
+      BVH4::NodeRef curNode = BVH4::encodeNode( (BVH4::Node*)&lazymem[currentIndex*16] );
+
+      for (size_t i=7;i>0;i--)
+        {
+          prim_tag[i] = prim_tag[i-1];
+          bvh4_ref[i] = bvh4_ref[i-1];
+        }
+
+      prim_tag[0]  = primID;
+      bvh4_ref[0] = curNode;
+
+      return curNode;
+    }
+
+    void printStats() const
+    {
+#if DEBUG
+      if (cache_accesses)
+        {
+          mtx.lock();
+          assert(cache_hits + cache_misses == cache_accesses);
+          DBG_PRINT(cache_accesses);
+          DBG_PRINT(cache_misses);
+          DBG_PRINT(cache_hits);
+          DBG_PRINT(100.0f * cache_hits / cache_accesses);
+          mtx.unlock();
+        }
+#endif
+    }
+  };
+
+  __thread TessellationCache *thread_cache = NULL;
+
+
+  void clearTessellationCache()
+  {
+#if defined(ENABLE_PER_THREAD_TESSELLATION_CACHE)
+    if (thread_cache)
+      thread_cache->clear();	  
+#endif
+  }
+
 
   struct __aligned(64) Quad2x2
   {
