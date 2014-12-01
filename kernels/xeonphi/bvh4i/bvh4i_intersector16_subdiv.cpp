@@ -72,6 +72,7 @@ namespace embree
 
       __forceinline void free_mem(mic_f *mem)
       {
+        assert(mem);
 	_mm_free(mem);
       }
 
