@@ -15,9 +15,9 @@
 // ======================================================================== //
 
 #include "subdivpatch1cached_intersector1.h"
-
 #include "common/subdiv/tessellation.h"
 #include "xeon/bvh4/bvh4.h"
+#include "xeon/bvh4/bvh4_intersector1.h"
 
 namespace embree
 {
@@ -336,6 +336,9 @@ namespace embree
 	  bounds.extend( bounds_subtree );
 	}
 
+      // for (unsigned int i=0;i<4;i++)
+      //   DBG_PRINT(node->bounds(i));
+
       return bounds;
     }
 
@@ -375,6 +378,9 @@ namespace embree
 				      patch.grid_v_res-1,
 				      currentIndex,
 				      geom);
+
+      // DBG_PRINT( currentIndex );
+      // DBG_PRINT( patch.grid_subtree_size_64b_blocks );
 
       assert(currentIndex == patch.grid_subtree_size_64b_blocks);
       TIMER(msec = getSeconds()-msec);    
@@ -625,10 +631,128 @@ namespace embree
 
 #if 1
     BVH4::Node tmpNode[1024];
-    BVH4::NodeRef tmpRoot = initLocalLazySubdivTree(subdiv_patch,tmpNode,(SubdivMesh*)geom);
-    //std::cout << "DONE" << std::endl;
-    //exit(0);
-    intersect1_tri8_precise( ray, *(Quad2x2*)tmpNode, (SubdivMesh*)geom);
+    BVH4::NodeRef root = initLocalLazySubdivTree(subdiv_patch,tmpNode,(SubdivMesh*)geom);
+    //intersect1_tri8_precise( ray, *(Quad2x2*)tmpNode, (SubdivMesh*)geom);
+
+#define STACK_SIZE 64
+
+    StackItemInt32<BVH4::NodeRef>  stack[STACK_SIZE];            //!< stack of nodes 
+    StackItemInt32<BVH4::NodeRef>* stackPtr = stack+1;        //!< current stack pointer
+    StackItemInt32<BVH4::NodeRef>* stackEnd = stack+STACK_SIZE;
+    stack[0].ptr  = root;
+    stack[0].dist = neg_inf;
+
+
+    /*! load the ray into SIMD registers */
+    const Vec3fa ray_rdir = rcp_safe(ray.dir);
+    const Vec3fa ray_org_rdir = ray.org*ray_rdir;
+    const sse3f org(ray.org.x,ray.org.y,ray.org.z);
+    const sse3f dir(ray.dir.x,ray.dir.y,ray.dir.z);
+    const sse3f rdir(ray_rdir.x,ray_rdir.y,ray_rdir.z);
+    const sse3f org_rdir(ray_org_rdir.x,ray_org_rdir.y,ray_org_rdir.z);
+    const ssef  ray_near(ray.tnear);
+    ssef ray_far(ray.tfar);
+
+    /*! offsets to select the side that becomes the lower or upper bound */
+    const size_t nearX = ray_rdir.x >= 0.0f ? 0*sizeof(ssef) : 1*sizeof(ssef);
+    const size_t nearY = ray_rdir.y >= 0.0f ? 2*sizeof(ssef) : 3*sizeof(ssef);
+    const size_t nearZ = ray_rdir.z >= 0.0f ? 4*sizeof(ssef) : 5*sizeof(ssef);
+
+    const size_t types = 1;
+    /* pop loop */
+    while (true) pop:
+      {
+        /*! pop next node */
+        if (unlikely(stackPtr == stack)) break;
+        stackPtr--;
+        BVH4::NodeRef cur = BVH4::NodeRef(stackPtr->ptr);
+        
+        /*! if popped node is too far, pop next one */
+        if (unlikely(*(float*)&stackPtr->dist > ray.tfar))
+          continue;
+        
+        /* downtraversal loop */
+        while (true)
+          {
+            size_t mask; 
+            ssef tNear;
+
+            /*! stop if we found a leaf node */
+            if (unlikely(cur.isLeaf(types))) break;
+            STAT3(normal.trav_nodes,1,1,1);
+
+
+            /* process standard nodes */
+            if (likely(cur.isNode(types)))
+              mask = cur.node()->intersect<false>(nearX,nearY,nearZ,org,rdir,org_rdir,ray_near,ray_far,tNear); 
+
+            /*! if no child is hit, pop next node */
+            const BVH4::BaseNode* node = cur.baseNode(types);
+            if (unlikely(mask == 0))
+              goto pop;
+          
+            /*! one child is hit, continue with that child */
+            size_t r = __bscf(mask);
+            if (likely(mask == 0)) {
+              cur = node->child(r); cur.prefetch(types);
+              assert(cur != BVH4::emptyNode);
+              continue;
+            }
+          
+            /*! two children are hit, push far child, and continue with closer child */
+            BVH4::NodeRef c0 = node->child(r); c0.prefetch(types); const unsigned int d0 = ((unsigned int*)&tNear)[r];
+            r = __bscf(mask);
+            BVH4::NodeRef c1 = node->child(r); c1.prefetch(types); const unsigned int d1 = ((unsigned int*)&tNear)[r];
+            assert(c0 != BVH4::emptyNode);
+            assert(c1 != BVH4::emptyNode);
+            if (likely(mask == 0)) {
+              assert(stackPtr < stackEnd); 
+              if (d0 < d1) { stackPtr->ptr = c1; stackPtr->dist = d1; stackPtr++; cur = c0; continue; }
+              else         { stackPtr->ptr = c0; stackPtr->dist = d0; stackPtr++; cur = c1; continue; }
+            }
+          
+            /*! Here starts the slow path for 3 or 4 hit children. We push
+             *  all nodes onto the stack to sort them there. */
+            assert(stackPtr < stackEnd); 
+            stackPtr->ptr = c0; stackPtr->dist = d0; stackPtr++;
+            assert(stackPtr < stackEnd); 
+            stackPtr->ptr = c1; stackPtr->dist = d1; stackPtr++;
+          
+            /*! three children are hit, push all onto stack and sort 3 stack items, continue with closest child */
+            assert(stackPtr < stackEnd); 
+            r = __bscf(mask);
+            BVH4::NodeRef c = node->child(r); c.prefetch(types); unsigned int d = ((unsigned int*)&tNear)[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
+            assert(c != BVH4::emptyNode);
+            if (likely(mask == 0)) {
+              sort(stackPtr[-1],stackPtr[-2],stackPtr[-3]);
+              cur = (BVH4::NodeRef) stackPtr[-1].ptr; stackPtr--;
+              continue;
+            }
+          
+            /*! four children are hit, push all onto stack and sort 4 stack items, continue with closest child */
+            assert(stackPtr < stackEnd); 
+            r = __bscf(mask);
+            c = node->child(r); c.prefetch(types); d = *(unsigned int*)&tNear[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
+            assert(c != BVH4::emptyNode);
+            sort(stackPtr[-1],stackPtr[-2],stackPtr[-3],stackPtr[-4]);
+            cur = (BVH4::NodeRef) stackPtr[-1].ptr; stackPtr--;
+          }
+        
+        /*! this is a leaf node */
+	assert(cur != BVH4::emptyNode);
+        STAT3(normal.trav_leaves,1,1,1);
+        size_t num; Quad2x2* prim = (Quad2x2*) cur.leaf(num);
+
+        //DBG_PRINT(*prim);
+        intersect1_tri8_precise( ray, *prim, (SubdivMesh*)geom);
+
+        ray_far = ray.tfar;
+
+      }
+
+    // std::cout << "DONE" << std::endl;
+    // exit(0);
+
 #else
     size_t offset_line0 = 0;
     size_t offset_line1 = grid_u_res;
