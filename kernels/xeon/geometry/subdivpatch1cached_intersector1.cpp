@@ -651,6 +651,7 @@ namespace embree
 
     if (!thread_cache)
       {
+        /* need thread cache to be aligned */
         thread_cache = (TessellationCache *)_mm_malloc(sizeof(TessellationCache),64);
         assert( (size_t)thread_cache % 64 == 0 );
         thread_cache->init();	  
@@ -805,6 +806,7 @@ namespace embree
 
 #else 
 
+    /* stupid scanline-based grid intersector for debugging */
     const float * const edge_levels = subdiv_patch.level;
     const unsigned int grid_u_res   = subdiv_patch.grid_u_res;
     const unsigned int grid_v_res   = subdiv_patch.grid_v_res;

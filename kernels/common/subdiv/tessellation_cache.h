@@ -20,6 +20,8 @@
 
 namespace embree
 {
+  // FIXME: implement 4 or 8 way associative cache on Xeon using ssei or avxi
+  
   class __aligned(64) TessellationCache {
 
   private:
