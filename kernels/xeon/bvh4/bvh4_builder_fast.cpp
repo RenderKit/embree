@@ -466,6 +466,9 @@ namespace embree
 
       assert( this->bvh->data_mem == NULL);
 
+      for (size_t i=0; i<numPrimitives; i++) // FIXME: parallelize
+        prims[i] = PrimRef(empty,-1,-1);
+
       std::cout << "ALLOCATING SUBDIVPATCH1CACHED MEMORY FOR " << numPrimitives << " PRIMITIVES" << std::endl;
 
       this->bvh->size_data_mem = sizeof(SubdivPatch1Cached) * numPrimitives;
@@ -493,19 +496,31 @@ namespace embree
 
           /* compute patch bounds */
           const BBox3fa bounds = patch.bounds(mesh);
+	  //CatmullClarkPatch p(mesh->getHalfEdge(f),mesh->getVertexPositionPtr());
+	  //const BBox3fa bounds = p.bounds();
           prims[base+s] = PrimRef(bounds,patchIndex,0); // geomID,primID);
 
-          DBG_PRINT( patchIndex );
-          DBG_PRINT( s );
-          DBG_PRINT( bounds );
+          //DBG_PRINT( patchIndex );
+          //DBG_PRINT( s );
+          //DBG_PRINT( bounds );
+	  //PRINT2(base+s,bounds);
           s++;
         }
         return s;
       }, [](size_t a, size_t b) { return a+b; });
 
 
-      for (size_t i=0; i<numPrimitives; i++) // FIXME: parallelize
+      for (size_t i=0; i<numPrimitives; i++) { // FIXME: parallelize
         pinfo.add(prims[i].bounds());
+	//if (prims[i].bounds().lower.y > prims[i].bounds().upper.y) {
+	//  PRINT(prims[i].bounds());
+	//}
+	PRINT2(i,prims[i].bounds());
+	assert(prims[i].geomID() != -1);
+	assert(prims[i].bounds().lower.x <= prims[i].bounds().upper.x);
+	assert(prims[i].bounds().lower.y <= prims[i].bounds().upper.y);
+	assert(prims[i].bounds().lower.z <= prims[i].bounds().upper.z);
+      }
 
       DBG_PRINT( pinfo );
 
