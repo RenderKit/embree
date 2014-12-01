@@ -58,7 +58,7 @@ namespace embree
       assert( ipatch.ring[2].edge_level >= 0.0f );
       assert( ipatch.ring[3].edge_level >= 0.0f );
 
-#if 0
+#if 1
       level[0] = max(ceilf(ipatch.ring[0].edge_level),1.0f);
       level[1] = max(ceilf(ipatch.ring[1].edge_level),1.0f);
       level[2] = max(ceilf(ipatch.ring[2].edge_level),1.0f);
