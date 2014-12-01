@@ -19,6 +19,9 @@
 #include "xeon/bvh4/bvh4.h"
 #include "xeon/bvh4/bvh4_intersector1.h"
 
+
+#define ENABLE_PER_THREAD_TESSELLATION_CACHE
+
 namespace embree
 {
 
@@ -33,7 +36,7 @@ namespace embree
   private:
     static const size_t DEFAULT_64B_BLOCKS = 8192;
     static const size_t CACHE_ENTRIES      = 8;
-    avxi prim_tag;
+    SubdivPatch1Cached *prim_tag[CACHE_ENTRIES];
     BVH4::NodeRef bvh4_ref[CACHE_ENTRIES];
 
     float *lazymem;
@@ -51,9 +54,11 @@ namespace embree
     __forceinline void clear()
     {
       blockCounter =  0;	  
-      prim_tag     = -1;
       for (size_t i=0;i<CACHE_ENTRIES;i++)
-        bvh4_ref[i] = 0;	
+        {
+          prim_tag[i] = NULL;
+          bvh4_ref[i] = 0;	
+        }
 
 #if DEBUG
       cache_accesses = 0;
@@ -88,23 +93,27 @@ namespace embree
     }
 
 
-    __forceinline BVH4::NodeRef lookup(const unsigned int primID)
+    __forceinline BVH4::NodeRef lookup(SubdivPatch1Cached *primID)
     {
-      avxb m_in_cache = prim_tag == primID;
+      ssize_t index = -1;
+
+      for (size_t i=0;i<CACHE_ENTRIES;i++)
+        if (prim_tag[i] == primID)
+          {
+            index = i;
+            break;
+          }
 
 #if DEBUG
       cache_accesses++;
 #endif
 
-      if (likely(any(m_in_cache)))
+      if (likely(index != -1))
         {
-          unsigned int index = bitscan(movemask(m_in_cache));
-
 #if DEBUG
           cache_hits++;
 #endif
 
-          assert(popcnt(m_in_cache) == 1);
           const BVH4::NodeRef ref = bvh4_ref[index];
           /* move most recently accessed entry to the beginning of the array */
           // FIXME
@@ -120,7 +129,7 @@ namespace embree
       return BVH4::invalidNode;
     }
 
-    __forceinline BVH4::NodeRef insert(const unsigned int primID, const unsigned int neededBlocks)
+    __forceinline BVH4::NodeRef insert(SubdivPatch1Cached *primID, const unsigned int neededBlocks)
     {
       if (unlikely(blockCounter + neededBlocks >= allocated64BytesBlocks))
         clear();
@@ -762,36 +771,36 @@ namespace embree
                                                               const Primitive& subdiv_patch,
                                                               const void* geom) // geom == mesh or geom == scene?
   {
-
 #if defined(__AVX__)
 
-    const float * const edge_levels = subdiv_patch.level;
-    const unsigned int grid_u_res   = subdiv_patch.grid_u_res;
-    const unsigned int grid_v_res   = subdiv_patch.grid_v_res;
+#if defined(ENABLE_PER_THREAD_TESSELLATION_CACHE)
+      TessellationCache *local_cache = NULL;
 
-#if 0
-    DBG_PRINT(geom);
-    DBG_PRINT(subdiv_patch.grid_size_8wide_blocks);
-    DBG_PRINT(grid_u_res);
-    DBG_PRINT(grid_v_res);
-    DBG_PRINT(edge_levels[0]);
-    DBG_PRINT(edge_levels[1]);
-    DBG_PRINT(edge_levels[2]);
-    DBG_PRINT(edge_levels[3]);
-#endif
+      if (!thread_cache)
+	{
+	  thread_cache = (TessellationCache *)_mm_malloc(sizeof(TessellationCache),64);
+	  assert( (size_t)thread_cache % 64 == 0 );
+	  thread_cache->init();	  
+	}
 
-    __aligned(64) float grid_x[(subdiv_patch.grid_size_8wide_blocks+1)*8]; // for unaligned access
-    __aligned(64) float grid_y[(subdiv_patch.grid_size_8wide_blocks+1)*8];
-    __aligned(64) float grid_z[(subdiv_patch.grid_size_8wide_blocks+1)*8];
-    __aligned(64) float grid_u[(subdiv_patch.grid_size_8wide_blocks+1)*8]; 
-    __aligned(64) float grid_v[(subdiv_patch.grid_size_8wide_blocks+1)*8];
+      local_cache = thread_cache;
 
+   SubdivPatch1Cached* tag = (SubdivPatch1Cached*)&subdiv_patch;
 
-    evalGrid(subdiv_patch,grid_x,grid_y,grid_z,grid_u,grid_v,(SubdivMesh*)geom);
+      BVH4::NodeRef root = local_cache->lookup(tag);
 
-#if 1
-    BVH4::Node tmpNode[1024];
-    BVH4::NodeRef root = initLocalLazySubdivTree(subdiv_patch,tmpNode,(SubdivMesh*)geom);
+      if (root == BVH4::invalidNode)
+	{
+	  const unsigned int blocks = subdiv_patch.grid_subtree_size_64b_blocks;
+	  root = local_cache->insert(tag,blocks);
+	  BVH4::Node* node = root.node();
+
+	  initLocalLazySubdivTree(subdiv_patch,root.node(),(SubdivMesh*)geom);		      
+ 	  assert( root != BVH4::invalidNode);
+       }
+
+    //BVH4::Node tmpNode[1024];
+    //BVH4::NodeRef root = initLocalLazySubdivTree(subdiv_patch,tmpNode,(SubdivMesh*)geom);
     //intersect1_tri8_precise( ray, *(Quad2x2*)tmpNode, (SubdivMesh*)geom);
 
 #define STACK_SIZE 64
@@ -910,10 +919,33 @@ namespace embree
 
       }
 
-    // std::cout << "DONE" << std::endl;
-    // exit(0);
 
-#else
+#else 
+
+    const float * const edge_levels = subdiv_patch.level;
+    const unsigned int grid_u_res   = subdiv_patch.grid_u_res;
+    const unsigned int grid_v_res   = subdiv_patch.grid_v_res;
+
+#if 0
+    DBG_PRINT(geom);
+    DBG_PRINT(subdiv_patch.grid_size_8wide_blocks);
+    DBG_PRINT(grid_u_res);
+    DBG_PRINT(grid_v_res);
+    DBG_PRINT(edge_levels[0]);
+    DBG_PRINT(edge_levels[1]);
+    DBG_PRINT(edge_levels[2]);
+    DBG_PRINT(edge_levels[3]);
+#endif
+
+    __aligned(64) float grid_x[(subdiv_patch.grid_size_8wide_blocks+1)*8]; // for unaligned access
+    __aligned(64) float grid_y[(subdiv_patch.grid_size_8wide_blocks+1)*8];
+    __aligned(64) float grid_z[(subdiv_patch.grid_size_8wide_blocks+1)*8];
+    __aligned(64) float grid_u[(subdiv_patch.grid_size_8wide_blocks+1)*8]; 
+    __aligned(64) float grid_v[(subdiv_patch.grid_size_8wide_blocks+1)*8];
+
+
+    evalGrid(subdiv_patch,grid_x,grid_y,grid_z,grid_u,grid_v,(SubdivMesh*)geom);
+
     size_t offset_line0 = 0;
     size_t offset_line1 = grid_u_res;
 
@@ -941,7 +973,12 @@ namespace embree
 
           }
       }	  
+
 #endif
+
+
+
+
 
     
 #endif
