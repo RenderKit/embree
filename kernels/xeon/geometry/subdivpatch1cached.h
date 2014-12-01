@@ -33,7 +33,7 @@ namespace embree
   __forceinline BBox3fa getBBox3fa(const avx3f &v)
   {
     const Vec3fa b_min( reduce_min(v.x), reduce_min(v.y), reduce_min(v.z) );
-    const Vec3fa b_max( reduce_max(v.x), reduce_max(v.z), reduce_max(v.z) );
+    const Vec3fa b_max( reduce_max(v.x), reduce_max(v.y), reduce_max(v.z) );
     return BBox3fa( b_min, b_max );
   }
 #endif
@@ -142,7 +142,7 @@ namespace embree
       return (flags & HAS_DISPLACEMENT) == HAS_DISPLACEMENT;
     }
 
-    __noinline BBox3fa bounds(const SubdivMesh* const mesh) const
+    __forceinline BBox3fa bounds(const SubdivMesh* const mesh) const
     {
 #if FORCE_TESSELLATION_BOUNDS == 1
 
@@ -174,7 +174,6 @@ namespace embree
 
 #else
       BBox3fa b ( empty );
-      
       assert( grid_size_8wide_blocks >= 1 );
       for (size_t i=0;i<grid_size_8wide_blocks;i++)
 	{
