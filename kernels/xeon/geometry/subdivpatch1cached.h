@@ -73,6 +73,18 @@ namespace embree
       return (flags & TRANSITION_PATCH) == TRANSITION_PATCH;      
     }
 
+    __forceinline Vec3fa eval(const float uu, const float vv)
+    {
+      if (likely(isRegular()))
+	{
+	  return patch.eval(uu,vv);
+	}
+      else 
+	{
+	  return GregoryPatch::eval( patch.v, uu, vv );
+	}      
+    }
+
 #if defined(__AVX__)
     __forceinline avx3f eval8(const avxf &uu,
         const avxf &vv) const
@@ -130,7 +142,7 @@ namespace embree
       return (flags & HAS_DISPLACEMENT) == HAS_DISPLACEMENT;
     }
 
-    BBox3fa bounds(const SubdivMesh* const mesh) const
+    __noinline BBox3fa bounds(const SubdivMesh* const mesh) const
     {
 #if FORCE_TESSELLATION_BOUNDS == 1
 
@@ -151,27 +163,11 @@ namespace embree
 #if !defined(__AVX__)
       BBox3fa b ( empty );
 
-      if (isRegular())
-	for (size_t i=0;i<real_grid_size;i++)
-	  {
-	    const Vec3fa vtx = patch.eval( u_array[i], v_array[i] );	    
-	    b.extend( vtx );
-	  }
-      else
-	{
-	  Vec3fa f_m[2][2];
-	  f_m[0][0] = GregoryPatch::extract_f_m_Vec3fa(patch.v,0);
-	  f_m[0][1] = GregoryPatch::extract_f_m_Vec3fa(patch.v,1);
-	  f_m[1][1] = GregoryPatch::extract_f_m_Vec3fa(patch.v,2);
-	  f_m[1][0] = GregoryPatch::extract_f_m_Vec3fa(patch.v,3);
-
-	  GregoryPatch gpatch( patch.v, f_m);
-	  for (size_t i=0;i<real_grid_size;i++)
-	    {
-	      const Vec3fa vtx = gpatch.eval( u_array[i], v_array[i] );
-	      b.extend( vtx );
-	    }
-	}
+      for (size_t i=0;i<real_grid_size;i++)
+        {
+          const Vec3fa vtx = patch.eval( u_array[i], v_array[i] );	    
+          b.extend( vtx );
+        }
 
       b.lower.a = 0.0f;
       b.upper.a = 0.0f;
