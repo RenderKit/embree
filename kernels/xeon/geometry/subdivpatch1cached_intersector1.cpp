@@ -23,10 +23,14 @@ namespace embree
 {
 
 #define FORCE_TRIANGLE_UV 1
+#define TIMER(x) 
 
   struct __aligned(64) Quad2x2
   {
-    Quad2x2() {}
+    Quad2x2() 
+      {
+        assert( (sizeof(Quad2x2)+63)/64 == 4 ); /* need 4 cachelines */
+      }
 
     float vtx_x[12];
     float vtx_y[12];
@@ -117,7 +121,7 @@ namespace embree
 
 
     BBox3fa createSubTree(BVH4::NodeRef &curNode,
-			  float *const lazymem,
+			  BVH4::Node *const lazyNodeMem,
 			  const SubdivPatch1Cached &patch,
 			  const float *const grid_x_array,
 			  const float *const grid_y_array,
@@ -143,9 +147,9 @@ namespace embree
 	  assert(u_size*v_size <= 16);
 
 	  const unsigned int currentIndex = localCounter;
-	  localCounter += 4*16; // 4 cachelines for Quad2x2
+	  localCounter += 2; // 4 cachelines for Quad2x2
 
-          Quad2x2 *qquad = (Quad2x2*)&lazymem[currentIndex];
+          Quad2x2 *qquad = (Quad2x2*)&lazyNodeMem[currentIndex];
 
 	  float leaf_x_array[3][3];
 	  float leaf_y_array[3][3];
@@ -204,9 +208,9 @@ namespace embree
 
       /* allocate new bvh4i node */
       const size_t currentIndex = localCounter;
-      localCounter += 2 * 16;
+      localCounter += 1;
 
-      BVH4::Node *node = (BVH4::Node*)&lazymem[currentIndex];
+      BVH4::Node *node = &lazyNodeMem[currentIndex];
 
       curNode = BVH4::encodeNode( node );
 
@@ -229,7 +233,7 @@ namespace embree
       for (unsigned int i=0;i<4;i++)
 	{
 	  BBox3fa bounds_subtree = createSubTree( node->child(i), 
-						  lazymem, 
+						  lazyNodeMem, 
 						  patch, 
 						  grid_x_array,
 						  grid_y_array,
@@ -248,6 +252,96 @@ namespace embree
 
       return bounds;
     }
+
+
+  BVH4::NodeRef initLocalLazySubdivTree(const SubdivPatch1Cached &patch,
+                                        void *const lazymem,
+                                        const SubdivMesh* const geom)
+  {
+
+      TIMER(double msec = 0.0);
+      TIMER(msec = getSeconds());
+
+      assert( patch.grid_size_8wide_blocks > 1 );
+      __aligned(64) float grid_x[(patch.grid_size_8wide_blocks+1)*8]; 
+      __aligned(64) float grid_y[(patch.grid_size_8wide_blocks+1)*8];
+      __aligned(64) float grid_z[(patch.grid_size_8wide_blocks+1)*8]; 
+
+      __aligned(64) float grid_u[(patch.grid_size_8wide_blocks+1)*8]; 
+      __aligned(64) float grid_v[(patch.grid_size_8wide_blocks+1)*8];
+
+
+      gridUVTessellator(patch.level,
+                        patch.grid_u_res,
+                        patch.grid_v_res,
+                        grid_u,
+                        grid_v);
+
+      if (unlikely(patch.needsStiching()))
+        stichUVGrid(patch.level,patch.grid_u_res,patch.grid_v_res,grid_u,grid_v);
+
+
+      for (size_t i=0;i<patch.grid_size_8wide_blocks;i++)
+        {
+          const avxf uu = load8f(&grid_u[8*i]);
+          const avxf vv = load8f(&grid_v[8*i]);
+          const avx3f vtx = patch.eval8(uu,vv);
+
+#if 1
+          if (unlikely(geom != NULL))
+            if (unlikely(((SubdivMesh*)geom)->displFunc != NULL))
+              {
+                avx3f normal = patch.normal8(uu,vv);
+                normal = normalize(normal);
+              
+                ((SubdivMesh*)geom)->displFunc(((SubdivMesh*)geom)->userPtr,
+                                               patch.geom,
+                                               patch.prim,
+                                               (const float*)&uu,
+                                               (const float*)&vv,
+                                               (const float*)&normal.x,
+                                               (const float*)&normal.y,
+                                               (const float*)&normal.z,
+                                               (float*)&vtx.x,
+                                               (float*)&vtx.y,
+                                               (float*)&vtx.z,
+                                               8);
+              }
+#endif        
+          *(avxf*)&grid_x[8*i] = vtx.x;
+          *(avxf*)&grid_y[8*i] = vtx.y;
+          *(avxf*)&grid_z[8*i] = vtx.z;        
+          *(avxf*)&grid_u[8*i] = uu;
+          *(avxf*)&grid_v[8*i] = vv;
+
+        }
+
+
+      BVH4::NodeRef subtree_root = BVH4::encodeNode( (BVH4::Node*)lazymem );
+      unsigned int currentIndex = 0;
+
+      const unsigned int oldIndex = currentIndex;
+
+      BBox3fa bounds = createSubTree( subtree_root,
+				      (BVH4::Node*)lazymem,
+				      patch,
+				      grid_x,
+				      grid_y,
+				      grid_z,
+				      grid_u,
+				      grid_v,
+				      0,
+				      patch.grid_u_res-1,
+				      0,
+				      patch.grid_v_res-1,
+				      currentIndex,
+				      geom);
+
+      assert(currentIndex - oldIndex == patch.grid_subtree_size_64b_blocks);
+      TIMER(msec = getSeconds()-msec);    
+      return subtree_root;
+    }
+
 
   static __forceinline void intersect1_tri8_precise(Ray& ray,
                                                     const avx3f &v0_org,
