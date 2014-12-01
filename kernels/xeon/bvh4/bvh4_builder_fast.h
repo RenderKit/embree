@@ -275,7 +275,7 @@ namespace embree
       void create_primitive_array_parallel  (size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, PrimInfo& pinfo);
 
       Scene::Iterator<SubdivMesh> iter;
-      ParallelForForPrefixSumState<size_t> pstate;
+      ParallelForForPrefixSumState<PrimInfo> pstate;
     };
 
     class BVH4BuilderFastGeneric : public BVH4BuilderFast

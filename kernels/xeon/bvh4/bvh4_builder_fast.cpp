@@ -321,7 +321,7 @@ namespace embree
 
     size_t BVH4SubdivQuadQuad4x4BuilderFast::number_of_primitives() 
     {
-      size_t S = parallel_for_for_prefix_sum( pstate, iter, size_t(0), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const size_t base) -> size_t
+      PrimInfo pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
       {
         size_t s = 0;
         for (size_t f=r.begin(); f!=r.end(); ++f) 
@@ -347,17 +347,17 @@ namespace embree
 	    s += nx*ny;
 	  });
 	}
-        return s;
-      }, [](size_t a, size_t b) { return a+b; });
+        return PrimInfo(s,empty,empty);
+      }, [](const PrimInfo& a, const PrimInfo b) { return PrimInfo(a.size()+b.size(),empty,empty); });
 
-      return S;
+      return pinfo.size();
     }
     
     void BVH4SubdivQuadQuad4x4BuilderFast::create_primitive_array_sequential(size_t threadIndex, size_t threadCount, PrimInfo& pinfo)
     {
-      parallel_for_for_prefix_sum( pstate, iter, size_t(0), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, size_t base) -> size_t
+      pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
       {
-        size_t s = 0;
+	PrimInfo s(empty);
         for (size_t f=r.begin(); f!=r.end(); ++f) {
           if (!mesh->valid(f)) continue;
 	  
@@ -371,7 +371,8 @@ namespace embree
 	      QuadQuad4x4* leaf = (QuadQuad4x4*) bvh->alloc2.malloc(sizeof(QuadQuad4x4),16);
 	      new (leaf) QuadQuad4x4(id,mesh->id,f);
 	      const BBox3fa bounds = leaf->quad(scene,patch,uv[0],uv[1],uv[2],uv[3]);
-	      prims[base+(s++)] = PrimRef(bounds,BVH4::encodeTypedLeaf(leaf,0));
+	      prims[base.size()+s.size()] = PrimRef(bounds,BVH4::encodeTypedLeaf(leaf,0));
+	      s.add(bounds);
 	      return;
 	    }
 
@@ -397,16 +398,14 @@ namespace embree
 		QuadQuad4x4* leaf = (QuadQuad4x4*) bvh->alloc2.malloc(sizeof(QuadQuad4x4),16);
 		new (leaf) QuadQuad4x4(id,mesh->id,f);
 		const BBox3fa bounds = leaf->build(scene,patcheval,pattern0,pattern1,pattern2,pattern3,pattern_x,x,nx,pattern_y,y,ny,uv[0],uv[1],uv[2],uv[3]);
-		prims[base+(s++)] = PrimRef(bounds,BVH4::encodeTypedLeaf(leaf,0));
+		prims[base.size()+s.size()] = PrimRef(bounds,BVH4::encodeTypedLeaf(leaf,0));
+		s.add(bounds);
 	      }
 	    }
 	  });
         }
         return s;
-      }, [](size_t a, size_t b) { return a+b; });
-
-      for (size_t i=0; i<numPrimitives; i++) // FIXME: parallelize
-        pinfo.add(prims[i].bounds());
+      }, [](PrimInfo a, const PrimInfo& b) { a.merge(b); return a; });
     }
     
     void BVH4SubdivQuadQuad4x4BuilderFast::create_primitive_array_parallel  (size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, PrimInfo& pinfo) {

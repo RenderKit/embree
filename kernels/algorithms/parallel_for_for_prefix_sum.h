@@ -49,7 +49,8 @@ namespace embree
       size_t j0 = state.j0[taskIndex];
 
       /* iterate over arrays */
-      size_t k=k0, N=0;
+      size_t k=k0;
+      Value N=identity;
       for (size_t i=i0; k<k1; i++) {
 	const size_t size = array2[i] ? array2[i]->size() : 0;
         const size_t r0 = j0, r1 = min(size,r0+k1-k);
@@ -60,7 +61,7 @@ namespace embree
     });
 
     /* calculate prefix sum */
-    Value sum=0;
+    Value sum=identity;
     for (size_t i=0; i<taskCount; i++)
     {
       const Value c = state.prefix_state.counts[i];
