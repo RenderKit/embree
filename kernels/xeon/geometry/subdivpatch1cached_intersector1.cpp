@@ -82,8 +82,6 @@ namespace embree
                                         const size_t offset_line1,
                                         const size_t offset_line2)
     {
-      DBG_PRINT(sizeof(Quad2x2));
-
       const float v00 = source[offset_line0 + 0];
       const float v01 = source[offset_line0 + 1];
       const float v02 = source[offset_line0 + 2];
@@ -280,7 +278,7 @@ namespace embree
 	      }
 
 	  /* set invalid grid u,v value to border elements */
-
+          // FIXME: use SIMD
 	  for (unsigned int y=0;y<3;y++)
 	    for (unsigned int x=u_size-1;x<3;x++)
 	      {
@@ -346,9 +344,11 @@ namespace embree
 
       node->clear();
 
+
+      // FIXME: just use largest dimension to split in two
+
       const unsigned int u_mid = (u_start+u_end)/2;
       const unsigned int v_mid = (v_start+v_end)/2;
-
 
       const unsigned int subtree_u_start[4] = { u_start ,u_mid ,u_mid ,u_start };
       const unsigned int subtree_u_end  [4] = { u_mid   ,u_end ,u_end ,u_mid };
@@ -379,9 +379,6 @@ namespace embree
 	  node->set(i, bounds_subtree);
 	  bounds.extend( bounds_subtree );
 	}
-
-      // for (unsigned int i=0;i<4;i++)
-      //   DBG_PRINT(node->bounds(i));
 
       return bounds;
     }
@@ -432,7 +429,8 @@ namespace embree
   /* intersect ray with Quad2x2 structure => 1 ray vs. 8 triangles */
   static __forceinline void intersect1_tri8_precise(Ray& ray,
                                                     const Quad2x2 &qquad,
-                                                    const void* geom)
+                                                    const void* geom,
+                                                    size_t &hitPtr)
   {
     const avx3f v0_org = qquad.getVtx( 0 );
     const avx3f v1_org = qquad.getVtx( 1 );
@@ -513,6 +511,7 @@ namespace embree
     ray.Ng.z = Ng.z[i];
     ray.geomID = 0; //FIXME
     ray.primID = 0;
+    hitPtr = (size_t)qquad.backPtr;
       
   };
 
@@ -700,6 +699,8 @@ namespace embree
     const size_t nearZ = ray_rdir.z >= 0.0f ? 4*sizeof(ssef) : 5*sizeof(ssef);
 
     const size_t types = 1;
+    size_t hitPtr = 0;
+
     /* pop loop */
     while (true) pop:
       {
@@ -785,11 +786,21 @@ namespace embree
         size_t num; Quad2x2* prim = (Quad2x2*) cur.leaf(num);
 
         //DBG_PRINT(*prim);
-        intersect1_tri8_precise( ray, *prim, (SubdivMesh*)geom);
+        intersect1_tri8_precise( ray, *prim, (SubdivMesh*)geom,hitPtr);
 
         ray_far = ray.tfar;
 
       }
+
+#if COMPUTE_SUBDIV_NORMALS_AFTER_PATCH_INTERSECTION == 1
+    if (unlikely(hitPtr != 0))
+      {
+        const SubdivPatch1Cached *const sptr = (SubdivPatch1Cached *)hitPtr;
+        assert(sptr == &subdiv_patch);
+        Vec3fa normal = sptr->normal(ray.u,ray.v);
+        ray.Ng = normal;
+      }
+#endif
 
 
 #else 
