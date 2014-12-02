@@ -198,7 +198,7 @@ namespace embree
       if (tags[index].blocks() >= neededBlocks)
         {
 #if DEBUG
-          if (tags[index].prim_tag != NULL) cache_evictions++;
+          //if (tags[index].prim_tag != NULL) cache_evictions++;
 #endif
 
           tags[index].set(primID,commitCounter);
