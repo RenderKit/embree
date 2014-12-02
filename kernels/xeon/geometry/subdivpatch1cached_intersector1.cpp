@@ -423,6 +423,8 @@ namespace embree
 
 #endif
 
+  static AtomicMutex mtx;
+
   size_t SubdivPatch1CachedIntersector1::getSubtreeRootNode(const SubdivPatch1Cached* const subdiv_patch, 
                                                             const void* geom)
   {
@@ -434,10 +436,16 @@ namespace embree
 
     if (unlikely(!thread_cache))
       {
+
         /* need thread cache to be aligned */
         thread_cache = (TessellationCache *)_mm_malloc(sizeof(TessellationCache),64);
         assert( (size_t)thread_cache % 64 == 0 );
-        thread_cache->init();	  
+        thread_cache->init();	
+
+        mtx.lock();
+        std::cout << "Enabling tessellation cache with " << thread_cache->allocated64ByteBlocks() << " blocks = " << thread_cache->allocated64ByteBlocks()*64 << " bytes as default size" << std::endl;
+        mtx.unlock();
+  
       }
 
     local_cache = thread_cache;
