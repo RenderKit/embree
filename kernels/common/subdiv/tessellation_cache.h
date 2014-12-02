@@ -27,7 +27,7 @@ namespace embree
   private:
     /* default sizes */
     static const size_t DEFAULT_64B_BLOCKS = 8192;
-    static const size_t CACHE_ENTRIES      = 32;
+    static const size_t CACHE_ENTRIES      = 64;
 
     /* 64bit pointers as cache tags for now */
     void         *prim_tag[CACHE_ENTRIES];
