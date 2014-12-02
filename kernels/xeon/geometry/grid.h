@@ -446,6 +446,53 @@ namespace embree
       const size_t h = ((height/2)+3)/4;
       return w*h;
     }
+    
+    template<typename Patch>
+    void displace(Scene* scene, const Patch& patch, const Vec2f* luv)
+    {
+      SubdivMesh* mesh = (SubdivMesh*) scene->get(geomID);
+      if (mesh->displFunc == NULL) return;
+
+      /* calculate uv coordinates */
+      __aligned(64) float qu[17*17], qv[17*17];
+      __aligned(64) float qx[17*17], qy[17*17], qz[17*17];
+      __aligned(64) float nx[17*17], ny[17*17], nz[17*17];
+      for (size_t y=0; y<height; y++) 
+      {
+        for (size_t x=0; x<width; x++) 
+        {
+          qu[y*width+x] = uv[y*width+x].x;
+          qv[y*width+x] = uv[y*width+x].y;
+          qx[y*width+x] = p[y*width+x].x;
+          qy[y*width+x] = p[y*width+x].y;
+          qz[y*width+x] = p[y*width+x].z;
+          const Vec3fa N = normalize(patch.normal(luv[y*width+x].x, luv[y*width+x].y));
+          nx[y*width+x] = N.x;
+          ny[y*width+x] = N.y;
+          nz[y*width+x] = N.z;
+        }
+      }
+      
+      /* call displacement shader */
+      mesh->displFunc(mesh->userPtr,geomID,primID,
+                      (float*)qu,(float*)qv,
+                      (float*)nx,(float*)ny,(float*)nz,
+                      (float*)qx,(float*)qy,(float*)qz,
+                      width*height);
+
+      /* add displacements */
+      for (size_t y=0; y<height; y++) {
+        for (size_t x=0; x<width; x++) {
+          const Vec3fa P0 = p[y*width+x];
+          const Vec3fa P1 = Vec3fa(qx[y*width+x],qy[y*width+x],qz[y*width+x]);
+/*#if defined(DEBUG) // FIXME: enable
+          if (!inside(mesh->displBounds,P1-P0))
+            THROW_RUNTIME_ERROR("displacement out of bounds");
+	    #endif*/
+          p[y*width+x] = P1;
+        }
+      }
+    }
 
     template<typename Patch>
     size_t build(Scene* scene, const Patch& patch,
@@ -464,7 +511,7 @@ namespace embree
       height = y1-y0;
       p = (Vec3fa*) alloc.malloc(width*height*sizeof(Vec3fa));
       uv = (Vec2f*) alloc.malloc(width*height*sizeof(Vec2f));
-      Vec2f* luv = (Vec2f*) alloca(width*height*sizeof(Vec2f));
+      Vec2f luv[17*17]; //= (Vec2f*) alloca(width*height*sizeof(Vec2f));
 
       for (int y=0; y<height; y++) {
         const float fy = pattern_y(y0+y);
@@ -491,7 +538,10 @@ namespace embree
           uvs(x,y) = uvxy;
         }
       }
-      
+
+      /* displace points */
+      displace(scene,patch,luv);
+
       /* create lists of quads */
       size_t i=0;
       for (size_t y=0; y<height-1; y+=8) {
