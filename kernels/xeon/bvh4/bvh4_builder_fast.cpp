@@ -468,8 +468,6 @@ namespace embree
     
     void BVH4SubdivGridBuilderFast::create_primitive_array_sequential(size_t threadIndex, size_t threadCount, PrimInfo& pinfo)
     {
-      double t0 = getSeconds();
-
       pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
       {
 	FastAllocator::Thread alloc(&bvh->alloc2);
@@ -518,9 +516,6 @@ namespace embree
         }
         return s;
       }, [](PrimInfo a, const PrimInfo& b) { a.merge(b); return a; });
-
-      double t1 = getSeconds();
-      PRINT(1000.0f*(t1-t0));
     }
     
     void BVH4SubdivGridBuilderFast::create_primitive_array_parallel  (size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, PrimInfo& pinfo) {

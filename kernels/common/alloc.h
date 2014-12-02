@@ -365,7 +365,7 @@ namespace embree
       if (usedBlocks) usedBlocks->reset();
 
       /* find end of free block list */
-      Block*& freeBlocksEnd = freeBlocks;
+      Block* volatile& freeBlocksEnd = freeBlocks;
       while (freeBlocksEnd) freeBlocksEnd = freeBlocksEnd->next;
 
       /* add previously used blocks to end of free block list */
@@ -387,7 +387,8 @@ namespace embree
       while (true) 
       {
         /* allocate using current block */
-        if (usedBlocks) {
+	Block* myUsedBlocks = usedBlocks;
+        if (myUsedBlocks) {
           void* ptr = usedBlocks->malloc(bytes,align);
           if (ptr) return ptr;
         }
@@ -399,15 +400,19 @@ namespace embree
         /* if this fails allocate new block */
         {
           Lock<AtomicMutex> lock(mutex);
-          if (freeBlocks) {
-            Block* nextFreeBlock = freeBlocks->next;
-            freeBlocks->next = usedBlocks;
-            usedBlocks = freeBlocks;
-            freeBlocks = nextFreeBlock;
-          } else {
-            growSize = min(2*growSize,size_t(maxAllocationSize+maxAlignment));
-            usedBlocks = Block::create(growSize-maxAlignment, growSize-maxAlignment, usedBlocks);
-          }
+	  if (myUsedBlocks == usedBlocks)
+	  {
+	    if (freeBlocks) {
+	      Block* nextFreeBlock = freeBlocks->next;
+	      freeBlocks->next = usedBlocks;
+	      __memory_barrier();
+	      usedBlocks = freeBlocks;
+	      freeBlocks = nextFreeBlock;
+	    } else {
+	      growSize = min(2*growSize,size_t(maxAllocationSize+maxAlignment));
+	      usedBlocks = Block::create(growSize-maxAlignment, growSize-maxAlignment, usedBlocks);
+	    }
+	  }
         }
       }
     }
@@ -479,8 +484,8 @@ namespace embree
 
   private:
     AtomicMutex mutex;
-    Block* usedBlocks;
-    Block* freeBlocks;
+    Block* volatile usedBlocks;
+    Block* volatile freeBlocks;
     size_t growSize;
   };
 }
