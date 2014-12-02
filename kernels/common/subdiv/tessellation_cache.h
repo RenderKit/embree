@@ -143,6 +143,11 @@ namespace embree
 
     }
 
+    __forceinline unsigned int allocated64ByteBlocks() 
+    {
+      return allocated64BytesBlocks;
+    }
+
     __forceinline unsigned int addrToCacheIndex(void *primAddr)
     {
       return (((size_t)primAddr)>>6) % CACHE_ENTRIES;
@@ -223,6 +228,7 @@ namespace embree
       /* insert new entry at the beginning */
       tags[index].set(primID,commitCounter,curNode,neededBlocks);
       return curNode;     
+
     }
 
     /* print stats for debugging */                 
