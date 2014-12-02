@@ -234,8 +234,8 @@ RTCScene constructScene(const Vec3fa& cam_pos)
     for (size_t i=0; i<4*mesh->numQuads; i++) level[i] = 16;
     rtcUnmapBuffer(scene,subdivMeshID, RTC_LEVEL_BUFFER);
 
-    //BBox3fa bounds(Vec3fa(-0.1f,-0.1f,-0.1f),Vec3fa(0.1f,0.1f,0.1f));
-    //rtcSetDisplacementFunction(scene, subdivMeshID, (RTCDisplacementFunc)DisplacementFunc,(RTCBounds*)&bounds);
+    BBox3fa bounds(Vec3fa(-0.1f,-0.1f,-0.1f),Vec3fa(0.1f,0.1f,0.1f));
+    rtcSetDisplacementFunction(scene, subdivMeshID, (RTCDisplacementFunc)DisplacementFunc,(RTCBounds*)&bounds);
   }       
   
   for (size_t i=0; i<g_ispc_scene->numSubdivMeshes; i++)

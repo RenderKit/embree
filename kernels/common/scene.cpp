@@ -34,7 +34,8 @@ namespace embree
       numBezierCurves(0), numBezierCurves2(0), 
       numSubdivPatches(0), numSubdivPatches2(0), 
       numUserGeometries1(0), 
-      numIntersectionFilters4(0), numIntersectionFilters8(0), numIntersectionFilters16(0)
+      numIntersectionFilters4(0), numIntersectionFilters8(0), numIntersectionFilters16(0),
+      commitCounter(0)
   {
 #if !defined(__MIC__)
     lockstep_scheduler.taskBarrier.init(TaskScheduler::getNumThreads());
@@ -449,6 +450,10 @@ namespace embree
       std::cout << "selected scene intersector" << std::endl;
       intersectors.print(2);
     }
+    
+    /* update commit counter */
+    commitCounter++;
+    DBG_PRINT( commitCounter );
   }
 
   void Scene::write(std::ofstream& file)

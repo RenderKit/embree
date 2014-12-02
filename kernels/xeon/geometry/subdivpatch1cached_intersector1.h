@@ -279,6 +279,7 @@ namespace embree
                                       const void* geom,
                                       size_t& lazy_node);
 
+    static size_t getSubtreeRootNode(const Primitive* const subdiv_patch, const void* geom);
 
     /*! Intersect a ray with the primitive. */
     static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Primitive* prim, size_t ty, const void* geom, size_t& lazy_node) 
@@ -303,7 +304,8 @@ namespace embree
 
         }
       else
-        intersect_subdiv_patch(pre,ray,*prim,ty,geom,lazy_node);
+        lazy_node = getSubtreeRootNode(prim, geom);
+        //intersect_subdiv_patch(pre,ray,*prim,ty,geom,lazy_node);
 #endif
 
     }

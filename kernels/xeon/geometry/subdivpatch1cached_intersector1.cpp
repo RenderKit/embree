@@ -80,7 +80,6 @@ namespace embree
         if (unlikely(geom != NULL))
           if (unlikely(((SubdivMesh*)geom)->displFunc != NULL))
             {
-              std::cout << "USING DISPLACEMENTS" << std::endl;
               avx3f normal = patch.normal8(uu,vv);
               normal = normalize(normal);
               
@@ -434,20 +433,13 @@ namespace embree
 
 #endif
 
-
-  void SubdivPatch1CachedIntersector1::intersect_subdiv_patch(const Precalculations& pre,
-                                                              Ray& ray,
-                                                              const Primitive& subdiv_patch,
-                                                              size_t ty,
-                                                              const void* geom,
-                                                              size_t& lazy_node) // geom == mesh or geom == scene?
+  size_t SubdivPatch1CachedIntersector1::getSubtreeRootNode(const SubdivPatch1Cached* const subdiv_patch, 
+                                                            const void* geom)
   {
-    /* only avx code for now */
 #if defined(__AVX__) 
 
-    //intersect1_tri8_precise( ray, *prim, (SubdivMesh*)geom,hitPtr);
-    
-#if defined(ENABLE_PER_THREAD_TESSELLATION_CACHE)
+    const unsigned int commitCounter = ((Scene*)geom)->commitCounter;
+
     TessellationCache *local_cache = NULL;
 
     if (!thread_cache)
@@ -460,22 +452,33 @@ namespace embree
 
     local_cache = thread_cache;
 
-    SubdivPatch1Cached* tag = (SubdivPatch1Cached*)&subdiv_patch;
+    SubdivPatch1Cached* tag = (SubdivPatch1Cached*)subdiv_patch;
 
     BVH4::NodeRef root = local_cache->lookup(tag);
 
     if (root == BVH4::invalidNode)
       {
-        const unsigned int blocks = subdiv_patch.grid_subtree_size_64b_blocks;
+        const unsigned int blocks = subdiv_patch->grid_subtree_size_64b_blocks;
         root = local_cache->insert(tag,blocks);
         BVH4::Node* node = root.node();
 
-        initLocalLazySubdivTree(subdiv_patch,root.node(),(SubdivMesh*)geom);		      
+        initLocalLazySubdivTree(*subdiv_patch,root.node(),((Scene*)geom)->getSubdivMesh(subdiv_patch->geom));
         assert( root != BVH4::invalidNode);
       }
-    lazy_node = root;
+    return root;   
+#endif    
+  }
 
-#else 
+
+  void SubdivPatch1CachedIntersector1::intersect_subdiv_patch(const Precalculations& pre,
+                                                              Ray& ray,
+                                                              const Primitive& subdiv_patch,
+                                                              size_t ty,
+                                                              const void* geom,
+                                                              size_t& lazy_node) // geom == mesh or geom == scene?
+  {
+    /* only avx code for now */
+#if defined(__AVX__) 
 
     /* stupid scanline-based grid intersector for debugging */
     const float * const edge_levels = subdiv_patch.level;
@@ -530,13 +533,6 @@ namespace embree
           }
       }	  
 
-#endif
-
-
-
-
-
-    
 #endif
   }
 

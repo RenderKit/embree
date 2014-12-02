@@ -186,10 +186,9 @@ namespace embree
 	  /* eval displacement function */
 	  if (unlikely(mesh->displFunc != NULL))
 	    {
-              std::cout << "USING DISPLACEMENTS" << std::endl;
 	      avx3f normal = normal8(u,v);
 	      normal = normalize(normal);
-
+              //PING;
 	      mesh->displFunc(mesh->userPtr,
 			      geom,
 			      prim,
