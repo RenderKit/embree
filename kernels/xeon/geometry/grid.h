@@ -226,24 +226,20 @@ namespace embree
 	  for (size_t x=x0; x<x1; x+=2)
 	  {
 	    if (x+1 == x1 || y+1 == y1) {
-	      for (size_t ly=y; ly<y+2; ly++) {
-		for (size_t lx=x; lx<x+2; lx++) { 
-		  //new (&quads[i]) Quads(Quads::Type::QUAD,ly*grid.width+lx);
-		  new (&quads[i]) Quads(Quads::Type::NONE,ly*grid.width+lx);
+	      for (size_t ly=y; ly<min(y+2,y1); ly++) {
+		for (size_t lx=x; lx<min(x+2,x1); lx++) { 
+		  new (&quads[i]) Quads(Quads::Type::QUAD,ly*grid.width+lx);
 		  const BBox3fa b = getQuadBounds(lx,ly);
-		  bounds.set(i,b);
+		  bounds.set(i++,b);
 		  box.extend(b);
-		  i++;
 		}
 	      }
 	    } 
 	    else {
-	      //new (&quads[i]) Quads(Quads::Type::QUADQUAD,y*grid.width+x);
 	      new (&quads[i]) Quads(Quads::Type::QUADQUAD,y*grid.width+x);
 	      const BBox3fa b = getQuadQuadBounds(x,y);
-	      bounds.set(i,b);
+	      bounds.set(i++,b);
 	      box.extend(b);
-	      i++;
 	    }
 	  }
 	}
@@ -294,7 +290,6 @@ namespace embree
         const float fy = pattern_y(y0+y);
         for (int x=0; x<width; x++) {
           const float fx = pattern_x(x0+x);
-	  PRINT4(x,y,fx,fy);
           luv[y*width+x] = Vec2f(fx,fy);
         }
       }
@@ -323,7 +318,7 @@ namespace embree
 	for (size_t x=0; x<width-1; x+=8) {
 	  //QuadList* leaf = new (alloc.malloc(sizeof(QuadList))) QuadList(*this);
 	  QuadList* leaf = new QuadList(*this); // FIXME: use allocator
-	  const BBox3fa bounds = leaf->init(x,min(x+8,width),y,min(y+8,height));
+	  const BBox3fa bounds = leaf->init(x,min(x+8,width-1),y,min(y+8,height-1));
 	  prims[i++] = PrimRef(bounds,BVH4::encodeTypedLeaf(leaf,0));
 	}
       }

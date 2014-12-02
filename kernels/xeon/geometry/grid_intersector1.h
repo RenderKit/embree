@@ -256,6 +256,7 @@ namespace embree
 	  const Vec2f& uv00 = prim.grid.uvs(ofs,0), uv10 = (&uv00)[1];
 	  const Vec2f& uv01 = prim.grid.uvs(ofs,1), uv11 = (&uv01)[1];
 	  intersectQuad(ray, v00,v10,v01,v11, uv00,uv10,uv01,uv11, prim);
+	  break;
 	}
 	case Grid::QuadList::Quads::Type::QUADQUAD: {
 	  const Vec3fa& v00 = prim.grid.point(ofs,0), v10 = (&v00)[1], v20 = (&v00)[2];
@@ -268,6 +269,7 @@ namespace embree
 			    v00,v10,v20,v01,v11,v21,v02,v12,v22,
 			    uv00,uv10,uv20,uv01,uv11,uv21,uv02,uv12,uv22,
 			    prim);
+	  break;
 	}
 	}
       }
