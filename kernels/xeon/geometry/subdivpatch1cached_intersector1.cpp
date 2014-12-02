@@ -433,10 +433,14 @@ namespace embree
 
     if (unlikely(!thread_cache))
       {
+        Lock<AtomicMutex> lock();
+
         /* need thread cache to be aligned */
         thread_cache = (TessellationCache *)_mm_malloc(sizeof(TessellationCache),64);
         assert( (size_t)thread_cache % 64 == 0 );
-        thread_cache->init();	  
+        thread_cache->init();	
+
+  
       }
 
     local_cache = thread_cache;

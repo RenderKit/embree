@@ -176,7 +176,6 @@ namespace embree
     /* insert entry using 'neededBlocks' cachelines into cache */
     __forceinline BVH4::NodeRef insert(void *primID, const unsigned int commitCounter, const size_t neededBlocks)
     {
-
       const unsigned int index = addrToCacheIndex(primID);
       assert(!tags[index].match(primID,commitCounter));
       if (tags[index].usedBlocks >= neededBlocks)
@@ -194,9 +193,10 @@ namespace embree
       if (unlikely(blockCounter + neededBlocks >= allocated64BytesBlocks))
         {          
           /* can the cache hold this subtree space at all in each cache entries? */
-          if (unlikely(CACHE_ENTRIES*neededBlocks > allocated64BytesBlocks)) 
+#define BIG_CACHE_ENTRIES 16
+          if (unlikely(BIG_CACHE_ENTRIES*neededBlocks > allocated64BytesBlocks)) 
             {
-              const unsigned int new_allocated64BytesBlocks = CACHE_ENTRIES*neededBlocks;
+              const unsigned int new_allocated64BytesBlocks = BIG_CACHE_ENTRIES*neededBlocks;
 
               std::cout << "EXTENDING TESSELLATION CACHE (PER THREAD) FROM " 
                         << allocated64BytesBlocks << " TO " 
