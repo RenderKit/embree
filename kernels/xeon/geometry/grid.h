@@ -181,61 +181,21 @@ namespace embree
     {
       struct Quads
       {
-	enum struct Type : char { QUAD1X1, QUAD1X2, QUAD2X1, QUAD2X2, NONE };
+	enum { QUAD2X2 = 0, QUAD1X2 = 1, QUAD2X1 = 2, QUAD1X1 = 3, NONE = 4 };
 	
-	__forceinline Quads () : type(Type::NONE), ofs(0) {}
-	__forceinline Quads (Type type, char ofs) : type(type), ofs(ofs) {}
+	__forceinline Quads () : type(NONE), ofs(0) {}
+	__forceinline Quads (unsigned char type, unsigned char ofs) : type(type), ofs(ofs) {}
 	
-	Type type;
+	unsigned char type;
 	unsigned char ofs;
       };
 
-      __forceinline const BBox3fa getQuad1x1Bounds(const size_t x0, const size_t y0) const 
+      __forceinline const BBox3fa getBounds(const size_t x0, const size_t x1, const size_t y0, const size_t y1) const 
       {
 	BBox3fa bounds = empty;
-	bounds.extend(grid.point(x0+0,y0+0));
-	bounds.extend(grid.point(x0+1,y0+0));
-	bounds.extend(grid.point(x0+0,y0+1));
-	bounds.extend(grid.point(x0+1,y0+1));
-	return bounds;
-      }
-      
-      __forceinline const BBox3fa getQuad1x2Bounds(const size_t x0, const size_t y0) const 
-      {
-	BBox3fa bounds = empty;
-	bounds.extend(grid.point(x0+0,y0+0));
-	bounds.extend(grid.point(x0+1,y0+0));
-	bounds.extend(grid.point(x0+0,y0+1));
-	bounds.extend(grid.point(x0+1,y0+1));
-	bounds.extend(grid.point(x0+0,y0+2));
-	bounds.extend(grid.point(x0+1,y0+2));
-	return bounds;
-      }
-
-      __forceinline const BBox3fa getQuad2x1Bounds(const size_t x0, const size_t y0) const 
-      {
-	BBox3fa bounds = empty;
-	bounds.extend(grid.point(x0+0,y0+0));
-	bounds.extend(grid.point(x0+1,y0+0));
-	bounds.extend(grid.point(x0+2,y0+0));
-	bounds.extend(grid.point(x0+0,y0+1));
-	bounds.extend(grid.point(x0+1,y0+1));
-	bounds.extend(grid.point(x0+2,y0+1));
-	return bounds;
-      }
-
-      __forceinline const BBox3fa getQuad2x2Bounds(const size_t x0, const size_t y0) const 
-      {
-	BBox3fa bounds = empty;
-	bounds.extend(grid.point(x0+0,y0+0));
-	bounds.extend(grid.point(x0+1,y0+0));
-	bounds.extend(grid.point(x0+2,y0+0));
-	bounds.extend(grid.point(x0+0,y0+1));
-	bounds.extend(grid.point(x0+1,y0+1));
-	bounds.extend(grid.point(x0+2,y0+1));
-	bounds.extend(grid.point(x0+0,y0+2));
-	bounds.extend(grid.point(x0+1,y0+2));
-	bounds.extend(grid.point(x0+2,y0+2));
+	for (size_t y=y0; y<=y1; y++)
+	  for (size_t x=x0; x<=x1; x++)
+	    bounds.extend(grid.point(x,y));
 	return bounds;
       }
 
@@ -251,30 +211,10 @@ namespace embree
 	  {
 	    const bool right = x+1 == x1;
 	    const bool bottom = y+1 == y1;
-	    if (right || bottom) {
-	      if (right && bottom) {
-		new (&quads[i]) Quads(Quads::Type::QUAD1X1,y*grid.width+x);
-		const BBox3fa b = getQuad1x1Bounds(x,y);
-		bounds.set(i++,b);
-		box.extend(b);
-	      } else if (right) {
-		new (&quads[i]) Quads(Quads::Type::QUAD1X2,y*grid.width+x);
-		const BBox3fa b = getQuad1x2Bounds(x,y);
-		bounds.set(i++,b);
-		box.extend(b);
-	      } else {
-		new (&quads[i]) Quads(Quads::Type::QUAD2X1,y*grid.width+x);
-		const BBox3fa b = getQuad2x1Bounds(x,y);
-		bounds.set(i++,b);
-		box.extend(b);
-	      }
-	    }
-	    else {
-	      new (&quads[i]) Quads(Quads::Type::QUAD2X2,y*grid.width+x);
-	      const BBox3fa b = getQuad2x2Bounds(x,y);
-	      bounds.set(i++,b);
-	      box.extend(b);
-	    }
+	    new (&quads[i]) Quads(2*bottom+right,y*grid.width+x);
+	    const BBox3fa b = getBounds(x,min(x+2,x1),y,min(y+2,y1));
+	    bounds.set(i++,b);
+	    box.extend(b);
 	  }
 	}
 	return box;

@@ -250,7 +250,7 @@ namespace embree
         const size_t i = __bscf(mask);
 	const size_t ofs = prim.quads[i].ofs;
 	switch (prim.quads[i].type) {
-	case Grid::QuadList::Quads::Type::QUAD1X1: {
+	case Grid::QuadList::Quads::QUAD1X1: {
 	  const Vec3fa& v00 = prim.grid.point(ofs,0), v10 = (&v00)[1];
 	  const Vec3fa& v01 = prim.grid.point(ofs,1), v11 = (&v01)[1];
 	  const Vec2f& uv00 = prim.grid.uvs  (ofs,0), uv10 = (&uv00)[1];
@@ -258,7 +258,7 @@ namespace embree
 	  intersectQuad(ray, v00,v10,v01,v11, uv00,uv10,uv01,uv11, prim);
 	  break;
 	}
-	case Grid::QuadList::Quads::Type::QUAD1X2: {
+	case Grid::QuadList::Quads::QUAD1X2: {
 	  const Vec3fa& v00 = prim.grid.point(ofs,0), v10 = (&v00)[1];
 	  const Vec3fa& v01 = prim.grid.point(ofs,1), v11 = (&v01)[1];
 	  const Vec3fa& v02 = prim.grid.point(ofs,2), v12 = (&v02)[1];
@@ -269,7 +269,7 @@ namespace embree
 	  intersectQuad(ray, v01,v11,v02,v12, uv01,uv11,uv02,uv12, prim);
 	  break;
 	}
-	case Grid::QuadList::Quads::Type::QUAD2X1: {
+	case Grid::QuadList::Quads::QUAD2X1: {
 	  const Vec3fa& v00 = prim.grid.point(ofs,0), v10 = (&v00)[1], v20 = (&v00)[2];
 	  const Vec3fa& v01 = prim.grid.point(ofs,1), v11 = (&v01)[1], v21 = (&v01)[2];
 	  const Vec2f& uv00 = prim.grid.uvs  (ofs,0), uv10 = (&uv00)[1], uv20 = (&uv00)[2];
@@ -278,7 +278,7 @@ namespace embree
 	  intersectQuad(ray, v10,v20,v11,v21, uv10,uv20,uv11,uv21, prim);
 	  break;
 	}
-	case Grid::QuadList::Quads::Type::QUAD2X2: {
+	case Grid::QuadList::Quads::QUAD2X2: {
 	  const Vec3fa& v00 = prim.grid.point(ofs,0), v10 = (&v00)[1], v20 = (&v00)[2];
 	  const Vec3fa& v01 = prim.grid.point(ofs,1), v11 = (&v01)[1], v21 = (&v01)[2];
 	  const Vec3fa& v02 = prim.grid.point(ofs,2), v12 = (&v02)[1], v22 = (&v02)[2];
