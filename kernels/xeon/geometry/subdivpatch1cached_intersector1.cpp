@@ -441,10 +441,11 @@ namespace embree
         assert( (size_t)thread_cache % 64 == 0 );
         thread_cache->init();	
 
+#if DEBUG
         mtx.lock();
         std::cout << "Enabling tessellation cache with " << thread_cache->allocated64ByteBlocks() << " blocks = " << thread_cache->allocated64ByteBlocks()*64 << " bytes as default size" << std::endl;
         mtx.unlock();
-  
+#endif
       }
 
     local_cache = thread_cache;

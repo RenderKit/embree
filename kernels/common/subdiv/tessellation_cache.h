@@ -28,14 +28,16 @@ namespace embree
   private:
     /* default sizes */
     static const size_t DEFAULT_64B_BLOCKS = (1<<14);
-    static const size_t CACHE_ENTRIES      = DEFAULT_64B_BLOCKS / 4;
+    static const size_t CACHE_ENTRIES      = DEFAULT_64B_BLOCKS / 8;
 
     struct CacheTag {
+    private:
       void *prim_tag;
       int commit_tag;
       int usedBlocks;
       BVH4::NodeRef bvh4_subtree_root;     
 
+    public:
       __forceinline void reset() 
       {
         prim_tag          = NULL;
@@ -67,6 +69,16 @@ namespace embree
         commit_tag        = commitCounter;
       }
 
+      __forceinline BVH4::NodeRef getSubTreeRoot() 
+      {
+        return bvh4_subtree_root;
+      }
+
+      __forceinline unsigned int blocks() 
+      {
+        return usedBlocks;
+      }
+      
     } tags[CACHE_ENTRIES];
 
 
@@ -168,7 +180,7 @@ namespace embree
 #if DEBUG
           cache_hits++;
 #endif
-          return tags[index].bvh4_subtree_root;
+          return tags[index].getSubTreeRoot();
         }
 
 #if DEBUG
@@ -183,14 +195,14 @@ namespace embree
     {
       const unsigned int index = addrToCacheIndex(primID);
       assert(!tags[index].match(primID,commitCounter));
-      if (tags[index].usedBlocks >= neededBlocks)
+      if (tags[index].blocks() >= neededBlocks)
         {
 #if DEBUG
           if (tags[index].prim_tag != NULL) cache_evictions++;
 #endif
 
           tags[index].set(primID,commitCounter);
-          return tags[index].bvh4_subtree_root;
+          return tags[index].getSubTreeRoot();
         }
 
 
