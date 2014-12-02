@@ -457,7 +457,7 @@ namespace embree
 	    const TessellationPattern pattern3(l3,subdiv[3]);
 	    const TessellationPattern pattern_x = pattern0.size() > pattern2.size() ? pattern0 : pattern2;
 	    const TessellationPattern pattern_y = pattern1.size() > pattern3.size() ? pattern1 : pattern3;
-	    s += Grid::getNumQuadLists(pattern_x.size()+1,pattern_y.size()+1);
+	    s += Grid::getNumQuadLists(pattern_x.size(),pattern_y.size());
 	  });
 	}
         return PrimInfo(s,empty,empty);
@@ -505,10 +505,9 @@ namespace embree
 	    const TessellationPattern pattern3(l3,subdiv[3]);
 	    const TessellationPattern pattern_x = pattern0.size() > pattern2.size() ? pattern0 : pattern2;
 	    const TessellationPattern pattern_y = pattern1.size() > pattern3.size() ? pattern1 : pattern3;
-	    const int nx = pattern_x.size()+1;
-	    const int ny = pattern_y.size()+1;
-	    Grid* leaf = new (alloc.malloc(sizeof(Grid),16)) Grid(mesh->id,f);
-	    size_t N = leaf->build(scene,patcheval,alloc,&prims[base.size()+s.size()],0,nx,0,ny,uv[0],uv[1],uv[2],uv[3],pattern0,pattern1,pattern2,pattern3,pattern_x,pattern_y);
+	    const int nx = pattern_x.size();
+	    const int ny = pattern_y.size();
+            size_t N = Grid::create(mesh->id,f,scene,patcheval,alloc,&prims[base.size()+s.size()],0,nx,0,ny,uv[0],uv[1],uv[2],uv[3],pattern0,pattern1,pattern2,pattern3,pattern_x,pattern_y);
 	    assert(N == Grid::getNumQuadLists(nx,ny));
 	    for (size_t i=0; i<N; i++)
 	      s.add(prims[base.size()+s.size()].bounds());

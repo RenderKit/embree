@@ -242,9 +242,7 @@ RTCScene constructScene(const Vec3fa& cam_pos)
 
     //BBox3fa bounds(Vec3fa(-0.1f,-0.1f,-0.1f),Vec3fa(0.1f,0.1f,0.1f));
     //rtcSetDisplacementFunction(scene, subdivMeshID, (RTCDisplacementFunc)DisplacementFunc,(RTCBounds*)&bounds);
-
     //rtcSetDisplacementFunction(scene, subdivMeshID, (RTCDisplacementFunc)DisplacementFunc,NULL);
-
   }       
   
   for (size_t i=0; i<g_ispc_scene->numSubdivMeshes; i++)

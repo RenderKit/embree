@@ -27,6 +27,7 @@ namespace embree
 {
 
 #define FORCE_TRIANGLE_UV 0
+#define COMPUTE_SUBDIV_NORMALS_AFTER_PATCH_INTERSECTION 0
 
 #define TIMER(x) 
   

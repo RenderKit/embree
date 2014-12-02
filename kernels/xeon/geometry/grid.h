@@ -410,6 +410,7 @@ namespace embree
 	{
 	  for (size_t x=x0; x<x1; x+=2)
 	  {
+            assert(i < 16);
 	    const bool right = x+1 == x1;
 	    const bool bottom = y+1 == y1;
 	    new (&quads[i]) Quads(2*bottom+right,y*grid.width+x);
@@ -436,22 +437,87 @@ namespace embree
     __forceinline Grid(unsigned geomID, unsigned primID)
       : width(0), height(0), geomID(geomID), primID(primID), p(NULL), uv(NULL) {}
     
-    __forceinline       Vec3fa& point(const size_t x, const size_t y)       { return p[y*width+x]; }
-    __forceinline const Vec3fa& point(const size_t x, const size_t y) const { return p[y*width+x]; }
-    __forceinline       Vec2f&  uvs  (const size_t x, const size_t y)       { return uv[y*width+x]; }
-    __forceinline const Vec2f&  uvs  (const size_t x, const size_t y) const { return uv[y*width+x]; }
+    __forceinline       Vec3fa& point(const size_t x, const size_t y)       { assert(y*width+x < width*height); return p[y*width+x]; }
+    __forceinline const Vec3fa& point(const size_t x, const size_t y) const { assert(y*width+x < width*height); return p[y*width+x]; }
+    __forceinline       Vec2f&  uvs  (const size_t x, const size_t y)       { assert(y*width+x < width*height); return uv[y*width+x]; }
+    __forceinline const Vec2f&  uvs  (const size_t x, const size_t y) const { assert(y*width+x < width*height); return uv[y*width+x]; }
 
     static size_t getNumQuadLists(size_t width, size_t height) {
-      const size_t w = ((width /2)+3)/4;
-      const size_t h = ((height/2)+3)/4;
+      const size_t w = (((width +1)/2)+3)/4;
+      const size_t h = (((height+1)/2)+3)/4;
       return w*h;
+    }
+    
+    template<typename Patch>
+    void displace(Scene* scene, const Patch& patch, const Vec2f* luv)
+    {
+      SubdivMesh* mesh = (SubdivMesh*) scene->get(geomID);
+      if (mesh->displFunc == NULL) return;
+
+      /* calculate uv coordinates */
+      __aligned(64) float qu[17*17], qv[17*17];
+      __aligned(64) float qx[17*17], qy[17*17], qz[17*17];
+      __aligned(64) float nx[17*17], ny[17*17], nz[17*17];
+      for (size_t y=0; y<height; y++) 
+      {
+        for (size_t x=0; x<width; x++) 
+        {
+          qu[y*width+x] = uv[y*width+x].x;
+          qv[y*width+x] = uv[y*width+x].y;
+          qx[y*width+x] = p[y*width+x].x;
+          qy[y*width+x] = p[y*width+x].y;
+          qz[y*width+x] = p[y*width+x].z;
+          const Vec3fa N = normalize(patch.normal(luv[y*width+x].x, luv[y*width+x].y));
+          nx[y*width+x] = N.x;
+          ny[y*width+x] = N.y;
+          nz[y*width+x] = N.z;
+        }
+      }
+      
+      /* call displacement shader */
+      mesh->displFunc(mesh->userPtr,geomID,primID,
+                      (float*)qu,(float*)qv,
+                      (float*)nx,(float*)ny,(float*)nz,
+                      (float*)qx,(float*)qy,(float*)qz,
+                      width*height);
+
+      /* add displacements */
+      for (size_t y=0; y<height; y++) {
+        for (size_t x=0; x<width; x++) {
+          const Vec3fa P0 = p[y*width+x];
+          const Vec3fa P1 = Vec3fa(qx[y*width+x],qy[y*width+x],qz[y*width+x]);
+/*#if defined(DEBUG) // FIXME: enable
+          if (!inside(mesh->displBounds,P1-P0))
+            THROW_RUNTIME_ERROR("displacement out of bounds");
+	    #endif*/
+          p[y*width+x] = P1;
+        }
+      }
+    }
+
+    template<typename Patch>
+    static size_t create(unsigned geomID, unsigned primID, 
+                         Scene* scene, const Patch& patch,
+                         FastAllocator::Thread& alloc, PrimRef* prims,
+                         const size_t x0, const size_t x1,
+                         const size_t y0, const size_t y1,
+                         const Vec2f& uv0, const Vec2f& uv1, const Vec2f& uv2, const Vec2f& uv3,
+                         const DiscreteTessellationPattern& pattern0, 
+                         const DiscreteTessellationPattern& pattern1, 
+                         const DiscreteTessellationPattern& pattern2, 
+                         const DiscreteTessellationPattern& pattern3, 
+                         const DiscreteTessellationPattern& pattern_x,
+                         const DiscreteTessellationPattern& pattern_y)
+    {
+      Grid* leaf = new (alloc.malloc(sizeof(Grid),16)) Grid(geomID,primID);
+      return leaf->build(scene,patch,alloc,prims,x0,x1,y0,y1,uv0,uv1,uv2,uv3,pattern0,pattern1,pattern2,pattern3,pattern_x,pattern_y);
     }
 
     template<typename Patch>
     size_t build(Scene* scene, const Patch& patch,
-	       FastAllocator::Thread& alloc, PrimRef* prims,
-	       const int x0, const int x1,
-	       const int y0, const int y1,
+                 FastAllocator::Thread& alloc, PrimRef* prims,
+	       const size_t x0, const size_t x1,
+	       const size_t y0, const size_t y1,
 	       const Vec2f& uv0, const Vec2f& uv1, const Vec2f& uv2, const Vec2f& uv3,
 	       const DiscreteTessellationPattern& pattern0, 
 	       const DiscreteTessellationPattern& pattern1, 
@@ -460,11 +526,11 @@ namespace embree
 	       const DiscreteTessellationPattern& pattern_x,
 	       const DiscreteTessellationPattern& pattern_y)
     {
-      width  = x1-x0;
-      height = y1-y0;
+      width  = x1-x0+1; assert(width <= 17);
+      height = y1-y0+1; assert(height <= 17);
       p = (Vec3fa*) alloc.malloc(width*height*sizeof(Vec3fa));
       uv = (Vec2f*) alloc.malloc(width*height*sizeof(Vec2f));
-      Vec2f* luv = (Vec2f*) alloca(width*height*sizeof(Vec2f));
+      Vec2f luv[17*17]; //= (Vec2f*) alloca(width*height*sizeof(Vec2f));
 
       for (int y=0; y<height; y++) {
         const float fy = pattern_y(y0+y);
@@ -491,13 +557,16 @@ namespace embree
           uvs(x,y) = uvxy;
         }
       }
-      
+
+      /* displace points */
+      displace(scene,patch,luv);
+
       /* create lists of quads */
       size_t i=0;
-      for (size_t y=0; y<height-1; y+=8) {
-	for (size_t x=0; x<width-1; x+=8) {
+      for (size_t y=y0; y<y1; y+=8) {
+	for (size_t x=x0; x<x1; x+=8) {
 	  QuadList* leaf = new (alloc.malloc(sizeof(QuadList))) QuadList(*this);
-	  const BBox3fa bounds = leaf->init(x,min(x+8,width-1),y,min(y+8,height-1));
+	  const BBox3fa bounds = leaf->init(x,min(x+8,x1),y,min(y+8,y1));
 	  prims[i++] = PrimRef(bounds,BVH4::encodeTypedLeaf(leaf,0));
 	}
       }
