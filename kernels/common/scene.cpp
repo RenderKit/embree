@@ -444,7 +444,6 @@ namespace embree
     
     /* update commit counter */
     commitCounter++;
-    DBG_PRINT( commitCounter );
   }
 
   void Scene::write(std::ofstream& file)
