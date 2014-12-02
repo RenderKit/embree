@@ -302,24 +302,29 @@ namespace embree
           return alloc->malloc(bytes,maxAlignment);
         }
 
+#if 0
         /* get new partial block if allocation failed */
-        size_t blockSize = allocBlockSize;
-        ptr = (char*) alloc->usedBlocks->malloc_some(blockSize,maxAlignment);
-        end = blockSize;
+	if (alloc->usedBlocks) 
+	{
+	  size_t blockSize = allocBlockSize;
+	  ptr = (char*) alloc->usedBlocks->malloc_some(blockSize,maxAlignment);
+	  end = blockSize;
+	  
+	  /* retry allocation */
+	  cur = bytes + ((align - cur) & (align-1));
+	  if (likely(cur <= end)) return &ptr[cur - bytes];
+	}
+#endif
 
-        /* retry allocation */
-        cur = bytes + ((align - cur) & (align-1));
-        if (likely(cur <= end)) return &ptr[cur - bytes];
-        
         /* get new full block if allocation failed */
-        blockSize = allocBlockSize;
+        size_t blockSize = allocBlockSize;
         ptr = (char*) alloc->malloc(blockSize,maxAlignment);
         end = blockSize;
 
         /* retry allocation */
         cur = bytes + ((align - cur) & (align-1));
         if (likely(cur <= end)) return &ptr[cur - bytes];
-        
+
         /* should never happen as large allocations get handled specially above */
         assert(false);
         return NULL;

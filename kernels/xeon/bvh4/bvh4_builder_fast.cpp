@@ -468,8 +468,12 @@ namespace embree
     
     void BVH4SubdivGridBuilderFast::create_primitive_array_sequential(size_t threadIndex, size_t threadCount, PrimInfo& pinfo)
     {
+      double t0 = getSeconds();
+
       pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
       {
+	FastAllocator::Thread alloc(&bvh->alloc2);
+
 	PrimInfo s(empty);
         for (size_t f=r.begin(); f!=r.end(); ++f) {
           if (!mesh->valid(f)) continue;
@@ -505,8 +509,11 @@ namespace embree
 	    const TessellationPattern pattern_y = pattern1.size() > pattern3.size() ? pattern1 : pattern3;
 	    const int nx = pattern_x.size()+1;
 	    const int ny = pattern_y.size()+1;
-	    Grid* leaf = new (bvh->alloc2.malloc(sizeof(Grid),16)) Grid(mesh->id,f);
-	    size_t N = leaf->build(scene,patcheval,bvh->alloc2,&prims[base.size()+s.size()],0,nx,0,ny,uv[0],uv[1],uv[2],uv[3],pattern0,pattern1,pattern2,pattern3,pattern_x,pattern_y);
+	    //PING;
+	    Grid* leaf = new (alloc.malloc(sizeof(Grid),16)) Grid(mesh->id,f);
+	    //PING;
+	    size_t N = leaf->build(scene,patcheval,alloc,&prims[base.size()+s.size()],0,nx,0,ny,uv[0],uv[1],uv[2],uv[3],pattern0,pattern1,pattern2,pattern3,pattern_x,pattern_y);
+	    //PING;
 	    assert(N == Grid::getNumQuadLists(nx,ny));
 	    for (size_t i=0; i<N; i++)
 	      s.add(prims[base.size()+s.size()].bounds());
@@ -514,6 +521,9 @@ namespace embree
         }
         return s;
       }, [](PrimInfo a, const PrimInfo& b) { a.merge(b); return a; });
+
+      double t1 = getSeconds();
+      PRINT(1000.0f*(t1-t0));
     }
     
     void BVH4SubdivGridBuilderFast::create_primitive_array_parallel  (size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, PrimInfo& pinfo) {

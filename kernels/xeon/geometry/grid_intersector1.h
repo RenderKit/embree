@@ -291,6 +291,7 @@ namespace embree
 			    prim);
 	  break;
 	}
+	default: assert(false);  
 	}
       }
     }
