@@ -495,8 +495,26 @@ namespace embree
     }
 
     template<typename Patch>
+    static size_t create(unsigned geomID, unsigned primID, 
+                         Scene* scene, const Patch& patch,
+                         FastAllocator::Thread& alloc, PrimRef* prims,
+                         const int x0, const int x1,
+                         const int y0, const int y1,
+                         const Vec2f& uv0, const Vec2f& uv1, const Vec2f& uv2, const Vec2f& uv3,
+                         const DiscreteTessellationPattern& pattern0, 
+                         const DiscreteTessellationPattern& pattern1, 
+                         const DiscreteTessellationPattern& pattern2, 
+                         const DiscreteTessellationPattern& pattern3, 
+                         const DiscreteTessellationPattern& pattern_x,
+                         const DiscreteTessellationPattern& pattern_y)
+    {
+      Grid* leaf = new (alloc.malloc(sizeof(Grid),16)) Grid(geomID,primID);
+      return leaf->build(scene,patch,alloc,prims,x0,x1,y0,y1,uv0,uv1,uv2,uv3,pattern0,pattern1,pattern2,pattern3,pattern_x,pattern_y);
+    }
+
+    template<typename Patch>
     size_t build(Scene* scene, const Patch& patch,
-	       FastAllocator::Thread& alloc, PrimRef* prims,
+                 FastAllocator::Thread& alloc, PrimRef* prims,
 	       const int x0, const int x1,
 	       const int y0, const int y1,
 	       const Vec2f& uv0, const Vec2f& uv1, const Vec2f& uv2, const Vec2f& uv3,
