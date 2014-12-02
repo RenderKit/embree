@@ -442,8 +442,8 @@ namespace embree
     __forceinline const Vec2f&  uvs  (const size_t x, const size_t y) const { return uv[y*width+x]; }
 
     static size_t getNumQuadLists(size_t width, size_t height) {
-      const size_t w = ((width /2)+3)/4;
-      const size_t h = ((height/2)+3)/4;
+      const size_t w = (((width +1)/2)+3)/4;
+      const size_t h = (((height+1)/2)+3)/4;
       return w*h;
     }
     
@@ -525,8 +525,8 @@ namespace embree
 	       const DiscreteTessellationPattern& pattern_x,
 	       const DiscreteTessellationPattern& pattern_y)
     {
-      width  = x1-x0;
-      height = y1-y0;
+      width  = x1-x0+1;
+      height = y1-y0+1;
       p = (Vec3fa*) alloc.malloc(width*height*sizeof(Vec3fa));
       uv = (Vec2f*) alloc.malloc(width*height*sizeof(Vec2f));
       Vec2f luv[17*17]; //= (Vec2f*) alloca(width*height*sizeof(Vec2f));
