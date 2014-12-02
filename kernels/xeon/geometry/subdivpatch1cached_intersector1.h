@@ -63,20 +63,31 @@ namespace embree
 
 
     /*! Intersect a ray with the primitive. */
-    static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Primitive& subdiv_patch, const void* geom)
+    static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Primitive* prim, size_t ty, const void* geom, size_t& lazy_node) 
     {
       STAT3(normal.trav_prims,1,1,1);
 
-      intersect_subdiv_patch(pre,ray,subdiv_patch,geom);
+      intersect_subdiv_patch(pre,ray,*prim,geom);
 
+    }
+
+   static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Primitive& prim, const void* geom, size_t& lazy_node)
+    {
     }
 
     /*! Test if the ray is occluded by the primitive */
-    static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Primitive& subdiv_patch, const void* geom)
+    static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Primitive* prim, size_t ty, const void* geom, size_t& lazy_node) 
     {
       STAT3(shadow.trav_prims,1,1,1);
 
-      return occluded_subdiv_patch(pre,ray,subdiv_patch,geom);;
+      return occluded_subdiv_patch(pre,ray,*prim,geom);
     }
+
+    static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Primitive& prim, const void* geom, size_t& lazy_node)
+    {
+      STAT3(shadow.trav_prims,1,1,1);
+      return false;
+    }
+
   };
-}
+    }

@@ -27,13 +27,16 @@ namespace embree
   private:
     /* default sizes */
     static const size_t DEFAULT_64B_BLOCKS = 8192;
-    static const size_t CACHE_ENTRIES      = 64;
+    static const size_t CACHE_ENTRIES      = 32;
 
-    /* 64bit pointers cache tags for now */
+    /* 64bit pointers as cache tags for now */
     void         *prim_tag[CACHE_ENTRIES];
 
     /* bvh4 subtree roots per cache entry */
     BVH4::NodeRef bvh4_ref[CACHE_ENTRIES];
+
+    /* bvh4 subtree roots per cache entry */
+    size_t usedBlocks[CACHE_ENTRIES];
 
     /* allocated memory to store cache entries */
     float *lazymem;
@@ -50,6 +53,7 @@ namespace embree
     size_t cache_accesses;
     size_t cache_hits;
     size_t cache_misses;
+    size_t cache_clears;
 #endif
 
     /* alloc cache memory */
@@ -69,18 +73,17 @@ namespace embree
     /* reset cache */
     __forceinline void clear()
     {
+#if DEBUG
+      cache_clears++;
+#endif
       blockCounter =  0;	  
       for (size_t i=0;i<CACHE_ENTRIES;i++)
         {
           prim_tag[i] = NULL;
-          bvh4_ref[i] = 0;	
+          bvh4_ref[i] = 0;
+          usedBlocks[i] = 0;
         }
 
-#if DEBUG
-      cache_accesses = 0;
-      cache_hits     = 0;
-      cache_misses   = 0;
-#endif
     }
 
     __forceinline float *getPtr()
@@ -89,11 +92,20 @@ namespace embree
     }
 
 
-    TessellationCache()  {}
+    TessellationCache()  
+      {
+      }
 
     /* initialize cache */
     __forceinline void init()
     {
+#if DEBUG
+      cache_accesses = 0;
+      cache_hits     = 0;
+      cache_misses   = 0;
+      cache_clears   = 0;
+#endif
+
       clear();
       allocated64BytesBlocks = DEFAULT_64B_BLOCKS;	
       lazymem = alloc_mem( allocated64BytesBlocks );
@@ -141,29 +153,62 @@ namespace embree
     /* insert entry using 'neededBlocks' cachelines into cache */
     __forceinline BVH4::NodeRef insert(void *primID, const size_t neededBlocks)
     {
-      /* can't hold required subtree space => flush and reset cache */
-      if (unlikely(blockCounter + neededBlocks >= allocated64BytesBlocks))
-        clear();
+      /* first find empty slot */
+      bool free_slot = false;
+      for (size_t i=0;i<CACHE_ENTRIES;i++)
+        if (prim_tag[i] == NULL)
+          {
+            free_slot = true;
+            break;
+          }
 
-      /* can the cache hold this subtree space at all in each cache entries? */
-      if (unlikely(CACHE_ENTRIES*neededBlocks > allocated64BytesBlocks)) 
+      /* no free slot, find eviction candidate with allocated blocks >= requested blocks */
+      if (!free_slot)
         {
-          const unsigned int new_allocated64BytesBlocks = CACHE_ENTRIES*neededBlocks;
+          ssize_t evictCandidate = -1;
+          for (ssize_t i=CACHE_ENTRIES-1;i>=0;i--)
+            if (usedBlocks[i] >= neededBlocks)
+              {
+                evictCandidate = i;
+                break;
+              }
+          if (evictCandidate)
+            {
+              // TODO: compact for LRU instead using swap
+              std::swap(prim_tag[0]  ,prim_tag[evictCandidate]);
+              std::swap(bvh4_ref[0]   ,bvh4_ref[evictCandidate]);
+              std::swap(usedBlocks[0],usedBlocks[evictCandidate]);
+              /* return previously allocated region */
+              prim_tag[0] = primID;
+              return bvh4_ref[0];
+            }
+        }
+      
+      /* no free slot and no eviction candidate found */  
 
-          std::cout << "EXTENDING TESSELLATION CACHE (PER THREAD) FROM " 
-                    << allocated64BytesBlocks << "TO " 
-                    << new_allocated64BytesBlocks << " BLOCKS = " 
-                    << new_allocated64BytesBlocks*64 << " BYTES" << std::endl << std::flush;
+      /* not enough space to hold entry? */
+      if (unlikely(blockCounter + neededBlocks >= allocated64BytesBlocks))
+        {
+          /* can the cache hold this subtree space at all in each cache entries? */
+          if (unlikely(CACHE_ENTRIES*neededBlocks > allocated64BytesBlocks)) 
+            {
+              const unsigned int new_allocated64BytesBlocks = CACHE_ENTRIES*neededBlocks;
 
-          free_mem(lazymem);
-          allocated64BytesBlocks = new_allocated64BytesBlocks; 
-          lazymem = alloc_mem(allocated64BytesBlocks);
-          assert(lazymem);
+              std::cout << "EXTENDING TESSELLATION CACHE (PER THREAD) FROM " 
+                        << allocated64BytesBlocks << "TO " 
+                        << new_allocated64BytesBlocks << " BLOCKS = " 
+                        << new_allocated64BytesBlocks*64 << " BYTES" << std::endl << std::flush;
 
+              free_mem(lazymem);
+              allocated64BytesBlocks = new_allocated64BytesBlocks; 
+              lazymem = alloc_mem(allocated64BytesBlocks);
+              assert(lazymem);
+
+            }
           /* realloc */
           clear();
         }
-
+      /* allocate entry */
       const size_t currentIndex = blockCounter;
       blockCounter += neededBlocks;
 
@@ -174,11 +219,13 @@ namespace embree
         {
           prim_tag[i] = prim_tag[i-1];
           bvh4_ref[i] = bvh4_ref[i-1];
+          usedBlocks[i] = usedBlocks[i-1];
         }
 
       /* insert new entry at the beginning */
-      prim_tag[0]  = primID;
-      bvh4_ref[0] = curNode;
+      prim_tag[0]   = primID;
+      bvh4_ref[0]   = curNode;
+      usedBlocks[0] = neededBlocks;
 
       return curNode;
     }
@@ -187,13 +234,14 @@ namespace embree
     void printStats() const
     {
 #if DEBUG
-      if (cache_accesses)
+      //if (cache_accesses)
         {
           assert(cache_hits + cache_misses == cache_accesses);
           DBG_PRINT(cache_accesses);
           DBG_PRINT(cache_misses);
           DBG_PRINT(cache_hits);
           DBG_PRINT(100.0f * cache_hits / cache_accesses);
+          DBG_PRINT(cache_clears);
         }
 #endif
     }
