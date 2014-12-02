@@ -436,8 +436,6 @@ namespace embree
 
     size_t BVH4SubdivGridBuilderFast::number_of_primitives() 
     {
-      PING;
-
       PrimInfo pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
       {
         size_t s = 0;
@@ -465,16 +463,15 @@ namespace embree
         return PrimInfo(s,empty,empty);
       }, [](const PrimInfo& a, const PrimInfo b) { return PrimInfo(a.size()+b.size(),empty,empty); });
 
-      //PRINT(pinfo.size());
       return pinfo.size();
     }
     
     void BVH4SubdivGridBuilderFast::create_primitive_array_sequential(size_t threadIndex, size_t threadCount, PrimInfo& pinfo)
     {
-      PING;
-
       pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
       {
+	FastAllocator::Thread alloc(&bvh->alloc2);
+
 	PrimInfo s(empty);
         for (size_t f=r.begin(); f!=r.end(); ++f) {
           if (!mesh->valid(f)) continue;
@@ -498,8 +495,6 @@ namespace embree
 	    //BSplinePatch patcheval;
 	    patcheval.init(patch);
 
-	    PRINT(base.size());
-	    
 	    const float l0 = patch.ring[0].edge_level;
 	    const float l1 = patch.ring[1].edge_level;
 	    const float l2 = patch.ring[2].edge_level;
@@ -512,10 +507,8 @@ namespace embree
 	    const TessellationPattern pattern_y = pattern1.size() > pattern3.size() ? pattern1 : pattern3;
 	    const int nx = pattern_x.size()+1;
 	    const int ny = pattern_y.size()+1;
-	    Grid* leaf = new (bvh->alloc2.malloc(sizeof(Grid),16)) Grid(mesh->id,f);
-	    size_t N = leaf->build(scene,patcheval,bvh->alloc2,&prims[base.size()+s.size()],0,nx,0,ny,uv[0],uv[1],uv[2],uv[3],pattern0,pattern1,pattern2,pattern3,pattern_x,pattern_y);
-	    PRINT(N);
-	    PRINT(Grid::getNumQuadLists(nx,ny));
+	    Grid* leaf = new (alloc.malloc(sizeof(Grid),16)) Grid(mesh->id,f);
+	    size_t N = leaf->build(scene,patcheval,alloc,&prims[base.size()+s.size()],0,nx,0,ny,uv[0],uv[1],uv[2],uv[3],pattern0,pattern1,pattern2,pattern3,pattern_x,pattern_y);
 	    assert(N == Grid::getNumQuadLists(nx,ny));
 	    for (size_t i=0; i<N; i++)
 	      s.add(prims[base.size()+s.size()].bounds());
@@ -523,8 +516,6 @@ namespace embree
         }
         return s;
       }, [](PrimInfo a, const PrimInfo& b) { a.merge(b); return a; });
-
-      PRINT(pinfo.size());
     }
     
     void BVH4SubdivGridBuilderFast::create_primitive_array_parallel  (size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, PrimInfo& pinfo) {
@@ -572,9 +563,6 @@ namespace embree
     
     void BVH4SubdivPatch1CachedBuilderFast::create_primitive_array_sequential(size_t threadIndex, size_t threadCount, PrimInfo& pinfo)
     {
-      //PING;
-      //DBG_PRINT(  bvh->numPrimitives );
-
       assert( this->bvh->data_mem == NULL);
 
       std::cout << "ALLOCATING SUBDIVPATCH1CACHED MEMORY FOR " << numPrimitives << " PRIMITIVES" << std::endl;
