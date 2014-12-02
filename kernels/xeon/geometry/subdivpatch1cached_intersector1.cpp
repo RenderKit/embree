@@ -431,7 +431,7 @@ namespace embree
 
     TessellationCache *local_cache = NULL;
 
-    if (!thread_cache)
+    if (unlikely(!thread_cache))
       {
         /* need thread cache to be aligned */
         thread_cache = (TessellationCache *)_mm_malloc(sizeof(TessellationCache),64);
@@ -445,7 +445,7 @@ namespace embree
 
     BVH4::NodeRef root = local_cache->lookup(tag,commitCounter);
 
-    if (root == BVH4::invalidNode)
+    if (unlikely(root == BVH4::invalidNode))
       {
         const unsigned int blocks = subdiv_patch->grid_subtree_size_64b_blocks;
         root = local_cache->insert(tag,commitCounter,blocks);
@@ -453,6 +453,7 @@ namespace embree
 
         initLocalLazySubdivTree(*subdiv_patch,root.node(),((Scene*)geom)->getSubdivMesh(subdiv_patch->geom));
         assert( root != BVH4::invalidNode);
+        //local_cache->printStats();
       }
     return root;   
 #endif    
