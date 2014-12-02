@@ -303,18 +303,9 @@ namespace embree
     delete geometry;
   }
 
-  extern void clearTessellationCache();
 
   void Scene::task_build_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
   {
-    // =====================
-    // ==== FIXME: HACK ====
-    // =====================
-    clearTessellationCache();    
-    // =====================
-    // =====================
-    // =====================
-
     LockStepTaskScheduler::Init init(threadIndex,threadCount,&lockstep_scheduler);
     if (threadIndex == 0) accels.build(threadIndex,threadCount);
   }

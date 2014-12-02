@@ -32,6 +32,9 @@ namespace embree
     /* 64bit pointers as cache tags for now */
     void         *prim_tag[CACHE_ENTRIES];
 
+    /* 32bit commit counter as part of tag */
+    int commit_tag[CACHE_ENTRIES];
+
     /* bvh4 subtree roots per cache entry */
     BVH4::NodeRef bvh4_ref[CACHE_ENTRIES];
 
@@ -80,8 +83,10 @@ namespace embree
       for (size_t i=0;i<CACHE_ENTRIES;i++)
         {
           prim_tag[i] = NULL;
+          commit_tag[i] = -1;
           bvh4_ref[i] = 0;
           usedBlocks[i] = 0;
+
         }
 
     }
@@ -114,12 +119,12 @@ namespace embree
 
 
     /* lookup cache entry using 64bit pointer as tag */
-    __forceinline BVH4::NodeRef lookup(void *primID)
+    __forceinline BVH4::NodeRef lookup(void *primID, const unsigned int commitCounter)
     {
       ssize_t index = -1;
 
       for (size_t i=0;i<CACHE_ENTRIES;i++)
-        if (prim_tag[i] == primID)
+        if (prim_tag[i] == primID && commit_tag[i] == commitCounter)
           {
             index = i;
             break;
@@ -140,6 +145,8 @@ namespace embree
           // not correct but fast
           std::swap(bvh4_ref[index],bvh4_ref[0]);
           std::swap(prim_tag[index],prim_tag[0]);
+          std::swap(commit_tag[index],commit_tag[0]);
+          std::swap(usedBlocks[index],usedBlocks[0]);
           return ref;
         }
 
@@ -151,7 +158,7 @@ namespace embree
     }
 
     /* insert entry using 'neededBlocks' cachelines into cache */
-    __forceinline BVH4::NodeRef insert(void *primID, const size_t neededBlocks)
+    __forceinline BVH4::NodeRef insert(void *primID, const unsigned int commitCounter, const size_t neededBlocks)
     {
       /* first find empty slot */
       bool free_slot = false;
@@ -175,11 +182,13 @@ namespace embree
           if (evictCandidate)
             {
               // TODO: compact for LRU instead using swap
-              std::swap(prim_tag[0]  ,prim_tag[evictCandidate]);
+              std::swap(prim_tag[0]   ,prim_tag[evictCandidate]);
+              std::swap(commit_tag[0] ,commit_tag[evictCandidate]);
               std::swap(bvh4_ref[0]   ,bvh4_ref[evictCandidate]);
-              std::swap(usedBlocks[0],usedBlocks[evictCandidate]);
+              std::swap(usedBlocks[0] ,usedBlocks[evictCandidate]);
               /* return previously allocated region */
-              prim_tag[0] = primID;
+              prim_tag[0]   = primID;
+              commit_tag[0] = commitCounter;
               return bvh4_ref[0];
             }
         }
@@ -217,13 +226,15 @@ namespace embree
       /* shift old cache entries */
       for (size_t i=CACHE_ENTRIES-1;i>0;i--)
         {
-          prim_tag[i] = prim_tag[i-1];
-          bvh4_ref[i] = bvh4_ref[i-1];
+          prim_tag[i]   = prim_tag[i-1];
+          commit_tag[i] = commit_tag[i-1];
+          bvh4_ref[i]   = bvh4_ref[i-1];
           usedBlocks[i] = usedBlocks[i-1];
         }
 
       /* insert new entry at the beginning */
       prim_tag[0]   = primID;
+      commit_tag[0] = commitCounter;
       bvh4_ref[0]   = curNode;
       usedBlocks[0] = neededBlocks;
 

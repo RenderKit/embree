@@ -33,17 +33,6 @@ namespace embree
 
   __thread TessellationCache *thread_cache = NULL;
 
-
-  void clearTessellationCache()
-  {
-#if defined(ENABLE_PER_THREAD_TESSELLATION_CACHE)
-    if (thread_cache)
-      {
-       thread_cache->clear();
-      }	  
-#endif
-  }
-
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -454,12 +443,12 @@ namespace embree
 
     SubdivPatch1Cached* tag = (SubdivPatch1Cached*)subdiv_patch;
 
-    BVH4::NodeRef root = local_cache->lookup(tag);
+    BVH4::NodeRef root = local_cache->lookup(tag,commitCounter);
 
     if (root == BVH4::invalidNode)
       {
         const unsigned int blocks = subdiv_patch->grid_subtree_size_64b_blocks;
-        root = local_cache->insert(tag,blocks);
+        root = local_cache->insert(tag,commitCounter,blocks);
         BVH4::Node* node = root.node();
 
         initLocalLazySubdivTree(*subdiv_patch,root.node(),((Scene*)geom)->getSubdivMesh(subdiv_patch->geom));

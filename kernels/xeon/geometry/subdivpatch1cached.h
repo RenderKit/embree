@@ -188,7 +188,6 @@ namespace embree
 	    {
 	      avx3f normal = normal8(u,v);
 	      normal = normalize(normal);
-              //PING;
 	      mesh->displFunc(mesh->userPtr,
 			      geom,
 			      prim,
@@ -202,10 +201,15 @@ namespace embree
 			      (float*)&vtx.z,
 			      8);
 
+              /* if ( !mesh->displBounds.empty() ) */
+              /*   { */
+              /*     b.extend( mesh->displBounds ); */
+              /*   } */
 	    }
 #endif
-	  /* extend bounding box */
 	  b.extend( getBBox3fa(vtx) );
+
+	  /* extend bounding box */
 	}
 
       b.lower.a = 0.0f;
