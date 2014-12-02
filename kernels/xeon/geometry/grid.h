@@ -498,8 +498,8 @@ namespace embree
     static size_t create(unsigned geomID, unsigned primID, 
                          Scene* scene, const Patch& patch,
                          FastAllocator::Thread& alloc, PrimRef* prims,
-                         const int x0, const int x1,
-                         const int y0, const int y1,
+                         const size_t x0, const size_t x1,
+                         const size_t y0, const size_t y1,
                          const Vec2f& uv0, const Vec2f& uv1, const Vec2f& uv2, const Vec2f& uv3,
                          const DiscreteTessellationPattern& pattern0, 
                          const DiscreteTessellationPattern& pattern1, 
@@ -515,8 +515,8 @@ namespace embree
     template<typename Patch>
     size_t build(Scene* scene, const Patch& patch,
                  FastAllocator::Thread& alloc, PrimRef* prims,
-	       const int x0, const int x1,
-	       const int y0, const int y1,
+	       const size_t x0, const size_t x1,
+	       const size_t y0, const size_t y1,
 	       const Vec2f& uv0, const Vec2f& uv1, const Vec2f& uv2, const Vec2f& uv3,
 	       const DiscreteTessellationPattern& pattern0, 
 	       const DiscreteTessellationPattern& pattern1, 
@@ -562,10 +562,10 @@ namespace embree
 
       /* create lists of quads */
       size_t i=0;
-      for (size_t y=0; y<height-1; y+=8) {
-	for (size_t x=0; x<width-1; x+=8) {
+      for (size_t y=y0; y<y1; y+=8) {
+	for (size_t x=x0; x<x1; x+=8) {
 	  QuadList* leaf = new (alloc.malloc(sizeof(QuadList))) QuadList(*this);
-	  const BBox3fa bounds = leaf->init(x,min(x+8,width-1),y,min(y+8,height-1));
+	  const BBox3fa bounds = leaf->init(x,min(x+8,x1),y,min(y+8,y1));
 	  prims[i++] = PrimRef(bounds,BVH4::encodeTypedLeaf(leaf,0));
 	}
       }
