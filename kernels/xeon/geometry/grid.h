@@ -462,8 +462,8 @@ namespace embree
     {
       width  = x1-x0;
       height = y1-y0;
-      p = new Vec3fa[width*height]; // FIXME: use allocator
-      uv = new Vec2f[width*height];
+      p = (Vec3fa*) alloc.malloc(width*height*sizeof(Vec3fa));
+      uv = (Vec2f*) alloc.malloc(width*height*sizeof(Vec2f));
       Vec2f* luv = (Vec2f*) alloca(width*height*sizeof(Vec2f));
 
       for (int y=0; y<height; y++) {
@@ -497,7 +497,6 @@ namespace embree
       for (size_t y=0; y<height-1; y+=8) {
 	for (size_t x=0; x<width-1; x+=8) {
 	  QuadList* leaf = new (alloc.malloc(sizeof(QuadList))) QuadList(*this);
-	  //QuadList* leaf = new QuadList(*this); // FIXME: use allocator
 	  const BBox3fa bounds = leaf->init(x,min(x+8,width-1),y,min(y+8,height-1));
 	  prims[i++] = PrimRef(bounds,BVH4::encodeTypedLeaf(leaf,0));
 	}
