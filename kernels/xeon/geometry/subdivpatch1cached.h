@@ -186,10 +186,8 @@ namespace embree
 	  /* eval displacement function */
 	  if (unlikely(mesh->displFunc != NULL))
 	    {
-              std::cout << "USING DISPLACEMENTS" << std::endl;
 	      avx3f normal = normal8(u,v);
 	      normal = normalize(normal);
-
 	      mesh->displFunc(mesh->userPtr,
 			      geom,
 			      prim,
@@ -203,10 +201,15 @@ namespace embree
 			      (float*)&vtx.z,
 			      8);
 
+              /* if ( !mesh->displBounds.empty() ) */
+              /*   { */
+              /*     b.extend( mesh->displBounds ); */
+              /*   } */
 	    }
 #endif
-	  /* extend bounding box */
 	  b.extend( getBBox3fa(vtx) );
+
+	  /* extend bounding box */
 	}
 
       b.lower.a = 0.0f;

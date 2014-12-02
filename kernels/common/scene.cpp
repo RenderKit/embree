@@ -34,7 +34,8 @@ namespace embree
       numBezierCurves(0), numBezierCurves2(0), 
       numSubdivPatches(0), numSubdivPatches2(0), 
       numUserGeometries1(0), 
-      numIntersectionFilters4(0), numIntersectionFilters8(0), numIntersectionFilters16(0)
+      numIntersectionFilters4(0), numIntersectionFilters8(0), numIntersectionFilters16(0),
+      commitCounter(0)
   {
 #if !defined(__MIC__)
     lockstep_scheduler.taskBarrier.init(TaskScheduler::getNumThreads());
@@ -302,18 +303,9 @@ namespace embree
     delete geometry;
   }
 
-  extern void clearTessellationCache();
 
   void Scene::task_build_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
   {
-    // =====================
-    // ==== FIXME: HACK ====
-    // =====================
-    clearTessellationCache();    
-    // =====================
-    // =====================
-    // =====================
-
     LockStepTaskScheduler::Init init(threadIndex,threadCount,&lockstep_scheduler);
     if (threadIndex == 0) accels.build(threadIndex,threadCount);
   }
@@ -449,6 +441,10 @@ namespace embree
       std::cout << "selected scene intersector" << std::endl;
       intersectors.print(2);
     }
+    
+    /* update commit counter */
+    commitCounter++;
+    DBG_PRINT( commitCounter );
   }
 
   void Scene::write(std::ofstream& file)

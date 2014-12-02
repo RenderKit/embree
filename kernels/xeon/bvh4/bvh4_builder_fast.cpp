@@ -540,6 +540,9 @@ namespace embree
           this->bvh->data_mem      = NULL;
           this->bvh->size_data_mem = 0;
         }
+
+      this->bvh->geometry = this->scene;
+
       BVH4BuilderFast::build(threadIndex,threadCount);
     }
 

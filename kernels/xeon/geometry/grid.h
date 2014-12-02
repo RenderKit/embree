@@ -410,6 +410,7 @@ namespace embree
 	{
 	  for (size_t x=x0; x<x1; x+=2)
 	  {
+            assert(i < 16);
 	    const bool right = x+1 == x1;
 	    const bool bottom = y+1 == y1;
 	    new (&quads[i]) Quads(2*bottom+right,y*grid.width+x);
@@ -436,10 +437,10 @@ namespace embree
     __forceinline Grid(unsigned geomID, unsigned primID)
       : width(0), height(0), geomID(geomID), primID(primID), p(NULL), uv(NULL) {}
     
-    __forceinline       Vec3fa& point(const size_t x, const size_t y)       { return p[y*width+x]; }
-    __forceinline const Vec3fa& point(const size_t x, const size_t y) const { return p[y*width+x]; }
-    __forceinline       Vec2f&  uvs  (const size_t x, const size_t y)       { return uv[y*width+x]; }
-    __forceinline const Vec2f&  uvs  (const size_t x, const size_t y) const { return uv[y*width+x]; }
+    __forceinline       Vec3fa& point(const size_t x, const size_t y)       { assert(y*width+x < width*height); return p[y*width+x]; }
+    __forceinline const Vec3fa& point(const size_t x, const size_t y) const { assert(y*width+x < width*height); return p[y*width+x]; }
+    __forceinline       Vec2f&  uvs  (const size_t x, const size_t y)       { assert(y*width+x < width*height); return uv[y*width+x]; }
+    __forceinline const Vec2f&  uvs  (const size_t x, const size_t y) const { assert(y*width+x < width*height); return uv[y*width+x]; }
 
     static size_t getNumQuadLists(size_t width, size_t height) {
       const size_t w = (((width +1)/2)+3)/4;
@@ -525,8 +526,8 @@ namespace embree
 	       const DiscreteTessellationPattern& pattern_x,
 	       const DiscreteTessellationPattern& pattern_y)
     {
-      width  = x1-x0+1;
-      height = y1-y0+1;
+      width  = x1-x0+1; assert(width <= 17);
+      height = y1-y0+1; assert(height <= 17);
       p = (Vec3fa*) alloc.malloc(width*height*sizeof(Vec3fa));
       uv = (Vec2f*) alloc.malloc(width*height*sizeof(Vec2f));
       Vec2f luv[17*17]; //= (Vec2f*) alloca(width*height*sizeof(Vec2f));

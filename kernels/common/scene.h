@@ -183,6 +183,7 @@ namespace embree
     
   public:
     AccelN accels;
+    unsigned int commitCounter;
     atomic_t numMappedBuffers;         //!< number of mapped buffers
     RTCSceneFlags flags;
     RTCAlgorithmFlags aflags;
@@ -191,7 +192,7 @@ namespace embree
     bool is_build;
     MutexSys mutex;
     AtomicMutex geometriesMutex;
-
+    
     /*! global lock step task scheduler */
     __aligned(64) LockStepTaskScheduler lockstep_scheduler;
 

@@ -34,139 +34,11 @@ namespace embree
 
   __thread TessellationCache *thread_cache = NULL;
 
-
-  void clearTessellationCache()
-  {
-#if defined(ENABLE_PER_THREAD_TESSELLATION_CACHE)
-    if (thread_cache)
-      thread_cache->clear();	  
-#endif
-  }
-
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-  /* 3x3 point grid => 2x2 quad grid */
-  struct __aligned(64) Quad2x2
-  {
-   
-    Quad2x2() 
-      {
-        assert( (sizeof(Quad2x2)+63)/64 == 4 ); /* need 4 cachelines */
-      }
-
-    /*  v00 - v01 - v02 */
-    /*  v10 - v11 - v12 */
-    /*  v20 - v21 - v22 */
-
-    /* v00 - v10 - v01 - v11 - v02 - v12 */
-    /* v10 - v20 - v11 - v21 - v12 - v22 */
-
-    float vtx_x[12];
-    float vtx_y[12];
-    float vtx_z[12];
-    float vtx_u[12];
-    float vtx_v[12];
-
-    /* back pointer to SubdivPatch1Cached patch */
-    const SubdivPatch1Cached *backPtr;
-
-    size_t reserved;
-
-
-    __forceinline void initFrom3x3Grid( const float *const source,
-                                        float *const dest,
-                                        const size_t offset_line0,
-                                        const size_t offset_line1,
-                                        const size_t offset_line2)
-    {
-      const float v00 = source[offset_line0 + 0];
-      const float v01 = source[offset_line0 + 1];
-      const float v02 = source[offset_line0 + 2];
-      const float v10 = source[offset_line1 + 0];
-      const float v11 = source[offset_line1 + 1];
-      const float v12 = source[offset_line1 + 2];
-      const float v20 = source[offset_line2 + 0];
-      const float v21 = source[offset_line2 + 1];
-      const float v22 = source[offset_line2 + 2];
-
-      /* v00 - v10 - v01 - v11 - v02 - v12 */
-      dest[ 0] = v00;
-      dest[ 1] = v10;
-      dest[ 2] = v01;
-      dest[ 3] = v11;
-      dest[ 4] = v02;
-      dest[ 5] = v12;
-      /* v10 - v20 - v11 - v21 - v12 - v22 */
-      dest[ 6] = v10;
-      dest[ 7] = v20;
-      dest[ 8] = v11;
-      dest[ 9] = v21;
-      dest[10] = v12;
-      dest[11] = v22;
-    }
-
-    /* init from 3x3 point grid */
-    void init( const float * const grid_x,
-               const float * const grid_y,
-               const float * const grid_z,
-               const float * const grid_u,
-               const float * const grid_v,
-               const size_t offset_line0,
-               const size_t offset_line1,
-               const size_t offset_line2,
-               const SubdivPatch1Cached *patch)
-      {
-        initFrom3x3Grid( grid_x, vtx_x, offset_line0, offset_line1, offset_line2 );
-        initFrom3x3Grid( grid_y, vtx_y, offset_line0, offset_line1, offset_line2 );
-        initFrom3x3Grid( grid_z, vtx_z, offset_line0, offset_line1, offset_line2 );
-        initFrom3x3Grid( grid_u, vtx_u, offset_line0, offset_line1, offset_line2 );
-        initFrom3x3Grid( grid_v, vtx_v, offset_line0, offset_line1, offset_line2 );
-        backPtr = patch;
-      }
-
-#if defined(__AVX__)
-
-    __forceinline avxf combine( const float *const source, const size_t offset ) const {
-      return avxf( *(ssef*)&source[0+offset], *(ssef*)&source[6+offset] );            
-    }
-
-    __forceinline avx3f getVtx( const size_t offset ) const {
-      return avx3f(  combine(vtx_x,offset), combine(vtx_y,offset), combine(vtx_z,offset) );
-    }
-
-    __forceinline avx2f getUV( const size_t offset ) const {
-      return avx2f(  combine(vtx_u,offset), combine(vtx_v,offset) );
-     }
-
-#endif
-
-    __forceinline BBox3fa bounds() const 
-    {
-      BBox3fa b( empty );
-      for (size_t i=0;i<12;i++)
-        b.extend( Vec3fa(vtx_x[i],vtx_y[i],vtx_z[i]) );
-      return b;
-    }
-    
-    __forceinline Vec3fa getVec3fa_xyz(const size_t i) const {
-      return Vec3fa( vtx_x[i], vtx_y[i], vtx_z[i] );
-    }
-
-    __forceinline Vec2f getVec2_uv(const size_t i) const {
-      return Vec2f( vtx_u[i], vtx_v[i] );
-    }
-
-  };
-
-  /*! Outputs ray to stream. */
-  inline std::ostream& operator<<(std::ostream& cout, const Quad2x2& qquad) {
-    for (size_t i=0;i<12;i++)
-      cout << "i = " << i << " -> xyz = " << qquad.getVec3fa_xyz(i) << " uv = " << qquad.getVec2_uv(i) << std::endl;
-    return cout;
-  }
 
 
 #if defined(__AVX__)
@@ -198,7 +70,6 @@ namespace embree
         if (unlikely(geom != NULL))
           if (unlikely(((SubdivMesh*)geom)->displFunc != NULL))
             {
-              std::cout << "USING DISPLACEMENTS" << std::endl;
               avx3f normal = patch.normal8(uu,vv);
               normal = normalize(normal);
               
@@ -328,7 +199,7 @@ namespace embree
 #endif          
           
           BBox3fa bounds = qquad->bounds();
-          curNode = BVH4::encodeLeaf(qquad,0);
+          curNode = BVH4::encodeLeaf(qquad,2);
 
 	  return bounds;
 	}
@@ -422,98 +293,13 @@ namespace embree
 
       assert(currentIndex == patch.grid_subtree_size_64b_blocks);
       TIMER(msec = getSeconds()-msec);    
+
+      //thread_cache->printStats(); 
+
       return subtree_root;
     }
 
 
-  /* intersect ray with Quad2x2 structure => 1 ray vs. 8 triangles */
-  static __forceinline void intersect1_tri8_precise(Ray& ray,
-                                                    const Quad2x2 &qquad,
-                                                    const void* geom,
-                                                    size_t &hitPtr)
-  {
-    const avx3f v0_org = qquad.getVtx( 0 );
-    const avx3f v1_org = qquad.getVtx( 1 );
-    const avx3f v2_org = qquad.getVtx( 2 );
-
-    const avx3f O = ray.org;
-    const avx3f D = ray.dir;
-
-    const avx3f v0 = v0_org - O;
-    const avx3f v1 = v1_org - O;
-    const avx3f v2 = v2_org - O;
-   
-    const avx3f e0 = v2 - v0;
-    const avx3f e1 = v0 - v1;	     
-    const avx3f e2 = v1 - v2;	     
-
-    /* calculate geometry normal and denominator */
-    const avx3f Ng1 = cross(e1,e0);
-    const avx3f Ng = Ng1+Ng1;
-    const avxf den = dot(Ng,D);
-    const avxf absDen = abs(den);
-    const avxf sgnDen = signmsk(den);
-      
-    avxb valid ( true );
-    /* perform edge tests */
-    const avxf U = dot(avx3f(cross(v2+v0,e0)),D) ^ sgnDen;
-    valid &= U >= 0.0f;
-    if (likely(none(valid))) return;
-    const avxf V = dot(avx3f(cross(v0+v1,e1)),D) ^ sgnDen;
-    valid &= V >= 0.0f;
-    if (likely(none(valid))) return;
-    const avxf W = dot(avx3f(cross(v1+v2,e2)),D) ^ sgnDen;
-    valid &= W >= 0.0f;
-    if (likely(none(valid))) return;
-      
-    /* perform depth test */
-    const avxf T = dot(v0,Ng) ^ sgnDen;
-    valid &= (T >= absDen*ray.tnear) & (absDen*ray.tfar >= T);
-    if (unlikely(none(valid))) return;
-      
-    /* perform backface culling */
-#if defined(RTCORE_BACKFACE_CULLING)
-    valid &= den > avxf(zero);
-    if (unlikely(none(valid))) return;
-#else
-    valid &= den != avxf(zero);
-    if (unlikely(none(valid))) return;
-#endif
-            
-    /* calculate hit information */
-    const avxf rcpAbsDen = rcp(absDen);
-    const avxf u = U*rcpAbsDen;
-    const avxf v = V*rcpAbsDen;
-    const avxf t = T*rcpAbsDen;
-
-#if FORCE_TRIANGLE_UV == 0
-    const avx2f uv0 = qquad.getUV( 0 );
-    const avx2f uv1 = qquad.getUV( 1 );
-    const avx2f uv2 = qquad.getUV( 2 );
-
-    const avx2f uv = u * uv1 + v * uv2 + (1.0f-u-v) * uv0;
-
-    const avxf u_final = uv[0];
-    const avxf v_final = uv[1];
-#else
-    const avxf u_final = u;
-    const avxf v_final = v;
-#endif
-
-    size_t i = select_min(valid,t);
-
-    /* update hit information */
-    ray.u = u_final[i];
-    ray.v = v_final[i];
-    ray.tfar = t[i];
-    ray.Ng.x = Ng.x[i];
-    ray.Ng.y = Ng.y[i];
-    ray.Ng.z = Ng.z[i];
-    ray.geomID = 0; //FIXME
-    ray.primID = 0;
-    hitPtr = (size_t)qquad.backPtr;
-      
-  };
 
   static __forceinline void intersect1_tri8_precise(Ray& ray,
                                                     const avx3f &v0_org,
@@ -637,19 +423,16 @@ namespace embree
 
 #endif
 
-
-  void SubdivPatch1CachedIntersector1::intersect_subdiv_patch(const Precalculations& pre,
-                                                              Ray& ray,
-                                                              const Primitive& subdiv_patch,
-                                                              const void* geom) // geom == mesh or geom == scene?
+  size_t SubdivPatch1CachedIntersector1::getSubtreeRootNode(const SubdivPatch1Cached* const subdiv_patch, 
+                                                            const void* geom)
   {
-    /* only avx code for now */
 #if defined(__AVX__) 
 
-#if defined(ENABLE_PER_THREAD_TESSELLATION_CACHE)
+    const unsigned int commitCounter = ((Scene*)geom)->commitCounter;
+
     TessellationCache *local_cache = NULL;
 
-    if (!thread_cache)
+    if (unlikely(!thread_cache))
       {
         /* need thread cache to be aligned */
         thread_cache = (TessellationCache *)_mm_malloc(sizeof(TessellationCache),64);
@@ -659,152 +442,34 @@ namespace embree
 
     local_cache = thread_cache;
 
-    SubdivPatch1Cached* tag = (SubdivPatch1Cached*)&subdiv_patch;
+    SubdivPatch1Cached* tag = (SubdivPatch1Cached*)subdiv_patch;
 
-    BVH4::NodeRef root = local_cache->lookup(tag);
+    BVH4::NodeRef root = local_cache->lookup(tag,commitCounter);
 
-    if (root == BVH4::invalidNode)
+    if (unlikely(root == BVH4::invalidNode))
       {
-        const unsigned int blocks = subdiv_patch.grid_subtree_size_64b_blocks;
-        root = local_cache->insert(tag,blocks);
+        const unsigned int blocks = subdiv_patch->grid_subtree_size_64b_blocks;
+        root = local_cache->insert(tag,commitCounter,blocks);
         BVH4::Node* node = root.node();
 
-        initLocalLazySubdivTree(subdiv_patch,root.node(),(SubdivMesh*)geom);		      
+        initLocalLazySubdivTree(*subdiv_patch,root.node(),((Scene*)geom)->getSubdivMesh(subdiv_patch->geom));
         assert( root != BVH4::invalidNode);
+        //local_cache->printStats();
       }
-
-    // FIXME: return lazy BVH4 node to original intersector
-
-#define STACK_SIZE 64
-
-    StackItemInt32<BVH4::NodeRef>  stack[STACK_SIZE];            //!< stack of nodes 
-    StackItemInt32<BVH4::NodeRef>* stackPtr = stack+1;        //!< current stack pointer
-    StackItemInt32<BVH4::NodeRef>* stackEnd = stack+STACK_SIZE;
-    stack[0].ptr  = root;
-    stack[0].dist = neg_inf;
+    return root;   
+#endif    
+  }
 
 
-    /*! load the ray into SIMD registers */
-    const Vec3fa ray_rdir = rcp_safe(ray.dir);
-    const Vec3fa ray_org_rdir = ray.org*ray_rdir;
-    const sse3f org(ray.org.x,ray.org.y,ray.org.z);
-    const sse3f dir(ray.dir.x,ray.dir.y,ray.dir.z);
-    const sse3f rdir(ray_rdir.x,ray_rdir.y,ray_rdir.z);
-    const sse3f org_rdir(ray_org_rdir.x,ray_org_rdir.y,ray_org_rdir.z);
-    const ssef  ray_near(ray.tnear);
-    ssef ray_far(ray.tfar);
-
-    /*! offsets to select the side that becomes the lower or upper bound */
-    const size_t nearX = ray_rdir.x >= 0.0f ? 0*sizeof(ssef) : 1*sizeof(ssef);
-    const size_t nearY = ray_rdir.y >= 0.0f ? 2*sizeof(ssef) : 3*sizeof(ssef);
-    const size_t nearZ = ray_rdir.z >= 0.0f ? 4*sizeof(ssef) : 5*sizeof(ssef);
-
-    const size_t types = 1;
-    size_t hitPtr = 0;
-
-    /* pop loop */
-    while (true) pop:
-      {
-        /*! pop next node */
-        if (unlikely(stackPtr == stack)) break;
-        stackPtr--;
-        BVH4::NodeRef cur = BVH4::NodeRef(stackPtr->ptr);
-        
-        /*! if popped node is too far, pop next one */
-        if (unlikely(*(float*)&stackPtr->dist > ray.tfar))
-          continue;
-        
-        /* downtraversal loop */
-        while (true)
-          {
-            size_t mask; 
-            ssef tNear;
-
-            /*! stop if we found a leaf node */
-            if (unlikely(cur.isLeaf(types))) break;
-            STAT3(normal.trav_nodes,1,1,1);
-
-
-            /* process standard nodes */
-            if (likely(cur.isNode(types)))
-              mask = cur.node()->intersect<false>(nearX,nearY,nearZ,org,rdir,org_rdir,ray_near,ray_far,tNear); 
-
-            /*! if no child is hit, pop next node */
-            const BVH4::BaseNode* node = cur.baseNode(types);
-            if (unlikely(mask == 0))
-              goto pop;
-          
-            /*! one child is hit, continue with that child */
-            size_t r = __bscf(mask);
-            if (likely(mask == 0)) {
-              cur = node->child(r); cur.prefetch(types);
-              assert(cur != BVH4::emptyNode);
-              continue;
-            }
-          
-            /*! two children are hit, push far child, and continue with closer child */
-            BVH4::NodeRef c0 = node->child(r); c0.prefetch(types); const unsigned int d0 = ((unsigned int*)&tNear)[r];
-            r = __bscf(mask);
-            BVH4::NodeRef c1 = node->child(r); c1.prefetch(types); const unsigned int d1 = ((unsigned int*)&tNear)[r];
-            assert(c0 != BVH4::emptyNode);
-            assert(c1 != BVH4::emptyNode);
-            if (likely(mask == 0)) {
-              assert(stackPtr < stackEnd); 
-              if (d0 < d1) { stackPtr->ptr = c1; stackPtr->dist = d1; stackPtr++; cur = c0; continue; }
-              else         { stackPtr->ptr = c0; stackPtr->dist = d0; stackPtr++; cur = c1; continue; }
-            }
-          
-            /*! Here starts the slow path for 3 or 4 hit children. We push
-             *  all nodes onto the stack to sort them there. */
-            assert(stackPtr < stackEnd); 
-            stackPtr->ptr = c0; stackPtr->dist = d0; stackPtr++;
-            assert(stackPtr < stackEnd); 
-            stackPtr->ptr = c1; stackPtr->dist = d1; stackPtr++;
-          
-            /*! three children are hit, push all onto stack and sort 3 stack items, continue with closest child */
-            assert(stackPtr < stackEnd); 
-            r = __bscf(mask);
-            BVH4::NodeRef c = node->child(r); c.prefetch(types); unsigned int d = ((unsigned int*)&tNear)[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
-            assert(c != BVH4::emptyNode);
-            if (likely(mask == 0)) {
-              sort(stackPtr[-1],stackPtr[-2],stackPtr[-3]);
-              cur = (BVH4::NodeRef) stackPtr[-1].ptr; stackPtr--;
-              continue;
-            }
-          
-            /*! four children are hit, push all onto stack and sort 4 stack items, continue with closest child */
-            assert(stackPtr < stackEnd); 
-            r = __bscf(mask);
-            c = node->child(r); c.prefetch(types); d = *(unsigned int*)&tNear[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
-            assert(c != BVH4::emptyNode);
-            sort(stackPtr[-1],stackPtr[-2],stackPtr[-3],stackPtr[-4]);
-            cur = (BVH4::NodeRef) stackPtr[-1].ptr; stackPtr--;
-          }
-        
-        /*! this is a leaf node */
-	assert(cur != BVH4::emptyNode);
-        STAT3(normal.trav_leaves,1,1,1);
-        size_t num; Quad2x2* prim = (Quad2x2*) cur.leaf(num);
-
-        //DBG_PRINT(*prim);
-        intersect1_tri8_precise( ray, *prim, (SubdivMesh*)geom,hitPtr);
-
-        ray_far = ray.tfar;
-
-      }
-
-#if COMPUTE_SUBDIV_NORMALS_AFTER_PATCH_INTERSECTION == 1
-    if (unlikely(hitPtr != 0))
-      {
-        const SubdivPatch1Cached *const sptr = (SubdivPatch1Cached *)hitPtr;
-        assert(sptr == &subdiv_patch);
-        Vec3fa normal = sptr->normal(ray.u,ray.v);
-        ray.Ng = normal;
-      }
-#endif
-
-
-#else 
+  void SubdivPatch1CachedIntersector1::intersect_subdiv_patch(const Precalculations& pre,
+                                                              Ray& ray,
+                                                              const Primitive& subdiv_patch,
+                                                              size_t ty,
+                                                              const void* geom,
+                                                              size_t& lazy_node) // geom == mesh or geom == scene?
+  {
+    /* only avx code for now */
+#if defined(__AVX__) 
 
     /* stupid scanline-based grid intersector for debugging */
     const float * const edge_levels = subdiv_patch.level;
@@ -860,19 +525,14 @@ namespace embree
       }	  
 
 #endif
-
-
-
-
-
-    
-#endif
   }
 
   bool SubdivPatch1CachedIntersector1::occluded_subdiv_patch(const Precalculations& pre,
                                                              Ray& ray,
                                                              const Primitive& subdiv_patch,
-                                                             const void* geom)
+                                                             size_t ty,
+                                                             const void* geom,
+                                                             size_t& lazy_node)
   {
     return false;
   }
