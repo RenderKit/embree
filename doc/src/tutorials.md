@@ -19,7 +19,7 @@ and will connect automatically to one installed Xeon Phi™ Coprocessor in
 the system.
 
 For all tutorials, you can select an initial camera using the `-vp`
-(camera position), `-vi` (camera lookat point), `-vu` (camera up
+(camera position), `-vi` (camera look-at point), `-vu` (camera up
 vector), and `-fov` (vertical field of view) command line parameters:
 
     ./tutorial00 -vp 10 10 10 -vi 0 0 0

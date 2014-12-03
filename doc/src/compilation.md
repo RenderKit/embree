@@ -61,8 +61,8 @@ your LD_LIBRARY_PATH (and SINK_LD_LIBRARY_PATH in case you want to use
 Embree on Xeon Phi™).
 
 The default configuration in the configuration dialog should be
-appropiate for most usages. The following table described all parameters
-that can be configured:
+appropriate for most usages. The following table described all
+parameters that can be configured:
 
   ---------------------------- -------------------------------- --------
   Option                       Description                      Default
@@ -141,7 +141,7 @@ least Intel Compiler 11.1 and for the `ReleaseAVX2` configuration you
 need at least Intel Compiler 12.1.
 
 Most configuration parameters described for the Linux build can be set
-under Windows by commenting out the appropiate lines in the
+under Windows by commenting out the appropriate lines in the
 `common/sys/platform.h` file.
 
 We recommend enabling syntax highlighting for the `.ispc` source and

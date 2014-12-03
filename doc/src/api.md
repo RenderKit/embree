@@ -43,8 +43,8 @@ configuration is used, that is optimal for most usages.
 
 API calls that access geometries are only thread safe as long as
 different geometries are accessed. Accesses to one geometry have to get
-sequentialized by the application. All other API calls are thread safe.
-The `rtcIntersect` and `rtcOccluded` calls are re-entrant, but only for
+sequenced by the application. All other API calls are thread safe. The
+`rtcIntersect` and `rtcOccluded` calls are re-entrant, but only for
 other `rtcIntersect` and `rtcOccluded` calls. It is thus safe to trace
 new rays when intersecting a user defined object, but not supported to
 create new geometry inside the intersect function of a user defined
@@ -62,9 +62,9 @@ Possible error codes returned by `rtcGetError` are:
   ----------------------- ---------------------------------------------
   Error Code              Description
   ----------------------- ---------------------------------------------
-  RTC_NO_ERROR            No error occured.
+  RTC_NO_ERROR            No error occurred.
 
-  RTC_UNKNOWN_ERROR       An unknown error has occured.
+  RTC_UNKNOWN_ERROR       An unknown error has occurred.
 
   RTC_INVALID_ARGUMENT    An invalid argument was specified.
 
@@ -227,7 +227,7 @@ The number of triangles, the number of vertices, and optionally the
 number of time steps (1 for normal meshes, and 2 for linear motion
 blur) have to get specified at construction time of the mesh. The user
 can also specify additional flags that choose the strategy to handle
-that mesh in dynamic scenes.  The following example demonstrates howto
+that mesh in dynamic scenes.  The following example demonstrates how to
 create a triangle mesh without motion blur:
 
     unsigned geomID = rtcNewTriangleMesh(scene, geomFlags, numTriangles, numVertices);
@@ -282,11 +282,11 @@ Also see tutorial00 for an example of how to create triangle meshes.
 ### Hair Geometry
 
 Hair geometries are supported, which consist of multiple hairs
-represented as cubic bezier curves with varying radius per control
+represented as cubic Bézier curves with varying radius per control
 point. Individual hairs are considered to be subpixel sized which allows
 the implementation to approximate the intersection calculation. This in
 particular means that zooming onto one hair might show geometric
-artefacts.
+artifacts.
 
 Hair geometries are created using the `rtcNewHairGeometry` function
 call, and potentially deleted using the `rtcDeleteGeometry` function
@@ -312,7 +312,7 @@ Like for triangle meshes, tee user can also specify a geometry mask and
 additional flags that choose the strategy to handle that mesh in dynamic
 scenes.
 
-The following example demonstrates howto create some hair geometry:
+The following example demonstrates how to create some hair geometry:
 
     unsigned geomID = rtcNewHairGeometry(scene, geomFlags, numCurves, numVertices);
 
@@ -338,7 +338,7 @@ single user geometry, but a set of such geometries, each specified by an
 index. The user has to provide a user data pointer, bounding function as
 well as user defined intersect and occluded functions to create a set of
 user geometries. The user geometry to process is specified by passing
-its user data pointer and index to each invokation of the bounding,
+its user data pointer and index to each invocation of the bounding,
 intersect, and occluded function. The bounding function is used to query
 the bounds of each user geometry. When performing ray queries, Embree
 will invoke the user intersect (and occluded) functions to test rays for
@@ -354,7 +354,7 @@ function pointers.
 
 User geometries are created using the `rtcNewUserGeometry` function
 call, and potentially deleted using the `rtcDeleteGeometry` function
-call. The folling example illustrates creating an array with two user
+call. The following example illustrates creating an array with two user
 geometries:
 
     struct UserObject { ... };
@@ -400,7 +400,7 @@ to update the hit information of the ray (`tfar`, `u`, `v`, `Ng`,
 
 Also the user occluded function should return without modifying the ray
 structure if the user geometry is missed. If the geometry is hit, it
-shoud set the `geomID` member of the ray to 0.
+should set the `geomID` member of the ray to 0.
 
 Is is supported to invoke the `rtcIntersect` and `rtcOccluded` function
 calls inside such user functions. It is not supported to invoke any
@@ -440,23 +440,23 @@ with different data layouts:
   ----------------------------------- ----------------------------------
   Layout                              Description
   ----------------------------------- ----------------------------------
-  RTC_MATRIX_ROW_MAJOR                The 3×4 float matrix is layed out
+  RTC_MATRIX_ROW_MAJOR                The 3×4 float matrix is laid out
                                       in row major form.
 
-  RTC_MATRIX_COLUMN_MAJOR             The 3×4 float matrix is layed out
+  RTC_MATRIX_COLUMN_MAJOR             The 3×4 float matrix is laid out
                                       in column major form.
 
-  RTC_MATRIX_COLUMN_MAJOR_ALIGNED16   The 3×4 float matrix is layed out
+  RTC_MATRIX_COLUMN_MAJOR_ALIGNED16   The 3×4 float matrix is laid out
                                       in column major form, with each
                                       column padded by an additional 4th
                                       component.
   ----------------------------------- ----------------------------------
   : Matrix layouts for `rtcSetTransform`.
 
-Passing homogenous 4×4 matrices is possible as long as the last row is
-(0, 0, 0, 1). If this homogenous matrix is layed out in row major form,
-use the `RTC_MATRIX_ROW_MAJOR` layout. If this homogenous matrix is
-layed out in column major form, use the
+Passing homogeneous 4×4 matrices is possible as long as the last row is
+(0, 0, 0, 1). If this homogeneous matrix is laid out in row major form,
+use the `RTC_MATRIX_ROW_MAJOR` layout. If this homogeneous matrix is
+laid out in column major form, use the
 `RTC_MATRIX_COLUMN_MAJOR_ALIGNED16` mode. In both cases, Embree will
 ignore the last row of the matrix.
 
@@ -492,7 +492,7 @@ ray contains the following data members:
   Member  In/Out  Description
   ------- ------- ----------------------------------------------------------
   org     in      ray origin
-  dir     in      ray direction (can be unnomalized)
+  dir     in      ray direction (can be unnormalized)
   tnear   in      start of ray segment
   tfar    in/out  end of ray segment, set to hit distance after intersection
   time    in      time used for motion blur
@@ -588,7 +588,7 @@ to free the buffer when the geometry gets deleted. When a buffer is
 shared, it is safe to modify that buffer without mapping and unmapping
 it. However, for dynamic scenes one still has to call `rtcModified` for
 modified geometries and the buffer data has to stay constant from the
-`rtcCommit` call to after the last ray query invokation.
+`rtcCommit` call to after the last ray query invocation.
 
 The `offset` parameter specifies a byte offset to the start of the first
 element and the `stride` parameter specifies a byte stride between the
@@ -602,8 +602,8 @@ accelerators, otherwise the `rtcSetBuffer` function will fail. For
 vertex buffers, the 4 bytes after the z-coordinate of the last vertex
 have to be readable memory, thus padding is required for some layouts.
 
-The following is an example of howto create a mesh with shared index and
-vertex buffers:
+The following is an example of how to create a mesh with shared index
+and vertex buffers:
 
     unsigned geomID = rtcNewTriangleMesh(scene, geomFlags, numTriangles, numVertices);
     rtcSetBuffer(scene, geomID, RTC_VERTEX_BUFFER, vertexPtr, 0, 3*sizeof(float));
@@ -616,7 +616,7 @@ also share the vertex buffer, resulting in even higher memory savings.
 
 The support for offset and stride is enabled by default, but can get
 disabled at compile time using the `RTCORE_BUFFER_STRIDE` parameter in
-cmake. Disabling this feature enables the default offset and stride
+CMake. Disabling this feature enables the default offset and stride
 which increases performance of spatial index structure build, thus can
 be useful for dynamic content.
 
@@ -644,7 +644,7 @@ different time, even inside a ray packet.
 Geometry Mask
 -------------
 
-A 32 bit geometry mask can be assigned to triangle meshs and hair
+A 32 bit geometry mask can be assigned to triangle meshes and hair
 geometries using the `rtcSetMask` call.
 
     rtcSetMask(scene, geomID, mask);
@@ -654,7 +654,7 @@ inside the ray is not 0, primitives of this geometry are hit by a ray.
 This feature can be used to disable selected triangle mesh or hair
 geometries for specifically tagged rays, e.g. to disable shadow casting
 for some geometry. This API feature is disabled in Embree by default at
-compile time, and can be enabled in cmake through the
+compile time, and can be enabled in CMake through the
 `RTCORE_ENABLE_RAY_MASK` parameter.
 
 Filter Functions
