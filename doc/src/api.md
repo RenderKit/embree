@@ -511,9 +511,9 @@ that the `tfar` member functions as an input and output.
 
 In the ray packet mode (with packet size of N), the user has to provide
 a pointer to N 32 bit integers that act as a ray activity mask. If one
-of these integers is set to 0x00000000 the corresponding ray is
-considered inactive and if the integer is set to 0xFFFFFFFF, the ray is
-considered active. Rays that are inactive will not update any hit
+of these integers is set to `0x00000000` the corresponding ray is
+considered inactive and if the integer is set to `0xFFFFFFFF`, the ray
+is considered active. Rays that are inactive will not update any hit
 information. Data alignment requirements for ray query functions
 operating on single rays is 16 bytes for the ray.
 
@@ -529,7 +529,7 @@ Finding the closest hit distance is done through the `rtcIntersect`
 functions. These get the activity mask, the scene, and a ray as input.
 The user has to initialize the ray origin (`org`), ray direction
 (`dir`), and ray segment (`tnear`, `tfar`). The ray segment has to be in
-the range $[0, inf)$, thus ranges that start behind the ray origin are
+the range $[0, ∞)$, thus ranges that start behind the ray origin are
 not valid, but ranges can reach to infinity. The geometry ID (`geomID`
 member) has to get initialized to `RTC_INVALID_GEOMETRY_ID` (-1). If the
 scene contains instances, also the instance ID (`instID`) has to get
