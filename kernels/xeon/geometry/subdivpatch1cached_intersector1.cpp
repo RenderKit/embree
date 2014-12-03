@@ -98,6 +98,7 @@ namespace embree
   }
 
 
+  int leaves = 0;
 
 
     BBox3fa createSubTree(BVH4::NodeRef &curNode,
@@ -123,6 +124,11 @@ namespace embree
 
       if (u_size <= 3 && v_size <= 3)
 	{
+          DBG_PRINT(u_size);
+          DBG_PRINT(v_size);
+          leaves++;
+          DBG_PRINT(leaves);
+
 	  assert(u_size*v_size <= 9);
 
 	  const unsigned int currentIndex = localCounter;
@@ -275,6 +281,9 @@ namespace embree
 
       BVH4::NodeRef subtree_root = BVH4::encodeNode( (BVH4::Node*)lazymem );
       unsigned int currentIndex = 0;
+
+      DBG_PRINT(patch.grid_u_res);
+      DBG_PRINT(patch.grid_v_res);
 
       BBox3fa bounds = createSubTree( subtree_root,
 				      (float*)lazymem,
