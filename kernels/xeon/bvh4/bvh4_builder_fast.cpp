@@ -120,7 +120,7 @@ namespace embree
     : BVH4BuilderFastT<PrimRef>(bvh,scene,listMode,0,0,false,sizeof(QuadQuad4x4),1,1,true) { this->bvh->alloc2.init(4096,4096); }
 
     BVH4SubdivGridBuilderFast::BVH4SubdivGridBuilderFast (BVH4* bvh, Scene* scene, size_t listMode) 
-    : BVH4BuilderFastT<PrimRef>(bvh,scene,listMode,0,0,false,sizeof(Grid),1,1,true) { this->bvh->alloc2.init(4096,4096); }
+      : BVH4BuilderFastT<PrimRef>(bvh,scene,listMode,0,0,false,sizeof(Grid),1,1,true) { this->bvh->alloc2.init(4096,4096); } 
 
 
     BVH4SubdivPatch1CachedBuilderFast::BVH4SubdivPatch1CachedBuilderFast (BVH4* bvh, Scene* scene, size_t listMode) 

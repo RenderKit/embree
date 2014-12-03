@@ -110,8 +110,8 @@ namespace embree
           ray.Ng.x = float(size_t(prim.id)>>4  & 0xFF)/255.0f * (0.5f+0.5f*u);
           ray.Ng.y = float(size_t(prim.id)>>8  & 0xFF)/255.0f * (0.5f+0.5f*v);
           ray.Ng.z = float(size_t(prim.id)>>16 & 0xFF)/255.0f * (0.5f+0.5f*w);*/
-          ray.geomID  = prim.grid.geomID;
-          ray.primID  = prim.grid.primID;
+          ray.geomID  = prim.grid->geomID;
+          ray.primID  = prim.grid->primID;
         }
       }
 
@@ -249,42 +249,45 @@ namespace embree
       {
         const size_t i = __bscf(mask);
 	const size_t ofs = prim.quads[i].ofs;
+	//PRINT(i);
+	//PRINT(&prim);
+	//PRINT(prim);
 	switch (prim.quads[i].type) {
 	case Grid::QuadList::Quads::QUAD1X1: {
-	  const Vec3fa& v00 = prim.grid.point(ofs,0), v10 = (&v00)[1];
-	  const Vec3fa& v01 = prim.grid.point(ofs,1), v11 = (&v01)[1];
-	  const Vec2f& uv00 = prim.grid.uvs  (ofs,0), uv10 = (&uv00)[1];
-	  const Vec2f& uv01 = prim.grid.uvs  (ofs,1), uv11 = (&uv01)[1];
+	  const Vec3fa& v00 = prim.grid->point(ofs,0), v10 = (&v00)[1];
+	  const Vec3fa& v01 = prim.grid->point(ofs,1), v11 = (&v01)[1];
+	  const Vec2f& uv00 = prim.grid->uvs  (ofs,0), uv10 = (&uv00)[1];
+	  const Vec2f& uv01 = prim.grid->uvs  (ofs,1), uv11 = (&uv01)[1];
 	  intersectQuad(ray, v00,v10,v01,v11, uv00,uv10,uv01,uv11, prim);
 	  break;
 	}
 	case Grid::QuadList::Quads::QUAD1X2: {
-	  const Vec3fa& v00 = prim.grid.point(ofs,0), v10 = (&v00)[1];
-	  const Vec3fa& v01 = prim.grid.point(ofs,1), v11 = (&v01)[1];
-	  const Vec3fa& v02 = prim.grid.point(ofs,2), v12 = (&v02)[1];
-	  const Vec2f& uv00 = prim.grid.uvs  (ofs,0), uv10 = (&uv00)[1];
-	  const Vec2f& uv01 = prim.grid.uvs  (ofs,1), uv11 = (&uv01)[1];
-	  const Vec2f& uv02 = prim.grid.uvs  (ofs,2), uv12 = (&uv02)[1];
+	  const Vec3fa& v00 = prim.grid->point(ofs,0), v10 = (&v00)[1];
+	  const Vec3fa& v01 = prim.grid->point(ofs,1), v11 = (&v01)[1];
+	  const Vec3fa& v02 = prim.grid->point(ofs,2), v12 = (&v02)[1];
+	  const Vec2f& uv00 = prim.grid->uvs  (ofs,0), uv10 = (&uv00)[1];
+	  const Vec2f& uv01 = prim.grid->uvs  (ofs,1), uv11 = (&uv01)[1];
+	  const Vec2f& uv02 = prim.grid->uvs  (ofs,2), uv12 = (&uv02)[1];
 	  intersectQuad(ray, v00,v10,v01,v11, uv00,uv10,uv01,uv11, prim);
 	  intersectQuad(ray, v01,v11,v02,v12, uv01,uv11,uv02,uv12, prim);
 	  break;
 	}
 	case Grid::QuadList::Quads::QUAD2X1: {
-	  const Vec3fa& v00 = prim.grid.point(ofs,0), v10 = (&v00)[1], v20 = (&v00)[2];
-	  const Vec3fa& v01 = prim.grid.point(ofs,1), v11 = (&v01)[1], v21 = (&v01)[2];
-	  const Vec2f& uv00 = prim.grid.uvs  (ofs,0), uv10 = (&uv00)[1], uv20 = (&uv00)[2];
-	  const Vec2f& uv01 = prim.grid.uvs  (ofs,1), uv11 = (&uv01)[1], uv21 = (&uv01)[2];
+	  const Vec3fa& v00 = prim.grid->point(ofs,0), v10 = (&v00)[1], v20 = (&v00)[2];
+	  const Vec3fa& v01 = prim.grid->point(ofs,1), v11 = (&v01)[1], v21 = (&v01)[2];
+	  const Vec2f& uv00 = prim.grid->uvs  (ofs,0), uv10 = (&uv00)[1], uv20 = (&uv00)[2];
+	  const Vec2f& uv01 = prim.grid->uvs  (ofs,1), uv11 = (&uv01)[1], uv21 = (&uv01)[2];
 	  intersectQuad(ray, v00,v10,v01,v11, uv00,uv10,uv01,uv11, prim);
 	  intersectQuad(ray, v10,v20,v11,v21, uv10,uv20,uv11,uv21, prim);
 	  break;
 	}
 	case Grid::QuadList::Quads::QUAD2X2: {
-	  const Vec3fa& v00 = prim.grid.point(ofs,0), v10 = (&v00)[1], v20 = (&v00)[2];
-	  const Vec3fa& v01 = prim.grid.point(ofs,1), v11 = (&v01)[1], v21 = (&v01)[2];
-	  const Vec3fa& v02 = prim.grid.point(ofs,2), v12 = (&v02)[1], v22 = (&v02)[2];
-	  const Vec2f& uv00 = prim.grid.uvs  (ofs,0), uv10 = (&uv00)[1], uv20 = (&uv00)[2];
-	  const Vec2f& uv01 = prim.grid.uvs  (ofs,1), uv11 = (&uv01)[1], uv21 = (&uv01)[2];
-	  const Vec2f& uv02 = prim.grid.uvs  (ofs,2), uv12 = (&uv02)[1], uv22 = (&uv02)[2];
+	  const Vec3fa& v00 = prim.grid->point(ofs,0), v10 = (&v00)[1], v20 = (&v00)[2];
+	  const Vec3fa& v01 = prim.grid->point(ofs,1), v11 = (&v01)[1], v21 = (&v01)[2];
+	  const Vec3fa& v02 = prim.grid->point(ofs,2), v12 = (&v02)[1], v22 = (&v02)[2];
+	  const Vec2f& uv00 = prim.grid->uvs  (ofs,0), uv10 = (&uv00)[1], uv20 = (&uv00)[2];
+	  const Vec2f& uv01 = prim.grid->uvs  (ofs,1), uv11 = (&uv01)[1], uv21 = (&uv01)[2];
+	  const Vec2f& uv02 = prim.grid->uvs  (ofs,2), uv12 = (&uv02)[1], uv22 = (&uv02)[2];
 	  intersectQuadQuad(ray,
 			    v00,v10,v20,v01,v11,v21,v02,v12,v22,
 			    uv00,uv10,uv20,uv01,uv11,uv21,uv02,uv12,uv22,
