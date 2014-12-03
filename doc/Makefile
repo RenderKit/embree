@@ -23,7 +23,7 @@ replacelinks=sed -i\
 -e 's@href="renderer.html"@href="http://embree.github.io/renderer.html"@' \
 $(1)
 
-version: ../build/kernels/version.h
+version: ../build/version.h
 	sed ':a;N;s/.*\"\(.*\)\".*/\1/;ba' $< > $@
 
 www/index.html: version src/*.html src/www/index.html
@@ -72,6 +72,13 @@ readme.html: version src/*.html
 	sed -i -e 's/\\240\\240/ /' readme.ps
 	ps2pdf readme.ps 
 	cp readme.pdf ..
+
+metadata.md: src/metadata.md version
+	sed -e "s/<EMBREE_VERSION>/`cat version`/" $< > $@
+
+../readme.md: metadata.md src/overview.md src/platforms.md src/compilation.md src/tutorials.md src/api.md src/support.md
+	cat $+ > $@
+	
 
 readme_bin.html: version src/*.html
 	$(call replace,src/readme_bin.html,$@)
