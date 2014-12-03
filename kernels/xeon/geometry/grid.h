@@ -455,13 +455,19 @@ namespace embree
 
   public:
     
-    __forceinline Grid(unsigned geomID, unsigned primID)
-      : width(0), height(0), geomID(geomID), primID(primID), p(NULL)/*, uv(NULL)*/ {}
+    __forceinline Grid(unsigned width, unsigned height, unsigned geomID, unsigned primID)
+      : width(width), height(height), geomID(geomID), primID(primID) 
+      {
+	assert(width <= 17);
+	assert(height <= 17);
+      }
+
+    static __forceinline Grid* create(FastAllocator::Thread& alloc, const size_t width, const size_t height, const unsigned geomID, const unsigned primID) {
+      return new (alloc.malloc(sizeof(Grid)+width*height*sizeof(Vec3fa))) Grid(width,height,geomID,primID);
+    }
     
     __forceinline       Vec3fa& point(const size_t x, const size_t y)       { assert(y*width+x < width*height); return p[y*width+x]; }
     __forceinline const Vec3fa& point(const size_t x, const size_t y) const { assert(y*width+x < width*height); return p[y*width+x]; }
-    //__forceinline       Vec2f&  uvs  (const size_t x, const size_t y)       { assert(y*width+x < width*height); return uv[y*width+x]; }
-    //__forceinline const Vec2f&  uvs  (const size_t x, const size_t y) const { assert(y*width+x < width*height); return uv[y*width+x]; }
 
     static size_t getNumQuadLists(size_t width, size_t height) {
       const size_t w = (((width +1)/2)+3)/4;
@@ -529,10 +535,7 @@ namespace embree
 	       const DiscreteTessellationPattern& pattern_x,
 	       const DiscreteTessellationPattern& pattern_y)
     {
-      width  = x1-x0+1; assert(width <= 17);
-      height = y1-y0+1; assert(height <= 17);
-      p = (Vec3fa*) alloc.malloc(width*height*sizeof(Vec3fa));
-      //uv = (Vec2f*) alloc.malloc(width*height*sizeof(Vec2f));
+      
       Vec2f luv[17*17];
       Vec2f uv[17*17];
 
@@ -561,9 +564,6 @@ namespace embree
 	  p.a = (iv << 16) | iu;
           point(x,y) = p;
 	  bounds.extend(p);
-
-	  assert(y*width+x < width*height);
-	  //uvs(x,y) = uvxy;
         }
       }
 
@@ -611,7 +611,7 @@ namespace embree
 	  const Vec2f luv1 = sy0*(sx1*uv0+sx0*uv1) + sy1*(sx1*uv3+sx0*uv2);
 	  const Vec2f luv2 = sy1*(sx1*uv0+sx0*uv1) + sy0*(sx1*uv3+sx0*uv2);
 	  const Vec2f luv3 = sy1*(sx0*uv0+sx1*uv1) + sy0*(sx0*uv3+sx1*uv2);
-	  Grid* leaf = new (alloc.malloc(sizeof(Grid),16)) Grid(geomID,primID);
+	  Grid* leaf = Grid::create(alloc,lx1-lx0+1,ly1-ly0+1,geomID,primID);
 	  size_t n = leaf->build(scene,patch,alloc,prims,lx0,lx1,ly0,ly1,luv0,luv1,luv2,luv3,pattern0,pattern1,pattern2,pattern3,pattern_x,pattern_y);
 	  prims += n;
 	  N += n;
@@ -625,8 +625,6 @@ namespace embree
     unsigned height;
     unsigned primID;
     unsigned geomID;
-    Vec3fa* p;
-    //Vec2f*  uv;
+    Vec3fa p[];
   };
-
 }
