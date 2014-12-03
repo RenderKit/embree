@@ -582,11 +582,10 @@ namespace embree
           if (!mesh->valid(f)) continue;
 	  
           const unsigned int patchIndex = base.size()+s.size();
-          const SubdivPatch1Cached patch = SubdivPatch1Cached(mesh->getHalfEdge(f), mesh->getVertexPositionPtr(), mesh->id, f, mesh);
-          subdiv_patches[patchIndex] = patch; /* FIXME: use storent to write out subdivpatch data to memory */
+          subdiv_patches[patchIndex] = SubdivPatch1Cached(mesh->getHalfEdge(f), mesh->getVertexPositionPtr(), mesh->id, f, mesh);
 
           /* compute patch bounds */
-          const BBox3fa bounds = patch.bounds(mesh);
+          const BBox3fa bounds = subdiv_patches[patchIndex].bounds(mesh);
 	  prims[base.size()+s.size()] = PrimRef(bounds,patchIndex);
 	  s.add(bounds);
         }

@@ -98,6 +98,7 @@ namespace embree
 
 
       /* tessellate into 3x3 grid blocks for larger grid resolutions, generate bvh4 subtree over 3x3 grid blocks*/
+
       if (grid_size_8wide_blocks > 1)
 	grid_subtree_size_64b_blocks = getSubTreeSize64bBlocks( 4 ); // u,v,x,y,z 
 

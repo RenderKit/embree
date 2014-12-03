@@ -38,6 +38,66 @@ namespace embree
   }
 #endif
 
+  struct GridRange
+  {
+    unsigned int u_start;
+    unsigned int u_end;
+    unsigned int v_start;
+    unsigned int v_end;
+
+    GridRange() {}
+
+    GridRange(unsigned int u_start, unsigned int u_end, unsigned int v_start, unsigned int v_end) : u_start(u_start), u_end(u_end), v_start(v_start), v_end(v_end) {}
+
+    __forceinline bool hasLeafSize() const
+    {
+      const unsigned int u_size = u_end-u_start+1;
+      const unsigned int v_size = v_end-v_start+1;
+      return u_size <= 3 && v_size <= 3;
+    }
+
+    __forceinline unsigned int largestExtend() const
+    {
+      const int u_size = u_end-u_start+1;
+      const int v_size = v_end-v_start+1;
+      return max(u_size,v_size);
+    }
+
+    static __forceinline unsigned int split(unsigned int start,unsigned int end)
+    {
+      return (start+end)/2;
+    }
+
+    __forceinline bool split(GridRange &r0, GridRange &r1) const
+    {
+      if (hasLeafSize()) return false;
+      const unsigned int u_size = u_end-u_start+1;
+      const unsigned int v_size = v_end-v_start+1;
+      r0 = *this;
+      r1 = *this;
+
+      if (u_size >= v_size)
+        {
+          assert(u_size >= 3);
+          const unsigned int u_mid = split(u_start,u_end);
+          r0.u_end   = u_mid;
+          r1.u_start = u_mid;
+        }
+      else
+        {
+          assert(v_size >= 3);
+          const unsigned int v_mid = split(v_start,v_end);
+          r0.v_end   = v_mid;
+          r1.v_start = v_mid;
+        }
+      return true;
+    }
+  };
+
+  inline std::ostream& operator<<(std::ostream& cout, const GridRange& r) {
+    cout << "range: u_start " << r.u_start << " u_end " << r.u_end << " v_start " << r.v_start << " v_end " << r.v_end << std::endl;
+    return cout;
+  }
 
   struct __aligned(64) SubdivPatch1Cached
   {
@@ -243,39 +303,44 @@ namespace embree
 
   private:
 
-    size_t get64BytesBlocksForGridSubTree(const unsigned int u_start,
-					  const unsigned int u_end,
-					  const unsigned int v_start,
-					  const unsigned int v_end,
-					  const unsigned int leafBlocks)
+    size_t get64BytesBlocksForGridSubTree(const GridRange &range,
+                                          const unsigned int leafBlocks)
     {
-      const unsigned int u_size = u_end-u_start+1;
-      const unsigned int v_size = v_end-v_start+1;
-      if (u_size <= 3 && v_size <= 3)
-	return leafBlocks;/* 128 bytes for 16x 'u' and 'v' plus 16x x,y,z for vtx with displacment*/
+      if (range.hasLeafSize()) return leafBlocks;
 
-      const unsigned int u_mid = (u_start+u_end)/2;
-      const unsigned int v_mid = (v_start+v_end)/2;
+      GridRange r[4];
 
-      const unsigned int subtree_u_start[4] = { u_start ,u_mid ,u_mid ,u_start };
-      const unsigned int subtree_u_end  [4] = { u_mid   ,u_end ,u_end ,u_mid };
-      const unsigned int subtree_v_start[4] = { v_start ,v_start ,v_mid ,v_mid};
-      const unsigned int subtree_v_end  [4] = { v_mid   ,v_mid   ,v_end ,v_end };
-      
+      unsigned int children = 1;
+      r[0] = range;
+      while(children < 4)
+        {
+          ssize_t index = -1;
+          ssize_t extend = 0;
+          for (size_t i=0;i<children;i++)
+            if (!r[i].hasLeafSize())
+              if (r[i].largestExtend() > extend)
+                {
+                  extend = r[i].largestExtend();
+                  index = i;
+                }
+          if (index == -1) break;
+
+          GridRange tmp = r[index];
+          tmp.split(r[index],r[children]);
+          children++;          
+        }
+
       size_t blocks = 2; /* 128 bytes bvh4 node layout */
 
-      for (unsigned int i=0;i<4;i++)
-	blocks += get64BytesBlocksForGridSubTree(subtree_u_start[i], 
-						 subtree_u_end[i],
-						 subtree_v_start[i],
-						 subtree_v_end[i],
+      for (unsigned int i=0;i<children;i++)
+	blocks += get64BytesBlocksForGridSubTree(r[i],
 						 leafBlocks);
       return blocks;    
     }
 
     __forceinline unsigned int getSubTreeSize64bBlocks(const unsigned int leafBlocks = 2)
     {
-      return get64BytesBlocksForGridSubTree(0,grid_u_res-1,0,grid_v_res-1,leafBlocks);
+      return get64BytesBlocksForGridSubTree(GridRange(0,grid_u_res-1,0,grid_v_res-1),leafBlocks);
     }
 
 
