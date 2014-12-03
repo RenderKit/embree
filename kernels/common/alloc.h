@@ -300,7 +300,7 @@ namespace embree
         if (4*bytes > allocBlockSize) {
           cur -= bytes;
           return alloc->malloc(bytes,maxAlignment);
-        }
+	}
 
 #if 0
         /* get new partial block if allocation failed */
@@ -318,11 +318,12 @@ namespace embree
 
         /* get new full block if allocation failed */
         size_t blockSize = allocBlockSize;
-        ptr = (char*) alloc->malloc(blockSize,maxAlignment);
+	ptr = (char*) alloc->malloc(blockSize,maxAlignment);
+	cur = 0;
         end = blockSize;
-
+	
         /* retry allocation */
-        cur = bytes + ((align - cur) & (align-1));
+        cur += bytes + ((align - cur) & (align-1));
         if (likely(cur <= end)) return &ptr[cur - bytes];
 
         /* should never happen as large allocations get handled specially above */
@@ -448,7 +449,7 @@ namespace embree
 	if (i+bytes > allocEnd) os_commit(&data[i],bytes); // FIXME: optimize, may get called frequently
 	return &data[i];
       }
-
+      
       void* malloc_some(size_t& bytes, size_t align = 16) 
       {
         assert(align <= maxAlignment);
