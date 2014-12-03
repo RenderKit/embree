@@ -86,7 +86,7 @@ namespace embree
 #endif
     };
 
-    static __forceinline void intersectFinish (Ray& ray, const Vec3fa& p0, const Vec3fa& p1, const Vec3fa& p2, const ssef uvw, const Primitive& prim)
+    static __forceinline void intersectFinish (Ray& ray, const Vec3fa& p0, const Vec3fa& p1, const Vec3fa& p2, const ssef& uvw, const Primitive& prim)
     {
       const Vec3fa Ng0 = cross(p2-p0,p1-p0);
       const Vec3fa Ng = Ng0+Ng0;
@@ -139,7 +139,7 @@ namespace embree
         intersectFinish(ray,q11,q10,q01,u001,prim);
     }
 
-#if defined(__AVX__) && 0
+#if defined(__AVX__)
 
     __forceinline static void intersectDualQuad(Ray& ray, const Vec3fa& O, const Vec3fa& D,
                                                    const Vec3fa& q00, const Vec3fa& q01, 
@@ -160,18 +160,18 @@ namespace embree
       const avx3f s000_s100 = t000_t100_end + t000_t100_start;
       const avxf  u000_u100 = dot(cross(e000_e100,s000_s100),D8);
       if (all(ge_mask(Vec3fa(extract<0>(u000_u100)),Vec3fa(0.0f))) || all(le_mask(Vec3fa(extract<0>(u000_u100)),Vec3fa(0.0f)))) 
-        intersectFinish(ray,q00,q01-q00,q10-q01,q00-q10,u000_u100[0],u000_u100[1],u000_u100[2],prim);
+        intersectFinish(ray,q00,q01,q10,extract<0>(u000_u100),prim);
       if (all(ge_mask(Vec3fa(extract<1>(u000_u100)),Vec3fa(0.0f))) || all(le_mask(Vec3fa(extract<1>(u000_u100)),Vec3fa(0.0f)))) 
-        intersectFinish(ray,q10,q11-q10,q20-q11,q10-q20,u000_u100[4],u000_u100[5],u000_u100[6],prim);
+        intersectFinish(ray,q10,q11,q20,extract<1>(u000_u100),prim);
       
       const avx3f t001_t101_start = shuffle<2,3,1,0>(p00_p10), t001_t101_end = shuffle<3,1,2,0>(p00_p10);
       const avx3f e001_e101 = t001_t101_end - t001_t101_start;
       const avx3f s001_s101 = t001_t101_end + t001_t101_start;
       const avxf  u001_u101 = dot(cross(e001_e101,s001_s101),D8);
       if (all(ge_mask(Vec3fa(extract<0>(u001_u101)),Vec3fa(0.0f))) || all(le_mask(Vec3fa(extract<0>(u001_u101)),Vec3fa(0.0f)))) 
-        intersectFinish2(ray,q11,q10-q11,q01-q10,q11-q01,u001_u101[0],u001_u101[1],u001_u101[2],prim);
+        intersectFinish(ray,q11,q10,q01,extract<0>(u001_u101),prim);
       if (all(ge_mask(Vec3fa(extract<1>(u001_u101)),Vec3fa(0.0f))) || all(le_mask(Vec3fa(extract<1>(u001_u101)),Vec3fa(0.0f)))) 
-        intersectFinish2(ray,q21,q20-q21,q11-q20,q21-q11,u001_u101[4],u001_u101[5],u001_u101[6],prim);
+        intersectFinish(ray,q21,q20,q11,extract<1>(u001_u101),prim);
     }
 
 #endif
@@ -200,7 +200,7 @@ namespace embree
       const Vec3fa q01 = copy_a(v01-O,v01), q11 = copy_a(v11-O,v11), q21 = copy_a(v21-O,v21);
       const Vec3fa q02 = copy_a(v02-O,v02), q12 = copy_a(v12-O,v12), q22 = copy_a(v22-O,v22);
 
-#if defined(__AVX__) && 0
+#if defined(__AVX__)
       intersectDualQuad(ray,O,D,q00,q01,q10,q11,q20,q21,prim);
       intersectDualQuad(ray,O,D,q01,q02,q11,q12,q21,q22,prim);
 #else
