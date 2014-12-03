@@ -66,7 +66,7 @@ namespace embree
     }
 
     __forceinline uint64 id64() const {
-      return (((uint64)geomID()) << 32) + (uint64)primID();
+      return (((uint64)primID()) << 32) + (uint64)geomID();
     }
 
     friend __forceinline bool operator<(const PrimRef& p0, const PrimRef& p1) {
