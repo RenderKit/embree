@@ -301,6 +301,7 @@ __forceinline const ssef select(const int mask, const ssef& t, const ssef& f) {
   template<size_t dst, size_t src> __forceinline const ssef insert( const ssef& a, const ssef& b ) { return insert<dst, src, 0>(a, b); }
   template<size_t dst>             __forceinline const ssef insert( const ssef& a, const float b ) { return insert<dst,      0>(a, _mm_set_ss(b)); }
 #else
+  template<size_t dst, size_t src> __forceinline const ssef insert( const ssef& a, const ssef& b ) { ssef c = a; c[dst] = b[src]; return c; }
   template<size_t dst>             __forceinline const ssef insert( const ssef& a, const float b ) { ssef c = a; c[dst] = b; return c; }
 #endif
 

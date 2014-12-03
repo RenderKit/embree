@@ -456,12 +456,12 @@ namespace embree
   public:
     
     __forceinline Grid(unsigned geomID, unsigned primID)
-      : width(0), height(0), geomID(geomID), primID(primID), p(NULL), uv(NULL) {}
+      : width(0), height(0), geomID(geomID), primID(primID), p(NULL)/*, uv(NULL)*/ {}
     
     __forceinline       Vec3fa& point(const size_t x, const size_t y)       { assert(y*width+x < width*height); return p[y*width+x]; }
     __forceinline const Vec3fa& point(const size_t x, const size_t y) const { assert(y*width+x < width*height); return p[y*width+x]; }
-    __forceinline       Vec2f&  uvs  (const size_t x, const size_t y)       { assert(y*width+x < width*height); return uv[y*width+x]; }
-    __forceinline const Vec2f&  uvs  (const size_t x, const size_t y) const { assert(y*width+x < width*height); return uv[y*width+x]; }
+    //__forceinline       Vec2f&  uvs  (const size_t x, const size_t y)       { assert(y*width+x < width*height); return uv[y*width+x]; }
+    //__forceinline const Vec2f&  uvs  (const size_t x, const size_t y) const { assert(y*width+x < width*height); return uv[y*width+x]; }
 
     static size_t getNumQuadLists(size_t width, size_t height) {
       const size_t w = (((width +1)/2)+3)/4;
@@ -470,7 +470,7 @@ namespace embree
     }
     
     template<typename Patch>
-    __forceinline void displace(Scene* scene, const Patch& patch, const Vec2f* luv)
+    __forceinline void displace(Scene* scene, const Patch& patch, const Vec2f* luv, const Vec2f* uv)
     {
       SubdivMesh* mesh = (SubdivMesh*) scene->get(geomID);
       if (mesh->displFunc == NULL) return;
@@ -532,8 +532,9 @@ namespace embree
       width  = x1-x0+1; assert(width <= 17);
       height = y1-y0+1; assert(height <= 17);
       p = (Vec3fa*) alloc.malloc(width*height*sizeof(Vec3fa));
-      uv = (Vec2f*) alloc.malloc(width*height*sizeof(Vec2f));
+      //uv = (Vec2f*) alloc.malloc(width*height*sizeof(Vec2f));
       Vec2f luv[17*17];
+      Vec2f uv[17*17];
 
       for (int y=0; y<height; y++) {
         const float fy = pattern_y(y0+y);
@@ -550,21 +551,24 @@ namespace embree
       {
         for (int x=0; x<width; x++) 
 	{
-	  const Vec3fa p = patch.eval(luv[y*width+x].x,luv[y*width+x].y);
-          point(x,y) = p;
-	  bounds.extend(p);
-
-	  assert(y*width+x < width*height);
 	  const Vec2f& uv = luv[y*width+x];
 	  const Vec2f uv01 = (1.0f-uv.x) * uv0  + uv.x * uv1;
 	  const Vec2f uv32 = (1.0f-uv.x) * uv3  + uv.x * uv2;
 	  const Vec2f uvxy = (1.0f-uv.y) * uv01 + uv.y * uv32;
-          uvs(x,y) = uvxy;
+	  const int iu = clamp(uvxy.x * 0xFFFF, 0.0f, float(0xFFFF));
+	  const int iv = clamp(uvxy.y * 0xFFFF, 0.0f, float(0xFFFF));
+	  Vec3fa p = patch.eval(luv[y*width+x].x,luv[y*width+x].y);
+	  p.a = (iv << 16) | iu;
+          point(x,y) = p;
+	  bounds.extend(p);
+
+	  assert(y*width+x < width*height);
+	  //uvs(x,y) = uvxy;
         }
       }
 
       /* displace points */
-      displace(scene,patch,luv);
+      displace(scene,patch,luv,uv);
 
       /* create lists of quads */
       size_t i=0;
@@ -622,7 +626,7 @@ namespace embree
     unsigned primID;
     unsigned geomID;
     Vec3fa* p;
-    Vec2f*  uv;
+    //Vec2f*  uv;
   };
 
 }
