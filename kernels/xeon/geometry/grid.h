@@ -469,9 +469,15 @@ namespace embree
     __forceinline       Vec3fa& point(const size_t x, const size_t y)       { assert(y*width+x < width*height); return p[y*width+x]; }
     __forceinline const Vec3fa& point(const size_t x, const size_t y) const { assert(y*width+x < width*height); return p[y*width+x]; }
 
-    static size_t getNumQuadLists(size_t width, size_t height) {
+    static size_t getNumEagerLeaves(size_t width, size_t height) {
       const size_t w = (((width +1)/2)+3)/4;
       const size_t h = (((height+1)/2)+3)/4;
+      return w*h;
+    }
+
+    static size_t getNumLazyLeaves(size_t width, size_t height) {
+      const size_t w = (width +15)/16;
+      const size_t h = (height+15)/16;
       return w*h;
     }
     
@@ -524,16 +530,16 @@ namespace embree
 
     template<typename Patch>
     __forceinline size_t build(Scene* scene, const Patch& patch,
-                 FastAllocator::Thread& alloc, PrimRef* prims,
-	       const size_t x0, const size_t x1,
-	       const size_t y0, const size_t y1,
-	       const Vec2f& uv0, const Vec2f& uv1, const Vec2f& uv2, const Vec2f& uv3,
-	       const DiscreteTessellationPattern& pattern0, 
-	       const DiscreteTessellationPattern& pattern1, 
-	       const DiscreteTessellationPattern& pattern2, 
-	       const DiscreteTessellationPattern& pattern3, 
-	       const DiscreteTessellationPattern& pattern_x,
-	       const DiscreteTessellationPattern& pattern_y)
+			       FastAllocator::Thread& alloc, PrimRef* prims,
+			       const size_t x0, const size_t x1,
+			       const size_t y0, const size_t y1,
+			       const Vec2f& uv0, const Vec2f& uv1, const Vec2f& uv2, const Vec2f& uv3,
+			       const DiscreteTessellationPattern& pattern0, 
+			       const DiscreteTessellationPattern& pattern1, 
+			       const DiscreteTessellationPattern& pattern2, 
+			       const DiscreteTessellationPattern& pattern3, 
+			       const DiscreteTessellationPattern& pattern_x,
+			       const DiscreteTessellationPattern& pattern_y)
     {
       
       Vec2f luv[17*17];
