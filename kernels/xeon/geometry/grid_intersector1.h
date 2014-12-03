@@ -86,34 +86,35 @@ namespace embree
 #endif
     };
 
-    static __forceinline void intersectFinish (Ray& ray, 
-                                               const Vec3fa& q, const Vec3fa& e0, const Vec3fa& e1, const Vec3fa& e2, 
-                                               const Vec3fa uv, const float U, const float V, const float W,
-                                               const Primitive& prim)
+    static __forceinline void intersectFinish (Ray& ray, const Vec3fa& p0, const Vec3fa& p1, const Vec3fa& p2, const ssef uvw, const Primitive& prim)
+    {
+      const Vec3fa Ng0 = cross(p2-p0,p1-p0);
+      const Vec3fa Ng = Ng0+Ng0;
+      const float det = dot(ray.dir,Ng);
+      const float rcpDet = rcp(det);
+      const float T   = dot(p0,Ng);
+      const float t = T*rcpDet;
+      if (unlikely(ray.tnear <= t && t <= ray.tfar)) 
       {
-        const Vec3fa Ng0 = cross(e1,e0);
-        const Vec3fa Ng = Ng0+Ng0;
-        const float det = dot(ray.dir,Ng);
-        const float rcpDet = rcp(det);
-        const float T   = dot(q,Ng);
-        const float t = T*rcpDet;
-        if (unlikely(ray.tnear <= t && t <= ray.tfar)) {
-          //ray.u    = U * rcpDet;
-          //ray.v    = V * rcpDet;
-          ray.u    = uv.x * rcpDet;
-          ray.v    = uv.y * rcpDet;
-          ray.tfar = t;
-          ray.Ng   = Ng;
-	  /*float u = U * rcpDet;
+	float rcp0xFFFF = 1.0f/0xFFFF;
+	const Vec3fa uv0 = Vec3fa(p2.u & 0xFFFF, p2.u >> 16, 0.0f)*rcp0xFFFF;
+	const Vec3fa uv1 = Vec3fa(p0.u & 0xFFFF, p0.u >> 16, 0.0f)*rcp0xFFFF;
+	const Vec3fa uv2 = Vec3fa(p1.u & 0xFFFF, p1.u >> 16, 0.0f)*rcp0xFFFF;
+	const Vec3fa uv = uvw[0]*uv0+uvw[1]*uv1+uvw[2]*uv2;
+	ray.u    = uv.x * rcpDet;
+	ray.v    = uv.y * rcpDet;
+	ray.tfar = t;
+	ray.Ng   = Ng;
+	/*float u = U * rcpDet;
 	  float v = V * rcpDet;
 	  float w = 1.0f-u-v;
           ray.Ng.x = float(size_t(prim.id)>>4  & 0xFF)/255.0f * (0.5f+0.5f*u);
           ray.Ng.y = float(size_t(prim.id)>>8  & 0xFF)/255.0f * (0.5f+0.5f*v);
           ray.Ng.z = float(size_t(prim.id)>>16 & 0xFF)/255.0f * (0.5f+0.5f*w);*/
-          ray.geomID  = prim.grid.geomID;
-          ray.primID  = prim.grid.primID;
-        }
+	ray.geomID  = prim.grid.geomID;
+	ray.primID  = prim.grid.primID;
       }
+    }
 
     __forceinline static void intersectQuad(Ray& ray, const Vec3fa& O, const Vec3fa& D,
 					    const Vec3fa& q00, const Vec3fa& q01, 
@@ -121,37 +122,21 @@ namespace embree
 					    const Primitive& prim)
     {
       const sse3f DDDD(D.x,D.y,D.z);
-      sse3f p00; ssef uv; transpose((ssef)q00,(ssef)q01,(ssef)q11,(ssef)q10,p00.x,p00.y,p00.z,uv);
+      sse3f p00; transpose((ssef)q00,(ssef)q01,(ssef)q11,(ssef)q10,p00.x,p00.y,p00.z);
 
       const sse3f t000_start = shuffle<0,1,3,0>(p00), t000_end = shuffle<1,3,0,0>(p00);
       const sse3f e000 = t000_end - t000_start;
       const sse3f s000 = t000_end + t000_start;
       const ssef  u000 = dot(cross(e000,s000),DDDD);
       if (all(ge_mask(Vec3fa(u000),Vec3fa(0.0f))) || all(le_mask(Vec3fa(u000),Vec3fa(0.0f)))) 
-      {
-	unsigned short* uvs = (unsigned short*) &uv;
-	float rcp0xFFFF = 1.0f/0xFFFF;
-	const Vec3fa uv00 = Vec3fa(uvs[2*0+0], uvs[2*0+1], 0.0f)*rcp0xFFFF;
-	const Vec3fa uv01 = Vec3fa(uvs[2*1+0], uvs[2*1+1], 0.0f)*rcp0xFFFF;
-	const Vec3fa uv11 = Vec3fa(uvs[2*2+0], uvs[2*2+1], 0.0f)*rcp0xFFFF;
-	const Vec3fa uv10 = Vec3fa(uvs[2*3+0], uvs[2*3+1], 0.0f)*rcp0xFFFF;
-        intersectFinish(ray, q00,q01-q00,q10-q01,q00-q10,u000[0]*uv10+u000[1]*uv00+u000[2]*uv01,u000[0],u000[1],u000[2],prim);
-      }
+        intersectFinish(ray, q00,q01,q10,u000,prim);
 
       const sse3f t001_start = shuffle<2,3,1,0>(p00), t001_end = shuffle<3,1,2,0>(p00);
       const sse3f e001 = t001_end - t001_start;
       const sse3f s001 = t001_end + t001_start;
       const ssef  u001 = dot(cross(e001,s001),DDDD);
-      if (all(ge_mask(Vec3fa(u001),Vec3fa(0.0f))) || all(le_mask(Vec3fa(u001),Vec3fa(0.0f)))) {
-
-	unsigned short* uvs = (unsigned short*) &uv;
-	float rcp0xFFFF = 1.0f/0xFFFF;
-	const Vec3fa uv00 = Vec3fa(uvs[2*0+0], uvs[2*0+1], 0.0f)*rcp0xFFFF;
-	const Vec3fa uv01 = Vec3fa(uvs[2*1+0], uvs[2*1+1], 0.0f)*rcp0xFFFF;
-	const Vec3fa uv11 = Vec3fa(uvs[2*2+0], uvs[2*2+1], 0.0f)*rcp0xFFFF;
-	const Vec3fa uv10 = Vec3fa(uvs[2*3+0], uvs[2*3+1], 0.0f)*rcp0xFFFF;
-        intersectFinish(ray,q11,q10-q11,q01-q10,q11-q01,u001[0]*uv01+u001[1]*uv11+u001[2]*uv10,u001[0],u001[1],u001[2],prim);
-      }
+      if (all(ge_mask(Vec3fa(u001),Vec3fa(0.0f))) || all(le_mask(Vec3fa(u001),Vec3fa(0.0f))))
+        intersectFinish(ray,q11,q10,q01,u001,prim);
     }
 
 #if defined(__AVX__) && 0
