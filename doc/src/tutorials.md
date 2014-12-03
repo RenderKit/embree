@@ -18,29 +18,29 @@ tutorials get started on the host CPU, just like all other tutorials,
 and will connect automatically to one installed Xeon Phi™ Coprocessor in
 the system.
 
-For all tutorials, you can select an initial camera using the -vp
-(camera position), -vi (camera lookat point), -vu (camera up vector),
-and -fov (vertical field of view) command line parameters:
+For all tutorials, you can select an initial camera using the `-vp`
+(camera position), `-vi` (camera lookat point), `-vu` (camera up
+vector), and `-fov` (vertical field of view) command line parameters:
 
     ./tutorial00 -vp 10 10 10 -vi 0 0 0
 
-You can select the initial windows size using the -size command line
-parameter, or start the tutorials in fullscreen using the -fullscreen
+You can select the initial windows size using the `-size` command line
+parameter, or start the tutorials in fullscreen using the `-fullscreen`
 parameter:
 
     ./tutorial00 -size 1024 1024
     ./tutorial00 -fullscreen
 
 Implementation specific parameters can be passed to the ray tracing core
-through the -rtcore command line parameter, e.g.:
+through the `-rtcore` command line parameter, e.g.:
 
-    ./tutorial00 -rtcore verbose=2,threads=1,accel=bvh3.triangle1
+    ./tutorial00 -rtcore verbose=2,threads=1,accel=bvh4.triangle1
 
 The navigation in the interactive display mode follows the camera orbit
 model, where the camera revolves around the current center of interest.
 With the left mouse button you can rotate around the center of interest
-(the point initially set with -vi). Holding Control pressed while
-klicking the left mouse button rotates the camera around its location.
+(the point initially set with `-vi`). Holding Control pressed while
+clicking the left mouse button rotates the camera around its location.
 You can also use the arrow keys for navigation.
 
 You can use the following keys:
@@ -92,134 +92,102 @@ q
 Tutorial00
 ----------
 
-+--------------------------------------+--------------------------------------+
-| ![](images/tutorial00.jpg)           | This tutorial demonstrates the       |
-|                                      | creation of a static cube and ground |
-|                                      | plane using triangle meshes. It also |
-|                                      | demonstrates the use of the          |
-|                                      | `rtcIntersect` and `rtcOccluded`     |
-|                                      | functions to render primary          |
-|                                      | visibility and hard shadows. The     |
-|                                      | cube sides are colored based on the  |
-|                                      | ID of the hit primitive.             |
-+--------------------------------------+--------------------------------------+
+![](images/tutorial00.jpg)
+
+This tutorial demonstrates the creation of a static cube and ground
+plane using triangle meshes. It also demonstrates the use of the
+`rtcIntersect` and `rtcOccluded` functions to render primary visibility
+and hard shadows. The cube sides are colored based on the ID of the hit
+primitive.
 
 Tutorial01
 ----------
 
-+--------------------------------------+--------------------------------------+
-| ![](images/tutorial01.jpg)           | This tutorial demonstrates the       |
-|                                      | creation of a dynamic scene,         |
-|                                      | consisting of several deformed       |
-|                                      | spheres. Half of the spheres use the |
-|                                      | RTC\_GEOMETRY\_DEFORMABLE flag,      |
-|                                      | which allows Embree to use a         |
-|                                      | refitting strategy for these         |
-|                                      | spheres, the other half uses the     |
-|                                      | RTC\_GEOMETRY\_DYNAMIC flag, causing |
-|                                      | a rebuild of their spatial data      |
-|                                      | structure each frame. The spheres    |
-|                                      | are colored based on the ID of the   |
-|                                      | hit sphere geometry.                 |
-+--------------------------------------+--------------------------------------+
+![](images/tutorial01.jpg)
+
+This tutorial demonstrates the creation of a dynamic scene, consisting
+of several deformed spheres. Half of the spheres use the
+RTC\_GEOMETRY\_DEFORMABLE flag, which allows Embree to use a refitting
+strategy for these spheres, the other half uses the
+RTC\_GEOMETRY\_DYNAMIC flag, causing a rebuild of their spatial data
+structure each frame. The spheres are colored based on the ID of the hit
+sphere geometry.
 
 Tutorial02
 ----------
 
-+--------------------------------------+--------------------------------------+
-| ![](images/tutorial02.jpg)           | This tutorial shows the use of user  |
-|                                      | defined geometry, to re-implement    |
-|                                      | instancing and to add analytic       |
-|                                      | spheres. A two level scene is        |
-|                                      | created, with a triangle mesh as     |
-|                                      | ground plane, and several user       |
-|                                      | geometries, that instance other      |
-|                                      | scenes with a small number of        |
-|                                      | spheres of different kind. The       |
-|                                      | spheres are colored using the        |
-|                                      | instance ID and geometry ID of the   |
-|                                      | hit sphere, to demonstrate how the   |
-|                                      | same geometry, instanced in          |
-|                                      | different ways can be distinguished. |
-+--------------------------------------+--------------------------------------+
+![](images/tutorial02.jpg)
+
+This tutorial shows the use of user defined geometry, to re-implement
+instancing and to add analytic spheres. A two level scene is created,
+with a triangle mesh as ground plane, and several user geometries, that
+instance other scenes with a small number of spheres of different kind.
+The spheres are colored using the instance ID and geometry ID of the hit
+sphere, to demonstrate how the same geometry, instanced in different
+ways can be distinguished.
 
 Tutorial03
 ----------
 
-+--------------------------------------+--------------------------------------+
-| ![](images/tutorial03.jpg)           | This tutorial demonstrates a simple  |
-|                                      | OBJ viewer that traces primary       |
-|                                      | visibility rays only. A scene        |
-|                                      | consisting of multiple meshes is     |
-|                                      | created, each mesh sharing the index |
-|                                      | and vertex buffer with the           |
-|                                      | application. Demonstrated is also    |
-|                                      | how to support additional per vertex |
-|                                      | data, such as shading normals.       |
-|                                      |                                      |
-|                                      | You need to specify an OBJ file at   |
-|                                      | the command line for this tutorial   |
-|                                      | to work: `./tutorial03 -i model.obj` |
-+--------------------------------------+--------------------------------------+
+![](images/tutorial03.jpg)
+
+This tutorial demonstrates a simple OBJ viewer that traces primary
+visibility rays only. A scene consisting of multiple meshes is created,
+each mesh sharing the index and vertex buffer with the application.
+Demonstrated is also how to support additional per vertex data, such as
+shading normals.
+
+You need to specify an OBJ file at the command line for this tutorial to
+work: `./tutorial03 -i model.obj`
 
 Tutorial04
 ----------
 
-+--------------------------------------+--------------------------------------+
-| ![](images/tutorial04.jpg)           | This tutorial demonstrates the       |
-|                                      | in-build instancing feature of       |
-|                                      | Embree, by instancing a number of    |
-|                                      | other scenes build from triangulated |
-|                                      | spheres. The spheres are again       |
-|                                      | colored using the instance ID and    |
-|                                      | geometry ID of the hit sphere, to    |
-|                                      | demonstrate how the same geometry,   |
-|                                      | instanced in different ways can be   |
-|                                      | distinguished.                       |
-+--------------------------------------+--------------------------------------+
+![](images/tutorial04.jpg)
+
+This tutorial demonstrates the in-build instancing feature of Embree, by
+instancing a number of other scenes build from triangulated spheres. The
+spheres are again colored using the instance ID and geometry ID of the
+hit sphere, to demonstrate how the same geometry, instanced in different
+ways can be distinguished.
 
 Tutorial05
 ----------
 
-+--------------------------------------+--------------------------------------+
-| ![](images/tutorial05.jpg)           | This tutorial demonstrates the use   |
-|                                      | of filter callback functions to      |
-|                                      | efficiently implement transparent    |
-|                                      | objects. The filter function used    |
-|                                      | for primary rays, lets the ray pass  |
-|                                      | through the geometry if it is        |
-|                                      | entirely transparent. Otherwise the  |
-|                                      | shading loop handles the             |
-|                                      | transparency properly, by            |
-|                                      | potentially shooting secondary rays. |
-|                                      | The filter function used for shadow  |
-|                                      | rays accumulates the transparency of |
-|                                      | all surfaces along the ray, and      |
-|                                      | terminates traversal if an opaque    |
-|                                      | occluder is hit.                     |
-+--------------------------------------+--------------------------------------+
+![](images/tutorial05.jpg)
+
+This tutorial demonstrates the use of filter callback functions to
+efficiently implement transparent objects. The filter function used for
+primary rays, lets the ray pass through the geometry if it is entirely
+transparent. Otherwise the shading loop handles the transparency
+properly, by potentially shooting secondary rays. The filter function
+used for shadow rays accumulates the transparency of all surfaces along
+the ray, and terminates traversal if an opaque occluder is hit.
 
 Tutorial06
 ----------
 
-+--------------------------------------+--------------------------------------+
-| ![](images/tutorial06.jpg)           | This tutorial is a simple path       |
-|                                      | tracer, building on tutorial03.      |
-|                                      |                                      |
-|                                      | You need to specify an OBJ file and  |
-|                                      | light source at the command line for |
-|                                      | this tutorial to work:               |
-|                                      | `./tutorial06 -i model.obj -ambientl |
-|                                      | ight 1     1 1`                      |
-+--------------------------------------+--------------------------------------+
+![](images/tutorial06.jpg)
+
+This tutorial is a simple path tracer, building on tutorial03.
+
+You need to specify an OBJ file and light source at the command line for
+this tutorial to work:
+
+    ./tutorial06 -i model.obj -ambientlight 1 1 1
 
 Tutorial07
 ----------
 
-+--------------------------------------+--------------------------------------+
-| ![](images/tutorial07.jpg)           | This tutorial demonstrates the use   |
-|                                      | of the hair geometry to render a     |
-|                                      | hairball.                            |
-+--------------------------------------+--------------------------------------+
+![](images/tutorial07.jpg)
 
+This tutorial demonstrates the use of the hair geometry to render a
+hairball.
+
+Tutorial08
+----------
+
+<!-- ![](images/tutorial08.jpg) -->
+
+This tutorial demonstrates the use of subdivision surfaces.
 

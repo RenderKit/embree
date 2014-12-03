@@ -1,7 +1,7 @@
 Supported Platforms
 -------------------
 
-Embree supports Windows (32bit and 64bit), Linux (64 bit) and Mac OS X
+Embree supports Windows (32bit and 64bit), Linux (64 bit) and Mac OS\ X
 (64 bit). The code compiles with the Intel Compiler, the Microsoft
 Compiler, GCC and CLANG. Using the Intel Compiler improves performance
 by approximately 10%. Performance also varies across different operating

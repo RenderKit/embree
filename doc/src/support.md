@@ -1,8 +1,10 @@
 Embree Support and Contact
 --------------------------
 
-For questions and bug reports please write us at
-<embree_support@intel.com>.
+If you encounter bugs please report them via [Embree's GitHub Issue
+Tracker](https://github.com/embree/embree/issues).
+
+For questions please write us at <embree_support@intel.com>.
 
 To receive notifications of updates and new features of Embree please
 subscribe to the [Embree mailing

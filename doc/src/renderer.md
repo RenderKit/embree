@@ -10,11 +10,8 @@ production renderering. The Embree Example Renderer is released as Open
 Source under the [Apache 2.0
 license](http://www.apache.org/licenses/LICENSE-2.0).
 
-The example renderer is only available in source form and can be
-downloaded using the following ZIP file:
-
 We provide binaries for the Embree Example Renderer for Linux (64 bit),
-Mac OS X (64 bit), and Windows (64 bit):
+Mac OS\ X (64 bit), and Windows (64 bit):
 
 [embree-renderer-2.2-linux.zip](http://github.com/embree/embree-renderer-bin/archive/v2.2_linux.zip)
 
@@ -22,7 +19,7 @@ Mac OS X (64 bit), and Windows (64 bit):
 
 [embree-renderer-2.2-win.zip](http://github.com/embree/embree-renderer-bin/archive/v2.2_win.zip)
 
-In case the Windows reports a missing MSVCP120.DLL please install the
+In case the Windows reports a missing `MSVCP120.DLL` please install the
 [Visual C++ Redistributable Packages for Visual Studio
 2013.](http://www.microsoft.com/en-us/download/details.aspx?id=40784)
 
@@ -37,9 +34,9 @@ below:
 Alternatively you can also use `git` to get the latest Embree Example
 Renderer 2.2:
 
-    $ git clone https://github.com/embree/embree-renderer.git embree-renderer
-    $ cd embree-renderer
-    $ git checkout v2.2
+    git clone https://github.com/embree/embree-renderer.git embree-renderer
+    cd embree-renderer
+    git checkout v2.2
 
 If you encounter bugs please report them to the [GitHub Issue
 Tracker](https://github.com/embree/embree-renderer/issues) for the
@@ -50,8 +47,8 @@ Compiling under Windows
 
 For compilation under Windows you first have to install the Embree ray
 tracing kernels including the Intel SPMD Compiler (ISPC). After
-installation you have to set the EMBREE\_INSTALL\_DIR environment
-variable to the root folder of Embree.
+installation you have to set the EMBREE_INSTALL_DIR environment variable
+to the root folder of Embree.
 
 Use the Visual Studio 2008 or Visual Studio 2010 solution file to
 compile the Embree Example Renderer. Inside Visual Studio you can switch
@@ -66,35 +63,48 @@ with the same or higher instruction set than the Embree example
 renderer.
 
 By default, the solution file requires ISPC to be installed properly.
-For compiling the solution without ISPC, simply delete the device\_ispc
+For compiling the solution without ISPC, simply delete the device_ispc
 project from the solution file.
 
-Compiling under Linux and Mac OS X
-----------------------------------
+Compiling under Linux and Mac OS\ X
+-----------------------------------
 
-To compile the Embree Example Renderer using CMake create a build
-directory and execute "ccmake .." inside this directory.
+To compile the Embree Example Renderer using CMake create a `build`
+directory and execute `ccmake ..` inside this directory.
 
     mkdir build
     cd build
     ccmake ..
 
 This will open a configuration dialog where you should set the build
-mode to “Release” and the compiler to either GCC, CLANG, or ICC. You can
+mode to `Release` and the compiler to either GCC, CLANG, or ICC. You can
 configure which parts of the Embree Example Renderer to build:
 
-  --------------------------------------- --------------------------------------------------------------------------------
-  BUILD\_SINGLE\_RAY\_DEVICE              Single ray rendering device for CPUs.
-  BUILD\_SINGLE\_RAY\_DEVICE\_XEON\_PHI   Single ray rendering device for Xeon Phi™.
-  BUILD\_ISPC\_DEVICE                     ISPC CPU rendering device operating on ray packets of size 4 (SSE) or 8 (AVX).
-  BUILD\_ISPC\_DEVICE\_XEON\_PHI          ISPC Xeon Phi™ rendering device operating on ray packets of size 16.
-  BUILD\_NETWORK\_DEVICE                  Network device to render on render server.
-  --------------------------------------- --------------------------------------------------------------------------------
+  ---------------------------------- -----------------------------------
+  Option                             Description
+  ---------------------------------- -----------------------------------
+  BUILD_SINGLE_RAY_DEVICE            Single ray rendering device for
+                                     CPUs.
+
+  BUILD_SINGLE_RAY_DEVICE_XEON_PHI   Single ray rendering device for
+                                     Xeon Phi™.
+
+  BUILD_ISPC_DEVICE                  ISPC CPU rendering device operating
+                                     on ray packets of size 4 (SSE) or
+                                     8 (AVX).
+
+  BUILD_ISPC_DEVICE_XEON_PHI         ISPC Xeon Phi™ rendering device
+                                     operating on ray packets of size 16.
+
+  BUILD_NETWORK_DEVICE               Network device to render on render
+                                     server.
+  ---------------------------------- -----------------------------------
+  : CMake build options for Embree Example Renderer.
 
 When enabling any ISPC renderer, you also have to install ISPC. If you
-select BUILD\_ISPC\_DEVICE, you should select which instructions sets to
-enable for ISPC (TARGET\_SSE2, TARGET\_SSE41, TARGET\_AVX, and
-TARGET\_AVX2).
+select `BUILD_ISPC_DEVICE`, you should select which instructions sets to
+enable for ISPC (`TARGET_SSE2`, `TARGET_SSE41`, `TARGET_AVX`, and
+`TARGET_AVX2`).
 
 All target ISAs you select when compiling the Embree Example Render,
 have also to be enabled when compiling Embree. Due to some limitation of
@@ -103,17 +113,17 @@ more than one target ISA when compiling Embree, otherwise you will get
 link errors.
 
 If you installed Embree, CMake will find it automatically and set the
-EMBREE\_INCLUDE\_PATH and EMBREE\_LIBRARY variables.
+`EMBREE_INCLUDE_PATH` and `EMBREE_LIBRARY` variables.
 
 If you cannot install Embree on your system (e.g. when you don't have
 administrator rights) some additional configurations are required to use
-Embree from its build folder. Set the EMBREE\_INCLUDE\_PATH to the
-embree\_root\_directory/include folder and the EMBREE\_LIBRARY to
-embree\_root\_directory/build/libembree.2.2.0.dylib for Mac OS X or
-embree\_root\_directory/build/libembree.so.2.2.0 for Linux. Under Linux
-you have to additionally add embree\_root\_directory/build to your
-LD\_LIBRARY\_PATH (and SINK\_LD\_LIBRARY\_PATH in case you want to use
-Embree on Xeon Phi).
+Embree from its build folder. Set the `EMBREE_INCLUDE_PATH` to the
+embree_root_directory/include folder and the `EMBREELIBRARY` to
+embree_root_directory/build/libembree.2.2.0.dylib for Mac OS\ X or
+embree_root_directory/build/libembree.so.2.2.0 for Linux. Under Linux
+you have to additionally add embree_root_directory/build to your
+`LD_LIBRARY_PATH` (and `SINK_LD_LIBRARY_PATH` in case you want to use
+Embree on Xeon Phi™).
 
 Press c (for configure) and g (for generate) to generate a Makefile and
 leave the configuration. The code can now be compiled by executing make.
@@ -125,11 +135,11 @@ Using the Embree Example Renderer
 ---------------------------------
 
 The example renderer also ships with a few simple test scenes, each
-consisting of a scene file (.xml or .obj) and a command script file
-(.ecs). The command script file contains command line parameters that
+consisting of a scene file (`.xml` or `.obj`) and a command script file
+(`.ecs`). The command script file contains command line parameters that
 set the camera parameters, lights and render settings. The following
 command line will render the Cornell Box scene with 16 samples per pixel
-and write the resulting image to the file cornell\_box.tga in the
+and write the resulting image to the file `cornell_box.tga` in the
 current directory:
 
     ./renderer -c ../models/cornell_box.ecs -spp 16 -o cornell_box.tga
@@ -168,8 +178,9 @@ connect from a second machine to the render server:
 
 The navigation in the interactive display mode follows the camera orbit
 model, where the camera revolves around the current center of interest.
-The camera navigation assumes the y-axis to point upwards. If your scene
-is modelled using the z-axis as up axis we recommend rotating the scene.
+The camera navigation assumes the $y$-axis to point upwards. If your
+scene is modelled using the $z$-axis as up axis we recommend rotating
+the scene.
 
 Left Mouse Button
 :   Rotate around center of interest
