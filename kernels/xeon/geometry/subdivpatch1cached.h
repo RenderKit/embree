@@ -236,6 +236,9 @@ namespace embree
 
       const unsigned int real_grid_size = grid_u_res*grid_v_res;
       gridUVTessellator(level,grid_u_res,grid_v_res,u_array,v_array);
+      
+      if (unlikely(needsStiching()))
+        stichUVGrid(level,grid_u_res,grid_v_res,u_array,v_array);
 
       // FIXME: remove
       for (size_t i=real_grid_size;i<grid_size_8wide_blocks*8;i++)
@@ -246,6 +249,8 @@ namespace embree
 
 
 #if !defined(__AVX__)
+      FATAL("HERE");
+
       BBox3fa b ( empty );
 
       for (size_t i=0;i<real_grid_size;i++)
@@ -269,10 +274,12 @@ namespace embree
 
 #if USE_DISPLACEMENT_FOR_TESSELLATION_BOUNDS == 1
 	  /* eval displacement function */
+
 	  if (unlikely(mesh->displFunc != NULL))
 	    {
 	      avx3f normal = normal8(u,v);
 	      normal = normalize(normal);
+
 	      mesh->displFunc(mesh->userPtr,
 			      geom,
 			      prim,
@@ -292,6 +299,7 @@ namespace embree
               /*   } */
 	    }
 #endif
+
 	  b.extend( getBBox3fa(vtx) );
 
 	  /* extend bounding box */

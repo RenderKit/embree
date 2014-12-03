@@ -159,10 +159,8 @@ namespace embree
       u_array[i] = 1.0f;
     for (unsigned int x=0;x<grid_u_res;x++)
       v_array[num_points-1-x] = 1.0f;
-    
-    
-    /* stich different tessellation levels in u/v grid */
-    stichUVGrid(edge_levels,grid_u_res,grid_v_res,u_array,v_array);
+        
+    //stichUVGrid(edge_levels,grid_u_res,grid_v_res,u_array,v_array);
   }
   
 #if defined(__MIC__)

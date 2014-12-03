@@ -101,13 +101,13 @@ void DisplacementFunc(void* ptr, unsigned geomID, unsigned primID,
 #else
   for (size_t i=0; i<N; i++) {
     const Vec3fa P(px[i],py[i],pz[i]);
-    const Vec3fa N = normalize(Vec3fa(nx[i],ny[i],nz[i]));
+    const Vec3fa nor = Vec3fa(nx[i],ny[i],nz[i]);
     float dN = 0.0f;
     for (float freq = 1.0f; freq<40.0f; freq*= 2) {
-      float n = fabs(noise(freq*P));
+      float n = fabsf(noise(freq*P));
       dN += 1.4f*n*n/freq;
     }
-    const Vec3fa dP = dN*N;
+    const Vec3fa dP = dN*nor;
     px[i] += dP.x; py[i] += dP.y; pz[i] += dP.z;
   }
 #endif
@@ -278,7 +278,7 @@ RTCScene constructScene(const Vec3fa& cam_pos)
 
     //BBox3fa bounds(Vec3fa(-0.1f,-0.1f,-0.1f),Vec3fa(0.1f,0.1f,0.1f));
     //rtcSetDisplacementFunction(scene, subdivMeshID, (RTCDisplacementFunc)DisplacementFunc,(RTCBounds*)&bounds);
-    //rtcSetDisplacementFunction(scene, subdivMeshID, (RTCDisplacementFunc)DisplacementFunc,NULL);
+    rtcSetDisplacementFunction(scene, subdivMeshID, (RTCDisplacementFunc)DisplacementFunc,NULL);
     mesh->geomID = subdivMeshID;
   }       
   
