@@ -400,20 +400,16 @@ namespace embree
 
       __forceinline const BBox3fa getBounds(const size_t x0, const size_t x1, const size_t y0, const size_t y1) const 
       {
-	//PRINT(grid->width);
-	//PRINT(grid->height);
 	BBox3fa bounds = empty;
-	for (size_t y=y0; y<=y1; y++) {
-	  for (size_t x=x0; x<=x1; x++) {
-	    //PRINT2(x,y);
-	    bounds.extend(grid->point(x,y));
-	  }
-	}
+	for (size_t y=y0; y<=y1; y++)
+	  for (size_t x=x0; x<=x1; x++) 
+	    bounds.extend(grid.point(x,y));
+
 	return bounds;
       }
 
-      __forceinline QuadList () {}
-      __forceinline QuadList (const Grid* grid) : grid(grid) {}
+      __forceinline QuadList (const Grid& grid) 
+	: grid(grid) {}
 
       __forceinline const BBox3fa init (size_t x0, size_t x1, size_t y0, size_t y1) 
       {
@@ -431,9 +427,7 @@ namespace embree
 	    const bool bottom = y+1 == y1;
 	    const size_t kx0 = x, kx1 = min(x+2,x1);
 	    const size_t ky0 = y, ky1 = min(y+2,y1);
-	    //PRINT2(kx0,kx1);
-	    //PRINT2(ky0,ky1);
-	    new (&quads[i]) Quads(2*bottom+right,y*grid->width+x);
+	    new (&quads[i]) Quads(2*bottom+right,y*grid.width+x);
 	    const BBox3fa b = getBounds(kx0,kx1,ky0,ky1);
 	    box_list[i++] = b;
 	    box.extend(b);
@@ -451,14 +445,14 @@ namespace embree
 	cout << "{ " << std::endl;
 	//cout << "  bounds = " << a.bounds << std::endl;
 	for (size_t i=0; i<16; i++) cout << "  quads[" << i << "] = " << a.quads[i] << ", " << std::endl;
-	cout << "  grid = " << a.grid << std::endl;
+	cout << "  grid = " << &a.grid << std::endl;
 	"}";
 	return cout;
       }
 
       Bounds16 bounds;
       Quads quads[16];
-      const Grid* grid;
+      const Grid& grid;
     };
 
   public:
@@ -539,13 +533,9 @@ namespace embree
     {
       width  = x1-x0+1; assert(width <= 17);
       height = y1-y0+1; assert(height <= 17);
-      //PRINT(width);
-      //PRINT(height);
       p = (Vec3fa*) alloc.malloc(width*height*sizeof(Vec3fa));
       uv = (Vec2f*) alloc.malloc(width*height*sizeof(Vec2f));
-      //p = new Vec3fa[width*height+1000];
-      //uv = new Vec2f[width*height+1000];
-      Vec2f luv[17*17]; //= (Vec2f*) alloca(width*height*sizeof(Vec2f));
+      Vec2f luv[17*17];
 
       for (int y=0; y<height; y++) {
         const float fy = pattern_y(y0+y);
@@ -576,9 +566,7 @@ namespace embree
       }
 
       /* displace points */
-      //displace(scene,patch,luv);
-
-      //QuadList* myleaves = new QuadList[1024];
+      displace(scene,patch,luv);
 
       /* create lists of quads */
       size_t i=0;
@@ -586,16 +574,8 @@ namespace embree
 	for (size_t x=x0; x<x1; x+=8) {
 	  const size_t rx0 = x-x0, rx1 = min(x+8,x1)-x0;
 	  const size_t ry0 = y-y0, ry1 = min(y+8,y1)-y0;
-	  //PRINT2(rx0,rx1);
-	  //PRINT2(ry0,ry1);
-	  QuadList* leaf = new (alloc.malloc(sizeof(QuadList))) QuadList(this);
-	  //PRINT2(leaf,leaf+1);
-	  //QuadList* leaf = new QuadList(this);
-	  //QuadList* leaf = new (&myleaves[i]) QuadList(this);
+	  QuadList* leaf = new (alloc.malloc(sizeof(QuadList))) QuadList(*this);
 	  const BBox3fa bounds = leaf->init(rx0,rx1,ry0,ry1);
-	  //PRINT(leaf);
-	  //PRINT(*leaf);
-	  //PRINT(i);
 	  prims[i++] = PrimRef(bounds,BVH4::encodeTypedLeaf(leaf,0));
 	}
       }
