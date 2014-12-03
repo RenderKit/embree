@@ -58,6 +58,7 @@ struct ISPCMesh
   int numVertices;
   int numTriangles;
   int numQuads;
+  int geomID;
 };
 
 struct ISPCSubdivMesh

@@ -18,8 +18,6 @@
 
 #include "primitive.h"
 #include "discrete_tessellation.h"
-//#include "common/subdiv/bspline_patch.h"
-//#include "common/subdiv/gregory_patch.h"
 
 #define GRID_COMPRESS_BOUNDS 1
 
@@ -30,7 +28,7 @@ namespace embree
     struct CompressedBounds16;
     struct UncompressedBounds16;
 
-#if GRID_COMPRESS_BOUNDS && defined(__SSE4_1__)
+#if GRID_COMPRESS_BOUNDS
     typedef CompressedBounds16 Bounds16;
 #else
     typedef UncompressedBounds16 Bounds16;
@@ -192,7 +190,7 @@ namespace embree
       ssef upper_z[4];           //!< Z dimension of upper bounds of all 4 children.
     };
 
-#if defined (__SSE4_1__)
+//#if defined (__SSE4_1__)
 
     struct CompressedBounds16
     {
@@ -234,6 +232,7 @@ namespace embree
         const size_t farX  = nearX ^ 16, farY  = nearY ^ 16, farZ  = nearZ ^ 16;
 
         const sse3f vscale(scale), voffset(offset);
+#if defined (__SSE4_1__)
         const ssef near_x = madd(ssef::load(&this->lower_x[i]+nearX),vscale.x,voffset.x);
         const ssef near_y = madd(ssef::load(&this->lower_x[i]+nearY),vscale.y,voffset.y);
         const ssef near_z = madd(ssef::load(&this->lower_x[i]+nearZ),vscale.z,voffset.z);
@@ -279,6 +278,11 @@ namespace embree
         const size_t mask = movemask(vmask);
 #endif
         return mask;
+
+#else
+	assert(false); // FIXME: implement
+	return 0;
+#endif
       }
 
       template<bool robust>
@@ -373,7 +377,7 @@ namespace embree
       unsigned char upper_z[16]; 
     };
 
-#endif
+//#endif
 
     struct QuadList
     {
@@ -383,7 +387,11 @@ namespace embree
 	
 	__forceinline Quads () : type(NONE), ofs(0) {}
 	__forceinline Quads (unsigned char type, unsigned char ofs) : type(type), ofs(ofs) {}
-	
+
+	friend std::ostream& operator<<(std::ostream& cout, const Quads& a) {
+	  return cout << "{ type = " << (int) a.type << ", ofs = " << (int) a.ofs << " }";
+	}
+
 	unsigned char type;
 	unsigned char ofs;
       };
@@ -392,12 +400,14 @@ namespace embree
       {
 	BBox3fa bounds = empty;
 	for (size_t y=y0; y<=y1; y++)
-	  for (size_t x=x0; x<=x1; x++)
+	  for (size_t x=x0; x<=x1; x++) 
 	    bounds.extend(grid.point(x,y));
+
 	return bounds;
       }
 
-      __forceinline QuadList (const Grid& grid) : grid(grid) {}
+      __forceinline QuadList (const Grid& grid) 
+	: grid(grid) {}
 
       __forceinline const BBox3fa init (size_t x0, size_t x1, size_t y0, size_t y1) 
       {
@@ -413,8 +423,10 @@ namespace embree
             assert(i < 16);
 	    const bool right = x+1 == x1;
 	    const bool bottom = y+1 == y1;
+	    const size_t kx0 = x, kx1 = min(x+2,x1);
+	    const size_t ky0 = y, ky1 = min(y+2,y1);
 	    new (&quads[i]) Quads(2*bottom+right,y*grid.width+x);
-	    const BBox3fa b = getBounds(x,min(x+2,x1),y,min(y+2,y1));
+	    const BBox3fa b = getBounds(kx0,kx1,ky0,ky1);
 	    box_list[i++] = b;
 	    box.extend(b);
 	  }
@@ -427,6 +439,15 @@ namespace embree
 	return box;
       }
 
+      friend std::ostream& operator<<(std::ostream& cout, const QuadList& a) {
+	cout << "{ " << std::endl;
+	//cout << "  bounds = " << a.bounds << std::endl;
+	for (size_t i=0; i<16; i++) cout << "  quads[" << i << "] = " << a.quads[i] << ", " << std::endl;
+	cout << "  grid = " << &a.grid << std::endl;
+	"}";
+	return cout;
+      }
+
       Bounds16 bounds;
       Quads quads[16];
       const Grid& grid;
@@ -434,22 +455,34 @@ namespace embree
 
   public:
     
-    __forceinline Grid(unsigned geomID, unsigned primID)
-      : width(0), height(0), geomID(geomID), primID(primID), p(NULL), uv(NULL) {}
+    __forceinline Grid(unsigned width, unsigned height, unsigned geomID, unsigned primID)
+      : width(width), height(height), geomID(geomID), primID(primID) 
+      {
+	assert(width <= 17);
+	assert(height <= 17);
+      }
+
+    static __forceinline Grid* create(FastAllocator::Thread& alloc, const size_t width, const size_t height, const unsigned geomID, const unsigned primID) {
+      return new (alloc.malloc(sizeof(Grid)+width*height*sizeof(Vec3fa))) Grid(width,height,geomID,primID);
+    }
     
     __forceinline       Vec3fa& point(const size_t x, const size_t y)       { assert(y*width+x < width*height); return p[y*width+x]; }
     __forceinline const Vec3fa& point(const size_t x, const size_t y) const { assert(y*width+x < width*height); return p[y*width+x]; }
-    __forceinline       Vec2f&  uvs  (const size_t x, const size_t y)       { assert(y*width+x < width*height); return uv[y*width+x]; }
-    __forceinline const Vec2f&  uvs  (const size_t x, const size_t y) const { assert(y*width+x < width*height); return uv[y*width+x]; }
 
-    static size_t getNumQuadLists(size_t width, size_t height) {
+    static size_t getNumEagerLeaves(size_t width, size_t height) {
       const size_t w = (((width +1)/2)+3)/4;
       const size_t h = (((height+1)/2)+3)/4;
       return w*h;
     }
+
+    static size_t getNumLazyLeaves(size_t width, size_t height) {
+      const size_t w = (width +15)/16;
+      const size_t h = (height+15)/16;
+      return w*h;
+    }
     
     template<typename Patch>
-    void displace(Scene* scene, const Patch& patch, const Vec2f* luv)
+    __forceinline void displace(Scene* scene, const Patch& patch, const Vec2f* luv, const Vec2f* uv)
     {
       SubdivMesh* mesh = (SubdivMesh*) scene->get(geomID);
       if (mesh->displFunc == NULL) return;
@@ -496,6 +529,68 @@ namespace embree
     }
 
     template<typename Patch>
+    __forceinline size_t build(Scene* scene, const Patch& patch,
+			       FastAllocator::Thread& alloc, PrimRef* prims,
+			       const size_t x0, const size_t x1,
+			       const size_t y0, const size_t y1,
+			       const Vec2f& uv0, const Vec2f& uv1, const Vec2f& uv2, const Vec2f& uv3,
+			       const DiscreteTessellationPattern& pattern0, 
+			       const DiscreteTessellationPattern& pattern1, 
+			       const DiscreteTessellationPattern& pattern2, 
+			       const DiscreteTessellationPattern& pattern3, 
+			       const DiscreteTessellationPattern& pattern_x,
+			       const DiscreteTessellationPattern& pattern_y)
+    {
+      
+      Vec2f luv[17*17];
+      Vec2f uv[17*17];
+
+      for (int y=0; y<height; y++) {
+        const float fy = pattern_y(y0+y);
+        for (int x=0; x<width; x++) {
+          const float fx = pattern_x(x0+x);
+	  assert(y*width+x < width*height);
+          luv[y*width+x] = Vec2f(fx,fy);
+        }
+      }
+
+      /* evaluate position and uvs */
+      BBox3fa bounds = empty;
+      for (int y=0; y<height; y++) 
+      {
+        for (int x=0; x<width; x++) 
+	{
+	  const Vec2f& uv = luv[y*width+x];
+	  const Vec2f uv01 = (1.0f-uv.x) * uv0  + uv.x * uv1;
+	  const Vec2f uv32 = (1.0f-uv.x) * uv3  + uv.x * uv2;
+	  const Vec2f uvxy = (1.0f-uv.y) * uv01 + uv.y * uv32;
+	  const int iu = clamp(uvxy.x * 0xFFFF, 0.0f, float(0xFFFF));
+	  const int iv = clamp(uvxy.y * 0xFFFF, 0.0f, float(0xFFFF));
+	  Vec3fa p = patch.eval(luv[y*width+x].x,luv[y*width+x].y);
+	  p.a = (iv << 16) | iu;
+          point(x,y) = p;
+	  bounds.extend(p);
+        }
+      }
+
+      /* displace points */
+      displace(scene,patch,luv,uv);
+
+      /* create lists of quads */
+      size_t i=0;
+      for (size_t y=y0; y<y1; y+=8) {
+	for (size_t x=x0; x<x1; x+=8) {
+	  const size_t rx0 = x-x0, rx1 = min(x+8,x1)-x0;
+	  const size_t ry0 = y-y0, ry1 = min(y+8,y1)-y0;
+	  QuadList* leaf = new (alloc.malloc(sizeof(QuadList))) QuadList(*this);
+	  const BBox3fa bounds = leaf->init(rx0,rx1,ry0,ry1);
+	  prims[i++] = PrimRef(bounds,BVH4::encodeTypedLeaf(leaf,0));
+	}
+      }
+      return i;
+    }
+    
+    template<typename Patch>
     static size_t create(unsigned geomID, unsigned primID, 
                          Scene* scene, const Patch& patch,
                          FastAllocator::Thread& alloc, PrimRef* prims,
@@ -509,77 +604,33 @@ namespace embree
                          const DiscreteTessellationPattern& pattern_x,
                          const DiscreteTessellationPattern& pattern_y)
     {
-      Grid* leaf = new (alloc.malloc(sizeof(Grid),16)) Grid(geomID,primID);
-      return leaf->build(scene,patch,alloc,prims,x0,x1,y0,y1,uv0,uv1,uv2,uv3,pattern0,pattern1,pattern2,pattern3,pattern_x,pattern_y);
-    }
-
-    template<typename Patch>
-    size_t build(Scene* scene, const Patch& patch,
-                 FastAllocator::Thread& alloc, PrimRef* prims,
-	       const size_t x0, const size_t x1,
-	       const size_t y0, const size_t y1,
-	       const Vec2f& uv0, const Vec2f& uv1, const Vec2f& uv2, const Vec2f& uv3,
-	       const DiscreteTessellationPattern& pattern0, 
-	       const DiscreteTessellationPattern& pattern1, 
-	       const DiscreteTessellationPattern& pattern2, 
-	       const DiscreteTessellationPattern& pattern3, 
-	       const DiscreteTessellationPattern& pattern_x,
-	       const DiscreteTessellationPattern& pattern_y)
-    {
-      width  = x1-x0+1; assert(width <= 17);
-      height = y1-y0+1; assert(height <= 17);
-      p = (Vec3fa*) alloc.malloc(width*height*sizeof(Vec3fa));
-      uv = (Vec2f*) alloc.malloc(width*height*sizeof(Vec2f));
-      Vec2f luv[17*17]; //= (Vec2f*) alloca(width*height*sizeof(Vec2f));
-
-      for (int y=0; y<height; y++) {
-        const float fy = pattern_y(y0+y);
-        for (int x=0; x<width; x++) {
-          const float fx = pattern_x(x0+x);
-          luv[y*width+x] = Vec2f(fx,fy);
-        }
-      }
-
-      /* evaluate position and uvs */
-      BBox3fa bounds = empty;
-      for (int y=0; y<height; y++) 
+      size_t N = 0;
+      for (size_t y=y0; y<y1; y+=16)
       {
-        for (int x=0; x<width; x++) 
+	for (size_t x=x0; x<x1; x+=16) 
 	{
-	  const Vec3fa p = patch.eval(luv[y*width+x].x,luv[y*width+x].y);
-          point(x,y) = p;
-	  bounds.extend(p);
-
-	  const Vec2f& uv = luv[y*width+x];
-	  const Vec2f uv01 = (1.0f-uv.x) * uv0  + uv.x * uv1;
-	  const Vec2f uv32 = (1.0f-uv.x) * uv3  + uv.x * uv2;
-	  const Vec2f uvxy = (1.0f-uv.y) * uv01 + uv.y * uv32;
-          uvs(x,y) = uvxy;
-        }
-      }
-
-      /* displace points */
-      displace(scene,patch,luv);
-
-      /* create lists of quads */
-      size_t i=0;
-      for (size_t y=y0; y<y1; y+=8) {
-	for (size_t x=x0; x<x1; x+=8) {
-	  QuadList* leaf = new (alloc.malloc(sizeof(QuadList))) QuadList(*this);
-	  const BBox3fa bounds = leaf->init(x,min(x+8,x1),y,min(y+8,y1));
-	  prims[i++] = PrimRef(bounds,BVH4::encodeTypedLeaf(leaf,0));
+	  const size_t lx0 = x, lx1 = min(lx0+16,x1);
+	  const size_t ly0 = y, ly1 = min(ly0+16,y1);
+	  const float sx1 = float(lx0-x0)/float(x1-x0), sx0 = 1.0f-sx1;
+	  const float sy1 = float(ly0-y0)/float(y1-y0), sy0 = 1.0f-sy1;
+	  const Vec2f luv0 = sy0*(sx0*uv0+sx1*uv1) + sy1*(sx0*uv3+sx1*uv2);
+	  const Vec2f luv1 = sy0*(sx1*uv0+sx0*uv1) + sy1*(sx1*uv3+sx0*uv2);
+	  const Vec2f luv2 = sy1*(sx1*uv0+sx0*uv1) + sy0*(sx1*uv3+sx0*uv2);
+	  const Vec2f luv3 = sy1*(sx0*uv0+sx1*uv1) + sy0*(sx0*uv3+sx1*uv2);
+	  Grid* leaf = Grid::create(alloc,lx1-lx0+1,ly1-ly0+1,geomID,primID);
+	  size_t n = leaf->build(scene,patch,alloc,prims,lx0,lx1,ly0,ly1,luv0,luv1,luv2,luv3,pattern0,pattern1,pattern2,pattern3,pattern_x,pattern_y);
+	  prims += n;
+	  N += n;
 	}
       }
-      return i;
+      return N;
     }
-    
+
   public:
     unsigned width;
     unsigned height;
     unsigned primID;
     unsigned geomID;
-    Vec3fa* p;
-    Vec2f*  uv;
+    Vec3fa p[];
   };
-
 }

@@ -25,6 +25,9 @@ const int numTheta = 2*numPhi;
 
 //extern unsigned int g_subdivision_levels;
 
+#define MAX_EDGE_LEVEL 16.0f
+#define MIN_EDGE_LEVEL 2.0f
+
 /* error reporting function */
 void error_handler(const RTCError code, const char* str)
 {
@@ -171,13 +174,44 @@ unsigned int createSphere (RTCGeometryFlags flags, const Vec3fa& pos, const floa
 
 extern float g_debug;
 
-#define MAX_EDGE_LEVEL 16.0f
-#define MIN_EDGE_LEVEL 2.0f
 
 void updateScene(RTCScene scene, const Vec3fa& cam_pos)
 {
   if (!g_ispc_scene) return;
   if (g_debug != 0.0f) return;
+
+  for (size_t j=0; j<g_ispc_scene->numMeshes; j++)
+  {
+    ISPCMesh* mesh = g_ispc_scene->meshes[j];
+    if (mesh->numQuads == 0) continue;
+
+    unsigned int geomID = mesh->geomID;
+    float* level = (float*) rtcMapBuffer(scene, geomID, RTC_LEVEL_BUFFER);
+    for (size_t i=0; i<mesh->numQuads; i++) {
+      unsigned int *quad_vtx = (unsigned int*)&mesh->quads[i];
+ 
+      for (size_t k=0; k<4; k++) {
+        const Vec3fa v0 = mesh->positions[quad_vtx[(k+0)%4]];
+        const Vec3fa v1 = mesh->positions[quad_vtx[(k+1)%4]];
+        const Vec3fa edge = v1-v0;
+        const Vec3fa P = 0.5f*(v1+v0);
+	const Vec3fa dist = cam_pos - P;
+
+        //mesh->subdivlevel[e+i] = float(g_subdivision_levels)/16.0f;
+        //mesh->subdivlevel[e+i] = 200.0f*atan(0.5f*length(edge)/length(cam_pos-P));
+	//mesh->subdivlevel[e+i] = 60.0f*atan(0.5f*length(edge)/length(Vec3fa(2.86598f, -0.784929f, -0.0090338f)-P));
+        level[i*4+k] = max(min(64.0f*(0.5f*length(edge)/length(dist)),MAX_EDGE_LEVEL),MIN_EDGE_LEVEL);
+	//mesh->subdivlevel[e+i] = 23;
+
+        //srand48(length(edge)/length(cam_pos-P)*12343.0f); mesh->subdivlevel[e+i] = 10.0f*drand48();
+      }
+ 
+      //mesh->position
+      //level[i] = 4; // 16
+    }
+    rtcUnmapBuffer(scene,geomID, RTC_LEVEL_BUFFER);
+    rtcUpdate(scene,geomID);
+  }
 
   for (size_t g=0; g<g_ispc_scene->numSubdivMeshes; g++)
   {
@@ -196,6 +230,7 @@ void updateScene(RTCScene scene, const Vec3fa& cam_pos)
         //mesh->subdivlevel[e+i] = 200.0f*atan(0.5f*length(edge)/length(cam_pos-P));
 	//mesh->subdivlevel[e+i] = 60.0f*atan(0.5f*length(edge)/length(Vec3fa(2.86598f, -0.784929f, -0.0090338f)-P));
         mesh->subdivlevel[e+i] = max(min(64.0f*(0.5f*length(edge)/length(dist)),MAX_EDGE_LEVEL),MIN_EDGE_LEVEL);
+	//mesh->subdivlevel[e+i] = 23;
 
         //srand48(length(edge)/length(cam_pos-P)*12343.0f); mesh->subdivlevel[e+i] = 10.0f*drand48();
       }
@@ -237,12 +272,14 @@ RTCScene constructScene(const Vec3fa& cam_pos)
     //delete face_buffer; // FIXME: never deleted
 
     float* level = (float*) rtcMapBuffer(scene, subdivMeshID, RTC_LEVEL_BUFFER);
-    for (size_t i=0; i<4*mesh->numQuads; i++) level[i] = 5; // 16
+    for (size_t i=0; i<4*mesh->numQuads; i++) level[i] = 4; // 16
+    //for (size_t i=0; i<4*mesh->numQuads; i++) level[i] = 32;
     rtcUnmapBuffer(scene,subdivMeshID, RTC_LEVEL_BUFFER);
 
     //BBox3fa bounds(Vec3fa(-0.1f,-0.1f,-0.1f),Vec3fa(0.1f,0.1f,0.1f));
     //rtcSetDisplacementFunction(scene, subdivMeshID, (RTCDisplacementFunc)DisplacementFunc,(RTCBounds*)&bounds);
     //rtcSetDisplacementFunction(scene, subdivMeshID, (RTCDisplacementFunc)DisplacementFunc,NULL);
+    mesh->geomID = subdivMeshID;
   }       
   
   for (size_t i=0; i<g_ispc_scene->numSubdivMeshes; i++)

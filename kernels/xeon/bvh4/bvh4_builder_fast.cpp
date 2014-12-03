@@ -120,7 +120,7 @@ namespace embree
     : BVH4BuilderFastT<PrimRef>(bvh,scene,listMode,0,0,false,sizeof(QuadQuad4x4),1,1,true) { this->bvh->alloc2.init(4096,4096); }
 
     BVH4SubdivGridBuilderFast::BVH4SubdivGridBuilderFast (BVH4* bvh, Scene* scene, size_t listMode) 
-    : BVH4BuilderFastT<PrimRef>(bvh,scene,listMode,0,0,false,sizeof(Grid),1,1,true) { this->bvh->alloc2.init(4096,4096); }
+      : BVH4BuilderFastT<PrimRef>(bvh,scene,listMode,0,0,false,sizeof(Grid),1,1,true) { this->bvh->alloc2.init(4096,4096); } 
 
 
     BVH4SubdivPatch1CachedBuilderFast::BVH4SubdivPatch1CachedBuilderFast (BVH4* bvh, Scene* scene, size_t listMode) 
@@ -457,7 +457,7 @@ namespace embree
 	    const TessellationPattern pattern3(l3,subdiv[3]);
 	    const TessellationPattern pattern_x = pattern0.size() > pattern2.size() ? pattern0 : pattern2;
 	    const TessellationPattern pattern_y = pattern1.size() > pattern3.size() ? pattern1 : pattern3;
-	    s += Grid::getNumQuadLists(pattern_x.size(),pattern_y.size());
+	    s += Grid::getNumEagerLeaves(pattern_x.size(),pattern_y.size());
 	  });
 	}
         return PrimInfo(s,empty,empty);
@@ -508,7 +508,7 @@ namespace embree
 	    const int nx = pattern_x.size();
 	    const int ny = pattern_y.size();
             size_t N = Grid::create(mesh->id,f,scene,patcheval,alloc,&prims[base.size()+s.size()],0,nx,0,ny,uv[0],uv[1],uv[2],uv[3],pattern0,pattern1,pattern2,pattern3,pattern_x,pattern_y);
-	    assert(N == Grid::getNumQuadLists(nx,ny));
+	    assert(N == Grid::getNumEagerLeaves(nx,ny));
 	    for (size_t i=0; i<N; i++)
 	      s.add(prims[base.size()+s.size()].bounds());
 	  });
@@ -582,11 +582,10 @@ namespace embree
           if (!mesh->valid(f)) continue;
 	  
           const unsigned int patchIndex = base.size()+s.size();
-          const SubdivPatch1Cached patch = SubdivPatch1Cached(mesh->getHalfEdge(f), mesh->getVertexPositionPtr(), mesh->id, f, mesh);
-          subdiv_patches[patchIndex] = patch; /* FIXME: use storent to write out subdivpatch data to memory */
+          subdiv_patches[patchIndex] = SubdivPatch1Cached(mesh->getHalfEdge(f), mesh->getVertexPositionPtr(), mesh->id, f, mesh);
 
           /* compute patch bounds */
-          const BBox3fa bounds = patch.bounds(mesh);
+          const BBox3fa bounds = subdiv_patches[patchIndex].bounds(mesh);
 	  prims[base.size()+s.size()] = PrimRef(bounds,patchIndex);
 	  s.add(bounds);
         }

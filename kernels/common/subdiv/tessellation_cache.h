@@ -17,7 +17,6 @@
 #pragma once
 
 #include "xeon/bvh4/bvh4.h"
-#include <bitset>
 
 namespace embree
 {
@@ -69,7 +68,7 @@ namespace embree
         commit_tag        = commitCounter;
       }
 
-      __forceinline BVH4::NodeRef getSubTreeRoot() 
+      __forceinline BVH4::NodeRef &getSubTreeRoot() 
       {
         return bvh4_subtree_root;
       }
@@ -191,7 +190,7 @@ namespace embree
     }
 
     /* insert entry using 'neededBlocks' cachelines into cache */
-    __forceinline BVH4::NodeRef insert(void *primID, const unsigned int commitCounter, const size_t neededBlocks)
+    __forceinline BVH4::NodeRef &insert(void *primID, const unsigned int commitCounter, const size_t neededBlocks)
     {
       const unsigned int index = addrToCacheIndex(primID);
       assert(!tags[index].match(primID,commitCounter));
@@ -200,7 +199,7 @@ namespace embree
 #if DEBUG
           //if (tags[index].prim_tag != NULL) cache_evictions++;
 #endif
-
+          tags[index].getSubTreeRoot().clearFlags();
           tags[index].set(primID,commitCounter);
           return tags[index].getSubTreeRoot();
         }
@@ -239,7 +238,8 @@ namespace embree
 
       /* insert new entry at the beginning */
       tags[index].set(primID,commitCounter,curNode,neededBlocks);
-      return curNode;     
+      assert( tags[index].getSubTreeRoot().isNode() );
+      return tags[index].getSubTreeRoot();     
 
     }
 

@@ -26,7 +26,6 @@
 namespace embree
 {
 
-#define FORCE_TRIANGLE_UV 0
 #define COMPUTE_SUBDIV_NORMALS_AFTER_PATCH_INTERSECTION 0
 
 #define TIMER(x) 
@@ -57,7 +56,7 @@ namespace embree
                       grid_u,
                       grid_v);
 
-    if (unlikely(patch.needsStiching()))
+    //if (unlikely(patch.needsStiching()))
       stichUVGrid(patch.level,patch.grid_u_res,patch.grid_v_res,grid_u,grid_v);
 
 
@@ -67,8 +66,7 @@ namespace embree
         const avxf vv = load8f(&grid_v[8*i]);
         const avx3f vtx = patch.eval8(uu,vv);
 
-        if (unlikely(geom != NULL))
-          if (unlikely(((SubdivMesh*)geom)->displFunc != NULL))
+        if (unlikely(((SubdivMesh*)geom)->displFunc != NULL))
             {
               avx3f normal = patch.normal8(uu,vv);
               normal = normalize(normal);
@@ -109,25 +107,25 @@ namespace embree
 			  const float *const grid_z_array,
 			  const float *const grid_u_array,
 			  const float *const grid_v_array,
-			  const unsigned int u_start,
-			  const unsigned int u_end,
-			  const unsigned int v_start,
-			  const unsigned int v_end,
+                          const GridRange &range,
 			  unsigned int &localCounter,
 			  const SubdivMesh* const geom)
     {
-      const unsigned int u_size = u_end-u_start+1;
-      const unsigned int v_size = v_end-v_start+1;
-      
-      assert(u_size >= 1);
-      assert(v_size >= 1);
-
-      if (u_size <= 3 && v_size <= 3)
+      if (range.hasLeafSize())
 	{
-          DBG_PRINT(u_size);
-          DBG_PRINT(v_size);
-          leaves++;
-          DBG_PRINT(leaves);
+          const unsigned int u_start = range.u_start;
+          const unsigned int u_end   = range.u_end;
+          const unsigned int v_start = range.v_start;
+          const unsigned int v_end   = range.v_end;
+
+          const unsigned int u_size = u_end-u_start+1;
+          const unsigned int v_size = v_end-v_start+1;
+
+          assert(u_size >= 1);
+          assert(v_size >= 1);
+
+          // DBG_PRINT(u_size);
+          // DBG_PRINT(v_size);
 
 	  assert(u_size*v_size <= 9);
 
@@ -210,6 +208,7 @@ namespace embree
 	  return bounds;
 	}
 
+     
       /* allocate new bvh4 node */
       const size_t currentIndex = localCounter;
       /* 128 bytes == 2 x 64 bytes cachelines */
@@ -221,23 +220,45 @@ namespace embree
 
       node->clear();
 
+      GridRange r[4];
 
-      // FIXME: just use largest dimension to split in two
+      unsigned int children = 1;
+      r[0] = range;
+      while(children < 4)
+        {
+          // PING;
+          // DBG_PRINT(children);
+          // for (size_t i=0;i<children;i++)
+          //   DBG_PRINT(r[i]);
+          
+          // DBG_PRINT("extend search");
+          ssize_t index = -1;
+          ssize_t extend = 0;
+          for (size_t i=0;i<children;i++)
+            if (!r[i].hasLeafSize())
+              if (r[i].largestExtend() > extend)
+                {
+                  extend = r[i].largestExtend();
+                  index = i;
+                }
+          // DBG_PRINT(extend);
+          // DBG_PRINT(index);
+          if (index == -1) break;
+          // DBG_PRINT(r[index]);
 
-      const unsigned int u_mid = (u_start+u_end)/2;
-      const unsigned int v_mid = (v_start+v_end)/2;
+          GridRange tmp = r[index];
+          tmp.split(r[index],r[children]);
+          // DBG_PRINT( r[index] );
+          // DBG_PRINT( r[children] );
 
-      const unsigned int subtree_u_start[4] = { u_start ,u_mid ,u_mid ,u_start };
-      const unsigned int subtree_u_end  [4] = { u_mid   ,u_end ,u_end ,u_mid };
-
-      const unsigned int subtree_v_start[4] = { v_start ,v_start ,v_mid ,v_mid};
-      const unsigned int subtree_v_end  [4] = { v_mid   ,v_mid   ,v_end ,v_end };
-
+          children++;          
+        }
+      //DBG_PRINT( children );
 
       /* create four subtrees */
       BBox3fa bounds( empty );
 
-      for (unsigned int i=0;i<4;i++)
+      for (unsigned int i=0;i<children;i++)
 	{
 	  BBox3fa bounds_subtree = createSubTree( node->child(i), 
 						  lazymem, 
@@ -247,10 +268,7 @@ namespace embree
 						  grid_z_array,
 						  grid_u_array,
 						  grid_v_array,
-						  subtree_u_start[i], 
-						  subtree_u_end[i],
-						  subtree_v_start[i],
-						  subtree_v_end[i],						  
+						  r[i],						  
 						  localCounter,
 						  geom);
 	  node->set(i, bounds_subtree);
@@ -279,11 +297,8 @@ namespace embree
 
       evalGrid(patch,grid_x,grid_y,grid_z,grid_u,grid_v,geom);
 
-      BVH4::NodeRef subtree_root = BVH4::encodeNode( (BVH4::Node*)lazymem );
+      BVH4::NodeRef subtree_root = BVH4::encodeNode( (BVH4::Node*)lazymem);
       unsigned int currentIndex = 0;
-
-      DBG_PRINT(patch.grid_u_res);
-      DBG_PRINT(patch.grid_v_res);
 
       BBox3fa bounds = createSubTree( subtree_root,
 				      (float*)lazymem,
@@ -293,13 +308,13 @@ namespace embree
 				      grid_z,
 				      grid_u,
 				      grid_v,
-				      0,
-				      patch.grid_u_res-1,
-				      0,
-				      patch.grid_v_res-1,
+                                      GridRange(0,patch.grid_u_res-1,0,patch.grid_v_res-1),
 				      currentIndex,
 				      geom);
 
+      // DBG_PRINT( patch.grid_u_res );
+      // DBG_PRINT( patch.grid_v_res );
+      // exit(0);
       assert(currentIndex == patch.grid_subtree_size_64b_blocks);
       TIMER(msec = getSeconds()-msec);    
 
@@ -464,15 +479,20 @@ namespace embree
 
     BVH4::NodeRef root = local_cache->lookup(tag,commitCounter);
 
+
     if (unlikely(root == BVH4::invalidNode))
       {
         const unsigned int blocks = subdiv_patch->grid_subtree_size_64b_blocks;
-        root = local_cache->insert(tag,commitCounter,blocks);
-        BVH4::Node* node = root.node();
+        BVH4::NodeRef &new_root = local_cache->insert(tag,commitCounter,blocks);
 
-        initLocalLazySubdivTree(*subdiv_patch,root.node(),((Scene*)geom)->getSubdivMesh(subdiv_patch->geom));
-        assert( root != BVH4::invalidNode);
+        assert( new_root.isNode() );
+
+        BVH4::Node* node = new_root.node(); // pointer to mem
+
+        new_root = initLocalLazySubdivTree(*subdiv_patch,node,((Scene*)geom)->getSubdivMesh(subdiv_patch->geom));
+        assert( new_root != BVH4::invalidNode);
         //local_cache->printStats();
+        return new_root;
       }
     return root;   
 #endif    

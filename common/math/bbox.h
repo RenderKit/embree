@@ -59,6 +59,9 @@ namespace embree
     /*! computes the size of the box */
     __forceinline T size() const { return upper - lower; }
 
+    /*! computes the center of the box */
+    __forceinline T center() const { return 0.5f*(lower+upper); }
+
     ////////////////////////////////////////////////////////////////////////////////
     /// Constants
     ////////////////////////////////////////////////////////////////////////////////
