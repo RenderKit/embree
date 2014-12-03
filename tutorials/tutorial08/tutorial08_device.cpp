@@ -239,6 +239,7 @@ RTCScene constructScene(const Vec3fa& cam_pos)
 
     float* level = (float*) rtcMapBuffer(scene, subdivMeshID, RTC_LEVEL_BUFFER);
     for (size_t i=0; i<4*mesh->numQuads; i++) level[i] = 4; // 16
+    //for (size_t i=0; i<4*mesh->numQuads; i++) level[i] = 32;
     rtcUnmapBuffer(scene,subdivMeshID, RTC_LEVEL_BUFFER);
 
     //BBox3fa bounds(Vec3fa(-0.1f,-0.1f,-0.1f),Vec3fa(0.1f,0.1f,0.1f));
