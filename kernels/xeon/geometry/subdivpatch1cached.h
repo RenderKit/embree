@@ -92,6 +92,31 @@ namespace embree
         }
       return true;
     }
+
+    unsigned int splitIntoSubRanges(GridRange r[4]) const
+    {
+      unsigned int children = 1;
+      r[0] = *this;
+      while(children < 4)
+        {
+          ssize_t index = -1;
+          ssize_t extend = 0;
+          for (size_t i=0;i<children;i++)
+            if (!r[i].hasLeafSize())
+              if (r[i].largestExtend() > extend)
+                {
+                  extend = r[i].largestExtend();
+                  index = i;
+                }
+          if (index == -1) break;
+
+          GridRange tmp = r[index];
+          tmp.split(r[index],r[children]);
+          children++;          
+        }
+      return children;
+    }
+
   };
 
   inline std::ostream& operator<<(std::ostream& cout, const GridRange& r) {
@@ -310,25 +335,7 @@ namespace embree
 
       GridRange r[4];
 
-      unsigned int children = 1;
-      r[0] = range;
-      while(children < 4)
-        {
-          ssize_t index = -1;
-          ssize_t extend = 0;
-          for (size_t i=0;i<children;i++)
-            if (!r[i].hasLeafSize())
-              if (r[i].largestExtend() > extend)
-                {
-                  extend = r[i].largestExtend();
-                  index = i;
-                }
-          if (index == -1) break;
-
-          GridRange tmp = r[index];
-          tmp.split(r[index],r[children]);
-          children++;          
-        }
+      const unsigned int children = range.splitIntoSubRanges(r);
 
       size_t blocks = 2; /* 128 bytes bvh4 node layout */
 

@@ -237,6 +237,64 @@ namespace embree
     hitPtr = (size_t)qquad.backPtr;
       
   };
+
+
+  /* intersect ray with Quad2x2 structure => 1 ray vs. 8 triangles */
+  static __forceinline bool occluded1_tri8_precise(Ray& ray,
+                                                   const Quad2x2 &qquad,
+                                                   const void* geom)
+  {
+    const avx3f v0_org = qquad.getVtx( 0 );
+    const avx3f v1_org = qquad.getVtx( 1 );
+    const avx3f v2_org = qquad.getVtx( 2 );
+
+    const avx3f O = ray.org;
+    const avx3f D = ray.dir;
+
+    const avx3f v0 = v0_org - O;
+    const avx3f v1 = v1_org - O;
+    const avx3f v2 = v2_org - O;
+   
+    const avx3f e0 = v2 - v0;
+    const avx3f e1 = v0 - v1;	     
+    const avx3f e2 = v1 - v2;	     
+
+    /* calculate geometry normal and denominator */
+    const avx3f Ng1 = cross(e1,e0);
+    const avx3f Ng = Ng1+Ng1;
+    const avxf den = dot(Ng,D);
+    const avxf absDen = abs(den);
+    const avxf sgnDen = signmsk(den);
+      
+    avxb valid ( true );
+    /* perform edge tests */
+    const avxf U = dot(avx3f(cross(v2+v0,e0)),D) ^ sgnDen;
+    valid &= U >= 0.0f;
+    if (likely(none(valid))) return false;
+    const avxf V = dot(avx3f(cross(v0+v1,e1)),D) ^ sgnDen;
+    valid &= V >= 0.0f;
+    if (likely(none(valid))) return false;
+    const avxf W = dot(avx3f(cross(v1+v2,e2)),D) ^ sgnDen;
+    valid &= W >= 0.0f;
+    if (likely(none(valid))) return false;
+      
+    /* perform depth test */
+    const avxf T = dot(v0,Ng) ^ sgnDen;
+    valid &= (T >= absDen*ray.tnear) & (absDen*ray.tfar >= T);
+    if (unlikely(none(valid))) return false;
+      
+    /* perform backface culling */
+#if defined(RTCORE_BACKFACE_CULLING)
+    valid &= den > avxf(zero);
+    if (unlikely(none(valid))) return false;
+#else
+    valid &= den != avxf(zero);
+    if (unlikely(none(valid))) return false;
+#endif
+            
+    return true;
+  };
+
 #endif
 
   struct SubdivPatch1CachedIntersector1
@@ -253,33 +311,6 @@ namespace embree
       }
     };
 
-    static __forceinline bool intersectBounds(const Precalculations& pre,
-					      const Ray& ray,
-					      const BBox3fa &bounds)
-    {
-      Vec3fa b_lower = bounds.lower * pre.ray_rdir - pre.ray_org_rdir;
-      Vec3fa b_upper = bounds.upper * pre.ray_rdir - pre.ray_org_rdir;
-      Vec3fa b_min = min(b_lower,b_upper);
-      Vec3fa b_max = max(b_lower,b_upper);
-      const float tnear = max(b_min.x,b_min.y,b_min.z,ray.tnear);
-      const float tfar = min(b_max.x,b_max.y,b_max.z,ray.tfar);
-      return tnear <= tfar;
-    }
-
-
-    static void intersect_subdiv_patch(const Precalculations& pre,
-                                       Ray& ray,
-                                       const Primitive& subdiv_patch,
-                                       size_t ty,
-                                       const void* geom,
-                                       size_t& lazy_node);
-
-    static bool occluded_subdiv_patch(const Precalculations& pre,
-                                      Ray& ray,
-                                      const Primitive& subdiv_patch,
-                                      size_t ty,
-                                      const void* geom,
-                                      size_t& lazy_node);
 
     static size_t getSubtreeRootNode(const Primitive* const subdiv_patch, const void* geom);
 
@@ -312,25 +343,22 @@ namespace embree
 
     }
 
-   static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Primitive& prim, const void* geom, size_t& lazy_node)
-    {
-      FATAL("not implemented");
-    }
-
     /*! Test if the ray is occluded by the primitive */
     static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Primitive* prim, size_t ty, const void* geom, size_t& lazy_node) 
     {
       STAT3(shadow.trav_prims,1,1,1);
 
-      return occluded_subdiv_patch(pre,ray,*prim,ty,geom,lazy_node);
-    }
+#if defined(__AVX__)
+      if (likely(ty == 2))
+        return occluded1_tri8_precise( ray, *(Quad2x2*)prim, (SubdivMesh*)geom);
+      else 
+        lazy_node = getSubtreeRootNode(prim, geom);        
+      
+#endif
 
-    static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Primitive& prim, const void* geom, size_t& lazy_node)
-    {
-      FATAL("not implemented");
-      STAT3(shadow.trav_prims,1,1,1);
       return false;
     }
 
+
   };
-    }
+}
