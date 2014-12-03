@@ -19,6 +19,7 @@
 #include "subdivpatch1cached.h"
 #include "common/ray.h"
 #include "geometry/filter.h"
+#include "bvh4/bvh4.h"
 
 
 #define COMPUTE_SUBDIV_NORMALS_AFTER_PATCH_INTERSECTION 0
@@ -303,9 +304,9 @@ namespace embree
 #endif
 
         }
-      else
-        lazy_node = getSubtreeRootNode(prim, geom);
-        //intersect_subdiv_patch(pre,ray,*prim,ty,geom,lazy_node);
+      else {
+        lazy_node = getSubtreeRootNode(prim, geom);        
+      }
 #endif
 
     }

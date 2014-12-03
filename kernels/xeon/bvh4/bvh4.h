@@ -190,6 +190,11 @@ namespace embree
         return (char*)(ptr & ~(size_t)align_mask);
       }
 
+      /*! clear all bit flags */
+      __forceinline void clearFlags() {
+        ptr &= ~(size_t)align_mask;
+      }
+
     private:
       size_t ptr;
     };
