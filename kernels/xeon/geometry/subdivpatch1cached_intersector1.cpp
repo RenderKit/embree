@@ -38,7 +38,7 @@ namespace embree
 
 #if defined(__AVX__)
 
-  __forceinline void evalGrid(const SubdivPatch1Cached &patch,
+  __noinline void evalGrid(const SubdivPatch1Cached &patch,
                               float *__restrict__ const grid_x,
                               float *__restrict__ const grid_y,
                               float *__restrict__ const grid_z,
@@ -52,8 +52,8 @@ namespace embree
                       grid_u,
                       grid_v);
 
-    //if (unlikely(patch.needsStiching()))
-    stichUVGrid(patch.level,patch.grid_u_res,patch.grid_v_res,grid_u,grid_v);
+    if (unlikely(patch.needsStiching()))
+      stichUVGrid(patch.level,patch.grid_u_res,patch.grid_v_res,grid_u,grid_v);
 
 
     for (size_t i=0;i<patch.grid_size_8wide_blocks;i++)
@@ -206,6 +206,7 @@ namespace embree
      
     /* allocate new bvh4 node */
     const size_t currentIndex = localCounter;
+
     /* 128 bytes == 2 x 64 bytes cachelines */
     localCounter += 2; 
 
@@ -243,9 +244,9 @@ namespace embree
   }
 
 
-  BVH4::NodeRef initLocalLazySubdivTree(const SubdivPatch1Cached &patch,
-                                        void *const lazymem,
-                                        const SubdivMesh* const geom)
+  __noinline BVH4::NodeRef buildSubdivPatchTree(const SubdivPatch1Cached &patch,
+                                                void *const lazymem,
+                                                const SubdivMesh* const geom)
   {
 
     TIMER(double msec = 0.0);
@@ -334,7 +335,7 @@ namespace embree
 
         BVH4::Node* node = new_root.node(); // pointer to mem
 
-        new_root = initLocalLazySubdivTree(*subdiv_patch,node,((Scene*)geom)->getSubdivMesh(subdiv_patch->geom));
+        new_root = buildSubdivPatchTree(*subdiv_patch,node,((Scene*)geom)->getSubdivMesh(subdiv_patch->geom));
         assert( new_root != BVH4::invalidNode);
         //local_cache->printStats();
         return new_root;
