@@ -111,8 +111,6 @@ namespace embree
 			  unsigned int &localCounter,
 			  const SubdivMesh* const geom)
     {
-      DBG_PRINT(range);
-
       if (range.hasLeafSize())
 	{
           const unsigned int u_start = range.u_start;
@@ -126,7 +124,6 @@ namespace embree
           assert(u_size >= 1);
           assert(v_size >= 1);
 
-          DBG_PRINT("leaf");
           // DBG_PRINT(u_size);
           // DBG_PRINT(v_size);
 
@@ -188,7 +185,7 @@ namespace embree
                        6,
                        &patch);
 
-#if 1
+#if 0
           DBG_PRINT("LEAF");
           DBG_PRINT(u_start);
           DBG_PRINT(v_start);
@@ -211,8 +208,7 @@ namespace embree
 	  return bounds;
 	}
 
-      PING;
-
+     
       /* allocate new bvh4 node */
       const size_t currentIndex = localCounter;
       /* 128 bytes == 2 x 64 bytes cachelines */
@@ -257,7 +253,7 @@ namespace embree
 
           children++;          
         }
-      DBG_PRINT( children );
+      //DBG_PRINT( children );
 
       /* create four subtrees */
       BBox3fa bounds( empty );
@@ -301,7 +297,7 @@ namespace embree
 
       evalGrid(patch,grid_x,grid_y,grid_z,grid_u,grid_v,geom);
 
-      BVH4::NodeRef subtree_root = BVH4::encodeNode( (BVH4::Node*)lazymem );
+      BVH4::NodeRef subtree_root = BVH4::encodeNode( (BVH4::Node*)lazymem);
       unsigned int currentIndex = 0;
 
       BBox3fa bounds = createSubTree( subtree_root,
@@ -316,11 +312,9 @@ namespace embree
 				      currentIndex,
 				      geom);
 
-      // DBG_PRINT( currentIndex );
       // DBG_PRINT( patch.grid_u_res );
       // DBG_PRINT( patch.grid_v_res );
       // exit(0);
-      if (currentIndex == 4) assert(subtree_root.isLeaf(2) );
       assert(currentIndex == patch.grid_subtree_size_64b_blocks);
       TIMER(msec = getSeconds()-msec);    
 
@@ -485,15 +479,20 @@ namespace embree
 
     BVH4::NodeRef root = local_cache->lookup(tag,commitCounter);
 
+
     if (unlikely(root == BVH4::invalidNode))
       {
         const unsigned int blocks = subdiv_patch->grid_subtree_size_64b_blocks;
-        root = local_cache->insert(tag,commitCounter,blocks);
-        BVH4::Node* node = root.node();
+        BVH4::NodeRef &new_root = local_cache->insert(tag,commitCounter,blocks);
 
-        initLocalLazySubdivTree(*subdiv_patch,root.node(),((Scene*)geom)->getSubdivMesh(subdiv_patch->geom));
-        assert( root != BVH4::invalidNode);
+        assert( new_root.isNode() );
+
+        BVH4::Node* node = new_root.node(); // pointer to mem
+
+        new_root = initLocalLazySubdivTree(*subdiv_patch,node,((Scene*)geom)->getSubdivMesh(subdiv_patch->geom));
+        assert( new_root != BVH4::invalidNode);
         //local_cache->printStats();
+        return new_root;
       }
     return root;   
 #endif    
