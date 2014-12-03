@@ -4,7 +4,7 @@ Installation of Embree
 Windows
 -------
 
-To install the Embree libray on your system add the folder `lib/x64` to
+To install the Embree library on your system add the folder `lib/x64` to
 your `PATH`. To compile applications with Embree you also have to set
 the "Include Directories" path in Visual Studio to the `include/` folder
 of Embree.
@@ -15,8 +15,8 @@ install the Embree library.
 Linux and Mac OS\ X
 -------------------
 
-To install the Embree libray and Embree header files on your system type
-the following:
+To install the Embree library and Embree header files on your system
+type the following:
 
     sudo ./install.sh
 
