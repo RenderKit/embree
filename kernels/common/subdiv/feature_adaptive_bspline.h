@@ -20,12 +20,6 @@
 
 namespace embree
 {
-  __forceinline std::ostream &operator<<(std::ostream &o, const std::vector<int> v)
-  {
-    for (size_t i=0; i<v.size(); i++) o << v[i] << ", ";
-    return o << std::endl;
-  } 
-
   template<typename Tessellator>
   struct FeatureAdaptiveSubdivisionBSpline
   {
