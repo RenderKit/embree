@@ -18,8 +18,6 @@
 
 #include "primitive.h"
 #include "discrete_tessellation.h"
-//#include "common/subdiv/bspline_patch.h"
-//#include "common/subdiv/gregory_patch.h"
 
 #define GRID_COMPRESS_BOUNDS 1
 
@@ -30,7 +28,7 @@ namespace embree
     struct CompressedBounds16;
     struct UncompressedBounds16;
 
-#if GRID_COMPRESS_BOUNDS // && defined(__SSE4_1__)
+#if GRID_COMPRESS_BOUNDS
     typedef CompressedBounds16 Bounds16;
 #else
     typedef UncompressedBounds16 Bounds16;
@@ -596,10 +594,6 @@ namespace embree
                          const DiscreteTessellationPattern& pattern_x,
                          const DiscreteTessellationPattern& pattern_y)
     {
-#if 1
-      //PING;
-      //PRINT2(x0,x1);
-      //PRINT2(y0,y1);
       size_t N = 0;
       for (size_t y=y0; y<y1; y+=16)
       {
@@ -614,21 +608,12 @@ namespace embree
 	  const Vec2f luv2 = sy1*(sx1*uv0+sx0*uv1) + sy0*(sx1*uv3+sx0*uv2);
 	  const Vec2f luv3 = sy1*(sx0*uv0+sx1*uv1) + sy0*(sx0*uv3+sx1*uv2);
 	  Grid* leaf = new (alloc.malloc(sizeof(Grid),16)) Grid(geomID,primID);
-	  //Grid* leaf = new Grid(geomID,primID);
-	  	  
-	  //PING;
-	  //PRINT2(lx0,lx1);
-	  //PRINT2(ly0,ly1);
 	  size_t n = leaf->build(scene,patch,alloc,prims,lx0,lx1,ly0,ly1,luv0,luv1,luv2,luv3,pattern0,pattern1,pattern2,pattern3,pattern_x,pattern_y);
 	  prims += n;
 	  N += n;
 	}
       }
       return N;
-#else
-      Grid* leaf = new (alloc.malloc(sizeof(Grid),16)) Grid(geomID,primID);
-      return leaf->build(scene,patch,alloc,prims,x0,x1,y0,y1,uv0,uv1,uv2,uv3,pattern0,pattern1,pattern2,pattern3,pattern_x,pattern_y);
-#endif
     }
 
   public:
