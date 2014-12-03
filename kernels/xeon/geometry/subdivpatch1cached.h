@@ -158,7 +158,7 @@ namespace embree
       return (flags & TRANSITION_PATCH) == TRANSITION_PATCH;      
     }
 
-    __forceinline Vec3fa eval(const float uu, const float vv)
+    __forceinline Vec3fa eval(const float uu, const float vv) const
     {
       if (likely(isRegular()))
 	{
@@ -191,11 +191,10 @@ namespace embree
     {
       if (likely(isRegular()))
 	{
-      return patch.normal(uu,vv);
+          return patch.normal(uu,vv);
 	}
       else 
 	{
-	  // FIXME: fast "lane" code for gregory patch normal
 	  return GregoryPatch::normal( patch.v, uu, vv );
 	}      
     }
@@ -249,16 +248,43 @@ namespace embree
 
 
 #if !defined(__AVX__)
-      FATAL("HERE");
+
 
       BBox3fa b ( empty );
 
       for (size_t i=0;i<real_grid_size;i++)
         {
-          const Vec3fa vtx = patch.eval( u_array[i], v_array[i] );	    
+          const float u = u_array[i];
+          const float v = v_array[i];
+
+          Vec3fa vtx = eval( u,v );	    
+
+	  if (unlikely(mesh->displFunc != NULL))
+	    {
+	      Vec3fa nor = normal(u,v);
+	      nor = normalize(nor);
+
+	      mesh->displFunc(mesh->userPtr,
+			      geom,
+			      prim,
+			      (const float*)&u_array[i],
+			      (const float*)&v_array[i],
+			      (const float*)&nor.x,
+			      (const float*)&nor.y,
+			      (const float*)&nor.z,
+			      (float*)&vtx.x,
+			      (float*)&vtx.y,
+			      (float*)&vtx.z,
+			      1);
+
+              /* if ( !mesh->displBounds.empty() ) */
+              /*   { */
+              /*     b.extend( mesh->displBounds ); */
+              /*   } */
+	    }
+
           b.extend( vtx );
         }
-
       b.lower.a = 0.0f;
       b.upper.a = 0.0f;
 
@@ -267,8 +293,8 @@ namespace embree
       assert( grid_size_8wide_blocks >= 1 );
       for (size_t i=0;i<grid_size_8wide_blocks;i++)
 	{
-	  const avxf u = load8f(&u_array[i*8]);
-	  const avxf v = load8f(&v_array[i*8]);
+	  avxf u = load8f(&u_array[i*8]);
+	  avxf v = load8f(&v_array[i*8]);
 
 	  avx3f vtx = eval8( u, v );
 
@@ -277,17 +303,17 @@ namespace embree
 
 	  if (unlikely(mesh->displFunc != NULL))
 	    {
-	      avx3f normal = normal8(u,v);
-	      normal = normalize(normal);
+	      avx3f nor = normal8(u,v);
+	      nor = normalize(nor);
 
 	      mesh->displFunc(mesh->userPtr,
 			      geom,
 			      prim,
-			      (const float*)&u,
-			      (const float*)&v,
-			      (const float*)&normal,
-			      (const float*)&normal,
-			      (const float*)&normal,
+			      (const float*)&u_array[i*8],
+			      (const float*)&v_array[i*8],
+			      (const float*)&nor.x,
+			      (const float*)&nor.y,
+			      (const float*)&nor.z,
 			      (float*)&vtx.x,
 			      (float*)&vtx.y,
 			      (float*)&vtx.z,

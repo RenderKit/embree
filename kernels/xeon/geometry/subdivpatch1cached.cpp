@@ -104,7 +104,7 @@ namespace embree
 
       /* determine whether patch is regular or not */
 
-      if (ipatch.isRegular()) 
+      if (ipatch.isRegular() && mesh->displFunc == NULL) /* gregory patches for displaced meshes */
 	{
 	  flags |= REGULAR_PATCH;
 	  patch.init( ipatch );
