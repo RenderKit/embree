@@ -449,7 +449,7 @@ namespace embree
     }
     
     template<typename Patch>
-    void displace(Scene* scene, const Patch& patch, const Vec2f* luv)
+    __forceinline void displace(Scene* scene, const Patch& patch, const Vec2f* luv)
     {
       SubdivMesh* mesh = (SubdivMesh*) scene->get(geomID);
       if (mesh->displFunc == NULL) return;
