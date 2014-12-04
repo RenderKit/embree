@@ -27,6 +27,7 @@ const int numTheta = 2*numPhi;
 
 #define MAX_EDGE_LEVEL 64.0f
 #define MIN_EDGE_LEVEL 2.0f
+#define ENABLE_DISPLACEMENTS 1
 
 /* error reporting function */
 void error_handler(const RTCError code, const char* str)
@@ -271,7 +272,9 @@ RTCScene constructScene(const Vec3fa& cam_pos)
 
     //BBox3fa bounds(Vec3fa(-0.1f,-0.1f,-0.1f),Vec3fa(0.1f,0.1f,0.1f));
     //rtcSetDisplacementFunction(scene, subdivMeshID, (RTCDisplacementFunc)DisplacementFunc,(RTCBounds*)&bounds);
-    //rtcSetDisplacementFunction(scene, subdivMeshID, (RTCDisplacementFunc)DisplacementFunc,NULL);
+#if ENABLE_DISPLACEMENTS == 1
+    rtcSetDisplacementFunction(scene, subdivMeshID, (RTCDisplacementFunc)DisplacementFunc,NULL);
+#endif
     mesh->geomID = subdivMeshID;
   }       
   

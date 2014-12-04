@@ -25,7 +25,7 @@ namespace embree
   public:
 
     template<class T>
-    static __forceinline Vec4< T >  eval_t(const T &u)
+      static __forceinline Vec4< T >  eval_t(const T &u)
       {
         const T t  = u;
         const T s  = T(1.0f) - u;
@@ -33,33 +33,31 @@ namespace embree
         const T n1 = (4.0f*s*s*s+t*t*t) + (12.0f*s*t*s + 6.0*t*s*t);
         const T n2 = (4.0f*t*t*t+s*s*s) + (12.0f*t*s*t + 6.0*s*t*s);
         const T n3 = t*t*t;
-        //const T c  = 1.0f/6.0f; // do this later
         return Vec4<T>(n0,n1,n2,n3);
       }
 
     template<class T>
-    static __forceinline Vec4< T>  derivative_t(const T &u)
-    {
-      const T t  =  u;
-      const T s  =  1.0f - u;
-      const T n0 = -s*s;
-      const T n1 = -t*t - 4.0f*t*s;
-      const T n2 =  s*s + 4.0f*s*t;
-      const T n3 =  t*t;
-      //const T c  = 1.0f/6.0f; // do this later
-      return Vec4<T>(n0,n1,n2,n3);
-    }
+      static __forceinline Vec4< T>  derivative_t(const T &u)
+      {
+        const T t  =  u;
+        const T s  =  1.0f - u;
+        const T n0 = -s*s;
+        const T n1 = -t*t - 4.0f*t*s;
+        const T n2 =  s*s + 4.0f*s*t;
+        const T n3 =  t*t;
+        return Vec4<T>(n0,n1,n2,n3);
+      }
 
 
       
-    static __forceinline Vec4f eval(const float &u) { return eval_t(u); }    
+    static __forceinline Vec4f eval      (const float &u) { return eval_t(u); }    
     static __forceinline Vec4f derivative(const float &u) { return derivative_t(u); }
 
 
 
 #if defined(__MIC__)
 
-    static __forceinline mic4f eval(const mic_f &u) { return eval_t(u); }
+    static __forceinline mic4f eval      (const mic_f &u) { return eval_t(u); }
     static __forceinline mic4f derivative(const mic_f &u) { return derivative_t(u); }
 
     static __forceinline mic4f eval_derivative(const mic_f u, const mic_m m_mask)
@@ -70,12 +68,12 @@ namespace embree
     }    
 #else
 
-    static __forceinline sse4f eval8(const ssef &u) { return eval_t(u); }
-    static __forceinline sse4f derivative8(const ssef &u) { return derivative_t(u); }
+    static __forceinline sse4f eval4      (const ssef &u) { return eval_t(u); }
+    static __forceinline sse4f derivative4(const ssef &u) { return derivative_t(u); }
 
 #if defined(__AVX__)
 
-    static __forceinline avx4f eval8(const avxf &u) { return eval_t(u); }
+    static __forceinline avx4f eval8      (const avxf &u) { return eval_t(u); }
     static __forceinline avx4f derivative8(const avxf &u) { return derivative_t(u); }
 
 #endif
@@ -312,11 +310,6 @@ namespace embree
       const Vec3fa limit_v2 = computeLimitVertex(2,2);
       const Vec3fa limit_v3 = computeLimitVertex(2,1);
       
-      /* const Vec3fa limit_normal0 = computeLimitNormal(1,1); */
-      /* const Vec3fa limit_normal1 = computeLimitNormal(1,2); */
-      /* const Vec3fa limit_normal2 = computeLimitNormal(2,2); */
-      /* const Vec3fa limit_normal3 = computeLimitNormal(2,1); */
-
       quad.vtx[0] = limit_v0;
       quad.vtx[1] = limit_v1;
       quad.vtx[2] = limit_v2;
@@ -329,12 +322,12 @@ namespace embree
       assert( patch.isRegular() );
 
       if (unlikely(patch.ring[0].hasBorder())) 
-      {
-	v[1][1] = patch.ring[0].vtx;
-	v[0][1] = patch.ring[0].regular_border_vertex_6();
-	v[0][0] = patch.ring[0].regular_border_vertex_5();
-	v[1][0] = patch.ring[0].regular_border_vertex_4();
-      } else {
+        {
+          v[1][1] = patch.ring[0].vtx;
+          v[0][1] = patch.ring[0].regular_border_vertex_6();
+          v[0][0] = patch.ring[0].regular_border_vertex_5();
+          v[1][0] = patch.ring[0].regular_border_vertex_4();
+        } else {
 	v[1][1] = patch.ring[0].vtx;
 	v[0][1] = patch.ring[0].ring[6];
 	v[0][0] = patch.ring[0].ring[5];
@@ -342,12 +335,12 @@ namespace embree
       }
 
       if (unlikely(patch.ring[1].hasBorder())) 
-      {
-	v[1][2] = patch.ring[1].vtx;
-	v[1][3] = patch.ring[1].regular_border_vertex_6();
-	v[0][3] = patch.ring[1].regular_border_vertex_5();
-	v[0][2] = patch.ring[1].regular_border_vertex_4();
-      } else {
+        {
+          v[1][2] = patch.ring[1].vtx;
+          v[1][3] = patch.ring[1].regular_border_vertex_6();
+          v[0][3] = patch.ring[1].regular_border_vertex_5();
+          v[0][2] = patch.ring[1].regular_border_vertex_4();
+        } else {
 	v[1][2] = patch.ring[1].vtx;
 	v[1][3] = patch.ring[1].ring[6];
 	v[0][3] = patch.ring[1].ring[5];
@@ -355,12 +348,12 @@ namespace embree
       }
 
       if (unlikely(patch.ring[2].hasBorder())) 
-      {
-	v[2][2] = patch.ring[2].vtx;
-	v[3][2] = patch.ring[2].regular_border_vertex_6();
-	v[3][3] = patch.ring[2].regular_border_vertex_5();
-	v[2][3] = patch.ring[2].regular_border_vertex_4();
-      } else {
+        {
+          v[2][2] = patch.ring[2].vtx;
+          v[3][2] = patch.ring[2].regular_border_vertex_6();
+          v[3][3] = patch.ring[2].regular_border_vertex_5();
+          v[2][3] = patch.ring[2].regular_border_vertex_4();
+        } else {
 	v[2][2] = patch.ring[2].vtx;
 	v[3][2] = patch.ring[2].ring[6];
 	v[3][3] = patch.ring[2].ring[5];
@@ -368,12 +361,12 @@ namespace embree
       }
 
       if (unlikely(patch.ring[3].hasBorder())) 
-      {
-	v[2][1] = patch.ring[3].vtx;
-	v[2][0] = patch.ring[3].regular_border_vertex_6();
-	v[3][0] = patch.ring[3].regular_border_vertex_5();
-	v[3][1] = patch.ring[3].regular_border_vertex_4();
-      } else {
+        {
+          v[2][1] = patch.ring[3].vtx;
+          v[2][0] = patch.ring[3].regular_border_vertex_6();
+          v[3][0] = patch.ring[3].regular_border_vertex_5();
+          v[3][1] = patch.ring[3].regular_border_vertex_4();
+        } else {
 	v[2][1] = patch.ring[3].vtx;
 	v[2][0] = patch.ring[3].ring[6];
 	v[3][0] = patch.ring[3].ring[5];      
@@ -396,22 +389,6 @@ namespace embree
 	bounds.extend( cv[i] );
       return bounds;
     }
-
-#if defined(__MIC__)
-
-    __forceinline mic_f getRow(const size_t i) const
-    {
-      return load16f(&v[i][0]);
-    }
-
-    __forceinline void prefetchData() const
-    {
-      prefetch<PFHINT_L1>(&v[0][0]);
-      prefetch<PFHINT_L1>(&v[1][0]);
-      prefetch<PFHINT_L1>(&v[2][0]);
-      prefetch<PFHINT_L1>(&v[3][0]);
-    }
-#endif
 
     __forceinline Vec3fa eval(const float uu, const float vv) const
     {
@@ -456,9 +433,58 @@ namespace embree
       return (u_n[0] * curve0 + u_n[1] * curve1 + u_n[2] * curve2 + u_n[3] * curve3); 
     }
 
+    __forceinline Vec3fa normal(const float uu, const float vv) const
+    {
+      const Vec3fa tu = tangentU(uu,vv);
+      const Vec3fa tv = tangentV(uu,vv);
+      return cross(tv,tu);
+    }   
+
+
+    template<class T>
+      __forceinline Vec3<T> eval_t(const T &uu, 
+                                   const T &vv,
+                                   const Vec4<T> &u_n,
+                                   const Vec4<T> &v_n) const
+      {
+        const T curve0_x = v_n[0] * T(v[0][0].x) + v_n[1] * T(v[1][0].x) + v_n[2] * T(v[2][0].x) + v_n[3] * T(v[3][0].x);
+        const T curve1_x = v_n[0] * T(v[0][1].x) + v_n[1] * T(v[1][1].x) + v_n[2] * T(v[2][1].x) + v_n[3] * T(v[3][1].x);
+        const T curve2_x = v_n[0] * T(v[0][2].x) + v_n[1] * T(v[1][2].x) + v_n[2] * T(v[2][2].x) + v_n[3] * T(v[3][2].x);
+        const T curve3_x = v_n[0] * T(v[0][3].x) + v_n[1] * T(v[1][3].x) + v_n[2] * T(v[2][3].x) + v_n[3] * T(v[3][3].x);
+        const T x = (u_n[0] * curve0_x + u_n[1] * curve1_x + u_n[2] * curve2_x + u_n[3] * curve3_x) * T(1.0f/36.0f);
+
+
+        const T curve0_y = v_n[0] * T(v[0][0].y) + v_n[1] * T(v[1][0].y) + v_n[2] * T(v[2][0].y) + v_n[3] * T(v[3][0].y);
+        const T curve1_y = v_n[0] * T(v[0][1].y) + v_n[1] * T(v[1][1].y) + v_n[2] * T(v[2][1].y) + v_n[3] * T(v[3][1].y);
+        const T curve2_y = v_n[0] * T(v[0][2].y) + v_n[1] * T(v[1][2].y) + v_n[2] * T(v[2][2].y) + v_n[3] * T(v[3][2].y);
+        const T curve3_y = v_n[0] * T(v[0][3].y) + v_n[1] * T(v[1][3].y) + v_n[2] * T(v[2][3].y) + v_n[3] * T(v[3][3].y);
+        const T y = (u_n[0] * curve0_y + u_n[1] * curve1_y + u_n[2] * curve2_y + u_n[3] * curve3_y) * T(1.0f/36.0f);
+      
+
+        const T curve0_z = v_n[0] * T(v[0][0].z) + v_n[1] * T(v[1][0].z) + v_n[2] * T(v[2][0].z) + v_n[3] * T(v[3][0].z);
+        const T curve1_z = v_n[0] * T(v[0][1].z) + v_n[1] * T(v[1][1].z) + v_n[2] * T(v[2][1].z) + v_n[3] * T(v[3][1].z);
+        const T curve2_z = v_n[0] * T(v[0][2].z) + v_n[1] * T(v[1][2].z) + v_n[2] * T(v[2][2].z) + v_n[3] * T(v[3][2].z);
+        const T curve3_z = v_n[0] * T(v[0][3].z) + v_n[1] * T(v[1][3].z) + v_n[2] * T(v[2][3].z) + v_n[3] * T(v[3][3].z);
+        const T z = (u_n[0] * curve0_z + u_n[1] * curve1_z + u_n[2] * curve2_z + u_n[3] * curve3_z) * T(1.0f/36.0f);
+
+        return Vec3<T>(x,y,z);
+      }
 
 
 #if defined(__MIC__)
+
+    __forceinline mic_f getRow(const size_t i) const
+    {
+      return load16f(&v[i][0]);
+    }
+
+    __forceinline void prefetchData() const
+    {
+      prefetch<PFHINT_L1>(&v[0][0]);
+      prefetch<PFHINT_L1>(&v[1][0]);
+      prefetch<PFHINT_L1>(&v[2][0]);
+      prefetch<PFHINT_L1>(&v[3][0]);
+    }
 
 
     __forceinline mic_f normal4(const float uu, const float vv) const
@@ -477,24 +503,20 @@ namespace embree
       const mic_f tangentU = permute<0,0,0,0>(tangentUV);
       const mic_f tangentV = permute<2,2,2,2>(tangentUV);
 
-      /* DBG_PRINT( tangentUV ); */
-      /* DBG_PRINT( tangentU ); */
-      /* DBG_PRINT( tangentV ); */
-
       const mic_f n = lcross_xyz(tangentV,tangentU);
       return n;
     }
 
     __forceinline mic_f eval4(const mic_f uu, const mic_f vv) const
     {
-      const mic4f v_n = CubicBSplineCurve::eval(vv); //FIXME: precompute in table
+      const mic4f v_n = CubicBSplineCurve::eval(vv); 
 
       const mic_f curve0 = v_n[0] * broadcast4to16f(&v[0][0]) + v_n[1] * broadcast4to16f(&v[1][0]) + v_n[2] * broadcast4to16f(&v[2][0]) + v_n[3] * broadcast4to16f(&v[3][0]);
       const mic_f curve1 = v_n[0] * broadcast4to16f(&v[0][1]) + v_n[1] * broadcast4to16f(&v[1][1]) + v_n[2] * broadcast4to16f(&v[2][1]) + v_n[3] * broadcast4to16f(&v[3][1]);
       const mic_f curve2 = v_n[0] * broadcast4to16f(&v[0][2]) + v_n[1] * broadcast4to16f(&v[1][2]) + v_n[2] * broadcast4to16f(&v[2][2]) + v_n[3] * broadcast4to16f(&v[3][2]);
       const mic_f curve3 = v_n[0] * broadcast4to16f(&v[0][3]) + v_n[1] * broadcast4to16f(&v[1][3]) + v_n[2] * broadcast4to16f(&v[2][3]) + v_n[3] * broadcast4to16f(&v[3][3]);
 
-      const mic4f u_n = CubicBSplineCurve::eval(uu); //FIXME: precompute in table
+      const mic4f u_n = CubicBSplineCurve::eval(uu); 
 
       return (u_n[0] * curve0 + u_n[1] * curve1 + u_n[2] * curve2 + u_n[3] * curve3) * mic_f(1.0f/36.0f);
     }
@@ -504,27 +526,7 @@ namespace embree
 			       const mic4f &u_n,
 			       const mic4f &v_n) const
     {
-      const mic_f curve0_x = v_n[0] * mic_f(v[0][0].x) + v_n[1] * mic_f(v[1][0].x) + v_n[2] * mic_f(v[2][0].x) + v_n[3] * mic_f(v[3][0].x);
-      const mic_f curve1_x = v_n[0] * mic_f(v[0][1].x) + v_n[1] * mic_f(v[1][1].x) + v_n[2] * mic_f(v[2][1].x) + v_n[3] * mic_f(v[3][1].x);
-      const mic_f curve2_x = v_n[0] * mic_f(v[0][2].x) + v_n[1] * mic_f(v[1][2].x) + v_n[2] * mic_f(v[2][2].x) + v_n[3] * mic_f(v[3][2].x);
-      const mic_f curve3_x = v_n[0] * mic_f(v[0][3].x) + v_n[1] * mic_f(v[1][3].x) + v_n[2] * mic_f(v[2][3].x) + v_n[3] * mic_f(v[3][3].x);
-      const mic_f x = (u_n[0] * curve0_x + u_n[1] * curve1_x + u_n[2] * curve2_x + u_n[3] * curve3_x) * mic_f(1.0f/36.0f);
-
-
-      const mic_f curve0_y = v_n[0] * mic_f(v[0][0].y) + v_n[1] * mic_f(v[1][0].y) + v_n[2] * mic_f(v[2][0].y) + v_n[3] * mic_f(v[3][0].y);
-      const mic_f curve1_y = v_n[0] * mic_f(v[0][1].y) + v_n[1] * mic_f(v[1][1].y) + v_n[2] * mic_f(v[2][1].y) + v_n[3] * mic_f(v[3][1].y);
-      const mic_f curve2_y = v_n[0] * mic_f(v[0][2].y) + v_n[1] * mic_f(v[1][2].y) + v_n[2] * mic_f(v[2][2].y) + v_n[3] * mic_f(v[3][2].y);
-      const mic_f curve3_y = v_n[0] * mic_f(v[0][3].y) + v_n[1] * mic_f(v[1][3].y) + v_n[2] * mic_f(v[2][3].y) + v_n[3] * mic_f(v[3][3].y);
-      const mic_f y = (u_n[0] * curve0_y + u_n[1] * curve1_y + u_n[2] * curve2_y + u_n[3] * curve3_y) * mic_f(1.0f/36.0f);
-      
-
-      const mic_f curve0_z = v_n[0] * mic_f(v[0][0].z) + v_n[1] * mic_f(v[1][0].z) + v_n[2] * mic_f(v[2][0].z) + v_n[3] * mic_f(v[3][0].z);
-      const mic_f curve1_z = v_n[0] * mic_f(v[0][1].z) + v_n[1] * mic_f(v[1][1].z) + v_n[2] * mic_f(v[2][1].z) + v_n[3] * mic_f(v[3][1].z);
-      const mic_f curve2_z = v_n[0] * mic_f(v[0][2].z) + v_n[1] * mic_f(v[1][2].z) + v_n[2] * mic_f(v[2][2].z) + v_n[3] * mic_f(v[3][2].z);
-      const mic_f curve3_z = v_n[0] * mic_f(v[0][3].z) + v_n[1] * mic_f(v[1][3].z) + v_n[2] * mic_f(v[2][3].z) + v_n[3] * mic_f(v[3][3].z);
-      const mic_f z = (u_n[0] * curve0_z + u_n[1] * curve1_z + u_n[2] * curve2_z + u_n[3] * curve3_z) * mic_f(1.0f/36.0f);
-
-      return mic3f(x,y,z);
+      return eval_t(uu,vv,u_n,v_n);
     }
     
     __forceinline mic3f eval16(const mic_f uu, const mic_f vv) const
@@ -556,7 +558,7 @@ namespace embree
       return cross(tV,tU);
     }
 
-#endif
+#else
 
 
 #if defined(__AVX__)
@@ -566,27 +568,7 @@ namespace embree
                               const avx4f &u_n,
                               const avx4f &v_n) const
     {
-      const avxf curve0_x = v_n[0] * avxf(v[0][0].x) + v_n[1] * avxf(v[1][0].x) + v_n[2] * avxf(v[2][0].x) + v_n[3] * avxf(v[3][0].x);
-      const avxf curve1_x = v_n[0] * avxf(v[0][1].x) + v_n[1] * avxf(v[1][1].x) + v_n[2] * avxf(v[2][1].x) + v_n[3] * avxf(v[3][1].x);
-      const avxf curve2_x = v_n[0] * avxf(v[0][2].x) + v_n[1] * avxf(v[1][2].x) + v_n[2] * avxf(v[2][2].x) + v_n[3] * avxf(v[3][2].x);
-      const avxf curve3_x = v_n[0] * avxf(v[0][3].x) + v_n[1] * avxf(v[1][3].x) + v_n[2] * avxf(v[2][3].x) + v_n[3] * avxf(v[3][3].x);
-      const avxf x = (u_n[0] * curve0_x + u_n[1] * curve1_x + u_n[2] * curve2_x + u_n[3] * curve3_x) * avxf(1.0f/36.0f);
-
-
-      const avxf curve0_y = v_n[0] * avxf(v[0][0].y) + v_n[1] * avxf(v[1][0].y) + v_n[2] * avxf(v[2][0].y) + v_n[3] * avxf(v[3][0].y);
-      const avxf curve1_y = v_n[0] * avxf(v[0][1].y) + v_n[1] * avxf(v[1][1].y) + v_n[2] * avxf(v[2][1].y) + v_n[3] * avxf(v[3][1].y);
-      const avxf curve2_y = v_n[0] * avxf(v[0][2].y) + v_n[1] * avxf(v[1][2].y) + v_n[2] * avxf(v[2][2].y) + v_n[3] * avxf(v[3][2].y);
-      const avxf curve3_y = v_n[0] * avxf(v[0][3].y) + v_n[1] * avxf(v[1][3].y) + v_n[2] * avxf(v[2][3].y) + v_n[3] * avxf(v[3][3].y);
-      const avxf y = (u_n[0] * curve0_y + u_n[1] * curve1_y + u_n[2] * curve2_y + u_n[3] * curve3_y) * avxf(1.0f/36.0f);
-      
-
-      const avxf curve0_z = v_n[0] * avxf(v[0][0].z) + v_n[1] * avxf(v[1][0].z) + v_n[2] * avxf(v[2][0].z) + v_n[3] * avxf(v[3][0].z);
-      const avxf curve1_z = v_n[0] * avxf(v[0][1].z) + v_n[1] * avxf(v[1][1].z) + v_n[2] * avxf(v[2][1].z) + v_n[3] * avxf(v[3][1].z);
-      const avxf curve2_z = v_n[0] * avxf(v[0][2].z) + v_n[1] * avxf(v[1][2].z) + v_n[2] * avxf(v[2][2].z) + v_n[3] * avxf(v[3][2].z);
-      const avxf curve3_z = v_n[0] * avxf(v[0][3].z) + v_n[1] * avxf(v[1][3].z) + v_n[2] * avxf(v[2][3].z) + v_n[3] * avxf(v[3][3].z);
-      const avxf z = (u_n[0] * curve0_z + u_n[1] * curve1_z + u_n[2] * curve2_z + u_n[3] * curve3_z) * avxf(1.0f/36.0f);
-
-      return avx3f(x,y,z);
+      return eval_t(uu,vv,u_n,v_n);
     }
 
     __forceinline avx3f eval8(const avxf uu, const avxf vv) const
@@ -616,15 +598,48 @@ namespace embree
       const avx3f tV = tangentV8(uu,vv);
       return cross(tV,tU);
     }
+#else
+
+    __forceinline sse3f eval4(const ssef &uu, 
+                              const ssef &vv,
+                              const sse4f &u_n,
+                              const sse4f &v_n) const
+    {
+      return eval_t(uu,vv,u_n,v_n);
+    }
+
+    __forceinline sse3f eval4(const ssef &uu, const ssef &vv) const
+    {
+      const sse4f v_n = CubicBSplineCurve::eval4(vv); 
+      const sse4f u_n = CubicBSplineCurve::eval4(uu); 
+      return eval4(uu,vv,u_n,v_n);
+    }
+
+    __forceinline sse3f tangentU4(const ssef &uu, const ssef &vv) const
+    {
+      const sse4f v_n = CubicBSplineCurve::derivative4(vv); 
+      const sse4f u_n = CubicBSplineCurve::eval4(uu); 
+      return eval4(uu,vv,u_n,v_n);      
+    }
+
+    __forceinline sse3f tangentV4(const ssef &uu, const ssef &vv) const
+    {
+      const sse4f v_n = CubicBSplineCurve::eval4(vv); 
+      const sse4f u_n = CubicBSplineCurve::derivative4(uu); 
+      return eval4(uu,vv,u_n,v_n);      
+    }
+
+    __forceinline sse3f normal4(const ssef &uu, const ssef &vv) const
+    {
+      const sse3f tU = tangentU4(uu,vv);
+      const sse3f tV = tangentV4(uu,vv);
+      return cross(tV,tU);
+    }
+
 
 #endif
 
-    __forceinline Vec3fa normal(const float uu, const float vv) const
-    {
-      const Vec3fa tu = tangentU(uu,vv);
-      const Vec3fa tv = tangentV(uu,vv);
-      return cross(tv,tu);
-    }   
+#endif
 
     friend __forceinline std::ostream &operator<<(std::ostream &o, const BSplinePatch &p)
     {

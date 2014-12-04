@@ -20,26 +20,6 @@
 
 namespace embree
 {
-#if 0
-  class CubicBezierCurve
-  {
-  public:
-    
-    static __forceinline Vec3fa_t eval(const float u, const Vec3fa_t &p0, const Vec3fa_t &p1, const Vec3fa_t &p2, const Vec3fa_t &p3)
-    {
-      // FIXME: lookup
-      const float t  = u;
-      const float s  = 1.0f - u;
-      const float n0 = s*s*s;
-      const float n1 = 3.0f*t*s*t;
-      const float n2 = 3.0f*s*t*s;
-      const float n3 = t*t*t;
-      const Vec3fa_t n = p0 * n0 + p1 * n1 + p2 * n2 + p3 * n3;
-      return n;
-    }
-    
-  };
-#endif
   
   class __aligned(64) GregoryPatch : public BSplinePatchT<Vec3fa> 
   {
@@ -152,30 +132,29 @@ namespace embree
       
       Vec3fa c_i, e_i_p_1;
       if (unlikely(border_index == num_vtx-2))
-      {
-	/* mirror quad center and edge mid-point */
-	c_i     = c_i_m_1 + 2 * (e_i - c_i_m_1);
-	e_i_p_1 = e_i_m_1 + 2 * (vtx - e_i_m_1);
-      }
+        {
+          /* mirror quad center and edge mid-point */
+          c_i     = c_i_m_1 + 2 * (e_i - c_i_m_1);
+          e_i_p_1 = e_i_m_1 + 2 * (vtx - e_i_m_1);
+        }
       else
-      {
-	c_i     = irreg_patch.ring[index].getQuadCenter( valence-1 );
-	e_i_p_1 = irreg_patch.ring[index].getEdgeCenter( valence-1 );
-      }
+        {
+          c_i     = irreg_patch.ring[index].getQuadCenter( valence-1 );
+          e_i_p_1 = irreg_patch.ring[index].getEdgeCenter( valence-1 );
+        }
       
       Vec3fa c_i_m_2, e_i_m_2;
       if (unlikely(border_index == 2 || valence == 2))
-      {
-	/* mirror quad center and edge mid-point */
-	c_i_m_2  = c_i_m_1 + 2 * (e_i_m_1 - c_i_m_1);
-	e_i_m_2  = e_i + 2 * (vtx - e_i);	  
-      }
+        {
+          /* mirror quad center and edge mid-point */
+          c_i_m_2  = c_i_m_1 + 2 * (e_i_m_1 - c_i_m_1);
+          e_i_m_2  = e_i + 2 * (vtx - e_i);	  
+        }
       else
-      {
-	c_i_m_2  = irreg_patch.ring[index].getQuadCenter( 1 );
-	e_i_m_2  = irreg_patch.ring[index].getEdgeCenter( 2 );
-      }
-      
+        {
+          c_i_m_2  = irreg_patch.ring[index].getQuadCenter( 1 );
+          e_i_m_2  = irreg_patch.ring[index].getEdgeCenter( 2 );
+        }      
       
       const float d = 3.0f;
       const float c     = cosf(2.0*M_PI/(float)valence);
@@ -187,10 +166,8 @@ namespace embree
       f_p_vtx =  1.0f / d * (c_e_p * p_vtx + (d - 2.0f*c - c_e_p) * e0_p_vtx + 2.0f*c* e1_m_vtx + r_e_p);
       
       const Vec3fa r_e_m = 1.0f/3.0f * (e_i - e_i_m_2) + 2.0f/3.0f * (c_i_m_1 - c_i_m_2);
-      
-      
-      f_m_vtx = 1.0f / d * (c_e_m * p_vtx + (d - 2.0f*c - c_e_m) * e0_m_vtx + 2.0f*c* e3_p_vtx + r_e_m);
-      
+            
+      f_m_vtx = 1.0f / d * (c_e_m * p_vtx + (d - 2.0f*c - c_e_m) * e0_m_vtx + 2.0f*c* e3_p_vtx + r_e_m);      
     }
     
     void init(const CatmullClarkPatch& patch)
@@ -266,36 +243,31 @@ namespace embree
       matrix[3][3].w = 0.0f;
     }
     
-    
-    static __forceinline Vec3fa_t deCasteljau(const float uu, const Vec3fa_t &v0, const Vec3fa_t &v1, const Vec3fa_t &v2, const Vec3fa_t &v3)
+    template<class T, class S>
+    static __forceinline T deCasteljau_t(const S &uu, const T &v0, const T &v1, const T &v2, const T &v3)
     {
-      const float one_minus_uu = 1.0f - uu;
-      
-      const Vec3fa_t v0_1 = one_minus_uu * v0 + uu * v1;
-      const Vec3fa_t v1_1 = one_minus_uu * v1 + uu * v2;
-      const Vec3fa_t v2_1 = one_minus_uu * v2 + uu * v3;
-      
-      const Vec3fa_t v0_2 = one_minus_uu * v0_1 + uu * v1_1;
-      const Vec3fa_t v1_2 = one_minus_uu * v1_1 + uu * v2_1;
-      
-      const Vec3fa_t v0_3 = one_minus_uu * v0_2 + uu * v1_2;
+      const S one_minus_uu = 1.0f - uu;      
+      const T v0_1 = one_minus_uu * v0   + uu * v1;
+      const T v1_1 = one_minus_uu * v1   + uu * v2;
+      const T v2_1 = one_minus_uu * v2   + uu * v3;      
+      const T v0_2 = one_minus_uu * v0_1 + uu * v1_1;
+      const T v1_2 = one_minus_uu * v1_1 + uu * v2_1;      
+      const T v0_3 = one_minus_uu * v0_2 + uu * v1_2;
       return v0_3;
     }
-    
-    static __forceinline Vec3fa_t deCasteljau_tangent(const float uu, const Vec3fa_t &v0, const Vec3fa_t &v1, const Vec3fa_t &v2, const Vec3fa_t &v3)
+
+    template<class T, class S>
+    static __forceinline T deCasteljau_tangent_t(const S &uu, const T &v0, const T &v1, const T &v2, const T &v3)
     {
-      const float one_minus_uu = 1.0f - uu;
-      
-      const Vec3fa_t v0_1 = one_minus_uu * v0 + uu * v1;
-      const Vec3fa_t v1_1 = one_minus_uu * v1 + uu * v2;
-      const Vec3fa_t v2_1 = one_minus_uu * v2 + uu * v3;
-      
-      const Vec3fa_t v0_2 = one_minus_uu * v0_1 + uu * v1_1;
-      const Vec3fa_t v1_2 = one_minus_uu * v1_1 + uu * v2_1;
-      
-      return v1_2 - v0_2;
+      const S one_minus_uu = 1.0f - uu;      
+      const T v0_1         = one_minus_uu * v0   + uu * v1;
+      const T v1_1         = one_minus_uu * v1   + uu * v2;
+      const T v2_1         = one_minus_uu * v2   + uu * v3;      
+      const T v0_2         = one_minus_uu * v0_1 + uu * v1_1;
+      const T v1_2         = one_minus_uu * v1_1 + uu * v2_1;      
+      return v1_2 - v0_2;      
     }
-    
+        
     static __forceinline void computeInnerVertices(const Vec3fa matrix[4][4],
 						   const Vec3fa f_m[2][2],
 						   const float uu,
@@ -305,7 +277,7 @@ namespace embree
 						   Vec3fa_t &matrix_22,
 						   Vec3fa_t &matrix_21)
     {
-      if (uu == 0.0f || uu == 1.0f || vv == 0.0f || vv == 1.0f) 
+      if (unlikely(uu == 0.0f || uu == 1.0f || vv == 0.0f || vv == 1.0f)) 
       {
 	matrix_11 = matrix[1][1];
 	matrix_12 = matrix[1][2];
@@ -346,20 +318,20 @@ namespace embree
       computeInnerVertices(matrix,f_m,uu,vv,matrix_11, matrix_12, matrix_22, matrix_21);
       
       /* tangentU */
-      const Vec3fa_t col0 = deCasteljau(vv, matrix[0][0], matrix[1][0], matrix[2][0], matrix[3][0]);
-      const Vec3fa_t col1 = deCasteljau(vv, matrix[0][1], matrix_11   , matrix_21   , matrix[3][1]);
-      const Vec3fa_t col2 = deCasteljau(vv, matrix[0][2], matrix_12   , matrix_22   , matrix[3][2]);
-      const Vec3fa_t col3 = deCasteljau(vv, matrix[0][3], matrix[1][3], matrix[2][3], matrix[3][3]);
+      const Vec3fa_t col0 = deCasteljau_t(vv, (Vec3fa_t)matrix[0][0], (Vec3fa_t)matrix[1][0], (Vec3fa_t)matrix[2][0], (Vec3fa_t)matrix[3][0]);
+      const Vec3fa_t col1 = deCasteljau_t(vv, (Vec3fa_t)matrix[0][1], (Vec3fa_t)matrix_11   , (Vec3fa_t)matrix_21   , (Vec3fa_t)matrix[3][1]);
+      const Vec3fa_t col2 = deCasteljau_t(vv, (Vec3fa_t)matrix[0][2], (Vec3fa_t)matrix_12   , (Vec3fa_t)matrix_22   , (Vec3fa_t)matrix[3][2]);
+      const Vec3fa_t col3 = deCasteljau_t(vv, (Vec3fa_t)matrix[0][3], (Vec3fa_t)matrix[1][3], (Vec3fa_t)matrix[2][3], (Vec3fa_t)matrix[3][3]);
       
-      const Vec3fa_t tangentU = deCasteljau_tangent(uu, col0, col1, col2, col3);
+      const Vec3fa_t tangentU = deCasteljau_tangent_t(uu, col0, col1, col2, col3);
       
       /* tangentV */
-      const Vec3fa_t row0 = deCasteljau(uu, matrix[0][0], matrix[0][1], matrix[0][2], matrix[0][3]);
-      const Vec3fa_t row1 = deCasteljau(uu, matrix[1][0], matrix_11   , matrix_12   , matrix[1][3]);
-      const Vec3fa_t row2 = deCasteljau(uu, matrix[2][0], matrix_21   , matrix_22   , matrix[2][3]);
-      const Vec3fa_t row3 = deCasteljau(uu, matrix[3][0], matrix[3][1], matrix[3][2], matrix[3][3]);
+      const Vec3fa_t row0 = deCasteljau_t(uu, (Vec3fa_t)matrix[0][0], (Vec3fa_t)matrix[0][1], (Vec3fa_t)matrix[0][2], (Vec3fa_t)matrix[0][3]);
+      const Vec3fa_t row1 = deCasteljau_t(uu, (Vec3fa_t)matrix[1][0], (Vec3fa_t)matrix_11   , (Vec3fa_t)matrix_12   , (Vec3fa_t)matrix[1][3]);
+      const Vec3fa_t row2 = deCasteljau_t(uu, (Vec3fa_t)matrix[2][0], (Vec3fa_t)matrix_21   , (Vec3fa_t)matrix_22   , (Vec3fa_t)matrix[2][3]);
+      const Vec3fa_t row3 = deCasteljau_t(uu, (Vec3fa_t)matrix[3][0], (Vec3fa_t)matrix[3][1], (Vec3fa_t)matrix[3][2], (Vec3fa_t)matrix[3][3]);
       
-      const Vec3fa_t tangentV = deCasteljau_tangent(vv, row0, row1, row2, row3);
+      const Vec3fa_t tangentV = deCasteljau_tangent_t(vv, row0, row1, row2, row3);
       
       /* normal = tangentU x tangentV */
       const Vec3fa_t n = cross(tangentU,tangentV);
@@ -421,194 +393,169 @@ namespace embree
       return res;
     }
 
-#if defined(__AVX__)    
-
-    static __forceinline avx3f deCasteljau8(const avxf &uu, const avx3f &v0, const avx3f &v1, const avx3f &v2, const avx3f &v3)
+    template<class M, class T>
+    static __forceinline Vec3<T> eval_t(const Vec3fa matrix[4][4],
+                                        const T &uu,
+                                        const T &vv) 
     {
-      const avxf one_minus_uu = 1.0f - uu;
+      const M m_border = (uu == 0.0f) | (uu == 1.0f) | (vv == 0.0f) | (vv == 1.0f);
       
-      const avx3f v0_1 = one_minus_uu * v0 + uu * v1;
-      const avx3f v1_1 = one_minus_uu * v1 + uu * v2;
-      const avx3f v2_1 = one_minus_uu * v2 + uu * v3;
+      const Vec3<T> f0_p = Vec3<T>(matrix[1][1].x,matrix[1][1].y,matrix[1][1].z);
+      const Vec3<T> f1_p = Vec3<T>(matrix[1][2].x,matrix[1][2].y,matrix[1][2].z);
+      const Vec3<T> f2_p = Vec3<T>(matrix[2][2].x,matrix[2][2].y,matrix[2][2].z);
+      const Vec3<T> f3_p = Vec3<T>(matrix[2][1].x,matrix[2][1].y,matrix[2][1].z);
       
-      const avx3f v0_2 = one_minus_uu * v0_1 + uu * v1_1;
-      const avx3f v1_2 = one_minus_uu * v1_1 + uu * v2_1;
+      const Vec3<T> f0_m = Vec3<T>( extract_f_m(matrix,0,0), extract_f_m(matrix,0,1), extract_f_m(matrix,0,2) );
+      const Vec3<T> f1_m = Vec3<T>( extract_f_m(matrix,1,0), extract_f_m(matrix,1,1), extract_f_m(matrix,1,2) );
+      const Vec3<T> f2_m = Vec3<T>( extract_f_m(matrix,2,0), extract_f_m(matrix,2,1), extract_f_m(matrix,2,2) );
+      const Vec3<T> f3_m = Vec3<T>( extract_f_m(matrix,3,0), extract_f_m(matrix,3,1), extract_f_m(matrix,3,2) );
       
-      const avx3f v0_3 = one_minus_uu * v0_2 + uu * v1_2;
-      return v0_3;
-    }
-
-    static __forceinline avx3f deCasteljau_tangent8(const avxf &uu, const avx3f &v0, const avx3f &v1, const avx3f &v2, const avx3f &v3)
-    {
-      const avxf one_minus_uu = 1.0f - uu;
-      
-      const avx3f v0_1 = one_minus_uu * v0 + uu * v1;
-      const avx3f v1_1 = one_minus_uu * v1 + uu * v2;
-      const avx3f v2_1 = one_minus_uu * v2 + uu * v3;
-      
-      const avx3f v0_2 = one_minus_uu * v0_1 + uu * v1_1;
-      const avx3f v1_2 = one_minus_uu * v1_1 + uu * v2_1;
-      
-      return v1_2 - v0_2;
-    }
-
-    static __forceinline avx3f extract_f_m_avx3f(const Vec3fa matrix[4][4],
-						 const size_t n)
-    {
-      return avx3f( extract_f_m(matrix,n,0), extract_f_m(matrix,n,1), extract_f_m(matrix,n,2) );
-    }
-
-    static __forceinline avx3f eval8(const Vec3fa matrix[4][4],
-                                     const avxf &uu,
-                                     const avxf &vv) 
-    {
-      const avxb m_border = (uu == 0.0f) | (uu == 1.0f) | (vv == 0.0f) | (vv == 1.0f);
-      
-      const avx3f f0_p = avx3f(matrix[1][1].x,matrix[1][1].y,matrix[1][1].z);
-      const avx3f f1_p = avx3f(matrix[1][2].x,matrix[1][2].y,matrix[1][2].z);
-      const avx3f f2_p = avx3f(matrix[2][2].x,matrix[2][2].y,matrix[2][2].z);
-      const avx3f f3_p = avx3f(matrix[2][1].x,matrix[2][1].y,matrix[2][1].z);
-      
-      const avx3f f0_m = extract_f_m_avx3f(matrix,0);
-      const avx3f f1_m = extract_f_m_avx3f(matrix,1);
-      const avx3f f2_m = extract_f_m_avx3f(matrix,2);
-      const avx3f f3_m = extract_f_m_avx3f(matrix,3);
-      
-      const avxf one_minus_uu = avxf(1.0f) - uu;
-      const avxf one_minus_vv = avxf(1.0f) - vv;      
+      const T one_minus_uu = T(1.0f) - uu;
+      const T one_minus_vv = T(1.0f) - vv;      
       
 #if 1
-      const avxf inv0 = rcp(uu+vv);
-      const avxf inv1 = rcp(one_minus_uu+vv);
-      const avxf inv2 = rcp(one_minus_uu+one_minus_vv);
-      const avxf inv3 = rcp(uu+one_minus_vv);
+      const T inv0 = rcp(uu+vv);
+      const T inv1 = rcp(one_minus_uu+vv);
+      const T inv2 = rcp(one_minus_uu+one_minus_vv);
+      const T inv3 = rcp(uu+one_minus_vv);
 #else
-      const avxf inv0 = 1.0f/(uu+vv);
-      const avxf inv1 = 1.0f/(one_minus_uu+vv);
-      const avxf inv2 = 1.0f/(one_minus_uu+one_minus_vv);
-      const avxf inv3 = 1.0f/(uu+one_minus_vv);
+      const T inv0 = 1.0f/(uu+vv);
+      const T inv1 = 1.0f/(one_minus_uu+vv);
+      const T inv2 = 1.0f/(one_minus_uu+one_minus_vv);
+      const T inv3 = 1.0f/(uu+one_minus_vv);
 #endif
       
-      const avx3f f0_i = (          uu * f0_p +           vv * f0_m) * inv0;
-      const avx3f f1_i = (one_minus_uu * f1_m +           vv * f1_p) * inv1;
-      const avx3f f2_i = (one_minus_uu * f2_p + one_minus_vv * f2_m) * inv2;
-      const avx3f f3_i = (          uu * f3_m + one_minus_vv * f3_p) * inv3;
+      const Vec3<T> f0_i = (          uu * f0_p +           vv * f0_m) * inv0;
+      const Vec3<T> f1_i = (one_minus_uu * f1_m +           vv * f1_p) * inv1;
+      const Vec3<T> f2_i = (one_minus_uu * f2_p + one_minus_vv * f2_m) * inv2;
+      const Vec3<T> f3_i = (          uu * f3_m + one_minus_vv * f3_p) * inv3;
       
-      const avx3f F0( select(m_border,f0_p.x,f0_i.x), select(m_border,f0_p.y,f0_i.y), select(m_border,f0_p.z,f0_i.z) );
-      const avx3f F1( select(m_border,f1_p.x,f1_i.x), select(m_border,f1_p.y,f1_i.y), select(m_border,f1_p.z,f1_i.z) );
-      const avx3f F2( select(m_border,f2_p.x,f2_i.x), select(m_border,f2_p.y,f2_i.y), select(m_border,f2_p.z,f2_i.z) );
-      const avx3f F3( select(m_border,f3_p.x,f3_i.x), select(m_border,f3_p.y,f3_i.y), select(m_border,f3_p.z,f3_i.z) );
+      const Vec3<T> F0( select(m_border,f0_p.x,f0_i.x), select(m_border,f0_p.y,f0_i.y), select(m_border,f0_p.z,f0_i.z) );
+      const Vec3<T> F1( select(m_border,f1_p.x,f1_i.x), select(m_border,f1_p.y,f1_i.y), select(m_border,f1_p.z,f1_i.z) );
+      const Vec3<T> F2( select(m_border,f2_p.x,f2_i.x), select(m_border,f2_p.y,f2_i.y), select(m_border,f2_p.z,f2_i.z) );
+      const Vec3<T> F3( select(m_border,f3_p.x,f3_i.x), select(m_border,f3_p.y,f3_i.y), select(m_border,f3_p.z,f3_i.z) );
       
-      const avxf B0_u = one_minus_uu * one_minus_uu * one_minus_uu;
-      const avxf B0_v = one_minus_vv * one_minus_vv * one_minus_vv;
-      const avxf B1_u = 3.0f * one_minus_uu * one_minus_uu * uu;
-      const avxf B1_v = 3.0f * one_minus_vv * one_minus_vv * vv;
-      const avxf B2_u = 3.0f * one_minus_uu * uu * uu;
-      const avxf B2_v = 3.0f * one_minus_vv * vv * vv;
-      const avxf B3_u = uu * uu * uu;
-      const avxf B3_v = vv * vv * vv;
+      const T B0_u = one_minus_uu * one_minus_uu * one_minus_uu;
+      const T B0_v = one_minus_vv * one_minus_vv * one_minus_vv;
+      const T B1_u = 3.0f * one_minus_uu * one_minus_uu * uu;
+      const T B1_v = 3.0f * one_minus_vv * one_minus_vv * vv;
+      const T B2_u = 3.0f * one_minus_uu * uu * uu;
+      const T B2_v = 3.0f * one_minus_vv * vv * vv;
+      const T B3_u = uu * uu * uu;
+      const T B3_v = vv * vv * vv;
       
-      const avxf x = 
+      const T x = 
 	(B0_u * matrix[0][0].x + B1_u * matrix[0][1].x + B2_u * matrix[0][2].x + B3_u * matrix[0][3].x) * B0_v + 
 	(B0_u * matrix[1][0].x + B1_u * F0.x           + B2_u * F1.x           + B3_u * matrix[1][3].x) * B1_v + 
 	(B0_u * matrix[2][0].x + B1_u * F3.x           + B2_u * F2.x           + B3_u * matrix[2][3].x) * B2_v + 
 	(B0_u * matrix[3][0].x + B1_u * matrix[3][1].x + B2_u * matrix[3][2].x + B3_u * matrix[3][3].x) * B3_v; 
       
-      const avxf y = 
+      const T y = 
 	(B0_u * matrix[0][0].y + B1_u * matrix[0][1].y + B2_u * matrix[0][2].y + B3_u * matrix[0][3].y) * B0_v + 
 	(B0_u * matrix[1][0].y + B1_u * F0.y           + B2_u * F1.y           + B3_u * matrix[1][3].y) * B1_v + 
 	(B0_u * matrix[2][0].y + B1_u * F3.y           + B2_u * F2.y           + B3_u * matrix[2][3].y) * B2_v + 
 	(B0_u * matrix[3][0].y + B1_u * matrix[3][1].y + B2_u * matrix[3][2].y + B3_u * matrix[3][3].y) * B3_v; 
       
-      const avxf z = 
+      const T z = 
 	(B0_u * matrix[0][0].z + B1_u * matrix[0][1].z + B2_u * matrix[0][2].z + B3_u * matrix[0][3].z) * B0_v + 
 	(B0_u * matrix[1][0].z + B1_u * F0.z           + B2_u * F1.z           + B3_u * matrix[1][3].z) * B1_v + 
 	(B0_u * matrix[2][0].z + B1_u * F3.z           + B2_u * F2.z           + B3_u * matrix[2][3].z) * B2_v + 
 	(B0_u * matrix[3][0].z + B1_u * matrix[3][1].z + B2_u * matrix[3][2].z + B3_u * matrix[3][3].z) * B3_v; 
       
       
-      return avx3f(x,y,z);
+      return Vec3<T>(x,y,z);
     }
 
-    static __forceinline avx3f normal8(const Vec3fa matrix[4][4],
-                                       const avxf &uu,
-                                       const avxf &vv) 
+
+    template<class M, class T>
+    static __forceinline Vec3<T> normal_t(const Vec3fa matrix[4][4],
+                                          const T &uu,
+                                          const T &vv) 
     {
-      const avxb m_border = (uu == 0.0f) | (uu == 1.0f) | (vv == 0.0f) | (vv == 1.0f);
+      const M m_border = (uu == 0.0f) | (uu == 1.0f) | (vv == 0.0f) | (vv == 1.0f);
       
-      const avx3f f0_p = avx3f(matrix[1][1].x,matrix[1][1].y,matrix[1][1].z);
-      const avx3f f1_p = avx3f(matrix[1][2].x,matrix[1][2].y,matrix[1][2].z);
-      const avx3f f2_p = avx3f(matrix[2][2].x,matrix[2][2].y,matrix[2][2].z);
-      const avx3f f3_p = avx3f(matrix[2][1].x,matrix[2][1].y,matrix[2][1].z);
+      const Vec3<T> f0_p = Vec3<T>(matrix[1][1].x,matrix[1][1].y,matrix[1][1].z);
+      const Vec3<T> f1_p = Vec3<T>(matrix[1][2].x,matrix[1][2].y,matrix[1][2].z);
+      const Vec3<T> f2_p = Vec3<T>(matrix[2][2].x,matrix[2][2].y,matrix[2][2].z);
+      const Vec3<T> f3_p = Vec3<T>(matrix[2][1].x,matrix[2][1].y,matrix[2][1].z);
       
-      const avx3f f0_m = extract_f_m_avx3f(matrix,0);
-      const avx3f f1_m = extract_f_m_avx3f(matrix,1);
-      const avx3f f2_m = extract_f_m_avx3f(matrix,2);
-      const avx3f f3_m = extract_f_m_avx3f(matrix,3);
+      const Vec3<T> f0_m = Vec3<T>( extract_f_m(matrix,0,0), extract_f_m(matrix,0,1), extract_f_m(matrix,0,2) );
+      const Vec3<T> f1_m = Vec3<T>( extract_f_m(matrix,1,0), extract_f_m(matrix,1,1), extract_f_m(matrix,1,2) );
+      const Vec3<T> f2_m = Vec3<T>( extract_f_m(matrix,2,0), extract_f_m(matrix,2,1), extract_f_m(matrix,2,2) );
+      const Vec3<T> f3_m = Vec3<T>( extract_f_m(matrix,3,0), extract_f_m(matrix,3,1), extract_f_m(matrix,3,2) );
       
-      const avxf one_minus_uu = avxf(1.0f) - uu;
-      const avxf one_minus_vv = avxf(1.0f) - vv;      
+      const T one_minus_uu = T(1.0f) - uu;
+      const T one_minus_vv = T(1.0f) - vv;      
       
-      const avxf inv0 = rcp(uu+vv);
-      const avxf inv1 = rcp(one_minus_uu+vv);
-      const avxf inv2 = rcp(one_minus_uu+one_minus_vv);
-      const avxf inv3 = rcp(uu+one_minus_vv);
+      const T inv0 = rcp(uu+vv);
+      const T inv1 = rcp(one_minus_uu+vv);
+      const T inv2 = rcp(one_minus_uu+one_minus_vv);
+      const T inv3 = rcp(uu+one_minus_vv);
       
-      const avx3f f0_i = (          uu * f0_p +           vv * f0_m) * inv0;
-      const avx3f f1_i = (one_minus_uu * f1_m +           vv * f1_p) * inv1;
-      const avx3f f2_i = (one_minus_uu * f2_p + one_minus_vv * f2_m) * inv2;
-      const avx3f f3_i = (          uu * f3_m + one_minus_vv * f3_p) * inv3;
+      const Vec3<T> f0_i = (          uu * f0_p +           vv * f0_m) * inv0;
+      const Vec3<T> f1_i = (one_minus_uu * f1_m +           vv * f1_p) * inv1;
+      const Vec3<T> f2_i = (one_minus_uu * f2_p + one_minus_vv * f2_m) * inv2;
+      const Vec3<T> f3_i = (          uu * f3_m + one_minus_vv * f3_p) * inv3;
       
-      const avx3f matrix_11( select(m_border,f0_p.x,f0_i.x), select(m_border,f0_p.y,f0_i.y), select(m_border,f0_p.z,f0_i.z) );
-      const avx3f matrix_12( select(m_border,f1_p.x,f1_i.x), select(m_border,f1_p.y,f1_i.y), select(m_border,f1_p.z,f1_i.z) );
-      const avx3f matrix_22( select(m_border,f2_p.x,f2_i.x), select(m_border,f2_p.y,f2_i.y), select(m_border,f2_p.z,f2_i.z) );
-      const avx3f matrix_21( select(m_border,f3_p.x,f3_i.x), select(m_border,f3_p.y,f3_i.y), select(m_border,f3_p.z,f3_i.z) );
+      const Vec3<T> matrix_11( select(m_border,f0_p.x,f0_i.x), select(m_border,f0_p.y,f0_i.y), select(m_border,f0_p.z,f0_i.z) );
+      const Vec3<T> matrix_12( select(m_border,f1_p.x,f1_i.x), select(m_border,f1_p.y,f1_i.y), select(m_border,f1_p.z,f1_i.z) );
+      const Vec3<T> matrix_22( select(m_border,f2_p.x,f2_i.x), select(m_border,f2_p.y,f2_i.y), select(m_border,f2_p.z,f2_i.z) );
+      const Vec3<T> matrix_21( select(m_border,f3_p.x,f3_i.x), select(m_border,f3_p.y,f3_i.y), select(m_border,f3_p.z,f3_i.z) );
 
       
-      const avx3f matrix_00 = avx3f(matrix[0][0].x,matrix[0][0].y,matrix[0][0].z);
-      const avx3f matrix_10 = avx3f(matrix[1][0].x,matrix[1][0].y,matrix[1][0].z);
-      const avx3f matrix_20 = avx3f(matrix[2][0].x,matrix[2][0].y,matrix[2][0].z);
-      const avx3f matrix_30 = avx3f(matrix[3][0].x,matrix[3][0].y,matrix[3][0].z);
+      const Vec3<T> matrix_00 = Vec3<T>(matrix[0][0].x,matrix[0][0].y,matrix[0][0].z);
+      const Vec3<T> matrix_10 = Vec3<T>(matrix[1][0].x,matrix[1][0].y,matrix[1][0].z);
+      const Vec3<T> matrix_20 = Vec3<T>(matrix[2][0].x,matrix[2][0].y,matrix[2][0].z);
+      const Vec3<T> matrix_30 = Vec3<T>(matrix[3][0].x,matrix[3][0].y,matrix[3][0].z);
 
-      const avx3f matrix_01 = avx3f(matrix[0][1].x,matrix[0][1].y,matrix[0][1].z);
-      const avx3f matrix_02 = avx3f(matrix[0][2].x,matrix[0][2].y,matrix[0][2].z);
-      const avx3f matrix_03 = avx3f(matrix[0][3].x,matrix[0][3].y,matrix[0][3].z);
+      const Vec3<T> matrix_01 = Vec3<T>(matrix[0][1].x,matrix[0][1].y,matrix[0][1].z);
+      const Vec3<T> matrix_02 = Vec3<T>(matrix[0][2].x,matrix[0][2].y,matrix[0][2].z);
+      const Vec3<T> matrix_03 = Vec3<T>(matrix[0][3].x,matrix[0][3].y,matrix[0][3].z);
 
-      const avx3f matrix_31 = avx3f(matrix[3][1].x,matrix[3][1].y,matrix[3][1].z);
-      const avx3f matrix_32 = avx3f(matrix[3][2].x,matrix[3][2].y,matrix[3][2].z);
-      const avx3f matrix_33 = avx3f(matrix[3][3].x,matrix[3][3].y,matrix[3][3].z);
+      const Vec3<T> matrix_31 = Vec3<T>(matrix[3][1].x,matrix[3][1].y,matrix[3][1].z);
+      const Vec3<T> matrix_32 = Vec3<T>(matrix[3][2].x,matrix[3][2].y,matrix[3][2].z);
+      const Vec3<T> matrix_33 = Vec3<T>(matrix[3][3].x,matrix[3][3].y,matrix[3][3].z);
 
-      const avx3f matrix_13 = avx3f(matrix[1][3].x,matrix[1][3].y,matrix[1][3].z);
-      const avx3f matrix_23 = avx3f(matrix[2][3].x,matrix[2][3].y,matrix[2][3].z);
+      const Vec3<T> matrix_13 = Vec3<T>(matrix[1][3].x,matrix[1][3].y,matrix[1][3].z);
+      const Vec3<T> matrix_23 = Vec3<T>(matrix[2][3].x,matrix[2][3].y,matrix[2][3].z);
 
       /* tangentU */
-      const avx3f col0 = deCasteljau8(vv, matrix_00, matrix_10, matrix_20, matrix_30);
-      const avx3f col1 = deCasteljau8(vv, matrix_01, matrix_11, matrix_21, matrix_31);
-      const avx3f col2 = deCasteljau8(vv, matrix_02, matrix_12, matrix_22, matrix_32);
-      const avx3f col3 = deCasteljau8(vv, matrix_03, matrix_13, matrix_23, matrix_33);
+      const Vec3<T> col0 = deCasteljau_t(vv, matrix_00, matrix_10, matrix_20, matrix_30);
+      const Vec3<T> col1 = deCasteljau_t(vv, matrix_01, matrix_11, matrix_21, matrix_31);
+      const Vec3<T> col2 = deCasteljau_t(vv, matrix_02, matrix_12, matrix_22, matrix_32);
+      const Vec3<T> col3 = deCasteljau_t(vv, matrix_03, matrix_13, matrix_23, matrix_33);
       
-      const avx3f tangentU = deCasteljau_tangent8(uu, col0, col1, col2, col3);
-
-
+      const Vec3<T> tangentU = deCasteljau_tangent_t(uu, col0, col1, col2, col3);
       
       /* tangentV */
-      const avx3f row0 = deCasteljau8(uu, matrix_00, matrix_01, matrix_02, matrix_03);
-      const avx3f row1 = deCasteljau8(uu, matrix_10, matrix_11, matrix_12, matrix_13);
-      const avx3f row2 = deCasteljau8(uu, matrix_20, matrix_21, matrix_22, matrix_23);
-      const avx3f row3 = deCasteljau8(uu, matrix_30, matrix_31, matrix_32, matrix_33);
+      const Vec3<T> row0 = deCasteljau_t(uu, matrix_00, matrix_01, matrix_02, matrix_03);
+      const Vec3<T> row1 = deCasteljau_t(uu, matrix_10, matrix_11, matrix_12, matrix_13);
+      const Vec3<T> row2 = deCasteljau_t(uu, matrix_20, matrix_21, matrix_22, matrix_23);
+      const Vec3<T> row3 = deCasteljau_t(uu, matrix_30, matrix_31, matrix_32, matrix_33);
       
-      const avx3f tangentV = deCasteljau_tangent8(vv, row0, row1, row2, row3);
+      const Vec3<T> tangentV = deCasteljau_tangent_t(vv, row0, row1, row2, row3);
       
       /* normal = tangentU x tangentV */
-      const avx3f n = cross(tangentU,tangentV);
+      const Vec3<T> n = cross(tangentU,tangentV);
       return n;
     }
 
+
+#if !defined(__MIC__)
+
+#if defined(__AVX__)    
+
+    static __forceinline avx3f eval8  (const Vec3fa matrix[4][4], const avxf &uu, const avxf &vv) { return eval_t<avxb,avxf>(matrix,uu,vv); }
+    static __forceinline avx3f normal8(const Vec3fa matrix[4][4], const avxf &uu, const avxf &vv) { return normal_t<avxb,avxf>(matrix,uu,vv); }
+
 #endif
     
-#if defined(__MIC__)
+    static __forceinline sse3f eval4  (const Vec3fa matrix[4][4], const ssef &uu, const ssef &vv) { return eval_t<sseb,ssef>(matrix,uu,vv); }
+    static __forceinline sse3f normal8(const Vec3fa matrix[4][4], const ssef &uu, const ssef &vv) { return normal_t<sseb,ssef>(matrix,uu,vv); }
     
-    
+#else    
+
+
     static __forceinline mic_f extract_f_m_mic_f(const Vec3fa matrix[4][4],
 						 const size_t n)
     {
@@ -679,182 +626,21 @@ namespace embree
     
     
     static __forceinline mic3f eval16(const Vec3fa matrix[4][4],
-				      const mic_f uu,
-				      const mic_f vv) 
+				      const mic_f &uu,
+				      const mic_f &vv) 
     {
-      const mic_m m_border = (uu == 0.0f) | (uu == 1.0f) | (vv == 0.0f) | (vv == 1.0f);
-      
-      const mic3f f0_p = mic3f(matrix[1][1].x,matrix[1][1].y,matrix[1][1].z);
-      const mic3f f1_p = mic3f(matrix[1][2].x,matrix[1][2].y,matrix[1][2].z);
-      const mic3f f2_p = mic3f(matrix[2][2].x,matrix[2][2].y,matrix[2][2].z);
-      const mic3f f3_p = mic3f(matrix[2][1].x,matrix[2][1].y,matrix[2][1].z);
-      
-      const mic3f f0_m = extract_f_m_mic3f(matrix,0);
-      const mic3f f1_m = extract_f_m_mic3f(matrix,1);
-      const mic3f f2_m = extract_f_m_mic3f(matrix,2);
-      const mic3f f3_m = extract_f_m_mic3f(matrix,3);
-      
-      const mic_f one_minus_uu = mic_f(1.0f) - uu;
-      const mic_f one_minus_vv = mic_f(1.0f) - vv;      
-      
-#if 1
-      const mic_f inv0 = rcp(uu+vv);
-      const mic_f inv1 = rcp(one_minus_uu+vv);
-      const mic_f inv2 = rcp(one_minus_uu+one_minus_vv);
-      const mic_f inv3 = rcp(uu+one_minus_vv);
-#else
-      const mic_f inv0 = 1.0f/(uu+vv);
-      const mic_f inv1 = 1.0f/(one_minus_uu+vv);
-      const mic_f inv2 = 1.0f/(one_minus_uu+one_minus_vv);
-      const mic_f inv3 = 1.0f/(uu+one_minus_vv);
-#endif
-      
-      const mic3f f0_i = (          uu * f0_p +           vv * f0_m) * inv0;
-      const mic3f f1_i = (one_minus_uu * f1_m +           vv * f1_p) * inv1;
-      const mic3f f2_i = (one_minus_uu * f2_p + one_minus_vv * f2_m) * inv2;
-      const mic3f f3_i = (          uu * f3_m + one_minus_vv * f3_p) * inv3;
-      
-      const mic3f F0( select(m_border,f0_p.x,f0_i.x), select(m_border,f0_p.y,f0_i.y), select(m_border,f0_p.z,f0_i.z) );
-      const mic3f F1( select(m_border,f1_p.x,f1_i.x), select(m_border,f1_p.y,f1_i.y), select(m_border,f1_p.z,f1_i.z) );
-      const mic3f F2( select(m_border,f2_p.x,f2_i.x), select(m_border,f2_p.y,f2_i.y), select(m_border,f2_p.z,f2_i.z) );
-      const mic3f F3( select(m_border,f3_p.x,f3_i.x), select(m_border,f3_p.y,f3_i.y), select(m_border,f3_p.z,f3_i.z) );
-      
-      
-      // FIXME: merge u,v and extract after computation
-      const mic_f B0_u = one_minus_uu * one_minus_uu * one_minus_uu;
-      const mic_f B0_v = one_minus_vv * one_minus_vv * one_minus_vv;
-      const mic_f B1_u = 3.0f * one_minus_uu * one_minus_uu * uu;
-      const mic_f B1_v = 3.0f * one_minus_vv * one_minus_vv * vv;
-      const mic_f B2_u = 3.0f * one_minus_uu * uu * uu;
-      const mic_f B2_v = 3.0f * one_minus_vv * vv * vv;
-      const mic_f B3_u = uu * uu * uu;
-      const mic_f B3_v = vv * vv * vv;
-      
-      const mic_f x = 
-	(B0_u * matrix[0][0].x + B1_u * matrix[0][1].x + B2_u * matrix[0][2].x + B3_u * matrix[0][3].x) * B0_v + 
-	(B0_u * matrix[1][0].x + B1_u * F0.x           + B2_u * F1.x           + B3_u * matrix[1][3].x) * B1_v + 
-	(B0_u * matrix[2][0].x + B1_u * F3.x           + B2_u * F2.x           + B3_u * matrix[2][3].x) * B2_v + 
-	(B0_u * matrix[3][0].x + B1_u * matrix[3][1].x + B2_u * matrix[3][2].x + B3_u * matrix[3][3].x) * B3_v; 
-      
-      const mic_f y = 
-	(B0_u * matrix[0][0].y + B1_u * matrix[0][1].y + B2_u * matrix[0][2].y + B3_u * matrix[0][3].y) * B0_v + 
-	(B0_u * matrix[1][0].y + B1_u * F0.y           + B2_u * F1.y           + B3_u * matrix[1][3].y) * B1_v + 
-	(B0_u * matrix[2][0].y + B1_u * F3.y           + B2_u * F2.y           + B3_u * matrix[2][3].y) * B2_v + 
-	(B0_u * matrix[3][0].y + B1_u * matrix[3][1].y + B2_u * matrix[3][2].y + B3_u * matrix[3][3].y) * B3_v; 
-      
-      const mic_f z = 
-	(B0_u * matrix[0][0].z + B1_u * matrix[0][1].z + B2_u * matrix[0][2].z + B3_u * matrix[0][3].z) * B0_v + 
-	(B0_u * matrix[1][0].z + B1_u * F0.z           + B2_u * F1.z           + B3_u * matrix[1][3].z) * B1_v + 
-	(B0_u * matrix[2][0].z + B1_u * F3.z           + B2_u * F2.z           + B3_u * matrix[2][3].z) * B2_v + 
-	(B0_u * matrix[3][0].z + B1_u * matrix[3][1].z + B2_u * matrix[3][2].z + B3_u * matrix[3][3].z) * B3_v; 
-      
-      
-      return mic3f(x,y,z);
+      return eval_t<mic_m,mic_f>(matrix,uu,vv);
     }
     
-    
-    static __forceinline mic3f deCasteljau(const mic_f uu, const mic3f &v0, const mic3f &v1, const mic3f &v2, const mic3f &v3)
-    {
-      const mic_f one_minus_uu = 1.0f - uu;
-      
-      const mic3f v0_1 = one_minus_uu * v0 + uu * v1;
-      const mic3f v1_1 = one_minus_uu * v1 + uu * v2;
-      const mic3f v2_1 = one_minus_uu * v2 + uu * v3;
-      
-      const mic3f v0_2 = one_minus_uu * v0_1 + uu * v1_1;
-      const mic3f v1_2 = one_minus_uu * v1_1 + uu * v2_1;
-      
-      const mic3f v0_3 = one_minus_uu * v0_2 + uu * v1_2;
-      return v0_3;
-    }
-
-    static __forceinline mic3f deCasteljau_tangent(const mic_f uu, const mic3f &v0, const mic3f &v1, const mic3f &v2, const mic3f &v3)
-    {
-      const mic_f one_minus_uu = 1.0f - uu;
-      
-      const mic3f v0_1 = one_minus_uu * v0 + uu * v1;
-      const mic3f v1_1 = one_minus_uu * v1 + uu * v2;
-      const mic3f v2_1 = one_minus_uu * v2 + uu * v3;
-      
-      const mic3f v0_2 = one_minus_uu * v0_1 + uu * v1_1;
-      const mic3f v1_2 = one_minus_uu * v1_1 + uu * v2_1;
-      
-      return v1_2 - v0_2;
-    }
-
+   
 
     static __forceinline mic3f normal16(const Vec3fa matrix[4][4],
-					const mic_f uu,
-					const mic_f vv) 
+					const mic_f &uu,
+					const mic_f &vv) 
     {
-      const mic_m m_border = (uu == 0.0f) | (uu == 1.0f) | (vv == 0.0f) | (vv == 1.0f);
-      
-      const mic3f f0_p = mic3f(matrix[1][1].x,matrix[1][1].y,matrix[1][1].z);
-      const mic3f f1_p = mic3f(matrix[1][2].x,matrix[1][2].y,matrix[1][2].z);
-      const mic3f f2_p = mic3f(matrix[2][2].x,matrix[2][2].y,matrix[2][2].z);
-      const mic3f f3_p = mic3f(matrix[2][1].x,matrix[2][1].y,matrix[2][1].z);
-      
-      const mic3f f0_m = extract_f_m_mic3f(matrix,0);
-      const mic3f f1_m = extract_f_m_mic3f(matrix,1);
-      const mic3f f2_m = extract_f_m_mic3f(matrix,2);
-      const mic3f f3_m = extract_f_m_mic3f(matrix,3);
-      
-      const mic_f one_minus_uu = mic_f(1.0f) - uu;
-      const mic_f one_minus_vv = mic_f(1.0f) - vv;      
-      
-      const mic_f inv0 = rcp(uu+vv);
-      const mic_f inv1 = rcp(one_minus_uu+vv);
-      const mic_f inv2 = rcp(one_minus_uu+one_minus_vv);
-      const mic_f inv3 = rcp(uu+one_minus_vv);
-      
-      const mic3f f0_i = (          uu * f0_p +           vv * f0_m) * inv0;
-      const mic3f f1_i = (one_minus_uu * f1_m +           vv * f1_p) * inv1;
-      const mic3f f2_i = (one_minus_uu * f2_p + one_minus_vv * f2_m) * inv2;
-      const mic3f f3_i = (          uu * f3_m + one_minus_vv * f3_p) * inv3;
-      
-      const mic3f matrix_11( select(m_border,f0_p.x,f0_i.x), select(m_border,f0_p.y,f0_i.y), select(m_border,f0_p.z,f0_i.z) );
-      const mic3f matrix_12( select(m_border,f1_p.x,f1_i.x), select(m_border,f1_p.y,f1_i.y), select(m_border,f1_p.z,f1_i.z) );
-      const mic3f matrix_22( select(m_border,f2_p.x,f2_i.x), select(m_border,f2_p.y,f2_i.y), select(m_border,f2_p.z,f2_i.z) );
-      const mic3f matrix_21( select(m_border,f3_p.x,f3_i.x), select(m_border,f3_p.y,f3_i.y), select(m_border,f3_p.z,f3_i.z) );
-
-      
-      const mic3f matrix_00 = mic3f(matrix[0][0].x,matrix[0][0].y,matrix[0][0].z);
-      const mic3f matrix_10 = mic3f(matrix[1][0].x,matrix[1][0].y,matrix[1][0].z);
-      const mic3f matrix_20 = mic3f(matrix[2][0].x,matrix[2][0].y,matrix[2][0].z);
-      const mic3f matrix_30 = mic3f(matrix[3][0].x,matrix[3][0].y,matrix[3][0].z);
-
-      const mic3f matrix_01 = mic3f(matrix[0][1].x,matrix[0][1].y,matrix[0][1].z);
-      const mic3f matrix_02 = mic3f(matrix[0][2].x,matrix[0][2].y,matrix[0][2].z);
-      const mic3f matrix_03 = mic3f(matrix[0][3].x,matrix[0][3].y,matrix[0][3].z);
-
-      const mic3f matrix_31 = mic3f(matrix[3][1].x,matrix[3][1].y,matrix[3][1].z);
-      const mic3f matrix_32 = mic3f(matrix[3][2].x,matrix[3][2].y,matrix[3][2].z);
-      const mic3f matrix_33 = mic3f(matrix[3][3].x,matrix[3][3].y,matrix[3][3].z);
-
-      const mic3f matrix_13 = mic3f(matrix[1][3].x,matrix[1][3].y,matrix[1][3].z);
-      const mic3f matrix_23 = mic3f(matrix[2][3].x,matrix[2][3].y,matrix[2][3].z);
-
-      /* tangentU */
-      const mic3f col0 = deCasteljau(vv, matrix_00, matrix_10, matrix_20, matrix_30);
-      const mic3f col1 = deCasteljau(vv, matrix_01, matrix_11, matrix_21, matrix_31);
-      const mic3f col2 = deCasteljau(vv, matrix_02, matrix_12, matrix_22, matrix_32);
-      const mic3f col3 = deCasteljau(vv, matrix_03, matrix_13, matrix_23, matrix_33);
-      
-      const mic3f tangentU = deCasteljau_tangent(uu, col0, col1, col2, col3);
-
-      
-      /* tangentV */
-      const mic3f row0 = deCasteljau(uu, matrix_00, matrix_01, matrix_02, matrix_03);
-      const mic3f row1 = deCasteljau(uu, matrix_10, matrix_11, matrix_12, matrix_13);
-      const mic3f row2 = deCasteljau(uu, matrix_20, matrix_21, matrix_22, matrix_23);
-      const mic3f row3 = deCasteljau(uu, matrix_30, matrix_31, matrix_32, matrix_33);
-      
-      const mic3f tangentV = deCasteljau_tangent(vv, row0, row1, row2, row3);
-      
-      /* normal = tangentU x tangentV */
-      const mic3f n = cross(tangentU,tangentV);
-      return n;
+      return normal_t<mic_m,mic_f>(matrix,uu,vv);
     }
+
 #endif
 
 
