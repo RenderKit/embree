@@ -578,34 +578,33 @@ namespace embree
       return build(scene,patch,alloc,prims,x0,x1,y0,y1,luv,guv,Ng);
     }
 
-#if 0
-    template<>
-    __forceinline size_t build<CatmullClarkPatch>(Scene* scene, const CatmullClarkPatch& patch,
-						  FastAllocator::Thread& alloc, PrimRef* prims,
-						  const size_t x0, const size_t x1,
-						  const size_t y0, const size_t y1,
-						  const Vec2f& uv0, const Vec2f& uv1, const Vec2f& uv2, const Vec2f& uv3,
-						  const DiscreteTessellationPattern& pattern0, 
-						  const DiscreteTessellationPattern& pattern1, 
-						  const DiscreteTessellationPattern& pattern2, 
-						  const DiscreteTessellationPattern& pattern3, 
-						  const DiscreteTessellationPattern& pattern_x,
-						  const DiscreteTessellationPattern& pattern_y)
+    __forceinline size_t build_patch(Scene* scene, const CatmullClarkPatch& patch,
+				     FastAllocator::Thread& alloc, PrimRef* prims,
+				     const size_t x0, const size_t x1,
+				     const size_t y0, const size_t y1,
+				     const Vec2f& uv0, const Vec2f& uv1, const Vec2f& uv2, const Vec2f& uv3,
+				     const DiscreteTessellationPattern& pattern0, 
+				     const DiscreteTessellationPattern& pattern1, 
+				     const DiscreteTessellationPattern& pattern2, 
+				     const DiscreteTessellationPattern& pattern3, 
+				     const DiscreteTessellationPattern& pattern_x,
+				     const DiscreteTessellationPattern& pattern_y)
     {
+      /* calculate UVs */
       Vec2f luv[17*17];
-      Vec2f uv[17*17];
-      for (int y=0; y<height; y++) {
+      Vec2f guv[17*17];
+      for (int y=0; y<height; y++) 
+      {
         const float fy = pattern_y(y0+y);
-        for (int x=0; x<width; x++) {
-          const float fx = pattern_x(x0+x);
+        for (int x=0; x<width; x++) 
+	{
 	  assert(y*width+x < width*height);
+          const float fx = pattern_x(x0+x);
           luv[y*width+x] = Vec2f(fx,fy);
-
-	  const Vec2f& uv = luv[y*width+x];
-	  const Vec2f uv01 = (1.0f-uv.x) * uv0  + uv.x * uv1;
-	  const Vec2f uv32 = (1.0f-uv.x) * uv3  + uv.x * uv2;
-	  const Vec2f uvxy = (1.0f-uv.y) * uv01 + uv.y * uv32;
-	  uv[y*width+x] = uvxy;
+	  const Vec2f uv01 = (1.0f-fx) * uv0  + fx * uv1;
+	  const Vec2f uv32 = (1.0f-fx) * uv3  + fx * uv2;
+	  const Vec2f uvxy = (1.0f-fy) * uv01 + fy * uv32;
+	  guv[y*width+x] = uvxy;
         }
       }
 
@@ -613,9 +612,17 @@ namespace embree
       Vec3fa Ng[17*17];
       feature_adaptive_eval (patch, x0,x1,y0,y1, width,height,p,Ng);
       
-      return build(scene,patch,alloc,prims,x0,x1,y0,y1,luv,uv,Ng);
+      /* store UVs inside P */
+      for (int y=0; y<height; y++) {
+        for (int x=0; x<width; x++) {
+	  const int iu = clamp(guv[y*width+x].x * 0xFFFF, 0.0f, float(0xFFFF));
+	  const int iv = clamp(guv[y*width+x].y * 0xFFFF, 0.0f, float(0xFFFF));
+	  point(x,y).a = (iv << 16) | iu;
+        }
+      }
+
+      return build(scene,patch,alloc,prims,x0,x1,y0,y1,luv,guv,Ng);
     }
-#endif
 
     template<typename Patch>
     __forceinline size_t build(Scene* scene, const Patch& patch, 
