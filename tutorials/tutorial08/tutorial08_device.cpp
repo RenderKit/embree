@@ -82,7 +82,7 @@ unsigned int packPixel(const Vec3f &color) {
 
 }
 
-void DisplacementFunc(void* ptr, unsigned geomID, unsigned primID, 
+void DisplacementFunc(void* ptr, unsigned int geomID, int unsigned primID, 
                       const float* u,      /*!< u coordinates (source) */
                       const float* v,      /*!< v coordinates (source) */
                       const float* nx,     /*!< x coordinates of normal at point to displace (source) */
@@ -93,7 +93,7 @@ void DisplacementFunc(void* ptr, unsigned geomID, unsigned primID,
                       float* pz,           /*!< z coordinates of points to displace (source and target) */
                       size_t N)
 {
-#if 0
+ #if 0
   for (size_t i=0; i<N; i++) {
     const Vec3fa dP = 0.02f*Vec3fa(sin(100.0f*px[i]+0.5f),sin(100.0f*pz[i]+1.5f),cos(100.0f*py[i]));
     px[i] += dP.x; py[i] += dP.y; pz[i] += dP.z;
@@ -101,13 +101,13 @@ void DisplacementFunc(void* ptr, unsigned geomID, unsigned primID,
 #else
   for (size_t i=0; i<N; i++) {
     const Vec3fa P(px[i],py[i],pz[i]);
-    const Vec3fa N = normalize(Vec3fa(nx[i],ny[i],nz[i]));
+    const Vec3fa nor = Vec3fa(nx[i],ny[i],nz[i]);
     float dN = 0.0f;
     for (float freq = 1.0f; freq<40.0f; freq*= 2) {
-      float n = fabs(noise(freq*P));
+      float n = fabsf(noise(freq*P));
       dN += 1.4f*n*n/freq;
     }
-    const Vec3fa dP = dN*N;
+    const Vec3fa dP = dN*nor;
     px[i] += dP.x; py[i] += dP.y; pz[i] += dP.z;
   }
 #endif
@@ -197,17 +197,10 @@ void updateScene(RTCScene scene, const Vec3fa& cam_pos)
         const Vec3fa P = 0.5f*(v1+v0);
 	const Vec3fa dist = cam_pos - P;
 
-        //mesh->subdivlevel[e+i] = float(g_subdivision_levels)/16.0f;
-        //mesh->subdivlevel[e+i] = 200.0f*atan(0.5f*length(edge)/length(cam_pos-P));
-	//mesh->subdivlevel[e+i] = 60.0f*atan(0.5f*length(edge)/length(Vec3fa(2.86598f, -0.784929f, -0.0090338f)-P));
         level[i*4+k] = max(min(64.0f*(0.5f*length(edge)/length(dist)),MAX_EDGE_LEVEL),MIN_EDGE_LEVEL);
-	//mesh->subdivlevel[e+i] = 23;
+        //level[i*4+k] = 4; // MAX_EDGE_LEVEL;
 
-        //srand48(length(edge)/length(cam_pos-P)*12343.0f); mesh->subdivlevel[e+i] = 10.0f*drand48();
-      }
- 
-      //mesh->position
-      //level[i] = 4; // 16
+      } 
     }
     rtcUnmapBuffer(scene,geomID, RTC_LEVEL_BUFFER);
     rtcUpdate(scene,geomID);

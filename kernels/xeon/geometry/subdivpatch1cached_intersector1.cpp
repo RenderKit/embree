@@ -58,9 +58,9 @@ namespace embree
 
     for (size_t i=0;i<patch.grid_size_8wide_blocks;i++)
       {
-        const avxf uu = load8f(&grid_u[8*i]);
-        const avxf vv = load8f(&grid_v[8*i]);
-        const avx3f vtx = patch.eval8(uu,vv);
+        avxf uu = load8f(&grid_u[8*i]);
+        avxf vv = load8f(&grid_v[8*i]);
+        avx3f vtx = patch.eval8(uu,vv);
 
         if (unlikely(((SubdivMesh*)geom)->displFunc != NULL))
           {

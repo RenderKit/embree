@@ -6,7 +6,7 @@ on the Embree high performance ray tracing kernels. The renderer is used
 to demonstrate how Embree is used in practice and to measure Embree's
 performance in a realistic application scenario. The Embree Example
 Renderer is not a full featured renderer and not designed to be used for
-production renderering. The Embree Example Renderer is released as Open
+production rendering. The Embree Example Renderer is released as Open
 Source under the [Apache 2.0
 license](http://www.apache.org/licenses/LICENSE-2.0).
 
@@ -118,7 +118,7 @@ If you installed Embree, CMake will find it automatically and set the
 If you cannot install Embree on your system (e.g. when you don't have
 administrator rights) some additional configurations are required to use
 Embree from its build folder. Set the `EMBREE_INCLUDE_PATH` to the
-embree_root_directory/include folder and the `EMBREELIBRARY` to
+embree_root_directory/include folder and the `EMBREE_LIBRARY` to
 embree_root_directory/build/libembree.2.2.0.dylib for Mac OS\ X or
 embree_root_directory/build/libembree.so.2.2.0 for Linux. Under Linux
 you have to additionally add embree_root_directory/build to your
@@ -179,8 +179,8 @@ connect from a second machine to the render server:
 The navigation in the interactive display mode follows the camera orbit
 model, where the camera revolves around the current center of interest.
 The camera navigation assumes the $y$-axis to point upwards. If your
-scene is modelled using the $z$-axis as up axis we recommend rotating
-the scene.
+scene is modeled using the $z$-axis as up axis we recommend rotating the
+scene.
 
 Left Mouse Button
 :   Rotate around center of interest
@@ -191,10 +191,10 @@ Middle Mouse Button
 Right Mouse Button
 :   Dolly (move camera closer or away from center of interest)
 
-Strg+Left Mouse Button
+Ctrl+Left Mouse Button
 :   Pick center of interest
 
-Strg+Shift+Left Mouse Button
+Ctrl+Shift+Left Mouse Button
 :   Pick focal distances
 
 Alt+Left Mouse Button
