@@ -11,6 +11,7 @@
 // distributed under the License is distributed on an "AS IS" BASIS,        //
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. //
 // See the License for the specific language governing permissions and      //
+
 // limitations under the License.                                           //
 // ======================================================================== //
 
@@ -536,13 +537,6 @@ namespace embree
 
       pstate.init(iter,size_t(1024));
 
-      if (this->bvh->data_mem != NULL) 
-        {
-          os_free( this->bvh->data_mem, this->bvh->size_data_mem );
-          this->bvh->data_mem      = NULL;
-          this->bvh->size_data_mem = 0;
-        }
-
       this->bvh->geometry = this->scene;
 
       BVH4BuilderFast::build(threadIndex,threadCount);
@@ -567,12 +561,22 @@ namespace embree
     
     void BVH4SubdivPatch1CachedBuilderFast::create_primitive_array_sequential(size_t threadIndex, size_t threadCount, PrimInfo& pinfo)
     {
-      assert( this->bvh->data_mem == NULL);
+      //assert( this->bvh->data_mem == NULL);
 
-      std::cout << "ALLOCATING SUBDIVPATCH1CACHED MEMORY FOR " << numPrimitives << " PRIMITIVES" << std::endl;
+     if (this->bvh->size_data_mem < sizeof(SubdivPatch1Cached) * numPrimitives) 
+        {
+          if (this->bvh->data_mem) 
+            os_free( this->bvh->data_mem, this->bvh->size_data_mem );
+          this->bvh->data_mem      = NULL;
+          this->bvh->size_data_mem = 0;
+        }
 
-      this->bvh->size_data_mem = sizeof(SubdivPatch1Cached) * numPrimitives;
-      this->bvh->data_mem      = os_malloc( this->bvh->size_data_mem );        
+     if (bvh->data_mem == NULL)
+       {
+          std::cout << "ALLOCATING SUBDIVPATCH1CACHED MEMORY FOR " << numPrimitives << " PRIMITIVES" << std::endl;
+         this->bvh->size_data_mem = sizeof(SubdivPatch1Cached) * numPrimitives;
+         this->bvh->data_mem      = os_malloc( this->bvh->size_data_mem );        
+       }
         
       SubdivPatch1Cached *const subdiv_patches = (SubdivPatch1Cached *)this->bvh->data_mem;
 

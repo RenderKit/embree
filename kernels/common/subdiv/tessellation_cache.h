@@ -213,12 +213,12 @@ namespace embree
           if (unlikely(BIG_CACHE_ENTRIES*neededBlocks > allocated64BytesBlocks)) 
             {
               const unsigned int new_allocated64BytesBlocks = BIG_CACHE_ENTRIES*neededBlocks;
-
+#if DEBUG
               std::cout << "EXTENDING TESSELLATION CACHE (PER THREAD) FROM " 
                         << allocated64BytesBlocks << " TO " 
                         << new_allocated64BytesBlocks << " BLOCKS = " 
                         << new_allocated64BytesBlocks*64 << " BYTES" << std::endl << std::flush;
-
+#endif
               free_mem(lazymem);
               allocated64BytesBlocks = new_allocated64BytesBlocks; 
               lazymem = alloc_mem(allocated64BytesBlocks);
