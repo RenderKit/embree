@@ -65,7 +65,7 @@ namespace embree
         if (unlikely(((SubdivMesh*)geom)->displFunc != NULL))
           {
             avx3f normal = patch.normal8(uu,vv);
-            normal = normalize(normal);
+            normal = normalize_safe(normal);
               
             ((SubdivMesh*)geom)->displFunc(((SubdivMesh*)geom)->userPtr,
                                            patch.geom,

@@ -589,6 +589,7 @@ namespace embree
       
       const avx3f tangentU = deCasteljau_tangent8(uu, col0, col1, col2, col3);
 
+
       
       /* tangentV */
       const avx3f row0 = deCasteljau8(uu, matrix_00, matrix_01, matrix_02, matrix_03);

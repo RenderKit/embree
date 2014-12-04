@@ -586,21 +586,17 @@ namespace embree
 
           /* compute patch bounds */
           const BBox3fa bounds = subdiv_patches[patchIndex].bounds(mesh);
+
+          assert(bounds.lower.x <= bounds.upper.x);
+          assert(bounds.lower.y <= bounds.upper.y);
+          assert(bounds.lower.z <= bounds.upper.z);
+          
 	  prims[base.size()+s.size()] = PrimRef(bounds,patchIndex);
 	  s.add(bounds);
         }
         return s;
       }, [](PrimInfo a, const PrimInfo& b) { a.merge(b); return a; });
 
-#if DEBUG
-      for (size_t i=0; i<numPrimitives; i++) {
-	assert(prims[i].geomID() != -1);
-	assert(prims[i].bounds().lower.x <= prims[i].bounds().upper.x);
-	assert(prims[i].bounds().lower.y <= prims[i].bounds().upper.y);
-	assert(prims[i].bounds().lower.z <= prims[i].bounds().upper.z);
-      }
-#endif
-      //DBG_PRINT( pinfo );
     }
     
     void BVH4SubdivPatch1CachedBuilderFast::create_primitive_array_parallel  (size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, PrimInfo& pinfo) {
