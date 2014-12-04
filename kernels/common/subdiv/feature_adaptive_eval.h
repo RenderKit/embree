@@ -16,6 +16,8 @@
 
 #pragma once
 
+#if 0
+
 #include "catmullclark_patch.h"
 
 namespace embree
@@ -106,3 +108,4 @@ namespace embree
     FeatureAdaptiveEval eval(patch,x0,x1,y0,y1,width,height,dst);
   }
 }
+#endif

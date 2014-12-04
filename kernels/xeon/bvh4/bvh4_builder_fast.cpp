@@ -491,9 +491,9 @@ namespace embree
 	      return;
 	      }*/
 
-	    GregoryPatch patcheval; 
-	    //BSplinePatch patcheval;
-	    patcheval.init(patch);
+	    GregoryPatch patcheval; patcheval.init(patch);
+	    //BSplinePatch patcheval; patcheval.init(patch);
+	    
 
 	    const float l0 = patch.ring[0].edge_level;
 	    const float l1 = patch.ring[1].edge_level;
@@ -507,7 +507,8 @@ namespace embree
 	    const TessellationPattern pattern_y = pattern1.size() > pattern3.size() ? pattern1 : pattern3;
 	    const int nx = pattern_x.size();
 	    const int ny = pattern_y.size();
-            size_t N = Grid::create(mesh->id,f,scene,patcheval,alloc,&prims[base.size()+s.size()],0,nx,0,ny,uv[0],uv[1],uv[2],uv[3],pattern0,pattern1,pattern2,pattern3,pattern_x,pattern_y);
+            size_t N = Grid::create(mesh->id,f,scene,patcheval,alloc,&prims[base.size()+s.size()],0,nx,0,ny,uv,pattern0,pattern1,pattern2,pattern3,pattern_x,pattern_y);
+	    //size_t N = Grid::create(mesh->id,f,scene,patch,alloc,&prims[base.size()+s.size()],0,nx,0,ny,uv,pattern0,pattern1,pattern2,pattern3,pattern_x,pattern_y);
 	    assert(N == Grid::getNumEagerLeaves(nx,ny));
 	    for (size_t i=0; i<N; i++)
 	      s.add(prims[base.size()+s.size()].bounds());

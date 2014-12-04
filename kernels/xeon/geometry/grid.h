@@ -18,6 +18,7 @@
 
 #include "primitive.h"
 #include "discrete_tessellation.h"
+#include "common/subdiv/feature_adaptive_eval.h"
 
 #define GRID_COMPRESS_BOUNDS 1
 
@@ -573,9 +574,19 @@ namespace embree
         }
       }
 
+      return build(scene,patch,alloc,prims,x0,x1,y0,y1,luv,uv);
+    }
+
+    template<typename Patch>
+    __forceinline size_t build(Scene* scene, const Patch& patch, 
+			       FastAllocator::Thread& alloc, PrimRef* prims, 
+			       const size_t x0, const size_t x1,
+			       const size_t y0, const size_t y1,
+			       Vec2f luv[17*17], Vec2f uv[17*17])
+    {
       /* displace points */
       displace(scene,patch,luv,uv);
-
+      
       /* create lists of quads */
       size_t i=0;
       for (size_t y=y0; y<y1; y+=8) {
@@ -590,13 +601,14 @@ namespace embree
       return i;
     }
     
+    
     template<typename Patch>
     static size_t create(unsigned geomID, unsigned primID, 
                          Scene* scene, const Patch& patch,
                          FastAllocator::Thread& alloc, PrimRef* prims,
                          const size_t x0, const size_t x1,
                          const size_t y0, const size_t y1,
-                         const Vec2f& uv0, const Vec2f& uv1, const Vec2f& uv2, const Vec2f& uv3,
+                         const Vec2f uv[4], 
                          const DiscreteTessellationPattern& pattern0, 
                          const DiscreteTessellationPattern& pattern1, 
                          const DiscreteTessellationPattern& pattern2, 
@@ -614,7 +626,7 @@ namespace embree
 	  const float sx1 = float(lx0-x0)/float(x1-x0), sx0 = 1.0f-sx1;
 	  const float sy1 = float(ly0-y0)/float(y1-y0), sy0 = 1.0f-sy1;
 	  Grid* leaf = Grid::create(alloc,lx1-lx0+1,ly1-ly0+1,geomID,primID);
-	  size_t n = leaf->build(scene,patch,alloc,prims,lx0,lx1,ly0,ly1,uv0,uv1,uv2,uv3,pattern0,pattern1,pattern2,pattern3,pattern_x,pattern_y);
+	  size_t n = leaf->build(scene,patch,alloc,prims,lx0,lx1,ly0,ly1,uv[0],uv[1],uv[2],uv[3],pattern0,pattern1,pattern2,pattern3,pattern_x,pattern_y);
 	  prims += n;
 	  N += n;
 	}
