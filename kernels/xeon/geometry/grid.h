@@ -582,7 +582,7 @@ namespace embree
       return build(scene,patch,alloc,prims,x0,x1,y0,y1,luv,guv,Ng,pattern0,pattern1,pattern2,pattern3,pattern_x,pattern_y);
     }
 
-    __forceinline bool stitch_x(const CatmullClarkPatch& patch, const size_t y0, const size_t border, const size_t x0, const size_t x1,
+    __forceinline bool stitch_x(const CatmullClarkPatch& patch, const size_t y0, const size_t y_ofs, const size_t border, const size_t x0, const size_t x1,
 				const DiscreteTessellationPattern& fine, const DiscreteTessellationPattern& coarse, 
 				Vec2f luv[17*17], Vec3fa Ng[17*17])
     {
@@ -597,17 +597,18 @@ namespace embree
       feature_adaptive_eval (patch, y0!=0,y0!=0,x0s,x1s,2,coarse.size()+1, p_y0,Ng_y0,1,17);
 
       Vec2f luv_y0[17];
-      for (int x=x0; x<=x1; x++) {
-	const size_t xs = stitch(x,fine.size(),coarse.size());
+      int y = y0-y_ofs;
+      for (int x=0; x<=x1-x0; x++) {
+	const size_t xs = stitch(x0+x,fine.size(),coarse.size());
 	const float fx = coarse(xs);
-	luv[x*width+y0].y = fx;
-	p  [x*width+y0] = p_y0 [xs-x0s];
-	Ng [x*width+y0] = Ng_y0[xs-x0s];
+	luv[x*width+y].y = fx;
+	p  [x*width+y] = p_y0 [xs-x0s];
+	Ng [x*width+y] = Ng_y0[xs-x0s];
       }
       return true;
     }
 
-    __forceinline bool stitch_y(const CatmullClarkPatch& patch, const size_t y0, const size_t border, const size_t x0, const size_t x1,
+    __forceinline bool stitch_y(const CatmullClarkPatch& patch, const size_t y0, const size_t y_ofs, const size_t border, const size_t x0, const size_t x1,
 				const DiscreteTessellationPattern& fine, const DiscreteTessellationPattern& coarse, 
 				Vec2f luv[17*17], Vec3fa Ng[17*17])
     {
@@ -623,12 +624,13 @@ namespace embree
       
       Vec2f luv_y0[17];
       //const float fy = pattern_y(y0);
-      for (int x=x0; x<=x1; x++) {
-	const size_t xs = stitch(x,fine.size(),coarse.size());
+      int y = y0-y_ofs;
+      for (int x=0; x<=x1-x0; x++) {
+	const size_t xs = stitch(x0+x,fine.size(),coarse.size());
 	const float fx = coarse(xs);
-	luv[y0*width+x].x = fx;
-	p  [y0*width+x] = p_y0 [xs-x0s];
-	Ng [y0*width+x] = Ng_y0[xs-x0s];
+	luv[y*width+x].x = fx;
+	p  [y*width+x] = p_y0 [xs-x0s];
+	Ng [y*width+x] = Ng_y0[xs-x0s];
       }
       return true;
     }
@@ -659,15 +661,15 @@ namespace embree
       Vec3fa Ng[17*17];
       size_t swidth  = pattern_x.size()+1;
       size_t sheight = pattern_y.size()+1;
-//#if 0
+#if 0
       feature_adaptive_eval (patch, x0,x1,y0,y1, swidth,sheight, p,Ng,width,height);
-//#else
-	//const bool st = stitch_y(patch,y0,0        ,x0,x1,pattern_x,pattern0,luv,Ng);
-      //const bool sr = false; //stitch_x(patch,x1,swidth-1 ,y0,y1,pattern_y,pattern1,luv,Ng);
-      //const bool sb = false; //stitch_y(patch,y1,sheight-1,x0,x1,pattern_x,pattern2,luv,Ng);
-      //const bool sl = false; //stitch_x(patch,x0,0        ,y0,y1,pattern_y,pattern3,luv,Ng);
-      //feature_adaptive_eval (patch, x0+sl,x1-sr,y0+st,y1-sb, swidth,sheight, p+st*width+sl,Ng+st*width+sl,width,height);
-//#endif
+#else
+      const bool st = stitch_y(patch,y0,y0,0        ,x0,x1,pattern_x,pattern0,luv,Ng);
+      const bool sr = stitch_x(patch,x1,x0,swidth-1 ,y0,y1,pattern_y,pattern1,luv,Ng);
+      const bool sb = stitch_y(patch,y1,y0,sheight-1,x0,x1,pattern_x,pattern2,luv,Ng);
+      const bool sl = stitch_x(patch,x0,x0,0        ,y0,y1,pattern_y,pattern3,luv,Ng);
+      feature_adaptive_eval (patch, x0+sl,x1-sr,y0+st,y1-sb, swidth,sheight, p+st*width+sl,Ng+st*width+sl,width,height);
+#endif
 
       //for (size_t y=y0; y<=y1; y++)
       //for (size_t x=x0; x<=x1; x++)
