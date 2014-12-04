@@ -25,9 +25,11 @@ const int numTheta = 2*numPhi;
 
 //extern unsigned int g_subdivision_levels;
 
-#define MAX_EDGE_LEVEL 64.0f
+#define MAX_EDGE_LEVEL 32.0f
 #define MIN_EDGE_LEVEL 2.0f
 #define ENABLE_DISPLACEMENTS 1
+#define LEVEL_FACTOR 256.0f
+//#define LEVEL_FACTOR 64.0f
 
 /* error reporting function */
 void error_handler(const RTCError code, const char* str)
@@ -198,7 +200,7 @@ void updateScene(RTCScene scene, const Vec3fa& cam_pos)
         const Vec3fa P = 0.5f*(v1+v0);
 	const Vec3fa dist = cam_pos - P;
 	//const Vec3fa dist = Vec3fa(-0.704586f, -2.43012f, 8.60752f) - P;
-        level[i*4+k] = max(min(256.0f*(0.5f*length(edge)/length(dist)),MAX_EDGE_LEVEL),MIN_EDGE_LEVEL);
+        level[i*4+k] = max(min(LEVEL_FACTOR*(0.5f*length(edge)/length(dist)),MAX_EDGE_LEVEL),MIN_EDGE_LEVEL);
         //level[i*4+k] = 8; // MAX_EDGE_LEVEL;
       } 
     }
@@ -220,7 +222,7 @@ void updateScene(RTCScene scene, const Vec3fa& cam_pos)
 	const Vec3fa dist = cam_pos - P;
 
         //mesh->subdivlevel[e+i] = float(g_subdivision_levels)/16.0f;
-        mesh->subdivlevel[e+i] = max(min(256.0f*(0.5f*length(edge)/length(dist)),MAX_EDGE_LEVEL),MIN_EDGE_LEVEL);
+        mesh->subdivlevel[e+i] = max(min(LEVEL_FACTOR*(0.5f*length(edge)/length(dist)),MAX_EDGE_LEVEL),MIN_EDGE_LEVEL);
 	//mesh->subdivlevel[e+i] = 32;
 	//static int randinit = 0; randinit++; //;
 	//PRINT(randinit);

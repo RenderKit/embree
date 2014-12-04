@@ -27,7 +27,7 @@ namespace embree
 #define TIMER(x) 
   
 
-  __thread TessellationCache<BVH4,BVH4::NodeRef> *thread_cache = NULL;
+  __thread TessellationCache *thread_cache = NULL;
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -329,13 +329,13 @@ namespace embree
   {
     const unsigned int commitCounter = ((Scene*)geom)->commitCounter;
 
-    TessellationCache<BVH4,BVH4::NodeRef> *local_cache = NULL;
+    TessellationCache *local_cache = NULL;
 
     if (unlikely(!thread_cache))
       {
 
         /* need thread cache to be aligned */
-        thread_cache = (TessellationCache<BVH4,BVH4::NodeRef> *)_mm_malloc(sizeof(TessellationCache<BVH4,BVH4::NodeRef>),64);
+        thread_cache = (TessellationCache *)_mm_malloc(sizeof(TessellationCache),64);
         assert( (size_t)thread_cache % 64 == 0 );
         thread_cache->init();	
 
@@ -349,20 +349,21 @@ namespace embree
     local_cache = thread_cache;
 
     SubdivPatch1Cached* tag = (SubdivPatch1Cached*)subdiv_patch;
-
+    
     BVH4::NodeRef root = local_cache->lookup(tag,commitCounter);
 
-
-    if (unlikely(root == BVH4::invalidNode))
+    if (unlikely(root == (size_t)-1))
       {
         const unsigned int blocks = subdiv_patch->grid_subtree_size_64b_blocks;
-        BVH4::NodeRef &new_root = local_cache->insert(tag,commitCounter,blocks);
+        size_t &new_root = local_cache->insert(tag,commitCounter,blocks);
+        //cache_root.clearFlags();
+        new_root &= ~BVH4::align_mask;
 
-        assert( new_root.isNode() );
+        assert( ((BVH4::NodeRef)new_root).isNode() );
 
-        BVH4::Node* node = new_root.node(); // pointer to mem
+        BVH4::Node* node = (BVH4::Node*)new_root; // new_root.node(); // pointer to mem
 
-        new_root = buildSubdivPatchTree(*subdiv_patch,node,((Scene*)geom)->getSubdivMesh(subdiv_patch->geom));
+        new_root = (size_t)buildSubdivPatchTree(*subdiv_patch,node,((Scene*)geom)->getSubdivMesh(subdiv_patch->geom));
         assert( new_root != BVH4::invalidNode);
         //local_cache->printStats();
         return new_root;
