@@ -578,17 +578,17 @@ namespace embree
       return build(scene,patch,alloc,prims,x0,x1,y0,y1,luv,guv,Ng);
     }
 
-    __forceinline size_t build_patch(Scene* scene, const CatmullClarkPatch& patch,
-				     FastAllocator::Thread& alloc, PrimRef* prims,
-				     const size_t x0, const size_t x1,
-				     const size_t y0, const size_t y1,
-				     const Vec2f& uv0, const Vec2f& uv1, const Vec2f& uv2, const Vec2f& uv3,
-				     const DiscreteTessellationPattern& pattern0, 
-				     const DiscreteTessellationPattern& pattern1, 
-				     const DiscreteTessellationPattern& pattern2, 
-				     const DiscreteTessellationPattern& pattern3, 
-				     const DiscreteTessellationPattern& pattern_x,
-				     const DiscreteTessellationPattern& pattern_y)
+    __forceinline size_t build(Scene* scene, const CatmullClarkPatch& patch,
+			       FastAllocator::Thread& alloc, PrimRef* prims,
+			       const size_t x0, const size_t x1,
+			       const size_t y0, const size_t y1,
+			       const Vec2f& uv0, const Vec2f& uv1, const Vec2f& uv2, const Vec2f& uv3,
+			       const DiscreteTessellationPattern& pattern0, 
+			       const DiscreteTessellationPattern& pattern1, 
+			       const DiscreteTessellationPattern& pattern2, 
+			       const DiscreteTessellationPattern& pattern3, 
+			       const DiscreteTessellationPattern& pattern_x,
+			       const DiscreteTessellationPattern& pattern_y)
     {
       /* calculate UVs */
       Vec2f luv[17*17];
@@ -611,10 +611,11 @@ namespace embree
       /* evaluate position and uvs */
       Vec3fa Ng[17*17];
       feature_adaptive_eval (patch, x0,x1,y0,y1, width,height,p,Ng);
-      
+
       /* store UVs inside P */
       for (int y=0; y<height; y++) {
         for (int x=0; x<width; x++) {
+	  //PRINT3(x,y,point(x,y));
 	  const int iu = clamp(guv[y*width+x].x * 0xFFFF, 0.0f, float(0xFFFF));
 	  const int iv = clamp(guv[y*width+x].y * 0xFFFF, 0.0f, float(0xFFFF));
 	  point(x,y).a = (iv << 16) | iu;

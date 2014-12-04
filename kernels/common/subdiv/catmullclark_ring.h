@@ -311,6 +311,38 @@ namespace embree
       return true;
     }
 
+    /* returns true if the vertex can be part of a dicable B-Spline patch or is a final Quad */
+    __forceinline bool isRegularOrFinal2(const size_t depth) const 
+    {
+      //if (depth < 2)
+      if (vertex_level > 1.0f) 
+      {
+	if (border_index == -1) 
+	{
+	  if (valence != 4)
+	    return false;
+	  if (vertex_crease_weight > 0.0f) 
+	    return false;
+	} 
+	else {
+	  if (valence == 2 && vertex_crease_weight > 1E5); // FIXME: use inf
+	  else if (valence == 3 && vertex_crease_weight == 0.0f);
+	  else return false;
+	}
+
+	for (size_t i=1; i<valence; i++)
+	  if (crease_weight[i] > 0.0f && (2*i != border_index) && (2*(i-1) != border_index)) 
+	    return false;
+
+	if (crease_weight[0] > 0.0f && (2*(valence-1) != border_index)) 
+	  return false;
+	
+	if (!noForcedSubdivision)
+	  return false;
+      }
+      return true;
+    }
+
     /* returns true if the vertex can be part of a dicable gregory patch (using gregory patches) */
     __forceinline bool isGregoryOrFinal(const size_t depth) const 
     {

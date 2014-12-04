@@ -81,6 +81,11 @@ namespace embree
       return ring[0].isRegularOrFinal(depth) && ring[1].isRegularOrFinal(depth) && ring[2].isRegularOrFinal(depth) && ring[3].isRegularOrFinal(depth);
     }
 
+    /*! returns true if the patch is a B-spline patch or final Quad */
+    __forceinline bool isRegularOrFinal2(const size_t depth) const {
+      return ring[0].isRegularOrFinal2(depth) && ring[1].isRegularOrFinal2(depth) && ring[2].isRegularOrFinal2(depth) && ring[3].isRegularOrFinal2(depth);
+    }
+
     /*! returns true of the patch is a Gregory patch */
     __forceinline bool isGregoryOrFinal(const size_t depth) const {
       return ring[0].isGregoryOrFinal(depth) && ring[1].isGregoryOrFinal(depth) && ring[2].isGregoryOrFinal(depth) && ring[3].isGregoryOrFinal(depth);

@@ -33,28 +33,37 @@ namespace embree
 				       const size_t width, const size_t height, Vec3fa* P, Vec3fa* Ng)
       : x0(x0), x1(x1), y0(y0), y1(y1), width(width), height(height), P(P), Ng(Ng) 
     {
-      const Vec2f lower(float(x0)/float(width) , float(x1)/float(width ));
-      const Vec2f upper(float(y0)/float(height), float(y1)/float(height));
+      //PRINT2(x0,x1);
+      //PRINT2(y0,y1);
+      //PRINT2(width,height);
+      const Vec2f lower(float(x0)/float(width -1), float(y0)/float(height-1));
+      const Vec2f upper(float(x1)/float(width -1), float(y1)/float(height-1));
       eval(patch, BBox2f(zero,one), BBox2f(lower,upper), 0);
     }
 
     void dice(const CatmullClarkPatch& patch, const BBox2f& srange, const BBox2f& erange)
     {
-      size_t lx0 = clamp((size_t)floor(erange.lower.x*width ),x0,x1);
-      size_t lx1 = clamp((size_t)ceil (erange.upper.x*width ),x0,x1); lx1 += (lx1 == x1);
-      size_t ly0 = clamp((size_t)floor(erange.lower.y*height),y0,y1);
-      size_t ly1 = clamp((size_t)ceil (erange.upper.y*height),y0,y1); ly1 += (ly1 == y1);
+      //PRINT(srange);
+      //PRINT(erange);
+      size_t lx0 = clamp((size_t)floor(erange.lower.x*(width -1)),x0,x1);
+      size_t lx1 = clamp((size_t)ceil (erange.upper.x*(width -1)),x0,x1); lx1 += (lx1 == x1);
+      size_t ly0 = clamp((size_t)floor(erange.lower.y*(height-1)),y0,y1);
+      size_t ly1 = clamp((size_t)ceil (erange.upper.y*(height-1)),y0,y1); ly1 += (ly1 == y1);
       if (lx0 >= lx1 || ly0 >= ly1) return;
+      //PRINT2(lx0,lx1-1);
+      //PRINT2(ly0,ly1-1);
 
       if (patch.isRegular()) 
       {
 	BSplinePatch patcheval;
 	patcheval.init(patch);
-	for (size_t y=ly0; y<ly1; y++) {
-	  for (size_t x=lx0; x<lx1; x++) { 
+	for (size_t y=ly0; y<ly1; y++) 
+	{
+	  for (size_t x=lx0; x<lx1; x++) 
+	  { 
 	    assert(x<width && y<height);
-	    const float fx = (float(x)*rcp((float)width )-srange.lower.x)*rcp(srange.upper.x-srange.lower.x);
-	    const float fy = (float(y)*rcp((float)height)-srange.lower.y)*rcp(srange.upper.y-srange.lower.y);
+	    const float fx = (float(x)*rcp((float)(width -1))-srange.lower.x)*rcp(srange.upper.x-srange.lower.x);
+	    const float fy = (float(y)*rcp((float)(height-1))-srange.lower.y)*rcp(srange.upper.y-srange.lower.y);
 	    P [y*width+x] = patcheval.eval  (fx,fy);
 	    Ng[y*width+x] = patcheval.normal(fx,fy);
 	  }
@@ -62,12 +71,21 @@ namespace embree
       }
       else 
       {
-	for (size_t y=ly0; y<ly1; y++) {
-	  for (size_t x=lx0; x<lx1; x++) { 
+	for (size_t y=ly0; y<ly1; y++) 
+	{
+	  for (size_t x=lx0; x<lx1; x++) 
+	  { 
 	    assert(x<width && y<height);
-	    const float sx1 = (float(x)*rcp((float)width )-srange.lower.x)*rcp(srange.upper.x-srange.lower.x), sx0 = 1.0f-sx1;
-	    const float sy1 = (float(y)*rcp((float)height)-srange.lower.y)*rcp(srange.upper.y-srange.lower.y), sy0 = 1.0f-sy1;
-	    P [y*width+x] = sy0*(sx0*patch.ring[0].vtx+sx1*patch.ring[1].vtx) + sy1*(sx0*patch.ring[3].vtx+sx1*patch.ring[2].vtx);
+	    
+	    const float sx1 = (float(x)*rcp((float)(width -1))-srange.lower.x)*rcp(srange.upper.x-srange.lower.x), sx0 = 1.0f-sx1;
+	    const float sy1 = (float(y)*rcp((float)(height-1))-srange.lower.y)*rcp(srange.upper.y-srange.lower.y), sy0 = 1.0f-sy1;
+
+	    const Vec3fa P0 = patch.ring[0].getLimitVertex();
+	    const Vec3fa P1 = patch.ring[1].getLimitVertex();
+	    const Vec3fa P2 = patch.ring[2].getLimitVertex();
+	    const Vec3fa P3 = patch.ring[3].getLimitVertex();
+	    P [y*width+x] = sy0*(sx0*P0+sx1*P1) + sy1*(sx0*P3+sx1*P2);
+
 	    const Vec3fa Ng0 = patch.ring[0].getNormal();
 	    const Vec3fa Ng1 = patch.ring[1].getNormal();
 	    const Vec3fa Ng2 = patch.ring[2].getNormal();
@@ -80,10 +98,13 @@ namespace embree
 
     void eval(const CatmullClarkPatch& patch, const BBox2f& srange, const BBox2f& erange, const size_t depth)
     {
+      //PRINT(depth);
+      //PRINT(srange);
+      //PRINT(erange);
       if (erange.empty())
 	return;
       
-      if (patch.isRegularOrFinal(depth))
+      if (patch.isRegularOrFinal2(depth))
 	return dice(patch,srange,erange);
 
       CatmullClarkPatch patches[4]; 
