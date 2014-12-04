@@ -238,7 +238,7 @@ namespace embree
 
   __forceinline Vec3fa normalize_safe( const Vec3fa& a ) { 
     const float d = dot(a,a);
-    if (d == 0.0f) 
+    if (unlikely(d == 0.0f)) 
       return a;
     else
       return a*rsqrt(d);
