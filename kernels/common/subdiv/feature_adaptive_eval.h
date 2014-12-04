@@ -24,20 +24,21 @@ namespace embree
   {
     const size_t x0,x1;
     const size_t y0,y1;
-    const size_t width,height;
+    const size_t swidth,sheight;
     Vec3fa* const P;
     Vec3fa* const Ng;
+    const size_t dwidth,dheight;
     
     __forceinline FeatureAdaptiveEval (const CatmullClarkPatch& patch, 
-				       const size_t x0, const size_t x1, const size_t y0, const size_t y1, 
-				       const size_t width, const size_t height, Vec3fa* P, Vec3fa* Ng)
-      : x0(x0), x1(x1), y0(y0), y1(y1), width(width), height(height), P(P), Ng(Ng) 
+				       const size_t x0, const size_t x1, const size_t y0, const size_t y1, const size_t swidth, const size_t sheight, 
+				       Vec3fa* P, Vec3fa* Ng, const size_t dwidth, const size_t dheight)
+      : x0(x0), x1(x1), y0(y0), y1(y1), swidth(swidth), sheight(sheight), P(P), Ng(Ng), dwidth(dwidth), dheight(dheight)
     {
       //PRINT2(x0,x1);
       //PRINT2(y0,y1);
-      //PRINT2(width,height);
-      const Vec2f lower(float(x0)/float(width -1), float(y0)/float(height-1));
-      const Vec2f upper(float(x1)/float(width -1), float(y1)/float(height-1));
+      //PRINT2(swidth,sheight);
+      const Vec2f lower(float(x0)/float(swidth -1), float(y0)/float(sheight-1));
+      const Vec2f upper(float(x1)/float(swidth -1), float(y1)/float(sheight-1));
       eval(patch, BBox2f(zero,one), BBox2f(lower,upper), 0);
     }
 
@@ -45,10 +46,10 @@ namespace embree
     {
       //PRINT(srange);
       //PRINT(erange);
-      size_t lx0 = clamp((size_t)floor(erange.lower.x*(width -1)),x0,x1);
-      size_t lx1 = clamp((size_t)ceil (erange.upper.x*(width -1)),x0,x1); lx1 += (lx1 == x1);
-      size_t ly0 = clamp((size_t)floor(erange.lower.y*(height-1)),y0,y1);
-      size_t ly1 = clamp((size_t)ceil (erange.upper.y*(height-1)),y0,y1); ly1 += (ly1 == y1);
+      size_t lx0 = clamp((size_t)floor(erange.lower.x*(swidth -1)),x0,x1);
+      size_t lx1 = clamp((size_t)ceil (erange.upper.x*(swidth -1)),x0,x1); lx1 += (lx1 == x1);
+      size_t ly0 = clamp((size_t)floor(erange.lower.y*(sheight-1)),y0,y1);
+      size_t ly1 = clamp((size_t)ceil (erange.upper.y*(sheight-1)),y0,y1); ly1 += (ly1 == y1);
       if (lx0 >= lx1 || ly0 >= ly1) return;
       //PRINT2(lx0,lx1-1);
       //PRINT2(ly0,ly1-1);
@@ -61,11 +62,11 @@ namespace embree
 	{
 	  for (size_t x=lx0; x<lx1; x++) 
 	  { 
-	    assert(x<width && y<height);
-	    const float fx = (float(x)*rcp((float)(width -1))-srange.lower.x)*rcp(srange.upper.x-srange.lower.x);
-	    const float fy = (float(y)*rcp((float)(height-1))-srange.lower.y)*rcp(srange.upper.y-srange.lower.y);
-	    P [y*width+x] = patcheval.eval  (fx,fy);
-	    Ng[y*width+x] = patcheval.normal(fx,fy);
+	    assert(x<swidth && y<sheight);
+	    const float fx = (float(x)*rcp((float)(swidth -1))-srange.lower.x)*rcp(srange.upper.x-srange.lower.x);
+	    const float fy = (float(y)*rcp((float)(sheight-1))-srange.lower.y)*rcp(srange.upper.y-srange.lower.y);
+	    P [y*dwidth+x] = patcheval.eval  (fx,fy);
+	    Ng[y*dwidth+x] = patcheval.normal(fx,fy);
 	  }
 	}
       }
@@ -75,22 +76,22 @@ namespace embree
 	{
 	  for (size_t x=lx0; x<lx1; x++) 
 	  { 
-	    assert(x<width && y<height);
+	    assert(x<swidth && y<sheight);
 	    
-	    const float sx1 = (float(x)*rcp((float)(width -1))-srange.lower.x)*rcp(srange.upper.x-srange.lower.x), sx0 = 1.0f-sx1;
-	    const float sy1 = (float(y)*rcp((float)(height-1))-srange.lower.y)*rcp(srange.upper.y-srange.lower.y), sy0 = 1.0f-sy1;
+	    const float sx1 = (float(x)*rcp((float)(swidth -1))-srange.lower.x)*rcp(srange.upper.x-srange.lower.x), sx0 = 1.0f-sx1;
+	    const float sy1 = (float(y)*rcp((float)(sheight-1))-srange.lower.y)*rcp(srange.upper.y-srange.lower.y), sy0 = 1.0f-sy1;
 
 	    const Vec3fa P0 = patch.ring[0].getLimitVertex();
 	    const Vec3fa P1 = patch.ring[1].getLimitVertex();
 	    const Vec3fa P2 = patch.ring[2].getLimitVertex();
 	    const Vec3fa P3 = patch.ring[3].getLimitVertex();
-	    P [y*width+x] = sy0*(sx0*P0+sx1*P1) + sy1*(sx0*P3+sx1*P2);
+	    P [y*dwidth+x] = sy0*(sx0*P0+sx1*P1) + sy1*(sx0*P3+sx1*P2);
 
 	    const Vec3fa Ng0 = patch.ring[0].getNormal();
 	    const Vec3fa Ng1 = patch.ring[1].getNormal();
 	    const Vec3fa Ng2 = patch.ring[2].getNormal();
 	    const Vec3fa Ng3 = patch.ring[3].getNormal();
-	    Ng[y*width+x] = sy0*(sx0*Ng0+sx1*Ng1) + sy1*(sx0*Ng3+sx1*Ng2);
+	    Ng[y*dwidth+x] = sy0*(sx0*Ng0+sx1*Ng1) + sy1*(sx0*Ng3+sx1*Ng2);
 	  }
 	}
       }
@@ -124,10 +125,12 @@ namespace embree
   };
 
   __forceinline void feature_adaptive_eval (const CatmullClarkPatch& patch, 
-					    const size_t x0, const size_t x1, const size_t y0, const size_t y1, 
-					    const size_t width, const size_t height, Vec3fa* P, Vec3fa* Ng)
+					    const size_t x0, const size_t x1, const size_t y0, const size_t y1, const size_t swidth, const size_t sheight, 
+					    Vec3fa* P, Vec3fa* Ng, const size_t dwidth, const size_t dheight)
   {
-    FeatureAdaptiveEval eval(patch,x0,x1,y0,y1,width,height,P,Ng);
+    FeatureAdaptiveEval eval(patch,
+			     x0,x1,y0,y1,swidth,sheight,
+			     P,Ng,dwidth,dheight);
   }
 }
 

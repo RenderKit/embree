@@ -582,6 +582,34 @@ namespace embree
       return build(scene,patch,alloc,prims,x0,x1,y0,y1,luv,guv,Ng,pattern0,pattern1,pattern2,pattern3,pattern_x,pattern_y);
     }
 
+#if 0
+    __forceinline bool stitch_y(const size_t y0, const size_t border, const size_t x0, const size_t x1,
+				const DiscreteTessellationPattern& coarse, const DiscreteTessellationPattern& fine, 
+				Vec2f luv[17*17], Vec3fa Ng[17*17])
+    {
+      if (unlikely(y0 != border || coarse.size() == fine.size()))
+	return false;
+
+      const size_t x0s = stitch(x0,coarse.size(),fine.size());
+      const size_t x1s = stitch(x1,coarse.size(),fine.size());
+      assert(x1s-x0s < 17);
+      
+      Vec3fa p_y0[17], Ng_y0[17];
+      feature_adaptive_eval (patch, x0s,x1s,y0,y0, fine.size(),1,p_y0,Ng_y0);
+      
+      Vec2f luv_y0[17];
+      const float fy = pattern_y(y0);
+      for (int x=x0; x<=x1; x++) {
+	const size_t xs = stitch(x,coarse.size(),fine.size());
+	const float fx = fine(xs);
+	luv[y*width+x] = Vec2f(fx,fy);
+	p  [y*width+x] = p_y0 [xs-x0s];
+	Ng [y*width+x] = Ng_y0[xs-x0s];
+      }
+      return true;
+    }
+#endif
+
     __forceinline size_t build(Scene* scene, const CatmullClarkPatch& patch,
 			       FastAllocator::Thread& alloc, PrimRef* prims,
 			       const size_t x0, const size_t x1,
@@ -604,48 +632,13 @@ namespace embree
         }
       }
 
-#if 0
-      /* stitch borders */
-      if (unlikely(y0 == 0)) {
-        for (int x=x0; x<=x1; x++) {
-          const size_t xs = stitch(x,pattern_x.size(),pattern0.size());
-	  p[y0*width+xs] = p[y0*width+x];
-	  Ng[y0*width+xs] = Ng[y0*width+x];
-	  guv[y0*width+xs] = guv[y0*width+x];
-	  luv[y0*width+xs] = luv[y0*width+x];
-        }
-      }
-
-      if (unlikely(y1 == height-1)) {
-	for (int x=x0; x<=x1; x++) {
-	  const size_t xs = stitch(x,pattern_x.size(),pattern2.size());
-	  p[y1*width+xs] = p[y1*width+x];
-	  Ng[y1*width+xs] = Ng[y1*width+x];
-	  guv[y1*width+xs] = guv[y1*width+x];
-	  luv[y1*width+xs] = luv[y1*width+x];
-	}
-      }
-
-      if (unlikely(x0 == 0)) {
-        for (int y=y0; y<=y1; y++) {
-          const size_t ys = stitch(y,pattern_y.size(),pattern3.size());
-          p[ys*width+x0] = p[y*width+x0];
-	  Ng[ys*width+x0] = Ng[y*width+x0];
-	  guv[ys*width+x0] = guv[y*width+x0];
-	  luv[ys*width+x0] = luv[y*width+x0];
-        }
-      }
-
-      if (unlikely(x1 == width-1)) {
-	for (int y=y0; y<=y1; y++) {
-	  const size_t ys = stitch(y,pattern_y.size(),pattern1.size());
-	  p[ys*width+x1] = p[y*width+x1];
-	  Ng[ys*width+x1] = Ng[y*width+x1];
-	  guv[ys*width+x1] = guv[y*width+x1];
-	  luv[ys*width+x1] = luv[y*width+x1];
-	}
-      }
-#endif
+      /* evaluate position and uvs */
+      Vec3fa Ng[17*17];
+      const bool st = false; //stitch_y(y0,0       ,x0,x1,pattern_x,pattern0,luv,Ng);
+      const bool sr = false; //stitch_x(x0,width-1 ,y0,y1,pattern_y,pattern1,luv,Ng);
+      const bool sb = false; //stitch_y(y0,height-1,x0,x1,pattern_x,pattern2,luv,Ng);
+      const bool sl = false; //stitch_x(x0,0       ,y0,y1,pattern_y,pattern3,luv,Ng);
+      feature_adaptive_eval (patch, x0+sl,x1-sr,y0+st,y1-sb, width,height, p,Ng,width,height);
 
       /* calculate global UVs */
       Vec2f guv[17*17];
@@ -660,10 +653,6 @@ namespace embree
 	  guv[y*width+x] = uvxy;
         }
       }
-
-      /* evaluate position and uvs */
-      Vec3fa Ng[17*17];
-      feature_adaptive_eval (patch, x0,x1,y0,y1, width,height,p,Ng);
 
       /* store UVs inside P */
       for (int y=0; y<height; y++) {
