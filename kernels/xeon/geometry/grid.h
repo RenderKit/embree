@@ -481,6 +481,10 @@ namespace embree
       const size_t h = (height+15)/16;
       return w*h;
     }
+
+    int stitch(const int x, const int fine, const int coarse) {
+      return (2*x+1)*coarse/(2*fine);
+    }
     
     template<typename Patch>
     __forceinline void displace(Scene* scene, const Patch& patch, const Vec2f* luv, const Vec2f* uv, const Vec3fa* Ng)
@@ -575,7 +579,7 @@ namespace embree
         }
       }
 
-      return build(scene,patch,alloc,prims,x0,x1,y0,y1,luv,guv,Ng);
+      return build(scene,patch,alloc,prims,x0,x1,y0,y1,luv,guv,Ng,pattern0,pattern1,pattern2,pattern3,pattern_x,pattern_y);
     }
 
     __forceinline size_t build(Scene* scene, const CatmullClarkPatch& patch,
@@ -592,15 +596,64 @@ namespace embree
     {
       /* calculate UVs */
       Vec2f luv[17*17];
-      Vec2f guv[17*17];
-      for (int y=0; y<height; y++) 
-      {
+      for (int y=0; y<height; y++) {
         const float fy = pattern_y(y0+y);
-        for (int x=0; x<width; x++) 
-	{
-	  assert(y*width+x < width*height);
+        for (int x=0; x<width; x++) {
           const float fx = pattern_x(x0+x);
           luv[y*width+x] = Vec2f(fx,fy);
+        }
+      }
+
+#if 0
+      /* stitch borders */
+      if (unlikely(y0 == 0)) {
+        for (int x=x0; x<=x1; x++) {
+          const size_t xs = stitch(x,pattern_x.size(),pattern0.size());
+	  p[y0*width+xs] = p[y0*width+x];
+	  Ng[y0*width+xs] = Ng[y0*width+x];
+	  guv[y0*width+xs] = guv[y0*width+x];
+	  luv[y0*width+xs] = luv[y0*width+x];
+        }
+      }
+
+      if (unlikely(y1 == height-1)) {
+	for (int x=x0; x<=x1; x++) {
+	  const size_t xs = stitch(x,pattern_x.size(),pattern2.size());
+	  p[y1*width+xs] = p[y1*width+x];
+	  Ng[y1*width+xs] = Ng[y1*width+x];
+	  guv[y1*width+xs] = guv[y1*width+x];
+	  luv[y1*width+xs] = luv[y1*width+x];
+	}
+      }
+
+      if (unlikely(x0 == 0)) {
+        for (int y=y0; y<=y1; y++) {
+          const size_t ys = stitch(y,pattern_y.size(),pattern3.size());
+          p[ys*width+x0] = p[y*width+x0];
+	  Ng[ys*width+x0] = Ng[y*width+x0];
+	  guv[ys*width+x0] = guv[y*width+x0];
+	  luv[ys*width+x0] = luv[y*width+x0];
+        }
+      }
+
+      if (unlikely(x1 == width-1)) {
+	for (int y=y0; y<=y1; y++) {
+	  const size_t ys = stitch(y,pattern_y.size(),pattern1.size());
+	  p[ys*width+x1] = p[y*width+x1];
+	  Ng[ys*width+x1] = Ng[y*width+x1];
+	  guv[ys*width+x1] = guv[y*width+x1];
+	  luv[ys*width+x1] = luv[y*width+x1];
+	}
+      }
+#endif
+
+      /* calculate global UVs */
+      Vec2f guv[17*17];
+      for (int y=0; y<height; y++) {
+        const float fy = pattern_y(y0+y);
+        for (int x=0; x<width; x++) {
+	  const float fx = luv[y*width+x].x;
+	  const float fy = luv[y*width+x].y;
 	  const Vec2f uv01 = (1.0f-fx) * uv0  + fx * uv1;
 	  const Vec2f uv32 = (1.0f-fx) * uv3  + fx * uv2;
 	  const Vec2f uvxy = (1.0f-fy) * uv01 + fy * uv32;
@@ -622,7 +675,7 @@ namespace embree
         }
       }
 
-      return build(scene,patch,alloc,prims,x0,x1,y0,y1,luv,guv,Ng);
+      return build(scene,patch,alloc,prims,x0,x1,y0,y1,luv,guv,Ng,pattern0,pattern1,pattern2,pattern3,pattern_x,pattern_y);
     }
 
     template<typename Patch>
@@ -630,7 +683,13 @@ namespace embree
 			       FastAllocator::Thread& alloc, PrimRef* prims, 
 			       const size_t x0, const size_t x1,
 			       const size_t y0, const size_t y1,
-			       Vec2f luv[17*17], Vec2f guv[17*17], Vec3fa Ng[17*17])
+			       Vec2f luv[17*17], Vec2f guv[17*17], Vec3fa Ng[17*17],
+			       const DiscreteTessellationPattern& pattern0, 
+			       const DiscreteTessellationPattern& pattern1, 
+			       const DiscreteTessellationPattern& pattern2, 
+			       const DiscreteTessellationPattern& pattern3, 
+			       const DiscreteTessellationPattern& pattern_x,
+			       const DiscreteTessellationPattern& pattern_y)
     {
       /* displace points */
       displace(scene,patch,luv,guv,Ng);

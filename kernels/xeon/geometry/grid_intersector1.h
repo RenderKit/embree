@@ -103,6 +103,8 @@ namespace embree
 	const Vec3fa uv = uvw[0]*uv0+uvw[1]*uv1+uvw[2]*uv2;
 	ray.u    = uv.x * rcpDet;
 	ray.v    = uv.y * rcpDet;
+	//ray.u    = uvw[0] * rcpDet;
+	//ray.v    = uvw[1] * rcpDet;
 	ray.tfar = t;
 	ray.Ng   = Ng;
 	/*float u = U * rcpDet;
