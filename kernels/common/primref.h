@@ -64,6 +64,14 @@ namespace embree
       return size_t(lower.u);
 #endif
     }
+
+    __forceinline uint64 id64() const {
+      return (((uint64)geomID()) << 32) + (uint64)primID();
+    }
+
+    friend __forceinline bool operator<(const PrimRef& p0, const PrimRef& p1) {
+      return p0.id64() < p1.id64();
+    }
     
 #if defined(__MIC__)
     __forceinline void operator=(const PrimRef& v) { 
