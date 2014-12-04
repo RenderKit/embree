@@ -39,6 +39,10 @@ namespace embree
       //PRINT2(swidth,sheight);
       const Vec2f lower(float(x0)/float(swidth -1), float(y0)/float(sheight-1));
       const Vec2f upper(float(x1)/float(swidth -1), float(y1)/float(sheight-1));
+      //for (size_t y=y0; y<=y1; y++)
+      //for (size_t x=x0; x<x1; x++)
+      //  P[(y-y0)*dwidth+(x-x0)] = Vec3fa(100.0f);
+
       eval(patch, BBox2f(zero,one), BBox2f(lower,upper), 0);
     }
 
@@ -65,8 +69,11 @@ namespace embree
 	    assert(x<swidth && y<sheight);
 	    const float fx = (float(x)*rcp((float)(swidth -1))-srange.lower.x)*rcp(srange.upper.x-srange.lower.x);
 	    const float fy = (float(y)*rcp((float)(sheight-1))-srange.lower.y)*rcp(srange.upper.y-srange.lower.y);
+	    if (fx < -0.001f || fx > 1.001f || fy < -0.001f || fy > 1.001f) continue;
 	    P [(y-y0)*dwidth+(x-x0)] = patcheval.eval  (fx,fy);
 	    Ng[(y-y0)*dwidth+(x-x0)] = patcheval.normal(fx,fy);
+	    //PRINT2(fx,fy);
+	    //PRINT3(x,y,P [(y-y0)*dwidth+(x-x0)]);
 	  }
 	}
       }
@@ -80,7 +87,7 @@ namespace embree
 	    
 	    const float sx1 = (float(x)*rcp((float)(swidth -1))-srange.lower.x)*rcp(srange.upper.x-srange.lower.x), sx0 = 1.0f-sx1;
 	    const float sy1 = (float(y)*rcp((float)(sheight-1))-srange.lower.y)*rcp(srange.upper.y-srange.lower.y), sy0 = 1.0f-sy1;
-
+	    if (sx1 < -0.001f || sx1 > 1.001f || sy1 < -0.001f || sy1 > 1.001f) continue;
 	    const Vec3fa P0 = patch.ring[0].getLimitVertex();
 	    const Vec3fa P1 = patch.ring[1].getLimitVertex();
 	    const Vec3fa P2 = patch.ring[2].getLimitVertex();
@@ -92,6 +99,8 @@ namespace embree
 	    const Vec3fa Ng2 = patch.ring[2].getNormal();
 	    const Vec3fa Ng3 = patch.ring[3].getNormal();
 	    Ng[(y-y0)*dwidth+(x-x0)] = sy0*(sx0*Ng0+sx1*Ng1) + sy1*(sx0*Ng3+sx1*Ng2);
+
+	    //PRINT3(x,y,P [(y-y0)*dwidth+(x-x0)]);
 	  }
 	}
       }
