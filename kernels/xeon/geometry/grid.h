@@ -671,12 +671,12 @@ namespace embree
 
       /* evaluate position and uvs */
       Vec3fa Ng[17*17];
-      feature_adaptive_eval (patch, x0,x1,y0,y1, width,height, p,Ng,width,height);
+      //feature_adaptive_eval (patch, x0,x1,y0,y1, width,height, p,Ng,width,height);
       const bool st = stitch_y(patch,y0,0       ,x0,x1,pattern_x,pattern0,luv,Ng);
       const bool sr = stitch_x(patch,x1,width-1 ,y0,y1,pattern_y,pattern1,luv,Ng);
       const bool sb = stitch_y(patch,y1,height-1,x0,x1,pattern_x,pattern2,luv,Ng);
       const bool sl = stitch_x(patch,x0,0       ,y0,y1,pattern_y,pattern3,luv,Ng);
-      //feature_adaptive_eval (patch, x0+sl,x1-sr,y0+st,y1-sb, width,height, p+st*width+sl,Ng+st*width+sl,width,height);
+      feature_adaptive_eval (patch, x0+sl,x1-sr,y0+st,y1-sb, width,height, p+st*width+sl,Ng+st*width+sl,width,height);
 
       //PRINT2(x0,x1);
       //PRINT2(y0,y1);
