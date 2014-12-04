@@ -132,7 +132,7 @@ namespace embree
 	  {
 	    const unsigned int new_allocated64BytesBlocks = CACHE_ENTRIES*neededBlocks;
 
-	    std::cout << "EXTENDING TESSELLATION CACHE (PER THREAD) FROM " << allocated64BytesBlocks << "TO " << new_allocated64BytesBlocks << " BLOCKS = " << new_allocated64BytesBlocks*sizeof(mic_f) << " BYTES" << std::endl << std::flush;
+	    //std::cout << "EXTENDING TESSELLATION CACHE (PER THREAD) FROM " << allocated64BytesBlocks << "TO " << new_allocated64BytesBlocks << " BLOCKS = " << new_allocated64BytesBlocks*sizeof(mic_f) << " BYTES" << std::endl << std::flush;
 
 	    free_mem(lazymem);
 	    allocated64BytesBlocks = new_allocated64BytesBlocks; 

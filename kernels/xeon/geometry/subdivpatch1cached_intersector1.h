@@ -319,11 +319,12 @@ namespace embree
     {
       STAT3(normal.trav_prims,1,1,1);
 
-#if defined(__AVX__)
       if (likely(ty == 2))
         {
+#if defined(__AVX__)
           size_t hitPtr = 0;
           intersect1_tri8_precise( ray, *(Quad2x2*)prim, (SubdivMesh*)geom,hitPtr);
+#endif
 
 #if COMPUTE_SUBDIV_NORMALS_AFTER_PATCH_INTERSECTION == 1
           if (unlikely(hitPtr != 0))
@@ -334,12 +335,9 @@ namespace embree
               ray.Ng = normal;
             }
 #endif
-
         }
-      else {
-        lazy_node = getSubtreeRootNode(prim, geom);        
-      }
-#endif
+      else 
+        lazy_node = getSubtreeRootNode(prim, geom);              
 
     }
 
@@ -348,13 +346,15 @@ namespace embree
     {
       STAT3(shadow.trav_prims,1,1,1);
 
-#if defined(__AVX__)
       if (likely(ty == 2))
+	{
+#if defined(__AVX__)
         return occluded1_tri8_precise( ray, *(Quad2x2*)prim, (SubdivMesh*)geom);
+#endif
+	}
       else 
         lazy_node = getSubtreeRootNode(prim, geom);        
       
-#endif
 
       return false;
     }

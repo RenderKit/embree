@@ -161,28 +161,28 @@ namespace embree
     __forceinline Vec3fa eval(const float uu, const float vv) const
     {
       if (likely(isRegular()))
-	{
-	  return patch.eval(uu,vv);
-	}
+	return patch.eval(uu,vv);
       else 
-	{
-	  return GregoryPatch::eval( patch.v, uu, vv );
-	}      
+	return GregoryPatch::eval( patch.v, uu, vv );
+    }
+
+    __forceinline sse3f eval4(const ssef &uu,
+			      const ssef &vv) const
+    {
+      if (likely(isRegular()))
+	return patch.eval4(uu,vv);
+      else 
+	return GregoryPatch::eval4( patch.v, uu, vv );
     }
 
 #if defined(__AVX__)
     __forceinline avx3f eval8(const avxf &uu,
-        const avxf &vv) const
+			      const avxf &vv) const
     {
       if (likely(isRegular()))
-	{
-	  return patch.eval8(uu,vv);
-	}
+	return patch.eval8(uu,vv);
       else 
-	{
-	  return GregoryPatch::eval8( patch.v, uu, vv );
-	}
-      
+	return GregoryPatch::eval8( patch.v, uu, vv );
     }
 #endif
 
@@ -190,13 +190,18 @@ namespace embree
 				const float &vv) const
     {
       if (likely(isRegular()))
-	{
-          return patch.normal(uu,vv);
-	}
+	return patch.normal(uu,vv);
       else 
-	{
-	  return GregoryPatch::normal( patch.v, uu, vv );
-	}      
+	return GregoryPatch::normal( patch.v, uu, vv );
+    }
+
+    __forceinline sse3f normal4(const ssef &uu,
+                                const ssef &vv) const
+    {
+      if (likely(isRegular()))
+	return patch.normal4(uu,vv);
+      else
+        return GregoryPatch::normal4( patch.v, uu, vv );
     }
 
 #if defined(__AVX__)

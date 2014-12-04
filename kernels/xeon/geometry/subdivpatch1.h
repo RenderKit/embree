@@ -20,7 +20,7 @@
 #include "common/subdiv/bspline_patch.h"
 #include "common/subdiv/gregory_patch.h"
 
-#define SUBDIVISION_LEVEL 3 // FIXME: remove
+#define SUBDIVISION_LEVEL 3 // FIXME: removes
 
 namespace embree
 {
