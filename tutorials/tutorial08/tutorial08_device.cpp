@@ -25,7 +25,7 @@ const int numTheta = 2*numPhi;
 
 //extern unsigned int g_subdivision_levels;
 
-#define MAX_EDGE_LEVEL 16.0f
+#define MAX_EDGE_LEVEL 64.0f
 #define MIN_EDGE_LEVEL 2.0f
 
 /* error reporting function */
@@ -198,7 +198,7 @@ void updateScene(RTCScene scene, const Vec3fa& cam_pos)
 	const Vec3fa dist = cam_pos - P;
 
         level[i*4+k] = max(min(64.0f*(0.5f*length(edge)/length(dist)),MAX_EDGE_LEVEL),MIN_EDGE_LEVEL);
-        //level[i*4+k] = 4; // MAX_EDGE_LEVEL;
+        //level[i*4+k] = 16; // MAX_EDGE_LEVEL;
 
       } 
     }

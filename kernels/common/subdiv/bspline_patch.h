@@ -509,7 +509,7 @@ namespace embree
       /* DBG_PRINT( tangentU ); */
       /* DBG_PRINT( tangentV ); */
 
-      const mic_f n = lcross_xyz(tangentU,tangentV);
+      const mic_f n = lcross_xyz(tangentV,tangentU);
       return n;
     }
 
@@ -581,7 +581,7 @@ namespace embree
     {
       const mic3f tU = tangentU16(uu,vv);
       const mic3f tV = tangentV16(uu,vv);
-      return cross(tU,tV);
+      return cross(tV,tU);
     }
 
 #endif
@@ -642,7 +642,7 @@ namespace embree
     {
       const avx3f tU = tangentU8(uu,vv);
       const avx3f tV = tangentV8(uu,vv);
-      return cross(tU,tV);
+      return cross(tV,tU);
     }
 
 #endif
@@ -651,7 +651,7 @@ namespace embree
     {
       const Vec3fa tu = tangentU(uu,vv);
       const Vec3fa tv = tangentV(uu,vv);
-      return cross(tu,tv);
+      return cross(tv,tu);
     }   
 
     friend __forceinline std::ostream &operator<<(std::ostream &o, const BSplinePatch &p)
