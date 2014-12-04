@@ -124,11 +124,11 @@ namespace embree
 #else
 
     __forceinline sse3f getVtx( const size_t offset, const size_t delta = 0 ) const {
-      return sse3f( *(ssef*)&vtx_x[offset+delta], *(ssef*)&vtx_y[offset+delta], *(ssef*)&vtx_z[offset+delta] );
+      return sse3f( loadu4f(&vtx_x[offset+delta]), loadu4f(&vtx_y[offset+delta]), loadu4f(&vtx_z[offset+delta]) );
     }
 
     __forceinline sse2f getUV( const size_t offset, const size_t delta = 0 ) const {
-      return sse2f(  *(ssef*)&vtx_u[offset+delta], *(ssef*)&vtx_v[offset+delta]  );
+      return sse2f(  loadu4f(&vtx_u[offset+delta]), loadu4f(&vtx_v[offset+delta])  );
     }
     
 
@@ -336,6 +336,9 @@ namespace embree
           size_t hitPtr = 0;
 #if defined(__AVX__)
           intersect1_precise<avxb,avxf>( ray, *(Quad2x2*)prim, (SubdivMesh*)geom,hitPtr);
+#else
+          intersect1_precise<sseb,ssef>( ray, *(Quad2x2*)prim, (SubdivMesh*)geom,hitPtr,0);
+          intersect1_precise<sseb,ssef>( ray, *(Quad2x2*)prim, (SubdivMesh*)geom,hitPtr,6);
 #endif
 #if COMPUTE_SUBDIV_NORMALS_AFTER_PATCH_INTERSECTION == 1
           if (unlikely(hitPtr != 0))
@@ -361,6 +364,9 @@ namespace embree
 	{
 #if defined(__AVX__)
 	  return occluded1_precise<avxb,avxf>( ray, *(Quad2x2*)prim, (SubdivMesh*)geom);
+#else
+	  if (occluded1_precise<sseb,ssef>( ray, *(Quad2x2*)prim, (SubdivMesh*)geom),0) return true;
+	  if (occluded1_precise<sseb,ssef>( ray, *(Quad2x2*)prim, (SubdivMesh*)geom),6) return true;
 #endif
 	}
       else 

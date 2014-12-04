@@ -86,8 +86,41 @@ namespace embree
         *(avxf*)&grid_z[8*i] = vtx.z;        
         *(avxf*)&grid_u[8*i] = uu;
         *(avxf*)&grid_v[8*i] = vv;
-
       }
+#else
+
+    for (size_t i=0;i<patch.grid_size_8wide_blocks*2;i++) // 4-wide blocks for SSE
+      {
+        ssef uu = load4f(&grid_u[4*i]);
+        ssef vv = load4f(&grid_v[4*i]);
+        sse3f vtx = patch.eval4(uu,vv);
+
+        if (unlikely(((SubdivMesh*)geom)->displFunc != NULL))
+          {
+            sse3f normal = patch.normal4(uu,vv);
+            normal = normalize_safe(normal);
+              
+            ((SubdivMesh*)geom)->displFunc(((SubdivMesh*)geom)->userPtr,
+                                           patch.geom,
+                                           patch.prim,
+                                           (const float*)&uu,
+                                           (const float*)&vv,
+                                           (const float*)&normal.x,
+                                           (const float*)&normal.y,
+                                           (const float*)&normal.z,
+                                           (float*)&vtx.x,
+                                           (float*)&vtx.y,
+                                           (float*)&vtx.z,
+                                           4);
+          }
+
+        *(ssef*)&grid_x[4*i] = vtx.x;
+        *(ssef*)&grid_y[4*i] = vtx.y;
+        *(ssef*)&grid_z[4*i] = vtx.z;        
+        *(ssef*)&grid_u[4*i] = uu;
+        *(ssef*)&grid_v[4*i] = vv;
+      }
+
 #endif
     
   }
