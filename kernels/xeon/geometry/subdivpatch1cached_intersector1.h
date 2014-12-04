@@ -23,7 +23,7 @@
 
 
 #define COMPUTE_SUBDIV_NORMALS_AFTER_PATCH_INTERSECTION 0
-#define FORCE_TRIANGLE_UV 1
+#define FORCE_TRIANGLE_UV 0
 
 namespace embree
 {
@@ -109,17 +109,28 @@ namespace embree
 
 #if defined(__AVX__)
 
-    __forceinline avxf combine( const float *const source, const size_t offset ) const {
+    __forceinline avxf combine( const float *const source, const size_t offset) const {
       return avxf( *(ssef*)&source[0+offset], *(ssef*)&source[6+offset] );            
     }
 
-    __forceinline avx3f getVtx( const size_t offset ) const {
+    __forceinline avx3f getVtx( const size_t offset, const size_t delta = 0 ) const {
       return avx3f(  combine(vtx_x,offset), combine(vtx_y,offset), combine(vtx_z,offset) );
     }
 
-    __forceinline avx2f getUV( const size_t offset ) const {
+    __forceinline avx2f getUV( const size_t offset, const size_t delta = 0 ) const {
       return avx2f(  combine(vtx_u,offset), combine(vtx_v,offset) );
     }
+
+#else
+
+    __forceinline sse3f getVtx( const size_t offset, const size_t delta = 0 ) const {
+      return sse3f( *(ssef*)&vtx_x[offset+delta], *(ssef*)&vtx_y[offset+delta], *(ssef*)&vtx_z[offset+delta] );
+    }
+
+    __forceinline sse2f getUV( const size_t offset, const size_t delta = 0 ) const {
+      return sse2f(  *(ssef*)&vtx_u[offset+delta], *(ssef*)&vtx_v[offset+delta]  );
+    }
+    
 
 #endif
 
@@ -148,79 +159,80 @@ namespace embree
     return cout;
   }
 
-#if defined(__AVX__)
   /* intersect ray with Quad2x2 structure => 1 ray vs. 8 triangles */
-  static __forceinline void intersect1_tri8_precise(Ray& ray,
-                                                    const Quad2x2 &qquad,
-                                                    const void* geom,
-                                                    size_t &hitPtr)
+  template<class M, class T>
+  static __forceinline void intersect1_precise(Ray& ray,
+					       const Quad2x2 &qquad,
+					       const void* geom,
+					       size_t &hitPtr,
+					       const size_t delta = 0)
   {
-    const avx3f v0_org = qquad.getVtx( 0 );
-    const avx3f v1_org = qquad.getVtx( 1 );
-    const avx3f v2_org = qquad.getVtx( 2 );
+    const Vec3<T> v0_org = qquad.getVtx( 0, delta);
+    const Vec3<T> v1_org = qquad.getVtx( 1, delta);
+    const Vec3<T> v2_org = qquad.getVtx( 2, delta);
 
-    const avx3f O = ray.org;
-    const avx3f D = ray.dir;
+    const Vec3<T> O = ray.org;
+    const Vec3<T> D = ray.dir;
 
-    const avx3f v0 = v0_org - O;
-    const avx3f v1 = v1_org - O;
-    const avx3f v2 = v2_org - O;
+    const Vec3<T> v0 = v0_org - O;
+    const Vec3<T> v1 = v1_org - O;
+    const Vec3<T> v2 = v2_org - O;
    
-    const avx3f e0 = v2 - v0;
-    const avx3f e1 = v0 - v1;	     
-    const avx3f e2 = v1 - v2;	     
+    const Vec3<T> e0 = v2 - v0;
+    const Vec3<T> e1 = v0 - v1;	     
+    const Vec3<T> e2 = v1 - v2;	     
 
     /* calculate geometry normal and denominator */
-    const avx3f Ng1 = cross(e1,e0);
-    const avx3f Ng = Ng1+Ng1;
-    const avxf den = dot(Ng,D);
-    const avxf absDen = abs(den);
-    const avxf sgnDen = signmsk(den);
+    const Vec3<T> Ng1 = cross(e1,e0);
+    const Vec3<T> Ng = Ng1+Ng1;
+    const T den = dot(Ng,D);
+    const T absDen = abs(den);
+    const T sgnDen = signmsk(den);
       
-    avxb valid ( true );
+    M valid ( true );
     /* perform edge tests */
-    const avxf U = dot(avx3f(cross(v2+v0,e0)),D) ^ sgnDen;
+    const T U = dot(Vec3<T>(cross(v2+v0,e0)),D) ^ sgnDen;
     valid &= U >= 0.0f;
     if (likely(none(valid))) return;
-    const avxf V = dot(avx3f(cross(v0+v1,e1)),D) ^ sgnDen;
+    const T V = dot(Vec3<T>(cross(v0+v1,e1)),D) ^ sgnDen;
     valid &= V >= 0.0f;
     if (likely(none(valid))) return;
-    const avxf W = dot(avx3f(cross(v1+v2,e2)),D) ^ sgnDen;
+    const T W = dot(Vec3<T>(cross(v1+v2,e2)),D) ^ sgnDen;
     valid &= W >= 0.0f;
     if (likely(none(valid))) return;
       
     /* perform depth test */
-    const avxf T = dot(v0,Ng) ^ sgnDen;
-    valid &= (T >= absDen*ray.tnear) & (absDen*ray.tfar >= T);
+    const T _t = dot(v0,Ng) ^ sgnDen;
+    valid &= (_t >= absDen*ray.tnear) & (absDen*ray.tfar >= _t);
     if (unlikely(none(valid))) return;
       
     /* perform backface culling */
 #if defined(RTCORE_BACKFACE_CULLING)
-    valid &= den > avxf(zero);
+    valid &= den > T(zero);
     if (unlikely(none(valid))) return;
 #else
-    valid &= den != avxf(zero);
+    valid &= den != T(zero);
     if (unlikely(none(valid))) return;
 #endif
             
     /* calculate hit information */
-    const avxf rcpAbsDen = rcp(absDen);
-    const avxf u = U*rcpAbsDen;
-    const avxf v = V*rcpAbsDen;
-    const avxf t = T*rcpAbsDen;
+    const T rcpAbsDen = rcp(absDen);
+    const T u = U*rcpAbsDen;
+    const T v = V*rcpAbsDen;
+    const T t = _t*rcpAbsDen;
 
 #if FORCE_TRIANGLE_UV == 0
-    const avx2f uv0 = qquad.getUV( 0 );
-    const avx2f uv1 = qquad.getUV( 1 );
-    const avx2f uv2 = qquad.getUV( 2 );
+    const Vec2<T> uv0 = qquad.getUV( 0, delta );
+    const Vec2<T> uv1 = qquad.getUV( 1, delta );
+    const Vec2<T> uv2 = qquad.getUV( 2, delta );
 
-    const avx2f uv = u * uv1 + v * uv2 + (1.0f-u-v) * uv0;
+    const Vec2<T> uv = u * uv1 + v * uv2 + (1.0f-u-v) * uv0;
 
-    const avxf u_final = uv[0];
-    const avxf v_final = uv[1];
+    const T u_final = uv[0];
+    const T v_final = uv[1];
 #else
-    const avxf u_final = u;
-    const avxf v_final = v;
+    const T u_final = u;
+    const T v_final = v;
 #endif
 
     size_t i = select_min(valid,t);
@@ -240,62 +252,62 @@ namespace embree
 
 
   /* intersect ray with Quad2x2 structure => 1 ray vs. 8 triangles */
-  static __forceinline bool occluded1_tri8_precise(Ray& ray,
-                                                   const Quad2x2 &qquad,
-                                                   const void* geom)
+  template<class M, class T>
+  static __forceinline bool occluded1_precise(Ray& ray,
+					      const Quad2x2 &qquad,
+					      const void* geom)
   {
-    const avx3f v0_org = qquad.getVtx( 0 );
-    const avx3f v1_org = qquad.getVtx( 1 );
-    const avx3f v2_org = qquad.getVtx( 2 );
+    const Vec3<T> v0_org = qquad.getVtx( 0 );
+    const Vec3<T> v1_org = qquad.getVtx( 1 );
+    const Vec3<T> v2_org = qquad.getVtx( 2 );
 
-    const avx3f O = ray.org;
-    const avx3f D = ray.dir;
+    const Vec3<T> O = ray.org;
+    const Vec3<T> D = ray.dir;
 
-    const avx3f v0 = v0_org - O;
-    const avx3f v1 = v1_org - O;
-    const avx3f v2 = v2_org - O;
+    const Vec3<T> v0 = v0_org - O;
+    const Vec3<T> v1 = v1_org - O;
+    const Vec3<T> v2 = v2_org - O;
    
-    const avx3f e0 = v2 - v0;
-    const avx3f e1 = v0 - v1;	     
-    const avx3f e2 = v1 - v2;	     
+    const Vec3<T> e0 = v2 - v0;
+    const Vec3<T> e1 = v0 - v1;	     
+    const Vec3<T> e2 = v1 - v2;	     
 
     /* calculate geometry normal and denominator */
-    const avx3f Ng1 = cross(e1,e0);
-    const avx3f Ng = Ng1+Ng1;
-    const avxf den = dot(Ng,D);
-    const avxf absDen = abs(den);
-    const avxf sgnDen = signmsk(den);
+    const Vec3<T> Ng1 = cross(e1,e0);
+    const Vec3<T> Ng = Ng1+Ng1;
+    const T den = dot(Ng,D);
+    const T absDen = abs(den);
+    const T sgnDen = signmsk(den);
       
-    avxb valid ( true );
+    M valid ( true );
     /* perform edge tests */
-    const avxf U = dot(avx3f(cross(v2+v0,e0)),D) ^ sgnDen;
+    const T U = dot(Vec3<T>(cross(v2+v0,e0)),D) ^ sgnDen;
     valid &= U >= 0.0f;
     if (likely(none(valid))) return false;
-    const avxf V = dot(avx3f(cross(v0+v1,e1)),D) ^ sgnDen;
+    const T V = dot(Vec3<T>(cross(v0+v1,e1)),D) ^ sgnDen;
     valid &= V >= 0.0f;
     if (likely(none(valid))) return false;
-    const avxf W = dot(avx3f(cross(v1+v2,e2)),D) ^ sgnDen;
+    const T W = dot(Vec3<T>(cross(v1+v2,e2)),D) ^ sgnDen;
     valid &= W >= 0.0f;
     if (likely(none(valid))) return false;
       
     /* perform depth test */
-    const avxf T = dot(v0,Ng) ^ sgnDen;
-    valid &= (T >= absDen*ray.tnear) & (absDen*ray.tfar >= T);
+    const T _t = dot(v0,Ng) ^ sgnDen;
+    valid &= (_t >= absDen*ray.tnear) & (absDen*ray.tfar >= _t);
     if (unlikely(none(valid))) return false;
       
     /* perform backface culling */
 #if defined(RTCORE_BACKFACE_CULLING)
-    valid &= den > avxf(zero);
+    valid &= den > T(zero);
     if (unlikely(none(valid))) return false;
 #else
-    valid &= den != avxf(zero);
+    valid &= den != T(zero);
     if (unlikely(none(valid))) return false;
 #endif
             
     return true;
   };
 
-#endif
 
   struct SubdivPatch1CachedIntersector1
   {
@@ -321,11 +333,10 @@ namespace embree
 
       if (likely(ty == 2))
         {
-#if defined(__AVX__)
           size_t hitPtr = 0;
-          intersect1_tri8_precise( ray, *(Quad2x2*)prim, (SubdivMesh*)geom,hitPtr);
+#if defined(__AVX__)
+          intersect1_precise<avxb,avxf>( ray, *(Quad2x2*)prim, (SubdivMesh*)geom,hitPtr);
 #endif
-
 #if COMPUTE_SUBDIV_NORMALS_AFTER_PATCH_INTERSECTION == 1
           if (unlikely(hitPtr != 0))
             {
@@ -349,7 +360,7 @@ namespace embree
       if (likely(ty == 2))
 	{
 #if defined(__AVX__)
-        return occluded1_tri8_precise( ray, *(Quad2x2*)prim, (SubdivMesh*)geom);
+	  return occluded1_precise<avxb,avxf>( ray, *(Quad2x2*)prim, (SubdivMesh*)geom);
 #endif
 	}
       else 
