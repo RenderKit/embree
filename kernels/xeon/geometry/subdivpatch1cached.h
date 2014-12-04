@@ -262,7 +262,7 @@ namespace embree
 	  if (unlikely(mesh->displFunc != NULL))
 	    {
 	      Vec3fa nor = normal(u,v);
-	      nor = normalize(nor);
+	      nor = normalize_safe(nor);
 
 	      mesh->displFunc(mesh->userPtr,
 			      geom,
@@ -291,6 +291,7 @@ namespace embree
 #else
       BBox3fa b ( empty );
       assert( grid_size_8wide_blocks >= 1 );
+
       for (size_t i=0;i<grid_size_8wide_blocks;i++)
 	{
 	  avxf u = load8f(&u_array[i*8]);
@@ -300,11 +301,12 @@ namespace embree
 
 #if USE_DISPLACEMENT_FOR_TESSELLATION_BOUNDS == 1
 	  /* eval displacement function */
-
 	  if (unlikely(mesh->displFunc != NULL))
 	    {
+
 	      avx3f nor = normal8(u,v);
-	      nor = normalize(nor);
+
+	      nor = normalize_safe(nor);
 
 	      mesh->displFunc(mesh->userPtr,
 			      geom,

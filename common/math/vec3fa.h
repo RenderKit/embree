@@ -235,6 +235,15 @@ namespace embree
 
   __forceinline float  length   ( const Vec3fa& a )                  { return sqrt(dot(a,a)); }
   __forceinline Vec3fa normalize( const Vec3fa& a )                  { return a*rsqrt(dot(a,a)); }
+
+  __forceinline Vec3fa normalize_safe( const Vec3fa& a ) { 
+    const float d = dot(a,a);
+    if (unlikely(d == 0.0f)) 
+      return a;
+    else
+      return a*rsqrt(d);
+  }
+
   __forceinline float  distance ( const Vec3fa& a, const Vec3fa& b ) { return length(a-b); }
   __forceinline float  halfArea ( const Vec3fa& d )                  { return d.x*(d.y+d.z)+d.y*d.z; }
   __forceinline Vec3fa reflect  (const Vec3fa& V, const Vec3fa& N)   { return 2.0f*dot(V,N)*N-V; } 

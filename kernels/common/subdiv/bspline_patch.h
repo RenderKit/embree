@@ -24,82 +24,43 @@ namespace embree
   {
   public:
 
-    static __forceinline Vec4f eval(const float u)
+    template<class T>
+    static __forceinline Vec4< T >  eval_t(const T &u)
+      {
+        const T t  = u;
+        const T s  = T(1.0f) - u;
+        const T n0 = s*s*s;
+        const T n1 = (4.0f*s*s*s+t*t*t) + (12.0f*s*t*s + 6.0*t*s*t);
+        const T n2 = (4.0f*t*t*t+s*s*s) + (12.0f*t*s*t + 6.0*s*t*s);
+        const T n3 = t*t*t;
+        //const T c  = 1.0f/6.0f; // do this later
+        return Vec4<T>(n0,n1,n2,n3);
+      }
+
+    template<class T>
+    static __forceinline Vec4< T>  derivative_t(const T &u)
     {
-      const float t  = u;
-      const float s  = 1.0f - u;
-      const float n0 = s*s*s;
-      const float n1 = (4.0f*s*s*s+t*t*t) + (12.0f*s*t*s + 6.0*t*s*t);
-      const float n2 = (4.0f*t*t*t+s*s*s) + (12.0f*t*s*t + 6.0*s*t*s);
-      const float n3 = t*t*t;
-      //const float c  = 1.0f/6.0f; // do this later
-      return Vec4f(n0,n1,n2,n3);
+      const T t  =  u;
+      const T s  =  1.0f - u;
+      const T n0 = -s*s;
+      const T n1 = -t*t - 4.0f*t*s;
+      const T n2 =  s*s + 4.0f*s*t;
+      const T n3 =  t*t;
+      //const T c  = 1.0f/6.0f; // do this later
+      return Vec4<T>(n0,n1,n2,n3);
     }
 
-    static __forceinline Vec4f derivative(const float u)
-    {
-      const float t  =  u;
-      const float s  =  1.0f - u;
-      const float n0 = -s*s;
-      const float n1 = -t*t - 4.0f*t*s;
-      const float n2 =  s*s + 4.0f*s*t;
-      const float n3 =  t*t;
-      //const float c  = 1.0f/6.0f; // do this later
-      return Vec4f(n0,n1,n2,n3);
-    }
 
-#if defined(__AVX__)
+      
+    static __forceinline Vec4f eval(const float &u) { return eval_t(u); }    
+    static __forceinline Vec4f derivative(const float &u) { return derivative_t(u); }
 
-    static __forceinline avx4f eval8(const avxf u)
-    {
-      const avxf t  = u;
-      const avxf s  = 1.0f - u;
-      const avxf n0 = s*s*s;
-      const avxf n1 = (4.0f*s*s*s+t*t*t) + (12.0f*s*t*s + 6.0*t*s*t);
-      const avxf n2 = (4.0f*t*t*t+s*s*s) + (12.0f*t*s*t + 6.0*s*t*s);
-      const avxf n3 = t*t*t;
-      return avx4f(n0,n1,n2,n3);
-    }
 
-    static __forceinline avx4f derivative8(const avxf u)
-    {
-      const avxf t  =  u;
-      const avxf s  =  1.0f - u;
-      const avxf n0 = -s*s;
-      const avxf n1 = -t*t - 4.0f*t*s;
-      const avxf n2 =  s*s + 4.0f*s*t;
-      const avxf n3 =  t*t;
-      return avx4f(n0,n1,n2,n3);
-    }
-
-#endif
 
 #if defined(__MIC__)
 
-    static __forceinline mic4f eval(const mic_f u)
-    {
-      const mic_f t  = u;
-      const mic_f s  = 1.0f - u;
-      const mic_f n0 = s*s*s;
-      const mic_f n1 = (4.0f*s*s*s+t*t*t) + (12.0f*s*t*s + 6.0*t*s*t);
-      const mic_f n2 = (4.0f*t*t*t+s*s*s) + (12.0f*t*s*t + 6.0*s*t*s);
-      const mic_f n3 = t*t*t;
-      //const mic_f c  = 1.0f/6.0f; // do this later
-      return mic4f(n0,n1,n2,n3);
-    }
-
-
-    static __forceinline mic4f derivative(const mic_f u)
-    {
-      const mic_f t  =  u;
-      const mic_f s  =  1.0f - u;
-      const mic_f n0 = -s*s;
-      const mic_f n1 = -t*t - 4.0f*t*s;
-      const mic_f n2 =  s*s + 4.0f*s*t;
-      const mic_f n3 =  t*t;
-      //const mic_f c  = 1.0f/6.0f; // do this later
-      return mic4f(n0,n1,n2,n3);
-    }
+    static __forceinline mic4f eval(const mic_f &u) { return eval_t(u); }
+    static __forceinline mic4f derivative(const mic_f &u) { return derivative_t(u); }
 
     static __forceinline mic4f eval_derivative(const mic_f u, const mic_m m_mask)
     {
@@ -107,6 +68,17 @@ namespace embree
       const mic4f d = derivative(u);
       return mic4f(select(m_mask,e[0],d[0]),select(m_mask,e[1],d[1]),select(m_mask,e[2],d[2]),select(m_mask,e[3],d[3]));
     }    
+#else
+
+    static __forceinline sse4f eval8(const ssef &u) { return eval_t(u); }
+    static __forceinline sse4f derivative8(const ssef &u) { return derivative_t(u); }
+
+#if defined(__AVX__)
+
+    static __forceinline avx4f eval8(const avxf &u) { return eval_t(u); }
+    static __forceinline avx4f derivative8(const avxf &u) { return derivative_t(u); }
+
+#endif
 
 #endif
   };
@@ -509,7 +481,7 @@ namespace embree
       /* DBG_PRINT( tangentU ); */
       /* DBG_PRINT( tangentV ); */
 
-      const mic_f n = lcross_xyz(tangentU,tangentV);
+      const mic_f n = lcross_xyz(tangentV,tangentU);
       return n;
     }
 
@@ -581,7 +553,7 @@ namespace embree
     {
       const mic3f tU = tangentU16(uu,vv);
       const mic3f tV = tangentV16(uu,vv);
-      return cross(tU,tV);
+      return cross(tV,tU);
     }
 
 #endif
@@ -642,7 +614,7 @@ namespace embree
     {
       const avx3f tU = tangentU8(uu,vv);
       const avx3f tV = tangentV8(uu,vv);
-      return cross(tU,tV);
+      return cross(tV,tU);
     }
 
 #endif
@@ -651,7 +623,7 @@ namespace embree
     {
       const Vec3fa tu = tangentU(uu,vv);
       const Vec3fa tv = tangentV(uu,vv);
-      return cross(tu,tv);
+      return cross(tv,tu);
     }   
 
     friend __forceinline std::ostream &operator<<(std::ostream &o, const BSplinePatch &p)

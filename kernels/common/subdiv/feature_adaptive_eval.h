@@ -34,29 +34,18 @@ namespace embree
 				       Vec3fa* P, Vec3fa* Ng, const size_t dwidth, const size_t dheight)
       : x0(x0), x1(x1), y0(y0), y1(y1), swidth(swidth), sheight(sheight), P(P), Ng(Ng), dwidth(dwidth), dheight(dheight)
     {
-      //PRINT2(x0,x1);
-      //PRINT2(y0,y1);
-      //PRINT2(swidth,sheight);
       const Vec2f lower(float(x0)/float(swidth -1), float(y0)/float(sheight-1));
       const Vec2f upper(float(x1)/float(swidth -1), float(y1)/float(sheight-1));
-      //for (size_t y=y0; y<=y1; y++)
-      //for (size_t x=x0; x<x1; x++)
-      //  P[(y-y0)*dwidth+(x-x0)] = Vec3fa(100.0f);
-
       eval(patch, BBox2f(zero,one), BBox2f(lower,upper), 0);
     }
 
     void dice(const CatmullClarkPatch& patch, const BBox2f& srange, const BBox2f& erange)
     {
-      //PRINT(srange);
-      //PRINT(erange);
       size_t lx0 = clamp((size_t)floor(erange.lower.x*(swidth -1)),x0,x1);
       size_t lx1 = clamp((size_t)ceil (erange.upper.x*(swidth -1)),x0,x1); lx1 += (lx1 == x1);
       size_t ly0 = clamp((size_t)floor(erange.lower.y*(sheight-1)),y0,y1);
       size_t ly1 = clamp((size_t)ceil (erange.upper.y*(sheight-1)),y0,y1); ly1 += (ly1 == y1);
       if (lx0 >= lx1 || ly0 >= ly1) return;
-      //PRINT2(lx0,lx1-1);
-      //PRINT2(ly0,ly1-1);
 
       if (patch.isRegular()) 
       {
@@ -71,9 +60,7 @@ namespace embree
 	    const float fy = (float(y)*rcp((float)(sheight-1))-srange.lower.y)*rcp(srange.upper.y-srange.lower.y);
 	    if (fx < -0.001f || fx > 1.001f || fy < -0.001f || fy > 1.001f) continue;
 	    P [(y-y0)*dwidth+(x-x0)] = patcheval.eval  (fx,fy);
-	    Ng[(y-y0)*dwidth+(x-x0)] = patcheval.normal(fx,fy);
-	    //PRINT2(fx,fy);
-	    //PRINT3(x,y,P [(y-y0)*dwidth+(x-x0)]);
+	    Ng[(y-y0)*dwidth+(x-x0)] = normalize_safe(patcheval.normal(fx,fy));
 	  }
 	}
       }
@@ -99,8 +86,6 @@ namespace embree
 	    const Vec3fa Ng2 = patch.ring[2].getNormal();
 	    const Vec3fa Ng3 = patch.ring[3].getNormal();
 	    Ng[(y-y0)*dwidth+(x-x0)] = sy0*(sx0*Ng0+sx1*Ng1) + sy1*(sx0*Ng3+sx1*Ng2);
-
-	    //PRINT3(x,y,P [(y-y0)*dwidth+(x-x0)]);
 	  }
 	}
       }
@@ -108,9 +93,6 @@ namespace embree
 
     void eval(const CatmullClarkPatch& patch, const BBox2f& srange, const BBox2f& erange, const size_t depth)
     {
-      //PRINT(depth);
-      //PRINT(srange);
-      //PRINT(erange);
       if (erange.empty())
 	return;
       
@@ -137,9 +119,6 @@ namespace embree
 					    const size_t x0, const size_t x1, const size_t y0, const size_t y1, const size_t swidth, const size_t sheight, 
 					    Vec3fa* P, Vec3fa* Ng, const size_t dwidth, const size_t dheight)
   {
-    //PRINT4(x0,x1,y0,y1);
-    //PRINT2(swidth,sheight);
-    //PRINT2(dwidth,dheight);
     FeatureAdaptiveEval eval(patch,
 			     x0,x1,y0,y1,swidth,sheight,
 			     P,Ng,dwidth,dheight);

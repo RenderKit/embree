@@ -574,7 +574,7 @@ namespace embree
 	  Vec3fa p = patch.eval(luv[y*width+x].x,luv[y*width+x].y);
 	  p.a = (iv << 16) | iu;
 	  point(x,y) = p;
-	  const Vec3fa N = normalize(patch.normal(luv[y*width+x].x, luv[y*width+x].y)); // FIXME: enable only for displacement mapping
+	  const Vec3fa N = normalize_safe(patch.normal(luv[y*width+x].x, luv[y*width+x].y)); // FIXME: enable only for displacement mapping
 	  Ng[y*width+x] = N;
         }
       }
@@ -589,23 +589,14 @@ namespace embree
       if (unlikely(y0 != border || fine.size() == coarse.size()))
 	return false;
 
-      //PING;
-      //PRINT2(x0,x1);
-      //PRINT(fine.size());
-      //PRINT(coarse.size());
       const size_t x0s = stitch(x0,fine.size(),coarse.size());
       const size_t x1s = stitch(x1,fine.size(),coarse.size());
-      //PRINT2(x0s,x1s);
       assert(x1s-x0s < 17);
       
       Vec3fa p_y0[17], Ng_y0[17];
       feature_adaptive_eval (patch, y0!=0,y0!=0,x0s,x1s,2,coarse.size()+1, p_y0,Ng_y0,1,coarse.size()+1);
 
-      //for (size_t i=0; i<x1s-x0s; i++)
-      //PRINT2(i,p_y0[i]);
-      
       Vec2f luv_y0[17];
-      //const float fy = pattern_y(y0);
       for (int x=x0; x<=x1; x++) {
 	const size_t xs = stitch(x,fine.size(),coarse.size());
 	const float fx = coarse(xs);
@@ -623,7 +614,6 @@ namespace embree
       if (unlikely(y0 != border || fine.size() == coarse.size()))
 	return false;
 
-      //PING;
       const size_t x0s = stitch(x0,fine.size(),coarse.size());
       const size_t x1s = stitch(x1,fine.size(),coarse.size());
       assert(x1s-x0s < 17);
@@ -655,10 +645,6 @@ namespace embree
 			       const DiscreteTessellationPattern& pattern_x,
 			       const DiscreteTessellationPattern& pattern_y)
     {
-      //PRINT2(width,height);
-      //PRINT2(x0,x1);
-      //PRINT2(y0,y1);
-
       /* calculate UVs */
       Vec2f luv[17*17];
       for (int y=0; y<height; y++) {
@@ -678,9 +664,6 @@ namespace embree
       const bool sl = stitch_x(patch,x0,0       ,y0,y1,pattern_y,pattern3,luv,Ng);
       feature_adaptive_eval (patch, x0+sl,x1-sr,y0+st,y1-sb, width,height, p+st*width+sl,Ng+st*width+sl,width,height);
 
-      //PRINT2(x0,x1);
-      //PRINT2(y0,y1);
-
       /* calculate global UVs */
       Vec2f guv[17*17];
       for (int y=0; y<height; y++) {
@@ -698,7 +681,6 @@ namespace embree
       /* store UVs inside P */
       for (int y=0; y<height; y++) {
         for (int x=0; x<width; x++) {
-	  //PRINT3(x,y,point(x,y));
 	  const int iu = clamp(guv[y*width+x].x * 0xFFFF, 0.0f, float(0xFFFF));
 	  const int iv = clamp(guv[y*width+x].y * 0xFFFF, 0.0f, float(0xFFFF));
 	  point(x,y).a = (iv << 16) | iu;
