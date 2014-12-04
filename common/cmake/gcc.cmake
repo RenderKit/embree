@@ -37,7 +37,4 @@ ENDIF()
 
 IF (APPLE)
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mmacosx-version-min=10.7 -stdlib=libc++")
-  IF (TARGET_AVX OR TARGET_AVX2)
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wa,-q") # use clang assembler if user needs AVX
-  ENDIF()
 ENDIF (APPLE)
