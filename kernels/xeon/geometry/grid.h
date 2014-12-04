@@ -541,9 +541,9 @@ namespace embree
 			       const DiscreteTessellationPattern& pattern_x,
 			       const DiscreteTessellationPattern& pattern_y)
     {
-      
+      /* calculate UVs */
       Vec2f luv[17*17];
-      Vec2f uv[17*17];
+      Vec2f guv[17*17];
       for (int y=0; y<height; y++) 
       {
         const float fy = pattern_y(y0+y);
@@ -555,7 +555,7 @@ namespace embree
 	  const Vec2f uv01 = (1.0f-fx) * uv0  + fx * uv1;
 	  const Vec2f uv32 = (1.0f-fx) * uv3  + fx * uv2;
 	  const Vec2f uvxy = (1.0f-fy) * uv01 + fy * uv32;
-	  uv[y*width+x] = uvxy;
+	  guv[y*width+x] = uvxy;
         }
       }
 
@@ -565,8 +565,8 @@ namespace embree
       {
         for (int x=0; x<width; x++) 
 	{
-	  const int iu = clamp(uv[y*width+x].x * 0xFFFF, 0.0f, float(0xFFFF));
-	  const int iv = clamp(uv[y*width+x].y * 0xFFFF, 0.0f, float(0xFFFF));
+	  const int iu = clamp(guv[y*width+x].x * 0xFFFF, 0.0f, float(0xFFFF));
+	  const int iv = clamp(guv[y*width+x].y * 0xFFFF, 0.0f, float(0xFFFF));
 	  Vec3fa p = patch.eval(luv[y*width+x].x,luv[y*width+x].y);
 	  p.a = (iv << 16) | iu;
 	  point(x,y) = p;
@@ -575,7 +575,7 @@ namespace embree
         }
       }
 
-      return build(scene,patch,alloc,prims,x0,x1,y0,y1,luv,uv,Ng);
+      return build(scene,patch,alloc,prims,x0,x1,y0,y1,luv,guv,Ng);
     }
 
 #if 0
@@ -622,10 +622,10 @@ namespace embree
 			       FastAllocator::Thread& alloc, PrimRef* prims, 
 			       const size_t x0, const size_t x1,
 			       const size_t y0, const size_t y1,
-			       Vec2f luv[17*17], Vec2f uv[17*17], Vec3fa Ng[17*17])
+			       Vec2f luv[17*17], Vec2f guv[17*17], Vec3fa Ng[17*17])
     {
       /* displace points */
-      displace(scene,patch,luv,uv,Ng);
+      displace(scene,patch,luv,guv,Ng);
       
       /* create lists of quads */
       size_t i=0;
