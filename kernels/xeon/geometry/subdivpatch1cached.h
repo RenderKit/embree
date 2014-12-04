@@ -36,6 +36,13 @@ namespace embree
     const Vec3fa b_max( reduce_max(v.x), reduce_max(v.y), reduce_max(v.z) );
     return BBox3fa( b_min, b_max );
   }
+#else
+  __forceinline BBox3fa getBBox3fa(const sse3f &v)
+  {
+    const Vec3fa b_min( reduce_min(v.x), reduce_min(v.y), reduce_min(v.z) );
+    const Vec3fa b_max( reduce_max(v.x), reduce_max(v.y), reduce_max(v.z) );
+    return BBox3fa( b_min, b_max );
+  }
 #endif
 
   struct GridRange
@@ -251,51 +258,44 @@ namespace embree
           v_array[i] = 1.0f;
         }
 
+      BBox3fa b ( empty );
+      assert( grid_size_8wide_blocks >= 1 );
 
 #if !defined(__AVX__)
 
+      for (size_t i=0;i<grid_size_8wide_blocks*2;i++)
+	{
+	  ssef u = load4f(&u_array[i*4]);
+	  ssef v = load4f(&v_array[i*4]);
 
-      BBox3fa b ( empty );
+	  sse3f vtx = eval4( u, v );
 
-      for (size_t i=0;i<real_grid_size;i++)
-        {
-          const float u = u_array[i];
-          const float v = v_array[i];
-
-          Vec3fa vtx = eval( u,v );	    
-
+	  /* eval displacement function */
 	  if (unlikely(mesh->displFunc != NULL))
 	    {
-	      Vec3fa nor = normal(u,v);
+
+	      sse3f nor = normal4(u,v);
+
 	      nor = normalize_safe(nor);
 
 	      mesh->displFunc(mesh->userPtr,
 			      geom,
 			      prim,
-			      (const float*)&u_array[i],
-			      (const float*)&v_array[i],
+			      (const float*)&u_array[i*4],
+			      (const float*)&v_array[i*4],
 			      (const float*)&nor.x,
 			      (const float*)&nor.y,
 			      (const float*)&nor.z,
 			      (float*)&vtx.x,
 			      (float*)&vtx.y,
 			      (float*)&vtx.z,
-			      1);
-
-              /* if ( !mesh->displBounds.empty() ) */
-              /*   { */
-              /*     b.extend( mesh->displBounds ); */
-              /*   } */
+			      4);
 	    }
+	  b.extend( getBBox3fa(vtx) );
+	}
 
-          b.extend( vtx );
-        }
-      b.lower.a = 0.0f;
-      b.upper.a = 0.0f;
 
 #else
-      BBox3fa b ( empty );
-      assert( grid_size_8wide_blocks >= 1 );
 
       for (size_t i=0;i<grid_size_8wide_blocks;i++)
 	{
@@ -304,7 +304,6 @@ namespace embree
 
 	  avx3f vtx = eval8( u, v );
 
-#if USE_DISPLACEMENT_FOR_TESSELLATION_BOUNDS == 1
 	  /* eval displacement function */
 	  if (unlikely(mesh->displFunc != NULL))
 	    {
@@ -325,22 +324,13 @@ namespace embree
 			      (float*)&vtx.y,
 			      (float*)&vtx.z,
 			      8);
-
-              /* if ( !mesh->displBounds.empty() ) */
-              /*   { */
-              /*     b.extend( mesh->displBounds ); */
-              /*   } */
 	    }
-#endif
-
 	  b.extend( getBBox3fa(vtx) );
-
-	  /* extend bounding box */
 	}
+#endif
 
       b.lower.a = 0.0f;
       b.upper.a = 0.0f;
-#endif
      
 #if DEBUG
       isfinite(b.lower.x);
