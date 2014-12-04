@@ -613,12 +613,8 @@ namespace embree
 	  const size_t ly0 = y, ly1 = min(ly0+16,y1);
 	  const float sx1 = float(lx0-x0)/float(x1-x0), sx0 = 1.0f-sx1;
 	  const float sy1 = float(ly0-y0)/float(y1-y0), sy0 = 1.0f-sy1;
-	  const Vec2f luv0 = sy0*(sx0*uv0+sx1*uv1) + sy1*(sx0*uv3+sx1*uv2);
-	  const Vec2f luv1 = sy0*(sx1*uv0+sx0*uv1) + sy1*(sx1*uv3+sx0*uv2);
-	  const Vec2f luv2 = sy1*(sx1*uv0+sx0*uv1) + sy0*(sx1*uv3+sx0*uv2);
-	  const Vec2f luv3 = sy1*(sx0*uv0+sx1*uv1) + sy0*(sx0*uv3+sx1*uv2);
 	  Grid* leaf = Grid::create(alloc,lx1-lx0+1,ly1-ly0+1,geomID,primID);
-	  size_t n = leaf->build(scene,patch,alloc,prims,lx0,lx1,ly0,ly1,luv0,luv1,luv2,luv3,pattern0,pattern1,pattern2,pattern3,pattern_x,pattern_y);
+	  size_t n = leaf->build(scene,patch,alloc,prims,lx0,lx1,ly0,ly1,uv0,uv1,uv2,uv3,pattern0,pattern1,pattern2,pattern3,pattern_x,pattern_y);
 	  prims += n;
 	  N += n;
 	}
