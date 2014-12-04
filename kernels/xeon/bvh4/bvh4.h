@@ -1287,7 +1287,7 @@ namespace embree
     }
 
     /*! Encodes a node */
-    static __forceinline NodeRef encodeNode(Node* node) {  // FIXME: template these functions
+    static __forceinline NodeRef encodeNode(void* node) {  // FIXME: template these functions
       assert(!((size_t)node & align_mask)); 
       return NodeRef((size_t) node);
     }

@@ -27,7 +27,7 @@ namespace embree
 #define TIMER(x) 
   
 
-  __thread TessellationCache *thread_cache = NULL;
+  __thread TessellationCache<BVH4,BVH4::NodeRef> *thread_cache = NULL;
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -329,13 +329,13 @@ namespace embree
   {
     const unsigned int commitCounter = ((Scene*)geom)->commitCounter;
 
-    TessellationCache *local_cache = NULL;
+    TessellationCache<BVH4,BVH4::NodeRef> *local_cache = NULL;
 
     if (unlikely(!thread_cache))
       {
 
         /* need thread cache to be aligned */
-        thread_cache = (TessellationCache *)_mm_malloc(sizeof(TessellationCache),64);
+        thread_cache = (TessellationCache<BVH4,BVH4::NodeRef> *)_mm_malloc(sizeof(TessellationCache<BVH4,BVH4::NodeRef>),64);
         assert( (size_t)thread_cache % 64 == 0 );
         thread_cache->init();	
 
