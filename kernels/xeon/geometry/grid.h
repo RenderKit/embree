@@ -483,7 +483,7 @@ namespace embree
     }
     
     template<typename Patch>
-    __forceinline void displace(Scene* scene, const Patch& patch, const Vec2f* luv, const Vec2f* uv)
+    __forceinline void displace(Scene* scene, const Patch& patch, const Vec2f* luv, const Vec2f* uv, const Vec3fa* Ng)
     {
       SubdivMesh* mesh = (SubdivMesh*) scene->get(geomID);
       if (mesh->displFunc == NULL) return;
@@ -501,10 +501,9 @@ namespace embree
           qx[y*width+x] = p[y*width+x].x;
           qy[y*width+x] = p[y*width+x].y;
           qz[y*width+x] = p[y*width+x].z;
-          const Vec3fa N = normalize(patch.normal(luv[y*width+x].x, luv[y*width+x].y));
-          nx[y*width+x] = N.x;
-          ny[y*width+x] = N.y;
-          nz[y*width+x] = N.z;
+          nx[y*width+x] = Ng[y*width+x].x;
+          ny[y*width+x] = Ng[y*width+x].y;
+          nz[y*width+x] = Ng[y*width+x].z;
         }
       }
       
@@ -545,6 +544,7 @@ namespace embree
       
       Vec2f luv[17*17];
       Vec2f uv[17*17];
+      Vec3fa Ng[17*17];
 
       for (int y=0; y<height; y++) {
         const float fy = pattern_y(y0+y);
@@ -569,12 +569,14 @@ namespace embree
 	  const int iv = clamp(uvxy.y * 0xFFFF, 0.0f, float(0xFFFF));
 	  Vec3fa p = patch.eval(luv[y*width+x].x,luv[y*width+x].y);
 	  p.a = (iv << 16) | iu;
-          point(x,y) = p;
+	  point(x,y) = p;
+	  const Vec3fa N = normalize(patch.normal(luv[y*width+x].x, luv[y*width+x].y)); // FIXME: enable only for displacement mapping
+	  Ng[y*width+x] = N;
 	  bounds.extend(p);
         }
       }
 
-      return build(scene,patch,alloc,prims,x0,x1,y0,y1,luv,uv);
+      return build(scene,patch,alloc,prims,x0,x1,y0,y1,luv,uv,Ng);
     }
 
     template<typename Patch>
@@ -582,10 +584,10 @@ namespace embree
 			       FastAllocator::Thread& alloc, PrimRef* prims, 
 			       const size_t x0, const size_t x1,
 			       const size_t y0, const size_t y1,
-			       Vec2f luv[17*17], Vec2f uv[17*17])
+			       Vec2f luv[17*17], Vec2f uv[17*17], Vec3fa Ng[17*17])
     {
       /* displace points */
-      displace(scene,patch,luv,uv);
+      displace(scene,patch,luv,uv,Ng);
       
       /* create lists of quads */
       size_t i=0;
