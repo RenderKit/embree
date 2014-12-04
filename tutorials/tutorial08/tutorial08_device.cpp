@@ -198,7 +198,7 @@ void updateScene(RTCScene scene, const Vec3fa& cam_pos)
         const Vec3fa P = 0.5f*(v1+v0);
 	const Vec3fa dist = cam_pos - P;
 	//const Vec3fa dist = Vec3fa(-0.704586f, -2.43012f, 8.60752f) - P;
-        level[i*4+k] = max(min(64.0f*(0.5f*length(edge)/length(dist)),MAX_EDGE_LEVEL),MIN_EDGE_LEVEL);
+        level[i*4+k] = max(min(256.0f*(0.5f*length(edge)/length(dist)),MAX_EDGE_LEVEL),MIN_EDGE_LEVEL);
         //level[i*4+k] = 8; // MAX_EDGE_LEVEL;
       } 
     }
@@ -220,7 +220,7 @@ void updateScene(RTCScene scene, const Vec3fa& cam_pos)
 	const Vec3fa dist = cam_pos - P;
 
         //mesh->subdivlevel[e+i] = float(g_subdivision_levels)/16.0f;
-        mesh->subdivlevel[e+i] = max(min(64.0f*(0.5f*length(edge)/length(dist)),MAX_EDGE_LEVEL),MIN_EDGE_LEVEL);
+        mesh->subdivlevel[e+i] = max(min(256.0f*(0.5f*length(edge)/length(dist)),MAX_EDGE_LEVEL),MIN_EDGE_LEVEL);
 	//mesh->subdivlevel[e+i] = 32;
 	//static int randinit = 0; randinit++; //;
 	//PRINT(randinit);

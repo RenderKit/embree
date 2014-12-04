@@ -437,7 +437,7 @@ namespace embree
     {
       const Vec3fa tu = tangentU(uu,vv);
       const Vec3fa tv = tangentV(uu,vv);
-      return cross(tv,tu);
+      return cross(tu,tv);
     }   
 
 

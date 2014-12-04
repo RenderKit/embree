@@ -71,8 +71,8 @@ namespace embree
 
       if (patch.isRegular()) 
       {
-	BSplinePatch patcheval;
-	patcheval.init(patch);
+	BSplinePatch patcheval; patcheval.init(patch);
+	//GregoryPatch patcheval; patcheval.init(patch);
 	for (float y=ly0; y<ly1; y++) 
 	{
 	  for (float x=lx0; x<lx1; x++) 
