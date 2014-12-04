@@ -315,11 +315,13 @@ namespace embree
 
     struct Precalculations {
       Vec3fa ray_rdir, ray_org_rdir;
+      SubdivPatch1Cached *last_patch;
 
       __forceinline Precalculations (const Ray& ray) 
       {
 	ray_rdir     = rcp_safe(ray.dir);
-	ray_org_rdir = ray.org*ray_rdir;	
+	ray_org_rdir = ray.org*ray_rdir;
+        last_patch   = NULL;
       }
     };
 
@@ -327,12 +329,13 @@ namespace embree
     static size_t getSubtreeRootNode(const Primitive* const subdiv_patch, const void* geom);
 
     /*! Intersect a ray with the primitive. */
-    static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Primitive* prim, size_t ty, const void* geom, size_t& lazy_node) 
+    static __forceinline void intersect(Precalculations& pre, Ray& ray, const Primitive* prim, size_t ty, const void* geom, size_t& lazy_node) 
     {
       STAT3(normal.trav_prims,1,1,1);
 
       if (likely(ty == 2))
         {
+          assert(pre.last_patch == ((Quad2x2*)prim)->backPtr);
           size_t hitPtr = 0;
 #if defined(__AVX__)
           intersect1_precise<avxb,avxf>( ray, *(Quad2x2*)prim, (SubdivMesh*)geom,hitPtr);
@@ -351,12 +354,15 @@ namespace embree
 #endif
         }
       else 
-        lazy_node = getSubtreeRootNode(prim, geom);              
+        {
+          lazy_node = getSubtreeRootNode(prim, geom);
+          pre.last_patch = (SubdivPatch1Cached*)prim;
+        }             
 
     }
 
     /*! Test if the ray is occluded by the primitive */
-    static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Primitive* prim, size_t ty, const void* geom, size_t& lazy_node) 
+    static __forceinline bool occluded(Precalculations& pre, Ray& ray, const Primitive* prim, size_t ty, const void* geom, size_t& lazy_node) 
     {
       STAT3(shadow.trav_prims,1,1,1);
 
@@ -370,7 +376,10 @@ namespace embree
 #endif
 	}
       else 
-        lazy_node = getSubtreeRootNode(prim, geom);        
+        {
+          lazy_node = getSubtreeRootNode(prim, geom);        
+          pre.last_patch = (SubdivPatch1Cached*)prim;
+        }             
       
 
       return false;
