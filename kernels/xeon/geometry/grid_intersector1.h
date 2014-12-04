@@ -188,11 +188,29 @@ namespace embree
       intersectQuad(ray,O,D, q00,q01,q10,q11, prim);
     }
 
-    static __forceinline void intersectQuadQuad (Ray& ray, 
-                                                 const Vec3fa& v00, const Vec3fa& v10, const Vec3fa& v20,
-                                                 const Vec3fa& v01, const Vec3fa& v11, const Vec3fa& v21,
-                                                 const Vec3fa& v02, const Vec3fa& v12, const Vec3fa& v22,
-                                                 const Primitive& prim)
+    static __forceinline void intersectQuads (Ray& ray, 
+					      const Vec3fa& v00, const Vec3fa& v10, const Vec3fa& v20,
+					      const Vec3fa& v01, const Vec3fa& v11, const Vec3fa& v21,
+					      const Primitive& prim)
+    {
+      const Vec3fa O = ray.org;
+      const Vec3fa D = ray.dir;
+      const Vec3fa q00 = copy_a(v00-O,v00), q10 = copy_a(v10-O,v10), q20 = copy_a(v20-O,v20);
+      const Vec3fa q01 = copy_a(v01-O,v01), q11 = copy_a(v11-O,v11), q21 = copy_a(v21-O,v21);
+
+#if defined(__AVX__)
+      intersectDualQuad(ray,O,D,q00,q01,q10,q11,q20,q21,prim);
+#else
+      intersectQuad(ray,O,D, q00,q01,q10,q11, prim);
+      intersectQuad(ray,O,D, q10,q11,q20,q21, prim);
+#endif
+    }
+
+    static __forceinline void intersectQuads (Ray& ray, 
+					      const Vec3fa& v00, const Vec3fa& v10, const Vec3fa& v20,
+					      const Vec3fa& v01, const Vec3fa& v11, const Vec3fa& v21,
+					      const Vec3fa& v02, const Vec3fa& v12, const Vec3fa& v22,
+					      const Primitive& prim)
     {
       const Vec3fa O = ray.org;
       const Vec3fa D = ray.dir;
@@ -246,22 +264,20 @@ namespace embree
 	  const Vec3fa& v00 = prim.grid.point(ofs,0), v10 = (&v00)[1];
 	  const Vec3fa& v01 = prim.grid.point(ofs,1), v11 = (&v01)[1];
 	  const Vec3fa& v02 = prim.grid.point(ofs,2), v12 = (&v02)[1];
-	  intersectQuad(ray, v00,v10,v01,v11, prim);
-	  intersectQuad(ray, v01,v11,v02,v12, prim);
+	  intersectQuads(ray, v00,v01,v02,v10,v11,v12, prim);
 	  break;
 	}
 	case Grid::QuadList::Quads::QUAD2X1: {
 	  const Vec3fa& v00 = prim.grid.point(ofs,0), v10 = (&v00)[1], v20 = (&v00)[2];
 	  const Vec3fa& v01 = prim.grid.point(ofs,1), v11 = (&v01)[1], v21 = (&v01)[2];
-	  intersectQuad(ray, v00,v10,v01,v11, prim);
-	  intersectQuad(ray, v10,v20,v11,v21, prim);
+	  intersectQuads(ray, v00,v10,v20,v01,v11,v21, prim);
 	  break;
 	}
 	case Grid::QuadList::Quads::QUAD2X2: {
 	  const Vec3fa& v00 = prim.grid.point(ofs,0), v10 = (&v00)[1], v20 = (&v00)[2];
 	  const Vec3fa& v01 = prim.grid.point(ofs,1), v11 = (&v01)[1], v21 = (&v01)[2];
 	  const Vec3fa& v02 = prim.grid.point(ofs,2), v12 = (&v02)[1], v22 = (&v02)[2];
-	  intersectQuadQuad(ray, v00,v10,v20,v01,v11,v21,v02,v12,v22, prim);
+	  intersectQuads(ray, v00,v10,v20,v01,v11,v21,v02,v12,v22, prim);
 	  break;
 	}
 	default: assert(false);  
