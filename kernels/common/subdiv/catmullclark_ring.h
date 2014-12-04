@@ -432,6 +432,11 @@ namespace embree
       }
       return alpha +  beta;      
     }
+
+    /* gets surface normal */
+    const Vec3fa getNormal() const  {
+      return cross(getLimitTangent(),getSecondLimitTangent());
+    }
     
     /* returns center of the n-th quad in the 1-ring */
     __forceinline Vec3fa getQuadCenter(const size_t index) const
