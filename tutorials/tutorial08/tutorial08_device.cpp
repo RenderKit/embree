@@ -220,8 +220,10 @@ void updateScene(RTCScene scene, const Vec3fa& cam_pos)
 
         //mesh->subdivlevel[e+i] = float(g_subdivision_levels)/16.0f;
         mesh->subdivlevel[e+i] = max(min(64.0f*(0.5f*length(edge)/length(dist)),MAX_EDGE_LEVEL),MIN_EDGE_LEVEL);
-	//mesh->subdivlevel[e+i] = 4;
-        //srand48(length(edge)/length(cam_pos-P)*12343.0f); mesh->subdivlevel[e+i] = 10.0f*drand48();
+	//mesh->subdivlevel[e+i] = 32;
+	//static int randinit = 0; randinit++; //;
+	//PRINT(randinit);
+        //srand48(length(edge)/length(cam_pos-P)*12343.0f); mesh->subdivlevel[e+i] = 16.0f*drand48()+1.0f;
       }
     }
     /*for (size_t i=0; i<8; i++) mesh->subdivlevel[i] = 16.2;
@@ -267,8 +269,8 @@ RTCScene constructScene(const Vec3fa& cam_pos)
     //for (size_t i=0; i<4*mesh->numQuads; i++) level[i] = 32;
     rtcUnmapBuffer(scene,subdivMeshID, RTC_LEVEL_BUFFER);
 
-    BBox3fa bounds(Vec3fa(-0.1f,-0.1f,-0.1f),Vec3fa(0.1f,0.1f,0.1f));
-    rtcSetDisplacementFunction(scene, subdivMeshID, (RTCDisplacementFunc)DisplacementFunc,(RTCBounds*)&bounds);
+    //BBox3fa bounds(Vec3fa(-0.1f,-0.1f,-0.1f),Vec3fa(0.1f,0.1f,0.1f));
+    //rtcSetDisplacementFunction(scene, subdivMeshID, (RTCDisplacementFunc)DisplacementFunc,(RTCBounds*)&bounds);
     //rtcSetDisplacementFunction(scene, subdivMeshID, (RTCDisplacementFunc)DisplacementFunc,NULL);
     mesh->geomID = subdivMeshID;
   }       

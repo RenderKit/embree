@@ -594,7 +594,7 @@ namespace embree
       assert(x1s-x0s < 17);
       
       Vec3fa p_y0[17], Ng_y0[17];
-      feature_adaptive_eval (patch, y0!=0,y0!=0,x0s,x1s,2,coarse.size()+1, p_y0,Ng_y0,1,coarse.size()+1);
+      feature_adaptive_eval (patch, y0!=0,y0!=0,x0s,x1s,2,coarse.size()+1, p_y0,Ng_y0,1,17);
 
       Vec2f luv_y0[17];
       for (int x=x0; x<=x1; x++) {
@@ -619,7 +619,7 @@ namespace embree
       assert(x1s-x0s < 17);
       
       Vec3fa p_y0[17], Ng_y0[17];
-      feature_adaptive_eval (patch, x0s,x1s,y0!=0,y0!=0,coarse.size()+1,2, p_y0,Ng_y0,coarse.size(),1);
+      feature_adaptive_eval (patch, x0s,x1s,y0!=0,y0!=0,coarse.size()+1,2, p_y0,Ng_y0,17,1);
       
       Vec2f luv_y0[17];
       //const float fy = pattern_y(y0);
@@ -657,12 +657,22 @@ namespace embree
 
       /* evaluate position and uvs */
       Vec3fa Ng[17*17];
-      //feature_adaptive_eval (patch, x0,x1,y0,y1, width,height, p,Ng,width,height);
-      const bool st = stitch_y(patch,y0,0       ,x0,x1,pattern_x,pattern0,luv,Ng);
-      const bool sr = stitch_x(patch,x1,width-1 ,y0,y1,pattern_y,pattern1,luv,Ng);
-      const bool sb = stitch_y(patch,y1,height-1,x0,x1,pattern_x,pattern2,luv,Ng);
-      const bool sl = stitch_x(patch,x0,0       ,y0,y1,pattern_y,pattern3,luv,Ng);
-      feature_adaptive_eval (patch, x0+sl,x1-sr,y0+st,y1-sb, width,height, p+st*width+sl,Ng+st*width+sl,width,height);
+      size_t swidth  = pattern_x.size()+1;
+      size_t sheight = pattern_y.size()+1;
+//#if 0
+      feature_adaptive_eval (patch, x0,x1,y0,y1, swidth,sheight, p,Ng,width,height);
+//#else
+	//const bool st = stitch_y(patch,y0,0        ,x0,x1,pattern_x,pattern0,luv,Ng);
+      //const bool sr = false; //stitch_x(patch,x1,swidth-1 ,y0,y1,pattern_y,pattern1,luv,Ng);
+      //const bool sb = false; //stitch_y(patch,y1,sheight-1,x0,x1,pattern_x,pattern2,luv,Ng);
+      //const bool sl = false; //stitch_x(patch,x0,0        ,y0,y1,pattern_y,pattern3,luv,Ng);
+      //feature_adaptive_eval (patch, x0+sl,x1-sr,y0+st,y1-sb, swidth,sheight, p+st*width+sl,Ng+st*width+sl,width,height);
+//#endif
+
+      //for (size_t y=y0; y<=y1; y++)
+      //for (size_t x=x0; x<=x1; x++)
+	  //PRINT3(x,y,point(x,y));
+      //  point(x-x0,y-y0) = Vec3fa(zero);
 
       /* calculate global UVs */
       Vec2f guv[17*17];
