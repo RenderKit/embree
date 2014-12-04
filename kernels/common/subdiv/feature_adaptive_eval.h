@@ -65,8 +65,8 @@ namespace embree
 	    assert(x<swidth && y<sheight);
 	    const float fx = (float(x)*rcp((float)(swidth -1))-srange.lower.x)*rcp(srange.upper.x-srange.lower.x);
 	    const float fy = (float(y)*rcp((float)(sheight-1))-srange.lower.y)*rcp(srange.upper.y-srange.lower.y);
-	    P [y*dwidth+x] = patcheval.eval  (fx,fy);
-	    Ng[y*dwidth+x] = patcheval.normal(fx,fy);
+	    P [(y-y0)*dwidth+(x-x0)] = patcheval.eval  (fx,fy);
+	    Ng[(y-y0)*dwidth+(x-x0)] = patcheval.normal(fx,fy);
 	  }
 	}
       }
@@ -85,13 +85,13 @@ namespace embree
 	    const Vec3fa P1 = patch.ring[1].getLimitVertex();
 	    const Vec3fa P2 = patch.ring[2].getLimitVertex();
 	    const Vec3fa P3 = patch.ring[3].getLimitVertex();
-	    P [y*dwidth+x] = sy0*(sx0*P0+sx1*P1) + sy1*(sx0*P3+sx1*P2);
+	    P [(y-y0)*dwidth+(x-x0)] = sy0*(sx0*P0+sx1*P1) + sy1*(sx0*P3+sx1*P2);
 
 	    const Vec3fa Ng0 = patch.ring[0].getNormal();
 	    const Vec3fa Ng1 = patch.ring[1].getNormal();
 	    const Vec3fa Ng2 = patch.ring[2].getNormal();
 	    const Vec3fa Ng3 = patch.ring[3].getNormal();
-	    Ng[y*dwidth+x] = sy0*(sx0*Ng0+sx1*Ng1) + sy1*(sx0*Ng3+sx1*Ng2);
+	    Ng[(y-y0)*dwidth+(x-x0)] = sy0*(sx0*Ng0+sx1*Ng1) + sy1*(sx0*Ng3+sx1*Ng2);
 	  }
 	}
       }
@@ -128,6 +128,9 @@ namespace embree
 					    const size_t x0, const size_t x1, const size_t y0, const size_t y1, const size_t swidth, const size_t sheight, 
 					    Vec3fa* P, Vec3fa* Ng, const size_t dwidth, const size_t dheight)
   {
+    //PRINT4(x0,x1,y0,y1);
+    //PRINT2(swidth,sheight);
+    //PRINT2(dwidth,dheight);
     FeatureAdaptiveEval eval(patch,
 			     x0,x1,y0,y1,swidth,sheight,
 			     P,Ng,dwidth,dheight);

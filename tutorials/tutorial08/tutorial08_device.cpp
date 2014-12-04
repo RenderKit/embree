@@ -197,8 +197,8 @@ void updateScene(RTCScene scene, const Vec3fa& cam_pos)
         const Vec3fa P = 0.5f*(v1+v0);
 	const Vec3fa dist = cam_pos - P;
 
-        //level[i*4+k] = max(min(64.0f*(0.5f*length(edge)/length(dist)),MAX_EDGE_LEVEL),MIN_EDGE_LEVEL);
-        level[i*4+k] = 4; // MAX_EDGE_LEVEL;
+        level[i*4+k] = max(min(64.0f*(0.5f*length(edge)/length(dist)),MAX_EDGE_LEVEL),MIN_EDGE_LEVEL);
+        //level[i*4+k] = 4; // MAX_EDGE_LEVEL;
 
       } 
     }
@@ -236,7 +236,8 @@ void updateScene(RTCScene scene, const Vec3fa& cam_pos)
     mesh->subdivlevel[1] = level;
     mesh->subdivlevel[2] = level;
     mesh->subdivlevel[3] = level;
-    mesh->subdivlevel[7] = level;*/
+    mesh->subdivlevel[7] = level;
+    mesh->subdivlevel[8] = level;*/
 
     rtcUpdate(scene,geomID);
   }
