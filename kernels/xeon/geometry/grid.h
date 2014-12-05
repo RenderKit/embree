@@ -623,7 +623,6 @@ namespace embree
       feature_adaptive_eval (patch, x0s,x1s,y0!=0,y0!=0,coarse.size()+1,2, p_y0,Ng_y0,17,1);
       
       Vec2f luv_y0[17];
-      //const float fy = pattern_y(y0);
       int y = y0-y_ofs;
       for (int x=0; x<=x1-x0; x++) {
 	const size_t xs = stitch(x0+x,fine.size(),coarse.size());

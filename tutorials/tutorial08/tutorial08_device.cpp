@@ -27,9 +27,12 @@ const int numTheta = 2*numPhi;
 
 #define MAX_EDGE_LEVEL 32.0f
 #define MIN_EDGE_LEVEL 2.0f
-#define ENABLE_DISPLACEMENTS 1
-#define LEVEL_FACTOR 256.0f
-//#define LEVEL_FACTOR 64.0f
+#define ENABLE_DISPLACEMENTS 0
+#if ENABLE_DISPLACEMENTS
+#  define LEVEL_FACTOR 256.0f
+#else
+#  define LEVEL_FACTOR 32.0f
+#endif
 
 /* error reporting function */
 void error_handler(const RTCError code, const char* str)
@@ -199,7 +202,7 @@ void updateScene(RTCScene scene, const Vec3fa& cam_pos)
         const Vec3fa edge = v1-v0;
         const Vec3fa P = 0.5f*(v1+v0);
 	const Vec3fa dist = cam_pos - P;
-	//const Vec3fa dist = Vec3fa(-0.704586f, -2.43012f, 8.60752f) - P;
+	//const Vec3fa dist = Vec3fa(-1.39588f, 2.62872f, 7.82919f) - P;
         level[i*4+k] = max(min(LEVEL_FACTOR*(0.5f*length(edge)/length(dist)),MAX_EDGE_LEVEL),MIN_EDGE_LEVEL);
         //level[i*4+k] = 8; // MAX_EDGE_LEVEL;
       } 
@@ -223,7 +226,7 @@ void updateScene(RTCScene scene, const Vec3fa& cam_pos)
 
         //mesh->subdivlevel[e+i] = float(g_subdivision_levels)/16.0f;
         mesh->subdivlevel[e+i] = max(min(LEVEL_FACTOR*(0.5f*length(edge)/length(dist)),MAX_EDGE_LEVEL),MIN_EDGE_LEVEL);
-	//mesh->subdivlevel[e+i] = 32;
+	//mesh->subdivlevel[e+i] = 6;
 	//static int randinit = 0; randinit++; //;
 	//PRINT(randinit);
         //srand48(length(edge)/length(cam_pos-P)*12343.0f); mesh->subdivlevel[e+i] = 16.0f*drand48()+1.0f;
@@ -237,8 +240,8 @@ void updateScene(RTCScene scene, const Vec3fa& cam_pos)
     mesh->subdivlevel[1] = level;
     mesh->subdivlevel[2] = level;
     mesh->subdivlevel[3] = level;
-    mesh->subdivlevel[7] = level;
-    mesh->subdivlevel[8] = level;*/
+    mesh->subdivlevel[7] = level;*/
+    //mesh->subdivlevel[8] = level;
 
     rtcUpdate(scene,geomID);
   }
@@ -287,7 +290,9 @@ RTCScene constructScene(const Vec3fa& cam_pos)
                                                       mesh->numEdgeCreases, mesh->numVertexCreases, mesh->numHoles);
 
     //BBox3fa bounds(Vec3fa(-0.1f,-0.1f,-0.1f),Vec3fa(0.1f,0.1f,0.1f));
-    //rtcSetDisplacementFunction(scene, geomID, (RTCDisplacementFunc)DisplacementFunc,(RTCBounds*)&bounds);
+#if ENABLE_DISPLACEMENTS == 1
+    rtcSetDisplacementFunction(scene, geomID, (RTCDisplacementFunc)DisplacementFunc,NULL);
+#endif
 
     rtcSetBuffer(scene, geomID, RTC_VERTEX_BUFFER, mesh->positions, 0, sizeof(Vec3fa  ));
     rtcSetBuffer(scene, geomID, RTC_LEVEL_BUFFER,  mesh->subdivlevel, 0, sizeof(float));
