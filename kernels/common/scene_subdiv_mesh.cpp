@@ -315,14 +315,13 @@ namespace embree
 
 #else
 
-
     /* calculate start edge of each face */
 
     TIMER(msec = getSeconds());
-
+    
     faceStartEdge.resize(numFaces);
     size_t numHalfEdges = parallel_prefix_sum(faceVertices,faceStartEdge,numFaces);
-        
+
     TIMER(msec = getSeconds()-msec);    
     TIMER(std::cout << "calculate start edge  " << 1000. * msec << " ms" << std::endl);
 
@@ -430,7 +429,7 @@ namespace embree
       size_t e=r.begin();
       if (e && (halfEdges1[e].key == halfEdges1[e-1].key)) {
 	const uint64 key = halfEdges1[e].key;
-	while (e<numHalfEdges && halfEdges1[e].key == key) e++;
+	while (e<r.end() && halfEdges1[e].key == key) e++;
       }
 
       while (e<r.end())
@@ -487,6 +486,7 @@ namespace embree
                 << "numRegularFaces = " << numRegularFaces << " (" << 100.0f * numRegularFaces / numFaces << "%), " 
                 << "numIrregularFaces " << numIrregularFaces << " (" << 100.0f * numIrregularFaces / numFaces << "%) " << std::endl;
     }
+
   }
 
   bool SubdivMesh::verify () 

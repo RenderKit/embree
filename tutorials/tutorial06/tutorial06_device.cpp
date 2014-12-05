@@ -901,7 +901,7 @@ void convertTriangleMeshesToSubdivMeshes(ISPCScene* scene_in, RTCScene scene_out
     rtcSetBuffer(scene_out, geomID, RTC_VERTEX_BUFFER, mesh->positions, 0, sizeof(Vec3fa  ));
     assert(geomID < numGeometries);
     geomID_to_mesh[geomID] = mesh;
-    geomID_to_type[geomID] = 1;
+    geomID_to_type[geomID] = 0;
     
     int* triangles = (int*) rtcMapBuffer(scene_out, geomID, RTC_INDEX_BUFFER);
     for (size_t i=0; i<mesh->numTriangles; i++) {
@@ -910,11 +910,20 @@ void convertTriangleMeshesToSubdivMeshes(ISPCScene* scene_in, RTCScene scene_out
       triangles[3*i+2] = mesh->triangles[i].v2;
     }
     rtcUnmapBuffer(scene_out, geomID, RTC_INDEX_BUFFER);
-    
+
+#if 0    
     unsigned int* face_buffer = (unsigned int*) rtcMapBuffer(scene_out,geomID,RTC_FACE_BUFFER);
     for (size_t i=0; i<mesh->numTriangles; i++) face_buffer[i] = 3;
     rtcUnmapBuffer(scene_out,geomID,RTC_FACE_BUFFER);
-    
+#endif
+
+#if 1
+    unsigned int* face_buffer = new unsigned int[mesh->numTriangles];
+    for (size_t i=0;i<mesh->numTriangles;i++) face_buffer[i] = 3;
+    rtcSetBuffer(scene_out, geomID, RTC_FACE_BUFFER, face_buffer    , 0, sizeof(unsigned int));
+    //delete face_buffer; // FIXME: never deleted
+#endif
+
     float* level = (float*) rtcMapBuffer(scene_out, geomID, RTC_LEVEL_BUFFER);
     for (size_t i=0; i<3*mesh->numTriangles; i++) level[i] = 4; // 16
     rtcUnmapBuffer(scene_out,geomID, RTC_LEVEL_BUFFER);
@@ -957,7 +966,7 @@ RTCScene convertScene(ISPCScene* scene_in)
   RTCScene scene_out = rtcNewScene(RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT, RTC_INTERSECT1);
   //convertTriangleMeshes(scene_in,scene_out,numGeometries);
   convertTriangleMeshesToSubdivMeshes(scene_in,scene_out,numGeometries);
-  convertSubdivMeshes(scene_in,scene_out,numGeometries);
+  //convertSubdivMeshes(scene_in,scene_out,numGeometries);
 
   /* commit changes to scene */
 #if !defined(PARALLEL_COMMIT)

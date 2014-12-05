@@ -529,7 +529,7 @@ namespace embree
      new (&iter) Scene::Iterator<SubdivMesh>(this->scene);
      for (size_t i=0; i<iter.size(); i++)
        if (iter[i]) iter[i]->initializeHalfEdgeStructures();
-     
+
      /* initialize allocator and parallel_for_for_prefix_sum */
      this->bvh->alloc2.reset();
      pstate.init(iter,size_t(1024));

@@ -901,7 +901,7 @@ void convertTriangleMeshesToSubdivMeshes(uniform ISPCScene* uniform scene_in, RT
     rtcSetBuffer(scene_out, geomID, RTC_VERTEX_BUFFER, mesh->positions, 0, sizeof(uniform Vec3fa  ));
     assert(geomID < numGeometries);
     geomID_to_mesh[geomID] = mesh;
-    geomID_to_type[geomID] = 1;
+    geomID_to_type[geomID] = 0;
     
     uniform int* uniform triangles = (uniform int* uniform) rtcMapBuffer(scene_out, geomID, RTC_INDEX_BUFFER);
     for (size_t i=0; i<mesh->numTriangles; i++) {

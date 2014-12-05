@@ -147,6 +147,7 @@ namespace embree
     /* load scene */
     if (strlwr(filename.ext()) == std::string("obj"))
       loadOBJ(filename,one,g_obj_scene,true);
+      //loadOBJ(filename,one,g_obj_scene,false);
     else if (strlwr(filename.ext()) == std::string("xml"))
       loadXML(filename,one,g_obj_scene);
     else if (filename.ext() != "")
