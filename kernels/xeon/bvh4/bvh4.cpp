@@ -127,6 +127,7 @@ namespace embree
   DECLARE_SCENE_BUILDER(BVH4SubdivPatch1CachedBuilderFast);
   DECLARE_SCENE_BUILDER(BVH4SubdivQuadQuad4x4BuilderFast);
   DECLARE_SCENE_BUILDER(BVH4SubdivGridBuilderFast);
+  DECLARE_SCENE_BUILDER(BVH4SubdivGridEagerBuilderFast);
   DECLARE_SCENE_BUILDER(BVH4UserGeometryBuilderFast);
 
   DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle1MeshBuilderFast);
@@ -204,6 +205,7 @@ namespace embree
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4SubdivPatch1CachedBuilderFast);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4SubdivQuadQuad4x4BuilderFast);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4SubdivGridBuilderFast);
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4SubdivGridEagerBuilderFast);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4UserGeometryMeshBuilderFast);
 
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle1MeshRefitFast);
@@ -970,6 +972,19 @@ namespace embree
     intersectors.intersector8 = NULL;
     intersectors.intersector16 = NULL;
     Builder* builder = BVH4SubdivGridBuilderFast(accel,scene,LeafMode);
+    return new AccelInstance(accel,builder,intersectors);
+  }
+
+  Accel* BVH4::BVH4SubdivGridEager(Scene* scene)
+  {
+    BVH4* accel = new BVH4(PrimitiveType2::type,NULL,LeafMode); // FIXME: type
+    Accel::Intersectors intersectors;
+    intersectors.ptr = accel; 
+    intersectors.intersector1 = BVH4GridIntersector1;
+    intersectors.intersector4 = NULL;
+    intersectors.intersector8 = NULL;
+    intersectors.intersector16 = NULL;
+    Builder* builder = BVH4SubdivGridEagerBuilderFast(accel,scene,LeafMode);
     return new AccelInstance(accel,builder,intersectors);
   }
 

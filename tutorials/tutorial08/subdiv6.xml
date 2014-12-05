@@ -24,7 +24,8 @@
       </position_indices>
 
       <faces>
-        4 4
+        4 4 
+<!--4 4-->
       </faces>
 
       <material>

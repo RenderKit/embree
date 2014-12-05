@@ -11,6 +11,7 @@
 // distributed under the License is distributed on an "AS IS" BASIS,        //
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. //
 // See the License for the specific language governing permissions and      //
+
 // limitations under the License.                                           //
 // ======================================================================== //
 
@@ -29,9 +30,6 @@
 #include "geometry/triangle4i.h"
 #include "geometry/subdivpatch1.h"
 #include "geometry/subdivpatch1cached.h"
-
-//#include "geometry/subdivpatchdispl1.h"
-//#include "geometry/quadquad4x4_subdiv.h"
 
 #include "geometry/quadquad4x4.h"
 #include "geometry/grid.h"
@@ -118,9 +116,6 @@ namespace embree
     
     BVH4SubdivQuadQuad4x4BuilderFast::BVH4SubdivQuadQuad4x4BuilderFast (BVH4* bvh, Scene* scene, size_t listMode) 
     : BVH4BuilderFastT<PrimRef>(bvh,scene,listMode,0,0,false,sizeof(QuadQuad4x4),1,1,true) { this->bvh->alloc2.init(4096,4096); }
-
-    BVH4SubdivGridBuilderFast::BVH4SubdivGridBuilderFast (BVH4* bvh, Scene* scene, size_t listMode) 
-      : BVH4BuilderFastT<PrimRef>(bvh,scene,listMode,0,0,false,sizeof(Grid),1,1,true) { this->bvh->alloc2.init(4096,4096); } 
 
 
     BVH4SubdivPatch1CachedBuilderFast::BVH4SubdivPatch1CachedBuilderFast (BVH4* bvh, Scene* scene, size_t listMode) 
@@ -420,6 +415,9 @@ namespace embree
     // =======================================================================================================
     // =======================================================================================================
 
+    BVH4SubdivGridBuilderFast::BVH4SubdivGridBuilderFast (BVH4* bvh, Scene* scene, size_t listMode) 
+      : BVH4BuilderFastT<PrimRef>(bvh,scene,listMode,0,0,false,sizeof(Grid),1,1,true) { this->bvh->alloc2.init(4096,4096); } 
+
    void BVH4SubdivGridBuilderFast::build(size_t threadIndex, size_t threadCount)
    {
       /* initialize all half edge structures */
@@ -427,8 +425,8 @@ namespace embree
      for (size_t i=0; i<iter.size(); i++)
        if (iter[i]) iter[i]->initializeHalfEdgeStructures();
      
+     /* initialize allocator and parallel_for_for_prefix_sum */
      this->bvh->alloc2.reset();
-     
      pstate.init(iter,size_t(1024));
      
      BVH4BuilderFast::build(threadIndex,threadCount);
@@ -442,7 +440,7 @@ namespace embree
         for (size_t f=r.begin(); f!=r.end(); ++f) 
 	{
           if (!mesh->valid(f)) continue;
-
+	  
 	  feature_adaptive_subdivision_gregory(f,mesh->getHalfEdge(f),mesh->getVertexPositionPtr(),
 					       [&](const CatmullClarkPatch& patch, const Vec2f uv[4], const int subdiv[4])
 	  {
@@ -479,8 +477,6 @@ namespace embree
 	  feature_adaptive_subdivision_gregory(f,mesh->getHalfEdge(f),mesh->getVertexPositionPtr(),
 					       [&](const CatmullClarkPatch& patch, const Vec2f uv[4], const int subdiv[4])
 	  {
-	    size_t id = rand();
-
 	    /*if (!patch.isRegular())
 	    {
 	      Grid* leaf = (Grid*) bvh->alloc2.malloc(sizeof(Grid),16);
@@ -490,10 +486,6 @@ namespace embree
 	      s.add(bounds);
 	      return;
 	      }*/
-
-	    GregoryPatch patcheval; 
-	    //BSplinePatch patcheval;
-	    patcheval.init(patch);
 
 	    const float l0 = patch.ring[0].edge_level;
 	    const float l1 = patch.ring[1].edge_level;
@@ -507,7 +499,10 @@ namespace embree
 	    const TessellationPattern pattern_y = pattern1.size() > pattern3.size() ? pattern1 : pattern3;
 	    const int nx = pattern_x.size();
 	    const int ny = pattern_y.size();
-            size_t N = Grid::create(mesh->id,f,scene,patcheval,alloc,&prims[base.size()+s.size()],0,nx,0,ny,uv[0],uv[1],uv[2],uv[3],pattern0,pattern1,pattern2,pattern3,pattern_x,pattern_y);
+
+	    GregoryPatch patcheval; patcheval.init(patch);
+	    //BSplinePatch patcheval; patcheval.init(patch);
+            size_t N = Grid::create(mesh->id,f,scene,patcheval,alloc,&prims[base.size()+s.size()],0,nx,0,ny,uv,pattern0,pattern1,pattern2,pattern3,pattern_x,pattern_y);
 	    assert(N == Grid::getNumEagerLeaves(nx,ny));
 	    for (size_t i=0; i<N; i++)
 	      s.add(prims[base.size()+s.size()].bounds());
@@ -518,6 +513,97 @@ namespace embree
     }
     
     void BVH4SubdivGridBuilderFast::create_primitive_array_parallel  (size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, PrimInfo& pinfo) {
+      create_primitive_array_sequential(threadIndex, threadCount, pinfo);  // FIXME: parallelize
+    }
+
+    // =======================================================================================================
+    // =======================================================================================================
+    // =======================================================================================================
+
+    BVH4SubdivGridEagerBuilderFast::BVH4SubdivGridEagerBuilderFast (BVH4* bvh, Scene* scene, size_t listMode) 
+      : BVH4BuilderFastT<PrimRef>(bvh,scene,listMode,0,0,false,sizeof(Grid),1,1,true) { this->bvh->alloc2.init(4096,4096); } 
+
+   void BVH4SubdivGridEagerBuilderFast::build(size_t threadIndex, size_t threadCount)
+   {
+      /* initialize all half edge structures */
+     new (&iter) Scene::Iterator<SubdivMesh>(this->scene);
+     for (size_t i=0; i<iter.size(); i++)
+       if (iter[i]) iter[i]->initializeHalfEdgeStructures();
+     
+     /* initialize allocator and parallel_for_for_prefix_sum */
+     this->bvh->alloc2.reset();
+     pstate.init(iter,size_t(1024));
+     
+     BVH4BuilderFast::build(threadIndex,threadCount);
+   }
+
+    size_t BVH4SubdivGridEagerBuilderFast::number_of_primitives() 
+    {
+      PrimInfo pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
+      {
+        size_t s = 0;
+        for (size_t f=r.begin(); f!=r.end(); ++f) 
+	{
+          if (!mesh->valid(f)) continue;
+	  
+	  feature_adaptive_subdivision_eval(f,mesh->getHalfEdge(f),mesh->getVertexPositionPtr(),
+					    [&](const CatmullClarkPatch& patch, const Vec2f uv[4], const int subdiv[4])
+	  {
+ 	    const float l0 = patch.ring[0].edge_level;
+	    const float l1 = patch.ring[1].edge_level;
+	    const float l2 = patch.ring[2].edge_level;
+	    const float l3 = patch.ring[3].edge_level;
+	    const TessellationPattern pattern0(l0,subdiv[0]);
+	    const TessellationPattern pattern1(l1,subdiv[1]);
+	    const TessellationPattern pattern2(l2,subdiv[2]);
+	    const TessellationPattern pattern3(l3,subdiv[3]);
+	    const TessellationPattern pattern_x = pattern0.size() > pattern2.size() ? pattern0 : pattern2;
+	    const TessellationPattern pattern_y = pattern1.size() > pattern3.size() ? pattern1 : pattern3;
+	    s += Grid::getNumEagerLeaves(pattern_x.size(),pattern_y.size());
+	  });
+	}
+        return PrimInfo(s,empty,empty);
+      }, [](const PrimInfo& a, const PrimInfo b) { return PrimInfo(a.size()+b.size(),empty,empty); });
+
+      return pinfo.size();
+    }
+    
+    void BVH4SubdivGridEagerBuilderFast::create_primitive_array_sequential(size_t threadIndex, size_t threadCount, PrimInfo& pinfo)
+    {
+      pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
+      {
+	FastAllocator::Thread alloc(&bvh->alloc2); // FIXME: should be thread local
+
+	PrimInfo s(empty);
+        for (size_t f=r.begin(); f!=r.end(); ++f) {
+          if (!mesh->valid(f)) continue;
+	  
+	  feature_adaptive_subdivision_eval(f,mesh->getHalfEdge(f),mesh->getVertexPositionPtr(),
+					    [&](const CatmullClarkPatch& patch, const Vec2f uv[4], const int subdiv[4])
+	  {
+	    const float l0 = patch.ring[0].edge_level;
+	    const float l1 = patch.ring[1].edge_level;
+	    const float l2 = patch.ring[2].edge_level;
+	    const float l3 = patch.ring[3].edge_level;
+	    const TessellationPattern pattern0(l0,subdiv[0]);
+	    const TessellationPattern pattern1(l1,subdiv[1]);
+	    const TessellationPattern pattern2(l2,subdiv[2]);
+	    const TessellationPattern pattern3(l3,subdiv[3]);
+	    const TessellationPattern pattern_x = pattern0.size() > pattern2.size() ? pattern0 : pattern2;
+	    const TessellationPattern pattern_y = pattern1.size() > pattern3.size() ? pattern1 : pattern3;
+	    const int nx = pattern_x.size();
+	    const int ny = pattern_y.size();
+	    size_t N = Grid::create(mesh->id,f,scene,patch,alloc,&prims[base.size()+s.size()],0,nx,0,ny,uv,pattern0,pattern1,pattern2,pattern3,pattern_x,pattern_y);
+	    assert(N == Grid::getNumEagerLeaves(nx,ny));
+	    for (size_t i=0; i<N; i++)
+	      s.add(prims[base.size()+s.size()].bounds());
+	  });
+        }
+        return s;
+      }, [](PrimInfo a, const PrimInfo& b) { a.merge(b); return a; });
+    }
+    
+    void BVH4SubdivGridEagerBuilderFast::create_primitive_array_parallel  (size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, PrimInfo& pinfo) {
       create_primitive_array_sequential(threadIndex, threadCount, pinfo);  // FIXME: parallelize
     }
 
@@ -533,13 +619,6 @@ namespace embree
         if (iter[i]) iter[i]->initializeHalfEdgeStructures();
 
       pstate.init(iter,size_t(1024));
-
-      if (this->bvh->data_mem != NULL) 
-        {
-          os_free( this->bvh->data_mem, this->bvh->size_data_mem );
-          this->bvh->data_mem      = NULL;
-          this->bvh->size_data_mem = 0;
-        }
 
       this->bvh->geometry = this->scene;
 
@@ -565,12 +644,22 @@ namespace embree
     
     void BVH4SubdivPatch1CachedBuilderFast::create_primitive_array_sequential(size_t threadIndex, size_t threadCount, PrimInfo& pinfo)
     {
-      assert( this->bvh->data_mem == NULL);
+      //assert( this->bvh->data_mem == NULL);
 
-      std::cout << "ALLOCATING SUBDIVPATCH1CACHED MEMORY FOR " << numPrimitives << " PRIMITIVES" << std::endl;
+     if (this->bvh->size_data_mem < sizeof(SubdivPatch1Cached) * numPrimitives) 
+        {
+          if (this->bvh->data_mem) 
+            os_free( this->bvh->data_mem, this->bvh->size_data_mem );
+          this->bvh->data_mem      = NULL;
+          this->bvh->size_data_mem = 0;
+        }
 
-      this->bvh->size_data_mem = sizeof(SubdivPatch1Cached) * numPrimitives;
-      this->bvh->data_mem      = os_malloc( this->bvh->size_data_mem );        
+     if (bvh->data_mem == NULL)
+       {
+          std::cout << "ALLOCATING SUBDIVPATCH1CACHED MEMORY FOR " << numPrimitives << " PRIMITIVES" << std::endl;
+         this->bvh->size_data_mem = sizeof(SubdivPatch1Cached) * numPrimitives;
+         this->bvh->data_mem      = os_malloc( this->bvh->size_data_mem );        
+       }
         
       SubdivPatch1Cached *const subdiv_patches = (SubdivPatch1Cached *)this->bvh->data_mem;
 
@@ -1082,6 +1171,7 @@ namespace embree
     Builder* BVH4SubdivPatch1BuilderFast(void* bvh, Scene* scene, size_t mode) { return new class BVH4SubdivBuilderFast<SubdivPatch1>((BVH4*)bvh,scene,mode); }
     Builder* BVH4SubdivQuadQuad4x4BuilderFast(void* bvh, Scene* scene, size_t mode) { return new class BVH4SubdivQuadQuad4x4BuilderFast((BVH4*)bvh,scene,mode); }
     Builder* BVH4SubdivGridBuilderFast(void* bvh, Scene* scene, size_t mode) { return new class BVH4SubdivGridBuilderFast((BVH4*)bvh,scene,mode); }
+    Builder* BVH4SubdivGridEagerBuilderFast(void* bvh, Scene* scene, size_t mode) { return new class BVH4SubdivGridEagerBuilderFast((BVH4*)bvh,scene,mode); }
     Builder* BVH4SubdivPatch1CachedBuilderFast(void* bvh, Scene* scene, size_t mode) { return new class BVH4SubdivPatch1CachedBuilderFast((BVH4*)bvh,scene,mode); }
 
   }

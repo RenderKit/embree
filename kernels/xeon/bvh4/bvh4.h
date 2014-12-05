@@ -1216,6 +1216,7 @@ namespace embree
     static Accel* BVH4SubdivPatch1(Scene* scene);
     static Accel* BVH4SubdivPatch1Cached(Scene* scene);
     static Accel* BVH4SubdivGrid(Scene* scene);
+    static Accel* BVH4SubdivGridEager(Scene* scene);
     static Accel* BVH4DisplQuadQuad4x4(Scene* scene);
     static Accel* BVH4UserGeometry(Scene* scene);
     
@@ -1287,7 +1288,7 @@ namespace embree
     }
 
     /*! Encodes a node */
-    static __forceinline NodeRef encodeNode(Node* node) {  // FIXME: template these functions
+    static __forceinline NodeRef encodeNode(void* node) {  // FIXME: template these functions
       assert(!((size_t)node & align_mask)); 
       return NodeRef((size_t) node);
     }

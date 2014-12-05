@@ -23,54 +23,58 @@ namespace embree
   // FIXME: implement 4 or 8 way associative cache on Xeon using ssei or avxi
   
   class __aligned(64) TessellationCache {
-
   private:
     /* default sizes */
     static const size_t DEFAULT_64B_BLOCKS = (1<<14);
     static const size_t CACHE_ENTRIES      = DEFAULT_64B_BLOCKS / 8;
-
+    
     struct CacheTag {
     private:
-      void *prim_tag;
+      size_t prim_tag;
       int commit_tag;
       int usedBlocks;
-      BVH4::NodeRef bvh4_subtree_root;     
+      size_t subtree_root;     
 
     public:
       __forceinline void reset() 
       {
-        prim_tag          = NULL;
-        commit_tag        = -1;
-        bvh4_subtree_root = 0;
-        usedBlocks        = 0;
+        prim_tag     = (size_t)-1;
+        commit_tag   = -1;
+        subtree_root = (size_t)-1;
+        usedBlocks   = 0;
+      }
+
+    __forceinline void fast_reset() 
+      {
+        prim_tag  = (size_t)-1;
       }
 
       __forceinline bool match(void *primID, const unsigned int commitCounter)
       {
-        return prim_tag == primID && commit_tag == commitCounter;
+        return prim_tag == (size_t)primID && commit_tag == commitCounter;
       }
 
       __forceinline void set(void *primID, 
                              const unsigned int commitCounter,
-                             BVH4::NodeRef root,
+                             size_t root,
                              const unsigned int blocks)
       {
-        prim_tag          = primID;
-        commit_tag        = commitCounter;
-        bvh4_subtree_root = root;
-        usedBlocks        = blocks;
+        prim_tag     = (size_t)primID;
+        commit_tag   = commitCounter;
+        subtree_root = root;
+        usedBlocks   = blocks;
       }
 
       __forceinline void set(void *primID, 
                              const unsigned int commitCounter)
       {
-        prim_tag          = primID;
-        commit_tag        = commitCounter;
+        prim_tag   = (size_t)primID;
+        commit_tag = commitCounter;
       }
 
-      __forceinline BVH4::NodeRef &getSubTreeRoot() 
+      __forceinline size_t &getSubTreeRoot() 
       {
-        return bvh4_subtree_root;
+        return subtree_root;
       }
 
       __forceinline unsigned int blocks() 
@@ -78,7 +82,9 @@ namespace embree
         return usedBlocks;
       }
       
-    } tags[CACHE_ENTRIES];
+    };
+
+    CacheTag tags[CACHE_ENTRIES];
 
 
     /* allocated memory to store cache entries */
@@ -165,7 +171,7 @@ namespace embree
     }
 
     /* lookup cache entry using 64bit pointer as tag */
-    __forceinline BVH4::NodeRef lookup(void *primID, const unsigned int commitCounter)
+    __forceinline size_t lookup(void *primID, const unsigned int commitCounter)
     {
 
 #if DEBUG
@@ -186,11 +192,11 @@ namespace embree
       cache_misses++;
 #endif
 
-      return BVH4::invalidNode;
+      return (size_t)-1;
     }
 
     /* insert entry using 'neededBlocks' cachelines into cache */
-    __forceinline BVH4::NodeRef &insert(void *primID, const unsigned int commitCounter, const size_t neededBlocks)
+    __forceinline size_t &insert(void *primID, const unsigned int commitCounter, const size_t neededBlocks)
     {
       const unsigned int index = addrToCacheIndex(primID);
       assert(!tags[index].match(primID,commitCounter));
@@ -199,7 +205,6 @@ namespace embree
 #if DEBUG
           //if (tags[index].prim_tag != NULL) cache_evictions++;
 #endif
-          tags[index].getSubTreeRoot().clearFlags();
           tags[index].set(primID,commitCounter);
           return tags[index].getSubTreeRoot();
         }
@@ -213,12 +218,12 @@ namespace embree
           if (unlikely(BIG_CACHE_ENTRIES*neededBlocks > allocated64BytesBlocks)) 
             {
               const unsigned int new_allocated64BytesBlocks = BIG_CACHE_ENTRIES*neededBlocks;
-
+#if DEBUG
               std::cout << "EXTENDING TESSELLATION CACHE (PER THREAD) FROM " 
                         << allocated64BytesBlocks << " TO " 
                         << new_allocated64BytesBlocks << " BLOCKS = " 
                         << new_allocated64BytesBlocks*64 << " BYTES" << std::endl << std::flush;
-
+#endif
               free_mem(lazymem);
               allocated64BytesBlocks = new_allocated64BytesBlocks; 
               lazymem = alloc_mem(allocated64BytesBlocks);
@@ -234,11 +239,10 @@ namespace embree
       const size_t currentIndex = blockCounter;
       blockCounter += neededBlocks;
 
-      BVH4::NodeRef curNode = BVH4::encodeNode( (BVH4::Node*)&lazymem[currentIndex*16] );
+      size_t curNode = (size_t)&lazymem[currentIndex*16];
 
       /* insert new entry at the beginning */
       tags[index].set(primID,commitCounter,curNode,neededBlocks);
-      assert( tags[index].getSubTreeRoot().isNode() );
       return tags[index].getSubTreeRoot();     
 
     }

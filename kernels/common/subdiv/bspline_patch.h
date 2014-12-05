@@ -437,7 +437,7 @@ namespace embree
     {
       const Vec3fa tu = tangentU(uu,vv);
       const Vec3fa tv = tangentV(uu,vv);
-      return cross(tv,tu);
+      return cross(tu,tv);
     }   
 
 
@@ -598,7 +598,7 @@ namespace embree
       const avx3f tV = tangentV8(uu,vv);
       return cross(tV,tU);
     }
-#else
+#endif
 
     __forceinline sse3f eval4(const ssef &uu, 
                               const ssef &vv,
@@ -636,8 +636,6 @@ namespace embree
       return cross(tV,tU);
     }
 
-
-#endif
 
 #endif
 
