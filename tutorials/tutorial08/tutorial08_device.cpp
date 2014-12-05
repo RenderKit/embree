@@ -25,13 +25,13 @@ const int numTheta = 2*numPhi;
 
 //extern unsigned int g_subdivision_levels;
 
-#define MAX_EDGE_LEVEL 32.0f
+#define MAX_EDGE_LEVEL 64.0f
 #define MIN_EDGE_LEVEL 2.0f
 #define ENABLE_DISPLACEMENTS 1
 #if ENABLE_DISPLACEMENTS
 #  define LEVEL_FACTOR 256.0f
 #else
-#  define LEVEL_FACTOR 32.0f
+#  define LEVEL_FACTOR 64.0f
 #endif
 
 /* error reporting function */
@@ -189,6 +189,7 @@ void updateScene(RTCScene scene, const Vec3fa& cam_pos)
   for (size_t j=0; j<g_ispc_scene->numMeshes; j++)
   {
     ISPCMesh* mesh = g_ispc_scene->meshes[j];
+#if 1
     if (mesh->numQuads == 0) continue;
 
     unsigned int geomID = mesh->geomID;
@@ -209,6 +210,26 @@ void updateScene(RTCScene scene, const Vec3fa& cam_pos)
     }
     rtcUnmapBuffer(scene,geomID, RTC_LEVEL_BUFFER);
     rtcUpdate(scene,geomID);
+#else
+    unsigned int geomID = mesh->geomID;
+    float* level = (float*) rtcMapBuffer(scene, geomID, RTC_LEVEL_BUFFER);
+    for (size_t i=0; i<mesh->numTriangles; i++) {
+      unsigned int *quad_vtx = (unsigned int*)&mesh->triangles[i];
+ 
+      for (size_t k=0; k<3; k++) {
+        const Vec3fa v0 = mesh->positions[quad_vtx[(k+0)%3]];
+        const Vec3fa v1 = mesh->positions[quad_vtx[(k+1)%3]];
+        const Vec3fa edge = v1-v0;
+        const Vec3fa P = 0.5f*(v1+v0);
+	const Vec3fa dist = cam_pos - P;
+	//const Vec3fa dist = Vec3fa(-1.39588f, 2.62872f, 7.82919f) - P;
+        level[i*3+k] = max(min(LEVEL_FACTOR*(0.5f*length(edge)/length(dist)),MAX_EDGE_LEVEL),MIN_EDGE_LEVEL);
+        //level[i*3+k] = 8; // MAX_EDGE_LEVEL;
+      } 
+    }
+    rtcUnmapBuffer(scene,geomID, RTC_LEVEL_BUFFER);
+    rtcUpdate(scene,geomID);
+#endif
   }
 
   for (size_t g=0; g<g_ispc_scene->numSubdivMeshes; g++)
@@ -228,7 +249,6 @@ void updateScene(RTCScene scene, const Vec3fa& cam_pos)
         mesh->subdivlevel[e+i] = max(min(LEVEL_FACTOR*(0.5f*length(edge)/length(dist)),MAX_EDGE_LEVEL),MIN_EDGE_LEVEL);
 	//mesh->subdivlevel[e+i] = 6;
 	//static int randinit = 0; randinit++; //;
-	//PRINT(randinit);
         //srand48(length(edge)/length(cam_pos-P)*12343.0f); mesh->subdivlevel[e+i] = 16.0f*drand48()+1.0f;
       }
     }
@@ -259,30 +279,62 @@ RTCScene constructScene(const Vec3fa& cam_pos)
   for (size_t i=0; i<g_ispc_scene->numMeshes; i++)
   {
     ISPCMesh* mesh = g_ispc_scene->meshes[i];
+#if 1
     if (mesh->numQuads == 0) continue;
     
-    unsigned int subdivMeshID = rtcNewSubdivisionMesh(scene, RTC_GEOMETRY_STATIC, mesh->numQuads, mesh->numQuads*4, mesh->numVertices, 0,0,0);
-    rtcSetBuffer(scene, subdivMeshID, RTC_VERTEX_BUFFER, mesh->positions, 0, sizeof(Vec3fa  ));
-    rtcSetBuffer(scene, subdivMeshID, RTC_INDEX_BUFFER,  mesh->quads    , 0, sizeof(unsigned int));
+    unsigned int geomID = rtcNewSubdivisionMesh(scene, RTC_GEOMETRY_STATIC, mesh->numQuads, mesh->numQuads*4, mesh->numVertices, 0,0,0);
+    rtcSetBuffer(scene, geomID, RTC_VERTEX_BUFFER, mesh->positions, 0, sizeof(Vec3fa  ));
+    rtcSetBuffer(scene, geomID, RTC_INDEX_BUFFER,  mesh->quads    , 0, sizeof(unsigned int));
     
     unsigned int* face_buffer = new unsigned int[mesh->numQuads];
     for (size_t i=0;i<mesh->numQuads;i++) face_buffer[i] = 4;
-    rtcSetBuffer(scene, subdivMeshID, RTC_FACE_BUFFER, face_buffer    , 0, sizeof(unsigned int));
+    rtcSetBuffer(scene, geomID, RTC_FACE_BUFFER, face_buffer    , 0, sizeof(unsigned int));
     //delete face_buffer; // FIXME: never deleted
 
-    float* level = (float*) rtcMapBuffer(scene, subdivMeshID, RTC_LEVEL_BUFFER);
+    float* level = (float*) rtcMapBuffer(scene, geomID, RTC_LEVEL_BUFFER);
     for (size_t i=0; i<4*mesh->numQuads; i++) level[i] = 4; // 16
     //for (size_t i=0; i<4*mesh->numQuads; i++) level[i] = 32;
-    rtcUnmapBuffer(scene,subdivMeshID, RTC_LEVEL_BUFFER);
+    rtcUnmapBuffer(scene,geomID, RTC_LEVEL_BUFFER);
+#else
+
+    unsigned int geomID = rtcNewSubdivisionMesh(scene, RTC_GEOMETRY_STATIC, mesh->numTriangles, mesh->numTriangles*3, mesh->numVertices, 0,0,0);
+    rtcSetBuffer(scene, geomID, RTC_VERTEX_BUFFER, mesh->positions, 0, sizeof(Vec3fa  ));
+
+    Triangle* triangles = (Triangle*) rtcMapBuffer(scene,geomID,RTC_INDEX_BUFFER);
+    for (int j=0; j<mesh->numTriangles; j++) {
+      triangles[j].v0 = mesh->triangles[j].v0;
+      triangles[j].v1 = mesh->triangles[j].v1;
+      triangles[j].v2 = mesh->triangles[j].v2;
+    }
+    rtcUnmapBuffer(scene,geomID,RTC_INDEX_BUFFER);
+
+#if 1
+    unsigned int* face_buffer = new unsigned int[mesh->numTriangles];
+    for (size_t i=0;i<mesh->numTriangles;i++) face_buffer[i] = 3;
+    rtcSetBuffer(scene, geomID, RTC_FACE_BUFFER, face_buffer    , 0, sizeof(unsigned int));
+    //delete face_buffer; // FIXME: never deleted
+#endif
+
+#if 0
+    unsigned int* face_buffer = (unsigned int*) rtcMapBuffer(scene,geomID,RTC_FACE_BUFFER);
+    for (size_t i=0; i<mesh->numTriangles; i++) face_buffer[i] = 3;
+    rtcUnmapBuffer(scene,geomID,RTC_FACE_BUFFER);
+#endif
+
+    float* level = (float*) rtcMapBuffer(scene, geomID, RTC_LEVEL_BUFFER);
+    for (size_t i=0; i<3*mesh->numTriangles; i++) level[i] = 4; // 16
+    rtcUnmapBuffer(scene,geomID, RTC_LEVEL_BUFFER);
+
+#endif
 
     //BBox3fa bounds(Vec3fa(-0.1f,-0.1f,-0.1f),Vec3fa(0.1f,0.1f,0.1f));
-    //rtcSetDisplacementFunction(scene, subdivMeshID, (RTCDisplacementFunc)DisplacementFunc,(RTCBounds*)&bounds);
+    //rtcSetDisplacementFunction(scene, geomID, (RTCDisplacementFunc)DisplacementFunc,(RTCBounds*)&bounds);
 #if ENABLE_DISPLACEMENTS == 1
-    rtcSetDisplacementFunction(scene, subdivMeshID, (RTCDisplacementFunc)DisplacementFunc,NULL);
+    rtcSetDisplacementFunction(scene, geomID, (RTCDisplacementFunc)DisplacementFunc,NULL);
 #endif
-    mesh->geomID = subdivMeshID;
+    mesh->geomID = geomID;
   }       
-  
+
   for (size_t i=0; i<g_ispc_scene->numSubdivMeshes; i++)
   {
     ISPCSubdivMesh* mesh = g_ispc_scene->subdiv[i];
@@ -305,7 +357,7 @@ RTCScene constructScene(const Vec3fa& cam_pos)
     rtcSetBuffer(scene, geomID, RTC_VERTEX_CREASE_WEIGHT_BUFFER, mesh->vertex_crease_weights, 0, sizeof(float));
     mesh->geomID = geomID;
   }       
-  
+
   updateScene(scene,cam_pos);
   return scene;
 }

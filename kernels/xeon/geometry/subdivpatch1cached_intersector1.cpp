@@ -208,8 +208,7 @@ namespace embree
                      (float*)leaf_v_array, 
                      0, 
                      3, 
-                     6,
-                     &patch);
+                     6);
 
 #if 0
         DBG_PRINT("LEAF");

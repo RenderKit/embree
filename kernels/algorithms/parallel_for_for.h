@@ -59,8 +59,8 @@ namespace embree
       LockStepTaskScheduler* scheduler = LockStepTaskScheduler::instance();
       const size_t numThreads = scheduler->getNumThreads();
       const size_t numBlocks  = (N+minStepSize-1)/minStepSize;
-      taskCount = min(numThreads,numBlocks,size_t(ParallelForForState::MAX_TASKS));
-
+      taskCount = max(size_t(1),min(numThreads,numBlocks,size_t(ParallelForForState::MAX_TASKS)));
+      
       /* calculate start (i,j) for each task */
       size_t taskIndex = 0;
       i0[taskIndex] = 0;

@@ -31,7 +31,7 @@
       <material>
         <code>"Matte"</code>
         <parameters>
-          <float3 name="reflectance">0.5 0.5 0.5</float3>
+          <float3 name="reflectance">1 1 1</float3>
         </parameters>
       </material>
 

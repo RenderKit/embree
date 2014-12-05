@@ -75,7 +75,7 @@ namespace embree
       
       double t0 = 0.0;
       if (g_verbose >= 2) {
-		  std::cout << "building BVH4<" << bvh->primTy.name << "> with " << TOSTRING(isa) << "::TopLevel SAH builder ... " << std::flush;
+	std::cout << "building BVH4<" << bvh->primTy.name << "> with " << TOSTRING(isa) << "::TopLevel SAH builder ... " << std::flush;
         t0 = getSeconds();
       }
 
@@ -88,6 +88,10 @@ namespace embree
       }
       
       BVH4TopLevelBuilderFastT::build(threadIndex,threadCount,prims.begin(),prims.size());
+
+      if (g_verbose >= 2) {
+	std::cout << "[DONE] " << std::endl;
+      }
     }
 
     void BVH4BuilderTopLevel::create_object(size_t objectID)
