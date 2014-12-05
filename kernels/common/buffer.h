@@ -31,6 +31,10 @@ namespace embree
     /*! Buffer destruction */
     ~Buffer ();
       
+    /*! disallow copy */
+    Buffer(const Buffer&) = delete;
+    Buffer& operator=(const Buffer&) = delete;
+
   public:
     
     /*! initialized the buffer */

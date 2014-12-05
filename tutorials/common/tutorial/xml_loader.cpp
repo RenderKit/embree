@@ -716,6 +716,7 @@ namespace embree
     mesh->edge_crease_weights = loadFloatArray(xml->childOpt("edge_crease_weights"));
     mesh->vertex_creases      = loadIntArray(xml->childOpt("vertex_creases"));
     mesh->vertex_crease_weights = loadFloatArray(xml->childOpt("vertex_crease_weights"));
+    mesh->materialID = materialID;
     scene.subdiv.push_back(mesh);
   }
 

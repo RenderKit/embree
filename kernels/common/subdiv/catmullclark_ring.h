@@ -586,6 +586,7 @@ namespace embree
     
     __forceinline void subdivide(CatmullClark1Ring& dest) const
     {
+      dest.noForcedSubdivision = true;
       dest.edge_level = 0.5f*edge_level;
       dest.vertex_level = 0.5f*vertex_level;
       dest.valence = valence;

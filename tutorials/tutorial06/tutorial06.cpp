@@ -37,6 +37,7 @@ namespace embree
   static int g_skipBenchmarkFrames = 0;
   static int g_numBenchmarkFrames = 0;
   static bool g_interactive = true;
+  static bool g_only_subdivs = false;
   
   /* scene */
   OBJScene g_obj_scene;
@@ -130,6 +131,11 @@ namespace embree
         g_obj_scene.distantLights.push_back(OBJScene::DistantLight(D,L,halfAngle));
       }
 
+      /* converts triangle meshes into subdiv meshes */
+      else if (tag == "-subdiv") {
+	g_only_subdivs = true;
+      }
+
       /* skip unknown command line parameter */
       else {
         std::cerr << "unknown command line parameter: " << tag << " ";
@@ -168,6 +174,10 @@ namespace embree
     AffineSpace3fa pixel2world = g_camera.pixel2world(g_width,g_height);
     render(0.0f,pixel2world.l.vx,pixel2world.l.vy,pixel2world.l.vz,pixel2world.p);
     void* ptr = map();
+    for (size_t y=0; y<g_height; y++)
+      for (size_t x=0; x<g_width; x++)
+	PRINT3(x,y,((int*)ptr)[y*g_width+x]);
+
     Ref<Image> image = new Image4c(g_width, g_height, (Col4c*)ptr);
     storeImage(image, fileName);
     unmap();
@@ -202,6 +212,10 @@ namespace embree
 
     /* initialize ray tracing core */
     init(g_rtcore.c_str());
+
+    /* convert triangle meshes to subdiv meshes */
+    if (g_only_subdivs)
+      g_obj_scene.convert_to_subdiv();
 
     /* send model */
     set_scene(&g_obj_scene);

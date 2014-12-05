@@ -105,7 +105,8 @@ namespace embree
     ISPCHair *hairs;    //!< list of hairs
     int numVertices;
     int numHairs;
-    ISPCHairSet(int numHairs, int numVertices) : numHairs(numHairs),numVertices(numVertices),positions(NULL),positions2(NULL),hairs(NULL) {}
+    ISPCHairSet(int numHairs, int numVertices) 
+      : numHairs(numHairs),numVertices(numVertices),positions(NULL),positions2(NULL),hairs(NULL) {}
     ~ISPCHairSet() {
       if (positions) free(positions);
       if (positions2) free(positions2);
@@ -130,7 +131,8 @@ namespace embree
         ambientLights(NULL), numAmbientLights(numAmbientLights),
         pointLights(NULL), numPointLights(numPointLights),
         directionalLights(NULL), numDirectionalLights(numDirectionalLights),
-        distantLights(NULL), numDistantLights(numDistantLights)
+        distantLights(NULL), numDistantLights(numDistantLights),
+	subdiv(NULL), numSubdivMeshes(0)
       {
         meshes = new ISPCMesh*[numMeshes];
         for (size_t i=0; i<numMeshes; i++)
@@ -192,6 +194,10 @@ namespace embree
 
     OBJScene::DistantLight* distantLights;
     int numDistantLights;
+
+    //ISPCSubdivMesh** subdiv;
+    void* subdiv;
+    int numSubdivMeshes; 
   };
 
   /* scene */

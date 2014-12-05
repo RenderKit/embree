@@ -5,7 +5,7 @@
       <code>"OBJ"</code>
       <parameters>
         <float3 name="Ka"> 0.0000  0.0000  0.0000</float3>
-        <float3 name="Kd"> 0.4000  0.4000  0.4000</float3>
+        <float3 name="Kd"> 1.0000  1.0000  1.0000</float3>
         <float3 name="Ks"> 0.0000  0.0000  0.0000</float3>
         <float3 name="Kt"> 0.0000  0.0000  0.0000</float3>
         <float  name="Ns"> 0.0000</float>

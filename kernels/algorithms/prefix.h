@@ -118,7 +118,7 @@ namespace embree
       const Ty id;                       //!< identity of the operation
     };
 
-    void operator() (const SrcArray src, DstArray& dst, const size_t N, const Op op, const Ty id) {
+    void operator() (const SrcArray& src, DstArray& dst, const size_t N, const Op op, const Ty id) {
       Task(this,src,dst,N,op,id);
     }
 
