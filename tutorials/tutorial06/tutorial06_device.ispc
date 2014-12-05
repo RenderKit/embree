@@ -916,7 +916,7 @@ void convertTriangleMeshesToSubdivMeshes(uniform ISPCScene* uniform scene_in, RT
     rtcUnmapBuffer(scene_out,geomID,RTC_FACE_BUFFER);
     
     uniform float* uniform level = (uniform float* uniform) rtcMapBuffer(scene_out, geomID, RTC_LEVEL_BUFFER);
-    for (size_t i=0; i<3*mesh->numTriangles; i++) level[i] = 4; // 16
+    for (size_t i=0; i<3*mesh->numTriangles; i++) level[i] = 16;
     rtcUnmapBuffer(scene_out,geomID, RTC_LEVEL_BUFFER);
   }
 }

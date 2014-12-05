@@ -910,22 +910,13 @@ void convertTriangleMeshesToSubdivMeshes(ISPCScene* scene_in, RTCScene scene_out
       triangles[3*i+2] = mesh->triangles[i].v2;
     }
     rtcUnmapBuffer(scene_out, geomID, RTC_INDEX_BUFFER);
-
-#if 1    
+    
     unsigned int* face_buffer = (unsigned int*) rtcMapBuffer(scene_out,geomID,RTC_FACE_BUFFER);
     for (size_t i=0; i<mesh->numTriangles; i++) face_buffer[i] = 3;
     rtcUnmapBuffer(scene_out,geomID,RTC_FACE_BUFFER);
-#endif
-
-#if 0
-    unsigned int* face_buffer = new unsigned int[mesh->numTriangles];
-    for (size_t i=0;i<mesh->numTriangles;i++) face_buffer[i] = 3;
-    rtcSetBuffer(scene_out, geomID, RTC_FACE_BUFFER, face_buffer    , 0, sizeof(unsigned int));
-    //delete face_buffer; // FIXME: never deleted
-#endif
-
+    
     float* level = (float*) rtcMapBuffer(scene_out, geomID, RTC_LEVEL_BUFFER);
-    for (size_t i=0; i<3*mesh->numTriangles; i++) level[i] = 4; // 16
+    for (size_t i=0; i<3*mesh->numTriangles; i++) level[i] = 16;
     rtcUnmapBuffer(scene_out,geomID, RTC_LEVEL_BUFFER);
   }
 }
