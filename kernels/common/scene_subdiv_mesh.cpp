@@ -263,8 +263,8 @@ namespace embree
           edge_crease_weight = creaseMap[value];
 
         float edge_level = 1.0f;
-        if (levels) edge_level = levels[j+dj];
-	assert( edge_level >= 0.0f );
+        if (levels) edge_level = clamp(levels[j+dj],1.0f,1024.0f);
+	assert( edge_level >= 0.0f && edge_level <= 1024.0f);
         
         edge0->vtx_index = startVertex;
         edge0->next_half_edge_ofs = (dj == (N-1)) ? -(N-1) : +1;
