@@ -532,21 +532,12 @@ namespace embree
       }
     }
 
-    template<typename Patch>
-    __forceinline size_t build(Scene* scene, const Patch& patch,
-			       FastAllocator::Thread& alloc, PrimRef* prims,
-			       const size_t x0, const size_t x1,
-			       const size_t y0, const size_t y1,
-			       const Vec2f& uv0, const Vec2f& uv1, const Vec2f& uv2, const Vec2f& uv3,
-			       const DiscreteTessellationPattern& pattern0, 
-			       const DiscreteTessellationPattern& pattern1, 
-			       const DiscreteTessellationPattern& pattern2, 
-			       const DiscreteTessellationPattern& pattern3, 
-			       const DiscreteTessellationPattern& pattern_x,
-			       const DiscreteTessellationPattern& pattern_y)
+    __forceinline void calculateLocalUVs(const size_t x0, const size_t x1,
+					 const size_t y0, const size_t y1,
+					 const DiscreteTessellationPattern& pattern_x,
+					 const DiscreteTessellationPattern& pattern_y,
+					 Vec2f luv[17*17])
     {
-      /* calculate local UVs */
-      Vec2f luv[17*17];
       for (int y=0; y<height; y++) {
         const float fy = pattern_y(y0+y);
         for (int x=0; x<width; x++) {
@@ -554,8 +545,18 @@ namespace embree
           luv[y*width+x] = Vec2f(fx,fy);
         }
       }
+    }
 
-#if 1
+    __forceinline void stitchLocalUVs(const size_t x0, const size_t x1,
+				      const size_t y0, const size_t y1,
+				      const DiscreteTessellationPattern& pattern0, 
+				      const DiscreteTessellationPattern& pattern1, 
+				      const DiscreteTessellationPattern& pattern2, 
+				      const DiscreteTessellationPattern& pattern3, 
+				      const DiscreteTessellationPattern& pattern_x,
+				      const DiscreteTessellationPattern& pattern_y,
+				      Vec2f luv[17*17])
+    {
       if (unlikely(y0 == 0 && pattern_x.size() != pattern0.size())) {
         const float fy = pattern_y(y0);
         for (int x=x0; x<=x1; x++) {
@@ -591,24 +592,26 @@ namespace embree
 	  luv[(y-y0)*width+(x1-x0)] = Vec2f(fx,fy);
 	}
       }
-#endif
-      
-      /* calculate global UVs */
-      Vec2f guv[17*17];
+    }
+
+    __forceinline void calculateGlobalUVs(const Vec2f& uv0, const Vec2f& uv1, const Vec2f& uv2, const Vec2f& uv3, 
+					  Vec2f luv[17*17], Vec2f guv[17*17])
+    {
       for (int y=0; y<height; y++) {
         for (int x=0; x<width; x++) {
-	  const float fx =  guv[y*width+x].x;
-	  const float fy =  guv[y*width+x].y;
+	  const float fx =  luv[y*width+x].x;
+	  const float fy =  luv[y*width+x].y;
 	  const Vec2f uv01 = (1.0f-fx) * uv0  + fx * uv1;
 	  const Vec2f uv32 = (1.0f-fx) * uv3  + fx * uv2;
 	  const Vec2f uvxy = (1.0f-fy) * uv01 + fy * uv32;
 	  guv[y*width+x] = uvxy;
         }
       }
+    }
 
-
-      /* evaluate position and uvs */
-      Vec3fa Ng[17*17];
+    template<typename Patch>
+    __forceinline void calculatePositionAndNormal(const Patch& patch, Vec2f luv[17*17], Vec2f guv[17*17], Vec3fa Ng[17*17])
+    {
       for (int y=0; y<height; y++) 
       {
         for (int x=0; x<width; x++) 
@@ -622,6 +625,35 @@ namespace embree
 	  Ng[y*width+x] = N;
         }
       }
+    }
+
+    template<typename Patch>
+    __forceinline size_t build(Scene* scene, const Patch& patch,
+			       FastAllocator::Thread& alloc, PrimRef* prims,
+			       const size_t x0, const size_t x1,
+			       const size_t y0, const size_t y1,
+			       const Vec2f& uv0, const Vec2f& uv1, const Vec2f& uv2, const Vec2f& uv3,
+			       const DiscreteTessellationPattern& pattern0, 
+			       const DiscreteTessellationPattern& pattern1, 
+			       const DiscreteTessellationPattern& pattern2, 
+			       const DiscreteTessellationPattern& pattern3, 
+			       const DiscreteTessellationPattern& pattern_x,
+			       const DiscreteTessellationPattern& pattern_y)
+    {
+      /* calculate local UVs */
+      Vec2f luv[17*17];
+      calculateLocalUVs(x0,x1,y0,y1,pattern_x,pattern_y,luv);
+
+      /* stitch local UVs */
+      stitchLocalUVs(x0,x1,y0,y1,pattern0,pattern1,pattern2,pattern3,pattern_x,pattern_y,luv);
+      
+      /* calculate global UVs */
+      Vec2f guv[17*17]; 
+      calculateGlobalUVs(uv0,uv1,uv2,uv3,luv,guv);
+      
+      /* evaluate position and normal */
+      Vec3fa Ng[17*17];
+      calculatePositionAndNormal(patch,luv,guv,Ng);
 
       return build(scene,patch,alloc,prims,x0,x1,y0,y1,luv,guv,Ng,pattern0,pattern1,pattern2,pattern3,pattern_x,pattern_y);
     }
@@ -690,15 +722,9 @@ namespace embree
 			       const DiscreteTessellationPattern& pattern_x,
 			       const DiscreteTessellationPattern& pattern_y)
     {
-      /* calculate UVs */
+      /* calculate local UVs */
       Vec2f luv[17*17];
-      for (int y=0; y<height; y++) {
-        const float fy = pattern_y(y0+y);
-        for (int x=0; x<width; x++) {
-          const float fx = pattern_x(x0+x);
-          luv[y*width+x] = Vec2f(fx,fy);
-        }
-      }
+      calculateLocalUVs(x0,x1,y0,y1,pattern_x,pattern_y,luv);
 
       /* evaluate position and uvs */
       Vec3fa Ng[17*17];
