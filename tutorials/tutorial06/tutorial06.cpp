@@ -37,6 +37,7 @@ namespace embree
   static int g_skipBenchmarkFrames = 0;
   static int g_numBenchmarkFrames = 0;
   static bool g_interactive = true;
+  static bool g_only_subdivs = false;
   
   /* scene */
   OBJScene g_obj_scene;
@@ -130,6 +131,11 @@ namespace embree
         g_obj_scene.distantLights.push_back(OBJScene::DistantLight(D,L,halfAngle));
       }
 
+      /* converts triangle meshes into subdiv meshes */
+      else if (tag == "-subdiv") {
+	g_only_subdivs = true;
+      }
+
       /* skip unknown command line parameter */
       else {
         std::cerr << "unknown command line parameter: " << tag << " ";
@@ -206,6 +212,10 @@ namespace embree
 
     /* initialize ray tracing core */
     init(g_rtcore.c_str());
+
+    /* convert triangle meshes to subdiv meshes */
+    if (g_only_subdivs)
+      g_obj_scene.convert_to_subdiv();
 
     /* send model */
     set_scene(&g_obj_scene);

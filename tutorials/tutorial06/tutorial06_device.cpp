@@ -891,36 +891,6 @@ void convertTriangleMeshes(ISPCScene* scene_in, RTCScene scene_out, size_t numGe
   }
 }
 
-void convertTriangleMeshesToSubdivMeshes(ISPCScene* scene_in, RTCScene scene_out, size_t numGeometries)
-{
-  for (size_t i=0; i<g_ispc_scene->numMeshes; i++)
-  {
-    ISPCMesh* mesh = g_ispc_scene->meshes[i];
-    
-    unsigned int geomID = rtcNewSubdivisionMesh(scene_out, RTC_GEOMETRY_STATIC, mesh->numTriangles, mesh->numTriangles*3, mesh->numVertices, 0,0,0);
-    rtcSetBuffer(scene_out, geomID, RTC_VERTEX_BUFFER, mesh->positions, 0, sizeof(Vec3fa  ));
-    assert(geomID < numGeometries);
-    geomID_to_mesh[geomID] = mesh;
-    geomID_to_type[geomID] = 0;
-    
-    int* triangles = (int*) rtcMapBuffer(scene_out, geomID, RTC_INDEX_BUFFER);
-    for (size_t i=0; i<mesh->numTriangles; i++) {
-      triangles[3*i+0] = mesh->triangles[i].v0;
-      triangles[3*i+1] = mesh->triangles[i].v1;
-      triangles[3*i+2] = mesh->triangles[i].v2;
-    }
-    rtcUnmapBuffer(scene_out, geomID, RTC_INDEX_BUFFER);
-    
-    unsigned int* face_buffer = (unsigned int*) rtcMapBuffer(scene_out,geomID,RTC_FACE_BUFFER);
-    for (size_t i=0; i<mesh->numTriangles; i++) face_buffer[i] = 3;
-    rtcUnmapBuffer(scene_out,geomID,RTC_FACE_BUFFER);
-    
-    float* level = (float*) rtcMapBuffer(scene_out, geomID, RTC_LEVEL_BUFFER);
-    for (size_t i=0; i<3*mesh->numTriangles; i++) level[i] = 16;
-    rtcUnmapBuffer(scene_out,geomID, RTC_LEVEL_BUFFER);
-  }
-}
- 
 void convertSubdivMeshes(ISPCScene* scene_in, RTCScene scene_out, size_t numGeometries)
 {
   for (size_t i=0; i<g_ispc_scene->numSubdivMeshes; i++)
@@ -955,8 +925,7 @@ RTCScene convertScene(ISPCScene* scene_in)
 
   /* create scene */
   RTCScene scene_out = rtcNewScene(RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT, RTC_INTERSECT1);
-  //convertTriangleMeshes(scene_in,scene_out,numGeometries);
-  convertTriangleMeshesToSubdivMeshes(scene_in,scene_out,numGeometries);
+  convertTriangleMeshes(scene_in,scene_out,numGeometries);
   convertSubdivMeshes(scene_in,scene_out,numGeometries);
 
   /* commit changes to scene */

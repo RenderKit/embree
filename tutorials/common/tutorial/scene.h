@@ -68,16 +68,10 @@ namespace embree
     {
       void set_motion_blur(const Mesh* other);
 
-#if 1 // FIXME: have to enable this for Visual Studio compiler
-      vector_t<Vec3fa> v;     //!< vertices
-      vector_t<Vec3fa> v2;    //!< vertices (2nd timestep)
-      vector_t<Vec3fa> vn;
-#else
       std::vector<Vec3fa> v;
       std::vector<Vec3fa> v2;
       std::vector<Vec3fa> vn;
 
-#endif
       std::vector<Vec2f> vt;
       std::vector<Triangle> triangles;
       std::vector<Quad> quads;
@@ -322,6 +316,34 @@ namespace embree
     }
 
     void set_motion_blur(OBJScene& other);
+
+    void convert_to_subdiv()
+    {
+      for (size_t i=0; i<meshes.size(); i++)
+      {
+	Mesh* mesh = meshes[i];
+	SubdivMesh* smesh = new SubdivMesh;
+	smesh->positions = mesh->v;
+	smesh->normals = mesh->vn;
+	smesh->texcoords = mesh->vt;
+	const size_t numTriangles = mesh->triangles.size();
+	smesh->verticesPerFace.resize(numTriangles);
+	smesh->position_indices.resize(3*numTriangles);
+	int materialID = 0;
+	for (size_t j=0; j<numTriangles; j++) {
+	  smesh->verticesPerFace[j] = 3;
+	  smesh->position_indices[3*j+0] = mesh->triangles[j].v0;
+	  smesh->position_indices[3*j+1] = mesh->triangles[j].v1;
+	  smesh->position_indices[3*j+2] = mesh->triangles[j].v2;
+	  materialID                     = mesh->triangles[j].materialID;
+	}
+	smesh->materialID = materialID;
+
+	delete mesh;
+	subdiv.push_back(smesh);
+      }
+      meshes.clear();
+    }
 
   public:
     vector_t<Material> materials;                      //!< material list

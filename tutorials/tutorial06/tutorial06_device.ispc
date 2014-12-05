@@ -891,36 +891,6 @@ void convertTriangleMeshes(uniform ISPCScene* uniform scene_in, RTCScene scene_o
   }
 }
 
-void convertTriangleMeshesToSubdivMeshes(uniform ISPCScene* uniform scene_in, RTCScene scene_out, uniform size_t numGeometries)
-{
-  for (uniform size_t i=0; i<g_ispc_scene->numMeshes; i++)
-  {
-    uniform ISPCMesh* uniform mesh = g_ispc_scene->meshes[i];
-    
-    uniform unsigned int geomID = rtcNewSubdivisionMesh(scene_out, RTC_GEOMETRY_STATIC, mesh->numTriangles, mesh->numTriangles*3, mesh->numVertices, 0,0,0);
-    rtcSetBuffer(scene_out, geomID, RTC_VERTEX_BUFFER, mesh->positions, 0, sizeof(uniform Vec3fa  ));
-    assert(geomID < numGeometries);
-    geomID_to_mesh[geomID] = mesh;
-    geomID_to_type[geomID] = 0;
-    
-    uniform int* uniform triangles = (uniform int* uniform) rtcMapBuffer(scene_out, geomID, RTC_INDEX_BUFFER);
-    for (size_t i=0; i<mesh->numTriangles; i++) {
-      triangles[3*i+0] = mesh->triangles[i].v0;
-      triangles[3*i+1] = mesh->triangles[i].v1;
-      triangles[3*i+2] = mesh->triangles[i].v2;
-    }
-    rtcUnmapBuffer(scene_out, geomID, RTC_INDEX_BUFFER);
-    
-    uniform unsigned int* uniform face_buffer = (uniform unsigned int* uniform) rtcMapBuffer(scene_out,geomID,RTC_FACE_BUFFER);
-    for (size_t i=0; i<mesh->numTriangles; i++) face_buffer[i] = 3;
-    rtcUnmapBuffer(scene_out,geomID,RTC_FACE_BUFFER);
-    
-    uniform float* uniform level = (uniform float* uniform) rtcMapBuffer(scene_out, geomID, RTC_LEVEL_BUFFER);
-    for (size_t i=0; i<3*mesh->numTriangles; i++) level[i] = 16;
-    rtcUnmapBuffer(scene_out,geomID, RTC_LEVEL_BUFFER);
-  }
-}
- 
 void convertSubdivMeshes(uniform ISPCScene* uniform scene_in, RTCScene scene_out, uniform size_t numGeometries)
 {
   for (uniform size_t i=0; i<g_ispc_scene->numSubdivMeshes; i++)
@@ -955,8 +925,7 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
 
   /* create scene */
   RTCScene scene_out = rtcNewScene(RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT, RTC_INTERSECT_VARYING);
-  //convertTriangleMeshes(scene_in,scene_out,numGeometries);
-  convertTriangleMeshesToSubdivMeshes(scene_in,scene_out,numGeometries);
+  convertTriangleMeshes(scene_in,scene_out,numGeometries);
   convertSubdivMeshes(scene_in,scene_out,numGeometries);
 
   /* commit changes to scene */
