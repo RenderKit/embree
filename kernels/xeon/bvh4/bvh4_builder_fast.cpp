@@ -533,7 +533,7 @@ namespace embree
      /* initialize allocator and parallel_for_for_prefix_sum */
      this->bvh->alloc2.reset();
      pstate.init(iter,size_t(1024));
-     
+
      BVH4BuilderFast::build(threadIndex,threadCount);
    }
 
