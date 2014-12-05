@@ -217,9 +217,7 @@ namespace embree
     TIMER(msec = getSeconds()-msec);    
     TIMER(std::cout << "allocate half edge arrays  " << 1000. * msec << " ms" << std::endl);
 
-
-
-#if 0 // defined(__MIC__)
+#if 0 // defined(__MIC__) // FIXME: remove
     
     /* calculate start edge of each face */
     faceStartEdge.resize(numFaces);
@@ -314,11 +312,11 @@ namespace embree
     }
 
 #else
-
+    
     /* calculate start edge of each face */
 
     TIMER(msec = getSeconds());
-    
+
     faceStartEdge.resize(numFaces);
     size_t numHalfEdges = parallel_prefix_sum(faceVertices,faceStartEdge,numFaces);
 

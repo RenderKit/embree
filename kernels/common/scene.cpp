@@ -312,45 +312,6 @@ namespace embree
 
   void Scene::build (size_t threadIndex, size_t threadCount) 
   {
-
-#if 0 // FIXME: remove
-    SubdivMesh* subdivmesh = getSubdivMesh(0);
-    subdivmesh->initializeHalfEdgeStructures();
-    size_t N = subdivmesh->numFaces;
-    //size_t N = 1;
-    for (size_t i=0; i<N; i++)
-    {
-      BVH4::NodeRef root;
-      SubdivPatchDispl1* patch = new SubdivPatchDispl1(root,this,&subdivmesh->halfEdges[4*i], subdivmesh->getVertexPositionPtr(0), 0, i, 8, true); // FIXME: wrong geomID
-      patch->initialize();
-      const size_t width  = patch->size();
-      const size_t height = patch->size();
-      TriangleMesh* mesh = new TriangleMesh (this, RTC_GEOMETRY_STATIC, (width-1)*(height-1)*2, width*height, 1);
-      Vec3fa* vertices = (Vec3fa*) mesh->map(RTC_VERTEX_BUFFER);
-      for (size_t y=0; y<height; y++) {
-        for (size_t x=0; x<width; x++) {
-          vertices[y*width+x] = patch->get(x,y);
-        }
-      }
-      mesh->unmap(RTC_VERTEX_BUFFER);
-      TriangleMesh::Triangle* triangles = (TriangleMesh::Triangle*) mesh->map(RTC_INDEX_BUFFER);
-      for (size_t y=0; y<height-1; y++) {
-        for (size_t x=0; x<width-1; x++) {
-          TriangleMesh::Triangle& tri0 = triangles[2*(y*(width-1)+x)+0];
-          tri0.v[0] = (y+0)*width + (x+0);
-          tri0.v[1] = (y+0)*width + (x+1);
-          tri0.v[2] = (y+1)*width + (x+1);
-          TriangleMesh::Triangle& tri1 = triangles[2*(y*(width-1)+x)+1];
-          tri1.v[0] = (y+0)*width + (x+0);
-          tri1.v[1] = (y+1)*width + (x+1);
-          tri1.v[2] = (y+1)*width + (x+0);
-        }
-      }
-      mesh->unmap(RTC_INDEX_BUFFER);
-    }
-    remove(subdivmesh);
-#endif
-
     /* all user worker threads properly enter and leave the tasking system */
     LockStepTaskScheduler::Init init(threadIndex,threadCount,&lockstep_scheduler);
     if (threadIndex != 0) return;

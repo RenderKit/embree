@@ -41,7 +41,7 @@ namespace embree
     bool noForcedSubdivision; // varying edge crease weight stitching fix
 
   public:
-    CatmullClark1Ring () {}
+    CatmullClark1Ring () : noForcedSubdivision(true) {}
 
     __forceinline bool hasBorder() const {
       return border_index != -1;
