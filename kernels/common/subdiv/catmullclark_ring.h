@@ -26,7 +26,7 @@ namespace embree
   
   struct __aligned(64) CatmullClark1Ring
   {
-    static const size_t MAX_VALENCE = 16;
+    static const size_t MAX_VALENCE = 2*16;
     
     Vec3fa ring[2*MAX_VALENCE]; // two vertices per face
     float crease_weight[MAX_VALENCE]; // FIXME: move into 4th component of ring entries
@@ -593,7 +593,8 @@ namespace embree
       dest.num_vtx = 2*valence;
       dest.border_index = border_face == -1 ? -1 : 2*border_face; // FIXME:
       dest.vertex_crease_weight   = max(0.0f,vertex_crease_weight-1.0f);
-      
+      assert(dest.valence <= CatmullClark1Ring::MAX_VALENCE);
+
       /* calculate face points */
       Vec3fa_t S = Vec3fa_t(0.0f);
       for (size_t f=0, v=0; f<valence; v+=face_size[f++]) {
