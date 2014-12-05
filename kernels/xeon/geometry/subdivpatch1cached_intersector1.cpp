@@ -280,7 +280,7 @@ namespace embree
     assert(currentIndex == patch.grid_subtree_size_64b_blocks);
     TIMER(msec = getSeconds()-msec);    
 
-    //thread_cache->printStats(); 
+    thread_cache->printStats(); 
 
     return subtree_root;
   }
