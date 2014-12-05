@@ -47,6 +47,7 @@ struct ISPCHairSet
   int numHairs;
 };
 
+
 struct ISPCMesh
 {
   Vec3fa* positions;    //!< vertex position array
@@ -55,6 +56,7 @@ struct ISPCMesh
   Vec2f* texcoords;     //!< vertex texcoord array
   ISPCTriangle* triangles;  //!< list of triangles
   ISPCQuad* quads;  //!< list of triangles
+  float* edge_level;
   int numVertices;
   int numTriangles;
   int numQuads;
@@ -82,6 +84,7 @@ struct ISPCSubdivMesh
   int numEdgeCreases;
   int numVertexCreases;
   int numHoles;
+  int materialID;
   int geomID;
 };
 

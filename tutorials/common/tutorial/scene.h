@@ -98,6 +98,7 @@ namespace embree
       std::vector<float> edge_crease_weights;   //!< weight for each edge crease
       std::vector<int> vertex_creases;          //!< indices of vertex creases
       std::vector<float> vertex_crease_weights; //!< weight for each vertex crease
+      int materialID;
     };
 
     struct Hair

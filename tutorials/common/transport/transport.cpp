@@ -57,6 +57,7 @@ namespace embree
     out->numVertices = in->v.size();
     out->numTriangles = in->triangles.size();
     out->numQuads = in->quads.size();   
+    out->geomID = -1;
     return out;
   }
 
@@ -81,6 +82,7 @@ namespace embree
     out->numEdgeCreases = in->edge_creases.size();
     out->numVertexCreases = in->vertex_creases.size();
     out->numHoles = in->holes.size();
+    out->materialID = in->materialID;
     out->geomID = -1;
 
     size_t numEdges = in->position_indices.size();

@@ -774,6 +774,8 @@ inline Vec3f Material__sample(ISPCMaterial* uniform uniform materials, int mater
 /* scene data */
 extern uniform ISPCScene* uniform g_ispc_scene;
 RTCScene g_scene = NULL;
+void* uniform* uniform geomID_to_mesh = NULL;
+uniform int* uniform geomID_to_type = NULL;
 
 /* render function to use */
 renderPixelFunc renderPixel;
@@ -842,11 +844,8 @@ export void device_init (uniform int8* uniform cfg)
 
 } // device_init
 
-RTCScene convertScene(uniform ISPCScene* uniform scene_in)
+void convertTriangleMeshes(uniform ISPCScene* uniform scene_in, RTCScene scene_out, uniform size_t numGeometries)
 {
-  /* create scene */
-  RTCScene scene_out = rtcNewScene(RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT, RTC_INTERSECT_VARYING);
-
   /* add all meshes to the scene */
   for (uniform int i=0; i<scene_in->numMeshes; i++)
   {
@@ -854,25 +853,28 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
     uniform ISPCMesh* uniform mesh = scene_in->meshes[i];
 
     /* create a triangle mesh */
-    uniform unsigned int geometry = rtcNewTriangleMesh (scene_out, RTC_GEOMETRY_STATIC, mesh->numTriangles, mesh->numVertices);
+    uniform unsigned int geomID = rtcNewTriangleMesh (scene_out, RTC_GEOMETRY_STATIC, mesh->numTriangles, mesh->numVertices);
+    assert(geomID < numGeometries);
+    geomID_to_mesh[geomID] = mesh;
+    geomID_to_type[geomID] = 0;
     
     /* set vertices */
-    uniform Vertex* uniform vertices = (uniform Vertex* uniform) rtcMapBuffer(scene_out,geometry,RTC_VERTEX_BUFFER); 
+    uniform Vertex* uniform vertices = (uniform Vertex* uniform) rtcMapBuffer(scene_out,geomID,RTC_VERTEX_BUFFER); 
     for (uniform int j=0; j<mesh->numVertices; j++) {
       vertices[j].x = mesh->positions[j].x;
       vertices[j].y = mesh->positions[j].y;
       vertices[j].z = mesh->positions[j].z;
     }
+    rtcUnmapBuffer(scene_out,geomID,RTC_VERTEX_BUFFER); 
 
     /* set triangles */
-    uniform Triangle* uniform triangles = (uniform Triangle* uniform) rtcMapBuffer(scene_out,geometry,RTC_INDEX_BUFFER);
+    uniform Triangle* uniform triangles = (uniform Triangle* uniform) rtcMapBuffer(scene_out,geomID,RTC_INDEX_BUFFER);
     for (uniform int j=0; j<mesh->numTriangles; j++) {
       triangles[j].v0 = mesh->triangles[j].v0;
       triangles[j].v1 = mesh->triangles[j].v1;
       triangles[j].v2 = mesh->triangles[j].v2;
     }
-    rtcUnmapBuffer(scene_out,geometry,RTC_VERTEX_BUFFER); 
-    rtcUnmapBuffer(scene_out,geometry,RTC_INDEX_BUFFER);
+    rtcUnmapBuffer(scene_out,geomID,RTC_INDEX_BUFFER);
 
     uniform bool allOpaque = true;
     uniform bool allTransparent = true;
@@ -885,11 +887,79 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
 	allTransparent = false;
     }
     if (allTransparent)
-      rtcSetOcclusionFilterFunction(scene_out,geometry,(RTCFilterFuncVarying)&occlusionFilterReject);
+      rtcSetOcclusionFilterFunction(scene_out,geomID,(RTCFilterFuncVarying)&occlusionFilterReject);
   }
+}
+
+void convertTriangleMeshesToSubdivMeshes(uniform ISPCScene* uniform scene_in, RTCScene scene_out, uniform size_t numGeometries)
+{
+  for (uniform size_t i=0; i<g_ispc_scene->numMeshes; i++)
+  {
+    uniform ISPCMesh* uniform mesh = g_ispc_scene->meshes[i];
+    
+    uniform unsigned int geomID = rtcNewSubdivisionMesh(scene_out, RTC_GEOMETRY_STATIC, mesh->numTriangles, mesh->numQuads*3, mesh->numVertices, 0,0,0);
+    rtcSetBuffer(scene_out, geomID, RTC_VERTEX_BUFFER, mesh->positions, 0, sizeof(uniform Vec3fa  ));
+    assert(geomID < numGeometries);
+    geomID_to_mesh[geomID] = mesh;
+    geomID_to_type[geomID] = 1;
+    
+    uniform int* uniform triangles = (uniform int* uniform) rtcMapBuffer(scene_out, geomID, RTC_INDEX_BUFFER);
+    for (size_t i=0; i<mesh->numTriangles; i++) {
+      triangles[3*i+0] = mesh->triangles[i].v0;
+      triangles[3*i+1] = mesh->triangles[i].v1;
+      triangles[3*i+2] = mesh->triangles[i].v2;
+    }
+    rtcUnmapBuffer(scene_out, geomID, RTC_INDEX_BUFFER);
+    
+    uniform unsigned int* uniform face_buffer = (uniform unsigned int* uniform) rtcMapBuffer(scene_out,geomID,RTC_FACE_BUFFER);
+    for (size_t i=0; i<mesh->numQuads; i++) face_buffer[i] = 3;
+    rtcUnmapBuffer(scene_out,geomID,RTC_FACE_BUFFER);
+    
+    uniform float* uniform level = (uniform float* uniform) rtcMapBuffer(scene_out, geomID, RTC_LEVEL_BUFFER);
+    for (size_t i=0; i<4*mesh->numQuads; i++) level[i] = 4; // 16
+    rtcUnmapBuffer(scene_out,geomID, RTC_LEVEL_BUFFER);
+  }
+}
+ 
+void convertSubdivMeshes(uniform ISPCScene* uniform scene_in, RTCScene scene_out, uniform size_t numGeometries)
+{
+  for (uniform size_t i=0; i<g_ispc_scene->numSubdivMeshes; i++)
+  {
+    uniform ISPCSubdivMesh* uniform mesh = g_ispc_scene->subdiv[i];
+    uniform unsigned int geomID = rtcNewSubdivisionMesh(scene_out, RTC_GEOMETRY_STATIC, mesh->numFaces, mesh->numEdges, mesh->numVertices, 
+						mesh->numEdgeCreases, mesh->numVertexCreases, mesh->numHoles);
+    assert(geomID < numGeometries);
+    geomID_to_mesh[geomID] = mesh;
+    geomID_to_type[geomID] = 1;
+
+    for (size_t i=0; i<mesh->numEdges; i++) mesh->subdivlevel[i] = 4; // 16
+    rtcSetBuffer(scene_out, geomID, RTC_VERTEX_BUFFER, mesh->positions, 0, sizeof(uniform Vec3fa  ));
+    rtcSetBuffer(scene_out, geomID, RTC_LEVEL_BUFFER,  mesh->subdivlevel, 0, sizeof(uniform float));
+    rtcSetBuffer(scene_out, geomID, RTC_INDEX_BUFFER,  mesh->position_indices  , 0, sizeof(uniform unsigned int));
+    rtcSetBuffer(scene_out, geomID, RTC_FACE_BUFFER,   mesh->verticesPerFace, 0, sizeof(uniform unsigned int));
+    rtcSetBuffer(scene_out, geomID, RTC_HOLE_BUFFER,   mesh->holes, 0, sizeof(uniform unsigned int));
+    rtcSetBuffer(scene_out, geomID, RTC_EDGE_CREASE_BUFFER,          mesh->edge_creases,          0, 2*sizeof(uniform unsigned int));
+    rtcSetBuffer(scene_out, geomID, RTC_EDGE_CREASE_WEIGHT_BUFFER,   mesh->edge_crease_weights,   0, sizeof(uniform float));
+    rtcSetBuffer(scene_out, geomID, RTC_VERTEX_CREASE_BUFFER,        mesh->vertex_creases,        0, sizeof(uniform unsigned int));
+    rtcSetBuffer(scene_out, geomID, RTC_VERTEX_CREASE_WEIGHT_BUFFER, mesh->vertex_crease_weights, 0, sizeof(uniform float));
+  }
+}      
+
+typedef void* uniform void_ptr;
+
+RTCScene convertScene(uniform ISPCScene* uniform scene_in)
+{
+  uniform size_t numGeometries = scene_in->numMeshes + scene_in->numSubdivMeshes;
+  geomID_to_mesh = uniform new void_ptr[numGeometries];
+  geomID_to_type = uniform new uniform int[numGeometries];
+
+  /* create scene */
+  RTCScene scene_out = rtcNewScene(RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT, RTC_INTERSECT_VARYING);
+  convertTriangleMeshes(scene_in,scene_out,numGeometries);
+  //convertTriangleMeshesToSubdivMeshes(scene_in,scene_out);
+  convertSubdivMeshes(scene_in,scene_out,numGeometries);
 
   /* commit changes to scene */
-
 #if !defined(PARALLEL_COMMIT)
   rtcCommit (scene_out);
 #else
@@ -1038,13 +1108,19 @@ Vec3f renderPixelFunction(float x, float y, rand_state& state, const uniform Vec
 
     /* shade all rays that hit something */
 #if 0 // FIXME: pointer gather not implemented in ISPC for Xeon Phi
-    int materialID = g_ispc_scene->meshes[ray.geomID]->triangles[ray.primID].materialID; 
+    int materialID = 0;
+    if (geomID_to_type[ray.geomID] == 0)
+      materialID = ((ISPCMesh* uniform) geomID_to_mesh[ray.geomID])->triangles[ray.primID].materialID; 
+    else 
+      materialID = ((ISPCSubdivMesh* uniform) geomID_to_mesh[ray.geomID])->materialID; 
 #else
     int materialID = 0;
     foreach_unique (geomID in ray.geomID) {
       if (geomID >= 0 && geomID < g_ispc_scene->numMeshes) { // FIXME: workaround for ISPC bug
-        uniform ISPCMesh* uniform mesh = g_ispc_scene->meshes[geomID];
-        materialID = mesh->triangles[ray.primID].materialID;
+	if (geomID_to_type[geomID] == 0) 
+	  materialID = ((ISPCMesh* uniform) geomID_to_mesh[geomID])->triangles[ray.primID].materialID; 
+	else                             
+	  materialID = ((ISPCSubdivMesh* uniform) geomID_to_mesh[geomID])->materialID; 
       }
     }
 #endif
