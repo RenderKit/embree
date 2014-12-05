@@ -123,6 +123,13 @@ struct ISPCMaterial
   Vec3fa v[7];
 };
 
+struct MatteMaterial
+{
+  int ty;
+  int align[3];
+  Vec3fa reflectance;
+};
+
 struct MirrorMaterial
 {
   int ty;

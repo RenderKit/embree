@@ -932,7 +932,7 @@ void convertSubdivMeshes(uniform ISPCScene* uniform scene_in, RTCScene scene_out
     geomID_to_mesh[geomID] = mesh;
     geomID_to_type[geomID] = 1;
 
-    for (size_t i=0; i<mesh->numEdges; i++) mesh->subdivlevel[i] = 4; // 16
+    for (size_t i=0; i<mesh->numEdges; i++) mesh->subdivlevel[i] = 16;
     rtcSetBuffer(scene_out, geomID, RTC_VERTEX_BUFFER, mesh->positions, 0, sizeof(uniform Vec3fa  ));
     rtcSetBuffer(scene_out, geomID, RTC_LEVEL_BUFFER,  mesh->subdivlevel, 0, sizeof(uniform float));
     rtcSetBuffer(scene_out, geomID, RTC_INDEX_BUFFER,  mesh->position_indices  , 0, sizeof(uniform unsigned int));
