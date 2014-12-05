@@ -288,6 +288,7 @@ namespace embree
       dest1.border_index = dest0.border_index = -1;
       dest1.vtx = dest0.vtx = (Vec3fa_t)p0.ring[0];
       dest1.vertex_crease_weight = dest0.vertex_crease_weight = 0.0f;
+      dest1.noForcedSubdivision = dest0.noForcedSubdivision = true;
 
       dest1.ring[2] = dest0.ring[0] = (Vec3fa_t)p0.ring[1];
       dest1.ring[1] = dest0.ring[7] = (Vec3fa_t)p1.ring[0];
@@ -317,6 +318,7 @@ namespace embree
       dest1.border_index = 4;
       dest1.vtx  = dest0.vtx = (Vec3fa_t)p0.ring[0];
       dest1.vertex_crease_weight = dest0.vertex_crease_weight = 0.0f;
+      dest1.noForcedSubdivision = dest0.noForcedSubdivision = true;
 
       dest1.ring[2] = dest0.ring[0] = (Vec3fa_t)p0.ring[1];
       dest1.ring[1] = dest0.ring[5] = (Vec3fa_t)p1.ring[0];
@@ -339,6 +341,7 @@ namespace embree
       dest.border_index = -1;
       dest.vtx     = (Vec3fa_t)center;
       dest.vertex_crease_weight = 0.0f;
+      dest.noForcedSubdivision = true;
       for (size_t i=0; i<2*N; i++) 
 	dest.ring[i] = (Vec3fa_t)center_ring[(2*N+offset+i-1)%(2*N)];
       for (size_t i=0; i<N; i++) 
