@@ -50,10 +50,7 @@ namespace embree
     float vtx_u[12];
     float vtx_v[12];
 
-    /* back pointer to SubdivPatch1Cached patch */
-    const SubdivPatch1Cached *backPtr;
-
-    size_t reserved;
+    size_t reserved[2];
 
 
     __forceinline void initFrom3x3Grid( const float *const source,
@@ -96,15 +93,13 @@ namespace embree
                const float * const grid_v,
                const size_t offset_line0,
                const size_t offset_line1,
-               const size_t offset_line2,
-               const SubdivPatch1Cached *patch)
+               const size_t offset_line2)
     {
       initFrom3x3Grid( grid_x, vtx_x, offset_line0, offset_line1, offset_line2 );
       initFrom3x3Grid( grid_y, vtx_y, offset_line0, offset_line1, offset_line2 );
       initFrom3x3Grid( grid_z, vtx_z, offset_line0, offset_line1, offset_line2 );
       initFrom3x3Grid( grid_u, vtx_u, offset_line0, offset_line1, offset_line2 );
       initFrom3x3Grid( grid_v, vtx_v, offset_line0, offset_line1, offset_line2 );
-      backPtr = patch;
     }
 
 #if defined(__AVX__)
@@ -161,11 +156,11 @@ namespace embree
 
   /* intersect ray with Quad2x2 structure => 1 ray vs. 8 triangles */
   template<class M, class T>
-  static __forceinline void intersect1_precise(Ray& ray,
-					       const Quad2x2 &qquad,
-					       const void* geom,
-					       size_t &hitPtr,
-					       const size_t delta = 0)
+    static __forceinline void intersect1_precise(Ray& ray,
+                                                 const Quad2x2 &qquad,
+                                                 const void* geom,
+                                                 bool &hit,
+                                                 const size_t delta = 0)
   {
     const Vec3<T> v0_org = qquad.getVtx( 0, delta);
     const Vec3<T> v1_org = qquad.getVtx( 1, delta);
@@ -217,8 +212,8 @@ namespace embree
             
     /* calculate hit information */
     const T rcpAbsDen = rcp(absDen);
-    const T u = U*rcpAbsDen;
-    const T v = V*rcpAbsDen;
+    const T u =  U*rcpAbsDen;
+    const T v =  V*rcpAbsDen;
     const T t = _t*rcpAbsDen;
 
 #if FORCE_TRIANGLE_UV == 0
@@ -238,16 +233,13 @@ namespace embree
     size_t i = select_min(valid,t);
 
     /* update hit information */
-    ray.u = u_final[i];
-    ray.v = v_final[i];
-    ray.tfar = t[i];
-    ray.Ng.x = Ng.x[i];
-    ray.Ng.y = Ng.y[i];
-    ray.Ng.z = Ng.z[i];
-    ray.geomID = 0; //FIXME
-    ray.primID = 0;
-    hitPtr = (size_t)qquad.backPtr;
-      
+    ray.u      = u_final[i];
+    ray.v      = v_final[i];
+    ray.tfar   = t[i];
+    ray.Ng.x   = Ng.x[i];
+    ray.Ng.y   = Ng.y[i];
+    ray.Ng.z   = Ng.z[i];
+    hit        = true;
   };
 
 
@@ -335,23 +327,23 @@ namespace embree
 
       if (likely(ty == 2))
         {
-          assert(pre.last_patch == ((Quad2x2*)prim)->backPtr);
-          size_t hitPtr = 0;
+          bool hit = false;
 #if defined(__AVX__)
-          intersect1_precise<avxb,avxf>( ray, *(Quad2x2*)prim, (SubdivMesh*)geom,hitPtr);
+          intersect1_precise<avxb,avxf>( ray, *(Quad2x2*)prim, (SubdivMesh*)geom,hit);
 #else
-          intersect1_precise<sseb,ssef>( ray, *(Quad2x2*)prim, (SubdivMesh*)geom,hitPtr,0);
-          intersect1_precise<sseb,ssef>( ray, *(Quad2x2*)prim, (SubdivMesh*)geom,hitPtr,6);
+          intersect1_precise<sseb,ssef>( ray, *(Quad2x2*)prim, (SubdivMesh*)geom,hit,0);
+          intersect1_precise<sseb,ssef>( ray, *(Quad2x2*)prim, (SubdivMesh*)geom,hit,6);
 #endif
-#if COMPUTE_SUBDIV_NORMALS_AFTER_PATCH_INTERSECTION == 1
-          if (unlikely(hitPtr != 0))
+          if (unlikely(hit == true))
             {
-              const SubdivPatch1Cached *const sptr = (SubdivPatch1Cached *)hitPtr;
-              assert(sptr == &subdiv_patch);
+              const SubdivPatch1Cached *const sptr = (SubdivPatch1Cached *)pre.last_patch;
+#if COMPUTE_SUBDIV_NORMALS_AFTER_PATCH_INTERSECTION == 1
               Vec3fa normal = sptr->normal(ray.u,ray.v);
               ray.Ng = normal;
-            }
 #endif
+              ray.geomID = sptr->geom;
+              ray.primID = sptr->prim;
+            }
         }
       else 
         {

@@ -25,13 +25,13 @@ const int numTheta = 2*numPhi;
 
 //extern unsigned int g_subdivision_levels;
 
-#define MAX_EDGE_LEVEL 32.0f
+#define MAX_EDGE_LEVEL 64.0f
 #define MIN_EDGE_LEVEL 2.0f
-#define ENABLE_DISPLACEMENTS 0
+#define ENABLE_DISPLACEMENTS 1
 #if ENABLE_DISPLACEMENTS
 #  define LEVEL_FACTOR 256.0f
 #else
-#  define LEVEL_FACTOR 32.0f
+#  define LEVEL_FACTOR 64.0f
 #endif
 
 /* error reporting function */

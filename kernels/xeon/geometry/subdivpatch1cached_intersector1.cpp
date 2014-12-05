@@ -208,8 +208,7 @@ namespace embree
                      (float*)leaf_v_array, 
                      0, 
                      3, 
-                     6,
-                     &patch);
+                     6);
 
 #if 0
         DBG_PRINT("LEAF");
@@ -311,7 +310,7 @@ namespace embree
     assert(currentIndex == patch.grid_subtree_size_64b_blocks);
     TIMER(msec = getSeconds()-msec);    
 
-    thread_cache->printStats(); 
+    //thread_cache->printStats(); 
 
     return subtree_root;
   }
