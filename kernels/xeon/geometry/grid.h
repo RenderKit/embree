@@ -545,23 +545,67 @@ namespace embree
 			       const DiscreteTessellationPattern& pattern_x,
 			       const DiscreteTessellationPattern& pattern_y)
     {
-      /* calculate UVs */
+      /* calculate local UVs */
       Vec2f luv[17*17];
-      Vec2f guv[17*17];
-      for (int y=0; y<height; y++) 
-      {
+      for (int y=0; y<height; y++) {
         const float fy = pattern_y(y0+y);
-        for (int x=0; x<width; x++) 
-	{
-	  assert(y*width+x < width*height);
-          const float fx = pattern_x(x0+x);
+        for (int x=0; x<width; x++) {
+	  const float fx = pattern_x(x0+x);
           luv[y*width+x] = Vec2f(fx,fy);
+        }
+      }
+
+#if 1
+      if (unlikely(y0 == 0 && pattern_x.size() != pattern0.size())) {
+        const float fy = pattern_y(y0);
+        for (int x=x0; x<=x1; x++) {
+          const float fx = pattern0(stitch(x,pattern_x.size(),pattern0.size()));
+	  assert((y0-y0)*width+(x-x0) < 17*17);
+          luv[(y0-y0)*width+(x-x0)] = Vec2f(fx,fy);
+        }
+      }
+
+      if (unlikely(y1 == pattern_y.size() && pattern_x.size() != pattern2.size())) {
+	const float fy = pattern_y(y1);
+	for (int x=x0; x<=x1; x++) {
+	  const float fx = pattern2(stitch(x,pattern_x.size(),pattern2.size()));
+	  assert((y1-y0)*width+(x-x0) < 17*17);
+	  luv[(y1-y0)*width+(x-x0)] = Vec2f(fx,fy);
+	}
+      }
+
+      if (unlikely(x0 == 0 && pattern_y.size() != pattern3.size())) {
+        const float fx = pattern_x(x0);
+        for (int y=y0; y<=y1; y++) {
+          const float fy = pattern3(stitch(y,pattern_y.size(),pattern3.size()));
+	  assert((y-y0)*width+(x0-x0) < 17*17);
+          luv[(y-y0)*width+(x0-x0)] = Vec2f(fx,fy);
+        }
+      }
+
+      if (unlikely(x1 == pattern_x.size() && pattern_y.size() != pattern1.size())) {
+	const float fx = pattern_x(x1);
+	for (int y=y0; y<=y1; y++) {
+	  const float fy = pattern1(stitch(y,pattern_y.size(),pattern1.size()));
+	  assert((y-y0)*width+(x1-x0) < 17*17);
+	  luv[(y-y0)*width+(x1-x0)] = Vec2f(fx,fy);
+	}
+      }
+#endif
+      
+      /* calculate global UVs */
+      Vec2f guv[17*17];
+      for (int y=0; y<height; y++) {
+        for (int x=0; x<width; x++) {
+	  const float fx =  guv[y*width+x].x;
+	  const float fy =  guv[y*width+x].y;
 	  const Vec2f uv01 = (1.0f-fx) * uv0  + fx * uv1;
 	  const Vec2f uv32 = (1.0f-fx) * uv3  + fx * uv2;
 	  const Vec2f uvxy = (1.0f-fy) * uv01 + fy * uv32;
 	  guv[y*width+x] = uvxy;
         }
       }
+
 
       /* evaluate position and uvs */
       Vec3fa Ng[17*17];
@@ -669,11 +713,6 @@ namespace embree
       const bool sl = stitch_x(patch,x0,x0,0        ,y0,y1,pattern_y,pattern3,luv,Ng);
       feature_adaptive_eval (patch, x0+sl,x1-sr,y0+st,y1-sb, swidth,sheight, p+st*width+sl,Ng+st*width+sl,width,height);
 #endif
-
-      //for (size_t y=y0; y<=y1; y++)
-      //for (size_t x=x0; x<=x1; x++)
-	  //PRINT3(x,y,point(x,y));
-      //  point(x-x0,y-y0) = Vec3fa(zero);
 
       /* calculate global UVs */
       Vec2f guv[17*17];
