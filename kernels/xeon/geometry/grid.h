@@ -467,8 +467,8 @@ namespace embree
       return new (alloc.malloc(sizeof(Grid)+width*height*sizeof(Vec3fa))) Grid(width,height,geomID,primID);
     }
     
-    __forceinline       Vec3fa& point(const size_t x, const size_t y)       { assert(y*width+x < width*height); return p[y*width+x]; }
-    __forceinline const Vec3fa& point(const size_t x, const size_t y) const { assert(y*width+x < width*height); return p[y*width+x]; }
+    __forceinline       Vec3fa& point(const size_t x, const size_t y)       { assert(y*width+x < width*height); return P[y*width+x]; }
+    __forceinline const Vec3fa& point(const size_t x, const size_t y) const { assert(y*width+x < width*height); return P[y*width+x]; }
 
     static size_t getNumEagerLeaves(size_t width, size_t height) {
       const size_t w = (((width +1)/2)+3)/4;
@@ -502,9 +502,9 @@ namespace embree
         {
           qu[y*width+x] = uv[y*width+x].x;
           qv[y*width+x] = uv[y*width+x].y;
-          qx[y*width+x] = p[y*width+x].x;
-          qy[y*width+x] = p[y*width+x].y;
-          qz[y*width+x] = p[y*width+x].z;
+          qx[y*width+x] = P[y*width+x].x;
+          qy[y*width+x] = P[y*width+x].y;
+          qz[y*width+x] = P[y*width+x].z;
           nx[y*width+x] = Ng[y*width+x].x;
           ny[y*width+x] = Ng[y*width+x].y;
           nz[y*width+x] = Ng[y*width+x].z;
@@ -521,15 +521,67 @@ namespace embree
       /* add displacements */
       for (size_t y=0; y<height; y++) {
         for (size_t x=0; x<width; x++) {
-          const Vec3fa P0 = p[y*width+x];
+          const Vec3fa P0 = P[y*width+x];
           const Vec3fa P1 = Vec3fa(qx[y*width+x],qy[y*width+x],qz[y*width+x]);
 /*#if defined(DEBUG) // FIXME: enable
           if (!inside(mesh->displBounds,P1-P0))
             THROW_RUNTIME_ERROR("displacement out of bounds");
 	    #endif*/
-          p[y*width+x] = P1;
+          P[y*width+x] = P1;
         }
       }
+    }
+
+    __forceinline bool stitch_x(const CatmullClarkPatch& patch, const size_t y0, const size_t y_ofs, const size_t border, const size_t x0, const size_t x1,
+				const DiscreteTessellationPattern& fine, const DiscreteTessellationPattern& coarse, 
+				Vec2f luv[17*17], Vec3fa Ng[17*17])
+    {
+      if (unlikely(y0 != border || fine.size() == coarse.size()))
+	return false;
+
+      const size_t x0s = stitch(x0,fine.size(),coarse.size());
+      const size_t x1s = stitch(x1,fine.size(),coarse.size());
+      assert(x1s-x0s < 17);
+      
+      Vec3fa p_y0[17], Ng_y0[17];
+      feature_adaptive_eval (patch, y0!=0,y0!=0,x0s,x1s,2,coarse.size()+1, p_y0,Ng_y0,1,17);
+
+      Vec2f luv_y0[17];
+      int y = y0-y_ofs;
+      for (int x=0; x<=x1-x0; x++) {
+	const size_t xs = stitch(x0+x,fine.size(),coarse.size());
+	const float fx = coarse(xs);
+	luv[x*width+y].y = fx;
+	P  [x*width+y] = p_y0 [xs-x0s];
+	Ng [x*width+y] = Ng_y0[xs-x0s];
+      }
+      return true;
+    }
+
+    __forceinline bool stitch_y(const CatmullClarkPatch& patch, const size_t y0, const size_t y_ofs, const size_t border, const size_t x0, const size_t x1,
+				const DiscreteTessellationPattern& fine, const DiscreteTessellationPattern& coarse, 
+				Vec2f luv[17*17], Vec3fa Ng[17*17])
+    {
+      if (unlikely(y0 != border || fine.size() == coarse.size()))
+	return false;
+
+      const size_t x0s = stitch(x0,fine.size(),coarse.size());
+      const size_t x1s = stitch(x1,fine.size(),coarse.size());
+      assert(x1s-x0s < 17);
+      
+      Vec3fa p_y0[17], Ng_y0[17];
+      feature_adaptive_eval (patch, x0s,x1s,y0!=0,y0!=0,coarse.size()+1,2, p_y0,Ng_y0,17,1);
+      
+      Vec2f luv_y0[17];
+      int y = y0-y_ofs;
+      for (int x=0; x<=x1-x0; x++) {
+	const size_t xs = stitch(x0+x,fine.size(),coarse.size());
+	const float fx = coarse(xs);
+	luv[y*width+x].x = fx;
+	P  [y*width+x] = p_y0 [xs-x0s];
+	Ng [y*width+x] = Ng_y0[xs-x0s];
+      }
+      return true;
     }
 
     __forceinline void calculateLocalUVs(const size_t x0, const size_t x1,
@@ -605,26 +657,39 @@ namespace embree
 	  const Vec2f uv32 = (1.0f-fx) * uv3  + fx * uv2;
 	  const Vec2f uvxy = (1.0f-fy) * uv01 + fy * uv32;
 	  guv[y*width+x] = uvxy;
+	  const int iu = clamp(uvxy.x * 0xFFFF, 0.0f, float(0xFFFF));
+	  const int iv = clamp(uvxy.y * 0xFFFF, 0.0f, float(0xFFFF));
+	  point(x,y).a = (iv << 16) | iu;
         }
       }
     }
 
     template<typename Patch>
-    __forceinline void calculatePositionAndNormal(const Patch& patch, Vec2f luv[17*17], Vec2f guv[17*17], Vec3fa Ng[17*17])
+    __forceinline void calculatePositionAndNormal(const Patch& patch, Vec2f luv[17*17], Vec3fa Ng[17*17])
     {
-      for (int y=0; y<height; y++) 
-      {
-        for (int x=0; x<width; x++) 
-	{
-	  const int iu = clamp(guv[y*width+x].x * 0xFFFF, 0.0f, float(0xFFFF));
-	  const int iv = clamp(guv[y*width+x].y * 0xFFFF, 0.0f, float(0xFFFF));
-	  Vec3fa p = patch.eval(luv[y*width+x].x,luv[y*width+x].y);
-	  p.a = (iv << 16) | iu;
-	  point(x,y) = p;
-	  const Vec3fa N = normalize_safe(patch.normal(luv[y*width+x].x, luv[y*width+x].y)); // FIXME: enable only for displacement mapping
-	  Ng[y*width+x] = N;
+      for (int y=0; y<height; y++) {
+        for (int x=0; x<width; x++) {
+	  point(x,y)    = patch.eval(luv[y*width+x].x,luv[y*width+x].y);
+	  Ng[y*width+x] = normalize_safe(patch.normal(luv[y*width+x].x, luv[y*width+x].y)); // FIXME: enable only for displacement mapping
         }
       }
+    }
+
+    __forceinline size_t createEagerPrims(FastAllocator::Thread& alloc, PrimRef* prims, 
+					  const size_t x0, const size_t x1,
+					  const size_t y0, const size_t y1)
+    {
+      size_t i=0;
+      for (size_t y=y0; y<y1; y+=8) {
+	for (size_t x=x0; x<x1; x+=8) {
+	  const size_t rx0 = x-x0, rx1 = min(x+8,x1)-x0;
+	  const size_t ry0 = y-y0, ry1 = min(y+8,y1)-y0;
+	  QuadList* leaf = new (alloc.malloc(sizeof(QuadList))) QuadList(*this);
+	  const BBox3fa bounds = leaf->init(rx0,rx1,ry0,ry1);
+	  prims[i++] = PrimRef(bounds,BVH4::encodeTypedLeaf(leaf,0));
+	}
+      }
+      return i;
     }
 
     template<typename Patch>
@@ -647,67 +712,19 @@ namespace embree
       /* stitch local UVs */
       stitchLocalUVs(x0,x1,y0,y1,pattern0,pattern1,pattern2,pattern3,pattern_x,pattern_y,luv);
       
+      /* evaluate position and normal */
+      Vec3fa Ng[17*17];
+      calculatePositionAndNormal(patch,luv,Ng);
+
       /* calculate global UVs */
       Vec2f guv[17*17]; 
       calculateGlobalUVs(uv0,uv1,uv2,uv3,luv,guv);
+
+      /* displace points */
+      displace(scene,patch,luv,guv,Ng);
       
-      /* evaluate position and normal */
-      Vec3fa Ng[17*17];
-      calculatePositionAndNormal(patch,luv,guv,Ng);
-
-      return build(scene,patch,alloc,prims,x0,x1,y0,y1,luv,guv,Ng,pattern0,pattern1,pattern2,pattern3,pattern_x,pattern_y);
-    }
-
-    __forceinline bool stitch_x(const CatmullClarkPatch& patch, const size_t y0, const size_t y_ofs, const size_t border, const size_t x0, const size_t x1,
-				const DiscreteTessellationPattern& fine, const DiscreteTessellationPattern& coarse, 
-				Vec2f luv[17*17], Vec3fa Ng[17*17])
-    {
-      if (unlikely(y0 != border || fine.size() == coarse.size()))
-	return false;
-
-      const size_t x0s = stitch(x0,fine.size(),coarse.size());
-      const size_t x1s = stitch(x1,fine.size(),coarse.size());
-      assert(x1s-x0s < 17);
-      
-      Vec3fa p_y0[17], Ng_y0[17];
-      feature_adaptive_eval (patch, y0!=0,y0!=0,x0s,x1s,2,coarse.size()+1, p_y0,Ng_y0,1,17);
-
-      Vec2f luv_y0[17];
-      int y = y0-y_ofs;
-      for (int x=0; x<=x1-x0; x++) {
-	const size_t xs = stitch(x0+x,fine.size(),coarse.size());
-	const float fx = coarse(xs);
-	luv[x*width+y].y = fx;
-	p  [x*width+y] = p_y0 [xs-x0s];
-	Ng [x*width+y] = Ng_y0[xs-x0s];
-      }
-      return true;
-    }
-
-    __forceinline bool stitch_y(const CatmullClarkPatch& patch, const size_t y0, const size_t y_ofs, const size_t border, const size_t x0, const size_t x1,
-				const DiscreteTessellationPattern& fine, const DiscreteTessellationPattern& coarse, 
-				Vec2f luv[17*17], Vec3fa Ng[17*17])
-    {
-      if (unlikely(y0 != border || fine.size() == coarse.size()))
-	return false;
-
-      const size_t x0s = stitch(x0,fine.size(),coarse.size());
-      const size_t x1s = stitch(x1,fine.size(),coarse.size());
-      assert(x1s-x0s < 17);
-      
-      Vec3fa p_y0[17], Ng_y0[17];
-      feature_adaptive_eval (patch, x0s,x1s,y0!=0,y0!=0,coarse.size()+1,2, p_y0,Ng_y0,17,1);
-      
-      Vec2f luv_y0[17];
-      int y = y0-y_ofs;
-      for (int x=0; x<=x1-x0; x++) {
-	const size_t xs = stitch(x0+x,fine.size(),coarse.size());
-	const float fx = coarse(xs);
-	luv[y*width+x].x = fx;
-	p  [y*width+x] = p_y0 [xs-x0s];
-	Ng [y*width+x] = Ng_y0[xs-x0s];
-      }
-      return true;
+      /* create lists of build primitives */
+      return createEagerPrims(alloc,prims,x0,x1,y0,y1);
     }
 
     __forceinline size_t build(Scene* scene, const CatmullClarkPatch& patch,
@@ -726,7 +743,7 @@ namespace embree
       Vec2f luv[17*17];
       calculateLocalUVs(x0,x1,y0,y1,pattern_x,pattern_y,luv);
 
-      /* evaluate position and uvs */
+      /* evaluate position and normal */
       Vec3fa Ng[17*17];
       size_t swidth  = pattern_x.size()+1;
       size_t sheight = pattern_y.size()+1;
@@ -737,65 +754,19 @@ namespace embree
       const bool sr = stitch_x(patch,x1,x0,swidth-1 ,y0,y1,pattern_y,pattern1,luv,Ng);
       const bool sb = stitch_y(patch,y1,y0,sheight-1,x0,x1,pattern_x,pattern2,luv,Ng);
       const bool sl = stitch_x(patch,x0,x0,0        ,y0,y1,pattern_y,pattern3,luv,Ng);
-      feature_adaptive_eval (patch, x0+sl,x1-sr,y0+st,y1-sb, swidth,sheight, p+st*width+sl,Ng+st*width+sl,width,height);
+      feature_adaptive_eval (patch, x0+sl,x1-sr,y0+st,y1-sb, swidth,sheight, P+st*width+sl,Ng+st*width+sl,width,height);
 #endif
 
       /* calculate global UVs */
-      Vec2f guv[17*17];
-      for (int y=0; y<height; y++) {
-        const float fy = pattern_y(y0+y);
-        for (int x=0; x<width; x++) {
-	  const float fx = luv[y*width+x].x;
-	  const float fy = luv[y*width+x].y;
-	  const Vec2f uv01 = (1.0f-fx) * uv0  + fx * uv1;
-	  const Vec2f uv32 = (1.0f-fx) * uv3  + fx * uv2;
-	  const Vec2f uvxy = (1.0f-fy) * uv01 + fy * uv32;
-	  guv[y*width+x] = uvxy;
-        }
-      }
+      Vec2f guv[17*17]; 
+      calculateGlobalUVs(uv0,uv1,uv2,uv3,luv,guv);
 
-      /* store UVs inside P */
-      for (int y=0; y<height; y++) {
-        for (int x=0; x<width; x++) {
-	  const int iu = clamp(guv[y*width+x].x * 0xFFFF, 0.0f, float(0xFFFF));
-	  const int iv = clamp(guv[y*width+x].y * 0xFFFF, 0.0f, float(0xFFFF));
-	  point(x,y).a = (iv << 16) | iu;
-        }
-      }
-
-      return build(scene,patch,alloc,prims,x0,x1,y0,y1,luv,guv,Ng,pattern0,pattern1,pattern2,pattern3,pattern_x,pattern_y);
-    }
-
-    template<typename Patch>
-    __forceinline size_t build(Scene* scene, const Patch& patch, 
-			       FastAllocator::Thread& alloc, PrimRef* prims, 
-			       const size_t x0, const size_t x1,
-			       const size_t y0, const size_t y1,
-			       Vec2f luv[17*17], Vec2f guv[17*17], Vec3fa Ng[17*17],
-			       const DiscreteTessellationPattern& pattern0, 
-			       const DiscreteTessellationPattern& pattern1, 
-			       const DiscreteTessellationPattern& pattern2, 
-			       const DiscreteTessellationPattern& pattern3, 
-			       const DiscreteTessellationPattern& pattern_x,
-			       const DiscreteTessellationPattern& pattern_y)
-    {
       /* displace points */
       displace(scene,patch,luv,guv,Ng);
       
-      /* create lists of quads */
-      size_t i=0;
-      for (size_t y=y0; y<y1; y+=8) {
-	for (size_t x=x0; x<x1; x+=8) {
-	  const size_t rx0 = x-x0, rx1 = min(x+8,x1)-x0;
-	  const size_t ry0 = y-y0, ry1 = min(y+8,y1)-y0;
-	  QuadList* leaf = new (alloc.malloc(sizeof(QuadList))) QuadList(*this);
-	  const BBox3fa bounds = leaf->init(rx0,rx1,ry0,ry1);
-	  prims[i++] = PrimRef(bounds,BVH4::encodeTypedLeaf(leaf,0));
-	}
-      }
-      return i;
+      /* create lists of build primitives */
+      return createEagerPrims(alloc,prims,x0,x1,y0,y1);
     }
-    
     
     template<typename Patch>
     static size_t create(unsigned geomID, unsigned primID, 
@@ -834,6 +805,6 @@ namespace embree
     unsigned height;
     unsigned primID;
     unsigned geomID;
-    Vec3fa p[]; // FIXME: rename to P
+    Vec3fa P[];
   };
 }
