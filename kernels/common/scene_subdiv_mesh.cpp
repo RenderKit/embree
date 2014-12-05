@@ -389,7 +389,6 @@ namespace embree
 	  
 	  float edge_level = 1.0f;
 	  if (levels) edge_level = levels[e+de];
-	  PRINT2(e+de,edge_level);
 	  assert( edge_level >= 0.0f );
 	  
 	  edge->vtx_index              = startVertex;
