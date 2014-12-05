@@ -270,7 +270,6 @@ namespace embree
       const SubdivMesh::HalfEdge* edge = h; 
       do {
 	ring[i].init(edge,vertices);
-        //level[i] = edge->edge_level;
         edge = edge->next();
         i++;
       } while ((edge != h) && (i < SIZE));
