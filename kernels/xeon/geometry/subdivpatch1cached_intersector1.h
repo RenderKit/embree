@@ -22,8 +22,8 @@
 #include "bvh4/bvh4.h"
 
 
-#define COMPUTE_SUBDIV_NORMALS_AFTER_PATCH_INTERSECTION 0
-#define FORCE_TRIANGLE_UV 1
+#define COMPUTE_SUBDIV_NORMALS_AFTER_PATCH_INTERSECTION 1
+#define FORCE_TRIANGLE_UV 0
 
 namespace embree
 {
@@ -126,8 +126,12 @@ namespace embree
       return sse2f(  loadu4f(&vtx_u[offset+delta]), loadu4f(&vtx_v[offset+delta])  );
     }
     
-
 #endif
+
+    __forceinline Vec2f getVtxUV( const size_t offset) const {
+      return Vec2f( vtx_u[offset], vtx_v[offset] );
+    }
+
 
     __forceinline BBox3fa bounds() const 
     {
@@ -225,12 +229,32 @@ namespace embree
 
     const T u_final = uv[0];
     const T v_final = uv[1];
+
 #else
     const T u_final = u;
     const T v_final = v;
 #endif
 
     size_t i = select_min(valid,t);
+
+
+    size_t strip_i = (i % 4) + ((i >= 4) ? 6 : 0);
+
+
+    const Vec2f _uv0 = qquad.getVtxUV( strip_i + 0 );
+    const Vec2f _uv1 = qquad.getVtxUV( strip_i + 1 );
+    const Vec2f _uv2 = qquad.getVtxUV( strip_i + 2 );
+
+
+    assert( uv0[0][i] == _uv0[0]);
+    assert( uv0[1][i] == _uv0[1]);
+
+    assert( uv1[0][i] == _uv1[0]);
+    assert( uv1[1][i] == _uv1[1]);
+
+    assert( uv2[0][i] == _uv2[0]);
+    assert( uv2[1][i] == _uv2[1]);
+
 
     /* update hit information */
     ray.u      = u_final[i];

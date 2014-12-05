@@ -27,7 +27,7 @@ const int numTheta = 2*numPhi;
 
 #define MAX_EDGE_LEVEL 64.0f
 #define MIN_EDGE_LEVEL 2.0f
-#define ENABLE_DISPLACEMENTS 1
+#define ENABLE_DISPLACEMENTS 0
 #if ENABLE_DISPLACEMENTS
 #  define LEVEL_FACTOR 256.0f
 #else
