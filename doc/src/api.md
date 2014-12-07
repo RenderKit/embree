@@ -277,7 +277,7 @@ buffers have to get unmapped before an `rtcCommit` call to the scene.
     // fill triangle indices here
     rtcUnmapBuffer(scene, geomID, RTC_INDEX_BUFFER);
 
-Also see tutorial00 for an example of how to create triangle meshes.
+Also see [tutorial00] for an example of how to create triangle meshes.
 
 ### Hair Geometry
 
@@ -326,7 +326,7 @@ The following example demonstrates how to create some hair geometry:
     // fill indices here
     rtcUnmapBuffer(scene, geomID, RTC_INDEX_BUFFER);
 
-Also see tutorial07 for an example of how to create and use hair
+Also see [tutorial07] for an example of how to create and use hair
 geometry.
 
 ### User Defined Geometry
@@ -406,7 +406,8 @@ Is is supported to invoke the `rtcIntersect` and `rtcOccluded` function
 calls inside such user functions. It is not supported to invoke any
 other API call inside these user functions.
 
-See tutorial02 for an example of how to use the user defined geometries.
+See [tutorial02] for an example of how to use the user defined
+geometries.
 
 ### Instances
 
@@ -463,7 +464,7 @@ ignore the last row of the matrix.
 The transformation passed to `rtcSetTransform` transforms from the local
 space of the instantiated scene to world space.
 
-See tutorial04 for an example of how to use instances.
+See [tutorial04] for an example of how to use instances.
 
 Ray Queries
 -----------
@@ -567,7 +568,7 @@ the `rtcOccluded` functions. Initialization has to be done as for
 geometry ID (`geomID`) will get set to 0. Other hit information of the
 ray is undefined after calling `rtcOccluded`.
 
-See tutorial00 for an example of how to trace rays.
+See [tutorial00] for an example of how to trace rays.
 
 Buffer Sharing
 --------------
@@ -710,7 +711,7 @@ using the following API functions:
     void rtcSetOcclusionFilterFunction8 (RTCScene, unsigned geomID, RTCFilterFunc8 );
     void rtcSetOcclusionFilterFunction16(RTCScene, unsigned geomID, RTCFilterFunc16);
 
-See tutorial05 for an example of how to use the filter functions.
+See [tutorial05] for an example of how to use the filter functions.
 
 Sharing Threads with Embree
 ---------------------------

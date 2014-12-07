@@ -1,8 +1,10 @@
 
-all: doc www
+all: doc www ../readme.md readme_bin.md
 www: www/index.html www/api.html www/tutorials.html www/downloads.html www/renderer.html 
-doc: ../readme.txt ../readme.pdf 
+doc: ../readme.txt ../readme.pdf
 images: images/tutorial00.jpg images/tutorial01.jpg images/tutorial02.jpg images/tutorial03.jpg images/tutorial04.jpg images/tutorial05.jpg images/tutorial06.jpg images/tutorial07.jpg
+
+.PHONY: all www doc images
 
 replace=sed \
 -e '/<CONTENT_OVERVIEW>/{r src/overview.html' -e 'd' -e '}' \
@@ -76,9 +78,25 @@ readme.html: version src/*.html
 metadata.md: src/metadata.md version
 	sed -e "s/<EMBREE_VERSION>/`cat version`/" $< > $@
 
-../readme.md: metadata.md src/overview.md src/platforms.md src/compilation.md src/tutorials.md src/api.md src/support.md
+../readme.md: metadata.md src/overview.md src/platforms.md src/support.md src/compilation.md src/api.md src/tutorials.md src/links_local.md
 	cat $+ > $@
-	
+
+%.tex: src/%.md src/links_local.md
+	pandoc --chapters $+ -o $@
+
+api.tex: src/api.md src/links_local.md
+	pandoc --chapters --indented-code-classes=cpp $+ -o $@
+#	sed -i -e 's/\\texttt/\\path/g' $@
+
+%.html: src/%.md src/links_web.md
+	pandoc --chapters $+ -o $@
+
+api.html: src/api.md src/links_web.md
+	pandoc --chapters --indented-code-classes=cpp $+ -o $@
+
+readme_bin.md: metadata.md src/overview.md src/platforms.md src/support.md src/install.md src/api.md src/tutorials.md src/links_local.md
+	cat $+ > $@
+
 
 readme_bin.html: version src/*.html
 	$(call replace,src/readme_bin.html,$@)
