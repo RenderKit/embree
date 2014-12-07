@@ -50,7 +50,15 @@ namespace embree
     float vtx_u[12];
     float vtx_v[12];
 
-    size_t reserved[2];
+    __forceinline ssef u16_to_float(const unsigned short *const source)
+    {
+      return _mm_cvtpu16_ps(*(__m64*)source);
+    } 
+
+    __forceinline __m64 float_to_u16(const float *const source)
+    {
+      return _mm_cvtps_pi16(*(ssef*)source);
+    } 
 
 
     __forceinline void initFrom3x3Grid( const float *const source,
