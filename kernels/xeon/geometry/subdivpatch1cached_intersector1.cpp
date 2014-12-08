@@ -15,127 +15,32 @@
 // ======================================================================== //
 
 #include "subdivpatch1cached_intersector1.h"
-#include "common/subdiv/tessellation.h"
-#include "common/subdiv/tessellation_cache.h"
 #include "xeon/bvh4/bvh4.h"
 #include "xeon/bvh4/bvh4_intersector1.h"
 
 
 namespace embree
 {
-
-#define TIMER(x) 
   
 
-  __thread TessellationCache *thread_cache = NULL;
+  __thread TessellationCache *SubdivPatch1CachedIntersector1::thread_cache = NULL;
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-  __noinline void evalGrid(const SubdivPatch1Cached &patch,
-                              float *__restrict__ const grid_x,
-                              float *__restrict__ const grid_y,
-                              float *__restrict__ const grid_z,
-                              float *__restrict__ const grid_u,
-                              float *__restrict__ const grid_v,
-                              const SubdivMesh* const geom)
-  {
-    gridUVTessellator(patch.level,
-                      patch.grid_u_res,
-                      patch.grid_v_res,
-                      grid_u,
-                      grid_v);
-
-    if (unlikely(patch.needsStiching()))
-      stichUVGrid(patch.level,patch.grid_u_res,patch.grid_v_res,grid_u,grid_v);
-
-#if defined(__AVX__)
-
-    for (size_t i=0;i<patch.grid_size_8wide_blocks;i++)
-      {
-        avxf uu = load8f(&grid_u[8*i]);
-        avxf vv = load8f(&grid_v[8*i]);
-        avx3f vtx = patch.eval8(uu,vv);
-
-        if (unlikely(((SubdivMesh*)geom)->displFunc != NULL))
-          {
-            avx3f normal = patch.normal8(uu,vv);
-            normal = normalize_safe(normal);
-              
-            ((SubdivMesh*)geom)->displFunc(((SubdivMesh*)geom)->userPtr,
-                                           patch.geom,
-                                           patch.prim,
-                                           (const float*)&uu,
-                                           (const float*)&vv,
-                                           (const float*)&normal.x,
-                                           (const float*)&normal.y,
-                                           (const float*)&normal.z,
-                                           (float*)&vtx.x,
-                                           (float*)&vtx.y,
-                                           (float*)&vtx.z,
-                                           8);
-          }
-
-        *(avxf*)&grid_x[8*i] = vtx.x;
-        *(avxf*)&grid_y[8*i] = vtx.y;
-        *(avxf*)&grid_z[8*i] = vtx.z;        
-        *(avxf*)&grid_u[8*i] = uu;
-        *(avxf*)&grid_v[8*i] = vv;
-      }
-#else
-
-    for (size_t i=0;i<patch.grid_size_8wide_blocks*2;i++) // 4-wide blocks for SSE
-      {
-        ssef uu = load4f(&grid_u[4*i]);
-        ssef vv = load4f(&grid_v[4*i]);
-        sse3f vtx = patch.eval4(uu,vv);
-
-        if (unlikely(((SubdivMesh*)geom)->displFunc != NULL))
-          {
-            sse3f normal = patch.normal4(uu,vv);
-            normal = normalize_safe(normal);
-              
-            ((SubdivMesh*)geom)->displFunc(((SubdivMesh*)geom)->userPtr,
-                                           patch.geom,
-                                           patch.prim,
-                                           (const float*)&uu,
-                                           (const float*)&vv,
-                                           (const float*)&normal.x,
-                                           (const float*)&normal.y,
-                                           (const float*)&normal.z,
-                                           (float*)&vtx.x,
-                                           (float*)&vtx.y,
-                                           (float*)&vtx.z,
-                                           4);
-          }
-
-        *(ssef*)&grid_x[4*i] = vtx.x;
-        *(ssef*)&grid_y[4*i] = vtx.y;
-        *(ssef*)&grid_z[4*i] = vtx.z;        
-        *(ssef*)&grid_u[4*i] = uu;
-        *(ssef*)&grid_v[4*i] = vv;
-      }
-
-#endif
-    
-  }
-
-
-
-
-  BBox3fa createSubTree(BVH4::NodeRef &curNode,
-                        float *const lazymem,
-                        const SubdivPatch1Cached &patch,
-                        const float *const grid_x_array,
-                        const float *const grid_y_array,
-                        const float *const grid_z_array,
-                        const float *const grid_u_array,
-                        const float *const grid_v_array,
-                        const GridRange &range,
-                        unsigned int &localCounter,
-                        const SubdivMesh* const geom)
+  BBox3fa SubdivPatch1CachedIntersector1::createSubTree(BVH4::NodeRef &curNode,
+                                                        float *const lazymem,
+                                                        const SubdivPatch1Cached &patch,
+                                                        const float *const grid_x_array,
+                                                        const float *const grid_y_array,
+                                                        const float *const grid_z_array,
+                                                        const float *const grid_u_array,
+                                                        const float *const grid_v_array,
+                                                        const GridRange &range,
+                                                        unsigned int &localCounter,
+                                                        const SubdivMesh* const geom)
   {
     if (range.hasLeafSize())
       {
@@ -270,100 +175,21 @@ namespace embree
   }
 
 
-  __noinline BVH4::NodeRef buildSubdivPatchTree(const SubdivPatch1Cached &patch,
-                                                void *const lazymem,
-                                                const SubdivMesh* const geom)
+ 
+
+
+
+
+
+  TessellationCache *SubdivPatch1CachedIntersector1::createTessellationCache()
   {
-
-    TIMER(double msec = 0.0);
-    TIMER(msec = getSeconds());
-
-    assert( patch.grid_size_8wide_blocks >= 1 );
-    __aligned(64) float grid_x[(patch.grid_size_8wide_blocks+1)*8]; 
-    __aligned(64) float grid_y[(patch.grid_size_8wide_blocks+1)*8];
-    __aligned(64) float grid_z[(patch.grid_size_8wide_blocks+1)*8]; 
-
-    __aligned(64) float grid_u[(patch.grid_size_8wide_blocks+1)*8]; 
-    __aligned(64) float grid_v[(patch.grid_size_8wide_blocks+1)*8];
-
-    evalGrid(patch,grid_x,grid_y,grid_z,grid_u,grid_v,geom);
-
-    BVH4::NodeRef subtree_root = BVH4::encodeNode( (BVH4::Node*)lazymem);
-    unsigned int currentIndex = 0;
-
-    BBox3fa bounds = createSubTree( subtree_root,
-                                    (float*)lazymem,
-                                    patch,
-                                    grid_x,
-                                    grid_y,
-                                    grid_z,
-                                    grid_u,
-                                    grid_v,
-                                    GridRange(0,patch.grid_u_res-1,0,patch.grid_v_res-1),
-                                    currentIndex,
-                                    geom);
-
-    assert(currentIndex == patch.grid_subtree_size_64b_blocks);
-    TIMER(msec = getSeconds()-msec);    
-
-    //TessellationCache::printStats(); 
-
-    return subtree_root;
-  }
-
-
-
-
-
-
-
-  static AtomicMutex mtx;
-
-  size_t SubdivPatch1CachedIntersector1::getSubtreeRootNode(const SubdivPatch1Cached* const subdiv_patch, 
-                                                            const void* geom)
-  {
-    const unsigned int commitCounter = ((Scene*)geom)->commitCounter;
-
-    TessellationCache *local_cache = NULL;
-
-    if (unlikely(!thread_cache))
-      {
-
-        /* need thread cache to be aligned */
-        thread_cache = (TessellationCache *)_mm_malloc(sizeof(TessellationCache),64);
-        assert( (size_t)thread_cache % 64 == 0 );
-        thread_cache->init();	
-
+    TessellationCache *cache = (TessellationCache *)_mm_malloc(sizeof(TessellationCache),64);
+    assert( (size_t)cache % 64 == 0 );
+    cache->init();	
 #if DEBUG
-        mtx.lock();
-        std::cout << "Enabling tessellation cache with " << thread_cache->allocated64ByteBlocks() << " blocks = " << thread_cache->allocated64ByteBlocks()*64 << " bytes as default size" << std::endl;
-        mtx.unlock();
+    std::cout << "Enabling tessellation cache with " << cache->allocated64ByteBlocks() << " blocks = " << cache->allocated64ByteBlocks()*64 << " bytes as default size" << std::endl;
 #endif
-      }
-
-    local_cache = thread_cache;
-
-    SubdivPatch1Cached* tag = (SubdivPatch1Cached*)subdiv_patch;
-    
-    BVH4::NodeRef root = local_cache->lookup(tag,commitCounter);
-
-    if (unlikely(root == (size_t)-1))
-      {
-        subdiv_patch->prefetchData();
-        const unsigned int blocks = subdiv_patch->grid_subtree_size_64b_blocks;
-
-        TessellationCache::CacheTag &t = local_cache->request(tag,commitCounter,blocks);
-        BVH4::Node* node = (BVH4::Node*)local_cache->getCacheMemoryPtr(t);
-        size_t new_root = (size_t)buildSubdivPatchTree(*subdiv_patch,node,((Scene*)geom)->getSubdivMesh(subdiv_patch->geom));
-        assert( new_root != BVH4::invalidNode);
-
-        local_cache->updateRootRef(t,new_root);
-
-        assert( (size_t)local_cache->getPtr() + (size_t)t.getRootRef() == new_root );
-
-        return new_root;
-      }
-    return root;   
+    return cache;    
   }
 
 };
