@@ -252,8 +252,8 @@ namespace embree
     {
 #if FORCE_TESSELLATION_BOUNDS == 1
 
-      __aligned(64) float u_array[(grid_size_8wide_blocks+1)*8]; // +8 for unaligned access
-      __aligned(64) float v_array[(grid_size_8wide_blocks+1)*8]; // +8 for unaligned access
+      __aligned(64) float u_array[(grid_size_simd_blocks+1)*8]; // +8 for unaligned access
+      __aligned(64) float v_array[(grid_size_simd_blocks+1)*8]; // +8 for unaligned access
 
       const unsigned int real_grid_size = grid_u_res*grid_v_res;
       gridUVTessellator(level,grid_u_res,grid_v_res,u_array,v_array);
@@ -262,18 +262,18 @@ namespace embree
         stichUVGrid(level,grid_u_res,grid_v_res,u_array,v_array);
 
       // FIXME: remove
-      for (size_t i=real_grid_size;i<grid_size_8wide_blocks*8;i++)
+      for (size_t i=real_grid_size;i<grid_size_simd_blocks*8;i++)
         {
           u_array[i] = 1.0f;
           v_array[i] = 1.0f;
         }
 
       BBox3fa b ( empty );
-      assert( grid_size_8wide_blocks >= 1 );
+      assert( grid_size_simd_blocks >= 1 );
 
 #if !defined(__AVX__)
 
-      for (size_t i=0;i<grid_size_8wide_blocks*2;i++)
+      for (size_t i=0;i<grid_size_simd_blocks*2;i++)
 	{
 	  ssef u = load4f(&u_array[i*4]);
 	  ssef v = load4f(&v_array[i*4]);
@@ -307,7 +307,7 @@ namespace embree
 
 #else
 
-      for (size_t i=0;i<grid_size_8wide_blocks;i++)
+      for (size_t i=0;i<grid_size_simd_blocks;i++)
 	{
 	  avxf u = load8f(&u_array[i*8]);
 	  avxf v = load8f(&v_array[i*8]);
@@ -406,7 +406,7 @@ namespace embree
 
     unsigned int grid_u_res;
     unsigned int grid_v_res;
-    unsigned int grid_size_8wide_blocks;
+    unsigned int grid_size_simd_blocks;
     unsigned int grid_subtree_size_64b_blocks;
 
     __aligned(64) BSplinePatch patch;

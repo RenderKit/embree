@@ -122,6 +122,7 @@ namespace embree
             }
 
 
+#if 1
         qquad->init( (float*)leaf_x_array, 
                      (float*)leaf_y_array, 
                      (float*)leaf_z_array, 
@@ -130,10 +131,14 @@ namespace embree
                      0, 
                      4, 
                      8);
+#else
+        qquad->init( leaf_x_array, 
+                     leaf_y_array, 
+                     leaf_z_array, 
+                     leaf_u_array, 
+                     leaf_v_array);
 
-                     // 0, 
-                     // 3, 
-                     // 6);
+#endif
 
 
 #if 0
@@ -152,6 +157,13 @@ namespace embree
         DBG_PRINT( *qquad );
 
 #endif          
+
+
+        // 0, 
+                     // 3, 
+                     // 6);
+
+
           
         BBox3fa bounds = qquad->bounds();
         curNode = BVH4::encodeLeaf(qquad,2);
@@ -198,13 +210,6 @@ namespace embree
 
     return bounds;
   }
-
-
- 
-
-
-
-
 
   void SubdivPatch1CachedIntersector1::createTessellationCache()
   {

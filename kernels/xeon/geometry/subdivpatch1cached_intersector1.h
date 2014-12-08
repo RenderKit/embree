@@ -26,7 +26,7 @@
 
 #define COMPUTE_SUBDIV_NORMALS_AFTER_PATCH_INTERSECTION 0
 #define FORCE_TRIANGLE_UV 0
-#define DISCRITIZED_UV 1
+#define DISCRITIZED_UV 0
 
 namespace embree
 {
@@ -62,10 +62,9 @@ namespace embree
       return ssef(t) * 1.0f/65535.0f;
     } 
 
-    static __forceinline unsigned short float_to_u16(const float f)
-    {
-      return (unsigned short)(f*65535.0f);
-    } 
+    static __forceinline unsigned short float_to_u16(const float f) { return (unsigned short)(f*65535.0f); }
+    static __forceinline ssei float_to_u16(const ssef f) { return (ssei)(f*65535.0f); }
+ 
 
 
     __forceinline void initFrom3x3Grid( const float *const source,
@@ -98,6 +97,34 @@ namespace embree
       dest[ 9] = v21;
       dest[10] = v12;
       dest[11] = v22;
+    }
+
+    __forceinline void initFrom3x3Grid( const ssef source[3],
+                                        float *const dest)
+    {
+      const ssef row0_a = unpacklo(source[0],source[1]); 
+      const ssef row0_b = shuffle<0,1,0,1>(unpackhi(source[0],source[1]));
+      const ssef row1_a = unpacklo(source[1],source[2]);
+      const ssef row1_b = shuffle<0,1,0,1>(unpackhi(source[1],source[2]));
+
+      storeu4f(&dest[2], row0_b);
+      storeu4f(&dest[8], row1_b);
+      storeu4f(&dest[0], row0_a);
+      storeu4f(&dest[6], row1_a);
+    }
+
+    __forceinline void initFrom3x3Grid_discritized( const ssef source[3],
+                                                    unsigned short *const dest)
+    {
+      const ssef row0_a = unpacklo(source[0],source[1]); 
+      const ssef row0_b = shuffle<0,1,0,1>(unpackhi(source[0],source[1]));
+      const ssef row1_a = unpacklo(source[1],source[2]);
+      const ssef row1_b = shuffle<0,1,0,1>(unpackhi(source[1],source[2]));
+
+      //storeu4f(&dest[2], row0_b);
+      //storeu4f(&dest[8], row1_b);
+      //storeu4f(&dest[0], row0_a);
+      //storeu4f(&dest[6], row1_a);
     }
 
     __forceinline void initFrom3x3Grid_discritized( const float *const source,
@@ -153,6 +180,26 @@ namespace embree
       initFrom3x3Grid( grid_v, vtx_v, offset_line0, offset_line1, offset_line2 );
 #endif
     }
+
+    /* init from 3x3 point grid */
+    void init( const ssef grid_x[3],
+               const ssef grid_y[3],
+               const ssef grid_z[3],
+               const ssef grid_u[3],
+               const ssef grid_v[3])
+    {
+      initFrom3x3Grid( grid_x, vtx_x);
+      initFrom3x3Grid( grid_y, vtx_y);
+      initFrom3x3Grid( grid_z, vtx_z);
+#if DISCRITIZED_UV == 1
+      initFrom3x3Grid_discritized( grid_u, vtx_u);
+      initFrom3x3Grid_discritized( grid_v, vtx_v);
+#else
+      initFrom3x3Grid( grid_u, vtx_u );
+      initFrom3x3Grid( grid_v, vtx_v );
+#endif
+    }
+
 
 #if defined(__AVX__)
 
@@ -385,7 +432,7 @@ namespace embree
 
    
 #if defined(__AVX__)
-        for (size_t i=0;i<patch.grid_size_8wide_blocks;i++)
+        for (size_t i=0;i<patch.grid_size_simd_blocks;i++)
           {
             avxf uu = load8f(&grid_u[8*i]);
             avxf vv = load8f(&grid_v[8*i]);
@@ -417,7 +464,7 @@ namespace embree
             *(avxf*)&grid_v[8*i] = vv;
           }
 #else
-        for (size_t i=0;i<patch.grid_size_8wide_blocks*2;i++) // 4-wide blocks for SSE
+        for (size_t i=0;i<patch.grid_size_simd_blocks*2;i++) // 4-wide blocks for SSE
           {
             ssef uu = load4f(&grid_u[4*i]);
             ssef vv = load4f(&grid_v[4*i]);
@@ -530,13 +577,13 @@ namespace embree
           TIMER(double msec = 0.0);
           TIMER(msec = getSeconds());
       
-          assert( patch.grid_size_8wide_blocks >= 1 );
-          __aligned(64) float grid_x[(patch.grid_size_8wide_blocks+1)*8]; 
-          __aligned(64) float grid_y[(patch.grid_size_8wide_blocks+1)*8];
-          __aligned(64) float grid_z[(patch.grid_size_8wide_blocks+1)*8]; 
+          assert( patch.grid_size_simd_blocks >= 1 );
+          __aligned(64) float grid_x[(patch.grid_size_simd_blocks+1)*8]; 
+          __aligned(64) float grid_y[(patch.grid_size_simd_blocks+1)*8];
+          __aligned(64) float grid_z[(patch.grid_size_simd_blocks+1)*8]; 
       
-          __aligned(64) float grid_u[(patch.grid_size_8wide_blocks+1)*8]; 
-          __aligned(64) float grid_v[(patch.grid_size_8wide_blocks+1)*8];
+          __aligned(64) float grid_u[(patch.grid_size_simd_blocks+1)*8]; 
+          __aligned(64) float grid_v[(patch.grid_size_simd_blocks+1)*8];
       
           evalGrid(patch,grid_x,grid_y,grid_z,grid_u,grid_v,geom);
       

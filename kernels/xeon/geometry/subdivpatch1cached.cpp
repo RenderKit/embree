@@ -63,7 +63,9 @@ namespace embree
       grid_u_res = max(level[0],level[2])+1; // n segments -> n+1 points
       grid_v_res = max(level[1],level[3])+1;
 
-      grid_size_8wide_blocks       = ((grid_u_res*grid_v_res+7)&(-8)) / 8;
+      /* 8-wide SIMD is default on Xeon */
+
+      grid_size_simd_blocks       = ((grid_u_res*grid_v_res+7)&(-8)) / 8;
 
       grid_subtree_size_64b_blocks = 4; // single bvh4 leaf with 3x3 grid => 4 cachelines
 
@@ -88,7 +90,7 @@ namespace embree
 
       /* tessellate into 3x3 grid blocks for larger grid resolutions, generate bvh4 subtree over 3x3 grid blocks*/
 
-      if (grid_size_8wide_blocks > 1)
+      if (grid_size_simd_blocks > 1)
         {
           const size_t blocks = (sizeof(Quad2x2)+63) / 64;
           grid_subtree_size_64b_blocks = getSubTreeSize64bBlocks( blocks ); // u,v,x,y,z 
