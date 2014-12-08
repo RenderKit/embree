@@ -237,6 +237,16 @@ namespace embree
       return (flags & HAS_DISPLACEMENT) == HAS_DISPLACEMENT;
     }
 
+    __forceinline void prefetchData() const
+    {
+      const char *const t = (char*)this;
+      prefetchL1(t + 0*64);
+      prefetchL1(t + 1*64);
+      prefetchL1(t + 2*64);
+      prefetchL1(t + 3*64);
+      prefetchL1(t + 4*64);
+    }
+
     __forceinline BBox3fa bounds(const SubdivMesh* const mesh) const
     {
 #if FORCE_TESSELLATION_BOUNDS == 1
@@ -391,7 +401,7 @@ namespace embree
     unsigned int flags;
     unsigned int geom;                          //!< geometry ID of the subdivision mesh this patch belongs to
     unsigned int prim;                          //!< primitive ID of this subdivision patch
-    unsigned int dummy;
+    unsigned int reserved;
 
     unsigned int grid_u_res;
     unsigned int grid_v_res;

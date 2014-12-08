@@ -349,6 +349,7 @@ namespace embree
 
     if (unlikely(root == (size_t)-1))
       {
+        subdiv_patch->prefetchData();
         const unsigned int blocks = subdiv_patch->grid_subtree_size_64b_blocks;
 
         TessellationCache::CacheTag &t = local_cache->request(tag,commitCounter,blocks);

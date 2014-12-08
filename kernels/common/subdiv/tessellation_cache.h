@@ -32,7 +32,7 @@ namespace embree
   private:
     /* default sizes */
     static const size_t DEFAULT_64B_BLOCKS = (1<<14);
-    static const size_t CACHE_ENTRIES      = DEFAULT_64B_BLOCKS / 8;
+    static const size_t CACHE_ENTRIES      = DEFAULT_64B_BLOCKS / 4;
     
   public:
 
