@@ -307,7 +307,7 @@ namespace embree
     assert(currentIndex == patch.grid_subtree_size_64b_blocks);
     TIMER(msec = getSeconds()-msec);    
 
-    //thread_cache->printStats(); 
+    //TessellationCache::printStats(); 
 
     return subtree_root;
   }
@@ -359,7 +359,6 @@ namespace embree
 
         local_cache->updateRootRef(t,new_root);
 
-        t.updateRootRef( new_root - (size_t)local_cache->getPtr() );
         assert( (size_t)local_cache->getPtr() + (size_t)t.getRootRef() == new_root );
 
         return new_root;

@@ -31,6 +31,17 @@ namespace embree
                 );
   }
 
+  void TessellationCache::clearStats()
+  {
+  CACHE_STATS(
+              TessellationCache::cache_accesses  = 0;
+              TessellationCache::cache_hits      = 0;
+              TessellationCache::cache_misses    = 0;
+              TessellationCache::cache_clears    = 0;
+              TessellationCache::cache_evictions = 0;          
+              );
+  }
+
   CACHE_STATS(
               AtomicCounter TessellationCache::cache_accesses  = 0;
               AtomicCounter TessellationCache::cache_hits      = 0;

@@ -96,7 +96,7 @@ namespace embree
 
       __forceinline void clearRootRefBits()
       {
-        subtree_root &= ~((unsigned int)1 << 4);
+        subtree_root &= ~(((unsigned int)1 << 4)-1);
       }
 
       __forceinline unsigned int blocks() const
@@ -178,15 +178,6 @@ namespace embree
       allocated64BytesBlocks = DEFAULT_64B_BLOCKS;	
       lazymem = alloc_mem( allocated64BytesBlocks );
       assert((size_t)lazymem % 64 == 0);
-
-#if DEBUG
-      cache_accesses  = 0;
-      cache_hits      = 0;
-      cache_misses    = 0;
-      cache_clears    = 0;
-      cache_evictions = 0;
-#endif
-
     }
 
     __forceinline unsigned int allocated64ByteBlocks() 
@@ -274,6 +265,8 @@ namespace embree
     
     /* print stats for debugging */                 
     static void printStats();
+    static void clearStats();
+
   };
 
 };
