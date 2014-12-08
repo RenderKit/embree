@@ -17,6 +17,7 @@
 #pragma once
 
 #include "platform.h"
+#include "sync/mutex.h"
 
 namespace embree
 {
@@ -55,6 +56,48 @@ namespace embree
 
   /*! destroys thread local storage identifier */
   void destroyTls(tls_t tls);
+
+  /*! manages thread local variables */
+  template<typename Type>
+  struct ThreadLocal
+  {
+  public:
+    __forceinline ThreadLocal (void* init) 
+      : ptr(NULL), init(init) {}
+
+    __forceinline ~ThreadLocal () 
+    {
+      if (ptr) destroyTls(ptr);
+      for (size_t i=0; i<threads.size(); i++)
+	delete threads[i];
+    }
+
+    __forceinline Type* get() const
+    {
+      if (ptr == NULL) {
+	Lock<AtomicMutex> lock(mutex);
+	if (ptr == NULL) ptr = createTls();
+      }
+      Type* lptr = getTls(ptr);
+      if (unlikely(lptr == NULL)) {
+	setTls(ptr,lptr = new Type(init));
+	Lock<AtomicMutex> lock(mutex);
+	lst.push_back(lptr);
+      }
+      return lptr;
+    }
+
+    __forceinline const Type& operator  *( void ) const { return *get(); }
+    __forceinline       Type& operator  *( void )       { return *get(); }
+    __forceinline const Type* operator ->( void ) const { return  get(); }
+    __forceinline       Type* operator ->( void )       { return  get(); }
+    
+  private:
+    tls_t ptr;
+    void* init;
+    AtomicMutex mutex;
+    std::vector<Type*> threads;
+  };
 
 #if defined(__MIC__)
   void printThreadInfo();
