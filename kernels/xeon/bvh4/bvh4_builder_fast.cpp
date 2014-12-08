@@ -31,7 +31,6 @@
 #include "geometry/subdivpatch1.h"
 #include "geometry/subdivpatch1cached.h"
 
-#include "geometry/quadquad4x4.h"
 #include "geometry/grid.h"
 #include "common/subdiv/feature_adaptive_gregory.h"
 #include "common/subdiv/feature_adaptive_bspline.h"
@@ -110,16 +109,8 @@ namespace embree
     template<> BVH4SubdivBuilderFast<SubdivPatch1>::BVH4SubdivBuilderFast (BVH4* bvh, SubdivMesh* geom, size_t listMode) 
       : geom(geom), BVH4BuilderFastT<SubdivPatch1>(bvh,geom->parent,listMode,0,0,false,sizeof(SubdivPatch1),1,1,geom->size() > THRESHOLD_FOR_SINGLE_THREADED) {}
 
-    //template<> BVH4SubdivBuilderFast<SubdivPatchDispl1>::BVH4SubdivBuilderFast (BVH4* bvh, Scene* scene, size_t listMode) 
-    //: geom(NULL), BVH4BuilderFastT<SubdivPatchDispl1>(bvh,scene,listMode,0,0,false,sizeof(SubdivPatchDispl1),1,1,true) { this->bvh->alloc2.init(4096,4096); }
-    
-    BVH4SubdivQuadQuad4x4BuilderFast::BVH4SubdivQuadQuad4x4BuilderFast (BVH4* bvh, Scene* scene, size_t listMode) 
-    : BVH4BuilderFastT<PrimRef>(bvh,scene,listMode,0,0,false,sizeof(QuadQuad4x4),1,1,true) { this->bvh->alloc2.init(4096,4096); }
-
-
     BVH4SubdivPatch1CachedBuilderFast::BVH4SubdivPatch1CachedBuilderFast (BVH4* bvh, Scene* scene, size_t listMode) 
-    : BVH4BuilderFastT<PrimRef>(bvh,scene,listMode,0,0,false,sizeof(QuadQuad4x4),1,1,true) { this->bvh->alloc2.init(4096,4096); }
-  
+      : BVH4BuilderFastT<PrimRef>(bvh,scene,listMode,0,0,false,32,1,1,true) { this->bvh->alloc2.init(4096,4096); } // FIXME: 32 is wrong
   
     BVH4TopLevelBuilderFastT::BVH4TopLevelBuilderFastT (LockStepTaskScheduler* scheduler, BVH4* bvh) 
       : prims_i(NULL), N(0), BVH4BuilderFast(scheduler,bvh,0,0,0,false,0,1,1) {}
@@ -298,118 +289,6 @@ namespace embree
       else      PrimRefArrayGen                        ::generate_parallel(threadIndex, threadCount, scheduler, this->scene, SUBDIV_MESH, 1, this->prims, pinfo);
     }
     
-
-    // =======================================================================================================
-    // =======================================================================================================
-    // =======================================================================================================
-
-   void BVH4SubdivQuadQuad4x4BuilderFast::build(size_t threadIndex, size_t threadCount)
-    {
-      /* initialize all half edge structures */
-      new (&iter) Scene::Iterator<SubdivMesh>(this->scene);
-      for (size_t i=0; i<iter.size(); i++)
-        if (iter[i]) iter[i]->initializeHalfEdgeStructures();
-
-      this->bvh->alloc2.reset();
-
-      pstate.init(iter,size_t(1024));
-
-      BVH4BuilderFast::build(threadIndex,threadCount);
-    }
-
-    size_t BVH4SubdivQuadQuad4x4BuilderFast::number_of_primitives() 
-    {
-      PrimInfo pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
-      {
-        size_t s = 0;
-        for (size_t f=r.begin(); f!=r.end(); ++f) 
-	{
-          if (!mesh->valid(f)) continue;
-
-	  feature_adaptive_subdivision_bspline(f,mesh->getHalfEdge(f),mesh->getVertexPositionPtr(),
-					       [&](const CatmullClarkPatch& patch, const Vec2f uv[4], const int subdiv[4])
-	  {
-	    if (!patch.isRegular()) { s++; return; }
- 	    const float l0 = patch.ring[0].edge_level;
-	    const float l1 = patch.ring[1].edge_level;
-	    const float l2 = patch.ring[2].edge_level;
-	    const float l3 = patch.ring[3].edge_level;
-	    const TessellationPattern pattern0(l0,subdiv[0]);
-	    const TessellationPattern pattern1(l1,subdiv[1]);
-	    const TessellationPattern pattern2(l2,subdiv[2]);
-	    const TessellationPattern pattern3(l3,subdiv[3]);
-	    const TessellationPattern pattern_x = pattern0.size() > pattern2.size() ? pattern0 : pattern2;
-	    const TessellationPattern pattern_y = pattern1.size() > pattern3.size() ? pattern1 : pattern3;
-	    const int nx = (pattern_x.size()+7)/8;
-	    const int ny = (pattern_y.size()+7)/8;
-	    s += nx*ny;
-	  });
-	}
-        return PrimInfo(s,empty,empty);
-      }, [](const PrimInfo& a, const PrimInfo b) { return PrimInfo(a.size()+b.size(),empty,empty); });
-
-      return pinfo.size();
-    }
-    
-    void BVH4SubdivQuadQuad4x4BuilderFast::create_primitive_array_sequential(size_t threadIndex, size_t threadCount, PrimInfo& pinfo)
-    {
-      pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
-      {
-	PrimInfo s(empty);
-        for (size_t f=r.begin(); f!=r.end(); ++f) {
-          if (!mesh->valid(f)) continue;
-	  
-	  feature_adaptive_subdivision_bspline(f,mesh->getHalfEdge(f),mesh->getVertexPositionPtr(),
-					       [&](const CatmullClarkPatch& patch, const Vec2f uv[4], const int subdiv[4])
-	  {
-	    size_t id = rand();
-
-	    if (!patch.isRegular())
-	    {
-	      QuadQuad4x4* leaf = (QuadQuad4x4*) bvh->alloc2.malloc(sizeof(QuadQuad4x4),16);
-	      new (leaf) QuadQuad4x4(id,mesh->id,f);
-	      const BBox3fa bounds = leaf->quad(scene,patch,uv[0],uv[1],uv[2],uv[3]);
-	      prims[base.size()+s.size()] = PrimRef(bounds,BVH4::encodeTypedLeaf(leaf,0));
-	      s.add(bounds);
-	      return;
-	    }
-
-	    //GregoryPatch patcheval; 
-	    BSplinePatch patcheval;
-	    patcheval.init(patch);
-	    
-	    const float l0 = patch.ring[0].edge_level;
-	    const float l1 = patch.ring[1].edge_level;
-	    const float l2 = patch.ring[2].edge_level;
-	    const float l3 = patch.ring[3].edge_level;
-	    const TessellationPattern pattern0(l0,subdiv[0]);
-	    const TessellationPattern pattern1(l1,subdiv[1]);
-	    const TessellationPattern pattern2(l2,subdiv[2]);
-	    const TessellationPattern pattern3(l3,subdiv[3]);
-	    const TessellationPattern pattern_x = pattern0.size() > pattern2.size() ? pattern0 : pattern2;
-	    const TessellationPattern pattern_y = pattern1.size() > pattern3.size() ? pattern1 : pattern3;
-	    const int nx = pattern_x.size();
-	    const int ny = pattern_y.size();
-	    	    
-	    for (int y=0; y<ny; y+=8) {
-	      for (int x=0; x<nx; x+=8) {
-		QuadQuad4x4* leaf = (QuadQuad4x4*) bvh->alloc2.malloc(sizeof(QuadQuad4x4),16);
-		new (leaf) QuadQuad4x4(id,mesh->id,f);
-		const BBox3fa bounds = leaf->build(scene,patcheval,pattern0,pattern1,pattern2,pattern3,pattern_x,x,nx,pattern_y,y,ny,uv[0],uv[1],uv[2],uv[3]);
-		prims[base.size()+s.size()] = PrimRef(bounds,BVH4::encodeTypedLeaf(leaf,0));
-		s.add(bounds);
-	      }
-	    }
-	  });
-        }
-        return s;
-      }, [](PrimInfo a, const PrimInfo& b) { a.merge(b); return a; });
-    }
-    
-    void BVH4SubdivQuadQuad4x4BuilderFast::create_primitive_array_parallel  (size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, PrimInfo& pinfo) {
-      create_primitive_array_sequential(threadIndex, threadCount, pinfo);  // FIXME: parallelize
-    }
-
     // =======================================================================================================
     // =======================================================================================================
     // =======================================================================================================
@@ -448,12 +327,12 @@ namespace embree
 	    const float l1 = patch.ring[1].edge_level;
 	    const float l2 = patch.ring[2].edge_level;
 	    const float l3 = patch.ring[3].edge_level;
-	    const TessellationPattern pattern0(l0,subdiv[0]);
-	    const TessellationPattern pattern1(l1,subdiv[1]);
-	    const TessellationPattern pattern2(l2,subdiv[2]);
-	    const TessellationPattern pattern3(l3,subdiv[3]);
-	    const TessellationPattern pattern_x = pattern0.size() > pattern2.size() ? pattern0 : pattern2;
-	    const TessellationPattern pattern_y = pattern1.size() > pattern3.size() ? pattern1 : pattern3;
+	    const DiscreteTessellationPattern pattern0(l0,subdiv[0]);
+	    const DiscreteTessellationPattern pattern1(l1,subdiv[1]);
+	    const DiscreteTessellationPattern pattern2(l2,subdiv[2]);
+	    const DiscreteTessellationPattern pattern3(l3,subdiv[3]);
+	    const DiscreteTessellationPattern pattern_x = pattern0.size() > pattern2.size() ? pattern0 : pattern2;
+	    const DiscreteTessellationPattern pattern_y = pattern1.size() > pattern3.size() ? pattern1 : pattern3;
 	    s += Grid::getNumEagerLeaves(pattern_x.size(),pattern_y.size());
 	  });
 	}
@@ -490,12 +369,12 @@ namespace embree
 	    const float l1 = patch.ring[1].edge_level;
 	    const float l2 = patch.ring[2].edge_level;
 	    const float l3 = patch.ring[3].edge_level;
-	    const TessellationPattern pattern0(l0,subdiv[0]);
-	    const TessellationPattern pattern1(l1,subdiv[1]);
-	    const TessellationPattern pattern2(l2,subdiv[2]);
-	    const TessellationPattern pattern3(l3,subdiv[3]);
-	    const TessellationPattern pattern_x = pattern0.size() > pattern2.size() ? pattern0 : pattern2;
-	    const TessellationPattern pattern_y = pattern1.size() > pattern3.size() ? pattern1 : pattern3;
+	    const DiscreteTessellationPattern pattern0(l0,subdiv[0]);
+	    const DiscreteTessellationPattern pattern1(l1,subdiv[1]);
+	    const DiscreteTessellationPattern pattern2(l2,subdiv[2]);
+	    const DiscreteTessellationPattern pattern3(l3,subdiv[3]);
+	    const DiscreteTessellationPattern pattern_x = pattern0.size() > pattern2.size() ? pattern0 : pattern2;
+	    const DiscreteTessellationPattern pattern_y = pattern1.size() > pattern3.size() ? pattern1 : pattern3;
 	    const int nx = pattern_x.size();
 	    const int ny = pattern_y.size();
 
@@ -552,12 +431,12 @@ namespace embree
 	    const float l1 = patch.ring[1].edge_level;
 	    const float l2 = patch.ring[2].edge_level;
 	    const float l3 = patch.ring[3].edge_level;
-	    const TessellationPattern pattern0(l0,subdiv[0]);
-	    const TessellationPattern pattern1(l1,subdiv[1]);
-	    const TessellationPattern pattern2(l2,subdiv[2]);
-	    const TessellationPattern pattern3(l3,subdiv[3]);
-	    const TessellationPattern pattern_x = pattern0.size() > pattern2.size() ? pattern0 : pattern2;
-	    const TessellationPattern pattern_y = pattern1.size() > pattern3.size() ? pattern1 : pattern3;
+	    const DiscreteTessellationPattern pattern0(l0,subdiv[0]);
+	    const DiscreteTessellationPattern pattern1(l1,subdiv[1]);
+	    const DiscreteTessellationPattern pattern2(l2,subdiv[2]);
+	    const DiscreteTessellationPattern pattern3(l3,subdiv[3]);
+	    const DiscreteTessellationPattern pattern_x = pattern0.size() > pattern2.size() ? pattern0 : pattern2;
+	    const DiscreteTessellationPattern pattern_y = pattern1.size() > pattern3.size() ? pattern1 : pattern3;
 	    s += Grid::getNumEagerLeaves(pattern_x.size(),pattern_y.size());
 	  });
 	}
@@ -584,12 +463,12 @@ namespace embree
 	    const float l1 = patch.ring[1].edge_level;
 	    const float l2 = patch.ring[2].edge_level;
 	    const float l3 = patch.ring[3].edge_level;
-	    const TessellationPattern pattern0(l0,subdiv[0]);
-	    const TessellationPattern pattern1(l1,subdiv[1]);
-	    const TessellationPattern pattern2(l2,subdiv[2]);
-	    const TessellationPattern pattern3(l3,subdiv[3]);
-	    const TessellationPattern pattern_x = pattern0.size() > pattern2.size() ? pattern0 : pattern2;
-	    const TessellationPattern pattern_y = pattern1.size() > pattern3.size() ? pattern1 : pattern3;
+	    const DiscreteTessellationPattern pattern0(l0,subdiv[0]);
+	    const DiscreteTessellationPattern pattern1(l1,subdiv[1]);
+	    const DiscreteTessellationPattern pattern2(l2,subdiv[2]);
+	    const DiscreteTessellationPattern pattern3(l3,subdiv[3]);
+	    const DiscreteTessellationPattern pattern_x = pattern0.size() > pattern2.size() ? pattern0 : pattern2;
+	    const DiscreteTessellationPattern pattern_y = pattern1.size() > pattern3.size() ? pattern1 : pattern3;
 	    const int nx = pattern_x.size();
 	    const int ny = pattern_y.size();
 	    size_t N = Grid::createEager(mesh->id,f,scene,patch,alloc,&prims[base.size()+s.size()],0,nx,0,ny,uv,pattern0,pattern1,pattern2,pattern3,pattern_x,pattern_y);
@@ -656,12 +535,12 @@ namespace embree
 	    const float l1 = patch.ring[1].edge_level;
 	    const float l2 = patch.ring[2].edge_level;
 	    const float l3 = patch.ring[3].edge_level;
-	    const TessellationPattern pattern0(l0,subdiv[0]);
-	    const TessellationPattern pattern1(l1,subdiv[1]);
-	    const TessellationPattern pattern2(l2,subdiv[2]);
-	    const TessellationPattern pattern3(l3,subdiv[3]);
-	    const TessellationPattern pattern_x = pattern0.size() > pattern2.size() ? pattern0 : pattern2;
-	    const TessellationPattern pattern_y = pattern1.size() > pattern3.size() ? pattern1 : pattern3;
+	    const DiscreteTessellationPattern pattern0(l0,subdiv[0]);
+	    const DiscreteTessellationPattern pattern1(l1,subdiv[1]);
+	    const DiscreteTessellationPattern pattern2(l2,subdiv[2]);
+	    const DiscreteTessellationPattern pattern3(l3,subdiv[3]);
+	    const DiscreteTessellationPattern pattern_x = pattern0.size() > pattern2.size() ? pattern0 : pattern2;
+	    const DiscreteTessellationPattern pattern_y = pattern1.size() > pattern3.size() ? pattern1 : pattern3;
 	    s += Grid::getNumLazyLeaves(pattern_x.size(),pattern_y.size());
 	  });
 	}
@@ -688,12 +567,12 @@ namespace embree
 	    const float l1 = patch.ring[1].edge_level;
 	    const float l2 = patch.ring[2].edge_level;
 	    const float l3 = patch.ring[3].edge_level;
-	    const TessellationPattern pattern0(l0,subdiv[0]);
-	    const TessellationPattern pattern1(l1,subdiv[1]);
-	    const TessellationPattern pattern2(l2,subdiv[2]);
-	    const TessellationPattern pattern3(l3,subdiv[3]);
-	    const TessellationPattern pattern_x = pattern0.size() > pattern2.size() ? pattern0 : pattern2;
-	    const TessellationPattern pattern_y = pattern1.size() > pattern3.size() ? pattern1 : pattern3;
+	    const DiscreteTessellationPattern pattern0(l0,subdiv[0]);
+	    const DiscreteTessellationPattern pattern1(l1,subdiv[1]);
+	    const DiscreteTessellationPattern pattern2(l2,subdiv[2]);
+	    const DiscreteTessellationPattern pattern3(l3,subdiv[3]);
+	    const DiscreteTessellationPattern pattern_x = pattern0.size() > pattern2.size() ? pattern0 : pattern2;
+	    const DiscreteTessellationPattern pattern_y = pattern1.size() > pattern3.size() ? pattern1 : pattern3;
 	    const int nx = pattern_x.size();
 	    const int ny = pattern_y.size();
 	    size_t N = Grid::createLazy(bvh,NULL,mesh->id,f,id,nx,ny,alloc,&prims[base.size()+s.size()]);
@@ -1231,7 +1110,6 @@ namespace embree
     Builder* BVH4UserGeometryMeshBuilderFast   (void* bvh, UserGeometryBase* geom, size_t mode) { return new class BVH4UserGeometryBuilderFastT<AccelSetItem>((BVH4*)bvh,geom,mode); }
 
     Builder* BVH4SubdivPatch1BuilderFast(void* bvh, Scene* scene, size_t mode) { return new class BVH4SubdivBuilderFast<SubdivPatch1>((BVH4*)bvh,scene,mode); }
-    Builder* BVH4SubdivQuadQuad4x4BuilderFast(void* bvh, Scene* scene, size_t mode) { return new class BVH4SubdivQuadQuad4x4BuilderFast((BVH4*)bvh,scene,mode); }
     Builder* BVH4SubdivGridBuilderFast(void* bvh, Scene* scene, size_t mode) { return new class BVH4SubdivGridBuilderFast((BVH4*)bvh,scene,mode); }
     Builder* BVH4SubdivGridEagerBuilderFast(void* bvh, Scene* scene, size_t mode) { return new class BVH4SubdivGridEagerBuilderFast((BVH4*)bvh,scene,mode); }
     Builder* BVH4SubdivGridLazyBuilderFast(void* bvh, Scene* scene, size_t mode) { return new class BVH4SubdivGridLazyBuilderFast((BVH4*)bvh,scene,mode); }

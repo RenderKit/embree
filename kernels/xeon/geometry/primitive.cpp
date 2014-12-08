@@ -15,7 +15,6 @@
 // ======================================================================== //
 
 #include "primitive.h"
-#include "quadquad4x4.h"
 
 namespace embree
 {
