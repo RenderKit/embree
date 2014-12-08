@@ -307,7 +307,7 @@ namespace embree
     assert(currentIndex == patch.grid_subtree_size_64b_blocks);
     TIMER(msec = getSeconds()-msec);    
 
-    //thread_cache->printStats(); 
+    //TessellationCache::printStats(); 
 
     return subtree_root;
   }
@@ -351,23 +351,16 @@ namespace embree
     if (unlikely(root == (size_t)-1))
       {
         const unsigned int blocks = subdiv_patch->grid_subtree_size_64b_blocks;
-#if 1
-        TessellationCache::CacheTag t = local_cache->request(tag,commitCounter,blocks);
-        size_t new_root = t.getSubTreeRoot();
-        new_root &= ~BVH4::align_mask;
-        BVH4::Node* node = (BVH4::Node*)new_root; // new_root.node(); // pointer to mem
-        new_root = (size_t)buildSubdivPatchTree(*subdiv_patch,node,((Scene*)geom)->getSubdivMesh(subdiv_patch->geom));
-        assert( new_root != BVH4::invalidNode);
-        
-#else
-        size_t &new_root = local_cache->insert(tag,commitCounter,blocks);
-        new_root &= ~BVH4::align_mask;
-        assert( ((BVH4::NodeRef)new_root).isNode() );
-        BVH4::Node* node = (BVH4::Node*)new_root; // new_root.node(); // pointer to mem
 
-        new_root = (size_t)buildSubdivPatchTree(*subdiv_patch,node,((Scene*)geom)->getSubdivMesh(subdiv_patch->geom));
+        TessellationCache::CacheTag &t = local_cache->request(tag,commitCounter,blocks);
+        BVH4::Node* node = (BVH4::Node*)local_cache->getCacheMemoryPtr(t);
+        size_t new_root = (size_t)buildSubdivPatchTree(*subdiv_patch,node,((Scene*)geom)->getSubdivMesh(subdiv_patch->geom));
         assert( new_root != BVH4::invalidNode);
-#endif
+
+        local_cache->updateRootRef(t,new_root);
+
+        assert( (size_t)local_cache->getPtr() + (size_t)t.getRootRef() == new_root );
+
         return new_root;
       }
     return root;   
