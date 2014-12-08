@@ -181,7 +181,7 @@ namespace embree
 
 
 
-  TessellationCache *SubdivPatch1CachedIntersector1::createTessellationCache()
+  void SubdivPatch1CachedIntersector1::createTessellationCache()
   {
     TessellationCache *cache = (TessellationCache *)_mm_malloc(sizeof(TessellationCache),64);
     assert( (size_t)cache % 64 == 0 );
@@ -189,7 +189,7 @@ namespace embree
 #if DEBUG
     std::cout << "Enabling tessellation cache with " << cache->allocated64ByteBlocks() << " blocks = " << cache->allocated64ByteBlocks()*64 << " bytes as default size" << std::endl;
 #endif
-    return cache;    
+    thread_cache = cache;
   }
 
 };

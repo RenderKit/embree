@@ -476,7 +476,7 @@ namespace embree
         static __thread TessellationCache *thread_cache;
 
         /*! Creates per thread tessellation cache */
-        static TessellationCache *createTessellationCache();
+        static void createTessellationCache();
 
         /*! Returns BVH4 node reference for subtree over patch grid */
         static __forceinline size_t getSubtreeRootNode(const Primitive* const subdiv_patch, const void* geom)
@@ -486,7 +486,7 @@ namespace embree
           TessellationCache *local_cache = NULL;
 
           if (unlikely(!thread_cache))
-            thread_cache = createTessellationCache();
+            createTessellationCache();
 
           local_cache = thread_cache;
 
