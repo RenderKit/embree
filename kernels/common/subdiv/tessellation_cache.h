@@ -28,9 +28,10 @@ namespace embree
     static const size_t DEFAULT_64B_BLOCKS = (1<<14);
     static const size_t CACHE_ENTRIES      = DEFAULT_64B_BLOCKS / 8;
     
+  public:
     struct CacheTag {
     private:
-      size_t prim_tag;
+      unsigned int prim_tag;
       int commit_tag;
       int usedBlocks;
       size_t subtree_root;     
@@ -38,20 +39,20 @@ namespace embree
     public:
       __forceinline void reset() 
       {
-        prim_tag     = (size_t)-1;
+        prim_tag     = (unsigned int)-1;
         commit_tag   = -1;
         subtree_root = (size_t)-1;
         usedBlocks   = 0;
       }
 
-    __forceinline void fast_reset() 
+      __forceinline unsigned int toTag(void *prim)
       {
-        prim_tag  = (size_t)-1;
+        return ((size_t)prim) >> 6;
       }
 
       __forceinline bool match(void *primID, const unsigned int commitCounter)
       {
-        return prim_tag == (size_t)primID && commit_tag == commitCounter;
+        return prim_tag == toTag(primID) && commit_tag == commitCounter;
       }
 
       __forceinline void set(void *primID, 
@@ -59,20 +60,25 @@ namespace embree
                              size_t root,
                              const unsigned int blocks)
       {
-        prim_tag     = (size_t)primID;
+        prim_tag     = toTag(primID);
         commit_tag   = commitCounter;
         subtree_root = root;
         usedBlocks   = blocks;
       }
 
-      __forceinline void set(void *primID, 
-                             const unsigned int commitCounter)
+      __forceinline void update(void *primID, 
+                                const unsigned int commitCounter)
       {
-        prim_tag   = (size_t)primID;
+        prim_tag   = toTag(primID);
         commit_tag = commitCounter;
       }
 
       __forceinline size_t &getSubTreeRoot() 
+      {
+        return subtree_root;
+      }
+
+      __forceinline unsigned int getRootRef() 
       {
         return subtree_root;
       }
@@ -84,6 +90,7 @@ namespace embree
       
     };
 
+  private:
     CacheTag tags[CACHE_ENTRIES];
 
 
@@ -173,7 +180,6 @@ namespace embree
     /* lookup cache entry using 64bit pointer as tag */
     __forceinline size_t lookup(void *primID, const unsigned int commitCounter)
     {
-
 #if DEBUG
       cache_accesses++;
 #endif
@@ -187,11 +193,9 @@ namespace embree
 #endif
           return tags[index].getSubTreeRoot();
         }
-
 #if DEBUG
       cache_misses++;
 #endif
-
       return (size_t)-1;
     }
 
@@ -205,7 +209,7 @@ namespace embree
 #if DEBUG
           //if (tags[index].prim_tag != NULL) cache_evictions++;
 #endif
-          tags[index].set(primID,commitCounter);
+          tags[index].update(primID,commitCounter);
           return tags[index].getSubTreeRoot();
         }
 
@@ -244,6 +248,59 @@ namespace embree
       /* insert new entry at the beginning */
       tags[index].set(primID,commitCounter,curNode,neededBlocks);
       return tags[index].getSubTreeRoot();     
+
+    }
+
+
+    /* insert entry using 'neededBlocks' cachelines into cache */
+    __forceinline CacheTag &request(void *primID, const unsigned int commitCounter, const size_t neededBlocks)
+    {
+      const unsigned int index = addrToCacheIndex(primID);
+      assert(!tags[index].match(primID,commitCounter));
+      if (tags[index].blocks() >= neededBlocks)
+        {
+#if DEBUG
+          //if (tags[index].prim_tag != NULL) cache_evictions++;
+#endif
+          tags[index].update(primID,commitCounter);
+          return tags[index];
+        }
+
+
+      /* not enough space to hold entry? */
+      if (unlikely(blockCounter + neededBlocks >= allocated64BytesBlocks))
+        {          
+          /* can the cache hold this subtree space at all in each cache entries? */
+#define BIG_CACHE_ENTRIES 16
+          if (unlikely(BIG_CACHE_ENTRIES*neededBlocks > allocated64BytesBlocks)) 
+            {
+              const unsigned int new_allocated64BytesBlocks = BIG_CACHE_ENTRIES*neededBlocks;
+#if DEBUG
+              std::cout << "EXTENDING TESSELLATION CACHE (PER THREAD) FROM " 
+                        << allocated64BytesBlocks << " TO " 
+                        << new_allocated64BytesBlocks << " BLOCKS = " 
+                        << new_allocated64BytesBlocks*64 << " BYTES" << std::endl << std::flush;
+#endif
+              free_mem(lazymem);
+              allocated64BytesBlocks = new_allocated64BytesBlocks; 
+              lazymem = alloc_mem(allocated64BytesBlocks);
+              assert(lazymem);
+
+            }
+          //std::cout << "FLUSH" << std::endl;
+          /* realloc */
+          clear();
+        }
+
+      /* allocate entry */
+      const size_t currentIndex = blockCounter;
+      blockCounter += neededBlocks;
+
+      size_t curNode = (size_t)&lazymem[currentIndex*16];
+
+      /* insert new entry at the beginning */
+      tags[index].set(primID,commitCounter,curNode,neededBlocks);
+      return tags[index];     
 
     }
 

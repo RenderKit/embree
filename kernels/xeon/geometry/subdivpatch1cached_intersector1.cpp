@@ -34,9 +34,6 @@ namespace embree
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-
-
-
   __noinline void evalGrid(const SubdivPatch1Cached &patch,
                               float *__restrict__ const grid_x,
                               float *__restrict__ const grid_y,
@@ -354,17 +351,23 @@ namespace embree
     if (unlikely(root == (size_t)-1))
       {
         const unsigned int blocks = subdiv_patch->grid_subtree_size_64b_blocks;
-        size_t &new_root = local_cache->insert(tag,commitCounter,blocks);
-        //cache_root.clearFlags();
+#if 1
+        TessellationCache::CacheTag t = local_cache->request(tag,commitCounter,blocks);
+        size_t new_root = t.getSubTreeRoot();
         new_root &= ~BVH4::align_mask;
-
+        BVH4::Node* node = (BVH4::Node*)new_root; // new_root.node(); // pointer to mem
+        new_root = (size_t)buildSubdivPatchTree(*subdiv_patch,node,((Scene*)geom)->getSubdivMesh(subdiv_patch->geom));
+        assert( new_root != BVH4::invalidNode);
+        
+#else
+        size_t &new_root = local_cache->insert(tag,commitCounter,blocks);
+        new_root &= ~BVH4::align_mask;
         assert( ((BVH4::NodeRef)new_root).isNode() );
-
         BVH4::Node* node = (BVH4::Node*)new_root; // new_root.node(); // pointer to mem
 
         new_root = (size_t)buildSubdivPatchTree(*subdiv_patch,node,((Scene*)geom)->getSubdivMesh(subdiv_patch->geom));
         assert( new_root != BVH4::invalidNode);
-        //local_cache->printStats();
+#endif
         return new_root;
       }
     return root;   
