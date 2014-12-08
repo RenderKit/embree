@@ -237,6 +237,7 @@ namespace embree
       return (flags & HAS_DISPLACEMENT) == HAS_DISPLACEMENT;
     }
 
+
     __forceinline void prefetchData() const
     {
       const char *const t = (char*)this;
