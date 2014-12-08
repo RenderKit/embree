@@ -805,7 +805,7 @@ namespace embree
 								   const size_t x0, const size_t x1,
 								   const size_t y0, const size_t y1)
       {
-	if (x1-x0 <= 8 && y1-y1 <= 8) {
+	if (x1-x0 <= 8 && y1-y0 <= 8) {
 	  EagerLeaf* leaf = new (alloc.malloc(sizeof(EagerLeaf))) EagerLeaf(*this);
 	  const BBox3fa bounds = leaf->init(x0,x1,y0,y1);
 	  return std::pair<BBox3fa,BVH4::NodeRef>(bounds,BVH4::encodeTypedLeaf(leaf,0));
@@ -845,13 +845,13 @@ namespace embree
 	    }
 	  }
 	}
-	
+
 	/* recurse */
 	BBox3fa bounds = empty;
 	BVH4::Node* node = (BVH4::Node*) alloc.malloc(sizeof(BVH4::Node),16); node->clear();
 	for (size_t i=0; i<N; i++) {
 	  std::pair<BBox3fa,BVH4::NodeRef> child = createLazyPrims(alloc,ranges[i].x0,ranges[i].x1,ranges[i].y0,ranges[i].y1);
-	  node->set(i++,child.first,child.second);
+	  node->set(i,child.first,child.second);
 	  bounds.extend(child.first);
 	}
 	return std::pair<BBox3fa,BVH4::NodeRef>(bounds,BVH4::encodeNode2(node));
@@ -886,7 +886,7 @@ namespace embree
 					  [&](const CatmullClarkPatch& patch, const Vec2f uv[4], const int subdiv[4], const int id)
 	{
 	  if (id != quadID) return;
-	  
+
 	  const float l0 = patch.ring[0].edge_level;
 	  const float l1 = patch.ring[1].edge_level;
 	  const float l2 = patch.ring[2].edge_level;
@@ -914,9 +914,9 @@ namespace embree
 	/* let only one thread lazily build this object */
 	if (atomic_add(&initializing,1) != 0) {
 	  while (!initialized) __pause();
-	  return (size_t)parent;
+	  return (size_t)*parent;
 	}
-	
+
 	/* build sub-BVH */
 	Scene* scene = (Scene*) bvh->geometry;
 	SubdivMesh* mesh = scene->getSubdivMesh(geomID);
@@ -943,7 +943,7 @@ namespace embree
 	  const int ny = pattern_y.size();
 	  Grid* leaf = Grid::create(alloc,x1-x0+1,y1-y0+1,geomID,primID);
 	  leaf->build(scene,patch,x0,x1,y0,y1,uv[0],uv[1],uv[2],uv[3],pattern0,pattern1,pattern2,pattern3,pattern_x,pattern_y);
-	  node = leaf->createLazyPrims(alloc,x0,x1,y0,y1).second;
+	  node = leaf->createLazyPrims(alloc,0,x1-x0,0,y1-y0).second;
 	});
 	
 	/* link to sub-BVH */
@@ -980,7 +980,8 @@ namespace embree
 	  const size_t lx0 = x, lx1 = min(lx0+16,width);
 	  const size_t ly0 = y, ly1 = min(ly0+16,height);
 	  LazyLeaf* leaf = new (alloc.malloc(sizeof(LazyLeaf))) LazyLeaf(bvh,parent,geomID,primID,quadID,lx0,lx1,ly0,ly1);
-	  prims[N++] = PrimRef(leaf->bounds(),BVH4::encodeTypedLeaf(leaf,1));
+	  const BBox3fa bounds = leaf->bounds();
+	  prims[N++] = PrimRef(bounds,BVH4::encodeTypedLeaf(leaf,1));
 	}
       }
       return N;

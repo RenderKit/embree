@@ -48,6 +48,7 @@ namespace embree
   DECLARE_SYMBOL(Accel::Intersector1,BVH4Subdivpatch1CachedIntersector1);
   DECLARE_SYMBOL(Accel::Intersector1,BVH4QuadQuad4x4Intersector1);
   DECLARE_SYMBOL(Accel::Intersector1,BVH4GridIntersector1);
+  DECLARE_SYMBOL(Accel::Intersector1,BVH4GridLazyIntersector1);
   DECLARE_SYMBOL(Accel::Intersector1,BVH4VirtualIntersector1);
   DECLARE_SYMBOL(Accel::Intersector1,BVH4Triangle1vMBIntersector1Moeller);
   DECLARE_SYMBOL(Accel::Intersector1,BVH4Triangle4vMBIntersector1Moeller);
@@ -128,6 +129,7 @@ namespace embree
   DECLARE_SCENE_BUILDER(BVH4SubdivQuadQuad4x4BuilderFast);
   DECLARE_SCENE_BUILDER(BVH4SubdivGridBuilderFast);
   DECLARE_SCENE_BUILDER(BVH4SubdivGridEagerBuilderFast);
+  DECLARE_SCENE_BUILDER(BVH4SubdivGridLazyBuilderFast);
   DECLARE_SCENE_BUILDER(BVH4UserGeometryBuilderFast);
 
   DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle1MeshBuilderFast);
@@ -206,6 +208,7 @@ namespace embree
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4SubdivQuadQuad4x4BuilderFast);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4SubdivGridBuilderFast);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4SubdivGridEagerBuilderFast);
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4SubdivGridLazyBuilderFast);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4UserGeometryMeshBuilderFast);
 
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle1MeshRefitFast);
@@ -245,6 +248,7 @@ namespace embree
     SELECT_SYMBOL_DEFAULT_SSE41_AVX_AVX2(features,BVH4Subdivpatch1CachedIntersector1);
     SELECT_SYMBOL_DEFAULT_SSE41_AVX_AVX2(features,BVH4QuadQuad4x4Intersector1);
     SELECT_SYMBOL_DEFAULT_SSE41_AVX_AVX2(features,BVH4GridIntersector1);
+    SELECT_SYMBOL_DEFAULT_SSE41_AVX_AVX2(features,BVH4GridLazyIntersector1);
     SELECT_SYMBOL_DEFAULT_SSE41_AVX_AVX2(features,BVH4VirtualIntersector1);
     SELECT_SYMBOL_DEFAULT_SSE41_AVX_AVX2(features,BVH4Triangle1vMBIntersector1Moeller);
     SELECT_SYMBOL_DEFAULT_SSE41_AVX_AVX2(features,BVH4Triangle4vMBIntersector1Moeller);
@@ -925,7 +929,7 @@ namespace embree
 
   Accel* BVH4::BVH4SubdivPatch1(Scene* scene)
   {
-    BVH4* accel = new BVH4(SubdivPatch1::type,NULL,LeafMode);
+    BVH4* accel = new BVH4(SubdivPatch1::type,scene,LeafMode);
     Accel::Intersectors intersectors;
     intersectors.ptr = accel; 
     intersectors.intersector1 = BVH4Subdivpatch1Intersector1;
@@ -939,7 +943,7 @@ namespace embree
 
   Accel* BVH4::BVH4SubdivPatch1Cached(Scene* scene)
   {
-    BVH4* accel = new BVH4(SubdivPatch1Cached::type,NULL,LeafMode);
+    BVH4* accel = new BVH4(SubdivPatch1Cached::type,scene,LeafMode);
     Accel::Intersectors intersectors;
     intersectors.ptr = accel; 
     intersectors.intersector1 = BVH4Subdivpatch1CachedIntersector1;
@@ -952,7 +956,7 @@ namespace embree
 
   Accel* BVH4::BVH4DisplQuadQuad4x4(Scene* scene)
   {
-    BVH4* accel = new BVH4(PrimitiveType2::type,NULL,LeafMode); // FIXME: type
+    BVH4* accel = new BVH4(PrimitiveType2::type,scene,LeafMode); // FIXME: type
     Accel::Intersectors intersectors;
     intersectors.ptr = accel; 
     intersectors.intersector1 = BVH4QuadQuad4x4Intersector1;
@@ -965,7 +969,7 @@ namespace embree
 
   Accel* BVH4::BVH4SubdivGrid(Scene* scene)
   {
-    BVH4* accel = new BVH4(PrimitiveType2::type,NULL,LeafMode); // FIXME: type
+    BVH4* accel = new BVH4(PrimitiveType2::type,scene,LeafMode); // FIXME: type
     Accel::Intersectors intersectors;
     intersectors.ptr = accel; 
     intersectors.intersector1 = BVH4GridIntersector1;
@@ -978,7 +982,7 @@ namespace embree
 
   Accel* BVH4::BVH4SubdivGridEager(Scene* scene)
   {
-    BVH4* accel = new BVH4(PrimitiveType2::type,NULL,LeafMode); // FIXME: type
+    BVH4* accel = new BVH4(PrimitiveType2::type,scene,LeafMode); // FIXME: type
     Accel::Intersectors intersectors;
     intersectors.ptr = accel; 
     intersectors.intersector1 = BVH4GridIntersector1;
@@ -989,9 +993,22 @@ namespace embree
     return new AccelInstance(accel,builder,intersectors);
   }
 
+  Accel* BVH4::BVH4SubdivGridLazy(Scene* scene)
+  {
+    BVH4* accel = new BVH4(PrimitiveType2::type,scene,LeafMode); // FIXME: type
+    Accel::Intersectors intersectors;
+    intersectors.ptr = accel; 
+    intersectors.intersector1 = BVH4GridLazyIntersector1;
+    intersectors.intersector4 = NULL;
+    intersectors.intersector8 = NULL;
+    intersectors.intersector16 = NULL;
+    Builder* builder = BVH4SubdivGridLazyBuilderFast(accel,scene,LeafMode);
+    return new AccelInstance(accel,builder,intersectors);
+  }
+
   Accel* BVH4::BVH4UserGeometry(Scene* scene)
   {
-    BVH4* accel = new BVH4(VirtualAccelObjectType::type,NULL,LeafMode);
+    BVH4* accel = new BVH4(VirtualAccelObjectType::type,scene,LeafMode);
     Accel::Intersectors intersectors;
     intersectors.ptr = accel; 
     intersectors.intersector1 = BVH4VirtualIntersector1;

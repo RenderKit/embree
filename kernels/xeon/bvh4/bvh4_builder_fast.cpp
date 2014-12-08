@@ -136,7 +136,7 @@ namespace embree
       size_t numPrimitivesOld = numPrimitives;
       bvh->numPrimitives = numPrimitives = number_of_primitives();
       bool parallel = needAllThreads && numPrimitives > THRESHOLD_FOR_SINGLE_THREADED;
-	  
+
       /* initialize BVH */
       bvh->init(sizeof(BVH4::Node),numPrimitives, parallel ? (threadCount+1) : 1); // threadCount+1 for toplevel build
 
@@ -617,9 +617,11 @@ namespace embree
     void BVH4BuilderFastT<Grid::LazyLeaf*>::createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID)
     {
       assert(current.size() == 1);
+      BVH4::NodeRef node = prims[current.begin].ID();
       size_t ty = 0;
-      Grid::LazyLeaf* leaf = (Grid::LazyLeaf*) ((BVH4::NodeRef) prims[current.begin].ID()).leaf(ty);
+      Grid::LazyLeaf* leaf = (Grid::LazyLeaf*) node.leaf(ty);
       leaf->parent = current.parent;
+      *current.parent = node;
       assert(ty == 1);
     }
 
@@ -1231,6 +1233,7 @@ namespace embree
     Builder* BVH4SubdivQuadQuad4x4BuilderFast(void* bvh, Scene* scene, size_t mode) { return new class BVH4SubdivQuadQuad4x4BuilderFast((BVH4*)bvh,scene,mode); }
     Builder* BVH4SubdivGridBuilderFast(void* bvh, Scene* scene, size_t mode) { return new class BVH4SubdivGridBuilderFast((BVH4*)bvh,scene,mode); }
     Builder* BVH4SubdivGridEagerBuilderFast(void* bvh, Scene* scene, size_t mode) { return new class BVH4SubdivGridEagerBuilderFast((BVH4*)bvh,scene,mode); }
+    Builder* BVH4SubdivGridLazyBuilderFast(void* bvh, Scene* scene, size_t mode) { return new class BVH4SubdivGridLazyBuilderFast((BVH4*)bvh,scene,mode); }
     Builder* BVH4SubdivPatch1CachedBuilderFast(void* bvh, Scene* scene, size_t mode) { return new class BVH4SubdivPatch1CachedBuilderFast((BVH4*)bvh,scene,mode); }
 
   }

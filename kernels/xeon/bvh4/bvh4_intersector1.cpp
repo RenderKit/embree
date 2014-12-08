@@ -317,6 +317,7 @@ namespace embree
 
     DEFINE_INTERSECTOR1(BVH4QuadQuad4x4Intersector1,BVH4Intersector1<0x1 COMMA false COMMA QuadQuad4x4Intersector1>);
     DEFINE_INTERSECTOR1(BVH4GridIntersector1,BVH4Intersector1<0x1 COMMA false COMMA GridIntersector1>);
+    DEFINE_INTERSECTOR1(BVH4GridLazyIntersector1,BVH4Intersector1<0x1 COMMA false COMMA Switch2Intersector1<GridIntersector1 COMMA GridLazyIntersector1> >);
 
     DEFINE_INTERSECTOR1(BVH4VirtualIntersector1,BVH4Intersector1<0x1 COMMA false COMMA LeafIterator1<VirtualAccelIntersector1> >);
 

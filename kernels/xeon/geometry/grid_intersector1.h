@@ -22,7 +22,7 @@
 
 namespace embree
 {
-  struct GridLazyLeafIntersector1
+  struct GridLazyIntersector1
   {
     typedef typename Grid::LazyLeaf Primitive;
 
