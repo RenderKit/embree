@@ -615,8 +615,11 @@ namespace embree
         for (size_t f=r.begin(); f!=r.end(); ++f) 
 	{          
           if (!mesh->valid(f)) continue;
-          /* do feature-adaptive-based counting here */
-          s++;
+	  feature_adaptive_subdivision_gregory(f,mesh->getHalfEdge(f),mesh->getVertexPositionPtr(),
+					       [&](const CatmullClarkPatch& patch, const Vec2f uv[4], const int subdiv[4])
+	  {
+	    s++;
+	  });
 	}
         return PrimInfo(s,empty,empty);
       }, [](const PrimInfo& a, const PrimInfo b) { return PrimInfo(a.size()+b.size(),empty,empty); });
@@ -651,20 +654,25 @@ namespace embree
         for (size_t f=r.begin(); f!=r.end(); ++f) 
 	{
           if (!mesh->valid(f)) continue;
+
+	  feature_adaptive_subdivision_gregory(f,mesh->getHalfEdge(f),mesh->getVertexPositionPtr(),
+					       [&](const CatmullClarkPatch& ipatch, const Vec2f uv[4], const int subdiv[4])
+	  {
 	  
-          const unsigned int patchIndex = base.size()+s.size();
-	  const CatmullClarkPatch ipatch(mesh->getHalfEdge(f), mesh->getVertexPositionPtr());
-          subdiv_patches[patchIndex] = SubdivPatch1Cached(ipatch, mesh->id, f, mesh);
-
-          /* compute patch bounds */
-          const BBox3fa bounds = subdiv_patches[patchIndex].bounds(mesh);
-
-          assert(bounds.lower.x <= bounds.upper.x);
-          assert(bounds.lower.y <= bounds.upper.y);
-          assert(bounds.lower.z <= bounds.upper.z);
-          
-	  prims[base.size()+s.size()] = PrimRef(bounds,patchIndex);
-	  s.add(bounds);
+	    const unsigned int patchIndex = base.size()+s.size();
+	    //const CatmullClarkPatch ipatch(mesh->getHalfEdge(f), mesh->getVertexPositionPtr());
+	    subdiv_patches[patchIndex] = SubdivPatch1Cached(ipatch, mesh->id, f, mesh);
+	    
+	    /* compute patch bounds */
+	    const BBox3fa bounds = subdiv_patches[patchIndex].bounds(mesh);
+	    
+	    assert(bounds.lower.x <= bounds.upper.x);
+	    assert(bounds.lower.y <= bounds.upper.y);
+	    assert(bounds.lower.z <= bounds.upper.z);
+	    
+	    prims[base.size()+s.size()] = PrimRef(bounds,patchIndex);
+	    s.add(bounds);
+	  });
         }
         return s;
       }, [](PrimInfo a, const PrimInfo& b) { a.merge(b); return a; });
