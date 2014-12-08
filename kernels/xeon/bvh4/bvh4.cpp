@@ -322,7 +322,8 @@ namespace embree
     size_t numReservedPrimitives = 1.5*numAllocatedPrimitives;
 #endif
     
-    size_t bytesAllocated = numAllocatedNodes * nodeSize + numAllocatedPrimitives * primTy.bytes; // required also for parallel split stage in BVH4BuilderFast
+    size_t bytesAllocated = numAllocatedNodes * nodeSize + numAllocatedPrimitives * primTy.bytes; 
+    bytesAllocated = max(bytesAllocated,numPrimitives*sizeof(PrimRef)); // required also for parallel split stage in BVH4BuilderFast
     size_t bytesReserved  = numReservedNodes  * nodeSize + numReservedPrimitives  * primTy.bytes;
     if (numPrimitives) bytesReserved = (bytesReserved+blockSize-1)/blockSize*blockSize + numThreads*blockSize*2;
 

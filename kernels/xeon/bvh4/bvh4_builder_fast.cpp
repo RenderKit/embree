@@ -42,7 +42,6 @@
 #define DBG(x) 
 
 //#define PROFILE
-#define SUBDIVISION_LEVEL_DISPL 9 // FIXME: remove
 
 namespace embree
 {
@@ -521,7 +520,7 @@ namespace embree
     // =======================================================================================================
 
     BVH4SubdivGridEagerBuilderFast::BVH4SubdivGridEagerBuilderFast (BVH4* bvh, Scene* scene, size_t listMode) 
-      : BVH4BuilderFastT<PrimRef>(bvh,scene,listMode,0,0,false,sizeof(Grid),1,1,true) { this->bvh->alloc2.init(4096,4096); } 
+      : BVH4BuilderFastT<PrimRef>(bvh,scene,listMode,0,0,false,0,1,1,true) { this->bvh->alloc2.init(4096,4096); } 
 
    void BVH4SubdivGridEagerBuilderFast::build(size_t threadIndex, size_t threadCount)
    {
@@ -607,6 +606,129 @@ namespace embree
       create_primitive_array_sequential(threadIndex, threadCount, pinfo);  // FIXME: parallelize
     }
 
+    // =======================================================================================================
+    // =======================================================================================================
+    // =======================================================================================================
+
+#if 0
+
+    template<>
+    void BVH4BuilderFastT<SubdivPatchDispl1>::createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID)
+    {
+      size_t items = current.size();
+      size_t start = current.begin;
+      if (items != 1) THROW_RUNTIME_ERROR("SubdivPatchDispl1: internal error");
+            
+      /* allocate leaf node */
+      SubdivPatchDispl1* accel = (SubdivPatchDispl1*) leafAlloc.malloc(sizeof(SubdivPatchDispl1));
+            
+      const PrimRef& prim = prims[start];
+      const unsigned int last   = listMode && !prims;
+      const unsigned int geomID = prim.geomID();
+      const unsigned int primID = prim.primID();
+      const SubdivMesh* const subdiv_mesh = scene->getSubdivMesh(geomID);
+      new (accel) SubdivPatchDispl1(bvh->alloc2,
+                                    *current.parent,
+                                    scene, 
+                                    subdiv_mesh->getHalfEdge(primID),
+                                    subdiv_mesh->getVertexPositionPtr(),
+                                    geomID,
+                                    primID,
+                                    SUBDIVISION_LEVEL_DISPL,
+                                    true); 
+      
+      *current.parent = bvh->encodeLeaf((char*)accel,1);
+    }
+
+    BVH4SubdivGridLazyBuilderFast::BVH4SubdivGridLazyBuilderFast (BVH4* bvh, Scene* scene, size_t listMode) 
+      : BVH4BuilderFastT<PrimRef>(bvh,scene,listMode,0,0,false,sizeof(Grid),1,1,true) { this->bvh->alloc2.init(4096,4096); } 
+
+   void BVH4SubdivGridLazyBuilderFast::build(size_t threadIndex, size_t threadCount)
+   {
+      /* initialize all half edge structures */
+     new (&iter) Scene::Iterator<SubdivMesh>(this->scene);
+     for (size_t i=0; i<iter.size(); i++)
+       if (iter[i]) iter[i]->initializeHalfEdgeStructures();
+
+     /* initialize allocator and parallel_for_for_prefix_sum */
+     this->bvh->alloc2.reset();
+     pstate.init(iter,size_t(1024));
+
+     BVH4BuilderFast::build(threadIndex,threadCount);
+   }
+
+    size_t BVH4SubdivGridLazyBuilderFast::number_of_primitives() 
+    {
+      PrimInfo pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
+      {
+        size_t s = 0;
+        for (size_t f=r.begin(); f!=r.end(); ++f) 
+	{
+          if (!mesh->valid(f)) continue;
+	  
+	  feature_adaptive_subdivision_eval(f,mesh->getHalfEdge(f),mesh->getVertexPositionPtr(),
+					    [&](const CatmullClarkPatch& patch, const Vec2f uv[4], const int subdiv[4])
+	  {
+ 	    const float l0 = patch.ring[0].edge_level;
+	    const float l1 = patch.ring[1].edge_level;
+	    const float l2 = patch.ring[2].edge_level;
+	    const float l3 = patch.ring[3].edge_level;
+	    const TessellationPattern pattern0(l0,subdiv[0]);
+	    const TessellationPattern pattern1(l1,subdiv[1]);
+	    const TessellationPattern pattern2(l2,subdiv[2]);
+	    const TessellationPattern pattern3(l3,subdiv[3]);
+	    const TessellationPattern pattern_x = pattern0.size() > pattern2.size() ? pattern0 : pattern2;
+	    const TessellationPattern pattern_y = pattern1.size() > pattern3.size() ? pattern1 : pattern3;
+	    s += Grid::getNumLazyLeaves(pattern_x.size(),pattern_y.size());
+	  });
+	}
+        return PrimInfo(s,empty,empty);
+      }, [](const PrimInfo& a, const PrimInfo b) { return PrimInfo(a.size()+b.size(),empty,empty); });
+
+      return pinfo.size();
+    }
+    
+    void BVH4SubdivGridLazyBuilderFast::create_primitive_array_sequential(size_t threadIndex, size_t threadCount, PrimInfo& pinfo)
+    {
+      pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
+      {
+	FastAllocator::Thread alloc(&bvh->alloc2); // FIXME: should be thread local
+
+	PrimInfo s(empty);
+        for (size_t f=r.begin(); f!=r.end(); ++f) {
+          if (!mesh->valid(f)) continue;
+	  
+	  feature_adaptive_subdivision_eval(f,mesh->getHalfEdge(f),mesh->getVertexPositionPtr(),
+					    [&](const CatmullClarkPatch& patch, const Vec2f uv[4], const int subdiv[4])
+	  {
+	    const float l0 = patch.ring[0].edge_level;
+	    const float l1 = patch.ring[1].edge_level;
+	    const float l2 = patch.ring[2].edge_level;
+	    const float l3 = patch.ring[3].edge_level;
+	    const TessellationPattern pattern0(l0,subdiv[0]);
+	    const TessellationPattern pattern1(l1,subdiv[1]);
+	    const TessellationPattern pattern2(l2,subdiv[2]);
+	    const TessellationPattern pattern3(l3,subdiv[3]);
+	    const TessellationPattern pattern_x = pattern0.size() > pattern2.size() ? pattern0 : pattern2;
+	    const TessellationPattern pattern_y = pattern1.size() > pattern3.size() ? pattern1 : pattern3;
+	    const int nx = pattern_x.size();
+	    const int ny = pattern_y.size();
+	    size_t N = Grid::create(mesh->id,f,scene,patch,alloc,&prims[base.size()+s.size()],0,nx,0,ny,uv,pattern0,pattern1,pattern2,pattern3,pattern_x,pattern_y);
+	    assert(N == Grid::getNumLazyLeaves(nx,ny));
+	    for (size_t i=0; i<N; i++)
+	      s.add(prims[base.size()+s.size()].bounds());
+	  });
+        }
+        return s;
+      }, [](PrimInfo a, const PrimInfo& b) { a.merge(b); return a; });
+    }
+    
+    void BVH4SubdivGridLazyBuilderFast::create_primitive_array_parallel  (size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, PrimInfo& pinfo) {
+      create_primitive_array_sequential(threadIndex, threadCount, pinfo);  // FIXME: parallelize
+    }
+
+#endif
+    
     // =======================================================================================================
     // ============================ similar builder as for MIC ===============================================
     // =======================================================================================================
@@ -705,17 +827,6 @@ namespace embree
     // =======================================================================================================
     // =======================================================================================================
 
-
-
-
-
-
-
-
-
-
-
-
     size_t BVH4TopLevelBuilderFastT::number_of_primitives() {
       return N;
     }
@@ -766,36 +877,6 @@ namespace embree
       if (current.size() != 1) THROW_RUNTIME_ERROR("bvh4_builder_fast: internal error");
       *current.parent = (BVH4::NodeRef) prims[current.begin].ID();
     }
-
-#if 0 // FIXME: remove
-    template<>
-    void BVH4BuilderFastT<SubdivPatchDispl1>::createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID)
-    {
-      size_t items = current.size();
-      size_t start = current.begin;
-      if (items != 1) THROW_RUNTIME_ERROR("SubdivPatchDispl1: internal error");
-            
-      /* allocate leaf node */
-      SubdivPatchDispl1* accel = (SubdivPatchDispl1*) leafAlloc.malloc(sizeof(SubdivPatchDispl1));
-            
-      const PrimRef& prim = prims[start];
-      const unsigned int last   = listMode && !prims;
-      const unsigned int geomID = prim.geomID();
-      const unsigned int primID = prim.primID();
-      const SubdivMesh* const subdiv_mesh = scene->getSubdivMesh(geomID);
-      new (accel) SubdivPatchDispl1(bvh->alloc2,
-                                    *current.parent,
-                                    scene, 
-                                    subdiv_mesh->getHalfEdge(primID),
-                                    subdiv_mesh->getVertexPositionPtr(),
-                                    geomID,
-                                    primID,
-                                    SUBDIVISION_LEVEL_DISPL,
-                                    true); 
-      
-      *current.parent = bvh->encodeLeaf((char*)accel,1);
-    }
-#endif
 
     void BVH4BuilderFast::createLeaf(BuildRecord& current, Allocator& nodeAlloc, Allocator& leafAlloc, size_t threadIndex, size_t threadCount)
     {
