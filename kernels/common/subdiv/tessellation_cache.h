@@ -18,6 +18,12 @@
 
 #include "xeon/bvh4/bvh4.h"
 
+#if DEBUG
+#define CACHE_STATS(x) x
+#else
+#define CACHE_STATS(x) 
+#endif
+
 namespace embree
 {
   // FIXME: implement 4 or 8 way associative cache on Xeon using ssei or avxi
@@ -29,6 +35,9 @@ namespace embree
     static const size_t CACHE_ENTRIES      = DEFAULT_64B_BLOCKS / 8;
     
   public:
+
+    static const size_t CACHE_MISS = (size_t)-1;
+
     struct CacheTag {
     private:
       unsigned int prim_tag;
@@ -36,7 +45,13 @@ namespace embree
       unsigned int usedBlocks;
       unsigned int subtree_root;     
 
+      __forceinline unsigned int toTag(void *prim)
+      {
+        return ((size_t)prim) >> 6;
+      }
+
     public:
+
       __forceinline void reset() 
       {
         assert(sizeof(CacheTag) == 16);
@@ -44,11 +59,6 @@ namespace embree
         commit_tag   = (unsigned int)-1;
         subtree_root = (unsigned int)-1;
         usedBlocks   = 0;
-      }
-
-      __forceinline unsigned int toTag(void *prim)
-      {
-        return ((size_t)prim) >> 6;
       }
 
       __forceinline bool match(void *primID, const unsigned int commitCounter)
@@ -84,6 +94,11 @@ namespace embree
         return subtree_root;
       }
 
+      __forceinline void clearRootRefBits()
+      {
+        subtree_root &= ~((unsigned int)1 << 4);
+      }
+
       __forceinline unsigned int blocks() const
       {
         return usedBlocks;
@@ -106,13 +121,14 @@ namespace embree
 
 
     /* stats */
-#if DEBUG
-    size_t cache_accesses;
-    size_t cache_hits;
-    size_t cache_misses;
-    size_t cache_clears;
-    size_t cache_evictions;
-#endif
+    CACHE_STATS(
+                static AtomicCounter cache_accesses;
+                static AtomicCounter cache_hits;
+                static AtomicCounter cache_misses;
+                static AtomicCounter cache_clears;
+                static AtomicCounter cache_evictions;                
+                );
+                
 
     /* alloc cache memory */
     __forceinline float *alloc_mem(const size_t blocks)
@@ -123,9 +139,10 @@ namespace embree
     /* free cache memory */
     __forceinline void free_mem(float *mem)
     {
+      assert(mem);
       _mm_free(mem);
     }
-
+    
     __forceinline unsigned int addrToCacheIndex(void *primAddr)
     {
       return (((size_t)primAddr)>>6) % CACHE_ENTRIES;
@@ -134,9 +151,7 @@ namespace embree
     /* reset cache */
     __forceinline void clear()
     {
-#if DEBUG
-      cache_clears++;
-#endif
+      CACHE_STATS(cache_clears++);
       blockCounter =  0;	  
       for (size_t i=0;i<CACHE_ENTRIES;i++)
         tags[i].reset();
@@ -183,23 +198,17 @@ namespace embree
     /* lookup cache entry using 64bit pointer as tag */
     __forceinline size_t lookup(void *primID, const unsigned int commitCounter)
     {
-#if DEBUG
-      cache_accesses++;
-#endif
+      CACHE_STATS(cache_accesses++);
       
       /* direct mapped */
       const unsigned int index = addrToCacheIndex(primID);
       if (likely(tags[index].match(primID,commitCounter)))
         {
-#if DEBUG
-          cache_hits++;
-#endif
+          CACHE_STATS(cache_hits++);
           return (size_t)getPtr() + tags[index].getRootRef();
         }
-#if DEBUG
-      cache_misses++;
-#endif
-      return (size_t)-1;
+      CACHE_STATS(cache_misses++);
+      return CACHE_MISS;
     }
 
     /* insert entry using 'neededBlocks' cachelines into cache */
@@ -211,10 +220,9 @@ namespace embree
       assert(!tags[index].match(primID,commitCounter));
       if (likely(tags[index].blocks() >= neededBlocks))
         {
-#if DEBUG
-          //if (tags[index].prim_tag != NULL) cache_evictions++;
-#endif
+          CACHE_STATS(cache_evictions);
           tags[index].update(primID,commitCounter);
+          tags[index].clearRootRefBits();
           return tags[index];
         }
 
@@ -254,26 +262,18 @@ namespace embree
       return tags[index];     
     }
 
-    size_t getBVHRef(const CacheTag &t) const
+    __forceinline char *getCacheMemoryPtr(const CacheTag &t) const
     {
-      return (size_t)getPtr() + t.getRootRef();
+      return (char*)((char*)getPtr() + t.getRootRef());
     }
+
+    __forceinline void updateRootRef(CacheTag &t, size_t new_root)
+    {
+      t.updateRootRef( new_root - (size_t)getPtr() );      
+    }    
     
     /* print stats for debugging */                 
-    void printStats() const
-    {
-#if DEBUG
-      //if (cache_accesses)
-        {
-          assert(cache_hits + cache_misses == cache_accesses);
-          DBG_PRINT(cache_accesses);
-          DBG_PRINT(cache_misses);
-          DBG_PRINT(cache_hits);
-          DBG_PRINT(100.0f * cache_hits / cache_accesses);
-          DBG_PRINT(cache_clears);
-        }
-#endif
-    }
+    static void printStats();
   };
 
 };
