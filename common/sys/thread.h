@@ -64,7 +64,7 @@ namespace embree
   public:
 
     __forceinline ThreadLocal (void* init) 
-      : ptr(createTls()), init(init) {}
+      : ptr(NULL), init(init) {}
 
     __forceinline ~ThreadLocal () 
     {
@@ -85,10 +85,10 @@ namespace embree
     
     __forceinline Type* get() const
     {
-      //if (ptr == NULL) {
-      //Lock<AtomicMutex> lock(mutex);
-      //if (ptr == NULL) ptr = createTls();
-      //}
+      if (ptr == NULL) {
+	Lock<AtomicMutex> lock(mutex);
+	if (ptr == NULL) ptr = createTls();
+      }
       Type* lptr = (Type*) getTls(ptr);
       if (unlikely(lptr == NULL)) {
 	setTls(ptr,lptr = new Type(init));
