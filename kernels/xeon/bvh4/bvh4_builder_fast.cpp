@@ -555,7 +555,7 @@ namespace embree
       pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
       {
 	FastAllocator::Thread& alloc = *bvh->alloc2_thread_local;
-
+	
 	PrimInfo s(empty);
         for (size_t f=r.begin(); f!=r.end(); ++f) {
           if (!mesh->valid(f)) continue;
@@ -593,7 +593,7 @@ namespace embree
     // ============================ similar builder as for MIC ===============================================
     // =======================================================================================================
 
-   void BVH4SubdivPatch1CachedBuilderFast::build(size_t threadIndex, size_t threadCount)
+    void BVH4SubdivPatch1CachedBuilderFast::build(size_t threadIndex, size_t threadCount)
     {
       /* initialize all half edge structures */
       new (&iter) Scene::Iterator<SubdivMesh>(this->scene);
