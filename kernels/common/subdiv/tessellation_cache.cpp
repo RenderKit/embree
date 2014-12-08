@@ -26,6 +26,7 @@ namespace embree
                 DBG_PRINT(cache_accesses);
                 DBG_PRINT(cache_misses);
                 DBG_PRINT(cache_hits);
+                DBG_PRINT(cache_evictions);
                 DBG_PRINT(100.0f * cache_hits / cache_accesses);
                 DBG_PRINT(cache_clears);
                 );
@@ -48,5 +49,12 @@ namespace embree
               AtomicCounter TessellationCache::cache_misses    = 0;
               AtomicCounter TessellationCache::cache_clears    = 0;
               AtomicCounter TessellationCache::cache_evictions = 0;                
-              );                            
+              );           
+
 };
+
+extern "C" void printTessCacheStats()
+{
+  embree::TessellationCache::printStats();
+  embree::TessellationCache::clearStats();
+}

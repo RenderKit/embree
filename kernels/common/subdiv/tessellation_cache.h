@@ -211,7 +211,7 @@ namespace embree
       assert(!tags[index].match(primID,commitCounter));
       if (likely(tags[index].blocks() >= neededBlocks))
         {
-          CACHE_STATS(cache_evictions);
+          CACHE_STATS(cache_evictions++);
           tags[index].update(primID,commitCounter);
           tags[index].clearRootRefBits();
           return tags[index];

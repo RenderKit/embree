@@ -505,6 +505,10 @@ namespace embree
     Stat::print(std::cout);
     Stat::clear();
 #endif
+#if DEBUG && 0
+    extern void printTessCacheStats();
+    printTessCacheStats();
+#endif
   }
   
   RTCORE_API RTCScene rtcNewScene (RTCSceneFlags flags, RTCAlgorithmFlags aflags) 
