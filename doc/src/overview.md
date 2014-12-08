@@ -15,7 +15,7 @@ under the [Apache 2.0
 license](http://www.apache.org/licenses/LICENSE-2.0).
 
 Embree supports applications written with the Intel SPMD Programm
-Compiler (ISPC, <http://ispc.github.com>) by also providing an ISPC
+Compiler (ISPC, <https://ispc.github.io/>) by also providing an ISPC
 interface to the core ray tracing algorithms. This makes it possible to
 write a renderer in ISPC that leverages SSE, AVX, AVX2, and Xeon Phi™
 instructions without any code change. ISPC also supports runtime code
@@ -36,8 +36,8 @@ also supports dynamic scenes by implementing high performance two-level
 spatial index structure construction algorithms.
 
 In addition to the ray tracing kernels, Embree provides some tutorials
-to demonstrate how to use the [Embree API](api.html). The example
-photorealistic renderer that was originally included in the Embree
-kernel package is now available in a separate GIT repository (see
-[Embree Example Renderer](renderer.html)).
+to demonstrate how to use the [Embree API]. The example photorealistic
+renderer that was originally included in the Embree kernel package is
+now available in a separate GIT repository (see [Embree Example
+Renderer]).
 

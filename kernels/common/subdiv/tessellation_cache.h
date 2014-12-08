@@ -28,62 +28,70 @@ namespace embree
     static const size_t DEFAULT_64B_BLOCKS = (1<<14);
     static const size_t CACHE_ENTRIES      = DEFAULT_64B_BLOCKS / 8;
     
+  public:
     struct CacheTag {
     private:
-      size_t prim_tag;
-      int commit_tag;
-      int usedBlocks;
-      size_t subtree_root;     
+      unsigned int prim_tag;
+      unsigned int commit_tag;
+      unsigned int usedBlocks;
+      unsigned int subtree_root;     
 
     public:
       __forceinline void reset() 
       {
-        prim_tag     = (size_t)-1;
-        commit_tag   = -1;
-        subtree_root = (size_t)-1;
+        assert(sizeof(CacheTag) == 16);
+        prim_tag     = (unsigned int)-1;
+        commit_tag   = (unsigned int)-1;
+        subtree_root = (unsigned int)-1;
         usedBlocks   = 0;
       }
 
-    __forceinline void fast_reset() 
+      __forceinline unsigned int toTag(void *prim)
       {
-        prim_tag  = (size_t)-1;
+        return ((size_t)prim) >> 6;
       }
 
       __forceinline bool match(void *primID, const unsigned int commitCounter)
       {
-        return prim_tag == (size_t)primID && commit_tag == commitCounter;
+        return prim_tag == toTag(primID) && commit_tag == commitCounter;
       }
 
       __forceinline void set(void *primID, 
                              const unsigned int commitCounter,
-                             size_t root,
+                             const unsigned int root32bit,
                              const unsigned int blocks)
       {
-        prim_tag     = (size_t)primID;
+        prim_tag     = toTag(primID);
         commit_tag   = commitCounter;
-        subtree_root = root;
+        subtree_root = root32bit;
         usedBlocks   = blocks;
       }
 
-      __forceinline void set(void *primID, 
-                             const unsigned int commitCounter)
+      __forceinline void update(void *primID, 
+                                const unsigned int commitCounter)
       {
-        prim_tag   = (size_t)primID;
+        prim_tag   = toTag(primID);
         commit_tag = commitCounter;
       }
 
-      __forceinline size_t &getSubTreeRoot() 
+      __forceinline void updateRootRef(const unsigned int root32bit)
+      {
+        subtree_root = root32bit;
+      }
+
+      __forceinline unsigned int getRootRef() const
       {
         return subtree_root;
       }
 
-      __forceinline unsigned int blocks() 
+      __forceinline unsigned int blocks() const
       {
         return usedBlocks;
       }
       
     };
 
+  private:
     CacheTag tags[CACHE_ENTRIES];
 
 
@@ -118,7 +126,10 @@ namespace embree
       _mm_free(mem);
     }
 
-  public:
+    __forceinline unsigned int addrToCacheIndex(void *primAddr)
+    {
+      return (((size_t)primAddr)>>6) % CACHE_ENTRIES;
+    }
 
     /* reset cache */
     __forceinline void clear()
@@ -131,7 +142,10 @@ namespace embree
         tags[i].reset();
     }
 
-    __forceinline float *getPtr()
+  public:
+
+
+    __forceinline float *getPtr() const
     {
       return lazymem;
     }
@@ -165,15 +179,10 @@ namespace embree
       return allocated64BytesBlocks;
     }
 
-    __forceinline unsigned int addrToCacheIndex(void *primAddr)
-    {
-      return (((size_t)primAddr)>>6) % CACHE_ENTRIES;
-    }
 
     /* lookup cache entry using 64bit pointer as tag */
     __forceinline size_t lookup(void *primID, const unsigned int commitCounter)
     {
-
 #if DEBUG
       cache_accesses++;
 #endif
@@ -185,30 +194,29 @@ namespace embree
 #if DEBUG
           cache_hits++;
 #endif
-          return tags[index].getSubTreeRoot();
+          return (size_t)getPtr() + tags[index].getRootRef();
         }
-
 #if DEBUG
       cache_misses++;
 #endif
-
       return (size_t)-1;
     }
 
     /* insert entry using 'neededBlocks' cachelines into cache */
-    __forceinline size_t &insert(void *primID, const unsigned int commitCounter, const size_t neededBlocks)
+    __forceinline CacheTag &request(void *primID, 
+                                    const unsigned int commitCounter, 
+                                    const size_t neededBlocks)
     {
       const unsigned int index = addrToCacheIndex(primID);
       assert(!tags[index].match(primID,commitCounter));
-      if (tags[index].blocks() >= neededBlocks)
+      if (likely(tags[index].blocks() >= neededBlocks))
         {
 #if DEBUG
           //if (tags[index].prim_tag != NULL) cache_evictions++;
 #endif
-          tags[index].set(primID,commitCounter);
-          return tags[index].getSubTreeRoot();
+          tags[index].update(primID,commitCounter);
+          return tags[index];
         }
-
 
       /* not enough space to hold entry? */
       if (unlikely(blockCounter + neededBlocks >= allocated64BytesBlocks))
@@ -239,14 +247,18 @@ namespace embree
       const size_t currentIndex = blockCounter;
       blockCounter += neededBlocks;
 
-      size_t curNode = (size_t)&lazymem[currentIndex*16];
+      size_t curNode = (size_t)&lazymem[currentIndex*16] - (size_t)getPtr(); //(size_t)&lazymem[currentIndex*16];
 
       /* insert new entry at the beginning */
       tags[index].set(primID,commitCounter,curNode,neededBlocks);
-      return tags[index].getSubTreeRoot();     
-
+      return tags[index];     
     }
 
+    size_t getBVHRef(const CacheTag &t) const
+    {
+      return (size_t)getPtr() + t.getRootRef();
+    }
+    
     /* print stats for debugging */                 
     void printStats() const
     {

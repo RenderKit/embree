@@ -4,10 +4,10 @@ Compiling Embree
 Linux and Mac OS\ X
 -------------------
 
-Embree requires the Intel SPMD Compiler (ISPC) to compile. We have
-tested ISPC version 1.6.0 and 1.7.0, but more recent versions of ISPC
-should also work. You can download and install the ISPC binaries from
-[ispc.github.com](http://ispc.github.com/downloads.html). After
+Embree requires the Intel SPMD Program Compiler (ISPC) to compile. We
+have tested ISPC version 1.6.0 and 1.7.0, but more recent versions of
+ISPC should also work. You can download and install the ISPC binaries
+from [ispc.github.io](https://ispc.github.io/downloads.html). After
 installation, put the path to the ispc executable permanently into your
 PATH.
 
@@ -117,10 +117,10 @@ spatial hierarchies on Xeon Phi™.
 Windows
 -------
 
-Embree requires the Intel SPMD Compiler (ISPC) to compile. We have
-tested ISPC version 1.6.0 and 1.7.0, but more recent versions of ISPC
-should also work. You can download and install the ISPC binaries from
-[ispc.github.com](http://ispc.github.com/downloads.html). After
+Embree requires the Intel SPMD Program Compiler (ISPC) to compile. We
+have tested ISPC version 1.6.0 and 1.7.0, but more recent versions of
+ISPC should also work. You can download and install the ISPC binaries
+from [ispc.github.io](https://ispc.github.io/downloads.html). After
 installation, put the path to ispc.exe permanently into your `PATH`
 environment variable. You have to restart Visual Studio for this change
 to take effect.
