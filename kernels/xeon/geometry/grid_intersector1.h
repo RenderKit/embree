@@ -298,12 +298,189 @@ namespace embree
     /*! Intersect a ray with the triangle and updates the hit. */
     static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Primitive* prim, size_t ty, const void* geom, size_t& lazy_node) {
       intersect(pre,ray,prim[0],geom,lazy_node);
+    }    
+
+    static __forceinline bool occludedFinish (Ray& ray, const Vec3fa& p0, const Vec3fa& p1, const Vec3fa& p2, const ssef& uvw, const Primitive& prim)
+    {
+      const Vec3fa Ng0 = cross(p2-p0,p1-p0);
+      const Vec3fa Ng = Ng0+Ng0;
+      const float det = dot(ray.dir,Ng);
+      const float rcpDet = rcp(det);
+      const float T   = dot(p0,Ng);
+      const float t = T*rcpDet;
+      return ray.tnear <= t && t <= ray.tfar;
+    }
+
+    __forceinline static bool occludedQuad(Ray& ray, const Vec3fa& O, const Vec3fa& D,
+					    const Vec3fa& q00, const Vec3fa& q01, 
+					    const Vec3fa& q10, const Vec3fa& q11,
+					    const Primitive& prim)
+    {
+      const sse3f DDDD(D.x,D.y,D.z);
+      sse3f p00; transpose((ssef)q00,(ssef)q01,(ssef)q11,(ssef)q10,p00.x,p00.y,p00.z);
+
+      const sse3f t000_start = shuffle<0,1,3,0>(p00), t000_end = shuffle<1,3,0,0>(p00);
+      const sse3f e000 = t000_end - t000_start;
+      const sse3f s000 = t000_end + t000_start;
+      const ssef  u000 = dot(cross(e000,s000),DDDD);
+      if (all(ge_mask(Vec3fa(u000),Vec3fa(0.0f))) || all(le_mask(Vec3fa(u000),Vec3fa(0.0f)))) 
+        if (occludedFinish(ray, q00,q01,q10,u000,prim)) return true;
+
+      const sse3f t001_start = shuffle<2,3,1,0>(p00), t001_end = shuffle<3,1,2,0>(p00);
+      const sse3f e001 = t001_end - t001_start;
+      const sse3f s001 = t001_end + t001_start;
+      const ssef  u001 = dot(cross(e001,s001),DDDD);
+      if (all(ge_mask(Vec3fa(u001),Vec3fa(0.0f))) || all(le_mask(Vec3fa(u001),Vec3fa(0.0f))))
+        if (occludedFinish(ray,q11,q10,q01,u001,prim)) return true;
+
+      return false;
+    }
+
+#if defined(__AVX__)
+
+    __forceinline static bool occludedDualQuad(Ray& ray, const Vec3fa& O, const Vec3fa& D,
+                                                   const Vec3fa& q00, const Vec3fa& q01, 
+                                                   const Vec3fa& q10, const Vec3fa& q11,
+                                                   const Vec3fa& q20, const Vec3fa& q21,
+                                                   const Primitive& prim)
+    {
+      const avx3f D8(D.x,D.y,D.z);
+
+      const avxf q00_q10((ssef)q00,(ssef)q10);
+      const avxf q01_q11((ssef)q01,(ssef)q11);
+      const avxf q11_q21((ssef)q11,(ssef)q21);
+      const avxf q10_q20((ssef)q10,(ssef)q20);
+      avx3f p00_p10; transpose(q00_q10,q01_q11,q11_q21,q10_q20,p00_p10.x,p00_p10.y,p00_p10.z);
+
+      const avx3f t000_t100_start = shuffle<0,1,3,0>(p00_p10), t000_t100_end = shuffle<1,3,0,0>(p00_p10);
+      const avx3f e000_e100 = t000_t100_end - t000_t100_start;
+      const avx3f s000_s100 = t000_t100_end + t000_t100_start;
+      const avxf  u000_u100 = dot(cross(e000_e100,s000_s100),D8);
+      if (all(ge_mask(Vec3fa(extract<0>(u000_u100)),Vec3fa(0.0f))) || all(le_mask(Vec3fa(extract<0>(u000_u100)),Vec3fa(0.0f)))) 
+        if (occludedFinish(ray,q00,q01,q10,extract<0>(u000_u100),prim)) return true;
+      if (all(ge_mask(Vec3fa(extract<1>(u000_u100)),Vec3fa(0.0f))) || all(le_mask(Vec3fa(extract<1>(u000_u100)),Vec3fa(0.0f)))) 
+        if (occludedFinish(ray,q10,q11,q20,extract<1>(u000_u100),prim)) return true;
+      
+      const avx3f t001_t101_start = shuffle<2,3,1,0>(p00_p10), t001_t101_end = shuffle<3,1,2,0>(p00_p10);
+      const avx3f e001_e101 = t001_t101_end - t001_t101_start;
+      const avx3f s001_s101 = t001_t101_end + t001_t101_start;
+      const avxf  u001_u101 = dot(cross(e001_e101,s001_s101),D8);
+      if (all(ge_mask(Vec3fa(extract<0>(u001_u101)),Vec3fa(0.0f))) || all(le_mask(Vec3fa(extract<0>(u001_u101)),Vec3fa(0.0f)))) 
+        if (occludedFinish(ray,q11,q10,q01,extract<0>(u001_u101),prim)) return true;
+      if (all(ge_mask(Vec3fa(extract<1>(u001_u101)),Vec3fa(0.0f))) || all(le_mask(Vec3fa(extract<1>(u001_u101)),Vec3fa(0.0f)))) 
+        if (occludedFinish(ray,q21,q20,q11,extract<1>(u001_u101),prim)) return true;
+
+      return false;
+    }
+
+#else
+    __forceinline static bool occludedDualQuad(Ray& ray, const Vec3fa& O, const Vec3fa& D,
+						const Vec3fa& q00, const Vec3fa& q01, 
+						const Vec3fa& q10, const Vec3fa& q11,
+						const Vec3fa& q20, const Vec3fa& q21,
+						const Primitive& prim)
+    {
+      if (occludedQuad(ray,O,D, q00,q01,q10,q11, prim)) return true;
+      if (occludedQuad(ray,O,D, q10,q11,q20,q21, prim)) return true;
+      return false;
+    }
+#endif
+
+    static __forceinline bool occludedQuad (Ray& ray, 
+					     const Vec3fa& v00, const Vec3fa& v10,
+					     const Vec3fa& v01, const Vec3fa& v11,
+					     const Primitive& prim)
+    {
+      const Vec3fa O = ray.org;
+      const Vec3fa D = ray.dir; 
+      const Vec3fa q00 = copy_a(v00-O,v00), q10 = copy_a(v10-O,v10);
+      const Vec3fa q01 = copy_a(v01-O,v01), q11 = copy_a(v11-O,v11);
+      return occludedQuad(ray,O,D, q00,q01,q10,q11, prim);
+    }
+
+    static __forceinline bool occludedQuads (Ray& ray, 
+					     const Vec3fa& v00, const Vec3fa& v10, const Vec3fa& v20,
+					     const Vec3fa& v01, const Vec3fa& v11, const Vec3fa& v21,
+					     const Primitive& prim)
+    {
+      const Vec3fa O = ray.org;
+      const Vec3fa D = ray.dir;
+      const Vec3fa q00 = copy_a(v00-O,v00), q10 = copy_a(v10-O,v10), q20 = copy_a(v20-O,v20);
+      const Vec3fa q01 = copy_a(v01-O,v01), q11 = copy_a(v11-O,v11), q21 = copy_a(v21-O,v21);
+      return occludedDualQuad(ray,O,D,q00,q01,q10,q11,q20,q21,prim);
+    }
+
+    static __forceinline bool occludedQuads (Ray& ray, 
+					     const Vec3fa& v00, const Vec3fa& v10, const Vec3fa& v20,
+					     const Vec3fa& v01, const Vec3fa& v11, const Vec3fa& v21,
+					     const Vec3fa& v02, const Vec3fa& v12, const Vec3fa& v22,
+					     const Primitive& prim)
+    {
+      const Vec3fa O = ray.org;
+      const Vec3fa D = ray.dir;
+      const Vec3fa q00 = copy_a(v00-O,v00), q10 = copy_a(v10-O,v10), q20 = copy_a(v20-O,v20);
+      const Vec3fa q01 = copy_a(v01-O,v01), q11 = copy_a(v11-O,v11), q21 = copy_a(v21-O,v21);
+      const Vec3fa q02 = copy_a(v02-O,v02), q12 = copy_a(v12-O,v12), q22 = copy_a(v22-O,v22);
+      if (occludedDualQuad(ray,O,D,q00,q01,q10,q11,q20,q21,prim)) return true;
+      if (occludedDualQuad(ray,O,D,q01,q02,q11,q12,q21,q22,prim)) return true;
+      return false;
     }
     
     /*! Test if the ray is occluded by the primitive */
     static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Primitive& prim, const void* geom, size_t& lazy_node)
     {
       STAT3(shadow.trav_prims,1,1,1);
+
+#if defined (__AVX__)
+
+      /* perform box tests */
+      const avxf ray_tfar(ray.tfar);
+      size_t mask = prim.bounds.intersect<false>(pre.nearX, pre.nearY, pre.nearZ, pre.org, pre.rdir, pre.org_rdir, pre.ray_tnear, ray_tfar);
+
+#else
+
+      /* perform box tests */
+      const ssef ray_tfar(ray.tfar);
+      size_t mask = prim.bounds.intersect<false>(pre.nearX, pre.nearY, pre.nearZ, pre.org, pre.rdir, pre.org_rdir, pre.ray_tnear, ray_tfar);
+
+#endif
+
+      /* intersect quad-quads */
+      while (mask) 
+      {
+        const size_t i = __bscf(mask);
+	const size_t ofs = prim.quads[i].ofs;
+	switch (prim.quads[i].type) {
+	case Grid::EagerLeaf::Quads::QUAD1X1: {
+	  const Vec3fa& v00 = prim.grid.point(ofs,0), v10 = (&v00)[1];
+	  const Vec3fa& v01 = prim.grid.point(ofs,1), v11 = (&v01)[1];
+	  if (occludedQuad(ray, v00,v10,v01,v11, prim)) return true;
+	  break;
+	}
+	case Grid::EagerLeaf::Quads::QUAD1X2: {
+	  const Vec3fa& v00 = prim.grid.point(ofs,0), v10 = (&v00)[1];
+	  const Vec3fa& v01 = prim.grid.point(ofs,1), v11 = (&v01)[1];
+	  const Vec3fa& v02 = prim.grid.point(ofs,2), v12 = (&v02)[1];
+	  if (occludedQuads(ray, v00,v01,v02,v10,v11,v12, prim)) return true;
+	  break;
+	}
+	case Grid::EagerLeaf::Quads::QUAD2X1: {
+	  const Vec3fa& v00 = prim.grid.point(ofs,0), v10 = (&v00)[1], v20 = (&v00)[2];
+	  const Vec3fa& v01 = prim.grid.point(ofs,1), v11 = (&v01)[1], v21 = (&v01)[2];
+	  if (occludedQuads(ray, v00,v10,v20,v01,v11,v21, prim)) return true;
+	  break;
+	}
+	case Grid::EagerLeaf::Quads::QUAD2X2: {
+	  const Vec3fa& v00 = prim.grid.point(ofs,0), v10 = (&v00)[1], v20 = (&v00)[2];
+	  const Vec3fa& v01 = prim.grid.point(ofs,1), v11 = (&v01)[1], v21 = (&v01)[2];
+	  const Vec3fa& v02 = prim.grid.point(ofs,2), v12 = (&v02)[1], v22 = (&v02)[2];
+	  if (occludedQuads(ray, v00,v10,v20,v01,v11,v21,v02,v12,v22, prim)) return true;
+	  break;
+	}
+	default: assert(false);  
+	}
+      }
+      
       return false;
     }
 
