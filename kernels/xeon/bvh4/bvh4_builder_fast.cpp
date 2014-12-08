@@ -653,7 +653,8 @@ namespace embree
           if (!mesh->valid(f)) continue;
 	  
           const unsigned int patchIndex = base.size()+s.size();
-          subdiv_patches[patchIndex] = SubdivPatch1Cached(mesh->getHalfEdge(f), mesh->getVertexPositionPtr(), mesh->id, f, mesh);
+	  const CatmullClarkPatch ipatch(mesh->getHalfEdge(f), mesh->getVertexPositionPtr());
+          subdiv_patches[patchIndex] = SubdivPatch1Cached(ipatch, mesh->id, f, mesh);
 
           /* compute patch bounds */
           const BBox3fa bounds = subdiv_patches[patchIndex].bounds(mesh);

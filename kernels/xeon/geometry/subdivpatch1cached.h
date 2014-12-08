@@ -154,8 +154,7 @@ namespace embree
     __forceinline SubdivPatch1Cached () {}
 
     /*! Construction from vertices and IDs. */
-    SubdivPatch1Cached (const SubdivMesh::HalfEdge * first_half_edge,
-                        const Vec3fa *vertices,
+    SubdivPatch1Cached (const CatmullClarkPatch& ipatch,
                         const unsigned int gID,
                         const unsigned int pID,
                         const SubdivMesh *const mesh);
