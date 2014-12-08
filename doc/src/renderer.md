@@ -10,8 +10,8 @@ production rendering. The Embree Example Renderer is released as Open
 Source under the [Apache 2.0
 license](http://www.apache.org/licenses/LICENSE-2.0).
 
-We provide binaries for the Embree Example Renderer for Linux (64 bit),
-Mac OS\ X (64 bit), and Windows (64 bit):
+We provide binaries for the Embree Example Renderer for Linux (64\ bit),
+Mac OS\ X (64\ bit), and Windows (64\ bit):
 
 [embree-renderer-2.2-linux.zip](http://github.com/embree/embree-renderer-bin/archive/v2.2_linux.zip)
 
@@ -46,7 +46,7 @@ Compiling under Windows
 -----------------------
 
 For compilation under Windows you first have to install the Embree ray
-tracing kernels including the Intel SPMD Compiler (ISPC). After
+tracing kernels including the Intel® SPMD Compiler (ISPC). After
 installation you have to set the EMBREE_INSTALL_DIR environment variable
 to the root folder of Embree.
 
@@ -54,8 +54,8 @@ Use the Visual Studio 2008 or Visual Studio 2010 solution file to
 compile the Embree Example Renderer. Inside Visual Studio you can switch
 between the Microsoft Compiler and the Intel Compiler by right clicking
 on the solution and then selecting the compiler. The project compiles
-with both compilers in 32 bit and 64 bit mode. We recommend using 64 bit
-mode and the Intel Compiler for best performance.
+with both compilers in 32\ bit and 64\ bit mode. We recommend using
+64\ bit mode and the Intel Compiler for best performance.
 
 To enable AVX and AVX2 for the ISPC code select the build configurations
 `ReleaseAVX` and `ReleaseAVX2`. You have to compile the Embree kernels

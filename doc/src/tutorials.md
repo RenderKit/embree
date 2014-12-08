@@ -11,11 +11,11 @@ executables, to start the ISPC version use the `tutorialXX_ispc`
 executables.
 
 Under Linux Embree also comes with an ISPC version of all tutorials for
-the Xeon Phi™ Coprocessor. The executables of this version of the
-tutorials are named `tutorialXX_xeonphi` and only work if a Xeon Phi™
-Coprocessor is present in the system. The Xeon Phi™ version of the
+the Intel® Xeon Phi™ coprocessor. The executables of this version of the
+tutorials are named `tutorialXX_xeonphi` and only work if a Xeon Phi
+coprocessor is present in the system. The Xeon Phi version of the
 tutorials get started on the host CPU, just like all other tutorials,
-and will connect automatically to one installed Xeon Phi™ Coprocessor in
+and will connect automatically to one installed Xeon Phi coprocessor in
 the system.
 
 For all tutorials, you can select an initial camera using the `-vp`

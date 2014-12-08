@@ -4,18 +4,20 @@ Compiling Embree
 Linux and Mac OS\ X
 -------------------
 
-Embree requires the Intel SPMD Program Compiler (ISPC) to compile. We
-have tested ISPC version 1.6.0 and 1.7.0, but more recent versions of
+Embree requires the Intel® SPMD Program Compiler (ISPC) to compile. We
+have tested ISPC version 1.7.1 and 1.8.0, but more recent versions of
 ISPC should also work. You can download and install the ISPC binaries
 from [ispc.github.io](https://ispc.github.io/downloads.html). After
-installation, put the path to the ispc executable permanently into your
-PATH.
+installation, either put the path to the `ispc` executable permanently
+into your `PATH`:
 
     export PATH=path-to-ispc:$PATH
 
-You additionally have to install CMake and the developer version of
-GLUT. Under Mac OS\ X, these dependencies can be installed using
-[MacPorts](http://www.macports.org/):
+Or provide the path to the `ispc` executable to CMake via the `ISPC_EXECUTABLE` variable.
+
+You additionally have to install CMake 2.8.12 or higher and the
+developer version of GLUT. Under Mac OS\ X, these dependencies can be
+installed using [MacPorts](http://www.macports.org/):
 
     sudo port install cmake freeglut
 
@@ -57,8 +59,8 @@ to finally install the Embree library and header files on your system:
 
 If you cannot install Embree on your system (e.g. when you don't have
 administrator rights) you need to add embree_root_directory/build to
-your LD_LIBRARY_PATH (and SINK_LD_LIBRARY_PATH in case you want to use
-Embree on Xeon Phi™).
+your `LD_LIBRARY_PATH` (and `SINK_LD_LIBRARY_PATH` in case you want to
+use Embree on Xeon Phi™).
 
 The default configuration in the configuration dialog should be
 appropriate for most usages. The following table described all
@@ -67,6 +69,9 @@ parameters that can be configured:
   ---------------------------- -------------------------------- --------
   Option                       Description                      Default
   ---------------------------- -------------------------------- --------
+  BUILD_EMBREE_SHARED_LIB      Build Embree as a shared         ON
+                               library.
+
   BUILD_TUTORIALS              Builds the C++ version of the    ON
                                Embree tutorials.
 
@@ -80,72 +85,99 @@ parameters that can be configured:
   COMPILER                     Select either GCC, ICC, or       GCC
                                CLANG as compiler.
 
-  RTCORE_INTERSECTION_FILTER   Enables the intersection filter  ON
+  RTCORE_BACKFACE_CULLING      Enables backface culling, i.e.   OFF
+                               only surfaces facing a ray can
+                               be hit.
+
+  RTCORE_BUFFER_STRIDE         Enables the buffer stride        ON
                                feature.
 
-  RTCORE_BUFFER_STRIDE         Enables buffer stride feature.   ON
+  RTCORE_INTERSECTION_FILTER   Enables the intersection filter  ON
+                               feature.
 
   RTCORE_RAY_MASK              Enables the ray masking feature. OFF
 
   RTCORE_SPINLOCKS             Enables faster spinlocks for     OFF
                                some builders.
 
-  XEON_ISA                     Select highest ISA on Xeon™ CPUs AVX2
-                               (SSE2, SSE3, SSSE3, SSE4.1,
-                               SSE4.2, AVX, AVX-I, AVX2).
+  XEON_ISA                     Select highest supported ISA on  AVX2
+                               Xeon™ CPUs (SSE2, SSE3, SSSE3,
+                               SSE4.1, SSE4.2, AVX, AVX-I, or
+                               AVX2).
 
   XEON_PHI_ISA                 Enables generation of Xeon Phi™  OFF
-                               version of kernels and
-                               tutorials.
+                               version of kernels and tutorials
+                               (when BUILD_TUTORIALS is ON).
   ---------------------------- -------------------------------- --------
   : CMake build options for Embree.
 
-You need at least Intel Compiler 11.1 or GCC 4.4 to enable AVX and Intel
-Compiler 12.1 or GCC 4.7 to enable AVX2.
+You need at least Intel Compiler 11.1 or GCC 4.7.
 
 Xeon Phi™
 ---------
 
 Embree supports the Xeon Phi™ coprocessor under Linux. To compile Embree
-for Xeon Phi™ you need to enable the XEON_PHI_ISA option in CMake and
-have the Intel Compiler and the Intel™ Manycore Platform Software Stack
+for Xeon Phi you need to enable the `XEON_PHI_ISA` option in CMake and
+have the Intel Compiler and the Intel [Manycore Platform Software
+Stack](https://software.intel.com/en-us/articles/intel-manycore-platform-software-stack-mpss)
 (MPSS) installed.
 
 Enabling the buffer stride feature reduces performance for building
-spatial hierarchies on Xeon Phi™.
+spatial hierarchies on Xeon Phi.
 
 Windows
 -------
 
 Embree requires the Intel SPMD Program Compiler (ISPC) to compile. We
-have tested ISPC version 1.6.0 and 1.7.0, but more recent versions of
+have tested ISPC version 1.7.0 and 1.8.0, but more recent versions of
 ISPC should also work. You can download and install the ISPC binaries
 from [ispc.github.io](https://ispc.github.io/downloads.html). After
-installation, put the path to ispc.exe permanently into your `PATH`
-environment variable. You have to restart Visual Studio for this change
-to take effect.
+installation, put the path to `ispc.exe` permanently into your `PATH`
+environment variable or you need to correctly set the `ISPC_EXECUTABLE`
+variable during CMake configuration.
 
-For compilation of Embree under Windows use the Visual Studio solution
-file embree.sln. The project compiles in 32 bit and 64 bit mode. The
-solution is by default setup to use the Microsoft Compiler. You can
-switch to the Intel Compiler by right clicking onto the solution in the
-Solution Explorer and then selecting the Intel Compiler. We recommend
-using 64 bit mode and the Intel Compiler for best performance.
+You additionally have to install CMake (version 2.8.12 or higher).
 
-In Visual Studio, you will find 4 build configurations, `Debug` (for
-SSE2 debug mode), `Release` (for SSE2 release mode), `ReleaseAVX` (for
-AVX release mode), and `ReleaseAVX2` (for AVX2 release mode). When using
-the Microsoft Compiler you can only use the Debug and Release
-configuration.  For enabling the `ReleaseAVX` configuration you need at
-least Intel Compiler 11.1 and for the `ReleaseAVX2` configuration you
-need at least Intel Compiler 12.1.
+### Using the IDE
 
-Most configuration parameters described for the Linux build can be set
-under Windows by commenting out the appropriate lines in the
-`common/sys/platform.h` file.
+Run `cmake-gui`, browse to the Embree sources, set the build directory
+and click Configure. Now you can select the Generator, e.g. "Visual
+Studio 12 2013" for a 32\ bit build or "Visual Studio 12 2013 Win64" for
+a 64\ bit build. Most configuration parameters described for the [Linux
+build](#linux-and-mac-os-x) can be set under Windows as well. Finally,
+click Generate to create the Visual Studio solution files.
+
+For compilation of Embree under Windows use the generated Visual Studio
+solution file `embree.sln`. The solution is by default setup to use the
+Microsoft Compiler. You can switch to the Intel Compiler by right
+clicking onto the solution in the Solution Explorer and then selecting
+the Intel Compiler. We recommend using 64\ bit mode and the Intel
+Compiler for best performance.
+
+To build all projects of the solution it is recommend to build the CMake
+utility project `ALL_BUILD`, which depends on all projects. Using "Build
+Solution" would also build all other CMake utility projects (such as
+`INSTALL`), which is usually not wanted.
 
 We recommend enabling syntax highlighting for the `.ispc` source and
 `.isph` header files. To do so open Visual Studio 2008, go to Tools ⇒
 Options ⇒ Text Editor ⇒ File Extension and add the isph and ispc
 extension for the "Microsoft Visual C++" editor.
+
+### Using the Command Line
+
+Embree can also be configured and built without the IDE using the Visual
+Studio command prompt:
+
+    cd path\to\embree
+    md build
+    cd build
+    cmake -G "Visual Studio 12 2013 Win64" ..
+    cmake --build . --config Release
+
+You can also build only some projects with the `--target` switch. Additional
+parameters after "`--`" will be passed to `msbuild`. For example, to build the
+Embree library in parallel use
+
+    cmake --build . --config Release --target embree -- /m
 
