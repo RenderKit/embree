@@ -380,7 +380,7 @@ namespace embree
 
 //#endif
 
-    struct QuadList
+    struct EagerLeaf
     {
       struct Quads
       {
@@ -407,7 +407,7 @@ namespace embree
 	return bounds;
       }
 
-      __forceinline QuadList (const Grid& grid) 
+      __forceinline EagerLeaf (const Grid& grid) 
 	: grid(grid) {}
 
       __forceinline const BBox3fa init (size_t x0, size_t x1, size_t y0, size_t y1) 
@@ -440,7 +440,7 @@ namespace embree
 	return box;
       }
 
-      friend std::ostream& operator<<(std::ostream& cout, const QuadList& a) {
+      friend std::ostream& operator<<(std::ostream& cout, const EagerLeaf& a) {
 	cout << "{ " << std::endl;
 	//cout << "  bounds = " << a.bounds << std::endl;
 	for (size_t i=0; i<16; i++) cout << "  quads[" << i << "] = " << a.quads[i] << ", " << std::endl;
@@ -458,10 +458,10 @@ namespace embree
     
     __forceinline Grid(unsigned width, unsigned height, unsigned geomID, unsigned primID)
       : width(width), height(height), geomID(geomID), primID(primID) 
-      {
-	assert(width <= 17);
-	assert(height <= 17);
-      }
+    {
+      assert(width <= 17);
+      assert(height <= 17);
+    }
 
     static __forceinline Grid* create(FastAllocator::Thread& alloc, const size_t width, const size_t height, const unsigned geomID, const unsigned primID) {
       return new (alloc.malloc(sizeof(Grid)+width*height*sizeof(Vec3fa))) Grid(width,height,geomID,primID);
@@ -469,6 +469,15 @@ namespace embree
     
     __forceinline       Vec3fa& point(const size_t x, const size_t y)       { assert(y*width+x < width*height); return P[y*width+x]; }
     __forceinline const Vec3fa& point(const size_t x, const size_t y) const { assert(y*width+x < width*height); return P[y*width+x]; }
+
+    __forceinline BBox3fa bounds() const
+    {
+      BBox3fa bounds = empty;
+      for (size_t y=0; y<height; y++)
+	for (size_t x=0; x<width; x++)
+	  bounds.extend(point(x,y));
+      return bounds;
+    }
 
     static size_t getNumEagerLeaves(size_t width, size_t height) {
       const size_t w = (((width +1)/2)+3)/4;
@@ -675,35 +684,35 @@ namespace embree
       }
     }
 
-    __forceinline size_t createEagerPrims(FastAllocator::Thread& alloc, PrimRef* prims, 
-					  const size_t x0, const size_t x1,
-					  const size_t y0, const size_t y1)
-    {
-      size_t i=0;
-      for (size_t y=y0; y<y1; y+=8) {
-	for (size_t x=x0; x<x1; x+=8) {
-	  const size_t rx0 = x-x0, rx1 = min(x+8,x1)-x0;
-	  const size_t ry0 = y-y0, ry1 = min(y+8,y1)-y0;
-	  QuadList* leaf = new (alloc.malloc(sizeof(QuadList))) QuadList(*this);
-	  const BBox3fa bounds = leaf->init(rx0,rx1,ry0,ry1);
-	  prims[i++] = PrimRef(bounds,BVH4::encodeTypedLeaf(leaf,0));
+   __forceinline size_t createEagerPrims(FastAllocator::Thread& alloc, PrimRef* prims, 
+					 const size_t x0, const size_t x1,
+					 const size_t y0, const size_t y1)
+	{
+	  size_t i=0;
+	  for (size_t y=y0; y<y1; y+=8) {
+	    for (size_t x=x0; x<x1; x+=8) {
+	      const size_t rx0 = x-x0, rx1 = min(x+8,x1)-x0;
+	      const size_t ry0 = y-y0, ry1 = min(y+8,y1)-y0;
+	      EagerLeaf* leaf = new (alloc.malloc(sizeof(EagerLeaf))) EagerLeaf(*this);
+	      const BBox3fa bounds = leaf->init(rx0,rx1,ry0,ry1);
+	      prims[i++] = PrimRef(bounds,BVH4::encodeTypedLeaf(leaf,0));
+	    }
+	  }
+	  return i;
 	}
-      }
-      return i;
-    }
+
 
     template<typename Patch>
-    __forceinline size_t build(Scene* scene, const Patch& patch,
-			       FastAllocator::Thread& alloc, PrimRef* prims,
-			       const size_t x0, const size_t x1,
-			       const size_t y0, const size_t y1,
-			       const Vec2f& uv0, const Vec2f& uv1, const Vec2f& uv2, const Vec2f& uv3,
-			       const DiscreteTessellationPattern& pattern0, 
-			       const DiscreteTessellationPattern& pattern1, 
-			       const DiscreteTessellationPattern& pattern2, 
-			       const DiscreteTessellationPattern& pattern3, 
-			       const DiscreteTessellationPattern& pattern_x,
-			       const DiscreteTessellationPattern& pattern_y)
+    __forceinline void build(Scene* scene, const Patch& patch,
+			     const size_t x0, const size_t x1,
+			     const size_t y0, const size_t y1,
+			     const Vec2f& uv0, const Vec2f& uv1, const Vec2f& uv2, const Vec2f& uv3,
+			     const DiscreteTessellationPattern& pattern0, 
+			     const DiscreteTessellationPattern& pattern1, 
+			     const DiscreteTessellationPattern& pattern2, 
+			     const DiscreteTessellationPattern& pattern3, 
+			     const DiscreteTessellationPattern& pattern_x,
+			     const DiscreteTessellationPattern& pattern_y)
     {
       /* calculate local UVs */
       Vec2f luv[17*17];
@@ -722,22 +731,18 @@ namespace embree
 
       /* displace points */
       displace(scene,patch,luv,guv,Ng);
-      
-      /* create lists of build primitives */
-      return createEagerPrims(alloc,prims,x0,x1,y0,y1);
     }
 
-    __forceinline size_t build(Scene* scene, const CatmullClarkPatch& patch,
-			       FastAllocator::Thread& alloc, PrimRef* prims,
-			       const size_t x0, const size_t x1,
-			       const size_t y0, const size_t y1,
-			       const Vec2f& uv0, const Vec2f& uv1, const Vec2f& uv2, const Vec2f& uv3,
-			       const DiscreteTessellationPattern& pattern0, 
-			       const DiscreteTessellationPattern& pattern1, 
-			       const DiscreteTessellationPattern& pattern2, 
-			       const DiscreteTessellationPattern& pattern3, 
-			       const DiscreteTessellationPattern& pattern_x,
-			       const DiscreteTessellationPattern& pattern_y)
+    __forceinline void build(Scene* scene, const CatmullClarkPatch& patch,
+			     const size_t x0, const size_t x1,
+			     const size_t y0, const size_t y1,
+			     const Vec2f& uv0, const Vec2f& uv1, const Vec2f& uv2, const Vec2f& uv3,
+			     const DiscreteTessellationPattern& pattern0, 
+			     const DiscreteTessellationPattern& pattern1, 
+			     const DiscreteTessellationPattern& pattern2, 
+			     const DiscreteTessellationPattern& pattern3, 
+			     const DiscreteTessellationPattern& pattern_x,
+			     const DiscreteTessellationPattern& pattern_y)
     {
       /* calculate local UVs */
       Vec2f luv[17*17];
@@ -763,24 +768,21 @@ namespace embree
 
       /* displace points */
       displace(scene,patch,luv,guv,Ng);
-      
-      /* create lists of build primitives */
-      return createEagerPrims(alloc,prims,x0,x1,y0,y1);
     }
     
     template<typename Patch>
-    static size_t create(unsigned geomID, unsigned primID, 
-                         Scene* scene, const Patch& patch,
-                         FastAllocator::Thread& alloc, PrimRef* prims,
-                         const size_t x0, const size_t x1,
-                         const size_t y0, const size_t y1,
-                         const Vec2f uv[4], 
-                         const DiscreteTessellationPattern& pattern0, 
-                         const DiscreteTessellationPattern& pattern1, 
-                         const DiscreteTessellationPattern& pattern2, 
-                         const DiscreteTessellationPattern& pattern3, 
-                         const DiscreteTessellationPattern& pattern_x,
-                         const DiscreteTessellationPattern& pattern_y)
+    static size_t createEager(unsigned geomID, unsigned primID, 
+			      Scene* scene, const Patch& patch,
+			      FastAllocator::Thread& alloc, PrimRef* prims,
+			      const size_t x0, const size_t x1,
+			      const size_t y0, const size_t y1,
+			      const Vec2f uv[4], 
+			      const DiscreteTessellationPattern& pattern0, 
+			      const DiscreteTessellationPattern& pattern1, 
+			      const DiscreteTessellationPattern& pattern2, 
+			      const DiscreteTessellationPattern& pattern3, 
+			      const DiscreteTessellationPattern& pattern_x,
+			      const DiscreteTessellationPattern& pattern_y)
     {
       size_t N = 0;
       for (size_t y=y0; y<y1; y+=16)
@@ -789,10 +791,9 @@ namespace embree
 	{
 	  const size_t lx0 = x, lx1 = min(lx0+16,x1);
 	  const size_t ly0 = y, ly1 = min(ly0+16,y1);
-	  const float sx1 = float(lx0-x0)/float(x1-x0), sx0 = 1.0f-sx1;
-	  const float sy1 = float(ly0-y0)/float(y1-y0), sy0 = 1.0f-sy1;
 	  Grid* leaf = Grid::create(alloc,lx1-lx0+1,ly1-ly0+1,geomID,primID);
-	  size_t n = leaf->build(scene,patch,alloc,prims,lx0,lx1,ly0,ly1,uv[0],uv[1],uv[2],uv[3],pattern0,pattern1,pattern2,pattern3,pattern_x,pattern_y);
+	  leaf->build(scene,patch,lx0,lx1,ly0,ly1,uv[0],uv[1],uv[2],uv[3],pattern0,pattern1,pattern2,pattern3,pattern_x,pattern_y);
+	  size_t n = leaf->createEagerPrims(alloc,prims,lx0,lx1,ly0,ly1);
 	  prims += n;
 	  N += n;
 	}
@@ -800,6 +801,191 @@ namespace embree
       return N;
     }
 
+    __forceinline std::pair<BBox3fa,BVH4::NodeRef> createLazyPrims(FastAllocator::Thread& alloc,
+								   const size_t x0, const size_t x1,
+								   const size_t y0, const size_t y1)
+      {
+	if (x1-x0 <= 8 && y1-y1 <= 8) {
+	  EagerLeaf* leaf = new (alloc.malloc(sizeof(EagerLeaf))) EagerLeaf(*this);
+	  const BBox3fa bounds = leaf->init(x0,x1,y0,y1);
+	  return std::pair<BBox3fa,BVH4::NodeRef>(bounds,BVH4::encodeTypedLeaf(leaf,0));
+	}
+	
+	struct Range2D { 
+	  __forceinline Range2D () {}
+	  __forceinline Range2D (size_t x0, size_t x1, size_t y0, size_t y1) : x0(x0), x1(x1), y0(y0), y1(y1) {}
+	  __forceinline size_t width () const { return x1-x0; }
+	  __forceinline size_t height() const { return y1-y0; }
+	  size_t x0,x1,y0,y1; 
+	};
+	
+	size_t N = 0;
+	Range2D ranges[4];
+	ranges[N++] = Range2D(x0,x1,y0,y1);
+	for (size_t j=0; j<2; j++)
+	{
+	  for (size_t i=0; i<N && N<4; i++) 
+	  {
+	    /* ignore leaves */
+	    Range2D& r = ranges[i];
+	    if (r.width() <= 8 && r.height() <= 8) 
+	      continue;
+	    
+	    /* split range along largest dimension */
+	    if (r.width() > r.height()) {
+	      const size_t x0 = r.x0, xc = (r.x0+r.x1)/2, x1 = r.x1;
+	      const size_t y0 = r.y0,                     y1 = r.y1;
+	      new (&ranges[i]  ) Range2D(x0,xc,y0,y1);
+	      new (&ranges[N++]) Range2D(xc,x1,y0,y1);
+	    } else {
+	      const size_t x0 = r.x0, x1 = r.x1;
+	      const size_t y0 = r.y0, yc = (r.y0+r.y1)/2, y1 = r.y1;
+	      new (&ranges[i]  ) Range2D(x0,x1,y0,yc);
+	      new (&ranges[N++]) Range2D(x0,x1,yc,y1);
+	    }
+	  }
+	}
+	
+	/* recurse */
+	BBox3fa bounds = empty;
+	BVH4::Node* node = (BVH4::Node*) alloc.malloc(sizeof(BVH4::Node),16); node->clear();
+	for (size_t i=0; i<N; i++) {
+	  std::pair<BBox3fa,BVH4::NodeRef> child = createLazyPrims(alloc,ranges[i].x0,ranges[i].x1,ranges[i].y0,ranges[i].y1);
+	  node->set(i++,child.first,child.second);
+	  bounds.extend(child.first);
+	}
+	return std::pair<BBox3fa,BVH4::NodeRef>(bounds,BVH4::encodeNode2(node));
+      }
+    
+    struct LazyLeaf
+    {
+      /*! Construction from vertices and IDs. */
+      __forceinline LazyLeaf (BVH4* bvh,
+			      BVH4::NodeRef* parent,
+			      const unsigned int geomID, 
+			      const unsigned int primID, 
+			      const unsigned int quadID,
+			      const unsigned int x0,
+			      const unsigned int x1,
+			      const unsigned int y0,
+			      const unsigned int y1)
+	
+	: initializing(0), initialized(0), bvh(bvh), parent(parent), geomID(geomID), primID(primID), quadID(quadID), x0(x0), x1(x1), y0(y0), y1(y1) {}
+    
+
+      __forceinline BBox3fa bounds()
+      {
+	BBox3fa box = empty;
+
+	/* build sub-BVH */
+	Scene* scene = (Scene*) bvh->geometry;
+	SubdivMesh* mesh = scene->getSubdivMesh(geomID);
+	BVH4::NodeRef node = BVH4::emptyNode;
+
+	feature_adaptive_subdivision_eval(mesh->getHalfEdge(primID),mesh->getVertexPositionPtr(), // FIXME: only recurse into one sub-quad
+					  [&](const CatmullClarkPatch& patch, const Vec2f uv[4], const int subdiv[4], const int id)
+	{
+	  if (id != quadID) return;
+	  
+	  const float l0 = patch.ring[0].edge_level;
+	  const float l1 = patch.ring[1].edge_level;
+	  const float l2 = patch.ring[2].edge_level;
+	  const float l3 = patch.ring[3].edge_level;
+	  const DiscreteTessellationPattern pattern0(l0,subdiv[0]);
+	  const DiscreteTessellationPattern pattern1(l1,subdiv[1]);
+	  const DiscreteTessellationPattern pattern2(l2,subdiv[2]);
+	  const DiscreteTessellationPattern pattern3(l3,subdiv[3]);
+	  const DiscreteTessellationPattern pattern_x = pattern0.size() > pattern2.size() ? pattern0 : pattern2;
+	  const DiscreteTessellationPattern pattern_y = pattern1.size() > pattern3.size() ? pattern1 : pattern3;
+	  const int nx = pattern_x.size();
+	  const int ny = pattern_y.size();
+	  const size_t width  = x1-x0+1;
+	  const size_t height = y1-y0+1;
+	  Grid* leaf = new (alloca(sizeof(Grid)+width*height*sizeof(Vec3fa))) Grid(width,height,geomID,primID);
+	  leaf->build(scene,patch,x0,x1,y0,y1,uv[0],uv[1],uv[2],uv[3],pattern0,pattern1,pattern2,pattern3,pattern_x,pattern_y);
+	  box = leaf->bounds();
+	});
+
+	return box;
+      }
+
+      size_t initialize()
+      {
+	/* let only one thread lazily build this object */
+	if (atomic_add(&initializing,1) != 0) {
+	  while (!initialized) __pause();
+	  return (size_t)parent;
+	}
+	
+	/* build sub-BVH */
+	Scene* scene = (Scene*) bvh->geometry;
+	SubdivMesh* mesh = scene->getSubdivMesh(geomID);
+	BVH4::NodeRef node = BVH4::emptyNode;
+
+	FastAllocator::Thread alloc(&bvh->alloc2); // FIXME: should be thread local
+	
+	feature_adaptive_subdivision_eval(mesh->getHalfEdge(primID),mesh->getVertexPositionPtr(), // FIXME: only recurse into one sub-quad
+					  [&](const CatmullClarkPatch& patch, const Vec2f uv[4], const int subdiv[4], const int id)
+	{
+	  if (id != quadID || node != BVH4::emptyNode) return;
+	  
+	  const float l0 = patch.ring[0].edge_level;
+	  const float l1 = patch.ring[1].edge_level;
+	  const float l2 = patch.ring[2].edge_level;
+	  const float l3 = patch.ring[3].edge_level;
+	  const DiscreteTessellationPattern pattern0(l0,subdiv[0]);
+	  const DiscreteTessellationPattern pattern1(l1,subdiv[1]);
+	  const DiscreteTessellationPattern pattern2(l2,subdiv[2]);
+	  const DiscreteTessellationPattern pattern3(l3,subdiv[3]);
+	  const DiscreteTessellationPattern pattern_x = pattern0.size() > pattern2.size() ? pattern0 : pattern2;
+	  const DiscreteTessellationPattern pattern_y = pattern1.size() > pattern3.size() ? pattern1 : pattern3;
+	  const int nx = pattern_x.size();
+	  const int ny = pattern_y.size();
+	  Grid* leaf = Grid::create(alloc,x1-x0+1,y1-y0+1,geomID,primID);
+	  leaf->build(scene,patch,x0,x1,y0,y1,uv[0],uv[1],uv[2],uv[3],pattern0,pattern1,pattern2,pattern3,pattern_x,pattern_y);
+	  node = leaf->createLazyPrims(alloc,x0,x1,y0,y1).second;
+	});
+	
+	/* link to sub-BVH */
+	*parent = node;
+	__memory_barrier();
+	initialized = 1;
+	return (size_t)node;
+      }
+      
+    public:
+      volatile atomic_t initializing; // FIXME: reduce size
+      volatile char initialized; 
+            
+    public:
+      BVH4* bvh;
+      BVH4::NodeRef* parent;
+      unsigned int geomID;
+      unsigned int primID;
+      unsigned short quadID;
+      unsigned short x0;
+      unsigned short x1;
+      unsigned short y0;
+      unsigned short y1;
+    };
+    
+    static size_t createLazy(BVH4* bvh, BVH4::NodeRef* parent, unsigned geomID, unsigned primID, unsigned quadID, unsigned width, unsigned height, 
+			     FastAllocator::Thread& alloc, PrimRef* prims)
+    {
+      size_t N = 0;
+      for (size_t y=0; y<height; y+=16)
+      {
+	for (size_t x=0; x<width; x+=16) 
+	{
+	  const size_t lx0 = x, lx1 = min(lx0+16,width);
+	  const size_t ly0 = y, ly1 = min(ly0+16,height);
+	  LazyLeaf* leaf = new (alloc.malloc(sizeof(LazyLeaf))) LazyLeaf(bvh,parent,geomID,primID,quadID,lx0,lx1,ly0,ly1);
+	  prims[N++] = PrimRef(leaf->bounds(),BVH4::encodeTypedLeaf(leaf,1));
+	}
+      }
+      return N;
+    }
+    
   public:
     unsigned width;
     unsigned height;

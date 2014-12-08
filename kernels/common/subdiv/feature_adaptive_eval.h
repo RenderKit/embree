@@ -17,6 +17,7 @@
 #pragma once
 
 #include "catmullclark_patch.h"
+#include "bspline_patch.h"
 
 namespace embree
 {
@@ -137,7 +138,7 @@ namespace embree
   {
     Tessellator& tessellator;
 
-    __forceinline FeatureAdaptiveEvalSubdivision (int primID, const SubdivMesh::HalfEdge* h, const Vec3fa* vertices, Tessellator& tessellator)
+    __forceinline FeatureAdaptiveEvalSubdivision (const SubdivMesh::HalfEdge* h, const Vec3fa* vertices, Tessellator& tessellator)
       : tessellator(tessellator)
     {
       int neighborSubdiv[GeneralCatmullClarkPatch::SIZE];
@@ -155,7 +156,7 @@ namespace embree
       {
 	const Vec2f uv[4] = { Vec2f(0.0f,0.0f), Vec2f(0.0f,1.0f), Vec2f(1.0f,1.0f), Vec2f(1.0f,0.0f) };
 	CatmullClarkPatch qpatch; patch.init(qpatch);
-	subdivide(qpatch,depth,uv,neighborSubdiv);
+	subdivide(qpatch,depth,uv,neighborSubdiv,0);
 	return;
       }
 
@@ -184,9 +185,9 @@ namespace embree
 	const int neighborSubdiv0[4] = { false,childSubdiv[1],childSubdiv[2],false };
 	const int neighborSubdiv1[4] = { false,childSubdiv[2],childSubdiv[0],false };
 	const int neighborSubdiv2[4] = { false,childSubdiv[0],childSubdiv[1],false };
-	subdivide(patches[0],depth+1, uv0, neighborSubdiv0);
-	subdivide(patches[1],depth+1, uv1, neighborSubdiv1);
-	subdivide(patches[2],depth+1, uv2, neighborSubdiv2);
+	subdivide(patches[0],depth+1, uv0, neighborSubdiv0, 0);
+	subdivide(patches[1],depth+1, uv1, neighborSubdiv1, 1);
+	subdivide(patches[2],depth+1, uv2, neighborSubdiv2, 2);
       } 
 
       /* parametrization for quads */
@@ -208,10 +209,10 @@ namespace embree
 	const int neighborSubdiv1[4] = { false,childSubdiv[2],childSubdiv[0],false };
 	const int neighborSubdiv2[4] = { false,childSubdiv[3],childSubdiv[1],false };
 	const int neighborSubdiv3[4] = { false,childSubdiv[0],childSubdiv[2],false };
-	subdivide(patches[0],depth+1, uv0, neighborSubdiv0);
-	subdivide(patches[1],depth+1, uv1, neighborSubdiv1);
-	subdivide(patches[2],depth+1, uv2, neighborSubdiv2);
-	subdivide(patches[3],depth+1, uv3, neighborSubdiv3);
+	subdivide(patches[0],depth+1, uv0, neighborSubdiv0, 0);
+	subdivide(patches[1],depth+1, uv1, neighborSubdiv1, 1);
+	subdivide(patches[2],depth+1, uv2, neighborSubdiv2, 2);
+	subdivide(patches[3],depth+1, uv3, neighborSubdiv3, 3);
       } 
 
       /* parametrization for arbitrary polygons */
@@ -221,20 +222,20 @@ namespace embree
 	{
 	  const Vec2f uv[4] = { Vec2f(float(i)+0.0f,0.0f),Vec2f(float(i)+0.0f,1.0f),Vec2f(float(i)+1.0f,1.0f),Vec2f(float(i)+1.0f,0.0f) };
 	  const int neighborSubdiv[4] = { false,childSubdiv[(i+1)%N],childSubdiv[(i-1)%N],false };
-	  subdivide(patches[i],depth+1,uv,neighborSubdiv);
+	  subdivide(patches[i],depth+1,uv,neighborSubdiv, i);
 	}
       }
     }
     
-    void subdivide(const CatmullClarkPatch& patch, int depth, const Vec2f uv[4], const int neighborSubdiv[4]) {
-      return tessellator(patch,uv,neighborSubdiv);
+    void subdivide(const CatmullClarkPatch& patch, int depth, const Vec2f uv[4], const int neighborSubdiv[4], const int id) {
+      return tessellator(patch,uv,neighborSubdiv,id);
     }
   };
 
    template<typename Tessellator>
-     inline void feature_adaptive_subdivision_eval (int primID, const SubdivMesh::HalfEdge* h, const Vec3fa* vertices, Tessellator tessellator)
+     inline void feature_adaptive_subdivision_eval (const SubdivMesh::HalfEdge* h, const Vec3fa* vertices, Tessellator tessellator)
    {
-     FeatureAdaptiveEvalSubdivision<Tessellator>(primID,h,vertices,tessellator);
+     FeatureAdaptiveEvalSubdivision<Tessellator>(h,vertices,tessellator);
    }
 }
 

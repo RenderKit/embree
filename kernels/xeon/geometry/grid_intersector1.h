@@ -22,9 +22,27 @@
 
 namespace embree
 {
+  struct GridLazyLeafIntersector1
+  {
+    typedef typename Grid::LazyLeaf Primitive;
+
+    struct Precalculations {
+      __forceinline Precalculations (const Ray& ray) {}
+    };
+
+    static __forceinline void intersect(const Precalculations& pre, Ray& ray, Primitive& prim, const void* geom, size_t& lazy_node) {
+      lazy_node = prim.initialize();
+    }
+    
+    static __forceinline bool occluded(const Precalculations& pre, Ray& ray, Primitive& prim, const void* geom, size_t& lazy_node) {
+      lazy_node = prim.initialize();
+      return false;
+    }
+  };
+
   struct GridIntersector1
   {
-    typedef typename Grid::QuadList Primitive;
+    typedef typename Grid::EagerLeaf Primitive;
 
     struct Precalculations 
     {
@@ -256,26 +274,26 @@ namespace embree
         const size_t i = __bscf(mask);
 	const size_t ofs = prim.quads[i].ofs;
 	switch (prim.quads[i].type) {
-	case Grid::QuadList::Quads::QUAD1X1: {
+	case Grid::EagerLeaf::Quads::QUAD1X1: {
 	  const Vec3fa& v00 = prim.grid.point(ofs,0), v10 = (&v00)[1];
 	  const Vec3fa& v01 = prim.grid.point(ofs,1), v11 = (&v01)[1];
 	  intersectQuad(ray, v00,v10,v01,v11, prim);
 	  break;
 	}
-	case Grid::QuadList::Quads::QUAD1X2: {
+	case Grid::EagerLeaf::Quads::QUAD1X2: {
 	  const Vec3fa& v00 = prim.grid.point(ofs,0), v10 = (&v00)[1];
 	  const Vec3fa& v01 = prim.grid.point(ofs,1), v11 = (&v01)[1];
 	  const Vec3fa& v02 = prim.grid.point(ofs,2), v12 = (&v02)[1];
 	  intersectQuads(ray, v00,v01,v02,v10,v11,v12, prim);
 	  break;
 	}
-	case Grid::QuadList::Quads::QUAD2X1: {
+	case Grid::EagerLeaf::Quads::QUAD2X1: {
 	  const Vec3fa& v00 = prim.grid.point(ofs,0), v10 = (&v00)[1], v20 = (&v00)[2];
 	  const Vec3fa& v01 = prim.grid.point(ofs,1), v11 = (&v01)[1], v21 = (&v01)[2];
 	  intersectQuads(ray, v00,v10,v20,v01,v11,v21, prim);
 	  break;
 	}
-	case Grid::QuadList::Quads::QUAD2X2: {
+	case Grid::EagerLeaf::Quads::QUAD2X2: {
 	  const Vec3fa& v00 = prim.grid.point(ofs,0), v10 = (&v00)[1], v20 = (&v00)[2];
 	  const Vec3fa& v01 = prim.grid.point(ofs,1), v11 = (&v01)[1], v21 = (&v01)[2];
 	  const Vec3fa& v02 = prim.grid.point(ofs,2), v12 = (&v02)[1], v22 = (&v02)[2];

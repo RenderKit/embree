@@ -501,7 +501,7 @@ namespace embree
 
 	    GregoryPatch patcheval; patcheval.init(patch);
 	    //BSplinePatch patcheval; patcheval.init(patch);
-            size_t N = Grid::create(mesh->id,f,scene,patcheval,alloc,&prims[base.size()+s.size()],0,nx,0,ny,uv,pattern0,pattern1,pattern2,pattern3,pattern_x,pattern_y);
+            size_t N = Grid::createEager(mesh->id,f,scene,patcheval,alloc,&prims[base.size()+s.size()],0,nx,0,ny,uv,pattern0,pattern1,pattern2,pattern3,pattern_x,pattern_y);
 	    assert(N == Grid::getNumEagerLeaves(nx,ny));
 	    for (size_t i=0; i<N; i++)
 	      s.add(prims[base.size()+s.size()].bounds());
@@ -545,8 +545,8 @@ namespace embree
 	{
           if (!mesh->valid(f)) continue;
 	  
-	  feature_adaptive_subdivision_eval(f,mesh->getHalfEdge(f),mesh->getVertexPositionPtr(),
-					    [&](const CatmullClarkPatch& patch, const Vec2f uv[4], const int subdiv[4])
+	  feature_adaptive_subdivision_eval(mesh->getHalfEdge(f),mesh->getVertexPositionPtr(),
+					    [&](const CatmullClarkPatch& patch, const Vec2f uv[4], const int subdiv[4], const int id)
 	  {
  	    const float l0 = patch.ring[0].edge_level;
 	    const float l1 = patch.ring[1].edge_level;
@@ -577,8 +577,8 @@ namespace embree
         for (size_t f=r.begin(); f!=r.end(); ++f) {
           if (!mesh->valid(f)) continue;
 	  
-	  feature_adaptive_subdivision_eval(f,mesh->getHalfEdge(f),mesh->getVertexPositionPtr(),
-					    [&](const CatmullClarkPatch& patch, const Vec2f uv[4], const int subdiv[4])
+	  feature_adaptive_subdivision_eval(mesh->getHalfEdge(f),mesh->getVertexPositionPtr(),
+					    [&](const CatmullClarkPatch& patch, const Vec2f uv[4], const int subdiv[4], const int id)
 	  {
 	    const float l0 = patch.ring[0].edge_level;
 	    const float l1 = patch.ring[1].edge_level;
@@ -592,7 +592,7 @@ namespace embree
 	    const TessellationPattern pattern_y = pattern1.size() > pattern3.size() ? pattern1 : pattern3;
 	    const int nx = pattern_x.size();
 	    const int ny = pattern_y.size();
-	    size_t N = Grid::create(mesh->id,f,scene,patch,alloc,&prims[base.size()+s.size()],0,nx,0,ny,uv,pattern0,pattern1,pattern2,pattern3,pattern_x,pattern_y);
+	    size_t N = Grid::createEager(mesh->id,f,scene,patch,alloc,&prims[base.size()+s.size()],0,nx,0,ny,uv,pattern0,pattern1,pattern2,pattern3,pattern_x,pattern_y);
 	    assert(N == Grid::getNumEagerLeaves(nx,ny));
 	    for (size_t i=0; i<N; i++)
 	      s.add(prims[base.size()+s.size()].bounds());
@@ -610,52 +610,32 @@ namespace embree
     // =======================================================================================================
     // =======================================================================================================
 
-#if 0
+    BVH4SubdivGridLazyBuilderFast::BVH4SubdivGridLazyBuilderFast (BVH4* bvh, Scene* scene, size_t listMode) 
+      : BVH4BuilderFastT<Grid::LazyLeaf*>(bvh,scene,listMode,0,0,false,0,1,1,true) { this->bvh->alloc2.init(4096,4096); } 
 
     template<>
-    void BVH4BuilderFastT<SubdivPatchDispl1>::createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID)
+    void BVH4BuilderFastT<Grid::LazyLeaf*>::createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID)
     {
-      size_t items = current.size();
-      size_t start = current.begin;
-      if (items != 1) THROW_RUNTIME_ERROR("SubdivPatchDispl1: internal error");
-            
-      /* allocate leaf node */
-      SubdivPatchDispl1* accel = (SubdivPatchDispl1*) leafAlloc.malloc(sizeof(SubdivPatchDispl1));
-            
-      const PrimRef& prim = prims[start];
-      const unsigned int last   = listMode && !prims;
-      const unsigned int geomID = prim.geomID();
-      const unsigned int primID = prim.primID();
-      const SubdivMesh* const subdiv_mesh = scene->getSubdivMesh(geomID);
-      new (accel) SubdivPatchDispl1(bvh->alloc2,
-                                    *current.parent,
-                                    scene, 
-                                    subdiv_mesh->getHalfEdge(primID),
-                                    subdiv_mesh->getVertexPositionPtr(),
-                                    geomID,
-                                    primID,
-                                    SUBDIVISION_LEVEL_DISPL,
-                                    true); 
-      
-      *current.parent = bvh->encodeLeaf((char*)accel,1);
+      assert(current.size() == 1);
+      size_t ty = 0;
+      Grid::LazyLeaf* leaf = (Grid::LazyLeaf*) ((BVH4::NodeRef) prims[current.begin].ID()).leaf(ty);
+      leaf->parent = current.parent;
+      assert(ty == 1);
     }
 
-    BVH4SubdivGridLazyBuilderFast::BVH4SubdivGridLazyBuilderFast (BVH4* bvh, Scene* scene, size_t listMode) 
-      : BVH4BuilderFastT<PrimRef>(bvh,scene,listMode,0,0,false,sizeof(Grid),1,1,true) { this->bvh->alloc2.init(4096,4096); } 
-
-   void BVH4SubdivGridLazyBuilderFast::build(size_t threadIndex, size_t threadCount)
-   {
+    void BVH4SubdivGridLazyBuilderFast::build(size_t threadIndex, size_t threadCount)
+    {
       /* initialize all half edge structures */
-     new (&iter) Scene::Iterator<SubdivMesh>(this->scene);
-     for (size_t i=0; i<iter.size(); i++)
-       if (iter[i]) iter[i]->initializeHalfEdgeStructures();
-
-     /* initialize allocator and parallel_for_for_prefix_sum */
-     this->bvh->alloc2.reset();
-     pstate.init(iter,size_t(1024));
-
-     BVH4BuilderFast::build(threadIndex,threadCount);
-   }
+      new (&iter) Scene::Iterator<SubdivMesh>(this->scene);
+      for (size_t i=0; i<iter.size(); i++)
+	if (iter[i]) iter[i]->initializeHalfEdgeStructures();
+      
+      /* initialize allocator and parallel_for_for_prefix_sum */
+      this->bvh->alloc2.reset();
+      pstate.init(iter,size_t(1024));
+      
+      BVH4BuilderFast::build(threadIndex,threadCount);
+    }
 
     size_t BVH4SubdivGridLazyBuilderFast::number_of_primitives() 
     {
@@ -666,8 +646,8 @@ namespace embree
 	{
           if (!mesh->valid(f)) continue;
 	  
-	  feature_adaptive_subdivision_eval(f,mesh->getHalfEdge(f),mesh->getVertexPositionPtr(),
-					    [&](const CatmullClarkPatch& patch, const Vec2f uv[4], const int subdiv[4])
+	  feature_adaptive_subdivision_eval(mesh->getHalfEdge(f),mesh->getVertexPositionPtr(),
+					    [&](const CatmullClarkPatch& patch, const Vec2f uv[4], const int subdiv[4], const int id)
 	  {
  	    const float l0 = patch.ring[0].edge_level;
 	    const float l1 = patch.ring[1].edge_level;
@@ -698,8 +678,8 @@ namespace embree
         for (size_t f=r.begin(); f!=r.end(); ++f) {
           if (!mesh->valid(f)) continue;
 	  
-	  feature_adaptive_subdivision_eval(f,mesh->getHalfEdge(f),mesh->getVertexPositionPtr(),
-					    [&](const CatmullClarkPatch& patch, const Vec2f uv[4], const int subdiv[4])
+	  feature_adaptive_subdivision_eval(mesh->getHalfEdge(f),mesh->getVertexPositionPtr(),
+					    [&](const CatmullClarkPatch& patch, const Vec2f uv[4], const int subdiv[4], const int id)
 	  {
 	    const float l0 = patch.ring[0].edge_level;
 	    const float l1 = patch.ring[1].edge_level;
@@ -713,7 +693,7 @@ namespace embree
 	    const TessellationPattern pattern_y = pattern1.size() > pattern3.size() ? pattern1 : pattern3;
 	    const int nx = pattern_x.size();
 	    const int ny = pattern_y.size();
-	    size_t N = Grid::create(mesh->id,f,scene,patch,alloc,&prims[base.size()+s.size()],0,nx,0,ny,uv,pattern0,pattern1,pattern2,pattern3,pattern_x,pattern_y);
+	    size_t N = Grid::createLazy(bvh,NULL,mesh->id,f,id,nx,ny,alloc,&prims[base.size()+s.size()]);
 	    assert(N == Grid::getNumLazyLeaves(nx,ny));
 	    for (size_t i=0; i<N; i++)
 	      s.add(prims[base.size()+s.size()].bounds());
@@ -726,8 +706,6 @@ namespace embree
     void BVH4SubdivGridLazyBuilderFast::create_primitive_array_parallel  (size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, PrimInfo& pinfo) {
       create_primitive_array_sequential(threadIndex, threadCount, pinfo);  // FIXME: parallelize
     }
-
-#endif
     
     // =======================================================================================================
     // ============================ similar builder as for MIC ===============================================

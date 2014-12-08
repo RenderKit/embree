@@ -21,6 +21,7 @@
 #include "builders/workstack.h"
 #include "common/scene_user_geometry.h"
 #include "common/scene_subdiv_mesh.h"
+#include "geometry/grid.h"
 
 #include "algorithms/parallel_for_for.h"
 #include "algorithms/parallel_for_for_prefix_sum.h"
@@ -296,6 +297,20 @@ namespace embree
     {
     public:
       BVH4SubdivGridEagerBuilderFast (BVH4* bvh, Scene* scene, size_t listMode);
+      virtual void build(size_t threadIndex, size_t threadCount);
+
+      size_t number_of_primitives();
+      void create_primitive_array_sequential(size_t threadIndex, size_t threadCount, PrimInfo& pinfo);
+      void create_primitive_array_parallel  (size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, PrimInfo& pinfo);
+
+      Scene::Iterator<SubdivMesh> iter;
+      ParallelForForPrefixSumState<PrimInfo> pstate;
+    };
+
+    class BVH4SubdivGridLazyBuilderFast : public BVH4BuilderFastT<Grid::LazyLeaf*>
+    {
+    public:
+      BVH4SubdivGridLazyBuilderFast (BVH4* bvh, Scene* scene, size_t listMode);
       virtual void build(size_t threadIndex, size_t threadCount);
 
       size_t number_of_primitives();
