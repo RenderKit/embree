@@ -35,11 +35,10 @@ namespace embree
   }
 
   /*! Construction from vertices and IDs. */
-    SubdivPatch1Cached::SubdivPatch1Cached (const SubdivMesh::HalfEdge * first_half_edge,
-                                            const Vec3fa *vertices,
-                                            const unsigned int gID,
-                                            const unsigned int pID,
-                                            const SubdivMesh *const mesh) 
+  SubdivPatch1Cached::SubdivPatch1Cached (const CatmullClarkPatch& ipatch,
+					  const unsigned int gID,
+					  const unsigned int pID,
+					  const SubdivMesh *const mesh) 
       : geom(gID),
         prim(pID),  
         flags(0)
@@ -48,10 +47,6 @@ namespace embree
 
       u_range = Vec2f(0.0f,1.0f);
       v_range = Vec2f(0.0f,1.0f);
-
-      /* init irregular patch */
-
-      CatmullClarkPatch ipatch ( first_half_edge, vertices ); 
 
       /* init discrete edge tessellation levels and grid resolution */
 

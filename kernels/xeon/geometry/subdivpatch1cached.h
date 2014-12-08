@@ -154,8 +154,7 @@ namespace embree
     __forceinline SubdivPatch1Cached () {}
 
     /*! Construction from vertices and IDs. */
-    SubdivPatch1Cached (const SubdivMesh::HalfEdge * first_half_edge,
-                        const Vec3fa *vertices,
+    SubdivPatch1Cached (const CatmullClarkPatch& ipatch,
                         const unsigned int gID,
                         const unsigned int pID,
                         const SubdivMesh *const mesh);
@@ -381,63 +380,9 @@ namespace embree
       return get64BytesBlocksForGridSubTree(GridRange(0,grid_u_res-1,0,grid_v_res-1),leafBlocks);
     }
 
-
     /*! returns required number of primitive blocks for N primitives */
     static __forceinline size_t blocks(size_t N) { return N; }
 
-    /*! return geometry ID */
-    template<bool list>
-    __forceinline unsigned int geomID() const { 
-      return geom; 
-    }
-
-    /*! return primitive ID */
-    template<bool list>
-    __forceinline unsigned int primID() const { 
-      if (list) return prim & 0x7FFFFFFF; 
-      else      return prim; 
-    }
-
-    /*! checks if this is the last primitive in list leaf mode */
-    __forceinline int last() const { 
-      return prim & 0x80000000; 
-    }
-
-    /*! builder interface to fill primitive */
-    __forceinline void fill(atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, Scene* scene, const bool list)
-    {
-      const PrimRef& prim = *prims;
-      prims++;
-
-      //const unsigned int last   = list && !prims;
-      const unsigned int geomID = prim.geomID();
-      const unsigned int primID = prim.primID();
-      const SubdivMesh* const subdiv_mesh = scene->getSubdivMesh(geomID);
-      new (this) SubdivPatch1Cached(subdiv_mesh->getHalfEdge(primID),
-                                    subdiv_mesh->getVertexPositionPtr(),
-                                    geomID,
-                                    primID,
-                                    subdiv_mesh); 
-    }
-
-    /*! builder interface to fill primitive */
-    __forceinline void fill(const PrimRef* prims, size_t& i, size_t end, Scene* scene, const bool list)
-    {
-      const PrimRef& prim = prims[i];
-      i++;
-
-      //const unsigned int last = list && i >= end;
-      const unsigned int geomID = prim.geomID();
-      const unsigned int primID = prim.primID();
-      const SubdivMesh* const subdiv_mesh = scene->getSubdivMesh(geomID);
-      new (this) SubdivPatch1Cached(subdiv_mesh->getHalfEdge(primID),
-                                    subdiv_mesh->getVertexPositionPtr(),
-                                    geomID,
-                                    primID,
-                                    subdiv_mesh); 
-    }
-
-    
   public:
     Vec2f u_range;
     Vec2f v_range;
