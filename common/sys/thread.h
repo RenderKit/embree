@@ -62,8 +62,9 @@ namespace embree
   struct ThreadLocal
   {
   public:
+
     __forceinline ThreadLocal (void* init) 
-      : ptr(NULL), init(init) {}
+      : ptr(createTls()), init(init) {}
 
     __forceinline ~ThreadLocal () 
     {
@@ -72,17 +73,27 @@ namespace embree
 	delete threads[i];
     }
 
+    /*! disallow copy */
+    ThreadLocal(const ThreadLocal&) = delete;
+    ThreadLocal& operator=(const ThreadLocal&) = delete;
+
+    __forceinline void reset()
+    {
+      for (size_t i=0; i<threads.size(); i++)
+	threads[i]->reset();
+    }
+    
     __forceinline Type* get() const
     {
-      if (ptr == NULL) {
-	Lock<AtomicMutex> lock(mutex);
-	if (ptr == NULL) ptr = createTls();
-      }
-      Type* lptr = getTls(ptr);
+      //if (ptr == NULL) {
+      //Lock<AtomicMutex> lock(mutex);
+      //if (ptr == NULL) ptr = createTls();
+      //}
+      Type* lptr = (Type*) getTls(ptr);
       if (unlikely(lptr == NULL)) {
 	setTls(ptr,lptr = new Type(init));
 	Lock<AtomicMutex> lock(mutex);
-	lst.push_back(lptr);
+	threads.push_back(lptr);
       }
       return lptr;
     }
@@ -92,11 +103,12 @@ namespace embree
     __forceinline const Type* operator ->( void ) const { return  get(); }
     __forceinline       Type* operator ->( void )       { return  get(); }
     
+    
   private:
-    tls_t ptr;
+    mutable tls_t ptr;
     void* init;
-    AtomicMutex mutex;
-    std::vector<Type*> threads;
+    mutable AtomicMutex mutex;
+    mutable std::vector<Type*> threads;
   };
 
 #if defined(__MIC__)

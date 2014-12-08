@@ -283,9 +283,20 @@ namespace embree
       ALIGNED_CLASS_(64);
     public:
 
+      /*! Constructor for usage with ThreadLocal */
+      __forceinline Thread (void* alloc) 
+	: alloc((FastAllocator*)alloc), ptr(NULL), cur(0), end(0), allocBlockSize(4096) {}
+
       /*! Default constructor. */
       __forceinline Thread (FastAllocator* alloc, const size_t allocBlockSize = 4096) 
 	: alloc(alloc), ptr(NULL), cur(0), end(0), allocBlockSize(allocBlockSize) {}
+
+      /*! resets the allocator */
+      __forceinline void reset() 
+      {
+	ptr = NULL;
+	cur = end = 0;
+      }
 
       /* Allocate aligned memory from the threads memory block. */
       __forceinline void* malloc(size_t bytes, size_t align = 16) 
