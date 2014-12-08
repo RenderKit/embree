@@ -125,12 +125,6 @@ namespace embree
 	//ray.v    = uvw[1] * rcpDet;
 	ray.tfar = t;
 	ray.Ng   = Ng;
-	/*float u = U * rcpDet;
-	  float v = V * rcpDet;
-	  float w = 1.0f-u-v;
-          ray.Ng.x = float(size_t(prim.id)>>4  & 0xFF)/255.0f * (0.5f+0.5f*u);
-          ray.Ng.y = float(size_t(prim.id)>>8  & 0xFF)/255.0f * (0.5f+0.5f*v);
-          ray.Ng.z = float(size_t(prim.id)>>16 & 0xFF)/255.0f * (0.5f+0.5f*w);*/
 	ray.geomID  = prim.grid.geomID;
 	ray.primID  = prim.grid.primID;
       }
@@ -194,6 +188,16 @@ namespace embree
         intersectFinish(ray,q21,q20,q11,extract<1>(u001_u101),prim);
     }
 
+#else
+    __forceinline static void intersectDualQuad(Ray& ray, const Vec3fa& O, const Vec3fa& D,
+						const Vec3fa& q00, const Vec3fa& q01, 
+						const Vec3fa& q10, const Vec3fa& q11,
+						const Vec3fa& q20, const Vec3fa& q21,
+						const Primitive& prim)
+    {
+      intersectQuad(ray,O,D, q00,q01,q10,q11, prim);
+      intersectQuad(ray,O,D, q10,q11,q20,q21, prim);
+    }
 #endif
 
     static __forceinline void intersectQuad (Ray& ray, 
@@ -217,13 +221,7 @@ namespace embree
       const Vec3fa D = ray.dir;
       const Vec3fa q00 = copy_a(v00-O,v00), q10 = copy_a(v10-O,v10), q20 = copy_a(v20-O,v20);
       const Vec3fa q01 = copy_a(v01-O,v01), q11 = copy_a(v11-O,v11), q21 = copy_a(v21-O,v21);
-
-#if defined(__AVX__)
       intersectDualQuad(ray,O,D,q00,q01,q10,q11,q20,q21,prim);
-#else
-      intersectQuad(ray,O,D, q00,q01,q10,q11, prim);
-      intersectQuad(ray,O,D, q10,q11,q20,q21, prim);
-#endif
     }
 
     static __forceinline void intersectQuads (Ray& ray, 
@@ -237,16 +235,8 @@ namespace embree
       const Vec3fa q00 = copy_a(v00-O,v00), q10 = copy_a(v10-O,v10), q20 = copy_a(v20-O,v20);
       const Vec3fa q01 = copy_a(v01-O,v01), q11 = copy_a(v11-O,v11), q21 = copy_a(v21-O,v21);
       const Vec3fa q02 = copy_a(v02-O,v02), q12 = copy_a(v12-O,v12), q22 = copy_a(v22-O,v22);
-
-#if defined(__AVX__)
       intersectDualQuad(ray,O,D,q00,q01,q10,q11,q20,q21,prim);
       intersectDualQuad(ray,O,D,q01,q02,q11,q12,q21,q22,prim);
-#else
-      intersectQuad(ray,O,D, q00,q01,q10,q11, prim);
-      intersectQuad(ray,O,D, q01,q02,q11,q12, prim);
-      intersectQuad(ray,O,D, q10,q11,q20,q21, prim);
-      intersectQuad(ray,O,D, q11,q12,q21,q22, prim);
-#endif
     }
     
     /*! Intersect a ray with the triangle and updates the hit. */
