@@ -171,7 +171,7 @@ namespace embree
       }
 
     /* initialize cache */
-    __forceinline void init()
+    void init()
     {
 
       clear();
