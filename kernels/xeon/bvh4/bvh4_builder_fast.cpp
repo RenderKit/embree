@@ -554,7 +554,7 @@ namespace embree
     {
       pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
       {
-	FastAllocator::Thread alloc(&bvh->alloc2); // FIXME: should be thread local
+	FastAllocator::Thread& alloc = *bvh->alloc2_thread_local;
 
 	PrimInfo s(empty);
         for (size_t f=r.begin(); f!=r.end(); ++f) {
