@@ -24,6 +24,7 @@
 
 #define COMPUTE_SUBDIV_NORMALS_AFTER_PATCH_INTERSECTION 0
 #define FORCE_TRIANGLE_UV 0
+#define DISCRITIZED_UV 1
 
 namespace embree
 {
@@ -34,7 +35,6 @@ namespace embree
    
     Quad2x2() 
       {
-        assert( (sizeof(Quad2x2)+63)/64 == 4 ); /* need 4 cachelines */
       }
 
     /*  v00 - v01 - v02 */
@@ -47,17 +47,22 @@ namespace embree
     float vtx_x[12];
     float vtx_y[12];
     float vtx_z[12];
+#if DISCRITIZED_UV == 1
+    unsigned short vtx_u[12];
+    unsigned short vtx_v[12];
+#else
     float vtx_u[12];
     float vtx_v[12];
-
-    __forceinline ssef u16_to_float(const unsigned short *const source)
+#endif
+    static __forceinline ssef u16_to_ssef(const unsigned short *const source)
     {
-      return _mm_cvtpu16_ps(*(__m64*)source);
+      const ssei t = _mm_cvtepu16_epi32(loadu4i(source));
+      return ssef(t) * 1.0f/65535.0f;
     } 
 
-    __forceinline __m64 float_to_u16(const float *const source)
+    static __forceinline unsigned short float_to_u16(const float f)
     {
-      return _mm_cvtps_pi16(*(ssef*)source);
+      return (unsigned short)(f*65535.0f);
     } 
 
 
@@ -93,6 +98,38 @@ namespace embree
       dest[11] = v22;
     }
 
+    __forceinline void initFrom3x3Grid_discritized( const float *const source,
+                                                    unsigned short *const dest,
+                                                    const size_t offset_line0,
+                                                    const size_t offset_line1,
+                                                    const size_t offset_line2)
+    {
+      const float v00 = source[offset_line0 + 0];
+      const float v01 = source[offset_line0 + 1];
+      const float v02 = source[offset_line0 + 2];
+      const float v10 = source[offset_line1 + 0];
+      const float v11 = source[offset_line1 + 1];
+      const float v12 = source[offset_line1 + 2];
+      const float v20 = source[offset_line2 + 0];
+      const float v21 = source[offset_line2 + 1];
+      const float v22 = source[offset_line2 + 2];
+
+      /* v00 - v10 - v01 - v11 - v02 - v12 */
+      dest[ 0] = float_to_u16(v00);
+      dest[ 1] = float_to_u16(v10);
+      dest[ 2] = float_to_u16(v01);
+      dest[ 3] = float_to_u16(v11);
+      dest[ 4] = float_to_u16(v02);
+      dest[ 5] = float_to_u16(v12);
+      /* v10 - v20 - v11 - v21 - v12 - v22 */
+      dest[ 6] = float_to_u16(v10);
+      dest[ 7] = float_to_u16(v20);
+      dest[ 8] = float_to_u16(v11);
+      dest[ 9] = float_to_u16(v21);
+      dest[10] = float_to_u16(v12);
+      dest[11] = float_to_u16(v22);
+    }
+
     /* init from 3x3 point grid */
     void init( const float * const grid_x,
                const float * const grid_y,
@@ -106,8 +143,13 @@ namespace embree
       initFrom3x3Grid( grid_x, vtx_x, offset_line0, offset_line1, offset_line2 );
       initFrom3x3Grid( grid_y, vtx_y, offset_line0, offset_line1, offset_line2 );
       initFrom3x3Grid( grid_z, vtx_z, offset_line0, offset_line1, offset_line2 );
+#if DISCRITIZED_UV == 1
+      initFrom3x3Grid_discritized( grid_u, vtx_u, offset_line0, offset_line1, offset_line2 );
+      initFrom3x3Grid_discritized( grid_v, vtx_v, offset_line0, offset_line1, offset_line2 );
+#else
       initFrom3x3Grid( grid_u, vtx_u, offset_line0, offset_line1, offset_line2 );
       initFrom3x3Grid( grid_v, vtx_v, offset_line0, offset_line1, offset_line2 );
+#endif
     }
 
 #if defined(__AVX__)
@@ -116,12 +158,20 @@ namespace embree
       return avxf( *(ssef*)&source[0+offset], *(ssef*)&source[6+offset] );            
     }
 
+    __forceinline avxf combine_discritized( const unsigned short *const source, const size_t offset) const {
+      return avxf( u16_to_ssef(&source[0+offset]), u16_to_ssef(&source[6+offset]) );            
+    }
+
     __forceinline avx3f getVtx( const size_t offset, const size_t delta = 0 ) const {
       return avx3f(  combine(vtx_x,offset), combine(vtx_y,offset), combine(vtx_z,offset) );
     }
 
     __forceinline avx2f getUV( const size_t offset, const size_t delta = 0 ) const {
+#if DISCRITIZED_UV == 1
+      return avx2f(  combine_discritized(vtx_u,offset), combine_discritized(vtx_v,offset) );
+#else
       return avx2f(  combine(vtx_u,offset), combine(vtx_v,offset) );
+#endif
     }
 
 #else
@@ -131,14 +181,14 @@ namespace embree
     }
 
     __forceinline sse2f getUV( const size_t offset, const size_t delta = 0 ) const {
+#if DISCRITIZED_UV == 1
+      return sse2f( u16_to_ssef(&vtx_u[offset+delta]), u16_to_ssef(&vtx_v[offset+delta]) );
+#else
       return sse2f(  loadu4f(&vtx_u[offset+delta]), loadu4f(&vtx_v[offset+delta])  );
+#endif
     }
     
 #endif
-
-    __forceinline Vec2f getVtxUV( const size_t offset) const {
-      return Vec2f( vtx_u[offset], vtx_v[offset] );
-    }
 
 
     __forceinline BBox3fa bounds() const 
@@ -153,7 +203,7 @@ namespace embree
       return Vec3fa( vtx_x[i], vtx_y[i], vtx_z[i] );
     }
 
-    __forceinline Vec2f getVec2_uv(const size_t i) const {
+    __forceinline Vec2f getVec2f_uv(const size_t i) const {
       return Vec2f( vtx_u[i], vtx_v[i] );
     }
 
@@ -162,7 +212,7 @@ namespace embree
   /*! Outputs ray to stream. */
   inline std::ostream& operator<<(std::ostream& cout, const Quad2x2& qquad) {
     for (size_t i=0;i<12;i++)
-      cout << "i = " << i << " -> xyz = " << qquad.getVec3fa_xyz(i) << " uv = " << qquad.getVec2_uv(i) << std::endl;
+      cout << "i = " << i << " -> xyz = " << qquad.getVec3fa_xyz(i) << " uv = " << qquad.getVec2f_uv(i) << std::endl;
     return cout;
   }
 
@@ -244,25 +294,6 @@ namespace embree
 #endif
 
     size_t i = select_min(valid,t);
-
-
-    size_t strip_i = (i % 4) + ((i >= 4) ? 6 : 0) + delta;
-
-
-    const Vec2f _uv0 = qquad.getVtxUV( strip_i + 0);
-    const Vec2f _uv1 = qquad.getVtxUV( strip_i + 1);
-    const Vec2f _uv2 = qquad.getVtxUV( strip_i + 2);
-
-
-    assert( uv0[0][i] == _uv0[0]);
-    assert( uv0[1][i] == _uv0[1]);
-
-    assert( uv1[0][i] == _uv1[0]);
-    assert( uv1[1][i] == _uv1[1]);
-
-    assert( uv2[0][i] == _uv2[0]);
-    assert( uv2[1][i] == _uv2[1]);
-
 
     /* update hit information */
     ray.u      = u_final[i];

@@ -15,6 +15,8 @@
 // ======================================================================== //
 
 #include "subdivpatch1cached.h"
+#include "subdivpatch1cached_intersector1.h"
+
 #include "common/scene.h"
 
 namespace embree
@@ -100,7 +102,10 @@ namespace embree
       /* tessellate into 3x3 grid blocks for larger grid resolutions, generate bvh4 subtree over 3x3 grid blocks*/
 
       if (grid_size_8wide_blocks > 1)
-	grid_subtree_size_64b_blocks = getSubTreeSize64bBlocks( 4 ); // u,v,x,y,z 
+        {
+          const size_t blocks = (sizeof(Quad2x2)+63) / 64;
+          grid_subtree_size_64b_blocks = getSubTreeSize64bBlocks( blocks ); // u,v,x,y,z 
+        }
 
       /* determine whether patch is regular or not */
 

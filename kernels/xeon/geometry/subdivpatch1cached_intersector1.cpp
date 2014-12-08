@@ -153,7 +153,7 @@ namespace embree
         assert(u_size*v_size <= 9);
 
         const unsigned int currentIndex = localCounter;
-        localCounter += 4; // 4 cachelines for Quad2x2
+        localCounter +=  (sizeof(Quad2x2)+63) / 64; 
 
         Quad2x2 *qquad = (Quad2x2*)&lazymem[currentIndex*16];
 
@@ -176,7 +176,6 @@ namespace embree
             }
 
         /* set invalid grid u,v value to border elements */
-        // FIXME: use SIMD
         for (unsigned int y=0;y<3;y++)
           for (unsigned int x=u_size-1;x<3;x++)
             {

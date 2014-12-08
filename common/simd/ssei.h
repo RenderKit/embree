@@ -279,6 +279,10 @@ namespace embree
     return _mm_load_si128((__m128i*)a); 
   }
 
+  __forceinline ssei loadu4i( const void* const a ) { 
+    return _mm_loadu_si128((__m128i*)a); 
+  }
+
   __forceinline void store4i(void* ptr, const ssei& v) {
     _mm_store_si128((__m128i*)ptr,v);
   }
