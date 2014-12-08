@@ -493,6 +493,7 @@ namespace embree
           SubdivPatch1Cached* tag = (SubdivPatch1Cached*)subdiv_patch;
     
           BVH4::NodeRef root = local_cache->lookup(tag,commitCounter);
+          root.prefetch(0);
 
           if (unlikely(root == (size_t)-1))
             {
@@ -501,6 +502,10 @@ namespace embree
 
               TessellationCache::CacheTag &t = local_cache->request(tag,commitCounter,blocks);
               BVH4::Node* node = (BVH4::Node*)local_cache->getCacheMemoryPtr(t);
+              prefetchL1(((float*)node + 0*16));
+              prefetchL1(((float*)node + 1*16));
+              prefetchL1(((float*)node + 2*16));
+
               size_t new_root = (size_t)buildSubdivPatchTree(*subdiv_patch,node,((Scene*)geom)->getSubdivMesh(subdiv_patch->geom));
               assert( new_root != BVH4::invalidNode);
 
@@ -510,6 +515,8 @@ namespace embree
 
               return new_root;
             }
+
+
           return root;   
         }
 

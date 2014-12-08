@@ -62,6 +62,7 @@ namespace embree
 
         Quad2x2 *qquad = (Quad2x2*)&lazymem[currentIndex*16];
 
+#if 0
         float leaf_x_array[3][3];
         float leaf_y_array[3][3];
         float leaf_z_array[3][3];
@@ -79,7 +80,26 @@ namespace embree
               leaf_u_array[local_v][local_u] = grid_u_array[ v * patch.grid_u_res + u ];
               leaf_v_array[local_v][local_u] = grid_v_array[ v * patch.grid_u_res + u ];
             }
+#else
+        ssef leaf_x_array[3];
+        ssef leaf_y_array[3];
+        ssef leaf_z_array[3];
+        ssef leaf_u_array[3];
+        ssef leaf_v_array[3];
 
+        for (unsigned int v=v_start;v<=v_end;v++)
+          {
+            const size_t offset = v * patch.grid_u_res + u_start;
+            const unsigned int local_v = v - v_start;
+            leaf_x_array[local_v] = loadu4f(&grid_x_array[ offset ]);
+            leaf_y_array[local_v] = loadu4f(&grid_y_array[ offset ]);
+            leaf_z_array[local_v] = loadu4f(&grid_z_array[ offset ]);
+            leaf_u_array[local_v] = loadu4f(&grid_u_array[ offset ]);
+            leaf_v_array[local_v] = loadu4f(&grid_v_array[ offset ]);            
+          }
+
+
+#endif
         /* set invalid grid u,v value to border elements */
         for (unsigned int y=0;y<3;y++)
           for (unsigned int x=u_size-1;x<3;x++)
@@ -108,8 +128,13 @@ namespace embree
                      (float*)leaf_u_array, 
                      (float*)leaf_v_array, 
                      0, 
-                     3, 
-                     6);
+                     4, 
+                     8);
+
+                     // 0, 
+                     // 3, 
+                     // 6);
+
 
 #if 0
         DBG_PRINT("LEAF");
