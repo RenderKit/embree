@@ -40,25 +40,18 @@ namespace embree
     };
 
     /*! Default constructor. */
-    SubdivPatch1 (const SubdivMesh::HalfEdge * first_half_edge,
-		  const Vec3fa *vertices,
+    SubdivPatch1 (const CatmullClarkPatch &ipatch,
 		  const unsigned int geomID,
 		  const unsigned int primID,
 		  const SubdivMesh *const mesh) 
-      : geomID(geomID),
-      primID(primID),
-      under_construction(0),
-      bvh4i_subtree_root(-1),
+      : geom(geomID),
+      prim(primID),
       flags(0)
     {
       assert(sizeof(SubdivPatch1) == 5 * 64);
 
       u_range = Vec2f(0.0f,1.0f);
       v_range = Vec2f(0.0f,1.0f);
-
-      /* init irregular patch */
-
-      CatmullClarkPatch ipatch ( first_half_edge, vertices ); 
 
       /* init discrete edge tessellation levels and grid resolution */
 
@@ -75,7 +68,7 @@ namespace embree
       grid_u_res = max(level[0],level[2])+1; // n segments -> n+1 points
       grid_v_res = max(level[1],level[3])+1;
 
-      grid_size_16wide_blocks = ((grid_u_res*grid_v_res+15)&(-16)) / 16;
+      grid_size_simd_blocks = ((grid_u_res*grid_v_res+15)&(-16)) / 16;
       grid_mask = 0;
       grid_subtree_size_64b_blocks = 5; // single leaf with u,v,x,y,z
 
@@ -99,12 +92,12 @@ namespace embree
 
 
       /* tessellate into 4x4 grid blocks for larger grid resolutions, generate bvh4i subtree over 4x4 grid blocks*/
-      if (grid_size_16wide_blocks > 1)
+      if (grid_size_simd_blocks > 1)
 	grid_subtree_size_64b_blocks = getSubTreeSize64bBlocks( 5 ); // u,v,x,y,z 
 
       /* compute 16-bit quad mask for direct evaluation */
 
-      if (grid_size_16wide_blocks == 1)
+      if (grid_size_simd_blocks == 1)
 	{
 	  mic_m m_active = 0xffff;
 	  for (unsigned int i=grid_u_res-1;i<16;i+=grid_u_res)
@@ -129,7 +122,7 @@ namespace embree
 #if 0
       DBG_PRINT( grid_u_res );
       DBG_PRINT( grid_v_res );
-      DBG_PRINT( grid_size_16wide_blocks );
+      DBG_PRINT( grid_size_simd_blocks );
       DBG_PRINT( grid_mask );
       DBG_PRINT( grid_subtree_size_64b_blocks );
 #endif
@@ -215,14 +208,14 @@ namespace embree
       return (flags & HAS_DISPLACEMENT) == HAS_DISPLACEMENT;
     }
 
-    BBox3fa bounds(const SubdivMesh* const geom) const
+    BBox3fa bounds(const SubdivMesh* const mesh) const
     {
 #if FORCE_TESSELLATION_BOUNDS == 1
 
-      __aligned(64) float u_array[(grid_size_16wide_blocks+1)*16];
-      __aligned(64) float v_array[(grid_size_16wide_blocks+1)*16];
+      __aligned(64) float u_array[(grid_size_simd_blocks+1)*16];
+      __aligned(64) float v_array[(grid_size_simd_blocks+1)*16];
 
-      if (grid_size_16wide_blocks == 1)
+      if (grid_size_simd_blocks == 1)
       	{
       	  gridUVTessellator16f(level,grid_u_res,grid_v_res,u_array,v_array);
 
@@ -236,7 +229,7 @@ namespace embree
 	  gridUVTessellatorMIC(level,grid_u_res,grid_v_res,u_array,v_array);
 
 	  // FIXME: remove
-	  for (size_t i=real_grid_size;i<grid_size_16wide_blocks*16;i++)
+	  for (size_t i=real_grid_size;i<grid_size_simd_blocks*16;i++)
 	    {
 	      u_array[i] = 1.0f;
 	      v_array[i] = 1.0f;
@@ -275,8 +268,8 @@ namespace embree
 #else
       BBox3fa b ( empty );
       
-      assert( grid_size_16wide_blocks >= 1 );
-      for (size_t i=0;i<grid_size_16wide_blocks;i++)
+      assert( grid_size_simd_blocks >= 1 );
+      for (size_t i=0;i<grid_size_simd_blocks;i++)
 	{
 	  const mic_f u = load16f(&u_array[i*16]);
 	  const mic_f v = load16f(&v_array[i*16]);
@@ -284,14 +277,14 @@ namespace embree
 	  mic3f vtx = eval16( u, v );
 
 	  /* eval displacement function */
-	  if (unlikely(geom->displFunc != NULL))
+	  if (unlikely(mesh->displFunc != NULL))
 	    {
 	      mic3f normal = normal16(u,v);
 	      normal = normalize(normal);
 
-	      geom->displFunc(geom->userPtr,
-			      geomID,
-			      primID,
+	      mesh->displFunc(mesh->userPtr,
+			      geom,
+			      prim,
 			      (const float*)&u,
 			      (const float*)&v,
 			      (const float*)&normal,
@@ -389,23 +382,21 @@ namespace embree
     float level[4];
 
     unsigned int flags;
-    unsigned int geomID;                          //!< geometry ID of the subdivision mesh this patch belongs to
-    unsigned int primID;                          //!< primitive ID of this subdivision patch
-    volatile unsigned int bvh4i_subtree_root;
+    unsigned int geom;                          //!< geometry ID of the subdivision mesh this patch belongs to
+    unsigned int prim;                          //!< primitive ID of this subdivision patch
+    unsigned int grid_mask;
 
-    unsigned short grid_u_res;
-    unsigned short grid_v_res;
-    unsigned short grid_size_16wide_blocks;
-    unsigned short grid_mask;
-    unsigned int   grid_subtree_size_64b_blocks;
-    volatile unsigned int under_construction; // 0 = not build yet, 1 = under construction, 2 = built
+    unsigned int grid_u_res;
+    unsigned int grid_v_res;
+    unsigned int grid_size_simd_blocks;
+    unsigned int grid_subtree_size_64b_blocks;
 
     __aligned(64) BSplinePatch patch;
   };
 
   __forceinline std::ostream &operator<<(std::ostream &o, const SubdivPatch1 &p)
     {
-      o << " flags " << p.flags << " geomID " << p.geomID << " primID " << p.primID << " u_range << " << p.u_range << " v_range " << p.v_range << " levels: " << p.level[0] << "," << p.level[1] << "," << p.level[2] << "," << p.level[3] << std::endl;
+      o << " flags " << p.flags << " geomID " << p.geom << " primID " << p.prim << " u_range << " << p.u_range << " v_range " << p.v_range << " levels: " << p.level[0] << "," << p.level[1] << "," << p.level[2] << "," << p.level[3] << std::endl;
       o << " patch " << p.patch;
 
       return o;

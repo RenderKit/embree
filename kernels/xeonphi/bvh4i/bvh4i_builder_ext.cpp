@@ -1018,8 +1018,11 @@ PRINT(CORRECT_numPrims);
 	    assert( currentID < numFaces );
 
 	    prefetch<PFHINT_L2EX>(&prims[currentID]);
-	    SubdivPatch1 tmp = SubdivPatch1(subdiv_mesh->getHalfEdge(i),
-					    subdiv_mesh->getVertexPositionPtr(),
+
+	    const CatmullClarkPatch ipatch ( subdiv_mesh->getHalfEdge(i),
+					     subdiv_mesh->getVertexPositionPtr() );
+	    
+	    SubdivPatch1 tmp = SubdivPatch1(ipatch,
 					    g,
 					    i,
 					    subdiv_mesh);
