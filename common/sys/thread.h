@@ -108,6 +108,7 @@ namespace embree
     mutable tls_t ptr;
     void* init;
     mutable AtomicMutex mutex;
+  public:
     mutable std::vector<Type*> threads;
   };
 

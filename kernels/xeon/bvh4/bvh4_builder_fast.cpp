@@ -159,10 +159,13 @@ namespace embree
       }
       
       /* verbose mode */
-      if (g_verbose >= 2) {
+      if (g_verbose >= 1) {
 	std::cout << "[DONE] " << 1000.0f*dt << "ms (" << numPrimitives/dt*1E-6 << " Mtris/s)" << std::endl;
-	std::cout << BVH4Statistics(bvh).str();
+	std::cout << "  "; bvh->alloc2.print_statistics();
       }
+      if (g_verbose >= 2)
+	std::cout << BVH4Statistics(bvh).str();
+      
 
       /* benchmark mode */
       if (g_benchmark) {
@@ -346,7 +349,7 @@ namespace embree
     {
       pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
       {
-	FastAllocator::Thread alloc(&bvh->alloc2);
+	FastAllocator::Thread& alloc = *bvh->alloc2.instance();
 
 	PrimInfo s(empty);
         for (size_t f=r.begin(); f!=r.end(); ++f) {
@@ -450,7 +453,7 @@ namespace embree
     {
       pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
       {
-	FastAllocator::Thread alloc(&bvh->alloc2); // FIXME: should be thread local
+	FastAllocator::Thread& alloc = *bvh->alloc2.instance();
 
 	PrimInfo s(empty);
         for (size_t f=r.begin(); f!=r.end(); ++f) {

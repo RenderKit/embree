@@ -285,31 +285,34 @@ namespace embree
 
       /*! Constructor for usage with ThreadLocal */
       __forceinline Thread (void* alloc) 
-	: alloc((FastAllocator*)alloc), ptr(NULL), cur(0), end(0), allocBlockSize(4096) {}
+	: alloc((FastAllocator*)alloc), ptr(NULL), cur(0), end(0), allocBlockSize(4096), bytesUsed(0), bytesWasted(0) {}
 
       /*! Default constructor. */
       __forceinline Thread (FastAllocator* alloc, const size_t allocBlockSize = 4096) 
-	: alloc(alloc), ptr(NULL), cur(0), end(0), allocBlockSize(allocBlockSize) {}
+	: alloc(alloc), ptr(NULL), cur(0), end(0), allocBlockSize(allocBlockSize), bytesUsed(0), bytesWasted(0)  {}
 
       /*! resets the allocator */
       __forceinline void reset() 
       {
 	ptr = NULL;
 	cur = end = 0;
+	bytesWasted = bytesUsed = 0;
       }
 
       /* Allocate aligned memory from the threads memory block. */
       __forceinline void* malloc(size_t bytes, size_t align = 16) 
       {
         assert(align <= maxAlignment);
-
+	bytesUsed += bytes;
+	
         /* try to allocate in local block */
-        cur += bytes + ((align - cur) & (align-1));
-        if (likely(cur <= end)) return &ptr[cur - bytes];
+	size_t ofs = (align - cur) & (align-1); 
+        cur += bytes + ofs;
+        if (likely(cur <= end)) { bytesWasted += ofs; return &ptr[cur - bytes]; }
+	cur -= bytes + ofs;
 
         /* if allocation is too large allocate with parent allocator */
         if (4*bytes > allocBlockSize) {
-          cur -= bytes;
           return alloc->malloc(bytes,maxAlignment);
 	}
 
@@ -320,41 +323,39 @@ namespace embree
 	{
 	  size_t blockSize = allocBlockSize;
 	  ptr = (char*) alloc->usedBlocks->malloc_some(blockSize,maxAlignment);
+	  bytesWasted += end-cur;
 	  cur = 0; end = blockSize;
 	  
 	  /* retry allocation */
-	  cur += bytes + ((align - cur) & (align-1));
-	  if (likely(cur <= end)) return &ptr[cur - bytes];
+	  size_t ofs = (align - cur) & (align-1); 
+	  cur += bytes + ofs;
+	  if (likely(cur <= end)) { bytesWasted += ofs; return &ptr[cur - bytes]; }
+	  cur -= bytes + ofs;
 	}
 #endif
 
         /* get new full block if allocation failed */
         size_t blockSize = allocBlockSize;
 	ptr = (char*) alloc->malloc(blockSize,maxAlignment);
+	bytesWasted += end-cur;
 	cur = 0; end = blockSize;
 	
         /* retry allocation */
-        cur += bytes + ((align - cur) & (align-1));
-        if (likely(cur <= end)) return &ptr[cur - bytes];
-
+	ofs = (align - cur) & (align-1); 
+        cur += bytes + ofs;
+        if (likely(cur <= end)) { bytesWasted += ofs; return &ptr[cur - bytes]; }
+	cur -= bytes + ofs;
+	
         /* should never happen as large allocations get handled specially above */
         assert(false);
         return NULL;
       }
 
-      /*! clears the allocator */
-      void clear () {
-        ptr = NULL;
-        cur = end = 0;
-	bytesWasted = bytesAllocated = 0;
-      }
-
-      /*! update statistics in parent allocator */
-      void updateStatistics()
-      {
-	alloc->bytesWasted += bytesWasted + (end-cur);
-	alloc->bytesAllocated += bytesAllocated;
-      }
+      /*! returns amount of used bytes */
+      size_t getUsedBytes() const { return bytesUsed; }
+      
+      /*! returns amount of wasted bytes */
+      size_t getWastedBytes() const { return bytesWasted + (end-cur); }
 
     public:
       FastAllocator* alloc;  //!< parent allocator
@@ -364,7 +365,7 @@ namespace embree
       size_t allocBlockSize; //!< block size for allocations
     private:
       size_t bytesWasted;    //!< number of bytes wasted
-      size_t bytesAllocated; //!< bumber of total bytes allocated
+      size_t bytesUsed; //!< bumber of total bytes allocated
     };
 
     FastAllocator () 
@@ -448,6 +449,41 @@ namespace embree
       }
     }
 
+    void print_statistics()
+    {
+      size_t bytesFree = 0;
+      size_t bytesAllocated = 0;
+      size_t bytesReserved = 0;
+      size_t bytesUsed = 0;
+      size_t bytesWasted = 0;
+
+      if (freeBlocks) {
+	bytesFree += freeBlocks->getAllocatedBytes();
+	bytesAllocated += freeBlocks->getAllocatedBytes();
+	bytesReserved += freeBlocks->getReservedBytes();
+      }
+      if (usedBlocks) {
+	bytesFree += usedBlocks->getFreeBytes();
+	bytesAllocated += usedBlocks->getAllocatedBytes();
+	bytesReserved += usedBlocks->getReservedBytes();
+	
+	Block* cur = usedBlocks;
+	while (cur = cur->next)
+	  bytesWasted += cur->getFreeBytes();
+      }
+
+      for (size_t t=0; t<thread_local_allocators.threads.size(); t++) {
+	bytesUsed   += thread_local_allocators.threads[t]->getUsedBytes();
+	bytesWasted += thread_local_allocators.threads[t]->getWastedBytes();
+      }
+      
+      printf("allocated = %3.2fMB, reserved = %3.2fMB, used = %3.2fMB (%3.2f%%), wasted = %3.2fMB (%3.2f%%), free = %3.2fMB (%3.2f%%)\n",
+	     1E-6f*bytesAllocated, 1E-6f*bytesReserved,
+	     1E-6f*bytesUsed, 100.0f*bytesUsed/bytesAllocated,
+	     1E-6f*bytesWasted, 100.0f*bytesWasted/bytesAllocated,
+	     1E-6f*bytesFree, 100.0f*bytesFree/bytesAllocated);
+    }
+
   private:
 
     struct Block 
@@ -504,6 +540,18 @@ namespace embree
         if (next) next->shrink();
       }
 
+      size_t getAllocatedBytes() const {
+	return allocEnd + (next ? next->getAllocatedBytes() : 0);
+      }
+
+      size_t getReservedBytes() const {
+	return reserveEnd + (next ? next->getReservedBytes() : 0);
+      }
+
+      size_t getFreeBytes() const {
+	return allocEnd-cur;
+      }
+
     public:
       atomic_t cur;              //!< current location of the allocator
       size_t allocEnd;           //!< end of the allocated memory region
@@ -523,6 +571,6 @@ namespace embree
 
   private:
     size_t bytesWasted;    //!< number of bytes wasted
-    size_t bytesAllocated; //!< bumber of total bytes allocated
+    size_t bytesUsed; //!< bumber of total bytes allocated
   };
 }
