@@ -19,7 +19,7 @@
 #include "common/default.h"
 
 #if DEBUG
-#define CACHE_STATS(x) x
+#define CACHE_STATS(x) 
 #else
 #define CACHE_STATS(x) 
 #endif
@@ -38,7 +38,11 @@ namespace embree
 
     static const size_t CACHE_MISS = (size_t)-1;
 
+#if defined(__MIC__)
+    typedef unsigned int InputTagType;
+#else
     typedef size_t InputTagType;
+#endif
 
     struct CacheTag {
     private:
@@ -52,7 +56,11 @@ namespace embree
 
       __forceinline unsigned int toTag(InputTagType prim)
       {
+#if defined(__MIC__)
+	return prim;
+#else
         return ((size_t)prim) >> 6;
+#endif
       }
 
       __forceinline void reset() 
@@ -148,7 +156,11 @@ namespace embree
     
     __forceinline unsigned int addrToCacheIndex(InputTagType primID)
     {
+#if defined(__MIC__)
+      return primID % CACHE_ENTRIES;
+#else
       return (((size_t)primID)>>6) % CACHE_ENTRIES;
+#endif
     }
 
     /* reset cache */
@@ -199,7 +211,11 @@ namespace embree
       if (likely(tags[index].match(primID,commitCounter)))
         {
           CACHE_STATS(cache_hits++);
+#if defined(__MIC__)
+          return tags[index].getRootRef();
+#else
           return (size_t)getPtr() + tags[index].getRootRef();
+#endif
         }
       CACHE_STATS(cache_misses++);
       return CACHE_MISS;
@@ -249,8 +265,11 @@ namespace embree
       const size_t currentIndex = blockCounter;
       blockCounter += neededBlocks;
 
+#if defined(__MIC__)
+      unsigned int curNode = currentIndex;
+#else
       size_t curNode = (size_t)&lazymem[currentIndex*16] - (size_t)getPtr(); //(size_t)&lazymem[currentIndex*16];
-
+#endif
       /* insert new entry at the beginning */
       tags[index].set(primID,commitCounter,curNode,neededBlocks);
       return tags[index];     
@@ -261,10 +280,17 @@ namespace embree
       return (char*)((char*)getPtr() + t.getRootRef());
     }
 
+#if defined(__MIC__)
+    __forceinline void updateRootRef(CacheTag &t, unsigned int new_root)
+    {
+      t.updateRootRef( new_root );      
+    }
+#else
     __forceinline void updateRootRef(CacheTag &t, size_t new_root)
     {
       t.updateRootRef( new_root - (size_t)getPtr() );      
-    }    
+    }
+#endif    
     
     /* print stats for debugging */                 
     static void printStats();
