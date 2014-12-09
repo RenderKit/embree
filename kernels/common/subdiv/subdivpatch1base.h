@@ -29,6 +29,8 @@ using namespace std;
 namespace embree
 {
 
+#if !defined(__MIC__)
+
   /* 3x3 point grid => 2x2 quad grid */
   struct __aligned(64) Quad2x2
   {
@@ -263,6 +265,7 @@ namespace embree
       return cout;
     }
 
+#endif
 
 #if defined(__AVX__)
   __forceinline BBox3fa getBBox3fa(const avx3f &v)
@@ -271,11 +274,30 @@ namespace embree
     const Vec3fa b_max( reduce_max(v.x), reduce_max(v.y), reduce_max(v.z) );
     return BBox3fa( b_min, b_max );
   }
-#else
+#endif
+
+#if defined(__SSE__)
   __forceinline BBox3fa getBBox3fa(const sse3f &v)
   {
     const Vec3fa b_min( reduce_min(v.x), reduce_min(v.y), reduce_min(v.z) );
     const Vec3fa b_max( reduce_max(v.x), reduce_max(v.y), reduce_max(v.z) );
+    return BBox3fa( b_min, b_max );
+  }
+#endif
+
+#if defined(__MIC__)
+  __forceinline BBox3fa getBBox3fa(const mic3f &v, const mic_m m_valid = 0xffff)
+  {
+    const mic_f x_min = select(m_valid,v.x,mic_f::inf());
+    const mic_f y_min = select(m_valid,v.y,mic_f::inf());
+    const mic_f z_min = select(m_valid,v.z,mic_f::inf());
+
+    const mic_f x_max = select(m_valid,v.x,mic_f::minus_inf());
+    const mic_f y_max = select(m_valid,v.y,mic_f::minus_inf());
+    const mic_f z_max = select(m_valid,v.z,mic_f::minus_inf());
+    
+    const Vec3fa b_min( reduce_min(x_min), reduce_min(y_min), reduce_min(z_min) );
+    const Vec3fa b_max( reduce_max(x_max), reduce_max(y_max), reduce_max(z_max) );
     return BBox3fa( b_min, b_max );
   }
 #endif
@@ -398,6 +420,7 @@ namespace embree
 	return GregoryPatch::eval( patch.v, uu, vv );
     }
 
+#if defined(__SSE__)
     __forceinline sse3f eval4(const ssef &uu,
 			      const ssef &vv) const
     {
@@ -407,6 +430,16 @@ namespace embree
 	return GregoryPatch::eval4( patch.v, uu, vv );
     }
 
+    __forceinline sse3f normal4(const ssef &uu,
+                                const ssef &vv) const
+    {
+      if (likely(isRegular()))
+	return patch.normal4(uu,vv);
+      else
+        return GregoryPatch::normal4( patch.v, uu, vv );
+    }
+#endif
+
 #if defined(__AVX__)
     __forceinline avx3f eval8(const avxf &uu,
 			      const avxf &vv) const
@@ -415,6 +448,51 @@ namespace embree
 	return patch.eval8(uu,vv);
       else 
 	return GregoryPatch::eval8( patch.v, uu, vv );
+    }
+    __forceinline avx3f normal8(const avxf &uu,
+                                const avxf &vv) const
+    {
+      if (likely(isRegular()))
+	return patch.normal8(uu,vv);
+      else
+        return GregoryPatch::normal8( patch.v, uu, vv );
+    }
+#endif
+
+#if defined(__MIC__)
+    __forceinline mic_f eval4(const mic_f &uu,
+			      const mic_f &vv) const
+    {
+      if (likely(isRegular()))
+	{
+	  return patch.eval4(uu,vv);
+	}
+      else 
+	{	  
+	  return GregoryPatch::eval4( patch.v, uu, vv );
+	}     
+    }
+
+    __forceinline mic3f eval16(const mic_f &uu,
+			       const mic_f &vv) const
+    {
+      if (likely(isRegular()))
+	{
+	  return patch.eval16(uu,vv);
+	}
+      else 
+	{
+	  return GregoryPatch::eval16( patch.v, uu, vv );
+	}     
+    }
+
+    __forceinline mic3f normal16(const mic_f &uu,
+				 const mic_f &vv) const
+    {
+      if (likely(isRegular()))
+	return patch.normal16(uu,vv);
+      else
+        return GregoryPatch::normal16( patch.v, uu, vv );
     }
 #endif
 
@@ -426,27 +504,6 @@ namespace embree
       else 
 	return GregoryPatch::normal( patch.v, uu, vv );
     }
-
-    __forceinline sse3f normal4(const ssef &uu,
-                                const ssef &vv) const
-    {
-      if (likely(isRegular()))
-	return patch.normal4(uu,vv);
-      else
-        return GregoryPatch::normal4( patch.v, uu, vv );
-    }
-
-#if defined(__AVX__)
-    __forceinline avx3f normal8(const avxf &uu,
-                                const avxf &vv) const
-    {
-      if (likely(isRegular()))
-	return patch.normal8(uu,vv);
-      else
-        return GregoryPatch::normal8( patch.v, uu, vv );
-    }
-#endif
-
 
     __forceinline bool isRegular() const
     {
@@ -478,13 +535,13 @@ namespace embree
     {
 #if FORCE_TESSELLATION_BOUNDS == 1
 
-      __aligned(64) float u_array[(grid_size_simd_blocks+1)*8]; // +8 for unaligned access
-      __aligned(64) float v_array[(grid_size_simd_blocks+1)*8]; // +8 for unaligned access
-	  //float* u_array = (float*) ALIGN_PTR(alloca((grid_size_simd_blocks+1)*8*sizeof(float)+64),64); // +8 for unaligned access
-	  //float* v_array = (float*) ALIGN_PTR(alloca((grid_size_simd_blocks+1)*8*sizeof(float)+64),64); // +8 for unaligned access
+      __aligned(64) float u_array[(grid_size_simd_blocks+1)*16]; // +16 for unaligned access
+      __aligned(64) float v_array[(grid_size_simd_blocks+1)*16]; // +16 for unaligned access
 	  
       const unsigned int real_grid_size = grid_u_res*grid_v_res;
       gridUVTessellator(level,grid_u_res,grid_v_res,u_array,v_array);
+
+      //gridUVTessellatorMIC(level,grid_u_res,grid_v_res,u_array,v_array);
       
       if (unlikely(needsStiching()))
         stichUVGrid(level,grid_u_res,grid_v_res,u_array,v_array);
@@ -498,6 +555,42 @@ namespace embree
 
       BBox3fa b ( empty );
       assert( grid_size_simd_blocks >= 1 );
+
+#if defined(__MIC__)
+
+      for (size_t i=0;i<grid_size_simd_blocks;i++)
+	{
+	  const mic_f u = load16f(&u_array[i*16]);
+	  const mic_f v = load16f(&v_array[i*16]);
+
+	  mic3f vtx = eval16( u, v );
+
+	  /* eval displacement function */
+	  if (unlikely(mesh->displFunc != NULL))
+	    {
+	      mic3f normal = normal16(u,v);
+	      normal = normalize(normal);
+
+	      mesh->displFunc(mesh->userPtr,
+			      geom,
+			      prim,
+			      (const float*)&u,
+			      (const float*)&v,
+			      (const float*)&normal,
+			      (const float*)&normal,
+			      (const float*)&normal,
+			      (float*)&vtx.x,
+			      (float*)&vtx.y,
+			      (float*)&vtx.z,
+			      16);
+
+	    }
+
+	  /* extend bounding box */
+	  b.extend( getBBox3fa(vtx) );
+	}
+
+#else
 
 #if !defined(__AVX__)
 
@@ -567,6 +660,7 @@ namespace embree
 	}
 #endif
 
+#endif
       b.lower.a = 0.0f;
       b.upper.a = 0.0f;
      
@@ -630,7 +724,7 @@ namespace embree
     unsigned int flags;
     unsigned int geom;                          //!< geometry ID of the subdivision mesh this patch belongs to
     unsigned int prim;                          //!< primitive ID of this subdivision patch
-    unsigned int reserved;
+    unsigned int grid_mask;
 
     unsigned int grid_u_res;
     unsigned int grid_v_res;

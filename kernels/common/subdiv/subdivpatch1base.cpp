@@ -48,13 +48,26 @@ namespace embree
 
       grid_u_res = max(level[0],level[2])+1; // n segments -> n+1 points
       grid_v_res = max(level[1],level[3])+1;
+      grid_mask  = 0;
 
+#if defined(__MIC__)
+      grid_size_simd_blocks        = ((grid_u_res*grid_v_res+15)&(-16)) / 16;
+      grid_subtree_size_64b_blocks = 5; // single leaf with u,v,x,y,z
+
+      if (grid_size_simd_blocks == 1)
+	{
+	  mic_m m_active = 0xffff;
+	  for (unsigned int i=grid_u_res-1;i<16;i+=grid_u_res)
+	    m_active ^= (unsigned int)1 << i;
+	  m_active &= ((unsigned int)1 << (grid_u_res * (grid_v_res-1)))-1;
+	  grid_mask = m_active;
+	}
+
+#else
       /* 8-wide SIMD is default on Xeon */
-
-      grid_size_simd_blocks       = ((grid_u_res*grid_v_res+7)&(-8)) / 8;
-
+      grid_size_simd_blocks        = ((grid_u_res*grid_v_res+7)&(-8)) / 8;
       grid_subtree_size_64b_blocks = (sizeof(Quad2x2)+63) / 64; // single Quad2x2
-
+#endif
       /* need stiching? */
 
       const unsigned int int_edge_points0 = (unsigned int)level[0] + 1;
@@ -78,8 +91,12 @@ namespace embree
 
       if (grid_size_simd_blocks > 1)
         {
-          const size_t blocks = (sizeof(Quad2x2)+63) / 64;
-          grid_subtree_size_64b_blocks = getSubTreeSize64bBlocks( blocks ); // u,v,x,y,z 
+#if defined(__MIC__)
+	  const size_t leafBlocks = 5;
+#else
+          const size_t leafBlocks = (sizeof(Quad2x2)+63) / 64;
+#endif
+          grid_subtree_size_64b_blocks = getSubTreeSize64bBlocks( leafBlocks ); // u,v,x,y,z 
         }
 
       /* determine whether patch is regular or not */

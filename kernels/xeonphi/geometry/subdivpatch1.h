@@ -21,6 +21,7 @@
 #include "common/subdiv/bspline_patch.h"
 #include "common/subdiv/gregory_patch.h"
 #include "common/subdiv/tessellation.h"
+#include "common/subdiv/subdivpatch1base.h"
 #include "bicubic_bezier_patch.h"
 
 #define FORCE_TESSELLATION_BOUNDS 1
@@ -28,21 +29,6 @@ using namespace std;
 
 namespace embree
 {
-
-  __forceinline BBox3fa getBBox3fa(const mic3f &v, const mic_m m_valid = 0xffff)
-  {
-    const mic_f x_min = select(m_valid,v.x,mic_f::inf());
-    const mic_f y_min = select(m_valid,v.y,mic_f::inf());
-    const mic_f z_min = select(m_valid,v.z,mic_f::inf());
-
-    const mic_f x_max = select(m_valid,v.x,mic_f::minus_inf());
-    const mic_f y_max = select(m_valid,v.y,mic_f::minus_inf());
-    const mic_f z_max = select(m_valid,v.z,mic_f::minus_inf());
-
-    const Vec3fa b_min( reduce_min(x_min), reduce_min(y_min), reduce_min(z_min) );
-    const Vec3fa b_max( reduce_max(x_max), reduce_max(y_max), reduce_max(z_max) );
-    return BBox3fa( b_min, b_max );
-  }
 
   struct __aligned(64) SubdivPatch1
   {
