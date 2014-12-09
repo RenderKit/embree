@@ -135,9 +135,35 @@ namespace embree
     assert( edge_levels[2] >= 1.0f );
     assert( edge_levels[3] >= 1.0f );
     
+ 
+#if defined(__AVX__)
+    const avxi grid_u_segments = avxi(grid_u_res)-1;
+    const avxi grid_v_segments = avxi(grid_v_res)-1;
+    
+    const avxf inv_grid_u_segments = rcp(avxf(grid_u_segments));
+    const avxf inv_grid_v_segments = rcp(avxf(grid_v_segments));
+    
+    unsigned int index = 0;
+    avxi v_i( zero );
+    for (unsigned int y=0;y<grid_v_res;y++,index+=grid_u_res,v_i += 1)
+    {
+      avxi u_i ( step );
+      
+      const avxb m_u = u_i < grid_u_segments;
+      const avxb m_v = v_i < grid_v_segments;
+      
+      for (unsigned int x=0;x<grid_u_res;x+=8, u_i += 8)
+      {
+	const avxf u = select(m_u, avxf(u_i) * inv_grid_u_segments, 1.0f);
+	const avxf v = select(m_v, avxf(v_i) * inv_grid_v_segments, 1.0f);
+	store8f(&u_array[index + x],u);
+	store8f(&v_array[index + x],v);	   
+      }
+    }       
+ #else   
     const unsigned int grid_u_segments = grid_u_res-1;
     const unsigned int grid_v_segments = grid_v_res-1;
-    
+
     const float inv_grid_u_segments = 1.0f / grid_u_segments;
     const float inv_grid_v_segments = 1.0f / grid_v_segments;
     
@@ -159,10 +185,10 @@ namespace embree
       u_array[i] = 1.0f;
     for (unsigned int x=0;x<grid_u_res;x++)
       v_array[num_points-1-x] = 1.0f;
-        
-    //stichUVGrid(edge_levels,grid_u_res,grid_v_res,u_array,v_array);
+ #endif       
   }
-  
+ 
+
 #if defined(__MIC__)
   
   __forceinline void gridUVTessellatorMIC(const float edge_levels[4],
