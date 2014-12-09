@@ -204,8 +204,8 @@ void updateScene(RTCScene scene, const Vec3fa& cam_pos)
         const Vec3fa P = 0.5f*(v1+v0);
 	const Vec3fa dist = cam_pos - P;
 	//const Vec3fa dist = Vec3fa(-1.39588f, 2.62872f, 7.82919f) - P;
-        level[i*4+k] = max(min(LEVEL_FACTOR*(0.5f*length(edge)/length(dist)),MAX_EDGE_LEVEL),MIN_EDGE_LEVEL);
-        //level[i*4+k] = 8; // MAX_EDGE_LEVEL;
+        //level[i*4+k] = max(min(LEVEL_FACTOR*(0.5f*length(edge)/length(dist)),MAX_EDGE_LEVEL),MIN_EDGE_LEVEL);
+        level[i*4+k] = 32; // MAX_EDGE_LEVEL;
       } 
     }
     rtcUnmapBuffer(scene,geomID, RTC_LEVEL_BUFFER);
@@ -566,10 +566,11 @@ extern "C" void toggleOpenSubdiv(unsigned char key, int x, int y)
 
 extern "C" void device_render(int *pixels, int width, int height, float time, const Vec3fa &vx, const Vec3fa &vy, const Vec3fa &vz, const Vec3fa &p) 
 {
+  static Vec3fa oldP = zero;
   if (g_scene == NULL) {
     g_scene = constructScene(p);
+    oldP = p;
   } else {
-    static Vec3fa oldP = zero;
     if (oldP != p) 
       updateScene (g_scene,p);
     oldP = p;

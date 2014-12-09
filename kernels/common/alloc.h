@@ -203,31 +203,44 @@ namespace embree
       block.shrink();
     }
 
+    void print_statistics()
+    {
+      size_t bytesAllocated = block.getAllocatedBytes();
+      size_t bytesReserved = block.getReservedBytes();
+      size_t bytesUsed = block.getUsedBytes();
+      size_t bytesFree = block.getFreeBytes();
+      
+      printf("allocated = %3.2fMB, reserved = %3.2fMB, used = %3.2fMB (%3.2f%%), free = %3.2fMB (%3.2f%%)\n",
+	     1E-6f*bytesAllocated, 1E-6f*bytesReserved,
+	     1E-6f*bytesUsed, 100.0f*bytesUsed/bytesAllocated,
+	     1E-6f*bytesFree, 100.0f*bytesFree/bytesAllocated);
+    }
+
   private:
 
     struct Block 
     {
       Block () 
-      : ptr(NULL), cur(0), end(0), bytesAllocated(0), next(NULL) {}
+      : ptr(NULL), cur(0), reserveEnd(0), allocEnd(0), next(NULL) {}
       
       Block (size_t bytes, Block* next = NULL) 
-      : ptr(NULL), cur(0), end(bytes), bytesAllocated(0), next(next) {}
+      : ptr(NULL), cur(0), reserveEnd(bytes), allocEnd(0), next(next) {}
 
       ~Block () {
-	if (ptr) os_free(ptr,end); ptr = NULL;
-	cur = end = 0;
+	if (ptr) os_free(ptr,reserveEnd); ptr = NULL;
+	cur = reserveEnd = 0;
 	if (next) delete next; next = NULL;
       }
 
       __forceinline void init (size_t bytesAllocate, size_t bytesReserved)
       {
-	if (bytesReserved != size_t(end) || bytesAllocate != bytesAllocated) 
+	if (bytesReserved != size_t(reserveEnd) || bytesAllocate != allocEnd) 
 	{
-	  bytesAllocated = bytesAllocate;
-	  if (ptr) os_free(ptr,end);
+	  allocEnd = bytesAllocate;
+	  if (ptr) os_free(ptr,reserveEnd);
 	  ptr = (char*) os_reserve(bytesReserved);
-	  os_commit(ptr,bytesAllocated);
-	  end = bytesReserved;
+	  os_commit(ptr,allocEnd);
+	  reserveEnd = bytesReserved;
 	}
       }
 
@@ -239,26 +252,42 @@ namespace embree
       void* malloc(size_t bytes) 
       {
 	ssize_t i = atomic_add(&cur,bytes);
-	if (unlikely(i+(ssize_t)bytes > end)) THROW_RUNTIME_ERROR("build out of memory");
+	if (unlikely(i+(ssize_t)bytes > reserveEnd)) THROW_RUNTIME_ERROR("build out of memory");
 	void* p = &ptr[i];
-	if (i+(ssize_t)bytes > bytesAllocated)
+	if (i+(ssize_t)bytes > allocEnd)
 	  os_commit(p,bytes);
 	return p;
       }
 
       void shrink () {
 	if (ptr == NULL) return;
-	os_shrink(ptr,cur,end);
-	end = cur;
-	bytesAllocated = cur;
+	os_shrink(ptr,cur,reserveEnd);
+	reserveEnd = cur;
+	allocEnd = cur;
+      }
+
+      size_t getAllocatedBytes() const {
+	return allocEnd;
+      }
+
+      size_t getReservedBytes() const {
+	return reserveEnd;
+      }
+
+      size_t getUsedBytes() const {
+	return cur;
+      }
+
+      size_t getFreeBytes() const {
+	return allocEnd-cur;
       }
 
     public:
       char*  ptr;                //!< pointer to memory
       atomic_t cur;              //!< Current location of the allocator.
-      atomic_t end;              //!< End of the memory block.
+      atomic_t allocEnd;
+      atomic_t reserveEnd;              //!< End of the memory block.
       Block* next;
-      atomic_t bytesAllocated;
     };
 
   private:
