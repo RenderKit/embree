@@ -17,6 +17,7 @@
 #include "bvh4i_intersector16_subdiv.h"
 #include "bvh4i_leaf_intersector.h"
 #include "geometry/subdivpatch1.h"
+#include "common/subdiv/tessellation_cache.h"
 
 #define TIMER(x) x
 #define ENABLE_PER_THREAD_TESSELLATION_CACHE
@@ -29,7 +30,7 @@ namespace embree
 
   static AtomicMutex mtx;
 
-    class __aligned(64) TessellationCache {
+    class __aligned(64) TessellationCacheMIC {
 
     private:
       static const size_t DEFAULT_64B_BLOCKS = 8192;
@@ -77,7 +78,7 @@ namespace embree
 	_mm_free(mem);
       }
 
-      TessellationCache()  {}
+      TessellationCacheMIC()  {}
 
       __forceinline void init()
       {
@@ -175,10 +176,10 @@ namespace embree
       }
     };
 
-    __thread TessellationCache *thread_cache = NULL;
+    __thread TessellationCacheMIC *thread_cache = NULL;
 
 
-    void clearTessellationCache()
+    void clearTessellationCacheMIC()
     {
 #if defined(ENABLE_PER_THREAD_TESSELLATION_CACHE)
       if (thread_cache)
@@ -197,6 +198,125 @@ namespace embree
 					       const unsigned int patchIndex) 
     {
       *(volatile unsigned int*)&ref = (patchIndex << BVH4i::encodingBits) | BVH4i::leaf_mask;
+    }
+
+
+    BBox3fa createSubTree(BVH4i::NodeRef &curNode,
+			  mic_f *const lazymem,
+			  const SubdivPatch1 &patch,
+			  const float *const grid_u_array,
+			  const float *const grid_v_array,
+			  const GridRange &range,
+			  unsigned int &localCounter,
+			  const SubdivMesh* const geom)
+    {
+      if (range.hasLeafSize())
+	{
+	  const unsigned int u_start = range.u_start;
+	  const unsigned int u_end   = range.u_end;
+	  const unsigned int v_start = range.v_start;
+	  const unsigned int v_end   = range.v_end;
+
+	  const unsigned int u_size = u_end-u_start+1;
+	  const unsigned int v_size = v_end-v_start+1;
+	  const unsigned int currentIndex = localCounter;
+	  localCounter += 5; // u,v, x,y,z
+
+	  mic_f &leaf_u_array = lazymem[currentIndex+0];
+	  mic_f &leaf_v_array = lazymem[currentIndex+1];
+
+	  leaf_u_array = mic_f::inf();
+	  leaf_v_array = mic_f::inf();
+
+	  for (unsigned int v=v_start;v<=v_end;v++)
+	    for (unsigned int u=u_start;u<=u_end;u++)
+	      {
+		const unsigned int local_v = v - v_start;
+		const unsigned int local_u = u - u_start;
+		leaf_u_array[4 * local_v + local_u] = grid_u_array[ v * patch.grid_u_res + u ];
+		leaf_v_array[4 * local_v + local_u] = grid_v_array[ v * patch.grid_u_res + u ];
+	      }
+
+	  /* set invalid grid u,v value to border elements */
+
+	  for (unsigned int y=0;y<4;y++)
+	    for (unsigned int x=u_size-1;x<4;x++)
+	      {
+		leaf_u_array[4 * y + x] = leaf_u_array[4 * y + u_size-1];
+		leaf_v_array[4 * y + x] = leaf_v_array[4 * y + u_size-1];
+	      }
+
+	  for (unsigned int x=0;x<4;x++)
+	    for (unsigned int y=v_size-1;y<4;y++)
+	      {
+		leaf_u_array[4 * y + x] = leaf_u_array[4 * (v_size-1) + x];
+		leaf_v_array[4 * y + x] = leaf_v_array[4 * (v_size-1) + x];
+	      }
+	  
+	  mic3f vtx = patch.eval16(leaf_u_array,leaf_v_array);
+
+	  if (unlikely(geom->displFunc != NULL))
+	    {
+	      mic3f normal      = patch.normal16(leaf_u_array,leaf_v_array);
+	      normal = normalize(normal);
+
+	      geom->displFunc(geom->userPtr,
+			      patch.geom,
+			      patch.prim,
+			      (const float*)&leaf_u_array,
+			      (const float*)&leaf_v_array,
+			      (const float*)&normal.x,
+			      (const float*)&normal.y,
+			      (const float*)&normal.z,
+			      (float*)&vtx.x,
+			      (float*)&vtx.y,
+			      (float*)&vtx.z,
+			      16);
+	    }
+	  const BBox3fa leafGridBounds = getBBox3fa(vtx);
+
+	  mic_f &leaf_vtx_x = lazymem[currentIndex+2];
+	  mic_f &leaf_vtx_y = lazymem[currentIndex+3];
+	  mic_f &leaf_vtx_z = lazymem[currentIndex+4];
+
+	  leaf_vtx_x = vtx.x;
+	  leaf_vtx_y = vtx.y;
+	  leaf_vtx_z = vtx.z;
+
+	  createSubPatchBVH4iLeaf( curNode, currentIndex);
+	  
+	  return leafGridBounds;
+	}
+      /* allocate new bvh4i node */
+      const size_t num64BytesBlocksPerNode = 2;
+      const size_t currentIndex = localCounter;
+      localCounter += num64BytesBlocksPerNode;
+
+      createBVH4iNode<2>(curNode,currentIndex);
+
+      BVH4i::Node &node = *(BVH4i::Node*)curNode.node((BVH4i::Node*)lazymem);
+
+      node.setInvalid();
+      GridRange r[4];
+      
+      const unsigned int children = range.splitIntoSubRanges(r);
+      
+      /* create four subtrees */
+      BBox3fa bounds( empty );
+      for (unsigned int i=0;i<children;i++)
+	{
+	  BBox3fa bounds_subtree = createSubTree( node.child(i), 
+						  lazymem, 
+						  patch, 
+						  grid_u_array,
+						  grid_v_array,
+						  r[i],
+						  localCounter,
+						  geom);
+	  node.setBounds(i, bounds_subtree);
+	  bounds.extend( bounds_subtree );
+	}
+      return bounds;      
     }
 
 
@@ -368,6 +488,17 @@ namespace embree
       BVH4i::NodeRef subtree_root = 0;
       const unsigned int oldIndex = currentIndex;
 
+#if 1
+      BBox3fa bounds = createSubTree( subtree_root,
+				      lazymem,
+				      patch,
+				      u_array,
+				      v_array,
+				      GridRange(0,patch.grid_u_res-1,0,patch.grid_v_res-1),
+				      currentIndex,
+				      geom);
+
+#else
       BBox3fa bounds = createSubTree( subtree_root,
 				      lazymem,
 				      patch,
@@ -379,6 +510,7 @@ namespace embree
 				      patch.grid_v_res-1,
 				      currentIndex,
 				      geom);
+#endif
 
       assert(currentIndex - oldIndex == patch.grid_subtree_size_64b_blocks);
       TIMER(msec = getSeconds()-msec);    
@@ -648,11 +780,11 @@ namespace embree
       __aligned(64) NodeRef stack_node[3*BVH4i::maxDepth+1];
 
 #if defined(ENABLE_PER_THREAD_TESSELLATION_CACHE)
-      TessellationCache *local_cache = NULL;
+      TessellationCacheMIC *local_cache = NULL;
 
       if (!thread_cache)
 	{
-	  thread_cache = (TessellationCache *)_mm_malloc(sizeof(TessellationCache),64);
+	  thread_cache = (TessellationCacheMIC *)_mm_malloc(sizeof(TessellationCacheMIC),64);
 	  assert( (size_t)thread_cache % 64 == 0 );
 	  thread_cache->init();	  
 	}
@@ -857,10 +989,6 @@ namespace embree
 	}
 #endif
 
-// #if DEBUG
-//       if (local_cache) 
-// 	local_cache->printStats();
-// #endif
     }
 
     template<typename LeafIntersector,bool ENABLE_COMPRESSED_BVH4I_NODES>    
@@ -870,11 +998,11 @@ namespace embree
       __aligned(64) NodeRef stack_node[3*BVH4i::maxDepth+1];
 
 #if defined(ENABLE_PER_THREAD_TESSELLATION_CACHE)
-      TessellationCache *local_cache = NULL;
+      TessellationCacheMIC *local_cache = NULL;
 
       if (!thread_cache)
 	{
-	  thread_cache = (TessellationCache *)_mm_malloc(sizeof(TessellationCache),64);
+	  thread_cache = (TessellationCacheMIC *)_mm_malloc(sizeof(TessellationCacheMIC),64);
 	  assert( (size_t)thread_cache % 64 == 0 );
 	  thread_cache->init();	  
 	}

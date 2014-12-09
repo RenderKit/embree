@@ -317,7 +317,11 @@ namespace embree
     {
       const unsigned int u_size = u_end-u_start+1;
       const unsigned int v_size = v_end-v_start+1;
+#if defined(__MIC__)
+      return u_size <= 4 && v_size <= 4;
+#else
       return u_size <= 3 && v_size <= 3;
+#endif
     }
 
     __forceinline unsigned int largestExtend() const
@@ -539,15 +543,21 @@ namespace embree
       __aligned(64) float v_array[(grid_size_simd_blocks+1)*16]; // +16 for unaligned access
 	  
       const unsigned int real_grid_size = grid_u_res*grid_v_res;
+#if defined(__MIC__)
+      gridUVTessellatorMIC(level,grid_u_res,grid_v_res,u_array,v_array);
+#else
       gridUVTessellator(level,grid_u_res,grid_v_res,u_array,v_array);
-
-      //gridUVTessellatorMIC(level,grid_u_res,grid_v_res,u_array,v_array);
+#endif
       
       if (unlikely(needsStiching()))
         stichUVGrid(level,grid_u_res,grid_v_res,u_array,v_array);
 
       // FIXME: remove
+#if defined(__MIC__)
+      for (size_t i=real_grid_size;i<grid_size_simd_blocks*16;i++)
+#else
       for (size_t i=real_grid_size;i<grid_size_simd_blocks*8;i++)
+#endif
         {
           u_array[i] = 1.0f;
           v_array[i] = 1.0f;
@@ -557,7 +567,6 @@ namespace embree
       assert( grid_size_simd_blocks >= 1 );
 
 #if defined(__MIC__)
-
       for (size_t i=0;i<grid_size_simd_blocks;i++)
 	{
 	  const mic_f u = load16f(&u_array[i*16]);
@@ -688,6 +697,17 @@ namespace embree
       return b;
     }
 
+#if defined(__MIC__)
+    __forceinline void store(void *mem)
+    {
+      const mic_f *const src = (mic_f*)this;
+      assert(sizeof(SubdivPatch1Base) % 64 == 0);
+      mic_f *const dst = (mic_f*)mem;
+#pragma unroll
+      for (size_t i=0;i<sizeof(SubdivPatch1Base) / 64;i++)
+	store16f_ngo(&dst[i],src[i]);
+    }
+#endif
 
   private:
 
@@ -713,8 +733,6 @@ namespace embree
       return get64BytesBlocksForGridSubTree(GridRange(0,grid_u_res-1,0,grid_v_res-1),leafBlocks);
     }
 
-    /*! returns required number of primitive blocks for N primitives */
-    static __forceinline size_t blocks(size_t N) { return N; }
 
   public:
     Vec2f u_range;

@@ -266,9 +266,10 @@ the triangle mesh:
 The triangle indices can be set by mapping and writing to the index
 buffer (`RTC_INDEX_BUFFER`) and the triangle vertices can be set by
 mapping and writing into the vertex buffer (`RTC_VERTEX_BUFFER`). The
-index buffer contains an array of three 32 bit indices, while the vertex
-buffer contains an array of 3 float values aligned to 16 bytes. All
-buffers have to get unmapped before an `rtcCommit` call to the scene.
+index buffer contains an array of three 32\ bit indices, while the
+vertex buffer contains an array of three float values aligned to 16
+bytes. All buffers have to get unmapped before an `rtcCommit` call to
+the scene.
 
     struct Vertex   { float x, y, z, a; };
     struct Triangle { int v0, v1, v2; };
@@ -379,7 +380,7 @@ writing into the vertex buffer (`RTC_VERTEX_BUFFER`). In case of linear
 motion blur, two vertex buffers (`RTC_VERTEX_BUFFER0` and
 `RTC_VERTEX_BUFFER1`) have to get filled, one for each time step.
 
-The index buffer contains an array of 32 bit indices pointing to the ID
+The index buffer contains an array of 32\ bit indices pointing to the ID
 of the first of four control vertices, while the vertex buffer stores
 all control pointing of a single precision position and radius stored in
 `x`, `y`, `z`, `r` order in memory. All buffers have to get unmapped
@@ -588,7 +589,7 @@ This structure is in struct of array layout (SOA) for ray packets. Note
 that the `tfar` member functions as an input and output.
 
 In the ray packet mode (with packet size of N), the user has to provide
-a pointer to N 32 bit integers that act as a ray activity mask. If one
+a pointer to N 32\ bit integers that act as a ray activity mask. If one
 of these integers is set to `0x00000000` the corresponding ray is
 considered inactive and if the integer is set to `0xFFFFFFFF`, the ray
 is considered active. Rays that are inactive will not update any hit
@@ -673,7 +674,7 @@ element and the `stride` parameter specifies a byte stride between the
 different elements of the shared buffer. This support for offset and
 stride allows the application quite some freedom in the data layout of
 these buffers, however, some restrictions apply. Index buffers always
-store 32 bit indices and vertex buffers always store single precision
+store 32\ bit indices and vertex buffers always store single precision
 floating point data. The start address ptr+offset and stride always have
 to be aligned to 4 bytes on Xeon CPUs and 16 bytes on Xeon Phi™
 accelerators, otherwise the `rtcSetBuffer` function will fail. For
@@ -722,7 +723,7 @@ different time, even inside a ray packet.
 Geometry Mask
 -------------
 
-A 32 bit geometry mask can be assigned to triangle meshes and hair
+A 32\ bit geometry mask can be assigned to triangle meshes and hair
 geometries using the `rtcSetMask` call.
 
     rtcSetMask(scene, geomID, mask);
@@ -742,10 +743,13 @@ The API supports per geometry filter callback functions that are invoked
 for each intersection found during the `rtcIntersect` or `rtcOccluded`
 calls. The former ones are called intersection filter functions, the
 latter ones occlusion filter functions. The filter functions can be used
-to implement various useful features, such as rejecting a hit to
-implement backface culling, accumulating opacity for transparent
-shadows, counting the number of surfaces along a ray, collecting all
-hits along a ray, etc.
+to implement various useful features, such as accumulating opacity for
+transparent shadows, counting the number of surfaces along a ray,
+collecting all hits along a ray, etc. Filter functions can also be used
+to selectively reject hits to enable backface culling for some
+geometries. If the backfaces should be culled in general for all
+geometries then it is faster to enable `RTCORE_BACKFACE_CULLING` during
+compilation of Embree instead of using filter functions.
 
 The filter functions provided by the user have to have the following
 signature:

@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "xeon/bvh4/bvh4.h"
+#include "common/default.h"
 
 #if DEBUG
 #define CACHE_STATS(x) x
@@ -38,6 +38,8 @@ namespace embree
 
     static const size_t CACHE_MISS = (size_t)-1;
 
+    typedef size_t InputTagType;
+
     struct CacheTag {
     private:
       unsigned int prim_tag;
@@ -45,12 +47,13 @@ namespace embree
       unsigned int usedBlocks;
       unsigned int subtree_root;     
 
-      __forceinline unsigned int toTag(void *prim)
+
+    public:
+
+      __forceinline unsigned int toTag(InputTagType prim)
       {
         return ((size_t)prim) >> 6;
       }
-
-    public:
 
       __forceinline void reset() 
       {
@@ -61,12 +64,12 @@ namespace embree
         usedBlocks   = 0;
       }
 
-      __forceinline bool match(void *primID, const unsigned int commitCounter)
+      __forceinline bool match(InputTagType primID, const unsigned int commitCounter)
       {
         return prim_tag == toTag(primID) && commit_tag == commitCounter;
       }
 
-      __forceinline void set(void *primID, 
+      __forceinline void set(InputTagType primID, 
                              const unsigned int commitCounter,
                              const unsigned int root32bit,
                              const unsigned int blocks)
@@ -77,7 +80,7 @@ namespace embree
         usedBlocks   = blocks;
       }
 
-      __forceinline void update(void *primID, 
+      __forceinline void update(InputTagType primID, 
                                 const unsigned int commitCounter)
       {
         prim_tag   = toTag(primID);
@@ -143,9 +146,9 @@ namespace embree
       _mm_free(mem);
     }
     
-    __forceinline unsigned int addrToCacheIndex(void *primAddr)
+    __forceinline unsigned int addrToCacheIndex(InputTagType primID)
     {
-      return (((size_t)primAddr)>>6) % CACHE_ENTRIES;
+      return (((size_t)primID)>>6) % CACHE_ENTRIES;
     }
 
     /* reset cache */
@@ -187,7 +190,7 @@ namespace embree
 
 
     /* lookup cache entry using 64bit pointer as tag */
-    __forceinline size_t lookup(void *primID, const unsigned int commitCounter)
+    __forceinline size_t lookup(InputTagType primID, const unsigned int commitCounter)
     {
       CACHE_STATS(cache_accesses++);
       
@@ -203,7 +206,7 @@ namespace embree
     }
 
     /* insert entry using 'neededBlocks' cachelines into cache */
-    __forceinline CacheTag &request(void *primID, 
+    __forceinline CacheTag &request(InputTagType primID, 
                                     const unsigned int commitCounter, 
                                     const size_t neededBlocks)
     {

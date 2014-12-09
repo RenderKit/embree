@@ -1,7 +1,7 @@
 
-all: doc www 
+all: doc www ../README.md readme_bin.md
 www: www/index.html www/api.html www/tutorials.html www/downloads.html www/renderer.html 
-doc: ../readme.txt ../readme.md readme_bin.md ../readme.pdf 
+doc: ../readme.txt ../readme.pdf 
 images: images/tutorial00.jpg images/tutorial01.jpg images/tutorial02.jpg images/tutorial03.jpg images/tutorial04.jpg images/tutorial05.jpg images/tutorial06.jpg images/tutorial07.jpg
 
 .PHONY: all www doc images
@@ -78,7 +78,7 @@ readme.html: version src/*.html
 metadata.md: src/metadata.md version
 	sed -e "s/<EMBREE_VERSION>/`cat version`/" $< > $@
 
-../readme.md: metadata.md src/overview.md src/platforms.md src/support.md src/compilation.md src/api.md src/tutorials.md src/links_local.md
+../README.md: metadata.md src/overview.md src/platforms.md src/support.md src/compilation.md src/api.md src/tutorials.md src/links_local.md
 	cat $+ > $@
 
 %.tex: src/%.md src/links_local.md
