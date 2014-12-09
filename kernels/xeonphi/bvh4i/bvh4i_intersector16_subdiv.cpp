@@ -989,10 +989,6 @@ namespace embree
 	}
 #endif
 
-// #if DEBUG
-//       if (local_cache) 
-// 	local_cache->printStats();
-// #endif
     }
 
     template<typename LeafIntersector,bool ENABLE_COMPRESSED_BVH4I_NODES>    
