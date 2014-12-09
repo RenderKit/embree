@@ -40,10 +40,11 @@ namespace embree
     if (taskCount == 1) {
       return func(range<Index>(first,last));
     }
-    taskCount = min(taskCount,LockStepTaskScheduler::instance()->getNumThreads());
+    const size_t maxTasks = 256;
+    taskCount = min(taskCount,LockStepTaskScheduler::instance()->getNumThreads(),maxTasks);
 
     /* parallel invokation of all tasks */
-    Value* values = (Value*) alloca(taskCount*sizeof(Value));
+    Value values[maxTasks];
     parallel_for(taskCount, [&](const size_t taskIndex) {
         const size_t k0 = first+(taskIndex+0)*(last-first)/taskCount;
         const size_t k1 = first+(taskIndex+1)*(last-first)/taskCount;

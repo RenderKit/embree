@@ -222,12 +222,13 @@ namespace embree
 #endif
   }
 
+  LockStepTaskScheduler regression_task_scheduler;
+
   void task_regression_testing(void* This, size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* taskGroup) 
   {
     if (regression_tests == NULL) return;
-    LockStepTaskScheduler task_scheduler;
-    LockStepTaskScheduler::setInstance(&task_scheduler);
-    LockStepTaskScheduler::Init init(threadIndex,threadCount,&task_scheduler);
+    LockStepTaskScheduler::setInstance(&regression_task_scheduler);
+    LockStepTaskScheduler::Init init(threadIndex,threadCount,&regression_task_scheduler);
     if (threadIndex != 0) return;
     for (size_t i=0; i<regression_tests->size(); i++) 
       (*(*regression_tests)[i])();
