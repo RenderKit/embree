@@ -513,7 +513,6 @@ namespace embree
       
       /* initialize allocator and parallel_for_for_prefix_sum */
       this->bvh->alloc2.reset();
-      this->bvh->alloc2_thread_local.reset();
       pstate.init(iter,size_t(1024));
       
       BVH4BuilderFast::build(threadIndex,threadCount);
@@ -554,7 +553,7 @@ namespace embree
     {
       pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
       {
-	FastAllocator::Thread& alloc = *bvh->alloc2_thread_local;
+	FastAllocator::Thread& alloc = *bvh->alloc2.instance();
 	
 	PrimInfo s(empty);
         for (size_t f=r.begin(); f!=r.end(); ++f) {

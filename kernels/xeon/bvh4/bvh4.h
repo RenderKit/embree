@@ -1255,7 +1255,6 @@ namespace embree
     LinearAllocatorPerThread alloc;
 
     FastAllocator alloc2;
-    ThreadLocal<FastAllocator::Thread> alloc2_thread_local;
 
     void *data_mem; /* additional memory, currently used for subdivpatch1cached memory */
     size_t size_data_mem;

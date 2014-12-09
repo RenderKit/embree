@@ -313,16 +313,17 @@ namespace embree
           return alloc->malloc(bytes,maxAlignment);
 	}
 
-#if 0
+#if 0 // FIXME: this optimization is broken
+
         /* get new partial block if allocation failed */
 	if (alloc->usedBlocks) 
 	{
 	  size_t blockSize = allocBlockSize;
 	  ptr = (char*) alloc->usedBlocks->malloc_some(blockSize,maxAlignment);
-	  end = blockSize;
+	  cur = 0; end = blockSize;
 	  
 	  /* retry allocation */
-	  cur = bytes + ((align - cur) & (align-1));
+	  cur += bytes + ((align - cur) & (align-1));
 	  if (likely(cur <= end)) return &ptr[cur - bytes];
 	}
 #endif
@@ -330,8 +331,7 @@ namespace embree
         /* get new full block if allocation failed */
         size_t blockSize = allocBlockSize;
 	ptr = (char*) alloc->malloc(blockSize,maxAlignment);
-	cur = 0;
-        end = blockSize;
+	cur = 0; end = blockSize;
 	
         /* retry allocation */
         cur += bytes + ((align - cur) & (align-1));
@@ -346,6 +346,14 @@ namespace embree
       void clear () {
         ptr = NULL;
         cur = end = 0;
+	bytesWasted = bytesAllocated = 0;
+      }
+
+      /*! update statistics in parent allocator */
+      void updateStatistics()
+      {
+	alloc->bytesWasted += bytesWasted + (end-cur);
+	alloc->bytesAllocated += bytesAllocated;
       }
 
     public:
@@ -354,14 +362,22 @@ namespace embree
       size_t cur;            //!< current location of the allocator
       size_t end;            //!< end of the memory block
       size_t allocBlockSize; //!< block size for allocations
+    private:
+      size_t bytesWasted;    //!< number of bytes wasted
+      size_t bytesAllocated; //!< bumber of total bytes allocated
     };
 
     FastAllocator () 
-      : growSize(4096), usedBlocks(NULL), freeBlocks(NULL) {}
+      : growSize(4096), usedBlocks(NULL), freeBlocks(NULL), thread_local_allocators(this) {}
 
     ~FastAllocator () { 
       if (usedBlocks) usedBlocks->~Block(); usedBlocks = NULL;
       if (freeBlocks) freeBlocks->~Block(); freeBlocks = NULL;
+    }
+
+    /*! returns a fast thread local allocator */
+    __forceinline Thread* instance() {
+      return thread_local_allocators.get();
     }
 
     /*! initializes the allocator */
@@ -383,6 +399,9 @@ namespace embree
       /* add previously used blocks to end of free block list */
       freeBlocksEnd = usedBlocks;
       usedBlocks = NULL;
+
+      /* reset all thread local allocators */
+      thread_local_allocators.reset();
     }
 
     /*! shrinks all memory blocks to the actually used size */
@@ -499,5 +518,11 @@ namespace embree
     Block* volatile usedBlocks;
     Block* volatile freeBlocks;
     size_t growSize;
+
+    ThreadLocal<Thread> thread_local_allocators; //!< thread local allocators
+
+  private:
+    size_t bytesWasted;    //!< number of bytes wasted
+    size_t bytesAllocated; //!< bumber of total bytes allocated
   };
 }
