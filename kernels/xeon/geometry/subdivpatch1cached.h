@@ -141,7 +141,6 @@ namespace embree
     };
 
     static Type type;
-
   public:
 
     enum {

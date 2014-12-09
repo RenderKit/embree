@@ -67,7 +67,7 @@ namespace embree
 
       grid_size_simd_blocks       = ((grid_u_res*grid_v_res+7)&(-8)) / 8;
 
-      grid_subtree_size_64b_blocks = 4; // single bvh4 leaf with 3x3 grid => 4 cachelines
+      grid_subtree_size_64b_blocks = (sizeof(Quad2x2)+63) / 64; // single Quad2x2
 
       /* need stiching? */
 
