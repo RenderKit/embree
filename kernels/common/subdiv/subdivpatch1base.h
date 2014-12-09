@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "primitive.h"
+#include <cmath>
 #include "common/subdiv/bspline_patch.h"
 #include "common/subdiv/gregory_patch.h"
 #include "common/subdiv/tessellation.h"
@@ -28,6 +28,241 @@ using namespace std;
 
 namespace embree
 {
+
+  /* 3x3 point grid => 2x2 quad grid */
+  struct __aligned(64) Quad2x2
+  {
+   
+    Quad2x2() 
+      {
+      }
+
+    /*  v00 - v01 - v02 */
+    /*  v10 - v11 - v12 */
+    /*  v20 - v21 - v22 */
+
+    /* v00 - v10 - v01 - v11 - v02 - v12 */
+    /* v10 - v20 - v11 - v21 - v12 - v22 */
+
+    float vtx_x[12];
+    float vtx_y[12];
+    float vtx_z[12];
+#if DISCRITIZED_UV == 1
+    unsigned short vtx_u[12];
+    unsigned short vtx_v[12];
+#else
+    float vtx_u[12];
+    float vtx_v[12];
+#endif
+    static __forceinline ssef u16_to_ssef(const unsigned short *const source)
+    {
+      const ssei t = _mm_cvtepu16_epi32(loadu4i(source));
+      return ssef(t) * 1.0f/65535.0f;
+    } 
+
+    static __forceinline unsigned short float_to_u16(const float f) { return (unsigned short)(f*65535.0f); }
+    static __forceinline ssei float_to_u16(const ssef f) { return (ssei)(f*65535.0f); }
+ 
+
+
+    __forceinline void initFrom3x3Grid( const float *const source,
+                                        float *const dest,
+                                        const size_t offset_line0,
+                                        const size_t offset_line1,
+                                        const size_t offset_line2)
+    {
+      const float v00 = source[offset_line0 + 0];
+      const float v01 = source[offset_line0 + 1];
+      const float v02 = source[offset_line0 + 2];
+      const float v10 = source[offset_line1 + 0];
+      const float v11 = source[offset_line1 + 1];
+      const float v12 = source[offset_line1 + 2];
+      const float v20 = source[offset_line2 + 0];
+      const float v21 = source[offset_line2 + 1];
+      const float v22 = source[offset_line2 + 2];
+
+      /* v00 - v10 - v01 - v11 - v02 - v12 */
+      dest[ 0] = v00;
+      dest[ 1] = v10;
+      dest[ 2] = v01;
+      dest[ 3] = v11;
+      dest[ 4] = v02;
+      dest[ 5] = v12;
+      /* v10 - v20 - v11 - v21 - v12 - v22 */
+      dest[ 6] = v10;
+      dest[ 7] = v20;
+      dest[ 8] = v11;
+      dest[ 9] = v21;
+      dest[10] = v12;
+      dest[11] = v22;
+    }
+
+    __forceinline void initFrom3x3Grid( const ssef source[3],
+                                        float *const dest)
+    {
+      const ssef row0_a = unpacklo(source[0],source[1]); 
+      const ssef row0_b = shuffle<0,1,0,1>(unpackhi(source[0],source[1]));
+      const ssef row1_a = unpacklo(source[1],source[2]);
+      const ssef row1_b = shuffle<0,1,0,1>(unpackhi(source[1],source[2]));
+
+      storeu4f(&dest[2], row0_b);
+      storeu4f(&dest[8], row1_b);
+      storeu4f(&dest[0], row0_a);
+      storeu4f(&dest[6], row1_a);
+    }
+
+    __forceinline void initFrom3x3Grid_discritized( const ssef source[3],
+                                                    unsigned short *const dest)
+    {
+      const ssef row0_a = unpacklo(source[0],source[1]); 
+      const ssef row0_b = shuffle<0,1,0,1>(unpackhi(source[0],source[1]));
+      const ssef row1_a = unpacklo(source[1],source[2]);
+      const ssef row1_b = shuffle<0,1,0,1>(unpackhi(source[1],source[2]));
+
+      //storeu4f(&dest[2], row0_b);
+      //storeu4f(&dest[8], row1_b);
+      //storeu4f(&dest[0], row0_a);
+      //storeu4f(&dest[6], row1_a);
+    }
+
+    __forceinline void initFrom3x3Grid_discritized( const float *const source,
+                                                    unsigned short *const dest,
+                                                    const size_t offset_line0,
+                                                    const size_t offset_line1,
+                                                    const size_t offset_line2)
+    {
+      const float v00 = source[offset_line0 + 0];
+      const float v01 = source[offset_line0 + 1];
+      const float v02 = source[offset_line0 + 2];
+      const float v10 = source[offset_line1 + 0];
+      const float v11 = source[offset_line1 + 1];
+      const float v12 = source[offset_line1 + 2];
+      const float v20 = source[offset_line2 + 0];
+      const float v21 = source[offset_line2 + 1];
+      const float v22 = source[offset_line2 + 2];
+
+      /* v00 - v10 - v01 - v11 - v02 - v12 */
+      dest[ 0] = float_to_u16(v00);
+      dest[ 1] = float_to_u16(v10);
+      dest[ 2] = float_to_u16(v01);
+      dest[ 3] = float_to_u16(v11);
+      dest[ 4] = float_to_u16(v02);
+      dest[ 5] = float_to_u16(v12);
+      /* v10 - v20 - v11 - v21 - v12 - v22 */
+      dest[ 6] = float_to_u16(v10);
+      dest[ 7] = float_to_u16(v20);
+      dest[ 8] = float_to_u16(v11);
+      dest[ 9] = float_to_u16(v21);
+      dest[10] = float_to_u16(v12);
+      dest[11] = float_to_u16(v22);
+    }
+
+    /* init from 3x3 point grid */
+    void init( const float * const grid_x,
+               const float * const grid_y,
+               const float * const grid_z,
+               const float * const grid_u,
+               const float * const grid_v,
+               const size_t offset_line0,
+               const size_t offset_line1,
+               const size_t offset_line2)
+    {
+      initFrom3x3Grid( grid_x, vtx_x, offset_line0, offset_line1, offset_line2 );
+      initFrom3x3Grid( grid_y, vtx_y, offset_line0, offset_line1, offset_line2 );
+      initFrom3x3Grid( grid_z, vtx_z, offset_line0, offset_line1, offset_line2 );
+#if DISCRITIZED_UV == 1
+      initFrom3x3Grid_discritized( grid_u, vtx_u, offset_line0, offset_line1, offset_line2 );
+      initFrom3x3Grid_discritized( grid_v, vtx_v, offset_line0, offset_line1, offset_line2 );
+#else
+      initFrom3x3Grid( grid_u, vtx_u, offset_line0, offset_line1, offset_line2 );
+      initFrom3x3Grid( grid_v, vtx_v, offset_line0, offset_line1, offset_line2 );
+#endif
+    }
+
+    /* init from 3x3 point grid */
+    void init( const ssef grid_x[3],
+               const ssef grid_y[3],
+               const ssef grid_z[3],
+               const ssef grid_u[3],
+               const ssef grid_v[3])
+    {
+      initFrom3x3Grid( grid_x, vtx_x);
+      initFrom3x3Grid( grid_y, vtx_y);
+      initFrom3x3Grid( grid_z, vtx_z);
+#if DISCRITIZED_UV == 1
+      initFrom3x3Grid_discritized( grid_u, vtx_u);
+      initFrom3x3Grid_discritized( grid_v, vtx_v);
+#else
+      initFrom3x3Grid( grid_u, vtx_u );
+      initFrom3x3Grid( grid_v, vtx_v );
+#endif
+    }
+
+
+#if defined(__AVX__)
+
+    __forceinline avxf combine( const float *const source, const size_t offset) const {
+      return avxf( *(ssef*)&source[0+offset], *(ssef*)&source[6+offset] );            
+    }
+
+    __forceinline avxf combine_discritized( const unsigned short *const source, const size_t offset) const {
+      return avxf( u16_to_ssef(&source[0+offset]), u16_to_ssef(&source[6+offset]) );            
+    }
+
+    __forceinline avx3f getVtx( const size_t offset, const size_t delta = 0 ) const {
+      return avx3f(  combine(vtx_x,offset), combine(vtx_y,offset), combine(vtx_z,offset) );
+    }
+
+    __forceinline avx2f getUV( const size_t offset, const size_t delta = 0 ) const {
+#if DISCRITIZED_UV == 1
+      return avx2f(  combine_discritized(vtx_u,offset), combine_discritized(vtx_v,offset) );
+#else
+      return avx2f(  combine(vtx_u,offset), combine(vtx_v,offset) );
+#endif
+    }
+
+#else
+
+    __forceinline sse3f getVtx( const size_t offset, const size_t delta = 0 ) const {
+      return sse3f( loadu4f(&vtx_x[offset+delta]), loadu4f(&vtx_y[offset+delta]), loadu4f(&vtx_z[offset+delta]) );
+    }
+
+    __forceinline sse2f getUV( const size_t offset, const size_t delta = 0 ) const {
+#if DISCRITIZED_UV == 1
+      return sse2f( u16_to_ssef(&vtx_u[offset+delta]), u16_to_ssef(&vtx_v[offset+delta]) );
+#else
+      return sse2f(  loadu4f(&vtx_u[offset+delta]), loadu4f(&vtx_v[offset+delta])  );
+#endif
+    }
+    
+#endif
+
+
+      __forceinline BBox3fa bounds() const 
+      {
+      BBox3fa b( empty );
+      for (size_t i=0;i<12;i++)
+        b.extend( Vec3fa(vtx_x[i],vtx_y[i],vtx_z[i]) );
+      return b;
+    }
+    
+      __forceinline Vec3fa getVec3fa_xyz(const size_t i) const {
+      return Vec3fa( vtx_x[i], vtx_y[i], vtx_z[i] );
+    }
+
+      __forceinline Vec2f getVec2f_uv(const size_t i) const {
+      return Vec2f( vtx_u[i], vtx_v[i] );
+    }
+
+    };
+
+      /*! Outputs ray to stream. */
+      inline std::ostream& operator<<(std::ostream& cout, const Quad2x2& qquad) {
+      for (size_t i=0;i<12;i++)
+        cout << "i = " << i << " -> xyz = " << qquad.getVec3fa_xyz(i) << " uv = " << qquad.getVec2f_uv(i) << std::endl;
+      return cout;
+    }
+
 
 #if defined(__AVX__)
   __forceinline BBox3fa getBBox3fa(const avx3f &v)
@@ -131,16 +366,8 @@ namespace embree
     return cout;
   }
 
-  struct __aligned(64) SubdivPatch1Cached
+  struct __aligned(64) SubdivPatch1Base
   {
-    struct Type : public PrimitiveType 
-    {
-      Type ();
-      size_t blocks(size_t x) const; 
-      size_t size(const char* This) const;
-    };
-
-    static Type type;
   public:
 
     enum {
@@ -150,10 +377,10 @@ namespace embree
     };
 
     /*! Default constructor. */
-    __forceinline SubdivPatch1Cached () {}
+    __forceinline SubdivPatch1Base () {}
 
     /*! Construction from vertices and IDs. */
-    SubdivPatch1Cached (const CatmullClarkPatch& ipatch,
+    SubdivPatch1Base (const CatmullClarkPatch& ipatch,
                         const unsigned int gID,
                         const unsigned int pID,
                         const SubdivMesh *const mesh);
@@ -413,7 +640,7 @@ namespace embree
     __aligned(64) BSplinePatch patch;
   };
 
-  __forceinline std::ostream &operator<<(std::ostream &o, const SubdivPatch1Cached &p)
+  __forceinline std::ostream &operator<<(std::ostream &o, const SubdivPatch1Base &p)
     {
       o << " flags " << p.flags << " geomID " << p.geom << " primID " << p.prim << " u_range << " << p.u_range << " v_range " << p.v_range << " levels: " << p.level[0] << "," << p.level[1] << "," << p.level[2] << "," << p.level[3] << std::endl;
       o << " patch " << p.patch;

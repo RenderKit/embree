@@ -14,28 +14,14 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "subdivpatch1cached.h"
-#include "subdivpatch1cached_intersector1.h"
-
-#include "common/scene.h"
+#include "common/scene_subdiv_mesh.h"
+#include "subdivpatch1base.h"
 
 namespace embree
 {
-  SubdivPatch1Cached::Type SubdivPatch1Cached::type;
-  
-  SubdivPatch1Cached::Type::Type () 
-    : PrimitiveType("subdivpatch1",sizeof(SubdivPatch1Cached),1,false,1) {} 
-  
-  size_t SubdivPatch1Cached::Type::blocks(size_t x) const {
-    return x;
-  }
-    
-  size_t SubdivPatch1Cached::Type::size(const char* This) const {
-    return 1;
-  }
 
   /*! Construction from vertices and IDs. */
-  SubdivPatch1Cached::SubdivPatch1Cached (const CatmullClarkPatch& ipatch,
+  SubdivPatch1Base::SubdivPatch1Base (const CatmullClarkPatch& ipatch,
 					  const unsigned int gID,
 					  const unsigned int pID,
 					  const SubdivMesh *const mesh) 
@@ -43,7 +29,7 @@ namespace embree
         prim(pID),  
         flags(0)
     {
-      assert(sizeof(SubdivPatch1Cached) == 5 * 64);
+      assert(sizeof(SubdivPatch1Base) == 5 * 64);
 
       u_range = Vec2f(0.0f,1.0f);
       v_range = Vec2f(0.0f,1.0f);
