@@ -218,6 +218,39 @@ namespace embree
       tess_cache = cache;
     }
 
+    __forceinline BVH4i::NodeRef lookUpTessellationCache(TessellationCache *local_cache,
+							 const unsigned int patchIndex,
+							 const unsigned int commitCounter,
+							 const SubdivPatch1* const patches,
+							 Scene *const scene)
+    {
+      TessellationCache::InputTagType tag = (TessellationCache::InputTagType)patchIndex;
+
+      BVH4i::NodeRef subtree_root = local_cache->lookup(tag,commitCounter);
+      if (unlikely(subtree_root == BVH4i::invalidNode))
+	{
+	  const SubdivPatch1& subdiv_patch = patches[patchIndex];
+		  
+	  subdiv_patch.prefetchData();
+
+	  const SubdivMesh* const geom = (SubdivMesh*)scene->get(subdiv_patch.geom); // FIXME: test flag first
+
+	  const unsigned int blocks = subdiv_patch.grid_subtree_size_64b_blocks;
+
+	  TessellationCache::CacheTag &t = local_cache->request(tag,commitCounter,blocks);		      
+	  mic_f *local_mem = (mic_f*)local_cache->getPtr(); 
+
+	  unsigned int currentIndex = t.getRootRef();
+
+	  subtree_root = initLocalLazySubdivTree(subdiv_patch,currentIndex,local_mem,geom);		      
+	  assert( subtree_root != BVH4i::invalidNode);
+
+	  local_cache->updateRootRef(t,subtree_root);
+	}
+      return subtree_root;
+    }
+
+
 
     template<bool ENABLE_INTERSECTION_FILTER>
     struct SubdivLeafIntersector
@@ -349,32 +382,11 @@ namespace embree
 
 	      const unsigned int patchIndex = curNode.offsetIndex();
 
-
-
-	      TessellationCache::InputTagType tag = (TessellationCache::InputTagType)patchIndex;
-
-	      BVH4i::NodeRef subtree_root = local_cache->lookup(tag,commitCounter);
-	      if (unlikely(subtree_root == BVH4i::invalidNode))
-		{
-		  SubdivPatch1& subdiv_patch = ((SubdivPatch1*)accel)[patchIndex];
-		  
-		  subdiv_patch.prefetchData();
-
-		  const SubdivMesh* const geom = (SubdivMesh*)scene->get(subdiv_patch.geom); // FIXME: test flag first
-
-		  const unsigned int blocks = subdiv_patch.grid_subtree_size_64b_blocks;
-
-		  TessellationCache::CacheTag &t = local_cache->request(tag,commitCounter,blocks);		      
-		  mic_f *local_mem = (mic_f*)local_cache->getPtr(); 
-
-		  unsigned int currentIndex = t.getRootRef();
-		  //assert( NodeRef(currentIndex).isNode() );
-
-		  subtree_root = initLocalLazySubdivTree(subdiv_patch,currentIndex,local_mem,geom);		      
-		  assert( subtree_root != BVH4i::invalidNode);
-
-		  local_cache->updateRootRef(t,subtree_root);
-		}
+	      BVH4i::NodeRef subtree_root = lookUpTessellationCache(local_cache,
+								    patchIndex,
+								    commitCounter,
+								    (SubdivPatch1*)accel,
+								    scene);
 	      mic_f     * const __restrict__ lazymem     = (mic_f*)local_cache->getPtr(); /* lazymem could change to realloc */
 
 	      // -------------------------------------
@@ -538,28 +550,11 @@ namespace embree
 	      
 
 	      const unsigned int patchIndex = curNode.offsetIndex();
-	      TessellationCache::InputTagType tag = (TessellationCache::InputTagType)patchIndex;
-	      BVH4i::NodeRef subtree_root = local_cache->lookup(tag,commitCounter);
-	      if (unlikely(subtree_root == BVH4i::invalidNode))
-		{
-		  SubdivPatch1& subdiv_patch = ((SubdivPatch1*)accel)[patchIndex];
-		  
-		  subdiv_patch.prefetchData();
-
-		  const SubdivMesh* const geom = (SubdivMesh*)scene->get(subdiv_patch.geom); // FIXME: test flag first
-
-		  const unsigned int blocks = subdiv_patch.grid_subtree_size_64b_blocks;
-
-		  TessellationCache::CacheTag &t = local_cache->request(tag,commitCounter,blocks);		      
-		  mic_f *local_mem = (mic_f*)local_cache->getPtr(); 
-
-		  unsigned int currentIndex = t.getRootRef();
-
-		  subtree_root = initLocalLazySubdivTree(subdiv_patch,currentIndex,local_mem,geom);		      
-		  assert( subtree_root != BVH4i::invalidNode);
-
-		  local_cache->updateRootRef(t,subtree_root);
-		}
+	      BVH4i::NodeRef subtree_root = lookUpTessellationCache(local_cache,
+								    patchIndex,
+								    commitCounter,
+								    (SubdivPatch1*)accel,
+								    scene);
 	      mic_f     * const __restrict__ lazymem     = (mic_f*)local_cache->getPtr(); /* lazymem could change to realloc */
 
 		{
