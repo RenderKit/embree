@@ -153,8 +153,12 @@ namespace embree
     rtcEnable(scene,geomID);
   }
   
-  extern "C" void ispcModified (RTCScene scene, unsigned geomID) {
+  extern "C" void ispcUpdate (RTCScene scene, unsigned geomID) {
     rtcUpdate(scene,geomID);
+  }
+
+  extern "C" void ispcUpdateBuffer (RTCScene scene, unsigned geomID, RTCBufferType type) {
+    rtcUpdateBuffer(scene,geomID,type);
   }
   
   extern "C" void ispcDisable (RTCScene scene, unsigned geomID) {

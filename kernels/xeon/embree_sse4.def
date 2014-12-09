@@ -82,3 +82,6 @@ rtcSetTransform___un_3C_s[un__RTCScene]_3E_unuunenum[RTCMatrixType]un_3C_Cunf_3E
 rtcSetUserData___un_3C_s[un__RTCScene]_3E_unuun_3C_unv_3E_sse4
 rtcUnmapBuffer___un_3C_s[un__RTCScene]_3E_unuunenum[RTCBufferType]sse4
 rtcUpdate___un_3C_s[un__RTCScene]_3E_unusse4
+
+rtcUpdateBuffer___un_3C_s[un__RTCScene]_3E_unuunenum[RTCBufferType]sse2
+rtcUpdateBuffer___un_3C_s[un__RTCScene]_3E_unuunenum[RTCBufferType]sse4

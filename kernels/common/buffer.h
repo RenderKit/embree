@@ -63,6 +63,16 @@ namespace embree
       return mapped; 
     }
 
+    /*! mark buffer as modified or unmodified */
+    __forceinline void setModified(bool b) {
+      modified = b;
+    }
+
+    /*! mark buffer as modified or unmodified */
+    __forceinline bool isModified() const {
+      return modified;
+    }
+
     /*! returns the number of elements of the buffer */
     size_t size() const { 
       return num; 
@@ -85,6 +95,7 @@ namespace embree
     size_t num;      //!< number of elements in the stream
     bool shared;     //!< set if memory is shared with application
     bool mapped;     //!< set if buffer is mapped
+    bool modified;   //!< true if the buffer got modified
   };
 
   /*! Implements a data stream inside a data buffer. */

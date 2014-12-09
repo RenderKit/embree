@@ -170,6 +170,39 @@ namespace embree
     }
   }
 
+  void SubdivMesh::update ()
+  {
+    vertexIndices.setModified(true); 
+    faceVertices.setModified(true);
+    holes.setModified(true);
+    vertices[0].setModified(true); 
+    vertices[1].setModified(true); 
+    edge_creases.setModified(true);
+    edge_crease_weights.setModified(true);
+    vertex_creases.setModified(true);
+    vertex_crease_weights.setModified(true); 
+    levels.setModified(true);
+    Geometry::update();
+  }
+
+  void SubdivMesh::updateBuffer (RTCBufferType type)
+  {
+    switch (type) {
+    case RTC_INDEX_BUFFER               : vertexIndices.setModified(true); break;
+    case RTC_FACE_BUFFER                : faceVertices.setModified(true); break;
+    case RTC_HOLE_BUFFER                : holes.setModified(true); break;
+    case RTC_VERTEX_BUFFER0             : vertices[0].setModified(true); break;
+    case RTC_VERTEX_BUFFER1             : vertices[1].setModified(true); break;
+    case RTC_EDGE_CREASE_BUFFER         : edge_creases.setModified(true); break;
+    case RTC_EDGE_CREASE_WEIGHT_BUFFER  : edge_crease_weights.setModified(true); break;
+    case RTC_VERTEX_CREASE_BUFFER       : vertex_creases.setModified(true); break;
+    case RTC_VERTEX_CREASE_WEIGHT_BUFFER: vertex_crease_weights.setModified(true); break;
+    case RTC_LEVEL_BUFFER               : levels.setModified(true); break;
+    default                             : process_error(RTC_INVALID_ARGUMENT,"unknown buffer type"); break;
+    }
+    Geometry::update();
+  }
+
   void SubdivMesh::setUserData (void* ptr, bool ispc) {
     userPtr = ptr;
   }
@@ -207,149 +240,40 @@ namespace embree
     double t0 = getSeconds();
 
     /* allocate half edge array */
-
     TIMER(msec = getSeconds());
-
     halfEdges.resize(numEdges);
     halfEdges0.resize(numEdges);
     halfEdges1.resize(numEdges);
-        
     TIMER(msec = getSeconds()-msec);    
     TIMER(std::cout << "allocate half edge arrays  " << 1000. * msec << " ms" << std::endl);
 
-#if 0 // defined(__MIC__) // FIXME: remove
-    
     /* calculate start edge of each face */
-    faceStartEdge.resize(numFaces);
-    for (size_t f=0, ofs=0; f<numFaces; ofs+=faceVertices[f++])
-      faceStartEdge[f] = ofs;
-
-    /* create map containing all edge_creases */
-    std::map<uint64,float> creaseMap;
-    for (size_t i=0; i<edge_creases.size(); i++)
-      creaseMap[pair64(edge_creases[i].v0,edge_creases[i].v1)] = edge_crease_weights[i];
-
-    /* calculate vertex_crease weight for each vertex */
-    std::vector<float> full_vertex_crease_weights(numVertices);
-    for (size_t i=0; i<numVertices; i++) 
-      full_vertex_crease_weights[i] = 0.0f;
-    for (size_t i=0; i<vertex_creases.size(); i++) 
-      full_vertex_crease_weights[vertex_creases[i]] = vertex_crease_weights[i];
-
-    /* calculate full hole vector */
-    full_holes.resize(numFaces);
-    for (size_t i=0; i<full_holes.size(); i++) full_holes[i] = 0;
-    for (size_t i=0; i<holes.size()     ; i++) full_holes[holes[i]] = 1;
-
-    double t0 = getSeconds();
-    
-    /* initialize all half-edges for each face */
-    std::map<size_t,HalfEdge*> edgeMap;
-    std::map<size_t,bool> nonManifoldEdges;
-
-    for (size_t i=0, j=0; i<numFaces; i++) 
-    {
-      const ssize_t N = faceVertices[i];
-      
-      for (size_t dj=0; dj<N; dj++)
-      {
-        HalfEdge* edge0 = &halfEdges[j+dj];
-        const unsigned int startVertex = vertexIndices[j+dj];
-        const unsigned int endVertex   = vertexIndices[j + (dj+1) % N];
-        const uint64 value = pair64(startVertex,endVertex);
-
-        float edge_crease_weight = 0.0f;
-        if (creaseMap.find(value) != creaseMap.end()) 
-          edge_crease_weight = creaseMap[value];
-
-        float edge_level = 1.0f;
-        if (levels) edge_level = clamp(levels[j+dj],1.0f,1024.0f);
-	assert( edge_level >= 0.0f && edge_level <= 1024.0f);
-        
-        edge0->vtx_index = startVertex;
-        edge0->next_half_edge_ofs = (dj == (N-1)) ? -(N-1) : +1;
-        edge0->prev_half_edge_ofs = (dj ==     0) ? +(N-1) : -1;
-        edge0->opposite_half_edge_ofs = 0;
-        edge0->edge_crease_weight = edge_crease_weight;
-        edge0->vertex_crease_weight = full_vertex_crease_weights[startVertex];
-        edge0->edge_level = edge_level;
-        if (full_holes[i]) continue;
-        
-        std::map<size_t,HalfEdge*>::iterator found = edgeMap.find(value);
-        if (found == edgeMap.end()) {
-          edgeMap[value] = edge0;
-          continue;
-        }
-
-        HalfEdge* edge1 = found->second;
-        if (unlikely(edge1->hasOpposite())) 
-          nonManifoldEdges[value] = true;
-
-        edge0->opposite_half_edge_ofs = edge1 - edge0;
-        edge1->opposite_half_edge_ofs = edge0 - edge1;
-      }
-      j+=N;
-    }
-
-    for (size_t i=0, j=0; i<numFaces; i++) 
-    {
-      ssize_t N = faceVertices[i];
-      for (size_t dj=0; dj<N; dj++)
-      {
-        HalfEdge* edge = &halfEdges[j+dj];
-        const unsigned int startVertex = vertexIndices[j+dj];
-        const unsigned int endVertex   = vertexIndices[j + (dj + 1) % N];
-        const uint64 value = pair64(startVertex,endVertex);
-
-        if (nonManifoldEdges.find(value) != nonManifoldEdges.end()) {
-          edge->opposite_half_edge_ofs = 0;
-          edge->vertex_crease_weight = inf;
-          edge->next()->vertex_crease_weight = inf;
-          continue;
-        }
-      }
-      j+=N;
-    }
-
-#else
-    
-    /* calculate start edge of each face */
-
     TIMER(msec = getSeconds());
-
     faceStartEdge.resize(numFaces);
     size_t numHalfEdges = parallel_prefix_sum(faceVertices,faceStartEdge,numFaces);
-
     TIMER(msec = getSeconds()-msec);    
     TIMER(std::cout << "calculate start edge  " << 1000. * msec << " ms" << std::endl);
 
     /* create set with all holes */
     TIMER(msec = getSeconds());
-
     holeSet.init(holes);
-
     TIMER(msec = getSeconds()-msec);    
     TIMER(std::cout << "holes  " << 1000. * msec << " ms" << std::endl);
 
     /* create set with all vertex creases */
     TIMER(msec = getSeconds());
-
     vertexCreaseMap.init(vertex_creases,vertex_crease_weights);
-
     TIMER(msec = getSeconds()-msec);    
     TIMER(std::cout << "creases  " << 1000. * msec << " ms" << std::endl);
     
     /* create map with all edge creases */
     TIMER(msec = getSeconds());
-
     edgeCreaseMap.init(edge_creases,edge_crease_weights);
-
     TIMER(msec = getSeconds()-msec);    
     TIMER(std::cout << "edge map  " << 1000. * msec << " ms" << std::endl);
 
     /* create all half edges */
     TIMER(msec = getSeconds());
-
 #if defined(__MIC__)
     parallel_for( size_t(0), numFaces, [&](const range<size_t>& r) 
 #else
@@ -358,7 +282,7 @@ namespace embree
     {
       for (size_t f=r.begin(); f<r.end(); f++) 
       {
-	//FIXME: use 'stride' to reduce imuls on MIC !!!
+	// FIXME: use 'stride' to reduce imuls on MIC !!!
 
 #if defined(__MIC__)
 	prefetch<PFHINT_L2>((char*)&faceVertices[f]  + 4*64);
@@ -380,7 +304,6 @@ namespace embree
 	  const unsigned int startVertex = vertexIndices[e+de];
 	  unsigned int nextIndex = de + 1;
 	  if (unlikely(nextIndex >= N)) nextIndex -=N; 
-	  //const unsigned int endVertex = vertexIndices[e + (de + 1) % N]; // FIXME: optimize %
 	  const unsigned int endVertex   = vertexIndices[e + nextIndex]; 
 	  const uint64 key = Edge(startVertex,endVertex);
 	  
@@ -409,15 +332,12 @@ namespace embree
 
     /* sort half edges to find adjacent edges */
     TIMER(msec = getSeconds());
-
     radix_sort_u64(&halfEdges1[0],&halfEdges0[0],numHalfEdges);
-
     TIMER(msec = getSeconds()-msec);    
     TIMER(std::cout << "sort edges  " << 1000. * msec << " ms" << std::endl);
 
     /* link all adjacent pairs of edges */
     TIMER(msec = getSeconds());
-
 #if defined(__MIC__)
     parallel_for( size_t(0), numHalfEdges, [&](const range<size_t>& r) 
 #else
@@ -463,7 +383,17 @@ namespace embree
       edgeCreaseMap.clear();
     }
 
-#endif
+    /* clear modified state of all buffers */
+    vertexIndices.setModified(false); 
+    faceVertices.setModified(false);
+    holes.setModified(false);
+    vertices[0].setModified(false); 
+    vertices[1].setModified(false); 
+    edge_creases.setModified(false);
+    edge_crease_weights.setModified(false);
+    vertex_creases.setModified(false);
+    vertex_crease_weights.setModified(false); 
+    levels.setModified(false);
 
     double t1 = getSeconds();
 
@@ -484,7 +414,6 @@ namespace embree
                 << "numRegularFaces = " << numRegularFaces << " (" << 100.0f * numRegularFaces / numFaces << "%), " 
                 << "numIrregularFaces " << numIrregularFaces << " (" << 100.0f * numIrregularFaces / numFaces << "%) " << std::endl;
     }
-
   }
 
   bool SubdivMesh::verify () 

@@ -161,12 +161,21 @@ void rtcSetBuffer(RTCScene scene, uniform unsigned int geomID, uniform RTCBuffer
 /*! \brief Enable geometry. Enabled geometry can be hit by a ray. */
 void rtcEnable (RTCScene scene, uniform unsigned int geomID);
 
-/*! \brief Update geometry. 
+/*! \brief Update spefific geometry buffer. 
 
-  This function has to get called, each time the user modifies some
-  geometry for dynamic scenes. The function does not have to get
-  called after initializing some geometry for the first time. */
+  Each time geometry buffers got modified, the user has to call some
+  update function to tell the ray tracing engine which buffers got
+  modified. The rtcUpdateBuffer function taggs a specific buffer of
+  some geometry as modified. */
 void rtcUpdate (RTCScene scene, uniform unsigned int geomID);
+
+/*! \brief Update spefific geometry buffer. 
+
+  Each time geometry buffers got modified, the user has to call some
+  update function to tell the ray tracing engine which buffers got
+  modified. The rtcUpdateBuffer function taggs a specific buffer of
+  some geometry as modified. */
+void rtcUpdateBuffer (RTCScene scene, uniform unsigned int geomID, uniform RTCBufferType type);
 
 /*! \brief Disable geometry. 
 

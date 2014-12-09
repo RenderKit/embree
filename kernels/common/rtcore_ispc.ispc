@@ -64,7 +64,8 @@ extern "C" void* uniform ispcMapBuffer(RTCScene scene, uniform unsigned int geom
 extern "C" void ispcUnmapBuffer(RTCScene scene, uniform unsigned int geomID, uniform RTCBufferType type);
 extern "C" void ispcSetBuffer(RTCScene scene, uniform unsigned int geomID, uniform RTCBufferType type, void* uniform ptr, uniform size_tt offset, uniform size_tt stride);
 extern "C" void ispcEnable (RTCScene scene, uniform unsigned int geomID);
-extern "C" void ispcModified (RTCScene scene, uniform unsigned int geomID);
+extern "C" void ispcUpdate (RTCScene scene, uniform unsigned int geomID);
+extern "C" void ispcUpdateBuffer (RTCScene scene, uniform unsigned int geomID, uniform RTCBufferType type);
 extern "C" void ispcDisable (RTCScene scene, uniform unsigned int geomID);
 extern "C" void ispcDeleteGeometry (RTCScene scene, uniform unsigned int geomID);
 
@@ -241,7 +242,11 @@ void rtcEnable (RTCScene scene, uniform unsigned int geomID) {
 }
 
 void rtcUpdate (RTCScene scene, uniform unsigned int geomID) {
-  ispcModified(scene,geomID);
+  ispcUpdate(scene,geomID);
+}
+
+void rtcUpdateBuffer (RTCScene scene, uniform unsigned int geomID, uniform RTCBufferType type) {
+  ispcUpdateBuffer(scene,geomID,type);
 }
 
 void rtcDisable (RTCScene scene, uniform unsigned int geomID) {

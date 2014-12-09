@@ -84,6 +84,11 @@ namespace embree
 
     /*! Update geometry. */
     virtual void update ();
+
+    /*! Update geometry buffer. */
+    virtual void updateBuffer (RTCBufferType type) {
+      update(); // update everything for geometries not supporting this call
+    }
     
     /*! Disable geometry. */
     virtual void disable ();

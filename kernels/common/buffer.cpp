@@ -19,7 +19,7 @@
 namespace embree
 {
   Buffer::Buffer () 
-    : ptr(NULL), bytes(0), ptr_ofs(NULL), stride(0), num(0), shared(false), mapped(false) {}
+    : ptr(NULL), bytes(0), ptr_ofs(NULL), stride(0), num(0), shared(false), mapped(false), modified(true) {}
   
   Buffer::~Buffer () {
     free();
@@ -34,6 +34,7 @@ namespace embree
     stride = stride_in;
     shared = false;
     mapped = false;
+    modified = true;
   }
 
   void Buffer::set(void* ptr_in, size_t ofs_in, size_t stride_in)

@@ -45,3 +45,5 @@ rtcSetTransform___un_3C_s[un__RTCScene]_3E_unuunenum[RTCMatrixType]un_3C_Cunf_3E
 rtcSetUserData___un_3C_s[un__RTCScene]_3E_unuun_3C_unv_3E_
 rtcUnmapBuffer___un_3C_s[un__RTCScene]_3E_unuunenum[RTCBufferType]
 rtcUpdate___un_3C_s[un__RTCScene]_3E_unu
+
+rtcUpdateBuffer___un_3C_s[un__RTCScene]_3E_unuunenum[RTCBufferType]

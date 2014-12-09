@@ -273,6 +273,8 @@ namespace embree
     void setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride);
     void* map(RTCBufferType type);
     void unmap(RTCBufferType type);
+    void update ();
+    void updateBuffer (RTCBufferType type);
     void setUserData (void* ptr, bool ispc);
     void immutable ();
     bool verify ();
