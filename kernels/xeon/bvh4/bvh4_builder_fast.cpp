@@ -29,11 +29,11 @@
 #include "geometry/triangle4v.h"
 #include "geometry/triangle4i.h"
 #include "geometry/subdivpatch1.h"
-#include "geometry/subdivpatch1cached.h"
 
 #include "geometry/grid.h"
 #include "common/subdiv/feature_adaptive_gregory.h"
 #include "common/subdiv/feature_adaptive_bspline.h"
+#include "geometry/subdivpatch1cached.h"
 #include "geometry/virtual_accel.h"
 
 #include <algorithm>

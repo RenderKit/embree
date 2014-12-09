@@ -18,9 +18,9 @@
 #include "../common/tutorial/scene_device.isph"
 
 #define PARALLEL_COMMIT
-#define ENABLE_DISPLACEMENTS
+//#define ENABLE_DISPLACEMENTS
 
-#define FORCE_FIXED_EDGE_TESSELLATION
+//#define FORCE_FIXED_EDGE_TESSELLATION
 #define FIXED_EDGE_TESSELLATION_VALUE 30
 
 #define MAX_EDGE_LEVEL 4.0f

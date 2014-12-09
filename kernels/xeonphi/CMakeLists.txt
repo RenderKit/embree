@@ -37,6 +37,7 @@ ADD_ISPC_LIBRARY(embree_xeonphi ${EMBREE_LIB_TYPE}
   ../common/scene_bezier_curves.cpp
   ../common/scene_subdiv_mesh.cpp
   ../common/raystream_log.cpp
+  ../common/subdiv/subdivpatch1base.cpp
 
   ../algorithms/parallel_for.cpp
   ../algorithms/parallel_reduce.cpp
