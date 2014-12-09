@@ -107,7 +107,11 @@ namespace embree
 
       __forceinline void clearRootRefBits()
       {
+#if defined(__MIC__)
+	subtree_root >>= 4+1;
+#else
         subtree_root &= ~(((unsigned int)1 << 4)-1);
+#endif
       }
 
       __forceinline unsigned int blocks() const
@@ -230,6 +234,7 @@ namespace embree
       assert(!tags[index].match(primID,commitCounter));
       if (likely(tags[index].blocks() >= neededBlocks))
         {
+	  //DBG_PRINT("EVICT");
           CACHE_STATS(cache_evictions++);
           tags[index].update(primID,commitCounter);
           tags[index].clearRootRefBits();
@@ -261,6 +266,8 @@ namespace embree
           clear();
         }
 
+      //DBG_PRINT("NEW ALLOC");
+	  
       /* allocate entry */
       const size_t currentIndex = blockCounter;
       blockCounter += neededBlocks;

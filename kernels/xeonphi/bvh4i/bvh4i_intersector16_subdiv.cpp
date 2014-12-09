@@ -343,6 +343,10 @@ namespace embree
       BVH4i::NodeRef subtree_root = 0;
       const unsigned int oldIndex = currentIndex;
 
+      // PING;
+      // DBG_PRINT( currentIndex );
+      // DBG_PRINT( patch.grid_subtree_size_64b_blocks );
+
       BBox3fa bounds = createSubTree( subtree_root,
 				      lazymem,
 				      patch,
@@ -351,6 +355,8 @@ namespace embree
 				      GridRange(0,patch.grid_u_res-1,0,patch.grid_v_res-1),
 				      currentIndex,
 				      geom);
+
+
       assert(currentIndex - oldIndex == patch.grid_subtree_size_64b_blocks);
       TIMER(msec = getSeconds()-msec);    
       return subtree_root;
@@ -737,7 +743,7 @@ namespace embree
 		      const unsigned int blocks = subdiv_patch.grid_subtree_size_64b_blocks;
 
 		      TessellationCache::CacheTag &t = local_cache->request(tag,commitCounter,blocks);
-		      mic_f *local_mem = (mic_f*)local_cache->getPtr(); //getCacheMemoryPtr(t);
+		      mic_f *local_mem = (mic_f*)local_cache->getPtr(); 
 
 		      unsigned int currentIndex = t.getRootRef();
 
