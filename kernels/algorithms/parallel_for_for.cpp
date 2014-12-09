@@ -36,11 +36,11 @@ namespace embree
       const size_t M = 1000;
       std::vector<std::vector<size_t>* > array2(M);
       for (size_t i=0; i<M; i++) {
-        const size_t N = ::random() % 1024;
+        const size_t N = rand() % 1024;
         K+=N;
         array2[i] = new std::vector<size_t>(N);
         for (size_t j=0; j<N; j++) 
-          sum0 += (*array2[i])[j] = ::random();
+          sum0 += (*array2[i])[j] = rand();
       }
 
       /* array to test global index */

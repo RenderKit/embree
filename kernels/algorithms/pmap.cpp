@@ -35,8 +35,8 @@ namespace embree
       std::vector<uint32> keys(N);
       std::vector<uint32> vals(N);
       for (size_t i=0; i<N; i++) {
-	keys[i] = 2*::random();
-	vals[i] = 2*::random();
+	keys[i] = 2*rand();
+	vals[i] = 2*rand();
       }
       
       /* create map */

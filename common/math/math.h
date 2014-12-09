@@ -19,6 +19,7 @@
 #include "sys/platform.h"
 #include "sys/intrinsics.h"
 
+#define _USE_MATH_DEFINES
 #include <math.h>
 #include <cmath>
 #include <float.h>

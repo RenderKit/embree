@@ -24,7 +24,7 @@ namespace embree
 {
   struct GridLazyIntersector1
   {
-    typedef typename Grid::LazyLeaf Primitive;
+    typedef Grid::LazyLeaf Primitive;
 
     struct Precalculations {
       __forceinline Precalculations (const Ray& ray) {}
@@ -42,7 +42,7 @@ namespace embree
 
   struct GridIntersector1
   {
-    typedef typename Grid::EagerLeaf Primitive;
+    typedef Grid::EagerLeaf Primitive;
 
     struct Precalculations 
     {

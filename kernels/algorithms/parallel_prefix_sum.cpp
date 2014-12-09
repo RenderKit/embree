@@ -35,7 +35,7 @@ namespace embree
       std::vector<size_t> array(N);
       std::vector<atomic_t> prefix_sum(N);
       for (size_t j=0; j<N; j++)
-	array[j] = ::random() % 10;
+	array[j] = rand() % 10;
   
       /* dry run only counts */
       ParallelPrefixSumState<size_t> state;

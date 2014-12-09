@@ -584,6 +584,13 @@ namespace embree
       
           __aligned(64) float grid_u[(patch.grid_size_simd_blocks+1)*8]; 
           __aligned(64) float grid_v[(patch.grid_size_simd_blocks+1)*8];
+
+		  //float* grid_x = (float*) ALIGN_PTR(alloca((patch.grid_size_simd_blocks + 1) * 8 * sizeof(float) + 64),64);
+		  //float* grid_y = (float*) ALIGN_PTR(alloca((patch.grid_size_simd_blocks + 1) * 8 * sizeof(float) + 64),64);
+		  //float* grid_z = (float*) ALIGN_PTR(alloca((patch.grid_size_simd_blocks + 1) * 8 * sizeof(float) + 64),64);
+
+		  //float* grid_u = (float*) ALIGN_PTR(alloca((patch.grid_size_simd_blocks + 1) * 8 * sizeof(float) + 64),64);
+		  //float* grid_v = (float*) ALIGN_PTR(alloca((patch.grid_size_simd_blocks + 1) * 8 * sizeof(float) + 64),64);
       
           evalGrid(patch,grid_x,grid_y,grid_z,grid_u,grid_v,geom);
       

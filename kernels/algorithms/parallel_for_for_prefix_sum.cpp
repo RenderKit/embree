@@ -37,11 +37,11 @@ namespace embree
       ArrayArray array2(M);
       size_t K = 0;
       for (size_t i=0; i<M; i++) {
-        const size_t N = ::random() % 10;
+        const size_t N = rand() % 10;
         K += N;
         array2[i] = new std::vector<size_t>(N);
         for (size_t j=0; j<N; j++) 
-          (*array2[i])[j] = ::random() % 10;
+          (*array2[i])[j] = rand() % 10;
       }
   
       /* array to test global index */

@@ -38,7 +38,7 @@ namespace embree
         uint32 sum0 = 0;
 	std::vector<uint32> src(N);
 	for (size_t i=0; i<N; i++) {
-	  sum0 += src[i] = ::random();
+	  sum0 += src[i] = rand();
         }
         
 	/* calculate parallel prefix sum */

@@ -254,7 +254,9 @@ namespace embree
 
       __aligned(64) float u_array[(grid_size_simd_blocks+1)*8]; // +8 for unaligned access
       __aligned(64) float v_array[(grid_size_simd_blocks+1)*8]; // +8 for unaligned access
-
+	  //float* u_array = (float*) ALIGN_PTR(alloca((grid_size_simd_blocks+1)*8*sizeof(float)+64),64); // +8 for unaligned access
+	  //float* v_array = (float*) ALIGN_PTR(alloca((grid_size_simd_blocks+1)*8*sizeof(float)+64),64); // +8 for unaligned access
+	  
       const unsigned int real_grid_size = grid_u_res*grid_v_res;
       gridUVTessellator(level,grid_u_res,grid_v_res,u_array,v_array);
       

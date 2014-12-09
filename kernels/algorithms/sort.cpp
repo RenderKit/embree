@@ -42,7 +42,7 @@ namespace embree
       {
 	std::vector<Key> src(N); memset(&src[0],0,N*sizeof(Key));
 	std::vector<Key> tmp(N); memset(&tmp[0],0,N*sizeof(Key));
-	for (size_t i=0; i<N; i++) src[i] = uint64(::random())*uint64(::random());
+	for (size_t i=0; i<N; i++) src[i] = uint64(rand())*uint64(rand());
 	
 	/* calculate checksum */
 	Key sum0 = 0; for (size_t i=0; i<N; i++) sum0 += src[i];
