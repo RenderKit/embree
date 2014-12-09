@@ -62,25 +62,25 @@ namespace embree
 
         Quad2x2 *qquad = (Quad2x2*)&lazymem[currentIndex*16];
 
-#if 0
-        float leaf_x_array[3][3];
-        float leaf_y_array[3][3];
-        float leaf_z_array[3][3];
-        float leaf_u_array[3][3];
-        float leaf_v_array[3][3];
+        // scalar code path
+        // float leaf_x_array[3][3];
+        // float leaf_y_array[3][3];
+        // float leaf_z_array[3][3];
+        // float leaf_u_array[3][3];
+        // float leaf_v_array[3][3];
 
-        for (unsigned int v=v_start;v<=v_end;v++)
-          for (unsigned int u=u_start;u<=u_end;u++)
-            {
-              const unsigned int local_v = v - v_start;
-              const unsigned int local_u = u - u_start;
-              leaf_x_array[local_v][local_u] = grid_x_array[ v * patch.grid_u_res + u ];
-              leaf_y_array[local_v][local_u] = grid_y_array[ v * patch.grid_u_res + u ];
-              leaf_z_array[local_v][local_u] = grid_z_array[ v * patch.grid_u_res + u ];
-              leaf_u_array[local_v][local_u] = grid_u_array[ v * patch.grid_u_res + u ];
-              leaf_v_array[local_v][local_u] = grid_v_array[ v * patch.grid_u_res + u ];
-            }
-#else
+        // for (unsigned int v=v_start;v<=v_end;v++)
+        //   for (unsigned int u=u_start;u<=u_end;u++)
+        //     {
+        //       const unsigned int local_v = v - v_start;
+        //       const unsigned int local_u = u - u_start;
+        //       leaf_x_array[local_v][local_u] = grid_x_array[ v * patch.grid_u_res + u ];
+        //       leaf_y_array[local_v][local_u] = grid_y_array[ v * patch.grid_u_res + u ];
+        //       leaf_z_array[local_v][local_u] = grid_z_array[ v * patch.grid_u_res + u ];
+        //       leaf_u_array[local_v][local_u] = grid_u_array[ v * patch.grid_u_res + u ];
+        //       leaf_v_array[local_v][local_u] = grid_v_array[ v * patch.grid_u_res + u ];
+        //     }
+
         ssef leaf_x_array[3];
         ssef leaf_y_array[3];
         ssef leaf_z_array[3];
@@ -98,11 +98,9 @@ namespace embree
             leaf_v_array[local_v] = loadu4f(&grid_v_array[ offset ]);            
           }
 
-
-#endif
         /* set invalid grid u,v value to border elements */
-        for (unsigned int y=0;y<3;y++)
-          for (unsigned int x=u_size-1;x<3;x++)
+        for (unsigned int x=u_size-1;x<3;x++)
+          for (unsigned int y=0;y<3;y++)
             {
               leaf_x_array[y][x] = leaf_x_array[y][u_size-1];
               leaf_y_array[y][x] = leaf_y_array[y][u_size-1];
@@ -111,8 +109,8 @@ namespace embree
               leaf_v_array[y][x] = leaf_v_array[y][u_size-1];
             }
 
-        for (unsigned int x=0;x<3;x++)
-          for (unsigned int y=v_size-1;y<3;y++)
+        for (unsigned int y=v_size-1;y<3;y++)
+          for (unsigned int x=0;x<3;x++)
             {
               leaf_x_array[y][x] = leaf_x_array[v_size-1][x];
               leaf_y_array[y][x] = leaf_y_array[v_size-1][x];
@@ -122,24 +120,22 @@ namespace embree
             }
 
 
-#if 1
-        qquad->init( (float*)leaf_x_array, 
-                     (float*)leaf_y_array, 
-                     (float*)leaf_z_array, 
-                     (float*)leaf_u_array, 
-                     (float*)leaf_v_array, 
-                     0, 
-                     4, 
-                     8);
-#else
+        // scalar code path
+
+         // qquad->init( (float*)leaf_x_array, 
+         //              (float*)leaf_y_array, 
+         //              (float*)leaf_z_array, 
+         //              (float*)leaf_u_array, 
+         //              (float*)leaf_v_array, 
+         //              0, 
+         //              4, 
+         //              8);
+
         qquad->init( leaf_x_array, 
                      leaf_y_array, 
                      leaf_z_array, 
                      leaf_u_array, 
                      leaf_v_array);
-
-#endif
-
 
 #if 0
         DBG_PRINT("LEAF");
@@ -158,13 +154,6 @@ namespace embree
 
 #endif          
 
-
-        // 0, 
-                     // 3, 
-                     // 6);
-
-
-          
         BBox3fa bounds = qquad->bounds();
         curNode = BVH4::encodeLeaf(qquad,2);
 
