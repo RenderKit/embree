@@ -99,9 +99,9 @@ namespace embree
     case RTC_INDEX_BUFFER               : vertexIndices.set(ptr,offset,stride); break;
     case RTC_FACE_BUFFER                : faceVertices.set(ptr,offset,stride); break;
     case RTC_HOLE_BUFFER                : holes.set(ptr,offset,stride); break;
-    case RTC_EDGE_CREASE_BUFFER         : edge_creases.set(ptr,offset,stride); break;
+    case RTC_EDGE_CREASE_INDEX_BUFFER   : edge_creases.set(ptr,offset,stride); break;
     case RTC_EDGE_CREASE_WEIGHT_BUFFER  : edge_crease_weights.set(ptr,offset,stride); break;
-    case RTC_VERTEX_CREASE_BUFFER       : vertex_creases.set(ptr,offset,stride); break;
+    case RTC_VERTEX_CREASE_INDEX_BUFFER : vertex_creases.set(ptr,offset,stride); break;
     case RTC_VERTEX_CREASE_WEIGHT_BUFFER: vertex_crease_weights.set(ptr,offset,stride); break;
     case RTC_LEVEL_BUFFER               : levels.set(ptr,offset,stride); break;
 
@@ -140,9 +140,9 @@ namespace embree
     case RTC_HOLE_BUFFER                 : return holes.map(parent->numMappedBuffers);
     case RTC_VERTEX_BUFFER0              : return vertices[0].map(parent->numMappedBuffers);
     case RTC_VERTEX_BUFFER1              : return vertices[1].map(parent->numMappedBuffers);
-    case RTC_EDGE_CREASE_BUFFER          : return edge_creases.map(parent->numMappedBuffers); 
+    case RTC_EDGE_CREASE_INDEX_BUFFER    : return edge_creases.map(parent->numMappedBuffers); 
     case RTC_EDGE_CREASE_WEIGHT_BUFFER   : return edge_crease_weights.map(parent->numMappedBuffers); 
-    case RTC_VERTEX_CREASE_BUFFER        : return vertex_creases.map(parent->numMappedBuffers); 
+    case RTC_VERTEX_CREASE_INDEX_BUFFER  : return vertex_creases.map(parent->numMappedBuffers); 
     case RTC_VERTEX_CREASE_WEIGHT_BUFFER : return vertex_crease_weights.map(parent->numMappedBuffers); 
     case RTC_LEVEL_BUFFER                : return levels.map(parent->numMappedBuffers); 
     default                              : process_error(RTC_INVALID_ARGUMENT,"unknown buffer type"); return NULL;
@@ -162,9 +162,9 @@ namespace embree
     case RTC_HOLE_BUFFER                : holes.unmap(parent->numMappedBuffers); break;
     case RTC_VERTEX_BUFFER0             : vertices[0].unmap(parent->numMappedBuffers); break;
     case RTC_VERTEX_BUFFER1             : vertices[1].unmap(parent->numMappedBuffers); break;
-    case RTC_EDGE_CREASE_BUFFER         : edge_creases.unmap(parent->numMappedBuffers); break;
+    case RTC_EDGE_CREASE_INDEX_BUFFER   : edge_creases.unmap(parent->numMappedBuffers); break;
     case RTC_EDGE_CREASE_WEIGHT_BUFFER  : edge_crease_weights.unmap(parent->numMappedBuffers); break;
-    case RTC_VERTEX_CREASE_BUFFER       : vertex_creases.unmap(parent->numMappedBuffers); break;
+    case RTC_VERTEX_CREASE_INDEX_BUFFER : vertex_creases.unmap(parent->numMappedBuffers); break;
     case RTC_VERTEX_CREASE_WEIGHT_BUFFER: vertex_crease_weights.unmap(parent->numMappedBuffers); break;
     case RTC_LEVEL_BUFFER               : levels.unmap(parent->numMappedBuffers); break;
     default                             : process_error(RTC_INVALID_ARGUMENT,"unknown buffer type"); break;
@@ -194,9 +194,9 @@ namespace embree
     case RTC_HOLE_BUFFER                : holes.setModified(true); break;
     case RTC_VERTEX_BUFFER0             : vertices[0].setModified(true); break;
     case RTC_VERTEX_BUFFER1             : vertices[1].setModified(true); break;
-    case RTC_EDGE_CREASE_BUFFER         : edge_creases.setModified(true); break;
+    case RTC_EDGE_CREASE_INDEX_BUFFER   : edge_creases.setModified(true); break;
     case RTC_EDGE_CREASE_WEIGHT_BUFFER  : edge_crease_weights.setModified(true); break;
-    case RTC_VERTEX_CREASE_BUFFER       : vertex_creases.setModified(true); break;
+    case RTC_VERTEX_CREASE_INDEX_BUFFER : vertex_creases.setModified(true); break;
     case RTC_VERTEX_CREASE_WEIGHT_BUFFER: vertex_crease_weights.setModified(true); break;
     case RTC_LEVEL_BUFFER               : levels.setModified(true); break;
     default                             : process_error(RTC_INVALID_ARGUMENT,"unknown buffer type"); break;

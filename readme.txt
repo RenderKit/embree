@@ -14,7 +14,7 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-= Embree: High Performance Ray Tracing Kernels 2.3.3  =
+= Embree: High Performance Ray Tracing Kernels 2.4.0 (devel)  =
 
 == Embree Overview  ==
 
@@ -22,8 +22,8 @@ Embree is a collection of high-performance ray tracing kernels, developed at
 Intel. The target user of Embree are graphics application engineers that want
 to improve the performance of their application by leveraging the optimized ray
 tracing kernels of Embree. The kernels are optimized for photo-realistic
-rendering on the latest Intel� processors with support for SSE, AVX, AVX2, and
-the 16-wide Xeon Phi[TM] vector instructions. Embree supports runtime code
+rendering on the latest Intel® processors with support for SSE, AVX, AVX2, and
+the 16-wide Xeon Phi™ vector instructions. Embree supports runtime code
 selection to choose the traversal and build algorithms that best matches the
 instruction set of your CPU. We recommend using Embree through its API to get
 the highest benefit from future improvements. Embree is released as Open Source
@@ -32,16 +32,16 @@ under the Apache 2.0 license.
 Embree supports applications written with the Intel SPMD Programm Compiler
 (ISPC, http://ispc.github.com) by also providing an ISPC interface to the core
 ray tracing algorithms. This makes it possible to write a renderer in ISPC that
-leverages SSE, AVX, AVX2, and Xeon Phi[TM] instructions without any code
-change. ISPC also supports runtime code selection, thus ISPC will select the
-best code path for your application, while Embree selects the optimal code path
-for the ray tracing algorithms.
+leverages SSE, AVX, AVX2, and Xeon Phi™ instructions without any code change.
+ISPC also supports runtime code selection, thus ISPC will select the best code
+path for your application, while Embree selects the optimal code path for the
+ray tracing algorithms.
 
 Embree contains algorithms optimized for incoherent workloads (e.g. Monte Carlo
 ray tracing algorithms) and coherent workloads (e.g. primary visibility and
 hard shadow rays). For standard CPUs, the single-ray traversal kernels in
 Embree provide the best performance for incoherent workloads and are very easy
-to integrate into existing rendering applications. For Xeon Phi[TM], a renderer
+to integrate into existing rendering applications. For Xeon Phi™, a renderer
 written in ISPC using the default hybrid ray/packet traversal algorithms have
 shown to perform best, but requires writing the renderer in ISPC. In general
 for coherent workloads, ISPC outperforms the single ray mode on each platform.
@@ -62,9 +62,9 @@ Performance also varies across different operating systems. Embree is optimized
 for Intel CPUs supporting SSE, AVX, and AVX2 instructions, and requires at
 least a CPU with support for SSE2.
 
-The Xeon Phi[TM] version of Embree only works under Linux in 64bit mode. For
-compilation of the the Xeon Phi[TM] code the Intel Compiler is required. The
-host side code compiles with GCC, CLANG, and the Intel Compiler.
+The Xeon Phi™ version of Embree only works under Linux in 64bit mode. For
+compilation of the the Xeon Phi™ code the Intel Compiler is required. The host
+side code compiles with GCC, CLANG, and the Intel Compiler.
 
 == Compiling Embree on Linux and Mac OS X  ==
 
@@ -119,44 +119,36 @@ finally install the Embree library and header files on your system:
 If you cannot install Embree on your system (e.g. when you don't have
 administrator rights) you need to add embree_root_directory/build to your
 LD_LIBRARY_PATH (and SINK_LD_LIBRARY_PATH in case you want to use Embree on
-Xeon Phi[TM]).
+Xeon Phi™).
 
 The default configuration in the configuration dialog should be appropiate for
 most usages. The following table described all parameters that can be
 configured:
 
 
-Parameter                  Description                           Default Value
+Parameter                  Description                                                                 Default
+                                                                                                       Value
 
-BUILD_TUTORIALS            Builds the C++ version of the Embree  ON
-                           tutorials.
+BUILD_TUTORIALS            Builds the C++ version of the Embree tutorials.                             ON
 
-BUILD_TUTORIALS_ISPC       Builds the ISPC version of the Embree ON
-                           tutorials.
+BUILD_TUTORIALS_ISPC       Builds the ISPC version of the Embree tutorials.                            ON
 
-                           Can be used to switch between Debug
-CMAKE_BUILD_TYPE           mode (Debug) and Release mode         Release
-                           (Release)
+CMAKE_BUILD_TYPE           Can be used to switch between Debug mode (Debug) and Release mode (Release) Release
 
-COMPILER                   Select either GCC, ICC, or CLANG as   GCC
-                           compiler.
+COMPILER                   Select either GCC, ICC, or CLANG as compiler.                               GCC
 
-RTCORE_INTERSECTION_FILTER Enables the intersection filter       ON
-                           feature.
+RTCORE_INTERSECTION_FILTER Enables the intersection filter feature.                                    ON
 
-RTCORE_BUFFER_STRIDE       Enables buffer stride feature.        ON
+RTCORE_BUFFER_STRIDE       Enables buffer stride feature.                                              ON
 
-RTCORE_RAY_MASK            Enables the ray masking feature.      OFF
+RTCORE_RAY_MASK            Enables the ray masking feature.                                            OFF
 
-RTCORE_SPINLOCKS           Enables faster spinlocks for some     OFF
-                           builders.
+RTCORE_SPINLOCKS           Enables faster spinlocks for some builders.                                 OFF
 
-                           Select highest ISA on Xeon[TM] CPUs
-XEON_ISA                   (SSE2, SSE3, SSSE3, SSE4.1, SSE4.2,   AVX2
-                           AVX, AVX-I, AVX2)
+XEON_ISA                   Select highest ISA on Xeon™ CPUs (SSE2, SSE3, SSSE3, SSE4.1, SSE4.2, AVX, AVX2
+                           AVX-I, AVX2)
 
-XEON_PHI_ISA               Enables generation of Xeon Phi[TM]    OFF
-                           version of kernels and tutorials.
+XEON_PHI_ISA               Enables generation of Xeon Phi™ version of kernels and tutorials.         OFF
 
 
 You need at least Intel Compiler 11.1 or GCC 4.4 to enable AVX and Intel
@@ -164,13 +156,13 @@ Compiler 12.1 or GCC 4.7 to enable AVX2.
 
 == Compiling Embree for Xeon Phi  ==
 
-Embree supports the Xeon Phi[TM] coprocessor under Linux. To compile Embree for
-Xeon Phi[TM] you need to enable the XEON_PHI_ISA option in CMake and have the
-Intel Compiler and the Intel[TM] Manycore Platform Software Stack (MPSS)
+Embree supports the Xeon Phi™ coprocessor under Linux. To compile Embree for
+Xeon Phi™ you need to enable the XEON_PHI_ISA option in CMake and have the
+Intel Compiler and the Intel™ Manycore Platform Software Stack (MPSS)
 installed.
 
 Enabling the buffer stride feature reduces performance for building spatial
-hierarchies on Xeon Phi[TM].
+hierarchies on Xeon Phi™.
 
 == Compiling Embree on Windows  ==
 
@@ -214,11 +206,11 @@ start the C++ version use the tutorialXX executables, to start the ISPC version
 use the tutorialXX_ispc executables.
 
 Under Linux Embree also comes with an ISPC version of all tutorials for the
-Xeon Phi[TM] Coprocessor. The executables of this version of the tutorials are
-named tutorialXX_xeonphi and only work if a Xeon Phi[TM] Coprocessor is present
-in the system. The Xeon Phi[TM] version of the tutorials get started on the
-host CPU, just like all other tutorials, and will connect automatically to one
-installed Xeon Phi[TM] Coprocessor in the system.
+Xeon Phi™ Coprocessor. The executables of this version of the tutorials are
+named tutorialXX_xeonphi and only work if a Xeon Phi™ Coprocessor is present in
+the system. The Xeon Phi™ version of the tutorials get started on the host CPU,
+just like all other tutorials, and will connect automatically to one installed
+Xeon Phi™ Coprocessor in the system.
 
 For all tutorials, you can select an initial camera using the -vp (camera
 position), -vi (camera lookat point), -vu (camera up vector), and -fov
@@ -538,10 +530,11 @@ RTC_INTERSECT16 Enables the rtcIntersect16 and rtcOccluded16 functions (16-wide
 
 Geometries are always contained in the scene they are created in. Each geometry
 is assigned an integer ID at creation time, which is unique for that scene. The
-current version of the API supports triangle meshes (rtcNewTriangleMesh),
-single level instances of other scenes (rtcNewInstance), and user defined
-geometries (rtcNewUserGeometry). The API is designed in a way that easily
-allows adding new geometry types in later releases.
+current version of the API supports triangle meshes (rtcNewTriangleMesh), hair
+geometries (rtcNewHairGeometry), single level instances of other scenes
+(rtcNewInstance), and user defined geometries (rtcNewUserGeometry). The API is
+designed in a way that easily allows adding new geometry types in later
+releases.
 
 For dynamic scenes, the assigned geometry IDs fulfill the following properties.
 As long as no geometry got deleted, all IDs are assigned sequentially, starting
@@ -614,8 +607,6 @@ rtcCommit call to the scene.
 Also see tutorial00 for an example of how to create triangle meshes.
 
 ==== Hair Geometry  ====
-
-Creates a new hair geometry,
 
 Hair geometries are supported, which consist of multiple hairs represented as
 cubic bezier curves with varying radius per control point. Individual hairs are
@@ -786,7 +777,7 @@ major form, use the RTC_MATRIX_COLUMN_MAJOR_ALIGNED16 mode. In both cases,
 Embree will ignore the last row of the matrix.
 
 The transformation passed to rtcSetTransform transforms from the local space of
-the instantiated scene, to world space.
+the instantiated scene to world space.
 
 See tutorial04 for an example of how to use instances.
 
@@ -856,7 +847,7 @@ Data alignment requirements for query functions operating on AOS packets of 4,
 ray. To operate on packets of 4 rays, the CPU has to support SSE, to operate on
 packets of 8 rays, the CPU has to support AVX-256, and to operate on packets of
 16 rays, the CPU has to support the Xeon Phi instructions. Additionally, the
-required ISA has to be enabled in Embree at compile time, to use the desired
+required ISA has to be enabled in Embree at compile time to use the desired
 packet size.
 
 Finding the closest hit distance is done through the rtcIntersect functions.
@@ -981,7 +972,7 @@ each intersection found during the rtcIntersect or rtcOccluded calls. The
 former ones are called intersection filter functions, the latter ones occlusion
 filter functions. The filter functions can be used to implement various useful
 features, such as rejecting a hit to implement backface culling, accumulating
-opacity for shadow shadows, counting the number of surfaces along a ray,
+opacity for transparent shadows, counting the number of surfaces along a ray,
 collecting all hits along a ray, etc.
 
 The filter functions provided by the user have to have the following signature:

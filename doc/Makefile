@@ -1,7 +1,7 @@
 
-all: doc www ../readme.md readme_bin.md
+all: doc www 
 www: www/index.html www/api.html www/tutorials.html www/downloads.html www/renderer.html 
-doc: ../readme.txt ../readme.pdf
+doc: ../readme.txt ../readme.md readme_bin.md ../readme.pdf 
 images: images/tutorial00.jpg images/tutorial01.jpg images/tutorial02.jpg images/tutorial03.jpg images/tutorial04.jpg images/tutorial05.jpg images/tutorial06.jpg images/tutorial07.jpg
 
 .PHONY: all www doc images
