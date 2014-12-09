@@ -455,7 +455,7 @@ namespace embree
     };
 
   public:
-    
+
     __forceinline Grid(unsigned width, unsigned height, unsigned geomID, unsigned primID)
       : width(width), height(height), geomID(geomID), primID(primID) 
     {
@@ -464,7 +464,7 @@ namespace embree
     }
 
     static __forceinline Grid* create(FastAllocator::Thread& alloc, const size_t width, const size_t height, const unsigned geomID, const unsigned primID) {
-      return new (alloc.malloc(sizeof(Grid)+width*height*sizeof(Vec3fa))) Grid(width,height,geomID,primID);
+      return new (alloc.malloc(sizeof(Grid)-17*17*sizeof(Vec3fa)+width*height*sizeof(Vec3fa))) Grid(width,height,geomID,primID);
     }
     
     __forceinline       Vec3fa& point(const size_t x, const size_t y)       { assert(y*width+x < width*height); return P[y*width+x]; }
@@ -901,15 +901,16 @@ namespace embree
 	  const int ny = pattern_y.size();
 	  const size_t width  = x1-x0+1;
 	  const size_t height = y1-y0+1;
-	  Grid* leaf = new (alloca(sizeof(Grid)+width*height*sizeof(Vec3fa))) Grid(width,height,geomID,primID);
-	  leaf->build(scene,patch,x0,x1,y0,y1,uv[0],uv[1],uv[2],uv[3],pattern0,pattern1,pattern2,pattern3,pattern_x,pattern_y);
-	  box = leaf->bounds();
+	  assert(width <= 17 && height <= 17);
+	  Grid grid(width,height,geomID,primID);
+	  grid.build(scene,patch,x0,x1,y0,y1,uv[0],uv[1],uv[2],uv[3],pattern0,pattern1,pattern2,pattern3,pattern_x,pattern_y);
+	  box = grid.bounds();
 	});
 
 	return box;
       }
 
-      size_t initialize()
+      __forceinline size_t initialize()
       {
 	/* let only one thread lazily build this object */
 	if (atomic_add(&initializing,1) != 0) {
@@ -992,6 +993,6 @@ namespace embree
     unsigned height;
     unsigned primID;
     unsigned geomID;
-    Vec3fa P[];
+    Vec3fa P[17*17];
   };
 }
