@@ -24,7 +24,6 @@
 
 namespace embree
 {
-
   namespace isa
   {
     __thread TessellationCache *tess_cache = NULL;
@@ -153,9 +152,6 @@ namespace embree
       return bounds;      
     }
 
-
-
-
     BVH4i::NodeRef initLocalLazySubdivTree(const SubdivPatch1 &patch,
 					   unsigned int currentIndex,
 					   mic_f *lazymem,
@@ -199,208 +195,12 @@ namespace embree
 
       // DBG_PRINT( currentIndex - oldIndex );
       // DBG_PRINT( patch.grid_subtree_size_64b_blocks );
+
       assert(currentIndex - oldIndex == patch.grid_subtree_size_64b_blocks);
       TIMER(msec = getSeconds()-msec);    
       return subtree_root;
     }
 
-
-    __aligned(64) float u_start[16] = { 0,0,0,0,1,1,1,1,1,1,1,1,0,0,0,0 };
-    __aligned(64) float v_start[16] = { 0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1 };
-
-    __forceinline bool intersect1Eval(const SubdivPatch1 &subdiv_patch,
-				      const unsigned int subdiv_patch_index,
-				      const float &u0,
-				      const float &v0,
-				      const float &u1,
-				      const float &v1,
-				      const float &u2,
-				      const float &v2,
-				      const float &u3,
-				      const float &v3,
-				      const size_t rayIndex, 
-				      const mic_f &dir_xyz,
-				      const mic_f &org_xyz,
-				      Ray16& ray16)
-    {
-      __aligned(64) Vec3fa vtx[4];
-
-      const mic_f uu = gather16f_4f_align(mic_f(u0),mic_f(u1),mic_f(u2),mic_f(u3));
-      const mic_f vv = gather16f_4f_align(mic_f(v0),mic_f(v1),mic_f(v2),mic_f(v3));
-
-      const mic_f _vtx = subdiv_patch.eval4(uu,vv);
-      store16f(vtx,_vtx);
-
-      return intersect1_quad(rayIndex, 
-			     dir_xyz,
-			     org_xyz,
-			     ray16,
-			     vtx[0],
-			     vtx[1],
-			     vtx[2],
-			     vtx[3],
-			     subdiv_patch_index);
-    }
-
-
-    __forceinline bool intersect1Eval16(const SubdivPatch1 &subdiv_patch,
-					const unsigned int subdiv_patch_index,					
-					const unsigned int grid_u_res,
-					const unsigned int grid_v_res,
-					const mic3f &vtx,
-					const mic_f &u,
-					const mic_f &v,
-					const mic_m m_active,
-					const size_t rayIndex, 
-					const mic_f &dir_xyz,
-					const mic_f &org_xyz,
-					Ray16& ray16)
-    {
-      
-
-      intersect1_quad16(rayIndex, 
-			dir_xyz,
-			org_xyz,
-			ray16,
-			vtx,
-			u,
-			v,
-			grid_u_res,
-			m_active,
-			subdiv_patch_index);
-      return true;
-    }
-
-    __noinline bool intersectEvalGrid1(const size_t rayIndex, 
-				       const mic_f &dir_xyz,
-				       const mic_f &org_xyz,
-				       Ray16& ray16,
-				       const SubdivPatch1& subdiv_patch,
-				       const unsigned int subdiv_patch_index,
-				       const SubdivMesh* const geom)
-    {
-      const float * const edge_levels = subdiv_patch.level;
-      const unsigned int grid_u_res   = subdiv_patch.grid_u_res;
-      const unsigned int grid_v_res   = subdiv_patch.grid_v_res;
-
-      __aligned(64) float u_array[(subdiv_patch.grid_size_simd_blocks+1)]; // for unaligned access
-      __aligned(64) float v_array[(subdiv_patch.grid_size_simd_blocks+1)];
-
-      //gridUVTessellator(edge_levels,grid_u_res,grid_v_res,u_array,v_array);
-      gridUVTessellator16f(edge_levels,grid_u_res,grid_v_res,u_array,v_array);
-
-      /* if necessary stich different tessellation levels in u/v grid */
-      if (unlikely(subdiv_patch.needsStiching()))
-	stichUVGrid(edge_levels,grid_u_res,grid_v_res,u_array,v_array);
-	
-      bool hit = false;
-
-      if (likely(subdiv_patch.grid_size_simd_blocks==1))
-	{
-	  const mic_m m_active = subdiv_patch.grid_mask;
-
-	  const mic_f uu = load16f(u_array);
-	  const mic_f vv = load16f(v_array);
-
-	  mic3f vtx = subdiv_patch.eval16(uu,vv);
-
-	  if (unlikely(geom->displFunc != NULL))
-	    {
-	      mic3f normal = subdiv_patch.normal16(uu,vv);
-	      normal = normalize(normal);
-
-	      geom->displFunc(geom->userPtr,
-			      subdiv_patch.geom,
-			      subdiv_patch.prim,
-			      (const float*)&uu,
-			      (const float*)&vv,
-			      (const float*)&normal.x,
-			      (const float*)&normal.y,
-			      (const float*)&normal.z,
-			      (float*)&vtx.x,
-			      (float*)&vtx.y,
-			      (float*)&vtx.z,
-			      16);
-	    }
-	  	  
-	  hit |= intersect1Eval16(subdiv_patch,
-				  subdiv_patch_index,
-				  grid_u_res,
-				  grid_v_res,
-				  vtx,
-				  uu,
-				  vv,
-				  m_active,
-				  rayIndex,
-				  dir_xyz,
-				  org_xyz,
-				  ray16);	    	  
-	}
-      else
-	{
-	  size_t offset_line0 = 0;
-	  size_t offset_line1 = grid_u_res;
-
-	  for (unsigned int y=0;y<grid_v_res-1;y++,offset_line0+=grid_u_res,offset_line1+=grid_u_res)
-	    {
-	      for (unsigned int x=0;x<grid_u_res-1;x+=7)
-		{
-		  const mic_f u8_line0 = uload16f(&u_array[offset_line0+x]);
-		  const mic_f u8_line1 = uload16f(&u_array[offset_line1+x]);
-		  const mic_f v8_line0 = uload16f(&v_array[offset_line0+x]);
-		  const mic_f v8_line1 = uload16f(&v_array[offset_line1+x]);
-
-		  const mic_f uu = select(0xff,u8_line0,align_shift_right<8>(u8_line1,u8_line1));
-		  const mic_f vv = select(0xff,v8_line0,align_shift_right<8>(v8_line1,v8_line1));
-
-		  mic3f vtx = subdiv_patch.eval16(uu,vv);
-
-		  if (unlikely(geom->displFunc != NULL))
-		    {
-		      mic3f normal = subdiv_patch.normal16(uu,vv);
-		      normal = normalize(normal);
-
-		      geom->displFunc(geom->userPtr,
-				      subdiv_patch.geom,
-				      subdiv_patch.prim,
-				      (const float*)&uu,
-				      (const float*)&vv,
-				      (const float*)&normal.x,
-				      (const float*)&normal.y,
-				      (const float*)&normal.z,
-				      (float*)&vtx.x,
-				      (float*)&vtx.y,
-				      (float*)&vtx.z,
-				      16);
-		    }
-
-	  	  unsigned int m_active = 0x7f;
-		  if (unlikely(x + 7 >= grid_u_res-1)) 
-		    {
-		      const unsigned int shift = x + 7 - (grid_u_res-1);
-		      m_active >>= shift;
-		    }
-
-		  hit |= intersect1Eval16(subdiv_patch,
-					  subdiv_patch_index,
-					  8,
-					  2,
-					  vtx,
-					  uu,
-					  vv,
-					  m_active,
-					  rayIndex,
-					  dir_xyz,
-					  org_xyz,
-					  ray16);	    	  
-
-		}
-	      
-	    }	  
-	}
-
-      return hit;
-    }
 
 
     static AtomicMutex mtx;
@@ -418,8 +218,6 @@ namespace embree
       tess_cache = cache;
     }
 
-
-    
 
     template<bool ENABLE_INTERSECTION_FILTER>
     struct SubdivLeafIntersector
@@ -552,105 +350,90 @@ namespace embree
 	      const unsigned int patchIndex = curNode.offsetIndex();
 
 
-#if 0
-	      /* fast patch for grid with <= 16 points */
 
-	      if (likely(subdiv_patch.grid_size_simd_blocks == 1))
-		intersectEvalGrid1(rayIndex,
-				   dir_xyz,
-				   org_xyz,
-				   ray16,
-				   subdiv_patch,
-				   patchIndex,
-				   geom);
-	      else
-#endif
+	      TessellationCache::InputTagType tag = (TessellationCache::InputTagType)patchIndex;
+
+	      BVH4i::NodeRef subtree_root = local_cache->lookup(tag,commitCounter);
+	      if (unlikely(subtree_root == BVH4i::invalidNode))
 		{
-
-		  TessellationCache::InputTagType tag = (TessellationCache::InputTagType)patchIndex;
-
-		  BVH4i::NodeRef subtree_root = local_cache->lookup(tag,commitCounter);
-		  if (unlikely(subtree_root == BVH4i::invalidNode))
-		    {
-		      SubdivPatch1& subdiv_patch = ((SubdivPatch1*)accel)[patchIndex];
+		  SubdivPatch1& subdiv_patch = ((SubdivPatch1*)accel)[patchIndex];
 		  
-		      subdiv_patch.prefetchData();
+		  subdiv_patch.prefetchData();
 
-		      const SubdivMesh* const geom = (SubdivMesh*)scene->get(subdiv_patch.geom); // FIXME: test flag first
+		  const SubdivMesh* const geom = (SubdivMesh*)scene->get(subdiv_patch.geom); // FIXME: test flag first
 
-		      const unsigned int blocks = subdiv_patch.grid_subtree_size_64b_blocks;
+		  const unsigned int blocks = subdiv_patch.grid_subtree_size_64b_blocks;
 
-		      TessellationCache::CacheTag &t = local_cache->request(tag,commitCounter,blocks);		      
-		      mic_f *local_mem = (mic_f*)local_cache->getPtr(); 
+		  TessellationCache::CacheTag &t = local_cache->request(tag,commitCounter,blocks);		      
+		  mic_f *local_mem = (mic_f*)local_cache->getPtr(); 
 
-		      unsigned int currentIndex = t.getRootRef();
-		      //assert( NodeRef(currentIndex).isNode() );
+		  unsigned int currentIndex = t.getRootRef();
+		  //assert( NodeRef(currentIndex).isNode() );
 
-		      subtree_root = initLocalLazySubdivTree(subdiv_patch,currentIndex,local_mem,geom);		      
-		      assert( subtree_root != BVH4i::invalidNode);
+		  subtree_root = initLocalLazySubdivTree(subdiv_patch,currentIndex,local_mem,geom);		      
+		  assert( subtree_root != BVH4i::invalidNode);
 
-		      local_cache->updateRootRef(t,subtree_root);
-		    }
-		  mic_f     * const __restrict__ lazymem     = (mic_f*)local_cache->getPtr(); /* lazymem could change to realloc */
+		  local_cache->updateRootRef(t,subtree_root);
+		}
+	      mic_f     * const __restrict__ lazymem     = (mic_f*)local_cache->getPtr(); /* lazymem could change to realloc */
 
-		  // -------------------------------------
-		  // -------------------------------------
-		  // -------------------------------------
+	      // -------------------------------------
+	      // -------------------------------------
+	      // -------------------------------------
 
-		  float   * __restrict__ const sub_stack_dist = &stack_dist[sindex];
-		  NodeRef * __restrict__ const sub_stack_node = &stack_node[sindex];
-		  sub_stack_node[0] = BVH4i::invalidNode;
-		  sub_stack_node[1] = subtree_root;
-		  ustore16f(sub_stack_dist,inf);
-		  size_t sub_sindex = 2;
+	      float   * __restrict__ const sub_stack_dist = &stack_dist[sindex];
+	      NodeRef * __restrict__ const sub_stack_node = &stack_node[sindex];
+	      sub_stack_node[0] = BVH4i::invalidNode;
+	      sub_stack_node[1] = subtree_root;
+	      ustore16f(sub_stack_dist,inf);
+	      size_t sub_sindex = 2;
 
-		  while (1)
-		    {
-		      curNode = sub_stack_node[sub_sindex-1];
-		      sub_sindex--;
+	      while (1)
+		{
+		  curNode = sub_stack_node[sub_sindex-1];
+		  sub_sindex--;
 
-		      traverse_single_intersect<ENABLE_COMPRESSED_BVH4I_NODES>(curNode,
-									       sub_sindex,
-									       rdir_xyz,
-									       org_rdir_xyz,
-									       min_dist_xyz,
-									       max_dist_xyz,
-									       sub_stack_node,
-									       sub_stack_dist,
-									       (BVH4i::Node*)lazymem,
-									       leaf_mask);
+		  traverse_single_intersect<ENABLE_COMPRESSED_BVH4I_NODES>(curNode,
+									   sub_sindex,
+									   rdir_xyz,
+									   org_rdir_xyz,
+									   min_dist_xyz,
+									   max_dist_xyz,
+									   sub_stack_node,
+									   sub_stack_dist,
+									   (BVH4i::Node*)lazymem,
+									   leaf_mask);
 		 		   
 
-		      /* return if stack is empty */
-		      if (unlikely(curNode == BVH4i::invalidNode)) break;
+		  /* return if stack is empty */
+		  if (unlikely(curNode == BVH4i::invalidNode)) break;
 
-		      const unsigned int uvIndex = curNode.offsetIndex();
+		  const unsigned int uvIndex = curNode.offsetIndex();
 
-		      prefetch<PFHINT_NT>(&lazymem[uvIndex + 0]);
-		      prefetch<PFHINT_NT>(&lazymem[uvIndex + 1]);
-		      prefetch<PFHINT_NT>(&lazymem[uvIndex + 2]);
-		      prefetch<PFHINT_NT>(&lazymem[uvIndex + 3]);
-		      prefetch<PFHINT_NT>(&lazymem[uvIndex + 4]);
+		  prefetch<PFHINT_NT>(&lazymem[uvIndex + 0]);
+		  prefetch<PFHINT_NT>(&lazymem[uvIndex + 1]);
+		  prefetch<PFHINT_NT>(&lazymem[uvIndex + 2]);
+		  prefetch<PFHINT_NT>(&lazymem[uvIndex + 3]);
+		  prefetch<PFHINT_NT>(&lazymem[uvIndex + 4]);
 		  
-		      const mic_m m_active = 0x777;
-		      const mic_f &uu = lazymem[uvIndex + 0];
-		      const mic_f &vv = lazymem[uvIndex + 1];	
-		      const mic3f vtx(lazymem[uvIndex + 2],
-				      lazymem[uvIndex + 3],
-				      lazymem[uvIndex + 4]);
-		      intersect1_quad16(rayIndex, 
-					dir_xyz,
-					org_xyz,
-					ray16,
-					vtx,
-					uu,
-					vv,
-					4,
-					m_active,
-					patchIndex);
-		    }
-
+		  const mic_m m_active = 0x777;
+		  const mic_f &uu = lazymem[uvIndex + 0];
+		  const mic_f &vv = lazymem[uvIndex + 1];	
+		  const mic3f vtx(lazymem[uvIndex + 2],
+				  lazymem[uvIndex + 3],
+				  lazymem[uvIndex + 4]);
+		  intersect1_quad16(rayIndex, 
+				    dir_xyz,
+				    org_xyz,
+				    ray16,
+				    vtx,
+				    uu,
+				    vv,
+				    4,
+				    m_active,
+				    patchIndex);
 		}
+
 	      // -------------------------------------
 	      // -------------------------------------
 	      // -------------------------------------
@@ -663,7 +446,6 @@ namespace embree
 
 
       /* update primID/geomID and compute normals */
-#if 1
       mic_m m_hit = (ray16.primID != -1) & m_valid;
       rayIndex = -1;
       while((rayIndex = bitscan64(rayIndex,toInt(m_hit))) != BITSCAN_NO_BIT_SET_64)	    
@@ -680,9 +462,7 @@ namespace embree
 	  ray16.Ng.y[rayIndex]   = normal.y;
 	  ray16.Ng.z[rayIndex]   = normal.z;
 #endif
-
 	}
-#endif
 
     }
 
@@ -774,7 +554,6 @@ namespace embree
 		  mic_f *local_mem = (mic_f*)local_cache->getPtr(); 
 
 		  unsigned int currentIndex = t.getRootRef();
-		  //assert( NodeRef(currentIndex).isNode() );
 
 		  subtree_root = initLocalLazySubdivTree(subdiv_patch,currentIndex,local_mem,geom);		      
 		  assert( subtree_root != BVH4i::invalidNode);
@@ -998,7 +777,6 @@ namespace embree
 
 	}
     }
-
 
     // ----------------------------------------------------------------------------------------------------------------
     // ----------------------------------------------------------------------------------------------------------------

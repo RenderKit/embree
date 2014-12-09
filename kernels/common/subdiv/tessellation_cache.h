@@ -108,7 +108,10 @@ namespace embree
       __forceinline void clearRootRefBits()
       {
 #if defined(__MIC__)
-	subtree_root >>= 4+1;
+	if (subtree_root & ((unsigned int)1<<3))
+	    subtree_root >>= 4;
+	  else
+	    subtree_root >>= 4+1;
 #else
         subtree_root &= ~(((unsigned int)1 << 4)-1);
 #endif
@@ -152,7 +155,7 @@ namespace embree
     }
 
     /* free cache memory */
-    __forceinline void free_mem(float *mem)
+    __forceinline void free_mem(void *mem)
     {
       assert(mem);
       _mm_free(mem);
@@ -243,7 +246,8 @@ namespace embree
 
       /* not enough space to hold entry? */
       if (unlikely(blockCounter + neededBlocks >= allocated64BytesBlocks))
-        {          
+        {   
+	  //DBG_PRINT("RESIZE");
           /* can the cache hold this subtree space at all in each cache entries? */
 #define BIG_CACHE_ENTRIES 16
           if (unlikely(BIG_CACHE_ENTRIES*neededBlocks > allocated64BytesBlocks)) 
@@ -261,8 +265,6 @@ namespace embree
               assert(lazymem);
 
             }
-          //std::cout << "FLUSH" << std::endl;
-          /* realloc */
           clear();
         }
 
@@ -271,6 +273,8 @@ namespace embree
       /* allocate entry */
       const size_t currentIndex = blockCounter;
       blockCounter += neededBlocks;
+
+      assert(blockCounter < allocated64BytesBlocks);
 
 #if defined(__MIC__)
       unsigned int curNode = currentIndex;
