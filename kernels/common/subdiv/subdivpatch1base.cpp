@@ -87,9 +87,9 @@ namespace embree
 	flags |= HAS_DISPLACEMENT;
 
 
-      /* tessellate into 3x3 grid blocks for larger grid resolutions, generate bvh4 subtree over 3x3 grid blocks*/
+      /* tessellate into grid blocks for larger grid resolutions, generate bvh4 subtree over grid blocks*/
 
-      if (grid_size_simd_blocks > 1)
+      //if (grid_size_simd_blocks > 1)
         {
 #if defined(__MIC__)
 	  const size_t leafBlocks = 5;
