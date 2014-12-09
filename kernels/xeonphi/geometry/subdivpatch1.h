@@ -30,6 +30,21 @@ using namespace std;
 namespace embree
 {
 
+#if 1
+  struct __aligned(64) SubdivPatch1 : public SubdivPatch1Base
+  {
+    SubdivPatch1 (const CatmullClarkPatch &ipatch,
+		  const unsigned int geomID,
+		  const unsigned int primID,
+		  const SubdivMesh *const mesh) 
+      : SubdivPatch1Base(ipatch,geomID,primID,mesh)
+    { 
+    }
+
+  };
+
+#else
+
   struct __aligned(64) SubdivPatch1
   {
   public:
@@ -401,6 +416,7 @@ namespace embree
 
       return o;
     } 
+#endif
 
 };
 

@@ -40,6 +40,10 @@ namespace embree
     };
 
     static Type type;
+
+    /*! returns required number of primitive blocks for N primitives */
+    static __forceinline size_t blocks(size_t N) { return N; }
+
   };
 
 };

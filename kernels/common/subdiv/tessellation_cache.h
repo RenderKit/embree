@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "xeon/bvh4/bvh4.h"
+#include "common/default.h"
 
 #if DEBUG
 #define CACHE_STATS(x) x

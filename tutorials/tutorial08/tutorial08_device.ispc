@@ -23,7 +23,7 @@
 //#define FORCE_FIXED_EDGE_TESSELLATION
 #define FIXED_EDGE_TESSELLATION_VALUE 30
 
-#define MAX_EDGE_LEVEL 4.0f
+#define MAX_EDGE_LEVEL 64.0f
 #define MIN_EDGE_LEVEL 2.0f
 
 /* scene data */
