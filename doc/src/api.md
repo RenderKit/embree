@@ -794,6 +794,47 @@ using the following API functions:
 
 See [tutorial05] for an example of how to use the filter functions.
 
+Displacement Mapping Functions
+------------------------------
+
+The API supports displacement mapping for subdivision meshes. A
+displacement function can be set for some subdivision mesh using the
+`rtcSetDisplacementFunction` API call.
+
+  void rtcSetDisplacementFunction (RTCScene scene, unsigned geomID, RTCDisplacementFunc func, RTCBounds* bounds);
+
+A displacement function of NULL will delete an already set
+displacement function. The bounds parameter has to point to a bounding
+box that bounds the maximal displacement. These bounds have to be
+conservative and should be tight, as some implementations might depend
+on them to avoid displacement callback invokations.
+
+The displacement function has to have the following type:
+
+  typedef void (*RTCDisplacementFunc)(void* ptr, unsigned geomID, unsigned primID,   
+                                      const float* u,  const float* v,    
+                                      const float* nx, const float* ny, const float* nz,   
+                                      float* px, float* py, float* pz,         
+                                      size_t N);
+
+The displacement function is called with the user data pointer of the
+geometry (ptr), the geometry ID (geomID) and primitive ID (primID) of a
+patch to displace. For this patch, a number N of points to displace
+are specified in a struct of array layout. For each point to displace
+the local patch UV coordinates (u and v arrays), the geometry normal
+(nx, ny, and nz arrays), as well as world space position (px, py, and
+pz arrays) are provided. The task of the displacement function is to
+use this information and move the world space position inside the
+allowed specified bounds around the point.
+
+All passed arrays are guaranteed to be 64 bytes aligned, and properly
+padded to make wide vector processing inside the displacement function
+possible.
+
+The displacement mapping functions might get called during the
+`rtcCommit` call, or lazily during one of the `rtcIntersect` or
+`rtcOccluded` calls.
+
 Sharing Threads with Embree
 ---------------------------
 
