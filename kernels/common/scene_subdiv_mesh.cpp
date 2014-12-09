@@ -30,6 +30,7 @@ namespace embree
       numTimeSteps(numTimeSteps),
       numFaces(numFaces), 
       numEdges(numEdges), 
+      numHalfEdges(0),
       numVertices(numVertices),
       displFunc(NULL), displBounds(empty)
   {
@@ -232,50 +233,15 @@ namespace embree
     return (((uint64)x) << 32) | (uint64)y;
   }
 
-  void SubdivMesh::initializeHalfEdgeStructures ()
+  void SubdivMesh::calculateHalfEdges()
   {
-#define TIMER(x) 
-    TIMER(double msec = 0.0);
-
-    double t0 = getSeconds();
-
-    /* allocate half edge array */
-    TIMER(msec = getSeconds());
-    halfEdges.resize(numEdges);
+    /* allocate temporary array */
     halfEdges0.resize(numEdges);
     halfEdges1.resize(numEdges);
-    TIMER(msec = getSeconds()-msec);    
-    TIMER(std::cout << "allocate half edge arrays  " << 1000. * msec << " ms" << std::endl);
-
-    /* calculate start edge of each face */
-    TIMER(msec = getSeconds());
-    faceStartEdge.resize(numFaces);
-    size_t numHalfEdges = parallel_prefix_sum(faceVertices,faceStartEdge,numFaces);
-    TIMER(msec = getSeconds()-msec);    
-    TIMER(std::cout << "calculate start edge  " << 1000. * msec << " ms" << std::endl);
-
-    /* create set with all holes */
-    TIMER(msec = getSeconds());
-    holeSet.init(holes);
-    TIMER(msec = getSeconds()-msec);    
-    TIMER(std::cout << "holes  " << 1000. * msec << " ms" << std::endl);
-
-    /* create set with all vertex creases */
-    TIMER(msec = getSeconds());
-    vertexCreaseMap.init(vertex_creases,vertex_crease_weights);
-    TIMER(msec = getSeconds()-msec);    
-    TIMER(std::cout << "creases  " << 1000. * msec << " ms" << std::endl);
-    
-    /* create map with all edge creases */
-    TIMER(msec = getSeconds());
-    edgeCreaseMap.init(edge_creases,edge_crease_weights);
-    TIMER(msec = getSeconds()-msec);    
-    TIMER(std::cout << "edge map  " << 1000. * msec << " ms" << std::endl);
 
     /* create all half edges */
-    TIMER(msec = getSeconds());
 #if defined(__MIC__)
-    parallel_for( size_t(0), numFaces, [&](const range<size_t>& r) 
+    parallel_for( size_t(0), numFaces, [&](const range<size_t>& r)
 #else
     parallel_for( size_t(0), numFaces, size_t(4096), [&](const range<size_t>& r) 
 #endif
@@ -309,6 +275,7 @@ namespace embree
 	  
 	  float edge_level = 1.0f;
 	  if (levels) edge_level = levels[e+de];
+	  edge_level = clamp(edge_level,1.0f,4096.0f);
 	  assert( edge_level >= 0.0f );
 	  
 	  edge->vtx_index              = startVertex;
@@ -327,17 +294,10 @@ namespace embree
       }
     });
 
-    TIMER(msec = getSeconds()-msec);    
-    TIMER(std::cout << "create half edges  " << 1000. * msec << " ms" << std::endl);
-
     /* sort half edges to find adjacent edges */
-    TIMER(msec = getSeconds());
     radix_sort_u64(&halfEdges1[0],&halfEdges0[0],numHalfEdges);
-    TIMER(msec = getSeconds()-msec);    
-    TIMER(std::cout << "sort edges  " << 1000. * msec << " ms" << std::endl);
 
     /* link all adjacent pairs of edges */
-    TIMER(msec = getSeconds());
 #if defined(__MIC__)
     parallel_for( size_t(0), numHalfEdges, [&](const range<size_t>& r) 
 #else
@@ -369,9 +329,86 @@ namespace embree
 	e+=N;
       }
     });
+  }
 
-    TIMER(msec = getSeconds()-msec);    
-    TIMER(std::cout << "link edge pairs  " << 1000. * msec << " ms" << std::endl);
+  void SubdivMesh::updateHalfEdges()
+  {
+    /* assume we do no longer recalculate in the future and clear these arrays */
+    halfEdges0.clear();
+    halfEdges1.clear();
+
+    /* calculate which data to update */
+    const bool updateEdgeCreases = edge_creases.isModified() || edge_crease_weights.isModified();
+    const bool updateVertexCreases = vertex_creases.isModified() || vertex_crease_weights.isModified(); 
+    const bool updateLevels = levels.isModified();
+
+    /* parallel loop over all half edges */
+    parallel_for( size_t(0), numHalfEdges, size_t(4096), [&](const range<size_t>& r) 
+    {
+      for (size_t i=r.begin(); i!=r.end(); i++)
+      {
+	HalfEdge& edge = halfEdges[i];
+	const unsigned int startVertex = edge.vtx_index;
+ 
+	if (updateLevels) {
+	  float edge_level = 1.0f;
+	  if (levels) edge_level = levels[i];
+	  edge.edge_level = clamp(edge_level,1.0f,4096.0f);
+	}
+	
+	if (updateEdgeCreases) {
+	  const unsigned int endVertex   = edge.next()->vtx_index;
+	  const uint64 key = Edge(startVertex,endVertex);
+	  edge.edge_crease_weight = edgeCreaseMap.lookup(key,0.0f);
+	}
+
+	if (updateVertexCreases)
+	  edge.vertex_crease_weight = vertexCreaseMap.lookup(startVertex,0.0f);
+      }
+    });
+  }
+
+  void SubdivMesh::initializeHalfEdgeStructures ()
+  {
+    double t0 = getSeconds();
+
+    /* allocate half edge array */
+    halfEdges.resize(numEdges);
+
+    /* calculate start edge of each face */
+    faceStartEdge.resize(numFaces);
+    if (faceVertices.isModified()) 
+      numHalfEdges = parallel_prefix_sum(faceVertices,faceStartEdge,numFaces);
+
+    /* create set with all holes */
+    if (holes.isModified())
+      holeSet.init(holes);
+
+    /* create set with all vertex creases */
+    if (vertex_creases.isModified() || vertex_crease_weights.isModified())
+      vertexCreaseMap.init(vertex_creases,vertex_crease_weights);
+    
+    /* create map with all edge creases */
+    if (edge_creases.isModified() || edge_crease_weights.isModified())
+      edgeCreaseMap.init(edge_creases,edge_crease_weights);
+
+    /* check if we have to recalculate the half edges */
+    bool recalculate = false;
+    recalculate |= vertexIndices.isModified(); 
+    recalculate |= faceVertices.isModified();
+    recalculate |= holes.isModified();
+
+    /* check if we can simply update the half edges */
+    bool update = false;
+    update |= edge_creases.isModified();
+    update |= edge_crease_weights.isModified();
+    update |= vertex_creases.isModified();
+    update |= vertex_crease_weights.isModified(); 
+    update |= levels.isModified();
+
+    /* now either recalculate or update the half edges */
+    if (recalculate) calculateHalfEdges();
+    else if (update) updateHalfEdges();
 
     /* cleanup some state for static scenes */
     if (parent->isStatic()) 

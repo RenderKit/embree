@@ -139,7 +139,7 @@ void updateEdgeLevels(uniform ISPCScene* uniform scene_in, const uniform Vec3fa&
       {
         uniform unsigned int geomID = mesh->geomID;
         launch[  g_threads ] updateEdgeLevelBuffer(mesh,p); sync;	           
-        rtcUpdate(g_scene,geomID);
+        rtcUpdateBuffer(g_scene,geomID,RTC_LEVEL_BUFFER);
       }
   }
 }

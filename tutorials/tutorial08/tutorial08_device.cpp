@@ -209,7 +209,7 @@ void updateScene(RTCScene scene, const Vec3fa& cam_pos)
       } 
     }
     rtcUnmapBuffer(scene,geomID, RTC_LEVEL_BUFFER);
-    rtcUpdate(scene,geomID);
+    rtcUpdateBuffer(scene,geomID,RTC_LEVEL_BUFFER);
 #else
     unsigned int geomID = mesh->geomID;
     float* level = (float*) rtcMapBuffer(scene, geomID, RTC_LEVEL_BUFFER);
@@ -228,7 +228,7 @@ void updateScene(RTCScene scene, const Vec3fa& cam_pos)
       } 
     }
     rtcUnmapBuffer(scene,geomID, RTC_LEVEL_BUFFER);
-    rtcUpdate(scene,geomID);
+    rtcUpdateBuffer(scene,geomID,RTC_LEVEL_BUFFER);
 #endif
   }
 
@@ -263,7 +263,7 @@ void updateScene(RTCScene scene, const Vec3fa& cam_pos)
     mesh->subdivlevel[7] = level;*/
     //mesh->subdivlevel[8] = level;
 
-    rtcUpdate(scene,geomID);
+    rtcUpdateBuffer(scene,geomID,RTC_LEVEL_BUFFER);
   }
   rtcCommit(scene);
 }

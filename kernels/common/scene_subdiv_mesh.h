@@ -295,13 +295,21 @@ namespace embree
     /*! check if the i'th primitive is valid */
     __forceinline bool valid(size_t i, BBox3fa* bbox = NULL) const {
       if (bbox) *bbox = bounds(i);
-      //return !full_holes[i];
       return !holeSet.lookup(i);
     }
 
     /*! initializes the half edge data structure */
     void initializeHalfEdgeStructures ();
 
+  private:
+
+    /*! recalculates the half edges */
+    void calculateHalfEdges();
+
+    /*! updates half edges when recalculation is not necessary */
+    void updateHalfEdges();
+
+  public:
     /*! returns the start half edge for some face */
     __forceinline const HalfEdge* getHalfEdge         ( const unsigned f     ) const { return &halfEdges[faceStartEdge[f]]; }    
     __forceinline const Vec3fa*   getVertexPositionPtr( const unsigned t = 0 ) const { return (Vec3fa*)vertices[t].getPtr(); } // FIXME: this function should never get used, always pass BufferT<Vec3fa> object
@@ -317,6 +325,7 @@ namespace embree
     size_t numFaces;                  //!< number of faces
     size_t numEdges;                  //!< number of edges
     size_t numVertices;               //!< number of vertices
+    size_t numHalfEdges;              //!< number of half edges used by faces
 
     /*! all buffers in this section are provided by the application */
   private:
@@ -373,10 +382,5 @@ namespace embree
 
     /*! map with all edge creases */
     pmap<uint64,float> edgeCreaseMap;
-    
-  private: // FIXME: remove all these
-
-    /*! fast lookup table to check of a face is a hole */
-    std::vector<bool> full_holes;
   };
 };
