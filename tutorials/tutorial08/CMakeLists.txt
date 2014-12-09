@@ -26,4 +26,4 @@ IF (USE_OPENSUBDIV)
 ENDIF()
 
 INCLUDE(tutorial)
-ADD_TUTORIAL(tutorial08 extensions/api.cpp extensions/catmullclark.cpp extensions/subdivisionmesh.cpp extensions/triangulatemesh.cpp)
+ADD_TUTORIAL(tutorial08)

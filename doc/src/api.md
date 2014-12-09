@@ -113,16 +113,20 @@ static and dynamic scene.
   : Dynamic type flags for `rtcNewScene`.
 
 A dynamic scene is created by invoking `rtcNewScene` with the
-`RTC_SCENE_DYNAMIC` flag. Different geometries can now be created inside
-that scene. Geometries are enabled by default. Once the scene geometry
-is specified, an `rtcCommit` call will finish the scene description and
-trigger building of internal data structures. After the `rtcCommit` call
-it is safe to perform ray queries of the type specified at scene
-construction time. Geometries can get disabled (`rtcDisable` call),
-enabled again (`rtcEnable` call), and deleted (`rtcDeleteGeometry`
-call). Geometries can also get modified, including their vertex and
-index arrays. After the modification of some geometry, `rtcModified` has
-to get called for that geometry. If geometries got enabled, disabled,
+`RTC_SCENE_DYNAMIC` flag. Different geometries can now be created
+inside that scene. Geometries are enabled by default. Once the scene
+geometry is specified, an `rtcCommit` call will finish the scene
+description and trigger building of internal data structures. After
+the `rtcCommit` call it is safe to perform ray queries of the type
+specified at scene construction time. Geometries can get disabled
+(`rtcDisable` call), enabled again (`rtcEnable` call), and deleted
+(`rtcDeleteGeometry` call). Geometries can also get modified,
+including their vertex and index arrays. After the modification of
+some geometry, `rtcUpdate` or `rtcUpdateBuffer` has to get called for
+that geometry to specify which buffers got modified. Using multiple
+invokations of `rtcUpdateBuffer` the modified buffers can specified
+directly, while the `rtcUpdate` function simply tags each buffer of
+some geometry as modified. If geometries got enabled, disabled,
 deleted, or modified an `rtcCommit` call has to get invoked before
 performing any ray queries for the scene, otherwise the effect of the
 ray query is undefined.
@@ -279,6 +283,79 @@ the scene.
     rtcUnmapBuffer(scene, geomID, RTC_INDEX_BUFFER);
 
 Also see [tutorial00] for an example of how to create triangle meshes.
+
+### Subdivision Surfaces
+
+Catmull Clark subdivision surfaces for meshes consisting of triangle
+and quad patches (even mixed inside one mesh) are supported, including
+support for edge creases, vertex creases, holes, and non-manifold
+geometry.
+
+A subdivision surface is created using the `rtcNewSubdivisionMesh`
+function call, and deleted again using the `rtcDeleteGeometry`
+function call.
+
+   unsigned rtcNewSubdivisionMesh (RTCScene scene, 
+                                   RTCGeometryFlags flags,
+                                   size_t numFaces,
+                                   size_t numEdges,
+                                   size_t numVertices,
+                                   size_t numCreases,
+                                   size_t numCorners,
+                                   size_t numHoles,
+                                   size_t numTimeSteps );
+
+The number of faces (numFaces), edges/indices (numEdges), vertices
+(numVertices), edge creases (numEdgeCreases), vertex creases
+(numVertexCreases), holes (numHoles), and time steps (numTimeSteps)
+have to get speficied at construction time.
+
+The following buffers have to get filled by the application: the face
+buffer (RTC_FACE_BUFFER) contains the number edges/indices (3 or 4) of
+each of the numFaces faces, the index buffer (RTC_INDEX_BUFFER)
+contains multiple (3 or 4) 32bit vertex indices for each face and
+numEdges indices in total, the vertex buffer (RTC_VERTEX_BUFFER)
+stores numVertices vertices as single precision x,y,z floating point
+coordinates aligned to 16 bytes. The value of the 4th float used for
+alignment can be arbitrary.
+
+Optionally, the application can fill the hole buffer (RTC_HOLE_BUFFER)
+with numHoles many 32 bit indices of faces that should be considered
+non-existing.
+
+Optionally, the application can fill the level buffer
+(RTC_LEVEL_BUFFER) with a tessellation level for each of the numEdges
+edges. The subdivision level is a positive floating point value, that
+specifies how many quads along the edge should get generated during
+tessellation. The tessellation level is a lower bound, thus the
+implementation is free to choose a larger level. If no level buffer is
+specified a level of 1 is used.
+
+Optionally, the application can fill the sparse edge crease buffers to
+make some edges appear sharper. The edge crease index buffer
+(RTC_EDGE_CREASE_INDEX_BUFFER) contains numEdgeCreases many pairs of
+32 bit vertex indices that specify unoriented edges. The edge crease
+weight buffer (RTC_EDGE_CREASE_WEIGHT_BUFFER) stores for each of
+theses crease edges a positive floating point weight. The larger this
+weight, the sharper the edge. Specifying a weight of infinify is
+supported and marks an edge as infinitely sharp. Storing an edge
+multiple times with the same crease weight is allowed, but has lower
+performance. Storing the an edge multiple times with different crease
+weights results in undefined behaviour. For a stored edge (i,j), the
+reverse direction edges (j,i) does not have to get stored, as both are
+considered the same edge.
+
+Optionally, the application can fill the sparse vertex crease buffers
+to make some vertices appear sharper. The vertex crease index buffer
+(RTC_VERTEX_CREASE_INDEX_BUFFER), contains numVertexCreases many 32
+bit vertex indices to speficy a set of vertices. The vertex crease
+weight buffer (RTC_VERTEX_CREASE_WEIGHT_BUFFER) specifies for each of
+these vertices a positive floating point weight. The larger this
+weight, the sharper the vertex. Specifying a weight of infinity is
+supported and makes the vertex infinitely sharp. Storing a vertex
+multiple times with the same crease weight is allowed, but has lower
+performance. Storing a vertex multiple times with different crease
+weights results in undefined behaviour.
 
 ### Hair Geometry
 
@@ -716,6 +793,47 @@ using the following API functions:
     void rtcSetOcclusionFilterFunction16(RTCScene, unsigned geomID, RTCFilterFunc16);
 
 See [tutorial05] for an example of how to use the filter functions.
+
+Displacement Mapping Functions
+------------------------------
+
+The API supports displacement mapping for subdivision meshes. A
+displacement function can be set for some subdivision mesh using the
+`rtcSetDisplacementFunction` API call.
+
+  void rtcSetDisplacementFunction (RTCScene scene, unsigned geomID, RTCDisplacementFunc func, RTCBounds* bounds);
+
+A displacement function of NULL will delete an already set
+displacement function. The bounds parameter has to point to a bounding
+box that bounds the maximal displacement. These bounds have to be
+conservative and should be tight, as some implementations might depend
+on them to avoid displacement callback invokations.
+
+The displacement function has to have the following type:
+
+  typedef void (*RTCDisplacementFunc)(void* ptr, unsigned geomID, unsigned primID,   
+                                      const float* u,  const float* v,    
+                                      const float* nx, const float* ny, const float* nz,   
+                                      float* px, float* py, float* pz,         
+                                      size_t N);
+
+The displacement function is called with the user data pointer of the
+geometry (ptr), the geometry ID (geomID) and primitive ID (primID) of a
+patch to displace. For this patch, a number N of points to displace
+are specified in a struct of array layout. For each point to displace
+the local patch UV coordinates (u and v arrays), the geometry normal
+(nx, ny, and nz arrays), as well as world space position (px, py, and
+pz arrays) are provided. The task of the displacement function is to
+use this information and move the world space position inside the
+allowed specified bounds around the point.
+
+All passed arrays are guaranteed to be 64 bytes aligned, and properly
+padded to make wide vector processing inside the displacement function
+possible.
+
+The displacement mapping functions might get called during the
+`rtcCommit` call, or lazily during one of the `rtcIntersect` or
+`rtcOccluded` calls.
 
 Sharing Threads with Embree
 ---------------------------

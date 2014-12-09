@@ -502,9 +502,9 @@ namespace embree
       if (mesh->displFunc == NULL) return;
 
       /* calculate uv coordinates */
-      __aligned(64) float qu[17*17], qv[17*17];
-      __aligned(64) float qx[17*17], qy[17*17], qz[17*17];
-      __aligned(64) float nx[17*17], ny[17*17], nz[17*17];
+      __aligned(64) float qu[17*17+16], qv[17*17+16];
+      __aligned(64) float qx[17*17+16], qy[17*17+16], qz[17*17+16];
+      __aligned(64) float nx[17*17+16], ny[17*17+16], nz[17*17+16];
       for (size_t y=0; y<height; y++) 
       {
         for (size_t x=0; x<width; x++) 

@@ -204,8 +204,8 @@ void updateScene(RTCScene scene, const Vec3fa& cam_pos)
         const Vec3fa P = 0.5f*(v1+v0);
 	const Vec3fa dist = cam_pos - P;
 	//const Vec3fa dist = Vec3fa(-1.39588f, 2.62872f, 7.82919f) - P;
-        //level[i*4+k] = max(min(LEVEL_FACTOR*(0.5f*length(edge)/length(dist)),MAX_EDGE_LEVEL),MIN_EDGE_LEVEL);
-        level[i*4+k] = 32; // MAX_EDGE_LEVEL;
+        level[i*4+k] = max(min(LEVEL_FACTOR*(0.5f*length(edge)/length(dist)),MAX_EDGE_LEVEL),MIN_EDGE_LEVEL);
+        //level[i*4+k] = 32; // MAX_EDGE_LEVEL;
       } 
     }
     rtcUnmapBuffer(scene,geomID, RTC_LEVEL_BUFFER);
@@ -351,9 +351,9 @@ RTCScene constructScene(const Vec3fa& cam_pos)
     rtcSetBuffer(scene, geomID, RTC_INDEX_BUFFER,  mesh->position_indices  , 0, sizeof(unsigned int));
     rtcSetBuffer(scene, geomID, RTC_FACE_BUFFER,   mesh->verticesPerFace, 0, sizeof(unsigned int));
     rtcSetBuffer(scene, geomID, RTC_HOLE_BUFFER,   mesh->holes, 0, sizeof(unsigned int));
-    rtcSetBuffer(scene, geomID, RTC_EDGE_CREASE_BUFFER,          mesh->edge_creases,          0, 2*sizeof(unsigned int));
+    rtcSetBuffer(scene, geomID, RTC_EDGE_CREASE_INDEX_BUFFER,    mesh->edge_creases,          0, 2*sizeof(unsigned int));
     rtcSetBuffer(scene, geomID, RTC_EDGE_CREASE_WEIGHT_BUFFER,   mesh->edge_crease_weights,   0, sizeof(float));
-    rtcSetBuffer(scene, geomID, RTC_VERTEX_CREASE_BUFFER,        mesh->vertex_creases,        0, sizeof(unsigned int));
+    rtcSetBuffer(scene, geomID, RTC_VERTEX_CREASE_INDEX_BUFFER,  mesh->vertex_creases,        0, sizeof(unsigned int));
     rtcSetBuffer(scene, geomID, RTC_VERTEX_CREASE_WEIGHT_BUFFER, mesh->vertex_crease_weights, 0, sizeof(float));
     mesh->geomID = geomID;
   }       

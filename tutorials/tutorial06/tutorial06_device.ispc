@@ -908,9 +908,9 @@ void convertSubdivMeshes(uniform ISPCScene* uniform scene_in, RTCScene scene_out
     rtcSetBuffer(scene_out, geomID, RTC_INDEX_BUFFER,  mesh->position_indices  , 0, sizeof(uniform unsigned int));
     rtcSetBuffer(scene_out, geomID, RTC_FACE_BUFFER,   mesh->verticesPerFace, 0, sizeof(uniform unsigned int));
     rtcSetBuffer(scene_out, geomID, RTC_HOLE_BUFFER,   mesh->holes, 0, sizeof(uniform unsigned int));
-    rtcSetBuffer(scene_out, geomID, RTC_EDGE_CREASE_BUFFER,          mesh->edge_creases,          0, 2*sizeof(uniform unsigned int));
+    rtcSetBuffer(scene_out, geomID, RTC_EDGE_CREASE_INDEX_BUFFER,    mesh->edge_creases,          0, 2*sizeof(uniform unsigned int));
     rtcSetBuffer(scene_out, geomID, RTC_EDGE_CREASE_WEIGHT_BUFFER,   mesh->edge_crease_weights,   0, sizeof(uniform float));
-    rtcSetBuffer(scene_out, geomID, RTC_VERTEX_CREASE_BUFFER,        mesh->vertex_creases,        0, sizeof(uniform unsigned int));
+    rtcSetBuffer(scene_out, geomID, RTC_VERTEX_CREASE_INDEX_BUFFER,  mesh->vertex_creases,        0, sizeof(uniform unsigned int));
     rtcSetBuffer(scene_out, geomID, RTC_VERTEX_CREASE_WEIGHT_BUFFER, mesh->vertex_crease_weights, 0, sizeof(uniform float));
   }
 }      

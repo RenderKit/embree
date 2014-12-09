@@ -33,10 +33,10 @@ enum RTCBufferType {
   RTC_FACE_BUFFER          = 0x03000000,
   RTC_LEVEL_BUFFER         = 0x04000001,
 
-  RTC_EDGE_CREASE_BUFFER        = 0x05000000,
+  RTC_EDGE_CREASE_INDEX_BUFFER = 0x05000000,
   RTC_EDGE_CREASE_WEIGHT_BUFFER = 0x06000000,
 
-  RTC_VERTEX_CREASE_BUFFER        = 0x07000000,
+  RTC_VERTEX_CREASE_INDEX_BUFFER = 0x07000000,
   RTC_VERTEX_CREASE_WEIGHT_BUFFER = 0x08000000,
 
   RTC_HOLE_BUFFER          = 0x09000001,
@@ -98,11 +98,77 @@ void rtcSetTransform (RTCScene scene,                                  //!< scen
   the ith vertex. The vertex buffer stores single precision x,y,z
   floating point coordinates aligned to 16 bytes. The value of the 4th
   float used for alignment can be arbitrary. */
-uniform unsigned int rtcNewTriangleMesh (RTCScene scene,              //!< the scene the mesh belongs to
+uniform unsigned int rtcNewTriangleMesh (RTCScene scene,                  //!< the scene the mesh belongs to
                                          uniform RTCGeometryFlags flags,  //!< geometry flags
                                          uniform size_t numTriangles,     //!< number of triangles
                                          uniform size_t numVertices,      //!< number of vertices
                                          uniform size_t numTimeSteps = 1  //!< number of motion blur time steps
+  );
+
+/*! \brief Creates a new subdivision mesh. The number of faces
+ (numFaces), edges/indices (numEdges), vertices (numVertices), edge
+ creases (numEdgeCreases), vertex creases (numVertexCreases), holes
+ (numHoles), and time steps (numTimeSteps) have to get speficied at
+ construction time.
+
+ The following buffers have to get filled by the application: the face
+ buffer (RTC_FACE_BUFFER) contains the number edges/indices (3 or 4)
+ of each of the numFaces faces, the index buffer (RTC_INDEX_BUFFER)
+ contains multiple (3 or 4) 32bit vertex indices for each face and
+ numEdges indices in total, the vertex buffer (RTC_VERTEX_BUFFER)
+ stores numVertices vertices as single precision x,y,z floating point
+ coordinates aligned to 16 bytes. The value of the 4th float used for
+ alignment can be arbitrary.
+
+ Optionally, the application can fill the hole buffer
+ (RTC_HOLE_BUFFER) with numHoles many 32 bit indices of faces that
+ should be considered non-existing.
+
+ Optionally, the application can fill the level buffer
+ (RTC_LEVEL_BUFFER) with a tessellation level for each of the numEdges
+ edges. The subdivision level is a positive floating point value, that
+ specifies how many quads along the edge should get generated during
+ tessellation. The tessellation level is a lower bound, thus the
+ implementation is free to choose a larger level. If no level buffer
+ is specified a level of 1 is used.
+
+ Optionally, the application can fill the sparse edge crease buffers
+ to make some edges appear sharper. The edge crease index buffer
+ (RTC_EDGE_CREASE_INDEX_BUFFER) contains numEdgeCreases many pairs of
+ 32 bit vertex indices that specify unoriented edges. The edge crease
+ weight buffer (RTC_EDGE_CREASE_WEIGHT_BUFFER) stores for each of
+ theses crease edges a positive floating point weight. The larger this
+ weight, the sharper the edge. Specifying a weight of infinify is
+ supported and marks an edge as infinitely sharp. Storing an edge
+ multiple times with the same crease weight is allowed, but has lower
+ performance. Storing the an edge multiple times with different
+ crease weights results in undefined behaviour. For a stored edge
+ (i,j), the reverse direction edges (j,i) does not have to get stored,
+ as both are considered the same edge.
+
+ Optionally, the application can fill the sparse vertex crease buffers
+ to make some vertices appear sharper. The vertex crease index buffer
+ (RTC_VERTEX_CREASE_INDEX_BUFFER), contains numVertexCreases many 32
+ bit vertex indices to speficy a set of vertices. The vertex crease
+ weight buffer (RTC_VERTEX_CREASE_WEIGHT_BUFFER) specifies for each of
+ these vertices a positive floating point weight. The larger this
+ weight, the sharper the vertex. Specifying a weight of infinity is
+ supported and makes the vertex infinitely sharp. Storing a vertex
+ multiple times with the same crease weight is allowed, but has lower
+ performance. Storing a vertex multiple times with different crease
+ weights results in undefined behaviour.
+
+*/
+
+uniform unsigned int rtcNewSubdivisionMesh (RTCScene scene,                //!< the scene the mesh belongs to
+                                            uniform RTCGeometryFlags flags,        //!< geometry flags
+                                            uniform size_t numFaces,               //!< number of faces
+                                            uniform size_t numEdges,               //!< number of edges
+                                            uniform size_t numVertices,            //!< number of vertices
+                                            uniform size_t numEdgeCreases,         //!< number of edge creases
+                                            uniform size_t numVertexCreases,       //!< number of vertex creases
+                                            uniform size_t numHoles,               //!< number of holes
+                                            uniform size_t numTimeSteps = 1        //!< number of motion blur time steps
   );
 
 /*! \brief Creates a new hair geometry, consisting of multiple hairs
@@ -198,19 +264,6 @@ void rtcSetOcclusionFilterFunction (RTCScene scene, uniform unsigned int geomID,
 
 /*! \brief Deletes the geometry. */
 void rtcDeleteGeometry (RTCScene scene, uniform unsigned int geomID);
-
-/*! \brief Creates a new subdivision mesh.  */
-
-uniform unsigned int rtcNewSubdivisionMesh (RTCScene scene,                //!< the scene the mesh belongs to
-                                            uniform RTCGeometryFlags flags,        //!< geometry flags
-                                            uniform size_t numFaces,               //!< number of faces
-                                            uniform size_t numEdges,               //!< number of edges
-                                            uniform size_t numVertices,            //!< number of vertices
-                                            uniform size_t numCreases,             //!< number of creases
-                                            uniform size_t numCorners,             //!< number of corners
-                                            uniform size_t numHoles,               //!< number of holes
-                                            uniform size_t numTimeSteps = 1        //!< number of motion blur time steps
-  );
 
 /*! @} */
 
