@@ -1022,10 +1022,17 @@ PRINT(CORRECT_numPrims);
 	    const CatmullClarkPatch ipatch ( subdiv_mesh->getHalfEdge(i),
 					     subdiv_mesh->getVertexPositionPtr() );
 	    
+            Vec2f uv[4];
+            uv[0] = Vec2f(0.0f,0.0f);
+            uv[1] = Vec2f(0.0f,1.0f);
+            uv[2] = Vec2f(1.0f,1.0f);
+            uv[3] = Vec2f(1.0f,0.0f);
+
 	    SubdivPatch1 tmp = SubdivPatch1(ipatch,
 					    g,
 					    i,
-					    subdiv_mesh);
+					    subdiv_mesh,
+                                            uv);
 	    	    
 	    const BBox3fa bounds = tmp.bounds(subdiv_mesh);
 	    

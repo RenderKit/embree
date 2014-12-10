@@ -28,7 +28,8 @@ namespace embree
   SubdivPatch1Cached (const CatmullClarkPatch& ipatch,
                       const unsigned int gID,
                       const unsigned int pID,
-                      const SubdivMesh *const mesh) : SubdivPatch1Base(ipatch,gID,pID,mesh)
+                      const SubdivMesh *const mesh,
+                      const Vec2f uv[4]) : SubdivPatch1Base(ipatch,gID,pID,mesh,uv)
       {
       }
 

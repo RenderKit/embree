@@ -27,7 +27,6 @@
 
 #define COMPUTE_SUBDIV_NORMALS_AFTER_PATCH_INTERSECTION 0
 #define FORCE_TRIANGLE_UV 0
-#define DISCRITIZED_UV 0
 
 namespace embree
 {
@@ -234,13 +233,31 @@ namespace embree
     if (unlikely(patch.needsStiching()))
       stichUVGrid(patch.level,patch.grid_u_res,patch.grid_v_res,grid_u,grid_v);
 
-   
+    const Vec2f uv0 = patch.getUV(0);
+    const Vec2f uv1 = patch.getUV(1);
+    const Vec2f uv2 = patch.getUV(2);
+    const Vec2f uv3 = patch.getUV(3);
+
+    //DBG_PRINT(uv0);
+    //DBG_PRINT(uv1);
+    //DBG_PRINT(uv2);
+    //DBG_PRINT(uv3);
+
 #if defined(__AVX__)
     for (size_t i=0;i<patch.grid_size_simd_blocks;i++)
       {
         avxf uu = load8f(&grid_u[8*i]);
         avxf vv = load8f(&grid_v[8*i]);
         avx3f vtx = patch.eval8(uu,vv);
+
+        //DBG_PRINT(uu);
+        //DBG_PRINT(vv);
+
+        const avxf patch_uu = bilinear_interpolate(uv0.x,uv1.x,uv2.x,uv3.x,uu,vv);
+        const avxf patch_vv = bilinear_interpolate(uv0.y,uv1.y,uv2.y,uv3.y,uu,vv);
+
+        //DBG_PRINT(patch_uu);
+        //DBG_PRINT(patch_vv);
 
         if (unlikely(((SubdivMesh*)geom)->displFunc != NULL))
           {

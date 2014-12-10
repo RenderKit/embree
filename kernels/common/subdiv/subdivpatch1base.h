@@ -23,11 +23,19 @@
 
 #define FORCE_TESSELLATION_BOUNDS 1
 #define USE_DISPLACEMENT_FOR_TESSELLATION_BOUNDS 1
+#define DISCRITIZED_UV 1
 
 using namespace std;
 
 namespace embree
 {
+
+
+  template<class T> 
+    __forceinline T bilinear_interpolate(const float x0, const float x1, const float x2, const float x3,const T &u, const T &v)
+    {
+      return (1.0f-u) * (1.0f-v) * x0 + u * (1.0f-v) * x1 + u * v * x2 + (1.0f-u) * v * x3; 
+    }
 
 #if !defined(__MIC__)
 
@@ -56,6 +64,12 @@ namespace embree
     float vtx_u[12];
     float vtx_v[12];
 #endif
+
+    static __forceinline ssef u16_to_ssei(const unsigned short *const source)
+    {
+      return _mm_cvtepu16_epi32(*(ssei*)source);
+    } 
+
     static __forceinline ssef u16_to_ssef(const unsigned short *const source)
     {
       const ssei t = _mm_cvtepu16_epi32(loadu4i(source));
@@ -208,7 +222,8 @@ namespace embree
     }
 
     __forceinline avxf combine_discritized( const unsigned short *const source, const size_t offset) const {
-      return avxf( u16_to_ssef(&source[0+offset]), u16_to_ssef(&source[6+offset]) );            
+      
+      return avxf( ssef(u16_to_ssei(&source[0+offset])), ssef(u16_to_ssei(&source[6+offset])) ) * avxf(1.0f/65536);            
     }
 
     __forceinline avx3f getVtx( const size_t offset, const size_t delta = 0 ) const {
@@ -239,9 +254,9 @@ namespace embree
     
 #endif
 
-
-      __forceinline BBox3fa bounds() const 
-      {
+    
+    __forceinline BBox3fa bounds() const 
+    {
       BBox3fa b( empty );
       for (size_t i=0;i<12;i++)
         b.extend( Vec3fa(vtx_x[i],vtx_y[i],vtx_z[i]) );
@@ -407,9 +422,10 @@ namespace embree
 
     /*! Construction from vertices and IDs. */
     SubdivPatch1Base (const CatmullClarkPatch& ipatch,
-                        const unsigned int gID,
-                        const unsigned int pID,
-                        const SubdivMesh *const mesh);
+                      const unsigned int gID,
+                      const unsigned int pID,
+                      const SubdivMesh *const mesh,
+                      const Vec2f uv[4]);
 
     __forceinline bool needsStiching() const
     {
@@ -735,8 +751,16 @@ namespace embree
 
 
   public:
-    Vec2f u_range;
-    Vec2f v_range;
+
+    __forceinline Vec2f getUV(const size_t i) const
+    {
+      return Vec2f((float)u[i],(float)v[i]) * 1.0f/65535.0f;
+    }
+
+    // 16bit discritized u,v coordinates
+
+    unsigned short u[4]; 
+    unsigned short v[4];
     float level[4];
 
     unsigned int flags;
@@ -754,7 +778,7 @@ namespace embree
 
   __forceinline std::ostream &operator<<(std::ostream &o, const SubdivPatch1Base &p)
     {
-      o << " flags " << p.flags << " geomID " << p.geom << " primID " << p.prim << " u_range << " << p.u_range << " v_range " << p.v_range << " levels: " << p.level[0] << "," << p.level[1] << "," << p.level[2] << "," << p.level[3] << std::endl;
+      o << " flags " << p.flags << " geomID " << p.geom << " primID " << p.prim << " levels: " << p.level[0] << "," << p.level[1] << "," << p.level[2] << "," << p.level[3] << std::endl;
       o << " patch " << p.patch;
 
       return o;

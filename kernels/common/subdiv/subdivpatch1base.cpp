@@ -22,17 +22,22 @@ namespace embree
 
   /*! Construction from vertices and IDs. */
   SubdivPatch1Base::SubdivPatch1Base (const CatmullClarkPatch& ipatch,
-					  const unsigned int gID,
-					  const unsigned int pID,
-					  const SubdivMesh *const mesh) 
+                                      const unsigned int gID,
+                                      const unsigned int pID,
+                                      const SubdivMesh *const mesh,
+                                      const Vec2f uv[4]) 
       : geom(gID),
         prim(pID),  
         flags(0)
     {
       assert(sizeof(SubdivPatch1Base) == 5 * 64);
 
-      u_range = Vec2f(0.0f,1.0f);
-      v_range = Vec2f(0.0f,1.0f);
+      for (size_t i=0;i<4;i++)
+        {
+          u[i] = (unsigned short)(uv[i].x * 65535.0f);
+          v[i] = (unsigned short)(uv[i].y * 65535.0f);
+        }
+
 
       /* init discrete edge tessellation levels and grid resolution */
 

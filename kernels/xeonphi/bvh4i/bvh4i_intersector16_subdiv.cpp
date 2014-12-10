@@ -465,8 +465,8 @@ namespace embree
 	  const SubdivPatch1& subdiv_patch = ((SubdivPatch1*)accel)[ray16.primID[rayIndex]];
 	  ray16.primID[rayIndex] = subdiv_patch.prim;
 	  ray16.geomID[rayIndex] = subdiv_patch.geom;
-	  ray16.u[rayIndex]      = (1.0f-ray16.u[rayIndex]) * subdiv_patch.u_range.x + ray16.u[rayIndex] * subdiv_patch.u_range.y;
-	  ray16.v[rayIndex]      = (1.0f-ray16.v[rayIndex]) * subdiv_patch.v_range.x + ray16.v[rayIndex] * subdiv_patch.v_range.y;
+	  //ray16.u[rayIndex]      = (1.0f-ray16.u[rayIndex]) * subdiv_patch.u_range.x + ray16.u[rayIndex] * subdiv_patch.u_range.y;
+	  //ray16.v[rayIndex]      = (1.0f-ray16.v[rayIndex]) * subdiv_patch.v_range.x + ray16.v[rayIndex] * subdiv_patch.v_range.y;
 	  if (unlikely(subdiv_patch.hasDisplacement())) continue;
 #if COMPUTE_SUBDIV_NORMALS_AFTER_PATCH_INTERSECTION == 1
 	  const Vec3fa normal    = subdiv_patch.normal(ray16.u[rayIndex],ray16.v[rayIndex]);
