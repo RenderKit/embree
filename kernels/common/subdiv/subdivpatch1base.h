@@ -76,6 +76,7 @@ namespace embree
       return ssef(t) * 1.0f/65535.0f;
     } 
 
+
     static __forceinline unsigned short float_to_u16(const float f) { return (unsigned short)(f*65535.0f); }
     static __forceinline ssei float_to_u16(const ssef f) { return (ssei)(f*65535.0f); }
  
@@ -135,10 +136,14 @@ namespace embree
       const ssef row1_a = unpacklo(source[1],source[2]);
       const ssef row1_b = shuffle<0,1,0,1>(unpackhi(source[1],source[2]));
 
-      //storeu4f(&dest[2], row0_b);
-      //storeu4f(&dest[8], row1_b);
-      //storeu4f(&dest[0], row0_a);
-      //storeu4f(&dest[6], row1_a);
+      for (size_t i=0;i<4;i++)
+        dest[2+i] = (unsigned short)(row0_b[i]*65535.0f);
+      for (size_t i=0;i<4;i++)
+        dest[8+i] = (unsigned short)(row1_b[i]*65535.0f);
+      for (size_t i=0;i<4;i++)
+        dest[0+i] = (unsigned short)(row0_a[i]*65535.0f);
+      for (size_t i=0;i<4;i++)
+        dest[6+i] = (unsigned short)(row1_a[i]*65535.0f);
     }
 
     __forceinline void initFrom3x3Grid_discritized( const float *const source,
@@ -232,7 +237,8 @@ namespace embree
 
     __forceinline avx2f getUV( const size_t offset, const size_t delta = 0 ) const {
 #if DISCRITIZED_UV == 1
-      return avx2f(  combine_discritized(vtx_u,offset), combine_discritized(vtx_v,offset) );
+      const avx2f t =  avx2f(  combine_discritized(vtx_u,offset), combine_discritized(vtx_v,offset) );
+      return t;
 #else
       return avx2f(  combine(vtx_u,offset), combine(vtx_v,offset) );
 #endif
