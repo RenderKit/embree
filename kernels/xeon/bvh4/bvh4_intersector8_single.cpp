@@ -15,9 +15,13 @@
 // ======================================================================== //
 
 #include "bvh4_intersector8_single.h"
+#include "bvh4_intersector1.h"
 
 #include "geometry/bezier1v_intersector8.h"
 #include "geometry/bezier1i_intersector8.h"
+#include "geometry/subdivpatch1_intersector1.h"
+#include "geometry/subdivpatch1cached_intersector1.h"
+#include "geometry/grid_intersector1.h"
 
 namespace embree
 {
@@ -51,7 +55,6 @@ namespace embree
       }
       AVX_ZERO_UPPER();
     }
-
     
     template<int types, bool robust, typename PrimitiveIntersector8>
     void BVH4Intersector8Single<types,robust, PrimitiveIntersector8>::occluded(avxb* valid_i, BVH4* bvh, Ray8& ray)
@@ -83,8 +86,40 @@ namespace embree
       store8i(valid & terminated,&ray.geomID,0);
       AVX_ZERO_UPPER();
     }
+
+    template<typename Intersector1>
+    void BVH4Intersector8FromIntersector1<Intersector1>::intersect(avxb* valid_i, BVH4* bvh, Ray8& ray)
+    {
+      Ray rays[8];
+      ray.get(rays);
+      size_t bits = movemask(*valid_i);
+      for (size_t i=__bsf(bits); bits!=0; bits=__btc(bits,i), i=__bsf(bits)) {
+	Intersector1::intersect(bvh,rays[i]);
+      }
+      ray.set(rays);
+      AVX_ZERO_UPPER();
+    }
+    
+    template<typename Intersector1>
+    void BVH4Intersector8FromIntersector1<Intersector1>::occluded(avxb* valid_i, BVH4* bvh, Ray8& ray)
+    {
+      Ray rays[8];
+      ray.get(rays);
+      size_t bits = movemask(*valid_i);
+      for (size_t i=__bsf(bits); bits!=0; bits=__btc(bits,i), i=__bsf(bits)) {
+	Intersector1::intersect(bvh,rays[i]);
+      }
+      ray.set(rays);
+      AVX_ZERO_UPPER();
+    }
     
     DEFINE_INTERSECTOR8(BVH4Bezier1vIntersector8Single_OBB, BVH4Intersector8Single<0x101 COMMA false COMMA LeafIterator8_1<Bezier1vIntersector8<LeafMode> > >);
     DEFINE_INTERSECTOR8(BVH4Bezier1iIntersector8Single_OBB, BVH4Intersector8Single<0x101 COMMA false COMMA LeafIterator8_1<Bezier1iIntersector8<LeafMode> > >);
+
+    DEFINE_INTERSECTOR8(BVH4Subdivpatch1Intersector8, BVH4Intersector8FromIntersector1<BVH4Intersector1<0x1 COMMA false COMMA LeafIterator1<SubdivPatch1Intersector1 > > >);
+    DEFINE_INTERSECTOR8(BVH4Subdivpatch1CachedIntersector8,BVH4Intersector8FromIntersector1<BVH4Intersector1<0x1 COMMA false COMMA SubdivPatch1CachedIntersector1> >);
+
+    DEFINE_INTERSECTOR8(BVH4GridIntersector8, BVH4Intersector8FromIntersector1<BVH4Intersector1<0x1 COMMA false COMMA GridIntersector1> >);
+    DEFINE_INTERSECTOR8(BVH4GridLazyIntersector8, BVH4Intersector8FromIntersector1<BVH4Intersector1<0x1 COMMA false COMMA Switch2Intersector1<GridIntersector1 COMMA GridLazyIntersector1> > >);
   }
 }

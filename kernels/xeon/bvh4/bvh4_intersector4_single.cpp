@@ -15,9 +15,13 @@
 // ======================================================================== //
 
 #include "bvh4_intersector4_single.h"
+#include "bvh4_intersector1.h"
 
 #include "geometry/bezier1v_intersector4.h"
 #include "geometry/bezier1i_intersector4.h"
+#include "geometry/subdivpatch1_intersector1.h"
+#include "geometry/subdivpatch1cached_intersector1.h"
+#include "geometry/grid_intersector1.h"
 
 namespace embree
 {
@@ -84,7 +88,39 @@ namespace embree
       AVX_ZERO_UPPER();
     }
 
+    template<typename Intersector1>
+    void BVH4Intersector4FromIntersector1<Intersector1>::intersect(sseb* valid_i, BVH4* bvh, Ray4& ray)
+    {
+      Ray rays[4];
+      ray.get(rays);
+      size_t bits = movemask(*valid_i);
+      for (size_t i=__bsf(bits); bits!=0; bits=__btc(bits,i), i=__bsf(bits)) {
+	Intersector1::intersect(bvh,rays[i]);
+      }
+      ray.set(rays);
+      AVX_ZERO_UPPER();
+    }
+    
+    template<typename Intersector1>
+    void BVH4Intersector4FromIntersector1<Intersector1>::occluded(sseb* valid_i, BVH4* bvh, Ray4& ray)
+    {
+      Ray rays[4];
+      ray.get(rays);
+      size_t bits = movemask(*valid_i);
+      for (size_t i=__bsf(bits); bits!=0; bits=__btc(bits,i), i=__bsf(bits)) {
+	Intersector1::intersect(bvh,rays[i]);
+      }
+      ray.set(rays);
+      AVX_ZERO_UPPER();
+    }
+
     DEFINE_INTERSECTOR4(BVH4Bezier1vIntersector4Single_OBB, BVH4Intersector4Single<0x101 COMMA false COMMA LeafIterator4_1<Bezier1vIntersector4<LeafMode> > >);
     DEFINE_INTERSECTOR4(BVH4Bezier1iIntersector4Single_OBB, BVH4Intersector4Single<0x101 COMMA false COMMA LeafIterator4_1<Bezier1iIntersector4<LeafMode> > >);
-  }
+
+    DEFINE_INTERSECTOR4(BVH4Subdivpatch1Intersector4, BVH4Intersector4FromIntersector1<BVH4Intersector1<0x1 COMMA false COMMA LeafIterator1<SubdivPatch1Intersector1 > > >);
+    DEFINE_INTERSECTOR4(BVH4Subdivpatch1CachedIntersector4,BVH4Intersector4FromIntersector1<BVH4Intersector1<0x1 COMMA false COMMA SubdivPatch1CachedIntersector1> >);
+
+    DEFINE_INTERSECTOR4(BVH4GridIntersector4, BVH4Intersector4FromIntersector1<BVH4Intersector1<0x1 COMMA false COMMA GridIntersector1> >);
+    DEFINE_INTERSECTOR4(BVH4GridLazyIntersector4, BVH4Intersector4FromIntersector1<BVH4Intersector1<0x1 COMMA false COMMA Switch2Intersector1<GridIntersector1 COMMA GridLazyIntersector1> > >);
+   }
 }

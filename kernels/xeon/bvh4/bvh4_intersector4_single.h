@@ -24,6 +24,15 @@ namespace embree
 {
   namespace isa 
   {
+    /*! Converts single ray traversal into packet traversal. */
+    template<typename Intersector1>
+    class BVH4Intersector4FromIntersector1
+    {
+    public:
+      static void intersect(sseb* valid, BVH4* bvh, Ray4& ray);
+      static void occluded (sseb* valid, BVH4* bvh, Ray4& ray);
+    };
+
     /*! Single ray traversal for packets. */
     template<int types, bool robust, typename PrimitiveIntersector4>
       class BVH4Intersector4Single 
