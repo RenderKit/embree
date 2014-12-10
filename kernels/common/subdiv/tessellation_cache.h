@@ -24,7 +24,7 @@
 #define CACHE_STATS(x) 
 #endif
 
-#define CACHE_DBG(x)
+#define CACHE_DBG(x) 
 
 namespace embree
 {
@@ -34,7 +34,7 @@ namespace embree
   class __aligned(64) TessellationCache {
   public:
     /* default sizes */
-    static const size_t DEFAULT_64B_BLOCKS = (1<<14); // 16384
+    static const size_t DEFAULT_64B_BLOCKS = (1<<15); // 16384
     //static const size_t CACHE_ENTRIES      = DEFAULT_64B_BLOCKS / 4;
     static const size_t CACHE_SETS = 1<<12; // 4096
     static const size_t CACHE_WAYS = 4;
@@ -50,6 +50,15 @@ namespace embree
     typedef size_t InputTagType;
 #endif
 
+    static __forceinline unsigned int toTag(InputTagType prim)
+    {
+#if defined(__MIC__)
+      return prim;
+#else
+      return ((size_t)prim) >> 6;
+#endif
+    }
+
   class __aligned(16) CacheTag {
   public:
     unsigned int prim_tag;
@@ -58,15 +67,6 @@ namespace embree
     unsigned int subtree_root;     
 
   public:
-
-    __forceinline unsigned int toTag(InputTagType prim)
-    {
-#if defined(__MIC__)
-      return prim;
-#else
-      return ((size_t)prim) >> 6;
-#endif
-    }
 
     __forceinline void reset() 
     {
@@ -129,6 +129,11 @@ namespace embree
       return usedBlocks;
     }
 
+    __forceinline bool empty() const
+    {
+      return prim_tag == (unsigned int)-1;
+    }
+
     __forceinline void print() {
       std::cout << "prim_tag " << prim_tag << " commit_tag " << commit_tag << " blocks " << usedBlocks << " subtree_root " << subtree_root << std::endl;
     }
@@ -174,6 +179,9 @@ namespace embree
 
       __forceinline size_t getEvictionCandidate(const unsigned int neededBlocks)
       {
+        /* fill empty slots first */
+        if (unlikely(tags[CACHE_WAYS-1].empty())) return (size_t)-1;
+
         for (ssize_t i=CACHE_WAYS-1;i>=0;i--)
           if (tags[i].blocks() >= neededBlocks)
             return i;
@@ -289,13 +297,15 @@ namespace embree
       CACHE_DBG(PING);
       /* direct mapped */
       const size_t set = addrToCacheSetIndex(primID);
-      CACHE_DBG(
-                DBG_PRINT(primID);
-                DBG_PRINT(set);
-                );
       assert(set < CACHE_SETS);
       const size_t index = sets[set].lookup(primID,commitCounter);
       CACHE_DBG(
+                DBG_PRINT( index == CACHE_MISS );
+
+                DBG_PRINT(primID);
+                DBG_PRINT(toTag(primID));
+                DBG_PRINT(set);
+
                 DBG_PRINT(index);
                 sets[set].print();
                 );
@@ -342,6 +352,21 @@ namespace embree
       /* not enough space to hold entry? */
       if (unlikely(blockCounter + neededBlocks >= allocated64BytesBlocks))
         {   
+#if 1
+          
+          const unsigned int new_allocated64BytesBlocks = 2*allocated64BytesBlocks;
+#if DEBUG
+          std::cout << "EXTENDING TESSELLATION CACHE (PER THREAD) FROM " 
+                    << allocated64BytesBlocks << " TO " 
+                    << new_allocated64BytesBlocks << " BLOCKS = " 
+                    << new_allocated64BytesBlocks*64 << " BYTES" << std::endl << std::flush;
+#endif
+          free_mem(lazymem);
+          allocated64BytesBlocks = new_allocated64BytesBlocks; 
+          lazymem = alloc_mem(allocated64BytesBlocks);
+          assert(lazymem);
+
+#else
 	  CACHE_DBG(DBG_PRINT("RESIZE"));
           /* can the cache hold this subtree space at all in each cache entries? */
 #define BIG_CACHE_ENTRIES 16
@@ -360,6 +385,7 @@ namespace embree
               assert(lazymem);
 
             }
+#endif
           clear();
         }
 
@@ -379,7 +405,7 @@ namespace embree
       /* insert new entry at the beginning */
       CACHE_DBG(DBG_PRINT(set));
       CacheTag &t = sets[set].getLRU();      
-      CACHE_DBG(DBG_PRINT(t));
+      CACHE_DBG(t.print());
       t.set(primID,commitCounter,curNode,neededBlocks);
       CACHE_DBG(sets[set].print());
       return t;     
