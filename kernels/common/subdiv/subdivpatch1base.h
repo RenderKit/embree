@@ -23,7 +23,7 @@
 
 #define FORCE_TESSELLATION_BOUNDS 1
 #define USE_DISPLACEMENT_FOR_TESSELLATION_BOUNDS 1
-#define DISCRITIZED_UV 0
+#define DISCRITIZED_UV 1
 
 using namespace std;
 
@@ -65,15 +65,20 @@ namespace embree
     float vtx_v[12];
 #endif
 
-    static __forceinline ssef u16_to_ssei(const unsigned short *const source)
+    static __forceinline ssei u16_to_ssei(const unsigned short *const source)
     {
-      return _mm_cvtepu16_epi32(*(ssei*)source);
+      return _mm_cvtepu16_epi32(loadu4i(source));
     } 
 
     static __forceinline ssef u16_to_ssef(const unsigned short *const source)
     {
       const ssei t = _mm_cvtepu16_epi32(loadu4i(source));
       return ssef(t) * 1.0f/65535.0f;
+    } 
+
+    static __forceinline float u16_to_float(const unsigned short source)
+    {
+      return (float)source * 1.0f/65535.0f;
     } 
 
 
@@ -144,6 +149,7 @@ namespace embree
         dest[0+i] = (unsigned short)(row0_a[i]*65535.0f);
       for (size_t i=0;i<4;i++)
         dest[6+i] = (unsigned short)(row1_a[i]*65535.0f);
+
     }
 
     __forceinline void initFrom3x3Grid_discritized( const float *const source,
@@ -227,9 +233,9 @@ namespace embree
       return avxf( *(ssef*)&source[0+offset], *(ssef*)&source[6+offset] );            
     }
 
-    __forceinline avxf combine_discritized( const unsigned short *const source, const size_t offset) const {
+    __forceinline avxi combine_discritized( const unsigned short *const source, const size_t offset) const {
       
-      return avxf( ssef(u16_to_ssei(&source[0+offset])), ssef(u16_to_ssei(&source[6+offset])) ) * avxf(1.0f/65536);            
+      return avxi( u16_to_ssei(&source[0+offset]), u16_to_ssei(&source[6+offset]) );            
     }
 
     __forceinline avx3f getVtx( const size_t offset, const size_t delta = 0 ) const {
@@ -238,8 +244,7 @@ namespace embree
 
     __forceinline avx2f getUV( const size_t offset, const size_t delta = 0 ) const {
 #if DISCRITIZED_UV == 1
-      const avx2f t =  avx2f(  combine_discritized(vtx_u,offset), combine_discritized(vtx_v,offset) );
-      return t;
+      return avx2f(  avxf(combine_discritized(vtx_u,offset)) * 1.0f/65535.0f, avxf(combine_discritized(vtx_v,offset)) * 1.0f/65535.0f )  ;
 #else
       return avx2f(  combine(vtx_u,offset), combine(vtx_v,offset) );
 #endif

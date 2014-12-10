@@ -25,7 +25,7 @@
 #include "geometry/subdivpatch1cached.h"
 
 
-#define COMPUTE_SUBDIV_NORMALS_AFTER_PATCH_INTERSECTION 0
+#define COMPUTE_SUBDIV_NORMALS_AFTER_PATCH_INTERSECTION 1
 #define FORCE_TRIANGLE_UV 0
 
 namespace embree
