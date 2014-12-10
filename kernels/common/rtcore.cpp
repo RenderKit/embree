@@ -506,7 +506,7 @@ namespace embree
     Stat::print(std::cout);
     Stat::clear();
 #endif
-#if DEBUG && 0
+#if DEBUG && 1
     extern void printTessCacheStats();
     printTessCacheStats();
 #endif

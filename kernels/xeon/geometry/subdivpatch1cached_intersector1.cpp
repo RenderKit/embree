@@ -206,7 +206,10 @@ namespace embree
     assert( (size_t)cache % 64 == 0 );
     cache->init();	
 #if DEBUG
+    static AtomicMutex mtx;
+    mtx.lock();
     std::cout << "Enabling tessellation cache with " << cache->allocated64ByteBlocks() << " blocks = " << cache->allocated64ByteBlocks()*64 << " bytes as default size" << std::endl;
+    mtx.unlock();
 #endif
     thread_cache = cache;
   }
