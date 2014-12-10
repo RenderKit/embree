@@ -144,7 +144,7 @@ Run `cmake-gui`, browse to the Embree sources, set the build directory
 and click Configure. Now you can select the Generator, e.g. "Visual
 Studio 12 2013" for a 32\ bit build or "Visual Studio 12 2013 Win64" for
 a 64\ bit build. Most configuration parameters described for the [Linux
-build](#linux-and-mac-os-x) can be set under Windows as well. Finally,
+build](#linux-and-mac-osx) can be set under Windows as well. Finally,
 click Generate to create the Visual Studio solution files.
 
 For compilation of Embree under Windows use the generated Visual Studio
