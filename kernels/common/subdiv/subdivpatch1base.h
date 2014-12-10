@@ -23,7 +23,7 @@
 
 #define FORCE_TESSELLATION_BOUNDS 1
 #define USE_DISPLACEMENT_FOR_TESSELLATION_BOUNDS 1
-#define DISCRITIZED_UV 1
+#define DISCRITIZED_UV 0
 
 using namespace std;
 
@@ -211,6 +211,7 @@ namespace embree
       initFrom3x3Grid( grid_y, vtx_y);
       initFrom3x3Grid( grid_z, vtx_z);
 #if DISCRITIZED_UV == 1
+      
       initFrom3x3Grid_discritized( grid_u, vtx_u);
       initFrom3x3Grid_discritized( grid_v, vtx_v);
 #else
