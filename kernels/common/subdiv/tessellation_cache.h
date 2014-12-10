@@ -108,6 +108,8 @@ namespace embree
       __forceinline void clearRootRefBits()
       {
 #if defined(__MIC__)
+        /* bvh4i currently requires a different 'reset' */
+        // FIXME
 	if (subtree_root & ((unsigned int)1<<3))
 	    subtree_root >>= 4;
 	  else

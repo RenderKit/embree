@@ -631,13 +631,13 @@ scene:
     RTCRay ray;
     ray.org = ray_origin;
     ray.dir = ray_direction;
-    ray.tnear = 0.0f;
+    ray.tnear = 0.f;
     ray.tfar = inf;
     ray.geomID = RTC_INVALID_GEOMETRY_ID;
     ray.primID = RTC_INVALID_GEOMETRY_ID;
     ray.instID = RTC_INVALID_GEOMETRY_ID;
     ray.mask = 0xFFFFFFFF;
-    ray.time = 0.0f;
+    ray.time = 0.f;
     rtcIntersect(scene, ray);
 
 Testing if any geometry intersects with the ray segment is done through

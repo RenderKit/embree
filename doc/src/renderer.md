@@ -213,6 +213,6 @@ We provide also a more advanced model of the Imperial Crown of Austria
 to test the renderer with: [Crown0413.zip
 (74MB)](http://software.intel.com/sites/default/files/article/183323/crown0413.zip).
 
-![Imperial Crown of Austria](images/crown.jpg) Model courtesy [Martin
-Lubich](http://www.loramel.net).
+<img src="images/crown.jpg" alt="Imperial Crown of Austria" width="400" height="480">
 
+Model courtesy [Martin Lubich](http://www.loramel.net).
