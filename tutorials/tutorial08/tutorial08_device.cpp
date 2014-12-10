@@ -64,8 +64,8 @@ RTCScene g_osd_scene = NULL;
 
 /* scene data */
 
-__forceinline RTCRay constructRay(const Vec3fa &origin, const Vec3fa &direction, float near, float far, int originGeomID, int originPrimID) {
-
+__forceinline RTCRay constructRay(const Vec3fa& origin, const Vec3fa& direction, float near, float far, int originGeomID, int originPrimID) 
+{
   RTCRay ray;
   ray.org = origin;
   ray.dir = direction;
@@ -76,11 +76,10 @@ __forceinline RTCRay constructRay(const Vec3fa &origin, const Vec3fa &direction,
   ray.mask = -1;
   ray.time = 0;
   return(ray);
-
 }
 
-unsigned int packPixel(const Vec3f &color) {
-
+unsigned int packPixel(const Vec3f& color) 
+{
   unsigned int r = (unsigned int) (255.0f * clamp(color.x, 0.0f, 1.0f));
   unsigned int g = (unsigned int) (255.0f * clamp(color.y, 0.0f, 1.0f));
   unsigned int b = (unsigned int) (255.0f * clamp(color.z, 0.0f, 1.0f));
@@ -119,72 +118,13 @@ void DisplacementFunc(void* ptr, unsigned int geomID, int unsigned primID,
 #endif
 }
 
-unsigned int g_sphere = -1;
-
-/* adds a sphere to the scene */
-unsigned int createSphere (RTCGeometryFlags flags, const Vec3fa& pos, const float r)
-{
-  /* create a triangulated sphere */
-  unsigned int mesh = rtcNewSubdivisionMesh(g_scene, flags, numTheta*numPhi, 4*numTheta*numPhi, numTheta*(numPhi+1), 0, 0, 0);
-  g_sphere = mesh;
-
-  BBox3fa bounds(Vec3fa(-0.1f,-0.1f,-0.1f),Vec3fa(0.1f,0.1f,0.1f));
-  rtcSetDisplacementFunction(g_scene, mesh, (RTCDisplacementFunc)DisplacementFunc,(RTCBounds*)&bounds);
-  
-  /* map buffers */
-  Vec3fa* vertices = (Vec3fa*  ) rtcMapBuffer(g_scene,mesh,RTC_VERTEX_BUFFER); 
-  int*    indices  = (int     *) rtcMapBuffer(g_scene,mesh,RTC_INDEX_BUFFER);
-  int*    offsets  = (int     *) rtcMapBuffer(g_scene,mesh,RTC_FACE_BUFFER);
-  
-  /* create sphere geometry */
-  int tri = 0;
-  const float rcpNumTheta = rcp((float)numTheta);
-  const float rcpNumPhi   = rcp((float)numPhi);
-  for (int phi=0; phi<=numPhi; phi++)
-  {
-    for (int theta=0; theta<numTheta; theta++)
-    {
-      const float phif   = phi*float(pi)*rcpNumPhi;
-      const float thetaf = theta*2.0f*float(pi)*rcpNumTheta;
-      Vec3fa& v = vertices[phi*numTheta+theta];
-      Vec3fa P(pos.x + r*sin(phif)*sin(thetaf),
-               pos.y + r*cos(phif),
-               pos.z + r*sin(phif)*cos(thetaf));
-      v.x = P.x;
-      v.y = P.y;
-      v.z = P.z;
-    }
-    if (phi == 0) continue;
-
-    for (int theta=1; theta<=numTheta; theta++) 
-    {
-      int p00 = (phi-1)*numTheta+theta-1;
-      int p01 = (phi-1)*numTheta+theta%numTheta;
-      int p10 = phi*numTheta+theta-1;
-      int p11 = phi*numTheta+theta%numTheta;
-
-      indices[4*tri+0] = p10; 
-      indices[4*tri+1] = p00; 
-      indices[4*tri+2] = p01; 
-      indices[4*tri+3] = p11; 
-      offsets[tri] = 4;//*tri;
-      tri++;
-    }
-  }
-  rtcUnmapBuffer(g_scene,mesh,RTC_VERTEX_BUFFER); 
-  rtcUnmapBuffer(g_scene,mesh,RTC_INDEX_BUFFER);
-  rtcUnmapBuffer(g_scene,mesh,RTC_FACE_BUFFER);
-
-  return mesh;
-}
-
-extern float g_debug;
+//extern float g_debug;
 
 
 void updateScene(RTCScene scene, const Vec3fa& cam_pos)
 {
   if (!g_ispc_scene) return;
-  if (g_debug != 0.0f) return;
+  //if (g_debug != 0.0f) return;
 
   for (size_t j=0; j<g_ispc_scene->numMeshes; j++)
   {
@@ -286,14 +226,12 @@ RTCScene constructScene(const Vec3fa& cam_pos)
     rtcSetBuffer(scene, geomID, RTC_VERTEX_BUFFER, mesh->positions, 0, sizeof(Vec3fa  ));
     rtcSetBuffer(scene, geomID, RTC_INDEX_BUFFER,  mesh->quads    , 0, sizeof(unsigned int));
     
-    unsigned int* face_buffer = new unsigned int[mesh->numQuads];
-    for (size_t i=0;i<mesh->numQuads;i++) face_buffer[i] = 4;
-    rtcSetBuffer(scene, geomID, RTC_FACE_BUFFER, face_buffer    , 0, sizeof(unsigned int));
-    //delete face_buffer; // FIXME: never deleted
+    unsigned int* face_buffer = (unsigned int*) rtcMapBuffer(scene,geomID,RTC_FACE_BUFFER);
+    for (size_t i=0; i<mesh->numQuads; i++) face_buffer[i] = 4;
+    rtcUnmapBuffer(scene,geomID,RTC_FACE_BUFFER);
 
     float* level = (float*) rtcMapBuffer(scene, geomID, RTC_LEVEL_BUFFER);
     for (size_t i=0; i<4*mesh->numQuads; i++) level[i] = 4; // 16
-    //for (size_t i=0; i<4*mesh->numQuads; i++) level[i] = 32;
     rtcUnmapBuffer(scene,geomID, RTC_LEVEL_BUFFER);
 #else
 
@@ -363,7 +301,7 @@ struct OSDVertex {
     // Minimal required interface ----------------------
     OSDVertex() { }
 
-    OSDVertex(OSDVertex const & src) {
+    OSDVertex(OSDVertex const&  src) {
         _position[0] = src._position[0];
         _position[1] = src._position[1];
         _position[1] = src._position[1];
@@ -373,13 +311,13 @@ struct OSDVertex {
         _position[0]=_position[1]=_position[2]=0.0f;
     }
 
-    void AddWithWeight(OSDVertex const & src, float weight) {
+    void AddWithWeight(OSDVertex const&  src, float weight) {
         _position[0]+=weight*src._position[0];
         _position[1]+=weight*src._position[1];
         _position[2]+=weight*src._position[2];
     }
 
-    void AddVaryingWithWeight(OSDVertex const &, float) { }
+    void AddVaryingWithWeight(OSDVertex const& , float) { }
 
     // Public interface ------------------------------------
     void SetPosition(float x, float y, float z) {
