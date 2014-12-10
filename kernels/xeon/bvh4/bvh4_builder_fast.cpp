@@ -123,6 +123,10 @@ namespace embree
     
     void BVH4BuilderFast::build(size_t threadIndex, size_t threadCount) 
     {
+      /* start measurement */
+      double t0 = 0.0f;
+      if (g_verbose >= 1) t0 = getSeconds();
+
       /* calculate size of scene */
       size_t numPrimitivesOld = numPrimitives;
       bvh->numPrimitives = numPrimitives = number_of_primitives();
@@ -158,6 +162,10 @@ namespace embree
         state.reset(NULL);
       }
       
+      /* start measurement */
+      double dt = 0.0f;
+      if (g_verbose >= 1) dt = getSeconds()-t0;
+
       /* verbose mode */
       if (g_verbose >= 1) {
 	std::cout << "[DONE] " << 1000.0f*dt << "ms (" << numPrimitives/dt*1E-6 << " Mtris/s)" << std::endl;
@@ -167,7 +175,6 @@ namespace embree
       if (g_verbose >= 2)
 	std::cout << BVH4Statistics(bvh).str();
       
-
       /* benchmark mode */
       if (g_benchmark) {
 	BVH4Statistics stat(bvh);
@@ -960,11 +967,7 @@ namespace embree
     }
 
     void BVH4BuilderFast::build_sequential(size_t threadIndex, size_t threadCount) 
-    {
-      /* start measurement */
-      double t0 = 0.0f;
-      if (g_verbose >= 2) t0 = getSeconds();
-      
+    {      
       /* initialize node and leaf allocator */
       bvh->alloc.clear();
       __aligned(64) Allocator nodeAlloc(&bvh->alloc);
@@ -984,17 +987,10 @@ namespace embree
       /* build BVH in single thread */
       recurse(br,nodeAlloc,leafAlloc,RECURSE_SEQUENTIAL,threadIndex,threadCount);
       _mm_sfence(); // make written leaves globally visible
-
-      /* stop measurement */
-      if (g_verbose >= 2) dt = getSeconds()-t0;
     }
 
     void BVH4BuilderFast::build_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount) 
     {
-      /* start measurement */
-      double t0 = 0.0f;
-      if (g_verbose >= 2) t0 = getSeconds();
-
       /* calculate list of primrefs */
       PrimInfo pinfo(empty);
       create_primitive_array_parallel(threadIndex, threadCount, scheduler, pinfo);
@@ -1042,9 +1038,6 @@ namespace embree
 
       /* now process all created subtasks on multiple threads */
       scheduler->dispatchTask(task_buildSubTrees, this, threadIndex, threadCount );
-      
-      /* stop measurement */
-      if (g_verbose >= 2) dt = getSeconds()-t0;
     }
 
     // =======================================================================================================

@@ -495,7 +495,7 @@ namespace embree
       return (2*x+1)*coarse/(2*fine);
     }
     
-    __forceinline void displace(RTCDisplacementFunc func, void* userPtr, const Vec2f* luv, const Vec2f* uv, const Vec3fa* Ng)
+    __forceinline void displace(Scene* scene, RTCDisplacementFunc func, void* userPtr, const Vec2f* luv, const Vec2f* uv, const Vec3fa* Ng)
     {
       /* calculate uv coordinates */
       __aligned(64) float qu[17*17+16], qv[17*17+16];
@@ -528,10 +528,11 @@ namespace embree
         for (size_t x=0; x<width; x++) {
           const Vec3fa P0 = P[y*width+x];
           const Vec3fa P1 = Vec3fa(qx[y*width+x],qy[y*width+x],qz[y*width+x]);
-/*#if defined(DEBUG) // FIXME: enable
-          if (!inside(mesh->displBounds,P1-P0))
+#if defined(DEBUG)
+	  SubdivMesh* mesh = (SubdivMesh*) scene->get(geomID);
+          if (!mesh->displBounds.empty() && !inside(mesh->displBounds,P1-P0))
             THROW_RUNTIME_ERROR("displacement out of bounds");
-	    #endif*/
+#endif
           P[y*width+x] = P1;
         }
       }
@@ -759,7 +760,7 @@ namespace embree
       /* perform displacement */
       SubdivMesh* mesh = (SubdivMesh*) scene->get(geomID);
       if (mesh->displFunc) 
-	displace(mesh->displFunc,mesh->userPtr,luv,guv,Ng);
+	displace(scene,mesh->displFunc,mesh->userPtr,luv,guv,Ng);
     }
 
     __forceinline void build(Scene* scene, const CatmullClarkPatch& patch,
@@ -788,7 +789,47 @@ namespace embree
       /* perform displacement */
       SubdivMesh* mesh = (SubdivMesh*) scene->get(geomID);
       if (mesh->displFunc) 
-	displace(mesh->displFunc,mesh->userPtr,luv,guv,Ng);
+	displace(scene,mesh->displFunc,mesh->userPtr,luv,guv,Ng);
+    }
+
+    __forceinline BBox3fa buildLazyBounds(Scene* scene, const CatmullClarkPatch& patch,
+					  const size_t x0, const size_t x1,
+					  const size_t y0, const size_t y1,
+					  const Vec2f& uv0, const Vec2f& uv1, const Vec2f& uv2, const Vec2f& uv3,
+					  const DiscreteTessellationPattern& pattern0, 
+					  const DiscreteTessellationPattern& pattern1, 
+					  const DiscreteTessellationPattern& pattern2, 
+					  const DiscreteTessellationPattern& pattern3, 
+					  const DiscreteTessellationPattern& pattern_x,
+					  const DiscreteTessellationPattern& pattern_y)
+    {
+      /* calculate local UVs */
+      Vec2f luv[17*17]; 
+      calculateLocalUVs(x0,x1,y0,y1,pattern_x,pattern_y,luv);
+
+      /* evaluate position and normal */
+      Vec3fa Ng[17*17];
+      calculatePositionAndNormal(patch,x0,x1,y0,y1,pattern0,pattern1,pattern2,pattern3,pattern_x,pattern_y,luv,Ng);
+
+      /* calculate global UVs */
+      Vec2f guv[17*17]; 
+      calculateGlobalUVs(uv0,uv1,uv2,uv3,luv,guv);
+
+      /* try to approximate bounding box */
+      SubdivMesh* mesh = (SubdivMesh*) scene->get(geomID);
+      const BBox3fa dbounds = mesh->displBounds;
+      if (!dbounds.empty()) {
+	const BBox3fa gbounds = bounds();
+	if (all(gt_mask(8.0f*gbounds.size(),dbounds.size()))) {
+	  return gbounds+dbounds;
+	}
+      }
+
+      /* perform displacement */
+      if (mesh->displFunc) 
+	displace(scene,mesh->displFunc,mesh->userPtr,luv,guv,Ng);
+
+      return bounds();
     }
     
     template<typename Patch>
@@ -924,8 +965,7 @@ namespace embree
 	  const size_t height = y1-y0+1;
 	  assert(width <= 17 && height <= 17);
 	  Grid grid(width,height,geomID,primID);
-	  grid.build(scene,patch,x0,x1,y0,y1,uv[0],uv[1],uv[2],uv[3],pattern0,pattern1,pattern2,pattern3,pattern_x,pattern_y);
-	  box = grid.bounds();
+	  box = grid.buildLazyBounds(scene,patch,x0,x1,y0,y1,uv[0],uv[1],uv[2],uv[3],pattern0,pattern1,pattern2,pattern3,pattern_x,pattern_y);
 	});
 
 	return box;

@@ -215,10 +215,8 @@ namespace embree
       return;
     }
     this->displFunc   = func;
-    if (bounds)
-      this->displBounds = *(BBox3fa*)bounds; 
-    else
-      this->displBounds = BBox3fa( empty );
+    if (bounds) this->displBounds = *(BBox3fa*)bounds; 
+    else        this->displBounds = empty;
   }
 
   void SubdivMesh::immutable () 

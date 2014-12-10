@@ -308,18 +308,9 @@ RTCScene constructScene(const Vec3fa& cam_pos)
     }
     rtcUnmapBuffer(scene,geomID,RTC_INDEX_BUFFER);
 
-#if 1
-    unsigned int* face_buffer = new unsigned int[mesh->numTriangles];
-    for (size_t i=0;i<mesh->numTriangles;i++) face_buffer[i] = 3;
-    rtcSetBuffer(scene, geomID, RTC_FACE_BUFFER, face_buffer    , 0, sizeof(unsigned int));
-    //delete face_buffer; // FIXME: never deleted
-#endif
-
-#if 0
     unsigned int* face_buffer = (unsigned int*) rtcMapBuffer(scene,geomID,RTC_FACE_BUFFER);
     for (size_t i=0; i<mesh->numTriangles; i++) face_buffer[i] = 3;
     rtcUnmapBuffer(scene,geomID,RTC_FACE_BUFFER);
-#endif
 
     float* level = (float*) rtcMapBuffer(scene, geomID, RTC_LEVEL_BUFFER);
     for (size_t i=0; i<3*mesh->numTriangles; i++) level[i] = 4; // 16
@@ -327,10 +318,10 @@ RTCScene constructScene(const Vec3fa& cam_pos)
 
 #endif
 
-    //BBox3fa bounds(Vec3fa(-0.1f,-0.1f,-0.1f),Vec3fa(0.1f,0.1f,0.1f));
-    //rtcSetDisplacementFunction(scene, geomID, (RTCDisplacementFunc)DisplacementFunc,(RTCBounds*)&bounds);
 #if ENABLE_DISPLACEMENTS == 1
-    rtcSetDisplacementFunction(scene, geomID, (RTCDisplacementFunc)DisplacementFunc,NULL);
+    const float b = 0.6f; const BBox3fa bounds(Vec3fa(-b),Vec3fa(b));
+    rtcSetDisplacementFunction(scene, geomID, (RTCDisplacementFunc)DisplacementFunc,(RTCBounds*)&bounds);
+    //rtcSetDisplacementFunction(scene, geomID, (RTCDisplacementFunc)DisplacementFunc,NULL);
 #endif
     mesh->geomID = geomID;
   }       
