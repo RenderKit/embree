@@ -148,7 +148,8 @@ namespace embree
       {
 	if (prims) os_free(prims,bytesPrims);
 	bytesPrims = numPrimitives * sizeof(PrimRef);
-        prims = (PrimRef* ) os_malloc(bytesPrims);  memset(prims,0,bytesPrims);
+        prims = (PrimRef* ) os_malloc(bytesPrims);  
+        memset(prims,0,bytesPrims);
       }
       
       if (!parallel) {
@@ -605,10 +606,16 @@ namespace embree
 
     void BVH4SubdivPatch1CachedBuilderFast::build(size_t threadIndex, size_t threadCount)
     {
+      bool levelUpdate = true;
+
       /* initialize all half edge structures */
       new (&iter) Scene::Iterator<SubdivMesh>(this->scene);
       for (size_t i=0; i<iter.size(); i++)
-        if (iter[i]) iter[i]->initializeHalfEdgeStructures();
+        if (iter[i]) 
+          {
+            iter[i]->initializeHalfEdgeStructures();
+            if (!iter[i]->checkLevelUpdate()) levelUpdate = false;
+          }
 
       pstate.init(iter,size_t(1024));
 
@@ -651,9 +658,11 @@ namespace embree
 
      if (bvh->data_mem == NULL)
        {
+#if DEBUG
           std::cout << "ALLOCATING SUBDIVPATCH1CACHED MEMORY FOR " << numPrimitives << " PRIMITIVES" << std::endl;
-         this->bvh->size_data_mem = sizeof(SubdivPatch1Cached) * numPrimitives;
-         this->bvh->data_mem      = os_malloc( this->bvh->size_data_mem );        
+#endif
+          this->bvh->size_data_mem = sizeof(SubdivPatch1Cached) * numPrimitives;
+          this->bvh->data_mem      = os_malloc( this->bvh->size_data_mem );        
        }
         
       SubdivPatch1Cached *const subdiv_patches = (SubdivPatch1Cached *)this->bvh->data_mem;
@@ -670,7 +679,6 @@ namespace embree
 	  {
 	  
 	    const unsigned int patchIndex = base.size()+s.size();
-	    //const CatmullClarkPatch ipatch(mesh->getHalfEdge(f), mesh->getVertexPositionPtr());
 	    subdiv_patches[patchIndex] = SubdivPatch1Cached(ipatch, mesh->id, f, mesh);
 	    
 	    /* compute patch bounds */

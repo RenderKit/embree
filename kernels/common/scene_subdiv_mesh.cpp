@@ -32,7 +32,9 @@ namespace embree
       numEdges(numEdges), 
       numHalfEdges(0),
       numVertices(numVertices),
-      displFunc(NULL), displBounds(empty)
+      displFunc(NULL), 
+      displBounds(empty),
+      levelUpdate(false)
   {
     for (size_t i=0; i<numTimeSteps; i++)
        vertices[i].init(numVertices,sizeof(Vec3fa));
@@ -403,6 +405,11 @@ namespace embree
     update |= vertex_creases.isModified();
     update |= vertex_crease_weights.isModified(); 
     update |= levels.isModified();
+
+    /* check whether we can simply update the bvh in cached mode */
+    levelUpdate = false;
+    if (!(recalculate || edge_creases.size() != 0 || vertex_creases.size() !=0) && levels.isModified())
+      levelUpdate = true;
 
     /* now either recalculate or update the half edges */
     if (recalculate) calculateHalfEdges();

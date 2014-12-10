@@ -382,5 +382,14 @@ namespace embree
 
     /*! map with all edge creases */
     pmap<uint64,float> edgeCreaseMap;
+
+    /*! flag whether only the edge levels have changed and the mesh has no creases,
+     *  allows for simple bvh update instead of full rebuild in cached mode */
+    bool levelUpdate;
+
+  public:
+    /* check for simple edge level update */
+    __forceinline bool checkLevelUpdate() { return levelUpdate; }
+
   };
 };
