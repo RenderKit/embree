@@ -34,7 +34,8 @@
 /* scene data */
 extern uniform ISPCScene* uniform g_ispc_scene;
 RTCScene g_scene = NULL;
-uniform unsigned int g_threads = 0;
+RTCScene g_embree_scene = NULL;
+RTCScene g_osd_scene = NULL;
 
 /* render function to use */
 renderPixelFunc renderPixel;
@@ -67,10 +68,6 @@ export void device_init (uniform int8* uniform cfg)
 {
   /* initialize ray tracing core */
   rtcInit(cfg);
-
-  /* get number of HW threads */
-  g_threads = getNumHWThreads();
-  print("% HW threads found \n",g_threads);
 
   /* set error handler */
   rtcSetErrorFunction(error_handler);
@@ -114,7 +111,7 @@ void updateEdgeLevels(uniform ISPCScene* uniform scene_in, const uniform Vec3fa&
     uniform ISPCMesh* uniform mesh = scene_in->meshes[i];
     if (mesh->edge_level) {
       uniform unsigned int geomID = mesh->geomID;
-      launch[  g_threads ] updateEdgeLevelBuffer(mesh,cam_pos); sync;	           
+      launch[  getNumHWThreads() ] updateEdgeLevelBuffer(mesh,cam_pos); sync;	           
 
       for (uniform size_t i=0; i<4*mesh->numQuads; i++) {
 	if (mesh->edge_level[i] > 1024) print("level = %\n",mesh->edge_level[i]);
@@ -256,6 +253,113 @@ void convertScene(uniform ISPCScene* uniform scene_in, const uniform Vec3fa& p)
   }
 }
 
+#if defined(__USE_OPENSUBDIV__)
+
+#include <opensubdiv/far/topologyRefinerFactory.h>
+using namespace OpenSubdiv;
+
+struct OSDVertex {
+
+    // Minimal required interface ----------------------
+    OSDVertex() { }
+
+    OSDVertex(OSDVertex const & src) {
+        _position[0] = src._position[0];
+        _position[1] = src._position[1];
+        _position[1] = src._position[1];
+    }
+
+    void Clear( void * =0 ) {
+        _position[0]=_position[1]=_position[2]=0.0f;
+    }
+
+    void AddWithWeight(OSDVertex const & src, float weight) {
+        _position[0]+=weight*src._position[0];
+        _position[1]+=weight*src._position[1];
+        _position[2]+=weight*src._position[2];
+    }
+
+    void AddVaryingWithWeight(OSDVertex const &, float) { }
+
+    // Public interface ------------------------------------
+    void SetPosition(float x, float y, float z) {
+        _position[0]=x;
+        _position[1]=y;
+        _position[2]=z;
+    }
+
+    const float * GetPosition() const {
+        return _position;
+    }
+
+private:
+    float _position[3];
+};
+
+RTCScene constructSceneOpenSubdiv() 
+{
+  if (!g_ispc_scene) return NULL;
+
+  typedef Far::TopologyRefinerFactoryBase::TopologyDescriptor Descriptor;
+
+  Sdc::Options options;
+  options.SetVVarBoundaryInterpolation(Sdc::Options::VVAR_BOUNDARY_EDGE_ONLY);
+  options.SetCreasingMethod(Sdc::Options::CREASE_CHAIKIN);
+
+  RTCScene scene = rtcNewScene(RTC_SCENE_STATIC, RTC_INTERSECT1);
+  
+  for (size_t i=0; i<g_ispc_scene->numSubdivMeshes; i++)
+  {
+    ISPCSubdivMesh* mesh = g_ispc_scene->subdiv[i];
+    
+    Descriptor desc;
+    desc.numVertices  = mesh->numVertices;
+    desc.numFaces     = mesh->numFaces;
+    desc.vertsPerFace = mesh->verticesPerFace;
+    desc.vertIndices  = mesh->position_indices;
+    desc.numCreases   = mesh->numEdgeCreases;
+    desc.creaseVertexIndexPairs = (int*) mesh->edge_creases;
+    desc.creaseWeights = mesh->edge_crease_weights;
+    desc.numCorners    = mesh->numVertexCreases;
+    desc.cornerVertexIndices = mesh->vertex_creases;
+    desc.cornerWeights = mesh->vertex_crease_weights;
+    
+    size_t maxlevel = 5;
+    Far::TopologyRefiner* refiner = Far::TopologyRefinerFactory<Descriptor>::Create(OpenSubdiv::Sdc::TYPE_CATMARK, options, desc);
+    refiner->RefineUniform(maxlevel);
+    
+    std::vector<OSDVertex> vbuffer(refiner->GetNumVerticesTotal());
+    OSDVertex* verts = &vbuffer[0];
+    
+    for (int i=0; i<mesh->numVertices; ++i)
+      verts[i].SetPosition(mesh->positions[i].x,mesh->positions[i].y,mesh->positions[i].z);
+    
+    refiner->Interpolate(verts, verts + mesh->numVertices);
+    
+    for (int level=0; level<maxlevel; ++level)
+        verts += refiner->GetNumVertices(level);
+    
+    const size_t numVertices = refiner->GetNumVertices(maxlevel);
+    const size_t numFaces    = refiner->GetNumFaces(maxlevel);
+    
+    unsigned int meshID = rtcNewTriangleMesh(scene, RTC_GEOMETRY_STATIC, 2*numFaces, numVertices);
+    rtcSetBuffer(scene, meshID, RTC_VERTEX_BUFFER, verts, 0, sizeof(Vec3f));
+    
+    Vec3i* tris = (Vec3i*) rtcMapBuffer(scene, meshID, RTC_INDEX_BUFFER);
+    for (size_t i=0; i<numFaces; i++) {
+      Far::IndexArray fverts = refiner->GetFaceVertices(maxlevel, i);
+      assert(fverts.size() == 4);
+      tris[2*i+0] = Vec3i(fverts[0],fverts[1],fverts[2]);
+      tris[2*i+1] = Vec3i(fverts[2],fverts[3],fverts[0]);
+    }
+    rtcUnmapBuffer(scene,meshID,RTC_INDEX_BUFFER);
+  }
+  rtcCommit(scene);
+  return scene;
+}
+
+#endif
+
 Vec3f rndColor(const int ID) 
 {
   int r = ((ID+13)*17*23) & 255;
@@ -264,6 +368,7 @@ Vec3f rndColor(const int ID)
   const float oneOver255f = 1.f/255.f;
   return make_Vec3f(r*oneOver255f,g*oneOver255f,b*oneOver255f);
 }
+
 
 /* task that renders a single screen tile */
 Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p)
@@ -329,18 +434,23 @@ task void renderTile(uniform int* uniform pixels,
   }
 }
 
-
-
-task void parallelCommit(RTCScene scene)
-{
+#if defined(PARALLEL_COMMIT)
+task void parallelCommit(RTCScene scene) {
   rtcCommitThread (scene,threadIndex,threadCount); 
 }
+#endif
 
 export void toggleOpenSubdiv(uniform int key, uniform int x, uniform int y)
 {
+#if defined(__USE_OPENSUBDIV__)
+  if (g_osd_scene == NULL) {
+    g_osd_scene = constructSceneOpenSubdiv();
+    g_embree_scene = g_scene;
+  }
+  if (g_scene == g_embree_scene) g_scene = g_osd_scene;
+  else                           g_scene = g_embree_scene;
+#endif
 }
-
-
 
 uniform Vec3f old_p; 
  
@@ -371,7 +481,7 @@ export void device_render (uniform int* uniform pixels,
 #if !defined(PARALLEL_COMMIT)
   rtcCommit (g_scene);
 #else
-  launch[  g_threads ] parallelCommit(g_scene); sync;
+  launch[ getNumHWThreads() ] parallelCommit(g_scene); sync;
 #endif
   }
 
@@ -386,7 +496,7 @@ export void device_render (uniform int* uniform pixels,
 #if !defined(PARALLEL_COMMIT)
      rtcCommit (g_scene);
 #else
-     launch[  g_threads ] parallelCommit(g_scene); sync;
+     launch[ getNumHWThreads() ] parallelCommit(g_scene); sync;
 #endif
     }
    }
