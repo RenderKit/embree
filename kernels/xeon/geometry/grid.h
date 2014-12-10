@@ -689,6 +689,32 @@ namespace embree
       return bounds;
     }
 
+    template<typename Patch>
+    __forceinline void calculatePositionAndNormal(const Patch& patch, 
+						  const size_t x0, const size_t x1,
+						  const size_t y0, const size_t y1,
+						  const DiscreteTessellationPattern& pattern0, 
+						  const DiscreteTessellationPattern& pattern1, 
+						  const DiscreteTessellationPattern& pattern2, 
+						  const DiscreteTessellationPattern& pattern3, 
+						  const DiscreteTessellationPattern& pattern_x,
+						  const DiscreteTessellationPattern& pattern_y,
+						  Vec2f luv[17*17], Vec3fa Ng[17*17])
+    {
+      /* evaluate position and normal */
+      size_t swidth  = pattern_x.size()+1;
+      size_t sheight = pattern_y.size()+1;
+#if 0
+      feature_adaptive_eval (patch, x0,x1,y0,y1, swidth,sheight, p,Ng,width,height);
+#else
+      const bool st = stitch_y(patch,y0,y0,0        ,x0,x1,pattern_x,pattern0,luv,Ng);
+      const bool sr = stitch_x(patch,x1,x0,swidth-1 ,y0,y1,pattern_y,pattern1,luv,Ng);
+      const bool sb = stitch_y(patch,y1,y0,sheight-1,x0,x1,pattern_x,pattern2,luv,Ng);
+      const bool sl = stitch_x(patch,x0,x0,0        ,y0,y1,pattern_y,pattern3,luv,Ng);
+      feature_adaptive_eval (patch, x0+sl,x1-sr,y0+st,y1-sb, swidth,sheight, P+st*width+sl,Ng+st*width+sl,width,height);
+#endif
+    }
+
    __forceinline size_t createEagerPrims(FastAllocator::Thread& alloc, PrimRef* prims, 
 					 const size_t x0, const size_t x1,
 					 const size_t y0, const size_t y1)
@@ -756,17 +782,7 @@ namespace embree
       calculateLocalUVs(x0,x1,y0,y1,pattern_x,pattern_y,luv);
 
       /* evaluate position and normal */
-      size_t swidth  = pattern_x.size()+1;
-      size_t sheight = pattern_y.size()+1;
-#if 0
-      feature_adaptive_eval (patch, x0,x1,y0,y1, swidth,sheight, p,Ng,width,height);
-#else
-      const bool st = stitch_y(patch,y0,y0,0        ,x0,x1,pattern_x,pattern0,luv,Ng);
-      const bool sr = stitch_x(patch,x1,x0,swidth-1 ,y0,y1,pattern_y,pattern1,luv,Ng);
-      const bool sb = stitch_y(patch,y1,y0,sheight-1,x0,x1,pattern_x,pattern2,luv,Ng);
-      const bool sl = stitch_x(patch,x0,x0,0        ,y0,y1,pattern_y,pattern3,luv,Ng);
-      feature_adaptive_eval (patch, x0+sl,x1-sr,y0+st,y1-sb, swidth,sheight, P+st*width+sl,Ng+st*width+sl,width,height);
-#endif
+      calculatePositionAndNormal(patch,x0,x1,y0,y1,pattern0,pattern1,pattern2,pattern3,pattern_x,pattern_y,luv,Ng);
 
       /* calculate global UVs */
       calculateGlobalUVs(uv0,uv1,uv2,uv3,luv,guv);
