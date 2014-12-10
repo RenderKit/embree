@@ -169,28 +169,28 @@ void convertScene(uniform ISPCScene* uniform scene_in, const uniform Vec3fa& p)
     uniform ISPCMesh* uniform mesh = scene_in->meshes[i];
     print("Input: mesh->numQuads %\n",mesh->numQuads);
     if (mesh->numQuads)
-      {   
-	uniform int   * uniform offset_buffer = uniform new uniform int[mesh->numQuads];
-	mesh->edge_level  = uniform new uniform float[mesh->numQuads*4];
+    {   
+      uniform int   * uniform offset_buffer = uniform new uniform int[mesh->numQuads];
+      mesh->edge_level  = uniform new uniform float[mesh->numQuads*4];
+      
+      /* create a triangle mesh */
+      uniform unsigned int geomID = rtcNewSubdivisionMesh (g_scene, RTC_GEOMETRY_STATIC, mesh->numQuads, mesh->numQuads*4, mesh->numVertices, 0, 0, 0);
+      mesh->geomID = geomID;
 
-	for (size_t i=0;i<mesh->numQuads;i++) offset_buffer[i] = 4;
-	for (size_t i=0;i<mesh->numQuads*4;i++) mesh->edge_level[i] = FIXED_EDGE_TESSELLATION_VALUE;
-
-       /* create a triangle mesh */
-        uniform unsigned int geomID = rtcNewSubdivisionMesh (g_scene, RTC_GEOMETRY_STATIC, mesh->numQuads, mesh->numQuads*4, mesh->numVertices, 0, 0, 0);
-	mesh->geomID = geomID;
-
-	rtcSetBuffer(g_scene, geomID, RTC_VERTEX_BUFFER, mesh->positions , 0, sizeof(uniform Vec3fa  ));
-	rtcSetBuffer(g_scene, geomID, RTC_INDEX_BUFFER,  mesh->quads     , 0, sizeof(uniform unsigned int));
-	rtcSetBuffer(g_scene, geomID, RTC_FACE_BUFFER,   offset_buffer   , 0, sizeof(uniform unsigned int));
-	rtcSetBuffer(g_scene, geomID, RTC_LEVEL_BUFFER,  mesh->edge_level, 0, sizeof(uniform float));
-	
+      uniform unsigned int* faces = (uniform unsigned int*) rtcMapBuffer(g_scene, geomID, RTC_FACE_BUFFER);
+      for (uniform size_t i=0; i<mesh->numQuads; i++) faces[i] = 4;
+      rtcUnmapBuffer(g_scene,geomID,RTC_FACE_BUFFER);
+      
+      rtcSetBuffer(g_scene, geomID, RTC_VERTEX_BUFFER, mesh->positions , 0, sizeof(uniform Vec3fa  ));
+      rtcSetBuffer(g_scene, geomID, RTC_INDEX_BUFFER,  mesh->quads     , 0, sizeof(uniform unsigned int));
+      rtcSetBuffer(g_scene, geomID, RTC_LEVEL_BUFFER,  mesh->edge_level, 0, sizeof(uniform float));
+      
 #if ENABLE_DISPLACEMENTS == 1
-        rtcSetDisplacementFunction(g_scene,geomID,(RTCDisplacementFunc)&displacementFunction,NULL);
+      rtcSetDisplacementFunction(g_scene,geomID,(RTCDisplacementFunc)&displacementFunction,NULL);
 #endif
-       }
+    }
   }
-
+  
   /* add all subdiv meshes to the scene */
   for (uniform size_t i=0; i<scene_in->numSubdivMeshes; i++)
   {
