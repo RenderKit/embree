@@ -717,21 +717,21 @@ namespace embree
 			     const DiscreteTessellationPattern& pattern2, 
 			     const DiscreteTessellationPattern& pattern3, 
 			     const DiscreteTessellationPattern& pattern_x,
-			     const DiscreteTessellationPattern& pattern_y)
+			     const DiscreteTessellationPattern& pattern_y,
+			     Vec2f luv[17*17],
+			     Vec2f guv[17*17],
+			     Vec3fa Ng[17*17])
     {
       /* calculate local UVs */
-      Vec2f luv[17*17];
       calculateLocalUVs(x0,x1,y0,y1,pattern_x,pattern_y,luv);
 
       /* stitch local UVs */
       stitchLocalUVs(x0,x1,y0,y1,pattern0,pattern1,pattern2,pattern3,pattern_x,pattern_y,luv);
       
       /* evaluate position and normal */
-      Vec3fa Ng[17*17];
       calculatePositionAndNormal(patch,luv,Ng);
 
       /* calculate global UVs */
-      Vec2f guv[17*17]; 
       calculateGlobalUVs(uv0,uv1,uv2,uv3,luv,guv);
 
       /* displace points */
@@ -747,14 +747,15 @@ namespace embree
 			     const DiscreteTessellationPattern& pattern2, 
 			     const DiscreteTessellationPattern& pattern3, 
 			     const DiscreteTessellationPattern& pattern_x,
-			     const DiscreteTessellationPattern& pattern_y)
+			     const DiscreteTessellationPattern& pattern_y,
+			     Vec2f luv[17*17],
+			     Vec2f guv[17*17],
+			     Vec3fa Ng[17*17])
     {
       /* calculate local UVs */
-      Vec2f luv[17*17];
       calculateLocalUVs(x0,x1,y0,y1,pattern_x,pattern_y,luv);
 
       /* evaluate position and normal */
-      Vec3fa Ng[17*17];
       size_t swidth  = pattern_x.size()+1;
       size_t sheight = pattern_y.size()+1;
 #if 0
@@ -768,7 +769,6 @@ namespace embree
 #endif
 
       /* calculate global UVs */
-      Vec2f guv[17*17]; 
       calculateGlobalUVs(uv0,uv1,uv2,uv3,luv,guv);
 
       /* displace points */
@@ -797,7 +797,8 @@ namespace embree
 	  const size_t lx0 = x, lx1 = min(lx0+16,x1);
 	  const size_t ly0 = y, ly1 = min(ly0+16,y1);
 	  Grid* leaf = Grid::create(alloc,lx1-lx0+1,ly1-ly0+1,geomID,primID);
-	  leaf->build(scene,patch,lx0,lx1,ly0,ly1,uv[0],uv[1],uv[2],uv[3],pattern0,pattern1,pattern2,pattern3,pattern_x,pattern_y);
+	  Vec2f luv[17*17]; Vec2f guv[17*17]; Vec3fa Ng[17*17];
+	  leaf->build(scene,patch,lx0,lx1,ly0,ly1,uv[0],uv[1],uv[2],uv[3],pattern0,pattern1,pattern2,pattern3,pattern_x,pattern_y,luv,guv,Ng);
 	  size_t n = leaf->createEagerPrims(alloc,prims,lx0,lx1,ly0,ly1);
 	  prims += n;
 	  N += n;
@@ -908,7 +909,8 @@ namespace embree
 	  const size_t height = y1-y0+1;
 	  assert(width <= 17 && height <= 17);
 	  Grid grid(width,height,geomID,primID);
-	  grid.build(scene,patch,x0,x1,y0,y1,uv[0],uv[1],uv[2],uv[3],pattern0,pattern1,pattern2,pattern3,pattern_x,pattern_y);
+	  Vec2f luv[17*17]; Vec2f guv[17*17]; Vec3fa Ng[17*17];
+	  grid.build(scene,patch,x0,x1,y0,y1,uv[0],uv[1],uv[2],uv[3],pattern0,pattern1,pattern2,pattern3,pattern_x,pattern_y,luv,guv,Ng);
 	  box = grid.bounds();
 	});
 
@@ -948,7 +950,8 @@ namespace embree
 	  const int nx = pattern_x.size();
 	  const int ny = pattern_y.size();
 	  Grid* leaf = Grid::create(alloc,x1-x0+1,y1-y0+1,geomID,primID);
-	  leaf->build(scene,patch,x0,x1,y0,y1,uv[0],uv[1],uv[2],uv[3],pattern0,pattern1,pattern2,pattern3,pattern_x,pattern_y);
+	  Vec2f luv[17*17]; Vec2f guv[17*17]; Vec3fa Ng[17*17];
+	  leaf->build(scene,patch,x0,x1,y0,y1,uv[0],uv[1],uv[2],uv[3],pattern0,pattern1,pattern2,pattern3,pattern_x,pattern_y,luv,guv,Ng);
 	  node = leaf->createLazyPrims(alloc,0,x1-x0,0,y1-y0).second;
 	});
 	
