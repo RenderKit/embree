@@ -1,6 +1,7 @@
+webpages =  www/index.html www/api.html www/tutorials.html www/downloads.html www/renderer.html 
 
 all: doc www ../README.md readme_bin.md
-www: www/index.html www/api.html www/tutorials.html www/downloads.html www/renderer.html 
+www: $(webpages)
 doc: ../readme.txt ../readme.pdf 
 images: images/tutorial00.jpg images/tutorial01.jpg images/tutorial02.jpg images/tutorial03.jpg images/tutorial04.jpg images/tutorial05.jpg images/tutorial06.jpg images/tutorial07.jpg
 
@@ -28,20 +29,20 @@ $(1)
 version: ../build/version.h
 	sed ':a;N;s/.*\"\(.*\)\".*/\1/;ba' $< > $@
 
-www/index.html: version src/*.html src/www/index.html
-	$(call replace,src/www/index.html,www/index.html)
 
-www/api.html: version src/*.html src/www/api.html
-	$(call replace,src/www/api.html,www/api.html)
+markdown2web = pandoc --email-obfuscation=none -f markdown $(filter-out src/webtemplate.html,$+) --template src/webtemplate -V select_$(basename $(@F)) -o $@
 
-www/tutorials.html: version src/*.html src/www/tutorials.html
-	$(call replace,src/www/tutorials.html,www/tutorials.html)
+$(webpages): src/links_web.md src/webtemplate.html
+www/%.html:
+	$(markdown2web)
 
-www/downloads.html: version src/*.html src/www/downloads.html
-	$(call replace,src/www/downloads.html,www/downloads.html)
+www/index.html: src/overview.md src/new_features.html src/support.md
+www/downloads.html: src/platforms.md src/downloading.html src/compilation.md
+www/tutorials.html: src/tutorials.md
+www/renderer.html: src/renderer.md
+www/api.html: src/api.md
+	$(markdown2web) --indented-code-classes=cpp 
 
-www/renderer.html: version src/*.html src/www/renderer.html
-	$(call replace,src/www/renderer.html,www/renderer.html)
 
 images/%.jpg: 
 	echo `basename -s .jpg $@`
@@ -87,12 +88,6 @@ metadata.md: src/metadata.md version
 api.tex: src/api.md src/links_local.md
 	pandoc --chapters --indented-code-classes=cpp $+ -o $@
 #	sed -i -e 's/\\texttt/\\path/g' $@
-
-%.html: src/%.md src/links_web.md
-	pandoc --chapters $+ -o $@
-
-api.html: src/api.md src/links_web.md
-	pandoc --chapters --indented-code-classes=cpp $+ -o $@
 
 readme_bin.md: metadata.md src/overview.md src/platforms.md src/support.md src/install.md src/api.md src/tutorials.md src/links_local.md
 	cat $+ > $@
