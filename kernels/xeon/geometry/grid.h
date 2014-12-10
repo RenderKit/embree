@@ -191,8 +191,6 @@ namespace embree
       ssef upper_z[4];           //!< Z dimension of upper bounds of all 4 children.
     };
 
-//#if defined (__SSE4_1__)
-
     struct CompressedBounds16
     {
       static const size_t N = 4;
@@ -233,7 +231,6 @@ namespace embree
         const size_t farX  = nearX ^ 16, farY  = nearY ^ 16, farZ  = nearZ ^ 16;
 
         const sse3f vscale(scale), voffset(offset);
-#if defined (__SSE4_1__)
         const ssef near_x = madd(ssef::load(&this->lower_x[i]+nearX),vscale.x,voffset.x);
         const ssef near_y = madd(ssef::load(&this->lower_x[i]+nearY),vscale.y,voffset.y);
         const ssef near_z = madd(ssef::load(&this->lower_x[i]+nearZ),vscale.z,voffset.z);
@@ -279,21 +276,16 @@ namespace embree
         const size_t mask = movemask(vmask);
 #endif
         return mask;
-
-#else
-	assert(false); // FIXME: implement
-	return 0;
-#endif
       }
 
       template<bool robust>
       __forceinline size_t intersect(size_t nearX, size_t nearY, size_t nearZ,
                                      const sse3f& org, const sse3f& rdir, const sse3f& org_rdir, const ssef& tnear, const ssef& tfar) const
       {
-        const size_t mask0 = intersect<robust>(0, nearX, nearY, nearZ, org, rdir, org_rdir, tnear, tfar);
-        const size_t mask1 = intersect<robust>(1, nearX, nearY, nearZ, org, rdir, org_rdir, tnear, tfar);
-        const size_t mask2 = intersect<robust>(2, nearX, nearY, nearZ, org, rdir, org_rdir, tnear, tfar);
-        const size_t mask3 = intersect<robust>(3, nearX, nearY, nearZ, org, rdir, org_rdir, tnear, tfar);
+        const size_t mask0 = intersect<robust>( 0, nearX, nearY, nearZ, org, rdir, org_rdir, tnear, tfar);
+        const size_t mask1 = intersect<robust>( 4, nearX, nearY, nearZ, org, rdir, org_rdir, tnear, tfar);
+        const size_t mask2 = intersect<robust>( 8, nearX, nearY, nearZ, org, rdir, org_rdir, tnear, tfar);
+        const size_t mask3 = intersect<robust>(12, nearX, nearY, nearZ, org, rdir, org_rdir, tnear, tfar);
         return mask0 | (mask1 << 4) | (mask2 << 8) | (mask3 << 12);
       }
 

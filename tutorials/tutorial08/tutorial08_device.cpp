@@ -247,7 +247,7 @@ void updateScene(RTCScene scene, const Vec3fa& cam_pos)
 
         //mesh->subdivlevel[e+i] = float(g_subdivision_levels)/16.0f;
         mesh->subdivlevel[e+i] = max(min(LEVEL_FACTOR*(0.5f*length(edge)/length(dist)),MAX_EDGE_LEVEL),MIN_EDGE_LEVEL);
-	//mesh->subdivlevel[e+i] = 6;
+	//mesh->subdivlevel[e+i] = 256;
 	//static int randinit = 0; randinit++; //;
         //srand48(length(edge)/length(cam_pos-P)*12343.0f); mesh->subdivlevel[e+i] = 16.0f*drand48()+1.0f;
       }

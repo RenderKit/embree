@@ -70,6 +70,10 @@ namespace embree
     static __forceinline ssef load( const unsigned char* const ptr ) { 
       return _mm_cvtepi32_ps(_mm_cvtepu8_epi32(_mm_load_si128((__m128i*)ptr)));
     }
+#else
+    static __forceinline ssef load( const unsigned char* const ptr ) { 
+      return _mm_cvtpu8_ps(*(__m64*)ptr);
+    }
 #endif
 
     static __forceinline ssef loadu( const void* const a ) {
