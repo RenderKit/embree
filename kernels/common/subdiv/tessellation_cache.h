@@ -28,17 +28,18 @@
 
 namespace embree
 {
-  // FIXME: implement 4 or 8 way associative cache on Xeon using ssei or avxi
-
-  
   class __aligned(64) TessellationCache {
   public:
     /* default sizes */
-    static const size_t DEFAULT_64B_BLOCKS = (1<<15); // 2MB 
+    static const size_t DEFAULT_64B_BLOCKS = (1<<14); // 1MB 
+#if defined(__MIC__)
+    static const size_t MAX_64B_BLOCKS     = (1<<16); // 4MB
+#else
     static const size_t MAX_64B_BLOCKS     = (1<<18); // 16MB
+#endif
 
-    static const size_t CACHE_SETS = 1<<12; 
-    static const size_t CACHE_WAYS = 4;
+    static const size_t CACHE_SETS = 1<<11; // 2048 sets
+    static const size_t CACHE_WAYS = 1<<2;  // 4-way associative
 
   public:
 
@@ -56,7 +57,7 @@ namespace embree
 #if defined(__MIC__)
       return prim;
 #else
-      return ((size_t)prim) >> 6;
+      return (((size_t)prim) >> 6);
 #endif
     }
 
@@ -356,7 +357,7 @@ namespace embree
           const unsigned int new_allocated64BytesBlocks = 2*allocated64BytesBlocks;
           if (new_allocated64BytesBlocks <= MAX_64B_BLOCKS)
             {
-#if DEBUG
+#if 1
               std::cout << "EXTENDING TESSELLATION CACHE (PER THREAD) FROM " 
                         << allocated64BytesBlocks << " TO " 
                         << new_allocated64BytesBlocks << " BLOCKS = " 
