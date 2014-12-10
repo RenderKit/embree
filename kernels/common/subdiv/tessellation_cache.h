@@ -34,9 +34,10 @@ namespace embree
   class __aligned(64) TessellationCache {
   public:
     /* default sizes */
-    static const size_t DEFAULT_64B_BLOCKS = (1<<15); // 16384
-    //static const size_t CACHE_ENTRIES      = DEFAULT_64B_BLOCKS / 4;
-    static const size_t CACHE_SETS = 1<<12; // 4096
+    static const size_t DEFAULT_64B_BLOCKS = (1<<15); // 2MB 
+    static const size_t MAX_64B_BLOCKS     = (1<<18); // 16MB
+
+    static const size_t CACHE_SETS = 1<<12; 
     static const size_t CACHE_WAYS = 4;
 
   public:
@@ -352,27 +353,9 @@ namespace embree
       /* not enough space to hold entry? */
       if (unlikely(blockCounter + neededBlocks >= allocated64BytesBlocks))
         {   
-#if 1
-          
           const unsigned int new_allocated64BytesBlocks = 2*allocated64BytesBlocks;
-#if DEBUG
-          std::cout << "EXTENDING TESSELLATION CACHE (PER THREAD) FROM " 
-                    << allocated64BytesBlocks << " TO " 
-                    << new_allocated64BytesBlocks << " BLOCKS = " 
-                    << new_allocated64BytesBlocks*64 << " BYTES" << std::endl << std::flush;
-#endif
-          free_mem(lazymem);
-          allocated64BytesBlocks = new_allocated64BytesBlocks; 
-          lazymem = alloc_mem(allocated64BytesBlocks);
-          assert(lazymem);
-
-#else
-	  CACHE_DBG(DBG_PRINT("RESIZE"));
-          /* can the cache hold this subtree space at all in each cache entries? */
-#define BIG_CACHE_ENTRIES 16
-          if (unlikely(BIG_CACHE_ENTRIES*neededBlocks > allocated64BytesBlocks)) 
+          if (new_allocated64BytesBlocks <= MAX_64B_BLOCKS)
             {
-              const unsigned int new_allocated64BytesBlocks = BIG_CACHE_ENTRIES*neededBlocks;
 #if DEBUG
               std::cout << "EXTENDING TESSELLATION CACHE (PER THREAD) FROM " 
                         << allocated64BytesBlocks << " TO " 
@@ -383,9 +366,8 @@ namespace embree
               allocated64BytesBlocks = new_allocated64BytesBlocks; 
               lazymem = alloc_mem(allocated64BytesBlocks);
               assert(lazymem);
-
             }
-#endif
+
           clear();
         }
 
