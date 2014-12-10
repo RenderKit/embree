@@ -27,6 +27,7 @@
 
 #define COMPUTE_SUBDIV_NORMALS_AFTER_PATCH_INTERSECTION 0
 #define FORCE_TRIANGLE_UV 0
+#define TIMER(x) 
 
 namespace embree
 {
@@ -36,13 +37,21 @@ namespace embree
   public:
     typedef SubdivPatch1Cached Primitive;
 
+    /*! Per thread tessellation cache */
+    static __thread TessellationCache *thread_cache;
+
+    /*! Creates per thread tessellation cache */
+    static void createTessellationCache();
+
     /*! Precalculations for subdiv patch intersection */
     struct Precalculations {
       Vec3fa ray_rdir;
       Vec3fa ray_org_rdir;
       SubdivPatch1Cached *current_patch;
       SubdivPatch1Cached *hit_patch;
+      TessellationCache *local_cache;      
       Ray &r;
+
 
       __forceinline Precalculations (Ray& ray) : r(ray) 
       {
@@ -50,6 +59,12 @@ namespace embree
         ray_org_rdir  = ray.org*ray_rdir;
         current_patch = NULL;
         hit_patch     = NULL;
+        /* per thread tessellation cache */
+        if (unlikely(!thread_cache))
+          createTessellationCache();
+
+        local_cache = thread_cache;
+        assert(local_cache != NULL);
       }
 
       __forceinline ~Precalculations() 
@@ -313,28 +328,11 @@ namespace embree
 #endif
   }
 
-#define TIMER(x) 
-
-
-
-
-    /*! Per thread tessellation cache */
-    static __thread TessellationCache *thread_cache;
-
-    /*! Creates per thread tessellation cache */
-    static void createTessellationCache();
 
     /*! Returns BVH4 node reference for subtree over patch grid */
-    static __forceinline size_t getSubtreeRootNode(const Primitive* const subdiv_patch, const void* geom)
+  static __forceinline size_t getSubtreeRootNode(TessellationCache *local_cache, const Primitive* const subdiv_patch, const void* geom)
     {
       const unsigned int commitCounter = ((Scene*)geom)->commitCounter;
-
-      TessellationCache *local_cache = NULL;
-
-      if (unlikely(!thread_cache))
-        createTessellationCache();
-
-      local_cache = thread_cache;
 
       TessellationCache::InputTagType tag = (TessellationCache::InputTagType)subdiv_patch;
     
@@ -451,7 +449,7 @@ namespace embree
         }
       else 
         {
-          lazy_node = getSubtreeRootNode(prim, geom);
+          lazy_node = getSubtreeRootNode(pre.local_cache, prim, geom);
           pre.current_patch = (SubdivPatch1Cached*)prim;
         }             
 
@@ -473,7 +471,7 @@ namespace embree
         }
       else 
         {
-          lazy_node = getSubtreeRootNode(prim, geom);        
+          lazy_node = getSubtreeRootNode(pre.local_cache, prim, geom);        
           pre.current_patch = (SubdivPatch1Cached*)prim;
         }             
       
