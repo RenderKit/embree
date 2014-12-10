@@ -72,7 +72,8 @@ namespace embree
     }
 #else
     static __forceinline ssef load( const unsigned char* const ptr ) { 
-      return _mm_cvtpu8_ps(*(__m64*)ptr);
+      //return _mm_cvtpu8_ps(*(__m64*)ptr); // don't enable, will use MMX instructions
+      return ssef(ptr[0],ptr[1],ptr[2],ptr[3]);
     }
 #endif
 
