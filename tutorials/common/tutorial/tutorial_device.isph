@@ -84,3 +84,6 @@ inline Sample3f make_Sample3f(const Vec3f v, const float pdf) { // FIXME: &
   Sample3f s; s.v = v; s.pdf = pdf; return s;
 }
 
+/* noise functions */
+float noise(const Vec3fa& p);
+Vec3fa noise3D(const Vec3fa& p);

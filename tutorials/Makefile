@@ -10,3 +10,4 @@ all:
 	@./ispc2cpp.sh tutorial06/shapesampler.isph tutorial06/shapesampler.h
 	@./ispc2cpp.sh tutorial06/optics.isph tutorial06/optics.h
 	@./ispc2cpp.sh tutorial07/tutorial07_device.ispc tutorial07/tutorial07_device.cpp
+	@./ispc2cpp.sh tutorial08/tutorial08_device.ispc tutorial08/tutorial08_device.cpp
