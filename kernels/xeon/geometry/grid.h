@@ -674,14 +674,19 @@ namespace embree
     }
 
     template<typename Patch>
-    __forceinline void calculatePositionAndNormal(const Patch& patch, Vec2f luv[17*17], Vec3fa Ng[17*17])
+    __forceinline BBox3fa calculatePositionAndNormal(const Patch& patch, Vec2f luv[17*17], Vec3fa Ng[17*17])
     {
+      BBox3fa bounds = empty;
       for (int y=0; y<height; y++) {
         for (int x=0; x<width; x++) {
-	  point(x,y)    = patch.eval(luv[y*width+x].x,luv[y*width+x].y);
+	  const Vec2f& uv = luv[y*width+x];
+	  const Vec3fa P = patch.eval(uv.x,uv.y);
+	  bounds.extend(P);
+	  point(x,y)    = P;
 	  Ng[y*width+x] = normalize_safe(patch.normal(luv[y*width+x].x, luv[y*width+x].y)); // FIXME: enable only for displacement mapping
         }
       }
+      return bounds;
     }
 
    __forceinline size_t createEagerPrims(FastAllocator::Thread& alloc, PrimRef* prims, 

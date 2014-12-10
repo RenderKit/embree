@@ -804,10 +804,13 @@ displacement function can be set for some subdivision mesh using the
   void rtcSetDisplacementFunction (RTCScene scene, unsigned geomID, RTCDisplacementFunc func, RTCBounds* bounds);
 
 A displacement function of NULL will delete an already set
-displacement function. The bounds parameter has to point to a bounding
-box that bounds the maximal displacement. These bounds have to be
-conservative and should be tight, as some implementations might depend
-on them to avoid displacement callback invokations.
+displacement function. The bounds parameter is optional. If NULL is
+passed as bounds, then the displacement shader will get evaluated
+during the build process to properly bound displaced geometry. If a
+pointer to some bounds of the displacement are passed, then the
+implementation can choose to use these bounds to bound displaced
+geometry. When bounds are specified, then these bounds have to be
+conservative and should be tight for best performance.
 
 The displacement function has to have the following type:
 
