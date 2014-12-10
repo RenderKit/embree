@@ -469,7 +469,8 @@ Vec3fa renderPixelEyeLightTest(float x, float y, const Vec3fa& vx, const Vec3fa&
   }
 }
 
-extern "C" void device_init(int8 *configuration) {
+extern "C" void device_init(int8 *configuration) 
+{
   /*! Initialize Embree ray tracing state. */
   rtcInit(configuration);
 
@@ -513,6 +514,5 @@ extern "C" void device_render(int *pixels, int width, int height, float time, co
 
   /*! Debugging information. */
   rtcDebug();
-
 }
 
