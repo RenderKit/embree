@@ -563,6 +563,11 @@ namespace embree
       prefetchL1(t + 4*64);
     }
 
+    __forceinline Vec2f getUV(const size_t i) const
+    {
+      return Vec2f((float)u[i],(float)v[i]) * 1.0f/65535.0f;
+    }
+
     __forceinline BBox3fa bounds(const SubdivMesh* const mesh) const
     {
 #if FORCE_TESSELLATION_BOUNDS == 1
@@ -602,6 +607,8 @@ namespace embree
 
 	  mic3f vtx = eval16( u, v );
 
+          DBG_PRINT("add patch_uu, patch_vv");
+
 	  /* eval displacement function */
 	  if (unlikely(mesh->displFunc != NULL))
 	    {
@@ -637,10 +644,18 @@ namespace embree
 	  ssef v = load4f(&v_array[i*4]);
 
 	  sse3f vtx = eval4( u, v );
+          
 
 	  /* eval displacement function */
 	  if (unlikely(mesh->displFunc != NULL))
 	    {
+              const Vec2f uv0 = getUV(0);
+              const Vec2f uv1 = getUV(1);
+              const Vec2f uv2 = getUV(2);
+              const Vec2f uv3 = getUV(3);
+
+              const ssef patch_uu = bilinear_interpolate(uv0.x,uv1.x,uv2.x,uv3.x,u,v);
+              const ssef patch_vv = bilinear_interpolate(uv0.y,uv1.y,uv2.y,uv3.y,u,v);
 
 	      sse3f nor = normal4(u,v);
 
@@ -649,8 +664,8 @@ namespace embree
 	      mesh->displFunc(mesh->userPtr,
 			      geom,
 			      prim,
-			      (const float*)&u_array[i*4],
-			      (const float*)&v_array[i*4],
+			      (const float*)&patch_uu,
+			      (const float*)&patch_vv,
 			      (const float*)&nor.x,
 			      (const float*)&nor.y,
 			      (const float*)&nor.z,
@@ -675,6 +690,13 @@ namespace embree
 	  /* eval displacement function */
 	  if (unlikely(mesh->displFunc != NULL))
 	    {
+              const Vec2f uv0 = getUV(0);
+              const Vec2f uv1 = getUV(1);
+              const Vec2f uv2 = getUV(2);
+              const Vec2f uv3 = getUV(3);
+
+              const avxf patch_uu = bilinear_interpolate(uv0.x,uv1.x,uv2.x,uv3.x,u,v);
+              const avxf patch_vv = bilinear_interpolate(uv0.y,uv1.y,uv2.y,uv3.y,u,v);
 
 	      avx3f nor = normal8(u,v);
 
@@ -683,8 +705,8 @@ namespace embree
 	      mesh->displFunc(mesh->userPtr,
 			      geom,
 			      prim,
-			      (const float*)&u_array[i*8],
-			      (const float*)&v_array[i*8],
+			      (const float*)&patch_uu,
+			      (const float*)&patch_vv,
 			      (const float*)&nor.x,
 			      (const float*)&nor.y,
 			      (const float*)&nor.z,
@@ -764,10 +786,6 @@ namespace embree
 
   public:
 
-    __forceinline Vec2f getUV(const size_t i) const
-    {
-      return Vec2f((float)u[i],(float)v[i]) * 1.0f/65535.0f;
-    }
 
     // 16bit discritized u,v coordinates
 

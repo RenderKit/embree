@@ -34,10 +34,10 @@ namespace embree
 
       for (size_t i=0;i<4;i++)
         {
-          u[i] = (unsigned short)(uv[i].x * 65535.0f);
-          v[i] = (unsigned short)(uv[i].y * 65535.0f);
+          /* need to reverse input here */
+          u[i] = (unsigned short)(uv[i].y * 65535.0f);
+          v[i] = (unsigned short)(uv[i].x * 65535.0f);
         }
-
 
       /* init discrete edge tessellation levels and grid resolution */
 

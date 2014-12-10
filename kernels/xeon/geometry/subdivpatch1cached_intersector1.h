@@ -25,7 +25,7 @@
 #include "geometry/subdivpatch1cached.h"
 
 
-#define COMPUTE_SUBDIV_NORMALS_AFTER_PATCH_INTERSECTION 1
+#define COMPUTE_SUBDIV_NORMALS_AFTER_PATCH_INTERSECTION 0
 #define FORCE_TRIANGLE_UV 0
 
 namespace embree
@@ -238,11 +238,6 @@ namespace embree
     const Vec2f uv2 = patch.getUV(2);
     const Vec2f uv3 = patch.getUV(3);
 
-    //DBG_PRINT(uv0);
-    //DBG_PRINT(uv1);
-    //DBG_PRINT(uv2);
-    //DBG_PRINT(uv3);
-
 #if defined(__AVX__)
     for (size_t i=0;i<patch.grid_size_simd_blocks;i++)
       {
@@ -250,25 +245,20 @@ namespace embree
         avxf vv = load8f(&grid_v[8*i]);
         avx3f vtx = patch.eval8(uu,vv);
 
-        //DBG_PRINT(uu);
-        //DBG_PRINT(vv);
-
         const avxf patch_uu = bilinear_interpolate(uv0.x,uv1.x,uv2.x,uv3.x,uu,vv);
         const avxf patch_vv = bilinear_interpolate(uv0.y,uv1.y,uv2.y,uv3.y,uu,vv);
-
-        //DBG_PRINT(patch_uu);
-        //DBG_PRINT(patch_vv);
 
         if (unlikely(((SubdivMesh*)geom)->displFunc != NULL))
           {
             avx3f normal = patch.normal8(uu,vv);
             normal = normalize_safe(normal);
+
               
             ((SubdivMesh*)geom)->displFunc(((SubdivMesh*)geom)->userPtr,
                                            patch.geom,
                                            patch.prim,
-                                           (const float*)&uu,
-                                           (const float*)&vv,
+                                           (const float*)&patch_uu,
+                                           (const float*)&patch_vv,
                                            (const float*)&normal.x,
                                            (const float*)&normal.y,
                                            (const float*)&normal.z,
@@ -281,8 +271,8 @@ namespace embree
         *(avxf*)&grid_x[8*i] = vtx.x;
         *(avxf*)&grid_y[8*i] = vtx.y;
         *(avxf*)&grid_z[8*i] = vtx.z;        
-        *(avxf*)&grid_u[8*i] = uu;
-        *(avxf*)&grid_v[8*i] = vv;
+        *(avxf*)&grid_u[8*i] = patch_uu;
+        *(avxf*)&grid_v[8*i] = patch_vv;
       }
 #else
     for (size_t i=0;i<patch.grid_size_simd_blocks*2;i++) // 4-wide blocks for SSE
@@ -290,6 +280,9 @@ namespace embree
         ssef uu = load4f(&grid_u[4*i]);
         ssef vv = load4f(&grid_v[4*i]);
         sse3f vtx = patch.eval4(uu,vv);
+
+        const ssef patch_uu = bilinear_interpolate(uv0.x,uv1.x,uv2.x,uv3.x,uu,vv);
+        const ssef patch_vv = bilinear_interpolate(uv0.y,uv1.y,uv2.y,uv3.y,uu,vv);
 
         if (unlikely(((SubdivMesh*)geom)->displFunc != NULL))
           {
@@ -299,8 +292,8 @@ namespace embree
             ((SubdivMesh*)geom)->displFunc(((SubdivMesh*)geom)->userPtr,
                                            patch.geom,
                                            patch.prim,
-                                           (const float*)&uu,
-                                           (const float*)&vv,
+                                           (const float*)&patch_uu,
+                                           (const float*)&patch_vv,
                                            (const float*)&normal.x,
                                            (const float*)&normal.y,
                                            (const float*)&normal.z,
@@ -313,8 +306,8 @@ namespace embree
         *(ssef*)&grid_x[4*i] = vtx.x;
         *(ssef*)&grid_y[4*i] = vtx.y;
         *(ssef*)&grid_z[4*i] = vtx.z;        
-        *(ssef*)&grid_u[4*i] = uu;
-        *(ssef*)&grid_v[4*i] = vv;
+        *(ssef*)&grid_u[4*i] = patch_uu;
+        *(ssef*)&grid_v[4*i] = patch_vv;
       }
 
 #endif
