@@ -32,12 +32,49 @@
 namespace embree
 {
 
+  class SubdivPatch1CachedIntersector1
+  {
+  public:
+    typedef SubdivPatch1Cached Primitive;
+
+    /*! Precalculations for subdiv patch intersection */
+    struct Precalculations {
+      Vec3fa ray_rdir;
+      Vec3fa ray_org_rdir;
+      SubdivPatch1Cached *current_patch;
+      SubdivPatch1Cached *hit_patch;
+      Ray &r;
+
+      __forceinline Precalculations (Ray& ray) : r(ray) 
+      {
+        ray_rdir      = rcp_safe(ray.dir);
+        ray_org_rdir  = ray.org*ray_rdir;
+        current_patch = NULL;
+        hit_patch     = NULL;
+      }
+
+      __forceinline ~Precalculations() 
+      {
+        if (unlikely(hit_patch != NULL))
+          {
+#if COMPUTE_SUBDIV_NORMALS_AFTER_PATCH_INTERSECTION == 1
+            Vec3fa normal = hit_patch->normal(r.u,r.v);
+            r.Ng = normal;
+#endif
+            r.geomID = hit_patch->geom;
+            r.primID = hit_patch->prim;
+          }
+      }
+      
+    };
+
+
   /* intersect ray with Quad2x2 structure => 1 ray vs. 8 triangles */
   template<class M, class T>
     static __forceinline void intersect1_precise(Ray& ray,
                                                  const Quad2x2 &qquad,
                                                  const void* geom,
-                                                 bool &hit,
+                                                 Precalculations &pre,
                                                  const size_t delta = 0)
   {
     const Vec3<T> v0_org = qquad.getVtx( 0, delta);
@@ -112,13 +149,13 @@ namespace embree
     size_t i = select_min(valid,t);
 
     /* update hit information */
-    ray.u      = u_final[i];
-    ray.v      = v_final[i];
-    ray.tfar   = t[i];
-    ray.Ng.x   = Ng.x[i];
-    ray.Ng.y   = Ng.y[i];
-    ray.Ng.z   = Ng.z[i];
-    hit        = true;
+    ray.u         = u_final[i];
+    ray.v         = v_final[i];
+    ray.tfar      = t[i];
+    ray.Ng.x      = Ng.x[i];
+    ray.Ng.y      = Ng.y[i];
+    ray.Ng.z      = Ng.z[i];
+    pre.hit_patch = pre.current_patch;
   };
 
 
@@ -180,13 +217,13 @@ namespace embree
   };
 
   
-  __forceinline void evalGrid(const SubdivPatch1Cached &patch,
-                              float *__restrict__ const grid_x,
-                              float *__restrict__ const grid_y,
-                              float *__restrict__ const grid_z,
-                              float *__restrict__ const grid_u,
-                              float *__restrict__ const grid_v,
-                              const SubdivMesh* const geom)
+  static __forceinline void evalGrid(const SubdivPatch1Cached &patch,
+                                     float *__restrict__ const grid_x,
+                                     float *__restrict__ const grid_y,
+                                     float *__restrict__ const grid_z,
+                                     float *__restrict__ const grid_u,
+                                     float *__restrict__ const grid_v,
+                                     const SubdivMesh* const geom)
   {
     gridUVTessellator(patch.level,
                       patch.grid_u_res,
@@ -269,22 +306,7 @@ namespace embree
 #define TIMER(x) 
 
 
-  struct SubdivPatch1CachedIntersector1
-  {
-    typedef SubdivPatch1Cached Primitive;
 
-    /*! Precalculations for subdiv patch intersection */
-    struct Precalculations {
-      Vec3fa ray_rdir, ray_org_rdir;
-      SubdivPatch1Cached *last_patch;
-
-      __forceinline Precalculations (const Ray& ray) 
-      {
-        ray_rdir     = rcp_safe(ray.dir);
-        ray_org_rdir = ray.org*ray_rdir;
-        last_patch   = NULL;
-      }
-    };
 
     /*! Per thread tessellation cache */
     static __thread TessellationCache *thread_cache;
@@ -410,28 +432,17 @@ namespace embree
 
       if (likely(ty == 2))
         {
-          bool hit = false;
 #if defined(__AVX__)
-          intersect1_precise<avxb,avxf>( ray, *(Quad2x2*)prim, (SubdivMesh*)geom,hit);
+          intersect1_precise<avxb,avxf>( ray, *(Quad2x2*)prim, (SubdivMesh*)geom,pre);
 #else
-          intersect1_precise<sseb,ssef>( ray, *(Quad2x2*)prim, (SubdivMesh*)geom,hit,0);
-          intersect1_precise<sseb,ssef>( ray, *(Quad2x2*)prim, (SubdivMesh*)geom,hit,6);
+          intersect1_precise<sseb,ssef>( ray, *(Quad2x2*)prim, (SubdivMesh*)geom,pre,0);
+          intersect1_precise<sseb,ssef>( ray, *(Quad2x2*)prim, (SubdivMesh*)geom,pre,6);
 #endif
-          if (unlikely(hit == true))
-            {
-              const SubdivPatch1Cached *const sptr = (SubdivPatch1Cached *)pre.last_patch;
-#if COMPUTE_SUBDIV_NORMALS_AFTER_PATCH_INTERSECTION == 1
-              Vec3fa normal = sptr->normal(ray.u,ray.v);
-              ray.Ng = normal;
-#endif
-              ray.geomID = sptr->geom;
-              ray.primID = sptr->prim;
-            }
         }
       else 
         {
           lazy_node = getSubtreeRootNode(prim, geom);
-          pre.last_patch = (SubdivPatch1Cached*)prim;
+          pre.current_patch = (SubdivPatch1Cached*)prim;
         }             
 
     }
@@ -453,7 +464,7 @@ namespace embree
       else 
         {
           lazy_node = getSubtreeRootNode(prim, geom);        
-          pre.last_patch = (SubdivPatch1Cached*)prim;
+          pre.current_patch = (SubdivPatch1Cached*)prim;
         }             
       
 
