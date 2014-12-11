@@ -37,6 +37,14 @@ namespace embree
       return (1.0f-u) * (1.0f-v) * x0 + u * (1.0f-v) * x1 + u * v * x2 + (1.0f-u) * v * x3; 
     }
 
+
+  template<class T>
+    __forceinline T *aligned_alloca(size_t elements, const size_t alignment = 64)
+    {
+      void *ptr = alloca(elements * sizeof(T) + alignment);
+      return (T*)ALIGN_PTR(ptr,alignment);
+    }
+
 #if !defined(__MIC__)
 
   /* 3x3 point grid => 2x2 quad grid */

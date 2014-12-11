@@ -40,20 +40,24 @@ namespace embree
         TIMER(msec = getSeconds());
         
         assert( patch.grid_size_simd_blocks >= 1 );
-        
+        // #if defined(_MSC_VER)
+#if 0
         __aligned(64) float grid_x[(patch.grid_size_simd_blocks+1)*8]; 
         __aligned(64) float grid_y[(patch.grid_size_simd_blocks+1)*8];
         __aligned(64) float grid_z[(patch.grid_size_simd_blocks+1)*8]; 
         
         __aligned(64) float grid_u[(patch.grid_size_simd_blocks+1)*8]; 
         __aligned(64) float grid_v[(patch.grid_size_simd_blocks+1)*8];
+     
+#else
+        float *grid_x = aligned_alloca<float>((patch.grid_size_simd_blocks+1)*8,64);
+        float *grid_y = aligned_alloca<float>((patch.grid_size_simd_blocks+1)*8,64);
+        float *grid_z = aligned_alloca<float>((patch.grid_size_simd_blocks+1)*8,64);
+        float *grid_u = aligned_alloca<float>((patch.grid_size_simd_blocks+1)*8,64);
+        float *grid_v = aligned_alloca<float>((patch.grid_size_simd_blocks+1)*8,64);
+
         
-        //float* grid_x = (float*) ALIGN_PTR(alloca((patch.grid_size_simd_blocks + 1) * 8 * sizeof(float) + 64),64);
-        //float* grid_y = (float*) ALIGN_PTR(alloca((patch.grid_size_simd_blocks + 1) * 8 * sizeof(float) + 64),64);
-        //float* grid_z = (float*) ALIGN_PTR(alloca((patch.grid_size_simd_blocks + 1) * 8 * sizeof(float) + 64),64);
-        
-        //float* grid_u = (float*) ALIGN_PTR(alloca((patch.grid_size_simd_blocks + 1) * 8 * sizeof(float) + 64),64);
-        //float* grid_v = (float*) ALIGN_PTR(alloca((patch.grid_size_simd_blocks + 1) * 8 * sizeof(float) + 64),64);
+#endif   
         
         evalGrid(patch,grid_x,grid_y,grid_z,grid_u,grid_v,geom);
         
