@@ -1827,7 +1827,7 @@ namespace embree
     case 0: addSphere(scene,gflags,Vec3fa(-1,0,-1),1.0f,50,-1,0.0f); break;
     case 1: addSphere(scene,gflags,Vec3fa(-1,0,-1),1.0f,50,-1,0.1f); break;
     case 2: addHair  (scene,gflags,Vec3fa(-1,0,-1),1.0f,1.0f,1,0.0f); break;
-      //case 3: addHair  (scene,gflags,Vec3fa(-1,0,-1),1.0f,1.0f,1,0.1f); break; // FIXME: motion blur for hair not yet implemented
+      //case 3: addHair  (scene,gflags,Vec3fa(-1,0,-1),1.0f,1.0f,1,0.1f); break; 
     }
     rtcCommit (scene);
 
@@ -2391,14 +2391,14 @@ namespace embree
   {
     RTCScene scene = rtcNewScene(RTC_SCENE_DYNAMIC,aflags);
     AssertNoError();
-    int geom[1024];
-    for (size_t i=0; i<1024; i++) geom[i] = -1;
-    Sphere spheres[1024];
+    int geom[128];
+    for (size_t i=0; i<128; i++) geom[i] = -1;
+    Sphere spheres[128];
     memset(spheres,0,sizeof(spheres));
 
-    for (size_t i=0; i<200; i++) {
-      for (size_t j=0; j<20; j++) {
-        int index = rand()%1024;
+    for (size_t i=0; i<50; i++) {
+      for (size_t j=0; j<10; j++) {
+        int index = rand()%128;
         Vec3fa pos = 100.0f*Vec3fa(drand48(),drand48(),drand48());
         if (geom[index] == -1) {
           switch (rand()%4) {
@@ -2549,7 +2549,7 @@ namespace embree
       for (size_t j=0; j<10; j++) 
       {
         Vec3fa pos = 100.0f*Vec3fa(drand48(),drand48(),drand48());
-/*#if !defined(__MIC__)
+/*#if !defined(__MIC__) // FIXME: enable
 	switch (rand()%16) {
 	case 0: pos = Vec3fa(nan); break;
 	case 1: pos = Vec3fa(inf); break;
@@ -2565,9 +2565,9 @@ namespace embree
         switch (type) {
         case 0: addSphere(task->scene,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles,0.0f); break;
 	case 1: addSphere(task->scene,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles,1.0f); break;
-	  //case 2: addSubdivSphere(task->scene,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,4,numTriangles,0.0f); break;
-        case 3: addHair  (task->scene,RTC_GEOMETRY_STATIC,pos,1.0f,2.0f,numTriangles,0.0f); break;
-	  //case 3: addHair  (task->scene,RTC_GEOMETRY_STATIC,pos,1.0f,2.0f,numTriangles,1.0f); break; // FIXME: motion blur for hair not yet implemented
+	case 2: addSubdivSphere(task->scene,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,4,numTriangles,0.0f); break;
+	case 3: addHair  (task->scene,RTC_GEOMETRY_STATIC,pos,1.0f,2.0f,numTriangles,0.0f); break;
+	  //case 4: addHair  (task->scene,RTC_GEOMETRY_STATIC,pos,1.0f,2.0f,numTriangles,1.0f); break; 
         case 5: {
 	  Sphere* sphere = new Sphere(pos,2.0f); spheres.push_back(sphere); 
 	  addUserGeometryEmpty(task->scene,sphere); break;
@@ -2827,9 +2827,6 @@ namespace embree
 
     /* perform tests */
     rtcInit(g_rtcore.c_str());
-
-    //POSITIVE("regression_static",         rtcore_regression(rtcore_regression_static_thread,false));
-    //POSITIVE("regression_dynamic",        rtcore_regression(rtcore_regression_dynamic_thread,false));
 
     POSITIVE("mutex_sys",                 test_mutex_sys());
 #if !defined(__MIC__)  // FIXME: hangs on MIC 

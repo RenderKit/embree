@@ -48,7 +48,7 @@ namespace embree
         Geometry* geom = scene->geometries[i];
         if (geom == NULL) return NULL;
         if (!geom->isEnabled()) return NULL;
-        if (geom->type != Ty::type) return NULL;
+        if (geom->type != Ty::geom_type) return NULL;
         return (Ty*) geom;
       }
 

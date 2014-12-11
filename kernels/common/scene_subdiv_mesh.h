@@ -27,7 +27,7 @@ namespace embree
   {
   public:
 
-    static const GeometryTy type = SUBDIV_MESH;
+    static const GeometryTy geom_type = SUBDIV_MESH;
 
     struct Edge 
     {
