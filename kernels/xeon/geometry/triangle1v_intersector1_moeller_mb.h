@@ -43,7 +43,7 @@ namespace embree
         };
         
         /*! Intersect a ray with the triangle and updates the hit. */
-        static __forceinline void intersect(Precalculations& pre, Ray& ray, const Primitive& tri, const void* geom)
+        static __forceinline void intersect(Precalculations& pre, Ray& ray, const Primitive& tri, Scene* scene)
         {
           /* load triangle */
           STAT3(normal.trav_prims,1,1,1);
@@ -98,7 +98,7 @@ namespace embree
           
           /* intersection filter test */
 #if defined(RTCORE_INTERSECTION_FILTER)
-          Geometry* geometry = ((Scene*)geom)->get(geomID);
+          Geometry* geometry = scene->get(geomID);
           if (unlikely(geometry->hasIntersectionFilter1())) {
             runIntersectionFilter1(geometry,ray,u,v,t,tri_Ng,geomID,primID);
             return;
@@ -115,7 +115,7 @@ namespace embree
         }
         
         /*! Test if the ray is occluded by one of the triangles. */
-        static __forceinline bool occluded(Precalculations& pre, Ray& ray, const Primitive& tri, const void* geom)
+        static __forceinline bool occluded(Precalculations& pre, Ray& ray, const Primitive& tri, Scene* scene)
         {
           /* load triangle */
           STAT3(shadow.trav_prims,1,1,1);
@@ -163,7 +163,7 @@ namespace embree
           /* intersection filter test */
 #if defined(RTCORE_INTERSECTION_FILTER)
           const int geomID = tri.geomID<list>();
-          Geometry* geometry = ((Scene*)geom)->get(geomID);
+          Geometry* geometry = scene->get(geomID);
           if (unlikely(geometry->hasOcclusionFilter1()))
           {
             /* calculate hit information */

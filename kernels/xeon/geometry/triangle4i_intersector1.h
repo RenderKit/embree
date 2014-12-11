@@ -34,7 +34,7 @@ namespace embree
           __forceinline Precalculations (const Ray& ray) {}
         };
         
-        static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Primitive& tri, const void* geom)
+        static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Primitive& tri, Scene* scene)
         {
           /* gather vertices */
           STAT3(normal.trav_prims,1,1,1);
@@ -100,7 +100,7 @@ namespace embree
 #if defined(RTCORE_INTERSECTION_FILTER) || defined(RTCORE_RAY_MASK)
           while (true) 
           {
-            TriangleMesh* geometry = ((Scene*)geom)->getTriangleMesh(geomID);
+            TriangleMesh* geometry = scene->getTriangleMesh(geomID);
             if ((geometry->mask & ray.mask) == 0) {
               valid[i] = 0;
               if (none(valid)) return;
@@ -136,7 +136,7 @@ namespace embree
           
         }
         
-        static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Primitive& tri, const void* geom)
+        static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Primitive& tri, Scene* scene)
         {
           /* gather vertices */
           STAT3(shadow.trav_prims,1,1,1);
@@ -197,7 +197,7 @@ namespace embree
           for (size_t m=movemask(valid), i=__bsf(m); m!=0; m=__btc(m,i), i=__bsf(m))
           {  
             const int geomID = tri.geomID<list>(i);
-            TriangleMesh* geometry = ((Scene*)geom)->getTriangleMesh(geomID);
+            TriangleMesh* geometry = scene->getTriangleMesh(geomID);
             
 #if defined(RTCORE_RAY_MASK)
             /* goto next hit if mask test fails */

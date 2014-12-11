@@ -32,11 +32,11 @@ namespace embree
         __forceinline Precalculations (const Ray& ray) {}
       };
       
-      static __forceinline void intersect(const Precalculations& pre, Ray& ray, Primitive& prim, const void* geom, size_t& lazy_node) {
+      static __forceinline void intersect(const Precalculations& pre, Ray& ray, Primitive& prim, const Scene* scene, size_t& lazy_node) {
         lazy_node = prim.initialize();
       }
       
-      static __forceinline bool occluded(const Precalculations& pre, Ray& ray, Primitive& prim, const void* geom, size_t& lazy_node) {
+      static __forceinline bool occluded(const Precalculations& pre, Ray& ray, Primitive& prim, const Scene* scene, size_t& lazy_node) {
         lazy_node = prim.initialize();
         return false;
       }
@@ -242,7 +242,7 @@ namespace embree
       }
       
       /*! Intersect a ray with the triangle and updates the hit. */
-      static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Primitive& prim, const void* geom, size_t& lazy_node)
+      static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Primitive& prim, const Scene* scene, size_t& lazy_node)
       {
         STAT3(normal.trav_prims,1,1,1);
         
@@ -298,8 +298,8 @@ namespace embree
       }
       
       /*! Intersect a ray with the triangle and updates the hit. */
-      static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Primitive* prim, size_t ty, const void* geom, size_t& lazy_node) {
-        intersect(pre,ray,prim[0],geom,lazy_node);
+      static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Primitive* prim, size_t ty, const Scene* scene, size_t& lazy_node) {
+        intersect(pre,ray,prim[0],scene,lazy_node);
       }    
       
       static __forceinline bool occludedFinish (Ray& ray, const Vec3fa& p0, const Vec3fa& p1, const Vec3fa& p2, const ssef& uvw, const Primitive& prim)
@@ -429,7 +429,7 @@ namespace embree
       }
       
       /*! Test if the ray is occluded by the primitive */
-      static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Primitive& prim, const void* geom, size_t& lazy_node)
+      static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Primitive& prim, const Scene* scene, size_t& lazy_node)
       {
         STAT3(shadow.trav_prims,1,1,1);
         
@@ -487,8 +487,8 @@ namespace embree
       }
       
       /*! Test if the ray is occluded by the primitive */
-      static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Primitive* prim, size_t ty, const void* geom, size_t& lazy_node) {
-        return occluded(pre,ray,prim[0],geom,lazy_node);
+      static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Primitive* prim, size_t ty, const Scene* scene, size_t& lazy_node) {
+        return occluded(pre,ray,prim[0],scene,lazy_node);
       }
     };
   }

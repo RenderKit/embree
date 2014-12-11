@@ -31,13 +31,13 @@ namespace embree
         __forceinline Precalculations (const Ray& ray) {}
       };
       
-      static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Primitive& prim, const void* geom) 
+      static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Primitive& prim, Scene* scene) 
       {
         AVX_ZERO_UPPER();
         prim.accel->intersect((RTCRay&)ray,prim.item);
       }
       
-      static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Primitive& prim, const void* geom) 
+      static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Primitive& prim, Scene* scene) 
       {
         AVX_ZERO_UPPER();
         prim.accel->occluded((RTCRay&)ray,prim.item);

@@ -33,7 +33,7 @@ namespace embree
           __forceinline Precalculations (const sseb& valid, const Ray4& ray) {}
         };
         
-        static __forceinline void intersect(const sseb& valid_i, Precalculations& pre, Ray4& ray, const Primitive& tri, const void* geom)
+        static __forceinline void intersect(const sseb& valid_i, Precalculations& pre, Ray4& ray, const Primitive& tri, Scene* scene)
         {
           for (size_t i=0; i<4; i++)
           {
@@ -92,7 +92,7 @@ namespace embree
             
             /* ray masking test */
 #if defined(RTCORE_RAY_MASK)
-            int mask = ((Scene*)geom)->getTriangleMesh(tri.geomID<list>(i))->mask;
+            int mask = scene->getTriangleMesh(tri.geomID<list>(i))->mask;
             valid &= (mask & ray.mask) != 0;
             if (unlikely(none(valid))) continue;
 #endif
@@ -106,7 +106,7 @@ namespace embree
             
             /* intersection filter test */
 #if defined(RTCORE_INTERSECTION_FILTER)
-            Geometry* geometry = ((Scene*)geom)->get(geomID);
+            Geometry* geometry = scene->get(geomID);
             if (unlikely(geometry->hasIntersectionFilter4())) {
               runIntersectionFilter4(valid,geometry,ray,u,v,t,Ng,geomID,primID);
               continue;
@@ -125,7 +125,7 @@ namespace embree
           }
         }
         
-        static __forceinline sseb occluded(const sseb& valid_i, Precalculations& pre, Ray4& ray, const Primitive& tri, const void* geom)
+        static __forceinline sseb occluded(const sseb& valid_i, Precalculations& pre, Ray4& ray, const Primitive& tri, Scene* scene)
         {
           sseb valid0 = valid_i;
           
@@ -185,7 +185,7 @@ namespace embree
             
             /* ray masking test */
 #if defined(RTCORE_RAY_MASK)
-            int mask = ((Scene*)geom)->getTriangleMesh(tri.geomID<list>(i))->mask;
+            int mask = scene->getTriangleMesh(tri.geomID<list>(i))->mask;
             valid &= (mask & ray.mask) != 0;
             if (unlikely(none(valid))) continue;
 #endif
@@ -193,7 +193,7 @@ namespace embree
             /* intersection filter test */
 #if defined(RTCORE_INTERSECTION_FILTER)
             const int geomID = tri.geomID<list>(i);
-            Geometry* geometry = ((Scene*)geom)->get(geomID);
+            Geometry* geometry = scene->get(geomID);
             if (unlikely(geometry->hasOcclusionFilter4()))
             {
               /* calculate hit information */

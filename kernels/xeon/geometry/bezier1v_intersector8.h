@@ -30,27 +30,27 @@ namespace embree
         typedef Bezier1v Primitive;
         typedef BezierIntersector8::Precalculations Precalculations;
         
-        static __forceinline void intersect(Precalculations& pre, Ray8& ray, const size_t k, const Primitive& curve, void* geom) {
-          BezierIntersector8::intersect(pre,ray,k,curve.p0,curve.p1,curve.p2,curve.p3,curve.geomID<list>(),curve.primID<list>(),geom);
+        static __forceinline void intersect(Precalculations& pre, Ray8& ray, const size_t k, const Primitive& curve, Scene* scene) {
+          BezierIntersector8::intersect(pre,ray,k,curve.p0,curve.p1,curve.p2,curve.p3,curve.geomID<list>(),curve.primID<list>(),scene);
         }
         
-        static __forceinline void intersect(const avxb& valid_i, Precalculations& pre, Ray8& ray, const Primitive& curve, void* geom)
+        static __forceinline void intersect(const avxb& valid_i, Precalculations& pre, Ray8& ray, const Primitive& curve, Scene* scene)
         {
           int mask = movemask(valid_i);
-          while (mask) intersect(pre,ray,__bscf(mask),curve,geom);
+          while (mask) intersect(pre,ray,__bscf(mask),curve,scene);
         }
         
-        static __forceinline bool occluded(Precalculations& pre, Ray8& ray, const size_t k, const Primitive& curve, void* geom) {
-          return BezierIntersector8::occluded(pre,ray,k,curve.p0,curve.p1,curve.p2,curve.p3,curve.geomID<list>(),curve.primID<list>(),geom);
+        static __forceinline bool occluded(Precalculations& pre, Ray8& ray, const size_t k, const Primitive& curve, Scene* scene) {
+          return BezierIntersector8::occluded(pre,ray,k,curve.p0,curve.p1,curve.p2,curve.p3,curve.geomID<list>(),curve.primID<list>(),scene);
         }
         
-        static __forceinline avxb occluded(const avxb& valid_i, Precalculations& pre, Ray8& ray, const Primitive& curve, void* geom)
+        static __forceinline avxb occluded(const avxb& valid_i, Precalculations& pre, Ray8& ray, const Primitive& curve, Scene* scene)
         {
           avxb valid_o = false;
           int mask = movemask(valid_i);
           while (mask) {
             size_t k = __bscf(mask);
-            if (occluded(pre,ray,k,curve,geom))
+            if (occluded(pre,ray,k,curve,scene))
               valid_o[k] = -1;
           }
           return valid_o;

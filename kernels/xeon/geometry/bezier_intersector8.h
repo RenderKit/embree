@@ -51,7 +51,7 @@ namespace embree
       
       static __forceinline void intersect(const Precalculations& pre, Ray8& ray, size_t k, 
                                           const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3, const int& geomID, const int& primID, 
-                                          const void* geom)
+                                          Scene* scene)
       {
         STAT3(normal.trav_prims,1,1,1);
         
@@ -117,13 +117,13 @@ namespace embree
         
         /* ray masking test */
 #if defined(RTCORE_RAY_MASK)
-        BezierCurves* g = ((Scene*)geom)->getBezierCurves(geomID);
+        BezierCurves* g = scene->getBezierCurves(geomID);
         if (unlikely(g->mask & ray.mask[k]) == 0) return;
 #endif    
         
         /* intersection filter test */
 #if defined(RTCORE_INTERSECTION_FILTER)
-        const Geometry* geometry = ((Scene*)geom)->get(geomID);
+        const Geometry* geometry = scene->get(geomID);
         if (!likely(geometry->hasIntersectionFilter8())) 
         {
 #endif
@@ -162,7 +162,7 @@ namespace embree
       
       static __forceinline bool occluded(const Precalculations& pre, Ray8& ray, const size_t k, 
                                          const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3, const int& geomID, const int& primID, 
-                                         const void* geom) 
+                                         Scene* scene) 
       {
         STAT3(shadow.trav_prims,1,1,1);
         
@@ -226,14 +226,14 @@ namespace embree
         
         /* ray masking test */
 #if defined(RTCORE_RAY_MASK)
-        BezierCurves* g = ((Scene*)geom)->getBezierCurves(geomID);
+        BezierCurves* g = scene->getBezierCurves(geomID);
         if (unlikely(g->mask & ray.mask[k]) == 0) return false;
 #endif  
         
         /* intersection filter test */
 #if defined(RTCORE_INTERSECTION_FILTER)
         size_t i = select_min(valid,t);
-        const Geometry* geometry = ((Scene*)geom)->get(geomID);
+        const Geometry* geometry = scene->get(geomID);
         if (likely(!geometry->hasOcclusionFilter8())) return true;
         
         while (true) 

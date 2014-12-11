@@ -1191,7 +1191,7 @@ namespace embree
   public:
 
     /*! BVH4 default constructor. */
-    BVH4 (const PrimitiveType& primTy, void* geometry, bool listMode);
+    BVH4 (const PrimitiveType& primTy, Scene* scene, bool listMode);
 
     /*! BVH4 destruction */
     ~BVH4 ();
@@ -1250,7 +1250,7 @@ namespace embree
     void clearBarrier(NodeRef& node);
 
     /*! Propagate bounds for time t0 and time t1 up the tree. */
-    std::pair<BBox3fa,BBox3fa> refit(void* geom, NodeRef node);
+    std::pair<BBox3fa,BBox3fa> refit(Scene* scene, NodeRef node);
 
     LinearAllocatorPerThread alloc;
 
@@ -1330,7 +1330,7 @@ namespace embree
 
   public:
     const PrimitiveType& primTy;       //!< primitive type stored in the BVH
-    void* geometry;                    //!< pointer to additional data for primitive intersector
+    Scene* scene;                      //!< scene pointer
     bool listMode;                     //!< true if number of leaf items not encoded in NodeRef
     NodeRef root;                      //!< Root node
     size_t numPrimitives;

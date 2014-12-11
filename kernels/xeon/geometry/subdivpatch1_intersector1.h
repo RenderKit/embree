@@ -32,7 +32,7 @@ namespace embree
                                            Ray& ray, 
                                            const unsigned int geomID,
                                            const unsigned int primID,
-                                           const void* geom)
+                                           Scene* scene)
     {
       /* load triangle */
       STAT3(normal.trav_prims,1,1,1);
@@ -89,7 +89,7 @@ namespace embree
       
       /* intersection filter test */
 #if 0 && defined(RTCORE_INTERSECTION_FILTER) // FIXME: enable
-      Geometry* geometry = ((Scene*)geom)->get(geomID);
+      Geometry* geometry = scene->get(geomID);
       if (unlikely(geometry->hasIntersectionFilter1())) {
         runIntersectionFilter1(geometry,ray,u,v,t,Ng,geomID,primID);
         return;
@@ -111,7 +111,7 @@ namespace embree
                                           Ray& ray, 
                                           const unsigned int geomID,
                                           const unsigned int primID,
-                                          const void* geom)
+                                          Scene* scene)
     {
       /* load triangle */
       STAT3(normal.trav_prims,1,1,1);
@@ -163,7 +163,7 @@ namespace embree
       /* intersection filter test */
 #if 0 && defined(RTCORE_INTERSECTION_FILTER) // FIXME: enable
       const int geomID = tri.geomID<list>();
-      Geometry* geometry = ((Scene*)geom)->get(geomID);
+      Geometry* geometry = scene->get(geomID);
       if (unlikely(geometry->hasOcclusionFilter1()))
       {
         /* calculate hit information */
@@ -248,7 +248,7 @@ namespace embree
       
       
       /*! Intersect a ray with the primitive. */
-      static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Primitive& subdiv_patch, const void* geom)
+      static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Primitive& subdiv_patch, Scene* scene)
       {
         STAT3(normal.trav_prims,1,1,1);
         
@@ -274,7 +274,7 @@ namespace embree
       }
       
       /*! Test if the ray is occluded by the primitive */
-      static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Primitive& subdiv_patch, const void* geom)
+      static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Primitive& subdiv_patch, Scene* scene)
       {
         STAT3(shadow.trav_prims,1,1,1);
         

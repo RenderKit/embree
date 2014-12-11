@@ -40,7 +40,7 @@ namespace embree
         };
         
         /*! Intersects a 8 rays with 8 triangles. */
-        static __forceinline void intersect(const avxb& valid_i, Precalculations& pre, Ray8& ray, const Primitive& tri, const void* geom)
+        static __forceinline void intersect(const avxb& valid_i, Precalculations& pre, Ray8& ray, const Primitive& tri, Scene* scene)
         {
           for (size_t i=0; i<8; i++)
           {
@@ -105,7 +105,7 @@ namespace embree
             /* intersection filter test */
 #if defined(RTCORE_INTERSECTION_FILTER)
             if (enableIntersectionFilter) {
-              Geometry* geometry = ((Scene*)geom)->get(geomID);
+              Geometry* geometry = scene->get(geomID);
               if (unlikely(geometry->hasIntersectionFilter8())) {
                 runIntersectionFilter8(valid,geometry,ray,u,v,t,Ng,geomID,primID);
                 continue;
@@ -126,7 +126,7 @@ namespace embree
         }
         
         /*! Test for 4 rays if they are occluded by any of the 4 triangle. */
-        static __forceinline avxb occluded(const avxb& valid_i, Precalculations& pre, Ray8& ray, const Primitive& tri, const void* geom)
+        static __forceinline avxb occluded(const avxb& valid_i, Precalculations& pre, Ray8& ray, const Primitive& tri, Scene* scene)
         {
           avxb valid0 = valid_i;
           
@@ -187,7 +187,7 @@ namespace embree
             if (enableIntersectionFilter) 
             {
               const int geomID = tri.geomID<list>(i);
-              Geometry* geometry = ((Scene*)geom)->get(geomID);
+              Geometry* geometry = scene->get(geomID);
               if (unlikely(geometry->hasOcclusionFilter8()))
               {
                 /* calculate hit information */
@@ -209,7 +209,7 @@ namespace embree
         }
         
         /*! Intersect a ray with the 4 triangles and updates the hit. */
-        static __forceinline void intersect(Precalculations& pre, Ray8& ray, size_t k, const Primitive& tri, void* geom)
+        static __forceinline void intersect(Precalculations& pre, Ray8& ray, size_t k, const Primitive& tri, Scene* scene)
         {
           /* calculate denominator */
           STAT3(normal.trav_prims,1,1,1);
@@ -259,7 +259,7 @@ namespace embree
 #if defined(RTCORE_INTERSECTION_FILTER)
           while (true) 
           {
-            Geometry* geometry = ((Scene*)geom)->get(geomID);
+            Geometry* geometry = scene->get(geomID);
             if (likely(!enableIntersectionFilter || !geometry->hasIntersectionFilter8())) 
             {
 #endif
@@ -288,7 +288,7 @@ namespace embree
         }
         
         /*! Test if the ray is occluded by one of the triangles. */
-        static __forceinline bool occluded(Precalculations& pre, Ray8& ray, size_t k, const Primitive& tri, void* geom)
+        static __forceinline bool occluded(Precalculations& pre, Ray8& ray, size_t k, const Primitive& tri, Scene* scene)
         {
           /* calculate denominator */
           STAT3(shadow.trav_prims,1,1,1);
@@ -335,7 +335,7 @@ namespace embree
           
           while (true) 
           {
-            Geometry* geometry = ((Scene*)geom)->get(geomID);
+            Geometry* geometry = scene->get(geomID);
             if (likely(!enableIntersectionFilter || !geometry->hasOcclusionFilter8())) break;
             
             /* calculate hit information */

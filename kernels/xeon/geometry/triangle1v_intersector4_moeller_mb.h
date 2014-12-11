@@ -40,7 +40,7 @@ namespace embree
           __forceinline Precalculations (const sseb& valid, const Ray4& ray) {}
         };
         
-        static __forceinline void intersect(const sseb& valid_i, Precalculations& pre, Ray4& ray, const Primitive& tri, const void* geom)
+        static __forceinline void intersect(const sseb& valid_i, Precalculations& pre, Ray4& ray, const Primitive& tri, Scene* scene)
         {
           STAT3(normal.trav_prims,1,popcnt(valid_i),4);
           
@@ -100,7 +100,7 @@ namespace embree
           
           /* intersection filter test */
 #if defined(RTCORE_INTERSECTION_FILTER)
-          Geometry* geometry = ((Scene*)geom)->get(geomID);
+          Geometry* geometry = scene->get(geomID);
           if (unlikely(geometry->hasIntersectionFilter4())) {
             runIntersectionFilter4(valid,geometry,ray,u,v,t,Ng,geomID,primID);
             return;
@@ -118,7 +118,7 @@ namespace embree
           store4f(valid,&ray.Ng.z,Ng.z);
         }
         
-        static __forceinline sseb occluded(const sseb& valid_i, Precalculations& pre, Ray4& ray, const Primitive& tri, const void* geom)
+        static __forceinline sseb occluded(const sseb& valid_i, Precalculations& pre, Ray4& ray, const Primitive& tri, Scene* scene)
         {
           STAT3(shadow.trav_prims,1,popcnt(valid_i),4);
           
@@ -171,7 +171,7 @@ namespace embree
           /* intersection filter test */
 #if defined(RTCORE_INTERSECTION_FILTER)
           const int geomID = tri.geomID<list>();
-          Geometry* geometry = ((Scene*)geom)->get(geomID);
+          Geometry* geometry = scene->get(geomID);
           if (unlikely(geometry->hasOcclusionFilter4()))
           {
             /* calculate hit information */

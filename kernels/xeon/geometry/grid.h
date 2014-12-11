@@ -932,7 +932,7 @@ namespace embree
 	BBox3fa box = empty;
 
 	/* build sub-BVH */
-	Scene* scene = (Scene*) bvh->geometry;
+	Scene* scene = bvh->scene;
 	SubdivMesh* mesh = scene->getSubdivMesh(geomID);
 	BVH4::NodeRef node = BVH4::emptyNode;
 
@@ -972,7 +972,7 @@ namespace embree
 	}
 
 	/* build sub-BVH */
-	Scene* scene = (Scene*) bvh->geometry;
+	Scene* scene = bvh->scene;
 	SubdivMesh* mesh = scene->getSubdivMesh(geomID);
 	BVH4::NodeRef node = BVH4::emptyNode;
 

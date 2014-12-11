@@ -317,8 +317,8 @@ namespace embree
     SELECT_SYMBOL_AVX_AVX2(features,BVH4VirtualIntersector8Chunk);
   }
 
-  BVH4::BVH4 (const PrimitiveType& primTy, void* geometry, bool listMode)
-    : primTy(primTy), geometry(geometry), listMode(listMode),
+  BVH4::BVH4 (const PrimitiveType& primTy, Scene* scene, bool listMode)
+    : primTy(primTy), scene(scene), listMode(listMode),
       root(emptyNode), numPrimitives(0), numVertices(0), data_mem(NULL), size_data_mem(0) {}
 
   BVH4::~BVH4 () {
@@ -363,14 +363,14 @@ namespace embree
     }
   }
 
-  std::pair<BBox3fa,BBox3fa> BVH4::refit(void* geom, NodeRef node)
+  std::pair<BBox3fa,BBox3fa> BVH4::refit(Scene* scene, NodeRef node)
   {
     /*! merge bounds of triangles for both time steps */
     if (node.isLeaf()) 
     {
       size_t num; char* tri = node.leaf(num);
       if (node == BVH4::emptyNode) return std::pair<BBox3fa,BBox3fa>(empty,empty);
-      return primTy.update2(tri,listMode ? -1 : num,geom);
+      return primTy.update2(tri,listMode ? -1 : num,scene);
     }
     /*! set and propagate merged bounds for both time steps */
     else
@@ -378,7 +378,7 @@ namespace embree
       NodeMB* n = node.nodeMB();
       if (!n->hasBounds()) {
         for (size_t i=0; i<4; i++) {
-          std::pair<BBox3fa,BBox3fa> bounds = refit(geom,n->child(i));
+          std::pair<BBox3fa,BBox3fa> bounds = refit(scene,n->child(i));
           n->set(i,bounds.first,bounds.second);
         }
       }

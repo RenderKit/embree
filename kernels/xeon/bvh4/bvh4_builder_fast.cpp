@@ -619,7 +619,7 @@ namespace embree
 
       pstate.init(iter,size_t(1024));
 
-      this->bvh->geometry = this->scene;
+      this->bvh->scene = this->scene; // FIXME: remove
 
       BVH4BuilderFast::build(threadIndex,threadCount);
     }
