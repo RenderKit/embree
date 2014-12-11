@@ -124,7 +124,7 @@ specified at scene construction time. Geometries can get disabled
 including their vertex and index arrays. After the modification of
 some geometry, `rtcUpdate` or `rtcUpdateBuffer` has to get called for
 that geometry to specify which buffers got modified. Using multiple
-invokations of `rtcUpdateBuffer` the modified buffers can specified
+invocations of `rtcUpdateBuffer` the modified buffers can specified
 directly, while the `rtcUpdate` function simply tags each buffer of
 some geometry as modified. If geometries got enabled, disabled,
 deleted, or modified an `rtcCommit` call has to get invoked before
@@ -295,20 +295,21 @@ A subdivision surface is created using the `rtcNewSubdivisionMesh`
 function call, and deleted again using the `rtcDeleteGeometry`
 function call.
 
-   unsigned rtcNewSubdivisionMesh (RTCScene scene, 
-                                   RTCGeometryFlags flags,
-                                   size_t numFaces,
-                                   size_t numEdges,
-                                   size_t numVertices,
-                                   size_t numCreases,
-                                   size_t numCorners,
-                                   size_t numHoles,
-                                   size_t numTimeSteps );
+     unsigned rtcNewSubdivisionMesh(RTCScene scene, 
+                                    RTCGeometryFlags flags,
+                                    size_t numFaces,
+                                    size_t numEdges,
+                                    size_t numVertices,
+                                    size_t numEdgeCreases,
+                                    size_t numVertexCreases,
+                                    size_t numCorners,
+                                    size_t numHoles,
+                                    size_t numTimeSteps);
 
 The number of faces (numFaces), edges/indices (numEdges), vertices
 (numVertices), edge creases (numEdgeCreases), vertex creases
 (numVertexCreases), holes (numHoles), and time steps (numTimeSteps)
-have to get speficied at construction time.
+have to get specified at construction time.
 
 The following buffers have to get setup by the application: the face
 buffer (RTC_FACE_BUFFER) contains the number edges/indices (3 or 4) of
@@ -337,11 +338,11 @@ make some edges appear sharper. The edge crease index buffer
 32 bit vertex indices that specify unoriented edges. The edge crease
 weight buffer (RTC_EDGE_CREASE_WEIGHT_BUFFER) stores for each of
 theses crease edges a positive floating point weight. The larger this
-weight, the sharper the edge. Specifying a weight of infinify is
+weight, the sharper the edge. Specifying a weight of infinity is
 supported and marks an edge as infinitely sharp. Storing an edge
 multiple times with the same crease weight is allowed, but has lower
 performance. Storing the an edge multiple times with different crease
-weights results in undefined behaviour. For a stored edge (i,j), the
+weights results in undefined behavior. For a stored edge (i,j), the
 reverse direction edges (j,i) does not have to get stored, as both are
 considered the same edge.
 
@@ -355,7 +356,9 @@ weight, the sharper the vertex. Specifying a weight of infinity is
 supported and makes the vertex infinitely sharp. Storing a vertex
 multiple times with the same crease weight is allowed, but has lower
 performance. Storing a vertex multiple times with different crease
-weights results in undefined behaviour.
+weights results in undefined behavior.
+
+Also see [tutorial08] for an example of how to create subdivision surfaces.
 
 ### Hair Geometry
 
@@ -462,7 +465,7 @@ geometries:
     rtcSetUserData(scene, geomID, userGeom);
     rtcSetBounds(scene, geomID, userBoundsFunction);
     rtcSetIntersectFunction(scene, geomID, userIntersectFunction);
-    rtcSetOccludedFunction (scene, geomID, userOccludedFunction);
+    rtcSetOccludedFunction(scene, geomID, userOccludedFunction);
 
 The user intersect function (`userIntersectFunction`) and user occluded
 function (`userOccludedFunction`) get as input the pointer provided
@@ -551,14 +554,14 @@ The API supports finding the closest hit of a ray segment with the scene
 (`rtcIntersect` functions), and determining if any hit between a ray
 segment and the scene exists (`rtcOccluded` functions).
 
-    void rtcIntersect   (                   RTCScene scene, RTCRay&   ray);
-    void rtcIntersect4  (const void* valid, RTCScene scene, RTCRay4&  ray);
-    void rtcIntersect8  (const void* valid, RTCScene scene, RTCRay8&  ray);
-    void rtcIntersect16 (const void* valid, RTCScene scene, RTCRay16& ray);
-    void rtcOccluded    (                   RTCScene scene, RTCRay&   ray);
-    void rtcOccluded4   (const void* valid, RTCScene scene, RTCRay4&  ray);
-    void rtcOccluded8   (const void* valid, RTCScene scene, RTCRay8&  ray);
-    void rtcOccluded16  (const void* valid, RTCScene scene, RTCRay16& ray);
+    void rtcIntersect  (                   RTCScene scene, RTCRay&   ray);
+    void rtcIntersect4 (const void* valid, RTCScene scene, RTCRay4&  ray);
+    void rtcIntersect8 (const void* valid, RTCScene scene, RTCRay8&  ray);
+    void rtcIntersect16(const void* valid, RTCScene scene, RTCRay16& ray);
+    void rtcOccluded   (                   RTCScene scene, RTCRay&   ray);
+    void rtcOccluded4  (const void* valid, RTCScene scene, RTCRay4&  ray);
+    void rtcOccluded8  (const void* valid, RTCScene scene, RTCRay8&  ray);
+    void rtcOccluded16 (const void* valid, RTCScene scene, RTCRay16& ray);
 
 The ray layout to be passed to the ray tracing core is defined in the
 `embree2/rtcore_ray.h` header file. It is up to the user if he wants to
@@ -801,7 +804,7 @@ The API supports displacement mapping for subdivision meshes. A
 displacement function can be set for some subdivision mesh using the
 `rtcSetDisplacementFunction` API call.
 
-  void rtcSetDisplacementFunction (RTCScene scene, unsigned geomID, RTCDisplacementFunc func, RTCBounds* bounds);
+    void rtcSetDisplacementFunction(RTCScene, unsigned geomID, RTCDisplacementFunc, RTCBounds* bounds);
 
 A displacement function of NULL will delete an already set
 displacement function. The bounds parameter is optional. If NULL is
@@ -814,11 +817,11 @@ conservative and should be tight for best performance.
 
 The displacement function has to have the following type:
 
-  typedef void (*RTCDisplacementFunc)(void* ptr, unsigned geomID, unsigned primID,   
-                                      const float* u,  const float* v,    
-                                      const float* nx, const float* ny, const float* nz,   
-                                      float* px, float* py, float* pz,         
-                                      size_t N);
+    typedef void (*RTCDisplacementFunc)(void* ptr, unsigned geomID, unsigned primID,   
+                                        const float* u,  const float* v,    
+                                        const float* nx, const float* ny, const float* nz,   
+                                        float* px, float* py, float* pz,         
+                                        size_t N);
 
 The displacement function is called with the user data pointer of the
 geometry (ptr), the geometry ID (geomID) and primitive ID (primID) of a

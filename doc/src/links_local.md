@@ -5,3 +5,4 @@
 [tutorial04]: #tutorial04
 [tutorial05]: #tutorial05
 [tutorial07]: #tutorial07
+[tutorial08]: #tutorial08
