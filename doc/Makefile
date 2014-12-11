@@ -1,8 +1,8 @@
 webpages =  www/index.html www/api.html www/tutorials.html www/downloads.html www/renderer.html 
 
-all: doc www ../README.md readme_bin.md
+all: doc www
 www: $(webpages)
-doc: ../readme.txt ../readme.pdf 
+doc: ../README.md README_bin.md ../readme.pdf 
 images: images/tutorial00.jpg images/tutorial01.jpg images/tutorial02.jpg images/tutorial03.jpg images/tutorial04.jpg images/tutorial05.jpg images/tutorial06.jpg images/tutorial07.jpg
 
 .PHONY: all www doc images
@@ -66,10 +66,6 @@ readme.html: version src/*.html
 	$(call replace,src/readme.html,$@)
 	$(call replacelinks,$@)
 
-../readme.txt: readme.html
-	html2text -nobs -rcfile html2text.conf readme.html > readme.txt
-	cat src/apache.txt readme.txt > ../readme.txt
-
 ../readme.pdf: readme.html
 	html2ps -t -f html2ps.conf readme.html > readme.ps
 	sed -i -e 's/\\240\\240/ /' readme.ps
@@ -82,6 +78,9 @@ metadata.md: src/metadata.md version
 ../README.md: metadata.md src/overview.md src/platforms.md src/support.md src/compilation.md src/api.md src/tutorials.md src/links_local.md
 	cat $+ > $@
 
+README_bin.md: metadata.md src/overview.md src/platforms.md src/support.md src/install.md src/api.md src/tutorials.md src/links_local.md
+	cat $+ > $@
+
 %.tex: src/%.md src/links_local.md
 	pandoc --chapters $+ -o $@
 
@@ -89,17 +88,11 @@ api.tex: src/api.md src/links_local.md
 	pandoc --chapters --indented-code-classes=cpp $+ -o $@
 #	sed -i -e 's/\\texttt/\\path/g' $@
 
-readme_bin.md: metadata.md src/overview.md src/platforms.md src/support.md src/install.md src/api.md src/tutorials.md src/links_local.md
-	cat $+ > $@
 
 
 readme_bin.html: version src/*.html
 	$(call replace,src/readme_bin.html,$@)
 	$(call replacelinks,$@)
-
-readme_bin.txt: readme_bin.html
-	html2text -nobs -rcfile html2text.conf readme_bin.html > readme_bin_temp.txt
-	cat src/apache.txt readme_bin_temp.txt > readme_bin.txt
 
 readme_bin.pdf: readme_bin.html
 	html2ps -t -f html2ps.conf readme_bin.html > readme_bin.ps
@@ -108,12 +101,10 @@ readme_bin.pdf: readme_bin.html
 
 clean:
 	rm -f version
-	rm -f readme.txt
 	rm -f readme.pdf
 	rm -f readme.ps
 	rm -f readme.html
-	rm -f readme_bin_temp.txt
-	rm -f readme_bin.txt
+	rm -f README_bin.md
 	rm -f readme_bin.pdf
 	rm -f readme_bin.ps
 	rm -f readme_bin.html
