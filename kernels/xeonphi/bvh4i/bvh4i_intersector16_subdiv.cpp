@@ -260,54 +260,6 @@ namespace embree
 
 
 
-    template<bool ENABLE_INTERSECTION_FILTER>
-    struct SubdivLeafIntersector
-    {
-      // ==================
-      // === single ray === 
-      // ==================
-      static __forceinline bool intersect(BVH4i::NodeRef curNode,
-					  const mic_f &dir_xyz,
-					  const mic_f &org_xyz,
-					  const mic_f &min_dist_xyz,
-					  mic_f &max_dist_xyz,
-					  Ray& ray, 
-					  const void *__restrict__ const accel,
-					  const Scene*__restrict__ const geometry)
-      {
-	unsigned int items = curNode.items();
-	unsigned int index = curNode.offsetIndex();
-	const SubdivPatch1 *__restrict__ const patch_ptr = (SubdivPatch1*)accel + index;
-	FATAL("NOT IMPLEMENTED");
-
-	// return SubdivPatchIntersector1<ENABLE_INTERSECTION_FILTER>::intersect1(dir_xyz,
-	// 								       org_xyz,
-	// 								       ray,
-	// 								       *patch_ptr);	
-      }
-
-      static __forceinline bool occluded(BVH4i::NodeRef curNode,
-					 const mic_f &dir_xyz,
-					 const mic_f &org_xyz,
-					 const mic_f &min_dist_xyz,
-					 const mic_f &max_dist_xyz,
-					 Ray& ray,
-					 const void *__restrict__ const accel,
-					 const Scene*__restrict__ const geometry)
-      {
-	unsigned int items = curNode.items();
-	unsigned int index = curNode.offsetIndex();
-	const SubdivPatch1 *__restrict__ const patch_ptr = (SubdivPatch1*)accel + index;
-	FATAL("NOT IMPLEMENTED");
-	// return SubdivPatchIntersector1<ENABLE_INTERSECTION_FILTER>::occluded1(dir_xyz,
-	// 								      org_xyz,
-	// 								      ray,
-	// 								      *patch_ptr);	
-      }
-
-
-    };
-
     static unsigned int BVH4I_LEAF_MASK = BVH4i::leaf_mask; // needed due to compiler efficiency bug
     static unsigned int M_LANE_7777 = 0x7777;               // needed due to compiler efficiency bug
 
@@ -316,18 +268,16 @@ namespace embree
     // ============================================================================================
 
 
-    template<typename LeafIntersector, bool ENABLE_COMPRESSED_BVH4I_NODES>
-    void BVH4iIntersector16Subdiv<LeafIntersector,ENABLE_COMPRESSED_BVH4I_NODES>::intersect(mic_i* valid_i, BVH4i* bvh, Ray16& ray16)
+    void BVH4iIntersector16Subdiv::intersect(mic_i* valid_i, BVH4i* bvh, Ray16& ray16)
     {
       /* near and node stack */
       __aligned(64) float   stack_dist[4*BVH4i::maxDepth+1];
       __aligned(64) NodeRef stack_node[4*BVH4i::maxDepth+1];
 
+      /* query per thread tessellation cache */
       TessellationCache *local_cache = NULL;
-
       if (!tess_cache)
 	createTessellationCache();
-
       local_cache = tess_cache;
 
 
@@ -368,23 +318,23 @@ namespace embree
 	      NodeRef curNode = stack_node[sindex-1];
 	      sindex--;
 
-	      traverse_single_intersect<ENABLE_COMPRESSED_BVH4I_NODES>(curNode,
-								       sindex,
-								       rdir_xyz,
-								       org_rdir_xyz,
-								       min_dist_xyz,
-								       max_dist_xyz,
-								       stack_node,
-								       stack_dist,
-								       nodes,
-								       leaf_mask);
+	      traverse_single_intersect<false>(curNode,
+					       sindex,
+					       rdir_xyz,
+					       org_rdir_xyz,
+					       min_dist_xyz,
+					       max_dist_xyz,
+					       stack_node,
+					       stack_dist,
+					       nodes,
+					       leaf_mask);
 		   
 
 	      /* return if stack is empty */
 	      if (unlikely(curNode == BVH4i::invalidNode)) break;
 
 	      STAT3(normal.trav_leaves,1,1,1);
-	      STAT3(normal.trav_prims,4,4,4);
+	      STAT3(normal.trav_prims,1,1,1);
 
 	      //////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -413,16 +363,16 @@ namespace embree
 		  curNode = sub_stack_node[sub_sindex-1];
 		  sub_sindex--;
 
-		  traverse_single_intersect<ENABLE_COMPRESSED_BVH4I_NODES>(curNode,
-									   sub_sindex,
-									   rdir_xyz,
-									   org_rdir_xyz,
-									   min_dist_xyz,
-									   max_dist_xyz,
-									   sub_stack_node,
-									   sub_stack_dist,
-									   (BVH4i::Node*)lazymem,
-									   leaf_mask);
+		  traverse_single_intersect<false>(curNode,
+						   sub_sindex,
+						   rdir_xyz,
+						   org_rdir_xyz,
+						   min_dist_xyz,
+						   max_dist_xyz,
+						   sub_stack_node,
+						   sub_stack_dist,
+						   (BVH4i::Node*)lazymem,
+						   leaf_mask);
 		 		   
 
 		  /* return if stack is empty */
@@ -478,17 +428,15 @@ namespace embree
 
     }
 
-    template<typename LeafIntersector,bool ENABLE_COMPRESSED_BVH4I_NODES>    
-    void BVH4iIntersector16Subdiv<LeafIntersector,ENABLE_COMPRESSED_BVH4I_NODES>::occluded(mic_i* valid_i, BVH4i* bvh, Ray16& ray16)
+    void BVH4iIntersector16Subdiv::occluded(mic_i* valid_i, BVH4i* bvh, Ray16& ray16)
     {
       /* near and node stack */
       __aligned(64) NodeRef stack_node[4*BVH4i::maxDepth+1];
 
+      /* query per thread tessellation cache */
       TessellationCache *local_cache = NULL;
-
       if (!tess_cache)
 	createTessellationCache();
-
       local_cache = tess_cache;
 
       /* setup */
@@ -527,23 +475,21 @@ namespace embree
 	      NodeRef curNode = stack_node[sindex-1];
 	      sindex--;
 
-	      traverse_single_occluded< ENABLE_COMPRESSED_BVH4I_NODES >(curNode,
-									sindex,
-									rdir_xyz,
-									org_rdir_xyz,
-									min_dist_xyz,
-									max_dist_xyz,
-									stack_node,
-									nodes,
-									leaf_mask);
+	      traverse_single_occluded< false >(curNode,
+						sindex,
+						rdir_xyz,
+						org_rdir_xyz,
+						min_dist_xyz,
+						max_dist_xyz,
+						stack_node,
+						nodes,
+						leaf_mask);
 
 	      /* return if stack is empty */
 	      if (unlikely(curNode == BVH4i::invalidNode)) break;
 
 	      STAT3(shadow.trav_leaves,1,1,1);
-	      STAT3(shadow.trav_prims,4,4,4);
-
-	      /* intersect one ray against four triangles */
+	      STAT3(shadow.trav_prims,1,1,1);
 
 	      //////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -574,15 +520,15 @@ namespace embree
 		      curNode = sub_stack_node[sub_sindex-1];
 		      sub_sindex--;
 
-		      traverse_single_occluded<ENABLE_COMPRESSED_BVH4I_NODES>(curNode,
-									      sub_sindex,
-									      rdir_xyz,
-									      org_rdir_xyz,
-									      min_dist_xyz,
-									      max_dist_xyz,
-									      sub_stack_node,
-									      (BVH4i::Node*)lazymem,
-									      leaf_mask);
+		      traverse_single_occluded<false>(curNode,
+						      sub_sindex,
+						      rdir_xyz,
+						      org_rdir_xyz,
+						      min_dist_xyz,
+						      max_dist_xyz,
+						      sub_stack_node,
+						      (BVH4i::Node*)lazymem,
+						      leaf_mask);
 		 		   
 
 		      /* return if stack is empty */
@@ -626,15 +572,20 @@ namespace embree
 
     }
 
-    template<typename LeafIntersector, bool ENABLE_COMPRESSED_BVH4I_NODES>
-    void BVH4iIntersector1Subdiv<LeafIntersector,ENABLE_COMPRESSED_BVH4I_NODES>::intersect(BVH4i* bvh, Ray& ray)
+
+    void BVH4iIntersector1Subdiv::intersect(BVH4i* bvh, Ray& ray)
     {
       /* near and node stack */
       __aligned(64) float   stack_dist[3*BVH4i::maxDepth+1];
       __aligned(64) NodeRef stack_node[3*BVH4i::maxDepth+1];
 
+      /* query per thread tessellation cache */
+      TessellationCache *local_cache = NULL;
+      if (!tess_cache)
+	createTessellationCache();
+      local_cache = tess_cache;
+
       /* setup */
-      //const mic_m m_valid    = *(mic_i*)valid_i != mic_i(0);
       const mic3f rdir16     = rcp_safe(mic3f(mic_f(ray.dir.x),mic_f(ray.dir.y),mic_f(ray.dir.z)));
       const mic_f inf        = mic_f(pos_inf);
       const mic_f zero       = mic_f::zero();
@@ -643,6 +594,8 @@ namespace embree
 
       const Node      * __restrict__ nodes = (Node    *)bvh->nodePtr();
       const Triangle1 * __restrict__ accel = (Triangle1*)bvh->triPtr();
+      Scene *const scene                   = (Scene*)bvh->geometry;
+      const unsigned int commitCounter     = scene->commitCounter;
 
       stack_node[0] = BVH4i::invalidNode;      
       stack_node[1] = bvh->root;
@@ -663,43 +616,101 @@ namespace embree
 	  NodeRef curNode = stack_node[sindex-1];
 	  sindex--;
 
-	  traverse_single_intersect<ENABLE_COMPRESSED_BVH4I_NODES>(curNode,
-								   sindex,
-								   rdir_xyz,
-								   org_rdir_xyz,
-								   min_dist_xyz,
-								   max_dist_xyz,
-								   stack_node,
-								   stack_dist,
-								   nodes,
-								   leaf_mask);            		    
+	  traverse_single_intersect<false>(curNode,
+					   sindex,
+					   rdir_xyz,
+					   org_rdir_xyz,
+					   min_dist_xyz,
+					   max_dist_xyz,
+					   stack_node,
+					   stack_dist,
+					   nodes,
+					   leaf_mask);            		    
 
 	  /* return if stack is empty */
 	  if (unlikely(curNode == BVH4i::invalidNode)) break;
 
+	  STAT3(normal.trav_leaves,1,1,1);
+	  STAT3(normal.trav_prims,1,1,1);
 
-	  /* intersect one ray against four triangles */
 
 	  //////////////////////////////////////////////////////////////////////////////////////////////////
 
-	  bool hit = LeafIntersector::intersect(curNode,
-						dir_xyz,
-						org_xyz,
-						min_dist_xyz,
-						max_dist_xyz,
-						ray,
-						accel,
-						(Scene*)bvh->geometry);
-	  if (hit)
-	    compactStack(stack_node,stack_dist,sindex,max_dist_xyz);
+	  const unsigned int patchIndex = curNode.offsetIndex();
+
+	  BVH4i::NodeRef subtree_root = lookUpTessellationCache(local_cache,
+								patchIndex,
+								commitCounter,
+								(SubdivPatch1*)accel,
+								scene);
+	  mic_f     * const __restrict__ lazymem     = (mic_f*)local_cache->getPtr(); /* lazymem could change to realloc */
+
+	  // -------------------------------------
+	  // -------------------------------------
+	  // -------------------------------------
+
+	  float   * __restrict__ const sub_stack_dist = &stack_dist[sindex];
+	  NodeRef * __restrict__ const sub_stack_node = &stack_node[sindex];
+	  sub_stack_node[0] = BVH4i::invalidNode;
+	  sub_stack_node[1] = subtree_root;
+	  ustore16f(sub_stack_dist,inf);
+	  size_t sub_sindex = 2;
+
+	  while (1)
+	    {
+	      curNode = sub_stack_node[sub_sindex-1];
+	      sub_sindex--;
+
+	      traverse_single_intersect<false>(curNode,
+					       sub_sindex,
+					       rdir_xyz,
+					       org_rdir_xyz,
+					       min_dist_xyz,
+					       max_dist_xyz,
+					       sub_stack_node,
+					       sub_stack_dist,
+					       (BVH4i::Node*)lazymem,
+					       leaf_mask);
+		 		   
+
+	      /* return if stack is empty */
+	      if (unlikely(curNode == BVH4i::invalidNode)) break;
+
+	      const unsigned int uvIndex = curNode.offsetIndex();
+		  
+	      const mic_m m_active = 0x777;
+	      const Quad4x4 *__restrict__ const quad4x4 = (Quad4x4*)&lazymem[uvIndex];
+	      quad4x4->prefetchData();
+	      const mic_f &uu = quad4x4->uu;
+	      const mic_f &vv = quad4x4->vv;
+
+	      intersect1_quad16(dir_xyz,
+				org_xyz,
+				ray,
+				quad4x4->vtx,
+				uu,
+				vv,
+				4,
+				m_active,
+				patchIndex);
+	    }
+
+
+
+	  compactStack(stack_node,stack_dist,sindex,max_dist_xyz);
 	}
     }
 
-    template<typename LeafIntersector, bool ENABLE_COMPRESSED_BVH4I_NODES>
-    void BVH4iIntersector1Subdiv<LeafIntersector,ENABLE_COMPRESSED_BVH4I_NODES>::occluded(BVH4i* bvh, Ray& ray)
+    void BVH4iIntersector1Subdiv::occluded(BVH4i* bvh, Ray& ray)
     {
       /* near and node stack */
       __aligned(64) NodeRef stack_node[3*BVH4i::maxDepth+1];
+
+      /* query per thread tessellation cache */
+      TessellationCache *local_cache = NULL;
+      if (!tess_cache)
+	createTessellationCache();
+      local_cache = tess_cache;
 
       /* setup */
       const mic3f rdir16      = rcp_safe(mic3f(ray.dir.x,ray.dir.y,ray.dir.z));
@@ -708,6 +719,8 @@ namespace embree
 
       const Node      * __restrict__ nodes = (Node     *)bvh->nodePtr();
       const Triangle1 * __restrict__ accel = (Triangle1*)bvh->triPtr();
+      Scene *const scene                   = (Scene*)bvh->geometry;
+      const unsigned int commitCounter     = scene->commitCounter;
 
       stack_node[0] = BVH4i::invalidNode;
       stack_node[1] = bvh->root;
@@ -728,38 +741,88 @@ namespace embree
 	  sindex--;
             
 	  
-	  traverse_single_occluded< ENABLE_COMPRESSED_BVH4I_NODES>(curNode,
-								   sindex,
-								   rdir_xyz,
-								   org_rdir_xyz,
-								   min_dist_xyz,
-								   max_dist_xyz,
-								   stack_node,
-								   nodes,
-								   leaf_mask);	    
+	  traverse_single_occluded< false >(curNode,
+					    sindex,
+					    rdir_xyz,
+					    org_rdir_xyz,
+					    min_dist_xyz,
+					    max_dist_xyz,
+					    stack_node,
+					    nodes,
+					    leaf_mask);	    
 
 	  /* return if stack is empty */
 	  if (unlikely(curNode == BVH4i::invalidNode)) break;
 
 
-	  /* intersect one ray against four triangles */
+	      STAT3(shadow.trav_leaves,1,1,1);
+	      STAT3(shadow.trav_prims,1,1,1);
 
-	  //////////////////////////////////////////////////////////////////////////////////////////////////
+	      //////////////////////////////////////////////////////////////////////////////////////////////////
 
-	  bool hit = LeafIntersector::occluded(curNode,
-					       dir_xyz,
-					       org_xyz,
-					       min_dist_xyz,
-					       max_dist_xyz,
-					       ray,
-					       accel,
-					       (Scene*)bvh->geometry);
+	      
 
-	  if (unlikely(hit))
-	    {
-	      ray.geomID = 0;
-	      return;
-	    }
+	      const unsigned int patchIndex = curNode.offsetIndex();
+	      BVH4i::NodeRef subtree_root = lookUpTessellationCache(local_cache,
+								    patchIndex,
+								    commitCounter,
+								    (SubdivPatch1*)accel,
+								    scene);
+	      mic_f     * const __restrict__ lazymem     = (mic_f*)local_cache->getPtr(); /* lazymem could change to realloc */
+
+		    
+	      // -------------------------------------
+	      // -------------------------------------
+	      // -------------------------------------
+
+	      __aligned(64) NodeRef sub_stack_node[64];
+	      sub_stack_node[0] = BVH4i::invalidNode;
+	      sub_stack_node[1] = subtree_root;
+	      size_t sub_sindex = 2;
+
+	      ///////////////////////////////////////////////////////////////////////////////////////////////////////
+	      while (1)
+		{
+		  curNode = sub_stack_node[sub_sindex-1];
+		  sub_sindex--;
+
+		  traverse_single_occluded<false>(curNode,
+						  sub_sindex,
+						  rdir_xyz,
+						  org_rdir_xyz,
+						  min_dist_xyz,
+						  max_dist_xyz,
+						  sub_stack_node,
+						  (BVH4i::Node*)lazymem,
+						  leaf_mask);
+		 		   
+
+		  /* return if stack is empty */
+		  if (unlikely(curNode == BVH4i::invalidNode)) break;
+
+		  const unsigned int uvIndex = curNode.offsetIndex();
+		  
+		  const mic_m m_active = 0x777;
+		  const Quad4x4 *__restrict__ const quad4x4 = (Quad4x4*)&lazymem[uvIndex];
+		  quad4x4->prefetchData();
+		  const mic_f &uu = quad4x4->uu;
+		  const mic_f &vv = quad4x4->vv;
+		  
+		  if (unlikely(occluded1_quad16(dir_xyz,
+						org_xyz,
+						ray,
+						quad4x4->vtx,
+						uu,
+						vv,
+						4,
+						m_active,
+						patchIndex)))
+		    {
+		      ray.geomID = 0;
+		      return;
+		    }
+		}
+
 	  //////////////////////////////////////////////////////////////////////////////////////////////////
 
 	}
@@ -771,14 +834,14 @@ namespace embree
 
 
 
-    typedef BVH4iIntersector16Subdiv< SubdivLeafIntersector    < true  >, false > SubdivIntersector16SingleMoellerFilter;
-    typedef BVH4iIntersector16Subdiv< SubdivLeafIntersector    < false >, false > SubdivIntersector16SingleMoellerNoFilter;
+    typedef BVH4iIntersector16Subdiv SubdivIntersector16SingleMoellerFilter;
+    typedef BVH4iIntersector16Subdiv SubdivIntersector16SingleMoellerNoFilter;
 
     DEFINE_INTERSECTOR16   (BVH4iSubdivMeshIntersector16        , SubdivIntersector16SingleMoellerFilter);
     DEFINE_INTERSECTOR16   (BVH4iSubdivMeshIntersector16NoFilter, SubdivIntersector16SingleMoellerNoFilter);
 
-    typedef BVH4iIntersector1Subdiv< SubdivLeafIntersector    < true  >, false > SubdivMeshIntersector1MoellerFilter;
-    typedef BVH4iIntersector1Subdiv< SubdivLeafIntersector    < false >, false > SubdivMeshIntersector1MoellerNoFilter;
+    typedef BVH4iIntersector1Subdiv SubdivMeshIntersector1MoellerFilter;
+    typedef BVH4iIntersector1Subdiv SubdivMeshIntersector1MoellerNoFilter;
 
     DEFINE_INTERSECTOR1    (BVH4iSubdivMeshIntersector1        , SubdivMeshIntersector1MoellerFilter);
     DEFINE_INTERSECTOR1    (BVH4iSubdivMeshIntersector1NoFilter, SubdivMeshIntersector1MoellerNoFilter);

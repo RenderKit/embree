@@ -25,7 +25,6 @@ namespace embree
   namespace isa
   {
     /*! BVH4i traverser. Single ray traversal implementation for a BVH4i. */
-    template<typename LeafIntersector, bool ENABLE_COMPRESSED_BVH4I_NODES>
     class BVH4iIntersector16Subdiv
     {
       /* shortcuts for frequently used types */
@@ -39,7 +38,6 @@ namespace embree
     };
 
     /*! BVH4i single ray traverser */
-    template<typename LeafIntersector, bool ENABLE_COMPRESSED_BVH4I_NODES>
     class BVH4iIntersector1Subdiv
     {
       /* shortcuts for frequently used types */
