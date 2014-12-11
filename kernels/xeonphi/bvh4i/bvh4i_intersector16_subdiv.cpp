@@ -200,11 +200,15 @@ namespace embree
       __aligned(64) float u_array[(patch.grid_size_simd_blocks+1)*16]; // for unaligned access
       __aligned(64) float v_array[(patch.grid_size_simd_blocks+1)*16];
 
-      gridUVTessellatorMIC(patch.level,
-			   patch.grid_u_res,
-			   patch.grid_v_res,
-			   u_array,
-			   v_array);
+      gridUVTessellator(patch.level,
+			patch.grid_u_res,
+			patch.grid_v_res,
+			u_array,
+			v_array);
+
+      /* stich different tessellation levels in u/v grid */
+      if (patch.needsStiching())
+	stichUVGrid(patch.level,patch.grid_u_res,patch.grid_v_res,u_array,v_array);
 
 
       BVH4i::NodeRef subtree_root = 0;
