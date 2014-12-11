@@ -189,5 +189,19 @@ Tutorial08
 
 <!-- ![](images/tutorial08.jpg) -->
 
-This tutorial demonstrates the use of subdivision surfaces.
+This tutorial demonstrates the use of Catmull Clark subdivision
+surfaces. Per default the edge tessellation level is set adaptively
+based on the distance to the camera origin. Embree currently supports
+three different modes for efficiently handling subdivision surfaces in
+various rendering scenarios. This three modes can be selected at the
+command line, e.g. '-lazy' builds internal per subdivision patch data
+structures on demand, '-cache' uses a small (per thread) tessellation
+cache for caching per patch data, and '-pregenerate' to build and
+store some amount of the per patch data during the initial build
+process. The 'cache' mode is most effective for coherent rays and
+provides a fixed memory footprint. The 'pregenerate' modes is most
+effecitve for very incoherent ray distributions while requiring more
+memory as it builds more data structures in advance. The 'lazy' mode
+works similar to the 'pregenerate' mode but provides a middle ground
+in terms of memory consumption by building and storing data on demand.
 
