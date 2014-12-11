@@ -95,6 +95,7 @@ void updateEdgeLevelBuffer( uniform ISPCMesh* uniform mesh, const uniform Vec3fa
   }
 }
 
+#if defined(ISPC)
 task void updateEdgeLevelBufferTask( uniform ISPCMesh* uniform mesh, const uniform Vec3fa& cam_pos )
 {
   const uniform size_t size = mesh->numQuads;
@@ -102,6 +103,7 @@ task void updateEdgeLevelBufferTask( uniform ISPCMesh* uniform mesh, const unifo
   const uniform size_t endID   = ((taskIndex+1)*size)/taskCount;
   updateEdgeLevelBuffer(mesh,cam_pos,startID,endID);
 }
+#endif
 
 void updateEdgeLevels(uniform ISPCScene* uniform scene_in, const uniform Vec3fa& cam_pos)
 {
