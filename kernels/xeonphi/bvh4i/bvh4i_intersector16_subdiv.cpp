@@ -20,7 +20,7 @@
 #include "common/subdiv/tessellation_cache.h"
 
 #define TIMER(x) x
-#define COMPUTE_SUBDIV_NORMALS_AFTER_PATCH_INTERSECTION 0
+#define COMPUTE_SUBDIV_NORMALS_AFTER_PATCH_INTERSECTION 1
 
 namespace embree
 {
@@ -57,19 +57,19 @@ namespace embree
 	  const unsigned int currentIndex = localCounter;
 	  localCounter += 5; // u,v, x,y,z
 
-	  mic_f &leaf_u_array = lazymem[currentIndex+0];
-	  mic_f &leaf_v_array = lazymem[currentIndex+1];
+	  mic_f &uu = lazymem[currentIndex+0];
+	  mic_f &vv = lazymem[currentIndex+1];
 
-	  leaf_u_array = mic_f::inf();
-	  leaf_v_array = mic_f::inf();
+	  uu = mic_f::inf();
+	  vv = mic_f::inf();
 
 	  for (unsigned int v=v_start;v<=v_end;v++)
 	    for (unsigned int u=u_start;u<=u_end;u++)
 	      {
 		const unsigned int local_v = v - v_start;
 		const unsigned int local_u = u - u_start;
-		leaf_u_array[4 * local_v + local_u] = grid_u_array[ v * patch.grid_u_res + u ];
-		leaf_v_array[4 * local_v + local_u] = grid_v_array[ v * patch.grid_u_res + u ];
+		uu[4 * local_v + local_u] = grid_u_array[ v * patch.grid_u_res + u ];
+		vv[4 * local_v + local_u] = grid_v_array[ v * patch.grid_u_res + u ];
 	      }
 
 	  /* set invalid grid u,v value to border elements */
@@ -77,29 +77,40 @@ namespace embree
 	  for (unsigned int x=u_size-1;x<4;x++)
 	    for (unsigned int y=0;y<4;y++)
 	      {
-		leaf_u_array[4 * y + x] = leaf_u_array[4 * y + u_size-1];
-		leaf_v_array[4 * y + x] = leaf_v_array[4 * y + u_size-1];
+		uu[4 * y + x] = uu[4 * y + u_size-1];
+		vv[4 * y + x] = vv[4 * y + u_size-1];
 	      }
 
 	  for (unsigned int y=v_size-1;y<4;y++)
 	    for (unsigned int x=0;x<4;x++)
 	      {
-		leaf_u_array[4 * y + x] = leaf_u_array[4 * (v_size-1) + x];
-		leaf_v_array[4 * y + x] = leaf_v_array[4 * (v_size-1) + x];
+		uu[4 * y + x] = uu[4 * (v_size-1) + x];
+		vv[4 * y + x] = vv[4 * (v_size-1) + x];
 	      }
 	  
-	  mic3f vtx = patch.eval16(leaf_u_array,leaf_v_array);
+	  mic3f vtx = patch.eval16(uu,vv);
+
+	  const Vec2f uv0 = patch.getUV(0);
+	  const Vec2f uv1 = patch.getUV(1);
+	  const Vec2f uv2 = patch.getUV(2);
+	  const Vec2f uv3 = patch.getUV(3);
+
+	  const mic_f patch_uu = bilinear_interpolate(uv0.x,uv1.x,uv2.x,uv3.x,uu,vv);
+	  const mic_f patch_vv = bilinear_interpolate(uv0.y,uv1.y,uv2.y,uv3.y,uu,vv);
+
+	  uu = patch_uu;
+	  vv = patch_vv;
 
 	  if (unlikely(geom->displFunc != NULL))
 	    {
-	      mic3f normal      = patch.normal16(leaf_u_array,leaf_v_array);
+	      mic3f normal      = patch.normal16(uu,vv);
 	      normal = normalize(normal);
 
 	      geom->displFunc(geom->userPtr,
 			      patch.geom,
 			      patch.prim,
-			      (const float*)&leaf_u_array,
-			      (const float*)&leaf_v_array,
+			      (const float*)&uu,
+			      (const float*)&vv,
 			      (const float*)&normal.x,
 			      (const float*)&normal.y,
 			      (const float*)&normal.z,
