@@ -21,22 +21,25 @@
 
 namespace embree
 {
-  struct VirtualAccelIntersector8
+  namespace isa
   {
-    typedef AccelSetItem Primitive;
-
-    struct Precalculations {
-      __forceinline Precalculations (const avxb& valid, const Ray8& ray) {}
-    };
-
-    static __forceinline void intersect(const avxb& valid_i, const Precalculations& pre, Ray8& ray, const Primitive& prim, const void* geom) {
-      prim.accel->intersect8(&valid_i,(RTCRay8&)ray,prim.item);
-    }
-
-    static __forceinline avxb occluded(const avxb& valid_i, const Precalculations& pre, const Ray8& ray, const Primitive& prim, const void* geom) 
+    struct VirtualAccelIntersector8
     {
-      prim.accel->occluded8(&valid_i,(RTCRay8&)ray,prim.item);
-      return ray.geomID == 0;
-    }
-  };
+      typedef AccelSetItem Primitive;
+      
+      struct Precalculations {
+        __forceinline Precalculations (const avxb& valid, const Ray8& ray) {}
+      };
+      
+      static __forceinline void intersect(const avxb& valid_i, const Precalculations& pre, Ray8& ray, const Primitive& prim, const void* geom) {
+        prim.accel->intersect8(&valid_i,(RTCRay8&)ray,prim.item);
+      }
+      
+      static __forceinline avxb occluded(const avxb& valid_i, const Precalculations& pre, const Ray8& ray, const Primitive& prim, const void* geom) 
+      {
+        prim.accel->occluded8(&valid_i,(RTCRay8&)ray,prim.item);
+        return ray.geomID == 0;
+      }
+    };
+  }
 }

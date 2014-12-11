@@ -20,24 +20,26 @@
 
 namespace embree
 {
-  struct Mailbox 
+  namespace isa
   {
+    struct Mailbox 
+    {
 #if defined (__AVX__)
-    avxi geomIDs;      
-    avxi primIDs;
+      avxi geomIDs;      
+      avxi primIDs;
 #else
-    ssei geomIDs;   
-    ssei primIDs;
+      ssei geomIDs;   
+      ssei primIDs;
 #endif
-    unsigned int index;
-    
-    __forceinline Mailbox() {
-      geomIDs = -1;
-      primIDs = -1;
-      index = 0;
-    };
-    
-    __forceinline bool hit(const unsigned geomID, const unsigned primID) const
+      unsigned int index;
+      
+      __forceinline Mailbox() {
+        geomIDs = -1;
+        primIDs = -1;
+        index = 0;
+      };
+      
+      __forceinline bool hit(const unsigned geomID, const unsigned primID) const
       {
 #if defined (__AVX__)
 	const avxb geomMask = geomIDs == geomID;
@@ -48,8 +50,8 @@ namespace embree
 #endif
 	return any(geomMask & primMask);
       }
-    
-    __forceinline void add(const unsigned geomID, const unsigned primID)
+      
+      __forceinline void add(const unsigned geomID, const unsigned primID)
       {
 	*(unsigned int*)&geomIDs[index] = geomID;
 	*(unsigned int*)&primIDs[index] = primID;
@@ -59,5 +61,6 @@ namespace embree
 	index = (index + 1 ) % 4;
 #endif
       }
-  };
+    };
+  }
 }

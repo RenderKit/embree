@@ -114,6 +114,9 @@ IF (TARGET_SSE41)
     bvh4/bvh4_intersector1.cpp
     bvh4/bvh4_intersector4_single.cpp
     bvh4/bvh4_intersector4_chunk.cpp
+
+    geometry/subdivpatch1_intersector1.cpp
+    geometry/subdivpatch1cached_intersector1.cpp
   )
   SET_TARGET_PROPERTIES(embree_sse41 PROPERTIES COMPILE_FLAGS "${FLAGS_SSE41}")
   SET_PROPERTY(TARGET embree_sse41 PROPERTY FOLDER kernels)
@@ -144,6 +147,7 @@ IF (TARGET_AVX)
     geometry/instance_intersector1.cpp
     geometry/instance_intersector4.cpp
     geometry/instance_intersector8.cpp
+    geometry/subdivpatch1_intersector1.cpp
     geometry/subdivpatch1cached_intersector1.cpp
 
     bvh4/bvh4_rotate.cpp
@@ -183,6 +187,7 @@ IF (TARGET_AVX2)
     geometry/instance_intersector1.cpp
     geometry/instance_intersector4.cpp
     geometry/instance_intersector8.cpp
+    geometry/subdivpatch1_intersector1.cpp
     geometry/subdivpatch1cached_intersector1.cpp
 
     bvh4/bvh4_intersector1.cpp

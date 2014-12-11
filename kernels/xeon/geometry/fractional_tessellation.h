@@ -22,22 +22,22 @@ namespace embree
   {
     FractionalTessellationPattern (float tess, const bool sublevel = false)
     : sublevel(sublevel)
-   {
-     rcp_tess = 1.0f/tess;
-     if (sublevel) tess *= 0.5f;
-     Nl = floor(tess);
-     Nh = Nl+1;
-     th = tess-float(Nh);
-     tl = float(Nl)-tess;
-     N = Nl+1+(Nl % 2);
-     if (sublevel) N *= 2;
-   }
+    {
+      rcp_tess = 1.0f/tess;
+      if (sublevel) tess *= 0.5f;
+      Nl = floor(tess);
+      Nh = Nl+1;
+      th = tess-float(Nh);
+      tl = float(Nl)-tess;
+      N = Nl+1+(Nl % 2);
+      if (sublevel) N *= 2;
+    }
     
     /* returns number of intervals (points-1) */
     __forceinline int size() const {
       return N;
     }
-
+    
     __forceinline float operator() (int i) const
     {
       float ofs = 0.0f;
@@ -45,7 +45,7 @@ namespace embree
         ofs = 0.5f;
         i-=N/2;
       }
-
+      
       const int Nl2 = Nl/2;
       if (Nl % 2 == 0) {
         const float f0 = float(i > Nl2) * th;
@@ -58,30 +58,11 @@ namespace embree
         return min((float(i) + f0 + f1 + f2)*rcp_tess+ofs,1.0f);
       }
     }
-
+    
   private:
     bool sublevel;
     float rcp_tess;
     int   Nl, Nh, N;
     float tl, th;
   };
-
-#if 0
-  const ssef fractional_tessellation_pattern(const ssei i, const float tess)
-  {
-    const int Nl = (int) floor(tess), Nh = Nl+1;
-    const float rcp_tess = 1.0f/tess;
-    if (Nl % 2 == 0) {
-      const float f0 = select(i > ssei(Nl/2),ssef(tess-float(Nh)),ssef(0.0f));
-      return (ssef(i) + f0)*rcp_tess;
-    } else {
-      const float th = tess-float(Nh);
-      const float tl = float(Nl)-tess;
-      const float f0 = select(i > ssei(Nl/2+0),ssef(th),ssef(0.0f));
-      const float f1 = select(i > ssei(Nl/2+1),ssef(tl),ssef(0.0f));
-      const float f2 = select(i > ssei(Nl/2+2),ssef(th),ssef(0.0f));
-      return (ssef(i) + f0 + f1 + f2)*rcp_tess;
-    }
-  }
-#endif
 }

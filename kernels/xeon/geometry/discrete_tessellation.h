@@ -22,23 +22,23 @@ namespace embree
   {
     DiscreteTessellationPattern (float ftess, const int sublevel = 0)
     : sublevel(sublevel)
-   {
-     for (size_t i=0; i<sublevel; i++) ftess *= 0.5f;
-     int tess = ceil(ftess);
-     for (size_t i=0; i<sublevel; i++) tess *= 2;
-     rcp_tess = 1.0f/float(tess);
-     N = tess;
-   }
+    {
+      for (size_t i=0; i<sublevel; i++) ftess *= 0.5f;
+      int tess = ceil(ftess);
+      for (size_t i=0; i<sublevel; i++) tess *= 2;
+      rcp_tess = 1.0f/float(tess);
+      N = tess;
+    }
     
     /* returns number of intervals (points-1) */
     __forceinline int size() const {
       return N;
     }
-
+    
     __forceinline float operator() (int i) const {
       return min(float(i)*rcp_tess,1.0f);
     }
-
+    
   private:
     int sublevel;
     float rcp_tess;
