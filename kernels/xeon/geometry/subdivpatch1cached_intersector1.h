@@ -27,7 +27,6 @@
 
 #define COMPUTE_SUBDIV_NORMALS_AFTER_PATCH_INTERSECTION 0
 #define FORCE_TRIANGLE_UV 0
-#define TIMER(x) 
 
 namespace embree
 {
@@ -368,53 +367,9 @@ namespace embree
       
       
       /*! Evaluates grid over patch and builds BVH4 tree over the grid. */
-      static __forceinline BVH4::NodeRef buildSubdivPatchTree(const SubdivPatch1Cached &patch,
-                                                              void *const lazymem,
-                                                              const SubdivMesh* const geom)
-      {
-        
-        TIMER(double msec = 0.0);
-        TIMER(msec = getSeconds());
-        
-        assert( patch.grid_size_simd_blocks >= 1 );
-        __aligned(64) float grid_x[(patch.grid_size_simd_blocks+1)*8]; 
-        __aligned(64) float grid_y[(patch.grid_size_simd_blocks+1)*8];
-        __aligned(64) float grid_z[(patch.grid_size_simd_blocks+1)*8]; 
-        
-        __aligned(64) float grid_u[(patch.grid_size_simd_blocks+1)*8]; 
-        __aligned(64) float grid_v[(patch.grid_size_simd_blocks+1)*8];
-        
-        //float* grid_x = (float*) ALIGN_PTR(alloca((patch.grid_size_simd_blocks + 1) * 8 * sizeof(float) + 64),64);
-        //float* grid_y = (float*) ALIGN_PTR(alloca((patch.grid_size_simd_blocks + 1) * 8 * sizeof(float) + 64),64);
-        //float* grid_z = (float*) ALIGN_PTR(alloca((patch.grid_size_simd_blocks + 1) * 8 * sizeof(float) + 64),64);
-        
-        //float* grid_u = (float*) ALIGN_PTR(alloca((patch.grid_size_simd_blocks + 1) * 8 * sizeof(float) + 64),64);
-        //float* grid_v = (float*) ALIGN_PTR(alloca((patch.grid_size_simd_blocks + 1) * 8 * sizeof(float) + 64),64);
-        
-        evalGrid(patch,grid_x,grid_y,grid_z,grid_u,grid_v,geom);
-        
-        BVH4::NodeRef subtree_root = BVH4::encodeNode( (BVH4::Node*)lazymem);
-        unsigned int currentIndex = 0;
-        
-        BBox3fa bounds = createSubTree( subtree_root,
-                                        (float*)lazymem,
-                                        patch,
-                                        grid_x,
-                                        grid_y,
-                                        grid_z,
-                                        grid_u,
-                                        grid_v,
-                                        GridRange(0,patch.grid_u_res-1,0,patch.grid_v_res-1),
-                                        currentIndex,
-                                        geom);
-        
-        assert(currentIndex == patch.grid_subtree_size_64b_blocks);
-        TIMER(msec = getSeconds()-msec);    
-        
-        //TessellationCache::printStats(); 
-        
-        return subtree_root;
-      }
+      static BVH4::NodeRef buildSubdivPatchTree(const SubdivPatch1Cached &patch,
+                                                void *const lazymem,
+                                                const SubdivMesh* const geom);
       
       /*! Create BVH4 tree over grid. */
       static BBox3fa createSubTree(BVH4::NodeRef &curNode,

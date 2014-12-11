@@ -18,6 +18,7 @@
 #include "xeon/bvh4/bvh4.h"
 #include "xeon/bvh4/bvh4_intersector1.h"
 
+#define TIMER(x) 
 
 namespace embree
 {
@@ -29,6 +30,54 @@ namespace embree
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    BVH4::NodeRef SubdivPatch1CachedIntersector1::buildSubdivPatchTree(const SubdivPatch1Cached &patch,
+                                                                       void *const lazymem,
+                                                                       const SubdivMesh* const geom)
+      {
+        
+        TIMER(double msec = 0.0);
+        TIMER(msec = getSeconds());
+        
+        assert( patch.grid_size_simd_blocks >= 1 );
+        
+        __aligned(64) float grid_x[(patch.grid_size_simd_blocks+1)*8]; 
+        __aligned(64) float grid_y[(patch.grid_size_simd_blocks+1)*8];
+        __aligned(64) float grid_z[(patch.grid_size_simd_blocks+1)*8]; 
+        
+        __aligned(64) float grid_u[(patch.grid_size_simd_blocks+1)*8]; 
+        __aligned(64) float grid_v[(patch.grid_size_simd_blocks+1)*8];
+        
+        //float* grid_x = (float*) ALIGN_PTR(alloca((patch.grid_size_simd_blocks + 1) * 8 * sizeof(float) + 64),64);
+        //float* grid_y = (float*) ALIGN_PTR(alloca((patch.grid_size_simd_blocks + 1) * 8 * sizeof(float) + 64),64);
+        //float* grid_z = (float*) ALIGN_PTR(alloca((patch.grid_size_simd_blocks + 1) * 8 * sizeof(float) + 64),64);
+        
+        //float* grid_u = (float*) ALIGN_PTR(alloca((patch.grid_size_simd_blocks + 1) * 8 * sizeof(float) + 64),64);
+        //float* grid_v = (float*) ALIGN_PTR(alloca((patch.grid_size_simd_blocks + 1) * 8 * sizeof(float) + 64),64);
+        
+        evalGrid(patch,grid_x,grid_y,grid_z,grid_u,grid_v,geom);
+        
+        BVH4::NodeRef subtree_root = BVH4::encodeNode( (BVH4::Node*)lazymem);
+        unsigned int currentIndex = 0;
+        
+        BBox3fa bounds = createSubTree( subtree_root,
+                                        (float*)lazymem,
+                                        patch,
+                                        grid_x,
+                                        grid_y,
+                                        grid_z,
+                                        grid_u,
+                                        grid_v,
+                                        GridRange(0,patch.grid_u_res-1,0,patch.grid_v_res-1),
+                                        currentIndex,
+                                        geom);
+        
+        assert(currentIndex == patch.grid_subtree_size_64b_blocks);
+
+        TIMER(msec = getSeconds()-msec);            
+        
+        return subtree_root;
+      }
     
     
     BBox3fa SubdivPatch1CachedIntersector1::createSubTree(BVH4::NodeRef &curNode,
@@ -62,26 +111,7 @@ namespace embree
         localCounter +=  (sizeof(Quad2x2)+63) / 64; 
         
         Quad2x2 *qquad = (Quad2x2*)&lazymem[currentIndex*16];
-        
-        // scalar code path
-        // float leaf_x_array[3][3];
-        // float leaf_y_array[3][3];
-        // float leaf_z_array[3][3];
-        // float leaf_u_array[3][3];
-        // float leaf_v_array[3][3];
-        
-        // for (unsigned int v=v_start;v<=v_end;v++)
-        //   for (unsigned int u=u_start;u<=u_end;u++)
-        //     {
-        //       const unsigned int local_v = v - v_start;
-        //       const unsigned int local_u = u - u_start;
-        //       leaf_x_array[local_v][local_u] = grid_x_array[ v * patch.grid_u_res + u ];
-        //       leaf_y_array[local_v][local_u] = grid_y_array[ v * patch.grid_u_res + u ];
-        //       leaf_z_array[local_v][local_u] = grid_z_array[ v * patch.grid_u_res + u ];
-        //       leaf_u_array[local_v][local_u] = grid_u_array[ v * patch.grid_u_res + u ];
-        //       leaf_v_array[local_v][local_u] = grid_v_array[ v * patch.grid_u_res + u ];
-        //     }
-        
+                
         ssef leaf_x_array[3];
         ssef leaf_y_array[3];
         ssef leaf_z_array[3];
@@ -120,18 +150,7 @@ namespace embree
             leaf_v_array[y][x] = leaf_v_array[v_size-1][x];
           }
         
-        
-        // scalar code path
-        
-        // qquad->init( (float*)leaf_x_array, 
-        //              (float*)leaf_y_array, 
-        //              (float*)leaf_z_array, 
-        //              (float*)leaf_u_array, 
-        //              (float*)leaf_v_array, 
-        //              0, 
-        //              4, 
-        //              8);
-        
+                
         qquad->init( leaf_x_array, 
                      leaf_y_array, 
                      leaf_z_array, 
