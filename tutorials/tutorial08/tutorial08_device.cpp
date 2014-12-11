@@ -19,7 +19,7 @@
 
 
 
-#define FORCE_FIXED_EDGE_TESSELLATION
+//#define FORCE_FIXED_EDGE_TESSELLATION
 #define FIXED_EDGE_TESSELLATION_VALUE 4
 
 #define MAX_EDGE_LEVEL 64.0f
@@ -77,75 +77,52 @@ extern "C" void device_init (int8* cfg)
   //  renderPixel = renderPixelUV;	
 }
 
-#if 0
-
-task void updateEdgeLevelBuffer(ISPCMesh* mesh, const Vec3fa& cam_pos )
+void updateEdgeLevelBuffer( ISPCMesh* mesh, const Vec3fa& cam_pos, size_t startID, size_t endID )
 {
-  const size_t size = mesh->numQuads;
-  const size_t startID = ((threadIndex+0)*size)/threadCount;
-  const size_t endID   = ((threadIndex+1)*size)/threadCount;
-
-  for (size_t f=startID;f<endID; f++) 
+  for (size_t f=startID; f<endID; f++) 
   {
-      const int N = 4;
-      for (size_t i=0; i<N; i++) {
-      	const int * index = (int *)&mesh->quads[f];	
-        const Vec3fa v0 = mesh->positions[index[i]];
-        const Vec3fa v1 = mesh->positions[index[(i+1)%N]];
-        const Vec3fa edge = v1-v0;
-        const Vec3fa P = 0.5f*(v1+v0);
-	const Vec3fa dist = cam_pos - P;
-        mesh->edge_level[f*4+i] = max(min(LEVEL_FACTOR*(0.5f*length(edge)/length(dist)),MAX_EDGE_LEVEL),MIN_EDGE_LEVEL); // FIXME: map mesh subdivlevel buffer
-	assert( mesh->edge_level[f*4+i] >= 1.0f );
-      }
+    const int N = 4;
+    for (size_t i=0; i<N; i++) {
+      const int * index = (int *)&mesh->quads[f];	
+      const Vec3fa v0 = mesh->positions[index[i]];
+      const Vec3fa v1 = mesh->positions[index[(i+1)%N]];
+      const Vec3fa edge = v1-v0;
+      const Vec3fa P = 0.5f*(v1+v0);
+      const Vec3fa dist = cam_pos - P;
+      mesh->edge_level[f*4+i] = max(min(LEVEL_FACTOR*(0.5f*length(edge)/length(dist)),MAX_EDGE_LEVEL),MIN_EDGE_LEVEL); // FIXME: map mesh subdivlevel buffer
+      assert( mesh->edge_level[f*4+i] >= 1.0f );
+    }
   }
 }
 
+#if defined(ISPC)
+task void updateEdgeLevelBufferTask( ISPCMesh* mesh, const Vec3fa& cam_pos )
+{
+  const size_t size = mesh->numQuads;
+  const size_t startID = ((taskIndex+0)*size)/taskCount;
+  const size_t endID   = ((taskIndex+1)*size)/taskCount;
+  updateEdgeLevelBuffer(mesh,cam_pos,startID,endID);
+}
 #endif
 
 void updateEdgeLevels(ISPCScene* scene_in, const Vec3fa& cam_pos)
 {
-#if 0 // FIXME: buggy on Xeon
-  for (int i=0; i<scene_in->numMeshes; i++)
+  for (int i=0; i<g_ispc_scene->numMeshes; i++)
   {
-    ISPCMesh* mesh = scene_in->meshes[i];
-    if (mesh->edge_level) {
+    ISPCMesh* mesh = g_ispc_scene->meshes[i];
+    if (mesh->numQuads == 0) continue;
+
+    if (mesh->edge_level) 
+    {
       unsigned int geomID = mesh->geomID;
-      launch[  getNumHWThreads() ] updateEdgeLevelBuffer(mesh,cam_pos); 	           
-
-      for (size_t i=0; i<4*mesh->numQuads; i++) {
-	if (mesh->edge_level[i] > 1024) printf("level = %\n",mesh->edge_level[i]);
-      }
-
+#if defined(ISPC)
+      launch[  getNumHWThreads() ] updateEdgeLevelBufferTask(mesh,cam_pos); 	           
+#else
+      updateEdgeLevelBuffer(mesh,cam_pos,0,mesh->numQuads);
+#endif
       rtcUpdateBuffer(g_scene,geomID,RTC_LEVEL_BUFFER);
     }
   }
-#else
-
-  for (size_t j=0; j<g_ispc_scene->numMeshes; j++)
-  {
-    ISPCMesh* mesh = g_ispc_scene->meshes[j];
-    if (mesh->numQuads == 0) continue;
-    
-    unsigned int geomID = mesh->geomID;
-    float* level = (float*) rtcMapBuffer(g_scene, geomID, RTC_LEVEL_BUFFER);
-    for (size_t i=0; i<mesh->numQuads; i++) 
-    {
-      unsigned int* quad_vtx = (unsigned int*)&mesh->quads[i];
- 
-      for (size_t k=0; k<4; k++) {
-        const Vec3fa v0 = mesh->positions[quad_vtx[(k+0)%4]];
-        const Vec3fa v1 = mesh->positions[quad_vtx[(k+1)%4]];
-        const Vec3fa edge = v1-v0;
-        const Vec3fa P = 0.5f*(v1+v0);
-	const Vec3fa dist = cam_pos - P;
-        level[i*4+k] = max(min(LEVEL_FACTOR*(0.5f*length(edge)/length(dist)),MAX_EDGE_LEVEL),MIN_EDGE_LEVEL);
-      } 
-    }
-    rtcUnmapBuffer(g_scene,geomID, RTC_LEVEL_BUFFER);
-    rtcUpdateBuffer(g_scene,geomID,RTC_LEVEL_BUFFER);
-  }
-#endif
 
   for (size_t g=0; g<scene_in->numSubdivMeshes; g++)
   {
@@ -225,7 +202,9 @@ void convertScene(ISPCScene* scene_in, const Vec3fa& p)
 #if ENABLE_DISPLACEMENTS == 1
       rtcSetDisplacementFunction(g_scene,geomID,(RTCDisplacementFunc)&displacementFunction,NULL);
 #endif
-    }
+     }
+     else
+      mesh->edge_level = NULL;
   }
   
   /* add all subdiv meshes to the scene */

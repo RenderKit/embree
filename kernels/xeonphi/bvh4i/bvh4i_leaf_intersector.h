@@ -25,6 +25,7 @@
 #include "geometry/virtual_accel_intersector1.h"
 #include "geometry/virtual_accel_intersector16.h"
 #include "geometry/subdiv_intersector16.h"
+#include "geometry/subdiv_intersector1.h"
 #include "geometry/filter.h"
 
 

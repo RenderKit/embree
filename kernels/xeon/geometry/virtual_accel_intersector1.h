@@ -21,25 +21,28 @@
 
 namespace embree
 {
-  struct VirtualAccelIntersector1
+  namespace isa
   {
-    typedef AccelSetItem Primitive;
-
-    struct Precalculations {
-      __forceinline Precalculations (const Ray& ray) {}
+    struct VirtualAccelIntersector1
+    {
+      typedef AccelSetItem Primitive;
+      
+      struct Precalculations {
+        __forceinline Precalculations (const Ray& ray) {}
+      };
+      
+      static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Primitive& prim, Scene* scene) 
+      {
+        AVX_ZERO_UPPER();
+        prim.accel->intersect((RTCRay&)ray,prim.item);
+      }
+      
+      static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Primitive& prim, Scene* scene) 
+      {
+        AVX_ZERO_UPPER();
+        prim.accel->occluded((RTCRay&)ray,prim.item);
+        return ray.geomID == 0;
+      }
     };
-
-    static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Primitive& prim, const void* geom) 
-    {
-      AVX_ZERO_UPPER();
-      prim.accel->intersect((RTCRay&)ray,prim.item);
-    }
-
-    static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Primitive& prim, const void* geom) 
-    {
-      AVX_ZERO_UPPER();
-      prim.accel->occluded((RTCRay&)ray,prim.item);
-      return ray.geomID == 0;
-    }
-  };
+  }
 }

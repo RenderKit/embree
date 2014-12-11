@@ -25,7 +25,7 @@ namespace embree
   {
     Tessellator& tessellator;
 
-    __forceinline FeatureAdaptiveSubdivisionBSpline (int primID, const SubdivMesh::HalfEdge* h, const Vec3fa* vertices, Tessellator& tessellator)
+    __forceinline FeatureAdaptiveSubdivisionBSpline (int primID, const SubdivMesh::HalfEdge* h, const BufferT<Vec3fa>& vertices, Tessellator& tessellator)
       : tessellator(tessellator)
     {
 #if 0
@@ -179,7 +179,7 @@ namespace embree
   };
 
    template<typename Tessellator>
-     inline void feature_adaptive_subdivision_bspline (int primID, const SubdivMesh::HalfEdge* h, const Vec3fa* vertices, Tessellator tessellator)
+     inline void feature_adaptive_subdivision_bspline (int primID, const SubdivMesh::HalfEdge* h, const BufferT<Vec3fa>& vertices, Tessellator tessellator)
    {
      FeatureAdaptiveSubdivisionBSpline<Tessellator>(primID,h,vertices,tessellator);
    }

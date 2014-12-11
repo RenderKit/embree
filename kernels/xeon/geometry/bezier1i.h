@@ -40,14 +40,14 @@ namespace embree
     __forceinline Bezier1i () {}
 
     /*! Construction from vertices and IDs. */
-    __forceinline Bezier1i (const Vec3fa* p, const unsigned int geomID, const unsigned int primID, const bool last)
-      : p(p), geom(geomID), prim(primID | (last << 31)) {}
+    __forceinline Bezier1i (const unsigned vertexID, const unsigned int geomID, const unsigned int primID, const bool last)
+      : vertexID(vertexID), geom(geomID), prim(primID | (last << 31)) {}
 
     /*! calculate the bounds of the triangle */
-    __forceinline BBox3fa bounds() const {
-      const BBox3fa b = merge(BBox3fa(p[0]),BBox3fa(p[1]),BBox3fa(p[2]),BBox3fa(p[3]));
-      return enlarge(b,Vec3fa(b.upper.w));
-    }
+    //__forceinline BBox3fa bounds() const {
+    //const BBox3fa b = merge(BBox3fa(p[0]),BBox3fa(p[1]),BBox3fa(p[2]),BBox3fa(p[3]));
+    //return enlarge(b,Vec3fa(b.upper.w));
+    //}
 
     /*! returns required number of primitive blocks for N primitives */
     static __forceinline size_t blocks(size_t N) { return N; }
@@ -73,8 +73,9 @@ namespace embree
       const unsigned geomID = curve.geomID<0>();
       const unsigned primID = curve.primID<0>();
       const BezierCurves* in = (BezierCurves*) scene->get(geomID);
-      const Vec3fa& p0 = in->vertex(in->curve(primID));
-      new (this) Bezier1i(&p0,geomID,primID,list && !iter);
+      //const Vec3fa& p0 = in->vertex(in->curve(primID));
+      const unsigned int vertexID = in->curve(primID);
+      new (this) Bezier1i(vertexID,geomID,primID,list && !iter);
     }
 
     /*! fill triangle from triangle list */
@@ -85,13 +86,14 @@ namespace embree
       const size_t geomID = prim.geomID();
       const size_t primID = prim.primID();
       const BezierCurves* curves = scene->getBezierCurves(geomID);
-      const size_t id = curves->curve(primID);
-      const Vec3fa& p0 = curves->vertex(id+0);
-      new (this) Bezier1i(&p0,geomID,primID,list && i>=end);
+      const size_t vertexID = curves->curve(primID);
+      //const Vec3fa& p0 = curves->vertex(vertexID+0);
+      new (this) Bezier1i(vertexID,geomID,primID,list && i>=end);
     }
 
   public:
-    const Vec3fa* p;      //!< pointer to first control point (x,y,z,r)
+    //const Vec3fa* p;      //!< pointer to first control point (x,y,z,r)
+    unsigned int vertexID; //!< index of start vertex
     unsigned int geom;  //!< geometry ID
     unsigned int prim;  //!< primitive ID
   };
@@ -104,8 +106,8 @@ namespace embree
     __forceinline Bezier1iMB () {}
 
     /*! Construction from vertices and IDs. */
-    __forceinline Bezier1iMB (const Vec3fa* p0, const Vec3fa* p1, const unsigned int geomID, const unsigned int primID, const bool last)
-      : p0(p0), p1(p1), geom(geomID), prim(primID | (last << 31)) {}
+    __forceinline Bezier1iMB (const unsigned vertexID, const unsigned int geomID, const unsigned int primID, const bool last)
+      : vertexID(vertexID), geom(geomID), prim(primID | (last << 31)) {}
 
     template<bool list>
     __forceinline unsigned int primID() const { 
@@ -122,10 +124,10 @@ namespace embree
     }
 
     /*! calculate the bounds of the triangle */
-    __forceinline BBox3fa bounds0() const {
-      const BBox3fa b = merge(BBox3fa(p0[0]),BBox3fa(p0[1]),BBox3fa(p0[2]),BBox3fa(p0[3]));
-      return enlarge(b,Vec3fa(b.upper.w));
-    }
+    //__forceinline BBox3fa bounds0() const {
+    //const BBox3fa b = merge(BBox3fa(p0[0]),BBox3fa(p0[1]),BBox3fa(p0[2]),BBox3fa(p0[3]));
+    //return enlarge(b,Vec3fa(b.upper.w));
+    //}
 
     /*! fill from list */
     __forceinline void fill(atomic_set<PrimRefBlockT<BezierPrim> >::block_iterator_unsafe& iter, Scene* scene, const bool list)
@@ -134,14 +136,16 @@ namespace embree
       const unsigned geomID = curve.geomID<0>();
       const unsigned primID = curve.primID<0>();
       const BezierCurves* in = (BezierCurves*) scene->get(geomID);
-      const Vec3fa& p0 = in->vertex(in->curve(primID),0);
-      const Vec3fa& p1 = in->vertex(in->curve(primID),1);
-      new (this) Bezier1iMB(&p0,&p1,geomID,primID,list && !iter);
+      //const Vec3fa& p0 = in->vertex(in->curve(primID),0);
+      //const Vec3fa& p1 = in->vertex(in->curve(primID),1);
+      const size_t vertexID = in->curve(primID);
+      new (this) Bezier1iMB(vertexID,geomID,primID,list && !iter);
     }
 
   public:
-    const Vec3fa* p0;      //!< pointer to first control point (x,y,z,r) for time t0
-    const Vec3fa* p1;      //!< pointer to first control point (x,y,z,r) for time t1
+    //const Vec3fa* p0;      //!< pointer to first control point (x,y,z,r) for time t0
+    //const Vec3fa* p1;      //!< pointer to first control point (x,y,z,r) for time t1
+    unsigned int vertexID; //!< index of start vertex
     unsigned int geom;  //!< geometry ID
     unsigned int prim;  //!< primitive ID
   };

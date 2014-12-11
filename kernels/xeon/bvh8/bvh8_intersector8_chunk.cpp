@@ -149,7 +149,7 @@ namespace embree
         const avxb valid_leaf = ray_tfar > curDist;
         STAT3(normal.trav_leaves,1,popcnt(valid_leaf),8);
         size_t items; const Triangle* tri  = (Triangle*) cur.leaf(items);
-        PrimitiveIntersector8::intersect(valid_leaf,pre,ray,tri,items,bvh->geometry);
+        PrimitiveIntersector8::intersect(valid_leaf,pre,ray,tri,items,bvh->scene);
         ray_tfar = select(valid_leaf,ray.tfar,ray_tfar);
       }
       AVX_ZERO_UPPER();
@@ -274,7 +274,7 @@ namespace embree
         const avxb valid_leaf = ray_tfar > curDist;
         STAT3(shadow.trav_leaves,1,popcnt(valid_leaf),8);
         size_t items; const Triangle* tri  = (Triangle*) cur.leaf(items);
-        terminated |= PrimitiveIntersector8::occluded(!terminated,pre,ray,tri,items,bvh->geometry);
+        terminated |= PrimitiveIntersector8::occluded(!terminated,pre,ray,tri,items,bvh->scene);
         if (all(terminated)) break;
         ray_tfar = select(terminated,neg_inf,ray_tfar);
       }

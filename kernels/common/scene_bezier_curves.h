@@ -29,7 +29,7 @@ namespace embree
         float x,y,z,r;
       };
 
-      static const GeometryTy type = BEZIER_CURVES;
+      static const GeometryTy geom_type = BEZIER_CURVES;
 
     public:
       BezierCurves (Scene* parent, RTCGeometryFlags flags, size_t numCurves, size_t numVertices, size_t numTimeSteps); 
@@ -196,7 +196,7 @@ namespace embree
 #endif
       }
 
-      __forceinline const Vec3fa *fristVertexPtr(size_t i) const {
+      __forceinline const Vec3fa *fristVertexPtr(size_t i) const { // FIXME: remove, use buffer to access vertices instead!
         return &vertex(curve(i));
       }
 

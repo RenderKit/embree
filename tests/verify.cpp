@@ -495,6 +495,140 @@ namespace embree
     return mesh;
   }
 
+  /* adds a subdiv sphere to the scene */
+  unsigned int addSubdivSphere (RTCScene scene, RTCGeometryFlags flags, const Vec3fa& pos, const float r, size_t numPhi, float level, size_t maxFaces = -1, float motion = 0.0f)
+  {
+    size_t numTheta = 2*numPhi;
+    std::vector<Vec3fa> vertices(numTheta*(numPhi+1));
+    std::vector<int> indices;
+    std::vector<int> faces;
+    std::vector<int> offsets;
+    
+    /* create sphere geometry */
+    const float rcpNumTheta = rcp((float)numTheta);
+    const float rcpNumPhi   = rcp((float)numPhi);
+    for (int phi=0; phi<=numPhi; phi++)
+    {
+      for (int theta=0; theta<numTheta; theta++)
+      {
+	const float phif   = phi*float(pi)*rcpNumPhi;
+	const float thetaf = theta*2.0f*float(pi)*rcpNumTheta;
+	Vec3fa& v = vertices[phi*numTheta+theta];
+	Vec3fa P(pos.x + r*sin(phif)*sin(thetaf),
+		 pos.y + r*cos(phif),
+		 pos.z + r*sin(phif)*cos(thetaf));
+	v.x = P.x;
+	v.y = P.y;
+	v.z = P.z;
+      }
+      if (phi == 0) continue;
+      
+      if (phi == 1)
+      {
+	for (int theta=1; theta<=numTheta; theta++) 
+	{
+	  int p00 = numTheta-1;
+	  int p10 = phi*numTheta+theta-1;
+	  int p11 = phi*numTheta+theta%numTheta;
+	  offsets.push_back(indices.size());
+	  indices.push_back(p10); 
+	  indices.push_back(p00);
+	  indices.push_back(p11);
+	  faces.push_back(3);
+	}
+      }
+      else if (phi == numPhi)
+      {
+	for (int theta=1; theta<=numTheta; theta++) 
+	{
+	  int p00 = (phi-1)*numTheta+theta-1;
+	  int p01 = (phi-1)*numTheta+theta%numTheta;
+	  int p10 = numPhi*numTheta;
+	  offsets.push_back(indices.size());
+	  indices.push_back(p10);
+	  indices.push_back(p00);
+	  indices.push_back(p01);
+	  faces.push_back(3);
+	}
+      }
+      else
+      {
+	for (int theta=1; theta<=numTheta; theta++) 
+	{
+	  int p00 = (phi-1)*numTheta+theta-1;
+	  int p01 = (phi-1)*numTheta+theta%numTheta;
+	  int p10 = phi*numTheta+theta-1;
+	  int p11 = phi*numTheta+theta%numTheta;
+	  offsets.push_back(indices.size());
+	  indices.push_back(p10);
+	  indices.push_back(p00);
+	  indices.push_back(p01);
+	  indices.push_back(p11);
+	  faces.push_back(4);
+	}
+      }
+    }
+    
+    /* create subdiv geometry */
+    size_t numFaces = min(faces.size(),maxFaces);
+    size_t numEdges = indices.size();
+    size_t numVertices = vertices.size();
+    size_t numEdgeCreases = 10;
+    size_t numVertexCreases = 10;
+    size_t numHoles = 0; // do not test holes as this causes some tests that assume a closed sphere to fail
+    unsigned int mesh = rtcNewSubdivisionMesh(scene, flags, numFaces, numEdges, numVertices, numEdgeCreases, numVertexCreases, numHoles);
+    Vec3fa* vertexBuffer = (Vec3fa*  ) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER); 
+    int*    indexBuffer  = (int     *) rtcMapBuffer(scene,mesh,RTC_INDEX_BUFFER);
+    int*    facesBuffer = (int     *) rtcMapBuffer(scene,mesh,RTC_FACE_BUFFER);
+    float*  levelBuffer  = (float   *) rtcMapBuffer(scene,mesh,RTC_LEVEL_BUFFER);
+    memcpy(vertexBuffer,vertices.data(),numVertices*sizeof(Vec3fa));
+    memcpy(indexBuffer ,indices.data() ,numEdges*sizeof(int));
+    memcpy(facesBuffer,faces.data() ,numFaces*sizeof(int));
+    for (size_t i=0; i<indices.size(); i++) levelBuffer[i] = level;
+    rtcUnmapBuffer(scene,mesh,RTC_VERTEX_BUFFER); 
+    rtcUnmapBuffer(scene,mesh,RTC_INDEX_BUFFER);
+    rtcUnmapBuffer(scene,mesh,RTC_FACE_BUFFER);
+    rtcUnmapBuffer(scene,mesh,RTC_LEVEL_BUFFER);
+    
+    int* edgeCreaseIndices  = (int*) rtcMapBuffer(scene,mesh,RTC_EDGE_CREASE_INDEX_BUFFER);
+    float* edgeCreaseWeights = (float*) rtcMapBuffer(scene,mesh,RTC_EDGE_CREASE_WEIGHT_BUFFER);
+    for (size_t i=0; i<numEdgeCreases; i++) 
+    {
+      if (faces.size()) {
+	int f = rand() % faces.size();
+	int n = faces[f];
+	int e = rand() % n;
+	edgeCreaseIndices[2*i+0] = indices[offsets[f]+(e+0)%n];
+	edgeCreaseIndices[2*i+1] = indices[offsets[f]+(e+1)%n];
+      } else {
+	edgeCreaseIndices[2*i+0] = 0;
+	edgeCreaseIndices[2*i+1] = 0;
+      }
+      edgeCreaseWeights[i] = 10.0f*drand48();
+    }
+    rtcUnmapBuffer(scene,mesh,RTC_EDGE_CREASE_INDEX_BUFFER); 
+    rtcUnmapBuffer(scene,mesh,RTC_EDGE_CREASE_WEIGHT_BUFFER); 
+    
+    int* vertexCreaseIndices  = (int*) rtcMapBuffer(scene,mesh,RTC_VERTEX_CREASE_INDEX_BUFFER);
+    float* vertexCreaseWeights = (float*) rtcMapBuffer(scene,mesh,RTC_VERTEX_CREASE_WEIGHT_BUFFER);
+    for (size_t i=0; i<numVertexCreases; i++) 
+    {
+      int v = numTheta-1 + rand() % (vertices.size()+2-2*numTheta);
+      vertexCreaseIndices[i] = v;
+      vertexCreaseWeights[i] = 10.0f*drand48();
+    }
+    rtcUnmapBuffer(scene,mesh,RTC_VERTEX_CREASE_INDEX_BUFFER); 
+    rtcUnmapBuffer(scene,mesh,RTC_VERTEX_CREASE_WEIGHT_BUFFER); 
+    
+    int* holeBuffer  = (int*) rtcMapBuffer(scene,mesh,RTC_HOLE_BUFFER);
+    for (size_t i=0; i<numHoles; i++) {
+      holeBuffer[i] = rand() % faces.size();
+    }
+    rtcUnmapBuffer(scene,mesh,RTC_HOLE_BUFFER); 
+    
+    return mesh;
+  }
+
   unsigned int addCube (RTCScene scene_i, RTCGeometryFlags flag, const Vec3fa& pos, const float r)
   {
     /* create a triangulated cube with 12 triangles and 8 vertices */
@@ -931,7 +1065,9 @@ namespace embree
     AssertNoError();
     unsigned geom0 = addSphere(scene,RTC_GEOMETRY_STATIC,zero,1.0f,50);
     AssertNoError();
-    unsigned geom1 = addHair(scene,RTC_GEOMETRY_STATIC,Vec3fa(0,0,0),1.0f,0.5f,100);
+    unsigned geom1 = addSubdivSphere(scene,RTC_GEOMETRY_STATIC,zero,1.0f,10,16);
+    AssertNoError();
+    unsigned geom2 = addHair(scene,RTC_GEOMETRY_STATIC,Vec3fa(0,0,0),1.0f,0.5f,100);
     AssertNoError();
     rtcCommit (scene);
     AssertNoError();
@@ -1691,7 +1827,7 @@ namespace embree
     case 0: addSphere(scene,gflags,Vec3fa(-1,0,-1),1.0f,50,-1,0.0f); break;
     case 1: addSphere(scene,gflags,Vec3fa(-1,0,-1),1.0f,50,-1,0.1f); break;
     case 2: addHair  (scene,gflags,Vec3fa(-1,0,-1),1.0f,1.0f,1,0.0f); break;
-      //case 3: addHair  (scene,gflags,Vec3fa(-1,0,-1),1.0f,1.0f,1,0.1f); break; // FIXME: motion blur for hair not yet implemented
+    case 3: addHair  (scene,gflags,Vec3fa(-1,0,-1),1.0f,1.0f,1,0.1f); break; 
     }
     rtcCommit (scene);
 
@@ -2255,20 +2391,21 @@ namespace embree
   {
     RTCScene scene = rtcNewScene(RTC_SCENE_DYNAMIC,aflags);
     AssertNoError();
-    int geom[1024];
-    for (size_t i=0; i<1024; i++) geom[i] = -1;
-    Sphere spheres[1024];
+    int geom[128];
+    for (size_t i=0; i<128; i++) geom[i] = -1;
+    Sphere spheres[128];
     memset(spheres,0,sizeof(spheres));
 
-    for (size_t i=0; i<200; i++) {
-      for (size_t j=0; j<20; j++) {
-        int index = rand()%1024;
+    for (size_t i=0; i<50; i++) {
+      for (size_t j=0; j<10; j++) {
+        int index = rand()%128;
         Vec3fa pos = 100.0f*Vec3fa(drand48(),drand48(),drand48());
         if (geom[index] == -1) {
-          switch (rand()%3) {
+          switch (rand()%4) {
           case 0: geom[index] = addSphere(scene,RTC_GEOMETRY_STATIC,pos,2.0f,10); break;
           case 1: geom[index] = addHair  (scene,RTC_GEOMETRY_STATIC,pos,1.0f,2.0f,10); break;
-          case 2: 
+	  case 2: geom[index] = addSubdivSphere(scene,RTC_GEOMETRY_STATIC,pos,2.0f,4,4); break;
+          case 3: 
 	    spheres[index] = Sphere(pos,2.0f);
 	    geom[index] = addUserGeometryEmpty(scene,&spheres[index]); break;
           }
@@ -2387,7 +2524,7 @@ namespace embree
       delete thread; thread = NULL;
       return;
     }
-    task->scene = rtcNewScene(RTC_SCENE_DYNAMIC,aflags);
+    //task->scene = rtcNewScene(RTC_SCENE_DYNAMIC,aflags);
     CountErrors();
     int geom[1024];
     int types[1024];
@@ -2405,32 +2542,37 @@ namespace embree
       if (i%20 == 0) std::cout << "." << std::flush;
 
       RTCSceneFlags sflag = getSceneFlag(i); 
-      RTCScene scene = rtcNewScene(sflag,aflags);
+      task->scene = rtcNewScene(sflag,aflags);
       vector_t<Sphere*> spheres;
       CountErrors();
 
-      for (size_t j=0; j<20; j++) 
+      for (size_t j=0; j<10; j++) 
       {
         Vec3fa pos = 100.0f*Vec3fa(drand48(),drand48(),drand48());
-#if !defined(__MIC__)
-	switch (rand()%16) {
-	case 0: pos = Vec3fa(nan); break;
-	case 1: pos = Vec3fa(inf); break;
-	case 2: pos = Vec3fa(1E30f); break;
-	default: break;
-	};
+	int type = rand()%6;
+#if !defined(__MIC__) 
+	if (type != 2) { // FIXME: strange inputs not supported yet for subdiv geometry
+	  switch (rand()%16) {
+	  case 0: pos = Vec3fa(nan); break;
+	  case 1: pos = Vec3fa(inf); break;
+	  case 2: pos = Vec3fa(1E30f); break;
+	  default: break;
+	  };
+	}
 #endif
-        size_t numPhi = rand()%100;
+	size_t numPhi = rand()%100;
+	if (type == 2) numPhi = rand()%10;
         size_t numTriangles = 2*2*numPhi*(numPhi-1);
 	numTriangles = rand()%(numTriangles+1);
-        switch (rand()%5) {
-        case 0: addSphere(scene,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles,0.0f); break;
-        case 1: addSphere(scene,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles,1.0f); break;
-        case 2: addHair  (scene,RTC_GEOMETRY_STATIC,pos,1.0f,2.0f,numTriangles,0.0f); break;
-	  //case 3: addHair  (scene,RTC_GEOMETRY_STATIC,pos,1.0f,2.0f,numTriangles,1.0f); break; // FIXME: motion blur for hair not yet implemented
-        case 4: {
+        switch (type) {
+        case 0: addSphere(task->scene,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles,0.0f); break;
+	case 1: addSphere(task->scene,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles,1.0f); break;
+	case 2: addSubdivSphere(task->scene,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,4,numTriangles,0.0f); break;
+	case 3: addHair  (task->scene,RTC_GEOMETRY_STATIC,pos,1.0f,2.0f,numTriangles,0.0f); break;
+	case 4: addHair  (task->scene,RTC_GEOMETRY_STATIC,pos,1.0f,2.0f,numTriangles,1.0f); break; 
+        case 5: {
 	  Sphere* sphere = new Sphere(pos,2.0f); spheres.push_back(sphere); 
-	  addUserGeometryEmpty(scene,sphere); break;
+	  addUserGeometryEmpty(task->scene,sphere); break;
         }
 	}
         CountErrors();
@@ -2451,7 +2593,7 @@ namespace embree
       if (thread->threadCount) 
 	task->barrier.wait();
 
-      rtcDeleteScene (scene);
+      rtcDeleteScene (task->scene);
       CountErrors();
 
       for (size_t i=0; i<spheres.size(); i++)
@@ -2499,7 +2641,7 @@ namespace embree
       srand(task->sceneIndex*23565+i*3242);
       if (i%20 == 0) std::cout << "." << std::flush;
 
-      for (size_t j=0; j<20; j++) 
+      for (size_t j=0; j<40; j++) 
       {
         int index = rand()%1024;
         Vec3fa pos = 100.0f*Vec3fa(drand48(),drand48(),drand48());
@@ -2513,8 +2655,9 @@ namespace embree
 #endif
         if (geom[index] == -1) 
         {
-          int type = rand()%3;
+          int type = rand()%10;
           size_t numPhi = rand()%100;
+	  if (type >= 3 || type <= 5) numPhi = rand()%20;
           size_t numTriangles = 2*2*numPhi*(numPhi-1);
           numTriangles = rand()%(numTriangles+1);
           types[index] = type;
@@ -2524,11 +2667,15 @@ namespace embree
           case 1: geom[index] = addSphere(task->scene,RTC_GEOMETRY_DEFORMABLE,pos,2.0f,numPhi,numTriangles,0.0f); break;
           case 2: geom[index] = addSphere(task->scene,RTC_GEOMETRY_DYNAMIC,pos,2.0f,numPhi,numTriangles,0.0f); break;
 
-          case 3: geom[index] = addSphere(task->scene,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles,1.0f); break;
-          case 4: geom[index] = addSphere(task->scene,RTC_GEOMETRY_DEFORMABLE,pos,2.0f,numPhi,numTriangles,1.0f); break;
-          case 5: geom[index] = addSphere(task->scene,RTC_GEOMETRY_DYNAMIC,pos,2.0f,numPhi,numTriangles,1.0f); break;
+	    //case 3: geom[index] = addSubdivSphere(task->scene,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,4,numTriangles,0.0f); break;
+	    //case 4: geom[index] = addSubdivSphere(task->scene,RTC_GEOMETRY_DEFORMABLE,pos,2.0f,numPhi,4,numTriangles,0.0f); break;
+	    //case 5: geom[index] = addSubdivSphere(task->scene,RTC_GEOMETRY_DYNAMIC,pos,2.0f,numPhi,4,numTriangles,0.0f); break;
+
+          case 6: geom[index] = addSphere(task->scene,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles,1.0f); break;
+          case 7: geom[index] = addSphere(task->scene,RTC_GEOMETRY_DEFORMABLE,pos,2.0f,numPhi,numTriangles,1.0f); break;
+          case 8: geom[index] = addSphere(task->scene,RTC_GEOMETRY_DYNAMIC,pos,2.0f,numPhi,numTriangles,1.0f); break;
             
-          case 6: spheres[index] = Sphere(pos,2.0f); geom[index] = addUserGeometryEmpty(task->scene,&spheres[index]); break;
+          case 9: spheres[index] = Sphere(pos,2.0f); geom[index] = addUserGeometryEmpty(task->scene,&spheres[index]); break;
           }; 
 	  CountErrors();
         }
@@ -2537,7 +2684,8 @@ namespace embree
           switch (types[index]) {
           case 0:
           case 3:
-          case 6: {
+          case 6:
+	  case 9: {
             rtcDeleteGeometry(task->scene,geom[index]);     
 	    CountErrors();
             geom[index] = -1; 
@@ -2546,7 +2694,9 @@ namespace embree
           case 1: 
           case 2:
           case 4: 
-          case 5: {
+          case 5:
+	  case 7: 
+          case 8: {
             int op = rand()%2;
             switch (op) {
             case 0: {
@@ -2560,7 +2710,7 @@ namespace embree
               for (size_t i=0; i<numVertices[index]; i++) vertices[i] += Vertex3f(0.1f);
               rtcUnmapBuffer(task->scene,geom[index],RTC_VERTEX_BUFFER);
 
-              if (types[index] == 4 || types[index] == 5) {
+              if (types[index] == 7 || types[index] == 8) {
                 Vertex3f* vertices = (Vertex3f*) rtcMapBuffer(task->scene,geom[index],RTC_VERTEX_BUFFER1);
                 for (size_t i=0; i<numVertices[index]; i++) vertices[i] += Vertex3f(0.1f);
                 rtcUnmapBuffer(task->scene,geom[index],RTC_VERTEX_BUFFER1);
@@ -2715,7 +2865,6 @@ namespace embree
     rtcore_build();
 
     POSITIVE("new_delete_geometry",       rtcore_new_delete_geometry());
-
 
 #if defined(RTCORE_RAY_MASK)
     rtcore_ray_masks_all();

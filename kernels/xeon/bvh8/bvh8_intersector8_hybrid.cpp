@@ -166,7 +166,7 @@ namespace embree
 	assert(cur != BVH8::emptyNode);
         STAT3(normal.trav_leaves,1,1,1);
         size_t num; Triangle* prim = (Triangle*) cur.leaf(num);
-        PrimitiveIntersector8::intersect(pre,ray,k,prim,num,bvh->geometry);
+        PrimitiveIntersector8::intersect(pre,ray,k,prim,num,bvh->scene);
         rayFar = ray.tfar[k];
       }
     }
@@ -321,7 +321,7 @@ namespace embree
         const avxb valid_leaf = ray_tfar > curDist;
         STAT3(normal.trav_leaves,1,popcnt(valid_leaf),8);
         size_t items; const Triangle* prim = (Triangle*) cur.leaf(items);
-        PrimitiveIntersector8::intersect(valid_leaf,pre,ray,prim,items,bvh->geometry);
+        PrimitiveIntersector8::intersect(valid_leaf,pre,ray,prim,items,bvh->scene);
         ray_tfar = select(valid_leaf,ray.tfar,ray_tfar);
       }
       AVX_ZERO_UPPER();
@@ -445,7 +445,7 @@ namespace embree
 	assert(cur != BVH8::emptyNode);
         STAT3(shadow.trav_leaves,1,1,1);
         size_t num; Triangle* prim = (Triangle*) cur.leaf(num);
-        if (PrimitiveIntersector8::occluded(pre,ray,k,prim,num,bvh->geometry)) {
+        if (PrimitiveIntersector8::occluded(pre,ray,k,prim,num,bvh->scene)) {
           //ray.geomID = 0;
           //break;
 	  return true;
@@ -601,7 +601,7 @@ namespace embree
         const avxb valid_leaf = ray_tfar > curDist;
         STAT3(shadow.trav_leaves,1,popcnt(valid_leaf),8);
         size_t items; const Triangle* prim = (Triangle*) cur.leaf(items);
-        terminated |= PrimitiveIntersector8::occluded(!terminated,pre,ray,prim,items,bvh->geometry);
+        terminated |= PrimitiveIntersector8::occluded(!terminated,pre,ray,prim,items,bvh->scene);
         if (all(terminated)) break;
         ray_tfar = select(terminated,avxf(neg_inf),ray_tfar);
       }

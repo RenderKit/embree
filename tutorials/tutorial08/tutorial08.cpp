@@ -32,6 +32,7 @@ namespace embree
   /* configuration */
   static std::string g_rtcore = "";
   static size_t g_numThreads = 0;
+  static std::string g_subdiv_mode = "";
 
   /* output settings */
   static size_t g_width = 1024;
@@ -100,7 +101,14 @@ namespace embree
       /*! Camera up vector. */
       else if (term == "-vu") g_camera.up = cin->getVec3fa();
 
-      //else if (term == "-subdiv_level") g_subdivision_levels = min(0,cin->getInt());
+      else if (term == "-cache") 
+	g_subdiv_mode = ",subdiv_accel=bvh4.subdivpatch1cached";
+
+      else if (term == "-lazy") 
+	g_subdiv_mode = ",subdiv_accel=bvh4.grid.lazy";
+
+      else if (term == "-pregenerate") 
+	g_subdiv_mode = ",subdiv_accel=bvh4.grid.eager";
 
       /*! Skip unknown command line parameters. */
       else std::cerr << "Unknown command line parameter: " << getParameterString(cin, term) << std::endl;
@@ -138,6 +146,8 @@ namespace embree
 
     /*! Set the thread count in the Embree configuration string. */
     if (g_numThreads) g_rtcore += ",threads=" + std::stringOf(g_numThreads);
+
+    g_rtcore += g_subdiv_mode;
 
     /*! Initialize the task scheduler. */
 #if !defined(RTCORE_EXPORT_ALL_SYMBOLS)

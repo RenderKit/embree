@@ -214,7 +214,7 @@ namespace embree
   public:
 
     /*! BVH8 default constructor. */
-    BVH8 (const PrimitiveType& primTy, void* geometry = NULL);
+    BVH8 (const PrimitiveType& primTy, Scene* scene = NULL);
 
     /*! BVH8 destruction */
     ~BVH8 ();
@@ -266,7 +266,7 @@ namespace embree
 
   public:
     const PrimitiveType& primTy;       //!< primitive type stored in the BVH
-    void* geometry;                    //!< pointer to additional data for primitive intersector
+    Scene* scene;                      //!< scene pointer
     NodeRef root;                      //!< Root node
     size_t numPrimitives;
     size_t numVertices;

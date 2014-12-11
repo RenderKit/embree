@@ -331,7 +331,7 @@ namespace embree
 	{
           if (!mesh->valid(f)) continue;
 	  
-	  feature_adaptive_subdivision_gregory(f,mesh->getHalfEdge(f),mesh->getVertexPositionPtr(),
+	  feature_adaptive_subdivision_gregory(f,mesh->getHalfEdge(f),mesh->getVertexBuffer(),
 					       [&](const CatmullClarkPatch& patch, const Vec2f uv[4], const int subdiv[4])
 	  {
 	    //if (!patch.isRegular()) { s++; return; }
@@ -364,7 +364,7 @@ namespace embree
         for (size_t f=r.begin(); f!=r.end(); ++f) {
           if (!mesh->valid(f)) continue;
 	  
-	  feature_adaptive_subdivision_gregory(f,mesh->getHalfEdge(f),mesh->getVertexPositionPtr(),
+	  feature_adaptive_subdivision_gregory(f,mesh->getHalfEdge(f),mesh->getVertexBuffer(),
 					       [&](const CatmullClarkPatch& patch, const Vec2f uv[4], const int subdiv[4])
 	  {
 	    /*if (!patch.isRegular())
@@ -436,7 +436,7 @@ namespace embree
 	{
           if (!mesh->valid(f)) continue;
 	  
-	  feature_adaptive_subdivision_eval(mesh->getHalfEdge(f),mesh->getVertexPositionPtr(),
+	  feature_adaptive_subdivision_eval(mesh->getHalfEdge(f),mesh->getVertexBuffer(),
 					    [&](const CatmullClarkPatch& patch, const Vec2f uv[4], const int subdiv[4], const int id)
 	  {
  	    const float l0 = patch.ring[0].edge_level;
@@ -468,7 +468,7 @@ namespace embree
         for (size_t f=r.begin(); f!=r.end(); ++f) {
           if (!mesh->valid(f)) continue;
 	  
-	  feature_adaptive_subdivision_eval(mesh->getHalfEdge(f),mesh->getVertexPositionPtr(),
+	  feature_adaptive_subdivision_eval(mesh->getHalfEdge(f),mesh->getVertexBuffer(),
 					    [&](const CatmullClarkPatch& patch, const Vec2f uv[4], const int subdiv[4], const int id)
 	  {
 	    const float l0 = patch.ring[0].edge_level;
@@ -539,7 +539,7 @@ namespace embree
 	{
           if (!mesh->valid(f)) continue;
 	  
-	  feature_adaptive_subdivision_eval(mesh->getHalfEdge(f),mesh->getVertexPositionPtr(),
+	  feature_adaptive_subdivision_eval(mesh->getHalfEdge(f),mesh->getVertexBuffer(),
 					    [&](const CatmullClarkPatch& patch, const Vec2f uv[4], const int subdiv[4], const int id)
 	  {
  	    const float l0 = patch.ring[0].edge_level;
@@ -571,7 +571,7 @@ namespace embree
         for (size_t f=r.begin(); f!=r.end(); ++f) {
           if (!mesh->valid(f)) continue;
 	  
-	  feature_adaptive_subdivision_eval(mesh->getHalfEdge(f),mesh->getVertexPositionPtr(),
+	  feature_adaptive_subdivision_eval(mesh->getHalfEdge(f),mesh->getVertexBuffer(),
 					    [&](const CatmullClarkPatch& patch, const Vec2f uv[4], const int subdiv[4], const int id)
 	  {
 	    const float l0 = patch.ring[0].edge_level;
@@ -619,7 +619,7 @@ namespace embree
 
       pstate.init(iter,size_t(1024));
 
-      this->bvh->geometry = this->scene;
+      this->bvh->scene = this->scene; // FIXME: remove
 
       BVH4BuilderFast::build(threadIndex,threadCount);
     }
@@ -632,7 +632,7 @@ namespace embree
         for (size_t f=r.begin(); f!=r.end(); ++f) 
 	{          
           if (!mesh->valid(f)) continue;
-	  feature_adaptive_subdivision_gregory(f,mesh->getHalfEdge(f),mesh->getVertexPositionPtr(),
+	  feature_adaptive_subdivision_gregory(f,mesh->getHalfEdge(f),mesh->getVertexBuffer(),
 					       [&](const CatmullClarkPatch& patch, const Vec2f uv[4], const int subdiv[4])
 	  {
 	    s++;
@@ -658,7 +658,7 @@ namespace embree
 
      if (bvh->data_mem == NULL)
        {
-#if DEBUG
+#if defined(DEBUG)
           std::cout << "ALLOCATING SUBDIVPATCH1CACHED MEMORY FOR " << numPrimitives << " PRIMITIVES" << std::endl;
 #endif
           this->bvh->size_data_mem = sizeof(SubdivPatch1Cached) * numPrimitives;
@@ -673,7 +673,8 @@ namespace embree
         for (size_t f=r.begin(); f!=r.end(); ++f) 
 	{
           if (!mesh->valid(f)) continue;
-	  feature_adaptive_subdivision_gregory(f,mesh->getHalfEdge(f),mesh->getVertexPositionPtr(),
+
+	  feature_adaptive_subdivision_gregory(f,mesh->getHalfEdge(f),mesh->getVertexBuffer(),
 					       [&](const CatmullClarkPatch& ipatch, const Vec2f uv[4], const int subdiv[4])
 	  {
 	  

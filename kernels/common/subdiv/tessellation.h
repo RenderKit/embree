@@ -135,6 +135,33 @@ namespace embree
     assert( edge_levels[2] >= 1.0f );
     assert( edge_levels[3] >= 1.0f );
     
+#if defined(__MIC__)
+
+    const mic_i grid_u_segments = mic_i(grid_u_res)-1;
+    const mic_i grid_v_segments = mic_i(grid_v_res)-1;
+    
+    const mic_f inv_grid_u_segments = rcp(mic_f(grid_u_segments));
+    const mic_f inv_grid_v_segments = rcp(mic_f(grid_v_segments));
+    
+    unsigned int index = 0;
+    mic_i v_i( zero );
+    for (unsigned int y=0;y<grid_v_res;y++,index+=grid_u_res,v_i += 1)
+    {
+      mic_i u_i ( step );
+      
+      const mic_m m_u = u_i < grid_u_segments;
+      const mic_m m_v = v_i < grid_v_segments;
+      
+      for (unsigned int x=0;x<grid_u_res;x+=16, u_i += 16)
+      {
+	const mic_f u = select(m_u, mic_f(u_i) * inv_grid_u_segments, 1.0f);
+	const mic_f v = select(m_v, mic_f(v_i) * inv_grid_v_segments, 1.0f);
+	ustore16f(&u_array[index + x],u);
+	ustore16f(&v_array[index + x],v);	   
+      }
+    }       
+
+#else
  
 #if defined(__AVX__)
     const avxi grid_u_segments = avxi(grid_u_res)-1;
@@ -185,117 +212,11 @@ namespace embree
       u_array[i] = 1.0f;
     for (unsigned int x=0;x<grid_u_res;x++)
       v_array[num_points-1-x] = 1.0f;
- #endif       
+ #endif
+
+#endif       
   }
  
 
-#if defined(__MIC__)
-  
-  __forceinline void gridUVTessellatorMIC(const float edge_levels[4],
-					  const unsigned int grid_u_res,
-					  const unsigned int grid_v_res,
-					  float * __restrict__ const u_array,
-					  float * __restrict__ const v_array)
-  {
-    assert( grid_u_res >= 1);
-    assert( grid_v_res >= 1);
-    assert( edge_levels[0] >= 1.0f );
-    assert( edge_levels[1] >= 1.0f );
-    assert( edge_levels[2] >= 1.0f );
-    assert( edge_levels[3] >= 1.0f );
-    
-    const mic_i grid_u_segments = mic_i(grid_u_res)-1;
-    const mic_i grid_v_segments = mic_i(grid_v_res)-1;
-    
-    const mic_f inv_grid_u_segments = rcp(mic_f(grid_u_segments));
-    const mic_f inv_grid_v_segments = rcp(mic_f(grid_v_segments));
-    
-    unsigned int index = 0;
-    mic_i v_i( zero );
-    for (unsigned int y=0;y<grid_v_res;y++,index+=grid_u_res,v_i += 1)
-    {
-      mic_i u_i ( step );
-      
-      const mic_m m_u = u_i < grid_u_segments;
-      const mic_m m_v = v_i < grid_v_segments;
-      
-      for (unsigned int x=0;x<grid_u_res;x+=16, u_i += 16)
-      {
-	const mic_f u = select(m_u, mic_f(u_i) * inv_grid_u_segments, 1.0f);
-	const mic_f v = select(m_v, mic_f(v_i) * inv_grid_v_segments, 1.0f);
-	ustore16f(&u_array[index + x],u);
-	ustore16f(&v_array[index + x],v);	   
-      }
-    }       
-    
-    /* stich different tessellation levels in u/v grid */
-    stichUVGrid(edge_levels,grid_u_res,grid_v_res,u_array,v_array);
-  }
-  
-  __forceinline void gridUVTessellator16f(const float edge_levels[4],
-					  const unsigned int grid_u_res,
-					  const unsigned int grid_v_res,
-					  float * __restrict__ const u_array,
-					  float * __restrict__ const v_array)
-  {
-    assert( grid_u_res >= 1);
-    assert( grid_v_res >= 1);
-    assert( edge_levels[0] >= 1.0f );
-    assert( edge_levels[1] >= 1.0f );
-    assert( edge_levels[2] >= 1.0f );
-    assert( edge_levels[3] >= 1.0f );
-    
-    const mic_i grid_u_segments = mic_i(grid_u_res)-1;
-    const mic_i grid_v_segments = mic_i(grid_v_res)-1;
-    
-    prefetch<PFHINT_L1EX>(u_array);
-    prefetch<PFHINT_L1EX>(v_array);
-    
-    const mic_i identity ( step );
-    
-    const mic_m m_u = identity < grid_u_segments;
-    const mic_m m_v = identity < grid_v_segments;
-    
-    const mic_f inv_grid_u_segments = rcp(mic_f(grid_u_segments));
-    const mic_f inv_grid_v_segments = rcp(mic_f(grid_v_segments));
-    
-    //const mic_f identity( step );
-    
-    
-    const mic_f u_values = select(m_u, mic_f(identity) * inv_grid_u_segments, 1.0f);
-    const mic_f v_values = select(m_v, mic_f(identity) * inv_grid_v_segments, 1.0f);
-    
-    /* initialize grid */
-    unsigned int index = 0;
-    for (unsigned int y=0;y<grid_v_res;y++,index+=grid_u_res)
-    {
-      const mic_f v = v_values[y];
-      const mic_f u = u_values;
-      ustore16f_low(&u_array[index],u);
-      ustore16f_low(&v_array[index],v);
-    }       
-    
-#if 0
-    DBG_PRINT("UV grid");
-    DBG_PRINT( edge_levels[0] );
-    DBG_PRINT( edge_levels[1] );
-    DBG_PRINT( edge_levels[2] );
-    DBG_PRINT( edge_levels[3] );
-    
-    DBG_PRINT( grid_u_res );
-    DBG_PRINT( grid_v_res );
-    
-    for (unsigned int y=0;y<grid_v_res;y++)
-    {
-      std::cout << "row " << y << " ";
-      for (unsigned int x=0;x<grid_u_res;x++)
-	std::cout << "(" << v_array[grid_u_res*y+x] << "," << u_array[grid_u_res*y+x] << ") ";
-      std::cout << std::endl;
-    }
-#endif
-    
-  }
-  
-#endif
 }
 

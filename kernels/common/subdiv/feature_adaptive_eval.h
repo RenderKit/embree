@@ -138,7 +138,7 @@ namespace embree
   {
     Tessellator& tessellator;
 
-    __forceinline FeatureAdaptiveEvalSubdivision (const SubdivMesh::HalfEdge* h, const Vec3fa* vertices, Tessellator& tessellator)
+    __forceinline FeatureAdaptiveEvalSubdivision (const SubdivMesh::HalfEdge* h, const BufferT<Vec3fa>& vertices, Tessellator& tessellator)
       : tessellator(tessellator)
     {
       int neighborSubdiv[GeneralCatmullClarkPatch::SIZE];
@@ -233,7 +233,7 @@ namespace embree
   };
 
    template<typename Tessellator>
-     inline void feature_adaptive_subdivision_eval (const SubdivMesh::HalfEdge* h, const Vec3fa* vertices, Tessellator tessellator)
+     inline void feature_adaptive_subdivision_eval (const SubdivMesh::HalfEdge* h, const BufferT<Vec3fa>& vertices, Tessellator tessellator)
    {
      FeatureAdaptiveEvalSubdivision<Tessellator>(h,vertices,tessellator);
    }

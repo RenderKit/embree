@@ -287,9 +287,9 @@ Also see [tutorial00] for an example of how to create triangle meshes.
 ### Subdivision Surfaces
 
 Catmull Clark subdivision surfaces for meshes consisting of triangle
-and quad patches (even mixed inside one mesh) are supported, including
-support for edge creases, vertex creases, holes, and non-manifold
-geometry.
+and quad primitives (even mixed inside one mesh) are supported,
+including support for edge creases, vertex creases, holes, and
+non-manifold geometry.
 
 A subdivision surface is created using the `rtcNewSubdivisionMesh`
 function call, and deleted again using the `rtcDeleteGeometry`
@@ -310,7 +310,7 @@ The number of faces (numFaces), edges/indices (numEdges), vertices
 (numVertexCreases), holes (numHoles), and time steps (numTimeSteps)
 have to get speficied at construction time.
 
-The following buffers have to get filled by the application: the face
+The following buffers have to get setup by the application: the face
 buffer (RTC_FACE_BUFFER) contains the number edges/indices (3 or 4) of
 each of the numFaces faces, the index buffer (RTC_INDEX_BUFFER)
 contains multiple (3 or 4) 32bit vertex indices for each face and
@@ -319,7 +319,7 @@ stores numVertices vertices as single precision x,y,z floating point
 coordinates aligned to 16 bytes. The value of the 4th float used for
 alignment can be arbitrary.
 
-Optionally, the application can fill the hole buffer (RTC_HOLE_BUFFER)
+Optionally, the application can setup the hole buffer (RTC_HOLE_BUFFER)
 with numHoles many 32 bit indices of faces that should be considered
 non-existing.
 
@@ -348,7 +348,7 @@ considered the same edge.
 Optionally, the application can fill the sparse vertex crease buffers
 to make some vertices appear sharper. The vertex crease index buffer
 (RTC_VERTEX_CREASE_INDEX_BUFFER), contains numVertexCreases many 32
-bit vertex indices to speficy a set of vertices. The vertex crease
+bit vertex indices to specify a set of vertices. The vertex crease
 weight buffer (RTC_VERTEX_CREASE_WEIGHT_BUFFER) specifies for each of
 these vertices a positive floating point weight. The larger this
 weight, the sharper the vertex. Specifying a weight of infinity is

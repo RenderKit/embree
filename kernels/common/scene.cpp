@@ -112,14 +112,7 @@ namespace embree
     accels.add(BVH4::BVH4UserGeometry(this));
     createHairAccel();
     accels.add(BVH4::BVH4OBBBezier1iMB(this,false));
-
-    if      (g_subdiv_accel == "default"                ) accels.add(BVH4::BVH4SubdivGridLazy(this));
-    else if (g_subdiv_accel == "bvh4.subdivpatch1"      ) accels.add(BVH4::BVH4SubdivPatch1(this));
-    else if (g_subdiv_accel == "bvh4.subdivpatch1cached") accels.add(BVH4::BVH4SubdivPatch1Cached(this));
-    else if (g_subdiv_accel == "bvh4.grid.adaptive"     ) accels.add(BVH4::BVH4SubdivGrid(this));
-    else if (g_subdiv_accel == "bvh4.grid.eager"        ) accels.add(BVH4::BVH4SubdivGridEager(this));
-    else if (g_subdiv_accel == "bvh4.grid.lazy"         ) accels.add(BVH4::BVH4SubdivGridLazy(this));
-    else THROW_RUNTIME_ERROR("unknown accel "+g_subdiv_accel);
+    createSubdivAccel();
 
 #endif
   }
@@ -210,6 +203,26 @@ namespace embree
     else if (g_hair_accel == "bvh4obb.bezier1v" ) accels.add(BVH4::BVH4OBBBezier1v(this,false));
     else if (g_hair_accel == "bvh4obb.bezier1i" ) accels.add(BVH4::BVH4OBBBezier1i(this,false));
     else THROW_RUNTIME_ERROR("unknown hair acceleration structure "+g_hair_accel);
+  }
+
+  void Scene::createSubdivAccel()
+  {
+    if (g_subdiv_accel == "default") 
+    {
+      if (isIncoherent(flags)) {
+        if (isCompact()) accels.add(BVH4::BVH4SubdivGridLazy(this));
+        else             accels.add(BVH4::BVH4SubdivGridEager(this));
+      }
+      else {
+        accels.add(BVH4::BVH4SubdivPatch1Cached(this));
+      }
+    }
+    else if (g_subdiv_accel == "bvh4.subdivpatch1"      ) accels.add(BVH4::BVH4SubdivPatch1(this));
+    else if (g_subdiv_accel == "bvh4.subdivpatch1cached") accels.add(BVH4::BVH4SubdivPatch1Cached(this));
+    else if (g_subdiv_accel == "bvh4.grid.adaptive"     ) accels.add(BVH4::BVH4SubdivGrid(this));
+    else if (g_subdiv_accel == "bvh4.grid.eager"        ) accels.add(BVH4::BVH4SubdivGridEager(this));
+    else if (g_subdiv_accel == "bvh4.grid.lazy"         ) accels.add(BVH4::BVH4SubdivGridLazy(this));
+    else THROW_RUNTIME_ERROR("unknown subdiv accel "+g_subdiv_accel);
   }
 
 #endif

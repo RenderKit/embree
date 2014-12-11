@@ -18,7 +18,7 @@
 
 #include "common/default.h"
 
-#if DEBUG
+#if defined(DEBUG)
 #define CACHE_STATS(x) 
 #else
 #define CACHE_STATS(x) 
@@ -31,9 +31,9 @@ namespace embree
   class __aligned(64) TessellationCache {
   public:
     /* default sizes */
-    static const size_t DEFAULT_64B_BLOCKS = (1<<14); // 1MB 
+    static const size_t DEFAULT_64B_BLOCKS = (1<<15); // 2MB 
 #if defined(__MIC__)
-    static const size_t MAX_64B_BLOCKS     = (1<<16); // 4MB
+    static const size_t MAX_64B_BLOCKS     = (1<<15); // 4MB
 #else
     static const size_t MAX_64B_BLOCKS     = (1<<18); // 16MB
 #endif

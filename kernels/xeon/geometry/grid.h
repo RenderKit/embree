@@ -932,11 +932,11 @@ namespace embree
 	BBox3fa box = empty;
 
 	/* build sub-BVH */
-	Scene* scene = (Scene*) bvh->geometry;
+	Scene* scene = bvh->scene;
 	SubdivMesh* mesh = scene->getSubdivMesh(geomID);
 	BVH4::NodeRef node = BVH4::emptyNode;
 
-	feature_adaptive_subdivision_eval(mesh->getHalfEdge(primID),mesh->getVertexPositionPtr(), // FIXME: only recurse into one sub-quad
+	feature_adaptive_subdivision_eval(mesh->getHalfEdge(primID),mesh->getVertexBuffer(), // FIXME: only recurse into one sub-quad
 					  [&](const CatmullClarkPatch& patch, const Vec2f uv[4], const int subdiv[4], const int id)
 	{
 	  if (id != quadID) return;
@@ -972,13 +972,13 @@ namespace embree
 	}
 
 	/* build sub-BVH */
-	Scene* scene = (Scene*) bvh->geometry;
+	Scene* scene = bvh->scene;
 	SubdivMesh* mesh = scene->getSubdivMesh(geomID);
 	BVH4::NodeRef node = BVH4::emptyNode;
 
 	FastAllocator::Thread& alloc = *bvh->alloc2.instance();
 	
-	feature_adaptive_subdivision_eval(mesh->getHalfEdge(primID),mesh->getVertexPositionPtr(), // FIXME: only recurse into one sub-quad
+	feature_adaptive_subdivision_eval(mesh->getHalfEdge(primID),mesh->getVertexBuffer(), // FIXME: only recurse into one sub-quad
 					  [&](const CatmullClarkPatch& patch, const Vec2f uv[4], const int subdiv[4], const int id)
 	{
 	  if (id != quadID || node != BVH4::emptyNode) return;

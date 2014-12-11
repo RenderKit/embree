@@ -48,7 +48,7 @@ namespace embree
         Geometry* geom = scene->geometries[i];
         if (geom == NULL) return NULL;
         if (!geom->isEnabled()) return NULL;
-        if (geom->type != Ty::type) return NULL;
+        if (geom->type != Ty::geom_type) return NULL;
         return (Ty*) geom;
       }
 
@@ -67,6 +67,7 @@ namespace embree
 
     void createTriangleAccel();
     void createHairAccel();
+    void createSubdivAccel();
 
     /*! Scene destruction */
     ~Scene ();
@@ -187,8 +188,8 @@ namespace embree
     atomic_t numMappedBuffers;         //!< number of mapped buffers
     RTCSceneFlags flags;
     RTCAlgorithmFlags aflags;
-    bool needTriangles;
-    bool needVertices;
+    bool needTriangles; 
+    bool needVertices; // FIXME: this flag is also used for hair geometry, but there should be a second flag
     bool is_build;
     MutexSys mutex;
     AtomicMutex geometriesMutex;

@@ -19,8 +19,7 @@
 #include "catmullclark_patch.h"
 
 namespace embree
-{
-  
+{  
   class __aligned(64) GregoryPatch : public BSplinePatchT<Vec3fa> 
   {
   public:
@@ -114,15 +113,15 @@ namespace embree
 			const Vec3fa &p_vtx,
 			const Vec3fa &e0_p_vtx,
 			const Vec3fa &e1_m_vtx,
-			const unsigned int valence_p1,
+			const unsigned int face_valence_p1,
 			const Vec3fa &e0_m_vtx,
 			const Vec3fa &e3_p_vtx,
-			const unsigned int valence_p3,
+			const unsigned int face_valence_p3,
 			Vec3fa &f_p_vtx,
 			Vec3fa &f_m_vtx)
     {
-      const unsigned int valence         = irreg_patch.ring[index].valence;
-      const unsigned int num_vtx         = irreg_patch.ring[index].num_vtx;
+      const unsigned int face_valence         = irreg_patch.ring[index].face_valence;
+      const unsigned int edge_valence         = irreg_patch.ring[index].edge_valence;
       const unsigned int border_index = irreg_patch.ring[index].border_index;
       
       const Vec3fa &vtx     = irreg_patch.ring[index].vtx;
@@ -131,42 +130,42 @@ namespace embree
       const Vec3fa e_i_m_1  = irreg_patch.ring[index].getEdgeCenter( 1 );
       
       Vec3fa c_i, e_i_p_1;
-      if (unlikely(border_index == num_vtx-2))
-        {
-          /* mirror quad center and edge mid-point */
-          c_i     = c_i_m_1 + 2 * (e_i - c_i_m_1);
-          e_i_p_1 = e_i_m_1 + 2 * (vtx - e_i_m_1);
-        }
+      if (unlikely(border_index == edge_valence-2))
+      {
+        /* mirror quad center and edge mid-point */
+        c_i     = c_i_m_1 + 2 * (e_i - c_i_m_1);
+        e_i_p_1 = e_i_m_1 + 2 * (vtx - e_i_m_1);
+      }
       else
-        {
-          c_i     = irreg_patch.ring[index].getQuadCenter( valence-1 );
-          e_i_p_1 = irreg_patch.ring[index].getEdgeCenter( valence-1 );
-        }
+      {
+        c_i     = irreg_patch.ring[index].getQuadCenter( face_valence-1 );
+        e_i_p_1 = irreg_patch.ring[index].getEdgeCenter( face_valence-1 );
+      }
       
       Vec3fa c_i_m_2, e_i_m_2;
-      if (unlikely(border_index == 2 || valence == 2))
-        {
-          /* mirror quad center and edge mid-point */
-          c_i_m_2  = c_i_m_1 + 2 * (e_i_m_1 - c_i_m_1);
-          e_i_m_2  = e_i + 2 * (vtx - e_i);	  
-        }
+      if (unlikely(border_index == 2 || face_valence == 2))
+      {
+        /* mirror quad center and edge mid-point */
+        c_i_m_2  = c_i_m_1 + 2 * (e_i_m_1 - c_i_m_1);
+        e_i_m_2  = e_i + 2 * (vtx - e_i);	  
+      }
       else
-        {
-          c_i_m_2  = irreg_patch.ring[index].getQuadCenter( 1 );
-          e_i_m_2  = irreg_patch.ring[index].getEdgeCenter( 2 );
-        }      
+      {
+        c_i_m_2  = irreg_patch.ring[index].getQuadCenter( 1 );
+        e_i_m_2  = irreg_patch.ring[index].getEdgeCenter( 2 );
+      }      
       
       const float d = 3.0f;
-      const float c     = cosf(2.0*M_PI/(float)valence);
-      const float c_e_p = cosf(2.0*M_PI/(float)valence_p1);
-      const float c_e_m = cosf(2.0*M_PI/(float)valence_p3);
+      const float c     = cosf(2.0*M_PI/(float)face_valence);
+      const float c_e_p = cosf(2.0*M_PI/(float)face_valence_p1);
+      const float c_e_m = cosf(2.0*M_PI/(float)face_valence_p3);
       
       const Vec3fa r_e_p = 1.0f/3.0f * (e_i_m_1 - e_i_p_1) + 2.0f/3.0f * (c_i_m_1 - c_i);
       
       f_p_vtx =  1.0f / d * (c_e_p * p_vtx + (d - 2.0f*c - c_e_p) * e0_p_vtx + 2.0f*c* e1_m_vtx + r_e_p);
       
       const Vec3fa r_e_m = 1.0f/3.0f * (e_i - e_i_m_2) + 2.0f/3.0f * (c_i_m_1 - c_i_m_2);
-            
+      
       f_m_vtx = 1.0f / d * (c_e_m * p_vtx + (d - 2.0f*c - c_e_m) * e0_m_vtx + 2.0f*c* e3_p_vtx + r_e_m);      
     }
     
@@ -187,24 +186,24 @@ namespace embree
       e2_m() = initNegativeEdgeVertex(patch,2, p2());
       e3_m() = initNegativeEdgeVertex(patch,3, p3());
       
-      const unsigned int valence_p0 = patch.ring[0].valence;
-      const unsigned int valence_p1 = patch.ring[1].valence;
-      const unsigned int valence_p2 = patch.ring[2].valence;
-      const unsigned int valence_p3 = patch.ring[3].valence;
+      const unsigned int face_valence_p0 = patch.ring[0].face_valence;
+      const unsigned int face_valence_p1 = patch.ring[1].face_valence;
+      const unsigned int face_valence_p2 = patch.ring[2].face_valence;
+      const unsigned int face_valence_p3 = patch.ring[3].face_valence;
       
-      initFaceVertex(patch,0,p0(),e0_p(),e1_m(),valence_p1,e0_m(),e3_p(),valence_p3,f0_p(),f0_m() );
-      initFaceVertex(patch,1,p1(),e1_p(),e2_m(),valence_p2,e1_m(),e0_p(),valence_p0,f1_p(),f1_m() );
-      initFaceVertex(patch,2,p2(),e2_p(),e3_m(),valence_p3,e2_m(),e1_p(),valence_p1,f2_p(),f2_m() );
-      initFaceVertex(patch,3,p3(),e3_p(),e0_m(),valence_p0,e3_m(),e2_p(),valence_p3,f3_p(),f3_m() );
+      initFaceVertex(patch,0,p0(),e0_p(),e1_m(),face_valence_p1,e0_m(),e3_p(),face_valence_p3,f0_p(),f0_m() );
+      initFaceVertex(patch,1,p1(),e1_p(),e2_m(),face_valence_p2,e1_m(),e0_p(),face_valence_p0,f1_p(),f1_m() );
+      initFaceVertex(patch,2,p2(),e2_p(),e3_m(),face_valence_p3,e2_m(),e1_p(),face_valence_p1,f2_p(),f2_m() );
+      initFaceVertex(patch,3,p3(),e3_p(),e0_m(),face_valence_p0,e3_m(),e2_p(),face_valence_p3,f3_p(),f3_m() );
     }
-
+    
     void init(const GeneralCatmullClarkPatch& patch)
     {
       assert(patch.size() == 4);
       CatmullClarkPatch qpatch; patch.init(qpatch);
       init(qpatch);
     }
-
+    
     __forceinline void exportConrolPoints( Vec3fa matrix[4][4], Vec3fa f_m[2][2] ) const
     {
       for (size_t y=0;y<4;y++)
@@ -244,7 +243,7 @@ namespace embree
     }
     
     template<class T, class S>
-    static __forceinline T deCasteljau_t(const S &uu, const T &v0, const T &v1, const T &v2, const T &v3)
+      static __forceinline T deCasteljau_t(const S &uu, const T &v0, const T &v1, const T &v2, const T &v3)
     {
       const S one_minus_uu = 1.0f - uu;      
       const T v0_1 = one_minus_uu * v0   + uu * v1;
@@ -255,9 +254,9 @@ namespace embree
       const T v0_3 = one_minus_uu * v0_2 + uu * v1_2;
       return v0_3;
     }
-
+    
     template<class T, class S>
-    static __forceinline T deCasteljau_tangent_t(const S &uu, const T &v0, const T &v1, const T &v2, const T &v3)
+      static __forceinline T deCasteljau_tangent_t(const S &uu, const T &v0, const T &v1, const T &v2, const T &v3)
     {
       const S one_minus_uu = 1.0f - uu;      
       const T v0_1         = one_minus_uu * v0   + uu * v1;
@@ -267,7 +266,7 @@ namespace embree
       const T v1_2         = one_minus_uu * v1_1 + uu * v2_1;      
       return v1_2 - v0_2;      
     }
-        
+    
     static __forceinline void computeInnerVertices(const Vec3fa matrix[4][4],
 						   const Vec3fa f_m[2][2],
 						   const float uu,
@@ -290,17 +289,17 @@ namespace embree
 	const Vec3fa_t f1_p = matrix[1][2];
 	const Vec3fa_t f2_p = matrix[2][2];
 	const Vec3fa_t f3_p = matrix[2][1];
-	
+        
 	const Vec3fa_t f0_m = f_m[0][0];
 	const Vec3fa_t f1_m = f_m[0][1];
 	const Vec3fa_t f2_m = f_m[1][1];
 	const Vec3fa_t f3_m = f_m[1][0];
-	
+        
 	const Vec3fa_t F0 = (      uu  * f0_p +       vv  * f0_m) * 1.0f/(uu+vv);
 	const Vec3fa_t F1 = ((1.0f-uu) * f1_m +       vv  * f1_p) * 1.0f/(1.0f-uu+vv);
 	const Vec3fa_t F2 = ((1.0f-uu) * f2_p + (1.0f-vv) * f2_m) * 1.0f/(2.0f-uu-vv);
 	const Vec3fa_t F3 = (      uu  * f3_m + (1.0f-vv) * f3_p) * 1.0f/(1.0f+uu-vv);
-	
+        
 	matrix_11 = F0;
 	matrix_12 = F1;
 	matrix_22 = F2;
@@ -356,9 +355,9 @@ namespace embree
     {
       return Vec3fa( extract_f_m(matrix,n,0), extract_f_m(matrix,n,1), extract_f_m(matrix,n,2) );
     }
-
-
-
+    
+    
+    
     static __forceinline Vec3fa eval(const Vec3fa matrix[4][4],
                                      const float &uu,
                                      const float &vv) 
@@ -368,7 +367,7 @@ namespace embree
       f[0][1] = extract_f_m_Vec3fa( matrix, 1 );
       f[1][1] = extract_f_m_Vec3fa( matrix, 2 );
       f[1][0] = extract_f_m_Vec3fa( matrix, 3 );
-
+      
       Vec3fa_t v_11, v_12, v_22, v_21;
       computeInnerVertices(matrix,f,uu,vv,v_11, v_12, v_22, v_21);
       
@@ -392,11 +391,11 @@ namespace embree
       
       return res;
     }
-
+    
     template<class M, class T>
-    static __forceinline Vec3<T> eval_t(const Vec3fa matrix[4][4],
-                                        const T &uu,
-                                        const T &vv) 
+      static __forceinline Vec3<T> eval_t(const Vec3fa matrix[4][4],
+                                          const T &uu,
+                                          const T &vv) 
     {
       const M m_border = (uu == 0.0f) | (uu == 1.0f) | (vv == 0.0f) | (vv == 1.0f);
       
@@ -465,12 +464,12 @@ namespace embree
       
       return Vec3<T>(x,y,z);
     }
-
-
+    
+    
     template<class M, class T>
-    static __forceinline Vec3<T> normal_t(const Vec3fa matrix[4][4],
-                                          const T &uu,
-                                          const T &vv) 
+      static __forceinline Vec3<T> normal_t(const Vec3fa matrix[4][4],
+                                            const T &uu,
+                                            const T &vv) 
     {
       const M m_border = (uu == 0.0f) | (uu == 1.0f) | (vv == 0.0f) | (vv == 1.0f);
       
@@ -501,24 +500,24 @@ namespace embree
       const Vec3<T> matrix_12( select(m_border,f1_p.x,f1_i.x), select(m_border,f1_p.y,f1_i.y), select(m_border,f1_p.z,f1_i.z) );
       const Vec3<T> matrix_22( select(m_border,f2_p.x,f2_i.x), select(m_border,f2_p.y,f2_i.y), select(m_border,f2_p.z,f2_i.z) );
       const Vec3<T> matrix_21( select(m_border,f3_p.x,f3_i.x), select(m_border,f3_p.y,f3_i.y), select(m_border,f3_p.z,f3_i.z) );
-
+      
       
       const Vec3<T> matrix_00 = Vec3<T>(matrix[0][0].x,matrix[0][0].y,matrix[0][0].z);
       const Vec3<T> matrix_10 = Vec3<T>(matrix[1][0].x,matrix[1][0].y,matrix[1][0].z);
       const Vec3<T> matrix_20 = Vec3<T>(matrix[2][0].x,matrix[2][0].y,matrix[2][0].z);
       const Vec3<T> matrix_30 = Vec3<T>(matrix[3][0].x,matrix[3][0].y,matrix[3][0].z);
-
+      
       const Vec3<T> matrix_01 = Vec3<T>(matrix[0][1].x,matrix[0][1].y,matrix[0][1].z);
       const Vec3<T> matrix_02 = Vec3<T>(matrix[0][2].x,matrix[0][2].y,matrix[0][2].z);
       const Vec3<T> matrix_03 = Vec3<T>(matrix[0][3].x,matrix[0][3].y,matrix[0][3].z);
-
+      
       const Vec3<T> matrix_31 = Vec3<T>(matrix[3][1].x,matrix[3][1].y,matrix[3][1].z);
       const Vec3<T> matrix_32 = Vec3<T>(matrix[3][2].x,matrix[3][2].y,matrix[3][2].z);
       const Vec3<T> matrix_33 = Vec3<T>(matrix[3][3].x,matrix[3][3].y,matrix[3][3].z);
-
+      
       const Vec3<T> matrix_13 = Vec3<T>(matrix[1][3].x,matrix[1][3].y,matrix[1][3].z);
       const Vec3<T> matrix_23 = Vec3<T>(matrix[2][3].x,matrix[2][3].y,matrix[2][3].z);
-
+      
       /* tangentU */
       const Vec3<T> col0 = deCasteljau_t(vv, matrix_00, matrix_10, matrix_20, matrix_30);
       const Vec3<T> col1 = deCasteljau_t(vv, matrix_01, matrix_11, matrix_21, matrix_31);
@@ -539,23 +538,23 @@ namespace embree
       const Vec3<T> n = cross(tangentU,tangentV);
       return n;
     }
-
-
+    
+    
 #if !defined(__MIC__)
-
+    
 #if defined(__AVX__)    
-
+    
     static __forceinline avx3f eval8  (const Vec3fa matrix[4][4], const avxf &uu, const avxf &vv) { return eval_t<avxb,avxf>(matrix,uu,vv); }
     static __forceinline avx3f normal8(const Vec3fa matrix[4][4], const avxf &uu, const avxf &vv) { return normal_t<avxb,avxf>(matrix,uu,vv); }
-
+    
 #endif
     
     static __forceinline sse3f eval4  (const Vec3fa matrix[4][4], const ssef &uu, const ssef &vv) { return eval_t<sseb,ssef>(matrix,uu,vv); }
     static __forceinline sse3f normal4(const Vec3fa matrix[4][4], const ssef &uu, const ssef &vv) { return normal_t<sseb,ssef>(matrix,uu,vv); }
     
 #else    
-
-
+    
+    
     static __forceinline mic_f extract_f_m_mic_f(const Vec3fa matrix[4][4],
 						 const size_t n)
     {
@@ -632,18 +631,18 @@ namespace embree
       return eval_t<mic_m,mic_f>(matrix,uu,vv);
     }
     
-   
-
+    
+    
     static __forceinline mic3f normal16(const Vec3fa matrix[4][4],
 					const mic_f &uu,
 					const mic_f &vv) 
     {
       return normal_t<mic_m,mic_f>(matrix,uu,vv);
     }
-
+    
 #endif
-
-
+    
+    
     static __forceinline Vec3fa normal(const Vec3fa matrix[4][4],
 				       const float uu,
 				       const float vv) 

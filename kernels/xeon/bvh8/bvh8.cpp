@@ -65,9 +65,9 @@ namespace embree
     SELECT_SYMBOL_AVX_AVX2(features,BVH8Triangle8Intersector8HybridMoellerNoFilter);
   }
 
-  BVH8::BVH8 (const PrimitiveType& primTy, void* geometry)
-  : primTy(primTy), geometry(geometry), root(emptyNode),
-    numPrimitives(0), numVertices(0) {}
+  BVH8::BVH8 (const PrimitiveType& primTy, Scene* scene)
+    : primTy(primTy), scene(scene), root(emptyNode),
+      numPrimitives(0), numVertices(0) {}
 
   BVH8::~BVH8 () {
     for (size_t i=0; i<objects.size(); i++) 

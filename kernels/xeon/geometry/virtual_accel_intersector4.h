@@ -21,25 +21,28 @@
 
 namespace embree
 {
-  struct VirtualAccelIntersector4
+  namespace isa
   {
-    typedef AccelSetItem Primitive;
-
-    struct Precalculations {
-      __forceinline Precalculations (const sseb& valid, const Ray4& ray) {}
+    struct VirtualAccelIntersector4
+    {
+      typedef AccelSetItem Primitive;
+      
+      struct Precalculations {
+        __forceinline Precalculations (const sseb& valid, const Ray4& ray) {}
+      };
+      
+      static __forceinline void intersect(const sseb& valid_i, const Precalculations& pre, Ray4& ray, const Primitive& prim, Scene* scene) 
+      {
+        AVX_ZERO_UPPER();
+        prim.accel->intersect4(&valid_i,(RTCRay4&)ray,prim.item);
+      }
+      
+      static __forceinline sseb occluded(const sseb& valid_i, const Precalculations& pre, const Ray4& ray, const Primitive& prim, Scene* scene) 
+      {
+        AVX_ZERO_UPPER();
+        prim.accel->occluded4(&valid_i,(RTCRay4&)ray,prim.item);
+        return ray.geomID == 0;
+      }
     };
-
-    static __forceinline void intersect(const sseb& valid_i, const Precalculations& pre, Ray4& ray, const Primitive& prim, const void* geom) 
-    {
-      AVX_ZERO_UPPER();
-      prim.accel->intersect4(&valid_i,(RTCRay4&)ray,prim.item);
-    }
-
-    static __forceinline sseb occluded(const sseb& valid_i, const Precalculations& pre, const Ray4& ray, const Primitive& prim, const void* geom) 
-    {
-      AVX_ZERO_UPPER();
-      prim.accel->occluded4(&valid_i,(RTCRay4&)ray,prim.item);
-      return ray.geomID == 0;
-    }
-  };
+  }
 }
