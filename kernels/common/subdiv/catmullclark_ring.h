@@ -29,13 +29,13 @@ namespace embree
     static const size_t MAX_FACE_VALENCE = 64;
     static const size_t MAX_EDGE_VALENCE = 2*64;
     
-    Vec3fa ring[MAX_EDGE_VALENCE]; // two vertices per face
-    float crease_weight[MAX_FACE_VALENCE]; // FIXME: move into 4th component of ring entries
+    Vec3fa ring [MAX_EDGE_VALENCE];
+    float crease_weight[MAX_FACE_VALENCE];
     
     int border_index;
     Vec3fa vtx;
-    unsigned int valence;
-    unsigned int num_vtx;
+    unsigned int face_valence;
+    unsigned int edge_valence;
     float vertex_crease_weight;
     float vertex_level; // maximal level of all adjacent edges
     float edge_level; // level of first edge
@@ -49,17 +49,17 @@ namespace embree
     }
     
     __forceinline const Vec3fa& front(size_t i) const {
-      assert(num_vtx>i);
+      assert(edge_valence>i);
       return ring[i];
     }
     
     __forceinline const Vec3fa& back(size_t i) const {
-      assert(i>0 && num_vtx>=i);
-      return ring[num_vtx-i];
+      assert(i>0 && edge_valence>=i);
+      return ring[edge_valence-i];
     }
     
     __forceinline bool has_last_face() const {
-      return border_index != num_vtx-2;
+      return border_index != edge_valence-2;
     }
     
     __forceinline bool has_second_face() const {
@@ -69,16 +69,16 @@ namespace embree
     __forceinline Vec3fa regular_border_vertex_4() const 
     {
       assert(border_index != -1);
-      assert(valence == 2 || valence == 3);
-      if (valence == 3 && border_index == 4) return ring[4];
+      assert(face_valence == 2 || face_valence == 3);
+      if (face_valence == 3 && border_index == 4) return ring[4];
       else return 2.0f*vtx-ring[0];
     }
 
     __forceinline Vec3fa regular_border_vertex_5() const 
     {
       assert(border_index != -1);
-      assert(valence == 2 || valence == 3);
-      if (valence == 2) return 2.0f*vtx-ring[1];
+      assert(face_valence == 2 || face_valence == 3);
+      if (face_valence == 2) return 2.0f*vtx-ring[1];
       else if (border_index == 2) return 2.0f*ring[4]-ring[5];
       else { assert(border_index == 4); return 2.0f*ring[4]-ring[3]; }
     }
@@ -86,15 +86,15 @@ namespace embree
     __forceinline Vec3fa regular_border_vertex_6() const 
     {
       assert(border_index != -1);
-      assert(valence == 2 || valence == 3);
-      if (valence == 3 && border_index == 2) return ring[4];
+      assert(face_valence == 2 || face_valence == 3);
+      if (face_valence == 3 && border_index == 2) return ring[4];
       else return 2.0f*vtx-ring[2];
     }
 
     __forceinline BBox3fa bounds() const
     {
       BBox3fa bounds ( vtx );
-      for (size_t i = 0; i<num_vtx ; i++)
+      for (size_t i = 0; i<edge_valence ; i++)
 	bounds.extend( ring[i] );
       return bounds;
     }
@@ -146,8 +146,8 @@ namespace embree
 	
       } while (p != h); 
       
-      num_vtx = i;
-      valence = i >> 1;
+      edge_valence = i;
+      face_valence = i >> 1;
     }
     
     
@@ -156,23 +156,23 @@ namespace embree
       dest.noForcedSubdivision = true;
       dest.edge_level = 0.5f*edge_level;
       dest.vertex_level = 0.5f*vertex_level;
-      dest.valence         = valence;
-      dest.num_vtx         = num_vtx;
+      dest.face_valence         = face_valence;
+      dest.edge_valence         = edge_valence;
       dest.border_index = border_index;
       dest.vertex_crease_weight   = max(0.0f,vertex_crease_weight-1.0f);
       
       /* calculate face points */
       Vec3fa_t S = Vec3fa_t(0.0f);
-      for (size_t i=0; i<valence-1; i++) {
+      for (size_t i=0; i<face_valence-1; i++) {
         S += dest.ring[2*i+1] = ((vtx + ring[2*i]) + (ring[2*i+1] + ring[2*i+2])) * 0.25f;
       }
-      S += dest.ring[num_vtx-1] = ((vtx + ring[num_vtx-2]) + (ring[num_vtx-1] + ring[0])) * 0.25f;
+      S += dest.ring[edge_valence-1] = ((vtx + ring[edge_valence-2]) + (ring[edge_valence-1] + ring[0])) * 0.25f;
       
       /* calculate new edge points */
       size_t num_creases = 0;
       size_t crease_id[MAX_FACE_VALENCE];
       Vec3fa_t C = Vec3fa_t(0.0f);
-      for (size_t i=1; i<valence; i++)
+      for (size_t i=1; i<face_valence; i++)
       {
         const Vec3fa_t v = vtx + ring[2*i];
         const Vec3fa_t f = dest.ring[2*i-1] + dest.ring[2*i+1];
@@ -201,7 +201,7 @@ namespace embree
       {
         const size_t i=0;
         const Vec3fa_t v = vtx + ring[2*i];
-        const Vec3fa_t f = dest.ring[num_vtx-1] + dest.ring[2*i+1];
+        const Vec3fa_t f = dest.ring[edge_valence-1] + dest.ring[2*i+1];
         S += ring[2*i];
         dest.crease_weight[i] = max(crease_weight[i]-1.0f,0.0f);
         //dest.crease_weight[i] = crease_weight[i] < 1.0f ? 0.0f : 0.5f*crease_weight[i];
@@ -226,8 +226,8 @@ namespace embree
       }
       
       /* compute new vertex using smooth rule */
-      const float inv_valence = 1.0f / (float)valence;
-      const Vec3fa_t v_smooth = (Vec3fa_t)(S*inv_valence + (float(valence)-2.0f)*vtx)*inv_valence;
+      const float inv_face_valence = 1.0f / (float)face_valence;
+      const Vec3fa_t v_smooth = (Vec3fa_t)(S*inv_face_valence + (float(face_valence)-2.0f)*vtx)*inv_face_valence;
       dest.vtx = v_smooth;
       
       /* compute new vertex using vertex_crease_weight rule */
@@ -273,9 +273,9 @@ namespace embree
     __forceinline bool isRegular() const 
     {
       if (border_index == -1) {
-	if (valence == 4) return true;
+	if (face_valence == 4) return true;
       } else {
-	if (valence < 4) return true;
+	if (face_valence < 4) return true;
       }
       return false;
     }
@@ -288,22 +288,22 @@ namespace embree
       {
 	if (border_index == -1) 
 	{
-	  if (valence != 4)
+	  if (face_valence != 4)
 	    return false;
 	  if (vertex_crease_weight > 0.0f) 
 	    return false;
 	} 
 	else {
-	  if (valence == 2 && vertex_crease_weight > 1E5); // FIXME: use inf
-	  else if (valence == 3 && vertex_crease_weight == 0.0f);
+	  if (face_valence == 2 && vertex_crease_weight > 1E5); // FIXME: use inf
+	  else if (face_valence == 3 && vertex_crease_weight == 0.0f);
 	  else return false;
 	}
 
-	for (size_t i=1; i<valence; i++)
+	for (size_t i=1; i<face_valence; i++)
 	  if (crease_weight[i] > 0.0f && (2*i != border_index) && (2*(i-1) != border_index)) 
 	    return false;
 
-	if (crease_weight[0] > 0.0f && (2*(valence-1) != border_index)) 
+	if (crease_weight[0] > 0.0f && (2*(face_valence-1) != border_index)) 
 	  return false;
 	
 	if (!noForcedSubdivision)
@@ -320,22 +320,22 @@ namespace embree
       {
 	if (border_index == -1) 
 	{
-	  if (valence != 4)
+	  if (face_valence != 4)
 	    return false;
 	  if (vertex_crease_weight > 0.0f) 
 	    return false;
 	} 
 	else {
-	  if (valence == 2 && vertex_crease_weight > 1E5); // FIXME: use inf
-	  else if (valence == 3 && vertex_crease_weight == 0.0f);
+	  if (face_valence == 2 && vertex_crease_weight > 1E5); // FIXME: use inf
+	  else if (face_valence == 3 && vertex_crease_weight == 0.0f);
 	  else return false;
 	}
 
-	for (size_t i=1; i<valence; i++)
+	for (size_t i=1; i<face_valence; i++)
 	  if (crease_weight[i] > 0.0f && (2*i != border_index) && (2*(i-1) != border_index)) 
 	    return false;
 
-	if (crease_weight[0] > 0.0f && (2*(valence-1) != border_index)) 
+	if (crease_weight[0] > 0.0f && (2*(face_valence-1) != border_index)) 
 	  return false;
 	
 	if (!noForcedSubdivision)
@@ -353,11 +353,11 @@ namespace embree
 	if (vertex_crease_weight > 0.0f) 
 	  return false;
 	
-	for (size_t i=1; i<valence; i++) 
+	for (size_t i=1; i<face_valence; i++) 
 	  if (crease_weight[i] > 0.0f && (2*i != border_index) && (2*(i-1) != border_index)) 
 	    return false;
 	  
-       	if (crease_weight[0] > 0.0f && (2*(valence-1) != border_index)) 
+       	if (crease_weight[0] > 0.0f && (2*(face_valence-1) != border_index)) 
 	  return false;
 
 	if (!noForcedSubdivision)
@@ -375,19 +375,19 @@ namespace embree
 	if (unlikely(std::isinf(vertex_crease_weight)))
 	  return vtx;
 	
-	const unsigned int second_border_index = border_index+2 >= num_vtx ? 0 : border_index+2;
+	const unsigned int second_border_index = border_index+2 >= edge_valence ? 0 : border_index+2;
 	return (4.0f * vtx + ring[border_index] + ring[second_border_index]) * 1.0f/6.0f;
       }
       
       Vec3fa_t F( 0.0f );
       Vec3fa_t E( 0.0f );
       
-      for (size_t i=0; i<valence; i++) {
+      for (size_t i=0; i<face_valence; i++) {
         F += ring[2*i+1];
         E += ring[2*i];
       }
       
-      const float n = (float)valence;
+      const float n = (float)face_valence;
       return (Vec3fa_t)(n*n*vtx+4*E+F) / ((n+5.0f)*n);      
     }
     
@@ -400,12 +400,12 @@ namespace embree
 	if (unlikely(std::isinf(vertex_crease_weight)))
 	  return ring[0] - vtx;
 	
-	if (border_index != num_vtx-2 && valence != 2) {
+	if (border_index != edge_valence-2 && face_valence != 2) {
 	  return ring[0] - vtx; 
 	}
 	else
 	{
-	  const unsigned int second_border_index = border_index+2 >= num_vtx ? 0 : border_index+2;
+	  const unsigned int second_border_index = border_index+2 >= edge_valence ? 0 : border_index+2;
 	  return (ring[second_border_index] - ring[border_index]) * 0.5f;
 	}
       }
@@ -413,13 +413,13 @@ namespace embree
       Vec3fa_t alpha( 0.0f );
       Vec3fa_t beta ( 0.0f );
       
-      const float n = (float)valence;
+      const float n = (float)face_valence;
       //const float delta = 1.0f / sqrtf(4.0f + cos(M_PI/n)*cos(M_PI/n));
       //const float c0 = 2.0f/n * delta;
       //const float c1 = 1.0f/n * (1.0f - delta*cosf(M_PI/n));
       const float c0 = 1.0f/n * 1.0f / sqrtf(4.0f + cosf(M_PI/n)*cosf(M_PI/n));  
       const float c1 = (1.0f/n + cosf(M_PI/n) * c0); // FIXME: plus or minus
-      for (size_t i=0; i<valence; i++)
+      for (size_t i=0; i<face_valence; i++)
       {
 	const float a = c1 * cosf(2.0f*M_PI*i/n);
 	const float b = c0 * cosf((2.0f*M_PI*i+M_PI)/n); // FIXME: factor of 2 missing?
@@ -429,7 +429,7 @@ namespace embree
       return alpha +  beta;
     }
     
-    /* gets limit tangent in the direction of egde vtx -> ring[num_vtx-2] */
+    /* gets limit tangent in the direction of egde vtx -> ring[edge_valence-2] */
     __forceinline Vec3fa getSecondLimitTangent() const 
     {
       /* border vertex rule */
@@ -438,25 +438,25 @@ namespace embree
         if (unlikely(std::isinf(vertex_crease_weight)))
           return ring[2] - vtx;
         
-        //if (border_index == 0 && valence != 2) {
-        if (border_index == num_vtx-2 && valence != 2) {
+        //if (border_index == 0 && face_valence != 2) {
+        if (border_index == edge_valence-2 && face_valence != 2) {
           return ring[2] - vtx;
         }
         else {
-          const unsigned int second_border_index = border_index+2 >= num_vtx ? 0 : border_index+2;
+          const unsigned int second_border_index = border_index+2 >= edge_valence ? 0 : border_index+2;
           return (ring[border_index] - ring[second_border_index]) * 0.5f;
         }
       }
       
       Vec3fa_t alpha( 0.0f );
       Vec3fa_t beta ( 0.0f );
-      const float n = (float)valence;
+      const float n = (float)face_valence;
       //const float delta = 1.0f / sqrtf(4.0f + cos(M_PI/n)*cos(M_PI/n));
       //const float c0 = 2.0f/n * delta;
       //const float c1 = 1.0f/n * (1.0f - delta*cosf(M_PI/n));
       const float c0 = 1.0f/n * 1.0f / sqrtf(4.0f + cosf(M_PI/n)*cosf(M_PI/n));  
       const float c1 = (1.0f/n + cosf(M_PI/n) * c0);
-      for (size_t i=0; i<valence; i++)
+      for (size_t i=0; i<face_valence; i++)
       {
 	const float a = c1 * cosf(2.0f*M_PI*(float(i)-1.0f)/n);
 	const float b = c0 * cosf((2.0f*M_PI*(float(i)-1.0f)+M_PI)/n);
@@ -477,7 +477,7 @@ namespace embree
       const Vec3fa_t &p0 = vtx;
       const Vec3fa_t &p1 = ring[2*index+0];
       const Vec3fa_t &p2 = ring[2*index+1];
-      const Vec3fa_t &p3 = index == valence-1 ? ring[0] : ring[2*index+2];
+      const Vec3fa_t &p3 = index == face_valence-1 ? ring[0] : ring[2*index+2];
       const Vec3fa p = (p0+p1+p2+p3) * 0.25f;
       return p;
     }
@@ -489,11 +489,11 @@ namespace embree
     
     friend __forceinline std::ostream &operator<<(std::ostream &o, const CatmullClark1Ring &c)
     {
-      o << "vtx " << c.vtx << " size = " << c.num_vtx << ", " << 
-	"hard_edge = " << c.border_index << ", valence " << c.valence << 
+      o << "vtx " << c.vtx << " size = " << c.edge_valence << ", " << 
+	"hard_edge = " << c.border_index << ", face_valence " << c.face_valence << 
 	", edge_level = " << c.edge_level << ", vertex_level = " << c.vertex_level << ", ring: " << std::endl;
       
-      for (size_t i=0; i<c.num_vtx; i++) {
+      for (size_t i=0; i<c.edge_valence; i++) {
         o << i << " -> " << c.ring[i];
         if (i % 2 == 0) o << " crease = " << c.crease_weight[i/2];
         o << std::endl;
@@ -511,8 +511,8 @@ namespace embree
     Vec3fa ring[MAX_EDGE_VALENCE]; 
     int face_size[MAX_FACE_VALENCE];       // number of vertices-2 of nth face in ring
     float crease_weight[MAX_FACE_VALENCE]; // FIXME: move into 4th component of ring entries
-    unsigned int valence;
-    unsigned int num_vtx;
+    unsigned int face_valence;
+    unsigned int edge_valence;
     int border_face;
     float vertex_crease_weight;
     float vertex_level;                      //!< maximal level of adjacent edges
@@ -522,7 +522,7 @@ namespace embree
     GeneralCatmullClark1Ring() {}
     
     __forceinline bool has_last_face() const {
-      return border_face != valence-1;
+      return border_face != face_valence-1;
     }
     
     __forceinline bool has_second_face() const {
@@ -585,8 +585,8 @@ namespace embree
 	
       } while (p != h); 
       
-      num_vtx = e;
-      valence = f;
+      edge_valence = e;
+      face_valence = f;
     }
     
     __forceinline void subdivide(CatmullClark1Ring& dest) const
@@ -594,17 +594,17 @@ namespace embree
       dest.noForcedSubdivision = true;
       dest.edge_level = 0.5f*edge_level;
       dest.vertex_level = 0.5f*vertex_level;
-      dest.valence = valence;
-      dest.num_vtx = 2*valence;
+      dest.face_valence = face_valence;
+      dest.edge_valence = 2*face_valence;
       dest.border_index = border_face == -1 ? -1 : 2*border_face; // FIXME:
       dest.vertex_crease_weight   = max(0.0f,vertex_crease_weight-1.0f);
-      assert(dest.valence <= CatmullClark1Ring::MAX_FACE_VALENCE);
+      assert(dest.face_valence <= CatmullClark1Ring::MAX_FACE_VALENCE);
 
       /* calculate face points */
       Vec3fa_t S = Vec3fa_t(0.0f);
-      for (size_t f=0, v=0; f<valence; v+=face_size[f++]) {
+      for (size_t f=0, v=0; f<face_valence; v+=face_size[f++]) {
         Vec3fa_t F = vtx;
-        for (size_t k=v; k<=v+face_size[f]; k++) F += ring[k%num_vtx]; // FIXME: optimize
+        for (size_t k=v; k<=v+face_size[f]; k++) F += ring[k%edge_valence]; // FIXME: optimize
         S += dest.ring[2*f+1] = F/float(face_size[f]+2);
       }
       
@@ -612,11 +612,11 @@ namespace embree
       size_t num_creases = 0;
       size_t crease_id[MAX_FACE_VALENCE];
       Vec3fa_t C = Vec3fa_t(0.0f);
-      for (size_t i=0, j=0; i<valence; j+=face_size[i++])
+      for (size_t i=0, j=0; i<face_valence; j+=face_size[i++])
       {
         const Vec3fa_t v = vtx + ring[j];
         Vec3fa_t f = dest.ring[2*i+1];
-        if (i == 0) f += dest.ring[dest.num_vtx-1]; 
+        if (i == 0) f += dest.ring[dest.edge_valence-1]; 
         else        f += dest.ring[2*i-1];
         S += ring[j];
         dest.crease_weight[i] = max(crease_weight[i]-1.0f,0.0f);
@@ -640,8 +640,8 @@ namespace embree
       }
       
       /* compute new vertex using smooth rule */
-      const float inv_valence = 1.0f / (float)valence;
-      const Vec3fa_t v_smooth = (Vec3fa_t)(S*inv_valence + (float(valence)-2.0f)*vtx)*inv_valence;
+      const float inv_face_valence = 1.0f / (float)face_valence;
+      const Vec3fa_t v_smooth = (Vec3fa_t)(S*inv_face_valence + (float(face_valence)-2.0f)*vtx)*inv_face_valence;
       dest.vtx = v_smooth;
       
       /* compute new vertex using vertex_crease_weight rule */
@@ -686,26 +686,26 @@ namespace embree
     void convert(CatmullClark1Ring& dst) const
     {
       assert(only_quads);
-      assert(std::all_of(&face_size[0],&face_size[valence],[](int i) { return i == 2; }));
+      assert(std::all_of(&face_size[0],&face_size[face_valence],[](int i) { return i == 2; }));
       
       dst.edge_level = edge_level;
       dst.vertex_level = vertex_level;
       dst.vtx = vtx;
-      dst.valence = valence;
-      dst.num_vtx = 2*valence;
+      dst.face_valence = face_valence;
+      dst.edge_valence = 2*face_valence;
       dst.border_index = border_face == -1 ? -1 : 2*border_face;
-      for (size_t i=0; i<valence; i++) 
+      for (size_t i=0; i<face_valence; i++) 
 	dst.crease_weight[i] = crease_weight[i];
       dst.vertex_crease_weight = vertex_crease_weight;
       dst.noForcedSubdivision = true;
-      for (size_t i=0; i<num_vtx; i++) dst.ring[i] = ring[i];
+      for (size_t i=0; i<edge_valence; i++) dst.ring[i] = ring[i];
     }
     
     friend __forceinline std::ostream &operator<<(std::ostream &o, const GeneralCatmullClark1Ring &c)
     {
-      o << "vtx " << c.vtx << " size = " << c.num_vtx << ", border_face = " << c.border_face << ", " << " valence = " << c.valence << 
+      o << "vtx " << c.vtx << " size = " << c.edge_valence << ", border_face = " << c.border_face << ", " << " face_valence = " << c.face_valence << 
 	", edge_level = " << c.edge_level << ", vertex_level = " << c.vertex_level << ", ring: " << std::endl;
-      for (size_t v=0, f=0; f<c.valence; v+=c.face_size[f++]) {
+      for (size_t v=0, f=0; f<c.face_valence; v+=c.face_size[f++]) {
         for (size_t i=v; i<v+c.face_size[f]; i++) {
           o << i << " -> " << c.ring[i];
           if (i == v) o << " crease = " << c.crease_weight[f];

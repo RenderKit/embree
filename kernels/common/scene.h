@@ -67,6 +67,7 @@ namespace embree
 
     void createTriangleAccel();
     void createHairAccel();
+    void createSubdivAccel();
 
     /*! Scene destruction */
     ~Scene ();

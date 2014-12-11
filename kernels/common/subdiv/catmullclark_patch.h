@@ -97,8 +97,8 @@ namespace embree
 					   CatmullClark1Ring& dest1) 
     {
       dest1.vertex_level = dest0.vertex_level = p0.edge_level;
-      dest1.valence = dest0.valence = 4;
-      dest1.num_vtx = dest0.num_vtx = 8;
+      dest1.face_valence = dest0.face_valence = 4;
+      dest1.edge_valence = dest0.edge_valence = 8;
       dest1.border_index = dest0.border_index = -1;
       dest1.vtx = dest0.vtx = (Vec3fa_t)p0.ring[0];
       dest1.vertex_crease_weight = dest0.vertex_crease_weight = 0.0f;
@@ -108,8 +108,8 @@ namespace embree
       dest1.ring[1] = dest0.ring[7] = (Vec3fa_t)p1.ring[0];
       dest1.ring[0] = dest0.ring[6] = (Vec3fa_t)p1.vtx;
       dest1.ring[7] = dest0.ring[5] = (Vec3fa_t)p1.ring[4];
-      dest1.ring[6] = dest0.ring[4] = (Vec3fa_t)p0.ring[p0.num_vtx-1];
-      dest1.ring[5] = dest0.ring[3] = (Vec3fa_t)p0.ring[p0.num_vtx-2];
+      dest1.ring[6] = dest0.ring[4] = (Vec3fa_t)p0.ring[p0.edge_valence-1];
+      dest1.ring[5] = dest0.ring[3] = (Vec3fa_t)p0.ring[p0.edge_valence-2];
       dest1.ring[4] = dest0.ring[2] = (Vec3fa_t)p0.vtx;
       dest1.ring[3] = dest0.ring[1] = (Vec3fa_t)p0.ring[2];
 
@@ -126,8 +126,8 @@ namespace embree
                                           CatmullClark1Ring &dest1) 
     {
       dest1.vertex_level = dest0.vertex_level = p0.edge_level;
-      dest1.valence = dest0.valence = 3;
-      dest1.num_vtx = dest0.num_vtx = 6;
+      dest1.face_valence = dest0.face_valence = 3;
+      dest1.edge_valence = dest0.edge_valence = 6;
       dest0.border_index = 2;
       dest1.border_index = 4;
       dest1.vtx  = dest0.vtx = (Vec3fa_t)p0.ring[0];
@@ -149,8 +149,8 @@ namespace embree
     static __forceinline void init_regular(const Vec3fa_t &center, const Vec3fa_t center_ring[8], const size_t offset, CatmullClark1Ring &dest)
     {
       dest.vertex_level = 0.0f;
-      dest.valence = 4;
-      dest.num_vtx = 8;
+      dest.face_valence = 4;
+      dest.edge_valence = 8;
       dest.border_index = -1;
       dest.vtx     = (Vec3fa_t)center;
       dest.vertex_crease_weight = 0.0f;
@@ -282,8 +282,8 @@ namespace embree
 					   CatmullClark1Ring& dest1) 
     {
       dest1.vertex_level = dest0.vertex_level = p0.edge_level;
-      dest1.valence = dest0.valence = 4;
-      dest1.num_vtx = dest0.num_vtx = 8;
+      dest1.face_valence = dest0.face_valence = 4;
+      dest1.edge_valence = dest0.edge_valence = 8;
       dest1.border_index = dest0.border_index = -1;
       dest1.vtx = dest0.vtx = (Vec3fa_t)p0.ring[0];
       dest1.vertex_crease_weight = dest0.vertex_crease_weight = 0.0f;
@@ -293,8 +293,8 @@ namespace embree
       dest1.ring[1] = dest0.ring[7] = (Vec3fa_t)p1.ring[0];
       dest1.ring[0] = dest0.ring[6] = (Vec3fa_t)p1.vtx;
       dest1.ring[7] = dest0.ring[5] = (Vec3fa_t)p1.ring[4];
-      dest1.ring[6] = dest0.ring[4] = (Vec3fa_t)p0.ring[p0.num_vtx-1];
-      dest1.ring[5] = dest0.ring[3] = (Vec3fa_t)p0.ring[p0.num_vtx-2];
+      dest1.ring[6] = dest0.ring[4] = (Vec3fa_t)p0.ring[p0.edge_valence-1];
+      dest1.ring[5] = dest0.ring[3] = (Vec3fa_t)p0.ring[p0.edge_valence-2];
       dest1.ring[4] = dest0.ring[2] = (Vec3fa_t)p0.vtx;
       dest1.ring[3] = dest0.ring[1] = (Vec3fa_t)p0.ring[2];
 
@@ -311,8 +311,8 @@ namespace embree
                                           CatmullClark1Ring &dest1) 
     {
       dest1.vertex_level = dest0.vertex_level = p0.edge_level;
-      dest1.valence = dest0.valence = 3;
-      dest1.num_vtx = dest0.num_vtx = 6;
+      dest1.face_valence = dest0.face_valence = 3;
+      dest1.edge_valence = dest0.edge_valence = 6;
       dest0.border_index = 2;
       dest1.border_index = 4;
       dest1.vtx  = dest0.vtx = (Vec3fa_t)p0.ring[0];
@@ -335,8 +335,8 @@ namespace embree
     {
       assert(N<CatmullClark1Ring::MAX_FACE_VALENCE);
       dest.vertex_level = vertex_level;
-      dest.valence = N;
-      dest.num_vtx = 2*N;
+      dest.face_valence = N;
+      dest.edge_valence = 2*N;
       dest.border_index = -1;
       dest.vtx     = (Vec3fa_t)center;
       dest.vertex_crease_weight = 0.0f;
