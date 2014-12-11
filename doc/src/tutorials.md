@@ -196,12 +196,13 @@ three different modes for efficiently handling subdivision surfaces in
 various rendering scenarios. This three modes can be selected at the
 command line, e.g. '-lazy' builds internal per subdivision patch data
 structures on demand, '-cache' uses a small (per thread) tessellation
-cache for caching per patch data, and '-pregenerate' to build and
-store some amount of the per patch data during the initial build
-process. The 'cache' mode is most effective for coherent rays and
-provides a fixed memory footprint. The 'pregenerate' modes is most
-effecitve for very incoherent ray distributions while requiring more
-memory as it builds more data structures in advance. The 'lazy' mode
-works similar to the 'pregenerate' mode but provides a middle ground
-in terms of memory consumption by building and storing data on demand.
+cache for caching per patch data, and '-pregenerate' to generate and
+store most per patch data during the initial build process. The
+'cache' mode is most effective for coherent rays while providing a
+fixed memory footprint. The 'pregenerate' modes is most effecitve for
+incoherent ray distributions while requiring more memory. The 'lazy'
+mode works similar to the 'pregenerate' mode but provides a middle
+ground in terms of memory consumption as it only builds and stores
+data only when the corresponding patch is accessed during the ray
+traversal.
 
