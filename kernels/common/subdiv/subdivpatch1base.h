@@ -30,7 +30,6 @@ using namespace std;
 namespace embree
 {
 
-
   template<class T> 
     __forceinline T bilinear_interpolate(const float x0, const float x1, const float x2, const float x3,const T &u, const T &v)
     {
@@ -141,6 +140,7 @@ namespace embree
       const ssef row1_a = unpacklo(source[1],source[2]);
       const ssef row1_b = shuffle<0,1,0,1>(unpackhi(source[1],source[2]));
 
+      //FIXME: use intrinsics for conversion
       for (size_t i=0;i<4;i++)
         dest[2+i] = (unsigned short)(row0_b[i]*65535.0f);
       for (size_t i=0;i<4;i++)

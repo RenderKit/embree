@@ -673,16 +673,11 @@ namespace embree
         for (size_t f=r.begin(); f!=r.end(); ++f) 
 	{
           if (!mesh->valid(f)) continue;
-
 	  feature_adaptive_subdivision_gregory(f,mesh->getHalfEdge(f),mesh->getVertexPositionPtr(),
 					       [&](const CatmullClarkPatch& ipatch, const Vec2f uv[4], const int subdiv[4])
 	  {
 	  
 	    const unsigned int patchIndex = base.size()+s.size();
-            // DBG_PRINT(uv[0]);
-            // DBG_PRINT(uv[1]);
-            // DBG_PRINT(uv[2]);
-            // DBG_PRINT(uv[3]);
 	    subdiv_patches[patchIndex] = SubdivPatch1Cached(ipatch, mesh->id, f, mesh, uv);
 	    
 	    /* compute patch bounds */
