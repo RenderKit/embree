@@ -27,7 +27,7 @@ namespace embree
 
     __forceinline CatmullClarkPatch () {}
 
-    __forceinline CatmullClarkPatch (const SubdivMesh::HalfEdge* first_half_edge, const Vec3fa* vertices) 
+    __forceinline CatmullClarkPatch (const SubdivMesh::HalfEdge* first_half_edge, const BufferT<Vec3fa>& vertices) 
     {
       for (size_t i=0; i<4; i++)
         ring[i].init(first_half_edge+i,vertices);
@@ -264,7 +264,7 @@ namespace embree
       return (N == 4) && ring[0].only_quads && ring[1].only_quads && ring[2].only_quads && ring[3].only_quads;
     }
 
-    __forceinline GeneralCatmullClarkPatch (const SubdivMesh::HalfEdge* h, const Vec3fa* vertices) 
+    __forceinline GeneralCatmullClarkPatch (const SubdivMesh::HalfEdge* h, const BufferT<Vec3fa>& vertices) 
     {
       size_t i = 0;
       const SubdivMesh::HalfEdge* edge = h; 

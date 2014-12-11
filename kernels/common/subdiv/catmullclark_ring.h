@@ -99,7 +99,7 @@ namespace embree
       return bounds;
     }
     
-    __forceinline void init(const SubdivMesh::HalfEdge* const h, const Vec3fa* const vertices) // FIXME: should get buffer as vertex array input!!!!
+    __forceinline void init(const SubdivMesh::HalfEdge* const h, const BufferT<Vec3fa>& vertices) 
     {
       noForcedSubdivision = true;
       border_index = -1;
@@ -529,7 +529,7 @@ namespace embree
       return (border_face == -1) || (border_face >= 2);
     }
     
-    __forceinline void init(const SubdivMesh::HalfEdge* const h, const Vec3fa* const vertices) // FIXME: should get buffer as vertex array input!!!!
+    __forceinline void init(const SubdivMesh::HalfEdge* const h, const BufferT<Vec3fa>& vertices)
     {
       only_quads = true;
       border_face = -1;

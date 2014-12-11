@@ -44,11 +44,11 @@ namespace embree
     };
 
     /*! Default constructor. */
-    __forceinline SubdivPatch1 () {}
+    //__forceinline SubdivPatch1 () {}
 
     /*! Construction from vertices and IDs. */
     __forceinline SubdivPatch1 (const SubdivMesh::HalfEdge* edge, 
-				const Vec3fa* vertices, 
+				const BufferT<Vec3fa>& vertices, 
                                 const unsigned int geom, 
 				const unsigned int prim, 
 				const unsigned int subdivision_level,
@@ -105,7 +105,7 @@ namespace embree
       const unsigned int primID = prim.primID();
       const SubdivMesh* const subdiv_mesh = scene->getSubdivMesh(geomID);
       new (this) SubdivPatch1(subdiv_mesh->getHalfEdge(primID),
-			      subdiv_mesh->getVertexPositionPtr(),
+			      subdiv_mesh->getVertexBuffer(),
 			      geomID,
 			      primID,
 			      SUBDIVISION_LEVEL,
@@ -123,7 +123,7 @@ namespace embree
       const unsigned int primID = prim.primID();
       const SubdivMesh* const subdiv_mesh = scene->getSubdivMesh(geomID);
       new (this) SubdivPatch1(subdiv_mesh->getHalfEdge(primID),
-			      subdiv_mesh->getVertexPositionPtr(),
+			      subdiv_mesh->getVertexBuffer(),
 			      geomID,
 			      primID,
 			      SUBDIVISION_LEVEL,
@@ -143,7 +143,7 @@ namespace embree
     
   public:
     const SubdivMesh::HalfEdge* first_half_edge;  //!< pointer to first half edge of this patch
-    const Vec3fa* vertices;                       //!< pointer to vertex array
+    const BufferT<Vec3fa>& vertices;                       //!< pointer to vertex array
     unsigned int subdivision_level;
     unsigned int flags;
     unsigned int geom;                            //!< geometry ID of the subdivision mesh this patch belongs to

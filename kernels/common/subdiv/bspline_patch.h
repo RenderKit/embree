@@ -374,8 +374,7 @@ namespace embree
       }
     }
 
-    __forceinline void init(const SubdivMesh::HalfEdge *const first_half_edge,
-			    const Vec3fa *const vertices)
+    __forceinline void init(const SubdivMesh::HalfEdge* const first_half_edge, const BufferT<Vec3fa>& vertices)
     {
       CatmullClarkPatch ipatch( first_half_edge, vertices );
       init( ipatch );
@@ -383,7 +382,7 @@ namespace embree
 
     __forceinline BBox3fa bounds() const
     {
-      const Vec3fa *const cv = &v[0][0];
+      const Vec3fa* const cv = &v[0][0];
       BBox3fa bounds ( cv[0] );
       for (size_t i = 1; i<16 ; i++)
 	bounds.extend( cv[i] );
