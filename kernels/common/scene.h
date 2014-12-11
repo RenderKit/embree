@@ -187,8 +187,8 @@ namespace embree
     atomic_t numMappedBuffers;         //!< number of mapped buffers
     RTCSceneFlags flags;
     RTCAlgorithmFlags aflags;
-    bool needTriangles;
-    bool needVertices;
+    bool needTriangles; 
+    bool needVertices; // FIXME: this flag is also used for hair geometry, but there should be a second flag
     bool is_build;
     MutexSys mutex;
     AtomicMutex geometriesMutex;

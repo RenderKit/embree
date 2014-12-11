@@ -27,12 +27,26 @@ namespace embree
     typedef Bezier1i Primitive;
     typedef BezierIntersector1::Precalculations Precalculations;
 
-    static __forceinline void intersect(Precalculations& pre, Ray& ray, const Primitive& curve, void* geom) {
-      BezierIntersector1::intersect(ray,pre,curve.p[0],curve.p[1],curve.p[2],curve.p[3],curve.geomID<list>(),curve.primID<list>(),geom);
+    static __forceinline void intersect(Precalculations& pre, Ray& ray, const Primitive& curve, void* geom) 
+    {
+      Scene* scene = (Scene*) geom;
+      const BezierCurves* in = (BezierCurves*) scene->get(curve.geomID<list>());
+      const Vec3fa a0 = in->vertex(curve.vertexID+0,0);
+      const Vec3fa a1 = in->vertex(curve.vertexID+1,0);
+      const Vec3fa a2 = in->vertex(curve.vertexID+2,0);
+      const Vec3fa a3 = in->vertex(curve.vertexID+3,0);
+      BezierIntersector1::intersect(ray,pre,a0,a1,a2,a3,curve.geomID<list>(),curve.primID<list>(),geom);
     }
 
-    static __forceinline bool occluded(Precalculations& pre, Ray& ray, const Primitive& curve, void* geom) {
-      return BezierIntersector1::occluded(ray,pre,curve.p[0],curve.p[1],curve.p[2],curve.p[3],curve.geomID<list>(),curve.primID<list>(),geom);
+    static __forceinline bool occluded(Precalculations& pre, Ray& ray, const Primitive& curve, void* geom) 
+    {
+      Scene* scene = (Scene*) geom;
+      const BezierCurves* in = (BezierCurves*) scene->get(curve.geomID<list>());
+      const Vec3fa a0 = in->vertex(curve.vertexID+0,0);
+      const Vec3fa a1 = in->vertex(curve.vertexID+1,0);
+      const Vec3fa a2 = in->vertex(curve.vertexID+2,0);
+      const Vec3fa a3 = in->vertex(curve.vertexID+3,0);
+      return BezierIntersector1::occluded(ray,pre,a0,a1,a2,a3,curve.geomID<list>(),curve.primID<list>(),geom);
     }
   };
   
@@ -44,8 +58,16 @@ namespace embree
 
     static __forceinline void intersect(Precalculations& pre, Ray& ray, const Primitive& curve, void* geom)
     {
-      const Vec3fa a0 = curve.p0[0], a1 = curve.p0[1], a2 = curve.p0[2], a3 = curve.p0[3];
-      const Vec3fa b0 = curve.p1[0], b1 = curve.p1[1], b2 = curve.p1[2], b3 = curve.p1[3];
+      Scene* scene = (Scene*) geom;
+      const BezierCurves* in = (BezierCurves*) scene->get(curve.geomID<list>());
+      const Vec3fa a0 = in->vertex(curve.vertexID+0,0);
+      const Vec3fa a1 = in->vertex(curve.vertexID+1,0);
+      const Vec3fa a2 = in->vertex(curve.vertexID+2,0);
+      const Vec3fa a3 = in->vertex(curve.vertexID+3,0);
+      const Vec3fa b0 = in->vertex(curve.vertexID+0,1);
+      const Vec3fa b1 = in->vertex(curve.vertexID+1,1);
+      const Vec3fa b2 = in->vertex(curve.vertexID+2,1);
+      const Vec3fa b3 = in->vertex(curve.vertexID+3,1);
       const float t0 = 1.0f-ray.time, t1 = ray.time;
       const Vec3fa p0 = t0*a0 + t1*b0;
       const Vec3fa p1 = t0*a1 + t1*b1;
@@ -56,8 +78,16 @@ namespace embree
 
     static __forceinline bool occluded(Precalculations& pre, Ray& ray, const Primitive& curve, void* geom) 
     {
-      const Vec3fa a0 = curve.p0[0], a1 = curve.p0[1], a2 = curve.p0[2], a3 = curve.p0[3];
-      const Vec3fa b0 = curve.p1[0], b1 = curve.p1[1], b2 = curve.p1[2], b3 = curve.p1[3];
+      Scene* scene = (Scene*) geom;
+      const BezierCurves* in = (BezierCurves*) scene->get(curve.geomID<list>());
+      const Vec3fa a0 = in->vertex(curve.vertexID+0,0);
+      const Vec3fa a1 = in->vertex(curve.vertexID+1,0);
+      const Vec3fa a2 = in->vertex(curve.vertexID+2,0);
+      const Vec3fa a3 = in->vertex(curve.vertexID+3,0);
+      const Vec3fa b0 = in->vertex(curve.vertexID+0,1);
+      const Vec3fa b1 = in->vertex(curve.vertexID+1,1);
+      const Vec3fa b2 = in->vertex(curve.vertexID+2,1);
+      const Vec3fa b3 = in->vertex(curve.vertexID+3,1);
       const float t0 = 1.0f-ray.time, t1 = ray.time;
       const Vec3fa p0 = t0*a0 + t1*b0;
       const Vec3fa p1 = t0*a1 + t1*b1;

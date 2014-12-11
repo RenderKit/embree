@@ -196,7 +196,7 @@ namespace embree
 #endif
       }
 
-      __forceinline const Vec3fa *fristVertexPtr(size_t i) const {
+      __forceinline const Vec3fa *fristVertexPtr(size_t i) const { // FIXME: remove, use buffer to access vertices instead!
         return &vertex(curve(i));
       }
 

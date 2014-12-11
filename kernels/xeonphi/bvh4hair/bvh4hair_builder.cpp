@@ -155,7 +155,7 @@ namespace embree
           bounds_centroid_min = min(bounds_centroid_min,centroid2);
           bounds_centroid_max = max(bounds_centroid_max,centroid2);
 
-	  bptr[currentID].p = geom->fristVertexPtr(i);
+	  bptr[currentID].p = geom->fristVertexPtr(i); // FIXME: this does not support strides!!
           bptr[currentID].geomID = g;
           bptr[currentID].primID = i;
         }

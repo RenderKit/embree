@@ -74,10 +74,11 @@ namespace embree
     }
 
     /*! returns the number of elements of the buffer */
-    size_t size() const { 
+    __forceinline size_t size() const { 
       return num; 
     }
 
+    /*! returns true of the buffer is not empty */
     __forceinline operator bool() { 
       return ptr; 
     }
