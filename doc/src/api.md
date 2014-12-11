@@ -287,9 +287,9 @@ Also see [tutorial00] for an example of how to create triangle meshes.
 ### Subdivision Surfaces
 
 Catmull Clark subdivision surfaces for meshes consisting of triangle
-and quad patches (even mixed inside one mesh) are supported, including
-support for edge creases, vertex creases, holes, and non-manifold
-geometry.
+and quad primitives (even mixed inside one mesh) are supported,
+including support for edge creases, vertex creases, holes, and
+non-manifold geometry.
 
 A subdivision surface is created using the `rtcNewSubdivisionMesh`
 function call, and deleted again using the `rtcDeleteGeometry`
