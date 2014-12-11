@@ -1827,7 +1827,7 @@ namespace embree
     case 0: addSphere(scene,gflags,Vec3fa(-1,0,-1),1.0f,50,-1,0.0f); break;
     case 1: addSphere(scene,gflags,Vec3fa(-1,0,-1),1.0f,50,-1,0.1f); break;
     case 2: addHair  (scene,gflags,Vec3fa(-1,0,-1),1.0f,1.0f,1,0.0f); break;
-      //case 3: addHair  (scene,gflags,Vec3fa(-1,0,-1),1.0f,1.0f,1,0.1f); break; 
+    case 3: addHair  (scene,gflags,Vec3fa(-1,0,-1),1.0f,1.0f,1,0.1f); break; 
     }
     rtcCommit (scene);
 
@@ -2549,16 +2549,18 @@ namespace embree
       for (size_t j=0; j<10; j++) 
       {
         Vec3fa pos = 100.0f*Vec3fa(drand48(),drand48(),drand48());
-/*#if !defined(__MIC__) // FIXME: enable
-	switch (rand()%16) {
-	case 0: pos = Vec3fa(nan); break;
-	case 1: pos = Vec3fa(inf); break;
-	case 2: pos = Vec3fa(1E30f); break;
-	default: break;
-	};
-	#endif*/
 	int type = rand()%6;
-        size_t numPhi = rand()%100;
+#if !defined(__MIC__) 
+	if (type != 2) { // FIXME: strange inputs not supported yet for subdiv geometry
+	  switch (rand()%16) {
+	  case 0: pos = Vec3fa(nan); break;
+	  case 1: pos = Vec3fa(inf); break;
+	  case 2: pos = Vec3fa(1E30f); break;
+	  default: break;
+	  };
+	}
+#endif
+	size_t numPhi = rand()%100;
 	if (type == 2) numPhi = rand()%10;
         size_t numTriangles = 2*2*numPhi*(numPhi-1);
 	numTriangles = rand()%(numTriangles+1);
@@ -2567,7 +2569,7 @@ namespace embree
 	case 1: addSphere(task->scene,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles,1.0f); break;
 	case 2: addSubdivSphere(task->scene,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,4,numTriangles,0.0f); break;
 	case 3: addHair  (task->scene,RTC_GEOMETRY_STATIC,pos,1.0f,2.0f,numTriangles,0.0f); break;
-	  //case 4: addHair  (task->scene,RTC_GEOMETRY_STATIC,pos,1.0f,2.0f,numTriangles,1.0f); break; 
+	case 4: addHair  (task->scene,RTC_GEOMETRY_STATIC,pos,1.0f,2.0f,numTriangles,1.0f); break; 
         case 5: {
 	  Sphere* sphere = new Sphere(pos,2.0f); spheres.push_back(sphere); 
 	  addUserGeometryEmpty(task->scene,sphere); break;

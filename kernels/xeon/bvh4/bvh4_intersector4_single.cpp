@@ -116,6 +116,7 @@ namespace embree
 
     DEFINE_INTERSECTOR4(BVH4Bezier1vIntersector4Single_OBB, BVH4Intersector4Single<0x101 COMMA false COMMA LeafIterator4_1<Bezier1vIntersector4<LeafMode> > >);
     DEFINE_INTERSECTOR4(BVH4Bezier1iIntersector4Single_OBB, BVH4Intersector4Single<0x101 COMMA false COMMA LeafIterator4_1<Bezier1iIntersector4<LeafMode> > >);
+    DEFINE_INTERSECTOR4(BVH4Bezier1iMBIntersector4Single_OBB,BVH4Intersector4Single<0x1010 COMMA false COMMA LeafIterator4_1<Bezier1iIntersector4MB<LeafMode> > >);
 
     DEFINE_INTERSECTOR4(BVH4Subdivpatch1Intersector4, BVH4Intersector4FromIntersector1<BVH4Intersector1<0x1 COMMA false COMMA LeafIterator1<SubdivPatch1Intersector1 > > >);
     DEFINE_INTERSECTOR4(BVH4Subdivpatch1CachedIntersector4,BVH4Intersector4FromIntersector1<BVH4Intersector1<0x1 COMMA false COMMA SubdivPatch1CachedIntersector1> >);
