@@ -289,7 +289,7 @@ namespace embree
     b.lower.a = 0.0f;
     b.upper.a = 0.0f;
      
-#if DEBUG
+#if defined(DEBUG)
     isfinite(b.lower.x);
     isfinite(b.lower.y);
     isfinite(b.lower.z);

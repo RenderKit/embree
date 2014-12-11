@@ -658,7 +658,7 @@ namespace embree
 
      if (bvh->data_mem == NULL)
        {
-#if DEBUG
+#if defined(DEBUG)
           std::cout << "ALLOCATING SUBDIVPATCH1CACHED MEMORY FOR " << numPrimitives << " PRIMITIVES" << std::endl;
 #endif
           this->bvh->size_data_mem = sizeof(SubdivPatch1Cached) * numPrimitives;

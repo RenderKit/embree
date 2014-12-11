@@ -18,7 +18,7 @@
 
 #include "common/default.h"
 
-#if DEBUG
+#if defined(DEBUG)
 #define CACHE_STATS(x) 
 #else
 #define CACHE_STATS(x) 

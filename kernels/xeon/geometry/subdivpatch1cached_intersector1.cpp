@@ -229,7 +229,7 @@ namespace embree
       TessellationCache *cache = (TessellationCache *)_mm_malloc(sizeof(TessellationCache),64);
       assert( (size_t)cache % 64 == 0 );
       cache->init();	
-#if DEBUG
+#if defined(DEBUG)
       static AtomicMutex mtx;
       mtx.lock();
       std::cout << "Enabling tessellation cache with " << cache->allocated64ByteBlocks() << " blocks = " << cache->allocated64ByteBlocks()*64 << " bytes as default size" << std::endl;
