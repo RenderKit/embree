@@ -679,10 +679,6 @@ namespace embree
 	  {
 	  
 	    const unsigned int patchIndex = base.size()+s.size();
-            // DBG_PRINT(uv[0]);
-            // DBG_PRINT(uv[1]);
-            // DBG_PRINT(uv[2]);
-            // DBG_PRINT(uv[3]);
 	    subdiv_patches[patchIndex] = SubdivPatch1Cached(ipatch, mesh->id, f, mesh, uv);
 	    
 	    /* compute patch bounds */

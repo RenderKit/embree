@@ -903,7 +903,6 @@ PRINT(CORRECT_numPrims);
 	geom->initializeHalfEdgeStructures();
       }
 
-    global_lazyMem64BytesBlocks = 0;
     leafItemThreshold = 1;
 
     BVH4iBuilder::build(threadIndex,threadCount);
@@ -1069,8 +1068,6 @@ PRINT(CORRECT_numPrims);
     store4f(&bounds.geometry.upper,bounds_scene_max);
 
     global_bounds.extend_atomic(bounds);    
-
-    global_lazyMem64BytesBlocks += local_lazyMem64BytesBlocks;
   }
 
 
@@ -1129,36 +1126,7 @@ PRINT(CORRECT_numPrims);
       {
 	bvh->accel = org_accel;
 	accel = (Triangle1*)org_accel;
-	bvh->lazyMemUsed64BytesBlocks = 0;
       }
-
-    //#define ENABLE_GLOBAL_TESSELLATION_CACHE
-#if defined(ENABLE_GLOBAL_TESSELLATION_CACHE)
-    if (threadIndex == 0)
-      {
-	const size_t new_lazyMem64BytesBlocks = global_lazyMem64BytesBlocks * 1.5f; 
-
-	if (new_lazyMem64BytesBlocks > bvh->lazyMemAllocated64BytesBlocks)
-	  {
-	    DBG_PRINT("REALLOC!");
-	    if (bvh->lazymem) os_free(bvh->lazymem, bvh->lazyMemAllocated64BytesBlocks * sizeof(mic_f));
-	    bvh->lazyMemAllocated64BytesBlocks = new_lazyMem64BytesBlocks; 
-	    bvh->lazymem = (mic_f*)os_malloc(sizeof(mic_f) * bvh->lazyMemAllocated64BytesBlocks);
-	  }
-
-
-#if DEBUG
-	DBG_PRINT(global_lazyMem64BytesBlocks);
-	DBG_PRINT(atomicID);
-	DBG_PRINT(numAllocated64BytesBlocks);
-
-	DBG_PRINT(bvh->lazyMemUsed64BytesBlocks);
-	DBG_PRINT(bvh->lazyMemAllocated64BytesBlocks);
-	DBG_PRINT(bvh->lazyMemAllocated64BytesBlocks * sizeof(mic_f));
-#endif
-
-      }
-#endif
 
   }
 
