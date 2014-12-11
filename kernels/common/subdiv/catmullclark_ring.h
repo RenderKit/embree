@@ -26,10 +26,11 @@ namespace embree
   
   struct __aligned(64) CatmullClark1Ring
   {
-    static const size_t MAX_VALENCE = 2*64;
+    static const size_t MAX_FACE_VALENCE = 64;
+    static const size_t MAX_EDGE_VALENCE = 2*64;
     
-    Vec3fa ring[2*MAX_VALENCE]; // two vertices per face
-    float crease_weight[MAX_VALENCE]; // FIXME: move into 4th component of ring entries
+    Vec3fa ring[MAX_EDGE_VALENCE]; // two vertices per face
+    float crease_weight[MAX_FACE_VALENCE]; // FIXME: move into 4th component of ring entries
     
     int border_index;
     Vec3fa vtx;
@@ -112,7 +113,7 @@ namespace embree
       edge_level = vertex_level = p->edge_level;
       if (!p->hasOpposite()) crease_weight[i/2] = inf;
       
-      do 
+      do // FIXME: assertions!?
       {
         /* store first two vertices of face */
         p = p->next();
@@ -169,7 +170,7 @@ namespace embree
       
       /* calculate new edge points */
       size_t num_creases = 0;
-      size_t crease_id[MAX_VALENCE];
+      size_t crease_id[MAX_FACE_VALENCE];
       Vec3fa_t C = Vec3fa_t(0.0f);
       for (size_t i=1; i<valence; i++)
       {
@@ -503,12 +504,13 @@ namespace embree
   
   struct __aligned(64) GeneralCatmullClark1Ring
   {
-    static const size_t MAX_VALENCE = 64;
+    static const size_t MAX_FACE_VALENCE = 64;
+    static const size_t MAX_EDGE_VALENCE = 2*64;
     
     Vec3fa vtx;
-    Vec3fa ring[2*MAX_VALENCE]; 
-    int face_size[MAX_VALENCE];       // number of vertices-2 of nth face in ring
-    float crease_weight[MAX_VALENCE]; // FIXME: move into 4th component of ring entries
+    Vec3fa ring[MAX_EDGE_VALENCE]; 
+    int face_size[MAX_FACE_VALENCE];       // number of vertices-2 of nth face in ring
+    float crease_weight[MAX_FACE_VALENCE]; // FIXME: move into 4th component of ring entries
     unsigned int valence;
     unsigned int num_vtx;
     int border_face;
@@ -546,12 +548,11 @@ namespace embree
 	size_t vn = 0;
 	SubdivMesh::HalfEdge* p_prev = p->prev();
         for (SubdivMesh::HalfEdge* v = p->next(); v!=p_prev; v=v->next()) {
-          assert(e < 2*MAX_VALENCE);
+          assert(e < MAX_EDGE_VALENCE);
           ring[e++] = (Vec3fa_t) vertices[ v->getStartVertexIndex() ];
 	  vn++;
-	  
-        }
-	assert(f < MAX_VALENCE);
+	}
+	assert(f < MAX_FACE_VALENCE);
 	face_size[f] = vn;
 	only_quads &= (vn == 2);
 	p = p_prev;
@@ -566,13 +567,13 @@ namespace embree
         else
         {
           /*! mark first border edge and store dummy vertex for face between the two border edges */
-	  assert(f < MAX_VALENCE);
+	  assert(f < MAX_FACE_VALENCE);
           border_face = f;
 	  face_size[f] = 2;
           crease_weight[f] = inf; 
-	  assert(e < 2*MAX_VALENCE);
+	  assert(e < MAX_EDGE_VALENCE);
           ring[e++] = (Vec3fa_t) vertices[ p->getStartVertexIndex() ];
-	  assert(e < 2*MAX_VALENCE);
+	  assert(e < MAX_EDGE_VALENCE);
           ring[e++] = vtx; // dummy vertex
           crease_weight[++f] = inf;
 	  
@@ -597,7 +598,7 @@ namespace embree
       dest.num_vtx = 2*valence;
       dest.border_index = border_face == -1 ? -1 : 2*border_face; // FIXME:
       dest.vertex_crease_weight   = max(0.0f,vertex_crease_weight-1.0f);
-      assert(dest.valence <= CatmullClark1Ring::MAX_VALENCE);
+      assert(dest.valence <= CatmullClark1Ring::MAX_FACE_VALENCE);
 
       /* calculate face points */
       Vec3fa_t S = Vec3fa_t(0.0f);
@@ -609,7 +610,7 @@ namespace embree
       
       /* calculate new edge points */
       size_t num_creases = 0;
-      size_t crease_id[MAX_VALENCE];
+      size_t crease_id[MAX_FACE_VALENCE];
       Vec3fa_t C = Vec3fa_t(0.0f);
       for (size_t i=0, j=0; i<valence; j+=face_size[i++])
       {

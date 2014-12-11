@@ -594,11 +594,16 @@ namespace embree
     float* edgeCreaseWeights = (float*) rtcMapBuffer(scene,mesh,RTC_EDGE_CREASE_WEIGHT_BUFFER);
     for (size_t i=0; i<numEdgeCreases; i++) 
     {
-      int f = rand() % faces.size();
-      int n = faces[f];
-      int e = rand() % n;
-      edgeCreaseIndices[2*i+0] = indices[offsets[f]+(e+0)%n];
-      edgeCreaseIndices[2*i+1] = indices[offsets[f]+(e+1)%n];
+      if (faces.size()) {
+	int f = rand() % faces.size();
+	int n = faces[f];
+	int e = rand() % n;
+	edgeCreaseIndices[2*i+0] = indices[offsets[f]+(e+0)%n];
+	edgeCreaseIndices[2*i+1] = indices[offsets[f]+(e+1)%n];
+      } else {
+	edgeCreaseIndices[2*i+0] = 0;
+	edgeCreaseIndices[2*i+1] = 0;
+      }
       edgeCreaseWeights[i] = 10.0f*drand48();
     }
     rtcUnmapBuffer(scene,mesh,RTC_EDGE_CREASE_INDEX_BUFFER); 
@@ -2519,7 +2524,7 @@ namespace embree
       delete thread; thread = NULL;
       return;
     }
-    task->scene = rtcNewScene(RTC_SCENE_DYNAMIC,aflags);
+    //task->scene = rtcNewScene(RTC_SCENE_DYNAMIC,aflags);
     CountErrors();
     int geom[1024];
     int types[1024];
@@ -2537,33 +2542,35 @@ namespace embree
       if (i%20 == 0) std::cout << "." << std::flush;
 
       RTCSceneFlags sflag = getSceneFlag(i); 
-      RTCScene scene = rtcNewScene(sflag,aflags);
+      task->scene = rtcNewScene(sflag,aflags);
       vector_t<Sphere*> spheres;
       CountErrors();
 
-      for (size_t j=0; j<20; j++) 
+      for (size_t j=0; j<10; j++) 
       {
         Vec3fa pos = 100.0f*Vec3fa(drand48(),drand48(),drand48());
-#if !defined(__MIC__)
+/*#if !defined(__MIC__)
 	switch (rand()%16) {
 	case 0: pos = Vec3fa(nan); break;
 	case 1: pos = Vec3fa(inf); break;
 	case 2: pos = Vec3fa(1E30f); break;
 	default: break;
 	};
-#endif
+	#endif*/
+	int type = rand()%6;
         size_t numPhi = rand()%100;
+	if (type == 2) numPhi = rand()%10;
         size_t numTriangles = 2*2*numPhi*(numPhi-1);
 	numTriangles = rand()%(numTriangles+1);
-        switch (rand()%6) {
-        case 0: addSphere(scene,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles,0.0f); break;
-        case 1: addSphere(scene,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles,1.0f); break;
-	  //case 2: addSubdivSphere(scene,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,4,numTriangles,0.0f); break;
-        case 3: addHair  (scene,RTC_GEOMETRY_STATIC,pos,1.0f,2.0f,numTriangles,0.0f); break;
-	  //case 3: addHair  (scene,RTC_GEOMETRY_STATIC,pos,1.0f,2.0f,numTriangles,1.0f); break; // FIXME: motion blur for hair not yet implemented
+        switch (type) {
+        case 0: addSphere(task->scene,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles,0.0f); break;
+	case 1: addSphere(task->scene,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles,1.0f); break;
+	  //case 2: addSubdivSphere(task->scene,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,4,numTriangles,0.0f); break;
+        case 3: addHair  (task->scene,RTC_GEOMETRY_STATIC,pos,1.0f,2.0f,numTriangles,0.0f); break;
+	  //case 3: addHair  (task->scene,RTC_GEOMETRY_STATIC,pos,1.0f,2.0f,numTriangles,1.0f); break; // FIXME: motion blur for hair not yet implemented
         case 5: {
 	  Sphere* sphere = new Sphere(pos,2.0f); spheres.push_back(sphere); 
-	  addUserGeometryEmpty(scene,sphere); break;
+	  addUserGeometryEmpty(task->scene,sphere); break;
         }
 	}
         CountErrors();
@@ -2584,7 +2591,7 @@ namespace embree
       if (thread->threadCount) 
 	task->barrier.wait();
 
-      rtcDeleteScene (scene);
+      rtcDeleteScene (task->scene);
       CountErrors();
 
       for (size_t i=0; i<spheres.size(); i++)
@@ -2632,7 +2639,7 @@ namespace embree
       srand(task->sceneIndex*23565+i*3242);
       if (i%20 == 0) std::cout << "." << std::flush;
 
-      for (size_t j=0; j<20; j++) 
+      for (size_t j=0; j<40; j++) 
       {
         int index = rand()%1024;
         Vec3fa pos = 100.0f*Vec3fa(drand48(),drand48(),drand48());
@@ -2648,6 +2655,7 @@ namespace embree
         {
           int type = rand()%10;
           size_t numPhi = rand()%100;
+	  if (type >= 3 || type <= 5) numPhi = rand()%20;
           size_t numTriangles = 2*2*numPhi*(numPhi-1);
           numTriangles = rand()%(numTriangles+1);
           types[index] = type;
@@ -2819,6 +2827,9 @@ namespace embree
 
     /* perform tests */
     rtcInit(g_rtcore.c_str());
+
+    //POSITIVE("regression_static",         rtcore_regression(rtcore_regression_static_thread,false));
+    //POSITIVE("regression_dynamic",        rtcore_regression(rtcore_regression_dynamic_thread,false));
 
     POSITIVE("mutex_sys",                 test_mutex_sys());
 #if !defined(__MIC__)  // FIXME: hangs on MIC 
