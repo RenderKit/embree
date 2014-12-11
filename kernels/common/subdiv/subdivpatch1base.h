@@ -607,7 +607,6 @@ namespace embree
 
 	  mic3f vtx = eval16( u, v );
 
-          DBG_PRINT("add patch_uu, patch_vv");
 
 	  /* eval displacement function */
 	  if (unlikely(mesh->displFunc != NULL))
@@ -615,11 +614,19 @@ namespace embree
 	      mic3f normal = normal16(u,v);
 	      normal = normalize(normal);
 
+              const Vec2f uv0 = getUV(0);
+              const Vec2f uv1 = getUV(1);
+              const Vec2f uv2 = getUV(2);
+              const Vec2f uv3 = getUV(3);
+
+              const mic_f patch_uu = bilinear_interpolate(uv0.x,uv1.x,uv2.x,uv3.x,u,v);
+              const mic_f patch_vv = bilinear_interpolate(uv0.y,uv1.y,uv2.y,uv3.y,u,v);
+
 	      mesh->displFunc(mesh->userPtr,
 			      geom,
 			      prim,
-			      (const float*)&u,
-			      (const float*)&v,
+			      (const float*)&patch_uu,
+			      (const float*)&patch_vv,
 			      (const float*)&normal,
 			      (const float*)&normal,
 			      (const float*)&normal,
