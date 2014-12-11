@@ -28,19 +28,36 @@ namespace embree
   {
     __thread TessellationCache *tess_cache = NULL;
 
-    struct Quad4x4 {
+    struct __aligned(64) Quad4x4 {
       mic3f vtx;
-      mic_f uu;
-      mic_f vv;
+      unsigned short uu[16];
+      unsigned short vv[16];
 
       __forceinline void prefetchData() const
       {
 	prefetch<PFHINT_NT>(&vtx.x);
 	prefetch<PFHINT_NT>(&vtx.y);
 	prefetch<PFHINT_NT>(&vtx.z);
-	prefetch<PFHINT_NT>(&uu);
-	prefetch<PFHINT_NT>(&vv);
+	prefetch<PFHINT_NT>(uu);
       }
+      
+      __forceinline mic_f getU() const
+      {
+	return load16f_uint16(uu);
+      }
+
+      __forceinline mic_f getV() const
+      {
+	return load16f_uint16(vv);
+      }
+
+      __forceinline void set(const mic3f &v3, const mic_f &u, const mic_f &v)
+      {
+	vtx = v3;
+	store16f_uint16(uu,u*65535.0f);
+	store16f_uint16(vv,v*65535.0f);
+      }
+
     };
 
     __forceinline void createSubPatchBVH4iLeaf(BVH4i::NodeRef &ref,
@@ -69,7 +86,7 @@ namespace embree
 	  const unsigned int u_size = u_end-u_start+1;
 	  const unsigned int v_size = v_end-v_start+1;
 	  const unsigned int currentIndex = localCounter;
-	  localCounter += 5; // u,v, x,y,z
+	  localCounter += 4; // x,y,z + 16bit u,v
 
 
 	  mic_f uu = mic_f::inf();
@@ -134,9 +151,7 @@ namespace embree
 	  const BBox3fa leafGridBounds = getBBox3fa(vtx);
 
 	  Quad4x4 *quad4x4 = (Quad4x4*)&lazymem[currentIndex];
-	  quad4x4->vtx = vtx;
-	  quad4x4->uu  = uu;
-	  quad4x4->vv  = vv;
+	  quad4x4->set(vtx,uu,vv);
 
 	  createSubPatchBVH4iLeaf( curNode, currentIndex);	  
 	  return leafGridBounds;
@@ -185,11 +200,15 @@ namespace embree
       __aligned(64) float u_array[(patch.grid_size_simd_blocks+1)*16]; // for unaligned access
       __aligned(64) float v_array[(patch.grid_size_simd_blocks+1)*16];
 
-      gridUVTessellatorMIC(patch.level,
-			   patch.grid_u_res,
-			   patch.grid_v_res,
-			   u_array,
-			   v_array);
+      gridUVTessellator(patch.level,
+			patch.grid_u_res,
+			patch.grid_v_res,
+			u_array,
+			v_array);
+
+      /* stich different tessellation levels in u/v grid */
+      if (patch.needsStiching())
+	stichUVGrid(patch.level,patch.grid_u_res,patch.grid_v_res,u_array,v_array);
 
 
       BVH4i::NodeRef subtree_root = 0;
@@ -383,8 +402,8 @@ namespace embree
 		  const mic_m m_active = 0x777;
 		  const Quad4x4 *__restrict__ const quad4x4 = (Quad4x4*)&lazymem[uvIndex];
 		  quad4x4->prefetchData();
-		  const mic_f &uu = quad4x4->uu;
-		  const mic_f &vv = quad4x4->vv;
+		  const mic_f uu = quad4x4->getU();
+		  const mic_f vv = quad4x4->getV();
 
 		  intersect1_quad16(rayIndex, 
 				    dir_xyz,
@@ -539,8 +558,8 @@ namespace embree
 		      const mic_m m_active = 0x777;
 		      const Quad4x4 *__restrict__ const quad4x4 = (Quad4x4*)&lazymem[uvIndex];
 		      quad4x4->prefetchData();
-		      const mic_f &uu = quad4x4->uu;
-		      const mic_f &vv = quad4x4->vv;
+		      const mic_f uu = quad4x4->getU();
+		      const mic_f vv = quad4x4->getV();
 		  
 		      if (unlikely(occluded1_quad16(rayIndex, 
 						    dir_xyz,
@@ -681,8 +700,8 @@ namespace embree
 	      const mic_m m_active = 0x777;
 	      const Quad4x4 *__restrict__ const quad4x4 = (Quad4x4*)&lazymem[uvIndex];
 	      quad4x4->prefetchData();
-	      const mic_f &uu = quad4x4->uu;
-	      const mic_f &vv = quad4x4->vv;
+	      const mic_f uu = quad4x4->getU();
+	      const mic_f vv = quad4x4->getV();
 
 	      intersect1_quad16(dir_xyz,
 				org_xyz,
@@ -805,8 +824,8 @@ namespace embree
 		  const mic_m m_active = 0x777;
 		  const Quad4x4 *__restrict__ const quad4x4 = (Quad4x4*)&lazymem[uvIndex];
 		  quad4x4->prefetchData();
-		  const mic_f &uu = quad4x4->uu;
-		  const mic_f &vv = quad4x4->vv;
+		  const mic_f uu = quad4x4->getU();
+		  const mic_f vv = quad4x4->getV();
 		  
 		  if (unlikely(occluded1_quad16(dir_xyz,
 						org_xyz,

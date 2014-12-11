@@ -576,11 +576,7 @@ namespace embree
       __aligned(64) float v_array[(grid_size_simd_blocks+1)*16]; // +16 for unaligned access
 	  
       const unsigned int real_grid_size = grid_u_res*grid_v_res;
-#if defined(__MIC__)
-      gridUVTessellatorMIC(level,grid_u_res,grid_v_res,u_array,v_array);
-#else
       gridUVTessellator(level,grid_u_res,grid_v_res,u_array,v_array);
-#endif
       
       if (unlikely(needsStiching()))
         stichUVGrid(level,grid_u_res,grid_v_res,u_array,v_array);

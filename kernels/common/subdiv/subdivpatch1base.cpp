@@ -97,7 +97,7 @@ namespace embree
       //if (grid_size_simd_blocks > 1)
         {
 #if defined(__MIC__)
-	  const size_t leafBlocks = 5;
+	  const size_t leafBlocks = 4;
 #else
           const size_t leafBlocks = (sizeof(Quad2x2)+63) / 64;
 #endif
