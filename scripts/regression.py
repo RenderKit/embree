@@ -57,8 +57,8 @@ dash = '/'
 
 ########################## configuration ##########################
 
-compilers_win = ['V120']
-#compilers_win = ['ICC']
+#compilers_win = ['V120']
+compilers_win = ['ICC']
 #compilers_win  = ['V100', 'V110', 'V120', 'ICC']
 #compilers_unix = ['ICC']
 compilers_unix = ['GCC', 'ICC']
@@ -200,8 +200,10 @@ def render(OS, compiler, platform, build, isa, tutorial, scene, flags):
   else:
     if OS == 'windows': command = 'build' + '\\' + build + '\\' + tutorial + ' '
     else:               command = 'build' + '/' + tutorial + ' '
-    if scene != '':
-      command += '-c ' + modelDir + dash + scene + dash + scene + '_regression.ecs '
+    if tutorial == 'tutorial08':
+      command += '-i tutorials/tutorial08/' + scene + '.xml '
+    elif scene != '':
+      command += '-i ' + modelDir + dash + scene + dash + scene + '_regression.ecs '
     if tutorial == 'regression':
       command += '-regressions 2000 '
     if tutorial[0:8] == 'tutorial':
@@ -214,10 +216,12 @@ def render(OS, compiler, platform, build, isa, tutorial, scene, flags):
 def processConfiguration(OS, compiler, platform, build, isa, models):
   sys.stdout.write('compiling configuration ' + compiler + ' ' + platform + ' ' + build + ' ' + isa)
   sys.stdout.flush()
-  ret = compile(OS,compiler,platform,build,isa)
+  ret = 0 # compile(OS,compiler,platform,build,isa)
   if ret != 0: sys.stdout.write(" [failed]\n")
   else: 
     sys.stdout.write(" [passed]\n")
+
+    render(OS, compiler, platform, build, isa, 'tutorial08', 'subdiv0', 'static')
                       
     render(OS, compiler, platform, build, isa, 'verify', '', '')
     render(OS, compiler, platform, build, isa, 'benchmark', '', '')

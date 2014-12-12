@@ -78,7 +78,10 @@ namespace embree
       else if (term == "-fullscreen") g_fullscreen = true;
 
       /* output filename */
-      else if (term == "-o") outFilename = cin->getFileName();
+	  else if (term == "-o") {
+		  g_interactive = false;
+		  outFilename = cin->getFileName();
+	  }
       
       /*! Embree configuration. */
       else if (term == "-rtcore") g_rtcore = cin->getString();
