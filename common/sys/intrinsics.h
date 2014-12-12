@@ -68,10 +68,6 @@
 
 #include <intrin.h>
 
-__forceinline uint64 __rdpmc(int i) {
-  return __readpmc(i);
-}
-
 #if defined(__SSE4_2__)
 
 __forceinline int __popcnt(int in) {
@@ -284,15 +280,9 @@ __forceinline void __cpuid_count(int out[4], int op1, int op2) {
 
 #endif
 
-__forceinline uint64 __rdtsc()  {
+__forceinline uint64 read_tsc()  {
   uint32 high,low;
   asm volatile ("rdtsc" : "=d"(high), "=a"(low));
-  return (((uint64)high) << 32) + (uint64)low;
-}
-
-__forceinline uint64 __rdpmc(int i) {
-  uint32 high,low;
-  asm volatile ("rdpmc" : "=d"(high), "=a"(low) : "c"(i));
   return (((uint64)high) << 32) + (uint64)low;
 }
 
@@ -662,11 +652,11 @@ __forceinline uint64 rdtsc()
 #if !defined(__MIC__)
   int dummy[4]; 
   __cpuid(dummy,0); 
-  uint64 clock = __rdtsc(); 
+  uint64 clock = read_tsc(); 
   __cpuid(dummy,0); 
   return clock;
 #else
-  return __rdtsc(); 
+  return read_tsc(); 
 #endif
 }
 

@@ -25,7 +25,7 @@ SET(FLAGS_AVX512 "-mavx512f -mavx512pf -mavx512er -mavx512cd")
 
 SET(CMAKE_CXX_COMPILER "g++")
 SET(CMAKE_C_COMPILER "gcc")
-SET(CMAKE_CXX_FLAGS "-fPIC -std=c++11")
+SET(CMAKE_CXX_FLAGS "-fPIC -std=c++11 -Wno-narrowing")
 SET(CMAKE_CXX_FLAGS_DEBUG          "-DDEBUG  -g -O2 -Wstrict-aliasing=0")
 SET(CMAKE_CXX_FLAGS_RELEASE        "-DNDEBUG    -O3 -Wstrict-aliasing=0")
 SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-DNDEBUG -g -O3 -Wstrict-aliasing=0")
