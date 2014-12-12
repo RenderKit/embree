@@ -136,7 +136,7 @@ namespace embree
 										  const size_t array_elements = (grid_size_simd_blocks + 1) * 8;
 
 										  float *const ptr = (float*)_malloca(2 *array_elements * sizeof(float) + 64);
-										  float *const uv_arrays = ALIGN_PTR(ptr, 64);
+										  float *const uv_arrays = (float*)ALIGN_PTR(ptr, 64);
 										  float *const u_array = &uv_arrays[0];
 										  float *const v_array = &uv_arrays[grid_size_simd_blocks * 8];
 
