@@ -2,10 +2,11 @@ webpages =  www/index.html www/api.html www/tutorials.html www/downloads.html ww
 
 all: doc www
 www: $(webpages)
-doc: ../README.md README_bin.md ../readme.pdf 
+doc: ../README.md ../readme.pdf
+bin: README_bin.md readme_bin.pdf 
 images: images/tutorial00.jpg images/tutorial01.jpg images/tutorial02.jpg images/tutorial03.jpg images/tutorial04.jpg images/tutorial05.jpg images/tutorial06.jpg images/tutorial07.jpg
 
-.PHONY: all www doc images
+.PHONY: all www doc images bin
 
 replace=sed \
 -e '/<CONTENT_OVERVIEW>/{r src/overview.html' -e 'd' -e '}' \
@@ -30,6 +31,9 @@ version: ../build/version.h
 	sed ':a;N;s/.*\"\(.*\)\".*/\1/;ba' $< > $@
 
 
+### webpages
+########################################################################
+
 markdown2web = pandoc --email-obfuscation=none -f markdown $(filter-out src/webtemplate.html,$+) --template src/webtemplate -V select_$(basename $(@F)) -o $@
 
 $(webpages): src/links_web.md src/webtemplate.html
@@ -43,6 +47,9 @@ www/renderer.html: src/renderer.md
 www/api.html: src/api.md
 	$(markdown2web) --indented-code-classes=cpp 
 
+
+### images
+########################################################################
 
 images/%.jpg: 
 	echo `basename -s .jpg $@`
@@ -72,6 +79,10 @@ readme.html: version src/*.html
 	ps2pdf readme.ps 
 	cp readme.pdf ..
 
+
+### markdown
+########################################################################
+
 metadata.md: src/metadata.md version
 	sed -e "s/<EMBREE_VERSION>/`cat version`/" $< > $@
 
@@ -81,13 +92,23 @@ metadata.md: src/metadata.md version
 README_bin.md: metadata.md src/overview.md src/platforms.md src/support.md src/install.md src/api.md src/tutorials.md src/links_local.md
 	cat $+ > $@
 
+
+### pdf
+########################################################################
+
+markdown2tex = pandoc --columns=70 --chapters $+ -o $@
+
 %.tex: src/%.md src/links_local.md
-	pandoc --chapters $+ -o $@
+	$(markdown2tex)
 
 api.tex: src/api.md src/links_local.md
-	pandoc --chapters --indented-code-classes=cpp $+ -o $@
+	$(markdown2tex) --indented-code-classes=cpp
 #	sed -i -e 's/\\texttt/\\path/g' $@
 
+readme.pdf: readme.tex version overview.tex platforms.tex support.tex compilation.tex api.tex tutorials.tex
+	xelatex $<
+	xelatex $<
+#	cp readme.pdf ..
 
 
 readme_bin.html: version src/*.html
@@ -99,8 +120,13 @@ readme_bin.pdf: readme_bin.html
 	sed -i -e 's/\\240\\240/ /' readme_bin.ps
 	ps2pdf readme_bin.ps 
 
+
+### clean
+########################################################################
+
 clean:
 	rm -f version
+	rm -f metadata.md
 	rm -f readme.pdf
 	rm -f readme.ps
 	rm -f readme.html
@@ -108,5 +134,5 @@ clean:
 	rm -f readme_bin.pdf
 	rm -f readme_bin.ps
 	rm -f readme_bin.html
-	rm -f www/*.html
+	rm -f $(webpages)
 #	rm images/*.jpg
