@@ -497,7 +497,7 @@ namespace embree
 	bytesReserved += usedBlocks->getReservedBytes();
 	
 	Block* cur = usedBlocks;
-	while (cur = cur->next)
+	while ((cur = cur->next) != NULL)
 	  bytesWasted += cur->getFreeBytes();
       }
 

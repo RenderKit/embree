@@ -437,8 +437,7 @@ namespace embree
 	//cout << "  bounds = " << a.bounds << std::endl;
 	for (size_t i=0; i<16; i++) cout << "  quads[" << i << "] = " << a.quads[i] << ", " << std::endl;
 	cout << "  grid = " << &a.grid << std::endl;
-	"}";
-	return cout;
+	return cout << "}";
       }
 
       Bounds16 bounds;
