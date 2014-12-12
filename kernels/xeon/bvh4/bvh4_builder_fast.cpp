@@ -370,7 +370,7 @@ namespace embree
 	    /*if (!patch.isRegular())
 	    {
 	      Grid* leaf = (Grid*) bvh->alloc2.malloc(sizeof(Grid),16);
-	      new (leaf) Grid(id,mesh->id,f);
+	      new (leaf) Grid(id,mesh->id,f);3
 	      const BBox3fa bounds = leaf->quad(scene,patch,uv[0],uv[1],uv[2],uv[3]);
 	      prims[base.size()+s.size()] = PrimRef(bounds,BVH4::encodeTypedLeaf(leaf,0));
 	      s.add(bounds);

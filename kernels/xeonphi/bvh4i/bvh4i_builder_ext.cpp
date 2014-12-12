@@ -17,6 +17,7 @@
 #include "bvh4i/bvh4i.h"
 #include "bvh4i/bvh4i_builder.h"
 #include "bvh4i/bvh4i_rotate.h"
+#include "common/subdiv/feature_adaptive_gregory.h"
 
 #define PRESPLIT_SPACE_FACTOR         1.30f
 #define PRESPLIT_AREA_THRESHOLD      20.0f
@@ -894,16 +895,21 @@ PRINT(CORRECT_numPrims);
 
   void BVH4iBuilderSubdivMesh::build(const size_t threadIndex, const size_t threadCount)
   {
-    for (size_t i=0;i<scene->size();i++)
-      {
-	if (unlikely(scene->get(i) == NULL)) continue;
-	if (unlikely((scene->get(i)->type != SUBDIV_MESH) /*&& (scene->get(i)->type != INSTANCES)*/)) continue;
-	if (unlikely(!scene->get(i)->isEnabled())) continue;
-        SubdivMesh* geom = (SubdivMesh*) scene->get(i);
-	geom->initializeHalfEdgeStructures();
-      }
-
     leafItemThreshold = 1;
+
+    // for (size_t i=0;i<scene->size();i++)
+    //   {
+    // 	if (unlikely(scene->get(i) == NULL)) continue;
+    // 	if (unlikely((scene->get(i)->type != SUBDIV_MESH) /*&& (scene->get(i)->type != INSTANCES)*/)) continue;
+    // 	if (unlikely(!scene->get(i)->isEnabled())) continue;
+    //     SubdivMesh* geom = (SubdivMesh*) scene->get(i);
+    // 	geom->initializeHalfEdgeStructures();
+    //   }
+
+     new (&iter) Scene::Iterator<SubdivMesh>(this->scene);
+     for (size_t i=0; i<iter.size(); i++)
+       if (iter[i]) iter[i]->initializeHalfEdgeStructures();
+     pstate.init(iter,size_t(1024));
 
     BVH4iBuilder::build(threadIndex,threadCount);
   }
@@ -941,22 +947,78 @@ PRINT(CORRECT_numPrims);
 
   size_t BVH4iBuilderSubdivMesh::getNumPrimitives()
   {
+    PrimInfo pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
+     {
+       size_t s = 0;
+       for (size_t f=r.begin(); f!=r.end(); ++f) 
+	{          
+          if (!mesh->valid(f)) continue;
+	  feature_adaptive_subdivision_gregory(f,mesh->getHalfEdge(f),mesh->getVertexBuffer(),
+					       [&](const CatmullClarkPatch& patch, const Vec2f uv[4], const int subdiv[4])
+					       {
+						 s++;
+					       });
+	}
+       return PrimInfo(s,empty,empty);
+     }, [](const PrimInfo& a, const PrimInfo b) -> PrimInfo { return PrimInfo(a.size()+b.size(),empty,empty); });
+
+    return pinfo.size();
+
     /* count total number of subdivision surface objects */
-    size_t numFaces = 0;       
-    for (size_t i=0;i<scene->size();i++)
-      {
-	if (unlikely(scene->get(i) == NULL)) continue;
-	if (unlikely((scene->get(i)->type != SUBDIV_MESH) /*&& (scene->get(i)->type != INSTANCES)*/)) continue;
-	if (unlikely(!scene->get(i)->isEnabled())) continue;
-        SubdivMesh* geom = (SubdivMesh*) scene->get(i);
-	numFaces += geom->size();
-      }
-    return numFaces;	
+    // size_t numFaces = 0;       
+    // for (size_t i=0;i<scene->size();i++)
+    //   {
+    // 	if (unlikely(scene->get(i) == NULL)) continue;
+    // 	if (unlikely((scene->get(i)->type != SUBDIV_MESH) /*&& (scene->get(i)->type != INSTANCES)*/)) continue;
+    // 	if (unlikely(!scene->get(i)->isEnabled())) continue;
+    //     SubdivMesh* geom = (SubdivMesh*) scene->get(i);
+    // 	numFaces += geom->size();
+    //   }
+    // return numFaces;	
   }
 
   void BVH4iBuilderSubdivMesh::computePrimRefs(const size_t threadIndex, const size_t threadCount)
   {
+#if 0
     scene->lockstep_scheduler.dispatchTask( task_computePrimRefsSubdivMesh, this, threadIndex, threadCount );	
+#else
+
+    PrimInfo pinfo( empty );
+    SubdivPatch1 *subdiv_patches = (SubdivPatch1*)org_accel;
+
+      pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
+      {
+        PrimInfo s(empty);
+        for (size_t f=r.begin(); f!=r.end(); ++f) 
+	{
+          if (!mesh->valid(f)) continue;
+
+	  feature_adaptive_subdivision_gregory(f,mesh->getHalfEdge(f),mesh->getVertexBuffer(),
+					       [&](const CatmullClarkPatch& ipatch, const Vec2f uv[4], const int subdiv[4])
+	  {
+	  
+	    const unsigned int patchIndex = base.size()+s.size();
+	    subdiv_patches[patchIndex] = SubdivPatch1(ipatch, mesh->id, f, mesh, uv);
+	    
+	    /* compute patch bounds */
+	    const BBox3fa bounds = subdiv_patches[patchIndex].bounds(mesh);
+	    assert(bounds.lower.x <= bounds.upper.x);
+	    assert(bounds.lower.y <= bounds.upper.y);
+	    assert(bounds.lower.z <= bounds.upper.z);
+	    
+	    prims[base.size()+s.size()] = PrimRef(bounds,patchIndex);
+	    s.add(bounds);
+	  });
+        }
+        return s;
+      }, [](PrimInfo a, const PrimInfo& b) -> PrimInfo { a.merge(b); return a; });
+
+      global_bounds.centroid2 = pinfo.centBounds;
+      global_bounds.geometry  = pinfo.geomBounds;
+
+#endif
+
+
   }
 
   void BVH4iBuilderSubdivMesh::createAccel(const size_t threadIndex, const size_t threadCount)
@@ -1001,8 +1063,6 @@ PRINT(CORRECT_numPrims);
 
     SubdivPatch1 *acc = (SubdivPatch1*)org_accel;
 
-    unsigned int local_lazyMem64BytesBlocks = 0;
-
     for (; g<numTotalGroups; g++) 
       {
 	if (unlikely(scene->get(g) == NULL)) continue;
@@ -1035,8 +1095,6 @@ PRINT(CORRECT_numPrims);
 	    	    
 	    const BBox3fa bounds = tmp.bounds(subdiv_mesh);
 	    
-	    local_lazyMem64BytesBlocks += tmp.grid_subtree_size_64b_blocks;
-
 	    tmp.store(&acc[currentID]);
 
 	    prefetch<PFHINT_L1EX>(&prims[currentID]);
