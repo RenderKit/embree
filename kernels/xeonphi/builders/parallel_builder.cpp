@@ -87,7 +87,7 @@ namespace embree
 	      {
 		if (local_workStack[globalCoreID].mutex.val() > 0)
 		  {
-		    __pause(1024);
+		    __pause_cpu(1024);
 		    continue;
 		  }
 		else

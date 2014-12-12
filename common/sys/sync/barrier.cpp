@@ -331,7 +331,7 @@ namespace embree
   }
   
   void QuadTreeBarrier::CoreSyncData::pause(unsigned int &cycles) {
-    __pause_expfalloff(cycles,MAX_MIC_BARRIER_WAIT_CYCLES);
+    __pause_cpu_expfalloff(cycles,MAX_MIC_BARRIER_WAIT_CYCLES);
   }
   
   void QuadTreeBarrier::CoreSyncData::switchModeAndSendRunSignal(const unsigned int m)

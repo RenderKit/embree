@@ -101,7 +101,7 @@ namespace embree
 	DBG( std::cout << "WAIT APP THREAD..." << std::endl << std::flush);
 	__memory_barrier();
 	while (tasks[liveIndex] != NULL) { 
-	  __pause(1023); 
+	  __pause_cpu(1023); 
 	}
 	DBG( std::cout << "WAIT APP THREAD...DONE" << std::endl << std::flush);
 	
@@ -122,7 +122,7 @@ namespace embree
 	/* wait for available task */
 	while(head_task_list == tail_task_list && !terminateThreads)
 	  {
-	    __pause(1023); 
+	    __pause_cpu(1023); 
 	  }
 
 	DBG( std::cout<< "WOKE " << threadIndex << std::endl);

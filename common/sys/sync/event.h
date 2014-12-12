@@ -45,7 +45,7 @@ namespace embree
 
     void wait() {
 #if defined(__MIC__)
-      while (!event) __pause(1024);
+      while (!event) __pause_cpu(1024);
 #else
       mutex.lock();
       while (!event) condition.wait(mutex);

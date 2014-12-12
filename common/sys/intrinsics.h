@@ -669,19 +669,19 @@ __forceinline float cast_i2f(int i) {
 }
 
 #if defined(__MIC__)
-__forceinline void __pause (const unsigned int cycles = 256) { 
+__forceinline void __pause_cpu (const unsigned int cycles = 256) { 
   _mm_delay_32(cycles); 
 }
 #else
-__forceinline void __pause (const int cycles = 0) {
+__forceinline void __pause_cpu (const int cycles = 0) {
   for (size_t i=0; i<8; i++)
     _mm_pause();    
 }
 #endif
 
-__forceinline void __pause_expfalloff(unsigned int &cycles, const unsigned int max_cycles) 
+__forceinline void __pause_cpu_expfalloff(unsigned int &cycles, const unsigned int max_cycles) 
 { 
-  __pause(cycles);
+  __pause_cpu(cycles);
   cycles += cycles;
   if (cycles > max_cycles) 
     cycles = max_cycles;

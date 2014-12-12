@@ -967,7 +967,7 @@ namespace embree
       {
 	/* let only one thread lazily build this object */
 	if (atomic_add(&initializing,1) != 0) {
-	  while (!initialized) __pause();
+	  while (!initialized) __pause_cpu();
 	  return (size_t)*parent;
 	}
 
