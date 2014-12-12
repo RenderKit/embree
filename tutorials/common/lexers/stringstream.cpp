@@ -50,6 +50,6 @@ namespace embree
     while (cin->peek() != EOF && !isSeparator(cin->peek()))
       str.push_back((char)cin->get());
     str.push_back(0);
-    return std::string(&str[0]);
+    return std::string(str.data());
   }
 }

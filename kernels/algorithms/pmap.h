@@ -70,7 +70,7 @@ namespace embree
       });
 
       /* perform parallel radix sort of the key/value pairs */
-      radix_sort<KeyValue,Key>(&vec[0],&temp[0],keys.size());
+      radix_sort<KeyValue,Key>(vec.data(),temp.data(),keys.size());
     }
 
     /*! initialized the parallel map from user buffers with keys and values */
@@ -89,7 +89,7 @@ namespace embree
       });
 
       /* perform parallel radix sort of the key/value pairs */
-      radix_sort<KeyValue,Key>(&vec[0],&temp[0],keys.size());
+      radix_sort<KeyValue,Key>(vec.data(),temp.data(),keys.size());
     }
 
     /*! Returns a pointer to the value associated with the specified key. The pointer will be NULL of the key is not contained in the map. */

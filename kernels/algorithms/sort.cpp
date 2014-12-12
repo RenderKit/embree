@@ -40,8 +40,8 @@ namespace embree
       const size_t M = 10;
       for (size_t N=10; N<10000000; N*=2.1f)
       {
-	std::vector<Key> src(N); memset(&src[0],0,N*sizeof(Key));
-	std::vector<Key> tmp(N); memset(&tmp[0],0,N*sizeof(Key));
+	std::vector<Key> src(N); memset(src.data(),0,N*sizeof(Key));
+	std::vector<Key> tmp(N); memset(tmp.data(),0,N*sizeof(Key));
 	for (size_t i=0; i<N; i++) src[i] = uint64(rand())*uint64(rand());
 	
 	/* calculate checksum */
@@ -50,7 +50,7 @@ namespace embree
 	/* sort numbers */
 	double t0 = getSeconds();
 	for (size_t i=0; i<M; i++) {
-          radix_sort(&src[0],&tmp[0],N);
+          radix_sort(src.data(),tmp.data(),N);
         }
 	double t1 = getSeconds();
 	printf("%zu/%3.2fM ",N,1E-6*double(N*M)/(t1-t0));

@@ -49,7 +49,7 @@ namespace embree
       });
 
       /* sort the data */
-      radix_sort<T>(&vec[0],&temp[0],vec.size());
+      radix_sort<T>(vec.data(),temp.data(),vec.size());
     }
 
 
@@ -68,7 +68,7 @@ namespace embree
       });
 
       /* parallel radix sort of the data */
-      radix_sort<T>(&vec[0],&temp[0],vec.size());
+      radix_sort<T>(vec.data(),temp.data(),vec.size());
     }
 
     /*! tests if some element is in the set */
