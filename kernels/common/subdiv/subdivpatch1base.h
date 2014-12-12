@@ -41,7 +41,7 @@ namespace embree
   template<class T>
     __forceinline T *aligned_alloca(size_t elements, const size_t alignment = 64)
     {
-      void *ptr = alloca(elements * sizeof(T) + alignment);
+      void *ptr = _alloca(elements * sizeof(T) + alignment);
       return (T*)ALIGN_PTR(ptr,alignment);
     }
 

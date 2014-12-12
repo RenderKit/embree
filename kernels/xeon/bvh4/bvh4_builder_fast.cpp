@@ -683,7 +683,6 @@ namespace embree
 	    
 	    /* compute patch bounds */
 	    const BBox3fa bounds = subdiv_patches[patchIndex].bounds(mesh);
-	    
 	    assert(bounds.lower.x <= bounds.upper.x);
 	    assert(bounds.lower.y <= bounds.upper.y);
 	    assert(bounds.lower.z <= bounds.upper.z);
