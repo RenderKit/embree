@@ -24,16 +24,15 @@
 
 # Prerequisites:
 #   Install Python 3.2+
-#   Install Visual Studio 2010 or 2008
+#   Install Visual Studio 2013
 #   Install Intel C++ Compiler
 #   Check out Embree into <embree_dir>
 
 # Instructions:
-#   Open the "Visual Studio x64 Cross Tools Command Prompt (2010)"
+#   Open the "Visual Studio x64 Cross Tools Command Prompt (2013)"
 #   cd <embree_dir>
-#   mkdir TEST
-#   <python_dir>\python.exe <embree_dir>\scripts\benchmark.py render windows TEST
-#   <python_dir>\python.exe <embree_dir>\scripts\benchmark.py extract windows TEST
+#   <python_dir>\python.exe <embree_dir>\scripts\benchmark.py run     windows test_dir
+#   <python_dir>\python.exe <embree_dir>\scripts\benchmark.py compile windows test_dir
 
 # Linux and OS X
 # --------------
@@ -47,8 +46,8 @@
 #   Open a shell
 #   cd <embree_dir>
 #   mkdir TEST
-#   ./scripts/benchmark.py render linux <model_dir> TEST
-#   ./scripts/benchmark.py extract linux TEST
+#   ./scripts/benchmark.py run     linux <model_dir> test_dir
+#   ./scripts/benchmark.py compile linux <model_dir> test_dir
 
 import sys
 import os
@@ -58,40 +57,48 @@ dash = '/'
 
 ########################## configuration ##########################
 
-#compilers_win = ['V100']
+compilers_win = ['V120']
 #compilers_win = ['ICC']
-compilers_win  = ['V100', 'V110', 'V120', 'ICC']
+#compilers_win  = ['V100', 'V110', 'V120', 'ICC']
 #compilers_unix = ['ICC']
 compilers_unix = ['GCC', 'ICC']
 #compilers_unix = ['GCC', 'CLANG', 'ICC']
 compilers      = []
 
-supported_configurations = [
-  'V100_x64_Debug', 'V100_x64_Release',
-  'V110_x64_Debug', 'V110_x64_Release', 'V110_x64_ReleaseAVX', 
-  'V120_x64_Debug', 'V120_x64_Release', 'V120_x64_ReleaseAVX', 'V120_x64_ReleaseAVX2', 
-  'ICC_x64_Debug', 'ICC_x64_Release', 'ICC_x64_ReleaseAVX', 'ICC_x64_ReleaseAVX2', 
-  'GCC_x64_Debug', 'GCC_x64_Release', 'GCC_x64_ReleaseAVX', 'GCC_x64_ReleaseAVX2', 
-  'CLANG_x64_Debug', 'CLANG_x64_Release', 'CLANG_x64_ReleaseAVX', 'CLANG_x64_ReleaseAVX2', 
-  #'V120_win32_Debug',
-  'V120_win32_Release', 'V120_win32_ReleaseAVX', 'V120_win32_ReleaseAVX2'
-  ]
-
-#builds_win = ['Debug']
-#builds_win = ['Release']
-#builds_win = ['Release', 'Debug', 'ReleaseAVX']
-builds_win = ['Release', 'Debug', 'ReleaseAVX', 'ReleaseAVX2']
-#builds_unix = ['Debug']
-#builds_unix = ['Release']
-#builds_unix = ['Release', 'Debug', 'ReleaseAVX']
-builds_unix = ['Release', 'Debug', 'ReleaseAVX', 'ReleaseAVX2']
-builds = []
-
 #platforms_win  = ['win32']
-#platforms_win  = ['x64']
-platforms_win  = ['win32', 'x64']
+platforms_win  = ['x64']
+#platforms_win  = ['win32', 'x64']
 platforms_unix = ['x64']
 platforms      = []
+
+#builds_win = ['Debug']
+builds_win = ['Release']
+#builds_win = ['Release', 'Debug']
+#builds_unix = ['Debug']
+#builds_unix = ['Release']
+builds_unix = ['Release', 'Debug']
+builds = []
+
+ISAs_win  = ['SSE2']
+#ISAs_win  = ['SSE2', 'SSE4.2', 'AVX', 'AVX2']
+ISAs_unix = ['SSE2', 'SSE4.2', 'AVX', 'AVX2']
+ISAs = []
+
+supported_configurations = [
+  'V120_win32_Debug_SSE2',   'V120_win32_Debug_SSE4.2',   'V120_win32_Debug_AVX',   'V120_win32_Debug_AVX2', 
+  'V120_win32_Release_SSE2', 'V120_win32_Release_SSE4.2', 'V120_win32_Release_AVX', 'V120_win32_Release_AVX2', 
+  'V120_x64_Debug_SSE2',     'V120_x64_Debug_SSE4.2',     'V120_x64_Debug_AVX',     'V120_x64_Debug_AVX2', 
+  'V120_x64_Release_SSE2',   'V120_x64_Release_SSE4.2',   'V120_x64_Release_AVX',   'V120_x64_Release_AVX2', 
+  'ICC_win32_Debug_SSE2',    'ICC_win32_Debug_SSE4.2',    'ICC_win32_Debug_AVX',    'ICC_win32_Debug_AVX2', 
+  'ICC_win32_Release_SSE2',  'ICC_win32_Release_SSE4.2',  'ICC_win32_Release_AVX',  'ICC_win32_Release_AVX2', 
+  'ICC_x64_Debug_SSE2',      'ICC_x64_Debug_SSE4.2',      'ICC_x64_Debug_AVX',      'ICC_x64_Debug_AVX2', 
+  'ICC_x64_Release_SSE2',    'ICC_x64_Release_SSE4.2',    'ICC_x64_Release_AVX',    'ICC_x64_Release_AVX2', 
+  'GCC_x64_Debug_SSE2',      'GCC_x64_Debug_SSE4.2',      'GCC_x64_Debug_AVX',      'GCC_x64_Debug_AVX2', 
+  'GCC_x64_Release_SSE2',    'GCC_x64_Release_SSE4.2',    'GCC_x64_Release_AVX',    'GCC_x64_Release_AVX2', 
+  'CLANG_x64_Debug_SSE2',    'CLANG_x64_Debug_SSE4.2',    'CLANG_x64_Debug_AVX',    'CLANG_x64_Debug_AVX2',  
+  'CLANG_x64_Release_SSE2',  'CLANG_x64_Release_SSE4.2',  'CLANG_x64_Release_AVX',  'CLANG_x64_Release_AVX2',  
+  ]
+
 
 models = {}
 models['win32'] = [ 'conference', 'sponza', 'headlight', 'crown', 'bentley' ]
@@ -100,8 +107,8 @@ models['x64'  ] = [ 'conference', 'sponza', 'headlight', 'crown', 'bentley', 'xy
 modelDir  = ''
 testDir = ''
 
-def configName(OS, compiler, platform, build, tutorial, scene, flags):
-  cfg = OS + '_' + compiler + '_' + platform + '_' + build
+def configName(OS, compiler, platform, build, isa, tutorial, scene, flags):
+  cfg = OS + '_' + compiler + '_' + platform + '_' + build + '_' + isa
   if tutorial != '':
     cfg += '_' + tutorial
   if scene != '':
@@ -112,30 +119,42 @@ def configName(OS, compiler, platform, build, tutorial, scene, flags):
 
 ########################## compiling ##########################
 
-def compile(OS,compiler,platform,build):
+def compile(OS,compiler,platform,build,isa):
 
-  base = configName(OS, compiler, platform, build, 'build', '', '')
+  base = configName(OS, compiler, platform, build, isa, 'build', '', '')
   logFile = testDir + dash + base + '.log'
 
   if OS == 'windows':
-  
-    cfg = '/p:Configuration=' + build + ';'
-    cfg += 'Platform=' + platform + ';'
-    cfg += 'PlatformToolset=';
-#   if (compiler == 'ICC'): cfg += '"Intel C++ Compiler 12.1" '
-#   if (compiler == 'ICC'): cfg += '"Intel C++ Compiler XE 12.1" '
-    if (compiler == 'ICC'): cfg += '"Intel C++ Compiler XE 14.0" '
-    elif (compiler == 'V90'): cfg += 'v90 '
-    elif (compiler == 'V100'): cfg += 'v100 '
-    elif (compiler == 'V110'): cfg += 'v110 '
-    elif (compiler == 'V120'): cfg += 'v120 '
-    else: 
-      sys.stderr.write('unknown compiler: ' + compiler + '\n')
-      sys.exit(1)
+
+    if (compiler == 'ICC'): compiler = '"Intel C++ Compiler XE 14.0" '
+
+	# generate build directory
+    if os.path.exists('build'):
+	  if os.path.exists('build/CMakeCache.txt'):
+	    os.system('rm build/CMakeCache.txt')
+    else:	
+	  os.system('mkdir build')
+
+    # generate solution files using cmake
+    command = 'cmake -L '
+    command += ' -G "Visual Studio 12 2013"'
+    command += ' -T ' + compiler
+    command += ' -A ' + platform
+    command += ' -D XEON_ISA=' + isa
+    command += ' -D RTCORE_RAY_MASK=OFF'
+    command += ' -D RTCORE_BACKFACE_CULLING=OFF'
+    command += ' -D RTCORE_INTERSECTION_FILTER=ON'
+    command += ' -D RTCORE_BUFFER_STRIDE=ON'
+    command += ' -D RTCORE_STAT_COUNTERS=OFF'
+    command += ' ..'
+    os.system('echo ' + command + ' > ' + logFile)
+    ret = os.system('cd build && ' + command + ' >> ../' + logFile)
+    if ret != 0: return ret
 
     # compile Embree
-    command =  'msbuild embree.sln' + ' /nologo ' + cfg + ' /t:rebuild /verbosity:q > ' + logFile
-    return os.system(command)
+    command =  'msbuild build\embree.sln' + ' /m /nologo /p:Platform=' + platform + ' /p:Configuration=' + build + ' /t:rebuild /verbosity:n' 
+    os.system('echo ' + command + ' >> ' + logFile)
+    return os.system(command + ' >> ' + logFile)
   
   else:
 
@@ -143,34 +162,16 @@ def compile(OS,compiler,platform,build):
       sys.stderr.write('unknown platform: ' + platform + '\n')
       sys.exit(1)
 
-    if   (compiler == 'ICC'  ): compilerOption = ' -D COMPILER=ICC'
-    elif (compiler == 'GCC'  ): compilerOption = ' -D COMPILER=GCC'
-    elif (compiler == 'CLANG'): compilerOption = ' -D COMPILER=CLANG'
-    else:
-      sys.stderr.write('unknown compiler: ' + compiler + '\n')
-      sys.exit(1)
-
-    # first compile Embree
+    # compile Embree
     command = 'mkdir -p build && cd build && cmake > /dev/null'
-    command += compilerOption
+    command += ' -D COMPILER=' + compiler
+    command += ' -D CMAKE_BUILD_TYPE='+build
+    command += ' -D XEON_ISA=' + isa
     command += ' -D RTCORE_RAY_MASK=OFF'
     command += ' -D RTCORE_BACKFACE_CULLING=OFF'
     command += ' -D RTCORE_INTERSECTION_FILTER=ON'
     command += ' -D RTCORE_BUFFER_STRIDE=ON'
     command += ' -D RTCORE_STAT_COUNTERS=OFF'
-
-    if build == 'ReleaseAVX' or build == 'ReleaseAVX2':
-      command += ' -D XEON_ISA=AVX'
-    elif build == 'ReleaseAVX2':
-      command += ' -D XEON_ISA=AVX2'
-    else:
-      command += ' -D XEON_ISA=SSE4.2'
-
-    if build == 'Debug':
-      command += ' -D CMAKE_BUILD_TYPE=Debug'
-    else:
-      command += ' -D CMAKE_BUILD_TYPE=Release'
-    
     command += ' .. && make clean && make -j 8'
     command += ' &> ../' + logFile
     return os.system(command)
@@ -179,23 +180,25 @@ def compileLoop(OS):
     for compiler in compilers:
       for platform in platforms:
         for build in builds:
-          sys.stdout.write(OS + ' ' + compiler + ' ' + platform + ' ' + build)
-          compile(OS,compiler,platform,isas,build)
+          for isa in ISAs:
+            if (compiler + '_' + platform + '_' + build + '_' + isa) in supported_configurations:
+              sys.stdout.write(OS + ' ' + compiler + ' ' + platform + ' ' + build + ' ' + isa)
+              compile(OS,compiler,platform,build,isa)
 
 ########################## rendering ##########################
 
-def render(OS, compiler, platform, build, tutorial, scene, flags):
+def render(OS, compiler, platform, build, isa, tutorial, scene, flags):
   sys.stdout.write("  "+tutorial)
   if scene != '': sys.stdout.write(' '+scene)
   if flags != '': sys.stdout.write(' '+flags)
   sys.stdout.flush()
-  base = configName(OS, compiler, platform, build, tutorial, scene, flags)
+  base = configName(OS, compiler, platform, build, isa, tutorial, scene, flags)
   logFile = testDir + dash + base + '.log'
   imageFile = testDir + dash + base + '.tga'
   if os.path.exists(logFile):
     sys.stdout.write(" [skipped]\n")
   else:
-    if OS == 'windows': command = platform + '\\' + build + '\\' + tutorial + ' '
+    if OS == 'windows': command = 'build' + '\\' + build + '\\' + tutorial + ' '
     else:               command = 'build' + '/' + tutorial + ' '
     if scene != '':
       command += '-c ' + modelDir + dash + scene + dash + scene + '_regression.ecs '
@@ -208,58 +211,59 @@ def render(OS, compiler, platform, build, tutorial, scene, flags):
     if ret == 0: sys.stdout.write(" [passed]\n")
     else       : sys.stdout.write(" [failed]\n")
 
-def processConfiguration(OS, compiler, platform, build, models):
-  sys.stdout.write('compiling configuration ' + compiler + ' ' + platform + ' ' + build)
+def processConfiguration(OS, compiler, platform, build, isa, models):
+  sys.stdout.write('compiling configuration ' + compiler + ' ' + platform + ' ' + build + ' ' + isa)
   sys.stdout.flush()
-  ret = compile(OS,compiler,platform,build)
+  ret = compile(OS,compiler,platform,build,isa)
   if ret != 0: sys.stdout.write(" [failed]\n")
   else: 
     sys.stdout.write(" [passed]\n")
                       
-    render(OS, compiler, platform, build, 'verify', '', '')
-    render(OS, compiler, platform, build, 'benchmark', '', '')
+    render(OS, compiler, platform, build, isa, 'verify', '', '')
+    render(OS, compiler, platform, build, isa, 'benchmark', '', '')
 
-    render(OS, compiler, platform, build, 'tutorial00', '', '')
-    render(OS, compiler, platform, build, 'tutorial01', '', '')
-    render(OS, compiler, platform, build, 'tutorial02', '', '')
+    render(OS, compiler, platform, build, isa, 'tutorial00', '', '')
+    render(OS, compiler, platform, build, isa, 'tutorial01', '', '')
+    render(OS, compiler, platform, build, isa, 'tutorial02', '', '')
     for model in models:
-      render(OS, compiler, platform, build, 'tutorial03', model, 'static')
-      render(OS, compiler, platform, build, 'tutorial03', model, 'dynamic')
-      render(OS, compiler, platform, build, 'tutorial03', model, 'high_quality')
-      render(OS, compiler, platform, build, 'tutorial03', model, 'robust')
-      render(OS, compiler, platform, build, 'tutorial03', model, 'compact')
+      render(OS, compiler, platform, build, isa, 'tutorial03', model, 'static')
+      render(OS, compiler, platform, build, isa, 'tutorial03', model, 'dynamic')
+      render(OS, compiler, platform, build, isa, 'tutorial03', model, 'high_quality')
+      render(OS, compiler, platform, build, isa, 'tutorial03', model, 'robust')
+      render(OS, compiler, platform, build, isa, 'tutorial03', model, 'compact')
 
-    render(OS, compiler, platform, build, 'tutorial04', '', '')
-    render(OS, compiler, platform, build, 'tutorial05', '', '')
+    render(OS, compiler, platform, build, isa, 'tutorial04', '', '')
+    render(OS, compiler, platform, build, isa, 'tutorial05', '', '')
     for model in models:
-      render(OS, compiler, platform, build, 'tutorial06', model, '')
-    render(OS, compiler, platform, build, 'tutorial07', '', '')
+      render(OS, compiler, platform, build, isa, 'tutorial06', model, '')
+    render(OS, compiler, platform, build, isa, 'tutorial07', '', '')
 			    
-    render(OS, compiler, platform, build, 'tutorial00_ispc', '', '')
-    render(OS, compiler, platform, build, 'tutorial01_ispc', '', '')
-    render(OS, compiler, platform, build, 'tutorial02_ispc', '', '')
+    render(OS, compiler, platform, build, isa, 'tutorial00_ispc', '', '')
+    render(OS, compiler, platform, build, isa, 'tutorial01_ispc', '', '')
+    render(OS, compiler, platform, build, isa, 'tutorial02_ispc', '', '')
     for model in models:
-      render(OS, compiler, platform, build, 'tutorial03_ispc', model, '')
-    render(OS, compiler, platform, build, 'tutorial04_ispc', '', '')
-    render(OS, compiler, platform, build, 'tutorial05_ispc', '', '')
+      render(OS, compiler, platform, build, isa, 'tutorial03_ispc', model, '')
+    render(OS, compiler, platform, build, isa, 'tutorial04_ispc', '', '')
+    render(OS, compiler, platform, build, isa, 'tutorial05_ispc', '', '')
     for model in models:
-      render(OS, compiler, platform, build, 'tutorial06_ispc', model, '')
-    render(OS, compiler, platform, build, 'tutorial07_ispc', '', 'static')
-    render(OS, compiler, platform, build, 'tutorial07_ispc', '', 'dynamic')
-    render(OS, compiler, platform, build, 'tutorial07_ispc', '', 'high_quality')
+      render(OS, compiler, platform, build, isa, 'tutorial06_ispc', model, '')
+    render(OS, compiler, platform, build, isa, 'tutorial07_ispc', '', 'static')
+    render(OS, compiler, platform, build, isa, 'tutorial07_ispc', '', 'dynamic')
+    render(OS, compiler, platform, build, isa, 'tutorial07_ispc', '', 'high_quality')
 
 def renderLoop(OS):
     for compiler in compilers:
       for platform in platforms:
         for build in builds:
-          if compiler + '_' + platform + '_' + build in supported_configurations:
-            processConfiguration(OS, compiler, platform, build, models[platform])
+          for isa in ISAs:
+            if (compiler + '_' + platform + '_' + build + '_' + isa) in supported_configurations:
+              processConfiguration(OS, compiler, platform, build, isa, models[platform])
 
 ########################## command line parsing ##########################
 
 def printUsage():
-  sys.stderr.write('Usage: ' + sys.argv[0] + ' render  <os> <testDir> <modelDir>\n')
-  sys.stderr.write('       ' + sys.argv[0] + ' extract <os> <testDir>\n')
+  sys.stderr.write('Usage: ' + sys.argv[0] + ' compile <os> <testDir>\n')
+  sys.stderr.write('       ' + sys.argv[0] + ' run     <os> <testDir> <modelDir>\n')
   sys.exit(1)
 
 if len(sys.argv) < 3: printUsage()
@@ -271,6 +275,7 @@ if OS == 'windows':
   compilers = compilers_win
   platforms = platforms_win
   builds = builds_win
+  ISAs = ISAs_win
   modelDir = '%HOMEPATH%\\models\\embree'
 
 else:
@@ -278,14 +283,24 @@ else:
   compilers = compilers_unix
   platforms = platforms_unix
   builds = builds_unix
+  ISAs = ISAs_unix
   modelDir = '~/models/embree'
 
-if mode == 'render':
+if mode == 'run':
   if len(sys.argv) < 4: printUsage()
   testDir = sys.argv[3]
-  os.system('mkdir '+testDir)
+  if not os.path.exists(testDir):
+    os.system('mkdir '+testDir)
   if len(sys.argv) > 4: 
     modelDir = sys.argv[4]
   renderLoop(OS)
+  sys.exit(1)
+
+if mode == 'compile':
+  if len(sys.argv) < 4: printUsage()
+  testDir = sys.argv[3]
+  if not os.path.exists(testDir):
+    os.system('mkdir '+testDir)
+  compileLoop(OS)
   sys.exit(1)
 

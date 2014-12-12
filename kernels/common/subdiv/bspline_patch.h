@@ -570,28 +570,28 @@ namespace embree
       return eval_t(uu,vv,u_n,v_n);
     }
 
-    __forceinline avx3f eval8(const avxf uu, const avxf vv) const
+    __forceinline avx3f eval8(const avxf &uu, const avxf &vv) const
     {
       const avx4f v_n = CubicBSplineCurve::eval8(vv); //FIXME: precompute in table
       const avx4f u_n = CubicBSplineCurve::eval8(uu); //FIXME: precompute in table
       return eval8(uu,vv,u_n,v_n);
     }
 
-    __forceinline avx3f tangentU8(const avxf uu, const avxf vv) const
+    __forceinline avx3f tangentU8(const avxf &uu, const avxf &vv) const
     {
       const avx4f v_n = CubicBSplineCurve::derivative8(vv); 
       const avx4f u_n = CubicBSplineCurve::eval8(uu); 
       return eval8(uu,vv,u_n,v_n);      
     }
 
-    __forceinline avx3f tangentV8(const avxf uu, const avxf vv) const
+    __forceinline avx3f tangentV8(const avxf &uu, const avxf &vv) const
     {
       const avx4f v_n = CubicBSplineCurve::eval8(vv); 
       const avx4f u_n = CubicBSplineCurve::derivative8(uu); 
       return eval8(uu,vv,u_n,v_n);      
     }
 
-    __forceinline avx3f normal8(const avxf uu, const avxf vv) const
+    __forceinline avx3f normal8(const avxf &uu, const avxf &vv) const
     {
       const avx3f tU = tangentU8(uu,vv);
       const avx3f tV = tangentV8(uu,vv);
