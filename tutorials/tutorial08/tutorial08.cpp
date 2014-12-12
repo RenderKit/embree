@@ -78,7 +78,10 @@ namespace embree
       else if (term == "-fullscreen") g_fullscreen = true;
 
       /* output filename */
-      else if (term == "-o") outFilename = cin->getFileName();
+	  else if (term == "-o") {
+		  g_interactive = false;
+		  outFilename = cin->getFileName();
+	  }
       
       /*! Embree configuration. */
       else if (term == "-rtcore") g_rtcore = cin->getString();
@@ -140,6 +143,7 @@ namespace embree
 #if defined(__USE_OPENSUBDIV__)
     mapKeyToFunction('t', toggleOpenSubdiv);
 #endif
+	std::cout << " === Possible cmd line options: -lazy, -pregenerate, -cache === " << std::endl;
 
     /*! Parse command line options. */  
     parseCommandLine(new ParseStream(new CommandLineStream(argc, argv)), FileName());

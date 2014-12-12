@@ -57,12 +57,12 @@ dash = '/'
 
 ########################## configuration ##########################
 
-compilers_win = ['V120']
-#compilers_win = ['ICC']
+#compilers_win = ['V120']
+compilers_win = ['ICC']
 #compilers_win  = ['V100', 'V110', 'V120', 'ICC']
 #compilers_unix = ['ICC']
-compilers_unix = ['GCC', 'ICC']
-#compilers_unix = ['GCC', 'CLANG', 'ICC']
+#compilers_unix = ['GCC', 'ICC']
+compilers_unix = ['GCC', 'CLANG', 'ICC']
 compilers      = []
 
 #platforms_win  = ['win32']
@@ -75,13 +75,14 @@ platforms      = []
 builds_win = ['Release']
 #builds_win = ['Release', 'Debug']
 #builds_unix = ['Debug']
-#builds_unix = ['Release']
-builds_unix = ['Release', 'Debug']
+builds_unix = ['Release']
+#builds_unix = ['Release', 'Debug']
 builds = []
 
 ISAs_win  = ['SSE2']
 #ISAs_win  = ['SSE2', 'SSE4.2', 'AVX', 'AVX2']
-ISAs_unix = ['SSE2', 'SSE4.2', 'AVX', 'AVX2']
+ISAs_unix = ['AVX2']
+#ISAs_unix = ['SSE2', 'SSE4.2', 'AVX', 'AVX2']
 ISAs = []
 
 supported_configurations = [
@@ -183,7 +184,10 @@ def compileLoop(OS):
           for isa in ISAs:
             if (compiler + '_' + platform + '_' + build + '_' + isa) in supported_configurations:
               sys.stdout.write(OS + ' ' + compiler + ' ' + platform + ' ' + build + ' ' + isa)
-              compile(OS,compiler,platform,build,isa)
+              sys.stdout.flush()
+              ret = compile(OS,compiler,platform,build,isa)
+              if ret != 0: sys.stdout.write(" [failed]\n")
+              else:        sys.stdout.write(" [passed]\n")
 
 ########################## rendering ##########################
 
@@ -200,8 +204,10 @@ def render(OS, compiler, platform, build, isa, tutorial, scene, flags):
   else:
     if OS == 'windows': command = 'build' + '\\' + build + '\\' + tutorial + ' '
     else:               command = 'build' + '/' + tutorial + ' '
-    if scene != '':
-      command += '-c ' + modelDir + dash + scene + dash + scene + '_regression.ecs '
+    if tutorial == 'tutorial08':
+      command += '-i tutorials/tutorial08/' + scene + '.xml '
+    elif scene != '':
+      command += '-i ' + modelDir + dash + scene + dash + scene + '_regression.ecs '
     if tutorial == 'regression':
       command += '-regressions 2000 '
     if tutorial[0:8] == 'tutorial':
@@ -216,9 +222,9 @@ def processConfiguration(OS, compiler, platform, build, isa, models):
   sys.stdout.flush()
   ret = compile(OS,compiler,platform,build,isa)
   if ret != 0: sys.stdout.write(" [failed]\n")
-  else: 
+  else:        
     sys.stdout.write(" [passed]\n")
-                      
+                    
     render(OS, compiler, platform, build, isa, 'verify', '', '')
     render(OS, compiler, platform, build, isa, 'benchmark', '', '')
 
@@ -250,6 +256,14 @@ def processConfiguration(OS, compiler, platform, build, isa, models):
     render(OS, compiler, platform, build, isa, 'tutorial07_ispc', '', 'static')
     render(OS, compiler, platform, build, isa, 'tutorial07_ispc', '', 'dynamic')
     render(OS, compiler, platform, build, isa, 'tutorial07_ispc', '', 'high_quality')
+
+    render(OS, compiler, platform, build, isa, 'tutorial08', 'subdiv0', 'static')
+    render(OS, compiler, platform, build, isa, 'tutorial08', 'subdiv1', 'dynamic')
+    render(OS, compiler, platform, build, isa, 'tutorial08', 'subdiv2', 'robust')
+    render(OS, compiler, platform, build, isa, 'tutorial08', 'subdiv3', 'high_quality')
+    render(OS, compiler, platform, build, isa, 'tutorial08', 'subdiv4', 'static')
+    render(OS, compiler, platform, build, isa, 'tutorial08', 'subdiv5', 'dynamic')
+    render(OS, compiler, platform, build, isa, 'tutorial08', 'subdiv6', 'robust')
 
 def renderLoop(OS):
     for compiler in compilers:

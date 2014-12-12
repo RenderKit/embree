@@ -27,7 +27,7 @@
 
 
 extern "C" int64 get_tsc() {
-  return __rdtsc();
+  return read_tsc();
 }
 
 namespace embree

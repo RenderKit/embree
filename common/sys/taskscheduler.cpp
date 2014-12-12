@@ -278,7 +278,7 @@ namespace embree
 	__memory_barrier();
 
 	while( (*(volatile unsigned int*)&threadState[m][0]) !=  0x01010101 )
-	  __pause(WAIT_CYCLES);
+	  __pause_cpu(WAIT_CYCLES);
 
 	mode = 1 - mode;
 
@@ -292,7 +292,7 @@ namespace embree
 	__memory_barrier();
 	
 	while (threadState[m][localThreadID] == 1)
-	  __pause(WAIT_CYCLES);
+	  __pause_cpu(WAIT_CYCLES);
       }
  
   }

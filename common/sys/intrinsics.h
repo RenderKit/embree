@@ -68,8 +68,9 @@
 
 #include <intrin.h>
 
-__forceinline uint64 __rdpmc(int i) {
-  return __readpmc(i);
+//FIXME
+__forceinline size_t read_tsc()  {
+	return 0;
 }
 
 #if defined(__SSE4_2__)
@@ -284,15 +285,9 @@ __forceinline void __cpuid_count(int out[4], int op1, int op2) {
 
 #endif
 
-__forceinline uint64 __rdtsc()  {
+__forceinline uint64 read_tsc()  {
   uint32 high,low;
   asm volatile ("rdtsc" : "=d"(high), "=a"(low));
-  return (((uint64)high) << 32) + (uint64)low;
-}
-
-__forceinline uint64 __rdpmc(int i) {
-  uint32 high,low;
-  asm volatile ("rdpmc" : "=d"(high), "=a"(low) : "c"(i));
   return (((uint64)high) << 32) + (uint64)low;
 }
 
@@ -662,11 +657,11 @@ __forceinline uint64 rdtsc()
 #if !defined(__MIC__)
   int dummy[4]; 
   __cpuid(dummy,0); 
-  uint64 clock = __rdtsc(); 
+  uint64 clock = read_tsc(); 
   __cpuid(dummy,0); 
   return clock;
 #else
-  return __rdtsc(); 
+  return read_tsc(); 
 #endif
 }
 
@@ -679,19 +674,19 @@ __forceinline float cast_i2f(int i) {
 }
 
 #if defined(__MIC__)
-__forceinline void __pause (const unsigned int cycles = 256) { 
+__forceinline void __pause_cpu (const unsigned int cycles = 256) { 
   _mm_delay_32(cycles); 
 }
 #else
-__forceinline void __pause (const int cycles = 0) {
+__forceinline void __pause_cpu (const int cycles = 0) {
   for (size_t i=0; i<8; i++)
     _mm_pause();    
 }
 #endif
 
-__forceinline void __pause_expfalloff(unsigned int &cycles, const unsigned int max_cycles) 
+__forceinline void __pause_cpu_expfalloff(unsigned int &cycles, const unsigned int max_cycles) 
 { 
-  __pause(cycles);
+  __pause_cpu(cycles);
   cycles += cycles;
   if (cycles > max_cycles) 
     cycles = max_cycles;

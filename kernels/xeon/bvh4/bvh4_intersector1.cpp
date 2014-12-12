@@ -166,7 +166,7 @@ namespace embree
 
         if (unlikely(lazy_node)) {
           stackPtr->ptr = lazy_node;
-          stackPtr->dist = inf;
+          stackPtr->dist = 0;
           stackPtr++;
         }
       }

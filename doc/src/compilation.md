@@ -13,7 +13,8 @@ into your `PATH`:
 
     export PATH=path-to-ispc:$PATH
 
-Or provide the path to the `ispc` executable to CMake via the `ISPC_EXECUTABLE` variable.
+Or provide the path to the `ispc` executable to CMake via the
+`ISPC_EXECUTABLE` variable.
 
 You additionally have to install CMake 2.8.12 or higher and the
 developer version of GLUT. Under Mac OS\ X, these dependencies can be
@@ -157,6 +158,12 @@ clicking onto the solution in the Solution Explorer and then selecting
 the Intel Compiler. We recommend using 64\ bit mode and the Intel
 Compiler for best performance.
 
+To build Embree with support for the AVX2 instruction set you need at
+least Visual Studio 2013 Update\ 4. When switching to the Intel Compiler
+to build with AVX2 you currently need to manually *remove* the switch
+`/arch:AVX2` from the `embree_avx2` project, which can be found under
+Properties ⇒ C/C++ ⇒ All Options ⇒ Additional Options.
+
 To build all projects of the solution it is recommend to build the CMake
 utility project `ALL_BUILD`, which depends on all projects. Using "Build
 Solution" would also build all other CMake utility projects (such as
@@ -178,9 +185,9 @@ Studio command prompt:
     cmake -G "Visual Studio 12 2013 Win64" ..
     cmake --build . --config Release
 
-You can also build only some projects with the `--target` switch. Additional
-parameters after "`--`" will be passed to `msbuild`. For example, to build the
-Embree library in parallel use
+You can also build only some projects with the `--target` switch.
+Additional parameters after "`--`" will be passed to `msbuild`. For
+example, to build the Embree library in parallel use
 
     cmake --build . --config Release --target embree -- /m
 

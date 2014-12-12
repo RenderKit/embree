@@ -2141,7 +2141,6 @@ namespace embree
     addHair  (scene,gflags,zero,1.0f,1.0f,100);
     rtcCommit (scene);
     size_t numFailures = 0;
-    //size_t c0 = __rdtsc();
     double c0 = getSeconds();
     for (size_t i=0; i<count; i++) {
       Vec3fa org(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
@@ -2150,7 +2149,6 @@ namespace embree
       rtcOccludedN(scene,ray,N);
       rtcIntersectN(scene,ray,N);
     }
-    //size_t c1 = __rdtsc();
     double c1 = getSeconds();
     for (size_t i=0; i<count; i++) {
       Vec3fa org(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
@@ -2159,7 +2157,6 @@ namespace embree
       rtcOccludedN(scene,ray,N);
       rtcIntersectN(scene,ray,N);
     }
-    //size_t c2 = __rdtsc();
     double c2 = getSeconds();
     for (size_t i=0; i<count; i++) {
       Vec3fa org(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
@@ -2168,7 +2165,6 @@ namespace embree
       rtcOccludedN(scene,ray,N);
       rtcIntersectN(scene,ray,N);
     }
-    //size_t c3 = __rdtsc();
     double c3 = getSeconds();
     for (size_t i=0; i<count; i++) {
       Vec3fa org(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
@@ -2177,7 +2173,6 @@ namespace embree
       rtcOccludedN(scene,ray,N);
       rtcIntersectN(scene,ray,N);
     }
-    //size_t c4 = __rdtsc();
     double c4 = getSeconds();
 
     double d1 = c1-c0;
@@ -2202,7 +2197,6 @@ namespace embree
     addHair  (scene,gflags,zero,1.0f,1.0f,100);
     rtcCommit (scene);
     size_t numFailures = 0;
-    //size_t c0 = __rdtsc();
     double c0 = getSeconds();
     for (size_t i=0; i<count; i++) {
       Vec3fa org(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
@@ -2211,7 +2205,6 @@ namespace embree
       rtcOccludedN(scene,ray,N);
       rtcIntersectN(scene,ray,N);
     }
-    //size_t c1 = __rdtsc();
     double c1 = getSeconds();
     for (size_t i=0; i<count; i++) {
       Vec3fa org(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
@@ -2220,7 +2213,6 @@ namespace embree
       rtcOccludedN(scene,ray,N);
       rtcIntersectN(scene,ray,N);
     }
-    //size_t c2 = __rdtsc();
     double c2 = getSeconds();
     for (size_t i=0; i<count; i++) {
       Vec3fa org(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
@@ -2229,7 +2221,6 @@ namespace embree
       rtcOccludedN(scene,ray,N);
       rtcIntersectN(scene,ray,N);
     }
-    //size_t c3 = __rdtsc();
     double c3 = getSeconds();
     for (size_t i=0; i<count; i++) {
       Vec3fa org(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
@@ -2238,7 +2229,6 @@ namespace embree
       rtcOccludedN(scene,ray,N);
       rtcIntersectN(scene,ray,N);
     }
-    //size_t c4 = __rdtsc();
     double c4 = getSeconds();
     for (size_t i=0; i<count; i++) {
       Vec3fa org(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
@@ -2247,7 +2237,6 @@ namespace embree
       rtcOccludedN(scene,ray,N);
       rtcIntersectN(scene,ray,N);
     }
-    //size_t c5 = __rdtsc();
     double c5 = getSeconds();
 
     double d1 = c1-c0;

@@ -437,8 +437,7 @@ namespace embree
 	//cout << "  bounds = " << a.bounds << std::endl;
 	for (size_t i=0; i<16; i++) cout << "  quads[" << i << "] = " << a.quads[i] << ", " << std::endl;
 	cout << "  grid = " << &a.grid << std::endl;
-	"}";
-	return cout;
+	return cout << "}";
       }
 
       Bounds16 bounds;
@@ -855,9 +854,9 @@ namespace embree
       return N;
     }
 
-    __forceinline std::pair<BBox3fa,BVH4::NodeRef> createLazyPrims(FastAllocator::Thread& alloc,
-								   const size_t x0, const size_t x1,
-								   const size_t y0, const size_t y1)
+    std::pair<BBox3fa,BVH4::NodeRef> createLazyPrims(FastAllocator::Thread& alloc,
+						     const size_t x0, const size_t x1,
+						     const size_t y0, const size_t y1)
       {
 	if (x1-x0 <= 8 && y1-y0 <= 8) {
 	  EagerLeaf* leaf = new (alloc.malloc(sizeof(EagerLeaf))) EagerLeaf(*this);
@@ -967,7 +966,7 @@ namespace embree
       {
 	/* let only one thread lazily build this object */
 	if (atomic_add(&initializing,1) != 0) {
-	  while (!initialized) __pause();
+	  while (!initialized) __pause_cpu();
 	  return (size_t)*parent;
 	}
 
