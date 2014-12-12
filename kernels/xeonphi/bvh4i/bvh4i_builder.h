@@ -19,10 +19,13 @@
 #include "builders/parallel_builder.h"
 #include "builders/builder_util.h"
 #include "builders/binning.h"
+#include "builders/priminfo.h"
 
 #include "bvh4i/bvh4i.h"
 #include "bvh4i_statistics.h"
 
+#include "algorithms/parallel_for_for.h"
+#include "algorithms/parallel_for_for_prefix_sum.h"
 
 namespace embree
 {
@@ -255,6 +258,10 @@ namespace embree
   {
   protected:
     void *org_accel;
+
+    Scene::Iterator<SubdivMesh> iter;
+    ParallelForForPrefixSumState<PrimInfo> pstate;
+
   public:
     BVH4iBuilderSubdivMesh (BVH4i* bvh, void* geometry) : BVH4iBuilder(bvh,geometry),org_accel(NULL)
       {}
