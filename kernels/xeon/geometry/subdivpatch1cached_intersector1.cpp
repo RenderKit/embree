@@ -50,7 +50,8 @@ namespace embree
      
 #else
 		const size_t array_elements = (patch.grid_size_simd_blocks + 1) * 8;
-		float *const grid_arrays = (float*)_malloca(5 * array_elements * sizeof(float));
+		float *const ptr = (float*)_malloca(5 * array_elements * sizeof(float) + 64);
+		float *const grid_arrays = (float*)ptr;
 
 		float *grid_x = &grid_arrays[array_elements * 0];
 		float *grid_y = &grid_arrays[array_elements * 1];
@@ -83,7 +84,7 @@ namespace embree
         TIMER(msec = getSeconds()-msec);            
 
 #if defined(_MSC_VER)
-		_freea(grid_arrays);
+		_freea(ptr);
 #endif
         return subtree_root;
       }

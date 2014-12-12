@@ -68,6 +68,8 @@
 
 #include <intrin.h>
 
+
+
 #if defined(__SSE4_2__)
 
 __forceinline int __popcnt(int in) {
@@ -649,6 +651,7 @@ static const size_t       BITSCAN_NO_BIT_SET_64 = 64;
 
 __forceinline uint64 rdtsc()
 {
+#if !defined(__WIN32__)
 #if !defined(__MIC__)
   int dummy[4]; 
   __cpuid(dummy,0); 
@@ -657,6 +660,9 @@ __forceinline uint64 rdtsc()
   return clock;
 #else
   return read_tsc(); 
+#endif
+#else
+	return 0;
 #endif
 }
 
