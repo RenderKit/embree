@@ -68,6 +68,11 @@
 
 #include <intrin.h>
 
+//FIXME
+__forceinline size_t read_tsc()  {
+	return 0;
+}
+
 #if defined(__SSE4_2__)
 
 __forceinline int __popcnt(int in) {
