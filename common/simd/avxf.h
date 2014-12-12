@@ -72,7 +72,7 @@ namespace embree
 
     static __forceinline avxf load( const unsigned char* const ptr ) { 
 #if defined(__AVX2__)
-      return _mm256_cvtepi32_ps(_mm256_cvtepu8_epi32(_mm_load_si128((__m128i*)ptr)));
+      return _mm256_cvtepi32_ps(_mm256_cvtepu8_epi32(_mm_loadu_si128((__m128i*)ptr)));
 #else
       return avxf(ssef::load(ptr),ssef::load(ptr+4));
 #endif

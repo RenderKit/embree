@@ -68,7 +68,7 @@ namespace embree
 
 #if defined(__SSE4_1__)
     static __forceinline ssef load( const unsigned char* const ptr ) { 
-      return _mm_cvtepi32_ps(_mm_cvtepu8_epi32(_mm_load_si128((__m128i*)ptr)));
+      return _mm_cvtepi32_ps(_mm_cvtepu8_epi32(_mm_loadu_si128((__m128i*)ptr)));
     }
 #else
     static __forceinline ssef load( const unsigned char* const ptr ) { 
