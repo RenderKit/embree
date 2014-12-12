@@ -695,7 +695,7 @@ namespace embree
 
         AffineSpace3fa space = b.space;
         space.p -= b.bounds.lower;
-        space = AffineSpace3fa::scale(1.0f/max(Vec3fa(1E-19),b.bounds.upper-b.bounds.lower))*space;
+        space = AffineSpace3fa::scale(1.0f/max(Vec3fa(1E-19f),b.bounds.upper-b.bounds.lower))*space;
         
         naabb.l.vx.x[i] = space.l.vx.x;
         naabb.l.vx.y[i] = space.l.vx.y;
@@ -799,7 +799,7 @@ namespace embree
 
 	AffineSpace3fa space = s0;
         space.p -= a.lower;
-	Vec3fa scale = 1.0f/max(Vec3fa(1E-19),a.upper-a.lower);
+	Vec3fa scale = 1.0f/max(Vec3fa(1E-19f),a.upper-a.lower);
         space = AffineSpace3fa::scale(scale)*space;
 	BBox3fa a1((a.lower-a.lower)*scale,(a.upper-a.lower)*scale);
 	BBox3fa c1((c.lower-a.lower)*scale,(c.upper-a.lower)*scale);
@@ -916,7 +916,7 @@ namespace embree
       {
 	AffineSpace3fa space = other;
         space.p -= bounds.lower;
-        space = AffineSpace3fa::scale(1.0f/max(Vec3fa(1E-19),bounds.upper-bounds.lower))*space;
+        space = AffineSpace3fa::scale(1.0f/max(Vec3fa(1E-19f),bounds.upper-bounds.lower))*space;
 	return space;
       }
 

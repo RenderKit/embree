@@ -180,7 +180,7 @@ namespace embree
       : space(space)
     {
       const ssef diag = (ssef) centBounds.size();
-      scale = select(diag > ssef(1E-19),rcp(diag) * ssef(BINS * 0.99f),ssef(0.0f));
+      scale = select(diag > ssef(1E-19f),rcp(diag) * ssef(BINS * 0.99f),ssef(0.0f));
       ofs  = (ssef) centBounds.lower;
     }
     

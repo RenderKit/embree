@@ -60,7 +60,7 @@ namespace embree
     {
       const ssef lower = (ssef) pinfo.geomBounds.lower;
       const ssef upper = (ssef) pinfo.geomBounds.upper;
-      const sseb ulpsized = upper - lower <= max(ssef(1E-19),128.0f*ssef(ulp)*max(abs(lower),abs(upper)));
+      const sseb ulpsized = upper - lower <= max(ssef(1E-19f),128.0f*ssef(ulp)*max(abs(lower),abs(upper)));
       const ssef diag = (ssef) pinfo.geomBounds.size();
       scale = select(ulpsized,ssef(0.0f),rcp(diag) * ssef(BINS * 0.99f));
       ofs  = (ssef) pinfo.geomBounds.lower;
