@@ -40,8 +40,7 @@ namespace embree
         TIMER(msec = getSeconds());
         
         assert( patch.grid_size_simd_blocks >= 1 );
-        // #if defined(_MSC_VER)
-#if 0
+#if !defined(_MSC_VER)
         __aligned(64) float grid_x[(patch.grid_size_simd_blocks+1)*8]; 
         __aligned(64) float grid_y[(patch.grid_size_simd_blocks+1)*8];
         __aligned(64) float grid_z[(patch.grid_size_simd_blocks+1)*8]; 
@@ -50,11 +49,14 @@ namespace embree
         __aligned(64) float grid_v[(patch.grid_size_simd_blocks+1)*8];
      
 #else
-        float *grid_x = aligned_alloca<float>((patch.grid_size_simd_blocks+1)*8,64);
-        float *grid_y = aligned_alloca<float>((patch.grid_size_simd_blocks+1)*8,64);
-        float *grid_z = aligned_alloca<float>((patch.grid_size_simd_blocks+1)*8,64);
-        float *grid_u = aligned_alloca<float>((patch.grid_size_simd_blocks+1)*8,64);
-        float *grid_v = aligned_alloca<float>((patch.grid_size_simd_blocks+1)*8,64);
+		const size_t array_elements = (patch.grid_size_simd_blocks + 1) * 8;
+		float *const grid_arrays = (float*)_malloca(5 * array_elements * sizeof(float));
+
+		float *grid_x = &grid_arrays[array_elements * 0];
+		float *grid_y = &grid_arrays[array_elements * 1];
+		float *grid_z = &grid_arrays[array_elements * 2];
+		float *grid_u = &grid_arrays[array_elements * 3];
+		float *grid_v = &grid_arrays[array_elements * 4];
 
         
 #endif   
@@ -79,7 +81,10 @@ namespace embree
         assert(currentIndex == patch.grid_subtree_size_64b_blocks);
 
         TIMER(msec = getSeconds()-msec);            
-        
+
+#if defined(_MSC_VER)
+		_freea(grid_arrays);
+#endif
         return subtree_root;
       }
     

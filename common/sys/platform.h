@@ -280,6 +280,7 @@ typedef int32 ssize_t;
 #pragma warning(disable:4996) // 'std::copy': Function call with parameters that may be unsafe 
 #pragma warning(disable:391 ) // '<=' : signed / unsigned mismatch
 #pragma warning(disable:4018) // '<' : signed / unsigned mismatch
+#pragma warning(disable:4305) // 'initializing' : truncation from 'double' to 'float'
 
 #endif
 
@@ -293,7 +294,7 @@ typedef int32 ssize_t;
 namespace embree
 {
 #define ALIGN_PTR(ptr,alignment) \
-	((((size_t)ptr)+alignment-1)&((size_t)-alignment))
+	((((size_t)ptr)+alignment-1)&((size_t)-(ssize_t)alignment))
 
 #define ALIGNED_STRUCT                                           \
   void* operator new(size_t size) { return alignedMalloc(size); }       \

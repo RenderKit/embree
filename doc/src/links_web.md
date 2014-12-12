@@ -5,3 +5,4 @@
 [tutorial04]: tutorials.html#tutorial04
 [tutorial05]: tutorials.html#tutorial05
 [tutorial07]: tutorials.html#tutorial07
+[tutorial08]: tutorials.html#tutorial08

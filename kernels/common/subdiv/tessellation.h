@@ -191,8 +191,8 @@ namespace embree
     const unsigned int grid_u_segments = grid_u_res-1;
     const unsigned int grid_v_segments = grid_v_res-1;
 
-    const float inv_grid_u_segments = 1.0f / grid_u_segments;
-    const float inv_grid_v_segments = 1.0f / grid_v_segments;
+    const float inv_grid_u_segments = 1.0f / (float)grid_u_segments;
+    const float inv_grid_v_segments = 1.0f / (float)grid_v_segments;
     
     /* initialize grid */
     unsigned int index = 0;

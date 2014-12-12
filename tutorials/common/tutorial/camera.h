@@ -30,7 +30,7 @@ namespace embree
   {
   public:
     Camera () 
-      : from(0.0001,0.0001,-3), to(0,0,0), up(0,1,0), fov(90) {}
+      : from(0.0001f,0.0001f,-3.0f), to(0,0,0), up(0,1,0), fov(90) {}
 
     Camera (Vec3fa& from, Vec3fa& to, Vec3fa& up, float fov) 
       : from(from), to(to), up(up), fov(fov) {}

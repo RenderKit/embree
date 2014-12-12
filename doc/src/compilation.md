@@ -136,7 +136,10 @@ installation, put the path to `ispc.exe` permanently into your `PATH`
 environment variable or you need to correctly set the `ISPC_EXECUTABLE`
 variable during CMake configuration.
 
-You additionally have to install CMake (version 2.8.12 or higher).
+You additionally have to install [CMake](http://www.cmake.org/download/)
+(version 2.8.12 or higher). Note that you need a native Windows CMake
+installation, because CMake under Cygwin cannot generate solution files
+for Visual Studio.
 
 ### Using the IDE
 

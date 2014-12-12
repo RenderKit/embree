@@ -295,7 +295,7 @@ namespace embree
     });
 
     /* sort half edges to find adjacent edges */
-    radix_sort_u64(&halfEdges1[0],&halfEdges0[0],numHalfEdges);
+    radix_sort_u64(halfEdges1.data(),halfEdges0.data(),numHalfEdges);
 
     /* link all adjacent pairs of edges */
 #if defined(__MIC__)

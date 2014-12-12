@@ -1,3 +1,266 @@
+% Embree: High Performance Ray Tracing Kernels 2.4.0 (devel)
+% Intel Corporation
+
+Embree Overview
+===============
+
+Embree is a collection of high-performance ray tracing kernels,
+developed at Intel. The target user of Embree are graphics application
+engineers that want to improve the performance of their application by
+leveraging the optimized ray tracing kernels of Embree. The kernels are
+optimized for photo-realistic rendering on the latest Intel® processors
+with support for SSE, AVX, AVX2, and the 16-wide Xeon Phi™ vector
+instructions. Embree supports runtime code selection to choose the
+traversal and build algorithms that best matches the instruction set of
+your CPU. We recommend using Embree through its API to get the highest
+benefit from future improvements. Embree is released as Open Source
+under the [Apache 2.0
+license](http://www.apache.org/licenses/LICENSE-2.0).
+
+Embree supports applications written with the Intel SPMD Programm
+Compiler (ISPC, <https://ispc.github.io/>) by also providing an ISPC
+interface to the core ray tracing algorithms. This makes it possible to
+write a renderer in ISPC that leverages SSE, AVX, AVX2, and Xeon Phi™
+instructions without any code change. ISPC also supports runtime code
+selection, thus ISPC will select the best code path for your
+application, while Embree selects the optimal code path for the ray
+tracing algorithms.
+
+Embree contains algorithms optimized for incoherent workloads (e.g.
+Monte Carlo ray tracing algorithms) and coherent workloads (e.g. primary
+visibility and hard shadow rays). For standard CPUs, the single-ray
+traversal kernels in Embree provide the best performance for incoherent
+workloads and are very easy to integrate into existing rendering
+applications. For Xeon Phi™, a renderer written in ISPC using the
+default hybrid ray/packet traversal algorithms have shown to perform
+best, but requires writing the renderer in ISPC. In general for coherent
+workloads, ISPC outperforms the single ray mode on each platform. Embree
+also supports dynamic scenes by implementing high performance two-level
+spatial index structure construction algorithms.
+
+In addition to the ray tracing kernels, Embree provides some tutorials
+to demonstrate how to use the [Embree API]. The example photorealistic
+renderer that was originally included in the Embree kernel package is
+now available in a separate GIT repository (see [Embree Example
+Renderer]).
+
+Supported Platforms
+-------------------
+
+Embree supports Windows (32\ bit and 64\ bit), Linux (64\ bit) and Mac
+OS\ X (64\ bit). The code compiles with the Intel Compiler, the
+Microsoft Compiler, GCC and CLANG. Using the Intel Compiler improves
+performance by approximately 10%. Performance also varies across
+different operating systems. Embree is optimized for Intel CPUs
+supporting SSE, AVX, and AVX2 instructions, and requires at least a CPU
+with support for SSE2.
+
+The Xeon Phi™ version of Embree only works under Linux in 64\ bit mode.
+For compilation of the the Xeon Phi™ code the Intel Compiler is
+required. The host side code compiles with GCC, CLANG, and the Intel
+Compiler.
+
+Embree Support and Contact
+--------------------------
+
+If you encounter bugs please report them via [Embree's GitHub Issue
+Tracker](https://github.com/embree/embree/issues).
+
+For questions please write us at <embree_support@intel.com>.
+
+To receive notifications of updates and new features of Embree please
+subscribe to the [Embree mailing
+list](https://groups.google.com/d/forum/embree/).
+
+For information about compiler optimizations, see our [Optimization
+Notice](http://software.intel.com/en-us/articles/optimization-notice#opt-en).
+
+Compiling Embree
+================
+
+Linux and Mac OS\ X
+-------------------
+
+Embree requires the Intel® SPMD Program Compiler (ISPC) to compile. We
+have tested ISPC version 1.7.1 and 1.8.0, but more recent versions of
+ISPC should also work. You can download and install the ISPC binaries
+from [ispc.github.io](https://ispc.github.io/downloads.html). After
+installation, either put the path to the `ispc` executable permanently
+into your `PATH`:
+
+    export PATH=path-to-ispc:$PATH
+
+Or provide the path to the `ispc` executable to CMake via the `ISPC_EXECUTABLE` variable.
+
+You additionally have to install CMake 2.8.12 or higher and the
+developer version of GLUT. Under Mac OS\ X, these dependencies can be
+installed using [MacPorts](http://www.macports.org/):
+
+    sudo port install cmake freeglut
+
+Under Linux you can install these dependencies using `yum` or `apt-get`.
+Depending on your Linux distribution, some of these packages might
+already be installed or might have slightly different names.
+
+Type the following to install the dependencies using `yum`:
+
+    sudo yum install cmake.x86_64
+    sudo yum install freeglut.x86_64 freeglut-devel.x86_64
+    sudo yum install libXmu.x86_64 libXi.x86_64
+    sudo yum install libXmu-devel.x86_64 libXi-devel.x86_64
+
+Type the following to install the dependencies using `apt-get`:
+
+    sudo apt-get install cmake-curses-gui
+    sudo apt-get install freeglut3-dev
+    sudo apt-get install libxmu-dev libxi-dev
+
+Finally you can compile Embree using CMake. Create a build directory and
+execute "ccmake .." inside this directory.
+
+    mkdir build
+    cd build
+    ccmake ..
+
+This will open a configuration dialog where you can perform various
+configurations as described below. After having configured Embree, press
+c (for configure) and g (for generate) to generate a Makefile and leave
+the configuration. The code can be compiled by executing make.
+
+    make
+
+The executables will be generated inside the build folder. We recommend
+to finally install the Embree library and header files on your system:
+
+    sudo make install
+
+If you cannot install Embree on your system (e.g. when you don't have
+administrator rights) you need to add embree_root_directory/build to
+your `LD_LIBRARY_PATH` (and `SINK_LD_LIBRARY_PATH` in case you want to
+use Embree on Xeon Phi™).
+
+The default configuration in the configuration dialog should be
+appropriate for most usages. The following table described all
+parameters that can be configured:
+
+  ---------------------------- -------------------------------- --------
+  Option                       Description                      Default
+  ---------------------------- -------------------------------- --------
+  BUILD_EMBREE_SHARED_LIB      Build Embree as a shared         ON
+                               library.
+
+  BUILD_TUTORIALS              Builds the C++ version of the    ON
+                               Embree tutorials.
+
+  BUILD_TUTORIALS_ISPC         Builds the ISPC version of the   ON
+                               Embree tutorials.
+
+  CMAKE_BUILD_TYPE             Can be used to switch between    Release
+                               Debug mode (Debug) and Release
+                               mode (Release).
+
+  COMPILER                     Select either GCC, ICC, or       GCC
+                               CLANG as compiler.
+
+  RTCORE_BACKFACE_CULLING      Enables backface culling, i.e.   OFF
+                               only surfaces facing a ray can
+                               be hit.
+
+  RTCORE_BUFFER_STRIDE         Enables the buffer stride        ON
+                               feature.
+
+  RTCORE_INTERSECTION_FILTER   Enables the intersection filter  ON
+                               feature.
+
+  RTCORE_RAY_MASK              Enables the ray masking feature. OFF
+
+  RTCORE_SPINLOCKS             Enables faster spinlocks for     OFF
+                               some builders.
+
+  XEON_ISA                     Select highest supported ISA on  AVX2
+                               Xeon™ CPUs (SSE2, SSE3, SSSE3,
+                               SSE4.1, SSE4.2, AVX, AVX-I, or
+                               AVX2).
+
+  XEON_PHI_ISA                 Enables generation of Xeon Phi™  OFF
+                               version of kernels and tutorials
+                               (when BUILD_TUTORIALS is ON).
+  ---------------------------- -------------------------------- --------
+  : CMake build options for Embree.
+
+You need at least Intel Compiler 11.1 or GCC 4.7.
+
+Xeon Phi™
+---------
+
+Embree supports the Xeon Phi™ coprocessor under Linux. To compile Embree
+for Xeon Phi you need to enable the `XEON_PHI_ISA` option in CMake and
+have the Intel Compiler and the Intel [Manycore Platform Software
+Stack](https://software.intel.com/en-us/articles/intel-manycore-platform-software-stack-mpss)
+(MPSS) installed.
+
+Enabling the buffer stride feature reduces performance for building
+spatial hierarchies on Xeon Phi.
+
+Windows
+-------
+
+Embree requires the Intel SPMD Program Compiler (ISPC) to compile. We
+have tested ISPC version 1.7.0 and 1.8.0, but more recent versions of
+ISPC should also work. You can download and install the ISPC binaries
+from [ispc.github.io](https://ispc.github.io/downloads.html). After
+installation, put the path to `ispc.exe` permanently into your `PATH`
+environment variable or you need to correctly set the `ISPC_EXECUTABLE`
+variable during CMake configuration.
+
+You additionally have to install [CMake](http://www.cmake.org/download/)
+(version 2.8.12 or higher). Note that you need a native Windows CMake
+installation, because CMake under Cygwin cannot generate solution files
+for Visual Studio.
+
+### Using the IDE
+
+Run `cmake-gui`, browse to the Embree sources, set the build directory
+and click Configure. Now you can select the Generator, e.g. "Visual
+Studio 12 2013" for a 32\ bit build or "Visual Studio 12 2013 Win64" for
+a 64\ bit build. Most configuration parameters described for the [Linux
+build](#linux-and-mac-osx) can be set under Windows as well. Finally,
+click Generate to create the Visual Studio solution files.
+
+For compilation of Embree under Windows use the generated Visual Studio
+solution file `embree.sln`. The solution is by default setup to use the
+Microsoft Compiler. You can switch to the Intel Compiler by right
+clicking onto the solution in the Solution Explorer and then selecting
+the Intel Compiler. We recommend using 64\ bit mode and the Intel
+Compiler for best performance.
+
+To build all projects of the solution it is recommend to build the CMake
+utility project `ALL_BUILD`, which depends on all projects. Using "Build
+Solution" would also build all other CMake utility projects (such as
+`INSTALL`), which is usually not wanted.
+
+We recommend enabling syntax highlighting for the `.ispc` source and
+`.isph` header files. To do so open Visual Studio 2008, go to Tools ⇒
+Options ⇒ Text Editor ⇒ File Extension and add the isph and ispc
+extension for the "Microsoft Visual C++" editor.
+
+### Using the Command Line
+
+Embree can also be configured and built without the IDE using the Visual
+Studio command prompt:
+
+    cd path\to\embree
+    md build
+    cd build
+    cmake -G "Visual Studio 12 2013 Win64" ..
+    cmake --build . --config Release
+
+You can also build only some projects with the `--target` switch. Additional
+parameters after "`--`" will be passed to `msbuild`. For example, to build the
+Embree library in parallel use
+
+    cmake --build . --config Release --target embree -- /m
+
 Embree API
 ==========
 
@@ -863,3 +1126,221 @@ different number of threads or the Embree internal threads using the
 
 call.
 
+Embree Tutorials
+================
+
+Embree comes with a set of tutorials aimed at helping users understand
+how Embree can be used and extended. All tutorials exist in an ISPC and
+C version to demonstrate the two versions of the API. Look for files
+named `tutorialXX_device.ispc` for the ISPC implementation of the
+tutorial, and files named `tutorialXX_device.cpp` for the single ray C++
+version of the tutorial. To start the C++ version use the `tutorialXX`
+executables, to start the ISPC version use the `tutorialXX_ispc`
+executables.
+
+Under Linux Embree also comes with an ISPC version of all tutorials for
+the Intel® Xeon Phi™ coprocessor. The executables of this version of the
+tutorials are named `tutorialXX_xeonphi` and only work if a Xeon Phi
+coprocessor is present in the system. The Xeon Phi version of the
+tutorials get started on the host CPU, just like all other tutorials,
+and will connect automatically to one installed Xeon Phi coprocessor in
+the system.
+
+For all tutorials, you can select an initial camera using the `-vp`
+(camera position), `-vi` (camera look-at point), `-vu` (camera up
+vector), and `-fov` (vertical field of view) command line parameters:
+
+    ./tutorial00 -vp 10 10 10 -vi 0 0 0
+
+You can select the initial windows size using the `-size` command line
+parameter, or start the tutorials in fullscreen using the `-fullscreen`
+parameter:
+
+    ./tutorial00 -size 1024 1024
+    ./tutorial00 -fullscreen
+
+Implementation specific parameters can be passed to the ray tracing core
+through the `-rtcore` command line parameter, e.g.:
+
+    ./tutorial00 -rtcore verbose=2,threads=1,accel=bvh4.triangle1
+
+The navigation in the interactive display mode follows the camera orbit
+model, where the camera revolves around the current center of interest.
+With the left mouse button you can rotate around the center of interest
+(the point initially set with `-vi`). Holding Control pressed while
+clicking the left mouse button rotates the camera around its location.
+You can also use the arrow keys for navigation.
+
+You can use the following keys:
+
+F1
+:   Default shading
+
+F2
+:   Gray EyeLight shading
+
+F3
+:   Wireframe shading
+
+F4
+:   UV Coordinate visualization
+
+F5
+:   Geometry normal visualization
+
+F6
+:   Geometry ID visualization
+
+F7
+:   Geometry ID and Primitive ID visualization
+
+F8
+:   Simple shading with 16 rays per pixel for benchmarking.
+
+F9
+:   Switches to render cost visualization. Pressing again reduces
+    brightness.
+
+F10
+:   Switches to render cost visualization. Pressing again increases
+    brightness.
+
+f
+:   Enters or leaves full screen mode.
+
+c
+:   Prints camera parameters.
+
+ESC
+:   Exists the tutorial.
+
+q
+:   Exists the tutorial.
+
+Tutorial00
+----------
+
+![](images/tutorial00.jpg)
+
+This tutorial demonstrates the creation of a static cube and ground
+plane using triangle meshes. It also demonstrates the use of the
+`rtcIntersect` and `rtcOccluded` functions to render primary visibility
+and hard shadows. The cube sides are colored based on the ID of the hit
+primitive.
+
+Tutorial01
+----------
+
+![](images/tutorial01.jpg)
+
+This tutorial demonstrates the creation of a dynamic scene, consisting
+of several deformed spheres. Half of the spheres use the
+RTC\_GEOMETRY\_DEFORMABLE flag, which allows Embree to use a refitting
+strategy for these spheres, the other half uses the
+RTC\_GEOMETRY\_DYNAMIC flag, causing a rebuild of their spatial data
+structure each frame. The spheres are colored based on the ID of the hit
+sphere geometry.
+
+Tutorial02
+----------
+
+![](images/tutorial02.jpg)
+
+This tutorial shows the use of user defined geometry, to re-implement
+instancing and to add analytic spheres. A two level scene is created,
+with a triangle mesh as ground plane, and several user geometries, that
+instance other scenes with a small number of spheres of different kind.
+The spheres are colored using the instance ID and geometry ID of the hit
+sphere, to demonstrate how the same geometry, instanced in different
+ways can be distinguished.
+
+Tutorial03
+----------
+
+![](images/tutorial03.jpg)
+
+This tutorial demonstrates a simple OBJ viewer that traces primary
+visibility rays only. A scene consisting of multiple meshes is created,
+each mesh sharing the index and vertex buffer with the application.
+Demonstrated is also how to support additional per vertex data, such as
+shading normals.
+
+You need to specify an OBJ file at the command line for this tutorial to
+work:
+
+    ./tutorial03 -i model.obj
+
+Tutorial04
+----------
+
+![](images/tutorial04.jpg)
+
+This tutorial demonstrates the in-build instancing feature of Embree, by
+instancing a number of other scenes build from triangulated spheres. The
+spheres are again colored using the instance ID and geometry ID of the
+hit sphere, to demonstrate how the same geometry, instanced in different
+ways can be distinguished.
+
+Tutorial05
+----------
+
+![](images/tutorial05.jpg)
+
+This tutorial demonstrates the use of filter callback functions to
+efficiently implement transparent objects. The filter function used for
+primary rays, lets the ray pass through the geometry if it is entirely
+transparent. Otherwise the shading loop handles the transparency
+properly, by potentially shooting secondary rays. The filter function
+used for shadow rays accumulates the transparency of all surfaces along
+the ray, and terminates traversal if an opaque occluder is hit.
+
+Tutorial06
+----------
+
+![](images/tutorial06.jpg)
+
+This tutorial is a simple path tracer, building on tutorial03.
+
+You need to specify an OBJ file and light source at the command line for
+this tutorial to work:
+
+    ./tutorial06 -i model.obj -ambientlight 1 1 1
+
+Tutorial07
+----------
+
+![](images/tutorial07.jpg)
+
+This tutorial demonstrates the use of the hair geometry to render a
+hairball.
+
+Tutorial08
+----------
+
+<!-- ![](images/tutorial08.jpg) -->
+
+This tutorial demonstrates the use of Catmull Clark subdivision
+surfaces. Per default the edge tessellation level is set adaptively
+based on the distance to the camera origin. Embree currently supports
+three different modes for efficiently handling subdivision surfaces in
+various rendering scenarios. These three modes can be selected at the
+command line, e.g. `-lazy` builds internal per subdivision patch data
+structures on demand, `-cache` uses a small (per thread) tessellation
+cache for caching per patch data, and `-pregenerate` to generate and
+store most per patch data during the initial build process. The
+`cache` mode is most effective for coherent rays while providing a
+fixed memory footprint. The `pregenerate` modes is most effective for
+incoherent ray distributions while requiring more memory. The `lazy`
+mode works similar to the `pregenerate` mode but provides a middle
+ground in terms of memory consumption as it only builds and stores
+data only when the corresponding patch is accessed during the ray
+traversal.
+
+[Embree API]: #embree-api
+[Embree Example Renderer]: https://embree.github.io/renderer.html
+[tutorial00]: #tutorial00
+[tutorial02]: #tutorial02
+[tutorial04]: #tutorial04
+[tutorial05]: #tutorial05
+[tutorial07]: #tutorial07
+[tutorial08]: #tutorial08

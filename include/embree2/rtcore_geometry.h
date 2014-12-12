@@ -191,14 +191,14 @@ RTCORE_API unsigned rtcNewTriangleMesh (RTCScene scene,                    //!< 
 
 */
 RTCORE_API unsigned rtcNewSubdivisionMesh (RTCScene scene,                //!< the scene the mesh belongs to
-					   RTCGeometryFlags flags,        //!< geometry flags
-					   size_t numFaces,               //!< number of faces
-					   size_t numEdges,               //!< number of edges
-					   size_t numVertices,            //!< number of vertices
-					   size_t numEdgeCreases,         //!< number of edge creases
-					   size_t numVertexCreases,       //!< number of vertex creases
+                                           RTCGeometryFlags flags,        //!< geometry flags
+                                           size_t numFaces,               //!< number of faces
+                                           size_t numEdges,               //!< number of edges
+                                           size_t numVertices,            //!< number of vertices
+                                           size_t numEdgeCreases,         //!< number of edge creases
+                                           size_t numVertexCreases,       //!< number of vertex creases
                                            size_t numHoles,               //!< number of holes
-					   size_t numTimeSteps = 1        //!< number of motion blur time steps
+                                           size_t numTimeSteps = 1        //!< number of motion blur time steps
   );
 
 /*! \brief Creates a new hair geometry, consisting of multiple hairs
@@ -220,10 +220,10 @@ RTCORE_API unsigned rtcNewSubdivisionMesh (RTCScene scene,                //!< t
   calculation. This in particular means that zooming onto one hair
   might show geometric artefacts. */
 RTCORE_API unsigned rtcNewHairGeometry (RTCScene scene,                    //!< the scene the curves belong to
-					RTCGeometryFlags flags,            //!< geometry flags
-					size_t numCurves,                  //!< number of curves
-					size_t numVertices,                //!< number of vertices
-					size_t numTimeSteps = 1            //!< number of motion blur time steps
+                                        RTCGeometryFlags flags,            //!< geometry flags
+                                        size_t numCurves,                  //!< number of curves
+                                        size_t numVertices,                //!< number of vertices
+                                        size_t numTimeSteps = 1            //!< number of motion blur time steps
   );
 
 /*! \brief Sets 32 bit ray mask. */
