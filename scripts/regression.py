@@ -24,16 +24,15 @@
 
 # Prerequisites:
 #   Install Python 3.2+
-#   Install Visual Studio 2013 or 2012
+#   Install Visual Studio 2013
 #   Install Intel C++ Compiler
 #   Check out Embree into <embree_dir>
 
 # Instructions:
 #   Open the "Visual Studio x64 Cross Tools Command Prompt (2013)"
 #   cd <embree_dir>
-#   mkdir TEST
-#   <python_dir>\python.exe <embree_dir>\scripts\benchmark.py render windows TEST
-#   <python_dir>\python.exe <embree_dir>\scripts\benchmark.py extract windows TEST
+#   <python_dir>\python.exe <embree_dir>\scripts\benchmark.py run     windows test_dir
+#   <python_dir>\python.exe <embree_dir>\scripts\benchmark.py compile windows test_dir
 
 # Linux and OS X
 # --------------
@@ -47,8 +46,8 @@
 #   Open a shell
 #   cd <embree_dir>
 #   mkdir TEST
-#   ./scripts/benchmark.py render linux <model_dir> TEST
-#   ./scripts/benchmark.py extract linux TEST
+#   ./scripts/benchmark.py run     linux <model_dir> test_dir
+#   ./scripts/benchmark.py compile linux <model_dir> test_dir
 
 import sys
 import os
@@ -181,7 +180,7 @@ def compileLoop(OS):
     for compiler in compilers:
       for platform in platforms:
         for build in builds:
-		  for isa in ISAs:
+          for isa in ISAs:
             if (compiler + '_' + platform + '_' + build + '_' + isa) in supported_configurations:
               sys.stdout.write(OS + ' ' + compiler + ' ' + platform + ' ' + build + ' ' + isa)
               compile(OS,compiler,platform,build,isa)
@@ -263,8 +262,8 @@ def renderLoop(OS):
 ########################## command line parsing ##########################
 
 def printUsage():
-  sys.stderr.write('Usage: ' + sys.argv[0] + ' render  <os> <testDir> <modelDir>\n')
-  sys.stderr.write('       ' + sys.argv[0] + ' extract <os> <testDir>\n')
+  sys.stderr.write('Usage: ' + sys.argv[0] + ' compile <os> <testDir>\n')
+  sys.stderr.write('       ' + sys.argv[0] + ' run     <os> <testDir> <modelDir>\n')
   sys.exit(1)
 
 if len(sys.argv) < 3: printUsage()
@@ -287,7 +286,7 @@ else:
   ISAs = ISAs_unix
   modelDir = '~/models/embree'
 
-if mode == 'render':
+if mode == 'run':
   if len(sys.argv) < 4: printUsage()
   testDir = sys.argv[3]
   if not os.path.exists(testDir):
@@ -295,5 +294,13 @@ if mode == 'render':
   if len(sys.argv) > 4: 
     modelDir = sys.argv[4]
   renderLoop(OS)
+  sys.exit(1)
+
+if mode == 'compile':
+  if len(sys.argv) < 4: printUsage()
+  testDir = sys.argv[3]
+  if not os.path.exists(testDir):
+    os.system('mkdir '+testDir)
+  compileLoop(OS)
   sys.exit(1)
 
