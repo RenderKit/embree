@@ -43,7 +43,7 @@ namespace embree
         
 	/* calculate parallel prefix sum */
 	std::vector<uint32> dst(N);
-	memset(&dst[0],0,N*sizeof(uint32));
+	memset(dst.data(),0,N*sizeof(uint32));
 	
 	double t0 = getSeconds();
 	for (size_t i=0; i<M; i++) {
