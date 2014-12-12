@@ -129,16 +129,17 @@ namespace embree
   {
 #if FORCE_TESSELLATION_BOUNDS == 1
 
-#if 0
+#if !defined(_MSC_VER)
     __aligned(64) float u_array[(grid_size_simd_blocks+1)*16]; // +16 for unaligned access
     __aligned(64) float v_array[(grid_size_simd_blocks+1)*16]; // +16 for unaligned access
 #else
 
-    float *u_array = aligned_alloca<float>((grid_size_simd_blocks+1)*16,64);
-    float *v_array = aligned_alloca<float>((grid_size_simd_blocks+1)*16,64);
-
-#endif
+	float *const uv_arrays = (float*)_malloca(2 * (grid_size_simd_blocks + 1) * 16 * sizeof(float));
+	float *const u_array = &uv_arrays[0];
+	float *const v_array = &uv_arrays[grid_size_simd_blocks*16];
 	  
+#endif
+
     const unsigned int real_grid_size = grid_u_res*grid_v_res;
     gridUVTessellator(level,grid_u_res,grid_v_res,u_array,v_array);
       
@@ -204,7 +205,6 @@ namespace embree
 #else
 
 #if !defined(__AVX__)
-
     for (size_t i=0;i<grid_size_simd_blocks*2;i++)
       {
         ssef u = load4f(&u_array[i*4]);
@@ -212,7 +212,6 @@ namespace embree
 
         sse3f vtx = eval4( u, v );
           
-
         /* eval displacement function */
         if (unlikely(mesh->displFunc != NULL))
           {
@@ -310,6 +309,9 @@ namespace embree
       }
 #endif
 
+#if defined(_MSC_VER)
+	_freea(uv_arrays);
+#endif
     return b;
   }
 
