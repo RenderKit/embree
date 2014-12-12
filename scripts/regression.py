@@ -216,13 +216,11 @@ def render(OS, compiler, platform, build, isa, tutorial, scene, flags):
 def processConfiguration(OS, compiler, platform, build, isa, models):
   sys.stdout.write('compiling configuration ' + compiler + ' ' + platform + ' ' + build + ' ' + isa)
   sys.stdout.flush()
-  ret = 0 # compile(OS,compiler,platform,build,isa)
+  ret = compile(OS,compiler,platform,build,isa)
   if ret != 0: sys.stdout.write(" [failed]\n")
   else: 
     sys.stdout.write(" [passed]\n")
-
-    render(OS, compiler, platform, build, isa, 'tutorial08', 'subdiv0', 'static')
-                      
+                    
     render(OS, compiler, platform, build, isa, 'verify', '', '')
     render(OS, compiler, platform, build, isa, 'benchmark', '', '')
 
@@ -254,6 +252,14 @@ def processConfiguration(OS, compiler, platform, build, isa, models):
     render(OS, compiler, platform, build, isa, 'tutorial07_ispc', '', 'static')
     render(OS, compiler, platform, build, isa, 'tutorial07_ispc', '', 'dynamic')
     render(OS, compiler, platform, build, isa, 'tutorial07_ispc', '', 'high_quality')
+
+    render(OS, compiler, platform, build, isa, 'tutorial08', 'subdiv0', 'static')
+    render(OS, compiler, platform, build, isa, 'tutorial08', 'subdiv1', 'dynamic')
+    render(OS, compiler, platform, build, isa, 'tutorial08', 'subdiv2', 'robust')
+    render(OS, compiler, platform, build, isa, 'tutorial08', 'subdiv3', 'high_quality')
+    render(OS, compiler, platform, build, isa, 'tutorial08', 'subdiv4', 'static')
+    render(OS, compiler, platform, build, isa, 'tutorial08', 'subdiv5', 'dynamic')
+    render(OS, compiler, platform, build, isa, 'tutorial08', 'subdiv6', 'robust')
 
 def renderLoop(OS):
     for compiler in compilers:
