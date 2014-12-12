@@ -61,8 +61,8 @@ dash = '/'
 compilers_win = ['ICC']
 #compilers_win  = ['V100', 'V110', 'V120', 'ICC']
 #compilers_unix = ['ICC']
-compilers_unix = ['GCC', 'ICC']
-#compilers_unix = ['GCC', 'CLANG', 'ICC']
+#compilers_unix = ['GCC', 'ICC']
+compilers_unix = ['GCC', 'CLANG', 'ICC']
 compilers      = []
 
 #platforms_win  = ['win32']
@@ -75,13 +75,14 @@ platforms      = []
 builds_win = ['Release']
 #builds_win = ['Release', 'Debug']
 #builds_unix = ['Debug']
-#builds_unix = ['Release']
-builds_unix = ['Release', 'Debug']
+builds_unix = ['Release']
+#builds_unix = ['Release', 'Debug']
 builds = []
 
 ISAs_win  = ['SSE2']
 #ISAs_win  = ['SSE2', 'SSE4.2', 'AVX', 'AVX2']
-ISAs_unix = ['SSE2', 'SSE4.2', 'AVX', 'AVX2']
+ISAs_unix = ['AVX2']
+#ISAs_unix = ['SSE2', 'SSE4.2', 'AVX', 'AVX2']
 ISAs = []
 
 supported_configurations = [
@@ -183,7 +184,10 @@ def compileLoop(OS):
           for isa in ISAs:
             if (compiler + '_' + platform + '_' + build + '_' + isa) in supported_configurations:
               sys.stdout.write(OS + ' ' + compiler + ' ' + platform + ' ' + build + ' ' + isa)
-              compile(OS,compiler,platform,build,isa)
+              sys.stdout.flush()
+              ret = compile(OS,compiler,platform,build,isa)
+              if ret != 0: sys.stdout.write(" [failed]\n")
+              else:        sys.stdout.write(" [passed]\n")
 
 ########################## rendering ##########################
 
@@ -218,7 +222,7 @@ def processConfiguration(OS, compiler, platform, build, isa, models):
   sys.stdout.flush()
   ret = compile(OS,compiler,platform,build,isa)
   if ret != 0: sys.stdout.write(" [failed]\n")
-  else: 
+  else:        
     sys.stdout.write(" [passed]\n")
                     
     render(OS, compiler, platform, build, isa, 'verify', '', '')
