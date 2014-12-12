@@ -75,14 +75,18 @@ namespace embree
     float vtx_v[12];
 #endif
 
-    static __forceinline ssei u16_to_ssei(const unsigned short *const source)
+    static __forceinline ssei u16_to_ssei(const unsigned short *const source) // FIXME: move to ssei header
     {
+#if defined (__SSE4_1__)
       return _mm_cvtepu16_epi32(loadu4i(source));
+#else
+      return ssei(source[0],source[1],source[2],source[3]);
+#endif
     } 
 
     static __forceinline ssef u16_to_ssef(const unsigned short *const source)
     {
-      const ssei t = _mm_cvtepu16_epi32(loadu4i(source));
+      const ssei t = u16_to_ssei(source);
       return ssef(t) * 1.0f/65535.0f;
     } 
 
