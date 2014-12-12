@@ -394,7 +394,6 @@ namespace embree
         
         if (likely(ty == 2))
         {
-			DBG_PRINT(*(Quad2x2*)prim);
 #if defined(__AVX__)
           intersect1_precise<avxb,avxf>( ray, *(Quad2x2*)prim, (SubdivMesh*)geom,pre);
 #else
