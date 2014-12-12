@@ -397,6 +397,10 @@ namespace embree
     return _mm256_store_ps((float*)ptr,f);
   }
 
+  __forceinline void storeu8f(void *ptr, const avxf& f ) { 
+    return _mm256_storeu_ps((float*)ptr,f);
+  }
+
   __forceinline void store8f( const avxb& mask, void *ptr, const avxf& f ) { 
     return _mm256_maskstore_ps((float*)ptr,(__m256i)mask,f);
   }

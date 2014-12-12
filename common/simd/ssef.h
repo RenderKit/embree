@@ -77,7 +77,7 @@ namespace embree
     }
 #endif
 
-    static __forceinline ssef loadu( const void* const a ) {
+    static __forceinline ssef loadu( const void* const a ) { // FIXME: no void* pointer here, use float*
       return _mm_loadu_ps((float*)a); 
     }
 
