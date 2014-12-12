@@ -855,9 +855,9 @@ namespace embree
       return N;
     }
 
-    __forceinline std::pair<BBox3fa,BVH4::NodeRef> createLazyPrims(FastAllocator::Thread& alloc,
-								   const size_t x0, const size_t x1,
-								   const size_t y0, const size_t y1)
+    std::pair<BBox3fa,BVH4::NodeRef> createLazyPrims(FastAllocator::Thread& alloc,
+						     const size_t x0, const size_t x1,
+						     const size_t y0, const size_t y1)
       {
 	if (x1-x0 <= 8 && y1-y0 <= 8) {
 	  EagerLeaf* leaf = new (alloc.malloc(sizeof(EagerLeaf))) EagerLeaf(*this);
