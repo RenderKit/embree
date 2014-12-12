@@ -46,7 +46,7 @@ namespace embree
 {
   namespace isa
   {
-    static double dt = 0.0f;
+    //static double dt = 0.0f;
 
     static const size_t THRESHOLD_FOR_SUBTREE_RECURSION = 128;
     static const size_t THRESHOLD_FOR_SINGLE_THREADED = 50000; // FIXME: measure if this is really optimal, maybe disable only parallel splits

@@ -61,7 +61,6 @@ namespace embree
 
         
 #endif   
-
         evalGrid(patch,grid_x,grid_y,grid_z,grid_u,grid_v,geom);
         
         BVH4::NodeRef subtree_root = BVH4::encodeNode( (BVH4::Node*)lazymem);

@@ -330,15 +330,13 @@ namespace embree
       
       
       /*! Returns BVH4 node reference for subtree over patch grid */
-      static __forceinline size_t getSubtreeRootNode(TessellationCache *local_cache, const Primitive* const subdiv_patch, const void* geom)
+      static __forceinline size_t getSubtreeRootNode(TessellationCache *local_cache, const SubdivPatch1Cached* const subdiv_patch, const void* geom)
       {
         const unsigned int commitCounter = ((Scene*)geom)->commitCounter;
-        
         TessellationCache::InputTagType tag = (TessellationCache::InputTagType)subdiv_patch;
         
         BVH4::NodeRef root = local_cache->lookup(tag,commitCounter);
         root.prefetch(0);
-        
         if (unlikely(root == (size_t)-1))
         {
           subdiv_patch->prefetchData();
@@ -396,6 +394,7 @@ namespace embree
         
         if (likely(ty == 2))
         {
+			DBG_PRINT(*(Quad2x2*)prim);
 #if defined(__AVX__)
           intersect1_precise<avxb,avxf>( ray, *(Quad2x2*)prim, (SubdivMesh*)geom,pre);
 #else
