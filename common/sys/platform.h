@@ -280,6 +280,7 @@ typedef int32 ssize_t;
 #pragma warning(disable:4996) // 'std::copy': Function call with parameters that may be unsafe 
 #pragma warning(disable:391 ) // '<=' : signed / unsigned mismatch
 #pragma warning(disable:4018) // '<' : signed / unsigned mismatch
+#pragma warning(disable:4305) // 'initializing' : truncation from 'double' to 'float'
 
 #endif
 
