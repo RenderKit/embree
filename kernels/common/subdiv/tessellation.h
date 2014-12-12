@@ -183,8 +183,8 @@ namespace embree
       {
 	const avxf u = select(m_u, avxf(u_i) * inv_grid_u_segments, 1.0f);
 	const avxf v = select(m_v, avxf(v_i) * inv_grid_v_segments, 1.0f);
-	store8f(&u_array[index + x],u);
-	store8f(&v_array[index + x],v);	   
+	storeu8f(&u_array[index + x],u); // FIXME: store not always 8 bytes aligned !!
+	storeu8f(&v_array[index + x],v);	   
       }
     }       
  #else   

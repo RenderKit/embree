@@ -244,7 +244,7 @@ namespace embree
 #if defined(__AVX__)
 
     __forceinline avxf combine( const float *const source, const size_t offset) const {
-      return avxf( *(ssef*)&source[0+offset], *(ssef*)&source[6+offset] );            
+      return avxf( ssef::loadu(&source[0+offset]), ssef::loadu(&source[6+offset]) ); // FIXME: unaligned loads
     }
 
     __forceinline avxi combine_discritized( const unsigned short *const source, const size_t offset) const {
