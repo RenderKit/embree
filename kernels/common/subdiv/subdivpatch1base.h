@@ -582,7 +582,7 @@ namespace embree
       return Vec2f((float)u[i],(float)v[i]) * 1.0f/65535.0f;
     }
 
-	BBox3fa bounds(const SubdivMesh* const mesh) const;
+    BBox3fa bounds(const SubdivMesh* const mesh) const;
 
 #if defined(__MIC__)
     __forceinline void store(void *mem)
