@@ -129,7 +129,7 @@ namespace embree
   {
 #if FORCE_TESSELLATION_BOUNDS == 1
 
-#if !defined(_MSC_VER)
+#if !defined(_MSC_VER) || defined(__INTEL_COMPILER)
     __aligned(64) float u_array[(grid_size_simd_blocks + 1) * 16]; // +16 for unaligned access
     __aligned(64) float v_array[(grid_size_simd_blocks + 1) * 16]; // +16 for unaligned access
 #else
@@ -311,7 +311,7 @@ namespace embree
       }
 #endif
 
-#if defined(_MSC_VER)
+#if defined(_MSC_VER) && !defined(__INTEL_COMPILER)
     _freea(ptr);
 #endif
     return b;

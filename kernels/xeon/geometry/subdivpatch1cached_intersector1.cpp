@@ -40,7 +40,7 @@ namespace embree
         TIMER(msec = getSeconds());
         
         assert( patch.grid_size_simd_blocks >= 1 );
-#if !defined(_MSC_VER)
+#if !defined(_MSC_VER) || defined(__INTEL_COMPILER)
         __aligned(64) float grid_x[(patch.grid_size_simd_blocks+1)*8]; 
         __aligned(64) float grid_y[(patch.grid_size_simd_blocks+1)*8];
         __aligned(64) float grid_z[(patch.grid_size_simd_blocks+1)*8]; 
@@ -82,7 +82,7 @@ namespace embree
 
         TIMER(msec = getSeconds()-msec);            
 
-#if defined(_MSC_VER)
+#if defined(_MSC_VER) && !defined(__INTEL_COMPILER)
 		_freea(ptr);
 #endif
         return subtree_root;
