@@ -451,7 +451,8 @@ namespace embree
                       const unsigned int gID,
                       const unsigned int pID,
                       const SubdivMesh *const mesh,
-                      const Vec2f uv[4]);
+                      const Vec2f uv[4],
+                      const float edge_level[4]);
 
     __forceinline bool needsStiching() const
     {

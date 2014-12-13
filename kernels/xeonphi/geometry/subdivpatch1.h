@@ -33,8 +33,9 @@ namespace embree
 		  const unsigned int geomID,
 		  const unsigned int primID,
 		  const SubdivMesh *const mesh, 
-                  const Vec2f uv[4]) 
-      : SubdivPatch1Base(ipatch,geomID,primID,mesh,uv)
+                  const Vec2f uv[4],
+                  const float edge_level[4]) 
+      : SubdivPatch1Base(ipatch,geomID,primID,mesh,uv,edge_level)
     { 
     }
 

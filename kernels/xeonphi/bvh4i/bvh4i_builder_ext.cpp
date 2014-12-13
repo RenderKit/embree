@@ -996,9 +996,14 @@ PRINT(CORRECT_numPrims);
 	  feature_adaptive_subdivision_gregory(f,mesh->getHalfEdge(f),mesh->getVertexBuffer(),
 					       [&](const CatmullClarkPatch& ipatch, const Vec2f uv[4], const int subdiv[4])
 	  {
-	  
+            float edge_level[4] = {
+              ipatch.ring[0].edge_level,
+              ipatch.ring[1].edge_level,
+              ipatch.ring[2].edge_level,
+              ipatch.ring[3].edge_level
+            };
 	    const unsigned int patchIndex = base.size()+s.size();
-	    subdiv_patches[patchIndex] = SubdivPatch1(ipatch, mesh->id, f, mesh, uv);
+	    subdiv_patches[patchIndex] = SubdivPatch1(ipatch, mesh->id, f, mesh, uv, edge_level);
 	    
 	    /* compute patch bounds */
 	    const BBox3fa bounds = subdiv_patches[patchIndex].bounds(mesh);
@@ -1087,11 +1092,19 @@ PRINT(CORRECT_numPrims);
             uv[2] = Vec2f(1.0f,1.0f);
             uv[3] = Vec2f(1.0f,0.0f);
 
+            float edge_level[4] = {
+              ipatch.ring[0].edge_level,
+              ipatch.ring[1].edge_level,
+              ipatch.ring[2].edge_level,
+              ipatch.ring[3].edge_level
+            };
+
 	    SubdivPatch1 tmp = SubdivPatch1(ipatch,
 					    g,
 					    i,
 					    subdiv_mesh,
-                                            uv);
+                                            uv,
+                                            edge_level);
 	    	    
 	    const BBox3fa bounds = tmp.bounds(subdiv_mesh);
 	    

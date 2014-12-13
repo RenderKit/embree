@@ -677,9 +677,15 @@ namespace embree
 	  feature_adaptive_subdivision_gregory(f,mesh->getHalfEdge(f),mesh->getVertexBuffer(),
 					       [&](const CatmullClarkPatch& ipatch, const Vec2f uv[4], const int subdiv[4])
 	  {
+            float edge_level[4] = {
+              ipatch.ring[0].edge_level,
+              ipatch.ring[1].edge_level,
+              ipatch.ring[2].edge_level,
+              ipatch.ring[3].edge_level
+            };
 	  
 	    const unsigned int patchIndex = base.size()+s.size();
-	    subdiv_patches[patchIndex] = SubdivPatch1Cached(ipatch, mesh->id, f, mesh, uv);
+	    subdiv_patches[patchIndex] = SubdivPatch1Cached(ipatch, mesh->id, f, mesh, uv, edge_level);
 	    
 	    /* compute patch bounds */
 	    const BBox3fa bounds = subdiv_patches[patchIndex].bounds(mesh);

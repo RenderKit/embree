@@ -25,7 +25,8 @@ namespace embree
                                       const unsigned int gID,
                                       const unsigned int pID,
                                       const SubdivMesh *const mesh,
-                                      const Vec2f uv[4]) 
+                                      const Vec2f uv[4],
+                                      const float edge_level[4]) 
     : geom(gID),
       prim(pID),  
       flags(0)
@@ -41,15 +42,15 @@ namespace embree
 
     /* init discrete edge tessellation levels and grid resolution */
 
-    assert( ipatch.ring[0].edge_level >= 0.0f );
-    assert( ipatch.ring[1].edge_level >= 0.0f );
-    assert( ipatch.ring[2].edge_level >= 0.0f );
-    assert( ipatch.ring[3].edge_level >= 0.0f );
+    assert( edge_level[0] >= 0.0f );
+    assert( edge_level[1] >= 0.0f );
+    assert( edge_level[2] >= 0.0f );
+    assert( edge_level[3] >= 0.0f );
 
-    level[0] = max(ceilf(ipatch.ring[0].edge_level),1.0f);
-    level[1] = max(ceilf(ipatch.ring[1].edge_level),1.0f);
-    level[2] = max(ceilf(ipatch.ring[2].edge_level),1.0f);
-    level[3] = max(ceilf(ipatch.ring[3].edge_level),1.0f);
+    level[0] = max(ceilf(edge_level[0]),1.0f);
+    level[1] = max(ceilf(edge_level[1]),1.0f);
+    level[2] = max(ceilf(edge_level[2]),1.0f);
+    level[3] = max(ceilf(edge_level[3]),1.0f);
 
     grid_u_res = max(level[0],level[2])+1; // n segments -> n+1 points
     grid_v_res = max(level[1],level[3])+1;
