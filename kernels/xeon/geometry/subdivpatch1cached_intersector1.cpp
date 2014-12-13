@@ -65,7 +65,6 @@ namespace embree
         
         BVH4::NodeRef subtree_root = BVH4::encodeNode( (BVH4::Node*)lazymem);
         unsigned int currentIndex = 0;
-        
         BBox3fa bounds = createSubTree( subtree_root,
                                         (float*)lazymem,
                                         patch,

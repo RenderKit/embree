@@ -44,7 +44,8 @@ namespace embree
       static void createTessellationCache();
       
       /*! Precalculations for subdiv patch intersection */
-      struct Precalculations {
+      class Precalculations {
+	  public:
         Vec3fa ray_rdir;
         Vec3fa ray_org_rdir;
         SubdivPatch1Cached *current_patch;
@@ -71,7 +72,7 @@ namespace embree
         {
           if (unlikely(hit_patch != NULL))
           {
-#if COMPUTE_SUBDIV_NORMALS_AFTER_PATCH_INTERSECTION == 1
+#if COMPUTE_SUBDIV_NORMALS_AFTER_PATCH_INTERSECTION == 1			 
             Vec3fa normal = hit_patch->normal(r.u,r.v);
             r.Ng = normal;
 #endif
