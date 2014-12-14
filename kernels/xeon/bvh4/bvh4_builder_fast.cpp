@@ -710,23 +710,35 @@ namespace embree
 	    }
 	  else
 	    {
-	      const CatmullClarkPatch ipatch(mesh->getHalfEdge(f),mesh->getVertexBuffer());
+	      // const CatmullClarkPatch ipatch(mesh->getHalfEdge(f),mesh->getVertexBuffer());
 
-	      Vec2f uv[4];
-	      uv[0] = Vec2f(0.0f,0.0f);
-	      uv[1] = Vec2f(0.0f,1.0f);
-	      uv[2] = Vec2f(1.0f,1.0f);
-	      uv[3] = Vec2f(1.0f,0.0f);
+	      // Vec2f uv[4];
+	      // uv[0] = Vec2f(0.0f,0.0f);
+	      // uv[1] = Vec2f(0.0f,1.0f);
+	      // uv[2] = Vec2f(1.0f,1.0f);
+	      // uv[3] = Vec2f(1.0f,0.0f);
+
+	      // float edge_level[4] = {
+	      // 	ipatch.ring[0].edge_level,
+	      // 	ipatch.ring[1].edge_level,
+	      // 	ipatch.ring[2].edge_level,
+	      // 	ipatch.ring[3].edge_level
+	      // };
+	      //subdiv_patches[patchIndex] = SubdivPatch1Cached(ipatch, mesh->id, f, mesh, uv, edge_level);
+
+	      const SubdivMesh::HalfEdge* first_half_edge = mesh->getHalfEdge(f);
 
 	      float edge_level[4] = {
-		ipatch.ring[0].edge_level,
-		ipatch.ring[1].edge_level,
-		ipatch.ring[2].edge_level,
-		ipatch.ring[3].edge_level
+		first_half_edge[0].edge_level,
+		first_half_edge[1].edge_level,
+		first_half_edge[2].edge_level,
+		first_half_edge[3].edge_level
 	      };
 
+
 	      const unsigned int patchIndex = base.size()+s.size();
-	      subdiv_patches[patchIndex] = SubdivPatch1Cached(ipatch, mesh->id, f, mesh, uv, edge_level);
+
+	      subdiv_patches[patchIndex].updateEdgeLevels(edge_level,mesh);
 	    
 	      /* compute patch bounds */
 	      const BBox3fa bounds = subdiv_patches[patchIndex].bounds(mesh);

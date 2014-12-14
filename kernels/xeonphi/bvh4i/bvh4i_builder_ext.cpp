@@ -1034,6 +1034,16 @@ PRINT(CORRECT_numPrims);
 	    }
 	  else
 	    {
+	      const SubdivMesh::HalfEdge* first_half_edge = mesh->getHalfEdge(f);
+	      float edge_level[4] = {
+		first_half_edge[0].edge_level,
+		first_half_edge[1].edge_level,
+		first_half_edge[2].edge_level,
+		first_half_edge[3].edge_level
+	      };
+	       
+	      subdiv_patches[patchIndex].updateEdgeLevels(edge_level,mesh);
+
 	      const unsigned int patchIndex = base.size()+s.size();
 	      const BBox3fa bounds = subdiv_patches[patchIndex].bounds(mesh);
 	      assert(bounds.lower.x <= bounds.upper.x);
@@ -1060,6 +1070,7 @@ PRINT(CORRECT_numPrims);
   }
 
 
+  /* FIXME: code is deprecated */
   void BVH4iBuilderSubdivMesh::computePrimRefsSubdivMesh(const size_t threadID, const size_t numThreads) 
   {
     const size_t numTotalGroups = scene->size();
