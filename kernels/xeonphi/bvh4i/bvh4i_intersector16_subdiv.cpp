@@ -20,7 +20,7 @@
 #include "common/subdiv/tessellation_cache.h"
 
 #define TIMER(x) 
-#define RETURN_SUBDIV_PATCH_NORMAL 1
+#define RETURN_SUBDIV_PATCH_NORMAL 0
 
 namespace embree
 {

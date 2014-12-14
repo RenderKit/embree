@@ -25,7 +25,7 @@
 #include "geometry/subdivpatch1cached.h"
 
 /* returns smooth subdiv patch normal instead of triangle normal */
-#define RETURN_SUBDIV_PATCH_NORMAL 1
+#define RETURN_SUBDIV_PATCH_NORMAL 0
 /* returns u,v based on individual triangles instead relative to original patch */
 #define FORCE_TRIANGLE_UV 0
 
@@ -61,14 +61,16 @@ namespace embree
           ray_org_rdir  = ray.org*ray_rdir;
           current_patch = NULL;
           hit_patch     = NULL;
-          /* per thread tessellation cache */
+
+          /*! Initialize per thread tessellation cache */
           if (unlikely(!thread_cache))
             createTessellationCache();
           
           local_cache = thread_cache;
           assert(local_cache != NULL);
         }
-        
+
+          /*! Final per ray computations like smooth normal, patch u,v, etc. */        
         __forceinline ~Precalculations() 
         {
           if (unlikely(hit_patch != NULL))
@@ -188,7 +190,7 @@ namespace embree
       };
       
       
-      /* intersect ray with Quad2x2 structure => 1 ray vs. 8 triangles */
+      /*! intersect ray with Quad2x2 structure => 1 ray vs. 8 triangles */
       template<class M, class T>
         static __forceinline bool occluded1_precise(Ray& ray,
                                                     const Quad2x2 &qquad,
@@ -245,7 +247,8 @@ namespace embree
         return true;
       };
       
-      
+
+      /* eval grid over patch and stich edges when required */      
       static __forceinline void evalGrid(const SubdivPatch1Cached &patch,
                                          float *__restrict__ const grid_x,
                                          float *__restrict__ const grid_y,
