@@ -606,7 +606,7 @@ namespace embree
 
     void BVH4SubdivPatch1CachedBuilderFast::build(size_t threadIndex, size_t threadCount)
     {
-      bool levelUpdate = true;
+      levelUpdate = true;
 
       /* initialize all half edge structures */
       new (&iter) Scene::Iterator<SubdivMesh>(this->scene);
@@ -620,6 +620,7 @@ namespace embree
       pstate.init(iter,size_t(1024));
 
       this->bvh->scene = this->scene; // FIXME: remove
+      DBG_PRINT(levelUpdate);
 
       BVH4BuilderFast::build(threadIndex,threadCount);
     }
@@ -632,11 +633,16 @@ namespace embree
         for (size_t f=r.begin(); f!=r.end(); ++f) 
 	{          
           if (!mesh->valid(f)) continue;
-	  feature_adaptive_subdivision_gregory(f,mesh->getHalfEdge(f),mesh->getVertexBuffer(),
-					       [&](const CatmullClarkPatch& patch, const Vec2f uv[4], const int subdiv[4])
-	  {
+	  if (unlikely(levelUpdate == false))
+	    {
+	      feature_adaptive_subdivision_gregory(f,mesh->getHalfEdge(f),mesh->getVertexBuffer(),
+						   [&](const CatmullClarkPatch& patch, const Vec2f uv[4], const int subdiv[4])
+						   {
+						     s++;
+						   });
+	    }
+	  else
 	    s++;
-	  });
 	}
         return PrimInfo(s,empty,empty);
       }, [](const PrimInfo& a, const PrimInfo b) -> PrimInfo { return PrimInfo(a.size()+b.size(),empty,empty); });
@@ -673,29 +679,64 @@ namespace embree
         for (size_t f=r.begin(); f!=r.end(); ++f) 
 	{
           if (!mesh->valid(f)) continue;
+	  if (unlikely(levelUpdate == false))
+	    {
 
-	  feature_adaptive_subdivision_gregory(f,mesh->getHalfEdge(f),mesh->getVertexBuffer(),
-					       [&](const CatmullClarkPatch& ipatch, const Vec2f uv[4], const int subdiv[4])
-	  {
-            float edge_level[4] = {
-              ipatch.ring[0].edge_level,
-              ipatch.ring[1].edge_level,
-              ipatch.ring[2].edge_level,
-              ipatch.ring[3].edge_level
-            };
+	      feature_adaptive_subdivision_gregory(f,mesh->getHalfEdge(f),mesh->getVertexBuffer(),
+						   [&](const CatmullClarkPatch& ipatch, const Vec2f uv[4], const int subdiv[4])
+						   {
+						     float edge_level[4] = {
+						       ipatch.ring[0].edge_level,
+						       ipatch.ring[1].edge_level,
+						       ipatch.ring[2].edge_level,
+						       ipatch.ring[3].edge_level
+						     };
+						     
+						     for (size_t i=0;i<4;i++)
+						       edge_level[i] = adjustDiscreteTessellationLevel(edge_level[i],subdiv[i]);
 	  
-	    const unsigned int patchIndex = base.size()+s.size();
-	    subdiv_patches[patchIndex] = SubdivPatch1Cached(ipatch, mesh->id, f, mesh, uv, edge_level);
+						     const unsigned int patchIndex = base.size()+s.size();
+						     subdiv_patches[patchIndex] = SubdivPatch1Cached(ipatch, mesh->id, f, mesh, uv, edge_level);
 	    
-	    /* compute patch bounds */
-	    const BBox3fa bounds = subdiv_patches[patchIndex].bounds(mesh);
-	    assert(bounds.lower.x <= bounds.upper.x);
-	    assert(bounds.lower.y <= bounds.upper.y);
-	    assert(bounds.lower.z <= bounds.upper.z);
+						     /* compute patch bounds */
+						     const BBox3fa bounds = subdiv_patches[patchIndex].bounds(mesh);
+						     assert(bounds.lower.x <= bounds.upper.x);
+						     assert(bounds.lower.y <= bounds.upper.y);
+						     assert(bounds.lower.z <= bounds.upper.z);
 	    
-	    prims[base.size()+s.size()] = PrimRef(bounds,patchIndex);
-	    s.add(bounds);
-	  });
+						     prims[base.size()+s.size()] = PrimRef(bounds,patchIndex);
+						     s.add(bounds);
+						   });
+	    }
+	  else
+	    {
+	      const CatmullClarkPatch ipatch(mesh->getHalfEdge(f),mesh->getVertexBuffer());
+
+	      Vec2f uv[4];
+	      uv[0] = Vec2f(0.0f,0.0f);
+	      uv[1] = Vec2f(0.0f,1.0f);
+	      uv[2] = Vec2f(1.0f,1.0f);
+	      uv[3] = Vec2f(1.0f,0.0f);
+
+	      float edge_level[4] = {
+		ipatch.ring[0].edge_level,
+		ipatch.ring[1].edge_level,
+		ipatch.ring[2].edge_level,
+		ipatch.ring[3].edge_level
+	      };
+
+	      const unsigned int patchIndex = base.size()+s.size();
+	      subdiv_patches[patchIndex] = SubdivPatch1Cached(ipatch, mesh->id, f, mesh, uv, edge_level);
+	    
+	      /* compute patch bounds */
+	      const BBox3fa bounds = subdiv_patches[patchIndex].bounds(mesh);
+	      assert(bounds.lower.x <= bounds.upper.x);
+	      assert(bounds.lower.y <= bounds.upper.y);
+	      assert(bounds.lower.z <= bounds.upper.z);
+	      
+	      prims[base.size()+s.size()] = PrimRef(bounds,patchIndex);
+	      s.add(bounds);	      
+	    }
         }
         return s;
       }, [](PrimInfo a, const PrimInfo& b) -> PrimInfo { a.merge(b); return a; });

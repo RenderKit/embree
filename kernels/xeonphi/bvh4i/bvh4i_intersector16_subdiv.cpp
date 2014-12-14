@@ -20,7 +20,7 @@
 #include "common/subdiv/tessellation_cache.h"
 
 #define TIMER(x) x
-#define COMPUTE_SUBDIV_NORMALS_AFTER_PATCH_INTERSECTION 1
+#define COMPUTE_SUBDIV_NORMALS_AFTER_PATCH_INTERSECTION 0
 
 namespace embree
 {

@@ -258,12 +258,12 @@ namespace embree
   {
   protected:
     void *org_accel;
-
     Scene::Iterator<SubdivMesh> iter;
     ParallelForForPrefixSumState<PrimInfo> pstate;
+    bool levelUpdate;
 
   public:
-    BVH4iBuilderSubdivMesh (BVH4i* bvh, void* geometry) : BVH4iBuilder(bvh,geometry),org_accel(NULL)
+    BVH4iBuilderSubdivMesh (BVH4i* bvh, void* geometry) : BVH4iBuilder(bvh,geometry),org_accel(NULL),levelUpdate(false)
       {}
 
     virtual void build            (const size_t threadIndex, const size_t threadCount);

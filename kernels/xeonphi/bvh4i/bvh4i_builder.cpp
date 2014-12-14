@@ -31,7 +31,7 @@
 #define L1_PREFETCH_ITEMS 2
 #define L2_PREFETCH_ITEMS 16
 
-#define TIMER(x)  
+#define TIMER(x) x 
 #define DBG(x) 
 
 //#define PROFILE

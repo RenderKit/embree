@@ -20,6 +20,72 @@
 namespace embree
 {
 
+    // if (grid_size_simd_blocks == 1)
+    //   {
+    //     mic_m m_active = 0xffff;
+    //     for (unsigned int i=grid_u_res-1;i<16;i+=grid_u_res)
+    //       m_active ^= (unsigned int)1 << i;
+    //     m_active &= ((unsigned int)1 << (grid_u_res * (grid_v_res-1)))-1;
+    //     grid_mask = m_active;
+    //   }
+
+  void SubdivPatch1Base::updateEdgeLevels(const float edge_level[4],const SubdivMesh *const mesh)
+  {
+    /* init discrete edge tessellation levels and grid resolution */
+
+    assert( edge_level[0] >= 0.0f );
+    assert( edge_level[1] >= 0.0f );
+    assert( edge_level[2] >= 0.0f );
+    assert( edge_level[3] >= 0.0f );
+      
+    level[0] = max(ceilf(edge_level[0]),1.0f);
+    level[1] = max(ceilf(edge_level[1]),1.0f);
+    level[2] = max(ceilf(edge_level[2]),1.0f);
+    level[3] = max(ceilf(edge_level[3]),1.0f);
+
+    grid_u_res = max(level[0],level[2])+1; // n segments -> n+1 points
+    grid_v_res = max(level[1],level[3])+1;
+
+#if defined(__MIC__)
+    grid_size_simd_blocks        = ((grid_u_res*grid_v_res+15)&(-16)) / 16;
+    grid_subtree_size_64b_blocks = 5; // single leaf with u,v,x,y,z      
+#else
+    /* 8-wide SIMD is default on Xeon */
+    grid_size_simd_blocks        = ((grid_u_res*grid_v_res+7)&(-8)) / 8;
+    grid_subtree_size_64b_blocks = (sizeof(Quad2x2)+63) / 64; // single Quad2x2
+#endif
+    /* need stiching? */
+
+    flags &= ~TRANSITION_PATCH;
+
+    const unsigned int int_edge_points0 = (unsigned int)level[0] + 1;
+    const unsigned int int_edge_points1 = (unsigned int)level[1] + 1;
+    const unsigned int int_edge_points2 = (unsigned int)level[2] + 1;
+    const unsigned int int_edge_points3 = (unsigned int)level[3] + 1;
+      
+    if (int_edge_points0 < (unsigned int)grid_u_res ||
+	int_edge_points2 < (unsigned int)grid_u_res ||
+	int_edge_points1 < (unsigned int)grid_v_res ||
+	int_edge_points3 < (unsigned int)grid_v_res)
+      flags |= TRANSITION_PATCH;
+
+    /* tessellate into grid blocks for larger grid resolutions, generate bvh4 subtree over grid blocks*/
+
+#if defined(__MIC__)
+    const size_t leafBlocks = 4;
+#else
+    const size_t leafBlocks = (sizeof(Quad2x2)+63) / 64;
+#endif
+    grid_subtree_size_64b_blocks = getSubTreeSize64bBlocks( leafBlocks ); // u,v,x,y,z 
+
+    /* has displacements? */
+    flags &= ~HAS_DISPLACEMENT;
+    if (mesh->displFunc != NULL)
+      flags |= HAS_DISPLACEMENT;
+
+  }
+
+
   /*! Construction from vertices and IDs. */
   SubdivPatch1Base::SubdivPatch1Base (const CatmullClarkPatch& ipatch,
                                       const unsigned int gID,
@@ -40,73 +106,13 @@ namespace embree
         v[i] = (unsigned short)(uv[i].x * 65535.0f);
       }
 
-    /* init discrete edge tessellation levels and grid resolution */
 
-    assert( edge_level[0] >= 0.0f );
-    assert( edge_level[1] >= 0.0f );
-    assert( edge_level[2] >= 0.0f );
-    assert( edge_level[3] >= 0.0f );
-
-    level[0] = max(ceilf(edge_level[0]),1.0f);
-    level[1] = max(ceilf(edge_level[1]),1.0f);
-    level[2] = max(ceilf(edge_level[2]),1.0f);
-    level[3] = max(ceilf(edge_level[3]),1.0f);
-
-    grid_u_res = max(level[0],level[2])+1; // n segments -> n+1 points
-    grid_v_res = max(level[1],level[3])+1;
-    grid_mask  = 0;
-
-#if defined(__MIC__)
-    grid_size_simd_blocks        = ((grid_u_res*grid_v_res+15)&(-16)) / 16;
-    grid_subtree_size_64b_blocks = 5; // single leaf with u,v,x,y,z
-
-    if (grid_size_simd_blocks == 1)
-      {
-        mic_m m_active = 0xffff;
-        for (unsigned int i=grid_u_res-1;i<16;i+=grid_u_res)
-          m_active ^= (unsigned int)1 << i;
-        m_active &= ((unsigned int)1 << (grid_u_res * (grid_v_res-1)))-1;
-        grid_mask = m_active;
-      }
-
-#else
-    /* 8-wide SIMD is default on Xeon */
-    grid_size_simd_blocks        = ((grid_u_res*grid_v_res+7)&(-8)) / 8;
-    grid_subtree_size_64b_blocks = (sizeof(Quad2x2)+63) / 64; // single Quad2x2
-#endif
-    /* need stiching? */
-
-    const unsigned int int_edge_points0 = (unsigned int)level[0] + 1;
-    const unsigned int int_edge_points1 = (unsigned int)level[1] + 1;
-    const unsigned int int_edge_points2 = (unsigned int)level[2] + 1;
-    const unsigned int int_edge_points3 = (unsigned int)level[3] + 1;
-
-    if (int_edge_points0 < (unsigned int)grid_u_res ||
-        int_edge_points2 < (unsigned int)grid_u_res ||
-        int_edge_points1 < (unsigned int)grid_v_res ||
-        int_edge_points3 < (unsigned int)grid_v_res)
-      flags |= TRANSITION_PATCH;
-      
-
-    /* has displacements? */
-    if (mesh->displFunc != NULL)
-      flags |= HAS_DISPLACEMENT;
-
-
-    /* tessellate into grid blocks for larger grid resolutions, generate bvh4 subtree over grid blocks*/
-
-    {
-#if defined(__MIC__)
-      const size_t leafBlocks = 4;
-#else
-      const size_t leafBlocks = (sizeof(Quad2x2)+63) / 64;
-#endif
-      grid_subtree_size_64b_blocks = getSubTreeSize64bBlocks( leafBlocks ); // u,v,x,y,z 
-    }
+    updateEdgeLevels(edge_level,mesh);
+     
 
     /* determine whether patch is regular or not */
 
-    if (ipatch.isRegular() && mesh->displFunc == NULL ) 
+    if (ipatch.isRegular() && mesh->displFunc == NULL ) //FIXME
       {
         flags |= REGULAR_PATCH;
         patch.init( ipatch );

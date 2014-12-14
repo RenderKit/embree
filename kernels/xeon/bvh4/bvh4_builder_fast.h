@@ -355,6 +355,7 @@ namespace embree
 
       Scene::Iterator<SubdivMesh> iter;
       ParallelForForPrefixSumState<PrimInfo> pstate;
+      bool levelUpdate;
     };
 
   }

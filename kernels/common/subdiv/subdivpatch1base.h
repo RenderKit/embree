@@ -43,20 +43,30 @@ namespace embree
       void *ptr = alloca(elements * sizeof(T) + alignment);
       return (T*)ALIGN_PTR(ptr,alignment);
     }
+  
+  /* adjust discret tessellation level for feature-adaptive pre-subdivision */
+    __forceinline float adjustDiscreteTessellationLevel(float l, const int sublevel = 0)
+    {
+      for (size_t i=0; i<sublevel; i++) l *= 0.5f;
+      float r = ceilf(l);      
+      for (size_t i=0; i<sublevel; i++) r *= 2.0f;
+      return r;
+    }
 
 #if !defined(__MIC__)
 
   /* 3x3 point grid => 2x2 quad grid */
 
-  /*  v00 - v01 - v02 */
-  /*  v10 - v11 - v12 */
-  /*  v20 - v21 - v22 */
-  
-  /* v00 - v10 - v01 - v11 - v02 - v12 */
-  /* v10 - v20 - v11 - v21 - v12 - v22 */
 
   struct __aligned(64) Quad2x2
   {
+
+    /*  v00 - v01 - v02 */
+    /*  v10 - v11 - v12 */
+    /*  v20 - v21 - v22 */
+  
+    /* v00 - v10 - v01 - v11 - v02 - v12 */
+    /* v10 - v20 - v11 - v21 - v12 - v22 */
    
     Quad2x2() 
       {
@@ -622,6 +632,8 @@ namespace embree
     }
 
 
+    void updateEdgeLevels(const float edge_level[4],const SubdivMesh *const mesh);
+
   public:
 
 
@@ -634,7 +646,7 @@ namespace embree
     unsigned int flags;
     unsigned int geom;                          //!< geometry ID of the subdivision mesh this patch belongs to
     unsigned int prim;                          //!< primitive ID of this subdivision patch
-    unsigned int grid_mask;
+    unsigned int reserved;
 
     unsigned int grid_u_res;
     unsigned int grid_v_res;
