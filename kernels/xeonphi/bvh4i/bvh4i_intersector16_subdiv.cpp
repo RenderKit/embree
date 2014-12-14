@@ -19,8 +19,8 @@
 #include "geometry/subdivpatch1.h"
 #include "common/subdiv/tessellation_cache.h"
 
-#define TIMER(x) x
-#define COMPUTE_SUBDIV_NORMALS_AFTER_PATCH_INTERSECTION 0
+#define TIMER(x) 
+#define RETURN_SUBDIV_PATCH_NORMAL 1
 
 namespace embree
 {
@@ -124,22 +124,19 @@ namespace embree
 	  const Vec2f uv2 = patch.getUV(2);
 	  const Vec2f uv3 = patch.getUV(3);
 
-	  const mic_f patch_uu = bilinear_interpolate(uv0.x,uv1.x,uv2.x,uv3.x,uu,vv);
-	  const mic_f patch_vv = bilinear_interpolate(uv0.y,uv1.y,uv2.y,uv3.y,uu,vv);
-
-	  uu = patch_uu;
-	  vv = patch_vv;
-
 	  if (unlikely(geom->displFunc != NULL))
 	    {
 	      mic3f normal      = patch.normal16(uu,vv);
 	      normal = normalize(normal);
 
+	      const mic_f patch_uu = bilinear_interpolate(uv0.x,uv1.x,uv2.x,uv3.x,uu,vv);
+	      const mic_f patch_vv = bilinear_interpolate(uv0.y,uv1.y,uv2.y,uv3.y,uu,vv);
+
 	      geom->displFunc(geom->userPtr,
 			      patch.geom,
 			      patch.prim,
-			      (const float*)&uu,
-			      (const float*)&vv,
+			      (const float*)&patch_uu,
+			      (const float*)&patch_vv,
 			      (const float*)&normal.x,
 			      (const float*)&normal.y,
 			      (const float*)&normal.z,
@@ -436,13 +433,25 @@ namespace embree
 	  const SubdivPatch1& subdiv_patch = ((SubdivPatch1*)accel)[ray16.primID[rayIndex]];
 	  ray16.primID[rayIndex] = subdiv_patch.prim;
 	  ray16.geomID[rayIndex] = subdiv_patch.geom;
-	  if (unlikely(subdiv_patch.hasDisplacement())) continue;
-#if COMPUTE_SUBDIV_NORMALS_AFTER_PATCH_INTERSECTION == 1
-	  const Vec3fa normal    = subdiv_patch.normal(ray16.u[rayIndex],ray16.v[rayIndex]);
-	  ray16.Ng.x[rayIndex]   = normal.x;
-	  ray16.Ng.y[rayIndex]   = normal.y;
-	  ray16.Ng.z[rayIndex]   = normal.z;
+#if RETURN_SUBDIV_PATCH_NORMAL == 1
+	  if (unlikely(!subdiv_patch.hasDisplacement()))
+	    {
+	      const Vec3fa normal    = subdiv_patch.normal(ray16.u[rayIndex],ray16.v[rayIndex]);
+	      ray16.Ng.x[rayIndex]   = normal.x;
+	      ray16.Ng.y[rayIndex]   = normal.y;
+	      ray16.Ng.z[rayIndex]   = normal.z;
+	    }
 #endif
+
+	    const Vec2f uv0 = subdiv_patch.getUV(0);
+	    const Vec2f uv1 = subdiv_patch.getUV(1);
+	    const Vec2f uv2 = subdiv_patch.getUV(2);
+	    const Vec2f uv3 = subdiv_patch.getUV(3);
+	    
+	    const float patch_u = bilinear_interpolate(uv0.x,uv1.x,uv2.x,uv3.x,ray16.u[rayIndex],ray16.v[rayIndex]);
+	    const float patch_v = bilinear_interpolate(uv0.y,uv1.y,uv2.y,uv3.y,ray16.u[rayIndex],ray16.v[rayIndex]);
+	    ray16.u[rayIndex] = patch_u;
+	    ray16.v[rayIndex] = patch_v;
 	}
 
     }

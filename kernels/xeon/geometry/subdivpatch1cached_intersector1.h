@@ -24,8 +24,9 @@
 #include "common/subdiv/tessellation_cache.h"
 #include "geometry/subdivpatch1cached.h"
 
-
-#define COMPUTE_SUBDIV_NORMALS_AFTER_PATCH_INTERSECTION 0
+/* returns smooth subdiv patch normal instead of triangle normal */
+#define RETURN_SUBDIV_PATCH_NORMAL 1
+/* returns u,v based on individual triangles instead relative to original patch */
 #define FORCE_TRIANGLE_UV 0
 
 namespace embree
@@ -72,10 +73,23 @@ namespace embree
         {
           if (unlikely(hit_patch != NULL))
           {
-#if COMPUTE_SUBDIV_NORMALS_AFTER_PATCH_INTERSECTION == 1			 
-            Vec3fa normal = hit_patch->normal(r.u,r.v);
-            r.Ng = normal;
+#if RETURN_SUBDIV_PATCH_NORMAL == 1	
+	    if (likely(!hit_patch->hasDisplacement()))
+	      {		 
+		Vec3fa normal = hit_patch->normal(r.u,r.v);
+		r.Ng = normal;
+	      }
 #endif
+	    const Vec2f uv0 = hit_patch->getUV(0);
+	    const Vec2f uv1 = hit_patch->getUV(1);
+	    const Vec2f uv2 = hit_patch->getUV(2);
+	    const Vec2f uv3 = hit_patch->getUV(3);
+	    
+	    const float patch_u = bilinear_interpolate(uv0.x,uv1.x,uv2.x,uv3.x,r.u,r.v);
+	    const float patch_v = bilinear_interpolate(uv0.y,uv1.y,uv2.y,uv3.y,r.u,r.v);
+
+	    r.u      = patch_u;
+	    r.v      = patch_v;
             r.geomID = hit_patch->geom;
             r.primID = hit_patch->prim;
           }
@@ -261,14 +275,14 @@ namespace embree
           avxf vv = load8f(&grid_v[8*i]);
           avx3f vtx = patch.eval8(uu,vv);
           
-          const avxf patch_uu = bilinear_interpolate(uv0.x,uv1.x,uv2.x,uv3.x,uu,vv);
-          const avxf patch_vv = bilinear_interpolate(uv0.y,uv1.y,uv2.y,uv3.y,uu,vv);
           
           if (unlikely(((SubdivMesh*)geom)->displFunc != NULL))
           {
             avx3f normal = patch.normal8(uu,vv);
             normal = normalize_safe(normal);
             
+	    const avxf patch_uu = bilinear_interpolate(uv0.x,uv1.x,uv2.x,uv3.x,uu,vv);
+	    const avxf patch_vv = bilinear_interpolate(uv0.y,uv1.y,uv2.y,uv3.y,uu,vv);
             
             ((SubdivMesh*)geom)->displFunc(((SubdivMesh*)geom)->userPtr,
                                            patch.geom,
@@ -287,8 +301,8 @@ namespace embree
           *(avxf*)&grid_x[8*i] = vtx.x;
           *(avxf*)&grid_y[8*i] = vtx.y;
           *(avxf*)&grid_z[8*i] = vtx.z;        
-          *(avxf*)&grid_u[8*i] = patch_uu;
-          *(avxf*)&grid_v[8*i] = patch_vv;
+          *(avxf*)&grid_u[8*i] = uu;
+          *(avxf*)&grid_v[8*i] = vv;
         }
 #else
         for (size_t i=0;i<patch.grid_size_simd_blocks*2;i++) // 4-wide blocks for SSE
@@ -297,13 +311,14 @@ namespace embree
           ssef vv = load4f(&grid_v[4*i]);
           sse3f vtx = patch.eval4(uu,vv);
           
-          const ssef patch_uu = bilinear_interpolate(uv0.x,uv1.x,uv2.x,uv3.x,uu,vv);
-          const ssef patch_vv = bilinear_interpolate(uv0.y,uv1.y,uv2.y,uv3.y,uu,vv);
           
           if (unlikely(((SubdivMesh*)geom)->displFunc != NULL))
           {
             sse3f normal = patch.normal4(uu,vv);
             normal = normalize_safe(normal);
+
+	    const ssef patch_uu = bilinear_interpolate(uv0.x,uv1.x,uv2.x,uv3.x,uu,vv);
+	    const ssef patch_vv = bilinear_interpolate(uv0.y,uv1.y,uv2.y,uv3.y,uu,vv);
             
             ((SubdivMesh*)geom)->displFunc(((SubdivMesh*)geom)->userPtr,
                                            patch.geom,
@@ -322,8 +337,8 @@ namespace embree
           *(ssef*)&grid_x[4*i] = vtx.x;
           *(ssef*)&grid_y[4*i] = vtx.y;
           *(ssef*)&grid_z[4*i] = vtx.z;        
-          *(ssef*)&grid_u[4*i] = patch_uu;
-          *(ssef*)&grid_v[4*i] = patch_vv;
+          *(ssef*)&grid_u[4*i] = uu;
+          *(ssef*)&grid_v[4*i] = vv;
         }
         
 #endif
