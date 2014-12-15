@@ -110,7 +110,11 @@ namespace embree
       : geom(geom), BVH4BuilderFastT<SubdivPatch1>(bvh,geom->parent,listMode,0,0,false,sizeof(SubdivPatch1),1,1,geom->size() > THRESHOLD_FOR_SINGLE_THREADED) {}
 
     BVH4SubdivPatch1CachedBuilderFast::BVH4SubdivPatch1CachedBuilderFast (BVH4* bvh, Scene* scene, size_t listMode) 
-      : BVH4BuilderFastT<PrimRef>(bvh,scene,listMode,0,0,false,32,1,1,true) { this->bvh->alloc2.init(4096,4096); } // FIXME: 32 is wrong
+      : BVH4BuilderFastT<PrimRef>(bvh,scene,listMode,0,0,false,32,1,1,true),fastUpdateMode(false),fastUpdateMode_numFaces(0)
+    { 
+      //this->bvh->alloc2.init(4096,4096); 
+    
+    } 
   
     BVH4TopLevelBuilderFastT::BVH4TopLevelBuilderFastT (LockStepTaskScheduler* scheduler, BVH4* bvh) 
       : prims_i(NULL), N(0), BVH4BuilderFast(scheduler,bvh,0,0,0,false,0,1,1) {}
@@ -602,12 +606,15 @@ namespace embree
     }
     
     // =======================================================================================================
-    // ============================ similar builder as for MIC ===============================================
     // =======================================================================================================
+    // =======================================================================================================
+
+#define DBG_CACHE_BUILDER(x) 
 
     void BVH4SubdivPatch1CachedBuilderFast::build(size_t threadIndex, size_t threadCount)
     {
-      levelUpdate = true;
+      fastUpdateMode = true;
+      fastUpdateMode_numFaces = 0;
 
       /* initialize all half edge structures */
       new (&iter) Scene::Iterator<SubdivMesh>(this->scene);
@@ -615,21 +622,18 @@ namespace embree
         if (iter[i]) 
           {
             iter[i]->initializeHalfEdgeStructures();
-            if (!iter[i]->checkLevelUpdate()) levelUpdate = false;
+            fastUpdateMode_numFaces += iter[i]->size();
+            if (!iter[i]->checkLevelUpdate()) fastUpdateMode = false;
           }
+      DBG_CACHE_BUILDER( DBG_PRINT( fastUpdateMode_numFaces ) );
 
       pstate.init(iter,size_t(1024));
 
       this->bvh->scene = this->scene; // FIXME: remove
-#if 0
-      //DBG_PRINT(levelUpdate);
-      if (levelUpdate)
-        needAllThreads = false;
-      else
-        needAllThreads = true;
-#else
-      levelUpdate = false;
-#endif
+
+      /* deactivate fast update mode */
+      //fastUpdateMode = false;
+
       BVH4BuilderFast::build(threadIndex,threadCount);
     }
 
@@ -652,13 +656,25 @@ namespace embree
         return PrimInfo(s,empty,empty);
       }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo(a.size()+b.size(),empty,empty); });
 
+      /* if input mesh contains triangles or creases disable fast update path for now */
+      if (pinfo.size() != fastUpdateMode_numFaces || pinfo.size() != bvh->numPrimitives)
+        fastUpdateMode = false;
+
+
+      /* force sequential code path for fast update */
+      if (fastUpdateMode)
+        needAllThreads = false;
+        
+      DBG_CACHE_BUILDER( DBG_PRINT(fastUpdateMode) );
+      DBG_CACHE_BUILDER( DBG_PRINT(pinfo.size()) );
+      DBG_CACHE_BUILDER( DBG_PRINT(needAllThreads) );
+      
       return pinfo.size();
     }
     
     void BVH4SubdivPatch1CachedBuilderFast::create_primitive_array_sequential(size_t threadIndex, size_t threadCount, PrimInfo& pinfo)
     {
-      //assert( this->bvh->data_mem == NULL);
-
+      /* Allocate memory for gregory and b-spline patches */
      if (this->bvh->size_data_mem < sizeof(SubdivPatch1Cached) * numPrimitives) 
         {
           if (this->bvh->data_mem) 
@@ -669,11 +685,9 @@ namespace embree
 
      if (bvh->data_mem == NULL)
        {
-#if defined(DEBUG)
-         //std::cout << "ALLOCATING SUBDIVPATCH1CACHED MEMORY FOR " << numPrimitives << " PRIMITIVES" << std::endl;
-#endif
-          this->bvh->size_data_mem = sizeof(SubdivPatch1Cached) * numPrimitives;
-          this->bvh->data_mem      = os_malloc( this->bvh->size_data_mem );        
+         DBG_CACHE_BUILDER(std::cout << "ALLOCATING SUBDIVPATCH1CACHED MEMORY FOR " << numPrimitives << " PRIMITIVES" << std::endl);
+         this->bvh->size_data_mem = sizeof(SubdivPatch1Cached) * numPrimitives;
+         this->bvh->data_mem      = os_malloc( this->bvh->size_data_mem );        
        }
         
       SubdivPatch1Cached *const subdiv_patches = (SubdivPatch1Cached *)this->bvh->data_mem;
@@ -685,13 +699,8 @@ namespace embree
 	{
           if (!mesh->valid(f)) continue;
 
-	  if (unlikely(levelUpdate == false))
+	  if (unlikely(fastUpdateMode == false))
 	    {
-              //CatmullClarkPatch ipatch(mesh->getHalfEdge(f),mesh->getVertexBuffer()); 
-              //DBG_PRINT(ipatch);
-              //const int subdiv[4] = { 0, 0, 0, 0 };
-              //const Vec2f uv[4] = { Vec2f(0.0f,0.0f), Vec2f(1.0f,0.0f), Vec2f(1.0f,1.0f), Vec2f(0.0f,1.0f) };
-
 	      feature_adaptive_subdivision_gregory(f,mesh->getHalfEdge(f),mesh->getVertexBuffer(),
                                                    [&](const CatmullClarkPatch& ipatch, const Vec2f uv[4], const int subdiv[4])
                                                    {
@@ -732,7 +741,6 @@ namespace embree
 		first_half_edge[3].edge_level
 	      };
 
-
 	      const unsigned int patchIndex = base.size()+s.size();
 
 	      subdiv_patches[patchIndex].updateEdgeLevels(edge_level,mesh);
@@ -766,22 +774,27 @@ namespace embree
 
     void BVH4SubdivPatch1CachedBuilderFast::build_sequential(size_t threadIndex, size_t threadCount)
     {
-      //PING;
-      //exit(0);
-      if (levelUpdate)
+      if (fastUpdateMode)
         {
+          double t0 = 0.0;
+
+          t0 = getSeconds();
+
           /* calculate list of primrefs */
           PrimInfo pinfo(empty);
           create_primitive_array_parallel(threadIndex, threadCount, scheduler, pinfo);
           bvh->bounds = pinfo.geomBounds;
 
-          double t0 = getSeconds();
+          t0 = getSeconds()-t0;
+          DBG_CACHE_BUILDER(std::cout << "create prim refs in " << 1000.0f*t0 << "ms " << std::endl);
+
+          t0 = getSeconds();
           if (bvh->root != BVH4::emptyNode)
             refit(bvh->root);
-          double dt = getSeconds()-t0;
+          t0 = getSeconds()-t0;
 
           /* verbose mode */
-          std::cout << "[DONE] " << 1000.0f*dt << "ms " << std::endl;
+          DBG_CACHE_BUILDER(std::cout << "Refit done in " << 1000.0f*t0 << "ms " << std::endl);
         }
       else       
         BVH4BuilderFast::build_sequential(threadIndex,threadCount);
@@ -801,7 +814,6 @@ namespace embree
           size_t num;
           SubdivPatch1Cached *sptr = (SubdivPatch1Cached*)ref.leaf(num);
           const size_t index = ((size_t)sptr - (size_t)this->bvh->data_mem) / sizeof(SubdivPatch1Cached);
-          //DBG_PRINT(index);
           assert(index < numPrimitives);
           return prims[index].bounds(); 
         }

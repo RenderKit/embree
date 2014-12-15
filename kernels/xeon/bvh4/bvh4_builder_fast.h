@@ -344,6 +344,9 @@ namespace embree
     class BVH4SubdivPatch1CachedBuilderFast : public BVH4BuilderFastT<PrimRef>
     {
     private:
+      bool fastUpdateMode;
+      size_t fastUpdateMode_numFaces;
+
       BBox3fa refit(NodeRef& ref);
 
     public:
@@ -359,7 +362,6 @@ namespace embree
 
       Scene::Iterator<SubdivMesh> iter;
       ParallelForForPrefixSumState<PrimInfo> pstate;
-      bool levelUpdate;
     };
 
   }
