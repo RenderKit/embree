@@ -635,11 +635,11 @@ namespace embree
           if (!mesh->valid(f)) continue;
 	  if (unlikely(levelUpdate == false))
 	    {
-	      feature_adaptive_subdivision_gregory(f,mesh->getHalfEdge(f),mesh->getVertexBuffer(),
-						   [&](const CatmullClarkPatch& patch, const Vec2f uv[4], const int subdiv[4])
-						   {
+	      //feature_adaptive_subdivision_gregory(f,mesh->getHalfEdge(f),mesh->getVertexBuffer(),
+              //					   [&](const CatmullClarkPatch& patch, const Vec2f uv[4], const int subdiv[4])
+              //					   {
 						     s++;
-						   });
+                                                     //				   });
 	    }
 	  else
 	    s++;
@@ -682,9 +682,12 @@ namespace embree
 	  if (unlikely(levelUpdate == false))
 	    {
 
-	      feature_adaptive_subdivision_gregory(f,mesh->getHalfEdge(f),mesh->getVertexBuffer(),
-						   [&](const CatmullClarkPatch& ipatch, const Vec2f uv[4], const int subdiv[4])
-						   {
+              const CatmullClarkPatch ipatch(mesh->getHalfEdge(f),mesh->getVertexBuffer()); 
+              const int subdiv[4] = { 0, 0, 0, 0 };
+              const Vec2f uv[4] = { Vec2f(0.0f,0.0f), Vec2f(1.0f,0.0f), Vec2f(1.0f,1.0f), Vec2f(0.0f,1.0f) };
+	      //feature_adaptive_subdivision_gregory(f,mesh->getHalfEdge(f),mesh->getVertexBuffer(),
+              //				   [&](const CatmullClarkPatch& ipatch, const Vec2f uv[4], const int subdiv[4])
+              //				   {
 						     float edge_level[4] = {
 						       ipatch.ring[0].edge_level,
 						       ipatch.ring[1].edge_level,
@@ -706,7 +709,7 @@ namespace embree
 	    
 						     prims[base.size()+s.size()] = PrimRef(bounds,patchIndex);
 						     s.add(bounds);
-						   });
+                                                     //				   });
 	    }
 	  else
 	    {
