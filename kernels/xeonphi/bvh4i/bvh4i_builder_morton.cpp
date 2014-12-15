@@ -176,10 +176,10 @@ namespace embree
       size_morton = size_morton_tmp;
 
 
-#if DEBUG
-      DBG_PRINT( minAllocNodes );
-      DBG_PRINT( numNodes );
-#endif
+      DBG(
+	  DBG_PRINT( minAllocNodes );
+	  DBG_PRINT( numNodes );
+	  );
 
     }
 
@@ -188,11 +188,11 @@ namespace embree
     bvh->size_node  = size_node;
     bvh->size_accel = size_accel;
 
-#if DEBUG
-    DBG_PRINT(bvh->size_node);
-    DBG_PRINT(bvh->size_accel);
-    DBG_PRINT(numAllocatedNodes);
-#endif
+    DBG(
+	DBG_PRINT(bvh->size_node);
+	DBG_PRINT(bvh->size_accel);
+	DBG_PRINT(numAllocatedNodes);
+	);
 
   }
 
@@ -254,18 +254,14 @@ namespace embree
 
     if (likely(numPrimitives > SINGLE_THREADED_BUILD_THRESHOLD && threadCount > 1))
       {
-#if DEBUG
-	std::cout << "PARALLEL BUILD" << std::endl << std::flush;
-#endif
+	DBG(std::cout << "PARALLEL BUILD" << std::endl << std::flush);
 	build_main(threadIndex,threadCount);
 
       }
     else
       {
 	/* number of primitives is small, just use single threaded mode */
-#if DEBUG
-	std::cout << "SERIAL BUILD" << std::endl << std::flush;
-#endif
+	DBG(std::cout << "SERIAL BUILD" << std::endl << std::flush);
 	build_main(0,1);
       }
 
@@ -1228,8 +1224,6 @@ namespace embree
     scene->lockstep_scheduler.dispatchTask( task_radixsort, this, threadIndex, threadCount );
 
 #if defined(DEBUG)
-    DBG_PRINT(numPrimitives);
-    DBG_PRINT(((numPrimitives+7)&(-8)));
     for (size_t i=1; i<((numPrimitives+7)&(-8)); i++)
       {
 	if (morton[i-1].code > morton[i].code)
