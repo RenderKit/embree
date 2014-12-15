@@ -153,7 +153,7 @@ inline varying Vec3f DistantLight__sample(const uniform ISPCDistantLight& light,
                                    varying float& tMax,
                                    varying const Vec2f& s) 
 {
-  wi = UniformSampleCone(s.x,s.y,light.radHalfAngle,make_Vec3f(neg(light.D)));
+  wi = UniformSampleCone(s.x,s.y,light.radHalfAngle,make_Vec3f((varying Vec3fa)neg(light.D)));
   tMax = 1e20f;
   return make_Vec3f(light.L);
 }
@@ -582,7 +582,7 @@ __device__ Vec3f ReflectiveMetalMaterial__eval(ReflectiveMetalMaterial* uniform 
 __device__ Vec3f ReflectiveMetalMaterial__sample(ReflectiveMetalMaterial* uniform This, const BRDF& brdf, const Vec3f& Lw, const Vec3f& wo, const DifferentialGeometry& dg, Sample3f& wi_o, Medium& medium, const Vec2f& s)  
 {
   wi_o = reflect_(wo,dg.Ns);
-  return make_Vec3f(This->reflectance) * fresnelConductor(dot(wo,dg.Ns),make_Vec3f(This->eta),make_Vec3f(This->k));
+  return make_Vec3f(This->reflectance) * fresnelConductor(dot(wo,dg.Ns),make_Vec3f((varying Vec3fa)This->eta),make_Vec3f((varying Vec3fa)This->k));
 }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -38,7 +38,7 @@ inline Sample3f reflect_(const Vec3f &V, const Vec3f &N, const float cosi) {
  *  medium. The vectors V and N have to point towards the same side
  *  of the surface. The cosine between V and N is given as input and
  *  the cosine of -N and transmission ray is computed as output. */
-inline Sample3f refract(const Vec3f V, const Vec3f N, const float eta, 
+inline Sample3f refract(const Vec3f& V, const Vec3f& N, const float eta, 
                         const float cosi, float &cost)
 {
   const float k = 1.0f-eta*eta*(1.0f-cosi*cosi);
@@ -72,7 +72,7 @@ inline float fresnelDielectric(const float cosi, const float eta)
 
 /*! Computes fresnel coefficient for conductor medium with complex
  *  refraction index (eta,k). The cosine has to be positive. */
-inline Vec3f fresnelConductor(const float cosi, const Vec3f eta, const Vec3f k)
+inline Vec3f fresnelConductor(const float cosi, const Vec3f& eta, const Vec3f& k)
 {
   const Vec3f tmp = eta*eta + k*k;
   const Vec3f Rpar = (tmp * (cosi*cosi) - 2.0f*eta*cosi + make_Vec3f(1.0f)) *
@@ -88,9 +88,9 @@ struct FresnelConductor {
   Vec3f k;    //!< Imaginary part of refraction index
 };
 
-inline Vec3f eval(uniform const FresnelConductor& THIS, const float cosTheta) {
-  return fresnelConductor(cosTheta,THIS.eta,THIS.k);
-}
+//inline Vec3f eval(uniform const FresnelConductor& THIS, const float cosTheta) {
+//  return fresnelConductor(cosTheta,THIS.eta,THIS.k);
+//}
 
 #if defined(ISPC)
 inline Vec3f eval(varying const FresnelConductor& THIS, const float cosTheta) {
@@ -98,12 +98,12 @@ inline Vec3f eval(varying const FresnelConductor& THIS, const float cosTheta) {
 }
 #endif
 
-inline uniform FresnelConductor make_FresnelConductor(const uniform Vec3f eta, const uniform Vec3f k) {
+inline uniform FresnelConductor make_FresnelConductor(const uniform Vec3f& eta, const uniform Vec3f& k) {
   uniform FresnelConductor m; m.eta = eta; m.k = k; return m;
 }
 
 #if defined(ISPC)
-inline varying FresnelConductor make_FresnelConductor(const varying Vec3f eta, const varying Vec3f k) {
+inline varying FresnelConductor make_FresnelConductor(const varying Vec3f& eta, const varying Vec3f& k) {
   varying FresnelConductor m; m.eta = eta; m.k = k; return m;
 }
 #endif
@@ -150,7 +150,7 @@ inline float eval(const varying PowerCosineDistribution &THIS, const float cosTh
 #endif
 
 /*! Samples the power cosine distribution. */
-inline void sample(const uniform PowerCosineDistribution& THIS, const Vec3f wo, const Vec3f& N, Sample3f &wi, const Vec2f s)  
+inline void sample(const uniform PowerCosineDistribution& THIS, const Vec3f& wo, const Vec3f& N, Sample3f &wi, const Vec2f s)  
 {
   Sample3f wh = powerCosineSampleHemisphere(s.x,s.y,N,THIS.exp);
   Sample3f r = reflect_(wo,wh.v);
@@ -159,7 +159,7 @@ inline void sample(const uniform PowerCosineDistribution& THIS, const Vec3f wo, 
 
 /*! Samples the power cosine distribution. */
 #if defined(ISPC)
-inline void sample(const varying PowerCosineDistribution& THIS, const Vec3f wo, const Vec3f& N, Sample3f &wi, const Vec2f s)  
+inline void sample(const varying PowerCosineDistribution& THIS, const Vec3f& wo, const Vec3f& N, Sample3f &wi, const Vec2f s)  
 {
   Sample3f wh = powerCosineSampleHemisphere(s.x,s.y,N,THIS.exp);
   Sample3f r = reflect_(wo,wh.v);
