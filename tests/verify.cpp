@@ -499,7 +499,7 @@ namespace embree
   unsigned int addSubdivSphere (RTCScene scene, RTCGeometryFlags flags, const Vec3fa& pos, const float r, size_t numPhi, float level, size_t maxFaces = -1, float motion = 0.0f)
   {
     size_t numTheta = 2*numPhi;
-    std::vector<Vec3fa> vertices(numTheta*(numPhi+1));
+    vector_t<Vec3fa> vertices(numTheta*(numPhi+1));
     std::vector<int> indices;
     std::vector<int> faces;
     std::vector<int> offsets;

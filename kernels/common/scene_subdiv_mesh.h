@@ -25,6 +25,7 @@ namespace embree
 {
   class SubdivMesh : public Geometry
   {
+	  ALIGNED_CLASS;
   public:
 
     static const GeometryTy geom_type = SUBDIV_MESH;

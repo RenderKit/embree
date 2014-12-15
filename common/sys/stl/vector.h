@@ -60,6 +60,10 @@ namespace embree
       T* begin() const { return t; };
       T* end() const { return t+m_size; };
 
+	  __forceinline       T* data()       { return t; };
+	  __forceinline const T* data() const { return t; };
+
+
       inline T& front() const { return t[0]; };
       inline T& back () const { return t[m_size-1]; };
 
