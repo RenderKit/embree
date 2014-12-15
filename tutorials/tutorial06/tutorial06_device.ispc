@@ -1268,7 +1268,7 @@ export void device_render (uniform int* uniform pixels,
   /* create accumulator */
   if (g_accu_width != width || g_accu_height != height) {
     delete[] g_accu;
-    g_accu = uniform new uniform Vec3fa[width*height]; // FIXME: never deleted
+    g_accu = uniform new uniform Vec3fa[width*height];
     g_accu_width = width;
     g_accu_height = height;
     memset(g_accu,0,width*height*sizeof(uniform Vec3fa));

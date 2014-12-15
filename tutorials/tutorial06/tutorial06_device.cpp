@@ -1268,7 +1268,7 @@ extern "C" void device_render (int* pixels,
   /* create accumulator */
   if (g_accu_width != width || g_accu_height != height) {
     alignedFree(g_accu);
-    g_accu = new Vec3fa[width*height]; // FIXME: never deleted
+    g_accu = (Vec3fa*) alignedMalloc(width*height*sizeof(Vec3fa));
     g_accu_width = width;
     g_accu_height = height;
     memset(g_accu,0,width*height*sizeof(Vec3fa));
