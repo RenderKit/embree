@@ -68,9 +68,9 @@ namespace embree
     {
       void set_motion_blur(const Mesh* other);
 
-      std::vector<Vec3fa> v;
-      std::vector<Vec3fa> v2;
-      std::vector<Vec3fa> vn;
+      vector_t<Vec3fa> v;
+      vector_t<Vec3fa> v2;
+      vector_t<Vec3fa> vn;
 
       std::vector<Vec2f> vt;
       std::vector<Triangle> triangles;
@@ -80,8 +80,8 @@ namespace embree
     /*! Subdivision Mesh. */
     struct SubdivMesh 
     {
-      std::vector<Vec3fa> positions;            //!< vertex positions
-      std::vector<Vec3fa> normals;              //!< face vertex normals
+      vector_t<Vec3fa> positions;            //!< vertex positions
+	  vector_t<Vec3fa> normals;              //!< face vertex normals
       std::vector<Vec2f> texcoords;             //!< face texture coordinates
       std::vector<int> position_indices;        //!< position indices for all faces
       std::vector<int> normal_indices;          //!< normal indices for all faces
@@ -110,13 +110,8 @@ namespace embree
     {
       void set_motion_blur(const HairSet* other);
 
-#if 1 // FIXME: have to enable this for Visual Studio compiler
       vector_t<Vec3fa> v;       //!< hair control points (x,y,z,r)
       vector_t<Vec3fa> v2;       //!< hair control points (x,y,z,r)
-#else
-      std::vector<Vec3fa> v;       //!< hair control points (x,y,z,r)
-      std::vector<Vec3fa> v2;       //!< hair control points (x,y,z,r)
-#endif
       std::vector<Hair> hairs;  //!< list of hairs
     };
     
