@@ -377,7 +377,7 @@ inline void DielectricLayerLambertian__Constructor(DielectricLayerLambertian* Th
                                                    const Vec3fa& T, 
                                                    const float etai, 
                                                    const float etat, 
-                                                   const Lambertian ground)
+                                                   const Lambertian& ground)
 {
   This->T = T;
   This->etait = etai*rcp(etat);
@@ -388,7 +388,7 @@ inline void DielectricLayerLambertian__Constructor(DielectricLayerLambertian* Th
 inline DielectricLayerLambertian make_DielectricLayerLambertian(const Vec3fa& T, 
                                                                         const float etai, 
                                                                         const float etat, 
-                                                                        const Lambertian ground)
+                                                                        const Lambertian& ground)
 {
   DielectricLayerLambertian m; 
   DielectricLayerLambertian__Constructor(&m,T,etai,etat,ground);
