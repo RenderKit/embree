@@ -57,17 +57,18 @@ dash = '/'
 
 ########################## configuration ##########################
 
-compilers_win = ['V120']
+#compilers_win = ['V120']
 #compilers_win = ['ICC']
+compilers_win  = ['V120', 'ICC']
 #compilers_win  = ['V100', 'V110', 'V120', 'ICC']
 #compilers_unix = ['ICC']
 #compilers_unix = ['GCC', 'ICC']
 compilers_unix = ['GCC', 'CLANG', 'ICC']
 compilers      = []
 
-platforms_win  = ['Win32']
+#platforms_win  = ['Win32']
 #platforms_win  = ['x64']
-#platforms_win  = ['Win32', 'x64']
+platforms_win  = ['Win32', 'x64']
 platforms_unix = ['x64']
 platforms      = []
 
@@ -129,18 +130,21 @@ def compile(OS,compiler,platform,build,isa):
 
     if (compiler == 'ICC'): compiler = '"Intel C++ Compiler XE 14.0" '
 
-	# generate build directory
+    # generate build directory
     if os.path.exists('build'):
-	  if os.path.exists('build/CMakeCache.txt'):
-	    os.system('rm build/CMakeCache.txt')
+      ret = os.system('rm -rf build && mkdir build')
+      if ret != 0:
+        sys.stdout.write("Cannot delete build folder!")
+        return ret
     else:	
-	  os.system('mkdir build')
+      os.system('mkdir build')
 
     # generate solution files using cmake
     command = 'cmake -L '
     command += ' -G "Visual Studio 12 2013"'
     command += ' -T ' + compiler
     command += ' -A ' + platform
+    command += ' -D COMPILER=' + compiler
     command += ' -D XEON_ISA=' + isa
     command += ' -D RTCORE_RAY_MASK=OFF'
     command += ' -D RTCORE_BACKFACE_CULLING=OFF'

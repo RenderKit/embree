@@ -22,7 +22,11 @@ SET(FLAGS_SSE41 "/DCONFIG_SSE41 /QxSSE4.1")
 SET(FLAGS_SSE42 "/DCONFIG_SSE42 /QxSSE4.2")
 SET(FLAGS_AVX   "/arch:AVX /DCONFIG_AVX")
 # Intel Compiler 15, Update 1 unfortunately cannot handle /arch:AVX2
-SET(FLAGS_AVX2  "/arch:AVX2 /DCONFIG_AVX2 /QxCORE-AVX2")
+IF (COMPILER STREQUAL "ICC") # for scripts/regression.py to work with ICC
+  SET(FLAGS_AVX2  "/DCONFIG_AVX2 /QxCORE-AVX2")
+ELSE()
+  SET(FLAGS_AVX2  "/arch:AVX2 /DCONFIG_AVX2 /QxCORE-AVX2")
+ENDIF()
 SET(FLAGS_AVX512 "")
 
 SET(ADDITIONAL_CXX_FLAGS "/Ox /fp:fast /Qpar /Oi /Gy /GR-")
