@@ -1267,6 +1267,7 @@ export void device_render (uniform int* uniform pixels,
 
   /* create accumulator */
   if (g_accu_width != width || g_accu_height != height) {
+    delete[] g_accu;
     g_accu = uniform new uniform Vec3fa[width*height]; // FIXME: never deleted
     g_accu_width = width;
     g_accu_height = height;
@@ -1295,6 +1296,7 @@ export void device_render (uniform int* uniform pixels,
 /* called by the C++ code for cleanup */
 export void device_cleanup ()
 {
+  delete[] g_accu;
   rtcDeleteScene (g_scene);
   rtcExit();
 } // device_cleanup
