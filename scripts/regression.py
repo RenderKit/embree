@@ -207,7 +207,7 @@ def render(OS, compiler, platform, build, isa, tutorial, scene, flags):
     if tutorial == 'tutorial08':
       command += '-i tutorials/tutorial08/' + scene + '.xml '
     elif scene != '':
-      command += '-i ' + modelDir + dash + scene + dash + scene + '_regression.ecs '
+      command += '-c ' + modelDir + dash + scene + dash + scene + '_regression.ecs '
     if tutorial == 'regression':
       command += '-regressions 2000 '
     if tutorial[0:8] == 'tutorial':

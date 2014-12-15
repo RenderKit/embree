@@ -20,7 +20,7 @@ SET(FLAGS_SSSE3 "-mssse3")
 SET(FLAGS_SSE41 "-msse4.1")
 SET(FLAGS_SSE42 "-msse4.2")
 SET(FLAGS_AVX   "-mavx")
-SET(FLAGS_AVX2  "-mavx2 -mfma -mlzcnt -mbmi -mbmi2")
+SET(FLAGS_AVX2  "-mf16c -mavx2 -mfma -mlzcnt -mbmi -mbmi2")
 SET(FLAGS_AVX512 "-mavx512")
 
 SET(CMAKE_CXX_COMPILER "clang++")
