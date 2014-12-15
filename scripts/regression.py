@@ -80,10 +80,10 @@ builds_unix = ['Release']
 #builds_unix = ['Release', 'Debug']
 builds = []
 
-ISAs_win  = ['SSE2']
-#ISAs_win  = ['SSE2', 'SSE4.2', 'AVX', 'AVX2']
-ISAs_unix = ['AVX2']
-#ISAs_unix = ['SSE2', 'SSE4.2', 'AVX', 'AVX2']
+#ISAs_win  = ['SSE2']
+ISAs_win  = ['SSE2', 'SSE4.2', 'AVX', 'AVX2']
+#ISAs_unix = ['AVX2']
+ISAs_unix = ['SSE2', 'SSE4.2', 'AVX', 'AVX2']
 ISAs = []
 
 supported_configurations = [
