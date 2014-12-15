@@ -349,7 +349,7 @@ namespace embree
 	  });
 	}
         return PrimInfo(s,empty,empty);
-      }, [](const PrimInfo& a, const PrimInfo b) -> PrimInfo { return PrimInfo(a.size()+b.size(),empty,empty); });
+      }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo(a.size()+b.size(),empty,empty); });
 
       return pinfo.size();
     }
@@ -399,7 +399,7 @@ namespace embree
 	  });
         }
         return s;
-      }, [](PrimInfo a, const PrimInfo& b) -> PrimInfo { a.merge(b); return a; });
+	  }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a,b); });
     }
     
     void BVH4SubdivGridBuilderFast::create_primitive_array_parallel  (size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, PrimInfo& pinfo) {
@@ -453,7 +453,7 @@ namespace embree
 	  });
 	}
         return PrimInfo(s,empty,empty);
-      }, [](const PrimInfo& a, const PrimInfo b) -> PrimInfo { return PrimInfo(a.size()+b.size(),empty,empty); });
+      }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo(a.size()+b.size(),empty,empty); });
 
       return pinfo.size();
     }
@@ -490,7 +490,7 @@ namespace embree
 	  });
         }
         return s;
-      }, [](PrimInfo a, const PrimInfo& b) -> PrimInfo { a.merge(b); return a; });
+      }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a,b); });
     }
     
     void BVH4SubdivGridEagerBuilderFast::create_primitive_array_parallel  (size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, PrimInfo& pinfo) {
@@ -556,7 +556,7 @@ namespace embree
 	  });
 	}
         return PrimInfo(s,empty,empty);
-      }, [](const PrimInfo& a, const PrimInfo b) -> PrimInfo { return PrimInfo(a.size()+b.size(),empty,empty); });
+      }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo(a.size()+b.size(),empty,empty); });
 
       return pinfo.size();
     }
@@ -593,7 +593,7 @@ namespace embree
 	  });
         }
         return s;
-      }, [](PrimInfo a, const PrimInfo& b) -> PrimInfo { a.merge(b); return a; });
+      }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a,b); });
     }
     
     void BVH4SubdivGridLazyBuilderFast::create_primitive_array_parallel  (size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, PrimInfo& pinfo) {
@@ -645,7 +645,7 @@ namespace embree
 	    s++;
 	}
         return PrimInfo(s,empty,empty);
-      }, [](const PrimInfo& a, const PrimInfo b) -> PrimInfo { return PrimInfo(a.size()+b.size(),empty,empty); });
+      }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo(a.size()+b.size(),empty,empty); });
 
       return pinfo.size();
     }
@@ -754,7 +754,7 @@ namespace embree
 	    }
         }
         return s;
-      }, [](PrimInfo a, const PrimInfo& b) -> PrimInfo { a.merge(b); return a; });
+	  }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a, b); });
 
     }
     

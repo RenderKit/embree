@@ -119,6 +119,10 @@ namespace embree
 	assert(begin == 0);
 	end += other.end;
       }
+
+	  static __forceinline const PrimInfo merge(const PrimInfo& a, const PrimInfo& b) {
+		  PrimInfo r = a; r.merge(b); return r;
+	  }
       
       /*! returns the number of primitives */
       __forceinline size_t size() const { 
