@@ -209,13 +209,13 @@ namespace embree
   {
     if (g_subdiv_accel == "default") 
     {
-      //if (isIncoherent(flags)) {
+      if (isIncoherent(flags)) {
         if (isCompact()) accels.add(BVH4::BVH4SubdivGridLazy(this));
         else             accels.add(BVH4::BVH4SubdivGridEager(this));
-      //}
-      //else {
-      //  accels.add(BVH4::BVH4SubdivPatch1Cached(this));
-      //}
+      }
+      else {
+        accels.add(BVH4::BVH4SubdivPatch1Cached(this));
+      }
     }
     else if (g_subdiv_accel == "bvh4.subdivpatch1"      ) accels.add(BVH4::BVH4SubdivPatch1(this));
     else if (g_subdiv_accel == "bvh4.subdivpatch1cached") accels.add(BVH4::BVH4SubdivPatch1Cached(this));

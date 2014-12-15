@@ -113,7 +113,7 @@ namespace embree
       virtual void build(size_t threadIndex, size_t threadCount);
 
       /* single threaded build */
-      void build_sequential(size_t threadIndex, size_t threadCount);
+      virtual void build_sequential(size_t threadIndex, size_t threadCount);
 
     public:
       TASK_SET_FUNCTION(BVH4BuilderFast,computePrimRefs);
@@ -343,6 +343,9 @@ namespace embree
 
     class BVH4SubdivPatch1CachedBuilderFast : public BVH4BuilderFastT<PrimRef>
     {
+    private:
+      BBox3fa refit(NodeRef& ref);
+
     public:
       BVH4SubdivPatch1CachedBuilderFast (BVH4* bvh, Scene* scene, size_t listMode);
       virtual void build(size_t threadIndex, size_t threadCount);
@@ -352,6 +355,7 @@ namespace embree
       void create_primitive_array_parallel  (size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, PrimInfo& pinfo);
 
       void createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID);
+      virtual void build_sequential(size_t threadIndex, size_t threadCount);
 
       Scene::Iterator<SubdivMesh> iter;
       ParallelForForPrefixSumState<PrimInfo> pstate;
