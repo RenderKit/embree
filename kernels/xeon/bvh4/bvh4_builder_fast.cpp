@@ -642,16 +642,12 @@ namespace embree
         for (size_t f=r.begin(); f!=r.end(); ++f) 
 	{          
           if (!mesh->valid(f)) continue;
-	  if (unlikely(levelUpdate == false))
-	    {
-	      feature_adaptive_subdivision_gregory(f,mesh->getHalfEdge(f),mesh->getVertexBuffer(),
-              					   [&](const CatmullClarkPatch& patch, const Vec2f uv[4], const int subdiv[4])
-              					   {
-						     s++;
-                                                   });
-	    }
-	  else
-	    s++;
+
+          feature_adaptive_subdivision_gregory(f,mesh->getHalfEdge(f),mesh->getVertexBuffer(),
+                                               [&](const CatmullClarkPatch& patch, const Vec2f uv[4], const int subdiv[4])
+                                               {
+                                                 s++;
+                                               });
 	}
         return PrimInfo(s,empty,empty);
       }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo(a.size()+b.size(),empty,empty); });
@@ -688,17 +684,17 @@ namespace embree
         for (size_t f=r.begin(); f!=r.end(); ++f) 
 	{
           if (!mesh->valid(f)) continue;
-          //DBG_PRINT( levelUpdate );
 
 	  if (unlikely(levelUpdate == false))
 	    {
-
-              //const CatmullClarkPatch ipatch(mesh->getHalfEdge(f),mesh->getVertexBuffer()); 
+              //CatmullClarkPatch ipatch(mesh->getHalfEdge(f),mesh->getVertexBuffer()); 
+              //DBG_PRINT(ipatch);
               //const int subdiv[4] = { 0, 0, 0, 0 };
               //const Vec2f uv[4] = { Vec2f(0.0f,0.0f), Vec2f(1.0f,0.0f), Vec2f(1.0f,1.0f), Vec2f(0.0f,1.0f) };
+
 	      feature_adaptive_subdivision_gregory(f,mesh->getHalfEdge(f),mesh->getVertexBuffer(),
-              				   [&](const CatmullClarkPatch& ipatch, const Vec2f uv[4], const int subdiv[4])
-              				   {
+                                                   [&](const CatmullClarkPatch& ipatch, const Vec2f uv[4], const int subdiv[4])
+                                                   {
 						     float edge_level[4] = {
 						       ipatch.ring[0].edge_level,
 						       ipatch.ring[1].edge_level,
@@ -708,20 +704,21 @@ namespace embree
 						     
 						     for (size_t i=0;i<4;i++)
 						       edge_level[i] = adjustDiscreteTessellationLevel(edge_level[i],subdiv[i]);
-	  
+
 						     const unsigned int patchIndex = base.size()+s.size();
                                                      assert(patchIndex < numPrimitives);
 						     subdiv_patches[patchIndex] = SubdivPatch1Cached(ipatch, mesh->id, f, mesh, uv, edge_level);
 	    
 						     /* compute patch bounds */
 						     const BBox3fa bounds = subdiv_patches[patchIndex].bounds(mesh);
+
 						     assert(bounds.lower.x <= bounds.upper.x);
 						     assert(bounds.lower.y <= bounds.upper.y);
 						     assert(bounds.lower.z <= bounds.upper.z);
 	    
 						     prims[patchIndex] = PrimRef(bounds,patchIndex);
 						     s.add(bounds);
-                                           });
+                                                   });
 	    }
 	  else
 	    {
@@ -747,7 +744,6 @@ namespace embree
 	      assert(bounds.lower.z <= bounds.upper.z);
 	      
 	      prims[patchIndex] = PrimRef(bounds,patchIndex);
-              //DBG_PRINT( prims[patchIndex] );
 	      s.add(bounds);	      
 	    }
         }

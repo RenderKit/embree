@@ -581,6 +581,7 @@ namespace embree
     int*    indexBuffer  = (int     *) rtcMapBuffer(scene,mesh,RTC_INDEX_BUFFER);
     int*    facesBuffer = (int     *) rtcMapBuffer(scene,mesh,RTC_FACE_BUFFER);
     float*  levelBuffer  = (float   *) rtcMapBuffer(scene,mesh,RTC_LEVEL_BUFFER);
+
     memcpy(vertexBuffer,vertices.data(),numVertices*sizeof(Vec3fa));
     memcpy(indexBuffer ,indices.data() ,numEdges*sizeof(int));
     memcpy(facesBuffer,faces.data() ,numFaces*sizeof(int));
@@ -866,7 +867,7 @@ namespace embree
     g_atomic0 = 0;
     g_atomic1 = 0;
     for (size_t i=1; i<numThreads; i++)
-      g_threads.push_back(createThread(test_barrier_sys_thread,NULL,1000000,i));
+      g_threads.push_back(createThread(test_barrier_sys_thread,NULL,2000000,i));
     setAffinity(0);
     
     bool ok = true;
@@ -2756,7 +2757,7 @@ namespace embree
 	  RegressionTask* task = new RegressionTask(sceneIndex++,5,N);
 	  
 	  for (size_t i=0; i<N; i++) 
-	    g_threads.push_back(createThread(func,new ThreadRegressionTask(i,N,task),1000000,numThreads+i));
+	    g_threads.push_back(createThread(func,new ThreadRegressionTask(i,N,task),4000000,numThreads+i));
 	}
 	
 	for (size_t i=0; i<g_threads.size(); i++)
@@ -2826,7 +2827,7 @@ namespace embree
 #if !defined(__MIC__) && !defined(_WIN32) // FIXME: hangs on MIC and Windows
     POSITIVE("condition_sys",             test_condition_sys());
 #endif
-#if 1
+#if 0
     POSITIVE("empty_static",              rtcore_empty(RTC_SCENE_STATIC));
     POSITIVE("empty_dynamic",             rtcore_empty(RTC_SCENE_DYNAMIC));
     POSITIVE("flags_static_static",       rtcore_dynamic_flag(RTC_SCENE_STATIC, RTC_GEOMETRY_STATIC));
