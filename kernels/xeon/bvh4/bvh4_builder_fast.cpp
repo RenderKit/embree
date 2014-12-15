@@ -621,7 +621,6 @@ namespace embree
       pstate.init(iter,size_t(1024));
 
       this->bvh->scene = this->scene; // FIXME: remove
-      
 #if 1
       //DBG_PRINT(levelUpdate);
       if (levelUpdate)

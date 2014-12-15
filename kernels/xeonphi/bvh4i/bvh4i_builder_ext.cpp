@@ -913,7 +913,7 @@ PRINT(CORRECT_numPrims);
 	  iter[i]->initializeHalfEdgeStructures();
 	  if (!iter[i]->checkLevelUpdate()) levelUpdate = false;
 	}
-    DBG_PRINT(levelUpdate);
+    //DBG_PRINT(levelUpdate);
     pstate.init(iter,size_t(1024));
 
     BVH4iBuilder::build(threadIndex,threadCount);
