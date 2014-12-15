@@ -57,17 +57,17 @@ dash = '/'
 
 ########################## configuration ##########################
 
-#compilers_win = ['V120']
-compilers_win = ['ICC']
+compilers_win = ['V120']
+#compilers_win = ['ICC']
 #compilers_win  = ['V100', 'V110', 'V120', 'ICC']
 #compilers_unix = ['ICC']
 #compilers_unix = ['GCC', 'ICC']
 compilers_unix = ['GCC', 'CLANG', 'ICC']
 compilers      = []
 
-#platforms_win  = ['win32']
-platforms_win  = ['x64']
-#platforms_win  = ['win32', 'x64']
+platforms_win  = ['Win32']
+#platforms_win  = ['x64']
+#platforms_win  = ['Win32', 'x64']
 platforms_unix = ['x64']
 platforms      = []
 
@@ -86,12 +86,12 @@ ISAs_unix = ['AVX2']
 ISAs = []
 
 supported_configurations = [
-  'V120_win32_Debug_SSE2',   'V120_win32_Debug_SSE4.2',   'V120_win32_Debug_AVX',   'V120_win32_Debug_AVX2', 
-  'V120_win32_Release_SSE2', 'V120_win32_Release_SSE4.2', 'V120_win32_Release_AVX', 'V120_win32_Release_AVX2', 
+  'V120_Win32_Debug_SSE2',   'V120_Win32_Debug_SSE4.2',   'V120_Win32_Debug_AVX',   'V120_Win32_Debug_AVX2', 
+  'V120_Win32_Release_SSE2', 'V120_Win32_Release_SSE4.2', 'V120_Win32_Release_AVX', 'V120_Win32_Release_AVX2', 
   'V120_x64_Debug_SSE2',     'V120_x64_Debug_SSE4.2',     'V120_x64_Debug_AVX',     'V120_x64_Debug_AVX2', 
   'V120_x64_Release_SSE2',   'V120_x64_Release_SSE4.2',   'V120_x64_Release_AVX',   'V120_x64_Release_AVX2', 
-  'ICC_win32_Debug_SSE2',    'ICC_win32_Debug_SSE4.2',    'ICC_win32_Debug_AVX',    'ICC_win32_Debug_AVX2', 
-  'ICC_win32_Release_SSE2',  'ICC_win32_Release_SSE4.2',  'ICC_win32_Release_AVX',  'ICC_win32_Release_AVX2', 
+  'ICC_Win32_Debug_SSE2',    'ICC_Win32_Debug_SSE4.2',    'ICC_Win32_Debug_AVX',    'ICC_Win32_Debug_AVX2', 
+  'ICC_Win32_Release_SSE2',  'ICC_Win32_Release_SSE4.2',  'ICC_Win32_Release_AVX',  'ICC_Win32_Release_AVX2', 
   'ICC_x64_Debug_SSE2',      'ICC_x64_Debug_SSE4.2',      'ICC_x64_Debug_AVX',      'ICC_x64_Debug_AVX2', 
   'ICC_x64_Release_SSE2',    'ICC_x64_Release_SSE4.2',    'ICC_x64_Release_AVX',    'ICC_x64_Release_AVX2', 
   'GCC_x64_Debug_SSE2',      'GCC_x64_Debug_SSE4.2',      'GCC_x64_Debug_AVX',      'GCC_x64_Debug_AVX2', 
@@ -102,7 +102,7 @@ supported_configurations = [
 
 
 models = {}
-models['win32'] = [ 'conference', 'sponza', 'headlight', 'crown', 'bentley' ]
+models['Win32'] = [ 'conference', 'sponza', 'headlight', 'crown', 'bentley' ]
 models['x64'  ] = [ 'conference', 'sponza', 'headlight', 'crown', 'bentley', 'xyz_dragon', 'powerplant' ]
 
 modelDir  = ''
