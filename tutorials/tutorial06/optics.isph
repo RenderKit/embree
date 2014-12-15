@@ -88,15 +88,9 @@ struct FresnelConductor {
   Vec3f k;    //!< Imaginary part of refraction index
 };
 
-//inline Vec3f eval(uniform const FresnelConductor& THIS, const float cosTheta) {
-//  return fresnelConductor(cosTheta,THIS.eta,THIS.k);
-//}
-
-#if defined(ISPC)
 inline Vec3f eval(varying const FresnelConductor& THIS, const float cosTheta) {
   return fresnelConductor(cosTheta,THIS.eta,THIS.k);
 }
-#endif
 
 inline uniform FresnelConductor make_FresnelConductor(const uniform Vec3f& eta, const uniform Vec3f& k) {
   uniform FresnelConductor m; m.eta = eta; m.k = k; return m;

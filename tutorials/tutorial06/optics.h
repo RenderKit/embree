@@ -38,7 +38,7 @@ inline Sample3f reflect_(const Vec3fa &V, const Vec3fa &N, const float cosi) {
  *  medium. The vectors V and N have to point towards the same side
  *  of the surface. The cosine between V and N is given as input and
  *  the cosine of -N and transmission ray is computed as output. */
-inline Sample3f refract(const Vec3fa V, const Vec3fa N, const float eta, 
+inline Sample3f refract(const Vec3fa& V, const Vec3fa& N, const float eta, 
                         const float cosi, float &cost)
 {
   const float k = 1.0f-eta*eta*(1.0f-cosi*cosi);
@@ -72,7 +72,7 @@ inline float fresnelDielectric(const float cosi, const float eta)
 
 /*! Computes fresnel coefficient for conductor medium with complex
  *  refraction index (eta,k). The cosine has to be positive. */
-inline Vec3fa fresnelConductor(const float cosi, const Vec3fa eta, const Vec3fa k)
+inline Vec3fa fresnelConductor(const float cosi, const Vec3fa& eta, const Vec3fa& k)
 {
   const Vec3fa tmp = eta*eta + k*k;
   const Vec3fa Rpar = (tmp * (cosi*cosi) - 2.0f*eta*cosi + Vec3fa(1.0f)) *
@@ -92,18 +92,12 @@ inline Vec3fa eval(const FresnelConductor& THIS, const float cosTheta) {
   return fresnelConductor(cosTheta,THIS.eta,THIS.k);
 }
 
-#if defined(ISPC)
-inline Vec3fa eval(const FresnelConductor& THIS, const float cosTheta) {
-  return fresnelConductor(cosTheta,THIS.eta,THIS.k);
-}
-#endif
-
-inline FresnelConductor make_FresnelConductor(const Vec3fa eta, const Vec3fa k) {
+inline FresnelConductor make_FresnelConductor(const Vec3fa& eta, const Vec3fa& k) {
   FresnelConductor m; m.eta = eta; m.k = k; return m;
 }
 
 #if defined(ISPC)
-inline FresnelConductor make_FresnelConductor(const Vec3fa eta, const Vec3fa k) {
+inline FresnelConductor make_FresnelConductor(const Vec3fa& eta, const Vec3fa& k) {
   FresnelConductor m; m.eta = eta; m.k = k; return m;
 }
 #endif
@@ -150,7 +144,7 @@ inline float eval(const PowerCosineDistribution &THIS, const float cosThetaH) {
 #endif
 
 /*! Samples the power cosine distribution. */
-inline void sample(const PowerCosineDistribution& THIS, const Vec3fa wo, const Vec3fa& N, Sample3f &wi, const Vec2f s)  
+inline void sample(const PowerCosineDistribution& THIS, const Vec3fa& wo, const Vec3fa& N, Sample3f &wi, const Vec2f s)  
 {
   Sample3f wh = powerCosineSampleHemisphere(s.x,s.y,N,THIS.exp);
   Sample3f r = reflect_(wo,wh.v);
@@ -159,7 +153,7 @@ inline void sample(const PowerCosineDistribution& THIS, const Vec3fa wo, const V
 
 /*! Samples the power cosine distribution. */
 #if defined(ISPC)
-inline void sample(const PowerCosineDistribution& THIS, const Vec3fa wo, const Vec3fa& N, Sample3f &wi, const Vec2f s)  
+inline void sample(const PowerCosineDistribution& THIS, const Vec3fa& wo, const Vec3fa& N, Sample3f &wi, const Vec2f s)  
 {
   Sample3f wh = powerCosineSampleHemisphere(s.x,s.y,N,THIS.exp);
   Sample3f r = reflect_(wo,wh.v);

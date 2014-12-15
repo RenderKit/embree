@@ -46,7 +46,7 @@ struct Medium
   float eta;             //!< Refraction index of medium.
 };
 
-inline Medium make_Medium(const Vec3fa transmission, const float eta)
+inline Medium make_Medium(const Vec3fa& transmission, const float eta)
 {
   Medium m;
   m.transmission = transmission;
@@ -55,7 +55,7 @@ inline Medium make_Medium(const Vec3fa transmission, const float eta)
 }
 
 inline Medium make_Medium_Vacuum() { 
-  return make_Medium(Vec3fa(1.0f),1.0f); 
+  return make_Medium(Vec3fa((float)1.0f),1.0f); 
 }
 
 inline bool eq(const Medium& a, const Medium& b) {
@@ -153,7 +153,7 @@ inline Vec3fa DistantLight__sample(const ISPCDistantLight& light,
                                    float& tMax,
                                    const Vec2f& s) 
 {
-  wi = UniformSampleCone(s.x,s.y,light.radHalfAngle,Vec3fa(neg(light.D)));
+  wi = UniformSampleCone(s.x,s.y,light.radHalfAngle,Vec3fa((Vec3fa)neg(light.D)));
   tMax = 1e20f;
   return Vec3fa(light.L);
 }
@@ -191,13 +191,13 @@ inline Vec3fa Minneart__sample(const Minneart* This,
   return Minneart__eval(This, wo, dg, wi.v);
 }
 
-inline void Minneart__Constructor(Minneart* This, const Vec3fa R, const float b) 
+inline void Minneart__Constructor(Minneart* This, const Vec3fa& R, const float b) 
 {
   This->R = R;
   This->b = b;
 }
 
-inline Minneart make_Minneart(const Vec3fa R, const float f) { 
+inline Minneart make_Minneart(const Vec3fa& R, const float f) { 
   Minneart m; Minneart__Constructor(&m,R,f); return m; 
 }
 
@@ -238,13 +238,13 @@ inline Vec3fa Velvety__sample(const Velvety* This,
   return Velvety__eval(This, wo, dg, wi.v);
 }
 
-inline void Velvety__Constructor(Velvety* This, const Vec3fa R, const float f) 
+inline void Velvety__Constructor(Velvety* This, const Vec3fa& R, const float f) 
 {
   This->R = R;
   This->f = f;
 }
 
-inline Velvety make_Velvety(const Vec3fa R, const float f) { 
+inline Velvety make_Velvety(const Vec3fa& R, const float f) { 
   Velvety m; Velvety__Constructor(&m,R,f); return m; 
 }
 
@@ -304,12 +304,12 @@ inline Vec3fa Lambertian__sample(const Lambertian* This,
   return Lambertian__eval(This, wo, dg, wi.v);
 }
 
-inline void Lambertian__Constructor(Lambertian* This, const Vec3fa R)
+inline void Lambertian__Constructor(Lambertian* This, const Vec3fa& R)
 {
   This->R = R;
 }
 
-inline Lambertian make_Lambertian(const Vec3fa R) {
+inline Lambertian make_Lambertian(const Vec3fa& R) {
   Lambertian v; Lambertian__Constructor(&v,R); return v;
 }
 
@@ -374,7 +374,7 @@ inline Vec3fa DielectricLayerLambertian__sample(const DielectricLayerLambertian*
 }
 
 inline void DielectricLayerLambertian__Constructor(DielectricLayerLambertian* This,
-                                                   const Vec3fa T, 
+                                                   const Vec3fa& T, 
                                                    const float etai, 
                                                    const float etat, 
                                                    const Lambertian ground)
@@ -385,7 +385,7 @@ inline void DielectricLayerLambertian__Constructor(DielectricLayerLambertian* Th
   This->ground = ground;
 }
 
-inline DielectricLayerLambertian make_DielectricLayerLambertian(const Vec3fa T, 
+inline DielectricLayerLambertian make_DielectricLayerLambertian(const Vec3fa& T, 
                                                                         const float etai, 
                                                                         const float etat, 
                                                                         const Lambertian ground)
@@ -405,13 +405,13 @@ inline DielectricLayerLambertian make_DielectricLayerLambertian(const Vec3fa T,
 
  Vec3fa MatteMaterial__eval(MatteMaterial* This, const BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Vec3fa& wi) 
 {
-  Lambertian lambertian = make_Lambertian(Vec3fa(This->reflectance));
+  Lambertian lambertian = make_Lambertian(Vec3fa((Vec3fa)This->reflectance));
   return Lambertian__eval(&lambertian,wo,dg,wi);
 }
 
  Vec3fa MatteMaterial__sample(MatteMaterial* This, const BRDF& brdf, const Vec3fa& Lw, const Vec3fa& wo, const DifferentialGeometry& dg, Sample3f& wi_o, Medium& medium, const Vec2f& s)  
 {
-  Lambertian lambertian = make_Lambertian(Vec3fa(This->reflectance));
+  Lambertian lambertian = make_Lambertian(Vec3fa((Vec3fa)This->reflectance));
   return Lambertian__sample(&lambertian,wo,dg,wi_o,s);
 }
 
@@ -582,7 +582,7 @@ inline DielectricLayerLambertian make_DielectricLayerLambertian(const Vec3fa T,
  Vec3fa ReflectiveMetalMaterial__sample(ReflectiveMetalMaterial* This, const BRDF& brdf, const Vec3fa& Lw, const Vec3fa& wo, const DifferentialGeometry& dg, Sample3f& wi_o, Medium& medium, const Vec2f& s)  
 {
   wi_o = reflect_(wo,dg.Ns);
-  return Vec3fa(This->reflectance) * fresnelConductor(dot(wo,dg.Ns),Vec3fa(This->eta),Vec3fa(This->k));
+  return Vec3fa(This->reflectance) * fresnelConductor(dot(wo,dg.Ns),Vec3fa((Vec3fa)This->eta),Vec3fa((Vec3fa)This->k));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -595,15 +595,15 @@ inline DielectricLayerLambertian make_DielectricLayerLambertian(const Vec3fa T,
 
  Vec3fa VelvetMaterial__eval(VelvetMaterial* This, const BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Vec3fa& wi) 
 {
-  Minneart minneart; Minneart__Constructor(&minneart,Vec3fa(This->reflectance),This->backScattering);
-  Velvety velvety; Velvety__Constructor (&velvety,Vec3fa(This->horizonScatteringColor),This->horizonScatteringFallOff);
+  Minneart minneart; Minneart__Constructor(&minneart,(Vec3fa)Vec3fa(This->reflectance),This->backScattering);
+  Velvety velvety; Velvety__Constructor (&velvety,Vec3fa((Vec3fa)This->horizonScatteringColor),This->horizonScatteringFallOff);
   return Minneart__eval(&minneart,wo,dg,wi) + Velvety__eval(&velvety,wo,dg,wi);
 }
 
  Vec3fa VelvetMaterial__sample(VelvetMaterial* This, const BRDF& brdf, const Vec3fa& Lw, const Vec3fa& wo, const DifferentialGeometry& dg, Sample3f& wi_o, Medium& medium, const Vec2f& s)  
 {
-  Minneart minneart; Minneart__Constructor(&minneart,Vec3fa(This->reflectance),This->backScattering);
-  Velvety velvety; Velvety__Constructor (&velvety,Vec3fa(This->horizonScatteringColor),This->horizonScatteringFallOff);
+  Minneart minneart; Minneart__Constructor(&minneart,Vec3fa((Vec3fa)This->reflectance),This->backScattering);
+  Velvety velvety; Velvety__Constructor (&velvety,Vec3fa((Vec3fa)This->horizonScatteringColor),This->horizonScatteringFallOff);
 
   Sample3f wi0; Vec3fa c0 = Minneart__sample(&minneart,wo,dg,wi0,s);
   Sample3f wi1; Vec3fa c1 = Velvety__sample(&velvety,wo,dg,wi1,s);
@@ -625,8 +625,8 @@ inline DielectricLayerLambertian make_DielectricLayerLambertian(const Vec3fa T,
  Vec3fa DielectricMaterial__sample(DielectricMaterial* material, const BRDF& brdf, const Vec3fa& Lw, const Vec3fa& wo, const DifferentialGeometry& dg, Sample3f& wi_o, Medium& medium, const Vec2f& s)  
 {
   float eta = 0.0f;
-  Medium mediumOutside = make_Medium(Vec3fa(material->transmissionOutside),material->etaOutside);
-  Medium mediumInside  = make_Medium(Vec3fa(material->transmissionInside ),material->etaInside );
+  Medium mediumOutside = make_Medium(Vec3fa((Vec3fa)material->transmissionOutside),material->etaOutside);
+  Medium mediumInside  = make_Medium(Vec3fa((Vec3fa)material->transmissionInside ),material->etaInside );
   Medium mediumFront, mediumBack;
   if (eq(medium,mediumInside)) {
     eta = material->etaInside/material->etaOutside;
@@ -683,14 +683,14 @@ inline DielectricLayerLambertian make_DielectricLayerLambertian(const Vec3fa T,
  Vec3fa MetallicPaintMaterial__eval(MetallicPaintMaterial* This, const BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Vec3fa& wi) 
 {
   DielectricReflection reflection; DielectricReflection__Constructor(&reflection, 1.0f, This->eta);
-  DielectricLayerLambertian lambertian; DielectricLayerLambertian__Constructor(&lambertian, Vec3fa(1.0f), 1.0f, This->eta, make_Lambertian(Vec3fa(This->shadeColor)));
+  DielectricLayerLambertian lambertian; DielectricLayerLambertian__Constructor(&lambertian, Vec3fa((float)1.0f), 1.0f, This->eta, make_Lambertian(Vec3fa((Vec3fa)This->shadeColor)));
   return DielectricReflection__eval(&reflection,wo,dg,wi) + DielectricLayerLambertian__eval(&lambertian,wo,dg,wi);
 }
 
  Vec3fa MetallicPaintMaterial__sample(MetallicPaintMaterial* This, const BRDF& brdf, const Vec3fa& Lw, const Vec3fa& wo, const DifferentialGeometry& dg, Sample3f& wi_o, Medium& medium, const Vec2f& s)  
 {
   DielectricReflection reflection; DielectricReflection__Constructor(&reflection, 1.0f, This->eta);
-  DielectricLayerLambertian lambertian; DielectricLayerLambertian__Constructor(&lambertian, Vec3fa(1.0f), 1.0f, This->eta, make_Lambertian(Vec3fa(This->shadeColor)));
+  DielectricLayerLambertian lambertian; DielectricLayerLambertian__Constructor(&lambertian, Vec3fa((float)1.0f), 1.0f, This->eta, make_Lambertian(Vec3fa((Vec3fa)This->shadeColor)));
   Sample3f wi0; Vec3fa c0 = DielectricReflection__sample(&reflection,wo,dg,wi0,s);
   Sample3f wi1; Vec3fa c1 = DielectricLayerLambertian__sample(&lambertian,wo,dg,wi1,s);
   return sample_component2(c0,wi0,medium,c1,wi1,medium,Lw,wi_o,medium,s.x);
