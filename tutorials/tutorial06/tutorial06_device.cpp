@@ -1267,6 +1267,7 @@ extern "C" void device_render (int* pixels,
 
   /* create accumulator */
   if (g_accu_width != width || g_accu_height != height) {
+    alignedFree(g_accu);
     g_accu = new Vec3fa[width*height]; // FIXME: never deleted
     g_accu_width = width;
     g_accu_height = height;
@@ -1295,6 +1296,7 @@ extern "C" void device_render (int* pixels,
 /* called by the C++ code for cleanup */
 extern "C" void device_cleanup ()
 {
+  alignedFree(g_accu);
   rtcDeleteScene (g_scene);
   rtcExit();
 } // device_cleanup
