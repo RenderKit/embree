@@ -674,7 +674,7 @@ namespace embree
      if (bvh->data_mem == NULL)
        {
 #if defined(DEBUG)
-          std::cout << "ALLOCATING SUBDIVPATCH1CACHED MEMORY FOR " << numPrimitives << " PRIMITIVES" << std::endl;
+         //std::cout << "ALLOCATING SUBDIVPATCH1CACHED MEMORY FOR " << numPrimitives << " PRIMITIVES" << std::endl;
 #endif
           this->bvh->size_data_mem = sizeof(SubdivPatch1Cached) * numPrimitives;
           this->bvh->data_mem      = os_malloc( this->bvh->size_data_mem );        
@@ -693,12 +693,12 @@ namespace embree
 	  if (unlikely(levelUpdate == false))
 	    {
 
-              const CatmullClarkPatch ipatch(mesh->getHalfEdge(f),mesh->getVertexBuffer()); 
-              const int subdiv[4] = { 0, 0, 0, 0 };
-              const Vec2f uv[4] = { Vec2f(0.0f,0.0f), Vec2f(1.0f,0.0f), Vec2f(1.0f,1.0f), Vec2f(0.0f,1.0f) };
-	      //feature_adaptive_subdivision_gregory(f,mesh->getHalfEdge(f),mesh->getVertexBuffer(),
-              //				   [&](const CatmullClarkPatch& ipatch, const Vec2f uv[4], const int subdiv[4])
-              //				   {
+              //const CatmullClarkPatch ipatch(mesh->getHalfEdge(f),mesh->getVertexBuffer()); 
+              //const int subdiv[4] = { 0, 0, 0, 0 };
+              //const Vec2f uv[4] = { Vec2f(0.0f,0.0f), Vec2f(1.0f,0.0f), Vec2f(1.0f,1.0f), Vec2f(0.0f,1.0f) };
+	      feature_adaptive_subdivision_gregory(f,mesh->getHalfEdge(f),mesh->getVertexBuffer(),
+              				   [&](const CatmullClarkPatch& ipatch, const Vec2f uv[4], const int subdiv[4])
+              				   {
 						     float edge_level[4] = {
 						       ipatch.ring[0].edge_level,
 						       ipatch.ring[1].edge_level,
@@ -721,7 +721,7 @@ namespace embree
 	    
 						     prims[patchIndex] = PrimRef(bounds,patchIndex);
 						     s.add(bounds);
-                                                     //                           });
+                                           });
 	    }
 	  else
 	    {
