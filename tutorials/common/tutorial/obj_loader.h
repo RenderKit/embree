@@ -30,5 +30,5 @@
 namespace embree
 {
   /*! read from disk */
-  void loadOBJ(const FileName& fileName, const AffineSpace3f& space, OBJScene& mesh, const bool onlyQuads = false);
+  void loadOBJ(const FileName& fileName, const AffineSpace3f& space, OBJScene& mesh, const bool subdivMode = false);
 }

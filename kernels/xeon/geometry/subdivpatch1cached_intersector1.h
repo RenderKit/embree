@@ -24,8 +24,6 @@
 #include "common/subdiv/tessellation_cache.h"
 #include "geometry/subdivpatch1cached.h"
 
-/* returns smooth subdiv patch normal instead of triangle normal */
-#define RETURN_SUBDIV_PATCH_NORMAL 0
 /* returns u,v based on individual triangles instead relative to original patch */
 #define FORCE_TRIANGLE_UV 0
 
@@ -75,7 +73,8 @@ namespace embree
         {
           if (unlikely(hit_patch != NULL))
           {
-#if RETURN_SUBDIV_PATCH_NORMAL == 1	
+
+#if defined(RTCORE_RETURN_SUBDIV_NORMAL)
 	    if (likely(!hit_patch->hasDisplacement()))
 	      {		 
 		Vec3fa normal = hit_patch->normal(r.u,r.v);

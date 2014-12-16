@@ -93,7 +93,7 @@ namespace embree
   public:
 
     /*! Constructor. */
-    OBJLoader(const FileName& fileName, const AffineSpace3f& space, OBJScene& mesh, const bool onlyQuads);
+    OBJLoader(const FileName& fileName, const AffineSpace3f& space, OBJScene& mesh, const bool subdivMode);
 
     /*! Destruction */
     ~OBJLoader();
@@ -110,7 +110,7 @@ namespace embree
     OBJScene& model;
     
     /*! load only quads and ignore triangles */
-    bool onlyQuads;
+    bool subdivMode;
 
     /*! Geometry buffer. */
     vector_t<Vec3fa> v;
@@ -132,8 +132,8 @@ namespace embree
     uint32 getVertex(std::map<Vertex,uint32>& vertexMap, OBJScene::Mesh* mesh, const Vertex& i);
   };
 
-  OBJLoader::OBJLoader(const FileName &fileName, const AffineSpace3f& space, OBJScene& mesh, const bool onlyQuads) 
-    : path(fileName.path()), model(mesh), space(space), onlyQuads(onlyQuads)
+  OBJLoader::OBJLoader(const FileName &fileName, const AffineSpace3f& space, OBJScene& mesh, const bool subdivMode) 
+    : path(fileName.path()), model(mesh), space(space), subdivMode(subdivMode)
   {
     /* open file */
     std::ifstream cin;
@@ -337,7 +337,7 @@ namespace embree
 
       /* for subdivision test scenes */
 
-      if (onlyQuads && face.size() == 4)
+      if (subdivMode && face.size() == 4)
 	{
 	  /* only look at position indices here */
 	  uint32 v0 = face[0].v;
@@ -359,18 +359,28 @@ namespace embree
       /* triangulate the face with a triangle fan */
       for (size_t k=2; k < face.size(); k++) {
         i1 = i2; i2 = face[k];
-        uint32 v0 = getVertex(vertexMap, mesh, i0);
-        uint32 v1 = getVertex(vertexMap, mesh, i1);
-        uint32 v2 = getVertex(vertexMap, mesh, i2);
-        mesh->triangles.push_back(OBJScene::Triangle(v0,v1,v2,curMaterial));
-        assert(v0 < mesh->v.size());
-        assert(v1 < mesh->v.size());
-        assert(v2 < mesh->v.size());
+	uint32 v0,v1,v2;
+	if (subdivMode)
+	  {
+	    v0 = i0.v; 
+	    v1 = i1.v; 
+	    v2 = i2.v; 
+	  }
+	else
+	  {
+	    v0 = getVertex(vertexMap, mesh, i0);
+	    v1 = getVertex(vertexMap, mesh, i1);
+	    v2 = getVertex(vertexMap, mesh, i2);
+	  }
+	mesh->triangles.push_back(OBJScene::Triangle(v0,v1,v2,curMaterial));
+	assert(v0 < mesh->v.size());
+	assert(v1 < mesh->v.size());
+	assert(v2 < mesh->v.size());
       }
     }
 
     /* use vertex array as it is in quad-only mode */
-    if (onlyQuads)
+    if (subdivMode)
       {
 	for (size_t i=0;i<v.size();i++)
 	  {
@@ -381,8 +391,8 @@ namespace embree
     curGroup.clear();
   }
 
-  void loadOBJ(const FileName& fileName, const AffineSpace3f& space, OBJScene& mesh_o, const bool onlyQuads) {
-    OBJLoader loader(fileName,space,mesh_o,onlyQuads); 
+  void loadOBJ(const FileName& fileName, const AffineSpace3f& space, OBJScene& mesh_o, const bool subdivMode) {
+    OBJLoader loader(fileName,space,mesh_o,subdivMode); 
   }
 
   void OBJScene::Mesh::set_motion_blur(const Mesh* other)
