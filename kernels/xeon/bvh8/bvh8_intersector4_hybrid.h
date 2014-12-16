@@ -33,7 +33,6 @@ namespace embree
       typedef typename PrimitiveIntersector::Primitive Primitive;
       typedef typename BVH8::NodeRef NodeRef;
       typedef typename BVH8::Node Node;
-      typedef StackItemT<NodeRef> StackItem;
       static const size_t stackSizeSingle = 1+3*BVH8::maxDepth;
       static const size_t stackSizeChunk = 4*BVH8::maxDepth+1;
 
