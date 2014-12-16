@@ -248,9 +248,8 @@ namespace embree
   class __aligned(64) GeneralCatmullClarkPatch
   {
   public:
-    enum { SIZE = 10 };
+    enum { SIZE = 5 };
     GeneralCatmullClark1Ring ring[SIZE];
-    //float level[SIZE];
     size_t N;
 
     __forceinline GeneralCatmullClarkPatch () 

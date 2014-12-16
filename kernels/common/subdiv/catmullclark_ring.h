@@ -26,8 +26,8 @@ namespace embree
   
   struct __aligned(64) CatmullClark1Ring
   {
-    static const size_t MAX_FACE_VALENCE = 64;
-    static const size_t MAX_EDGE_VALENCE = 2*64;
+    static const size_t MAX_FACE_VALENCE = 32;
+    static const size_t MAX_EDGE_VALENCE = 2*32;
     
     Vec3fa ring [MAX_EDGE_VALENCE];
     float crease_weight[MAX_FACE_VALENCE];
@@ -504,8 +504,8 @@ namespace embree
   
   struct __aligned(64) GeneralCatmullClark1Ring
   {
-    static const size_t MAX_FACE_VALENCE = 64;
-    static const size_t MAX_EDGE_VALENCE = 2*64;
+    static const size_t MAX_FACE_VALENCE = 32;
+    static const size_t MAX_EDGE_VALENCE = 2*32;
     
     Vec3fa vtx;
     Vec3fa ring[MAX_EDGE_VALENCE]; 

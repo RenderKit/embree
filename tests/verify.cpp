@@ -28,7 +28,9 @@
 #include "../kernels/common/default.h"
 #include <vector>
 
-#define DEFAULT_STACK_SIZE 2*1024*2024
+//#define DEFAULT_STACK_SIZE 2*1024*1024
+//#define DEFAULT_STACK_SIZE 512*1024
+#define DEFAULT_STACK_SIZE 0
 namespace embree
 {
 #if !defined(__MIC__)
