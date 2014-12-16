@@ -31,7 +31,7 @@
 #define L1_PREFETCH_ITEMS 2
 #define L2_PREFETCH_ITEMS 16
 
-#define TIMER(x) x 
+#define TIMER(x) 
 #define DBG(x) 
 
 //#define PROFILE
@@ -174,17 +174,17 @@ namespace embree
     const size_t size_accel    = numPrims * sizeAccelInBytes + additional_size;
 
     numAllocated64BytesBlocks = size_node / sizeof(mic_f);
-    
-#if DEBUG  
-    DBG_PRINT(numPrims);
-    DBG_PRINT(numNodes);
-    DBG_PRINT(sizeNodeInBytes);
-    DBG_PRINT(sizeAccelInBytes);
-    DBG_PRINT(numAllocated64BytesBlocks);
-    DBG_PRINT(size_primrefs);
-    DBG_PRINT(size_node);
-    DBG_PRINT(size_accel);
-#endif
+
+    DBG(
+	DBG_PRINT(numPrims);
+	DBG_PRINT(numNodes);
+	DBG_PRINT(sizeNodeInBytes);
+	DBG_PRINT(sizeAccelInBytes);
+	DBG_PRINT(numAllocated64BytesBlocks);
+	DBG_PRINT(size_primrefs);
+	DBG_PRINT(size_node);
+	DBG_PRINT(size_accel);
+	);
 
     prims = (PrimRef  *) os_malloc(size_primrefs); 
     node  = (mic_i    *) os_malloc(size_node);
@@ -248,11 +248,11 @@ namespace embree
     if (unlikely(g_verbose >= 2)) {
       printBuilderName();
 
-#if DEBUG
-      DBG_PRINT(totalNumPrimitives);
-      DBG_PRINT(threadIndex);
-      DBG_PRINT(threadCount);
-#endif
+      DBG(
+	  DBG_PRINT(totalNumPrimitives);
+	  DBG_PRINT(threadIndex);
+	  DBG_PRINT(threadCount);
+	  );
     }
 
     if (likely(totalNumPrimitives == 0))
