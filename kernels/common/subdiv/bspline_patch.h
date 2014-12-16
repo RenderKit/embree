@@ -389,7 +389,8 @@ namespace embree
       return bounds;
     }
 
-    __forceinline Vec3fa eval(const float uu, const float vv) const
+    __noinline Vec3fa eval(const float uu, const float vv) const // this has to be noinline to work around likely compiler bug in feature_adaptive_eval
+	//__forceinline Vec3fa eval(const float uu, const float vv) const
     {
       const Vec4f v_n = CubicBSplineCurve::eval(vv);
 
@@ -400,7 +401,7 @@ namespace embree
 
       const Vec4f u_n = CubicBSplineCurve::eval(uu);
 
-      return (u_n[0] * curve0 + u_n[1] * curve1 + u_n[2] * curve2 + u_n[3] * curve3) * 1.0f/36.0f;
+      return (u_n[0] * curve0 + u_n[1] * curve1 + u_n[2] * curve2 + u_n[3] * curve3) * (1.0f/36.0f);
     }
 
 
