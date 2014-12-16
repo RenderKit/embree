@@ -25,7 +25,7 @@
 #include "geometry/subdivpatch1cached.h"
 
 /* returns smooth subdiv patch normal instead of triangle normal */
-#define RETURN_SUBDIV_PATCH_NORMAL 1
+#define RETURN_SUBDIV_PATCH_NORMAL 0
 /* returns u,v based on individual triangles instead relative to original patch */
 #define FORCE_TRIANGLE_UV 0
 
