@@ -212,7 +212,7 @@ namespace embree
         /*! Intersect a ray with the 4 triangles and updates the hit. */
         static __forceinline void intersect(Precalculations& pre, Ray8& ray, size_t k, const Primitive& tri, Scene* scene)
         {
-          /* calculate denominator */
+	  /* calculate denominator */
           STAT3(normal.trav_prims,1,1,1);
           const sse3f O = broadcast4f(ray.org,k);
           const sse3f D = broadcast4f(ray.dir,k);

@@ -28,6 +28,7 @@
 #include "../kernels/common/default.h"
 #include <vector>
 
+#define DEFAULT_STACK_SIZE 2*1024*2024
 namespace embree
 {
 #if !defined(__MIC__)
@@ -581,6 +582,7 @@ namespace embree
     int*    indexBuffer  = (int     *) rtcMapBuffer(scene,mesh,RTC_INDEX_BUFFER);
     int*    facesBuffer = (int     *) rtcMapBuffer(scene,mesh,RTC_FACE_BUFFER);
     float*  levelBuffer  = (float   *) rtcMapBuffer(scene,mesh,RTC_LEVEL_BUFFER);
+
     memcpy(vertexBuffer,vertices.data(),numVertices*sizeof(Vec3fa));
     memcpy(indexBuffer ,indices.data() ,numEdges*sizeof(int));
     memcpy(facesBuffer,faces.data() ,numFaces*sizeof(int));
@@ -866,7 +868,7 @@ namespace embree
     g_atomic0 = 0;
     g_atomic1 = 0;
     for (size_t i=1; i<numThreads; i++)
-      g_threads.push_back(createThread(test_barrier_sys_thread,NULL,1000000,i));
+      g_threads.push_back(createThread(test_barrier_sys_thread,NULL,DEFAULT_STACK_SIZE,i));
     setAffinity(0);
     
     bool ok = true;
@@ -958,7 +960,7 @@ namespace embree
     g_atomic0 = 0;
     g_atomic1 = 0;
     for (size_t i=1; i<numThreads; i++)
-      g_threads.push_back(createThread(test_condition_sys_thread,NULL,1000000,i));
+      g_threads.push_back(createThread(test_condition_sys_thread,NULL,DEFAULT_STACK_SIZE,i));
     setAffinity(0);
     
     bool ok = true;
@@ -1011,7 +1013,7 @@ namespace embree
     g_barrier.init(numThreads);
     g_counter = 0;
     for (size_t i=1; i<numThreads; i++) 
-      g_threads.push_back(createThread(test_mutex_sys_thread,NULL,1000000,i));
+      g_threads.push_back(createThread(test_mutex_sys_thread,NULL,DEFAULT_STACK_SIZE,i));
 
     setAffinity(0);
     
@@ -2756,7 +2758,7 @@ namespace embree
 	  RegressionTask* task = new RegressionTask(sceneIndex++,5,N);
 	  
 	  for (size_t i=0; i<N; i++) 
-	    g_threads.push_back(createThread(func,new ThreadRegressionTask(i,N,task),1000000,numThreads+i));
+	    g_threads.push_back(createThread(func,new ThreadRegressionTask(i,N,task),DEFAULT_STACK_SIZE,numThreads+i));
 	}
 	
 	for (size_t i=0; i<g_threads.size(); i++)

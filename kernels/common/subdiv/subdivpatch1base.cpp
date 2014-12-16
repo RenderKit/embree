@@ -53,6 +53,7 @@ namespace embree
     /* 8-wide SIMD is default on Xeon */
     grid_size_simd_blocks        = ((grid_u_res*grid_v_res+7)&(-8)) / 8;
     grid_subtree_size_64b_blocks = (sizeof(Quad2x2)+63) / 64; // single Quad2x2
+
 #endif
     /* need stiching? */
 
@@ -139,6 +140,7 @@ namespace embree
 #if !defined(_MSC_VER) || defined(__INTEL_COMPILER)
     __aligned(64) float u_array[(grid_size_simd_blocks + 1) * 16]; // +16 for unaligned access
     __aligned(64) float v_array[(grid_size_simd_blocks + 1) * 16]; // +16 for unaligned access
+
 #else
     const size_t array_elements = (grid_size_simd_blocks + 1) * 8;
 
@@ -214,6 +216,7 @@ namespace embree
 #else
 
 #if !defined(__AVX__)
+
     for (size_t i = 0; i<grid_size_simd_blocks * 2; i++)
       {
         ssef u = load4f(&u_array[i * 4]);

@@ -289,7 +289,7 @@ namespace embree
     pthread_attr_t attr;
     pthread_attr_init(&attr);
     if (stack_size > 0) pthread_attr_setstacksize (&attr, stack_size);
-    
+    //DBG_PRINT( stack_size );
     /* set affinity */
 #if defined(__LINUX__)
     if (threadID >= 0) {

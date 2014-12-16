@@ -18,6 +18,7 @@
 
 #include "catmullclark_patch.h"
 
+
 namespace embree
 {
   template<typename Tessellator>
@@ -39,12 +40,15 @@ namespace embree
 #else
       int neighborSubdiv[GeneralCatmullClarkPatch::SIZE];
       const GeneralCatmullClarkPatch patch(h,vertices);
+
+      assert( patch.size() < GeneralCatmullClarkPatch::SIZE);
       for (size_t i=0; i<patch.size(); i++) {
 	neighborSubdiv[i] = h->hasOpposite() ? !h->opposite()->isGregoryFace() : 0; h = h->next();
       }
       subdivide(patch,0,neighborSubdiv);
 #endif
     }
+
 
     void subdivide(const GeneralCatmullClarkPatch& patch, int depth, int neighborSubdiv[GeneralCatmullClarkPatch::SIZE])
     {
@@ -125,11 +129,13 @@ namespace embree
       }
     }
 
+
     void subdivide(const CatmullClarkPatch& patch, int depth, const Vec2f uv[4], const int neighborSubdiv[4])
     {
       if (depth == 0)
 	if (patch.isGregoryOrFinal(depth))
 	  return tessellator(patch,uv,neighborSubdiv);
+
 
       CatmullClarkPatch patches[4]; 
       patch.subdivide(patches);
