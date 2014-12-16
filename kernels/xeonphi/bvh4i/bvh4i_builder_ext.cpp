@@ -913,7 +913,9 @@ PRINT(CORRECT_numPrims);
 	  iter[i]->initializeHalfEdgeStructures();
 	  if (!iter[i]->checkLevelUpdate()) levelUpdate = false;
 	}
-    DBG_PRINT(levelUpdate);
+
+    levelUpdate = false;
+    //DBG_PRINT(levelUpdate);
     pstate.init(iter,size_t(1024));
 
     BVH4iBuilder::build(threadIndex,threadCount);
@@ -958,17 +960,11 @@ PRINT(CORRECT_numPrims);
        for (size_t f=r.begin(); f!=r.end(); ++f) 
 	{          
           if (!mesh->valid(f)) continue;
-	  if (unlikely(levelUpdate == false))
-	    {
-	      feature_adaptive_subdivision_gregory(f,mesh->getHalfEdge(f),mesh->getVertexBuffer(),
-						   [&](const CatmullClarkPatch& patch, const Vec2f uv[4], const int subdiv[4])
-						   {
-						     s++;
-						   });
-	    }
-	    else
-	      s++;
-	    
+	  feature_adaptive_subdivision_gregory(f,mesh->getHalfEdge(f),mesh->getVertexBuffer(),
+					       [&](const CatmullClarkPatch& patch, const Vec2f uv[4], const int subdiv[4])
+					       {
+						 s++;
+					       });	    
 	}
        return PrimInfo(s,empty,empty);
      }, [](const PrimInfo& a, const PrimInfo b) -> PrimInfo { return PrimInfo(a.size()+b.size(),empty,empty); });
@@ -989,7 +985,7 @@ PRINT(CORRECT_numPrims);
 
   void BVH4iBuilderSubdivMesh::computePrimRefs(const size_t threadIndex, const size_t threadCount)
   {
-#if 1
+#if 0
     scene->lockstep_scheduler.dispatchTask( task_computePrimRefsSubdivMesh, this, threadIndex, threadCount );	
 #else
 
@@ -1035,6 +1031,17 @@ PRINT(CORRECT_numPrims);
 	  else
 	    {
 	      const unsigned int patchIndex = base.size()+s.size();
+
+	      const SubdivMesh::HalfEdge* first_half_edge = mesh->getHalfEdge(f);
+	      float edge_level[4] = {
+		first_half_edge[0].edge_level,
+		first_half_edge[1].edge_level,
+		first_half_edge[2].edge_level,
+		first_half_edge[3].edge_level
+	      };
+	       
+	      subdiv_patches[patchIndex].updateEdgeLevels(edge_level,mesh);
+
 	      const BBox3fa bounds = subdiv_patches[patchIndex].bounds(mesh);
 	      assert(bounds.lower.x <= bounds.upper.x);
 	      assert(bounds.lower.y <= bounds.upper.y);
@@ -1060,6 +1067,7 @@ PRINT(CORRECT_numPrims);
   }
 
 
+  /* FIXME: code is deprecated */
   void BVH4iBuilderSubdivMesh::computePrimRefsSubdivMesh(const size_t threadID, const size_t numThreads) 
   {
     const size_t numTotalGroups = scene->size();

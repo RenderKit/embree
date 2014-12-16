@@ -456,6 +456,7 @@ namespace embree
                 << "numRegularFaces = " << numRegularFaces << " (" << 100.0f * numRegularFaces / numFaces << "%), " 
                 << "numIrregularFaces " << numIrregularFaces << " (" << 100.0f * numIrregularFaces / numFaces << "%) " << std::endl;
     }
+
   }
 
   bool SubdivMesh::verify () 

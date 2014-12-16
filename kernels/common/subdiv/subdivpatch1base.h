@@ -607,6 +607,8 @@ namespace embree
     }
 #endif
 
+    void updateEdgeLevels(const float edge_level[4],const SubdivMesh *const mesh);
+
   private:
 
     size_t get64BytesBlocksForGridSubTree(const GridRange &range,
@@ -632,7 +634,6 @@ namespace embree
     }
 
 
-    void updateEdgeLevels(const float edge_level[4],const SubdivMesh *const mesh);
 
   public:
 

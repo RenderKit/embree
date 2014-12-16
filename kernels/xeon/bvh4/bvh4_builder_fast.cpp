@@ -133,7 +133,8 @@ namespace embree
       bool parallel = needAllThreads && numPrimitives > THRESHOLD_FOR_SINGLE_THREADED;
 
       /* initialize BVH */
-      bvh->init(sizeof(BVH4::Node),numPrimitives, parallel ? (threadCount+1) : 1); // threadCount+1 for toplevel build
+      if (numPrimitivesOld != numPrimitives)
+        bvh->init(sizeof(BVH4::Node),numPrimitives, parallel ? (threadCount+1) : 1); // threadCount+1 for toplevel build
 
       /* skip build for empty scene */
       if (numPrimitives == 0) 
@@ -349,7 +350,7 @@ namespace embree
 	  });
 	}
         return PrimInfo(s,empty,empty);
-      }, [](const PrimInfo& a, const PrimInfo b) -> PrimInfo { return PrimInfo(a.size()+b.size(),empty,empty); });
+      }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo(a.size()+b.size(),empty,empty); });
 
       return pinfo.size();
     }
@@ -399,7 +400,7 @@ namespace embree
 	  });
         }
         return s;
-      }, [](PrimInfo a, const PrimInfo& b) -> PrimInfo { a.merge(b); return a; });
+	  }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a,b); });
     }
     
     void BVH4SubdivGridBuilderFast::create_primitive_array_parallel  (size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, PrimInfo& pinfo) {
@@ -453,7 +454,7 @@ namespace embree
 	  });
 	}
         return PrimInfo(s,empty,empty);
-      }, [](const PrimInfo& a, const PrimInfo b) -> PrimInfo { return PrimInfo(a.size()+b.size(),empty,empty); });
+      }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo(a.size()+b.size(),empty,empty); });
 
       return pinfo.size();
     }
@@ -490,7 +491,7 @@ namespace embree
 	  });
         }
         return s;
-      }, [](PrimInfo a, const PrimInfo& b) -> PrimInfo { a.merge(b); return a; });
+      }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a,b); });
     }
     
     void BVH4SubdivGridEagerBuilderFast::create_primitive_array_parallel  (size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, PrimInfo& pinfo) {
@@ -556,7 +557,7 @@ namespace embree
 	  });
 	}
         return PrimInfo(s,empty,empty);
-      }, [](const PrimInfo& a, const PrimInfo b) -> PrimInfo { return PrimInfo(a.size()+b.size(),empty,empty); });
+      }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo(a.size()+b.size(),empty,empty); });
 
       return pinfo.size();
     }
@@ -593,7 +594,7 @@ namespace embree
 	  });
         }
         return s;
-      }, [](PrimInfo a, const PrimInfo& b) -> PrimInfo { a.merge(b); return a; });
+      }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a,b); });
     }
     
     void BVH4SubdivGridLazyBuilderFast::create_primitive_array_parallel  (size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, PrimInfo& pinfo) {
@@ -620,32 +621,36 @@ namespace embree
       pstate.init(iter,size_t(1024));
 
       this->bvh->scene = this->scene; // FIXME: remove
-      DBG_PRINT(levelUpdate);
-
+#if 0
+      //DBG_PRINT(levelUpdate);
+      if (levelUpdate)
+        needAllThreads = false;
+      else
+        needAllThreads = true;
+#else
+      levelUpdate = false;
+#endif
       BVH4BuilderFast::build(threadIndex,threadCount);
     }
 
     size_t BVH4SubdivPatch1CachedBuilderFast::number_of_primitives() 
     {
+      // FIXME: skip in levelUpdate mode
       PrimInfo pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
       {
         size_t s = 0;
         for (size_t f=r.begin(); f!=r.end(); ++f) 
 	{          
           if (!mesh->valid(f)) continue;
-	  if (unlikely(levelUpdate == false))
-	    {
-	      feature_adaptive_subdivision_gregory(f,mesh->getHalfEdge(f),mesh->getVertexBuffer(),
-						   [&](const CatmullClarkPatch& patch, const Vec2f uv[4], const int subdiv[4])
-						   {
-						     s++;
-						   });
-	    }
-	  else
-	    s++;
+
+          feature_adaptive_subdivision_gregory(f,mesh->getHalfEdge(f),mesh->getVertexBuffer(),
+                                               [&](const CatmullClarkPatch& patch, const Vec2f uv[4], const int subdiv[4])
+                                               {
+                                                 s++;
+                                               });
 	}
         return PrimInfo(s,empty,empty);
-      }, [](const PrimInfo& a, const PrimInfo b) -> PrimInfo { return PrimInfo(a.size()+b.size(),empty,empty); });
+      }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo(a.size()+b.size(),empty,empty); });
 
       return pinfo.size();
     }
@@ -665,7 +670,7 @@ namespace embree
      if (bvh->data_mem == NULL)
        {
 #if defined(DEBUG)
-          std::cout << "ALLOCATING SUBDIVPATCH1CACHED MEMORY FOR " << numPrimitives << " PRIMITIVES" << std::endl;
+         //std::cout << "ALLOCATING SUBDIVPATCH1CACHED MEMORY FOR " << numPrimitives << " PRIMITIVES" << std::endl;
 #endif
           this->bvh->size_data_mem = sizeof(SubdivPatch1Cached) * numPrimitives;
           this->bvh->data_mem      = os_malloc( this->bvh->size_data_mem );        
@@ -679,12 +684,17 @@ namespace embree
         for (size_t f=r.begin(); f!=r.end(); ++f) 
 	{
           if (!mesh->valid(f)) continue;
+
 	  if (unlikely(levelUpdate == false))
 	    {
+              //CatmullClarkPatch ipatch(mesh->getHalfEdge(f),mesh->getVertexBuffer()); 
+              //DBG_PRINT(ipatch);
+              //const int subdiv[4] = { 0, 0, 0, 0 };
+              //const Vec2f uv[4] = { Vec2f(0.0f,0.0f), Vec2f(1.0f,0.0f), Vec2f(1.0f,1.0f), Vec2f(0.0f,1.0f) };
 
 	      feature_adaptive_subdivision_gregory(f,mesh->getHalfEdge(f),mesh->getVertexBuffer(),
-						   [&](const CatmullClarkPatch& ipatch, const Vec2f uv[4], const int subdiv[4])
-						   {
+                                                   [&](const CatmullClarkPatch& ipatch, const Vec2f uv[4], const int subdiv[4])
+                                                   {
 						     float edge_level[4] = {
 						       ipatch.ring[0].edge_level,
 						       ipatch.ring[1].edge_level,
@@ -694,39 +704,38 @@ namespace embree
 						     
 						     for (size_t i=0;i<4;i++)
 						       edge_level[i] = adjustDiscreteTessellationLevel(edge_level[i],subdiv[i]);
-	  
+
 						     const unsigned int patchIndex = base.size()+s.size();
+                                                     assert(patchIndex < numPrimitives);
 						     subdiv_patches[patchIndex] = SubdivPatch1Cached(ipatch, mesh->id, f, mesh, uv, edge_level);
 	    
 						     /* compute patch bounds */
 						     const BBox3fa bounds = subdiv_patches[patchIndex].bounds(mesh);
+
 						     assert(bounds.lower.x <= bounds.upper.x);
 						     assert(bounds.lower.y <= bounds.upper.y);
 						     assert(bounds.lower.z <= bounds.upper.z);
 	    
-						     prims[base.size()+s.size()] = PrimRef(bounds,patchIndex);
+						     prims[patchIndex] = PrimRef(bounds,patchIndex);
 						     s.add(bounds);
-						   });
+                                                   });
 	    }
 	  else
 	    {
-	      const CatmullClarkPatch ipatch(mesh->getHalfEdge(f),mesh->getVertexBuffer());
 
-	      Vec2f uv[4];
-	      uv[0] = Vec2f(0.0f,0.0f);
-	      uv[1] = Vec2f(0.0f,1.0f);
-	      uv[2] = Vec2f(1.0f,1.0f);
-	      uv[3] = Vec2f(1.0f,0.0f);
+	      const SubdivMesh::HalfEdge* first_half_edge = mesh->getHalfEdge(f);
 
 	      float edge_level[4] = {
-		ipatch.ring[0].edge_level,
-		ipatch.ring[1].edge_level,
-		ipatch.ring[2].edge_level,
-		ipatch.ring[3].edge_level
+		first_half_edge[0].edge_level,
+		first_half_edge[1].edge_level,
+		first_half_edge[2].edge_level,
+		first_half_edge[3].edge_level
 	      };
 
+
 	      const unsigned int patchIndex = base.size()+s.size();
-	      subdiv_patches[patchIndex] = SubdivPatch1Cached(ipatch, mesh->id, f, mesh, uv, edge_level);
+
+	      subdiv_patches[patchIndex].updateEdgeLevels(edge_level,mesh);
 	    
 	      /* compute patch bounds */
 	      const BBox3fa bounds = subdiv_patches[patchIndex].bounds(mesh);
@@ -734,13 +743,12 @@ namespace embree
 	      assert(bounds.lower.y <= bounds.upper.y);
 	      assert(bounds.lower.z <= bounds.upper.z);
 	      
-	      prims[base.size()+s.size()] = PrimRef(bounds,patchIndex);
+	      prims[patchIndex] = PrimRef(bounds,patchIndex);
 	      s.add(bounds);	      
 	    }
         }
         return s;
-      }, [](PrimInfo a, const PrimInfo& b) -> PrimInfo { a.merge(b); return a; });
-
+	  }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a, b); });
     }
     
     void BVH4SubdivPatch1CachedBuilderFast::create_primitive_array_parallel  (size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, PrimInfo& pinfo) {
@@ -755,6 +763,81 @@ namespace embree
       SubdivPatch1Cached *const subdiv_patches = (SubdivPatch1Cached *)this->bvh->data_mem;
       *current.parent = bvh->encodeLeaf((char*)&subdiv_patches[patchIndex],1);
     }
+
+    void BVH4SubdivPatch1CachedBuilderFast::build_sequential(size_t threadIndex, size_t threadCount)
+    {
+      //PING;
+      //exit(0);
+      if (levelUpdate)
+        {
+          /* calculate list of primrefs */
+          PrimInfo pinfo(empty);
+          create_primitive_array_parallel(threadIndex, threadCount, scheduler, pinfo);
+          bvh->bounds = pinfo.geomBounds;
+
+          double t0 = getSeconds();
+          if (bvh->root != BVH4::emptyNode)
+            refit(bvh->root);
+          double dt = getSeconds()-t0;
+
+          /* verbose mode */
+          std::cout << "[DONE] " << 1000.0f*dt << "ms " << std::endl;
+        }
+      else       
+        BVH4BuilderFast::build_sequential(threadIndex,threadCount);
+    }
+
+    BBox3fa BVH4SubdivPatch1CachedBuilderFast::refit(NodeRef& ref)
+    {
+      /* this is a empty node */
+      if (unlikely(ref == BVH4::emptyNode))
+        return BBox3fa( empty );
+
+      assert(ref != BVH4::invalidNode);
+
+      /* this is a leaf node */
+      if (unlikely(ref.isLeaf()))
+        {
+          size_t num;
+          SubdivPatch1Cached *sptr = (SubdivPatch1Cached*)ref.leaf(num);
+          const size_t index = ((size_t)sptr - (size_t)this->bvh->data_mem) / sizeof(SubdivPatch1Cached);
+          //DBG_PRINT(index);
+          assert(index < numPrimitives);
+          return prims[index].bounds(); 
+        }
+      
+      /* recurse if this is an internal node */
+      Node* node = ref.node();
+      const BBox3fa bounds0 = refit(node->child(0));
+      const BBox3fa bounds1 = refit(node->child(1));
+      const BBox3fa bounds2 = refit(node->child(2));
+      const BBox3fa bounds3 = refit(node->child(3));
+      
+      /* AOS to SOA transform */
+      BBox<sse3f> bounds;
+      transpose((ssef&)bounds0.lower,(ssef&)bounds1.lower,(ssef&)bounds2.lower,(ssef&)bounds3.lower,bounds.lower.x,bounds.lower.y,bounds.lower.z);
+      transpose((ssef&)bounds0.upper,(ssef&)bounds1.upper,(ssef&)bounds2.upper,(ssef&)bounds3.upper,bounds.upper.x,bounds.upper.y,bounds.upper.z);
+      
+      /* set new bounds */
+      node->lower_x = bounds.lower.x;
+      node->lower_y = bounds.lower.y;
+      node->lower_z = bounds.lower.z;
+      node->upper_x = bounds.upper.x;
+      node->upper_y = bounds.upper.y;
+      node->upper_z = bounds.upper.z;
+      
+      /* return merged bounds */
+      const float lower_x = reduce_min(bounds.lower.x);
+      const float lower_y = reduce_min(bounds.lower.y);
+      const float lower_z = reduce_min(bounds.lower.z);
+      const float upper_x = reduce_max(bounds.upper.x);
+      const float upper_y = reduce_max(bounds.upper.y);
+      const float upper_z = reduce_max(bounds.upper.z);
+      return BBox3fa(Vec3fa(lower_x,lower_y,lower_z),
+                    Vec3fa(upper_x,upper_y,upper_z));
+    }
+
+
 
     // =======================================================================================================
     // =======================================================================================================

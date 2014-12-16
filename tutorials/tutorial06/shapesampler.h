@@ -34,7 +34,7 @@ inline Sample3f cosineSampleHemisphere(const float u, const float v) {
 }
 
 /*! Cosine weighted hemisphere sampling. Up direction is provided as argument. */
-inline Sample3f cosineSampleHemisphere(const float  u, const float  v, const Vec3fa N) 
+inline Sample3f cosineSampleHemisphere(const float  u, const float  v, const Vec3fa& N) 
 {
   Sample3f s = cosineSampleHemisphere(u,v);
   return Sample3f(frame(N)*s.v,s.pdf);
@@ -54,14 +54,14 @@ inline Sample3f powerCosineSampleHemisphere(const float u, const float v, const 
 }
 
 /*! Computes the probability density for the power cosine sampling of the hemisphere. */
-inline float powerCosineSampleHemispherePDF(const Vec3fa s, const float _exp) {
+inline float powerCosineSampleHemispherePDF(const Vec3fa& s, const float _exp) {
   if (s.z < 0.f) return 0.f;
   return (_exp+1.0f)*pow(s.z,_exp)*0.5f/float(pi);
 }
 
 /*! Samples hemisphere with power cosine distribution. Up direction
  *  is provided as argument. */
-inline Sample3f powerCosineSampleHemisphere(const float u, const float v, const Vec3fa N, const float _exp) {
+inline Sample3f powerCosineSampleHemisphere(const float u, const float v, const Vec3fa& N, const float _exp) {
   Sample3f s = powerCosineSampleHemisphere(u,v,_exp);
   return Sample3f(frame(N)*s.v,s.pdf);
 }
@@ -86,7 +86,7 @@ inline float UniformSampleConePDF(const Vec3fa &s, const float angle) {
 }
 
 /*! Uniform sampling of spherical cone. Cone direction is provided as argument. */
-inline Sample3f UniformSampleCone(const float u, const float v, const float angle, const Vec3fa N) {
+inline Sample3f UniformSampleCone(const float u, const float v, const float angle, const Vec3fa& N) {
   Sample3f s = UniformSampleCone(u,v,angle);
   return Sample3f(frame(N)*s.v,s.pdf);
 }
@@ -105,7 +105,7 @@ inline float UniformSampleConePDF(const Vec3fa &s, const float angle, const Vec3
 ////////////////////////////////////////////////////////////////////////////////
 
 /*! Uniform sampling of triangle. */
-inline Vec3fa UniformSampleTriangle(const float u, const float v, const Vec3fa A, const Vec3fa B, const Vec3fa C) {
+inline Vec3fa UniformSampleTriangle(const float u, const float v, const Vec3fa& A, const Vec3fa& B, const Vec3fa& C) {
   const float su = sqrt(u);
   return C + (1.0f-su)*(A-C) + (v*su)*(B-C);
 }
