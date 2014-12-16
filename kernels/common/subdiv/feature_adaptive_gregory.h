@@ -136,7 +136,7 @@ namespace embree
 	if (patch.isGregoryOrFinal(depth))
 	  return tessellator(patch,uv,neighborSubdiv);
 
-#if 1
+#if  0
 
 #define MAX_DEPTH 5
 
