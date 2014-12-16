@@ -136,13 +136,6 @@ namespace embree
 	if (patch.isGregoryOrFinal(depth))
 	  return tessellator(patch,uv,neighborSubdiv);
 
-#if  0
-
-#define MAX_DEPTH 5
-
-      if (depth == MAX_DEPTH)
-        return tessellator(patch,uv,neighborSubdiv);
-#endif
 
       CatmullClarkPatch patches[4]; 
       patch.subdivide(patches);

@@ -28,7 +28,9 @@
 #include "../kernels/common/default.h"
 #include <vector>
 
-#define DEFAULT_STACK_SIZE 2*1024*2024
+//#define DEFAULT_STACK_SIZE 2*1024*1024
+//#define DEFAULT_STACK_SIZE 512*1024
+#define DEFAULT_STACK_SIZE 0
 namespace embree
 {
 #if !defined(__MIC__)
@@ -1910,7 +1912,7 @@ namespace embree
   void rtcore_watertight_closed1(const std::string& type, const Vec3fa& pos)
   {
     RTCScene scene = rtcNewScene(RTC_SCENE_STATIC | RTC_SCENE_ROBUST,aflags);
-    if      (type == "sphere") addSphere(scene,RTC_GEOMETRY_STATIC,pos,2.0f,1000);
+    if      (type == "sphere") addSphere(scene,RTC_GEOMETRY_STATIC,pos,2.0f,500);
     else if (type == "cube"  ) addCube  (scene,RTC_GEOMETRY_STATIC,pos,2.0f);
     rtcCommit (scene);
 
@@ -1935,7 +1937,7 @@ namespace embree
   void rtcore_watertight_closed4(const std::string& type, const Vec3fa& pos)
   {
     RTCScene scene = rtcNewScene(RTC_SCENE_STATIC | RTC_SCENE_ROBUST,aflags);
-    if      (type == "sphere") addSphere(scene,RTC_GEOMETRY_STATIC,pos,2.0f,1000);
+    if      (type == "sphere") addSphere(scene,RTC_GEOMETRY_STATIC,pos,2.0f,500);
     else if (type == "cube"  ) addCube  (scene,RTC_GEOMETRY_STATIC,pos,2.0f);
     rtcCommit (scene);
 
@@ -1966,7 +1968,7 @@ namespace embree
   void rtcore_watertight_closed8(const std::string& type, const Vec3fa& pos)
   {
     RTCScene scene = rtcNewScene(RTC_SCENE_STATIC | RTC_SCENE_ROBUST,aflags);
-    if      (type == "sphere") addSphere(scene,RTC_GEOMETRY_STATIC,pos,2.0f,1000);
+    if      (type == "sphere") addSphere(scene,RTC_GEOMETRY_STATIC,pos,2.0f,500);
     else if (type == "cube"  ) addCube  (scene,RTC_GEOMETRY_STATIC,pos,2.0f);
     rtcCommit (scene);
 
@@ -1997,7 +1999,7 @@ namespace embree
   void rtcore_watertight_closed16(const std::string& type, const Vec3fa& pos)
   {
     RTCScene scene = rtcNewScene(RTC_SCENE_STATIC | RTC_SCENE_ROBUST,aflags);
-    if      (type == "sphere") addSphere(scene,RTC_GEOMETRY_STATIC,pos,2.0f,1000);
+    if      (type == "sphere") addSphere(scene,RTC_GEOMETRY_STATIC,pos,2.0f,500);
     else if (type == "cube"  ) addCube  (scene,RTC_GEOMETRY_STATIC,pos,2.0f);
     rtcCommit (scene);
 
@@ -2028,7 +2030,7 @@ namespace embree
   void rtcore_watertight_plane1(float pos)
   {
     RTCScene scene = rtcNewScene(RTC_SCENE_STATIC | RTC_SCENE_ROBUST,aflags);
-    unsigned geom = addPlane(scene,RTC_GEOMETRY_STATIC,1000,Vec3fa(pos,-6.0f,-6.0f),Vec3fa(0.0f,12.0f,0.0f),Vec3fa(0.0f,0.0f,12.0f));
+    unsigned geom = addPlane(scene,RTC_GEOMETRY_STATIC,500,Vec3fa(pos,-6.0f,-6.0f),Vec3fa(0.0f,12.0f,0.0f),Vec3fa(0.0f,0.0f,12.0f));
     rtcCommit (scene);
     size_t numFailures = 0;
     for (size_t i=0; i<testN; i++) {
@@ -2051,7 +2053,7 @@ namespace embree
   void rtcore_watertight_plane4(float pos)
   {
     RTCScene scene = rtcNewScene(RTC_SCENE_STATIC | RTC_SCENE_ROBUST,aflags);
-    unsigned geom = addPlane(scene,RTC_GEOMETRY_STATIC,1000,Vec3fa(pos,-6.0f,-6.0f),Vec3fa(0.0f,12.0f,0.0f),Vec3fa(0.0f,0.0f,12.0f));
+    unsigned geom = addPlane(scene,RTC_GEOMETRY_STATIC,500,Vec3fa(pos,-6.0f,-6.0f),Vec3fa(0.0f,12.0f,0.0f),Vec3fa(0.0f,0.0f,12.0f));
     rtcCommit (scene);
     size_t numFailures = 0;
     for (size_t i=0; i<testN; i+=4) {
@@ -2080,7 +2082,7 @@ namespace embree
   void rtcore_watertight_plane8(float pos)
   {
     RTCScene scene = rtcNewScene(RTC_SCENE_STATIC | RTC_SCENE_ROBUST,aflags);
-    unsigned geom = addPlane(scene,RTC_GEOMETRY_STATIC,1000,Vec3fa(pos,-6.0f,-6.0f),Vec3fa(0.0f,12.0f,0.0f),Vec3fa(0.0f,0.0f,12.0f));
+    unsigned geom = addPlane(scene,RTC_GEOMETRY_STATIC,500,Vec3fa(pos,-6.0f,-6.0f),Vec3fa(0.0f,12.0f,0.0f),Vec3fa(0.0f,0.0f,12.0f));
     rtcCommit (scene);
     size_t numFailures = 0;
     for (size_t i=0; i<testN; i+=8) {
@@ -2109,7 +2111,7 @@ namespace embree
   void rtcore_watertight_plane16(float pos)
   {
     RTCScene scene = rtcNewScene(RTC_SCENE_STATIC | RTC_SCENE_ROBUST,aflags);
-    unsigned geom = addPlane(scene,RTC_GEOMETRY_STATIC,1000,Vec3fa(pos,-6.0f,-6.0f),Vec3fa(0.0f,12.0f,0.0f),Vec3fa(0.0f,0.0f,12.0f));
+    unsigned geom = addPlane(scene,RTC_GEOMETRY_STATIC,500,Vec3fa(pos,-6.0f,-6.0f),Vec3fa(0.0f,12.0f,0.0f),Vec3fa(0.0f,0.0f,12.0f));
     rtcCommit (scene);
     size_t numFailures = 0;
     for (size_t i=0; i<testN; i+=16) {
@@ -2872,7 +2874,7 @@ namespace embree
     rtcore_packet_write_test_all();
 
     const Vec3fa pos = Vec3fa(148376.0f,1234.0f,-223423.0f);
-    rtcore_watertight_closed1("sphere",pos);
+	rtcore_watertight_closed1("sphere", pos);
     rtcore_watertight_closed1("cube",pos);
     rtcore_watertight_plane1(100000);
 #if !defined(__MIC__)

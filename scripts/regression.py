@@ -128,7 +128,8 @@ def compile(OS,compiler,platform,build,isa):
 
   if OS == 'windows':
 
-    if (compiler == 'ICC'): compiler = '"Intel C++ Compiler XE 14.0" '
+    full_compiler = compiler
+    if (compiler == 'ICC'): full_compiler = '"Intel C++ Compiler XE 14.0" '
 
     # generate build directory
     if os.path.exists('build'):
@@ -142,7 +143,7 @@ def compile(OS,compiler,platform,build,isa):
     # generate solution files using cmake
     command = 'cmake -L '
     command += ' -G "Visual Studio 12 2013"'
-    command += ' -T ' + compiler
+    command += ' -T ' + full_compiler
     command += ' -A ' + platform
     command += ' -D COMPILER=' + compiler
     command += ' -D XEON_ISA=' + isa

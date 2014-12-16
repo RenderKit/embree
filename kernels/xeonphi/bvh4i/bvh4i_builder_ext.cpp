@@ -887,6 +887,7 @@ PRINT(CORRECT_numPrims);
   /* =================================================================================== */
   /* =================================================================================== */
   /* =================================================================================== */
+#define DBG_CACHE_BUILDER(x) 
 
   void BVH4iBuilderSubdivMesh::printBuilderName()
   {
@@ -897,26 +898,30 @@ PRINT(CORRECT_numPrims);
   {
     leafItemThreshold = 1;
 
-    // for (size_t i=0;i<scene->size();i++)
-    //   {
-    // 	if (unlikely(scene->get(i) == NULL)) continue;
-    // 	if (unlikely((scene->get(i)->type != SUBDIV_MESH) /*&& (scene->get(i)->type != INSTANCES)*/)) continue;
-    // 	if (unlikely(!scene->get(i)->isEnabled())) continue;
-    //     SubdivMesh* geom = (SubdivMesh*) scene->get(i);
-    // 	geom->initializeHalfEdgeStructures();
-    //   }
-    levelUpdate = true;
+    fastUpdateMode = true;
+    fastUpdateMode_numFaces = 0;
+
+      /* initialize all half edge structures */
     new (&iter) Scene::Iterator<SubdivMesh>(this->scene);
     for (size_t i=0; i<iter.size(); i++)
       if (iter[i]) 
 	{
 	  iter[i]->initializeHalfEdgeStructures();
-	  if (!iter[i]->checkLevelUpdate()) levelUpdate = false;
+	  fastUpdateMode_numFaces += iter[i]->size();
+	  if (!iter[i]->checkLevelUpdate()) fastUpdateMode = false;
 	}
+    DBG_CACHE_BUILDER( DBG_PRINT( fastUpdateMode_numFaces ) );
 
-    levelUpdate = false;
-    //DBG_PRINT(levelUpdate);
     pstate.init(iter,size_t(1024));
+
+      /* deactivate fast update mode */
+    if (numPrimitives == 0 || 
+	numPrimitives != fastUpdateMode_numFaces ||
+	bvh->root     == BVH4i::emptyNode ||
+	bvh->qbvh     == NULL)
+      fastUpdateMode = false;
+    
+    DBG_CACHE_BUILDER(DBG_PRINT(fastUpdateMode));
 
     BVH4iBuilder::build(threadIndex,threadCount);
   }
@@ -954,6 +959,9 @@ PRINT(CORRECT_numPrims);
 
   size_t BVH4iBuilderSubdivMesh::getNumPrimitives()
   {
+    /* in fast update mode we know the number of primitives in advance */
+    if (fastUpdateMode) return fastUpdateMode_numFaces;
+
     PrimInfo pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
      {
        size_t s = 0;
@@ -999,7 +1007,7 @@ PRINT(CORRECT_numPrims);
 	{
           if (!mesh->valid(f)) continue;
 
-	  if (unlikely(levelUpdate == false))
+	  if (!fastUpdateMode) 
 	    {
 	      feature_adaptive_subdivision_gregory(
 						   f,mesh->getHalfEdge(f),mesh->getVertexBuffer(),
@@ -1039,7 +1047,8 @@ PRINT(CORRECT_numPrims);
 		first_half_edge[2].edge_level,
 		first_half_edge[3].edge_level
 	      };
-	       
+	      prefetch<PFHINT_L1EX>(&prims[patchIndex]);
+ 
 	      subdiv_patches[patchIndex].updateEdgeLevels(edge_level,mesh);
 
 	      const BBox3fa bounds = subdiv_patches[patchIndex].bounds(mesh);
@@ -1047,7 +1056,7 @@ PRINT(CORRECT_numPrims);
 	      assert(bounds.lower.y <= bounds.upper.y);
 	      assert(bounds.lower.z <= bounds.upper.z);
 						     
-	      prims[base.size()+s.size()] = PrimRef(bounds,patchIndex);
+	      prims[patchIndex] = PrimRef(bounds,patchIndex);
 	      s.add(bounds);	      
 	    }
         }

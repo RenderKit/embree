@@ -43,9 +43,9 @@ namespace embree
 
     void dice(const CatmullClarkPatch& patch, const BBox2f& srange, const BBox2f& erange)
     {
-      float lx0 = ceil (erange.lower.x);
+      float lx0 = ceilf (erange.lower.x);
       float lx1 = erange.upper.x + (erange.upper.x >= x1);
-      float ly0 = ceil (erange.lower.y);
+      float ly0 = ceilf (erange.lower.y);
       float ly1 = erange.upper.y + (erange.upper.y >= y1);
       if (lx0 >= lx1 || ly0 >= ly1) return;
 
@@ -65,7 +65,7 @@ namespace embree
 	    const float fy = (float(y)-srange.lower.y)*scale_y;
 	    const size_t ix = (size_t) x, iy = (size_t) y;
 	    assert(ix-x0 < dwidth && iy-y0 < dheight);
-	    
+
 	    P [(iy-y0)*dwidth+(ix-x0)] = patcheval.eval  (fx,fy);
 	    Ng[(iy-y0)*dwidth+(ix-x0)] = normalize_safe(patcheval.normal(fx,fy));
 	  }

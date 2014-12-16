@@ -632,39 +632,41 @@ namespace embree
       this->bvh->scene = this->scene; // FIXME: remove
 
       /* deactivate fast update mode */
+      if (bvh->numPrimitives == 0 || 
+          bvh->numPrimitives != fastUpdateMode_numFaces ||
+          bvh->root          == BVH4::emptyNode)
+        fastUpdateMode = false;
+
       //fastUpdateMode = false;
+
+      /* force sequential code path for fast update */
+      if (fastUpdateMode)
+        needAllThreads = false;
 
       BVH4BuilderFast::build(threadIndex,threadCount);
     }
 
     size_t BVH4SubdivPatch1CachedBuilderFast::number_of_primitives() 
     {
-      // FIXME: skip in levelUpdate mode
+      /* in fast update mode we know the number of primitives in advance */
+      if (fastUpdateMode) return fastUpdateMode_numFaces;
+
       PrimInfo pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
       {
         size_t s = 0;
         for (size_t f=r.begin(); f!=r.end(); ++f) 
-	{          
+        {          
           if (!mesh->valid(f)) continue;
-
+          
           feature_adaptive_subdivision_gregory(f,mesh->getHalfEdge(f),mesh->getVertexBuffer(),
                                                [&](const CatmullClarkPatch& patch, const Vec2f uv[4], const int subdiv[4])
                                                {
                                                  s++;
                                                });
-	}
+        }
         return PrimInfo(s,empty,empty);
       }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo(a.size()+b.size(),empty,empty); });
 
-      /* if input mesh contains triangles or creases disable fast update path for now */
-      if (pinfo.size() != fastUpdateMode_numFaces || pinfo.size() != bvh->numPrimitives)
-        fastUpdateMode = false;
-
-
-      /* force sequential code path for fast update */
-      if (fastUpdateMode)
-        needAllThreads = false;
-        
       DBG_CACHE_BUILDER( DBG_PRINT(fastUpdateMode) );
       DBG_CACHE_BUILDER( DBG_PRINT(pinfo.size()) );
       DBG_CACHE_BUILDER( DBG_PRINT(needAllThreads) );
@@ -677,6 +679,7 @@ namespace embree
       /* Allocate memory for gregory and b-spline patches */
      if (this->bvh->size_data_mem < sizeof(SubdivPatch1Cached) * numPrimitives) 
         {
+         DBG_CACHE_BUILDER(std::cout << "DEALLOCATING SUBDIVPATCH1CACHED MEMORY" << std::endl);
           if (this->bvh->data_mem) 
             os_free( this->bvh->data_mem, this->bvh->size_data_mem );
           this->bvh->data_mem      = NULL;
@@ -692,6 +695,8 @@ namespace embree
         
       SubdivPatch1Cached *const subdiv_patches = (SubdivPatch1Cached *)this->bvh->data_mem;
 
+      double t0 = getSeconds();
+
       pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
       {
         PrimInfo s(empty);
@@ -700,38 +705,38 @@ namespace embree
           if (!mesh->valid(f)) continue;
 
 	  if (unlikely(fastUpdateMode == false))
-	    {
-	      feature_adaptive_subdivision_gregory(f,mesh->getHalfEdge(f),mesh->getVertexBuffer(),
-                                                   [&](const CatmullClarkPatch& ipatch, const Vec2f uv[4], const int subdiv[4])
-                                                   {
-						     float edge_level[4] = {
-						       ipatch.ring[0].edge_level,
-						       ipatch.ring[1].edge_level,
-						       ipatch.ring[2].edge_level,
-						       ipatch.ring[3].edge_level
-						     };
-						     
-						     for (size_t i=0;i<4;i++)
-						       edge_level[i] = adjustDiscreteTessellationLevel(edge_level[i],subdiv[i]);
-
-						     const unsigned int patchIndex = base.size()+s.size();
-                                                     assert(patchIndex < numPrimitives);
-						     subdiv_patches[patchIndex] = SubdivPatch1Cached(ipatch, mesh->id, f, mesh, uv, edge_level);
-	    
-						     /* compute patch bounds */
-						     const BBox3fa bounds = subdiv_patches[patchIndex].bounds(mesh);
-
-						     assert(bounds.lower.x <= bounds.upper.x);
-						     assert(bounds.lower.y <= bounds.upper.y);
-						     assert(bounds.lower.z <= bounds.upper.z);
-	    
-						     prims[patchIndex] = PrimRef(bounds,patchIndex);
-						     s.add(bounds);
-                                                   });
-	    }
+          {
+            feature_adaptive_subdivision_gregory(f,mesh->getHalfEdge(f),mesh->getVertexBuffer(),
+                                                 [&](const CatmullClarkPatch& ipatch, const Vec2f uv[4], const int subdiv[4])
+            {
+              float edge_level[4] = {
+                ipatch.ring[0].edge_level,
+                ipatch.ring[1].edge_level,
+                ipatch.ring[2].edge_level,
+                ipatch.ring[3].edge_level
+              };
+              
+              for (size_t i=0;i<4;i++)
+                edge_level[i] = adjustDiscreteTessellationLevel(edge_level[i],subdiv[i]);
+              
+              const unsigned int patchIndex = base.size()+s.size();
+              assert(patchIndex < numPrimitives);
+              subdiv_patches[patchIndex] = SubdivPatch1Cached(ipatch, mesh->id, f, mesh, uv, edge_level);
+              
+              /* compute patch bounds */
+              const BBox3fa bounds = subdiv_patches[patchIndex].bounds(mesh);
+              
+              assert(bounds.lower.x <= bounds.upper.x);
+              assert(bounds.lower.y <= bounds.upper.y);
+              assert(bounds.lower.z <= bounds.upper.z);
+              
+              prims[patchIndex] = PrimRef(bounds,patchIndex);
+              s.add(bounds);
+            });
+          }
 	  else
-	    {
-
+          {
+            
 	      const SubdivMesh::HalfEdge* first_half_edge = mesh->getHalfEdge(f);
 
 	      float edge_level[4] = {
@@ -740,11 +745,11 @@ namespace embree
 		first_half_edge[2].edge_level,
 		first_half_edge[3].edge_level
 	      };
-
+              
 	      const unsigned int patchIndex = base.size()+s.size();
-
+              
 	      subdiv_patches[patchIndex].updateEdgeLevels(edge_level,mesh);
-	    
+              
 	      /* compute patch bounds */
 	      const BBox3fa bounds = subdiv_patches[patchIndex].bounds(mesh);
 	      assert(bounds.lower.x <= bounds.upper.x);
@@ -756,7 +761,10 @@ namespace embree
 	    }
         }
         return s;
-	  }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a, b); });
+      }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a, b); });
+      
+      t0 = getSeconds()-t0;
+      DBG_CACHE_BUILDER(std::cout << "create prims in " << 1000.0f*t0 << "ms " << std::endl);
     }
     
     void BVH4SubdivPatch1CachedBuilderFast::create_primitive_array_parallel  (size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, PrimInfo& pinfo) {
