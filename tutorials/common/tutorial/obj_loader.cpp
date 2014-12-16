@@ -93,7 +93,8 @@ namespace embree
   public:
 
     /*! Constructor. */
-    OBJLoader(const FileName& fileName, const AffineSpace3f& space, OBJScene& mesh, const bool subdivMode);
+    OBJLoader(const FileName& fileName, const AffineSpace3f& space, OBJScene& mesh, const bool
+              subdivMode);
 
     /*! Destruction */
     ~OBJLoader();
@@ -371,11 +372,11 @@ namespace embree
 	    v0 = getVertex(vertexMap, mesh, i0);
 	    v1 = getVertex(vertexMap, mesh, i1);
 	    v2 = getVertex(vertexMap, mesh, i2);
+            assert(v0 < mesh->v.size());
+            assert(v1 < mesh->v.size());
+            assert(v2 < mesh->v.size());
 	  }
 	mesh->triangles.push_back(OBJScene::Triangle(v0,v1,v2,curMaterial));
-	assert(v0 < mesh->v.size());
-	assert(v1 < mesh->v.size());
-	assert(v2 < mesh->v.size());
       }
     }
 
