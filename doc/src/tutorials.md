@@ -206,5 +206,7 @@ incoherent ray distributions while requiring more memory. The `lazy`
 mode works similar to the `pregenerate` mode but provides a middle
 ground in terms of memory consumption as it only builds and stores
 data only when the corresponding patch is accessed during the ray
-traversal.
+traversal. The 'cache' mode is currently a bit more efficient at
+handling dynamic scenes where only the edge tessellation levels are
+changing per frame.
 
