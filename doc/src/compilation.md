@@ -101,6 +101,11 @@ parameters that can be configured:
   RTCORE_SPINLOCKS             Enables faster spinlocks for     OFF
                                some builders.
 
+  RTCORE_RETURN_SUBDIV_NORMAL  Instead of the triangle normal   OFF
+                               the ray returns a smooth normal
+                               based on evaluating the 
+                               subdivision surface patch.
+
   XEON_ISA                     Select highest supported ISA on  AVX2
                                Xeon™ CPUs (SSE2, SSE3, SSSE3,
                                SSE4.1, SSE4.2, AVX, AVX-I, or

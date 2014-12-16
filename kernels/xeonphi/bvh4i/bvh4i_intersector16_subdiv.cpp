@@ -20,7 +20,6 @@
 #include "common/subdiv/tessellation_cache.h"
 
 #define TIMER(x) 
-#define RETURN_SUBDIV_PATCH_NORMAL 0
 
 namespace embree
 {
@@ -433,7 +432,8 @@ namespace embree
 	  const SubdivPatch1& subdiv_patch = ((SubdivPatch1*)accel)[ray16.primID[rayIndex]];
 	  ray16.primID[rayIndex] = subdiv_patch.prim;
 	  ray16.geomID[rayIndex] = subdiv_patch.geom;
-#if RETURN_SUBDIV_PATCH_NORMAL == 1
+#if defined(RTCORE_RETURN_SUBDIV_NORMAL)
+
 	  if (unlikely(!subdiv_patch.hasDisplacement()))
 	    {
 	      const Vec3fa normal    = subdiv_patch.normal(ray16.u[rayIndex],ray16.v[rayIndex]);
