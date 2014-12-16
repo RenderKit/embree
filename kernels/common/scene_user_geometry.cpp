@@ -38,7 +38,11 @@ namespace embree
   void UserGeometry::setUserData (void* ptr, bool ispc) {
     intersectors.ptr = ptr;
   }
-  
+
+  void* UserGeometry::getUserData(bool ispc) {
+    return intersectors.ptr;
+  }
+
   void UserGeometry::setBoundsFunction (RTCBoundsFunc bounds) {
     this->boundsFunc = bounds;
   }

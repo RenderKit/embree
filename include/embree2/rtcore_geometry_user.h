@@ -87,11 +87,6 @@ typedef void (*RTCOccludedFunc16) (const void* valid, /*! pointer to valid mask 
 RTCORE_API unsigned rtcNewUserGeometry (RTCScene scene,        /*!< the scene the user geometry set is created in */
                                         size_t numGeometries   /*!< the number of geometries contained in the set */);
 
-/*! Set data pointer for intersect and occluded functions. Invokations
- *  of the various user intersect and occluded functions get passed
- *  this data pointer when called. */
-RTCORE_API void rtcSetUserData (RTCScene scene, unsigned geomID, void* ptr);
-
 /*! Sets the bounding function to calculate bounding boxes of the user
  *  geometry items when building spatial index structures. The
  *  calculated bounding box have to be conservative and should be

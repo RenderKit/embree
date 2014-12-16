@@ -274,6 +274,7 @@ namespace embree
     void* map(RTCBufferType type);
     void unmap(RTCBufferType type);
     void setUserData (void* ptr, bool ispc);
+    void* getUserData(bool ispc);
     void immutable ();
     bool verify ();
     void setDisplacementFunction (RTCDisplacementFunc func, RTCBounds* bounds);

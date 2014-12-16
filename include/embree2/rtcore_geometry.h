@@ -245,6 +245,14 @@ RTCORE_API void rtcSetOcclusionFilterFunction8 (RTCScene scene, unsigned geomID,
 /*! \brief Sets the occlusion filter function for ray packets of size 16. */
 RTCORE_API void rtcSetOcclusionFilterFunction16 (RTCScene scene, unsigned geomID, RTCFilterFunc16 func);
 
+/*! Set pointer for user defined data per geometry. Invokations
+ *  of the various user intersect and occluded functions get passed
+ *  this data pointer when called. */
+RTCORE_API void rtcSetUserData (RTCScene scene, unsigned geomID, void* ptr);
+
+/*! Get pointer for user defined data per geometry based on geomID. */
+RTCORE_API void* rtcGetUserData (RTCScene scene, unsigned geomID);
+
 /*! \brief Deletes the geometry. */
 RTCORE_API void rtcDeleteGeometry (RTCScene scene, unsigned geomID);
 

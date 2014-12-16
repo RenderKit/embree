@@ -124,6 +124,10 @@ namespace embree
     userPtr = ptr;
   }
 
+  void* BezierCurves::getUserData(bool ispc) {
+    return userPtr;
+  }
+
   void BezierCurves::immutable () 
   {
     bool freeCurves    = true; //!parent->needCurves;

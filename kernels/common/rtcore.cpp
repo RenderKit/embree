@@ -938,6 +938,19 @@ namespace embree
     CATCH_END;
   }
 
+  RTCORE_API void* rtcGetUserData (RTCScene scene, unsigned geomID)
+  {
+    void* userData = NULL;
+    CATCH_BEGIN;
+    TRACE(rtcGetUserData);
+    VERIFY_HANDLE(scene);
+    VERIFY_GEOMID(geomID);
+    // read only, not locked for performance
+    userData = ((Scene*)scene)->get(geomID)->getUserData();
+    CATCH_END;
+    return userData;
+  }
+
   RTCORE_API void rtcSetBoundsFunction (RTCScene scene, unsigned geomID, RTCBoundsFunc bounds)
   {
     CATCH_BEGIN;
