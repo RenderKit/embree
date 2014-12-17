@@ -2637,18 +2637,20 @@ namespace embree
       for (size_t j=0; j<40; j++) 
       {
         int index = rand()%1024;
-        Vec3fa pos = 100.0f*Vec3fa(drand48(),drand48(),drand48());
-#if !defined(__MIC__)
-	switch (rand()%16) {
-	case 0: pos = Vec3fa(nan); break;
-	case 1: pos = Vec3fa(inf); break;
-	case 2: pos = Vec3fa(1E30f); break;
-	default: break;
-	};
-#endif
         if (geom[index] == -1) 
         {
           int type = rand()%10;
+          Vec3fa pos = 100.0f*Vec3fa(drand48(),drand48(),drand48());
+#if !defined(__MIC__)
+          if (type < 3 || type > 5) { // FIXME: strange inputs not supported yet for subdiv geometry
+            switch (rand()%16) {
+            case 0: pos = Vec3fa(nan); break;
+            case 1: pos = Vec3fa(inf); break;
+            case 2: pos = Vec3fa(1E30f); break;
+            default: break;
+            };
+          }
+#endif
           size_t numPhi = rand()%100;
 	  if (type >= 3 || type <= 5) numPhi = rand()%10; // FIXME: larger rings not supported by subdiv geometry
           size_t numTriangles = 2*2*numPhi*(numPhi-1);
