@@ -2737,7 +2737,6 @@ namespace embree
     CountErrors();
 
     delete thread; thread = NULL;
-    delete task; task = NULL;
     return;
   }
 
@@ -2753,18 +2752,23 @@ namespace embree
 #if defined (__MIC__)
 	numThreads -= 4;
 #endif
+
+        std::vector<RegressionTask*> tasks;
       
 	while (numThreads) 
 	{
 	  size_t N = max(size_t(1),rand()%numThreads); numThreads -= N;
 	  RegressionTask* task = new RegressionTask(sceneIndex++,5,N);
-	  
+	  tasks.push_back(task);
+
 	  for (size_t i=0; i<N; i++) 
 	    g_threads.push_back(createThread(func,new ThreadRegressionTask(i,N,task),DEFAULT_STACK_SIZE,numThreads+i));
 	}
 	
 	for (size_t i=0; i<g_threads.size(); i++)
 	  join(g_threads[i]);
+        for (size_t i=0; i<tasks.size(); i++)
+          delete tasks[i];
 	
 	g_threads.clear();
 	clearBuffers();
