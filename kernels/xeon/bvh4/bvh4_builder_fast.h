@@ -52,6 +52,12 @@ namespace embree
 	
         BuildRecord() {}
 
+#if defined(_MSC_VER)
+        BuildRecord& operator=(const BuildRecord &arg) { 
+          memcpy(this, &arg, sizeof(BuildRecord));    
+          return *this;
+        }
+#endif
 	__forceinline void init(unsigned int depth)
 	{
 	  this->depth = depth;
