@@ -25,9 +25,12 @@ namespace embree
 {
   class SubdivMesh : public Geometry
   {
-	  ALIGNED_CLASS;
+    ALIGNED_CLASS;
   public:
 
+    static const size_t MAX_VALENCE = 5;                //!< maximal number of vertices of a patch
+    static const size_t MAX_RING_FACE_VALENCE = 32;     //!< maximal number of faces per ring
+    static const size_t MAX_RING_EDGE_VALENCE = 2*32;   //!< maximal number of edges per ring
     static const GeometryTy geom_type = SUBDIV_MESH;
 
     struct Edge 
@@ -146,30 +149,37 @@ namespace embree
 	const HalfEdge* p = this;
 
         if (p->hasCreases()) return false;
-	//if (!p->hasOpposite()) return false;
         if ((p = p->next()) == this) return false;
 
         if (p->hasCreases()) return false;
-	//if (!p->hasOpposite()) return false;
         if ((p = p->next()) == this) return false;
 
         if (p->hasCreases()) return false;
-	//if (!p->hasOpposite()) return false;
         if ((p = p->next()) == this) return false;
         
         if (p->hasCreases()) return false;
-	//if (!p->hasOpposite()) return false;
         if ((p = p->next()) != this) return false;
 
 	return true;
       }
 
       /*! calculates conservative bounds of a catmull clark subdivision face */
-      __forceinline BBox3fa bounds(const BufferT<Vec3fa>& vertices) const
+      __forceinline BBox3fa bounds(const BufferT<Vec3fa>& vertices, bool& valid) const
       {
-        BBox3fa bounds = this->get1RingBounds(vertices);
-        for (const HalfEdge* p=this->next(); p!=this; p=p->next())
-          bounds.extend(p->get1RingBounds(vertices));
+        size_t N = 0;
+        size_t faceValence, edgeValence;
+        
+        BBox3fa bounds = this->get1RingBounds(vertices,faceValence,edgeValence);
+        valid  = faceValence <= MAX_RING_FACE_VALENCE;
+        valid &= edgeValence <= MAX_RING_EDGE_VALENCE;
+        
+        for (const HalfEdge* p=this->next(); p!=this; p=p->next(), N++) {
+          bounds.extend(p->get1RingBounds(vertices,faceValence,edgeValence));
+          valid &= faceValence <= MAX_RING_FACE_VALENCE;
+          valid &= edgeValence <= MAX_RING_EDGE_VALENCE;
+        }
+
+        valid &= N > 2 && N < MAX_VALENCE;
         return bounds;
       }
 
@@ -190,23 +200,27 @@ namespace embree
     private:
 
       /*! calculates the bounds of the face associated with the half-edge */
-      __forceinline BBox3fa getFaceBounds(const BufferT<Vec3fa>& vertices) const 
+      __forceinline BBox3fa getFaceBounds(const BufferT<Vec3fa>& vertices, size_t& N) const 
       {
         BBox3fa b = vertices[getStartVertexIndex()];
-        for (const HalfEdge* p = next(); p!=this; p=p->next()) 
+        for (const HalfEdge* p = next(); p!=this; p=p->next(), N++) {
           b.extend(vertices[p->getStartVertexIndex()]);
+        }
         return b;
       }
 
       /*! calculates the bounds of the 1-ring associated with the vertex of the half-edge */
-      __forceinline BBox3fa get1RingBounds(const BufferT<Vec3fa>& vertices) const 
+      __forceinline BBox3fa get1RingBounds(const BufferT<Vec3fa>& vertices, size_t& faceValence, size_t& edgeValence) const 
       {
         BBox3fa bounds = empty;
+        faceValence = edgeValence = 0;
         const HalfEdge* p = this;
         do 
         {
           /* calculate bounds of current face */
-          bounds.extend(p->getFaceBounds(vertices));
+          bounds.extend(p->getFaceBounds(vertices,edgeValence));
+          faceValence++;
+          edgeValence--;
           p = p->prev();
           
           /* continue with next face */
@@ -215,6 +229,8 @@ namespace embree
           
           /* if there is no opposite go the long way to the other side of the border */
           else {
+            faceValence++;
+            edgeValence++;
             p = this;
             while (p->hasOpposite()) 
               p = p->opposite()->next();
@@ -289,14 +305,15 @@ namespace embree
     };
 
     /*! calculates the bounds of the i'th subdivision patch */
-    __forceinline BBox3fa bounds(size_t i) const {
-      return halfEdges[faceStartEdge[i]].bounds(vertices[0]);
+    __forceinline BBox3fa bounds(size_t i, bool& valid) const {
+      return halfEdges[faceStartEdge[i]].bounds(vertices[0],valid);
     }
 
     /*! check if the i'th primitive is valid */
     __forceinline bool valid(size_t i, BBox3fa* bbox = NULL) const {
-      if (bbox) *bbox = bounds(i);
-      return !holeSet.lookup(i);
+      bool v; const BBox3fa b = bounds(i,v);
+      if (bbox) *bbox = b;
+      return v && !holeSet.lookup(i);
     }
 
     /*! initializes the half edge data structure */
