@@ -140,7 +140,7 @@ namespace embree
 	const mic_f v0 = broadcast4to16f(vptr0); 
 	const mic_f v1 = broadcast4to16f(vptr1); 
 	const mic_f v2 = broadcast4to16f(vptr2); 
-
+	return mic3f(v0,v1,v2);
 #else
 	const mic_i stride = vertices[dim].getBufferStride();
 
@@ -166,15 +166,18 @@ namespace embree
 	assert( vptr0_64 == (float*)vertexPtr(tri.v[0],dim) );
 	assert( vptr1_64 == (float*)vertexPtr(tri.v[1],dim) );
 	assert( vptr2_64 == (float*)vertexPtr(tri.v[2],dim) );
+	
+	const mic_m m_3f = 0x7;
 
-	const mic_f v0 = broadcast4to16f(vptr0_64);
-	const mic_f v1 = broadcast4to16f(vptr1_64);
-	const mic_f v2 = broadcast4to16f(vptr2_64);
+	const mic_f v0 = permute<0,0,0,0>(uload16f(m_3f,vptr0_64));
+	const mic_f v1 = permute<0,0,0,0>(uload16f(m_3f,vptr1_64));
+	const mic_f v2 = permute<0,0,0,0>(uload16f(m_3f,vptr2_64));
+	 //FIXME: there should be no need to zero the last component
 
+	return mic3f(select(0x7777,v0,mic_f::zero()),select(0x7777,v1,mic_f::zero()),select(0x7777,v2,mic_f::zero()));
 #endif	
 	
-	return mic3f(v0,v1,v2);
-	//return mic3f(select(0x7777,v0,mic_f::zero()),select(0x7777,v1,mic_f::zero()),select(0x7777,v2,mic_f::zero()));
+	
       }
     
 #endif
