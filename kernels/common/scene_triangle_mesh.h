@@ -168,7 +168,6 @@ namespace embree
 	assert( vptr2_64 == (float*)vertexPtr(tri.v[2],dim) );
 	
 	const mic_m m_3f = 0x7;
-
 	const mic_f v0 = permute<0,0,0,0>(uload16f(m_3f,vptr0_64));
 	const mic_f v1 = permute<0,0,0,0>(uload16f(m_3f,vptr1_64));
 	const mic_f v2 = permute<0,0,0,0>(uload16f(m_3f,vptr2_64));
