@@ -261,7 +261,9 @@ namespace embree
         do 
         {
           /* calculate bounds of current face */
-          if (!p->validFace(vertices,edgeValence));
+          if (!p->validFace(vertices,edgeValence)) 
+            return false;
+          
           faceValence++;
           p = p->prev();
           

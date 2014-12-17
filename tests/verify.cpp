@@ -2544,14 +2544,12 @@ namespace embree
         Vec3fa pos = 100.0f*Vec3fa(drand48(),drand48(),drand48());
 	int type = rand()%6;
 #if !defined(__MIC__) 
-	if (type != 2) { // FIXME: strange inputs not supported yet for subdiv geometry
-	  switch (rand()%16) {
-	  case 0: pos = Vec3fa(nan); break;
-	  case 1: pos = Vec3fa(inf); break;
-	  case 2: pos = Vec3fa(1E30f); break;
-	  default: break;
-	  };
-	}
+        switch (rand()%16) {
+        case 0: pos = Vec3fa(nan); break;
+        case 1: pos = Vec3fa(inf); break;
+        case 2: pos = Vec3fa(1E30f); break;
+        default: break;
+        };
 #endif
 	size_t numPhi = rand()%100;
 	if (type == 2) numPhi = rand()%10; // FIXME: larger rings not supported by subdiv geometry
@@ -2642,14 +2640,12 @@ namespace embree
           int type = rand()%10;
           Vec3fa pos = 100.0f*Vec3fa(drand48(),drand48(),drand48());
 #if !defined(__MIC__)
-          if (type < 3 || type > 5) { // FIXME: strange inputs not supported yet for subdiv geometry
-            switch (rand()%16) {
-            case 0: pos = Vec3fa(nan); break;
-            case 1: pos = Vec3fa(inf); break;
-            case 2: pos = Vec3fa(1E30f); break;
-            default: break;
-            };
-          }
+          switch (rand()%16) {
+          case 0: pos = Vec3fa(nan); break;
+          case 1: pos = Vec3fa(inf); break;
+          case 2: pos = Vec3fa(1E30f); break;
+          default: break;
+          };
 #endif
           size_t numPhi = rand()%100;
 	  if (type >= 3 || type <= 5) numPhi = rand()%10; // FIXME: larger rings not supported by subdiv geometry
