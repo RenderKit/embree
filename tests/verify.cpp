@@ -31,6 +31,7 @@
 //#define DEFAULT_STACK_SIZE 2*1024*1024
 //#define DEFAULT_STACK_SIZE 512*1024
 #define DEFAULT_STACK_SIZE 0
+
 namespace embree
 {
 #if !defined(__MIC__)
@@ -2517,7 +2518,7 @@ namespace embree
       delete thread; thread = NULL;
       return;
     }
-    //task->scene = rtcNewScene(RTC_SCENE_DYNAMIC,aflags);
+
     CountErrors();
     int geom[1024];
     int types[1024];
@@ -2552,7 +2553,7 @@ namespace embree
         };
 #endif
 	size_t numPhi = rand()%100;
-	if (type == 2) numPhi = rand()%10; // FIXME: larger rings not supported by subdiv geometry
+	if (type == 2) numPhi = rand()%10;
         size_t numTriangles = 2*2*numPhi*(numPhi-1);
 	numTriangles = rand()%(numTriangles+1);
         switch (type) {
@@ -2648,7 +2649,7 @@ namespace embree
           };
 #endif
           size_t numPhi = rand()%100;
-	  if (type >= 3 || type <= 5) numPhi = rand()%10; // FIXME: larger rings not supported by subdiv geometry
+	  if (type >= 3 || type <= 5) numPhi = rand()%10;
           size_t numTriangles = 2*2*numPhi*(numPhi-1);
           numTriangles = rand()%(numTriangles+1);
           types[index] = type;
