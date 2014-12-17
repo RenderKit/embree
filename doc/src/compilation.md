@@ -4,10 +4,12 @@ Compiling Embree
 Linux and Mac OS\ X
 -------------------
 
-Embree requires the Intel® SPMD Program Compiler (ISPC) to compile. We
-have tested ISPC version 1.7.1 and 1.8.0, but more recent versions of
-ISPC should also work. You can download and install the ISPC binaries
-from [ispc.github.io](https://ispc.github.io/downloads.html). After
+Embree is tested with Intel Compiler 15.0.0, CLANG 3.4.2, and
+GCC 4.8.2. Embree also requires the Intel® SPMD Program Compiler
+(ISPC) to compile. We have tested ISPC version 1.8.0, but more recent
+versions of ISPC should also work. You can download and install the
+ISPC binaries from
+[ispc.github.io](https://ispc.github.io/downloads.html). After
 installation, either put the path to the `ispc` executable permanently
 into your `PATH`:
 
@@ -117,7 +119,6 @@ parameters that can be configured:
   ---------------------------- -------------------------------- --------
   : CMake build options for Embree.
 
-You need at least Intel Compiler 11.1 or GCC 4.7.
 
 Xeon Phi™
 ---------
@@ -134,13 +135,14 @@ spatial hierarchies on Xeon Phi.
 Windows
 -------
 
-Embree requires the Intel SPMD Program Compiler (ISPC) to compile. We
-have tested ISPC version 1.7.0 and 1.8.0, but more recent versions of
-ISPC should also work. You can download and install the ISPC binaries
-from [ispc.github.io](https://ispc.github.io/downloads.html). After
+Embree requires Visual Studio 12 2013 and the Intel SPMD Program
+Compiler (ISPC) to compile. We have tested ISPC version 1.8.0, but
+more recent versions of ISPC should also work. You can download and
+install the ISPC binaries from
+[ispc.github.io](https://ispc.github.io/downloads.html). After
 installation, put the path to `ispc.exe` permanently into your `PATH`
-environment variable or you need to correctly set the `ISPC_EXECUTABLE`
-variable during CMake configuration.
+environment variable or you need to correctly set the
+`ISPC_EXECUTABLE` variable during CMake configuration.
 
 You additionally have to install [CMake](http://www.cmake.org/download/)
 (version 2.8.12 or higher). Note that you need a native Windows CMake
@@ -154,7 +156,7 @@ and click Configure. Now you can select the Generator, e.g. "Visual
 Studio 12 2013" for a 32\ bit build or "Visual Studio 12 2013 Win64" for
 a 64\ bit build. Most configuration parameters described for the [Linux
 build](#linux-and-mac-osx) can be set under Windows as well. Finally,
-click Generate to create the Visual Studio solution files.
+click "Generate" to create the Visual Studio solution files.
 
 For compilation of Embree under Windows use the generated Visual Studio
 solution file `embree.sln`. The solution is by default setup to use the
@@ -185,7 +187,7 @@ Embree can also be configured and built without the IDE using the Visual
 Studio command prompt:
 
     cd path\to\embree
-    md build
+    mkdir build
     cd build
     cmake -G "Visual Studio 12 2013 Win64" ..
     cmake --build . --config Release
