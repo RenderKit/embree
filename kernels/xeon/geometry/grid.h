@@ -693,7 +693,7 @@ namespace embree
       size_t swidth  = pattern_x.size()+1;
       size_t sheight = pattern_y.size()+1;
 #if 0
-      feature_adaptive_eval (patch, x0,x1,y0,y1, swidth,sheight, p,Ng,width,height);
+      feature_adaptive_eval (patch, x0,x1,y0,y1, swidth,sheight, P,Ng,width,height);
 #else
       const bool st = stitch_y(patch,y0,y0,0        ,x0,x1,pattern_x,pattern0,luv,Ng);
       const bool sr = stitch_x(patch,x1,x0,swidth-1 ,y0,y1,pattern_y,pattern1,luv,Ng);

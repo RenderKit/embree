@@ -276,7 +276,7 @@ namespace embree
             const Vec3fa& v00 = prim.grid.point(ofs,0), v10 = (&v00)[1];
             const Vec3fa& v01 = prim.grid.point(ofs,1), v11 = (&v01)[1];
             const Vec3fa& v02 = prim.grid.point(ofs,2), v12 = (&v02)[1];
-            intersectQuads(ray, v00,v01,v02,v10,v11,v12, prim);
+            intersectQuads(ray, v10,v11,v12, v00,v01,v02, prim);
             break;
           }
           case Grid::EagerLeaf::Quads::QUAD2X1: {
@@ -463,7 +463,7 @@ namespace embree
             const Vec3fa& v00 = prim.grid.point(ofs,0), v10 = (&v00)[1];
             const Vec3fa& v01 = prim.grid.point(ofs,1), v11 = (&v01)[1];
             const Vec3fa& v02 = prim.grid.point(ofs,2), v12 = (&v02)[1];
-            if (occludedQuads(ray, v00,v01,v02,v10,v11,v12, prim)) return true;
+            if (occludedQuads(ray, v10,v11,v12,v00,v01,v02,  prim)) return true;
             break;
           }
           case Grid::EagerLeaf::Quads::QUAD2X1: {
