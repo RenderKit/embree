@@ -229,7 +229,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const unifo
     
     /* trace shadow ray */
      rtcOccluded(g_scene,shadow);
-    
+             
     /* add light contribution */
     if (shadow.geomID == RTC_INVALID_GEOMETRY_ID)
       color = color + diffuse*clamp(-dot(lightDir,normalize(ray.Ng)),0.0f,1.0f); // FIXME: +=

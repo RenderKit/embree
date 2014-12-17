@@ -442,19 +442,21 @@ namespace embree
 	      ray16.Ng.z[rayIndex]   = normal.z;
 	    }
 #else
-	  //ray16.Ng *= mic_f(-1.0f);
-
+	  /* switch triangle normal */
+	  ray16.Ng.x[rayIndex]   = -ray16.Ng.x[rayIndex];
+	  ray16.Ng.y[rayIndex]   = -ray16.Ng.y[rayIndex];
+	  ray16.Ng.z[rayIndex]   = -ray16.Ng.z[rayIndex];	 
 #endif
 
-	    const Vec2f uv0 = subdiv_patch.getUV(0);
-	    const Vec2f uv1 = subdiv_patch.getUV(1);
-	    const Vec2f uv2 = subdiv_patch.getUV(2);
-	    const Vec2f uv3 = subdiv_patch.getUV(3);
-	    
-	    const float patch_u = bilinear_interpolate(uv0.x,uv1.x,uv2.x,uv3.x,ray16.u[rayIndex],ray16.v[rayIndex]);
-	    const float patch_v = bilinear_interpolate(uv0.y,uv1.y,uv2.y,uv3.y,ray16.u[rayIndex],ray16.v[rayIndex]);
-	    ray16.u[rayIndex] = patch_u;
-	    ray16.v[rayIndex] = patch_v;
+	  const Vec2f uv0 = subdiv_patch.getUV(0);
+	  const Vec2f uv1 = subdiv_patch.getUV(1);
+	  const Vec2f uv2 = subdiv_patch.getUV(2);
+	  const Vec2f uv3 = subdiv_patch.getUV(3);
+	  
+	  const float patch_u = bilinear_interpolate(uv0.x,uv1.x,uv2.x,uv3.x,ray16.u[rayIndex],ray16.v[rayIndex]);
+	  const float patch_v = bilinear_interpolate(uv0.y,uv1.y,uv2.y,uv3.y,ray16.u[rayIndex],ray16.v[rayIndex]);
+	  ray16.u[rayIndex] = patch_u;
+	  ray16.v[rayIndex] = patch_v;
 	}
 
     }
