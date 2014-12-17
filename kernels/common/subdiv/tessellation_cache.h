@@ -31,7 +31,12 @@ namespace embree
   class __aligned(64) TessellationCache {
   public:
     /* default sizes */
-    static const size_t DEFAULT_64B_BLOCKS = (1<<15); // 2MB 
+#if defined(__MIC__)
+    static const size_t DEFAULT_64B_BLOCKS = ((size_t)1<<15); // 2MB 
+#else
+    static const size_t DEFAULT_64B_BLOCKS = ((size_t)1<<17); // 8MB 
+#endif
+
     static const size_t MAX_64B_BLOCKS     = (1<<19); // 32MB
 
     static const size_t CACHE_SETS = 1<<11; // 2048 sets
@@ -276,7 +281,6 @@ namespace embree
     /* initialize cache */
     void init()
     {
-
       clear();
       allocated64BytesBlocks = DEFAULT_64B_BLOCKS;	
       lazymem = alloc_mem( allocated64BytesBlocks );

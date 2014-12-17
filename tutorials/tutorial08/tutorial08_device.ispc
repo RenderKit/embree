@@ -222,16 +222,16 @@ Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const unifo
     shadow.dir = neg(lightDir);
     shadow.tnear = 0.001f;
     shadow.tfar = inf;
-    shadow.geomID = 1;
-    shadow.primID = 0;
+    shadow.geomID = RTC_INVALID_GEOMETRY_ID;
+    shadow.primID = RTC_INVALID_GEOMETRY_ID;
     shadow.mask = -1;
     shadow.time = 0;
     
     /* trace shadow ray */
-    rtcOccluded(g_scene,shadow);
+     rtcOccluded(g_scene,shadow);
     
     /* add light contribution */
-    if (shadow.geomID)
+    if (shadow.geomID == RTC_INVALID_GEOMETRY_ID)
       color = color + diffuse*clamp(-dot(lightDir,normalize(ray.Ng)),0.0f,1.0f); // FIXME: +=
   }
   return color;

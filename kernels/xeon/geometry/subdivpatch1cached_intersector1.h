@@ -204,11 +204,12 @@ namespace embree
       template<class M, class T>
         static __forceinline bool occluded1_precise(Ray& ray,
                                                     const Quad2x2 &qquad,
-                                                    const void* geom)
+                                                    const void* geom,
+						    const size_t delta = 0)
       {
-        const Vec3<T> v0_org = qquad.getVtx( 0 );
-        const Vec3<T> v1_org = qquad.getVtx( 1 );
-        const Vec3<T> v2_org = qquad.getVtx( 2 );
+        const Vec3<T> v0_org = qquad.getVtx( 0, delta );
+        const Vec3<T> v1_org = qquad.getVtx( 1, delta );
+        const Vec3<T> v2_org = qquad.getVtx( 2, delta );
         
         const Vec3<T> O = ray.org;
         const Vec3<T> D = ray.dir;
@@ -253,7 +254,6 @@ namespace embree
         valid &= den != T(zero);
         if (unlikely(none(valid))) return false;
 #endif
-        ray.geomID = 0;
         return true;
       };
       
@@ -448,8 +448,8 @@ namespace embree
 #if defined(__AVX__)
           return occluded1_precise<avxb,avxf>( ray, *(Quad2x2*)prim, (SubdivMesh*)geom);
 #else
-          if (occluded1_precise<sseb,ssef>( ray, *(Quad2x2*)prim, (SubdivMesh*)geom),0) return true;
-          if (occluded1_precise<sseb,ssef>( ray, *(Quad2x2*)prim, (SubdivMesh*)geom),6) return true;
+          if (occluded1_precise<sseb,ssef>( ray, *(Quad2x2*)prim, (SubdivMesh*)geom,0)) return true;
+          if (occluded1_precise<sseb,ssef>( ray, *(Quad2x2*)prim, (SubdivMesh*)geom,6)) return true;
 #endif
         }
         else 
