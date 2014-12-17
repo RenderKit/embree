@@ -9,7 +9,7 @@ and user defined geometry. Supported ray queries are, finding the
 closest scene intersection along a ray, and testing a ray segment for
 any intersection with the scene. Single rays, as well as packets of rays
 in a struct of array layout can be used for packet sizes of 1, 4, 8, and
-16. Filter callback functions are supported, that get invoked for every
+16 rays. Filter callback functions are supported, that get invoked for every
 intersection encountered during traversal.
 
 The Embree API exists in a C++ and ISPC version. This document describes
@@ -47,7 +47,7 @@ sequenced by the application. All other API calls are thread safe. The
 `rtcIntersect` and `rtcOccluded` calls are re-entrant, but only for
 other `rtcIntersect` and `rtcOccluded` calls. It is thus safe to trace
 new rays when intersecting a user defined object, but not supported to
-create new geometry inside the intersect function of a user defined
+create new geometry inside the intersect callback function of a user defined
 geometry.
 
 Each user thread has its own error flag in the API. If an error occurs
@@ -123,10 +123,10 @@ specified at scene construction time. Geometries can get disabled
 (`rtcDeleteGeometry` call). Geometries can also get modified,
 including their vertex and index arrays. After the modification of
 some geometry, `rtcUpdate` or `rtcUpdateBuffer` has to get called for
-that geometry to specify which buffers got modified. Using multiple
-invocations of `rtcUpdateBuffer` the modified buffers can specified
-directly, while the `rtcUpdate` function simply tags each buffer of
-some geometry as modified. If geometries got enabled, disabled,
+that geometry to specify which buffers got modified. Each modified
+buffer can specified separately using the `rtcUpdateBuffer`
+function. In contrast the `rtcUpdate` function simply tags each buffer
+of some geometry as modified. If geometries got enabled, disabled,
 deleted, or modified an `rtcCommit` call has to get invoked before
 performing any ray queries for the scene, otherwise the effect of the
 ray query is undefined.
@@ -178,7 +178,7 @@ application should only pass ray query requirements that are really
 needed, to give Embree most freedom in choosing the best algorithm. E.g.
 in case Embree implements no packet traversers for some highly optimized
 data structure for single rays, then this data structure cannot be used
-if the user specifies any ray packet query.
+if the user enables any ray packet query.
 
   ----------------- ----------------------------------------------------
   Algorithm Flag    Description
@@ -201,12 +201,13 @@ Geometries
 ----------
 
 Geometries are always contained in the scene they are created in. Each
-geometry is assigned an integer ID at creation time, which is unique for
-that scene. The current version of the API supports triangle meshes
-(`rtcNewTriangleMesh`), hair geometries (`rtcNewHairGeometry`), single
-level instances of other scenes (`rtcNewInstance`), and user defined
-geometries (`rtcNewUserGeometry`). The API is designed in a way that
-easily allows adding new geometry types in later releases.
+geometry is assigned an integer ID at creation time, which is unique
+for that scene. The current version of the API supports triangle
+meshes (`rtcNewTriangleMesh`), Catmull-Clark subdivision surfaces
+(`rtcNewSubdivisionMesh`), hair geometries (`rtcNewHairGeometry`),
+single level instances of other scenes (`rtcNewInstance`), and user
+defined geometries (`rtcNewUserGeometry`). The API is designed in a
+way that easily allows adding new geometry types in later releases.
 
 For dynamic scenes, the assigned geometry IDs fulfill the following
 properties. As long as no geometry got deleted, all IDs are assigned
@@ -268,8 +269,8 @@ buffer (`RTC_INDEX_BUFFER`) and the triangle vertices can be set by
 mapping and writing into the vertex buffer (`RTC_VERTEX_BUFFER`). The
 index buffer contains an array of three 32\ bit indices, while the
 vertex buffer contains an array of three float values aligned to 16
-bytes. All buffers have to get unmapped before an `rtcCommit` call to
-the scene.
+bytes. The 4th component of the aligned vertices can be arbitrary. All
+buffers have to get unmapped before an `rtcCommit` call to the scene.
 
     struct Vertex   { float x, y, z, a; };
     struct Triangle { int v0, v1, v2; };
@@ -286,7 +287,7 @@ Also see [tutorial00] for an example of how to create triangle meshes.
 
 ### Subdivision Surfaces
 
-Catmull Clark subdivision surfaces for meshes consisting of triangle
+Catmull-Clark subdivision surfaces for meshes consisting of triangle
 and quad primitives (even mixed inside one mesh) are supported,
 including support for edge creases, vertex creases, holes, and
 non-manifold geometry.
@@ -314,7 +315,7 @@ have to get specified at construction time.
 The following buffers have to get setup by the application: the face
 buffer (RTC_FACE_BUFFER) contains the number edges/indices (3 or 4) of
 each of the numFaces faces, the index buffer (RTC_INDEX_BUFFER)
-contains multiple (3 or 4) 32bit vertex indices for each face and
+contains multiple (3 or 4) 32 bit vertex indices for each face and
 numEdges indices in total, the vertex buffer (RTC_VERTEX_BUFFER)
 stores numVertices vertices as single precision x,y,z floating point
 coordinates aligned to 16 bytes. The value of the 4th float used for
@@ -325,12 +326,15 @@ with numHoles many 32 bit indices of faces that should be considered
 non-existing.
 
 Optionally, the application can fill the level buffer
-(RTC_LEVEL_BUFFER) with a tessellation level for each of the numEdges
-edges. The subdivision level is a positive floating point value, that
-specifies how many quads along the edge should get generated during
-tessellation. The tessellation level is a lower bound, thus the
-implementation is free to choose a larger level. If no level buffer is
-specified a level of 1 is used.
+(RTC_LEVEL_BUFFER) with a tessellation level for each or the edges of
+each face, making a total of numEdges values. The tessellation level
+is a positive floating point value, that specifies how many quads
+along the edge should get generated during tessellation. The
+tessellation level is a lower bound, thus the implementation is free
+to choose a larger level. If no level buffer is specified a level of 1
+is used. Note that some edge may be shared between (typically 2)
+faces. To guarantee a watertight tessellation, the level of these
+shared edges has to be exactly identical.
 
 Optionally, the application can fill the sparse edge crease buffers to
 make some edges appear sharper. The edge crease index buffer
@@ -341,7 +345,7 @@ theses crease edges a positive floating point weight. The larger this
 weight, the sharper the edge. Specifying a weight of infinity is
 supported and marks an edge as infinitely sharp. Storing an edge
 multiple times with the same crease weight is allowed, but has lower
-performance. Storing the an edge multiple times with different crease
+performance. Storing an edge multiple times with different crease
 weights results in undefined behavior. For a stored edge (i,j), the
 reverse direction edges (j,i) does not have to get stored, as both are
 considered the same edge.
@@ -357,6 +361,10 @@ supported and makes the vertex infinitely sharp. Storing a vertex
 multiple times with the same crease weight is allowed, but has lower
 performance. Storing a vertex multiple times with different crease
 weights results in undefined behavior.
+
+Like for triangle meshes, the user can also specify a geometry mask
+and additional flags that choose the strategy to handle that
+subdivision mesh in dynamic scenes.
 
 Also see [tutorial08] for an example of how to create subdivision surfaces.
 
@@ -375,7 +383,7 @@ call.
 
 The number of hair curves, the number of vertices, and optionally the
 number of time steps (1 for normal curves, and 2 for linear motion blur)
-have to get specified at construction time.
+have to get specified at construction time of the hair geometry.
 
 The curve indices can be set by mapping and writing to the index buffer
 (`RTC_INDEX_BUFFER`) and the control vertices can be set by mapping and
@@ -383,13 +391,13 @@ writing into the vertex buffer (`RTC_VERTEX_BUFFER`). In case of linear
 motion blur, two vertex buffers (`RTC_VERTEX_BUFFER0` and
 `RTC_VERTEX_BUFFER1`) have to get filled, one for each time step.
 
-The index buffer contains an array of 32\ bit indices pointing to the ID
-of the first of four control vertices, while the vertex buffer stores
-all control pointing of a single precision position and radius stored in
-`x`, `y`, `z`, `r` order in memory. All buffers have to get unmapped
-before an `rtcCommit` call to the scene.
+The index buffer contains an array of 32\ bit indices pointing to the
+ID of the first of four control vertices, while the vertex buffer
+stores all control points in the form of a single precision position
+and radius stored in `x`, `y`, `z`, `r` order in memory. All buffers
+have to get unmapped before an `rtcCommit` call to the scene.
 
-Like for triangle meshes, tee user can also specify a geometry mask and
+Like for triangle meshes, the user can also specify a geometry mask and
 additional flags that choose the strategy to handle that mesh in dynamic
 scenes.
 
@@ -510,11 +518,10 @@ the following way:
 
 One has to call `rtcCommit` on scene B before one calls `rtcCommit` on
 scene A. When modifying scene B one has to call `rtcModified` for all
-instances of that scene. Providing a bounding box is not required and
-also not allowed. If a ray hits the instance, then the geomID and primID
-members of the ray are set to the geometry ID and primitive ID of the
-primitive hit in scene B, and the instID member of the ray is set to the
-instance ID returned from the `rtcNewInstance` function.
+instances of that scene. If a ray hits the instance, then the geomID
+and primID members of the ray are set to the geometry ID and primitive
+ID of the primitive hit in scene B, and the instID member of the ray
+is set to the instance ID returned from the `rtcNewInstance` function.
 
 The `rtcSetTransform` call can be passed an affine transformation matrix
 with different data layouts:
@@ -564,12 +571,12 @@ segment and the scene exists (`rtcOccluded` functions).
     void rtcOccluded16 (const void* valid, RTCScene scene, RTCRay16& ray);
 
 The ray layout to be passed to the ray tracing core is defined in the
-`embree2/rtcore_ray.h` header file. It is up to the user if he wants to
-use the ray structures defined in that file, or resemble the exact same
-binary data layout with their own vector classes. The ray layout might
-change with new Embree releases as new features get added, however, will
-stay constant as long as the major release number does not change. The
-ray contains the following data members:
+`embree2/rtcore_ray.h` header file. It is up to the user if he wants
+to use the ray structures defined in that file, or resemble the exact
+same binary data layout with their own vector classes. The ray layout
+might change with new Embree releases as new features get added,
+however, will stay constant as long as the major Embree release number
+does not change. The ray contains the following data members:
 
   Member  In/Out  Description
   ------- ------- ----------------------------------------------------------
@@ -705,7 +712,7 @@ be useful for dynamic content.
 Linear Motion Blur
 ------------------
 
-A triangle mesh or hair geometry with linear motion blur support is
+Triangle meshes and hair geometries with linear motion blur support are
 created by setting the number of time steps to 2 at geometry
 construction time. Specifying a number of time steps of 0 or larger than
 2 is invalid. For a triangle mesh or hair geometry with linear motion
@@ -824,21 +831,21 @@ The displacement function has to have the following type:
                                         size_t N);
 
 The displacement function is called with the user data pointer of the
-geometry (ptr), the geometry ID (geomID) and primitive ID (primID) of a
-patch to displace. For this patch, a number N of points to displace
+geometry (ptr), the geometry ID (geomID) and primitive ID (primID) of
+a patch to displace. For this patch, a number N of points to displace
 are specified in a struct of array layout. For each point to displace
-the local patch UV coordinates (u and v arrays), the geometry normal
-(nx, ny, and nz arrays), as well as world space position (px, py, and
-pz arrays) are provided. The task of the displacement function is to
-use this information and move the world space position inside the
-allowed specified bounds around the point.
+the local patch UV coordinates (u and v arrays), the normalized
+geometry normal (nx, ny, and nz arrays), as well as world space
+position (px, py, and pz arrays) are provided. The task of the
+displacement function is to use this information and move the world
+space position inside the allowed specified bounds around the point.
 
 All passed arrays are guaranteed to be 64 bytes aligned, and properly
 padded to make wide vector processing inside the displacement function
 possible.
 
 The displacement mapping functions might get called during the
-`rtcCommit` call, or lazily during one of the `rtcIntersect` or
+`rtcCommit` call, or lazily during the `rtcIntersect` or
 `rtcOccluded` calls.
 
 Sharing Threads with Embree

@@ -5,7 +5,9 @@ Linux and Mac OS\ X
 -------------------
 
 Embree is tested with Intel Compiler 15.0.0, CLANG 3.4.2, and
-GCC 4.8.2. Embree also requires the Intel® SPMD Program Compiler
+GCC 4.8.2.
+
+Embree also requires the Intel® SPMD Program Compiler
 (ISPC) to compile. We have tested ISPC version 1.8.0, but more recent
 versions of ISPC should also work. You can download and install the
 ISPC binaries from
