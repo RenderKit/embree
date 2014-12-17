@@ -29,9 +29,9 @@ Linking ISPC applications with Embree
 -------------------------------------
 
 The precompiled Embree library uses the multi-target mode of ISPC. For
-you ISPC application to properly link against Embree you also have to
-enable this mode for your application. You can do this by specifying
-multiple targets when compiling your application with ISPC:
+your ISPC application to properly link against Embree you also have to
+enable this mode. You can do this by specifying multiple targets when
+compiling your application with ISPC, e.g.:
 
     ispc --target sse2,sse4,avx,avx2 -o code.o code.ispc
 
