@@ -53,7 +53,7 @@ www/api.html: src/api.md
 
 images/%.jpg: 
 	echo `basename -s .jpg $@`
-	../build/`basename -s .jpg $@` -size 512 512 -frames 0 16 -o images/`basename -s .jpg $@`.tga
+	../build/`basename -s .jpg $@` -size 512 512 -o images/`basename -s .jpg $@`.tga
 	convert images/`basename -s .jpg $@`.tga images/`basename -s .jpg $@`.jpg
 	rm images/`basename -s .jpg $@`.tga
 

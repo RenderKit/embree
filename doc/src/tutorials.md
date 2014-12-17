@@ -209,3 +209,9 @@ data only when the corresponding patch is accessed during the ray
 traversal. The 'cache' mode is currently a bit more efficient at
 handling dynamic scenes where only the edge tessellation levels are
 changing per frame.
+
+<!-- ![](images/tutorial09.jpg) -->
+
+This tutorial demonstrates the use of Catmull Clark subdivision
+surfaces with procedural displacement mapping using a constant edge
+tessellation level.
