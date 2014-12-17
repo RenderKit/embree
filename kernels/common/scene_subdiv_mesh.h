@@ -175,12 +175,12 @@ namespace embree
       /*! tests if this is a valid patch */
       __forceinline bool valid(const BufferT<Vec3fa>& vertices) const
       {
-        size_t N = 0;
+        size_t N = 1;
         if (!this->validRing(vertices)) return false;
         for (const HalfEdge* p=this->next(); p!=this; p=p->next(), N++) {
           if (!p->validRing(vertices)) return false;
         }
-        return N > 2 && N < MAX_VALENCE;
+        return N >= 3 && N <= MAX_VALENCE;
       }
 
       /*! stream output */
@@ -247,7 +247,7 @@ namespace embree
           if (!inFloatRange(v)) return false;
         }
         N += n-2;
-        return n > 2 && n < MAX_VALENCE;
+        return n >= 3 && n <= MAX_VALENCE;
       }
 
       /*! tests if this is a valid ring */
