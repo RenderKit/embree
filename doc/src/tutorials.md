@@ -209,4 +209,3 @@ data only when the corresponding patch is accessed during the ray
 traversal. The 'cache' mode is currently a bit more efficient at
 handling dynamic scenes where only the edge tessellation levels are
 changing per frame.
-

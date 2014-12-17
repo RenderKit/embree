@@ -20,10 +20,6 @@
 #include "sys/taskscheduler.h"
 #include "image/image.h"
 
-extern "C" void toggleOpenSubdiv(unsigned char key, int x, int y);
-
-//extern unsigned int g_subdivision_levels;
-
 namespace embree 
 {
   /* name of the tutorial */
@@ -35,8 +31,8 @@ namespace embree
   static std::string g_subdiv_mode = "";
 
   /* output settings */
-  static size_t g_width = 1024;
-  static size_t g_height = 1024;
+  static size_t g_width = 512;
+  static size_t g_height = 512;
   static bool g_fullscreen = false;
   static FileName outFilename = "";
   static bool g_interactive = true;
@@ -140,17 +136,13 @@ namespace embree
 
   void main(int argc, char **argv) 
   {
-#if defined(__USE_OPENSUBDIV__)
-    mapKeyToFunction('t', toggleOpenSubdiv);
-#endif
-	std::cout << " === Possible cmd line options: -lazy, -pregenerate, -cache === " << std::endl;
+    std::cout << " === Possible cmd line options: -lazy, -pregenerate, -cache === " << std::endl;
 
     /*! Parse command line options. */  
     parseCommandLine(new ParseStream(new CommandLineStream(argc, argv)), FileName());
 
     /*! Set the thread count in the Embree configuration string. */
     if (g_numThreads) g_rtcore += ",threads=" + std::stringOf(g_numThreads);
-
     g_rtcore += g_subdiv_mode;
 
     /*! Initialize the task scheduler. */
@@ -158,21 +150,9 @@ namespace embree
     TaskScheduler::create(g_numThreads);
 #endif
 
-    /* load scene */
-    if (strlwr(filename.ext()) == std::string("obj"))
-      loadOBJ(filename,one,g_obj_scene,true);
-      //loadOBJ(filename,one,g_obj_scene,false);
-    else if (strlwr(filename.ext()) == std::string("xml"))
-      loadXML(filename,one,g_obj_scene);
-    else if (filename.ext() != "")
-      THROW_RUNTIME_ERROR("invalid scene type: "+strlwr(filename.ext()));
-
     /*! Initialize Embree state. */
     init(g_rtcore.c_str());
 
-    /* send model */
-    set_scene(&g_obj_scene);
-        
     /* render to disk */
     if (outFilename.str() != "")
       renderToFile(outFilename);
@@ -180,16 +160,13 @@ namespace embree
     /* interactive mode */
     if (g_interactive) {
       initWindowState(argc,argv,tutorialName, g_width, g_height, g_fullscreen);
-
       enterWindowRunLoop();
     }
-
   }
-
 }
 
-int main(int argc, char** argv) {
-
+int main(int argc, char** argv) 
+{
   /*! Tutorial entry point. */
   try { embree::main(argc, argv);  return(0); }
 
