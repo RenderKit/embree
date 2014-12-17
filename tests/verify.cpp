@@ -2554,7 +2554,7 @@ namespace embree
 	}
 #endif
 	size_t numPhi = rand()%100;
-	if (type == 2) numPhi = rand()%10;
+	if (type == 2) numPhi = rand()%10; // FIXME: larger rings not supported by subdiv geometry
         size_t numTriangles = 2*2*numPhi*(numPhi-1);
 	numTriangles = rand()%(numTriangles+1);
         switch (type) {
@@ -2650,7 +2650,7 @@ namespace embree
         {
           int type = rand()%10;
           size_t numPhi = rand()%100;
-	  if (type >= 3 || type <= 5) numPhi = rand()%20;
+	  if (type >= 3 || type <= 5) numPhi = rand()%10; // FIXME: larger rings not supported by subdiv geometry
           size_t numTriangles = 2*2*numPhi*(numPhi-1);
           numTriangles = rand()%(numTriangles+1);
           types[index] = type;
@@ -2660,9 +2660,9 @@ namespace embree
           case 1: geom[index] = addSphere(task->scene,RTC_GEOMETRY_DEFORMABLE,pos,2.0f,numPhi,numTriangles,0.0f); break;
           case 2: geom[index] = addSphere(task->scene,RTC_GEOMETRY_DYNAMIC,pos,2.0f,numPhi,numTriangles,0.0f); break;
 
-	    //case 3: geom[index] = addSubdivSphere(task->scene,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,4,numTriangles,0.0f); break;
-	    //case 4: geom[index] = addSubdivSphere(task->scene,RTC_GEOMETRY_DEFORMABLE,pos,2.0f,numPhi,4,numTriangles,0.0f); break;
-	    //case 5: geom[index] = addSubdivSphere(task->scene,RTC_GEOMETRY_DYNAMIC,pos,2.0f,numPhi,4,numTriangles,0.0f); break;
+          case 3: geom[index] = addSubdivSphere(task->scene,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,4,numTriangles,0.0f); break;
+	  case 4: geom[index] = addSubdivSphere(task->scene,RTC_GEOMETRY_DEFORMABLE,pos,2.0f,numPhi,4,numTriangles,0.0f); break;
+	  case 5: geom[index] = addSubdivSphere(task->scene,RTC_GEOMETRY_DYNAMIC,pos,2.0f,numPhi,4,numTriangles,0.0f); break;
 
           case 6: geom[index] = addSphere(task->scene,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles,1.0f); break;
           case 7: geom[index] = addSphere(task->scene,RTC_GEOMETRY_DEFORMABLE,pos,2.0f,numPhi,numTriangles,1.0f); break;
