@@ -18,7 +18,7 @@
 
 /* configuration */
 
-#define EDGE_LEVEL 1024.0f
+#define EDGE_LEVEL 256.0f 
 
 /* scene data */
 RTCScene g_scene = NULL;

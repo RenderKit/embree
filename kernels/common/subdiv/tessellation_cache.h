@@ -32,11 +32,7 @@ namespace embree
   public:
     /* default sizes */
     static const size_t DEFAULT_64B_BLOCKS = (1<<15); // 2MB 
-#if defined(__MIC__)
-    static const size_t MAX_64B_BLOCKS     = (1<<15); // 4MB
-#else
     static const size_t MAX_64B_BLOCKS     = (1<<18); // 16MB
-#endif
 
     static const size_t CACHE_SETS = 1<<11; // 2048 sets
     static const size_t CACHE_WAYS = 1<<2;  // 4-way associative
@@ -354,10 +350,10 @@ namespace embree
       /* not enough space to hold entry? */
       if (unlikely(blockCounter + neededBlocks >= allocated64BytesBlocks))
         {   
-          const unsigned int new_allocated64BytesBlocks = 2*allocated64BytesBlocks;
-          if (new_allocated64BytesBlocks <= MAX_64B_BLOCKS)
+          const unsigned int new_allocated64BytesBlocks = max(2*allocated64BytesBlocks,neededBlocks);
+	  if (new_allocated64BytesBlocks <= MAX_64B_BLOCKS)
             {
-#if 1
+#if DEBUG
               std::cout << "EXTENDING TESSELLATION CACHE (PER THREAD) FROM " 
                         << allocated64BytesBlocks << " TO " 
                         << new_allocated64BytesBlocks << " BLOCKS = " 
@@ -368,6 +364,9 @@ namespace embree
               lazymem = alloc_mem(allocated64BytesBlocks);
               assert(lazymem);
             }
+	  
+	  if (unlikely(new_allocated64BytesBlocks < neededBlocks))
+	    FATAL("can't enlarge tessellation cache to handle " << neededBlocks << ", increase maximum size limit");
 
           clear();
         }
@@ -377,8 +376,7 @@ namespace embree
       /* allocate entry */
       const size_t currentIndex = blockCounter;
       blockCounter += neededBlocks;
-
-      assert(blockCounter < allocated64BytesBlocks);
+      assert(blockCounter <= allocated64BytesBlocks);
 
 #if defined(__MIC__)
       unsigned int curNode = currentIndex;

@@ -177,15 +177,26 @@ namespace embree
 #endif
         
         size_t i = select_min(valid,t);
+
         
         /* update hit information */
+        pre.hit_patch = pre.current_patch;
+
         ray.u         = u_final[i];
         ray.v         = v_final[i];
         ray.tfar      = t[i];
-        ray.Ng.x      = Ng.x[i];
-        ray.Ng.y      = Ng.y[i];
-        ray.Ng.z      = Ng.z[i];
-        pre.hit_patch = pre.current_patch;
+	if (i % 2)
+	  {
+	    ray.Ng.x      = -Ng.x[i];
+	    ray.Ng.y      = -Ng.y[i];
+	    ray.Ng.z      = -Ng.z[i];
+	  }
+	else
+	  {
+	    ray.Ng.x      = Ng.x[i];
+	    ray.Ng.y      = Ng.y[i];
+	    ray.Ng.z      = Ng.z[i];	    
+	  }
       };
       
       
@@ -242,7 +253,7 @@ namespace embree
         valid &= den != T(zero);
         if (unlikely(none(valid))) return false;
 #endif
-        
+        ray.geomID = 0;
         return true;
       };
       

@@ -441,6 +441,9 @@ namespace embree
 	      ray16.Ng.y[rayIndex]   = normal.y;
 	      ray16.Ng.z[rayIndex]   = normal.z;
 	    }
+#else
+	  //ray16.Ng *= mic_f(-1.0f);
+
 #endif
 
 	    const Vec2f uv0 = subdiv_patch.getUV(0);
