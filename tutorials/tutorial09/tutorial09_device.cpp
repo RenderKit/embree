@@ -18,9 +18,7 @@
 
 /* configuration */
 
-#define MIN_EDGE_LEVEL 2.0f
-#define MAX_EDGE_LEVEL 64.0f
-#define LEVEL_FACTOR 64.0f
+#define EDGE_LEVEL 128.0f
 
 /* scene data */
 RTCScene g_scene = NULL;
@@ -110,6 +108,30 @@ unsigned int cube_faces[12] = {
 
 #endif
 
+void displacementFunction(void* ptr, unsigned int geomID, int unsigned primID, 
+                      const float* u,      /*!< u coordinates (source) */
+                      const float* v,      /*!< v coordinates (source) */
+                      const float* nx,     /*!< x coordinates of normal at point to displace (source) */
+                      const float* ny,     /*!< y coordinates of normal at point to displace (source) */
+                      const float* nz,     /*!< z coordinates of normal at point to displace (source) */
+                      float* px,           /*!< x coordinates of points to displace (source and target) */
+                      float* py,           /*!< y coordinates of points to displace (source and target) */
+                      float* pz,           /*!< z coordinates of points to displace (source and target) */
+                      size_t N)
+{
+  for (size_t i = 0; i<N; i++) {
+    const Vec3fa P = Vec3fa(px[i],py[i],pz[i]);
+    const Vec3fa Ng = Vec3fa(nx[i],ny[i],nz[i]);
+    float dN = 0.0f;
+    for (float freq = 1.0f; freq<40.0f; freq*= 2) {
+      float n = abs(noise(freq*P));
+      dN += 1.4f*n*n/freq;
+    }
+    const Vec3fa dP = dN*Ng;
+    px[i] += dP.x; py[i] += dP.y; pz[i] += dP.z;
+  }
+}
+
 /* adds a cube to the scene */
 unsigned int addCube (RTCScene scene_i)
 {
@@ -120,30 +142,13 @@ unsigned int addCube (RTCScene scene_i)
   rtcSetBuffer(scene_i, geomID, RTC_INDEX_BUFFER,  cube_indices , 0, sizeof(unsigned int));
   rtcSetBuffer(scene_i, geomID, RTC_FACE_BUFFER,   cube_faces,    0, sizeof(unsigned int));
 
-  return geomID;
-}
-
-/*! updates the tessellation level for each edge */
-void updateEdgeLevelBuffer( RTCScene scene_i, unsigned geomID, const Vec3fa& cam_pos )
-{
-  float*  level    = (float* ) rtcMapBuffer(scene_i, geomID, RTC_LEVEL_BUFFER);
-  int*    faces    = (int*   ) rtcMapBuffer(scene_i, geomID, RTC_INDEX_BUFFER);
-  Vec3fa* vertices = (Vec3fa*) rtcMapBuffer(scene_i, geomID, RTC_VERTEX_BUFFER);
-  
-  for (size_t f=0; f<NUM_FACES; f++) 
-  {
-    for (size_t i=0; i<FACE_SIZE; i++) {
-      const Vec3fa v0 = Vec3fa(vertices[faces[FACE_SIZE*f+(i+0)%FACE_SIZE]]);
-      const Vec3fa v1 = Vec3fa(vertices[faces[FACE_SIZE*f+(i+1)%FACE_SIZE]]);
-      const float l  = LEVEL_FACTOR*length(v1-v0)/length(cam_pos-0.5f*(v1+v0));
-      level[FACE_SIZE*f+i] = max(min(l,MAX_EDGE_LEVEL),MIN_EDGE_LEVEL);
-    }
-  }
-  rtcUnmapBuffer(scene_i, geomID, RTC_VERTEX_BUFFER);
-  rtcUnmapBuffer(scene_i, geomID, RTC_INDEX_BUFFER);
+  float* level = (float*) rtcMapBuffer(scene_i, geomID, RTC_LEVEL_BUFFER);
+  for (size_t i=0; i<NUM_INDICES; i++) level[i] = EDGE_LEVEL;
   rtcUnmapBuffer(scene_i, geomID, RTC_LEVEL_BUFFER);
 
-  rtcUpdateBuffer(scene_i,geomID,RTC_LEVEL_BUFFER);
+  rtcSetDisplacementFunction(scene_i,geomID,(RTCDisplacementFunc)&displacementFunction,NULL);
+
+  return geomID;
 }
 
 /* adds a ground plane to the scene */
@@ -186,6 +191,13 @@ extern "C" void device_init (int8* cfg)
 
   /* add ground plane */
   addGroundPlane(g_scene);
+
+  /* commit changes to scene */
+#if !defined(PARALLEL_COMMIT)
+  rtcCommit (g_scene);
+#else
+  launch[ getNumHWThreads() ] parallelCommit(g_scene); 
+#endif
 
   /* set start render mode */
   renderPixel = renderPixelStandard;
@@ -279,16 +291,6 @@ extern "C" void device_render (int* pixels,
                            const Vec3fa& vz, 
                            const Vec3fa& p)
 {
-  /* recompute levels */
-  updateEdgeLevelBuffer(g_scene,0,p);
-    
-  /* rebuild scene */
-#if !defined(PARALLEL_COMMIT)
-  rtcCommit (g_scene);
-#else
-  launch[ getNumHWThreads() ] parallelCommit(g_scene); 
-#endif
-  
   /* render image */
   const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;

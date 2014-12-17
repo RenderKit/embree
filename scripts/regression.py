@@ -209,8 +209,8 @@ def render(OS, compiler, platform, build, isa, tutorial, scene, flags):
   else:
     if OS == 'windows': command = 'build' + '\\' + build + '\\' + tutorial + ' '
     else:               command = 'build' + '/' + tutorial + ' '
-    if tutorial == 'tutorial08':
-      command += '-i tutorials/tutorial08/' + scene + '.xml '
+    if tutorial == 'tutorial10':
+      command += '-i tutorials/tutorial10/' + scene + '.xml '
     elif scene != '':
       command += '-c ' + modelDir + dash + scene + dash + scene + '_regression.ecs '
     if tutorial == 'regression':
@@ -262,13 +262,16 @@ def processConfiguration(OS, compiler, platform, build, isa, models):
     render(OS, compiler, platform, build, isa, 'tutorial07_ispc', '', 'dynamic')
     render(OS, compiler, platform, build, isa, 'tutorial07_ispc', '', 'high_quality')
 
-    render(OS, compiler, platform, build, isa, 'tutorial08', 'subdiv0', 'static')
-    render(OS, compiler, platform, build, isa, 'tutorial08', 'subdiv1', 'dynamic')
-    render(OS, compiler, platform, build, isa, 'tutorial08', 'subdiv2', 'robust')
-    render(OS, compiler, platform, build, isa, 'tutorial08', 'subdiv3', 'high_quality')
-    render(OS, compiler, platform, build, isa, 'tutorial08', 'subdiv4', 'static')
-    render(OS, compiler, platform, build, isa, 'tutorial08', 'subdiv5', 'dynamic')
-    render(OS, compiler, platform, build, isa, 'tutorial08', 'subdiv6', 'robust')
+    render(OS, compiler, platform, build, isa, 'tutorial08', '', '')
+    render(OS, compiler, platform, build, isa, 'tutorial09', '', '')
+
+    render(OS, compiler, platform, build, isa, 'tutorial10', 'subdiv0', 'static')
+    render(OS, compiler, platform, build, isa, 'tutorial10', 'subdiv1', 'dynamic')
+    render(OS, compiler, platform, build, isa, 'tutorial10', 'subdiv2', 'robust')
+    render(OS, compiler, platform, build, isa, 'tutorial10', 'subdiv3', 'high_quality')
+    render(OS, compiler, platform, build, isa, 'tutorial10', 'subdiv4', 'static')
+    render(OS, compiler, platform, build, isa, 'tutorial10', 'subdiv5', 'dynamic')
+    render(OS, compiler, platform, build, isa, 'tutorial10', 'subdiv6', 'robust')
 
 def renderLoop(OS):
     for compiler in compilers:

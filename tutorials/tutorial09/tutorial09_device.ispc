@@ -18,9 +18,7 @@
 
 /* configuration */
 #define PARALLEL_COMMIT
-#define MIN_EDGE_LEVEL 2.0f
-#define MAX_EDGE_LEVEL 64.0f
-#define LEVEL_FACTOR 64.0f
+#define EDGE_LEVEL 128.0f
 
 /* scene data */
 RTCScene g_scene = NULL;
@@ -110,6 +108,30 @@ uniform unsigned int cube_faces[12] = {
 
 #endif
 
+void displacementFunction(void* uniform ptr, uniform unsigned int geomID, uniform int unsigned primID, 
+                      const uniform float* uniform u,      /*!< u coordinates (source) */
+                      const uniform float* uniform v,      /*!< v coordinates (source) */
+                      const uniform float* uniform nx,     /*!< x coordinates of normal at point to displace (source) */
+                      const uniform float* uniform ny,     /*!< y coordinates of normal at point to displace (source) */
+                      const uniform float* uniform nz,     /*!< z coordinates of normal at point to displace (source) */
+                      uniform float* uniform px,           /*!< x coordinates of points to displace (source and target) */
+                      uniform float* uniform py,           /*!< y coordinates of points to displace (source and target) */
+                      uniform float* uniform pz,           /*!< z coordinates of points to displace (source and target) */
+                      uniform size_t N)
+{
+  foreach (i=0 ... N) {
+    const Vec3fa P = make_Vec3fa(px[i],py[i],pz[i]);
+    const Vec3fa Ng = make_Vec3fa(nx[i],ny[i],nz[i]);
+    float dN = 0.0f;
+    for (float freq = 1.0f; freq<40.0f; freq*= 2) {
+      float n = abs(noise(freq*P));
+      dN += 1.4f*n*n/freq;
+    }
+    const Vec3fa dP = dN*Ng;
+    px[i] += dP.x; py[i] += dP.y; pz[i] += dP.z;
+  }
+}
+
 /* adds a cube to the scene */
 uniform unsigned int addCube (RTCScene scene_i)
 {
@@ -120,30 +142,13 @@ uniform unsigned int addCube (RTCScene scene_i)
   rtcSetBuffer(scene_i, geomID, RTC_INDEX_BUFFER,  cube_indices , 0, sizeof(uniform unsigned int));
   rtcSetBuffer(scene_i, geomID, RTC_FACE_BUFFER,   cube_faces,    0, sizeof(uniform unsigned int));
 
-  return geomID;
-}
-
-/*! updates the tessellation level for each edge */
-void updateEdgeLevelBuffer( RTCScene scene_i, uniform unsigned geomID, const uniform Vec3f& cam_pos )
-{
-  uniform float*  uniform level    = (uniform float*  uniform) rtcMapBuffer(scene_i, geomID, RTC_LEVEL_BUFFER);
-  uniform int*    uniform faces    = (uniform int*    uniform) rtcMapBuffer(scene_i, geomID, RTC_INDEX_BUFFER);
-  uniform Vec3fa* uniform vertices = (uniform Vec3fa* uniform) rtcMapBuffer(scene_i, geomID, RTC_VERTEX_BUFFER);
-  
-  for (uniform size_t f=0; f<NUM_FACES; f++) 
-  {
-    for (uniform size_t i=0; i<FACE_SIZE; i++) {
-      const uniform Vec3f v0 = make_Vec3f(vertices[faces[FACE_SIZE*f+(i+0)%FACE_SIZE]]);
-      const uniform Vec3f v1 = make_Vec3f(vertices[faces[FACE_SIZE*f+(i+1)%FACE_SIZE]]);
-      const uniform float l  = LEVEL_FACTOR*length(v1-v0)/length(cam_pos-0.5f*(v1+v0));
-      level[FACE_SIZE*f+i] = max(min(l,MAX_EDGE_LEVEL),MIN_EDGE_LEVEL);
-    }
-  }
-  rtcUnmapBuffer(scene_i, geomID, RTC_VERTEX_BUFFER);
-  rtcUnmapBuffer(scene_i, geomID, RTC_INDEX_BUFFER);
+  uniform float* uniform level = (uniform float* uniform) rtcMapBuffer(scene_i, geomID, RTC_LEVEL_BUFFER);
+  for (uniform size_t i=0; i<NUM_INDICES; i++) level[i] = EDGE_LEVEL;
   rtcUnmapBuffer(scene_i, geomID, RTC_LEVEL_BUFFER);
 
-  rtcUpdateBuffer(scene_i,geomID,RTC_LEVEL_BUFFER);
+  rtcSetDisplacementFunction(scene_i,geomID,(RTCDisplacementFunc)&displacementFunction,NULL);
+
+  return geomID;
 }
 
 /* adds a ground plane to the scene */
@@ -186,6 +191,13 @@ export void device_init (uniform int8* uniform cfg)
 
   /* add ground plane */
   addGroundPlane(g_scene);
+
+  /* commit changes to scene */
+#if !defined(PARALLEL_COMMIT)
+  rtcCommit (g_scene);
+#else
+  launch[ getNumHWThreads() ] parallelCommit(g_scene); sync;
+#endif
 
   /* set start render mode */
   renderPixel = renderPixelStandard;
@@ -279,16 +291,6 @@ export void device_render (uniform int* uniform pixels,
                            const uniform Vec3f& vz, 
                            const uniform Vec3f& p)
 {
-  /* recompute levels */
-  updateEdgeLevelBuffer(g_scene,0,p);
-    
-  /* rebuild scene */
-#if !defined(PARALLEL_COMMIT)
-  rtcCommit (g_scene);
-#else
-  launch[ getNumHWThreads() ] parallelCommit(g_scene); sync;
-#endif
-  
   /* render image */
   const uniform int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   const uniform int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
