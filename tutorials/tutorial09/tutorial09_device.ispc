@@ -19,7 +19,11 @@
 /* configuration */
 #define PARALLEL_COMMIT
 
+#if defined(__XEON_PHI__)
+#define EDGE_LEVEL 64.0f
+#else
 #define EDGE_LEVEL 256.0f
+#endif
 
 /* scene data */
 RTCScene g_scene = NULL;

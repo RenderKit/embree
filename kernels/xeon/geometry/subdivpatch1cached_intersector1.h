@@ -292,7 +292,7 @@ namespace embree
           if (unlikely(((SubdivMesh*)geom)->displFunc != NULL))
           {
             avx3f normal = patch.normal8(uu,vv);
-            normal = normalize_safe(normal);
+            normal = normalize_safe(normal) ;
             
 	    const avxf patch_uu = bilinear_interpolate(uv0.x,uv1.x,uv2.x,uv3.x,uu,vv);
 	    const avxf patch_vv = bilinear_interpolate(uv0.y,uv1.y,uv2.y,uv3.y,uu,vv);
