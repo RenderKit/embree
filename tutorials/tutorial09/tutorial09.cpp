@@ -138,6 +138,10 @@ namespace embree
   {
     std::cout << " === Possible cmd line options: -lazy, -pregenerate, -cache === " << std::endl;
 
+    /* set default camera */
+    g_camera.from = Vec3fa(1.5f,1.5f,-1.5f);
+    g_camera.to   = Vec3fa(0.0f,0.0f,0.0f);
+
     /*! Parse command line options. */  
     parseCommandLine(new ParseStream(new CommandLineStream(argc, argv)), FileName());
 

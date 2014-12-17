@@ -18,7 +18,7 @@
 
 /* configuration */
 #define PARALLEL_COMMIT
-#define EDGE_LEVEL 128.0f
+#define EDGE_LEVEL 1024.0f
 
 /* scene data */
 RTCScene g_scene = NULL;
@@ -224,7 +224,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const unifo
   Vec3f color = make_Vec3f(0.0f);
   if (ray.geomID != RTC_INVALID_GEOMETRY_ID) 
   {
-    Vec3f diffuse = make_Vec3f(0.8f,0.8f,0.8f);
+    Vec3f diffuse = ray.geomID == 0 ? make_Vec3f(0.9f,0.6f,0.5f) : make_Vec3f(0.8f,0.0f,0.0f);
     color = color + diffuse*0.5f; // FIXME: +=
     Vec3f lightDir = normalize(make_Vec3f(-1,-1,-1));
     
