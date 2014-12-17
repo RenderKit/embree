@@ -17,6 +17,7 @@
 #pragma once
 
 #include "common/geometry.h"
+#include "common/scene_subdiv_mesh.h"
 
 namespace embree
 {
@@ -26,8 +27,8 @@ namespace embree
   
   struct __aligned(64) CatmullClark1Ring
   {
-    static const size_t MAX_FACE_VALENCE = 32;
-    static const size_t MAX_EDGE_VALENCE = 2*32;
+    static const size_t MAX_FACE_VALENCE = SubdivMesh::MAX_RING_FACE_VALENCE;
+    static const size_t MAX_EDGE_VALENCE = SubdivMesh::MAX_RING_EDGE_VALENCE;
     
     Vec3fa ring [MAX_EDGE_VALENCE];
     float crease_weight[MAX_FACE_VALENCE];
@@ -504,8 +505,8 @@ namespace embree
   
   struct __aligned(64) GeneralCatmullClark1Ring
   {
-    static const size_t MAX_FACE_VALENCE = 32;
-    static const size_t MAX_EDGE_VALENCE = 2*32;
+    static const size_t MAX_FACE_VALENCE = SubdivMesh::MAX_RING_FACE_VALENCE;
+    static const size_t MAX_EDGE_VALENCE = SubdivMesh::MAX_RING_EDGE_VALENCE;
     
     Vec3fa vtx;
     Vec3fa ring[MAX_EDGE_VALENCE]; 

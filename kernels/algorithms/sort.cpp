@@ -18,9 +18,9 @@
 
 namespace embree
 {
-  ParallelRadixSort shared_radix_sort_state;
-  ParallelRadixSortT<uint32> radix_sort_u32(shared_radix_sort_state);
-  ParallelRadixSortT<uint64> radix_sort_u64(shared_radix_sort_state);
+  //ParallelRadixSort shared_radix_sort_state;
+  //ParallelRadixSortT<uint32> radix_sort_u32(shared_radix_sort_state);
+  //ParallelRadixSortT<uint64> radix_sort_u64(shared_radix_sort_state);
   
   template<typename Key>
   struct RadixSortRegressionTest : public RegressionTest
@@ -35,8 +35,6 @@ namespace embree
       printf("%s::%s ... ",TOSTRING(isa),name);
       fflush(stdout);
 
-      ParallelRadixSortT<Key> radix_sort(shared_radix_sort_state);
-      
       const size_t M = 10;
       for (size_t N=10; N<10000000; N*=2.1f)
       {
@@ -50,7 +48,7 @@ namespace embree
 	/* sort numbers */
 	double t0 = getSeconds();
 	for (size_t i=0; i<M; i++) {
-          radix_sort(src.data(),tmp.data(),N);
+          radix_sort<Key>(src.data(),tmp.data(),N);
         }
 	double t1 = getSeconds();
 	printf("%zu/%3.2fM ",N,1E-6*double(N*M)/(t1-t0));

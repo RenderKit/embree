@@ -113,7 +113,7 @@ namespace embree
 
     /* determine whether patch is regular or not */
 
-    if (ipatch.isRegular() && mesh->displFunc == NULL ) //FIXME
+    if (ipatch.isRegularOrFinal(0) && mesh->displFunc == NULL)
       {
         flags |= REGULAR_PATCH;
         patch.init( ipatch );

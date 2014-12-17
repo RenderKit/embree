@@ -31,6 +31,7 @@
 //#define DEFAULT_STACK_SIZE 2*1024*1024
 //#define DEFAULT_STACK_SIZE 512*1024
 #define DEFAULT_STACK_SIZE 0
+
 namespace embree
 {
 #if !defined(__MIC__)
@@ -2517,7 +2518,7 @@ namespace embree
       delete thread; thread = NULL;
       return;
     }
-    //task->scene = rtcNewScene(RTC_SCENE_DYNAMIC,aflags);
+
     CountErrors();
     int geom[1024];
     int types[1024];
@@ -2544,14 +2545,12 @@ namespace embree
         Vec3fa pos = 100.0f*Vec3fa(drand48(),drand48(),drand48());
 	int type = rand()%6;
 #if !defined(__MIC__) 
-	if (type != 2) { // FIXME: strange inputs not supported yet for subdiv geometry
-	  switch (rand()%16) {
-	  case 0: pos = Vec3fa(nan); break;
-	  case 1: pos = Vec3fa(inf); break;
-	  case 2: pos = Vec3fa(1E30f); break;
-	  default: break;
-	  };
-	}
+        switch (rand()%16) {
+        case 0: pos = Vec3fa(nan); break;
+        case 1: pos = Vec3fa(inf); break;
+        case 2: pos = Vec3fa(1E30f); break;
+        default: break;
+        };
 #endif
 	size_t numPhi = rand()%100;
 	if (type == 2) numPhi = rand()%10;
@@ -2637,20 +2636,20 @@ namespace embree
       for (size_t j=0; j<40; j++) 
       {
         int index = rand()%1024;
-        Vec3fa pos = 100.0f*Vec3fa(drand48(),drand48(),drand48());
-#if !defined(__MIC__)
-	switch (rand()%16) {
-	case 0: pos = Vec3fa(nan); break;
-	case 1: pos = Vec3fa(inf); break;
-	case 2: pos = Vec3fa(1E30f); break;
-	default: break;
-	};
-#endif
         if (geom[index] == -1) 
         {
           int type = rand()%10;
+          Vec3fa pos = 100.0f*Vec3fa(drand48(),drand48(),drand48());
+#if !defined(__MIC__)
+          switch (rand()%16) {
+          case 0: pos = Vec3fa(nan); break;
+          case 1: pos = Vec3fa(inf); break;
+          case 2: pos = Vec3fa(1E30f); break;
+          default: break;
+          };
+#endif
           size_t numPhi = rand()%100;
-	  if (type >= 3 || type <= 5) numPhi = rand()%20;
+	  if (type >= 3 || type <= 5) numPhi = rand()%10;
           size_t numTriangles = 2*2*numPhi*(numPhi-1);
           numTriangles = rand()%(numTriangles+1);
           types[index] = type;
@@ -2660,9 +2659,9 @@ namespace embree
           case 1: geom[index] = addSphere(task->scene,RTC_GEOMETRY_DEFORMABLE,pos,2.0f,numPhi,numTriangles,0.0f); break;
           case 2: geom[index] = addSphere(task->scene,RTC_GEOMETRY_DYNAMIC,pos,2.0f,numPhi,numTriangles,0.0f); break;
 
-	    //case 3: geom[index] = addSubdivSphere(task->scene,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,4,numTriangles,0.0f); break;
-	    //case 4: geom[index] = addSubdivSphere(task->scene,RTC_GEOMETRY_DEFORMABLE,pos,2.0f,numPhi,4,numTriangles,0.0f); break;
-	    //case 5: geom[index] = addSubdivSphere(task->scene,RTC_GEOMETRY_DYNAMIC,pos,2.0f,numPhi,4,numTriangles,0.0f); break;
+          case 3: geom[index] = addSubdivSphere(task->scene,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,4,numTriangles,0.0f); break;
+	  case 4: geom[index] = addSubdivSphere(task->scene,RTC_GEOMETRY_DEFORMABLE,pos,2.0f,numPhi,4,numTriangles,0.0f); break;
+	  case 5: geom[index] = addSubdivSphere(task->scene,RTC_GEOMETRY_DYNAMIC,pos,2.0f,numPhi,4,numTriangles,0.0f); break;
 
           case 6: geom[index] = addSphere(task->scene,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles,1.0f); break;
           case 7: geom[index] = addSphere(task->scene,RTC_GEOMETRY_DEFORMABLE,pos,2.0f,numPhi,numTriangles,1.0f); break;
@@ -2737,7 +2736,6 @@ namespace embree
     CountErrors();
 
     delete thread; thread = NULL;
-    delete task; task = NULL;
     return;
   }
 
@@ -2753,18 +2751,23 @@ namespace embree
 #if defined (__MIC__)
 	numThreads -= 4;
 #endif
+
+        std::vector<RegressionTask*> tasks;
       
 	while (numThreads) 
 	{
 	  size_t N = max(size_t(1),rand()%numThreads); numThreads -= N;
 	  RegressionTask* task = new RegressionTask(sceneIndex++,5,N);
-	  
+	  tasks.push_back(task);
+
 	  for (size_t i=0; i<N; i++) 
 	    g_threads.push_back(createThread(func,new ThreadRegressionTask(i,N,task),DEFAULT_STACK_SIZE,numThreads+i));
 	}
 	
 	for (size_t i=0; i<g_threads.size(); i++)
 	  join(g_threads[i]);
+        for (size_t i=0; i<tasks.size(); i++)
+          delete tasks[i];
 	
 	g_threads.clear();
 	clearBuffers();

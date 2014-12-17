@@ -248,7 +248,7 @@ namespace embree
   class __aligned(64) GeneralCatmullClarkPatch
   {
   public:
-    enum { SIZE = 5 };
+    static const size_t SIZE = SubdivMesh::MAX_VALENCE;
     GeneralCatmullClark1Ring ring[SIZE];
     size_t N;
 
