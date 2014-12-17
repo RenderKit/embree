@@ -72,11 +72,8 @@ namespace embree
     }
 
     /*! tests if some element is in the set */
-    __forceinline bool lookup(const T& elt) const
-    {
-      typename std::vector<T>::const_iterator i = std::lower_bound(vec.begin(), vec.end(), elt);
-      if (i == vec.end()) return false;
-      return *i == elt;
+    __forceinline bool lookup(const T& elt) const {
+      return std::binary_search(vec.begin(), vec.end(), elt);
     }
 
     /*! cleans temporary state required for re-construction */
