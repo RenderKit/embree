@@ -73,16 +73,16 @@ cp build/tutorial06_xeonphi_device $1/bin/x64
 cp build/tutorial07_xeonphi_device $1/bin/x64
 
 mkdir -p $1/lib/x64
-cp build/libembree.so.2.3.3 $1/lib/x64
-ln -sf libembree.so.2.3.3 $1/lib/x64/libembree.so.2 
-cp build/libembree_xeonphi.so.2.3.3 $1/lib/x64
-ln -sf libembree_xeonphi.so.2.3.3 $1/lib/x64/libembree_xeonphi.so.2 
+cp build/libembree.so.2.4 $1/lib/x64
+ln -sf libembree.so.2.4 $1/lib/x64/libembree.so.2 
+cp build/libembree_xeonphi.so.2.4 $1/lib/x64
+ln -sf libembree_xeonphi.so.2.4 $1/lib/x64/libembree_xeonphi.so.2 
 
 mkdir -p $1/include
 cp -r include/embree2 $1/include
 
-make -C doc readme_bin.txt readme_bin.pdf
-cp doc/readme_bin.txt $1/readme.txt
-cp doc/readme_bin.pdf $1/readme.pdf
+#make -C doc readme_bin.txt readme_bin.pdf
+#cp doc/readme_bin.txt $1/readme.txt
+#cp doc/readme_bin.pdf $1/readme.pdf
 cp scripts/install_linux/install.sh $1/
 cp scripts/install_linux/paths.sh $1/

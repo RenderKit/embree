@@ -1,6 +1,6 @@
 #!/bin/sh
 
-echo "Installing Embree v2.3.3 ... "
+echo "Installing Embree v2.4 ... "
 
 INCLUDE_INSTALL_DIR=/usr/local/include
 LIBRARY_INSTALL_DIR=/usr/local/lib
@@ -12,6 +12,6 @@ echo "  installing include files in" $INCLUDE_INSTALL_DIR
 cp -r include/embree2 $INCLUDE_INSTALL_DIR
 
 echo "  installing library files in" $LIBRARY_INSTALL_DIR
-cp -r lib/x64/libembree.2.3.3.dylib $LIBRARY_INSTALL_DIR
-ln -sf $LIBRARY_INSTALL_DIR/libembree.2.3.3.dylib $LIBRARY_INSTALL_DIR/libembree.2.dylib
+cp -r lib/x64/libembree.2.4.dylib $LIBRARY_INSTALL_DIR
+ln -sf $LIBRARY_INSTALL_DIR/libembree.2.4.dylib $LIBRARY_INSTALL_DIR/libembree.2.dylib
 ln -sf $LIBRARY_INSTALL_DIR/libembree.2.dylib     $LIBRARY_INSTALL_DIR/libembree.dylib

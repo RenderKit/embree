@@ -52,14 +52,14 @@ cp build/tutorial06_ispc $1/bin/x64
 cp build/tutorial07_ispc $1/bin/x64
 
 mkdir -p $1/lib/x64
-cp build/libembree.2.3.3.dylib $1/lib/x64
-ln -sf libembree.2.3.3.dylib $1/lib/x64/libembree.2.dylib 
+cp build/libembree.2.4.dylib $1/lib/x64
+ln -sf libembree.2.4.dylib $1/lib/x64/libembree.2.dylib 
 
 mkdir -p $1/include
 cp -r include/embree2 $1/include
 
-make -C doc readme_bin.txt readme_bin.pdf
-cp doc/readme_bin.txt $1/readme.txt
-cp doc/readme_bin.pdf $1/readme.pdf
+#make -C doc readme_bin.txt readme_bin.pdf
+#cp doc/readme_bin.txt $1/readme.txt
+#cp doc/readme_bin.pdf $1/readme.pdf
 cp scripts/install_macos/install.sh $1/
 cp scripts/install_macos/paths.sh $1/
