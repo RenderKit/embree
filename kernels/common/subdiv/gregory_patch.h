@@ -495,12 +495,23 @@ namespace embree
       const Vec3<T> f1_i = (one_minus_uu * f1_m +           vv * f1_p) * inv1;
       const Vec3<T> f2_i = (one_minus_uu * f2_p + one_minus_vv * f2_m) * inv2;
       const Vec3<T> f3_i = (          uu * f3_m + one_minus_vv * f3_p) * inv3;
+
+#if 1
+      const M m_border0 = (uu == 0.0f) & (vv == 0.0f);
+      const M m_border1 = (uu == 1.0f) & (vv == 0.0f);
+      const M m_border2 = (uu == 1.0f) & (vv == 1.0f);
+      const M m_border3 = (uu == 0.0f) & (vv == 1.0f);
       
+      const Vec3<T> matrix_11( select(m_border0,f0_p.x,f0_i.x), select(m_border0,f0_p.y,f0_i.y), select(m_border0,f0_p.z,f0_i.z) );
+      const Vec3<T> matrix_12( select(m_border1,f1_p.x,f1_i.x), select(m_border1,f1_p.y,f1_i.y), select(m_border1,f1_p.z,f1_i.z) );
+      const Vec3<T> matrix_22( select(m_border2,f2_p.x,f2_i.x), select(m_border2,f2_p.y,f2_i.y), select(m_border2,f2_p.z,f2_i.z) );
+      const Vec3<T> matrix_21( select(m_border3,f3_p.x,f3_i.x), select(m_border3,f3_p.y,f3_i.y), select(m_border3,f3_p.z,f3_i.z) );
+#else
       const Vec3<T> matrix_11( select(m_border,f0_p.x,f0_i.x), select(m_border,f0_p.y,f0_i.y), select(m_border,f0_p.z,f0_i.z) );
       const Vec3<T> matrix_12( select(m_border,f1_p.x,f1_i.x), select(m_border,f1_p.y,f1_i.y), select(m_border,f1_p.z,f1_i.z) );
       const Vec3<T> matrix_22( select(m_border,f2_p.x,f2_i.x), select(m_border,f2_p.y,f2_i.y), select(m_border,f2_p.z,f2_i.z) );
       const Vec3<T> matrix_21( select(m_border,f3_p.x,f3_i.x), select(m_border,f3_p.y,f3_i.y), select(m_border,f3_p.z,f3_i.z) );
-      
+#endif
       
       const Vec3<T> matrix_00 = Vec3<T>(matrix[0][0].x,matrix[0][0].y,matrix[0][0].z);
       const Vec3<T> matrix_10 = Vec3<T>(matrix[1][0].x,matrix[1][0].y,matrix[1][0].z);

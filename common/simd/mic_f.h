@@ -557,6 +557,13 @@ namespace embree
   }
 
 
+  __forceinline mic_f uload16f(const mic_m& mask,const float *const addr) {
+    mic_f r = mic_f::undefined();
+    r =_mm512_mask_extloadunpacklo_ps(r, mask,addr, _MM_UPCONV_PS_NONE, _MM_HINT_NONE);
+    r = _mm512_mask_extloadunpackhi_ps(r, mask, addr+16, _MM_UPCONV_PS_NONE, _MM_HINT_NONE);  
+    return r;
+  }
+
   __forceinline mic_f uload16f(const float *const addr) {
     mic_f r = mic_f::undefined();
     r =_mm512_extloadunpacklo_ps(r, addr, _MM_UPCONV_PS_NONE, _MM_HINT_NONE);
