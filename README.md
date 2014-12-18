@@ -41,8 +41,10 @@ spatial index structure construction algorithms.
 In addition to the ray tracing kernels, Embree provides some tutorials
 to demonstrate how to use the [Embree API]. The example photorealistic
 renderer that was originally included in the Embree kernel package is
-now available in a separate GIT repository (see [Embree Example
-Renderer]).
+now available in a separate GIT repository (see
+[Embree Example Renderer]). Please also check out the OSPRay Ray
+Tracing based Rendering Engine for High-Fidelity Visualization
+(<https://ospray.github.io/>) which builds on Embree.
 
 Supported Platforms
 -------------------
@@ -1375,6 +1377,15 @@ Tutorial09
 This tutorial demonstrates the use of Catmull Clark subdivision
 surfaces with procedural displacement mapping using a constant edge
 tessellation level.
+
+Tutorial10
+----------
+
+![](images/tutorial10.jpg)
+
+This tutorial loads an .obj file and renders the mesh as a Catmull
+Clark subdivision surface object. The edge tessellation level is
+chosen adaptively based on the distance to the camera.
 
 [Embree API]: #embree-api
 [Embree Example Renderer]: https://embree.github.io/renderer.html
