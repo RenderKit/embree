@@ -441,11 +441,6 @@ namespace embree
 	      ray16.Ng.y[rayIndex]   = normal.y;
 	      ray16.Ng.z[rayIndex]   = normal.z;
 	    }
-#else
-	  /* switch triangle normal */
-	  ray16.Ng.x[rayIndex]   = -ray16.Ng.x[rayIndex];
-	  ray16.Ng.y[rayIndex]   = -ray16.Ng.y[rayIndex];
-	  ray16.Ng.z[rayIndex]   = -ray16.Ng.z[rayIndex];	 
 #endif
 
 	  const Vec2f uv0 = subdiv_patch.getUV(0);
