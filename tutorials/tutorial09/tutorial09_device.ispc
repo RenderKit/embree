@@ -18,7 +18,7 @@
 
 /* configuration */
 #define PARALLEL_COMMIT
-#define EDGE_LEVEL 1024.0f
+#define EDGE_LEVEL 128.0f
 
 /* scene data */
 RTCScene g_scene = NULL;

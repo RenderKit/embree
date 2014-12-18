@@ -62,8 +62,8 @@ dash = '/'
 compilers_win  = ['V120', 'ICC']
 #compilers_win  = ['V100', 'V110', 'V120', 'ICC']
 #compilers_unix = ['ICC']
-#compilers_unix = ['GCC', 'ICC']
-compilers_unix = ['GCC', 'CLANG', 'ICC']
+compilers_unix = ['GCC', 'CLANG']
+#compilers_unix = ['GCC', 'CLANG', 'ICC']
 compilers      = []
 
 #platforms_win  = ['Win32']
@@ -209,7 +209,7 @@ def render(OS, compiler, platform, build, isa, tutorial, scene, flags):
   else:
     if OS == 'windows': command = 'build' + '\\' + build + '\\' + tutorial + ' '
     else:               command = 'build' + '/' + tutorial + ' '
-    if tutorial == 'tutorial10':
+    if tutorial[0:10] == 'tutorial10':
       command += '-i tutorials/tutorial10/' + scene + '.xml '
     elif scene != '':
       command += '-c ' + modelDir + dash + scene + dash + scene + '_regression.ecs '
@@ -248,6 +248,17 @@ def processConfiguration(OS, compiler, platform, build, isa, models):
     for model in models:
       render(OS, compiler, platform, build, isa, 'tutorial06', model, '')
     render(OS, compiler, platform, build, isa, 'tutorial07', '', '')
+
+    render(OS, compiler, platform, build, isa, 'tutorial08', '', '')
+    render(OS, compiler, platform, build, isa, 'tutorial09', '', '')
+
+    render(OS, compiler, platform, build, isa, 'tutorial10', 'subdiv0', 'static')
+    render(OS, compiler, platform, build, isa, 'tutorial10', 'subdiv1', 'dynamic')
+    render(OS, compiler, platform, build, isa, 'tutorial10', 'subdiv2', 'robust')
+    render(OS, compiler, platform, build, isa, 'tutorial10', 'subdiv3', 'high_quality')
+    render(OS, compiler, platform, build, isa, 'tutorial10', 'subdiv4', 'static')
+    render(OS, compiler, platform, build, isa, 'tutorial10', 'subdiv5', 'dynamic')
+    render(OS, compiler, platform, build, isa, 'tutorial10', 'subdiv6', 'robust')
 			    
     render(OS, compiler, platform, build, isa, 'tutorial00_ispc', '', '')
     render(OS, compiler, platform, build, isa, 'tutorial01_ispc', '', '')
@@ -262,16 +273,16 @@ def processConfiguration(OS, compiler, platform, build, isa, models):
     render(OS, compiler, platform, build, isa, 'tutorial07_ispc', '', 'dynamic')
     render(OS, compiler, platform, build, isa, 'tutorial07_ispc', '', 'high_quality')
 
-    render(OS, compiler, platform, build, isa, 'tutorial08', '', '')
-    render(OS, compiler, platform, build, isa, 'tutorial09', '', '')
+    render(OS, compiler, platform, build, isa, 'tutorial08_ispc', '', '')
+    render(OS, compiler, platform, build, isa, 'tutorial09_ispc', '', '')
 
-    render(OS, compiler, platform, build, isa, 'tutorial10', 'subdiv0', 'static')
-    render(OS, compiler, platform, build, isa, 'tutorial10', 'subdiv1', 'dynamic')
-    render(OS, compiler, platform, build, isa, 'tutorial10', 'subdiv2', 'robust')
-    render(OS, compiler, platform, build, isa, 'tutorial10', 'subdiv3', 'high_quality')
-    render(OS, compiler, platform, build, isa, 'tutorial10', 'subdiv4', 'static')
-    render(OS, compiler, platform, build, isa, 'tutorial10', 'subdiv5', 'dynamic')
-    render(OS, compiler, platform, build, isa, 'tutorial10', 'subdiv6', 'robust')
+    render(OS, compiler, platform, build, isa, 'tutorial10_ispc', 'subdiv0', 'static')
+    render(OS, compiler, platform, build, isa, 'tutorial10_ispc', 'subdiv1', 'dynamic')
+    render(OS, compiler, platform, build, isa, 'tutorial10_ispc', 'subdiv2', 'robust')
+    render(OS, compiler, platform, build, isa, 'tutorial10_ispc', 'subdiv3', 'high_quality')
+    render(OS, compiler, platform, build, isa, 'tutorial10_ispc', 'subdiv4', 'static')
+    render(OS, compiler, platform, build, isa, 'tutorial10_ispc', 'subdiv5', 'dynamic')
+    render(OS, compiler, platform, build, isa, 'tutorial10_ispc', 'subdiv6', 'robust')
 
 def renderLoop(OS):
     for compiler in compilers:

@@ -357,7 +357,7 @@ namespace embree
           const unsigned int new_allocated64BytesBlocks = 2*allocated64BytesBlocks;
           if (new_allocated64BytesBlocks <= MAX_64B_BLOCKS)
             {
-#if 1
+#if 0
               std::cout << "EXTENDING TESSELLATION CACHE (PER THREAD) FROM " 
                         << allocated64BytesBlocks << " TO " 
                         << new_allocated64BytesBlocks << " BLOCKS = " 
