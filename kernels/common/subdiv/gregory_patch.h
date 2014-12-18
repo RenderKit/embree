@@ -333,7 +333,7 @@ namespace embree
       const Vec3fa_t tangentV = deCasteljau_tangent_t(vv, row0, row1, row2, row3);
       
       /* normal = tangentU x tangentV */
-      const Vec3fa_t n = cross(tangentU,tangentV);
+      const Vec3fa_t n = cross(tangentV,tangentU);
       
       return n;     
     }
@@ -546,7 +546,7 @@ namespace embree
       const Vec3<T> tangentV = deCasteljau_tangent_t(vv, row0, row1, row2, row3);
       
       /* normal = tangentU x tangentV */
-      const Vec3<T> n = cross(tangentU,tangentV);
+      const Vec3<T> n = cross(tangentV,tangentU);
       return n;
     }
     

@@ -108,7 +108,7 @@ namespace embree
       
       static __forceinline void intersectFinish (Ray& ray, const Vec3fa& p0, const Vec3fa& p1, const Vec3fa& p2, const ssef& uvw, const Primitive& prim)
       {
-        const Vec3fa Ng0 = cross(p2-p0,p1-p0);
+        const Vec3fa Ng0 = cross(p1-p0,p2-p0);
         const Vec3fa Ng = Ng0+Ng0;
         const float det = dot(ray.dir,Ng);
         const float rcpDet = rcp(det);

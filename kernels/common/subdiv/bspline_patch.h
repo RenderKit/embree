@@ -147,7 +147,7 @@ namespace embree
 	const T Ry = v[y-1][x] - v[y+1][x];
 	const T tangentY = (Ry * 4.0f + Qy) * 1.0f / 12.0f;
     
-	return cross(tangentX,tangentY);
+	return cross(tangentY,tangentX);
       }
 
       __forceinline void initSubPatches(const T edge[12],
@@ -437,7 +437,7 @@ namespace embree
     {
       const Vec3fa tu = tangentU(uu,vv);
       const Vec3fa tv = tangentV(uu,vv);
-      return cross(tu,tv);
+      return cross(tv,tu);
     }   
 
 
@@ -503,7 +503,7 @@ namespace embree
       const mic_f tangentU = permute<0,0,0,0>(tangentUV);
       const mic_f tangentV = permute<2,2,2,2>(tangentUV);
 
-      const mic_f n = lcross_xyz(tangentV,tangentU);
+      const mic_f n = lcross_xyz(tangentU,tangentV);
       return n;
     }
 
@@ -555,7 +555,7 @@ namespace embree
     {
       const mic3f tU = tangentU16(uu,vv);
       const mic3f tV = tangentV16(uu,vv);
-      return cross(tV,tU);
+      return cross(tU,tV);
     }
 
 #else
@@ -596,7 +596,7 @@ namespace embree
     {
       const avx3f tU = tangentU8(uu,vv);
       const avx3f tV = tangentV8(uu,vv);
-      return cross(tV,tU);
+      return cross(tU,tV);
     }
 #endif
 
@@ -633,7 +633,7 @@ namespace embree
     {
       const sse3f tU = tangentU4(uu,vv);
       const sse3f tV = tangentV4(uu,vv);
-      return cross(tV,tU);
+      return cross(tU,tV);
     }
 
 

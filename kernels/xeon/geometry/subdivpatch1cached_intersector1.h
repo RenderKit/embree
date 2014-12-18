@@ -187,15 +187,15 @@ namespace embree
         ray.tfar      = t[i];
 	if (i % 2)
 	  {
-	    ray.Ng.x      = -Ng.x[i];
-	    ray.Ng.y      = -Ng.y[i];
-	    ray.Ng.z      = -Ng.z[i];
+	    ray.Ng.x      = Ng.x[i];
+	    ray.Ng.y      = Ng.y[i];
+	    ray.Ng.z      = Ng.z[i];
 	  }
 	else
 	  {
-	    ray.Ng.x      = Ng.x[i];
-	    ray.Ng.y      = Ng.y[i];
-	    ray.Ng.z      = Ng.z[i];	    
+	    ray.Ng.x      = -Ng.x[i];
+	    ray.Ng.y      = -Ng.y[i];
+	    ray.Ng.z      = -Ng.z[i];	    
 	  }
       };
       

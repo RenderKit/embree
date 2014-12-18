@@ -33,14 +33,14 @@ namespace embree
         ring[i].init(first_half_edge+i,vertices);
     }
 
-    __forceinline Vec3fa normal(const float uu, const float vv) const
+    __forceinline Vec3fa normal(const float uu, const float vv) const // FIXME: remove
     {
       const int iu = (int) uu;
       const int iv = (int) vv;
       const int index = iv > 0 ? 3-iu : iu;
       const Vec3fa tu = ring[index].getLimitTangent();
       const Vec3fa tv = ring[index].getSecondLimitTangent();
-      return cross(tu,tv);
+      return cross(tv,tu);
     }   
 
     __forceinline Vec3fa eval(const float uu, const float vv) const
