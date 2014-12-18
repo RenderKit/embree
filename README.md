@@ -1,4 +1,4 @@
-% Embree: High Performance Ray Tracing Kernels 2.4.0 (devel)
+% Embree: High Performance Ray Tracing Kernels 2.4.0
 % Intel Corporation
 
 Embree Overview
@@ -48,12 +48,15 @@ Supported Platforms
 -------------------
 
 Embree supports Windows (32\ bit and 64\ bit), Linux (64\ bit) and Mac
-OS\ X (64\ bit). The code compiles with the Intel Compiler, the
-Microsoft Compiler, GCC and CLANG. Using the Intel Compiler improves
-performance by approximately 10%. Performance also varies across
-different operating systems. Embree is optimized for Intel CPUs
-supporting SSE, AVX, and AVX2 instructions, and requires at least a CPU
-with support for SSE2.
+OS\ X (64\ bit). The code compiles with the Intel Compiler, GCC, CLANG
+and the Microsoft Compiler. Embree is tested with Intel
+Compiler 15.0.0, CLANG 3.4.2, GCC 4.8.2, and Visual Studio
+12 2013. Using the Intel Compiler improves performance by
+approximately 10%.
+
+Performance also varies across different operating systems. Embree is
+optimized for Intel CPUs supporting SSE, AVX, and AVX2 instructions,
+and requires at least a CPU with support for SSE2.
 
 The Xeon Phi™ version of Embree only works under Linux in 64\ bit mode.
 For compilation of the the Xeon Phi™ code the Intel Compiler is
@@ -81,16 +84,21 @@ Compiling Embree
 Linux and Mac OS\ X
 -------------------
 
-Embree requires the Intel® SPMD Program Compiler (ISPC) to compile. We
-have tested ISPC version 1.7.1 and 1.8.0, but more recent versions of
-ISPC should also work. You can download and install the ISPC binaries
-from [ispc.github.io](https://ispc.github.io/downloads.html). After
+Embree is tested with Intel Compiler 15.0.0, CLANG 3.4.2, and
+GCC 4.8.2.
+
+Embree also requires the Intel® SPMD Program Compiler
+(ISPC) to compile. We have tested ISPC version 1.8.0, but more recent
+versions of ISPC should also work. You can download and install the
+ISPC binaries from
+[ispc.github.io](https://ispc.github.io/downloads.html). After
 installation, either put the path to the `ispc` executable permanently
 into your `PATH`:
 
     export PATH=path-to-ispc:$PATH
 
-Or provide the path to the `ispc` executable to CMake via the `ISPC_EXECUTABLE` variable.
+Or provide the path to the `ispc` executable to CMake via the
+`ISPC_EXECUTABLE` variable.
 
 You additionally have to install CMake 2.8.12 or higher and the
 developer version of GLUT. Under Mac OS\ X, these dependencies can be
@@ -177,6 +185,11 @@ parameters that can be configured:
   RTCORE_SPINLOCKS             Enables faster spinlocks for     OFF
                                some builders.
 
+  RTCORE_RETURN_SUBDIV_NORMAL  Instead of the triangle normal   OFF
+                               the ray returns a smooth normal
+                               based on evaluating the 
+                               subdivision surface patch.
+
   XEON_ISA                     Select highest supported ISA on  AVX2
                                Xeon™ CPUs (SSE2, SSE3, SSSE3,
                                SSE4.1, SSE4.2, AVX, AVX-I, or
@@ -188,7 +201,6 @@ parameters that can be configured:
   ---------------------------- -------------------------------- --------
   : CMake build options for Embree.
 
-You need at least Intel Compiler 11.1 or GCC 4.7.
 
 Xeon Phi™
 ---------
@@ -205,13 +217,14 @@ spatial hierarchies on Xeon Phi.
 Windows
 -------
 
-Embree requires the Intel SPMD Program Compiler (ISPC) to compile. We
-have tested ISPC version 1.7.0 and 1.8.0, but more recent versions of
-ISPC should also work. You can download and install the ISPC binaries
-from [ispc.github.io](https://ispc.github.io/downloads.html). After
+Embree requires Visual Studio 12 2013 and the Intel SPMD Program
+Compiler (ISPC) to compile. We have tested ISPC version 1.8.0, but
+more recent versions of ISPC should also work. You can download and
+install the ISPC binaries from
+[ispc.github.io](https://ispc.github.io/downloads.html). After
 installation, put the path to `ispc.exe` permanently into your `PATH`
-environment variable or you need to correctly set the `ISPC_EXECUTABLE`
-variable during CMake configuration.
+environment variable or you need to correctly set the
+`ISPC_EXECUTABLE` variable during CMake configuration.
 
 You additionally have to install [CMake](http://www.cmake.org/download/)
 (version 2.8.12 or higher). Note that you need a native Windows CMake
@@ -225,7 +238,7 @@ and click Configure. Now you can select the Generator, e.g. "Visual
 Studio 12 2013" for a 32\ bit build or "Visual Studio 12 2013 Win64" for
 a 64\ bit build. Most configuration parameters described for the [Linux
 build](#linux-and-mac-osx) can be set under Windows as well. Finally,
-click Generate to create the Visual Studio solution files.
+click "Generate" to create the Visual Studio solution files.
 
 For compilation of Embree under Windows use the generated Visual Studio
 solution file `embree.sln`. The solution is by default setup to use the
@@ -233,6 +246,12 @@ Microsoft Compiler. You can switch to the Intel Compiler by right
 clicking onto the solution in the Solution Explorer and then selecting
 the Intel Compiler. We recommend using 64\ bit mode and the Intel
 Compiler for best performance.
+
+To build Embree with support for the AVX2 instruction set you need at
+least Visual Studio 2013 Update\ 4. When switching to the Intel Compiler
+to build with AVX2 you currently need to manually *remove* the switch
+`/arch:AVX2` from the `embree_avx2` project, which can be found under
+Properties ⇒ C/C++ ⇒ All Options ⇒ Additional Options.
 
 To build all projects of the solution it is recommend to build the CMake
 utility project `ALL_BUILD`, which depends on all projects. Using "Build
@@ -250,14 +269,14 @@ Embree can also be configured and built without the IDE using the Visual
 Studio command prompt:
 
     cd path\to\embree
-    md build
+    mkdir build
     cd build
     cmake -G "Visual Studio 12 2013 Win64" ..
     cmake --build . --config Release
 
-You can also build only some projects with the `--target` switch. Additional
-parameters after "`--`" will be passed to `msbuild`. For example, to build the
-Embree library in parallel use
+You can also build only some projects with the `--target` switch.
+Additional parameters after "`--`" will be passed to `msbuild`. For
+example, to build the Embree library in parallel use
 
     cmake --build . --config Release --target embree -- /m
 
@@ -272,7 +291,7 @@ and user defined geometry. Supported ray queries are, finding the
 closest scene intersection along a ray, and testing a ray segment for
 any intersection with the scene. Single rays, as well as packets of rays
 in a struct of array layout can be used for packet sizes of 1, 4, 8, and
-16. Filter callback functions are supported, that get invoked for every
+16 rays. Filter callback functions are supported, that get invoked for every
 intersection encountered during traversal.
 
 The Embree API exists in a C++ and ISPC version. This document describes
@@ -310,7 +329,7 @@ sequenced by the application. All other API calls are thread safe. The
 `rtcIntersect` and `rtcOccluded` calls are re-entrant, but only for
 other `rtcIntersect` and `rtcOccluded` calls. It is thus safe to trace
 new rays when intersecting a user defined object, but not supported to
-create new geometry inside the intersect function of a user defined
+create new geometry inside the intersect callback function of a user defined
 geometry.
 
 Each user thread has its own error flag in the API. If an error occurs
@@ -386,10 +405,10 @@ specified at scene construction time. Geometries can get disabled
 (`rtcDeleteGeometry` call). Geometries can also get modified,
 including their vertex and index arrays. After the modification of
 some geometry, `rtcUpdate` or `rtcUpdateBuffer` has to get called for
-that geometry to specify which buffers got modified. Using multiple
-invocations of `rtcUpdateBuffer` the modified buffers can specified
-directly, while the `rtcUpdate` function simply tags each buffer of
-some geometry as modified. If geometries got enabled, disabled,
+that geometry to specify which buffers got modified. Each modified
+buffer can specified separately using the `rtcUpdateBuffer`
+function. In contrast the `rtcUpdate` function simply tags each buffer
+of some geometry as modified. If geometries got enabled, disabled,
 deleted, or modified an `rtcCommit` call has to get invoked before
 performing any ray queries for the scene, otherwise the effect of the
 ray query is undefined.
@@ -441,7 +460,7 @@ application should only pass ray query requirements that are really
 needed, to give Embree most freedom in choosing the best algorithm. E.g.
 in case Embree implements no packet traversers for some highly optimized
 data structure for single rays, then this data structure cannot be used
-if the user specifies any ray packet query.
+if the user enables any ray packet query.
 
   ----------------- ----------------------------------------------------
   Algorithm Flag    Description
@@ -464,12 +483,13 @@ Geometries
 ----------
 
 Geometries are always contained in the scene they are created in. Each
-geometry is assigned an integer ID at creation time, which is unique for
-that scene. The current version of the API supports triangle meshes
-(`rtcNewTriangleMesh`), hair geometries (`rtcNewHairGeometry`), single
-level instances of other scenes (`rtcNewInstance`), and user defined
-geometries (`rtcNewUserGeometry`). The API is designed in a way that
-easily allows adding new geometry types in later releases.
+geometry is assigned an integer ID at creation time, which is unique
+for that scene. The current version of the API supports triangle
+meshes (`rtcNewTriangleMesh`), Catmull-Clark subdivision surfaces
+(`rtcNewSubdivisionMesh`), hair geometries (`rtcNewHairGeometry`),
+single level instances of other scenes (`rtcNewInstance`), and user
+defined geometries (`rtcNewUserGeometry`). The API is designed in a
+way that easily allows adding new geometry types in later releases.
 
 For dynamic scenes, the assigned geometry IDs fulfill the following
 properties. As long as no geometry got deleted, all IDs are assigned
@@ -531,8 +551,8 @@ buffer (`RTC_INDEX_BUFFER`) and the triangle vertices can be set by
 mapping and writing into the vertex buffer (`RTC_VERTEX_BUFFER`). The
 index buffer contains an array of three 32\ bit indices, while the
 vertex buffer contains an array of three float values aligned to 16
-bytes. All buffers have to get unmapped before an `rtcCommit` call to
-the scene.
+bytes. The 4th component of the aligned vertices can be arbitrary. All
+buffers have to get unmapped before an `rtcCommit` call to the scene.
 
     struct Vertex   { float x, y, z, a; };
     struct Triangle { int v0, v1, v2; };
@@ -549,7 +569,7 @@ Also see [tutorial00] for an example of how to create triangle meshes.
 
 ### Subdivision Surfaces
 
-Catmull Clark subdivision surfaces for meshes consisting of triangle
+Catmull-Clark subdivision surfaces for meshes consisting of triangle
 and quad primitives (even mixed inside one mesh) are supported,
 including support for edge creases, vertex creases, holes, and
 non-manifold geometry.
@@ -569,57 +589,64 @@ function call.
                                     size_t numHoles,
                                     size_t numTimeSteps);
 
-The number of faces (numFaces), edges/indices (numEdges), vertices
-(numVertices), edge creases (numEdgeCreases), vertex creases
-(numVertexCreases), holes (numHoles), and time steps (numTimeSteps)
-have to get specified at construction time.
+The number of faces (`numFaces`), edges/indices (`numEdges`), vertices
+(`numVertices`), edge creases (`numEdgeCreases`), vertex creases
+(`numVertexCreases`), holes (`numHoles`), and time steps
+(`numTimeSteps`) have to get specified at construction time.
 
 The following buffers have to get setup by the application: the face
-buffer (RTC_FACE_BUFFER) contains the number edges/indices (3 or 4) of
-each of the numFaces faces, the index buffer (RTC_INDEX_BUFFER)
-contains multiple (3 or 4) 32bit vertex indices for each face and
-numEdges indices in total, the vertex buffer (RTC_VERTEX_BUFFER)
-stores numVertices vertices as single precision x,y,z floating point
-coordinates aligned to 16 bytes. The value of the 4th float used for
-alignment can be arbitrary.
+buffer (`RTC_FACE_BUFFER`) contains the number edges/indices (3 or 4) of
+each of the `numFaces` faces, the index buffer (`RTC_INDEX_BUFFER`)
+contains multiple (3 or 4) 32\ bit vertex indices for each face and
+`numEdges` indices in total, the vertex buffer (`RTC_VERTEX_BUFFER`)
+stores `numVertices` vertices as single precision `x`, `y`, `z` floating
+point coordinates aligned to 16 bytes. The value of the 4th float used
+for alignment can be arbitrary.
 
-Optionally, the application can setup the hole buffer (RTC_HOLE_BUFFER)
-with numHoles many 32 bit indices of faces that should be considered
+Optionally, the application can setup the hole buffer (`RTC_HOLE_BUFFER`)
+with `numHoles` many 32\ bit indices of faces that should be considered
 non-existing.
 
 Optionally, the application can fill the level buffer
-(RTC_LEVEL_BUFFER) with a tessellation level for each of the numEdges
-edges. The subdivision level is a positive floating point value, that
-specifies how many quads along the edge should get generated during
-tessellation. The tessellation level is a lower bound, thus the
-implementation is free to choose a larger level. If no level buffer is
-specified a level of 1 is used.
+(`RTC_LEVEL_BUFFER`) with a tessellation level for each or the edges of
+each face, making a total of `numEdges` values. The tessellation level
+is a positive floating point value, that specifies how many quads
+along the edge should get generated during tessellation. The
+tessellation level is a lower bound, thus the implementation is free
+to choose a larger level. If no level buffer is specified a level of 1
+is used. Note that some edge may be shared between (typically 2)
+faces. To guarantee a watertight tessellation, the level of these
+shared edges has to be exactly identical.
 
 Optionally, the application can fill the sparse edge crease buffers to
 make some edges appear sharper. The edge crease index buffer
-(RTC_EDGE_CREASE_INDEX_BUFFER) contains numEdgeCreases many pairs of
-32 bit vertex indices that specify unoriented edges. The edge crease
-weight buffer (RTC_EDGE_CREASE_WEIGHT_BUFFER) stores for each of
+(`RTC_EDGE_CREASE_INDEX_BUFFER`) contains `numEdgeCreases` many pairs of
+32\ bit vertex indices that specify unoriented edges. The edge crease
+weight buffer (`RTC_EDGE_CREASE_WEIGHT_BUFFER`) stores for each of
 theses crease edges a positive floating point weight. The larger this
 weight, the sharper the edge. Specifying a weight of infinity is
 supported and marks an edge as infinitely sharp. Storing an edge
 multiple times with the same crease weight is allowed, but has lower
-performance. Storing the an edge multiple times with different crease
+performance. Storing an edge multiple times with different crease
 weights results in undefined behavior. For a stored edge (i,j), the
 reverse direction edges (j,i) does not have to get stored, as both are
 considered the same edge.
 
 Optionally, the application can fill the sparse vertex crease buffers
 to make some vertices appear sharper. The vertex crease index buffer
-(RTC_VERTEX_CREASE_INDEX_BUFFER), contains numVertexCreases many 32
-bit vertex indices to specify a set of vertices. The vertex crease
-weight buffer (RTC_VERTEX_CREASE_WEIGHT_BUFFER) specifies for each of
+(`RTC_VERTEX_CREASE_INDEX_BUFFER`), contains `numVertexCreases` many
+32\ bit vertex indices to specify a set of vertices. The vertex crease
+weight buffer (`RTC_VERTEX_CREASE_WEIGHT_BUFFER`) specifies for each of
 these vertices a positive floating point weight. The larger this
 weight, the sharper the vertex. Specifying a weight of infinity is
 supported and makes the vertex infinitely sharp. Storing a vertex
 multiple times with the same crease weight is allowed, but has lower
 performance. Storing a vertex multiple times with different crease
 weights results in undefined behavior.
+
+Like for triangle meshes, the user can also specify a geometry mask
+and additional flags that choose the strategy to handle that
+subdivision mesh in dynamic scenes.
 
 Also see [tutorial08] for an example of how to create subdivision surfaces.
 
@@ -638,7 +665,7 @@ call.
 
 The number of hair curves, the number of vertices, and optionally the
 number of time steps (1 for normal curves, and 2 for linear motion blur)
-have to get specified at construction time.
+have to get specified at construction time of the hair geometry.
 
 The curve indices can be set by mapping and writing to the index buffer
 (`RTC_INDEX_BUFFER`) and the control vertices can be set by mapping and
@@ -646,13 +673,13 @@ writing into the vertex buffer (`RTC_VERTEX_BUFFER`). In case of linear
 motion blur, two vertex buffers (`RTC_VERTEX_BUFFER0` and
 `RTC_VERTEX_BUFFER1`) have to get filled, one for each time step.
 
-The index buffer contains an array of 32\ bit indices pointing to the ID
-of the first of four control vertices, while the vertex buffer stores
-all control pointing of a single precision position and radius stored in
-`x`, `y`, `z`, `r` order in memory. All buffers have to get unmapped
-before an `rtcCommit` call to the scene.
+The index buffer contains an array of 32\ bit indices pointing to the
+ID of the first of four control vertices, while the vertex buffer
+stores all control points in the form of a single precision position
+and radius stored in `x`, `y`, `z`, `r` order in memory. All buffers
+have to get unmapped before an `rtcCommit` call to the scene.
 
-Like for triangle meshes, tee user can also specify a geometry mask and
+Like for triangle meshes, the user can also specify a geometry mask and
 additional flags that choose the strategy to handle that mesh in dynamic
 scenes.
 
@@ -773,11 +800,10 @@ the following way:
 
 One has to call `rtcCommit` on scene B before one calls `rtcCommit` on
 scene A. When modifying scene B one has to call `rtcModified` for all
-instances of that scene. Providing a bounding box is not required and
-also not allowed. If a ray hits the instance, then the geomID and primID
-members of the ray are set to the geometry ID and primitive ID of the
-primitive hit in scene B, and the instID member of the ray is set to the
-instance ID returned from the `rtcNewInstance` function.
+instances of that scene. If a ray hits the instance, then the geomID
+and primID members of the ray are set to the geometry ID and primitive
+ID of the primitive hit in scene B, and the instID member of the ray
+is set to the instance ID returned from the `rtcNewInstance` function.
 
 The `rtcSetTransform` call can be passed an affine transformation matrix
 with different data layouts:
@@ -827,12 +853,12 @@ segment and the scene exists (`rtcOccluded` functions).
     void rtcOccluded16 (const void* valid, RTCScene scene, RTCRay16& ray);
 
 The ray layout to be passed to the ray tracing core is defined in the
-`embree2/rtcore_ray.h` header file. It is up to the user if he wants to
-use the ray structures defined in that file, or resemble the exact same
-binary data layout with their own vector classes. The ray layout might
-change with new Embree releases as new features get added, however, will
-stay constant as long as the major release number does not change. The
-ray contains the following data members:
+`embree2/rtcore_ray.h` header file. It is up to the user if he wants
+to use the ray structures defined in that file, or resemble the exact
+same binary data layout with their own vector classes. The ray layout
+might change with new Embree releases as new features get added,
+however, will stay constant as long as the major Embree release number
+does not change. The ray contains the following data members:
 
   Member  In/Out  Description
   ------- ------- ----------------------------------------------------------
@@ -968,7 +994,7 @@ be useful for dynamic content.
 Linear Motion Blur
 ------------------
 
-A triangle mesh or hair geometry with linear motion blur support is
+Triangle meshes and hair geometries with linear motion blur support are
 created by setting the number of time steps to 2 at geometry
 construction time. Specifying a number of time steps of 0 or larger than
 2 is invalid. For a triangle mesh or hair geometry with linear motion
@@ -1087,22 +1113,25 @@ The displacement function has to have the following type:
                                         size_t N);
 
 The displacement function is called with the user data pointer of the
-geometry (ptr), the geometry ID (geomID) and primitive ID (primID) of a
-patch to displace. For this patch, a number N of points to displace
+geometry (`ptr`), the geometry ID (`geomID`) and primitive ID (`primID`)
+of a patch to displace. For this patch, a number N of points to displace
 are specified in a struct of array layout. For each point to displace
-the local patch UV coordinates (u and v arrays), the geometry normal
-(nx, ny, and nz arrays), as well as world space position (px, py, and
-pz arrays) are provided. The task of the displacement function is to
-use this information and move the world space position inside the
-allowed specified bounds around the point.
+the local patch UV coordinates (`u` and `v` arrays), the normalized
+geometry normal (`nx`, `ny`, and `nz` arrays), as well as world space
+position (`px`, `py`, and `pz` arrays) are provided. The task of the
+displacement function is to use this information and move the world
+space position inside the allowed specified bounds around the point.
 
 All passed arrays are guaranteed to be 64 bytes aligned, and properly
 padded to make wide vector processing inside the displacement function
 possible.
 
 The displacement mapping functions might get called during the
-`rtcCommit` call, or lazily during one of the `rtcIntersect` or
+`rtcCommit` call, or lazily during the `rtcIntersect` or
 `rtcOccluded` calls.
+
+Also see [tutorial09] for an example of how to use the displacement
+mapping functions.
 
 Sharing Threads with Embree
 ---------------------------
@@ -1235,9 +1264,9 @@ Tutorial01
 
 This tutorial demonstrates the creation of a dynamic scene, consisting
 of several deformed spheres. Half of the spheres use the
-RTC\_GEOMETRY\_DEFORMABLE flag, which allows Embree to use a refitting
+`RTC_GEOMETRY_DEFORMABLE` flag, which allows Embree to use a refitting
 strategy for these spheres, the other half uses the
-RTC\_GEOMETRY\_DYNAMIC flag, causing a rebuild of their spatial data
+`RTC_GEOMETRY_DYNAMIC` flag, causing a rebuild of their spatial data
 structure each frame. The spheres are colored based on the ID of the hit
 sphere geometry.
 
@@ -1317,7 +1346,7 @@ hairball.
 Tutorial08
 ----------
 
-<!-- ![](images/tutorial08.jpg) -->
+![](images/tutorial08.jpg)
 
 This tutorial demonstrates the use of Catmull Clark subdivision
 surfaces. Per default the edge tessellation level is set adaptively
@@ -1334,7 +1363,18 @@ incoherent ray distributions while requiring more memory. The `lazy`
 mode works similar to the `pregenerate` mode but provides a middle
 ground in terms of memory consumption as it only builds and stores
 data only when the corresponding patch is accessed during the ray
-traversal.
+traversal. The `cache` mode is currently a bit more efficient at
+handling dynamic scenes where only the edge tessellation levels are
+changing per frame.
+
+Tutorial09
+----------
+
+![](images/tutorial09.jpg)
+
+This tutorial demonstrates the use of Catmull Clark subdivision
+surfaces with procedural displacement mapping using a constant edge
+tessellation level.
 
 [Embree API]: #embree-api
 [Embree Example Renderer]: https://embree.github.io/renderer.html
@@ -1344,3 +1384,4 @@ traversal.
 [tutorial05]: #tutorial05
 [tutorial07]: #tutorial07
 [tutorial08]: #tutorial08
+[tutorial09]: #tutorial09
