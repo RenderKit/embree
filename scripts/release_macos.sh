@@ -41,6 +41,9 @@ cp build/tutorial04 $1/bin/x64
 cp build/tutorial05 $1/bin/x64
 cp build/tutorial06 $1/bin/x64
 cp build/tutorial07 $1/bin/x64
+cp build/tutorial08 $1/bin/x64
+cp build/tutorial09 $1/bin/x64
+cp build/tutorial10 $1/bin/x64
 
 cp build/tutorial00_ispc $1/bin/x64
 cp build/tutorial01_ispc $1/bin/x64
@@ -50,6 +53,9 @@ cp build/tutorial04_ispc $1/bin/x64
 cp build/tutorial05_ispc $1/bin/x64
 cp build/tutorial06_ispc $1/bin/x64
 cp build/tutorial07_ispc $1/bin/x64
+cp build/tutorial08_ispc $1/bin/x64
+cp build/tutorial09_ispc $1/bin/x64
+cp build/tutorial10_ispc $1/bin/x64
 
 mkdir -p $1/lib/x64
 cp build/libembree.2.4.0.dylib $1/lib/x64

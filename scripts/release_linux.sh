@@ -41,6 +41,9 @@ cp build/tutorial04 $1/bin/x64
 cp build/tutorial05 $1/bin/x64
 cp build/tutorial06 $1/bin/x64
 cp build/tutorial07 $1/bin/x64
+cp build/tutorial08 $1/bin/x64
+cp build/tutorial09 $1/bin/x64
+cp build/tutorial10 $1/bin/x64
 
 cp build/tutorial00_ispc $1/bin/x64
 cp build/tutorial01_ispc $1/bin/x64
@@ -50,6 +53,9 @@ cp build/tutorial04_ispc $1/bin/x64
 cp build/tutorial05_ispc $1/bin/x64
 cp build/tutorial06_ispc $1/bin/x64
 cp build/tutorial07_ispc $1/bin/x64
+cp build/tutorial08_ispc $1/bin/x64
+cp build/tutorial09_ispc $1/bin/x64
+cp build/tutorial10_ispc $1/bin/x64
 
 cp build/verify_xeonphi $1/bin/x64
 cp build/benchmark_xeonphi $1/bin/x64
@@ -62,6 +68,9 @@ cp build/tutorial04_xeonphi $1/bin/x64
 cp build/tutorial05_xeonphi $1/bin/x64
 cp build/tutorial06_xeonphi $1/bin/x64
 cp build/tutorial07_xeonphi $1/bin/x64
+cp build/tutorial08_xeonphi $1/bin/x64
+cp build/tutorial09_xeonphi $1/bin/x64
+cp build/tutorial10_xeonphi $1/bin/x64
 
 cp build/tutorial00_xeonphi_device $1/bin/x64
 cp build/tutorial01_xeonphi_device $1/bin/x64
@@ -71,6 +80,9 @@ cp build/tutorial04_xeonphi_device $1/bin/x64
 cp build/tutorial05_xeonphi_device $1/bin/x64
 cp build/tutorial06_xeonphi_device $1/bin/x64
 cp build/tutorial07_xeonphi_device $1/bin/x64
+cp build/tutorial08_xeonphi_device $1/bin/x64
+cp build/tutorial09_xeonphi_device $1/bin/x64
+cp build/tutorial10_xeonphi_device $1/bin/x64
 
 mkdir -p $1/lib/x64
 cp build/libembree.so.2.4.0 $1/lib/x64
