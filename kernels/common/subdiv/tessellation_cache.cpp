@@ -51,6 +51,23 @@ namespace embree
               AtomicCounter TessellationCache::cache_evictions = 0;                
               );           
 
+  CACHE_STATS(
+              AtomicCounter AdaptiveTessellationCache::cache_accesses  = 0;
+              AtomicCounter AdaptiveTessellationCache::cache_hits      = 0;
+              AtomicCounter AdaptiveTessellationCache::cache_misses    = 0;
+              AtomicCounter AdaptiveTessellationCache::cache_clears    = 0;
+              AtomicCounter AdaptiveTessellationCache::cache_evictions = 0;                
+              );           
+
+  CACHE_STATS(
+              AtomicCounter SharedTessellationCache::cache_accesses  = 0;
+              AtomicCounter SharedTessellationCache::cache_hits      = 0;
+              AtomicCounter SharedTessellationCache::cache_misses    = 0;
+              AtomicCounter SharedTessellationCache::cache_clears    = 0;
+              AtomicCounter SharedTessellationCache::cache_evictions = 0;                
+              );           
+
+
 };
 
 extern "C" void printTessCacheStats()

@@ -25,7 +25,7 @@ namespace embree
   namespace isa
   {  
     
-    __thread TessellationCache *SubdivPatch1CachedIntersector1::thread_cache = NULL;
+    __thread TESSELLATION_CACHE *SubdivPatch1CachedIntersector1::thread_cache = NULL;
     
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -230,7 +230,7 @@ namespace embree
     
     void SubdivPatch1CachedIntersector1::createTessellationCache()
     {
-      TessellationCache *cache = (TessellationCache *)_mm_malloc(sizeof(TessellationCache),64);
+      TESSELLATION_CACHE *cache = (TESSELLATION_CACHE *)_mm_malloc(sizeof(TESSELLATION_CACHE),64);
       assert( (size_t)cache % 64 == 0 );
       cache->init();	
 #if defined(DEBUG) && 0

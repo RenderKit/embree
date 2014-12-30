@@ -27,6 +27,9 @@
 /* returns u,v based on individual triangles instead relative to original patch */
 #define FORCE_TRIANGLE_UV 0
 
+//#define TESSELLATION_CACHE TessellationCache
+#define TESSELLATION_CACHE AdaptiveTessellationCache
+
 namespace embree
 {
   namespace isa
@@ -37,7 +40,7 @@ namespace embree
       typedef SubdivPatch1Cached Primitive;
       
       /*! Per thread tessellation cache */
-      static __thread TessellationCache *thread_cache;
+      static __thread TESSELLATION_CACHE *thread_cache;
       
       /*! Creates per thread tessellation cache */
       static void createTessellationCache();
@@ -49,7 +52,7 @@ namespace embree
         Vec3fa ray_org_rdir;
         SubdivPatch1Cached *current_patch;
         SubdivPatch1Cached *hit_patch;
-        TessellationCache *local_cache;      
+        TESSELLATION_CACHE *local_cache;      
         Ray &r;
         
         
@@ -359,10 +362,10 @@ namespace embree
       
       
       /*! Returns BVH4 node reference for subtree over patch grid */
-      static __forceinline size_t getSubtreeRootNode(TessellationCache *local_cache, const SubdivPatch1Cached* const subdiv_patch, const void* geom)
+      static __forceinline size_t getSubtreeRootNode(TESSELLATION_CACHE *local_cache, const SubdivPatch1Cached* const subdiv_patch, const void* geom)
       {
         const unsigned int commitCounter = ((Scene*)geom)->commitCounter;
-        TessellationCache::InputTagType tag = (TessellationCache::InputTagType)subdiv_patch;
+        TESSELLATION_CACHE::InputTagType tag = (TessellationCache::InputTagType)subdiv_patch;
         
         BVH4::NodeRef root = local_cache->lookup(tag,commitCounter);
         root.prefetch(0);
@@ -371,7 +374,7 @@ namespace embree
           subdiv_patch->prefetchData();
           const unsigned int blocks = subdiv_patch->grid_subtree_size_64b_blocks;
           
-          TessellationCache::CacheTag &t = local_cache->request(tag,commitCounter,blocks);
+          TESSELLATION_CACHE::CacheTag &t = local_cache->request(tag,commitCounter,blocks);
           BVH4::Node* node = (BVH4::Node*)local_cache->getCacheMemoryPtr(t);
           prefetchL1(((float*)node + 0*16));
           prefetchL1(((float*)node + 1*16));
@@ -383,7 +386,8 @@ namespace embree
           
           local_cache->updateRootRef(t,new_root);
           
-          assert( (size_t)local_cache->getPtr() + (size_t)t.getRootRef() == new_root );
+          //assert( (size_t)local_cache->getPtr() + (size_t)t.getRootRef() == new_root );
+          //assert( (size_t)t.getPtr() + (size_t)t.getRootRef() == new_root );
           
           return new_root;
         }
