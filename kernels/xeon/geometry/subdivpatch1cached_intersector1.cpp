@@ -19,9 +19,9 @@
 #include "xeon/bvh4/bvh4_intersector1.h"
 
 #define TIMER(x)
-#define DBG(x)
+#define DBG(x) 
 
-//MUST COPY FROM L2 -> L1, otherwise L2 eviction won't evict L1
+//MUST COPY FROM L2 -> L1, otherwise L2 eviction won't evict entries from L1
   
 
 namespace embree
@@ -151,11 +151,8 @@ namespace embree
       return root;
     }
 
-    void updateNodeRefs(size_t &nr, const size_t old_ptr, const size_t new_ptr)
+    void updateBVH4Refs(const BVH4::NodeRef &ref, const size_t old_ptr, const size_t new_ptr)
     {
-      PING;
-      BVH4::NodeRef ref(nr);
-      
       if (unlikely(ref == BVH4::emptyNode))
         return;
 
@@ -164,18 +161,25 @@ namespace embree
       /* this is a leaf node */
       if (unlikely(ref.isLeaf()))
         {
-          nr = nr - old_ptr + new_ptr;
-          assert( BVH4::NodeRef(nr).isLeaf() );
           return;
         }
 
-      BVH4::Node* node = ref.node();
+      const BVH4::Node* node = ref.node();
       
       for (size_t i=0;i<4;i++)
-        if (node->child(i) != BVH4::emptyNode)
-          updateNodeRefs(*(size_t*)&node->child(i),old_ptr,new_ptr);
-
-      nr = nr - old_ptr + new_ptr;                  
+        {
+          const BVH4::NodeRef &child = node->child(i);
+          if (node->child(i) != BVH4::emptyNode)
+            {
+              if (child.isNode())
+                updateBVH4Refs(child,old_ptr,new_ptr);
+              
+              const size_t offset   = (size_t)child - old_ptr;
+              const size_t new_ref  = new_ptr + offset;
+              size_t *ptr = (size_t*)((char*)new_ptr + offset);
+              *ptr = new_ref;    
+            }
+        }
     }
     
     size_t SubdivPatch1CachedIntersector1::getSubtreeRootNodeFromCacheHierarchy(Precalculations& pre,
@@ -200,7 +204,7 @@ namespace embree
           t_l2->read_lock();
           CACHE_STATS(SharedTessellationCache::cache_accesses++);
       
-          if (1 || unlikely(!t_l2->match(tag,commitCounter))) /* not in L2 either */
+          if (unlikely(!t_l2->match(tag,commitCounter))) /* not in L2 either */
             {
               DBG(DBG_PRINT("L2 CACHE MISS"));                                            
               
@@ -213,7 +217,7 @@ namespace embree
               const unsigned int needed_blocks = subdiv_patch->grid_subtree_size_64b_blocks;
               DBG(DBG_PRINT(needed_blocks));                          
           
-              if (1 || t_l2->blocks() < needed_blocks)
+              if (t_l2->blocks() < needed_blocks)
                 {
                   DBG(DBG_PRINT("EXPAND L2 CACHE ENTRY"));                                            
                   BVH4::Node* node = (BVH4::Node*)t_l2->getPtr();
@@ -248,43 +252,43 @@ namespace embree
               assert(t_l2->getRef() == new_root);
               
               /* get L1 cache tag to evict */
-              TESSELLATION_CACHE::CacheTag &t_l1 = pre.local_cache->request_LRU(tag,commitCounter); //,needed_blocks);
+              TESSELLATION_CACHE::CacheTag &t_l1 = pre.local_cache->request(tag,commitCounter,needed_blocks);
              
               /* copy data to L1 */
               DBG(DBG_PRINT("INIT FROM SHARED CACHE TAG"));                                                              
 
-#if 1
-              t_l1.copyFromSharedCacheTag(*t_l2);
-#else
-              t_l1.initFromSharedCacheTag(*t_l2);
-              DBG(DBG_PRINT("MEMCPY"));                                                              
-              memcpy(t_l1.ptr,t_l2->ptr,t_l2->blocks()*64);
+              t_l1.update(tag,commitCounter);
+
               DBG(DBG_PRINT("updateNodeRefs"));                                                              
               DBG(DBG_PRINT(t_l2->ptr));
               DBG(DBG_PRINT(t_l1.ptr));
-              
-              updateNodeRefs(t_l1.getRootRef(),(size_t)t_l2->ptr,(size_t)t_l1.ptr);
-#endif
+
+              memcpy(t_l1.ptr,t_l2->ptr,64*needed_blocks);
+              size_t t_l2_root = t_l2->getRef();
+              updateBVH4Refs(t_l2_root,(size_t)t_l2->ptr,(size_t)t_l1.ptr);
+              t_l1.updateRootRef( (size_t)t_l2_root - (size_t)t_l2->ptr + (size_t)t_l1.ptr );
+              DBG(DBG_PRINT(t_l1.subtree_root));
+
               DBG(t_l2->print());
               DBG(t_l1.print());
               
-              /* write unlock */
-              t_l2->write_unlock();
 
               DBG(pre.local_cache->print());
               
               /* return data from L1 */
-              assert( pre.local_cache->lookup(tag,commitCounter) != (size_t)-1 );
+              assert( t_l1.match(tag,commitCounter));
               BVH4::NodeRef l1_root = t_l1.getRootRef();
               DBG(DBG_PRINT(l1_root));
-              assert(l1_root == new_root);
+
+              /* write unlock */
+              t_l2->write_unlock();
+
               return l1_root;          
 
             }
           else
             {
               DBG(DBG_PRINT("L2 CACHE HIT"));                                            
-              FATAL("HERE2");
               DBG(pre.local_cache->print());
               
               CACHE_STATS(SharedTessellationCache::cache_hits++);
@@ -293,18 +297,21 @@ namespace embree
               DBG(t_l1.print());
               
               /* copy data to L1 */
-              DBG(DBG_PRINT("INIT FROM SHARED CACHE TAG"));                                                                            
-              t_l1.initFromSharedCacheTag(*t_l2);
-              DBG(DBG_PRINT("MEMCPY"));                                                                            
-              memcpy(t_l1.ptr,t_l2->ptr,t_l2->blocks()*64);
+              DBG(DBG_PRINT("INIT FROM SHARED CACHE TAG"));
+              t_l1.update(tag,commitCounter);
+
               DBG(DBG_PRINT("updateNodeRefs"));                                                                            
-              updateNodeRefs(t_l1.getRootRef(),(size_t)t_l2->ptr,(size_t)t_l1.ptr);
+              memcpy(t_l1.ptr,t_l2->ptr,64*t_l2->blocks());
+              size_t t_l2_root = t_l2->getRef();
+              updateBVH4Refs(t_l2_root,(size_t)t_l2->ptr,(size_t)t_l1.ptr);
+              t_l1.updateRootRef( (size_t)t_l2_root - (size_t)t_l2->ptr + (size_t)t_l1.ptr );
+              DBG(DBG_PRINT(t_l1.subtree_root));
+
+              BVH4::NodeRef l1_root = t_l1.getRootRef();
               
               t_l2->read_unlock();
 
               /* return data from L1 */
-              assert( pre.local_cache->lookup(tag,commitCounter) != (size_t)-1 );
-              BVH4::NodeRef l1_root = t_l1.getRootRef();
               return l1_root;                        
             }
         }

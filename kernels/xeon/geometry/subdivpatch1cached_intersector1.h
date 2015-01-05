@@ -27,7 +27,7 @@
 /* returns u,v based on individual triangles instead relative to original patch */
 #define FORCE_TRIANGLE_UV 0
 
-#define SHARED_TESSELLATION_CACHE
+//#define SHARED_TESSELLATION_CACHE
 
 //#define TESSELLATION_CACHE TessellationCache
 # define TESSELLATION_CACHE AdaptiveTessellationCache
@@ -456,8 +456,8 @@ namespace embree
         else 
         {
 #if defined(SHARED_TESSELLATION_CACHE)
-          lazy_node = getSubtreeRootNode(pre, SharedTessellationCache::sharedTessellationCache, prim, geom);
-          //lazy_node = getSubtreeRootNodeFromCacheHierarchy(pre, SharedTessellationCache::sharedTessellationCache, prim, geom);          
+          //lazy_node = getSubtreeRootNode(pre, SharedTessellationCache::sharedTessellationCache, prim, geom);
+          lazy_node = getSubtreeRootNodeFromCacheHierarchy(pre, SharedTessellationCache::sharedTessellationCache, prim, geom);          
 #else          
           lazy_node = getSubtreeRootNode(pre.local_cache, prim, geom);
 #endif

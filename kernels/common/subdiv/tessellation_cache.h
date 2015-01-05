@@ -19,7 +19,7 @@
 #include "common/default.h"
 
 #if defined(DEBUG)
-#define CACHE_STATS(x) x
+#define CACHE_STATS(x) 
 #else
 #define CACHE_STATS(x) 
 #endif
@@ -121,7 +121,7 @@ namespace embree
   public:
     
     /* default sizes */
-    static const size_t CACHE_ENTRIES = 8;
+    static const size_t CACHE_ENTRIES = 1024;
     
   public:
 
@@ -312,7 +312,7 @@ namespace embree
   public:
     /* default sizes */
 
-    static const size_t CACHE_ENTRIES = 8; //512; //1024;
+    static const size_t CACHE_ENTRIES = 64; //512; //1024;
     static const size_t CACHE_WAYS    = 4;  // 4-way associative
     static const size_t CACHE_SETS    = CACHE_ENTRIES / CACHE_WAYS; 
 
@@ -330,32 +330,6 @@ namespace embree
     void         *ptr;
 
   public:
-
-    __forceinline void initFromSharedCacheTag(const SharedTessellationCache::CacheTag &tag) 
-    {
-      prim_tag     = tag.prim_tag;
-      commit_tag   = tag.commit_tag;
-      subtree_root = tag.getRef();
-      assert(subtree_root == (size_t)tag.ptr + tag.subtree_root);
-      
-      if (usedBlocks < tag.usedBlocks)
-        {
-          if (ptr != NULL)
-            free_tessellation_cache_mem(ptr);
-          ptr = alloc_tessellation_cache_mem(tag.usedBlocks);
-          usedBlocks = tag.usedBlocks;
-        }
-      assert(ptr != NULL);
-    }
-
-    __forceinline void copyFromSharedCacheTag(const SharedTessellationCache::CacheTag &tag) 
-    {
-      prim_tag     = tag.prim_tag;
-      commit_tag   = tag.commit_tag;
-      subtree_root = tag.getRef();
-      assert(subtree_root == (size_t)tag.ptr + tag.subtree_root);
-      ptr = tag.ptr;     
-    }
 
     __forceinline void reset() 
     {
@@ -573,22 +547,12 @@ namespace embree
       assert( t.match(primID,commitCounter) );
       return t.getRootRef();
     }
-
-    __forceinline CacheTag &request_LRU(InputTagType primID, 
-                                        const unsigned int commitCounter)
-    {
-      CACHE_DBG(PING);
-      const size_t set = addrToCacheSetIndex(primID);
-      CACHE_DBG(DBG_PRINT(set));
-      return sets[set].getLRU();
-    }
     
     /* insert entry using 'neededBlocks' cachelines into cache */
     __forceinline CacheTag &request(InputTagType primID, 
                                     const unsigned int commitCounter, 
                                     const size_t neededBlocks)
     {
-      PING;
       CACHE_DBG(PING);
       const size_t set = addrToCacheSetIndex(primID);
       CACHE_DBG(DBG_PRINT(set));
