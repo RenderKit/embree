@@ -27,8 +27,10 @@
 /* returns u,v based on individual triangles instead relative to original patch */
 #define FORCE_TRIANGLE_UV 0
 
+#define SHARED_TESSELLATION_CACHE
+
 //#define TESSELLATION_CACHE TessellationCache
-#define TESSELLATION_CACHE AdaptiveTessellationCache
+# define TESSELLATION_CACHE AdaptiveTessellationCache
 
 namespace embree
 {
@@ -52,9 +54,12 @@ namespace embree
         Vec3fa ray_org_rdir;
         SubdivPatch1Cached *current_patch;
         SubdivPatch1Cached *hit_patch;
-        TESSELLATION_CACHE *local_cache;      
+        TESSELLATION_CACHE *local_cache;
         Ray &r;
         
+#if defined(SHARED_TESSELLATION_CACHE)        
+        AtomicReadWriteMutex *rw_mtx;
+#endif
         
         __forceinline Precalculations (Ray& ray) : r(ray) 
         {
@@ -63,6 +68,9 @@ namespace embree
           current_patch = NULL;
           hit_patch     = NULL;
 
+#if defined(SHARED_TESSELLATION_CACHE)
+          rw_mtx = NULL;
+#endif
           /*! Initialize per thread tessellation cache */
           if (unlikely(!thread_cache))
             createTessellationCache();
@@ -74,6 +82,9 @@ namespace embree
           /*! Final per ray computations like smooth normal, patch u,v, etc. */        
         __forceinline ~Precalculations() 
         {
+#if defined(SHARED_TESSELLATION_CACHE)
+          if (rw_mtx) rw_mtx->read_unlock();            
+#endif
           if (unlikely(hit_patch != NULL))
           {
 
@@ -365,7 +376,7 @@ namespace embree
       static __forceinline size_t getSubtreeRootNode(TESSELLATION_CACHE *local_cache, const SubdivPatch1Cached* const subdiv_patch, const void* geom)
       {
         const unsigned int commitCounter = ((Scene*)geom)->commitCounter;
-        TESSELLATION_CACHE::InputTagType tag = (TessellationCache::InputTagType)subdiv_patch;
+        InputTagType tag = (InputTagType)subdiv_patch;
         
         BVH4::NodeRef root = local_cache->lookup(tag,commitCounter);
         root.prefetch(0);
@@ -375,7 +386,10 @@ namespace embree
           const unsigned int blocks = subdiv_patch->grid_subtree_size_64b_blocks;
           
           TESSELLATION_CACHE::CacheTag &t = local_cache->request(tag,commitCounter,blocks);
-          BVH4::Node* node = (BVH4::Node*)local_cache->getCacheMemoryPtr(t);
+          //BVH4::Node* node = (BVH4::Node*)local_cache->getCacheMemoryPtr(t);
+
+          BVH4::Node* node = (BVH4::Node*)t.getPtr();
+
           prefetchL1(((float*)node + 0*16));
           prefetchL1(((float*)node + 1*16));
           prefetchL1(((float*)node + 2*16));
@@ -390,13 +404,18 @@ namespace embree
           //assert( (size_t)t.getPtr() + (size_t)t.getRootRef() == new_root );
           
           return new_root;
-        }
-        
-        
+        }        
         return root;   
       }
-      
-      
+
+
+      /*! Returns BVH4 node reference for subtree over patch grid */
+      static size_t getSubtreeRootNode(Precalculations& pre, SharedTessellationCache &shared_cache, const SubdivPatch1Cached* const subdiv_patch, const void* geom);
+
+
+      /*! Returns BVH4 node reference for subtree over patch grid */
+      static size_t getSubtreeRootNodeFromCacheHierarchy(Precalculations& pre, SharedTessellationCache &shared_cache, const SubdivPatch1Cached* const subdiv_patch, const void* geom);
+
       /*! Evaluates grid over patch and builds BVH4 tree over the grid. */
       static BVH4::NodeRef buildSubdivPatchTree(const SubdivPatch1Cached &patch,
                                                 void *const lazymem,
@@ -436,7 +455,12 @@ namespace embree
         }
         else 
         {
+#if defined(SHARED_TESSELLATION_CACHE)
+          lazy_node = getSubtreeRootNode(pre, SharedTessellationCache::sharedTessellationCache, prim, geom);
+          //lazy_node = getSubtreeRootNodeFromCacheHierarchy(pre, SharedTessellationCache::sharedTessellationCache, prim, geom);          
+#else          
           lazy_node = getSubtreeRootNode(pre.local_cache, prim, geom);
+#endif
           pre.current_patch = (SubdivPatch1Cached*)prim;
         }             
         

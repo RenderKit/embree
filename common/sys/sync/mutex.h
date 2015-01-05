@@ -44,7 +44,7 @@ namespace embree
     AtomicMutex ()
       : flag(0) {}
 
-    __forceinline bool islocked() {
+    __forceinline bool isLocked() {
       return flag == 1;
     }
 

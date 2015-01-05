@@ -19,6 +19,8 @@
 namespace embree
 {
 
+  SharedTessellationCache SharedTessellationCache::sharedTessellationCache;
+
   void TessellationCache::printStats()
   {
     CACHE_STATS(
@@ -38,11 +40,60 @@ namespace embree
               TessellationCache::cache_accesses  = 0;
               TessellationCache::cache_hits      = 0;
               TessellationCache::cache_misses    = 0;
-              TessellationCache::cache_clears    = 0;
               TessellationCache::cache_evictions = 0;          
               );
   }
 
+  void AdaptiveTessellationCache::clearStats()
+  {
+  CACHE_STATS(
+              AdaptiveTessellationCache::cache_accesses  = 0;
+              AdaptiveTessellationCache::cache_hits      = 0;
+              AdaptiveTessellationCache::cache_misses    = 0;
+              AdaptiveTessellationCache::cache_evictions = 0;          
+              );
+  }
+
+  void AdaptiveTessellationCache::printStats()
+  {
+    CACHE_STATS(
+                assert(cache_hits + cache_misses == cache_accesses);
+                DBG_PRINT(CACHE_ENTRIES);
+                DBG_PRINT(CACHE_ENTRIES * sizeof(AdaptiveTessellationCache::CacheTag));
+                DBG_PRINT(cache_accesses);
+                DBG_PRINT(cache_misses);
+                DBG_PRINT(cache_hits);
+                DBG_PRINT(cache_evictions);
+                DBG_PRINT(100.0f * cache_hits / cache_accesses);
+                DBG_PRINT(cache_clears);
+                );
+  }
+
+  
+  void SharedTessellationCache::printStats()
+  {
+    CACHE_STATS(
+                DBG_PRINT(CACHE_ENTRIES);
+                DBG_PRINT(CACHE_ENTRIES * sizeof(SharedTessellationCache::CacheTag));                
+                DBG_PRINT(cache_accesses);
+                DBG_PRINT(cache_misses);
+                DBG_PRINT(cache_hits);
+                DBG_PRINT(cache_evictions);
+                DBG_PRINT(100.0f * cache_hits / cache_accesses);
+                assert(cache_hits + cache_misses == cache_accesses);                
+                );
+  }
+
+  void SharedTessellationCache::clearStats()
+  {
+    CACHE_STATS(
+                SharedTessellationCache::cache_accesses  = 0;
+                SharedTessellationCache::cache_hits      = 0;
+                SharedTessellationCache::cache_misses    = 0;
+                SharedTessellationCache::cache_evictions = 0;          
+                );
+  }
+  
   CACHE_STATS(
               AtomicCounter TessellationCache::cache_accesses  = 0;
               AtomicCounter TessellationCache::cache_hits      = 0;
@@ -63,7 +114,6 @@ namespace embree
               AtomicCounter SharedTessellationCache::cache_accesses  = 0;
               AtomicCounter SharedTessellationCache::cache_hits      = 0;
               AtomicCounter SharedTessellationCache::cache_misses    = 0;
-              AtomicCounter SharedTessellationCache::cache_clears    = 0;
               AtomicCounter SharedTessellationCache::cache_evictions = 0;                
               );           
 
@@ -72,6 +122,16 @@ namespace embree
 
 extern "C" void printTessCacheStats()
 {
+  DBG_PRINT("SHARED TESSELLATION CACHE");
+  embree::SharedTessellationCache::printStats();
+  embree::SharedTessellationCache::clearStats();
+#if 1
+  DBG_PRINT("PER THREAD TESSELLATION CACHE");  
+  embree::AdaptiveTessellationCache::printStats();
+  embree::AdaptiveTessellationCache::clearStats();
+#else
+  DBG_PRINT("PER THREAD TESSELLATION CACHE");  
   embree::TessellationCache::printStats();
   embree::TessellationCache::clearStats();
+#endif  
 }
