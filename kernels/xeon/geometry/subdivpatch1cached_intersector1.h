@@ -414,7 +414,7 @@ namespace embree
 
 
       /*! Returns BVH4 node reference for subtree over patch grid */
-      static size_t getSubtreeRootNodeFromCacheHierarchy(Precalculations& pre, SharedTessellationCache &shared_cache, const SubdivPatch1Cached* const subdiv_patch, const void* geom);
+      static size_t getSubtreeRootNodeFromCacheHierarchy(Precalculations& pre, const SubdivPatch1Cached* const subdiv_patch, const void* geom);
 
       /*! Evaluates grid over patch and builds BVH4 tree over the grid. */
       static BVH4::NodeRef buildSubdivPatchTree(const SubdivPatch1Cached &patch,
@@ -457,7 +457,7 @@ namespace embree
         {
 #if defined(SHARED_TESSELLATION_CACHE)
           //lazy_node = getSubtreeRootNode(pre, SharedTessellationCache::sharedTessellationCache, prim, geom);
-          lazy_node = getSubtreeRootNodeFromCacheHierarchy(pre, SharedTessellationCache::sharedTessellationCache, prim, geom);          
+          lazy_node = getSubtreeRootNodeFromCacheHierarchy(pre, prim, geom);          
 #else          
           lazy_node = getSubtreeRootNode(pre.local_cache, prim, geom);
 #endif

@@ -19,10 +19,7 @@
 #include "xeon/bvh4/bvh4_intersector1.h"
 
 #define TIMER(x)
-#define DBG(x) 
-
-//MUST COPY FROM L2 -> L1, otherwise L2 eviction won't evict entries from L1
-  
+#define DBG(x) x
 
 namespace embree
 {
@@ -38,9 +35,10 @@ namespace embree
     /*! Returns BVH4 node reference for subtree over patch grid */
     size_t SubdivPatch1CachedIntersector1::getSubtreeRootNode(Precalculations& pre, SharedTessellationCache &shared_cache, const SubdivPatch1Cached* const subdiv_patch, const void* geom)
     {
-      DBG(DBG_PRINT(pre.rw_mtx));
 
 #if defined(SHARED_TESSELLATION_CACHE)      
+      DBG(DBG_PRINT(pre.rw_mtx));
+
       if (likely(pre.rw_mtx != NULL))
         {
           DBG(DBG_PRINT("READ_UNLOCK"));          
@@ -183,7 +181,6 @@ namespace embree
     }
     
     size_t SubdivPatch1CachedIntersector1::getSubtreeRootNodeFromCacheHierarchy(Precalculations& pre,
-                                                                                SharedTessellationCache &shared_cache,
                                                                                 const SubdivPatch1Cached* const subdiv_patch,
                                                                                 const void* geom)
     {
@@ -191,6 +188,7 @@ namespace embree
     
       const unsigned int commitCounter = ((Scene*)geom)->commitCounter;
       InputTagType tag = (InputTagType)subdiv_patch;
+      SharedTessellationCache &shared_cache = SharedTessellationCache::sharedTessellationCache;
 
       DBG(DBG_PRINT((size_t)tag / 320));
       BVH4::NodeRef root = pre.local_cache->lookup(tag,commitCounter);

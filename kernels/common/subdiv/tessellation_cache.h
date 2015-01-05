@@ -312,7 +312,7 @@ namespace embree
   public:
     /* default sizes */
 
-    static const size_t CACHE_ENTRIES = 64; //512; //1024;
+    static const size_t CACHE_ENTRIES = 128; //512; //1024;
     static const size_t CACHE_WAYS    = 4;  // 4-way associative
     static const size_t CACHE_SETS    = CACHE_ENTRIES / CACHE_WAYS; 
 
@@ -325,7 +325,7 @@ namespace embree
     unsigned int prim_tag;
     unsigned int commit_tag;
     unsigned int usedBlocks;
-    unsigned int reserved;
+    unsigned int access_timestamp;
     size_t       subtree_root;     
     void         *ptr;
 
@@ -334,12 +334,12 @@ namespace embree
     __forceinline void reset() 
     {
       assert(sizeof(CacheTag) == 32);
-      prim_tag     = (unsigned int)-1;
-      commit_tag   = (unsigned int)-1;
-      usedBlocks   = 0;
-      reserved     = 0;
-      subtree_root = (size_t)-1;
-      ptr          = NULL;
+      prim_tag         = (unsigned int)-1;
+      commit_tag       = (unsigned int)-1;
+      usedBlocks       = 0;
+      access_timestamp = 0;
+      subtree_root     = (size_t)-1;
+      ptr              = NULL;
     }
 
     __forceinline bool match(InputTagType primID, const unsigned int commitCounter)
@@ -370,6 +370,21 @@ namespace embree
       subtree_root = root;
     }
 
+    /* update with NFU replacement policy */
+    __forceinline void updateNFUStat()
+    {
+      access_timestamp >>= 1;
+    }
+    __forceinline void markAsMRU()
+    {
+      access_timestamp |= (unsigned int)1 << 31;
+    }
+
+    __forceinline unsigned int getAccessTimeStamp()
+    {
+      return access_timestamp;
+    }
+
     __forceinline size_t &getRootRef()
     {
       return subtree_root;
@@ -386,7 +401,7 @@ namespace embree
     }
 
     __forceinline void print() {
-      std::cout << "prim_tag " << prim_tag << " commit_tag " << commit_tag << " blocks " << usedBlocks << " subtree_root " << subtree_root << " ptr "<< ptr << std::endl;
+      std::cout << "prim_tag " << prim_tag << " commit_tag " << commit_tag << " blocks " << usedBlocks << " subtree_root " << subtree_root << " ptr "<< ptr << " access time stamp " << access_timestamp << std::endl;
     }
 
     __forceinline void *getPtr() const
@@ -401,29 +416,29 @@ namespace embree
     public:
       CacheTag tags[CACHE_WAYS];
 
-      __forceinline CacheTag &getCacheTag(size_t index)
+      __forceinline CacheTag &getCacheTagAndUpdateNFU(size_t index)
       {
         assert(index < CACHE_WAYS);
-        return tags[index];
-      }
+        /* PING; */
+        /* for (size_t i=0;i<CACHE_WAYS;i++) */
+        /*   std::cout << std::hex << tags[i].getAccessTimeStamp() << std::dec << std::endl; */
 
-      __forceinline void moveToFront(const size_t index)
-      {
-        CACHE_DBG(PING);
-        CacheTag tmp = tags[index];
-        for (ssize_t i = index-1;i>=0;i--)
-          tags[i+1] = tags[i];
-        tags[0] = tmp;
+        for (size_t i=0;i<CACHE_WAYS;i++)
+          tags[i].updateNFUStat();
+
+        tags[index].markAsMRU();
+
+        /* for (size_t i=0;i<CACHE_WAYS;i++) */
+        /*   std::cout << std::hex << tags[i].getAccessTimeStamp() << std::dec << std::endl; */
+
+        return tags[index];
       }
 
       __forceinline size_t lookup(InputTagType primID, const unsigned int commitCounter)
       {
         for (size_t i=0;i<CACHE_WAYS;i++)
           if (tags[i].match(primID,commitCounter))
-            {
-              moveToFront(i);
-              return 0;
-            }
+            return i;
         return CACHE_MISS;
       };
 
@@ -441,23 +456,35 @@ namespace embree
         return b;
       }
 
-      __forceinline size_t getEvictionCandidate(const unsigned int neededBlocks)
+      __forceinline CacheTag& getEvictionCandidate(const unsigned int neededBlocks)
       {
         /* fill empty slots first */
-        if (unlikely(tags[CACHE_WAYS-1].empty())) return (size_t)-1;
+        for (size_t i=0;i<CACHE_WAYS;i++)
+          if (tags[i].empty()) 
+            {
+              return getCacheTagAndUpdateNFU(i);
+            }
 
-        for (ssize_t i=CACHE_WAYS-1;i>=0;i--)
-          if (tags[i].blocks() >= neededBlocks)
-            return i;
-        return (size_t)-1;
+        unsigned int min_access_timestamp = (unsigned int)-1;
+
+        //if (tags[i].blocks() >= neededBlocks)
+
+        /* use NFU replacement policy */
+        size_t index = (size_t)-1;
+        for (size_t i=0;i<CACHE_WAYS;i++)          
+          {
+            if (tags[i].getAccessTimeStamp() < min_access_timestamp)
+              {
+                min_access_timestamp = tags[i].getAccessTimeStamp();
+                index = i;
+              }
+          }
+        assert(index != (size_t)-1);
+
+        /* update NFU status */
+        return getCacheTagAndUpdateNFU(index);
       }
       
-      __forceinline CacheTag &getLRU()
-      {
-        moveToFront(CACHE_WAYS-1);
-        return tags[0];
-      }
-
       __forceinline void print() {
         std::cout << "CACHE-TAG-SET:" << std::endl;
         for (size_t i=0;i<AdaptiveTessellationCache::CACHE_WAYS;i++)
@@ -471,7 +498,6 @@ namespace embree
 
   private:
     CacheTagSet sets[CACHE_SETS];
-
                     
     __forceinline size_t addrToCacheSetIndex(InputTagType primID)
     {      
@@ -524,6 +550,7 @@ namespace embree
       const size_t set = addrToCacheSetIndex(primID);
       assert(set < CACHE_SETS);
       const size_t index = sets[set].lookup(primID,commitCounter);
+
       CACHE_DBG(
                 DBG_PRINT( index == CACHE_MISS );
 
@@ -542,7 +569,7 @@ namespace embree
         }
       CACHE_STATS(cache_hits++);
 
-      CacheTag &t = sets[set].getCacheTag(index);
+      CacheTag &t = sets[set].getCacheTagAndUpdateNFU(index);
 
       assert( t.match(primID,commitCounter) );
       return t.getRootRef();
@@ -556,12 +583,13 @@ namespace embree
       CACHE_DBG(PING);
       const size_t set = addrToCacheSetIndex(primID);
       CACHE_DBG(DBG_PRINT(set));
-      const size_t eviction_index = sets[set].getEvictionCandidate(neededBlocks);
-      CACHE_DBG(DBG_PRINT(eviction_index));
+      
+      CacheTag &t = sets[set].getEvictionCandidate(neededBlocks);
+      
+      assert( t.getAccessTimeStamp() & ((unsigned int)1 << 31));
 
-      if (eviction_index != (size_t)-1)
+      if (!t.empty() && t.blocks() >= neededBlocks)
         {
-          CacheTag &t = sets[set].getCacheTag(eviction_index);
           assert(t.blocks() >= neededBlocks);
 	  CACHE_DBG(DBG_PRINT("EVICT"));
           CACHE_STATS(cache_evictions++);
@@ -569,12 +597,10 @@ namespace embree
           return t;
         }
 
-
       /* allocate entry */
       CACHE_DBG(DBG_PRINT("NEW ALLOC"));
 
       CACHE_DBG(DBG_PRINT(set));
-      CacheTag &t = sets[set].getLRU();      
       if (t.ptr != NULL)
         {
           assert(t.usedBlocks != 0);
