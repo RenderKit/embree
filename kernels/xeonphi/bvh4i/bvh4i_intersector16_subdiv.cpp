@@ -247,7 +247,7 @@ namespace embree
 							 const SubdivPatch1* const patches,
 							 Scene *const scene)
     {
-      TessellationCache::InputTagType tag = (TessellationCache::InputTagType)patchIndex;
+      InputTagType tag = (InputTagType)patchIndex;
 
       BVH4i::NodeRef subtree_root = local_cache->lookup(tag,commitCounter);
       if (unlikely(subtree_root == BVH4i::invalidNode))
