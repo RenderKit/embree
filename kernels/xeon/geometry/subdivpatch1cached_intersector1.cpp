@@ -19,7 +19,7 @@
 #include "xeon/bvh4/bvh4_intersector1.h"
 
 #define TIMER(x)
-#define DBG(x) x
+#define DBG(x) 
 
 namespace embree
 {
