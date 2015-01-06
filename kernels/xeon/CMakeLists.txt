@@ -92,6 +92,7 @@ ADD_ISPC_LIBRARY(embree ${EMBREE_LIB_TYPE}
   bvh4/bvh4_rotate.cpp
   bvh4/bvh4_refit.cpp
   bvh4/bvh4_builder.cpp
+  bvh4/bvh4_builder_generic.cpp
   bvh4/bvh4_builder_mb.cpp
   bvh4/bvh4_builder_hair.cpp
   bvh4/bvh4_builder_hair_mb.cpp

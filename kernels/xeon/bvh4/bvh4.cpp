@@ -346,10 +346,22 @@ namespace embree
     bytesAllocated = max(bytesAllocated,numPrimitives*sizeof(PrimRef)); // required also for parallel split stage in BVH4BuilderFast
     size_t bytesReserved  = numReservedNodes  * nodeSize + numReservedPrimitives  * primTy.bytes;
     if (numPrimitives) bytesReserved = (bytesReserved+blockSize-1)/blockSize*blockSize + numThreads*blockSize*2;
+    alloc.init(bytesAllocated,bytesReserved);
 
+    init();
+  }
+
+  void BVH4::init()
+  {
     root = emptyNode;
     bounds = empty;
-    alloc.init(bytesAllocated,bytesReserved);
+  }
+
+  void BVH4::set (NodeRef root, const BBox3fa& bounds, size_t numPrimitives)
+  {
+    this->root = root;
+    this->bounds = bounds;
+    this->numPrimitives = numPrimitives;
   }
 
   void BVH4::clearBarrier(NodeRef& node)
