@@ -121,7 +121,7 @@ namespace embree
   public:
     
     /* default sizes */
-    static const size_t CACHE_ENTRIES = 1024;
+    static const size_t CACHE_ENTRIES = 512;
     
   public:
 
@@ -312,7 +312,7 @@ namespace embree
   public:
     /* default sizes */
 
-    static const size_t CACHE_ENTRIES = 128; //512; //1024;
+    static const size_t CACHE_ENTRIES = 256; 
     static const size_t CACHE_WAYS    = 4;  // 4-way associative
     static const size_t CACHE_SETS    = CACHE_ENTRIES / CACHE_WAYS; 
 
@@ -587,6 +587,7 @@ namespace embree
       CacheTag &t = sets[set].getEvictionCandidate(neededBlocks);
       
       assert( t.getAccessTimeStamp() & ((unsigned int)1 << 31));
+      assert(!t.match(primID,commitCounter));
 
       if (!t.empty() && t.blocks() >= neededBlocks)
         {
