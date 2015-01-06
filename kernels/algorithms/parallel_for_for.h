@@ -121,4 +121,40 @@ namespace embree
   {
     parallel_for_for(array2,1,func);
   }
+
+  template<typename ArrayArray, typename Value, typename Func, typename Reduction>
+    __forceinline Value parallel_for_for_reduce( ArrayArray& array2, const size_t minStepSize, const Value& identity, const Func& func, const Reduction& reduction )
+  {
+    ParallelForForState state(array2,minStepSize);
+    Value temp[ParallelForForState::MAX_TASKS];
+    
+    parallel_for(state.taskCount, [&](const size_t taskIndex) 
+    {
+      /* calculate range */
+      const size_t k0 = (taskIndex+0)*state.size()/state.taskCount;
+      const size_t k1 = (taskIndex+1)*state.size()/state.taskCount;
+      size_t i0 = state.i0[taskIndex];
+      size_t j0 = state.j0[taskIndex];
+
+      /* iterate over arrays */
+      size_t k=k0;
+      for (size_t i=i0; k<k1; i++) {
+        const size_t N =  array2[i] ? array2[i]->size() : 0;
+        const size_t r0 = j0, r1 = min(N,r0+k1-k);
+        if (r1 > r0) temp[taskIndex] = func(array2[i],range<size_t>(r0,r1),k);
+        k+=r1-r0; j0 = 0;
+      }
+    });
+
+    Value ret = identity;
+    for (size_t i=0; i<state.taskCount; i++)
+      ret = reduction(ret,temp[i]);
+    return ret;
+  }
+
+  template<typename ArrayArray, typename Value, typename Func, typename Reduction>
+    __forceinline Value parallel_for_for_reduce( ArrayArray& array2, const Value& identity, const Func& func, const Reduction& reduction)
+  {
+    return parallel_for_for_reduce(array2,1,identity,func,reduction);
+  }
 }

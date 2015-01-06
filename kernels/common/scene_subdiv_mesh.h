@@ -385,7 +385,7 @@ namespace embree
 
   public:
     unsigned int mask;                //!< for masking out geometry
-    unsigned int numTimeSteps;        //!< number of time steps (1 or 2)  
+    unsigned int numTimeSteps;        //!< number of time steps (1 or 2)  // FIXME: remove
 
     RTCDisplacementFunc displFunc;    //!< displacement function
     BBox3fa             displBounds;  //!< bounds for maximal displacement 

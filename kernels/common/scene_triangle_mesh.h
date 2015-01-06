@@ -183,7 +183,7 @@ namespace embree
     
   public:
     unsigned int mask;                //!< for masking out geometry
-    unsigned int numTimeSteps;        //!< number of time steps (1 or 2)
+    unsigned int numTimeSteps;        //!< number of time steps (1 or 2) // FIXME: remove
     
     BufferT<Triangle> triangles;      //!< array of triangles
     size_t numTriangles;              //!< number of triangles

@@ -34,7 +34,7 @@ namespace embree
     ALIGNED_CLASS;
 
   public:
-    template<typename Ty> // FIXME: give motion blur meshes different type to iterate over them here
+    template<typename Ty, size_t timeSteps = 1>
     class Iterator
     {
     public:
@@ -49,6 +49,7 @@ namespace embree
         if (geom == NULL) return NULL;
         if (!geom->isEnabled()) return NULL;
         if (geom->type != Ty::geom_type) return NULL;
+        if (geom->numTimeSteps != timeSteps) return NULL;
         return (Ty*) geom;
       }
 

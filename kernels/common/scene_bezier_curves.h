@@ -269,7 +269,7 @@ namespace embree
 
     public:
       unsigned int mask;                //!< for masking out geometry
-      unsigned char numTimeSteps;       //!< number of time steps (1 or 2)
+      unsigned char numTimeSteps;       //!< number of time steps (1 or 2) // FIXME: remove
 
       BufferT<int> curves;              //!< array of curve indices
       size_t numCurves;                 //!< number of triangles

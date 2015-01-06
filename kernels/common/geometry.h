@@ -44,12 +44,12 @@ namespace embree
   public:
 
     /*! state of a mesh */
-    enum State { ENABLING, ENABLED, MODIFIED, DISABLING, DISABLED, ERASING };
+    enum State { ENABLING, ENABLED, MODIFIED, DISABLING, DISABLED, ERASING }; // FIXME: cleanup these states
 
   public:
     
     /*! Geometry constructor */
-    Geometry (Scene* scene, GeometryTy type, size_t numPrimitives, RTCGeometryFlags flags);
+    Geometry (Scene* scene, GeometryTy type, size_t numPrimitives, size_t numTimeSteps, RTCGeometryFlags flags);
 
     /*! Virtual destructor */
     virtual ~Geometry() {}
@@ -232,6 +232,7 @@ namespace embree
     Scene* parent;   //!< pointer to scene this mesh belongs to
     GeometryTy type;
     ssize_t numPrimitives;    //!< number of primitives of this geometry
+    unsigned int numTimeSteps;        //!< number of time steps (1 or 2)
     unsigned int id;       //!< internal geometry ID
     RTCGeometryFlags flags;    //!< flags of geometry
     State state;       //!< state of the geometry 

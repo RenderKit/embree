@@ -54,7 +54,12 @@ namespace embree
     BVH4BuilderFast::BVH4BuilderFast (LockStepTaskScheduler* scheduler, BVH4* bvh, size_t listMode, size_t logBlockSize, size_t logSAHBlockSize, 
 				      bool needVertices, size_t primBytes, const size_t minLeafSize, const size_t maxLeafSize)
       : scheduler(scheduler), state(nullptr), bvh(bvh), numPrimitives(0), prims(NULL), bytesPrims(0), listMode(listMode), logBlockSize(logBlockSize), logSAHBlockSize(logSAHBlockSize), 
-	needVertices(needVertices), primBytes(primBytes), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize) { needAllThreads = true; }
+	needVertices(needVertices), primBytes(primBytes), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize)
+    {
+      size_t maxLeafPrims = BVH4::maxLeafBlocks*(size_t(1)<<logBlockSize);
+      if (maxLeafPrims < this->maxLeafSize) this->maxLeafSize = maxLeafPrims;
+      needAllThreads = true;
+    }
 
     template<typename Primitive>
     BVH4BuilderFastT<Primitive>::BVH4BuilderFastT (BVH4* bvh, Scene* scene, size_t listMode, size_t logBlockSize, size_t logSAHBlockSize, 

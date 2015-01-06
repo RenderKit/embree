@@ -20,7 +20,7 @@
 namespace embree
 {
   TriangleMesh::TriangleMesh (Scene* parent, RTCGeometryFlags flags, size_t numTriangles, size_t numVertices, size_t numTimeSteps)
-    : Geometry(parent,TRIANGLE_MESH,numTriangles,flags), 
+    : Geometry(parent,TRIANGLE_MESH,numTriangles,numTimeSteps,flags), 
       mask(-1), numTimeSteps(numTimeSteps),
       numTriangles(numTriangles), numVertices(numVertices)
   {
