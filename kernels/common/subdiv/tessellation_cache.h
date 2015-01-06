@@ -419,17 +419,10 @@ namespace embree
       __forceinline CacheTag &getCacheTagAndUpdateNFU(size_t index)
       {
         assert(index < CACHE_WAYS);
-        /* PING; */
-        /* for (size_t i=0;i<CACHE_WAYS;i++) */
-        /*   std::cout << std::hex << tags[i].getAccessTimeStamp() << std::dec << std::endl; */
-
         for (size_t i=0;i<CACHE_WAYS;i++)
           tags[i].updateNFUStat();
 
         tags[index].markAsMRU();
-
-        /* for (size_t i=0;i<CACHE_WAYS;i++) */
-        /*   std::cout << std::hex << tags[i].getAccessTimeStamp() << std::dec << std::endl; */
 
         return tags[index];
       }
