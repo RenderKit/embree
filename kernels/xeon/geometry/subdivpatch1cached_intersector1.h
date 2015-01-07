@@ -27,7 +27,7 @@
 /* returns u,v based on individual triangles instead relative to original patch */
 #define FORCE_TRIANGLE_UV 0
 
-#define SHARED_TESSELLATION_CACHE
+//#define SHARED_TESSELLATION_CACHE
 
 //#define TESSELLATION_CACHE TessellationCache
 # define TESSELLATION_CACHE AdaptiveTessellationCache
@@ -392,7 +392,6 @@ namespace embree
           //BVH4::Node* node = (BVH4::Node*)local_cache->getCacheMemoryPtr(t);
 
           BVH4::Node* node = (BVH4::Node*)t.getPtr();
-
           prefetchL1(((float*)node + 0*16));
           prefetchL1(((float*)node + 1*16));
           prefetchL1(((float*)node + 2*16));
@@ -401,7 +400,7 @@ namespace embree
           size_t new_root = (size_t)buildSubdivPatchTree(*subdiv_patch,node,((Scene*)geom)->getSubdivMesh(subdiv_patch->geom));
           assert( new_root != BVH4::invalidNode);
           
-          local_cache->updateRootRef(t,new_root);
+          t.updateRootRef(new_root);
           
           //assert( (size_t)local_cache->getPtr() + (size_t)t.getRootRef() == new_root );
           //assert( (size_t)t.getPtr() + (size_t)t.getRootRef() == new_root );
