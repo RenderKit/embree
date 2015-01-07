@@ -284,19 +284,19 @@ namespace embree
               t_l1.update(tag,commitCounter);
 
               DBG(DBG_PRINT("updateNodeRefs"));                                                              
-              DBG(DBG_PRINT(t_l2->ptr));
-              DBG(DBG_PRINT(t_l1.ptr));
+              DBG(DBG_PRINT(t_l2->getPtr()));
+              DBG(DBG_PRINT(t_l1.getPtr()));
               assert(t_l1.blocks() >= needed_blocks);
 
-              memcpy(t_l1.ptr,t_l2->ptr,64*needed_blocks);
+              memcpy(t_l1.getPtr(),t_l2->getPtr(),64*needed_blocks);
               size_t t_l2_root = t_l2->getRef();
-              updateBVH4Refs(t_l2_root,(size_t)t_l2->ptr,(size_t)t_l1.ptr);
-              t_l1.updateRootRef( ((size_t)t_l2_root - (size_t)t_l2->ptr) + (size_t)t_l1.ptr );
+              updateBVH4Refs(t_l2_root,(size_t)t_l2->getPtr(),(size_t)t_l1.getPtr());
+              t_l1.updateRootRef( ((size_t)t_l2_root - (size_t)t_l2->getPtr()) + (size_t)t_l1.getPtr() );
               DBG(DBG_PRINT(t_l1.subtree_root));
 
               DBG(t_l2->print());
               DBG(t_l1.print());
-              const size_t l1_range0 = (size_t)t_l1.ptr;
+              const size_t l1_range0 = (size_t)t_l1.getPtr();
               const size_t l1_range1 = l1_range0 + 64*needed_blocks;
               size_t l1_blocks = countBlocks(BVH4::NodeRef(t_l1.getRootRef()),l1_range0,l1_range1);
               
@@ -330,10 +330,10 @@ namespace embree
               t_l1.update(tag,commitCounter);
 
               DBG(DBG_PRINT("updateNodeRefs"));                                                                            
-              memcpy(t_l1.ptr,t_l2->ptr,64*t_l2->blocks());
+              memcpy(t_l1.getPtr(),t_l2->getPtr(),64*t_l2->blocks());
               size_t t_l2_root = t_l2->getRef();
-              updateBVH4Refs(t_l2_root,(size_t)t_l2->ptr,(size_t)t_l1.ptr);
-              t_l1.updateRootRef( (size_t)t_l2_root - (size_t)t_l2->ptr + (size_t)t_l1.ptr );
+              updateBVH4Refs(t_l2_root,(size_t)t_l2->getPtr(),(size_t)t_l1.getPtr());
+              t_l1.updateRootRef( (size_t)t_l2_root - (size_t)t_l2->getPtr() + (size_t)t_l1.getPtr() );
               DBG(DBG_PRINT(t_l1.subtree_root));
 
               BVH4::NodeRef l1_root = t_l1.getRootRef();

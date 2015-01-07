@@ -19,7 +19,7 @@
 #include "common/default.h"
 
 #if defined(DEBUG)
-#define CACHE_STATS(x) 
+#define CACHE_STATS(x) x
 #else
 #define CACHE_STATS(x) 
 #endif
@@ -327,7 +327,8 @@ namespace embree
     unsigned int usedBlocks;
     unsigned int access_timestamp;
     size_t       subtree_root;     
-    void         *ptr;
+    //void         *ptr;
+    size_t reserved;
 
   public:
 
@@ -338,8 +339,22 @@ namespace embree
       commit_tag       = (unsigned int)-1;
       usedBlocks       = 0;
       access_timestamp = 0;
-      subtree_root     = (size_t)-1;
-      ptr              = NULL;
+      subtree_root     = 0;
+      //ptr              = NULL;
+    }
+
+    __forceinline void clearRootRefBits()
+    {
+#if defined(__MIC__)
+      /* bvh4i currently requires a different 'reset' */
+      // FIXME
+      if (subtree_root & ((size_t)1<<3))
+        subtree_root &= ~(((size_t)1 << 4)-1);
+      else
+        subtree_root &= ~(((size_t)1 << 5)-1);
+#else
+      subtree_root &= ~(((size_t)1 << 4)-1);
+#endif
     }
 
     __forceinline bool match(InputTagType primID, const unsigned int commitCounter)
@@ -401,12 +416,13 @@ namespace embree
     }
 
     __forceinline void print() {
-      std::cout << "prim_tag " << prim_tag << " commit_tag " << commit_tag << " blocks " << usedBlocks << " subtree_root " << subtree_root << " ptr "<< ptr << " access time stamp " << access_timestamp << std::endl;
+      std::cout << "prim_tag " << prim_tag << " commit_tag " << commit_tag << " blocks " << usedBlocks << " subtree_root " << subtree_root << " ptr "<< getPtr() << " access time stamp " << access_timestamp << std::endl;
     }
 
     __forceinline void *getPtr() const
     {
-      return ptr;
+      //FIXME: bvh4i
+      return (void *)(subtree_root & (~(((size_t)1 << 4)-1)));
     }    
 
   };
@@ -587,6 +603,7 @@ namespace embree
           assert(t.blocks() >= neededBlocks);
 	  CACHE_DBG(DBG_PRINT("EVICT"));
           CACHE_STATS(cache_evictions++);
+          t.clearRootRefBits();
           t.update(primID,commitCounter);
           return t;
         }
@@ -595,30 +612,28 @@ namespace embree
       CACHE_DBG(DBG_PRINT("NEW ALLOC"));
 
       CACHE_DBG(DBG_PRINT(set));
-      if (t.ptr != NULL)
+      CACHE_DBG(DBG_PRINT(t.getPtr()));
+      
+      if (t.getPtr() != NULL)
         {
           assert(t.usedBlocks != 0);
           assert(t.prim_tag != (unsigned int)-1);
-          CACHE_DBG(DBG_PRINT(t.ptr));
-          free_tessellation_cache_mem(t.ptr);
+          CACHE_DBG(DBG_PRINT(t.getPtr()));
+          free_tessellation_cache_mem(t.getPtr());
         }
       else
         {
           assert(t.usedBlocks == 0);
           assert(t.prim_tag == (unsigned int)-1);
         }
-      t.ptr = alloc_tessellation_cache_mem(neededBlocks);
+      float *new_mem = alloc_tessellation_cache_mem(neededBlocks);
+      CACHE_DBG(DBG_PRINT(new_mem));
 
       /* insert new entry at the beginning */
       CACHE_DBG(t.print());
-      t.set(primID,commitCounter,0,neededBlocks);
+      t.set(primID,commitCounter,(size_t)new_mem,neededBlocks);
       CACHE_DBG(sets[set].print());
       return t;     
-    }
-
-    __forceinline void updateRootRef(CacheTag &t, size_t new_root)
-    {
-      t.updateRootRef( new_root );      
     }
 
     /* print stats for debugging */                 
