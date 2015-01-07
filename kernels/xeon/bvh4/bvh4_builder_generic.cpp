@@ -145,16 +145,17 @@ namespace embree
               
         //bvh->init(sizeof(BVH4::Node),numPrimitives,1);
         //g_alloc = new LinearAllocatorPerThread::ThreadAllocator(&bvh->alloc);
-        bvh->alloc2.init(numPrimitives*sizeof(BVH4::Node)/2,numPrimitives*sizeof(BVH4::Node)); 
+        bvh->alloc2.init(numPrimitives*sizeof(PrimRef),numPrimitives*sizeof(BVH4::Node)); 
         
         /* build BVH */
         prims.resize(numPrimitives);
         //memset(prims.data(),0,prims.size()*sizeof(PrimRef));
+        vector_t<PrimRef> tmp; tmp.resize(prims.size());
 
         double T0 = getSeconds();
         PrimInfo pinfo = CreatePrimRefArray<TriangleMesh,1>(scene,prims);
         double T1 = getSeconds();
-        BVHBuilderGeneric<BVH4::NodeRef> builder(prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,2,4,4*BVH4::maxLeafBlocks);
+        BVHBuilderGeneric<BVH4::NodeRef> builder(prims.data(),tmp.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,2,4,4*BVH4::maxLeafBlocks);
         CreateBVH4Node createNode(bvh);
         CreateLeaf<Triangle4> createLeaf(bvh);
         BVH4::NodeRef root = builder(createNode,createLeaf);

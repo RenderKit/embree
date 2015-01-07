@@ -479,6 +479,10 @@ namespace embree
       }
     }
 
+    void* ptr() {
+      return usedBlocks->ptr();
+    }
+
     void print_statistics()
     {
       size_t bytesFree = 0;
@@ -557,6 +561,10 @@ namespace embree
 	if (unlikely(i+bytes > reserveEnd)) bytes = reserveEnd-i;
 	if (i+bytes > allocEnd) os_commit(&data[i],bytes); // FIXME: optimize, may get called frequently
 	return &data[i];
+      }
+
+      void* ptr() {
+        return &data[cur];
       }
 
       void reset () 
