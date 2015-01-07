@@ -89,13 +89,11 @@ namespace embree
     DistributedTessellationCacheStats::cache_evictions = 0;          
   }
   
-  CACHE_STATS(
-              AtomicCounter TessellationCache::cache_accesses  = 0;
-              AtomicCounter TessellationCache::cache_hits      = 0;
-              AtomicCounter TessellationCache::cache_misses    = 0;
-              AtomicCounter TessellationCache::cache_clears    = 0;
-              AtomicCounter TessellationCache::cache_evictions = 0;                
-              );           
+  AtomicCounter TessellationCache::cache_accesses  = 0;
+  AtomicCounter TessellationCache::cache_hits      = 0;
+  AtomicCounter TessellationCache::cache_misses    = 0;
+  AtomicCounter TessellationCache::cache_clears    = 0;
+  AtomicCounter TessellationCache::cache_evictions = 0;                
 
 };
 

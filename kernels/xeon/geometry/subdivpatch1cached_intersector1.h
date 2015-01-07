@@ -29,15 +29,16 @@
 
 #define SHARED_TESSELLATION_CACHE
 
-//#define TESSELLATION_CACHE TessellationCache
-# define TESSELLATION_CACHE AdaptiveTessellationCache
+#define SHARED_TESSELLATION_CACHE_ENTRIES      1024
+#define DISTRIBUTED_TESSELLATION_CACHE_ENTRIES  128
+
 
 namespace embree
 {
+  typedef AdaptiveTessellationCache<DISTRIBUTED_TESSELLATION_CACHE_ENTRIES> PerThreadTessellationCache;
+
   namespace isa
   {
-
-    
 
     class SubdivPatch1CachedIntersector1
     {
@@ -45,7 +46,7 @@ namespace embree
       typedef SubdivPatch1Cached Primitive;
       
       /*! Per thread tessellation cache */
-      static __thread TESSELLATION_CACHE *thread_cache;
+      static __thread PerThreadTessellationCache *thread_cache;
       
       /*! Creates per thread tessellation cache */
       static void createTessellationCache();
@@ -57,7 +58,7 @@ namespace embree
         Vec3fa ray_org_rdir;
         SubdivPatch1Cached *current_patch;
         SubdivPatch1Cached *hit_patch;
-        TESSELLATION_CACHE *local_cache;
+        PerThreadTessellationCache *local_cache;
         Ray &r;
         
 #if defined(SHARED_TESSELLATION_CACHE)        
@@ -376,7 +377,7 @@ namespace embree
       
       
       /*! Returns BVH4 node reference for subtree over patch grid */
-      static __forceinline size_t getSubtreeRootNode(TESSELLATION_CACHE *local_cache, const SubdivPatch1Cached* const subdiv_patch, const void* geom)
+      static __forceinline size_t getSubtreeRootNode(PerThreadTessellationCache *local_cache, const SubdivPatch1Cached* const subdiv_patch, const void* geom)
       {
         const unsigned int commitCounter = ((Scene*)geom)->commitCounter;
         InputTagType tag = (InputTagType)subdiv_patch;
@@ -458,8 +459,8 @@ namespace embree
         else 
         {
 #if defined(SHARED_TESSELLATION_CACHE)
-          lazy_node = getSubtreeRootNode(pre, prim, geom);
-          //lazy_node = getSubtreeRootNodeFromCacheHierarchy(pre, prim, geom);          
+          //lazy_node = getSubtreeRootNode(pre, prim, geom);
+          lazy_node = getSubtreeRootNodeFromCacheHierarchy(pre, prim, geom);          
 #else          
           lazy_node = getSubtreeRootNode(pre.local_cache, prim, geom);
 #endif

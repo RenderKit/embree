@@ -19,7 +19,7 @@
 #include "common/default.h"
 
 #if defined(DEBUG)
-#define CACHE_STATS(x) x
+#define CACHE_STATS(x) 
 #else
 #define CACHE_STATS(x) 
 #endif
@@ -327,12 +327,11 @@ namespace embree
 
  };
 
-
+ template<size_t CACHE_ENTRIES>
   class __aligned(64) AdaptiveTessellationCache {
   public:
     /* default sizes */
 
-    static const size_t CACHE_ENTRIES = 256; 
     static const size_t CACHE_WAYS    = 4;  // 4-way associative
     static const size_t CACHE_SETS    = CACHE_ENTRIES / CACHE_WAYS; 
 
@@ -390,7 +389,6 @@ namespace embree
 
         unsigned int min_access_timestamp = (unsigned int)-1;
 
-        //if (tags[i].blocks() >= neededBlocks)
 
         /* use NFU replacement policy */
         size_t index = (size_t)-1;
@@ -406,6 +404,8 @@ namespace embree
 
         /* update NFU status */
         return getCacheTagAndUpdateNFU(index);
+
+        //if (tags[i].blocks() >= neededBlocks)
       }
       
       __forceinline void print() {

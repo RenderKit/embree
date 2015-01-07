@@ -21,14 +21,13 @@
 #define TIMER(x)
 #define DBG(x) 
 
-#define SHARED_TESSELLATION_CACHE_ENTRIES 1024
 
 namespace embree
 {
   namespace isa
   {  
     
-    __thread TESSELLATION_CACHE *SubdivPatch1CachedIntersector1::thread_cache = NULL;
+    __thread PerThreadTessellationCache *SubdivPatch1CachedIntersector1::thread_cache = NULL;
     SharedTessellationCache<SHARED_TESSELLATION_CACHE_ENTRIES> sharedTessellationCache;
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -547,7 +546,7 @@ namespace embree
     
     void SubdivPatch1CachedIntersector1::createTessellationCache()
     {
-      TESSELLATION_CACHE *cache = (TESSELLATION_CACHE *)_mm_malloc(sizeof(TESSELLATION_CACHE),64);
+      PerThreadTessellationCache *cache = (PerThreadTessellationCache *)_mm_malloc(sizeof(PerThreadTessellationCache),64);
       assert( (size_t)cache % 64 == 0 );
       cache->init();	
 #if defined(DEBUG) && 0
