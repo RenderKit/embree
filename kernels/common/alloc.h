@@ -522,13 +522,16 @@ namespace embree
       {
         void* ptr = os_reserve(sizeof(Block)+bytesReserve);
         os_commit(ptr,sizeof(Block)+bytesAllocate);
-        bytesAllocate = ((sizeof(Block)+bytesAllocate+4095) & ~(4095)) - sizeof(Block); // always comsume full pages
-        bytesReserve  = ((sizeof(Block)+bytesReserve +4095) & ~(4095)) - sizeof(Block); // always comsume full pages
+        bytesAllocate = ((sizeof(Block)+bytesAllocate+4095) & ~(4095)) - sizeof(Block); // always consume full pages
+        bytesReserve  = ((sizeof(Block)+bytesReserve +4095) & ~(4095)) - sizeof(Block); // always consume full pages
         return new (ptr) Block(bytesAllocate,bytesReserve,next);
       }
 
       Block (size_t bytesAllocate, size_t bytesReserve, Block* next) 
-      : cur(0), allocEnd(bytesAllocate), reserveEnd(bytesReserve), next(next) {}
+      : cur(0), allocEnd(bytesAllocate), reserveEnd(bytesReserve), next(next) 
+      {
+        //for (size_t i=0; i<allocEnd; i+=4096) data[i] = 0;
+      }
 
       ~Block () {
 	if (next) next->~Block(); next = NULL;
