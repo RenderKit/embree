@@ -111,7 +111,7 @@ namespace embree
         
         /* create leaf for few primitives */
         if (current.size() <= maxLeafSize) {
-          createLeaf(current,prims);
+          *current.parent = createLeaf(current,prims);
           return;
         }
 

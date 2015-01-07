@@ -52,13 +52,25 @@ namespace embree
       
       __forceinline BVH4::NodeRef operator() (BVHBuilderGeneric<BVH4::NodeRef>::BuildRecord& current, PrimRef* prims)
       {
+        PRINT("leaf");
+        for (size_t i=current.begin; i<current.end; i++)
+          PRINT3(i,prims[i].geomID(),prims[i].primID());
+
         FastAllocator::Thread& alloc = *bvh->alloc2.instance();
         size_t items = Primitive::blocks(current.size());
         size_t start = current.begin;
         Primitive* accel = (Primitive*) alloc.malloc(items*sizeof(Primitive));
+        //Primitive* accel = (Primitive*) malloc(items*sizeof(Primitive));
         BVH4::NodeRef node = bvh->encodeLeaf((char*)accel,items);
-        for (size_t i=0; i<items; i++) 
+        for (size_t i=0; i<items; i++) {
           accel[i].fill(prims,start,current.end,bvh->scene,false);
+          PRINT2(i,accel[i].v0);
+          PRINT2(i,accel[i].e1);
+          PRINT2(i,accel[i].e2);
+          PRINT2(i,accel[i].Ng);
+          PRINT2(i,accel[i].geomIDs);
+          PRINT2(i,accel[i].primIDs);
+        }
         return node;
       }
 

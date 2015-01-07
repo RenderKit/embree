@@ -151,6 +151,7 @@ IF (TARGET_AVX)
     geometry/subdivpatch1_intersector1.cpp
     geometry/subdivpatch1cached_intersector1.cpp
 
+    bvh4/bvh4_builder_generic.cpp
     bvh4/bvh4_rotate.cpp
     bvh4/bvh4_builder_toplevel.cpp
     bvh4/bvh4_builder_morton.cpp
