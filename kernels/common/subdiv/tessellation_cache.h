@@ -42,7 +42,7 @@ namespace embree
     _mm_free(mem);
   }
 
- class AtomicReadWriteMutex
+ class MultipleReaderSingleWriterMutex
  {
  private:
    AtomicMutex writer_mtx;
@@ -50,10 +50,15 @@ namespace embree
 
  public:
 
- AtomicReadWriteMutex() : readers(0) {
-     assert(sizeof(AtomicReadWriteMutex) == 8);
+ MultipleReaderSingleWriterMutex() : readers(0) {
+     assert(sizeof(MultipleReaderSingleWriterMutex) == 8);
    }
 
+   __forceinline void reset()
+   {
+     readers = 0;
+     writer_mtx.reset();
+   }
    __forceinline void pause()
    {
 #if !defined(__MIC__)
@@ -102,129 +107,160 @@ namespace embree
  };
 
 #if defined(__MIC__)
-    typedef unsigned int InputTagType;
+ typedef unsigned int InputTagType;
 #else
-    typedef size_t InputTagType;
+ typedef size_t InputTagType;
 #endif
 
-    // FIXME: must be the same of all, move outside class
-    static __forceinline unsigned int toTag(InputTagType prim)
-    {
+ // FIXME: must be the same of all, move outside class
+ static __forceinline unsigned int toTag(InputTagType prim)
+ {
 #if defined(__MIC__)
-      return prim;
+   return prim;
 #else
-      return prim / 320; // (((size_t)prim) >> 6);
+   return prim / 320; // (((size_t)prim) >> 6);
 #endif
-    }
+ }
 
+
+
+ class __aligned(32) TessellationCacheTag 
+ {
+ private:
+   unsigned int prim_tag;
+   unsigned int commit_tag;
+   unsigned int usedBlocks;
+   unsigned int access_timestamp;
+   size_t       subtree_root;     
+   MultipleReaderSingleWriterMutex mtx;
+
+ public:
+
+   __forceinline void read_lock()    { mtx.read_lock();   }
+   __forceinline void read_unlock()  { mtx.read_unlock(); }
+   __forceinline void write_lock()   { mtx.write_lock();   }
+   __forceinline void write_unlock() { mtx.write_unlock(); }
+   __forceinline void write_unlock_set_read_lock() { mtx.write_unlock_set_read_lock(); }
+
+
+   __forceinline TessellationCacheTag() {}
+
+   __forceinline void reset() 
+   {
+     assert(sizeof(TessellationCacheTag) == 32);
+     prim_tag         = (unsigned int)-1;
+     commit_tag       = (unsigned int)-1;
+     usedBlocks       = 0;
+     access_timestamp = 0;
+     subtree_root     = 0;
+     mtx.reset();    
+   }
+
+   __forceinline void clearRootRefBits()
+   {
+#if defined(__MIC__)
+     /* bvh4i currently requires a different 'reset' */
+     // FIXME
+     if (subtree_root & ((size_t)1<<3))
+       subtree_root &= ~(((size_t)1 << 4)-1);
+     else
+       subtree_root &= ~(((size_t)1 << 5)-1);
+#else
+     subtree_root &= ~(((size_t)1 << 4)-1);
+#endif
+   }
+
+   __forceinline bool match(InputTagType primID, const unsigned int commitCounter)
+   {
+     return prim_tag == toTag(primID) && commit_tag == commitCounter;
+   }
+
+   __forceinline void set(const InputTagType primID, 
+                          const unsigned int commitCounter,
+                          const size_t root,
+                          const unsigned int blocks)
+   {
+     prim_tag     = toTag(primID);
+     commit_tag   = commitCounter;
+     subtree_root = root;
+     usedBlocks   = blocks;
+   }
+
+   __forceinline void update(const InputTagType primID, 
+                             const unsigned int commitCounter)
+   {
+     prim_tag   = toTag(primID);
+     commit_tag = commitCounter;
+   }
+
+   __forceinline void updateRootRef(const size_t root)
+   {
+     subtree_root = root;
+   }
+
+   /* update with NFU replacement policy */
+   __forceinline void updateNFUStat()
+   {
+     access_timestamp >>= 1;
+   }
+   __forceinline void markAsMRU()
+   {
+     access_timestamp |= (unsigned int)1 << 31;
+   }
+
+
+   __forceinline size_t       &getRootRef()              { return subtree_root;     }
+   __forceinline unsigned int getNumBlocks() const       { return usedBlocks;       }
+   __forceinline unsigned int getPrimTag()   const       { return prim_tag;         }
+   __forceinline unsigned int getCommitTag() const       { return commit_tag;       }
+   __forceinline unsigned int getAccessTimeStamp() const { return access_timestamp; }
+
+
+   __forceinline MultipleReaderSingleWriterMutex* getMutexPtr()     { return &mtx;              }
+   
+
+   __forceinline bool empty() const { return prim_tag == (unsigned int)-1; }
+
+   __forceinline void print() {
+     std::cout << "prim_tag " << prim_tag << " commit_tag " << commit_tag << " blocks " << usedBlocks << " subtree_root " << subtree_root << " ptr "<< getPtr() << " access time stamp " << access_timestamp << std::endl;
+   }
+
+   __forceinline void *getPtr() const
+   {
+     //FIXME: bvh4i
+     return (void *)(subtree_root & (~(((size_t)1 << 4)-1)));
+   }    
+
+ };
+
+ class SharedTessellationCacheStats
+ {
+ public:
+    /* stats */
+   static AtomicCounter cache_accesses;
+   static AtomicCounter cache_hits;
+   static AtomicCounter cache_misses;
+   static AtomicCounter cache_evictions;                
+
+    /* print stats for debugging */                 
+    static void printStats();
+    static void clearStats();
+
+ };
+
+ template<size_t CACHE_ENTRIES>
   class __aligned(64) SharedTessellationCache {
-  public:
-    
-    /* default sizes */
-    static const size_t CACHE_ENTRIES = 512;
-    
-  public:
 
-  class __aligned(32) CacheTag {
-  public:
-    unsigned int prim_tag;
-    unsigned int commit_tag;
-    unsigned int usedBlocks;
-    unsigned int subtree_root;     
-   
-    void        *ptr;
-    AtomicReadWriteMutex mtx;
+  private:
+    TessellationCacheTag tags[CACHE_ENTRIES];            
 
   public:
 
-    __forceinline void read_lock()    { mtx.read_lock();   }
-    __forceinline void read_unlock()  { mtx.read_unlock(); }
-    __forceinline void write_lock()   { mtx.write_lock();   }
-    __forceinline void write_unlock() { mtx.write_unlock(); }
-    __forceinline void write_unlock_set_read_lock() { mtx.write_unlock_set_read_lock(); }
-    __forceinline void reset() 
-    {
-      assert(sizeof(CacheTag) == 32);
-      prim_tag     = (unsigned int)-1;
-      commit_tag   = (unsigned int)-1;
-      subtree_root = (unsigned int)-1;
-      ptr          = NULL;
-      usedBlocks   = 0;
-    }
-
-    __forceinline bool match(InputTagType primID, const unsigned int commitCounter)
-    {
-      return prim_tag == toTag(primID) && (unsigned int)commit_tag == commitCounter;
-    }
-
-    __forceinline void set(InputTagType primID, 
-                           const unsigned int commitCounter,
-                           const unsigned int root32bit,
-                           const unsigned int blocks)
-    {
-      prim_tag        = toTag(primID);
-      commit_tag      = commitCounter;
-      subtree_root    = root32bit;
-      usedBlocks      = blocks;
-    }
-
-    __forceinline void update(InputTagType primID, 
-                              const unsigned int commitCounter)
-    {
-      prim_tag        = toTag(primID);
-      commit_tag      = commitCounter;
-    }
-
-    __forceinline void updateRootRef(const unsigned int root32bit)
-    {
-      subtree_root = root32bit;
-    }
-
-    //__forceinline unsigned int getRootRef() const
-    // {
-    //  return subtree_root;
-    //}
-
-    __forceinline size_t getRef() const
-    {
- #if defined(__MIC__)
-      return subtree_root;
-#else
-      return (size_t)getPtr() + subtree_root;
-#endif
-    };
-   
-    __forceinline unsigned int blocks() const
-    {
-      return usedBlocks;
-    }
-
-    __forceinline bool empty() const
-    {
-      return prim_tag == (unsigned int)-1;
-    }
-
-    __forceinline void print() {
-      std::cout << "prim_tag " << prim_tag << " commit_tag " << commit_tag << " blocks " << usedBlocks << " subtree_root " << subtree_root << " ptr "<< ptr << std::endl;
-    }
-
-    __forceinline void *getPtr() const
-    {
-      return ptr;
-    }
-
-    __forceinline void setPtr(void *_ptr) 
-    {
-      ptr = _ptr;
-    }
-
-  };
-
-  __forceinline unsigned int blocks() 
+  __forceinline unsigned int getNumBlocks() 
   {
     unsigned int b = 0;
     for (size_t i=0;i<CACHE_ENTRIES;i++) 
-      b += tags[i].blocks();
+      b += tags[i].getNumBlocks();
     return b;
   }
 
@@ -238,8 +274,6 @@ namespace embree
       }
   }
       
-  private:
-    CacheTag tags[CACHE_ENTRIES];            
 
     /* reset cache */
     __forceinline void clear()
@@ -247,19 +281,6 @@ namespace embree
       for (size_t i=0;i<CACHE_ENTRIES;i++)
         tags[i].reset();
     }
-
-  public:
-
-    /* stats */
-
-    CACHE_STATS(
-                static AtomicCounter cache_accesses;
-                static AtomicCounter cache_hits;
-                static AtomicCounter cache_misses;
-                static AtomicCounter cache_evictions;                
-                );
-
-    static SharedTessellationCache sharedTessellationCache;
     
 
     SharedTessellationCache()  
@@ -271,12 +292,12 @@ namespace embree
     {
       unsigned int b = 0;
       for (size_t i=0;i<CACHE_ENTRIES;i++)
-        b += tags[i].blocks();
+        b += tags[i].getNumBlocks();
       return b;
     }
 
     /* lookup cache entry using 64bit pointer as tag */
-    __forceinline CacheTag *getTag(InputTagType primID)
+    __forceinline TessellationCacheTag *getTag(InputTagType primID)
     {
       CACHE_DBG(PING);
       /* direct mapped */
@@ -284,28 +305,27 @@ namespace embree
       return &tags[t];
     }
 
-#if defined(__MIC__)
-    static __forceinline void updateRootRef(CacheTag &t, unsigned int new_root)
-    {
-      t.updateRootRef( new_root );      
-    }
-#else
-    static __forceinline void updateRootRef(CacheTag &t, size_t new_root)
-    {
-      t.updateRootRef( new_root - (size_t)t.getPtr() );      
-    }
-#endif    
-
-    /* print stats for debugging */                 
-    static void printStats();
-    static void clearStats();
-
   };
 
 
   // =========================================================================================================
   // =========================================================================================================
   // =========================================================================================================
+
+ class DistributedTessellationCacheStats
+ {
+ public:
+    /* stats */
+   static AtomicCounter cache_accesses;
+   static AtomicCounter cache_hits;
+   static AtomicCounter cache_misses;
+   static AtomicCounter cache_evictions;                
+
+    /* print stats for debugging */                 
+    static void printStats();
+    static void clearStats();
+
+ };
 
 
   class __aligned(64) AdaptiveTessellationCache {
@@ -320,119 +340,13 @@ namespace embree
 
     static const size_t CACHE_MISS = (size_t)-1;
 
-  class __aligned(32) CacheTag {
-  public:
-    unsigned int prim_tag;
-    unsigned int commit_tag;
-    unsigned int usedBlocks;
-    unsigned int access_timestamp;
-    size_t       subtree_root;     
-    //void         *ptr;
-    size_t reserved;
-
-  public:
-
-    __forceinline void reset() 
-    {
-      assert(sizeof(CacheTag) == 32);
-      prim_tag         = (unsigned int)-1;
-      commit_tag       = (unsigned int)-1;
-      usedBlocks       = 0;
-      access_timestamp = 0;
-      subtree_root     = 0;
-      //ptr              = NULL;
-    }
-
-    __forceinline void clearRootRefBits()
-    {
-#if defined(__MIC__)
-      /* bvh4i currently requires a different 'reset' */
-      // FIXME
-      if (subtree_root & ((size_t)1<<3))
-        subtree_root &= ~(((size_t)1 << 4)-1);
-      else
-        subtree_root &= ~(((size_t)1 << 5)-1);
-#else
-      subtree_root &= ~(((size_t)1 << 4)-1);
-#endif
-    }
-
-    __forceinline bool match(InputTagType primID, const unsigned int commitCounter)
-    {
-      return prim_tag == toTag(primID) && commit_tag == commitCounter;
-    }
-
-    __forceinline void set(InputTagType primID, 
-                           const unsigned int commitCounter,
-                           const size_t root,
-                           const unsigned int blocks)
-    {
-      prim_tag     = toTag(primID);
-      commit_tag   = commitCounter;
-      subtree_root = root;
-      usedBlocks   = blocks;
-    }
-
-    __forceinline void update(InputTagType primID, 
-                              const unsigned int commitCounter)
-    {
-      prim_tag   = toTag(primID);
-      commit_tag = commitCounter;
-    }
-
-    __forceinline void updateRootRef(const size_t root)
-    {
-      subtree_root = root;
-    }
-
-    /* update with NFU replacement policy */
-    __forceinline void updateNFUStat()
-    {
-      access_timestamp >>= 1;
-    }
-    __forceinline void markAsMRU()
-    {
-      access_timestamp |= (unsigned int)1 << 31;
-    }
-
-    __forceinline unsigned int getAccessTimeStamp()
-    {
-      return access_timestamp;
-    }
-
-    __forceinline size_t &getRootRef()
-    {
-      return subtree_root;
-    }
-
-    __forceinline unsigned int blocks() const
-    {
-      return usedBlocks;
-    }
-
-    __forceinline bool empty() const
-    {
-      return prim_tag == (unsigned int)-1;
-    }
-
-    __forceinline void print() {
-      std::cout << "prim_tag " << prim_tag << " commit_tag " << commit_tag << " blocks " << usedBlocks << " subtree_root " << subtree_root << " ptr "<< getPtr() << " access time stamp " << access_timestamp << std::endl;
-    }
-
-    __forceinline void *getPtr() const
-    {
-      //FIXME: bvh4i
-      return (void *)(subtree_root & (~(((size_t)1 << 4)-1)));
-    }    
-
-  };
 
 
     class CacheTagSet {
     public:
-      CacheTag tags[CACHE_WAYS];
+      TessellationCacheTag tags[CACHE_WAYS];
 
-      __forceinline CacheTag &getCacheTagAndUpdateNFU(size_t index)
+      __forceinline TessellationCacheTag &getCacheTagAndUpdateNFU(size_t index)
       {
         assert(index < CACHE_WAYS);
         for (size_t i=0;i<CACHE_WAYS;i++)
@@ -457,15 +371,15 @@ namespace embree
         for (size_t i=0;i<CACHE_WAYS;i++) tags[i].reset();
       }
 
-      __forceinline unsigned int blocks() 
+      __forceinline unsigned int getNumBlocks() 
       {
         unsigned int b = 0;
         for (size_t i=0;i<CACHE_WAYS;i++) 
-          b += tags[i].blocks();
+          b += tags[i].getNumBlocks();
         return b;
       }
 
-      __forceinline CacheTag& getEvictionCandidate(const unsigned int neededBlocks)
+      __forceinline TessellationCacheTag& getEvictionCandidate(const unsigned int neededBlocks)
       {
         /* fill empty slots first */
         for (size_t i=0;i<CACHE_WAYS;i++)
@@ -517,7 +431,6 @@ namespace embree
     /* reset cache */
     __forceinline void clear()
     {
-      CACHE_STATS(cache_clears++);
       for (size_t i=0;i<CACHE_SETS;i++)
         sets[i].reset();
     }
@@ -546,14 +459,13 @@ namespace embree
     {
       unsigned int b = 0;
       for (size_t i=0;i<CACHE_SETS;i++)
-        b += sets[i].blocks();
+        b += sets[i].getNumBlocks();
       return b;
     }
 
     /* lookup cache entry using 64bit pointer as tag */
     __forceinline size_t lookup(InputTagType primID, const unsigned int commitCounter)
     {
-      CACHE_STATS(cache_accesses++);
       CACHE_DBG(PING);
       /* direct mapped */
       const size_t set = addrToCacheSetIndex(primID);
@@ -573,36 +485,33 @@ namespace embree
 
       if (unlikely(index == CACHE_MISS)) 
         {
-          CACHE_STATS(cache_misses++);
           return CACHE_MISS;
         }
-      CACHE_STATS(cache_hits++);
 
-      CacheTag &t = sets[set].getCacheTagAndUpdateNFU(index);
+      TessellationCacheTag &t = sets[set].getCacheTagAndUpdateNFU(index);
 
       assert( t.match(primID,commitCounter) );
       return t.getRootRef();
     }
     
     /* insert entry using 'neededBlocks' cachelines into cache */
-    __forceinline CacheTag &request(InputTagType primID, 
-                                    const unsigned int commitCounter, 
-                                    const size_t neededBlocks)
+    __forceinline TessellationCacheTag &request(InputTagType primID, 
+                                                const unsigned int commitCounter, 
+                                                const size_t neededBlocks)
     {
       CACHE_DBG(PING);
       const size_t set = addrToCacheSetIndex(primID);
       CACHE_DBG(DBG_PRINT(set));
       
-      CacheTag &t = sets[set].getEvictionCandidate(neededBlocks);
+      TessellationCacheTag &t = sets[set].getEvictionCandidate(neededBlocks);
       
       assert( t.getAccessTimeStamp() & ((unsigned int)1 << 31));
       assert(!t.match(primID,commitCounter));
 
-      if (!t.empty() && t.blocks() >= neededBlocks)
+      if (!t.empty() && t.getNumBlocks() >= neededBlocks)
         {
-          assert(t.blocks() >= neededBlocks);
+          assert(t.getNumBlocks() >= neededBlocks);
 	  CACHE_DBG(DBG_PRINT("EVICT"));
-          CACHE_STATS(cache_evictions++);
           t.clearRootRefBits();
           t.update(primID,commitCounter);
           return t;
@@ -616,15 +525,15 @@ namespace embree
       
       if (t.getPtr() != NULL)
         {
-          assert(t.usedBlocks != 0);
-          assert(t.prim_tag != (unsigned int)-1);
+          assert(t.getNumBlocks() != 0);
+          assert(t.getPrimTag() != (unsigned int)-1);
           CACHE_DBG(DBG_PRINT(t.getPtr()));
           free_tessellation_cache_mem(t.getPtr());
         }
       else
         {
-          assert(t.usedBlocks == 0);
-          assert(t.prim_tag == (unsigned int)-1);
+          assert(t.getNumBlocks() == 0);
+          assert(t.getPrimTag() == (unsigned int)-1);
         }
       float *new_mem = alloc_tessellation_cache_mem(neededBlocks);
       CACHE_DBG(DBG_PRINT(new_mem));
@@ -635,19 +544,6 @@ namespace embree
       CACHE_DBG(sets[set].print());
       return t;     
     }
-
-    /* print stats for debugging */                 
-    static void printStats();
-    static void clearStats();
-
-    /* stats */
-    CACHE_STATS(
-                static AtomicCounter cache_accesses;
-                static AtomicCounter cache_hits;
-                static AtomicCounter cache_misses;
-                static AtomicCounter cache_clears;
-                static AtomicCounter cache_evictions;                
-                );
 
   };
 
@@ -836,13 +732,11 @@ namespace embree
 
 
     /* stats */
-    CACHE_STATS(
-                static AtomicCounter cache_accesses;
-                static AtomicCounter cache_hits;
-                static AtomicCounter cache_misses;
-                static AtomicCounter cache_clears;
-                static AtomicCounter cache_evictions;                
-                );
+    static AtomicCounter cache_accesses;
+    static AtomicCounter cache_hits;
+    static AtomicCounter cache_misses;
+    static AtomicCounter cache_clears;
+    static AtomicCounter cache_evictions;                
                     
     __forceinline size_t addrToCacheSetIndex(InputTagType primID)
     {      

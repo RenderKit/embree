@@ -21,19 +21,22 @@
 #define TIMER(x)
 #define DBG(x) 
 
+#define SHARED_TESSELLATION_CACHE_ENTRIES 1024
+
 namespace embree
 {
   namespace isa
   {  
     
     __thread TESSELLATION_CACHE *SubdivPatch1CachedIntersector1::thread_cache = NULL;
-    
+    SharedTessellationCache<SHARED_TESSELLATION_CACHE_ENTRIES> sharedTessellationCache;
+
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /*! Returns BVH4 node reference for subtree over patch grid */
-    size_t SubdivPatch1CachedIntersector1::getSubtreeRootNode(Precalculations& pre, SharedTessellationCache &shared_cache, const SubdivPatch1Cached* const subdiv_patch, const void* geom)
+    size_t SubdivPatch1CachedIntersector1::getSubtreeRootNode(Precalculations& pre, const SubdivPatch1Cached* const subdiv_patch, const void* geom)
     {
 
 #if defined(SHARED_TESSELLATION_CACHE)      
@@ -52,7 +55,7 @@ namespace embree
 
       DBG(DBG_PRINT(tag));
 
-      SharedTessellationCache::CacheTag *t = shared_cache.getTag(tag);
+      TessellationCacheTag *t = sharedTessellationCache.getTag(tag);
       /* read lock */
       DBG(DBG_PRINT("READ_LOCK"));
       t->read_lock();
@@ -60,15 +63,15 @@ namespace embree
       
 #if defined(SHARED_TESSELLATION_CACHE)      
       /* remember read/write mutex */
-      pre.rw_mtx = &t->mtx;
+      pre.rw_mtx = t->getMutexPtr();
 #endif      
 
       /* patch data not in cache? */
-      CACHE_STATS(SharedTessellationCache::cache_accesses++);
+      CACHE_STATS(SharedTessellationCacheStats::cache_accesses++);
       
       if (unlikely(!t->match(tag,commitCounter)))
         {
-          CACHE_STATS(SharedTessellationCache::cache_misses++);
+          CACHE_STATS(SharedTessellationCacheStats::cache_misses++);
           
           DBG(DBG_PRINT("CACHE_MISS"));                
           
@@ -93,7 +96,7 @@ namespace embree
           DBG(DBG_PRINT(needed_blocks));                          
           
           BVH4::Node* node = (BVH4::Node*)t->getPtr();
-          if (t->blocks() < needed_blocks)
+          if (t->getNumBlocks() < needed_blocks)
             {
               DBG(DBG_PRINT("EXPAND DATA MEM"));                          
               
@@ -107,10 +110,9 @@ namespace embree
               DBG(DBG_PRINT("ALLOCATE PREVIOUS DATA MEM"));                                            
               node = (BVH4::Node*)alloc_tessellation_cache_mem(needed_blocks);
               
-              CACHE_STATS(SharedTessellationCache::cache_evictions++);              
+              CACHE_STATS(SharedTessellationCacheStats::cache_evictions++);              
 
-              t->set(tag,commitCounter,0,needed_blocks);
-              t->setPtr(node);
+              t->set(tag,commitCounter,(size_t)node,needed_blocks);
             }
           else
             {
@@ -126,7 +128,7 @@ namespace embree
           
           assert( new_root != BVH4::invalidNode);
           
-          SharedTessellationCache::updateRootRef(*t,new_root);
+          t->updateRootRef(new_root);
 
           /* write unlock and read lock */
           DBG(DBG_PRINT("WRITE UNLOCK READ LOCK"));                                                      
@@ -134,17 +136,17 @@ namespace embree
           DBG(DBG_PRINT(&t->mtx));
 
           DBG(DBG_PRINT(new_root));                                            
-          DBG(shared_cache.print());
+          DBG(sharedTessellationCache.print());
           
           return new_root;
         }
-      CACHE_STATS(SharedTessellationCache::cache_hits++);              
+      CACHE_STATS(SharedTessellationCacheStats::cache_hits++);              
       
       DBG(DBG_PRINT("CACHE HIT"));                                            
 
-      BVH4::NodeRef root = t->getRef();
+      BVH4::NodeRef root = t->getRootRef();
       DBG(DBG_PRINT(root));
-      DBG(shared_cache.print());
+      DBG(sharedTessellationCache.print());
       
       return root;
     }
@@ -209,7 +211,6 @@ namespace embree
     
       const unsigned int commitCounter = ((Scene*)geom)->commitCounter;
       InputTagType tag = (InputTagType)subdiv_patch;
-      SharedTessellationCache &shared_cache = SharedTessellationCache::sharedTessellationCache;
 
       DBG(DBG_PRINT((size_t)tag / 320));
       BVH4::NodeRef root = pre.local_cache->lookup(tag,commitCounter);
@@ -219,9 +220,9 @@ namespace embree
           DBG(DBG_PRINT("L1 CACHE MISS"));                                            
 
           /* is data in L2 */
-          SharedTessellationCache::CacheTag *t_l2 = shared_cache.getTag(tag);
+          TessellationCacheTag *t_l2 = sharedTessellationCache.getTag(tag);
           t_l2->read_lock();
-          CACHE_STATS(SharedTessellationCache::cache_accesses++);
+          CACHE_STATS(SharedTessellationCacheStats::cache_accesses++);
       
           if (unlikely(!t_l2->match(tag,commitCounter))) /* not in L2 either */
             {
@@ -229,14 +230,14 @@ namespace embree
               
               subdiv_patch->prefetchData();
 
-              CACHE_STATS(SharedTessellationCache::cache_misses++);
+              CACHE_STATS(SharedTessellationCacheStats::cache_misses++);
               t_l2->read_unlock();
               t_l2->write_lock();
               /* update */
               const unsigned int needed_blocks = subdiv_patch->grid_subtree_size_64b_blocks;
               DBG(DBG_PRINT(needed_blocks));                          
           
-              if (t_l2->blocks() < needed_blocks)
+              if (t_l2->getNumBlocks() < needed_blocks)
                 {
                   DBG(DBG_PRINT("EXPAND L2 CACHE ENTRY"));                                            
                   BVH4::Node* node = (BVH4::Node*)t_l2->getPtr();
@@ -246,10 +247,9 @@ namespace embree
                   node = (BVH4::Node*)alloc_tessellation_cache_mem(needed_blocks);
                   DBG(DBG_PRINT(node));
               
-                  CACHE_STATS(SharedTessellationCache::cache_evictions++);              
+                  CACHE_STATS(SharedTessellationCacheStats::cache_evictions++);              
 
-                  t_l2->set(tag,commitCounter,0,needed_blocks);
-                  t_l2->setPtr(node);
+                  t_l2->set(tag,commitCounter,(size_t)node,needed_blocks);
                   assert(t_l2->getPtr() == node);
                 }
               else
@@ -272,11 +272,11 @@ namespace embree
               assert( l2_blocks == needed_blocks );
 
               assert( new_root != BVH4::invalidNode);          
-              SharedTessellationCache::updateRootRef(*t_l2,new_root);
-              assert(t_l2->getRef() == new_root);
+              t_l2->updateRootRef(new_root);
+              assert(t_l2->getRootRef() == new_root);
               
               /* get L1 cache tag to evict */
-              TESSELLATION_CACHE::CacheTag &t_l1 = pre.local_cache->request(tag,commitCounter,needed_blocks);
+              TessellationCacheTag &t_l1 = pre.local_cache->request(tag,commitCounter,needed_blocks);
              
               /* copy data to L1 */
               DBG(DBG_PRINT("INIT FROM SHARED CACHE TAG"));                                                              
@@ -286,10 +286,10 @@ namespace embree
               DBG(DBG_PRINT("updateNodeRefs"));                                                              
               DBG(DBG_PRINT(t_l2->getPtr()));
               DBG(DBG_PRINT(t_l1.getPtr()));
-              assert(t_l1.blocks() >= needed_blocks);
+              assert(t_l1.getNumBlocks() >= needed_blocks);
 
               memcpy(t_l1.getPtr(),t_l2->getPtr(),64*needed_blocks);
-              size_t t_l2_root = t_l2->getRef();
+              size_t t_l2_root = t_l2->getRootRef();
               updateBVH4Refs(t_l2_root,(size_t)t_l2->getPtr(),(size_t)t_l1.getPtr());
               t_l1.updateRootRef( ((size_t)t_l2_root - (size_t)t_l2->getPtr()) + (size_t)t_l1.getPtr() );
               DBG(DBG_PRINT(t_l1.subtree_root));
@@ -320,8 +320,8 @@ namespace embree
               DBG(DBG_PRINT("L2 CACHE HIT"));                                            
               DBG(pre.local_cache->print());
               
-              CACHE_STATS(SharedTessellationCache::cache_hits++);
-              TESSELLATION_CACHE::CacheTag &t_l1 = pre.local_cache->request(tag,commitCounter,t_l2->blocks());
+              CACHE_STATS(SharedTessellationCacheStats::cache_hits++);
+              TessellationCacheTag &t_l1 = pre.local_cache->request(tag,commitCounter,t_l2->getNumBlocks());
 
               DBG(t_l1.print());
               
@@ -330,8 +330,8 @@ namespace embree
               t_l1.update(tag,commitCounter);
 
               DBG(DBG_PRINT("updateNodeRefs"));                                                                            
-              memcpy(t_l1.getPtr(),t_l2->getPtr(),64*t_l2->blocks());
-              size_t t_l2_root = t_l2->getRef();
+              memcpy(t_l1.getPtr(),t_l2->getPtr(),64*t_l2->getNumBlocks());
+              size_t t_l2_root = t_l2->getRootRef();
               updateBVH4Refs(t_l2_root,(size_t)t_l2->getPtr(),(size_t)t_l1.getPtr());
               t_l1.updateRootRef( (size_t)t_l2_root - (size_t)t_l2->getPtr() + (size_t)t_l1.getPtr() );
               DBG(DBG_PRINT(t_l1.subtree_root));

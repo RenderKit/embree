@@ -27,7 +27,7 @@
 /* returns u,v based on individual triangles instead relative to original patch */
 #define FORCE_TRIANGLE_UV 0
 
-//#define SHARED_TESSELLATION_CACHE
+#define SHARED_TESSELLATION_CACHE
 
 //#define TESSELLATION_CACHE TessellationCache
 # define TESSELLATION_CACHE AdaptiveTessellationCache
@@ -61,7 +61,7 @@ namespace embree
         Ray &r;
         
 #if defined(SHARED_TESSELLATION_CACHE)        
-        AtomicReadWriteMutex *rw_mtx;
+        MultipleReaderSingleWriterMutex *rw_mtx;
 #endif
         
         __forceinline Precalculations (Ray& ray) : r(ray) 
@@ -388,7 +388,7 @@ namespace embree
           subdiv_patch->prefetchData();
           const unsigned int blocks = subdiv_patch->grid_subtree_size_64b_blocks;
           
-          TESSELLATION_CACHE::CacheTag &t = local_cache->request(tag,commitCounter,blocks);
+          TessellationCacheTag &t = local_cache->request(tag,commitCounter,blocks);
           //BVH4::Node* node = (BVH4::Node*)local_cache->getCacheMemoryPtr(t);
 
           BVH4::Node* node = (BVH4::Node*)t.getPtr();
@@ -412,7 +412,7 @@ namespace embree
 
 
       /*! Returns BVH4 node reference for subtree over patch grid */
-      static size_t getSubtreeRootNode(Precalculations& pre, SharedTessellationCache &shared_cache, const SubdivPatch1Cached* const subdiv_patch, const void* geom);
+      static size_t getSubtreeRootNode(Precalculations& pre, const SubdivPatch1Cached* const subdiv_patch, const void* geom);
 
 
       /*! Returns BVH4 node reference for subtree over patch grid */
@@ -458,8 +458,8 @@ namespace embree
         else 
         {
 #if defined(SHARED_TESSELLATION_CACHE)
-          //lazy_node = getSubtreeRootNode(pre, SharedTessellationCache::sharedTessellationCache, prim, geom);
-          lazy_node = getSubtreeRootNodeFromCacheHierarchy(pre, prim, geom);          
+          lazy_node = getSubtreeRootNode(pre, prim, geom);
+          //lazy_node = getSubtreeRootNodeFromCacheHierarchy(pre, prim, geom);          
 #else          
           lazy_node = getSubtreeRootNode(pre.local_cache, prim, geom);
 #endif
