@@ -284,7 +284,7 @@ namespace embree
       struct Recursion { 
         BVHBuilderGeneric* parent;
         __forceinline Recursion(BVHBuilderGeneric* parent) : parent(parent) {}
-        __forceinline void operator() (BuildRecord<NodeRef>& br) { Recursion recursion(parent); parent->recurse(br,recursion); } 
+        __forceinline void operator() (BuildRecord<NodeRef>& br) { parent->recurse(br,*this); } 
       };
 
       void recurseTop(BuildRecord<NodeRef>& current)
