@@ -24,17 +24,7 @@ namespace embree
   namespace isa
   {
     template<typename NodeRef>
-      class BVHBuilderGeneric
-    {
-      static const size_t MAX_BRANCHING_FACTOR = 16;
-      static const size_t MIN_LARGE_LEAF_LEVELS = 8;
-      static const size_t SIZE_WORK_STACK = 64;
-      static const size_t THRESHOLD_FOR_SUBTREE_RECURSION = 128;
-      static const size_t THRESHOLD_FOR_SINGLE_THREADED = 50000; 
-
-    public:
-      
-      class __aligned(64) BuildRecord : public PrimInfo
+     class __aligned(64) BuildRecord : public PrimInfo
       {
       public:
 	unsigned depth;         //!< depth from the root of the tree
@@ -80,13 +70,24 @@ namespace embree
 	};
       };
 
+    template<typename NodeRef, typename CreateNodeFunc, typename CreateLeafFunc>
+      class BVHBuilderGeneric
+    {
+      static const size_t MAX_BRANCHING_FACTOR = 16;
+      static const size_t MIN_LARGE_LEAF_LEVELS = 8;
+      static const size_t SIZE_WORK_STACK = 64;
+      static const size_t THRESHOLD_FOR_SUBTREE_RECURSION = 128;
+      static const size_t THRESHOLD_FOR_SINGLE_THREADED = 50000; 
+
+    public:
+
       struct GlobalState
       {
         ALIGNED_CLASS;
       public:
 
         GlobalState () : numThreads(getNumberOfLogicalThreads()) {
-	  threadStack = new WorkStack<BuildRecord,SIZE_WORK_STACK>[numThreads]; 
+	  threadStack = new WorkStack<BuildRecord<NodeRef>,SIZE_WORK_STACK>[numThreads]; 
         }
         
         ~GlobalState () {
@@ -95,17 +96,19 @@ namespace embree
 
       public:
 	size_t numThreads;
-	WorkHeap<BuildRecord> heap;
-        __aligned(64) WorkStack<BuildRecord,SIZE_WORK_STACK>* threadStack;
+	WorkHeap<BuildRecord<NodeRef>> heap;
+        __aligned(64) WorkStack<BuildRecord<NodeRef>,SIZE_WORK_STACK>* threadStack;
         ObjectPartition::ParallelBinner parallelBinner;
       };
       
     public:
       
-      BVHBuilderGeneric (PrimRef* prims, PrimRef* tmp, const PrimInfo& pinfo,
+      BVHBuilderGeneric (CreateNodeFunc& createNode, CreateLeafFunc& createLeaf,
+                         PrimRef* prims, PrimRef* tmp, const PrimInfo& pinfo,
                          const size_t branchingFactor, const size_t maxDepth, 
                          const size_t logBlockSize, const size_t minLeafSize, const size_t maxLeafSize)
-        : state(NULL), prims(prims), tmp(tmp), pinfo(pinfo), 
+        : createNode(createNode), createLeaf(createLeaf), 
+        state(NULL), prims(prims), tmp(tmp), pinfo(pinfo), 
           branchingFactor(branchingFactor), maxDepth(maxDepth),
           logBlockSize(logBlockSize), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize)
       {
@@ -113,7 +116,7 @@ namespace embree
           THROW_RUNTIME_ERROR("bvh4_builder: branching factor too large");
       }
 
-      void splitFallback(BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild)
+      void splitFallback(BuildRecord<NodeRef>& current, BuildRecord<NodeRef>& leftChild, BuildRecord<NodeRef>& rightChild)
       {
         const size_t center = (current.begin + current.end)/2;
         
@@ -128,8 +131,7 @@ namespace embree
         rightChild.init(right,center,current.end);
       }
 
-      template<typename CreateNodeFunc, typename CreateLeafFunc>
-        void createLargeLeaf(CreateNodeFunc& createNode, CreateLeafFunc& createLeaf, BuildRecord& current)
+      void createLargeLeaf(CreateNodeFunc& createNode, CreateLeafFunc& createLeaf, BuildRecord<NodeRef>& current)
       {
         if (current.depth > maxDepth) 
           THROW_RUNTIME_ERROR("depth limit reached");
@@ -141,7 +143,7 @@ namespace embree
         }
 
         /* fill all children by always splitting the largest one */
-        BuildRecord children[MAX_BRANCHING_FACTOR];
+        BuildRecord<NodeRef> children[MAX_BRANCHING_FACTOR];
         size_t numChildren = 1;
         children[0] = current;
         
@@ -165,7 +167,7 @@ namespace embree
           if (bestChild == -1) break;
           
           /*! split best child into left and right child */
-          __aligned(64) BuildRecord left, right;
+          __aligned(64) BuildRecord<NodeRef> left, right;
           splitFallback(children[bestChild],left,right);
           
           /* add new children left and right */
@@ -186,7 +188,7 @@ namespace embree
           createLargeLeaf(createNode,createLeaf,children[i]);
       }
             
-      __forceinline void splitSequential(BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild)
+      __forceinline void splitSequential(BuildRecord<NodeRef>& current, BuildRecord<NodeRef>& leftChild, BuildRecord<NodeRef>& rightChild)
       {
         /* calculate binning function */
         PrimInfo pinfo(current.size(),current.geomBounds,current.centBounds);
@@ -199,13 +201,12 @@ namespace embree
         else split.partition(prims, current.begin, current.end, leftChild, rightChild);
       }
 
-      void splitParallel(BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild)
+      void splitParallel(BuildRecord<NodeRef>& current, BuildRecord<NodeRef>& leftChild, BuildRecord<NodeRef>& rightChild)
       {
         LockStepTaskScheduler* scheduler = LockStepTaskScheduler::instance();
         const size_t threadCount = scheduler->getNumThreads();
 
         /* use primitive array temporarily for parallel splits */
-        //PrimRef* tmp = (PrimRef*) bvh->alloc2.curPtr();
         PrimInfo pinfo(current.begin,current.end,current.geomBounds,current.centBounds);
         
         /* parallel binning of centroids */
@@ -218,10 +219,9 @@ namespace embree
         else state->parallelBinner.partition(pinfo,tmp,prims,leftChild,rightChild,0,threadCount,scheduler);
       }
 
-      template<typename CreateNodeFunc, typename CreateLeafFunc>
-        void recurse(CreateNodeFunc& createNode, CreateLeafFunc& createLeaf, BuildRecord& current)
+      void recurse(CreateNodeFunc& createNode, CreateLeafFunc& createLeaf, BuildRecord<NodeRef>& current)
       {
-        __aligned(64) BuildRecord children[MAX_BRANCHING_FACTOR];
+        __aligned(64) BuildRecord<NodeRef> children[MAX_BRANCHING_FACTOR];
         
         /* create leaf node */
         if (current.depth+MIN_LARGE_LEAF_LEVELS >= maxDepth || current.size() <= minLeafSize) {
@@ -253,7 +253,7 @@ namespace embree
           if (bestChild == -1) break;
           
           /*! split best child into left and right child */
-          __aligned(64) BuildRecord left, right;
+          __aligned(64) BuildRecord<NodeRef> left, right;
           splitSequential(children[bestChild],left,right);
           
           /* add new children left and right */
@@ -280,10 +280,9 @@ namespace embree
           recurse(createNode,createLeaf,children[i]);
       }
 
-      template<typename CreateNodeFunc, typename CreateLeafFunc>
-        void recurseTop(CreateNodeFunc& createNode, CreateLeafFunc& createLeaf, BuildRecord& current)
+      void recurseTop(CreateNodeFunc& createNode, CreateLeafFunc& createLeaf, BuildRecord<NodeRef>& current)
       {
-        __aligned(64) BuildRecord children[MAX_BRANCHING_FACTOR];
+        __aligned(64) BuildRecord<NodeRef> children[MAX_BRANCHING_FACTOR];
         
         /* create leaf node */
         //if (current.depth+MIN_LARGE_LEAF_LEVELS >= maxDepth || current.size() <= minLeafSize) {
@@ -315,7 +314,7 @@ namespace embree
           if (bestChild == -1) break;
           
           /*! split best child into left and right child */
-          __aligned(64) BuildRecord left, right;
+          __aligned(64) BuildRecord<NodeRef> left, right;
           splitParallel(children[bestChild],left,right);
           
           /* add new children left and right */
@@ -342,15 +341,14 @@ namespace embree
           state->heap.push(children[i]);
       }
 
-      template<typename CreateNodeFunc, typename CreateLeafFunc>
-        void buildSubTrees(size_t threadID, size_t numThreads)
+      void buildSubTrees(size_t threadID, size_t numThreads)
     {
       //__aligned(64) Allocator nodeAlloc(&bvh->alloc);
       //__aligned(64) Allocator leafAlloc(&bvh->alloc);
       
       while (true) 
       {
-	BuildRecord br;
+	BuildRecord<NodeRef> br;
 	if (!state->heap.pop(br))
         {
           /* global work queue empty => try to steal from neighboring queues */	  
@@ -367,8 +365,8 @@ namespace embree
         }
         
         /* process local work queue */
-        CreateNodeFunc& createNode = *(CreateNodeFunc*)cNode;
-        CreateLeafFunc& createLeaf = *(CreateLeafFunc*)cLeaf;
+        //CreateNodeFunc& createNode = *(CreateNodeFunc*)cNode;
+        //CreateLeafFunc& createLeaf = *(CreateLeafFunc*)cLeaf;
 
 	recurse(createNode,createLeaf,br);
 	while (state->threadStack[threadID].pop(br))
@@ -377,18 +375,16 @@ namespace embree
       _mm_sfence(); // make written leaves globally visible
     }
       
-      template<typename CreateNodeFunc, typename CreateLeafFunc>
-        static void task_buildSubTrees (void* data, const size_t threadID, const size_t numThreads) {
-        ((BVHBuilderGeneric*)data)->buildSubTrees<CreateNodeFunc,CreateLeafFunc>(threadID,numThreads);                     
+      static void task_buildSubTrees (void* data, const size_t threadID, const size_t numThreads) {
+        ((BVHBuilderGeneric*)data)->buildSubTrees(threadID,numThreads);                     
       }
 
       /*! builder entry function */
-      template<typename CreateNodeFunc, typename CreateLeafFunc>
-        NodeRef operator() (CreateNodeFunc& createNode, CreateLeafFunc& createLeaf)
+      NodeRef operator() ()
       {
         /* create initial build record */
         NodeRef root;
-        BuildRecord br;
+        BuildRecord<NodeRef> br;
         br.init(pinfo,0,pinfo.size());
         br.depth = 1;
         br.parent = &root;
@@ -406,7 +402,7 @@ namespace embree
         const size_t threadCount = scheduler->getNumThreads();
         while (state->heap.size() < 2*threadCount)
         {
-          BuildRecord br;
+          BuildRecord<NodeRef> br;
 
           /* pop largest item for better load balancing */
           if (!state->heap.pop(br)) 
@@ -422,12 +418,12 @@ namespace embree
         }
         _mm_sfence(); // make written leaves globally visible
         
-        std::sort(state->heap.begin(),state->heap.end(),BuildRecord::Greater());
+        std::sort(state->heap.begin(),state->heap.end(),BuildRecord<NodeRef>::Greater());
 
         /* now process all created subtasks on multiple threads */
-        cNode = &createNode;
-        cLeaf = &createLeaf;
-        scheduler->dispatchTask(task_buildSubTrees<CreateNodeFunc,CreateLeafFunc>, this, 0, threadCount ); // FIXME: threadIdx=0
+        //cNode = &createNode;
+        //cLeaf = &createLeaf;
+        scheduler->dispatchTask(task_buildSubTrees, this, 0, threadCount ); // FIXME: threadIdx=0
 
         delete state; state = NULL;
 
@@ -435,8 +431,8 @@ namespace embree
       }
 
     private:
-      void* cNode;
-      void* cLeaf;
+      CreateNodeFunc& createNode;
+      CreateLeafFunc& createLeaf;
       GlobalState* state;
       PrimRef* prims;
       PrimRef* tmp;

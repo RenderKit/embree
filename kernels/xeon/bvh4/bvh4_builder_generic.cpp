@@ -34,7 +34,7 @@ namespace embree
     {
       __forceinline CreateBVH4Node (BVH4* bvh) : bvh(bvh) {}
       
-      __forceinline BVH4::NodeRef operator() (BVHBuilderGeneric<BVH4::NodeRef>::BuildRecord* children, const size_t N)
+      __forceinline BVH4::NodeRef operator() (BuildRecord<BVH4::NodeRef>* children, const size_t N)
       {
         FastAllocator::Thread& alloc = *bvh->alloc2.instance();
         BVH4::Node* node = (BVH4::Node*) alloc.malloc(sizeof(BVH4::Node)); node->clear();
@@ -54,7 +54,7 @@ namespace embree
     {
       __forceinline CreateLeaf (BVH4* bvh) : bvh(bvh) {}
       
-      __forceinline BVH4::NodeRef operator() (BVHBuilderGeneric<BVH4::NodeRef>::BuildRecord& current, PrimRef* prims)
+      __forceinline BVH4::NodeRef operator() (BuildRecord<BVH4::NodeRef>& current, PrimRef* prims)
       {
         size_t items = Primitive::blocks(current.size());
         size_t start = current.begin;
@@ -155,10 +155,10 @@ namespace embree
         double T0 = getSeconds();
         PrimInfo pinfo = CreatePrimRefArray<TriangleMesh,1>(scene,prims);
         double T1 = getSeconds();
-        BVHBuilderGeneric<BVH4::NodeRef> builder(prims.data(),tmp.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,2,4,4*BVH4::maxLeafBlocks);
         CreateBVH4Node createNode(bvh);
         CreateLeaf<Triangle4> createLeaf(bvh);
-        BVH4::NodeRef root = builder(createNode,createLeaf);
+        BVHBuilderGeneric<BVH4::NodeRef,CreateBVH4Node,CreateLeaf<Triangle4> > builder(createNode,createLeaf,prims.data(),tmp.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,2,4,4*BVH4::maxLeafBlocks);
+        BVH4::NodeRef root = builder();
         double T2 = getSeconds();
         bvh->set(root,pinfo.geomBounds,pinfo.size());
       
