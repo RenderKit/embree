@@ -52,16 +52,15 @@ namespace embree
         void operator() (const Continuation& c) { parent->func(c,*this); } 
       };
     
-      struct Select : public ParallelContinue<Continuation>
+      struct Split : public ParallelContinue<Continuation>
       {
         ParallelContinueTask* parent;
-        __forceinline Select(ParallelContinueTask* parent) : parent(parent) {}
+        __forceinline Split(ParallelContinueTask* parent) : parent(parent) {}
         void operator() (const Continuation& c) 
         {
           const size_t threadIndex = LockStepTaskScheduler::threadIndex();
-          if (c.final() || !parent->threadStack[threadIndex].push(c)) {
-            Recurse r(parent); r(c); 
-          }
+          if (parent->threadStack[threadIndex].push(c)) return;
+          Recurse r(parent); r(c); // fallback if push was not possible
         }
       };
 
@@ -87,9 +86,10 @@ namespace embree
           if (!success) return; // FIXME: may loose threads
         }
 
-        Select select(this); func(cont,select);
+        Recurse recurse(this); Split split(this); 
+        func(cont,cont.final() ? (ParallelContinue<Continuation>&)recurse : (ParallelContinue<Continuation>&)split);
 	while (threadStack[threadIndex].pop(cont)) {
-          Select select(this); func(cont,select);
+          func(cont,cont.final() ? (ParallelContinue<Continuation>&)recurse : (ParallelContinue<Continuation>&)split);
         }
       }
     }
