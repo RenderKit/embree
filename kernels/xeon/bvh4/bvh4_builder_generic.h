@@ -79,9 +79,8 @@ namespace embree
     public:
       
       BVHBuilderGeneric (PrimRef* prims, const size_t N,
-                         const size_t branchingFactor, const size_t logBlockSize,
-                         const size_t minLeafSize, const size_t maxLeafSize,
-                         const size_t maxDepth)
+                         const size_t branchingFactor, const size_t maxDepth, 
+                         const size_t logBlockSize, const size_t minLeafSize, const size_t maxLeafSize)
         : prims(prims), N(N), branchingFactor(branchingFactor), logBlockSize(logBlockSize), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize), maxDepth(maxDepth)
       {
         if (branchingFactor > MAX_BRANCHING_FACTOR)

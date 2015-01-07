@@ -411,9 +411,10 @@ namespace embree
     }
 
     /*! initializes the allocator */
-    void init(size_t bytesAllocate, size_t bytesReserve) {
+    void init(size_t bytesAllocate, size_t bytesReserve = 0) {
+      if (bytesReserve == 0) bytesReserve = bytesAllocate;
       usedBlocks = Block::create(bytesAllocate,bytesReserve);
-      growSize = bytesReserve;
+      growSize = max(size_t(256),bytesReserve);
     }
 
     /*! resets the allocator, memory blocks get reused */
@@ -570,7 +571,7 @@ namespace embree
       }
 
       size_t getAllocatedBytes() const {
-	return allocEnd + (next ? next->getAllocatedBytes() : 0);
+	return max(allocEnd,size_t(cur)) + (next ? next->getAllocatedBytes() : 0);
       }
 
       size_t getReservedBytes() const {
@@ -578,7 +579,7 @@ namespace embree
       }
 
       size_t getFreeBytes() const {
-	return allocEnd-cur;
+	return max(allocEnd,size_t(cur))-cur;
       }
 
     public:

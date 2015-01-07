@@ -173,7 +173,7 @@ namespace embree
         state.reset(NULL);
       }
       
-      /* start measurement */
+      /* stop measurement */
       double dt = 0.0f;
       if (g_verbose >= 1) dt = getSeconds()-t0;
 
