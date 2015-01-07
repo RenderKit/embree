@@ -98,7 +98,7 @@ namespace embree
   __forceinline const ssef operator +( const ssef& a ) { return a; }
   __forceinline const ssef operator -( const ssef& a ) { return _mm_xor_ps(a.m128, _mm_castsi128_ps(_mm_set1_epi32(0x80000000))); }
   __forceinline const ssef abs       ( const ssef& a ) { return _mm_and_ps(a.m128, _mm_castsi128_ps(_mm_set1_epi32(0x7fffffff))); }
-  __forceinline const ssef sign      ( const ssef& a ) { return _mm_blendv_ps(ssef(one), -ssef(one), _mm_cmplt_ps (a,ssef(zero))); }
+  __forceinline const ssef sign      ( const ssef& a ) { return blendv_ps(ssef(one), -ssef(one), _mm_cmplt_ps (a,ssef(zero))); }
   __forceinline const ssef signmsk   ( const ssef& a ) { return _mm_and_ps(a.m128,_mm_castsi128_ps(_mm_set1_epi32(0x80000000))); }
   
   __forceinline const ssef rcp  ( const ssef& a ) {

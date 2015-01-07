@@ -200,7 +200,7 @@ namespace embree
   }
 
 #if defined(__SSE4_1__) 
-#if defined(__clang__) || defined(_MSC_VER) && !defined(__INTEL_COMPILER)
+#if defined(__clang__) || defined(_MSC_VER) && !defined(__INTEL_COMPILER) // FIXME: can this get removed?
   __forceinline const ssei select(const int mask, const ssei& t, const ssei& f) {
 	  return select(sseb(mask), t, f);
   }

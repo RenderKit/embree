@@ -14,7 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#pragma once
+#pragma once // FIXME: remove this file?
 
 #ifndef __GNUC__
 #pragma message (" --- Intel remark: SSE4 intrinsics are emulated with SSE3 ---")
