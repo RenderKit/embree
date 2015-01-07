@@ -26,10 +26,10 @@ struct RTCORE_ALIGN(16)  RTCRay
   /* ray data */
 public:
   float org[3];      //!< Ray origin
-  int   align0;
+  float align0;
   
   float dir[3];      //!< Ray direction
-  int   align1;
+  float align1;
   
   float tnear;       //!< Start of ray segment
   float tfar;        //!< End of ray segment (set to hit distance)
@@ -40,7 +40,7 @@ public:
   /* hit data */
 public:
   float Ng[3];       //!< Unnormalized geometry normal
-  int   align2;
+  float align2;
   
   float u;           //!< Barycentric u coordinate of hit
   float v;           //!< Barycentric v coordinate of hit

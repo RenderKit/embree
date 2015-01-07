@@ -36,6 +36,9 @@ namespace embree
 {
   namespace isa
   {
+
+    
+
     class SubdivPatch1CachedIntersector1
     {
     public:

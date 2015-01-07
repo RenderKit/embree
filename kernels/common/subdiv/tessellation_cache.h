@@ -121,7 +121,7 @@ namespace embree
   public:
     
     /* default sizes */
-    static const size_t CACHE_ENTRIES = 1024;
+    static const size_t CACHE_ENTRIES = 512;
     
   public:
 
@@ -312,7 +312,7 @@ namespace embree
   public:
     /* default sizes */
 
-    static const size_t CACHE_ENTRIES = 128; //512; //1024;
+    static const size_t CACHE_ENTRIES = 256; 
     static const size_t CACHE_WAYS    = 4;  // 4-way associative
     static const size_t CACHE_SETS    = CACHE_ENTRIES / CACHE_WAYS; 
 
@@ -419,17 +419,10 @@ namespace embree
       __forceinline CacheTag &getCacheTagAndUpdateNFU(size_t index)
       {
         assert(index < CACHE_WAYS);
-        /* PING; */
-        /* for (size_t i=0;i<CACHE_WAYS;i++) */
-        /*   std::cout << std::hex << tags[i].getAccessTimeStamp() << std::dec << std::endl; */
-
         for (size_t i=0;i<CACHE_WAYS;i++)
           tags[i].updateNFUStat();
 
         tags[index].markAsMRU();
-
-        /* for (size_t i=0;i<CACHE_WAYS;i++) */
-        /*   std::cout << std::hex << tags[i].getAccessTimeStamp() << std::dec << std::endl; */
 
         return tags[index];
       }
@@ -587,6 +580,7 @@ namespace embree
       CacheTag &t = sets[set].getEvictionCandidate(neededBlocks);
       
       assert( t.getAccessTimeStamp() & ((unsigned int)1 << 31));
+      assert(!t.match(primID,commitCounter));
 
       if (!t.empty() && t.blocks() >= neededBlocks)
         {

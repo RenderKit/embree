@@ -158,9 +158,7 @@ namespace embree
 
       /* this is a leaf node */
       if (unlikely(ref.isLeaf()))
-        {
           return;
-        }
 
       const BVH4::Node* node = ref.node();
       
@@ -171,13 +169,36 @@ namespace embree
             {
               if (child.isNode())
                 updateBVH4Refs(child,old_ptr,new_ptr);
-              
-              const size_t offset   = (size_t)child - old_ptr;
-              const size_t new_ref  = new_ptr + offset;
-              size_t *ptr = (size_t*)((char*)new_ptr + offset);
+
+              const size_t dest_offset = (size_t)&child - old_ptr;              
+              const size_t new_ref     = (size_t)child - old_ptr + new_ptr;
+              size_t *ptr = (size_t*)((char*)new_ptr + dest_offset);
               *ptr = new_ref;    
             }
         }
+    }
+
+
+    size_t countBlocks(const BVH4::NodeRef ref, const size_t range0, const size_t range1)
+    {
+      
+      size_t t = (size_t)ref;
+
+      assert(range0 <= t);
+      assert(t <= range1);
+
+      /* this is a leaf node */
+      if (unlikely(ref.isLeaf()))
+        return 3;
+      
+      const BVH4::Node* node = ref.node();
+      
+      size_t size = 0;
+      for (size_t i=0;i<4;i++)
+        if (node->child(i) != BVH4::emptyNode)
+          size += countBlocks(node->child(i),range0,range1);
+
+      return 2 + size;
     }
     
     size_t SubdivPatch1CachedIntersector1::getSubtreeRootNodeFromCacheHierarchy(Precalculations& pre,
@@ -220,8 +241,7 @@ namespace embree
                   DBG(DBG_PRINT("EXPAND L2 CACHE ENTRY"));                                            
                   BVH4::Node* node = (BVH4::Node*)t_l2->getPtr();
                   
-                  if (node != NULL)
-                    free_tessellation_cache_mem(node);                                 
+                  if (node != NULL) free_tessellation_cache_mem(node);                                 
 
                   node = (BVH4::Node*)alloc_tessellation_cache_mem(needed_blocks);
                   DBG(DBG_PRINT(node));
@@ -244,7 +264,13 @@ namespace embree
              
               size_t new_root = (size_t)buildSubdivPatchTree(*subdiv_patch,node,((Scene*)geom)->getSubdivMesh(subdiv_patch->geom));
               DBG(DBG_PRINT(new_root));
-              
+
+              const size_t l2_range0 = (size_t)node;
+              const size_t l2_range1 = ((size_t)node) + 64*needed_blocks;
+
+              size_t l2_blocks = countBlocks(BVH4::NodeRef(new_root),l2_range0,l2_range1);
+              assert( l2_blocks == needed_blocks );
+
               assert( new_root != BVH4::invalidNode);          
               SharedTessellationCache::updateRootRef(*t_l2,new_root);
               assert(t_l2->getRef() == new_root);
@@ -260,16 +286,21 @@ namespace embree
               DBG(DBG_PRINT("updateNodeRefs"));                                                              
               DBG(DBG_PRINT(t_l2->ptr));
               DBG(DBG_PRINT(t_l1.ptr));
+              assert(t_l1.blocks() >= needed_blocks);
 
               memcpy(t_l1.ptr,t_l2->ptr,64*needed_blocks);
               size_t t_l2_root = t_l2->getRef();
               updateBVH4Refs(t_l2_root,(size_t)t_l2->ptr,(size_t)t_l1.ptr);
-              t_l1.updateRootRef( (size_t)t_l2_root - (size_t)t_l2->ptr + (size_t)t_l1.ptr );
+              t_l1.updateRootRef( ((size_t)t_l2_root - (size_t)t_l2->ptr) + (size_t)t_l1.ptr );
               DBG(DBG_PRINT(t_l1.subtree_root));
 
               DBG(t_l2->print());
               DBG(t_l1.print());
+              const size_t l1_range0 = (size_t)t_l1.ptr;
+              const size_t l1_range1 = l1_range0 + 64*needed_blocks;
+              size_t l1_blocks = countBlocks(BVH4::NodeRef(t_l1.getRootRef()),l1_range0,l1_range1);
               
+              assert(l1_blocks >= needed_blocks);
 
               DBG(pre.local_cache->print());
               
