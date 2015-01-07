@@ -78,10 +78,10 @@ namespace embree
       
     public:
       
-      BVHBuilderGeneric (PrimRef* prims, const size_t N,
+      BVHBuilderGeneric (PrimRef* prims, const PrimInfo& pinfo,
                          const size_t branchingFactor, const size_t maxDepth, 
                          const size_t logBlockSize, const size_t minLeafSize, const size_t maxLeafSize)
-        : prims(prims), N(N), branchingFactor(branchingFactor), logBlockSize(logBlockSize), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize), maxDepth(maxDepth)
+        : prims(prims), pinfo(pinfo), branchingFactor(branchingFactor), logBlockSize(logBlockSize), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize), maxDepth(maxDepth)
       {
         if (branchingFactor > MAX_BRANCHING_FACTOR)
           THROW_RUNTIME_ERROR("bvh4_builder: branching factor too large");
@@ -239,10 +239,6 @@ namespace embree
       template<typename CreateNodeFunc, typename CreateLeafFunc>
         NodeRef operator() (CreateNodeFunc& createNode, CreateLeafFunc& createLeaf)
       {
-        /* calculate bounding box */
-        PrimInfo pinfo(empty);
-        for (size_t i=0; i<N; i++) pinfo.add(prims[i].bounds());
-
         /* create initial build record */
         NodeRef root;
         BuildRecord br;
@@ -257,7 +253,7 @@ namespace embree
 
     private:
       PrimRef* prims;
-      const size_t N;
+      const PrimInfo pinfo;
       const size_t branchingFactor;
       const size_t logBlockSize;
       const size_t minLeafSize;
