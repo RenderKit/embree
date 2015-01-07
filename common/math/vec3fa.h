@@ -99,7 +99,7 @@ namespace embree
     return _mm_and_ps(a.m128, mask);
   }
   __forceinline const Vec3fa sign ( const Vec3fa& a ) {
-    return _mm_blendv_ps(Vec3fa(one), -Vec3fa(one), _mm_cmplt_ps (a,Vec3fa(zero))); 
+    return blendv_ps(Vec3fa(one), -Vec3fa(one), _mm_cmplt_ps (a,Vec3fa(zero))); 
   }
   __forceinline const Vec3fa rcp  ( const Vec3fa& a ) {
     const Vec3fa r = _mm_rcp_ps(a.m128);
@@ -111,7 +111,7 @@ namespace embree
     __m128 r = _mm_rsqrt_ps(a.m128);
     return _mm_add_ps(_mm_mul_ps(_mm_set1_ps(1.5f),r), _mm_mul_ps(_mm_mul_ps(_mm_mul_ps(a, _mm_set1_ps(-0.5f)), r), _mm_mul_ps(r, r)));
   }
-  __forceinline const Vec3fa zero_fix(const Vec3fa& a) { return _mm_blendv_ps(a, _mm_set1_ps(1E-10f), _mm_cmpeq_ps (a.m128, _mm_setzero_ps())); }
+  __forceinline const Vec3fa zero_fix(const Vec3fa& a) { return blendv_ps(a, _mm_set1_ps(1E-10f), _mm_cmpeq_ps (a.m128, _mm_setzero_ps())); }
   __forceinline const Vec3fa rcp_safe(const Vec3fa& a) { return rcp(zero_fix(a)); }
 
   __forceinline Vec3fa log ( const Vec3fa& a ) { 
@@ -254,11 +254,11 @@ namespace embree
 
   __forceinline const Vec3fa select( bool s, const Vec3fa& t, const Vec3fa& f ) {
     __m128 mask = s ? _mm_castsi128_ps(_mm_cmpeq_epi32(_mm_setzero_si128(), _mm_setzero_si128())) : _mm_setzero_ps();
-    return _mm_blendv_ps(f, t, mask);
+    return blendv_ps(f, t, mask);
   }
 
   __forceinline const Vec3fa select( const Vec3ba& s, const Vec3fa& t, const Vec3fa& f ) {
-    return _mm_blendv_ps(f, t, s);
+    return blendv_ps(f, t, s);
   }
 
   __forceinline int maxDim ( const Vec3fa& a ) 

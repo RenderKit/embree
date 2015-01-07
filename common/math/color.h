@@ -14,7 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#pragma once
+#pragma once // FIXME: delete color files
 
 #include "../sys/constants.h"
 #include "../simd/sse.h"
@@ -201,7 +201,7 @@ namespace embree
 
   __forceinline const Color select( bool s, const Color& t, const Color& f ) {
     __m128 mask = s ? _mm_castsi128_ps(_mm_cmpeq_epi32(_mm_setzero_si128(), _mm_setzero_si128())) : _mm_setzero_ps();
-    return _mm_blendv_ps(f, t, mask);
+    return blendv_ps(f, t, mask);
   }
 
   ////////////////////////////////////////////////////////////////////////////////
