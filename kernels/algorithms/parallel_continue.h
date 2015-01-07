@@ -21,58 +21,64 @@
 
 namespace embree
 {
+  template<typename Continuation>
+  class ParallelContinue {
+  public:
+    virtual void operator() (const Continuation& c) = 0;
+  };
+
   template<typename Continuation, typename Index, typename Func>
     class ParallelContinueTask
   {
     static const size_t SIZE_WORK_STACK = 64;
 
   public:
-    __forceinline ParallelContinueTask (Continuation* continations, const Index taskCount, const Func& func)
+    __forceinline ParallelContinueTask (Continuation* continuations, const Index taskCount, const Func& func)
       : continuations(continuations), cntr(0), taskCount(taskCount), func(func)
     {
       LockStepTaskScheduler* scheduler = LockStepTaskScheduler::instance();
       size_t threadCount = scheduler->getNumThreads();
-      threadStack = new WorkStack<BuildRecord<NodeRef>,SIZE_WORK_STACK>[threadCount]; 
+      threadStack = new WorkStack<Continuation,SIZE_WORK_STACK>[threadCount]; 
       scheduler->dispatchTask(_task,this);
       delete[] threadStack;
     }
 
     void task(const size_t threadIndex, const size_t threadCount) 
     {
-      struct Recurse 
+      struct Recurse : public ParallelContinue<Continuation>
       {
-        Func& func;
-        __forceinline Recurse(Func& func) : func(func) {}
-        __forceinline void operator() (Continuation& c) { func(c,*this); } 
+        ParallelContinueTask* parent;
+        __forceinline Recurse(ParallelContinueTask* parent) : parent(parent) {}
+        void operator() (const Continuation& c) { parent->func(c,*this); } 
       };
     
-      struct Select 
+      struct Select : public ParallelContinue<Continuation>
       {
-        Func& func;
-        __forceinline Select(Func& func) : func(func) {}
-        __forceinline void operator() (Continuation& c) 
+        ParallelContinueTask* parent;
+        __forceinline Select(ParallelContinueTask* parent) : parent(parent) {}
+        void operator() (const Continuation& c) 
         {
-          if (c.final() || !state->threadStack[threadID].push(c)) {
-            Recurse r(func); r(c); 
+          const size_t threadIndex = LockStepTaskScheduler::threadIndex();
+          if (c.final() || !parent->threadStack[threadIndex].push(c)) {
+            Recurse r(parent); r(c); 
           }
-          else func(c,*this);
         }
       };
-      
+
       while (true) 
       {
         Continuation cont;
-        Index i = atomic_add(&cntr,1);
-        if (i <= taskCount) 
+        Index taskIndex = atomic_add(&cntr,1);
+        if (taskIndex < taskCount) 
           cont = continuations[taskIndex];
-        
+
         /* global work queue empty => try to steal from neighboring queues */	 
         else
         {
           bool success = false;
           for (size_t i=0; i<threadCount; i++)
           {
-            if (state->threadStack[(threadIndex+i)%threadCount].pop(cont)) {
+            if (threadStack[(threadIndex+i)%threadCount].pop(cont)) {
               success = true;
               break;
             }
@@ -80,10 +86,10 @@ namespace embree
           /* found nothing to steal ? */
           if (!success) return; // FIXME: may loose threads
         }
-        
-        Select select(func); func(cont,select);
-	while (state->threadStack[threadIndex].pop(cont)) {
-          Select select(func); func(cont,select);
+
+        Select select(this); func(cont,select);
+	while (threadStack[threadIndex].pop(cont)) {
+          Select select(this); func(cont,select);
         }
       }
     }
@@ -93,7 +99,7 @@ namespace embree
     }
     
   private:
-    Continuation* continations;
+    Continuation* continuations;
     atomic_t cntr;
     Index taskCount;
     const Func& func;
@@ -103,8 +109,8 @@ namespace embree
   
   /* parallel continue */
   template<typename Continuation, typename Index, typename Func>
-    __forceinline void parallel_continue( Continuation* continations, const Index N, const Func& func)
+    __forceinline void parallel_continue( Continuation* continuations, const Index N, const Func& func)
   {
-    ParallelContinueTask task(continations,N,func);
+    ParallelContinueTask<Continuation,Index,Func> task(continuations,N,func);
   }
 }

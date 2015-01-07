@@ -235,8 +235,9 @@ namespace embree
 	  if (threadIndex == 0) {
             scheduler->taskBarrier.init(threadCount);
             scheduler->threadCount = threadCount;
-	    LockStepTaskScheduler::scheduler = scheduler;
+	    LockStepTaskScheduler::t_scheduler = scheduler;
           }
+          LockStepTaskScheduler::t_threadIndex = threadIndex;
 	  scheduler->barrier.wait(threadCount);
 	  scheduler->enter(threadIndex,threadCount);
 	}
@@ -246,7 +247,7 @@ namespace embree
 	if (threadIndex == 0 && threadCount != 0) {
 	  scheduler->leave(threadIndex,threadCount);
 	  scheduler->barrier.reset();
-	  LockStepTaskScheduler::scheduler = NULL;
+	  LockStepTaskScheduler::t_scheduler = NULL;
 	}
       }
 
@@ -254,9 +255,12 @@ namespace embree
       LockStepTaskScheduler* scheduler;
     };
 
-    static __thread LockStepTaskScheduler* scheduler;
+    static __thread LockStepTaskScheduler* t_scheduler;
     static LockStepTaskScheduler* instance();
     static void setInstance(LockStepTaskScheduler*);
+
+    static __thread size_t t_threadIndex;
+    static size_t threadIndex();
 
     static const unsigned int CONTROL_THREAD_ID = 0;
 

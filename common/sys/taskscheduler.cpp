@@ -159,12 +159,20 @@ namespace embree
     exit(1);
   }
 
+  __thread LockStepTaskScheduler* LockStepTaskScheduler::t_scheduler = NULL;
+
   LockStepTaskScheduler* LockStepTaskScheduler::instance() {
-    return scheduler;
+    return t_scheduler;
   }
 
   void LockStepTaskScheduler::setInstance(LockStepTaskScheduler* inst) {
-    scheduler = inst;
+    t_scheduler = inst;
+  }
+
+  __thread size_t LockStepTaskScheduler::t_threadIndex = 0;
+
+  size_t LockStepTaskScheduler::threadIndex() {
+    return t_threadIndex;
   }
 
   void TaskScheduler::destroyThreads ()
@@ -174,9 +182,7 @@ namespace embree
     threads.clear();
     terminateThreads = false;
   }
-
-  __thread LockStepTaskScheduler* LockStepTaskScheduler::scheduler = NULL;
-
+  
   void LockStepTaskScheduler::syncThreads(const size_t threadID, const size_t numThreads) {
     taskBarrier.wait(threadID,numThreads);
   }
