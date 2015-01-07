@@ -131,7 +131,7 @@ namespace embree
         rightChild.init(right,center,current.end);
       }
 
-      void createLargeLeaf(CreateNodeFunc& createNode, CreateLeafFunc& createLeaf, BuildRecord<NodeRef>& current)
+      void createLargeLeaf(BuildRecord<NodeRef>& current)
       {
         if (current.depth > maxDepth) 
           THROW_RUNTIME_ERROR("depth limit reached");
@@ -185,7 +185,7 @@ namespace embree
 
         /* recurse into each child */
         for (size_t i=0; i<numChildren; i++) 
-          createLargeLeaf(createNode,createLeaf,children[i]);
+          createLargeLeaf(children[i]);
       }
             
       __forceinline void splitSequential(BuildRecord<NodeRef>& current, BuildRecord<NodeRef>& leftChild, BuildRecord<NodeRef>& rightChild)
@@ -219,13 +219,14 @@ namespace embree
         else state->parallelBinner.partition(pinfo,tmp,prims,leftChild,rightChild,0,threadCount,scheduler);
       }
 
-      void recurse(CreateNodeFunc& createNode, CreateLeafFunc& createLeaf, BuildRecord<NodeRef>& current)
+      template<typename Spawn>
+        void recurse(BuildRecord<NodeRef>& current, Spawn& spawn)
       {
         __aligned(64) BuildRecord<NodeRef> children[MAX_BRANCHING_FACTOR];
         
         /* create leaf node */
         if (current.depth+MIN_LARGE_LEAF_LEVELS >= maxDepth || current.size() <= minLeafSize) {
-          createLargeLeaf(createNode,createLeaf,current);
+          createLargeLeaf(current);
           return;
         }
         
@@ -268,7 +269,7 @@ namespace embree
         
         /* create leaf node if no split is possible */
         if (numChildren == 1) {
-          createLargeLeaf(createNode,createLeaf,current);
+          createLargeLeaf(current);
           return;
         }
         
@@ -277,16 +278,22 @@ namespace embree
 
         /* recurse into each child */
         for (size_t i=0; i<numChildren; i++) 
-          recurse(createNode,createLeaf,children[i]);
+          spawn(children[i]);
       }
 
-      void recurseTop(CreateNodeFunc& createNode, CreateLeafFunc& createLeaf, BuildRecord<NodeRef>& current)
+      struct Recursion { 
+        BVHBuilderGeneric* parent;
+        __forceinline Recursion(BVHBuilderGeneric* parent) : parent(parent) {}
+        __forceinline void operator() (BuildRecord<NodeRef>& br) { Recursion recursion(parent); parent->recurse(br,recursion); } 
+      };
+
+      void recurseTop(BuildRecord<NodeRef>& current)
       {
         __aligned(64) BuildRecord<NodeRef> children[MAX_BRANCHING_FACTOR];
         
         /* create leaf node */
         //if (current.depth+MIN_LARGE_LEAF_LEVELS >= maxDepth || current.size() <= minLeafSize) {
-        //  createLargeLeaf(createNode,createLeaf,current);
+        //  createLargeLeaf(current);
         //  return;
         //}
         
@@ -329,7 +336,7 @@ namespace embree
         
         /* create leaf node if no split is possible */
         //if (numChildren == 1) {
-        //  createLargeLeaf(createNode,createLeaf,current);
+        //  createLargeLeaf(current);
         //  return;
         //}
         
@@ -368,9 +375,17 @@ namespace embree
         //CreateNodeFunc& createNode = *(CreateNodeFunc*)cNode;
         //CreateLeafFunc& createLeaf = *(CreateLeafFunc*)cLeaf;
 
-	recurse(createNode,createLeaf,br);
-	while (state->threadStack[threadID].pop(br))
-          recurse(createNode,createLeaf,br);
+        /*else if (mode == RECURSE_PARALLEL && current.size() > THRESHOLD_FOR_SUBTREE_RECURSION) {
+        if (!state->threadStack[threadID].push(current))
+          recurse(current,nodeAlloc,leafAlloc,RECURSE_SEQUENTIAL,threadID,numThreads);
+      }
+      else
+      recurse(current,nodeAlloc,leafAlloc,mode,threadID,numThreads);*/
+
+        Recursion recurse(this); recurse(br);
+	while (state->threadStack[threadID].pop(br)) {
+          Recursion recurse(this); recurse(br);
+        }
       }
       _mm_sfence(); // make written leaves globally visible
     }
@@ -390,7 +405,7 @@ namespace embree
         br.parent = &root;
         
         /* build BVH */
-        //recurse(createNode,createLeaf,br);
+        //Recursion recurse(this); recurse(br);
 
         /* push initial build record to global work stack */
         state = new GlobalState;
@@ -414,15 +429,13 @@ namespace embree
             break;
           }
           
-          recurseTop(createNode,createLeaf,br);
+          recurseTop(br);
         }
         _mm_sfence(); // make written leaves globally visible
         
         std::sort(state->heap.begin(),state->heap.end(),BuildRecord<NodeRef>::Greater());
 
         /* now process all created subtasks on multiple threads */
-        //cNode = &createNode;
-        //cLeaf = &createLeaf;
         scheduler->dispatchTask(task_buildSubTrees, this, 0, threadCount ); // FIXME: threadIdx=0
 
         delete state; state = NULL;
