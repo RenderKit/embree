@@ -26,42 +26,43 @@ namespace embree
   namespace isa
   {
     template<typename NodeRef>
-     class __aligned(64) BuildRecord : public PrimInfo
-      {
-      public:
-	unsigned depth;         //!< depth from the root of the tree
-	float area;
-	NodeRef* parent; 
-	
-        BuildRecord() {}
-
-        BuildRecord(const PrimInfo& pinfo, const size_t depth, NodeRef* parent) 
-          : PrimInfo(pinfo), depth(depth), parent(parent), area(embree::area(pinfo.geomBounds)) {}
-
+      class __aligned(64) BuildRecord : public PrimInfo
+    {
+    public:
+      __forceinline BuildRecord() {}
+      
+      __forceinline BuildRecord(const PrimInfo& pinfo, const size_t depth, NodeRef* parent) 
+        : PrimInfo(pinfo), depth(depth), parent(parent), area(embree::area(pinfo.geomBounds)) {}
+      
 #if defined(_MSC_VER)
-        BuildRecord& operator=(const BuildRecord &arg) { 
-          memcpy(this, &arg, sizeof(BuildRecord));    
-          return *this;
-        }
+      __forceinline BuildRecord& operator=(const BuildRecord &arg) { 
+        memcpy(this, &arg, sizeof(BuildRecord));    
+        return *this;
+      }
 #endif
 
-	__forceinline void init(size_t depth)
-	{
-          parent = NULL;
-	  this->depth = depth;
-	  area = embree::area(geomBounds);
-	}
-	
-	__forceinline bool operator<(const BuildRecord &br) const { return size() < br.size(); } 
-	__forceinline bool operator>(const BuildRecord &br) const { return size() > br.size(); } 
-	
-	struct Greater {
-	  bool operator()(const BuildRecord& a, const BuildRecord& b) {
-	    return a > b;
-	  }
-	};
+      __forceinline void init(size_t depth)
+      {
+        parent = NULL;
+        this->depth = depth;
+        area = embree::area(geomBounds);
+      }
+      
+      __forceinline bool operator<(const BuildRecord &br) const { return size() < br.size(); } 
+      __forceinline bool operator>(const BuildRecord &br) const { return size() > br.size(); } 
+      
+      struct Greater {
+        __forceinline bool operator()(const BuildRecord& a, const BuildRecord& b) {
+          return a.size() > b.size();
+        }
       };
 
+    public:
+      unsigned depth;         //!< depth from the root of the tree
+      float    area;          //!< surface area of bounding box
+      NodeRef* parent;        //!< reference pointing to us
+    };
+    
     template<typename NodeRef, typename Allocator, typename CreateAllocFunc, typename CreateNodeFunc, typename CreateLeafFunc>
       class BVHBuilderGeneric
     {
