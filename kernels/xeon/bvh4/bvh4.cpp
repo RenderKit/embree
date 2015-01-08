@@ -351,7 +351,7 @@ namespace embree
     size_t bytesReserved  = numReservedNodes  * nodeSize + numReservedPrimitives  * primTy.bytes;
     if (numPrimitives) bytesReserved = (bytesReserved+blockSize-1)/blockSize*blockSize + numThreads*blockSize*2;
     alloc.init(bytesAllocated,bytesReserved);
-
+    
     init();
   }
 

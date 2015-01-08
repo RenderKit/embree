@@ -159,6 +159,7 @@ namespace embree
           std::cout << "building BVH4<" << bvh->primTy.name << "> with " << TOSTRING(isa) "::BVH4BuilderFastNew ... " << std::flush;
 
         bvh->alloc2.init(numPrimitives*sizeof(PrimRef),numPrimitives*sizeof(BVH4::Node)); 
+        //bvh->alloc2.init(202822848,1652703232);
 
 #if defined(PROFILE)
       
@@ -190,7 +191,7 @@ namespace embree
         CreateAlloc createAlloc(bvh);
         CreateBVH4Node createNode(bvh);
         CreateLeaf<Triangle4> createLeaf(bvh);
-        BVHBuilderGeneric<BVH4::NodeRef,Allocator,CreateAlloc,CreateBVH4Node,CreateLeaf<Triangle4> > builder(bvh,createAlloc,createNode,createLeaf,prims.data(),tmp_prims,pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,2,4,4*BVH4::maxLeafBlocks);
+        BVHBuilderGeneric<BVH4::NodeRef,Allocator,CreateAlloc,CreateBVH4Node,CreateLeaf<Triangle4> > builder(createAlloc,createNode,createLeaf,prims.data(),tmp_prims,pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,2,4,4*BVH4::maxLeafBlocks);
         BVH4::NodeRef root = builder();
         //double T2 = getSeconds();
         bvh->set(root,pinfo.geomBounds,pinfo.size());

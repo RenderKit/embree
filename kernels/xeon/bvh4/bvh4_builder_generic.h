@@ -19,7 +19,6 @@
 #include "builders/heuristic_object_partition.h"
 #include "builders/workstack.h"
 
-#include "bvh4.h"
 #include "algorithms/parallel_continue.h"
 
 namespace embree
@@ -88,14 +87,8 @@ namespace embree
       static const size_t SIZE_WORK_STACK = 64;
       static const size_t THRESHOLD_FOR_SUBTREE_RECURSION = 128;
       static const size_t THRESHOLD_FOR_SINGLE_THREADED = 50000; 
-      //typedef FastAllocator::Thread Allocator;
-      //typedef LinearAllocatorPerThread::ThreadAllocator Allocator;
 
     public:
-      
-       /*! build mode */
-      enum { RECURSE_SEQUENTIAL = 1, RECURSE_PARALLEL = 2, BUILD_TOP_LEVEL = 3 };
-     
 
       struct GlobalState
       {
@@ -119,13 +112,11 @@ namespace embree
       
     public:
       
-      BVHBuilderGeneric (BVH4* bvh,
-                         CreateAllocFunc& createAlloc, CreateNodeFunc& createNode, CreateLeafFunc& createLeaf,
+      BVHBuilderGeneric (CreateAllocFunc& createAlloc, CreateNodeFunc& createNode, CreateLeafFunc& createLeaf,
                          PrimRef* prims, PrimRef* tmp, const PrimInfo& pinfo,
                          const size_t branchingFactor, const size_t maxDepth, 
                          const size_t logBlockSize, const size_t minLeafSize, const size_t maxLeafSize)
-        : bvh(bvh),
-        createAlloc(createAlloc), createNode(createNode), createLeaf(createLeaf), 
+        : createAlloc(createAlloc), createNode(createNode), createLeaf(createLeaf), 
         state(NULL), prims(prims), tmp(tmp), pinfo(pinfo), 
           branchingFactor(branchingFactor), maxDepth(maxDepth),
           logBlockSize(logBlockSize), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize)
@@ -227,11 +218,10 @@ namespace embree
         /* use primitive array temporarily for parallel splits */
         PrimInfo pinfo(current.begin,current.end,current.geomBounds,current.centBounds);
         
-        //PrimRef* tmp = (PrimRef*) bvh->alloc.curPtr();
-        PrimRef* tmp = (PrimRef*) alloc.malloc(1);
+        PrimRef* tmp = (PrimRef*) alloc.malloc(1); // FIXME: malloc(1) should be malloc(0) or getPtr()
 
         /* parallel binning of centroids */
-        const float sah = state->parallelBinner.find(pinfo,prims,tmp,logBlockSize,0,threadCount,scheduler);
+        const float sah = state->parallelBinner.find(pinfo,prims,tmp,logBlockSize,0,threadCount,scheduler); // FIXME: hardcoded threadIndex=0
         
         /* if we cannot find a valid split, enforce an arbitrary split */
         if (unlikely(sah == float(inf))) splitFallback(current,leftChild,rightChild);
@@ -302,96 +292,9 @@ namespace embree
           spawn(children[i]);
       }
 
-      struct Recursion { 
-        BVHBuilderGeneric* parent;
-        __forceinline Recursion(BVHBuilderGeneric* parent) : parent(parent) {}
-        __forceinline void operator() (BuildRecord<NodeRef>& br, Allocator& alloc) { parent->recurse(br,alloc,*this); } 
-      };
-
-      __forceinline void recurse_continue(BuildRecord<NodeRef>& current, Allocator& nodeAlloc, Allocator& leafAlloc, const size_t mode, const size_t threadID, const size_t numThreads)
-      {
-        if (mode == BUILD_TOP_LEVEL) {
-          state->heap.push(current);
-        }
-        else if (mode == RECURSE_PARALLEL && current.size() > THRESHOLD_FOR_SUBTREE_RECURSION) {
-          if (!state->threadStack[threadID].push(current))
-            recurse1(current,nodeAlloc,leafAlloc,RECURSE_SEQUENTIAL,threadID,numThreads);
-        }
-        else
-          recurse1(current,nodeAlloc,leafAlloc,mode,threadID,numThreads);
-      }
-    
-      void recurse1(const BuildRecord<NodeRef>& current, Allocator& nodeAlloc, Allocator& leafAlloc, const size_t mode, const size_t threadID, const size_t numThreads)
-      {
-        __aligned(64) BuildRecord<NodeRef> children[MAX_BRANCHING_FACTOR];
-        
-        /* create leaf node */
-        if (current.depth+MIN_LARGE_LEAF_LEVELS >= maxDepth || current.size() <= minLeafSize) {
-          createLargeLeaf(current,nodeAlloc,leafAlloc);
-          return;
-        }
-        
-        /* fill all children by always splitting the one with the largest surface area */
-        size_t numChildren = 1;
-        children[0] = current;
-        
-        do {
-          
-          /* find best child with largest bounding box area */
-          int bestChild = -1;
-          float bestArea = neg_inf;
-          for (size_t i=0; i<numChildren; i++)
-          {
-            /* ignore leaves as they cannot get split */
-            if (children[i].size() <= minLeafSize)
-              continue;
-            
-            /* remember child with largest area */
-            if (children[i].sceneArea() > bestArea) { 
-              bestArea = children[i].sceneArea();
-              bestChild = i;
-            }
-          }
-          if (bestChild == -1) break;
-          
-          /*! split best child into left and right child */
-          __aligned(64) BuildRecord<NodeRef> left, right;
-          splitSequential(children[bestChild],left,right);
-          
-          /* add new children left and right */
-          left.init(current.depth+1); 
-          right.init(current.depth+1);
-          children[bestChild] = children[numChildren-1];
-          children[numChildren-1] = left;
-          children[numChildren+0] = right;
-          numChildren++;
-          
-        } while (numChildren < branchingFactor);
-        
-        /* create leaf node if no split is possible */
-        if (numChildren == 1) {
-          createLargeLeaf(current,nodeAlloc,leafAlloc);
-          return;
-        }
-        
-        /* create node */
-        *current.parent = createNode(children,numChildren,nodeAlloc);
-
-        /* recurse into each child */
-        for (size_t i=0; i<numChildren; i++) 
-          recurse_continue(children[i],nodeAlloc,leafAlloc,mode,threadID,numThreads);
-          //spawn(children[i]);
-      }
-
       void recurseTop(const BuildRecord<NodeRef>& current, Allocator& nodeAlloc)
       {
         __aligned(64) BuildRecord<NodeRef> children[MAX_BRANCHING_FACTOR];
-        
-        /* create leaf node */
-        //if (current.depth+MIN_LARGE_LEAF_LEVELS >= maxDepth || current.size() <= minLeafSize) {
-        //  createLargeLeaf(current);
-        //  return;
-        //}
         
         /* fill all children by always splitting the one with the largest surface area */
         size_t numChildren = 1;
@@ -430,12 +333,6 @@ namespace embree
           
         } while (numChildren < branchingFactor);
         
-        /* create leaf node if no split is possible */
-        //if (numChildren == 1) {
-        //  createLargeLeaf(current);
-        //  return;
-        //}
-        
         /* create node */
         *current.parent = createNode(children,numChildren,nodeAlloc);
 
@@ -444,53 +341,9 @@ namespace embree
           state->heap.push(children[i]);
       }
 
-      void buildSubTrees(size_t threadID, size_t numThreads)
-    {
-      //__aligned(64) Allocator nodeAlloc(&bvh->alloc);
-      //__aligned(64) Allocator leafAlloc(&bvh->alloc);
-      //Allocator alloc(&bvh->alloc);
-      //Allocator& alloc = *bvh->alloc2.instance();
-      Allocator& alloc = createAlloc();
-
-      while (true) 
-      {
-	BuildRecord<NodeRef> br;
-	if (!state->heap.pop(br))
-        {
-          /* global work queue empty => try to steal from neighboring queues */	  
-          bool success = false;
-          for (size_t i=0; i<numThreads; i++)
-          {
-            if (state->threadStack[(threadID+i)%numThreads].pop(br)) {
-              success = true;
-              break;
-            }
-          }
-          /* found nothing to steal ? */
-          if (!success) break; // FIXME: may loose threads
-        }
-        
-        //Recursion recurse(this); recurse(br);
-	//while (state->threadStack[threadID].pop(br)) {
-        //  Recursion recurse(this); recurse(br);
-        //}
-
-        recurse1(br,alloc,alloc,RECURSE_PARALLEL,threadID,numThreads);
-	while (state->threadStack[threadID].pop(br))
-          recurse1(br,alloc,alloc,RECURSE_PARALLEL,threadID,numThreads);
-      }
-      _mm_sfence(); // make written leaves globally visible
-    }
-      
-      static void task_buildSubTrees (void* data, const size_t threadID, const size_t numThreads) {
-        ((BVHBuilderGeneric*)data)->buildSubTrees(threadID,numThreads);                     
-      }
-
       /*! builder entry function */
       NodeRef operator() ()
       {
-        //Allocator alloc(&bvh->alloc);
-        //Allocator& alloc = *bvh->alloc2.instance();
         Allocator& alloc = createAlloc();
 
         /* create initial build record */
@@ -500,10 +353,16 @@ namespace embree
         br.depth = 1;
         br.parent = &root;
         
-#if 0
+#if 1
+
+        struct Recursion { 
+          BVHBuilderGeneric* parent;
+          Allocator& alloc;
+          __forceinline Recursion(BVHBuilderGeneric* parent, Allocator& alloc) : parent(parent), alloc(alloc) {}
+          __forceinline void operator() (BuildRecord<NodeRef>& br) { parent->recurse(br,alloc,*this); } 
+        };
         /* build BVH */
-        //Recursion recurse(this); recurse(br);
-        recurse1(br,alloc,alloc,RECURSE_SEQUENTIAL,0,0);
+        Recursion recurse(this,alloc); recurse(br);
 
 #else
 
@@ -519,13 +378,9 @@ namespace embree
         state->heap.reset();
         state->heap.push(br);
 
-        //double t0 = getSeconds();
-
         /* work in multithreaded toplevel mode until sufficient subtasks got generated */
         while (state->heap.size() < 2*threadCount)
         {
-          //PRINT(state->heap.size());
-
           BuildRecord<NodeRef> br;
 
           /* pop largest item for better load balancing */
@@ -538,29 +393,15 @@ namespace embree
             break;
           }
           
-          //PING;
           recurseTop(br,alloc);
-          //PING;
         }
         _mm_sfence(); // make written leaves globally visible
         
         std::sort(state->heap.begin(),state->heap.end(),BuildRecord<NodeRef>::Greater());
-        //double t1 = getSeconds();
 
-#if 1
         parallel_continue( state->heap.begin(), state->heap.size(), [&](const BuildRecord<NodeRef>& br, Allocator& alloc, ParallelContinue<BuildRecord<NodeRef> >& cont) {
             recurse(br,alloc,cont);
           },createAlloc);
-#else
-        /* now process all created subtasks on multiple threads */
-        scheduler->dispatchTask(task_buildSubTrees, this, 0, threadCount ); // FIXME: threadIdx=0
-
-#endif
-
-        //double t2 = getSeconds();
-
-        //PRINT(1000.0f*(t1-t0));
-        //PRINT(1000.0f*(t2-t1));
 
         delete state; state = NULL;
 #endif
@@ -569,7 +410,6 @@ namespace embree
       }
 
     private:
-      BVH4* bvh; // FIXME: remove
       CreateAllocFunc& createAlloc;
       CreateNodeFunc& createNode;
       CreateLeafFunc& createLeaf;
