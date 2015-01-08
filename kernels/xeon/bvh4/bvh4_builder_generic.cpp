@@ -145,6 +145,8 @@ namespace embree
         if (g_verbose >= 1)
           std::cout << "building BVH4<" << bvh->primTy.name << "> with " << TOSTRING(isa) "::BVH4BuilderFastNew ... " << std::flush;
 
+        bvh->alloc2.init(numPrimitives*sizeof(PrimRef),numPrimitives*sizeof(BVH4::Node)); 
+
 #if defined(PROFILE)
       
       double dt_min = pos_inf;
@@ -157,7 +159,7 @@ namespace embree
 
         //bvh->init(sizeof(BVH4::Node),numPrimitives,1);
         //g_alloc = new LinearAllocatorPerThread::ThreadAllocator(&bvh->alloc);
-        bvh->alloc2.init(numPrimitives*sizeof(PrimRef),numPrimitives*sizeof(BVH4::Node)); 
+        bvh->alloc2.reset();
         
         /* build BVH */
         prims.resize(numPrimitives);
