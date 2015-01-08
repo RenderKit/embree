@@ -30,13 +30,13 @@ namespace embree
       {
       public:
 	unsigned depth;         //!< depth from the root of the tree
-	float sArea;
+	float area;
 	NodeRef* parent; 
 	
         BuildRecord() {}
 
         BuildRecord(const PrimInfo& pinfo, const size_t depth, NodeRef* parent) 
-          : PrimInfo(pinfo), depth(depth), parent(parent), sArea(area(pinfo.geomBounds)) {}
+          : PrimInfo(pinfo), depth(depth), parent(parent), area(embree::area(pinfo.geomBounds)) {}
 
 #if defined(_MSC_VER)
         BuildRecord& operator=(const BuildRecord &arg) { 
@@ -45,29 +45,11 @@ namespace embree
         }
 #endif
 
-        //__forceinline bool final() const {
-        //  return size() < 128;
-        //}
-
 	__forceinline void init(size_t depth)
 	{
           parent = NULL;
 	  this->depth = depth;
-	  sArea = area(geomBounds);
-	}
-
-	__forceinline void init(const CentGeomBBox3fa& _bounds, const size_t _begin, const size_t _end)
-	{
-          parent = NULL;
-	  geomBounds = _bounds.geomBounds;
-	  centBounds = _bounds.centBounds;
-	  begin  = _begin;
-	  end    = _end;
-	  sArea = area(geomBounds);
-	}
-	
-	__forceinline float sceneArea() {
-	  return sArea;
+	  area = embree::area(geomBounds);
 	}
 	
 	__forceinline bool operator<(const BuildRecord &br) const { return size() < br.size(); } 
@@ -109,12 +91,12 @@ namespace embree
         CentGeomBBox3fa left; left.reset();
         for (size_t i=current.begin; i<center; i++)
           left.extend(prims[i].bounds());
-        leftChild.init(left,current.begin,center);
+        new (&leftChild) PrimInfo(current.begin,center,left.geomBounds,left.centBounds);
         
         CentGeomBBox3fa right; right.reset();
         for (size_t i=center; i<current.end; i++)
           right.extend(prims[i].bounds());	
-        rightChild.init(right,center,current.end);
+        new (&rightChild) PrimInfo(center,current.end,right.geomBounds,right.centBounds);
       }
 
       __forceinline void splitSequential(const BuildRecord<NodeRef>& current, BuildRecord<NodeRef>& leftChild, BuildRecord<NodeRef>& rightChild)
@@ -138,7 +120,7 @@ namespace embree
         /* use primitive array temporarily for parallel splits */
         PrimInfo pinfo(current.begin,current.end,current.geomBounds,current.centBounds);
         
-        PrimRef* tmp = (PrimRef*) alloc.curPtr(); // FIXME: malloc(1) should be malloc(0) or getPtr()
+        PrimRef* tmp = (PrimRef*) alloc.curPtr();
 
         /* parallel binning of centroids */
         const float sah = parallelBinner->find(pinfo,prims,tmp,logBlockSize,0,threadCount,scheduler); // FIXME: hardcoded threadIndex=0
@@ -213,9 +195,11 @@ namespace embree
         __aligned(64) BuildRecord<NodeRef> children[MAX_BRANCHING_FACTOR];
         
         /* create leaf node */
-        if (current.depth+MIN_LARGE_LEAF_LEVELS >= maxDepth || current.size() <= minLeafSize) {
-          createLargeLeaf(current,alloc,alloc);
-          return;
+        if (!toplevel) {
+          if (current.depth+MIN_LARGE_LEAF_LEVELS >= maxDepth || current.size() <= minLeafSize) {
+            createLargeLeaf(current,alloc,alloc);
+            return;
+          }
         }
         
         /* fill all children by always splitting the one with the largest surface area */
@@ -234,8 +218,8 @@ namespace embree
               continue;
             
             /* remember child with largest area */
-            if (children[i].sceneArea() > bestArea) { 
-              bestArea = children[i].sceneArea();
+            if (children[i].area > bestArea) { 
+              bestArea = children[i].area;
               bestChild = i;
             }
           }
@@ -257,7 +241,7 @@ namespace embree
         } while (numChildren < branchingFactor);
         
         /* create leaf node if no split is possible */
-        if (numChildren == 1) {
+        if (!toplevel && numChildren == 1) {
           createLargeLeaf(current,alloc,alloc);
           return;
         }
@@ -296,6 +280,8 @@ namespace embree
       CreateAllocFunc& createAlloc;
       CreateNodeFunc& createNode;
       CreateLeafFunc& createLeaf;
+      
+    private:
       PrimRef* prims;
       const PrimInfo& pinfo;
       const size_t branchingFactor;
