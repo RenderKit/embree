@@ -151,9 +151,6 @@ namespace embree
         if (g_verbose >= 1)
           std::cout << "building BVH4<" << bvh->primTy.name << "> with " << TOSTRING(isa) "::BVH4BuilderFastNew ... " << std::flush;
 
-        //bvh->alloc2.init(numPrimitives*sizeof(PrimRef),numPrimitives*sizeof(BVH4::Node)); 
-        //bvh->alloc2.init(202822848,1652703232);
-
 #if defined(PROFILE)
       
       double dt_min = pos_inf;
@@ -164,19 +161,14 @@ namespace embree
         double t0 = getSeconds();
 #endif
 
-        /* build BVH */
+        /* reserve data */
         bvh->alloc2.init(numPrimitives*sizeof(PrimRef),numPrimitives*sizeof(BVH4::Node)); 
-        //bvh->alloc2.reset();
         prims.resize(numPrimitives);
-        //memset(prims.data(),0,prims.size()*sizeof(PrimRef));
 
+        /* build BVH */
         PrimInfo pinfo = CreatePrimRefArray<TriangleMesh,1>(scene,prims);
-        CreateAlloc createAlloc(bvh);
-        CreateBVH4Node createNode(bvh);
-        CreateLeaf<Triangle4> createLeaf(bvh);
-        BVHBuilderGeneric<BVH4::NodeRef,Allocator,CreateAlloc,CreateBVH4Node,CreateLeaf<Triangle4> > builder
-          (createAlloc,createNode,createLeaf,prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,2,4,4*BVH4::maxLeafBlocks);
-        BVH4::NodeRef root = builder();
+        BVH4::NodeRef root = build_bvh_sah<BVH4::NodeRef>(CreateAlloc(bvh),CreateBVH4Node(bvh),CreateLeaf<Triangle4>(bvh),
+                                                          prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,2,4,4*BVH4::maxLeafBlocks);
         bvh->set(root,pinfo.geomBounds,pinfo.size());
 
 #if defined(PROFILE)

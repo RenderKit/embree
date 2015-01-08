@@ -256,7 +256,7 @@ namespace embree
       }
 
       /*! builder entry function */
-      NodeRef operator() ()
+      __forceinline NodeRef operator() ()
       {
         /* create initial build record */
         NodeRef root;
@@ -291,5 +291,15 @@ namespace embree
       const size_t minLeafSize;
       const size_t maxLeafSize;
     };
+
+    template<typename NodeRef, typename CreateAllocFunc, typename CreateNodeFunc, typename CreateLeafFunc>
+      NodeRef build_bvh_sah(CreateAllocFunc createAlloc, CreateNodeFunc createNode, CreateLeafFunc createLeaf, 
+                            PrimRef* prims, const PrimInfo& pinfo, 
+                            const size_t branchingFactor, const size_t maxDepth, const size_t logBlockSize, const size_t minLeafSize, const size_t maxLeafSize)
+    {
+      BVHBuilderGeneric<NodeRef,decltype(createAlloc()),CreateAllocFunc,CreateNodeFunc,CreateLeafFunc> builder
+        (createAlloc,createNode,createLeaf,prims,pinfo,branchingFactor,maxDepth,logBlockSize,minLeafSize,maxLeafSize);
+      return builder();
+    }
   }
 }
