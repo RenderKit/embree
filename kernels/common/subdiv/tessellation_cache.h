@@ -122,8 +122,6 @@ namespace embree
 #endif
  }
 
-
-
  class __aligned(32) TessellationCacheTag 
  {
  private:
@@ -208,8 +206,7 @@ namespace embree
      access_timestamp |= (unsigned int)1 << 31;
    }
 
-
-   __forceinline size_t       &getRootRef()              { return subtree_root;     }
+   __forceinline size_t       getRootRef()               { return subtree_root;     }
    __forceinline unsigned int getNumBlocks() const       { return usedBlocks;       }
    __forceinline unsigned int getPrimTag()   const       { return prim_tag;         }
    __forceinline unsigned int getCommitTag() const       { return commit_tag;       }
@@ -553,7 +550,7 @@ namespace embree
   // =========================================================================================================
 
 
-  class __aligned(64) TessellationCache {
+  class __aligned(64) OldTessellationCache {
   public:
     /* default sizes */
 #if defined(__MIC__)
@@ -708,7 +705,7 @@ namespace embree
 
       __forceinline void print() {
         std::cout << "CACHE-TAG-SET:" << std::endl;
-        for (size_t i=0;i<TessellationCache::CACHE_WAYS;i++)
+        for (size_t i=0;i<OldTessellationCache::CACHE_WAYS;i++)
           {
             std::cout << "i = " << i << " -> ";
             tags[i].print();
@@ -731,13 +728,6 @@ namespace embree
     size_t blockCounter;
 
 
-    /* stats */
-    static AtomicCounter cache_accesses;
-    static AtomicCounter cache_hits;
-    static AtomicCounter cache_misses;
-    static AtomicCounter cache_clears;
-    static AtomicCounter cache_evictions;                
-                    
     __forceinline size_t addrToCacheSetIndex(InputTagType primID)
     {      
       const size_t cache_set = toTag(primID) % CACHE_SETS;
@@ -761,7 +751,7 @@ namespace embree
     }
 
 
-    TessellationCache()  
+    OldTessellationCache()  
       {
       }
 
@@ -900,9 +890,9 @@ namespace embree
     }
 #endif    
     
-    /* print stats for debugging */                 
-    static void printStats();
-    static void clearStats();
+    /* /\* print stats for debugging *\/                  */
+    /* static void printStats(); */
+    /* static void clearStats(); */
 
   };
 

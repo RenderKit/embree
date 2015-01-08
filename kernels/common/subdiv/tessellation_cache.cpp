@@ -19,24 +19,24 @@
 namespace embree
 {
 
-  void TessellationCache::printStats()
-  {
-    assert(cache_hits + cache_misses == cache_accesses);
-    DBG_PRINT(cache_accesses);
-    DBG_PRINT(cache_misses);
-    DBG_PRINT(cache_hits);
-    DBG_PRINT(cache_evictions);
-    DBG_PRINT(100.0f * cache_hits / cache_accesses);
-    DBG_PRINT(cache_clears);
-  }
+  // void TessellationCache::printStats()
+  // {
+  //   assert(cache_hits + cache_misses == cache_accesses);
+  //   DBG_PRINT(cache_accesses);
+  //   DBG_PRINT(cache_misses);
+  //   DBG_PRINT(cache_hits);
+  //   DBG_PRINT(cache_evictions);
+  //   DBG_PRINT(100.0f * cache_hits / cache_accesses);
+  //   DBG_PRINT(cache_clears);
+  // }
 
-  void TessellationCache::clearStats()
-  {
-    TessellationCache::cache_accesses  = 0;
-    TessellationCache::cache_hits      = 0;
-    TessellationCache::cache_misses    = 0;
-    TessellationCache::cache_evictions = 0;          
-  }
+  // void TessellationCache::clearStats()
+  // {
+  //   TessellationCache::cache_accesses  = 0;
+  //   TessellationCache::cache_hits      = 0;
+  //   TessellationCache::cache_misses    = 0;
+  //   TessellationCache::cache_evictions = 0;          
+  // }
 
 
   
@@ -89,11 +89,11 @@ namespace embree
     DistributedTessellationCacheStats::cache_evictions = 0;          
   }
   
-  AtomicCounter TessellationCache::cache_accesses  = 0;
-  AtomicCounter TessellationCache::cache_hits      = 0;
-  AtomicCounter TessellationCache::cache_misses    = 0;
-  AtomicCounter TessellationCache::cache_clears    = 0;
-  AtomicCounter TessellationCache::cache_evictions = 0;                
+  // AtomicCounter TessellationCache::cache_accesses  = 0;
+  // AtomicCounter TessellationCache::cache_hits      = 0;
+  // AtomicCounter TessellationCache::cache_misses    = 0;
+  // AtomicCounter TessellationCache::cache_clears    = 0;
+  // AtomicCounter TessellationCache::cache_evictions = 0;                
 
 };
 
