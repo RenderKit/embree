@@ -24,13 +24,13 @@
 
 #include "geometry/triangle4.h"
 
-//#define PROFILE
+#define PROFILE
 
 namespace embree
 {
   namespace isa
   {
-    //__aligned(64) LinearAllocatorPerThread::ThreadAllocator* g_alloc;
+    __aligned(64) LinearAllocatorPerThread::ThreadAllocator* g_alloc;
 
     struct CreateBVH4Node
     {
@@ -144,7 +144,7 @@ namespace embree
         /* verbose mode */
         if (g_verbose >= 1)
           std::cout << "building BVH4<" << bvh->primTy.name << "> with " << TOSTRING(isa) "::BVH4BuilderFastNew ... " << std::flush;
-              
+
 #if defined(PROFILE)
       
       double dt_min = pos_inf;
@@ -155,23 +155,26 @@ namespace embree
         double t0 = getSeconds();
 #endif
 
-        //bvh->init(sizeof(BVH4::Node),numPrimitives,1);
+        bvh->init(sizeof(BVH4::Node),numPrimitives,1);
         //g_alloc = new LinearAllocatorPerThread::ThreadAllocator(&bvh->alloc);
         bvh->alloc2.init(numPrimitives*sizeof(PrimRef),numPrimitives*sizeof(BVH4::Node)); 
         
         /* build BVH */
         prims.resize(numPrimitives);
         //memset(prims.data(),0,prims.size()*sizeof(PrimRef));
-        vector_t<PrimRef> tmp; tmp.resize(prims.size());
 
-        double T0 = getSeconds();
+        vector_t<PrimRef> tmp; tmp.resize(numPrimitives); 
+        PrimRef* tmp_prims = (PrimRef*) tmp.data();
+        //PrimRef* tmp_prims = (PrimRef*) bvh->alloc.curPtr();
+
+        //double T0 = getSeconds();
         PrimInfo pinfo = CreatePrimRefArray<TriangleMesh,1>(scene,prims);
-        double T1 = getSeconds();
+        //double T1 = getSeconds();
         CreateBVH4Node createNode(bvh);
         CreateLeaf<Triangle4> createLeaf(bvh);
-        BVHBuilderGeneric<BVH4::NodeRef,CreateBVH4Node,CreateLeaf<Triangle4> > builder(createNode,createLeaf,prims.data(),tmp.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,2,4,4*BVH4::maxLeafBlocks);
+        BVHBuilderGeneric<BVH4::NodeRef,CreateBVH4Node,CreateLeaf<Triangle4> > builder(createNode,createLeaf,prims.data(),tmp_prims,pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,2,4,4*BVH4::maxLeafBlocks);
         BVH4::NodeRef root = builder();
-        double T2 = getSeconds();
+        //double T2 = getSeconds();
         bvh->set(root,pinfo.geomBounds,pinfo.size());
 
 #if defined(PROFILE)

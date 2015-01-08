@@ -404,9 +404,11 @@ namespace embree
         br.depth = 1;
         br.parent = &root;
         
+#if 0
         /* build BVH */
-        //Recursion recurse(this); recurse(br);
+        Recursion recurse(this); recurse(br);
 
+#else
         /* push initial build record to global work stack */
         state = new GlobalState;
         state->heap.reset();
@@ -439,7 +441,7 @@ namespace embree
         scheduler->dispatchTask(task_buildSubTrees, this, 0, threadCount ); // FIXME: threadIdx=0
 
         delete state; state = NULL;
-
+#endif
         return root;
       }
 
