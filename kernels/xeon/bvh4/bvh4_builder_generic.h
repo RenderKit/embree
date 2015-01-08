@@ -284,24 +284,14 @@ namespace embree
         
 #if 0
 
-        struct Recursion { 
-          BVHBuilderGeneric* parent;
-          Allocator& alloc;
-          __forceinline Recursion(BVHBuilderGeneric* parent, Allocator& alloc) : parent(parent), alloc(alloc) {}
-          __forceinline void operator() (BuildRecord<NodeRef>& br) { parent->recurse<false>(br,alloc,*this); } 
-        };
-        /* build BVH */
-        Recursion recurse(this,alloc); recurse<false>(br);
-
-#else
-
-        /* push initial build record to global work stack */
+        sequential_create_tree<THRESHOLD_FOR_SINGLE_THREADED>(br, createAlloc, 
+          [&](const BuildRecord<NodeRef>& br, Allocator& alloc, ParallelContinue<BuildRecord<NodeRef> >& cont) { recurse<false>(br,alloc,cont); });
+     
+#else   
         parallelBinner = new ObjectPartition::ParallelBinner;
-        
         parallel_create_tree<THRESHOLD_FOR_SINGLE_THREADED>(br, createAlloc, 
           [&](const BuildRecord<NodeRef>& br, Allocator& alloc, ParallelContinue<BuildRecord<NodeRef> >& cont) { recurse<true>(br,alloc,cont); } ,
           [&](const BuildRecord<NodeRef>& br, Allocator& alloc, ParallelContinue<BuildRecord<NodeRef> >& cont) { recurse<false>(br,alloc,cont); });
-
         delete parallelBinner;
 #endif
 

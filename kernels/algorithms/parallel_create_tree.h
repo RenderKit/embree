@@ -79,4 +79,21 @@ namespace embree
   {
     parallel_create_tree(br,createAlloc,recurse,recurse);
   }
+
+  template<size_t threshold, typename CreateThreadAllocator, typename Continuation, typename Recurse>
+    void sequential_create_tree(const Continuation& br, CreateThreadAllocator& createAlloc, const Recurse& recurse)
+  {
+    typedef decltype(createAlloc()) Allocator;
+    
+    struct Recursion : public ParallelContinue<Continuation> { 
+      const Recurse& recurse;
+      Allocator& alloc;
+      __forceinline Recursion(const Recurse& recurse, Allocator& alloc) : recurse(recurse), alloc(alloc) {}
+      __forceinline void operator() (const Continuation& br) { recurse(br,alloc,*this); } 
+    };
+
+    Allocator& alloc = createAlloc();
+    Recursion recursion(recurse,alloc); 
+    recursion(br);
+  }
 }
