@@ -27,14 +27,14 @@ namespace embree
     virtual void operator() (const Continuation& c) = 0;
   };
 
-  template<typename Continuation, typename Index, typename Func>
+  template<typename Continuation, typename Index, typename Func, typename ThreadLocal, typename CreateThreadLocal>
     class ParallelContinueTask
   {
     static const size_t SIZE_WORK_STACK = 64;
 
   public:
-    __forceinline ParallelContinueTask (Continuation* continuations, const Index taskCount, const Func& func)
-      : continuations(continuations), cntr(0), taskCount(taskCount), func(func)
+    __forceinline ParallelContinueTask (Continuation* continuations, const Index taskCount, const Func& func, const CreateThreadLocal& createThreadLocal)
+      : continuations(continuations), cntr(0), taskCount(taskCount), func(func), createThreadLocal(createThreadLocal)
     {
       LockStepTaskScheduler* scheduler = LockStepTaskScheduler::instance();
       size_t threadCount = scheduler->getNumThreads();
@@ -48,21 +48,27 @@ namespace embree
       struct Recurse : public ParallelContinue<Continuation>
       {
         ParallelContinueTask* parent;
-        __forceinline Recurse(ParallelContinueTask* parent) : parent(parent) {}
-        void operator() (const Continuation& c) { parent->func(c,*this); } 
+        ThreadLocal& threadLocal;
+        __forceinline Recurse(ParallelContinueTask* parent, ThreadLocal& threadLocal) 
+          : parent(parent), threadLocal(threadLocal) {}
+        void operator() (const Continuation& c) { parent->func(c,threadLocal,*this); } 
       };
     
       struct Split : public ParallelContinue<Continuation>
       {
         ParallelContinueTask* parent;
-        __forceinline Split(ParallelContinueTask* parent) : parent(parent) {}
+        ThreadLocal& threadLocal;
+        __forceinline Split(ParallelContinueTask* parent, ThreadLocal& threadLocal) 
+          : parent(parent), threadLocal(threadLocal) {}
         void operator() (const Continuation& c) 
         {
           const size_t threadIndex = LockStepTaskScheduler::threadIndex();
           if (parent->threadStack[threadIndex].push(c)) return;
-          Recurse r(parent); r(c); // fallback if push was not possible
+          Recurse r(parent,threadLocal); r(c); // fallback if push was not possible
         }
       };
+
+      ThreadLocal threadLocal = createThreadLocal();
 
       while (true) 
       {
@@ -86,10 +92,10 @@ namespace embree
           if (!success) return; // FIXME: may loose threads
         }
 
-        Recurse recurse(this); Split split(this); 
-        func(cont,cont.final() ? (ParallelContinue<Continuation>&)recurse : (ParallelContinue<Continuation>&)split);
+        Recurse recurse(this,threadLocal); Split split(this,threadLocal); 
+        func(cont,threadLocal,cont.final() ? (ParallelContinue<Continuation>&)recurse : (ParallelContinue<Continuation>&)split);
 	while (threadStack[threadIndex].pop(cont)) {
-          func(cont,cont.final() ? (ParallelContinue<Continuation>&)recurse : (ParallelContinue<Continuation>&)split);
+          func(cont,threadLocal,cont.final() ? (ParallelContinue<Continuation>&)recurse : (ParallelContinue<Continuation>&)split);
         }
       }
     }
@@ -103,14 +109,15 @@ namespace embree
     atomic_t cntr;
     Index taskCount;
     const Func& func;
+    const CreateThreadLocal& createThreadLocal;
   private:
     __aligned(64) WorkStack<Continuation,SIZE_WORK_STACK>* threadStack;
   };
   
   /* parallel continue */
-  template<typename Continuation, typename Index, typename Func>
-    __forceinline void parallel_continue( Continuation* continuations, const Index N, const Func& func)
+  template<typename Continuation, typename Index, typename Func, typename CreateThreadLocal>
+    __forceinline void parallel_continue( Continuation* continuations, const Index N, const Func& func, const CreateThreadLocal& createThreadLocal)
   {
-    ParallelContinueTask<Continuation,Index,Func> task(continuations,N,func);
+    ParallelContinueTask<Continuation,Index,Func,decltype(createThreadLocal()),CreateThreadLocal> task(continuations,N,func,createThreadLocal);
   }
 }

@@ -35,6 +35,17 @@ namespace embree
 
     //__aligned(64) LinearAllocatorPerThread::ThreadAllocator* g_alloc;
 
+    struct CreateAlloc
+    {
+      __forceinline CreateAlloc (BVH4* bvh) : bvh(bvh) {}
+      
+      __forceinline Allocator operator() () const {
+        return Allocator(&bvh->alloc);
+      }
+
+      BVH4* bvh;
+    };
+
     struct CreateBVH4Node
     {
       __forceinline CreateBVH4Node (BVH4* bvh) : bvh(bvh) {}
@@ -177,9 +188,10 @@ namespace embree
         //double T0 = getSeconds();
         PrimInfo pinfo = CreatePrimRefArray<TriangleMesh,1>(scene,prims);
         //double T1 = getSeconds();
+        CreateAlloc createAlloc(bvh);
         CreateBVH4Node createNode(bvh);
         CreateLeaf<Triangle4> createLeaf(bvh);
-        BVHBuilderGeneric<BVH4::NodeRef,CreateBVH4Node,CreateLeaf<Triangle4> > builder(bvh,createNode,createLeaf,prims.data(),tmp_prims,pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,2,4,4*BVH4::maxLeafBlocks);
+        BVHBuilderGeneric<BVH4::NodeRef,Allocator,CreateAlloc,CreateBVH4Node,CreateLeaf<Triangle4> > builder(bvh,createAlloc,createNode,createLeaf,prims.data(),tmp_prims,pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,2,4,4*BVH4::maxLeafBlocks);
         BVH4::NodeRef root = builder();
         //double T2 = getSeconds();
         bvh->set(root,pinfo.geomBounds,pinfo.size());

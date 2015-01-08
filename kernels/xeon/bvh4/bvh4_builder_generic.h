@@ -80,7 +80,7 @@ namespace embree
 	};
       };
 
-    template<typename NodeRef, typename CreateNodeFunc, typename CreateLeafFunc>
+    template<typename NodeRef, typename Allocator, typename CreateAllocFunc, typename CreateNodeFunc, typename CreateLeafFunc>
       class BVHBuilderGeneric
     {
       static const size_t MAX_BRANCHING_FACTOR = 16;
@@ -89,7 +89,7 @@ namespace embree
       static const size_t THRESHOLD_FOR_SUBTREE_RECURSION = 128;
       static const size_t THRESHOLD_FOR_SINGLE_THREADED = 50000; 
       //typedef FastAllocator::Thread Allocator;
-      typedef LinearAllocatorPerThread::ThreadAllocator Allocator;
+      //typedef LinearAllocatorPerThread::ThreadAllocator Allocator;
 
     public:
       
@@ -120,12 +120,12 @@ namespace embree
     public:
       
       BVHBuilderGeneric (BVH4* bvh,
-                         CreateNodeFunc& createNode, CreateLeafFunc& createLeaf,
+                         CreateAllocFunc& createAlloc, CreateNodeFunc& createNode, CreateLeafFunc& createLeaf,
                          PrimRef* prims, PrimRef* tmp, const PrimInfo& pinfo,
                          const size_t branchingFactor, const size_t maxDepth, 
                          const size_t logBlockSize, const size_t minLeafSize, const size_t maxLeafSize)
         : bvh(bvh),
-        createNode(createNode), createLeaf(createLeaf), 
+        createAlloc(createAlloc), createNode(createNode), createLeaf(createLeaf), 
         state(NULL), prims(prims), tmp(tmp), pinfo(pinfo), 
           branchingFactor(branchingFactor), maxDepth(maxDepth),
           logBlockSize(logBlockSize), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize)
@@ -239,15 +239,14 @@ namespace embree
         else state->parallelBinner.partition(pinfo,tmp,prims,leftChild,rightChild,0,threadCount,scheduler);
       }
 
-#if 0
       template<typename Spawn>
-        inline void recurse(const BuildRecord<NodeRef>& current, Spawn& spawn)
+        inline void recurse(const BuildRecord<NodeRef>& current, Allocator& alloc, Spawn& spawn)
       {
         __aligned(64) BuildRecord<NodeRef> children[MAX_BRANCHING_FACTOR];
         
         /* create leaf node */
         if (current.depth+MIN_LARGE_LEAF_LEVELS >= maxDepth || current.size() <= minLeafSize) {
-          createLargeLeaf(current);
+          createLargeLeaf(current,alloc,alloc);
           return;
         }
         
@@ -290,12 +289,12 @@ namespace embree
         
         /* create leaf node if no split is possible */
         if (numChildren == 1) {
-          createLargeLeaf(current);
+          createLargeLeaf(current,alloc,alloc);
           return;
         }
         
         /* create node */
-        *current.parent = createNode(children,numChildren);
+        *current.parent = createNode(children,numChildren,alloc);
 
         /* recurse into each child */
         for (size_t i=0; i<numChildren; i++) 
@@ -305,9 +304,8 @@ namespace embree
       struct Recursion { 
         BVHBuilderGeneric* parent;
         __forceinline Recursion(BVHBuilderGeneric* parent) : parent(parent) {}
-        __forceinline void operator() (BuildRecord<NodeRef>& br) { parent->recurse(br,*this); } 
+        __forceinline void operator() (BuildRecord<NodeRef>& br, Allocator& alloc) { parent->recurse(br,alloc,*this); } 
       };
-#endif
 
       __forceinline void recurse_continue(BuildRecord<NodeRef>& current, Allocator& nodeAlloc, Allocator& leafAlloc, const size_t mode, const size_t threadID, const size_t numThreads)
       {
@@ -449,9 +447,10 @@ namespace embree
     {
       //__aligned(64) Allocator nodeAlloc(&bvh->alloc);
       //__aligned(64) Allocator leafAlloc(&bvh->alloc);
-      Allocator alloc(&bvh->alloc);
+      //Allocator alloc(&bvh->alloc);
       //Allocator& alloc = *bvh->alloc2.instance();
-      
+      Allocator alloc = createAlloc();
+
       while (true) 
       {
 	BuildRecord<NodeRef> br;
@@ -489,8 +488,9 @@ namespace embree
       /*! builder entry function */
       NodeRef operator() ()
       {
-        Allocator alloc(&bvh->alloc);
+        //Allocator alloc(&bvh->alloc);
         //Allocator& alloc = *bvh->alloc2.instance();
+        Allocator alloc = createAlloc();
 
         /* create initial build record */
         NodeRef root;
@@ -542,10 +542,10 @@ namespace embree
         std::sort(state->heap.begin(),state->heap.end(),BuildRecord<NodeRef>::Greater());
         //double t1 = getSeconds();
 
-#if 0
-        parallel_continue( state->heap.begin(), state->heap.size(), [&](const BuildRecord<NodeRef>& br, ParallelContinue<BuildRecord<NodeRef> >& cont) {
-          recurse(br,cont);
-        });
+#if 1
+        parallel_continue( state->heap.begin(), state->heap.size(), [&](const BuildRecord<NodeRef>& br, Allocator& alloc, ParallelContinue<BuildRecord<NodeRef> >& cont) {
+            recurse(br,alloc,cont);
+          },createAlloc);
 #else
         /* now process all created subtasks on multiple threads */
         scheduler->dispatchTask(task_buildSubTrees, this, 0, threadCount ); // FIXME: threadIdx=0
@@ -565,6 +565,7 @@ namespace embree
 
     private:
       BVH4* bvh; // FIXME: remove
+      CreateAllocFunc& createAlloc;
       CreateNodeFunc& createNode;
       CreateLeafFunc& createLeaf;
       GlobalState* state;
