@@ -21,11 +21,40 @@
 
 #define TIMER(x) 
 
+#if defined(DEBUG)
+#define CACHE_STATS(x) 
+#else
+#define CACHE_STATS(x) 
+#endif
+
+#define SHARED_TESSELLATION_CACHE_ENTRIES      1024
+#define DISTRIBUTED_TESSELLATION_CACHE_ENTRIES  128
+
 namespace embree
 {
+  typedef AdaptiveTessellationCache<DISTRIBUTED_TESSELLATION_CACHE_ENTRIES> TessellationCache;
+
   namespace isa
   {
+
     __thread TessellationCache *tess_cache = NULL;
+
+    static __forceinline void * extractBVH4iPtr(const size_t &subtree_root)
+    {
+      if (likely(subtree_root & ((size_t)1<<3)))
+	return (void*)(subtree_root & ~(((size_t)1 << 4)-1));
+      else
+	return (void*)(subtree_root & ~(((size_t)1 << 5)-1));
+    }
+
+    static __forceinline BVH4i::NodeRef extractBVH4iNodeRef(const size_t &subtree_root)
+    {
+      if (likely(subtree_root & ((size_t)1<<3)))
+	return (unsigned int)(subtree_root & (((size_t)1 << 4)-1));
+      else
+	return (unsigned int)(subtree_root & (((size_t)1 << 5)-1));
+    }
+
 
     struct __aligned(64) Quad4x4 {
       mic3f vtx;
@@ -232,26 +261,28 @@ namespace embree
     {
       TessellationCache *cache = (TessellationCache *)_mm_malloc(sizeof(TessellationCache),64);
       assert( (size_t)cache % 64 == 0 );
-      cache->init();	
-#if DEBUG
+#define PRE_ALLOC_BLOCKS 18
       mtx.lock();
-      std::cout << "Enabling tessellation cache with " << cache->allocated64ByteBlocks() << " blocks = " << cache->allocated64ByteBlocks()*64 << " bytes as default size" << std::endl;
+      cache->init(PRE_ALLOC_BLOCKS);	
       mtx.unlock();
-#endif
       tess_cache = cache;
     }
 
-    __forceinline BVH4i::NodeRef lookUpTessellationCache(TessellationCache *local_cache,
-							 const unsigned int patchIndex,
-							 const unsigned int commitCounter,
-							 const SubdivPatch1* const patches,
-							 Scene *const scene)
+    __forceinline size_t lookUpTessellationCache(TessellationCache *local_cache,
+						 const unsigned int patchIndex,
+						 const unsigned int commitCounter,
+						 const SubdivPatch1* const patches,
+						 Scene *const scene)
     {
+      CACHE_STATS(DistributedTessellationCacheStats::cache_accesses++);
+
       InputTagType tag = (InputTagType)patchIndex;
 
-      BVH4i::NodeRef subtree_root = local_cache->lookup(tag,commitCounter);
-      if (unlikely(subtree_root == BVH4i::invalidNode))
+      size_t subtree_root = local_cache->lookup(tag,commitCounter);
+      if (unlikely(subtree_root == (size_t)-1))
 	{
+	  CACHE_STATS(DistributedTessellationCacheStats::cache_misses++);
+
 	  const SubdivPatch1& subdiv_patch = patches[patchIndex];
 		  
 	  subdiv_patch.prefetchData();
@@ -259,17 +290,25 @@ namespace embree
 	  const SubdivMesh* const geom = (SubdivMesh*)scene->get(subdiv_patch.geom); // FIXME: test flag first
 
 	  const unsigned int blocks = subdiv_patch.grid_subtree_size_64b_blocks;
+	  TessellationCacheTag &t = local_cache->request(tag,commitCounter,blocks);		      
+	  //mic_f *local_mem = (mic_f*)local_cache->getPtr(); 
+	  mic_f *local_mem = (mic_f*)t.getPtr(); 
 
-	  TessellationCache::CacheTag &t = local_cache->request(tag,commitCounter,blocks);		      
-	  mic_f *local_mem = (mic_f*)local_cache->getPtr(); 
+	  unsigned int currentIndex = 0;
 
-	  unsigned int currentIndex = t.getRootRef();
+	  BVH4i::NodeRef bvh4i_root = initLocalLazySubdivTree(subdiv_patch,currentIndex,local_mem,geom);		      
+	  assert( bvh4i_root != BVH4i::invalidNode);
 
-	  subtree_root = initLocalLazySubdivTree(subdiv_patch,currentIndex,local_mem,geom);		      
-	  assert( subtree_root != BVH4i::invalidNode);
+	  //local_cache->updateRootRef(t,subtree_root);
+	  t.updateRootRef((size_t)bvh4i_root + (size_t)local_mem);
 
-	  local_cache->updateRootRef(t,subtree_root);
+	  assert( bvh4i_root == extractBVH4iNodeRef( t.getRootRef() ));
+	  assert( local_mem  == extractBVH4iPtr( t.getRootRef() ));
+	  assert( (size_t)extractBVH4iNodeRef( t.getRootRef() ) + (size_t)extractBVH4iPtr( t.getRootRef() ) == t.getRootRef() );
+
+	  return t.getRootRef();
 	}
+      CACHE_STATS(DistributedTessellationCacheStats::cache_hits++);
       return subtree_root;
     }
 
@@ -355,12 +394,15 @@ namespace embree
 
 	      const unsigned int patchIndex = curNode.offsetIndex();
 
-	      BVH4i::NodeRef subtree_root = lookUpTessellationCache(local_cache,
-								    patchIndex,
-								    commitCounter,
-								    (SubdivPatch1*)accel,
-								    scene);
-	      mic_f     * const __restrict__ lazymem     = (mic_f*)local_cache->getPtr(); /* lazymem could change to realloc */
+	      size_t cached_64bit_root = lookUpTessellationCache(local_cache,
+								 patchIndex,
+								 commitCounter,
+								 (SubdivPatch1*)accel,
+								 scene);
+	      
+	      //mic_f     * const __restrict__ lazymem     = (mic_f*)local_cache->getPtr(); /* lazymem could change to realloc */
+	      BVH4i::NodeRef subtree_root = extractBVH4iNodeRef(cached_64bit_root); 
+	      mic_f     * const __restrict__ lazymem     = (mic_f*)extractBVH4iPtr(cached_64bit_root); 
 
 	      // -------------------------------------
 	      // -------------------------------------
@@ -524,12 +566,23 @@ namespace embree
 	      
 
 	      const unsigned int patchIndex = curNode.offsetIndex();
-	      BVH4i::NodeRef subtree_root = lookUpTessellationCache(local_cache,
-								    patchIndex,
-								    commitCounter,
-								    (SubdivPatch1*)accel,
-								    scene);
-	      mic_f     * const __restrict__ lazymem     = (mic_f*)local_cache->getPtr(); /* lazymem could change to realloc */
+
+	      size_t cached_64bit_root = lookUpTessellationCache(local_cache,
+								 patchIndex,
+								 commitCounter,
+								 (SubdivPatch1*)accel,
+								 scene);
+	      
+	      //mic_f     * const __restrict__ lazymem     = (mic_f*)local_cache->getPtr(); /* lazymem could change to realloc */
+	      BVH4i::NodeRef subtree_root = extractBVH4iNodeRef(cached_64bit_root); 
+	      mic_f     * const __restrict__ lazymem     = (mic_f*)extractBVH4iPtr(cached_64bit_root); 
+
+	      // BVH4i::NodeRef subtree_root = lookUpTessellationCache(local_cache,
+	      // 							    patchIndex,
+	      // 							    commitCounter,
+	      // 							    (SubdivPatch1*)accel,
+	      // 							    scene);
+	      // mic_f     * const __restrict__ lazymem     = (mic_f*)local_cache->getPtr(); /* lazymem could change to realloc */
 
 		{
 		    
@@ -666,12 +719,15 @@ namespace embree
 
 	  const unsigned int patchIndex = curNode.offsetIndex();
 
-	  BVH4i::NodeRef subtree_root = lookUpTessellationCache(local_cache,
-								patchIndex,
-								commitCounter,
-								(SubdivPatch1*)accel,
-								scene);
-	  mic_f     * const __restrict__ lazymem     = (mic_f*)local_cache->getPtr(); /* lazymem could change to realloc */
+	  size_t cached_64bit_root = lookUpTessellationCache(local_cache,
+							     patchIndex,
+							     commitCounter,
+							     (SubdivPatch1*)accel,
+							     scene);
+	      
+	  BVH4i::NodeRef subtree_root = extractBVH4iNodeRef(cached_64bit_root); 
+	  mic_f     * const __restrict__ lazymem     = (mic_f*)extractBVH4iPtr(cached_64bit_root); 
+
 
 	  // -------------------------------------
 	  // -------------------------------------
@@ -791,12 +847,16 @@ namespace embree
 	      
 
 	      const unsigned int patchIndex = curNode.offsetIndex();
-	      BVH4i::NodeRef subtree_root = lookUpTessellationCache(local_cache,
-								    patchIndex,
-								    commitCounter,
-								    (SubdivPatch1*)accel,
-								    scene);
-	      mic_f     * const __restrict__ lazymem     = (mic_f*)local_cache->getPtr(); /* lazymem could change to realloc */
+
+	      size_t cached_64bit_root = lookUpTessellationCache(local_cache,
+								 patchIndex,
+								 commitCounter,
+								 (SubdivPatch1*)accel,
+								 scene);
+	      
+	      BVH4i::NodeRef subtree_root = extractBVH4iNodeRef(cached_64bit_root); 
+	      mic_f     * const __restrict__ lazymem     = (mic_f*)extractBVH4iPtr(cached_64bit_root); 
+
 
 		    
 	      // -------------------------------------
