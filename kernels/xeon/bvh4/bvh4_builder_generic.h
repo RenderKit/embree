@@ -230,7 +230,7 @@ namespace embree
         else state->parallelBinner.partition(pinfo,tmp,prims,leftChild,rightChild,0,threadCount,scheduler);
       }
 
-      template<typename Spawn>
+      template<bool toplevel, typename Spawn>
         inline void recurse(const BuildRecord<NodeRef>& current, Allocator& alloc, Spawn& spawn)
       {
         __aligned(64) BuildRecord<NodeRef> children[MAX_BRANCHING_FACTOR];
@@ -266,7 +266,8 @@ namespace embree
           
           /*! split best child into left and right child */
           __aligned(64) BuildRecord<NodeRef> left, right;
-          splitSequential(children[bestChild],left,right);
+          if (toplevel) splitParallel(children[bestChild],left,right,alloc);
+          else          splitSequential(children[bestChild],left,right);
           
           /* add new children left and right */
           left.init(current.depth+1); 
@@ -292,56 +293,6 @@ namespace embree
           spawn(children[i]);
       }
 
-      template<typename Spawn>
-        void recurseTop(const BuildRecord<NodeRef>& current, Allocator& nodeAlloc, Spawn& spawn)
-      {
-        __aligned(64) BuildRecord<NodeRef> children[MAX_BRANCHING_FACTOR];
-        
-        /* fill all children by always splitting the one with the largest surface area */
-        size_t numChildren = 1;
-        children[0] = current;
-        
-        do {
-          
-          /* find best child with largest bounding box area */
-          int bestChild = -1;
-          float bestArea = neg_inf;
-          for (size_t i=0; i<numChildren; i++)
-          {
-            /* ignore leaves as they cannot get split */
-            if (children[i].size() <= minLeafSize)
-              continue;
-            
-            /* remember child with largest area */
-            if (children[i].sceneArea() > bestArea) { 
-              bestArea = children[i].sceneArea();
-              bestChild = i;
-            }
-          }
-          if (bestChild == -1) break;
-          
-          /*! split best child into left and right child */
-          __aligned(64) BuildRecord<NodeRef> left, right;
-          splitParallel(children[bestChild],left,right,nodeAlloc);
-          
-          /* add new children left and right */
-          left.init(current.depth+1); 
-          right.init(current.depth+1);
-          children[bestChild] = children[numChildren-1];
-          children[numChildren-1] = left;
-          children[numChildren+0] = right;
-          numChildren++;
-          
-        } while (numChildren < branchingFactor);
-        
-        /* create node */
-        *current.parent = createNode(children,numChildren,nodeAlloc);
-
-        /* recurse into each child */
-        for (size_t i=0; i<numChildren; i++) 
-          spawn(children[i]);
-      }
-
       /*! builder entry function */
       NodeRef operator() ()
       {
@@ -360,10 +311,10 @@ namespace embree
           BVHBuilderGeneric* parent;
           Allocator& alloc;
           __forceinline Recursion(BVHBuilderGeneric* parent, Allocator& alloc) : parent(parent), alloc(alloc) {}
-          __forceinline void operator() (BuildRecord<NodeRef>& br) { parent->recurse(br,alloc,*this); } 
+          __forceinline void operator() (BuildRecord<NodeRef>& br) { parent->recurse<false>(br,alloc,*this); } 
         };
         /* build BVH */
-        Recursion recurse(this,alloc); recurse(br);
+        Recursion recurse(this,alloc); recurse<false>(br);
 
 #else
 
@@ -407,14 +358,14 @@ namespace embree
             break;
           }
           
-          recurseTop(br,alloc,push);
+          recurse<true>(br,alloc,push);
         }
         _mm_sfence(); // make written leaves globally visible
         
         std::sort(heap.begin(),heap.end(),BuildRecord<NodeRef>::Greater());
 
         parallel_continue( heap.begin(), heap.size(), [&](const BuildRecord<NodeRef>& br, Allocator& alloc, ParallelContinue<BuildRecord<NodeRef> >& cont) {
-            recurse(br,alloc,cont);
+            recurse<false>(br,alloc,cont);
           },createAlloc);
 
         delete state; state = NULL;
