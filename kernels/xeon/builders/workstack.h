@@ -230,7 +230,7 @@ namespace embree
     T* begin() { return &heap[0]; }
     T* end  () { return &heap[0]+heap.size(); }
 
-    void push(T& br)
+    void push(const T& br)
     {
       heap.push_back(br);
       std::push_heap(heap.begin(),heap.end());

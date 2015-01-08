@@ -380,6 +380,12 @@ namespace embree
         return NULL;
       }
 
+      /* returns current address */
+      __forceinline void* curPtr() {
+        if (ptr == NULL) ptr = (char*) alloc->malloc(allocBlockSize,maxAlignment);
+        return &ptr[bytesUsed];
+      }
+
       /*! returns amount of used bytes */
       size_t getUsedBytes() const { return bytesUsed; }
       
@@ -412,6 +418,7 @@ namespace embree
 
     /*! initializes the allocator */
     void init(size_t bytesAllocate, size_t bytesReserve = 0) {
+      if (usedBlocks || freeBlocks) { reset(); return; }
       if (bytesReserve == 0) bytesReserve = bytesAllocate;
       usedBlocks = Block::create(bytesAllocate,bytesReserve);
       growSize = max(size_t(256),bytesReserve);

@@ -24,21 +24,30 @@
 
 #include "geometry/triangle4.h"
 
+//#define PROFILE
+
 namespace embree
 {
   namespace isa
   {
-    //__aligned(64) LinearAllocatorPerThread::ThreadAllocator* g_alloc;
+    typedef FastAllocator::Thread Allocator;
+
+    struct CreateAlloc
+    {
+      __forceinline CreateAlloc (BVH4* bvh) : bvh(bvh) {}
+      __forceinline Allocator& operator() () const { return *bvh->alloc2.instance();  }
+
+      BVH4* bvh;
+    };
 
     struct CreateBVH4Node
     {
       __forceinline CreateBVH4Node (BVH4* bvh) : bvh(bvh) {}
       
-      __forceinline BVH4::NodeRef operator() (BuildRecord<BVH4::NodeRef>* children, const size_t N)
+      __forceinline BVH4::NodeRef operator() (BuildRecord<BVH4::NodeRef>* children, const size_t N, Allocator& alloc)
       {
-        FastAllocator::Thread& alloc = *bvh->alloc2.instance();
+        //FastAllocator::Thread& alloc = *bvh->alloc2.instance();
         BVH4::Node* node = (BVH4::Node*) alloc.malloc(sizeof(BVH4::Node)); node->clear();
-        //BVH4::Node* node = (BVH4::Node*) g_alloc->malloc(sizeof(BVH4::Node)); node->clear();
         for (size_t i=0; i<N; i++) {
           node->set(i,children[i].geomBounds);
           children[i].parent = &node->child(i);
@@ -54,13 +63,12 @@ namespace embree
     {
       __forceinline CreateLeaf (BVH4* bvh) : bvh(bvh) {}
       
-      __forceinline BVH4::NodeRef operator() (BuildRecord<BVH4::NodeRef>& current, PrimRef* prims)
+      __forceinline BVH4::NodeRef operator() (const BuildRecord<BVH4::NodeRef>& current, PrimRef* prims, Allocator& alloc)
       {
         size_t items = Primitive::blocks(current.size());
         size_t start = current.begin;
-        FastAllocator::Thread& alloc = *bvh->alloc2.instance();
+        //FastAllocator::Thread& alloc = *bvh->alloc2.instance();
         Primitive* accel = (Primitive*) alloc.malloc(items*sizeof(Primitive));
-        //Primitive* accel = (Primitive*) g_alloc->malloc(items*sizeof(Primitive));
         BVH4::NodeRef node = bvh->encodeLeaf((char*)accel,items);
         for (size_t i=0; i<items; i++) {
           accel[i].fill(prims,start,current.end,bvh->scene,false);
@@ -125,7 +133,7 @@ namespace embree
 
       void build(size_t threadIndex, size_t threadCount) 
       {
-         /* start measurement */
+        /* start measurement */
         double t0 = 0.0f;
         if (g_verbose >= 1) t0 = getSeconds();
 
@@ -142,26 +150,42 @@ namespace embree
         /* verbose mode */
         if (g_verbose >= 1)
           std::cout << "building BVH4<" << bvh->primTy.name << "> with " << TOSTRING(isa) "::BVH4BuilderFastNew ... " << std::flush;
-              
-        //bvh->init(sizeof(BVH4::Node),numPrimitives,1);
-        //g_alloc = new LinearAllocatorPerThread::ThreadAllocator(&bvh->alloc);
-        bvh->alloc2.init(numPrimitives*sizeof(PrimRef),numPrimitives*sizeof(BVH4::Node)); 
-        
-        /* build BVH */
-        prims.resize(numPrimitives);
-        //memset(prims.data(),0,prims.size()*sizeof(PrimRef));
-        vector_t<PrimRef> tmp; tmp.resize(prims.size());
 
-        double T0 = getSeconds();
-        PrimInfo pinfo = CreatePrimRefArray<TriangleMesh,1>(scene,prims);
-        double T1 = getSeconds();
-        CreateBVH4Node createNode(bvh);
-        CreateLeaf<Triangle4> createLeaf(bvh);
-        BVHBuilderGeneric<BVH4::NodeRef,CreateBVH4Node,CreateLeaf<Triangle4> > builder(createNode,createLeaf,prims.data(),tmp.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,2,4,4*BVH4::maxLeafBlocks);
-        BVH4::NodeRef root = builder();
-        double T2 = getSeconds();
-        bvh->set(root,pinfo.geomBounds,pinfo.size());
+#if defined(PROFILE)
       
+        double dt_min = pos_inf;
+        double dt_avg = 0.0f;
+        double dt_max = neg_inf;
+        for (size_t i=0; i<20; i++) 
+        {
+          double t0 = getSeconds();
+#endif
+          
+          /* reserve data */
+          bvh->alloc2.init(numPrimitives*sizeof(PrimRef),numPrimitives*sizeof(BVH4::Node)); 
+          prims.resize(numPrimitives);
+          
+          /* build BVH */
+          PrimInfo pinfo = CreatePrimRefArray<TriangleMesh,1>(scene,prims);
+          BVH4::NodeRef root = build_bvh_sah<BVH4::NodeRef>(CreateAlloc(bvh),CreateBVH4Node(bvh),CreateLeaf<Triangle4>(bvh),
+                                                            prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,2,4,4*BVH4::maxLeafBlocks);
+          bvh->set(root,pinfo.geomBounds,pinfo.size());
+          
+#if defined(PROFILE)
+          double dt = getSeconds()-t0;
+          dt_min = min(dt_min,dt);
+          dt_avg = dt_avg + dt;
+          dt_max = max(dt_max,dt);
+        }
+        dt_avg /= double(20);
+        
+        std::cout << "[DONE]" << std::endl;
+        std::cout << "  min = " << 1000.0f*dt_min << "ms (" << numPrimitives/dt_min*1E-6 << " Mtris/s)" << std::endl;
+        std::cout << "  avg = " << 1000.0f*dt_avg << "ms (" << numPrimitives/dt_avg*1E-6 << " Mtris/s)" << std::endl;
+        std::cout << "  max = " << 1000.0f*dt_max << "ms (" << numPrimitives/dt_max*1E-6 << " Mtris/s)" << std::endl;
+        std::cout << BVH4Statistics(bvh).str();
+#endif
+        
         /* stop measurement */
         double dt = 0.0f;
         if (g_verbose >= 1) dt = getSeconds()-t0;
@@ -174,12 +198,9 @@ namespace embree
         }
         if (g_verbose >= 2)
           std::cout << BVH4Statistics(bvh).str();
-
-        PRINT(1000.0f*(T1-T0));
-        PRINT(1000.0f*(T2-T1));
       }
     };
-
+    
     Builder* BVH4Triangle4BuilderFastNew  (void* bvh, Scene* scene, size_t mode) { return new class BVH4Triangle4BuilderFastClass((BVH4*)bvh,scene); }
   }
 }

@@ -30,8 +30,8 @@ namespace embree
       __forceinline Continuation () : N(0) {}
       __forceinline Continuation(size_t N) : N(N) {}
 
-      __forceinline bool final() const {
-        return N<1000;
+      __forceinline size_t size() const {
+        return N;
       }
     };
     
@@ -52,7 +52,7 @@ namespace embree
           atomic_add(&cntr,1);
         }
 
-        parallel_continue( continuations.data(), continuations.size(), [&](const Continuation& c, ParallelContinue<Continuation>& cont) 
+        parallel_continue<1000>( continuations.data(), continuations.size(), [&](const Continuation& c, int& tl, ParallelContinue<Continuation>& cont) 
         {
           size_t N = c.N;
           atomic_add(&cntr,-1);
@@ -61,7 +61,7 @@ namespace embree
           atomic_add(&cntr,2);
           cont(Continuation(N0));
           cont(Continuation(N1));
-        });
+        }, []() { return 0; });
         passed = cntr == 0;
       }
       

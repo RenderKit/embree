@@ -161,17 +161,42 @@ namespace embree
         prims = (PrimRef* ) os_malloc(bytesPrims);  
         memset(prims,0,bytesPrims);
       }
+
+#if defined(PROFILE)
       
-      if (!parallel) {
-	build_sequential(threadIndex,threadCount);
-      } 
-      else {
-        state.reset(new GlobalState());
-	//size_t numActiveThreads = threadCount;
-	size_t numActiveThreads = min(threadCount,getNumberOfCores());
-	build_parallel(threadIndex,numActiveThreads,0,1);
-        state.reset(NULL);
+      double dt_min = pos_inf;
+      double dt_avg = 0.0f;
+      double dt_max = neg_inf;
+      for (size_t i=0; i<20; i++) 
+      {
+        double t0 = getSeconds();
+#endif
+
+        if (!parallel) {
+          build_sequential(threadIndex,threadCount);
+        } 
+        else {
+          state.reset(new GlobalState());
+          size_t numActiveThreads = threadCount;
+          //size_t numActiveThreads = min(threadCount,getNumberOfCores());
+          build_parallel(threadIndex,numActiveThreads,0,1);
+          state.reset(NULL);
+        }
+
+#if defined(PROFILE)
+        double dt = getSeconds()-t0;
+        dt_min = min(dt_min,dt);
+        dt_avg = dt_avg + dt;
+        dt_max = max(dt_max,dt);
       }
+      dt_avg /= double(20);
+      
+      std::cout << "[DONE]" << std::endl;
+      std::cout << "  min = " << 1000.0f*dt_min << "ms (" << numPrimitives/dt_min*1E-6 << " Mtris/s)" << std::endl;
+      std::cout << "  avg = " << 1000.0f*dt_avg << "ms (" << numPrimitives/dt_avg*1E-6 << " Mtris/s)" << std::endl;
+      std::cout << "  max = " << 1000.0f*dt_max << "ms (" << numPrimitives/dt_max*1E-6 << " Mtris/s)" << std::endl;
+      std::cout << BVH4Statistics(bvh).str();
+#endif
       
       /* stop measurement */
       double dt = 0.0f;
@@ -1153,6 +1178,8 @@ namespace embree
 
     void BVH4BuilderFast::build_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount) 
     {
+      //double T0 = getSeconds();
+
       /* calculate list of primrefs */
       PrimInfo pinfo(empty);
       create_primitive_array_parallel(threadIndex, threadCount, scheduler, pinfo);
@@ -1177,6 +1204,8 @@ namespace embree
       state->heap.reset();
       state->heap.push(br);
 
+      //double T1 = getSeconds();
+
       /* work in multithreaded toplevel mode until sufficient subtasks got generated */
       while (state->heap.size() < 2*threadCount)
       {
@@ -1197,9 +1226,15 @@ namespace embree
       _mm_sfence(); // make written leaves globally visible
 
       std::sort(state->heap.begin(),state->heap.end(),BuildRecord::Greater());
+      
 
       /* now process all created subtasks on multiple threads */
       scheduler->dispatchTask(task_buildSubTrees, this, threadIndex, threadCount );
+    
+      //double T2 = getSeconds();
+
+      //PRINT(1000.0f*(T1-T0));
+      //PRINT(1000.0f*(T2-T1));
     }
 
     // =======================================================================================================
