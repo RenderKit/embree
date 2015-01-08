@@ -129,4 +129,126 @@ namespace embree
   protected:
     Mutex& mutex;
   };
+
+  class TicketMutex
+  {
+  public:
+ 
+    static const size_t MAX_MIC_WAIT_CYCLES = 1024;
+    TicketMutex () { reset(); }
+
+    __forceinline bool isLocked() {
+      return tickets != threads;
+    }
+
+    __forceinline void lock()
+    {
+      const unsigned short i = atomic_add((int16*)&threads, 1);
+
+      unsigned int wait = 128;	
+      while (tickets != i) 
+	{
+#if !defined(__MIC__)
+	  _mm_pause(); 
+	  _mm_pause();
+#else
+	  _mm_delay_32(wait); 
+	  wait += wait;  
+	  if (wait > MAX_MIC_WAIT_CYCLES) wait = MAX_MIC_WAIT_CYCLES;  
+#endif	  
+	}
+    }
+
+    __forceinline void unlock() 
+    {
+      __memory_barrier();
+      tickets++;
+      __memory_barrier();
+    }
+
+    __forceinline void reset() 
+    {
+      assert(sizeof(TicketMutex) == 4);
+      __memory_barrier();
+      threads = 0;
+      tickets = 0;
+      __memory_barrier();
+    }
+
+  public:
+    volatile unsigned short threads;     
+    volatile unsigned short tickets;
+  };
+
+ class MultipleReaderSingleWriterMutex
+ {
+ private:
+#if defined(__WIN32__)
+   AtomicMutex writer_mtx;
+#else
+   AtomicMutex writer_mtx;
+   //TicketMutex writer_mtx;
+#endif
+   volatile int readers;
+
+ public:
+
+ MultipleReaderSingleWriterMutex() : readers(0) {
+     assert(sizeof(MultipleReaderSingleWriterMutex) == 8);
+   }
+
+   static const unsigned int DELAY_CYCLES = 1024;
+
+   __forceinline void reset()
+   {
+     readers = 0;
+     writer_mtx.reset();
+   }
+   __forceinline void pause()
+   {
+#if !defined(__MIC__)
+     _mm_pause(); 
+     _mm_pause();
+#else
+     _mm_delay_32(DELAY_CYCLES); 
+#endif      
+   }
+    
+   __forceinline void read_lock()
+   {
+     while(1)
+       {
+         atomic_add(&readers,1);
+         if (likely(!writer_mtx.isLocked())) break;
+         atomic_add(&readers,-1);
+         while(writer_mtx.isLocked())
+           pause();
+       }
+   }
+
+   __forceinline void read_unlock()
+   {
+     atomic_add(&readers,-1);      
+   }
+
+   __forceinline void write_lock()
+   {
+     writer_mtx.lock();
+     while(readers)
+       pause();
+   }
+
+   __forceinline void write_unlock()
+   {
+     writer_mtx.unlock();
+   }
+
+   __forceinline void write_unlock_set_read_lock()
+   {
+     atomic_add(&readers,1);     
+     writer_mtx.unlock();
+   }
+
+ };
+
 }

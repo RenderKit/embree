@@ -225,6 +225,7 @@ __forceinline int32 atomic_cmpxchg(volatile int32* p, const int32 c, const int32
   return _InterlockedCompareExchange((volatile long*)p,v,c);
 }
 
+
 #if defined(__X86_64__)
 
 typedef int64 atomic64_t;
