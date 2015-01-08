@@ -24,6 +24,8 @@
 
 #include "geometry/triangle4.h"
 
+//#define PROFILE
+
 namespace embree
 {
   namespace isa
@@ -143,6 +145,16 @@ namespace embree
         if (g_verbose >= 1)
           std::cout << "building BVH4<" << bvh->primTy.name << "> with " << TOSTRING(isa) "::BVH4BuilderFastNew ... " << std::flush;
               
+#if defined(PROFILE)
+      
+      double dt_min = pos_inf;
+      double dt_avg = 0.0f;
+      double dt_max = neg_inf;
+      for (size_t i=0; i<20; i++) 
+      {
+        double t0 = getSeconds();
+#endif
+
         //bvh->init(sizeof(BVH4::Node),numPrimitives,1);
         //g_alloc = new LinearAllocatorPerThread::ThreadAllocator(&bvh->alloc);
         bvh->alloc2.init(numPrimitives*sizeof(PrimRef),numPrimitives*sizeof(BVH4::Node)); 
@@ -161,6 +173,21 @@ namespace embree
         BVH4::NodeRef root = builder();
         double T2 = getSeconds();
         bvh->set(root,pinfo.geomBounds,pinfo.size());
+
+#if defined(PROFILE)
+        double dt = getSeconds()-t0;
+        dt_min = min(dt_min,dt);
+        dt_avg = dt_avg + dt;
+        dt_max = max(dt_max,dt);
+      }
+      dt_avg /= double(20);
+      
+      std::cout << "[DONE]" << std::endl;
+      std::cout << "  min = " << 1000.0f*dt_min << "ms (" << numPrimitives/dt_min*1E-6 << " Mtris/s)" << std::endl;
+      std::cout << "  avg = " << 1000.0f*dt_avg << "ms (" << numPrimitives/dt_avg*1E-6 << " Mtris/s)" << std::endl;
+      std::cout << "  max = " << 1000.0f*dt_max << "ms (" << numPrimitives/dt_max*1E-6 << " Mtris/s)" << std::endl;
+      std::cout << BVH4Statistics(bvh).str();
+#endif
       
         /* stop measurement */
         double dt = 0.0f;
@@ -174,9 +201,6 @@ namespace embree
         }
         if (g_verbose >= 2)
           std::cout << BVH4Statistics(bvh).str();
-
-        PRINT(1000.0f*(T1-T0));
-        PRINT(1000.0f*(T2-T1));
       }
     };
 
