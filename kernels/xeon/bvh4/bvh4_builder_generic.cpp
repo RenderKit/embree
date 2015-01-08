@@ -30,15 +30,18 @@ namespace embree
 {
   namespace isa
   {
-    __aligned(64) LinearAllocatorPerThread::ThreadAllocator* g_alloc;
+    typedef LinearAllocatorPerThread::ThreadAllocator Allocator;
+    //typedef FastAllocator::Thread Allocator;
+
+    //__aligned(64) LinearAllocatorPerThread::ThreadAllocator* g_alloc;
 
     struct CreateBVH4Node
     {
       __forceinline CreateBVH4Node (BVH4* bvh) : bvh(bvh) {}
       
-      __forceinline BVH4::NodeRef operator() (BuildRecord<BVH4::NodeRef>* children, const size_t N)
+      __forceinline BVH4::NodeRef operator() (BuildRecord<BVH4::NodeRef>* children, const size_t N, Allocator& alloc)
       {
-        FastAllocator::Thread& alloc = *bvh->alloc2.instance();
+        //FastAllocator::Thread& alloc = *bvh->alloc2.instance();
         BVH4::Node* node = (BVH4::Node*) alloc.malloc(sizeof(BVH4::Node)); node->clear();
         //BVH4::Node* node = (BVH4::Node*) g_alloc->malloc(sizeof(BVH4::Node)); node->clear();
         for (size_t i=0; i<N; i++) {
@@ -56,11 +59,11 @@ namespace embree
     {
       __forceinline CreateLeaf (BVH4* bvh) : bvh(bvh) {}
       
-      __forceinline BVH4::NodeRef operator() (const BuildRecord<BVH4::NodeRef>& current, PrimRef* prims)
+      __forceinline BVH4::NodeRef operator() (const BuildRecord<BVH4::NodeRef>& current, PrimRef* prims, Allocator& alloc)
       {
         size_t items = Primitive::blocks(current.size());
         size_t start = current.begin;
-        FastAllocator::Thread& alloc = *bvh->alloc2.instance();
+        //FastAllocator::Thread& alloc = *bvh->alloc2.instance();
         Primitive* accel = (Primitive*) alloc.malloc(items*sizeof(Primitive));
         //Primitive* accel = (Primitive*) g_alloc->malloc(items*sizeof(Primitive));
         BVH4::NodeRef node = bvh->encodeLeaf((char*)accel,items);
@@ -145,7 +148,7 @@ namespace embree
         if (g_verbose >= 1)
           std::cout << "building BVH4<" << bvh->primTy.name << "> with " << TOSTRING(isa) "::BVH4BuilderFastNew ... " << std::flush;
 
-        bvh->alloc2.init(numPrimitives*sizeof(PrimRef),numPrimitives*sizeof(BVH4::Node)); 
+        //bvh->alloc2.init(numPrimitives*sizeof(PrimRef),numPrimitives*sizeof(BVH4::Node)); 
 
 #if defined(PROFILE)
       
@@ -157,9 +160,10 @@ namespace embree
         double t0 = getSeconds();
 #endif
 
-        //bvh->init(sizeof(BVH4::Node),numPrimitives,1);
+        if (i == 0) bvh->init(sizeof(BVH4::Node),numPrimitives,1);
+        bvh->alloc.clear();
         //g_alloc = new LinearAllocatorPerThread::ThreadAllocator(&bvh->alloc);
-        bvh->alloc2.reset();
+        //bvh->alloc2.reset();
         
         /* build BVH */
         prims.resize(numPrimitives);
@@ -174,7 +178,7 @@ namespace embree
         //double T1 = getSeconds();
         CreateBVH4Node createNode(bvh);
         CreateLeaf<Triangle4> createLeaf(bvh);
-        BVHBuilderGeneric<BVH4::NodeRef,CreateBVH4Node,CreateLeaf<Triangle4> > builder(createNode,createLeaf,prims.data(),tmp_prims,pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,2,4,4*BVH4::maxLeafBlocks);
+        BVHBuilderGeneric<BVH4::NodeRef,CreateBVH4Node,CreateLeaf<Triangle4> > builder(bvh,createNode,createLeaf,prims.data(),tmp_prims,pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,2,4,4*BVH4::maxLeafBlocks);
         BVH4::NodeRef root = builder();
         //double T2 = getSeconds();
         bvh->set(root,pinfo.geomBounds,pinfo.size());
