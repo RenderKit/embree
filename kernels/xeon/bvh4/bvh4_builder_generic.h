@@ -19,6 +19,8 @@
 #include "builders/heuristic_object_partition.h"
 #include "builders/workstack.h"
 
+#include "algorithms/parallel_continue.h"
+
 namespace embree
 {
   namespace isa
@@ -26,6 +28,8 @@ namespace embree
     template<typename NodeRef>
      class __aligned(64) BuildRecord : public PrimInfo
       {
+        static const size_t THRESHOLD_FOR_SUBTREE_RECURSION = 128;
+
       public:
 	unsigned depth;         //!< depth from the root of the tree
 	float sArea;
@@ -39,6 +43,11 @@ namespace embree
           return *this;
         }
 #endif
+
+        __forceinline bool final() const {
+          return size() < THRESHOLD_FOR_SUBTREE_RECURSION;
+        }
+
 	__forceinline void init(size_t depth)
 	{
           parent = NULL;
@@ -116,7 +125,7 @@ namespace embree
           THROW_RUNTIME_ERROR("bvh4_builder: branching factor too large");
       }
 
-      void splitFallback(BuildRecord<NodeRef>& current, BuildRecord<NodeRef>& leftChild, BuildRecord<NodeRef>& rightChild)
+      void splitFallback(const BuildRecord<NodeRef>& current, BuildRecord<NodeRef>& leftChild, BuildRecord<NodeRef>& rightChild)
       {
         const size_t center = (current.begin + current.end)/2;
         
@@ -131,7 +140,7 @@ namespace embree
         rightChild.init(right,center,current.end);
       }
 
-      void createLargeLeaf(BuildRecord<NodeRef>& current)
+      void createLargeLeaf(const BuildRecord<NodeRef>& current)
       {
         if (current.depth > maxDepth) 
           THROW_RUNTIME_ERROR("depth limit reached");
@@ -188,7 +197,7 @@ namespace embree
           createLargeLeaf(children[i]);
       }
             
-      __forceinline void splitSequential(BuildRecord<NodeRef>& current, BuildRecord<NodeRef>& leftChild, BuildRecord<NodeRef>& rightChild)
+      __forceinline void splitSequential(const BuildRecord<NodeRef>& current, BuildRecord<NodeRef>& leftChild, BuildRecord<NodeRef>& rightChild)
       {
         /* calculate binning function */
         PrimInfo pinfo(current.size(),current.geomBounds,current.centBounds);
@@ -201,7 +210,7 @@ namespace embree
         else split.partition(prims, current.begin, current.end, leftChild, rightChild);
       }
 
-      void splitParallel(BuildRecord<NodeRef>& current, BuildRecord<NodeRef>& leftChild, BuildRecord<NodeRef>& rightChild)
+      void splitParallel(const BuildRecord<NodeRef>& current, BuildRecord<NodeRef>& leftChild, BuildRecord<NodeRef>& rightChild)
       {
         LockStepTaskScheduler* scheduler = LockStepTaskScheduler::instance();
         const size_t threadCount = scheduler->getNumThreads();
@@ -220,7 +229,7 @@ namespace embree
       }
 
       template<typename Spawn>
-        void recurse(BuildRecord<NodeRef>& current, Spawn& spawn)
+        inline void recurse(const BuildRecord<NodeRef>& current, Spawn& spawn)
       {
         __aligned(64) BuildRecord<NodeRef> children[MAX_BRANCHING_FACTOR];
         
@@ -287,7 +296,7 @@ namespace embree
         __forceinline void operator() (BuildRecord<NodeRef>& br) { parent->recurse(br,*this); } 
       };
 
-      void recurseTop(BuildRecord<NodeRef>& current)
+      void recurseTop(const BuildRecord<NodeRef>& current)
       {
         __aligned(64) BuildRecord<NodeRef> children[MAX_BRANCHING_FACTOR];
         
@@ -408,7 +417,9 @@ namespace embree
         /* build BVH */
         Recursion recurse(this); recurse(br);
 
-#else
+#endif
+
+#if 1
         /* push initial build record to global work stack */
         state = new GlobalState;
         state->heap.reset();
@@ -437,11 +448,19 @@ namespace embree
         
         std::sort(state->heap.begin(),state->heap.end(),BuildRecord<NodeRef>::Greater());
 
+#if 1
+        parallel_continue( state->heap.begin(), state->heap.size(), [&](const BuildRecord<NodeRef>& br, ParallelContinue<BuildRecord<NodeRef> >& cont) {
+          recurse(br,cont);
+        });
+#else
         /* now process all created subtasks on multiple threads */
         scheduler->dispatchTask(task_buildSubTrees, this, 0, threadCount ); // FIXME: threadIdx=0
 
+#endif
+
         delete state; state = NULL;
 #endif
+
         return root;
       }
 

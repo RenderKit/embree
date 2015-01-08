@@ -56,7 +56,7 @@ namespace embree
     {
       __forceinline CreateLeaf (BVH4* bvh) : bvh(bvh) {}
       
-      __forceinline BVH4::NodeRef operator() (BuildRecord<BVH4::NodeRef>& current, PrimRef* prims)
+      __forceinline BVH4::NodeRef operator() (const BuildRecord<BVH4::NodeRef>& current, PrimRef* prims)
       {
         size_t items = Primitive::blocks(current.size());
         size_t start = current.begin;
@@ -155,7 +155,7 @@ namespace embree
         double t0 = getSeconds();
 #endif
 
-        bvh->init(sizeof(BVH4::Node),numPrimitives,1);
+        //bvh->init(sizeof(BVH4::Node),numPrimitives,1);
         //g_alloc = new LinearAllocatorPerThread::ThreadAllocator(&bvh->alloc);
         bvh->alloc2.init(numPrimitives*sizeof(PrimRef),numPrimitives*sizeof(BVH4::Node)); 
         
