@@ -227,6 +227,8 @@ namespace embree
         /* use primitive array temporarily for parallel splits */
         PrimInfo pinfo(current.begin,current.end,current.geomBounds,current.centBounds);
         
+        PrimRef* tmp = (PrimRef*) bvh->alloc.curPtr();
+
         /* parallel binning of centroids */
         const float sah = state->parallelBinner.find(pinfo,prims,tmp,logBlockSize,0,threadCount,scheduler);
         
@@ -504,14 +506,21 @@ namespace embree
 
 #else
 
+        LockStepTaskScheduler* scheduler = LockStepTaskScheduler::instance();
+        const size_t threadCount = scheduler->getNumThreads();
+
         /* push initial build record to global work stack */
         state = new GlobalState;
+        
+        /* initialize thread-local work stacks */
+        for (size_t i=0; i<threadCount; i++)
+          state->threadStack[i].reset();
         state->heap.reset();
         state->heap.push(br);
 
+        //double t0 = getSeconds();
+
         /* work in multithreaded toplevel mode until sufficient subtasks got generated */
-        LockStepTaskScheduler* scheduler = LockStepTaskScheduler::instance();
-        const size_t threadCount = scheduler->getNumThreads();
         while (state->heap.size() < 2*threadCount)
         {
           BuildRecord<NodeRef> br;
@@ -531,6 +540,7 @@ namespace embree
         _mm_sfence(); // make written leaves globally visible
         
         std::sort(state->heap.begin(),state->heap.end(),BuildRecord<NodeRef>::Greater());
+        //double t1 = getSeconds();
 
 #if 0
         parallel_continue( state->heap.begin(), state->heap.size(), [&](const BuildRecord<NodeRef>& br, ParallelContinue<BuildRecord<NodeRef> >& cont) {
@@ -541,6 +551,11 @@ namespace embree
         scheduler->dispatchTask(task_buildSubTrees, this, 0, threadCount ); // FIXME: threadIdx=0
 
 #endif
+
+        //double t2 = getSeconds();
+
+        //PRINT(1000.0f*(t1-t0));
+        //PRINT(1000.0f*(t2-t1));
 
         delete state; state = NULL;
 #endif

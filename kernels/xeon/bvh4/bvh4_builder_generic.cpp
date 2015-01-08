@@ -169,9 +169,10 @@ namespace embree
         prims.resize(numPrimitives);
         //memset(prims.data(),0,prims.size()*sizeof(PrimRef));
 
-        vector_t<PrimRef> tmp; tmp.resize(numPrimitives); 
-        PrimRef* tmp_prims = (PrimRef*) tmp.data();
+        //vector_t<PrimRef> tmp; tmp.resize(numPrimitives); 
+        //PrimRef* tmp_prims = (PrimRef*) tmp.data();
         //PrimRef* tmp_prims = (PrimRef*) bvh->alloc.curPtr();
+        PrimRef* tmp_prims = NULL;
 
         //double T0 = getSeconds();
         PrimInfo pinfo = CreatePrimRefArray<TriangleMesh,1>(scene,prims);
@@ -182,6 +183,9 @@ namespace embree
         BVH4::NodeRef root = builder();
         //double T2 = getSeconds();
         bvh->set(root,pinfo.geomBounds,pinfo.size());
+
+        //PRINT(1000.0f*(T1-T0));
+        //PRINT(1000.0f*(T2-T1));
 
 #if defined(PROFILE)
         double dt = getSeconds()-t0;

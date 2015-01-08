@@ -1178,6 +1178,8 @@ namespace embree
 
     void BVH4BuilderFast::build_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount) 
     {
+      //double T0 = getSeconds();
+
       /* calculate list of primrefs */
       PrimInfo pinfo(empty);
       create_primitive_array_parallel(threadIndex, threadCount, scheduler, pinfo);
@@ -1202,6 +1204,8 @@ namespace embree
       state->heap.reset();
       state->heap.push(br);
 
+      //double T1 = getSeconds();
+
       /* work in multithreaded toplevel mode until sufficient subtasks got generated */
       while (state->heap.size() < 2*threadCount)
       {
@@ -1222,9 +1226,15 @@ namespace embree
       _mm_sfence(); // make written leaves globally visible
 
       std::sort(state->heap.begin(),state->heap.end(),BuildRecord::Greater());
+      
 
       /* now process all created subtasks on multiple threads */
       scheduler->dispatchTask(task_buildSubTrees, this, threadIndex, threadCount );
+    
+      //double T2 = getSeconds();
+
+      //PRINT(1000.0f*(T1-T0));
+      //PRINT(1000.0f*(T2-T1));
     }
 
     // =======================================================================================================
