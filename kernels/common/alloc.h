@@ -418,6 +418,7 @@ namespace embree
 
     /*! initializes the allocator */
     void init(size_t bytesAllocate, size_t bytesReserve = 0) {
+      if (usedBlocks || freeBlocks) { reset(); return; }
       if (bytesReserve == 0) bytesReserve = bytesAllocate;
       usedBlocks = Block::create(bytesAllocate,bytesReserve);
       growSize = max(size_t(256),bytesReserve);

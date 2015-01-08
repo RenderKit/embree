@@ -35,6 +35,9 @@ namespace embree
 	
         BuildRecord() {}
 
+        BuildRecord(const PrimInfo& pinfo, const size_t depth, NodeRef* parent) 
+          : PrimInfo(pinfo), depth(depth), parent(parent), sArea(area(pinfo.geomBounds)) {}
+
 #if defined(_MSC_VER)
         BuildRecord& operator=(const BuildRecord &arg) { 
           memcpy(this, &arg, sizeof(BuildRecord));    
@@ -86,12 +89,12 @@ namespace embree
     public:
 
       BVHBuilderGeneric (CreateAllocFunc& createAlloc, CreateNodeFunc& createNode, CreateLeafFunc& createLeaf,
-                         PrimRef* prims, PrimRef* tmp, const PrimInfo& pinfo,
+                         PrimRef* prims, const PrimInfo& pinfo,
                          const size_t branchingFactor, const size_t maxDepth, 
                          const size_t logBlockSize, const size_t minLeafSize, const size_t maxLeafSize)
         : parallelBinner(NULL),
           createAlloc(createAlloc), createNode(createNode), createLeaf(createLeaf), 
-          prims(prims), tmp(tmp), pinfo(pinfo), 
+          prims(prims), pinfo(pinfo), 
           branchingFactor(branchingFactor), maxDepth(maxDepth),
           logBlockSize(logBlockSize), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize)
       {
@@ -270,19 +273,13 @@ namespace embree
       /*! builder entry function */
       NodeRef operator() ()
       {
-        
         /* create initial build record */
         NodeRef root;
-        BuildRecord<NodeRef> br;
-        br.init(pinfo,0,pinfo.size());
-        br.depth = 1;
-        br.parent = &root;
+        BuildRecord<NodeRef> br(pinfo,1,&root);
         
 #if 0
-
         sequential_create_tree(br, createAlloc, 
           [&](const BuildRecord<NodeRef>& br, Allocator& alloc, ParallelContinue<BuildRecord<NodeRef> >& cont) { recurse<false>(br,alloc,cont); });
-     
 #else   
         parallelBinner = new ObjectPartition::ParallelBinner;
         parallel_create_tree<50000,128>(br, createAlloc, 
@@ -300,8 +297,7 @@ namespace embree
       CreateNodeFunc& createNode;
       CreateLeafFunc& createLeaf;
       PrimRef* prims;
-      PrimRef* tmp;
-      const PrimInfo pinfo;
+      const PrimInfo& pinfo;
       const size_t branchingFactor;
       const size_t maxDepth;
       const size_t logBlockSize;
