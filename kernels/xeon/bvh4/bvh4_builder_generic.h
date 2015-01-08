@@ -28,8 +28,6 @@ namespace embree
     template<typename NodeRef>
      class __aligned(64) BuildRecord : public PrimInfo
       {
-        static const size_t THRESHOLD_FOR_SUBTREE_RECURSION = 128;
-
       public:
 	unsigned depth;         //!< depth from the root of the tree
 	float sArea;
@@ -44,9 +42,9 @@ namespace embree
         }
 #endif
 
-        __forceinline bool final() const {
-          return size() < THRESHOLD_FOR_SUBTREE_RECURSION;
-        }
+        //__forceinline bool final() const {
+        //  return size() < 128;
+        //}
 
 	__forceinline void init(size_t depth)
 	{
@@ -84,8 +82,6 @@ namespace embree
     {
       static const size_t MAX_BRANCHING_FACTOR = 16;
       static const size_t MIN_LARGE_LEAF_LEVELS = 8;
-      static const size_t THRESHOLD_FOR_SUBTREE_RECURSION = 128;
-      static const size_t THRESHOLD_FOR_SINGLE_THREADED = 50000; 
 
     public:
 
@@ -284,12 +280,12 @@ namespace embree
         
 #if 0
 
-        sequential_create_tree<THRESHOLD_FOR_SINGLE_THREADED>(br, createAlloc, 
+        sequential_create_tree(br, createAlloc, 
           [&](const BuildRecord<NodeRef>& br, Allocator& alloc, ParallelContinue<BuildRecord<NodeRef> >& cont) { recurse<false>(br,alloc,cont); });
      
 #else   
         parallelBinner = new ObjectPartition::ParallelBinner;
-        parallel_create_tree<THRESHOLD_FOR_SINGLE_THREADED>(br, createAlloc, 
+        parallel_create_tree<50000,128>(br, createAlloc, 
           [&](const BuildRecord<NodeRef>& br, Allocator& alloc, ParallelContinue<BuildRecord<NodeRef> >& cont) { recurse<true>(br,alloc,cont); } ,
           [&](const BuildRecord<NodeRef>& br, Allocator& alloc, ParallelContinue<BuildRecord<NodeRef> >& cont) { recurse<false>(br,alloc,cont); });
         delete parallelBinner;

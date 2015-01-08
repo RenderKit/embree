@@ -27,7 +27,7 @@ namespace embree
     virtual void operator() (const Continuation& c) = 0;
   };
 
-  template<typename Continuation, typename Index, typename Func, typename ThreadLocal, typename CreateThreadLocal>
+  template<size_t threshold, typename Continuation, typename Index, typename Func, typename ThreadLocal, typename CreateThreadLocal>
     class ParallelContinueTask
   {
     static const size_t SIZE_WORK_STACK = 64;
@@ -93,9 +93,9 @@ namespace embree
         }
 
         Recurse recurse(this,threadLocal); Split split(this,threadLocal); 
-        func(cont,threadLocal,cont.final() ? (ParallelContinue<Continuation>&)recurse : (ParallelContinue<Continuation>&)split);
+        func(cont,threadLocal,cont.size() < threshold ? (ParallelContinue<Continuation>&)recurse : (ParallelContinue<Continuation>&)split);
 	while (threadStack[threadIndex].pop(cont)) {
-          func(cont,threadLocal,cont.final() ? (ParallelContinue<Continuation>&)recurse : (ParallelContinue<Continuation>&)split);
+          func(cont,threadLocal,cont.size() < threshold ? (ParallelContinue<Continuation>&)recurse : (ParallelContinue<Continuation>&)split);
         }
       }
     }
@@ -115,9 +115,9 @@ namespace embree
   };
   
   /* parallel continue */
-  template<typename Continuation, typename Index, typename Func, typename CreateThreadLocal>
+  template<size_t threshold, typename Continuation, typename Index, typename Func, typename CreateThreadLocal>
     __forceinline void parallel_continue( Continuation* continuations, const Index N, const Func& func, const CreateThreadLocal& createThreadLocal)
   {
-    ParallelContinueTask<Continuation,Index,Func,decltype(createThreadLocal()),CreateThreadLocal> task(continuations,N,func,createThreadLocal);
+    ParallelContinueTask<threshold,Continuation,Index,Func,decltype(createThreadLocal()),CreateThreadLocal> task(continuations,N,func,createThreadLocal);
   }
 }

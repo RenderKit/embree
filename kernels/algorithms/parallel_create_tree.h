@@ -20,7 +20,7 @@
 
 namespace embree
 {
-  template<size_t threshold, typename CreateThreadAllocator, typename Continuation, typename Recurse1, typename Recurse2>
+  template<size_t threshold1, size_t threshold2, typename CreateThreadAllocator, typename Continuation, typename Recurse1, typename Recurse2>
     void parallel_create_tree(const Continuation& br, CreateThreadAllocator& createAlloc, const Recurse1& recurseParallel, const Recurse2& recurseSequential)
   {
     typedef decltype(createAlloc()) Allocator;
@@ -58,7 +58,7 @@ namespace embree
       heap.pop_back();
       
       /* guarantees to create no leaves in this stage */
-      if (br.size() <= threshold) { // FIXME: max(minLeafSize,threshold)
+      if (br.size() <= threshold1) { // FIXME: max(minLeafSize,threshold)
         push(br);
         break;
       }
@@ -69,18 +69,18 @@ namespace embree
     
     std::sort(heap.begin(),heap.end(),Continuation::Greater());
     
-    parallel_continue( heap.begin(), heap.size(), [&](const Continuation& br, Allocator& alloc, ParallelContinue<Continuation >& cont) {
+    parallel_continue<threshold2>( heap.begin(), heap.size(), [&](const Continuation& br, Allocator& alloc, ParallelContinue<Continuation >& cont) {
         recurseSequential(br,alloc,cont);
       },createAlloc);
   };
   
-  template<size_t threshold, typename CreateThreadAllocator, typename Continuation, typename Recurse>
+  template<size_t threshold1, size_t threshold2, typename CreateThreadAllocator, typename Continuation, typename Recurse>
     void parallel_create_tree(const Continuation& br, CreateThreadAllocator& createAlloc, const Recurse& recurse)
   {
-    parallel_create_tree(br,createAlloc,recurse,recurse);
+    parallel_create_tree<threshold1,threshold2>(br,createAlloc,recurse,recurse);
   }
 
-  template<size_t threshold, typename CreateThreadAllocator, typename Continuation, typename Recurse>
+  template<typename CreateThreadAllocator, typename Continuation, typename Recurse>
     void sequential_create_tree(const Continuation& br, CreateThreadAllocator& createAlloc, const Recurse& recurse)
   {
     typedef decltype(createAlloc()) Allocator;
