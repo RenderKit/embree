@@ -30,8 +30,8 @@ namespace embree
 {
   namespace isa
   {
-    typedef LinearAllocatorPerThread::ThreadAllocator Allocator;
-    //typedef FastAllocator::Thread Allocator;
+    //typedef LinearAllocatorPerThread::ThreadAllocator Allocator;
+    typedef FastAllocator::Thread Allocator;
 
     //__aligned(64) LinearAllocatorPerThread::ThreadAllocator* g_alloc;
 
@@ -39,9 +39,8 @@ namespace embree
     {
       __forceinline CreateAlloc (BVH4* bvh) : bvh(bvh) {}
       
-      __forceinline Allocator operator() () const {
-        return Allocator(&bvh->alloc);
-      }
+      //__forceinline Allocator operator() () const { return Allocator(&bvh->alloc);  }
+      __forceinline Allocator& operator() () const { return *bvh->alloc2.instance();  }
 
       BVH4* bvh;
     };
@@ -159,7 +158,7 @@ namespace embree
         if (g_verbose >= 1)
           std::cout << "building BVH4<" << bvh->primTy.name << "> with " << TOSTRING(isa) "::BVH4BuilderFastNew ... " << std::flush;
 
-        //bvh->alloc2.init(numPrimitives*sizeof(PrimRef),numPrimitives*sizeof(BVH4::Node)); 
+        bvh->alloc2.init(numPrimitives*sizeof(PrimRef),numPrimitives*sizeof(BVH4::Node)); 
 
 #if defined(PROFILE)
       
@@ -171,10 +170,10 @@ namespace embree
         double t0 = getSeconds();
 #endif
 
-        if (i == 0) bvh->init(sizeof(BVH4::Node),numPrimitives,1);
-        bvh->alloc.clear();
+        //if (i == 0) bvh->init(sizeof(BVH4::Node),numPrimitives,1);
+        //bvh->alloc.clear();
         //g_alloc = new LinearAllocatorPerThread::ThreadAllocator(&bvh->alloc);
-        //bvh->alloc2.reset();
+        bvh->alloc2.reset();
         
         /* build BVH */
         prims.resize(numPrimitives);

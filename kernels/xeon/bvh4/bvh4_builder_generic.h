@@ -219,7 +219,7 @@ namespace embree
         else split.partition(prims, current.begin, current.end, leftChild, rightChild);
       }
 
-      void splitParallel(const BuildRecord<NodeRef>& current, BuildRecord<NodeRef>& leftChild, BuildRecord<NodeRef>& rightChild)
+      void splitParallel(const BuildRecord<NodeRef>& current, BuildRecord<NodeRef>& leftChild, BuildRecord<NodeRef>& rightChild, Allocator& alloc)
       {
         LockStepTaskScheduler* scheduler = LockStepTaskScheduler::instance();
         const size_t threadCount = scheduler->getNumThreads();
@@ -227,7 +227,8 @@ namespace embree
         /* use primitive array temporarily for parallel splits */
         PrimInfo pinfo(current.begin,current.end,current.geomBounds,current.centBounds);
         
-        PrimRef* tmp = (PrimRef*) bvh->alloc.curPtr();
+        //PrimRef* tmp = (PrimRef*) bvh->alloc.curPtr();
+        PrimRef* tmp = (PrimRef*) alloc.malloc(1);
 
         /* parallel binning of centroids */
         const float sah = state->parallelBinner.find(pinfo,prims,tmp,logBlockSize,0,threadCount,scheduler);
@@ -417,7 +418,7 @@ namespace embree
           
           /*! split best child into left and right child */
           __aligned(64) BuildRecord<NodeRef> left, right;
-          splitParallel(children[bestChild],left,right);
+          splitParallel(children[bestChild],left,right,nodeAlloc);
           
           /* add new children left and right */
           left.init(current.depth+1); 
@@ -449,7 +450,7 @@ namespace embree
       //__aligned(64) Allocator leafAlloc(&bvh->alloc);
       //Allocator alloc(&bvh->alloc);
       //Allocator& alloc = *bvh->alloc2.instance();
-      Allocator alloc = createAlloc();
+      Allocator& alloc = createAlloc();
 
       while (true) 
       {
@@ -490,7 +491,7 @@ namespace embree
       {
         //Allocator alloc(&bvh->alloc);
         //Allocator& alloc = *bvh->alloc2.instance();
-        Allocator alloc = createAlloc();
+        Allocator& alloc = createAlloc();
 
         /* create initial build record */
         NodeRef root;
@@ -523,6 +524,8 @@ namespace embree
         /* work in multithreaded toplevel mode until sufficient subtasks got generated */
         while (state->heap.size() < 2*threadCount)
         {
+          //PRINT(state->heap.size());
+
           BuildRecord<NodeRef> br;
 
           /* pop largest item for better load balancing */
@@ -535,7 +538,9 @@ namespace embree
             break;
           }
           
+          //PING;
           recurseTop(br,alloc);
+          //PING;
         }
         _mm_sfence(); // make written leaves globally visible
         
