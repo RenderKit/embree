@@ -540,6 +540,25 @@ __forceinline int8 atomic_cmpxchg( int8 volatile* value, int8 comparand, const i
   return __sync_val_compare_and_swap(value, comparand, input);
 }
 
+
+typedef int16 atomic16_t;
+
+__forceinline int16 atomic_add( int16 volatile* value, int16 input ) {
+  return __sync_fetch_and_add(value, input);
+}
+
+__forceinline int16 atomic_sub( int16 volatile* value, int16 input ) {
+  return __sync_fetch_and_add(value, -input);
+}
+
+__forceinline int16 atomic_xchg( int16 volatile* value, int16 input ) {
+  return __sync_lock_test_and_set(value, input);
+}
+
+__forceinline int16 atomic_cmpxchg( int16 volatile* value, int16 comparand, const int16 input ) {
+  return __sync_val_compare_and_swap(value, comparand, input);
+}
+
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////

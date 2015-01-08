@@ -36,10 +36,63 @@ namespace embree
     _mm_free(mem);
   }
 
+
+  class TicketMutex
+  {
+  public:
+ 
+    static const size_t MAX_MIC_WAIT_CYCLES = 1024;
+    TicketMutex () { reset(); }
+
+    __forceinline bool isLocked() {
+      return tickets != threads;
+    }
+
+    __forceinline void lock()
+    {
+      const unsigned short i = atomic_add((int16*)&threads, 1);
+
+      unsigned int wait = 128;	
+      while (tickets != i) 
+	{
+#if !defined(__MIC__)
+	  _mm_pause(); 
+	  _mm_pause();
+#else
+	  _mm_delay_32(wait); 
+	  wait += wait;  
+	  if (wait > MAX_MIC_WAIT_CYCLES) wait = MAX_MIC_WAIT_CYCLES;  
+#endif	  
+	}
+    }
+
+    __forceinline void unlock() 
+    {
+      __memory_barrier();
+      tickets++;
+      __memory_barrier();
+    }
+
+    __forceinline void reset() 
+    {
+      assert(sizeof(TicketMutex) == 4);
+      __memory_barrier();
+      threads = 0;
+      tickets = 0;
+      __memory_barrier();
+    }
+
+  public:
+    volatile unsigned short threads;     
+    volatile unsigned short tickets;
+  };
+
  class MultipleReaderSingleWriterMutex
  {
  private:
-   AtomicMutex writer_mtx;
+   //AtomicMutex writer_mtx;
+   TicketMutex writer_mtx;
+
    volatile int readers;
 
  public:
