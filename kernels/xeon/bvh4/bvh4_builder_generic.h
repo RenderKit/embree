@@ -292,7 +292,8 @@ namespace embree
           spawn(children[i]);
       }
 
-      void recurseTop(const BuildRecord<NodeRef>& current, Allocator& nodeAlloc)
+      template<typename Spawn>
+        void recurseTop(const BuildRecord<NodeRef>& current, Allocator& nodeAlloc, Spawn& spawn)
       {
         __aligned(64) BuildRecord<NodeRef> children[MAX_BRANCHING_FACTOR];
         
@@ -338,7 +339,7 @@ namespace embree
 
         /* recurse into each child */
         for (size_t i=0; i<numChildren; i++) 
-          state->heap.push(children[i]);
+          spawn(children[i]);
       }
 
       /*! builder entry function */
@@ -353,7 +354,7 @@ namespace embree
         br.depth = 1;
         br.parent = &root;
         
-#if 1
+#if 0
 
         struct Recursion { 
           BVHBuilderGeneric* parent;
@@ -373,33 +374,46 @@ namespace embree
         state = new GlobalState;
         
         /* initialize thread-local work stacks */
-        for (size_t i=0; i<threadCount; i++)
-          state->threadStack[i].reset();
-        state->heap.reset();
-        state->heap.push(br);
+        //for (size_t i=0; i<threadCount; i++)
+        //  state->threadStack[i].reset();
+        //state->heap.reset();
+        //state->heap.push(br);
+
+        vector_t<BuildRecord<NodeRef> > heap;
+        heap.push_back(br);
+
+        auto push = [&] (const BuildRecord<NodeRef>& br) {
+          heap.push_back(br);
+          std::push_heap(heap.begin(),heap.end());
+        };
 
         /* work in multithreaded toplevel mode until sufficient subtasks got generated */
-        while (state->heap.size() < 2*threadCount)
+        while (heap.size() < 2*threadCount)
         {
           BuildRecord<NodeRef> br;
 
-          /* pop largest item for better load balancing */
-          if (!state->heap.pop(br)) 
+          /* terminate if heap got empty */
+          if (heap.size() == 0) 
             break;
+          
+          /* pop largest item for better load balancing */
+          br = heap.front();
+          std::pop_heap(heap.begin(),heap.end());
+          heap.pop_back();
           
           /* guarantees to create no leaves in this stage */
           if (br.size() <= max(minLeafSize,THRESHOLD_FOR_SINGLE_THREADED)) {
-            state->heap.push(br);
+            push(br);
             break;
           }
           
-          recurseTop(br,alloc);
+          recurseTop(br,alloc,push);
         }
         _mm_sfence(); // make written leaves globally visible
         
-        std::sort(state->heap.begin(),state->heap.end(),BuildRecord<NodeRef>::Greater());
+        std::sort(heap.begin(),heap.end(),BuildRecord<NodeRef>::Greater());
 
-        parallel_continue( state->heap.begin(), state->heap.size(), [&](const BuildRecord<NodeRef>& br, Allocator& alloc, ParallelContinue<BuildRecord<NodeRef> >& cont) {
+        parallel_continue( heap.begin(), heap.size(), [&](const BuildRecord<NodeRef>& br, Allocator& alloc, ParallelContinue<BuildRecord<NodeRef> >& cont) {
             recurse(br,alloc,cont);
           },createAlloc);
 
