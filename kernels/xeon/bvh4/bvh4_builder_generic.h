@@ -84,40 +84,18 @@ namespace embree
     {
       static const size_t MAX_BRANCHING_FACTOR = 16;
       static const size_t MIN_LARGE_LEAF_LEVELS = 8;
-      static const size_t SIZE_WORK_STACK = 64;
       static const size_t THRESHOLD_FOR_SUBTREE_RECURSION = 128;
       static const size_t THRESHOLD_FOR_SINGLE_THREADED = 50000; 
 
     public:
 
-      struct GlobalState
-      {
-        ALIGNED_CLASS;
-      public:
-
-        GlobalState () : numThreads(getNumberOfLogicalThreads()) {
-	  threadStack = new WorkStack<BuildRecord<NodeRef>,SIZE_WORK_STACK>[numThreads]; 
-        }
-        
-        ~GlobalState () {
-          delete[] threadStack;
-        }
-
-      public:
-	size_t numThreads;
-	WorkHeap<BuildRecord<NodeRef>> heap;
-        __aligned(64) WorkStack<BuildRecord<NodeRef>,SIZE_WORK_STACK>* threadStack;
-        ObjectPartition::ParallelBinner parallelBinner;
-      };
-      
-    public:
-      
       BVHBuilderGeneric (CreateAllocFunc& createAlloc, CreateNodeFunc& createNode, CreateLeafFunc& createLeaf,
                          PrimRef* prims, PrimRef* tmp, const PrimInfo& pinfo,
                          const size_t branchingFactor, const size_t maxDepth, 
                          const size_t logBlockSize, const size_t minLeafSize, const size_t maxLeafSize)
-        : createAlloc(createAlloc), createNode(createNode), createLeaf(createLeaf), 
-        state(NULL), prims(prims), tmp(tmp), pinfo(pinfo), 
+        : parallelBinner(NULL),
+          createAlloc(createAlloc), createNode(createNode), createLeaf(createLeaf), 
+          prims(prims), tmp(tmp), pinfo(pinfo), 
           branchingFactor(branchingFactor), maxDepth(maxDepth),
           logBlockSize(logBlockSize), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize)
       {
@@ -138,6 +116,39 @@ namespace embree
         for (size_t i=center; i<current.end; i++)
           right.extend(prims[i].bounds());	
         rightChild.init(right,center,current.end);
+      }
+
+      __forceinline void splitSequential(const BuildRecord<NodeRef>& current, BuildRecord<NodeRef>& leftChild, BuildRecord<NodeRef>& rightChild)
+      {
+        /* calculate binning function */
+        PrimInfo pinfo(current.size(),current.geomBounds,current.centBounds);
+        ObjectPartition::Split split = ObjectPartition::find(prims,current.begin,current.end,pinfo,logBlockSize);
+        
+        /* if we cannot find a valid split, enforce an arbitrary split */
+        if (unlikely(!split.valid())) splitFallback(current,leftChild,rightChild);
+        
+        /* partitioning of items */
+        else split.partition(prims, current.begin, current.end, leftChild, rightChild);
+      }
+
+      void splitParallel(const BuildRecord<NodeRef>& current, BuildRecord<NodeRef>& leftChild, BuildRecord<NodeRef>& rightChild, Allocator& alloc)
+      {
+        LockStepTaskScheduler* scheduler = LockStepTaskScheduler::instance();
+        const size_t threadCount = scheduler->getNumThreads();
+
+        /* use primitive array temporarily for parallel splits */
+        PrimInfo pinfo(current.begin,current.end,current.geomBounds,current.centBounds);
+        
+        PrimRef* tmp = (PrimRef*) alloc.curPtr(); // FIXME: malloc(1) should be malloc(0) or getPtr()
+
+        /* parallel binning of centroids */
+        const float sah = parallelBinner->find(pinfo,prims,tmp,logBlockSize,0,threadCount,scheduler); // FIXME: hardcoded threadIndex=0
+        
+        /* if we cannot find a valid split, enforce an arbitrary split */
+        if (unlikely(sah == float(inf))) splitFallback(current,leftChild,rightChild);
+        
+        /* parallel partitioning of items */
+        else parallelBinner->partition(pinfo,tmp,prims,leftChild,rightChild,0,threadCount,scheduler);
       }
 
       void createLargeLeaf(const BuildRecord<NodeRef>& current, Allocator& nodeAlloc, Allocator& leafAlloc)
@@ -195,39 +206,6 @@ namespace embree
         /* recurse into each child */
         for (size_t i=0; i<numChildren; i++) 
           createLargeLeaf(children[i],nodeAlloc,leafAlloc);
-      }
-            
-      __forceinline void splitSequential(const BuildRecord<NodeRef>& current, BuildRecord<NodeRef>& leftChild, BuildRecord<NodeRef>& rightChild)
-      {
-        /* calculate binning function */
-        PrimInfo pinfo(current.size(),current.geomBounds,current.centBounds);
-        ObjectPartition::Split split = ObjectPartition::find(prims,current.begin,current.end,pinfo,logBlockSize);
-        
-        /* if we cannot find a valid split, enforce an arbitrary split */
-        if (unlikely(!split.valid())) splitFallback(current,leftChild,rightChild);
-        
-        /* partitioning of items */
-        else split.partition(prims, current.begin, current.end, leftChild, rightChild);
-      }
-
-      void splitParallel(const BuildRecord<NodeRef>& current, BuildRecord<NodeRef>& leftChild, BuildRecord<NodeRef>& rightChild, Allocator& alloc)
-      {
-        LockStepTaskScheduler* scheduler = LockStepTaskScheduler::instance();
-        const size_t threadCount = scheduler->getNumThreads();
-
-        /* use primitive array temporarily for parallel splits */
-        PrimInfo pinfo(current.begin,current.end,current.geomBounds,current.centBounds);
-        
-        PrimRef* tmp = (PrimRef*) alloc.malloc(1); // FIXME: malloc(1) should be malloc(0) or getPtr()
-
-        /* parallel binning of centroids */
-        const float sah = state->parallelBinner.find(pinfo,prims,tmp,logBlockSize,0,threadCount,scheduler); // FIXME: hardcoded threadIndex=0
-        
-        /* if we cannot find a valid split, enforce an arbitrary split */
-        if (unlikely(sah == float(inf))) splitFallback(current,leftChild,rightChild);
-        
-        /* parallel partitioning of items */
-        else state->parallelBinner.partition(pinfo,tmp,prims,leftChild,rightChild,0,threadCount,scheduler);
       }
 
       template<bool toplevel, typename Spawn>
@@ -322,7 +300,8 @@ namespace embree
         const size_t threadCount = scheduler->getNumThreads();
 
         /* push initial build record to global work stack */
-        state = new GlobalState;
+        parallelBinner = new ObjectPartition::ParallelBinner;
+        //state = new GlobalState;
         
         /* initialize thread-local work stacks */
         //for (size_t i=0; i<threadCount; i++)
@@ -368,17 +347,18 @@ namespace embree
             recurse<false>(br,alloc,cont);
           },createAlloc);
 
-        delete state; state = NULL;
+        delete parallelBinner;
 #endif
 
         return root;
       }
 
     private:
+      ObjectPartition::ParallelBinner* parallelBinner;
       CreateAllocFunc& createAlloc;
       CreateNodeFunc& createNode;
       CreateLeafFunc& createLeaf;
-      GlobalState* state;
+      //GlobalState* state;
       PrimRef* prims;
       PrimRef* tmp;
       const PrimInfo pinfo;

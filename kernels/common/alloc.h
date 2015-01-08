@@ -380,6 +380,12 @@ namespace embree
         return NULL;
       }
 
+      /* returns current address */
+      __forceinline void* curPtr() {
+        if (ptr == NULL) ptr = (char*) alloc->malloc(allocBlockSize,maxAlignment);
+        return &ptr[bytesUsed];
+      }
+
       /*! returns amount of used bytes */
       size_t getUsedBytes() const { return bytesUsed; }
       
