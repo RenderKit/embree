@@ -48,6 +48,8 @@ namespace embree
      assert(sizeof(MultipleReaderSingleWriterMutex) == 8);
    }
 
+   static const unsigned int DELAY_CYCLES = 1024;
+
    __forceinline void reset()
    {
      readers = 0;
@@ -59,7 +61,7 @@ namespace embree
      _mm_pause(); 
      _mm_pause();
 #else
-     _mm_delay_32(128); 
+     _mm_delay_32(DELAY_CYCLES); 
 #endif      
    }
     
@@ -247,7 +249,7 @@ namespace embree
 
  };
 
- template<size_t CACHE_ENTRIES>
+ template<size_t CACHE_ENTRIES, size_t PRE_ALLOC_BLOCKS>
   class __aligned(64) SharedTessellationCache {
 
   private:
@@ -278,7 +280,7 @@ namespace embree
     __forceinline void reset()
     {
       for (size_t i=0;i<CACHE_ENTRIES;i++)
-        tags[i].reset();
+        tags[i].reset(PRE_ALLOC_BLOCKS);
     }
     
 
@@ -525,7 +527,6 @@ namespace embree
       if (t.getPtr() != NULL)
         {
           assert(t.getNumBlocks() != 0);
-          assert(t.getPrimTag() != (unsigned int)-1);
           CACHE_DBG(DBG_PRINT(t.getPtr()));
           free_tessellation_cache_mem(t.getPtr());
         }

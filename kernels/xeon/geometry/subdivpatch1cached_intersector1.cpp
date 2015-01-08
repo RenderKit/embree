@@ -27,13 +27,15 @@
 #define CACHE_STATS(x) 
 #endif
 
+#define PRE_ALLOC_BLOCKS 32
+
 namespace embree
 {
   namespace isa
   {  
     
     __thread PerThreadTessellationCache *SubdivPatch1CachedIntersector1::thread_cache = NULL;
-    SharedTessellationCache<SHARED_TESSELLATION_CACHE_ENTRIES> sharedTessellationCache;
+    SharedTessellationCache<SHARED_TESSELLATION_CACHE_ENTRIES,PRE_ALLOC_BLOCKS> sharedTessellationCache;
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
