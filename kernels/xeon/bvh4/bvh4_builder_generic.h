@@ -19,7 +19,7 @@
 #include "builders/heuristic_object_partition.h"
 #include "builders/workstack.h"
 
-#include "algorithms/parallel_continue.h"
+#include "algorithms/parallel_create_tree.h"
 
 namespace embree
 {
@@ -274,8 +274,7 @@ namespace embree
       /*! builder entry function */
       NodeRef operator() ()
       {
-        Allocator& alloc = createAlloc();
-
+        
         /* create initial build record */
         NodeRef root;
         BuildRecord<NodeRef> br;
@@ -296,56 +295,12 @@ namespace embree
 
 #else
 
-        LockStepTaskScheduler* scheduler = LockStepTaskScheduler::instance();
-        const size_t threadCount = scheduler->getNumThreads();
-
         /* push initial build record to global work stack */
         parallelBinner = new ObjectPartition::ParallelBinner;
-        //state = new GlobalState;
         
-        /* initialize thread-local work stacks */
-        //for (size_t i=0; i<threadCount; i++)
-        //  state->threadStack[i].reset();
-        //state->heap.reset();
-        //state->heap.push(br);
-
-        vector_t<BuildRecord<NodeRef> > heap;
-        heap.push_back(br);
-
-        auto push = [&] (const BuildRecord<NodeRef>& br) {
-          heap.push_back(br);
-          std::push_heap(heap.begin(),heap.end());
-        };
-
-        /* work in multithreaded toplevel mode until sufficient subtasks got generated */
-        while (heap.size() < 2*threadCount)
-        {
-          BuildRecord<NodeRef> br;
-
-          /* terminate if heap got empty */
-          if (heap.size() == 0) 
-            break;
-          
-          /* pop largest item for better load balancing */
-          br = heap.front();
-          std::pop_heap(heap.begin(),heap.end());
-          heap.pop_back();
-          
-          /* guarantees to create no leaves in this stage */
-          if (br.size() <= max(minLeafSize,THRESHOLD_FOR_SINGLE_THREADED)) {
-            push(br);
-            break;
-          }
-          
-          recurse<true>(br,alloc,push);
-        }
-        _mm_sfence(); // make written leaves globally visible
-        
-        std::sort(heap.begin(),heap.end(),BuildRecord<NodeRef>::Greater());
-
-        parallel_continue( heap.begin(), heap.size(), [&](const BuildRecord<NodeRef>& br, Allocator& alloc, ParallelContinue<BuildRecord<NodeRef> >& cont) {
-            recurse<false>(br,alloc,cont);
-          },createAlloc);
+        parallel_create_tree<THRESHOLD_FOR_SINGLE_THREADED>(br, createAlloc, 
+          [&](const BuildRecord<NodeRef>& br, Allocator& alloc, ParallelContinue<BuildRecord<NodeRef> >& cont) { recurse<true>(br,alloc,cont); } ,
+          [&](const BuildRecord<NodeRef>& br, Allocator& alloc, ParallelContinue<BuildRecord<NodeRef> >& cont) { recurse<false>(br,alloc,cont); });
 
         delete parallelBinner;
 #endif
@@ -358,7 +313,6 @@ namespace embree
       CreateAllocFunc& createAlloc;
       CreateNodeFunc& createNode;
       CreateLeafFunc& createLeaf;
-      //GlobalState* state;
       PrimRef* prims;
       PrimRef* tmp;
       const PrimInfo pinfo;
