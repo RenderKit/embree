@@ -186,8 +186,7 @@ namespace embree
 #if defined(__WIN32__)
    AtomicMutex writer_mtx;
 #else
-   AtomicMutex writer_mtx;
-   //TicketMutex writer_mtx;
+   TicketMutex writer_mtx;
 #endif
    volatile int readers;
 
