@@ -18,8 +18,14 @@
 
 /* configuration */
 
+#if 0
+#define MIN_EDGE_LEVEL 8.0f
+#define MAX_EDGE_LEVEL 8.0f
+#else
 #define MIN_EDGE_LEVEL 2.0f
 #define MAX_EDGE_LEVEL 64.0f
+#endif
+
 #define LEVEL_FACTOR 64.0f
 
 /* scene data */

@@ -367,6 +367,14 @@ namespace embree
       return true;
     }
     
+    __forceinline Vec3fa ksum(Vec3fa_t &sum, Vec3fa_t &c, const Vec3fa_t &i) const
+    {
+      Vec3fa_t y = i - c;
+      Vec3fa_t t = sum + y;
+      c = (t - sum) - y;
+      return t;
+    }
+
     /* computes the limit vertex */
     __forceinline Vec3fa getLimitVertex() const
     {
@@ -383,13 +391,19 @@ namespace embree
       Vec3fa_t F( 0.0f );
       Vec3fa_t E( 0.0f );
       
+
+      //Vec3fa_t c_F ( 0.0f );
+      //Vec3fa_t c_E ( 0.0f );
+
+      //F = ksum(F,c_F,ring[2*i+1]);
+      //E = ksum(E,c_E,ring[2*i]);
       for (size_t i=0; i<face_valence; i++) {
         F += ring[2*i+1];
         E += ring[2*i];
       }
-      
+
       const float n = (float)face_valence;
-      return (Vec3fa_t)(n*n*vtx+4*E+F) / ((n+5.0f)*n);      
+      return (Vec3fa_t)(n*n*vtx+4.0f*E+F) / ((n+5.0f)*n);      
     }
     
     /* gets limit tangent in the direction of egde vtx -> ring[0] */
@@ -420,10 +434,17 @@ namespace embree
       //const float c1 = 1.0f/n * (1.0f - delta*cosf(M_PI/n));
       const float c0 = 1.0f/n * 1.0f / sqrtf(4.0f + cosf(M_PI/n)*cosf(M_PI/n));  
       const float c1 = (1.0f/n + cosf(M_PI/n) * c0); // FIXME: plus or minus
+
+
+      //Vec3fa_t c_alpha( 0.0f );
+      //Vec3fa_t c_beta ( 0.0f );
+
       for (size_t i=0; i<face_valence; i++)
       {
 	const float a = c1 * cosf(2.0f*M_PI*i/n);
 	const float b = c0 * cosf((2.0f*M_PI*i+M_PI)/n); // FIXME: factor of 2 missing?
+        //alpha = ksum(alpha,c_alpha,a*ring[2*i]);
+        //beta  = ksum(beta ,c_beta ,b*ring[2*i+1]);
 	alpha +=  a * ring[2*i];
 	beta  +=  b * ring[2*i+1];
       }
@@ -457,10 +478,16 @@ namespace embree
       //const float c1 = 1.0f/n * (1.0f - delta*cosf(M_PI/n));
       const float c0 = 1.0f/n * 1.0f / sqrtf(4.0f + cosf(M_PI/n)*cosf(M_PI/n));  
       const float c1 = (1.0f/n + cosf(M_PI/n) * c0);
+
+      //Vec3fa_t c_alpha( 0.0f );
+      //Vec3fa_t c_beta ( 0.0f );
+
       for (size_t i=0; i<face_valence; i++)
       {
 	const float a = c1 * cosf(2.0f*M_PI*(float(i)-1.0f)/n);
 	const float b = c0 * cosf((2.0f*M_PI*(float(i)-1.0f)+M_PI)/n);
+        //alpha = ksum(alpha,c_alpha,a*ring[2*i]);
+        //beta  = ksum(beta ,c_beta ,b*ring[2*i+1]);
 	alpha += a * ring[2*i];
 	beta  += b * ring[2*i+1];
       }
