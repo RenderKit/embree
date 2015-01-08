@@ -24,7 +24,7 @@
 
 #include "geometry/triangle4.h"
 
-#define PROFILE
+//#define PROFILE
 
 namespace embree
 {
@@ -153,39 +153,39 @@ namespace embree
 
 #if defined(PROFILE)
       
-      double dt_min = pos_inf;
-      double dt_avg = 0.0f;
-      double dt_max = neg_inf;
-      for (size_t i=0; i<20; i++) 
-      {
-        double t0 = getSeconds();
+        double dt_min = pos_inf;
+        double dt_avg = 0.0f;
+        double dt_max = neg_inf;
+        for (size_t i=0; i<20; i++) 
+        {
+          double t0 = getSeconds();
 #endif
-
-        /* reserve data */
-        bvh->alloc2.init(numPrimitives*sizeof(PrimRef),numPrimitives*sizeof(BVH4::Node)); 
-        prims.resize(numPrimitives);
-
-        /* build BVH */
-        PrimInfo pinfo = CreatePrimRefArray<TriangleMesh,1>(scene,prims);
-        BVH4::NodeRef root = build_bvh_sah<BVH4::NodeRef>(CreateAlloc(bvh),CreateBVH4Node(bvh),CreateLeaf<Triangle4>(bvh),
-                                                          prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,2,4,4*BVH4::maxLeafBlocks);
-        bvh->set(root,pinfo.geomBounds,pinfo.size());
-
+          
+          /* reserve data */
+          bvh->alloc2.init(numPrimitives*sizeof(PrimRef),numPrimitives*sizeof(BVH4::Node)); 
+          prims.resize(numPrimitives);
+          
+          /* build BVH */
+          PrimInfo pinfo = CreatePrimRefArray<TriangleMesh,1>(scene,prims);
+          BVH4::NodeRef root = build_bvh_sah<BVH4::NodeRef>(CreateAlloc(bvh),CreateBVH4Node(bvh),CreateLeaf<Triangle4>(bvh),
+                                                            prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,2,4,4*BVH4::maxLeafBlocks);
+          bvh->set(root,pinfo.geomBounds,pinfo.size());
+          
 #if defined(PROFILE)
-        double dt = getSeconds()-t0;
-        dt_min = min(dt_min,dt);
-        dt_avg = dt_avg + dt;
-        dt_max = max(dt_max,dt);
-      }
-      dt_avg /= double(20);
-      
-      std::cout << "[DONE]" << std::endl;
-      std::cout << "  min = " << 1000.0f*dt_min << "ms (" << numPrimitives/dt_min*1E-6 << " Mtris/s)" << std::endl;
-      std::cout << "  avg = " << 1000.0f*dt_avg << "ms (" << numPrimitives/dt_avg*1E-6 << " Mtris/s)" << std::endl;
-      std::cout << "  max = " << 1000.0f*dt_max << "ms (" << numPrimitives/dt_max*1E-6 << " Mtris/s)" << std::endl;
-      std::cout << BVH4Statistics(bvh).str();
+          double dt = getSeconds()-t0;
+          dt_min = min(dt_min,dt);
+          dt_avg = dt_avg + dt;
+          dt_max = max(dt_max,dt);
+        }
+        dt_avg /= double(20);
+        
+        std::cout << "[DONE]" << std::endl;
+        std::cout << "  min = " << 1000.0f*dt_min << "ms (" << numPrimitives/dt_min*1E-6 << " Mtris/s)" << std::endl;
+        std::cout << "  avg = " << 1000.0f*dt_avg << "ms (" << numPrimitives/dt_avg*1E-6 << " Mtris/s)" << std::endl;
+        std::cout << "  max = " << 1000.0f*dt_max << "ms (" << numPrimitives/dt_max*1E-6 << " Mtris/s)" << std::endl;
+        std::cout << BVH4Statistics(bvh).str();
 #endif
-      
+        
         /* stop measurement */
         double dt = 0.0f;
         if (g_verbose >= 1) dt = getSeconds()-t0;
@@ -200,7 +200,7 @@ namespace embree
           std::cout << BVH4Statistics(bvh).str();
       }
     };
-
+    
     Builder* BVH4Triangle4BuilderFastNew  (void* bvh, Scene* scene, size_t mode) { return new class BVH4Triangle4BuilderFastClass((BVH4*)bvh,scene); }
   }
 }
