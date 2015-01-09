@@ -17,17 +17,11 @@
 PROJECT(embree)
 
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8.12)
-#CMAKE_POLICY(SET CMP0042 OLD)
-
-##############################################################
-# Embree version
-##############################################################
 
 SET(EMBREE_VERSION_MAJOR 2)
-SET(EMBREE_VERSION_MINOR 4)
+SET(EMBREE_VERSION_MINOR 5)
 SET(EMBREE_VERSION_PATCH 0)
-# comment out for release builds:
-#SET(EMBREE_VERSION_NOTE " (devel)")
+SET(EMBREE_VERSION_NOTE " (devel)")
 
 CONFIGURE_FILE(
   "${PROJECT_SOURCE_DIR}/kernels/version.h.in"
@@ -35,9 +29,13 @@ CONFIGURE_FILE(
 )
 INCLUDE_DIRECTORIES("${PROJECT_BINARY_DIR}")
 
- 
 IF(COMMAND cmake_policy)
-  cmake_policy(SET CMP0003 NEW)
+  if (POLICY CMP0003)
+    cmake_policy(SET CMP0003 NEW)
+  endif()
+  if (POLICY CMP0042)
+    cmake_policy(SET CMP0042 OLD)
+  endif()
 ENDIF(COMMAND cmake_policy)
 
 MARK_AS_ADVANCED(CMAKE_BACKWARDS_COMPATIBILITY)
