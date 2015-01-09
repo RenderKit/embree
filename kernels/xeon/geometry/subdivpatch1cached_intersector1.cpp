@@ -21,11 +21,6 @@
 #define TIMER(x)
 #define DBG(x) 
 
-#if defined(DEBUG)
-#define CACHE_STATS(x) x
-#else
-#define CACHE_STATS(x) 
-#endif
 
 #define PRE_ALLOC_BLOCKS 32
 
@@ -221,8 +216,12 @@ namespace embree
       DBG(DBG_PRINT((size_t)tag / 320));
       BVH4::NodeRef root = pre.local_cache->lookup(tag,commitCounter);
       root.prefetch(0);
+      CACHE_STATS(DistributedTessellationCacheStats::cache_accesses++);
+
       if (unlikely(root == (size_t)-1)) /* L1 cache miss ? */
         {
+          CACHE_STATS(DistributedTessellationCacheStats::cache_misses++);
+
           DBG(DBG_PRINT("L1 CACHE MISS"));                                            
 
           /* is data in L2 */
@@ -350,6 +349,8 @@ namespace embree
               return l1_root;                        
             }
         }
+      CACHE_STATS(DistributedTessellationCacheStats::cache_hits++);
+
       DBG(DBG_PRINT("L1 CACHE HIT"));                                            
       return root;          
     }
