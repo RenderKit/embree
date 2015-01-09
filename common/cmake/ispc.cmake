@@ -14,17 +14,19 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-SET(ISPC_VERSION_REQUIRED "1.7.1")
-
 SET (ISPC_INCLUDE_DIR "")
 MACRO (INCLUDE_DIRECTORIES_ISPC)
   SET (ISPC_INCLUDE_DIR ${ISPC_INCLUDE_DIR} ${ARGN})
 ENDMACRO ()
 
+IF (ENABLE_ISPC_SUPPORT)
+
+SET(ISPC_VERSION_REQUIRED "1.7.1")
+
 IF (NOT ISPC_EXECUTABLE)
   FIND_PROGRAM(ISPC_EXECUTABLE ispc)
   IF (NOT ISPC_EXECUTABLE)
-    MESSAGE(FATAL_ERROR "Intel SPMD Compiler (ISPC) not found.")
+    MESSAGE(FATAL_ERROR "Intel SPMD Compiler (ISPC) not found. Disable ENABLE_ISPC_SUPPORT or install ISPC.")
   ELSE()
     MESSAGE(STATUS "Found Intel SPMD Compiler (ISPC): ${ISPC_EXECUTABLE}")
   ENDIF()
@@ -47,7 +49,6 @@ GET_FILENAME_COMPONENT(ISPC_DIR ${ISPC_EXECUTABLE} DIRECTORY)
 
 SET(EMBREE_ISPC_ADDRESSING 32 CACHE INT "32vs64 bit addressing in ispc")
 MARK_AS_ADVANCED(EMBREE_ISPC_ADDRESSING)
-
 
 MACRO (ispc_compile)
   SET(ISPC_ADDITIONAL_ARGS "")
@@ -194,3 +195,22 @@ MACRO (add_ispc_library name type)
   ENDIF()
 #  SET_TARGET_PROPERTIES(${name} PROPERTIES LINKER_LANGUAGE C)
 ENDMACRO()
+
+ELSE (ENABLE_ISPC_SUPPORT)
+
+MACRO (add_ispc_library name type)
+   SET(ISPC_SOURCES "")
+   SET(OTHER_SOURCES "")
+   FOREACH(src ${ARGN})
+    GET_FILENAME_COMPONENT(ext ${src} EXT)
+    IF (ext STREQUAL ".ispc")
+      SET(ISPC_SOURCES ${ISPC_SOURCES} ${src})
+    ELSE ()
+      SET(OTHER_SOURCES ${OTHER_SOURCES} ${src})
+    ENDIF ()
+  ENDFOREACH()
+  ADD_LIBRARY(${name} ${type} ${OTHER_SOURCES})
+
+ENDMACRO()
+
+ENDIF (ENABLE_ISPC_SUPPORT)

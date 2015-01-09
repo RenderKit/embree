@@ -56,12 +56,10 @@ IF (WIN32)
   )
 ENDIF (WIN32)
 
-IF (BUILD_TUTORIALS)
-  ADD_LIBRARY(tutorial_device STATIC tutorial_device.cpp)
-  SET_PROPERTY(TARGET tutorial_device PROPERTY FOLDER tutorials/common)
-ENDIF()
+ADD_LIBRARY(tutorial_device STATIC tutorial_device.cpp)
+SET_PROPERTY(TARGET tutorial_device PROPERTY FOLDER tutorials/common)
 
-IF (BUILD_TUTORIALS_ISPC)
+IF (ENABLE_ISPC_SUPPORT)
   ADD_ISPC_LIBRARY(tutorial_device_ispc STATIC tutorial_device.ispc)
   SET_TARGET_PROPERTIES(tutorial_device_ispc PROPERTIES LINKER_LANGUAGE C)
   SET_PROPERTY(TARGET tutorial_device_ispc PROPERTY FOLDER tutorials/common)
@@ -69,11 +67,9 @@ ENDIF()
 
 ELSE (__XEON__)
 
-IF (BUILD_TUTORIALS)
   INCLUDE (icc_xeonphi)
   ADD_ISPC_LIBRARY(tutorial_xeonphi_device_ispc STATIC tutorial_device.ispc)
   SET_TARGET_PROPERTIES(tutorial_xeonphi_device_ispc PROPERTIES LINKER_LANGUAGE C)
   SET_PROPERTY(TARGET tutorial_xeonphi_device_ispc PROPERTY FOLDER tutorials/common)
-ENDIF()
 
 ENDIF (__XEON__)

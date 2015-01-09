@@ -54,12 +54,26 @@ SET(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/common/cmake ${CMAKE_MODULE_PA
 # Embree configuration
 ##############################################################
 
-OPTION(BUILD_EMBREE_SHARED_LIB "Build Embree as a shared library." ON)
-IF (BUILD_EMBREE_SHARED_LIB)
+OPTION(ENABLE_SHARED_LIB "Build Embree as a shared library." ON)
+IF (ENABLE_SHARED_LIB)
   SET(EMBREE_LIB_TYPE SHARED)
 ELSE()
   SET(EMBREE_LIB_TYPE STATIC)
 ENDIF()
+
+OPTION(ENABLE_ISPC_SUPPORT "Build Embree with support for ISPC applications." ON)
+OPTION(ENABLE_TUTORIALS    "Enable to build Embree tutorials" ON)
+
+# only support Xeon Phi on Linux
+IF (NOT WIN32 AND NOT APPLE)
+  OPTION(ENABLE_XEON_PHI_SUPPORT "Generates code path for Xeon Phi.")
+ELSE()
+  SET(ENABLE_XEON_PHI_SUPPORT OFF CACHE INTERNAL "Xeon Phi only supported on Linux.")
+ENDIF()
+
+IF (ENABLE_XEON_PHI_SUPPORT)
+  SET(ENABLE_ISPC_SUPPORT ON CACHE BOOL "Build Embree with support for ISPC applications." FORCE)
+ENDIF ()
 
 OPTION(RTCORE_RAY_MASK "Enables ray mask support.")
 OPTION(RTCORE_STAT_COUNTERS "Enables statistic counters.")
@@ -83,13 +97,6 @@ CONFIGURE_FILE(
 
 SET(XEON_ISA "AVX2" CACHE STRING "Selects highest ISA to support.")
 SET_PROPERTY(CACHE XEON_ISA PROPERTY STRINGS SSE2 SSE3 SSSE3 SSE4.1 SSE4.2 AVX AVX-I AVX2 AVX512)
-
-# only support Xeon Phi on Linux
-IF (NOT WIN32 AND NOT APPLE)
-  OPTION(XEON_PHI_ISA "Generates code path for Xeon Phi.")
-ELSE()
-  SET(XEON_PHI_ISA OFF CACHE INTERNAL "Xeon Phi only supported on Linux.")
-ENDIF()
 
 IF (XEON_ISA STREQUAL "SSE2")
   SET(ISA  1)
@@ -243,15 +250,18 @@ SET(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
 
 ADD_SUBDIRECTORY(common)
 ADD_SUBDIRECTORY(kernels)
-ADD_SUBDIRECTORY(tutorials)
 
-SET (__XEON__ 1)
-ADD_SUBDIRECTORY(tests)
+IF (ENABLE_TUTORIALS)
+  ADD_SUBDIRECTORY(tutorials)
 
-IF (XEON_PHI_ISA)
-  SET (__XEON__ 0)
-  ADD_SUBDIRECTORY(tests tests_xeonphi)
-ENDIF ()
+  SET (__XEON__ 1)
+  ADD_SUBDIRECTORY(tests)
+
+  IF (ENABLE_XEON_PHI_SUPPORT)
+    SET (__XEON__ 0)
+    ADD_SUBDIRECTORY(tests tests_xeonphi)
+  ENDIF ()
+ENDIF()
 
 ##############################################################
 # Install Headers
@@ -259,6 +269,5 @@ ENDIF ()
 
 INSTALL(DIRECTORY include/embree2 DESTINATION include FILES_MATCHING PATTERN "*.h")
 INSTALL(DIRECTORY include/embree2 DESTINATION include FILES_MATCHING PATTERN "*.isph")
-
 
 SOURCE_GROUP("doc" FILES README.md) # does not work
