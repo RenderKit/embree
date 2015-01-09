@@ -17,7 +17,6 @@
 #include "tutorial/tutorial.h"
 #include "tutorial/obj_loader.h"
 #include "tutorial/xml_loader.h"
-#include "tasking/taskscheduler.h"
 #include "image/image.h"
 
 extern "C" void toggleOpenSubdiv(unsigned char key, int x, int y);
@@ -152,11 +151,6 @@ namespace embree
     if (g_numThreads) g_rtcore += ",threads=" + std::stringOf(g_numThreads);
 
     g_rtcore += g_subdiv_mode;
-
-    /*! Initialize the task scheduler. */
-#if !defined(RTCORE_EXPORT_ALL_SYMBOLS)
-    TaskScheduler::create(g_numThreads);
-#endif
 
     /* load scene */
     if (strlwr(filename.ext()) == std::string("obj"))

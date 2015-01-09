@@ -17,7 +17,6 @@
 #include "tutorial/tutorial.h"
 #include "tutorial/obj_loader.h"
 #include "tutorial/xml_loader.h"
-#include "tasking/taskscheduler.h"
 #include "image/image.h"
 
 namespace embree 
@@ -148,11 +147,6 @@ namespace embree
     /*! Set the thread count in the Embree configuration string. */
     if (g_numThreads) g_rtcore += ",threads=" + std::stringOf(g_numThreads);
     g_rtcore += g_subdiv_mode;
-
-    /*! Initialize the task scheduler. */
-#if !defined(RTCORE_EXPORT_ALL_SYMBOLS)
-    TaskScheduler::create(g_numThreads);
-#endif
 
     /*! Initialize Embree state. */
     init(g_rtcore.c_str());

@@ -34,6 +34,11 @@ ENDIF()
 
 ADD_ISPC_LIBRARY(embree ${EMBREE_LIB_TYPE}
   embree.rc
+  ../../common/tasking/taskscheduler.cpp
+  ../../common/tasking/taskscheduler_sys.cpp
+  ../../common/tasking/tasklogger.cpp
+  ../../common/tasking/tasksys.cpp
+
   ../common/stat.cpp
   ../common/globals.cpp
   ../common/alloc.cpp
@@ -237,7 +242,7 @@ IF (TARGET_AVX512)
   SET(EMBREE_LIBRARIES ${EMBREE_LIBRARIES} embree_avx512)
 ENDIF()
 
-TARGET_LINK_LIBRARIES(embree ${EMBREE_LIBRARIES} sys tasking simd)
+TARGET_LINK_LIBRARIES(embree ${EMBREE_LIBRARIES} sys simd)
 SET_TARGET_PROPERTIES(embree PROPERTIES
   VERSION "${EMBREE_VERSION_MAJOR}.${EMBREE_VERSION_MINOR}.${EMBREE_VERSION_PATCH}"
   SOVERSION ${EMBREE_VERSION_MAJOR}

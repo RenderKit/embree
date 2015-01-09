@@ -14,30 +14,30 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-IF (__XEON__)
+#IF (__XEON__)
+#
+#  ADD_LIBRARY(tasking STATIC
+#    taskscheduler.cpp
+#    taskscheduler_sys.cpp
+#    tasklogger.cpp
+#    tasksys.cpp
+#  )
 
-  ADD_LIBRARY(tasking STATIC
-    taskscheduler.cpp
-    taskscheduler_sys.cpp
-    tasklogger.cpp
-    tasksys.cpp
-  )
+#  TARGET_LINK_LIBRARIES(tasking sys)
+#  SET_PROPERTY(TARGET sys PROPERTY FOLDER kernels)
 
-  TARGET_LINK_LIBRARIES(tasking sys)
-  SET_PROPERTY(TARGET sys PROPERTY FOLDER kernels)
-
-ELSE ()
+#ELSE ()
  
-  INCLUDE(icc_xeonphi)
+#  INCLUDE(icc_xeonphi)
 
-  ADD_LIBRARY(tasking_xeonphi STATIC
-    taskscheduler.cpp
-    taskscheduler_sys.cpp
-    taskscheduler_mic.cpp
-    tasklogger.cpp
-    tasksys.cpp
-  )
+#  ADD_LIBRARY(tasking_xeonphi STATIC
+#    taskscheduler.cpp
+#    taskscheduler_sys.cpp
+#    taskscheduler_mic.cpp
+#    tasklogger.cpp
+#    tasksys.cpp
+#  )
 
-  TARGET_LINK_LIBRARIES(tasking_xeonphi sys_xeonphi)
+#  TARGET_LINK_LIBRARIES(tasking_xeonphi sys_xeonphi)
 
-ENDIF ()
+#ENDIF ()
