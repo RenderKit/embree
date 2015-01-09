@@ -209,10 +209,18 @@ namespace embree
         const Vec3fa& cp2 = vertex(index+2);
         const Vec3fa& cp3 = vertex(index+3);
 	
+#if 0
 	const mic_f v0 = broadcast4to16f((float*)&cp0);
 	const mic_f v1 = broadcast4to16f((float*)&cp1);
 	const mic_f v2 = broadcast4to16f((float*)&cp2);
 	const mic_f v3 = broadcast4to16f((float*)&cp3);
+#else
+	const mic_m m_4f = 0xf;
+	const mic_f v0 = permute<0,0,0,0>(uload16f(m_4f,(float*)&cp0));
+	const mic_f v1 = permute<0,0,0,0>(uload16f(m_4f,(float*)&cp1));
+	const mic_f v2 = permute<0,0,0,0>(uload16f(m_4f,(float*)&cp2));
+	const mic_f v3 = permute<0,0,0,0>(uload16f(m_4f,(float*)&cp3));
+#endif
 
 	const mic_f b_min = min(min(v0,v1),min(v2,v3));
 	const mic_f b_max = max(max(v0,v1),max(v2,v3));
