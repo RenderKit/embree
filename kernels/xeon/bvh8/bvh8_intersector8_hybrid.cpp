@@ -48,6 +48,8 @@ namespace embree
       unsigned int nearZ;
       BVH8::NodeRef cur;
       size_t sindex;
+      avxf tNear;
+      size_t mask;
       Context *prev;
       Context *next;
       StackItemInt32<BVH8::NodeRef> stack[CONTEXT_STACK_SIZE];
@@ -87,6 +89,322 @@ namespace embree
         "rdir = " << c.rdir << ", org_rdir = " << c.org_rdir << ", tnear = " << c.tnear << ", tfar = " << c.tfar << ", nearX = " << c.nearX << ", " << "nearY = " << c.nearY << ", nearZ = " << c.nearZ << ", cur = " << c.cur <<  ", " << "sindex = " << c.sindex <<  ", ray_index = " << c.ray_index << " , prev " << c.prev << " , next " << c.next << " }";
   }
 
+#if 1
+
+    template<typename PrimitiveIntersector8>    
+    void BVH8Intersector8Hybrid<PrimitiveIntersector8>::intersect(avxb* valid_i, BVH8* bvh, Ray8& ray)
+    {
+      /* load ray */
+      const avxb valid0 = *valid_i;
+      avx3f ray_org = ray.org;
+      avx3f ray_dir = ray.dir;
+      avxf ray_tnear = ray.tnear;
+      avxf ray_tfar  = ray.tfar;
+
+      const avx3f rdir = rcp_safe(ray_dir);
+      const avx3f org(ray_org), org_rdir = org * rdir;
+      ray_tnear = select(valid0,ray_tnear,avxf(pos_inf));
+      ray_tfar  = select(valid0,ray_tfar ,avxf(neg_inf));
+      avx3i nearXYZ;
+      nearXYZ.x = select(rdir.x >= 0.0f,avxi(0*(int)sizeof(avxf)),avxi(1*(int)sizeof(avxf)));
+      nearXYZ.y = select(rdir.y >= 0.0f,avxi(2*(int)sizeof(avxf)),avxi(3*(int)sizeof(avxf)));
+      nearXYZ.z = select(rdir.z >= 0.0f,avxi(4*(int)sizeof(avxf)),avxi(5*(int)sizeof(avxf)));
+
+      Precalculations pre(valid0,ray);
+
+      Context context[8];
+
+      Context *context_traversal[8];
+      Context *context_intersection[8];
+
+      size_t num_traversal    = 0;
+      size_t num_intersection = 0;
+
+
+      /* init per ray context */
+      size_t rays = 0;
+      for (size_t i=0;i<8;i++)
+        if (likely(valid0[i]))
+          {
+            context[rays++].init(i,rdir,org_rdir,ray_tnear,ray_tfar,nearXYZ,bvh->root);
+            if (bvh->root.isLeaf())
+              context_intersection[num_intersection++] = &context[i];
+            else
+              context_traversal[num_traversal++] = &context[i];
+          }
+
+      DBG(DBG_PRINT(rays));
+      
+      /* no active rays? */
+      if (unlikely(rays == 0)) return;
+
+      while(1)
+        {
+          DBG(
+              PING;
+              DBG_PRINT(current);
+              DBG_PRINT(*current);
+              );
+
+          if (unlikely(num_intersection))
+            {
+              size_t new_num_intersection = 0;
+              size_t new_num_traversal    = 0;
+
+              for (size_t i=0;i<num_intersection;i++)
+                {
+                  Context *__restrict__ current = context_intersection[i];
+                  assert(current->cur.isLeaf());
+                  DBG(DBG_PRINT("LEAF"));
+                  const size_t k = current->ray_index;
+                  /* a ray has terminated */
+                  if (unlikely(current->cur == BVH8::invalidNode))
+                    {
+                      DBG(DBG_PRINT("terminate"));
+                      DBG(DBG_PRINT(current));
+                      rays--;
+                      if (unlikely(rays == 0)) 
+                        {
+                          DBG(DBG_PRINT("all terminate"));
+                          return;
+                        }
+                      continue;
+                    }
+
+                  /* leaf intersection */
+                  assert(current->cur != BVH8::emptyNode);
+                  STAT3(normal.trav_leaves,1,1,1);
+                  size_t num; 
+                  Triangle* prim = (Triangle*)current->cur.leaf(num);
+                  PrimitiveIntersector8::intersect(pre,ray,k,prim,num,bvh->scene);
+
+                  /* compact stack */
+                  if (unlikely(current->tfar > ray.tfar[k]))
+                    {
+                      size_t new_sindex = 1;
+                      for (size_t i=1;i<current->sindex;i++)
+                        if(*(float*)&current->stack[i].dist < ray.tfar[k])
+                          current->stack[new_sindex++] = current->stack[i];
+                      current->sindex = new_sindex;
+                    }
+                  current->cur = current->stack[--current->sindex].ptr;
+                  if (current->cur.isLeaf())
+                    context_intersection[new_num_intersection++] = current;
+                  else
+                    context_traversal[new_num_intersection++] = current;
+                }
+              num_intersection = new_num_intersection;
+              num_traversal    = new_num_traversal;
+            }
+
+          if (likely(num_traversal))
+            {
+              DBG(DBG_PRINT("NODE"));
+              ///////////////////////////////////////////////////////////////////////////////////////////////////
+              for (size_t i=0;i<num_traversal;i++)
+                {
+                  Context *__restrict__ current = context_traversal[i];
+                  STAT3(normal.trav_nodes,1,1,1);
+                  const Node* node = current->cur.node();
+                  const avx3f rdir(current->rdir.x,current->rdir.y,current->rdir.z);
+                  const avx3f org_rdir(current->org_rdir.x,current->org_rdir.y,current->org_rdir.z);
+                  const size_t nearX = current->nearX;
+                  const size_t nearY = current->nearY;
+                  const size_t nearZ = current->nearZ;
+                  const size_t farX  = nearX ^ sizeof(avxf);
+                  const size_t farY  = nearY ^ sizeof(avxf);
+                  const size_t farZ  = nearZ ^ sizeof(avxf);
+
+
+                  const avxf tNearX = msub(load8f((const char*)node+nearX), rdir.x, org_rdir.x);
+                  const avxf tNearY = msub(load8f((const char*)node+nearY), rdir.y, org_rdir.y);
+                  const avxf tNearZ = msub(load8f((const char*)node+nearZ), rdir.z, org_rdir.z);
+                  const avxf tFarX  = msub(load8f((const char*)node+farX ), rdir.x, org_rdir.x);
+                  const avxf tFarY  = msub(load8f((const char*)node+farY ), rdir.y, org_rdir.y);
+                  const avxf tFarZ  = msub(load8f((const char*)node+farZ ), rdir.z, org_rdir.z);
+
+                  const avxf rayNear(current->tnear);
+                  const avxf rayFar (current->tfar);
+
+#if defined(__AVX2__)
+                  const avxf tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,rayNear));
+                  const avxf tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,rayFar ));
+                  const avxb vmask = cast(tNear) > cast(tFar);
+                  size_t mask = movemask(vmask)^0xff;
+#else
+                  const avxf tNear = max(tNearX,tNearY,tNearZ,rayNear);
+                  const avxf tFar  = min(tFarX ,tFarY ,tFarZ ,rayFar);
+                  const avxb vmask = tNear <= tFar;
+                  size_t mask = movemask(vmask);
+#endif
+                  current->tNear = tNear;
+                  current->mask  = mask;
+                }
+                ///////////////////////////////////////////////////////////////////////////////////////////////////
+                size_t new_num_intersection = 0;
+                size_t new_num_traversal    = 0;
+                for (size_t i=0;i<num_intersection;i++)
+                  {
+                  Context *__restrict__ current = context_traversal[i];
+                  size_t mask      = current->mask;
+                  const Node* node = current->cur.node();
+                  
+                  DBG(DBG_PRINT(vmask));
+
+                  /* zero hit case */
+                  if (unlikely(mask == 0))
+                    {
+                  current->cur = current->stack[--current->sindex].ptr;
+                  current->cur.prefetch();
+
+                  if (current->cur.isLeaf())
+                    context_intersection[new_num_intersection++] = current;
+                  else
+                    context_traversal[new_num_intersection++] = current;
+
+                  continue;
+                }
+
+                  /* single hit case */
+                  size_t r = __bscf(mask);
+                  if (likely(mask == 0)) 
+                    {
+                  current->cur = node->child(r); 
+                  current->cur.prefetch();
+                  assert(current->cur != BVH8::emptyNode);
+
+                  if (current->cur.isLeaf())
+                    context_intersection[new_num_intersection++] = current;
+                  else
+                    context_traversal[new_num_intersection++] = current;
+
+                  continue;
+                }
+
+                  /* two hits case */
+                  NodeRef c0 = node->child(r); 
+                  c0.prefetch(); 
+                  const unsigned int d0 = ((unsigned int*)&current->tNear)[r];
+                  r = __bscf(mask);
+                  NodeRef c1 = node->child(r); 
+                  c1.prefetch(); 
+                  const unsigned int d1 = ((unsigned int*)&current->tNear)[r];
+                  assert(c0 != BVH8::emptyNode);
+                  assert(c1 != BVH8::emptyNode);
+                  if (likely(mask == 0)) 
+                    {
+                  assert(current->sindex < CONTEXT_STACK_SIZE); 
+                  if (d0 < d1) 
+                    { 
+                  current->stack[current->sindex].ptr  = c1; 
+                  current->stack[current->sindex].dist = d1; 
+                  current->cur = c0; 
+                }
+                  else         
+                    { 
+                  current->stack[current->sindex].ptr = c0; 
+                  current->stack[current->sindex].dist = d0; 
+                  current->cur = c1; 
+                }
+                  current->sindex++; 
+
+                  if (current->cur.isLeaf())
+                    context_intersection[new_num_intersection++] = current;
+                  else
+                    context_traversal[new_num_intersection++] = current;
+
+                  continue;                   
+                }
+
+                
+                  /*! Here starts the slow path for 3 or 4 hit children. We push
+                   *  all nodes onto the stack to sort them there. */
+                  assert(current->sindex < CONTEXT_STACK_SIZE); 
+                  current->stack[current->sindex].ptr  = c0; 
+                  current->stack[current->sindex].dist = d0; 
+                  current->sindex++;
+                  assert(current->sindex < CONTEXT_STACK_SIZE); 
+                  current->stack[current->sindex].ptr  = c1; 
+                  current->stack[current->sindex].dist = d1; 
+                  current->sindex++;
+          
+                  /*! three children are hit, push all onto stack and sort 3 stack items, continue with closest child */
+                  r = __bscf(mask);
+                  NodeRef c = node->child(r); 
+                  c.prefetch(); 
+                  unsigned int d = ((unsigned int*)&current->tNear)[r]; 
+                  assert(current->sindex < CONTEXT_STACK_SIZE); 
+                  current->stack[current->sindex].ptr  = c; 
+                  current->stack[current->sindex].dist = d; 
+                  current->sindex++;
+                  assert(c != BVH8::emptyNode);
+                  if (likely(mask == 0)) 
+                    {
+                  sort(current->stack[current->sindex-1],current->stack[current->sindex-2],current->stack[current->sindex-3]);
+                  current->cur = (NodeRef)(current->stack[--current->sindex].ptr); 
+
+                  if (current->cur.isLeaf())
+                    context_intersection[new_num_intersection++] = current;
+                  else
+                    context_traversal[new_num_intersection++] = current;
+
+                  continue;
+                }
+          
+                  /*! four children are hit, push all onto stack and sort 4 stack items, continue with closest child */
+                  r = __bscf(mask);
+                  c = node->child(r); 
+                  c.prefetch(); 
+                  d = *(unsigned int*)&current->tNear[r]; 
+                  assert(current->sindex < CONTEXT_STACK_SIZE); 
+                  current->stack[current->sindex].ptr  = c; 
+                  current->stack[current->sindex].dist = d; 
+                  current->sindex++;
+                  if (likely(mask == 0)) 
+                    {
+                      sort(current->stack[current->sindex-1],current->stack[current->sindex-2],current->stack[current->sindex-3],current->stack[current->sindex-4]);                
+                      current->cur = (NodeRef)(current->stack[--current->sindex].ptr); 
+
+                      if (current->cur.isLeaf())
+                        context_intersection[new_num_intersection++] = current;
+                      else
+                        context_traversal[new_num_intersection++] = current;
+
+                      continue;
+                    }
+
+                  /*! fallback case if more than 4 children are hit */
+                  while (1)
+                    {
+                      r = __bscf(mask);
+                      assert(current->sindex < CONTEXT_STACK_SIZE); 
+                      c = node->child(r); 
+                      c.prefetch(); 
+                      d = *(unsigned int*)&current->tNear[r]; 
+                      current->stack[current->sindex].ptr  = c; 
+                      current->stack[current->sindex].dist = d; 
+                      current->sindex++;
+                      if (unlikely(mask == 0)) break;
+                    }
+
+                  current->cur = (NodeRef)(current->stack[--current->sindex].ptr); 
+                  if (current->cur.isLeaf())
+                    context_intersection[new_num_intersection++] = current;
+                  else
+                    context_traversal[new_num_intersection++] = current;
+                  ///////////////////////////////////////////////////////////////////////////////////////////////////
+                  }
+                num_intersection = new_num_intersection;
+                num_traversal    = new_num_traversal;
+            }
+
+            
+        }
+      AVX_ZERO_UPPER();
+    }  
+
+
+#else
     template<typename PrimitiveIntersector8>    
     void BVH8Intersector8Hybrid<PrimitiveIntersector8>::intersect(avxb* valid_i, BVH8* bvh, Ray8& ray)
     {
@@ -344,6 +662,9 @@ namespace embree
         }
       AVX_ZERO_UPPER();
     }  
+
+#endif
+
 #endif
 
 
