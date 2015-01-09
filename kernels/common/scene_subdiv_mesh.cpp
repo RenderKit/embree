@@ -206,14 +206,6 @@ namespace embree
     Geometry::update();
   }
 
-  void SubdivMesh::setUserData (void* ptr, bool ispc) {
-    userPtr = ptr;
-  }
-
-  void* SubdivMesh::getUserData(bool ispc) {
-    return userPtr;
-  }
-
   void SubdivMesh::setDisplacementFunction (RTCDisplacementFunc func, RTCBounds* bounds) 
   {
     if (parent->isStatic() && parent->isBuild()) {

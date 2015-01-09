@@ -173,15 +173,10 @@ namespace embree
   public:
 
     /*! Set user data pointer, which is also used for intersect and occluded functions. */
-    virtual void setUserData (void* ptr, bool ispc = false) { 
-      process_error(RTC_INVALID_OPERATION,"operation not supported for this geometry"); 
-    }
-
+    virtual void setUserData (void* ptr);
+      
     /*! Get user data pointer. */
-    virtual void* getUserData (bool ispc = false) {
-      process_error(RTC_INVALID_OPERATION,"operation not supported for this geometry");
-      return 0;
-    }
+    virtual void* getUserData ();
 
     /*! Set bounds function. */
     virtual void setBoundsFunction (RTCBoundsFunc bounds) { 

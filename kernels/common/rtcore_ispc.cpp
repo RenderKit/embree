@@ -175,20 +175,19 @@ namespace embree
     TRACE(rtcSetUserData);
     VERIFY_HANDLE(scene);
     VERIFY_GEOMID(geomID);
-    ((Scene*)scene)->get(geomID)->setUserData(ptr,true);
+    ((Scene*)scene)->get(geomID)->setUserData(ptr);
     CATCH_END;
   }
 
   extern "C" void* ispcGetUserData (RTCScene scene, unsigned geomID)
   {
-    void* userData = NULL;
     CATCH_BEGIN;
     TRACE(rtcSetUserData);
     VERIFY_HANDLE(scene);
     VERIFY_GEOMID(geomID);
-    userData = ((Scene*)scene)->get(geomID)->getUserData(true);
+    return ((Scene*)scene)->get(geomID)->getUserData();
     CATCH_END;
-    return userData;
+    return NULL;
   }
 
   extern "C" void ispcSetBoundsFunction (RTCScene scene, unsigned geomID, RTCBoundsFunc bounds) {

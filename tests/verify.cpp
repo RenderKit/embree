@@ -1216,6 +1216,35 @@ namespace embree
     return true;
   }
 
+  bool rtcore_get_user_data()
+  {
+    RTCScene scene = rtcNewScene(RTC_SCENE_STATIC,RTC_INTERSECT1);
+    AssertNoError();
+    unsigned geom0 = rtcNewTriangleMesh (scene, RTC_GEOMETRY_STATIC, 0, 0, 1);
+    AssertNoError();
+    rtcSetUserData(scene,geom0,(void*)1);
+    if ((size_t)rtcGetUserData(scene,geom0) != 1) return false;
+
+    unsigned geom1 = rtcNewSubdivisionMesh(scene, RTC_GEOMETRY_STATIC, 0, 0, 0, 0, 0, 0, 1);
+    AssertNoError();
+    rtcSetUserData(scene,geom1,(void*)2);
+    if ((size_t)rtcGetUserData(scene,geom1) != 2) return false;
+    
+    unsigned geom2 = rtcNewHairGeometry (scene, RTC_GEOMETRY_STATIC, 0, 0, 1);
+    AssertNoError();
+    rtcSetUserData(scene,geom2,(void*)3);
+    if ((size_t)rtcGetUserData(scene,geom2) != 3) return false;
+
+    unsigned geom3 = rtcNewUserGeometry (scene,0);
+    AssertNoError();
+    rtcSetUserData(scene,geom3,(void*)4);
+    if ((size_t)rtcGetUserData(scene,geom3) != 4) return false;
+
+    rtcDeleteScene (scene);
+    AssertNoError();
+    return true;
+  }
+
   void move_mesh_vec3f(RTCScene scene, unsigned mesh, size_t numVertices, Vec3fa& pos) 
   {
     Vertex3f* vertices = (Vertex3f*) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER); 
@@ -2852,6 +2881,7 @@ namespace embree
 
 
     POSITIVE("dynamic_enable_disable",    rtcore_dynamic_enable_disable());
+    POSITIVE("get_user_data"         ,    rtcore_get_user_data());
 
     POSITIVE("update_deformable",         rtcore_update(RTC_GEOMETRY_DEFORMABLE));
     POSITIVE("update_dynamic",            rtcore_update(RTC_GEOMETRY_DYNAMIC));

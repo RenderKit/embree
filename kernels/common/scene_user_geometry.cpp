@@ -35,12 +35,9 @@ namespace embree
   UserGeometry::UserGeometry (Scene* parent, size_t items) 
     : UserGeometryBase(parent,USER_GEOMETRY,items) {}
   
-  void UserGeometry::setUserData (void* ptr, bool ispc) {
+  void UserGeometry::setUserData (void* ptr) {
     intersectors.ptr = ptr;
-  }
-
-  void* UserGeometry::getUserData(bool ispc) {
-    return intersectors.ptr;
+    Geometry::setUserData(ptr);
   }
 
   void UserGeometry::setBoundsFunction (RTCBoundsFunc bounds) {

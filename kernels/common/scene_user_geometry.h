@@ -50,8 +50,7 @@ namespace embree
   {
   public:
     UserGeometry (Scene* parent, size_t items); 
-    virtual void setUserData (void* ptr, bool ispc);
-    virtual void* getUserData(bool ispc);
+    virtual void setUserData (void* ptr);
     virtual void setBoundsFunction (RTCBoundsFunc bounds);
     virtual void setIntersectFunction (RTCIntersectFunc intersect, bool ispc);
     virtual void setIntersectFunction4 (RTCIntersectFunc4 intersect4, bool ispc);

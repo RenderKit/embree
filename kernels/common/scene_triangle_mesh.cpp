@@ -129,14 +129,6 @@ namespace embree
     }
   }
 
-  void TriangleMesh::setUserData (void* ptr, bool ispc) {
-    userPtr = ptr;
-  }
-
-  void* TriangleMesh::getUserData(bool ispc) {
-    return userPtr;
-  }
-
   void TriangleMesh::immutable () 
   {
     bool freeTriangles = !parent->needTriangles;

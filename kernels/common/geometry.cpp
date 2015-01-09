@@ -152,6 +152,14 @@ namespace embree
       break;
     }
   }
+  
+  void Geometry::setUserData (void* ptr) {
+    userPtr = ptr;
+  }
+  
+  void* Geometry::getUserData() {
+    return userPtr;
+  }
 
   void Geometry::setIntersectionFilterFunction (RTCFilterFunc filter, bool ispc) 
   {
