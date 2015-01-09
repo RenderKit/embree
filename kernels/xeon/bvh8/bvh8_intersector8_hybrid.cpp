@@ -24,7 +24,7 @@
 // FORCING SWITCH TO SINGLE RAYS
 #define SWITCH_THRESHOLD 8
 
-//#define ENABLE_FIBERS
+#define ENABLE_FIBERS
 
 //TODO: switch to pure single mode in case only single ray left
 
@@ -229,6 +229,7 @@ namespace embree
               if (unlikely(mask == 0))
                 {
                   current->cur = current->stack[--current->sindex].ptr;
+                  current->cur.prefetch();
                   current = current->next;
                   continue;
                 }
@@ -238,7 +239,7 @@ namespace embree
               if (likely(mask == 0)) 
                 {
                   current->cur = node->child(r); 
-                  //cur.prefetch();
+                  current->cur.prefetch();
                   assert(current->cur != BVH8::emptyNode);
                   current = current->next;
                   continue;
@@ -246,11 +247,11 @@ namespace embree
 
               /* two hits case */
               NodeRef c0 = node->child(r); 
-              //c0.prefetch(); 
+              c0.prefetch(); 
               const unsigned int d0 = ((unsigned int*)&tNear)[r];
               r = __bscf(mask);
               NodeRef c1 = node->child(r); 
-              //c1.prefetch(); 
+              c1.prefetch(); 
               const unsigned int d1 = ((unsigned int*)&tNear)[r];
               assert(c0 != BVH8::emptyNode);
               assert(c1 != BVH8::emptyNode);
@@ -289,7 +290,7 @@ namespace embree
               /*! three children are hit, push all onto stack and sort 3 stack items, continue with closest child */
               r = __bscf(mask);
               NodeRef c = node->child(r); 
-              //c.prefetch(); 
+              c.prefetch(); 
               unsigned int d = ((unsigned int*)&tNear)[r]; 
               assert(current->sindex < CONTEXT_STACK_SIZE); 
               current->stack[current->sindex].ptr  = c; 
@@ -307,7 +308,7 @@ namespace embree
               /*! four children are hit, push all onto stack and sort 4 stack items, continue with closest child */
               r = __bscf(mask);
               c = node->child(r); 
-              //c.prefetch(); 
+              c.prefetch(); 
               d = *(unsigned int*)&tNear[r]; 
               assert(current->sindex < CONTEXT_STACK_SIZE); 
               current->stack[current->sindex].ptr  = c; 
@@ -327,7 +328,7 @@ namespace embree
                   r = __bscf(mask);
                   assert(current->sindex < CONTEXT_STACK_SIZE); 
                   c = node->child(r); 
-                  //c.prefetch(); 
+                  c.prefetch(); 
                   d = *(unsigned int*)&tNear[r]; 
                   current->stack[current->sindex].ptr  = c; 
                   current->stack[current->sindex].dist = d; 
@@ -786,6 +787,7 @@ namespace embree
     template<typename PrimitiveIntersector8>
     void BVH8Intersector8Hybrid<PrimitiveIntersector8>::occluded(avxb* valid_i, BVH8* bvh, Ray8& ray)
     {
+      FATAL("OCCLUDED");
       /* load ray */
       const avxb valid = *valid_i;
       avxb terminated = !valid;
