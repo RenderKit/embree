@@ -1223,21 +1223,25 @@ namespace embree
     unsigned geom0 = rtcNewTriangleMesh (scene, RTC_GEOMETRY_STATIC, 0, 0, 1);
     AssertNoError();
     rtcSetUserData(scene,geom0,(void*)1);
-    if ((size_t)rtcGetUserData(scene,geom0) != 1) return false;
 
     unsigned geom1 = rtcNewSubdivisionMesh(scene, RTC_GEOMETRY_STATIC, 0, 0, 0, 0, 0, 0, 1);
     AssertNoError();
     rtcSetUserData(scene,geom1,(void*)2);
-    if ((size_t)rtcGetUserData(scene,geom1) != 2) return false;
     
     unsigned geom2 = rtcNewHairGeometry (scene, RTC_GEOMETRY_STATIC, 0, 0, 1);
     AssertNoError();
     rtcSetUserData(scene,geom2,(void*)3);
-    if ((size_t)rtcGetUserData(scene,geom2) != 3) return false;
 
     unsigned geom3 = rtcNewUserGeometry (scene,0);
     AssertNoError();
     rtcSetUserData(scene,geom3,(void*)4);
+
+    rtcCommit (scene);
+    AssertNoError();
+
+    if ((size_t)rtcGetUserData(scene,geom0) != 1) return false;
+    if ((size_t)rtcGetUserData(scene,geom1) != 2) return false;
+    if ((size_t)rtcGetUserData(scene,geom2) != 3) return false;
     if ((size_t)rtcGetUserData(scene,geom3) != 4) return false;
 
     rtcDeleteScene (scene);

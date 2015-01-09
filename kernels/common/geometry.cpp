@@ -153,7 +153,13 @@ namespace embree
     }
   }
   
-  void Geometry::setUserData (void* ptr) {
+  void Geometry::setUserData (void* ptr)
+  {
+    if (parent->isStatic() && parent->isBuild()) {
+      process_error(RTC_INVALID_OPERATION,"static geometries cannot get modified");
+      return;
+    }
+
     userPtr = ptr;
   }
   
