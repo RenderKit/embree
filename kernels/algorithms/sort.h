@@ -18,7 +18,7 @@
 
 #include "sys/platform.h"
 #include "sys/sysinfo.h"
-#include "sys/taskscheduler.h"
+#include "tasking/taskscheduler.h"
 #include "math/math.h"
 #include <algorithm>
 

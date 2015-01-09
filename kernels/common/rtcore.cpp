@@ -24,7 +24,7 @@
 #include "common/alloc.h"
 #include "embree2/rtcore.h"
 #include "common/scene.h"
-#include "sys/taskscheduler.h"
+#include "tasking/taskscheduler.h"
 #include "sys/thread.h"
 #include "raystream_log.h"
 

@@ -17,7 +17,7 @@
 #include "tutorial/tutorial.h"
 #include "tutorial/obj_loader.h"
 #include "tutorial/xml_loader.h"
-#include "sys/taskscheduler.h"
+#include "tasking/taskscheduler.h"
 #include "image/image.h"
 
 namespace embree 

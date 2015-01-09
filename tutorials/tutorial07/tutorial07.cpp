@@ -18,7 +18,7 @@
 #include "tutorial/obj_loader.h"
 #include "tutorial/hair_loader.h"
 #include "tutorial/cy_hair_loader.h"
-#include "sys/taskscheduler.h"
+#include "tasking/taskscheduler.h"
 #include "image/image.h"
 
 extern "C" embree::Vec3fa g_dirlight_direction = embree::normalize(embree::Vec3fa(1,-1,1));

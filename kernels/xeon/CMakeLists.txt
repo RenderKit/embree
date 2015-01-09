@@ -37,7 +37,6 @@ ADD_ISPC_LIBRARY(embree ${EMBREE_LIB_TYPE}
   ../common/stat.cpp
   ../common/globals.cpp
   ../common/alloc.cpp
-  ../common/tasksys.cpp
   ../common/acceln.cpp
   ../common/rtcore.cpp
   ../common/rtcore_ispc.cpp
@@ -238,7 +237,7 @@ IF (TARGET_AVX512)
   SET(EMBREE_LIBRARIES ${EMBREE_LIBRARIES} embree_avx512)
 ENDIF()
 
-TARGET_LINK_LIBRARIES(embree ${EMBREE_LIBRARIES} sys simd)
+TARGET_LINK_LIBRARIES(embree ${EMBREE_LIBRARIES} sys tasking simd)
 SET_TARGET_PROPERTIES(embree PROPERTIES
   VERSION "${EMBREE_VERSION_MAJOR}.${EMBREE_VERSION_MINOR}.${EMBREE_VERSION_PATCH}"
   SOVERSION ${EMBREE_VERSION_MAJOR}

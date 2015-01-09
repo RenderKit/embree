@@ -24,7 +24,6 @@ ADD_ISPC_LIBRARY(embree_xeonphi ${EMBREE_LIB_TYPE}
   ../common/stat.cpp 
   ../common/globals.cpp 
   ../common/alloc.cpp 
-  ../common/tasksys.cpp 
   ../common/acceln.cpp
   ../common/rtcore.cpp 
   ../common/rtcore_ispc.cpp 
@@ -83,6 +82,6 @@ ADD_ISPC_LIBRARY(embree_xeonphi ${EMBREE_LIB_TYPE}
   bvh4hair/bvh4hair_intersector16_single.cpp
 )
 
-TARGET_LINK_LIBRARIES(embree_xeonphi sys_xeonphi simd_xeonphi)
+TARGET_LINK_LIBRARIES(embree_xeonphi sys_xeonphi tasking_xeonphi simd_xeonphi)
 SET_TARGET_PROPERTIES(embree_xeonphi PROPERTIES VERSION 2.4.0 SOVERSION 2)
 INSTALL(TARGETS embree_xeonphi DESTINATION lib)

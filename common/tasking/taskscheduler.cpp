@@ -19,7 +19,7 @@
 #if defined(__MIC__)
 #include "taskscheduler_mic.h"
 #endif
-#include "sysinfo.h"
+#include "sys/sysinfo.h"
 #include "tasklogger.h"
 #include "sys/sync/atomic.h"
 #include "math/math.h"

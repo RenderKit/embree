@@ -14,14 +14,30 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-SET(__XEON__ 1)
-ADD_SUBDIRECTORY(sys)
-ADD_SUBDIRECTORY(simd)
-ADD_SUBDIRECTORY(tasking)
+IF (__XEON__)
 
-IF (ENABLE_XEON_PHI_SUPPORT)
-  SET(__XEON__ 0)
-  ADD_SUBDIRECTORY(sys sys_xeonphi)
-  ADD_SUBDIRECTORY(simd simd_xeonphi)
-  ADD_SUBDIRECTORY(tasking tasking_xeonphi)
+  ADD_LIBRARY(tasking STATIC
+    taskscheduler.cpp
+    taskscheduler_sys.cpp
+    tasklogger.cpp
+    tasksys.cpp
+  )
+
+  TARGET_LINK_LIBRARIES(tasking sys)
+  SET_PROPERTY(TARGET sys PROPERTY FOLDER kernels)
+
+ELSE ()
+ 
+  INCLUDE(icc_xeonphi)
+
+  ADD_LIBRARY(tasking_xeonphi STATIC
+    taskscheduler.cpp
+    taskscheduler_sys.cpp
+    taskscheduler_mic.cpp
+    tasklogger.cpp
+    tasksys.cpp
+  )
+
+  TARGET_LINK_LIBRARIES(tasking_xeonphi sys_xeonphi)
+
 ENDIF ()

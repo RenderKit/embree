@@ -25,8 +25,6 @@
 #include "geometry/triangle4v.h"
 #include "geometry/triangle4i.h"
 
-#include "sys/tasklogger.h"
-
 #define DBG(x) 
 //#define PROFILE
 

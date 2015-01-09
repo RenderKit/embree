@@ -15,7 +15,7 @@
 // ======================================================================== //
 
 #include "tutorial/tutorial.h"
-#include "sys/taskscheduler.h"
+#include "tasking/taskscheduler.h"
 #include "image/image.h"
 
 namespace embree

@@ -24,7 +24,7 @@
 #include "sys/stl/vector.h"
 #include "sys/stl/string.h"
 #include "sys/stl/array2d.h"
-#include "sys/taskscheduler.h"
+#include "tasking/taskscheduler.h"
 
 #include "math/math.h"
 #include "math/vec2.h"
