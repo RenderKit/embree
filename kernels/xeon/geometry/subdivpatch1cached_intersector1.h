@@ -32,6 +32,11 @@
 #define SHARED_TESSELLATION_CACHE_ENTRIES      1024
 #define DISTRIBUTED_TESSELLATION_CACHE_ENTRIES  128
 
+#if defined(DEBUG)
+#define CACHE_STATS(x) 
+#else
+#define CACHE_STATS(x) 
+#endif
 
 namespace embree
 {
@@ -384,13 +389,17 @@ namespace embree
         
         BVH4::NodeRef root = local_cache->lookup(tag,commitCounter);
         root.prefetch(0);
+        CACHE_STATS(DistributedTessellationCacheStats::cache_accesses++);
+
         if (unlikely(root == (size_t)-1))
         {
+          /* CACHE MISS */
+          CACHE_STATS(DistributedTessellationCacheStats::cache_misses++);
+
           subdiv_patch->prefetchData();
           const unsigned int blocks = subdiv_patch->grid_subtree_size_64b_blocks;
           
           TessellationCacheTag &t = local_cache->request(tag,commitCounter,blocks);
-          //BVH4::Node* node = (BVH4::Node*)local_cache->getCacheMemoryPtr(t);
 
           BVH4::Node* node = (BVH4::Node*)t.getPtr();
           prefetchL1(((float*)node + 0*16));
@@ -403,11 +412,10 @@ namespace embree
           
           t.updateRootRef(new_root);
           
-          //assert( (size_t)local_cache->getPtr() + (size_t)t.getRootRef() == new_root );
-          //assert( (size_t)t.getPtr() + (size_t)t.getRootRef() == new_root );
-          
           return new_root;
         }        
+        /* CACHE HIT */
+        CACHE_STATS(DistributedTessellationCacheStats::cache_hits++);
         return root;   
       }
 
