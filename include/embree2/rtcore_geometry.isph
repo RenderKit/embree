@@ -262,6 +262,14 @@ void rtcSetOcclusionFilterFunction1 (RTCScene scene, uniform unsigned int geomID
 /*! \brief Sets the occlusion filter function for varying rays. */
 void rtcSetOcclusionFilterFunction (RTCScene scene, uniform unsigned int geomID, uniform RTCFilterFuncVarying func);
 
+/*! Set pointer for user defined data per geometry. Invokations
+ *  of the various user intersect and occluded functions get passed
+ *  this data pointer when called. */
+void rtcSetUserData (RTCScene scene, uniform unsigned int geomID, void* uniform ptr);
+
+/*! Get pointer for user defined data per geometry based on geomID. */
+void* uniform rtcGetUserData (RTCScene scene, uniform unsigned int geomID);
+
 /*! \brief Deletes the geometry. */
 void rtcDeleteGeometry (RTCScene scene, uniform unsigned int geomID);
 

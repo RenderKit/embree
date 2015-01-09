@@ -210,6 +210,10 @@ namespace embree
     userPtr = ptr;
   }
 
+  void* SubdivMesh::getUserData(bool ispc) {
+    return userPtr;
+  }
+
   void SubdivMesh::setDisplacementFunction (RTCDisplacementFunc func, RTCBounds* bounds) 
   {
     if (parent->isStatic() && parent->isBuild()) {
