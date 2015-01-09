@@ -134,6 +134,8 @@ namespace embree
           }
 
       DBG(DBG_PRINT(rays));
+      DBG(DBG_PRINT(num_intersection));
+      DBG(DBG_PRINT(num_traversal));
       
       /* no active rays? */
       if (unlikely(rays == 0)) return;
@@ -142,17 +144,17 @@ namespace embree
         {
           DBG(
               PING;
-              DBG_PRINT(current);
-              DBG_PRINT(*current);
+              DBG(DBG_PRINT(num_intersection));
+              DBG(DBG_PRINT(num_traversal));              
               );
 
-          if (unlikely(num_intersection))
+          while (unlikely(num_intersection))
             {
               size_t new_num_intersection = 0;
-              size_t new_num_traversal    = 0;
-
               for (size_t i=0;i<num_intersection;i++)
                 {
+                  DBG(DBG_PRINT(i));
+
                   Context *__restrict__ current = context_intersection[i];
                   assert(current->cur.isLeaf());
                   DBG(DBG_PRINT("LEAF"));
@@ -191,16 +193,21 @@ namespace embree
                   if (current->cur.isLeaf())
                     context_intersection[new_num_intersection++] = current;
                   else
-                    context_traversal[new_num_intersection++] = current;
+                    context_traversal[num_traversal++] = current;
                 }
               num_intersection = new_num_intersection;
-              num_traversal    = new_num_traversal;
+              DBG(
+                  DBG(DBG_PRINT(num_intersection));
+                  DBG(DBG_PRINT(num_traversal));              
+                  );             
             }
-
-          if (likely(num_traversal))
+          assert(num_intersection == 0);
+          assert(num_traversal    == rays);
+          
+          while (likely(num_traversal))
             {
               DBG(DBG_PRINT("NODE"));
-              ///////////////////////////////////////////////////////////////////////////////////////////////////
+              ///////////////////////////////////////////////////////////////////////////////////////////////////             
               for (size_t i=0;i<num_traversal;i++)
                 {
                   Context *__restrict__ current = context_traversal[i];
@@ -241,45 +248,45 @@ namespace embree
                   current->mask  = mask;
                 }
                 ///////////////////////////////////////////////////////////////////////////////////////////////////
-                size_t new_num_intersection = 0;
-                size_t new_num_traversal    = 0;
-                for (size_t i=0;i<num_intersection;i++)
-                  {
+              size_t new_num_traversal    = 0;
+              for (size_t i=0;i<num_traversal;i++)
+                {
                   Context *__restrict__ current = context_traversal[i];
                   size_t mask      = current->mask;
                   const Node* node = current->cur.node();
                   
-                  DBG(DBG_PRINT(vmask));
+                  DBG(DBG_PRINT(mask));
+                  DBG(DBG_PRINT(__popcnt(mask)));
 
                   /* zero hit case */
                   if (unlikely(mask == 0))
                     {
-                  current->cur = current->stack[--current->sindex].ptr;
-                  current->cur.prefetch();
+                      current->cur = current->stack[--current->sindex].ptr;
+                      current->cur.prefetch();
 
-                  if (current->cur.isLeaf())
-                    context_intersection[new_num_intersection++] = current;
-                  else
-                    context_traversal[new_num_intersection++] = current;
+                      if (current->cur.isLeaf())
+                        context_intersection[num_intersection++] = current;
+                      else
+                        context_traversal[new_num_traversal++] = current;
 
-                  continue;
-                }
+                      continue;
+                    }
 
                   /* single hit case */
                   size_t r = __bscf(mask);
                   if (likely(mask == 0)) 
                     {
-                  current->cur = node->child(r); 
-                  current->cur.prefetch();
-                  assert(current->cur != BVH8::emptyNode);
+                      current->cur = node->child(r); 
+                      current->cur.prefetch();
+                      assert(current->cur != BVH8::emptyNode);
 
-                  if (current->cur.isLeaf())
-                    context_intersection[new_num_intersection++] = current;
-                  else
-                    context_traversal[new_num_intersection++] = current;
+                      if (current->cur.isLeaf())
+                        context_intersection[num_intersection++] = current;
+                      else
+                        context_traversal[new_num_traversal++] = current;
 
-                  continue;
-                }
+                      continue;
+                    }
 
                   /* two hits case */
                   NodeRef c0 = node->child(r); 
@@ -293,28 +300,29 @@ namespace embree
                   assert(c1 != BVH8::emptyNode);
                   if (likely(mask == 0)) 
                     {
-                  assert(current->sindex < CONTEXT_STACK_SIZE); 
-                  if (d0 < d1) 
-                    { 
-                  current->stack[current->sindex].ptr  = c1; 
-                  current->stack[current->sindex].dist = d1; 
-                  current->cur = c0; 
-                }
-                  else         
-                    { 
-                  current->stack[current->sindex].ptr = c0; 
-                  current->stack[current->sindex].dist = d0; 
-                  current->cur = c1; 
-                }
-                  current->sindex++; 
+                      assert(current->sindex < CONTEXT_STACK_SIZE); 
+                      if (d0 < d1) 
+                        { 
+                          current->stack[current->sindex].ptr  = c1; 
+                          current->stack[current->sindex].dist = d1; 
+                          current->cur = c0; 
+                        }
+                      else         
+                        { 
+                          current->stack[current->sindex].ptr = c0; 
+                          current->stack[current->sindex].dist = d0; 
+                          current->cur = c1; 
+                        }
+                      current->sindex++; 
+                      DBG(DBG_PRINT(current->cur.isLeaf()));
+                      
+                      if (current->cur.isLeaf())
+                        context_intersection[num_intersection++] = current;
+                      else
+                        context_traversal[new_num_traversal++] = current;
 
-                  if (current->cur.isLeaf())
-                    context_intersection[new_num_intersection++] = current;
-                  else
-                    context_traversal[new_num_intersection++] = current;
-
-                  continue;                   
-                }
+                      continue;                   
+                    }
 
                 
                   /*! Here starts the slow path for 3 or 4 hit children. We push
@@ -340,16 +348,16 @@ namespace embree
                   assert(c != BVH8::emptyNode);
                   if (likely(mask == 0)) 
                     {
-                  sort(current->stack[current->sindex-1],current->stack[current->sindex-2],current->stack[current->sindex-3]);
-                  current->cur = (NodeRef)(current->stack[--current->sindex].ptr); 
+                      sort(current->stack[current->sindex-1],current->stack[current->sindex-2],current->stack[current->sindex-3]);
+                      current->cur = (NodeRef)(current->stack[--current->sindex].ptr); 
 
-                  if (current->cur.isLeaf())
-                    context_intersection[new_num_intersection++] = current;
-                  else
-                    context_traversal[new_num_intersection++] = current;
+                      if (current->cur.isLeaf())
+                        context_intersection[num_intersection++] = current;
+                      else
+                        context_traversal[new_num_traversal++] = current;
 
-                  continue;
-                }
+                      continue;
+                    }
           
                   /*! four children are hit, push all onto stack and sort 4 stack items, continue with closest child */
                   r = __bscf(mask);
@@ -366,9 +374,9 @@ namespace embree
                       current->cur = (NodeRef)(current->stack[--current->sindex].ptr); 
 
                       if (current->cur.isLeaf())
-                        context_intersection[new_num_intersection++] = current;
+                        context_intersection[num_intersection++] = current;
                       else
-                        context_traversal[new_num_intersection++] = current;
+                        context_traversal[new_num_traversal++] = current;
 
                       continue;
                     }
@@ -389,15 +397,17 @@ namespace embree
 
                   current->cur = (NodeRef)(current->stack[--current->sindex].ptr); 
                   if (current->cur.isLeaf())
-                    context_intersection[new_num_intersection++] = current;
+                    context_intersection[num_intersection++] = current;
                   else
-                    context_traversal[new_num_intersection++] = current;
+                    context_traversal[new_num_traversal++] = current;
                   ///////////////////////////////////////////////////////////////////////////////////////////////////
-                  }
-                num_intersection = new_num_intersection;
-                num_traversal    = new_num_traversal;
+                }
+              num_traversal    = new_num_traversal;
+              DBG(DBG_PRINT(new_num_traversal));              
             }
-
+          assert(num_intersection+num_traversal > 0);
+          assert(num_intersection == rays);
+          assert(num_traversal    == 0);
             
         }
       AVX_ZERO_UPPER();
