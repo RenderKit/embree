@@ -124,6 +124,7 @@ namespace embree
     /* initialize ray tracing core */
     init(g_rtcore.c_str());
 
+#if 0
     /* render to disk */
     if (outFilename.str() != "") {
       renderToFile(outFilename);
@@ -135,6 +136,7 @@ namespace embree
     
     /* enter the GLUT run loop */
     enterWindowRunLoop();
+#endif
 
     return 0;
   }

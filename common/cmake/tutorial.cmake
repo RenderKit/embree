@@ -14,7 +14,6 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-
 # additional parameters (beyond the name) are treated as additional dependencies
 # if ADDITIONAL_LIBRARIES is set these will be included during linking
 
@@ -48,6 +47,5 @@ IF (ENABLE_XEON_PHI_SUPPORT)
 ENDIF()
 
 ENDIF (__XEON__)
-
 
 ENDMACRO ()

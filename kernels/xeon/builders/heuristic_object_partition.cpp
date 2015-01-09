@@ -57,7 +57,7 @@ namespace embree
     //                             Binning                                      //
     //////////////////////////////////////////////////////////////////////////////
     
-    ObjectPartition::BinInfo::BinInfo() {
+    __dllexport ObjectPartition::BinInfo::BinInfo() {
       clear();
     }
 
@@ -306,7 +306,7 @@ namespace embree
       return binner.best(mapping,logBlockSize);
     }
     
-    const ObjectPartition::Split ObjectPartition::find(PrimRef *__restrict__ const prims, const size_t begin, const size_t end, const PrimInfo& pinfo, const size_t logBlockSize)
+    __dllexport const ObjectPartition::Split ObjectPartition::find(PrimRef *__restrict__ const prims, const size_t begin, const size_t end, const PrimInfo& pinfo, const size_t logBlockSize)
     {
       BinInfo binner;
       const Mapping mapping(pinfo);
@@ -516,7 +516,7 @@ namespace embree
       rinfo_o.add(rightBounds.geomBounds,rightBounds.centBounds,numRight);
     }
         
-    void ObjectPartition::Split::partition(PrimRef *__restrict__ const prims, const size_t begin, const size_t end, PrimInfo& left, PrimInfo& right) const
+    __dllexport void ObjectPartition::Split::partition(PrimRef *__restrict__ const prims, const size_t begin, const size_t end, PrimInfo& left, PrimInfo& right) const
     {
       assert(valid());
       CentGeomBBox3fa local_left(empty);
@@ -611,7 +611,7 @@ namespace embree
       bin16.bin_copy(src,startID,endID,mapping,dst);
     }
     
-    float ObjectPartition::ParallelBinner::find(const PrimInfo& pinfo, const PrimRef* src, PrimRef* dst, const size_t logBlockSize, const size_t threadID, const size_t numThreads, LockStepTaskScheduler* scheduler) 
+    __dllexport float ObjectPartition::ParallelBinner::find(const PrimInfo& pinfo, const PrimRef* src, PrimRef* dst, const size_t logBlockSize, const size_t threadID, const size_t numThreads, LockStepTaskScheduler* scheduler) 
     {
       this->pinfo = pinfo;
       mapping = Mapping(pinfo);
@@ -678,7 +678,7 @@ namespace embree
       right.extend_atomic(rightBounds);  
     }
     
-    void ObjectPartition::ParallelBinner::partition(const PrimInfo& pinfo, const PrimRef* src, PrimRef* dst, PrimInfo& leftChild, PrimInfo& rightChild, const size_t threadID, const size_t numThreads, LockStepTaskScheduler* scheduler)
+    __dllexport void ObjectPartition::ParallelBinner::partition(const PrimInfo& pinfo, const PrimRef* src, PrimRef* dst, PrimInfo& leftChild, PrimInfo& rightChild, const size_t threadID, const size_t numThreads, LockStepTaskScheduler* scheduler)
     {
       left.reset(); lCounter.reset(0);
       right.reset(); rCounter.reset(0); 
