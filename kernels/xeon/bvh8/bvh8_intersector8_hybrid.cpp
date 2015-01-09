@@ -20,13 +20,205 @@
 
 #define DBG(x) 
 
-#define SWITCH_THRESHOLD 7
+//#define SWITCH_THRESHOLD 7
+// FORCING SWITCH TO SINGLE RAYS
+#define SWITCH_THRESHOLD 8
 
+#define ENABLE_FIBERS
 
 namespace embree
 {
   namespace isa
   { 
+#if defined(ENABLE_FIBERS)    
+
+#define CONTEXT_STACK_SIZE 96
+
+    struct Context 
+    {
+      Vec3f rdir;     
+      float tnear;
+      Vec3f org_rdir; 
+      float tfar;
+      unsigned int ray_index;
+      unsigned int nearX;
+      unsigned int nearY;
+      unsigned int nearZ;
+      BVH8::NodeRef cur;
+      size_t sindex;
+      Context *prev;
+      Context *next;
+      StackItemInt32<BVH8::NodeRef> stack[CONTEXT_STACK_SIZE];
+
+      __forceinline void init(size_t i, 
+                              const avx3f &ray_rdir, 
+                              const avx3f &ray_org_rdir, 
+                              const avxf  &ray_tnear, 
+                              const avxf  &ray_tfar,
+                              const avx3i &ray_nearXYZ,
+                              BVH8::NodeRef &root)
+      {
+        rdir     = Vec3f(ray_rdir.x[i],ray_rdir.y[i],ray_rdir.z[i]);
+        org_rdir = Vec3f(ray_org_rdir.x[i],ray_org_rdir.y[i],ray_org_rdir.z[i]);
+        tnear    = ray_tnear[i];
+        tfar     = ray_tfar[i];
+        nearX    = ray_nearXYZ.x[i];
+        nearY    = ray_nearXYZ.y[i];
+        nearZ    = ray_nearXYZ.z[i];
+        stack[0].ptr  = BVH8::invalidNode;
+        stack[0].dist = pos_inf;
+        cur           = root;
+        sindex    = 1;
+        ray_index = i;
+      }
+
+      __forceinline void init_prev_next(Context *p, Context* n)
+      {
+        prev = p;
+        next = n;
+      }
+
+    };
+
+    template<typename PrimitiveIntersector8>    
+    void BVH8Intersector8Hybrid<PrimitiveIntersector8>::intersect(avxb* valid_i, BVH8* bvh, Ray8& ray)
+    {
+      /* load ray */
+      const avxb valid0 = *valid_i;
+      avx3f ray_org = ray.org;
+      avx3f ray_dir = ray.dir;
+      avxf ray_tnear = ray.tnear;
+      avxf ray_tfar  = ray.tfar;
+
+      const avx3f rdir = rcp_safe(ray_dir);
+      const avx3f org(ray_org), org_rdir = org * rdir;
+      ray_tnear = select(valid0,ray_tnear,avxf(pos_inf));
+      ray_tfar  = select(valid0,ray_tfar ,avxf(neg_inf));
+      avx3i nearXYZ;
+      nearXYZ.x = select(rdir.x >= 0.0f,avxi(0*(int)sizeof(avxf)),avxi(1*(int)sizeof(avxf)));
+      nearXYZ.y = select(rdir.y >= 0.0f,avxi(2*(int)sizeof(avxf)),avxi(3*(int)sizeof(avxf)));
+      nearXYZ.z = select(rdir.z >= 0.0f,avxi(4*(int)sizeof(avxf)),avxi(5*(int)sizeof(avxf)));
+
+      Context context[8];
+
+      /* init per ray context */
+      size_t rays = 0;
+      for (size_t i=0;i<8;i++)
+        if (likely(valid0[i]))
+          context[rays++].init(i,rdir,org_rdir,ray_tnear,ray_tfar,nearXYZ,bvh->root);
+
+      DBG_PRINT(rays);
+
+      /* no active rays? */
+      if (unlikely(rays == 0)) return;
+
+      /* init prev/next pointers */
+      for (size_t i=0;i<rays;i++)
+        {
+          size_t prev = (i == 0)      ? rays-1 : i-1;
+          size_t next = (i == rays-1) ? 0      : i+1;
+          context[i].init_prev_next(&context[prev],&context[next]);
+        }
+
+      Context  *__restrict__ start_context = &context[0];          
+
+      while(1)
+        {
+          Context *__restrict__ current = start_context;
+          do {
+            if (unlikely(current->cur.isLeaf()))
+              {
+              }
+            else              
+              {
+                const Node* node = current->cur.node();
+                const avx3f rdir(current->rdir.x,current->rdir.y,current->rdir.z);
+                const avx3f org_rdir(current->org_rdir.x,current->org_rdir.y,current->org_rdir.z);
+                const size_t nearX = current->nearX;
+                const size_t nearY = current->nearY;
+                const size_t nearZ = current->nearZ;
+                const size_t farX  = nearX ^ sizeof(avxf);
+                const size_t farY  = nearY ^ sizeof(avxf);
+                const size_t farZ  = nearZ ^ sizeof(avxf);
+
+
+                const avxf tNearX = msub(load8f((const char*)node+nearX), rdir.x, org_rdir.x);
+                const avxf tNearY = msub(load8f((const char*)node+nearY), rdir.y, org_rdir.y);
+                const avxf tNearZ = msub(load8f((const char*)node+nearZ), rdir.z, org_rdir.z);
+                const avxf tFarX  = msub(load8f((const char*)node+farX ), rdir.x, org_rdir.x);
+                const avxf tFarY  = msub(load8f((const char*)node+farY ), rdir.y, org_rdir.y);
+                const avxf tFarZ  = msub(load8f((const char*)node+farZ ), rdir.z, org_rdir.z);
+
+                const avxf rayNear(current->tnear);
+                const avxf rayFar (current->tfar);
+
+#if defined(__AVX2__)
+                const avxf tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,rayNear));
+                const avxf tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,rayFar ));
+                const avxb vmask = cast(tNear) > cast(tFar);
+                size_t mask = movemask(vmask)^0xff;
+#else
+                const avxf tNear = max(tNearX,tNearY,tNearZ,rayNear);
+                const avxf tFar  = min(tFarX ,tFarY ,tFarZ ,rayFar);
+                const avxb vmask = tNear <= tFar;
+                size_t mask = movemask(vmask);
+#endif
+                /* zero hit case */
+                if (unlikely(mask == 0))
+                  {
+                   current->cur = current->stack[--current->sindex].ptr;
+                   current = current->next;
+                   continue;
+                  }
+
+                /* single hit case */
+                size_t r = __bscf(mask);
+                if (likely(mask == 0)) 
+                  {
+                   current->cur = node->child(r); 
+                   //cur.prefetch();
+                   assert(current->cur != BVH8::emptyNode);
+                   current = current->next;
+                   continue;
+                  }
+
+                /* two hits case */
+                NodeRef c0 = node->child(r); 
+                //c0.prefetch(); 
+                const unsigned int d0 = ((unsigned int*)&tNear)[r];
+                r = __bscf(mask);
+                NodeRef c1 = node->child(r); 
+                //c1.prefetch(); 
+                const unsigned int d1 = ((unsigned int*)&tNear)[r];
+                assert(c0 != BVH8::emptyNode);
+                assert(c1 != BVH8::emptyNode);
+                if (likely(mask == 0)) 
+                  {
+                   assert(current->sindex < CONTEXT_STACK_SIZE); 
+                   if (d0 < d1) { current->stack[current->sindex].ptr = c1; current->stack[current->sindex].dist = d1; current->cur = c0; }
+                   else         { current->stack[current->sindex].ptr = c0; current->stack[current->sindex].dist = d0; current->cur = c1; }
+                   current->sindex++; 
+                   current = current->next;
+                   continue;                   
+                  }
+
+               
+
+                
+              }
+
+            
+          } while(current != start_context);
+        }
+      AVX_ZERO_UPPER();
+    }
+
+#endif
+
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     template<typename PrimitiveIntersector8>
     __forceinline void BVH8Intersector8Hybrid<PrimitiveIntersector8>::intersect1(const BVH8* bvh, NodeRef root, const size_t k, Precalculations& pre, Ray8& ray,const avx3f &ray_org, const avx3f &ray_dir, const avx3f &ray_rdir, const avxf &ray_tnear, const avxf &ray_tfar, const avx3i& nearXYZ)
@@ -171,7 +363,7 @@ namespace embree
       }
     }
    
-    
+#if !defined(ENABLE_FIBERS)    
     template<typename PrimitiveIntersector8>    
     void BVH8Intersector8Hybrid<PrimitiveIntersector8>::intersect(avxb* valid_i, BVH8* bvh, Ray8& ray)
     {
@@ -326,7 +518,7 @@ namespace embree
       }
       AVX_ZERO_UPPER();
     }
-    
+#endif    
 
 
     template<typename PrimitiveIntersector8>
