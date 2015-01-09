@@ -43,7 +43,7 @@ namespace embree
     {
       __forceinline CreateBVH4Node (BVH4* bvh) : bvh(bvh) {}
       
-      __forceinline BVH4::NodeRef operator() (BuildRecord<BVH4::NodeRef>* children, const size_t N, Allocator& alloc)
+      __forceinline BVH4::NodeRef operator() (BuildRecord<BVH4::NodeRef>* children, const size_t N, Allocator& alloc) 
       {
         //FastAllocator::Thread& alloc = *bvh->alloc2.instance();
         BVH4::Node* node = (BVH4::Node*) alloc.malloc(sizeof(BVH4::Node)); node->clear();
@@ -62,7 +62,7 @@ namespace embree
     {
       __forceinline CreateLeaf (BVH4* bvh) : bvh(bvh) {}
       
-      __forceinline BVH4::NodeRef operator() (const BuildRecord<BVH4::NodeRef>& current, PrimRef* prims, Allocator& alloc)
+      __forceinline BVH4::NodeRef operator() (const BuildRecord<BVH4::NodeRef>& current, PrimRef* prims, Allocator& alloc) // FIXME: why are prims passed here but not for createNode
       {
         size_t items = Primitive::blocks(current.size());
         size_t start = current.begin;
