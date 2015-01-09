@@ -26,6 +26,8 @@
 
 //#define ENABLE_FIBERS
 
+//TODO: switch to pure single mode in case only single ray left
+
 namespace embree
 {
   namespace isa
@@ -149,11 +151,12 @@ namespace embree
                 {
                   DBG(DBG_PRINT("terminate"));
                   DBG(DBG_PRINT(current));
-
+                  rays--;
                   if (unlikely(current->next == current)) 
                     {
                       DBG(DBG_PRINT("all terminate"));
                       //exit(0);
+                      assert(rays == 0);
                       break;
                     }
 
@@ -169,7 +172,16 @@ namespace embree
               size_t num; 
               Triangle* prim = (Triangle*)current->cur.leaf(num);
               PrimitiveIntersector8::intersect(pre,ray,k,prim,num,bvh->scene);
-              current->tfar = ray.tfar[k];
+
+              /* compact stack */
+              if (unlikely(current->tfar > ray.tfar[k]))
+                {
+                  size_t new_sindex = 1;
+                  for (size_t i=1;i<current->sindex;i++)
+                    if(*(float*)&current->stack[i].dist < ray.tfar[k])
+                      current->stack[new_sindex++] = current->stack[i];
+                  current->sindex = new_sindex;
+                }
               current->cur = current->stack[--current->sindex].ptr;
               current = current->next;
             }
