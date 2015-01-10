@@ -188,7 +188,7 @@ export void device_init (uniform int8* uniform cfg)
   rtcSetErrorFunction(error_handler);
 
   /* create scene */
-  g_scene = rtcNewScene(RTC_SCENE_DYNAMIC,RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING);
+  g_scene = rtcNewScene(RTC_SCENE_DYNAMIC | RTC_SCENE_ROBUST,RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING);
 
   /* add cube */
   addCube(g_scene);
