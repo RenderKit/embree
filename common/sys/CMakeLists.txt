@@ -34,9 +34,6 @@ ADD_LIBRARY(sys STATIC
   library.cpp
   thread.cpp
   network.cpp
-  tasklogger.cpp
-  taskscheduler.cpp
-  taskscheduler_sys.cpp
   sync/mutex.cpp
   sync/condition.cpp
   sync/barrier.cpp
@@ -57,10 +54,6 @@ ADD_LIBRARY(sys_xeonphi STATIC
   library.cpp
   thread.cpp
   network.cpp
-  tasklogger.cpp
-  taskscheduler.cpp
-  taskscheduler_sys.cpp
-  taskscheduler_mic.cpp
   sync/mutex.cpp
   sync/condition.cpp
   sync/barrier.cpp

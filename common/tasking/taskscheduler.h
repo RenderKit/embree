@@ -28,8 +28,7 @@
 namespace embree
 {
   /*! Interface to different task scheduler implementations. */
-  /* __hidden */
-  class __hidden TaskScheduler : public RefCount
+  class TaskScheduler : public RefCount
   {
   public:
     struct Event;
@@ -235,9 +234,9 @@ namespace embree
 	  if (threadIndex == 0) {
             scheduler->taskBarrier.init(threadCount);
             scheduler->threadCount = threadCount;
-	    LockStepTaskScheduler::t_scheduler = scheduler;
+	    setInstance(scheduler);
           }
-          LockStepTaskScheduler::t_threadIndex = threadIndex;
+          setThreadIndex(threadIndex);
 	  scheduler->barrier.wait(threadCount);
 	  scheduler->enter(threadIndex,threadCount);
 	}
@@ -247,7 +246,7 @@ namespace embree
 	if (threadIndex == 0 && threadCount != 0) {
 	  scheduler->leave(threadIndex,threadCount);
 	  scheduler->barrier.reset();
-	  LockStepTaskScheduler::t_scheduler = NULL;
+	  setInstance(NULL);
 	}
       }
 
@@ -261,6 +260,7 @@ namespace embree
 
     static __thread size_t t_threadIndex;
     static size_t threadIndex();
+    static void setThreadIndex(size_t threadIndex);
 
     static const unsigned int CONTROL_THREAD_ID = 0;
 

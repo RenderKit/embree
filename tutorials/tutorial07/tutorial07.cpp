@@ -18,7 +18,6 @@
 #include "tutorial/obj_loader.h"
 #include "tutorial/hair_loader.h"
 #include "tutorial/cy_hair_loader.h"
-#include "sys/taskscheduler.h"
 #include "image/image.h"
 
 extern "C" embree::Vec3fa g_dirlight_direction = embree::normalize(embree::Vec3fa(1,-1,1));
@@ -687,13 +686,8 @@ float noise(float x, float y, float z)
 
     /* parse command line */  
     parseCommandLine(stream, FileName());
-    //if (g_numThreads) // FIXME
-    //g_rtcore += ",threads=" + std::stringOf(g_numThreads);
-
-    /* initialize task scheduler */
-#if !defined(RTCORE_EXPORT_ALL_SYMBOLS)
-    TaskScheduler::create(g_numThreads);
-#endif
+    if (g_numThreads) 
+      g_rtcore += ",threads=" + std::stringOf(g_numThreads);
 
     /* initialize ray tracing core */
     init(g_rtcore.c_str());

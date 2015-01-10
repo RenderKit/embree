@@ -15,7 +15,7 @@
 // ======================================================================== //
 
 #include "sys/platform.h"
-#include "sys/taskscheduler.h"
+#include "tasking/taskscheduler.h"
 
 namespace embree
 {

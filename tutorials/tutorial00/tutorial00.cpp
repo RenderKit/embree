@@ -15,7 +15,6 @@
 // ======================================================================== //
 
 #include "tutorial/tutorial.h"
-#include "sys/taskscheduler.h"
 #include "image/image.h"
 
 namespace embree
@@ -115,11 +114,6 @@ namespace embree
     parseCommandLine(stream, FileName());
     if (g_numThreads) 
       g_rtcore += ",threads=" + std::stringOf(g_numThreads);
-
-    /* initialize task scheduler */
-#if !defined(RTCORE_EXPORT_ALL_SYMBOLS)
-    TaskScheduler::create(g_numThreads);
-#endif
 
     /* initialize ray tracing core */
     init(g_rtcore.c_str());

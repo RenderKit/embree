@@ -16,7 +16,6 @@
 
 #include "bvh4_refit.h"
 #include "bvh4_statistics.h"
-#include "sys/tasklogger.h"
 
 #include <algorithm>
 
@@ -68,9 +67,7 @@ namespace embree
       /* schedule refit tasks */
       size_t numRoots = roots.size();
       if (numRoots <= 1) {
-        size_t taskID = TaskLogger::beginTask(threadIndex,"BVH4Refit::sequential",0);
         refit_sequential(threadIndex,threadCount);
-        TaskLogger::endTask(threadIndex,taskID);
       }
       else {
         scheduler->dispatchTask(threadIndex,threadCount,_task_refit_parallel,this,numRoots,"BVH4Refit::parallel");

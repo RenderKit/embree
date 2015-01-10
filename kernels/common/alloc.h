@@ -18,7 +18,7 @@
 
 #include "sys/sysinfo.h"
 #include "sys/sync/mutex.h"
-#include "sys/taskscheduler.h"
+#include "tasking/taskscheduler.h"
 #include "math/math.h"
 
 #include <vector>

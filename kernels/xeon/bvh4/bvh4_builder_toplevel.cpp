@@ -22,8 +22,6 @@
 #include "geometry/triangle1v.h"
 #include "geometry/triangle4v.h"
 
-#include "sys/tasklogger.h"
-
 namespace embree
 {
   namespace isa

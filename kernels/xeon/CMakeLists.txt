@@ -34,10 +34,14 @@ ENDIF()
 
 ADD_ISPC_LIBRARY(embree ${EMBREE_LIB_TYPE}
   embree.rc
+  ../../common/tasking/taskscheduler.cpp
+  ../../common/tasking/taskscheduler_sys.cpp
+  ../../common/tasking/tasklogger.cpp
+  ../../common/tasking/tasksys.cpp
+
   ../common/stat.cpp
   ../common/globals.cpp
   ../common/alloc.cpp
-  ../common/tasksys.cpp
   ../common/acceln.cpp
   ../common/rtcore.cpp
   ../common/rtcore_ispc.cpp

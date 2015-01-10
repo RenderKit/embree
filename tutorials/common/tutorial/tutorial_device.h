@@ -28,7 +28,7 @@ struct Triangle { int v0, v1, v2; };
 
 #include "embree2/rtcore.h"
 #include "ray.h"
-#include "sys/taskscheduler.h"
+#include "tasking/taskscheduler.h"
 using namespace embree;
 
 /* returns time stamp counter */

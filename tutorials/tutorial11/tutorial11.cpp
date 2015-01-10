@@ -20,7 +20,7 @@
 namespace embree
 {
   /* name of the tutorial */
-  const char* tutorialName = "tutorial04";
+  const char* tutorialName = "tutorial11";
 
   /* configuration */
   static std::string g_rtcore = "";
@@ -98,14 +98,13 @@ namespace embree
     Ref<Image> image = new Image4c(g_width, g_height, (Col4c*)ptr);
     storeImage(image, fileName);
     unmap();
-    cleanup();
   }
 
   /* main function in embree namespace */
   int main(int argc, char** argv) 
   {
     /* set default camera */
-    g_camera.from = Vec3fa(2.5f,2.5f,2.5f);
+    g_camera.from = Vec3fa(1.5f,1.5f,-1.5f);
     g_camera.to   = Vec3fa(0.0f,0.0f,0.0f);
 
     /* create stream for parsing */
@@ -119,6 +118,7 @@ namespace embree
     /* initialize ray tracing core */
     init(g_rtcore.c_str());
 
+#if 0
     /* render to disk */
     if (outFilename.str() != "") {
       renderToFile(outFilename);
@@ -130,6 +130,7 @@ namespace embree
     
     /* enter the GLUT run loop */
     enterWindowRunLoop();
+#endif
 
     return 0;
   }

@@ -19,7 +19,7 @@
 #if defined(__MIC__)
 #include "taskscheduler_mic.h"
 #endif
-#include "sysinfo.h"
+#include "sys/sysinfo.h"
 #include "tasklogger.h"
 #include "sys/sync/atomic.h"
 #include "math/math.h"
@@ -40,7 +40,7 @@ namespace embree
   
   TaskScheduler* TaskScheduler::instance = NULL;
 
-  void TaskScheduler::create(size_t numThreads)
+  __dllexport void TaskScheduler::create(size_t numThreads)
   {
     if (instance)
       THROW_RUNTIME_ERROR("Embree threads already running.");
@@ -56,7 +56,7 @@ namespace embree
     instance->createThreads(numThreads);
   }
 
-  size_t TaskScheduler::getNumThreads() 
+  __dllexport size_t TaskScheduler::getNumThreads() 
   {
     if (!instance) THROW_RUNTIME_ERROR("Embree threads not running.");
     return instance->numEnabledThreads;
@@ -71,7 +71,7 @@ namespace embree
     return instance->numEnabledThreads = N;
   }
 
-  void TaskScheduler::addTask(ssize_t threadIndex, QUEUE queue, Task* task)
+  __dllexport void TaskScheduler::addTask(ssize_t threadIndex, QUEUE queue, Task* task)
   {
     if (!instance) THROW_RUNTIME_ERROR("Embree threads not running.");
     instance->add(threadIndex,queue,task);
@@ -161,18 +161,22 @@ namespace embree
 
   __thread LockStepTaskScheduler* LockStepTaskScheduler::t_scheduler = NULL;
 
-  LockStepTaskScheduler* LockStepTaskScheduler::instance() {
+  __dllexport LockStepTaskScheduler* LockStepTaskScheduler::instance() {
     return t_scheduler;
   }
 
-  void LockStepTaskScheduler::setInstance(LockStepTaskScheduler* inst) {
+  __dllexport void LockStepTaskScheduler::setInstance(LockStepTaskScheduler* inst) {
     t_scheduler = inst;
   }
 
   __thread size_t LockStepTaskScheduler::t_threadIndex = 0;
 
-  size_t LockStepTaskScheduler::threadIndex() {
+  __dllexport size_t LockStepTaskScheduler::threadIndex() {
     return t_threadIndex;
+  }
+
+  __dllexport void LockStepTaskScheduler::setThreadIndex(size_t threadIndex) {
+    t_threadIndex = threadIndex;
   }
 
   void TaskScheduler::destroyThreads ()
@@ -198,7 +202,7 @@ namespace embree
   }
 
 
-  bool LockStepTaskScheduler::enter(size_t threadIndex, size_t threadCount)
+  __dllexport bool LockStepTaskScheduler::enter(size_t threadIndex, size_t threadCount)
   {
     if (threadIndex == 0) return false;
     dispatchTaskMainLoop(threadIndex,threadCount);
@@ -213,7 +217,7 @@ namespace embree
     }  
   }
 
-  bool LockStepTaskScheduler::dispatchTask(const size_t threadID, size_t numThreads)
+  __dllexport bool LockStepTaskScheduler::dispatchTask(const size_t threadID, size_t numThreads)
   {
     if (threadID == 0) {
       taskCounter.reset(0);
@@ -245,7 +249,7 @@ namespace embree
     return true;
   }
 
-  void LockStepTaskScheduler::leave(const size_t threadID, const size_t numThreads)
+  __dllexport void LockStepTaskScheduler::leave(const size_t threadID, const size_t numThreads)
   {
     assert(threadID == 0);
     releaseThreads(numThreads);

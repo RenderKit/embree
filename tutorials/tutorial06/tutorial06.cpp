@@ -17,7 +17,6 @@
 #include "tutorial/tutorial.h"
 #include "tutorial/obj_loader.h"
 #include "tutorial/xml_loader.h"
-#include "sys/taskscheduler.h"
 #include "image/image.h"
 
 namespace embree
@@ -192,11 +191,6 @@ namespace embree
       g_rtcore += ",threads=" + std::stringOf(g_numThreads);
     if (g_numBenchmarkFrames)
       g_rtcore += ",benchmark=1";
-
-    /* initialize task scheduler */
-#if !defined(RTCORE_EXPORT_ALL_SYMBOLS)
-    TaskScheduler::create(g_numThreads);
-#endif
 
     /* load scene */
     if (strlwr(filename.ext()) == std::string("obj"))

@@ -14,14 +14,9 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-SET(__XEON__ 1)
-ADD_SUBDIRECTORY(sys)
-ADD_SUBDIRECTORY(simd)
-ADD_SUBDIRECTORY(tasking)
+INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR}/../../kernels)       # FIXME: should not be necessary
+INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR}/../../kernels/xeon)  # FIXME: should not be necessary
+SET(ENABLE_ISPC_SUPPORT OFF)
 
-IF (ENABLE_XEON_PHI_SUPPORT)
-  SET(__XEON__ 0)
-  ADD_SUBDIRECTORY(sys sys_xeonphi)
-  ADD_SUBDIRECTORY(simd simd_xeonphi)
-  ADD_SUBDIRECTORY(tasking tasking_xeonphi)
-ENDIF ()
+INCLUDE(tutorial)
+ADD_TUTORIAL(tutorial11)
