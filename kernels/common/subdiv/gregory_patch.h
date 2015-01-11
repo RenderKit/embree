@@ -689,10 +689,10 @@ namespace embree
       
       const float B0_u = one_minus_uu * one_minus_uu * one_minus_uu;
       const float B0_v = one_minus_vv * one_minus_vv * one_minus_vv;
-      const float B1_u = 3.0f * one_minus_uu * one_minus_uu * uu;
-      const float B1_v = 3.0f * one_minus_vv * one_minus_vv * vv;
-      const float B2_u = 3.0f * one_minus_uu * uu * uu;
-      const float B2_v = 3.0f * one_minus_vv * vv * vv;
+      const float B1_u = 3.0f * (one_minus_uu * uu * one_minus_uu);
+      const float B1_v = 3.0f * (one_minus_vv * vv * one_minus_vv);
+      const float B2_u = 3.0f * (uu * one_minus_uu * uu);
+      const float B2_v = 3.0f * (vv * one_minus_vv * vv);
       const float B3_u = uu * uu * uu;
       const float B3_v = vv * vv * vv;
       
