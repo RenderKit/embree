@@ -213,6 +213,8 @@ namespace embree
       const unsigned int commitCounter = ((Scene*)geom)->commitCounter;
       InputTagType tag = (InputTagType)subdiv_patch;
 
+      //frDBG_PRINT( *subdiv_patch );
+      
       DBG(DBG_PRINT((size_t)tag / 320));
       BVH4::NodeRef root = pre.local_cache->lookup(tag,commitCounter);
       root.prefetch(0);
@@ -354,6 +356,12 @@ namespace embree
       DBG(DBG_PRINT("L1 CACHE HIT"));                                            
       return root;          
     }
+
+
+    unsigned int save_id = (unsigned int)-1;
+    float save_x[16];
+    float save_y[16];
+    float save_z[16];
     
 
     BVH4::NodeRef SubdivPatch1CachedIntersector1::buildSubdivPatchTree(const SubdivPatch1Cached &patch,
@@ -386,7 +394,94 @@ namespace embree
         
 #endif   
       evalGrid(patch,grid_x,grid_y,grid_z,grid_u,grid_v,geom);
-        
+
+      
+
+      if (patch.prim == 0)
+        {
+          //DBG_PRINT(patch.prim);
+          //DBG_PRINT(patch.patch.v[0][3]);
+          //DBG_PRINT(patch.patch.v[1][3]);
+          //DBG_PRINT(patch.patch.v[2][3]);
+          //DBG_PRINT(patch.patch.v[3][3]);
+
+          for (size_t i=0;i<patch.grid_v_res;i++)
+            {
+              save_id = patch.prim;
+              save_x[i] = grid_x[patch.grid_u_res*i+(patch.grid_u_res-1)];
+              save_y[i] = grid_y[patch.grid_u_res*i+(patch.grid_u_res-1)];
+              save_z[i] = grid_z[patch.grid_u_res*i+(patch.grid_u_res-1)];             
+            }
+          
+          for (size_t i=0;i<patch.grid_v_res;i++)
+            {
+              const unsigned int x = *(unsigned int*)&grid_x[patch.grid_u_res*i+(patch.grid_u_res-1)];
+              const unsigned int y = *(unsigned int*)&grid_y[patch.grid_u_res*i+(patch.grid_u_res-1)];
+              const unsigned int z = *(unsigned int*)&grid_z[patch.grid_u_res*i+(patch.grid_u_res-1)];
+              const unsigned int u = *(unsigned int*)&grid_u[patch.grid_u_res*i+(patch.grid_u_res-1)];
+              const unsigned int v = *(unsigned int*)&grid_v[patch.grid_u_res*i+(patch.grid_u_res-1)];              
+              std::cout << i << " => " << x << "," << y << "," << z << "," << u << "," << v << std::endl;
+            }
+        }
+
+      if (patch.prim == 1)
+        {
+          //DBG_PRINT(patch.prim);
+          //DBG_PRINT(patch.patch.v[0][0]);
+          //DBG_PRINT(patch.patch.v[1][0]);
+          //DBG_PRINT(patch.patch.v[2][0]);
+          //DBG_PRINT(patch.patch.v[3][0]);
+
+          if (save_id == 0 && 0)
+            {
+              for (size_t i=0;i<patch.grid_v_res;i++)
+                {
+                  save_id = patch.prim;
+                  grid_x[patch.grid_u_res*i] = save_x[i];
+                  grid_y[patch.grid_u_res*i] = save_y[i];
+                  grid_z[patch.grid_u_res*i] = save_z[i];                  
+                }
+            }
+          
+          for (size_t i=0;i<patch.grid_v_res;i++)
+            {
+              const unsigned int x = *(unsigned int*)&grid_x[patch.grid_u_res*i];
+              const unsigned int y = *(unsigned int*)&grid_y[patch.grid_u_res*i];
+              const unsigned int z = *(unsigned int*)&grid_z[patch.grid_u_res*i];
+              const unsigned int u = *(unsigned int*)&grid_u[patch.grid_u_res*i];
+              const unsigned int v = *(unsigned int*)&grid_v[patch.grid_u_res*i];
+              
+              std::cout << i << " => " << x << "," << y << "," << z << "," << u << "," << v << std::endl;
+              
+            }
+        }
+      
+      //DBG_PRINT(*hit_patch);      
+      #if 0
+      DBG_PRINT("x");
+        {
+          for (size_t x=0;x<patch.grid_u_res;x++)
+            std::cout << grid_x[patch.grid_u_res*y+x] << " ";
+          cout << std::endl;
+        }
+
+      DBG_PRINT("y");
+      for (size_t y=0;y<patch.grid_v_res;y++)
+        {
+          for (size_t x=0;x<patch.grid_u_res;x++)
+            std::cout << grid_y[patch.grid_u_res*y+x] << " ";
+          cout << std::endl;
+        }
+
+      DBG_PRINT("z");      
+       for (size_t y=0;y<patch.grid_v_res;y++)
+        {
+          for (size_t x=0;x<patch.grid_u_res;x++)
+            std::cout << grid_z[patch.grid_u_res*y+x] << " ";
+          cout << std::endl;
+        }
+       #endif
+     
       BVH4::NodeRef subtree_root = BVH4::encodeNode( (BVH4::Node*)lazymem);
       unsigned int currentIndex = 0;
       BBox3fa bounds = createSubTree( subtree_root,
@@ -507,6 +602,9 @@ namespace embree
 #endif          
         
 	  BBox3fa bounds = qquad->bounds();
+          //bounds.lower -= 1E3f;
+          //bounds.upper += 1E3f;
+          
 	  curNode = BVH4::encodeLeaf(qquad,2);
         
 	  return bounds;

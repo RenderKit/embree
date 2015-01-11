@@ -794,6 +794,21 @@ namespace embree
       
       t0 = getSeconds()-t0;
       DBG_CACHE_BUILDER(std::cout << "create prims in " << 1000.0f*t0 << "ms " << std::endl);
+ #if 1
+      DBG_PRINT("FIX");
+      //SubdivPatch1Cached *const subdiv_patches = (SubdivPatch1Cached *)this->bvh->data_mem;
+#if 0
+      subdiv_patches[1].patch.v[0][0] = subdiv_patches[0].patch.v[0][3];
+      subdiv_patches[1].patch.v[1][0] = subdiv_patches[0].patch.v[1][3];
+      subdiv_patches[1].patch.v[2][0] = subdiv_patches[0].patch.v[2][3];
+      subdiv_patches[1].patch.v[3][0] = subdiv_patches[0].patch.v[3][3];
+#endif
+      assert(subdiv_patches[1].patch.v[0][0] == subdiv_patches[0].patch.v[0][3]);
+      assert(subdiv_patches[1].patch.v[1][0] == subdiv_patches[0].patch.v[1][3]);
+      assert(subdiv_patches[1].patch.v[2][0] == subdiv_patches[0].patch.v[2][3]);
+      assert(subdiv_patches[1].patch.v[3][0] == subdiv_patches[0].patch.v[3][3]);
+
+ #endif     
     }
     
     void BVH4SubdivPatch1CachedBuilderFast::create_primitive_array_parallel  (size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, PrimInfo& pinfo) {

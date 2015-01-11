@@ -25,7 +25,7 @@
 #include "geometry/subdivpatch1cached.h"
 
 /* returns u,v based on individual triangles instead relative to original patch */
-#define FORCE_TRIANGLE_UV 0
+#define FORCE_TRIANGLE_UV 1
 
 #define SHARED_TESSELLATION_CACHE
 
@@ -116,6 +116,7 @@ namespace embree
 	    r.v      = patch_v;
             r.geomID = hit_patch->geom;
             r.primID = hit_patch->prim;
+            
           }
         }
         
@@ -155,17 +156,21 @@ namespace embree
         M valid ( true );
         /* perform edge tests */
         const T U = dot(Vec3<T>(cross(v2+v0,e0)),D) ^ sgnDen;
+        
         valid &= U >= 0.0f;
         if (likely(none(valid))) return;
         const T V = dot(Vec3<T>(cross(v0+v1,e1)),D) ^ sgnDen;
-        valid &= V >= 0.0f;
+        
+        valid &= V >= 0.0f;        
         if (likely(none(valid))) return;
         const T W = dot(Vec3<T>(cross(v1+v2,e2)),D) ^ sgnDen;
+        
         valid &= W >= 0.0f;
         if (likely(none(valid))) return;
+
         
         /* perform depth test */
-        const T _t = dot(v0,Ng) ^ sgnDen;
+        const T _t = dot(v0,Ng) ^ sgnDen;        
         valid &= (_t >= absDen*ray.tnear) & (absDen*ray.tfar >= _t);
         if (unlikely(none(valid))) return;
         
@@ -183,6 +188,7 @@ namespace embree
         const T u =  U*rcpAbsDen;
         const T v =  V*rcpAbsDen;
         const T t = _t*rcpAbsDen;
+
         
 #if FORCE_TRIANGLE_UV == 0
         const Vec2<T> uv0 = qquad.getUV( 0, delta );
@@ -200,13 +206,15 @@ namespace embree
 #endif
         
         size_t i = select_min(valid,t);
-
         
         /* update hit information */
         pre.hit_patch = pre.current_patch;
 
         ray.u         = u_final[i];
         ray.v         = v_final[i];
+        //DBG_PRINT(ray.u);
+        //DBG_PRINT(ray.v);
+        
         ray.tfar      = t[i];
 	if (i % 2)
 	  {

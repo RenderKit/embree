@@ -18,7 +18,7 @@
 
 /* configuration */
 
-#if 0
+#if 1
 #define MIN_EDGE_LEVEL 8.0f
 #define MAX_EDGE_LEVEL 8.0f
 #else
@@ -122,6 +122,7 @@ unsigned int addCube (RTCScene scene_i)
   /* create a triangulated cube with 6 quads and 8 vertices */
   unsigned int geomID = rtcNewSubdivisionMesh(scene_i, RTC_GEOMETRY_STATIC, NUM_FACES, NUM_INDICES, 8, 0, 0, 0);
 
+ 
   rtcSetBuffer(scene_i, geomID, RTC_VERTEX_BUFFER, cube_vertices, 0, sizeof(Vec3fa  ));
   rtcSetBuffer(scene_i, geomID, RTC_INDEX_BUFFER,  cube_indices , 0, sizeof(unsigned int));
   rtcSetBuffer(scene_i, geomID, RTC_FACE_BUFFER,   cube_faces,    0, sizeof(unsigned int));
@@ -142,7 +143,7 @@ void updateEdgeLevelBuffer( RTCScene scene_i, unsigned geomID, const Vec3fa& cam
       const Vec3fa v0 = Vec3fa(vertices[faces[FACE_SIZE*f+(i+0)%FACE_SIZE]]);
       const Vec3fa v1 = Vec3fa(vertices[faces[FACE_SIZE*f+(i+1)%FACE_SIZE]]);
       const float l  = LEVEL_FACTOR*length(v1-v0)/length(cam_pos-0.5f*(v1+v0));
-      level[FACE_SIZE*f+i] = max(min(l,MAX_EDGE_LEVEL),MIN_EDGE_LEVEL);
+      level[FACE_SIZE*f+i] = MAX_EDGE_LEVEL; // max(min(l,MAX_EDGE_LEVEL),MIN_EDGE_LEVEL);
     }
   }
   rtcUnmapBuffer(scene_i, geomID, RTC_VERTEX_BUFFER);
@@ -213,14 +214,17 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
   
   /* intersect ray with scene */
   rtcIntersect(g_scene,ray);
-  
+
+  //DBG_PRINT(ray);
+  //DBG_PRINT( ray.org + ray.tfar*ray.dir );
   /* shade pixels */
   Vec3fa color = Vec3fa(0.0f);
   if (ray.geomID != RTC_INVALID_GEOMETRY_ID) 
   {
     Vec3fa diffuse = ray.geomID == 0 ? Vec3fa(0.9f,0.6f,0.5f) : Vec3fa(0.8f,0.0f,0.0f);
     color = color + diffuse*0.5f; // FIXME: +=
-    Vec3fa lightDir = normalize(Vec3fa(-1,-1,-1));
+ 
+    Vec3fa lightDir = normalize(Vec3fa(-1.0f,-1.0f,-1.0f));
     
     /* initialize shadow ray */
     RTCRay shadow;
@@ -234,11 +238,11 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
     shadow.time = 0;
     
     /* trace shadow ray */
-     rtcOccluded(g_scene,shadow);
+    //rtcOccluded(g_scene,shadow);
              
     /* add light contribution */
     if (shadow.geomID == RTC_INVALID_GEOMETRY_ID)
-      color = color + diffuse*clamp(-dot(lightDir,normalize(ray.Ng)),0.0f,1.0f); // FIXME: +=
+      color = color + diffuse*clamp(-dot(lightDir,normalize_safe(ray.Ng)),0.1f,1.0f); // FIXME: +=
   }
   return color;
 }
@@ -265,8 +269,17 @@ void renderTile(int taskIndex, int* pixels,
   for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)
   {
     /* calculate pixel color */
+    // primID 0 <-> primID 3 <-> primID 1
+    // x = 255 => ray.org + ray.tfar*ray.dir = (0.499992, 0.5, -0.500007)
+    // x = 257 => ray.org + ray.tfar*ray.dir = (0.500007, 0.5, -0.499992)
+    
+    x = 256;
+    y = 200;
+    //Vec3fa color = renderPixelGeomIDPrimID(x,y,vx,vy,vz,p);
     Vec3fa color = renderPixel(x,y,vx,vy,vz,p);
+    exit(0);
 
+  
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
     unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
