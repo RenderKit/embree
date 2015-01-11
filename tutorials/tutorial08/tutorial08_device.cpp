@@ -228,7 +228,7 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
     shadow.time = 0;
     
     /* trace shadow ray */
-     rtcOccluded(g_scene,shadow);
+    rtcOccluded(g_scene,shadow);
              
     /* add light contribution */
     if (shadow.geomID == RTC_INVALID_GEOMETRY_ID)
