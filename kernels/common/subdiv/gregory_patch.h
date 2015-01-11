@@ -376,10 +376,10 @@ namespace embree
       
       const float B0_u = one_minus_uu * one_minus_uu * one_minus_uu;
       const float B0_v = one_minus_vv * one_minus_vv * one_minus_vv;
-      const float B1_u = 3.0f * one_minus_uu * one_minus_uu * uu;
-      const float B1_v = 3.0f * one_minus_vv * one_minus_vv * vv;
-      const float B2_u = 3.0f * one_minus_uu * uu * uu;
-      const float B2_v = 3.0f * one_minus_vv * vv * vv;
+      const float B1_u = 3.0f * (one_minus_uu * uu * one_minus_uu);
+      const float B1_v = 3.0f * (one_minus_vv * vv * one_minus_vv);
+      const float B2_u = 3.0f * (uu * one_minus_uu * uu);
+      const float B2_v = 3.0f * (vv * one_minus_vv * vv);
       const float B3_u = uu * uu * uu;
       const float B3_v = vv * vv * vv;
       
@@ -436,10 +436,10 @@ namespace embree
       
       const T B0_u = one_minus_uu * one_minus_uu * one_minus_uu;
       const T B0_v = one_minus_vv * one_minus_vv * one_minus_vv;
-      const T B1_u = 3.0f * one_minus_uu * one_minus_uu * uu;
-      const T B1_v = 3.0f * one_minus_vv * one_minus_vv * vv;
-      const T B2_u = 3.0f * one_minus_uu * uu * uu;
-      const T B2_v = 3.0f * one_minus_vv * vv * vv;
+      const T B1_u = 3.0f * (one_minus_uu * uu * one_minus_uu);
+      const T B1_v = 3.0f * (one_minus_vv * vv * one_minus_vv);
+      const T B2_u = 3.0f * (uu * one_minus_uu * uu);
+      const T B2_v = 3.0f * (vv * one_minus_vv * vv);
       const T B3_u = uu * uu * uu;
       const T B3_v = vv * vv * vv;
       
@@ -619,10 +619,10 @@ namespace embree
       
       const mic_f B0_u = one_minus_uu * one_minus_uu * one_minus_uu;
       const mic_f B0_v = one_minus_vv * one_minus_vv * one_minus_vv;
-      const mic_f B1_u = 3.0f * one_minus_uu * one_minus_uu * uu;
-      const mic_f B1_v = 3.0f * one_minus_vv * one_minus_vv * vv;
-      const mic_f B2_u = 3.0f * one_minus_uu * uu * uu;
-      const mic_f B2_v = 3.0f * one_minus_vv * vv * vv;
+      const mic_f B1_u = 3.0f * (one_minus_uu * uu * one_minus_uu);
+      const mic_f B1_v = 3.0f * (one_minus_vv * vv * one_minus_vv);
+      const mic_f B2_u = 3.0f * (uu * one_minus_uu * uu);
+      const mic_f B2_v = 3.0f * (vv * one_minus_vv * vv);
       const mic_f B3_u = uu * uu * uu;
       const mic_f B3_v = vv * vv * vv;
       
