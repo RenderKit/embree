@@ -385,7 +385,8 @@ namespace embree
       const float B2_v = 3.0f * (vv * one_minus_vv * vv);
       const float B3_u = uu * uu * uu;
       const float B3_v = vv * vv * vv;
-      
+
+
       const Vec3fa_t res = 
 	(B0_u * matrix[0][0] + B1_u * matrix[0][1] + B2_u * matrix[0][2] + B3_u * matrix[0][3]) * B0_v + 
 	(B0_u * matrix[1][0] + B1_u * v_11    + B2_u * v_12    + B3_u * matrix[1][3]) * B1_v + 
