@@ -308,12 +308,12 @@ namespace embree
 
     template<typename NodeRef, typename CreateAllocFunc, typename CreateNodeFunc, typename CreateLeafFunc>
       NodeRef build_bvh_sah(CreateAllocFunc createAlloc, CreateNodeFunc createNode, CreateLeafFunc createLeaf, 
-                                PrimRef* prims, PrimRef* temp, const PrimInfo& pinfo, 
+                                PrimRef* prims, const PrimInfo& pinfo, 
                                 const size_t branchingFactor, const size_t maxDepth, const size_t logBlockSize, const size_t minLeafSize, const size_t maxLeafSize)
     {
       return execute_closure([&]() -> NodeRef {
           BVHBuilderGeneric<NodeRef,decltype(createAlloc()),CreateAllocFunc,CreateNodeFunc,CreateLeafFunc> builder
-            (createAlloc,createNode,createLeaf,prims,temp,pinfo,branchingFactor,maxDepth,logBlockSize,minLeafSize,maxLeafSize);
+            (createAlloc,createNode,createLeaf,prims,NULL,pinfo,branchingFactor,maxDepth,logBlockSize,minLeafSize,maxLeafSize);
           return builder();
         });
     }

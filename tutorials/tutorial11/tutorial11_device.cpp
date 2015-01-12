@@ -84,8 +84,6 @@ struct LeafNode : public Node
   }
 };
 
-PrimRef* tmp = new PrimRef[200];
-
 /* called by the C++ code for initialization */
 extern "C" void device_init (int8* cfg)
 {
@@ -94,50 +92,62 @@ extern "C" void device_init (int8* cfg)
 
   /* set error handler */
   rtcSetErrorFunction(error_handler);
-
+  
   /* set start render mode */
   renderPixel = renderPixelStandard;
 
   /* create random bounding boxes */
+  const size_t N = 2300000;
   isa::PrimInfo pinfo(empty);
   std::vector<PrimRef> prims; // FIXME: does not support alignment
-  for (size_t i=0; i<100; i++) {
-    const Vec3fa p = 100.0f*Vec3fa(drand48(),drand48(),drand48());
+  for (size_t i=0; i<N; i++) {
+    const Vec3fa p = 1000.0f*Vec3fa(drand48(),drand48(),drand48());
     const BBox3fa b = BBox3fa(p,p+Vec3fa(1.0f));
     pinfo.add(b);
     const PrimRef prim = PrimRef(b,i);
     prims.push_back(prim);
   }
 
+  /* fast allocator that supports thread local operation */
   FastAllocator allocator;
 
-  /* build BVH */
-  Node* root = isa::build_bvh_sah<Node*>(
-    [&] () -> FastAllocator::ThreadLocal* { 
-      return allocator.threadLocal(); 
-    },
-    [&](isa::BuildRecord<Node*>* children, const size_t N, FastAllocator::ThreadLocal* alloc) -> Node* 
-    {
-      assert(N <= 2);
-      //InnerNode* node = new InnerNode;
-      InnerNode* node = new (alloc->malloc(sizeof(InnerNode))) InnerNode;
-      for (size_t i=0; i<N; i++) {
-        node->bounds[i] = children[i].geomBounds;
-        children[i].parent = &node->children[i];
-      }
-      return node;
-    },
-    [&](const isa::BuildRecord<Node*>& current, PrimRef* prims, FastAllocator::ThreadLocal* alloc) -> Node*
-    {
-      assert(current.size() == 1);
-      //return new LeafNode(prims[current.begin].ID());
-      return new (alloc->malloc(sizeof(LeafNode))) LeafNode(prims[current.begin].ID());
-    },
-    prims.data(),NULL,pinfo,2,1024,0,1,1);
+  for (size_t i=0; i<2; i++)
+  {
+    std::cout << "iteration " << i << ": building BVH over " << N << " primitives, " << std::flush;
+    double t0 = getSeconds();
+    
+    allocator.reset();
+    Node* root = isa::build_bvh_sah<Node*>(
 
-  /* print SAH of generated tree */
-  float sah = root->sah();
-  PRINT(sah);
+      /* thread local allocator for fast allocations */
+      [&] () -> FastAllocator::ThreadLocal* { 
+        return allocator.threadLocal(); 
+      },
+
+      /* lambda function that creates BVH nodes */
+      [&](isa::BuildRecord<Node*>* children, const size_t N, FastAllocator::ThreadLocal* alloc) -> Node* 
+      {
+        assert(N <= 2);
+        InnerNode* node = new (alloc->malloc(sizeof(InnerNode))) InnerNode;
+        for (size_t i=0; i<N; i++) {
+          node->bounds[i] = children[i].geomBounds;
+          children[i].parent = &node->children[i];
+        }
+        return node;
+      },
+
+      /* lambda function that creates BVH leaves */
+      [&](const isa::BuildRecord<Node*>& current, PrimRef* prims, FastAllocator::ThreadLocal* alloc) -> Node*
+      {
+        assert(current.size() == 1);
+        return new (alloc->malloc(sizeof(LeafNode))) LeafNode(prims[current.begin].ID());
+      },
+      prims.data(),pinfo,2,1024,0,1,1);
+    
+    double t1 = getSeconds();
+    
+    std::cout << 1000.0f*(t1-t0) << "ms, " << 1E-6*double(N)/(t1-t0) << " Mprims/s, sah = " << root->sah() << " [DONE]" << std::endl;
+  }
 }
 
 /* task that renders a single screen tile */
@@ -169,6 +179,7 @@ void renderTile(int taskIndex, int* pixels,
   {
     /* calculate pixel color */
     Vec3fa color = renderPixel(x,y,vx,vy,vz,p);
+    
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
     unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
