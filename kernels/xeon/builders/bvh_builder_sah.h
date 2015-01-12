@@ -64,14 +64,14 @@ namespace embree
     };
     
     template<typename NodeRef, typename Allocator, typename CreateAllocFunc, typename CreateNodeFunc, typename CreateLeafFunc>
-      class BVHBuilderGeneric
+      class BVHBuilderSAH
     {
       static const size_t MAX_BRANCHING_FACTOR = 16;  //!< maximal supported BVH branching factor
       static const size_t MIN_LARGE_LEAF_LEVELS = 8;  //!< create balanced tree of we are that many levels before the maximal tree depth
 
     public:
 
-      BVHBuilderGeneric (CreateAllocFunc& createAlloc, CreateNodeFunc& createNode, CreateLeafFunc& createLeaf,
+      BVHBuilderSAH (CreateAllocFunc& createAlloc, CreateNodeFunc& createNode, CreateLeafFunc& createLeaf,
                          PrimRef* prims, PrimRef* temp, const PrimInfo& pinfo,
                          const size_t branchingFactor, const size_t maxDepth, 
                          const size_t logBlockSize, const size_t minLeafSize, const size_t maxLeafSize)
@@ -297,22 +297,22 @@ namespace embree
     };
 
     template<typename NodeRef, typename CreateAllocFunc, typename CreateNodeFunc, typename CreateLeafFunc>
-      NodeRef build_bvh_sah_internal(CreateAllocFunc createAlloc, CreateNodeFunc createNode, CreateLeafFunc createLeaf, 
-                                     PrimRef* prims, PrimRef* temp, const PrimInfo& pinfo, 
-                                     const size_t branchingFactor, const size_t maxDepth, const size_t logBlockSize, const size_t minLeafSize, const size_t maxLeafSize)
+      NodeRef bvh_builder_sah_internal(CreateAllocFunc createAlloc, CreateNodeFunc createNode, CreateLeafFunc createLeaf, 
+                                       PrimRef* prims, PrimRef* temp, const PrimInfo& pinfo, 
+                                       const size_t branchingFactor, const size_t maxDepth, const size_t logBlockSize, const size_t minLeafSize, const size_t maxLeafSize)
     {
-      BVHBuilderGeneric<NodeRef,decltype(createAlloc()),CreateAllocFunc,CreateNodeFunc,CreateLeafFunc> builder
+      BVHBuilderSAH<NodeRef,decltype(createAlloc()),CreateAllocFunc,CreateNodeFunc,CreateLeafFunc> builder
         (createAlloc,createNode,createLeaf,prims,temp,pinfo,branchingFactor,maxDepth,logBlockSize,minLeafSize,maxLeafSize);
       return builder();
     }
 
     template<typename NodeRef, typename CreateAllocFunc, typename CreateNodeFunc, typename CreateLeafFunc>
-      NodeRef build_bvh_sah(CreateAllocFunc createAlloc, CreateNodeFunc createNode, CreateLeafFunc createLeaf, 
-                                PrimRef* prims, const PrimInfo& pinfo, 
-                                const size_t branchingFactor, const size_t maxDepth, const size_t logBlockSize, const size_t minLeafSize, const size_t maxLeafSize)
+      NodeRef bvh_builder_sah(CreateAllocFunc createAlloc, CreateNodeFunc createNode, CreateLeafFunc createLeaf, 
+                              PrimRef* prims, const PrimInfo& pinfo, 
+                              const size_t branchingFactor, const size_t maxDepth, const size_t logBlockSize, const size_t minLeafSize, const size_t maxLeafSize)
     {
       return execute_closure([&]() -> NodeRef {
-          BVHBuilderGeneric<NodeRef,decltype(createAlloc()),CreateAllocFunc,CreateNodeFunc,CreateLeafFunc> builder
+          BVHBuilderSAH<NodeRef,decltype(createAlloc()),CreateAllocFunc,CreateNodeFunc,CreateLeafFunc> builder
             (createAlloc,createNode,createLeaf,prims,NULL,pinfo,branchingFactor,maxDepth,logBlockSize,minLeafSize,maxLeafSize);
           return builder();
         });

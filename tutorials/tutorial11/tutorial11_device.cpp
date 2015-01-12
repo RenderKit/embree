@@ -15,7 +15,7 @@
 // ======================================================================== //
 
 #include "../common/tutorial/tutorial_device.h"
-#include "kernels/xeon/bvh4/bvh4_builder_generic.h" // FIXME: should not be in bvh4 folder
+#include "kernels/xeon/builders/bvh_builder_sah.h"
 #include "kernels/xeon/builders/priminfo.h"
 
 /* scene data */
@@ -117,7 +117,7 @@ extern "C" void device_init (int8* cfg)
     double t0 = getSeconds();
     
     allocator.reset();
-    Node* root = isa::build_bvh_sah<Node*>(
+    Node* root = isa::bvh_builder_sah<Node*>(
 
       /* thread local allocator for fast allocations */
       [&] () -> FastAllocator::ThreadLocal* { 

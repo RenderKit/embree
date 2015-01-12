@@ -16,7 +16,7 @@
 
 #include "bvh4.h"
 #include "bvh4_statistics.h"
-#include "bvh4_builder_generic.h"
+#include "builders/bvh_builder_sah.h"
 
 #include "algorithms/parallel_for_for.h"
 #include "algorithms/parallel_for_for_prefix_sum.h"
@@ -168,7 +168,7 @@ namespace embree
           
           /* build BVH */
           PrimInfo pinfo = CreatePrimRefArray<TriangleMesh,1>(scene,prims);
-          BVH4::NodeRef root = build_bvh_sah_internal<BVH4::NodeRef>(CreateAlloc(bvh),CreateBVH4Node(bvh),CreateLeaf<Triangle4>(bvh),
+          BVH4::NodeRef root = bvh_builder_sah_internal<BVH4::NodeRef>(CreateAlloc(bvh),CreateBVH4Node(bvh),CreateLeaf<Triangle4>(bvh),
                                                                      prims.data(),temp.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,2,4,4*BVH4::maxLeafBlocks);
           bvh->set(root,pinfo.geomBounds,pinfo.size());
           
