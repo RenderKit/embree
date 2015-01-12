@@ -98,6 +98,7 @@ namespace embree
     Vec3fa initPositiveEdgeVertex(const CatmullClarkPatch &irreg_patch, const size_t index, const Vec3fa &p_vtx)
     {
       const Vec3fa tangent = irreg_patch.ring[index].getLimitTangent();
+      
       return 1.0f/3.0f * tangent + p_vtx;
     }
     
@@ -175,16 +176,18 @@ namespace embree
       p1() = initCornerVertex(patch,1);
       p2() = initCornerVertex(patch,2);
       p3() = initCornerVertex(patch,3);
-      
+
       e0_p() = initPositiveEdgeVertex(patch,0, p0());
       e1_p() = initPositiveEdgeVertex(patch,1, p1());
       e2_p() = initPositiveEdgeVertex(patch,2, p2());
       e3_p() = initPositiveEdgeVertex(patch,3, p3());
-      
+
+
       e0_m() = initNegativeEdgeVertex(patch,0, p0());
       e1_m() = initNegativeEdgeVertex(patch,1, p1());
       e2_m() = initNegativeEdgeVertex(patch,2, p2());
       e3_m() = initNegativeEdgeVertex(patch,3, p3());
+
       
       const unsigned int face_valence_p0 = patch.ring[0].face_valence;
       const unsigned int face_valence_p1 = patch.ring[1].face_valence;
@@ -378,8 +381,8 @@ namespace embree
       const float B0_v = one_minus_vv * one_minus_vv * one_minus_vv;
       const float B1_u = 3.0f * (one_minus_uu * uu * one_minus_uu);
       const float B1_v = 3.0f * (one_minus_vv * vv * one_minus_vv);
-      const float B2_u = 3.0f * uu * one_minus_uu * uu;
-      const float B2_v = 3.0f * vv * one_minus_vv * vv;
+      const float B2_u = 3.0f * (uu * one_minus_uu * uu);
+      const float B2_v = 3.0f * (vv * one_minus_vv * vv);
       const float B3_u = uu * uu * uu;
       const float B3_v = vv * vv * vv;
       
@@ -657,10 +660,10 @@ namespace embree
       
       const mic_f B0_u = one_minus_uu * one_minus_uu * one_minus_uu;
       const mic_f B0_v = one_minus_vv * one_minus_vv * one_minus_vv;
-      const mic_f B1_u = 3.0f * one_minus_uu * one_minus_uu * uu;
-      const mic_f B1_v = 3.0f * one_minus_vv * one_minus_vv * vv;
-      const mic_f B2_u = 3.0f * one_minus_uu * uu * uu;
-      const mic_f B2_v = 3.0f * one_minus_vv * vv * vv;
+      const mic_f B1_u = 3.0f * (one_minus_uu * uu * one_minus_uu);
+      const mic_f B1_v = 3.0f * (one_minus_vv * vv * one_minus_vv);
+      const mic_f B2_u = 3.0f * (uu * one_minus_uu * uu);
+      const mic_f B2_v = 3.0f * (vv * one_minus_vv * vv);
       const mic_f B3_u = uu * uu * uu;
       const mic_f B3_v = vv * vv * vv;
       
@@ -727,10 +730,10 @@ namespace embree
       
       const float B0_u = one_minus_uu * one_minus_uu * one_minus_uu;
       const float B0_v = one_minus_vv * one_minus_vv * one_minus_vv;
-      const float B1_u = 3.0f * one_minus_uu * one_minus_uu * uu;
-      const float B1_v = 3.0f * one_minus_vv * one_minus_vv * vv;
-      const float B2_u = 3.0f * one_minus_uu * uu * uu;
-      const float B2_v = 3.0f * one_minus_vv * vv * vv;
+      const float B1_u = 3.0f * (one_minus_uu * uu * one_minus_uu);
+      const float B1_v = 3.0f * (one_minus_vv * vv * one_minus_vv);
+      const float B2_u = 3.0f * (uu * one_minus_uu * uu);
+      const float B2_v = 3.0f * (vv * one_minus_vv * vv);
       const float B3_u = uu * uu * uu;
       const float B3_v = vv * vv * vv;
       

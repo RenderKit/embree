@@ -59,14 +59,14 @@ namespace embree
 
   /*! manages thread local variables */
   template<typename Type>
-  struct ThreadLocal
+  struct ThreadLocalData
   {
   public:
 
-    __forceinline ThreadLocal (void* init) 
+    __forceinline ThreadLocalData (void* init) 
       : ptr(NULL), init(init) {}
 
-    __forceinline ~ThreadLocal () 
+    __forceinline ~ThreadLocalData () 
     {
       if (ptr) destroyTls(ptr);
       for (size_t i=0; i<threads.size(); i++)
@@ -74,8 +74,8 @@ namespace embree
     }
 
     /*! disallow copy */
-    ThreadLocal(const ThreadLocal&) = delete;
-    ThreadLocal& operator=(const ThreadLocal&) = delete;
+    ThreadLocalData(const ThreadLocalData&) = delete;
+    ThreadLocalData& operator=(const ThreadLocalData&) = delete;
 
     __forceinline void reset()
     {

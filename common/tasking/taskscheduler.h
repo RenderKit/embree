@@ -372,4 +372,37 @@ namespace embree
     
     void syncThreads(const size_t localThreadID);
   };
+
+  template<typename Ty, typename Closure>
+    struct ExecuteClosureTask
+    {
+      ExecuteClosureTask (const Closure& closure) 
+      : closure(closure)
+      {
+        TaskScheduler::EventSync event;
+        TaskScheduler::Task task(&event,_task_execute_parallel,this,TaskScheduler::getNumThreads(),NULL,NULL,"executing_closure");
+        TaskScheduler::addTask(-1,TaskScheduler::GLOBAL_FRONT,&task);
+        event.sync();
+      }
+      
+      void task_execute_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
+      {
+        LockStepTaskScheduler::Init init(threadIndex,threadCount,&lockstep_scheduler);
+        if (threadIndex == 0) result = closure();
+      }
+      
+      static void _task_execute_parallel(void* This, size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) {
+        ((ExecuteClosureTask*)This)->task_execute_parallel(threadIndex,threadCount,taskIndex,taskCount,event);
+      }
+      
+      LockStepTaskScheduler lockstep_scheduler;
+      const Closure& closure;
+      Ty result;
+    };
+  
+  template<typename Closure> auto execute_closure(const Closure& closure) -> decltype(closure())
+  {
+    ExecuteClosureTask<decltype(closure()),Closure> task(closure);
+    return task.result;
+  }
 }

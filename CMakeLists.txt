@@ -54,11 +54,12 @@ SET(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/common/cmake ${CMAKE_MODULE_PA
 # Embree configuration
 ##############################################################
 
-OPTION(ENABLE_SHARED_LIB "Build Embree as a shared library." ON)
-IF (ENABLE_SHARED_LIB)
-  SET(EMBREE_LIB_TYPE SHARED)
-ELSE()
+OPTION(ENABLE_STATIC_LIB "Build Embree as a static library." OFF)
+IF (ENABLE_STATIC_LIB)
   SET(EMBREE_LIB_TYPE STATIC)
+  ADD_DEFINITIONS(-DENABLE_STATIC_LIB)
+ELSE()
+  SET(EMBREE_LIB_TYPE SHARED)
 ENDIF()
 
 OPTION(ENABLE_ISPC_SUPPORT "Build Embree with support for ISPC applications." ON)

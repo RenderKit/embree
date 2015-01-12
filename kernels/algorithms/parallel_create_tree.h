@@ -25,7 +25,7 @@ namespace embree
   {
     typedef decltype(createAlloc()) Allocator;
     
-    Allocator& alloc = createAlloc();
+    Allocator alloc = createAlloc();
     
     LockStepTaskScheduler* scheduler = LockStepTaskScheduler::instance();
     const size_t threadCount = scheduler->getNumThreads();
@@ -92,7 +92,7 @@ namespace embree
       __forceinline void operator() (const Continuation& br) { recurse(br,alloc,*this); } 
     };
 
-    Allocator& alloc = createAlloc();
+    Allocator alloc = createAlloc();
     Recursion recursion(recurse,alloc); 
     recursion(br);
   }

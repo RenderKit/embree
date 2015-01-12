@@ -454,7 +454,7 @@ namespace embree
       assert(height <= 17);
     }
 
-    static __forceinline Grid* create(FastAllocator::Thread& alloc, const size_t width, const size_t height, const unsigned geomID, const unsigned primID) {
+    static __forceinline Grid* create(FastAllocator::ThreadLocal& alloc, const size_t width, const size_t height, const unsigned geomID, const unsigned primID) {
       return new (alloc.malloc(sizeof(Grid)-17*17*sizeof(Vec3fa)+width*height*sizeof(Vec3fa))) Grid(width,height,geomID,primID);
     }
     
@@ -703,7 +703,7 @@ namespace embree
 #endif
     }
 
-   __forceinline size_t createEagerPrims(FastAllocator::Thread& alloc, PrimRef* prims, 
+   __forceinline size_t createEagerPrims(FastAllocator::ThreadLocal& alloc, PrimRef* prims, 
 					 const size_t x0, const size_t x1,
 					 const size_t y0, const size_t y1)
 	{
@@ -826,7 +826,7 @@ namespace embree
     template<typename Patch>
     static size_t createEager(unsigned geomID, unsigned primID, 
 			      Scene* scene, const Patch& patch,
-			      FastAllocator::Thread& alloc, PrimRef* prims,
+			      FastAllocator::ThreadLocal& alloc, PrimRef* prims,
 			      const size_t x0, const size_t x1,
 			      const size_t y0, const size_t y1,
 			      const Vec2f uv[4], 
@@ -854,7 +854,7 @@ namespace embree
       return N;
     }
 
-    std::pair<BBox3fa,BVH4::NodeRef> createLazyPrims(FastAllocator::Thread& alloc,
+    std::pair<BBox3fa,BVH4::NodeRef> createLazyPrims(FastAllocator::ThreadLocal& alloc,
 						     const size_t x0, const size_t x1,
 						     const size_t y0, const size_t y1)
       {
@@ -974,8 +974,8 @@ namespace embree
 	Scene* scene = bvh->scene;
 	SubdivMesh* mesh = scene->getSubdivMesh(geomID);
 	BVH4::NodeRef node = BVH4::emptyNode;
-
-	FastAllocator::Thread& alloc = *bvh->alloc2.instance();
+        
+	FastAllocator::ThreadLocal& alloc = *bvh->alloc2.threadLocal();
 	
 	feature_adaptive_subdivision_eval(mesh->getHalfEdge(primID),mesh->getVertexBuffer(), // FIXME: only recurse into one sub-quad
 					  [&](const CatmullClarkPatch& patch, const Vec2f uv[4], const int subdiv[4], const int id)
@@ -1023,7 +1023,7 @@ namespace embree
     };
     
     static size_t createLazy(BVH4* bvh, BVH4::NodeRef* parent, unsigned geomID, unsigned primID, unsigned quadID, unsigned width, unsigned height, 
-			     FastAllocator::Thread& alloc, PrimRef* prims)
+			     FastAllocator::ThreadLocal& alloc, PrimRef* prims)
     {
       size_t N = 0;
       for (size_t y=0; y<height; y+=16)

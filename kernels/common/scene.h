@@ -207,8 +207,18 @@ namespace embree
     atomic_t numSubdivPatches2;        //!< number of enabled motion blur subdivision patches
     atomic_t numUserGeometries1;       //!< number of enabled user geometries
 
+    template<typename Mesh, int timeSteps> __forceinline size_t getNumPrimitives                    () const { THROW_RUNTIME_ERROR("NOT IMPLEMENTED"); }
+   
     atomic_t numIntersectionFilters4;   //!< number of enabled intersection/occlusion filters for 4-wide ray packets
     atomic_t numIntersectionFilters8;   //!< number of enabled intersection/occlusion filters for 8-wide ray packets
     atomic_t numIntersectionFilters16;  //!< number of enabled intersection/occlusion filters for 16-wide ray packets
   };
+
+  template<> __forceinline size_t Scene::getNumPrimitives<TriangleMesh,1>() const { return numTriangles; } 
+  template<> __forceinline size_t Scene::getNumPrimitives<TriangleMesh,2>() const { return numTriangles2; } 
+  template<> __forceinline size_t Scene::getNumPrimitives<BezierCurves,1>() const { return numBezierCurves; } 
+  template<> __forceinline size_t Scene::getNumPrimitives<BezierCurves,2>() const { return numBezierCurves2; } 
+  template<> __forceinline size_t Scene::getNumPrimitives<SubdivMesh,1>() const { return numSubdivPatches; } 
+  template<> __forceinline size_t Scene::getNumPrimitives<SubdivMesh,2>() const { return numSubdivPatches2; } 
+  template<> __forceinline size_t Scene::getNumPrimitives<UserGeometryBase,1>() const { return numUserGeometries1; } 
 }

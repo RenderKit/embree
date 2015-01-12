@@ -131,6 +131,7 @@ namespace embree
     DBG_PRINT( grid_mask );
     DBG_PRINT( grid_subtree_size_64b_blocks );
 #endif
+
   }
 
   BBox3fa SubdivPatch1Base::bounds(const SubdivMesh* const mesh) const

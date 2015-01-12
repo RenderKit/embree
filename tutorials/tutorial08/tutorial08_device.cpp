@@ -18,15 +18,17 @@
 
 /* configuration */
 
-#if 1
-#define MIN_EDGE_LEVEL 8.0f
-#define MAX_EDGE_LEVEL 8.0f
+#if 0
+#define MIN_EDGE_LEVEL 16.0f
+#define MAX_EDGE_LEVEL 16.0f
 #else
 #define MIN_EDGE_LEVEL 2.0f
 #define MAX_EDGE_LEVEL 64.0f
 #endif
 
 #define LEVEL_FACTOR 64.0f
+
+#define DBG(x) 
 
 /* scene data */
 RTCScene g_scene = NULL;
@@ -186,7 +188,7 @@ extern "C" void device_init (int8* cfg)
   rtcSetErrorFunction(error_handler);
 
   /* create scene */
-  g_scene = rtcNewScene(RTC_SCENE_DYNAMIC,RTC_INTERSECT1);
+  g_scene = rtcNewScene(RTC_SCENE_DYNAMIC | RTC_SCENE_ROBUST,RTC_INTERSECT1);
 
   /* add cube */
   addCube(g_scene);
@@ -214,9 +216,9 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
   
   /* intersect ray with scene */
   rtcIntersect(g_scene,ray);
+  DBG( DBG_PRINT(ray) );
+  DBG( DBG_PRINT( ray.org + ray.tfar*ray.dir ) );
 
-  //DBG_PRINT(ray);
-  //DBG_PRINT( ray.org + ray.tfar*ray.dir );
   /* shade pixels */
   Vec3fa color = Vec3fa(0.0f);
   if (ray.geomID != RTC_INVALID_GEOMETRY_ID) 
@@ -238,7 +240,7 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
     shadow.time = 0;
     
     /* trace shadow ray */
-    //rtcOccluded(g_scene,shadow);
+    rtcOccluded(g_scene,shadow);
              
     /* add light contribution */
     if (shadow.geomID == RTC_INVALID_GEOMETRY_ID)
@@ -268,18 +270,15 @@ void renderTile(int taskIndex, int* pixels,
 
   for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)
   {
-    /* calculate pixel color */
-    // primID 0 <-> primID 3 <-> primID 1
-    // x = 255 => ray.org + ray.tfar*ray.dir = (0.499992, 0.5, -0.500007)
-    // x = 257 => ray.org + ray.tfar*ray.dir = (0.500007, 0.5, -0.499992)
-    
-    x = 256;
-    y = 200;
-    //Vec3fa color = renderPixelGeomIDPrimID(x,y,vx,vy,vz,p);
-    Vec3fa color = renderPixel(x,y,vx,vy,vz,p);
-    exit(0);
+    DBG(       std::cout.precision(10); );
 
-  
+    DBG( x = 256; y = 512-289; );
+    
+    Vec3fa color = renderPixel(x,y,vx,vy,vz,p);
+
+    DBG( DBG_PRINT(color) );
+    DBG( exit(0); );
+
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
     unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
