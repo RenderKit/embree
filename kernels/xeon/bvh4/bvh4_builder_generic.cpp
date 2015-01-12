@@ -34,7 +34,7 @@ namespace embree
     struct CreateAlloc
     {
       __forceinline CreateAlloc (BVH4* bvh) : bvh(bvh) {}
-      __forceinline Allocator& operator() () const { return *bvh->alloc2.instance();  }
+      __forceinline Allocator* operator() () const { return bvh->alloc2.instance();  }
 
       BVH4* bvh;
     };
@@ -43,10 +43,10 @@ namespace embree
     {
       __forceinline CreateBVH4Node (BVH4* bvh) : bvh(bvh) {}
       
-      __forceinline BVH4::NodeRef operator() (BuildRecord<BVH4::NodeRef>* children, const size_t N, Allocator& alloc) 
+      __forceinline BVH4::NodeRef operator() (BuildRecord<BVH4::NodeRef>* children, const size_t N, Allocator* alloc) 
       {
         //FastAllocator::Thread& alloc = *bvh->alloc2.instance();
-        BVH4::Node* node = (BVH4::Node*) alloc.malloc(sizeof(BVH4::Node)); node->clear();
+        BVH4::Node* node = (BVH4::Node*) alloc->malloc(sizeof(BVH4::Node)); node->clear();
         for (size_t i=0; i<N; i++) {
           node->set(i,children[i].geomBounds);
           children[i].parent = &node->child(i);
@@ -62,12 +62,12 @@ namespace embree
     {
       __forceinline CreateLeaf (BVH4* bvh) : bvh(bvh) {}
       
-      __forceinline BVH4::NodeRef operator() (const BuildRecord<BVH4::NodeRef>& current, PrimRef* prims, Allocator& alloc) // FIXME: why are prims passed here but not for createNode
+      __forceinline BVH4::NodeRef operator() (const BuildRecord<BVH4::NodeRef>& current, PrimRef* prims, Allocator* alloc) // FIXME: why are prims passed here but not for createNode
       {
         size_t items = Primitive::blocks(current.size());
         size_t start = current.begin;
         //FastAllocator::Thread& alloc = *bvh->alloc2.instance();
-        Primitive* accel = (Primitive*) alloc.malloc(items*sizeof(Primitive));
+        Primitive* accel = (Primitive*) alloc->malloc(items*sizeof(Primitive));
         BVH4::NodeRef node = bvh->encodeLeaf((char*)accel,items);
         for (size_t i=0; i<items; i++) {
           accel[i].fill(prims,start,current.end,bvh->scene,false);
@@ -166,8 +166,8 @@ namespace embree
           
           /* build BVH */
           PrimInfo pinfo = CreatePrimRefArray<TriangleMesh,1>(scene,prims);
-          BVH4::NodeRef root = build_bvh_sah<BVH4::NodeRef>(CreateAlloc(bvh),CreateBVH4Node(bvh),CreateLeaf<Triangle4>(bvh),
-                                                            prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,2,4,4*BVH4::maxLeafBlocks);
+          BVH4::NodeRef root = build_bvh_sah_internal<BVH4::NodeRef>(CreateAlloc(bvh),CreateBVH4Node(bvh),CreateLeaf<Triangle4>(bvh),
+                                                                     prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,2,4,4*BVH4::maxLeafBlocks);
           bvh->set(root,pinfo.geomBounds,pinfo.size());
           
 #if defined(PROFILE)

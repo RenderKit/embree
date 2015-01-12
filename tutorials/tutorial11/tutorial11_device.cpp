@@ -86,10 +86,10 @@ struct LeafNode : public Node
 
 PrimRef* tmp = new PrimRef[200];
 
-struct Allocator
+/*struct Allocator
 {
   void* curPtr() { return tmp; } // FIXME: application should provide temporary buffer
-} g_alloc;
+  } g_alloc;*/
 
 /* called by the C++ code for initialization */
 extern "C" void device_init (int8* cfg)
@@ -114,10 +114,13 @@ extern "C" void device_init (int8* cfg)
     prims.push_back(prim);
   }
 
+  FastAllocator allocator;
+
   /* build BVH */
-  Node* root = isa::build_bvh_sah_api<Node*>(
-    [] () -> Allocator& { return g_alloc; },
-    [&](isa::BuildRecord<Node*>* children, const size_t N, Allocator& alloc) -> Node* 
+  Node* root = isa::build_bvh_sah<Node*>(
+    //[] () -> Allocator& { return g_alloc; },
+    [&] () -> FastAllocator::Thread* { return allocator.instance(); },
+    [&](isa::BuildRecord<Node*>* children, const size_t N, FastAllocator::Thread* alloc) -> Node* 
     {
       PRINT(N);
       assert(N <= 2);
@@ -128,7 +131,7 @@ extern "C" void device_init (int8* cfg)
       }
       return node;
     },
-    [&](const isa::BuildRecord<Node*>& current, PrimRef* prims, Allocator& alloc) -> Node*
+    [&](const isa::BuildRecord<Node*>& current, PrimRef* prims, FastAllocator::Thread* alloc) -> Node*
     {
       PRINT(current.size());
       assert(current.size() == 1);
