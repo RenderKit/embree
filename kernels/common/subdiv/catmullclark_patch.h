@@ -117,6 +117,11 @@ namespace embree
       dest1.crease_weight[0] = dest0.crease_weight[3] = p1.crease_weight[1];
       dest1.crease_weight[3] = dest0.crease_weight[2] = 0.0f;
       dest1.crease_weight[2] = dest0.crease_weight[1] = p0.crease_weight[0];
+
+      //////////////////////////////
+      dest0.eval_start_index = 3;
+      dest1.eval_start_index = 0;
+      //////////////////////////////
     }
 
 
@@ -144,6 +149,11 @@ namespace embree
       dest1.crease_weight[1] = dest0.crease_weight[0] = 0.0f;
       dest1.crease_weight[0] = dest0.crease_weight[2] = p1.crease_weight[1];
       dest1.crease_weight[2] = dest0.crease_weight[1] = p0.crease_weight[0];
+
+      //////////////////////////////
+      dest0.eval_start_index = 2;
+      dest1.eval_start_index = 0;
+      //////////////////////////////
     }
 
     static __forceinline void init_regular(const Vec3fa_t &center, const Vec3fa_t center_ring[8], const size_t offset, CatmullClark1Ring &dest)
@@ -159,6 +169,10 @@ namespace embree
 	dest.ring[i] = (Vec3fa_t)center_ring[(offset+i)%8];
       for (size_t i=0; i<4; i++) 
         dest.crease_weight[i] = 0.0f;
+
+      //////////////////////////////
+      dest.eval_start_index = (offset%8)>>1;
+      //////////////////////////////
     }
 
     void subdivide(CatmullClarkPatch patch[4]) const
