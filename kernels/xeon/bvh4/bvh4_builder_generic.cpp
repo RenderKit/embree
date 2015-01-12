@@ -45,7 +45,6 @@ namespace embree
       
       __forceinline BVH4::NodeRef operator() (BuildRecord<BVH4::NodeRef>* children, const size_t N, Allocator* alloc) 
       {
-        //FastAllocator::ThreadLocal& alloc = *bvh->alloc2.instance();
         BVH4::Node* node = (BVH4::Node*) alloc->malloc(sizeof(BVH4::Node)); node->clear();
         for (size_t i=0; i<N; i++) {
           node->set(i,children[i].geomBounds);
@@ -66,7 +65,6 @@ namespace embree
       {
         size_t items = Primitive::blocks(current.size());
         size_t start = current.begin;
-        //FastAllocator::ThreadLocal& alloc = *bvh->alloc2.instance();
         Primitive* accel = (Primitive*) alloc->malloc(items*sizeof(Primitive));
         BVH4::NodeRef node = bvh->encodeLeaf((char*)accel,items);
         for (size_t i=0; i<items; i++) {
@@ -138,7 +136,8 @@ namespace embree
         if (g_verbose >= 1) t0 = getSeconds();
 
         /* calculate scene size */
-        const size_t numPrimitives = scene->numTriangles;
+        //const size_t numPrimitives = scene->numTriangles;
+        const size_t numPrimitives = scene->getNumPrimitives<TriangleMesh,1>();
         
         /* skip build for empty scene */
         if (numPrimitives == 0) {
