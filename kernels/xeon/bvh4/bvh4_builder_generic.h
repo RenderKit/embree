@@ -72,12 +72,12 @@ namespace embree
     public:
 
       BVHBuilderGeneric (CreateAllocFunc& createAlloc, CreateNodeFunc& createNode, CreateLeafFunc& createLeaf,
-                         PrimRef* prims, const PrimInfo& pinfo,
+                         PrimRef* prims, PrimRef* temp, const PrimInfo& pinfo,
                          const size_t branchingFactor, const size_t maxDepth, 
                          const size_t logBlockSize, const size_t minLeafSize, const size_t maxLeafSize)
         : parallelBinner(NULL),
           createAlloc(createAlloc), createNode(createNode), createLeaf(createLeaf), 
-          prims(prims), pinfo(pinfo), 
+          prims(prims), temp(temp), pinfo(pinfo), 
           branchingFactor(branchingFactor), maxDepth(maxDepth),
           logBlockSize(logBlockSize), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize)
       {
@@ -115,22 +115,25 @@ namespace embree
 
       void splitParallel(const BuildRecord<NodeRef>& current, BuildRecord<NodeRef>& leftChild, BuildRecord<NodeRef>& rightChild, Allocator& alloc)
       {
+        if (temp == NULL) 
+          return splitSequential(current,leftChild,rightChild);
+        
         LockStepTaskScheduler* scheduler = LockStepTaskScheduler::instance();
         const size_t threadCount = scheduler->getNumThreads();
 
         /* use primitive array temporarily for parallel splits */
         PrimInfo pinfo(current.begin,current.end,current.geomBounds,current.centBounds);
         
-        PrimRef* tmp = (PrimRef*) alloc->curPtr(); // FIXME
+        //PrimRef* temp = (PrimRef*) alloc->curPtr(); // FIXME
 
         /* parallel binning of centroids */
-        const float sah = parallelBinner->find(pinfo,prims,tmp,logBlockSize,0,threadCount,scheduler); // FIXME: hardcoded threadIndex=0
+        const float sah = parallelBinner->find(pinfo,prims,temp,logBlockSize,0,threadCount,scheduler); // FIXME: hardcoded threadIndex=0
         
         /* if we cannot find a valid split, enforce an arbitrary split */
         if (unlikely(sah == float(inf))) splitFallback(current,leftChild,rightChild);
         
         /* parallel partitioning of items */
-        else parallelBinner->partition(pinfo,tmp,prims,leftChild,rightChild,0,threadCount,scheduler);
+        else parallelBinner->partition(pinfo,temp,prims,leftChild,rightChild,0,threadCount,scheduler);
       }
 
       void createLargeLeaf(const BuildRecord<NodeRef>& current, Allocator& nodeAlloc, Allocator& leafAlloc)
@@ -284,6 +287,7 @@ namespace embree
       
     private:
       PrimRef* prims;
+      PrimRef* temp;
       const PrimInfo& pinfo;
       const size_t branchingFactor;
       const size_t maxDepth;
@@ -294,22 +298,22 @@ namespace embree
 
     template<typename NodeRef, typename CreateAllocFunc, typename CreateNodeFunc, typename CreateLeafFunc>
       NodeRef build_bvh_sah_internal(CreateAllocFunc createAlloc, CreateNodeFunc createNode, CreateLeafFunc createLeaf, 
-                                     PrimRef* prims, const PrimInfo& pinfo, 
+                                     PrimRef* prims, PrimRef* temp, const PrimInfo& pinfo, 
                                      const size_t branchingFactor, const size_t maxDepth, const size_t logBlockSize, const size_t minLeafSize, const size_t maxLeafSize)
     {
       BVHBuilderGeneric<NodeRef,decltype(createAlloc()),CreateAllocFunc,CreateNodeFunc,CreateLeafFunc> builder
-        (createAlloc,createNode,createLeaf,prims,pinfo,branchingFactor,maxDepth,logBlockSize,minLeafSize,maxLeafSize);
+        (createAlloc,createNode,createLeaf,prims,temp,pinfo,branchingFactor,maxDepth,logBlockSize,minLeafSize,maxLeafSize);
       return builder();
     }
 
     template<typename NodeRef, typename CreateAllocFunc, typename CreateNodeFunc, typename CreateLeafFunc>
       NodeRef build_bvh_sah(CreateAllocFunc createAlloc, CreateNodeFunc createNode, CreateLeafFunc createLeaf, 
-                                PrimRef* prims, const PrimInfo& pinfo, 
+                                PrimRef* prims, PrimRef* temp, const PrimInfo& pinfo, 
                                 const size_t branchingFactor, const size_t maxDepth, const size_t logBlockSize, const size_t minLeafSize, const size_t maxLeafSize)
     {
       return execute_closure([&]() -> NodeRef {
           BVHBuilderGeneric<NodeRef,decltype(createAlloc()),CreateAllocFunc,CreateNodeFunc,CreateLeafFunc> builder
-            (createAlloc,createNode,createLeaf,prims,pinfo,branchingFactor,maxDepth,logBlockSize,minLeafSize,maxLeafSize);
+            (createAlloc,createNode,createLeaf,prims,temp,pinfo,branchingFactor,maxDepth,logBlockSize,minLeafSize,maxLeafSize);
           return builder();
         });
     }

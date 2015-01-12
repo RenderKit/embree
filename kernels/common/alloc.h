@@ -307,17 +307,17 @@ namespace embree
   public:
 
     /*! Per thread structure holding the current memory block. */
-    struct __aligned(64) Thread 
+    struct __aligned(64) ThreadLocal 
     {
       ALIGNED_CLASS_(64);
     public:
 
-      /*! Constructor for usage with ThreadLocal */
-      __forceinline Thread (void* alloc) 
+      /*! Constructor for usage with ThreadLocalData */
+      __forceinline ThreadLocal (void* alloc) 
 	: alloc((FastAllocator*)alloc), ptr(NULL), cur(0), end(0), allocBlockSize(4096), bytesUsed(0), bytesWasted(0) {}
 
       /*! Default constructor. */
-      __forceinline Thread (FastAllocator* alloc, const size_t allocBlockSize = 4096) 
+      __forceinline ThreadLocal (FastAllocator* alloc, const size_t allocBlockSize = 4096) 
 	: alloc(alloc), ptr(NULL), cur(0), end(0), allocBlockSize(allocBlockSize), bytesUsed(0), bytesWasted(0)  {}
 
       /*! resets the allocator */
@@ -412,7 +412,7 @@ namespace embree
     }
 
     /*! returns a fast thread local allocator */
-    __forceinline Thread* instance() {
+    __forceinline ThreadLocal* threadLocal() {
       return thread_local_allocators.get();
     }
 
@@ -615,7 +615,7 @@ namespace embree
     Block* volatile freeBlocks;
     size_t growSize;
 
-    ThreadLocal<Thread> thread_local_allocators; //!< thread local allocators
+    ThreadLocalData<ThreadLocal> thread_local_allocators; //!< thread local allocators
 
   private:
     size_t bytesWasted;    //!< number of bytes wasted

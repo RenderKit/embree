@@ -68,7 +68,7 @@ struct InnerNode : public Node
   }
   
   float sah() {
-    return area(bounds[0])*children[0]->sah() + area(bounds[1])*children[1]->sah();
+    return 1.0f + (area(bounds[0])*children[0]->sah() + area(bounds[1])*children[1]->sah())/area(merge(bounds[0],bounds[1]));
   }
 };
 
@@ -85,11 +85,6 @@ struct LeafNode : public Node
 };
 
 PrimRef* tmp = new PrimRef[200];
-
-/*struct Allocator
-{
-  void* curPtr() { return tmp; } // FIXME: application should provide temporary buffer
-  } g_alloc;*/
 
 /* called by the C++ code for initialization */
 extern "C" void device_init (int8* cfg)
@@ -118,26 +113,31 @@ extern "C" void device_init (int8* cfg)
 
   /* build BVH */
   Node* root = isa::build_bvh_sah<Node*>(
-    //[] () -> Allocator& { return g_alloc; },
-    [&] () -> FastAllocator::Thread* { return allocator.instance(); },
-    [&](isa::BuildRecord<Node*>* children, const size_t N, FastAllocator::Thread* alloc) -> Node* 
+    [&] () -> FastAllocator::ThreadLocal* { 
+      return allocator.threadLocal(); 
+    },
+    [&](isa::BuildRecord<Node*>* children, const size_t N, FastAllocator::ThreadLocal* alloc) -> Node* 
     {
-      PRINT(N);
       assert(N <= 2);
-      InnerNode* node = new InnerNode;
+      //InnerNode* node = new InnerNode;
+      InnerNode* node = new (alloc->malloc(sizeof(InnerNode))) InnerNode;
       for (size_t i=0; i<N; i++) {
         node->bounds[i] = children[i].geomBounds;
         children[i].parent = &node->children[i];
       }
       return node;
     },
-    [&](const isa::BuildRecord<Node*>& current, PrimRef* prims, FastAllocator::Thread* alloc) -> Node*
+    [&](const isa::BuildRecord<Node*>& current, PrimRef* prims, FastAllocator::ThreadLocal* alloc) -> Node*
     {
-      PRINT(current.size());
       assert(current.size() == 1);
-      return new LeafNode(prims[current.begin].ID());
+      //return new LeafNode(prims[current.begin].ID());
+      return new (alloc->malloc(sizeof(LeafNode))) LeafNode(prims[current.begin].ID());
     },
-    prims.data(),pinfo,2,1024,0,1,1);
+    prims.data(),NULL,pinfo,2,1024,0,1,1);
+
+  /* print SAH of generated tree */
+  float sah = root->sah();
+  PRINT(sah);
 }
 
 /* task that renders a single screen tile */
