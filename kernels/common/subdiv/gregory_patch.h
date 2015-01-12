@@ -98,6 +98,7 @@ namespace embree
     Vec3fa initPositiveEdgeVertex(const CatmullClarkPatch &irreg_patch, const size_t index, const Vec3fa &p_vtx)
     {
       const Vec3fa tangent = irreg_patch.ring[index].getLimitTangent();
+      
       return 1.0f/3.0f * tangent + p_vtx;
     }
     
@@ -175,16 +176,18 @@ namespace embree
       p1() = initCornerVertex(patch,1);
       p2() = initCornerVertex(patch,2);
       p3() = initCornerVertex(patch,3);
-      
+
       e0_p() = initPositiveEdgeVertex(patch,0, p0());
       e1_p() = initPositiveEdgeVertex(patch,1, p1());
       e2_p() = initPositiveEdgeVertex(patch,2, p2());
       e3_p() = initPositiveEdgeVertex(patch,3, p3());
-      
+
+
       e0_m() = initNegativeEdgeVertex(patch,0, p0());
       e1_m() = initNegativeEdgeVertex(patch,1, p1());
       e2_m() = initNegativeEdgeVertex(patch,2, p2());
       e3_m() = initNegativeEdgeVertex(patch,3, p3());
+
       
       const unsigned int face_valence_p0 = patch.ring[0].face_valence;
       const unsigned int face_valence_p1 = patch.ring[1].face_valence;
