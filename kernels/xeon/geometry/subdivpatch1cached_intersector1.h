@@ -27,7 +27,7 @@
 /* returns u,v based on individual triangles instead relative to original patch */
 #define FORCE_TRIANGLE_UV 0
 
-#define SHARED_TESSELLATION_CACHE
+//#define SHARED_TESSELLATION_CACHE
 
 #define SHARED_TESSELLATION_CACHE_ENTRIES      1024
 #define DISTRIBUTED_TESSELLATION_CACHE_ENTRIES  128
