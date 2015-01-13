@@ -1,4 +1,3 @@
-#cmakedefine BUILD_EMBREE_SHARED_LIB
 #cmakedefine RTCORE_RAY_MASK
 #cmakedefine RTCORE_STAT_COUNTERS
 #cmakedefine RTCORE_BACKFACE_CULLING
