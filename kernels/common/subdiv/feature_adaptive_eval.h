@@ -18,6 +18,7 @@
 
 #include "catmullclark_patch.h"
 #include "bspline_patch.h"
+#include "gregory_patch.h"
 
 namespace embree
 {
