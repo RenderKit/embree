@@ -283,6 +283,7 @@ IF (NOT WIN32)
   CONFIGURE_FILE(
     scripts/${SCRIPT_DIR}/install.sh
     "${PROJECT_BINARY_DIR}/install.sh"
+    @ONLY
   )
   INSTALL(PROGRAMS "${PROJECT_BINARY_DIR}/install.sh" scripts/${SCRIPT_DIR}/paths.sh DESTINATION ./)
 ENDIF()
