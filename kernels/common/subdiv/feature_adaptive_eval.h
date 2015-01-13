@@ -61,8 +61,9 @@ namespace embree
 	  for (float x=lx0; x<lx1; x++) 
 	  { 
 	    assert(x<swidth && y<sheight);
-	    const float fx = (float(x)-srange.lower.x)*scale_x;
-	    const float fy = (float(y)-srange.lower.y)*scale_y;
+	    const float fx = x == srange.upper.x ? 1.0f : (float(x)-srange.lower.x)*scale_x;
+	    const float fy = y == srange.upper.y ? 1.0f : (float(y)-srange.lower.y)*scale_y;
+
 	    const size_t ix = (size_t) x, iy = (size_t) y;
 	    assert(ix-x0 < dwidth && iy-y0 < dheight);
 
@@ -79,8 +80,8 @@ namespace embree
 	  { 
 	    assert(x<swidth && y<sheight);
 	    
-	    const float sx1 = (float(x)-srange.lower.x)*scale_x, sx0 = 1.0f-sx1;
-	    const float sy1 = (float(y)-srange.lower.y)*scale_y, sy0 = 1.0f-sy1;
+	    const float sx1 = x == srange.upper.x ? 1.0f : (float(x)-srange.lower.x)*scale_x, sx0 = 1.0f-sx1;
+	    const float sy1 = y == srange.upper.y ? 1.0f : (float(y)-srange.lower.y)*scale_y, sy0 = 1.0f-sy1;
 	    const size_t ix = (size_t) x, iy = (size_t) y;
 	    assert(ix-x0 < dwidth && iy-y0 < dheight);
 
