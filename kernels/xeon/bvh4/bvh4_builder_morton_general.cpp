@@ -69,76 +69,6 @@ namespace embree
       }
     }
 
-    CentGeomBBox3fa BVH4BuilderMortonGeneral::computeBounds()
-    {
-      CentGeomBBox3fa bounds; bounds.reset();
-
-      if (mesh) 
-      {
-        for (size_t i=0; i<mesh->numTriangles; i++) {
-	  const BBox3fa b = mesh->bounds(i);
-	  if (!inFloatRange(b)) continue;
-          bounds.extend(b);
-	}
-      }
-      else
-      {
-        for (size_t group=0; group<numGroups; group++) 
-        {       
-          Geometry* geom = scene->get(group);
-          if (!geom || geom->type != TRIANGLE_MESH) continue;
-          TriangleMesh* mesh = (TriangleMesh*) geom;
-          if (mesh->numTimeSteps != 1) continue;
-          for (size_t i=0; i<mesh->numTriangles; i++) {
-	    const BBox3fa b = mesh->bounds(i);
-	    if (!inFloatRange(b)) continue;
-	    bounds.extend(b);
-	  }
-        }
-      }
-      return bounds;
-    }
-
-    void BVH4BuilderMortonGeneral::computeBounds(const size_t threadID, const size_t numThreads)
-    {
-      initThreadState(threadID,numThreads);
-
-      const ssize_t start = (threadID+0)*numPrimitives/numThreads;
-      const ssize_t end   = (threadID+1)*numPrimitives/numThreads;
-      
-      CentGeomBBox3fa bounds; bounds.reset();
-      
-      if (mesh) 
-      {
-        for (size_t i=start; i<end; i++) {
-	  const BBox3fa b = mesh->bounds(i);
-	  if (!inFloatRange(b)) continue;
-          bounds.extend(b);
-	}
-      }
-      else
-      {
-	for (ssize_t cur=0, i=0; i<ssize_t(scene->size()); i++) 
-	{
-	  TriangleMesh* geom = (TriangleMesh*) scene->get(i);
-          if (geom == NULL) continue;
-	  if (geom->type != TRIANGLE_MESH || geom->numTimeSteps != 1 || !geom->isEnabled()) continue;
-	  ssize_t gstart = 0;
-	  ssize_t gend = geom->numTriangles;
-	  ssize_t s = max(start-cur,gstart);
-	  ssize_t e = min(end  -cur,gend  );
-	  for (ssize_t j=s; j<e; j++) {
-	    const BBox3fa b = geom->bounds(j);
-	    if (!inFloatRange(b)) continue;
-	    bounds.extend(b);
-	  }
-	  cur += geom->numTriangles;
-	  if (cur >= end) break;  
-        }
-      }
-      global_bounds.extend_atomic(bounds);    
-    }
-
     void BVH4BuilderMortonGeneral::recreateMortonCodes(BuildRecord& current) const
     {
       assert(current.size() > 4);
@@ -309,9 +239,24 @@ namespace embree
       bvh->alloc2.init(bytesAllocated,2*bytesAllocated);
 
       /* compute scene bounds */
-      global_bounds.reset();
-      scheduler->dispatchTask( task_computeBounds, this, threadIndex, threadCount );
+      //double T0 = getSeconds();
+
+      Scene::Iterator<TriangleMesh,1> iter1(scene);
+      global_bounds = parallel_for_for_reduce( iter1, CentGeomBBox3fa(empty), [&](TriangleMesh* mesh, const range<size_t>& r, size_t k) -> CentGeomBBox3fa
+      {
+        CentGeomBBox3fa bounds(empty);
+        for (size_t i=r.begin(); i<r.end(); i++)
+        {
+          const BBox3fa b = mesh->bounds(i);
+          if (!inFloatRange(b)) continue;
+          bounds.extend(b);
+        }
+        return bounds;
+      }, [] (CentGeomBBox3fa a, const CentGeomBBox3fa& b) { a.merge(b); return a; });
+
       bvh->bounds = global_bounds.geomBounds;
+      //double T1 = getSeconds();
+      //PRINT(1000.0f*(T1-T0));
 
       /* calculate initial destination for each thread */
       for (size_t i=0; i<threadCount; i++)

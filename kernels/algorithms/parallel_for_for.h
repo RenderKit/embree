@@ -127,6 +127,9 @@ namespace embree
   {
     ParallelForForState state(array2,minStepSize);
     Value temp[ParallelForForState::MAX_TASKS];
+
+    for (size_t i=0; i<state.taskCount; i++)
+      temp[i] = identity;
     
     parallel_for(state.taskCount, [&](const size_t taskIndex) 
     {
@@ -141,7 +144,7 @@ namespace embree
       for (size_t i=i0; k<k1; i++) {
         const size_t N =  array2[i] ? array2[i]->size() : 0;
         const size_t r0 = j0, r1 = min(N,r0+k1-k);
-        if (r1 > r0) temp[taskIndex] = func(array2[i],range<size_t>(r0,r1),k);
+        if (r1 > r0) temp[taskIndex] = reduction(temp[taskIndex],func(array2[i],range<size_t>(r0,r1),k));
         k+=r1-r0; j0 = 0;
       }
     });
