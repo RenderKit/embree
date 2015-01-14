@@ -26,6 +26,8 @@
 #include "geometry/triangle4v.h"
 #include "geometry/triangle4i.h"
 
+#include "algorithms/parallel_for_for.h"
+
 #define DBG(x) 
 
 
@@ -137,81 +139,6 @@ namespace embree
       global_bounds.extend_atomic(bounds);    
     }
 
-    void BVH4BuilderMortonGeneral::computeMortonCodes(const size_t startID, const size_t endID, size_t& destID,
-                                               const size_t startGroup, const size_t startOffset, 
-                                               MortonID32Bit* __restrict__ const dest)
-    {
-      /* compute mapping from world space into 3D grid */
-      const ssef base  = (ssef)global_bounds.centBounds.lower;
-      const ssef diag  = (ssef)global_bounds.centBounds.upper - (ssef)global_bounds.centBounds.lower;
-      const ssef scale = select(diag > ssef(1E-19f), rcp(diag) * ssef(LATTICE_SIZE_PER_DIM * 0.99f),ssef(0.0f));
-      
-      size_t currentID = destID;
-      size_t offset = startOffset;
-      
-      /* use SSE to calculate morton codes */
-      size_t slots = 0;
-      ssei ax = 0, ay = 0, az = 0, ai = 0;
-      
-      for (size_t group = startGroup; group<numGroups; group++) 
-      {       
-        Geometry* geom = scene->get(group);
-        if (!geom || !geom->isEnabled() || geom->type != TRIANGLE_MESH) continue;
-        TriangleMesh* mesh = (TriangleMesh*) geom;
-        if (mesh->numTimeSteps != 1) continue;
-        const size_t numTriangles = min(mesh->numTriangles-offset,endID-currentID);
-        
-        for (size_t i=0; i<numTriangles; i++)	  
-        {
-          const BBox3fa b = mesh->bounds(offset+i);
-          const ssef lower = (ssef)b.lower;
-          const ssef upper = (ssef)b.upper;
-          const ssef centroid = lower+upper;
-          const ssei binID = ssei((centroid-base)*scale);
-          unsigned int index = offset+i;
-          if (this->mesh == NULL) index |= group << encodeShift;
-          ax[slots] = extract<0>(binID);
-          ay[slots] = extract<1>(binID);
-          az[slots] = extract<2>(binID);
-          ai[slots] = index;
-          slots++;
-          currentID++;
-          
-          if (slots == 4)
-          {
-            const ssei code = bitInterleave(ax,ay,az);
-            storeu4i(&dest[currentID-4],unpacklo(code,ai));
-            storeu4i(&dest[currentID-2],unpackhi(code,ai));
-            slots = 0;
-          }
-        }
-        offset = 0;
-        if (currentID == endID) break;
-      }
-      
-      if (slots != 0)
-      {
-        const ssei code = bitInterleave(ax,ay,az);
-        for (size_t i=0; i<slots; i++) {
-          dest[currentID-slots+i].index = ai[i];
-          dest[currentID-slots+i].code = code[i];
-        }
-      }
-      destID = currentID - destID;
-    }
-    
-    void BVH4BuilderMortonGeneral::computeMortonCodes(const size_t threadID, const size_t numThreads)
-    {      
-      const size_t startID = (threadID+0)*numPrimitives/numThreads;
-      const size_t endID   = (threadID+1)*numPrimitives/numThreads;
-      
-      /* store the morton codes temporarily in 'node' memory */
-      //MortonID32Bit* __restrict__ const dest = (MortonID32Bit*)bvh->alloc.base();
-      MortonID32Bit* __restrict__ const dest = (MortonID32Bit*)bvh->alloc2.ptr();
-      //MortonID32Bit* __restrict__ const dest = (MortonID32Bit*) morton;
-      computeMortonCodes(startID,endID,state->dest[threadID],state->startGroup[threadID],state->startGroupOffset[threadID],dest);
-    }
-    
     void BVH4BuilderMortonGeneral::recreateMortonCodes(BuildRecord& current) const
     {
       assert(current.size() > 4);
@@ -390,24 +317,63 @@ namespace embree
       for (size_t i=0; i<threadCount; i++)
 	state->dest[i] = i*numPrimitives/threadCount;
 
-      /* compute morton codes */
-      scheduler->dispatchTask( task_computeMortonCodes, this, threadIndex, threadCount );   
+      //double T0 = getSeconds();
 
-      /* calculate new destinations */
-      size_t cnt = 0;
-      for (size_t i=0; i<threadCount; i++) {
-	size_t n = state->dest[i]; state->dest[i] = cnt; cnt += n;
-      }
-      
-      /* if primitive got filtered out, run again */
-      if (cnt < numPrimitives) {
-	scheduler->dispatchTask( task_computeMortonCodes, this, threadIndex, threadCount );   
-	numPrimitives = cnt;
-      }
-      
-      /* padding */
+      /* compute morton codes */
       MortonID32Bit* __restrict__ const dest = (MortonID32Bit*) bvh->alloc2.ptr();
       //MortonID32Bit* __restrict__ const dest = (MortonID32Bit*) morton;
+
+      /* compute mapping from world space into 3D grid */
+      const ssef base  = (ssef)global_bounds.centBounds.lower;
+      const ssef diag  = (ssef)global_bounds.centBounds.upper - (ssef)global_bounds.centBounds.lower;
+      const ssef scale = select(diag > ssef(1E-19f), rcp(diag) * ssef(LATTICE_SIZE_PER_DIM * 0.99f),ssef(0.0f));
+      
+      Scene::Iterator<TriangleMesh,1> iter(scene);
+      parallel_for_for( iter, [&](TriangleMesh* mesh, const range<size_t>& r, size_t k)
+      {
+        size_t currentID = k;
+        size_t slots = 0;
+        ssei ax = 0, ay = 0, az = 0, ai = 0;
+                
+        for (size_t i=r.begin(); i<r.end(); i++)	  
+        {
+          const BBox3fa b = mesh->bounds(i);
+          const ssef lower = (ssef)b.lower;
+          const ssef upper = (ssef)b.upper;
+          const ssef centroid = lower+upper;
+          const ssei binID = ssei((centroid-base)*scale);
+          unsigned int index = i;
+          index |= mesh->id << encodeShift;
+          ax[slots] = extract<0>(binID);
+          ay[slots] = extract<1>(binID);
+          az[slots] = extract<2>(binID);
+          ai[slots] = index;
+          slots++;
+          currentID++;
+          
+          if (slots == 4)
+          {
+            const ssei code = bitInterleave(ax,ay,az);
+            storeu4i(&dest[currentID-4],unpacklo(code,ai));
+            storeu4i(&dest[currentID-2],unpackhi(code,ai));
+            slots = 0;
+          }
+        }
+            
+        if (slots != 0)
+        {
+          const ssei code = bitInterleave(ax,ay,az);
+          for (size_t i=0; i<slots; i++) {
+            dest[currentID-slots+i].index = ai[i];
+            dest[currentID-slots+i].code = code[i];
+          }
+        }
+      });
+
+      //double T1 = getSeconds();
+      //PRINT(1000.0f*(T1-T0));
+
+      /* padding */     
       for (size_t i=numPrimitives; i<( (numPrimitives+7)&(-8) ); i++) {
         dest[i].code  = 0xffffffff; 
         dest[i].index = 0;
