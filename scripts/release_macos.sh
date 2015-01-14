@@ -5,7 +5,19 @@ if [ "$#" -ne 1 ]; then
   exit 1
 fi
 
-destdir=`readlink -f "$1"`
+realpath() {
+  OURPWD=$PWD
+  cd "$(dirname "$1")"
+  LINK=$(readlink "$(basename "$1")")
+  while [ "$LINK" ]; do
+    cd "$(dirname "$LINK")"
+    LINK=$(readlink "$(basename "$1")")
+  done
+  destdir="$PWD/$(basename "$1")"
+  cd "$OURPWD"
+}
+
+realpath $1
 
 mkdir -p build
 cd build
@@ -15,6 +27,7 @@ cmake \
 -D CMAKE_SKIP_RPATH=ON \
 ..
 make -j 8 preinstall
+echo $destdir
 cmake -D CMAKE_INSTALL_PREFIX="$destdir" -P cmake_install.cmake
 cd ..
 
