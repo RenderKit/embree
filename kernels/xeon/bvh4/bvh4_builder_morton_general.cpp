@@ -425,8 +425,10 @@ namespace embree
     
     void BVH4BuilderMortonGeneral::recurseSubMortonTrees(const size_t threadID, const size_t numThreads)
     {
-      __aligned(64) Allocator nodeAlloc(&bvh->alloc);
-      __aligned(64) Allocator leafAlloc(&bvh->alloc);
+      //__aligned(64) Allocator nodeAlloc(&bvh->alloc);
+      //__aligned(64) Allocator leafAlloc(&bvh->alloc);
+      __aligned(64) Allocator nodeAlloc(&bvh->alloc2);
+      __aligned(64) Allocator leafAlloc(&bvh->alloc2);
       while (true)
       {
         const unsigned int taskID = atomic_add(&state->taskCounter,1);
@@ -615,8 +617,14 @@ namespace embree
       
       /* perform first splits in single threaded mode */
       bvh->alloc.clear();
-      __aligned(64) Allocator nodeAlloc(&bvh->alloc);
-      __aligned(64) Allocator leafAlloc(&bvh->alloc);
+      //bvh->alloc2.reset();
+      //bvh->alloc.init(numPrimitives*sizeof(BVH4::Node),numPrimitives*sizeof(BVH4::Node));
+      size_t bytesAllocated = (numPrimitives+7)/8*sizeof(BVH4::Node) + size_t(1.2f*(numPrimitives+3)/4)*sizeof(Triangle4);
+      bvh->alloc2.init(bytesAllocated,2*bytesAllocated);
+      //__aligned(64) Allocator nodeAlloc(&bvh->alloc);
+      //__aligned(64) Allocator leafAlloc(&bvh->alloc);
+      __aligned(64) Allocator nodeAlloc(&bvh->alloc2);
+      __aligned(64) Allocator leafAlloc(&bvh->alloc2);
       recurse(br,nodeAlloc,leafAlloc,CREATE_TOP_LEVEL,threadIndex);	    
       _mm_sfence(); // make written leaves globally visible
 

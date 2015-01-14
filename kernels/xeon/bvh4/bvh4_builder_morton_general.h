@@ -32,8 +32,8 @@ namespace embree
       /*! Type shortcuts */
       typedef BVH4::Node    Node;
       typedef BVH4::NodeRef NodeRef;
-      //typedef GlobalAllocator::ThreadAllocator Allocator;
-      typedef LinearAllocatorPerThread::ThreadAllocator Allocator;
+      typedef FastAllocator::ThreadLocal Allocator;
+      //typedef LinearAllocatorPerThread::ThreadAllocator Allocator;
       
       enum { RECURSE = 1, CREATE_TOP_LEVEL = 2 };
       
