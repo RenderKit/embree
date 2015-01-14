@@ -573,6 +573,10 @@ namespace embree
       double t0 = 0.0f;
       if (g_verbose >= 2) t0 = getSeconds();
 
+      //int numThreads = tbb::task_scheduler_init::default_num_threads();
+      //std::cout << "numThreads = " << numThreads << std::endl;
+      //tbb::task_scheduler_init init(numThreads);
+
       //bvh->alloc.init(numPrimitives*sizeof(BVH4::Node),numPrimitives*sizeof(BVH4::Node));
       size_t bytesAllocated = (numPrimitives+7)/8*sizeof(BVH4::Node) + size_t(1.2f*(numPrimitives+3)/4)*sizeof(Triangle4);
       bvh->alloc2.init(bytesAllocated,2*bytesAllocated);
@@ -627,8 +631,13 @@ namespace embree
       br.parent = &bvh->root;
       br.depth = 1;
       
+#if 1
+
+      BBox3fa bounds = recurse_tbb(br, NULL); 
+        
+#else
       /* perform first splits in single threaded mode */
-      bvh->alloc.clear();
+      //bvh->alloc.clear();
       //bvh->alloc2.reset();
       
       //__aligned(64) Allocator nodeAlloc(&bvh->alloc);
@@ -651,6 +660,7 @@ namespace embree
       
       /* refit toplevel part of tree */
       refitTopLevel(bvh->root);
+#endif
 
       /* stop measurement */
       if (g_verbose >= 2) dt = getSeconds()-t0;

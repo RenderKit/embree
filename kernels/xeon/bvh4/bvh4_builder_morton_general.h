@@ -20,6 +20,8 @@
 #include "builders/heuristic_fallback.h"
 #include "builders/workstack.h"
 
+#include "tbb/tbb.h"
+
 namespace embree
 {
   namespace isa
@@ -281,7 +283,7 @@ namespace embree
         right.init(center,current.end);
       }
       
-      BBox3fa recurse(BuildRecord& current, Allocator* alloc, const size_t mode) 
+      BBox3fa recurse(BuildRecord& current, Allocator* alloc, int mode) 
       {
         /* stop toplevel recursion at some number of items */
         if (mode == CREATE_TOP_LEVEL && current.size() <= topLevelItemThreshold) {
@@ -360,9 +362,11 @@ namespace embree
         return bounds0;
       }
 
-      template<typename Spawn>
-      BBox3fa recurse_general(BuildRecord& current, Allocator* alloc, Spawn& spawn) 
+      BBox3fa recurse_tbb(BuildRecord& current, Allocator* alloc) 
       {
+        if (alloc == NULL) 
+          alloc = bvh->alloc2.threadLocal2();
+
         __aligned(64) BuildRecord children[BVH4::N];
         
         /* create leaf node */
@@ -414,21 +418,42 @@ namespace embree
         /* allocate node */
         Node* node = (Node*) alloc->alloc0.malloc(sizeof(Node)); node->clear();
         *current.parent = bvh->encodeNode(node);
-        
-        /* recurse into each child */
+      
+        /* process top parts of tree parallel */
         BBox3fa bounds0 = empty;
-        for (size_t i=0; i<numChildren; i++) 
+        if (current.size() > 4096)
         {
-          children[i].parent = &node->child(i);
-          
-          if (children[i].size() <= minLeafSize) {
-            const BBox3fa bounds = createLeaf(children[i],alloc);
-            bounds0.extend(bounds);
-            node->set(i,bounds);
-          } else {
-            const BBox3fa bounds = spawn(children[i],alloc);
-            bounds0.extend(bounds);
-            node->set(i,bounds);
+          BBox3fa bounds[4];
+          tbb::task_group g;
+          for (size_t i=0; i<numChildren; i++) {
+            children[i].parent = &node->child(i);
+            g.run([&,i]{ bounds[i] = recurse_tbb(children[i],NULL); });
+          }
+          g.wait();
+
+          for (size_t i=0; i<numChildren; i++) {
+            bounds0.extend(bounds[i]);
+            node->set(i,bounds[i]);
+          }
+        } 
+
+        /* finish tree sequential */
+        else 
+        {
+          /* recurse into each child */
+          for (size_t i=0; i<numChildren; i++) 
+          {
+            children[i].parent = &node->child(i);
+            
+            if (children[i].size() <= minLeafSize) {
+              const BBox3fa bounds = createLeaf(children[i],alloc);
+              bounds0.extend(bounds);
+              node->set(i,bounds);
+            } else {
+              const BBox3fa bounds = recurse_tbb(children[i],alloc);
+              bounds0.extend(bounds);
+              node->set(i,bounds);
+            }
           }
         }
         return bounds0;
