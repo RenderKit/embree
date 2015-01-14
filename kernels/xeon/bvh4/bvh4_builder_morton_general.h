@@ -32,7 +32,7 @@ namespace embree
       /*! Type shortcuts */
       typedef BVH4::Node    Node;
       typedef BVH4::NodeRef NodeRef;
-      typedef FastAllocator::ThreadLocal Allocator;
+      typedef FastAllocator::ThreadLocal2 Allocator;
       //typedef LinearAllocatorPerThread::ThreadAllocator Allocator;
       
       enum { RECURSE = 1, CREATE_TOP_LEVEL = 2 };
@@ -184,7 +184,7 @@ namespace embree
     public:
       
       /*! creates leaf node */
-      virtual void createSmallLeaf(BuildRecord& current, Allocator* leafAlloc, BBox3fa& box_o) = 0;
+      virtual void createSmallLeaf(BuildRecord& current, Allocator* alloc, BBox3fa& box_o) = 0;
 
       void splitFallback(BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild) const
       {
@@ -193,7 +193,7 @@ namespace embree
         rightChild.init(center,current.end);
       }
       
-      BBox3fa createLeaf(BuildRecord& current, Allocator* nodeAlloc, Allocator* leafAlloc)
+      BBox3fa createLeaf(BuildRecord& current, Allocator* alloc)
       {
 #if defined(DEBUG)
         if (current.depth > BVH4::maxBuildDepthLeaf) 
@@ -203,7 +203,7 @@ namespace embree
         /* create leaf for few primitives */
         if (current.size() <= minLeafSize) {
           BBox3fa bounds;
-          createSmallLeaf(current,leafAlloc,bounds);
+          createSmallLeaf(current,alloc,bounds);
           return bounds;
         }
         
@@ -217,7 +217,7 @@ namespace embree
         splitFallback(record1,children[2],children[3]);
         
         /* allocate node */
-        Node* node = (Node*) nodeAlloc->malloc(sizeof(Node)); node->clear();
+        Node* node = (Node*) alloc->alloc0.malloc(sizeof(Node)); node->clear();
         *current.parent = bvh->encodeNode(node);
         
         /* recurse into each child */
@@ -225,7 +225,7 @@ namespace embree
         for (size_t i=0; i<4; i++) {
           children[i].parent = &node->child(i);
           children[i].depth = current.depth+1;
-          BBox3fa bounds = createLeaf(children[i],nodeAlloc,leafAlloc);
+          BBox3fa bounds = createLeaf(children[i],alloc);
           bounds0.extend(bounds);
           node->set(i,bounds);
         }
@@ -281,7 +281,7 @@ namespace embree
         right.init(center,current.end);
       }
       
-      BBox3fa recurse(BuildRecord& current, Allocator* nodeAlloc, Allocator* leafAlloc, const size_t mode) 
+      BBox3fa recurse(BuildRecord& current, Allocator* alloc, const size_t mode) 
       {
         /* stop toplevel recursion at some number of items */
         if (mode == CREATE_TOP_LEVEL && current.size() <= topLevelItemThreshold) {
@@ -293,7 +293,7 @@ namespace embree
         
         /* create leaf node */
         if (unlikely(current.depth >= BVH4::maxBuildDepth || current.size() <= minLeafSize)) {
-          return createLeaf(current,nodeAlloc,leafAlloc);
+          return createLeaf(current,alloc);
         }
         
         /* fill all 4 children by always splitting the one with the largest surface area */
@@ -334,11 +334,11 @@ namespace embree
         
         /* create leaf node if no split is possible */
         if (unlikely(numChildren == 1)) {
-          BBox3fa bounds; createSmallLeaf(current,leafAlloc,bounds); return bounds;
+          BBox3fa bounds; createSmallLeaf(current,alloc,bounds); return bounds;
         }
         
         /* allocate node */
-        Node* node = (Node*) nodeAlloc->malloc(sizeof(Node)); node->clear();
+        Node* node = (Node*) alloc->alloc0.malloc(sizeof(Node)); node->clear();
         *current.parent = bvh->encodeNode(node);
         
         /* recurse into each child */
@@ -348,11 +348,11 @@ namespace embree
           children[i].parent = &node->child(i);
           
           if (children[i].size() <= minLeafSize) {
-            const BBox3fa bounds = createLeaf(children[i],nodeAlloc,leafAlloc);
+            const BBox3fa bounds = createLeaf(children[i],alloc);
             bounds0.extend(bounds);
             node->set(i,bounds);
           } else {
-            const BBox3fa bounds = recurse(children[i],nodeAlloc,leafAlloc,mode);
+            const BBox3fa bounds = recurse(children[i],alloc,mode);
             bounds0.extend(bounds);
             node->set(i,bounds);
           }
@@ -413,7 +413,7 @@ namespace embree
       BVH4Triangle4BuilderMortonGeneral (BVH4* bvh, Scene* scene, size_t listMode);
       BVH4Triangle4BuilderMortonGeneral (BVH4* bvh, TriangleMesh* mesh, size_t listMode);
       BBox3fa leafBounds(NodeRef& ref) const;
-      void createSmallLeaf(BuildRecord& current, Allocator* leafAlloc, BBox3fa& box_o);
+      void createSmallLeaf(BuildRecord& current, Allocator* alloc, BBox3fa& box_o);
     };
   }
 }

@@ -403,6 +403,34 @@ namespace embree
       size_t bytesUsed; //!< bumber of total bytes allocated
     };
 
+    /*! Two thread local structures. */
+    struct __aligned(64) ThreadLocal2
+    {
+      /*! Constructor for usage with ThreadLocalData */
+      __forceinline ThreadLocal2 (void* alloc) 
+        : alloc0(alloc), alloc1(alloc) {}
+
+      /*! Default constructor. */
+      __forceinline ThreadLocal2 (FastAllocator* alloc, const size_t allocBlockSize = 4096) 
+        : alloc0(alloc,allocBlockSize), alloc1(alloc,allocBlockSize) {}
+
+      /*! resets the allocator */
+      __forceinline void reset() {
+        alloc0.reset();
+        alloc1.reset();
+      }
+
+      /*! returns amount of used bytes */
+      size_t getUsedBytes() const { return alloc0.getUsedBytes() + alloc1.getUsedBytes(); }
+      
+      /*! returns amount of wasted bytes */
+      size_t getWastedBytes() const { return alloc0.getWastedBytes() + alloc1.getWastedBytes(); }
+    
+    public:  
+      ThreadLocal alloc0;
+      ThreadLocal alloc1;
+    };
+
     FastAllocator () 
       : growSize(4096), usedBlocks(NULL), freeBlocks(NULL), 
         thread_local_allocators(this), thread_local_allocators2(this) {}
@@ -413,9 +441,13 @@ namespace embree
     }
 
     /*! returns a fast thread local allocator */
-    __forceinline ThreadLocal* threadLocal(int slot = 0) {
-      if (slot == 0) return thread_local_allocators.get();
-      else           return thread_local_allocators2.get();
+    __forceinline ThreadLocal* threadLocal() {
+      return thread_local_allocators.get();
+    }
+
+    /*! returns a fast thread local allocator */
+    __forceinline ThreadLocal2* threadLocal2() {
+      return thread_local_allocators2.get();
     }
 
     /*! initializes the allocator */
@@ -624,7 +656,7 @@ namespace embree
     size_t growSize;
 
     ThreadLocalData<ThreadLocal> thread_local_allocators; //!< thread local allocators
-    ThreadLocalData<ThreadLocal> thread_local_allocators2; //!< thread local allocators
+    ThreadLocalData<ThreadLocal2> thread_local_allocators2; //!< thread local allocators
 
   private:
     size_t bytesWasted;    //!< number of bytes wasted
