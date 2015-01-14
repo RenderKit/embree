@@ -404,7 +404,8 @@ namespace embree
     };
 
     FastAllocator () 
-      : growSize(4096), usedBlocks(NULL), freeBlocks(NULL), thread_local_allocators(this) {}
+      : growSize(4096), usedBlocks(NULL), freeBlocks(NULL), 
+        thread_local_allocators(this), thread_local_allocators2(this) {}
 
     ~FastAllocator () { 
       if (usedBlocks) usedBlocks->~Block(); usedBlocks = NULL;
@@ -412,8 +413,9 @@ namespace embree
     }
 
     /*! returns a fast thread local allocator */
-    __forceinline ThreadLocal* threadLocal() {
-      return thread_local_allocators.get();
+    __forceinline ThreadLocal* threadLocal(int slot = 0) {
+      if (slot == 0) return thread_local_allocators.get();
+      else           return thread_local_allocators2.get();
     }
 
     /*! initializes the allocator */
@@ -440,6 +442,7 @@ namespace embree
       
       /* reset all thread local allocators */
       thread_local_allocators.reset();
+      thread_local_allocators2.reset();
     }
 
     /*! shrinks all memory blocks to the actually used size */
@@ -516,6 +519,11 @@ namespace embree
       for (size_t t=0; t<thread_local_allocators.threads.size(); t++) {
 	bytesUsed   += thread_local_allocators.threads[t]->getUsedBytes();
 	bytesWasted += thread_local_allocators.threads[t]->getWastedBytes();
+      }
+
+      for (size_t t=0; t<thread_local_allocators2.threads.size(); t++) {
+	bytesUsed   += thread_local_allocators2.threads[t]->getUsedBytes();
+	bytesWasted += thread_local_allocators2.threads[t]->getWastedBytes();
       }
       
       printf("allocated = %3.2fMB, reserved = %3.2fMB, used = %3.2fMB (%3.2f%%), wasted = %3.2fMB (%3.2f%%), free = %3.2fMB (%3.2f%%)\n",
@@ -616,6 +624,7 @@ namespace embree
     size_t growSize;
 
     ThreadLocalData<ThreadLocal> thread_local_allocators; //!< thread local allocators
+    ThreadLocalData<ThreadLocal> thread_local_allocators2; //!< thread local allocators
 
   private:
     size_t bytesWasted;    //!< number of bytes wasted

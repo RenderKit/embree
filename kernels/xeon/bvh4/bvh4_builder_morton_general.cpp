@@ -429,8 +429,10 @@ namespace embree
     {
       //__aligned(64) Allocator nodeAlloc(&bvh->alloc);
       //__aligned(64) Allocator leafAlloc(&bvh->alloc);
-      __aligned(64) Allocator nodeAlloc(&bvh->alloc2);
-      __aligned(64) Allocator leafAlloc(&bvh->alloc2);
+      //__aligned(64) Allocator nodeAlloc(&bvh->alloc2);
+      //__aligned(64) Allocator leafAlloc(&bvh->alloc2);
+      Allocator* nodeAlloc = bvh->alloc2.threadLocal(0);
+      Allocator* leafAlloc = bvh->alloc2.threadLocal(1);
       while (true)
       {
         const unsigned int taskID = atomic_add(&state->taskCounter,1);
@@ -445,7 +447,7 @@ namespace embree
     // =======================================================================================================
     // =======================================================================================================
     
-    void BVH4Triangle4BuilderMortonGeneral::createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o)
+    void BVH4Triangle4BuilderMortonGeneral::createSmallLeaf(BuildRecord& current, Allocator* leafAlloc, size_t threadID, BBox3fa& box_o)
     {
       ssef lower(pos_inf);
       ssef upper(neg_inf);
@@ -454,7 +456,7 @@ namespace embree
       assert(items<=4);
       
       /* allocate leaf node */
-      Triangle4* accel = (Triangle4*) leafAlloc.malloc(sizeof(Triangle4));
+      Triangle4* accel = (Triangle4*) leafAlloc->malloc(sizeof(Triangle4));
       *current.parent = bvh->encodeLeaf((char*)accel,listMode ? listMode : 1);
       
       ssei vgeomID = -1, vprimID = -1, vmask = -1;
@@ -628,8 +630,10 @@ namespace embree
       
       //__aligned(64) Allocator nodeAlloc(&bvh->alloc);
       //__aligned(64) Allocator leafAlloc(&bvh->alloc);
-      __aligned(64) Allocator nodeAlloc(&bvh->alloc2);
-      __aligned(64) Allocator leafAlloc(&bvh->alloc2);
+      //__aligned(64) Allocator nodeAlloc(&bvh->alloc2);
+      //__aligned(64) Allocator leafAlloc(&bvh->alloc2);
+      Allocator* nodeAlloc = bvh->alloc2.threadLocal(0);
+      Allocator* leafAlloc = bvh->alloc2.threadLocal(1);
       recurse(br,nodeAlloc,leafAlloc,CREATE_TOP_LEVEL,threadIndex);	    
       _mm_sfence(); // make written leaves globally visible
 

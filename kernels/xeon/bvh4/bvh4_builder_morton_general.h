@@ -184,7 +184,7 @@ namespace embree
     public:
       
       /*! creates leaf node */
-      virtual void createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o) = 0;
+      virtual void createSmallLeaf(BuildRecord& current, Allocator* leafAlloc, size_t threadID, BBox3fa& box_o) = 0;
 
       void splitFallback(BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild) const
       {
@@ -193,7 +193,7 @@ namespace embree
         rightChild.init(center,current.end);
       }
       
-      BBox3fa createLeaf(BuildRecord& current, Allocator& nodeAlloc, Allocator& leafAlloc, size_t threadID)
+      BBox3fa createLeaf(BuildRecord& current, Allocator* nodeAlloc, Allocator* leafAlloc, size_t threadID)
       {
 #if defined(DEBUG)
         if (current.depth > BVH4::maxBuildDepthLeaf) 
@@ -217,7 +217,7 @@ namespace embree
         splitFallback(record1,children[2],children[3]);
         
         /* allocate node */
-        Node* node = (Node*) nodeAlloc.malloc(sizeof(Node)); node->clear();
+        Node* node = (Node*) nodeAlloc->malloc(sizeof(Node)); node->clear();
         *current.parent = bvh->encodeNode(node);
         
         /* recurse into each child */
@@ -281,7 +281,7 @@ namespace embree
         right.init(center,current.end);
       }
       
-      BBox3fa recurse(BuildRecord& current, Allocator& nodeAlloc, Allocator& leafAlloc, const size_t mode, const size_t threadID) 
+      BBox3fa recurse(BuildRecord& current, Allocator* nodeAlloc, Allocator* leafAlloc, const size_t mode, const size_t threadID) 
       {
         /* stop toplevel recursion at some number of items */
         if (mode == CREATE_TOP_LEVEL && current.size() <= topLevelItemThreshold) {
@@ -338,7 +338,7 @@ namespace embree
         }
         
         /* allocate node */
-        Node* node = (Node*) nodeAlloc.malloc(sizeof(Node)); node->clear();
+        Node* node = (Node*) nodeAlloc->malloc(sizeof(Node)); node->clear();
         *current.parent = bvh->encodeNode(node);
         
         /* recurse into each child */
@@ -413,7 +413,7 @@ namespace embree
       BVH4Triangle4BuilderMortonGeneral (BVH4* bvh, Scene* scene, size_t listMode);
       BVH4Triangle4BuilderMortonGeneral (BVH4* bvh, TriangleMesh* mesh, size_t listMode);
       BBox3fa leafBounds(NodeRef& ref) const;
-      void createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o);
+      void createSmallLeaf(BuildRecord& current, Allocator* leafAlloc, size_t threadID, BBox3fa& box_o);
     };
   }
 }
