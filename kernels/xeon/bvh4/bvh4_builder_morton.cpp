@@ -26,7 +26,7 @@
 #include "geometry/triangle4i.h"
 
 #define DBG(x) 
-#define PROFILE
+//#define PROFILE
 
 namespace embree 
 {
@@ -155,10 +155,10 @@ namespace embree
 #if defined(PROFILE)
         double dt = getSeconds()-t0;
         dt_min = min(dt_min,dt);
-        dt_avg = dt_avg + dt;
+        if (i != 0) dt_avg = dt_avg + dt;
         dt_max = max(dt_max,dt);
       }
-      dt_avg /= double(20);
+      dt_avg /= double(19);
       
       std::cout << "[DONE]" << std::endl;
       std::cout << "  min = " << 1000.0f*dt_min << "ms (" << numPrimitives/dt_min*1E-6 << " Mtris/s)" << std::endl;
