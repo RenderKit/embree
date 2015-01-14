@@ -203,7 +203,7 @@ namespace embree
       
   __forceinline void print() {
     std::cout << "CACHE-TAGS:" << std::endl;
-    for (size_t i=0;i<SharedTessellationCache::CACHE_ENTRIES;i++)
+    for (size_t i=0;i<CACHE_ENTRIES;i++)
       {
         std::cout << "i = " << i << " -> ";
         tags[i].print();

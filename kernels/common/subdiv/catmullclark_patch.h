@@ -119,8 +119,20 @@ namespace embree
       dest1.crease_weight[2] = dest0.crease_weight[1] = p0.crease_weight[0];
 
       //////////////////////////////
-      dest0.eval_start_index = 3;
-      dest1.eval_start_index = 0;
+      if (p0.eval_unique_identifier <= p1.eval_unique_identifier)
+        {
+          dest0.eval_start_index = 3;
+          dest1.eval_start_index = 0;
+          dest0.eval_unique_identifier = p0.eval_unique_identifier;
+          dest1.eval_unique_identifier = p0.eval_unique_identifier;
+        }
+      else
+        {
+          dest0.eval_start_index = 1;
+          dest1.eval_start_index = 2;
+          dest0.eval_unique_identifier = p1.eval_unique_identifier;
+          dest1.eval_unique_identifier = p1.eval_unique_identifier;
+        }
       //////////////////////////////
     }
 
@@ -151,8 +163,20 @@ namespace embree
       dest1.crease_weight[2] = dest0.crease_weight[1] = p0.crease_weight[0];
 
       //////////////////////////////
-      dest0.eval_start_index = 2;
-      dest1.eval_start_index = 0;
+      if (p0.eval_unique_identifier <= p1.eval_unique_identifier)
+        {
+          dest0.eval_start_index = 1;
+          dest1.eval_start_index = 2;
+          dest0.eval_unique_identifier = p0.eval_unique_identifier;
+          dest1.eval_unique_identifier = p0.eval_unique_identifier;
+        }
+      else
+        {
+          dest0.eval_start_index = 2;
+          dest1.eval_start_index = 0;
+          dest0.eval_unique_identifier = p1.eval_unique_identifier;
+          dest1.eval_unique_identifier = p1.eval_unique_identifier;
+        }
       //////////////////////////////
     }
 
@@ -171,7 +195,8 @@ namespace embree
         dest.crease_weight[i] = 0.0f;
 
       //////////////////////////////
-      dest.eval_start_index = (offset%8)>>1;
+      dest.eval_start_index       = (offset%8)>>1;
+      dest.eval_unique_identifier = 0;
       //////////////////////////////
     }
 
