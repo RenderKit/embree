@@ -633,8 +633,10 @@ namespace embree
       
 #if 1
 
-      BBox3fa bounds = recurse_tbb(br, NULL); 
-        
+      BBox3fa bounds = empty;
+      LockStepTaskScheduler::execute_tbb([&] { bounds = recurse_tbb(br, NULL); });
+      //bounds = recurse_tbb(br, NULL);
+
 #else
       /* perform first splits in single threaded mode */
       //bvh->alloc.clear();
