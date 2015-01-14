@@ -459,18 +459,6 @@ namespace embree
         return bounds0;
       }
       
-      /*! calculates bounding box of leaf node */
-      virtual BBox3fa leafBounds(NodeRef& ref) const = 0;
-
-      /*! calculates bounding box of node */
-      BBox3fa nodeBounds(NodeRef& ref) const;
-      
-      /*! refit the toplevel part of the BVH */
-      BBox3fa refitTopLevel(NodeRef& index) const;
-      
-      /*! refit the sub-BVHs */
-      BBox3fa refit(NodeRef& index) const;
-      
       /*! recreates morton codes when reaching a region where all codes are identical */
       void recreateMortonCodes(BuildRecord& current) const;
       
@@ -511,7 +499,6 @@ namespace embree
     public:
       BVH4Triangle4BuilderMortonGeneral (BVH4* bvh, Scene* scene, size_t listMode);
       BVH4Triangle4BuilderMortonGeneral (BVH4* bvh, TriangleMesh* mesh, size_t listMode);
-      BBox3fa leafBounds(NodeRef& ref) const;
       void createSmallLeaf(BuildRecord& current, Allocator* alloc, BBox3fa& box_o);
     };
   }

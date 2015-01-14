@@ -427,25 +427,6 @@ namespace embree
       }
     }
     
-    void BVH4BuilderMortonGeneral::recurseSubMortonTrees(const size_t threadID, const size_t numThreads)
-    {
-      //__aligned(64) Allocator nodeAlloc(&bvh->alloc);
-      //__aligned(64) Allocator leafAlloc(&bvh->alloc);
-      //__aligned(64) Allocator nodeAlloc(&bvh->alloc2);
-      //__aligned(64) Allocator leafAlloc(&bvh->alloc2);
-      //Allocator* nodeAlloc = bvh->alloc2.threadLocal(0);
-      //Allocator* leafAlloc = bvh->alloc2.threadLocal(1);
-      Allocator* alloc = bvh->alloc2.threadLocal2();
-      while (true)
-      {
-        const unsigned int taskID = atomic_add(&state->taskCounter,1);
-        if (taskID >= state->buildRecords.size()) break;
-	recurse(state->buildRecords[taskID],alloc,RECURSE);
-        state->buildRecords[taskID].parent->setBarrier();
-      }
-      _mm_sfence(); // make written leaves globally visible
-    }
-    
     // =======================================================================================================
     // =======================================================================================================
     // =======================================================================================================
@@ -494,79 +475,6 @@ namespace embree
     // =======================================================================================================
     // =======================================================================================================
     
-
-    __forceinline BBox3fa BVH4Triangle4BuilderMortonGeneral::leafBounds(NodeRef& ref) const
-    {
-      BBox3fa bounds = empty;
-      size_t num; Triangle4* tri = (Triangle4*) ref.leaf(num);
-      if (listMode) {
-	do {
-	  bounds.extend(tri->bounds());
-	} while (!((tri++)->last()));
-      }
-      else
-      {
-	for (size_t i=0; i<num; i++) 
-	  bounds.extend(tri[i].bounds());
-      }
-      return bounds;
-    }
-
-    __forceinline BBox3fa BVH4BuilderMortonGeneral::nodeBounds(NodeRef& ref) const
-    {
-      if (ref.isNode())
-        return ref.node()->bounds();
-      else
-        return leafBounds(ref);
-    }
-    
-    BBox3fa BVH4BuilderMortonGeneral::refitTopLevel(NodeRef& ref) const
-    { 
-      /* stop here if we encounter a barrier */
-      if (unlikely(ref.isBarrier())) {
-        ref.clearBarrier();
-        return nodeBounds(ref);
-      }
-      
-      /* return point bound for empty nodes */
-      if (unlikely(ref == BVH4::emptyNode))
-        return BBox3fa(empty);
-      
-      /* this is a leaf node */
-      if (unlikely(ref.isLeaf()))
-	return leafBounds(ref);
-      
-      /* recurse if this is an internal node */
-      Node* node = ref.node();
-      const BBox3fa bounds0 = refitTopLevel(node->child(0));
-      const BBox3fa bounds1 = refitTopLevel(node->child(1));
-      const BBox3fa bounds2 = refitTopLevel(node->child(2));
-      const BBox3fa bounds3 = refitTopLevel(node->child(3));
-      
-      /* AOS to SOA transform */
-      BBox<sse3f> bounds;
-      transpose((ssef&)bounds0.lower,(ssef&)bounds1.lower,(ssef&)bounds2.lower,(ssef&)bounds3.lower,bounds.lower.x,bounds.lower.y,bounds.lower.z);
-      transpose((ssef&)bounds0.upper,(ssef&)bounds1.upper,(ssef&)bounds2.upper,(ssef&)bounds3.upper,bounds.upper.x,bounds.upper.y,bounds.upper.z);
-      
-      /* set new bounds */
-      node->lower_x = bounds.lower.x;
-      node->lower_y = bounds.lower.y;
-      node->lower_z = bounds.lower.z;
-      node->upper_x = bounds.upper.x;
-      node->upper_y = bounds.upper.y;
-      node->upper_z = bounds.upper.z;
-      
-      /* return merged bounds */
-      const float lower_x = reduce_min(bounds.lower.x);
-      const float lower_y = reduce_min(bounds.lower.y);
-      const float lower_z = reduce_min(bounds.lower.z);
-      const float upper_x = reduce_max(bounds.upper.x);
-      const float upper_y = reduce_max(bounds.upper.y);
-      const float upper_z = reduce_max(bounds.upper.z);
-      return BBox3fa(Vec3fa(lower_x,lower_y,lower_z),
-		     Vec3fa(upper_x,upper_y,upper_z));
-    }
-
     void BVH4BuilderMortonGeneral::build_parallel_morton(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount) 
     {
       /* start measurement */
@@ -606,7 +514,6 @@ namespace embree
       }
       
       /* padding */
-      //MortonID32Bit* __restrict__ const dest = (MortonID32Bit*) bvh->alloc.base();
       MortonID32Bit* __restrict__ const dest = (MortonID32Bit*) bvh->alloc2.ptr();
       for (size_t i=numPrimitives; i<( (numPrimitives+7)&(-8) ); i++) {
         dest[i].code  = 0xffffffff; 
@@ -622,47 +529,14 @@ namespace embree
         assert(morton[i-1].code <= morton[i].code);
 #endif	    
 
-      /* build and extract top-level tree */
-      state->buildRecords.clear();
-      topLevelItemThreshold = (numPrimitives + threadCount-1)/(2*threadCount);
-      
       BuildRecord br;
       br.init(0,numPrimitives);
       br.parent = &bvh->root;
       br.depth = 1;
       
-#if 1
-
       BBox3fa bounds = empty;
-      LockStepTaskScheduler::execute_tbb([&] { bounds = recurse_tbb(br, NULL); });
-      //bounds = recurse_tbb(br, NULL);
-
-#else
-      /* perform first splits in single threaded mode */
-      //bvh->alloc.clear();
-      //bvh->alloc2.reset();
-      
-      //__aligned(64) Allocator nodeAlloc(&bvh->alloc);
-      //__aligned(64) Allocator leafAlloc(&bvh->alloc);
-      //__aligned(64) Allocator nodeAlloc(&bvh->alloc2);
-      //__aligned(64) Allocator leafAlloc(&bvh->alloc2);
-      //Allocator* nodeAlloc = bvh->alloc2.threadLocal(0);
-      //Allocator* leafAlloc = bvh->alloc2.threadLocal(1);
-      Allocator* alloc = bvh->alloc2.threadLocal2();
-      recurse(br,alloc,CREATE_TOP_LEVEL);
-      _mm_sfence(); // make written leaves globally visible
-
-      /* sort all subtasks by size */
-      std::sort(state->buildRecords.begin(),state->buildRecords.end(),BuildRecord::Greater());
-
-      /* build sub-trees */
-      state->taskCounter = 0;
-      //state->workStack.reset();
-      scheduler->dispatchTask( task_recurseSubMortonTrees, this, threadIndex, threadCount );
-      
-      /* refit toplevel part of tree */
-      refitTopLevel(bvh->root);
-#endif
+      //LockStepTaskScheduler::execute_tbb([&] { bounds = recurse_tbb(br, NULL); });
+      bounds = recurse_tbb(br, NULL);
 
       /* stop measurement */
       if (g_verbose >= 2) dt = getSeconds()-t0;
