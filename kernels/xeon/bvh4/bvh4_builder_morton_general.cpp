@@ -15,7 +15,7 @@
 // ======================================================================== //
 
 #include "bvh4.h"
-#include "bvh4_builder_morton.h"
+#include "bvh4_builder_morton_general.h"
 #include "bvh4_statistics.h"
 
 #include "geometry/triangle1.h"
@@ -34,7 +34,7 @@ namespace embree
   {
     static double dt = 0.0f;
 
-    BVH4BuilderMorton::BVH4BuilderMorton (BVH4* bvh, Scene* scene, TriangleMesh* mesh, size_t listMode, size_t logBlockSize, bool needVertices, size_t primBytes, const size_t minLeafSize, const size_t maxLeafSize)
+    BVH4BuilderMortonGeneral::BVH4BuilderMortonGeneral (BVH4* bvh, Scene* scene, TriangleMesh* mesh, size_t listMode, size_t logBlockSize, bool needVertices, size_t primBytes, const size_t minLeafSize, const size_t maxLeafSize)
       : bvh(bvh), state(nullptr), scheduler(&scene->lockstep_scheduler), scene(scene), mesh(mesh), listMode(listMode), logBlockSize(logBlockSize), needVertices(needVertices), primBytes(primBytes), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize),
 	topLevelItemThreshold(0), encodeShift(0), encodeMask(-1), morton(NULL), bytesMorton(0), numGroups(0), numPrimitives(0), numAllocatedPrimitives(0), numAllocatedNodes(0)
     {
@@ -42,56 +42,56 @@ namespace embree
       if (mesh) needAllThreads = mesh->numTriangles > 50000;
     }
     
-    BVH4Triangle1BuilderMorton::BVH4Triangle1BuilderMorton (BVH4* bvh, Scene* scene, size_t listMode)
-      : BVH4BuilderMorton(bvh,scene,NULL,listMode,0,false,sizeof(Triangle1),4,inf) {}
+    BVH4Triangle1BuilderMortonGeneral::BVH4Triangle1BuilderMortonGeneral (BVH4* bvh, Scene* scene, size_t listMode)
+      : BVH4BuilderMortonGeneral(bvh,scene,NULL,listMode,0,false,sizeof(Triangle1),4,inf) {}
 
-    BVH4Triangle4BuilderMorton::BVH4Triangle4BuilderMorton (BVH4* bvh, Scene* scene, size_t listMode)
-      : BVH4BuilderMorton(bvh,scene,NULL,listMode,2,false,sizeof(Triangle4),4,inf) {}
-
-#if defined(__AVX__)
-    BVH4Triangle8BuilderMorton::BVH4Triangle8BuilderMorton (BVH4* bvh, Scene* scene, size_t listMode)
-      : BVH4BuilderMorton(bvh,scene,NULL,listMode,3,false,sizeof(Triangle8),8,inf) {}
-#endif
-    
-    BVH4Triangle1vBuilderMorton::BVH4Triangle1vBuilderMorton (BVH4* bvh, Scene* scene, size_t listMode)
-      : BVH4BuilderMorton(bvh,scene,NULL,listMode,0,false,sizeof(Triangle1v),4,inf) {}
-
-    BVH4Triangle4vBuilderMorton::BVH4Triangle4vBuilderMorton (BVH4* bvh, Scene* scene, size_t listMode)
-      : BVH4BuilderMorton(bvh,scene,NULL,listMode,2,false,sizeof(Triangle4v),4,inf) {}
-
-    BVH4Triangle4iBuilderMorton::BVH4Triangle4iBuilderMorton (BVH4* bvh, Scene* scene, size_t listMode)
-      : BVH4BuilderMorton(bvh,scene,NULL,listMode,2,true,sizeof(Triangle4i),4,inf) {}
-
-    BVH4Triangle1BuilderMorton::BVH4Triangle1BuilderMorton (BVH4* bvh, TriangleMesh* mesh, size_t listMode)
-      : BVH4BuilderMorton(bvh,mesh->parent,mesh,listMode,0,false,sizeof(Triangle1),4,inf) {}
-
-    BVH4Triangle4BuilderMorton::BVH4Triangle4BuilderMorton (BVH4* bvh, TriangleMesh* mesh, size_t listMode)
-      : BVH4BuilderMorton(bvh,mesh->parent,mesh,listMode,2,false,sizeof(Triangle4),4,inf) {}
+    BVH4Triangle4BuilderMortonGeneral::BVH4Triangle4BuilderMortonGeneral (BVH4* bvh, Scene* scene, size_t listMode)
+      : BVH4BuilderMortonGeneral(bvh,scene,NULL,listMode,2,false,sizeof(Triangle4),4,inf) {}
 
 #if defined(__AVX__)
-    BVH4Triangle8BuilderMorton::BVH4Triangle8BuilderMorton (BVH4* bvh, TriangleMesh* mesh, size_t listMode)
-      : BVH4BuilderMorton(bvh,mesh->parent,mesh,listMode,3,false,sizeof(Triangle8),8,inf) {}
+    BVH4Triangle8BuilderMortonGeneral::BVH4Triangle8BuilderMortonGeneral (BVH4* bvh, Scene* scene, size_t listMode)
+      : BVH4BuilderMortonGeneral(bvh,scene,NULL,listMode,3,false,sizeof(Triangle8),8,inf) {}
 #endif
     
-    BVH4Triangle1vBuilderMorton::BVH4Triangle1vBuilderMorton (BVH4* bvh, TriangleMesh* mesh, size_t listMode)
-      : BVH4BuilderMorton(bvh,mesh->parent,mesh,listMode,0,false,sizeof(Triangle1v),4,inf) {}
+    BVH4Triangle1vBuilderMortonGeneral::BVH4Triangle1vBuilderMortonGeneral (BVH4* bvh, Scene* scene, size_t listMode)
+      : BVH4BuilderMortonGeneral(bvh,scene,NULL,listMode,0,false,sizeof(Triangle1v),4,inf) {}
 
-    BVH4Triangle4vBuilderMorton::BVH4Triangle4vBuilderMorton (BVH4* bvh, TriangleMesh* mesh, size_t listMode)
-      : BVH4BuilderMorton(bvh,mesh->parent,mesh,listMode,2,false,sizeof(Triangle4v),4,inf) {}
+    BVH4Triangle4vBuilderMortonGeneral::BVH4Triangle4vBuilderMortonGeneral (BVH4* bvh, Scene* scene, size_t listMode)
+      : BVH4BuilderMortonGeneral(bvh,scene,NULL,listMode,2,false,sizeof(Triangle4v),4,inf) {}
 
-    BVH4Triangle4iBuilderMorton::BVH4Triangle4iBuilderMorton (BVH4* bvh, TriangleMesh* mesh, size_t listMode)
-      : BVH4BuilderMorton(bvh,mesh->parent,mesh,listMode,2,true,sizeof(Triangle4i),4,inf) {}
+    BVH4Triangle4iBuilderMortonGeneral::BVH4Triangle4iBuilderMortonGeneral (BVH4* bvh, Scene* scene, size_t listMode)
+      : BVH4BuilderMortonGeneral(bvh,scene,NULL,listMode,2,true,sizeof(Triangle4i),4,inf) {}
+
+    BVH4Triangle1BuilderMortonGeneral::BVH4Triangle1BuilderMortonGeneral (BVH4* bvh, TriangleMesh* mesh, size_t listMode)
+      : BVH4BuilderMortonGeneral(bvh,mesh->parent,mesh,listMode,0,false,sizeof(Triangle1),4,inf) {}
+
+    BVH4Triangle4BuilderMortonGeneral::BVH4Triangle4BuilderMortonGeneral (BVH4* bvh, TriangleMesh* mesh, size_t listMode)
+      : BVH4BuilderMortonGeneral(bvh,mesh->parent,mesh,listMode,2,false,sizeof(Triangle4),4,inf) {}
+
+#if defined(__AVX__)
+    BVH4Triangle8BuilderMortonGeneral::BVH4Triangle8BuilderMortonGeneral (BVH4* bvh, TriangleMesh* mesh, size_t listMode)
+      : BVH4BuilderMortonGeneral(bvh,mesh->parent,mesh,listMode,3,false,sizeof(Triangle8),8,inf) {}
+#endif
+    
+    BVH4Triangle1vBuilderMortonGeneral::BVH4Triangle1vBuilderMortonGeneral (BVH4* bvh, TriangleMesh* mesh, size_t listMode)
+      : BVH4BuilderMortonGeneral(bvh,mesh->parent,mesh,listMode,0,false,sizeof(Triangle1v),4,inf) {}
+
+    BVH4Triangle4vBuilderMortonGeneral::BVH4Triangle4vBuilderMortonGeneral (BVH4* bvh, TriangleMesh* mesh, size_t listMode)
+      : BVH4BuilderMortonGeneral(bvh,mesh->parent,mesh,listMode,2,false,sizeof(Triangle4v),4,inf) {}
+
+    BVH4Triangle4iBuilderMortonGeneral::BVH4Triangle4iBuilderMortonGeneral (BVH4* bvh, TriangleMesh* mesh, size_t listMode)
+      : BVH4BuilderMortonGeneral(bvh,mesh->parent,mesh,listMode,2,true,sizeof(Triangle4i),4,inf) {}
         
-    BVH4BuilderMorton::~BVH4BuilderMorton () 
+    BVH4BuilderMortonGeneral::~BVH4BuilderMortonGeneral () 
     {
       if (morton) os_free(morton,bytesMorton);
       bvh->alloc.shrink();
     }
     
-    void BVH4BuilderMorton::build(size_t threadIndex, size_t threadCount) 
+    void BVH4BuilderMortonGeneral::build(size_t threadIndex, size_t threadCount) 
     {
       if (g_verbose >= 2)
-        std::cout << "building BVH4<" << bvh->primTy.name << "> with " << TOSTRING(isa) << "::BVH4BuilderMorton ... " << std::flush;
+        std::cout << "building BVH4<" << bvh->primTy.name << "> with " << TOSTRING(isa) << "::BVH4BuilderMortonGeneral ... " << std::flush;
       
       /* calculate size of scene */
       size_t numPrimitivesOld = numPrimitives;
@@ -183,7 +183,7 @@ namespace embree
     // =======================================================================================================
     // =======================================================================================================
     
-    void BVH4BuilderMorton::initThreadState(const size_t threadID, const size_t numThreads)
+    void BVH4BuilderMortonGeneral::initThreadState(const size_t threadID, const size_t numThreads)
     {
       const size_t startID = (threadID+0)*numPrimitives/numThreads;
       const size_t endID   = (threadID+1)*numPrimitives/numThreads;
@@ -215,7 +215,7 @@ namespace embree
       }
     }
 
-    CentGeomBBox3fa BVH4BuilderMorton::computeBounds()
+    CentGeomBBox3fa BVH4BuilderMortonGeneral::computeBounds()
     {
       CentGeomBBox3fa bounds; bounds.reset();
 
@@ -245,7 +245,7 @@ namespace embree
       return bounds;
     }
 
-    void BVH4BuilderMorton::computeBounds(const size_t threadID, const size_t numThreads)
+    void BVH4BuilderMortonGeneral::computeBounds(const size_t threadID, const size_t numThreads)
     {
       initThreadState(threadID,numThreads);
 
@@ -285,7 +285,7 @@ namespace embree
       global_bounds.extend_atomic(bounds);    
     }
 
-    void BVH4BuilderMorton::computeMortonCodes(const size_t startID, const size_t endID, size_t& destID,
+    void BVH4BuilderMortonGeneral::computeMortonCodes(const size_t startID, const size_t endID, size_t& destID,
                                                const size_t startGroup, const size_t startOffset, 
                                                MortonID32Bit* __restrict__ const dest)
     {
@@ -348,7 +348,7 @@ namespace embree
       destID = currentID - destID;
     }
     
-    void BVH4BuilderMorton::computeMortonCodes(const size_t threadID, const size_t numThreads)
+    void BVH4BuilderMortonGeneral::computeMortonCodes(const size_t threadID, const size_t numThreads)
     {      
       const size_t startID = (threadID+0)*numPrimitives/numThreads;
       const size_t endID   = (threadID+1)*numPrimitives/numThreads;
@@ -358,7 +358,7 @@ namespace embree
       computeMortonCodes(startID,endID,state->dest[threadID],state->startGroup[threadID],state->startGroupOffset[threadID],dest);
     }
     
-    void BVH4BuilderMorton::recreateMortonCodes(BuildRecord& current) const
+    void BVH4BuilderMortonGeneral::recreateMortonCodes(BuildRecord& current) const
     {
       assert(current.size() > 4);
       CentGeomBBox3fa global_bounds;
@@ -403,7 +403,7 @@ namespace embree
 #endif	    
     }
     
-    void BVH4BuilderMorton::radixsort(const size_t threadID, const size_t numThreads)
+    void BVH4BuilderMortonGeneral::radixsort(const size_t threadID, const size_t numThreads)
     {
       const size_t startID = (threadID+0)*numPrimitives/numThreads;
       const size_t endID   = (threadID+1)*numPrimitives/numThreads;
@@ -464,7 +464,7 @@ namespace embree
       }
     }
     
-    void BVH4BuilderMorton::recurseSubMortonTrees(const size_t threadID, const size_t numThreads)
+    void BVH4BuilderMortonGeneral::recurseSubMortonTrees(const size_t threadID, const size_t numThreads)
     {
       __aligned(64) Allocator nodeAlloc(&bvh->alloc);
       __aligned(64) Allocator leafAlloc(&bvh->alloc);
@@ -482,7 +482,7 @@ namespace embree
     // =======================================================================================================
     // =======================================================================================================
     
-    void BVH4Triangle1BuilderMorton::createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o)
+    void BVH4Triangle1BuilderMortonGeneral::createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o)
     {
       ssef lower(pos_inf);
       ssef upper(neg_inf);
@@ -521,7 +521,7 @@ namespace embree
       box_o = BBox3fa((Vec3fa)lower,(Vec3fa)upper);
     }
     
-    void BVH4Triangle4BuilderMorton::createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o)
+    void BVH4Triangle4BuilderMortonGeneral::createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o)
     {
       ssef lower(pos_inf);
       ssef upper(neg_inf);
@@ -560,7 +560,7 @@ namespace embree
     }
 
 #if defined(__AVX__)
-    void BVH4Triangle8BuilderMorton::createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o)
+    void BVH4Triangle8BuilderMortonGeneral::createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o)
     {
       ssef lower(pos_inf);
       ssef upper(neg_inf);
@@ -599,7 +599,7 @@ namespace embree
     }
 #endif
     
-    void BVH4Triangle1vBuilderMorton::createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o)
+    void BVH4Triangle1vBuilderMortonGeneral::createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o)
     {
       ssef lower(pos_inf);
       ssef upper(neg_inf);
@@ -637,7 +637,7 @@ namespace embree
       box_o = BBox3fa((Vec3fa)lower,(Vec3fa)upper);
     }
     
-    void BVH4Triangle4vBuilderMorton::createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o)
+    void BVH4Triangle4vBuilderMortonGeneral::createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o)
     {
       ssef lower(pos_inf);
       ssef upper(neg_inf);
@@ -675,7 +675,7 @@ namespace embree
       box_o = BBox3fa((Vec3fa)lower,(Vec3fa)upper);
     }
 
-    void BVH4Triangle4iBuilderMorton::createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o)
+    void BVH4Triangle4iBuilderMortonGeneral::createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o)
     {
       ssef lower(pos_inf);
       ssef upper(neg_inf);
@@ -723,14 +723,14 @@ namespace embree
       box_o = BBox3fa((Vec3fa)lower,(Vec3fa)upper);
     }
     
-    void BVH4BuilderMorton::splitFallback(BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild) const
+    void BVH4BuilderMortonGeneral::splitFallback(BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild) const
     {
       const unsigned int center = (current.begin + current.end)/2;
       leftChild.init(current.begin,center);
       rightChild.init(center,current.end);
     }
     
-    BBox3fa BVH4BuilderMorton::createLeaf(BuildRecord& current, Allocator& nodeAlloc, Allocator& leafAlloc, size_t threadID)
+    BBox3fa BVH4BuilderMortonGeneral::createLeaf(BuildRecord& current, Allocator& nodeAlloc, Allocator& leafAlloc, size_t threadID)
     {
 #if defined(DEBUG)
       if (current.depth > BVH4::maxBuildDepthLeaf) 
@@ -770,7 +770,7 @@ namespace embree
       return bounds0;
     }  
     
-    __forceinline void BVH4BuilderMorton::split(BuildRecord& current,
+    __forceinline void BVH4BuilderMortonGeneral::split(BuildRecord& current,
                                                 BuildRecord& left,
                                                 BuildRecord& right) const
     {
@@ -818,7 +818,7 @@ namespace embree
       right.init(center,current.end);
     }
     
-    BBox3fa BVH4BuilderMorton::recurse(BuildRecord& current, Allocator& nodeAlloc, Allocator& leafAlloc, const size_t mode, const size_t threadID) 
+    BBox3fa BVH4BuilderMortonGeneral::recurse(BuildRecord& current, Allocator& nodeAlloc, Allocator& leafAlloc, const size_t mode, const size_t threadID) 
     {
       /* stop toplevel recursion at some number of items */
       if (mode == CREATE_TOP_LEVEL && current.size() <= topLevelItemThreshold) {
@@ -902,7 +902,7 @@ namespace embree
     // =======================================================================================================
     
 
-    __forceinline BBox3fa BVH4Triangle1BuilderMorton::leafBounds(NodeRef& ref) const
+    __forceinline BBox3fa BVH4Triangle1BuilderMortonGeneral::leafBounds(NodeRef& ref) const
     {
       BBox3fa bounds = empty;
       size_t num; Triangle1* tri = (Triangle1*) ref.leaf(num);
@@ -917,7 +917,7 @@ namespace embree
       return bounds;
     }
     
-    __forceinline BBox3fa BVH4Triangle4BuilderMorton::leafBounds(NodeRef& ref) const
+    __forceinline BBox3fa BVH4Triangle4BuilderMortonGeneral::leafBounds(NodeRef& ref) const
     {
       BBox3fa bounds = empty;
       size_t num; Triangle4* tri = (Triangle4*) ref.leaf(num);
@@ -935,7 +935,7 @@ namespace embree
     }
 
 #if defined(__AVX__)
-    __forceinline BBox3fa BVH4Triangle8BuilderMorton::leafBounds(NodeRef& ref) const
+    __forceinline BBox3fa BVH4Triangle8BuilderMortonGeneral::leafBounds(NodeRef& ref) const
     {
       BBox3fa bounds = empty;
       size_t num; Triangle8* tri = (Triangle8*) ref.leaf(num);
@@ -953,7 +953,7 @@ namespace embree
     }
 #endif
     
-    __forceinline BBox3fa BVH4Triangle1vBuilderMorton::leafBounds(NodeRef& ref) const
+    __forceinline BBox3fa BVH4Triangle1vBuilderMortonGeneral::leafBounds(NodeRef& ref) const
     {
       BBox3fa bounds = empty;
       size_t num; Triangle1v* tri = (Triangle1v*) ref.leaf(num);
@@ -970,7 +970,7 @@ namespace embree
       return bounds;
     }
     
-    __forceinline BBox3fa BVH4Triangle4vBuilderMorton::leafBounds(NodeRef& ref) const
+    __forceinline BBox3fa BVH4Triangle4vBuilderMortonGeneral::leafBounds(NodeRef& ref) const
     {
       BBox3fa bounds = empty;
       size_t num; Triangle4v* tri = (Triangle4v*) ref.leaf(num);
@@ -987,7 +987,7 @@ namespace embree
       return bounds;
     }
 
-    __forceinline BBox3fa BVH4Triangle4iBuilderMorton::leafBounds(NodeRef& ref) const
+    __forceinline BBox3fa BVH4Triangle4iBuilderMortonGeneral::leafBounds(NodeRef& ref) const
     {
       BBox3fa bounds = empty;
       size_t num; Triangle4i* tri = (Triangle4i*) ref.leaf(num);
@@ -1004,7 +1004,7 @@ namespace embree
       return bounds;
     }
     
-    __forceinline BBox3fa BVH4BuilderMorton::nodeBounds(NodeRef& ref) const
+    __forceinline BBox3fa BVH4BuilderMortonGeneral::nodeBounds(NodeRef& ref) const
     {
       if (ref.isNode())
         return ref.node()->bounds();
@@ -1012,7 +1012,7 @@ namespace embree
         return leafBounds(ref);
     }
     
-    BBox3fa BVH4BuilderMorton::refitTopLevel(NodeRef& ref) const
+    BBox3fa BVH4BuilderMortonGeneral::refitTopLevel(NodeRef& ref) const
     { 
       /* stop here if we encounter a barrier */
       if (unlikely(ref.isBarrier())) {
@@ -1059,7 +1059,7 @@ namespace embree
 		     Vec3fa(upper_x,upper_y,upper_z));
     }
 
-    void BVH4BuilderMorton::build_sequential_morton(size_t threadIndex, size_t threadCount) 
+    void BVH4BuilderMortonGeneral::build_sequential_morton(size_t threadIndex, size_t threadCount) 
     {
       /* start measurement */
       double t0 = 0.0f;
@@ -1099,7 +1099,7 @@ namespace embree
       if (g_verbose >= 2) dt = getSeconds()-t0;
     }
     
-    void BVH4BuilderMorton::build_parallel_morton(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount) 
+    void BVH4BuilderMortonGeneral::build_parallel_morton(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount) 
     {
       /* start measurement */
       double t0 = 0.0f;
@@ -1176,23 +1176,7 @@ namespace embree
       if (g_verbose >= 2) dt = getSeconds()-t0;
     }
 
-    Builder* BVH4Triangle1BuilderMorton  (void* bvh, Scene* scene, size_t mode) { return new class BVH4Triangle1BuilderMorton ((BVH4*)bvh,scene,mode); }
-    Builder* BVH4Triangle4BuilderMorton  (void* bvh, Scene* scene, size_t mode) { return new class BVH4Triangle4BuilderMorton ((BVH4*)bvh,scene,mode); }
-#if defined(__AVX__)
-    Builder* BVH4Triangle8BuilderMorton  (void* bvh, Scene* scene, size_t mode) { return new class BVH4Triangle8BuilderMorton ((BVH4*)bvh,scene,mode); }
-#endif
-    Builder* BVH4Triangle1vBuilderMorton (void* bvh, Scene* scene, size_t mode) { return new class BVH4Triangle1vBuilderMorton((BVH4*)bvh,scene,mode); }
-    Builder* BVH4Triangle4vBuilderMorton (void* bvh, Scene* scene, size_t mode) { return new class BVH4Triangle4vBuilderMorton((BVH4*)bvh,scene,mode); }
-    Builder* BVH4Triangle4iBuilderMorton (void* bvh, Scene* scene, size_t mode) { return new class BVH4Triangle4iBuilderMorton((BVH4*)bvh,scene,mode); }
-
-    Builder* BVH4Triangle1MeshBuilderMorton  (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4Triangle1BuilderMorton ((BVH4*)bvh,mesh,mode); }
-    Builder* BVH4Triangle4MeshBuilderMorton  (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4Triangle4BuilderMorton ((BVH4*)bvh,mesh,mode); }
-#if defined(__AVX__)
-    Builder* BVH4Triangle8MeshBuilderMorton  (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4Triangle8BuilderMorton ((BVH4*)bvh,mesh,mode); }
-#endif
-    Builder* BVH4Triangle1vMeshBuilderMorton (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4Triangle1vBuilderMorton((BVH4*)bvh,mesh,mode); }
-    Builder* BVH4Triangle4vMeshBuilderMorton (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4Triangle4vBuilderMorton((BVH4*)bvh,mesh,mode); }
-    Builder* BVH4Triangle4iMeshBuilderMorton (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4Triangle4iBuilderMorton((BVH4*)bvh,mesh,mode); }
+    Builder* BVH4Triangle4BuilderMortonGeneral  (void* bvh, Scene* scene, size_t mode) { return new class BVH4Triangle4BuilderMortonGeneral ((BVH4*)bvh,scene,mode); }
   }
 }
 

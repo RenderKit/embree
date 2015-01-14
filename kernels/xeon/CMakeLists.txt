@@ -103,6 +103,7 @@ ADD_ISPC_LIBRARY(embree ${EMBREE_LIB_TYPE}
   bvh4/bvh4_builder_hair_mb.cpp
   bvh4/bvh4_builder_fast.cpp
   bvh4/bvh4_builder_morton.cpp
+  bvh4/bvh4_builder_morton_general.cpp
   bvh4/bvh4_builder_toplevel.cpp
   bvh4/bvh4_intersector1.cpp
   bvh4/bvh4_intersector4_single.cpp
@@ -160,6 +161,7 @@ IF (TARGET_AVX)
     bvh4/bvh4_rotate.cpp
     bvh4/bvh4_builder_toplevel.cpp
     bvh4/bvh4_builder_morton.cpp
+    bvh4/bvh4_builder_morton_general.cpp
     bvh4/bvh4_builder_fast.cpp
     bvh4/bvh4_builder.cpp
     bvh4/bvh4_builder_mb.cpp
