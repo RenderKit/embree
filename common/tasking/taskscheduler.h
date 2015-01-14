@@ -24,7 +24,10 @@
 #include "sys/ref.h"
 
 #include <vector>
+
+#if defined(USE_TBB)
 #include "tbb/tbb.h"
+#endif
 
 namespace embree
 {
@@ -255,6 +258,7 @@ namespace embree
       LockStepTaskScheduler* scheduler;
     };
 
+#if defined(USE_TBB)
     template<typename Closure>
     struct TBBTask
     {
@@ -283,6 +287,7 @@ namespace embree
       static void execute_tbb(const Closure& closure) {
       TBBTask<Closure> task(closure);
     }
+#endif
 
     static __thread LockStepTaskScheduler* t_scheduler;
     static LockStepTaskScheduler* instance();
