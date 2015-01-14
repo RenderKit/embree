@@ -437,7 +437,7 @@ namespace embree
       {
         const unsigned int taskID = atomic_add(&state->taskCounter,1);
         if (taskID >= state->buildRecords.size()) break;
-	recurse(state->buildRecords[taskID],nodeAlloc,leafAlloc,RECURSE,threadID);
+	recurse(state->buildRecords[taskID],nodeAlloc,leafAlloc,RECURSE);
         state->buildRecords[taskID].parent->setBarrier();
       }
       _mm_sfence(); // make written leaves globally visible
@@ -447,7 +447,7 @@ namespace embree
     // =======================================================================================================
     // =======================================================================================================
     
-    void BVH4Triangle4BuilderMortonGeneral::createSmallLeaf(BuildRecord& current, Allocator* leafAlloc, size_t threadID, BBox3fa& box_o)
+    void BVH4Triangle4BuilderMortonGeneral::createSmallLeaf(BuildRecord& current, Allocator* leafAlloc, BBox3fa& box_o)
     {
       ssef lower(pos_inf);
       ssef upper(neg_inf);
@@ -634,7 +634,7 @@ namespace embree
       //__aligned(64) Allocator leafAlloc(&bvh->alloc2);
       Allocator* nodeAlloc = bvh->alloc2.threadLocal(0);
       Allocator* leafAlloc = bvh->alloc2.threadLocal(1);
-      recurse(br,nodeAlloc,leafAlloc,CREATE_TOP_LEVEL,threadIndex);	    
+      recurse(br,nodeAlloc,leafAlloc,CREATE_TOP_LEVEL);
       _mm_sfence(); // make written leaves globally visible
 
       /* sort all subtasks by size */
