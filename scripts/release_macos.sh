@@ -12,6 +12,7 @@ cd build
 rm CMakeCache.txt # make sure to use default settigs
 cmake \
 -D COMPILER=ICC \
+-D CMAKE_SKIP_RPATH=ON \
 ..
 make -j 8 preinstall
 cmake -D CMAKE_INSTALL_PREFIX="$destdir" -P cmake_install.cmake
