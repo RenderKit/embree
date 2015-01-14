@@ -20,7 +20,7 @@
 
 
 //#define FORCE_FIXED_EDGE_TESSELLATION
-#define FIXED_EDGE_TESSELLATION_VALUE 4
+#define FIXED_EDGE_TESSELLATION_VALUE 2
 
 #define MAX_EDGE_LEVEL 64.0f
 #define MIN_EDGE_LEVEL 2.0f
@@ -30,6 +30,8 @@
 #else
 #  define LEVEL_FACTOR 64.0f
 #endif
+
+#define DBG(x) 
 
 /* scene data */
 extern "C" ISPCScene* g_ispc_scene;
@@ -366,6 +368,9 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
   /* intersect ray with scene */
   rtcIntersect(g_scene,ray);
   
+  DBG( DBG_PRINT(ray) );
+  DBG( DBG_PRINT( ray.org + ray.tfar*ray.dir ) );
+
   /* shade background black */
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return Vec3fa(0.0f,0.0f,1.0f);
   
@@ -400,10 +405,18 @@ void renderTile(int taskIndex, int* pixels,
   const int y0 = tileY * TILE_SIZE_Y;
   const int y1 = min(y0+TILE_SIZE_Y,height);
 
+
   for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)
   {
+    DBG(       std::cout.precision(10); );
+
+    DBG( x = 500; y = 1024-10; );
+
     /* calculate pixel color */
     Vec3fa color = renderPixel(x,y,vx,vy,vz,p);
+
+    DBG( DBG_PRINT(color) );
+    DBG( exit(0); );
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));

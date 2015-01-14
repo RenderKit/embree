@@ -42,6 +42,8 @@ IF (__XEON__)
   TARGET_LINK_LIBRARIES(retrace sys simd embree)
   SET_PROPERTY(TARGET retrace PROPERTY FOLDER tests)
 
+  INSTALL(TARGETS verify benchmark retrace DESTINATION bin)
+
 ELSE ()
 
   INCLUDE (icc_xeonphi)
@@ -57,5 +59,7 @@ ELSE ()
   ADD_EXECUTABLE(retrace_xeonphi retrace.cpp)
   TARGET_LINK_LIBRARIES(retrace_xeonphi sys_xeonphi embree_xeonphi)
   SET_PROPERTY(TARGET retrace_xeonphi PROPERTY FOLDER tests)
+
+  INSTALL(TARGETS verify_xeonphi benchmark_xeonphi retrace_xeonphi DESTINATION bin)
 
 ENDIF()

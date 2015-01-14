@@ -235,7 +235,6 @@ INCLUDE (ispc)
 INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/common)
 INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/include)
 INCLUDE_DIRECTORIES_ISPC(${PROJECT_SOURCE_DIR})
-LINK_DIRECTORIES(${EXECUTABLE_OUTPUT_PATH})
 
 ##############################################################
 # Output paths
@@ -268,7 +267,23 @@ ENDIF()
 # Install Headers
 ##############################################################
 
-INSTALL(DIRECTORY include/embree2 DESTINATION include FILES_MATCHING PATTERN "*.h")
-INSTALL(DIRECTORY include/embree2 DESTINATION include FILES_MATCHING PATTERN "*.isph")
+INSTALL(DIRECTORY include/embree2 DESTINATION include)
 
-SOURCE_GROUP("doc" FILES README.md) # does not work
+
+# currently CMake does not support solution folders without projects
+# SOURCE_GROUP("doc" FILES README.md readme.pdf)
+
+# install scripts
+IF (NOT WIN32)
+  IF (APPLE)
+    SET(SCRIPT_DIR install_macos)
+  ELSE()
+    SET(SCRIPT_DIR install_linux)
+  ENDIF()
+  CONFIGURE_FILE(
+    scripts/${SCRIPT_DIR}/install.sh
+    "${PROJECT_BINARY_DIR}/install.sh"
+    @ONLY
+  )
+  INSTALL(PROGRAMS "${PROJECT_BINARY_DIR}/install.sh" scripts/${SCRIPT_DIR}/paths.sh DESTINATION ./)
+ENDIF()
