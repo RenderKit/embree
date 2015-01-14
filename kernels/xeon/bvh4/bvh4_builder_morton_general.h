@@ -359,6 +359,80 @@ namespace embree
         }
         return bounds0;
       }
+
+      template<typename Spawn>
+      BBox3fa recurse_general(BuildRecord& current, Allocator* alloc, Spawn& spawn) 
+      {
+        __aligned(64) BuildRecord children[BVH4::N];
+        
+        /* create leaf node */
+        if (unlikely(current.depth >= BVH4::maxBuildDepth || current.size() <= minLeafSize)) {
+          return createLeaf(current,alloc);
+        }
+        
+        /* fill all 4 children by always splitting the one with the largest surface area */
+        size_t numChildren = 1;
+        children[0] = current;
+        
+        do {
+          
+          /* find best child with largest bounding box area */
+          int bestChild = -1;
+          unsigned bestItems = 0;
+          for (unsigned int i=0; i<numChildren; i++)
+          {
+            /* ignore leaves as they cannot get split */
+            if (children[i].size() <= minLeafSize)
+              continue;
+            
+            /* remember child with largest area */
+            if (children[i].size() > bestItems) { 
+              bestItems = children[i].size();
+              bestChild = i;
+            }
+          }
+          if (bestChild == -1) break;
+          
+          /*! split best child into left and right child */
+          __aligned(64) BuildRecord left, right;
+          split(children[bestChild],left,right);
+          
+          /* add new children left and right */
+          left.depth = right.depth = current.depth+1;
+          children[bestChild] = children[numChildren-1];
+          children[numChildren-1] = left;
+          children[numChildren+0] = right;
+          numChildren++;
+          
+        } while (numChildren < BVH4::N);
+        
+        /* create leaf node if no split is possible */
+        if (unlikely(numChildren == 1)) {
+          BBox3fa bounds; createSmallLeaf(current,alloc,bounds); return bounds;
+        }
+        
+        /* allocate node */
+        Node* node = (Node*) alloc->alloc0.malloc(sizeof(Node)); node->clear();
+        *current.parent = bvh->encodeNode(node);
+        
+        /* recurse into each child */
+        BBox3fa bounds0 = empty;
+        for (size_t i=0; i<numChildren; i++) 
+        {
+          children[i].parent = &node->child(i);
+          
+          if (children[i].size() <= minLeafSize) {
+            const BBox3fa bounds = createLeaf(children[i],alloc);
+            bounds0.extend(bounds);
+            node->set(i,bounds);
+          } else {
+            const BBox3fa bounds = spawn(children[i],alloc);
+            bounds0.extend(bounds);
+            node->set(i,bounds);
+          }
+        }
+        return bounds0;
+      }
       
       /*! calculates bounding box of leaf node */
       virtual BBox3fa leafBounds(NodeRef& ref) const = 0;
