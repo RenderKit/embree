@@ -27,6 +27,7 @@ cmake \
 -D CMAKE_SKIP_RPATH=ON \
 ..
 make -j 8 preinstall
+echo $destdir
 cmake -D CMAKE_INSTALL_PREFIX="$destdir" -P cmake_install.cmake
 cd ..
 
