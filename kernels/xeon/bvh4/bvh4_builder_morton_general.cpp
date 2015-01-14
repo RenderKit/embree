@@ -207,7 +207,8 @@ namespace embree
       
       /* store the morton codes temporarily in 'node' memory */
       //MortonID32Bit* __restrict__ const dest = (MortonID32Bit*)bvh->alloc.base();
-      MortonID32Bit* __restrict__ const dest = (MortonID32Bit*)bvh->alloc2.ptr();
+      //MortonID32Bit* __restrict__ const dest = (MortonID32Bit*)bvh->alloc2.ptr();
+      MortonID32Bit* __restrict__ const dest = (MortonID32Bit*) morton;
       computeMortonCodes(startID,endID,state->dest[threadID],state->startGroup[threadID],state->startGroupOffset[threadID],dest);
     }
     
@@ -405,7 +406,8 @@ namespace embree
       }
       
       /* padding */
-      MortonID32Bit* __restrict__ const dest = (MortonID32Bit*) bvh->alloc2.ptr();
+      //MortonID32Bit* __restrict__ const dest = (MortonID32Bit*) bvh->alloc2.ptr();
+      MortonID32Bit* __restrict__ const dest = (MortonID32Bit*) morton;
       for (size_t i=numPrimitives; i<( (numPrimitives+7)&(-8) ); i++) {
         dest[i].code  = 0xffffffff; 
         dest[i].index = 0;
@@ -413,8 +415,8 @@ namespace embree
 
       /* sort morton codes */
       barrier.init(threadCount);
-      scheduler->dispatchTask( task_radixsort, this, threadIndex, threadCount );
-      //radix_sort_u32(dest,
+      //scheduler->dispatchTask( task_radixsort, this, threadIndex, threadCount );
+      radix_sort_u32(dest,(MortonID32Bit*)bvh->alloc2.ptr(),numPrimitives);
 
 #if defined(DEBUG)
       for (size_t i=1; i<numPrimitives; i++)
