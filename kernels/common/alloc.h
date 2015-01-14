@@ -430,14 +430,14 @@ namespace embree
       /* first reset all used blocks */
       if (usedBlocks) usedBlocks->reset();
 
-      /* find end of free block list */
-      Block* volatile& freeBlocksEnd = freeBlocks;
-      while (freeBlocksEnd) freeBlocksEnd = freeBlocksEnd->next;
-
-      /* add previously used blocks to end of free block list */
-      freeBlocksEnd = usedBlocks;
-      usedBlocks = NULL;
-
+      /* move all used blocks (except last) to begin of free block list */
+      while (usedBlocks && usedBlocks->next) {
+        Block* nextUsedBlock = usedBlocks->next;
+        usedBlocks->next = freeBlocks;
+        freeBlocks = usedBlocks;
+        usedBlocks = nextUsedBlock;
+      }
+      
       /* reset all thread local allocators */
       thread_local_allocators.reset();
     }

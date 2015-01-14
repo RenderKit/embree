@@ -313,7 +313,8 @@ namespace embree
       const size_t endID   = (threadID+1)*numPrimitives/numThreads;
       
       /* store the morton codes temporarily in 'node' memory */
-      MortonID32Bit* __restrict__ const dest = (MortonID32Bit*)bvh->alloc.base();
+      //MortonID32Bit* __restrict__ const dest = (MortonID32Bit*)bvh->alloc.base();
+      MortonID32Bit* __restrict__ const dest = (MortonID32Bit*)bvh->alloc2.ptr();
       computeMortonCodes(startID,endID,state->dest[threadID],state->startGroup[threadID],state->startGroupOffset[threadID],dest);
     }
     
@@ -369,7 +370,8 @@ namespace embree
       
       MortonID32Bit* __restrict__ mortonID[2];
       mortonID[0] = (MortonID32Bit*) morton; 
-      mortonID[1] = (MortonID32Bit*) bvh->alloc.base();
+      //mortonID[1] = (MortonID32Bit*) bvh->alloc.base();
+      mortonID[1] = (MortonID32Bit*) bvh->alloc2.ptr();
       MortonBuilderState::ThreadRadixCountTy* radixCount = state->radixCount;
       
       /* we need 3 iterations to process all 32 bits */
@@ -566,6 +568,10 @@ namespace embree
       double t0 = 0.0f;
       if (g_verbose >= 2) t0 = getSeconds();
 
+      //bvh->alloc.init(numPrimitives*sizeof(BVH4::Node),numPrimitives*sizeof(BVH4::Node));
+      size_t bytesAllocated = (numPrimitives+7)/8*sizeof(BVH4::Node) + size_t(1.2f*(numPrimitives+3)/4)*sizeof(Triangle4);
+      bvh->alloc2.init(bytesAllocated,2*bytesAllocated);
+
       /* compute scene bounds */
       global_bounds.reset();
       scheduler->dispatchTask( task_computeBounds, this, threadIndex, threadCount );
@@ -591,7 +597,8 @@ namespace embree
       }
       
       /* padding */
-      MortonID32Bit* __restrict__ const dest = (MortonID32Bit*) bvh->alloc.base();
+      //MortonID32Bit* __restrict__ const dest = (MortonID32Bit*) bvh->alloc.base();
+      MortonID32Bit* __restrict__ const dest = (MortonID32Bit*) bvh->alloc2.ptr();
       for (size_t i=numPrimitives; i<( (numPrimitives+7)&(-8) ); i++) {
         dest[i].code  = 0xffffffff; 
         dest[i].index = 0;
@@ -618,9 +625,7 @@ namespace embree
       /* perform first splits in single threaded mode */
       bvh->alloc.clear();
       //bvh->alloc2.reset();
-      //bvh->alloc.init(numPrimitives*sizeof(BVH4::Node),numPrimitives*sizeof(BVH4::Node));
-      size_t bytesAllocated = (numPrimitives+7)/8*sizeof(BVH4::Node) + size_t(1.2f*(numPrimitives+3)/4)*sizeof(Triangle4);
-      bvh->alloc2.init(bytesAllocated,2*bytesAllocated);
+      
       //__aligned(64) Allocator nodeAlloc(&bvh->alloc);
       //__aligned(64) Allocator leafAlloc(&bvh->alloc);
       __aligned(64) Allocator nodeAlloc(&bvh->alloc2);
