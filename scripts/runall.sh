@@ -19,4 +19,9 @@
 ./tutorial07_ispc
 ./tutorial08
 ./tutorial08_ispc
+./tutorial09
+./tutorial09_ispc
+./tutorial10
+./tutorial10_ispc
+./tutorial11
 

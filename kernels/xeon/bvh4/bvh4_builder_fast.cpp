@@ -699,7 +699,7 @@ namespace embree
       DBG_CACHE_BUILDER( DBG_PRINT(fastUpdateMode) );
       DBG_CACHE_BUILDER( DBG_PRINT(pinfo.size()) );
       DBG_CACHE_BUILDER( DBG_PRINT(needAllThreads) );
-      
+
       return pinfo.size();
     }
     

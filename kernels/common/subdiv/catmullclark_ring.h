@@ -19,6 +19,8 @@
 #include "common/geometry.h"
 #include "common/scene_subdiv_mesh.h"
 
+// FIXME: use eval_start_index for subdivide() fct
+
 namespace embree
 {
   struct __aligned(64) FinalQuad {
@@ -41,10 +43,11 @@ namespace embree
     float vertex_level; // maximal level of all adjacent edges
     float edge_level; // level of first edge
     unsigned int eval_start_index;
+    unsigned int eval_unique_identifier;
     bool noForcedSubdivision; // varying edge crease weight stitching fix
 
   public:
-    CatmullClark1Ring () : eval_start_index(0) {}
+    CatmullClark1Ring () : eval_start_index(0), eval_unique_identifier(0) {}
 
     __forceinline bool hasBorder() const {
       return border_index != -1;
@@ -112,6 +115,7 @@ namespace embree
           min_val = *(unsigned int*)&ring[i].a; 
           eval_start_index = i>>1; 
         }
+      eval_unique_identifier = min_val;
     }
 
     __forceinline void init(const SubdivMesh::HalfEdge* const h, const BufferT<Vec3fa>& vertices) 
@@ -177,74 +181,71 @@ namespace embree
     
     __forceinline void subdivide(CatmullClark1Ring& dest) const
     {
-      dest.noForcedSubdivision = true;
-      dest.edge_level = 0.5f*edge_level;
-      dest.vertex_level = 0.5f*vertex_level;
-      dest.face_valence         = face_valence;
-      dest.edge_valence         = edge_valence;
-      dest.border_index = border_index;
+      dest.noForcedSubdivision    = true;
+      dest.edge_level             = 0.5f*edge_level;
+      dest.vertex_level           = 0.5f*vertex_level;
+      dest.face_valence           = face_valence;
+      dest.edge_valence           = edge_valence;
+      dest.border_index           = border_index;
       dest.vertex_crease_weight   = max(0.0f,vertex_crease_weight-1.0f);
-      
+      dest.eval_start_index       = eval_start_index;
+      dest.eval_unique_identifier = eval_unique_identifier;
+
+      assert(eval_start_index < edge_valence);
+
       /* calculate face points */
       Vec3fa_t S = Vec3fa_t(0.0f);
-      for (size_t i=0; i<face_valence-1; i++) {
-        S += dest.ring[2*i+1] = ((vtx + ring[2*i]) + (ring[2*i+1] + ring[2*i+2])) * 0.25f;
+      for (size_t i=0; i<face_valence; i++) {
+        ////////////////////////////////////////////////
+        size_t face_index = i + eval_start_index;
+        if (face_index >= face_valence) face_index -= face_valence;
+        ////////////////////////////////////////////////
+
+        size_t index0     = 2*face_index;
+        size_t index1     = 2*face_index+1;
+        size_t index2     = 2*face_index+2;
+        if (index0 >= edge_valence) index0 -= edge_valence;
+        if (index1 >= edge_valence) index1 -= edge_valence;
+        if (index2 >= edge_valence) index2 -= edge_valence;
+        assert(index0 < edge_valence);
+        assert(index1 < edge_valence);
+        assert(index2 < edge_valence);
+        S += dest.ring[index1] = ((vtx + ring[index0]) + (ring[index1] + ring[index2])) * 0.25f;
       }
-      S += dest.ring[edge_valence-1] = ((vtx + ring[edge_valence-2]) + (ring[edge_valence-1] + ring[0])) * 0.25f;
       
       /* calculate new edge points */
       size_t num_creases = 0;
       size_t crease_id[MAX_FACE_VALENCE];
       Vec3fa_t C = Vec3fa_t(0.0f);
-      for (size_t i=1; i<face_valence; i++)
+      for (size_t i=0; i<face_valence; i++)
       {
-        const Vec3fa_t v = vtx + ring[2*i];
-        const Vec3fa_t f = dest.ring[2*i-1] + dest.ring[2*i+1];
-        S += ring[2*i];
-        dest.crease_weight[i] = max(crease_weight[i]-1.0f,0.0f);
-        //dest.crease_weight[i] = crease_weight[i] < 1.0f ? 0.0f : 0.5f*crease_weight[i];
-	dest.noForcedSubdivision &= crease_weight[i] == 0.0f || crease_weight[i] > 1.0f;
-        
-        /* fast path for regular edge points */
-        if (likely(crease_weight[i] <= 0.0f)) {
-          dest.ring[2*i] = (v+f) * 0.25f;
-        }
-        
-        /* slower path for hard edge rule */
-        else {
-          C += ring[2*i]; crease_id[num_creases++] = i;
-          dest.ring[2*i] = v*0.5f;
-	  
-          /* even slower path for blended edge rule */
-          if (unlikely(crease_weight[i] < 1.0f)) {
-            const float w0 = crease_weight[i], w1 = 1.0f-w0;
-            dest.ring[2*i] = w1*((v+f)*0.25f) + w0*(v*0.5f);
-          }
-        }
-      }
-      {
-        const size_t i=0;
-        const Vec3fa_t v = vtx + ring[2*i];
-        const Vec3fa_t f = dest.ring[edge_valence-1] + dest.ring[2*i+1];
-        S += ring[2*i];
-        dest.crease_weight[i] = max(crease_weight[i]-1.0f,0.0f);
-        //dest.crease_weight[i] = crease_weight[i] < 1.0f ? 0.0f : 0.5f*crease_weight[i];
-	dest.noForcedSubdivision &= crease_weight[i] == 0.0f || crease_weight[i] > 1.0f;
+        // FIXME: NEED TO USE eval_start_index HERE !!!!"
+        size_t face_index = i;
+        size_t index      = 2*face_index;
+        size_t prev_index = face_index == 0 ? edge_valence-1 : 2*face_index-1;
+        size_t next_index = 2*face_index+1;
 
+        const Vec3fa_t v = vtx + ring[index];
+        const Vec3fa_t f = dest.ring[prev_index] + dest.ring[next_index];
+        S += ring[index];
+        dest.crease_weight[face_index] = max(crease_weight[face_index]-1.0f,0.0f);
+        //dest.crease_weight[i] = crease_weight[face_index] < 1.0f ? 0.0f : 0.5f*crease_weight[face_index];
+	dest.noForcedSubdivision &= crease_weight[face_index] == 0.0f || crease_weight[face_index] > 1.0f;
+        
         /* fast path for regular edge points */
-        if (likely(crease_weight[i] <= 0.0f)) {
-          dest.ring[2*i] = (v+f) * 0.25f;
+        if (likely(crease_weight[face_index] <= 0.0f)) {
+          dest.ring[index] = (v+f) * 0.25f;
         }
         
         /* slower path for hard edge rule */
         else {
-          C += ring[2*i]; crease_id[num_creases++] = i;
-          dest.ring[2*i] = v*0.5f;
+          C += ring[index]; crease_id[num_creases++] = face_index;
+          dest.ring[index] = v*0.5f;
 	  
           /* even slower path for blended edge rule */
-          if (unlikely(crease_weight[i] < 1.0f)) {
-            const float w0 = crease_weight[i], w1 = 1.0f-w0;
-            dest.ring[2*i] = w1*((v+f)*0.25f) + w0*(v*0.5f);
+          if (unlikely(crease_weight[face_index] < 1.0f)) {
+            const float w0 = crease_weight[face_index], w1 = 1.0f-w0;
+            dest.ring[index] = w1*((v+f)*0.25f) + w0*(v*0.5f);
           }
         }
       }
