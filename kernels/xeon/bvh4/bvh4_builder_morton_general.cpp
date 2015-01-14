@@ -39,48 +39,11 @@ namespace embree
 	topLevelItemThreshold(0), encodeShift(0), encodeMask(-1), morton(NULL), bytesMorton(0), numGroups(0), numPrimitives(0), numAllocatedPrimitives(0), numAllocatedNodes(0)
     {
       needAllThreads = true;
-      if (mesh) needAllThreads = mesh->numTriangles > 50000;
+      //if (mesh) needAllThreads = mesh->numTriangles > 50000;
     }
     
-    BVH4Triangle1BuilderMortonGeneral::BVH4Triangle1BuilderMortonGeneral (BVH4* bvh, Scene* scene, size_t listMode)
-      : BVH4BuilderMortonGeneral(bvh,scene,NULL,listMode,0,false,sizeof(Triangle1),4,inf) {}
-
     BVH4Triangle4BuilderMortonGeneral::BVH4Triangle4BuilderMortonGeneral (BVH4* bvh, Scene* scene, size_t listMode)
       : BVH4BuilderMortonGeneral(bvh,scene,NULL,listMode,2,false,sizeof(Triangle4),4,inf) {}
-
-#if defined(__AVX__)
-    BVH4Triangle8BuilderMortonGeneral::BVH4Triangle8BuilderMortonGeneral (BVH4* bvh, Scene* scene, size_t listMode)
-      : BVH4BuilderMortonGeneral(bvh,scene,NULL,listMode,3,false,sizeof(Triangle8),8,inf) {}
-#endif
-    
-    BVH4Triangle1vBuilderMortonGeneral::BVH4Triangle1vBuilderMortonGeneral (BVH4* bvh, Scene* scene, size_t listMode)
-      : BVH4BuilderMortonGeneral(bvh,scene,NULL,listMode,0,false,sizeof(Triangle1v),4,inf) {}
-
-    BVH4Triangle4vBuilderMortonGeneral::BVH4Triangle4vBuilderMortonGeneral (BVH4* bvh, Scene* scene, size_t listMode)
-      : BVH4BuilderMortonGeneral(bvh,scene,NULL,listMode,2,false,sizeof(Triangle4v),4,inf) {}
-
-    BVH4Triangle4iBuilderMortonGeneral::BVH4Triangle4iBuilderMortonGeneral (BVH4* bvh, Scene* scene, size_t listMode)
-      : BVH4BuilderMortonGeneral(bvh,scene,NULL,listMode,2,true,sizeof(Triangle4i),4,inf) {}
-
-    BVH4Triangle1BuilderMortonGeneral::BVH4Triangle1BuilderMortonGeneral (BVH4* bvh, TriangleMesh* mesh, size_t listMode)
-      : BVH4BuilderMortonGeneral(bvh,mesh->parent,mesh,listMode,0,false,sizeof(Triangle1),4,inf) {}
-
-    BVH4Triangle4BuilderMortonGeneral::BVH4Triangle4BuilderMortonGeneral (BVH4* bvh, TriangleMesh* mesh, size_t listMode)
-      : BVH4BuilderMortonGeneral(bvh,mesh->parent,mesh,listMode,2,false,sizeof(Triangle4),4,inf) {}
-
-#if defined(__AVX__)
-    BVH4Triangle8BuilderMortonGeneral::BVH4Triangle8BuilderMortonGeneral (BVH4* bvh, TriangleMesh* mesh, size_t listMode)
-      : BVH4BuilderMortonGeneral(bvh,mesh->parent,mesh,listMode,3,false,sizeof(Triangle8),8,inf) {}
-#endif
-    
-    BVH4Triangle1vBuilderMortonGeneral::BVH4Triangle1vBuilderMortonGeneral (BVH4* bvh, TriangleMesh* mesh, size_t listMode)
-      : BVH4BuilderMortonGeneral(bvh,mesh->parent,mesh,listMode,0,false,sizeof(Triangle1v),4,inf) {}
-
-    BVH4Triangle4vBuilderMortonGeneral::BVH4Triangle4vBuilderMortonGeneral (BVH4* bvh, TriangleMesh* mesh, size_t listMode)
-      : BVH4BuilderMortonGeneral(bvh,mesh->parent,mesh,listMode,2,false,sizeof(Triangle4v),4,inf) {}
-
-    BVH4Triangle4iBuilderMortonGeneral::BVH4Triangle4iBuilderMortonGeneral (BVH4* bvh, TriangleMesh* mesh, size_t listMode)
-      : BVH4BuilderMortonGeneral(bvh,mesh->parent,mesh,listMode,2,true,sizeof(Triangle4i),4,inf) {}
         
     BVH4BuilderMortonGeneral::~BVH4BuilderMortonGeneral () 
     {
@@ -141,16 +104,12 @@ namespace embree
         double t0 = getSeconds();
 #endif
 
-      if (needAllThreads) 
-      {
         state.reset(new MortonBuilderState);
 	size_t numActiveThreads = threadCount;
 	//size_t numActiveThreads = min(threadCount,getNumberOfCores());
 	build_parallel_morton(threadIndex,numActiveThreads,0,1);
         state.reset(NULL);
-      } else {
-        build_sequential_morton(threadIndex,threadCount);
-      }
+
 
 #if defined(PROFILE)
         double dt = getSeconds()-t0;
@@ -482,45 +441,6 @@ namespace embree
     // =======================================================================================================
     // =======================================================================================================
     
-    void BVH4Triangle1BuilderMortonGeneral::createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o)
-    {
-      ssef lower(pos_inf);
-      ssef upper(neg_inf);
-      size_t items = current.size();
-      size_t start = current.begin;
-      
-      /* allocate leaf node */
-      Triangle1* accel = (Triangle1*) leafAlloc.malloc(items*sizeof(Triangle1));
-      *current.parent = bvh->encodeLeaf((char*)accel,listMode ? listMode : items);
-      
-      for (size_t i=0; i<items; i++) 
-      {	
-        const size_t index = morton[start+i].index;
-        const size_t primID = index & encodeMask; 
-        const size_t geomID = this->mesh ? this->mesh->id : (index >> encodeShift); 
-        const TriangleMesh* mesh = scene->getTriangleMesh(geomID);
-        const TriangleMesh::Triangle& tri = mesh->triangle(primID);
-        
-        const ssef v0 = select(0x7,(ssef)mesh->vertex(tri.v[0]),zero);
-        const ssef v1 = select(0x7,(ssef)mesh->vertex(tri.v[1]),zero);
-        const ssef v2 = select(0x7,(ssef)mesh->vertex(tri.v[2]),zero);
-        
-        lower = min(lower,v0,v1,v2);
-        upper = max(upper,v0,v1,v2);
-        
-        const ssef e1 = v0 - v1;
-        const ssef e2 = v2 - v0;	     
-        const ssef normal = cross(e1,e2);
-	const bool last = listMode && (i==(items-1));
-        
-        store4f_nt(&accel[i].v0,cast(insert<3>(cast(v0),primID | (last << 31))));
-        store4f_nt(&accel[i].v1,cast(insert<3>(cast(v1),geomID)));
-        store4f_nt(&accel[i].v2,cast(insert<3>(cast(v2),mesh->mask)));
-        store4f_nt(&accel[i].Ng,cast(insert<3>(cast(normal),0)));
-      }
-      box_o = BBox3fa((Vec3fa)lower,(Vec3fa)upper);
-    }
-    
     void BVH4Triangle4BuilderMortonGeneral::createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o)
     {
       ssef lower(pos_inf);
@@ -559,170 +479,6 @@ namespace embree
       box_o = BBox3fa((Vec3fa)lower,(Vec3fa)upper);
     }
 
-#if defined(__AVX__)
-    void BVH4Triangle8BuilderMortonGeneral::createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o)
-    {
-      ssef lower(pos_inf);
-      ssef upper(neg_inf);
-      size_t items = current.size();
-      size_t start = current.begin;
-      assert(items<=8);
-      
-      /* allocate leaf node */
-      Triangle8* accel = (Triangle8*) leafAlloc.malloc(sizeof(Triangle8));
-      *current.parent = bvh->encodeLeaf((char*)accel,listMode ? listMode : 1);
-      
-      avxi vgeomID = -1, vprimID = -1, vmask = -1;
-      avx3f v0 = zero, v1 = zero, v2 = zero;
-      
-      for (size_t i=0; i<items; i++)
-      {
-        const size_t index = morton[start+i].index;
-        const size_t primID = index & encodeMask; 
-        const size_t geomID = this->mesh ? this->mesh->id : (index >> encodeShift); 
-        const TriangleMesh* mesh = scene->getTriangleMesh(geomID);
-        const TriangleMesh::Triangle& tri = mesh->triangle(primID);
-        const Vec3fa& p0 = mesh->vertex(tri.v[0]);
-        const Vec3fa& p1 = mesh->vertex(tri.v[1]);
-        const Vec3fa& p2 = mesh->vertex(tri.v[2]);
-        lower = min(lower,(ssef)p0,(ssef)p1,(ssef)p2);
-        upper = max(upper,(ssef)p0,(ssef)p1,(ssef)p2);
-        vgeomID [i] = geomID;
-        vprimID [i] = primID;
-        vmask   [i] = mesh->mask;
-        v0.x[i] = p0.x; v0.y[i] = p0.y; v0.z[i] = p0.z;
-        v1.x[i] = p1.x; v1.y[i] = p1.y; v1.z[i] = p1.z;
-        v2.x[i] = p2.x; v2.y[i] = p2.y; v2.z[i] = p2.z;
-      }
-      new (accel) Triangle8(v0,v1,v2,vgeomID,vprimID,vmask,listMode); // FIXME: use storent
-      box_o = BBox3fa((Vec3fa)lower,(Vec3fa)upper);
-    }
-#endif
-    
-    void BVH4Triangle1vBuilderMortonGeneral::createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o)
-    {
-      ssef lower(pos_inf);
-      ssef upper(neg_inf);
-      size_t items = current.size();
-      size_t start = current.begin;
-      
-      /* allocate leaf node */
-      Triangle1v* accel = (Triangle1v*) leafAlloc.malloc(items*sizeof(Triangle1v));
-      *current.parent = bvh->encodeLeaf((char*)accel,listMode ? listMode : items);
-      
-      for (size_t i=0; i<items; i++) 
-      {	
-        const size_t index = morton[start+i].index;
-        const size_t primID = index & encodeMask; 
-        const size_t geomID = this->mesh ? this->mesh->id : (index >> encodeShift); 
-        const TriangleMesh* mesh = scene->getTriangleMesh(geomID);
-        const TriangleMesh::Triangle& tri = mesh->triangle(primID);
-        
-        const ssef v0 = select(0x7,(ssef)mesh->vertex(tri.v[0]),zero);
-        const ssef v1 = select(0x7,(ssef)mesh->vertex(tri.v[1]),zero);
-        const ssef v2 = select(0x7,(ssef)mesh->vertex(tri.v[2]),zero);
-        
-        lower = min(lower,v0,v1,v2);
-        upper = max(upper,v0,v1,v2);
-        
-        const ssef e1 = v0 - v1;
-        const ssef e2 = v2 - v0;	     
-        const ssef normal = cross(e1,e2);
-        const bool last = listMode && (i==(items-1));
-
-        store4f_nt(&accel[i].v0,cast(insert<3>(cast(v0),primID | (last << 31))));
-        store4f_nt(&accel[i].v1,cast(insert<3>(cast(v1),geomID)));
-        store4f_nt(&accel[i].v2,cast(insert<3>(cast(v2),mesh->mask)));
-      }
-      box_o = BBox3fa((Vec3fa)lower,(Vec3fa)upper);
-    }
-    
-    void BVH4Triangle4vBuilderMortonGeneral::createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o)
-    {
-      ssef lower(pos_inf);
-      ssef upper(neg_inf);
-      size_t items = current.size();
-      size_t start = current.begin;
-      assert(items<=4);
-      
-      /* allocate leaf node */
-      Triangle4v* accel = (Triangle4v*) leafAlloc.malloc(sizeof(Triangle4v));
-      *current.parent = bvh->encodeLeaf((char*)accel,listMode ? listMode : 1);
-      
-      ssei vgeomID = -1, vprimID = -1, vmask = -1;
-      sse3f v0 = zero, v1 = zero, v2 = zero;
-      
-      for (size_t i=0; i<items; i++)
-      {
-        const size_t index = morton[start+i].index;
-        const size_t primID = index & encodeMask; 
-        const size_t geomID = this->mesh ? this->mesh->id : (index >> encodeShift); 
-        const TriangleMesh* mesh = scene->getTriangleMesh(geomID);
-        const TriangleMesh::Triangle& tri = mesh->triangle(primID);
-        const Vec3fa& p0 = mesh->vertex(tri.v[0]);
-        const Vec3fa& p1 = mesh->vertex(tri.v[1]);
-        const Vec3fa& p2 = mesh->vertex(tri.v[2]);
-        lower = min(lower,(ssef)p0,(ssef)p1,(ssef)p2);
-        upper = max(upper,(ssef)p0,(ssef)p1,(ssef)p2);
-        vgeomID [i] = geomID;
-        vprimID [i] = primID;
-        vmask   [i] = mesh->mask;
-        v0.x[i] = p0.x; v0.y[i] = p0.y; v0.z[i] = p0.z;
-        v1.x[i] = p1.x; v1.y[i] = p1.y; v1.z[i] = p1.z;
-        v2.x[i] = p2.x; v2.y[i] = p2.y; v2.z[i] = p2.z;
-      }
-      Triangle4v::store_nt(accel,Triangle4v(v0,v1,v2,vgeomID,vprimID,vmask,listMode));
-      box_o = BBox3fa((Vec3fa)lower,(Vec3fa)upper);
-    }
-
-    void BVH4Triangle4iBuilderMortonGeneral::createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o)
-    {
-      ssef lower(pos_inf);
-      ssef upper(neg_inf);
-      size_t items = current.size();
-      size_t start = current.begin;
-      assert(items<=4);
-      
-      /* allocate leaf node */
-      Triangle4i* accel = (Triangle4i*) leafAlloc.malloc(sizeof(Triangle4i));
-      *current.parent = bvh->encodeLeaf((char*)accel,listMode ? listMode : 1);
-
-      ssei vgeomID = -1, vprimID = -1;
-      Vec3f* v0[4] = { NULL, NULL, NULL, NULL };
-      ssei v1 = zero, v2 = zero;
-      
-      for (size_t i=0; i<items; i++)
-      {
-	const size_t index = morton[start+i].index;
-        const size_t primID = index & encodeMask; 
-        const size_t geomID = this->mesh ? this->mesh->id : (index >> encodeShift); 
-        const TriangleMesh* mesh = scene->getTriangleMesh(geomID);
-	const TriangleMesh::Triangle& tri = mesh->triangle(primID);
-	const Vec3fa& p0 = mesh->vertex(tri.v[0]);
-        const Vec3fa& p1 = mesh->vertex(tri.v[1]);
-        const Vec3fa& p2 = mesh->vertex(tri.v[2]);
-        lower = min(lower,(ssef)p0,(ssef)p1,(ssef)p2);
-        upper = max(upper,(ssef)p0,(ssef)p1,(ssef)p2);
-	vgeomID[i] = geomID;
-	vprimID[i] = primID;
-	v0[i] = (Vec3f*) mesh->vertexPtr(tri.v[0]); 
-	v1[i] = (int*)   mesh->vertexPtr(tri.v[1])-(int*)v0[i]; 
-	v2[i] = (int*)   mesh->vertexPtr(tri.v[2])-(int*)v0[i]; 
-      }
-
-      for (size_t i=items; i<4; i++)
-      {
-	vgeomID[i] = -1;
-	vprimID[i] = -1;
-	v0[i] = v0[0];
-	v1[i] = 0; 
-	v2[i] = 0;
-      }
-    
-      new (accel) Triangle4i(v0,v1,v2,vgeomID,vprimID,listMode);
-      box_o = BBox3fa((Vec3fa)lower,(Vec3fa)upper);
-    }
-    
     void BVH4BuilderMortonGeneral::splitFallback(BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild) const
     {
       const unsigned int center = (current.begin + current.end)/2;
@@ -902,21 +658,6 @@ namespace embree
     // =======================================================================================================
     
 
-    __forceinline BBox3fa BVH4Triangle1BuilderMortonGeneral::leafBounds(NodeRef& ref) const
-    {
-      BBox3fa bounds = empty;
-      size_t num; Triangle1* tri = (Triangle1*) ref.leaf(num);
-      if (listMode) {
-	do {
-	  bounds.extend(tri->bounds());
-	} while (!((tri++)->last()));
-      } else {
-	for (size_t i=0; i<num; i++)  // FIXME: have to iterate list also
-	  bounds.extend(tri[i].bounds());
-      }
-      return bounds;
-    }
-    
     __forceinline BBox3fa BVH4Triangle4BuilderMortonGeneral::leafBounds(NodeRef& ref) const
     {
       BBox3fa bounds = empty;
@@ -934,76 +675,6 @@ namespace embree
       return bounds;
     }
 
-#if defined(__AVX__)
-    __forceinline BBox3fa BVH4Triangle8BuilderMortonGeneral::leafBounds(NodeRef& ref) const
-    {
-      BBox3fa bounds = empty;
-      size_t num; Triangle8* tri = (Triangle8*) ref.leaf(num);
-      if (listMode) {
-	do {
-	  bounds.extend(tri->bounds());
-	} while (!((tri++)->last()));
-      }
-      else
-      {
-	for (size_t i=0; i<num; i++) 
-	  bounds.extend(tri[i].bounds());
-      }
-      return bounds;
-    }
-#endif
-    
-    __forceinline BBox3fa BVH4Triangle1vBuilderMortonGeneral::leafBounds(NodeRef& ref) const
-    {
-      BBox3fa bounds = empty;
-      size_t num; Triangle1v* tri = (Triangle1v*) ref.leaf(num);
-      if (listMode) {
-	do {
-	  bounds.extend(tri->bounds());
-	} while (!((tri++)->last()));
-      }
-      else
-      {
-	for (size_t i=0; i<num; i++) 
-	  bounds.extend(tri[i].bounds());
-      }
-      return bounds;
-    }
-    
-    __forceinline BBox3fa BVH4Triangle4vBuilderMortonGeneral::leafBounds(NodeRef& ref) const
-    {
-      BBox3fa bounds = empty;
-      size_t num; Triangle4v* tri = (Triangle4v*) ref.leaf(num);
-      if (listMode) {
-	do {
-	  bounds.extend(tri->bounds());
-	} while (!((tri++)->last()));
-      }
-      else
-      {
-	for (size_t i=0; i<num; i++) 
-	  bounds.extend(tri[i].bounds());
-      }
-      return bounds;
-    }
-
-    __forceinline BBox3fa BVH4Triangle4iBuilderMortonGeneral::leafBounds(NodeRef& ref) const
-    {
-      BBox3fa bounds = empty;
-      size_t num; Triangle4i* tri = (Triangle4i*) ref.leaf(num);
-      if (listMode) {
-	do {
-	  bounds.extend(tri->bounds());
-	} while (!((tri++)->last()));
-      }
-      else
-      {
-	for (size_t i=0; i<num; i++) 
-	  bounds.extend(tri[i].bounds());
-      }
-      return bounds;
-    }
-    
     __forceinline BBox3fa BVH4BuilderMortonGeneral::nodeBounds(NodeRef& ref) const
     {
       if (ref.isNode())
@@ -1059,46 +730,6 @@ namespace embree
 		     Vec3fa(upper_x,upper_y,upper_z));
     }
 
-    void BVH4BuilderMortonGeneral::build_sequential_morton(size_t threadIndex, size_t threadCount) 
-    {
-      /* start measurement */
-      double t0 = 0.0f;
-      if (g_verbose >= 2) t0 = getSeconds();
-
-      /* compute scene bounds */
-      global_bounds = computeBounds();
-      bvh->bounds = global_bounds.geomBounds;
-
-      /* compute morton codes */
-      size_t dst = 0;
-      if (mesh) computeMortonCodes(0,numPrimitives,dst,mesh->id,0,morton);
-      else      computeMortonCodes(0,numPrimitives,dst,0,0,morton);
-      numPrimitives = dst;
-
-      /* sort morton codes */
-      std::sort(&morton[0],&morton[numPrimitives]); // FIXME: use radix sort
-      
-#if defined(DEBUG)
-      for (size_t i=1; i<numPrimitives; i++)
-        assert(morton[i-1].code <= morton[i].code);
-#endif	    
-      
-      BuildRecord br;
-      br.init(0,numPrimitives);
-      br.parent = &bvh->root;
-      br.depth = 1;
-      
-      /* perform first splits in single threaded mode */
-      bvh->alloc.clear();
-      __aligned(64) Allocator nodeAlloc(&bvh->alloc);
-      __aligned(64) Allocator leafAlloc(&bvh->alloc);
-      recurse(br,nodeAlloc,leafAlloc,RECURSE,threadIndex);	    
-      _mm_sfence(); // make written leaves globally visible
-            
-      /* stop measurement */
-      if (g_verbose >= 2) dt = getSeconds()-t0;
-    }
-    
     void BVH4BuilderMortonGeneral::build_parallel_morton(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount) 
     {
       /* start measurement */

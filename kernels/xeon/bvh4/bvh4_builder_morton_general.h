@@ -246,18 +246,6 @@ namespace embree
       size_t numAllocatedNodes;
       CentGeomBBox3fa global_bounds;
       Barrier barrier;
-      //createSmallLeaf createSmallLeaf;
-      //leafBounds leafBounds;
-      //LockStepTaskScheduler scheduler;
-    };
-
-    class BVH4Triangle1BuilderMortonGeneral : public BVH4BuilderMortonGeneral
-    {
-    public:
-      BVH4Triangle1BuilderMortonGeneral (BVH4* bvh, Scene* scene, size_t listMode);
-      BVH4Triangle1BuilderMortonGeneral (BVH4* bvh, TriangleMesh* mesh, size_t listMode);
-      BBox3fa leafBounds(NodeRef& ref) const;
-      void createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o);
     };
 
     class BVH4Triangle4BuilderMortonGeneral : public BVH4BuilderMortonGeneral
@@ -265,42 +253,6 @@ namespace embree
     public:
       BVH4Triangle4BuilderMortonGeneral (BVH4* bvh, Scene* scene, size_t listMode);
       BVH4Triangle4BuilderMortonGeneral (BVH4* bvh, TriangleMesh* mesh, size_t listMode);
-      BBox3fa leafBounds(NodeRef& ref) const;
-      void createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o);
-    };
-
-    class BVH4Triangle8BuilderMortonGeneral : public BVH4BuilderMortonGeneral
-    {
-    public:
-      BVH4Triangle8BuilderMortonGeneral (BVH4* bvh, Scene* scene, size_t listMode);
-      BVH4Triangle8BuilderMortonGeneral (BVH4* bvh, TriangleMesh* mesh, size_t listMode);
-      BBox3fa leafBounds(NodeRef& ref) const;
-      void createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o);
-    };
-
-    class BVH4Triangle1vBuilderMortonGeneral : public BVH4BuilderMortonGeneral
-    {
-    public:
-      BVH4Triangle1vBuilderMortonGeneral (BVH4* bvh, Scene* scene, size_t listMode);
-      BVH4Triangle1vBuilderMortonGeneral (BVH4* bvh, TriangleMesh* mesh, size_t listMode);
-      BBox3fa leafBounds(NodeRef& ref) const;
-      void createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o);
-    };
-
-    class BVH4Triangle4vBuilderMortonGeneral : public BVH4BuilderMortonGeneral
-    {
-    public:
-      BVH4Triangle4vBuilderMortonGeneral (BVH4* bvh, Scene* scene, size_t listMode);
-      BVH4Triangle4vBuilderMortonGeneral (BVH4* bvh, TriangleMesh* mesh, size_t listMode);
-      BBox3fa leafBounds(NodeRef& ref) const;
-      void createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o);
-    };
-
-    class BVH4Triangle4iBuilderMortonGeneral : public BVH4BuilderMortonGeneral
-    {
-    public:
-      BVH4Triangle4iBuilderMortonGeneral (BVH4* bvh, Scene* scene, size_t listMode);
-      BVH4Triangle4iBuilderMortonGeneral (BVH4* bvh, TriangleMesh* mesh, size_t listMode);
       BBox3fa leafBounds(NodeRef& ref) const;
       void createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o);
     };
