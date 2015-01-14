@@ -14,9 +14,10 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
+#define PROFILE_MORTON_GENERAL
+
 #include "bvh4.h"
 #include "bvh4_builder_morton_general.h"
-#include "bvh4_statistics.h"
 
 #include "geometry/triangle1.h"
 #include "geometry/triangle4.h"
@@ -26,123 +27,13 @@
 #include "geometry/triangle4i.h"
 
 #define DBG(x) 
-#define PROFILE
+
 
 namespace embree 
 {
   namespace isa
   {
     static double dt = 0.0f;
-
-    BVH4BuilderMortonGeneral::BVH4BuilderMortonGeneral (BVH4* bvh, Scene* scene, TriangleMesh* mesh, size_t listMode, size_t logBlockSize, bool needVertices, size_t primBytes, const size_t minLeafSize, const size_t maxLeafSize)
-      : bvh(bvh), state(nullptr), scheduler(&scene->lockstep_scheduler), scene(scene), mesh(mesh), listMode(listMode), logBlockSize(logBlockSize), needVertices(needVertices), primBytes(primBytes), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize),
-	topLevelItemThreshold(0), encodeShift(0), encodeMask(-1), morton(NULL), bytesMorton(0), numGroups(0), numPrimitives(0), numAllocatedPrimitives(0), numAllocatedNodes(0)
-    {
-      needAllThreads = true;
-      //if (mesh) needAllThreads = mesh->numTriangles > 50000;
-    }
-    
-    BVH4Triangle4BuilderMortonGeneral::BVH4Triangle4BuilderMortonGeneral (BVH4* bvh, Scene* scene, size_t listMode)
-      : BVH4BuilderMortonGeneral(bvh,scene,NULL,listMode,2,false,sizeof(Triangle4),4,inf) {}
-        
-    BVH4BuilderMortonGeneral::~BVH4BuilderMortonGeneral () 
-    {
-      if (morton) os_free(morton,bytesMorton);
-      bvh->alloc.shrink();
-    }
-    
-    void BVH4BuilderMortonGeneral::build(size_t threadIndex, size_t threadCount) 
-    {
-      if (g_verbose >= 2)
-        std::cout << "building BVH4<" << bvh->primTy.name << "> with " << TOSTRING(isa) << "::BVH4BuilderMortonGeneral ... " << std::flush;
-      
-      /* calculate size of scene */
-      size_t numPrimitivesOld = numPrimitives;
-      if (mesh) numPrimitives = mesh->numTriangles;
-      else      numPrimitives = scene->numTriangles;
-      
-      bvh->numPrimitives = numPrimitives;
-      numGroups = scene->size();
-      size_t maxPrimsPerGroup = 0;
-      if (mesh) 
-        maxPrimsPerGroup = numPrimitives;
-      else {
-	for (size_t i=0; i<numGroups; i++) // FIXME: encoding unsafe
-        {
-          Geometry* geom = scene->get(i);
-          if (!geom || geom->type != TRIANGLE_MESH) continue;
-          TriangleMesh* mesh = (TriangleMesh*) geom;
-	  if (mesh->numTimeSteps != 1) continue;
-	  maxPrimsPerGroup = max(maxPrimsPerGroup,mesh->numTriangles);
-        }
-
-        /* calculate groupID, primID encoding */
-        encodeShift = __bsr(maxPrimsPerGroup) + 1;
-        encodeMask = ((size_t)1 << encodeShift)-1;
-        size_t maxGroups = ((size_t)1 << (31-encodeShift))-1;
-      
-        if (maxPrimsPerGroup > encodeMask || numGroups > maxGroups) 
-          THROW_RUNTIME_ERROR("encoding error in morton builder");
-      }
-      
-      /* preallocate arrays */
-      if (numPrimitivesOld != numPrimitives)
-      {
-	bvh->init(sizeof(BVH4::Node),numPrimitives,threadCount);
-        if (morton) os_free(morton,bytesMorton);
-	bytesMorton = ((numPrimitives+7)&(-8)) * sizeof(MortonID32Bit);
-        morton = (MortonID32Bit* ) os_malloc(bytesMorton); memset(morton,0,bytesMorton);
-      }
-         
-#if defined(PROFILE)
-      
-      double dt_min = pos_inf;
-      double dt_avg = 0.0f;
-      double dt_max = neg_inf;
-      for (size_t i=0; i<20; i++) 
-      {
-        double t0 = getSeconds();
-#endif
-
-        state.reset(new MortonBuilderState);
-	size_t numActiveThreads = threadCount;
-	//size_t numActiveThreads = min(threadCount,getNumberOfCores());
-	build_parallel_morton(threadIndex,numActiveThreads,0,1);
-        state.reset(NULL);
-
-
-#if defined(PROFILE)
-        double dt = getSeconds()-t0;
-        dt_min = min(dt_min,dt);
-        if (i != 0) dt_avg = dt_avg + dt;
-        dt_max = max(dt_max,dt);
-      }
-      dt_avg /= double(19);
-      
-      std::cout << "[DONE]" << std::endl;
-      std::cout << "  min = " << 1000.0f*dt_min << "ms (" << numPrimitives/dt_min*1E-6 << " Mtris/s)" << std::endl;
-      std::cout << "  avg = " << 1000.0f*dt_avg << "ms (" << numPrimitives/dt_avg*1E-6 << " Mtris/s)" << std::endl;
-      std::cout << "  max = " << 1000.0f*dt_max << "ms (" << numPrimitives/dt_max*1E-6 << " Mtris/s)" << std::endl;
-      std::cout << BVH4Statistics(bvh).str();
-#endif
-
-      if (g_verbose >= 2) {
-        std::cout << "[DONE] " << 1000.0f*dt << "ms (" << numPrimitives/dt*1E-6 << " Mtris/s)" << std::endl;
-        std::cout << "  bvh4::alloc : "; bvh->alloc.print_statistics();
-	std::cout << "  bvh4::alloc2: "; bvh->alloc2.print_statistics();
-        std::cout << BVH4Statistics(bvh).str();
-      }
-
-      /* benchmark mode */
-      if (g_benchmark) {
-	BVH4Statistics stat(bvh);
-	std::cout << "BENCHMARK_BUILD " << dt << " " << double(numPrimitives)/dt << " " << stat.sah() << " " << stat.bytesUsed() << std::endl;
-      }
-    }
-    
-    // =======================================================================================================
-    // =======================================================================================================
-    // =======================================================================================================
     
     void BVH4BuilderMortonGeneral::initThreadState(const size_t threadID, const size_t numThreads)
     {
@@ -431,7 +322,7 @@ namespace embree
     // =======================================================================================================
     // =======================================================================================================
     
-    void BVH4Triangle4BuilderMortonGeneral::createSmallLeaf(BuildRecord& current, Allocator* alloc, BBox3fa& box_o)
+    void BVH4BuilderMortonGeneral::createSmallLeaf(BuildRecord& current, Allocator* alloc, BBox3fa& box_o)
     {
       ssef lower(pos_inf);
       ssef upper(neg_inf);
@@ -523,6 +414,7 @@ namespace embree
       /* sort morton codes */
       barrier.init(threadCount);
       scheduler->dispatchTask( task_radixsort, this, threadIndex, threadCount );
+      //radix_sort_u32(dest,
 
 #if defined(DEBUG)
       for (size_t i=1; i<numPrimitives; i++)
@@ -542,7 +434,9 @@ namespace embree
       if (g_verbose >= 2) dt = getSeconds()-t0;
     }
 
-    Builder* BVH4Triangle4BuilderMortonGeneral  (void* bvh, Scene* scene, size_t mode) { return new class BVH4Triangle4BuilderMortonGeneral ((BVH4*)bvh,scene,mode); }
+      Builder* BVH4Triangle4BuilderMortonGeneral  (void* bvh, Scene* scene, size_t mode) { 
+        return new class BVH4BuilderMortonGeneral ((BVH4*)bvh,scene,NULL,mode,2,false,sizeof(Triangle4),4,inf); 
+      }
   }
 }
 
