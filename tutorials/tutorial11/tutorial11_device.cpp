@@ -117,7 +117,7 @@ extern "C" void device_init (int8* cfg)
     double t0 = getSeconds();
     
     allocator.reset();
-    Node* root = isa::bvh_builder_sah<Node*>(
+    Node* root = isa::bvh_builder_sah<Node*>( // FIXME: rename to bvh_builder_binned_sah
 
       /* thread local allocator for fast allocations */
       [&] () -> FastAllocator::ThreadLocal* { 
@@ -125,7 +125,7 @@ extern "C" void device_init (int8* cfg)
       },
 
       /* lambda function that creates BVH nodes */
-      [&](isa::BuildRecord<Node*>* children, const size_t N, FastAllocator::ThreadLocal* alloc) -> Node* 
+      __forceinline [&](isa::BuildRecord<Node*>* children, const size_t N, FastAllocator::ThreadLocal* alloc) -> Node*  // FIXME: Node* to void
       {
         assert(N <= 2);
         InnerNode* node = new (alloc->malloc(sizeof(InnerNode))) InnerNode;
@@ -133,6 +133,7 @@ extern "C" void device_init (int8* cfg)
           node->bounds[i] = children[i].geomBounds;
           children[i].parent = &node->children[i];
         }
+        // FIXME: also set parent->parent to node
         return node;
       },
 
@@ -142,7 +143,7 @@ extern "C" void device_init (int8* cfg)
         assert(current.size() == 1);
         return new (alloc->malloc(sizeof(LeafNode))) LeafNode(prims[current.begin].ID());
       },
-      prims.data(),pinfo,2,1024,0,1,1);
+      prims.data(),pinfo,2,1024,0,4,8); // FIXME: change log blocksize to blocksize
     
     double t1 = getSeconds();
     
