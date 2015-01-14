@@ -185,22 +185,181 @@ namespace embree
       
       /*! creates leaf node */
       virtual void createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID, BBox3fa& box_o) = 0;
-      
-      /*! creates leaf node that is larger than supported by BVH */
-      BBox3fa createLeaf(BuildRecord& current, Allocator& nodeAlloc, Allocator& leafAlloc, size_t threadID);
-      
-      /*! fallback split mode */
-      void splitFallback(BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild) const;
-      
-      /*! split a build record into two */
-      void split(BuildRecord& current, BuildRecord& left, BuildRecord& right) const;
-      
-      /*! main recursive build function */
-      BBox3fa recurse(BuildRecord& current, 
-                     Allocator& nodeAlloc, Allocator& leafAlloc,
-                     const size_t mode, 
-                     const size_t threadID);
 
+      void splitFallback(BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild) const
+      {
+        const unsigned int center = (current.begin + current.end)/2;
+        leftChild.init(current.begin,center);
+        rightChild.init(center,current.end);
+      }
+      
+      BBox3fa createLeaf(BuildRecord& current, Allocator& nodeAlloc, Allocator& leafAlloc, size_t threadID)
+      {
+#if defined(DEBUG)
+        if (current.depth > BVH4::maxBuildDepthLeaf) 
+          THROW_RUNTIME_ERROR("ERROR: depth limit reached");
+#endif
+        
+        /* create leaf for few primitives */
+        if (current.size() <= minLeafSize) {
+          BBox3fa bounds;
+          createSmallLeaf(current,leafAlloc,threadID,bounds);
+          return bounds;
+        }
+        
+        /* first split level */
+        BuildRecord record0, record1;
+        splitFallback(current,record0,record1);
+        
+        /* second split level */
+        BuildRecord children[4];
+        splitFallback(record0,children[0],children[1]);
+        splitFallback(record1,children[2],children[3]);
+        
+        /* allocate node */
+        Node* node = (Node*) nodeAlloc.malloc(sizeof(Node)); node->clear();
+        *current.parent = bvh->encodeNode(node);
+        
+        /* recurse into each child */
+        BBox3fa bounds0 = empty;
+        for (size_t i=0; i<4; i++) {
+          children[i].parent = &node->child(i);
+          children[i].depth = current.depth+1;
+          BBox3fa bounds = createLeaf(children[i],nodeAlloc,leafAlloc,threadID);
+          bounds0.extend(bounds);
+          node->set(i,bounds);
+        }
+        BVH4::compact(node); // move empty nodes to the end
+        return bounds0;
+      }  
+      
+      __forceinline void split(BuildRecord& current,
+                               BuildRecord& left,
+                               BuildRecord& right) const
+      {
+        const unsigned int code_start = morton[current.begin].code;
+        const unsigned int code_end   = morton[current.end-1].code;
+        unsigned int bitpos = clz(code_start^code_end);
+        
+        /* if all items mapped to same morton code, then create new morton codes for the items */
+        if (unlikely(bitpos == 32)) 
+        {
+          recreateMortonCodes(current);
+          const unsigned int code_start = morton[current.begin].code;
+          const unsigned int code_end   = morton[current.end-1].code;
+          bitpos = clz(code_start^code_end);
+          
+          /* if the morton code is still the same, goto fall back split */
+          if (unlikely(bitpos == 32)) 
+          {
+            size_t center = (current.begin + current.end)/2; 
+            left.init(current.begin,center);
+            right.init(center,current.end);
+            return;
+          }
+        }
+        
+        /* split the items at the topmost different morton code bit */
+        const unsigned int bitpos_diff = 31-bitpos;
+        const unsigned int bitmask = 1 << bitpos_diff;
+        
+        /* find location where bit differs using binary search */
+        size_t begin = current.begin;
+        size_t end   = current.end;
+        while (begin + 1 != end) {
+          const size_t mid = (begin+end)/2;
+          const unsigned bit = morton[mid].code & bitmask;
+          if (bit == 0) begin = mid; else end = mid;
+        }
+        size_t center = end;
+#if defined(DEBUG)      
+        for (unsigned int i=begin;  i<center; i++) assert((morton[i].code & bitmask) == 0);
+        for (unsigned int i=center; i<end;    i++) assert((morton[i].code & bitmask) == bitmask);
+#endif
+        
+        left.init(current.begin,center);
+        right.init(center,current.end);
+      }
+      
+      BBox3fa recurse(BuildRecord& current, Allocator& nodeAlloc, Allocator& leafAlloc, const size_t mode, const size_t threadID) 
+      {
+        /* stop toplevel recursion at some number of items */
+        if (mode == CREATE_TOP_LEVEL && current.size() <= topLevelItemThreshold) {
+          state->buildRecords.push_back(current);
+          return empty;
+        }
+        
+        __aligned(64) BuildRecord children[BVH4::N];
+        
+        /* create leaf node */
+        if (unlikely(current.depth >= BVH4::maxBuildDepth || current.size() <= minLeafSize)) {
+          return createLeaf(current,nodeAlloc,leafAlloc,threadID);
+        }
+        
+        /* fill all 4 children by always splitting the one with the largest surface area */
+        size_t numChildren = 1;
+        children[0] = current;
+        
+        do {
+          
+          /* find best child with largest bounding box area */
+          int bestChild = -1;
+          unsigned bestItems = 0;
+          for (unsigned int i=0; i<numChildren; i++)
+          {
+            /* ignore leaves as they cannot get split */
+            if (children[i].size() <= minLeafSize)
+              continue;
+            
+            /* remember child with largest area */
+            if (children[i].size() > bestItems) { 
+              bestItems = children[i].size();
+              bestChild = i;
+            }
+          }
+          if (bestChild == -1) break;
+          
+          /*! split best child into left and right child */
+          __aligned(64) BuildRecord left, right;
+          split(children[bestChild],left,right);
+          
+          /* add new children left and right */
+          left.depth = right.depth = current.depth+1;
+          children[bestChild] = children[numChildren-1];
+          children[numChildren-1] = left;
+          children[numChildren+0] = right;
+          numChildren++;
+          
+        } while (numChildren < BVH4::N);
+        
+        /* create leaf node if no split is possible */
+        if (unlikely(numChildren == 1)) {
+          BBox3fa bounds; createSmallLeaf(current,leafAlloc,threadID,bounds); return bounds;
+        }
+        
+        /* allocate node */
+        Node* node = (Node*) nodeAlloc.malloc(sizeof(Node)); node->clear();
+        *current.parent = bvh->encodeNode(node);
+        
+        /* recurse into each child */
+        BBox3fa bounds0 = empty;
+        for (size_t i=0; i<numChildren; i++) 
+        {
+          children[i].parent = &node->child(i);
+          
+          if (children[i].size() <= minLeafSize) {
+            const BBox3fa bounds = createLeaf(children[i],nodeAlloc,leafAlloc,threadID);
+            bounds0.extend(bounds);
+            node->set(i,bounds);
+          } else {
+            const BBox3fa bounds = recurse(children[i],nodeAlloc,leafAlloc,mode,threadID);
+            bounds0.extend(bounds);
+            node->set(i,bounds);
+          }
+        }
+        return bounds0;
+      }
+      
       /*! calculates bounding box of leaf node */
       virtual BBox3fa leafBounds(NodeRef& ref) const = 0;
 
