@@ -128,6 +128,8 @@ namespace embree
 
       if (g_verbose >= 2) {
         std::cout << "[DONE] " << 1000.0f*dt << "ms (" << numPrimitives/dt*1E-6 << " Mtris/s)" << std::endl;
+        std::cout << "  bvh4::alloc : "; bvh->alloc.print_statistics();
+	std::cout << "  bvh4::alloc2: "; bvh->alloc2.print_statistics();
         std::cout << BVH4Statistics(bvh).str();
       }
 
