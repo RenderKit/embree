@@ -101,6 +101,10 @@ namespace embree
       static const size_t LATTICE_BITS_PER_DIM = 10;
       static const size_t LATTICE_SIZE_PER_DIM = size_t(1) << LATTICE_BITS_PER_DIM;
 
+      static const size_t branchingFactor = 4; // FIXME: 
+      static const size_t maxDepth = 64; // FIXME: 
+      static const size_t MAX_BRANCHING_FACTOR = 16;
+
     public:
   
       BVH4BuilderMortonGeneral (AllocNodeFunc& allocNode, SetNodeBoundsFunc& setBounds, CreateLeafFunc& createLeaf, BVH4* bvh, Scene* scene, TriangleMesh* mesh, size_t listMode, size_t logBlockSize, bool needVertices, size_t primBytes, const size_t minLeafSize, const size_t maxLeafSize)
@@ -115,47 +119,66 @@ namespace embree
       
       BBox3fa createLargeLeaf(BuildRecord& current, Allocator* alloc)
       {
-#if defined(DEBUG)
-        if (current.depth > BVH4::maxBuildDepthLeaf) 
-          THROW_RUNTIME_ERROR("ERROR: depth limit reached");
-#endif
+        if (current.depth > maxDepth) 
+          THROW_RUNTIME_ERROR("depth limit reached");
         
         /* create leaf for few primitives */
-        if (current.size() <= minLeafSize) {
+        if (current.size() <= maxLeafSize) {
           BBox3fa bounds;
           createLeaf(current,alloc,bounds);
           return bounds;
         }
+
+        /* fill all children by always splitting the largest one */
+        BuildRecord children[MAX_BRANCHING_FACTOR];
+        size_t numChildren = 1;
+        children[0] = current;
         
-        /* first split level */
-        BuildRecord record0, record1;
-        splitFallback(current,record0,record1);
-        
-        /* second split level */
-        BuildRecord children[4];
-        splitFallback(record0,children[0],children[1]);
-        splitFallback(record1,children[2],children[3]);
-        
-        /* allocate node */
-        //Node* node = (Node*) alloc->alloc0.malloc(sizeof(Node)); node->clear();
-        //*current.parent = bvh->encodeNode(node);
-        Node* node = allocNode(current,children,4,alloc);
-        
+        do {
+          
+          /* find best child with largest bounding box area */
+          int bestChild = -1;
+          int bestSize = 0;
+          for (size_t i=0; i<numChildren; i++)
+          {
+            /* ignore leaves as they cannot get split */
+            if (children[i].size() <= maxLeafSize)
+              continue;
+            
+            /* remember child with largest size */
+            if (children[i].size() > bestSize) { 
+              bestSize = children[i].size();
+              bestChild = i;
+            }
+          }
+          if (bestChild == -1) break;
+          
+          /*! split best child into left and right child */
+          __aligned(64) BuildRecord left, right;
+          splitFallback(children[bestChild],left,right);
+          
+          /* add new children left and right */
+          left.depth = current.depth+1; 
+          right.depth = current.depth+1;
+          children[bestChild] = children[numChildren-1];
+          children[numChildren-1] = left;
+          children[numChildren+0] = right;
+          numChildren++;
+          
+        } while (numChildren < branchingFactor);
+
+        /* create node */
+        //*current.parent = createNode(children,numChildren,nodeAlloc);
+        Node* node = allocNode(current,children,numChildren,alloc);
+
         /* recurse into each child */
-        //BBox3fa bounds0 = empty;
-        BBox3fa bounds[4];
-        for (size_t i=0; i<4; i++) {
-          children[i].parent = &node->child(i);
-          children[i].depth = current.depth+1;
+        BBox3fa bounds[MAX_BRANCHING_FACTOR];
+        for (size_t i=0; i<numChildren; i++) {
           bounds[i] = createLargeLeaf(children[i],alloc);
-          //bounds0.extend(bounds);
-          //node->set(i,bounds);
         }
-        BBox3fa bounds0 = setBounds(node,bounds,4);
-        BVH4::compact(node); // move empty nodes to the end
-        return bounds0;
-      }  
-      
+        return setBounds(node,bounds,numChildren);
+      }
+
       /*! recreates morton codes when reaching a region where all codes are identical */
       void recreateMortonCodes(BuildRecord& current) const
       {
@@ -303,46 +326,22 @@ namespace embree
         BBox3fa bounds[4];
       
         /* process top parts of tree parallel */
-        //BBox3fa bounds0 = empty;
         if (current.size() > 4096)
         {
-          //BBox3fa bounds[4];
           tbb::task_group g;
           for (size_t i=0; i<numChildren; i++) {
-            //children[i].parent = &node->child(i);
             g.run([&,i]{ bounds[i] = recurse(children[i],NULL); });
           }
           g.wait();
-
-          //for (size_t i=0; i<numChildren; i++) {
-          //  bounds0.extend(bounds[i]);
-          //  node->set(i,bounds[i]);
-          //}
-          
         } 
 
         /* finish tree sequential */
-        else 
-        {
-          /* recurse into each child */
+        else {
           for (size_t i=0; i<numChildren; i++) 
-          {
-            //children[i].parent = &node->child(i);
-            
-            if (children[i].size() <= minLeafSize) {
-              bounds[i] = createLargeLeaf(children[i],alloc);
-              //bounds0.extend(bounds);
-              //node->set(i,bounds);
-            } else {
-              bounds[i] = recurse(children[i],alloc);
-              //bounds0.extend(bounds);
-              //node->set(i,bounds);
-            }
-          }
+            bounds[i] = recurse(children[i],alloc);
         }
 
         return setBounds(node,bounds,numChildren);
-        //return bounds0;
       }
 
        /* build function */
