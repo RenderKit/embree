@@ -95,14 +95,9 @@ namespace embree
 
     public:
       BVH4* bvh;               //!< Output BVH
-      //LockStepTaskScheduler* scheduler;
-      //std::unique_ptr<MortonBuilderState> state;
 
       Scene* scene;
-      TriangleMesh* mesh;
       size_t logBlockSize;
-      size_t blocks(size_t N) { return (N+((1<<logBlockSize)-1)) >> logBlockSize; }
-      bool needVertices;
       size_t primBytes; 
       size_t minLeafSize;
       size_t maxLeafSize;
@@ -111,6 +106,8 @@ namespace embree
       size_t topLevelItemThreshold;
       size_t encodeShift;
       size_t encodeMask;
+
+      bool needVertices;
             
     public:
       MortonID32Bit* __restrict__ morton;
@@ -125,7 +122,7 @@ namespace embree
       Barrier barrier;
 
       BVH4BuilderMortonGeneral2 (BVH4* bvh, Scene* scene, TriangleMesh* mesh, size_t listMode, size_t logBlockSize, bool needVertices, size_t primBytes, const size_t minLeafSize, const size_t maxLeafSize)
-        : bvh(bvh), scene(scene), mesh(mesh), listMode(listMode), logBlockSize(logBlockSize), needVertices(needVertices), primBytes(primBytes), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize),
+        : bvh(bvh), scene(scene), listMode(listMode), logBlockSize(logBlockSize), needVertices(needVertices), primBytes(primBytes), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize),
 	topLevelItemThreshold(0), encodeShift(0), encodeMask(-1), morton(NULL), bytesMorton(0), numGroups(0), numPrimitives(0), numAllocatedPrimitives(0), numAllocatedNodes(0)
       {
         needAllThreads = true;
@@ -146,15 +143,12 @@ namespace embree
       
       /* calculate size of scene */
       size_t numPrimitivesOld = numPrimitives;
-      if (mesh) numPrimitives = mesh->numTriangles;
-      else      numPrimitives = scene->numTriangles;
+      numPrimitives = scene->numTriangles;
       
       bvh->numPrimitives = numPrimitives;
       numGroups = scene->size();
       size_t maxPrimsPerGroup = 0;
-      if (mesh) 
-        maxPrimsPerGroup = numPrimitives;
-      else {
+
 	for (size_t i=0; i<numGroups; i++) // FIXME: encoding unsafe
         {
           Geometry* geom = scene->get(i);
@@ -171,7 +165,7 @@ namespace embree
       
         if (maxPrimsPerGroup > encodeMask || numGroups > maxGroups) 
           THROW_RUNTIME_ERROR("encoding error in morton builder");
-      }
+
       
       /* preallocate arrays */
       if (numPrimitivesOld != numPrimitives)
@@ -206,7 +200,7 @@ namespace embree
         for (size_t i=r.begin(); i<r.end(); i++)
         {
           const BBox3fa b = mesh->bounds(i);
-          if (!inFloatRange(b)) continue;
+          //if (!inFloatRange(b)) continue;
           bounds.extend(b);
         }
         return bounds;

@@ -107,7 +107,7 @@ namespace embree
 
       /*! Constructor. */
       BVH4BuilderMortonGeneral (CreateLeafFunc& createLeaf, BVH4* bvh, Scene* scene, TriangleMesh* mesh, size_t listMode, size_t logBlockSize, bool needVertices, size_t primBytes, const size_t minLeafSize, const size_t maxLeafSize)
-        : createLeaf(createLeaf), bvh(bvh), scene(scene), mesh(mesh), listMode(listMode), logBlockSize(logBlockSize), needVertices(needVertices), primBytes(primBytes), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize),
+        : createLeaf(createLeaf), bvh(bvh), scene(scene), listMode(listMode), primBytes(primBytes), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize),
 	topLevelItemThreshold(0), encodeShift(0), encodeMask(-1), morton(NULL), bytesMorton(0), numGroups(0), numPrimitives(0), numAllocatedPrimitives(0), numAllocatedNodes(0)
       {
         //needAllThreads = true;
@@ -183,7 +183,7 @@ namespace embree
           const size_t index  = morton[i].index;
           const size_t primID = index & encodeMask; 
           const size_t geomID = index >> encodeShift; 
-          const TriangleMesh* mesh = this->mesh ? this->mesh : scene->getTriangleMesh(geomID);
+          const TriangleMesh* mesh = scene->getTriangleMesh(geomID);
           global_bounds.extend(mesh->bounds(primID));
         }
         
@@ -197,7 +197,7 @@ namespace embree
           const size_t index  = morton[i].index;
           const size_t primID = index & encodeMask; 
           const size_t geomID = index >> encodeShift; 
-          const TriangleMesh* mesh = this->mesh ? this->mesh : scene->getTriangleMesh(geomID);
+          const TriangleMesh* mesh = scene->getTriangleMesh(geomID);
           const BBox3fa b = mesh->bounds(primID);
           const ssef lower = (ssef)b.lower;
           const ssef upper = (ssef)b.upper;
@@ -384,10 +384,10 @@ namespace embree
       //std::unique_ptr<MortonBuilderState> state;
 
       Scene* scene;
-      TriangleMesh* mesh;
-      size_t logBlockSize;
-      size_t blocks(size_t N) { return (N+((1<<logBlockSize)-1)) >> logBlockSize; }
-      bool needVertices;
+      //TriangleMesh* mesh;
+      //size_t logBlockSize;
+      //size_t blocks(size_t N) { return (N+((1<<logBlockSize)-1)) >> logBlockSize; }
+      //bool needVertices;
       size_t primBytes; 
       size_t minLeafSize;
       size_t maxLeafSize;
