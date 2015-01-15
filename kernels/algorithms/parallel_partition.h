@@ -339,14 +339,30 @@ namespace embree
         
         _mm_sfence(); // make written leaves globally visible
 
-        assert( numLeftRemainderBlocks == 1);
-        assert( numRightRemainderBlocks == 1);
+        DBG_PART(
+                 DBG_PRINT(numLeftRemainderBlocks);
+                 DBG_PRINT(numRightRemainderBlocks);
+                 );
+                 
+        assert(numLeftRemainderBlocks || numRightRemainderBlocks);
+        
+        size_t left_begin = (size_t)-1;
+        size_t left_end   = (size_t)-1;
+        
+        if (numLeftRemainderBlocks)
+          getLeftArrayIndex(leftRemainderBlockIDs[0],left_begin,left_end);
 
-        size_t left_begin, left_end;
-        getLeftArrayIndex(leftRemainderBlockIDs[0],left_begin,left_end);
+        size_t right_begin = (size_t)-1;
+        size_t right_end   = (size_t)-1;
+        
+        if (numRightRemainderBlocks)
+          getRightArrayIndex(rightRemainderBlockIDs[0],right_begin,right_end);
 
-        size_t right_begin, right_end;
-        getRightArrayIndex(rightRemainderBlockIDs[0],right_begin,right_end);
+        if (left_begin == (size_t)-1)
+          left_begin = right_begin;
+
+        if (right_end == (size_t)-1)
+          right_end = left_end;
 
         
         DBG_PART(
@@ -363,7 +379,9 @@ namespace embree
         
         DBG_CHECK(
                   DBG_PRINT(right_end - left_begin);
+                  assert( right_end - left_begin <= 2*BLOCK_SIZE);
                   )
+          
         const size_t mid = serialPartitioning(left_begin,right_end,pivot);
         DBG_CHECK(
                  checkLeft(0,mid,pivot);
