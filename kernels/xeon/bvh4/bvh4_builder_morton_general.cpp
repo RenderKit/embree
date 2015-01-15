@@ -118,8 +118,9 @@ namespace embree
       __forceinline CalculateBounds (Scene* scene, size_t encodeShift, size_t encodeMask)
         : scene(scene), encodeShift(encodeShift), encodeMask(encodeMask) {}
 
-      __forceinline const BBox3fa operator() (unsigned index)
+      __forceinline const BBox3fa operator() (const MortonID32Bit& morton)
       {
+        const size_t index = morton.index;
         const size_t primID = index & encodeMask; 
         const size_t geomID = index >> encodeShift; 
         const TriangleMesh* mesh = scene->getTriangleMesh(geomID);

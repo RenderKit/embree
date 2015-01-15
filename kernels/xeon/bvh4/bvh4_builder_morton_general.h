@@ -265,12 +265,7 @@ namespace embree
         
         for (size_t i=current.begin; i<current.end; i++)
         {
-          const size_t index  = morton[i].index;
-          const size_t primID = index & encodeMask; 
-          const size_t geomID = index >> encodeShift; 
-          const TriangleMesh* mesh = scene->getTriangleMesh(geomID);
-          const BBox3fa b = mesh->bounds(primID);
-
+          const BBox3fa b = calculateBounds(morton[i]);
           const ssef lower = (ssef)b.lower;
           const ssef upper = (ssef)b.upper;
           const ssef centroid = lower+upper;
@@ -278,8 +273,7 @@ namespace embree
           const unsigned int bx = extract<0>(binID);
           const unsigned int by = extract<1>(binID);
           const unsigned int bz = extract<2>(binID);
-          const unsigned int code = bitInterleave(bx,by,bz);
-          morton[i].code  = code;
+          morton[i].code = bitInterleave(bx,by,bz);
         }
         std::sort(morton+current.begin,morton+current.end);
       }
