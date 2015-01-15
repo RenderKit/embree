@@ -166,8 +166,7 @@ namespace embree
         if (maxPrimsPerGroup > encodeMask || numGroups > maxGroups) 
           THROW_RUNTIME_ERROR("encoding error in morton builder");
 
-      
-      /* preallocate arrays */
+        /* preallocate arrays */
       if (numPrimitivesOld != numPrimitives)
       {
 	bvh->init(sizeof(BVH4::Node),numPrimitives,threadCount);
@@ -197,12 +196,7 @@ namespace embree
       global_bounds = parallel_for_for_reduce( iter1, CentGeomBBox3fa(empty), [&](TriangleMesh* mesh, const range<size_t>& r, size_t k) -> CentGeomBBox3fa
       {
         CentGeomBBox3fa bounds(empty);
-        for (size_t i=r.begin(); i<r.end(); i++)
-        {
-          const BBox3fa b = mesh->bounds(i);
-          //if (!inFloatRange(b)) continue;
-          bounds.extend(b);
-        }
+        for (size_t i=r.begin(); i<r.end(); i++) bounds.extend(mesh->bounds(i));
         return bounds;
       }, [] (CentGeomBBox3fa a, const CentGeomBBox3fa& b) { a.merge(b); return a; });
 

@@ -107,8 +107,8 @@ namespace embree
 
       /*! Constructor. */
       BVH4BuilderMortonGeneral (CreateLeafFunc& createLeaf, BVH4* bvh, Scene* scene, TriangleMesh* mesh, size_t listMode, size_t logBlockSize, bool needVertices, size_t primBytes, const size_t minLeafSize, const size_t maxLeafSize)
-        : createLeaf(createLeaf), bvh(bvh), scene(scene), listMode(listMode), primBytes(primBytes), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize),
-	topLevelItemThreshold(0), encodeShift(0), encodeMask(-1), morton(NULL), bytesMorton(0), numGroups(0), numPrimitives(0), numAllocatedPrimitives(0), numAllocatedNodes(0)
+        : createLeaf(createLeaf), bvh(bvh), scene(scene), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize),
+	  encodeShift(0), encodeMask(-1), morton(NULL),  numPrimitives(0)
       {
         //needAllThreads = true;
       }
@@ -388,26 +388,26 @@ namespace embree
       //size_t logBlockSize;
       //size_t blocks(size_t N) { return (N+((1<<logBlockSize)-1)) >> logBlockSize; }
       //bool needVertices;
-      size_t primBytes; 
+      //size_t primBytes; 
       size_t minLeafSize;
       size_t maxLeafSize;
-      size_t listMode;
+      //size_t listMode;
 
-      size_t topLevelItemThreshold;
+      //size_t topLevelItemThreshold;
       size_t encodeShift;
       size_t encodeMask;
             
     public:
       MortonID32Bit* __restrict__ morton;
-      size_t bytesMorton;
+      //size_t bytesMorton;
       
     public:
-      size_t numGroups;
+      //size_t numGroups;
       size_t numPrimitives;
-      size_t numAllocatedPrimitives;
-      size_t numAllocatedNodes;
-      CentGeomBBox3fa global_bounds;
-      Barrier barrier;
+      //size_t numAllocatedPrimitives;
+      //size_t numAllocatedNodes;
+      //CentGeomBBox3fa global_bounds;
+      //Barrier barrier;
 
       CreateLeafFunc& createLeaf;
     };
