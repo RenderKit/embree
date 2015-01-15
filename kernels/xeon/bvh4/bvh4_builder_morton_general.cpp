@@ -138,9 +138,9 @@ namespace embree
     {
     public:
       
-      BVH4BuilderMortonGeneral2 (BVH4* bvh, Scene* scene, size_t listMode, size_t logBlockSize, bool needVertices, size_t primBytes, const size_t minLeafSize, const size_t maxLeafSize)
-        : bvh(bvh), scene(scene), listMode(listMode), logBlockSize(logBlockSize), needVertices(needVertices), primBytes(primBytes), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize),
-          encodeShift(0), encodeMask(-1), morton(NULL), bytesMorton(0), numPrimitives(0), numAllocatedPrimitives(0), numAllocatedNodes(0)
+      BVH4BuilderMortonGeneral2 (BVH4* bvh, Scene* scene, bool needVertices, size_t primBytes, const size_t minLeafSize, const size_t maxLeafSize)
+        : bvh(bvh), scene(scene), needVertices(needVertices), primBytes(primBytes), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize),
+          encodeShift(0), encodeMask(-1), morton(NULL), bytesMorton(0), numPrimitives(0)
       {
         needAllThreads = true;
       }
@@ -260,32 +260,22 @@ namespace embree
       
     public:
       BVH4* bvh;               //!< Output BVH
-      
       Scene* scene;
-      size_t logBlockSize;
       size_t primBytes; 
       size_t minLeafSize;
       size_t maxLeafSize;
-      size_t listMode;
-      
-      //size_t topLevelItemThreshold;
       size_t encodeShift;
       size_t encodeMask;
-      
       bool needVertices;
       
     public:
       MortonID32Bit* morton;
       size_t bytesMorton;
-      
-    public:
       size_t numPrimitives;
-      size_t numAllocatedPrimitives;
-      size_t numAllocatedNodes;
     };
     
     Builder* BVH4Triangle4BuilderMortonGeneral  (void* bvh, Scene* scene, size_t mode) { 
-      return new class BVH4BuilderMortonGeneral2 ((BVH4*)bvh,scene,mode,2,false,sizeof(Triangle4),4,inf); 
+      return new class BVH4BuilderMortonGeneral2 ((BVH4*)bvh,scene,false,sizeof(Triangle4),4,inf); 
     }
   }
 }
