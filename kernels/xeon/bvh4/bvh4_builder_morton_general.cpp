@@ -115,6 +115,21 @@ namespace embree
       
     struct CalculateBounds
     {
+      __forceinline CalculateBounds (Scene* scene, size_t encodeShift, size_t encodeMask)
+        : scene(scene), encodeShift(encodeShift), encodeMask(encodeMask) {}
+
+      __forceinline const BBox3fa operator() (unsigned index)
+      {
+        const size_t primID = index & encodeMask; 
+        const size_t geomID = index >> encodeShift; 
+        const TriangleMesh* mesh = scene->getTriangleMesh(geomID);
+        return mesh->bounds(primID);
+      }
+
+    private:
+      Scene* scene;
+      size_t encodeShift;
+      size_t encodeMask;
     };
 
     class BVH4BuilderMortonGeneral2 : public Builder
@@ -203,7 +218,7 @@ namespace embree
       AllocBVH4Node allocNode;
       SetBVH4Bounds setBounds;
       CreateTriangle4Leaf createLeaf(scene,morton,encodeShift,encodeMask);
-      CalculateBounds calculateBounds;
+      CalculateBounds calculateBounds(scene,encodeShift,encodeMask);
       BVH4BuilderMortonGeneral<AllocBVH4Node,SetBVH4Bounds,CreateTriangle4Leaf,CalculateBounds> builder
         (allocNode,setBounds,createLeaf,calculateBounds,(BVH4*)bvh,scene,4,BVH4::maxBuildDepth,4,inf);
       BVH4::NodeRef root = builder.build(dest,morton,numPrimitives,encodeShift,encodeMask);
