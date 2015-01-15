@@ -142,7 +142,7 @@ namespace embree
     };
     
     template<typename NodeRef, typename Allocator, typename CreateAllocator, typename AllocNodeFunc, typename SetNodeBoundsFunc, typename CreateLeafFunc, typename CalculateBounds>
-      class BVH4BuilderMortonGeneral
+      class BVHBuilderCenter
     {
       ALIGNED_CLASS;
       
@@ -152,7 +152,7 @@ namespace embree
       
     public:
       
-      BVH4BuilderMortonGeneral (CreateAllocator& createAllocator, AllocNodeFunc& allocNode, SetNodeBoundsFunc& setBounds, CreateLeafFunc& createLeaf, CalculateBounds& calculateBounds,
+      BVHBuilderCenter (CreateAllocator& createAllocator, AllocNodeFunc& allocNode, SetNodeBoundsFunc& setBounds, CreateLeafFunc& createLeaf, CalculateBounds& calculateBounds,
                                 const size_t branchingFactor, const size_t maxDepth, const size_t minLeafSize, const size_t maxLeafSize)
         : createAllocator(createAllocator), allocNode(allocNode), setBounds(setBounds), createLeaf(createLeaf), calculateBounds(calculateBounds),
           branchingFactor(branchingFactor), maxDepth(maxDepth), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize), 
@@ -414,7 +414,7 @@ namespace embree
                                        MortonID32Bit* src, MortonID32Bit* tmp, size_t numPrimitives,
                                        const size_t branchingFactor, const size_t maxDepth, const size_t minLeafSize, const size_t maxLeafSize)
     {
-      BVH4BuilderMortonGeneral<NodeRef,decltype(createAllocator()),CreateAllocFunc,AllocNodeFunc,SetBoundsFunc,CreateLeafFunc,CalculateBoundsFunc> builder
+      BVHBuilderCenter<NodeRef,decltype(createAllocator()),CreateAllocFunc,AllocNodeFunc,SetBoundsFunc,CreateLeafFunc,CalculateBoundsFunc> builder
         (createAllocator,allocNode,setBounds,createLeaf,calculateBounds,branchingFactor,maxDepth,minLeafSize,maxLeafSize);
       return builder.build(src,tmp,numPrimitives);
     }
