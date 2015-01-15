@@ -31,58 +31,58 @@ namespace embree
   namespace isa
   {
     class BuildRecord 
+    {
+    public:
+      unsigned int begin;
+      unsigned int end;
+      unsigned int depth;
+      BVH4::NodeRef* parent;
+      
+      __forceinline unsigned int size() const {
+        return end - begin;
+      }
+      
+      __forceinline void init(const unsigned int _begin, const unsigned int _end)			 
       {
-      public:
-        unsigned int begin;
-        unsigned int end;
-        unsigned int depth;
-        BVH4::NodeRef* parent;
-        
-        __forceinline unsigned int size() const {
-          return end - begin;
-        }
-        
-        __forceinline void init(const unsigned int _begin, const unsigned int _end)			 
-        {
-          begin = _begin;
-          end = _end;
-          depth = 1;
-          parent = NULL;
-	}
-        
-	struct Greater {
-	  __forceinline bool operator()(const BuildRecord& a, const BuildRecord& b) {
-	    return a.size() > b.size();
-	  }
-	};
-      };
-
-      struct __aligned(8) MortonID32Bit
-      {
-      public:
-        unsigned int code;
-        unsigned int index;
-             
-      public:   
-        __forceinline operator unsigned() const { return code; }
-        
-        __forceinline unsigned int get(const unsigned int shift, const unsigned and_mask) const {
-          return (code >> shift) & and_mask;
-        }
-                
-        __forceinline bool operator<(const MortonID32Bit &m) const { return code < m.code; } 
-
-        __forceinline friend std::ostream &operator<<(std::ostream &o, const MortonID32Bit& mc) {
-          o << "index " << mc.index << " code = " << mc.code;
-          return o;
+        begin = _begin;
+        end = _end;
+        depth = 1;
+        parent = NULL;
+      }
+      
+      struct Greater {
+        __forceinline bool operator()(const BuildRecord& a, const BuildRecord& b) {
+          return a.size() > b.size();
         }
       };
-
-      struct MortonCodeGenerator
+    };
+    
+    struct __aligned(8) MortonID32Bit
+    {
+    public:
+      unsigned int code;
+      unsigned int index;
+      
+    public:   
+      __forceinline operator unsigned() const { return code; }
+      
+      __forceinline unsigned int get(const unsigned int shift, const unsigned and_mask) const {
+        return (code >> shift) & and_mask;
+      }
+      
+      __forceinline bool operator<(const MortonID32Bit &m) const { return code < m.code; } 
+      
+      __forceinline friend std::ostream &operator<<(std::ostream &o, const MortonID32Bit& mc) {
+        o << "index " << mc.index << " code = " << mc.code;
+        return o;
+      }
+    };
+    
+    struct MortonCodeGenerator
     {
       static const size_t LATTICE_BITS_PER_DIM = 10;
       static const size_t LATTICE_SIZE_PER_DIM = size_t(1) << LATTICE_BITS_PER_DIM;
-
+      
       struct MortonCodeMapping
       {
         ssef base;
@@ -95,13 +95,13 @@ namespace embree
           scale = select(diag > ssef(1E-19f), rcp(diag) * ssef(LATTICE_SIZE_PER_DIM * 0.99f),ssef(0.0f));
         }
       };
-  
+      
       __forceinline MortonCodeGenerator(const BBox3fa& bounds, MortonID32Bit* dest)
         : mapping(bounds), dest(dest), currentID(0), slots(0), ax(0), ay(0), az(0), ai(0) {}
-
+      
       __forceinline MortonCodeGenerator(const MortonCodeMapping& mapping, MortonID32Bit* dest)
         : mapping(mapping), dest(dest), currentID(0), slots(0), ax(0), ay(0), az(0), ai(0) {}
-
+      
       __forceinline ~MortonCodeGenerator()
       {
         if (slots != 0)
@@ -120,14 +120,14 @@ namespace embree
         const ssef upper = (ssef)b.upper;
         const ssef centroid = lower+upper;
         const ssei binID = ssei((centroid-mapping.base)*mapping.scale);
-          
+        
         ax[slots] = extract<0>(binID);
         ay[slots] = extract<1>(binID);
         az[slots] = extract<2>(binID);
         ai[slots] = index;
         slots++;
         currentID++;
-          
+        
         if (slots == 4)
         {
           const ssei code = bitInterleave(ax,ay,az);
@@ -136,7 +136,7 @@ namespace embree
           slots = 0;
         }
       }
-
+      
     public:
       const MortonCodeMapping mapping;
       MortonID32Bit* dest;
@@ -146,23 +146,23 @@ namespace embree
       size_t slots;
       ssei ax, ay, az, ai;
     };
-
-      template<typename Allocator, typename CreateAllocator, typename AllocNodeFunc, typename SetNodeBoundsFunc, typename CreateLeafFunc, typename CalculateBounds>
-    class BVH4BuilderMortonGeneral
+    
+    template<typename Allocator, typename CreateAllocator, typename AllocNodeFunc, typename SetNodeBoundsFunc, typename CreateLeafFunc, typename CalculateBounds>
+      class BVH4BuilderMortonGeneral
     {
       ALIGNED_CLASS;
       
     protected:
       static const size_t MAX_BRANCHING_FACTOR = 16;  //!< maximal supported BVH branching factor
       static const size_t MIN_LARGE_LEAF_LEVELS = 8;  //!< create balanced tree of we are that many levels before the maximal tree depth
-
+      
     public:
-  
+      
       BVH4BuilderMortonGeneral (CreateAllocator& createAllocator, AllocNodeFunc& allocNode, SetNodeBoundsFunc& setBounds, CreateLeafFunc& createLeaf, CalculateBounds& calculateBounds,
                                 const size_t branchingFactor, const size_t maxDepth, const size_t minLeafSize, const size_t maxLeafSize)
         : createAllocator(createAllocator), allocNode(allocNode), setBounds(setBounds), createLeaf(createLeaf), calculateBounds(calculateBounds),
-          branchingFactor(branchingFactor), maxDepth(maxDepth), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize), 
-          encodeShift(0), encodeMask(-1), morton(NULL) {}
+        branchingFactor(branchingFactor), maxDepth(maxDepth), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize), 
+        morton(NULL) {}
       
       void splitFallback(BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild) const
       {
@@ -182,7 +182,7 @@ namespace embree
           createLeaf(current,alloc,bounds);
           return bounds;
         }
-
+        
         /* fill all children by always splitting the largest one */
         BuildRecord children[MAX_BRANCHING_FACTOR];
         size_t numChildren = 1;
@@ -220,10 +220,10 @@ namespace embree
           numChildren++;
           
         } while (numChildren < branchingFactor);
-
+        
         /* create node */
         auto node = allocNode(current,children,numChildren,alloc);
-
+        
         /* recurse into each child */
         BBox3fa bounds[MAX_BRANCHING_FACTOR];
         for (size_t i=0; i<numChildren; i++) {
@@ -231,14 +231,14 @@ namespace embree
         }
         return setBounds(node,bounds,numChildren);
       }
-
+      
       /*! recreates morton codes when reaching a region where all codes are identical */
       void recreateMortonCodes(BuildRecord& current) const
       {
         CentGeomBBox3fa global_bounds; global_bounds.reset();
         for (size_t i=current.begin; i<current.end; i++)
           global_bounds.extend(calculateBounds(morton[i]));
-
+        
         MortonCodeGenerator::MortonCodeMapping mapping(global_bounds.centBounds);
         for (size_t i=current.begin; i<current.end; i++)
         {
@@ -254,7 +254,7 @@ namespace embree
         }
         std::sort(morton+current.begin,morton+current.end); // FIXME: use radix sort
       }
-
+      
       __forceinline void split(BuildRecord& current,
                                BuildRecord& left,
                                BuildRecord& right) const
@@ -307,7 +307,7 @@ namespace embree
       {
         if (alloc == NULL) 
           alloc = createAllocator();
-
+        
         __aligned(64) BuildRecord children[MAX_BRANCHING_FACTOR];
         
         /* create leaf node */
@@ -369,51 +369,43 @@ namespace embree
           }
           g.wait();
         } 
-
+        
         /* finish tree sequential */
         else {
           for (size_t i=0; i<numChildren; i++) 
             bounds[i] = recurse(children[i],alloc);
         }
-
+        
         return setBounds(node,bounds,numChildren);
       }
-
-       /* build function */
-      BVH4::NodeRef build(MortonID32Bit* src, MortonID32Bit* tmp, size_t numPrimitives, size_t encodeShift, size_t encodeMask) 
-    {
-      this->morton = tmp;
-      this->encodeShift = encodeShift;
-      this->encodeMask = encodeMask;
-     
-      /* sort morton codes */
-      radix_sort_copy_u32(src,tmp,numPrimitives);
-
-      /* build BVH */
-      BVH4::NodeRef root;
-      BuildRecord br;
-      br.init(0,numPrimitives);
-      br.parent = &root;
-      br.depth = 1;
       
-      BBox3fa bounds = empty;
-      LockStepTaskScheduler::execute_tbb([&] { bounds = recurse(br, NULL); });
-      //bounds = recurse(br, NULL);
-
-      return root;
-    }
-
+      /* build function */
+      BVH4::NodeRef build(MortonID32Bit* src, MortonID32Bit* tmp, size_t numPrimitives) 
+      {
+        /* sort morton codes */
+        morton = tmp;
+        radix_sort_copy_u32(src,morton,numPrimitives);
+        
+        /* build BVH */
+        BVH4::NodeRef root;
+        BuildRecord br;
+        br.init(0,numPrimitives);
+        br.parent = &root;
+        br.depth = 1;
+        
+        BBox3fa bounds = empty;
+        //LockStepTaskScheduler::execute_tbb([&] { bounds = recurse(br, NULL); });
+        bounds = recurse(br, NULL); // FIXME: why is this faster??
+        return root;
+      }
+      
     public:
-
-      size_t encodeShift;
-      size_t encodeMask;
       MortonID32Bit* morton;
-
       const size_t branchingFactor;
       const size_t maxDepth;
       const size_t minLeafSize;
       const size_t maxLeafSize;
-
+      
     public:
       CreateAllocator& createAllocator;
       AllocNodeFunc& allocNode;
