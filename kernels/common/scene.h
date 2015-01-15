@@ -35,15 +35,15 @@ namespace embree
 
   public:
     template<typename Ty, size_t timeSteps = 1>
-    class Iterator
-    {
-    public:
+      class Iterator
+      {
+      public:
       Iterator ()  {}
-
+      
       Iterator (Scene* scene) 
-        : scene(scene) {}
-
-      __forceinline Ty* operator[] (const size_t i) 
+      : scene(scene) {}
+      
+      __forceinline Ty* at(const size_t i)
       {
         Geometry* geom = scene->geometries[i];
         if (geom == NULL) return NULL;
@@ -53,8 +53,27 @@ namespace embree
         return (Ty*) geom;
       }
 
+      __forceinline Ty* operator[] (const size_t i) {
+        return at(i);
+      }
+
       __forceinline size_t size() const {
         return scene->size();
+      }
+      
+      __forceinline size_t numPrimitives() const {
+        return scene->getNumPrimitives<Ty,timeSteps>();
+      }
+
+      __forceinline size_t maxPrimitivesPerGeometry() 
+      {
+        size_t ret = 0;
+        for (size_t i=0; i<scene->size(); i++) {
+          Ty* mesh = at(i);
+          if (mesh == NULL) continue;
+          ret = max(ret,mesh->size());
+        }
+        return ret;
       }
       
     private:

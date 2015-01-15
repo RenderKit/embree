@@ -147,7 +147,7 @@ namespace embree
       ssei ax, ay, az, ai;
     };
 
-      template<typename AllocNodeFunc, typename SetNodeBoundsFunc, typename CreateLeafFunc>
+      template<typename AllocNodeFunc, typename SetNodeBoundsFunc, typename CreateLeafFunc, typename CalculateBounds>
     class BVH4BuilderMortonGeneral
     {
       ALIGNED_CLASS;
@@ -166,9 +166,11 @@ namespace embree
 
     public:
   
-      BVH4BuilderMortonGeneral (AllocNodeFunc& allocNode, SetNodeBoundsFunc& setBounds, CreateLeafFunc& createLeaf, BVH4* bvh, Scene* scene, 
+      BVH4BuilderMortonGeneral (AllocNodeFunc& allocNode, SetNodeBoundsFunc& setBounds, CreateLeafFunc& createLeaf, CalculateBounds& calculateBounds,
+                                BVH4* bvh, Scene* scene, 
                                 const size_t branchingFactor, const size_t maxDepth, const size_t minLeafSize, const size_t maxLeafSize)
-        : allocNode(allocNode), setBounds(setBounds), createLeaf(createLeaf), bvh(bvh), scene(scene), 
+        : allocNode(allocNode), setBounds(setBounds), createLeaf(createLeaf), calculateBounds(calculateBounds),
+          bvh(bvh), scene(scene), 
           branchingFactor(branchingFactor), maxDepth(maxDepth), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize), 
           encodeShift(0), encodeMask(-1), morton(NULL) {}
       
@@ -268,6 +270,7 @@ namespace embree
           const size_t geomID = index >> encodeShift; 
           const TriangleMesh* mesh = scene->getTriangleMesh(geomID);
           const BBox3fa b = mesh->bounds(primID);
+
           const ssef lower = (ssef)b.lower;
           const ssef upper = (ssef)b.upper;
           const ssef centroid = lower+upper;
@@ -406,7 +409,7 @@ namespace embree
       }
 
        /* build function */
-      NodeRef build(size_t threadIndex, size_t threadCount, MortonID32Bit* src, MortonID32Bit* tmp, size_t numPrimitives, size_t encodeShift, size_t encodeMask) 
+      NodeRef build(MortonID32Bit* src, MortonID32Bit* tmp, size_t numPrimitives, size_t encodeShift, size_t encodeMask) 
     {
       this->morton = tmp;
       this->encodeShift = encodeShift;
@@ -446,6 +449,7 @@ namespace embree
       AllocNodeFunc& allocNode;
       SetNodeBoundsFunc& setBounds;
       CreateLeafFunc& createLeaf;
+      CalculateBounds& calculateBounds;
     };
   }
 }

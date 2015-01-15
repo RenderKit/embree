@@ -112,37 +112,14 @@ namespace embree
       size_t encodeShift;
       size_t encodeMask;
     };
-
-    
       
-    //template<typename CreateLeafFunc>
+    struct CalculateBounds
+    {
+    };
+
     class BVH4BuilderMortonGeneral2 : public Builder
     {
-   
     public:
-      BVH4* bvh;               //!< Output BVH
-
-      Scene* scene;
-      size_t logBlockSize;
-      size_t primBytes; 
-      size_t minLeafSize;
-      size_t maxLeafSize;
-      size_t listMode;
-
-      size_t topLevelItemThreshold;
-      size_t encodeShift;
-      size_t encodeMask;
-
-      bool needVertices;
-            
-    public:
-      MortonID32Bit* __restrict__ morton;
-      size_t bytesMorton;
-      
-    public:
-      size_t numPrimitives;
-      size_t numAllocatedPrimitives;
-      size_t numAllocatedNodes;
 
       BVH4BuilderMortonGeneral2 (BVH4* bvh, Scene* scene, TriangleMesh* mesh, size_t listMode, size_t logBlockSize, bool needVertices, size_t primBytes, const size_t minLeafSize, const size_t maxLeafSize)
         : bvh(bvh), scene(scene), listMode(listMode), logBlockSize(logBlockSize), needVertices(needVertices), primBytes(primBytes), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize),
@@ -168,24 +145,13 @@ namespace embree
       size_t numPrimitivesOld = numPrimitives;
       numPrimitives = scene->numTriangles;
       
-      bvh->numPrimitives = numPrimitives;
-      size_t numGroups = scene->size();
-      size_t maxPrimsPerGroup = 0;
-
-      for (size_t i=0; i<numGroups; i++) // FIXME: encoding unsafe
-      {
-        Geometry* geom = scene->get(i);
-        if (!geom || geom->type != TRIANGLE_MESH) continue;
-        TriangleMesh* mesh = (TriangleMesh*) geom;
-        if (mesh->numTimeSteps != 1) continue;
-        maxPrimsPerGroup = max(maxPrimsPerGroup,mesh->numTriangles);
-      }
-      
       /* calculate groupID, primID encoding */
+      Scene::Iterator<TriangleMesh,1> iter2(scene);
+      size_t numGroups = iter2.size();
+      size_t maxPrimsPerGroup = iter2.maxPrimitivesPerGeometry();
       encodeShift = __bsr(maxPrimsPerGroup) + 1;
       encodeMask = ((size_t)1 << encodeShift)-1;
       size_t maxGroups = ((size_t)1 << (31-encodeShift))-1;
-      
       if (maxPrimsPerGroup > encodeMask || numGroups > maxGroups) 
         THROW_RUNTIME_ERROR("encoding error in morton builder");
       
@@ -222,12 +188,10 @@ namespace embree
       }, [] (CentGeomBBox3fa a, const CentGeomBBox3fa& b) { a.merge(b); return a; });
 
       /* compute morton codes */
-      MortonID32Bit* __restrict__ const dest = (MortonID32Bit*) bvh->alloc2.ptr();
-
-      MortonCodeGenerator::MortonCodeMapping mapping(bounds.centBounds);
-      
       Scene::Iterator<TriangleMesh,1> iter(scene);
-      parallel_for_for( iter, [&](TriangleMesh* mesh, const range<size_t>& r, size_t k)
+      MortonID32Bit* dest = (MortonID32Bit*) bvh->alloc2.ptr();
+      MortonCodeGenerator::MortonCodeMapping mapping(bounds.centBounds);
+      parallel_for_for( iter, [&](TriangleMesh* mesh, const range<size_t>& r, size_t k) 
       {
         MortonCodeGenerator generator(mapping,&dest[k]);
         for (size_t i=r.begin(); i<r.end(); i++) {
@@ -235,11 +199,14 @@ namespace embree
         }
       });
 
+      /* create BVH */
       AllocBVH4Node allocNode;
       SetBVH4Bounds setBounds;
       CreateTriangle4Leaf createLeaf(scene,morton,encodeShift,encodeMask);
-      BVH4BuilderMortonGeneral<AllocBVH4Node,SetBVH4Bounds,CreateTriangle4Leaf> builder(allocNode,setBounds,createLeaf,(BVH4*)bvh,scene,4,BVH4::maxBuildDepth,4,inf);
-      BVH4::NodeRef root = builder.build(threadIndex,threadCount,dest,morton,numPrimitives,encodeShift,encodeMask);
+      CalculateBounds calculateBounds;
+      BVH4BuilderMortonGeneral<AllocBVH4Node,SetBVH4Bounds,CreateTriangle4Leaf,CalculateBounds> builder
+        (allocNode,setBounds,createLeaf,calculateBounds,(BVH4*)bvh,scene,4,BVH4::maxBuildDepth,4,inf);
+      BVH4::NodeRef root = builder.build(dest,morton,numPrimitives,encodeShift,encodeMask);
       bvh->set(root,bounds.geomBounds,numPrimitives);
 
 #if defined(PROFILE_MORTON_GENERAL)
@@ -269,8 +236,32 @@ namespace embree
 	BVH4Statistics stat(bvh);
 	//std::cout << "BENCHMARK_BUILD " << dt << " " << double(numPrimitives)/dt << " " << stat.sah() << " " << stat.bytesUsed() << std::endl;
       }
-
       }
+
+    public:
+      BVH4* bvh;               //!< Output BVH
+      
+      Scene* scene;
+      size_t logBlockSize;
+      size_t primBytes; 
+      size_t minLeafSize;
+      size_t maxLeafSize;
+      size_t listMode;
+
+      size_t topLevelItemThreshold;
+      size_t encodeShift;
+      size_t encodeMask;
+
+      bool needVertices;
+            
+    public:
+      MortonID32Bit* __restrict__ morton;
+      size_t bytesMorton;
+      
+    public:
+      size_t numPrimitives;
+      size_t numAllocatedPrimitives;
+      size_t numAllocatedNodes;
     };
     
     // =======================================================================================================
