@@ -222,7 +222,7 @@ namespace embree
       CalculateBounds calculateBounds(scene,encodeShift,encodeMask);
       auto createAllocator = [&] () { return bvh->alloc2.threadLocal2(); };
       BVH4BuilderMortonGeneral<FastAllocator::ThreadLocal2*,decltype(createAllocator),AllocBVH4Node,SetBVH4Bounds,CreateTriangle4Leaf,CalculateBounds> builder
-        (createAllocator,allocNode,setBounds,createLeaf,calculateBounds,(BVH4*)bvh,scene,4,BVH4::maxBuildDepth,4,inf);
+        (createAllocator,allocNode,setBounds,createLeaf,calculateBounds,4,BVH4::maxBuildDepth,4,inf);
       BVH4::NodeRef root = builder.build(dest,morton,numPrimitives,encodeShift,encodeMask);
       bvh->set(root,bounds.geomBounds,numPrimitives);
 

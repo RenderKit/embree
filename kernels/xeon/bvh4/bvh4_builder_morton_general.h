@@ -153,20 +153,14 @@ namespace embree
       ALIGNED_CLASS;
       
     protected:
-      /*! Type shortcuts */
-      typedef BVH4::Node    Node;
-      typedef BVH4::NodeRef NodeRef;
-            
       static const size_t MAX_BRANCHING_FACTOR = 16;  //!< maximal supported BVH branching factor
       static const size_t MIN_LARGE_LEAF_LEVELS = 8;  //!< create balanced tree of we are that many levels before the maximal tree depth
 
     public:
   
       BVH4BuilderMortonGeneral (CreateAllocator& createAllocator, AllocNodeFunc& allocNode, SetNodeBoundsFunc& setBounds, CreateLeafFunc& createLeaf, CalculateBounds& calculateBounds,
-                                BVH4* bvh, Scene* scene, 
                                 const size_t branchingFactor, const size_t maxDepth, const size_t minLeafSize, const size_t maxLeafSize)
         : createAllocator(createAllocator), allocNode(allocNode), setBounds(setBounds), createLeaf(createLeaf), calculateBounds(calculateBounds),
-          bvh(bvh), scene(scene), 
           branchingFactor(branchingFactor), maxDepth(maxDepth), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize), 
           encodeShift(0), encodeMask(-1), morton(NULL) {}
       
@@ -228,7 +222,7 @@ namespace embree
         } while (numChildren < branchingFactor);
 
         /* create node */
-        Node* node = allocNode(current,children,numChildren,alloc);
+        auto node = allocNode(current,children,numChildren,alloc);
 
         /* recurse into each child */
         BBox3fa bounds[MAX_BRANCHING_FACTOR];
@@ -363,7 +357,7 @@ namespace embree
         }
         
         /* allocate node */
-        Node* node = allocNode(current,children,numChildren,alloc);
+        auto node = allocNode(current,children,numChildren,alloc);
         
         /* process top parts of tree parallel */
         BBox3fa bounds[4];
@@ -386,7 +380,7 @@ namespace embree
       }
 
        /* build function */
-      NodeRef build(MortonID32Bit* src, MortonID32Bit* tmp, size_t numPrimitives, size_t encodeShift, size_t encodeMask) 
+      BVH4::NodeRef build(MortonID32Bit* src, MortonID32Bit* tmp, size_t numPrimitives, size_t encodeShift, size_t encodeMask) 
     {
       this->morton = tmp;
       this->encodeShift = encodeShift;
@@ -396,7 +390,7 @@ namespace embree
       radix_sort_copy_u32(src,tmp,numPrimitives);
 
       /* build BVH */
-      NodeRef root;
+      BVH4::NodeRef root;
       BuildRecord br;
       br.init(0,numPrimitives);
       br.parent = &root;
@@ -410,9 +404,7 @@ namespace embree
     }
 
     public:
-      BVH4* bvh;
-      Scene* scene;
-      
+
       size_t encodeShift;
       size_t encodeMask;
       MortonID32Bit* morton;
