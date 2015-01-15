@@ -59,36 +59,27 @@ namespace embree
 
       struct __aligned(8) MortonID32Bit
       {
-        union {
-          struct {
-	    unsigned int code;
-	    unsigned int index;
-	    //uint64 index;
-          };
-          //int64 all;
-        };
-
+      public:
+        unsigned int code;
+        unsigned int index;
+             
+      public:   
         __forceinline operator unsigned() const { return code; }
         
         __forceinline unsigned int get(const unsigned int shift, const unsigned and_mask) const {
           return (code >> shift) & and_mask;
         }
-        
-        /*__forceinline void operator=(const MortonID32Bit& v) {   
-          all = v.all; 
-	  };*/  
-        
+                
+        __forceinline bool operator<(const MortonID32Bit &m) const { return code < m.code; } 
+
         __forceinline friend std::ostream &operator<<(std::ostream &o, const MortonID32Bit& mc) {
           o << "index " << mc.index << " code = " << mc.code;
           return o;
         }
-        
-        __forceinline bool operator<(const MortonID32Bit &m) const { return code < m.code; } 
-        __forceinline bool operator>(const MortonID32Bit &m) const { return code > m.code; } 
       };
 
       template<typename AllocNodeFunc, typename SetNodeBoundsFunc, typename CreateLeafFunc>
-    class BVH4BuilderMortonGeneral //: public Builder
+    class BVH4BuilderMortonGeneral
     {
       ALIGNED_CLASS;
       

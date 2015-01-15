@@ -113,12 +113,79 @@ namespace embree
       size_t encodeMask;
     };
 
-    //template<typename CreateLeafFunc>
-    class BVH4BuilderMortonGeneral2 : public Builder
+    struct MortonCodeGenerator
     {
       static const size_t LATTICE_BITS_PER_DIM = 10;
       static const size_t LATTICE_SIZE_PER_DIM = size_t(1) << LATTICE_BITS_PER_DIM;
 
+      struct MortonCodeMapping
+      {
+        ssef base;
+        ssef scale;
+        
+        __forceinline MortonCodeMapping(const BBox3fa& bounds)
+        {
+          base  = (ssef)bounds.lower;
+          const ssef diag  = (ssef)bounds.upper - (ssef)bounds.lower;
+          scale = select(diag > ssef(1E-19f), rcp(diag) * ssef(LATTICE_SIZE_PER_DIM * 0.99f),ssef(0.0f));
+        }
+      };
+  
+      __forceinline MortonCodeGenerator(const BBox3fa& bounds, MortonID32Bit* dest)
+        : mapping(bounds), dest(dest), currentID(0), slots(0), ax(0), ay(0), az(0), ai(0) {}
+
+      __forceinline MortonCodeGenerator(const MortonCodeMapping& mapping, MortonID32Bit* dest)
+        : mapping(mapping), dest(dest), currentID(0), slots(0), ax(0), ay(0), az(0), ai(0) {}
+
+      __forceinline ~MortonCodeGenerator()
+      {
+        if (slots != 0)
+        {
+          const ssei code = bitInterleave(ax,ay,az);
+          for (size_t i=0; i<slots; i++) {
+            dest[currentID-slots+i].index = ai[i];
+            dest[currentID-slots+i].code = code[i];
+          }
+        }
+      }
+      
+      __forceinline void operator() (const BBox3fa& b, const size_t index)
+      {
+        const ssef lower = (ssef)b.lower;
+        const ssef upper = (ssef)b.upper;
+        const ssef centroid = lower+upper;
+        const ssei binID = ssei((centroid-mapping.base)*mapping.scale);
+          
+        ax[slots] = extract<0>(binID);
+        ay[slots] = extract<1>(binID);
+        az[slots] = extract<2>(binID);
+        ai[slots] = index;
+        slots++;
+        currentID++;
+          
+        if (slots == 4)
+        {
+          const ssei code = bitInterleave(ax,ay,az);
+          storeu4i(&dest[currentID-4],unpacklo(code,ai));
+          storeu4i(&dest[currentID-2],unpackhi(code,ai));
+          slots = 0;
+        }
+      }
+
+    public:
+      const MortonCodeMapping mapping;
+      MortonID32Bit* dest;
+      const ssef base;
+      const ssef scale;
+      size_t currentID;
+      size_t slots;
+      ssei ax, ay, az, ai;
+    };
+      
+    //template<typename CreateLeafFunc>
+    class BVH4BuilderMortonGeneral2 : public Builder
+    {
+   
     public:
       BVH4* bvh;               //!< Output BVH
 
@@ -232,49 +299,20 @@ namespace embree
       MortonID32Bit* __restrict__ const dest = (MortonID32Bit*) bvh->alloc2.ptr();
 
       /* compute mapping from world space into 3D grid */
-      const ssef base  = (ssef)global_bounds.centBounds.lower;
-      const ssef diag  = (ssef)global_bounds.centBounds.upper - (ssef)global_bounds.centBounds.lower;
-      const ssef scale = select(diag > ssef(1E-19f), rcp(diag) * ssef(LATTICE_SIZE_PER_DIM * 0.99f),ssef(0.0f));
+      //const ssef base  = (ssef)global_bounds.centBounds.lower;
+      //const ssef diag  = (ssef)global_bounds.centBounds.upper - (ssef)global_bounds.centBounds.lower;
+      //const ssef scale = select(diag > ssef(1E-19f), rcp(diag) * ssef(LATTICE_SIZE_PER_DIM * 0.99f),ssef(0.0f));
+      MortonCodeGenerator::MortonCodeMapping mapping(global_bounds.centBounds);
       
       Scene::Iterator<TriangleMesh,1> iter(scene);
       parallel_for_for( iter, [&](TriangleMesh* mesh, const range<size_t>& r, size_t k)
       {
-        size_t currentID = k;
-        size_t slots = 0;
-        ssei ax = 0, ay = 0, az = 0, ai = 0;
-                
+        MortonCodeGenerator generator(mapping,&dest[k]);
         for (size_t i=r.begin(); i<r.end(); i++)	  
         {
           const BBox3fa b = mesh->bounds(i);
-          const ssef lower = (ssef)b.lower;
-          const ssef upper = (ssef)b.upper;
-          const ssef centroid = lower+upper;
-          const ssei binID = ssei((centroid-base)*scale);
-          unsigned int index = i;
-          index |= mesh->id << encodeShift;
-          ax[slots] = extract<0>(binID);
-          ay[slots] = extract<1>(binID);
-          az[slots] = extract<2>(binID);
-          ai[slots] = index;
-          slots++;
-          currentID++;
-          
-          if (slots == 4)
-          {
-            const ssei code = bitInterleave(ax,ay,az);
-            storeu4i(&dest[currentID-4],unpacklo(code,ai));
-            storeu4i(&dest[currentID-2],unpackhi(code,ai));
-            slots = 0;
-          }
-        }
-            
-        if (slots != 0)
-        {
-          const ssei code = bitInterleave(ax,ay,az);
-          for (size_t i=0; i<slots; i++) {
-            dest[currentID-slots+i].index = ai[i];
-            dest[currentID-slots+i].code = code[i];
-          }
+          const unsigned int index = i | (mesh->id << encodeShift);
+          generator(b,index);
         }
       });
 
