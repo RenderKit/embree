@@ -37,6 +37,16 @@ namespace embree
   namespace isa
   {
     static double dt = 0.0f;
+
+    struct AllocBVH4Node
+    {
+      __forceinline BVH4::Node* operator() (BuildRecord& current, FastAllocator::ThreadLocal2* alloc)
+      {
+        BVH4::Node* node = (BVH4::Node*) alloc->alloc0.malloc(sizeof(BVH4::Node)); node->clear();
+        *current.parent = BVH4::encodeNode(node);
+        return node;
+      }
+    };
     
     struct CreateTriangle4Leaf
     {
@@ -258,11 +268,12 @@ namespace embree
         dest[i].index = 0;
       }
       
+      AllocBVH4Node allocNode;
       CreateTriangle4Leaf createLeaf(scene,morton,encodeShift,encodeMask);
-      BVH4BuilderMortonGeneral<CreateTriangle4Leaf> builder(createLeaf,(BVH4*)bvh,scene,NULL,false,2,false,sizeof(Triangle4),4,inf);
+      BVH4BuilderMortonGeneral<AllocBVH4Node,CreateTriangle4Leaf> builder(allocNode,createLeaf,(BVH4*)bvh,scene,NULL,false,2,false,sizeof(Triangle4),4,inf);
       builder.build(threadIndex,threadCount,morton,numPrimitives,encodeShift,encodeMask);
 
-      #if defined(PROFILE_MORTON_GENERAL)
+#if defined(PROFILE_MORTON_GENERAL)
         double dt = getSeconds()-t0;
         dt_min = min(dt_min,dt);
         if (k != 0) dt_avg = dt_avg + dt;

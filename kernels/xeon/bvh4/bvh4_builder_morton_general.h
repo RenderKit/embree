@@ -87,7 +87,7 @@ namespace embree
         __forceinline bool operator>(const MortonID32Bit &m) const { return code > m.code; } 
       };
 
-    template<typename CreateLeafFunc>
+      template<typename AllocNodeFunc, typename CreateLeafFunc>
     class BVH4BuilderMortonGeneral //: public Builder
     {
       ALIGNED_CLASS;
@@ -103,26 +103,8 @@ namespace embree
 
     public:
   
-      
-
-      /*! Constructor. */
-      BVH4BuilderMortonGeneral (CreateLeafFunc& createLeaf, BVH4* bvh, Scene* scene, TriangleMesh* mesh, size_t listMode, size_t logBlockSize, bool needVertices, size_t primBytes, const size_t minLeafSize, const size_t maxLeafSize)
-        : createLeaf(createLeaf), bvh(bvh), scene(scene), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize),
-	  encodeShift(0), encodeMask(-1), morton(NULL),  numPrimitives(0)
-      {
-        //needAllThreads = true;
-      }
-      
-      /*! Destruction */
-      ~BVH4BuilderMortonGeneral ()
-      {
-        //if (morton) os_free(morton,bytesMorton);
-        //bvh->alloc.shrink();
-      }
-      
-     
-      
-    public:
+      BVH4BuilderMortonGeneral (AllocNodeFunc& allocNode, CreateLeafFunc& createLeaf, BVH4* bvh, Scene* scene, TriangleMesh* mesh, size_t listMode, size_t logBlockSize, bool needVertices, size_t primBytes, const size_t minLeafSize, const size_t maxLeafSize)
+        : allocNode(allocNode), createLeaf(createLeaf), bvh(bvh), scene(scene), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize), encodeShift(0), encodeMask(-1), morton(NULL), numPrimitives(0) {}
       
       void splitFallback(BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild) const
       {
@@ -155,8 +137,9 @@ namespace embree
         splitFallback(record1,children[2],children[3]);
         
         /* allocate node */
-        Node* node = (Node*) alloc->alloc0.malloc(sizeof(Node)); node->clear();
-        *current.parent = bvh->encodeNode(node);
+        //Node* node = (Node*) alloc->alloc0.malloc(sizeof(Node)); node->clear();
+        //*current.parent = bvh->encodeNode(node);
+        Node* node = allocNode(current,alloc);
         
         /* recurse into each child */
         BBox3fa bounds0 = empty;
@@ -260,7 +243,7 @@ namespace embree
         right.init(center,current.end);
       }
       
-      BBox3fa recurse_tbb(BuildRecord& current, Allocator* alloc) 
+      BBox3fa recurse(BuildRecord& current, Allocator* alloc) 
       {
         if (alloc == NULL) 
           alloc = bvh->alloc2.threadLocal2();
@@ -314,8 +297,9 @@ namespace embree
         }
         
         /* allocate node */
-        Node* node = (Node*) alloc->alloc0.malloc(sizeof(Node)); node->clear();
-        *current.parent = bvh->encodeNode(node);
+        //Node* node = (Node*) alloc->alloc0.malloc(sizeof(Node)); node->clear();
+        //*current.parent = bvh->encodeNode(node);
+        Node* node = allocNode(current,alloc);
       
         /* process top parts of tree parallel */
         BBox3fa bounds0 = empty;
@@ -325,7 +309,7 @@ namespace embree
           tbb::task_group g;
           for (size_t i=0; i<numChildren; i++) {
             children[i].parent = &node->child(i);
-            g.run([&,i]{ bounds[i] = recurse_tbb(children[i],NULL); });
+            g.run([&,i]{ bounds[i] = recurse(children[i],NULL); });
           }
           g.wait();
 
@@ -348,7 +332,7 @@ namespace embree
               bounds0.extend(bounds);
               node->set(i,bounds);
             } else {
-              const BBox3fa bounds = recurse_tbb(children[i],alloc);
+              const BBox3fa bounds = recurse(children[i],alloc);
               bounds0.extend(bounds);
               node->set(i,bounds);
             }
@@ -374,41 +358,22 @@ namespace embree
       br.depth = 1;
       
       BBox3fa bounds = empty;
-      LockStepTaskScheduler::execute_tbb([&] { bounds = recurse_tbb(br, NULL); });
-      //bounds = recurse_tbb(br, NULL);
+      LockStepTaskScheduler::execute_tbb([&] { bounds = recurse(br, NULL); });
+      //bounds = recurse(br, NULL);
     }
 
     public:
       BVH4* bvh;               //!< Output BVH
-      //LockStepTaskScheduler* scheduler;
-      //std::unique_ptr<MortonBuilderState> state;
-
       Scene* scene;
-      //TriangleMesh* mesh;
-      //size_t logBlockSize;
-      //size_t blocks(size_t N) { return (N+((1<<logBlockSize)-1)) >> logBlockSize; }
-      //bool needVertices;
-      //size_t primBytes; 
       size_t minLeafSize;
       size_t maxLeafSize;
-      //size_t listMode;
-
-      //size_t topLevelItemThreshold;
       size_t encodeShift;
       size_t encodeMask;
-            
-    public:
       MortonID32Bit* __restrict__ morton;
-      //size_t bytesMorton;
-      
-    public:
-      //size_t numGroups;
       size_t numPrimitives;
-      //size_t numAllocatedPrimitives;
-      //size_t numAllocatedNodes;
-      //CentGeomBBox3fa global_bounds;
-      //Barrier barrier;
 
+    public:
+      AllocNodeFunc& allocNode;
       CreateLeafFunc& createLeaf;
     };
   }
