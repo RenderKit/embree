@@ -18,7 +18,8 @@
 
 #include "common/default.h"
 
-#define DBG_PART(x) x
+#define DBG_PART(x) 
+#define DBG_CHECK(x) x
 
 namespace embree
 {
@@ -177,6 +178,9 @@ namespace embree
         {
           blockID.reset();
           blocks = N/BLOCK_SIZE;
+          DBG_PART(
+                   DBG_PRINT(blocks);
+                   );
         }
 
       size_t parition(const T pivot)
@@ -184,13 +188,17 @@ namespace embree
         if (N <= SERIAL_THRESHOLD)
           {
             size_t mid = serialPartitioning(0,N,pivot);
-            DBG_PRINT( mid );
             DBG_PART(
+                     DBG_PRINT( mid );
                      checkLeft(0,mid,pivot);
                      checkRight(mid,N,pivot);
                      );
             return mid;
           }
+
+        DBG_PART(
+                 DBG_PRINT("PARALLEL MODE");
+                 );
 
         size_t mode = NEED_LEFT_BLOCK | NEED_RIGHT_BLOCK;
         
@@ -204,15 +212,35 @@ namespace embree
 
         while(1)
           {
+            DBG_PART(
+                     std::cout << std::endl;
+                     DBG_PRINT("NEXT ITERATION");
+                     );
+
             size_t id = getBlockID(mode);
+
+            DBG_PART(
+                     DBG_PRINT(id);
+                     DBG_PRINT(validBlockID(id));
+                     );
+
             if (!validBlockID(id)) break;
 
             /* need a left block? */
             if (needLeftBlock(mode))
               {
+
                 const size_t blockIndex = getLeftBlockIndex(id);
                 getLeftArrayIndex(blockIndex,left_begin,left_end);                
                 maxLeftBlock = blockIndex;
+
+                DBG_PART(
+                         DBG_PRINT("LEFT BLOCK");
+                         DBG_PRINT(maxLeftBlock);
+                         checkLeft(0,left_begin,pivot);
+
+                         );
+
               }
 
             /* need a right block? */
@@ -221,6 +249,12 @@ namespace embree
                 const size_t blockIndex = getRightBlockIndex(id);
                 getRightArrayIndex(blockIndex,right_begin,right_end);
                 maxRightBlock = blockIndex;
+
+                DBG_PART(
+                         DBG_PRINT("RIGHT BLOCK");
+                         DBG_PRINT(maxRightBlock);
+                         checkRight(right_end,N,pivot);
+                         );
               }
 
             DBG_PART(
@@ -246,13 +280,15 @@ namespace embree
                  DBG_PRINT(left_end);
                  DBG_PRINT(right_begin);
                  DBG_PRINT(right_end);
+                 checkLeft(0,left_begin,pivot);
+                 checkRight(right_end,N,pivot);
                  );
 
-        const size_t local_mid = serialPartitioning(left_begin,right_end,pivot);
-        const size_t mid = left_begin + mid;
-        DBG_PART(
-                 DBG_PRINT( local_mid );
-                 DBG_PRINT( mid );
+        DBG_CHECK(
+                  DBG_PRINT(right_end - left_begin);
+                  )
+        const size_t mid = serialPartitioning(left_begin,right_end,pivot);
+        DBG_CHECK(
                  checkLeft(0,mid,pivot);
                  checkRight(mid,N,pivot);
                  );

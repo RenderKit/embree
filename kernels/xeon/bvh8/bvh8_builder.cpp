@@ -398,26 +398,25 @@ namespace embree
         /////////////////////////////////////////////////////
 
 #if 0
-#define SIZE 32
 
-        test_array = (unsigned int*)_mm_malloc(SIZE*sizeof(int),64);
-        srand(32323);
-        for (size_t i=0;i<SIZE;i++)
+#define MAX_SIZE 1024*1024*512
+        test_array = (unsigned int*)_mm_malloc(MAX_SIZE*sizeof(int),64);
+
+        for (size_t s=16;s<MAX_SIZE;s+=s)
           {
-            test_array[i] = lrand48() % SIZE;
-            std::cout << i << " " << test_array[i] << std::endl;
-          }
+            DBG_PRINT(s);
+            srand(s*32323);
+            for (size_t i=0;i<s;i++)
+              {
+                test_array[i] = lrand48();
+              }
 
         
-        parallel_partition<unsigned int,64> pp(test_array,SIZE);
-        unsigned int pivot = test_array[SIZE/2];
-        size_t mid = pp.parition(pivot);
-        DBG_PRINT(pivot);
-        DBG_PRINT(mid);
+            parallel_partition<unsigned int,2> pp(test_array,s);
 
-        for (size_t i=0;i<SIZE;i++)
-          {
-            std::cout << i << " " << test_array[i] % SIZE << std::endl;
+            unsigned int pivot = test_array[s/2];
+            size_t mid = pp.parition(pivot);
+            DBG_PRINT(mid);
           }
 
         exit(0);
