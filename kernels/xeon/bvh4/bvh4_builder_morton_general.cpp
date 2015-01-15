@@ -140,16 +140,13 @@ namespace embree
       size_t bytesMorton;
       
     public:
-      size_t numGroups;
       size_t numPrimitives;
       size_t numAllocatedPrimitives;
       size_t numAllocatedNodes;
-      CentGeomBBox3fa global_bounds;
-      Barrier barrier;
 
       BVH4BuilderMortonGeneral2 (BVH4* bvh, Scene* scene, TriangleMesh* mesh, size_t listMode, size_t logBlockSize, bool needVertices, size_t primBytes, const size_t minLeafSize, const size_t maxLeafSize)
         : bvh(bvh), scene(scene), listMode(listMode), logBlockSize(logBlockSize), needVertices(needVertices), primBytes(primBytes), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize),
-	topLevelItemThreshold(0), encodeShift(0), encodeMask(-1), morton(NULL), bytesMorton(0), numGroups(0), numPrimitives(0), numAllocatedPrimitives(0), numAllocatedNodes(0)
+	topLevelItemThreshold(0), encodeShift(0), encodeMask(-1), morton(NULL), bytesMorton(0), numPrimitives(0), numAllocatedPrimitives(0), numAllocatedNodes(0)
       {
         needAllThreads = true;
       }
@@ -172,36 +169,34 @@ namespace embree
       numPrimitives = scene->numTriangles;
       
       bvh->numPrimitives = numPrimitives;
-      numGroups = scene->size();
+      size_t numGroups = scene->size();
       size_t maxPrimsPerGroup = 0;
 
-	for (size_t i=0; i<numGroups; i++) // FIXME: encoding unsafe
-        {
-          Geometry* geom = scene->get(i);
-          if (!geom || geom->type != TRIANGLE_MESH) continue;
-          TriangleMesh* mesh = (TriangleMesh*) geom;
-	  if (mesh->numTimeSteps != 1) continue;
-	  maxPrimsPerGroup = max(maxPrimsPerGroup,mesh->numTriangles);
-        }
-
-        /* calculate groupID, primID encoding */
-        encodeShift = __bsr(maxPrimsPerGroup) + 1;
-        encodeMask = ((size_t)1 << encodeShift)-1;
-        size_t maxGroups = ((size_t)1 << (31-encodeShift))-1;
+      for (size_t i=0; i<numGroups; i++) // FIXME: encoding unsafe
+      {
+        Geometry* geom = scene->get(i);
+        if (!geom || geom->type != TRIANGLE_MESH) continue;
+        TriangleMesh* mesh = (TriangleMesh*) geom;
+        if (mesh->numTimeSteps != 1) continue;
+        maxPrimsPerGroup = max(maxPrimsPerGroup,mesh->numTriangles);
+      }
       
-        if (maxPrimsPerGroup > encodeMask || numGroups > maxGroups) 
-          THROW_RUNTIME_ERROR("encoding error in morton builder");
-
-        /* preallocate arrays */
+      /* calculate groupID, primID encoding */
+      encodeShift = __bsr(maxPrimsPerGroup) + 1;
+      encodeMask = ((size_t)1 << encodeShift)-1;
+      size_t maxGroups = ((size_t)1 << (31-encodeShift))-1;
+      
+      if (maxPrimsPerGroup > encodeMask || numGroups > maxGroups) 
+        THROW_RUNTIME_ERROR("encoding error in morton builder");
+      
+      /* preallocate arrays */
       if (numPrimitivesOld != numPrimitives)
       {
 	bvh->init(sizeof(BVH4::Node),numPrimitives,threadCount);
         if (morton) os_free(morton,bytesMorton);
-	bytesMorton = ((numPrimitives+7)&(-8)) * sizeof(MortonID32Bit);
+	bytesMorton = ((numPrimitives+4)&(-4)) * sizeof(MortonID32Bit);
         morton = (MortonID32Bit* ) os_malloc(bytesMorton); memset(morton,0,bytesMorton);
       }
-
-       
          
 #if defined(PROFILE_MORTON_GENERAL)
       
@@ -215,23 +210,21 @@ namespace embree
 
         //bvh->alloc.init(numPrimitives*sizeof(BVH4::Node),numPrimitives*sizeof(BVH4::Node));
       size_t bytesAllocated = (numPrimitives+7)/8*sizeof(BVH4::Node) + size_t(1.2f*(numPrimitives+3)/4)*sizeof(Triangle4);
-      bvh->alloc2.init(bytesAllocated,2*bytesAllocated);
-
+      bvh->alloc2.init(bytesAllocated,2*bytesAllocated); // FIXME: not working if scene size changes, initial block has to get reallocated as used as temporary data
+      
       /* compute scene bounds */
       Scene::Iterator<TriangleMesh,1> iter1(scene);
-      global_bounds = parallel_for_for_reduce( iter1, CentGeomBBox3fa(empty), [&](TriangleMesh* mesh, const range<size_t>& r, size_t k) -> CentGeomBBox3fa
+      const CentGeomBBox3fa bounds = parallel_for_for_reduce( iter1, CentGeomBBox3fa(empty), [&](TriangleMesh* mesh, const range<size_t>& r, size_t k) -> CentGeomBBox3fa
       {
         CentGeomBBox3fa bounds(empty);
         for (size_t i=r.begin(); i<r.end(); i++) bounds.extend(mesh->bounds(i));
         return bounds;
       }, [] (CentGeomBBox3fa a, const CentGeomBBox3fa& b) { a.merge(b); return a; });
 
-      bvh->bounds = global_bounds.geomBounds;
-
       /* compute morton codes */
       MortonID32Bit* __restrict__ const dest = (MortonID32Bit*) bvh->alloc2.ptr();
 
-      MortonCodeGenerator::MortonCodeMapping mapping(global_bounds.centBounds);
+      MortonCodeGenerator::MortonCodeMapping mapping(bounds.centBounds);
       
       Scene::Iterator<TriangleMesh,1> iter(scene);
       parallel_for_for( iter, [&](TriangleMesh* mesh, const range<size_t>& r, size_t k)
@@ -242,17 +235,12 @@ namespace embree
         }
       });
 
-      /* padding */     
-      for (size_t i=numPrimitives; i<( (numPrimitives+7)&(-8) ); i++) {
-        dest[i].code  = 0xffffffff; 
-        dest[i].index = 0;
-      }
-      
       AllocBVH4Node allocNode;
       SetBVH4Bounds setBounds;
       CreateTriangle4Leaf createLeaf(scene,morton,encodeShift,encodeMask);
       BVH4BuilderMortonGeneral<AllocBVH4Node,SetBVH4Bounds,CreateTriangle4Leaf> builder(allocNode,setBounds,createLeaf,(BVH4*)bvh,scene,4,BVH4::maxBuildDepth,4,inf);
-      bvh->root = builder.build(threadIndex,threadCount,dest,morton,numPrimitives,encodeShift,encodeMask);
+      BVH4::NodeRef root = builder.build(threadIndex,threadCount,dest,morton,numPrimitives,encodeShift,encodeMask);
+      bvh->set(root,bounds.geomBounds,numPrimitives);
 
 #if defined(PROFILE_MORTON_GENERAL)
         double dt = getSeconds()-t0;
