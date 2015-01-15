@@ -40,7 +40,7 @@ namespace embree
     
     struct AllocBVH4Node
     {
-      __forceinline BVH4::Node* operator() (BuildRecord& current, BuildRecord* children, size_t numChildren, FastAllocator::ThreadLocal2* alloc)
+      __forceinline BVH4::Node* operator() (MortonBuildRecord& current, MortonBuildRecord* children, size_t numChildren, FastAllocator::ThreadLocal2* alloc)
       {
         BVH4::Node* node = (BVH4::Node*) alloc->alloc0.malloc(sizeof(BVH4::Node)); node->clear();
         *current.parent = BVH4::encodeNode(node);
@@ -69,7 +69,7 @@ namespace embree
       __forceinline CreateTriangle4Leaf (Scene* scene, MortonID32Bit* morton, size_t encodeShift, size_t encodeMask)
         : scene(scene), morton(morton), encodeShift(encodeShift), encodeMask(encodeMask) {}
       
-      void operator() (BuildRecord& current, FastAllocator::ThreadLocal2* alloc, BBox3fa& box_o)
+      void operator() (MortonBuildRecord& current, FastAllocator::ThreadLocal2* alloc, BBox3fa& box_o)
       {
         ssef lower(pos_inf);
         ssef upper(neg_inf);
@@ -223,9 +223,8 @@ namespace embree
           CreateTriangle4Leaf createLeaf(scene,morton,encodeShift,encodeMask);
           CalculateBounds calculateBounds(scene,encodeShift,encodeMask);
           auto createAllocator = [&] () { return bvh->alloc2.threadLocal2(); };
-          BVH4BuilderMortonGeneral<BVH4::NodeRef,FastAllocator::ThreadLocal2*,decltype(createAllocator),AllocBVH4Node,SetBVH4Bounds,CreateTriangle4Leaf,CalculateBounds> builder
-            (createAllocator,allocNode,setBounds,createLeaf,calculateBounds,4,BVH4::maxBuildDepth,4,inf);
-          BVH4::NodeRef root = builder.build(dest,morton,numPrimitives);
+          BVH4::NodeRef root = bvh_builder_center_internal<BVH4::NodeRef>(createAllocator,allocNode,setBounds,createLeaf,calculateBounds,
+                                                                          dest,morton,numPrimitives,4,BVH4::maxBuildDepth,4,inf);
           bvh->set(root,bounds.geomBounds,numPrimitives);
           
 #if defined(PROFILE_MORTON_GENERAL)

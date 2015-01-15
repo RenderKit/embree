@@ -30,7 +30,7 @@ namespace embree
 {
   namespace isa
   {
-    class BuildRecord 
+    class MortonBuildRecord 
     {
     public:
       unsigned int begin;
@@ -51,7 +51,7 @@ namespace embree
       }
       
       struct Greater {
-        __forceinline bool operator()(const BuildRecord& a, const BuildRecord& b) {
+        __forceinline bool operator()(const MortonBuildRecord& a, const MortonBuildRecord& b) {
           return a.size() > b.size();
         }
       };
@@ -161,17 +161,17 @@ namespace embree
       BVH4BuilderMortonGeneral (CreateAllocator& createAllocator, AllocNodeFunc& allocNode, SetNodeBoundsFunc& setBounds, CreateLeafFunc& createLeaf, CalculateBounds& calculateBounds,
                                 const size_t branchingFactor, const size_t maxDepth, const size_t minLeafSize, const size_t maxLeafSize)
         : createAllocator(createAllocator), allocNode(allocNode), setBounds(setBounds), createLeaf(createLeaf), calculateBounds(calculateBounds),
-        branchingFactor(branchingFactor), maxDepth(maxDepth), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize), 
-        morton(NULL) {}
+          branchingFactor(branchingFactor), maxDepth(maxDepth), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize), 
+          morton(NULL) {}
       
-      void splitFallback(BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild) const
+      void splitFallback(MortonBuildRecord& current, MortonBuildRecord& leftChild, MortonBuildRecord& rightChild) const
       {
         const unsigned int center = (current.begin + current.end)/2;
         leftChild.init(current.begin,center);
         rightChild.init(center,current.end);
       }
       
-      BBox3fa createLargeLeaf(BuildRecord& current, Allocator alloc)
+      BBox3fa createLargeLeaf(MortonBuildRecord& current, Allocator alloc)
       {
         if (current.depth > maxDepth) 
           THROW_RUNTIME_ERROR("depth limit reached");
@@ -184,7 +184,7 @@ namespace embree
         }
         
         /* fill all children by always splitting the largest one */
-        BuildRecord children[MAX_BRANCHING_FACTOR];
+        MortonBuildRecord children[MAX_BRANCHING_FACTOR];
         size_t numChildren = 1;
         children[0] = current;
         
@@ -208,7 +208,7 @@ namespace embree
           if (bestChild == -1) break;
           
           /*! split best child into left and right child */
-          __aligned(64) BuildRecord left, right;
+          __aligned(64) MortonBuildRecord left, right;
           splitFallback(children[bestChild],left,right);
           
           /* add new children left and right */
@@ -233,7 +233,7 @@ namespace embree
       }
       
       /*! recreates morton codes when reaching a region where all codes are identical */
-      void recreateMortonCodes(BuildRecord& current) const
+      void recreateMortonCodes(MortonBuildRecord& current) const
       {
         CentGeomBBox3fa global_bounds; global_bounds.reset();
         for (size_t i=current.begin; i<current.end; i++)
@@ -255,9 +255,9 @@ namespace embree
         std::sort(morton+current.begin,morton+current.end); // FIXME: use radix sort
       }
       
-      __forceinline void split(BuildRecord& current,
-                               BuildRecord& left,
-                               BuildRecord& right) const
+      __forceinline void split(MortonBuildRecord& current,
+                               MortonBuildRecord& left,
+                               MortonBuildRecord& right) const
       {
         const unsigned int code_start = morton[current.begin].code;
         const unsigned int code_end   = morton[current.end-1].code;
@@ -303,12 +303,12 @@ namespace embree
         right.init(center,current.end);
       }
       
-      BBox3fa recurse(BuildRecord& current, Allocator alloc) 
+      BBox3fa recurse(MortonBuildRecord& current, Allocator alloc) 
       {
         if (alloc == NULL) 
           alloc = createAllocator();
         
-        __aligned(64) BuildRecord children[MAX_BRANCHING_FACTOR];
+        __aligned(64) MortonBuildRecord children[MAX_BRANCHING_FACTOR];
         
         /* create leaf node */
         if (unlikely(current.depth+MIN_LARGE_LEAF_LEVELS >= maxDepth || current.size() <= minLeafSize)) {
@@ -339,7 +339,7 @@ namespace embree
           if (bestChild == -1) break;
           
           /*! split best child into left and right child */
-          __aligned(64) BuildRecord left, right;
+          __aligned(64) MortonBuildRecord left, right;
           split(children[bestChild],left,right);
           
           /* add new children left and right */
@@ -388,7 +388,7 @@ namespace embree
         
         /* build BVH */
         NodeRef root;
-        BuildRecord br;
+        MortonBuildRecord br;
         br.init(0,numPrimitives);
         br.parent = &root;
         br.depth = 1;
@@ -413,5 +413,16 @@ namespace embree
       CreateLeafFunc& createLeaf;
       CalculateBounds& calculateBounds;
     };
+
+    
+    template<typename NodeRef, typename CreateAllocFunc, typename AllocNodeFunc, typename SetBoundsFunc, typename CreateLeafFunc, typename CalculateBoundsFunc>
+      NodeRef bvh_builder_center_internal(CreateAllocFunc createAllocator, AllocNodeFunc allocNode, SetBoundsFunc setBounds, CreateLeafFunc createLeaf, CalculateBoundsFunc calculateBounds,
+                                       MortonID32Bit* src, MortonID32Bit* tmp, size_t numPrimitives,
+                                       const size_t branchingFactor, const size_t maxDepth, const size_t minLeafSize, const size_t maxLeafSize)
+    {
+      BVH4BuilderMortonGeneral<NodeRef,decltype(createAllocator()),CreateAllocFunc,AllocNodeFunc,SetBoundsFunc,CreateLeafFunc,CalculateBoundsFunc> builder
+        (createAllocator,allocNode,setBounds,createLeaf,calculateBounds,branchingFactor,maxDepth,minLeafSize,maxLeafSize);
+      return builder.build(src,tmp,numPrimitives);
+    }
   }
 }
