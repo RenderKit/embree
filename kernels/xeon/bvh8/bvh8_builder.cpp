@@ -31,6 +31,8 @@
 
 #include "common/scene_triangle_mesh.h"
 
+#include "algorithms/parallel_partition.h"
+
 namespace embree
 {
   namespace isa
@@ -301,6 +303,8 @@ namespace embree
       else
 	return node;
     }
+
+    unsigned int *test_array = NULL;
     
     void BVH8Builder::build(size_t threadIndex, size_t threadCount) 
     {
@@ -391,6 +395,34 @@ namespace embree
 	}
 	_mm_sfence(); // make written leaves globally visible
 	
+        /////////////////////////////////////////////////////
+
+#if 0
+
+#define MAX_SIZE 1024*1024*512
+        test_array = (unsigned int*)_mm_malloc(MAX_SIZE*sizeof(int),64);
+
+        for (size_t s=16;s<MAX_SIZE;s++)
+          {
+            DBG_PRINT(s);
+            srand(s*32323);
+            for (size_t i=0;i<s;i++)
+              {
+                test_array[i] = lrand48();
+              }
+
+        
+            parallel_partition<unsigned int,4> pp(test_array,s);
+
+            unsigned int pivot = test_array[s/2];
+            size_t mid = pp.parition(pivot);
+            DBG_PRINT(mid);
+          }
+
+        exit(0);
+#endif
+        /////////////////////////////////////////////////////
+
 	/*! process each generated subtask in its own thread */
 	scheduler->dispatchTask(threadIndex,threadCount,_build_parallel,this,threadCount,"BVH8Builder::build");
 

@@ -25,6 +25,10 @@
 
 #include <vector>
 
+#if defined(USE_TBB)
+#include "tbb/tbb.h"
+#endif
+
 namespace embree
 {
   /*! Interface to different task scheduler implementations. */
@@ -207,8 +211,18 @@ namespace embree
     ((Class*)data)->Name(threadID,numThreads);                          \
   }
 
+#define TASK_FUNCTION_(Class,Name) \
+  static void task_##Name (void* data, const size_t threadID, const size_t numThreads) { \
+    ((Class*)data)->Name(threadID,numThreads);                          \
+  }
+
 #define TASK_SET_FUNCTION(Class,Name) \
   void Name (const size_t threadID, const size_t numThreads, const size_t taskID, const size_t numTasks); \
+  static void _##Name (void* data, const size_t threadID, const size_t numThreads, const size_t taskID, const size_t numTasks) { \
+    ((Class*)data)->Name(threadID,numThreads,taskID,numTasks);			\
+  }
+
+#define TASK_SET_FUNCTION_(Class,Name) \
   static void _##Name (void* data, const size_t threadID, const size_t numThreads, const size_t taskID, const size_t numTasks) { \
     ((Class*)data)->Name(threadID,numThreads,taskID,numTasks);			\
   }
@@ -253,6 +267,37 @@ namespace embree
       size_t threadIndex, threadCount;
       LockStepTaskScheduler* scheduler;
     };
+
+#if defined(USE_TBB)
+    template<typename Closure>
+    struct TBBTask
+    {
+    public:
+      TBBTask (const Closure& closure) : closure(closure)
+      {
+        LockStepTaskScheduler* scheduler = LockStepTaskScheduler::instance();
+        size_t threadIndex = LockStepTaskScheduler::threadIndex();
+        size_t threadCount = scheduler->getNumThreads();
+        scheduler->dispatchTask( run, this, threadIndex, threadCount );
+      }
+
+      static void run(void* data, const size_t threadID, const size_t threadCount) 
+      {
+        TBBTask* This = (TBBTask*) data;
+        if (threadID == 0) This->arena.execute([&] { This->closure(); });
+        else               This->arena.execute([]{});
+      }
+
+    public:
+      const Closure& closure;
+      tbb::task_arena arena;
+    };
+
+    template<typename Closure>
+      static void execute_tbb(const Closure& closure) {
+      TBBTask<Closure> task(closure);
+    }
+#endif
 
     static __thread LockStepTaskScheduler* t_scheduler;
     static LockStepTaskScheduler* instance();

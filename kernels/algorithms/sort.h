@@ -478,4 +478,169 @@ namespace embree
     void radix_sort_u64(Ty* const src, Ty* const tmp, const size_t N) {
     radix_sort<Ty,uint64>(src,tmp,N);
   }
+
+  //////////////////////////////////////////////////////////////////////////
+  //////////////////////////////////////////////////////////////////////////
+
+  class ParallelRadixSortCopy
+  {
+  public:
+
+    static const size_t MAX_THREADS = 32;
+    static const size_t BITS = 11;
+    static const size_t BUCKETS = (1 << BITS);
+    typedef unsigned int TyRadixCount[MAX_THREADS][BUCKETS];
+    
+    template<typename Ty, typename Key>
+      class Task
+    {
+      template<typename T>
+	static bool compare(const T& v0, const T& v1) {
+	return (Key)v0 < (Key)v1;
+      }
+
+    public:
+      Task (ParallelRadixSortCopy* parent, Ty* src, Ty* dst, const size_t N)
+	: parent(parent), src(src), dst(dst), N(N) 
+      {
+	/* perform single threaded sort for small N */
+	if (N<3000) 
+	{
+	  /* copy data to destination array */
+	  for (size_t i=0; i<N; i++)
+	    dst[i] = src[i];
+	  
+	  /* do inplace sort inside destination array */
+	  std::sort(dst,dst+N,compare<Ty>);
+	}
+	
+	/* perform parallel sort for large N */
+	else {
+	  LockStepTaskScheduler* scheduler = LockStepTaskScheduler::instance();
+	  const size_t numThreads = min(scheduler->getNumThreads(),MAX_THREADS);
+	  parent->barrier.init(numThreads);
+	  scheduler->dispatchTask(task_radixsort,this,0,numThreads);
+	}
+      }
+      
+    private:
+      
+      void radixIteration(const Key shift, const bool last,
+			  const Ty* __restrict src, Ty* __restrict dst, 
+			  const size_t startID, const size_t endID, 
+			  const size_t threadIndex, const size_t threadCount)
+      {
+	/* mask to extract some number of bits */
+	const Key mask = BUCKETS-1;
+        
+	/* count how many items go into the buckets */
+	for (size_t i=0; i<BUCKETS; i++)
+	  parent->radixCount[threadIndex][i] = 0;
+	
+	for (size_t i=startID; i<endID; i++) {
+	  const Key index = ((Key)src[i] >> shift) & mask;
+	  parent->radixCount[threadIndex][index]++;
+	}
+	parent->barrier.wait(threadIndex,threadCount);
+	
+	/* calculate total number of items for each bucket */
+	__aligned(64) size_t total[BUCKETS];
+	for (size_t i=0; i<BUCKETS; i++)
+	  total[i] = 0;
+	
+	for (size_t i=0; i<threadCount; i++)
+	  for (size_t j=0; j<BUCKETS; j++)
+	    total[j] += parent->radixCount[i][j];
+	
+	/* calculate start offset of each bucket */
+	__aligned(64) size_t offset[BUCKETS];
+	offset[0] = 0;
+	for (size_t i=1; i<BUCKETS; i++)    
+	  offset[i] = offset[i-1] + total[i-1];
+	
+	/* calculate start offset of each bucket for this thread */
+	for (size_t i=0; i<threadIndex; i++)
+	  for (size_t j=0; j<BUCKETS; j++)
+	    offset[j] += parent->radixCount[i][j];
+	
+	/* copy items into their buckets */
+	for (size_t i=startID; i<endID; i++) {
+	  const Ty elt = src[i];
+	  const Key index = ((Key)src[i] >> shift) & mask;
+	  dst[offset[index]++] = elt;
+	}
+	if (!last) 
+	  parent->barrier.wait(threadIndex,threadCount);
+      }
+      
+      void radixsort(const size_t threadIndex, const size_t numThreads)
+      {
+	const size_t startID = (threadIndex+0)*N/numThreads;
+	const size_t endID   = (threadIndex+1)*N/numThreads;
+
+	if (sizeof(Key) == sizeof(uint32)) {
+	  radixIteration(0*BITS,0,src,dst,startID,endID,threadIndex,numThreads);
+	  radixIteration(1*BITS,0,dst,src,startID,endID,threadIndex,numThreads);
+	  radixIteration(2*BITS,1,src,dst,startID,endID,threadIndex,numThreads);
+	}
+	else if (sizeof(Key) == sizeof(uint64))
+	{
+	  Ty* src = this->src;
+	  Ty* dst = this->dst;
+	  for (uint64 shift=0*BITS; shift<64; shift+=BITS) {
+	    radixIteration(shift,0,src,dst,startID,endID,threadIndex,numThreads);
+	    std::swap(src,dst);
+	  }
+	  radixIteration(5*BITS,1,src,dst,startID,endID,threadIndex,numThreads); // required to copy into destination buffer
+	}
+      }
+      
+      static void task_radixsort (void* data, const size_t threadIndex, const size_t threadCount) { 
+	((Task*)data)->radixsort(threadIndex,threadCount);                          
+      }
+
+    private:
+      ParallelRadixSortCopy* const parent;
+      Ty* const src;
+      Ty* const dst;
+      const size_t N;
+    };
+    
+  private:
+    TyRadixCount radixCount;
+    LinearBarrierActive barrier; // FIXME: should be able to speficy number of threads here
+  };
+
+  /*! parallel radix sort */
+  template<typename Key>
+  struct ParallelRadixSortCopyT
+  {
+    ParallelRadixSortCopyT (ParallelRadixSortCopy& state) 
+      : state(state) {} 
+
+    template<typename Ty>
+    void operator() (Ty* const src, Ty* const dst, const size_t N) {
+      ParallelRadixSortCopy::Task<Ty,Key>(&state,src,dst,N);
+    }
+
+    ParallelRadixSortCopy& state;
+  };
+
+  template<typename Ty, typename Key = Ty>
+    void radix_sort_copy(Ty* const src, Ty* const dst, const size_t N)
+  {
+    ParallelRadixSortCopy radix_sort_state;
+    ParallelRadixSortCopyT<Key> sort(radix_sort_state);
+    sort(src,dst,N);
+  }
+
+  template<typename Ty>
+    void radix_sort_copy_u32(Ty* const src, Ty* const dst, const size_t N) {
+    radix_sort_copy<Ty,uint32>(src,dst,N);
+  }
+
+  template<typename Ty>
+    void radix_sort_copy_u64(Ty* const src, Ty* const dst, const size_t N) {
+    radix_sort_copy<Ty,uint64>(src,dst,N);
+  } 
 }

@@ -9,11 +9,12 @@ destdir=`readlink -f "$1"`
 
 mkdir -p build
 cd build
-rm CMakeCache.txt # make sure to use default settigs
+rm CMakeCache.txt # make sure to use default settings
 cmake \
 -D COMPILER=ICC \
 -D ENABLE_XEON_PHI_SUPPORT=ON \
 -D RTCORE_SPINLOCKS=ON \
+-D CMAKE_SKIP_INSTALL_RPATH=ON \
 ..
 make -j 8 preinstall
 cmake -D CMAKE_INSTALL_PREFIX="$destdir" -P cmake_install.cmake

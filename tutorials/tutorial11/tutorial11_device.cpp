@@ -15,7 +15,8 @@
 // ======================================================================== //
 
 #include "../common/tutorial/tutorial_device.h"
-#include "kernels/xeon/builders/bvh_builder_sah.h"
+#include "kernels/xeon/builders/bvh_builder_binned_sah.h"
+#include "kernels/xeon/builders/bvh_builder_center.h"
 #include "kernels/xeon/builders/priminfo.h"
 
 /* scene data */
@@ -75,14 +76,139 @@ struct InnerNode : public Node
 struct LeafNode : public Node
 {
   size_t id;
+  BBox3fa bounds;
 
-  LeafNode (size_t id)
-    : id(id) {}
+  LeafNode (size_t id, const BBox3fa& bounds)
+    : id(id), bounds(bounds) {}
 
   float sah() {
     return 1.0f;
   }
 };
+
+void build_sah(std::vector<PrimRef>& prims, isa::PrimInfo& pinfo)
+{
+  size_t N = pinfo.size();
+
+  /* fast allocator that supports thread local operation */
+  FastAllocator allocator;
+
+  for (size_t i=0; i<2; i++)
+  {
+    std::cout << "iteration " << i << ": building BVH over " << N << " primitives, " << std::flush;
+    double t0 = getSeconds();
+    
+    allocator.reset();
+
+    Node* root = isa::bvh_builder_binned_sah<Node*>(
+
+      /* thread local allocator for fast allocations */
+      [&] () -> FastAllocator::ThreadLocal* { 
+        return allocator.threadLocal(); 
+      },
+
+      /* lambda function that creates BVH nodes */
+      [&](const isa::BuildRecord<Node*>& current, isa::BuildRecord<Node*>* children, const size_t N, FastAllocator::ThreadLocal* alloc)
+      {
+        assert(N <= 2);
+        InnerNode* node = new (alloc->malloc(sizeof(InnerNode))) InnerNode;
+        for (size_t i=0; i<N; i++) {
+          node->bounds[i] = children[i].geomBounds;
+          children[i].parent = &node->children[i];
+        }
+        *current.parent = node;
+        return node;
+      },
+
+      /* lambda function that creates BVH leaves */
+      [&](const isa::BuildRecord<Node*>& current, PrimRef* prims, FastAllocator::ThreadLocal* alloc)
+      {
+        assert(current.size() == 1);
+        Node* node = new (alloc->malloc(sizeof(LeafNode))) LeafNode(prims[current.begin].ID(),prims[current.begin].bounds());
+        *current.parent = node;
+      },
+      prims.data(),pinfo,2,1024,1,1,1);
+    
+    double t1 = getSeconds();
+
+    std::cout << 1000.0f*(t1-t0) << "ms, " << 1E-6*double(N)/(t1-t0) << " Mprims/s, sah = " << root->sah() << " [DONE]" << std::endl;
+  }
+}
+
+void build_morton(std::vector<PrimRef>& prims, isa::PrimInfo& pinfo)
+{
+  size_t N = pinfo.size();
+  /* array for morton builder */
+  std::vector<isa::MortonID32Bit> morton_src(N);
+  std::vector<isa::MortonID32Bit> morton_tmp(N);
+  for (size_t i=0; i<N; i++) 
+    morton_src[i].index = i;
+
+  /* fast allocator that supports thread local operation */
+  FastAllocator allocator;
+
+  for (size_t i=0; i<2; i++)
+  {
+    std::cout << "iteration " << i << ": building BVH over " << N << " primitives, " << std::flush;
+    double t0 = getSeconds();
+    
+    allocator.reset();
+
+    std::pair<Node*,BBox3fa> node_bounds = isa::bvh_builder_center<Node*>(
+
+      /* thread local allocator for fast allocations */
+      [&] () -> FastAllocator::ThreadLocal* { 
+        return allocator.threadLocal(); 
+      },
+
+      /* lambda function that allocates BVH nodes */
+      [&] ( isa::MortonBuildRecord<Node*>& current, isa::MortonBuildRecord<Node*>* children, size_t N, FastAllocator::ThreadLocal* alloc ) -> InnerNode*
+      {
+        assert(N <= 2);
+        InnerNode* node = new (alloc->malloc(sizeof(InnerNode))) InnerNode;
+        *current.parent = node;
+        for (size_t i=0; i<N; i++) 
+          children[i].parent = &node->children[i];
+        return node;
+      },
+
+      /* lambda function that sets bounds */
+      [&] (InnerNode* node, const BBox3fa* bounds, size_t N) -> BBox3fa
+      {
+        BBox3fa res = empty;
+        for (size_t i=0; i<N; i++) {
+          const BBox3fa b = bounds[i];
+          res.extend(b);
+          node->bounds[i] = b;
+        }
+        return res;
+      },
+
+      /* lambda function that creates BVH leaves */
+      [&]( isa::MortonBuildRecord<Node*>& current, FastAllocator::ThreadLocal* alloc, BBox3fa& box_o) -> Node*
+      {
+        assert(current.size() == 1);
+        const size_t id = morton_src[current.begin].index;
+        const BBox3fa bounds = prims[id].bounds(); // FIXME: dont use morton_src, should be input
+        Node* node = new (alloc->malloc(sizeof(LeafNode))) LeafNode(id,bounds);
+        *current.parent = node;
+        box_o = bounds;
+        return node;
+      },
+
+      /* lambda that calculates the bounds for some primitive */
+      [&] (const isa::MortonID32Bit& morton) -> BBox3fa {
+        return prims[morton.index].bounds();
+      },
+      morton_src.data(),morton_tmp.data(),prims.size(),2,1024,1,1);
+
+    Node* root = node_bounds.first;
+    
+    double t1 = getSeconds();
+
+    std::cout << 1000.0f*(t1-t0) << "ms, " << 1E-6*double(N)/(t1-t0) << " Mprims/s, sah = " << root->sah() << " [DONE]" << std::endl;
+  }
+}
 
 /* called by the C++ code for initialization */
 extern "C" void device_init (int8* cfg)
@@ -108,47 +234,8 @@ extern "C" void device_init (int8* cfg)
     prims.push_back(prim);
   }
 
-  /* fast allocator that supports thread local operation */
-  FastAllocator allocator;
-
-  for (size_t i=0; i<2; i++)
-  {
-    std::cout << "iteration " << i << ": building BVH over " << N << " primitives, " << std::flush;
-    double t0 = getSeconds();
-    
-    allocator.reset();
-    Node* root = isa::bvh_builder_sah<Node*>( // FIXME: rename to bvh_builder_binned_sah
-
-      /* thread local allocator for fast allocations */
-      [&] () -> FastAllocator::ThreadLocal* { 
-        return allocator.threadLocal(); 
-      },
-
-      /* lambda function that creates BVH nodes */
-      [&](isa::BuildRecord<Node*>* children, const size_t N, FastAllocator::ThreadLocal* alloc) -> Node*  // FIXME: Node* to void
-      {
-        assert(N <= 2);
-        InnerNode* node = new (alloc->malloc(sizeof(InnerNode))) InnerNode;
-        for (size_t i=0; i<N; i++) {
-          node->bounds[i] = children[i].geomBounds;
-          children[i].parent = &node->children[i];
-        }
-        // FIXME: also set parent->parent to node
-        return node;
-      },
-
-      /* lambda function that creates BVH leaves */
-      [&](const isa::BuildRecord<Node*>& current, PrimRef* prims, FastAllocator::ThreadLocal* alloc) -> Node*
-      {
-        assert(current.size() == 1);
-        return new (alloc->malloc(sizeof(LeafNode))) LeafNode(prims[current.begin].ID());
-      },
-      prims.data(),pinfo,2,1024,0,4,8); // FIXME: change log blocksize to blocksize
-    
-    double t1 = getSeconds();
-    
-    std::cout << 1000.0f*(t1-t0) << "ms, " << 1E-6*double(N)/(t1-t0) << " Mprims/s, sah = " << root->sah() << " [DONE]" << std::endl;
-  }
+  build_sah(prims,pinfo);
+  build_morton(prims,pinfo);
 }
 
 /* task that renders a single screen tile */

@@ -155,10 +155,10 @@ namespace embree
 #if defined(PROFILE)
         double dt = getSeconds()-t0;
         dt_min = min(dt_min,dt);
-        dt_avg = dt_avg + dt;
+        if (i != 0) dt_avg = dt_avg + dt;
         dt_max = max(dt_max,dt);
       }
-      dt_avg /= double(20);
+      dt_avg /= double(19);
       
       std::cout << "[DONE]" << std::endl;
       std::cout << "  min = " << 1000.0f*dt_min << "ms (" << numPrimitives/dt_min*1E-6 << " Mtris/s)" << std::endl;
@@ -467,12 +467,12 @@ namespace embree
     void BVH4BuilderMorton::recurseSubMortonTrees(const size_t threadID, const size_t numThreads)
     {
       __aligned(64) Allocator nodeAlloc(&bvh->alloc);
-      __aligned(64) Allocator leafAlloc(&bvh->alloc);
+      //__aligned(64) Allocator leafAlloc(&bvh->alloc);
       while (true)
       {
         const unsigned int taskID = atomic_add(&state->taskCounter,1);
         if (taskID >= state->buildRecords.size()) break;
-	recurse(state->buildRecords[taskID],nodeAlloc,leafAlloc,RECURSE,threadID);
+	recurse(state->buildRecords[taskID],nodeAlloc,nodeAlloc,RECURSE,threadID);
         state->buildRecords[taskID].parent->setBarrier();
       }
       _mm_sfence(); // make written leaves globally visible
@@ -1157,8 +1157,8 @@ namespace embree
       /* perform first splits in single threaded mode */
       bvh->alloc.clear();
       __aligned(64) Allocator nodeAlloc(&bvh->alloc);
-      __aligned(64) Allocator leafAlloc(&bvh->alloc);
-      recurse(br,nodeAlloc,leafAlloc,CREATE_TOP_LEVEL,threadIndex);	    
+      //__aligned(64) Allocator leafAlloc(&bvh->alloc);
+      recurse(br,nodeAlloc,nodeAlloc,CREATE_TOP_LEVEL,threadIndex);	    
       _mm_sfence(); // make written leaves globally visible
 
       /* sort all subtasks by size */

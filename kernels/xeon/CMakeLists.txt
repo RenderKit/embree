@@ -14,6 +14,14 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
+OPTION(USE_TBB    "EXPERIMENTAL" OFF) # FIXME:
+IF (USE_TBB)
+  ADD_DEFINITIONS(-DUSE_TBB)
+  FIND_PACKAGE(TBB REQUIRED)
+  INCLUDE_DIRECTORIES(${TBB_INCLUDE_DIR})
+  SET(EMBREE_LIBRARIES ${EMBREE_LIBRARIES} ${TBB_LIBRARY})
+ENDIF()
+
 INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
 
 IF (TARGET_SSE41)
@@ -103,6 +111,7 @@ ADD_ISPC_LIBRARY(embree ${EMBREE_LIB_TYPE}
   bvh4/bvh4_builder_hair_mb.cpp
   bvh4/bvh4_builder_fast.cpp
   bvh4/bvh4_builder_morton.cpp
+  bvh4/bvh4_builder_morton_general.cpp
   bvh4/bvh4_builder_toplevel.cpp
   bvh4/bvh4_intersector1.cpp
   bvh4/bvh4_intersector4_single.cpp
@@ -160,6 +169,7 @@ IF (TARGET_AVX)
     bvh4/bvh4_rotate.cpp
     bvh4/bvh4_builder_toplevel.cpp
     bvh4/bvh4_builder_morton.cpp
+    bvh4/bvh4_builder_morton_general.cpp
     bvh4/bvh4_builder_fast.cpp
     bvh4/bvh4_builder.cpp
     bvh4/bvh4_builder_mb.cpp

@@ -17,17 +17,16 @@ realpath() {
   cd "$OURPWD"
 }
 
-realpath $1
+realpath "$1"
 
 mkdir -p build
 cd build
-rm CMakeCache.txt # make sure to use default settigs
+rm CMakeCache.txt # make sure to use default settings
 cmake \
 -D COMPILER=ICC \
--D CMAKE_SKIP_RPATH=ON \
+-D CMAKE_SKIP_INSTALL_RPATH=ON \
 ..
 make -j 8 preinstall
-echo $destdir
 cmake -D CMAKE_INSTALL_PREFIX="$destdir" -P cmake_install.cmake
 cd ..
 

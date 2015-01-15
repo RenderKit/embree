@@ -60,6 +60,6 @@ namespace embree
   template<typename Index, typename Value, typename Func, typename Reduction>
     __forceinline Value parallel_reduce( const Index first, const Index last, const Value& identity, const Func& func, const Reduction& reduction )
   {
-    return parallel_reduce(first,last,1,identity,func,reduction);
+    return parallel_reduce(first,last,Index(1),identity,func,reduction);
   }
 }

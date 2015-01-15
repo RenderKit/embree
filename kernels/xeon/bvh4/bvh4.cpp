@@ -164,6 +164,8 @@ namespace embree
   DECLARE_SCENE_BUILDER(BVH4Triangle4vBuilderMorton);
   DECLARE_SCENE_BUILDER(BVH4Triangle4iBuilderMorton);
 
+  DECLARE_SCENE_BUILDER(BVH4Triangle4BuilderMortonGeneral);
+
   DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle1MeshBuilderMorton);
   DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle4MeshBuilderMorton);
   DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle8MeshBuilderMorton);
@@ -235,6 +237,8 @@ namespace embree
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle1vBuilderMorton);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4vBuilderMorton);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4iBuilderMorton);
+
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4BuilderMortonGeneral);
     
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle1MeshBuilderMorton);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4MeshBuilderMorton);
@@ -662,7 +666,8 @@ namespace embree
     if      (g_tri_builder == "default"     ) builder = BVH4Triangle4Builder(accel,scene,LeafMode);
     else if (g_tri_builder == "spatialsplit") builder = BVH4Triangle4Builder(accel,scene,LeafMode | MODE_HIGH_QUALITY);
     else if (g_tri_builder == "objectsplit" ) builder = BVH4Triangle4Builder(accel,scene,LeafMode);
-    else if (g_tri_builder == "morton"      ) builder = BVH4Triangle4BuilderMorton(accel,scene,LeafMode);
+    else if (g_tri_builder == "morton"      ) builder = BVH4Triangle4BuilderMorton(accel,scene,LeafMode); 
+    else if (g_tri_builder == "morton_new"  ) builder = BVH4Triangle4BuilderMortonGeneral(accel,scene,LeafMode);
     else if (g_tri_builder == "fast"        ) builder = BVH4Triangle4BuilderFast(accel,scene,LeafMode);
     else if (g_tri_builder == "fast_new"    ) builder = BVH4Triangle4BuilderFastNew(accel,scene,LeafMode);
     else THROW_RUNTIME_ERROR("unknown builder "+g_tri_builder+" for BVH4<Triangle4>");
