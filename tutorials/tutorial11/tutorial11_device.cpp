@@ -195,6 +195,7 @@ extern "C" void device_init (int8* cfg)
         const size_t id = morton_src[current.begin].index;
         const BBox3fa bounds = prims[id].bounds(); // FIXME: dont use morton_src, should be input
         Node* node = new (alloc->malloc(sizeof(LeafNode))) LeafNode(id,bounds);
+        *current.parent = node;
         box_o = bounds;
         return node;
       },
@@ -210,7 +211,7 @@ extern "C" void device_init (int8* cfg)
 #endif
     
     double t1 = getSeconds();
-    
+
     std::cout << 1000.0f*(t1-t0) << "ms, " << 1E-6*double(N)/(t1-t0) << " Mprims/s, sah = " << root->sah() << " [DONE]" << std::endl;
   }
 }
