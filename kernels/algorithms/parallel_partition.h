@@ -18,7 +18,7 @@
 
 #include "common/default.h"
 
-#define DBG_PART(x) x
+#define DBG_PART(x) 
 #define DBG_CHECK(x) x
 
 namespace embree
@@ -38,6 +38,8 @@ namespace embree
 
       AlignedAtomicCounter64 numLeftRemainderBlocks;
       AlignedAtomicCounter64 numRightRemainderBlocks;
+      AlignedAtomicCounter32 maxLeftBlockID;
+      AlignedAtomicCounter32 maxRightBlockID;
       
       unsigned int  leftRemainderBlockIDs[MAX_MIC_THREADS];
       unsigned int rightRemainderBlockIDs[MAX_MIC_THREADS];
@@ -220,8 +222,11 @@ namespace embree
     parallel_partition(T *array, size_t N) : array(array), N(N)
         {
           blockID.reset();
-          numLeftRemainderBlocks.reset();
-          numRightRemainderBlocks.reset();
+          numLeftRemainderBlocks  = 0;
+          numRightRemainderBlocks = 0;
+          maxLeftBlockID          = 0;
+          maxRightBlockID         = 0;
+          
           blocks = N/BLOCK_SIZE;
           DBG_PART(
                    DBG_PRINT(blocks);
@@ -310,11 +315,15 @@ namespace embree
             leftRemainderBlockIDs[index] = currentLeftBlock;
           }
 
+        maxLeftBlockID.max(currentLeftBlock);
+
         if (right_begin != right_end)
           {
             const size_t index = numRightRemainderBlocks.inc();
             rightRemainderBlockIDs[index] = currentRightBlock;
           }
+
+        maxRightBlockID.max(currentRightBlock);       
       }
 
       size_t parition(const T pivot, const size_t threadID = 0)
@@ -337,24 +346,50 @@ namespace embree
         // do parallel for here
         thread_partition(pivot);
         
-        _mm_sfence(); // make written leaves globally visible
+        DBG_PART(
+                 DBG_PRINT(numLeftRemainderBlocks);
+                 DBG_PRINT(numRightRemainderBlocks);
+                 DBG_PRINT(maxLeftBlockID);
+                 DBG_PRINT(maxRightBlockID);                 
+                 );
+                 
+        
+        size_t left_begin = (size_t)-1;
+        size_t left_end   = (size_t)-1;
 
-        assert( numLeftRemainderBlocks == 1);
-        assert( numRightRemainderBlocks == 1);
+        getLeftArrayIndex(maxLeftBlockID,left_begin,left_end);
+        
+        if (numLeftRemainderBlocks)
+          getLeftArrayIndex(leftRemainderBlockIDs[0],left_begin,left_end);
+        else
+          left_begin += BLOCK_SIZE;
 
-        size_t left_begin, left_end;
-        getLeftArrayIndex(leftRemainderBlockIDs[0],left_begin,left_end);
+        size_t right_begin = (size_t)-1;
+        size_t right_end   = (size_t)-1;
 
-        size_t right_begin, right_end;
-        getRightArrayIndex(rightRemainderBlockIDs[0],right_begin,right_end);
+        getRightArrayIndex(maxRightBlockID,right_begin,right_end);
+        
+        if (numRightRemainderBlocks)
+          getRightArrayIndex(rightRemainderBlockIDs[0],right_begin,right_end);
+        else
+          right_end -= BLOCK_SIZE;
 
         
         DBG_PART(
                  DBG_PRINT("CLEANUP");
+                 
                  DBG_PRINT(left_begin);
                  DBG_PRINT(left_end);
                  DBG_PRINT(right_begin);
                  DBG_PRINT(right_end);
+
+                 //for (size_t i=0;i<N;i++)
+                 //std::cout << i << " -> " << array[i] << std::endl;
+                 );
+        DBG_CHECK(
+                 assert(left_begin != (size_t)-1);
+                 assert(right_end  != (size_t)-1);
+                 
                  checkLeft(0,left_begin,pivot);
                  checkRight(right_end,N,pivot);
                  );
@@ -363,13 +398,21 @@ namespace embree
         
         DBG_CHECK(
                   DBG_PRINT(right_end - left_begin);
+                  assert( right_end - left_begin <= 4*BLOCK_SIZE);
                   )
+          
         const size_t mid = serialPartitioning(left_begin,right_end,pivot);
+
+        DBG_PART(
+                 for (size_t i=0;i<N;i++)
+                   std::cout << i << " -> " << array[i] << std::endl;
+                 );
+        
         DBG_CHECK(
                  checkLeft(0,mid,pivot);
                  checkRight(mid,N,pivot);
                  );
-
+        
         return mid;
       }
 
