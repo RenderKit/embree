@@ -106,7 +106,8 @@ namespace embree
         Triangle4::store_nt(accel,Triangle4(v0,v1,v2,vgeomID,vprimID,vmask,false));
         box_o = BBox3fa((Vec3fa)lower,(Vec3fa)upper);
       }
-      
+    
+    private:
       Scene* scene;
       MortonID32Bit* morton;
       size_t encodeShift;
@@ -137,9 +138,9 @@ namespace embree
     {
     public:
       
-      BVH4BuilderMortonGeneral2 (BVH4* bvh, Scene* scene, TriangleMesh* mesh, size_t listMode, size_t logBlockSize, bool needVertices, size_t primBytes, const size_t minLeafSize, const size_t maxLeafSize)
+      BVH4BuilderMortonGeneral2 (BVH4* bvh, Scene* scene, size_t listMode, size_t logBlockSize, bool needVertices, size_t primBytes, const size_t minLeafSize, const size_t maxLeafSize)
         : bvh(bvh), scene(scene), listMode(listMode), logBlockSize(logBlockSize), needVertices(needVertices), primBytes(primBytes), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize),
-          topLevelItemThreshold(0), encodeShift(0), encodeMask(-1), morton(NULL), bytesMorton(0), numPrimitives(0), numAllocatedPrimitives(0), numAllocatedNodes(0)
+          encodeShift(0), encodeMask(-1), morton(NULL), bytesMorton(0), numPrimitives(0), numAllocatedPrimitives(0), numAllocatedNodes(0)
       {
         needAllThreads = true;
       }
@@ -196,18 +197,18 @@ namespace embree
           
           /* compute scene bounds */
           Scene::Iterator<TriangleMesh,1> iter1(scene);
-          const CentGeomBBox3fa bounds = parallel_for_for_reduce 
-            ( iter1, CentGeomBBox3fa(empty), [&](TriangleMesh* mesh, const range<size_t>& r, size_t k) -> CentGeomBBox3fa
+          const BBox3fa centBounds = parallel_for_for_reduce 
+            ( iter1, BBox3fa(empty), [&](TriangleMesh* mesh, const range<size_t>& r, size_t k) -> BBox3fa
               {
-                CentGeomBBox3fa bounds(empty);
-                for (size_t i=r.begin(); i<r.end(); i++) bounds.extend(mesh->bounds(i));
+                BBox3fa bounds(empty);
+                for (size_t i=r.begin(); i<r.end(); i++) bounds.extend(center2(mesh->bounds(i)));
                 return bounds;
-              }, [] (CentGeomBBox3fa a, const CentGeomBBox3fa& b) { a.merge(b); return a; });
+              }, [] (const BBox3fa& a, const BBox3fa& b) { return merge(a,b); });
           
           /* compute morton codes */
           Scene::Iterator<TriangleMesh,1> iter(scene);
           MortonID32Bit* dest = (MortonID32Bit*) bvh->alloc2.ptr();
-          MortonCodeGenerator::MortonCodeMapping mapping(bounds.centBounds);
+          MortonCodeGenerator::MortonCodeMapping mapping(centBounds);
           parallel_for_for
             ( iter, [&](TriangleMesh* mesh, const range<size_t>& r, size_t k) 
               {
@@ -222,10 +223,11 @@ namespace embree
           SetBVH4Bounds setBounds;
           CreateTriangle4Leaf createLeaf(scene,morton,encodeShift,encodeMask);
           CalculateBounds calculateBounds(scene,encodeShift,encodeMask);
-          auto createAllocator = [&] () { return bvh->alloc2.threadLocal2(); };
-          BVH4::NodeRef root = bvh_builder_center_internal<BVH4::NodeRef>(createAllocator,allocNode,setBounds,createLeaf,calculateBounds,
-                                                                          dest,morton,numPrimitives,4,BVH4::maxBuildDepth,4,inf);
-          bvh->set(root,bounds.geomBounds,numPrimitives);
+          auto node_bounds = bvh_builder_center_internal<BVH4::NodeRef>(
+            [&] () { return bvh->alloc2.threadLocal2(); },
+            allocNode,setBounds,createLeaf,calculateBounds,
+            dest,morton,numPrimitives,4,BVH4::maxBuildDepth,4,inf);
+          bvh->set(node_bounds.first,node_bounds.second,numPrimitives);
           
 #if defined(PROFILE_MORTON_GENERAL)
           double dt = getSeconds()-t0;
@@ -266,14 +268,14 @@ namespace embree
       size_t maxLeafSize;
       size_t listMode;
       
-      size_t topLevelItemThreshold;
+      //size_t topLevelItemThreshold;
       size_t encodeShift;
       size_t encodeMask;
       
       bool needVertices;
       
     public:
-      MortonID32Bit* __restrict__ morton;
+      MortonID32Bit* morton;
       size_t bytesMorton;
       
     public:
@@ -282,14 +284,8 @@ namespace embree
       size_t numAllocatedNodes;
     };
     
-    // =======================================================================================================
-    // =======================================================================================================
-    // =======================================================================================================
-    
-    
-    
     Builder* BVH4Triangle4BuilderMortonGeneral  (void* bvh, Scene* scene, size_t mode) { 
-      return new class BVH4BuilderMortonGeneral2 ((BVH4*)bvh,scene,NULL,mode,2,false,sizeof(Triangle4),4,inf); 
+      return new class BVH4BuilderMortonGeneral2 ((BVH4*)bvh,scene,mode,2,false,sizeof(Triangle4),4,inf); 
     }
   }
 }

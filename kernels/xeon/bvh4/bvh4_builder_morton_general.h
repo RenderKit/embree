@@ -380,7 +380,7 @@ namespace embree
       }
       
       /* build function */
-      NodeRef build(MortonID32Bit* src, MortonID32Bit* tmp, size_t numPrimitives) 
+      std::pair<NodeRef,BBox3fa> build(MortonID32Bit* src, MortonID32Bit* tmp, size_t numPrimitives) 
       {
         /* sort morton codes */
         morton = tmp;
@@ -396,7 +396,7 @@ namespace embree
         BBox3fa bounds = empty;
         //LockStepTaskScheduler::execute_tbb([&] { bounds = recurse(br, NULL); });
         bounds = recurse(br, NULL); // FIXME: why is this faster??
-        return root;
+        return std::make_pair(root,bounds);
       }
       
     public:
@@ -416,7 +416,7 @@ namespace embree
 
     
     template<typename NodeRef, typename CreateAllocFunc, typename AllocNodeFunc, typename SetBoundsFunc, typename CreateLeafFunc, typename CalculateBoundsFunc>
-      NodeRef bvh_builder_center_internal(CreateAllocFunc createAllocator, AllocNodeFunc allocNode, SetBoundsFunc setBounds, CreateLeafFunc createLeaf, CalculateBoundsFunc calculateBounds,
+      std::pair<NodeRef,BBox3fa> bvh_builder_center_internal(CreateAllocFunc createAllocator, AllocNodeFunc allocNode, SetBoundsFunc setBounds, CreateLeafFunc createLeaf, CalculateBoundsFunc calculateBounds,
                                        MortonID32Bit* src, MortonID32Bit* tmp, size_t numPrimitives,
                                        const size_t branchingFactor, const size_t maxDepth, const size_t minLeafSize, const size_t maxLeafSize)
     {
