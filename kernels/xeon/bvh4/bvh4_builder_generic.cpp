@@ -168,7 +168,7 @@ namespace embree
           /* build BVH */
           PrimInfo pinfo = CreatePrimRefArray<TriangleMesh,1>(scene,prims);
           BVH4::NodeRef root = bvh_builder_binned_sah_internal<BVH4::NodeRef>(CreateAlloc(bvh),CreateBVH4Node(bvh),CreateLeaf<Triangle4>(bvh),
-                                                                              prims.data(),temp.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,2,4,4*BVH4::maxLeafBlocks);
+                                                                              prims.data(),temp.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,4,4,4*BVH4::maxLeafBlocks);
           bvh->set(root,pinfo.geomBounds,pinfo.size());
           
 #if defined(PROFILE)

@@ -127,7 +127,7 @@ void build_sah(std::vector<PrimRef>& prims, isa::PrimInfo& pinfo)
         Node* node = new (alloc->malloc(sizeof(LeafNode))) LeafNode(prims[current.begin].ID(),prims[current.begin].bounds());
         *current.parent = node;
       },
-      prims.data(),pinfo,2,1024,0,1,1); // FIXME: change log blocksize to blocksize
+      prims.data(),pinfo,2,1024,1,1,1);
     
     double t1 = getSeconds();
 
