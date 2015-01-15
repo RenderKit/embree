@@ -66,6 +66,11 @@ namespace embree
     __forceinline atomic32_t inc() { return atomic_add(&data,+1); }
     __forceinline atomic32_t dec() { return atomic_add(&data,-1); }
 
+    __forceinline void min(const unsigned int i) { return atomic_min_ui32((volatile unsigned int*)&data, i); }
+
+    __forceinline void max(const unsigned int i) { return atomic_max_ui32((volatile unsigned int*)&data, i); }
+
+
   private:
     volatile atomic32_t data;
     char align[64-sizeof(atomic32_t)]; // one counter per cache line

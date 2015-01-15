@@ -397,7 +397,7 @@ namespace embree
 	
         /////////////////////////////////////////////////////
 
-#if 1
+#if 0
         PING;
 #define MAX_SIZE 1024*1024*512
         test_array = (unsigned int*)_mm_malloc(MAX_SIZE*sizeof(int),64);
@@ -408,7 +408,7 @@ namespace embree
             srand(s*32323);
             for (size_t i=0;i<s;i++)
               {
-                test_array[i] = lrand48();
+                test_array[i] = lrand48() % s;
               }
 
         
