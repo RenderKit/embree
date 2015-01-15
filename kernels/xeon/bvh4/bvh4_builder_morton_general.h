@@ -113,47 +113,9 @@ namespace embree
         __forceinline bool operator>(const MortonID32Bit &m) const { return code > m.code; } 
       };
 
-      struct MortonBuilderState
-      {
-        ALIGNED_CLASS;
-
-      public:
-
-        typedef unsigned int ThreadRadixCountTy[RADIX_BUCKETS];
-
-        MortonBuilderState () 
-        {
-	  taskCounter = 0;
-          numThreads = getNumberOfLogicalThreads();
-          startGroup = new unsigned int[numThreads];
-          startGroupOffset = new unsigned int[numThreads];
-	  dest = new size_t[numThreads];
-          radixCount = (ThreadRadixCountTy*) alignedMalloc(numThreads*sizeof(ThreadRadixCountTy));
-        }
-
-        ~MortonBuilderState () 
-        {
-          alignedFree(radixCount);
-          delete[] startGroupOffset;
-          delete[] startGroup;
-	  delete[] dest;
-        }
-
-        size_t numThreads;
-        unsigned int* startGroup;
-        unsigned int* startGroupOffset;
-	size_t* dest;
-        ThreadRadixCountTy* radixCount;
-        
-	atomic_t taskCounter;
-	std::vector<BuildRecord> buildRecords;
-        __aligned(64) WorkStack<BuildRecord,NUM_TOP_LEVEL_BINS> workStack;
-        LinearBarrierActive barrier;
-      };
-      
       /*! Constructor. */
       BVH4BuilderMortonGeneral (BVH4* bvh, Scene* scene, TriangleMesh* mesh, size_t listMode, size_t logBlockSize, bool needVertices, size_t primBytes, const size_t minLeafSize, const size_t maxLeafSize)
-        : bvh(bvh), state(nullptr), scheduler(&scene->lockstep_scheduler), scene(scene), mesh(mesh), listMode(listMode), logBlockSize(logBlockSize), needVertices(needVertices), primBytes(primBytes), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize),
+        : bvh(bvh), scheduler(&scene->lockstep_scheduler), scene(scene), mesh(mesh), listMode(listMode), logBlockSize(logBlockSize), needVertices(needVertices), primBytes(primBytes), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize),
 	topLevelItemThreshold(0), encodeShift(0), encodeMask(-1), morton(NULL), bytesMorton(0), numGroups(0), numPrimitives(0), numAllocatedPrimitives(0), numAllocatedNodes(0)
       {
         needAllThreads = true;
@@ -222,7 +184,7 @@ namespace embree
         double t0 = getSeconds();
 #endif
 
-        state.reset(new MortonBuilderState);
+        //state.reset(new MortonBuilderState);
 	//size_t numActiveThreads = threadCount;
 	//size_t numActiveThreads = min(threadCount,getNumberOfCores());
 
@@ -251,8 +213,8 @@ namespace embree
       bvh->bounds = global_bounds.geomBounds;
 
       /* calculate initial destination for each thread */
-      for (size_t t=0; t<threadCount; t++)
-	state->dest[t] = t*numPrimitives/threadCount;
+      //for (size_t t=0; t<threadCount; t++)
+      //state->dest[t] = t*numPrimitives/threadCount;
 
       /* compute morton codes */
       MortonID32Bit* __restrict__ const dest = (MortonID32Bit*) bvh->alloc2.ptr();
@@ -323,7 +285,7 @@ namespace embree
       //bounds = recurse_tbb(br, NULL);
 
 	//build_parallel_morton(threadIndex,numActiveThreads,0,1);
-        state.reset(NULL);
+      //state.reset(NULL);
 
 
 #if defined(PROFILE_MORTON_GENERAL)
@@ -356,10 +318,10 @@ namespace embree
     }
       
       /*! precalculate some per thread data */
-      void initThreadState(const size_t threadID, const size_t numThreads);
+      //void initThreadState(const size_t threadID, const size_t numThreads);
       
       /*! single threaded build */
-      void build_sequential_morton(size_t threadIndex, size_t threadCount);
+      //void build_sequential_morton(size_t threadIndex, size_t threadCount);
 
       CentGeomBBox3fa computeBounds();
 
@@ -483,85 +445,6 @@ namespace embree
         right.init(center,current.end);
       }
       
-      BBox3fa recurse(BuildRecord& current, Allocator* alloc, int mode) 
-      {
-        /* stop toplevel recursion at some number of items */
-        if (mode == CREATE_TOP_LEVEL && current.size() <= topLevelItemThreshold) {
-          state->buildRecords.push_back(current);
-          return empty;
-        }
-        
-        __aligned(64) BuildRecord children[BVH4::N];
-        
-        /* create leaf node */
-        if (unlikely(current.depth >= BVH4::maxBuildDepth || current.size() <= minLeafSize)) {
-          return createLeaf(current,alloc);
-        }
-        
-        /* fill all 4 children by always splitting the one with the largest surface area */
-        size_t numChildren = 1;
-        children[0] = current;
-        
-        do {
-          
-          /* find best child with largest bounding box area */
-          int bestChild = -1;
-          unsigned bestItems = 0;
-          for (unsigned int i=0; i<numChildren; i++)
-          {
-            /* ignore leaves as they cannot get split */
-            if (children[i].size() <= minLeafSize)
-              continue;
-            
-            /* remember child with largest area */
-            if (children[i].size() > bestItems) { 
-              bestItems = children[i].size();
-              bestChild = i;
-            }
-          }
-          if (bestChild == -1) break;
-          
-          /*! split best child into left and right child */
-          __aligned(64) BuildRecord left, right;
-          split(children[bestChild],left,right);
-          
-          /* add new children left and right */
-          left.depth = right.depth = current.depth+1;
-          children[bestChild] = children[numChildren-1];
-          children[numChildren-1] = left;
-          children[numChildren+0] = right;
-          numChildren++;
-          
-        } while (numChildren < BVH4::N);
-        
-        /* create leaf node if no split is possible */
-        if (unlikely(numChildren == 1)) {
-          BBox3fa bounds; createSmallLeaf(current,alloc,bounds); return bounds;
-        }
-        
-        /* allocate node */
-        Node* node = (Node*) alloc->alloc0.malloc(sizeof(Node)); node->clear();
-        *current.parent = bvh->encodeNode(node);
-        
-        /* recurse into each child */
-        BBox3fa bounds0 = empty;
-        for (size_t i=0; i<numChildren; i++) 
-        {
-          children[i].parent = &node->child(i);
-          
-          if (children[i].size() <= minLeafSize) {
-            const BBox3fa bounds = createLeaf(children[i],alloc);
-            bounds0.extend(bounds);
-            node->set(i,bounds);
-          } else {
-            const BBox3fa bounds = recurse(children[i],alloc,mode);
-            bounds0.extend(bounds);
-            node->set(i,bounds);
-          }
-        }
-        return bounds0;
-      }
-
       BBox3fa recurse_tbb(BuildRecord& current, Allocator* alloc) 
       {
         if (alloc == NULL) 
@@ -704,7 +587,7 @@ namespace embree
     public:
       BVH4* bvh;               //!< Output BVH
       LockStepTaskScheduler* scheduler;
-      std::unique_ptr<MortonBuilderState> state;
+      //std::unique_ptr<MortonBuilderState> state;
 
       Scene* scene;
       TriangleMesh* mesh;
