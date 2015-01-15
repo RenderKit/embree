@@ -40,10 +40,12 @@ namespace embree
 
     struct AllocBVH4Node
     {
-      __forceinline BVH4::Node* operator() (BuildRecord& current, FastAllocator::ThreadLocal2* alloc)
+      __forceinline BVH4::Node* operator() (BuildRecord& current, BuildRecord* children, size_t numChildren, FastAllocator::ThreadLocal2* alloc)
       {
         BVH4::Node* node = (BVH4::Node*) alloc->alloc0.malloc(sizeof(BVH4::Node)); node->clear();
         *current.parent = BVH4::encodeNode(node);
+        for (size_t i=0; i<numChildren; i++)
+          children[i].parent = &node->child(i);
         return node;
       }
     };

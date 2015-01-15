@@ -139,7 +139,7 @@ namespace embree
         /* allocate node */
         //Node* node = (Node*) alloc->alloc0.malloc(sizeof(Node)); node->clear();
         //*current.parent = bvh->encodeNode(node);
-        Node* node = allocNode(current,alloc);
+        Node* node = allocNode(current,children,4,alloc);
         
         /* recurse into each child */
         BBox3fa bounds0 = empty;
@@ -297,9 +297,7 @@ namespace embree
         }
         
         /* allocate node */
-        //Node* node = (Node*) alloc->alloc0.malloc(sizeof(Node)); node->clear();
-        //*current.parent = bvh->encodeNode(node);
-        Node* node = allocNode(current,alloc);
+        Node* node = allocNode(current,children,numChildren,alloc);
       
         /* process top parts of tree parallel */
         BBox3fa bounds0 = empty;
@@ -308,7 +306,7 @@ namespace embree
           BBox3fa bounds[4];
           tbb::task_group g;
           for (size_t i=0; i<numChildren; i++) {
-            children[i].parent = &node->child(i);
+            //children[i].parent = &node->child(i);
             g.run([&,i]{ bounds[i] = recurse(children[i],NULL); });
           }
           g.wait();
@@ -325,7 +323,7 @@ namespace embree
           /* recurse into each child */
           for (size_t i=0; i<numChildren; i++) 
           {
-            children[i].parent = &node->child(i);
+            //children[i].parent = &node->child(i);
             
             if (children[i].size() <= minLeafSize) {
               const BBox3fa bounds = createLargeLeaf(children[i],alloc);
