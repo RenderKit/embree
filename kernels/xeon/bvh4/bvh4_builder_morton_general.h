@@ -147,7 +147,7 @@ namespace embree
       ssei ax, ay, az, ai;
     };
 
-      template<typename AllocNodeFunc, typename SetNodeBoundsFunc, typename CreateLeafFunc, typename CalculateBounds>
+      template<typename Allocator, typename AllocNodeFunc, typename SetNodeBoundsFunc, typename CreateLeafFunc, typename CalculateBounds>
     class BVH4BuilderMortonGeneral
     {
       ALIGNED_CLASS;
@@ -156,11 +156,8 @@ namespace embree
       /*! Type shortcuts */
       typedef BVH4::Node    Node;
       typedef BVH4::NodeRef NodeRef;
-      typedef FastAllocator::ThreadLocal2 Allocator;
+      //typedef FastAllocator::ThreadLocal2 Allocator;
             
-      static const size_t LATTICE_BITS_PER_DIM = 10;
-      static const size_t LATTICE_SIZE_PER_DIM = size_t(1) << LATTICE_BITS_PER_DIM;
-
       static const size_t MAX_BRANCHING_FACTOR = 16;  //!< maximal supported BVH branching factor
       static const size_t MIN_LARGE_LEAF_LEVELS = 8;  //!< create balanced tree of we are that many levels before the maximal tree depth
 
@@ -181,7 +178,7 @@ namespace embree
         rightChild.init(center,current.end);
       }
       
-      BBox3fa createLargeLeaf(BuildRecord& current, Allocator* alloc)
+      BBox3fa createLargeLeaf(BuildRecord& current, Allocator alloc)
       {
         if (current.depth > maxDepth) 
           THROW_RUNTIME_ERROR("depth limit reached");
@@ -262,7 +259,7 @@ namespace embree
           const unsigned int bz = extract<2>(binID);
           morton[i].code = bitInterleave(bx,by,bz);
         }
-        std::sort(morton+current.begin,morton+current.end);
+        std::sort(morton+current.begin,morton+current.end); // FIXME: use radix sort
       }
 
       __forceinline void split(BuildRecord& current,
@@ -274,7 +271,7 @@ namespace embree
         unsigned int bitpos = clz(code_start^code_end);
         
         /* if all items mapped to same morton code, then create new morton codes for the items */
-        if (unlikely(bitpos == 32)) 
+        if (unlikely(bitpos == 32)) // FIXME: maybe go here earlier to build better tree
         {
           recreateMortonCodes(current);
           const unsigned int code_start = morton[current.begin].code;
@@ -313,7 +310,7 @@ namespace embree
         right.init(center,current.end);
       }
       
-      BBox3fa recurse(BuildRecord& current, Allocator* alloc) 
+      BBox3fa recurse(BuildRecord& current, Allocator alloc) 
       {
         if (alloc == NULL) 
           alloc = bvh->alloc2.threadLocal2();
