@@ -87,7 +87,7 @@ namespace embree
         __forceinline bool operator>(const MortonID32Bit &m) const { return code > m.code; } 
       };
 
-    //template<typename CreateLeafFunc>
+    template<typename CreateLeafFunc>
     class BVH4BuilderMortonGeneral //: public Builder
     {
       ALIGNED_CLASS;
@@ -106,8 +106,8 @@ namespace embree
       
 
       /*! Constructor. */
-      BVH4BuilderMortonGeneral (BVH4* bvh, Scene* scene, TriangleMesh* mesh, size_t listMode, size_t logBlockSize, bool needVertices, size_t primBytes, const size_t minLeafSize, const size_t maxLeafSize)
-        : bvh(bvh), scene(scene), mesh(mesh), listMode(listMode), logBlockSize(logBlockSize), needVertices(needVertices), primBytes(primBytes), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize),
+      BVH4BuilderMortonGeneral (CreateLeafFunc& createLeaf, BVH4* bvh, Scene* scene, TriangleMesh* mesh, size_t listMode, size_t logBlockSize, bool needVertices, size_t primBytes, const size_t minLeafSize, const size_t maxLeafSize)
+        : createLeaf(createLeaf), bvh(bvh), scene(scene), mesh(mesh), listMode(listMode), logBlockSize(logBlockSize), needVertices(needVertices), primBytes(primBytes), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize),
 	topLevelItemThreshold(0), encodeShift(0), encodeMask(-1), morton(NULL), bytesMorton(0), numGroups(0), numPrimitives(0), numAllocatedPrimitives(0), numAllocatedNodes(0)
       {
         //needAllThreads = true;
@@ -124,9 +124,6 @@ namespace embree
       
     public:
       
-      /*! creates leaf node */
-      void createSmallLeaf(BuildRecord& current, Allocator* alloc, BBox3fa& box_o);
-
       void splitFallback(BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild) const
       {
         const unsigned int center = (current.begin + current.end)/2;
@@ -134,7 +131,7 @@ namespace embree
         rightChild.init(center,current.end);
       }
       
-      BBox3fa createLeaf(BuildRecord& current, Allocator* alloc)
+      BBox3fa createLargeLeaf(BuildRecord& current, Allocator* alloc)
       {
 #if defined(DEBUG)
         if (current.depth > BVH4::maxBuildDepthLeaf) 
@@ -144,7 +141,7 @@ namespace embree
         /* create leaf for few primitives */
         if (current.size() <= minLeafSize) {
           BBox3fa bounds;
-          createSmallLeaf(current,alloc,bounds);
+          createLeaf(current,alloc,bounds);
           return bounds;
         }
         
@@ -166,7 +163,7 @@ namespace embree
         for (size_t i=0; i<4; i++) {
           children[i].parent = &node->child(i);
           children[i].depth = current.depth+1;
-          BBox3fa bounds = createLeaf(children[i],alloc);
+          BBox3fa bounds = createLargeLeaf(children[i],alloc);
           bounds0.extend(bounds);
           node->set(i,bounds);
         }
@@ -272,7 +269,7 @@ namespace embree
         
         /* create leaf node */
         if (unlikely(current.depth >= BVH4::maxBuildDepth || current.size() <= minLeafSize)) {
-          return createLeaf(current,alloc);
+          return createLargeLeaf(current,alloc);
         }
         
         /* fill all 4 children by always splitting the one with the largest surface area */
@@ -313,7 +310,7 @@ namespace embree
         
         /* create leaf node if no split is possible */
         if (unlikely(numChildren == 1)) {
-          BBox3fa bounds; createSmallLeaf(current,alloc,bounds); return bounds;
+          BBox3fa bounds; createLeaf(current,alloc,bounds); return bounds;
         }
         
         /* allocate node */
@@ -347,7 +344,7 @@ namespace embree
             children[i].parent = &node->child(i);
             
             if (children[i].size() <= minLeafSize) {
-              const BBox3fa bounds = createLeaf(children[i],alloc);
+              const BBox3fa bounds = createLargeLeaf(children[i],alloc);
               bounds0.extend(bounds);
               node->set(i,bounds);
             } else {
@@ -411,6 +408,8 @@ namespace embree
       size_t numAllocatedNodes;
       CentGeomBBox3fa global_bounds;
       Barrier barrier;
+
+      CreateLeafFunc& createLeaf;
     };
   }
 }

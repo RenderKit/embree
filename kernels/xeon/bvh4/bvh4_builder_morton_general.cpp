@@ -38,49 +38,54 @@ namespace embree
   {
     static double dt = 0.0f;
     
-    
-    // =======================================================================================================
-    // =======================================================================================================
-    // =======================================================================================================
-    
-    void BVH4BuilderMortonGeneral::createSmallLeaf(BuildRecord& current, Allocator* alloc, BBox3fa& box_o)
+    struct CreateTriangle4Leaf
     {
-      ssef lower(pos_inf);
-      ssef upper(neg_inf);
-      size_t items = current.size();
-      size_t start = current.begin;
-      assert(items<=4);
-      
-      /* allocate leaf node */
-      Triangle4* accel = (Triangle4*) alloc->alloc1.malloc(sizeof(Triangle4));
-      *current.parent = bvh->encodeLeaf((char*)accel,listMode ? listMode : 1);
-      
-      ssei vgeomID = -1, vprimID = -1, vmask = -1;
-      sse3f v0 = zero, v1 = zero, v2 = zero;
-      
-      for (size_t i=0; i<items; i++)
-      {
-        const size_t index = morton[start+i].index;
-        const size_t primID = index & encodeMask; 
-        const size_t geomID = this->mesh ? this->mesh->id : (index >> encodeShift); 
-        const TriangleMesh* mesh = scene->getTriangleMesh(geomID);
-        const TriangleMesh::Triangle& tri = mesh->triangle(primID);
-        const Vec3fa& p0 = mesh->vertex(tri.v[0]);
-        const Vec3fa& p1 = mesh->vertex(tri.v[1]);
-        const Vec3fa& p2 = mesh->vertex(tri.v[2]);
-        lower = min(lower,(ssef)p0,(ssef)p1,(ssef)p2);
-        upper = max(upper,(ssef)p0,(ssef)p1,(ssef)p2);
-        vgeomID [i] = geomID;
-        vprimID [i] = primID;
-        vmask   [i] = mesh->mask;
-        v0.x[i] = p0.x; v0.y[i] = p0.y; v0.z[i] = p0.z;
-        v1.x[i] = p1.x; v1.y[i] = p1.y; v1.z[i] = p1.z;
-        v2.x[i] = p2.x; v2.y[i] = p2.y; v2.z[i] = p2.z;
-      }
-      Triangle4::store_nt(accel,Triangle4(v0,v1,v2,vgeomID,vprimID,vmask,listMode));
-      box_o = BBox3fa((Vec3fa)lower,(Vec3fa)upper);
-    }
+      __forceinline CreateTriangle4Leaf (Scene* scene, MortonID32Bit* morton, size_t encodeShift, size_t encodeMask)
+        : scene(scene), morton(morton), encodeShift(encodeShift), encodeMask(encodeMask) {}
 
+      void operator() (BuildRecord& current, FastAllocator::ThreadLocal2* alloc, BBox3fa& box_o)
+      {
+        ssef lower(pos_inf);
+        ssef upper(neg_inf);
+        size_t items = current.size();
+        size_t start = current.begin;
+        assert(items<=4);
+        
+        /* allocate leaf node */
+        Triangle4* accel = (Triangle4*) alloc->alloc1.malloc(sizeof(Triangle4));
+        *current.parent = BVH4::encodeLeaf((char*)accel,1);
+        
+        ssei vgeomID = -1, vprimID = -1, vmask = -1;
+        sse3f v0 = zero, v1 = zero, v2 = zero;
+        
+        for (size_t i=0; i<items; i++)
+        {
+          const size_t index = morton[start+i].index;
+          const size_t primID = index & encodeMask; 
+          const size_t geomID = index >> encodeShift; 
+          const TriangleMesh* mesh = scene->getTriangleMesh(geomID);
+          const TriangleMesh::Triangle& tri = mesh->triangle(primID);
+          const Vec3fa& p0 = mesh->vertex(tri.v[0]);
+          const Vec3fa& p1 = mesh->vertex(tri.v[1]);
+          const Vec3fa& p2 = mesh->vertex(tri.v[2]);
+          lower = min(lower,(ssef)p0,(ssef)p1,(ssef)p2);
+          upper = max(upper,(ssef)p0,(ssef)p1,(ssef)p2);
+          vgeomID [i] = geomID;
+          vprimID [i] = primID;
+          vmask   [i] = mesh->mask;
+          v0.x[i] = p0.x; v0.y[i] = p0.y; v0.z[i] = p0.z;
+          v1.x[i] = p1.x; v1.y[i] = p1.y; v1.z[i] = p1.z;
+          v2.x[i] = p2.x; v2.y[i] = p2.y; v2.z[i] = p2.z;
+        }
+        Triangle4::store_nt(accel,Triangle4(v0,v1,v2,vgeomID,vprimID,vmask,false));
+        box_o = BBox3fa((Vec3fa)lower,(Vec3fa)upper);
+      }
+      
+      Scene* scene;
+      MortonID32Bit* morton;
+      size_t encodeShift;
+      size_t encodeMask;
+    };
 
     //template<typename CreateLeafFunc>
     class BVH4BuilderMortonGeneral2 : public Builder
@@ -264,8 +269,9 @@ namespace embree
         dest[i].code  = 0xffffffff; 
         dest[i].index = 0;
       }
-
-      BVH4BuilderMortonGeneral builder((BVH4*)bvh,scene,NULL,false,2,false,sizeof(Triangle4),4,inf);
+      
+      CreateTriangle4Leaf createLeaf(scene,morton,encodeShift,encodeMask);
+      BVH4BuilderMortonGeneral<CreateTriangle4Leaf> builder(createLeaf,(BVH4*)bvh,scene,NULL,false,2,false,sizeof(Triangle4),4,inf);
       builder.build(threadIndex,threadCount,morton,numPrimitives,encodeShift,encodeMask);
 
       #if defined(PROFILE_MORTON_GENERAL)
