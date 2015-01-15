@@ -20,8 +20,11 @@
 #include "builders/heuristic_fallback.h"
 #include "builders/workstack.h"
 #include "bvh4_statistics.h"
+#include "geometry/triangle4.h"
 
 #include "tbb/tbb.h"
+#include "algorithms/parallel_for_for.h"
+
 
 namespace embree
 {
@@ -220,9 +223,106 @@ namespace embree
 #endif
 
         state.reset(new MortonBuilderState);
-	size_t numActiveThreads = threadCount;
+	//size_t numActiveThreads = threadCount;
 	//size_t numActiveThreads = min(threadCount,getNumberOfCores());
-	build_parallel_morton(threadIndex,numActiveThreads,0,1);
+
+      //int numThreads = tbb::task_scheduler_init::default_num_threads();
+      //std::cout << "numThreads = " << numThreads << std::endl;
+      //tbb::task_scheduler_init init(numThreads);
+
+      //bvh->alloc.init(numPrimitives*sizeof(BVH4::Node),numPrimitives*sizeof(BVH4::Node));
+      size_t bytesAllocated = (numPrimitives+7)/8*sizeof(BVH4::Node) + size_t(1.2f*(numPrimitives+3)/4)*sizeof(Triangle4);
+      bvh->alloc2.init(bytesAllocated,2*bytesAllocated);
+
+      /* compute scene bounds */
+      Scene::Iterator<TriangleMesh,1> iter1(scene);
+      global_bounds = parallel_for_for_reduce( iter1, CentGeomBBox3fa(empty), [&](TriangleMesh* mesh, const range<size_t>& r, size_t k) -> CentGeomBBox3fa
+      {
+        CentGeomBBox3fa bounds(empty);
+        for (size_t i=r.begin(); i<r.end(); i++)
+        {
+          const BBox3fa b = mesh->bounds(i);
+          if (!inFloatRange(b)) continue;
+          bounds.extend(b);
+        }
+        return bounds;
+      }, [] (CentGeomBBox3fa a, const CentGeomBBox3fa& b) { a.merge(b); return a; });
+
+      bvh->bounds = global_bounds.geomBounds;
+
+      /* calculate initial destination for each thread */
+      for (size_t t=0; t<threadCount; t++)
+	state->dest[t] = t*numPrimitives/threadCount;
+
+      /* compute morton codes */
+      MortonID32Bit* __restrict__ const dest = (MortonID32Bit*) bvh->alloc2.ptr();
+
+      /* compute mapping from world space into 3D grid */
+      const ssef base  = (ssef)global_bounds.centBounds.lower;
+      const ssef diag  = (ssef)global_bounds.centBounds.upper - (ssef)global_bounds.centBounds.lower;
+      const ssef scale = select(diag > ssef(1E-19f), rcp(diag) * ssef(LATTICE_SIZE_PER_DIM * 0.99f),ssef(0.0f));
+      
+      Scene::Iterator<TriangleMesh,1> iter(scene);
+      parallel_for_for( iter, [&](TriangleMesh* mesh, const range<size_t>& r, size_t k)
+      {
+        size_t currentID = k;
+        size_t slots = 0;
+        ssei ax = 0, ay = 0, az = 0, ai = 0;
+                
+        for (size_t i=r.begin(); i<r.end(); i++)	  
+        {
+          const BBox3fa b = mesh->bounds(i);
+          const ssef lower = (ssef)b.lower;
+          const ssef upper = (ssef)b.upper;
+          const ssef centroid = lower+upper;
+          const ssei binID = ssei((centroid-base)*scale);
+          unsigned int index = i;
+          index |= mesh->id << encodeShift;
+          ax[slots] = extract<0>(binID);
+          ay[slots] = extract<1>(binID);
+          az[slots] = extract<2>(binID);
+          ai[slots] = index;
+          slots++;
+          currentID++;
+          
+          if (slots == 4)
+          {
+            const ssei code = bitInterleave(ax,ay,az);
+            storeu4i(&dest[currentID-4],unpacklo(code,ai));
+            storeu4i(&dest[currentID-2],unpackhi(code,ai));
+            slots = 0;
+          }
+        }
+            
+        if (slots != 0)
+        {
+          const ssei code = bitInterleave(ax,ay,az);
+          for (size_t i=0; i<slots; i++) {
+            dest[currentID-slots+i].index = ai[i];
+            dest[currentID-slots+i].code = code[i];
+          }
+        }
+      });
+
+      /* padding */     
+      for (size_t i=numPrimitives; i<( (numPrimitives+7)&(-8) ); i++) {
+        dest[i].code  = 0xffffffff; 
+        dest[i].index = 0;
+      }
+
+      /* sort morton codes */
+      radix_sort_copy_u32((MortonID32Bit*)bvh->alloc2.ptr(),morton,numPrimitives);
+
+      BuildRecord br;
+      br.init(0,numPrimitives);
+      br.parent = &bvh->root;
+      br.depth = 1;
+      
+      BBox3fa bounds = empty;
+      LockStepTaskScheduler::execute_tbb([&] { bounds = recurse_tbb(br, NULL); });
+      //bounds = recurse_tbb(br, NULL);
+
+	//build_parallel_morton(threadIndex,numActiveThreads,0,1);
         state.reset(NULL);
 
 
@@ -560,7 +660,46 @@ namespace embree
       }
       
       /*! recreates morton codes when reaching a region where all codes are identical */
-      void recreateMortonCodes(BuildRecord& current) const;
+      void recreateMortonCodes(BuildRecord& current) const
+      {
+        assert(current.size() > 4);
+        CentGeomBBox3fa global_bounds;
+        global_bounds.reset();
+        
+        for (size_t i=current.begin; i<current.end; i++)
+        {
+          const size_t index  = morton[i].index;
+          const size_t primID = index & encodeMask; 
+          const size_t geomID = index >> encodeShift; 
+          const TriangleMesh* mesh = this->mesh ? this->mesh : scene->getTriangleMesh(geomID);
+          global_bounds.extend(mesh->bounds(primID));
+        }
+        
+        /* compute mapping from world space into 3D grid */
+        const ssef base  = (ssef)global_bounds.centBounds.lower;
+        const ssef diag  = (ssef)global_bounds.centBounds.upper - (ssef)global_bounds.centBounds.lower;
+        const ssef scale = select(diag > ssef(1E-19f), rcp(diag) * ssef(LATTICE_SIZE_PER_DIM * 0.99f),ssef(0.0f));
+        
+        for (size_t i=current.begin; i<current.end; i++)
+        {
+          const size_t index  = morton[i].index;
+          const size_t primID = index & encodeMask; 
+          const size_t geomID = index >> encodeShift; 
+          const TriangleMesh* mesh = this->mesh ? this->mesh : scene->getTriangleMesh(geomID);
+          const BBox3fa b = mesh->bounds(primID);
+          const ssef lower = (ssef)b.lower;
+          const ssef upper = (ssef)b.upper;
+          const ssef centroid = lower+upper;
+          const ssei binID = ssei((centroid-base)*scale);
+          const unsigned int bx = extract<0>(binID);
+          const unsigned int by = extract<1>(binID);
+          const unsigned int bz = extract<2>(binID);
+          const unsigned int code = bitInterleave(bx,by,bz);
+          morton[i].code  = code;
+        }
+        std::sort(morton+current.begin,morton+current.end);
+      }
+      
       
     public:
       BVH4* bvh;               //!< Output BVH
