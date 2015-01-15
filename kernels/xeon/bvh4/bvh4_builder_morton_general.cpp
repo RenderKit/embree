@@ -287,8 +287,8 @@ namespace embree
       AllocBVH4Node allocNode;
       SetBVH4Bounds setBounds;
       CreateTriangle4Leaf createLeaf(scene,morton,encodeShift,encodeMask);
-      BVH4BuilderMortonGeneral<AllocBVH4Node,SetBVH4Bounds,CreateTriangle4Leaf> builder(allocNode,setBounds,createLeaf,(BVH4*)bvh,scene,4,inf);
-      builder.build(threadIndex,threadCount,dest,morton,numPrimitives,encodeShift,encodeMask);
+      BVH4BuilderMortonGeneral<AllocBVH4Node,SetBVH4Bounds,CreateTriangle4Leaf> builder(allocNode,setBounds,createLeaf,(BVH4*)bvh,scene,4,BVH4::maxBuildDepth,4,inf);
+      bvh->root = builder.build(threadIndex,threadCount,dest,morton,numPrimitives,encodeShift,encodeMask);
 
 #if defined(PROFILE_MORTON_GENERAL)
         double dt = getSeconds()-t0;

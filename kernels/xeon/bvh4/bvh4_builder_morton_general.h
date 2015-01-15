@@ -101,19 +101,16 @@ namespace embree
       static const size_t LATTICE_BITS_PER_DIM = 10;
       static const size_t LATTICE_SIZE_PER_DIM = size_t(1) << LATTICE_BITS_PER_DIM;
 
-      static const size_t branchingFactor = 4; // FIXME: 
-      static const size_t maxDepth = 64; // FIXME: 
-
       static const size_t MAX_BRANCHING_FACTOR = 16;  //!< maximal supported BVH branching factor
       static const size_t MIN_LARGE_LEAF_LEVELS = 8;  //!< create balanced tree of we are that many levels before the maximal tree depth
 
     public:
   
       BVH4BuilderMortonGeneral (AllocNodeFunc& allocNode, SetNodeBoundsFunc& setBounds, CreateLeafFunc& createLeaf, BVH4* bvh, Scene* scene, 
-                                const size_t minLeafSize, const size_t maxLeafSize)
+                                const size_t branchingFactor, const size_t maxDepth, const size_t minLeafSize, const size_t maxLeafSize)
         : allocNode(allocNode), setBounds(setBounds), createLeaf(createLeaf), bvh(bvh), scene(scene), 
-          minLeafSize(minLeafSize), maxLeafSize(maxLeafSize), 
-          encodeShift(0), encodeMask(-1), morton(NULL), numPrimitives(0) {}
+          branchingFactor(branchingFactor), maxDepth(maxDepth), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize), 
+          encodeShift(0), encodeMask(-1), morton(NULL) {}
       
       void splitFallback(BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild) const
       {
@@ -349,35 +346,41 @@ namespace embree
       }
 
        /* build function */
-      void build(size_t threadIndex, size_t threadCount, MortonID32Bit* src, MortonID32Bit* tmp, size_t numPrimitives_i, size_t encodeShift, size_t encodeMask) 
+      NodeRef build(size_t threadIndex, size_t threadCount, MortonID32Bit* src, MortonID32Bit* tmp, size_t numPrimitives, size_t encodeShift, size_t encodeMask) 
     {
       this->morton = tmp;
-      this->numPrimitives = numPrimitives_i;
       this->encodeShift = encodeShift;
       this->encodeMask = encodeMask;
      
       /* sort morton codes */
       radix_sort_copy_u32(src,tmp,numPrimitives);
 
+      /* build BVH */
+      NodeRef root;
       BuildRecord br;
       br.init(0,numPrimitives);
-      br.parent = &bvh->root;
+      br.parent = &root;
       br.depth = 1;
       
       BBox3fa bounds = empty;
       LockStepTaskScheduler::execute_tbb([&] { bounds = recurse(br, NULL); });
       //bounds = recurse(br, NULL);
+
+      return root;
     }
 
     public:
-      BVH4* bvh;               //!< Output BVH
+      BVH4* bvh;
       Scene* scene;
-      size_t minLeafSize;
-      size_t maxLeafSize;
+      
       size_t encodeShift;
       size_t encodeMask;
       MortonID32Bit* morton;
-      size_t numPrimitives;
+
+      const size_t branchingFactor;
+      const size_t maxDepth;
+      const size_t minLeafSize;
+      const size_t maxLeafSize;
 
     public:
       AllocNodeFunc& allocNode;
