@@ -87,7 +87,7 @@ namespace embree
         __forceinline bool operator>(const MortonID32Bit &m) const { return code > m.code; } 
       };
 
-      template<typename AllocNodeFunc, typename CreateLeafFunc>
+      template<typename AllocNodeFunc, typename SetNodeBoundsFunc, typename CreateLeafFunc>
     class BVH4BuilderMortonGeneral //: public Builder
     {
       ALIGNED_CLASS;
@@ -103,8 +103,8 @@ namespace embree
 
     public:
   
-      BVH4BuilderMortonGeneral (AllocNodeFunc& allocNode, CreateLeafFunc& createLeaf, BVH4* bvh, Scene* scene, TriangleMesh* mesh, size_t listMode, size_t logBlockSize, bool needVertices, size_t primBytes, const size_t minLeafSize, const size_t maxLeafSize)
-        : allocNode(allocNode), createLeaf(createLeaf), bvh(bvh), scene(scene), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize), encodeShift(0), encodeMask(-1), morton(NULL), numPrimitives(0) {}
+      BVH4BuilderMortonGeneral (AllocNodeFunc& allocNode, SetNodeBoundsFunc& setBounds, CreateLeafFunc& createLeaf, BVH4* bvh, Scene* scene, TriangleMesh* mesh, size_t listMode, size_t logBlockSize, bool needVertices, size_t primBytes, const size_t minLeafSize, const size_t maxLeafSize)
+        : allocNode(allocNode), setBounds(setBounds), createLeaf(createLeaf), bvh(bvh), scene(scene), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize), encodeShift(0), encodeMask(-1), morton(NULL), numPrimitives(0) {}
       
       void splitFallback(BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild) const
       {
@@ -142,14 +142,16 @@ namespace embree
         Node* node = allocNode(current,children,4,alloc);
         
         /* recurse into each child */
-        BBox3fa bounds0 = empty;
+        //BBox3fa bounds0 = empty;
+        BBox3fa bounds[4];
         for (size_t i=0; i<4; i++) {
           children[i].parent = &node->child(i);
           children[i].depth = current.depth+1;
-          BBox3fa bounds = createLargeLeaf(children[i],alloc);
-          bounds0.extend(bounds);
-          node->set(i,bounds);
+          bounds[i] = createLargeLeaf(children[i],alloc);
+          //bounds0.extend(bounds);
+          //node->set(i,bounds);
         }
+        BBox3fa bounds0 = setBounds(node,bounds,4);
         BVH4::compact(node); // move empty nodes to the end
         return bounds0;
       }  
@@ -298,12 +300,13 @@ namespace embree
         
         /* allocate node */
         Node* node = allocNode(current,children,numChildren,alloc);
+        BBox3fa bounds[4];
       
         /* process top parts of tree parallel */
-        BBox3fa bounds0 = empty;
+        //BBox3fa bounds0 = empty;
         if (current.size() > 4096)
         {
-          BBox3fa bounds[4];
+          //BBox3fa bounds[4];
           tbb::task_group g;
           for (size_t i=0; i<numChildren; i++) {
             //children[i].parent = &node->child(i);
@@ -311,10 +314,11 @@ namespace embree
           }
           g.wait();
 
-          for (size_t i=0; i<numChildren; i++) {
-            bounds0.extend(bounds[i]);
-            node->set(i,bounds[i]);
-          }
+          //for (size_t i=0; i<numChildren; i++) {
+          //  bounds0.extend(bounds[i]);
+          //  node->set(i,bounds[i]);
+          //}
+          
         } 
 
         /* finish tree sequential */
@@ -326,17 +330,19 @@ namespace embree
             //children[i].parent = &node->child(i);
             
             if (children[i].size() <= minLeafSize) {
-              const BBox3fa bounds = createLargeLeaf(children[i],alloc);
-              bounds0.extend(bounds);
-              node->set(i,bounds);
+              bounds[i] = createLargeLeaf(children[i],alloc);
+              //bounds0.extend(bounds);
+              //node->set(i,bounds);
             } else {
-              const BBox3fa bounds = recurse(children[i],alloc);
-              bounds0.extend(bounds);
-              node->set(i,bounds);
+              bounds[i] = recurse(children[i],alloc);
+              //bounds0.extend(bounds);
+              //node->set(i,bounds);
             }
           }
         }
-        return bounds0;
+
+        return setBounds(node,bounds,numChildren);
+        //return bounds0;
       }
 
        /* build function */
@@ -372,6 +378,7 @@ namespace embree
 
     public:
       AllocNodeFunc& allocNode;
+      SetNodeBoundsFunc& setBounds;
       CreateLeafFunc& createLeaf;
     };
   }

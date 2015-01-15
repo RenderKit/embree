@@ -49,6 +49,20 @@ namespace embree
         return node;
       }
     };
+
+    struct SetBVH4Bounds
+    {
+      __forceinline BBox3fa operator() (BVH4::Node* node, const BBox3fa* bounds, size_t N)
+      {
+        BBox3fa res = empty;
+        for (size_t i=0; i<N; i++) {
+          const BBox3fa b = bounds[i];
+          res.extend(b);
+          node->set(i,b);
+        }
+        return res;
+      }
+    };
     
     struct CreateTriangle4Leaf
     {
@@ -271,8 +285,9 @@ namespace embree
       }
       
       AllocBVH4Node allocNode;
+      SetBVH4Bounds setBounds;
       CreateTriangle4Leaf createLeaf(scene,morton,encodeShift,encodeMask);
-      BVH4BuilderMortonGeneral<AllocBVH4Node,CreateTriangle4Leaf> builder(allocNode,createLeaf,(BVH4*)bvh,scene,NULL,false,2,false,sizeof(Triangle4),4,inf);
+      BVH4BuilderMortonGeneral<AllocBVH4Node,SetBVH4Bounds,CreateTriangle4Leaf> builder(allocNode,setBounds,createLeaf,(BVH4*)bvh,scene,NULL,false,2,false,sizeof(Triangle4),4,inf);
       builder.build(threadIndex,threadCount,morton,numPrimitives,encodeShift,encodeMask);
 
 #if defined(PROFILE_MORTON_GENERAL)
