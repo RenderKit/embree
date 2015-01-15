@@ -18,7 +18,7 @@
 
 #include "common/default.h"
 
-#define DBG_PART(x) 
+#define DBG_PART(x) x
 #define DBG_CHECK(x) x
 
 namespace embree
@@ -30,11 +30,18 @@ namespace embree
 
       static const size_t SERIAL_THRESHOLD = 16;
 
-      AlignedAtomicCounter64 blockID;
-      
       size_t N;
       size_t blocks;
       T* array;
+
+      AlignedAtomicCounter64 blockID;
+
+      AlignedAtomicCounter64 numLeftRemainderBlocks;
+      AlignedAtomicCounter64 numRightRemainderBlocks;
+      
+      unsigned int  leftRemainderBlockIDs[MAX_MIC_THREADS];
+      unsigned int rightRemainderBlockIDs[MAX_MIC_THREADS];
+
 
       enum {
         NEED_LEFT_BLOCK           = 1,
@@ -76,7 +83,7 @@ namespace embree
       /* get right array index from block index */
       __forceinline void getRightArrayIndex(const size_t blockIndex, size_t &begin, size_t &end) 
       { 
-        begin = (blocks-1-blockIndex) * BLOCK_SIZE; 
+        begin = N - (blockIndex+1) * BLOCK_SIZE; 
         end   = begin + BLOCK_SIZE; 
       }
 
@@ -86,6 +93,42 @@ namespace embree
         const size_t numLeftBlocks  = getLeftBlockIndex(id) + 1;
         const size_t numRightBlocks = getRightBlockIndex(id) + 1;
         return numLeftBlocks+numRightBlocks <= blocks;
+      }
+
+      /* swap to blocks */
+      __forceinline void swapTwoBlocks(const size_t index0, const size_t index1)
+      {
+        assert(index0 != index1);
+        for (size_t i=0;i<BLOCK_SIZE;i++)
+          std::swap(array[index0+i],array[index1+i]);                
+      }
+
+      /* swap to left blocks */
+      __forceinline void swapTwoLeftBlocks(const size_t leftID0, const size_t leftID1)
+      {
+        assert( id0 != id1 );
+        size_t left0_begin, left0_end;
+        size_t left1_begin, left1_end;
+
+        getLeftArrayIndex(leftID0, left0_begin, left0_end);
+        getLeftArrayIndex(leftID1, left1_begin, left1_end);
+
+        assert(left0_end <= left1_begin);
+        swapTwoBlocks(left0_begin,left1_begin);
+      }
+
+      /* swap to right blocks */
+      __forceinline void swapTwoRightBlocks(const size_t rightID0, const size_t rightID1)
+      {
+        assert( id0 != id1 );
+        size_t right0_begin, right0_end;
+        size_t right1_begin, right1_end;
+
+        getRightArrayIndex(rightID0, right0_begin, right0_end);
+        getRightArrayIndex(rightID1, right1_begin, right1_end);
+
+        assert(right0_end <= right1_begin);
+        swapTwoBlocks(right0_begin,right1_begin);
       }
 
       /* serial partitioning */
@@ -177,29 +220,16 @@ namespace embree
     parallel_partition(T *array, size_t N) : array(array), N(N)
         {
           blockID.reset();
+          numLeftRemainderBlocks.reset();
+          numRightRemainderBlocks.reset();
           blocks = N/BLOCK_SIZE;
           DBG_PART(
                    DBG_PRINT(blocks);
                    );
         }
 
-      size_t parition(const T pivot)
+      void thread_partition(const T pivot)
       {
-        if (N <= SERIAL_THRESHOLD)
-          {
-            size_t mid = serialPartitioning(0,N,pivot);
-            DBG_PART(
-                     DBG_PRINT( mid );
-                     checkLeft(0,mid,pivot);
-                     checkRight(mid,N,pivot);
-                     );
-            return mid;
-          }
-
-        DBG_PART(
-                 DBG_PRINT("PARALLEL MODE");
-                 );
-
         size_t mode = NEED_LEFT_BLOCK | NEED_RIGHT_BLOCK;
         
         size_t left_begin  = (size_t)-1;
@@ -207,8 +237,8 @@ namespace embree
         size_t right_begin = (size_t)-1;
         size_t right_end   = (size_t)-1;
 
-        size_t maxLeftBlock  = (size_t)-1;
-        size_t maxRightBlock = (size_t)-1;
+        size_t currentLeftBlock  = (size_t)-1;
+        size_t currentRightBlock = (size_t)-1;
 
         while(1)
           {
@@ -232,11 +262,11 @@ namespace embree
 
                 const size_t blockIndex = getLeftBlockIndex(id);
                 getLeftArrayIndex(blockIndex,left_begin,left_end);                
-                maxLeftBlock = blockIndex;
+                currentLeftBlock = blockIndex;
 
                 DBG_PART(
                          DBG_PRINT("LEFT BLOCK");
-                         DBG_PRINT(maxLeftBlock);
+                         DBG_PRINT(currentLeftBlock);
                          checkLeft(0,left_begin,pivot);
 
                          );
@@ -248,11 +278,11 @@ namespace embree
               {
                 const size_t blockIndex = getRightBlockIndex(id);
                 getRightArrayIndex(blockIndex,right_begin,right_end);
-                maxRightBlock = blockIndex;
+                currentRightBlock = blockIndex;
 
                 DBG_PART(
                          DBG_PRINT("RIGHT BLOCK");
-                         DBG_PRINT(maxRightBlock);
+                         DBG_PRINT(currentRightBlock);
                          checkRight(right_end,N,pivot);
                          );
               }
@@ -270,10 +300,55 @@ namespace embree
             assert(left_end <= right_begin);
 
             mode = neutralizeBlocks(left_begin,left_end,right_begin,right_end,pivot);
-          }
+          }        
 
         assert(left_end <= right_begin);
 
+        if (left_begin != left_end)
+          {
+            const size_t index = numLeftRemainderBlocks.inc();
+            leftRemainderBlockIDs[index] = currentLeftBlock;
+          }
+
+        if (right_begin != right_end)
+          {
+            const size_t index = numRightRemainderBlocks.inc();
+            rightRemainderBlockIDs[index] = currentRightBlock;
+          }
+      }
+
+      size_t parition(const T pivot, const size_t threadID = 0)
+      {
+        if (N <= SERIAL_THRESHOLD)
+          {
+            size_t mid = serialPartitioning(0,N,pivot);
+            DBG_PART(
+                     DBG_PRINT( mid );
+                     checkLeft(0,mid,pivot);
+                     checkRight(mid,N,pivot);
+                     );
+            return mid;
+          }
+
+        DBG_PART(
+                 DBG_PRINT("PARALLEL MODE");
+                 );
+
+        // do parallel for here
+        thread_partition(pivot);
+        
+        _mm_sfence(); // make written leaves globally visible
+
+        assert( numLeftRemainderBlocks == 1);
+        assert( numRightRemainderBlocks == 1);
+
+        size_t left_begin, left_end;
+        getLeftArrayIndex(leftRemainderBlockIDs[0],left_begin,left_end);
+
+        size_t right_begin, right_end;
+        getRightArrayIndex(rightRemainderBlockIDs[0],right_begin,right_end);
+
+        
         DBG_PART(
                  DBG_PRINT("CLEANUP");
                  DBG_PRINT(left_begin);
@@ -284,6 +359,8 @@ namespace embree
                  checkRight(right_end,N,pivot);
                  );
 
+
+        
         DBG_CHECK(
                   DBG_PRINT(right_end - left_begin);
                   )

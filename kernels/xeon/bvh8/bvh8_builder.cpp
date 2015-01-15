@@ -397,7 +397,7 @@ namespace embree
 	
         /////////////////////////////////////////////////////
 
-#if 1
+#if 0
 
 #define MAX_SIZE 1024*1024*512
         test_array = (unsigned int*)_mm_malloc(MAX_SIZE*sizeof(int),64);
@@ -412,7 +412,7 @@ namespace embree
               }
 
         
-            parallel_partition<unsigned int,2> pp(test_array,s);
+            parallel_partition<unsigned int,4> pp(test_array,s);
 
             unsigned int pivot = test_array[s/2];
             size_t mid = pp.parition(pivot);
