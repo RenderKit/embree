@@ -211,8 +211,18 @@ namespace embree
     ((Class*)data)->Name(threadID,numThreads);                          \
   }
 
+#define TASK_FUNCTION_(Class,Name) \
+  static void task_##Name (void* data, const size_t threadID, const size_t numThreads) { \
+    ((Class*)data)->Name(threadID,numThreads);                          \
+  }
+
 #define TASK_SET_FUNCTION(Class,Name) \
   void Name (const size_t threadID, const size_t numThreads, const size_t taskID, const size_t numTasks); \
+  static void _##Name (void* data, const size_t threadID, const size_t numThreads, const size_t taskID, const size_t numTasks) { \
+    ((Class*)data)->Name(threadID,numThreads,taskID,numTasks);			\
+  }
+
+#define TASK_SET_FUNCTION_(Class,Name) \
   static void _##Name (void* data, const size_t threadID, const size_t numThreads, const size_t taskID, const size_t numTasks) { \
     ((Class*)data)->Name(threadID,numThreads,taskID,numTasks);			\
   }
