@@ -15,7 +15,7 @@
 // ======================================================================== //
 
 #include "../common/tutorial/tutorial_device.h"
-#include "kernels/xeon/builders/bvh_builder_sah.h"
+#include "kernels/xeon/builders/bvh_builder_binned_sah.h"
 #include "kernels/xeon/builders/bvh_builder_center.h"
 #include "kernels/xeon/builders/priminfo.h"
 
@@ -100,7 +100,7 @@ void build_sah(std::vector<PrimRef>& prims, isa::PrimInfo& pinfo)
     
     allocator.reset();
 
-    Node* root = isa::bvh_builder_sah<Node*>( // FIXME: rename to bvh_builder_binned_sah
+    Node* root = isa::bvh_builder_binned_sah<Node*>(
 
       /* thread local allocator for fast allocations */
       [&] () -> FastAllocator::ThreadLocal* { 
@@ -108,7 +108,7 @@ void build_sah(std::vector<PrimRef>& prims, isa::PrimInfo& pinfo)
       },
 
       /* lambda function that creates BVH nodes */
-      [&](isa::BuildRecord<Node*>* children, const size_t N, FastAllocator::ThreadLocal* alloc) -> Node*  // FIXME: Node* to void
+      [&](const isa::BuildRecord<Node*>& current, isa::BuildRecord<Node*>* children, const size_t N, FastAllocator::ThreadLocal* alloc)
       {
         assert(N <= 2);
         InnerNode* node = new (alloc->malloc(sizeof(InnerNode))) InnerNode;
@@ -116,15 +116,16 @@ void build_sah(std::vector<PrimRef>& prims, isa::PrimInfo& pinfo)
           node->bounds[i] = children[i].geomBounds;
           children[i].parent = &node->children[i];
         }
-        // FIXME: also set parent->parent to node
+        *current.parent = node;
         return node;
       },
 
       /* lambda function that creates BVH leaves */
-      [&](const isa::BuildRecord<Node*>& current, PrimRef* prims, FastAllocator::ThreadLocal* alloc) -> Node*
+      [&](const isa::BuildRecord<Node*>& current, PrimRef* prims, FastAllocator::ThreadLocal* alloc)
       {
         assert(current.size() == 1);
-        return new (alloc->malloc(sizeof(LeafNode))) LeafNode(prims[current.begin].ID(),prims[current.begin].bounds());
+        Node* node = new (alloc->malloc(sizeof(LeafNode))) LeafNode(prims[current.begin].ID(),prims[current.begin].bounds());
+        *current.parent = node;
       },
       prims.data(),pinfo,2,1024,0,1,1); // FIXME: change log blocksize to blocksize
     
