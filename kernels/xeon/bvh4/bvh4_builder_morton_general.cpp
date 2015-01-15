@@ -45,7 +45,7 @@ namespace embree
     
     struct AllocBVH4Node
     {
-      __forceinline BVH4::Node* operator() (MortonBuildRecord& current, MortonBuildRecord* children, size_t numChildren, FastAllocator::ThreadLocal2* alloc)
+      __forceinline BVH4::Node* operator() (MortonBuildRecord<BVH4::NodeRef>& current, MortonBuildRecord<BVH4::NodeRef>* children, size_t numChildren, FastAllocator::ThreadLocal2* alloc)
       {
         BVH4::Node* node = (BVH4::Node*) alloc->alloc0.malloc(sizeof(BVH4::Node)); node->clear();
         *current.parent = BVH4::encodeNode(node);
@@ -74,7 +74,7 @@ namespace embree
       __forceinline CreateTriangle4Leaf (Scene* scene, MortonID32Bit* morton, size_t encodeShift, size_t encodeMask)
         : scene(scene), morton(morton), encodeShift(encodeShift), encodeMask(encodeMask) {}
       
-      void operator() (MortonBuildRecord& current, FastAllocator::ThreadLocal2* alloc, BBox3fa& box_o)
+      void operator() (MortonBuildRecord<BVH4::NodeRef>& current, FastAllocator::ThreadLocal2* alloc, BBox3fa& box_o)
       {
         ssef lower(pos_inf);
         ssef upper(neg_inf);

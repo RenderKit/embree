@@ -16,6 +16,7 @@
 
 #include "../common/tutorial/tutorial_device.h"
 #include "kernels/xeon/builders/bvh_builder_sah.h"
+#include "kernels/xeon/builders/bvh_builder_center.h"
 #include "kernels/xeon/builders/priminfo.h"
 
 /* scene data */
@@ -75,9 +76,10 @@ struct InnerNode : public Node
 struct LeafNode : public Node
 {
   size_t id;
+  BBox3fa bounds;
 
-  LeafNode (size_t id)
-    : id(id) {}
+  LeafNode (size_t id, const BBox3fa& bounds)
+    : id(id), bounds(bounds) {}
 
   float sah() {
     return 1.0f;
@@ -108,6 +110,12 @@ extern "C" void device_init (int8* cfg)
     prims.push_back(prim);
   }
 
+  /* array for morton builder */
+  std::vector<isa::MortonID32Bit> morton_src(N);
+  std::vector<isa::MortonID32Bit> morton_tmp(N);
+  for (size_t i=0; i<N; i++) 
+    morton_src[i].index = i;
+
   /* fast allocator that supports thread local operation */
   FastAllocator allocator;
 
@@ -117,6 +125,9 @@ extern "C" void device_init (int8* cfg)
     double t0 = getSeconds();
     
     allocator.reset();
+
+#if 0
+
     Node* root = isa::bvh_builder_sah<Node*>( // FIXME: rename to bvh_builder_binned_sah
 
       /* thread local allocator for fast allocations */
@@ -141,9 +152,62 @@ extern "C" void device_init (int8* cfg)
       [&](const isa::BuildRecord<Node*>& current, PrimRef* prims, FastAllocator::ThreadLocal* alloc) -> Node*
       {
         assert(current.size() == 1);
-        return new (alloc->malloc(sizeof(LeafNode))) LeafNode(prims[current.begin].ID());
+        return new (alloc->malloc(sizeof(LeafNode))) LeafNode(prims[current.begin].ID(),prims[current.begin].bounds());
       },
-      prims.data(),pinfo,2,1024,0,4,8); // FIXME: change log blocksize to blocksize
+      prims.data(),pinfo,2,1024,0,1,1); // FIXME: change log blocksize to blocksize
+
+#else
+
+    std::pair<Node*,BBox3fa> node_bounds = isa::bvh_builder_center<Node*>(
+
+      /* thread local allocator for fast allocations */
+      [&] () -> FastAllocator::ThreadLocal* { 
+        return allocator.threadLocal(); 
+      },
+
+      /* lambda function that allocates BVH nodes */
+      [&] ( isa::MortonBuildRecord<Node*>& current, isa::MortonBuildRecord<Node*>* children, size_t N, FastAllocator::ThreadLocal* alloc ) -> InnerNode*
+      {
+        assert(N <= 2);
+        InnerNode* node = new (alloc->malloc(sizeof(InnerNode))) InnerNode;
+        *current.parent = node;
+        for (size_t i=0; i<N; i++) 
+          children[i].parent = &node->children[i];
+        return node;
+      },
+
+      /* lambda function that sets bounds */
+      [&] (InnerNode* node, const BBox3fa* bounds, size_t N) -> BBox3fa
+      {
+        BBox3fa res = empty;
+        for (size_t i=0; i<N; i++) {
+          const BBox3fa b = bounds[i];
+          res.extend(b);
+          node->bounds[i] = b;
+        }
+        return res;
+      },
+
+      /* lambda function that creates BVH leaves */
+      [&]( isa::MortonBuildRecord<Node*>& current, FastAllocator::ThreadLocal* alloc, BBox3fa& box_o) -> Node*
+      {
+        assert(current.size() == 1);
+        const size_t id = morton_src[current.begin].index;
+        const BBox3fa bounds = prims[id].bounds(); // FIXME: dont use morton_src, should be input
+        Node* node = new (alloc->malloc(sizeof(LeafNode))) LeafNode(id,bounds);
+        box_o = bounds;
+        return node;
+      },
+
+      /* lambda that calculates the bounds for some primitive */
+      [&] (const isa::MortonID32Bit& morton) -> BBox3fa {
+        return prims[morton.index].bounds();
+      },
+      morton_src.data(),morton_tmp.data(),prims.size(),2,1024,1,1);
+
+    Node* root = node_bounds.first;
+
+#endif
     
     double t1 = getSeconds();
     

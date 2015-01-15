@@ -18,19 +18,21 @@
 
 #include "common/builder.h"
 #include "tbb/tbb.h"
+#include "algorithms/parallel_reduce.h"
 #include "algorithms/parallel_for_for.h"
 
 namespace embree
 {
   namespace isa
   {
-    class MortonBuildRecord 
+    template<typename NodeRef>
+      class MortonBuildRecord 
     {
     public:
       unsigned int begin;
       unsigned int end;
       unsigned int depth;
-      BVH4::NodeRef* parent;
+      NodeRef* parent;
       
       __forceinline unsigned int size() const {
         return end - begin;
@@ -158,14 +160,14 @@ namespace embree
           branchingFactor(branchingFactor), maxDepth(maxDepth), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize), 
           morton(NULL) {}
       
-      void splitFallback(MortonBuildRecord& current, MortonBuildRecord& leftChild, MortonBuildRecord& rightChild) const
+      void splitFallback(MortonBuildRecord<NodeRef>& current, MortonBuildRecord<NodeRef>& leftChild, MortonBuildRecord<NodeRef>& rightChild) const
       {
         const unsigned int center = (current.begin + current.end)/2;
         leftChild.init(current.begin,center);
         rightChild.init(center,current.end);
       }
       
-      BBox3fa createLargeLeaf(MortonBuildRecord& current, Allocator alloc)
+      BBox3fa createLargeLeaf(MortonBuildRecord<NodeRef>& current, Allocator alloc)
       {
         if (current.depth > maxDepth) 
           THROW_RUNTIME_ERROR("depth limit reached");
@@ -178,7 +180,7 @@ namespace embree
         }
         
         /* fill all children by always splitting the largest one */
-        MortonBuildRecord children[MAX_BRANCHING_FACTOR];
+        MortonBuildRecord<NodeRef> children[MAX_BRANCHING_FACTOR];
         size_t numChildren = 1;
         children[0] = current;
         
@@ -202,7 +204,7 @@ namespace embree
           if (bestChild == -1) break;
           
           /*! split best child into left and right child */
-          __aligned(64) MortonBuildRecord left, right;
+          __aligned(64) MortonBuildRecord<NodeRef> left, right;
           splitFallback(children[bestChild],left,right);
           
           /* add new children left and right */
@@ -227,7 +229,7 @@ namespace embree
       }
       
       /*! recreates morton codes when reaching a region where all codes are identical */
-      void recreateMortonCodes(MortonBuildRecord& current) const
+      void recreateMortonCodes(MortonBuildRecord<NodeRef>& current) const
       {
         BBox3fa centBounds(empty);
         for (size_t i=current.begin; i<current.end; i++)
@@ -249,9 +251,9 @@ namespace embree
         std::sort(morton+current.begin,morton+current.end); // FIXME: use radix sort
       }
       
-      __forceinline void split(MortonBuildRecord& current,
-                               MortonBuildRecord& left,
-                               MortonBuildRecord& right) const
+      __forceinline void split(MortonBuildRecord<NodeRef>& current,
+                               MortonBuildRecord<NodeRef>& left,
+                               MortonBuildRecord<NodeRef>& right) const
       {
         const unsigned int code_start = morton[current.begin].code;
         const unsigned int code_end   = morton[current.end-1].code;
@@ -297,12 +299,12 @@ namespace embree
         right.init(center,current.end);
       }
       
-      BBox3fa recurse(MortonBuildRecord& current, Allocator alloc) 
+      BBox3fa recurse(MortonBuildRecord<NodeRef>& current, Allocator alloc) 
       {
         if (alloc == NULL) 
           alloc = createAllocator();
         
-        __aligned(64) MortonBuildRecord children[MAX_BRANCHING_FACTOR];
+        __aligned(64) MortonBuildRecord<NodeRef> children[MAX_BRANCHING_FACTOR];
         
         /* create leaf node */
         if (unlikely(current.depth+MIN_LARGE_LEAF_LEVELS >= maxDepth || current.size() <= minLeafSize)) {
@@ -333,7 +335,7 @@ namespace embree
           if (bestChild == -1) break;
           
           /*! split best child into left and right child */
-          __aligned(64) MortonBuildRecord left, right;
+          __aligned(64) MortonBuildRecord<NodeRef> left, right;
           split(children[bestChild],left,right);
           
           /* add new children left and right */
@@ -382,7 +384,7 @@ namespace embree
         
         /* build BVH */
         NodeRef root;
-        MortonBuildRecord br;
+        MortonBuildRecord<NodeRef> br;
         br.init(0,numPrimitives);
         br.parent = &root;
         br.depth = 1;
@@ -425,7 +427,7 @@ namespace embree
                                        const size_t branchingFactor, const size_t maxDepth, const size_t minLeafSize, const size_t maxLeafSize)
     {
       /* compute scene bounds */
-      const BBox3fa centBounds = parallel_reduce ( 0, numPrimitives, BBox3fa(empty), [&](const range<size_t>& r) -> BBox3fa
+      const BBox3fa centBounds = parallel_reduce ( size_t(0), numPrimitives, BBox3fa(empty), [&](const range<size_t>& r) -> BBox3fa
       {
         BBox3fa bounds(empty);
         for (size_t i=r.begin(); i<r.end(); i++) 
@@ -435,7 +437,7 @@ namespace embree
       
       /* compute morton codes */
       MortonCodeGenerator::MortonCodeMapping mapping(centBounds);
-      parallel_for ( 0, numPrimitives, [&](const range<size_t>& r) 
+      parallel_for ( size_t(0), numPrimitives, [&](const range<size_t>& r) 
       {
         MortonCodeGenerator generator(mapping,&temp[r.begin()]);
         for (size_t i=r.begin(); i<r.end(); i++) {
