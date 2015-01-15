@@ -103,12 +103,17 @@ namespace embree
 
       static const size_t branchingFactor = 4; // FIXME: 
       static const size_t maxDepth = 64; // FIXME: 
-      static const size_t MAX_BRANCHING_FACTOR = 16;
+
+      static const size_t MAX_BRANCHING_FACTOR = 16;  //!< maximal supported BVH branching factor
+      static const size_t MIN_LARGE_LEAF_LEVELS = 8;  //!< create balanced tree of we are that many levels before the maximal tree depth
 
     public:
   
-      BVH4BuilderMortonGeneral (AllocNodeFunc& allocNode, SetNodeBoundsFunc& setBounds, CreateLeafFunc& createLeaf, BVH4* bvh, Scene* scene, TriangleMesh* mesh, size_t listMode, size_t logBlockSize, bool needVertices, size_t primBytes, const size_t minLeafSize, const size_t maxLeafSize)
-        : allocNode(allocNode), setBounds(setBounds), createLeaf(createLeaf), bvh(bvh), scene(scene), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize), encodeShift(0), encodeMask(-1), morton(NULL), numPrimitives(0) {}
+      BVH4BuilderMortonGeneral (AllocNodeFunc& allocNode, SetNodeBoundsFunc& setBounds, CreateLeafFunc& createLeaf, BVH4* bvh, Scene* scene, 
+                                const size_t minLeafSize, const size_t maxLeafSize)
+        : allocNode(allocNode), setBounds(setBounds), createLeaf(createLeaf), bvh(bvh), scene(scene), 
+          minLeafSize(minLeafSize), maxLeafSize(maxLeafSize), 
+          encodeShift(0), encodeMask(-1), morton(NULL), numPrimitives(0) {}
       
       void splitFallback(BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild) const
       {
@@ -168,7 +173,6 @@ namespace embree
         } while (numChildren < branchingFactor);
 
         /* create node */
-        //*current.parent = createNode(children,numChildren,nodeAlloc);
         Node* node = allocNode(current,children,numChildren,alloc);
 
         /* recurse into each child */
@@ -276,7 +280,7 @@ namespace embree
         __aligned(64) BuildRecord children[BVH4::N];
         
         /* create leaf node */
-        if (unlikely(current.depth >= BVH4::maxBuildDepth || current.size() <= minLeafSize)) {
+        if (unlikely(current.depth+MIN_LARGE_LEAF_LEVELS >= maxDepth || current.size() <= minLeafSize)) {
           return createLargeLeaf(current,alloc);
         }
         
@@ -314,7 +318,7 @@ namespace embree
           children[numChildren+0] = right;
           numChildren++;
           
-        } while (numChildren < BVH4::N);
+        } while (numChildren < branchingFactor);
         
         /* create leaf node if no split is possible */
         if (unlikely(numChildren == 1)) {
@@ -323,9 +327,9 @@ namespace embree
         
         /* allocate node */
         Node* node = allocNode(current,children,numChildren,alloc);
-        BBox3fa bounds[4];
-      
+        
         /* process top parts of tree parallel */
+        BBox3fa bounds[4];
         if (current.size() > 4096)
         {
           tbb::task_group g;
