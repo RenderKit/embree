@@ -245,31 +245,18 @@ namespace embree
       /*! recreates morton codes when reaching a region where all codes are identical */
       void recreateMortonCodes(BuildRecord& current) const
       {
-        assert(current.size() > 4);
-        CentGeomBBox3fa global_bounds;
-        global_bounds.reset();
-        
+        CentGeomBBox3fa global_bounds; global_bounds.reset();
         for (size_t i=current.begin; i<current.end; i++)
-        {
-          const size_t index  = morton[i].index;
-          const size_t primID = index & encodeMask; 
-          const size_t geomID = index >> encodeShift; 
-          const TriangleMesh* mesh = scene->getTriangleMesh(geomID);
-          global_bounds.extend(mesh->bounds(primID));
-        }
-        
-        /* compute mapping from world space into 3D grid */
-        const ssef base  = (ssef)global_bounds.centBounds.lower;
-        const ssef diag  = (ssef)global_bounds.centBounds.upper - (ssef)global_bounds.centBounds.lower;
-        const ssef scale = select(diag > ssef(1E-19f), rcp(diag) * ssef(LATTICE_SIZE_PER_DIM * 0.99f),ssef(0.0f));
-        
+          global_bounds.extend(calculateBounds(morton[i]));
+
+        MortonCodeGenerator::MortonCodeMapping mapping(global_bounds.centBounds);
         for (size_t i=current.begin; i<current.end; i++)
         {
           const BBox3fa b = calculateBounds(morton[i]);
           const ssef lower = (ssef)b.lower;
           const ssef upper = (ssef)b.upper;
           const ssef centroid = lower+upper;
-          const ssei binID = ssei((centroid-base)*scale);
+          const ssei binID = ssei((centroid-mapping.base)*mapping.scale);
           const unsigned int bx = extract<0>(binID);
           const unsigned int by = extract<1>(binID);
           const unsigned int bz = extract<2>(binID);
