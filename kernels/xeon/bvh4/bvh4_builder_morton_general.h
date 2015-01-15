@@ -147,7 +147,7 @@ namespace embree
       ssei ax, ay, az, ai;
     };
     
-    template<typename Allocator, typename CreateAllocator, typename AllocNodeFunc, typename SetNodeBoundsFunc, typename CreateLeafFunc, typename CalculateBounds>
+    template<typename NodeRef, typename Allocator, typename CreateAllocator, typename AllocNodeFunc, typename SetNodeBoundsFunc, typename CreateLeafFunc, typename CalculateBounds>
       class BVH4BuilderMortonGeneral
     {
       ALIGNED_CLASS;
@@ -380,14 +380,14 @@ namespace embree
       }
       
       /* build function */
-      BVH4::NodeRef build(MortonID32Bit* src, MortonID32Bit* tmp, size_t numPrimitives) 
+      NodeRef build(MortonID32Bit* src, MortonID32Bit* tmp, size_t numPrimitives) 
       {
         /* sort morton codes */
         morton = tmp;
         radix_sort_copy_u32(src,morton,numPrimitives);
         
         /* build BVH */
-        BVH4::NodeRef root;
+        NodeRef root;
         BuildRecord br;
         br.init(0,numPrimitives);
         br.parent = &root;

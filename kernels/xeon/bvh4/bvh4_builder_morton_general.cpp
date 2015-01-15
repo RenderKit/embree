@@ -196,24 +196,26 @@ namespace embree
           
           /* compute scene bounds */
           Scene::Iterator<TriangleMesh,1> iter1(scene);
-          const CentGeomBBox3fa bounds = parallel_for_for_reduce( iter1, CentGeomBBox3fa(empty), [&](TriangleMesh* mesh, const range<size_t>& r, size_t k) -> CentGeomBBox3fa
-                                                                  {
-                                                                    CentGeomBBox3fa bounds(empty);
-                                                                    for (size_t i=r.begin(); i<r.end(); i++) bounds.extend(mesh->bounds(i));
-                                                                    return bounds;
-                                                                  }, [] (CentGeomBBox3fa a, const CentGeomBBox3fa& b) { a.merge(b); return a; });
+          const CentGeomBBox3fa bounds = parallel_for_for_reduce 
+            ( iter1, CentGeomBBox3fa(empty), [&](TriangleMesh* mesh, const range<size_t>& r, size_t k) -> CentGeomBBox3fa
+              {
+                CentGeomBBox3fa bounds(empty);
+                for (size_t i=r.begin(); i<r.end(); i++) bounds.extend(mesh->bounds(i));
+                return bounds;
+              }, [] (CentGeomBBox3fa a, const CentGeomBBox3fa& b) { a.merge(b); return a; });
           
           /* compute morton codes */
           Scene::Iterator<TriangleMesh,1> iter(scene);
           MortonID32Bit* dest = (MortonID32Bit*) bvh->alloc2.ptr();
           MortonCodeGenerator::MortonCodeMapping mapping(bounds.centBounds);
-          parallel_for_for( iter, [&](TriangleMesh* mesh, const range<size_t>& r, size_t k) 
-                            {
-                              MortonCodeGenerator generator(mapping,&dest[k]);
-                              for (size_t i=r.begin(); i<r.end(); i++) {
-                                generator(mesh->bounds(i),i | (mesh->id << encodeShift));
-                              }
-                            });
+          parallel_for_for
+            ( iter, [&](TriangleMesh* mesh, const range<size_t>& r, size_t k) 
+              {
+                MortonCodeGenerator generator(mapping,&dest[k]);
+                for (size_t i=r.begin(); i<r.end(); i++) {
+                  generator(mesh->bounds(i),i | (mesh->id << encodeShift));
+                }
+              });
           
           /* create BVH */
           AllocBVH4Node allocNode;
@@ -221,7 +223,7 @@ namespace embree
           CreateTriangle4Leaf createLeaf(scene,morton,encodeShift,encodeMask);
           CalculateBounds calculateBounds(scene,encodeShift,encodeMask);
           auto createAllocator = [&] () { return bvh->alloc2.threadLocal2(); };
-          BVH4BuilderMortonGeneral<FastAllocator::ThreadLocal2*,decltype(createAllocator),AllocBVH4Node,SetBVH4Bounds,CreateTriangle4Leaf,CalculateBounds> builder
+          BVH4BuilderMortonGeneral<BVH4::NodeRef,FastAllocator::ThreadLocal2*,decltype(createAllocator),AllocBVH4Node,SetBVH4Bounds,CreateTriangle4Leaf,CalculateBounds> builder
             (createAllocator,allocNode,setBounds,createLeaf,calculateBounds,4,BVH4::maxBuildDepth,4,inf);
           BVH4::NodeRef root = builder.build(dest,morton,numPrimitives);
           bvh->set(root,bounds.geomBounds,numPrimitives);
