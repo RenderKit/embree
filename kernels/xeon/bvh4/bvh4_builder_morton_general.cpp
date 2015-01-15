@@ -220,8 +220,9 @@ namespace embree
       SetBVH4Bounds setBounds;
       CreateTriangle4Leaf createLeaf(scene,morton,encodeShift,encodeMask);
       CalculateBounds calculateBounds(scene,encodeShift,encodeMask);
-      BVH4BuilderMortonGeneral<FastAllocator::ThreadLocal2*,AllocBVH4Node,SetBVH4Bounds,CreateTriangle4Leaf,CalculateBounds> builder
-        (allocNode,setBounds,createLeaf,calculateBounds,(BVH4*)bvh,scene,4,BVH4::maxBuildDepth,4,inf);
+      auto createAllocator = [&] () { return bvh->alloc2.threadLocal2(); };
+      BVH4BuilderMortonGeneral<FastAllocator::ThreadLocal2*,decltype(createAllocator),AllocBVH4Node,SetBVH4Bounds,CreateTriangle4Leaf,CalculateBounds> builder
+        (createAllocator,allocNode,setBounds,createLeaf,calculateBounds,(BVH4*)bvh,scene,4,BVH4::maxBuildDepth,4,inf);
       BVH4::NodeRef root = builder.build(dest,morton,numPrimitives,encodeShift,encodeMask);
       bvh->set(root,bounds.geomBounds,numPrimitives);
 

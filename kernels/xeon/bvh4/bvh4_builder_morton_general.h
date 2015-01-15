@@ -147,7 +147,7 @@ namespace embree
       ssei ax, ay, az, ai;
     };
 
-      template<typename Allocator, typename AllocNodeFunc, typename SetNodeBoundsFunc, typename CreateLeafFunc, typename CalculateBounds>
+      template<typename Allocator, typename CreateAllocator, typename AllocNodeFunc, typename SetNodeBoundsFunc, typename CreateLeafFunc, typename CalculateBounds>
     class BVH4BuilderMortonGeneral
     {
       ALIGNED_CLASS;
@@ -156,17 +156,16 @@ namespace embree
       /*! Type shortcuts */
       typedef BVH4::Node    Node;
       typedef BVH4::NodeRef NodeRef;
-      //typedef FastAllocator::ThreadLocal2 Allocator;
             
       static const size_t MAX_BRANCHING_FACTOR = 16;  //!< maximal supported BVH branching factor
       static const size_t MIN_LARGE_LEAF_LEVELS = 8;  //!< create balanced tree of we are that many levels before the maximal tree depth
 
     public:
   
-      BVH4BuilderMortonGeneral (AllocNodeFunc& allocNode, SetNodeBoundsFunc& setBounds, CreateLeafFunc& createLeaf, CalculateBounds& calculateBounds,
+      BVH4BuilderMortonGeneral (CreateAllocator& createAllocator, AllocNodeFunc& allocNode, SetNodeBoundsFunc& setBounds, CreateLeafFunc& createLeaf, CalculateBounds& calculateBounds,
                                 BVH4* bvh, Scene* scene, 
                                 const size_t branchingFactor, const size_t maxDepth, const size_t minLeafSize, const size_t maxLeafSize)
-        : allocNode(allocNode), setBounds(setBounds), createLeaf(createLeaf), calculateBounds(calculateBounds),
+        : createAllocator(createAllocator), allocNode(allocNode), setBounds(setBounds), createLeaf(createLeaf), calculateBounds(calculateBounds),
           bvh(bvh), scene(scene), 
           branchingFactor(branchingFactor), maxDepth(maxDepth), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize), 
           encodeShift(0), encodeMask(-1), morton(NULL) {}
@@ -313,9 +312,9 @@ namespace embree
       BBox3fa recurse(BuildRecord& current, Allocator alloc) 
       {
         if (alloc == NULL) 
-          alloc = bvh->alloc2.threadLocal2();
+          alloc = createAllocator();
 
-        __aligned(64) BuildRecord children[BVH4::N];
+        __aligned(64) BuildRecord children[MAX_BRANCHING_FACTOR];
         
         /* create leaf node */
         if (unlikely(current.depth+MIN_LARGE_LEAF_LEVELS >= maxDepth || current.size() <= minLeafSize)) {
@@ -424,6 +423,7 @@ namespace embree
       const size_t maxLeafSize;
 
     public:
+      CreateAllocator& createAllocator;
       AllocNodeFunc& allocNode;
       SetNodeBoundsFunc& setBounds;
       CreateLeafFunc& createLeaf;
