@@ -19,7 +19,12 @@
 #define PROFILE_MORTON_GENERAL
 
 #include "bvh4.h"
+#include "bvh4_statistics.h"
 #include "bvh4_builder_morton_general.h"
+
+#include "builders/heuristic_fallback.h"
+#include "builders/workstack.h"
+#include "bvh4_statistics.h"
 
 #include "geometry/triangle1.h"
 #include "geometry/triangle4.h"

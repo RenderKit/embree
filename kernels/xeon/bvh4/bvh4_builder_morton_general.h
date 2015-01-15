@@ -16,15 +16,9 @@
 
 #pragma once
 
-#include "bvh4.h"
-#include "builders/heuristic_fallback.h"
-#include "builders/workstack.h"
-#include "bvh4_statistics.h"
-#include "geometry/triangle4.h"
-
+#include "common/builder.h"
 #include "tbb/tbb.h"
 #include "algorithms/parallel_for_for.h"
-
 
 namespace embree
 {
@@ -235,11 +229,11 @@ namespace embree
       /*! recreates morton codes when reaching a region where all codes are identical */
       void recreateMortonCodes(MortonBuildRecord& current) const
       {
-        CentGeomBBox3fa global_bounds; global_bounds.reset();
+        BBox3fa centBounds(empty);
         for (size_t i=current.begin; i<current.end; i++)
-          global_bounds.extend(calculateBounds(morton[i]));
+          centBounds.extend(center2(calculateBounds(morton[i])));
         
-        MortonCodeGenerator::MortonCodeMapping mapping(global_bounds.centBounds);
+        MortonCodeGenerator::MortonCodeMapping mapping(centBounds);
         for (size_t i=current.begin; i<current.end; i++)
         {
           const BBox3fa b = calculateBounds(morton[i]);
