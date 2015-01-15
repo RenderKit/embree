@@ -349,15 +349,15 @@ namespace embree
       }
 
        /* build function */
-      void build(size_t threadIndex, size_t threadCount, MortonID32Bit*  morton_i, size_t numPrimitives_i, size_t encodeShift, size_t encodeMask) 
+      void build(size_t threadIndex, size_t threadCount, MortonID32Bit* src, MortonID32Bit* tmp, size_t numPrimitives_i, size_t encodeShift, size_t encodeMask) 
     {
-      this->morton = morton_i;
+      this->morton = tmp;
       this->numPrimitives = numPrimitives_i;
       this->encodeShift = encodeShift;
       this->encodeMask = encodeMask;
      
       /* sort morton codes */
-      radix_sort_copy_u32((MortonID32Bit*)bvh->alloc2.ptr(),morton,numPrimitives);
+      radix_sort_copy_u32(src,tmp,numPrimitives);
 
       BuildRecord br;
       br.init(0,numPrimitives);
@@ -376,7 +376,7 @@ namespace embree
       size_t maxLeafSize;
       size_t encodeShift;
       size_t encodeMask;
-      MortonID32Bit* __restrict__ morton;
+      MortonID32Bit* morton;
       size_t numPrimitives;
 
     public:
