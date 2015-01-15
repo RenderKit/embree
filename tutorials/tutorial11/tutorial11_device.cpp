@@ -86,35 +86,9 @@ struct LeafNode : public Node
   }
 };
 
-/* called by the C++ code for initialization */
-extern "C" void device_init (int8* cfg)
+void build_sah(std::vector<PrimRef>& prims, isa::PrimInfo& pinfo)
 {
-  /* initialize ray tracing core */
-  rtcInit(cfg);
-
-  /* set error handler */
-  rtcSetErrorFunction(error_handler);
-  
-  /* set start render mode */
-  renderPixel = renderPixelStandard;
-
-  /* create random bounding boxes */
-  const size_t N = 2300000;
-  isa::PrimInfo pinfo(empty);
-  std::vector<PrimRef> prims; // FIXME: does not support alignment
-  for (size_t i=0; i<N; i++) {
-    const Vec3fa p = 1000.0f*Vec3fa(drand48(),drand48(),drand48());
-    const BBox3fa b = BBox3fa(p,p+Vec3fa(1.0f));
-    pinfo.add(b);
-    const PrimRef prim = PrimRef(b,i);
-    prims.push_back(prim);
-  }
-
-  /* array for morton builder */
-  std::vector<isa::MortonID32Bit> morton_src(N);
-  std::vector<isa::MortonID32Bit> morton_tmp(N);
-  for (size_t i=0; i<N; i++) 
-    morton_src[i].index = i;
+  size_t N = pinfo.size();
 
   /* fast allocator that supports thread local operation */
   FastAllocator allocator;
@@ -125,8 +99,6 @@ extern "C" void device_init (int8* cfg)
     double t0 = getSeconds();
     
     allocator.reset();
-
-#if 0
 
     Node* root = isa::bvh_builder_sah<Node*>( // FIXME: rename to bvh_builder_binned_sah
 
@@ -155,8 +127,31 @@ extern "C" void device_init (int8* cfg)
         return new (alloc->malloc(sizeof(LeafNode))) LeafNode(prims[current.begin].ID(),prims[current.begin].bounds());
       },
       prims.data(),pinfo,2,1024,0,1,1); // FIXME: change log blocksize to blocksize
+    
+    double t1 = getSeconds();
 
-#else
+    std::cout << 1000.0f*(t1-t0) << "ms, " << 1E-6*double(N)/(t1-t0) << " Mprims/s, sah = " << root->sah() << " [DONE]" << std::endl;
+  }
+}
+
+void build_morton(std::vector<PrimRef>& prims, isa::PrimInfo& pinfo)
+{
+  size_t N = pinfo.size();
+  /* array for morton builder */
+  std::vector<isa::MortonID32Bit> morton_src(N);
+  std::vector<isa::MortonID32Bit> morton_tmp(N);
+  for (size_t i=0; i<N; i++) 
+    morton_src[i].index = i;
+
+  /* fast allocator that supports thread local operation */
+  FastAllocator allocator;
+
+  for (size_t i=0; i<2; i++)
+  {
+    std::cout << "iteration " << i << ": building BVH over " << N << " primitives, " << std::flush;
+    double t0 = getSeconds();
+    
+    allocator.reset();
 
     std::pair<Node*,BBox3fa> node_bounds = isa::bvh_builder_center<Node*>(
 
@@ -207,13 +202,39 @@ extern "C" void device_init (int8* cfg)
       morton_src.data(),morton_tmp.data(),prims.size(),2,1024,1,1);
 
     Node* root = node_bounds.first;
-
-#endif
     
     double t1 = getSeconds();
 
     std::cout << 1000.0f*(t1-t0) << "ms, " << 1E-6*double(N)/(t1-t0) << " Mprims/s, sah = " << root->sah() << " [DONE]" << std::endl;
   }
+}
+
+/* called by the C++ code for initialization */
+extern "C" void device_init (int8* cfg)
+{
+  /* initialize ray tracing core */
+  rtcInit(cfg);
+
+  /* set error handler */
+  rtcSetErrorFunction(error_handler);
+  
+  /* set start render mode */
+  renderPixel = renderPixelStandard;
+
+  /* create random bounding boxes */
+  const size_t N = 2300000;
+  isa::PrimInfo pinfo(empty);
+  std::vector<PrimRef> prims; // FIXME: does not support alignment
+  for (size_t i=0; i<N; i++) {
+    const Vec3fa p = 1000.0f*Vec3fa(drand48(),drand48(),drand48());
+    const BBox3fa b = BBox3fa(p,p+Vec3fa(1.0f));
+    pinfo.add(b);
+    const PrimRef prim = PrimRef(b,i);
+    prims.push_back(prim);
+  }
+
+  build_sah(prims,pinfo);
+  build_morton(prims,pinfo);
 }
 
 /* task that renders a single screen tile */
