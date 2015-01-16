@@ -22,9 +22,8 @@
 #include "tasking/taskscheduler.h"
 
 #define DBG_PART(x) 
-#define DBG_PART2(x) x
-
-#define DBG_CHECK(x) x
+#define DBG_PART2(x) 
+#define DBG_CHECK(x) 
 
 namespace embree
 {
@@ -360,9 +359,6 @@ namespace embree
         LockStepTaskScheduler* scheduler = LockStepTaskScheduler::instance();
         const size_t numThreads = scheduler->getNumThreads();
 
-        DBG_PRINT(numThreads);
-
-        
         task_pivot = pivot;
         scheduler->dispatchTask(task_thread_partition,this,0,numThreads);
 
@@ -491,6 +487,12 @@ namespace embree
                  );
         
         return mid;
+      }
+
+
+      size_t partition_serial(const T pivot)
+      {
+        return serialPartitioning(0,N,pivot);      
       }
 
     };

@@ -400,23 +400,58 @@ namespace embree
 #if 0
         PING;
 #define MAX_SIZE 1024*1024*512
-        test_array = (unsigned int*)_mm_malloc(MAX_SIZE*sizeof(int),64);
+        test_array  = (unsigned int*)_mm_malloc(MAX_SIZE*sizeof(int),64);
 
-        for (size_t s=256;s<MAX_SIZE;s++)
+        double t_parallel,t_serial;
+
+        double t_parallel_total,t_serial_total;
+
+        for (size_t s=1024*1024;s<MAX_SIZE;s+=s)
           {
             DBG_PRINT(s);
-            srand(s*32323);
-            for (size_t i=0;i<s;i++)
+            srand48(s*32323);
+
+
+            t_parallel_total = 0.0;
+            
+#define ITERATIONS 20
+            for (size_t i=0;i<ITERATIONS;i++)
               {
-                test_array[i] = lrand48() % s;
+                for (size_t i=0;i<s;i++)
+                  test_array[i] = lrand48() % s;
+
+                unsigned int pivot = test_array[s/2];
+
+                t_parallel = getSeconds();        
+                parallel_partition<unsigned int,128> pp(test_array,s);
+                size_t mid = pp.parition(pivot);
+                t_parallel = getSeconds() - t_parallel;        
+                t_parallel_total += t_parallel;
               }
+            t_parallel_total /= ITERATIONS;
 
-        
-            parallel_partition<unsigned int,4> pp(test_array,s);
+            srand48(s*32323);
+            
+            t_serial_total = 0.0;
+#define ITERATIONS 20
+            for (size_t i=0;i<ITERATIONS;i++)
+              {
+                for (size_t i=0;i<s;i++)
+                  test_array[i] = lrand48() % s;
 
-            unsigned int pivot = test_array[s/2];
-            size_t mid = pp.parition(pivot);
-            DBG_PRINT(mid);
+                unsigned int pivot = test_array[s/2];
+                t_serial = getSeconds();        
+                parallel_partition<unsigned int,128> pp(test_array,s);
+                size_t mid_serial = pp.partition_serial(pivot);
+                t_serial = getSeconds() - t_serial;        
+                t_serial_total += t_serial;
+              }
+            t_serial_total /= ITERATIONS;
+
+            std::cout << " t_parallel_total = " << 1000.0f*t_parallel_total << "ms, perf = " << 1E-6*double(s)/t_parallel_total << " Mprim/s" << std::endl;
+            std::cout << " t_serial_total = " << 1000.0f*t_serial_total << "ms, perf = " << 1E-6*double(s)/t_serial_total << " Mprim/s" << std::endl;
+            DBG_PRINT(t_serial_total/t_parallel_total);
+            
           }
 
         exit(0);
