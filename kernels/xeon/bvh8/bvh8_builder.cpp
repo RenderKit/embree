@@ -31,6 +31,8 @@
 
 #include "common/scene_triangle_mesh.h"
 
+#include "algorithms/parallel_partition.h"
+
 namespace embree
 {
   namespace isa
@@ -301,6 +303,8 @@ namespace embree
       else
 	return node;
     }
+
+    unsigned int *test_array = NULL;
     
     void BVH8Builder::build(size_t threadIndex, size_t threadCount) 
     {
@@ -391,6 +395,73 @@ namespace embree
 	}
 	_mm_sfence(); // make written leaves globally visible
 	
+        /////////////////////////////////////////////////////
+
+#if 0
+        PING;
+#define MAX_SIZE 1024*1024*512
+        test_array  = (unsigned int*)_mm_malloc(MAX_SIZE*sizeof(int),64);
+
+        double t_parallel,t_serial;
+
+        double t_parallel_total,t_serial_total;
+
+        for (size_t s=128*1024;s<MAX_SIZE;s+=s)
+          {
+            DBG_PRINT(s);
+            srand48(s*32323);
+
+
+            t_parallel_total = 0.0;
+#define ITERATIONS 20
+
+            size_t mids[ITERATIONS];
+
+            for (size_t j=0;j<ITERATIONS;j++)
+              {
+                for (size_t i=0;i<s;i++)
+                  test_array[i] = lrand48() % s;
+
+                unsigned int pivot = test_array[s/2];
+
+                t_parallel = getSeconds();        
+                parallel_partition<unsigned int,512> pp(test_array,s);
+                size_t mid = pp.parition(pivot);
+                t_parallel = getSeconds() - t_parallel;        
+                t_parallel_total += t_parallel;
+                mids[j] = mid;
+              }
+            t_parallel_total /= ITERATIONS;
+
+            srand48(s*32323);
+            
+            t_serial_total = 0.0;
+#define ITERATIONS 20
+            for (size_t j=0;j<ITERATIONS;j++)
+              {
+                for (size_t i=0;i<s;i++)
+                  test_array[i] = lrand48() % s;
+
+                unsigned int pivot = test_array[s/2];
+                t_serial = getSeconds();        
+                parallel_partition<unsigned int,128> pp(test_array,s);
+                size_t mid_serial = pp.partition_serial(pivot);
+                t_serial = getSeconds() - t_serial;        
+                t_serial_total += t_serial;
+                assert(mid_serial == mids[j]);
+              }
+            t_serial_total /= ITERATIONS;
+
+            std::cout << " t_parallel_total = " << 1000.0f*t_parallel_total << "ms, perf = " << 1E-6*double(s)/t_parallel_total << " Mprim/s" << std::endl;
+            std::cout << " t_serial_total = " << 1000.0f*t_serial_total << "ms, perf = " << 1E-6*double(s)/t_serial_total << " Mprim/s" << std::endl;
+            DBG_PRINT(t_serial_total/t_parallel_total);
+            
+          }
+
+        exit(0);
+#endif
+        /////////////////////////////////////////////////////
+
 	/*! process each generated subtask in its own thread */
 	scheduler->dispatchTask(threadIndex,threadCount,_build_parallel,this,threadCount,"BVH8Builder::build");
 
