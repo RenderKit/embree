@@ -17,6 +17,9 @@
 #pragma once
 
 #include "common/default.h"
+#include "sys/platform.h"
+#include "sys/sysinfo.h"
+#include "tasking/taskscheduler.h"
 
 #define DBG_PART(x) 
 #define DBG_CHECK(x) x
@@ -32,7 +35,9 @@ namespace embree
 
       size_t N;
       size_t blocks;
+      T task_pivot;
       T* array;
+     
 
       AlignedAtomicCounter64 blockID;
 
@@ -219,20 +224,22 @@ namespace embree
 
     public:
 
+      /* initialize atomic counters */
     parallel_partition(T *array, size_t N) : array(array), N(N)
-        {
-          blockID.reset();
-          numLeftRemainderBlocks  = 0;
-          numRightRemainderBlocks = 0;
-          maxLeftBlockID          = 0;
-          maxRightBlockID         = 0;
-          
-          blocks = N/BLOCK_SIZE;
-          DBG_PART(
-                   DBG_PRINT(blocks);
-                   );
-        }
+      {
+        blockID.reset();
+        numLeftRemainderBlocks  = 0;
+        numRightRemainderBlocks = 0;
+        maxLeftBlockID          = 0;
+        maxRightBlockID         = 0;
+        
+        blocks = N/BLOCK_SIZE;
+        DBG_PART(
+                 DBG_PRINT(blocks);
+                 );
+      }
 
+      /* each thread neutralizes blocks taken from left and right */
       void thread_partition(const T pivot)
       {
         size_t mode = NEED_LEFT_BLOCK | NEED_RIGHT_BLOCK;
@@ -326,7 +333,14 @@ namespace embree
         maxRightBlockID.max(currentRightBlock);       
       }
 
-      size_t parition(const T pivot, const size_t threadID = 0)
+      static void task_thread_partition(void* data, const size_t threadIndex, const size_t threadCount) {
+        DBG_PRINT(threadIndex);
+        parallel_partition<T,BLOCK_SIZE>* p = (parallel_partition<T,BLOCK_SIZE>*)data;
+        p->thread_partition(p->task_pivot);
+      } 
+
+      /* main function for parallel in-place partitioning */
+      size_t parition(const T pivot)
       {
         if (N <= SERIAL_THRESHOLD)
           {
@@ -343,8 +357,15 @@ namespace embree
                  DBG_PRINT("PARALLEL MODE");
                  );
 
-        // do parallel for here
-        thread_partition(pivot);
+        LockStepTaskScheduler* scheduler = LockStepTaskScheduler::instance();
+        const size_t numThreads = scheduler->getNumThreads();
+        DBG_PRINT(numThreads);
+
+        
+        task_pivot = pivot;
+        scheduler->dispatchTask(task_thread_partition,this,0,numThreads);
+
+        //thread_partition(pivot);
         
         DBG_PART(
                  DBG_PRINT(numLeftRemainderBlocks);
