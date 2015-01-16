@@ -16,6 +16,10 @@
 
 #pragma once
 
+#if defined(MIC)
+#undef USE_TBB
+#endif
+
 #include "sys/platform.h"
 #include "sys/thread.h"
 #include "sys/sync/event.h"
@@ -278,19 +282,23 @@ namespace embree
         LockStepTaskScheduler* scheduler = LockStepTaskScheduler::instance();
         size_t threadIndex = LockStepTaskScheduler::threadIndex();
         size_t threadCount = scheduler->getNumThreads();
+        barrier.init(threadCount);
         scheduler->dispatchTask( run, this, threadIndex, threadCount );
       }
 
       static void run(void* data, const size_t threadID, const size_t threadCount) 
       {
         TBBTask* This = (TBBTask*) data;
-        if (threadID == 0) This->arena.execute([&] { This->closure(); });
-        else               This->arena.execute([]{});
+        //if (threadID == 0) This->arena.execute([&] { This->closure(); });
+        //else               This->arena.execute([]{});
+        if (threadID == 0) This->closure();
+        This->barrier.wait();
       }
 
     public:
       const Closure& closure;
       tbb::task_arena arena;
+      BarrierSys barrier;
     };
 
     template<typename Closure>
