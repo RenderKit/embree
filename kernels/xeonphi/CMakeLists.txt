@@ -24,6 +24,7 @@ ADD_ISPC_LIBRARY(embree_xeonphi ${EMBREE_LIB_TYPE}
 
   ../../common/tasking/taskscheduler.cpp
   ../../common/tasking/taskscheduler_sys.cpp
+  ../../common/tasking/taskscheduler_new.cpp
   ../../common/tasking/taskscheduler_mic.cpp
   ../../common/tasking/tasklogger.cpp
   ../../common/tasking/tasksys.cpp

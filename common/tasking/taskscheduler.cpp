@@ -169,7 +169,7 @@ namespace embree
     t_scheduler = inst;
   }
 
-  __thread size_t LockStepTaskScheduler::t_threadIndex = 0;
+  __thread size_t LockStepTaskScheduler::t_threadIndex = -1;
 
   __dllexport size_t LockStepTaskScheduler::threadIndex() {
     return t_threadIndex;
