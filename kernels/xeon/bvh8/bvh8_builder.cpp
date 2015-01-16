@@ -406,16 +406,18 @@ namespace embree
 
         double t_parallel_total,t_serial_total;
 
-        for (size_t s=1024*1024;s<MAX_SIZE;s+=s)
+        for (size_t s=128*1024;s<MAX_SIZE;s+=s)
           {
             DBG_PRINT(s);
             srand48(s*32323);
 
 
             t_parallel_total = 0.0;
-            
 #define ITERATIONS 20
-            for (size_t i=0;i<ITERATIONS;i++)
+
+            size_t mids[ITERATIONS];
+
+            for (size_t j=0;j<ITERATIONS;j++)
               {
                 for (size_t i=0;i<s;i++)
                   test_array[i] = lrand48() % s;
@@ -423,10 +425,11 @@ namespace embree
                 unsigned int pivot = test_array[s/2];
 
                 t_parallel = getSeconds();        
-                parallel_partition<unsigned int,128> pp(test_array,s);
+                parallel_partition<unsigned int,512> pp(test_array,s);
                 size_t mid = pp.parition(pivot);
                 t_parallel = getSeconds() - t_parallel;        
                 t_parallel_total += t_parallel;
+                mids[j] = mid;
               }
             t_parallel_total /= ITERATIONS;
 
@@ -434,7 +437,7 @@ namespace embree
             
             t_serial_total = 0.0;
 #define ITERATIONS 20
-            for (size_t i=0;i<ITERATIONS;i++)
+            for (size_t j=0;j<ITERATIONS;j++)
               {
                 for (size_t i=0;i<s;i++)
                   test_array[i] = lrand48() % s;
@@ -445,6 +448,7 @@ namespace embree
                 size_t mid_serial = pp.partition_serial(pivot);
                 t_serial = getSeconds() - t_serial;        
                 t_serial_total += t_serial;
+                assert(mid_serial == mids[j]);
               }
             t_serial_total /= ITERATIONS;
 

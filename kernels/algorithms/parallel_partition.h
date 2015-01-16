@@ -390,10 +390,7 @@ namespace embree
             const unsigned int index0 = leftRemainderBlockIDs[numLeftRemainderBlocks-1-i];
             const unsigned int index1 = maxLeftBlockID-i;
             if (index0 != index1)
-              {
-                //DBG_PART2(std::cout << "SWAP " << index0 << " " << index1 << std::endl);
-                swapTwoLeftBlocks(index0,index1);
-              }
+              swapTwoLeftBlocks(index0,index1);
           }
         assert(numLeftRemainderBlocks-1 <= maxLeftBlockID);
 
@@ -403,6 +400,8 @@ namespace embree
         size_t left_end   = (size_t)-1;
 
         getLeftArrayIndex(left_border_index,left_begin,left_end);
+
+        assert(left_begin != (size_t)-1);
 
         DBG_CHECK( checkLeft(0,left_begin,pivot) );
 
@@ -415,10 +414,7 @@ namespace embree
             const unsigned int index0 = rightRemainderBlockIDs[numRightRemainderBlocks-1-i];
             const unsigned int index1 = maxRightBlockID-i;
             if (index0 != index1)
-              {
-                //DBG_PART2(std::cout << "SWAP " << index0 << " " << index1 << std::endl);
-                swapTwoRightBlocks(index0,index1);
-              }
+              swapTwoRightBlocks(index0,index1);
           }
         assert(numRightRemainderBlocks-1 <= maxRightBlockID);
 
@@ -428,6 +424,8 @@ namespace embree
         size_t right_end   = (size_t)-1;
 
         getRightArrayIndex(right_border_index,right_begin,right_end);
+
+        assert(right_end  != (size_t)-1);
 
         DBG_CHECK( checkRight(right_end,N,pivot) );
 
@@ -463,9 +461,8 @@ namespace embree
                  //for (size_t i=0;i<N;i++)
                  //std::cout << i << " -> " << array[i] << std::endl;
                  );
+
         DBG_CHECK(
-                 assert(left_begin != (size_t)-1);
-                 assert(right_end  != (size_t)-1);
                  
                  checkLeft(0,left_begin,pivot);
                  checkRight(right_end,N,pivot);
@@ -474,7 +471,6 @@ namespace embree
 
         
         DBG_CHECK(
-                  DBG_PRINT(right_end - left_begin);
                   assert( right_end - left_begin <= numThreads*3*BLOCK_SIZE);
                   )
           
@@ -492,7 +488,12 @@ namespace embree
 
       size_t partition_serial(const T pivot)
       {
-        return serialPartitioning(0,N,pivot);      
+        const size_t mid = serialPartitioning(0,N,pivot);      
+        DBG_CHECK(
+                 checkLeft(0,mid,pivot);
+                 checkRight(mid,N,pivot);
+                 );        
+        return mid;
       }
 
     };
