@@ -397,7 +397,7 @@ namespace embree
 	
         /////////////////////////////////////////////////////
 
-#if 1
+#if 0
         PING;
 #define MAX_SIZE 1024*1024*512
         test_array = (unsigned int*)_mm_malloc(MAX_SIZE*sizeof(int),64);

@@ -374,7 +374,8 @@ namespace embree
                  DBG_PRINT(maxRightBlockID);                 
                  );
                  
-        
+        exit(0);
+
         size_t left_begin = (size_t)-1;
         size_t left_end   = (size_t)-1;
 
