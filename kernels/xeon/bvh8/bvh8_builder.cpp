@@ -402,7 +402,7 @@ namespace embree
 #define MAX_SIZE 1024*1024*512
         test_array = (unsigned int*)_mm_malloc(MAX_SIZE*sizeof(int),64);
 
-        for (size_t s=16;s<MAX_SIZE;s+=s)
+        for (size_t s=256;s<MAX_SIZE;s++)
           {
             DBG_PRINT(s);
             srand(s*32323);

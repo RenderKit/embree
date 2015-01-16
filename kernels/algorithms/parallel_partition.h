@@ -22,6 +22,8 @@
 #include "tasking/taskscheduler.h"
 
 #define DBG_PART(x) 
+#define DBG_PART2(x) x
+
 #define DBG_CHECK(x) x
 
 namespace embree
@@ -113,28 +115,26 @@ namespace embree
       /* swap to left blocks */
       __forceinline void swapTwoLeftBlocks(const size_t leftID0, const size_t leftID1)
       {
-        assert( id0 != id1 );
+        assert( leftID0 != leftID1 );
         size_t left0_begin, left0_end;
         size_t left1_begin, left1_end;
 
         getLeftArrayIndex(leftID0, left0_begin, left0_end);
         getLeftArrayIndex(leftID1, left1_begin, left1_end);
 
-        assert(left0_end <= left1_begin);
         swapTwoBlocks(left0_begin,left1_begin);
       }
 
       /* swap to right blocks */
       __forceinline void swapTwoRightBlocks(const size_t rightID0, const size_t rightID1)
       {
-        assert( id0 != id1 );
+        assert( rightID0 != rightID1 );
         size_t right0_begin, right0_end;
         size_t right1_begin, right1_end;
 
         getRightArrayIndex(rightID0, right0_begin, right0_end);
         getRightArrayIndex(rightID1, right1_begin, right1_end);
 
-        assert(right0_end <= right1_begin);
         swapTwoBlocks(right0_begin,right1_begin);
       }
 
@@ -279,8 +279,6 @@ namespace embree
                 DBG_PART(
                          DBG_PRINT("LEFT BLOCK");
                          DBG_PRINT(currentLeftBlock);
-                         checkLeft(0,left_begin,pivot);
-
                          );
 
               }
@@ -295,7 +293,6 @@ namespace embree
                 DBG_PART(
                          DBG_PRINT("RIGHT BLOCK");
                          DBG_PRINT(currentRightBlock);
-                         checkRight(right_end,N,pivot);
                          );
               }
 
@@ -322,7 +319,8 @@ namespace embree
             leftRemainderBlockIDs[index] = currentLeftBlock;
           }
 
-        maxLeftBlockID.max(currentLeftBlock);
+        if (currentLeftBlock != (size_t)-1)
+          maxLeftBlockID.max(currentLeftBlock);
 
         if (right_begin != right_end)
           {
@@ -330,11 +328,12 @@ namespace embree
             rightRemainderBlockIDs[index] = currentRightBlock;
           }
 
-        maxRightBlockID.max(currentRightBlock);       
+        if (currentRightBlock != (size_t)-1)
+          maxRightBlockID.max(currentRightBlock);       
+
       }
 
       static void task_thread_partition(void* data, const size_t threadIndex, const size_t threadCount) {
-        DBG_PRINT(threadIndex);
         parallel_partition<T,BLOCK_SIZE>* p = (parallel_partition<T,BLOCK_SIZE>*)data;
         p->thread_partition(p->task_pivot);
       } 
@@ -342,6 +341,7 @@ namespace embree
       /* main function for parallel in-place partitioning */
       size_t parition(const T pivot)
       {
+
         if (N <= SERIAL_THRESHOLD)
           {
             size_t mid = serialPartitioning(0,N,pivot);
@@ -353,12 +353,13 @@ namespace embree
             return mid;
           }
 
-        DBG_PART(
+        DBG_PART2(
                  DBG_PRINT("PARALLEL MODE");
                  );
 
         LockStepTaskScheduler* scheduler = LockStepTaskScheduler::instance();
         const size_t numThreads = scheduler->getNumThreads();
+
         DBG_PRINT(numThreads);
 
         
@@ -366,35 +367,93 @@ namespace embree
         scheduler->dispatchTask(task_thread_partition,this,0,numThreads);
 
         //thread_partition(pivot);
+
+        /* ---------------------------------- */
+        /* ------ serial cleanup phase ------ */
+        /* ---------------------------------- */
         
+        /* sort remainder blocks */
+        insertionsort_ascending<T>(leftRemainderBlockIDs,numLeftRemainderBlocks);
+        insertionsort_ascending<T>(rightRemainderBlockIDs,numRightRemainderBlocks);
+
         DBG_PART(
                  DBG_PRINT(numLeftRemainderBlocks);
+                 for (size_t i=0;i<numLeftRemainderBlocks;i++)
+                   std::cout << i << " -> " << leftRemainderBlockIDs[i] << std::endl;
                  DBG_PRINT(numRightRemainderBlocks);
+                 for (size_t i=0;i<numRightRemainderBlocks;i++)
+                   std::cout << i << " -> " << rightRemainderBlockIDs[i] << std::endl;
                  DBG_PRINT(maxLeftBlockID);
                  DBG_PRINT(maxRightBlockID);                 
                  );
-                 
-        exit(0);
+
+        /* compact left remaining blocks */        
+        for (size_t i=0;i<numLeftRemainderBlocks;i++)
+          {
+            assert(i<=maxLeftBlockID);
+            const unsigned int index0 = leftRemainderBlockIDs[numLeftRemainderBlocks-1-i];
+            const unsigned int index1 = maxLeftBlockID-i;
+            if (index0 != index1)
+              {
+                //DBG_PART2(std::cout << "SWAP " << index0 << " " << index1 << std::endl);
+                swapTwoLeftBlocks(index0,index1);
+              }
+          }
+        assert(numLeftRemainderBlocks-1 <= maxLeftBlockID);
+
+        const size_t left_border_index = maxLeftBlockID-(numLeftRemainderBlocks-1);
 
         size_t left_begin = (size_t)-1;
         size_t left_end   = (size_t)-1;
 
-        getLeftArrayIndex(maxLeftBlockID,left_begin,left_end);
-        
-        if (numLeftRemainderBlocks)
-          getLeftArrayIndex(leftRemainderBlockIDs[0],left_begin,left_end);
-        else
-          left_begin += BLOCK_SIZE;
+        getLeftArrayIndex(left_border_index,left_begin,left_end);
+
+        DBG_CHECK( checkLeft(0,left_begin,pivot) );
+
+        /* compact right remaining blocks */
+
+
+        for (size_t i=0;i<numRightRemainderBlocks;i++)
+          {
+            assert(i<=maxRightBlockID);
+            const unsigned int index0 = rightRemainderBlockIDs[numRightRemainderBlocks-1-i];
+            const unsigned int index1 = maxRightBlockID-i;
+            if (index0 != index1)
+              {
+                //DBG_PART2(std::cout << "SWAP " << index0 << " " << index1 << std::endl);
+                swapTwoRightBlocks(index0,index1);
+              }
+          }
+        assert(numRightRemainderBlocks-1 <= maxRightBlockID);
+
+        const size_t right_border_index = maxRightBlockID-(numRightRemainderBlocks-1);
 
         size_t right_begin = (size_t)-1;
         size_t right_end   = (size_t)-1;
 
-        getRightArrayIndex(maxRightBlockID,right_begin,right_end);
+        getRightArrayIndex(right_border_index,right_begin,right_end);
+
+        DBG_CHECK( checkRight(right_end,N,pivot) );
+
+        /* size_t left_begin = (size_t)-1; */
+        /* size_t left_end   = (size_t)-1; */
+
+        /* getLeftArrayIndex(maxLeftBlockID,left_begin,left_end); */
         
-        if (numRightRemainderBlocks)
-          getRightArrayIndex(rightRemainderBlockIDs[0],right_begin,right_end);
-        else
-          right_end -= BLOCK_SIZE;
+        /* if (numLeftRemainderBlocks) */
+        /*   getLeftArrayIndex(leftRemainderBlockIDs[0],left_begin,left_end); */
+        /* else */
+        /*   left_begin += BLOCK_SIZE; */
+
+        /* size_t right_begin = (size_t)-1; */
+        /* size_t right_end   = (size_t)-1; */
+
+        /* getRightArrayIndex(maxRightBlockID,right_begin,right_end); */
+        
+        /* if (numRightRemainderBlocks) */
+        /*   getRightArrayIndex(rightRemainderBlockIDs[0],right_begin,right_end); */
+        /* else */
+        /*   right_end -= BLOCK_SIZE; */
 
         
         DBG_PART(
@@ -420,15 +479,11 @@ namespace embree
         
         DBG_CHECK(
                   DBG_PRINT(right_end - left_begin);
-                  assert( right_end - left_begin <= 4*BLOCK_SIZE);
+                  assert( right_end - left_begin <= numThreads*3*BLOCK_SIZE);
                   )
           
         const size_t mid = serialPartitioning(left_begin,right_end,pivot);
 
-        DBG_PART(
-                 for (size_t i=0;i<N;i++)
-                   std::cout << i << " -> " << array[i] << std::endl;
-                 );
         
         DBG_CHECK(
                  checkLeft(0,mid,pivot);
