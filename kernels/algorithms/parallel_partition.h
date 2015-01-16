@@ -27,10 +27,12 @@
 
 namespace embree
 {
-  template<typename T, size_t BLOCK_SIZE>
+  template<size_t BLOCK_SIZE, typename T, typename Compare>
   class __aligned(64) parallel_partition
     {
     private:
+
+      const Compare& cmp;
 
       static const size_t SERIAL_THRESHOLD = 16;
 
@@ -138,18 +140,27 @@ namespace embree
       }
 
       /* serial partitioning */
-      size_t serialPartitioning(const size_t begin, const size_t end, const T pivot)
+      __forceinline size_t serialPartitioning(const size_t begin, const size_t end, const T pivot)
       {
         T* l = array + begin;
         T* r = array + end - 1;
 
         while(1)
           {
-            while (likely(l <= r && *l < pivot)) 
-              ++l;
-            while (likely(l <= r && *r >= pivot)) 
-              --r;
+            while (likely(l <= r && cmp(*l,pivot) /* *l < pivot */)) 
+              {
+                //func_left(*l);
+               ++l;
+              }
+            while (likely(l <= r && !cmp(*r,pivot) /* *r >= pivot) */))
+              {
+                //func_right(*r);
+                --r;
+              }
             if (r<l) break;
+
+              //func_right(*l);
+              //func_left(*r);
 
             std::swap(*l,*r);
             l++; r--;
@@ -159,21 +170,21 @@ namespace embree
       }
 
       /* neutralize left and right block */
-      size_t neutralizeBlocks(size_t &left_begin,
-                               const size_t &left_end,
-                               size_t &right_begin,
-                               const size_t &right_end,
-                               const T pivot)
+      __forceinline size_t neutralizeBlocks(size_t &left_begin,
+                                            const size_t &left_end,
+                                            size_t &right_begin,
+                                            const size_t &right_end,
+                                            const T pivot)
       {
         while(left_begin < left_end && right_begin < right_end)
           {
-            while(array[left_begin] < pivot)
+            while(cmp(array[left_begin],pivot) /* array[left_begin] < pivot */)
               {
                 left_begin++;
                 if (left_begin >= left_end) break;
               }
 
-            while(array[right_begin] >= pivot)
+            while(!cmp(array[right_begin],pivot) /* array[right_begin] >= pivot */)
               {
                 right_begin++;
                 if (right_begin >= right_end) break;
@@ -224,7 +235,7 @@ namespace embree
     public:
 
       /* initialize atomic counters */
-    parallel_partition(T *array, size_t N) : array(array), N(N)
+      __forceinline parallel_partition(T *array, size_t N, const Compare& cmp) : array(array), N(N), cmp(cmp)
       {
         blockID.reset();
         numLeftRemainderBlocks  = 0;
@@ -333,12 +344,12 @@ namespace embree
       }
 
       static void task_thread_partition(void* data, const size_t threadIndex, const size_t threadCount) {
-        parallel_partition<T,BLOCK_SIZE>* p = (parallel_partition<T,BLOCK_SIZE>*)data;
+        parallel_partition<BLOCK_SIZE,T,Compare>* p = (parallel_partition<BLOCK_SIZE,T,Compare>*)data;
         p->thread_partition(p->task_pivot);
       } 
 
       /* main function for parallel in-place partitioning */
-      size_t parition(const T pivot)
+      size_t partition_parallel(const T pivot)
       {
 
         if (N <= SERIAL_THRESHOLD)
@@ -429,26 +440,11 @@ namespace embree
 
         DBG_CHECK( checkRight(right_end,N,pivot) );
 
-        /* size_t left_begin = (size_t)-1; */
-        /* size_t left_end   = (size_t)-1; */
-
-        /* getLeftArrayIndex(maxLeftBlockID,left_begin,left_end); */
-        
-        /* if (numLeftRemainderBlocks) */
-        /*   getLeftArrayIndex(leftRemainderBlockIDs[0],left_begin,left_end); */
-        /* else */
+        /* if (!numLeftRemainderBlocks) */
         /*   left_begin += BLOCK_SIZE; */
-
-        /* size_t right_begin = (size_t)-1; */
-        /* size_t right_end   = (size_t)-1; */
-
-        /* getRightArrayIndex(maxRightBlockID,right_begin,right_end); */
         
-        /* if (numRightRemainderBlocks) */
-        /*   getRightArrayIndex(rightRemainderBlockIDs[0],right_begin,right_end); */
-        /* else */
+        /* if (!numRightRemainderBlocks) */
         /*   right_end -= BLOCK_SIZE; */
-
         
         DBG_PART(
                  DBG_PRINT("CLEANUP");
@@ -498,4 +494,18 @@ namespace embree
 
     };
 
-};
+  template<size_t BLOCK_SIZE, typename T, typename Compare>
+    __forceinline size_t parallel_in_place_partitioning(T *array, size_t N, T pivot, const Compare& cmp)
+  {
+    parallel_partition<BLOCK_SIZE,T,Compare> p(array,N,cmp);
+    return p.partition_parallel(pivot);
+  }
+
+  template<typename T, typename Compare>
+    __forceinline size_t serial_in_place_partitioning(T *array, size_t N, T pivot, const Compare& cmp)
+  {
+    parallel_partition<1,T,Compare> p(array,N,cmp);
+    return p.partition_serial(pivot);
+  }
+
+ };

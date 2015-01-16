@@ -425,8 +425,13 @@ namespace embree
                 unsigned int pivot = test_array[s/2];
 
                 t_parallel = getSeconds();        
-                parallel_partition<unsigned int,512> pp(test_array,s);
-                size_t mid = pp.parition(pivot);
+
+                //parallel_partition pp(test_array,s, [] (unsigned int &t) { DBG_PRINT(t);} );
+                //size_t mid = pp.parition(pivot);
+
+                size_t tt = 0;
+                size_t mid = parallel_in_place_partitioning<512>(test_array,s,pivot,[&] (const unsigned int &t0,const unsigned int &t1) { return t0 < t1; } );
+
                 t_parallel = getSeconds() - t_parallel;        
                 t_parallel_total += t_parallel;
                 mids[j] = mid;
@@ -434,7 +439,7 @@ namespace embree
             t_parallel_total /= ITERATIONS;
 
             srand48(s*32323);
-            
+#if 1
             t_serial_total = 0.0;
 #define ITERATIONS 20
             for (size_t j=0;j<ITERATIONS;j++)
@@ -444,14 +449,17 @@ namespace embree
 
                 unsigned int pivot = test_array[s/2];
                 t_serial = getSeconds();        
-                parallel_partition<unsigned int,128> pp(test_array,s);
-                size_t mid_serial = pp.partition_serial(pivot);
+                //parallel_partition<unsigned int,128> pp(test_array,s);
+                //size_t mid_serial = pp.partition_serial(pivot);
+
+                size_t mid_serial = serial_in_place_partitioning(test_array,s,pivot,[&] (const unsigned int &t0,const unsigned int &t1) { return t0 < t1; } );
+
                 t_serial = getSeconds() - t_serial;        
                 t_serial_total += t_serial;
                 assert(mid_serial == mids[j]);
               }
             t_serial_total /= ITERATIONS;
-
+#endif
             std::cout << " t_parallel_total = " << 1000.0f*t_parallel_total << "ms, perf = " << 1E-6*double(s)/t_parallel_total << " Mprim/s" << std::endl;
             std::cout << " t_serial_total = " << 1000.0f*t_serial_total << "ms, perf = " << 1E-6*double(s)/t_serial_total << " Mprim/s" << std::endl;
             DBG_PRINT(t_serial_total/t_parallel_total);
