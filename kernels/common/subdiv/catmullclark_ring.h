@@ -177,8 +177,7 @@ namespace embree
       edge_valence = i;
       face_valence = i >> 1;
     }
-    
-    
+      
     __forceinline void subdivide(CatmullClark1Ring& dest) const
     {
       dest.noForcedSubdivision    = true;
@@ -219,8 +218,12 @@ namespace embree
       Vec3fa_t C = Vec3fa_t(0.0f);
       for (size_t i=0; i<face_valence; i++)
       {
-        // FIXME: NEED TO USE eval_start_index HERE !!!!"
-        size_t face_index = i;
+        ////////////////////////////////////////////////
+        size_t face_index = i + eval_start_index;
+        if (face_index >= face_valence) face_index -= face_valence;
+        ////////////////////////////////////////////////
+      
+        //size_t face_index = i;
         size_t index      = 2*face_index;
         size_t prev_index = face_index == 0 ? edge_valence-1 : 2*face_index-1;
         size_t next_index = 2*face_index+1;
@@ -801,4 +804,31 @@ namespace embree
       return o;
     } 
   };
+
+  __forceinline bool equalRingEval(CatmullClark1Ring& source, CatmullClark1Ring& dest) 
+    {
+      if (source.face_valence != dest.face_valence) return false;
+      if (source.edge_valence != dest.edge_valence) return false;
+      
+      size_t start_index_source = 2 * source.eval_start_index;
+      size_t start_index_dest   = 2 * dest.eval_start_index;
+      
+      for (size_t i=0;i<source.edge_valence;i++)
+        {
+          size_t index_source = (start_index_source + i) % source.edge_valence;
+          size_t index_dest   = (start_index_dest   + i) % source.edge_valence;          
+          if ( source.ring[index_source] != dest.ring[index_dest] )
+            {
+              DBG_PRINT(source.eval_start_index);
+              DBG_PRINT(dest.eval_start_index);              
+              DBG_PRINT(index_source);
+              DBG_PRINT(index_dest);
+              DBG_PRINT(source.ring[index_source]);
+              DBG_PRINT(dest.ring[index_dest]);
+              return false;              
+            }
+        }
+      return true;
+    }
+    
 }

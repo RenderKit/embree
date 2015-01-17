@@ -264,6 +264,24 @@ namespace embree
       init_regular(center,center_ring,2,patch[1].ring[3]);
       init_regular(center,center_ring,4,patch[2].ring[0]);
       init_regular(center,center_ring,6,patch[3].ring[1]);
+
+#if 0
+      DBG_PRINT("CHECK_RINGS");
+      if (!equalRingEval(patch[0].ring[1],patch[1].ring[0]))
+        {
+          DBG_PRINT(patch[0].ring[1]);
+          DBG_PRINT(patch[1].ring[0]);          
+          FATAL("equalRingEval(patch[0].ring[1],patch[1].ring[0])");
+        }
+      if (!equalRingEval(patch[0].ring[2],patch[1].ring[3]))
+        {
+          DBG_PRINT(patch[0].ring[2]);
+          DBG_PRINT(patch[1].ring[3]);          
+          FATAL("equalRingEval(patch[0].ring[2],patch[1].ring[3])");
+        }
+      
+      
+#endif
     }
 
     __forceinline void init( FinalQuad& quad ) const
