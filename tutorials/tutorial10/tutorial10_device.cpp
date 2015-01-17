@@ -410,7 +410,7 @@ void renderTile(int taskIndex, int* pixels,
   {
     DBG(       std::cout.precision(10); );
 
-    DBG( x = 500; y = 1024-10; );
+    DBG( x = 512; y = 1023-12; );
 
     /* calculate pixel color */
     Vec3fa color = renderPixel(x,y,vx,vy,vz,p);

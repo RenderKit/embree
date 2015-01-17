@@ -593,7 +593,204 @@ namespace embree
       return Vec2f((float)u[i],(float)v[i]) * 1.0f/65535.0f;
     }
 
-    BBox3fa bounds(const SubdivMesh* const mesh) const;
+    //BBox3fa bounds(const SubdivMesh* const mesh) const;
+    BBox3fa bounds(const SubdivMesh* const mesh) const
+    {
+#if FORCE_TESSELLATION_BOUNDS == 1
+
+#if !defined(_MSC_VER) || defined(__INTEL_COMPILER)
+      __aligned(64) float u_array[(grid_size_simd_blocks + 1) * 16]; // +16 for unaligned access
+      __aligned(64) float v_array[(grid_size_simd_blocks + 1) * 16]; // +16 for unaligned access
+
+#else
+      const size_t array_elements = (grid_size_simd_blocks + 1) * 8;
+
+      float *const ptr = (float*)_malloca(2 *array_elements * sizeof(float) + 64);
+      float *const uv_arrays = (float*)ALIGN_PTR(ptr, 64);
+      float *const u_array = &uv_arrays[0];
+      float *const v_array = &uv_arrays[grid_size_simd_blocks * 8];
+
+#endif
+
+      const unsigned int real_grid_size = grid_u_res*grid_v_res;
+      gridUVTessellator(level, grid_u_res, grid_v_res, u_array, v_array);
+
+      if (unlikely(needsStiching()))
+        stichUVGrid(level, grid_u_res, grid_v_res, u_array, v_array);
+
+      // FIXME: remove
+#if defined(__MIC__)
+      for (size_t i = real_grid_size; i<grid_size_simd_blocks * 16; i++)
+#else
+        for (size_t i = real_grid_size; i<grid_size_simd_blocks * 8; i++)
+#endif
+          {
+            u_array[i] = 1.0f;
+            v_array[i] = 1.0f;
+          }
+
+      BBox3fa b(empty);
+      assert(grid_size_simd_blocks >= 1);
+
+#if defined(__MIC__)
+      for (size_t i = 0; i<grid_size_simd_blocks; i++)
+        {
+          const mic_f u = load16f(&u_array[i * 16]);
+          const mic_f v = load16f(&v_array[i * 16]);
+
+          mic3f vtx = eval16(u, v);
+
+
+          /* eval displacement function */
+          if (unlikely(mesh->displFunc != NULL))
+            {
+              mic3f normal = normal16(u, v);
+              normal = normalize(normal);
+
+              const Vec2f uv0 = getUV(0);
+              const Vec2f uv1 = getUV(1);
+              const Vec2f uv2 = getUV(2);
+              const Vec2f uv3 = getUV(3);
+
+              const mic_f patch_uu = bilinear_interpolate(uv0.x, uv1.x, uv2.x, uv3.x, u, v);
+              const mic_f patch_vv = bilinear_interpolate(uv0.y, uv1.y, uv2.y, uv3.y, u, v);
+
+              mesh->displFunc(mesh->userPtr,
+                              geom,
+                              prim,
+                              (const float*)&patch_uu,
+                              (const float*)&patch_vv,
+                              (const float*)&normal.x,
+                              (const float*)&normal.y,
+                              (const float*)&normal.z,
+                              (float*)&vtx.x,
+                              (float*)&vtx.y,
+                              (float*)&vtx.z,
+                              16);
+
+            }
+
+          /* extend bounding box */
+          b.extend(getBBox3fa(vtx));
+        }
+
+#else
+
+#if !defined(__AVX__)
+
+      for (size_t i = 0; i<grid_size_simd_blocks * 2; i++)
+        {
+          ssef u = load4f(&u_array[i * 4]);
+          ssef v = load4f(&v_array[i * 4]);
+
+          sse3f vtx = eval4(u, v);
+
+          /* eval displacement function */
+          if (unlikely(mesh->displFunc != NULL))
+            {
+              const Vec2f uv0 = getUV(0);
+              const Vec2f uv1 = getUV(1);
+              const Vec2f uv2 = getUV(2);
+              const Vec2f uv3 = getUV(3);
+
+              const ssef patch_uu = bilinear_interpolate(uv0.x, uv1.x, uv2.x, uv3.x, u, v);
+              const ssef patch_vv = bilinear_interpolate(uv0.y, uv1.y, uv2.y, uv3.y, u, v);
+
+              sse3f nor = normal4(u, v);
+
+              nor = normalize_safe(nor);
+
+              mesh->displFunc(mesh->userPtr,
+                              geom,
+                              prim,
+                              (const float*)&patch_uu,
+                              (const float*)&patch_vv,
+                              (const float*)&nor.x,
+                              (const float*)&nor.y,
+                              (const float*)&nor.z,
+                              (float*)&vtx.x,
+                              (float*)&vtx.y,
+                              (float*)&vtx.z,
+                              4);
+            }
+          b.extend(getBBox3fa(vtx));
+        }
+
+#else
+
+      for (size_t i = 0; i<grid_size_simd_blocks; i++)
+        {
+          avxf u = load8f(&u_array[i * 8]);
+          avxf v = load8f(&v_array[i * 8]);
+
+          avx3f vtx = eval8(u, v);
+
+          /* eval displacement function */
+          if (unlikely(mesh->displFunc != NULL))
+            {
+              const Vec2f uv0 = getUV(0);
+              const Vec2f uv1 = getUV(1);
+              const Vec2f uv2 = getUV(2);
+              const Vec2f uv3 = getUV(3);
+
+              const avxf patch_uu = bilinear_interpolate(uv0.x, uv1.x, uv2.x, uv3.x, u, v);
+              const avxf patch_vv = bilinear_interpolate(uv0.y, uv1.y, uv2.y, uv3.y, u, v);
+
+              avx3f nor = normal8(u, v);
+
+              nor = normalize_safe(nor);
+
+              mesh->displFunc(mesh->userPtr,
+                              geom,
+                              prim,
+                              (const float*)&patch_uu,
+                              (const float*)&patch_vv,
+                              (const float*)&nor.x,
+                              (const float*)&nor.y,
+                              (const float*)&nor.z,
+                              (float*)&vtx.x,
+                              (float*)&vtx.y,
+                              (float*)&vtx.z,
+                              8);
+            }
+          b.extend(getBBox3fa(vtx));
+        }
+#endif
+
+#endif
+      b.lower.a = 0.0f;
+      b.upper.a = 0.0f;
+
+#if defined(DEBUG)
+      isfinite(b.lower.x);
+      isfinite(b.lower.y);
+      isfinite(b.lower.z);
+
+      isfinite(b.upper.x);
+      isfinite(b.upper.y);
+      isfinite(b.upper.z);
+#endif
+
+#else
+      BBox3fa b = patch.bounds();
+      if (unlikely(isGregoryPatch()))
+        {
+          b.extend(GregoryPatch::extract_f_m_Vec3fa(patch.v, 0));
+          b.extend(GregoryPatch::extract_f_m_Vec3fa(patch.v, 1));
+          b.extend(GregoryPatch::extract_f_m_Vec3fa(patch.v, 2));
+          b.extend(GregoryPatch::extract_f_m_Vec3fa(patch.v, 3));
+        }
+#endif
+
+#if defined(_MSC_VER) && !defined(__INTEL_COMPILER)
+      _freea(ptr);
+#endif
+
+      //b.lower -= 1E5f;
+      //b.upper += 1E5f;
+
+      return b;
+    }
 
 #if defined(__MIC__)
     __forceinline void store(void *mem)
@@ -608,6 +805,11 @@ namespace embree
 #endif
 
     void updateEdgeLevels(const float edge_level[4],const SubdivMesh *const mesh);
+
+    __forceinline size_t gridOffset(const size_t y, const size_t x) const
+    {
+      return grid_u_res*y+x;
+    }
 
   private:
 
@@ -632,7 +834,6 @@ namespace embree
     {
       return get64BytesBlocksForGridSubTree(GridRange(0,grid_u_res-1,0,grid_v_res-1),leafBlocks);
     }
-
 
 
   public:
@@ -664,5 +865,109 @@ namespace embree
 
     return o;
   } 
+
+#if !defined(__MIC__)
+  /* eval grid over patch and stich edges when required */      
+  static __forceinline void evalGrid(const SubdivPatch1Base &patch,
+                                     float *__restrict__ const grid_x,
+                                     float *__restrict__ const grid_y,
+                                     float *__restrict__ const grid_z,
+                                     float *__restrict__ const grid_u,
+                                     float *__restrict__ const grid_v,
+                                     const SubdivMesh* const geom)
+  {
+    gridUVTessellator(patch.level,
+                      patch.grid_u_res,
+                      patch.grid_v_res,
+                      grid_u,
+                      grid_v);
+        
+    if (unlikely(patch.needsStiching()))
+      stichUVGrid(patch.level,patch.grid_u_res,patch.grid_v_res,grid_u,grid_v);
+        
+    const Vec2f uv0 = patch.getUV(0);
+    const Vec2f uv1 = patch.getUV(1);
+    const Vec2f uv2 = patch.getUV(2);
+    const Vec2f uv3 = patch.getUV(3);
+        
+#if defined(__AVX__)
+    for (size_t i=0;i<patch.grid_size_simd_blocks;i++)
+      {
+        avxf uu = load8f(&grid_u[8*i]);
+        avxf vv = load8f(&grid_v[8*i]);
+        avx3f vtx = patch.eval8(uu,vv);
+          
+          
+        if (unlikely(((SubdivMesh*)geom)->displFunc != NULL))
+          {
+            avx3f normal = patch.normal8(uu,vv);
+            normal = normalize_safe(normal) ;
+            
+	    const avxf patch_uu = bilinear_interpolate(uv0.x,uv1.x,uv2.x,uv3.x,uu,vv);
+	    const avxf patch_vv = bilinear_interpolate(uv0.y,uv1.y,uv2.y,uv3.y,uu,vv);
+            
+            ((SubdivMesh*)geom)->displFunc(((SubdivMesh*)geom)->userPtr,
+                                           patch.geom,
+                                           patch.prim,
+                                           (const float*)&patch_uu,
+                                           (const float*)&patch_vv,
+                                           (const float*)&normal.x,
+                                           (const float*)&normal.y,
+                                           (const float*)&normal.z,
+                                           (float*)&vtx.x,
+                                           (float*)&vtx.y,
+                                           (float*)&vtx.z,
+                                           8);
+          }
+          
+        *(avxf*)&grid_x[8*i] = vtx.x;
+        *(avxf*)&grid_y[8*i] = vtx.y;
+        *(avxf*)&grid_z[8*i] = vtx.z;        
+        *(avxf*)&grid_u[8*i] = uu;
+        *(avxf*)&grid_v[8*i] = vv;
+      }
+#else
+    for (size_t i=0;i<patch.grid_size_simd_blocks*2;i++) // 4-wide blocks for SSE
+      {
+        ssef uu = load4f(&grid_u[4*i]);
+        ssef vv = load4f(&grid_v[4*i]);
+        sse3f vtx = patch.eval4(uu,vv);
+          
+          
+        if (unlikely(((SubdivMesh*)geom)->displFunc != NULL))
+          {
+            sse3f normal = patch.normal4(uu,vv);
+            normal = normalize_safe(normal);
+
+	    const ssef patch_uu = bilinear_interpolate(uv0.x,uv1.x,uv2.x,uv3.x,uu,vv);
+	    const ssef patch_vv = bilinear_interpolate(uv0.y,uv1.y,uv2.y,uv3.y,uu,vv);
+            
+            ((SubdivMesh*)geom)->displFunc(((SubdivMesh*)geom)->userPtr,
+                                           patch.geom,
+                                           patch.prim,
+                                           (const float*)&patch_uu,
+                                           (const float*)&patch_vv,
+                                           (const float*)&normal.x,
+                                           (const float*)&normal.y,
+                                           (const float*)&normal.z,
+                                           (float*)&vtx.x,
+                                           (float*)&vtx.y,
+                                           (float*)&vtx.z,
+                                           4);
+          }
+          
+        *(ssef*)&grid_x[4*i] = vtx.x;
+        *(ssef*)&grid_y[4*i] = vtx.y;
+        *(ssef*)&grid_z[4*i] = vtx.z;        
+        *(ssef*)&grid_u[4*i] = uu;
+        *(ssef*)&grid_v[4*i] = vv;
+      }
+        
+#endif
+  }
+
+  void debugGridBorders(const SubdivPatch1Base &patch,const SubdivMesh* const geom);
+
+#endif
 
 }

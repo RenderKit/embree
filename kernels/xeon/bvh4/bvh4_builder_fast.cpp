@@ -734,38 +734,45 @@ namespace embree
           if (!mesh->valid(f)) continue;
 
 	  if (unlikely(fastUpdateMode == false))
-          {
-            feature_adaptive_subdivision_gregory(f,mesh->getHalfEdge(f),mesh->getVertexBuffer(),
-                                                 [&](const CatmullClarkPatch& ipatch, const Vec2f uv[4], const int subdiv[4])
             {
-              float edge_level[4] = {
-                ipatch.ring[0].edge_level,
-                ipatch.ring[1].edge_level,
-                ipatch.ring[2].edge_level,
-                ipatch.ring[3].edge_level
-              };
-              
-              for (size_t i=0;i<4;i++)
-                edge_level[i] = adjustDiscreteTessellationLevel(edge_level[i],subdiv[i]);
-              
-              const unsigned int patchIndex = base.size()+s.size();
-              assert(patchIndex < numPrimitives);
-              subdiv_patches[patchIndex] = SubdivPatch1Cached(ipatch, mesh->id, f, mesh, uv, edge_level);
-              
-              /* compute patch bounds */
-              const BBox3fa bounds = subdiv_patches[patchIndex].bounds(mesh);
-              
-              assert(bounds.lower.x <= bounds.upper.x);
-              assert(bounds.lower.y <= bounds.upper.y);
-              assert(bounds.lower.z <= bounds.upper.z);
-              
-              prims[patchIndex] = PrimRef(bounds,patchIndex);
-              s.add(bounds);
-            });
-          }
-	  else
-          {
             
+              feature_adaptive_subdivision_gregory(f,mesh->getHalfEdge(f),mesh->getVertexBuffer(),[&](const CatmullClarkPatch& ipatch, const Vec2f uv[4], const int subdiv[4])
+                                                   {
+                                                     //std::cout.precision(12);
+
+                                                     float edge_level[4] = {
+                                                       ipatch.ring[0].edge_level,
+                                                       ipatch.ring[1].edge_level,
+                                                       ipatch.ring[2].edge_level,
+                                                       ipatch.ring[3].edge_level
+                                                     };
+              
+                                                     for (size_t i=0;i<4;i++)
+                                                       edge_level[i] = adjustDiscreteTessellationLevel(edge_level[i],subdiv[i]);
+              
+                                                     const unsigned int patchIndex = base.size()+s.size();
+                                                     assert(patchIndex < numPrimitives);
+                                                     subdiv_patches[patchIndex] = SubdivPatch1Cached(ipatch, mesh->id, f, mesh, uv, edge_level);
+
+                                                     //DBG_PRINT(patchIndex);
+                                                     //DBG_PRINT(ipatch);
+                                                     //DBG_PRINT(subdiv_patches[patchIndex]);
+                                                     //debugGridBorders(subdiv_patches[patchIndex],mesh);
+
+              
+                                                     /* compute patch bounds */
+                                                     const BBox3fa bounds = subdiv_patches[patchIndex].bounds(mesh);
+              
+                                                     assert(bounds.lower.x <= bounds.upper.x);
+                                                     assert(bounds.lower.y <= bounds.upper.y);
+                                                     assert(bounds.lower.z <= bounds.upper.z);
+              
+                                                     prims[patchIndex] = PrimRef(bounds,patchIndex);
+                                                     s.add(bounds);
+                                                   });
+            }
+	  else
+            {
 	      const SubdivMesh::HalfEdge* first_half_edge = mesh->getHalfEdge(f);
 
 	      float edge_level[4] = {
@@ -791,6 +798,7 @@ namespace embree
         }
         return s;
       }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a, b); });
+
       
       t0 = getSeconds()-t0;
       DBG_CACHE_BUILDER(std::cout << "create prims in " << 1000.0f*t0 << "ms " << std::endl);
