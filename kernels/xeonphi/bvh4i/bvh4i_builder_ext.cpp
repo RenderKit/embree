@@ -994,7 +994,7 @@ PRINT(CORRECT_numPrims);
 
 #define FORCE_TESSELLATION_BOUNDS 1
 
-    BBox3fa getBounds(const SubdivPatch1Base &p,const SubdivMesh* const mesh) const
+    BBox3fa getBounds(const SubdivPatch1Base &p,const SubdivMesh* const mesh)
     {
       
 #if FORCE_TESSELLATION_BOUNDS == 1
@@ -1003,10 +1003,10 @@ PRINT(CORRECT_numPrims);
       __aligned(64) float v_array[(p.grid_size_simd_blocks + 1) * 16]; // +16 for unaligned access
 
       const unsigned int real_grid_size = p.grid_u_res*p.grid_v_res;
-      gridUVTessellator(level, p.grid_u_res, p.grid_v_res, u_array, v_array);
+      gridUVTessellator(p.level, p.grid_u_res, p.grid_v_res, u_array, v_array);
 
-      if (unlikely(needsStiching()))
-        stichUVGrid(level, p.grid_u_res, p.grid_v_res, u_array, v_array);
+      if (unlikely(p.needsStiching()))
+        stichUVGrid(p.level, p.grid_u_res, p.grid_v_res, u_array, v_array);
 
       // FIXME: remove
       for (size_t i = real_grid_size; i<p.grid_size_simd_blocks * 16; i++)
@@ -1023,26 +1023,26 @@ PRINT(CORRECT_numPrims);
           const mic_f u = load16f(&u_array[i * 16]);
           const mic_f v = load16f(&v_array[i * 16]);
 
-          mic3f vtx = eval16(u, v);
+          mic3f vtx = p.eval16(u, v);
 
 
           /* eval displacement function */
           if (unlikely(mesh->displFunc != NULL))
             {
-              mic3f normal = normal16(u, v);
+              mic3f normal = p.normal16(u, v);
               normal = normalize(normal);
 
-              const Vec2f uv0 = getUV(0);
-              const Vec2f uv1 = getUV(1);
-              const Vec2f uv2 = getUV(2);
-              const Vec2f uv3 = getUV(3);
+              const Vec2f uv0 = p.getUV(0);
+              const Vec2f uv1 = p.getUV(1);
+              const Vec2f uv2 = p.getUV(2);
+              const Vec2f uv3 = p.getUV(3);
 
               const mic_f patch_uu = bilinear_interpolate(uv0.x, uv1.x, uv2.x, uv3.x, u, v);
               const mic_f patch_vv = bilinear_interpolate(uv0.y, uv1.y, uv2.y, uv3.y, u, v);
 
               mesh->displFunc(mesh->userPtr,
-                              geom,
-                              prim,
+                              p.geom,
+                              p.prim,
                               (const float*)&patch_uu,
                               (const float*)&patch_vv,
                               (const float*)&normal.x,
@@ -1126,7 +1126,7 @@ PRINT(CORRECT_numPrims);
 						     subdiv_patches[patchIndex] = SubdivPatch1(ipatch, mesh->id, f, mesh, uv, edge_level);
 						   
 						     /* compute patch bounds */
-						     const BBox3fa bounds = subdiv_patches[patchIndex].bounds(mesh);
+						     const BBox3fa bounds = getBounds(subdiv_patches[patchIndex],mesh);
 						     assert(bounds.lower.x <= bounds.upper.x);
 						     assert(bounds.lower.y <= bounds.upper.y);
 						     assert(bounds.lower.z <= bounds.upper.z);
@@ -1150,7 +1150,7 @@ PRINT(CORRECT_numPrims);
  
 	      subdiv_patches[patchIndex].updateEdgeLevels(edge_level,mesh);
 
-	      const BBox3fa bounds = subdiv_patches[patchIndex].bounds(mesh);
+	      const BBox3fa bounds = getBounds(subdiv_patches[patchIndex],mesh);
 	      assert(bounds.lower.x <= bounds.upper.x);
 	      assert(bounds.lower.y <= bounds.upper.y);
 	      assert(bounds.lower.z <= bounds.upper.z);
@@ -1250,7 +1250,7 @@ PRINT(CORRECT_numPrims);
                                             uv,
                                             edge_level);
 	    	    
-	    const BBox3fa bounds = tmp.bounds(subdiv_mesh);
+	    const BBox3fa bounds = getBounds(tmp,subdiv_mesh);
 	    
 	    tmp.store(&acc[currentID]);
 
