@@ -50,8 +50,8 @@ namespace embree
       float ly1 = erange.upper.y + (erange.upper.y >= y1);
       if (lx0 >= lx1 || ly0 >= ly1) return;
 
-      const float scale_x = rcp(srange.upper.x-srange.lower.x);
-      const float scale_y = rcp(srange.upper.y-srange.lower.y);
+      const float scale_x = 1.0f / (srange.upper.x-srange.lower.x); // rcp precision is not enough
+      const float scale_y = 1.0f / (srange.upper.y-srange.lower.y);
 
       if (patch.isRegular()) 
       {

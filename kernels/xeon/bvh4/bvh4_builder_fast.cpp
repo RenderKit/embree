@@ -643,7 +643,6 @@ namespace embree
     BBox3fa getBounds(const SubdivPatch1Base &p, const SubdivMesh* const mesh)
     {
 #if FORCE_TESSELLATION_BOUNDS == 1
-      PING;
       
 #if !defined(_MSC_VER) || defined(__INTEL_COMPILER)
       __aligned(64) float u_array[(p.grid_size_simd_blocks + 1) * 16]; // +16 for unaligned access
@@ -662,6 +661,13 @@ namespace embree
 
       if (unlikely(p.needsStiching()))
         stichUVGrid(p.level, p.grid_u_res, p.grid_v_res, u_array, v_array);
+
+      const unsigned int real_grid_size = p.grid_u_res*p.grid_v_res;
+      for (size_t i = real_grid_size; i<p.grid_size_simd_blocks * 16; i++)
+          {
+            u_array[i] = 1.0f;
+            v_array[i] = 1.0f;
+          }
 
       
       BBox3fa b(empty);
@@ -743,8 +749,6 @@ namespace embree
                               (float*)&vtx.z,
                               8);
             }
-          //DBG_PRINT(vtx);
-          //DBG_PRINT(getBBox3fa(vtx));
           b.extend(getBBox3fa(vtx));
         }
 #endif
@@ -841,11 +845,9 @@ namespace embree
       return pinfo.size();
     }
 
-#if 0
     void debugGridBorders(const SubdivPatch1Base &patch,
                           const SubdivMesh* const geom)
     {
-      PING;
       assert( patch.grid_size_simd_blocks >= 1 );
 #if !defined(_MSC_VER) || defined(__INTEL_COMPILER)
       __aligned(64) float grid_x[(patch.grid_size_simd_blocks+1)*8]; 
@@ -921,7 +923,6 @@ namespace embree
       _freea(ptr);
 #endif      
     }
- #endif   
     
     void BVH4SubdivPatch1CachedBuilderFast::create_primitive_array_sequential(size_t threadIndex, size_t threadCount, PrimInfo& pinfo)
     {
@@ -1000,7 +1001,9 @@ namespace embree
 	      subdiv_patches[patchIndex].updateEdgeLevels(edge_level,mesh);
               
 	      /* compute patch bounds */
-	      const BBox3fa bounds = subdiv_patches[patchIndex].bounds(mesh);
+	      const BBox3fa bounds = getBounds(subdiv_patches[patchIndex],mesh);
+              if (bounds.lower.x > bounds.upper.x)
+                DBG_PRINT(bounds);
 	      assert(bounds.lower.x <= bounds.upper.x);
 	      assert(bounds.lower.y <= bounds.upper.y);
 	      assert(bounds.lower.z <= bounds.upper.z);
