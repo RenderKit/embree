@@ -640,6 +640,145 @@ namespace embree
 
 #define DBG_CACHE_BUILDER(x) 
 
+    BBox3fa getBounds(const SubdivPatch1Base &p, const SubdivMesh* const mesh)
+    {
+#if FORCE_TESSELLATION_BOUNDS == 1
+      PING;
+      
+#if !defined(_MSC_VER) || defined(__INTEL_COMPILER)
+      __aligned(64) float u_array[(p.grid_size_simd_blocks + 1) * 16]; // +16 for unaligned access
+      __aligned(64) float v_array[(p.grid_size_simd_blocks + 1) * 16]; // +16 for unaligned access
+
+#else
+      const size_t array_elements = (p.grid_size_simd_blocks + 1) * 8;
+
+      float *const ptr = (float*)_malloca(2 *array_elements * sizeof(float) + 64);
+      float *const uv_arrays = (float*)ALIGN_PTR(ptr, 64);
+      float *const u_array = &uv_arrays[array_elements*0];
+      float *const v_array = &uv_arrays[array_elements*1];
+#endif
+
+      gridUVTessellator(p.level, p.grid_u_res, p.grid_v_res, u_array, v_array);
+
+      if (unlikely(p.needsStiching()))
+        stichUVGrid(p.level, p.grid_u_res, p.grid_v_res, u_array, v_array);
+
+      
+      BBox3fa b(empty);
+      assert(p.grid_size_simd_blocks >= 1);
+
+#if !defined(__AVX__)
+
+      for (size_t i = 0; i<p.grid_size_simd_blocks * 2; i++)
+        {
+          ssef u = load4f(&u_array[i * 4]);
+          ssef v = load4f(&v_array[i * 4]);
+
+          sse3f vtx = p.eval4(u, v);
+
+          /* eval displacement function */
+          if (unlikely(mesh->displFunc != NULL))
+            {
+              const Vec2f uv0 = p.getUV(0);
+              const Vec2f uv1 = p.getUV(1);
+              const Vec2f uv2 = p.getUV(2);
+              const Vec2f uv3 = p.getUV(3);
+
+              const ssef patch_uu = bilinear_interpolate(uv0.x, uv1.x, uv2.x, uv3.x, u, v);
+              const ssef patch_vv = bilinear_interpolate(uv0.y, uv1.y, uv2.y, uv3.y, u, v);
+
+              sse3f nor = p.normal4(u, v);
+
+              nor = normalize_safe(nor);
+
+              mesh->displFunc(mesh->userPtr,
+                              p.geom,
+                              p.prim,
+                              (const float*)&patch_uu,
+                              (const float*)&patch_vv,
+                              (const float*)&nor.x,
+                              (const float*)&nor.y,
+                              (const float*)&nor.z,
+                              (float*)&vtx.x,
+                              (float*)&vtx.y,
+                              (float*)&vtx.z,
+                              4);
+            }
+          b.extend(getBBox3fa(vtx));
+        }
+
+#else
+
+      for (size_t i = 0; i<p.grid_size_simd_blocks; i++)
+        {
+          avxf u = load8f(&u_array[i * 8]);
+          avxf v = load8f(&v_array[i * 8]);          
+          avx3f vtx = p.eval8(u, v);
+
+          /* eval displacement function */
+          if (unlikely(mesh->displFunc != NULL))
+            {
+              const Vec2f uv0 = p.getUV(0);
+              const Vec2f uv1 = p.getUV(1);
+              const Vec2f uv2 = p.getUV(2);
+              const Vec2f uv3 = p.getUV(3);
+
+              const avxf patch_uu = bilinear_interpolate(uv0.x, uv1.x, uv2.x, uv3.x, u, v);
+              const avxf patch_vv = bilinear_interpolate(uv0.y, uv1.y, uv2.y, uv3.y, u, v);
+
+              avx3f nor = p.normal8(u, v);
+
+              nor = normalize_safe(nor);
+
+              mesh->displFunc(mesh->userPtr,
+                              p.geom,
+                              p.prim,
+                              (const float*)&patch_uu,
+                              (const float*)&patch_vv,
+                              (const float*)&nor.x,
+                              (const float*)&nor.y,
+                              (const float*)&nor.z,
+                              (float*)&vtx.x,
+                              (float*)&vtx.y,
+                              (float*)&vtx.z,
+                              8);
+            }
+          //DBG_PRINT(vtx);
+          //DBG_PRINT(getBBox3fa(vtx));
+          b.extend(getBBox3fa(vtx));
+        }
+#endif
+
+      b.lower.a = 0.0f;
+      b.upper.a = 0.0f;
+
+#if defined(DEBUG)
+      isfinite(b.lower.x);
+      isfinite(b.lower.y);
+      isfinite(b.lower.z);
+
+      isfinite(b.upper.x);
+      isfinite(b.upper.y);
+      isfinite(b.upper.z);
+#endif
+
+#else
+      BBox3fa b = patch.bounds();
+      if (unlikely(isGregoryPatch()))
+        {
+          b.extend(GregoryPatch::extract_f_m_Vec3fa(patch.v, 0));
+          b.extend(GregoryPatch::extract_f_m_Vec3fa(patch.v, 1));
+          b.extend(GregoryPatch::extract_f_m_Vec3fa(patch.v, 2));
+          b.extend(GregoryPatch::extract_f_m_Vec3fa(patch.v, 3));
+        }
+#endif
+
+#if defined(_MSC_VER) && !defined(__INTEL_COMPILER)
+      _freea(ptr);
+#endif
+      return b;
+    }
+
     void BVH4SubdivPatch1CachedBuilderFast::build(size_t threadIndex, size_t threadCount)
     {
       fastUpdateMode = true;
@@ -697,11 +836,92 @@ namespace embree
       }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo(a.size()+b.size(),empty,empty); });
 
       DBG_CACHE_BUILDER( DBG_PRINT(fastUpdateMode) );
-      DBG_CACHE_BUILDER( DBG_PRINT(pinfo.size()) );
+      DBG_CACHE_BUILDER( DBG_PRINT(pinfo) );
       DBG_CACHE_BUILDER( DBG_PRINT(needAllThreads) );
-
       return pinfo.size();
     }
+
+#if 0
+    void debugGridBorders(const SubdivPatch1Base &patch,
+                          const SubdivMesh* const geom)
+    {
+      PING;
+      assert( patch.grid_size_simd_blocks >= 1 );
+#if !defined(_MSC_VER) || defined(__INTEL_COMPILER)
+      __aligned(64) float grid_x[(patch.grid_size_simd_blocks+1)*8]; 
+      __aligned(64) float grid_y[(patch.grid_size_simd_blocks+1)*8];
+      __aligned(64) float grid_z[(patch.grid_size_simd_blocks+1)*8]; 
+        
+      __aligned(64) float grid_u[(patch.grid_size_simd_blocks+1)*8]; 
+      __aligned(64) float grid_v[(patch.grid_size_simd_blocks+1)*8];
+     
+#else
+      const size_t array_elements = (patch.grid_size_simd_blocks + 1) * 8;
+      float *const ptr = (float*)_malloca(5 * array_elements * sizeof(float) + 64);
+      float *const grid_arrays = (float*)ALIGN_PTR(ptr,64);
+
+      float *grid_x = &grid_arrays[array_elements * 0];
+      float *grid_y = &grid_arrays[array_elements * 1];
+      float *grid_z = &grid_arrays[array_elements * 2];
+      float *grid_u = &grid_arrays[array_elements * 3];
+      float *grid_v = &grid_arrays[array_elements * 4];
+
+        
+#endif   
+
+      DBG_PRINT( patch.grid_size_simd_blocks );
+
+      evalGrid(patch,grid_x,grid_y,grid_z,grid_u,grid_v,geom);
+
+      DBG_PRINT(patch.grid_u_res);
+      DBG_PRINT(patch.grid_v_res);
+      
+      DBG_PRINT("top");
+      for (size_t x=0;x<patch.grid_u_res;x++)
+        {
+          const size_t offset = patch.gridOffset(0,x);
+          std::cout << x << " -> " << Vec2f(grid_u[offset],grid_v[offset]) << " ";
+          std::cout << " / ";
+          std::cout << Vec3f(grid_x[offset],grid_y[offset],grid_z[offset]) << " ";
+          std::cout << std::endl;
+        }
+
+      DBG_PRINT("right");
+      for (size_t y=0;y<patch.grid_v_res;y++)
+        {
+          const size_t offset = patch.gridOffset(y,patch.grid_u_res-1);
+          std::cout << y << " -> " << Vec2f(grid_u[offset],grid_v[offset]) << " ";
+          std::cout << " / ";
+          std::cout << Vec3f(grid_x[offset],grid_y[offset],grid_z[offset]) << " ";
+          std::cout << std::endl;
+        }
+
+      DBG_PRINT("buttom");
+      for (ssize_t x=patch.grid_u_res-1;x>=0;x--)
+        {
+          const size_t offset = patch.gridOffset(patch.grid_v_res-1,x);
+          std::cout << x << " -> " << Vec2f(grid_u[offset],grid_v[offset]) << " ";
+          std::cout << " / ";
+          std::cout << Vec3f(grid_x[offset],grid_y[offset],grid_z[offset]) << " ";
+          std::cout << std::endl;
+        }
+
+
+      DBG_PRINT("left");
+      for (ssize_t y=patch.grid_v_res-1;y>=0;y--)
+        {
+          const size_t offset = patch.gridOffset(y,0);
+          std::cout << y << " -> " << Vec2f(grid_u[offset],grid_v[offset]) << " ";
+          std::cout << " / ";
+          std::cout << Vec3f(grid_x[offset],grid_y[offset],grid_z[offset]) << " ";
+          std::cout << std::endl;
+        }
+
+#if defined(_MSC_VER) && !defined(__INTEL_COMPILER)
+      _freea(ptr);
+#endif      
+    }
+ #endif   
     
     void BVH4SubdivPatch1CachedBuilderFast::create_primitive_array_sequential(size_t threadIndex, size_t threadCount, PrimInfo& pinfo)
     {
@@ -753,16 +973,9 @@ namespace embree
                                                      const unsigned int patchIndex = base.size()+s.size();
                                                      assert(patchIndex < numPrimitives);
                                                      subdiv_patches[patchIndex] = SubdivPatch1Cached(ipatch, mesh->id, f, mesh, uv, edge_level);
-
-                                                     //DBG_PRINT(patchIndex);
-                                                     //DBG_PRINT(ipatch);
-                                                     //DBG_PRINT(subdiv_patches[patchIndex]);
-                                                     //debugGridBorders(subdiv_patches[patchIndex],mesh);
-
               
                                                      /* compute patch bounds */
-                                                     const BBox3fa bounds = subdiv_patches[patchIndex].bounds(mesh);
-              
+                                                     const BBox3fa bounds = getBounds(subdiv_patches[patchIndex],mesh);
                                                      assert(bounds.lower.x <= bounds.upper.x);
                                                      assert(bounds.lower.y <= bounds.upper.y);
                                                      assert(bounds.lower.z <= bounds.upper.z);

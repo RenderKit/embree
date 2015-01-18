@@ -168,8 +168,11 @@ namespace embree
     const avxi grid_u_segments = avxi(grid_u_res)-1;
     const avxi grid_v_segments = avxi(grid_v_res)-1;
     
-    const avxf inv_grid_u_segments = rcp(avxf(grid_u_segments));
-    const avxf inv_grid_v_segments = rcp(avxf(grid_v_segments));
+    //const avxf inv_grid_u_segments = rcp(avxf(grid_u_segments));
+    //const avxf inv_grid_v_segments = rcp(avxf(grid_v_segments));
+
+    const avxf inv_grid_u_segments = 1.0f / (avxf(grid_u_segments));
+    const avxf inv_grid_v_segments = 1.0f / (avxf(grid_v_segments));
     
     unsigned int index = 0;
     avxi v_i( zero );

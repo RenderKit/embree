@@ -410,6 +410,8 @@ namespace embree
 #endif
       return subtree_root;
     }
+
+    
     
     
     BBox3fa SubdivPatch1CachedIntersector1::createSubTree(BVH4::NodeRef &curNode,
