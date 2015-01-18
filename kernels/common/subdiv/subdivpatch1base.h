@@ -668,6 +668,7 @@ namespace embree
     return o;
   } 
 
+#if !defined(__MIC__)
   /* eval grid over patch and stich edges when required */      
   static __forceinline void evalGrid(const SubdivPatch1Base &patch,
                                      float *__restrict__ const grid_x,
@@ -765,6 +766,7 @@ namespace embree
       }
 #endif        
   }
+#endif
 
 
 }
