@@ -16,10 +16,13 @@
 
 #include "tasking/taskscheduler.h"
 #include "math/math.h"
+#include "kernels/algorithms/sort.h"
 #include <tbb/tbb.h>
 
 namespace embree
 {
+  std::fstream fs;
+
   struct reduce_benchmark
   {
     reduce_benchmark() 
@@ -44,19 +47,40 @@ namespace embree
     {
       this->N = N;
       array = new double[N];
+
       for (size_t i=0; i<N; i++) 
         array[i] = drand48();
+
+      
+    }
+
+    double reduce_sequential(size_t N)
+    {
+      double sum = 0.0;
+      for (size_t i=0; i<N; i++) 
+        sum += sin(array[i]);
+      return sum;
     }
     
     double run_sequential (size_t N) 
     {
+      double t0 = getSeconds();
       double c0 = 0;
       for (size_t i=0; i<N; i++) c0 += sin(array[i]);
-      return c0;
+      volatile double result = c0;
+      double t1 = getSeconds();
+
+      /*double sum = reduce_sequential(N);
+      if (abs(sum-c0) > 1E-5) {
+        std::cerr << "internal error: " << sum << " != " << c0 << std::endl;
+        exit(1);
+        }*/
+      return t1-t0;
     }  
     
     double run_locksteptaskscheduler(size_t N)
     {
+      double t0 = getSeconds();
       this->N = N;
       LockStepTaskScheduler* scheduler = LockStepTaskScheduler::instance();
       scheduler->dispatchTask( task_reduce, this, 0, scheduler->getNumThreads() );
@@ -64,12 +88,20 @@ namespace embree
       double c = 0;
       for (size_t i=0; i<scheduler->getNumThreads(); i++) 
         c += threadReductions[i];
-      
-      return c;
+      volatile double result = c;
+      double t1 = getSeconds();
+
+      /*double sum = reduce_sequential(N);
+      if (abs(sum-c) > 1E-5) {
+        std::cerr << "internal error: " << sum << " != " << c << std::endl;
+        exit(1);
+        }*/
+      return t1-t0;
     }
     
     double run_tbb(size_t N)
     {
+      double t0 = getSeconds();
       double c2 = 0;
       //LockStepTaskScheduler::execute_tbb([&] () {
       c2 = tbb::parallel_reduce(tbb::blocked_range<size_t>(0,N,1024), 0.0, 
@@ -80,7 +112,15 @@ namespace embree
                                 },
                                 std::plus<double>());
       //});
-      return c2;
+      volatile double result = c2;
+      double t1 = getSeconds();
+
+      /*double sum = reduce_sequential(N);
+      if (abs(sum-c2) > 1E-5) {
+        std::cerr << "internal error: " << sum << " != " << c2 << std::endl;
+        exit(1);
+        }*/
+      return t1-t0;
     }
     
     const char* name;
@@ -89,8 +129,8 @@ namespace embree
   template<typename Closure>
   void benchmark(size_t N0, size_t N1, const char* name, const Closure& closure)
   {
-    std::cout << "# " << name << std::endl;
-    std::cout << "# N dt_min dt_avg dt_max M/s(min) M/s(avg) M/s(max)" << std::endl;
+    fs << "# " << name << std::endl;
+    fs << "# N dt_min dt_avg dt_max M/s(min) M/s(avg) M/s(max)" << std::endl;
     for (size_t N = N0; N < N1; N *= 1.5) 
     {
       double t_min = pos_inf;
@@ -98,15 +138,13 @@ namespace embree
       double t_max = neg_inf;
       for (size_t i=0; i<10; i++)
       {
-        double t0 = getSeconds();
-        volatile auto c1 = closure(N);
-        double dt = getSeconds()-t0;
+        double dt = closure(N);
         t_min = min(t_min,dt);
         if (i != 0) t_avg = t_avg + dt;
         t_max = max(t_max,dt);
       }
       t_avg /= 9.0;
-      std::cout << N << " " 
+      fs << N << " " 
                 << 1000.0f*t_min << " " << 1000.0f*t_avg << " " << 1000.0f*t_max << " " 
                 << 1E-6*N/t_max << " " << 1E-6*N/t_avg << " " << 1E-6*N/t_min << std::endl;
     }
@@ -116,19 +154,81 @@ namespace embree
 
   void main()
   {
-    const size_t N = 10*1024*1024;
+    const size_t N = 100*1024*1024;
+    const size_t N_seq = 10*1024*1024;
+
+    /* parallel reduction */
     reduce.init(N);
     
-    benchmark(1000,N,"sequential",[] (size_t N) -> double { return reduce.run_sequential(N); });
-    
+    fs.open ("benchmark_reduce_sequential.csv", std::fstream::out);
+    benchmark(1000,N_seq,"reduce_sequential",[] (size_t N) -> double { return reduce.run_sequential(N); });
+    fs.close();
+
+    fs.open ("benchmark_reduce_lockstep.csv", std::fstream::out);
     TaskScheduler::create();
-    execute_closure([] () -> double { benchmark(1000,N,"lockstep",[] (size_t N) -> double { return reduce.run_locksteptaskscheduler(N); }); return 0.0; });
+    execute_closure([] () -> double { benchmark(1000,N,"reduce_lockstep",[] (size_t N) -> double { return reduce.run_locksteptaskscheduler(N); }); return 0.0; });
     TaskScheduler::destroy();
+    fs.close();
 
     {
+      fs.open ("benchmark_reduce_tbb.csv", std::fstream::out);
       tbb::task_scheduler_init init(tbb::task_scheduler_init::default_num_threads());
-      benchmark(1000,N,"tbb",[] (size_t N) -> double { return reduce.run_tbb(N); });
+      benchmark(1000,N,"reduce_tbb",[] (size_t N) -> double { return reduce.run_tbb(N); });
+      fs.close();
     }
+
+    /* parallel sort */
+    int* src = new int[N];
+    int* array = new int[N];
+    int* temp = new int[N];
+    for (size_t i=0; i<N; i++) src[i] = random<int>();
+    for (size_t i=0; i<N; i++) array[i] = i;
+    for (size_t i=0; i<N; i++) temp[i] = i;
+
+    fs.open ("benchmark_sort_sequential.csv", std::fstream::out);
+    benchmark(1000,N_seq,"sort_sequential",[&] (size_t N) -> double 
+    { 
+      for (size_t i=0; i<N; i++) array[i] = src[i];
+      double t0 = getSeconds();
+      std::sort(array,array+N); 
+      double t1 = getSeconds();
+      //for (size_t i=1; i<N; i++) if (array[i] < array[i-1]) { std::cerr << "internal error" << std::endl;  exit(1); }
+      return t1-t0; 
+    });
+    fs.close();
+
+    {
+      fs.open ("benchmark_sort_tbb.csv", std::fstream::out);
+      tbb::task_scheduler_init init(tbb::task_scheduler_init::default_num_threads());
+      benchmark(1000,N,"sort_tbb",[&] (size_t N) -> double 
+      { 
+        for (size_t i=0; i<N; i++) array[i] = src[i];
+        double t0 = getSeconds();
+        tbb::parallel_sort(array,array+N); 
+        double t1 = getSeconds();
+        //for (size_t i=1; i<N; i++) if (array[i] < array[i-1]) { std::cerr << "internal error" << std::endl;  exit(1); }
+        return t1-t0; 
+      });
+      fs.close();
+    }
+
+    fs.open ("benchmark_sort_lockstep.csv", std::fstream::out);
+    TaskScheduler::create();
+    execute_closure([&] () -> double 
+    { 
+      benchmark(1000,N,"sort_lockstep",[&] (size_t N) -> double
+      { 
+        for (size_t i=0; i<N; i++) array[i] = src[i];
+        double t0 = getSeconds();
+        radix_sort_u32(array,temp,N); 
+        double t1 = getSeconds();
+        //for (size_t i=1; i<N; i++) if (array[i] < array[i-1]) { std::cerr << "internal error" << std::endl;  exit(1); }
+        return t1-t0; 
+      });
+      return 0.0;
+    });
+    TaskScheduler::destroy();
+    fs.close();
   }
 }
 
