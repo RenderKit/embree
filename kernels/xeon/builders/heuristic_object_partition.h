@@ -602,8 +602,7 @@ namespace embree
 	typedef atomic_set<PrimRefBlockT<Prim> > List;
 	
 	/*! construction executes the task */
-        template<typename Prim>
-        TaskSplitParallel(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, const Split* split, PrimRefBlockAlloc<Prim>& alloc, List& prims, 
+      TaskSplitParallel(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, const Split* split, PrimRefBlockAlloc<Prim>& alloc, List& prims, 
                           List& lprims_o, PrimInfo& linfo_o, List& rprims_o, PrimInfo& rinfo_o)
         : split(split), alloc(alloc), prims(prims), lprims_o(lprims_o), linfo_o(linfo_o), rprims_o(rprims_o), rinfo_o(rinfo_o)
         {

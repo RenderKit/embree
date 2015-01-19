@@ -52,7 +52,7 @@ namespace embree
     }
 
     __forceinline bool islocked() {
-      return mutex.islocked();
+      return mutex.isLocked();
     }
 
     __forceinline void lock() {

@@ -67,7 +67,7 @@ namespace embree
     }
     _mm_sfence(); // make written leaves globally visible
     
-    std::sort(heap.begin(),heap.end(),Continuation::Greater());
+    std::sort(heap.begin(),heap.end(),typename Continuation::Greater());
     
     parallel_continue<threshold2>( heap.begin(), heap.size(), [&](const Continuation& br, Allocator& alloc, ParallelContinue<Continuation >& cont) {
         recurseSequential(br,alloc,cont);

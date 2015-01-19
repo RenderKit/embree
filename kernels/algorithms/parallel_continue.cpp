@@ -45,10 +45,10 @@ namespace embree
 
       for (size_t N=10; N<160000; N*=2.1f)
       {
-        size_t N = 10000;
+        size_t NN = 10000;
         std::vector<Continuation> continuations;
         for (size_t i=0; i<1; i++) {
-          continuations.push_back(N);
+          continuations.push_back(NN);
           atomic_add(&cntr,1);
         }
 
