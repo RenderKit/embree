@@ -42,6 +42,18 @@ IF (__XEON__)
   TARGET_LINK_LIBRARIES(retrace sys simd embree)
   SET_PROPERTY(TARGET retrace PROPERTY FOLDER tests)
 
+  IF (USE_TBB)
+   ADD_DEFINITIONS(-DUSE_TBB)
+    ADD_EXECUTABLE(benchmark_tasking 
+      benchmark_tasking.cpp
+      ../../common/tasking/taskscheduler.cpp
+      ../../common/tasking/tasklogger.cpp
+      ../../common/tasking/taskscheduler_sys.cpp
+    )             
+    TARGET_LINK_LIBRARIES(benchmark_tasking sys ${TBB_LIBRARY})
+    SET_PROPERTY(TARGET benchmark_tasking PROPERTY FOLDER tests)
+  ENDIF()
+
   INSTALL(TARGETS verify benchmark retrace DESTINATION bin)
 
 ELSE ()

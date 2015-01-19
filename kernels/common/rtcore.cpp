@@ -28,10 +28,6 @@
 #include "sys/thread.h"
 #include "raystream_log.h"
 
-#if USE_TBB
-#include <tbb/tbb.h> // FIXME:
-#endif
-
 #define TRACE(x) //std::cout << #x << std::endl;
 
 namespace embree
@@ -228,110 +224,6 @@ namespace embree
 
   LockStepTaskScheduler regression_task_scheduler;
 
-   struct taskscheduler_regression_test// : public RegressionTest
-  {
-    taskscheduler_regression_test(const char* name) : name(name), N(0), NN(0), array(NULL) {
-      //registerRegressionTest(this);
-    }
-
-    size_t N;
-    size_t NN;
-    double* array;
-    double threadReductions[1024];
-
-    TASK_FUNCTION_(taskscheduler_regression_test,reduce);
-    
-    void reduce(size_t threadIndex, size_t threadCount)
-    {
-      const size_t begin = (threadIndex+0)*N/threadCount;
-      const size_t end   = (threadIndex+1)*N/threadCount;
-      double c = 0;
-      for (size_t i=begin; i<end; i++) c += sin(array[i]);
-      threadReductions[threadIndex] = c;
-    }
-
-    double reduce_with_lockstep_taskscheduler()
-    {
-      LockStepTaskScheduler* scheduler = LockStepTaskScheduler::instance();
-      scheduler->dispatchTask( task_reduce, this, 0, scheduler->getNumThreads() );
-
-      double c = 0;
-      for (size_t i=0; i<scheduler->getNumThreads(); i++) 
-        c += threadReductions[i];
-      
-      return c;
-    }
-
-    void init()
-    {
-      bool passed = true;
-      printf("%s::%s ... \n",TOSTRING(isa),name);
-      fflush(stdout);
-
-#if USE_TBB
-      int nt = tbb::task_scheduler_init::default_num_threads();
-      tbb::task_scheduler_init init(nt);
-#endif
-
-      NN = N = 10*1024*1024;
-      array = new double[N];
-      for (size_t i=0; i<N; i++) 
-        array[i] = drand48();
-    }
-
-    void run_sequential ()
-    {
-      double t0 = getSeconds();
-      double c0 = 0;
-      for (size_t N = 1000; N < NN; N *= 1.5) 
-      {
-        for (size_t i=0; i<N; i++) c0 += sin(array[i]);
-        double t1 = getSeconds();
-        std::cout << "sequential   : N = " << N << ", sum = " << c0 << ", " << 1000.0f*(t1-t0) << "ms, " << 1E-6*N/(t1-t0) << "M/s" << std::endl;
-      }
-    }  
-
-    void run_parallel()
-    {
-      for (size_t N = 1000; N < NN; N *= 1.5) 
-      {
-        this->N = N;
-        double t2 = getSeconds();
-        double c1 = reduce_with_lockstep_taskscheduler();
-        double t3 = getSeconds();
-        std::cout << "taskscheduler: N = " << N << ", sum = " << c1 << ", " << 1000.0f*(t3-t2) << "ms, " << 1E-6*N/(t3-t2) << "M/s" << std::endl;
-      }
-    }
-    
-    void run_tbb()
-    {
-#if USE_TBB
-      for (size_t N = 1000; N < NN; N *= 1.5) 
-      {
-        double t4 = getSeconds();
-        double c2 = 0;
-        //LockStepTaskScheduler::execute_tbb([&] () {
-        c2 = tbb::parallel_reduce(tbb::blocked_range<size_t>(0,N,1024), 0.0, 
-                                  [&](const tbb::blocked_range<size_t>& r, double value) -> double {
-                                    //PRINT(LockStepTaskScheduler::threadIndex());
-                                    double c = value; 
-                                    for (size_t i=r.begin(); i<r.end(); i++) c += sin(array[i]); 
-                                    return c;
-                                  },
-                                  std::plus<double>());
-        //});
-        double t5 = getSeconds();
-        std::cout << "tbb          : N = " << N << ", sum = " << c2 << ", " << 1000.0f*(t5-t4) << "ms, " << 1E-6*N/(t5-t4) << "M/s" << std::endl;
-      }
-#endif
-      
-    }
-
-    const char* name;
-  };
-
-  taskscheduler_regression_test taskscheduler_regression("taskscheduler_regression_test");
-
   void task_regression_testing(void* This, size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* taskGroup) 
   {
     if (regression_tests == NULL) return;
@@ -339,12 +231,9 @@ namespace embree
     LockStepTaskScheduler::Init init(threadIndex,threadCount,&regression_task_scheduler);
     if (threadIndex != 0) return;
     
-    taskscheduler_regression.run_parallel();
-    
     for (size_t i=0; i<regression_tests->size(); i++) 
       (*(*regression_tests)[i])();
   }
-
  
   RTCORE_API void rtcInit(const char* cfg) 
   {
@@ -519,14 +408,6 @@ namespace embree
 
     if (g_verbose >= 2) 
       printSettings();
-    
-    if (g_regression_testing) 
-    {
-      taskscheduler_regression.init();
-      taskscheduler_regression.run_sequential();
-      taskscheduler_regression.run_sequential();
-      taskscheduler_regression.run_tbb();
-    }
     
     TaskScheduler::create(g_numThreads);
 
