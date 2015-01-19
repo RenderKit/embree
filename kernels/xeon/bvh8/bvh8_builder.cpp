@@ -542,7 +542,7 @@ namespace embree
             t_parallel_total /= ITERATIONS;
 
             srand48(s*32323);
-#if 1
+#if 0
             t_serial_total = 0.0;
 #define ITERATIONS 20
             for (size_t j=0;j<ITERATIONS;j++)
