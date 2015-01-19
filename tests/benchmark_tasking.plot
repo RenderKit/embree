@@ -28,7 +28,7 @@ set style line 109 lc rgb "#000088" lt 1
 set term png
 
 set xtics rotate 90
-set xlabel 'Working Set Size'
+set xlabel 'Items'
 set logscale x
 set xrange [1000:100000000]
 
@@ -36,13 +36,13 @@ set xrange [1000:100000000]
 set ylabel 'Performance in M/s'
 
 set output "benchmark_reduce.png"
-set title "benchmark_reduce"
+set title "benchmark_reduce Dual Socket SNB"
 plot 'benchmark_reduce_sequential.csv' using ($1):($6) t "single threaded" with lines ls 108, \
      'benchmark_reduce_lockstep.csv' using ($1):($6) t "lockstep taskscheduler" with lines ls 102, \
      'benchmark_reduce_tbb.csv' using ($1):($6) t "threading building blocks" with lines ls 107
 
 set output "benchmark_sort.png"
-set title "benchmark_sort"
+set title "benchmark_sort Dual Socket SNB"
 plot 'benchmark_sort_sequential.csv' using ($1):($6) t "single threaded" with lines ls 108, \
      'benchmark_sort_lockstep.csv' using ($1):($6) t "lockstep taskscheduler" with lines ls 102, \
      'benchmark_sort_tbb.csv' using ($1):($6) t "threading building blocks" with lines ls 107
