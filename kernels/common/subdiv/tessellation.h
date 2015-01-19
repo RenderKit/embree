@@ -74,7 +74,7 @@ namespace embree
     assert(low_rate < high_rate);
     assert(high_rate >= 2);
     
-    const float inv_low_rate = 1.0f / (float)(low_rate-1);
+    const float inv_low_rate = rcp((float)(low_rate-1));
     const unsigned int dy = low_rate  - 1; 
     const unsigned int dx = high_rate - 1;
     
@@ -168,11 +168,8 @@ namespace embree
     const avxi grid_u_segments = avxi(grid_u_res)-1;
     const avxi grid_v_segments = avxi(grid_v_res)-1;
     
-    //const avxf inv_grid_u_segments = rcp(avxf(grid_u_segments));
-    //const avxf inv_grid_v_segments = rcp(avxf(grid_v_segments));
-
-    const avxf inv_grid_u_segments = 1.0f / (avxf(grid_u_segments));
-    const avxf inv_grid_v_segments = 1.0f / (avxf(grid_v_segments));
+    const avxf inv_grid_u_segments = rcp(avxf(grid_u_segments));
+    const avxf inv_grid_v_segments = rcp(avxf(grid_v_segments));
     
     unsigned int index = 0;
     avxi v_i( zero );
@@ -195,8 +192,8 @@ namespace embree
     const unsigned int grid_u_segments = grid_u_res-1;
     const unsigned int grid_v_segments = grid_v_res-1;
 
-    const float inv_grid_u_segments = 1.0f / (float)grid_u_segments;
-    const float inv_grid_v_segments = 1.0f / (float)grid_v_segments;
+    const float inv_grid_u_segments = rcp((float)grid_u_segments);
+    const float inv_grid_v_segments = rcp((float)grid_v_segments);
     
     /* initialize grid */
     unsigned int index = 0;

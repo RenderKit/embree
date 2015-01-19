@@ -279,6 +279,20 @@ namespace embree
           DBG_PRINT(patch[1].ring[3]);          
           FATAL("equalRingEval(patch[0].ring[2],patch[1].ring[3])");
         }
+
+      if (!equalRingEval(patch[3].ring[1],patch[2].ring[0]))
+        {
+          DBG_PRINT(patch[3].ring[1]);
+          DBG_PRINT(patch[2].ring[0]);          
+          FATAL("equalRingEval(patch[3].ring[1],patch[2].ring[0])");
+        }
+
+      if (!equalRingEval(patch[3].ring[2],patch[2].ring[3]))
+        {
+          DBG_PRINT(patch[3].ring[2]);
+          DBG_PRINT(patch[2].ring[3]);          
+          FATAL("equalRingEval(patch[3].ring[2],patch[2].ring[3])");
+        }
       
       
 #endif
