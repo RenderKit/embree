@@ -437,7 +437,6 @@ namespace embree
 
                     size_t mid = parallel_in_place_partitioning<16,PrimRef,PrimInfo>(test_array,
                                                                                      s,
-                                                                                     pivot,
                                                                                      0,
                                                                                      leftReduc,
                                                                                      rightReduc,
@@ -469,7 +468,6 @@ namespace embree
 
                 size_t mid_serial = serial_in_place_partitioning<unsigned int,unsigned int>(test_array,
                                                                                             s,
-                                                                                            pivot,
                                                                                             0,
                                                                                             leftReduc,
                                                                                             rightReduc,
@@ -492,10 +490,10 @@ namespace embree
 
 #endif
 
-#if 0
+#if 1
         PING;
 #define MAX_SIZE 1024*1024*512
-        test_array  = (unsigned int*)_mm_malloc(MAX_SIZE*sizeof(int),64);
+        unsigned int *test_array  = (unsigned int*)_mm_malloc(MAX_SIZE*sizeof(int),64);
 
         double t_parallel,t_serial;
 
@@ -530,11 +528,10 @@ namespace embree
 
                 size_t mid = parallel_in_place_partitioning<512,unsigned int,unsigned int>(test_array,
                                                                                            s,
-                                                                                           pivot,
                                                                                            0,
                                                                                            leftReduc,
                                                                                            rightReduc,
-                                                                                           [&] (const unsigned int &t0,const unsigned int &t1) { return t0 < t1; },
+                                                                                           [&] (const unsigned int &t0) { return t0 < pivot; },
                                                                                            [&] (const unsigned int &t0,const unsigned int &t1) { return t0; }
                                                                  );
 
@@ -562,11 +559,10 @@ namespace embree
 
                 size_t mid_serial = serial_in_place_partitioning<unsigned int,unsigned int>(test_array,
                                                                                             s,
-                                                                                            pivot,
                                                                                             0,
                                                                                             leftReduc,
                                                                                             rightReduc,
-                                                                                            [&] (const unsigned int &t0,const unsigned int &t1) { return t0 < t1; },
+                                                                                            [&] (const unsigned int &t0) { return t0 < pivot; },
                                                                                             [&] (const unsigned int &t0,const unsigned int &t1) { return t0; } );
 
                 t_serial = getSeconds() - t_serial;        
