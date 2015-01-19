@@ -166,7 +166,7 @@ namespace embree
 
     fs.open ("benchmark_reduce_lockstep.csv", std::fstream::out);
     TaskScheduler::create();
-    execute_closure([] () -> double { benchmark(1000,N,"reduce_lockstep",[] (size_t N) -> double { return reduce.run_locksteptaskscheduler(N); }); return 0.0; });
+    execute_closure([&] () -> double { benchmark(1000,N,"reduce_lockstep",[] (size_t N) -> double { return reduce.run_locksteptaskscheduler(N); }); return 0.0; });
     TaskScheduler::destroy();
     fs.close();
 

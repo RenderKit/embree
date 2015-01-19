@@ -272,7 +272,7 @@ namespace embree
       LockStepTaskScheduler* scheduler;
     };
 
-#if defined(USE_TBB)
+#if defined(USE_TBB) && 0
     template<typename Closure>
     struct TBBTask
     {

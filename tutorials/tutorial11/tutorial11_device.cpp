@@ -117,11 +117,10 @@ void build_sah(std::vector<PrimRef>& prims, isa::PrimInfo& pinfo)
           children[i].parent = &node->children[i];
         }
         *current.parent = node;
-        return node;
       },
 
       /* lambda function that creates BVH leaves */
-      [&](const isa::BuildRecord<Node*>& current, PrimRef* prims, FastAllocator::ThreadLocal* alloc)
+      [&](const isa::BuildRecord<Node*>& current, PrimRef* prims, FastAllocator::ThreadLocal* alloc) 
       {
         assert(current.size() == 1);
         Node* node = new (alloc->malloc(sizeof(LeafNode))) LeafNode(prims[current.begin].ID(),prims[current.begin].bounds());
