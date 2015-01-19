@@ -27,12 +27,14 @@
 
 namespace embree
 {
-  template<size_t BLOCK_SIZE, typename T, typename Compare>
+  template<size_t BLOCK_SIZE, typename T, typename V, typename Compare, typename Reduction>
   class __aligned(64) parallel_partition
     {
     private:
 
       const Compare& cmp;
+      const Reduction& reduction;
+      const V &init;
 
       static const size_t SERIAL_THRESHOLD = 16;
 
@@ -51,6 +53,9 @@ namespace embree
       
       unsigned int  leftRemainderBlockIDs[MAX_MIC_THREADS];
       unsigned int rightRemainderBlockIDs[MAX_MIC_THREADS];
+
+      V leftReductions[MAX_MIC_THREADS];
+      V rightReductions[MAX_MIC_THREADS];
 
 
       enum {
@@ -140,7 +145,11 @@ namespace embree
       }
 
       /* serial partitioning */
-      __forceinline size_t serialPartitioning(const size_t begin, const size_t end, const T pivot)
+      __forceinline size_t serialPartitioning(const size_t begin, 
+                                              const size_t end, 
+                                              const T pivot, 
+                                              V &leftReduc, 
+                                              V &rightReduc)
       {
         T* l = array + begin;
         T* r = array + end - 1;
@@ -149,19 +158,18 @@ namespace embree
           {
             while (likely(l <= r && cmp(*l,pivot) /* *l < pivot */)) 
               {
-                //func_left(*l);
+                leftReduc = reduction(leftReduc,*l);
                ++l;
               }
             while (likely(l <= r && !cmp(*r,pivot) /* *r >= pivot) */))
               {
-                //func_right(*r);
+                rightReduc = reduction(rightReduc,*r);
                 --r;
               }
             if (r<l) break;
 
-              //func_right(*l);
-              //func_left(*r);
-
+            leftReduc  = reduction(leftReduc ,*r);
+            rightReduc = reduction(rightReduc,*l);
             std::swap(*l,*r);
             l++; r--;
           }
@@ -174,23 +182,32 @@ namespace embree
                                             const size_t &left_end,
                                             size_t &right_begin,
                                             const size_t &right_end,
-                                            const T pivot)
+                                            const T pivot, 
+                                            V &leftReduc, 
+                                            V &rightReduc)
       {
         while(left_begin < left_end && right_begin < right_end)
           {
             while(cmp(array[left_begin],pivot) /* array[left_begin] < pivot */)
               {
+                leftReduc = reduction(leftReduc,array[left_begin]);
+
                 left_begin++;
                 if (left_begin >= left_end) break;
               }
 
             while(!cmp(array[right_begin],pivot) /* array[right_begin] >= pivot */)
               {
+                rightReduc = reduction(rightReduc,array[right_begin]);
+
                 right_begin++;
                 if (right_begin >= right_end) break;
               }
 
             if (unlikely(left_begin == left_end || right_begin == right_end)) break;
+            
+            leftReduc  = reduction(leftReduc ,array[right_begin]);
+            rightReduc = reduction(rightReduc,array[left_begin]);
 
             std::swap(array[left_begin++],array[right_begin++]);
           }
@@ -235,7 +252,7 @@ namespace embree
     public:
 
       /* initialize atomic counters */
-      __forceinline parallel_partition(T *array, size_t N, const Compare& cmp) : array(array), N(N), cmp(cmp)
+      __forceinline parallel_partition(T *array, size_t N, const V& init, const Compare& cmp, const Reduction& reduction) : array(array), N(N), init(init), cmp(cmp), reduction(reduction)
       {
         blockID.reset();
         numLeftRemainderBlocks  = 0;
@@ -250,7 +267,9 @@ namespace embree
       }
 
       /* each thread neutralizes blocks taken from left and right */
-      void thread_partition(const T pivot)
+      void thread_partition(const T pivot,
+                            V &leftReduction,
+                            V &rightReduction)
       {
         size_t mode = NEED_LEFT_BLOCK | NEED_RIGHT_BLOCK;
         
@@ -261,6 +280,9 @@ namespace embree
 
         size_t currentLeftBlock  = (size_t)-1;
         size_t currentRightBlock = (size_t)-1;
+
+        leftReduction  = init;
+        rightReduction = init;
 
         while(1)
           {
@@ -318,7 +340,7 @@ namespace embree
 
             assert(left_end <= right_begin);
 
-            mode = neutralizeBlocks(left_begin,left_end,right_begin,right_end,pivot);
+            mode = neutralizeBlocks(left_begin,left_end,right_begin,right_end,pivot,leftReduction,rightReduction);
           }        
 
         assert(left_end <= right_begin);
@@ -344,17 +366,25 @@ namespace embree
       }
 
       static void task_thread_partition(void* data, const size_t threadIndex, const size_t threadCount) {
-        parallel_partition<BLOCK_SIZE,T,Compare>* p = (parallel_partition<BLOCK_SIZE,T,Compare>*)data;
-        p->thread_partition(p->task_pivot);
+        parallel_partition<BLOCK_SIZE,T,V,Compare,Reduction>* p = (parallel_partition<BLOCK_SIZE,T,V,Compare,Reduction>*)data;
+        V left;
+        V right;
+        p->thread_partition(p->task_pivot,left,right);
+        p->leftReductions[threadIndex]  = left;
+        p->rightReductions[threadIndex] = right;
       } 
 
       /* main function for parallel in-place partitioning */
-      size_t partition_parallel(const T pivot)
-      {
-
+      size_t partition_parallel(const T pivot,
+                                V &leftReduction,
+                                V &rightReduction)
+      {    
+        leftReduction = init;
+        rightReduction = init;
+    
         if (N <= SERIAL_THRESHOLD)
           {
-            size_t mid = serialPartitioning(0,N,pivot);
+            size_t mid = serialPartitioning(0,N,pivot,leftReduction,rightReduction);
             DBG_PART(
                      DBG_PRINT( mid );
                      checkLeft(0,mid,pivot);
@@ -369,6 +399,12 @@ namespace embree
 
         LockStepTaskScheduler* scheduler = LockStepTaskScheduler::instance();
         const size_t numThreads = scheduler->getNumThreads();
+
+        for (size_t i=0;i<numThreads;i++)
+          {
+            leftReductions[i] = init;
+            rightReductions[i] = init;
+          }
 
         task_pivot = pivot;
         scheduler->dispatchTask(task_thread_partition,this,0,numThreads);
@@ -469,10 +505,16 @@ namespace embree
         DBG_CHECK(
                   assert( right_end - left_begin <= numThreads*3*BLOCK_SIZE);
                   )
-          
-        const size_t mid = serialPartitioning(left_begin,right_end,pivot);
 
+        const size_t mid = serialPartitioning(left_begin,right_end,pivot,leftReduction,rightReduction);
+
+        for (size_t i=0;i<numThreads;i++)
+          {
+            leftReduction  = reduction(leftReduction,leftReductions[i]);
+            rightReduction = reduction(rightReduction,rightReductions[i]);
+          }
         
+
         DBG_CHECK(
                  checkLeft(0,mid,pivot);
                  checkRight(mid,N,pivot);
@@ -482,9 +524,13 @@ namespace embree
       }
 
 
-      size_t partition_serial(const T pivot)
+      size_t partition_serial(const T pivot,
+                              V &leftReduction,
+                              V &rightReduction)
       {
-        const size_t mid = serialPartitioning(0,N,pivot);      
+        leftReduction = init;
+        rightReduction = init;
+        const size_t mid = serialPartitioning(0,N,pivot,leftReduction,rightReduction);      
         DBG_CHECK(
                  checkLeft(0,mid,pivot);
                  checkRight(mid,N,pivot);
@@ -494,18 +540,35 @@ namespace embree
 
     };
 
-  template<size_t BLOCK_SIZE, typename T, typename Compare>
-    __forceinline size_t parallel_in_place_partitioning(T *array, size_t N, T pivot, const Compare& cmp)
+  template<size_t BLOCK_SIZE, typename T, typename V, typename Compare, typename Reduction>
+    __forceinline size_t parallel_in_place_partitioning(T *array, 
+                                                        size_t N, 
+                                                        T pivot, 
+                                                        const V &init,
+                                                        V &leftReduction,
+                                                        V &rightReduction,
+                                                        const Compare& cmp, 
+                                                        const Reduction& reduction)
   {
-    parallel_partition<BLOCK_SIZE,T,Compare> p(array,N,cmp);
-    return p.partition_parallel(pivot);
+    parallel_partition<BLOCK_SIZE,T,V,Compare,Reduction> p(array,N,init,cmp,reduction );
+    return p.partition_parallel(pivot,leftReduction,rightReduction);    
   }
 
-  template<typename T, typename Compare>
-    __forceinline size_t serial_in_place_partitioning(T *array, size_t N, T pivot, const Compare& cmp)
+
+
+
+  template<typename T, typename V, typename Compare, typename Reduction>
+    __forceinline size_t serial_in_place_partitioning(T *array, 
+                                                      size_t N, 
+                                                      T pivot, 
+                                                      const V &init,
+                                                      V &leftReduction,
+                                                      V &rightReduction,
+                                                      const Compare& cmp, 
+                                                      const Reduction& reduction)
   {
-    parallel_partition<1,T,Compare> p(array,N,cmp);
-    return p.partition_serial(pivot);
+    parallel_partition<1,T,V,Compare,Reduction> p(array,N,init,cmp,reduction);
+    return p.partition_serial(pivot,leftReduction,rightReduction);
   }
 
  };

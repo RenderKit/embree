@@ -19,6 +19,7 @@
 #include "geometry/bezier1v.h"
 #include "builders/primrefalloc.h"
 #include "heuristic_fallback.h"
+#include "algorithms/parallel_partition.h"
 
 namespace embree
 {
