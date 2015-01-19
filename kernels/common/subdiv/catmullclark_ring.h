@@ -574,7 +574,7 @@ namespace embree
     {
       o << "vtx " << c.vtx << " size = " << c.edge_valence << ", " << 
 	"hard_edge = " << c.border_index << ", face_valence " << c.face_valence << 
-	", edge_level = " << c.edge_level << ", vertex_level = " << c.vertex_level << ", ring: " << std::endl;
+	", edge_level = " << c.edge_level << ", vertex_level = " << c.vertex_level << ", eval_start_index: " << c.eval_start_index << ", ring: " << std::endl;
       
       for (size_t i=0; i<c.edge_valence; i++) {
         o << i << " -> " << c.ring[i];

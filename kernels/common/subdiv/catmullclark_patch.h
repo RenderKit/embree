@@ -195,7 +195,7 @@ namespace embree
         dest.crease_weight[i] = 0.0f;
 
       //////////////////////////////
-      dest.eval_start_index       = (offset%8)>>1;
+      dest.eval_start_index       = (8-offset)>>1;
       dest.eval_unique_identifier = 0;
       //////////////////////////////
     }
@@ -267,34 +267,66 @@ namespace embree
 
 #if 0
       DBG_PRINT("CHECK_RINGS");
+      std::cout.precision(10);
+
+      /* outer rings */
       if (!equalRingEval(patch[0].ring[1],patch[1].ring[0]))
         {
           DBG_PRINT(patch[0].ring[1]);
           DBG_PRINT(patch[1].ring[0]);          
           FATAL("equalRingEval(patch[0].ring[1],patch[1].ring[0])");
         }
-      if (!equalRingEval(patch[0].ring[2],patch[1].ring[3]))
+
+      if (!equalRingEval(patch[1].ring[2],patch[2].ring[1]))
         {
-          DBG_PRINT(patch[0].ring[2]);
-          DBG_PRINT(patch[1].ring[3]);          
-          FATAL("equalRingEval(patch[0].ring[2],patch[1].ring[3])");
+          DBG_PRINT(patch[1].ring[2]);
+          DBG_PRINT(patch[2].ring[1]);          
+          FATAL("equalRingEval(patch[1].ring[2],patch[2].ring[1])");
         }
 
-      if (!equalRingEval(patch[3].ring[1],patch[2].ring[0]))
+      if (!equalRingEval(patch[2].ring[3],patch[3].ring[2]))
         {
-          DBG_PRINT(patch[3].ring[1]);
-          DBG_PRINT(patch[2].ring[0]);          
-          FATAL("equalRingEval(patch[3].ring[1],patch[2].ring[0])");
+          DBG_PRINT(patch[2].ring[3]);
+          DBG_PRINT(patch[3].ring[2]);          
+          FATAL("equalRingEval(patch[2].ring[3],patch[3].ring[2])");
+        }
+      
+      if (!equalRingEval(patch[3].ring[0],patch[0].ring[3]))
+        {
+          DBG_PRINT(patch[3].ring[0]);
+          DBG_PRINT(patch[0].ring[3]);          
+          FATAL("equalRingEval(patch[3].ring[0],patch[0].ring[3])");
         }
 
-      if (!equalRingEval(patch[3].ring[2],patch[2].ring[3]))
-        {
-          DBG_PRINT(patch[3].ring[2]);
-          DBG_PRINT(patch[2].ring[3]);          
-          FATAL("equalRingEval(patch[3].ring[2],patch[2].ring[3])");
-        }
+      /* inner rings */
       
-      
+      if (!equalRingEval(patch[0].ring[2],patch[1].ring[3])) 
+        { 
+          DBG_PRINT(patch[0].ring[2]); 
+          DBG_PRINT(patch[1].ring[3]);           
+          FATAL("equalRingEval(patch[0].ring[2],patch[1].ring[3])"); 
+        } 
+
+      if (!equalRingEval(patch[1].ring[3],patch[2].ring[0])) 
+        { 
+          DBG_PRINT(patch[1].ring[3]); 
+          DBG_PRINT(patch[2].ring[0]);           
+          FATAL("equalRingEval(patch[1].ring[3],patch[2].ring[0])"); 
+        } 
+
+      if (!equalRingEval(patch[2].ring[0],patch[3].ring[1])) 
+        { 
+          DBG_PRINT(patch[2].ring[0]); 
+          DBG_PRINT(patch[3].ring[1]);           
+          FATAL("equalRingEval(patch[2].ring[0],patch[3].ring[1])"); 
+        } 
+
+      if (!equalRingEval(patch[3].ring[1],patch[0].ring[2])) 
+        { 
+          DBG_PRINT(patch[3].ring[1]); 
+          DBG_PRINT(patch[0].ring[2]);           
+          FATAL("equalRingEval(patch[3].ring[1],patch[0].ring[2])"); 
+        }       
 #endif
     }
 
