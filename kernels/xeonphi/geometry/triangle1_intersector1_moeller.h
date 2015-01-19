@@ -278,4 +278,268 @@ namespace embree
     }
 
   };
+
+
+  //////////////////////////////////////////////////////////////////////////////////////////////////
+  //////////////////////////////////////////////////////////////////////////////////////////////////
+  //////////////////////////////////////////////////////////////////////////////////////////////////
+
+  template< bool ENABLE_INTERSECTION_FILTER>
+    struct Triangle1Intersector1MoellerTrumboreRobust
+    {
+
+      __forceinline static bool intersect1(const mic_f &dir_xyz,
+					   const mic_f &org_xyz,
+					   const mic_f &min_dist_xyz,
+					   mic_f &max_dist_xyz,
+					   const mic_i &and_mask,
+					   Ray& ray, 
+					   const Scene     *__restrict__ const geometry,
+					   const Triangle1 * __restrict__ const tptr)
+      {
+	const mic_f zero = mic_f::zero();
+	prefetch<PFHINT_L1>(tptr + 3);
+	prefetch<PFHINT_L1>(tptr + 2);
+	prefetch<PFHINT_L1>(tptr + 1);
+	prefetch<PFHINT_L1>(tptr + 0); 
+	const mic_f _v0 = gather_4f_zlc(and_mask,
+					(float*)&tptr[0].v0,
+					(float*)&tptr[1].v0,
+					(float*)&tptr[2].v0,
+					(float*)&tptr[3].v0);
+	      
+	const mic_f _v1 = gather_4f_zlc(and_mask,
+					(float*)&tptr[0].v1,
+					(float*)&tptr[1].v1,
+					(float*)&tptr[2].v1,
+					(float*)&tptr[3].v1);
+	      
+	const mic_f _v2 = gather_4f_zlc(and_mask,
+					(float*)&tptr[0].v2,
+					(float*)&tptr[1].v2,
+					(float*)&tptr[2].v2,
+					(float*)&tptr[3].v2);
+	const mic_f v0 = _v0 - org_xyz;
+	const mic_f v1 = _v1 - org_xyz;
+	const mic_f v2 = _v2 - org_xyz;
+
+	const mic_f e0 = v2 - v0;
+	const mic_f e1 = v0 - v1;	     
+	const mic_f e2 = v1 - v2;	     
+
+	const mic_f Ng1     = lcross_xyz(e1,e0);
+	const mic_f Ng      = Ng1+Ng1;
+	const mic_f den     = ldot3_xyz(Ng,dir_xyz);	      
+	const mic_f rcp_den = rcp(den);
+
+#if defined(RTCORE_BACKFACE_CULLING)
+	mic_m m_valid = (mic_m)0x1111 & (den > zero);
+#else
+	mic_m m_valid = (mic_m)0x1111;
+#endif
+
+	const mic_f u = ldot3_xyz(lcross_xyz(v2+v0,e0),dir_xyz) * rcp_den; 
+	m_valid       = ge( m_valid, u, zero);
+
+	const mic_f v = ldot3_xyz(lcross_xyz(v0+v1,e1),dir_xyz) * rcp_den; 
+	m_valid       = ge( m_valid, v, zero);
+
+	const mic_f w = ldot3_xyz(lcross_xyz(v1+v2,e2),dir_xyz) * rcp_den;  
+	m_valid       = ge( m_valid, w, zero);
+
+
+	if (unlikely(none(m_valid))) return false;
+
+	const mic_m m_den = ne(m_valid,den,zero);
+	const mic_f t = ldot3_xyz(v0,Ng) * rcp_den;
+	mic_m m_final      = lt(lt(m_den,min_dist_xyz,t),t,max_dist_xyz);
+
+#if defined(RTCORE_RAY_MASK)
+	const mic_i rayMask(ray.mask);
+	const mic_i triMask = getTriMasks(tptr);
+	const mic_m m_ray_mask = (rayMask & triMask) != mic_i::zero();
+	m_final &= m_ray_mask;	      
+#endif
+
+
+	//////////////////////////////////////////////////////////////////////////////////////////////////
+
+	/* did the ray hot one of the four triangles? */
+	if (unlikely(any(m_final)))
+	  {
+	    /* intersection filter test */
+	    if (ENABLE_INTERSECTION_FILTER) 
+	      {
+		mic_f org_max_dist_xyz = max_dist_xyz;
+
+		/* did the ray hit one of the four triangles? */
+		while (any(m_final)) 
+		  {
+		    max_dist_xyz  = select(m_final,t,org_max_dist_xyz);
+		    const mic_f min_dist = vreduce_min(max_dist_xyz);
+		    const mic_m m_dist = eq(min_dist,max_dist_xyz);
+		    const size_t vecIndex = bitscan(toInt(m_dist));
+		    const size_t triIndex = vecIndex >> 2;
+		    const Triangle1  *__restrict__ tri_ptr = tptr + triIndex;
+		    const mic_m m_tri = m_dist^(m_dist & (mic_m)((unsigned int)m_dist - 1));
+		    const mic_f gnormalx = mic_f(tri_ptr->Ng.x);
+		    const mic_f gnormaly = mic_f(tri_ptr->Ng.y);
+		    const mic_f gnormalz = mic_f(tri_ptr->Ng.z);
+		    const int geomID = tri_ptr->geomID();
+		    const int primID = tri_ptr->primID();
+                
+		    const Geometry* geom = geometry->get(geomID);
+		    if (likely(!geom->hasIntersectionFilter1())) 
+		      {
+			ray.update(m_tri,min_dist,u,v,gnormalx,gnormaly,gnormalz,geomID,primID);
+			break;
+		      }
+                
+		    if (runIntersectionFilter1(geom,ray,u,v,min_dist,gnormalx,gnormaly,gnormalz,m_tri,geomID,primID)) {
+		      break;
+		    }
+		    m_final ^= m_tri;
+		  }
+		max_dist_xyz = ray.tfar;
+	      }
+	    else
+	      {
+		max_dist_xyz  = select(m_final,t,max_dist_xyz);
+		const mic_f min_dist = vreduce_min(max_dist_xyz);
+		const mic_m m_dist = eq(min_dist,max_dist_xyz);
+
+		prefetch<PFHINT_L1EX>((mic_f*)&ray + 0);
+		prefetch<PFHINT_L1EX>((mic_f*)&ray + 1);
+
+		const size_t vecIndex = bitscan(toInt(m_dist));
+		const size_t triIndex = vecIndex >> 2;
+
+		const Triangle1  *__restrict__ tri_ptr = tptr + triIndex;
+
+		const mic_m m_tri = m_dist^(m_dist & (mic_m)((unsigned int)m_dist - 1));
+
+		const mic_f gnormalx = mic_f(tri_ptr->Ng.x);
+		const mic_f gnormaly = mic_f(tri_ptr->Ng.y);
+		const mic_f gnormalz = mic_f(tri_ptr->Ng.z);
+
+		max_dist_xyz = min_dist;
+
+		ray.update(m_tri,min_dist,u,v,gnormalx,gnormaly,gnormalz,tri_ptr->geomID(),tri_ptr->primID());
+	      }
+	  return true;
+
+	}
+      return false;
+    }
+
+
+      __forceinline static mic_m occluded1(const mic_f &dir_xyz,
+					   const mic_f &org_xyz,
+					   const mic_f &min_dist_xyz,
+					   const mic_f &max_dist_xyz,
+					   const mic_i &and_mask,
+					   const Ray& ray, 
+					   const Scene     *__restrict__ const geometry,
+					   const Triangle1 * __restrict__ const tptr)
+      {
+	const mic_f zero = mic_f::zero();
+
+	prefetch<PFHINT_L1>(tptr + 3);
+	prefetch<PFHINT_L1>(tptr + 2);
+	prefetch<PFHINT_L1>(tptr + 1);
+	prefetch<PFHINT_L1>(tptr + 0); 
+	const mic_f _v0 = gather_4f_zlc(and_mask,
+					(float*)&tptr[0].v0,
+					(float*)&tptr[1].v0,
+					(float*)&tptr[2].v0,
+					(float*)&tptr[3].v0);
+	      
+	const mic_f _v1 = gather_4f_zlc(and_mask,
+					(float*)&tptr[0].v1,
+					(float*)&tptr[1].v1,
+					(float*)&tptr[2].v1,
+					(float*)&tptr[3].v1);
+	      
+	const mic_f _v2 = gather_4f_zlc(and_mask,
+					(float*)&tptr[0].v2,
+					(float*)&tptr[1].v2,
+					(float*)&tptr[2].v2,
+					(float*)&tptr[3].v2);
+
+	      
+	const mic_f v0 = _v0 - org_xyz;
+	const mic_f v1 = _v1 - org_xyz;
+	const mic_f v2 = _v2 - org_xyz;
+
+	const mic_f e0 = v2 - v0;
+	const mic_f e1 = v0 - v1;	     
+	const mic_f e2 = v1 - v2;	     
+
+	const mic_f Ng1     = lcross_xyz(e1,e0);
+	const mic_f Ng      = Ng1+Ng1;
+	const mic_f den     = ldot3_xyz(Ng,dir_xyz);	      
+	const mic_f rcp_den = rcp(den);
+
+#if defined(RTCORE_BACKFACE_CULLING)
+	mic_m m_valid = (mic_m)0x1111 & (den > zero);
+#else
+	mic_m m_valid = (mic_m)0x1111;
+#endif
+
+	const mic_f u = ldot3_xyz(lcross_xyz(v2+v0,e0),dir_xyz) * rcp_den; 
+	m_valid       = ge( m_valid, u, zero);
+
+	const mic_f v = ldot3_xyz(lcross_xyz(v0+v1,e1),dir_xyz) * rcp_den; 
+	m_valid       = ge( m_valid, v, zero);
+
+	const mic_f w = ldot3_xyz(lcross_xyz(v1+v2,e2),dir_xyz) * rcp_den;  
+	m_valid       = ge( m_valid, w, zero);
+
+	const mic_m m_den = ne(m_valid,den,zero);
+	const mic_f t = ldot3_xyz(v0,Ng) * rcp_den;
+
+	if (unlikely(none(m_valid))) return false;
+
+	mic_m m_final  = lt(lt(m_valid,min_dist_xyz,t),t,max_dist_xyz);
+
+#if defined(RTCORE_RAY_MASK)
+	const mic_i rayMask(ray16.mask[rayIndex]);
+	const mic_i triMask = getTriMasks(tptr); 
+	const mic_m m_ray_mask = (rayMask & triMask) != mic_i::zero();
+	m_final &= m_ray_mask;	      
+#endif
+
+	if (ENABLE_INTERSECTION_FILTER)
+	  {
+	    /* did the ray hit one of the four triangles? */
+	    while (any(m_final)) 
+	      {
+		const mic_f temp_t  = select(m_final,t,max_dist_xyz);
+		const mic_f min_dist = vreduce_min(temp_t);
+		const mic_m m_dist = eq(min_dist,temp_t);
+		const size_t vecIndex = bitscan(toInt(m_dist));
+		const size_t triIndex = vecIndex >> 2;
+		const Triangle1  *__restrict__ tri_ptr = tptr + triIndex;
+		const mic_m m_tri = m_dist^(m_dist & (mic_m)((unsigned int)m_dist - 1));
+		const mic_f gnormalx = mic_f(tri_ptr->Ng.x);
+		const mic_f gnormaly = mic_f(tri_ptr->Ng.y);
+		const mic_f gnormalz = mic_f(tri_ptr->Ng.z);
+		const int geomID = tri_ptr->geomID();
+		const int primID = tri_ptr->primID();                
+		const Geometry* geom = geometry->get(geomID);
+
+		if (likely(!geom->hasOcclusionFilter1())) break;
+                
+		if (runOcclusionFilter1(geom,(Ray&)ray,u,v,min_dist,gnormalx,gnormaly,gnormalz,m_tri,geomID,primID)) 
+		  break;
+
+		m_final ^= m_tri; /* clear bit */
+	      }
+	  }
+
+	return m_final;
+      }
+
+    };
+
 }

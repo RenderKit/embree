@@ -469,16 +469,16 @@ namespace embree
 	      NodeRef curNode = stack_node[sindex-1];
 	      sindex--;
 
-	      traverse_single_intersect<false>(curNode,
-					       sindex,
-					       rdir_xyz,
-					       org_rdir_xyz,
-					       min_dist_xyz,
-					       max_dist_xyz,
-					       stack_node,
-					       stack_dist,
-					       nodes,
-					       leaf_mask);
+	      traverse_single_intersect<false,true>(curNode,
+						    sindex,
+						    rdir_xyz,
+						    org_rdir_xyz,
+						    min_dist_xyz,
+						    max_dist_xyz,
+						    stack_node,
+						    stack_dist,
+						    nodes,
+						    leaf_mask);
 		   
 
 	      /* return if stack is empty */
@@ -522,16 +522,16 @@ namespace embree
 		  curNode = sub_stack_node[sub_sindex-1];
 		  sub_sindex--;
 
-		  traverse_single_intersect<false>(curNode,
-						   sub_sindex,
-						   rdir_xyz,
-						   org_rdir_xyz,
-						   min_dist_xyz,
-						   max_dist_xyz,
-						   sub_stack_node,
-						   sub_stack_dist,
-						   (BVH4i::Node*)lazymem,
-						   leaf_mask);
+		  traverse_single_intersect<false, true>(curNode,
+							 sub_sindex,
+							 rdir_xyz,
+							 org_rdir_xyz,
+							 min_dist_xyz,
+							 max_dist_xyz,
+							 sub_stack_node,
+							 sub_stack_dist,
+							 (BVH4i::Node*)lazymem,
+							 leaf_mask);
 		 		   
 
 		  /* return if stack is empty */
@@ -651,15 +651,15 @@ namespace embree
 	      NodeRef curNode = stack_node[sindex-1];
 	      sindex--;
 
-	      traverse_single_occluded< false >(curNode,
-						sindex,
-						rdir_xyz,
-						org_rdir_xyz,
-						min_dist_xyz,
-						max_dist_xyz,
-						stack_node,
-						nodes,
-						leaf_mask);
+	      traverse_single_occluded< false, true >(curNode,
+						      sindex,
+						      rdir_xyz,
+						      org_rdir_xyz,
+						      min_dist_xyz,
+						      max_dist_xyz,
+						      stack_node,
+						      nodes,
+						      leaf_mask);
 
 	      /* return if stack is empty */
 	      if (unlikely(curNode == BVH4i::invalidNode)) break;
@@ -705,15 +705,15 @@ namespace embree
 		      curNode = sub_stack_node[sub_sindex-1];
 		      sub_sindex--;
 
-		      traverse_single_occluded<false>(curNode,
-						      sub_sindex,
-						      rdir_xyz,
-						      org_rdir_xyz,
-						      min_dist_xyz,
-						      max_dist_xyz,
-						      sub_stack_node,
-						      (BVH4i::Node*)lazymem,
-						      leaf_mask);
+		      traverse_single_occluded<false, true>(curNode,
+							    sub_sindex,
+							    rdir_xyz,
+							    org_rdir_xyz,
+							    min_dist_xyz,
+							    max_dist_xyz,
+							    sub_stack_node,
+							    (BVH4i::Node*)lazymem,
+							    leaf_mask);
 		 		   
 
 		      /* return if stack is empty */
@@ -805,16 +805,16 @@ namespace embree
 	  NodeRef curNode = stack_node[sindex-1];
 	  sindex--;
 
-	  traverse_single_intersect<false>(curNode,
-					   sindex,
-					   rdir_xyz,
-					   org_rdir_xyz,
-					   min_dist_xyz,
-					   max_dist_xyz,
-					   stack_node,
-					   stack_dist,
-					   nodes,
-					   leaf_mask);            		    
+	  traverse_single_intersect<false, true>(curNode,
+						 sindex,
+						 rdir_xyz,
+						 org_rdir_xyz,
+						 min_dist_xyz,
+						 max_dist_xyz,
+						 stack_node,
+						 stack_dist,
+						 nodes,
+						 leaf_mask);            		    
 
 	  /* return if stack is empty */
 	  if (unlikely(curNode == BVH4i::invalidNode)) break;
@@ -857,16 +857,16 @@ namespace embree
 	      curNode = sub_stack_node[sub_sindex-1];
 	      sub_sindex--;
 
-	      traverse_single_intersect<false>(curNode,
-					       sub_sindex,
-					       rdir_xyz,
-					       org_rdir_xyz,
-					       min_dist_xyz,
-					       max_dist_xyz,
-					       sub_stack_node,
-					       sub_stack_dist,
-					       (BVH4i::Node*)lazymem,
-					       leaf_mask);
+	      traverse_single_intersect<false,true>(curNode,
+						    sub_sindex,
+						    rdir_xyz,
+						    org_rdir_xyz,
+						    min_dist_xyz,
+						    max_dist_xyz,
+						    sub_stack_node,
+						    sub_stack_dist,
+						    (BVH4i::Node*)lazymem,
+						    leaf_mask);
 		 		   
 
 	      /* return if stack is empty */
@@ -940,15 +940,15 @@ namespace embree
 	  sindex--;
             
 	  
-	  traverse_single_occluded< false >(curNode,
-					    sindex,
-					    rdir_xyz,
-					    org_rdir_xyz,
-					    min_dist_xyz,
-					    max_dist_xyz,
-					    stack_node,
-					    nodes,
-					    leaf_mask);	    
+	  traverse_single_occluded< false, true >(curNode,
+						  sindex,
+						  rdir_xyz,
+						  org_rdir_xyz,
+						  min_dist_xyz,
+						  max_dist_xyz,
+						  stack_node,
+						  nodes,
+						  leaf_mask);	    
 
 	  /* return if stack is empty */
 	  if (unlikely(curNode == BVH4i::invalidNode)) break;
@@ -994,15 +994,15 @@ namespace embree
 		  curNode = sub_stack_node[sub_sindex-1];
 		  sub_sindex--;
 
-		  traverse_single_occluded<false>(curNode,
-						  sub_sindex,
-						  rdir_xyz,
-						  org_rdir_xyz,
-						  min_dist_xyz,
-						  max_dist_xyz,
-						  sub_stack_node,
-						  (BVH4i::Node*)lazymem,
-						  leaf_mask);
+		  traverse_single_occluded<false,true>(curNode,
+						       sub_sindex,
+						       rdir_xyz,
+						       org_rdir_xyz,
+						       min_dist_xyz,
+						       max_dist_xyz,
+						       sub_stack_node,
+						       (BVH4i::Node*)lazymem,
+						       leaf_mask);
 		 		   
 
 		  /* return if stack is empty */

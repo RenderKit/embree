@@ -25,7 +25,7 @@ namespace embree
   namespace isa
   {
     /*! BVH4i traverser. Test ray traversal implementation for a BVH4i. */
-    template<typename LeafIntersector, bool ENABLE_COMPRESSED_BVH4I_NODES>
+    template<typename LeafIntersector, bool ENABLE_COMPRESSED_BVH4I_NODES, bool ROBUST>
     class BVH4iIntersector16Test
     {
       /* shortcuts for frequently used types */

@@ -24,7 +24,7 @@ namespace embree
   // ====================================================================================================================
   // ====================================================================================================================
 
-  template<bool DECOMPRESS_NODE>
+  template<bool DECOMPRESS_NODE,bool ROBUST>
   __forceinline void traverse_single_intersect(BVH4i::NodeRef &curNode,
 					       size_t &sindex,
 					       const mic_f &rdir_xyz,
@@ -101,7 +101,15 @@ namespace embree
 
 	const mic_f tNear = vreduce_max4(tLower);
 	const mic_f tFar  = vreduce_min4(tUpper);  
-	hitm = le(hitm,tNear,tFar);
+	if (ROBUST)
+	  {
+	    const float round_down = 1.0f-2.0f*float(ulp);
+	    const float round_up   = 1.0f+2.0f*float(ulp);
+
+	    hitm = le(hitm,round_down*tNear,round_up*tFar);
+	  }
+	else
+	  hitm = le(hitm,tNear,tFar);
 		  
 	const mic_f tNear_pos = select(hitm,tNear,inf);
 
@@ -180,7 +188,7 @@ namespace embree
 
   }
 
-  template<bool DECOMPRESS_NODE>
+  template<bool DECOMPRESS_NODE,bool ROBUST>
   __forceinline void traverse_single_occluded(BVH4i::NodeRef &curNode,
 					      size_t &sindex,
 					      const mic_f &rdir_xyz,
@@ -254,8 +262,16 @@ namespace embree
 
 	const mic_f tNear = vreduce_max4(tLower);
 	const mic_f tFar  = vreduce_min4(tUpper);  
-	hitm = le(hitm,tNear,tFar);
-		  
+
+	if (ROBUST)
+	  {
+	    const float round_down = 1.0f-2.0f*float(ulp);
+	    const float round_up   = 1.0f+2.0f*float(ulp);
+
+	    hitm = le(hitm,round_down*tNear,round_up*tFar);
+	  }
+	else
+	  hitm = le(hitm,tNear,tFar);		  
 
 	const mic_f tNear_pos = select(hitm,tNear,inf);
 

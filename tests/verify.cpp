@@ -2866,6 +2866,8 @@ namespace embree
 #if !defined(__MIC__) && !defined(_WIN32) // FIXME: hangs on MIC and Windows
     POSITIVE("condition_sys",             test_condition_sys());
 #endif
+
+
 #if 1
     POSITIVE("empty_static",              rtcore_empty(RTC_SCENE_STATIC));
     POSITIVE("empty_dynamic",             rtcore_empty(RTC_SCENE_DYNAMIC));
@@ -2894,7 +2896,9 @@ namespace embree
 
     rtcore_build();
 
+#if !defined(__MIC__)
     POSITIVE("new_delete_geometry",       rtcore_new_delete_geometry());
+#endif
 
 #if defined(RTCORE_RAY_MASK)
     rtcore_ray_masks_all();
@@ -2911,7 +2915,7 @@ namespace embree
     rtcore_packet_write_test_all();
 
     const Vec3fa pos = Vec3fa(148376.0f,1234.0f,-223423.0f);
-	rtcore_watertight_closed1("sphere", pos);
+    rtcore_watertight_closed1("sphere", pos);
     rtcore_watertight_closed1("cube",pos);
     rtcore_watertight_plane1(100000);
 #if !defined(__MIC__)

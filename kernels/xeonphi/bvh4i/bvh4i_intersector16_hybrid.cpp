@@ -25,8 +25,8 @@ namespace embree
   {
     static unsigned int BVH4I_LEAF_MASK = BVH4i::leaf_mask; // needed due to compiler efficiency bug
 
-    template<typename LeafIntersector, bool ENABLE_COMPRESSED_BVH4I_NODES>
-    void BVH4iIntersector16Hybrid<LeafIntersector,ENABLE_COMPRESSED_BVH4I_NODES>::intersect(mic_i* valid_i, BVH4i* bvh, Ray16& ray16)
+    template<typename LeafIntersector, bool ENABLE_COMPRESSED_BVH4I_NODES, bool ROBUST>
+    void BVH4iIntersector16Hybrid<LeafIntersector,ENABLE_COMPRESSED_BVH4I_NODES,ROBUST>::intersect(mic_i* valid_i, BVH4i* bvh, Ray16& ray16)
     {
       /* near and node stack */
       __aligned(64) mic_f   stack_dist[3*BVH4i::maxDepth+1];
@@ -99,7 +99,7 @@ namespace embree
 		    NodeRef curNode = stack_node_single[sindex-1];
 		    sindex--;
             
-		    traverse_single_intersect<ENABLE_COMPRESSED_BVH4I_NODES>(curNode,
+		    traverse_single_intersect<ENABLE_COMPRESSED_BVH4I_NODES,ROBUST>(curNode,
 									     sindex,
 									     rdir_xyz,
 									     org_rdir_xyz,
@@ -260,8 +260,8 @@ namespace embree
       }
     }
     
-    template<typename LeafIntersector, bool ENABLE_COMPRESSED_BVH4I_NODES>
-    void BVH4iIntersector16Hybrid<LeafIntersector,ENABLE_COMPRESSED_BVH4I_NODES>::occluded(mic_i* valid_i, BVH4i* bvh, Ray16& ray16)
+    template<typename LeafIntersector, bool ENABLE_COMPRESSED_BVH4I_NODES, bool ROBUST>
+    void BVH4iIntersector16Hybrid<LeafIntersector,ENABLE_COMPRESSED_BVH4I_NODES,ROBUST>::occluded(mic_i* valid_i, BVH4i* bvh, Ray16& ray16)
     {
       /* allocate stack */
       __aligned(64) mic_f   stack_dist[3*BVH4i::maxDepth+1];
@@ -331,15 +331,15 @@ namespace embree
 		    NodeRef curNode = stack_node_single[sindex-1];
 		    sindex--;
             
-		    traverse_single_occluded<ENABLE_COMPRESSED_BVH4I_NODES>(curNode,
-									    sindex,
-									    rdir_xyz,
-									    org_rdir_xyz,
-									    min_dist_xyz,
-									    max_dist_xyz,
-									    stack_node_single,
-									    nodes,
-									    leaf_mask);	    
+		    traverse_single_occluded<ENABLE_COMPRESSED_BVH4I_NODES,ROBUST>(curNode,
+										   sindex,
+										   rdir_xyz,
+										   org_rdir_xyz,
+										   min_dist_xyz,
+										   max_dist_xyz,
+										   stack_node_single,
+										   nodes,
+										   leaf_mask);	    
 
 		    /* return if stack is empty */
 		    if (unlikely(curNode == BVH4i::invalidNode)) break;
@@ -505,10 +505,10 @@ namespace embree
     }
     
 
-    typedef BVH4iIntersector16Hybrid< Triangle1LeafIntersector  < true >, false  > Triangle1Intersector16HybridMoellerFilter;
-    typedef BVH4iIntersector16Hybrid< Triangle1LeafIntersector  < false >, false > Triangle1Intersector16HybridMoellerNoFilter;
-    typedef BVH4iIntersector16Hybrid< Triangle1mcLeafIntersector< true >, true  > Triangle1mcIntersector16HybridMoellerFilter;
-    typedef BVH4iIntersector16Hybrid< Triangle1mcLeafIntersector< false >, true > Triangle1mcIntersector16HybridMoellerNoFilter;
+    typedef BVH4iIntersector16Hybrid< Triangle1LeafIntersector  < true >, false, false  > Triangle1Intersector16HybridMoellerFilter;
+    typedef BVH4iIntersector16Hybrid< Triangle1LeafIntersector  < false >, false, false > Triangle1Intersector16HybridMoellerNoFilter;
+    typedef BVH4iIntersector16Hybrid< Triangle1mcLeafIntersector< true >, true, false  > Triangle1mcIntersector16HybridMoellerFilter;
+    typedef BVH4iIntersector16Hybrid< Triangle1mcLeafIntersector< false >, true, false > Triangle1mcIntersector16HybridMoellerNoFilter;
 
 
     DEFINE_INTERSECTOR16    (BVH4iTriangle1Intersector16HybridMoeller          , Triangle1Intersector16HybridMoellerFilter);

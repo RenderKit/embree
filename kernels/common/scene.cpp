@@ -48,9 +48,9 @@ namespace embree
 
 #if defined(__MIC__)
     accels.add( BVH4mb::BVH4mbTriangle1ObjectSplitBinnedSAH(this) );
-    accels.add( BVH4i::BVH4iVirtualGeometryBinnedSAH(this) );
-    accels.add( BVH4Hair::BVH4HairBinnedSAH(this) );
-    accels.add( BVH4i::BVH4iSubdivMeshBinnedSAH(this) );
+    accels.add( BVH4i::BVH4iVirtualGeometryBinnedSAH(this, isRobust()));
+    accels.add( BVH4Hair::BVH4HairBinnedSAH(this));
+    accels.add( BVH4i::BVH4iSubdivMeshBinnedSAH(this, isRobust() ));
 
     if (g_verbose >= 1)
       {
@@ -65,38 +65,38 @@ namespace embree
 	      {
 		if (g_verbose >= 1) std::cout << "STATIC BUILDER MODE" << std::endl;
 		if ( isCompact() )
-		  accels.add(BVH4i::BVH4iTriangle1MemoryConservativeBinnedSAH(this));		    
+		  accels.add(BVH4i::BVH4iTriangle1MemoryConservativeBinnedSAH(this,isRobust()));		    
 		else if ( isHighQuality() )
-		  accels.add(BVH4i::BVH4iTriangle1ObjectSplitBinnedSAH(this));
+		  accels.add(BVH4i::BVH4iTriangle1ObjectSplitBinnedSAH(this,isRobust()));
 		else
-		  accels.add(BVH4i::BVH4iTriangle1ObjectSplitBinnedSAH(this));
+		  accels.add(BVH4i::BVH4iTriangle1ObjectSplitBinnedSAH(this,isRobust()));
 	      }
 	    else
 	      {
 		if (g_verbose >= 1) std::cout << "DYNAMIC BUILDER MODE" << std::endl;
-		accels.add(BVH4i::BVH4iTriangle1ObjectSplitMorton(this));
+		accels.add(BVH4i::BVH4iTriangle1ObjectSplitMorton(this,isRobust()));
 	      }
 	  }
 	else
 	  {
 	    if (g_tri_builder == "sah" || g_tri_builder == "bvh4i" || g_tri_builder == "bvh4i.sah") {
-	      accels.add(BVH4i::BVH4iTriangle1ObjectSplitBinnedSAH(this));
+	      accels.add(BVH4i::BVH4iTriangle1ObjectSplitBinnedSAH(this,isRobust()));
 	    }
 	    else if (g_tri_builder == "fast" || g_tri_builder == "morton") {
-	      accels.add(BVH4i::BVH4iTriangle1ObjectSplitMorton(this));
+	      accels.add(BVH4i::BVH4iTriangle1ObjectSplitMorton(this,isRobust()));
 	    }
 	    else if (g_tri_builder == "fast_enhanced" || g_tri_builder == "morton.enhanced") {
-	      accels.add(BVH4i::BVH4iTriangle1ObjectSplitEnhancedMorton(this));
+	      accels.add(BVH4i::BVH4iTriangle1ObjectSplitEnhancedMorton(this,isRobust()));
 	    }
 	    else if (g_tri_builder == "high_quality" || g_tri_builder == "presplits") {
-	      accels.add(BVH4i::BVH4iTriangle1PreSplitsBinnedSAH(this));
+	      accels.add(BVH4i::BVH4iTriangle1PreSplitsBinnedSAH(this,isRobust()));
 	    }
 	    else if (g_tri_builder == "compact" ||
 		     g_tri_builder == "memory_conservative") {
-	      accels.add(BVH4i::BVH4iTriangle1MemoryConservativeBinnedSAH(this));
+	      accels.add(BVH4i::BVH4iTriangle1MemoryConservativeBinnedSAH(this,isRobust()));
 	    }
 	    else if (g_tri_builder == "morton64") {
-	      accels.add(BVH4i::BVH4iTriangle1ObjectSplitMorton64Bit(this));
+	      accels.add(BVH4i::BVH4iTriangle1ObjectSplitMorton64Bit(this,isRobust()));
 	    }
 
 	    else THROW_RUNTIME_ERROR("unknown builder "+g_tri_builder+" for BVH4i<Triangle1>");

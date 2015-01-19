@@ -406,7 +406,146 @@ namespace embree
     };
 
 
+  // ============================================================================================
+  // ============================================================================================
+  // ============================================================================================
 
 
+  template<bool ENABLE_INTERSECTION_FILTER>
+    struct Triangle1LeafIntersectorRobust
+    {
+      // ==================
+      // === single ray === 
+      // ==================
+      static __forceinline bool intersect(BVH4i::NodeRef curNode,
+					  const mic_f &dir_xyz,
+					  const mic_f &org_xyz,
+					  const mic_f &min_dist_xyz,
+					  mic_f &max_dist_xyz,
+					  Ray& ray, 
+					  const void *__restrict__ const accel,
+					  const Scene*__restrict__ const geometry)
+      {
+	const Triangle1* __restrict__ const tptr  = (Triangle1*) curNode.leaf(accel);	      
+	const mic_i and_mask = broadcast4to16i(zlc4);
+	return Triangle1Intersector1MoellerTrumboreRobust<ENABLE_INTERSECTION_FILTER>::intersect1(dir_xyz,
+											    org_xyz,
+											    min_dist_xyz,
+											    max_dist_xyz,
+											    and_mask,
+											    ray,
+											    geometry,
+											    tptr);	
+      }
+
+      static __forceinline bool occluded(BVH4i::NodeRef curNode,
+					 const mic_f &dir_xyz,
+					 const mic_f &org_xyz,
+					 const mic_f &min_dist_xyz,
+					 const mic_f &max_dist_xyz,
+					 Ray& ray,
+					 const void *__restrict__ const accel,
+					 const Scene*__restrict__ const geometry)
+      {
+	const Triangle1* __restrict__ const tptr  = (Triangle1*) curNode.leaf(accel);	      
+	const mic_i and_mask = broadcast4to16i(zlc4);
+	return any(Triangle1Intersector1MoellerTrumboreRobust<ENABLE_INTERSECTION_FILTER>::occluded1(dir_xyz,
+											       org_xyz,
+											       min_dist_xyz,
+											       max_dist_xyz,
+											       and_mask,
+											       ray,
+											       geometry,
+											       tptr));	
+      }
+
+      // ============================================
+      // ==== single ray mode for 16-wide packets ===
+      // ============================================
+      static __forceinline bool intersect(BVH4i::NodeRef curNode,
+					  const size_t rayIndex, 
+					  const mic_f &dir_xyz,
+					  const mic_f &org_xyz,
+					  const mic_f &min_dist_xyz,
+					  mic_f &max_dist_xyz,
+					  Ray16& ray16, 
+					  const void *__restrict__ const accel,
+					  const Scene*__restrict__ const geometry)
+      {
+	const Triangle1* __restrict__ const tptr  = (Triangle1*) curNode.leaf(accel);	      
+	const mic_i and_mask = broadcast4to16i(zlc4);
+	return Triangle1Intersector16MoellerTrumboreRobust<ENABLE_INTERSECTION_FILTER>::intersect1(curNode,
+											     rayIndex,
+											     dir_xyz,
+											     org_xyz,
+											     min_dist_xyz,
+											     max_dist_xyz,
+											     and_mask,
+											     ray16,
+											     geometry,
+											     tptr);	
+      }
+
+
+
+      static __forceinline bool occluded(BVH4i::NodeRef curNode,
+					 const size_t rayIndex, 
+					 const mic_f &dir_xyz,
+					 const mic_f &org_xyz,
+					 const mic_f &min_dist_xyz,
+					 const mic_f &max_dist_xyz,
+					 const Ray16& ray16, 
+					 mic_m &m_terminated,
+					 const void *__restrict__ const accel,
+					 const Scene*__restrict__ const geometry)
+      {
+	const Triangle1* __restrict__ const tptr  = (Triangle1*) curNode.leaf(accel);	      
+	const mic_i and_mask = broadcast4to16i(zlc4);
+	return Triangle1Intersector16MoellerTrumboreRobust<ENABLE_INTERSECTION_FILTER>::occluded1(curNode,
+											    rayIndex,
+											    dir_xyz,
+											    org_xyz,
+											    min_dist_xyz,
+											    max_dist_xyz,
+											    and_mask,
+											    ray16,
+											    m_terminated,
+											    geometry,
+											    tptr);	
+      }
+
+      // ========================
+      // ==== 16-wide packets ===
+      // ========================
+
+      __forceinline static void intersect16(BVH4i::NodeRef curNode,
+					    const mic_m m_valid_leaf, 
+					    const mic3f &dir,
+					    const mic3f &org,
+					    Ray16& ray16, 
+					    const void *__restrict__ const accel,
+					    const Scene     *__restrict__ const geometry)
+      {
+	unsigned int items; 
+	const Triangle1* __restrict__ const tptr  = (Triangle1*) curNode.leaf(accel,items);
+	Triangle1Intersector16MoellerTrumboreRobust<ENABLE_INTERSECTION_FILTER>::intersect16(m_valid_leaf,items,dir,org,ray16,geometry,tptr);	
+      }
+
+      __forceinline static void occluded16(BVH4i::NodeRef curNode,
+					   const mic_m m_valid_leaf, 
+					   const mic3f &dir,
+					   const mic3f &org,
+					   Ray16& ray16, 
+					   mic_m &m_terminated,					    
+					   const void *__restrict__ const accel,
+					   const Scene     *__restrict__ const geometry)
+      {
+	unsigned int items; 
+	const Triangle1* __restrict__ const tptr  = (Triangle1*) curNode.leaf(accel,items);
+	Triangle1Intersector16MoellerTrumboreRobust<ENABLE_INTERSECTION_FILTER>::occluded16(m_valid_leaf,items,dir,org,ray16,m_terminated,geometry,tptr);
+      }
+
+
+    };
 
 };
