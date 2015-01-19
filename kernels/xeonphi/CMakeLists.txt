@@ -14,6 +14,11 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
+IF (USE_TBB)
+  INCLUDE_DIRECTORIES(${TBB_INCLUDE_PATH_MIC})
+  SET(ADDITIONAL_LIBRARIES ${TBB_LIBRARIES_MIC})
+ENDIF()
+
 INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
 
 INCLUDE(icc_xeonphi)
@@ -90,7 +95,7 @@ ADD_ISPC_LIBRARY(embree_xeonphi ${EMBREE_LIB_TYPE}
   bvh4hair/bvh4hair_intersector16_single.cpp
 )
 
-TARGET_LINK_LIBRARIES(embree_xeonphi sys_xeonphi simd_xeonphi)
+TARGET_LINK_LIBRARIES(embree_xeonphi sys_xeonphi simd_xeonphi ${ADDITIONAL_LIBRARIES})
 SET_TARGET_PROPERTIES(embree_xeonphi PROPERTIES
   VERSION "${EMBREE_VERSION_MAJOR}.${EMBREE_VERSION_MINOR}.${EMBREE_VERSION_PATCH}"
   SOVERSION ${EMBREE_VERSION_MAJOR}

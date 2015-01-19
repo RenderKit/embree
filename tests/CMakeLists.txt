@@ -43,14 +43,15 @@ IF (__XEON__)
   SET_PROPERTY(TARGET retrace PROPERTY FOLDER tests)
 
   IF (USE_TBB)
-   ADD_DEFINITIONS(-DUSE_TBB)
+    ADD_DEFINITIONS(-DUSE_TBB)
+    FIND_PACKAGE(TBB REQUIRED)
     ADD_EXECUTABLE(benchmark_tasking 
       benchmark_tasking.cpp
       ../../common/tasking/taskscheduler.cpp
       ../../common/tasking/tasklogger.cpp
       ../../common/tasking/taskscheduler_sys.cpp
     )             
-    TARGET_LINK_LIBRARIES(benchmark_tasking sys ${TBB_LIBRARY})
+    TARGET_LINK_LIBRARIES(benchmark_tasking sys ${TBB_LIBRARIES})
     SET_PROPERTY(TARGET benchmark_tasking PROPERTY FOLDER tests)
   ENDIF()
 
@@ -71,6 +72,19 @@ ELSE ()
   ADD_EXECUTABLE(retrace_xeonphi retrace.cpp)
   TARGET_LINK_LIBRARIES(retrace_xeonphi sys_xeonphi embree_xeonphi)
   SET_PROPERTY(TARGET retrace_xeonphi PROPERTY FOLDER tests)
+
+  IF (USE_TBB)
+    ADD_DEFINITIONS(-DUSE_TBB)
+    FIND_PACKAGE(TBB REQUIRED)
+    ADD_EXECUTABLE(benchmark_tasking_xeonphi 
+      benchmark_tasking.cpp
+      ../../common/tasking/taskscheduler.cpp
+      ../../common/tasking/tasklogger.cpp
+      ../../common/tasking/taskscheduler_mic.cpp
+    )             
+    TARGET_LINK_LIBRARIES(benchmark_tasking_xeonphi sys_xeonphi ${TBB_LIBRARIES_MIC})
+    SET_PROPERTY(TARGET benchmark_tasking_xeonphi PROPERTY FOLDER tests)
+  ENDIF()
 
   INSTALL(TARGETS verify_xeonphi benchmark_xeonphi retrace_xeonphi DESTINATION bin)
 

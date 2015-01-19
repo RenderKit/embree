@@ -87,8 +87,10 @@ OPTION(RTCORE_EXPORT_ALL_SYMBOLS "Lets Embree library export all symbols.")
 OPTION(RTCORE_ENABLE_RAYSTREAM_LOGGER "Enables ray stream logger.")
 OPTION(RTCORE_RETURN_SUBDIV_NORMAL "Returns smooth subdivision surface normal in ray structure instead of triangle normal." OFF)
 
+OPTION(USE_TBB    "EXPERIMENTAL" OFF) # FIXME:
 IF (USE_TBB)
-  ADD_DEFINITIONS(-DUSE_TBB)  # FIXME: 
+  ADD_DEFINITIONS(-DUSE_TBB)
+  FIND_PACKAGE(TBB REQUIRED)
 ENDIF()
 
 CONFIGURE_FILE(

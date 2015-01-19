@@ -14,12 +14,9 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-OPTION(USE_TBB    "EXPERIMENTAL" OFF) # FIXME:
 IF (USE_TBB)
-  ADD_DEFINITIONS(-DUSE_TBB)
-  FIND_PACKAGE(TBB REQUIRED)
-  INCLUDE_DIRECTORIES(${TBB_INCLUDE_DIR})
-  SET(EMBREE_LIBRARIES ${EMBREE_LIBRARIES} ${TBB_LIBRARY})
+  INCLUDE_DIRECTORIES(${TBB_INCLUDE_PATH})
+  SET(EMBREE_LIBRARIES ${EMBREE_LIBRARIES} ${TBB_LIBRARIES})
 ENDIF()
 
 INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
