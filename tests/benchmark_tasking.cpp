@@ -15,6 +15,8 @@
 // ======================================================================== //
 
 #include "tasking/taskscheduler.h"
+#include "tasking/taskscheduler_new.h"
+
 #include "math/math.h"
 #include "kernels/algorithms/sort.h"
 #include <tbb/tbb.h>
@@ -152,8 +154,84 @@ namespace embree
 
   reduce_benchmark reduce;
 
+  size_t fib(size_t i)
+  {
+    if (i == 0) 
+      return 0;
+    else if (i == 1) 
+      return 1;
+    else {
+      return fib(i-1) + fib(i-2);
+    }
+  }
+
+  /* regression testing */
+  struct task_scheduler_regression_test //: public RegressionTest
+  {
+    task_scheduler_regression_test(const char* name) : name(name) {
+      //registerRegressionTest(this);
+    }
+    
+    bool operator() (size_t N)
+    {
+      bool passed = true;
+      printf("%s::%s ... ",TOSTRING(isa),name);
+      fflush(stdout);
+
+      /* create task scheduler */
+      TaskSchedulerNew* scheduler = new TaskSchedulerNew;
+
+      struct Fib
+      {
+        size_t& r;
+        size_t i;
+        
+        __forceinline Fib (size_t& r, size_t i) : r(r), i(i) {}
+        
+        void operator() (size_t, size_t) const
+        {
+          if (i == 0) 
+            r = 0;
+          else if (i == 1) 
+            r = 1;
+          else {
+            size_t r0; const Fib fib0(r0, i-1);
+            size_t r1; const Fib fib1(r1, i-2);
+            TaskSchedulerNew::spawn(fib0);
+            TaskSchedulerNew::spawn(fib1);
+            TaskSchedulerNew::wait();
+            r = r0+r1;
+          }
+        }
+      };
+
+      /* parallel calculation of sum of fibonacci number */
+      size_t r0 = fib(N);
+      double t0 = getSeconds();
+      size_t r1; Fib pfib(r1,N);
+      scheduler->spawn_root(pfib);
+      double t1 = getSeconds();
+      printf("fib(%zu) = %zu, parallel_fib(%zu) = %zu\n",N,r0,N,r1);
+      passed = r0 == r1;
+            
+      /* output if test passed or not */
+      if (passed) printf("[passed]\n");
+      else        printf("[failed]\n");
+
+      delete scheduler;
+      return passed;
+    }
+
+    const char* name;
+  };
+
   void main()
   {
+#if 1
+    task_scheduler_regression_test task_scheduler_regression("task_scheduler_regression_test");
+    task_scheduler_regression(1000);
+#else
+
     const size_t N = 100*1024*1024;
     const size_t N_seq = 10*1024*1024;
 
@@ -229,6 +307,7 @@ namespace embree
     });
     TaskScheduler::destroy();
     fs.close();
+#endif
   }
 }
 

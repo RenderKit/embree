@@ -71,6 +71,12 @@ namespace embree
       }
     }
 
+    __forceinline bool tryLock()
+    {
+      if (flag == 1) return false;
+      return atomic_cmpxchg(&flag,0,1) == 0;
+    }
+
     __forceinline void unlock() 
     {
       __memory_barrier();

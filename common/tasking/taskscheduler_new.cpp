@@ -16,24 +16,16 @@
 
 #include "taskscheduler_new.h"
 #include "math/math.h"
+#include "sys/sysinfo.h"
 
 #include <thread>
 #include <mutex>
 #include <condition_variable>
 
-#if USE_TBB
-#include <tbb/tbb.h>
-#endif
-
 namespace embree
 {
-#if 1
-  
-
-#else
-
   TaskSchedulerNew::TaskSchedulerNew(size_t numThreads)
-    : numThreads(numThreads), terminate(false)
+    : numThreads(numThreads), terminate(false), anyTasksRunning(0)
   {
     if (!numThreads) numThreads = getNumberOfLogicalThreads();
     if ( numThreads) numThreads--;
@@ -42,7 +34,7 @@ namespace embree
       threadLocal[i] = NULL;
     
     for (size_t i=0; i<numThreads; i++) {
-      threads.push_back(std::thread([i]() { schedule(i); }));
+      threads.push_back(std::thread([i,this]() { schedule(i); }));
     }
   }
   
@@ -52,11 +44,11 @@ namespace embree
     mutex.lock();
     terminate = true;
     mutex.unlock();
-    condition.signal_all();
+    condition.notify_all();
 
     /* wait for threads to terminate */
     for (size_t i=0; i<threads.size(); i++) 
-      join(threads[i]);
+      threads[i].join();
   }
 
   __thread TaskSchedulerNew::Thread* TaskSchedulerNew::thread_local_thread = NULL;
@@ -71,32 +63,11 @@ namespace embree
     return thread_local_task;
   }
 
-#if 0
-  ssize_t TaskSchedulerNew::allocThreadIndex()
-  {
-    while (true) {
-      size_t N = numThreads;
-      if (N >= MAX_THREADS) break;
-      if (atomic_cmpxchg(&numThreads,N,N+1) == N)
-        return N;
-    }
-    return -1;
-  }
-
-  bool TaskSchedulerNew::join()
-  {
-    /* try to get a new thread index */
-    ssize_t threadIndex = allocThreadIndex();
-    if (threadIndex < 0) return false;
-
-  }
-#endif
-
   void TaskSchedulerNew::schedule(size_t threadIndex) try 
   {
     /* allocate thread structure */
     Thread thread(threadIndex,this);
-    threadLocals[threadIndex] = &thread;
+    threadLocal[threadIndex] = &thread;
     thread_local_thread = &thread;
 
     /* main thread loop */
@@ -108,26 +79,8 @@ namespace embree
         condition.wait(lock);
       }
 
-      /* continue until there are some running tasks */
-      while (anyTasksRunning)
-      {
-        /* first try executing local tasks */
-        while (thread.tasks.local()) {
-          if (terminate) return;
-        }
-        atomic_add(&anyTasksRunning,-1);
-        
-        /* second try to steal tasks */
-        for (size_t i=0; i<threadCount; i++) 
-        {
-          const size_t otherThreadIndex = (threadIndex+i)%threadCount; // FIXME: optimize %
-          if (!threadLocals[otherThreadIndex])
-            continue;
-          
-          if (threadLocals[otherThreadIndex]->tasks.steal(&anyTasksRunning))
-            break;
-        }
-      }
+      /* work on available task */
+      schedule_on_thread(thread);
     }
   }
   catch (const std::exception& e) {
@@ -135,75 +88,30 @@ namespace embree
     exit(1);
   }
 
-  void TaskSchedulerNew::schedule_local(Thread* thread)
+  void TaskSchedulerNew::schedule_on_thread(Thread& thread)
   {
-    Task* task = TaskSchedulerNew::task();
-    while (thread->tasks.local(task)) {}
-  }
+    const size_t threadIndex = thread.threadIndex;
+    const size_t threadCount = threads.size();
 
-  void TaskSchedulerNew::scheduleLocal()
-  {
-    Thread* thread = TaskSchedulerNew::thread();
-    thread->scheduler->scheduler_local(thread);
-  }
-
-  /* regression testing */
-  struct task_scheduler_regression_test : public RegressionTest
-  {
-    task_scheduler_regression_test(const char* name) : name(name) {
-      registerRegressionTest(this);
-    }
-    
-    bool operator() ()
+    /* continue until there are some running tasks */
+    while (anyTasksRunning)
     {
-      bool passed = true;
-      printf("%s::%s ... ",TOSTRING(isa),name);
-      fflush(stdout);
-
-      /* create task scheduler */
-      TaskSchedulerNew* scheduler = new TaskSchedulerNew;
-
-      struct Fib
-      {
-        size_t& r;
-        size_t i;
-        
-        Fib(size_t& r, size_t i) : r(r), i(i) {}
-        
-        void operator(size_t i) const
-        {
-          if (i == 0) return 0;
-          else if (i == 1) return 1;
-          else {
-            size_t r0; const Fib fib0(r0, i-1);
-            size_t r1; const Fib fib1(r1, i-2);
-            TaskScheduler::spawn(fib0);
-            TaskScheduler::spawn(fib1);
-            TaskScheduelr::wait();
-            r = r0+r1;
-          }
-        }
-      };
-
-      /* parallel calculation of sum of fibonacci number */
-      double t0 = getSeconds();
-      size_t r; Fib fib(r,1000);
-      TaskSchedulerNew::spawn_root(fib);
-      double t1 = getSeconds();
-      printf("fib(1000) = %z\n",r);
-      //printf("%zu/%3.2fM ",N,1E-6*double(N*M)/(t1-t0));
-            
-      /* output if test passed or not */
-      if (passed) printf("[passed]\n");
-      else        printf("[failed]\n");
+      /* first try executing local tasks */
+      while (thread.tasks.execute_local()) {
+        if (terminate) return;
+      }
+      atomic_add(&anyTasksRunning,-1);
       
-      return passed;
+      /* second try to steal tasks */
+      for (size_t i=0; i<threadCount; i++) 
+      {
+        const size_t otherThreadIndex = (threadIndex+i)%threadCount; // FIXME: optimize %
+        if (!threadLocal[otherThreadIndex])
+          continue;
+        
+        if (threadLocal[otherThreadIndex]->tasks.steal(&anyTasksRunning))
+          break;
+      }
     }
-
-    const char* name;
-  };
-
-  task_scheduler_regression_test task_scheduler_regression("task_scheduler_regression_test");
-
-#endif
+  }
 }

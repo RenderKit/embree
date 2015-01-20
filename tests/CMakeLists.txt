@@ -50,6 +50,7 @@ IF (__XEON__)
       ../../common/tasking/taskscheduler.cpp
       ../../common/tasking/tasklogger.cpp
       ../../common/tasking/taskscheduler_sys.cpp
+      ../../common/tasking/taskscheduler_new.cpp
     )             
     TARGET_LINK_LIBRARIES(benchmark_tasking sys ${TBB_LIBRARIES})
     SET_PROPERTY(TARGET benchmark_tasking PROPERTY FOLDER tests)
@@ -81,6 +82,7 @@ ELSE ()
       ../../common/tasking/taskscheduler.cpp
       ../../common/tasking/tasklogger.cpp
       ../../common/tasking/taskscheduler_mic.cpp
+      ../../common/tasking/taskscheduler_new.cpp
     )             
     TARGET_LINK_LIBRARIES(benchmark_tasking_xeonphi sys_xeonphi ${TBB_LIBRARIES_MIC})
     SET_PROPERTY(TARGET benchmark_tasking_xeonphi PROPERTY FOLDER tests)
