@@ -15,7 +15,6 @@
 ## ======================================================================== ##
 
 IF (USE_TBB)
-  INCLUDE_DIRECTORIES(${TBB_INCLUDE_PATH})
   SET(EMBREE_LIBRARIES ${EMBREE_LIBRARIES} ${TBB_LIBRARIES})
 ENDIF()
 
