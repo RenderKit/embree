@@ -248,7 +248,7 @@ namespace embree
     
     std::mutex mutex;        
     std::condition_variable condition;
-    
+
     static __thread Thread* thread_local_thread;
     static Thread* thread();
     

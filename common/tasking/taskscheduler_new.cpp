@@ -14,13 +14,14 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
+#include <thread>
+#include <mutex>
+#include <condition_variable>
+
 #include "taskscheduler_new.h"
 #include "math/math.h"
 #include "sys/sysinfo.h"
 
-#include <thread>
-#include <mutex>
-#include <condition_variable>
 
 namespace embree
 {

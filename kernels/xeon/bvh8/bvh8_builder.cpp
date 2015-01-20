@@ -456,6 +456,14 @@ namespace embree
                 t_parallel = getSeconds() - t_parallel;        
                 t_parallel_total += t_parallel;
                 mids[j] = mid;
+
+                for (size_t i=0;i<mid;i++)
+                  if (test_array[i].lower.x >= 0.5f)
+                    {
+                      DBG_PRINT("left error");
+                      DBG_PRINT(i);
+                      DBG_PRINT(test_array[i]);
+                    }
               }
             t_parallel_total /= ITERATIONS;
 
