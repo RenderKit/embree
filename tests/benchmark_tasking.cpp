@@ -175,7 +175,7 @@ namespace embree
     bool operator() (size_t N)
     {
       bool passed = true;
-      printf("%s::%s ... ",TOSTRING(isa),name);
+      printf("%s::%s ... \n",TOSTRING(isa),name);
       fflush(stdout);
 
       /* create task scheduler */
@@ -206,12 +206,14 @@ namespace embree
       };
 
       /* parallel calculation of sum of fibonacci number */
-      size_t r0 = fib(N);
       double t0 = getSeconds();
+      size_t r0 = fib(N);
+      double t1 = getSeconds();
       size_t r1; Fib pfib(r1,N);
       scheduler->spawn_root(pfib);
-      double t1 = getSeconds();
-      printf("fib(%zu) = %zu, parallel_fib(%zu) = %zu\n",N,r0,N,r1);
+      double t2 = getSeconds();
+      printf("  sequential_fib(%zu) = %zu, %3.2fms\n",N,r0,1000.0f*(t1-t0));
+      printf("  parallel_fib  (%zu) = %zu, %3.2fms\n",N,r1,1000.0f*(t2-t1));
       passed = r0 == r1;
             
       /* output if test passed or not */
@@ -229,7 +231,7 @@ namespace embree
   {
 #if 1
     task_scheduler_regression_test task_scheduler_regression("task_scheduler_regression_test");
-    task_scheduler_regression(1000);
+    task_scheduler_regression(40);
 #else
 
     const size_t N = 100*1024*1024;
