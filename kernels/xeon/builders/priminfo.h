@@ -116,7 +116,7 @@ namespace embree
       __forceinline void merge(const PrimInfo& other) 
       {
 	CentGeomBBox3fa::merge(other);
-	assert(begin == 0);
+	//assert(begin == 0);
 	end += other.end;
       }
 
