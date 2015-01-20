@@ -27,13 +27,15 @@
 
 namespace embree
 {
-  template<size_t BLOCK_SIZE, typename T, typename V, typename Compare, typename Reduction>
+  template<size_t BLOCK_SIZE, typename T, typename V, typename Compare, typename Reduction_T, typename Reduction_V>
   class __aligned(64) parallel_partition
     {
     private:
 
       const Compare& cmp;
-      const Reduction& reduction;
+      const Reduction_T& reduction_t;
+      const Reduction_V& reduction_v;
+      
       const V &init;
 
       static const size_t SERIAL_THRESHOLD = 16;
@@ -156,18 +158,18 @@ namespace embree
           {
             while (likely(l <= r && cmp(*l) /* *l < pivot */)) 
               {
-                leftReduc = reduction(leftReduc,*l);
+                reduction_t(leftReduc,*l);
                ++l;
               }
             while (likely(l <= r && !cmp(*r) /* *r >= pivot) */))
               {
-                rightReduc = reduction(rightReduc,*r);
+                reduction_t(rightReduc,*r);
                 --r;
               }
             if (r<l) break;
 
-            leftReduc  = reduction(leftReduc ,*r);
-            rightReduc = reduction(rightReduc,*l);
+            reduction_t(leftReduc ,*r);
+            reduction_t(rightReduc,*l);
             std::swap(*l,*r);
             l++; r--;
           }
@@ -187,7 +189,7 @@ namespace embree
           {
             while(cmp(array[left_begin]) /* array[left_begin] < pivot */)
               {
-                leftReduc = reduction(leftReduc,array[left_begin]);
+                reduction_t(leftReduc,array[left_begin]);
 
                 left_begin++;
                 if (left_begin >= left_end) break;
@@ -195,7 +197,7 @@ namespace embree
 
             while(!cmp(array[right_begin]) /* array[right_begin] >= pivot */)
               {
-                rightReduc = reduction(rightReduc,array[right_begin]);
+                reduction_t(rightReduc,array[right_begin]);
 
                 right_begin++;
                 if (right_begin >= right_end) break;
@@ -203,8 +205,8 @@ namespace embree
 
             if (unlikely(left_begin == left_end || right_begin == right_end)) break;
             
-            leftReduc  = reduction(leftReduc ,array[right_begin]);
-            rightReduc = reduction(rightReduc,array[left_begin]);
+            reduction_t(leftReduc ,array[right_begin]);
+            reduction_t(rightReduc,array[left_begin]);
 
             std::swap(array[left_begin++],array[right_begin++]);
           }
@@ -247,7 +249,7 @@ namespace embree
     public:
 
       /* initialize atomic counters */
-      __forceinline parallel_partition(T *array, size_t N, const V& init, const Compare& cmp, const Reduction& reduction) : array(array), N(N), init(init), cmp(cmp), reduction(reduction)
+      __forceinline parallel_partition(T *array, size_t N, const V& init, const Compare& cmp, const Reduction_T& reduction_t, const Reduction_V& reduction_v) : array(array), N(N), init(init), cmp(cmp), reduction_t(reduction_t) , reduction_v(reduction_v)
       {
         blockID.reset();
         numLeftRemainderBlocks  = 0;
@@ -360,7 +362,7 @@ namespace embree
       }
 
       static void task_thread_partition(void* data, const size_t threadIndex, const size_t threadCount) {
-        parallel_partition<BLOCK_SIZE,T,V,Compare,Reduction>* p = (parallel_partition<BLOCK_SIZE,T,V,Compare,Reduction>*)data;
+        parallel_partition<BLOCK_SIZE,T,V,Compare,Reduction_T,Reduction_V>* p = (parallel_partition<BLOCK_SIZE,T,V,Compare,Reduction_T,Reduction_V>*)data;
         V left;
         V right;
         p->thread_partition(left,right);
@@ -406,8 +408,8 @@ namespace embree
         /* ---------------------------------- */
         
         /* sort remainder blocks */
-        insertionsort_ascending<T>(leftRemainderBlockIDs,numLeftRemainderBlocks);
-        insertionsort_ascending<T>(rightRemainderBlockIDs,numRightRemainderBlocks);
+        insertionsort_ascending<unsigned int>(leftRemainderBlockIDs,(unsigned int)numLeftRemainderBlocks);
+        insertionsort_ascending<unsigned int>(rightRemainderBlockIDs,(unsigned int)numRightRemainderBlocks);
 
         DBG_PART(
                  DBG_PRINT(numLeftRemainderBlocks);
@@ -500,8 +502,8 @@ namespace embree
 
         for (size_t i=0;i<numThreads;i++)
           {
-            leftReduction  = reduction(leftReduction,leftReductions[i]);
-            rightReduction = reduction(rightReduction,rightReductions[i]);
+            reduction_v(leftReduction,leftReductions[i]);
+            reduction_v(rightReduction,rightReductions[i]);
           }
         
 
@@ -529,32 +531,34 @@ namespace embree
 
     };
 
-  template<size_t BLOCK_SIZE, typename T, typename V, typename Compare, typename Reduction>
+  template<size_t BLOCK_SIZE, typename T, typename V, typename Compare, typename Reduction_T, typename Reduction_V>
     __forceinline size_t parallel_in_place_partitioning(T *array, 
                                                         size_t N, 
                                                         const V &init,
                                                         V &leftReduction,
                                                         V &rightReduction,
                                                         const Compare& cmp, 
-                                                        const Reduction& reduction)
+                                                        const Reduction_T& reduction_t,
+                                                        const Reduction_V& reduction_v)
   {
-    parallel_partition<BLOCK_SIZE,T,V,Compare,Reduction> p(array,N,init,cmp,reduction );
+    parallel_partition<BLOCK_SIZE,T,V,Compare,Reduction_T,Reduction_V> p(array,N,init,cmp,reduction_t,reduction_v);
     return p.partition_parallel(leftReduction,rightReduction);    
   }
 
 
 
 
-  template<typename T, typename V, typename Compare, typename Reduction>
+  template<typename T, typename V, typename Compare, typename Reduction_T, typename Reduction_V>
     __forceinline size_t serial_in_place_partitioning(T *array, 
                                                       size_t N, 
                                                       const V &init,
                                                       V &leftReduction,
                                                       V &rightReduction,
                                                       const Compare& cmp, 
-                                                      const Reduction& reduction)
+                                                      const Reduction_T& reduction_t,
+                                                      const Reduction_V& reduction_v)
   {
-    parallel_partition<1,T,V,Compare,Reduction> p(array,N,init,cmp,reduction);
+    parallel_partition<1,T,V,Compare,Reduction_T,Reduction_V> p(array,N,init,cmp,reduction_t,reduction_v);
     return p.partition_serial(leftReduction,rightReduction);
   }
 

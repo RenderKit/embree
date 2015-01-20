@@ -396,9 +396,14 @@ namespace embree
         /////////////////////////////////////////////////////
 
 #if 0
+        #define MAX_SIZE 1024*1024
+
         PING;
-#define MAX_SIZE 1024*1024
         PrimRef *test_array  = (PrimRef*)_mm_malloc(MAX_SIZE*sizeof(PrimRef),64);
+        double t_parallel,t_serial;
+
+        double t_parallel_total,t_serial_total;
+        
         for (size_t s=128*1024;s<MAX_SIZE;s+=s)
           {
             DBG_PRINT(s);
@@ -418,6 +423,7 @@ namespace embree
                     float y = drand48();
                     float z = drand48();
                     BBox3fa b;
+                    const float f = 0.1f;
                     b.lower = Vec3fa(x-f,y-f,z-f);
                     b.upper = Vec3fa(x+f,y+f,z+f);
 
@@ -430,18 +436,21 @@ namespace embree
                     //parallel_partition pp(test_array,s, [] (unsigned int &t) { DBG_PRINT(t);} );
                     //size_t mid = pp.parition(pivot);
 
-                    PrimInfo left;
-                    PrimInfo right;
-                    left.reset();
-                    right.reset();
-
+                    PrimInfo leftInfo;
+                    PrimInfo rightInfo;
+                    PrimInfo init;
+                    leftInfo.reset();
+                    rightInfo.reset();
+                    init.reset();
+                    
                     size_t mid = parallel_in_place_partitioning<16,PrimRef,PrimInfo>(test_array,
                                                                                      s,
-                                                                                     0,
-                                                                                     leftReduc,
-                                                                                     rightReduc,
-                                                                                     [&] (const unsigned int &t0,const unsigned int &t1) { return t0 < t1; },
-                                                                                     [&] (const unsigned int &t0,const unsigned int &t1) { return t0; }
+                                                                                     init,
+                                                                                     leftInfo,
+                                                                                     rightInfo,
+                                                                                     [&] (PrimRef &ref) { return ref.lower.x < 0.5f; },
+                                                                                     [&] (PrimInfo &pinfo,PrimRef &ref) { pinfo.extend(ref.bounds()); },
+                                                                                     [&] (PrimInfo &pinfo0,PrimInfo &pinfo1) { pinfo0.merge(pinfo1); }                                                                                     
                                                                  );
 
                 t_parallel = getSeconds() - t_parallel;        
@@ -451,7 +460,7 @@ namespace embree
             t_parallel_total /= ITERATIONS;
 
             srand48(s*32323);
-#if 1
+#if 0
             t_serial_total = 0.0;
 #define ITERATIONS 20
             for (size_t j=0;j<ITERATIONS;j++)
@@ -466,13 +475,12 @@ namespace embree
                 unsigned int leftReduc  = 0;
                 unsigned int rightReduc = 0;
 
-                size_t mid_serial = serial_in_place_partitioning<unsigned int,unsigned int>(test_array,
-                                                                                            s,
-                                                                                            0,
-                                                                                            leftReduc,
-                                                                                            rightReduc,
-                                                                                            [&] (const unsigned int &t0,const unsigned int &t1) { return t0 < t1; },
-                                                                                            [&] (const unsigned int &t0,const unsigned int &t1) { return t0; } );
+                size_t mid_serial = serial_in_place_partitioning<PrimRef,PrimInfo>(test_array,
+                                                                                   s,
+                                                                                   leftReduc,
+                                                                                   rightReduc,                                                                                   
+                                                                                   [&] (PrimRef &ref) { return ref.lower.x < 0.5f; },
+                                                                                   [&] (PrimInfo &pinfo,PrimRef &ref) { pinfo.extend(ref.bounds()); });
 
                 t_serial = getSeconds() - t_serial;        
                 t_serial_total += t_serial;
@@ -484,13 +492,13 @@ namespace embree
             std::cout << " t_serial_total = " << 1000.0f*t_serial_total << "ms, perf = " << 1E-6*double(s)/t_serial_total << " Mprim/s" << std::endl;
             DBG_PRINT(t_serial_total/t_parallel_total);
             
+              }
           }
-
         exit(0);
 
 #endif
 
-#if 1
+#if 0
         PING;
 #define MAX_SIZE 1024*1024*512
         unsigned int *test_array  = (unsigned int*)_mm_malloc(MAX_SIZE*sizeof(int),64);
