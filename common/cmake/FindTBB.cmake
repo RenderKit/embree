@@ -14,10 +14,10 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-FIND_PATH(TBB_INCLUDE_DIR tbb/task_scheduler_init.h)
-FIND_LIBRARY(TBB_LIBRARY tbb)
-FIND_LIBRARY(TBB_LIBRARY_MALLOC tbbmalloc)
-
+FIND_PATH(TBB_INCLUDE_DIR tbb/task_scheduler_init.h PATHS /opt/intel/composerxe/tbb/include)
+FIND_LIBRARY(TBB_LIBRARY tbb PATHS /opt/intel/composerxe/tbb/lib/mic)
+FIND_LIBRARY(TBB_LIBRARY_MALLOC tbbmalloc PATHS /opt/intel/composerxe/tbb/lib/mic)
+ 
 FIND_PATH(TBB_INCLUDE_DIR_MIC tbb/task_scheduler_init.h NO_DEFAULT_PATH PATHS /opt/intel/composerxe/tbb/include)
 FIND_LIBRARY(TBB_LIBRARY_MIC tbb NO_DEFAULT_PATH PATHS /opt/intel/composerxe/tbb/lib/mic)
 FIND_LIBRARY(TBB_LIBRARY_MALLOC_MIC tbbmalloc NO_DEFAULT_PATH PATHS /opt/intel/composerxe/tbb/lib/mic)
