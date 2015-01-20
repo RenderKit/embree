@@ -38,8 +38,6 @@ namespace embree
       
       const V &init;
 
-      static const size_t SERIAL_THRESHOLD = 16;
-
       size_t N;
       size_t blocks;
       T* array;
@@ -376,9 +374,13 @@ namespace embree
       {    
         leftReduction = init;
         rightReduction = init;
+
+        LockStepTaskScheduler* scheduler = LockStepTaskScheduler::instance();
+        const size_t numThreads = scheduler->getNumThreads();
     
-        if (N <= SERIAL_THRESHOLD)
+        if (N <= BLOCK_SIZE * numThreads * 2)
           {
+            DBG_PRINT("SERIAL FALLBACK");
             size_t mid = serialPartitioning(0,N,leftReduction,rightReduction);
             DBG_PART(
                      DBG_PRINT( mid );
@@ -392,8 +394,6 @@ namespace embree
                  DBG_PRINT("PARALLEL MODE");
                  );
 
-        LockStepTaskScheduler* scheduler = LockStepTaskScheduler::instance();
-        const size_t numThreads = scheduler->getNumThreads();
 
         for (size_t i=0;i<numThreads;i++)
           {

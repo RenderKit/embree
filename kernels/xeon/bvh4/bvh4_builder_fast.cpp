@@ -1249,7 +1249,11 @@ namespace embree
       if (unlikely(sah == float(inf))) splitFallback(prims,current,leftChild,rightChild);
       
       /* parallel partitioning of items */
-      else state->parallelBinner.partition(pinfo,tmp,prims,leftChild,rightChild,threadID,numThreads,scheduler);
+      else 
+        {
+          state->parallelBinner.partition(pinfo,tmp,prims,leftChild,rightChild,threadID,numThreads,scheduler);
+          //state->parallelBinner.partitionNEW(pinfo,prims,leftChild,rightChild,threadID,numThreads,scheduler);
+        }
     }
     
     __forceinline void BVH4BuilderFast::split(BuildRecord& current, BuildRecord& left, BuildRecord& right, const size_t mode, const size_t threadID, const size_t numThreads)

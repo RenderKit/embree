@@ -687,6 +687,37 @@ namespace embree
           new (&leftChild ) PrimInfo(pinfo.begin,center,left.geomBounds,left.centBounds);
           new (&rightChild) PrimInfo(center,pinfo.end,right.geomBounds,right.centBounds);
         }
+
+        void partitionNEW(const PrimInfo& pinfo, PrimRef* src, PrimInfo& leftChild, PrimInfo& rightChild, const size_t threadID, const size_t numThreads, LockStepTaskScheduler* scheduler)
+        {
+          left.reset(); 
+          right.reset();
+          this->src = src;
+          this->dst = NULL;
+          PrimInfo init;
+
+          const unsigned int splitPos = split.pos;
+          const unsigned int splitDim = split.dim;
+
+          size_t mid_serial = serial_in_place_partitioning<PrimRef,PrimInfo>(&src[pinfo.begin],
+                                                                             pinfo.size(),
+                                                                             init,
+                                                                             left,
+                                                                             right,
+                                                                             [&] (const PrimRef &ref) { return mapping.bin_unsafe(center2(ref.bounds()))[splitDim] < splitPos; },
+                                                                             [] (PrimInfo &pinfo,const PrimRef &ref) { pinfo.extend(ref.bounds()); },
+                                                                             [] (PrimInfo &pinfo0,const PrimInfo &pinfo1) { pinfo0.merge(pinfo1); }
+                                                                             );
+
+
+
+          //scheduler->dispatchTask(task_parallelPartition, this, threadID, numThreads);
+          size_t numLeft = bin16.getNumLeft(split);
+          unsigned int center = pinfo.begin + numLeft;
+          assert(mid_serial == numLeft);
+          new (&leftChild ) PrimInfo(pinfo.begin,center,left.geomBounds,left.centBounds);
+          new (&rightChild) PrimInfo(center,pinfo.end,right.geomBounds,right.centBounds);
+        }
         
       private:
         TASK_FUNCTION_(ParallelBinner,parallelBinning);

@@ -396,7 +396,7 @@ namespace embree
         /////////////////////////////////////////////////////
 
 #if 0
-        #define MAX_SIZE 1024*1024
+        #define MAX_SIZE 1024*1024*128
 
         PING;
         PrimRef *test_array  = (PrimRef*)_mm_malloc(MAX_SIZE*sizeof(PrimRef),64);
@@ -414,6 +414,8 @@ namespace embree
 #define ITERATIONS 20
 
             size_t mids[ITERATIONS];
+            PrimInfo total;
+            total.reset();
 
             for (size_t j=0;j<ITERATIONS;j++)
               {
@@ -426,37 +428,36 @@ namespace embree
                     const float f = 0.1f;
                     b.lower = Vec3fa(x-f,y-f,z-f);
                     b.upper = Vec3fa(x+f,y+f,z+f);
-
                     test_array[i] = PrimRef(b,i);
+                    total.add(b,b,1);
+                  }
 
-                    float pivot = 0;
+                t_parallel = getSeconds();        
                     
-                    t_parallel = getSeconds();        
-                    
-                    //parallel_partition pp(test_array,s, [] (unsigned int &t) { DBG_PRINT(t);} );
-                    //size_t mid = pp.parition(pivot);
+                DBG_PRINT(total);
+                //parallel_partition pp(test_array,s, [] (unsigned int &t) { DBG_PRINT(t);} );
+                //size_t mid = pp.parition(pivot);
 
-                    PrimInfo leftInfo;
-                    PrimInfo rightInfo;
-                    PrimInfo init;
-                    leftInfo.reset();
-                    rightInfo.reset();
-                    init.reset();
+                PrimInfo leftInfo;
+                PrimInfo rightInfo;
+                PrimInfo init;
+                leftInfo.reset();
+                rightInfo.reset();
+                init.reset();
                     
-                    size_t mid = parallel_in_place_partitioning<16,PrimRef,PrimInfo>(test_array,
-                                                                                     s,
-                                                                                     init,
-                                                                                     leftInfo,
-                                                                                     rightInfo,
-                                                                                     [&] (PrimRef &ref) { return ref.lower.x < 0.5f; },
-                                                                                     [&] (PrimInfo &pinfo,PrimRef &ref) { pinfo.extend(ref.bounds()); },
-                                                                                     [&] (PrimInfo &pinfo0,PrimInfo &pinfo1) { pinfo0.merge(pinfo1); }                                                                                     
-                                                                 );
+                size_t mid = parallel_in_place_partitioning<96,PrimRef,PrimInfo>(test_array,
+                                                                                 s,
+                                                                                 init,
+                                                                                 leftInfo,
+                                                                                 rightInfo,
+                                                                                 [] (const PrimRef &ref) { return ref.lower.x < 0.5f; },
+                                                                                 [] (PrimInfo &pinfo,const PrimRef &ref) { pinfo.extend(ref.bounds()); },
+                                                                                 [] (PrimInfo &pinfo0,const PrimInfo &pinfo1) { pinfo0.merge(pinfo1); }                                                                                     
+                                                                                 );
 
                 t_parallel = getSeconds() - t_parallel;        
                 t_parallel_total += t_parallel;
                 mids[j] = mid;
-
                 for (size_t i=0;i<mid;i++)
                   if (test_array[i].lower.x >= 0.5f)
                     {
@@ -464,35 +465,76 @@ namespace embree
                       DBG_PRINT(i);
                       DBG_PRINT(test_array[i]);
                     }
+
+                for (size_t i=mid;i<s;i++)
+                  if (test_array[i].lower.x < 0.5f)
+                    {
+                      DBG_PRINT("right error");
+                      DBG_PRINT(i);
+                      DBG_PRINT(test_array[i]);
+                    }
+
               }
             t_parallel_total /= ITERATIONS;
 
             srand48(s*32323);
-#if 0
+#if 1
             t_serial_total = 0.0;
 #define ITERATIONS 20
             for (size_t j=0;j<ITERATIONS;j++)
               {
                 for (size_t i=0;i<s;i++)
-                  test_array[i] = lrand48() % s;
+                  {
+                    float x = drand48();
+                    float y = drand48();
+                    float z = drand48();
+                    BBox3fa b;
+                    const float f = 0.1f;
+                    b.lower = Vec3fa(x-f,y-f,z-f);
+                    b.upper = Vec3fa(x+f,y+f,z+f);
+                    test_array[i] = PrimRef(b,i);
+                  }
 
-                unsigned int pivot = test_array[s/2];
+
                 t_serial = getSeconds();        
-                //parallel_partition<unsigned int,128> pp(test_array,s);
-                //size_t mid_serial = pp.partition_serial(pivot);
-                unsigned int leftReduc  = 0;
-                unsigned int rightReduc = 0;
+
+                PrimInfo leftInfo;
+                PrimInfo rightInfo;
+                PrimInfo init;
+                leftInfo.reset();
+                rightInfo.reset();
+                init.reset();
 
                 size_t mid_serial = serial_in_place_partitioning<PrimRef,PrimInfo>(test_array,
                                                                                    s,
-                                                                                   leftReduc,
-                                                                                   rightReduc,                                                                                   
-                                                                                   [&] (PrimRef &ref) { return ref.lower.x < 0.5f; },
-                                                                                   [&] (PrimInfo &pinfo,PrimRef &ref) { pinfo.extend(ref.bounds()); });
+                                                                                   init,
+                                                                                   leftInfo,
+                                                                                   rightInfo,
+                                                                                   [] (const PrimRef &ref) { return ref.lower.x < 0.5f; },
+                                                                                   [] (PrimInfo &pinfo,const PrimRef &ref) { pinfo.extend(ref.bounds()); },
+                                                                                   [] (PrimInfo &pinfo0,const PrimInfo &pinfo1) { pinfo0.merge(pinfo1); }
+                                                                                   );
 
                 t_serial = getSeconds() - t_serial;        
                 t_serial_total += t_serial;
                 assert(mid_serial == mids[j]);
+
+                for (size_t i=0;i<mid_serial;i++)
+                  if (test_array[i].lower.x >= 0.5f)
+                    {
+                      DBG_PRINT("left error");
+                      DBG_PRINT(i);
+                      DBG_PRINT(test_array[i]);
+                    }
+
+                for (size_t i=mid_serial;i<s;i++)
+                  if (test_array[i].lower.x < 0.5f)
+                    {
+                      DBG_PRINT("right error");
+                      DBG_PRINT(i);
+                      DBG_PRINT(test_array[i]);
+                    }
+
               }
             t_serial_total /= ITERATIONS;
 #endif
@@ -500,7 +542,7 @@ namespace embree
             std::cout << " t_serial_total = " << 1000.0f*t_serial_total << "ms, perf = " << 1E-6*double(s)/t_serial_total << " Mprim/s" << std::endl;
             DBG_PRINT(t_serial_total/t_parallel_total);
             
-              }
+             
           }
         exit(0);
 
