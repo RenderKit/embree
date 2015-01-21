@@ -695,7 +695,7 @@ namespace embree
           this->src = src;
           this->dst = NULL;
           PrimInfo init;
-
+          init.reset();
           const unsigned int splitPos = split.pos;
           const unsigned int splitDim = split.dim;
 
