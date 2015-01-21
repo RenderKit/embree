@@ -395,12 +395,6 @@ namespace embree
                  );
 
 
-        for (size_t i=0;i<numThreads;i++)
-          {
-            leftReductions[i] = init;
-            rightReductions[i] = init;
-          }
-
         scheduler->dispatchTask(task_thread_partition,this,0,numThreads);
 
         /* ---------------------------------- */

@@ -168,7 +168,7 @@ namespace embree
       double dt_min = pos_inf;
       double dt_avg = 0.0f;
       double dt_max = neg_inf;
-      for (size_t i=0; i<20; i++) 
+      for (size_t i=0; i<40; i++) 
       {
         double t0 = getSeconds();
 #endif
