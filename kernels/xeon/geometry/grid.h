@@ -923,7 +923,7 @@ namespace embree
 			      const unsigned int y0,
 			      const unsigned int y1)
 	
-	: initializing(0), initialized(0), bvh(bvh), parent(parent), geomID(geomID), primID(primID), quadID(quadID), x0(x0), x1(x1), y0(y0), y1(y1) {}
+	: initializing(0), initialized(0), bvh(bvh), parent(parent), geomID(geomID), primID(primID), quadID(quadID), x0(x0), x1(x1), Y0(y0), Y1(y1) {}
     
 
       __forceinline BBox3fa bounds()
@@ -953,10 +953,10 @@ namespace embree
 	  const int nx = pattern_x.size();
 	  const int ny = pattern_y.size();
 	  const size_t width  = x1-x0+1;
-	  const size_t height = y1-y0+1;
+	  const size_t height = Y1-Y0+1;
 	  assert(width <= 17 && height <= 17);
 	  Grid grid(width,height,geomID,primID);
-	  box = grid.buildLazyBounds(scene,patch,x0,x1,y0,y1,uv[0],uv[1],uv[2],uv[3],pattern0,pattern1,pattern2,pattern3,pattern_x,pattern_y);
+	  box = grid.buildLazyBounds(scene,patch,x0,x1,Y0,Y1,uv[0],uv[1],uv[2],uv[3],pattern0,pattern1,pattern2,pattern3,pattern_x,pattern_y);
 	});
 
 	return box;
@@ -994,9 +994,9 @@ namespace embree
 	  const DiscreteTessellationPattern pattern_y = pattern1.size() > pattern3.size() ? pattern1 : pattern3;
 	  const int nx = pattern_x.size();
 	  const int ny = pattern_y.size();
-	  Grid* leaf = Grid::create(alloc,x1-x0+1,y1-y0+1,geomID,primID);
-	  leaf->build(scene,patch,x0,x1,y0,y1,uv[0],uv[1],uv[2],uv[3],pattern0,pattern1,pattern2,pattern3,pattern_x,pattern_y);
-	  node = leaf->createLazyPrims(alloc,0,x1-x0,0,y1-y0).second;
+	  Grid* leaf = Grid::create(alloc,x1-x0+1,Y1-Y0+1,geomID,primID);
+	  leaf->build(scene,patch,x0,x1,Y0,Y1,uv[0],uv[1],uv[2],uv[3],pattern0,pattern1,pattern2,pattern3,pattern_x,pattern_y);
+	  node = leaf->createLazyPrims(alloc,0,x1-x0,0,Y1-Y0).second;
 	});
 	
 	/* link to sub-BVH */
@@ -1018,8 +1018,8 @@ namespace embree
       unsigned short quadID;
       unsigned short x0;
       unsigned short x1;
-      unsigned short y0;
-      unsigned short y1;
+      unsigned short Y0;
+      unsigned short Y1;
     };
     
     static size_t createLazy(BVH4* bvh, BVH4::NodeRef* parent, unsigned geomID, unsigned primID, unsigned quadID, unsigned width, unsigned height, 
