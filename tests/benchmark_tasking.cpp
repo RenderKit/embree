@@ -179,7 +179,7 @@ namespace embree
       fflush(stdout);
 
       /* create task scheduler */
-      TaskSchedulerNew* scheduler = new TaskSchedulerNew;
+      TaskSchedulerNew* scheduler = new TaskSchedulerNew(2);
 
       struct Fib
       {
@@ -190,11 +190,9 @@ namespace embree
         
         void operator() (size_t, size_t) const
         {
-          if (i == 0) 
-            r = 0;
-          else if (i == 1) 
-            r = 1;
-          else {
+          if (i < 2) {
+            r = i;
+          } else {
             size_t r0; const Fib fib0(r0, i-1);
             size_t r1; const Fib fib1(r1, i-2);
             TaskSchedulerNew::spawn(fib0);
@@ -212,6 +210,7 @@ namespace embree
       size_t r1; Fib pfib(r1,N);
       scheduler->spawn_root(pfib);
       double t2 = getSeconds();
+
       printf("  sequential_fib(%zu) = %zu, %3.2fms\n",N,r0,1000.0f*(t1-t0));
       printf("  parallel_fib  (%zu) = %zu, %3.2fms\n",N,r1,1000.0f*(t2-t1));
       passed = r0 == r1;
@@ -227,11 +226,35 @@ namespace embree
     const char* name;
   };
 
+  size_t Fib(size_t n)
+  {
+    if (n<2) {
+      return n;
+    }
+    else {
+      size_t x, y;
+      tbb::parallel_invoke([&]{x=Fib(n-1);}, [&]{y=Fib(n-2);});
+      return x+y;
+    }
+  }
+
   void main()
   {
 #if 1
-    task_scheduler_regression_test task_scheduler_regression("task_scheduler_regression_test");
-    task_scheduler_regression(40);
+    const size_t N = 30;
+    {
+      task_scheduler_regression_test task_scheduler_regression("task_scheduler_regression_test");
+      task_scheduler_regression(N);
+    }
+    {
+      tbb::task_scheduler_init init(tbb::task_scheduler_init::default_num_threads());
+      //tbb::task_scheduler_init init(1);
+      double t0 = getSeconds();
+      size_t r0 = Fib(N);
+      double t1 = getSeconds();
+      printf("  tbb_fib(%zu) = %zu, %3.2fms\n",N,r0,1000.0f*(t1-t0));
+
+    }
 #else
 
     const size_t N = 100*1024*1024;

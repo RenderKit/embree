@@ -22,7 +22,6 @@
 #include "math/math.h"
 #include "sys/sysinfo.h"
 
-
 namespace embree
 {
   TaskSchedulerNew::TaskSchedulerNew(size_t numThreads)
@@ -33,7 +32,7 @@ namespace embree
 
     for (size_t i=0; i<MAX_THREADS; i++)
       threadLocal[i] = NULL;
-    
+
     for (size_t i=0; i<numThreads; i++) {
       threads.push_back(std::thread([i,this]() { schedule(i); }));
     }
@@ -81,7 +80,7 @@ namespace embree
       }
 
       /* work on available task */
-      schedule_on_thread(thread);
+      //schedule_on_thread(thread);
     }
   }
   catch (const std::exception& e) {
