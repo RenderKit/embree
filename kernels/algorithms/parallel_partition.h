@@ -378,9 +378,9 @@ namespace embree
         LockStepTaskScheduler* scheduler = LockStepTaskScheduler::instance();
         const size_t numThreads = scheduler->getNumThreads();
     
-        if (N <= BLOCK_SIZE * numThreads * 2)
+        if (N <= BLOCK_SIZE * numThreads)
           {
-            DBG_PRINT("SERIAL FALLBACK");
+            DBG_PART(DBG_PRINT("SERIAL FALLBACK"));
             size_t mid = serialPartitioning(0,N,leftReduction,rightReduction);
             DBG_PART(
                      DBG_PRINT( mid );

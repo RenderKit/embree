@@ -692,15 +692,15 @@ namespace embree
           const unsigned int splitPos = split.pos;
           const unsigned int splitDim = split.dim;
 
-          size_t mid = parallel_in_place_partitioning<64,PrimRef,PrimInfo>(&src[pinfo.begin],
-                                                                      pinfo.size(),
-                                                                      init,
-                                                                      left,
-                                                                      right,
-                                                                      [&] (const PrimRef &ref) { return mapping.bin_unsafe(center2(ref.bounds()))[splitDim] < splitPos; },
-                                                                      [] (PrimInfo &pinfo,const PrimRef &ref) { pinfo.extend(ref.bounds()); },
-                                                                      [] (PrimInfo &pinfo0,const PrimInfo &pinfo1) { pinfo0.merge(pinfo1); }
-                                                                      );
+          size_t mid = parallel_in_place_partitioning<128,PrimRef,PrimInfo>(&src[pinfo.begin],
+                                                                            pinfo.size(),
+                                                                            init,
+                                                                            left,
+                                                                            right,
+                                                                            [&] (const PrimRef &ref) { return mapping.bin_unsafe(center2(ref.bounds()))[splitDim] < splitPos; },
+                                                                            [] (PrimInfo &pinfo,const PrimRef &ref) { pinfo.extend(ref.bounds()); },
+                                                                            [] (PrimInfo &pinfo0,const PrimInfo &pinfo1) { pinfo0.merge(pinfo1); }
+                                                                            );
           //scheduler->dispatchTask(task_parallelPartition, this, threadID, numThreads);
           size_t numLeft = bin16.getNumLeft(split);
           unsigned int center = pinfo.begin + numLeft;
