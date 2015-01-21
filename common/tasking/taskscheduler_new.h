@@ -265,6 +265,7 @@ namespace embree
     
     std::mutex mutex;        
     std::condition_variable condition;
+    volatile atomic_t numThreadsRunning;
 
     static __thread Thread* thread_local_thread;
     static Thread* thread();

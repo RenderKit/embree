@@ -154,6 +154,8 @@ namespace embree
 
   reduce_benchmark reduce;
 
+  const int CUTOFF = 20;
+
   size_t fib(size_t i)
   {
     if (i == 0) 
@@ -179,7 +181,7 @@ namespace embree
       fflush(stdout);
 
       /* create task scheduler */
-      TaskSchedulerNew* scheduler = new TaskSchedulerNew();
+      TaskSchedulerNew* scheduler = new TaskSchedulerNew(8);
 
       struct Fib
       {
@@ -190,8 +192,8 @@ namespace embree
         
         void operator() (size_t, size_t) const
         {
-          if (i < 2) {
-            r = i;
+          if (i < CUTOFF) {
+            r = fib(i); //i;
           } else {
             size_t r0; const Fib fib0(r0, i-1);
             size_t r1; const Fib fib1(r1, i-2);
@@ -228,30 +230,49 @@ namespace embree
 
   size_t Fib(size_t n)
   {
-    if (n<2) {
-      return n;
+    if (n<CUTOFF) {
+      return fib(n);
     }
     else {
       size_t x, y;
+      //for (volatile size_t i=0; ; i++);
       tbb::parallel_invoke([&]{x=Fib(n-1);}, [&]{y=Fib(n-2);});
+      //if (n == 40) *((char*)NULL) = 0;
       return x+y;
     }
   }
 
+  struct myobserver : public tbb::task_scheduler_observer
+  {
+    virtual void on_scheduler_entry( bool is_worker ) {
+      PRINT("on_scheduler_entry");
+    }
+    virtual void on_scheduler_exit( bool is_worker ) {
+      PRINT("on_scheduler_exit");
+    }
+  };
+
   void main()
   {
-#if 1
-    const size_t N = 30;
-    {
+#if 0
+    const size_t N = 40;
+    //tbb::task_arena limited(2);
+    //limited.my_limit = 1000000;
+
+    /*{
       task_scheduler_regression_test task_scheduler_regression("task_scheduler_regression_test");
       task_scheduler_regression(N);
-    }
+      }*/
     {
-      tbb::task_scheduler_init init(tbb::task_scheduler_init::default_num_threads());
-      //tbb::task_scheduler_init init(1);
+      //tbb::task_scheduler_init init(tbb::task_scheduler_init::default_num_threads());
+      tbb::task_scheduler_init init(8);
+      myobserver observer; observer.observe();
       double t0 = getSeconds();
       size_t r0 = Fib(N);
       double t1 = getSeconds();
+      //sleep(1);
+      //*((char*)NULL) = 0;
+      //Fib(N);
       printf("  tbb_fib(%zu) = %zu, %3.2fms\n",N,r0,1000.0f*(t1-t0));
 
     }

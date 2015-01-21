@@ -27,7 +27,7 @@ namespace embree
   std::mutex g_mutex; // FIXME: remove
 
   TaskSchedulerNew::TaskSchedulerNew(size_t numThreads)
-    : numThreads(numThreads), terminate(false), anyTasksRunning(0)
+    : numThreads(numThreads), terminate(false), anyTasksRunning(0), numThreadsRunning(0)
   {
     if (!numThreads)
       numThreads = getNumberOfLogicalThreads();
@@ -36,6 +36,7 @@ namespace embree
       threadLocal[i] = NULL;
 
     for (size_t i=1; i<numThreads; i++) {
+      atomic_add(&numThreadsRunning,1);
       threads.push_back(std::thread([i,this]() { schedule(i); }));
     }
   }
@@ -46,7 +47,9 @@ namespace embree
     mutex.lock();
     terminate = true;
     mutex.unlock();
-    condition.notify_all();
+
+    while (numThreadsRunning)
+      condition.notify_all();
 
     /* wait for threads to terminate */
     for (size_t i=0; i<threads.size(); i++) 
@@ -76,16 +79,18 @@ namespace embree
     while (!terminate)
     {
       /* wait for tasks to enter the tasking system */
-      while (!anyTasksRunning) {
+      while (!anyTasksRunning && !terminate) {
         std::unique_lock<std::mutex> lock(mutex);
         condition.wait(lock);
-        if (terminate) return;
       }
+      if (terminate) break;
       
       /* work on available task */
       atomic_add(&anyTasksRunning,+1);
       schedule_on_thread(thread);
     }
+    
+    atomic_add(&numThreadsRunning,-1);
   }
   catch (const std::exception& e) {
     std::cout << "Error: " << e.what() << std::endl; // FIXME: propagate to main thread
