@@ -25,6 +25,9 @@ namespace embree
 {
   std::fstream fs;
 
+  static const size_t ITER = 10;
+  TaskSchedulerNew* newscheduler = NULL;
+
   struct reduce_benchmark
   {
     reduce_benchmark() 
@@ -41,7 +44,9 @@ namespace embree
       const size_t begin = (threadIndex+0)*N/threadCount;
       const size_t end   = (threadIndex+1)*N/threadCount;
       double c = 0;
-      for (size_t i=begin; i<end; i++) c += sin(array[i]);
+      for (size_t i=begin; i<end; i++) 
+	for (size_t j=0; j<ITER; j++)
+	  c += sin(array[i]);
       threadReductions[threadIndex] = c;
     }
     
@@ -60,7 +65,8 @@ namespace embree
     {
       double sum = 0.0;
       for (size_t i=0; i<N; i++) 
-        sum += sin(array[i]);
+	for (size_t j=0; j<ITER; j++)
+	  sum += sin(array[i]);
       return sum;
     }
     
@@ -68,7 +74,9 @@ namespace embree
     {
       double t0 = getSeconds();
       double c0 = 0;
-      for (size_t i=0; i<N; i++) c0 += sin(array[i]);
+      for (size_t i=0; i<N; i++) 
+	for (size_t j=0; j<ITER; j++)
+	  c0 += sin(array[i]);
       volatile double result = c0;
       double t1 = getSeconds();
 
@@ -106,10 +114,13 @@ namespace embree
       double t0 = getSeconds();
       double c2 = 0;
       //LockStepTaskScheduler::execute_tbb([&] () {
-      c2 = tbb::parallel_reduce(tbb::blocked_range<size_t>(0,N,1024), 0.0, 
+      c2 = tbb::parallel_reduce(tbb::blocked_range<size_t>(0,N,128), 0.0, 
                                 [&](const tbb::blocked_range<size_t>& r, double value) -> double {
                                   double c = value; 
-                                  for (size_t i=r.begin(); i<r.end(); i++) c += sin(array[i]); 
+                                  for (size_t i=r.begin(); i<r.end(); i++) {
+				    for (size_t j=0; j<ITER; j++)
+				      c += sin(array[i]); 
+				  }
                                   return c;
                                 },
                                 std::plus<double>());
@@ -124,6 +135,40 @@ namespace embree
         }*/
       return t1-t0;
     }
+
+    double myreduce(size_t n0, size_t n1)
+    {
+      double c = 0;
+      if (n1-n0<128) {
+	for (size_t i=n0; i<n1; i++)
+	  for (size_t j=0; j<ITER; j++)
+	    c += sin(array[i]);
+	return c;
+      }
+      else {
+	size_t center = (n0+n1)/2;
+	double c0; TaskSchedulerNew::spawn([&](size_t,size_t){ c0=myreduce(n0,center); });
+	double c1; TaskSchedulerNew::spawn([&](size_t,size_t){ c1=myreduce(center,n1); });
+	TaskSchedulerNew::wait();
+	return c0+c1;
+      }
+    }
+
+    double run_mytbb(size_t N)
+    {
+      double t0 = getSeconds();
+      double c2 = 0;
+      newscheduler->spawn_root([&](size_t,size_t){ c2 = myreduce(0,N); });
+      volatile double result = c2;
+      double t1 = getSeconds();
+      
+      /*double sum = reduce_sequential(N);
+      if (abs(sum-c2) > 1E-5) {
+        std::cerr << "internal error: " << sum << " != " << c2 << std::endl;
+        exit(1);
+	}*/
+      return t1-t0;
+    }
     
     const char* name;
   };
@@ -131,8 +176,8 @@ namespace embree
   template<typename Closure>
   void benchmark(size_t N0, size_t N1, const char* name, const Closure& closure)
   {
-    fs << "# " << name << std::endl;
-    fs << "# N dt_min dt_avg dt_max M/s(min) M/s(avg) M/s(max)" << std::endl;
+    std::cout << "# " << name << std::endl;
+    std::cout << "# N dt_min dt_avg dt_max M/s(min) M/s(avg) M/s(max)" << std::endl;
     for (size_t N = N0; N < N1; N *= 1.5) 
     {
       double t_min = pos_inf;
@@ -146,9 +191,9 @@ namespace embree
         t_max = max(t_max,dt);
       }
       t_avg /= 9.0;
-      fs << N << " " 
-                << 1000.0f*t_min << " " << 1000.0f*t_avg << " " << 1000.0f*t_max << " " 
-                << 1E-6*N/t_max << " " << 1E-6*N/t_avg << " " << 1E-6*N/t_min << std::endl;
+      std::cout << N << " " 
+		<< 1000.0f*t_min << " " << 1000.0f*t_avg << " " << 1000.0f*t_max << " " 
+		<< 1E-6*N/t_max << " " << 1E-6*N/t_avg << " " << 1E-6*N/t_min << std::endl;
     }
   }
 
@@ -252,21 +297,21 @@ namespace embree
     }
   };
 
-  void main()
+  void main(int argc, const char* argv[])
   {
 #if 0
     const size_t N = 40;
     //tbb::task_arena limited(2);
     //limited.my_limit = 1000000;
 
-    /*{
+    {
       task_scheduler_regression_test task_scheduler_regression("task_scheduler_regression_test");
       task_scheduler_regression(N);
-      }*/
+    }
     {
       //tbb::task_scheduler_init init(tbb::task_scheduler_init::default_num_threads());
       tbb::task_scheduler_init init(8);
-      myobserver observer; observer.observe();
+      //myobserver observer; observer.observe();
       double t0 = getSeconds();
       size_t r0 = Fib(N);
       double t1 = getSeconds();
@@ -278,29 +323,48 @@ namespace embree
     }
 #else
 
-    const size_t N = 100*1024*1024;
+    const size_t N = 10*1024*1024;
     const size_t N_seq = 10*1024*1024;
+
+    int test = 0;
+    if (argc > 1) test = atoi(argv[1]);
 
     /* parallel reduction */
     reduce.init(N);
-    
-    fs.open ("benchmark_reduce_sequential.csv", std::fstream::out);
-    benchmark(1000,N_seq,"reduce_sequential",[] (size_t N) -> double { return reduce.run_sequential(N); });
-    fs.close();
 
-    fs.open ("benchmark_reduce_lockstep.csv", std::fstream::out);
-    TaskScheduler::create();
-    execute_closure([&] () -> double { benchmark(1000,N,"reduce_lockstep",[] (size_t N) -> double { return reduce.run_locksteptaskscheduler(N); }); return 0.0; });
-    TaskScheduler::destroy();
-    fs.close();
+    if (test == 1) {
+      fs.open ("benchmark_reduce_sequential.csv", std::fstream::out);
+      benchmark(1000,N_seq,"reduce_sequential",[] (size_t N) -> double { return reduce.run_sequential(N); });
+      fs.close();
+    }
 
+    if (test == 2) {
+      fs.open ("benchmark_reduce_lockstep.csv", std::fstream::out);
+      TaskScheduler::create();
+      execute_closure([&] () -> double { benchmark(1000,N,"reduce_lockstep",[] (size_t N) -> double { return reduce.run_locksteptaskscheduler(N); }); return 0.0; });
+      TaskScheduler::destroy();
+      fs.close();
+    }
+
+    if (test == 3)
     {
       fs.open ("benchmark_reduce_tbb.csv", std::fstream::out);
+      //tbb::task_scheduler_init init(128);
       tbb::task_scheduler_init init(tbb::task_scheduler_init::default_num_threads());
       benchmark(1000,N,"reduce_tbb",[] (size_t N) -> double { return reduce.run_tbb(N); });
       fs.close();
     }
 
+    if (test == 4)
+    {
+      newscheduler = new TaskSchedulerNew();
+      fs.open ("benchmark_reduce_mytbb.csv", std::fstream::out);
+      benchmark(1000,N,"reduce_mytbb",[] (size_t N) -> double { return reduce.run_mytbb(N); });
+      fs.close();
+      delete newscheduler;
+    }
+
+#if 0
     /* parallel sort */
     int* src = new int[N];
     int* array = new int[N];
@@ -354,11 +418,13 @@ namespace embree
     TaskScheduler::destroy();
     fs.close();
 #endif
+#endif
   }
 }
 
-int main() {
-  embree::main();
+int main(int argc, const char* argv[]) 
+{
+  embree::main(argc,argv);
   return 0;
 }
   
