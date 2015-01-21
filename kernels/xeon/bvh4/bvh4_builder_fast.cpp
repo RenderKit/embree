@@ -1252,7 +1252,7 @@ namespace embree
       else 
         {
           state->parallelBinner.partition(pinfo,tmp,prims,leftChild,rightChild,threadID,numThreads,scheduler);
-          //state->parallelBinner.partitionNEW(pinfo,prims,leftChild,rightChild,threadID,numThreads,scheduler);
+          // state->parallelBinner.partitionNEW(pinfo,prims,leftChild,rightChild,threadID,numThreads,scheduler);
         }
     }
     

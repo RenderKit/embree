@@ -384,7 +384,12 @@ namespace embree
         {
           bin_copy(prims+begin,end-begin,mapping,dest+begin);
         }
-	
+
+        __forceinline void bin(const PrimRef* prims, size_t begin, size_t end, const Mapping& mapping)
+        {
+          bin(prims+begin,end-begin,mapping);
+        }
+
 	/*! bins a list of bezier curves */
         __forceinline void bin(BezierRefList& prims, const Mapping& mapping)
         {
@@ -729,6 +734,7 @@ namespace embree
           const size_t endID   = pinfo.begin + (threadID+1)*pinfo.size()/numThreads;
           bin16.clear();
           bin16.bin_copy(src,startID,endID,mapping,dst);
+          //bin16.bin(src,startID,endID,mapping);
         }
         
         TASK_FUNCTION_(ParallelBinner,parallelPartition);
