@@ -146,16 +146,16 @@ namespace embree
     static TaskScheduler* instance;
     
     /*! creates the threads */
-    static void create(size_t numThreads = 0);
+    static __dllexport2 void create(size_t numThreads = 0);
 
     /*! returns the number of threads used */
-    static size_t getNumThreads();
+    static __dllexport2 size_t getNumThreads();
 
     /*! enables specified number of threads */
     static size_t enableThreads(size_t N);
 
     /*! add a task to the scheduler */
-    static void addTask(ssize_t threadIndex, QUEUE queue, Task* task);
+    static __dllexport2 void addTask(ssize_t threadIndex, QUEUE queue, Task* task);
 
     /*! executes a task, function returns if execution finished */
     static void executeTask(size_t threadIndex, size_t threadCount, runFunction run, void* runData, size_t elts, completeFunction complete, void* completeData, const char* name);
@@ -308,12 +308,12 @@ namespace embree
 #endif
 
     static __thread LockStepTaskScheduler* t_scheduler;
-    static LockStepTaskScheduler* instance();
-    static void setInstance(LockStepTaskScheduler*);
+    static __dllexport2 LockStepTaskScheduler* instance();
+    static __dllexport2 void setInstance(LockStepTaskScheduler*);
 
     static __thread size_t t_threadIndex;
-    static size_t threadIndex();
-    static void setThreadIndex(size_t threadIndex);
+    static __dllexport2 size_t threadIndex();
+    static __dllexport2 void setThreadIndex(size_t threadIndex);
 
     static const unsigned int CONTROL_THREAD_ID = 0;
 
@@ -340,10 +340,10 @@ namespace embree
     __aligned(64) Barrier taskBarrier;
 #endif
 
-    bool enter(size_t threadIndex, size_t threadCount);
-    void leave(size_t threadIndex, size_t threadCount);
+    __dllexport2 bool enter(size_t threadIndex, size_t threadCount);
+    __dllexport2 void leave(size_t threadIndex, size_t threadCount);
 
-    bool dispatchTask(const size_t threadID, size_t numThreads);
+    __dllexport2 bool dispatchTask(const size_t threadID, size_t numThreads);
 
     void dispatchTaskMainLoop(const size_t threadID, const size_t numThreads);
     void releaseThreads(const size_t numThreads);

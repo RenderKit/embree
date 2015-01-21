@@ -201,6 +201,6 @@ namespace embree
       }
     };
     
-    Builder* BVH4Triangle4BuilderFastNew  (void* bvh, Scene* scene, size_t mode) { return new class BVH4Triangle4BuilderFastClass((BVH4*)bvh,scene); }
+    Builder* BVH4Triangle4BuilderFastNew  (void* bvh, Scene* scene, size_t mode) { return new BVH4Triangle4BuilderFastClass((BVH4*)bvh,scene); }
   }
 }

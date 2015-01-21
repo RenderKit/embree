@@ -207,6 +207,12 @@ __forceinline size_t __bscf(size_t& v)
 
 #endif
 
+typedef int16 atomic16_t;
+
+__forceinline int16 atomic_add( int16 volatile* p, int16 v ) {
+  return _InterlockedExchangeAdd16((volatile short*)p,v);
+}
+
 typedef int32 atomic32_t;
 
 __forceinline int32 atomic_add(volatile int32* p, const int32 v) {

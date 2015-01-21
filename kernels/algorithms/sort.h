@@ -461,7 +461,15 @@ namespace embree
     ParallelRadixSort& state;
   };
 
-  template<typename Ty, typename Key = Ty>
+  template<typename Ty>
+    void radix_sort(Ty* const src, Ty* const tmp, const size_t N)
+  {
+    ParallelRadixSort radix_sort_state;
+    ParallelRadixSortT<Ty> sort(radix_sort_state);
+    sort(src,tmp,N);
+  }
+
+  template<typename Ty, typename Key>
     void radix_sort(Ty* const src, Ty* const tmp, const size_t N)
   {
     ParallelRadixSort radix_sort_state;
@@ -626,7 +634,15 @@ namespace embree
     ParallelRadixSortCopy& state;
   };
 
-  template<typename Ty, typename Key = Ty>
+  template<typename Ty>
+    void radix_sort_copy(Ty* const src, Ty* const dst, const size_t N)
+  {
+    ParallelRadixSortCopy radix_sort_state;
+    ParallelRadixSortCopyT<Ty> sort(radix_sort_state);
+    sort(src,dst,N);
+  }
+
+  template<typename Ty, typename Key>
     void radix_sort_copy(Ty* const src, Ty* const dst, const size_t N)
   {
     ParallelRadixSortCopy radix_sort_state;
