@@ -26,12 +26,14 @@
 #include <emmintrin.h>
 #include <xmmintrin.h>
 
+#if defined(__WIN32__)
 #if (__MSV_VER <= 1700)
 namespace std
 {
   __forceinline bool isinf ( const float x ) { return !_finite(x); }
   __forceinline bool isnan ( const float x ) { return _isnan(x); }
 }
+#endif
 #endif
 
 namespace embree
