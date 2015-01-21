@@ -158,9 +158,11 @@
 #ifdef __WIN32__
 #define __dllexport extern "C" __declspec(dllexport)
 #define __dllimport extern "C" __declspec(dllimport)
+#define __dllexport2 __declspec(dllexport)
 #else
 #define __dllexport extern "C" __attribute__ ((visibility ("default")))
 #define __dllimport extern "C"
+#define __dllexport2 
 #endif
 
 #if defined(_WIN32) || defined(RTCORE_EXPORT_ALL_SYMBOLS)

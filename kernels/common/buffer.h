@@ -32,8 +32,8 @@ namespace embree
     ~Buffer ();
       
     /*! disallow copy */
-    Buffer(const Buffer&) = delete;
-    Buffer& operator=(const Buffer&) = delete;
+    //Buffer(const Buffer&) = delete;
+    //Buffer& operator=(const Buffer&) = delete;
 
   public:
     
