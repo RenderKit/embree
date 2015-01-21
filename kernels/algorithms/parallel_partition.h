@@ -154,13 +154,24 @@ namespace embree
 
         while(1)
           {
-            while (likely(l <= r && cmp(*l) /* *l < pivot */)) 
+	    /* *l < pivot */
+            while (likely(l <= r && cmp(*l) )) 
               {
+#if defined(__MIC__)
+		prefetch<PFHINT_L1EX>(l+4);	  
+#endif
+		//if (!cmp(*l)) break;
                 reduction_t(leftReduc,*l);
                ++l;
               }
-            while (likely(l <= r && !cmp(*r) /* *r >= pivot) */))
+	    /* *r >= pivot) */
+            while (likely(l <= r && !cmp(*r)))
               {
+#if defined(__MIC__)
+		prefetch<PFHINT_L1EX>(r-4);	  
+#endif
+		//if (cmp(*r)) break;
+
                 reduction_t(rightReduc,*r);
                 --r;
               }
@@ -187,6 +198,10 @@ namespace embree
           {
             while(cmp(array[left_begin]) /* array[left_begin] < pivot */)
               {
+#if defined(__MIC__)
+		prefetch<PFHINT_L1EX>(&array[left_begin] + 2);	  
+		//prefetch<PFHINT_L2EX>(&array[left_begin] + 16);	  
+#endif
                 reduction_t(leftReduc,array[left_begin]);
 
                 left_begin++;
@@ -195,6 +210,10 @@ namespace embree
 
             while(!cmp(array[right_begin]) /* array[right_begin] >= pivot */)
               {
+#if defined(__MIC__)
+		prefetch<PFHINT_L1EX>(&array[right_begin] - 2);	  
+		//prefetch<PFHINT_L2EX>(&array[right_begin] - 16);	  
+#endif
                 reduction_t(rightReduc,array[right_begin]);
 
                 right_begin++;
@@ -202,6 +221,11 @@ namespace embree
               }
 
             if (unlikely(left_begin == left_end || right_begin == right_end)) break;
+
+#if defined(__MIC__)
+	    prefetch<PFHINT_L1EX>(&array[right_begin]);	  
+	    prefetch<PFHINT_L1EX>(&array[left_begin]);	  
+#endif
             
             reduction_t(leftReduc ,array[right_begin]);
             reduction_t(rightReduc,array[left_begin]);
@@ -380,7 +404,10 @@ namespace embree
     
         if (N <= BLOCK_SIZE * numThreads)
           {
-            DBG_PART(DBG_PRINT("SERIAL FALLBACK"));
+#if defined(__MIC__)
+            DBG_PRINT("SERIAL FALLBACK");
+            DBG_PRINT("numThreads");
+#endif
             size_t mid = serialPartitioning(0,N,leftReduction,rightReduction);
             DBG_PART(
                      DBG_PRINT( mid );

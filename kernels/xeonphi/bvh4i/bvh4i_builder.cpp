@@ -18,6 +18,7 @@
 #include "bvh4i/bvh4i_builder.h"
 #include "bvh4i/bvh4i_statistics.h"
 #include "bvh4i/bvh4i_rotate.h"
+#include "algorithms/parallel_partition.h"
 
 
 
@@ -31,13 +32,14 @@
 #define L1_PREFETCH_ITEMS 2
 #define L2_PREFETCH_ITEMS 16
 
-#define TIMER(x) 
+#define TIMER(x) x 
 #define DBG(x) 
 
 //#define PROFILE
-#define PROFILE_ITERATIONS 100
+#define PROFILE_ITERATIONS 20
 
 #define MEASURE_MEMORY_ALLOCATION_TIME 0
+#define USE_IN_PLACE_PARTITIONING 0
 
 //#define CHECK_BUILD_RECORD_IN_DEBUG_MODE
 
@@ -267,7 +269,9 @@ namespace embree
 
     /* allocate BVH data */
     allocateData(threadCount ,totalNumPrimitives);
-    if (likely(numPrimitives > SINGLE_THREADED_BUILD_THRESHOLD &&  threadCount > 1) )
+    //if (likely(numPrimitives > SINGLE_THREADED_BUILD_THRESHOLD &&  threadCount > 1) )
+    if (likely(threadCount > 1) )
+
       {
 	DBG(std::cout << "PARALLEL BUILD" << std::endl);
 
@@ -801,7 +805,12 @@ namespace embree
 
     PrimRef  *__restrict__ const tmp_prims = (PrimRef*)accel;
 
+#if USE_IN_PLACE_PARTITIONING == 1
+    fastbin<PrimRef>(prims,startID,endID,centroidBoundsMin_2,scale,global_bin16[threadID]);    
+
+#else
     fastbin_copy<PrimRef,true>(prims,tmp_prims,startID,endID,centroidBoundsMin_2,scale,global_bin16[threadID]);    
+#endif
 
     scene->lockstep_scheduler.syncThreadsWithReduction( threadID, numThreads, reduceBinsParallel, global_bin16 );
     
@@ -890,6 +899,9 @@ namespace embree
     size_t num_local_right = 0;
 
     const mic_m dim_mask = mic_m::shift1[bestSplitDim];
+
+
+
 
     for (;l_source<r_source;)
       {
@@ -1101,7 +1113,7 @@ namespace embree
     else 
       {
 	leftChild.bounds.reset();
-	rightChild.bounds.reset();
+	rightChild.bounds.reset();	
 
 	const unsigned int mid = partitionPrimitives<L2_PREFETCH_ITEMS>(prims ,current.begin, current.end-1, split.pos, split.dim, centroidBoundsMin_2, scale, leftChild.bounds, rightChild.bounds);
 
@@ -1188,13 +1200,96 @@ namespace embree
 	global_sharedData.left.reset();
 	global_sharedData.right.reset();
 
+#if USE_IN_PLACE_PARTITIONING == 0
 	global_sharedData.lCounter.reset(0);
 	global_sharedData.rCounter.reset(0); 
 
-	scene->lockstep_scheduler.dispatchTask( task_parallelPartitioningGlobal, this, threadID, numThreads );
 
+	{
+	  const mic_f centroidMin = broadcast4to16f(&global_sharedData.rec.bounds.centroid2.lower);
+	  const mic_f centroidMax = broadcast4to16f(&global_sharedData.rec.bounds.centroid2.upper);
+
+	  const mic_f centroidBoundsMin_2 = centroidMin;
+	  const mic_f centroidDiagonal_2  = centroidMax-centroidMin;
+	  const mic_f scale = select(centroidDiagonal_2 != 0.0f,rcp(centroidDiagonal_2) * mic_f(16.0f * 0.99f),mic_f::zero());
+ 
+	  const unsigned int bestSplitDim =  global_sharedData.split.dim;
+	  const unsigned int bestSplit    =  global_sharedData.split.pos;
+
+	  const mic_f c = mic_f(centroidBoundsMin_2[bestSplitDim]);
+	  const mic_f s = mic_f(scale[bestSplitDim]);
+	  const mic_m dim_mask = mic_m::shift1[bestSplitDim];
+	  
+	  /*
+	  DBG_PRINT(c);
+	  DBG_PRINT(s);
+	  DBG_PRINT(dim_mask);
+	  */
+
+	}
+
+	scene->lockstep_scheduler.dispatchTask( task_parallelPartitioningGlobal, this, threadID, numThreads );
 	const unsigned int mid = current.begin + global_sharedData.split.numLeft;
 
+	/*
+	DBG_PRINT(mid);
+	DBG_PRINT(global_sharedData.left);
+	DBG_PRINT(global_sharedData.right);
+	*/
+
+#else
+	Centroid_Scene_AABB init;
+	init.reset();
+
+	const unsigned int bestSplitDim     = global_sharedData.split.dim;
+	const unsigned int bestSplit        = global_sharedData.split.pos;
+	const unsigned int bestSplitNumLeft = global_sharedData.split.numLeft;
+
+	const mic_f centroidMin = broadcast4to16f(&global_sharedData.rec.bounds.centroid2.lower);
+	const mic_f centroidMax = broadcast4to16f(&global_sharedData.rec.bounds.centroid2.upper);
+
+	const mic_f centroidBoundsMin_2 = centroidMin;
+	const mic_f centroidDiagonal_2  = centroidMax-centroidMin;
+	const mic_f scale = select(centroidDiagonal_2 != 0.0f,rcp(centroidDiagonal_2) * mic_f(16.0f * 0.99f),mic_f::zero());
+	const mic_f c = mic_f(centroidBoundsMin_2[bestSplitDim]);
+	const mic_f s = mic_f(scale[bestSplitDim]);
+	const mic_m dim_mask = mic_m::shift1[bestSplitDim];
+	const mic_f bestSplit_f = mic_f(bestSplit);
+
+	/*
+	DBG_PRINT(c);
+	DBG_PRINT(s);
+	DBG_PRINT(dim_mask);
+	DBG_PRINT(current.begin);
+	DBG_PRINT(current.size());
+	*/
+
+	size_t mid_parallel = parallel_in_place_partitioning<16,PrimRef,Centroid_Scene_AABB>(&prims[current.begin],
+											     current.size(),
+											     init,
+											     global_sharedData.left,
+											     global_sharedData.right,
+											     [&] (const PrimRef &ref) { 
+											       const mic2f b = ref.getBounds();
+											       const mic_f b_min = b.x;
+											       const mic_f b_max = b.y;
+											       const mic_f b_centroid2 = b_min + b_max;
+											       return any(lt_split(b_min,b_max,dim_mask,c,s,bestSplit_f));
+											     },
+											     [] (Centroid_Scene_AABB &cs,const PrimRef &ref) { cs.extend(ref); },
+											     [] (Centroid_Scene_AABB &cs0,const Centroid_Scene_AABB &cs1) { cs0.extend(cs1); }
+											     );
+	const unsigned int mid = current.begin + mid_parallel;
+
+	/*
+	DBG_PRINT(mid_parallel);
+	DBG_PRINT(mid);
+	DBG_PRINT(global_sharedData.left);
+	DBG_PRINT(global_sharedData.right);
+	*/
+
+	assert(mid_parallel == global_sharedData.split.numLeft);
+#endif
 	if (unlikely(current.begin == mid || mid == current.end)) 
 	  {
 	    std::cout << "WARNING: mid == current.begin || mid == current.end " << std::endl;
@@ -1261,12 +1356,50 @@ namespace embree
 	sd.left.reset();
 	sd.right.reset();
 
+#if 0
+
+	Centroid_Scene_AABB init;
+	init.reset();
+
+	const unsigned int bestSplitDim     = sd.split.dim;
+	const unsigned int bestSplit        = sd.split.pos;
+	const unsigned int bestSplitNumLeft = sd.split.numLeft;
+
+	const mic_f centroidMin = broadcast4to16f(&sd.rec.bounds.centroid2.lower);
+	const mic_f centroidMax = broadcast4to16f(&sd.rec.bounds.centroid2.upper);
+
+	const mic_f centroidBoundsMin_2 = centroidMin;
+	const mic_f centroidDiagonal_2  = centroidMax-centroidMin;
+	const mic_f scale = select(centroidDiagonal_2 != 0.0f,rcp(centroidDiagonal_2) * mic_f(16.0f * 0.99f),mic_f::zero());
+	const mic_f c = mic_f(centroidBoundsMin_2[bestSplitDim]);
+	const mic_f s = mic_f(scale[bestSplitDim]);
+	const mic_m dim_mask = mic_m::shift1[bestSplitDim];
+	const mic_f bestSplit_f = mic_f(bestSplit);
+
+	size_t mid_parallel = parallel_in_place_partitioning<64,PrimRef,Centroid_Scene_AABB>(&prims[current.begin],
+											     current.size(),
+											     init,
+											     sd.left,
+											     sd.right,
+											     [&] (const PrimRef &ref) { 
+											       const mic2f b = ref.getBounds();
+											       const mic_f b_min = b.x;
+											       const mic_f b_max = b.y;
+											       const mic_f b_centroid2 = b_min + b_max;
+											       return any(lt_split(b_min,b_max,dim_mask,c,s,bestSplit_f));
+											     },
+											     [] (Centroid_Scene_AABB &cs,const PrimRef &ref) { cs.extend(ref); },
+											     [] (Centroid_Scene_AABB &cs0,const Centroid_Scene_AABB &cs1) { cs0.extend(cs1); }
+											     );
+	const unsigned int mid = current.begin + mid_parallel;
+	
+#else
 	sd.lCounter.reset(0);
 	sd.rCounter.reset(0); 
 
 	localTaskScheduler[globalCoreID].dispatchTask( task_parallelPartitioningLocal, this, localThreadID, globalThreadID );
-
 	const unsigned int mid = current.begin + sd.split.numLeft;
+#endif
 
 	if (unlikely(mid == current.begin || mid == current.end)) 
 	  {
@@ -1568,9 +1701,12 @@ namespace embree
     const mic_f centroidDiagonal_2  = centroidMax-centroidMin;
     const mic_f scale = select(centroidDiagonal_2 != 0.0f,rcp(centroidDiagonal_2) * mic_f(16.0f * 0.99f),mic_f::zero());
 
+#if 0
+    fastbin<PrimRef>(prims,startID,endID,centroidBoundsMin_2,scale,global_bin16[globalThreadID]);    
+#else
     PrimRef  *__restrict__ const tmp_prims = (PrimRef*)accel;
-
     fastbin_copy<PrimRef,true>(prims,tmp_prims,startID,endID,centroidBoundsMin_2,scale,global_bin16[globalThreadID]);    
+#endif
 
     localTaskScheduler[globalCoreID].syncThreads(localThreadID);
 

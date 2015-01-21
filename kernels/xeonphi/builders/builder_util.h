@@ -17,6 +17,7 @@
 #pragma once
 
 #include "common/default.h"
+#include "common/primref.h"
 
 namespace embree
 {
@@ -49,6 +50,11 @@ namespace embree
       assert(!b.empty());
       centroid2.extend(center2(b));
       geometry.extend(b);
+    }
+
+    __forceinline void extend(const PrimRef& b) {
+      centroid2.extend(b.center2());
+      geometry.extend(BBox3fa(b.lower,b.upper));
     }
 
     __forceinline void extend(const Centroid_Scene_AABB& v) {
@@ -142,6 +148,10 @@ namespace embree
 
     __forceinline unsigned int items() const {
       return end - begin;
+    }
+
+    __forceinline unsigned int size() const {
+      return items();
     }
 
     __forceinline float sceneArea() {
