@@ -41,7 +41,7 @@
 
 #define DBG(x) 
 
-//#define PROFILE
+#define PROFILE
 
 namespace embree
 {
@@ -1251,8 +1251,8 @@ namespace embree
       /* parallel partitioning of items */
       else 
         {
-          state->parallelBinner.partition(pinfo,tmp,prims,leftChild,rightChild,threadID,numThreads,scheduler);
-          //state->parallelBinner.partitionNEW(pinfo,prims,leftChild,rightChild,threadID,numThreads,scheduler);
+          //state->parallelBinner.partition(pinfo,tmp,prims,leftChild,rightChild,threadID,numThreads,scheduler);
+          state->parallelBinner.partitionNEW(pinfo,prims,leftChild,rightChild,threadID,numThreads,scheduler);
         }
     }
     
