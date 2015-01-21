@@ -17,7 +17,10 @@
 #pragma once
 
 #define CACHELINE_SIZE 64
-#define PAGE_SIZE 4096
+
+#if !defined(PAGE_SIZE)
+  #define PAGE_SIZE 4096
+#endif
 
 #include "sys/platform.h"
 

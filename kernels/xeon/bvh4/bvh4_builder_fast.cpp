@@ -168,7 +168,8 @@ namespace embree
       double dt_min = pos_inf;
       double dt_avg = 0.0f;
       double dt_max = neg_inf;
-      for (size_t i=0; i<20; i++) 
+#define ITERATIONS 20
+      for (size_t i=0; i<ITERATIONS; i++) 
       {
         double t0 = getSeconds();
 #endif
@@ -190,7 +191,7 @@ namespace embree
         dt_avg = dt_avg + dt;
         dt_max = max(dt_max,dt);
       }
-      dt_avg /= double(20);
+      dt_avg /= double(ITERATIONS);
       
       std::cout << "[DONE]" << std::endl;
       std::cout << "  min = " << 1000.0f*dt_min << "ms (" << numPrimitives/dt_min*1E-6 << " Mtris/s)" << std::endl;
@@ -1251,8 +1252,7 @@ namespace embree
       /* parallel partitioning of items */
       else 
         {
-          //state->parallelBinner.partition(pinfo,tmp,prims,leftChild,rightChild,threadID,numThreads,scheduler);
-          state->parallelBinner.partitionNEW(pinfo,prims,leftChild,rightChild,threadID,numThreads,scheduler);
+          state->parallelBinner.partition(pinfo,tmp,prims,leftChild,rightChild,threadID,numThreads,scheduler);
         }
     }
     

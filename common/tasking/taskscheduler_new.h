@@ -22,6 +22,8 @@
 
 namespace embree
 {
+  extern std::mutex g_mutex;
+  
   struct TaskSchedulerNew
   {
     struct TaskFunction {
@@ -46,10 +48,11 @@ namespace embree
       __forceinline Task()
         : valid(false) {}
 
-      __forceinline Task (TaskFunction* closure, Task* parent, size_t begin, size_t end, size_t block) 
-        : closure(closure), parent(parent), begin(begin), end(end), block(block), dependencies(1) 
+      __forceinline Task (TaskFunction* closure, Task* parent, size_t oldStackPtr, size_t begin, size_t end, size_t block) 
+        : closure(closure), parent(parent), oldStackPtr(oldStackPtr), begin(begin), end(end), block(block), dependencies(1) 
       {
         validate(true);
+        if (parent) parent->addDependency();
       }
 
       __forceinline void validate(bool valid0) {
@@ -70,7 +73,7 @@ namespace embree
         Lock<AtomicMutex> lock(mutex);
         if (isLeaf()) return false;
         size_t center = (begin+end)/2;
-        new (&child) Task(closure, this, center, end, block);
+        new (&child) Task(closure, this, -1, center, end, block);
         end = center;
         atomic_add(&dependencies,1);
         return true;
@@ -86,19 +89,19 @@ namespace embree
           return 0;
         }
 
-        if (isLeaf()) { 
-          new (&child) Task(closure, this, begin, end, block);
+        if (isLeaf()) {
+          new (&child) Task(closure, this, -1, begin, end, block);
           begin = end = 0;
-          atomic_add(&dependencies,1);
+          validate(false);
           mutex.unlock();
           return 1;
         } 
         
         else {
           size_t center = (begin+end)/2;
-          new (&child) Task(closure, this, center, end, block);
+          new (&child) Task(closure, this, -1, center, end, block);
           end = center;
-          atomic_add(&dependencies,1);
+          addDependency();
           mutex.unlock();
           return 2;
         }
@@ -113,9 +116,10 @@ namespace embree
         mutex.lock();
         validate(false);
         if (size()) {
+          Task* prevTask = TaskSchedulerNew::thread_local_task;
           TaskSchedulerNew::thread_local_task = this;
           closure->execute(begin,end);
-          TaskSchedulerNew::thread_local_task = NULL; // FIXME: not required
+          TaskSchedulerNew::thread_local_task = prevTask;
         }
         mutex.unlock();
         removeDependency();
@@ -129,6 +133,7 @@ namespace embree
       AtomicMutex mutex;
       Task* parent;
       volatile size_t begin, end, block;
+      size_t oldStackPtr;
       volatile atomic_t dependencies;
     };
     
@@ -158,31 +163,42 @@ namespace embree
         size_t oldStackPtr = stackPtr;
         Task* parent = TaskSchedulerNew::task();
         TaskFunction* func = new (alloc(sizeof(Closure))) ClosureFunction<Closure>(closure);
-        new (&tasks[right++]) Task(func,parent,begin,end,block);
+        new (&tasks[right++]) Task(func,parent,oldStackPtr,begin,end,block);
       }
       
       bool execute_local()
       {
-        while (tasks[right].split(tasks[right+1]))
-          right++;
+        if (right == 0)
+          return false;
 
-        tasks[right].run();
+        if (&tasks[right-1] == TaskSchedulerNew::thread_local_task)
+          return false;
+        
+        while (tasks[right-1].split(tasks[right])) {
+          right++;
+        }
+
+        tasks[right-1].run();
+        if (tasks[right-1].oldStackPtr != -1)
+          stackPtr = tasks[right-1].oldStackPtr;
+        right--;
         if (right == 0) {
           left = 0;
           return false;
         }
 
-        right--;
         if (left >= right) left = right;
         return true;
       }
 
       bool steal(volatile atomic_t* anyTasksRunning)
       {
-        const size_t l = left;
+        size_t l = left;
+        while (!tasks[l].valid && l<right) l = atomic_add(&left,1);
         if (!tasks[l].valid) return false;
         Thread* thread = TaskSchedulerNew::thread();
         Task& dst = thread->tasks.tasks[thread->tasks.right];
+
         int op = tasks[l].steal(dst);
         if (op == 0) return false;
         if (op == 1) atomic_add(&left,1);
@@ -231,6 +247,7 @@ namespace embree
       spawn(closure,begin,end,block);
       atomic_add(&anyTasksRunning,+1);
       condition.notify_all();
+      schedule_on_thread(thread);
     }
 
     /* work on spawned subtasks and wait until all have finished */
@@ -248,6 +265,7 @@ namespace embree
     
     std::mutex mutex;        
     std::condition_variable condition;
+    volatile atomic_t numThreadsRunning;
 
     static __thread Thread* thread_local_thread;
     static Thread* thread();

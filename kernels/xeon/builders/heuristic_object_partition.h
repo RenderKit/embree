@@ -21,6 +21,8 @@
 #include "heuristic_fallback.h"
 #include "algorithms/parallel_partition.h"
 
+#define USE_IN_PLACE_PARTITIONING 1
+
 namespace embree
 {
   namespace isa
@@ -384,7 +386,12 @@ namespace embree
         {
           bin_copy(prims+begin,end-begin,mapping,dest+begin);
         }
-	
+
+        __forceinline void bin(const PrimRef* prims, size_t begin, size_t end, const Mapping& mapping)
+        {
+          bin(prims+begin,end-begin,mapping);
+        }
+
 	/*! bins a list of bezier curves */
         __forceinline void bin(BezierRefList& prims, const Mapping& mapping)
         {
@@ -672,6 +679,36 @@ namespace embree
           return split.sah;
         }
 
+#if USE_IN_PLACE_PARTITIONING == 1
+
+        void partition(const PrimInfo& pinfo, const PrimRef* dst, PrimRef* src,PrimInfo& leftChild, PrimInfo& rightChild, const size_t threadID, const size_t numThreads, LockStepTaskScheduler* scheduler)
+        {
+          left.reset(); 
+          right.reset();
+          this->src = src;
+          this->dst = NULL;
+          PrimInfo init;
+          init.reset();
+          const unsigned int splitPos = split.pos;
+          const unsigned int splitDim = split.dim;
+
+          size_t mid = parallel_in_place_partitioning<64,PrimRef,PrimInfo>(&src[pinfo.begin],
+                                                                      pinfo.size(),
+                                                                      init,
+                                                                      left,
+                                                                      right,
+                                                                      [&] (const PrimRef &ref) { return mapping.bin_unsafe(center2(ref.bounds()))[splitDim] < splitPos; },
+                                                                      [] (PrimInfo &pinfo,const PrimRef &ref) { pinfo.extend(ref.bounds()); },
+                                                                      [] (PrimInfo &pinfo0,const PrimInfo &pinfo1) { pinfo0.merge(pinfo1); }
+                                                                      );
+          //scheduler->dispatchTask(task_parallelPartition, this, threadID, numThreads);
+          size_t numLeft = bin16.getNumLeft(split);
+          unsigned int center = pinfo.begin + numLeft;
+          assert(mid == numLeft);
+          new (&leftChild ) PrimInfo(pinfo.begin,center,left.geomBounds,left.centBounds);
+          new (&rightChild) PrimInfo(center,pinfo.end,right.geomBounds,right.centBounds);
+        }
+#else
         /* parallel partitioning of a list of primitives */
         void partition(const PrimInfo& pinfo, const PrimRef* src, PrimRef* dst, PrimInfo& leftChild, PrimInfo& rightChild, const size_t threadID, const size_t numThreads, LockStepTaskScheduler* scheduler)
         {
@@ -687,37 +724,7 @@ namespace embree
           new (&leftChild ) PrimInfo(pinfo.begin,center,left.geomBounds,left.centBounds);
           new (&rightChild) PrimInfo(center,pinfo.end,right.geomBounds,right.centBounds);
         }
-
-        void partitionNEW(const PrimInfo& pinfo, PrimRef* src, PrimInfo& leftChild, PrimInfo& rightChild, const size_t threadID, const size_t numThreads, LockStepTaskScheduler* scheduler)
-        {
-          left.reset(); 
-          right.reset();
-          this->src = src;
-          this->dst = NULL;
-          PrimInfo init;
-
-          const unsigned int splitPos = split.pos;
-          const unsigned int splitDim = split.dim;
-
-          size_t mid_serial = serial_in_place_partitioning<PrimRef,PrimInfo>(&src[pinfo.begin],
-                                                                             pinfo.size(),
-                                                                             init,
-                                                                             left,
-                                                                             right,
-                                                                             [&] (const PrimRef &ref) { return mapping.bin_unsafe(center2(ref.bounds()))[splitDim] < splitPos; },
-                                                                             [] (PrimInfo &pinfo,const PrimRef &ref) { pinfo.extend(ref.bounds()); },
-                                                                             [] (PrimInfo &pinfo0,const PrimInfo &pinfo1) { pinfo0.merge(pinfo1); }
-                                                                             );
-
-
-
-          //scheduler->dispatchTask(task_parallelPartition, this, threadID, numThreads);
-          size_t numLeft = bin16.getNumLeft(split);
-          unsigned int center = pinfo.begin + numLeft;
-          assert(mid_serial == numLeft);
-          new (&leftChild ) PrimInfo(pinfo.begin,center,left.geomBounds,left.centBounds);
-          new (&rightChild) PrimInfo(center,pinfo.end,right.geomBounds,right.centBounds);
-        }
+#endif
         
       private:
         TASK_FUNCTION_(ParallelBinner,parallelBinning);
@@ -728,7 +735,11 @@ namespace embree
           const size_t startID = pinfo.begin + (threadID+0)*pinfo.size()/numThreads;
           const size_t endID   = pinfo.begin + (threadID+1)*pinfo.size()/numThreads;
           bin16.clear();
+#if USE_IN_PLACE_PARTITIONING == 1
+          bin16.bin(src,startID,endID,mapping);
+#else
           bin16.bin_copy(src,startID,endID,mapping,dst);
+#endif
         }
         
         TASK_FUNCTION_(ParallelBinner,parallelPartition);
