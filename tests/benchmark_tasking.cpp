@@ -179,7 +179,7 @@ namespace embree
       fflush(stdout);
 
       /* create task scheduler */
-      TaskSchedulerNew* scheduler = new TaskSchedulerNew(2);
+      TaskSchedulerNew* scheduler = new TaskSchedulerNew();
 
       struct Fib
       {

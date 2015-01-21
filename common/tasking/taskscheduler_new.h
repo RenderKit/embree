@@ -22,6 +22,8 @@
 
 namespace embree
 {
+  extern std::mutex g_mutex;
+  
   struct TaskSchedulerNew
   {
     struct TaskFunction {
@@ -87,19 +89,22 @@ namespace embree
           return 0;
         }
 
-        if (isLeaf()) { 
+        if (isLeaf()) {
+          //g_mutex.lock(); PRINT2(TaskSchedulerNew::thread()->threadIndex,"steal leaf"); g_mutex.unlock();
           new (&child) Task(closure, this, -1, begin, end, block);
           begin = end = 0;
-          atomic_add(&dependencies,1);
+          validate(false);
+          //g_mutex.lock(); PRINT2(TaskSchedulerNew::thread()->threadIndex,dependencies); g_mutex.unlock();
           mutex.unlock();
           return 1;
         } 
         
         else {
+          //g_mutex.lock(); PRINT2(TaskSchedulerNew::thread()->threadIndex,"steal split"); g_mutex.unlock(); 
           size_t center = (begin+end)/2;
           new (&child) Task(closure, this, -1, center, end, block);
           end = center;
-          atomic_add(&dependencies,1);
+          addDependency();
           mutex.unlock();
           return 2;
         }
@@ -112,15 +117,19 @@ namespace embree
       void run () 
       {
         mutex.lock();
+        //g_mutex.lock(); PRINT2(TaskSchedulerNew::thread()->threadIndex,"run"); g_mutex.unlock(); 
         validate(false);
         if (size()) {
+          //g_mutex.lock(); PRINT2(TaskSchedulerNew::thread()->threadIndex,"run begin"); g_mutex.unlock(); 
           Task* prevTask = TaskSchedulerNew::thread_local_task;
           TaskSchedulerNew::thread_local_task = this;
           closure->execute(begin,end);
           TaskSchedulerNew::thread_local_task = prevTask;
+          //g_mutex.lock(); PRINT2(TaskSchedulerNew::thread()->threadIndex,"run end"); g_mutex.unlock(); 
         }
         mutex.unlock();
         removeDependency();
+        //g_mutex.lock(); PRINT3(TaskSchedulerNew::thread()->threadIndex,"run",dependencies); g_mutex.unlock(); 
         waitForDependencies(); // FIXME: maybe steal here
         if (parent) parent->removeDependency();
       }
@@ -169,12 +178,17 @@ namespace embree
         if (right == 0)
           return false;
 
+        //g_mutex.lock(); PRINT2(TaskSchedulerNew::thread()->threadIndex,"execute_local"); g_mutex.unlock(); 
+
         if (&tasks[right-1] == TaskSchedulerNew::thread_local_task)
           return false;
         
         while (tasks[right-1].split(tasks[right])) {
           right++;
         }
+
+        //g_mutex.lock(); PRINT3(TaskSchedulerNew::thread()->threadIndex,"execute_local2",right-1); g_mutex.unlock(); 
+
         tasks[right-1].run();
         if (tasks[right-1].oldStackPtr != -1)
           stackPtr = tasks[right-1].oldStackPtr;
@@ -190,10 +204,13 @@ namespace embree
 
       bool steal(volatile atomic_t* anyTasksRunning)
       {
-        const size_t l = left;
+        size_t l = left;
+        while (!tasks[l].valid && l<right) l = atomic_add(&left,1);
         if (!tasks[l].valid) return false;
         Thread* thread = TaskSchedulerNew::thread();
         Task& dst = thread->tasks.tasks[thread->tasks.right];
+
+        //g_mutex.lock(); PRINT2(TaskSchedulerNew::thread()->threadIndex,tasks[l].dependencies); g_mutex.unlock();
         int op = tasks[l].steal(dst);
         if (op == 0) return false;
         if (op == 1) atomic_add(&left,1);
@@ -249,8 +266,7 @@ namespace embree
     static __forceinline void wait() 
     {
       Thread* thread = TaskSchedulerNew::thread();
-      while (thread->tasks.execute_local()) {
-      };
+      while (thread->tasks.execute_local()) {};
     }
 
     std::vector<std::thread> threads;

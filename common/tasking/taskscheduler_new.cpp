@@ -24,16 +24,18 @@
 
 namespace embree
 {
+  std::mutex g_mutex; // FIXME: remove
+
   TaskSchedulerNew::TaskSchedulerNew(size_t numThreads)
     : numThreads(numThreads), terminate(false), anyTasksRunning(0)
   {
-    if (!numThreads) numThreads = getNumberOfLogicalThreads();
-    if ( numThreads) numThreads--;
-
+    if (!numThreads)
+      numThreads = getNumberOfLogicalThreads();
+    
     for (size_t i=0; i<MAX_THREADS; i++)
       threadLocal[i] = NULL;
 
-    for (size_t i=0; i<numThreads; i++) {
+    for (size_t i=1; i<numThreads; i++) {
       threads.push_back(std::thread([i,this]() { schedule(i); }));
     }
   }
@@ -74,13 +76,15 @@ namespace embree
     while (!terminate)
     {
       /* wait for tasks to enter the tasking system */
-      {
+      while (!anyTasksRunning) {
         std::unique_lock<std::mutex> lock(mutex);
         condition.wait(lock);
+        if (terminate) return;
       }
-
+      
       /* work on available task */
-      //schedule_on_thread(thread);
+      atomic_add(&anyTasksRunning,+1);
+      schedule_on_thread(thread);
     }
   }
   catch (const std::exception& e) {
@@ -91,26 +95,29 @@ namespace embree
   void TaskSchedulerNew::schedule_on_thread(Thread& thread)
   {
     const size_t threadIndex = thread.threadIndex;
-    const size_t threadCount = threads.size();
+    const size_t threadCount = threads.size()+1;
 
     /* continue until there are some running tasks */
-    while (anyTasksRunning)
+    while (anyTasksRunning) cont2:
     {
       /* first try executing local tasks */
       while (thread.tasks.execute_local()) {
         if (terminate) return;
       }
       atomic_add(&anyTasksRunning,-1);
-      
+
       /* second try to steal tasks */
-      for (size_t i=0; i<threadCount; i++) 
+      while (anyTasksRunning)
       {
-        const size_t otherThreadIndex = (threadIndex+i)%threadCount; // FIXME: optimize %
-        if (!threadLocal[otherThreadIndex])
-          continue;
-        
-        if (threadLocal[otherThreadIndex]->tasks.steal(&anyTasksRunning))
-          break;
+        for (size_t i=1; i<threadCount; i++) 
+        {
+          const size_t otherThreadIndex = (threadIndex+i)%threadCount; // FIXME: optimize %
+          if (!threadLocal[otherThreadIndex])
+            continue;
+
+          if (threadLocal[otherThreadIndex]->tasks.steal(&anyTasksRunning))
+            goto cont2;
+        }
       }
     }
   }
