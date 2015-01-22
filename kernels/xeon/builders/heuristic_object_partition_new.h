@@ -37,18 +37,6 @@ namespace embree
     public:
       
       /*! finds the best split */
-      template<bool Parallel>
-	static const Split find(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, BezierRefList& prims, const PrimInfo& pinfo, const size_t logBlockSize);
-      
-      /*! finds the best split */
-      template<bool Parallel>
-	static const Split find(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, PrimRefList& prims, const PrimInfo& pinfo, const size_t logBlockSize);
-
-      /*! finds the best split and returns extended split information */
-      template<bool Parallel>
-      static const Split find(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, PrimRefList& prims, const PrimInfo& pinfo, const size_t logBlockSize, SplitInfo& sinfo_o);
-      
-      /*! finds the best split */
       static const Split find(PrimRef *__restrict__ const prims, const size_t begin, const size_t end, const PrimInfo& pinfo, const size_t logBlockSize)
       {
         BinInfo binner(empty);
@@ -62,12 +50,9 @@ namespace embree
       {
         BinInfo binner(empty);
         const Mapping mapping(pinfo);
-        //binner.bin(prims+begin,end-begin,mapping);
-        
         binner = parallel_reduce(begin,end,binner,
                                  [&](const range<size_t>& r) { BinInfo binner(empty); binner.bin(prims+r.begin(),r.size(),mapping); return binner; },
                                  [] (const BinInfo& b0, const BinInfo& b1) { BinInfo r = b0; r.merge(b1); return r; });
-
         return binner.best(mapping,logBlockSize);
       }
       
@@ -483,127 +468,5 @@ namespace embree
 	ssei    counts[maxBins];    //!< counts number of primitives that map into the bins
       };
     };
-
-    template<>
-      inline const ObjectPartitionNew::Split ObjectPartitionNew::find<false>(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, BezierRefList& prims, const PrimInfo& pinfo, const size_t logBlockSize)
-    {
-      BinInfo binner(empty);
-      const Mapping mapping(pinfo);
-      binner.bin(prims,mapping);
-      return binner.best(mapping,logBlockSize);
-    }
-
-    template<>
-      inline const ObjectPartitionNew::Split ObjectPartitionNew::find<false>(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, PrimRefList& prims, const PrimInfo& pinfo, const size_t logBlockSize)
-    {
-      BinInfo binner(empty);
-      const Mapping mapping(pinfo);
-      binner.bin(prims,mapping);
-      return binner.best(mapping,logBlockSize);
-    }
-
-    template<>
-      inline const ObjectPartitionNew::Split ObjectPartitionNew::find<false>(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, PrimRefList& prims, const PrimInfo& pinfo, const size_t logBlockSize, SplitInfo& sinfo_o)
-    {
-      BinInfo binner(empty);
-      const Mapping mapping(pinfo);
-      binner.bin(prims,mapping);
-      const ObjectPartitionNew::Split split = binner.best(mapping,logBlockSize);
-      binner.getSplitInfo(mapping,split,sinfo_o);
-      return split;
-    }
-
-
-    template<>
-    inline void ObjectPartitionNew::Split::split<false>(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, 
-					      PrimRefBlockAlloc<BezierPrim>& alloc, 
-					      BezierRefList& prims, 
-					      BezierRefList& lprims_o, PrimInfo& linfo_o, 
-					      BezierRefList& rprims_o, PrimInfo& rinfo_o) const
-    {
-      assert(valid());
-      BezierRefList::item* lblock = lprims_o.insert(alloc.malloc(threadIndex));
-      BezierRefList::item* rblock = rprims_o.insert(alloc.malloc(threadIndex));
-      linfo_o.reset();
-      rinfo_o.reset();
-
-      while (BezierRefList::item* block = prims.take()) 
-      {
-	for (size_t i=0; i<block->size(); i++) 
-	{
-	  const BezierPrim& prim = block->at(i); 
-	  const Vec3fa center = prim.center2();
-	  const ssei bin = ssei(mapping.bin_unsafe(center));
-	  
-	  if (bin[dim] < pos) 
-	  {
-	    linfo_o.add(prim.bounds(),center);
-	    if (likely(lblock->insert(prim))) continue; 
-	    lblock = lprims_o.insert(alloc.malloc(threadIndex));
-	    lblock->insert(prim);
-	  } 
-	  else 
-	  {
-	    rinfo_o.add(prim.bounds(),center);
-	    if (likely(rblock->insert(prim))) continue;
-	    rblock = rprims_o.insert(alloc.malloc(threadIndex));
-	    rblock->insert(prim);
-	  }
-	}
-	alloc.free(threadIndex,block);
-      }
-    }
-    
-    template<>
-    inline void ObjectPartitionNew::Split::split<false>(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, 
-					      PrimRefBlockAlloc<PrimRef>& alloc, 
-					      PrimRefList& prims, 
-					      PrimRefList& lprims_o, PrimInfo& linfo_o, 
-					      PrimRefList& rprims_o, PrimInfo& rinfo_o) const
-    {
-      assert(valid());
-      PrimRefList::item* lblock = lprims_o.insert(alloc.malloc(threadIndex));
-      PrimRefList::item* rblock = rprims_o.insert(alloc.malloc(threadIndex));
-      linfo_o.reset();
-      rinfo_o.reset();
-
-      size_t numLeft = 0; CentGeomBBox3fa leftBounds(empty);
-      size_t numRight = 0; CentGeomBBox3fa rightBounds(empty);
-      
-      while (PrimRefList::item* block = prims.take()) 
-      {
-	for (size_t i=0; i<block->size(); i++) 
-	{
-	  const PrimRef& prim = block->at(i); 
-	  const Vec3fa center = center2(prim.bounds());
-	  const ssei bin = ssei(mapping.bin_unsafe(center));
-
-	  if (bin[dim] < pos) 
-	  {
-	    leftBounds.extend(prim.bounds()); numLeft++;
-	    //linfo_o.add(prim.bounds(),center);
-	    //if (++lblock->num > PrimRefBlock::blockSize)
-	    //lblock = lprims_o.insert(alloc.malloc(threadIndex));
-	    if (likely(lblock->insert(prim))) continue; 
-	    lblock = lprims_o.insert(alloc.malloc(threadIndex));
-	    lblock->insert(prim);
-	  } 
-	  else 
-	  {
-	    rightBounds.extend(prim.bounds()); numRight++;
-	    //rinfo_o.add(prim.bounds(),center);
-	    //if (++rblock->num > PrimRefBlock::blockSize)
-	    //rblock = rprims_o.insert(alloc.malloc(threadIndex));
-	    if (likely(rblock->insert(prim))) continue;
-	    rblock = rprims_o.insert(alloc.malloc(threadIndex));
-	    rblock->insert(prim);
-	  }
-	}
-	alloc.free(threadIndex,block);
-      }
-
-      linfo_o.add(leftBounds.geomBounds,leftBounds.centBounds,numLeft);
-      rinfo_o.add(rightBounds.geomBounds,rightBounds.centBounds,numRight);
-    }
   }
 }
