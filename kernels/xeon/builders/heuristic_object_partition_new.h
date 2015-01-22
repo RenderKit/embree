@@ -299,23 +299,6 @@ namespace embree
           }
         }
 	
-	/*! merge multiple binning infos into one */
-        static void reduce(const BinInfo binners[], size_t num, BinInfo& binner_o)
-        {
-          binner_o = binners[0];
-          for (size_t tid=1; tid<num; tid++) 
-          {
-            const BinInfo& binner = binners[tid];
-            for (size_t bin=0; bin<maxBins; bin++) 
-            {
-              binner_o.bounds[bin][0].extend(binner.bounds[bin][0]);
-              binner_o.bounds[bin][1].extend(binner.bounds[bin][1]);
-              binner_o.bounds[bin][2].extend(binner.bounds[bin][2]);
-              binner_o.counts[bin] += binner.counts[bin];
-            }
-          }
-        }
-
 	/*! finds the best split by scanning binning information */
         __forceinline Split best(const Mapping& mapping, const size_t blocks_shift)
         {
@@ -373,15 +356,6 @@ namespace embree
           return Split(bestSAH,bestDim,bestPos,mapping);
         }
 	
-	/*! calculates number of primitives on the left */
-	__forceinline size_t getNumLeft(Split& split) 
-	{
-	  size_t N = 0;
-	  for (size_t i=0; i<split.pos; i++)
-	    N += counts[i][split.dim];
-	  return N;
-	}
-
 	/*! calculates extended split information */
 	__forceinline void getSplitInfo(const Mapping& mapping, const Split& split, SplitInfo& info) const
 	{
@@ -405,7 +379,7 @@ namespace embree
 	  new (&info) SplitInfo(leftCount,leftBounds,rightCount,rightBounds);
 	}
 	
-      public: // FIXME
+      private:
       	BBox3fa bounds[maxBins][4]; //!< geometry bounds for each bin in each dimension
 	ssei    counts[maxBins];    //!< counts number of primitives that map into the bins
       };
