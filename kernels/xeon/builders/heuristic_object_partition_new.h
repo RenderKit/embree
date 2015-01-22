@@ -50,7 +50,7 @@ namespace embree
       {
         BinInfo binner(empty);
         const Mapping mapping(pinfo);
-        binner = parallel_reduce(begin,end,binner,
+        binner = parallel_reduce(begin,end,size_t(4096),binner,
                                  [&](const range<size_t>& r) { BinInfo binner(empty); binner.bin(prims+r.begin(),r.size(),mapping); return binner; },
                                  [] (const BinInfo& b0, const BinInfo& b1) { BinInfo r = b0; r.merge(b1); return r; });
         return binner.best(mapping,logBlockSize);
