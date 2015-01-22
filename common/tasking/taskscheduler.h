@@ -365,6 +365,31 @@ namespace embree
       }
     }
 
+    template<typename Closure>
+      struct ExecuteClosureTask
+      {
+        ExecuteClosureTask (LockStepTaskScheduler* scheduler, const Closure& closure) 
+        : scheduler(scheduler), closure(closure)
+        {
+          scheduler->dispatchTaskSet(_task_execute_parallel, this, 1);
+        }
+      
+        void task_execute_parallel(const size_t threadID, const size_t numThreads, const size_t taskID, const size_t numTasks) {
+          closure();
+        }
+        
+        static void _task_execute_parallel(void* This, const size_t threadIndex, const size_t threadCount, const size_t taskIndex, const size_t taskCount) {
+          ((ExecuteClosureTask*)This)->task_execute_parallel(threadIndex,threadCount,taskIndex,taskCount);
+        }
+        
+        LockStepTaskScheduler* scheduler;
+        const Closure& closure;
+      };
+  
+    template<typename Closure> void execute(const Closure& closure) {
+      ExecuteClosureTask<Closure> task(this,closure);
+    }
+
     void syncThreads(const size_t threadID, const size_t numThreads);
 
     void syncThreadsWithReduction(const size_t threadID, 

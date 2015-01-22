@@ -104,12 +104,18 @@ namespace embree
         /* calculate binning function */
         PrimInfo pinfo(current.size(),current.geomBounds,current.centBounds);
         ObjectPartitionNew::Split split = ObjectPartitionNew::find(prims,current.begin,current.end,pinfo,logBlockSize);
-        
+
         /* if we cannot find a valid split, enforce an arbitrary split */
         if (unlikely(!split.valid())) splitFallback(current,leftChild,rightChild);
         
         /* partitioning of items */
-        else split.partition(prims, current.begin, current.end, leftChild, rightChild);
+        else {
+          //split.partition_parallel(prims, current.begin, current.end, leftChild, rightChild);
+          //size_t left0 = leftChild.size();
+          split.partition(prims, current.begin, current.end, leftChild, rightChild);
+          //size_t left1 = leftChild.size();
+          //if (left0 != left1) PRINT2(left0,left1);
+        }
       }
 
       void splitParallel(const BuildRecord<NodeRef>& current, BuildRecord<NodeRef>& leftChild, BuildRecord<NodeRef>& rightChild, Allocator& alloc)
@@ -122,7 +128,13 @@ namespace embree
         if (unlikely(!split.valid())) splitFallback(current,leftChild,rightChild);
         
         /* partitioning of items */
-        else split.partition_parallel(prims, current.begin, current.end, leftChild, rightChild);
+        else {
+          split.partition_parallel(prims, current.begin, current.end, leftChild, rightChild);
+          //size_t left0 = leftChild.size();
+          //split.partition(prims, current.begin, current.end, leftChild, rightChild);
+          //size_t left1 = leftChild.size();
+          //if (left0 != left1) PRINT2(left0,left1);
+        }
       }
 
       void createLargeLeaf(const BuildRecord<NodeRef>& current, Allocator& nodeAlloc, Allocator& leafAlloc)
@@ -256,7 +268,7 @@ namespace embree
         
 #if 0
         sequential_create_tree(br, createAlloc, 
-          [&](const BuildRecord<NodeRef>& br, Allocator& alloc, ParallelContinue<BuildRecord<NodeRef> >& cont) { recurse<false>(br,alloc,cont); });
+                               [&](const BuildRecord<NodeRef>& br, Allocator& alloc, ParallelContinue<BuildRecord<NodeRef> >& cont) { recurse<false>(br,alloc,cont); });
 #else   
         parallel_create_tree<50000,128>(br, createAlloc, 
           [&](const BuildRecord<NodeRef>& br, Allocator& alloc, ParallelContinue<BuildRecord<NodeRef> >& cont) { recurse<true>(br,alloc,cont); } ,

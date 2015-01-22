@@ -27,6 +27,51 @@
 
 namespace embree
 {
+  /* serial partitioning */
+  template<typename T, typename V, typename Compare, typename Reduction_T>
+    __forceinline size_t serial_partitioning(T* array, 
+                                             const size_t begin,
+                                             const size_t end, 
+                                             V& leftReduction,
+                                             V& rightReduction,
+                                             const Compare& cmp, 
+                                             const Reduction_T& reduction_t)
+  {
+    T* l = array + begin;
+    T* r = array + end - 1;
+    
+    while(1)
+    {
+      /* *l < pivot */
+      while (likely(l <= r && cmp(*l) )) 
+      {
+#if defined(__MIC__)
+        prefetch<PFHINT_L1EX>(l+4);	  
+#endif
+        reduction_t(leftReduction,*l);
+        ++l;
+      }
+      /* *r >= pivot) */
+      while (likely(l <= r && !cmp(*r)))
+      {
+#if defined(__MIC__)
+        prefetch<PFHINT_L1EX>(r-4);	  
+#endif
+        reduction_t(rightReduction,*r);
+        --r;
+      }
+      if (r<l) break;
+      
+      reduction_t(leftReduction ,*r);
+      reduction_t(rightReduction,*l);
+      std::swap(*l,*r);
+      l++; r--;
+    }
+    
+    return l - array;        
+  }
+  
+
   template<size_t BLOCK_SIZE, typename T, typename V, typename Compare, typename Reduction_T, typename Reduction_V>
   class __aligned(64) parallel_partition
     {
@@ -405,7 +450,7 @@ namespace embree
 
         LockStepTaskScheduler* scheduler = LockStepTaskScheduler::instance();
         const size_t numThreads = scheduler->getNumThreads();
-    
+
         if (N <= BLOCK_SIZE * numThreads)
           {
 #if defined(__MIC__)

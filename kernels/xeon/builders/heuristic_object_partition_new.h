@@ -31,7 +31,7 @@ namespace embree
     {
       struct Split;
       struct SplitInfo;
-      typedef atomic_set<PrimRefBlockT<PrimRef> > PrimRefList;   //!< list of primitives
+      typedef atomic_set<PrimRefBlockT<PrimRef> > PrimRefList;      //!< list of primitives
       typedef atomic_set<PrimRefBlockT<BezierPrim> > BezierRefList; //!< list of bezier primitives
       
     public:
@@ -60,9 +60,6 @@ namespace embree
       
       /*! number of bins */
       static const size_t maxBins = 32;
-      
-      /*! number of tasks */
-      static const size_t maxTasks = 32;
       
       /*! mapping into bins */
       struct Mapping
@@ -136,57 +133,16 @@ namespace embree
 	/*! calculates surface area heuristic for performing the split */
 	__forceinline float splitSAH() const { return sah; }
 	
-	/*! splitting into two sets */
-	template<bool Parallel>
-	  void split(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, 
-		     PrimRefBlockAlloc<BezierPrim>& alloc, 
-		     BezierRefList& prims, 
-		     BezierRefList& lprims_o, PrimInfo& linfo_o, 
-		     BezierRefList& rprims_o, PrimInfo& rinfo_o) const;
-	
-	/*! splitting into two sets */
-	template<bool Parallel>
-	  void split(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, 
-		     PrimRefBlockAlloc<PrimRef>& alloc, 
-		     PrimRefList& prims, 
-		     PrimRefList& lprims_o, PrimInfo& linfo_o, 
-		     PrimRefList& rprims_o, PrimInfo& rinfo_o) const;
-	
 	/*! array partitioning */
-        void partition(PrimRef *__restrict__ const prims, const size_t begin, const size_t end, PrimInfo& left, PrimInfo& right) const
+        void partition(PrimRef* const prims, const size_t begin, const size_t end, PrimInfo& left, PrimInfo& right) const
         {
           assert(valid());
           CentGeomBBox3fa local_left(empty);
           CentGeomBBox3fa local_right(empty);
-          
-          assert(begin <= end);
-          PrimRef* l = prims + begin;
-          PrimRef* r = prims + end - 1;
-          
-          while(1)
-          {
-            while (likely(l <= r && mapping.bin_unsafe(center2(l->bounds()))[dim] < pos)) 
-            {
-              local_left.extend(l->bounds());
-              ++l;
-            }
-            while (likely(l <= r && mapping.bin_unsafe(center2(r->bounds()))[dim] >= pos)) 
-            {
-              local_right.extend(r->bounds());
-              --r;
-            }
-            if (r<l) break;
-            
-            const BBox3fa bl = l->bounds();
-            const BBox3fa br = r->bounds();
-            local_left.extend(br);
-            local_right.extend(bl);
-            *(BBox3fa*)l = br;
-            *(BBox3fa*)r = bl;
-            l++; r--;
-          }
-          
-          unsigned int center = l - prims;
+          size_t center = serial_partitioning(prims,begin,end,local_left,local_right,
+                                              [&] (const PrimRef& ref) { return mapping.bin_unsafe(center2(ref.bounds()))[dim] < pos; },
+                                              [] (CentGeomBBox3fa& pinfo,const PrimRef& ref) { pinfo.extend(ref.bounds()); });
+
           new (&left ) PrimInfo(begin,center,local_left.geomBounds,local_left.centBounds);
           new (&right) PrimInfo(center,end,local_right.geomBounds,local_right.centBounds);
           assert(area(left.geomBounds) >= 0.0f);
@@ -212,6 +168,9 @@ namespace embree
                                                                             [] (PrimInfo &pinfo0,const PrimInfo &pinfo1) { pinfo0.merge(pinfo1); }
                                                                             );
 
+          //PRINT(end-begin);
+          //PRINT2(mid,left.size());
+          //mid = left.size();
           left.begin = begin;
           left.end   = begin+mid;
           right.begin = begin+mid;
