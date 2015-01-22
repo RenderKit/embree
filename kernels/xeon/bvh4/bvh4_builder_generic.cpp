@@ -23,7 +23,7 @@
 
 #include "geometry/triangle4.h"
 
-//#define PROFILE
+#define PROFILE
 
 namespace embree
 {
@@ -124,7 +124,6 @@ namespace embree
       BVH4* bvh;
       Scene* scene;
       vector_t<PrimRef> prims; // FIXME: use os_malloc in vector_t for large allocations
-      vector_t<PrimRef> temp;
 
       BVH4Triangle4BuilderFastClass (BVH4* bvh, Scene* scene)
         : bvh(bvh), scene(scene) {}
@@ -163,12 +162,11 @@ namespace embree
           /* reserve data */
           bvh->alloc2.init(numPrimitives*sizeof(PrimRef),numPrimitives*sizeof(BVH4::Node)); 
           prims.resize(numPrimitives);
-          temp.resize(numPrimitives);
           
           /* build BVH */
           PrimInfo pinfo = CreatePrimRefArray<TriangleMesh,1>(scene,prims);
           BVH4::NodeRef root = bvh_builder_binned_sah_internal<BVH4::NodeRef>(CreateAlloc(bvh),CreateBVH4Node(bvh),CreateLeaf<Triangle4>(bvh),
-                                                                              prims.data(),temp.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,4,4,4*BVH4::maxLeafBlocks);
+                                                                              prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,4,4,4*BVH4::maxLeafBlocks);
           bvh->set(root,pinfo.geomBounds,pinfo.size());
           
 #if defined(PROFILE)
