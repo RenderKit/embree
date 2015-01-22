@@ -234,13 +234,13 @@ namespace embree
           //new (&leftChild ) PrimInfo(pinfo.begin,center,left.geomBounds,left.centBounds);
           //new (&rightChild) PrimInfo(center,pinfo.end,right.geomBounds,right.centBounds);
 
-          PRINT(end-begin);
+          /*PRINT(end-begin);
           PRINT(left.size());
-          PRINT(right.size());
-          left.begin += begin;
-          left.end   += begin;
-          right.begin += left.end;
-          right.end   += left.end;
+          PRINT(right.size());*/
+          left.begin = begin;
+          left.end   = begin+mid;
+          right.begin = begin+mid;
+          right.end   = end;
 
           /*PrimInfo left1; left1.reset();
           PrimInfo right1; right1.reset();
@@ -563,7 +563,7 @@ namespace embree
 	typedef atomic_set<PrimRefBlockT<Prim> > List;
 	
 	/*! construction executes the task */
-      TaskSplitParallel(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, const Split* split, PrimRefBlockAlloc<Prim>& alloc, List& prims, 
+        TaskSplitParallel (size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, const Split* split, PrimRefBlockAlloc<Prim>& alloc, List& prims, 
                           List& lprims_o, PrimInfo& linfo_o, List& rprims_o, PrimInfo& rinfo_o)
         : split(split), alloc(alloc), prims(prims), lprims_o(lprims_o), linfo_o(linfo_o), rprims_o(rprims_o), rinfo_o(rinfo_o)
         {
@@ -666,9 +666,9 @@ namespace embree
 
 #else
           //scheduler->dispatchTask(task_parallelPartition, this, threadID, numThreads);
-          size_t numLeft = bin16.getNumLeft(split);
-          unsigned int center = pinfo.begin + numLeft;
-          assert(mid == numLeft);
+          //size_t numLeft = bin16.getNumLeft(split);
+          unsigned int center = pinfo.begin + mid; //pinfo.begin + numLeft;
+          //assert(mid == numLeft);
           new (&leftChild ) PrimInfo(pinfo.begin,center,left.geomBounds,left.centBounds);
           new (&rightChild) PrimInfo(center,pinfo.end,right.geomBounds,right.centBounds);
 #endif

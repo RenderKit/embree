@@ -115,7 +115,7 @@ namespace embree
 
       void splitParallel(const BuildRecord<NodeRef>& current, BuildRecord<NodeRef>& leftChild, BuildRecord<NodeRef>& rightChild, Allocator& alloc)
       {
-#if 0
+#if 1
         /* calculate binning function */
         PrimInfo pinfo(current.size(),current.geomBounds,current.centBounds);
         ObjectPartitionNew::Split split = ObjectPartitionNew::find_parallel(prims,current.begin,current.end,pinfo,logBlockSize);
@@ -124,16 +124,7 @@ namespace embree
         if (unlikely(!split.valid())) splitFallback(current,leftChild,rightChild);
         
         /* partitioning of items */
-        else {
-          //PRINT("sequential");
-          split.partition(prims, current.begin, current.end, leftChild, rightChild);
-          //PRINT(leftChild);
-          //PRINT(rightChild);
-          //PRINT("parallel");
-          //split.partition_parallel(prims, current.begin, current.end, leftChild, rightChild);
-          //PRINT(leftChild);
-          //PRINT(rightChild);
-        }
+        else split.partition_parallel(prims, current.begin, current.end, leftChild, rightChild);
 
 #else
         LockStepTaskScheduler* scheduler = LockStepTaskScheduler::instance();
