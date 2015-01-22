@@ -115,6 +115,27 @@ namespace embree
 
       void splitParallel(const BuildRecord<NodeRef>& current, BuildRecord<NodeRef>& leftChild, BuildRecord<NodeRef>& rightChild, Allocator& alloc)
       {
+#if 0
+        /* calculate binning function */
+        PrimInfo pinfo(current.size(),current.geomBounds,current.centBounds);
+        ObjectPartitionNew::Split split = ObjectPartitionNew::find_parallel(prims,current.begin,current.end,pinfo,logBlockSize);
+        
+        /* if we cannot find a valid split, enforce an arbitrary split */
+        if (unlikely(!split.valid())) splitFallback(current,leftChild,rightChild);
+        
+        /* partitioning of items */
+        else {
+          //PRINT("sequential");
+          split.partition(prims, current.begin, current.end, leftChild, rightChild);
+          //PRINT(leftChild);
+          //PRINT(rightChild);
+          //PRINT("parallel");
+          //split.partition_parallel(prims, current.begin, current.end, leftChild, rightChild);
+          //PRINT(leftChild);
+          //PRINT(rightChild);
+        }
+
+#else
         LockStepTaskScheduler* scheduler = LockStepTaskScheduler::instance();
         const size_t threadCount = scheduler->getNumThreads();
 
@@ -129,6 +150,7 @@ namespace embree
         
         /* parallel partitioning of items */
         else parallelBinner->partition(pinfo,NULL,prims,leftChild,rightChild,0,threadCount,scheduler);
+#endif
       }
 
       void createLargeLeaf(const BuildRecord<NodeRef>& current, Allocator& nodeAlloc, Allocator& leafAlloc)

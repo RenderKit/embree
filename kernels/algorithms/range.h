@@ -33,8 +33,12 @@ namespace embree
         return _begin;
       }
       
-    __forceinline Ty end() const {
+      __forceinline Ty end() const {
 	return _end;
+      }
+
+      __forceinline Ty size() const {
+        return _end - _begin;
       }
 
       friend std::ostream& operator<<(std::ostream& cout, const range& r) {

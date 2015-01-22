@@ -19,6 +19,7 @@
 #include "geometry/bezier1v.h"
 #include "builders/primrefalloc.h"
 #include "heuristic_fallback.h"
+#include "algorithms/parallel_reduce.h"
 #include "algorithms/parallel_partition.h"
 
 namespace embree
@@ -53,6 +54,20 @@ namespace embree
         BinInfo binner;
         const Mapping mapping(pinfo);
         binner.bin(prims+begin,end-begin,mapping);
+        return binner.best(mapping,logBlockSize);
+      }
+
+      /*! finds the best split */
+      static const Split find_parallel(PrimRef *__restrict__ const prims, const size_t begin, const size_t end, const PrimInfo& pinfo, const size_t logBlockSize)
+      {
+        BinInfo binner;
+        const Mapping mapping(pinfo);
+        //binner.bin(prims+begin,end-begin,mapping);
+        
+        binner = parallel_reduce(begin,end,binner,
+                                 [&](const range<size_t>& r) { BinInfo binner; binner.bin(prims+r.begin(),r.size(),mapping); return binner; },
+                                 [] (const BinInfo& b0, const BinInfo& b1) { BinInfo r = b0; r.merge(b1); return r; });
+
         return binner.best(mapping,logBlockSize);
       }
       
@@ -191,6 +206,63 @@ namespace embree
           new (&right) PrimInfo(center,end,local_right.geomBounds,local_right.centBounds);
           assert(area(left.geomBounds) >= 0.0f);
           assert(area(right.geomBounds) >= 0.0f);
+        }
+
+        /*! array partitioning */
+        void partition_parallel(PrimRef *__restrict__ const prims, const size_t begin, const size_t end, PrimInfo& left, PrimInfo& right) const
+        {
+          left.reset(); 
+          right.reset();
+          PrimInfo init; init.reset();
+          const unsigned int splitPos = pos;
+          const unsigned int splitDim = dim;
+
+          size_t mid = parallel_in_place_partitioning<128,PrimRef,PrimInfo>(&prims[begin],
+                                                                            end-begin,
+                                                                            init,
+                                                                            left,
+                                                                            right,
+                                                                            [&] (const PrimRef &ref) { return mapping.bin_unsafe(center2(ref.bounds()))[splitDim] < splitPos; },
+                                                                            [] (PrimInfo &pinfo,const PrimRef &ref) { pinfo.add(ref.bounds()); },
+                                                                            [] (PrimInfo &pinfo0,const PrimInfo &pinfo1) { pinfo0.merge(pinfo1); }
+                                                                            );
+
+          //scheduler->dispatchTask(task_parallelPartition, this, threadID, numThreads);
+          //size_t numLeft = bin16.getNumLeft(split);
+          //unsigned int center = pinfo.begin + numLeft;
+          //assert(mid == numLeft);
+          //new (&leftChild ) PrimInfo(pinfo.begin,center,left.geomBounds,left.centBounds);
+          //new (&rightChild) PrimInfo(center,pinfo.end,right.geomBounds,right.centBounds);
+
+          PRINT(end-begin);
+          PRINT(left.size());
+          PRINT(right.size());
+          left.begin += begin;
+          left.end   += begin;
+          right.begin += left.end;
+          right.end   += left.end;
+
+          /*PrimInfo left1; left1.reset();
+          PrimInfo right1; right1.reset();
+          for (size_t i=left .begin; i<left .end; i++) left1 .add(prims[i].bounds());
+          for (size_t i=right.begin; i<right.end; i++) right1.add(prims[i].bounds());
+          new (&left ) PrimInfo(left1.begin,left1.end,left1.geomBounds,left1.centBounds);
+          new (&right) PrimInfo(right1.begin,right1.end,right1.geomBounds,right1.centBounds);
+          left.begin += begin;
+          left.end   += begin;
+          right.begin += left.end;
+          right.end   += left.end;*/
+          /*PRINT(left);
+          PRINT(left1);
+          PRINT(right);
+          PRINT(right1);*/
+
+          
+          
+
+          //PRINT2(begin,end);
+          //PRINT(left);
+          //PRINT(right);
         }
 
 	/*! stream output */
@@ -577,15 +649,28 @@ namespace embree
                                                                             left,
                                                                             right,
                                                                             [&] (const PrimRef &ref) { return mapping.bin_unsafe(center2(ref.bounds()))[splitDim] < splitPos; },
-                                                                            [] (PrimInfo &pinfo,const PrimRef &ref) { pinfo.extend(ref.bounds()); },
+                                                                            [] (PrimInfo &pinfo,const PrimRef &ref) { pinfo.add(ref.bounds()); },
                                                                             [] (PrimInfo &pinfo0,const PrimInfo &pinfo1) { pinfo0.merge(pinfo1); }
                                                                             );
+
+          PRINT(left.size());
+          PRINT(right.size());
+          PRINT(left.size()+right.size());
+          PRINT(pinfo.size());
+
+#if 1
+          size_t center = pinfo.begin+left.end;
+          new (&leftChild ) PrimInfo(pinfo.begin,center,left.geomBounds,left.centBounds);
+          new (&rightChild) PrimInfo(center,center+right.end,right.geomBounds,right.centBounds);
+
+#else
           //scheduler->dispatchTask(task_parallelPartition, this, threadID, numThreads);
           size_t numLeft = bin16.getNumLeft(split);
           unsigned int center = pinfo.begin + numLeft;
           assert(mid == numLeft);
           new (&leftChild ) PrimInfo(pinfo.begin,center,left.geomBounds,left.centBounds);
           new (&rightChild) PrimInfo(center,pinfo.end,right.geomBounds,right.centBounds);
+#endif
         }
         
       private:
