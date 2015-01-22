@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "builders/heuristic_object_partition.h"
+#include "builders/heuristic_object_partition_new.h"
 #include "builders/workstack.h"
 
 #include "algorithms/parallel_create_tree.h"
@@ -104,7 +104,7 @@ namespace embree
       {
         /* calculate binning function */
         PrimInfo pinfo(current.size(),current.geomBounds,current.centBounds);
-        ObjectPartition::Split split = ObjectPartition::find(prims,current.begin,current.end,pinfo,logBlockSize);
+        ObjectPartitionNew::Split split = ObjectPartitionNew::find(prims,current.begin,current.end,pinfo,logBlockSize);
         
         /* if we cannot find a valid split, enforce an arbitrary split */
         if (unlikely(!split.valid())) splitFallback(current,leftChild,rightChild);
@@ -264,7 +264,7 @@ namespace embree
         sequential_create_tree(br, createAlloc, 
           [&](const BuildRecord<NodeRef>& br, Allocator& alloc, ParallelContinue<BuildRecord<NodeRef> >& cont) { recurse<false>(br,alloc,cont); });
 #else   
-        parallelBinner = new ObjectPartition::ParallelBinner;
+        parallelBinner = new ObjectPartitionNew::ParallelBinner;
         parallel_create_tree<50000,128>(br, createAlloc, 
           [&](const BuildRecord<NodeRef>& br, Allocator& alloc, ParallelContinue<BuildRecord<NodeRef> >& cont) { recurse<true>(br,alloc,cont); } ,
           [&](const BuildRecord<NodeRef>& br, Allocator& alloc, ParallelContinue<BuildRecord<NodeRef> >& cont) { recurse<false>(br,alloc,cont); });
@@ -275,7 +275,7 @@ namespace embree
       }
 
     private:
-      ObjectPartition::ParallelBinner* parallelBinner;
+      ObjectPartitionNew::ParallelBinner* parallelBinner;
       CreateAllocFunc& createAlloc;
       CreateNodeFunc& createNode;
       CreateLeafFunc& createLeaf;
