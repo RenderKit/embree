@@ -450,8 +450,7 @@ namespace embree
 
         LockStepTaskScheduler* scheduler = LockStepTaskScheduler::instance();
         const size_t numThreads = scheduler->getNumThreads();
-
-        if (N <= BLOCK_SIZE * numThreads)
+        if (N <= 2 * BLOCK_SIZE * numThreads) // need at least 1 block from the left and 1 block from the right per thread
           {
 #if defined(__MIC__)
             DBG_PRINT("SERIAL FALLBACK");
@@ -476,97 +475,106 @@ namespace embree
         /* ---------------------------------- */
         /* ------ serial cleanup phase ------ */
         /* ---------------------------------- */
-        
-        /* sort remainder blocks */
-        insertionsort_ascending<unsigned int>(leftRemainderBlockIDs,(unsigned int)numLeftRemainderBlocks);
-        insertionsort_ascending<unsigned int>(rightRemainderBlockIDs,(unsigned int)numRightRemainderBlocks);
-
-        DBG_PART(
-                 DBG_PRINT(numLeftRemainderBlocks);
-                 for (size_t i=0;i<numLeftRemainderBlocks;i++)
-                   std::cout << i << " -> " << leftRemainderBlockIDs[i] << std::endl;
-                 DBG_PRINT(numRightRemainderBlocks);
-                 for (size_t i=0;i<numRightRemainderBlocks;i++)
-                   std::cout << i << " -> " << rightRemainderBlockIDs[i] << std::endl;
-                 DBG_PRINT(maxLeftBlockID);
-                 DBG_PRINT(maxRightBlockID);                 
-                 );
-
-        /* compact left remaining blocks */        
-        for (size_t i=0;i<numLeftRemainderBlocks;i++)
-          {
-            assert(i<=maxLeftBlockID);
-            const unsigned int index0 = leftRemainderBlockIDs[numLeftRemainderBlocks-1-i];
-            const unsigned int index1 = maxLeftBlockID-i;
-            if (index0 != index1)
-              swapTwoLeftBlocks(index0,index1);
-          }
-        assert(numLeftRemainderBlocks-1 <= maxLeftBlockID);
-
-        const size_t left_border_index = maxLeftBlockID-(numLeftRemainderBlocks-1);
 
         size_t left_begin = (size_t)-1;
         size_t left_end   = (size_t)-1;
-
-        getLeftArrayIndex(left_border_index,left_begin,left_end);
-
-        assert(left_begin != (size_t)-1);
-
-        DBG_CHECK( checkLeft(0,left_begin) );
-
-        /* compact right remaining blocks */
-
-
-        for (size_t i=0;i<numRightRemainderBlocks;i++)
-          {
-            assert(i<=maxRightBlockID);
-            const unsigned int index0 = rightRemainderBlockIDs[numRightRemainderBlocks-1-i];
-            const unsigned int index1 = maxRightBlockID-i;
-            if (index0 != index1)
-              swapTwoRightBlocks(index0,index1);
-          }
-        assert(numRightRemainderBlocks-1 <= maxRightBlockID);
-
-        const size_t right_border_index = maxRightBlockID-(numRightRemainderBlocks-1);
-
         size_t right_begin = (size_t)-1;
         size_t right_end   = (size_t)-1;
-
-        getRightArrayIndex(right_border_index,right_begin,right_end);
-
-        assert(right_end  != (size_t)-1);
-
-        DBG_CHECK( checkRight(right_end,N) );
-
-        /* if (!numLeftRemainderBlocks) */
-        /*   left_begin += BLOCK_SIZE; */
         
-        /* if (!numRightRemainderBlocks) */
-        /*   right_end -= BLOCK_SIZE; */
+	if (maxLeftBlockID != 0 || maxRightBlockID != 0) // has any thread done anything?
+	  {
+	    /* sort remainder blocks */
+	    insertionsort_ascending<unsigned int>(leftRemainderBlockIDs,(unsigned int)numLeftRemainderBlocks);
+	    insertionsort_ascending<unsigned int>(rightRemainderBlockIDs,(unsigned int)numRightRemainderBlocks);
+
+	    DBG_PART(
+		     DBG_PRINT(numLeftRemainderBlocks);
+		     for (size_t i=0;i<numLeftRemainderBlocks;i++)
+		       std::cout << i << " -> " << leftRemainderBlockIDs[i] << std::endl;
+		     DBG_PRINT(numRightRemainderBlocks);
+		     for (size_t i=0;i<numRightRemainderBlocks;i++)
+		       std::cout << i << " -> " << rightRemainderBlockIDs[i] << std::endl;
+		     DBG_PRINT(maxLeftBlockID);
+		     DBG_PRINT(maxRightBlockID);                 
+		     );
+
+	    /* compact left remaining blocks */        
+	    for (size_t i=0;i<numLeftRemainderBlocks;i++)
+	      {
+		assert(i<=maxLeftBlockID);
+		const unsigned int index0 = leftRemainderBlockIDs[numLeftRemainderBlocks-1-i];
+		const unsigned int index1 = maxLeftBlockID-i;
+		if (index0 != index1)
+		  swapTwoLeftBlocks(index0,index1);
+	      }
+	    assert(numLeftRemainderBlocks-1 <= maxLeftBlockID);
+
+	    const size_t left_border_index = maxLeftBlockID-(numLeftRemainderBlocks-1);
+
+
+	    getLeftArrayIndex(left_border_index,left_begin,left_end);
+
+	    assert(left_begin != (size_t)-1);
+
+	    DBG_CHECK( checkLeft(0,left_begin) );
+
+	    /* compact right remaining blocks */
+
+
+	    for (size_t i=0;i<numRightRemainderBlocks;i++)
+	      {
+		assert(i<=maxRightBlockID);
+		const unsigned int index0 = rightRemainderBlockIDs[numRightRemainderBlocks-1-i];
+		const unsigned int index1 = maxRightBlockID-i;
+		if (index0 != index1)
+		  swapTwoRightBlocks(index0,index1);
+	      }
+	    assert(numRightRemainderBlocks-1 <= maxRightBlockID);
+
+	    const size_t right_border_index = maxRightBlockID-(numRightRemainderBlocks-1);
+
+
+	    getRightArrayIndex(right_border_index,right_begin,right_end);
+
+	    assert(right_end  != (size_t)-1);
+
+	    DBG_CHECK( checkRight(right_end,N) );
+
+	    /* if (!numLeftRemainderBlocks) */
+	    /*   left_begin += BLOCK_SIZE; */
         
-        DBG_PART(
-                 DBG_PRINT("CLEANUP");
+	    /* if (!numRightRemainderBlocks) */
+	    /*   right_end -= BLOCK_SIZE; */
+        
+	    DBG_PART(
+		     DBG_PRINT("CLEANUP");
                  
-                 DBG_PRINT(left_begin);
-                 DBG_PRINT(left_end);
-                 DBG_PRINT(right_begin);
-                 DBG_PRINT(right_end);
+		     DBG_PRINT(left_begin);
+		     DBG_PRINT(left_end);
+		     DBG_PRINT(right_begin);
+		     DBG_PRINT(right_end);
 
-                 //for (size_t i=0;i<N;i++)
-                 //std::cout << i << " -> " << array[i] << std::endl;
-                 );
+		     //for (size_t i=0;i<N;i++)
+		     //std::cout << i << " -> " << array[i] << std::endl;
+		     );
 
-        DBG_CHECK(
+	    DBG_CHECK(
                  
-                 checkLeft(0,left_begin);
-                 checkRight(right_end,N);
-                 );
+		      checkLeft(0,left_begin);
+		      checkRight(right_end,N);
+		      );
 
 
         
-        DBG_CHECK(
-                  assert( right_end - left_begin <= numThreads*3*BLOCK_SIZE);
-                  )
+	    DBG_CHECK(
+		      assert( right_end - left_begin <= numThreads*3*BLOCK_SIZE);
+		      )
+	      }
+	else
+	  {
+	    left_begin = 0;
+	    right_end  = N;
+	  }
 
         const size_t mid = serialPartitioning(left_begin,right_end,leftReduction,rightReduction);
 
@@ -631,5 +639,237 @@ namespace embree
     parallel_partition<1,T,V,Compare,Reduction_T,Reduction_V> p(array,N,init,cmp,reduction_t,reduction_v);
     return p.partition_serial(leftReduction,rightReduction);
   }
+
+
+  //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+  template<typename T, typename V, typename Compare, typename Reduction_T, typename Reduction_V>
+  class __aligned(64) parallel_partition_static
+    {
+    private:
+
+      const Compare& cmp;
+      const Reduction_T& reduction_t;
+      const Reduction_V& reduction_v;
+      
+      const V &init;
+
+      size_t N;
+      size_t blocks;
+      size_t global_mid;
+      T* array;
+
+      struct LeftRightCounter {
+	unsigned int left;
+	unsigned int right;
+      };
+
+      __aligned(64) LeftRightCounter counter[MAX_MIC_THREADS];
+
+      struct Range {
+	unsigned int start;
+	unsigned int size;
+	
+	Range() {}
+
+	__forceinline void reset() { start = 0; size = 0; } 
+      };
+      
+      __aligned(64) Range leftMisplacedRanges[MAX_MIC_THREADS];
+      __aligned(64) Range rightMisplacedRanges[MAX_MIC_THREADS];
+
+      V leftReductions[MAX_MIC_THREADS];
+      V rightReductions[MAX_MIC_THREADS];
+
+
+      /* serial partitioning */
+      __forceinline size_t serialPartitioning(T* const t_array,
+                                              const size_t size, 
+                                              V &leftReduc, 
+                                              V &rightReduc)
+      {
+        T* l = t_array;
+        T* r = t_array + size - 1;
+
+        while(1)
+          {
+	    /* *l < pivot */
+            while (likely(l <= r && cmp(*l) )) 
+              {
+#if defined(__MIC__)
+		prefetch<PFHINT_L1EX>(l+4);	  
+#endif
+                reduction_t(leftReduc,*l);
+               ++l;
+              }
+	    /* *r >= pivot) */
+            while (likely(l <= r && !cmp(*r)))
+              {
+#if defined(__MIC__)
+		prefetch<PFHINT_L1EX>(r-4);	  
+#endif
+                reduction_t(rightReduc,*r);
+                --r;
+              }
+            if (r<l) break;
+
+            reduction_t(leftReduc ,*r);
+            reduction_t(rightReduc,*l);
+            std::swap(*l,*r);
+            l++; r--;
+          }
+      
+        return l - t_array;        
+      }
+
+
+      /* check left part of array */
+      void checkLeft(T* const t_array,const size_t begin, const size_t end)
+      {
+        for (size_t i=begin;i<end;i++)
+          if (!cmp(t_array[i]))
+            {
+              DBG_PRINT(i);
+              DBG_PRINT(array[i]);
+              FATAL("partition error on left side");
+            }
+      }
+
+      /* check right part of array */
+      void checkRight(T* const t_array,const size_t begin, const size_t end)
+      {
+        for (size_t i=begin;i<end;i++)
+          if (cmp(t_array[i]))
+            {
+              DBG_PRINT(i);
+              DBG_PRINT(array[i]);
+              FATAL("partition error on right side");
+            }
+      }
+
+      size_t partition_serial(T* const t_array,
+			      const size_t size,                                               
+			      V &leftReduction,
+                              V &rightReduction)
+      {
+	leftReduction = init;
+	rightReduction = init;
+        const size_t mid = serialPartitioning(t_array,size,leftReduction,rightReduction); 
+        DBG_CHECK(
+		  checkLeft(t_array,0,mid);
+		  checkRight(t_array,mid,size);
+                 );        
+        return mid;
+      }
+
+    public:
+
+      /* initialize atomic counters */
+      __forceinline parallel_partition_static(T *array, size_t N, const V& init, const Compare& cmp, const Reduction_T& reduction_t, const Reduction_V& reduction_v) : array(array), N(N), init(init), cmp(cmp), reduction_t(reduction_t) , reduction_v(reduction_v)
+      {
+	global_mid = (size_t)-1;
+      }
+
+      /* each thread neutralizes blocks taken from left and right */
+
+      static void task_thread_partition(void* data, const size_t threadID, const size_t numThreads) {
+
+        parallel_partition_static<T,V,Compare,Reduction_T,Reduction_V>* p = (parallel_partition_static<T,V,Compare,Reduction_T,Reduction_V>*)data;
+
+	const size_t startID = (threadID+0)*p->N/numThreads;
+	const size_t endID   = (threadID+1)*p->N/numThreads;
+	const size_t size    = endID-startID;
+
+        V left;
+        V right;
+        const size_t mid = p->partition_serial(&p->array[startID],size,left,right);
+	p->counter[threadID].left  = mid;
+	p->counter[threadID].right = size-mid;
+        p->leftReductions[threadID]  = left;
+        p->rightReductions[threadID] = right;
+      } 
+
+      static void task_thread_move_misplaced(void* data, const size_t threadID, const size_t numThreads) {
+
+        parallel_partition_static<T,V,Compare,Reduction_T,Reduction_V>* p = (parallel_partition_static<T,V,Compare,Reduction_T,Reduction_V>*)data;
+
+	const size_t startID = (threadID+0)*p->N/numThreads;
+	const size_t endID   = (threadID+1)*p->N/numThreads;
+
+      } 
+
+      /* main function for parallel in-place partitioning */
+      size_t partition_parallel(V &leftReduction,
+                                V &rightReduction)
+      {    
+        leftReduction = init;
+        rightReduction = init;
+
+        LockStepTaskScheduler* scheduler = LockStepTaskScheduler::instance();
+        const size_t numThreads = scheduler->getNumThreads();
+    
+        if (N <= 2 * numThreads)
+          {
+            DBG_PRINT("SERIAL FALLBACK");
+            DBG_PRINT("numThreads");
+
+            size_t mid = partition_serial(array,N,leftReduction,rightReduction);
+            DBG_CHECK(
+		      checkLeft(array,0,mid);
+		      checkRight(array,mid,N);
+                     );
+            return mid;
+          }
+
+        DBG_PART2(
+                 DBG_PRINT("PARALLEL MODE");
+                 );
+
+
+        scheduler->dispatchTask(task_thread_partition,this,0,numThreads);
+
+        /* ------------------------------------ */
+        /* ------ parallel cleanup phase ------ */
+        /* ------------------------------------ */
+        
+        for (size_t i=0;i<numThreads;i++)
+          {
+            reduction_v(leftReduction,leftReductions[i]);
+            reduction_v(rightReduction,rightReductions[i]);
+          }
+        
+	size_t mid = counter[0].left;
+	for (size_t i=1;i<numThreads;i++)
+	  mid += counter[i].left;
+
+	global_mid = mid;
+
+        DBG_CHECK(
+		  //checkLeft(0,mid);
+		  //checkRight(mid,N);
+                 );
+        
+        return mid;
+      }
+
+
+
+    };
+
+  template<typename T, typename V, typename Compare, typename Reduction_T, typename Reduction_V>
+    __forceinline size_t parallel_in_place_partitioning_static(T *array, 
+							       size_t N, 
+							       const V &init,
+							       V &leftReduction,
+							       V &rightReduction,
+							       const Compare& cmp, 
+							       const Reduction_T& reduction_t,
+							       const Reduction_V& reduction_v)
+  {
+    parallel_partition_static<T,V,Compare,Reduction_T,Reduction_V> p(array,N,init,cmp,reduction_t,reduction_v);
+    return p.partition_parallel(leftReduction,rightReduction);    
+  }
+
 
  };
