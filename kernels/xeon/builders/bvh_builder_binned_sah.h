@@ -109,13 +109,7 @@ namespace embree
         if (unlikely(!split.valid())) splitFallback(current,leftChild,rightChild);
         
         /* partitioning of items */
-        else {
-          //split.partition_parallel(prims, current.begin, current.end, leftChild, rightChild);
-          //size_t left0 = leftChild.size();
-          split.partition(prims, current.begin, current.end, leftChild, rightChild);
-          //size_t left1 = leftChild.size();
-          //if (left0 != left1) PRINT2(left0,left1);
-        }
+        else split.partition(prims, current.begin, current.end, leftChild, rightChild);
       }
 
       void splitParallel(const BuildRecord<NodeRef>& current, BuildRecord<NodeRef>& leftChild, BuildRecord<NodeRef>& rightChild, Allocator& alloc)
@@ -128,13 +122,7 @@ namespace embree
         if (unlikely(!split.valid())) splitFallback(current,leftChild,rightChild);
         
         /* partitioning of items */
-        else {
-          split.partition_parallel(prims, current.begin, current.end, leftChild, rightChild);
-          //size_t left0 = leftChild.size();
-          //split.partition(prims, current.begin, current.end, leftChild, rightChild);
-          //size_t left1 = leftChild.size();
-          //if (left0 != left1) PRINT2(left0,left1);
-        }
+        else split.partition_parallel(prims, current.begin, current.end, leftChild, rightChild);
       }
 
       void createLargeLeaf(const BuildRecord<NodeRef>& current, Allocator& nodeAlloc, Allocator& leafAlloc)
