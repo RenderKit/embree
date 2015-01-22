@@ -202,7 +202,6 @@ namespace embree
 		prefetch<PFHINT_L1EX>(&array[left_begin] + 2);	  
 		//prefetch<PFHINT_L2EX>(&array[left_begin] + 16);	  
 #endif
-                reduction_t(leftReduc,array[left_begin]);
 
                 left_begin++;
                 if (left_begin >= left_end) break;
@@ -214,8 +213,6 @@ namespace embree
 		prefetch<PFHINT_L1EX>(&array[right_begin] - 2);	  
 		//prefetch<PFHINT_L2EX>(&array[right_begin] - 16);	  
 #endif
-                reduction_t(rightReduc,array[right_begin]);
-
                 right_begin++;
                 if (right_begin >= right_end) break;
               }
@@ -227,18 +224,25 @@ namespace embree
 	    prefetch<PFHINT_L1EX>(&array[left_begin]);	  
 #endif
             
-            reduction_t(leftReduc ,array[right_begin]);
-            reduction_t(rightReduc,array[left_begin]);
-
             std::swap(array[left_begin++],array[right_begin++]);
           }
 
         size_t mode = 0;
         if (unlikely(left_begin == left_end))
-          mode |= NEED_LEFT_BLOCK;
+	  {
+	    for (size_t i=left_end-BLOCK_SIZE;i<left_end;i++)
+	      reduction_t(leftReduc,array[i]);
+
+	    mode |= NEED_LEFT_BLOCK;
+	  }
 
         if (unlikely(right_begin == right_end))
-          mode |= NEED_RIGHT_BLOCK;
+	  {
+	    for (size_t i=right_end-BLOCK_SIZE;i<right_end;i++)
+	      reduction_t(rightReduc,array[i]);
+
+	    mode |= NEED_RIGHT_BLOCK;
+	  }
 
         assert(mode != 0);
         return mode;

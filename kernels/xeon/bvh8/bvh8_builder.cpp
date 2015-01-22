@@ -438,25 +438,29 @@ namespace embree
                 //parallel_partition pp(test_array,s, [] (unsigned int &t) { DBG_PRINT(t);} );
                 //size_t mid = pp.parition(pivot);
 
-                PrimInfo leftInfo;
-                PrimInfo rightInfo;
-                PrimInfo init;
-                leftInfo.reset();
-                rightInfo.reset();
-                init.reset();
+		size_t numLeft = 0;
+		size_t numRight = 0;
+		size_t init = 0;
                     
-                size_t mid = parallel_in_place_partitioning<96,PrimRef,PrimInfo>(test_array,
+                size_t mid = parallel_in_place_partitioning<96,PrimRef,size_t>(test_array,
                                                                                  s,
                                                                                  init,
-                                                                                 leftInfo,
-                                                                                 rightInfo,
+                                                                                 numLeft,
+                                                                                 numRight,
                                                                                  [] (const PrimRef &ref) { return ref.lower.x < 0.5f; },
-                                                                                 [] (PrimInfo &pinfo,const PrimRef &ref) { pinfo.extend(ref.bounds()); },
-                                                                                 [] (PrimInfo &pinfo0,const PrimInfo &pinfo1) { pinfo0.merge(pinfo1); }                                                                                     
+                                                                                 [] (size_t &pinfo,const PrimRef &ref) { pinfo++; },
+                                                                                 [] (size_t &pinfo0,const size_t &pinfo1) { pinfo0 += pinfo1; }                                                                                     
                                                                                  );
 
                 t_parallel = getSeconds() - t_parallel;        
                 t_parallel_total += t_parallel;
+
+		DBG_PRINT(numLeft);
+		DBG_PRINT(numRight);
+		DBG_PRINT(numLeft+numRight);
+		DBG_PRINT(s);
+		DBG_PRINT(mid);
+
                 mids[j] = mid;
                 for (size_t i=0;i<mid;i++)
                   if (test_array[i].lower.x >= 0.5f)
@@ -478,7 +482,7 @@ namespace embree
             t_parallel_total /= ITERATIONS;
 
             srand48(s*32323);
-#if 1
+#if 0
             t_serial_total = 0.0;
 #define ITERATIONS 20
             for (size_t j=0;j<ITERATIONS;j++)

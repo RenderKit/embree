@@ -133,6 +133,7 @@ namespace embree
     
     void BVH4BuilderFast::build(size_t threadIndex, size_t threadCount) 
     {
+
       /* start measurement */
       double t0 = 0.0f;
       if (g_verbose >= 1) t0 = getSeconds();
