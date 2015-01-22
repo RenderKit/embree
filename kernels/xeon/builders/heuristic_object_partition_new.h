@@ -139,8 +139,10 @@ namespace embree
           assert(valid());
           CentGeomBBox3fa local_left(empty);
           CentGeomBBox3fa local_right(empty);
+          const unsigned int splitPos = pos;
+          const unsigned int splitDim = dim;
           size_t center = serial_partitioning(prims,begin,end,local_left,local_right,
-                                              [&] (const PrimRef& ref) { return mapping.bin_unsafe(center2(ref.bounds()))[dim] < pos; },
+                                              [&] (const PrimRef& ref) { return mapping.bin_unsafe(center2(ref.bounds()))[splitDim] < splitPos; },
                                               [] (CentGeomBBox3fa& pinfo,const PrimRef& ref) { pinfo.extend(ref.bounds()); });
 
           new (&left ) PrimInfo(begin,center,local_left.geomBounds,local_left.centBounds);
@@ -158,23 +160,15 @@ namespace embree
           const unsigned int splitPos = pos;
           const unsigned int splitDim = dim;
 
-          size_t mid = parallel_in_place_partitioning<128,PrimRef,PrimInfo>(&prims[begin],
-                                                                            end-begin,
-                                                                            init,
-                                                                            left,
-                                                                            right,
-                                                                            [&] (const PrimRef &ref) { return mapping.bin_unsafe(center2(ref.bounds()))[splitDim] < splitPos; },
-                                                                            [] (PrimInfo &pinfo,const PrimRef &ref) { pinfo.add(ref.bounds()); },
-                                                                            [] (PrimInfo &pinfo0,const PrimInfo &pinfo1) { pinfo0.merge(pinfo1); }
-                                                                            );
+          const size_t mid = parallel_in_place_partitioning<128,PrimRef,PrimInfo>
+            (&prims[begin],end-begin,init,left,right,
+             [&] (const PrimRef &ref) { return mapping.bin_unsafe(center2(ref.bounds()))[splitDim] < splitPos; },
+             [] (PrimInfo &pinfo,const PrimRef &ref) { pinfo.add(ref.bounds()); },
+             [] (PrimInfo &pinfo0,const PrimInfo &pinfo1) { pinfo0.merge(pinfo1); });
 
-          //PRINT(end-begin);
-          //PRINT2(mid,left.size());
-          //mid = left.size();
-          left.begin = begin;
-          left.end   = begin+mid;
-          right.begin = begin+mid;
-          right.end   = end;
+          const size_t center = begin+mid;
+          left.begin  = begin;  left.end  = center;
+          right.begin = center; right.end = end;
         }
 
 	/*! stream output */
