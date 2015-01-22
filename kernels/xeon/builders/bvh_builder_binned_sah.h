@@ -75,8 +75,7 @@ namespace embree
                          PrimRef* prims, const PrimInfo& pinfo,
                          const size_t branchingFactor, const size_t maxDepth, 
                          const size_t logBlockSize, const size_t minLeafSize, const size_t maxLeafSize)
-        : parallelBinner(NULL),
-          createAlloc(createAlloc), createNode(createNode), createLeaf(createLeaf), 
+        : createAlloc(createAlloc), createNode(createNode), createLeaf(createLeaf), 
           prims(prims), pinfo(pinfo), 
           branchingFactor(branchingFactor), maxDepth(maxDepth),
           logBlockSize(logBlockSize), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize)
@@ -115,7 +114,6 @@ namespace embree
 
       void splitParallel(const BuildRecord<NodeRef>& current, BuildRecord<NodeRef>& leftChild, BuildRecord<NodeRef>& rightChild, Allocator& alloc)
       {
-#if 1
         /* calculate binning function */
         PrimInfo pinfo(current.size(),current.geomBounds,current.centBounds);
         ObjectPartitionNew::Split split = ObjectPartitionNew::find_parallel(prims,current.begin,current.end,pinfo,logBlockSize);
@@ -125,23 +123,6 @@ namespace embree
         
         /* partitioning of items */
         else split.partition_parallel(prims, current.begin, current.end, leftChild, rightChild);
-
-#else
-        LockStepTaskScheduler* scheduler = LockStepTaskScheduler::instance();
-        const size_t threadCount = scheduler->getNumThreads();
-
-        /* use primitive array temporarily for parallel splits */
-        PrimInfo pinfo(current.begin,current.end,current.geomBounds,current.centBounds);
-        
-        /* parallel binning of centroids */
-        const float sah = parallelBinner->find(pinfo,prims,NULL,logBlockSize,0,threadCount,scheduler); // FIXME: hardcoded threadIndex=0
-        
-        /* if we cannot find a valid split, enforce an arbitrary split */
-        if (unlikely(sah == float(inf))) splitFallback(current,leftChild,rightChild);
-        
-        /* parallel partitioning of items */
-        else parallelBinner->partition(pinfo,NULL,prims,leftChild,rightChild,0,threadCount,scheduler);
-#endif
       }
 
       void createLargeLeaf(const BuildRecord<NodeRef>& current, Allocator& nodeAlloc, Allocator& leafAlloc)
@@ -277,18 +258,15 @@ namespace embree
         sequential_create_tree(br, createAlloc, 
           [&](const BuildRecord<NodeRef>& br, Allocator& alloc, ParallelContinue<BuildRecord<NodeRef> >& cont) { recurse<false>(br,alloc,cont); });
 #else   
-        parallelBinner = new ObjectPartitionNew::ParallelBinner;
         parallel_create_tree<50000,128>(br, createAlloc, 
           [&](const BuildRecord<NodeRef>& br, Allocator& alloc, ParallelContinue<BuildRecord<NodeRef> >& cont) { recurse<true>(br,alloc,cont); } ,
           [&](const BuildRecord<NodeRef>& br, Allocator& alloc, ParallelContinue<BuildRecord<NodeRef> >& cont) { recurse<false>(br,alloc,cont); });
-        delete parallelBinner;
 #endif
 
         return root;
       }
 
     private:
-      ObjectPartitionNew::ParallelBinner* parallelBinner;
       CreateAllocFunc& createAlloc;
       CreateNodeFunc& createNode;
       CreateLeafFunc& createLeaf;
