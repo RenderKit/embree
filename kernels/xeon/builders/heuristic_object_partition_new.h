@@ -653,12 +653,13 @@ namespace embree
                                                                             [] (PrimInfo &pinfo0,const PrimInfo &pinfo1) { pinfo0.merge(pinfo1); }
                                                                             );
 
+          
+
+#if 0
           PRINT(left.size());
           PRINT(right.size());
           PRINT(left.size()+right.size());
           PRINT(pinfo.size());
-
-#if 1
           size_t center = pinfo.begin+left.end;
           new (&leftChild ) PrimInfo(pinfo.begin,center,left.geomBounds,left.centBounds);
           new (&rightChild) PrimInfo(center,center+right.end,right.geomBounds,right.centBounds);

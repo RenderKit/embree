@@ -221,27 +221,21 @@ namespace embree
   {
     if (threadID == 0) {
       taskCounter.reset(0);
-      this->numThreads = numThreads;
     }
     
     syncThreads(threadID, numThreads);
-    numThreads = this->numThreads;
 
     if (taskPtr) {
-      if (threadID < numThreads) {
-	(*taskPtr)((void*)data,threadID,numThreads);
-      }
+      (*taskPtr)((void*)data,threadID,numThreads);
       syncThreads(threadID, numThreads);
       return false;
     }
 
     if (taskPtr2) {
-      if (threadID < numThreads) {
-	while (true) {
-	  size_t taskID = taskCounter.inc();
-	  if (taskID >= numTasks) break;
-	  (*taskPtr2)((void*)data,threadID,numThreads,taskID,numTasks);
-	}
+      while (true) {
+        size_t taskID = taskCounter.inc();
+        if (taskID >= numTasks) break;
+        (*taskPtr2)((void*)data,threadID,numThreads,taskID,numTasks);
       }
       syncThreads(threadID, numThreads);
       return false;

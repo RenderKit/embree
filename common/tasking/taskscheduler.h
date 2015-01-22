@@ -272,40 +272,8 @@ namespace embree
       LockStepTaskScheduler* scheduler;
     };
 
-#if defined(USE_TBB) && 0
-    template<typename Closure>
-    struct TBBTask
-    {
-    public:
-      TBBTask (const Closure& closure) : closure(closure)
-      {
-        LockStepTaskScheduler* scheduler = LockStepTaskScheduler::instance();
-        size_t threadIndex = LockStepTaskScheduler::threadIndex();
-        size_t threadCount = scheduler->getNumThreads();
-        barrier.init(threadCount);
-        scheduler->dispatchTask( run, this, threadIndex, threadCount );
-      }
-
-      static void run(void* data, const size_t threadID, const size_t threadCount) 
-      {
-        TBBTask* This = (TBBTask*) data;
-        //if (threadID == 0) This->arena.execute([&] { This->closure(); });
-        //else               This->arena.execute([]{});
-        if (threadID == 0) This->closure();
-        This->barrier.wait();
-      }
-
-    public:
-      const Closure& closure;
-      tbb::task_arena arena;
-      BarrierSys barrier;
-    };
-
-    template<typename Closure>
-      static void execute_tbb(const Closure& closure) {
-      TBBTask<Closure> task(closure);
-    }
-#endif
+    __forceinline LockStepTaskScheduler()
+      : numTasks(0), threadCount(0), insideTask(false), data(NULL) {}
 
     static __thread LockStepTaskScheduler* t_scheduler;
     static __dllexport2 LockStepTaskScheduler* instance();
@@ -314,8 +282,6 @@ namespace embree
     static __thread size_t t_threadIndex;
     static __dllexport2 size_t threadIndex();
     static __dllexport2 void setThreadIndex(size_t threadIndex);
-
-    static const unsigned int CONTROL_THREAD_ID = 0;
 
     __aligned(64) BarrierActive barrier;
 
@@ -326,7 +292,7 @@ namespace embree
     __aligned(64) runFunction taskPtr;
     __aligned(64) runFunction2 taskPtr2;
     size_t numTasks;
-    size_t numThreads; 
+    volatile bool insideTask;
 
     size_t getNumThreads() const { return threadCount; }
     size_t threadCount;
