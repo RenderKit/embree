@@ -131,8 +131,11 @@ namespace embree
       bvh->alloc.shrink(); 
     }
     
+    void test_partition();
+
     void BVH4BuilderFast::build(size_t threadIndex, size_t threadCount) 
     {
+      // test_partition(); 
 
       /* start measurement */
       double t0 = 0.0f;
@@ -1555,34 +1558,42 @@ namespace embree
 
                 t_parallel = getSeconds();        
                     
+
+                PrimInfo leftInfo;
+                PrimInfo rightInfo;
+                PrimInfo init;
+                leftInfo.reset();
+                rightInfo.reset();
+                init.reset();
+
                 //parallel_partition pp(test_array,s, [] (unsigned int &t) { DBG_PRINT(t);} );
                 //size_t mid = pp.parition(pivot);
 
-		size_t numLeft = 0;
-		size_t numRight = 0;
-		size_t init = 0;
+		// size_t numLeft = 0;
+		// size_t numRight = 0;
+		// size_t init = 0;
 
 #if 1
 
-                size_t mid = parallel_in_place_partitioning_static<PrimRef,size_t>(test_array,              
+                size_t mid = parallel_in_place_partitioning_static<PrimRef,PrimInfo>(test_array,              
 										   s,
 										   init,
-										   numLeft,
-										   numRight,
-										   [] (const PrimRef &ref) { return ref.lower.x < 0.5f; },
-										   [] (size_t &pinfo,const PrimRef &ref) { pinfo++; },
-										   [] (size_t &pinfo0,const size_t &pinfo1) { pinfo0 += pinfo1; }                                                                                     
-										   );
+                                                                                   leftInfo,
+                                                                                   rightInfo,
+                                                                                   [] (const PrimRef &ref) { return ref.lower.x < 0.5f; },
+                                                                                   [] (PrimInfo &pinfo,const PrimRef &ref) { pinfo.extend(ref.bounds()); },
+                                                                                   [] (PrimInfo &pinfo0,const PrimInfo &pinfo1) { pinfo0.merge(pinfo1); }
+                                                                                   );
 #else
                     
-                size_t mid = parallel_in_place_partitioning<128,PrimRef,size_t>(test_array,
+                size_t mid = parallel_in_place_partitioning<128,PrimRef,PrimInfo>(test_array,
 										s,
 										init,
-										numLeft,
-										numRight,
+										leftInfo,
+										rightInfo,
 										[] (const PrimRef &ref) { return ref.lower.x < 0.5f; },
-										[] (size_t &pinfo,const PrimRef &ref) { pinfo++; },
-										[] (size_t &pinfo0,const size_t &pinfo1) { pinfo0 += pinfo1; }                                                                                     
+										[] (PrimInfo &pinfo,const PrimRef &ref) { pinfo.extend(ref.bounds()); },
+										[] (PrimInfo &pinfo0,const PrimInfo &pinfo1) { pinfo0.merge(pinfo1); }
 										);
 #endif
 
@@ -1613,14 +1624,13 @@ namespace embree
                       DBG_PRINT(i);
                       DBG_PRINT(test_array[i]);
                     }
-		assert(numLeft+numRight == s);
+		//assert(numLeft+numRight == s);
               }
             t_parallel_total /= ITERATIONS;
 
             srand48(s*32323);
 #if 1
             t_serial_total = 0.0;
-#define ITERATIONS 20
             for (size_t j=0;j<ITERATIONS;j++)
               {
                 for (size_t i=0;i<s;i++)

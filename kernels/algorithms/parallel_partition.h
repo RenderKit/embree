@@ -621,8 +621,8 @@ namespace embree
       __aligned(64) LeftRightCounter counter[MAX_MIC_THREADS];
 
       struct Range {
-	ssize_t start;
-	ssize_t end;
+	int start;
+	int end;
 	Range() {}
 
       Range(ssize_t start, ssize_t end) : start(start), end(end) {}
@@ -631,7 +631,7 @@ namespace embree
 	
 	__forceinline Range intersect(const Range& r) const
 	{
-	  return Range (max(start,r.start),min(end,r.end));
+	  return Range (max(start,r.start),min(end,r.end)); // carefull with ssize_t here
 	}
 
 	__forceinline bool empty() const { return end < start; } 
@@ -755,7 +755,7 @@ namespace embree
 	const size_t startID = (threadID+0)*p->N/numThreads;
 	const size_t endID   = (threadID+1)*p->N/numThreads;
 	const size_t size    = endID-startID;
-
+	
         V left;
         V right;
         const size_t mid = p->partition_serial(&p->array[startID],size,left,right);
@@ -867,10 +867,10 @@ namespace embree
         LockStepTaskScheduler* scheduler = LockStepTaskScheduler::instance();
         const size_t numThreads = scheduler->getNumThreads();
     
-        if (N <= 4 * numThreads)
+        if (N <= 8 * numThreads)
           {
             DBG_PRINT("SERIAL FALLBACK");
-            DBG_PRINT("numThreads");
+            DBG_PRINT(numThreads);
 
             size_t mid = partition_serial(array,N,leftReduction,rightReduction);
             DBG_CHECK(
@@ -884,8 +884,10 @@ namespace embree
                  DBG_PRINT("PARALLEL MODE");
                  );
 
-
+	//double t0 = getSeconds();
         scheduler->dispatchTask(task_thread_partition,this,0,numThreads);
+	//t0 = getSeconds() - t0;
+	//std::cout << " phase0 = " << 1000.0f*t0 << "ms, perf = " << 1E-6*double(N)/t0 << " Mprim/s" << std::endl;
 
         /* ------------------------------------ */
         /* ------ parallel cleanup phase ------ */
@@ -903,7 +905,11 @@ namespace embree
 
 	global_mid = mid;
 
+	//double t1 = getSeconds();
         scheduler->dispatchTask(task_thread_move_misplaced,this,0,numThreads);
+
+	//t1 = getSeconds() - t1;
+	//std::cout << " phase1 = " << 1000.0f*t1 << "ms, perf = " << 1E-6*double(N)/t1 << " Mprim/s" << std::endl;
 
         DBG_CHECK(
 		  checkLeft(array,0,global_mid);
