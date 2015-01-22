@@ -56,10 +56,6 @@ namespace embree
         return binner.best(mapping,logBlockSize);
       }
       
-      /*! computes bounding box of bezier curves for motion blur */
-      template<bool Parallel>
-      static const std::pair<BBox3fa,BBox3fa> computePrimInfoMB(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, Scene* scene, BezierRefList& prims);
-
     private:
       
       /*! number of bins */
@@ -224,53 +220,6 @@ namespace embree
       
     private:
 
-      /*! task for parallel bounding calculations */
-      struct TaskPrimInfoMBParallel
-      {
-	/*! construction executes the task */
-        TaskPrimInfoMBParallel(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, Scene* scene, BezierRefList& prims) 
-      : scene(scene), iter(prims), bounds0(empty), bounds1(empty)
-        {
-          size_t numTasks = min(maxTasks,threadCount);
-          scheduler->dispatchTask(threadIndex,numTasks,_task_bound_parallel,this,numTasks,"build::task_bound_parallel");
-        }
-    
-      private:
-	
-	/*! parallel bounding calculations */
-	TASK_SET_FUNCTION_(TaskPrimInfoMBParallel,task_bound_parallel);
-
-        void task_bound_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount) 
-        {
-          size_t N = 0;
-          BBox3fa bounds0 = empty;
-          BBox3fa bounds1 = empty;
-          while (BezierRefList::item* block = iter.next()) 
-          {
-            for (size_t i=0; i<block->size(); i++) 
-            {
-              const BezierPrim& ref = block->at(i);
-              const BezierCurves* curves = scene->getBezierCurves(ref.geomID<0>());
-              bounds0.extend(curves->bounds(ref.primID<0>(),0));
-              bounds1.extend(curves->bounds(ref.primID<0>(),1));
-            }
-          }
-          this->bounds0.extend_atomic(bounds0);
-          this->bounds1.extend_atomic(bounds1);
-        }
-	
-	/*! state for bounding stage */
-      private:
-        Scene* scene;
-	BezierRefList::iterator iter; //!< iterator for bounding stage 
-	
-	/*! output data */
-      public:
-        BBox3fa bounds0; 
-        BBox3fa bounds1;
-      };
-
-      
       /*! stores all binning information */
       struct __aligned(64) BinInfo
       {
@@ -337,56 +286,7 @@ namespace embree
           }
         }
 	
-	/*! bins an array of primitives */
-        __forceinline void bin_copy (const PrimRef* prims, size_t num, const Mapping& mapping, PrimRef* dest)
-        {
-          if (num == 0) return;
-          
-          size_t i; 
-          for (i=0; i<num-1; i+=2)
-          {
-            /*! map even and odd primitive to bin */
-            const BBox3fa prim0 = prims[i+0].bounds(); const Vec3fa center0 = Vec3fa(center2(prim0)); const Vec3ia bin0 = mapping.bin(center0); 
-            const BBox3fa prim1 = prims[i+1].bounds(); const Vec3fa center1 = Vec3fa(center2(prim1)); const Vec3ia bin1 = mapping.bin(center1); 
-            
-            /*! increase bounds for bins for even primitive */
-            const int b00 = bin0.x; counts[b00][0]++; bounds[b00][0].extend(prim0);
-            const int b01 = bin0.y; counts[b01][1]++; bounds[b01][1].extend(prim0);
-            const int b02 = bin0.z; counts[b02][2]++; bounds[b02][2].extend(prim0);
-            
-            /*! increase bounds of bins for odd primitive */
-            const int b10 = bin1.x; counts[b10][0]++; bounds[b10][0].extend(prim1);
-            const int b11 = bin1.y; counts[b11][1]++; bounds[b11][1].extend(prim1);
-            const int b12 = bin1.z; counts[b12][2]++; bounds[b12][2].extend(prim1);
-            
-            /*! copy to destination */
-            dest[i+0] = prims[i+0];
-            dest[i+1] = prims[i+1];
-          }
-          
-          /*! for uneven number of primitives */
-          if (i < num)
-          {
-            /*! map primitive to bin */
-            const BBox3fa prim0 = prims[i].bounds(); const Vec3fa center0 = Vec3fa(center2(prim0)); const Vec3ia bin0 = mapping.bin(center0); 
-            
-            /*! increase bounds of bins */
-            const int b00 = bin0.x; counts[b00][0]++; bounds[b00][0].extend(prim0);
-            const int b01 = bin0.y; counts[b01][1]++; bounds[b01][1].extend(prim0);
-            const int b02 = bin0.z; counts[b02][2]++; bounds[b02][2].extend(prim0);
-            
-            /*! copy to destination */
-            dest[i+0] = prims[i+0];
-          }
-        }
-
-        __forceinline void bin_copy (const PrimRef* prims, size_t begin, size_t end, const Mapping& mapping, PrimRef* dest)
-        {
-          bin_copy(prims+begin,end-begin,mapping,dest+begin);
-        }
-
-        __forceinline void bin(const PrimRef* prims, size_t begin, size_t end, const Mapping& mapping)
-        {
+        __forceinline void bin(const PrimRef* prims, size_t begin, size_t end, const Mapping& mapping) {
           bin(prims+begin,end-begin,mapping);
         }
 
@@ -446,22 +346,6 @@ namespace embree
           }
         }
 
-        static void reduce2(const BinInfo binners[], size_t num, BinInfo& binner_o) // FIXME: remove
-        {
-          binner_o = binners[0];
-          for (size_t tid=1; tid<num; tid++) 
-          {
-            const BinInfo& binner = binners[tid];
-            for (size_t bin=0; bin<16; bin++) 
-            {
-              binner_o.bounds[bin][0].extend(binner.bounds[bin][0]);
-              binner_o.bounds[bin][1].extend(binner.bounds[bin][1]);
-              binner_o.bounds[bin][2].extend(binner.bounds[bin][2]);
-              binner_o.counts[bin] += binner.counts[bin];
-            }
-          }
-        }
-	
 	/*! finds the best split by scanning binning information */
         __forceinline Split best(const Mapping& mapping, const size_t blocks_shift)
         {
@@ -551,9 +435,8 @@ namespace embree
 	  new (&info) SplitInfo(leftCount,leftBounds,rightCount,rightBounds);
 	}
 	
-	//private:
       public: // FIXME
-	BBox3fa bounds[maxBins][4]; //!< geometry bounds for each bin in each dimension
+      	BBox3fa bounds[maxBins][4]; //!< geometry bounds for each bin in each dimension
 	ssei    counts[maxBins];    //!< counts number of primitives that map into the bins
       };
       
@@ -828,27 +711,6 @@ namespace embree
       TaskBinParallel<PrimRefList> task(threadIndex,threadCount,scheduler,prims,pinfo,logBlockSize);
       task.binner.getSplitInfo(task.mapping,task.split,sinfo_o);
       return task.split;
-    }
-
-    template<>
-      inline const std::pair<BBox3fa,BBox3fa> ObjectPartitionNew::computePrimInfoMB<false>(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, Scene* scene, BezierRefList& prims)
-    {
-      BBox3fa bounds0 = empty;
-      BBox3fa bounds1 = empty;
-      for (BezierRefList::block_iterator_unsafe i = prims; i; i++) 
-      {
-        const BezierCurves* curves = scene->getBezierCurves(i->geomID<0>());
-        bounds0.extend(curves->bounds(i->primID<0>(),0));
-        bounds1.extend(curves->bounds(i->primID<0>(),1));
-      }
-      return std::pair<BBox3fa,BBox3fa>(bounds0,bounds1);
-    }
-    
-    template<>
-      inline const std::pair<BBox3fa,BBox3fa> ObjectPartitionNew::computePrimInfoMB<true>(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, Scene* scene, BezierRefList& prims)
-    {
-      const TaskPrimInfoMBParallel bounds(threadIndex,threadCount,scheduler,scene,prims);
-      return std::pair<BBox3fa,BBox3fa>(bounds.bounds0,bounds.bounds1);
     }
 
     template<>
