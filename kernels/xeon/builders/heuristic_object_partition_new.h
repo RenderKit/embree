@@ -51,7 +51,7 @@ namespace embree
       /*! finds the best split */
       static const Split find(PrimRef *__restrict__ const prims, const size_t begin, const size_t end, const PrimInfo& pinfo, const size_t logBlockSize)
       {
-        BinInfo binner;
+        BinInfo binner(empty);
         const Mapping mapping(pinfo);
         binner.bin(prims+begin,end-begin,mapping);
         return binner.best(mapping,logBlockSize);
@@ -60,12 +60,12 @@ namespace embree
       /*! finds the best split */
       static const Split find_parallel(PrimRef *__restrict__ const prims, const size_t begin, const size_t end, const PrimInfo& pinfo, const size_t logBlockSize)
       {
-        BinInfo binner;
+        BinInfo binner(empty);
         const Mapping mapping(pinfo);
         //binner.bin(prims+begin,end-begin,mapping);
         
         binner = parallel_reduce(begin,end,binner,
-                                 [&](const range<size_t>& r) { BinInfo binner; binner.bin(prims+r.begin(),r.size(),mapping); return binner; },
+                                 [&](const range<size_t>& r) { BinInfo binner(empty); binner.bin(prims+r.begin(),r.size(),mapping); return binner; },
                                  [] (const BinInfo& b0, const BinInfo& b1) { BinInfo r = b0; r.merge(b1); return r; });
 
         return binner.best(mapping,logBlockSize);
@@ -296,6 +296,9 @@ namespace embree
       struct __aligned(64) BinInfo
       {
         __forceinline BinInfo() {
+        }
+
+        __forceinline BinInfo(EmptyTy) {
           clear();
         }
 	
@@ -518,7 +521,7 @@ namespace embree
       {
 	/*! construction executes the task */
         TaskBinParallel (size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, List& prims, const PrimInfo& pinfo, const size_t logBlockSize) 
-        : iter(prims)
+        : iter(prims), binner(empty)
         {
           /* parallel binning */			
           size_t numTasks = min(maxTasks,threadCount);
@@ -541,6 +544,7 @@ namespace embree
 
         void task_bin_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount) 
         {
+          binners[taskIndex].clear();
           while (typename List::item* block = iter.next())
             binners[taskIndex].bin(block->base(),block->size(),mapping);
         }
@@ -755,7 +759,7 @@ namespace embree
     template<>
       inline const ObjectPartitionNew::Split ObjectPartitionNew::find<false>(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, BezierRefList& prims, const PrimInfo& pinfo, const size_t logBlockSize)
     {
-      BinInfo binner;
+      BinInfo binner(empty);
       const Mapping mapping(pinfo);
       binner.bin(prims,mapping);
       return binner.best(mapping,logBlockSize);
@@ -764,7 +768,7 @@ namespace embree
     template<>
       inline const ObjectPartitionNew::Split ObjectPartitionNew::find<false>(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, PrimRefList& prims, const PrimInfo& pinfo, const size_t logBlockSize)
     {
-      BinInfo binner;
+      BinInfo binner(empty);
       const Mapping mapping(pinfo);
       binner.bin(prims,mapping);
       return binner.best(mapping,logBlockSize);
@@ -773,7 +777,7 @@ namespace embree
     template<>
       inline const ObjectPartitionNew::Split ObjectPartitionNew::find<false>(size_t threadIndex, size_t threadCount, LockStepTaskScheduler* scheduler, PrimRefList& prims, const PrimInfo& pinfo, const size_t logBlockSize, SplitInfo& sinfo_o)
     {
-      BinInfo binner;
+      BinInfo binner(empty);
       const Mapping mapping(pinfo);
       binner.bin(prims,mapping);
       const ObjectPartitionNew::Split split = binner.best(mapping,logBlockSize);
