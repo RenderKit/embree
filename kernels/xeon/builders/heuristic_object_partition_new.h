@@ -52,7 +52,7 @@ namespace embree
         const Mapping mapping(pinfo);
         binner = parallel_reduce(begin,end,size_t(4096),binner,
                                  [&](const range<size_t>& r) { BinInfo binner(empty); binner.bin(prims+r.begin(),r.size(),mapping); return binner; },
-                                 [] (const BinInfo& b0, const BinInfo& b1) { BinInfo r = b0; r.merge(b1); return r; });
+                                 [&] (const BinInfo& b0, const BinInfo& b1) { BinInfo r = b0; r.merge(b1,mapping.size()); return r; });
         return binner.best(mapping,logBlockSize);
       }
       
@@ -232,12 +232,12 @@ namespace embree
         }
 	
 	/*! bins an array of primitives */
-        __forceinline void bin (const PrimRef* prims, size_t num, const Mapping& mapping)
+        __forceinline void bin (const PrimRef* prims, size_t N, const Mapping& mapping)
         {
-          if (num == 0) return;
+          if (N == 0) return;
           
           size_t i; 
-          for (i=0; i<num-1; i+=2)
+          for (i=0; i<N-1; i+=2)
           {
             /*! map even and odd primitive to bin */
             const BBox3fa prim0 = prims[i+0].bounds(); const Vec3fa center0 = Vec3fa(center2(prim0)); const Vec3ia bin0 = mapping.bin(center0); 
@@ -255,7 +255,7 @@ namespace embree
           }
           
           /*! for uneven number of primitives */
-          if (i < num)
+          if (i < N)
           {
             /*! map primitive to bin */
             const BBox3fa prim0 = prims[i].bounds(); const Vec3fa center0 = Vec3fa(center2(prim0)); const Vec3ia bin0 = mapping.bin(center0); 
@@ -288,17 +288,6 @@ namespace embree
         }
 	
 	/*! merges in other binning information */
-        __forceinline void merge (const BinInfo& other) 
-        {
-          for (size_t i=0; i<maxBins; i++) // FIXME: dont iterate over all bins
-          {
-            counts[i] += other.counts[i];
-            bounds[i][0].extend(other.bounds[i][0]);
-            bounds[i][1].extend(other.bounds[i][1]);
-            bounds[i][2].extend(other.bounds[i][2]);
-          }
-        }
-
         __forceinline void merge (const BinInfo& other, size_t numBins)
         {
           for (size_t i=0; i<numBins; i++) 
