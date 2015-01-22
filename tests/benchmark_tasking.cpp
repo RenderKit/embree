@@ -21,6 +21,8 @@
 #include "kernels/algorithms/sort.h"
 #include <tbb/tbb.h>
 
+#define OUTPUT 1
+
 namespace embree
 {
   std::fstream fs;
@@ -176,8 +178,10 @@ namespace embree
   template<typename Closure>
   void benchmark(size_t N0, size_t N1, const char* name, const Closure& closure)
   {
+#if OUTPUT == 1
     std::cout << "# " << name << std::endl;
     std::cout << "# N dt_min dt_avg dt_max M/s(min) M/s(avg) M/s(max)" << std::endl;
+#endif
     for (size_t N = N0; N < N1; N *= 1.5) 
     {
       double t_min = pos_inf;
@@ -191,9 +195,11 @@ namespace embree
         t_max = max(t_max,dt);
       }
       t_avg /= 9.0;
+#if OUTPUT == 1
       std::cout << N << " " 
 		<< 1000.0f*t_min << " " << 1000.0f*t_avg << " " << 1000.0f*t_max << " " 
 		<< 1E-6*N/t_max << " " << 1E-6*N/t_avg << " " << 1E-6*N/t_min << std::endl;
+#endif
     }
   }
 
