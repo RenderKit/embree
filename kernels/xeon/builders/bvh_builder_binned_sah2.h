@@ -148,31 +148,40 @@ namespace embree
         new (&rightChild.pinfo) PrimInfo(center,current.pinfo.end,right.geomBounds,right.centBounds);
       }
 
-      __forceinline const ObjectPartitionNew::Split find(BuildRecord2<NodeRef>& current) {
-        return ObjectPartitionNew::find(prims,current.pinfo.begin,current.pinfo.end,current.pinfo,logBlockSize);
+      template<bool toplevel>
+        __forceinline const ObjectPartitionNew::Split find(BuildRecord2<NodeRef>& current) {
+        if (toplevel) return ObjectPartitionNew::find_parallel(prims,current.pinfo.begin,current.pinfo.end,current.pinfo,logBlockSize);
+        else          return ObjectPartitionNew::find(prims,current.pinfo.begin,current.pinfo.end,current.pinfo,logBlockSize);
       }
-      
+
+      template<bool toplevel>
       __forceinline void partition(const BuildRecord2<NodeRef>& brecord, BuildRecord2<NodeRef>& lrecord, BuildRecord2<NodeRef>& rrecord) {
         if (brecord.split.sah == float(inf)) splitFallback(brecord,lrecord,rrecord);
-        else brecord.split.partition(prims,brecord.pinfo.begin,brecord.pinfo.end,lrecord.pinfo,rrecord.pinfo);
+        else {
+          if (toplevel) brecord.split.partition_parallel(prims,brecord.pinfo.begin,brecord.pinfo.end,lrecord.pinfo,rrecord.pinfo);
+          else          brecord.split.partition(prims,brecord.pinfo.begin,brecord.pinfo.end,lrecord.pinfo,rrecord.pinfo);
+        }
       }
 
       template<bool toplevel, typename Spawn>
-        inline void recurse(const BuildRecord2<NodeRef>& current, Allocator& alloc, Spawn& spawn)
+        inline void recurse(const BuildRecord2<NodeRef>& record, Allocator& alloc, Spawn& spawn)
       {
         /*! compute leaf and split cost */
-        const float leafSAH  = intCost*current.pinfo.leafSAH(logBlockSize);
-        const float splitSAH = travCost*halfArea(current.pinfo.geomBounds)+intCost*current.split.splitSAH();
-        assert(current.pinfo.size() == 0 || leafSAH >= 0 && splitSAH >= 0);
+        const float leafSAH  = intCost*record.pinfo.leafSAH(logBlockSize);
+        const float splitSAH = travCost*halfArea(record.pinfo.geomBounds)+intCost*record.split.splitSAH();
+        //PRINT(record.pinfo);
+        //PRINT3(record.depth,leafSAH,splitSAH);
+        assert(record.pinfo.size() == 0 || leafSAH >= 0 && splitSAH >= 0);
         
         /*! create a leaf node when threshold reached or SAH tells us to stop */
-        if (current.pinfo.size() <= minLeafSize || current.depth+MIN_LARGE_LEAF_LEVELS >= maxDepth || (current.pinfo.size() <= maxLeafSize && leafSAH <= splitSAH)) {
-          createLargeLeaf(current,alloc); return;
+        if (record.pinfo.size() <= minLeafSize || record.depth+MIN_LARGE_LEAF_LEVELS >= maxDepth || (record.pinfo.size() <= maxLeafSize && leafSAH <= splitSAH)) {
+          //PRINT("leaf");
+          createLargeLeaf(record,alloc); return;
         }
         
         /*! initialize child list */
         BuildRecord2<NodeRef> children[MAX_BRANCHING_FACTOR];
-        children[0] = current;
+        children[0] = record;
         size_t numChildren = 1;
         
         /*! split until node is full or SAH tells us to stop */
@@ -189,24 +198,30 @@ namespace embree
             if (dSAH <= bestSAH) { bestChild = i; bestSAH = dSAH; }
           }
           if (bestChild == -1) break;
+          //PRINT(bestChild);
           
           /* perform best found split */
           BuildRecord2<NodeRef>& brecord = children[bestChild];
-          BuildRecord2<NodeRef> lrecord(current.depth+1);
-          BuildRecord2<NodeRef> rrecord(current.depth+1);
-          partition(brecord,lrecord,rrecord);
+          BuildRecord2<NodeRef> lrecord(record.depth+1);
+          BuildRecord2<NodeRef> rrecord(record.depth+1);
+          partition<toplevel>(brecord,lrecord,rrecord);
           
           /* find new splits */
-          lrecord.split = find(lrecord);
-          rrecord.split = find(rrecord);
+          lrecord.split = find<toplevel>(lrecord);
+          rrecord.split = find<toplevel>(rrecord);
+          //PRINT2(lrecord.split,lrecord.pinfo);
+          //PRINT2(rrecord.split,rrecord.pinfo);
           children[bestChild  ] = lrecord;
           children[numChildren] = rrecord;
           numChildren++;
           
         } while (numChildren < branchingFactor);
         
+        //for (size_t i=0; i<numChildren; i++) PRINT2(i,children[i].split);
+        //for (size_t i=0; i<numChildren; i++) PRINT2(i,children[i].pinfo);
+        
         /*! create an inner node */
-        createNode(current,children,numChildren,alloc);
+        createNode(record,children,numChildren,alloc);
         
         /* recurse into each child */
         for (size_t i=0; i<numChildren; i++) 
@@ -219,6 +234,7 @@ namespace embree
         /* create initial build record */
         NodeRef root;
         BuildRecord2<NodeRef> br(pinfo,1,&root);
+        br.split = find<true>(br);
         
 #if 0
         sequential_create_tree(br, createAlloc, 

@@ -193,7 +193,7 @@ namespace embree
 	  if (dSAH <= bestSAH) { bestChild = i; bestSAH = dSAH; }
 	}
 	if (bestChild == -1) break;
-	
+
 	/* perform best found split */
 	BuildRecord lrecord(record.depth+1);
 	BuildRecord rrecord(record.depth+1);
@@ -228,7 +228,7 @@ namespace embree
 	numChildren++;
 	
       } while (numChildren < BVH4::N);
-      
+
       /*! create an inner node */
       Node* node = parent->bvh->allocNode(nodeAlloc);
       for (size_t i=0; i<numChildren; i++) {

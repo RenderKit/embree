@@ -23,7 +23,7 @@
 
 #include "geometry/triangle4.h"
 
-#define PROFILE
+//#define PROFILE
 
 namespace embree
 {

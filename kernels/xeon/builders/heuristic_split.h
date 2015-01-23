@@ -104,7 +104,7 @@ namespace embree
 	  default: THROW_RUNTIME_ERROR("internal error");
 	  }
 	}
-      
+
       private:
       __aligned(16) char data[SIZE]; //!< stores the different split types
       Ty type;                       //!< the type of split stored
