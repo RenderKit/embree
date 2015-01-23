@@ -81,7 +81,7 @@ namespace embree
           logBlockSize(logBlockSize), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize)
       {
         if (branchingFactor > MAX_BRANCHING_FACTOR)
-          THROW_RUNTIME_ERROR("bvh4_builder: branching factor too large");
+          THROW_RUNTIME_ERROR("bvh_builder: branching factor too large");
       }
 
       void splitFallback(const BuildRecord<NodeRef>& current, BuildRecord<NodeRef>& leftChild, BuildRecord<NodeRef>& rightChild)
@@ -190,7 +190,7 @@ namespace embree
         /* create leaf node */
         if (!toplevel) {
           if (current.depth+MIN_LARGE_LEAF_LEVELS >= maxDepth || current.size() <= minLeafSize) {
-            createLargeLeaf(current,alloc,alloc);
+            createLargeLeaf(current,alloc,alloc); // FIXME: alloc,alloc
             return;
           }
         }

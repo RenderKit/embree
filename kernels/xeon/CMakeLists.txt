@@ -103,6 +103,7 @@ ADD_ISPC_LIBRARY(embree ${EMBREE_LIB_TYPE}
   bvh4/bvh4_refit.cpp
   bvh4/bvh4_builder.cpp
   bvh4/bvh4_builder_generic.cpp
+  bvh4/bvh4_builder_binned_sah2.cpp
   bvh4/bvh4_builder_mb.cpp
   bvh4/bvh4_builder_hair.cpp
   bvh4/bvh4_builder_hair_mb.cpp
@@ -163,6 +164,7 @@ IF (TARGET_AVX)
     geometry/subdivpatch1cached_intersector1.cpp
 
     bvh4/bvh4_builder_generic.cpp
+    bvh4/bvh4_builder_binned_sah2.cpp
     bvh4/bvh4_rotate.cpp
     bvh4/bvh4_builder_toplevel.cpp
     bvh4/bvh4_builder_morton.cpp
