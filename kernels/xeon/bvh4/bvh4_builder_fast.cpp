@@ -131,8 +131,12 @@ namespace embree
       bvh->alloc.shrink(); 
     }
     
+    void test_partition();
+
     void BVH4BuilderFast::build(size_t threadIndex, size_t threadCount) 
     {
+      // test_partition(); 
+
       /* start measurement */
       double t0 = 0.0f;
       if (g_verbose >= 1) t0 = getSeconds();
@@ -1511,6 +1515,189 @@ namespace embree
     {
       *current.parent = makeLeaf(leafAlloc, &prims[current.begin], current.size());
     }
+
+    // will be removed soon, just for testing 
+    static void test_partition()
+    {
+#if 1
+#define MAX_SIZE 1024*1024*128
+
+        PING;
+        PrimRef *test_array  = (PrimRef*)_mm_malloc(MAX_SIZE*sizeof(PrimRef),64);
+        double t_parallel,t_serial;
+
+        double t_parallel_total,t_serial_total;
+
+	for (size_t s=1;s<MAX_SIZE;s+=s)        
+          {
+            DBG_PRINT(s);
+            srand48(s*32323);
+
+
+            t_parallel_total = 0.0;
+#define ITERATIONS 20
+
+            size_t mids[ITERATIONS];
+            PrimInfo total;
+            total.reset();
+
+            for (size_t j=0;j<ITERATIONS;j++)
+              {
+                for (size_t i=0;i<s;i++)
+                  {
+                    float x = drand48();
+                    float y = drand48();
+                    float z = drand48();
+                    BBox3fa b;
+                    const float f = 0.1f;
+                    b.lower = Vec3fa(x-f,y-f,z-f);
+                    b.upper = Vec3fa(x+f,y+f,z+f);
+                    test_array[i] = PrimRef(b,i);
+                    total.add(b,b,1);
+                  }
+
+                t_parallel = getSeconds();        
+                    
+
+                PrimInfo leftInfo;
+                PrimInfo rightInfo;
+                PrimInfo init;
+                leftInfo.reset();
+                rightInfo.reset();
+                init.reset();
+
+                //parallel_partition pp(test_array,s, [] (unsigned int &t) { DBG_PRINT(t);} );
+                //size_t mid = pp.parition(pivot);
+
+		// size_t numLeft = 0;
+		// size_t numRight = 0;
+		// size_t init = 0;
+
+#if 1
+
+                size_t mid = parallel_in_place_partitioning_static<PrimRef,PrimInfo>(test_array,              
+										   s,
+										   init,
+                                                                                   leftInfo,
+                                                                                   rightInfo,
+                                                                                   [] (const PrimRef &ref) { return ref.lower.x < 0.5f; },
+                                                                                   [] (PrimInfo &pinfo,const PrimRef &ref) { pinfo.extend(ref.bounds()); },
+                                                                                   [] (PrimInfo &pinfo0,const PrimInfo &pinfo1) { pinfo0.merge(pinfo1); }
+                                                                                   );
+#else
+                    
+                size_t mid = parallel_in_place_partitioning<128,PrimRef,PrimInfo>(test_array,
+										s,
+										init,
+										leftInfo,
+										rightInfo,
+										[] (const PrimRef &ref) { return ref.lower.x < 0.5f; },
+										[] (PrimInfo &pinfo,const PrimRef &ref) { pinfo.extend(ref.bounds()); },
+										[] (PrimInfo &pinfo0,const PrimInfo &pinfo1) { pinfo0.merge(pinfo1); }
+										);
+#endif
+
+                t_parallel = getSeconds() - t_parallel;        
+                t_parallel_total += t_parallel;
+
+		/*
+		DBG_PRINT(numLeft);
+		DBG_PRINT(numRight);
+		DBG_PRINT(numLeft+numRight);
+		DBG_PRINT(s);
+		DBG_PRINT(mid);
+		*/
+
+                mids[j] = mid;
+                for (size_t i=0;i<mid;i++)
+                  if (test_array[i].lower.x >= 0.5f)
+                    {
+                      DBG_PRINT("left error");
+                      DBG_PRINT(i);
+                      DBG_PRINT(test_array[i]);
+                    }
+
+                for (size_t i=mid;i<s;i++)
+                  if (test_array[i].lower.x < 0.5f)
+                    {
+                      DBG_PRINT("right error");
+                      DBG_PRINT(i);
+                      DBG_PRINT(test_array[i]);
+                    }
+		//assert(numLeft+numRight == s);
+              }
+            t_parallel_total /= ITERATIONS;
+
+            srand48(s*32323);
+#if 1
+            t_serial_total = 0.0;
+            for (size_t j=0;j<ITERATIONS;j++)
+              {
+                for (size_t i=0;i<s;i++)
+                  {
+                    float x = drand48();
+                    float y = drand48();
+                    float z = drand48();
+                    BBox3fa b;
+                    const float f = 0.1f;
+                    b.lower = Vec3fa(x-f,y-f,z-f);
+                    b.upper = Vec3fa(x+f,y+f,z+f);
+                    test_array[i] = PrimRef(b,i);
+                  }
+
+
+                t_serial = getSeconds();        
+
+                PrimInfo leftInfo;
+                PrimInfo rightInfo;
+                PrimInfo init;
+                leftInfo.reset();
+                rightInfo.reset();
+                init.reset();
+
+                size_t mid_serial = serial_in_place_partitioning<PrimRef,PrimInfo>(test_array,
+                                                                                   s,
+                                                                                   init,
+                                                                                   leftInfo,
+                                                                                   rightInfo,
+                                                                                   [] (const PrimRef &ref) { return ref.lower.x < 0.5f; },
+                                                                                   [] (PrimInfo &pinfo,const PrimRef &ref) { pinfo.extend(ref.bounds()); },
+                                                                                   [] (PrimInfo &pinfo0,const PrimInfo &pinfo1) { pinfo0.merge(pinfo1); }
+                                                                                   );
+
+                t_serial = getSeconds() - t_serial;        
+                t_serial_total += t_serial;
+                assert(mid_serial == mids[j]);
+
+                for (size_t i=0;i<mid_serial;i++)
+                  if (test_array[i].lower.x >= 0.5f)
+                    {
+                      DBG_PRINT("left error");
+                      DBG_PRINT(i);
+                      DBG_PRINT(test_array[i]);
+                    }
+
+                for (size_t i=mid_serial;i<s;i++)
+                  if (test_array[i].lower.x < 0.5f)
+                    {
+                      DBG_PRINT("right error");
+                      DBG_PRINT(i);
+                      DBG_PRINT(test_array[i]);
+                    }
+
+              }
+            t_serial_total /= ITERATIONS;
+#endif
+            std::cout << " t_parallel_total = " << 1000.0f*t_parallel_total << "ms, perf = " << 1E-6*double(s)/t_parallel_total << " Mprim/s" << std::endl;
+            std::cout << " t_serial_total = " << 1000.0f*t_serial_total << "ms, perf = " << 1E-6*double(s)/t_serial_total << " Mprim/s" << std::endl;
+            DBG_PRINT(t_serial_total/t_parallel_total);
+            
+             
+          }
+        exit(0);
+
+#endif
+  }
 
     // =======================================================================================================
     // =======================================================================================================

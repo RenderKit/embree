@@ -245,8 +245,8 @@ namespace embree
               {
 #if defined(__MIC__)
 		prefetch<PFHINT_L1EX>(&array[left_begin] + 2);	  
-		//prefetch<PFHINT_L2EX>(&array[left_begin] + 16);	  
 #endif
+
 
                 left_begin++;
                 if (left_begin >= left_end) break;
@@ -256,18 +256,13 @@ namespace embree
               {
 #if defined(__MIC__)
 		prefetch<PFHINT_L1EX>(&array[right_begin] - 2);	  
-		//prefetch<PFHINT_L2EX>(&array[right_begin] - 16);	  
 #endif
+
                 right_begin++;
                 if (right_begin >= right_end) break;
               }
 
             if (unlikely(left_begin == left_end || right_begin == right_end)) break;
-
-#if defined(__MIC__)
-	    prefetch<PFHINT_L1EX>(&array[right_begin]);	  
-	    prefetch<PFHINT_L1EX>(&array[left_begin]);	  
-#endif
             
             std::swap(array[left_begin++],array[right_begin++]);
           }
@@ -661,6 +656,8 @@ namespace embree
       T* array;
 
       struct LeftRightCounter {
+	unsigned int start;
+	unsigned int size;
 	unsigned int left;
 	unsigned int right;
       };
@@ -668,17 +665,39 @@ namespace embree
       __aligned(64) LeftRightCounter counter[MAX_MIC_THREADS];
 
       struct Range {
-	unsigned int start;
-	unsigned int size;
-	
+	int start;
+	int end;
 	Range() {}
 
-	__forceinline void reset() { start = 0; size = 0; } 
-      };
-      
-      __aligned(64) Range leftMisplacedRanges[MAX_MIC_THREADS];
-      __aligned(64) Range rightMisplacedRanges[MAX_MIC_THREADS];
+      Range(ssize_t start, ssize_t end) : start(start), end(end) {}
 
+	__forceinline void reset() { start = 0; end = -1; } 
+	
+	__forceinline Range intersect(const Range& r) const
+	{
+	  return Range (max(start,r.start),min(end,r.end)); // carefull with ssize_t here
+	}
+
+	__forceinline bool empty() const { return end < start; } 
+	
+	__forceinline size_t size() const { 
+	  assert(!empty());
+	  return end-start+1; 
+	}
+      };
+
+      __forceinline size_t findStartRange(size_t &index,const Range *const r,const size_t numRanges)
+      {
+	size_t i = 0;
+	while(index >= r[i].size())
+	  {
+	    assert(i < numRanges);
+	    index -= r[i].size();
+	    i++;
+	  }	    
+	return i;
+      }
+      
       V leftReductions[MAX_MIC_THREADS];
       V rightReductions[MAX_MIC_THREADS];
 
@@ -780,23 +799,106 @@ namespace embree
 	const size_t startID = (threadID+0)*p->N/numThreads;
 	const size_t endID   = (threadID+1)*p->N/numThreads;
 	const size_t size    = endID-startID;
-
+	
         V left;
         V right;
         const size_t mid = p->partition_serial(&p->array[startID],size,left,right);
+	p->counter[threadID].start = startID;
+	p->counter[threadID].size  = size;
 	p->counter[threadID].left  = mid;
 	p->counter[threadID].right = size-mid;
         p->leftReductions[threadID]  = left;
         p->rightReductions[threadID] = right;
       } 
 
+      void move_misplaced(const size_t threadID, const size_t numThreads) 
+      {
+	__aligned(64) Range leftMisplacedRanges[MAX_MIC_THREADS];
+	__aligned(64) Range rightMisplacedRanges[MAX_MIC_THREADS];
+
+	const Range globalLeft (0,global_mid-1);
+	const Range globalRight(global_mid,N-1);
+
+	size_t numMisplacedRangesLeft  = 0;
+	size_t numMisplacedRangesRight = 0;
+	size_t numMisplacedItemsLeft   = 0;
+	size_t numMisplacedItemsRight  = 0;
+
+	for (size_t i=0;i<numThreads;i++)
+	  {	    
+
+	    Range left_range (counter[i].start,counter[i].start+counter[i].left-1);
+	    Range right_range(counter[i].start+counter[i].left,counter[i].start+counter[i].size-1);
+
+	    Range left_misplaced = globalLeft.intersect(right_range);
+	    Range right_misplaced = globalRight.intersect(left_range);
+
+	    DBG_PART(
+		     DBG_PRINT(i);
+		     DBG_PRINT(counter[i].start);
+		     DBG_PRINT(counter[i].size);
+		     DBG_PRINT(counter[i].left);
+		     DBG_PRINT(counter[i].right);
+		     
+		     DBG_PRINT(left_range.start);
+		     DBG_PRINT(left_range.end);
+		     
+		     DBG_PRINT(right_range.start);
+		     DBG_PRINT(right_range.end);
+		     
+		     DBG_PRINT(left_misplaced.start);
+		     DBG_PRINT(left_misplaced.end);
+
+		     DBG_PRINT(right_misplaced.start);
+		     DBG_PRINT(right_misplaced.end);
+		     );
+
+	    if (!left_misplaced.empty())  
+	      {
+		numMisplacedItemsLeft  += left_misplaced.size();
+		leftMisplacedRanges[numMisplacedRangesLeft++] = left_misplaced;
+	      }
+
+	    if (!right_misplaced.empty()) 
+	      {
+		numMisplacedItemsRight += right_misplaced.size();
+		rightMisplacedRanges[numMisplacedRangesRight++] = right_misplaced;
+	      }
+	  }
+
+	DBG_PART(
+		 DBG_PRINT( global_mid );
+		 DBG_PRINT( numMisplacedItemsLeft );
+		 DBG_PRINT( numMisplacedItemsRight );
+		 DBG_PRINT( numMisplacedRangesLeft );
+		 DBG_PRINT( numMisplacedRangesRight );
+		 );
+
+	assert( numMisplacedItemsLeft == numMisplacedItemsRight );
+
+	const size_t numMisplacedItems = numMisplacedItemsLeft;
+	if ( numMisplacedItems )
+	  {
+	    //for (size_t i=0;i<numThreads;i++)
+	      {
+		const size_t startID = (threadID+0)*numMisplacedItems/numThreads;
+		const size_t endID   = (threadID+1)*numMisplacedItems/numThreads;
+		swapItemsInMisplacedRanges(leftMisplacedRanges,
+					   numMisplacedRangesLeft,
+					   rightMisplacedRanges,
+					   numMisplacedRangesRight,
+					   startID,
+					   endID);	    
+	      }
+	  }
+	
+      }
+
       static void task_thread_move_misplaced(void* data, const size_t threadID, const size_t numThreads) {
 
         parallel_partition_static<T,V,Compare,Reduction_T,Reduction_V>* p = (parallel_partition_static<T,V,Compare,Reduction_T,Reduction_V>*)data;
 
-	const size_t startID = (threadID+0)*p->N/numThreads;
-	const size_t endID   = (threadID+1)*p->N/numThreads;
-
+	p->move_misplaced(threadID,numThreads);
       } 
 
       /* main function for parallel in-place partitioning */
@@ -809,10 +911,12 @@ namespace embree
         LockStepTaskScheduler* scheduler = LockStepTaskScheduler::instance();
         const size_t numThreads = scheduler->getNumThreads();
     
-        if (N <= 2 * numThreads)
+        if (N <= 4 * numThreads)
           {
-            DBG_PRINT("SERIAL FALLBACK");
-            DBG_PRINT("numThreads");
+	    DBG_PART(
+		     DBG_PRINT("SERIAL FALLBACK");
+		     DBG_PRINT(numThreads);
+		     );
 
             size_t mid = partition_serial(array,N,leftReduction,rightReduction);
             DBG_CHECK(
@@ -826,8 +930,10 @@ namespace embree
                  DBG_PRINT("PARALLEL MODE");
                  );
 
-
+	double t0 = getSeconds();
         scheduler->dispatchTask(task_thread_partition,this,0,numThreads);
+	t0 = getSeconds() - t0;
+	std::cout << " phase0 = " << 1000.0f*t0 << "ms, perf = " << 1E-6*double(N)/t0 << " Mprim/s" << std::endl;
 
         /* ------------------------------------ */
         /* ------ parallel cleanup phase ------ */
@@ -845,15 +951,64 @@ namespace embree
 
 	global_mid = mid;
 
+	double t1 = getSeconds();
+        scheduler->dispatchTask(task_thread_move_misplaced,this,0,numThreads);
+
+	t1 = getSeconds() - t1;
+	std::cout << " phase1 = " << 1000.0f*t1 << "ms, perf = " << 1E-6*double(N)/t1 << " Mprim/s" << std::endl;
+
         DBG_CHECK(
-		  //checkLeft(0,mid);
-		  //checkRight(mid,N);
+		  checkLeft(array,0,global_mid);
+		  checkRight(array,global_mid,N);
                  );
         
         return mid;
       }
 
+      __forceinline void swapItemsInMisplacedRanges(const Range * const leftMisplacedRanges,
+						    const size_t numLeftMisplacedRanges,
+						    const Range * const rightMisplacedRanges,
+						    const size_t numRightMisplacedRanges,
+						    const size_t startID,
+						    const size_t endID)
+      {
+	const size_t size = endID - startID;
 
+	size_t leftLocalIndex  = startID;
+	size_t rightLocalIndex = startID;
+
+	const size_t leftRangeIndex  = findStartRange(leftLocalIndex,leftMisplacedRanges,numLeftMisplacedRanges);
+	const size_t rightRangeIndex = findStartRange(rightLocalIndex,rightMisplacedRanges,numRightMisplacedRanges);
+
+	const Range* l_range = &leftMisplacedRanges[leftRangeIndex];
+	const Range* r_range = &rightMisplacedRanges[rightRangeIndex];
+
+	for (size_t i=0;i<size;i++)
+	  {
+	    if (unlikely(leftLocalIndex) >= l_range->size())
+	      {
+		leftLocalIndex = 0;
+		l_range++;
+	      }
+
+	    if (unlikely(rightLocalIndex) >= r_range->size())
+	      {
+		rightLocalIndex = 0;
+		r_range++;		
+	      }
+	    
+	    const size_t leftGlobalIndex  = l_range->start + leftLocalIndex;
+	    const size_t rightGlobalIndex = r_range->start + rightLocalIndex;
+
+	    assert( !cmp(array[leftGlobalIndex]) );
+	    assert(  cmp(array[rightGlobalIndex]) );
+
+	    std::swap(array[leftGlobalIndex],array[rightGlobalIndex]);
+	    leftLocalIndex++;
+	    rightLocalIndex++;
+	  }
+      }
+						    
 
     };
 
