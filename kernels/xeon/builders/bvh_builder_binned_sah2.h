@@ -188,7 +188,7 @@ namespace embree
         do {
           
           /*! find best child to split */
-          float bestSAH = 0; 
+          float bestSAH = neg_inf; 
           ssize_t bestChild = -1;
           for (size_t i=0; i<numChildren; i++) 
           {
