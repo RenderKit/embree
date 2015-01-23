@@ -75,6 +75,8 @@ namespace embree
       : geom(NULL), BVH4BuilderFastT<Triangle1> (bvh,scene,listMode,0,0,false,sizeof(Triangle1),2,inf,true) {}
     template<> BVH4TriangleBuilderFast<Triangle4> ::BVH4TriangleBuilderFast (BVH4* bvh, Scene* scene, size_t listMode) 
       : geom(NULL), BVH4BuilderFastT<Triangle4> (bvh,scene,listMode,2,2,false,sizeof(Triangle4),4,inf,true) {}
+
+
 #if defined(__AVX__)
     template<> BVH4TriangleBuilderFast<Triangle8> ::BVH4TriangleBuilderFast (BVH4* bvh, Scene* scene, size_t listMode) 
       : geom(NULL), BVH4BuilderFastT<Triangle8> (bvh,scene,listMode,3,2,false,sizeof(Triangle8),8,inf,true) {}
@@ -121,7 +123,16 @@ namespace embree
       //this->bvh->alloc2.init(4096,4096); 
     
     } 
-  
+
+    
+    template<> BVH4TriangleBuilderFastSweep<Triangle4> ::BVH4TriangleBuilderFastSweep (BVH4* bvh, Scene *scene, size_t listMode) 
+      : BVH4TriangleBuilderFast<Triangle4> (bvh,scene,listMode),tmp(NULL) {
+      centroids[0] = NULL;
+      centroids[1] = NULL;
+      centroids[2] = NULL;      
+      needAllThreads = false;
+    }
+
     BVH4TopLevelBuilderFastT::BVH4TopLevelBuilderFastT (LockStepTaskScheduler* scheduler, BVH4* bvh) 
       : prims_i(NULL), N(0), BVH4BuilderFast(scheduler,bvh,0,0,0,false,0,1,1) {}
 
@@ -273,6 +284,10 @@ namespace embree
       if (geom) PrimRefArrayGenFromGeometry<TriangleMesh>::generate_parallel(threadIndex, threadCount, scheduler, geom , this->prims, pinfo);
       else      PrimRefArrayGen                          ::generate_parallel(threadIndex, threadCount, scheduler, this->scene, TRIANGLE_MESH, 1, this->prims, pinfo);
     }
+
+    // =======================================================================================================
+    // =======================================================================================================
+    // =======================================================================================================
 
     // =======================================================================================================
     // =======================================================================================================
@@ -1470,199 +1485,6 @@ namespace embree
       //PRINT(1000.0f*(T2-T1));
     }
 
-    static __forceinline bool compare_x(const Vec3fa& v0, const Vec3fa& v1) { return v0.x < v1.x; }
-    static __forceinline bool compare_y(const Vec3fa& v0, const Vec3fa& v1) { return v0.y < v1.y; }
-    static __forceinline bool compare_z(const Vec3fa& v0, const Vec3fa& v1) { return v0.z < v1.z; }
-
-    void BVH4BuilderFast::build_sequential_sweep(size_t threadIndex, size_t threadCount) 
-    {
-      PING;
-      /* initialize node and leaf allocator */
-      bvh->alloc.clear();
-      __aligned(64) Allocator nodeAlloc(&bvh->alloc);
-      __aligned(64) Allocator leafAlloc(&bvh->alloc);
-     
-      /* create prim refs */
-      PrimInfo pinfo(empty);
-      create_primitive_array_sequential(threadIndex, threadCount, pinfo);
-      bvh->bounds = pinfo.geomBounds;
-
-      DBG_PRINT(pinfo.size());
-      
-      /* for sweep builder */
-      Vec3fa *centroids_x = (Vec3fa*)_mm_malloc(sizeof(Vec3fa)*pinfo.size(),64);
-      Vec3fa *centroids_y = (Vec3fa*)_mm_malloc(sizeof(Vec3fa)*pinfo.size(),64);
-      Vec3fa *centroids_z = (Vec3fa*)_mm_malloc(sizeof(Vec3fa)*pinfo.size(),64);     
-      float  *tmp         = (float*) _mm_malloc(sizeof(float) *pinfo.size(),64);     
-      for (size_t i=0;i<pinfo.size();i++)
-        {
-          Vec3fa centroid = prims[i].center2() * 0.5;
-          centroid.a = i;
-          centroids_x[i] = centroid;
-          centroids_y[i] = centroid;
-          centroids_z[i] = centroid;          
-        }
-      std::sort(centroids_x,centroids_x+pinfo.size(),compare_x);
-      std::sort(centroids_y,centroids_y+pinfo.size(),compare_y);
-      std::sort(centroids_z,centroids_z+pinfo.size(),compare_z);      
-      
-      /* create initial build record */
-      BuildRecord br;
-      br.init(pinfo,0,pinfo.size());
-      br.depth = 1;
-      br.parent = &bvh->root;
-
-      /* build BVH in single thread */
-      recurse_sweep(br,nodeAlloc,leafAlloc,centroids_x,centroids_y,centroids_z,tmp,threadIndex,threadCount);
-
-     
-      _mm_sfence(); // make written leaves globally visible
-
-      _mm_free(tmp);
-      _mm_free(centroids_x);
-      _mm_free(centroids_y);
-      _mm_free(centroids_z);      
-    }
-
-    void BVH4BuilderFast::recurse_sweep(BuildRecord& current,
-                                        Allocator& nodeAlloc,
-                                        Allocator& leafAlloc,
-                                        Vec3fa *const centroids_x,
-                                        Vec3fa *const centroids_y,
-                                        Vec3fa *const centroids_z,
-                                        float  *const tmp,
-                                        const size_t threadID,
-                                        const size_t numThreads)
-    {
-       __aligned(64) BuildRecord children[BVH4::N];
-      
-      /* create leaf node */
-      if (current.depth >= BVH4::maxBuildDepth || current.size() <= minLeafSize) {
-        createLeaf(current,nodeAlloc,leafAlloc,threadID,numThreads);
-        return;
-      }
-
-      /* fill all 4 children by always splitting the one with the largest surface area */
-      unsigned int numChildren = 1;
-      children[0] = current;
-
-      do {
-        
-        /* find best child with largest bounding box area */
-        int bestChild = -1;
-        float bestArea = neg_inf;
-        for (unsigned int i=0; i<numChildren; i++)
-        {
-          /* ignore leaves as they cannot get split */
-          if (children[i].size() <= minLeafSize)
-            continue;
-          
-          /* remember child with largest area */
-          if (children[i].sceneArea() > bestArea) { 
-            bestArea = children[i].sceneArea();
-            bestChild = i;
-          }
-        }
-        if (bestChild == -1) break;
-        
-        /*! split best child into left and right child */
-        __aligned(64) BuildRecord left, right;
-        splitSequential_sweep(children[bestChild],left,right,centroids_x,centroids_y,centroids_z,tmp,threadID,numThreads);
-        
-        /* add new children left and right */
-	left.init(current.depth+1); 
-	right.init(current.depth+1);
-        children[bestChild] = children[numChildren-1];
-        children[numChildren-1] = left;
-        children[numChildren+0] = right;
-        numChildren++;
-        
-      } while (numChildren < BVH4::N);
-
-      /* create leaf node if no split is possible */
-      if (numChildren == 1) {
-        createLeaf(current,nodeAlloc,leafAlloc,threadID,numThreads);
-        return;
-      }
-      
-      /* allocate node */
-      Node* node = (Node*) nodeAlloc.malloc(sizeof(Node)); node->clear();
-      *current.parent = bvh->encodeNode(node);
-      
-      /* recurse into each child */
-      for (unsigned int i=0; i<numChildren; i++) 
-      {  
-        node->set(i,children[i].geomBounds);
-        children[i].parent = &node->child(i);
-        recurse_sweep(children[i],nodeAlloc,leafAlloc,centroids_x,centroids_y,centroids_z,tmp,threadID,numThreads);
-      }     
-    }
-
-       struct SplitSweep
-      {
-	/*! construct an invalid split by default */
-	__forceinline SplitSweep()
-	  : sah(inf), dim(-1), pos(0) {}
-	
-	/*! constructs specified split */
-	__forceinline SplitSweep(float sah, int dim, int pos)
-	  : sah(sah), dim(dim), pos(pos) {}
-	
-	/*! tests if this split is valid */
-	__forceinline bool valid() const { return dim != -1; }
-
-	/*! calculates surface area heuristic for performing the split */
-	__forceinline float splitSAH() const { return sah; }
-       	
-
-	/*! stream output */
-	friend std::ostream& operator<<(std::ostream& cout, const SplitSweep& split) {
-	  return cout << "Split { sah = " << split.sah << ", dim = " << split.dim << ", pos = " << split.pos << "}";
-	}
-	
-      public:
-	float sah;       //!< SAH cost of the split
-	int dim;         //!< split dimension
-	int pos;         //!< bin index for splitting
-      };
-   
-    void BVH4BuilderFast::splitSequential_sweep(BuildRecord& current,
-                                                BuildRecord& leftChild,
-                                                BuildRecord& rightChild,
-                                                Vec3fa *const centroids_x,
-                                                Vec3fa *const centroids_y,
-                                                Vec3fa *const centroids_z,
-                                                float  *const tmp,                           
-                                                const size_t threadID,
-                                                const size_t numThreads)
-    {
-       /* calculate binning function */
-      PrimInfo pinfo(current.size(),current.geomBounds,current.centBounds);
-
-      std::sort(centroids_x+current.begin,centroids_x+current.end,compare_x);
-      std::sort(centroids_y+current.begin,centroids_y+current.end,compare_y);
-      std::sort(centroids_z+current.begin,centroids_z+current.end,compare_z);      
-
-      SplitSweep split;
-      
-      BBox3fa bounds;     
-      /* 'x' direction */
-      bounds = empty;
-      for (ssize_t i=current.end-1;i>=current.begin;i--) { bounds.extend( centroids_x[i] ); tmp[i] = area( bounds ); }
-      bounds = empty;
-      //for (size_t i=1;i<current.begin-1;i++)     
-        
-      
-      //ObjectPartition::Split split = ObjectPartition::find(prims,current.begin,current.end,pinfo,logBlockSize);
-      
-      /* if we cannot find a valid split, enforce an arbitrary split */
-      if (unlikely(!split.valid())) splitFallback(prims,current,leftChild,rightChild);
-      
-      /* partitioning of items */
-      //else split.partition(prims, current.begin, current.end, leftChild, rightChild);
-     
-    }
-    
 
     // =======================================================================================================
     // =======================================================================================================
@@ -1709,6 +1531,294 @@ namespace embree
     {
       *current.parent = makeLeaf(leafAlloc, &prims[current.begin], current.size());
     }
+
+    // =======================================================================================================
+    // =======================================================================================================
+    // =======================================================================================================
+
+    static __forceinline bool compare_x(const Vec3fa& v0, const Vec3fa& v1) { return v0.x < v1.x; }
+    static __forceinline bool compare_y(const Vec3fa& v0, const Vec3fa& v1) { return v0.y < v1.y; }
+    static __forceinline bool compare_z(const Vec3fa& v0, const Vec3fa& v1) { return v0.z < v1.z; }
+    
+    template<typename Primitive>
+    void BVH4TriangleBuilderFastSweep<Primitive>::build_sequential(size_t threadIndex, size_t threadCount) 
+    {
+      PING;
+      BVH4 *bvh = BVH4TriangleBuilderFast<Primitive>::bvh;
+      /* initialize node and leaf allocator */
+      bvh->alloc.clear();
+      __aligned(64) Allocator nodeAlloc(&bvh->alloc);
+      __aligned(64) Allocator leafAlloc(&bvh->alloc);
+     
+      /* create prim refs */
+      PrimInfo pinfo(empty);
+      BVH4TriangleBuilderFast<Primitive>::create_primitive_array_sequential(threadIndex, threadCount, pinfo);
+      bvh->bounds = pinfo.geomBounds;
+
+      DBG_PRINT(pinfo.size());
+      
+      /* for sweep builder */
+      for (size_t i=0;i<3;i++)
+        centroids[i] = (Vec3fa*)_mm_malloc(sizeof(Vec3fa)*pinfo.size(),64);
+      tmp = (float*) _mm_malloc(sizeof(float) *pinfo.size(),64);
+      
+      for (size_t i=0;i<pinfo.size();i++)
+        {
+          Vec3fa centroid = BVH4TriangleBuilderFast<Primitive>::prims[i].center2() * 0.5;
+          centroid.a = i;
+          centroids[0][i] = centroid;
+          centroids[1][i] = centroid;
+          centroids[2][i] = centroid;          
+        }
+      std::sort(centroids[0],centroids[0]+pinfo.size(),compare_x);
+      std::sort(centroids[1],centroids[1]+pinfo.size(),compare_y);
+      std::sort(centroids[2],centroids[2]+pinfo.size(),compare_z);      
+      
+      /* create initial build record */
+      BuildRecord br;
+      br.init(pinfo,0,pinfo.size());
+      br.depth = 1;
+      br.parent = &bvh->root;
+
+      /* build BVH in single thread */
+
+      recurse_sweep(br,nodeAlloc,leafAlloc,threadIndex,threadCount);
+      DBG_PRINT("HERE");
+      exit(0);
+     
+      _mm_sfence(); // make written leaves globally visible
+
+      _mm_free(tmp);
+      for (size_t i=0;i<3;i++)
+        _mm_free(centroids[i]);
+    }
+
+
+    template<typename Primitive>
+    void BVH4TriangleBuilderFastSweep<Primitive>::recurse_sweep(BuildRecord& current,
+                                                                Allocator& nodeAlloc,
+                                                                Allocator& leafAlloc,
+                                                                const size_t threadID,
+                                                                const size_t numThreads)
+    {
+      PING;
+      __aligned(64) BuildRecord children[BVH4::N];
+      /* create leaf node */
+      if (current.depth >= BVH4::maxBuildDepth ||
+          current.size() <= BVH4TriangleBuilderFast<Primitive>::minLeafSize)
+        {
+          BVH4TriangleBuilderFast<Primitive>::createLeaf(current,nodeAlloc,leafAlloc,threadID,numThreads);
+          return;
+        }
+
+      /* fill all 4 children by always splitting the one with the largest surface area */
+      unsigned int numChildren = 1;
+      children[0] = current;
+
+      do {
+        
+        /* find best child with largest bounding box area */
+        int bestChild = -1;
+        float bestArea = neg_inf;
+        for (unsigned int i=0; i<numChildren; i++)
+          {
+            /* ignore leaves as they cannot get split */
+            if (children[i].size() <= minLeafSize)
+              continue;
+          
+            /* remember child with largest area */
+            if (children[i].sceneArea() > bestArea) { 
+              bestArea = children[i].sceneArea();
+              bestChild = i;
+            }
+          }
+        if (bestChild == -1) break;
+        
+        /*! split best child into left and right child */
+        __aligned(64) BuildRecord left, right;
+        //splitSequential_sweep(children[bestChild],left,right,centroids_x,centroids_y,centroids_z,tmp,threadID,numThreads);
+        
+        /* add new children left and right */
+        left.init(current.depth+1); 
+        right.init(current.depth+1);
+        children[bestChild] = children[numChildren-1];
+        children[numChildren-1] = left;
+        children[numChildren+0] = right;
+        numChildren++;
+        
+      } while (numChildren < BVH4::N);
+
+      /* create leaf node if no split is possible */
+      if (numChildren == 1) {
+        BVH4TriangleBuilderFast<Primitive>::createLeaf(current,nodeAlloc,leafAlloc,threadID,numThreads);
+        return;
+      }
+      
+      /* allocate node */
+      Node* node = (Node*) nodeAlloc.malloc(sizeof(Node));
+      node->clear();
+      *current.parent = bvh->encodeNode(node);
+      
+      /* recurse into each child */
+      for (unsigned int i=0; i<numChildren; i++) 
+        {  
+          node->set(i,children[i].geomBounds);
+          children[i].parent = &node->child(i);
+          recurse_sweep(children[i],nodeAlloc,leafAlloc,threadID,numThreads);
+        }     
+    }
+    
+       struct SplitSweep
+      {
+	/*! construct an invalid split by default */
+	__forceinline SplitSweep()
+	  : sah(inf), dim(-1), pos(0) {}
+	
+	/*! constructs specified split */
+	__forceinline SplitSweep(float sah, int dim, int pos)
+	  : sah(sah), dim(dim), pos(pos) {}
+	
+	/*! tests if this split is valid */
+	__forceinline bool valid() const { return dim != -1; }
+
+	/*! calculates surface area heuristic for performing the split */
+	__forceinline float splitSAH() const { return sah; }
+       	
+
+	/*! stream output */
+	friend std::ostream& operator<<(std::ostream& cout, const SplitSweep& split) {
+	  return cout << "Split { sah = " << split.sah << ", dim = " << split.dim << ", pos = " << split.pos << "}";
+	}
+	
+      public:
+	float sah;       //!< SAH cost of the split
+	int dim;         //!< split dimension
+	int pos;         //!< bin index for splitting
+      };
+
+    void getBestSweepSplit(SplitSweep &split,
+			   const size_t begin,
+			   const size_t end,
+			   const Vec3fa *const centroids,
+			   float *const tmp,
+			   const size_t N,
+			   const size_t dim)
+    {
+      const size_t size = end-begin;
+      assert(size >= 2);
+      BBox3fa bounds;     
+      bounds = empty;
+      for (ssize_t i=end-1;i>=begin;i--) { bounds.extend( centroids[i] ); tmp[i] = area( bounds ); }
+      bounds = centroids[begin];
+      for (size_t i=begin+1;i<end-1;i++) { 
+	bounds.extend( centroids[i-1] );
+	const float lArea  = area( bounds );
+	const float rArea = tmp[i];
+	const size_t lItems  = i-begin;
+	const size_t rItems = size - lItems;
+	assert(lItems + rItems == size);
+	const float sah = (lItems+(N-1))/N * lArea + (rItems+(N-1))/N * rArea;
+	if (unlikely(sah < split.splitSAH()))
+	  split = SplitSweep(sah,dim,i);
+      } 
+    }
+
+    template<typename T, typename Compare>
+    size_t partition(T *const prims, const size_t begin, const size_t end, const Compare &cmp)
+    {
+      assert(begin <= end);
+      T* l = prims + begin;
+      T* r = prims + end - 1;
+          
+      while(1)
+	{
+	  while (likely(l <= r && cmp(*l))) 
+            {
+              ++l;
+            }
+	  while (likely(l <= r && !cmp(*r)))
+            {
+              --r;
+            }
+	  if (r<l) break;
+
+	  std::swap(*l,*r);
+	  l++; r--;
+	}
+          
+      return l - prims;
+    }
+
+    template<typename Primitive>
+    void BVH4TriangleBuilderFastSweep<Primitive>::splitSequential_sweep(BuildRecord& current,
+							     BuildRecord& leftChild,
+							     BuildRecord& rightChild,
+							     const size_t threadID,
+							     const size_t numThreads)
+    {
+    PING;
+       /* calculate binning function */
+      PrimInfo pinfo(current.size(),current.geomBounds,current.centBounds);
+
+      std::sort(centroids[0]+current.begin,centroids[0]+current.end,compare_x);
+      std::sort(centroids[1]+current.begin,centroids[1]+current.end,compare_y);
+      std::sort(centroids[2]+current.begin,centroids[2]+current.end,compare_z);      
+
+      SplitSweep bestSplit;
+      getBestSweepSplit(bestSplit,current.begin,current.end,centroids[0],tmp,4,0);
+      getBestSweepSplit(bestSplit,current.begin,current.end,centroids[1],tmp,4,1);
+      getBestSweepSplit(bestSplit,current.begin,current.end,centroids[2],tmp,4,2);
+
+      if (unlikely(!bestSplit.valid())) 
+	splitFallback(prims,current,leftChild,rightChild);
+      else
+	{
+	  const size_t center = current.begin + bestSplit.pos;
+	  const size_t dim   = bestSplit.dim;
+	  const size_t dim_1 = (bestSplit.dim + 1)%3;
+	  const size_t dim_2 = (bestSplit.dim + 2)%3;
+	  memcpy(&centroids[dim_1][current.begin],&centroids[dim][current.begin],sizeof(Vec3fa)*current.size());
+	  memcpy(&centroids[dim_2][current.begin],&centroids[dim][current.begin],sizeof(Vec3fa)*current.size());
+
+	  CentGeomBBox3fa left; 
+	  left.reset();
+	  for (size_t i=current.begin; i<center; i++)
+	    left.extend(centroids[dim][i]);
+	  leftChild.init(left,current.begin,center);
+
+	  CentGeomBBox3fa right; 
+	  right.reset();
+	  for (size_t i=center; i<current.end; i++)
+	    right.extend(centroids[dim][i]);
+	  rightChild.init(right,center,current.end);
+	  
+	  //const size_t mid_1 = partition(centroids[dim_1],current.begin,current.end,[&]( const Vec3fa &v ) { return v[split.dim]
+	}           
+    }
+
+    template<typename Primitive>    
+    void BVH4TriangleBuilderFastSweep<Primitive>::createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID)
+    {
+      PING;
+      size_t items = Primitive::blocks(current.size());
+      size_t start = current.begin;
+            
+      /* allocate leaf node */
+      Primitive* accel = (Primitive*) leafAlloc.malloc(items*sizeof(Primitive));
+      *current.parent = BVH4TriangleBuilderFast<Primitive>::bvh->encodeLeaf((char*)accel, BVH4TriangleBuilderFast<Primitive>::listMode ? BVH4TriangleBuilderFast<Primitive>::listMode : items);
+      
+      assert(current.size() <= BVH4::N);
+      PrimRef local[BVH4::N];
+      for (size_t i=0; i<items; i++) 
+	local[i] = prims[current.begin+i];
+      
+      for (size_t i=0; i<items; i++) 
+	accel[i].fill(local,start,items,BVH4TriangleBuilderFast<Primitive>::scene,BVH4TriangleBuilderFast<Primitive>::listMode);
+    }
+    // =======================================================================================================
+    // =======================================================================================================
+    // =======================================================================================================
+
 
     // will be removed soon, just for testing 
     static void test_partition()
@@ -1893,6 +2003,9 @@ namespace embree
 #endif
   }
 
+
+
+
     // =======================================================================================================
     // =======================================================================================================
     // =======================================================================================================
@@ -1901,6 +2014,10 @@ namespace embree
     Builder* BVH4Bezier1iBuilderFast   (void* bvh, Scene* scene, size_t mode) { return new class BVH4BezierBuilderFast<Bezier1i>((BVH4*)bvh,scene,mode); }
     Builder* BVH4Triangle1BuilderFast  (void* bvh, Scene* scene, size_t mode) { return new class BVH4TriangleBuilderFast<Triangle1> ((BVH4*)bvh,scene,mode); }
     Builder* BVH4Triangle4BuilderFast  (void* bvh, Scene* scene, size_t mode) { return new class BVH4TriangleBuilderFast<Triangle4> ((BVH4*)bvh,scene,mode); }
+
+    Builder* BVH4Triangle4BuilderFastSweep  (void* bvh, Scene* scene, size_t mode) { return new class BVH4TriangleBuilderFastSweep<Triangle4> ((BVH4*)bvh,scene,mode); }
+
+
 #if defined(__AVX__)
     Builder* BVH4Triangle8BuilderFast  (void* bvh, Scene* scene, size_t mode) { return new class BVH4TriangleBuilderFast<Triangle8> ((BVH4*)bvh,scene,mode); }
 #endif

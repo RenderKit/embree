@@ -120,30 +120,6 @@ namespace embree
       /* single threaded build */
       virtual void build_sequential(size_t threadIndex, size_t threadCount);
 
-      /* single threaded build in sweep mode */
-      virtual void build_sequential_sweep(size_t threadIndex, size_t threadCount);
-
-      /* single threaded recurse function for sweep builder */
-      void recurse_sweep(BuildRecord& current,
-                         Allocator& nodeAlloc,
-                         Allocator& leafAlloc,
-                         Vec3fa *const centroids_x,
-                         Vec3fa *const centroids_y,
-                         Vec3fa *const centroids_z,
-                         float  *const tmp,
-                         const size_t threadID,
-                         const size_t numThreads);
-
-      /* single threaded split function for sweep builder */
-      void splitSequential_sweep(BuildRecord& current,
-                                 BuildRecord& leftChild,
-                                 BuildRecord& rightChild,
-                                 Vec3fa *const centroids_x,
-                                 Vec3fa *const centroids_y,
-                                 Vec3fa *const centroids_z,
-                                 float  *const tmp,                           
-                                 const size_t threadID,
-                                 const size_t numThreads);
 
     public:
       TASK_SET_FUNCTION(BVH4BuilderFast,computePrimRefs);
@@ -248,6 +224,49 @@ namespace embree
     public:
       TriangleMesh* geom;   //!< input mesh
     };
+
+    template<typename Primitive>
+    class BVH4TriangleBuilderFastSweep : public BVH4TriangleBuilderFast<Primitive>
+    {
+    protected:
+      Vec3fa *centroids[3];
+      float  *tmp;
+      
+    public:
+      typedef BVH4BuilderFast::BuildRecord BuildRecord;
+      typedef BVH4::Node Node;
+      typedef BVH4::NodeRef NodeRef;
+      typedef LinearAllocatorPerThread::ThreadAllocator Allocator;
+      
+      /////////////////////////////////////////////////////////////////////////////
+
+      virtual void build_sequential(size_t threadIndex, size_t threadCount);
+
+            /* single threaded recurse function for sweep builder */
+      void recurse_sweep(BuildRecord& current,
+                         Allocator& nodeAlloc,
+                         Allocator& leafAlloc,
+                         const size_t threadID,
+                         const size_t numThreads);
+
+
+      /* single threaded split function for sweep builder */
+      void splitSequential_sweep(BuildRecord& current,
+                                 BuildRecord& leftChild,
+                                 BuildRecord& rightChild,
+                                 const size_t threadID,
+                                 const size_t numThreads);
+
+      virtual void createSmallLeaf(BuildRecord& current, 
+                                   Allocator& leafAlloc, 
+                                   size_t threadID);
+
+      /////////////////////////////////////////////////////////////////////////////
+
+    public:
+      BVH4TriangleBuilderFastSweep (BVH4* bvh, Scene* scene, size_t listMode);
+    };
+
   
     template<typename Primitive>
     class BVH4UserGeometryBuilderFastT : public BVH4BuilderFastT<Primitive>

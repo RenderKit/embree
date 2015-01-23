@@ -183,6 +183,8 @@ namespace embree
     std::cout << "# N dt_min dt_avg dt_max M/s(min) M/s(avg) M/s(max)" << std::endl;
 #endif
     for (size_t N = N0; N < N1; N *= 1.5) 
+    //for (size_t N = N1; N >= N0; N *= 1./1.5) 
+
     {
       double t_min = pos_inf;
       double t_avg = 0.0f;
@@ -357,7 +359,8 @@ namespace embree
       fs.open ("benchmark_reduce_tbb.csv", std::fstream::out);
       //tbb::task_scheduler_init init(128);
       tbb::task_scheduler_init init(tbb::task_scheduler_init::default_num_threads());
-      benchmark(1000,N,"reduce_tbb",[] (size_t N) -> double { return reduce.run_tbb(N); });
+      //while(1)
+	benchmark(1000,N,"reduce_tbb",[] (size_t N) -> double { return reduce.run_tbb(N); });
       fs.close();
     }
 
