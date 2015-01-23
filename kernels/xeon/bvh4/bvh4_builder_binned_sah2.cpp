@@ -196,6 +196,12 @@ namespace embree
         }
         if (g_verbose >= 2)
           std::cout << BVH4Statistics(bvh).str();
+
+        /* benchmark mode */
+        if (g_benchmark) {
+          BVH4Statistics stat(bvh);
+          std::cout << "BENCHMARK_BUILD " << dt << " " << double(numPrimitives)/dt << " " << stat.sah() << " " << stat.bytesUsed() << std::endl;
+        }
       }
     };
     
