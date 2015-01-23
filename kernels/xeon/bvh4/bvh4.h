@@ -276,7 +276,7 @@ namespace embree
       }
 
       /*! Returns extent of bounds of specified child. */
-      __forceinline BBox3fa extend(size_t i) const {
+      __forceinline Vec3fa extend(size_t i) const {
 	return bounds(i).size();
       }
 
@@ -518,7 +518,7 @@ namespace embree
       }
 
       /*! Returns extent of bounds of specified child. */
-      __forceinline BBox3fa extend0(size_t i) const {
+      __forceinline Vec3fa extend0(size_t i) const {
 	return bounds0(i).size();
       }
 

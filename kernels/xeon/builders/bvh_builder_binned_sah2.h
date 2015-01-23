@@ -192,10 +192,11 @@ namespace embree
           ssize_t bestChild = -1;
           for (size_t i=0; i<numChildren; i++) 
           {
-            float dSAH = children[i].split.splitSAH()-children[i].pinfo.leafSAH(logBlockSize);
+            /*float dSAH = children[i].split.splitSAH()-children[i].pinfo.leafSAH(logBlockSize);
             if (children[i].pinfo.size() <= minLeafSize) continue; 
             if (children[i].pinfo.size() > maxLeafSize) dSAH = min(0.0f,dSAH); //< force split for large jobs
-            if (dSAH <= bestSAH) { bestChild = i; bestSAH = dSAH; }
+            if (dSAH <= bestSAH) { bestChild = i; bestSAH = dSAH; }*/
+            if (area(children[i].pinfo.geomBounds) > bestSAH) { bestChild = i; bestSAH = area(children[i].pinfo.geomBounds); }
           }
           if (bestChild == -1) break;
           //PRINT(bestChild);
