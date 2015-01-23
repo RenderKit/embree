@@ -29,12 +29,12 @@ namespace embree
 {
   namespace isa
   {
-    typedef FastAllocator::ThreadLocal Allocator;
+    typedef FastAllocator::ThreadLocal2 Allocator;
 
     struct CreateAlloc
     {
       __forceinline CreateAlloc (BVH4* bvh) : bvh(bvh) {}
-      __forceinline Allocator* operator() () const { return bvh->alloc2.threadLocal();  }
+      __forceinline Allocator* operator() () const { return bvh->alloc2.threadLocal2();  }
 
       BVH4* bvh;
     };
@@ -45,7 +45,7 @@ namespace embree
       
       __forceinline void operator() (const isa::BuildRecord<BVH4::NodeRef>& current, BuildRecord<BVH4::NodeRef>* children, const size_t N, Allocator* alloc) 
       {
-        BVH4::Node* node = (BVH4::Node*) alloc->malloc(sizeof(BVH4::Node)); node->clear();
+        BVH4::Node* node = (BVH4::Node*) alloc->alloc0.malloc(sizeof(BVH4::Node)); node->clear();
         for (size_t i=0; i<N; i++) {
           node->set(i,children[i].geomBounds);
           children[i].parent = &node->child(i);
@@ -65,7 +65,7 @@ namespace embree
       {
         size_t items = Primitive::blocks(current.size());
         size_t start = current.begin;
-        Primitive* accel = (Primitive*) alloc->malloc(items*sizeof(Primitive));
+        Primitive* accel = (Primitive*) alloc->alloc1.malloc(items*sizeof(Primitive));
         BVH4::NodeRef node = bvh->encodeLeaf((char*)accel,items);
         for (size_t i=0; i<items; i++) {
           accel[i].fill(prims,start,current.end,bvh->scene,false);

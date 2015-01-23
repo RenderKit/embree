@@ -416,8 +416,8 @@ namespace embree
 #endif
       
       /* layout top nodes */
-      bvh->root = layout_top_nodes(threadIndex,nodeAlloc,bvh->root);
-      //bvh->clearBarrier(bvh->root);
+      //bvh->root = layout_top_nodes(threadIndex,nodeAlloc,bvh->root);
+      bvh->clearBarrier(bvh->root);
       bvh->numPrimitives = pinfo.size();
       bvh->bounds = pinfo.geomBounds;
       
