@@ -120,6 +120,31 @@ namespace embree
       /* single threaded build */
       virtual void build_sequential(size_t threadIndex, size_t threadCount);
 
+      /* single threaded build in sweep mode */
+      virtual void build_sequential_sweep(size_t threadIndex, size_t threadCount);
+
+      /* single threaded recurse function for sweep builder */
+      void recurse_sweep(BuildRecord& current,
+                         Allocator& nodeAlloc,
+                         Allocator& leafAlloc,
+                         Vec3fa *const centroids_x,
+                         Vec3fa *const centroids_y,
+                         Vec3fa *const centroids_z,
+                         float  *const tmp,
+                         const size_t threadID,
+                         const size_t numThreads);
+
+      /* single threaded split function for sweep builder */
+      void splitSequential_sweep(BuildRecord& current,
+                                 BuildRecord& leftChild,
+                                 BuildRecord& rightChild,
+                                 Vec3fa *const centroids_x,
+                                 Vec3fa *const centroids_y,
+                                 Vec3fa *const centroids_z,
+                                 float  *const tmp,                           
+                                 const size_t threadID,
+                                 const size_t numThreads);
+
     public:
       TASK_SET_FUNCTION(BVH4BuilderFast,computePrimRefs);
       TASK_FUNCTION(BVH4BuilderFast,buildSubTrees);
@@ -182,9 +207,10 @@ namespace embree
     public:
       PrimRef* prims;
       size_t bytesPrims;
-      
+
     protected:
       size_t numPrimitives;
+
     };
 
     template<typename Primitive>

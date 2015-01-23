@@ -1470,6 +1470,200 @@ namespace embree
       //PRINT(1000.0f*(T2-T1));
     }
 
+    static __forceinline bool compare_x(const Vec3fa& v0, const Vec3fa& v1) { return v0.x < v1.x; }
+    static __forceinline bool compare_y(const Vec3fa& v0, const Vec3fa& v1) { return v0.y < v1.y; }
+    static __forceinline bool compare_z(const Vec3fa& v0, const Vec3fa& v1) { return v0.z < v1.z; }
+
+    void BVH4BuilderFast::build_sequential_sweep(size_t threadIndex, size_t threadCount) 
+    {
+      PING;
+      /* initialize node and leaf allocator */
+      bvh->alloc.clear();
+      __aligned(64) Allocator nodeAlloc(&bvh->alloc);
+      __aligned(64) Allocator leafAlloc(&bvh->alloc);
+     
+      /* create prim refs */
+      PrimInfo pinfo(empty);
+      create_primitive_array_sequential(threadIndex, threadCount, pinfo);
+      bvh->bounds = pinfo.geomBounds;
+
+      DBG_PRINT(pinfo.size());
+      
+      /* for sweep builder */
+      Vec3fa *centroids_x = (Vec3fa*)_mm_malloc(sizeof(Vec3fa)*pinfo.size(),64);
+      Vec3fa *centroids_y = (Vec3fa*)_mm_malloc(sizeof(Vec3fa)*pinfo.size(),64);
+      Vec3fa *centroids_z = (Vec3fa*)_mm_malloc(sizeof(Vec3fa)*pinfo.size(),64);     
+      float  *tmp         = (float*) _mm_malloc(sizeof(float) *pinfo.size(),64);     
+      for (size_t i=0;i<pinfo.size();i++)
+        {
+          Vec3fa centroid = prims[i].center2() * 0.5;
+          centroid.a = i;
+          centroids_x[i] = centroid;
+          centroids_y[i] = centroid;
+          centroids_z[i] = centroid;          
+        }
+      std::sort(centroids_x,centroids_x+pinfo.size(),compare_x);
+      std::sort(centroids_y,centroids_y+pinfo.size(),compare_y);
+      std::sort(centroids_z,centroids_z+pinfo.size(),compare_z);      
+      
+      /* create initial build record */
+      BuildRecord br;
+      br.init(pinfo,0,pinfo.size());
+      br.depth = 1;
+      br.parent = &bvh->root;
+
+      /* build BVH in single thread */
+      recurse_sweep(br,nodeAlloc,leafAlloc,centroids_x,centroids_y,centroids_z,tmp,threadIndex,threadCount);
+
+     
+      _mm_sfence(); // make written leaves globally visible
+
+      _mm_free(tmp);
+      _mm_free(centroids_x);
+      _mm_free(centroids_y);
+      _mm_free(centroids_z);      
+    }
+
+    void BVH4BuilderFast::recurse_sweep(BuildRecord& current,
+                                        Allocator& nodeAlloc,
+                                        Allocator& leafAlloc,
+                                        Vec3fa *const centroids_x,
+                                        Vec3fa *const centroids_y,
+                                        Vec3fa *const centroids_z,
+                                        float  *const tmp,
+                                        const size_t threadID,
+                                        const size_t numThreads)
+    {
+       __aligned(64) BuildRecord children[BVH4::N];
+      
+      /* create leaf node */
+      if (current.depth >= BVH4::maxBuildDepth || current.size() <= minLeafSize) {
+        createLeaf(current,nodeAlloc,leafAlloc,threadID,numThreads);
+        return;
+      }
+
+      /* fill all 4 children by always splitting the one with the largest surface area */
+      unsigned int numChildren = 1;
+      children[0] = current;
+
+      do {
+        
+        /* find best child with largest bounding box area */
+        int bestChild = -1;
+        float bestArea = neg_inf;
+        for (unsigned int i=0; i<numChildren; i++)
+        {
+          /* ignore leaves as they cannot get split */
+          if (children[i].size() <= minLeafSize)
+            continue;
+          
+          /* remember child with largest area */
+          if (children[i].sceneArea() > bestArea) { 
+            bestArea = children[i].sceneArea();
+            bestChild = i;
+          }
+        }
+        if (bestChild == -1) break;
+        
+        /*! split best child into left and right child */
+        __aligned(64) BuildRecord left, right;
+        splitSequential_sweep(children[bestChild],left,right,centroids_x,centroids_y,centroids_z,tmp,threadID,numThreads);
+        
+        /* add new children left and right */
+	left.init(current.depth+1); 
+	right.init(current.depth+1);
+        children[bestChild] = children[numChildren-1];
+        children[numChildren-1] = left;
+        children[numChildren+0] = right;
+        numChildren++;
+        
+      } while (numChildren < BVH4::N);
+
+      /* create leaf node if no split is possible */
+      if (numChildren == 1) {
+        createLeaf(current,nodeAlloc,leafAlloc,threadID,numThreads);
+        return;
+      }
+      
+      /* allocate node */
+      Node* node = (Node*) nodeAlloc.malloc(sizeof(Node)); node->clear();
+      *current.parent = bvh->encodeNode(node);
+      
+      /* recurse into each child */
+      for (unsigned int i=0; i<numChildren; i++) 
+      {  
+        node->set(i,children[i].geomBounds);
+        children[i].parent = &node->child(i);
+        recurse_sweep(children[i],nodeAlloc,leafAlloc,centroids_x,centroids_y,centroids_z,tmp,threadID,numThreads);
+      }     
+    }
+
+       struct SplitSweep
+      {
+	/*! construct an invalid split by default */
+	__forceinline SplitSweep()
+	  : sah(inf), dim(-1), pos(0) {}
+	
+	/*! constructs specified split */
+	__forceinline SplitSweep(float sah, int dim, int pos)
+	  : sah(sah), dim(dim), pos(pos) {}
+	
+	/*! tests if this split is valid */
+	__forceinline bool valid() const { return dim != -1; }
+
+	/*! calculates surface area heuristic for performing the split */
+	__forceinline float splitSAH() const { return sah; }
+       	
+
+	/*! stream output */
+	friend std::ostream& operator<<(std::ostream& cout, const SplitSweep& split) {
+	  return cout << "Split { sah = " << split.sah << ", dim = " << split.dim << ", pos = " << split.pos << "}";
+	}
+	
+      public:
+	float sah;       //!< SAH cost of the split
+	int dim;         //!< split dimension
+	int pos;         //!< bin index for splitting
+      };
+   
+    void BVH4BuilderFast::splitSequential_sweep(BuildRecord& current,
+                                                BuildRecord& leftChild,
+                                                BuildRecord& rightChild,
+                                                Vec3fa *const centroids_x,
+                                                Vec3fa *const centroids_y,
+                                                Vec3fa *const centroids_z,
+                                                float  *const tmp,                           
+                                                const size_t threadID,
+                                                const size_t numThreads)
+    {
+       /* calculate binning function */
+      PrimInfo pinfo(current.size(),current.geomBounds,current.centBounds);
+
+      std::sort(centroids_x+current.begin,centroids_x+current.end,compare_x);
+      std::sort(centroids_y+current.begin,centroids_y+current.end,compare_y);
+      std::sort(centroids_z+current.begin,centroids_z+current.end,compare_z);      
+
+      SplitSweep split;
+      
+      BBox3fa bounds;     
+      /* 'x' direction */
+      bounds = empty;
+      for (ssize_t i=current.end-1;i>=current.begin;i--) { bounds.extend( centroids_x[i] ); tmp[i] = area( bounds ); }
+      bounds = empty;
+      //for (size_t i=1;i<current.begin-1;i++)     
+        
+      
+      //ObjectPartition::Split split = ObjectPartition::find(prims,current.begin,current.end,pinfo,logBlockSize);
+      
+      /* if we cannot find a valid split, enforce an arbitrary split */
+      if (unlikely(!split.valid())) splitFallback(prims,current,leftChild,rightChild);
+      
+      /* partitioning of items */
+      //else split.partition(prims, current.begin, current.end, leftChild, rightChild);
+     
+    }
+    
+
     // =======================================================================================================
     // =======================================================================================================
     // =======================================================================================================
