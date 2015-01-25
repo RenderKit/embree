@@ -1535,7 +1535,7 @@ namespace embree
     // =======================================================================================================
     // =======================================================================================================
     // =======================================================================================================
-#define DBG_SWEEP(x)
+#define DBG_SWEEP(x) 
     
     template<typename Primitive>
     void BVH4TriangleBuilderFastSweep<Primitive>::build_sequential(size_t threadIndex, size_t threadCount) 
@@ -1619,8 +1619,6 @@ namespace embree
         createSmallLeaf(current,leafAlloc,threadIndex);
         return;
       }
-      DBG_PRINT( current.size() );
-      DBG_PRINT( minLeafSize );
       
       
       /* first split level */
@@ -1782,19 +1780,44 @@ namespace embree
       assert(size >= 2);
       BBox3fa bounds;     
       bounds = empty;
-      for (size_t i=begin;i<end;i++) { const size_t index = end-1-i; bounds.extend( centroids[index] ); tmp[index] = area( bounds ); }
+      for (ssize_t i=end-1;i>=(ssize_t)begin;i--) {
+        bounds.extend( centroids[i] );
+        tmp[i] = area( bounds );
+      }
+      float value = centroids[begin][dim];
+      
       bounds = centroids[begin];
-      for (size_t i=begin+1;i<end-1;i++) { 
+      for (size_t i=begin+1;i<end;i++) {
+        assert( centroids[i][dim] >= centroids[i][dim] );
 	bounds.extend( centroids[i-1] );
+        if ( centroids[i][dim] == value ) continue;
+        value = centroids[i][dim];
 	const float lArea  = area( bounds );
 	const float rArea = tmp[i];
+
+        /*
+        BBox3fa test_right( empty );
+        for (size_t j=i;j<end;j++)
+          test_right.extend( centroids[j] );
+
+        //DBG_PRINT( test );
+        //DBG_PRINT( area(test) );
+        //DBG_PRINT( rArea );
+        assert( area(test_right) == rArea);
+
+        BBox3fa test_left( empty );
+        for (size_t j=begin;j<i;j++)
+          test_left.extend( centroids[j] );
+
+        assert( area(test_left) == lArea);
+        */
 	const size_t lItems  = i-begin;
 	const size_t rItems = size - lItems;
 	assert(lItems + rItems == size);
         const size_t lBlocks = (lItems+(N-1))/N;
         const size_t rBlocks = (rItems+(N-1))/N;        
 	const float sah = (float)lBlocks * lArea + (float)rBlocks * rArea;
-	if (unlikely(sah < split.splitSAH()))
+	if (unlikely(lItems > 0 && rItems > 0 && sah < split.splitSAH()))
           {
             split = SplitSweep(sah,dim,i,centroids[i][dim]);
           }
@@ -1855,7 +1878,6 @@ namespace embree
                 DBG_PRINT(current);
                 );
       assert( checkCentroids( current ));
-      
       /* calculate binning function */
       //PrimInfo pinfo(current.size(),current.geomBounds,current.centBounds);
     
@@ -1871,7 +1893,6 @@ namespace embree
       DBG_SWEEP(
                 DBG_PRINT(bestSplit);
                 );
-      DBG_PRINT(bestSplit);
       if (unlikely(!bestSplit.valid()))
         {
           DBG_PRINT("FALLBACK");
@@ -1912,9 +1933,10 @@ namespace embree
           assert( checkCentroids(leftChild) );
           assert( checkCentroids(rightChild) );
 
-          DBG_PRINT(leftChild);
-          DBG_PRINT(rightChild);
-          
+          DBG_SWEEP(
+                    DBG_PRINT(leftChild);
+                    DBG_PRINT(rightChild);
+                    );          
 	  //const size_t mid_1 = partition(centroids[dim_1],current.begin,current.end,[&]( const Vec3fa &v ) { return v[split.dim]
 	}           
     }
