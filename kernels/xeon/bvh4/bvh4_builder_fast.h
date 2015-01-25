@@ -261,6 +261,11 @@ namespace embree
                                    Allocator& leafAlloc, 
                                    size_t threadID);
 
+      void splitFallback(BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild);
+      
+      void createLeaf_sweep(BuildRecord& current, Allocator& nodeAlloc, Allocator& leafAlloc, size_t threadIndex, size_t threadCount);
+                            
+      bool checkCentroids( BuildRecord& current );
       /////////////////////////////////////////////////////////////////////////////
 
     public:

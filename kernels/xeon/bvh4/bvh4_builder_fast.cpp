@@ -1248,7 +1248,6 @@ namespace embree
       /* calculate binning function */
       PrimInfo pinfo(current.size(),current.geomBounds,current.centBounds);
       ObjectPartition::Split split = ObjectPartition::find(prims,current.begin,current.end,pinfo,logBlockSize);
-      
       /* if we cannot find a valid split, enforce an arbitrary split */
       if (unlikely(!split.valid())) splitFallback(prims,current,leftChild,rightChild);
       
@@ -1279,6 +1278,7 @@ namespace embree
     {
       if (mode == BUILD_TOP_LEVEL) splitParallel(current,left,right,threadID,numThreads);		  
       else                         splitSequential(current,left,right,threadID,numThreads);
+
     }
     
     // =======================================================================================================
@@ -1535,15 +1535,12 @@ namespace embree
     // =======================================================================================================
     // =======================================================================================================
     // =======================================================================================================
-
-    static __forceinline bool compare_x(const Vec3fa& v0, const Vec3fa& v1) { return v0.x < v1.x; }
-    static __forceinline bool compare_y(const Vec3fa& v0, const Vec3fa& v1) { return v0.y < v1.y; }
-    static __forceinline bool compare_z(const Vec3fa& v0, const Vec3fa& v1) { return v0.z < v1.z; }
+#define DBG_SWEEP(x)
     
     template<typename Primitive>
     void BVH4TriangleBuilderFastSweep<Primitive>::build_sequential(size_t threadIndex, size_t threadCount) 
     {
-      PING;
+      DBG_SWEEP(PING);
       BVH4 *bvh = BVH4TriangleBuilderFast<Primitive>::bvh;
       /* initialize node and leaf allocator */
       bvh->alloc.clear();
@@ -1555,25 +1552,25 @@ namespace embree
       BVH4TriangleBuilderFast<Primitive>::create_primitive_array_sequential(threadIndex, threadCount, pinfo);
       bvh->bounds = pinfo.geomBounds;
 
-      DBG_PRINT(pinfo.size());
+      DBG_SWEEP(DBG_PRINT(pinfo.size()));
       
       /* for sweep builder */
       for (size_t i=0;i<3;i++)
         centroids[i] = (Vec3fa*)_mm_malloc(sizeof(Vec3fa)*pinfo.size(),64);
-      tmp = (float*) _mm_malloc(sizeof(float) *pinfo.size(),64);
+      tmp = (float*) _mm_malloc(sizeof(float) * pinfo.size(),64);
       
       for (size_t i=0;i<pinfo.size();i++)
         {
-          Vec3fa centroid = BVH4TriangleBuilderFast<Primitive>::prims[i].center2() * 0.5;
+          Vec3fa centroid = BVH4TriangleBuilderFast<Primitive>::prims[i].center2();
           centroid.a = i;
           centroids[0][i] = centroid;
           centroids[1][i] = centroid;
           centroids[2][i] = centroid;          
         }
-      std::sort(centroids[0],centroids[0]+pinfo.size(),compare_x);
-      std::sort(centroids[1],centroids[1]+pinfo.size(),compare_y);
-      std::sort(centroids[2],centroids[2]+pinfo.size(),compare_z);      
-      
+      std::sort(centroids[0],centroids[0]+pinfo.size(),[&](const Vec3fa& v0, const Vec3fa& v1) { return v0.x < v1.x; });
+      std::sort(centroids[1],centroids[1]+pinfo.size(),[&](const Vec3fa& v0, const Vec3fa& v1) { return v0.y < v1.y; });
+      std::sort(centroids[2],centroids[2]+pinfo.size(),[&](const Vec3fa& v0, const Vec3fa& v1) { return v0.z < v1.z; });      
+
       /* create initial build record */
       BuildRecord br;
       br.init(pinfo,0,pinfo.size());
@@ -1583,8 +1580,8 @@ namespace embree
       /* build BVH in single thread */
 
       recurse_sweep(br,nodeAlloc,leafAlloc,threadIndex,threadCount);
-      DBG_PRINT("HERE");
-      exit(0);
+      DBG_SWEEP(DBG_PRINT("BUILD DONE"));
+      //exit(0);
      
       _mm_sfence(); // make written leaves globally visible
 
@@ -1592,6 +1589,64 @@ namespace embree
       for (size_t i=0;i<3;i++)
         _mm_free(centroids[i]);
     }
+
+     template<typename Primitive>   
+     void BVH4TriangleBuilderFastSweep<Primitive>::splitFallback(BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild)
+    {
+      DBG_SWEEP(PING);
+      const unsigned int center = (current.begin + current.end)/2;
+      
+      CentGeomBBox3fa left; left.reset();
+      for (size_t i=current.begin; i<center; i++)
+        left.extend(prims[centroids[0][i].a].bounds()); //left.extend(centroids[dim][i]);        
+      leftChild.init(left,current.begin,center);
+      
+      CentGeomBBox3fa right; right.reset();
+      for (size_t i=center; i<current.end; i++)
+        right.extend(prims[centroids[0][i].a].bounds()); //right.extend(centroids[dim][i]); 
+      rightChild.init(right,center,current.end);
+    }
+   
+
+    template<typename Primitive>
+     void BVH4TriangleBuilderFastSweep<Primitive>::createLeaf_sweep(BuildRecord& current, Allocator& nodeAlloc, Allocator& leafAlloc, size_t threadIndex, size_t threadCount)
+    {
+      if (current.depth > BVH4::maxBuildDepthLeaf) 
+        THROW_RUNTIME_ERROR("depth limit reached");
+      
+      /* create leaf for few primitives */
+      if (current.size() <= minLeafSize) {
+        createSmallLeaf(current,leafAlloc,threadIndex);
+        return;
+      }
+      DBG_PRINT( current.size() );
+      DBG_PRINT( minLeafSize );
+      
+      
+      /* first split level */
+      BuildRecord record0, record1;
+      splitFallback(current,record0,record1);
+      
+      /* second split level */
+      BuildRecord children[4];
+      splitFallback(record0,children[0],children[1]);
+      splitFallback(record1,children[2],children[3]);
+
+      /* allocate node */
+      Node* node = (Node*) nodeAlloc.malloc(sizeof(Node)); node->clear();
+      *current.parent = bvh->encodeNode(node);
+      
+      /* recurse into each child */
+      for (size_t i=0; i<4; i++) 
+      {
+        node->set(i,children[i].geomBounds);
+        children[i].parent = &node->child(i);
+        children[i].depth = current.depth+1;
+        createLeaf_sweep(children[i],nodeAlloc,leafAlloc,threadIndex,threadCount);
+      }
+      BVH4::compact(node); // move empty nodes to the end
+    }
+   
 
 
     template<typename Primitive>
@@ -1601,13 +1656,20 @@ namespace embree
                                                                 const size_t threadID,
                                                                 const size_t numThreads)
     {
-      PING;
+      DBG_SWEEP(
+                std::cout << std::endl;
+                PING;
+                DBG_PRINT(current);
+                );
+      assert( checkCentroids(current) );
+      
       __aligned(64) BuildRecord children[BVH4::N];
       /* create leaf node */
       if (current.depth >= BVH4::maxBuildDepth ||
           current.size() <= BVH4TriangleBuilderFast<Primitive>::minLeafSize)
         {
-          BVH4TriangleBuilderFast<Primitive>::createLeaf(current,nodeAlloc,leafAlloc,threadID,numThreads);
+          DBG_SWEEP(DBG_PRINT("CREATELEAF"));
+          createLeaf_sweep(current,nodeAlloc,leafAlloc,threadID,numThreads);
           return;
         }
 
@@ -1636,7 +1698,11 @@ namespace embree
         
         /*! split best child into left and right child */
         __aligned(64) BuildRecord left, right;
-        //splitSequential_sweep(children[bestChild],left,right,centroids_x,centroids_y,centroids_z,tmp,threadID,numThreads);
+        splitSequential_sweep(children[bestChild],left,right,threadID,numThreads);
+        DBG_SWEEP(
+                  DBG_PRINT(left);
+                  DBG_PRINT(right);
+                  );
         
         /* add new children left and right */
         left.init(current.depth+1); 
@@ -1650,7 +1716,10 @@ namespace embree
 
       /* create leaf node if no split is possible */
       if (numChildren == 1) {
-        BVH4TriangleBuilderFast<Primitive>::createLeaf(current,nodeAlloc,leafAlloc,threadID,numThreads);
+        DBG_SWEEP(
+                  DBG_PRINT("CREATE LEAF");
+                  );
+        createLeaf_sweep(current,nodeAlloc,leafAlloc,threadID,numThreads);
         return;
       }
       
@@ -1675,8 +1744,8 @@ namespace embree
 	  : sah(inf), dim(-1), pos(0) {}
 	
 	/*! constructs specified split */
-	__forceinline SplitSweep(float sah, int dim, int pos)
-	  : sah(sah), dim(dim), pos(pos) {}
+	__forceinline SplitSweep(float sah, int dim, int pos, float value)
+	  : sah(sah), dim(dim), pos(pos), value(value) {}
 	
 	/*! tests if this split is valid */
 	__forceinline bool valid() const { return dim != -1; }
@@ -1687,13 +1756,14 @@ namespace embree
 
 	/*! stream output */
 	friend std::ostream& operator<<(std::ostream& cout, const SplitSweep& split) {
-	  return cout << "Split { sah = " << split.sah << ", dim = " << split.dim << ", pos = " << split.pos << "}";
+	  return cout << "Split { sah = " << split.sah << ", dim = " << split.dim << ", pos = " << split.pos << " value " << split.value << " }";
 	}
 	
       public:
 	float sah;       //!< SAH cost of the split
 	int dim;         //!< split dimension
 	int pos;         //!< bin index for splitting
+        float value;
       };
 
     void getBestSweepSplit(SplitSweep &split,
@@ -1704,11 +1774,15 @@ namespace embree
 			   const size_t N,
 			   const size_t dim)
     {
+      // PING;
+      // DBG_PRINT(begin);
+      // DBG_PRINT(end);
+      
       const size_t size = end-begin;
       assert(size >= 2);
       BBox3fa bounds;     
       bounds = empty;
-      for (ssize_t i=end-1;i>=begin;i--) { bounds.extend( centroids[i] ); tmp[i] = area( bounds ); }
+      for (size_t i=begin;i<end;i++) { const size_t index = end-1-i; bounds.extend( centroids[index] ); tmp[index] = area( bounds ); }
       bounds = centroids[begin];
       for (size_t i=begin+1;i<end-1;i++) { 
 	bounds.extend( centroids[i-1] );
@@ -1717,9 +1791,13 @@ namespace embree
 	const size_t lItems  = i-begin;
 	const size_t rItems = size - lItems;
 	assert(lItems + rItems == size);
-	const float sah = (lItems+(N-1))/N * lArea + (rItems+(N-1))/N * rArea;
+        const size_t lBlocks = (lItems+(N-1))/N;
+        const size_t rBlocks = (rItems+(N-1))/N;        
+	const float sah = (float)lBlocks * lArea + (float)rBlocks * rArea;
 	if (unlikely(sah < split.splitSAH()))
-	  split = SplitSweep(sah,dim,i);
+          {
+            split = SplitSweep(sah,dim,i,centroids[i][dim]);
+          }
       } 
     }
 
@@ -1750,48 +1828,93 @@ namespace embree
     }
 
     template<typename Primitive>
+      bool BVH4TriangleBuilderFastSweep<Primitive>::checkCentroids( BuildRecord& current )
+    {
+      for (size_t i=current.begin;i<current.end;i++)
+        {
+          const size_t index0 = centroids[0][i].a;
+          const size_t index1 = centroids[1][i].a;
+          const size_t index2 = centroids[2][i].a;
+          if (!subset(prims[index0].bounds(), current.geomBounds)) return false;
+          if (!subset(prims[index1].bounds(), current.geomBounds)) return false;
+          if (!subset(prims[index2].bounds(), current.geomBounds)) return false;          
+        }
+      return true;
+    }
+    
+
+    template<typename Primitive>
     void BVH4TriangleBuilderFastSweep<Primitive>::splitSequential_sweep(BuildRecord& current,
 							     BuildRecord& leftChild,
 							     BuildRecord& rightChild,
 							     const size_t threadID,
 							     const size_t numThreads)
     {
-    PING;
-       /* calculate binning function */
-      PrimInfo pinfo(current.size(),current.geomBounds,current.centBounds);
-
-      std::sort(centroids[0]+current.begin,centroids[0]+current.end,compare_x);
-      std::sort(centroids[1]+current.begin,centroids[1]+current.end,compare_y);
-      std::sort(centroids[2]+current.begin,centroids[2]+current.end,compare_z);      
+      DBG_SWEEP(
+                PING;
+                DBG_PRINT(current);
+                );
+      assert( checkCentroids( current ));
+      
+      /* calculate binning function */
+      //PrimInfo pinfo(current.size(),current.geomBounds,current.centBounds);
+    
+      std::sort(centroids[0]+current.begin,centroids[0]+current.end,[&](const Vec3fa& v0, const Vec3fa& v1) { return v0.x < v1.x; });
+      std::sort(centroids[1]+current.begin,centroids[1]+current.end,[&](const Vec3fa& v0, const Vec3fa& v1) { return v0.y < v1.y; });
+      std::sort(centroids[2]+current.begin,centroids[2]+current.end,[&](const Vec3fa& v0, const Vec3fa& v1) { return v0.z < v1.z; });      
 
       SplitSweep bestSplit;
       getBestSweepSplit(bestSplit,current.begin,current.end,centroids[0],tmp,4,0);
       getBestSweepSplit(bestSplit,current.begin,current.end,centroids[1],tmp,4,1);
       getBestSweepSplit(bestSplit,current.begin,current.end,centroids[2],tmp,4,2);
 
-      if (unlikely(!bestSplit.valid())) 
-	splitFallback(prims,current,leftChild,rightChild);
+      DBG_SWEEP(
+                DBG_PRINT(bestSplit);
+                );
+      DBG_PRINT(bestSplit);
+      if (unlikely(!bestSplit.valid()))
+        {
+          DBG_PRINT("FALLBACK");
+          splitFallback(current,leftChild,rightChild);
+        }
       else
 	{
-	  const size_t center = current.begin + bestSplit.pos;
+	  size_t center = bestSplit.pos;
+          assert(center != current.end);
+          
 	  const size_t dim   = bestSplit.dim;
+          //assert(centroids[dim][center][dim] == bestSplit.value);
+
+          assert( center != current.end );
+          
 	  const size_t dim_1 = (bestSplit.dim + 1)%3;
 	  const size_t dim_2 = (bestSplit.dim + 2)%3;
+
+          //DBG_PRINT( dim );
+          //DBG_PRINT( dim_1 );
+          //DBG_PRINT( dim_2 );
+          
 	  memcpy(&centroids[dim_1][current.begin],&centroids[dim][current.begin],sizeof(Vec3fa)*current.size());
 	  memcpy(&centroids[dim_2][current.begin],&centroids[dim][current.begin],sizeof(Vec3fa)*current.size());
 
 	  CentGeomBBox3fa left; 
 	  left.reset();
 	  for (size_t i=current.begin; i<center; i++)
-	    left.extend(centroids[dim][i]);
+	    left.extend(prims[centroids[dim][i].a].bounds()); //left.extend(centroids[dim][i]);
 	  leftChild.init(left,current.begin,center);
-
+          
 	  CentGeomBBox3fa right; 
 	  right.reset();
 	  for (size_t i=center; i<current.end; i++)
-	    right.extend(centroids[dim][i]);
+	    right.extend(prims[centroids[dim][i].a].bounds()); //right.extend(centroids[dim][i]);
 	  rightChild.init(right,center,current.end);
-	  
+
+          assert( checkCentroids(leftChild) );
+          assert( checkCentroids(rightChild) );
+
+          DBG_PRINT(leftChild);
+          DBG_PRINT(rightChild);
+          
 	  //const size_t mid_1 = partition(centroids[dim_1],current.begin,current.end,[&]( const Vec3fa &v ) { return v[split.dim]
 	}           
     }
@@ -1799,21 +1922,51 @@ namespace embree
     template<typename Primitive>    
     void BVH4TriangleBuilderFastSweep<Primitive>::createSmallLeaf(BuildRecord& current, Allocator& leafAlloc, size_t threadID)
     {
-      PING;
+      DBG_SWEEP(
+                PING;
+                DBG_PRINT(current);
+                );
+      assert( checkCentroids( current ) );
       size_t items = Primitive::blocks(current.size());
-      size_t start = current.begin;
-            
+      size_t start = 0; //current.begin;
+
+      DBG_SWEEP(
+                DBG_PRINT(items);
+                );
+
       /* allocate leaf node */
       Primitive* accel = (Primitive*) leafAlloc.malloc(items*sizeof(Primitive));
       *current.parent = BVH4TriangleBuilderFast<Primitive>::bvh->encodeLeaf((char*)accel, BVH4TriangleBuilderFast<Primitive>::listMode ? BVH4TriangleBuilderFast<Primitive>::listMode : items);
-      
+
+      DBG_SWEEP( DBG_PRINT( BVH4TriangleBuilderFast<Primitive>::listMode ) );
       assert(current.size() <= BVH4::N);
       PrimRef local[BVH4::N];
-      for (size_t i=0; i<items; i++) 
-	local[i] = prims[current.begin+i];
+
+      DBG_SWEEP(
+                for (size_t i=0; i<current.size(); i++)
+                  DBG_PRINT( centroids[0][current.begin+i].a );
+                for (size_t i=0; i<current.size(); i++)
+                  DBG_PRINT( centroids[1][current.begin+i].a );
+                for (size_t i=0; i<current.size(); i++)
+                  DBG_PRINT( centroids[2][current.begin+i].a );
+                );
+      
+          
+      for (size_t i=0; i<current.size(); i++)
+        {
+          const size_t index = centroids[0][current.begin+i].a;
+          local[i] = prims[index]; //prims[current.begin+i];
+          DBG_SWEEP(
+                    DBG_PRINT(index);                    
+                    DBG_PRINT( local[i].bounds() );
+                    DBG_PRINT( current.geomBounds );
+                    );
+          assert( subset(local[i].bounds(), current.geomBounds) );
+        }
+      //exit(0);
       
       for (size_t i=0; i<items; i++) 
-	accel[i].fill(local,start,items,BVH4TriangleBuilderFast<Primitive>::scene,BVH4TriangleBuilderFast<Primitive>::listMode);
+	accel[i].fill(local,start,current.size(),BVH4TriangleBuilderFast<Primitive>::scene,BVH4TriangleBuilderFast<Primitive>::listMode);
     }
     // =======================================================================================================
     // =======================================================================================================
