@@ -108,25 +108,229 @@ namespace embree
       int pos;         //!< bin index for splitting
       BinMapping<maxBins> mapping; //!< mapping into bins
     };
+
+    /*! stores extended information about the split */
+    struct SplitInfo
+    {
+      __forceinline SplitInfo () {}
+      
+      __forceinline SplitInfo (size_t leftCount, const BBox3fa& leftBounds, size_t rightCount, const BBox3fa& rightBounds)
+	: leftCount(leftCount), rightCount(rightCount), leftBounds(leftBounds), rightBounds(rightBounds) {}
+      
+    public:
+      size_t leftCount,rightCount;
+      BBox3fa leftBounds,rightBounds;
+    };
+    
+    /*! stores all binning information */
+    template<size_t maxBins, typename PrimRef>
+    struct __aligned(64) BinInfo
+    {
+      typedef BinSplit<maxBins> Split;
+
+      __forceinline BinInfo() {
+      }
+      
+      __forceinline BinInfo(EmptyTy) {
+	clear();
+      }
+      
+      /*! clears the bin info */
+      __forceinline void clear() 
+      {
+	for (size_t i=0; i<maxBins; i++) {
+	  bounds[i][0] = bounds[i][1] = bounds[i][2] = bounds[i][3] = empty;
+	  counts[i] = 0;
+	}
+      }
+      
+      /*! bins an array of bezier curves */
+      __forceinline void bin (const BezierPrim* prims, size_t N, const BinMapping<maxBins>& mapping)
+      {
+	for (size_t i=0; i<N; i++)
+          {
+            const BBox3fa cbounds = prims[i].bounds();
+            const Vec3fa  center  = prims[i].center();
+            const ssei bin = ssei(mapping.bin(center));
+            const int b0 = bin[0]; counts[b0][0]++; bounds[b0][0].extend(cbounds);
+            const int b1 = bin[1]; counts[b1][1]++; bounds[b1][1].extend(cbounds);
+            const int b2 = bin[2]; counts[b2][2]++; bounds[b2][2].extend(cbounds);
+          }
+      }
+      
+      /*! bins an array of primitives */
+      __forceinline void bin (const PrimRef* prims, size_t N, const BinMapping<maxBins>& mapping)
+      {
+	if (N == 0) return;
+        
+	size_t i; 
+	for (i=0; i<N-1; i+=2)
+          {
+            /*! map even and odd primitive to bin */
+            const BBox3fa prim0 = prims[i+0].bounds(); const Vec3fa center0 = Vec3fa(center2(prim0)); const Vec3ia bin0 = mapping.bin(center0); 
+            const BBox3fa prim1 = prims[i+1].bounds(); const Vec3fa center1 = Vec3fa(center2(prim1)); const Vec3ia bin1 = mapping.bin(center1); 
+            
+            /*! increase bounds for bins for even primitive */
+            const int b00 = bin0.x; counts[b00][0]++; bounds[b00][0].extend(prim0);
+            const int b01 = bin0.y; counts[b01][1]++; bounds[b01][1].extend(prim0);
+            const int b02 = bin0.z; counts[b02][2]++; bounds[b02][2].extend(prim0);
+            
+            /*! increase bounds of bins for odd primitive */
+            const int b10 = bin1.x; counts[b10][0]++; bounds[b10][0].extend(prim1);
+            const int b11 = bin1.y; counts[b11][1]++; bounds[b11][1].extend(prim1);
+            const int b12 = bin1.z; counts[b12][2]++; bounds[b12][2].extend(prim1);
+          }
+	
+	/*! for uneven number of primitives */
+	if (i < N)
+          {
+            /*! map primitive to bin */
+            const BBox3fa prim0 = prims[i].bounds(); const Vec3fa center0 = Vec3fa(center2(prim0)); const Vec3ia bin0 = mapping.bin(center0); 
+            
+            /*! increase bounds of bins */
+            const int b00 = bin0.x; counts[b00][0]++; bounds[b00][0].extend(prim0);
+            const int b01 = bin0.y; counts[b01][1]++; bounds[b01][1].extend(prim0);
+            const int b02 = bin0.z; counts[b02][2]++; bounds[b02][2].extend(prim0);
+          }
+      }
+      
+      __forceinline void bin(const PrimRef* prims, size_t begin, size_t end, const BinMapping<maxBins>& mapping) {
+	bin(prims+begin,end-begin,mapping);
+      }
+    
+#if 0  
+      /*! bins a list of bezier curves */
+      __forceinline void bin(BezierRefList& prims, const BinMapping<maxBins>& mapping)
+      {
+	BezierRefList::iterator i=prims;
+	while (BezierRefList::item* block = i.next())
+	  bin(block->base(),block->size(),mapping);
+      }
+      
+      /*! bins a list of primitives */
+      __forceinline void bin(PrimRefList& prims, const BinMapping<maxBins>& mapping)
+      {
+	PrimRefList::iterator i=prims;
+	while (PrimRefList::item* block = i.next())
+	  bin(block->base(),block->size(),mapping);
+      }
+#endif     
+ 
+      /*! merges in other binning information */
+      __forceinline void merge (const BinInfo& other, size_t numBins)
+      {
+	for (size_t i=0; i<numBins; i++) 
+          {
+            counts[i] += other.counts[i];
+            bounds[i][0].extend(other.bounds[i][0]);
+            bounds[i][1].extend(other.bounds[i][1]);
+            bounds[i][2].extend(other.bounds[i][2]);
+          }
+      }
+      
+      /*! finds the best split by scanning binning information */
+      __forceinline Split best(const BinMapping<maxBins>& mapping, const size_t blocks_shift)
+      {
+	/* sweep from right to left and compute parallel prefix of merged bounds */
+	ssef rAreas[maxBins];
+	ssei rCounts[maxBins];
+	ssei count = 0; BBox3fa bx = empty; BBox3fa by = empty; BBox3fa bz = empty;
+	for (size_t i=mapping.size()-1; i>0; i--)
+          {
+            count += counts[i];
+            rCounts[i] = count;
+            bx.extend(bounds[i][0]); rAreas[i][0] = halfArea(bx);
+            by.extend(bounds[i][1]); rAreas[i][1] = halfArea(by);
+            bz.extend(bounds[i][2]); rAreas[i][2] = halfArea(bz);
+          }
+	
+	/* sweep from left to right and compute SAH */
+	ssei blocks_add = (1 << blocks_shift)-1;
+	ssei ii = 1; ssef vbestSAH = pos_inf; ssei vbestPos = 0; 
+	count = 0; bx = empty; by = empty; bz = empty;
+	for (size_t i=1; i<mapping.size(); i++, ii+=1)
+          {
+            count += counts[i-1];
+            bx.extend(bounds[i-1][0]); float Ax = halfArea(bx);
+            by.extend(bounds[i-1][1]); float Ay = halfArea(by);
+            bz.extend(bounds[i-1][2]); float Az = halfArea(bz);
+            const ssef lArea = ssef(Ax,Ay,Az,Az);
+            const ssef rArea = rAreas[i];
+            const ssei lCount = (count     +blocks_add) >> blocks_shift;
+            const ssei rCount = (rCounts[i]+blocks_add) >> blocks_shift;
+            const ssef sah = lArea*ssef(lCount) + rArea*ssef(rCount);
+            vbestPos = select(sah < vbestSAH,ii ,vbestPos);
+            vbestSAH = select(sah < vbestSAH,sah,vbestSAH);
+          }
+	
+	/* find best dimension */
+	float bestSAH = inf;
+	int   bestDim = -1;
+	int   bestPos = 0;
+	int   bestLeft = 0;
+	for (size_t dim=0; dim<3; dim++) 
+          {
+            /* ignore zero sized dimensions */
+            if (unlikely(mapping.invalid(dim)))
+              continue;
+            
+            /* test if this is a better dimension */
+            if (vbestSAH[dim] < bestSAH && vbestPos[dim] != 0) {
+              bestDim = dim;
+              bestPos = vbestPos[dim];
+              bestSAH = vbestSAH[dim];
+            }
+          }
+	
+	return Split(bestSAH,bestDim,bestPos,mapping);
+      }
+      
+      /*! calculates extended split information */
+      __forceinline void getSplitInfo(const BinMapping<maxBins>& mapping, const Split& split, SplitInfo& info) const
+      {
+	if (split.dim == -1) {
+	  new (&info) SplitInfo(0,empty,0,empty);
+	  return;
+	}
+	
+	size_t leftCount = 0;
+	BBox3fa leftBounds = empty;
+	for (size_t i=0; i<split.pos; i++) {
+	  leftCount += counts[i][split.dim];
+	  leftBounds.extend(bounds[i][split.dim]);
+	}
+	size_t rightCount = 0;
+	BBox3fa rightBounds = empty;
+	for (size_t i=split.pos; i<mapping.size(); i++) {
+	  rightCount += counts[i][split.dim];
+	  rightBounds.extend(bounds[i][split.dim]);
+	}
+	new (&info) SplitInfo(leftCount,leftBounds,rightCount,rightBounds);
+      }
+      
+    private:
+      BBox3fa bounds[maxBins][4]; //!< geometry bounds for each bin in each dimension
+      ssei    counts[maxBins];    //!< counts number of primitives that map into the bins
+    };
+    
     
     /*! Performs standard object binning */
     struct ObjectPartitionNew
     {
       /*! number of bins */
       static const size_t maxBins = 32;
-
+      
       typedef BinSplit<maxBins> Split;
-      struct SplitInfo;
-      typedef atomic_set<PrimRefBlockT<PrimRef> > PrimRefList;      //!< list of primitives
-      typedef atomic_set<PrimRefBlockT<BezierPrim> > BezierRefList; //!< list of bezier primitives
-    
-
-    public:
+      typedef BinInfo<maxBins,PrimRef> Binner;
+      //struct SplitInfo;
+      //typedef atomic_set<PrimRefBlockT<PrimRef> > PrimRefList;      //!< list of primitives
+      //typedef atomic_set<PrimRefBlockT<BezierPrim> > BezierRefList; //!< list of bezier primitives
+      
       
       /*! finds the best split */
       static const Split find(PrimRef *__restrict__ const prims, const size_t begin, const size_t end, const PrimInfo& pinfo, const size_t logBlockSize)
       {
-        BinInfo binner(empty);
+        Binner binner(empty);
         const BinMapping<maxBins> mapping(pinfo);
         binner.bin(prims+begin,end-begin,mapping);
         return binner.best(mapping,logBlockSize);
@@ -135,11 +339,11 @@ namespace embree
       /*! finds the best split */
       static const Split find_parallel(PrimRef *__restrict__ const prims, const size_t begin, const size_t end, const PrimInfo& pinfo, const size_t logBlockSize)
       {
-        BinInfo binner(empty);
+        Binner binner(empty);
         const BinMapping<maxBins> mapping(pinfo);
         binner = parallel_reduce(begin,end,size_t(4096),binner,
-                                 [&](const range<size_t>& r) { BinInfo binner(empty); binner.bin(prims+r.begin(),r.size(),mapping); return binner; },
-                                 [&] (const BinInfo& b0, const BinInfo& b1) { BinInfo r = b0; r.merge(b1,mapping.size()); return r; });
+                                 [&](const range<size_t>& r) { Binner binner(empty); binner.bin(prims+r.begin(),r.size(),mapping); return binner; },
+                                 [&] (const Binner& b0, const Binner& b1) { Binner r = b0; r.merge(b1,mapping.size()); return r; });
         return binner.best(mapping,logBlockSize);
       }
       
@@ -180,212 +384,6 @@ namespace embree
 	left.begin  = begin;  left.end  = center;
 	right.begin = center; right.end = end;
       }
-      
-      
-    public:
-      
-      
-
-      /*! stores extended information about the split */
-      struct SplitInfo
-      {
-	__forceinline SplitInfo () {}
-	
-	__forceinline SplitInfo (size_t leftCount, const BBox3fa& leftBounds, size_t rightCount, const BBox3fa& rightBounds)
-	  : leftCount(leftCount), rightCount(rightCount), leftBounds(leftBounds), rightBounds(rightBounds) {}
-
-      public:
-	size_t leftCount,rightCount;
-	BBox3fa leftBounds,rightBounds;
-      };
-      
-    private:
-
-      /*! stores all binning information */
-      struct __aligned(64) BinInfo
-      {
-        __forceinline BinInfo() {
-        }
-
-        __forceinline BinInfo(EmptyTy) {
-          clear();
-        }
-	
-	/*! clears the bin info */
-        __forceinline void clear() 
-        {
-          for (size_t i=0; i<maxBins; i++) {
-            bounds[i][0] = bounds[i][1] = bounds[i][2] = bounds[i][3] = empty;
-            counts[i] = 0;
-          }
-        }
-	
-	/*! bins an array of bezier curves */
-        __forceinline void bin (const BezierPrim* prims, size_t N, const BinMapping<maxBins>& mapping)
-        {
-          for (size_t i=0; i<N; i++)
-          {
-            const BBox3fa cbounds = prims[i].bounds();
-            const Vec3fa  center  = prims[i].center();
-            const ssei bin = ssei(mapping.bin(center));
-            const int b0 = bin[0]; counts[b0][0]++; bounds[b0][0].extend(cbounds);
-            const int b1 = bin[1]; counts[b1][1]++; bounds[b1][1].extend(cbounds);
-            const int b2 = bin[2]; counts[b2][2]++; bounds[b2][2].extend(cbounds);
-          }
-        }
-	
-	/*! bins an array of primitives */
-        __forceinline void bin (const PrimRef* prims, size_t N, const BinMapping<maxBins>& mapping)
-        {
-          if (N == 0) return;
-          
-          size_t i; 
-          for (i=0; i<N-1; i+=2)
-          {
-            /*! map even and odd primitive to bin */
-            const BBox3fa prim0 = prims[i+0].bounds(); const Vec3fa center0 = Vec3fa(center2(prim0)); const Vec3ia bin0 = mapping.bin(center0); 
-            const BBox3fa prim1 = prims[i+1].bounds(); const Vec3fa center1 = Vec3fa(center2(prim1)); const Vec3ia bin1 = mapping.bin(center1); 
-            
-            /*! increase bounds for bins for even primitive */
-            const int b00 = bin0.x; counts[b00][0]++; bounds[b00][0].extend(prim0);
-            const int b01 = bin0.y; counts[b01][1]++; bounds[b01][1].extend(prim0);
-            const int b02 = bin0.z; counts[b02][2]++; bounds[b02][2].extend(prim0);
-            
-            /*! increase bounds of bins for odd primitive */
-            const int b10 = bin1.x; counts[b10][0]++; bounds[b10][0].extend(prim1);
-            const int b11 = bin1.y; counts[b11][1]++; bounds[b11][1].extend(prim1);
-            const int b12 = bin1.z; counts[b12][2]++; bounds[b12][2].extend(prim1);
-          }
-          
-          /*! for uneven number of primitives */
-          if (i < N)
-          {
-            /*! map primitive to bin */
-            const BBox3fa prim0 = prims[i].bounds(); const Vec3fa center0 = Vec3fa(center2(prim0)); const Vec3ia bin0 = mapping.bin(center0); 
-            
-            /*! increase bounds of bins */
-            const int b00 = bin0.x; counts[b00][0]++; bounds[b00][0].extend(prim0);
-            const int b01 = bin0.y; counts[b01][1]++; bounds[b01][1].extend(prim0);
-            const int b02 = bin0.z; counts[b02][2]++; bounds[b02][2].extend(prim0);
-          }
-        }
-	
-        __forceinline void bin(const PrimRef* prims, size_t begin, size_t end, const BinMapping<maxBins>& mapping) {
-          bin(prims+begin,end-begin,mapping);
-        }
-
-	/*! bins a list of bezier curves */
-        __forceinline void bin(BezierRefList& prims, const BinMapping<maxBins>& mapping)
-        {
-          BezierRefList::iterator i=prims;
-          while (BezierRefList::item* block = i.next())
-            bin(block->base(),block->size(),mapping);
-        }
-	
-	/*! bins a list of primitives */
-        __forceinline void bin(PrimRefList& prims, const BinMapping<maxBins>& mapping)
-        {
-          PrimRefList::iterator i=prims;
-          while (PrimRefList::item* block = i.next())
-            bin(block->base(),block->size(),mapping);
-        }
-	
-	/*! merges in other binning information */
-        __forceinline void merge (const BinInfo& other, size_t numBins)
-        {
-          for (size_t i=0; i<numBins; i++) 
-          {
-            counts[i] += other.counts[i];
-            bounds[i][0].extend(other.bounds[i][0]);
-            bounds[i][1].extend(other.bounds[i][1]);
-            bounds[i][2].extend(other.bounds[i][2]);
-          }
-        }
-	
-	/*! finds the best split by scanning binning information */
-        __forceinline Split best(const BinMapping<maxBins>& mapping, const size_t blocks_shift)
-        {
-          /* sweep from right to left and compute parallel prefix of merged bounds */
-          ssef rAreas[maxBins];
-          ssei rCounts[maxBins];
-          ssei count = 0; BBox3fa bx = empty; BBox3fa by = empty; BBox3fa bz = empty;
-          for (size_t i=mapping.size()-1; i>0; i--)
-          {
-            count += counts[i];
-            rCounts[i] = count;
-            bx.extend(bounds[i][0]); rAreas[i][0] = halfArea(bx);
-            by.extend(bounds[i][1]); rAreas[i][1] = halfArea(by);
-            bz.extend(bounds[i][2]); rAreas[i][2] = halfArea(bz);
-          }
-          
-          /* sweep from left to right and compute SAH */
-          ssei blocks_add = (1 << blocks_shift)-1;
-          ssei ii = 1; ssef vbestSAH = pos_inf; ssei vbestPos = 0; 
-          count = 0; bx = empty; by = empty; bz = empty;
-          for (size_t i=1; i<mapping.size(); i++, ii+=1)
-          {
-            count += counts[i-1];
-            bx.extend(bounds[i-1][0]); float Ax = halfArea(bx);
-            by.extend(bounds[i-1][1]); float Ay = halfArea(by);
-            bz.extend(bounds[i-1][2]); float Az = halfArea(bz);
-            const ssef lArea = ssef(Ax,Ay,Az,Az);
-            const ssef rArea = rAreas[i];
-            const ssei lCount = (count     +blocks_add) >> blocks_shift;
-            const ssei rCount = (rCounts[i]+blocks_add) >> blocks_shift;
-            const ssef sah = lArea*ssef(lCount) + rArea*ssef(rCount);
-            vbestPos = select(sah < vbestSAH,ii ,vbestPos);
-            vbestSAH = select(sah < vbestSAH,sah,vbestSAH);
-          }
-          
-          /* find best dimension */
-          float bestSAH = inf;
-          int   bestDim = -1;
-          int   bestPos = 0;
-          int   bestLeft = 0;
-          for (size_t dim=0; dim<3; dim++) 
-          {
-            /* ignore zero sized dimensions */
-            if (unlikely(mapping.invalid(dim)))
-              continue;
-            
-            /* test if this is a better dimension */
-            if (vbestSAH[dim] < bestSAH && vbestPos[dim] != 0) {
-              bestDim = dim;
-              bestPos = vbestPos[dim];
-              bestSAH = vbestSAH[dim];
-            }
-          }
-          
-          return Split(bestSAH,bestDim,bestPos,mapping);
-        }
-	
-	/*! calculates extended split information */
-	__forceinline void getSplitInfo(const BinMapping<maxBins>& mapping, const Split& split, SplitInfo& info) const
-	{
-          if (split.dim == -1) {
-            new (&info) SplitInfo(0,empty,0,empty);
-            return;
-          }
-
-	  size_t leftCount = 0;
-	  BBox3fa leftBounds = empty;
-	  for (size_t i=0; i<split.pos; i++) {
-	    leftCount += counts[i][split.dim];
-	    leftBounds.extend(bounds[i][split.dim]);
-	  }
-	  size_t rightCount = 0;
-	  BBox3fa rightBounds = empty;
-	  for (size_t i=split.pos; i<mapping.size(); i++) {
-	    rightCount += counts[i][split.dim];
-	    rightBounds.extend(bounds[i][split.dim]);
-	  }
-	  new (&info) SplitInfo(leftCount,leftBounds,rightCount,rightBounds);
-	}
-	
-      private:
-      	BBox3fa bounds[maxBins][4]; //!< geometry bounds for each bin in each dimension
-	ssei    counts[maxBins];    //!< counts number of primitives that map into the bins
-      };
     };
   }
 }
