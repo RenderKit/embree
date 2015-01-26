@@ -35,24 +35,11 @@ namespace embree
         __forceinline BuildRecord2 (const PrimInfo& pinfo, size_t depth, NodeRef* parent) 
           : pinfo(pinfo), depth(depth), parent(parent) {}
 
-	__forceinline friend bool operator< (const BuildRecord2& a, const BuildRecord2& b) { return a.pinfo.size() < b.pinfo.size(); }
-	__forceinline friend bool operator> (const BuildRecord2& a, const BuildRecord2& b) { return a.pinfo.size() > b.pinfo.size(); }
-
-        __forceinline size_t size() const { return pinfo.size(); }
-        
-        struct Greater {
-          __forceinline bool operator()(const BuildRecord2& a, const BuildRecord2& b) {
-            return a.size() > b.size();
-          }
-        };
-
       public:
 	NodeRef*   parent;      //!< Pointer to the parent node's reference to us
 	size_t     depth;    //!< Depth of the root of this subtree.
-	Set prims;    //!< The list of primitives.
+	Set prims;            //!< The list of primitives.
 	PrimInfo   pinfo;    //!< Bounding info of primitives.
-	BinSplit<32>      split;    //!< The best split for the primitives.
-	// FIXME: BinSplit
       };
 
     template<typename NodeRef, typename Heuristic, typename Allocator, typename CreateAllocFunc, typename CreateNodeFunc, typename CreateLeafFunc>
@@ -60,6 +47,32 @@ namespace embree
     {
       static const size_t MAX_BRANCHING_FACTOR = 16;  //!< maximal supported BVH branching factor
       static const size_t MIN_LARGE_LEAF_LEVELS = 8;  //!< create balanced tree of we are that many levels before the maximal tree depth
+
+      struct BuildRecord : public BuildRecord2<NodeRef>
+      {
+      public:
+	__forceinline BuildRecord () {}
+        
+	__forceinline BuildRecord (size_t depth) 
+	  : BuildRecord2<NodeRef>(depth) {}
+        
+        __forceinline BuildRecord (const PrimInfo& pinfo, size_t depth, NodeRef* parent) 
+	  : BuildRecord2<NodeRef>(pinfo,depth,parent) {}
+
+	__forceinline friend bool operator< (const BuildRecord& a, const BuildRecord& b) { return a.pinfo.size() < b.pinfo.size(); }
+	__forceinline friend bool operator> (const BuildRecord& a, const BuildRecord& b) { return a.pinfo.size() > b.pinfo.size(); }
+
+        __forceinline size_t size() const { return this->pinfo.size(); }
+        
+        struct Greater {
+          __forceinline bool operator()(const BuildRecord& a, const BuildRecord& b) {
+            return a.size() > b.size();
+          }
+        };
+
+      public:
+	typename Heuristic::Split split;    //!< The best split for the primitives.
+      };
 
     public:
 
@@ -78,7 +91,7 @@ namespace embree
           THROW_RUNTIME_ERROR("bvh_builder: branching factor too large");
       }
 
-      void createLargeLeaf(const BuildRecord2<NodeRef>& current, Allocator& alloc)
+      void createLargeLeaf(const BuildRecord& current, Allocator& alloc)
       {
         if (current.depth > maxDepth) 
           THROW_RUNTIME_ERROR("depth limit reached");
@@ -91,7 +104,7 @@ namespace embree
 
         /* fill all children by always splitting the largest one */
 	BuildRecord2<NodeRef>* pchildren[MAX_BRANCHING_FACTOR];
-        BuildRecord2<NodeRef> children[MAX_BRANCHING_FACTOR];
+        BuildRecord children[MAX_BRANCHING_FACTOR];
         size_t numChildren = 1;
         children[0] = current;
 	pchildren[0] = &children[0];
@@ -116,8 +129,8 @@ namespace embree
           if (bestChild == -1) break;
           
           /*! split best child into left and right child */
-          BuildRecord2<NodeRef> left(current.depth+1);
-          BuildRecord2<NodeRef> right(current.depth+1);
+          BuildRecord left(current.depth+1);
+          BuildRecord right(current.depth+1);
           splitFallback(children[bestChild],left,right);
           
           /* add new children left and right */
@@ -137,7 +150,7 @@ namespace embree
           createLargeLeaf(children[i],alloc);
       }
 
-      void splitFallback(const BuildRecord2<NodeRef>& current, BuildRecord2<NodeRef>& leftChild, BuildRecord2<NodeRef>& rightChild)
+      void splitFallback(const BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild)
       {
         const size_t center = (current.pinfo.begin + current.pinfo.end)/2;
         
@@ -153,13 +166,13 @@ namespace embree
       }
 
       template<bool toplevel>
-        __forceinline const typename Heuristic::Split find(BuildRecord2<NodeRef>& current) {
+        __forceinline const typename Heuristic::Split find(BuildRecord& current) {
         if (toplevel) return heuristic.parallel_find(current.pinfo.begin,current.pinfo.end,current.pinfo,logBlockSize);
         else          return heuristic.find(current.pinfo.begin,current.pinfo.end,current.pinfo,logBlockSize);
       }
 
       template<bool toplevel>
-      __forceinline void partition(const BuildRecord2<NodeRef>& brecord, BuildRecord2<NodeRef>& lrecord, BuildRecord2<NodeRef>& rrecord) {
+      __forceinline void partition(const BuildRecord& brecord, BuildRecord& lrecord, BuildRecord& rrecord) {
         if (brecord.split.sah == float(inf)) splitFallback(brecord,lrecord,rrecord);
         else {
           if (toplevel) heuristic.parallel_split(brecord.split,brecord.pinfo.begin,brecord.pinfo.end,lrecord.pinfo,rrecord.pinfo);
@@ -168,7 +181,7 @@ namespace embree
       }
 
       template<bool toplevel, typename Spawn>
-        inline void recurse(const BuildRecord2<NodeRef>& record, Allocator& alloc, Spawn& spawn)
+        inline void recurse(const BuildRecord& record, Allocator& alloc, Spawn& spawn)
       {
         /*! compute leaf and split cost */
         const float leafSAH  = intCost*record.pinfo.leafSAH(logBlockSize);
@@ -185,7 +198,7 @@ namespace embree
         
         /*! initialize child list */
 	BuildRecord2<NodeRef>* pchildren[MAX_BRANCHING_FACTOR];
-        BuildRecord2<NodeRef> children[MAX_BRANCHING_FACTOR];
+        BuildRecord children[MAX_BRANCHING_FACTOR];
         children[0] = record;
 	pchildren[0] = &children[0];
         size_t numChildren = 1;
@@ -208,9 +221,9 @@ namespace embree
           //PRINT(bestChild);
           
           /* perform best found split */
-          BuildRecord2<NodeRef>& brecord = children[bestChild];
-          BuildRecord2<NodeRef> lrecord(record.depth+1);
-          BuildRecord2<NodeRef> rrecord(record.depth+1);
+          BuildRecord& brecord = children[bestChild];
+          BuildRecord lrecord(record.depth+1);
+          BuildRecord rrecord(record.depth+1);
           partition<toplevel>(brecord,lrecord,rrecord);
           
           /* find new splits */
@@ -241,16 +254,16 @@ namespace embree
       {
         /* create initial build record */
         NodeRef root;
-        BuildRecord2<NodeRef> br(pinfo,1,&root);
+        BuildRecord br(pinfo,1,&root);
         br.split = find<true>(br);
         
 #if 0
         sequential_create_tree(br, createAlloc, 
-                               [&](const BuildRecord2<NodeRef>& br, Allocator& alloc, ParallelContinue<BuildRecord2<NodeRef> >& cont) { recurse<false>(br,alloc,cont); });
+                               [&](const BuildRecord& br, Allocator& alloc, ParallelContinue<BuildRecord >& cont) { recurse<false>(br,alloc,cont); });
 #else   
         parallel_create_tree<50000,128>(br, createAlloc, 
-                                        [&](const BuildRecord2<NodeRef>& br, Allocator& alloc, ParallelContinue<BuildRecord2<NodeRef> >& cont) { recurse<true>(br,alloc,cont); } ,
-                                        [&](const BuildRecord2<NodeRef>& br, Allocator& alloc, ParallelContinue<BuildRecord2<NodeRef> >& cont) { recurse<false>(br,alloc,cont); });
+                                        [&](const BuildRecord& br, Allocator& alloc, ParallelContinue<BuildRecord >& cont) { recurse<true>(br,alloc,cont); } ,
+                                        [&](const BuildRecord& br, Allocator& alloc, ParallelContinue<BuildRecord >& cont) { recurse<false>(br,alloc,cont); });
 #endif
         
         return root;
