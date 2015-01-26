@@ -1253,7 +1253,7 @@ namespace embree
 	const mic_f scale = select(centroidDiagonal_2 != 0.0f,rcp(centroidDiagonal_2) * mic_f(16.0f * 0.99f),mic_f::zero());
 	const mic_f c = mic_f(centroidBoundsMin_2[bestSplitDim]);
 	const mic_f s = mic_f(scale[bestSplitDim]);
-	const mic_m dim_mask = mic_m::shift1[bestSplitDim];
+	const unsigned int dim_mask = mic_m::shift1[bestSplitDim];
 	const mic_f bestSplit_f = mic_f(bestSplit);
 
 	/*
@@ -1279,11 +1279,13 @@ namespace embree
 												  left,
 												  right,
 												  [&] (const PrimRef &ref) { 
-												    const mic2f b = ref.getBounds();
+												    const mic_m m_mask = dim_mask;
+												    const mic_f bf = bestSplit_f;
+    												    const mic2f b = ref.getBounds();
 												    const mic_f b_min = b.x;
 												    const mic_f b_max = b.y;
 												    const mic_f b_centroid2 = b_min + b_max;
-												    return any(lt_split(b_min,b_max,dim_mask,c,s,bestSplit_f));
+												    return any(lt_split(b_min,b_max,m_mask,c,s,bf));
 												  },
 												 [] (CentroidGeometryAABB &cg,const PrimRef &ref) { cg.extend(ref); },
 												 [] (CentroidGeometryAABB &cg0,const CentroidGeometryAABB &cg1) { cg0.extend(cg1); }
@@ -1859,7 +1861,7 @@ namespace embree
     test_partition();
 #endif
 
-    TIMER(double msec = 0.0);
+    TIMER(double msec = 0.0; std::cout << std::endl);
 
     /* start measurement */
     double t0 = 0.0f;

@@ -717,24 +717,34 @@ namespace embree
             while (likely(l <= r && cmp(*l) )) 
               {
 #if defined(__MIC__)
-		prefetch<PFHINT_L1EX>(l+4);	  
+		prefetch<PFHINT_NT>(((char*)l)+4*64);
+		prefetch<PFHINT_L2EX>(((char*)l)+64*20);	  	  
 #endif
                 reduction_t(leftReduc,*l);
                ++l;
               }
+
+#if defined(__MIC__)
+	    //prefetch<PFHINT_L1EX>(l);	  
+#endif
+
 	    /* *r >= pivot) */
             while (likely(l <= r && !cmp(*r)))
               {
 #if defined(__MIC__)
-		prefetch<PFHINT_L1EX>(r-4);	  
+		prefetch<PFHINT_NT>(((char*)r)-4*64);	  
+		prefetch<PFHINT_L2EX>(((char*)r)-64*20);	  	  
 #endif
                 reduction_t(rightReduc,*r);
                 --r;
               }
-            if (r<l) break;
 
-            reduction_t(leftReduc ,*r);
+            if (r<l) break;
+#if defined(__MIC__)
+	    //prefetch<PFHINT_L1EX>(r);	  
+#endif
             reduction_t(rightReduc,*l);
+            reduction_t(leftReduc ,*r);
             std::swap(*l,*r);
             l++; r--;
           }
@@ -930,18 +940,21 @@ namespace embree
         DBG_PART2(
                  DBG_PRINT("PARALLEL MODE");
                  );
-
-#if 0
+#define TIME_PHASES 0
+#if TIME_PHASES == 1
 	double t0 = getSeconds();
 #endif
         scheduler->dispatchTask(task_thread_partition,this,0,numThreads);
-#if 0
+#if TIME_PHASES == 1
 	t0 = getSeconds() - t0;
 	std::cout << " phase0 = " << 1000.0f*t0 << "ms, perf = " << 1E-6*double(N)/t0 << " Mprim/s" << std::endl;
 #endif
         /* ------------------------------------ */
         /* ------ parallel cleanup phase ------ */
         /* ------------------------------------ */
+#if  TIME_PHASES == 1
+	double t1 = getSeconds();
+#endif
         
         for (size_t i=0;i<numThreads;i++)
           {
@@ -955,13 +968,18 @@ namespace embree
 
 	global_mid = mid;
 
-#if 0
-	double t1 = getSeconds();
-#endif
-        scheduler->dispatchTask(task_thread_move_misplaced,this,0,numThreads);
-#if 0
+#if  TIME_PHASES == 1
 	t1 = getSeconds() - t1;
 	std::cout << " phase1 = " << 1000.0f*t1 << "ms, perf = " << 1E-6*double(N)/t1 << " Mprim/s" << std::endl;
+#endif
+
+#if  TIME_PHASES == 1
+	double t2 = getSeconds();
+#endif
+        scheduler->dispatchTask(task_thread_move_misplaced,this,0,numThreads);
+#if  TIME_PHASES == 1
+	t2 = getSeconds() - t2;
+	std::cout << " phase2 = " << 1000.0f*t2 << "ms, perf = " << 1E-6*double(N)/t2 << " Mprim/s" << std::endl;
 #endif
         DBG_CHECK(
 		  checkLeft(array,0,global_mid);
