@@ -27,7 +27,7 @@ namespace embree
   namespace isa
   { 
     /*! mapping into bins */
-    template<size_t maxBins>
+    template<size_t BINS>
     struct BinMapping
     {
     public:
@@ -36,7 +36,7 @@ namespace embree
       /*! calculates the mapping */
       __forceinline BinMapping(const PrimInfo& pinfo) 
       {
-	num = min(maxBins,size_t(4.0f + 0.05f*pinfo.size()));
+	num = min(BINS,size_t(4.0f + 0.05f*pinfo.size()));
 	const ssef diag = (ssef) pinfo.centBounds.size();
 	scale = select(diag > ssef(1E-19f),rcp(diag) * ssef(0.99f*num),ssef(0.0f));
 	ofs  = (ssef) pinfo.centBounds.lower;
@@ -80,7 +80,7 @@ namespace embree
     };
 
     /*! stores all information to perform some split */
-    template<size_t maxBins>
+    template<size_t BINS>
       struct BinSplit
     {
       /*! construct an invalid split by default */
@@ -88,7 +88,7 @@ namespace embree
 	: sah(inf), dim(-1), pos(0) {}
       
       /*! constructs specified split */
-      __forceinline BinSplit(float sah, int dim, int pos, const BinMapping<maxBins>& mapping)
+      __forceinline BinSplit(float sah, int dim, int pos, const BinMapping<BINS>& mapping)
 	: sah(sah), dim(dim), pos(pos), mapping(mapping) {}
       
       /*! tests if this split is valid */
@@ -106,7 +106,7 @@ namespace embree
       float sah;       //!< SAH cost of the split
       int dim;         //!< split dimension
       int pos;         //!< bin index for splitting
-      BinMapping<maxBins> mapping; //!< mapping into bins
+      BinMapping<BINS> mapping; //!< mapping into bins
     };
 
     /*! stores extended information about the split */
@@ -123,10 +123,10 @@ namespace embree
     };
     
     /*! stores all binning information */
-    template<size_t maxBins, typename PrimRef>
+    template<size_t BINS, typename PrimRef>
     struct __aligned(64) BinInfo
     {
-      typedef BinSplit<maxBins> Split;
+      typedef BinSplit<BINS> Split;
 
       __forceinline BinInfo() {
       }
@@ -138,14 +138,14 @@ namespace embree
       /*! clears the bin info */
       __forceinline void clear() 
       {
-	for (size_t i=0; i<maxBins; i++) {
+	for (size_t i=0; i<BINS; i++) {
 	  bounds[i][0] = bounds[i][1] = bounds[i][2] = bounds[i][3] = empty;
 	  counts[i] = 0;
 	}
       }
       
       /*! bins an array of bezier curves */
-      __forceinline void bin (const BezierPrim* prims, size_t N, const BinMapping<maxBins>& mapping)
+      __forceinline void bin (const BezierPrim* prims, size_t N, const BinMapping<BINS>& mapping)
       {
 	for (size_t i=0; i<N; i++)
           {
@@ -159,7 +159,7 @@ namespace embree
       }
       
       /*! bins an array of primitives */
-      __forceinline void bin (const PrimRef* prims, size_t N, const BinMapping<maxBins>& mapping)
+      __forceinline void bin (const PrimRef* prims, size_t N, const BinMapping<BINS>& mapping)
       {
 	if (N == 0) return;
         
@@ -194,13 +194,13 @@ namespace embree
           }
       }
       
-      __forceinline void bin(const PrimRef* prims, size_t begin, size_t end, const BinMapping<maxBins>& mapping) {
+      __forceinline void bin(const PrimRef* prims, size_t begin, size_t end, const BinMapping<BINS>& mapping) {
 	bin(prims+begin,end-begin,mapping);
       }
     
 #if 0  
       /*! bins a list of bezier curves */
-      __forceinline void bin(BezierRefList& prims, const BinMapping<maxBins>& mapping)
+      __forceinline void bin(BezierRefList& prims, const BinMapping<BINS>& mapping)
       {
 	BezierRefList::iterator i=prims;
 	while (BezierRefList::item* block = i.next())
@@ -208,7 +208,7 @@ namespace embree
       }
       
       /*! bins a list of primitives */
-      __forceinline void bin(PrimRefList& prims, const BinMapping<maxBins>& mapping)
+      __forceinline void bin(PrimRefList& prims, const BinMapping<BINS>& mapping)
       {
 	PrimRefList::iterator i=prims;
 	while (PrimRefList::item* block = i.next())
@@ -229,11 +229,11 @@ namespace embree
       }
       
       /*! finds the best split by scanning binning information */
-      __forceinline Split best(const BinMapping<maxBins>& mapping, const size_t blocks_shift)
+      __forceinline Split best(const BinMapping<BINS>& mapping, const size_t blocks_shift)
       {
 	/* sweep from right to left and compute parallel prefix of merged bounds */
-	ssef rAreas[maxBins];
-	ssei rCounts[maxBins];
+	ssef rAreas[BINS];
+	ssei rCounts[BINS];
 	ssei count = 0; BBox3fa bx = empty; BBox3fa by = empty; BBox3fa bz = empty;
 	for (size_t i=mapping.size()-1; i>0; i--)
           {
@@ -286,7 +286,7 @@ namespace embree
       }
       
       /*! calculates extended split information */
-      __forceinline void getSplitInfo(const BinMapping<maxBins>& mapping, const Split& split, SplitInfo& info) const
+      __forceinline void getSplitInfo(const BinMapping<BINS>& mapping, const Split& split, SplitInfo& info) const
       {
 	if (split.dim == -1) {
 	  new (&info) SplitInfo(0,empty,0,empty);
@@ -309,26 +309,24 @@ namespace embree
       }
       
     private:
-      BBox3fa bounds[maxBins][4]; //!< geometry bounds for each bin in each dimension
-      ssei    counts[maxBins];    //!< counts number of primitives that map into the bins
+      BBox3fa bounds[BINS][4]; //!< geometry bounds for each bin in each dimension
+      ssei    counts[BINS];    //!< counts number of primitives that map into the bins
     };
     
     
     /*! Performs standard object binning */
-    struct ObjectPartitionNew
+    template<typename PrimRef, size_t BINS = 32>
+      struct ObjectPartitionNew
     {
-      /*! number of bins */
-      static const size_t maxBins = 32;
-      
-      typedef BinSplit<maxBins> Split;
-      typedef BinInfo<maxBins,PrimRef> Binner;
+      typedef BinSplit<BINS> Split;
+      typedef BinInfo<BINS,PrimRef> Binner;
       
       
       /*! finds the best split */
       static const Split find(PrimRef *__restrict__ const prims, const size_t begin, const size_t end, const PrimInfo& pinfo, const size_t logBlockSize)
       {
         Binner binner(empty);
-        const BinMapping<maxBins> mapping(pinfo);
+        const BinMapping<BINS> mapping(pinfo);
         binner.bin(prims,begin,end,mapping);
         return binner.best(mapping,logBlockSize);
       }
@@ -337,7 +335,7 @@ namespace embree
       static const Split parallel_find(PrimRef *__restrict__ const prims, const size_t begin, const size_t end, const PrimInfo& pinfo, const size_t logBlockSize)
       {
         Binner binner(empty);
-        const BinMapping<maxBins> mapping(pinfo);
+        const BinMapping<BINS> mapping(pinfo);
         binner = parallel_reduce(begin,end,size_t(4096),binner,
                                  [&](const range<size_t>& r) { Binner binner(empty); binner.bin(prims+r.begin(),r.size(),mapping); return binner; },
                                  [&] (const Binner& b0, const Binner& b1) { Binner r = b0; r.merge(b1,mapping.size()); return r; });

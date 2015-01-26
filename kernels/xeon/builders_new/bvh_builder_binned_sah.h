@@ -63,7 +63,7 @@ namespace embree
       NodeRef* parent;        //!< reference pointing to us
     };
     
-    template<typename NodeRef, typename Allocator, typename CreateAllocFunc, typename CreateNodeFunc, typename CreateLeafFunc>
+    template<typename Heuristic, typename NodeRef, typename Allocator, typename CreateAllocFunc, typename CreateNodeFunc, typename CreateLeafFunc>
       class BVHBuilderSAH
     {
       static const size_t MAX_BRANCHING_FACTOR = 16;  //!< maximal supported BVH branching factor
@@ -103,26 +103,26 @@ namespace embree
       {
         /* calculate binning function */
         PrimInfo pinfo(current.size(),current.geomBounds,current.centBounds);
-        ObjectPartitionNew::Split split = ObjectPartitionNew::find(prims,current.begin,current.end,pinfo,logBlockSize);
+        typename Heuristic::Split split = Heuristic::find(prims,current.begin,current.end,pinfo,logBlockSize);
 
         /* if we cannot find a valid split, enforce an arbitrary split */
         if (unlikely(!split.valid())) splitFallback(current,leftChild,rightChild);
         
         /* partitioning of items */
-        else ObjectPartitionNew::split(split, prims, current.begin, current.end, leftChild, rightChild);
+        else Heuristic::split(split, prims, current.begin, current.end, leftChild, rightChild);
       }
 
       void splitParallel(const BuildRecord<NodeRef>& current, BuildRecord<NodeRef>& leftChild, BuildRecord<NodeRef>& rightChild, Allocator& alloc)
       {
         /* calculate binning function */
         PrimInfo pinfo(current.size(),current.geomBounds,current.centBounds);
-        ObjectPartitionNew::Split split = ObjectPartitionNew::parallel_find(prims,current.begin,current.end,pinfo,logBlockSize);
+        typename Heuristic::Split split = Heuristic::parallel_find(prims,current.begin,current.end,pinfo,logBlockSize);
         
         /* if we cannot find a valid split, enforce an arbitrary split */
         if (unlikely(!split.valid())) splitFallback(current,leftChild,rightChild);
         
         /* partitioning of items */
-        else ObjectPartitionNew::parallel_split(split, prims, current.begin, current.end, leftChild, rightChild);
+        else Heuristic::parallel_split(split, prims, current.begin, current.end, leftChild, rightChild);
       }
 
       void createLargeLeaf(const BuildRecord<NodeRef>& current, Allocator& nodeAlloc, Allocator& leafAlloc)
@@ -288,7 +288,8 @@ namespace embree
     {
       const size_t logBlockSize = __bsr(blockSize);
       assert((blockSize ^ (1L << logBlockSize)) == 0);
-      BVHBuilderSAH<NodeRef,decltype(createAlloc()),CreateAllocFunc,CreateNodeFunc,CreateLeafFunc> builder
+      typedef ObjectPartitionNew<PrimRef> Heuristic;
+      BVHBuilderSAH<Heuristic,NodeRef,decltype(createAlloc()),CreateAllocFunc,CreateNodeFunc,CreateLeafFunc> builder
         (createAlloc,createNode,createLeaf,prims,pinfo,branchingFactor,maxDepth,logBlockSize,minLeafSize,maxLeafSize);
       return builder();
     }
@@ -298,10 +299,11 @@ namespace embree
                                      PrimRef* prims, const PrimInfo& pinfo, 
                                      const size_t branchingFactor, const size_t maxDepth, const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize)
     {
+      typedef ObjectPartitionNew<PrimRef> Heuristic;
       const size_t logBlockSize = __bsr(blockSize);
       assert((blockSize ^ (1L << logBlockSize)) == 0);
       return execute_closure([&]() -> NodeRef {
-          BVHBuilderSAH<NodeRef,decltype(createAlloc()),CreateAllocFunc,CreateNodeFunc,CreateLeafFunc> builder
+          BVHBuilderSAH<Heuristic,NodeRef,decltype(createAlloc()),CreateAllocFunc,CreateNodeFunc,CreateLeafFunc> builder
             (createAlloc,createNode,createLeaf,prims,pinfo,branchingFactor,maxDepth,logBlockSize,minLeafSize,maxLeafSize);
           return builder();
         });
