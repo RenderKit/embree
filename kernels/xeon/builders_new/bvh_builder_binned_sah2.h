@@ -59,6 +59,9 @@ namespace embree
         __forceinline BuildRecord (const PrimInfo& pinfo, size_t depth, NodeRef* parent) 
 	  : BuildRecord2<NodeRef>(pinfo,depth,parent) {}
 
+	__forceinline BuildRecord(const BuildRecord2<NodeRef>& other)
+	  : BuildRecord2<NodeRef>(other) {}
+
 	__forceinline friend bool operator< (const BuildRecord& a, const BuildRecord& b) { return a.pinfo.size() < b.pinfo.size(); }
 	__forceinline friend bool operator> (const BuildRecord& a, const BuildRecord& b) { return a.pinfo.size() > b.pinfo.size(); }
 
@@ -237,14 +240,10 @@ namespace embree
       }
       
       /*! builder entry function */
-      __forceinline NodeRef operator() ()
+      __forceinline void operator() (BuildRecord2<NodeRef>& record)
       {
-        /* create initial build record */
-        NodeRef root;
-        BuildRecord br(pinfo,1,&root);
-	br.prims = range<size_t>(0,pinfo.size());
-        br.split = find<true>(br);
-        
+	BuildRecord br(record);
+        br.split = find<true>(br); 
 #if 0
         sequential_create_tree(br, createAlloc, 
                                [&](const BuildRecord& br, Allocator& alloc, ParallelContinue<BuildRecord >& cont) { recurse<false>(br,alloc,cont); });
@@ -253,8 +252,6 @@ namespace embree
                                         [&](const BuildRecord& br, Allocator& alloc, ParallelContinue<BuildRecord >& cont) { recurse<true>(br,alloc,cont); } ,
                                         [&](const BuildRecord& br, Allocator& alloc, ParallelContinue<BuildRecord >& cont) { recurse<false>(br,alloc,cont); });
 #endif
-        
-        return root;
       }
       
     private:
@@ -286,7 +283,12 @@ namespace embree
       HeuristicArrayBinningSAH<PrimRef> heuristic(prims);
       BVHBuilderSAH2<NodeRef,decltype(heuristic),decltype(createAlloc()),CreateAllocFunc,CreateNodeFunc,CreateLeafFunc> builder
         (heuristic,createAlloc,createNode,createLeaf,prims,pinfo,branchingFactor,maxDepth,logBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
-      return builder();
+
+      NodeRef root;
+      BuildRecord2<NodeRef> br(pinfo,1,&root);
+      br.prims = range<size_t>(0,pinfo.size());
+      builder(br);
+      return root;
     }
 
     template<typename NodeRef, typename CreateAllocFunc, typename CreateNodeFunc, typename CreateLeafFunc>
@@ -298,11 +300,17 @@ namespace embree
       const size_t logBlockSize = __bsr(blockSize);
       HeuristicArrayBinningSAH<PrimRef> heuristic(prims);
       assert((blockSize ^ (1L << logBlockSize)) == 0);
-      return execute_closure([&]() -> NodeRef {
+      return execute_closure([&]() -> NodeRef 
+      {
           BVHBuilderSAH2<NodeRef,decltype(heuristic),decltype(createAlloc()),CreateAllocFunc,CreateNodeFunc,CreateLeafFunc> builder
             (heuristic,createAlloc,createNode,createLeaf,prims,pinfo,branchingFactor,maxDepth,logBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
-          return builder();
-        });
+
+	  NodeRef root;
+	  BuildRecord2<NodeRef> br(pinfo,1,&root);
+	  br.prims = range<size_t>(0,pinfo.size());
+          builder();
+	  return root;
+      });
     }
   }
 }
