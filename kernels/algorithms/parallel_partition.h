@@ -913,8 +913,9 @@ namespace embree
     
         if (N <= 4 * numThreads)
           {
+	    DBG_PRINT("SERIAL FALLBACK");
+
 	    DBG_PART(
-		     DBG_PRINT("SERIAL FALLBACK");
 		     DBG_PRINT(numThreads);
 		     );
 
@@ -930,11 +931,14 @@ namespace embree
                  DBG_PRINT("PARALLEL MODE");
                  );
 
+#if 0
 	double t0 = getSeconds();
+#endif
         scheduler->dispatchTask(task_thread_partition,this,0,numThreads);
+#if 0
 	t0 = getSeconds() - t0;
 	std::cout << " phase0 = " << 1000.0f*t0 << "ms, perf = " << 1E-6*double(N)/t0 << " Mprim/s" << std::endl;
-
+#endif
         /* ------------------------------------ */
         /* ------ parallel cleanup phase ------ */
         /* ------------------------------------ */
@@ -951,12 +955,14 @@ namespace embree
 
 	global_mid = mid;
 
+#if 0
 	double t1 = getSeconds();
+#endif
         scheduler->dispatchTask(task_thread_move_misplaced,this,0,numThreads);
-
+#if 0
 	t1 = getSeconds() - t1;
 	std::cout << " phase1 = " << 1000.0f*t1 << "ms, perf = " << 1E-6*double(N)/t1 << " Mprim/s" << std::endl;
-
+#endif
         DBG_CHECK(
 		  checkLeft(array,0,global_mid);
 		  checkRight(array,global_mid,N);
@@ -996,9 +1002,15 @@ namespace embree
 		rightLocalIndex = 0;
 		r_range++;		
 	      }
+
 	    
 	    const size_t leftGlobalIndex  = l_range->start + leftLocalIndex;
 	    const size_t rightGlobalIndex = r_range->start + rightLocalIndex;
+
+#if defined(__MIC__)
+	    prefetch<PFHINT_L1EX>(((char*)&array[leftGlobalIndex]) + 64);	  
+	    prefetch<PFHINT_L1EX>(((char*)&array[rightGlobalIndex])+ 64);	  
+#endif
 
 	    assert( !cmp(array[leftGlobalIndex]) );
 	    assert(  cmp(array[rightGlobalIndex]) );

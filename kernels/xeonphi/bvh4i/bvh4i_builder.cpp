@@ -1197,6 +1197,8 @@ namespace embree
       split_fallback(prims,current,leftChild,rightChild);
     else
       {
+	double msec = getSeconds();    
+
 	global_sharedData.left.reset();
 	global_sharedData.right.reset();
 
@@ -1238,8 +1240,6 @@ namespace embree
 	*/
 
 #else
-	Centroid_Scene_AABB init;
-	init.reset();
 
 	const unsigned int bestSplitDim     = global_sharedData.split.dim;
 	const unsigned int bestSplit        = global_sharedData.split.pos;
@@ -1265,6 +1265,35 @@ namespace embree
 	*/
 
 	//size_t mid_parallel = parallel_in_place_partitioning<16,PrimRef,Centroid_Scene_AABB>(&prims[current.begin],
+
+
+#if 1
+	CentroidGeometryAABB init;
+	init.reset();
+	CentroidGeometryAABB left;
+	CentroidGeometryAABB right;
+
+	size_t mid_parallel = parallel_in_place_partitioning_static<PrimRef,CentroidGeometryAABB>(&prims[current.begin],
+												  current.size(),
+												  init,
+												  left,
+												  right,
+												  [&] (const PrimRef &ref) { 
+												    const mic2f b = ref.getBounds();
+												    const mic_f b_min = b.x;
+												    const mic_f b_max = b.y;
+												    const mic_f b_centroid2 = b_min + b_max;
+												    return any(lt_split(b_min,b_max,dim_mask,c,s,bestSplit_f));
+												  },
+												 [] (CentroidGeometryAABB &cg,const PrimRef &ref) { cg.extend(ref); },
+												 [] (CentroidGeometryAABB &cg0,const CentroidGeometryAABB &cg1) { cg0.extend(cg1); }
+											     );
+	global_sharedData.left  = left;
+	global_sharedData.right = right;
+#else
+	Centroid_Scene_AABB init;
+	init.reset();
+
 	size_t mid_parallel = parallel_in_place_partitioning_static<PrimRef,Centroid_Scene_AABB>(&prims[current.begin],
 											     current.size(),
 											     init,
@@ -1277,9 +1306,10 @@ namespace embree
 											       const mic_f b_centroid2 = b_min + b_max;
 											       return any(lt_split(b_min,b_max,dim_mask,c,s,bestSplit_f));
 											     },
-											     [] (Centroid_Scene_AABB &cs,const PrimRef &ref) { cs.extend(ref); },
-											     [] (Centroid_Scene_AABB &cs0,const Centroid_Scene_AABB &cs1) { cs0.extend(cs1); }
+												 [] (Centroid_Scene_AABB &cs,const PrimRef &ref) { cs.extend(ref); },
+												 [] (Centroid_Scene_AABB &cs0,const Centroid_Scene_AABB &cs1) { cs0.extend(cs1); }
 											     );
+#endif
 	const unsigned int mid = current.begin + mid_parallel;
 
 	/*
@@ -1291,6 +1321,10 @@ namespace embree
 
 	assert(mid_parallel == global_sharedData.split.numLeft);
 #endif
+
+	msec = getSeconds()-msec;    
+	//std::cout << "partition time " << 1000. * msec << std::endl;
+	
 	if (unlikely(current.begin == mid || mid == current.end)) 
 	  {
 	    std::cout << "WARNING: mid == current.begin || mid == current.end " << std::endl;

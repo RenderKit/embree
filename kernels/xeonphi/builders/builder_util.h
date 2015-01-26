@@ -22,6 +22,59 @@
 namespace embree
 {
 
+  class CentroidGeometryAABB
+  {
+  public:
+    mic_f centroid2_lower;
+    mic_f centroid2_upper;
+    mic_f geometry_lower;
+    mic_f geometry_upper;
+
+    __forceinline void reset() {
+      const mic_f p_inf( pos_inf );
+      const mic_f n_inf( neg_inf );
+      centroid2_lower = p_inf;
+      centroid2_upper = n_inf;
+      geometry_lower  = p_inf;
+      geometry_upper  = n_inf;
+    }
+
+
+    __forceinline void extend(const PrimRef& b) {
+      const mic2f b2 = b.getBounds();
+      const mic_f b_min = b2.x;
+      const mic_f b_max = b2.y;
+      const mic_f b_centroid2 = b_min + b_max;
+      centroid2_lower = min(centroid2_lower,b_centroid2);
+      centroid2_upper = max(centroid2_upper,b_centroid2);
+      geometry_lower  = min(geometry_lower,b_min);
+      geometry_upper  = max(geometry_upper,b_max);
+    }
+
+    __forceinline void extend(const CentroidGeometryAABB& c) {
+      centroid2_lower = min(centroid2_lower,c.centroid2_lower);
+      centroid2_upper = max(centroid2_upper,c.centroid2_upper);
+      geometry_lower  = min(geometry_lower,c.geometry_lower);
+      geometry_upper  = max(geometry_upper,c.geometry_upper);
+    };
+
+    __forceinline CentroidGeometryAABB& operator=(const CentroidGeometryAABB &c) 
+      { 
+	centroid2_lower = c.centroid2_lower;
+	centroid2_upper = c.centroid2_upper;
+	geometry_lower  = c.geometry_lower;
+	geometry_upper  = c.geometry_upper;      
+	return *this;
+      }
+
+    __forceinline friend std::ostream &operator<<(std::ostream &o, const CentroidGeometryAABB &cs)
+    {
+      o << "centroid2 = " << cs.centroid2_lower << " " << cs.centroid2_upper;
+      o << "geometry = " << cs.geometry_lower << " " << cs.geometry_upper;
+      return o;
+    };
+
+  };
 
   /* --------------------------------------------------------------- */
   /* --------------------- Centroid_Scene_AABB --------------------- */
@@ -61,6 +114,7 @@ namespace embree
       centroid2.extend(v.centroid2);
       geometry.extend(v.geometry);
     }
+
 
     __forceinline void extend_atomic(const Centroid_Scene_AABB& v)
     {
@@ -106,6 +160,15 @@ namespace embree
       return o;
     };
 
+    __forceinline Centroid_Scene_AABB& operator=(const CentroidGeometryAABB &c) 
+      { 
+	store4f(&centroid2.lower,c.centroid2_lower);
+	store4f(&centroid2.upper,c.centroid2_upper);
+	store4f(&geometry.lower,c.geometry_lower);
+	store4f(&geometry.upper,c.geometry_upper);      
+	return *this;
+      }
+ 
   };
 
   /* --------------------------------------------------------------- */
