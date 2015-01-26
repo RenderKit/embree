@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "builders_new/heuristic_object_partition_new.h"
+#include "builders_new/heuristic_binning.h"
 #include "algorithms/parallel_create_tree.h"
 
 namespace embree
