@@ -16,10 +16,9 @@
 
 #include "bvh4.h"
 #include "bvh4_statistics.h"
-#include "builders_new/bvh_builder.h"
 
-#include "algorithms/parallel_for_for.h"
-#include "algorithms/parallel_for_for_prefix_sum.h"
+#include "builders_new/primrefgen.h"
+#include "builders_new/bvh_builder.h"
 
 #include "geometry/triangle4.h"
 
@@ -75,50 +74,7 @@ namespace embree
 
       BVH4* bvh;
     };
-    
-    template<typename Ty, size_t timeSteps>
-    PrimInfo CreatePrimRefArray(Scene* scene, vector_t<PrimRef>& prims)
-    {
-      ParallelForForPrefixSumState<PrimInfo> pstate;
-      Scene::Iterator<Ty,timeSteps> iter(scene);
-
-      /* first try */
-      pstate.init(iter,size_t(1024));
-      PrimInfo pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](Ty* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
-      {
-        PrimInfo pinfo(empty);
-        for (ssize_t j=r.begin(); j<r.end(); j++)
-        {
-          BBox3fa bounds = empty;
-          if (!mesh->valid(j,&bounds)) continue;
-          const PrimRef prim(bounds,mesh->id,j);
-          pinfo.add(prim.bounds(),prim.center2());
-          prims[k++] = prim;
-        }
-        return pinfo;
-      }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a,b); });
-
-      /* if we need to filter out geometry, run again */
-      if (pinfo.size() != prims.size())
-      {
-        pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](Ty* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
-        {
-          k = base.begin;
-          PrimInfo pinfo(empty);
-          for (ssize_t j=r.begin(); j<r.end(); j++)
-          {
-            BBox3fa bounds = empty;
-            if (!mesh->valid(j,&bounds)) continue;
-            const PrimRef prim(bounds,mesh->id,j);
-            pinfo.add(prim.bounds(),prim.center2());
-            prims[k++] = prim;
-          }
-          return pinfo;
-        }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a,b); });
-      }
-      return pinfo;
-    }
-    
+   
     struct BVH4Triangle4BuilderFastClass : public Builder
     {
       BVH4* bvh;
@@ -164,7 +120,7 @@ namespace embree
           prims.resize(numPrimitives);
           
           /* build BVH */
-          PrimInfo pinfo = CreatePrimRefArray<TriangleMesh,1>(scene,prims);
+          PrimInfo pinfo = createPrimRefArray<TriangleMesh,1>(scene,prims);
           BVH4::NodeRef root = bvh_builder_binned_sah_internal<BVH4::NodeRef>(CreateAlloc(bvh),CreateBVH4Node(bvh),CreateLeaf<Triangle4>(bvh),
                                                                               prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,4,4,4*BVH4::maxLeafBlocks);
           bvh->set(root,pinfo.geomBounds,pinfo.size());

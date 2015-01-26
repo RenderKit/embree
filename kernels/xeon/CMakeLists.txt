@@ -73,6 +73,8 @@ ADD_ISPC_LIBRARY(embree ${EMBREE_LIB_TYPE}
   ../algorithms/pmap.cpp
   ../algorithms/prefix.cpp
 
+  builders_new/primrefgen.cpp
+
   builders/bezierrefgen.cpp
   builders/primrefgen.cpp
   builders/heuristic_object_partition_unaligned.cpp
@@ -104,6 +106,7 @@ ADD_ISPC_LIBRARY(embree ${EMBREE_LIB_TYPE}
   bvh4/bvh4_builder.cpp
   bvh4/bvh4_builder_binned_sah.cpp
   bvh4/bvh4_builder_binned_sah2.cpp
+
   bvh4/bvh4_builder_mb.cpp
   bvh4/bvh4_builder_hair.cpp
   bvh4/bvh4_builder_hair_mb.cpp
@@ -147,6 +150,9 @@ ENDIF ()
 
 IF (TARGET_AVX)
   ADD_LIBRARY(embree_avx STATIC
+
+    builders_new/primrefgen.cpp
+
     builders/bezierrefgen.cpp
     builders/primrefgen.cpp
     builders/heuristic_object_partition_unaligned.cpp
