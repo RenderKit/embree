@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "builders/heuristic_object_partition_new.h"
+#include "builders_new/heuristic_binning.h"
 #include "algorithms/parallel_create_tree.h"
 
 namespace embree
@@ -24,7 +24,7 @@ namespace embree
   namespace isa
   {
     /*! the build record stores all information to continue the build of some subtree */
-    template<typename NodeRef>
+    template<typename NodeRef, typename Set = range<size_t> >
       struct BuildRecord2 
       {
       public:
@@ -35,39 +35,56 @@ namespace embree
         __forceinline BuildRecord2 (const PrimInfo& pinfo, size_t depth, NodeRef* parent) 
           : pinfo(pinfo), depth(depth), parent(parent) {}
 
-	__forceinline friend bool operator< (const BuildRecord2& a, const BuildRecord2& b) { return a.pinfo.size() < b.pinfo.size(); }
-	__forceinline friend bool operator> (const BuildRecord2& a, const BuildRecord2& b) { return a.pinfo.size() > b.pinfo.size(); }
-
-        __forceinline size_t size() const { return pinfo.size(); }
-        
-        struct Greater {
-          __forceinline bool operator()(const BuildRecord2& a, const BuildRecord2& b) {
-            return a.size() > b.size();
-          }
-        };
-
       public:
 	NodeRef*   parent;      //!< Pointer to the parent node's reference to us
 	size_t     depth;    //!< Depth of the root of this subtree.
-	//PrimRefList prims;    //!< The list of primitives.
+	Set prims;            //!< The list of primitives.
 	PrimInfo   pinfo;    //!< Bounding info of primitives.
-	ObjectPartitionNew::Split      split;    //!< The best split for the primitives.
       };
 
-    template<typename NodeRef, typename Allocator, typename CreateAllocFunc, typename CreateNodeFunc, typename CreateLeafFunc>
+    template<typename NodeRef, typename Heuristic, typename Allocator, typename CreateAllocFunc, typename CreateNodeFunc, typename CreateLeafFunc>
       class BVHBuilderSAH2
     {
       static const size_t MAX_BRANCHING_FACTOR = 16;  //!< maximal supported BVH branching factor
       static const size_t MIN_LARGE_LEAF_LEVELS = 8;  //!< create balanced tree of we are that many levels before the maximal tree depth
 
+      struct BuildRecord : public BuildRecord2<NodeRef>
+      {
+      public:
+	__forceinline BuildRecord () {}
+        
+	__forceinline BuildRecord (size_t depth) 
+	  : BuildRecord2<NodeRef>(depth) {}
+        
+        __forceinline BuildRecord (const PrimInfo& pinfo, size_t depth, NodeRef* parent) 
+	  : BuildRecord2<NodeRef>(pinfo,depth,parent) {}
+
+	__forceinline BuildRecord(const BuildRecord2<NodeRef>& other)
+	  : BuildRecord2<NodeRef>(other) {}
+
+	__forceinline friend bool operator< (const BuildRecord& a, const BuildRecord& b) { return a.pinfo.size() < b.pinfo.size(); }
+	__forceinline friend bool operator> (const BuildRecord& a, const BuildRecord& b) { return a.pinfo.size() > b.pinfo.size(); }
+
+        __forceinline size_t size() const { return this->pinfo.size(); }
+        
+        struct Greater {
+          __forceinline bool operator()(const BuildRecord& a, const BuildRecord& b) {
+            return a.size() > b.size();
+          }
+        };
+
+      public:
+	typename Heuristic::Split split;    //!< The best split for the primitives.
+      };
+
     public:
 
-      BVHBuilderSAH2 (CreateAllocFunc& createAlloc, CreateNodeFunc& createNode, CreateLeafFunc& createLeaf,
+      BVHBuilderSAH2 (Heuristic& heuristic, CreateAllocFunc& createAlloc, CreateNodeFunc& createNode, CreateLeafFunc& createLeaf,
                       PrimRef* prims, const PrimInfo& pinfo,
                       const size_t branchingFactor, const size_t maxDepth, 
                       const size_t logBlockSize, const size_t minLeafSize, const size_t maxLeafSize,
                       const float travCost, const float intCost)
-        : createAlloc(createAlloc), createNode(createNode), createLeaf(createLeaf), 
+        : heuristic(heuristic), createAlloc(createAlloc), createNode(createNode), createLeaf(createLeaf), 
         prims(prims), pinfo(pinfo), 
         branchingFactor(branchingFactor), maxDepth(maxDepth),
         logBlockSize(logBlockSize), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize),
@@ -77,7 +94,7 @@ namespace embree
           THROW_RUNTIME_ERROR("bvh_builder: branching factor too large");
       }
 
-      void createLargeLeaf(const BuildRecord2<NodeRef>& current, Allocator& alloc)
+      void createLargeLeaf(const BuildRecord& current, Allocator& alloc)
       {
         if (current.depth > maxDepth) 
           THROW_RUNTIME_ERROR("depth limit reached");
@@ -89,9 +106,11 @@ namespace embree
         }
 
         /* fill all children by always splitting the largest one */
-        BuildRecord2<NodeRef> children[MAX_BRANCHING_FACTOR];
+	BuildRecord2<NodeRef>* pchildren[MAX_BRANCHING_FACTOR];
+        BuildRecord children[MAX_BRANCHING_FACTOR];
         size_t numChildren = 1;
         children[0] = current;
+	pchildren[0] = &children[0];
         
         do {
           
@@ -113,58 +132,46 @@ namespace embree
           if (bestChild == -1) break;
           
           /*! split best child into left and right child */
-          BuildRecord2<NodeRef> left(current.depth+1);
-          BuildRecord2<NodeRef> right(current.depth+1);
-          splitFallback(children[bestChild],left,right);
+          BuildRecord left(current.depth+1);
+          BuildRecord right(current.depth+1);
+          heuristic.splitFallback(children[bestChild].prims,left.pinfo,left.prims,right.pinfo,right.prims);
           
           /* add new children left and right */
           children[bestChild] = children[numChildren-1];
           children[numChildren-1] = left;
           children[numChildren+0] = right;
+	  pchildren[numChildren] = &children[numChildren];
           numChildren++;
           
         } while (numChildren < branchingFactor);
 
         /* create node */
-        createNode(current,children,numChildren,alloc);
+        createNode(current,pchildren,numChildren,alloc);
 
         /* recurse into each child */
         for (size_t i=0; i<numChildren; i++) 
           createLargeLeaf(children[i],alloc);
       }
 
-      void splitFallback(const BuildRecord2<NodeRef>& current, BuildRecord2<NodeRef>& leftChild, BuildRecord2<NodeRef>& rightChild)
+      template<bool toplevel>
+        __forceinline const typename Heuristic::Split find(BuildRecord& current) {
+        if (toplevel) return heuristic.parallel_find(current.prims,current.pinfo,logBlockSize);
+        else          return heuristic.find         (current.prims,current.pinfo,logBlockSize);
+      }
+
+      template<bool toplevel>
+      __forceinline void partition(const BuildRecord& brecord, BuildRecord& lrecord, BuildRecord& rrecord) 
       {
-        const size_t center = (current.pinfo.begin + current.pinfo.end)/2;
-        
-        CentGeomBBox3fa left; left.reset();
-        for (size_t i=current.pinfo.begin; i<center; i++)
-          left.extend(prims[i].bounds());
-        new (&leftChild.pinfo) PrimInfo(current.pinfo.begin,center,left.geomBounds,left.centBounds);
-        
-        CentGeomBBox3fa right; right.reset();
-        for (size_t i=center; i<current.pinfo.end; i++)
-          right.extend(prims[i].bounds());	
-        new (&rightChild.pinfo) PrimInfo(center,current.pinfo.end,right.geomBounds,right.centBounds);
-      }
-
-      template<bool toplevel>
-        __forceinline const ObjectPartitionNew::Split find(BuildRecord2<NodeRef>& current) {
-        if (toplevel) return ObjectPartitionNew::find_parallel(prims,current.pinfo.begin,current.pinfo.end,current.pinfo,logBlockSize);
-        else          return ObjectPartitionNew::find(prims,current.pinfo.begin,current.pinfo.end,current.pinfo,logBlockSize);
-      }
-
-      template<bool toplevel>
-      __forceinline void partition(const BuildRecord2<NodeRef>& brecord, BuildRecord2<NodeRef>& lrecord, BuildRecord2<NodeRef>& rrecord) {
-        if (brecord.split.sah == float(inf)) splitFallback(brecord,lrecord,rrecord);
+        if (brecord.split.sah == float(inf)) 
+	  heuristic.splitFallback(brecord.prims,lrecord.pinfo,lrecord.prims,rrecord.pinfo,rrecord.prims);
         else {
-          if (toplevel) brecord.split.partition_parallel(prims,brecord.pinfo.begin,brecord.pinfo.end,lrecord.pinfo,rrecord.pinfo);
-          else          brecord.split.partition(prims,brecord.pinfo.begin,brecord.pinfo.end,lrecord.pinfo,rrecord.pinfo);
+          if (toplevel) heuristic.parallel_split(brecord.split,brecord.prims,lrecord.pinfo,lrecord.prims,rrecord.pinfo,rrecord.prims);
+          else          heuristic.split         (brecord.split,brecord.prims,lrecord.pinfo,lrecord.prims,rrecord.pinfo,rrecord.prims);
         }
       }
 
       template<bool toplevel, typename Spawn>
-        inline void recurse(const BuildRecord2<NodeRef>& record, Allocator& alloc, Spawn& spawn)
+        inline void recurse(const BuildRecord& record, Allocator& alloc, Spawn& spawn)
       {
         /*! compute leaf and split cost */
         const float leafSAH  = intCost*record.pinfo.leafSAH(logBlockSize);
@@ -180,8 +187,10 @@ namespace embree
         }
         
         /*! initialize child list */
-        BuildRecord2<NodeRef> children[MAX_BRANCHING_FACTOR];
+	BuildRecord2<NodeRef>* pchildren[MAX_BRANCHING_FACTOR];
+        BuildRecord children[MAX_BRANCHING_FACTOR];
         children[0] = record;
+	pchildren[0] = &children[0];
         size_t numChildren = 1;
         
         /*! split until node is full or SAH tells us to stop */
@@ -202,9 +211,9 @@ namespace embree
           //PRINT(bestChild);
           
           /* perform best found split */
-          BuildRecord2<NodeRef>& brecord = children[bestChild];
-          BuildRecord2<NodeRef> lrecord(record.depth+1);
-          BuildRecord2<NodeRef> rrecord(record.depth+1);
+          BuildRecord& brecord = children[bestChild];
+          BuildRecord lrecord(record.depth+1);
+          BuildRecord rrecord(record.depth+1);
           partition<toplevel>(brecord,lrecord,rrecord);
           
           /* find new splits */
@@ -214,6 +223,7 @@ namespace embree
           //PRINT2(rrecord.split,rrecord.pinfo);
           children[bestChild  ] = lrecord;
           children[numChildren] = rrecord;
+	  pchildren[numChildren] = &children[numChildren];
           numChildren++;
           
         } while (numChildren < branchingFactor);
@@ -222,7 +232,7 @@ namespace embree
         //for (size_t i=0; i<numChildren; i++) PRINT2(i,children[i].pinfo);
         
         /*! create an inner node */
-        createNode(record,children,numChildren,alloc);
+        createNode(record,pchildren,numChildren,alloc);
         
         /* recurse into each child */
         for (size_t i=0; i<numChildren; i++) 
@@ -230,26 +240,22 @@ namespace embree
       }
       
       /*! builder entry function */
-      __forceinline NodeRef operator() ()
+      __forceinline void operator() (BuildRecord2<NodeRef>& record)
       {
-        /* create initial build record */
-        NodeRef root;
-        BuildRecord2<NodeRef> br(pinfo,1,&root);
-        br.split = find<true>(br);
-        
+	BuildRecord br(record);
+        br.split = find<true>(br); 
 #if 0
         sequential_create_tree(br, createAlloc, 
-                               [&](const BuildRecord2<NodeRef>& br, Allocator& alloc, ParallelContinue<BuildRecord2<NodeRef> >& cont) { recurse<false>(br,alloc,cont); });
+                               [&](const BuildRecord& br, Allocator& alloc, ParallelContinue<BuildRecord >& cont) { recurse<false>(br,alloc,cont); });
 #else   
         parallel_create_tree<50000,128>(br, createAlloc, 
-                                        [&](const BuildRecord2<NodeRef>& br, Allocator& alloc, ParallelContinue<BuildRecord2<NodeRef> >& cont) { recurse<true>(br,alloc,cont); } ,
-                                        [&](const BuildRecord2<NodeRef>& br, Allocator& alloc, ParallelContinue<BuildRecord2<NodeRef> >& cont) { recurse<false>(br,alloc,cont); });
+                                        [&](const BuildRecord& br, Allocator& alloc, ParallelContinue<BuildRecord >& cont) { recurse<true>(br,alloc,cont); } ,
+                                        [&](const BuildRecord& br, Allocator& alloc, ParallelContinue<BuildRecord >& cont) { recurse<false>(br,alloc,cont); });
 #endif
-        
-        return root;
       }
       
     private:
+      Heuristic& heuristic;
       CreateAllocFunc& createAlloc;
       CreateNodeFunc& createNode;
       CreateLeafFunc& createLeaf;
@@ -274,9 +280,15 @@ namespace embree
     {
       const size_t logBlockSize = __bsr(blockSize);
       assert((blockSize ^ (1L << logBlockSize)) == 0);
-      BVHBuilderSAH2<NodeRef,decltype(createAlloc()),CreateAllocFunc,CreateNodeFunc,CreateLeafFunc> builder
-        (createAlloc,createNode,createLeaf,prims,pinfo,branchingFactor,maxDepth,logBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
-      return builder();
+      HeuristicArrayBinningSAH<PrimRef> heuristic(prims);
+      BVHBuilderSAH2<NodeRef,decltype(heuristic),decltype(createAlloc()),CreateAllocFunc,CreateNodeFunc,CreateLeafFunc> builder
+        (heuristic,createAlloc,createNode,createLeaf,prims,pinfo,branchingFactor,maxDepth,logBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
+
+      NodeRef root;
+      BuildRecord2<NodeRef> br(pinfo,1,&root);
+      br.prims = range<size_t>(0,pinfo.size());
+      builder(br);
+      return root;
     }
 
     template<typename NodeRef, typename CreateAllocFunc, typename CreateNodeFunc, typename CreateLeafFunc>
@@ -286,12 +298,19 @@ namespace embree
                                       const float travCost, const float intCost)
     {
       const size_t logBlockSize = __bsr(blockSize);
+      HeuristicArrayBinningSAH<PrimRef> heuristic(prims);
       assert((blockSize ^ (1L << logBlockSize)) == 0);
-      return execute_closure([&]() -> NodeRef {
-          BVHBuilderSAH2<NodeRef,decltype(createAlloc()),CreateAllocFunc,CreateNodeFunc,CreateLeafFunc> builder
-            (createAlloc,createNode,createLeaf,prims,pinfo,branchingFactor,maxDepth,logBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
-          return builder();
-        });
+      return execute_closure([&]() -> NodeRef 
+      {
+          BVHBuilderSAH2<NodeRef,decltype(heuristic),decltype(createAlloc()),CreateAllocFunc,CreateNodeFunc,CreateLeafFunc> builder
+            (heuristic,createAlloc,createNode,createLeaf,prims,pinfo,branchingFactor,maxDepth,logBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
+
+	  NodeRef root;
+	  BuildRecord2<NodeRef> br(pinfo,1,&root);
+	  br.prims = range<size_t>(0,pinfo.size());
+          builder();
+	  return root;
+      });
     }
   }
 }

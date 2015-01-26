@@ -16,14 +16,13 @@
 
 #include "bvh4.h"
 #include "bvh4_statistics.h"
-#include "builders/bvh_builder_binned_sah2.h"
 
-#include "algorithms/parallel_for_for.h"
-#include "algorithms/parallel_for_for_prefix_sum.h"
+#include "builders_new/primrefgen.h"
+#include "builders_new/bvh_builder2.h"
 
 #include "geometry/triangle4.h"
 
-//#define PROFILE
+#define PROFILE
 
 namespace embree
 {
@@ -43,12 +42,12 @@ namespace embree
     {
       __forceinline CreateBVH4Node (BVH4* bvh) : bvh(bvh) {}
       
-      __forceinline void operator() (const isa::BuildRecord2<BVH4::NodeRef>& current, BuildRecord2<BVH4::NodeRef>* children, const size_t N, Allocator* alloc) 
+      __forceinline void operator() (const isa::BuildRecord2<BVH4::NodeRef>& current, BuildRecord2<BVH4::NodeRef>** children, const size_t N, Allocator* alloc) 
       {
         BVH4::Node* node = (BVH4::Node*) alloc->alloc0.malloc(sizeof(BVH4::Node)); node->clear();
         for (size_t i=0; i<N; i++) {
-          node->set(i,children[i].pinfo.geomBounds);
-          children[i].parent = &node->child(i);
+          node->set(i,children[i]->pinfo.geomBounds);
+          children[i]->parent = &node->child(i);
         }
         *current.parent = bvh->encodeNode(node);
       }
@@ -63,61 +62,18 @@ namespace embree
       
       __forceinline void operator() (const BuildRecord2<BVH4::NodeRef>& current, PrimRef* prims, Allocator* alloc) // FIXME: why are prims passed here but not for createNode
       {
-        size_t items = Primitive::blocks(current.pinfo.size());
-        size_t start = current.pinfo.begin;
+        size_t items = Primitive::blocks(current.prims.size());
+        size_t start = current.prims.begin();
         Primitive* accel = (Primitive*) alloc->alloc1.malloc(items*sizeof(Primitive));
         BVH4::NodeRef node = bvh->encodeLeaf((char*)accel,items);
         for (size_t i=0; i<items; i++) {
-          accel[i].fill(prims,start,current.pinfo.end,bvh->scene,false);
+          accel[i].fill(prims,start,current.prims.end(),bvh->scene,false);
         }
         *current.parent = node;
       }
 
       BVH4* bvh;
     };
-    
-    template<typename Ty, size_t timeSteps>
-    PrimInfo CreatePrimRefArray(Scene* scene, vector_t<PrimRef>& prims)
-    {
-      ParallelForForPrefixSumState<PrimInfo> pstate;
-      Scene::Iterator<Ty,timeSteps> iter(scene);
-
-      /* first try */
-      pstate.init(iter,size_t(1024));
-      PrimInfo pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](Ty* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
-      {
-        PrimInfo pinfo(empty);
-        for (ssize_t j=r.begin(); j<r.end(); j++)
-        {
-          BBox3fa bounds = empty;
-          if (!mesh->valid(j,&bounds)) continue;
-          const PrimRef prim(bounds,mesh->id,j);
-          pinfo.add(prim.bounds(),prim.center2());
-          prims[k++] = prim;
-        }
-        return pinfo;
-      }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a,b); });
-
-      /* if we need to filter out geometry, run again */
-      if (pinfo.size() != prims.size())
-      {
-        pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](Ty* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
-        {
-          k = base.begin;
-          PrimInfo pinfo(empty);
-          for (ssize_t j=r.begin(); j<r.end(); j++)
-          {
-            BBox3fa bounds = empty;
-            if (!mesh->valid(j,&bounds)) continue;
-            const PrimRef prim(bounds,mesh->id,j);
-            pinfo.add(prim.bounds(),prim.center2());
-            prims[k++] = prim;
-          }
-          return pinfo;
-        }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a,b); });
-      }
-      return pinfo;
-    }
     
     struct BVH4Triangle4BuilderBinnedSAH2Class : public Builder
     {
@@ -147,7 +103,7 @@ namespace embree
       
         /* verbose mode */
         if (g_verbose >= 1)
-          std::cout << "building BVH4<" << bvh->primTy.name << "> with " << TOSTRING(isa) "::BVH4BuilderFastNew ... " << std::flush;
+          std::cout << "building BVH4<" << bvh->primTy.name << "> with " << TOSTRING(isa) "::BVH4BuilderBinnedSAH2 ... " << std::flush;
 
 #if defined(PROFILE)
       
@@ -164,7 +120,7 @@ namespace embree
           prims.resize(numPrimitives);
           
           /* build BVH */
-          PrimInfo pinfo = CreatePrimRefArray<TriangleMesh,1>(scene,prims);
+          PrimInfo pinfo = createPrimRefArray<TriangleMesh,1>(scene,prims);
           BVH4::NodeRef root = bvh_builder_binned_sah2_internal<BVH4::NodeRef>(CreateAlloc(bvh),CreateBVH4Node(bvh),CreateLeaf<Triangle4>(bvh),
                                                                               prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,4,4,4*BVH4::maxLeafBlocks,BVH4::travCost,1.0f);
           bvh->set(root,pinfo.geomBounds,pinfo.size());

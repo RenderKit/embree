@@ -16,9 +16,7 @@
 
 #pragma once
 
-#include "builders/heuristic_object_partition_new.h"
-#include "builders/workstack.h"
-
+#include "builders_new/heuristic_binning.h"
 #include "algorithms/parallel_create_tree.h"
 
 namespace embree
@@ -58,12 +56,13 @@ namespace embree
       };
 
     public:
+      range<size_t> prims;
       unsigned depth;         //!< depth from the root of the tree
       float    area;          //!< surface area of bounding box
       NodeRef* parent;        //!< reference pointing to us
     };
     
-    template<typename NodeRef, typename Allocator, typename CreateAllocFunc, typename CreateNodeFunc, typename CreateLeafFunc>
+    template<typename NodeRef, typename Heuristic, typename Allocator, typename CreateAllocFunc, typename CreateNodeFunc, typename CreateLeafFunc>
       class BVHBuilderSAH
     {
       static const size_t MAX_BRANCHING_FACTOR = 16;  //!< maximal supported BVH branching factor
@@ -71,11 +70,11 @@ namespace embree
 
     public:
 
-      BVHBuilderSAH (CreateAllocFunc& createAlloc, CreateNodeFunc& createNode, CreateLeafFunc& createLeaf,
+      BVHBuilderSAH (Heuristic& heuristic,CreateAllocFunc& createAlloc, CreateNodeFunc& createNode, CreateLeafFunc& createLeaf,
                          PrimRef* prims, const PrimInfo& pinfo,
                          const size_t branchingFactor, const size_t maxDepth, 
                          const size_t logBlockSize, const size_t minLeafSize, const size_t maxLeafSize)
-        : createAlloc(createAlloc), createNode(createNode), createLeaf(createLeaf), 
+        : heuristic(heuristic), createAlloc(createAlloc), createNode(createNode), createLeaf(createLeaf), 
           prims(prims), pinfo(pinfo), 
           branchingFactor(branchingFactor), maxDepth(maxDepth),
           logBlockSize(logBlockSize), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize)
@@ -84,45 +83,30 @@ namespace embree
           THROW_RUNTIME_ERROR("bvh_builder: branching factor too large");
       }
 
-      void splitFallback(const BuildRecord<NodeRef>& current, BuildRecord<NodeRef>& leftChild, BuildRecord<NodeRef>& rightChild)
-      {
-        const size_t center = (current.begin + current.end)/2;
-        
-        CentGeomBBox3fa left; left.reset();
-        for (size_t i=current.begin; i<center; i++)
-          left.extend(prims[i].bounds());
-        new (&leftChild) PrimInfo(current.begin,center,left.geomBounds,left.centBounds);
-        
-        CentGeomBBox3fa right; right.reset();
-        for (size_t i=center; i<current.end; i++)
-          right.extend(prims[i].bounds());	
-        new (&rightChild) PrimInfo(center,current.end,right.geomBounds,right.centBounds);
-      }
-
       __forceinline void splitSequential(const BuildRecord<NodeRef>& current, BuildRecord<NodeRef>& leftChild, BuildRecord<NodeRef>& rightChild)
       {
         /* calculate binning function */
         PrimInfo pinfo(current.size(),current.geomBounds,current.centBounds);
-        ObjectPartitionNew::Split split = ObjectPartitionNew::find(prims,current.begin,current.end,pinfo,logBlockSize);
+        typename Heuristic::Split split = heuristic.find(current.prims,pinfo,logBlockSize);
 
         /* if we cannot find a valid split, enforce an arbitrary split */
-        if (unlikely(!split.valid())) splitFallback(current,leftChild,rightChild);
+        if (unlikely(!split.valid())) heuristic.splitFallback(current.prims,leftChild,leftChild.prims,rightChild,rightChild.prims);
         
         /* partitioning of items */
-        else split.partition(prims, current.begin, current.end, leftChild, rightChild);
+        else heuristic.split(split, current.prims, leftChild, leftChild.prims, rightChild, rightChild.prims);
       }
 
       void splitParallel(const BuildRecord<NodeRef>& current, BuildRecord<NodeRef>& leftChild, BuildRecord<NodeRef>& rightChild, Allocator& alloc)
       {
         /* calculate binning function */
         PrimInfo pinfo(current.size(),current.geomBounds,current.centBounds);
-        ObjectPartitionNew::Split split = ObjectPartitionNew::find_parallel(prims,current.begin,current.end,pinfo,logBlockSize);
+        typename Heuristic::Split split = heuristic.parallel_find(current.prims,pinfo,logBlockSize);
         
         /* if we cannot find a valid split, enforce an arbitrary split */
-        if (unlikely(!split.valid())) splitFallback(current,leftChild,rightChild);
+        if (unlikely(!split.valid())) heuristic.splitFallback(current.prims,leftChild,leftChild.prims,rightChild,rightChild.prims);
         
         /* partitioning of items */
-        else split.partition_parallel(prims, current.begin, current.end, leftChild, rightChild);
+        else heuristic.parallel_split(split, current.prims, leftChild, leftChild.prims, rightChild, rightChild.prims);
       }
 
       void createLargeLeaf(const BuildRecord<NodeRef>& current, Allocator& nodeAlloc, Allocator& leafAlloc)
@@ -137,10 +121,12 @@ namespace embree
         }
 
         /* fill all children by always splitting the largest one */
+	BuildRecord<NodeRef>* pchildren[MAX_BRANCHING_FACTOR];
         BuildRecord<NodeRef> children[MAX_BRANCHING_FACTOR];
         size_t numChildren = 1;
         children[0] = current;
-        
+        pchildren[0] = &children[0];
+
         do {
           
           /* find best child with largest bounding box area */
@@ -162,7 +148,7 @@ namespace embree
           
           /*! split best child into left and right child */
           __aligned(64) BuildRecord<NodeRef> left, right;
-          splitFallback(children[bestChild],left,right);
+          heuristic.splitFallback(children[bestChild].prims,left,left.prims,right,right.prims);
           
           /* add new children left and right */
           left.init(current.depth+1); 
@@ -170,12 +156,13 @@ namespace embree
           children[bestChild] = children[numChildren-1];
           children[numChildren-1] = left;
           children[numChildren+0] = right;
+	  pchildren[numChildren] = &children[numChildren];
           numChildren++;
           
         } while (numChildren < branchingFactor);
 
         /* create node */
-        createNode(current,children,numChildren,nodeAlloc);
+        createNode(current,pchildren,numChildren,nodeAlloc);
 
         /* recurse into each child */
         for (size_t i=0; i<numChildren; i++) 
@@ -185,6 +172,7 @@ namespace embree
       template<bool toplevel, typename Spawn>
         inline void recurse(const BuildRecord<NodeRef>& current, Allocator& alloc, Spawn& spawn)
       {
+	BuildRecord<NodeRef>* pchildren[MAX_BRANCHING_FACTOR];
         __aligned(64) BuildRecord<NodeRef> children[MAX_BRANCHING_FACTOR];
         
         /* create leaf node */
@@ -198,7 +186,8 @@ namespace embree
         /* fill all children by always splitting the one with the largest surface area */
         size_t numChildren = 1;
         children[0] = current;
-        
+        pchildren[0] = &children[0];
+
         do {
           
           /* find best child with largest bounding box area */
@@ -229,6 +218,7 @@ namespace embree
           children[bestChild] = children[numChildren-1];
           children[numChildren-1] = left;
           children[numChildren+0] = right;
+	  pchildren[numChildren] = &children[numChildren];
           numChildren++;
           
         } while (numChildren < branchingFactor);
@@ -240,7 +230,7 @@ namespace embree
         }
         
         /* create node */
-        createNode(current,children,numChildren,alloc);
+        createNode(current,pchildren,numChildren,alloc);
 
         /* recurse into each child */
         for (size_t i=0; i<numChildren; i++) 
@@ -248,12 +238,8 @@ namespace embree
       }
 
       /*! builder entry function */
-      __forceinline NodeRef operator() ()
-      {
-        /* create initial build record */
-        NodeRef root;
-        BuildRecord<NodeRef> br(pinfo,1,&root);
-        
+      __forceinline void operator() (BuildRecord<NodeRef>& br)
+      { 
 #if 0
         sequential_create_tree(br, createAlloc, 
                                [&](const BuildRecord<NodeRef>& br, Allocator& alloc, ParallelContinue<BuildRecord<NodeRef> >& cont) { recurse<false>(br,alloc,cont); });
@@ -262,11 +248,10 @@ namespace embree
           [&](const BuildRecord<NodeRef>& br, Allocator& alloc, ParallelContinue<BuildRecord<NodeRef> >& cont) { recurse<true>(br,alloc,cont); } ,
           [&](const BuildRecord<NodeRef>& br, Allocator& alloc, ParallelContinue<BuildRecord<NodeRef> >& cont) { recurse<false>(br,alloc,cont); });
 #endif
-
-        return root;
       }
 
     private:
+      Heuristic& heuristic;
       CreateAllocFunc& createAlloc;
       CreateNodeFunc& createNode;
       CreateLeafFunc& createLeaf;
@@ -288,9 +273,16 @@ namespace embree
     {
       const size_t logBlockSize = __bsr(blockSize);
       assert((blockSize ^ (1L << logBlockSize)) == 0);
-      BVHBuilderSAH<NodeRef,decltype(createAlloc()),CreateAllocFunc,CreateNodeFunc,CreateLeafFunc> builder
-        (createAlloc,createNode,createLeaf,prims,pinfo,branchingFactor,maxDepth,logBlockSize,minLeafSize,maxLeafSize);
-      return builder();
+      HeuristicArrayBinningSAH<PrimRef> heuristic(prims);
+      
+      BVHBuilderSAH<NodeRef,decltype(heuristic),decltype(createAlloc()),CreateAllocFunc,CreateNodeFunc,CreateLeafFunc> builder
+        (heuristic,createAlloc,createNode,createLeaf,prims,pinfo,branchingFactor,maxDepth,logBlockSize,minLeafSize,maxLeafSize);
+
+      NodeRef root;
+      BuildRecord<NodeRef> br(pinfo,1,&root);
+      br.prims = range<size_t>(0,pinfo.size());
+      builder(br);
+      return root;
     }
 
     template<typename NodeRef, typename CreateAllocFunc, typename CreateNodeFunc, typename CreateLeafFunc>
@@ -298,12 +290,19 @@ namespace embree
                                      PrimRef* prims, const PrimInfo& pinfo, 
                                      const size_t branchingFactor, const size_t maxDepth, const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize)
     {
+      HeuristicArrayBinningSAH<PrimRef> heuristic(prims);
       const size_t logBlockSize = __bsr(blockSize);
       assert((blockSize ^ (1L << logBlockSize)) == 0);
-      return execute_closure([&]() -> NodeRef {
-          BVHBuilderSAH<NodeRef,decltype(createAlloc()),CreateAllocFunc,CreateNodeFunc,CreateLeafFunc> builder
-            (createAlloc,createNode,createLeaf,prims,pinfo,branchingFactor,maxDepth,logBlockSize,minLeafSize,maxLeafSize);
-          return builder();
+      return execute_closure([&]() -> NodeRef 
+      {
+          BVHBuilderSAH<NodeRef,decltype(heuristic),decltype(createAlloc()),CreateAllocFunc,CreateNodeFunc,CreateLeafFunc> builder
+            (heuristic,createAlloc,createNode,createLeaf,prims,pinfo,branchingFactor,maxDepth,logBlockSize,minLeafSize,maxLeafSize);
+
+	  NodeRef root;
+	  BuildRecord<NodeRef> br(pinfo,1,&root);
+	  br.prims = range<size_t>(0,pinfo.size());
+          builder(br);
+	  return root;
         });
     }
   }
