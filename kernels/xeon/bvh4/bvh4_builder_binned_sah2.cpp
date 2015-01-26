@@ -23,7 +23,7 @@
 
 #include "geometry/triangle4.h"
 
-//#define PROFILE
+#define PROFILE
 
 namespace embree
 {
@@ -147,7 +147,7 @@ namespace embree
       
         /* verbose mode */
         if (g_verbose >= 1)
-          std::cout << "building BVH4<" << bvh->primTy.name << "> with " << TOSTRING(isa) "::BVH4BuilderFastNew ... " << std::flush;
+          std::cout << "building BVH4<" << bvh->primTy.name << "> with " << TOSTRING(isa) "::BVH4BuilderBinnedSAH2 ... " << std::flush;
 
 #if defined(PROFILE)
       
