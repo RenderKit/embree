@@ -137,10 +137,12 @@ namespace embree
         }
 
         /* fill all children by always splitting the largest one */
+	BuildRecord<NodeRef>* pchildren[MAX_BRANCHING_FACTOR];
         BuildRecord<NodeRef> children[MAX_BRANCHING_FACTOR];
         size_t numChildren = 1;
         children[0] = current;
-        
+        pchildren[0] = &children[0];
+
         do {
           
           /* find best child with largest bounding box area */
@@ -170,12 +172,13 @@ namespace embree
           children[bestChild] = children[numChildren-1];
           children[numChildren-1] = left;
           children[numChildren+0] = right;
+	  pchildren[numChildren] = &children[numChildren];
           numChildren++;
           
         } while (numChildren < branchingFactor);
 
         /* create node */
-        createNode(current,children,numChildren,nodeAlloc);
+        createNode(current,pchildren,numChildren,nodeAlloc);
 
         /* recurse into each child */
         for (size_t i=0; i<numChildren; i++) 
@@ -185,6 +188,7 @@ namespace embree
       template<bool toplevel, typename Spawn>
         inline void recurse(const BuildRecord<NodeRef>& current, Allocator& alloc, Spawn& spawn)
       {
+	BuildRecord<NodeRef>* pchildren[MAX_BRANCHING_FACTOR];
         __aligned(64) BuildRecord<NodeRef> children[MAX_BRANCHING_FACTOR];
         
         /* create leaf node */
@@ -198,7 +202,8 @@ namespace embree
         /* fill all children by always splitting the one with the largest surface area */
         size_t numChildren = 1;
         children[0] = current;
-        
+        pchildren[0] = &children[0];
+
         do {
           
           /* find best child with largest bounding box area */
@@ -229,6 +234,7 @@ namespace embree
           children[bestChild] = children[numChildren-1];
           children[numChildren-1] = left;
           children[numChildren+0] = right;
+	  pchildren[numChildren] = &children[numChildren];
           numChildren++;
           
         } while (numChildren < branchingFactor);
@@ -240,7 +246,7 @@ namespace embree
         }
         
         /* create node */
-        createNode(current,children,numChildren,alloc);
+        createNode(current,pchildren,numChildren,alloc);
 
         /* recurse into each child */
         for (size_t i=0; i<numChildren; i++) 

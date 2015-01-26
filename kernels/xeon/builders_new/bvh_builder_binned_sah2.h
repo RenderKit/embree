@@ -90,9 +90,11 @@ namespace embree
         }
 
         /* fill all children by always splitting the largest one */
+	BuildRecord2<NodeRef>* pchildren[MAX_BRANCHING_FACTOR];
         BuildRecord2<NodeRef> children[MAX_BRANCHING_FACTOR];
         size_t numChildren = 1;
         children[0] = current;
+	pchildren[0] = &children[0];
         
         do {
           
@@ -122,12 +124,13 @@ namespace embree
           children[bestChild] = children[numChildren-1];
           children[numChildren-1] = left;
           children[numChildren+0] = right;
+	  pchildren[numChildren] = &children[numChildren];
           numChildren++;
           
         } while (numChildren < branchingFactor);
 
         /* create node */
-        createNode(current,children,numChildren,alloc);
+        createNode(current,pchildren,numChildren,alloc);
 
         /* recurse into each child */
         for (size_t i=0; i<numChildren; i++) 
@@ -181,8 +184,10 @@ namespace embree
         }
         
         /*! initialize child list */
+	BuildRecord2<NodeRef>* pchildren[MAX_BRANCHING_FACTOR];
         BuildRecord2<NodeRef> children[MAX_BRANCHING_FACTOR];
         children[0] = record;
+	pchildren[0] = &children[0];
         size_t numChildren = 1;
         
         /*! split until node is full or SAH tells us to stop */
@@ -215,6 +220,7 @@ namespace embree
           //PRINT2(rrecord.split,rrecord.pinfo);
           children[bestChild  ] = lrecord;
           children[numChildren] = rrecord;
+	  pchildren[numChildren] = &children[numChildren];
           numChildren++;
           
         } while (numChildren < branchingFactor);
@@ -223,7 +229,7 @@ namespace embree
         //for (size_t i=0; i<numChildren; i++) PRINT2(i,children[i].pinfo);
         
         /*! create an inner node */
-        createNode(record,children,numChildren,alloc);
+        createNode(record,pchildren,numChildren,alloc);
         
         /* recurse into each child */
         for (size_t i=0; i<numChildren; i++) 

@@ -43,12 +43,12 @@ namespace embree
     {
       __forceinline CreateBVH4Node (BVH4* bvh) : bvh(bvh) {}
       
-      __forceinline void operator() (const isa::BuildRecord2<BVH4::NodeRef>& current, BuildRecord2<BVH4::NodeRef>* children, const size_t N, Allocator* alloc) 
+      __forceinline void operator() (const isa::BuildRecord2<BVH4::NodeRef>& current, BuildRecord2<BVH4::NodeRef>** children, const size_t N, Allocator* alloc) 
       {
         BVH4::Node* node = (BVH4::Node*) alloc->alloc0.malloc(sizeof(BVH4::Node)); node->clear();
         for (size_t i=0; i<N; i++) {
-          node->set(i,children[i].pinfo.geomBounds);
-          children[i].parent = &node->child(i);
+          node->set(i,children[i]->pinfo.geomBounds);
+          children[i]->parent = &node->child(i);
         }
         *current.parent = bvh->encodeNode(node);
       }
