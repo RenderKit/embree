@@ -109,20 +109,20 @@ namespace embree
         if (unlikely(!split.valid())) splitFallback(current,leftChild,rightChild);
         
         /* partitioning of items */
-        else ObjectPartitionNew::partition(split, prims, current.begin, current.end, leftChild, rightChild);
+        else ObjectPartitionNew::split(split, prims, current.begin, current.end, leftChild, rightChild);
       }
 
       void splitParallel(const BuildRecord<NodeRef>& current, BuildRecord<NodeRef>& leftChild, BuildRecord<NodeRef>& rightChild, Allocator& alloc)
       {
         /* calculate binning function */
         PrimInfo pinfo(current.size(),current.geomBounds,current.centBounds);
-        ObjectPartitionNew::Split split = ObjectPartitionNew::find_parallel(prims,current.begin,current.end,pinfo,logBlockSize);
+        ObjectPartitionNew::Split split = ObjectPartitionNew::parallel_find(prims,current.begin,current.end,pinfo,logBlockSize);
         
         /* if we cannot find a valid split, enforce an arbitrary split */
         if (unlikely(!split.valid())) splitFallback(current,leftChild,rightChild);
         
         /* partitioning of items */
-        else ObjectPartitionNew::partition_parallel(split, prims, current.begin, current.end, leftChild, rightChild);
+        else ObjectPartitionNew::parallel_split(split, prims, current.begin, current.end, leftChild, rightChild);
       }
 
       void createLargeLeaf(const BuildRecord<NodeRef>& current, Allocator& nodeAlloc, Allocator& leafAlloc)

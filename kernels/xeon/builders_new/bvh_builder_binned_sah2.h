@@ -150,7 +150,7 @@ namespace embree
 
       template<bool toplevel>
         __forceinline const ObjectPartitionNew::Split find(BuildRecord2<NodeRef>& current) {
-        if (toplevel) return ObjectPartitionNew::find_parallel(prims,current.pinfo.begin,current.pinfo.end,current.pinfo,logBlockSize);
+        if (toplevel) return ObjectPartitionNew::parallel_find(prims,current.pinfo.begin,current.pinfo.end,current.pinfo,logBlockSize);
         else          return ObjectPartitionNew::find(prims,current.pinfo.begin,current.pinfo.end,current.pinfo,logBlockSize);
       }
 
@@ -158,8 +158,8 @@ namespace embree
       __forceinline void partition(const BuildRecord2<NodeRef>& brecord, BuildRecord2<NodeRef>& lrecord, BuildRecord2<NodeRef>& rrecord) {
         if (brecord.split.sah == float(inf)) splitFallback(brecord,lrecord,rrecord);
         else {
-          if (toplevel) ObjectPartitionNew::partition_parallel(brecord.split,prims,brecord.pinfo.begin,brecord.pinfo.end,lrecord.pinfo,rrecord.pinfo);
-          else          ObjectPartitionNew::partition         (brecord.split,prims,brecord.pinfo.begin,brecord.pinfo.end,lrecord.pinfo,rrecord.pinfo);
+          if (toplevel) ObjectPartitionNew::parallel_split(brecord.split,prims,brecord.pinfo.begin,brecord.pinfo.end,lrecord.pinfo,rrecord.pinfo);
+          else          ObjectPartitionNew::split         (brecord.split,prims,brecord.pinfo.begin,brecord.pinfo.end,lrecord.pinfo,rrecord.pinfo);
         }
       }
 

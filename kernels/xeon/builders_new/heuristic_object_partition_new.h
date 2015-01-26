@@ -322,9 +322,6 @@ namespace embree
       
       typedef BinSplit<maxBins> Split;
       typedef BinInfo<maxBins,PrimRef> Binner;
-      //struct SplitInfo;
-      //typedef atomic_set<PrimRefBlockT<PrimRef> > PrimRefList;      //!< list of primitives
-      //typedef atomic_set<PrimRefBlockT<BezierPrim> > BezierRefList; //!< list of bezier primitives
       
       
       /*! finds the best split */
@@ -332,12 +329,12 @@ namespace embree
       {
         Binner binner(empty);
         const BinMapping<maxBins> mapping(pinfo);
-        binner.bin(prims+begin,end-begin,mapping);
+        binner.bin(prims,begin,end,mapping);
         return binner.best(mapping,logBlockSize);
       }
 
       /*! finds the best split */
-      static const Split find_parallel(PrimRef *__restrict__ const prims, const size_t begin, const size_t end, const PrimInfo& pinfo, const size_t logBlockSize)
+      static const Split parallel_find(PrimRef *__restrict__ const prims, const size_t begin, const size_t end, const PrimInfo& pinfo, const size_t logBlockSize)
       {
         Binner binner(empty);
         const BinMapping<maxBins> mapping(pinfo);
@@ -348,7 +345,7 @@ namespace embree
       }
       
       /*! array partitioning */
-      static void partition(const Split& split, PrimRef* const prims, const size_t begin, const size_t end, PrimInfo& left, PrimInfo& right) 
+      static void split(const Split& split, PrimRef* const prims, const size_t begin, const size_t end, PrimInfo& left, PrimInfo& right) 
       {
 	assert(valid());
 	CentGeomBBox3fa local_left(empty);
@@ -366,7 +363,7 @@ namespace embree
       }
       
       /*! array partitioning */
-      static void partition_parallel(const Split& split, PrimRef *__restrict__ const prims, const size_t begin, const size_t end, PrimInfo& left, PrimInfo& right)
+      static void parallel_split(const Split& split, PrimRef *__restrict__ const prims, const size_t begin, const size_t end, PrimInfo& left, PrimInfo& right)
       {
 	left.reset(); 
 	right.reset();
