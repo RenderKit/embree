@@ -63,12 +63,12 @@ namespace embree
       
       __forceinline void operator() (const BuildRecord<BVH4::NodeRef>& current, PrimRef* prims, Allocator* alloc) // FIXME: why are prims passed here but not for createNode
       {
-        size_t items = Primitive::blocks(current.size());
-        size_t start = current.begin;
+        size_t items = Primitive::blocks(current.prims.size());
+        size_t start = current.prims.begin();
         Primitive* accel = (Primitive*) alloc->alloc1.malloc(items*sizeof(Primitive));
         BVH4::NodeRef node = bvh->encodeLeaf((char*)accel,items);
         for (size_t i=0; i<items; i++) {
-          accel[i].fill(prims,start,current.end,bvh->scene,false);
+          accel[i].fill(prims,start,current.prims.end(),bvh->scene,false);
         }
         *current.parent = node;
       }
