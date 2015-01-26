@@ -24,7 +24,7 @@ namespace embree
   namespace isa
   {
     /*! the build record stores all information to continue the build of some subtree */
-    template<typename NodeRef, typename Set = size_t>
+    template<typename NodeRef, typename Set = range<size_t> >
       struct BuildRecord2 
       {
       public:
@@ -131,7 +131,7 @@ namespace embree
           /*! split best child into left and right child */
           BuildRecord left(current.depth+1);
           BuildRecord right(current.depth+1);
-          splitFallback(children[bestChild],left,right);
+          heuristic.splitFallback(children[bestChild].prims,left.pinfo,left.prims,right.pinfo,right.prims);
           
           /* add new children left and right */
           children[bestChild] = children[numChildren-1];
@@ -150,33 +150,20 @@ namespace embree
           createLargeLeaf(children[i],alloc);
       }
 
-      void splitFallback(const BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild)
-      {
-        const size_t center = (current.pinfo.begin + current.pinfo.end)/2;
-        
-        CentGeomBBox3fa left; left.reset();
-        for (size_t i=current.pinfo.begin; i<center; i++)
-          left.extend(prims[i].bounds());
-        new (&leftChild.pinfo) PrimInfo(current.pinfo.begin,center,left.geomBounds,left.centBounds);
-        
-        CentGeomBBox3fa right; right.reset();
-        for (size_t i=center; i<current.pinfo.end; i++)
-          right.extend(prims[i].bounds());	
-        new (&rightChild.pinfo) PrimInfo(center,current.pinfo.end,right.geomBounds,right.centBounds);
-      }
-
       template<bool toplevel>
         __forceinline const typename Heuristic::Split find(BuildRecord& current) {
-        if (toplevel) return heuristic.parallel_find(current.pinfo.begin,current.pinfo.end,current.pinfo,logBlockSize);
-        else          return heuristic.find(current.pinfo.begin,current.pinfo.end,current.pinfo,logBlockSize);
+        if (toplevel) return heuristic.parallel_find(current.prims,current.pinfo,logBlockSize);
+        else          return heuristic.find         (current.prims,current.pinfo,logBlockSize);
       }
 
       template<bool toplevel>
-      __forceinline void partition(const BuildRecord& brecord, BuildRecord& lrecord, BuildRecord& rrecord) {
-        if (brecord.split.sah == float(inf)) splitFallback(brecord,lrecord,rrecord);
+      __forceinline void partition(const BuildRecord& brecord, BuildRecord& lrecord, BuildRecord& rrecord) 
+      {
+        if (brecord.split.sah == float(inf)) 
+	  heuristic.splitFallback(brecord.prims,lrecord.pinfo,lrecord.prims,rrecord.pinfo,rrecord.prims);
         else {
-          if (toplevel) heuristic.parallel_split(brecord.split,brecord.pinfo.begin,brecord.pinfo.end,lrecord.pinfo,rrecord.pinfo);
-          else          heuristic.split         (brecord.split,brecord.pinfo.begin,brecord.pinfo.end,lrecord.pinfo,rrecord.pinfo);
+          if (toplevel) heuristic.parallel_split(brecord.split,brecord.prims,lrecord.pinfo,lrecord.prims,rrecord.pinfo,rrecord.prims);
+          else          heuristic.split         (brecord.split,brecord.prims,lrecord.pinfo,lrecord.prims,rrecord.pinfo,rrecord.prims);
         }
       }
 
@@ -255,6 +242,7 @@ namespace embree
         /* create initial build record */
         NodeRef root;
         BuildRecord br(pinfo,1,&root);
+	br.prims = range<size_t>(0,pinfo.size());
         br.split = find<true>(br);
         
 #if 0

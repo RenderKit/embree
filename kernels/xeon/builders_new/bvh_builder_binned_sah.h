@@ -58,6 +58,7 @@ namespace embree
       };
 
     public:
+      range<size_t> prims;
       unsigned depth;         //!< depth from the root of the tree
       float    area;          //!< surface area of bounding box
       NodeRef* parent;        //!< reference pointing to us
@@ -84,45 +85,30 @@ namespace embree
           THROW_RUNTIME_ERROR("bvh_builder: branching factor too large");
       }
 
-      void splitFallback(const BuildRecord<NodeRef>& current, BuildRecord<NodeRef>& leftChild, BuildRecord<NodeRef>& rightChild)
-      {
-        const size_t center = (current.begin + current.end)/2;
-        
-        CentGeomBBox3fa left; left.reset();
-        for (size_t i=current.begin; i<center; i++)
-          left.extend(prims[i].bounds());
-        new (&leftChild) PrimInfo(current.begin,center,left.geomBounds,left.centBounds);
-        
-        CentGeomBBox3fa right; right.reset();
-        for (size_t i=center; i<current.end; i++)
-          right.extend(prims[i].bounds());	
-        new (&rightChild) PrimInfo(center,current.end,right.geomBounds,right.centBounds);
-      }
-
       __forceinline void splitSequential(const BuildRecord<NodeRef>& current, BuildRecord<NodeRef>& leftChild, BuildRecord<NodeRef>& rightChild)
       {
         /* calculate binning function */
         PrimInfo pinfo(current.size(),current.geomBounds,current.centBounds);
-        typename Heuristic::Split split = heuristic.find(current.begin,current.end,pinfo,logBlockSize);
+        typename Heuristic::Split split = heuristic.find(current.prims,pinfo,logBlockSize);
 
         /* if we cannot find a valid split, enforce an arbitrary split */
-        if (unlikely(!split.valid())) splitFallback(current,leftChild,rightChild);
+        if (unlikely(!split.valid())) heuristic.splitFallback(current.prims,leftChild,leftChild.prims,rightChild,rightChild.prims);
         
         /* partitioning of items */
-        else heuristic.split(split, current.begin, current.end, leftChild, rightChild);
+        else heuristic.split(split, current.prims, leftChild, leftChild.prims, rightChild, rightChild.prims);
       }
 
       void splitParallel(const BuildRecord<NodeRef>& current, BuildRecord<NodeRef>& leftChild, BuildRecord<NodeRef>& rightChild, Allocator& alloc)
       {
         /* calculate binning function */
         PrimInfo pinfo(current.size(),current.geomBounds,current.centBounds);
-        typename Heuristic::Split split = heuristic.parallel_find(current.begin,current.end,pinfo,logBlockSize);
+        typename Heuristic::Split split = heuristic.parallel_find(current.prims,pinfo,logBlockSize);
         
         /* if we cannot find a valid split, enforce an arbitrary split */
-        if (unlikely(!split.valid())) splitFallback(current,leftChild,rightChild);
+        if (unlikely(!split.valid())) heuristic.splitFallback(current.prims,leftChild,leftChild.prims,rightChild,rightChild.prims);
         
         /* partitioning of items */
-        else heuristic.parallel_split(split, current.begin, current.end, leftChild, rightChild);
+        else heuristic.parallel_split(split, current.prims, leftChild, leftChild.prims, rightChild, rightChild.prims);
       }
 
       void createLargeLeaf(const BuildRecord<NodeRef>& current, Allocator& nodeAlloc, Allocator& leafAlloc)
@@ -164,7 +150,7 @@ namespace embree
           
           /*! split best child into left and right child */
           __aligned(64) BuildRecord<NodeRef> left, right;
-          splitFallback(children[bestChild],left,right);
+          heuristic.splitFallback(children[bestChild].prims,left,left.prims,right,right.prims);
           
           /* add new children left and right */
           left.init(current.depth+1); 
@@ -259,6 +245,7 @@ namespace embree
         /* create initial build record */
         NodeRef root;
         BuildRecord<NodeRef> br(pinfo,1,&root);
+	br.prims = range<size_t>(0,pinfo.size());
         
 #if 0
         sequential_create_tree(br, createAlloc, 

@@ -23,10 +23,12 @@ namespace embree
   template<typename Ty>
     struct range 
     {
-      range (const Ty& begin) 
+      __forceinline range () {}
+
+      __forceinline range (const Ty& begin) 
       : _begin(begin), _end(begin+1) {}
       
-      range (const Ty& begin, const Ty& end) 
+      __forceinline range (const Ty& begin, const Ty& end) 
       : _begin(begin), _end(end) {}
       
       __forceinline Ty begin() const {

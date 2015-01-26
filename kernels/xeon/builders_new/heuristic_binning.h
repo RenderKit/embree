@@ -19,6 +19,7 @@
 #include "geometry/bezier1v.h"
 #include "builders/primrefalloc.h"
 #include "builders/heuristic_fallback.h"
+#include "algorithms/range.h"
 #include "algorithms/parallel_reduce.h"
 #include "algorithms/parallel_partition.h"
 
@@ -320,34 +321,37 @@ namespace embree
     {
       typedef BinSplit<BINS> Split;
       typedef BinInfo<BINS,PrimRef> Binner;
+      typedef range<size_t> Set;
 
       /*! remember prim array */
       __forceinline HeuristicArrayBinningSAH (PrimRef* prims)
       : prims(prims) {}
             
       /*! finds the best split */
-      const Split find(const size_t begin, const size_t end, const PrimInfo& pinfo, const size_t logBlockSize)
+      const Split find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize)
       {
         Binner binner(empty);
         const BinMapping<BINS> mapping(pinfo);
-        binner.bin(prims,begin,end,mapping);
+        binner.bin(prims,set.begin(),set.end(),mapping);
         return binner.best(mapping,logBlockSize);
       }
 
       /*! finds the best split */
-      const Split parallel_find(const size_t begin, const size_t end, const PrimInfo& pinfo, const size_t logBlockSize)
+      const Split parallel_find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize)
       {
         Binner binner(empty);
         const BinMapping<BINS> mapping(pinfo);
-        binner = parallel_reduce(begin,end,size_t(4096),binner,
+        binner = parallel_reduce(set.begin(),set.end(),size_t(4096),binner,
                                  [&](const range<size_t>& r) { Binner binner(empty); binner.bin(prims+r.begin(),r.size(),mapping); return binner; },
                                  [&] (const Binner& b0, const Binner& b1) { Binner r = b0; r.merge(b1,mapping.size()); return r; });
         return binner.best(mapping,logBlockSize);
       }
       
       /*! array partitioning */
-      void split(const Split& split, const size_t begin, const size_t end, PrimInfo& left, PrimInfo& right) 
+      void split(const Split& split, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset) 
       {
+	const size_t begin = set.begin();
+	const size_t end   = set.end();
 	assert(valid());
 	CentGeomBBox3fa local_left(empty);
 	CentGeomBBox3fa local_right(empty);
@@ -359,13 +363,17 @@ namespace embree
 	
 	new (&left ) PrimInfo(begin,center,local_left.geomBounds,local_left.centBounds);
 	new (&right) PrimInfo(center,end,local_right.geomBounds,local_right.centBounds);
+	new (&lset) range<size_t>(begin,center);
+	new (&rset) range<size_t>(center,end);
 	assert(area(left.geomBounds) >= 0.0f);
 	assert(area(right.geomBounds) >= 0.0f);
       }
       
       /*! array partitioning */
-      void parallel_split(const Split& split, const size_t begin, const size_t end, PrimInfo& left, PrimInfo& right)
+      void parallel_split(const Split& split, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset)
       {
+	const size_t begin = set.begin();
+	const size_t end   = set.end();
 	left.reset(); 
 	right.reset();
 	PrimInfo init; init.reset();
@@ -379,8 +387,31 @@ namespace embree
 	   [] (PrimInfo &pinfo0,const PrimInfo &pinfo1) { pinfo0.merge(pinfo1); });
 	
 	const size_t center = begin+mid;
-	left.begin  = begin;  left.end  = center;
+	left.begin  = begin;  left.end  = center; // FIXME: remove?
 	right.begin = center; right.end = end;
+
+	new (&lset) range<size_t>(begin,center);
+	new (&rset) range<size_t>(center,end);
+      }
+
+      void splitFallback(const Set& set, PrimInfo& linfo, Set& lset, PrimInfo& rinfo, Set& rset)
+      {
+	const size_t begin = set.begin();
+	const size_t end   = set.end();
+        const size_t center = (begin + end)/2;
+        
+        CentGeomBBox3fa left; left.reset();
+        for (size_t i=begin; i<center; i++)
+          left.extend(prims[i].bounds());
+        new (&linfo) PrimInfo(begin,center,left.geomBounds,left.centBounds);
+        
+        CentGeomBBox3fa right; right.reset();
+        for (size_t i=center; i<end; i++)
+          right.extend(prims[i].bounds());	
+        new (&rinfo) PrimInfo(center,end,right.geomBounds,right.centBounds);
+
+	new (&lset) range<size_t>(begin,center);
+	new (&rset) range<size_t>(center,end);
       }
 
     private:
