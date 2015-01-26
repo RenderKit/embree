@@ -63,7 +63,7 @@ namespace embree
       NodeRef* parent;        //!< reference pointing to us
     };
     
-    template<typename Heuristic, typename NodeRef, typename Allocator, typename CreateAllocFunc, typename CreateNodeFunc, typename CreateLeafFunc>
+    template<typename NodeRef, typename Heuristic, typename Allocator, typename CreateAllocFunc, typename CreateNodeFunc, typename CreateLeafFunc>
       class BVHBuilderSAH
     {
       static const size_t MAX_BRANCHING_FACTOR = 16;  //!< maximal supported BVH branching factor
@@ -71,11 +71,11 @@ namespace embree
 
     public:
 
-      BVHBuilderSAH (CreateAllocFunc& createAlloc, CreateNodeFunc& createNode, CreateLeafFunc& createLeaf,
+      BVHBuilderSAH (Heuristic& heuristic,CreateAllocFunc& createAlloc, CreateNodeFunc& createNode, CreateLeafFunc& createLeaf,
                          PrimRef* prims, const PrimInfo& pinfo,
                          const size_t branchingFactor, const size_t maxDepth, 
                          const size_t logBlockSize, const size_t minLeafSize, const size_t maxLeafSize)
-        : createAlloc(createAlloc), createNode(createNode), createLeaf(createLeaf), 
+        : heuristic(heuristic), createAlloc(createAlloc), createNode(createNode), createLeaf(createLeaf), 
           prims(prims), pinfo(pinfo), 
           branchingFactor(branchingFactor), maxDepth(maxDepth),
           logBlockSize(logBlockSize), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize)
@@ -103,26 +103,26 @@ namespace embree
       {
         /* calculate binning function */
         PrimInfo pinfo(current.size(),current.geomBounds,current.centBounds);
-        typename Heuristic::Split split = Heuristic::find(prims,current.begin,current.end,pinfo,logBlockSize);
+        typename Heuristic::Split split = heuristic.find(current.begin,current.end,pinfo,logBlockSize);
 
         /* if we cannot find a valid split, enforce an arbitrary split */
         if (unlikely(!split.valid())) splitFallback(current,leftChild,rightChild);
         
         /* partitioning of items */
-        else Heuristic::split(split, prims, current.begin, current.end, leftChild, rightChild);
+        else heuristic.split(split, current.begin, current.end, leftChild, rightChild);
       }
 
       void splitParallel(const BuildRecord<NodeRef>& current, BuildRecord<NodeRef>& leftChild, BuildRecord<NodeRef>& rightChild, Allocator& alloc)
       {
         /* calculate binning function */
         PrimInfo pinfo(current.size(),current.geomBounds,current.centBounds);
-        typename Heuristic::Split split = Heuristic::parallel_find(prims,current.begin,current.end,pinfo,logBlockSize);
+        typename Heuristic::Split split = heuristic.parallel_find(current.begin,current.end,pinfo,logBlockSize);
         
         /* if we cannot find a valid split, enforce an arbitrary split */
         if (unlikely(!split.valid())) splitFallback(current,leftChild,rightChild);
         
         /* partitioning of items */
-        else Heuristic::parallel_split(split, prims, current.begin, current.end, leftChild, rightChild);
+        else heuristic.parallel_split(split, current.begin, current.end, leftChild, rightChild);
       }
 
       void createLargeLeaf(const BuildRecord<NodeRef>& current, Allocator& nodeAlloc, Allocator& leafAlloc)
@@ -267,6 +267,7 @@ namespace embree
       }
 
     private:
+      Heuristic& heuristic;
       CreateAllocFunc& createAlloc;
       CreateNodeFunc& createNode;
       CreateLeafFunc& createLeaf;
@@ -288,9 +289,9 @@ namespace embree
     {
       const size_t logBlockSize = __bsr(blockSize);
       assert((blockSize ^ (1L << logBlockSize)) == 0);
-      typedef HeuristicArrayBinningSAH<PrimRef> Heuristic;
-      BVHBuilderSAH<Heuristic,NodeRef,decltype(createAlloc()),CreateAllocFunc,CreateNodeFunc,CreateLeafFunc> builder
-        (createAlloc,createNode,createLeaf,prims,pinfo,branchingFactor,maxDepth,logBlockSize,minLeafSize,maxLeafSize);
+      HeuristicArrayBinningSAH<PrimRef> heuristic(prims);
+      BVHBuilderSAH<NodeRef,decltype(heuristic),decltype(createAlloc()),CreateAllocFunc,CreateNodeFunc,CreateLeafFunc> builder
+        (heuristic,createAlloc,createNode,createLeaf,prims,pinfo,branchingFactor,maxDepth,logBlockSize,minLeafSize,maxLeafSize);
       return builder();
     }
 
@@ -299,12 +300,12 @@ namespace embree
                                      PrimRef* prims, const PrimInfo& pinfo, 
                                      const size_t branchingFactor, const size_t maxDepth, const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize)
     {
-      typedef HeuristicArrayBinningSAH<PrimRef> Heuristic;
+      HeuristicArrayBinningSAH<PrimRef> heuristic(prims);
       const size_t logBlockSize = __bsr(blockSize);
       assert((blockSize ^ (1L << logBlockSize)) == 0);
       return execute_closure([&]() -> NodeRef {
-          BVHBuilderSAH<Heuristic,NodeRef,decltype(createAlloc()),CreateAllocFunc,CreateNodeFunc,CreateLeafFunc> builder
-            (createAlloc,createNode,createLeaf,prims,pinfo,branchingFactor,maxDepth,logBlockSize,minLeafSize,maxLeafSize);
+          BVHBuilderSAH<NodeRef,decltype(heuristic),decltype(createAlloc()),CreateAllocFunc,CreateNodeFunc,CreateLeafFunc> builder
+            (heuristic,createAlloc,createNode,createLeaf,prims,pinfo,branchingFactor,maxDepth,logBlockSize,minLeafSize,maxLeafSize);
           return builder();
         });
     }

@@ -320,17 +320,13 @@ namespace embree
     {
       typedef BinSplit<BINS> Split;
       typedef BinInfo<BINS,PrimRef> Binner;
-      
-      struct PrimSet 
-      {
-	__forceinline PrimSet( size_t begin, size_t end) 
-	  : begin(begin), end(end) {}
 
-	size_t begin, end;
-      };
+      /*! remember prim array */
+      __forceinline HeuristicArrayBinningSAH (PrimRef* prims)
+      : prims(prims) {}
             
       /*! finds the best split */
-      static const Split find(PrimRef *__restrict__ const prims, const size_t begin, const size_t end, const PrimInfo& pinfo, const size_t logBlockSize)
+      const Split find(const size_t begin, const size_t end, const PrimInfo& pinfo, const size_t logBlockSize)
       {
         Binner binner(empty);
         const BinMapping<BINS> mapping(pinfo);
@@ -339,7 +335,7 @@ namespace embree
       }
 
       /*! finds the best split */
-      static const Split parallel_find(PrimRef *__restrict__ const prims, const size_t begin, const size_t end, const PrimInfo& pinfo, const size_t logBlockSize)
+      const Split parallel_find(const size_t begin, const size_t end, const PrimInfo& pinfo, const size_t logBlockSize)
       {
         Binner binner(empty);
         const BinMapping<BINS> mapping(pinfo);
@@ -350,7 +346,7 @@ namespace embree
       }
       
       /*! array partitioning */
-      static void split(const Split& split, PrimRef* const prims, const size_t begin, const size_t end, PrimInfo& left, PrimInfo& right) 
+      void split(const Split& split, const size_t begin, const size_t end, PrimInfo& left, PrimInfo& right) 
       {
 	assert(valid());
 	CentGeomBBox3fa local_left(empty);
@@ -368,7 +364,7 @@ namespace embree
       }
       
       /*! array partitioning */
-      static void parallel_split(const Split& split, PrimRef *__restrict__ const prims, const size_t begin, const size_t end, PrimInfo& left, PrimInfo& right)
+      void parallel_split(const Split& split, const size_t begin, const size_t end, PrimInfo& left, PrimInfo& right)
       {
 	left.reset(); 
 	right.reset();
@@ -386,6 +382,9 @@ namespace embree
 	left.begin  = begin;  left.end  = center;
 	right.begin = center; right.end = end;
       }
+
+    private:
+      PrimRef* const prims;
     };
   }
 }
