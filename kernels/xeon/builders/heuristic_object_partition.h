@@ -495,6 +495,7 @@ namespace embree
             const ssei lCount = (count     +blocks_add) >> blocks_shift;
             const ssei rCount = (rCounts[i]+blocks_add) >> blocks_shift;
             const ssef sah = lArea*ssef(lCount) + rArea*ssef(rCount);
+
             vbestPos = select(sah < vbestSAH,ii ,vbestPos);
             vbestSAH = select(sah < vbestSAH,sah,vbestSAH);
           }
@@ -517,7 +518,8 @@ namespace embree
               bestSAH = vbestSAH[dim];
             }
           }
-          
+
+
           return Split(bestSAH,bestDim,bestPos,mapping);
         }
 	
