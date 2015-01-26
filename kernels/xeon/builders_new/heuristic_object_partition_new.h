@@ -25,7 +25,7 @@
 namespace embree
 {
   namespace isa
-  {
+  { 
     /*! mapping into bins */
     template<size_t maxBins>
     struct BinMapping
@@ -78,15 +78,49 @@ namespace embree
       size_t num;
       ssef ofs,scale;        //!< linear function that maps to bin ID
     };
+
+    /*! stores all information to perform some split */
+    template<size_t maxBins>
+      struct BinSplit
+    {
+      /*! construct an invalid split by default */
+      __forceinline BinSplit()
+	: sah(inf), dim(-1), pos(0) {}
+      
+      /*! constructs specified split */
+      __forceinline BinSplit(float sah, int dim, int pos, const BinMapping<maxBins>& mapping)
+	: sah(sah), dim(dim), pos(pos), mapping(mapping) {}
+      
+      /*! tests if this split is valid */
+      __forceinline bool valid() const { return dim != -1; }
+      
+      /*! calculates surface area heuristic for performing the split */
+      __forceinline float splitSAH() const { return sah; }
+      
+      /*! stream output */
+      friend std::ostream& operator<<(std::ostream& cout, const BinSplit& split) {
+	return cout << "BinSplit { sah = " << split.sah << ", dim = " << split.dim << ", pos = " << split.pos << "}";
+      }
+      
+    public:
+      float sah;       //!< SAH cost of the split
+      int dim;         //!< split dimension
+      int pos;         //!< bin index for splitting
+      BinMapping<maxBins> mapping; //!< mapping into bins
+    };
     
     /*! Performs standard object binning */
     struct ObjectPartitionNew
     {
-      struct Split;
+      /*! number of bins */
+      static const size_t maxBins = 32;
+
+      typedef BinSplit<maxBins> Split;
       struct SplitInfo;
       typedef atomic_set<PrimRefBlockT<PrimRef> > PrimRefList;      //!< list of primitives
       typedef atomic_set<PrimRefBlockT<BezierPrim> > BezierRefList; //!< list of bezier primitives
-      
+    
+
     public:
       
       /*! finds the best split */
@@ -147,46 +181,10 @@ namespace embree
 	right.begin = center; right.end = end;
       }
       
-    private:
-      
-      /*! number of bins */
-      static const size_t maxBins = 32;
-      
-      
-
       
     public:
       
-      /*! stores all information to perform some split */
-      struct Split
-      {
-	/*! construct an invalid split by default */
-	__forceinline Split()
-	  : sah(inf), dim(-1), pos(0) {}
-	
-	/*! constructs specified split */
-	__forceinline Split(float sah, int dim, int pos, const BinMapping<maxBins>& mapping)
-	  : sah(sah), dim(dim), pos(pos), mapping(mapping) {}
-	
-	/*! tests if this split is valid */
-	__forceinline bool valid() const { return dim != -1; }
-
-	/*! calculates surface area heuristic for performing the split */
-	__forceinline float splitSAH() const { return sah; }
-	
-	
-
-	/*! stream output */
-	friend std::ostream& operator<<(std::ostream& cout, const Split& split) {
-	  return cout << "Split { sah = " << split.sah << ", dim = " << split.dim << ", pos = " << split.pos << "}";
-	}
-	
-      public:
-	float sah;       //!< SAH cost of the split
-	int dim;         //!< split dimension
-	int pos;         //!< bin index for splitting
-	BinMapping<maxBins> mapping; //!< mapping into bins
-      };
+      
 
       /*! stores extended information about the split */
       struct SplitInfo
