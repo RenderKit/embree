@@ -15,7 +15,7 @@
 // ======================================================================== //
 
 #include "../common/tutorial/tutorial_device.h"
-#include "kernels/xeon/builders/bvh_builder_binned_sah.h"
+#include "kernels/xeon/builders/bvh_builder.h"
 #include "kernels/xeon/builders/bvh_builder_center.h"
 #include "kernels/xeon/builders/priminfo.h"
 

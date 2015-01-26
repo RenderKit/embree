@@ -16,7 +16,7 @@
 
 #include "bvh4.h"
 #include "bvh4_statistics.h"
-#include "builders_new/bvh_builder_binned_sah2.h"
+#include "builders_new/bvh_builder2.h"
 
 #include "algorithms/parallel_for_for.h"
 #include "algorithms/parallel_for_for_prefix_sum.h"
