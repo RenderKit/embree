@@ -316,12 +316,19 @@ namespace embree
     
     /*! Performs standard object binning */
     template<typename PrimRef, size_t BINS = 32>
-      struct ObjectPartitionNew
+      struct HeuristicArrayBinningSAH
     {
       typedef BinSplit<BINS> Split;
       typedef BinInfo<BINS,PrimRef> Binner;
       
-      
+      struct PrimSet 
+      {
+	__forceinline PrimSet( size_t begin, size_t end) 
+	  : begin(begin), end(end) {}
+
+	size_t begin, end;
+      };
+            
       /*! finds the best split */
       static const Split find(PrimRef *__restrict__ const prims, const size_t begin, const size_t end, const PrimInfo& pinfo, const size_t logBlockSize)
       {

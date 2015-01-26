@@ -288,7 +288,7 @@ namespace embree
     {
       const size_t logBlockSize = __bsr(blockSize);
       assert((blockSize ^ (1L << logBlockSize)) == 0);
-      typedef ObjectPartitionNew<PrimRef> Heuristic;
+      typedef HeuristicArrayBinningSAH<PrimRef> Heuristic;
       BVHBuilderSAH<Heuristic,NodeRef,decltype(createAlloc()),CreateAllocFunc,CreateNodeFunc,CreateLeafFunc> builder
         (createAlloc,createNode,createLeaf,prims,pinfo,branchingFactor,maxDepth,logBlockSize,minLeafSize,maxLeafSize);
       return builder();
@@ -299,7 +299,7 @@ namespace embree
                                      PrimRef* prims, const PrimInfo& pinfo, 
                                      const size_t branchingFactor, const size_t maxDepth, const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize)
     {
-      typedef ObjectPartitionNew<PrimRef> Heuristic;
+      typedef HeuristicArrayBinningSAH<PrimRef> Heuristic;
       const size_t logBlockSize = __bsr(blockSize);
       assert((blockSize ^ (1L << logBlockSize)) == 0);
       return execute_closure([&]() -> NodeRef {

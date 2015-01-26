@@ -24,7 +24,7 @@ namespace embree
   namespace isa
   {
     /*! the build record stores all information to continue the build of some subtree */
-    template<typename NodeRef>
+    template<typename NodeRef, typename Set = size_t>
       struct BuildRecord2 
       {
       public:
@@ -49,7 +49,7 @@ namespace embree
       public:
 	NodeRef*   parent;      //!< Pointer to the parent node's reference to us
 	size_t     depth;    //!< Depth of the root of this subtree.
-	//PrimRefList prims;    //!< The list of primitives.
+	Set prims;    //!< The list of primitives.
 	PrimInfo   pinfo;    //!< Bounding info of primitives.
 	BinSplit<32>      split;    //!< The best split for the primitives.
 	// FIXME: BinSplit
@@ -275,7 +275,7 @@ namespace embree
     {
       const size_t logBlockSize = __bsr(blockSize);
       assert((blockSize ^ (1L << logBlockSize)) == 0);
-      typedef ObjectPartitionNew<PrimRef> Heuristic;
+      typedef HeuristicArrayBinningSAH<PrimRef> Heuristic;
       BVHBuilderSAH2<Heuristic,NodeRef,decltype(createAlloc()),CreateAllocFunc,CreateNodeFunc,CreateLeafFunc> builder
         (createAlloc,createNode,createLeaf,prims,pinfo,branchingFactor,maxDepth,logBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
       return builder();
@@ -288,7 +288,7 @@ namespace embree
                                       const float travCost, const float intCost)
     {
       const size_t logBlockSize = __bsr(blockSize);
-      typedef ObjectPartitionNew<PrimRef> Heuristic;
+      typedef HeuristicArrayBinningSAH<PrimRef> Heuristic;
       assert((blockSize ^ (1L << logBlockSize)) == 0);
       return execute_closure([&]() -> NodeRef {
           BVHBuilderSAH2<Heuristic,NodeRef,decltype(createAlloc()),CreateAllocFunc,CreateNodeFunc,CreateLeafFunc> builder
