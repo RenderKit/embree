@@ -352,7 +352,7 @@ namespace embree
       {
 	const size_t begin = set.begin();
 	const size_t end   = set.end();
-	assert(valid());
+	//assert(valid());
 	CentGeomBBox3fa local_left(empty);
 	CentGeomBBox3fa local_right(empty);
 	const unsigned int splitPos = split.pos;
