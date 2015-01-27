@@ -28,6 +28,8 @@ namespace embree
 {
   struct TaskSchedulerNew
   {
+    struct Thread;
+    
     struct TaskFunction {
       virtual void execute(size_t begin, size_t end) = 0;
     };
@@ -113,15 +115,15 @@ namespace embree
       void removeDependency   () { atomic_add(&dependencies,-1); }
       void waitForDependencies() { while (dependencies) __pause_cpu(); }
       
-      void run () 
+      void run (Thread& thread) 
       {
         mutex.lock();
         validate(false);
         if (size()) {
-          Task* prevTask = TaskSchedulerNew::thread_local_task;
-          TaskSchedulerNew::thread_local_task = this;
+          Task* prevTask = thread.task; 
+          thread.task = this;
           closure->execute(begin,end);
-          TaskSchedulerNew::thread_local_task = prevTask;
+          thread.task = prevTask;
         }
         mutex.unlock();
         removeDependency();
@@ -159,28 +161,28 @@ namespace embree
       }
       
       template<typename Closure>
-      __forceinline void push_right(const Closure& closure, size_t begin, size_t end, size_t block) 
+      __forceinline void push_right(Thread& thread, const Closure& closure, size_t begin, size_t end, size_t block) 
       {
         assert(right < SIZE);
         size_t oldStackPtr = stackPtr;
-        Task* parent = TaskSchedulerNew::task();
+        Task* parent = thread.task;
         TaskFunction* func = new (alloc(sizeof(Closure))) ClosureFunction<Closure>(closure);
         new (&tasks[right++]) Task(func,parent,oldStackPtr,begin,end,block);
       }
       
-      bool execute_local()
+      bool execute_local(Thread& thread)
       {
         if (right == 0)
           return false;
 
-        if (&tasks[right-1] == TaskSchedulerNew::thread_local_task)
+        if (&tasks[right-1] == thread.task)
           return false;
         
         while (tasks[right-1].split(tasks[right])) {
           right++;
         }
 
-        tasks[right-1].run();
+        tasks[right-1].run(thread);
         if (tasks[right-1].oldStackPtr != -1)
           stackPtr = tasks[right-1].oldStackPtr;
         right--;
@@ -215,10 +217,11 @@ namespace embree
       static const size_t MAX_STACK_SIZE = 64*1024;
       
       Thread (size_t threadIndex, TaskSchedulerNew* scheduler)
-      : threadIndex(threadIndex), scheduler(scheduler) {}
+      : threadIndex(threadIndex), scheduler(scheduler), task(NULL) {}
       
       size_t threadIndex;
       TaskQueue tasks;
+      Task* task;
       TaskSchedulerNew* scheduler;
     };
     
@@ -235,7 +238,7 @@ namespace embree
     static __forceinline void spawn(const Closure& closure, const size_t begin = 0, const size_t end = 1, const size_t block = 1) 
     {
       Thread* thread = TaskSchedulerNew::thread();
-      thread->tasks.push_right(closure,begin,end,block);
+      thread->tasks.push_right(*thread,closure,begin,end,block);
     }
 
     /* spawn a new task at the top of the threads task stack */
@@ -256,7 +259,7 @@ namespace embree
     static __forceinline void wait() 
     {
       Thread* thread = TaskSchedulerNew::thread();
-      while (thread->tasks.execute_local()) {};
+      while (thread->tasks.execute_local(*thread)) {};
     }
 
     std::vector<std::thread> threads;
@@ -271,9 +274,6 @@ namespace embree
 
     static __thread Thread* thread_local_thread;
     static Thread* thread();
-    
-    static __thread Task* thread_local_task;
-    static Task* task();
   };
 };
 

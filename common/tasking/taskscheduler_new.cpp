@@ -56,12 +56,6 @@ namespace embree
     return thread_local_thread;
   }
 
-  __thread TaskSchedulerNew::Task* TaskSchedulerNew::thread_local_task = NULL;
-
-  TaskSchedulerNew::Task* TaskSchedulerNew::task() {
-    return thread_local_task;
-  }
-
   void TaskSchedulerNew::schedule(size_t threadIndex) try 
   {
     /* allocate thread structure */
@@ -101,7 +95,7 @@ namespace embree
     while (anyTasksRunning) cont2:
     {
       /* first try executing local tasks */
-      while (thread.tasks.execute_local()) {
+      while (thread.tasks.execute_local(thread)) {
         if (terminate) return;
       }
       atomic_add(&anyTasksRunning,-1);
