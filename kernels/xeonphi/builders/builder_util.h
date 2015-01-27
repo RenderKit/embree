@@ -51,6 +51,15 @@ namespace embree
       geometry_upper  = max(geometry_upper,b_max);
     }
 
+    __forceinline void extend(const mic_f &b_min,
+			      const mic_f &b_max) {
+      const mic_f b_centroid2 = b_min + b_max;
+      centroid2_lower = min(centroid2_lower,b_centroid2);
+      centroid2_upper = max(centroid2_upper,b_centroid2);
+      geometry_lower  = min(geometry_lower,b_min);
+      geometry_upper  = max(geometry_upper,b_max);
+    }
+
     __forceinline void extend(const CentroidGeometryAABB& c) {
       centroid2_lower = min(centroid2_lower,c.centroid2_lower);
       centroid2_upper = max(centroid2_upper,c.centroid2_upper);

@@ -131,8 +131,8 @@ namespace embree
 
       /* get right index from block id */
       __forceinline size_t getRightBlockIndex(const size_t id) { return id >> 32; }
-
-      /* get left array index from block index */
+ 
+     /* get left array index from block index */
       __forceinline void getLeftArrayIndex(const size_t blockIndex, size_t &begin, size_t &end) 
       { 
         begin = blockIndex * BLOCK_SIZE; 
@@ -639,7 +639,7 @@ namespace embree
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-  template<typename T, typename V, typename Compare, typename Reduction_T, typename Reduction_V>
+  template<typename T, typename V, typename Compare, typename Reduction_T, typename Reduction_V, typename ThreadLocalPartition>
   class __aligned(64) parallel_partition_static
     {
     private:
@@ -647,6 +647,7 @@ namespace embree
       const Compare& cmp;
       const Reduction_T& reduction_t;
       const Reduction_V& reduction_v;
+      const ThreadLocalPartition& threadLocalPartition;
       
       const V &init;
 
@@ -718,7 +719,7 @@ namespace embree
               {
 #if defined(__MIC__)
 		prefetch<PFHINT_NT>(((char*)l)+4*64);
-		prefetch<PFHINT_L2EX>(((char*)l)+64*20);	  	  
+		//prefetch<PFHINT_L2>(((char*)l)+64*20);	  	  
 #endif
                 reduction_t(leftReduc,*l);
                ++l;
@@ -733,7 +734,7 @@ namespace embree
               {
 #if defined(__MIC__)
 		prefetch<PFHINT_NT>(((char*)r)-4*64);	  
-		prefetch<PFHINT_L2EX>(((char*)r)-64*20);	  	  
+		//prefetch<PFHINT_L2>(((char*)r)-64*20);	  	  
 #endif
                 reduction_t(rightReduc,*r);
                 --r;
@@ -784,7 +785,9 @@ namespace embree
       {
 	leftReduction = init;
 	rightReduction = init;
-        const size_t mid = serialPartitioning(t_array,size,leftReduction,rightReduction); 
+        //const size_t mid = serialPartitioning(t_array,size,leftReduction,rightReduction); 
+
+	const size_t mid = threadLocalPartition(t_array,size,leftReduction,rightReduction); 
         DBG_CHECK(
 		  checkLeft(t_array,0,mid);
 		  checkRight(t_array,mid,size);
@@ -795,7 +798,13 @@ namespace embree
     public:
 
       /* initialize atomic counters */
-      __forceinline parallel_partition_static(T *array, size_t N, const V& init, const Compare& cmp, const Reduction_T& reduction_t, const Reduction_V& reduction_v) : array(array), N(N), init(init), cmp(cmp), reduction_t(reduction_t) , reduction_v(reduction_v)
+      __forceinline parallel_partition_static(T *array, 
+					      size_t N, 
+					      const V& init, 
+					      const Compare& cmp, 
+					      const Reduction_T& reduction_t, 
+					      const Reduction_V& reduction_v,
+					      const ThreadLocalPartition& threadLocalPartition) : array(array), N(N), init(init), cmp(cmp), reduction_t(reduction_t), reduction_v(reduction_v), threadLocalPartition(threadLocalPartition) 
       {
 	global_mid = (size_t)-1;
       }
@@ -804,7 +813,7 @@ namespace embree
 
       static void task_thread_partition(void* data, const size_t threadID, const size_t numThreads) {
 
-        parallel_partition_static<T,V,Compare,Reduction_T,Reduction_V>* p = (parallel_partition_static<T,V,Compare,Reduction_T,Reduction_V>*)data;
+        parallel_partition_static<T,V,Compare,Reduction_T,Reduction_V,ThreadLocalPartition>* p = (parallel_partition_static<T,V,Compare,Reduction_T,Reduction_V,ThreadLocalPartition>*)data;
 
 	const size_t startID = (threadID+0)*p->N/numThreads;
 	const size_t endID   = (threadID+1)*p->N/numThreads;
@@ -906,7 +915,7 @@ namespace embree
 
       static void task_thread_move_misplaced(void* data, const size_t threadID, const size_t numThreads) {
 
-        parallel_partition_static<T,V,Compare,Reduction_T,Reduction_V>* p = (parallel_partition_static<T,V,Compare,Reduction_T,Reduction_V>*)data;
+        parallel_partition_static<T,V,Compare,Reduction_T,Reduction_V,ThreadLocalPartition>* p = (parallel_partition_static<T,V,Compare,Reduction_T,Reduction_V,ThreadLocalPartition>*)data;
 
 	p->move_misplaced(threadID,numThreads);
       } 
@@ -1007,7 +1016,7 @@ namespace embree
 	const Range* l_range = &leftMisplacedRanges[leftRangeIndex];
 	const Range* r_range = &rightMisplacedRanges[rightRangeIndex];
 
-	for (size_t i=0;i<size;i++)
+	for (size_t i=0;i<size;)
 	  {
 	    if (unlikely(leftLocalIndex) >= l_range->size())
 	      {
@@ -1021,28 +1030,38 @@ namespace embree
 		r_range++;		
 	      }
 
+	    const size_t l_size = l_range->size()-leftLocalIndex;
+	    const size_t r_size = r_range->size()-rightLocalIndex;
+	    const size_t lr_size = min(l_size,r_size);
 	    
 	    const size_t leftGlobalIndex  = l_range->start + leftLocalIndex;
 	    const size_t rightGlobalIndex = r_range->start + rightLocalIndex;
 
+	    const size_t items = min(lr_size,size-i);
+	    T *l = &array[leftGlobalIndex];
+	    T *r = &array[rightGlobalIndex];
+
+#pragma nounroll
+	    for (size_t j=0;j<items;j++)
+	      {
 #if defined(__MIC__)
-	    prefetch<PFHINT_L1EX>(((char*)&array[leftGlobalIndex]) + 64);	  
-	    prefetch<PFHINT_L1EX>(((char*)&array[rightGlobalIndex])+ 64);	  
+		prefetch<PFHINT_L1EX>(((char*)l) + 4*64);	  
+		prefetch<PFHINT_L1EX>(((char*)r) + 4*64);	  
 #endif
-
-	    assert( !cmp(array[leftGlobalIndex]) );
-	    assert(  cmp(array[rightGlobalIndex]) );
-
-	    std::swap(array[leftGlobalIndex],array[rightGlobalIndex]);
-	    leftLocalIndex++;
-	    rightLocalIndex++;
+		assert( !cmp(*l) );
+		assert(  cmp(*r) );
+		std::swap(*l++,*r++);
+	      }
+	    leftLocalIndex += items;
+	    rightLocalIndex += items;
+	    i += items;
 	  }
       }
 						    
 
     };
 
-  template<typename T, typename V, typename Compare, typename Reduction_T, typename Reduction_V>
+  template<typename T, typename V, typename Compare, typename Reduction_T, typename Reduction_V,typename ThreadLocalPartition>
     __forceinline size_t parallel_in_place_partitioning_static(T *array, 
 							       size_t N, 
 							       const V &init,
@@ -1050,9 +1069,10 @@ namespace embree
 							       V &rightReduction,
 							       const Compare& cmp, 
 							       const Reduction_T& reduction_t,
-							       const Reduction_V& reduction_v)
+							       const Reduction_V& reduction_v,
+							       const ThreadLocalPartition& threadLocalPartition)
   {
-    parallel_partition_static<T,V,Compare,Reduction_T,Reduction_V> p(array,N,init,cmp,reduction_t,reduction_v);
+    parallel_partition_static<T,V,Compare,Reduction_T,Reduction_V,ThreadLocalPartition> p(array,N,init,cmp,reduction_t,reduction_v,threadLocalPartition);
     return p.partition_parallel(leftReduction,rightReduction);    
   }
 

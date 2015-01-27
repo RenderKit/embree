@@ -80,6 +80,15 @@ namespace embree
     return prefix_sum(c);
   }
 
+  static __forceinline mic_m lt_split_new(const mic_f &centroid2,
+					  const mic_f &c,
+					  const mic_f &s,
+					  const mic_f &bestSplit_f)
+  {
+    const mic_f binID = (centroid2 - c)*s;
+    return lt(binID,bestSplit_f);    
+  }
+
   static __forceinline mic_m lt_split(const mic_f &b_min,
 				      const mic_f &b_max,
 				      const mic_m &dim_mask,
