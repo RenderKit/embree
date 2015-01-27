@@ -43,7 +43,7 @@ namespace embree
         : closure(closure) {}
       
       void execute(size_t begin, size_t end) {
-        closure(begin,end);
+        closure(range<size_t>(begin,end));
       };
     };
     

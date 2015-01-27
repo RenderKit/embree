@@ -149,8 +149,8 @@ namespace embree
       }
       else {
 	size_t center = (n0+n1)/2;
-	double c0; TaskSchedulerNew::spawn([&](size_t,size_t){ c0=myreduce(n0,center); });
-	double c1; TaskSchedulerNew::spawn([&](size_t,size_t){ c1=myreduce(center,n1); });
+	double c0; TaskSchedulerNew::spawn([&](const range<size_t>&){ c0=myreduce(n0,center); });
+	double c1; TaskSchedulerNew::spawn([&](const range<size_t>&){ c1=myreduce(center,n1); });
 	TaskSchedulerNew::wait();
 	return c0+c1;
       }
@@ -160,7 +160,7 @@ namespace embree
     {
       double t0 = getSeconds();
       double c2 = 0;
-      newscheduler->spawn_root([&](size_t,size_t){ c2 = myreduce(0,N); });
+      newscheduler->spawn_root([&](const range<size_t>&){ c2 = myreduce(0,N); });
       volatile double result = c2;
       double t1 = getSeconds();
       
@@ -243,7 +243,7 @@ namespace embree
         
         __forceinline Fib (size_t& r, size_t i) : r(r), i(i) {}
         
-        void operator() (size_t, size_t) const
+        void operator() (const range<size_t>&) const
         {
           if (i < CUTOFF) {
             r = fib(i); //i;
