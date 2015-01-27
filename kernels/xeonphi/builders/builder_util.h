@@ -95,6 +95,16 @@ namespace embree
     BBox3fa centroid2;
     BBox3fa geometry;
 
+    Centroid_Scene_AABB() {}
+
+    Centroid_Scene_AABB( const CentroidGeometryAABB &cg )
+      {
+	store4f(&centroid2.lower,cg.centroid2_lower);
+	store4f(&centroid2.upper,cg.centroid2_upper);
+	store4f(&geometry.lower,cg.geometry_lower);
+	store4f(&geometry.upper,cg.geometry_upper);	
+      }
+
     __forceinline void reset() {
 #if !defined(__MIC__)
       centroid2 = geometry = empty;

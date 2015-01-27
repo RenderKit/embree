@@ -32,7 +32,7 @@
 #define L1_PREFETCH_ITEMS 2
 #define L2_PREFETCH_ITEMS 16
 
-#define TIMER(x) x
+#define TIMER(x) 
 #define DBG(x) 
 
 #define PROFILE
@@ -1269,16 +1269,14 @@ namespace embree
 
 
 #if 1
-	CentroidGeometryAABB init;
-	init.reset();
-	CentroidGeometryAABB left;
-	CentroidGeometryAABB right;
-
 	auto part = [&] (PrimRef* const t_array,
-			 const size_t size,                                               
-			 CentroidGeometryAABB &leftReduction,
-			 CentroidGeometryAABB &rightReduction) 
-	  {
+			 const size_t size) 
+	  {                                               
+	    CentroidGeometryAABB leftReduction;
+	    CentroidGeometryAABB rightReduction;
+	    leftReduction.reset();
+	    rightReduction.reset();
+
 	    const mic_m m_mask = mic_m::shift1[bestSplitDim];
 	    PrimRef* l = t_array;
 	    PrimRef* r = t_array + size - 1;
@@ -1293,9 +1291,9 @@ namespace embree
 		    const mic_f b_min  = bounds.x;
 		    const mic_f b_max  = bounds.y;
 		    prefetch<PFHINT_L1EX>(((char*)l)+4*64);
-		    prefetch<PFHINT_L2EX>(((char*)l)+20*64);
 
 		    if (unlikely(ge_split(b_min,b_max,m_mask,c,s,bestSplit_f))) break;
+		    prefetch<PFHINT_L2EX>(((char*)l)+20*64);
 
 		    leftReduction.extend(b_min,b_max);
 		    ++l;
@@ -1308,9 +1306,9 @@ namespace embree
 		    const mic_f b_min  = bounds.x;
 		    const mic_f b_max  = bounds.y;
 		    prefetch<PFHINT_L1EX>(((char*)r)-4*64);	  
-		    prefetch<PFHINT_L2EX>(((char*)r)-20*64);	  
 
 		    if (unlikely(lt_split(b_min,b_max,m_mask,c,s,bestSplit_f))) break;
+		    prefetch<PFHINT_L2EX>(((char*)r)-20*64);	  
 
 		    rightReduction.extend(b_min,b_max);
 		    --r;
@@ -1325,30 +1323,30 @@ namespace embree
 		l++; r--;
 	      }
       
+	    Centroid_Scene_AABB cs_left ( leftReduction );
+	    Centroid_Scene_AABB cs_right ( rightReduction );
+
+	    global_sharedData.left.extend_atomic(cs_left);
+	    global_sharedData.right.extend_atomic(cs_right);
+	    
 	    return l - t_array;        
 
 	  };
 
-	size_t mid_parallel = parallel_in_place_partitioning_static<PrimRef,CentroidGeometryAABB>(&prims[current.begin],
-												  current.size(),
-												  init,
-												  left,
-												  right,
-												  [&] (const PrimRef &ref) { 
-												    const mic_f bf = bestSplit_f;
-    												    const mic2f b = ref.getBounds();
-												    const mic_f b_min = b.x;
-												    const mic_f b_max = b.y;
-												    const mic_f b_centroid2 = b_min + b_max;
-												    //return any(lt_split(b_min,b_max,dim_mask,c,s,bf));
-												    return any(lt_split_new(b_centroid2,c,s,bf));
-												  },
-												  [] (CentroidGeometryAABB &cg,const PrimRef &ref) { cg.extend(ref); },
-												  [] (CentroidGeometryAABB &cg0,const CentroidGeometryAABB &cg1) { cg0.extend(cg1); },
-												  part
-											     );
-	global_sharedData.left  = left;
-	global_sharedData.right = right;
+	size_t mid_parallel = parallel_in_place_partitioning_static<PrimRef>(&prims[current.begin],
+									     current.size(),
+									     [&] (const PrimRef &ref) { 
+									       const mic_f bf = bestSplit_f;
+									       const mic2f b = ref.getBounds();
+									       const mic_f b_min = b.x;
+									       const mic_f b_max = b.y;
+									       const mic_f b_centroid2 = b_min + b_max;
+									       //return any(lt_split(b_min,b_max,dim_mask,c,s,bf));
+									       return any(lt_split_new(b_centroid2,c,s,bf));
+									     },
+									     part
+									     );
+
 #else
 	Centroid_Scene_AABB init;
 	init.reset();
@@ -1384,7 +1382,7 @@ namespace embree
 	TIMER(
 	      msec = getSeconds()-msec;    
 	      total_partition_time += msec;
-	      std::cout << "partition time " << 1000. * msec << " total " << 1000. * total_partition_time << " items << " << current.size() << std::endl;
+	      //std::cout << "partition time " << 1000. * msec << " total " << 1000. * total_partition_time << " items = " << current.size() << std::endl;
 	      );
 	
 	if (unlikely(current.begin == mid || mid == current.end)) 
