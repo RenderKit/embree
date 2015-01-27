@@ -20,6 +20,8 @@
 #include "builders_new/primrefgen.h"
 #include "builders_new/bvh_builder.h"
 
+#include "geometry/bezier1v.h"
+#include "geometry/bezier1i.h"
 #include "geometry/triangle1.h"
 #include "geometry/triangle4.h"
 #include "geometry/triangle8.h"
@@ -176,6 +178,8 @@ namespace embree
     };
     
     /* entry functions for the scene builder */
+    Builder* BVH4Bezier1vSceneBuilderBinnedSAH   (void* bvh, Scene* scene, size_t mode) { return new BVH4BuilderBinnedSAH<BezierCurves,Bezier1v>((BVH4*)bvh,scene,1,1,1.0f,1,1); }
+    Builder* BVH4Bezier1iSceneBuilderBinnedSAH   (void* bvh, Scene* scene, size_t mode) { return new BVH4BuilderBinnedSAH<BezierCurves,Bezier1i>((BVH4*)bvh,scene,1,1,1.0f,1,1); }
     Builder* BVH4Triangle1SceneBuilderBinnedSAH  (void* bvh, Scene* scene, size_t mode) { return new BVH4BuilderBinnedSAH<TriangleMesh,Triangle1>((BVH4*)bvh,scene,1,1,1.0f,2,inf); }
     Builder* BVH4Triangle4SceneBuilderBinnedSAH  (void* bvh, Scene* scene, size_t mode) { return new BVH4BuilderBinnedSAH<TriangleMesh,Triangle4>((BVH4*)bvh,scene,4,4,1.0f,4,inf); }
 #if defined(__AVX__)

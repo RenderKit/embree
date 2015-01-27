@@ -196,8 +196,8 @@ namespace embree
   DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle4vMeshBuilderBinnedSAH2);
   DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle4iMeshBuilderBinnedSAH2);
 
-  //DECLARE_SCENE_BUILDER(BVH4Bezier1vBuilderFast);
-  //DECLARE_SCENE_BUILDER(BVH4Bezier1iBuilderFast);
+  DECLARE_SCENE_BUILDER(BVH4Bezier1vSceneBuilderBinnedSAH);
+  DECLARE_SCENE_BUILDER(BVH4Bezier1iSceneBuilderBinnedSAH);
   DECLARE_SCENE_BUILDER(BVH4Triangle1SceneBuilderBinnedSAH);
   DECLARE_SCENE_BUILDER(BVH4Triangle4SceneBuilderBinnedSAH);
   DECLARE_SCENE_BUILDER(BVH4Triangle8SceneBuilderBinnedSAH);
@@ -338,8 +338,8 @@ namespace embree
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4vMeshBuilderBinnedSAH2);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4iMeshBuilderBinnedSAH2);
   
-    //SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Bezier1vBuilderFast);
-    //SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Bezier1iBuilderFast);
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Bezier1vSceneBuilderBinnedSAH);
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Bezier1iSceneBuilderBinnedSAH);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle1SceneBuilderBinnedSAH);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4SceneBuilderBinnedSAH);
     SELECT_SYMBOL_AVX        (features,BVH4Triangle8SceneBuilderBinnedSAH);
