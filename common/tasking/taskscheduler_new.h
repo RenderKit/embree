@@ -79,7 +79,6 @@ namespace embree
         size_t center = (begin+end)/2;
         new (&child) Task(closure, this, -1, center, end, block);
         end = center;
-        atomic_add(&dependencies,1);
         return true;
       }
 
@@ -118,8 +117,8 @@ namespace embree
       void run (Thread& thread) 
       {
         mutex.lock();
-        validate(false);
-        if (size()) {
+        if (valid) {
+          validate(false);
           Task* prevTask = thread.task; 
           thread.task = this;
           closure->execute(begin,end);
