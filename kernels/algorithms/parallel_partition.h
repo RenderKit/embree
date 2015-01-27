@@ -666,7 +666,7 @@ namespace embree
 	int end;
 	Range() {}
 
-      Range(ssize_t start, ssize_t end) : start(start), end(end) {}
+      Range(int start, int end) : start(start), end(end) {}
 
 	__forceinline void reset() { start = 0; end = -1; } 
 	
@@ -764,6 +764,7 @@ namespace embree
 	const Range globalLeft (0,global_mid-1);
 	const Range globalRight(global_mid,N-1);
 
+#pragma novector
 	for (size_t i=0;i<numThreads;i++)
 	  {	    
 	    Range right_range(counter[i].start+counter[i].left,counter[i].start+counter[i].size-1);
@@ -978,19 +979,19 @@ namespace embree
 	    const size_t rightGlobalIndex = r_range->start + rightLocalIndex;
 
 	    const size_t items = min(lr_size,size-i);
-	    T *l = &array[leftGlobalIndex];
-	    T *r = &array[rightGlobalIndex];
+	    T *__restrict__ const l = &array[leftGlobalIndex];
+	    T *__restrict__ const r = &array[rightGlobalIndex];
 
 #pragma nounroll
 	    for (size_t j=0;j<items;j++)
 	      {
 #if defined(__MIC__)
-		prefetch<PFHINT_L1EX>(((char*)l) + 4*64);	  
-		prefetch<PFHINT_L1EX>(((char*)r) + 4*64);	  
+		prefetch<PFHINT_L1EX>(((char*)&l[j]) + 4*64);
+		prefetch<PFHINT_L1EX>(((char*)&r[j]) + 4*64);	  
 #endif
-		assert( !cmp(*l) );
-		assert(  cmp(*r) );
-		std::swap(*l++,*r++);
+		assert( !cmp(l[j]) );
+		assert(  cmp(r[j]) );
+		xchg(l[j],r[j]);
 	      }
 	    leftLocalIndex += items;
 	    rightLocalIndex += items;
