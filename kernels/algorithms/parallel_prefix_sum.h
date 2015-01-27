@@ -46,8 +46,8 @@ namespace embree
     });
 
     /* calculate prefix sum */
-    Value sum=0;
-    for (size_t i=0; i<taskCount; i++)
+    Value sum=identity; // FIXME: optimize, initialize with first element
+    for (size_t i=0; i<taskCount; i++) 
     {
       const Value c = state.counts[i];
       state.sums[i] = sum;

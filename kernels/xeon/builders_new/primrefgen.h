@@ -24,7 +24,10 @@ namespace embree
 {
   namespace isa
   {
-    template<typename Ty, size_t timeSteps>
+    template<typename Mesh>
+      PrimInfo createPrimRefArray(Mesh* mesh, vector_t<PrimRef>& prims);
+
+    template<typename Mesh, size_t timeSteps>
       PrimInfo createPrimRefArray(Scene* scene, vector_t<PrimRef>& prims);
   }
 }

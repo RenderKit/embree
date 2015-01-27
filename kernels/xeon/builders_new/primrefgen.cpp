@@ -23,49 +23,93 @@ namespace embree
 {
   namespace isa
   {
-    template<typename Ty, size_t timeSteps>
-    PrimInfo createPrimRefArray(Scene* scene, vector_t<PrimRef>& prims)
+    template<typename Mesh>
+    PrimInfo createPrimRefArray(Mesh* mesh, vector_t<PrimRef>& prims)
     {
-      ParallelForForPrefixSumState<PrimInfo> pstate;
-      Scene::Iterator<Ty,timeSteps> iter(scene);
+      ParallelPrefixSumState<PrimInfo> pstate;
       
       /* first try */
-      pstate.init(iter,size_t(1024));
-      PrimInfo pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](Ty* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
-						    {
-						      PrimInfo pinfo(empty);
-						      for (ssize_t j=r.begin(); j<r.end(); j++)
-							{
-							  BBox3fa bounds = empty;
-							  if (!mesh->valid(j,&bounds)) continue;
-							  const PrimRef prim(bounds,mesh->id,j);
-							  pinfo.add(prim.bounds(),prim.center2());
-							  prims[k++] = prim;
-							}
-						      return pinfo;
-						    }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a,b); });
+      PrimInfo pinfo = parallel_prefix_sum( pstate, size_t(0), mesh->size(), size_t(1024), PrimInfo(empty), [&](const range<size_t>& r, const PrimInfo& base) -> PrimInfo
+      {
+        size_t k = r.begin();
+        PrimInfo pinfo(empty);
+        for (size_t j=r.begin(); j<r.end(); j++)
+        {
+          BBox3fa bounds = empty;
+          if (!mesh->valid(j,&bounds)) continue;
+          const PrimRef prim(bounds,mesh->id,j);
+          pinfo.add(prim.bounds(),prim.center2());
+          prims[k++] = prim;
+        }
+        return pinfo;
+      }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a,b); });
       
       /* if we need to filter out geometry, run again */
       if (pinfo.size() != prims.size())
-	{
-	  pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](Ty* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
-					       {
-						 k = base.begin;
-						 PrimInfo pinfo(empty);
-						 for (ssize_t j=r.begin(); j<r.end(); j++)
-						   {
-						     BBox3fa bounds = empty;
-						     if (!mesh->valid(j,&bounds)) continue;
-						     const PrimRef prim(bounds,mesh->id,j);
-						     pinfo.add(prim.bounds(),prim.center2());
-						     prims[k++] = prim;
-						   }
-						 return pinfo;
-					       }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a,b); });
-	}
+      {
+        pinfo = parallel_prefix_sum( pstate, size_t(0), mesh->size(), size_t(1024), PrimInfo(empty), [&](const range<size_t>& r, const PrimInfo& base) -> PrimInfo
+        {
+          size_t k = base.size();
+          PrimInfo pinfo(empty);
+          for (ssize_t j=r.begin(); j<r.end(); j++)
+          {
+            BBox3fa bounds = empty;
+            if (!mesh->valid(j,&bounds)) continue;
+            const PrimRef prim(bounds,mesh->id,j);
+            pinfo.add(prim.bounds(),prim.center2());
+            prims[k++] = prim;
+          }
+          return pinfo;
+        }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a,b); });
+      }
+      return pinfo;
+    }
+
+    template<typename Mesh, size_t timeSteps>
+    PrimInfo createPrimRefArray(Scene* scene, vector_t<PrimRef>& prims)
+    {
+      ParallelForForPrefixSumState<PrimInfo> pstate;
+      Scene::Iterator<Mesh,timeSteps> iter(scene);
+      
+      /* first try */
+      pstate.init(iter,size_t(1024));
+      PrimInfo pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](Mesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
+      {
+        PrimInfo pinfo(empty);
+        for (size_t j=r.begin(); j<r.end(); j++)
+        {
+          BBox3fa bounds = empty;
+          if (!mesh->valid(j,&bounds)) continue;
+          const PrimRef prim(bounds,mesh->id,j);
+          pinfo.add(prim.bounds(),prim.center2());
+          prims[k++] = prim;
+        }
+        return pinfo;
+      }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a,b); });
+      
+      /* if we need to filter out geometry, run again */
+      if (pinfo.size() != prims.size())
+      {
+        pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](Mesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
+        {
+          k = base.size();
+          PrimInfo pinfo(empty);
+          for (size_t j=r.begin(); j<r.end(); j++)
+          {
+            BBox3fa bounds = empty;
+            if (!mesh->valid(j,&bounds)) continue;
+            const PrimRef prim(bounds,mesh->id,j);
+            pinfo.add(prim.bounds(),prim.center2());
+            prims[k++] = prim;
+          }
+          return pinfo;
+        }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a,b); });
+      }
       return pinfo;
     }
     
+    template PrimInfo createPrimRefArray<TriangleMesh>(TriangleMesh* mesh, vector_t<PrimRef>& prims);
+
     template PrimInfo createPrimRefArray<TriangleMesh,1>(Scene* scene, vector_t<PrimRef>& prims);
   }
 }
