@@ -65,6 +65,7 @@ namespace embree
     template<typename NodeRef, typename Heuristic, typename Allocator, typename CreateAllocFunc, typename CreateNodeFunc, typename CreateLeafFunc>
       class BVHBuilderSAH
     {
+      typedef typename Heuristic::Split Split;
       static const size_t MAX_BRANCHING_FACTOR = 16;  //!< maximal supported BVH branching factor
       static const size_t MIN_LARGE_LEAF_LEVELS = 8;  //!< create balanced tree of we are that many levels before the maximal tree depth
 
@@ -87,7 +88,7 @@ namespace embree
       {
         /* calculate binning function */
         PrimInfo pinfo(current.size(),current.geomBounds,current.centBounds);
-        typename Heuristic::Split split = heuristic.find(current.prims,pinfo,logBlockSize);
+        Split split = heuristic.find(current.prims,pinfo,logBlockSize);
 
         /* if we cannot find a valid split, enforce an arbitrary split */
         if (unlikely(!split.valid())) heuristic.splitFallback(current.prims,leftChild,leftChild.prims,rightChild,rightChild.prims);
@@ -100,7 +101,7 @@ namespace embree
       {
         /* calculate binning function */
         PrimInfo pinfo(current.size(),current.geomBounds,current.centBounds);
-        typename Heuristic::Split split = heuristic.parallel_find(current.prims,pinfo,logBlockSize);
+        Split split = heuristic.parallel_find(current.prims,pinfo,logBlockSize);
         
         /* if we cannot find a valid split, enforce an arbitrary split */
         if (unlikely(!split.valid())) heuristic.splitFallback(current.prims,leftChild,leftChild.prims,rightChild,rightChild.prims);
@@ -295,7 +296,7 @@ namespace embree
       assert((blockSize ^ (1L << logBlockSize)) == 0);
       return execute_closure([&]() -> NodeRef 
       {
-          BVHBuilderSAH<NodeRef,decltype(heuristic),decltype(createAlloc()),CreateAllocFunc,CreateNodeFunc,CreateLeafFunc> builder
+          BVHBuilderSAH<NodeRef,HeuristicArrayBinningSAH<PrimRef>,decltype(createAlloc()),CreateAllocFunc,CreateNodeFunc,CreateLeafFunc> builder
             (heuristic,createAlloc,createNode,createLeaf,prims,pinfo,branchingFactor,maxDepth,logBlockSize,minLeafSize,maxLeafSize);
 
 	  NodeRef root;

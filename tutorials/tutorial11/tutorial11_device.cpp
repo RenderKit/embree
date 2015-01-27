@@ -15,8 +15,8 @@
 // ======================================================================== //
 
 #include "../common/tutorial/tutorial_device.h"
-#include "kernels/xeon/builders/bvh_builder.h"
-#include "kernels/xeon/builders/bvh_builder_center.h"
+#include "kernels/xeon/builders_new/bvh_builder.h"
+#include "kernels/xeon/builders_new/bvh_builder_morton.h"
 #include "kernels/xeon/builders/priminfo.h"
 
 /* scene data */
@@ -108,13 +108,13 @@ void build_sah(std::vector<PrimRef>& prims, isa::PrimInfo& pinfo)
       },
 
       /* lambda function that creates BVH nodes */
-      [&](const isa::BuildRecord<Node*>& current, isa::BuildRecord<Node*>* children, const size_t N, FastAllocator::ThreadLocal* alloc)
+      [&](const isa::BuildRecord<Node*>& current, isa::BuildRecord<Node*>** children, const size_t N, FastAllocator::ThreadLocal* alloc)
       {
         assert(N <= 2);
         InnerNode* node = new (alloc->malloc(sizeof(InnerNode))) InnerNode;
         for (size_t i=0; i<N; i++) {
-          node->bounds[i] = children[i].geomBounds;
-          children[i].parent = &node->children[i];
+          node->bounds[i] = children[i]->geomBounds;
+          children[i]->parent = &node->children[i];
         }
         *current.parent = node;
       },

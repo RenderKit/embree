@@ -18,7 +18,10 @@
 
 #include "sys/platform.h"
 #include "tasking/taskscheduler.h"
+
 #include <thread>
+#include <mutex>
+#include <condition_variable>
 
 namespace embree
 {

@@ -20,7 +20,7 @@
 
 #include "bvh4.h"
 #include "bvh4_statistics.h"
-#include "builders/bvh_builder_center.h"
+#include "builders_new/bvh_builder_morton.h"
 
 #include "builders/heuristic_fallback.h"
 #include "builders/workstack.h"
