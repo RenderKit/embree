@@ -20,6 +20,8 @@
 
 namespace embree
 {
+  std::mutex mutex;
+
   TaskSchedulerNew::TaskSchedulerNew(size_t numThreads)
     : numThreads(numThreads), terminate(false), anyTasksRunning(0), numThreadsRunning(0)
   {
@@ -88,9 +90,6 @@ namespace embree
 
   void TaskSchedulerNew::schedule_on_thread(Thread& thread)
   {
-    const size_t threadIndex = thread.threadIndex;
-    const size_t threadCount = threads.size()+1;
-
     /* continue until there are some running tasks */
     while (anyTasksRunning) cont2:
     {
@@ -101,20 +100,32 @@ namespace embree
       atomic_add(&anyTasksRunning,-1);
 
       /* second try to steal tasks */
-      while (anyTasksRunning)
-      {
-        for (size_t i=1; i<threadCount; i++) 
-        {
-          const size_t otherThreadIndex = (threadIndex+i)%threadCount; // FIXME: optimize %
-          if (!threadLocal[otherThreadIndex])
-            continue;
-
-          if (threadLocal[otherThreadIndex]->tasks.steal()) {
-            atomic_add(&anyTasksRunning,1);
-            goto cont2;
-          }
+      while (anyTasksRunning) {
+        if (schedule_steal(thread)) {
+          atomic_add(&anyTasksRunning,1);
+          goto cont2;
         }
       }
     }
+  }
+
+  bool TaskSchedulerNew::schedule_steal(Thread& thread)
+  {
+    const size_t threadIndex = thread.threadIndex;
+    const size_t threadCount = threads.size()+1;
+
+    for (size_t i=1; i<threadCount; i++) 
+    {
+      const size_t otherThreadIndex = (threadIndex+i)%threadCount; // FIXME: optimize %
+      if (!threadLocal[otherThreadIndex])
+        continue;
+      
+      if (threadLocal[otherThreadIndex]->tasks.steal()) {
+        //atomic_add(&anyTasksRunning,1);
+        return true;
+      }
+    }
+
+    return false;
   }
 }

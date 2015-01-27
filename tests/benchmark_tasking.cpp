@@ -160,7 +160,7 @@ namespace embree
     {
       double t0 = getSeconds();
       double c2 = 0;
-      newscheduler->spawn_root([&](const range<size_t>&){ c2 = myreduce(0,N); });
+      newscheduler->spawn_root(0,1,1,[&](const range<size_t>&){ c2 = myreduce(0,N); });
       volatile double result = c2;
       double t1 = getSeconds();
       
@@ -236,6 +236,7 @@ namespace embree
       /* create task scheduler */
       TaskSchedulerNew* scheduler = new TaskSchedulerNew;
 
+#if 0
       struct Fib
       {
         size_t& r;
@@ -245,6 +246,7 @@ namespace embree
         
         void operator() (const range<size_t>&) const
         {
+          //mutex.lock(); PRINT2(TaskSchedulerNew::thread()->threadIndex,i); mutex.unlock();
           if (i < CUTOFF) {
             r = fib(i); //i;
           } else {
@@ -263,7 +265,7 @@ namespace embree
       size_t r0 = fib(N);
       double t1 = getSeconds();
       size_t r1; Fib pfib(r1,N);
-      scheduler->spawn_root(pfib);
+      scheduler->spawn_root(0,1,1,pfib);
       double t2 = getSeconds();
 
       printf("  sequential_fib(%zu) = %zu, %3.2fms\n",N,r0,1000.0f*(t1-t0));
@@ -273,7 +275,26 @@ namespace embree
       /* output if test passed or not */
       if (passed) printf("[passed]\n");
       else        printf("[failed]\n");
+      
+#else
 
+      atomic_t cntr = 0;
+      const size_t M = 160000;
+      
+      scheduler->spawn_root(0,M,1,[&] (const range<size_t>& r)
+      {
+        atomic_add(&cntr,r.begin());
+      //mutex.lock();
+        //PRINT3(TaskSchedulerNew::thread()->threadIndex,r.begin(),r.end());
+        //for (size_t i=0; i<scheduler->threads.size()+1; i++) {
+        //  scheduler->threadLocal[i]->tasks.print(*scheduler->threadLocal[i]);
+        //}
+        //mutex.unlock();
+      });
+      
+      PRINT2(cntr,M*(M-1)/2);
+#endif
+      
       delete scheduler;
       return passed;
     }
@@ -309,6 +330,7 @@ namespace embree
   {
 #if 1
     const size_t N = 40;
+    //const size_t N = 22;
     //tbb::task_arena limited(2);
     //limited.my_limit = 1000000;
 

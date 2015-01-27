@@ -26,6 +26,8 @@
 
 namespace embree
 {
+  extern std::mutex mutex;
+  
   struct TaskSchedulerNew
   {
     struct Thread;
@@ -104,7 +106,6 @@ namespace embree
           size_t center = (begin+end)/2;
           new (&child) Task(closure, this, -1, center, end, block);
           end = center;
-          addDependency();
           mutex.unlock();
           return 2;
         }
@@ -126,7 +127,11 @@ namespace embree
         }
         mutex.unlock();
         removeDependency();
-        waitForDependencies(); // FIXME: maybe steal here
+        //waitForDependencies(); // FIXME: maybe steal here
+        /*while (dependencies) {
+          if (thread.scheduler->schedule_steal(thread))
+            while (thread.tasks.execute_local(thread));
+            }*/
         if (parent) parent->removeDependency();
       }
 
@@ -149,6 +154,17 @@ namespace embree
       
       __aligned(64) char stack[MAX_STACK_SIZE];
       size_t stackPtr;
+
+      void print(Thread& thread)
+      {
+        //std::cout << "left = " << left << ", right = " << right << std::endl;
+        std::cout << "thread" << thread.threadIndex;
+        for (size_t i=0; i<right; i++) {
+          std::cout << " ( valid" << tasks[i].valid << ", dep" << tasks[i].dependencies << ", " << tasks[i].begin << ", " << tasks[i].end << "), ";
+        }
+        std::cout << std::endl;
+      }
+
       
       TaskQueue ()
       : left(0), right(0), stackPtr(0) {}
@@ -231,6 +247,7 @@ namespace embree
 
     void schedule(size_t threadIndex);
     void schedule_on_thread(Thread& thread);
+    bool schedule_steal(Thread& thread);
 
     /* spawn a new task at the top of the threads task stack */
     template<typename Closure>
@@ -242,7 +259,7 @@ namespace embree
 
     /* spawn a new task at the top of the threads task stack */
     template<typename Closure>
-    __forceinline void spawn_root(const Closure& closure, const size_t begin = 0, const size_t end = 1, const size_t block = 1) 
+    __forceinline void spawn_root(const size_t begin, const size_t end, const size_t block, const Closure& closure) 
     {
       /* allocate thread structure */
       Thread thread(0,this);
