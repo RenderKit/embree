@@ -1980,7 +1980,7 @@ namespace embree
 	for (size_t s=1;s<MAX_SIZE;s+=s)        
           {
             DBG_PRINT(s);
-            srand48(s*32323);
+            //srand48(s*32323);
 
 
             t_parallel_total = 0.0;
@@ -2077,7 +2077,7 @@ namespace embree
               }
             t_parallel_total /= ITERATIONS;
 
-            srand48(s*32323);
+            //srand48(s*32323);
 #if 1
             t_serial_total = 0.0;
             for (size_t j=0;j<ITERATIONS;j++)
