@@ -406,6 +406,8 @@ namespace embree
     /*! Two thread local structures. */
     struct __aligned(64) ThreadLocal2
     {
+	  ALIGNED_STRUCT;
+
       /*! Constructor for usage with ThreadLocalData */
       __forceinline ThreadLocal2 (void* alloc) 
         : alloc0(alloc), alloc1(alloc) {}
