@@ -20,8 +20,6 @@
 
 namespace embree
 {
-  std::mutex g_mutex; // FIXME: remove
-
   TaskSchedulerNew::TaskSchedulerNew(size_t numThreads)
     : numThreads(numThreads), terminate(false), anyTasksRunning(0), numThreadsRunning(0)
   {
@@ -85,7 +83,8 @@ namespace embree
       atomic_add(&anyTasksRunning,+1);
       schedule_on_thread(thread);
     }
-    
+
+    /* decrement thread counter */
     atomic_add(&numThreadsRunning,-1);
   }
   catch (const std::exception& e) {
@@ -116,8 +115,10 @@ namespace embree
           if (!threadLocal[otherThreadIndex])
             continue;
 
-          if (threadLocal[otherThreadIndex]->tasks.steal(&anyTasksRunning))
+          if (threadLocal[otherThreadIndex]->tasks.steal()) {
+            atomic_add(&anyTasksRunning,1);
             goto cont2;
+          }
         }
       }
     }

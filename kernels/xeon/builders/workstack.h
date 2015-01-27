@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include "common/default.h"
+
 namespace embree
 {
   template<class T, unsigned int SIZE>

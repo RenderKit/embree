@@ -234,7 +234,7 @@ namespace embree
       fflush(stdout);
 
       /* create task scheduler */
-      TaskSchedulerNew* scheduler = new TaskSchedulerNew(8);
+      TaskSchedulerNew* scheduler = new TaskSchedulerNew;
 
       struct Fib
       {
@@ -307,7 +307,7 @@ namespace embree
 
   void main(int argc, const char* argv[])
   {
-#if 0
+#if 1
     const size_t N = 40;
     //tbb::task_arena limited(2);
     //limited.my_limit = 1000000;
@@ -317,8 +317,8 @@ namespace embree
       task_scheduler_regression(N);
     }
     {
-      //tbb::task_scheduler_init init(tbb::task_scheduler_init::default_num_threads());
-      tbb::task_scheduler_init init(8);
+      tbb::task_scheduler_init init(tbb::task_scheduler_init::default_num_threads());
+      //tbb::task_scheduler_init init(8);
       //myobserver observer; observer.observe();
       double t0 = getSeconds();
       size_t r0 = Fib(N);

@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include "common/default.h"
 #include "range.h"
 
 namespace embree

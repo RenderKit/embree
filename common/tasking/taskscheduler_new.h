@@ -18,6 +18,7 @@
 
 #include "sys/platform.h"
 #include "tasking/taskscheduler.h"
+#include "../../kernels/algorithms/range.h"
 
 #include <thread>
 #include <mutex>
@@ -25,8 +26,6 @@
 
 namespace embree
 {
-  extern std::mutex g_mutex;
-  
   struct TaskSchedulerNew
   {
     struct TaskFunction {
@@ -194,7 +193,7 @@ namespace embree
         return true;
       }
 
-      bool steal(volatile atomic_t* anyTasksRunning)
+      bool steal() //volatile atomic_t* anyTasksRunning)
       {
         size_t l = left;
         while (!tasks[l].valid && l<right) l = atomic_add(&left,1);
@@ -205,7 +204,7 @@ namespace embree
         int op = tasks[l].steal(dst);
         if (op == 0) return false;
         if (op == 1) atomic_add(&left,1);
-        if (anyTasksRunning) atomic_add(anyTasksRunning,1);
+        //if (anyTasksRunning) atomic_add(anyTasksRunning,1);
         thread->tasks.right++;
         return true;
       }
