@@ -55,6 +55,7 @@ namespace embree
     {
       enum { EMPTY, INITIALIZED, STEALING };
 
+      /*! switch from one state to another */
       __forceinline void switch_state(int from, int to) 
       {
 	__memory_barrier();
@@ -62,68 +63,67 @@ namespace embree
 	assert(success);
       }
 
+      /*! try to switch from one state to another */
       __forceinline bool try_switch_state(int from, int to) {
 	__memory_barrier();
 	return atomic_cmpxchg(&state,from,to) == from;
       }
 
-      __forceinline Task()
-      : state(EMPTY) {} //valid(false) {}
+       /*! increment/decrement dependency counter */
+      void add_dependencies(int n) { 
+	atomic_add(&dependencies,n); 
+      }
 
+      /*! initialize all tasks to EMPTY state by default */
+      __forceinline Task()
+	: state(EMPTY) {} 
+
+      /*! construction of new task */
       __forceinline Task (TaskFunction* closure, Task* parent, size_t stackPtr) 
         : closure(closure), parent(parent), stackPtr(stackPtr), dependencies(1) 
       {
-	//validate(true);
-        if (parent) parent->addDependency();
+        if (parent) parent->add_dependencies(+1);
 	switch_state(EMPTY,INITIALIZED);
       }
 
+      /*! construction of stolen task, stealing thread will decrement initial dependency */
       __forceinline Task (TaskFunction* closure, Task* parent) 
         : closure(closure), parent(parent), stackPtr(-1), dependencies(1) 
       {
-	//validate(true);
-        //if (parent) parent->addDependency();
 	switch_state(EMPTY,INITIALIZED);
       }
 
-      //__forceinline void validate(bool valid0) {
-      //  __memory_barrier();
-      //  valid = valid0;
-      //}
-
-      int steal(Task& child)
+      /*! try to steal this task */
+      bool try_steal(Task& child)
       {
-	if (!try_switch_state(INITIALIZED,STEALING)) return 0;
+	if (!try_switch_state(INITIALIZED,STEALING)) return false;
 	new (&child) Task(closure, this);
 	switch_state(STEALING,EMPTY);
-        return 1;
+        return true;
       } 
-
-      void addDependency      () { atomic_add(&dependencies,+1); }
-      void removeDependency   () { atomic_add(&dependencies,-1); }
-      void waitForDependencies() { while (dependencies) __pause_cpu(); }
       
+      /*! run this task */
       void run (Thread& thread) 
       {
-	bool run = try_switch_state(INITIALIZED,EMPTY);
-	if (run)
+	/* try to run if not already stolen */
+	if (try_switch_state(INITIALIZED,EMPTY))
 	{
 	  Task* prevTask = thread.task; 
           thread.task = this;
           closure->execute();
           thread.task = prevTask;
-	  removeDependency();
+	  add_dependencies(-1);
 	}
-	//else {
-	//  while (state != EMPTY)
-	//    __pause_cpu();
-	//}
         
+	/* steal until all dependencies have completed */
         while (dependencies) {
           if (thread.scheduler->schedule_steal(thread))
             while (thread.tasks.execute_local(thread,this));
         }
-        if (parent) parent->removeDependency();
+
+	/* now signal our parent task that we are finished */
+        if (parent) 
+	  parent->add_dependencies(-1);
       }
 
     public:
@@ -192,7 +192,7 @@ namespace embree
         Thread* thread = TaskSchedulerNew::thread();
         Task& dst = thread->tasks.tasks[thread->tasks.right];
 
-        if (!tasks[l].steal(dst))
+        if (!tasks[l].try_steal(dst))
           return false;
 
         atomic_add(&left,1);
