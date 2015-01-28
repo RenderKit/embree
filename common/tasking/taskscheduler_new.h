@@ -122,7 +122,7 @@ namespace embree
 	  Task* prevTask = thread.task; 
           thread.task = this;
           closure->execute();
-          thread.task = prevTask;
+	  thread.task = prevTask;
 	  add_dependencies(-1);
 	}
         

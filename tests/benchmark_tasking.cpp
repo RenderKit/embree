@@ -288,7 +288,7 @@ namespace embree
 			     for (size_t i=r.begin(); i<r.end(); i++)
 			       atomic_add(&cntr,i);
 			   });
-	  scheduler->wait(); // FIXME: should be automatic
+	  scheduler->wait();
       });
       
       PRINT2(cntr,M*(M-1)/2);
