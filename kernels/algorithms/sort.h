@@ -236,7 +236,7 @@ namespace embree
 	
 	/* perform parallel sort for large N */
 	else {
-#if USE_TBB
+#if USE_TBB // FIXME: sort should get split into subtasks
 	  const size_t numThreads = min(size_t(tbb::task_scheduler_init::default_num_threads()),MAX_THREADS);
 	  parent->barrier.init(numThreads);
 	  tbb::parallel_for(size_t(0),numThreads,size_t(1),[&] (size_t taskIndex) { radixsort(taskIndex,numThreads); });
