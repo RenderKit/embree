@@ -652,14 +652,8 @@ namespace embree
       size_t global_mid;
       T* array;
 
-      struct LeftRightCounter {
-	unsigned int start;
-	unsigned int size;
-	unsigned int left;
-	unsigned int right;
-      };
-
-      __aligned(64) LeftRightCounter counter[MAX_MIC_THREADS];
+      unsigned int counter_start[MAX_MIC_THREADS];
+      unsigned int counter_left[MAX_MIC_THREADS];     
 
       struct Range {
 	int start;
@@ -752,87 +746,87 @@ namespace embree
 	const size_t size    = endID-startID;
 	
         const size_t mid = p->partition_serial(&p->array[startID],size);
-	p->counter[threadID].start = startID;
-	p->counter[threadID].size  = size;
-	p->counter[threadID].left  = mid;
-	p->counter[threadID].right = size-mid;
+	p->counter_start[threadID] = startID;
+	p->counter_left[threadID]  = mid;
       } 
 
-      size_t countMisplacedItems(const size_t numThreads)
-      {
-	size_t numMisplacedItemsLeft   = 0;
-	const Range globalLeft (0,global_mid-1);
-	const Range globalRight(global_mid,N-1);
 
-#pragma novector
-	for (size_t i=0;i<numThreads;i++)
-	  {	    
-	    Range right_range(counter[i].start+counter[i].left,counter[i].start+counter[i].size-1);
-	    Range left_misplaced = globalLeft.intersect(right_range);
-	    if (!left_misplaced.empty())  
-	      {
-		numMisplacedItemsLeft  += left_misplaced.size();
-	      }
-	  }
-	return numMisplacedItemsLeft;
-      }
-
-      void move_misplaced(const size_t threadID, const size_t numThreads) 
-      {
 	__aligned(64) Range leftMisplacedRanges[MAX_MIC_THREADS];
 	__aligned(64) Range rightMisplacedRanges[MAX_MIC_THREADS];
+	size_t numMisplacedRangesLeft;
+	size_t numMisplacedRangesRight;
+	size_t numMisplacedItems;
+
+      void computeMisplacedRanges(const size_t numThreads)
+      {
+#if defined(__MIC__)
+	for (size_t i=0;i<(numThreads+15)/16;i++)
+	  prefetch<PFHINT_L2>(&counter_left[i*16]);
+#endif
+
+	numMisplacedRangesLeft  = 0;
+	numMisplacedRangesRight = 0;
+	size_t numMisplacedItemsLeft   = 0;
+	size_t numMisplacedItemsRight  = 0;
+
+	counter_start[numThreads] = N;
+	counter_left[numThreads]  = 0;
+
+	unsigned int mid = counter_left[0];
+	for (unsigned int i=1;i<numThreads;i++)
+	  {
+#if defined(__MIC__)
+	    prefetch<PFHINT_L1>(&counter_left[i+16]);
+#endif
+	    mid += counter_left[i];
+	  }
+
+	global_mid = mid;
+
+#if defined(__MIC__)
+	for (size_t i=0;i<(numThreads+15)/16;i++)
+	  prefetch<PFHINT_L2>(&counter_start[i*16]);
+#endif
 
 	const Range globalLeft (0,global_mid-1);
 	const Range globalRight(global_mid,N-1);
-
-	size_t numMisplacedRangesLeft  = 0;
-	size_t numMisplacedRangesRight = 0;
-	size_t numMisplacedItemsLeft   = 0;
-	size_t numMisplacedItemsRight  = 0;
 
 	// without pragma the compiler makes a mess out of this loop
 #pragma novector
 	for (size_t i=0;i<numThreads;i++)
 	  {	    
 #if defined(__MIC__)
-	    prefetch<PFHINT_NT>(&counter[i+4]);
+	    prefetch<PFHINT_L1>(&counter_start[i+16]);
 #endif
-	    Range left_range (counter[i].start,counter[i].start+counter[i].left-1);
-	    Range right_range(counter[i].start+counter[i].left,counter[i].start+counter[i].size-1);
+
+	    const unsigned int left_start  = counter_start[i];
+	    const unsigned int left_end    = counter_start[i] + counter_left[i]-1;
+	    const unsigned int right_start = counter_start[i] + counter_left[i];
+	    const unsigned int right_end   = counter_start[i+1]-1;
+
+	    Range left_range (left_start,left_end); // counter[i].start,counter[i].start+counter[i].left-1);
+	    Range right_range(right_start,right_end); // counter[i].start+counter[i].left,counter[i].start+counter[i].size-1);
 
 	    Range left_misplaced = globalLeft.intersect(right_range);
 	    Range right_misplaced = globalRight.intersect(left_range);
-
-	    DBG_PART(
-		     DBG_PRINT(i);
-		     DBG_PRINT(counter[i].start);
-		     DBG_PRINT(counter[i].size);
-		     DBG_PRINT(counter[i].left);
-		     DBG_PRINT(counter[i].right);
-		     
-		     DBG_PRINT(left_range.start);
-		     DBG_PRINT(left_range.end);
-		     
-		     DBG_PRINT(right_range.start);
-		     DBG_PRINT(right_range.end);
-		     
-		     DBG_PRINT(left_misplaced.start);
-		     DBG_PRINT(left_misplaced.end);
-
-		     DBG_PRINT(right_misplaced.start);
-		     DBG_PRINT(right_misplaced.end);
-		     );
 
 	    if (!left_misplaced.empty())  
 	      {
 		numMisplacedItemsLeft  += left_misplaced.size();
 		leftMisplacedRanges[numMisplacedRangesLeft++] = left_misplaced;
+#if defined(__MIC__)
+		prefetch<PFHINT_L1EX>(&leftMisplacedRanges[numMisplacedRangesLeft+8]);
+#endif
+
 	      }
 
 	    if (!right_misplaced.empty()) 
 	      {
 		numMisplacedItemsRight += right_misplaced.size();
 		rightMisplacedRanges[numMisplacedRangesRight++] = right_misplaced;
+#if defined(__MIC__)
+		prefetch<PFHINT_L1EX>(&rightMisplacedRanges[numMisplacedRangesRight+8]);
+#endif
 	      }
 	  }
 
@@ -846,10 +840,21 @@ namespace embree
 
 	assert( numMisplacedItemsLeft == numMisplacedItemsRight );
 	
-	const size_t numMisplacedItems = numMisplacedItemsLeft;
-	const size_t numPartitionThreads = 64;
+	numMisplacedItems = numMisplacedItemsLeft;
+      }
+
+      void move_misplaced(const size_t threadID, const size_t numThreads) 
+      {
+	//const size_t numPartitionThreads = 64;
 
 	if ( !numMisplacedItems ) return;
+
+#if defined(__MIC__)
+	for (size_t i=0;i<(numMisplacedRangesLeft+7)/8;i++)
+	  prefetch<PFHINT_L2>(&leftMisplacedRanges[i*8]);
+	for (size_t i=0;i<(numMisplacedRangesRight+7)/8;i++)
+	  prefetch<PFHINT_L2>(&rightMisplacedRanges[i*8]);
+#endif
 
 	//size_t numTotalThreads = small ? numPartitionThreads : numThreads;
 	const size_t numTotalThreads = numThreads;
@@ -901,7 +906,7 @@ namespace embree
         scheduler->dispatchTask(task_thread_partition,this,0,numThreads);
 #if TIME_PHASES == 1
 	t0 = getSeconds() - t0;
-	std::cout << " phase0 = " << 1000.0f*t0 << "ms, perf = " << 1E-6*double(N)/t0 << " Mprim/s" << std::endl;
+	std::cout << std::endl << " phase0 = " << 1000.0f*t0 << "ms, perf = " << 1E-6*double(N)/t0 << " Mprim/s" << std::endl;
 #endif
         /* ------------------------------------ */
         /* ------ parallel cleanup phase ------ */
@@ -910,17 +915,12 @@ namespace embree
 	double t1 = getSeconds();
 #endif
                 
-	size_t mid = counter[0].left;
-	for (size_t i=1;i<numThreads;i++)
-	  mid += counter[i].left;
 
-	global_mid = mid;
-
-	//const size_t numMisplacedItems = countMisplacedItems(numThreads);
-
+	computeMisplacedRanges(numThreads);
+	
 #if  TIME_PHASES == 1
 	t1 = getSeconds() - t1;
-	std::cout << " phase1 = " << 1000.0f*t1 << "ms, perf = " << 1E-6*double(N)/t1 << " Mprim/s" << std::endl;
+	std::cout << " phase1 = " << 1000.0f*t1 << "ms, perf = " << 1E-6*double(N)/t1 << " Mprim/s" <<  " misplaced : " << numMisplacedItems << std::endl;
 #endif
 
 #if  TIME_PHASES == 1
@@ -936,7 +936,7 @@ namespace embree
 		  checkRight(array,global_mid,N);
                  );
         
-        return mid;
+        return global_mid;
       }
 
       __forceinline void swapItemsInMisplacedRanges(const Range * const leftMisplacedRanges,
