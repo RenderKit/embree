@@ -222,6 +222,8 @@ namespace embree
 #endif
   }
 
+#if USE_TBB
+#else
   LockStepTaskScheduler regression_task_scheduler;
 
   void task_regression_testing(void* This, size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* taskGroup) 
@@ -230,10 +232,11 @@ namespace embree
     LockStepTaskScheduler::setInstance(&regression_task_scheduler);
     LockStepTaskScheduler::Init init(threadIndex,threadCount,&regression_task_scheduler);
     if (threadIndex != 0) return;
-    
+
     for (size_t i=0; i<regression_tests->size(); i++) 
       (*(*regression_tests)[i])();
   }
+#endif
  
   RTCORE_API void rtcInit(const char* cfg) 
   {
@@ -414,10 +417,15 @@ namespace embree
     /* execute regression tests */
     if (g_regression_testing) 
     {
+#if USE_TBB
+      for (size_t i=0; i<regression_tests->size(); i++) 
+	(*(*regression_tests)[i])();
+#else
       TaskScheduler::EventSync event;
       TaskScheduler::Task task(&event,task_regression_testing,NULL,TaskScheduler::getNumThreads(),NULL,NULL,"regression_testing");
       TaskScheduler::addTask(-1,TaskScheduler::GLOBAL_FRONT,&task);
       event.sync();
+#endif
     }
 
     CATCH_END;

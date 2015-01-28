@@ -55,6 +55,11 @@ namespace embree
   template<typename Index, typename Value, typename Func, typename Reduction>
     __forceinline Value parallel_reduce( const Index first, const Index last, const Index minStepSize, const Value& identity, const Func& func, const Reduction& reduction )
   {
+#if USE_TBB
+    return tbb::parallel_reduce(tbb::blocked_range<Index>(first,last,minStepSize),identity,
+      [&](const tbb::blocked_range<Index>& r, const Value& start) { return reduction(start,func(range<Index>(r.begin(),r.end()))); },
+      reduction);
+#else
     /* fast path for small number of iterations */
     Index taskCount = (last-first+minStepSize-1)/minStepSize;
     if (likely(taskCount == 1)) {
@@ -62,6 +67,7 @@ namespace embree
     }
 
     return parallel_reduce_internal(taskCount,first,last,minStepSize,identity,func,reduction);
+#endif
   }
 
   template<typename Index, typename Value, typename Func, typename Reduction>
