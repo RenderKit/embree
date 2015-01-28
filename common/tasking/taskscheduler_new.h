@@ -138,6 +138,7 @@ namespace embree
     {
       static const size_t SIZE = 1024;
       static const size_t MAX_STACK_SIZE = 256*1024;
+      
       Task tasks[SIZE];
       volatile atomic_t left, right;
       
@@ -165,23 +166,22 @@ namespace embree
       
       bool execute_local(Thread& thread, Task* parent)
       {
-        if (right == 0)
+	/* stop if we run out of local tasks or reach the waiting task */
+        if (right == 0 || &tasks[right-1] == parent)
           return false;
 
-        if (&tasks[right-1] == parent)
-          return false;
-        
+	/* execute task */
         tasks[right-1].run(thread);
-        if (tasks[right-1].stackPtr != -1)
-          stackPtr = tasks[right-1].stackPtr;
-        right--;
-        if (right == 0) {
-          left = 0;
-          return false;
-        }
 
-        if (left >= right) left = right;
-        return true;
+	/* pop task and closure from stack */
+	right--;
+        if (tasks[right].stackPtr != -1)
+          stackPtr = tasks[right].stackPtr;
+
+	/* also move left pointer */
+	if (left >= right) left = right;
+
+	return right != 0;
       }
 
       bool steal() 
