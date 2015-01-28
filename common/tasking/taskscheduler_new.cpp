@@ -98,7 +98,9 @@ namespace embree
 
     for (size_t i=1; i<threadCount; i++) 
     {
-      const size_t otherThreadIndex = (threadIndex+i)%threadCount; // FIXME: optimize %
+      size_t otherThreadIndex = threadIndex+i;
+      if (otherThreadIndex >= threadCount) otherThreadIndex -= threadCount;
+
       if (!threadLocal[otherThreadIndex])
         continue;
       
