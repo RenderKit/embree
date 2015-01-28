@@ -53,7 +53,8 @@ namespace embree
     
     struct __aligned(64) Task 
     {
-      enum { EMPTY, INITIALIZED, STEALING };
+      /*! states a task can be in */
+      enum { DONE, INITIALIZED };
 
       /*! switch from one state to another */
       __forceinline void switch_state(int from, int to) 
@@ -74,31 +75,30 @@ namespace embree
 	atomic_add(&dependencies,n); 
       }
 
-      /*! initialize all tasks to EMPTY state by default */
+      /*! initialize all tasks to DONE state by default */
       __forceinline Task()
-	: state(EMPTY) {} 
+	: state(DONE) {} 
 
       /*! construction of new task */
       __forceinline Task (TaskFunction* closure, Task* parent, size_t stackPtr) 
         : closure(closure), parent(parent), stackPtr(stackPtr), dependencies(1) 
       {
         if (parent) parent->add_dependencies(+1);
-	switch_state(EMPTY,INITIALIZED);
+	switch_state(DONE,INITIALIZED);
       }
 
       /*! construction of stolen task, stealing thread will decrement initial dependency */
       __forceinline Task (TaskFunction* closure, Task* parent) 
         : closure(closure), parent(parent), stackPtr(-1), dependencies(1) 
       {
-	switch_state(EMPTY,INITIALIZED);
+	switch_state(DONE,INITIALIZED);
       }
 
       /*! try to steal this task */
       bool try_steal(Task& child)
       {
-	if (!try_switch_state(INITIALIZED,STEALING)) return false;
+	if (!try_switch_state(INITIALIZED,DONE)) return false;
 	new (&child) Task(closure, this);
-	switch_state(STEALING,EMPTY);
         return true;
       } 
       
@@ -106,7 +106,7 @@ namespace embree
       void run (Thread& thread) 
       {
 	/* try to run if not already stolen */
-	if (try_switch_state(INITIALIZED,EMPTY))
+	if (try_switch_state(INITIALIZED,DONE))
 	{
 	  Task* prevTask = thread.task; 
           thread.task = this;
