@@ -928,7 +928,7 @@ namespace embree
         return global_mid;
       }
 
-      __forceinline size_t findStartRange(size_t &index,const Range *const r,const size_t numRanges)
+      __forceinline const Range *findStartRange(size_t &index,const Range *const r,const size_t numRanges)
       {
 	size_t i = 0;
 	while(index >= r[i].size())
