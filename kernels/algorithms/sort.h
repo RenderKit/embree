@@ -236,10 +236,16 @@ namespace embree
 	
 	/* perform parallel sort for large N */
 	else {
+#if USE_TBB
+	  const size_t numThreads = min(size_t(tbb::task_scheduler_init::default_num_threads()),MAX_THREADS);
+	  parent->barrier.init(numThreads);
+	  tbb::parallel_for(size_t(0),numThreads,size_t(1),[&] (size_t taskIndex) { radixsort(taskIndex,numThreads); });
+#else
 	  LockStepTaskScheduler* scheduler = LockStepTaskScheduler::instance();
 	  const size_t numThreads = min(scheduler->getNumThreads(),MAX_THREADS);
 	  parent->barrier.init(numThreads);
 	  scheduler->dispatchTask(task_radixsort,this,0,numThreads);
+#endif
 	}
       }
       
