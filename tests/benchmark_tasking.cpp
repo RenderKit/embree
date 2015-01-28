@@ -234,9 +234,9 @@ namespace embree
       fflush(stdout);
 
       /* create task scheduler */
-      TaskSchedulerNew* scheduler = new TaskSchedulerNew;
+      TaskSchedulerNew* scheduler = new TaskSchedulerNew(1);
 
-#if 1
+#if 0
       struct Fib
       {
         size_t& r;
@@ -281,15 +281,14 @@ namespace embree
       atomic_t cntr = 0;
       const size_t M = 160000;
       
-      scheduler->spawn_root(0,M,1,[&] (const range<size_t>& r)
+      scheduler->spawn_root([&]() 
       {
-        atomic_add(&cntr,r.begin());
-      //mutex.lock();
-        //PRINT3(TaskSchedulerNew::thread()->threadIndex,r.begin(),r.end());
-        //for (size_t i=0; i<scheduler->threads.size()+1; i++) {
-        //  scheduler->threadLocal[i]->tasks.print(*scheduler->threadLocal[i]);
-        //}
-        //mutex.unlock();
+	  scheduler->spawn(0,M,1,[&] (const range<size_t>& r)
+			   {
+			     for (size_t i=r.begin(); i<r.end(); i++)
+			       atomic_add(&cntr,i);
+			   });
+	  scheduler->wait(); // FIXME: should be automatic
       });
       
       PRINT2(cntr,M*(M-1)/2);

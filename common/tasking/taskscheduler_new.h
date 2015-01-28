@@ -244,8 +244,8 @@ namespace embree
     template<typename Closure>
     __forceinline void spawn(const size_t begin, const size_t end, const size_t blockSize, const Closure& closure) 
     {
-      spawn([]() {
-	  if (end-begin < blockSize) {
+      spawn([=,&closure]() {
+	  if (end-begin <= blockSize) {
 	    return closure(range<size_t>(begin,end));
 	  }
 	  const size_t center = (begin+end)/2;
@@ -254,23 +254,6 @@ namespace embree
 	  wait();
 	});
     }
-
-#if 0
-    /* spawn a new task set  */
-    template<typename Closure>
-    __forceinline void spawn_set(const size_t begin, const size_t end, const size_t blockSize, const Closure& closure) 
-    {
-      assert(global_task_set == NULL);
-
-      /* setup global taskset */
-      global_task_set_begin = begin;
-      global_task_set_end = end;
-      __memory_barrier();
-      ClosureTaskSetFunction<Closure> taskset(closure);
-      global_task_set = &taskset;
-
-    }
-#endif
 
     /* spawn a new task at the top of the threads task stack */
     template<typename Closure>
