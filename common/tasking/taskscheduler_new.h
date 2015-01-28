@@ -39,20 +39,27 @@ namespace embree
       virtual void execute() = 0;
     };
 
+    /*! virtual interface for all task sets */
+    struct TaskSetFunction {
+      virtual void execute(const range<size_t>& range) = 0;
+    };
+
     /*! builds a task interface from a closure */
     template<typename Closure>
     struct ClosureTaskFunction : public TaskFunction
     {
-    public:
-      __forceinline ClosureTaskFunction (const Closure& closure)
-        : closure(closure) {}
-      
-      void execute() {
-        closure();
-      };
-
-    public:
       Closure closure;
+      __forceinline ClosureTaskFunction (const Closure& closure) : closure(closure) {}
+      void execute() { closure(); };
+    };
+
+    /*! builds a task interface from a closure */
+    template<typename Closure>
+    struct ClosureTaskSetFunction : public TaskFunction
+    {
+      Closure closure;
+      __forceinline ClosureTaskSetFunction (const Closure& closure) : closure(closure) {}
+      void execute(const range<size_t>& range) { closure(range); };
     };
     
     struct __aligned(64) Task 
@@ -233,11 +240,44 @@ namespace embree
       thread->tasks.push_right(*thread,closure);
     }
 
+    /* spawn a new task set  */
+    template<typename Closure>
+    __forceinline void spawn(const size_t begin, const size_t end, const size_t blockSize, const Closure& closure) 
+    {
+      spawn([]() {
+	  if (end-begin < blockSize) {
+	    return closure(range<size_t>(begin,end));
+	  }
+	  const size_t center = (begin+end)/2;
+	  spawn(begin,center,blockSize,closure);
+	  spawn(center,end  ,blockSize,closure);
+	  wait();
+	});
+    }
+
+#if 0
+    /* spawn a new task set  */
+    template<typename Closure>
+    __forceinline void spawn_set(const size_t begin, const size_t end, const size_t blockSize, const Closure& closure) 
+    {
+      assert(global_task_set == NULL);
+
+      /* setup global taskset */
+      global_task_set_begin = begin;
+      global_task_set_end = end;
+      __memory_barrier();
+      ClosureTaskSetFunction<Closure> taskset(closure);
+      global_task_set = &taskset;
+
+    }
+#endif
+
     /* spawn a new task at the top of the threads task stack */
     template<typename Closure>
     __forceinline void spawn_root(const Closure& closure) 
     {
-      /* allocate thread structure */
+      assert(!active);
+      active = true;
       Thread thread(0,this);
       threadLocal[0] = &thread;
       thread_local_thread = &thread;
@@ -246,6 +286,7 @@ namespace embree
       condition.notify_all();
       while (thread.tasks.execute_local(thread,NULL));
       atomic_add(&anyTasksRunning,-1);
+      active = false;
     }
 
     /* work on spawned subtasks and wait until all have finished */
@@ -260,7 +301,8 @@ namespace embree
     volatile atomic_t numThreads;
     volatile bool terminate;
     volatile atomic_t anyTasksRunning;
-    
+    volatile bool active;
+
     std::mutex mutex;        
     std::condition_variable condition;
     volatile atomic_t numThreadsRunning;

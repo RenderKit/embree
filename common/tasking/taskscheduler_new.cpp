@@ -21,7 +21,7 @@
 namespace embree
 {
   TaskSchedulerNew::TaskSchedulerNew(size_t numThreads)
-    : numThreads(numThreads), terminate(false), anyTasksRunning(0), numThreadsRunning(0)
+    : numThreads(numThreads), terminate(false), anyTasksRunning(0), numThreadsRunning(0), active(false)
   {
     if (!numThreads)
       numThreads = getNumberOfLogicalThreads();
@@ -97,7 +97,9 @@ namespace embree
     const size_t threadCount = threads.size()+1;
 
     for (size_t i=1; i<threadCount; i++) 
+    //for (size_t i=1; i<5; i++) 
     {
+      __pause_cpu();
       size_t otherThreadIndex = threadIndex+i;
       if (otherThreadIndex >= threadCount) otherThreadIndex -= threadCount;
 
