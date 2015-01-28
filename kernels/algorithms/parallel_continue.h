@@ -27,6 +27,34 @@ namespace embree
     virtual void operator() (const Continuation& c) = 0;
   };
 
+#if USE_TBB
+
+  template<typename Continuation, typename Func, typename ThreadLocal>
+    struct TBBRecurse : public ParallelContinue<Continuation>
+  {
+    const Func& func;
+    ThreadLocal& threadLocal;
+    __forceinline TBBRecurse(const Func& func, ThreadLocal& threadLocal) 
+      : func(func), threadLocal(threadLocal) {}
+    void operator() (const Continuation& c) { 
+      func(c,threadLocal,*this); 
+    } 
+  };
+  
+  /* parallel continue */
+  template<size_t threshold, typename Continuation, typename Index, typename Func, typename CreateThreadLocal>
+    __forceinline void parallel_continue( Continuation* continuations, const Index N, const Func& func, const CreateThreadLocal& createThreadLocal)
+  {
+    tbb::parallel_for(Index(0),N,Index(1),[&] (size_t i) 
+    {
+	auto threadLocal = createThreadLocal();
+	TBBRecurse<Continuation,Func,decltype(threadLocal)> recurse(func,threadLocal);
+	recurse(continuations[i]);
+      });
+  }
+
+#else
+
   template<size_t threshold, typename Continuation, typename Index, typename Func, typename ThreadLocal, typename CreateThreadLocal>
     class ParallelContinueTask
   {
@@ -120,4 +148,5 @@ namespace embree
   {
     ParallelContinueTask<threshold,Continuation,Index,Func,decltype(createThreadLocal()),CreateThreadLocal> task(continuations,N,func,createThreadLocal);
   }
+#endif
 }
