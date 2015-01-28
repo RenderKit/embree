@@ -149,8 +149,8 @@ namespace embree
       }
       else {
 	size_t center = (n0+n1)/2;
-	double c0; TaskSchedulerNew::spawn([&](const range<size_t>&){ c0=myreduce(n0,center); });
-	double c1; TaskSchedulerNew::spawn([&](const range<size_t>&){ c1=myreduce(center,n1); });
+	double c0; TaskSchedulerNew::spawn([&](){ c0=myreduce(n0,center); });
+	double c1; TaskSchedulerNew::spawn([&](){ c1=myreduce(center,n1); });
 	TaskSchedulerNew::wait();
 	return c0+c1;
       }
@@ -160,7 +160,7 @@ namespace embree
     {
       double t0 = getSeconds();
       double c2 = 0;
-      newscheduler->spawn_root(0,1,1,[&](const range<size_t>&){ c2 = myreduce(0,N); });
+      newscheduler->spawn_root([&](){ c2 = myreduce(0,N); });
       volatile double result = c2;
       double t1 = getSeconds();
       
@@ -236,7 +236,7 @@ namespace embree
       /* create task scheduler */
       TaskSchedulerNew* scheduler = new TaskSchedulerNew;
 
-#if 0
+#if 1
       struct Fib
       {
         size_t& r;
@@ -244,7 +244,7 @@ namespace embree
         
         __forceinline Fib (size_t& r, size_t i) : r(r), i(i) {}
         
-        void operator() (const range<size_t>&) const
+        void operator() () const
         {
           //mutex.lock(); PRINT2(TaskSchedulerNew::thread()->threadIndex,i); mutex.unlock();
           if (i < CUTOFF) {
@@ -265,7 +265,7 @@ namespace embree
       size_t r0 = fib(N);
       double t1 = getSeconds();
       size_t r1; Fib pfib(r1,N);
-      scheduler->spawn_root(0,1,1,pfib);
+      scheduler->spawn_root(pfib);
       double t2 = getSeconds();
 
       printf("  sequential_fib(%zu) = %zu, %3.2fms\n",N,r0,1000.0f*(t1-t0));
