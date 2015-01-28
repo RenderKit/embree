@@ -21,15 +21,13 @@
 namespace embree
 {
   TaskSchedulerNew::TaskSchedulerNew(size_t numThreads_in)
-    : numThreads(numThreads_in), createThreads(true), terminate(false), anyTasksRunning(0), numThreadsRunning(0), active(false)
+    : numThreads(numThreads_in), createThreads(true), terminate(false), anyTasksRunning(0), active(false)
   {
     if (!numThreads_in)
       numThreads = getNumberOfLogicalThreads();
     
     for (size_t i=0; i<MAX_THREADS; i++)
       threadLocal[i] = NULL;
-
-    startThreads();
   }
   
   TaskSchedulerNew::~TaskSchedulerNew() 
@@ -44,10 +42,8 @@ namespace embree
   void TaskSchedulerNew::startThreads()
   {
     createThreads = false;
-    for (size_t i=1; i<numThreads; i++) {
-      atomic_add(&numThreadsRunning,1);
+    for (size_t i=1; i<numThreads; i++)
       threads.push_back(std::thread([i,this]() { thread_loop(i); }));
-    }
   }
 
   void TaskSchedulerNew::terminateThreadLoop()
@@ -56,9 +52,7 @@ namespace embree
     mutex.lock();
     terminate = true;
     mutex.unlock();
-
-    while (numThreadsRunning)
-      condition.notify_all();
+    condition.notify_all();
   }
 
   void TaskSchedulerNew::destroyThreads() 
@@ -101,25 +95,23 @@ namespace embree
     /* main thread loop */
     while (!terminate)
     {
-      /* wait for tasks to enter the tasking system */
-      while (!anyTasksRunning && !terminate) {
+      /* all threads are waiting inside some condition */
+      {
         std::unique_lock<std::mutex> lock(mutex);
-        condition.wait(lock);
+        condition.wait(lock, [&] () { return anyTasksRunning || terminate; });
       }
       if (terminate) break;
       
       /* work on available task */
       while (anyTasksRunning) {
-	if (thread.scheduler->steal_from_other_threads(thread)) {
+	if (thread.scheduler->steal_from_other_threads(thread)) 
+	{
 	  atomic_add(&anyTasksRunning,+1);
 	  while (thread.tasks.execute_local(thread,NULL));
 	  atomic_add(&anyTasksRunning,-1);
 	}
       }
     }
-
-    /* decrement thread counter */
-    atomic_add(&numThreadsRunning,-1);
   }
   catch (const std::exception& e) {
     std::cout << "Error: " << e.what() << std::endl; // FIXME: propagate to main thread

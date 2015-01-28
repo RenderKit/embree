@@ -263,13 +263,19 @@ namespace embree
     template<typename Closure>
     __forceinline void spawn_root(const Closure& closure) 
     {
+      if (createThreads)
+	startThreads();
+
       assert(!active);
       active = true;
       Thread thread(0,this);
       threadLocal[0] = &thread;
       thread_local_thread = &thread;
       spawn(closure);
-      atomic_add(&anyTasksRunning,+1);
+      {
+	std::unique_lock<std::mutex> lock(mutex);
+	atomic_add(&anyTasksRunning,+1);
+      }
       condition.notify_all();
       while (thread.tasks.execute_local(thread,NULL));
       atomic_add(&anyTasksRunning,-1);
@@ -293,7 +299,6 @@ namespace embree
 
     std::mutex mutex;        
     std::condition_variable condition;
-    volatile atomic_t numThreadsRunning;
 
     static __thread Thread* thread_local_thread;
     static Thread* thread();
