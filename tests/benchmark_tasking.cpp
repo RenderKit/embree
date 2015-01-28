@@ -327,7 +327,7 @@ namespace embree
 
   void main(int argc, const char* argv[])
   {
-#if 0
+#if 1
     const size_t N = 40;
     //const size_t N = 22;
     //tbb::task_arena limited(2);

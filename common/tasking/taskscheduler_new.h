@@ -229,6 +229,10 @@ namespace embree
     TaskSchedulerNew (size_t numThreads = 0);
     ~TaskSchedulerNew ();
 
+    void startThreads();
+    void terminateThreadLoop();
+    void destroyThreads();
+
     void thread_loop(size_t threadIndex);
     bool steal_from_other_threads(Thread& thread);
 
@@ -285,6 +289,7 @@ namespace embree
     volatile bool terminate;
     volatile atomic_t anyTasksRunning;
     volatile bool active;
+    bool createThreads;
 
     std::mutex mutex;        
     std::condition_variable condition;

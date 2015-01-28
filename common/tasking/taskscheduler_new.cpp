@@ -20,22 +20,37 @@
 
 namespace embree
 {
-  TaskSchedulerNew::TaskSchedulerNew(size_t numThreads)
-    : numThreads(numThreads), terminate(false), anyTasksRunning(0), numThreadsRunning(0), active(false)
+  TaskSchedulerNew::TaskSchedulerNew(size_t numThreads_in)
+    : numThreads(numThreads_in), createThreads(true), terminate(false), anyTasksRunning(0), numThreadsRunning(0), active(false)
   {
-    if (!numThreads)
+    if (!numThreads_in)
       numThreads = getNumberOfLogicalThreads();
     
     for (size_t i=0; i<MAX_THREADS; i++)
       threadLocal[i] = NULL;
 
+    startThreads();
+  }
+  
+  TaskSchedulerNew::~TaskSchedulerNew() 
+  {
+    /* let all threads leave the thread loop */
+    terminateThreadLoop();
+
+    /* destroy all threads that we created */
+    destroyThreads();
+  }
+
+  void TaskSchedulerNew::startThreads()
+  {
+    createThreads = false;
     for (size_t i=1; i<numThreads; i++) {
       atomic_add(&numThreadsRunning,1);
       threads.push_back(std::thread([i,this]() { thread_loop(i); }));
     }
   }
-  
-  TaskSchedulerNew::~TaskSchedulerNew() 
+
+  void TaskSchedulerNew::terminateThreadLoop()
   {
     /* signal threads to terminate */
     mutex.lock();
@@ -44,11 +59,31 @@ namespace embree
 
     while (numThreadsRunning)
       condition.notify_all();
+  }
 
+  void TaskSchedulerNew::destroyThreads() 
+  {
     /* wait for threads to terminate */
     for (size_t i=0; i<threads.size(); i++) 
       threads[i].join();
   }
+
+#if 0
+  void TaskSchedulerNew::join()
+  {
+    size_t threadIndex = atomic_add(&numThreads,1);
+    assert(threadIndex < MAX_THREADS);
+  
+    /* allocate thread structure */
+    Thread thread(threadIndex,this);
+    threadLocal[threadIndex] = &thread;
+    thread_local_thread = &thread;
+
+    /* process tasks */
+    while (anyTasksRunning)
+      task_loop(thread);
+  }
+#endif
 
   __thread TaskSchedulerNew::Thread* TaskSchedulerNew::thread_local_thread = NULL;
 
