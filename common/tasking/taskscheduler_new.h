@@ -118,9 +118,9 @@ namespace embree
       void run (Thread& thread) 
       {
         mutex.lock();
+        Task* prevTask = thread.task; 
         if (valid) {
           validate(false);
-          Task* prevTask = thread.task; 
           thread.task = this;
           closure->execute(begin,end);
           thread.task = prevTask;
@@ -128,10 +128,10 @@ namespace embree
         mutex.unlock();
         removeDependency();
         //waitForDependencies(); // FIXME: maybe steal here
-        /*while (dependencies) {
+        while (dependencies) {
           if (thread.scheduler->schedule_steal(thread))
-            while (thread.tasks.execute_local(thread));
-            }*/
+            while (thread.tasks.execute_local(thread,this));
+        }
         if (parent) parent->removeDependency();
       }
 
@@ -185,12 +185,12 @@ namespace embree
         new (&tasks[right++]) Task(func,parent,oldStackPtr,begin,end,block);
       }
       
-      bool execute_local(Thread& thread)
+      bool execute_local(Thread& thread, Task* parent)
       {
         if (right == 0)
           return false;
 
-        if (&tasks[right-1] == thread.task)
+        if (&tasks[right-1] == parent)
           return false;
         
         while (tasks[right-1].split(tasks[right])) {
@@ -275,7 +275,7 @@ namespace embree
     static __forceinline void wait() 
     {
       Thread* thread = TaskSchedulerNew::thread();
-      while (thread->tasks.execute_local(*thread)) {};
+      while (thread->tasks.execute_local(*thread,thread->task)) {};
     }
 
     std::vector<std::thread> threads;

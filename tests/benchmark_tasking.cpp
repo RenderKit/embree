@@ -236,7 +236,7 @@ namespace embree
       /* create task scheduler */
       TaskSchedulerNew* scheduler = new TaskSchedulerNew;
 
-#if 0
+#if 1
       struct Fib
       {
         size_t& r;

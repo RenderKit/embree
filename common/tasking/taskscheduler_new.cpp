@@ -94,7 +94,7 @@ namespace embree
     while (anyTasksRunning) cont2:
     {
       /* first try executing local tasks */
-      while (thread.tasks.execute_local(thread)) {
+      while (thread.tasks.execute_local(thread,NULL)) {
         if (terminate) return;
       }
       atomic_add(&anyTasksRunning,-1);
