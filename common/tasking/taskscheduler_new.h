@@ -26,59 +26,78 @@
 
 namespace embree
 {
-  extern std::mutex mutex;
-  
   struct TaskSchedulerNew
   {
     struct Thread;
     
+    /*! virtual interface for all tasks */
     struct TaskFunction {
       virtual void execute() = 0;
     };
 
+    /*! builds a task interface from a closure */
     template<typename Closure>
-    struct ClosureFunction : public TaskFunction
+    struct ClosureTaskFunction : public TaskFunction
     {
-      Closure closure;
-      
-      __forceinline ClosureFunction (const Closure& closure)
+    public:
+      __forceinline ClosureTaskFunction (const Closure& closure)
         : closure(closure) {}
       
       void execute() {
         closure();
       };
+
+    public:
+      Closure closure;
     };
     
     struct __aligned(64) Task 
     {
-      __forceinline Task()
-        : valid(false) {}
+      enum { EMPTY, INITIALIZED, STEALING };
 
-      __forceinline Task (TaskFunction* closure, Task* parent, size_t oldStackPtr) 
-        : closure(closure), parent(parent), oldStackPtr(oldStackPtr), dependencies(1) 
+      __forceinline void switch_state(int from, int to) 
       {
-        validate(true);
-        if (parent) parent->addDependency();
+	__memory_barrier();
+	bool success = atomic_cmpxchg(&state,from,to) == from;
+	assert(success);
       }
 
-      __forceinline void validate(bool valid0) {
-        __memory_barrier();
-        valid = valid0;
+      __forceinline bool try_switch_state(int from, int to) {
+	__memory_barrier();
+	return atomic_cmpxchg(&state,from,to) == from;
       }
+
+      __forceinline Task()
+      : state(EMPTY) {} //valid(false) {}
+
+      __forceinline Task (TaskFunction* closure, Task* parent, size_t stackPtr) 
+        : closure(closure), parent(parent), stackPtr(stackPtr), dependencies(1) 
+      {
+	//validate(true);
+        if (parent) parent->addDependency();
+	switch_state(EMPTY,INITIALIZED);
+      }
+
+      //__forceinline void validate(bool valid0) {
+      //  __memory_barrier();
+      //  valid = valid0;
+      //}
 
       int steal(Task& child)
       {
-        if (!mutex.tryLock())
+	if (!try_switch_state(INITIALIZED,STEALING))
+	  //if (!mutex.tryLock())
           return 0;
         
-        if (!valid) {
-          mutex.unlock();
-          return 0;
-        }
+        //if (!valid) {
+        //  mutex.unlock();
+        //  return 0;
+        //}
 
         new (&child) Task(closure, this, -1);
-        validate(false);
-        mutex.unlock();
+        //validate(false);
+        //mutex.unlock();
+	switch_state(STEALING,EMPTY);
         return 1;
       } 
 
@@ -88,15 +107,21 @@ namespace embree
       
       void run (Thread& thread) 
       {
-        mutex.lock();
-        Task* prevTask = thread.task; 
-        if (valid) {
-          validate(false);
+        //mutex.lock();
+	bool run = try_switch_state(INITIALIZED,EMPTY);
+	if (run)
+	{
+	  Task* prevTask = thread.task; 
+          //validate(false);
           thread.task = this;
           closure->execute();
           thread.task = prevTask;
-        }
-        mutex.unlock();
+	}
+	else {
+	  while (state != EMPTY)
+	    __pause_cpu();
+	}
+
         removeDependency();
         while (dependencies) {
           if (thread.scheduler->schedule_steal(thread))
@@ -106,12 +131,15 @@ namespace embree
       }
 
     public:
-      volatile bool valid;
-      TaskFunction* closure;
-      AtomicMutex mutex;
-      Task* parent;
-      size_t oldStackPtr;
-      volatile atomic_t dependencies;
+      //AtomicMutex mutex;
+      //volatile bool valid;
+      volatile int state;
+
+    public:
+      TaskFunction* closure;             //!< the closure to execute
+      volatile atomic_t dependencies;    //!< dependencies to wait for
+      Task* parent;                      //!< parent task to signal when we are finished
+      size_t stackPtr;                   //!< stack location where closure is stored
     };
     
     struct TaskQueue
@@ -139,8 +167,8 @@ namespace embree
         assert(right < SIZE);
         size_t oldStackPtr = stackPtr;
         Task* parent = thread.task;
-        TaskFunction* func = new (alloc(sizeof(Closure))) ClosureFunction<Closure>(closure);
-        new (&tasks[right++]) Task(func,parent,oldStackPtr);
+        TaskFunction* func = new (alloc(sizeof(Closure))) ClosureTaskFunction<Closure>(closure);
+        new (&tasks[right++]) Task(func,parent,stackPtr);
       }
       
       bool execute_local(Thread& thread, Task* parent)
@@ -152,8 +180,8 @@ namespace embree
           return false;
         
         tasks[right-1].run(thread);
-        if (tasks[right-1].oldStackPtr != -1)
-          stackPtr = tasks[right-1].oldStackPtr;
+        if (tasks[right-1].stackPtr != -1)
+          stackPtr = tasks[right-1].stackPtr;
         right--;
         if (right == 0) {
           left = 0;
@@ -167,8 +195,8 @@ namespace embree
       bool steal() 
       {
         size_t l = left;
-        while (!tasks[l].valid && l<right) l = atomic_add(&left,1);
-        if (!tasks[l].valid) return false;
+        while (tasks[l].state != Task::INITIALIZED && l<right) l = atomic_add(&left,1);
+        if (tasks[l].state != Task::INITIALIZED) return false;
         Thread* thread = TaskSchedulerNew::thread();
         Task& dst = thread->tasks.tasks[thread->tasks.right];
 

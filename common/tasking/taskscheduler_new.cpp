@@ -20,8 +20,6 @@
 
 namespace embree
 {
-  std::mutex mutex;
-
   TaskSchedulerNew::TaskSchedulerNew(size_t numThreads)
     : numThreads(numThreads), terminate(false), anyTasksRunning(0), numThreadsRunning(0)
   {
