@@ -228,7 +228,8 @@ namespace embree
     
     TaskSchedulerNew (size_t numThreads = 0);
     ~TaskSchedulerNew ();
-
+    
+    void join();
     void startThreads();
     void terminateThreadLoop();
     void destroyThreads();
@@ -291,7 +292,7 @@ namespace embree
 
     std::vector<std::thread> threads;
     Thread* threadLocal[MAX_THREADS];
-    volatile atomic_t numThreads;
+    volatile atomic_t threadCount;
     volatile bool terminate;
     volatile atomic_t anyTasksRunning;
     volatile bool active;

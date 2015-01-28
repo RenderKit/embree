@@ -20,14 +20,19 @@
 
 namespace embree
 {
-  TaskSchedulerNew::TaskSchedulerNew(size_t numThreads_in)
-    : numThreads(numThreads_in), createThreads(true), terminate(false), anyTasksRunning(0), active(false)
+  TaskSchedulerNew::TaskSchedulerNew(size_t numThreads)
+    : threadCount(numThreads), createThreads(true), terminate(false), anyTasksRunning(0), active(false)
   {
-    if (!numThreads_in)
-      numThreads = getNumberOfLogicalThreads();
-    
     for (size_t i=0; i<MAX_THREADS; i++)
       threadLocal[i] = NULL;
+
+    if (numThreads == -1) {
+      threadCount = 1;
+      createThreads = false;
+    }
+    else if (numThreads == 0) {
+      threadCount = getNumberOfLogicalThreads();
+    }
   }
   
   TaskSchedulerNew::~TaskSchedulerNew() 
@@ -42,7 +47,7 @@ namespace embree
   void TaskSchedulerNew::startThreads()
   {
     createThreads = false;
-    for (size_t i=1; i<numThreads; i++)
+    for (size_t i=1; i<threadCount; i++)
       threads.push_back(std::thread([i,this]() { thread_loop(i); }));
   }
 
@@ -62,22 +67,12 @@ namespace embree
       threads[i].join();
   }
 
-#if 0
   void TaskSchedulerNew::join()
   {
-    size_t threadIndex = atomic_add(&numThreads,1);
+    size_t threadIndex = atomic_add(&threadCount,1);
     assert(threadIndex < MAX_THREADS);
-  
-    /* allocate thread structure */
-    Thread thread(threadIndex,this);
-    threadLocal[threadIndex] = &thread;
-    thread_local_thread = &thread;
-
-    /* process tasks */
-    while (anyTasksRunning)
-      task_loop(thread);
+    thread_loop(threadIndex);
   }
-#endif
 
   __thread TaskSchedulerNew::Thread* TaskSchedulerNew::thread_local_thread = NULL;
 
@@ -103,7 +98,8 @@ namespace embree
       if (terminate) break;
       
       /* work on available task */
-      while (anyTasksRunning) {
+      while (anyTasksRunning) 
+      {
 	if (thread.scheduler->steal_from_other_threads(thread)) 
 	{
 	  atomic_add(&anyTasksRunning,+1);
@@ -121,7 +117,7 @@ namespace embree
   bool TaskSchedulerNew::steal_from_other_threads(Thread& thread)
   {
     const size_t threadIndex = thread.threadIndex;
-    const size_t threadCount = threads.size()+1;
+    const size_t threadCount = this->threadCount;
 
     for (size_t i=1; i<threadCount; i++) 
     //for (size_t i=1; i<5; i++) 
