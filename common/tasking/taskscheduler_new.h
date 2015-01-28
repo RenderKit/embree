@@ -33,7 +33,7 @@ namespace embree
     struct Thread;
     
     struct TaskFunction {
-      virtual void execute(size_t begin, size_t end) = 0;
+      virtual void execute() = 0;
     };
 
     template<typename Closure>
@@ -44,8 +44,8 @@ namespace embree
       __forceinline ClosureFunction (const Closure& closure)
         : closure(closure) {}
       
-      void execute(size_t begin, size_t end) {
-        closure(range<size_t>(begin,end));
+      void execute() {
+        closure();
       };
     };
     
@@ -54,8 +54,8 @@ namespace embree
       __forceinline Task()
         : valid(false) {}
 
-      __forceinline Task (TaskFunction* closure, Task* parent, size_t oldStackPtr, size_t begin, size_t end, size_t block) 
-        : closure(closure), parent(parent), oldStackPtr(oldStackPtr), begin(begin), end(end), block(block), dependencies(1) 
+      __forceinline Task (TaskFunction* closure, Task* parent, size_t oldStackPtr) 
+        : closure(closure), parent(parent), oldStackPtr(oldStackPtr), dependencies(1) 
       {
         validate(true);
         if (parent) parent->addDependency();
@@ -64,24 +64,6 @@ namespace embree
       __forceinline void validate(bool valid0) {
         __memory_barrier();
         valid = valid0;
-      }
-
-      __forceinline size_t size() const {
-        return end-begin;
-      }
-
-      __forceinline bool isLeaf() const {
-        return size() <= block;
-      }
-      
-      bool split(Task& child)
-      {
-        Lock<AtomicMutex> lock(mutex);
-        if (isLeaf()) return false;
-        size_t center = (begin+end)/2;
-        new (&child) Task(closure, this, -1, center, end, block);
-        end = center;
-        return true;
       }
 
       int steal(Task& child)
@@ -94,22 +76,11 @@ namespace embree
           return 0;
         }
 
-        if (isLeaf()) {
-          new (&child) Task(closure, this, -1, begin, end, block);
-          begin = end = 0;
-          validate(false);
-          mutex.unlock();
-          return 1;
-        } 
-        
-        else {
-          size_t center = (begin+end)/2;
-          new (&child) Task(closure, this, -1, center, end, block);
-          end = center;
-          mutex.unlock();
-          return 2;
-        }
-      }
+        new (&child) Task(closure, this, -1);
+        validate(false);
+        mutex.unlock();
+        return 1;
+      } 
 
       void addDependency      () { atomic_add(&dependencies,+1); }
       void removeDependency   () { atomic_add(&dependencies,-1); }
@@ -122,12 +93,11 @@ namespace embree
         if (valid) {
           validate(false);
           thread.task = this;
-          closure->execute(begin,end);
+          closure->execute();
           thread.task = prevTask;
         }
         mutex.unlock();
         removeDependency();
-        //waitForDependencies(); // FIXME: maybe steal here
         while (dependencies) {
           if (thread.scheduler->schedule_steal(thread))
             while (thread.tasks.execute_local(thread,this));
@@ -140,7 +110,6 @@ namespace embree
       TaskFunction* closure;
       AtomicMutex mutex;
       Task* parent;
-      volatile size_t begin, end, block;
       size_t oldStackPtr;
       volatile atomic_t dependencies;
     };
@@ -155,17 +124,6 @@ namespace embree
       __aligned(64) char stack[MAX_STACK_SIZE];
       size_t stackPtr;
 
-      void print(Thread& thread)
-      {
-        //std::cout << "left = " << left << ", right = " << right << std::endl;
-        std::cout << "thread" << thread.threadIndex;
-        for (size_t i=0; i<right; i++) {
-          std::cout << " ( valid" << tasks[i].valid << ", dep" << tasks[i].dependencies << ", " << tasks[i].begin << ", " << tasks[i].end << "), ";
-        }
-        std::cout << std::endl;
-      }
-
-      
       TaskQueue ()
       : left(0), right(0), stackPtr(0) {}
       
@@ -176,13 +134,13 @@ namespace embree
       }
       
       template<typename Closure>
-      __forceinline void push_right(Thread& thread, const Closure& closure, size_t begin, size_t end, size_t block) 
+      __forceinline void push_right(Thread& thread, const Closure& closure) 
       {
         assert(right < SIZE);
         size_t oldStackPtr = stackPtr;
         Task* parent = thread.task;
         TaskFunction* func = new (alloc(sizeof(Closure))) ClosureFunction<Closure>(closure);
-        new (&tasks[right++]) Task(func,parent,oldStackPtr,begin,end,block);
+        new (&tasks[right++]) Task(func,parent,oldStackPtr);
       }
       
       bool execute_local(Thread& thread, Task* parent)
@@ -193,10 +151,6 @@ namespace embree
         if (&tasks[right-1] == parent)
           return false;
         
-        while (tasks[right-1].split(tasks[right])) {
-          right++;
-        }
-
         tasks[right-1].run(thread);
         if (tasks[right-1].oldStackPtr != -1)
           stackPtr = tasks[right-1].oldStackPtr;
@@ -210,7 +164,7 @@ namespace embree
         return true;
       }
 
-      bool steal() //volatile atomic_t* anyTasksRunning)
+      bool steal() 
       {
         size_t l = left;
         while (!tasks[l].valid && l<right) l = atomic_add(&left,1);
@@ -218,10 +172,10 @@ namespace embree
         Thread* thread = TaskSchedulerNew::thread();
         Task& dst = thread->tasks.tasks[thread->tasks.right];
 
-        int op = tasks[l].steal(dst);
-        if (op == 0) return false;
-        if (op == 1) atomic_add(&left,1);
-        //if (anyTasksRunning) atomic_add(anyTasksRunning,1);
+        if (!tasks[l].steal(dst))
+          return false;
+
+        atomic_add(&left,1);
         thread->tasks.right++;
         return true;
       }
@@ -251,21 +205,21 @@ namespace embree
 
     /* spawn a new task at the top of the threads task stack */
     template<typename Closure>
-    static __forceinline void spawn(const Closure& closure, const size_t begin = 0, const size_t end = 1, const size_t block = 1) 
+    static __forceinline void spawn(const Closure& closure) 
     {
       Thread* thread = TaskSchedulerNew::thread();
-      thread->tasks.push_right(*thread,closure,begin,end,block);
+      thread->tasks.push_right(*thread,closure);
     }
 
     /* spawn a new task at the top of the threads task stack */
     template<typename Closure>
-    __forceinline void spawn_root(const size_t begin, const size_t end, const size_t block, const Closure& closure) 
+    __forceinline void spawn_root(const Closure& closure) 
     {
       /* allocate thread structure */
       Thread thread(0,this);
       threadLocal[0] = &thread;
       thread_local_thread = &thread;
-      spawn(closure,begin,end,block);
+      spawn(closure);
       atomic_add(&anyTasksRunning,+1);
       condition.notify_all();
       schedule_on_thread(thread);
