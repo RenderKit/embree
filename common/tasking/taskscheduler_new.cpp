@@ -20,18 +20,18 @@
 
 namespace embree
 {
-  TaskSchedulerNew::TaskSchedulerNew(size_t numThreads)
-    : threadCount(numThreads), createThreads(true), terminate(false), anyTasksRunning(0), active(false)
+  TaskSchedulerNew::TaskSchedulerNew(size_t numThreads, bool spinning)
+    : threadCounter(numThreads), createThreads(true), terminate(false), anyTasksRunning(0), active(false), spinning(spinning)
   {
     for (size_t i=0; i<MAX_THREADS; i++)
       threadLocal[i] = NULL;
 
     if (numThreads == -1) {
-      threadCount = 1;
+      threadCounter = 1;
       createThreads = false;
     }
     else if (numThreads == 0) {
-      threadCount = getNumberOfLogicalThreads();
+      threadCounter = getNumberOfLogicalThreads();
     }
   }
   
@@ -47,7 +47,7 @@ namespace embree
   void TaskSchedulerNew::startThreads()
   {
     createThreads = false;
-    for (size_t i=1; i<threadCount; i++)
+    for (size_t i=1; i<threadCounter; i++)
       threads.push_back(std::thread([i,this]() { thread_loop(i); }));
   }
 
@@ -69,9 +69,15 @@ namespace embree
 
   void TaskSchedulerNew::join()
   {
-    size_t threadIndex = atomic_add(&threadCount,1);
+    size_t threadIndex = atomic_add(&threadCounter,1);
     assert(threadIndex < MAX_THREADS);
     thread_loop(threadIndex);
+  }
+
+  void TaskSchedulerNew::wait_for_threads(size_t threadCount)
+  {
+    while (threadCounter < threadCount)
+      __pause_cpu();
   }
 
   __thread TaskSchedulerNew::Thread* TaskSchedulerNew::thread_local_thread = NULL;
@@ -90,10 +96,18 @@ namespace embree
     /* main thread loop */
     while (!terminate)
     {
+      auto predicate = [&] () { return anyTasksRunning || terminate; };
+
       /* all threads are waiting inside some condition */
+      if (spinning) 
+      {
+	while (!predicate())
+	  __pause_cpu();
+      }
+      else
       {
         std::unique_lock<std::mutex> lock(mutex);
-        condition.wait(lock, [&] () { return anyTasksRunning || terminate; });
+        condition.wait(lock, predicate);
       }
       if (terminate) break;
       
@@ -110,15 +124,16 @@ namespace embree
     }
 
     /* decrement threadCount again */
-    atomic_add(&threadCount,-1);
+    atomic_add(&threadCounter,-1);
 
     /* wait for all threads to terminate */
-    while (threadCount > 1)
+    while (threadCounter > 1)
       yield();
 
     threadLocal[threadIndex] = NULL;
   }
-  catch (const std::exception& e) {
+  catch (const std::exception& e) 
+  {
     std::cout << "Error: " << e.what() << std::endl; // FIXME: propagate to main thread
     threadLocal[threadIndex] = NULL;
     exit(1);
@@ -127,10 +142,9 @@ namespace embree
   bool TaskSchedulerNew::steal_from_other_threads(Thread& thread)
   {
     const size_t threadIndex = thread.threadIndex;
-    const size_t threadCount = this->threadCount;
+    const size_t threadCount = this->threadCounter;
 
     for (size_t i=1; i<threadCount; i++) 
-    //for (size_t i=1; i<5; i++) 
     {
       __pause_cpu();
       size_t otherThreadIndex = threadIndex+i;

@@ -226,10 +226,15 @@ namespace embree
       TaskSchedulerNew* scheduler;     //!< pointer to task scheduler
     };
     
-    TaskSchedulerNew (size_t numThreads = 0);
+    TaskSchedulerNew (size_t numThreads = 0, bool spinning = false);
     ~TaskSchedulerNew ();
     
+    /*! lets new worker threads join the tasking system */
     void join();
+
+    /*! wait for some number of threads available (threadCount includes main thread) */
+    void wait_for_threads(size_t threadCount);
+
     void startThreads();
     void terminateThreadLoop();
     void destroyThreads();
@@ -290,19 +295,29 @@ namespace embree
       while (thread->tasks.execute_local(*thread,thread->task)) {};
     }
 
+    /* work on spawned subtasks and wait until all have finished */
+    __forceinline size_t threadCount() const {
+      return threadCounter;
+    }
+
     std::vector<std::thread> threads;
     Thread* threadLocal[MAX_THREADS];
-    volatile atomic_t threadCount;
+    volatile atomic_t threadCounter;
     volatile bool terminate;
     volatile atomic_t anyTasksRunning;
     volatile bool active;
     bool createThreads;
+    bool spinning;
 
     std::mutex mutex;        
     std::condition_variable condition;
 
     static __thread Thread* thread_local_thread;
     static Thread* thread();
+
+    __forceinline static TaskSchedulerNew* instance() {
+      return thread()->scheduler;
+    }
   };
 };
 
