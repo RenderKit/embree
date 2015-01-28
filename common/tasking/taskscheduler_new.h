@@ -28,6 +28,10 @@ namespace embree
 {
   struct TaskSchedulerNew
   {
+    static const size_t MAX_THREADS = 1024;
+    static const size_t TASK_STACK_SIZE = 1024;
+    static const size_t CLOSURE_STACK_SIZE = 256*1024;
+
     struct Thread;
     
     /*! virtual interface for all tasks */
@@ -136,28 +140,21 @@ namespace embree
     
     struct TaskQueue
     {
-      static const size_t SIZE = 1024;
-      static const size_t MAX_STACK_SIZE = 256*1024;
-      
-      Task tasks[SIZE];
-      volatile atomic_t left, right;
-      
-      __aligned(64) char stack[MAX_STACK_SIZE];
-      size_t stackPtr;
-
       TaskQueue ()
       : left(0), right(0), stackPtr(0) {}
       
       __forceinline void* alloc(size_t bytes, size_t align = 64) {
         stackPtr += bytes + ((align - stackPtr) & (align-1));
-        assert(stackPtr <= MAX_STACK_SIZE);
+        assert(stackPtr <= CLOSURE_STACK_SIZE);
         return &stack[stackPtr-bytes];
       }
       
       template<typename Closure>
       __forceinline void push_right(Thread& thread, const Closure& closure) 
       {
-        assert(right < SIZE);
+        assert(right < TASK_STACK_SIZE);
+
+	/* allocate new task on right side of stack */
         size_t oldStackPtr = stackPtr;
         TaskFunction* func = new (alloc(sizeof(Closure))) ClosureTaskFunction<Closure>(closure);
         new (&tasks[right++]) Task(func,thread.task,oldStackPtr);
@@ -197,22 +194,30 @@ namespace embree
         thread.tasks.right++;
         return true;
       }
+
+    public:
+
+      /* task stack */
+      Task tasks[TASK_STACK_SIZE];
+      volatile atomic_t left;   //!< threads steal from left
+      atomic_t right;           //!< new tasks are added to the right
+      
+      /* closure stack */
+      __aligned(64) char stack[CLOSURE_STACK_SIZE];
+      size_t stackPtr;
     };
     
+    /*! thread local structure for each thread */
     struct Thread 
     {
-      static const size_t MAX_STACK_SIZE = 64*1024;
-      
       Thread (size_t threadIndex, TaskSchedulerNew* scheduler)
       : threadIndex(threadIndex), scheduler(scheduler), task(NULL) {}
       
-      size_t threadIndex;
-      TaskQueue tasks;
-      Task* task;
-      TaskSchedulerNew* scheduler;
+      size_t threadIndex;              //!< ID of this thread
+      TaskQueue tasks;                 //!< local task queue
+      Task* task;                      //!< current active task
+      TaskSchedulerNew* scheduler;     //!< pointer to task scheduler
     };
-    
-    static const size_t MAX_THREADS = 1024;
     
     TaskSchedulerNew (size_t numThreads = 0);
     ~TaskSchedulerNew ();

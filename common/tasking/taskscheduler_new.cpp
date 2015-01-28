@@ -74,8 +74,15 @@ namespace embree
       if (terminate) break;
       
       /* work on available task */
-      atomic_add(&anyTasksRunning,+1);
-      schedule_on_thread(thread);
+      //atomic_add(&anyTasksRunning,+1);
+      //schedule_on_thread(thread);
+      while (anyTasksRunning) {
+	if (thread.scheduler->schedule_steal(thread)) {
+	  atomic_add(&anyTasksRunning,+1);
+	  while (thread.tasks.execute_local(thread,NULL));
+	  atomic_add(&anyTasksRunning,-1);
+	}
+      }
     }
 
     /* decrement thread counter */
