@@ -56,8 +56,12 @@ namespace embree
       this->N = N;
 
       /* calculate number of tasks to use */
+#if USE_TBB
+      const size_t numThreads = tbb::task_scheduler_init::default_num_threads();
+#else
       LockStepTaskScheduler* scheduler = LockStepTaskScheduler::instance();
       const size_t numThreads = scheduler->getNumThreads();
+#endif
       const size_t numBlocks  = (N+minStepSize-1)/minStepSize;
       taskCount = max(size_t(1),min(numThreads,numBlocks,size_t(ParallelForForState::MAX_TASKS)));
       
