@@ -32,7 +32,7 @@
 #define L1_PREFETCH_ITEMS 2
 #define L2_PREFETCH_ITEMS 16
 
-#define TIMER(x) x
+#define TIMER(x) 
 #define DBG(x) 
 
 #define PROFILE
@@ -50,6 +50,7 @@ namespace embree
   extern AtomicMutex mtx;
 
   static double dt = 0.0f;
+  static double total_partition_time = 0.0;
 
   // =============================================================================================
   // =============================================================================================
@@ -1197,7 +1198,7 @@ namespace embree
       split_fallback(prims,current,leftChild,rightChild);
     else
       {
-	double msec = getSeconds();    
+	TIMER(double msec = getSeconds());    
 
 	global_sharedData.left.reset();
 	global_sharedData.right.reset();
@@ -1253,8 +1254,8 @@ namespace embree
 	const mic_f scale = select(centroidDiagonal_2 != 0.0f,rcp(centroidDiagonal_2) * mic_f(16.0f * 0.99f),mic_f::zero());
 	const mic_f c = mic_f(centroidBoundsMin_2[bestSplitDim]);
 	const mic_f s = mic_f(scale[bestSplitDim]);
-	const unsigned int dim_mask = mic_m::shift1[bestSplitDim];
-	const mic_f bestSplit_f = mic_f(bestSplit);
+	const mic_m dim_mask = mic_m::shift1[bestSplitDim];
+	const mic_f bestSplit_f = select(dim_mask,mic_f(bestSplit),mic_f(neg_inf));
 
 	/*
 	DBG_PRINT(c);
@@ -1268,30 +1269,84 @@ namespace embree
 
 
 #if 1
-	CentroidGeometryAABB init;
-	init.reset();
-	CentroidGeometryAABB left;
-	CentroidGeometryAABB right;
+	auto part = [&] (PrimRef* const t_array,
+			 const size_t size) 
+	  {                                               
+	    CentroidGeometryAABB leftReduction;
+	    CentroidGeometryAABB rightReduction;
+	    leftReduction.reset();
+	    rightReduction.reset();
 
-	size_t mid_parallel = parallel_in_place_partitioning_static<PrimRef,CentroidGeometryAABB>(&prims[current.begin],
-												  current.size(),
-												  init,
-												  left,
-												  right,
-												  [&] (const PrimRef &ref) { 
-												    const mic_m m_mask = dim_mask;
-												    const mic_f bf = bestSplit_f;
-    												    const mic2f b = ref.getBounds();
-												    const mic_f b_min = b.x;
-												    const mic_f b_max = b.y;
-												    const mic_f b_centroid2 = b_min + b_max;
-												    return any(lt_split(b_min,b_max,m_mask,c,s,bf));
-												  },
-												 [] (CentroidGeometryAABB &cg,const PrimRef &ref) { cg.extend(ref); },
-												 [] (CentroidGeometryAABB &cg0,const CentroidGeometryAABB &cg1) { cg0.extend(cg1); }
-											     );
-	global_sharedData.left  = left;
-	global_sharedData.right = right;
+	    const mic_m m_mask = mic_m::shift1[bestSplitDim];
+	    PrimRef* l = t_array;
+	    PrimRef* r = t_array + size - 1;
+
+	    while(1)
+	      {
+		/* *l < pivot */
+		while (likely(l <= r)) 
+		  {
+		    const mic2f bounds = l->getBounds();
+		    evictL1(((char*)l)-2*64);
+		    const mic_f b_min  = bounds.x;
+		    const mic_f b_max  = bounds.y;
+		    prefetch<PFHINT_L1EX>(((char*)l)+4*64);
+
+		    if (unlikely(ge_split(b_min,b_max,m_mask,c,s,bestSplit_f))) break;
+		    prefetch<PFHINT_L2EX>(((char*)l)+20*64);
+
+		    leftReduction.extend(b_min,b_max);
+		    ++l;
+		  }
+		/* *r >= pivot) */
+		while (likely(l <= r))
+		  {
+		    const mic2f bounds = r->getBounds();
+		    evictL1(((char*)r)+2*64);
+		    const mic_f b_min  = bounds.x;
+		    const mic_f b_max  = bounds.y;
+		    prefetch<PFHINT_L1EX>(((char*)r)-4*64);	  
+
+		    if (unlikely(lt_split(b_min,b_max,m_mask,c,s,bestSplit_f))) break;
+		    prefetch<PFHINT_L2EX>(((char*)r)-20*64);	  
+
+		    rightReduction.extend(b_min,b_max);
+		    --r;
+		  }
+
+		if (r<l) break;
+
+		rightReduction.extend(*l);
+		leftReduction.extend(*r);
+
+		xchg(*l,*r);
+		l++; r--;
+	      }
+      
+	    Centroid_Scene_AABB cs_left ( leftReduction );
+	    Centroid_Scene_AABB cs_right ( rightReduction );
+
+	    global_sharedData.left.extend_atomic(cs_left);
+	    global_sharedData.right.extend_atomic(cs_right);
+	    
+	    return l - t_array;        
+
+	  };
+
+	size_t mid_parallel = parallel_in_place_partitioning_static<PrimRef>(&prims[current.begin],
+									     current.size(),
+									     [&] (const PrimRef &ref) { 
+									       const mic_f bf = bestSplit_f;
+									       const mic2f b = ref.getBounds();
+									       const mic_f b_min = b.x;
+									       const mic_f b_max = b.y;
+									       const mic_f b_centroid2 = b_min + b_max;
+									       //return any(lt_split(b_min,b_max,dim_mask,c,s,bf));
+									       return any(lt_split_new(b_centroid2,c,s,bf));
+									     },
+									     part
+									     );
+
 #else
 	Centroid_Scene_AABB init;
 	init.reset();
@@ -1324,8 +1379,11 @@ namespace embree
 	assert(mid_parallel == global_sharedData.split.numLeft);
 #endif
 
-	msec = getSeconds()-msec;    
-	//std::cout << "partition time " << 1000. * msec << std::endl;
+	TIMER(
+	      msec = getSeconds()-msec;    
+	      total_partition_time += msec;
+	      //std::cout << "partition time " << 1000. * msec << " total " << 1000. * total_partition_time << " items = " << current.size() << std::endl;
+	      );
 	
 	if (unlikely(current.begin == mid || mid == current.end)) 
 	  {
@@ -1852,16 +1910,10 @@ namespace embree
   // =======================================================================================================
   // =======================================================================================================
 
-  void test_partition();
-  
   void BVH4iBuilder::build_main(size_t threadIndex, size_t threadCount) 
   {
-#if 0
-    PING;
-    test_partition();
-#endif
 
-    TIMER(double msec = 0.0; std::cout << std::endl);
+    TIMER(double msec = 0.0; std::cout << std::endl; total_partition_time = 0.0);
 
     /* start measurement */
     double t0 = 0.0f;
@@ -1974,7 +2026,7 @@ namespace embree
       dt = getSeconds()-t0;
   }
 
-
+#if 0
     // will be removed soon, just for testing 
     static void test_partition()
     {
@@ -2035,13 +2087,15 @@ namespace embree
 #if 1
 
                 size_t mid = parallel_in_place_partitioning_static<PrimRef,Centroid_Scene_AABB>(test_array,              
-										   s,
-										   init,
-                                                                                   leftInfo,
-                                                                                   rightInfo,
-                                                                                   [] (const PrimRef &ref) { return ref.lower.x < 0.5f; },
-                                                                                   [] (Centroid_Scene_AABB &pinfo,const PrimRef &ref) { pinfo.extend(ref.bounds()); },
-                                                                                   [] (Centroid_Scene_AABB &pinfo0,const Centroid_Scene_AABB &pinfo1) { pinfo0.extend(pinfo1); }
+												s,
+												init,
+												leftInfo,
+												rightInfo,
+												[] (const PrimRef &ref) { return ref.lower.x < 0.5f; },
+												[] (Centroid_Scene_AABB &pinfo,const PrimRef &ref) { pinfo.extend(ref.bounds()); },
+												[] (Centroid_Scene_AABB &pinfo0,const Centroid_Scene_AABB &pinfo1) { pinfo0.extend(pinfo1); },
+												[] () {}
+												
                                                                                    );
 #else
                     
@@ -2157,5 +2211,6 @@ namespace embree
 
 #endif
   }
+#endif
 
 };

@@ -51,6 +51,15 @@ namespace embree
       geometry_upper  = max(geometry_upper,b_max);
     }
 
+    __forceinline void extend(const mic_f &b_min,
+			      const mic_f &b_max) {
+      const mic_f b_centroid2 = b_min + b_max;
+      centroid2_lower = min(centroid2_lower,b_centroid2);
+      centroid2_upper = max(centroid2_upper,b_centroid2);
+      geometry_lower  = min(geometry_lower,b_min);
+      geometry_upper  = max(geometry_upper,b_max);
+    }
+
     __forceinline void extend(const CentroidGeometryAABB& c) {
       centroid2_lower = min(centroid2_lower,c.centroid2_lower);
       centroid2_upper = max(centroid2_upper,c.centroid2_upper);
@@ -85,6 +94,16 @@ namespace embree
   public:
     BBox3fa centroid2;
     BBox3fa geometry;
+
+    Centroid_Scene_AABB() {}
+
+    Centroid_Scene_AABB( const CentroidGeometryAABB &cg )
+      {
+	store4f(&centroid2.lower,cg.centroid2_lower);
+	store4f(&centroid2.upper,cg.centroid2_upper);
+	store4f(&geometry.lower,cg.geometry_lower);
+	store4f(&geometry.upper,cg.geometry_upper);	
+      }
 
     __forceinline void reset() {
 #if !defined(__MIC__)
