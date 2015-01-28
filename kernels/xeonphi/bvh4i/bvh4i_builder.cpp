@@ -32,11 +32,11 @@
 #define L1_PREFETCH_ITEMS 2
 #define L2_PREFETCH_ITEMS 16
 
-#define TIMER(x) 
+#define TIMER(x) x
 #define DBG(x) 
 
 #define PROFILE
-#define PROFILE_ITERATIONS 20
+#define PROFILE_ITERATIONS 2
 
 #define MEASURE_MEMORY_ALLOCATION_TIME 0
 #define USE_IN_PLACE_PARTITIONING 1
@@ -1382,7 +1382,7 @@ namespace embree
 	TIMER(
 	      msec = getSeconds()-msec;    
 	      total_partition_time += msec;
-	      //std::cout << "partition time " << 1000. * msec << " total " << 1000. * total_partition_time << " items = " << current.size() << std::endl;
+	      std::cout << "partition time " << 1000. * msec << " total " << 1000. * total_partition_time << " items = " << current.size() << std::endl;
 	      );
 	
 	if (unlikely(current.begin == mid || mid == current.end)) 
