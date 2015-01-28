@@ -234,9 +234,9 @@ namespace embree
       fflush(stdout);
 
       /* create task scheduler */
-      TaskSchedulerNew* scheduler = new TaskSchedulerNew(1);
+      TaskSchedulerNew* scheduler = new TaskSchedulerNew;
 
-#if 0
+#if 1
       struct Fib
       {
         size_t& r;
@@ -327,7 +327,7 @@ namespace embree
 
   void main(int argc, const char* argv[])
   {
-#if 1
+#if 0
     const size_t N = 40;
     //const size_t N = 22;
     //tbb::task_arena limited(2);
