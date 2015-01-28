@@ -121,7 +121,7 @@ namespace embree
         
 	/* steal until all dependencies have completed */
         while (dependencies) {
-          if (thread.scheduler->schedule_steal(thread))
+          if (thread.scheduler->steal_from_other_threads(thread))
             while (thread.tasks.execute_local(thread,this));
         }
 
@@ -222,9 +222,8 @@ namespace embree
     TaskSchedulerNew (size_t numThreads = 0);
     ~TaskSchedulerNew ();
 
-    void schedule(size_t threadIndex);
-    void schedule_on_thread(Thread& thread);
-    bool schedule_steal(Thread& thread);
+    void thread_loop(size_t threadIndex);
+    bool steal_from_other_threads(Thread& thread);
 
     /* spawn a new task at the top of the threads task stack */
     template<typename Closure>
@@ -245,7 +244,8 @@ namespace embree
       spawn(closure);
       atomic_add(&anyTasksRunning,+1);
       condition.notify_all();
-      schedule_on_thread(thread);
+      while (thread.tasks.execute_local(thread,NULL));
+      atomic_add(&anyTasksRunning,-1);
     }
 
     /* work on spawned subtasks and wait until all have finished */

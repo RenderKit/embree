@@ -31,7 +31,7 @@ namespace embree
 
     for (size_t i=1; i<numThreads; i++) {
       atomic_add(&numThreadsRunning,1);
-      threads.push_back(std::thread([i,this]() { schedule(i); }));
+      threads.push_back(std::thread([i,this]() { thread_loop(i); }));
     }
   }
   
@@ -56,7 +56,7 @@ namespace embree
     return thread_local_thread;
   }
 
-  void TaskSchedulerNew::schedule(size_t threadIndex) try 
+  void TaskSchedulerNew::thread_loop(size_t threadIndex) try 
   {
     /* allocate thread structure */
     Thread thread(threadIndex,this);
@@ -74,10 +74,8 @@ namespace embree
       if (terminate) break;
       
       /* work on available task */
-      //atomic_add(&anyTasksRunning,+1);
-      //schedule_on_thread(thread);
       while (anyTasksRunning) {
-	if (thread.scheduler->schedule_steal(thread)) {
+	if (thread.scheduler->steal_from_other_threads(thread)) {
 	  atomic_add(&anyTasksRunning,+1);
 	  while (thread.tasks.execute_local(thread,NULL));
 	  atomic_add(&anyTasksRunning,-1);
@@ -93,28 +91,7 @@ namespace embree
     exit(1);
   }
 
-  void TaskSchedulerNew::schedule_on_thread(Thread& thread)
-  {
-    /* continue until there are some running tasks */
-    while (anyTasksRunning) cont2:
-    {
-      /* first try executing local tasks */
-      while (thread.tasks.execute_local(thread,NULL)) {
-        if (terminate) return;
-      }
-      atomic_add(&anyTasksRunning,-1);
-
-      /* second try to steal tasks */
-      while (anyTasksRunning) {
-        if (schedule_steal(thread)) {
-          atomic_add(&anyTasksRunning,1);
-          goto cont2;
-        }
-      }
-    }
-  }
-
-  bool TaskSchedulerNew::schedule_steal(Thread& thread)
+  bool TaskSchedulerNew::steal_from_other_threads(Thread& thread)
   {
     const size_t threadIndex = thread.threadIndex;
     const size_t threadCount = threads.size()+1;
@@ -126,7 +103,6 @@ namespace embree
         continue;
       
       if (threadLocal[otherThreadIndex]->tasks.steal(thread)) {
-        //atomic_add(&anyTasksRunning,1);
         return true;
       }
     }
