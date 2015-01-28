@@ -159,9 +159,8 @@ namespace embree
       {
         assert(right < SIZE);
         size_t oldStackPtr = stackPtr;
-        Task* parent = thread.task;
         TaskFunction* func = new (alloc(sizeof(Closure))) ClosureTaskFunction<Closure>(closure);
-        new (&tasks[right++]) Task(func,parent,stackPtr);
+        new (&tasks[right++]) Task(func,thread.task,oldStackPtr);
 
 	/* also move left pointer */
 	if (left >= right-1) left = right-1;
