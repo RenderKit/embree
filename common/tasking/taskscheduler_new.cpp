@@ -108,9 +108,19 @@ namespace embree
 	}
       }
     }
+
+    /* decrement threadCount again */
+    atomic_add(&threadCount,-1);
+
+    /* wait for all threads to terminate */
+    while (threadCount > 1)
+      yield();
+
+    threadLocal[threadIndex] = NULL;
   }
   catch (const std::exception& e) {
     std::cout << "Error: " << e.what() << std::endl; // FIXME: propagate to main thread
+    threadLocal[threadIndex] = NULL;
     exit(1);
   }
 
