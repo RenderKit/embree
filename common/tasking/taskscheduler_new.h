@@ -186,17 +186,18 @@ namespace embree
 
       bool steal(Thread& thread) 
       {
-        size_t l = left;
-        while (tasks[l].state != Task::INITIALIZED && l<right) 
-	  l = atomic_add(&left,1);
+        //size_t l = left;
+        //while (tasks[l].state != Task::INITIALIZED && l<right) 
+	//  l = atomic_add(&left,1);
 
         //Thread* thread = TaskSchedulerNew::thread();
         Task& dst = thread.tasks.tasks[thread.tasks.right];
 
+	size_t l = left;
+	if (l < right) atomic_add(&left,1);
         if (!tasks[l].try_steal(dst))
           return false;
-
-        atomic_add(&left,1);
+        
         thread.tasks.right++;
         return true;
       }
