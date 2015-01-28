@@ -23,7 +23,7 @@
 
 #define DBG_PART(x) 
 #define DBG_PART2(x) 
-#define DBG_CHECK(x) 
+#define DBG_CHECK(x) x
 
 namespace embree
 {
@@ -657,7 +657,6 @@ namespace embree
       
       size_t N;
       size_t blocks;
-      size_t global_mid;
       T* array;
 
       __aligned(64) unsigned int counter_start[MAX_MIC_THREADS];
@@ -667,7 +666,6 @@ namespace embree
       size_t numMisplacedRangesLeft;
       size_t numMisplacedRangesRight;
       size_t numMisplacedItems;
-
 
       
       /* check left part of array */
@@ -720,98 +718,8 @@ namespace embree
       } 
 
 
-
-      void computeMisplacedRanges(const size_t numThreads)
-      {
-#if defined(__MIC__)
-	for (size_t i=0;i<(numThreads+15)/16;i++)
-	  prefetch<PFHINT_L2>(&counter_left[i*16]);
-#endif
-
-	numMisplacedRangesLeft  = 0;
-	numMisplacedRangesRight = 0;
-	size_t numMisplacedItemsLeft   = 0;
-	size_t numMisplacedItemsRight  = 0;
-
-	counter_start[numThreads] = N;
-	counter_left[numThreads]  = 0;
-
-	unsigned int mid = counter_left[0];
-	for (unsigned int i=1;i<numThreads;i++)
-	  {
-#if defined(__MIC__)
-	    prefetch<PFHINT_L1>(&counter_left[i+16]);
-#endif
-	    mid += counter_left[i];
-	  }
-
-	global_mid = mid;
-
-#if defined(__MIC__)
-	for (size_t i=0;i<(numThreads+15)/16;i++)
-	  prefetch<PFHINT_L2>(&counter_start[i*16]);
-#endif
-
-	const Range globalLeft (0,global_mid-1);
-	const Range globalRight(global_mid,N-1);
-
-	// without pragma the compiler makes a mess out of this loop
-#pragma novector
-	for (size_t i=0;i<numThreads;i++)
-	  {	    
-#if defined(__MIC__)
-	    prefetch<PFHINT_L1>(&counter_start[i+16]);
-#endif
-
-	    const unsigned int left_start  = counter_start[i];
-	    const unsigned int left_end    = counter_start[i] + counter_left[i]-1;
-	    const unsigned int right_start = counter_start[i] + counter_left[i];
-	    const unsigned int right_end   = counter_start[i+1]-1;
-
-	    Range left_range (left_start,left_end); // counter[i].start,counter[i].start+counter[i].left-1);
-	    Range right_range(right_start,right_end); // counter[i].start+counter[i].left,counter[i].start+counter[i].size-1);
-
-	    Range left_misplaced = globalLeft.intersect(right_range);
-	    Range right_misplaced = globalRight.intersect(left_range);
-
-	    if (!left_misplaced.empty())  
-	      {
-		numMisplacedItemsLeft  += left_misplaced.size();
-		leftMisplacedRanges[numMisplacedRangesLeft++] = left_misplaced;
-#if defined(__MIC__)
-		prefetch<PFHINT_L1EX>(&leftMisplacedRanges[numMisplacedRangesLeft+8]);
-#endif
-
-	      }
-
-	    if (!right_misplaced.empty()) 
-	      {
-		numMisplacedItemsRight += right_misplaced.size();
-		rightMisplacedRanges[numMisplacedRangesRight++] = right_misplaced;
-#if defined(__MIC__)
-		prefetch<PFHINT_L1EX>(&rightMisplacedRanges[numMisplacedRangesRight+8]);
-#endif
-	      }
-	  }
-
-	DBG_PART(
-		 DBG_PRINT( global_mid );
-		 DBG_PRINT( numMisplacedItemsLeft );
-		 DBG_PRINT( numMisplacedItemsRight );
-		 DBG_PRINT( numMisplacedRangesLeft );
-		 DBG_PRINT( numMisplacedRangesRight );
-		 );
-
-	assert( numMisplacedItemsLeft == numMisplacedItemsRight );
-	
-	numMisplacedItems = numMisplacedItemsLeft;
-      }
-
       void move_misplaced(const size_t threadID, const size_t numThreads) 
       {
-	//const size_t numPartitionThreads = 64;
-
-	if ( !numMisplacedItems ) return;
 
 #if defined(__MIC__)
 	for (size_t i=0;i<(numMisplacedRangesLeft+7)/8;i++)
@@ -820,7 +728,6 @@ namespace embree
 	  prefetch<PFHINT_L2>(&rightMisplacedRanges[i*8]);
 #endif
 
-	//size_t numTotalThreads = small ? numPartitionThreads : numThreads;
 	const size_t numTotalThreads = numThreads;
 	const size_t startID = (threadID+0)*numMisplacedItems/numTotalThreads;
 	const size_t endID   = (threadID+1)*numMisplacedItems/numTotalThreads;
@@ -980,18 +887,18 @@ namespace embree
 					      const ThreadLocalPartition& threadLocalPartition) : 
       array(array), N(N), cmp(cmp), threadLocalPartition(threadLocalPartition) 
       {
-	global_mid = (size_t)-1;
+	numMisplacedRangesLeft  = 0;
+	numMisplacedRangesRight = 0;
+	numMisplacedItems  = 0;
       }
 
       /* main function for parallel in-place partitioning */
       size_t partition_parallel(Scheduler &scheduler)
       {    
-        //LockStepTaskScheduler* scheduler = LockStepTaskScheduler::instance();
         const size_t numThreads = scheduler.getNumThreads();
     
         if (N <= 4 * numThreads)
           {
-	    DBG_PRINT("SERIAL FALLBACK");
 	    DBG_PART(
 		     DBG_PRINT(numThreads);
 		     );
@@ -1008,37 +915,130 @@ namespace embree
                  DBG_PRINT("PARALLEL MODE");
                  );
 #define TIME_PHASES 0
+
+	////////////////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////
+
 #if TIME_PHASES == 1
 	double t0 = getSeconds();
 #endif
+
         scheduler.dispatchTask(task_thread_partition,this,0,numThreads);
+
 #if TIME_PHASES == 1
 	t0 = getSeconds() - t0;
 	std::cout << std::endl << " phase0 = " << 1000.0f*t0 << "ms, perf = " << 1E-6*double(N)/t0 << " Mprim/s" << std::endl;
 #endif
-        /* ------------------------------------ */
-        /* ------ parallel cleanup phase ------ */
-        /* ------------------------------------ */
+
+	////////////////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////
+
 #if  TIME_PHASES == 1
 	double t1 = getSeconds();
 #endif
                 
+#if defined(__MIC__)
+	for (size_t i=0;i<(numThreads+15)/16;i++)
+	  prefetch<PFHINT_L2>(&counter_left[i*16]);
+#endif
 
-	computeMisplacedRanges(numThreads);
+	numMisplacedRangesLeft  = 0;
+	numMisplacedRangesRight = 0;
+	size_t numMisplacedItemsLeft   = 0;
+	size_t numMisplacedItemsRight  = 0;
 	
+	counter_start[numThreads] = N;
+	counter_left[numThreads]  = 0;
+
+	unsigned int mid = counter_left[0];
+	for (unsigned int i=1;i<numThreads;i++)
+	  {
+#if defined(__MIC__)
+	    prefetch<PFHINT_L1>(&counter_left[i+16]);
+#endif
+	    mid += counter_left[i];
+	  }
+
+#if defined(__MIC__)
+	for (size_t i=0;i<(numThreads+15)/16;i++)
+	  prefetch<PFHINT_L2>(&counter_start[i*16]);
+#endif
+
+	const Range globalLeft (0,mid-1);
+	const Range globalRight(mid,N-1);
+
+	// without pragma the compiler makes a mess out of this loop
+#pragma novector
+	for (size_t i=0;i<numThreads;i++)
+	  {	    
+#if defined(__MIC__)
+	    prefetch<PFHINT_L1>(&counter_start[i+16]);
+#endif
+
+	    const unsigned int left_start  = counter_start[i];
+	    const unsigned int left_end    = counter_start[i] + counter_left[i]-1;
+	    const unsigned int right_start = counter_start[i] + counter_left[i];
+	    const unsigned int right_end   = counter_start[i+1]-1;
+
+	    Range left_range (left_start,left_end); // counter[i].start,counter[i].start+counter[i].left-1);
+	    Range right_range(right_start,right_end); // counter[i].start+counter[i].left,counter[i].start+counter[i].size-1);
+
+	    Range left_misplaced = globalLeft.intersect(right_range);
+	    Range right_misplaced = globalRight.intersect(left_range);
+
+	    if (!left_misplaced.empty())  
+	      {
+		numMisplacedItemsLeft  += left_misplaced.size();
+		leftMisplacedRanges[numMisplacedRangesLeft++] = left_misplaced;
+#if defined(__MIC__)
+		prefetch<PFHINT_L1EX>(&leftMisplacedRanges[numMisplacedRangesLeft+8]);
+#endif
+
+	      }
+
+	    if (!right_misplaced.empty()) 
+	      {
+		numMisplacedItemsRight += right_misplaced.size();
+		rightMisplacedRanges[numMisplacedRangesRight++] = right_misplaced;
+#if defined(__MIC__)
+		prefetch<PFHINT_L1EX>(&rightMisplacedRanges[numMisplacedRangesRight+8]);
+#endif
+	      }
+	  }
+
+	assert( numMisplacedItemsLeft == numMisplacedItemsRight );
+	
+	numMisplacedItems = numMisplacedItemsLeft;
+
+	const size_t global_mid = mid;
+
 #if  TIME_PHASES == 1
 	t1 = getSeconds() - t1;
 	std::cout << " phase1 = " << 1000.0f*t1 << "ms, perf = " << 1E-6*double(N)/t1 << " Mprim/s" <<  " misplaced : " << numMisplacedItems << std::endl;
 #endif
 
+	////////////////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////
+
+
 #if  TIME_PHASES == 1
 	double t2 = getSeconds();
 #endif
-	scheduler.dispatchTask(task_thread_move_misplaced,this,0,numThreads);
+	if (numMisplacedItems)
+	  scheduler.dispatchTask(task_thread_move_misplaced,this,0,numThreads);
+
 #if  TIME_PHASES == 1
 	t2 = getSeconds() - t2;
 	std::cout << " phase2 = " << 1000.0f*t2 << "ms, perf = " << 1E-6*double(N)/t2 << " Mprim/s" << std::endl;
 #endif
+
+	////////////////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////
+
         DBG_CHECK(
 		  checkLeft(array,0,global_mid);
 		  checkRight(array,global_mid,N);
