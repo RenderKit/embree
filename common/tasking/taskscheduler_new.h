@@ -162,6 +162,9 @@ namespace embree
         Task* parent = thread.task;
         TaskFunction* func = new (alloc(sizeof(Closure))) ClosureTaskFunction<Closure>(closure);
         new (&tasks[right++]) Task(func,parent,stackPtr);
+
+	/* also move left pointer */
+	if (left >= right-1) left = right-1;
       }
       
       bool execute_local(Thread& thread, Task* parent)
@@ -186,16 +189,10 @@ namespace embree
 
       bool steal(Thread& thread) 
       {
-        //size_t l = left;
-        //while (tasks[l].state != Task::INITIALIZED && l<right) 
-	//  l = atomic_add(&left,1);
-
-        //Thread* thread = TaskSchedulerNew::thread();
-        Task& dst = thread.tasks.tasks[thread.tasks.right];
-
 	size_t l = left;
-	if (l < right) atomic_add(&left,1);
-        if (!tasks[l].try_steal(dst))
+	if (l < right) l = atomic_add(&left,1);
+	
+        if (!tasks[l].try_steal(thread.tasks.tasks[thread.tasks.right]))
           return false;
         
         thread.tasks.right++;
