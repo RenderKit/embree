@@ -118,7 +118,7 @@ namespace embree
       if (!threadLocal[otherThreadIndex])
         continue;
       
-      if (threadLocal[otherThreadIndex]->tasks.steal()) {
+      if (threadLocal[otherThreadIndex]->tasks.steal(thread)) {
         //atomic_add(&anyTasksRunning,1);
         return true;
       }

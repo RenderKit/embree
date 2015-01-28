@@ -184,19 +184,20 @@ namespace embree
 	return right != 0;
       }
 
-      bool steal() 
+      bool steal(Thread& thread) 
       {
         size_t l = left;
-        while (tasks[l].state != Task::INITIALIZED && l<right) l = atomic_add(&left,1);
-        if (tasks[l].state != Task::INITIALIZED) return false;
-        Thread* thread = TaskSchedulerNew::thread();
-        Task& dst = thread->tasks.tasks[thread->tasks.right];
+        while (tasks[l].state != Task::INITIALIZED && l<right) 
+	  l = atomic_add(&left,1);
+
+        //Thread* thread = TaskSchedulerNew::thread();
+        Task& dst = thread.tasks.tasks[thread.tasks.right];
 
         if (!tasks[l].try_steal(dst))
           return false;
 
         atomic_add(&left,1);
-        thread->tasks.right++;
+        thread.tasks.right++;
         return true;
       }
     };
