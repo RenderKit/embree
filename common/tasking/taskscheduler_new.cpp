@@ -98,12 +98,14 @@ namespace embree
     {
       auto predicate = [&] () { return anyTasksRunning || terminate; };
 
-      /* all threads are waiting inside some condition */
+      /* all threads are either spinning ... */
       if (spinning) 
       {
 	while (!predicate())
 	  __pause_cpu();
       }
+      
+      /* ... or waiting inside some condition variable */
       else
       {
         std::unique_lock<std::mutex> lock(mutex);
