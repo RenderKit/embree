@@ -677,17 +677,6 @@ namespace embree
 	}
       };
 
-      __forceinline size_t findStartRange(size_t &index,const Range *const r,const size_t numRanges)
-      {
-	size_t i = 0;
-	while(index >= r[i].size())
-	  {
-	    assert(i < numRanges);
-	    index -= r[i].size();
-	    i++;
-	  }	    
-	return i;
-      }
       
       /* check left part of array */
       void checkLeft(T* const t_array,const size_t begin, const size_t end)
@@ -939,6 +928,19 @@ namespace embree
         return global_mid;
       }
 
+      __forceinline size_t findStartRange(size_t &index,const Range *const r,const size_t numRanges)
+      {
+	size_t i = 0;
+	while(index >= r[i].size())
+	  {
+	    assert(i < numRanges);
+	    index -= r[i].size();
+	    i++;
+	  }	    
+	return &r[i];
+      }
+
+
       __forceinline void swapItemsInMisplacedRanges(const Range * const leftMisplacedRanges,
 						    const size_t numLeftMisplacedRanges,
 						    const Range * const rightMisplacedRanges,
@@ -951,11 +953,8 @@ namespace embree
 	size_t leftLocalIndex  = startID;
 	size_t rightLocalIndex = startID;
 
-	const size_t leftRangeIndex  = findStartRange(leftLocalIndex,leftMisplacedRanges,numLeftMisplacedRanges);
-	const size_t rightRangeIndex = findStartRange(rightLocalIndex,rightMisplacedRanges,numRightMisplacedRanges);
-
-	const Range* l_range = &leftMisplacedRanges[leftRangeIndex];
-	const Range* r_range = &rightMisplacedRanges[rightRangeIndex];
+	const Range* l_range = findStartRange(leftLocalIndex,leftMisplacedRanges,numLeftMisplacedRanges);
+	const Range* r_range = findStartRange(rightLocalIndex,rightMisplacedRanges,numRightMisplacedRanges);
 
 	for (size_t i=0;i<size;)
 	  {
@@ -999,6 +998,58 @@ namespace embree
 	  }
       }
 						    
+      __forceinline void swapItemsInMisplacedRanges2(const Range * const leftMisplacedRanges,
+						    const size_t numLeftMisplacedRanges,
+						    const Range * const rightMisplacedRanges,
+						    const size_t numRightMisplacedRanges,
+						    const size_t startID,
+						    const size_t endID)
+      {
+
+	size_t leftLocalIndex  = startID;
+	size_t rightLocalIndex = startID;
+
+	const Range* l_range = findStartRange(leftLocalIndex,leftMisplacedRanges,numLeftMisplacedRanges);
+	const Range* r_range = findStartRange(rightLocalIndex,rightMisplacedRanges,numRightMisplacedRanges);
+
+        size_t l_left = l_range->size() - leftLocalIndex;
+        size_t r_left = r_range->size() - rightLocalIndex;
+
+        size_t size = endID - startID;
+
+        T *__restrict__ const l = &array[l_range->start + leftLocalIndex];
+        T *__restrict__ const r = &array[r_range->start + rightLocalIndex];
+
+	while(size)
+	  {
+	    if (unlikely(l_left == 0))
+	      {
+		l_range++;
+                l_left = l_range->size();
+                l = &array[l_range->start];
+	      }
+
+	    if (unlikely(r_left == 0))
+	      {		
+		r_range++;
+                r_left = r_range->size();
+                r = &array[r_range->start];                
+	      }
+
+#pragma nounroll
+	    while(l_left>0 && r_left>0 && size>0)
+	      {
+#if defined(__MIC__)
+		prefetch<PFHINT_L1EX>(((char*)l) + 4*64);
+		prefetch<PFHINT_L1EX>(((char*)r) + 4*64);	  
+#endif
+                l_left--;
+                r_left--;
+                size--;
+		xchg(*l,*r);
+	      }
+	  }
+      }
 
     };
 
