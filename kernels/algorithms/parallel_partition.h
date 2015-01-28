@@ -849,12 +849,12 @@ namespace embree
 	const size_t numTotalThreads = numThreads;
 	const size_t startID = (threadID+0)*numMisplacedItems/numTotalThreads;
 	const size_t endID   = (threadID+1)*numMisplacedItems/numTotalThreads;
-	swapItemsInMisplacedRanges(leftMisplacedRanges,
-				   numMisplacedRangesLeft,
-				   rightMisplacedRanges,
-				   numMisplacedRangesRight,
-				   startID,
-				   endID);	    
+	swapItemsInMisplacedRanges2(leftMisplacedRanges,
+				    numMisplacedRangesLeft,
+				    rightMisplacedRanges,
+				    numMisplacedRangesRight,
+				    startID,
+				    endID);	    
       }
 
       static void task_thread_move_misplaced(void* data, const size_t threadID, const size_t numThreads) {
@@ -1017,8 +1017,10 @@ namespace embree
 
         size_t size = endID - startID;
 
-        T *__restrict__ const l = &array[l_range->start + leftLocalIndex];
-        T *__restrict__ const r = &array[r_range->start + rightLocalIndex];
+        T *__restrict__ l = &array[l_range->start + leftLocalIndex];
+        T *__restrict__ r = &array[r_range->start + rightLocalIndex];
+
+	size_t items = min(size,min(l_left,r_left)); 
 
 	while(size)
 	  {
@@ -1027,26 +1029,33 @@ namespace embree
 		l_range++;
                 l_left = l_range->size();
                 l = &array[l_range->start];
+		items = min(size,min(l_left,r_left));
+
 	      }
 
 	    if (unlikely(r_left == 0))
 	      {		
 		r_range++;
                 r_left = r_range->size();
-                r = &array[r_range->start];                
+                r = &array[r_range->start];          
+		items = min(size,min(l_left,r_left));
 	      }
 
+	    size   -= items;
+	    l_left -= items;
+	    r_left -= items;
 #pragma nounroll
-	    while(l_left>0 && r_left>0 && size>0)
+	    while(items)
 	      {
 #if defined(__MIC__)
-		prefetch<PFHINT_L1EX>(((char*)l) + 4*64);
-		prefetch<PFHINT_L1EX>(((char*)r) + 4*64);	  
+		prefetch<PFHINT_L2EX>(((char*)l) + 4*64);
+		prefetch<PFHINT_L2EX>(((char*)r) + 4*64);	  
+
+		prefetch<PFHINT_L1EX>(((char*)l) + 1*64);
+		prefetch<PFHINT_L1EX>(((char*)r) + 1*64);	  
 #endif
-                l_left--;
-                r_left--;
-                size--;
-		xchg(*l,*r);
+		items--;
+		xchg(*l++,*r++);
 	      }
 	  }
       }
