@@ -23,7 +23,7 @@
 
 #define DBG_PART(x) 
 #define DBG_PART2(x) 
-#define DBG_CHECK(x) x
+#define DBG_CHECK(x) 
 
 namespace embree
 {
@@ -657,6 +657,7 @@ namespace embree
       
       size_t N;
       size_t blocks;
+      size_t schedulerNumThreads;
       T* array;
 
       __aligned(64) unsigned int counter_start[MAX_MIC_THREADS];
@@ -704,9 +705,11 @@ namespace embree
       }
 
 
-      static void task_thread_partition(void* data, const size_t threadID, const size_t numThreads) {
+      static void task_thread_partition(void* data, const size_t threadID, const size_t old_numThreads) {
 
         parallel_partition_static<T,Compare,ThreadLocalPartition,Scheduler>* p = (parallel_partition_static<T,Compare,ThreadLocalPartition,Scheduler>*)data;
+
+	const size_t numThreads = p->schedulerNumThreads /*workaround*/;
 
 	const size_t startID = (threadID+0)*p->N/numThreads;
 	const size_t endID   = (threadID+1)*p->N/numThreads;
@@ -743,7 +746,7 @@ namespace embree
 
         parallel_partition_static<T,Compare,ThreadLocalPartition,Scheduler>* p = (parallel_partition_static<T,Compare,ThreadLocalPartition,Scheduler>*)data;
 
-	p->move_misplaced(threadID,numThreads);
+	p->move_misplaced(threadID,p->schedulerNumThreads/*numThreads*/);
       } 
 
       __forceinline const Range *findStartRange(size_t &index,const Range *const r,const size_t numRanges)
@@ -890,13 +893,15 @@ namespace embree
 	numMisplacedRangesLeft  = 0;
 	numMisplacedRangesRight = 0;
 	numMisplacedItems  = 0;
+	schedulerNumThreads = 0;
       }
 
       /* main function for parallel in-place partitioning */
       size_t partition_parallel(Scheduler &scheduler)
       {    
         const size_t numThreads = scheduler.getNumThreads();
-    
+	schedulerNumThreads = numThreads;
+
         if (N <= 4 * numThreads)
           {
 	    DBG_PART(

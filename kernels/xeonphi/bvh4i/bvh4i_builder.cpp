@@ -36,7 +36,7 @@
 #define DBG(x) 
 
 //#define PROFILE
-#define PROFILE_ITERATIONS 2
+#define PROFILE_ITERATIONS 20
 
 #define MEASURE_MEMORY_ALLOCATION_TIME 0
 #define USE_IN_PLACE_PARTITIONING 1
@@ -1412,8 +1412,7 @@ namespace embree
 	sd.left.reset();
 	sd.right.reset();
 
-#if 0
-
+#if USE_IN_PLACE_PARTITIONING == 1
 	const unsigned int bestSplitDim     = sd.split.dim;
 	const unsigned int bestSplit        = sd.split.pos;
 	const unsigned int bestSplitNumLeft = sd.split.numLeft;
@@ -1430,14 +1429,13 @@ namespace embree
 	const mic_m dim_mask = mic_m::shift1[bestSplitDim];
 
 
-	auto part = [&] (PrimRef* const t_array,
+	auto part_local = [&] (PrimRef* const t_array,
 			 const size_t size) 
 	  {                                               
 	    CentroidGeometryAABB leftReduction;
 	    CentroidGeometryAABB rightReduction;
 	    leftReduction.reset();
 	    rightReduction.reset();
-
 	    const mic_m m_mask = mic_m::shift1[bestSplitDim];
 	    PrimRef* l = t_array;
 	    PrimRef* r = t_array + size - 1;
@@ -1494,8 +1492,8 @@ namespace embree
 
 	  };
 
-	size_t mid_parallel = parallel_in_place_partitioning_static<PrimRef>(&prims[current.begin],
-									     current.size(),
+	size_t mid_parallel = parallel_in_place_partitioning_static<PrimRef>(&prims[sd.rec.begin],
+									     sd.rec.size(),
 									     [&] (const PrimRef &ref) { 
 									       const mic_f bf = bestSplit_f;
 									       const mic2f b = ref.getBounds();
@@ -1504,7 +1502,7 @@ namespace embree
 									       const mic_f b_centroid2 = b_min + b_max;
 									       return any(lt_split(b_min,b_max,dim_mask,c,s,bf));
 									     },
-									     part,
+									     part_local,
 									     localTaskScheduler[globalCoreID]
 									     );
 
@@ -1819,7 +1817,7 @@ namespace embree
     const mic_f centroidDiagonal_2  = centroidMax-centroidMin;
     const mic_f scale = select(centroidDiagonal_2 != 0.0f,rcp(centroidDiagonal_2) * mic_f(16.0f * 0.99f),mic_f::zero());
 
-#if 0
+#if USE_IN_PLACE_PARTITIONING == 1
     fastbin<PrimRef>(prims,startID,endID,centroidBoundsMin_2,scale,global_bin16[globalThreadID]);    
 #else
     PrimRef  *__restrict__ const tmp_prims = (PrimRef*)accel;
