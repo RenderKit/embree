@@ -434,6 +434,8 @@ namespace embree
       data    = _data;
       return dispatchTask(localThreadID,globalThreadID);
     }
+
+    size_t getNumThreads() const { return 4; }
     
     void syncThreads(const size_t localThreadID);
   };

@@ -1344,7 +1344,8 @@ namespace embree
 									       //return any(lt_split(b_min,b_max,dim_mask,c,s,bf));
 									       return any(lt_split_new(b_centroid2,c,s,bf));
 									     },
-									     part
+									     part,
+									     scene->lockstep_scheduler
 									     );
 
 #else

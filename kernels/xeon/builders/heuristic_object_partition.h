@@ -701,7 +701,8 @@ namespace embree
                                                                             right,
                                                                             [&] (const PrimRef &ref) { return mapping.bin_unsafe(center2(ref.bounds()))[splitDim] < splitPos; },
                                                                             [] (PrimInfo &pinfo,const PrimRef &ref) { pinfo.extend(ref.bounds()); },
-                                                                            [] (PrimInfo &pinfo0,const PrimInfo &pinfo1) { pinfo0.merge(pinfo1); }
+                                                                            [] (PrimInfo &pinfo0,const PrimInfo &pinfo1) { pinfo0.merge(pinfo1); },
+									    *scheduler
                                                                             );
           //scheduler->dispatchTask(task_parallelPartition, this, threadID, numThreads);
           size_t numLeft = bin16.getNumLeft(split);

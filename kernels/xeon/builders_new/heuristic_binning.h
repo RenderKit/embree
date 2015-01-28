@@ -379,12 +379,15 @@ namespace embree
 	PrimInfo init; init.reset();
 	const unsigned int splitPos = split.pos;
 	const unsigned int splitDim = split.dim;
+
+	LockStepTaskScheduler* scheduler = LockStepTaskScheduler::instance();
 	
 	const size_t mid = parallel_in_place_partitioning<128,PrimRef,PrimInfo>
 	  (&prims[begin],end-begin,init,left,right,
 	   [&] (const PrimRef &ref) { return split.mapping.bin_unsafe(center2(ref.bounds()))[splitDim] < splitPos; },
 	   [] (PrimInfo &pinfo,const PrimRef &ref) { pinfo.add(ref.bounds()); },
-	   [] (PrimInfo &pinfo0,const PrimInfo &pinfo1) { pinfo0.merge(pinfo1); });
+	   [] (PrimInfo &pinfo0,const PrimInfo &pinfo1) { pinfo0.merge(pinfo1); },
+	   *scheduler);
 	
 	const size_t center = begin+mid;
 	left.begin  = begin;  left.end  = center; // FIXME: remove?

@@ -72,7 +72,7 @@ namespace embree
   }
   
 
-  template<size_t BLOCK_SIZE, typename T, typename V, typename Compare, typename Reduction_T, typename Reduction_V>
+  template<size_t BLOCK_SIZE, typename T, typename V, typename Compare, typename Reduction_T, typename Reduction_V, typename Scheduler>
   class __aligned(64) parallel_partition
     {
     private:
@@ -428,7 +428,7 @@ namespace embree
       }
 
       static void task_thread_partition(void* data, const size_t threadIndex, const size_t threadCount) {
-        parallel_partition<BLOCK_SIZE,T,V,Compare,Reduction_T,Reduction_V>* p = (parallel_partition<BLOCK_SIZE,T,V,Compare,Reduction_T,Reduction_V>*)data;
+        parallel_partition<BLOCK_SIZE,T,V,Compare,Reduction_T,Reduction_V,Scheduler>* p = (parallel_partition<BLOCK_SIZE,T,V,Compare,Reduction_T,Reduction_V,Scheduler>*)data;
         V left;
         V right;
         p->thread_partition(left,right);
@@ -438,13 +438,14 @@ namespace embree
 
       /* main function for parallel in-place partitioning */
       size_t partition_parallel(V &leftReduction,
-                                V &rightReduction)
+                                V &rightReduction,
+				Scheduler &scheduler)
       {    
         leftReduction = init;
         rightReduction = init;
 
-        LockStepTaskScheduler* scheduler = LockStepTaskScheduler::instance();
-        const size_t numThreads = scheduler->getNumThreads();
+        //LockStepTaskScheduler* scheduler = LockStepTaskScheduler::instance();
+        const size_t numThreads = scheduler.getNumThreads();
         if (N <= 2 * BLOCK_SIZE * numThreads) // need at least 1 block from the left and 1 block from the right per thread
           {
 #if defined(__MIC__)
@@ -465,7 +466,7 @@ namespace embree
                  );
 
 
-        scheduler->dispatchTask(task_thread_partition,this,0,numThreads);
+        scheduler.dispatchTask(task_thread_partition,this,0,numThreads);
 
         /* ---------------------------------- */
         /* ------ serial cleanup phase ------ */
@@ -604,7 +605,7 @@ namespace embree
 
     };
 
-  template<size_t BLOCK_SIZE, typename T, typename V, typename Compare, typename Reduction_T, typename Reduction_V>
+  template<size_t BLOCK_SIZE, typename T, typename V, typename Compare, typename Reduction_T, typename Reduction_V, typename Scheduler>
     __forceinline size_t parallel_in_place_partitioning(T *array, 
                                                         size_t N, 
                                                         const V &init,
@@ -612,48 +613,22 @@ namespace embree
                                                         V &rightReduction,
                                                         const Compare& cmp, 
                                                         const Reduction_T& reduction_t,
-                                                        const Reduction_V& reduction_v)
+                                                        const Reduction_V& reduction_v,
+							Scheduler &scheduler)
   {
-    parallel_partition<BLOCK_SIZE,T,V,Compare,Reduction_T,Reduction_V> p(array,N,init,cmp,reduction_t,reduction_v);
-    return p.partition_parallel(leftReduction,rightReduction);    
+    parallel_partition<BLOCK_SIZE,T,V,Compare,Reduction_T,Reduction_V,Scheduler> p(array,N,init,cmp,reduction_t,reduction_v);
+    return p.partition_parallel(leftReduction,rightReduction,scheduler);    
   }
 
-
-
-
-  template<typename T, typename V, typename Compare, typename Reduction_T, typename Reduction_V>
-    __forceinline size_t serial_in_place_partitioning(T *array, 
-                                                      size_t N, 
-                                                      const V &init,
-                                                      V &leftReduction,
-                                                      V &rightReduction,
-                                                      const Compare& cmp, 
-                                                      const Reduction_T& reduction_t,
-                                                      const Reduction_V& reduction_v)
-  {
-    parallel_partition<1,T,V,Compare,Reduction_T,Reduction_V> p(array,N,init,cmp,reduction_t,reduction_v);
-    return p.partition_serial(leftReduction,rightReduction);
-  }
 
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-  template<typename T, typename Compare, typename ThreadLocalPartition>
+  template<typename T, typename Compare, typename ThreadLocalPartition, typename Scheduler>
   class __aligned(64) parallel_partition_static
     {
     private:
-
-      const Compare& cmp;
-      const ThreadLocalPartition& threadLocalPartition;
-      
-      size_t N;
-      size_t blocks;
-      size_t global_mid;
-      T* array;
-
-      unsigned int counter_start[MAX_MIC_THREADS];
-      unsigned int counter_left[MAX_MIC_THREADS];     
 
       struct Range {
 	int start;
@@ -676,6 +651,23 @@ namespace embree
 	  return end-start+1; 
 	}
       };
+
+      const Compare& cmp;
+      const ThreadLocalPartition& threadLocalPartition;
+      
+      size_t N;
+      size_t blocks;
+      size_t global_mid;
+      T* array;
+
+      __aligned(64) unsigned int counter_start[MAX_MIC_THREADS];
+      __aligned(64) unsigned int counter_left[MAX_MIC_THREADS];     
+      __aligned(64) Range leftMisplacedRanges[MAX_MIC_THREADS];
+      __aligned(64) Range rightMisplacedRanges[MAX_MIC_THREADS];
+      size_t numMisplacedRangesLeft;
+      size_t numMisplacedRangesRight;
+      size_t numMisplacedItems;
+
 
       
       /* check left part of array */
@@ -713,22 +705,10 @@ namespace embree
         return mid;
       }
 
-    public:
-
-      /* initialize atomic counters */
-      __forceinline parallel_partition_static(T *array, 
-					      size_t N, 
-					      const Compare& cmp,
-					      const ThreadLocalPartition& threadLocalPartition) : array(array), N(N), cmp(cmp), threadLocalPartition(threadLocalPartition) 
-      {
-	global_mid = (size_t)-1;
-      }
-
-      /* each thread neutralizes blocks taken from left and right */
 
       static void task_thread_partition(void* data, const size_t threadID, const size_t numThreads) {
 
-        parallel_partition_static<T,Compare,ThreadLocalPartition>* p = (parallel_partition_static<T,Compare,ThreadLocalPartition>*)data;
+        parallel_partition_static<T,Compare,ThreadLocalPartition,Scheduler>* p = (parallel_partition_static<T,Compare,ThreadLocalPartition,Scheduler>*)data;
 
 	const size_t startID = (threadID+0)*p->N/numThreads;
 	const size_t endID   = (threadID+1)*p->N/numThreads;
@@ -740,11 +720,6 @@ namespace embree
       } 
 
 
-	__aligned(64) Range leftMisplacedRanges[MAX_MIC_THREADS];
-	__aligned(64) Range rightMisplacedRanges[MAX_MIC_THREADS];
-	size_t numMisplacedRangesLeft;
-	size_t numMisplacedRangesRight;
-	size_t numMisplacedItems;
 
       void computeMisplacedRanges(const size_t numThreads)
       {
@@ -859,74 +834,10 @@ namespace embree
 
       static void task_thread_move_misplaced(void* data, const size_t threadID, const size_t numThreads) {
 
-        parallel_partition_static<T,Compare,ThreadLocalPartition>* p = (parallel_partition_static<T,Compare,ThreadLocalPartition>*)data;
+        parallel_partition_static<T,Compare,ThreadLocalPartition,Scheduler>* p = (parallel_partition_static<T,Compare,ThreadLocalPartition,Scheduler>*)data;
 
 	p->move_misplaced(threadID,numThreads);
       } 
-
-      /* main function for parallel in-place partitioning */
-      size_t partition_parallel()
-      {    
-        LockStepTaskScheduler* scheduler = LockStepTaskScheduler::instance();
-        const size_t numThreads = scheduler->getNumThreads();
-    
-        if (N <= 4 * numThreads)
-          {
-	    DBG_PRINT("SERIAL FALLBACK");
-	    DBG_PART(
-		     DBG_PRINT(numThreads);
-		     );
-
-            size_t mid = partition_serial(array,N);
-            DBG_CHECK(
-		      checkLeft(array,0,mid);
-		      checkRight(array,mid,N);
-                     );
-            return mid;
-          }
-
-        DBG_PART2(
-                 DBG_PRINT("PARALLEL MODE");
-                 );
-#define TIME_PHASES 0
-#if TIME_PHASES == 1
-	double t0 = getSeconds();
-#endif
-        scheduler->dispatchTask(task_thread_partition,this,0,numThreads);
-#if TIME_PHASES == 1
-	t0 = getSeconds() - t0;
-	std::cout << std::endl << " phase0 = " << 1000.0f*t0 << "ms, perf = " << 1E-6*double(N)/t0 << " Mprim/s" << std::endl;
-#endif
-        /* ------------------------------------ */
-        /* ------ parallel cleanup phase ------ */
-        /* ------------------------------------ */
-#if  TIME_PHASES == 1
-	double t1 = getSeconds();
-#endif
-                
-
-	computeMisplacedRanges(numThreads);
-	
-#if  TIME_PHASES == 1
-	t1 = getSeconds() - t1;
-	std::cout << " phase1 = " << 1000.0f*t1 << "ms, perf = " << 1E-6*double(N)/t1 << " Mprim/s" <<  " misplaced : " << numMisplacedItems << std::endl;
-#endif
-
-#if  TIME_PHASES == 1
-	double t2 = getSeconds();
-#endif
-	scheduler->dispatchTask(task_thread_move_misplaced,this,0,numThreads);
-#if  TIME_PHASES == 1
-	t2 = getSeconds() - t2;
-	std::cout << " phase2 = " << 1000.0f*t2 << "ms, perf = " << 1E-6*double(N)/t2 << " Mprim/s" << std::endl;
-#endif
-        DBG_CHECK(
-		  checkLeft(array,0,global_mid);
-		  checkRight(array,global_mid,N);
-                 );
-        
-        return global_mid;
-      }
 
       __forceinline const Range *findStartRange(size_t &index,const Range *const r,const size_t numRanges)
       {
@@ -1060,16 +971,94 @@ namespace embree
 	  }
       }
 
+    public:
+
+      /* initialize atomic counters */
+      __forceinline parallel_partition_static(T *array, 
+					      size_t N, 
+					      const Compare& cmp,
+					      const ThreadLocalPartition& threadLocalPartition) : 
+      array(array), N(N), cmp(cmp), threadLocalPartition(threadLocalPartition) 
+      {
+	global_mid = (size_t)-1;
+      }
+
+      /* main function for parallel in-place partitioning */
+      size_t partition_parallel(Scheduler &scheduler)
+      {    
+        //LockStepTaskScheduler* scheduler = LockStepTaskScheduler::instance();
+        const size_t numThreads = scheduler.getNumThreads();
+    
+        if (N <= 4 * numThreads)
+          {
+	    DBG_PRINT("SERIAL FALLBACK");
+	    DBG_PART(
+		     DBG_PRINT(numThreads);
+		     );
+
+            size_t mid = partition_serial(array,N);
+            DBG_CHECK(
+		      checkLeft(array,0,mid);
+		      checkRight(array,mid,N);
+                     );
+            return mid;
+          }
+
+        DBG_PART2(
+                 DBG_PRINT("PARALLEL MODE");
+                 );
+#define TIME_PHASES 0
+#if TIME_PHASES == 1
+	double t0 = getSeconds();
+#endif
+        scheduler.dispatchTask(task_thread_partition,this,0,numThreads);
+#if TIME_PHASES == 1
+	t0 = getSeconds() - t0;
+	std::cout << std::endl << " phase0 = " << 1000.0f*t0 << "ms, perf = " << 1E-6*double(N)/t0 << " Mprim/s" << std::endl;
+#endif
+        /* ------------------------------------ */
+        /* ------ parallel cleanup phase ------ */
+        /* ------------------------------------ */
+#if  TIME_PHASES == 1
+	double t1 = getSeconds();
+#endif
+                
+
+	computeMisplacedRanges(numThreads);
+	
+#if  TIME_PHASES == 1
+	t1 = getSeconds() - t1;
+	std::cout << " phase1 = " << 1000.0f*t1 << "ms, perf = " << 1E-6*double(N)/t1 << " Mprim/s" <<  " misplaced : " << numMisplacedItems << std::endl;
+#endif
+
+#if  TIME_PHASES == 1
+	double t2 = getSeconds();
+#endif
+	scheduler.dispatchTask(task_thread_move_misplaced,this,0,numThreads);
+#if  TIME_PHASES == 1
+	t2 = getSeconds() - t2;
+	std::cout << " phase2 = " << 1000.0f*t2 << "ms, perf = " << 1E-6*double(N)/t2 << " Mprim/s" << std::endl;
+#endif
+        DBG_CHECK(
+		  checkLeft(array,0,global_mid);
+		  checkRight(array,global_mid,N);
+                 );
+        
+        return global_mid;
+      }
+
+
     };
 
-  template<typename T, typename Compare, typename ThreadLocalPartition>
+  template<typename T, typename Compare, typename ThreadLocalPartition, typename Scheduler>
     __forceinline size_t parallel_in_place_partitioning_static(T *array, 
 							       size_t N, 
 							       const Compare& cmp,
-							       const ThreadLocalPartition& threadLocalPartition)
+							       const ThreadLocalPartition& threadLocalPartition,
+							       Scheduler &scheduler)
   {
-    parallel_partition_static<T,Compare,ThreadLocalPartition> p(array,N,cmp,threadLocalPartition);
-    return p.partition_parallel();    
+    parallel_partition_static<T,Compare,ThreadLocalPartition,Scheduler> p(array,N,cmp,threadLocalPartition);
+    return p.partition_parallel(scheduler);    
   }
 
 
