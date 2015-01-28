@@ -78,6 +78,14 @@ namespace embree
 	switch_state(EMPTY,INITIALIZED);
       }
 
+      __forceinline Task (TaskFunction* closure, Task* parent) 
+        : closure(closure), parent(parent), stackPtr(-1), dependencies(1) 
+      {
+	//validate(true);
+        //if (parent) parent->addDependency();
+	switch_state(EMPTY,INITIALIZED);
+      }
+
       //__forceinline void validate(bool valid0) {
       //  __memory_barrier();
       //  valid = valid0;
@@ -85,18 +93,8 @@ namespace embree
 
       int steal(Task& child)
       {
-	if (!try_switch_state(INITIALIZED,STEALING))
-	  //if (!mutex.tryLock())
-          return 0;
-        
-        //if (!valid) {
-        //  mutex.unlock();
-        //  return 0;
-        //}
-
-        new (&child) Task(closure, this, -1);
-        //validate(false);
-        //mutex.unlock();
+	if (!try_switch_state(INITIALIZED,STEALING)) return 0;
+	new (&child) Task(closure, this);
 	switch_state(STEALING,EMPTY);
         return 1;
       } 
@@ -107,22 +105,20 @@ namespace embree
       
       void run (Thread& thread) 
       {
-        //mutex.lock();
 	bool run = try_switch_state(INITIALIZED,EMPTY);
 	if (run)
 	{
 	  Task* prevTask = thread.task; 
-          //validate(false);
           thread.task = this;
           closure->execute();
           thread.task = prevTask;
+	  removeDependency();
 	}
-	else {
-	  while (state != EMPTY)
-	    __pause_cpu();
-	}
-
-        removeDependency();
+	//else {
+	//  while (state != EMPTY)
+	//    __pause_cpu();
+	//}
+        
         while (dependencies) {
           if (thread.scheduler->schedule_steal(thread))
             while (thread.tasks.execute_local(thread,this));
@@ -131,13 +127,9 @@ namespace embree
       }
 
     public:
-      //AtomicMutex mutex;
-      //volatile bool valid;
-      volatile int state;
-
-    public:
+      volatile atomic32_t state;         //!< state this task is in
+      volatile atomic32_t dependencies;  //!< dependencies to wait for
       TaskFunction* closure;             //!< the closure to execute
-      volatile atomic_t dependencies;    //!< dependencies to wait for
       Task* parent;                      //!< parent task to signal when we are finished
       size_t stackPtr;                   //!< stack location where closure is stored
     };
