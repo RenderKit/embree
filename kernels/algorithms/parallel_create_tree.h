@@ -27,9 +27,13 @@ namespace embree
     
     Allocator alloc = createAlloc();
     
+#if USE_TBB
+    const size_t threadCount = tbb::task_scheduler_init::default_num_threads();
+#else
     LockStepTaskScheduler* scheduler = LockStepTaskScheduler::instance();
     const size_t threadCount = scheduler->getNumThreads();
-    
+#endif
+
     vector_t<Continuation > heap;
     heap.push_back(br);
     
