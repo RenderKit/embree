@@ -50,7 +50,7 @@ namespace embree
       NodeRef* parent;        //!< reference pointing to us
     };
     
-    template<typename NodeRef, typename Heuristic, typename Allocator, typename CreateAllocFunc, typename CreateNodeFunc, typename CreateLeafFunc>
+    template<typename NodeRef, typename Heuristic, typename ReductionTy, typename ReductionFunc, typename Allocator, typename CreateAllocFunc, typename CreateNodeFunc, typename UpdateNodeFunc, typename CreateLeafFunc>
       class BVHBuilderSAH
     {
       typedef typename Heuristic::Split Split;
@@ -59,11 +59,15 @@ namespace embree
 
     public:
 
-      BVHBuilderSAH (Heuristic& heuristic,CreateAllocFunc& createAlloc, CreateNodeFunc& createNode, CreateLeafFunc& createLeaf,
-                         PrimRef* prims, const PrimInfo& pinfo,
-                         const size_t branchingFactor, const size_t maxDepth, 
-                         const size_t logBlockSize, const size_t minLeafSize, const size_t maxLeafSize)
-        : heuristic(heuristic), createAlloc(createAlloc), createNode(createNode), createLeaf(createLeaf), 
+      BVHBuilderSAH (Heuristic& heuristic,
+		     const ReductionTy& identity, ReductionFunc& reduce,
+		     CreateAllocFunc& createAlloc, CreateNodeFunc& createNode, UpdateNodeFunc& updateNode, CreateLeafFunc& createLeaf,
+		     PrimRef* prims, const PrimInfo& pinfo,
+		     const size_t branchingFactor, const size_t maxDepth, 
+		     const size_t logBlockSize, const size_t minLeafSize, const size_t maxLeafSize)
+        : heuristic(heuristic), 
+	  identity(identity), reduce(reduce),
+	  createAlloc(createAlloc), createNode(createNode), updateNode(updateNode), createLeaf(createLeaf), 
           prims(prims), pinfo(pinfo), 
           branchingFactor(branchingFactor), maxDepth(maxDepth),
           logBlockSize(logBlockSize), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize)
@@ -98,15 +102,14 @@ namespace embree
         else heuristic.parallel_split(split, current.prims, leftChild, leftChild.prims, rightChild, rightChild.prims);
       }
 
-      void createLargeLeaf(const BuildRecord<NodeRef>& current, Allocator alloc)
+      const ReductionTy createLargeLeaf(const BuildRecord<NodeRef>& current, Allocator alloc)
       {
         if (current.depth > maxDepth) 
           THROW_RUNTIME_ERROR("depth limit reached");
         
         /* create leaf for few primitives */
         if (current.size() <= maxLeafSize) {
-          createLeaf(current,prims,alloc);
-          return;
+          return createLeaf(current,prims,alloc);
         }
 
         /* fill all children by always splitting the largest one */
@@ -154,22 +157,24 @@ namespace embree
         createNode(current,pchildren,numChildren,alloc);
 
         /* recurse into each child */
+	ReductionTy v = identity;
         for (size_t i=0; i<numChildren; i++) 
-          createLargeLeaf(children[i],alloc);
+          v = reduce(v, createLargeLeaf(children[i],alloc));
+	return v;
       }
 
-      void recurse(const BuildRecord<NodeRef>& current, Allocator alloc)
+      const ReductionTy recurse(const BuildRecord<NodeRef>& current, Allocator alloc)
       {
 	if (alloc == NULL) 
           alloc = createAlloc();
-
+	
+	ReductionTy values[MAX_BRANCHING_FACTOR];
 	BuildRecord<NodeRef>* pchildren[MAX_BRANCHING_FACTOR];
         __aligned(64) BuildRecord<NodeRef> children[MAX_BRANCHING_FACTOR];
         
         /* create leaf node */
 	if (current.depth+MIN_LARGE_LEAF_LEVELS >= maxDepth || current.size() <= minLeafSize) {
-	  createLargeLeaf(current,alloc);
-	  return;
+	  return createLargeLeaf(current,alloc);
 	}
                 
         /* fill all children by always splitting the one with the largest surface area */
@@ -213,44 +218,62 @@ namespace embree
         } while (numChildren < branchingFactor);
         
         /* create leaf node if no split is possible */
-        if (numChildren == 1) {
-          createLargeLeaf(current,alloc);
-          return;
-        }
+        if (numChildren == 1)
+          return createLargeLeaf(current,alloc);
 
 	/* sort buildrecords for optimal cache locality */
 	std::sort(&children[0],&children[numChildren]);
         
 	/* create node */
-	createNode(current,pchildren,numChildren,alloc);
+	auto node = createNode(current,pchildren,numChildren,alloc);
 
 	/* spawn tasks */
 	if (current.size() > 4096) 
 	{
 	  SPAWN_BEGIN;
-	  //for (ssize_t i=numChildren-1; i>=0; i--) 
+	  //for (ssize_t i=numChildren-1; i>=0; i--)  // FIXME: this should be better!
 	  for (size_t i=0; i<numChildren; i++) 
-	    SPAWN(([&,i] { recurse(children[i],NULL); }));
+	    SPAWN(([&,i] { values[i] = recurse(children[i],NULL); }));
 	  SPAWN_END;
+	  
+	  /* perform reduction */
+	  ReductionTy v = values[0];
+	  for (size_t i=1; i<numChildren; i++)
+	    v = reduce(v,values[i]);
+
+	  /* passed reduced values to node */
+	  updateNode(node,v,values,numChildren);
+	  return v;
 	}
 	/* recurse into each child */
 	else 
 	{
-	  //for (ssize_t i=numChildren-1; i>=0; i--) 
-	  for (size_t i=0; i<numChildren; i++) 
-	    recurse(children[i],alloc);
+	  /* perform reduction */
+	  ReductionTy v = identity;
+	  for (size_t i=0; i<numChildren; i++) {
+	    const ReductionTy r = recurse(children[i],alloc);
+	    values[i] = r;
+	    v = reduce(v,r);
+	  }
+	  
+	  /* passed reduced values to node */
+	  updateNode(node,v,values,numChildren);
+	  return v;
 	}
       }
 
       /*! builder entry function */
-      __forceinline void operator() (BuildRecord<NodeRef>& br) { 
-	recurse(br,NULL);
+      __forceinline const ReductionTy operator() (BuildRecord<NodeRef>& br) { 
+	return recurse(br,NULL);
       }
 
     private:
       Heuristic& heuristic;
+      const ReductionTy identity;
+      ReductionFunc& reduce;
       CreateAllocFunc& createAlloc;
       CreateNodeFunc& createNode;
+      UpdateNodeFunc& updateNode;
       CreateLeafFunc& createLeaf;
       
     private:
@@ -272,8 +295,10 @@ namespace embree
       assert((blockSize ^ (1L << logBlockSize)) == 0);
       HeuristicArrayBinningSAH<PrimRef> heuristic(prims);
       
-      BVHBuilderSAH<NodeRef,decltype(heuristic),decltype(createAlloc()),CreateAllocFunc,CreateNodeFunc,CreateLeafFunc> builder
-        (heuristic,createAlloc,createNode,createLeaf,prims,pinfo,branchingFactor,maxDepth,logBlockSize,minLeafSize,maxLeafSize);
+      auto plus = std::plus<int>();
+      auto updateNode = [] (int node, int, int*, size_t) {};
+      BVHBuilderSAH<NodeRef,decltype(heuristic),int,decltype(plus),decltype(createAlloc()),CreateAllocFunc,CreateNodeFunc,decltype(updateNode),CreateLeafFunc> builder
+        (heuristic,0,plus,createAlloc,createNode,updateNode,createLeaf,prims,pinfo,branchingFactor,maxDepth,logBlockSize,minLeafSize,maxLeafSize);
 
       NodeRef root;
       BuildRecord<NodeRef> br(pinfo,1,&root);
@@ -292,8 +317,10 @@ namespace embree
       assert((blockSize ^ (1L << logBlockSize)) == 0);
       return execute_closure([&]() -> NodeRef 
       {
-          BVHBuilderSAH<NodeRef,HeuristicArrayBinningSAH<PrimRef>,decltype(createAlloc()),CreateAllocFunc,CreateNodeFunc,CreateLeafFunc> builder
-            (heuristic,createAlloc,createNode,createLeaf,prims,pinfo,branchingFactor,maxDepth,logBlockSize,minLeafSize,maxLeafSize);
+	auto plus = std::plus<int>();
+	auto updateNode = [] (int node, int, int*, size_t) {};
+	BVHBuilderSAH<NodeRef,HeuristicArrayBinningSAH<PrimRef>,int,decltype(plus),decltype(createAlloc()),CreateAllocFunc,CreateNodeFunc,decltype(updateNode),CreateLeafFunc> builder
+	  (heuristic,0,plus,createAlloc,createNode,updateNode,createLeaf,prims,pinfo,branchingFactor,maxDepth,logBlockSize,minLeafSize,maxLeafSize);
 
 	  NodeRef root;
 	  BuildRecord<NodeRef> br(pinfo,1,&root);

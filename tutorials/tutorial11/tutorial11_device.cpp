@@ -117,6 +117,7 @@ void build_sah(std::vector<PrimRef>& prims, isa::PrimInfo& pinfo)
           children[i]->parent = &node->children[i];
         }
         *current.parent = node;
+	return 0;
       },
 
       /* lambda function that creates BVH leaves */
@@ -125,6 +126,7 @@ void build_sah(std::vector<PrimRef>& prims, isa::PrimInfo& pinfo)
         assert(current.size() == 1);
         Node* node = new (alloc->malloc(sizeof(LeafNode))) LeafNode(prims[current.begin].ID(),prims[current.begin].bounds());
         *current.parent = node;
+	return 0;
       },
       prims.data(),pinfo,2,1024,1,1,1);
     
