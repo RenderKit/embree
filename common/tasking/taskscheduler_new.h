@@ -199,7 +199,8 @@ namespace embree
 	size_t l = left;
 	if (l < right) 
 	  l = atomic_add(&left,1);
-	return false;
+	else 
+	  return false;
 	
         if (!tasks[l].try_steal(thread.tasks.tasks[thread.tasks.right]))
           return false;

@@ -18,7 +18,7 @@
 #include "tasking/taskscheduler_new.h"
 
 #include "math/math.h"
-#include "kernels/algorithms/sort.h"
+//#include "kernels/algorithms/sort.h"
 #include <tbb/tbb.h>
 
 #define OUTPUT 1
@@ -328,7 +328,7 @@ namespace embree
 
   void main(int argc, const char* argv[])
   {
-#if 0
+#if 1
     const size_t N = 40;
     //const size_t N = 22;
     //tbb::task_arena limited(2);
