@@ -55,12 +55,7 @@ namespace embree
 	/* perform parallel prefix operation for large N */
 	else 
 	{
-#if USE_TBB
-	  const size_t threadCount = min(size_t(tbb::task_scheduler_init::default_num_threads()),MAX_THREADS);
-#else
-	  LockStepTaskScheduler* scheduler = LockStepTaskScheduler::instance();
-	  const size_t threadCount = min(scheduler->getNumThreads(),MAX_THREADS);
-#endif
+	  const size_t threadCount = TaskSchedulerNew::threadCount();
 	  
 	  /* first calculate range for each block */
 	  parallel_for(threadCount, [&] (const size_t threadIndex) 
@@ -107,7 +102,7 @@ namespace embree
       }
       
       /* task that sums up a block of elements */
-      void sum(const size_t threadIndex, const size_t threadCount)
+      void sum(const size_t threadIndex, const size_t threadCount) // FIXME: remove
       {
 	const size_t start = (threadIndex+0)*N/threadCount;
 	const size_t end   = (threadIndex+1)*N/threadCount;
@@ -120,7 +115,7 @@ namespace embree
       }
 
       /* task that calculates the prefix operation for a block of elements */
-      void prefix_op(const size_t threadIndex, const size_t threadCount)
+      void prefix_op(const size_t threadIndex, const size_t threadCount) // FIXME: remove
       {
 	const size_t start = (threadIndex+0)*N/threadCount;
 	const size_t end   = (threadIndex+1)*N/threadCount;

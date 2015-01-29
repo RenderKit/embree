@@ -296,9 +296,15 @@ namespace embree
     }
 
     /* work on spawned subtasks and wait until all have finished */
-    __forceinline size_t threadCount() const {
-      return threadCounter;
+#if USE_TBB
+    static __forceinline size_t threadCount() {
+      return tbb::task_scheduler_init::default_num_threads();
     }
+#else
+    static __forceinline size_t threadCount() {
+      return TaskSchedulerNew::thread()->scheduler->threadCounter;
+    }
+#endif
 
     std::vector<std::thread> threads;
     Thread* threadLocal[MAX_THREADS];

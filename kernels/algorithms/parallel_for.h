@@ -19,6 +19,8 @@
 #include "common/default.h"
 #include "range.h"
 
+#include "tasking/taskscheduler_new.h"
+
 namespace embree
 {
   template<typename Index, typename Func>

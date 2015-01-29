@@ -28,7 +28,7 @@ namespace embree
     Value sums  [MAX_TASKS];
   };
 
-#if 0 && USE_TBB
+#if 0  // FIXME: remove
 
   template<typename Index, typename Value, typename Func, typename Reduction>
   class ParallelScanBody 
@@ -76,12 +76,7 @@ namespace embree
     __forceinline Value parallel_prefix_sum( ParallelPrefixSumState<Value>& state, Index first, Index last, Index minStepSize, const Value& identity, const Func& func, const Reduction& reduction)
   {
     /* calculate number of tasks to use */
-#if USE_TBB
-    const size_t numThreads = tbb::task_scheduler_init::default_num_threads();
-#else
-    LockStepTaskScheduler* scheduler = LockStepTaskScheduler::instance();
-    const size_t numThreads = scheduler->getNumThreads();
-#endif
+    const size_t numThreads = TaskSchedulerNew::threadCount();
     const size_t numBlocks  = (last-first+minStepSize-1)/minStepSize;
     const size_t taskCount  = min(numThreads,numBlocks,size_t(ParallelPrefixSumState<Value>::MAX_TASKS));
 

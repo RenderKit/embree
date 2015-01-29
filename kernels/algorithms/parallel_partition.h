@@ -443,12 +443,7 @@ namespace embree
       {    
         leftReduction = init;
         rightReduction = init;
-#if USE_TBB
-    const size_t numThreads = tbb::task_scheduler_init::default_num_threads();
-#else
-        LockStepTaskScheduler* scheduler = LockStepTaskScheduler::instance();
-        const size_t numThreads = scheduler->getNumThreads();
-#endif
+	const size_t numThreads = TaskSchedulerNew::threadCount();
 
         if (N <= 2 * BLOCK_SIZE * numThreads) // need at least 1 block from the left and 1 block from the right per thread
           {
