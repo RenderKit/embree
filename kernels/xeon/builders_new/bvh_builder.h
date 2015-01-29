@@ -97,7 +97,7 @@ namespace embree
         else heuristic.split(split, current.prims, leftChild, leftChild.prims, rightChild, rightChild.prims);
       }
 
-      void splitParallel(const BuildRecord<NodeRef>& current, BuildRecord<NodeRef>& leftChild, BuildRecord<NodeRef>& rightChild, Allocator& alloc)
+      void splitParallel(const BuildRecord<NodeRef>& current, BuildRecord<NodeRef>& leftChild, BuildRecord<NodeRef>& rightChild)
       {
         /* calculate binning function */
         PrimInfo pinfo(current.size(),current.geomBounds,current.centBounds);
@@ -110,14 +110,14 @@ namespace embree
         else heuristic.parallel_split(split, current.prims, leftChild, leftChild.prims, rightChild, rightChild.prims);
       }
 
-      void createLargeLeaf(const BuildRecord<NodeRef>& current, Allocator& nodeAlloc, Allocator& leafAlloc)
+      void createLargeLeaf(const BuildRecord<NodeRef>& current, Allocator alloc)
       {
         if (current.depth > maxDepth) 
           THROW_RUNTIME_ERROR("depth limit reached");
         
         /* create leaf for few primitives */
         if (current.size() <= maxLeafSize) {
-          createLeaf(current,prims,leafAlloc);
+          createLeaf(current,prims,alloc);
           return;
         }
 
@@ -163,27 +163,27 @@ namespace embree
         } while (numChildren < branchingFactor);
 
         /* create node */
-        createNode(current,pchildren,numChildren,nodeAlloc);
+        createNode(current,pchildren,numChildren,alloc);
 
         /* recurse into each child */
         for (size_t i=0; i<numChildren; i++) 
-          createLargeLeaf(children[i],nodeAlloc,leafAlloc);
+          createLargeLeaf(children[i],alloc);
       }
 
-      template<bool toplevel, typename Spawn>
-        inline void recurse(const BuildRecord<NodeRef>& current, Allocator& alloc, Spawn& spawn)
+      void recurse(const BuildRecord<NodeRef>& current, Allocator alloc)
       {
+	if (alloc == NULL) 
+          alloc = createAlloc();
+
 	BuildRecord<NodeRef>* pchildren[MAX_BRANCHING_FACTOR];
         __aligned(64) BuildRecord<NodeRef> children[MAX_BRANCHING_FACTOR];
         
         /* create leaf node */
-        if (!toplevel) {
-          if (current.depth+MIN_LARGE_LEAF_LEVELS >= maxDepth || current.size() <= minLeafSize) {
-            createLargeLeaf(current,alloc,alloc); // FIXME: alloc,alloc
-            return;
-          }
-        }
-        
+	if (current.depth+MIN_LARGE_LEAF_LEVELS >= maxDepth || current.size() <= minLeafSize) {
+	  createLargeLeaf(current,alloc);
+	  return;
+	}
+                
         /* fill all children by always splitting the one with the largest surface area */
         size_t numChildren = 1;
         children[0] = current;
@@ -210,8 +210,8 @@ namespace embree
           
           /*! split best child into left and right child */
           __aligned(64) BuildRecord<NodeRef> left, right;
-          if (toplevel) splitParallel(children[bestChild],left,right,alloc);
-          else          splitSequential(children[bestChild],left,right);
+          if (children[bestChild].size() > 10000) splitParallel  (children[bestChild],left,right);
+          else                                    splitSequential(children[bestChild],left,right);
           
           /* add new children left and right */
           left.init(current.depth+1); 
@@ -225,30 +225,31 @@ namespace embree
         } while (numChildren < branchingFactor);
         
         /* create leaf node if no split is possible */
-        if (!toplevel && numChildren == 1) {
-          createLargeLeaf(current,alloc,alloc);
+        if (numChildren == 1) {
+          createLargeLeaf(current,alloc);
           return;
         }
         
         /* create node */
         createNode(current,pchildren,numChildren,alloc);
 
-        /* recurse into each child */
-        for (size_t i=0; i<numChildren; i++) 
-          spawn(children[i]);
+	/* spawn tasks */
+	if (current.size() > 4096) {
+	  SPAWN_BEGIN;
+	  for (size_t i=0; i<numChildren; i++) 
+	    SPAWN(([&,i] { recurse(children[i],NULL); }));
+	  SPAWN_END;
+	}
+	/* recurse into each child */
+	else {
+	  for (size_t i=0; i<numChildren; i++) 
+	    recurse(children[i],alloc);
+	}
       }
 
       /*! builder entry function */
-      __forceinline void operator() (BuildRecord<NodeRef>& br)
-      { 
-#if 0
-        sequential_create_tree(br, createAlloc, 
-                               [&](const BuildRecord<NodeRef>& br, Allocator& alloc, ParallelContinue<BuildRecord<NodeRef> >& cont) { recurse<false>(br,alloc,cont); });
-#else   
-        parallel_create_tree<50000,128>(br, createAlloc, 
-          [&](const BuildRecord<NodeRef>& br, Allocator& alloc, ParallelContinue<BuildRecord<NodeRef> >& cont) { recurse<true>(br,alloc,cont); } ,
-          [&](const BuildRecord<NodeRef>& br, Allocator& alloc, ParallelContinue<BuildRecord<NodeRef> >& cont) { recurse<false>(br,alloc,cont); });
-#endif
+      __forceinline void operator() (BuildRecord<NodeRef>& br) { 
+	recurse(br,NULL);
       }
 
     private:
