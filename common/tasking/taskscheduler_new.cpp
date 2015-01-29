@@ -44,6 +44,18 @@ namespace embree
     destroyThreads();
   }
 
+  TaskSchedulerNew* TaskSchedulerNew::g_instance = NULL;
+
+  void TaskSchedulerNew::create(size_t numThreads)
+  {
+    if (g_instance) THROW_RUNTIME_ERROR("Embree threads already running.");
+    g_instance = new TaskSchedulerNew(numThreads); 
+  }
+
+  void TaskSchedulerNew::destroy() {
+    delete g_instance; g_instance = NULL;
+  }
+
   void TaskSchedulerNew::startThreads()
   {
     createThreads = false;

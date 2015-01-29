@@ -229,6 +229,11 @@ namespace embree
     TaskSchedulerNew (size_t numThreads = 0, bool spinning = false);
     ~TaskSchedulerNew ();
     
+    static TaskSchedulerNew* g_instance;
+
+    static void create(size_t numThreads);
+    static void destroy();
+    
     /*! lets new worker threads join the tasking system */
     void join();
 

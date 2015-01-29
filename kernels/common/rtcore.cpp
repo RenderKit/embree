@@ -411,22 +411,39 @@ namespace embree
 
     if (g_verbose >= 2) 
       printSettings();
-    
+
+    //#if TASKING_LOCKSTEP    
     TaskScheduler::create(g_numThreads);
+    //#endif
+
+#if TASKING_TBB
+    // FIXME: implement setting number of threads for TBB
+#endif
+
+#if TASKING_TBB_INTERNAL
+    TaskSchedulerNew::create(g_numThreads);
+#endif
 
     /* execute regression tests */
     if (g_regression_testing) 
     {
-#if TASKING_TBB
-      for (size_t i=0; i<regression_tests->size(); i++) 
-	(*(*regression_tests)[i])();
-#endif
-
 #if TASKING_LOCKSTEP
       TaskScheduler::EventSync event;
       TaskScheduler::Task task(&event,task_regression_testing,NULL,TaskScheduler::getNumThreads(),NULL,NULL,"regression_testing");
       TaskScheduler::addTask(-1,TaskScheduler::GLOBAL_FRONT,&task);
       event.sync();
+#endif
+      
+#if TASKING_TBB
+      for (size_t i=0; i<regression_tests->size(); i++) 
+	(*(*regression_tests)[i])();
+#endif
+
+#if TASKING_TBB_INTERNAL
+      TaskSchedulerNew::g_instance->spawn_root([&]() {
+        for (size_t i=0; i<regression_tests->size(); i++) 
+  	  (*(*regression_tests)[i])();
+      });
 #endif
     }
 
@@ -441,7 +458,13 @@ namespace embree
     if (!g_initialized) {
       return;
     }
+    //#if TASKING_LOCKSTEP   
     TaskScheduler::destroy();
+    //#endif
+
+#if TASKING_TBB_INTERNAL
+    TaskSchedulerNew::destroy();
+#endif
     {
       Lock<MutexSys> lock(g_errors_mutex);
       for (size_t i=0; i<g_errors.size(); i++)
