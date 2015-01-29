@@ -22,6 +22,7 @@
 #include <tbb/tbb.h>
 
 #define OUTPUT 1
+#define PROFILE 0
 
 namespace embree
 {
@@ -327,7 +328,7 @@ namespace embree
 
   void main(int argc, const char* argv[])
   {
-#if 1
+#if 0
     const size_t N = 40;
     //const size_t N = 22;
     //tbb::task_arena limited(2);
@@ -370,6 +371,9 @@ namespace embree
     if (test == 2) {
       fs.open ("benchmark_reduce_lockstep.csv", std::fstream::out);
       TaskScheduler::create();
+#if PROFILE == 1
+      while(1)
+#endif
       execute_closure([&] () -> double { benchmark(1000,N,"reduce_lockstep",[] (size_t N) -> double { return reduce.run_locksteptaskscheduler(N); }); return 0.0; });
       TaskScheduler::destroy();
       fs.close();
@@ -380,16 +384,21 @@ namespace embree
       fs.open ("benchmark_reduce_tbb.csv", std::fstream::out);
       //tbb::task_scheduler_init init(128);
       tbb::task_scheduler_init init(tbb::task_scheduler_init::default_num_threads());
-      //while(1)
+#if PROFILE == 1
+      while(1)
+#endif
 	benchmark(1000,N,"reduce_tbb",[] (size_t N) -> double { return reduce.run_tbb(N); });
       fs.close();
     }
 
     if (test == 4)
     {
-      newscheduler = new TaskSchedulerNew();
+      newscheduler = new TaskSchedulerNew(0,true); // false
       fs.open ("benchmark_reduce_mytbb.csv", std::fstream::out);
-      benchmark(1000,N,"reduce_mytbb",[] (size_t N) -> double { return reduce.run_mytbb(N); });
+#if PROFILE == 1
+      while(1)
+#endif
+	benchmark(1000,N,"reduce_mytbb",[] (size_t N) -> double { return reduce.run_mytbb(N); });
       fs.close();
       delete newscheduler;
     }

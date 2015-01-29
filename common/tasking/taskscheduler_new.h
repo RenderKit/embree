@@ -209,7 +209,9 @@ namespace embree
       bool steal(Thread& thread) 
       {
 	size_t l = left;
-	if (l < right) l = atomic_add(&left,1);
+	if (l < right) 
+	  l = atomic_add(&left,1);
+	return false;
 	
         if (!tasks[l].try_steal(thread.tasks.tasks[thread.tasks.right]))
           return false;
@@ -222,8 +224,8 @@ namespace embree
 
       /* task stack */
       Task tasks[TASK_STACK_SIZE];
-      volatile atomic_t left;   //!< threads steal from left
-      atomic_t right;           //!< new tasks are added to the right
+      __aligned(64) volatile atomic_t left;   //!< threads steal from left
+      __aligned(64) volatile atomic_t right;           //!< new tasks are added to the right
       
       /* closure stack */
       __aligned(64) char stack[CLOSURE_STACK_SIZE];
