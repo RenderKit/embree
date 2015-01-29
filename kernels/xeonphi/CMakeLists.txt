@@ -14,7 +14,7 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-IF (USE_TBB)
+IF (TASKING_TBB)
   INCLUDE_DIRECTORIES(${TBB_INCLUDE_PATH_MIC})
   SET(ADDITIONAL_LIBRARIES ${TBB_LIBRARIES_MIC})
 ENDIF()

@@ -325,12 +325,14 @@ namespace embree
 
   void Scene::build (size_t threadIndex, size_t threadCount) 
   {
-#if USE_TBB
+#if TASKING_TBB
     if (threadCount != 0) {
       process_error(RTC_INVALID_OPERATION,"TBB does not support rtcCommitThread");
       return;
     }
-#else
+#endif
+
+#if TASKING_LOCKSTEP
     /* all user worker threads properly enter and leave the tasking system */
     LockStepTaskScheduler::Init init(threadIndex,threadCount,&lockstep_scheduler);
     if (threadIndex != 0) return;
@@ -364,9 +366,11 @@ namespace embree
     /* select fast code path if no intersection filter is present */
     accels.select(numIntersectionFilters4,numIntersectionFilters8,numIntersectionFilters16);
 
-#if USE_TBB
+#if TASKING_TBB
     accels.build(0,0);
-#else
+#endif
+
+#if TASKING_LOCKSTEP
 
     /* if user provided threads use them */
     if (threadCount)

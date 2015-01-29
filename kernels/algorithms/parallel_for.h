@@ -52,11 +52,13 @@ namespace embree
   template<typename Index, typename Func>
     __forceinline void parallel_for( const Index N, const Func& func)
   {
-#if USE_TBB
+#if TASKING_TBB
     tbb::parallel_for(Index(0),N,Index(1),[&](Index i) { 
 	func(i);
       });
-#else
+#endif
+
+#if TASKING_LOCKSTEP
     ParallelForTask<Index,Func>(N,func);
 #endif
   }
@@ -79,11 +81,13 @@ namespace embree
   template<typename Index, typename Func>
     __forceinline void parallel_for( const Index first, const Index last, const Index minStepSize, const Func& func)
   {
-#if USE_TBB
+#if TASKING_TBB
     tbb::parallel_for(tbb::blocked_range<Index>(first,last,minStepSize),[&](const tbb::blocked_range<Index>& r) { 
       func(range<Index>(r.begin(),r.end()));
     });
-#else
+#endif
+
+#if TASKING_LOCKSTEP
     size_t taskCount = (last-first+minStepSize-1)/minStepSize;
     if (taskCount > 1) taskCount = min(taskCount,LockStepTaskScheduler::instance()->getNumThreads());
 

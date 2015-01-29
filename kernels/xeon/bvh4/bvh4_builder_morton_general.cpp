@@ -14,7 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#if defined(USE_TBB)
+#if defined(TASKING_TBB)
 
 #define PROFILE_MORTON_GENERAL
 

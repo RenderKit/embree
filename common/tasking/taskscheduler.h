@@ -16,10 +16,6 @@
 
 #pragma once
 
-#if defined(MIC)
-#undef USE_TBB
-#endif
-
 #include "sys/platform.h"
 #include "sys/thread.h"
 #include "sys/sync/event.h"
@@ -29,7 +25,7 @@
 
 #include <vector>
 
-#if defined(USE_TBB)
+#if defined(TASKING_TBB)
 #include "tbb/tbb.h"
 #endif
 

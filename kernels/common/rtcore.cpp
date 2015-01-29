@@ -222,8 +222,8 @@ namespace embree
 #endif
   }
 
-#if USE_TBB
-#else
+#if TASKING_LOCKSTEP
+
   LockStepTaskScheduler regression_task_scheduler;
 
   void task_regression_testing(void* This, size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* taskGroup) 
@@ -417,10 +417,12 @@ namespace embree
     /* execute regression tests */
     if (g_regression_testing) 
     {
-#if USE_TBB
+#if TASKING_TBB
       for (size_t i=0; i<regression_tests->size(); i++) 
 	(*(*regression_tests)[i])();
-#else
+#endif
+
+#if TASKING_LOCKSTEP
       TaskScheduler::EventSync event;
       TaskScheduler::Task task(&event,task_regression_testing,NULL,TaskScheduler::getNumThreads(),NULL,NULL,"regression_testing");
       TaskScheduler::addTask(-1,TaskScheduler::GLOBAL_FRONT,&task);

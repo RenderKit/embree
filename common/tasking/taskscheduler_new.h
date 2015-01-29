@@ -296,11 +296,19 @@ namespace embree
     }
 
     /* work on spawned subtasks and wait until all have finished */
-#if USE_TBB
+#if TASKING_LOCKSTEP
     static __forceinline size_t threadCount() {
-      return tbb::task_scheduler_init::default_num_threads();
+      return LockStepTaskScheduler::instance()->getNumThreads();
     }
-#else
+#endif
+
+#if TASKING_TBB
+    static __forceinline size_t threadCount() {
+      return tbb::task_scheduler_init::default_num_threads(); // FIXME: should return number of really created threads !!
+    }
+#endif
+
+#if TASKING_TBB_INTERNAL
     static __forceinline size_t threadCount() {
       return TaskSchedulerNew::thread()->scheduler->threadCounter;
     }
