@@ -534,11 +534,20 @@ namespace embree
 	}
 	
 	/* perform parallel sort for large N */
-	else {
+	else 
+	{
+#if defined(TASKING_LOCKSTEP)
 	  LockStepTaskScheduler* scheduler = LockStepTaskScheduler::instance();
 	  const size_t numThreads = min(scheduler->getNumThreads(),MAX_THREADS);
 	  parent->barrier.init(numThreads);
 	  scheduler->dispatchTask(task_radixsort,this,0,numThreads);
+#endif
+
+#if TASKING_TBB || TASKING_TBB_INTERNAL // FIXME: sort should get split into stages
+	  const size_t numThreads = min(TaskSchedulerNew::threadCount(),MAX_THREADS);
+	  parent->barrier.init(numThreads);
+	  parallel_for(numThreads,[&] (size_t taskIndex) { radixsort(taskIndex,numThreads); });
+#endif
 	}
       }
       
