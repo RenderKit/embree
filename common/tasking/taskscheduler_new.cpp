@@ -185,7 +185,8 @@ namespace embree
 	if (!threadLocal[otherThreadIndex])
 	  continue;
 
-	const size_t task_size = threadLocal[otherThreadIndex]->getCurrentTaskSize();
+	const size_t task_size = threadLocal[otherThreadIndex]->tasks.getTaskSizeAtLeft(); /* we steal from the left side */
+
 	thread_task_size[workingThreads++] = std::pair<size_t,size_t>(task_size,otherThreadIndex);
       }
 
