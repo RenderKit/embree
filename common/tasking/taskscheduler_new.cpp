@@ -17,6 +17,9 @@
 #include "taskscheduler_new.h"
 #include "math/math.h"
 #include "sys/sysinfo.h"
+#include <algorithm>
+
+#define SORTED_STEALING 1
 
 namespace embree
 {
@@ -169,6 +172,49 @@ namespace embree
     const size_t threadIndex = thread.threadIndex;
     const size_t threadCount = this->threadCounter;
 
+#if SORTED_STEALING == 1
+    size_t workingThreads = 0;
+    std::pair<size_t,size_t> thread_task_size[MAX_MIC_THREADS];
+
+    /* find thread with largest estimated size left */
+    for (size_t i=1; i<threadCount; i++) 
+      {
+	size_t otherThreadIndex = threadIndex+i;
+	if (otherThreadIndex >= threadCount) otherThreadIndex -= threadCount;
+
+	if (!threadLocal[otherThreadIndex])
+	  continue;
+
+	const size_t task_size = threadLocal[otherThreadIndex]->getCurrentTaskSize();
+	thread_task_size[workingThreads++] = std::pair<size_t,size_t>(task_size,otherThreadIndex);
+      }
+
+    /* sort thread/size pairs based on size */
+    std::sort(thread_task_size,
+	      &thread_task_size[workingThreads],
+	      [](const std::pair<size_t,size_t> & a, const std::pair<size_t,size_t> & b) -> bool
+	      { 
+		return a.first > b.first; 
+	      });
+
+    /*
+    if (threadIndex == 0)
+      for (size_t i=0;i<workingThreads;i++)
+	std::cout << "thread_task_size " << thread_task_size[i].first << " " << thread_task_size[i].second << std::endl;
+    */
+
+    for (size_t i=0; i<workingThreads; i++) 
+      {
+	const size_t otherThreadIndex = thread_task_size[i].second;
+	if (!threadLocal[otherThreadIndex])
+	  continue;
+      
+	if (threadLocal[otherThreadIndex]->tasks.steal(thread))
+	  return true;
+      }    
+    /* nothing found this time, do another round */
+
+#else	      
     for (size_t i=1; i<threadCount; i++) 
     {
       __pause_cpu();
@@ -178,10 +224,11 @@ namespace embree
       if (!threadLocal[otherThreadIndex])
         continue;
       
-      if (threadLocal[otherThreadIndex]->tasks.steal(thread)) {
-        return true;
-      }
+      if (threadLocal[otherThreadIndex]->tasks.steal(thread)) 
+        return true;      
     }
+#endif	      
+
 
     return false;
   }

@@ -118,9 +118,15 @@ namespace embree
 	if (try_switch_state(INITIALIZED,DONE))
 	{
 	  Task* prevTask = thread.task; 
+	  size_t prevN   = thread.N;
+
           thread.task = this;
+	  thread.N    = this->N;
+	  /* set estimate working size here */
           closure->execute();
 	  thread.task = prevTask;
+	  thread.N    = prevN;
+
 	  add_dependencies(-1);
 	}
         
@@ -229,12 +235,16 @@ namespace embree
     struct Thread 
     {
       Thread (size_t threadIndex, TaskSchedulerNew* scheduler)
-      : threadIndex(threadIndex), scheduler(scheduler), task(NULL) {}
+      : threadIndex(threadIndex), scheduler(scheduler), task(NULL), N(0) {}
       
       size_t threadIndex;              //!< ID of this thread
       TaskQueue tasks;                 //!< local task queue
       Task* task;                      //!< current active task
       TaskSchedulerNew* scheduler;     //!< pointer to task scheduler
+      size_t N;                        //!< approximative size of current task
+
+      /* get size of current task, larger task have higher priority for stealing */
+      __forceinline size_t getCurrentTaskSize() { return N; }
     };
     
     TaskSchedulerNew (size_t numThreads = 0, bool spinning = false);

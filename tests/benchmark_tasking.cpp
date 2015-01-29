@@ -150,8 +150,8 @@ namespace embree
       }
       else {
 	size_t center = (n0+n1)/2;
-	double c0; TaskSchedulerNew::spawn([&](){ c0=myreduce(n0,center); });
-	double c1; TaskSchedulerNew::spawn([&](){ c1=myreduce(center,n1); });
+	double c0; TaskSchedulerNew::spawn(center-n0,[&](){ c0=myreduce(n0,center); });
+	double c1; TaskSchedulerNew::spawn(n1-center,[&](){ c1=myreduce(center,n1); });
 	TaskSchedulerNew::wait();
 	return c0+c1;
       }
@@ -328,7 +328,7 @@ namespace embree
 
   void main(int argc, const char* argv[])
   {
-#if 1
+#if 0
     const size_t N = 40;
     //const size_t N = 22;
     //tbb::task_arena limited(2);
@@ -353,6 +353,9 @@ namespace embree
     }
 #else
 
+    const size_t N_start = 1000;
+    //const size_t N_start = 10*1024*1024-1;
+
     const size_t N = 10*1024*1024;
     const size_t N_seq = 10*1024*1024;
 
@@ -364,7 +367,7 @@ namespace embree
 
     if (test == 1) {
       fs.open ("benchmark_reduce_sequential.csv", std::fstream::out);
-      benchmark(1000,N_seq,"reduce_sequential",[] (size_t N) -> double { return reduce.run_sequential(N); });
+      benchmark(N_start,N_seq,"reduce_sequential",[] (size_t N) -> double { return reduce.run_sequential(N); });
       fs.close();
     }
 
@@ -374,7 +377,7 @@ namespace embree
 #if PROFILE == 1
       while(1)
 #endif
-      execute_closure([&] () -> double { benchmark(1000,N,"reduce_lockstep",[] (size_t N) -> double { return reduce.run_locksteptaskscheduler(N); }); return 0.0; });
+      execute_closure([&] () -> double { benchmark(N_start,N,"reduce_lockstep",[] (size_t N) -> double { return reduce.run_locksteptaskscheduler(N); }); return 0.0; });
       TaskScheduler::destroy();
       fs.close();
     }
@@ -387,7 +390,7 @@ namespace embree
 #if PROFILE == 1
       while(1)
 #endif
-	benchmark(1000,N,"reduce_tbb",[] (size_t N) -> double { return reduce.run_tbb(N); });
+	benchmark(N_start,N,"reduce_tbb",[] (size_t N) -> double { return reduce.run_tbb(N); });
       fs.close();
     }
 
@@ -398,7 +401,7 @@ namespace embree
 #if PROFILE == 1
       while(1)
 #endif
-	benchmark(1000,N,"reduce_mytbb",[] (size_t N) -> double { return reduce.run_mytbb(N); });
+	benchmark(N_start,N,"reduce_mytbb",[] (size_t N) -> double { return reduce.run_mytbb(N); });
       fs.close();
       delete newscheduler;
     }
@@ -413,7 +416,7 @@ namespace embree
     for (size_t i=0; i<N; i++) temp[i] = i;
 
     fs.open ("benchmark_sort_sequential.csv", std::fstream::out);
-    benchmark(1000,N_seq,"sort_sequential",[&] (size_t N) -> double 
+    benchmark(N_start,N_seq,"sort_sequential",[&] (size_t N) -> double 
     { 
       for (size_t i=0; i<N; i++) array[i] = src[i];
       double t0 = getSeconds();
@@ -427,7 +430,7 @@ namespace embree
     {
       fs.open ("benchmark_sort_tbb.csv", std::fstream::out);
       tbb::task_scheduler_init init(tbb::task_scheduler_init::default_num_threads());
-      benchmark(1000,N,"sort_tbb",[&] (size_t N) -> double 
+      benchmark(N_start,N,"sort_tbb",[&] (size_t N) -> double 
       { 
         for (size_t i=0; i<N; i++) array[i] = src[i];
         double t0 = getSeconds();
@@ -443,7 +446,7 @@ namespace embree
     TaskScheduler::create();
     execute_closure([&] () -> double 
     { 
-      benchmark(1000,N,"sort_lockstep",[&] (size_t N) -> double
+      benchmark(N_start,N,"sort_lockstep",[&] (size_t N) -> double
       { 
         for (size_t i=0; i<N; i++) array[i] = src[i];
         double t0 = getSeconds();
