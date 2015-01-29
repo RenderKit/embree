@@ -51,11 +51,6 @@ namespace embree
       virtual void execute() = 0;
     };
 
-    /*! virtual interface for all task sets */
-    struct TaskSetFunction {
-      virtual void execute(const range<size_t>& range) = 0;
-    };
-
     /*! builds a task interface from a closure */
     template<typename Closure>
     struct ClosureTaskFunction : public TaskFunction
@@ -65,15 +60,6 @@ namespace embree
       void execute() { closure(); };
     };
 
-    /*! builds a task interface from a closure */
-    template<typename Closure>
-    struct ClosureTaskSetFunction : public TaskFunction
-    {
-      Closure closure;
-      __forceinline ClosureTaskSetFunction (const Closure& closure) : closure(closure) {}
-      void execute(const range<size_t>& range) { closure(range); };
-    };
-    
     struct __aligned(64) Task 
     {
       /*! states a task can be in */
@@ -103,8 +89,8 @@ namespace embree
 	: state(DONE) {} 
 
       /*! construction of new task */
-      __forceinline Task (TaskFunction* closure, Task* parent, size_t stackPtr) 
-        : closure(closure), parent(parent), stackPtr(stackPtr), dependencies(1) 
+      __forceinline Task (TaskFunction* closure, Task* parent, size_t stackPtr, size_t N) 
+        : closure(closure), parent(parent), stackPtr(stackPtr), dependencies(1), N(N)
       {
         if (parent) parent->add_dependencies(+1);
 	switch_state(DONE,INITIALIZED);
@@ -149,12 +135,18 @@ namespace embree
 	  parent->add_dependencies(-1);
       }
 
+      /*! return approximate size of the task */
+      __forceinline size_t size() const {
+	return N;
+      }
+
     public:
       volatile atomic32_t state;         //!< state this task is in
       volatile atomic32_t dependencies;  //!< dependencies to wait for
       TaskFunction* closure;             //!< the closure to execute
       Task* parent;                      //!< parent task to signal when we are finished
       size_t stackPtr;                   //!< stack location where closure is stored
+      size_t N;                          //!< approximative size of task
     };
     
     struct TaskQueue
@@ -169,14 +161,14 @@ namespace embree
       }
       
       template<typename Closure>
-      __forceinline void push_right(Thread& thread, const Closure& closure) 
+      __forceinline void push_right(Thread& thread, const size_t size, const Closure& closure) 
       {
         assert(right < TASK_STACK_SIZE);
 
 	/* allocate new task on right side of stack */
         size_t oldStackPtr = stackPtr;
         TaskFunction* func = new (alloc(sizeof(Closure))) ClosureTaskFunction<Closure>(closure);
-        new (&tasks[right++]) Task(func,thread.task,oldStackPtr);
+        new (&tasks[right++]) Task(func,thread.task,oldStackPtr,size);
 
 	/* also move left pointer */
 	if (left >= right-1) left = right-1;
@@ -268,17 +260,23 @@ namespace embree
 
     /* spawn a new task at the top of the threads task stack */
     template<typename Closure>
-    static __forceinline void spawn(const Closure& closure) 
+    static __forceinline void spawn(size_t size, const Closure& closure) 
     {
       Thread* thread = TaskSchedulerNew::thread();
-      thread->tasks.push_right(*thread,closure);
+      thread->tasks.push_right(*thread,size,closure);
+    }
+
+    /* spawn a new task at the top of the threads task stack */
+    template<typename Closure>
+    static __forceinline void spawn(const Closure& closure) {
+      spawn(1,closure);
     }
 
     /* spawn a new task set  */
     template<typename Closure>
     __forceinline void spawn(const size_t begin, const size_t end, const size_t blockSize, const Closure& closure) 
     {
-      spawn([=,&closure]() {
+      spawn(begin-end, [=,&closure]() {
 	  if (end-begin <= blockSize) {
 	    return closure(range<size_t>(begin,end));
 	  }
