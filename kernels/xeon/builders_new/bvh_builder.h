@@ -229,6 +229,8 @@ namespace embree
           createLargeLeaf(current,alloc);
           return;
         }
+
+	std::sort(&children[0],&children[numChildren],std::less<BuildRecord<NodeRef> >());
         
         /* create node */
         createNode(current,pchildren,numChildren,alloc);
