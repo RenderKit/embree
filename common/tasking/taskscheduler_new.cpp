@@ -20,7 +20,7 @@
 
 namespace embree
 {
-  extern size_t g_numThreads; // FIXME: remove 
+  size_t g_numThreads = 0;                              //!< number of threads to use in builders
 
   TaskSchedulerNew::TaskSchedulerNew(size_t numThreads, bool spinning)
     : threadCounter(numThreads), createThreads(true), terminate(false), anyTasksRunning(0), active(false), spinning(spinning)

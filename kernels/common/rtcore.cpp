@@ -92,7 +92,7 @@ namespace embree
 
   int g_scene_flags = -1;                               //!< scene flags to use
   size_t g_verbose = 0;                                 //!< verbosity of output
-  size_t g_numThreads = 0;                              //!< number of threads to use in builders
+  //size_t g_numThreads = 0;                              //!< number of threads to use in builders
   size_t g_benchmark = 0;
   size_t g_regression_testing = 0;                      //!< enables regression tests at startup
 
