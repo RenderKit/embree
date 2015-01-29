@@ -20,6 +20,8 @@
 
 namespace embree
 {
+  extern size_t g_numThreads; // FIXME: remove 
+
   TaskSchedulerNew::TaskSchedulerNew(size_t numThreads, bool spinning)
     : threadCounter(numThreads), createThreads(true), terminate(false), anyTasksRunning(0), active(false), spinning(spinning)
   {
@@ -43,6 +45,14 @@ namespace embree
     /* destroy all threads that we created */
     destroyThreads();
   }
+
+#if TASKING_TBB
+  __dllexport size_t TaskSchedulerNew::threadCount()
+  {
+    //return g_numThreads;
+    return tbb::task_scheduler_init::default_num_threads();
+  }
+#endif
 
   TaskSchedulerNew* TaskSchedulerNew::g_instance = NULL;
 

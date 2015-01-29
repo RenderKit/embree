@@ -324,9 +324,7 @@ namespace embree
 #endif
 
 #if TASKING_TBB
-    static __forceinline size_t threadCount() {
-      return tbb::task_scheduler_init::default_num_threads(); // FIXME: should return number of really created threads !!
-    }
+    static size_t threadCount();
 #endif
 
 #if TASKING_TBB_INTERNAL

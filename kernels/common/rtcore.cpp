@@ -96,6 +96,10 @@ namespace embree
   size_t g_benchmark = 0;
   size_t g_regression_testing = 0;                      //!< enables regression tests at startup
 
+#if defined(TASKING_TBB)
+  tbb::task_scheduler_init tbb_threads(tbb::task_scheduler_init::deferred);
+#endif
+
   void initSettings()
   {
     g_tri_accel = "default";
@@ -417,7 +421,8 @@ namespace embree
     //#endif
 
 #if TASKING_TBB
-    // FIXME: implement setting number of threads for TBB
+      g_numThreads = tbb::task_scheduler_init::default_num_threads();
+      tbb_threads.initialize(g_numThreads);
 #endif
 
 #if TASKING_TBB_INTERNAL
@@ -461,6 +466,10 @@ namespace embree
     //#if TASKING_LOCKSTEP   
     TaskScheduler::destroy();
     //#endif
+
+#if TASKING_TBB
+    tbb_threads.terminate();
+#endif
 
 #if TASKING_TBB_INTERNAL
     TaskSchedulerNew::destroy();
