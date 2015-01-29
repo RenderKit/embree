@@ -36,6 +36,13 @@ IF (TARGET_AVX2)
  ADD_DEFINITIONS(-D__TARGET_AVX2__)
 ENDIF()
 
+IF (TASKING_TBB OR TASKING_TBB_INTERNAL)
+  SET(EMBREE_BUILDERS_NEW
+    bvh4/bvh4_builder_morton_general.cpp
+    bvh4/bvh4_builder_binned_sah.cpp
+    bvh4/bvh4_builder_binned_sah2.cpp)
+ENDIF()
+
 ADD_ISPC_LIBRARY(embree ${EMBREE_LIB_TYPE}
   embree.rc
   ../../common/tasking/taskscheduler.cpp
@@ -104,20 +111,18 @@ ADD_ISPC_LIBRARY(embree ${EMBREE_LIB_TYPE}
   bvh4/bvh4_rotate.cpp
   bvh4/bvh4_refit.cpp
   bvh4/bvh4_builder.cpp
-  bvh4/bvh4_builder_binned_sah.cpp
-  bvh4/bvh4_builder_binned_sah2.cpp
-
   bvh4/bvh4_builder_mb.cpp
   bvh4/bvh4_builder_hair.cpp
   bvh4/bvh4_builder_hair_mb.cpp
   bvh4/bvh4_builder_fast.cpp
   bvh4/bvh4_builder_morton.cpp
-  bvh4/bvh4_builder_morton_general.cpp
   bvh4/bvh4_builder_toplevel.cpp
   bvh4/bvh4_intersector1.cpp
   bvh4/bvh4_intersector4_single.cpp
   bvh4/bvh4_intersector4_chunk.cpp
   bvh4/bvh4_statistics.cpp
+
+  ${EMBREE_BUILDERS_NEW}
 )
 SET_PROPERTY(TARGET embree PROPERTY FOLDER kernels)
 IF (WIN32 AND ENABLE_ISPC_SUPPORT)
@@ -169,12 +174,9 @@ IF (TARGET_AVX)
     geometry/subdivpatch1_intersector1.cpp
     geometry/subdivpatch1cached_intersector1.cpp
 
-    bvh4/bvh4_builder_binned_sah.cpp
-    bvh4/bvh4_builder_binned_sah2.cpp
     bvh4/bvh4_rotate.cpp
     bvh4/bvh4_builder_toplevel.cpp
     bvh4/bvh4_builder_morton.cpp
-    bvh4/bvh4_builder_morton_general.cpp
     bvh4/bvh4_builder_fast.cpp
     bvh4/bvh4_builder.cpp
     bvh4/bvh4_builder_mb.cpp
@@ -197,6 +199,8 @@ IF (TARGET_AVX)
     bvh8/bvh8_intersector4_hybrid.cpp
     bvh8/bvh8_intersector8_chunk.cpp
     bvh8/bvh8_intersector8_hybrid.cpp
+
+    ${EMBREE_BUILDERS_NEW}   
   )
 
   SET_TARGET_PROPERTIES(embree_avx PROPERTIES COMPILE_FLAGS "${FLAGS_AVX}")

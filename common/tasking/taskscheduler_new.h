@@ -26,6 +26,18 @@
 
 namespace embree
 {
+#if defined(TASKING_TBB)
+#  define SPAWN_BEGIN tbb::task_group __internal_task_group
+#  define SPAWN(closure) __internal_task_group.run(closure)
+#  define SPAWN_END __internal_task_group.wait();
+#endif
+
+#if defined(TASKING_TBB_INTERNAL)
+#  define SPAWN_BEGIN TaskSchedulerNew* __internal_scheduler = TaskSchedulerNew::instance();
+#  define SPAWN(closure) __internal_scheduler->spawn(closure)
+#  define SPAWN_END __internal_scheduler->wait();
+#endif
+
   struct TaskSchedulerNew
   {
     static const size_t MAX_THREADS = 1024;

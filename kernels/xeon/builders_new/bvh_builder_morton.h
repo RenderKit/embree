@@ -359,11 +359,11 @@ namespace embree
         BBox3fa bounds[4];
         if (current.size() > 4096)
         {
-          tbb::task_group g;
+          SPAWN_BEGIN;
           for (size_t i=0; i<numChildren; i++) {
-            g.run([&,i]{ bounds[i] = recurse(children[i],NULL); });
+            SPAWN(([&,i]{ bounds[i] = recurse(children[i],NULL); }));
           }
-          g.wait();
+          SPAWN_END;
         } 
         
         /* finish tree sequential */
@@ -426,7 +426,10 @@ namespace embree
                                        MortonID32Bit* src, MortonID32Bit* temp, size_t numPrimitives,
                                        const size_t branchingFactor, const size_t maxDepth, const size_t minLeafSize, const size_t maxLeafSize)
     {
-      return execute_closure([&]() -> std::pair<NodeRef,BBox3fa> {
+      std::pair<NodeRef,BBox3fa> ret;
+#if USE_TBB_INTERNAL
+      TaskSchedulerNew::instance()->spawn_root([&]() {
+#endif
 
           /* compute scene bounds */
           const BBox3fa centBounds = parallel_reduce ( size_t(0), numPrimitives, BBox3fa(empty), [&](const range<size_t>& r) -> BBox3fa
@@ -447,10 +450,15 @@ namespace embree
             }
           });
 
-          return bvh_builder_center_internal<NodeRef>(
+          ret = bvh_builder_center_internal<NodeRef>(
             createAllocator,allocNode,setBounds,createLeaf,calculateBounds,
             temp,src,numPrimitives,branchingFactor,maxDepth,minLeafSize,maxLeafSize);
+
+#if USE_TBB_INTERNAL
         });
+#endif
+
+      return ret;
     }
   }
 }

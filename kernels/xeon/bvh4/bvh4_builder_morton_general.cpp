@@ -14,8 +14,6 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#if defined(TASKING_TBB)
-
 #define PROFILE_MORTON_GENERAL
 
 #include "bvh4.h"
@@ -285,17 +283,3 @@ namespace embree
   }
 }
 
-#else
-
-#include "common/builder.h"
-
-namespace embree 
-{
-  namespace isa
-  {
-    Builder* BVH4Triangle4BuilderMortonGeneral  (void* bvh, Scene* scene, size_t mode) { 
-      return NULL;
-    }
-  }
-}
-#endif

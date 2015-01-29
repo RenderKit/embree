@@ -164,8 +164,6 @@ namespace embree
   DECLARE_SCENE_BUILDER(BVH4Triangle4vBuilderMorton);
   DECLARE_SCENE_BUILDER(BVH4Triangle4iBuilderMorton);
 
-  DECLARE_SCENE_BUILDER(BVH4Triangle4BuilderMortonGeneral);
-
   DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle1MeshBuilderMorton);
   DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle4MeshBuilderMorton);
   DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle8MeshBuilderMorton);
@@ -233,7 +231,7 @@ namespace embree
   //DECLARE_SCENE_BUILDER(BVH4Triangle4vBuilderMorton);
   //DECLARE_SCENE_BUILDER(BVH4Triangle4iBuilderMorton);
 
-  //DECLARE_SCENE_BUILDER(BVH4Triangle4BuilderMortonGeneral);
+  DECLARE_SCENE_BUILDER(BVH4Triangle4BuilderMortonGeneral);
 
   //DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle1MeshBuilderMorton);
   //DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle4MeshBuilderMorton);
@@ -307,8 +305,6 @@ namespace embree
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4vBuilderMorton);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4iBuilderMorton);
 
-    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4BuilderMortonGeneral);
-    
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle1MeshBuilderMorton);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4MeshBuilderMorton);
     SELECT_SYMBOL_AVX        (features,BVH4Triangle8MeshBuilderMorton);
@@ -317,6 +313,8 @@ namespace embree
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4iMeshBuilderMorton);
 
     /* select new builders */
+#if defined(TASKING_TBB) || defined(TASKING_TBB_INTERNAL)
+
     //SELECT_SYMBOL_DEFAULT_AVX(features,BVH4BuilderTopLevelFast);
 
     //SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Bezier1vBuilder_OBB);
@@ -375,7 +373,7 @@ namespace embree
     //SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4vBuilderMorton);
     //SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4iBuilderMorton);
 
-    //SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4BuilderMortonGeneral);
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4BuilderMortonGeneral);
     
     //SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle1MeshBuilderMorton);
     //SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4MeshBuilderMorton);
@@ -383,6 +381,7 @@ namespace embree
     //SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle1vMeshBuilderMorton);
     //SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4vMeshBuilderMorton);
     //SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4iMeshBuilderMorton);
+#endif
 
     /* select intersectors1 */
     SELECT_SYMBOL_DEFAULT_AVX_AVX2      (features,BVH4Bezier1vIntersector1);
