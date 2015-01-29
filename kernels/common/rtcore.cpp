@@ -421,7 +421,8 @@ namespace embree
     //#endif
 
 #if TASKING_TBB
-      g_numThreads = tbb::task_scheduler_init::default_num_threads();
+      if (g_numThreads == 0)
+	g_numThreads = tbb::task_scheduler_init::default_num_threads();
       tbb_threads.initialize(g_numThreads);
 #endif
 

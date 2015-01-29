@@ -49,8 +49,8 @@ namespace embree
 #if TASKING_TBB
   __dllexport size_t TaskSchedulerNew::threadCount()
   {
-    //return g_numThreads;
-    return tbb::task_scheduler_init::default_num_threads();
+    return g_numThreads;
+    //return tbb::task_scheduler_init::default_num_threads();
   }
 #endif
 
