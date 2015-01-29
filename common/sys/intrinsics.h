@@ -700,7 +700,7 @@ __forceinline float cast_i2f(int i) {
 }
 
 #if defined(__MIC__)
-__forceinline void __pause_cpu (const unsigned int cycles = 256) { 
+__forceinline void __pause_cpu (const unsigned int cycles = 1024) { 
   _mm_delay_32(cycles); 
 }
 #else
