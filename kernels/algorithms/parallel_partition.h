@@ -72,7 +72,7 @@ namespace embree
   }
   
 
-  template<size_t BLOCK_SIZE, typename T, typename V, typename Compare, typename Reduction_T, typename Reduction_V, typename Scheduler>
+  template<size_t BLOCK_SIZE, typename T, typename V, typename Compare, typename Reduction_T, typename Reduction_V>
   class __aligned(64) parallel_partition
     {
     private:
@@ -428,7 +428,7 @@ namespace embree
       }
 
       static void task_thread_partition(void* data, const size_t threadIndex, const size_t threadCount) {
-        parallel_partition<BLOCK_SIZE,T,V,Compare,Reduction_T,Reduction_V,Scheduler>* p = (parallel_partition<BLOCK_SIZE,T,V,Compare,Reduction_T,Reduction_V,Scheduler>*)data;
+        parallel_partition<BLOCK_SIZE,T,V,Compare,Reduction_T,Reduction_V>* p = (parallel_partition<BLOCK_SIZE,T,V,Compare,Reduction_T,Reduction_V>*)data;
         V left;
         V right;
         p->thread_partition(left,right);
@@ -438,14 +438,18 @@ namespace embree
 
       /* main function for parallel in-place partitioning */
       size_t partition_parallel(V &leftReduction,
-                                V &rightReduction,
-				Scheduler &scheduler)
+                                V &rightReduction)
+      //				Scheduler &scheduler)
       {    
         leftReduction = init;
         rightReduction = init;
+#if USE_TBB
+    const size_t numThreads = tbb::task_scheduler_init::default_num_threads();
+#else
+        LockStepTaskScheduler* scheduler = LockStepTaskScheduler::instance();
+        const size_t numThreads = scheduler->getNumThreads();
+#endif
 
-        //LockStepTaskScheduler* scheduler = LockStepTaskScheduler::instance();
-        const size_t numThreads = scheduler.getNumThreads();
         if (N <= 2 * BLOCK_SIZE * numThreads) // need at least 1 block from the left and 1 block from the right per thread
           {
 #if defined(__MIC__)
@@ -466,7 +470,10 @@ namespace embree
                  );
 
 
-        scheduler.dispatchTask(task_thread_partition,this,0,numThreads);
+        //scheduler->dispatchTask(task_thread_partition,this,0,numThreads);
+	parallel_for(numThreads,[&] (const size_t threadIndex) {
+	    task_thread_partition(this,threadIndex,numThreads);
+	  });
 
         /* ---------------------------------- */
         /* ------ serial cleanup phase ------ */
@@ -605,7 +612,7 @@ namespace embree
 
     };
 
-  template<size_t BLOCK_SIZE, typename T, typename V, typename Compare, typename Reduction_T, typename Reduction_V, typename Scheduler>
+  template<size_t BLOCK_SIZE, typename T, typename V, typename Compare, typename Reduction_T, typename Reduction_V>
     __forceinline size_t parallel_in_place_partitioning(T *array, 
                                                         size_t N, 
                                                         const V &init,
@@ -613,11 +620,11 @@ namespace embree
                                                         V &rightReduction,
                                                         const Compare& cmp, 
                                                         const Reduction_T& reduction_t,
-                                                        const Reduction_V& reduction_v,
-							Scheduler &scheduler)
+                                                        const Reduction_V& reduction_v)
+  //							Scheduler &scheduler)
   {
-    parallel_partition<BLOCK_SIZE,T,V,Compare,Reduction_T,Reduction_V,Scheduler> p(array,N,init,cmp,reduction_t,reduction_v);
-    return p.partition_parallel(leftReduction,rightReduction,scheduler);    
+    parallel_partition<BLOCK_SIZE,T,V,Compare,Reduction_T,Reduction_V> p(array,N,init,cmp,reduction_t,reduction_v);
+    return p.partition_parallel(leftReduction,rightReduction);    
   }
 
 
