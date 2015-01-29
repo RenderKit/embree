@@ -203,7 +203,7 @@ namespace embree
           
           /*! split best child into left and right child */
           __aligned(64) BuildRecord<NodeRef> left, right;
-          if (children[bestChild].size() > 10000) splitParallel  (children[bestChild],left,right);
+          if (children[bestChild].size() > 10000) splitParallel  (children[bestChild],left,right); // FIXME: splitParallel reduced single threaded performance
           else                                    splitSequential(children[bestChild],left,right);
           
           /* add new children left and right */
