@@ -20,6 +20,7 @@
 #include "sys/sysinfo.h"
 #include "tasking/taskscheduler.h"
 #include "tasking/taskscheduler_new.h"
+#include "parallel_for.h"
 #include "math/math.h"
 #include <algorithm>
 
@@ -236,18 +237,19 @@ namespace embree
 	}
 	
 	/* perform parallel sort for large N */
-	else {
-#if TASKING_TBB // FIXME: sort should get split into stages
-	  const size_t numThreads = min(TaskSchedulerNew::threadCount(),MAX_THREADS);
-	  parent->barrier.init(numThreads);
-	  tbb::parallel_for(size_t(0),numThreads,size_t(1),[&] (size_t taskIndex) { radixsort(taskIndex,numThreads); });
-#endif
-
+	else 
+	{
 #if TASKING_LOCKSTEP
 	  LockStepTaskScheduler* scheduler = LockStepTaskScheduler::instance();
 	  const size_t numThreads = min(scheduler->getNumThreads(),MAX_THREADS);
 	  parent->barrier.init(numThreads);
 	  scheduler->dispatchTask(task_radixsort,this,0,numThreads);
+#endif
+
+#if TASKING_TBB || TASKING_TBB_INTERNAL // FIXME: sort should get split into stages
+	  const size_t numThreads = min(TaskSchedulerNew::threadCount(),MAX_THREADS);
+	  parent->barrier.init(numThreads);
+	  parallel_for(numThreads,[&] (size_t taskIndex) { radixsort(taskIndex,numThreads); });
 #endif
 	}
       }

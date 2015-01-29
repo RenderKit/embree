@@ -49,7 +49,7 @@ namespace embree
   void TaskSchedulerNew::create(size_t numThreads)
   {
     if (g_instance) THROW_RUNTIME_ERROR("Embree threads already running.");
-    g_instance = new TaskSchedulerNew(numThreads); 
+    g_instance = new TaskSchedulerNew(numThreads);
   }
 
   void TaskSchedulerNew::destroy() {
@@ -59,8 +59,9 @@ namespace embree
   void TaskSchedulerNew::startThreads()
   {
     createThreads = false;
-    for (size_t i=1; i<threadCounter; i++)
+    for (size_t i=1; i<threadCounter; i++) {
       threads.push_back(std::thread([i,this]() { thread_loop(i); }));
+    }
   }
 
   void TaskSchedulerNew::terminateThreadLoop()

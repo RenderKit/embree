@@ -177,7 +177,11 @@ namespace embree
           return false;
 
 	/* execute task */
+	size_t oldRight = right;
         tasks[right-1].run(thread);
+	if (right != oldRight) {
+	  THROW_RUNTIME_ERROR("you have to wait for spawned subtasks");
+	}
 
 	/* pop task and closure from stack */
 	right--;

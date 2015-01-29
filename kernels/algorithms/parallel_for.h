@@ -52,14 +52,22 @@ namespace embree
   template<typename Index, typename Func>
     __forceinline void parallel_for( const Index N, const Func& func)
   {
+#if TASKING_LOCKSTEP
+    ParallelForTask<Index,Func>(N,func);
+#endif
+
 #if TASKING_TBB
     tbb::parallel_for(Index(0),N,Index(1),[&](Index i) { 
 	func(i);
       });
 #endif
 
-#if TASKING_LOCKSTEP
-    ParallelForTask<Index,Func>(N,func);
+#if TASKING_TBB_INTERNAL
+    TaskSchedulerNew::instance()->spawn(Index(0),N,Index(1),[&] (const range<Index>& r) {
+	assert(r.size() == 1);
+	func(r.begin());
+    });
+    TaskSchedulerNew::instance()->wait();
 #endif
   }
 
@@ -81,12 +89,6 @@ namespace embree
   template<typename Index, typename Func>
     __forceinline void parallel_for( const Index first, const Index last, const Index minStepSize, const Func& func)
   {
-#if TASKING_TBB
-    tbb::parallel_for(tbb::blocked_range<Index>(first,last,minStepSize),[&](const tbb::blocked_range<Index>& r) { 
-      func(range<Index>(r.begin(),r.end()));
-    });
-#endif
-
 #if TASKING_LOCKSTEP
     size_t taskCount = (last-first+minStepSize-1)/minStepSize;
     if (taskCount > 1) taskCount = min(taskCount,LockStepTaskScheduler::instance()->getNumThreads());
@@ -96,6 +98,17 @@ namespace embree
         const size_t k1 = first+(taskIndex+1)*(last-first)/taskCount;
         func(range<Index>(k0,k1));
       });
+#endif
+
+#if TASKING_TBB
+    tbb::parallel_for(tbb::blocked_range<Index>(first,last,minStepSize),[&](const tbb::blocked_range<Index>& r) { 
+      func(range<Index>(r.begin(),r.end()));
+    });
+#endif
+
+#if TASKING_TBB_INTERNAL
+    TaskSchedulerNew::instance()->spawn(first,last,minStepSize,func);
+    TaskSchedulerNew::instance()->wait();
 #endif
   }
 
