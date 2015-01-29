@@ -70,7 +70,7 @@ namespace embree
     return body.sum;
   }
 
-#else
+#endif
 
   template<typename Index, typename Value, typename Func, typename Reduction>
     __forceinline Value parallel_prefix_sum( ParallelPrefixSumState<Value>& state, Index first, Index last, Index minStepSize, const Value& identity, const Func& func, const Reduction& reduction)
@@ -104,5 +104,4 @@ namespace embree
 
     return sum;
   }
-#endif
 }

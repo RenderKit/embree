@@ -17,6 +17,7 @@
 #pragma once
 
 #include "common/default.h"
+#include "parallel_for.h"
 
 namespace embree
 {
@@ -54,14 +55,54 @@ namespace embree
 	/* perform parallel prefix operation for large N */
 	else 
 	{
+#if USE_TBB
+	  const size_t threadCount = min(size_t(tbb::task_scheduler_init::default_num_threads()),MAX_THREADS);
+#else
 	  LockStepTaskScheduler* scheduler = LockStepTaskScheduler::instance();
-	  const size_t numThreads = min(scheduler->getNumThreads(),MAX_THREADS);
+	  const size_t threadCount = min(scheduler->getNumThreads(),MAX_THREADS);
+#endif
+	  
+	  /* first calculate range for each block */
+	  parallel_for(threadCount, [&] (const size_t threadIndex) 
+	  {
+	    const size_t start = (threadIndex+0)*N/threadCount;
+	    const size_t end   = (threadIndex+1)*N/threadCount;
+	    
+	    Ty sum = id;
+	    for (size_t i=start; i<end; i++)
+	      sum = op(sum,src[i]);
+	    
+	    parent->state[threadIndex] = sum;
+	  });
+
+	  /* now calculate prefix_op for each block */
+	  parallel_for(threadCount, [&] (const size_t threadIndex) 
+	  {
+	    const size_t start = (threadIndex+0)*N/threadCount;
+	    const size_t end   = (threadIndex+1)*N/threadCount;
+	    
+	    /* calculate start sum for block */
+	    Ty count = id;
+	    for (size_t i=0; i<threadIndex; i++)
+	      count += parent->state[i];
+	    
+	    /* calculate prefix sums for the block */
+	    for (size_t i=start; i<end; i++) 
+	    {
+	      const Ty v = src[i];
+	      dst[i] = count;
+	      count = op(count,v);
+	    }
+	    
+	    if (threadIndex == threadCount-1) 
+	      parent->value = count;
+	  });
 
 	  /* first calculate range for each block */
-	  scheduler->dispatchTask(task_sum,this,0,numThreads);
+	  //scheduler->dispatchTask(task_sum,this,0,numThreads);
 	  
 	  /* now calculate prefix_op for each block */
-	  scheduler->dispatchTask(task_prefix_op,this,0,numThreads);
+	  //scheduler->dispatchTask(task_prefix_op,this,0,numThreads);
 	}
       }
       
@@ -101,13 +142,13 @@ namespace embree
           parent->value = count;
       }
       
-      static void task_sum (void* data, const size_t threadIndex, const size_t threadCount) { 
-	((Task*)data)->sum(threadIndex,threadCount);                          
-      }
+      //static void task_sum (void* data, const size_t threadIndex, const size_t threadCount) { 
+      //	((Task*)data)->sum(threadIndex,threadCount);                          
+      //}
       
-      static void task_prefix_op (void* data, const size_t threadIndex, const size_t threadCount) { 
-	((Task*)data)->prefix_op(threadIndex,threadCount);                          
-      }
+      //static void task_prefix_op (void* data, const size_t threadIndex, const size_t threadCount) { 
+      //((Task*)data)->prefix_op(threadIndex,threadCount);                          
+      //}
 
     private:
       ParallelPrefixOp* const parent;
