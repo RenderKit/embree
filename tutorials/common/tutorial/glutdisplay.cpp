@@ -111,7 +111,6 @@ namespace embree
     case '\033': case 'q': case 'Q':
       cleanup();
       glutDestroyWindow(g_window);
-      exit(0);
       break;
     }
   }
