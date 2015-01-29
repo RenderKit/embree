@@ -32,13 +32,6 @@ namespace embree
       __forceinline BuildRecord(const PrimInfo& pinfo, const size_t depth, NodeRef* parent) 
         : PrimInfo(pinfo), depth(depth), parent(parent), area(embree::area(pinfo.geomBounds)) {}
       
-#if defined(_MSC_VER)
-      __forceinline BuildRecord& operator=(const BuildRecord &arg) { 
-        memcpy(this, &arg, sizeof(BuildRecord));    
-        return *this;
-      }
-#endif
-
       __forceinline void init(size_t depth)
       {
         parent = NULL;
@@ -46,14 +39,9 @@ namespace embree
         area = embree::area(geomBounds);
       }
       
-      __forceinline bool operator<(const BuildRecord &br) const { return size() < br.size(); } 
-      __forceinline bool operator>(const BuildRecord &br) const { return size() > br.size(); } 
-      
-      struct Greater {
-        __forceinline bool operator()(const BuildRecord& a, const BuildRecord& b) {
-          return a.size() > b.size();
-        }
-      };
+      __forceinline bool operator< (const BuildRecord &br) const { 
+	return size() < br.size(); 
+      } 
 
     public:
       range<size_t> prims;
@@ -230,20 +218,25 @@ namespace embree
           return;
         }
 
-	std::sort(&children[0],&children[numChildren],std::less<BuildRecord<NodeRef> >());
+	/* sort buildrecords for optimal cache locality */
+	std::sort(&children[0],&children[numChildren]);
         
-        /* create node */
-        createNode(current,pchildren,numChildren,alloc);
+	/* create node */
+	createNode(current,pchildren,numChildren,alloc);
 
 	/* spawn tasks */
-	if (current.size() > 4096) {
+	if (current.size() > 4096) 
+	{
 	  SPAWN_BEGIN;
+	  //for (ssize_t i=numChildren-1; i>=0; i--) 
 	  for (size_t i=0; i<numChildren; i++) 
 	    SPAWN(([&,i] { recurse(children[i],NULL); }));
 	  SPAWN_END;
 	}
 	/* recurse into each child */
-	else {
+	else 
+	{
+	  //for (ssize_t i=numChildren-1; i>=0; i--) 
 	  for (size_t i=0; i<numChildren; i++) 
 	    recurse(children[i],alloc);
 	}
