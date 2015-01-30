@@ -39,7 +39,6 @@
 #define PROFILE_ITERATIONS 20
 
 #define MEASURE_MEMORY_ALLOCATION_TIME 0
-#define USE_IN_PLACE_PARTITIONING 1
 
 //#define CHECK_BUILD_RECORD_IN_DEBUG_MODE
 
@@ -806,12 +805,7 @@ namespace embree
 
     PrimRef  *__restrict__ const tmp_prims = (PrimRef*)accel;
 
-#if USE_IN_PLACE_PARTITIONING == 1
     fastbin<PrimRef>(prims,startID,endID,centroidBoundsMin_2,scale,global_bin16[threadID]);    
-
-#else
-    fastbin_copy<PrimRef,true>(prims,tmp_prims,startID,endID,centroidBoundsMin_2,scale,global_bin16[threadID]);    
-#endif
 
     scene->lockstep_scheduler.syncThreadsWithReduction( threadID, numThreads, reduceBinsParallel, global_bin16 );
     
@@ -1008,7 +1002,7 @@ namespace embree
 	global_sharedData.left.reset();
 	global_sharedData.right.reset();
 
-	const BinMapping mapping(global_sharedData.split,global_sharedData.rec.bounds);
+	const BinPartitionMapping mapping(global_sharedData.split,global_sharedData.rec.bounds);
 
 	auto part = [&] (PrimRef* const t_array,
 			 const size_t size) 
@@ -1074,18 +1068,21 @@ namespace embree
 
 	  };
 
-	LockStepTaskScheduler* scheduler = LockStepTaskScheduler::instance();
-
 	size_t mid_parallel = parallel_in_place_partitioning_static<PrimRef>(&prims[current.begin],
 									     current.size(),
-									     [&] (const PrimRef &ref) { 
-									       const mic2f b = ref.getBounds();
-									       return any(mapping.lt_split(b.x,b.y));
-
-									     },
 									     part,
-									     scene->lockstep_scheduler
-									     );
+									     scene->lockstep_scheduler);
+	
+	assert( 
+	       parallel_in_place_partitioning_static_verify<PrimRef>(&prims[current.begin],
+								     current.size(),
+								     mid_parallel,
+								     [&] (const PrimRef &ref) { 
+								       const mic2f b = ref.getBounds();
+								       return any(mapping.lt_split(b.x,b.y));
+								     }
+								     ));
+
 	assert(mid_parallel == global_sharedData.split.numLeft);
 	const unsigned int mid = current.begin + mid_parallel;
 
@@ -1161,7 +1158,7 @@ namespace embree
 	sd.left.reset();
 	sd.right.reset();
 
-	const BinMapping mapping(sd.split,sd.rec.bounds);
+	const BinPartitionMapping mapping(sd.split,sd.rec.bounds);
 
 	auto part_local = [&] (PrimRef* const t_array,
 			 const size_t size) 
@@ -1170,7 +1167,6 @@ namespace embree
 	    CentroidGeometryAABB rightReduction;
 	    leftReduction.reset();
 	    rightReduction.reset();
-	    //const mic_m m_mask = mic_m::shift1[bestSplitDim];
 	    PrimRef* l = t_array;
 	    PrimRef* r = t_array + size - 1;
 
@@ -1230,14 +1226,19 @@ namespace embree
 
 	size_t mid_parallel = parallel_in_place_partitioning_static<PrimRef>(&prims[sd.rec.begin],
 									     sd.rec.size(),
-									     [&] (const PrimRef &ref) { 
-									       const mic2f b = ref.getBounds();
-									       return any(mapping.lt_split(b.x,b.y));
-									     },
 									     part_local,
 									     localTaskScheduler[globalCoreID]
 									     );
-
+	assert( 
+	       parallel_in_place_partitioning_static_verify<PrimRef>(&prims[sd.rec.begin],
+								     sd.rec.size(),
+								     mid_parallel,
+								     [&] (const PrimRef &ref) { 
+								       const mic2f b = ref.getBounds();
+								       return any(mapping.lt_split(b.x,b.y));
+								     }
+								     )
+		);
 	assert(mid_parallel == sd.split.numLeft);
 	const unsigned int mid = current.begin + mid_parallel;
 	
@@ -1543,12 +1544,7 @@ namespace embree
     const mic_f centroidDiagonal_2  = centroidMax-centroidMin;
     const mic_f scale = select(centroidDiagonal_2 != 0.0f,rcp(centroidDiagonal_2) * mic_f(16.0f * 0.99f),mic_f::zero());
 
-#if USE_IN_PLACE_PARTITIONING == 1
     fastbin<PrimRef>(prims,startID,endID,centroidBoundsMin_2,scale,global_bin16[globalThreadID]);    
-#else
-    PrimRef  *__restrict__ const tmp_prims = (PrimRef*)accel;
-    fastbin_copy<PrimRef,true>(prims,tmp_prims,startID,endID,centroidBoundsMin_2,scale,global_bin16[globalThreadID]);    
-#endif
 
     localTaskScheduler[globalCoreID].syncThreads(localThreadID);
 

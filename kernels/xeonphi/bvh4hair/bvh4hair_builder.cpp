@@ -17,6 +17,7 @@
 #include "bvh4hair/bvh4hair_builder.h"
 #include "geometry/bezier1i.h"
 #include "bvh4hair/bvh4hair_statistics.h"
+#include "algorithms/parallel_partition.h"
 
 namespace embree
 {
@@ -252,7 +253,7 @@ namespace embree
 
     Bezier1i  *__restrict__ const tmp_prims = (Bezier1i*)accel;
 
-    fastbin_copy<Bezier1i,false>(prims,tmp_prims,startID,endID,centroidBoundsMin_2,scale,global_bin16[threadID]);    
+    fastbin<Bezier1i>(prims,startID,endID,centroidBoundsMin_2,scale,global_bin16[threadID]);    
 
     scene->lockstep_scheduler.syncThreadsWithReduction( threadID, numThreads, reduceBinsParallel, global_bin16 );
     
@@ -302,128 +303,6 @@ namespace embree
   }
 
 
-  void BVH4HairBuilder::parallelPartitioning(BuildRecord& current,
-					  Bezier1i * __restrict__ l_source,
-					  Bezier1i * __restrict__ r_source,
-					  Bezier1i * __restrict__ l_dest,
-					  Bezier1i * __restrict__ r_dest,
-					  const Split &split,
-					  Centroid_Scene_AABB &local_left,
-					  Centroid_Scene_AABB &local_right)
-  {
-    const mic_f centroidMin = broadcast4to16f(&current.bounds.centroid2.lower);
-    const mic_f centroidMax = broadcast4to16f(&current.bounds.centroid2.upper);
-
-    const mic_f centroidBoundsMin_2 = centroidMin;
-    const mic_f centroidDiagonal_2  = centroidMax-centroidMin;
-    const mic_f scale = select(centroidDiagonal_2 != 0.0f,rcp(centroidDiagonal_2) * mic_f(16.0f * 0.99f),mic_f::zero());
- 
-    const unsigned int bestSplitDim = split.dim;
-    const unsigned int bestSplit    = split.pos;
-
-    const mic_f c = mic_f(centroidBoundsMin_2[bestSplitDim]);
-    const mic_f s = mic_f(scale[bestSplitDim]);
-
-    mic_f leftSceneBoundsMin((float)pos_inf);
-    mic_f leftSceneBoundsMax((float)neg_inf);
-    mic_f leftCentroidBoundsMin((float)pos_inf);
-    mic_f leftCentroidBoundsMax((float)neg_inf);
-
-    mic_f rightSceneBoundsMin((float)pos_inf);
-    mic_f rightSceneBoundsMax((float)neg_inf);
-    mic_f rightCentroidBoundsMin((float)pos_inf);
-    mic_f rightCentroidBoundsMax((float)neg_inf);
-
-    const mic_m dim_mask = mic_m::shift1[bestSplitDim];
-
-    for (;l_source<r_source;)
-      {
-	evictL1(l_source-2);	
-	    
-	prefetch<PFHINT_NT>(l_source+2);
-	prefetch<PFHINT_L2>(l_source + L2_PREFETCH_ITEMS + 4);
-
-	const mic2f b = l_source->getBounds();
-	const mic_f b_min = b.x;
-	const mic_f b_max = b.y;
-	// const mic_f b_min = broadcast4to16f(&l_source->lower);
-	// const mic_f b_max = broadcast4to16f(&l_source->upper);
-	const mic_f b_centroid2 = b_min + b_max;
-
-	if (likely(lt_split(b_min,b_max,dim_mask,c,s,mic_f(bestSplit)))) 
-	  {
-	    *l_dest++ = *l_source++;
-
-	    leftSceneBoundsMin = min(leftSceneBoundsMin,b_min);
-	    leftSceneBoundsMax = max(leftSceneBoundsMax,b_max);
-
-	    leftCentroidBoundsMin = min(leftCentroidBoundsMin,b_centroid2);
-	    leftCentroidBoundsMax = max(leftCentroidBoundsMax,b_centroid2);
-	    
-	  }
-	else
-	  {
-	    *r_dest++ = *l_source++;
-
-	    rightSceneBoundsMin = min(rightSceneBoundsMin,b_min);
-	    rightSceneBoundsMax = max(rightSceneBoundsMax,b_max);
-	    rightCentroidBoundsMin = min(rightCentroidBoundsMin,b_centroid2);
-	    rightCentroidBoundsMax = max(rightCentroidBoundsMax,b_centroid2);
-	  }
-      }
-    
-    store4f(&local_left.geometry.lower,leftSceneBoundsMin);
-    store4f(&local_left.geometry.upper,leftSceneBoundsMax);
-    store4f(&local_left.centroid2.lower,leftCentroidBoundsMin);
-    store4f(&local_left.centroid2.upper,leftCentroidBoundsMax);
-
-    store4f(&local_right.geometry.lower,rightSceneBoundsMin);
-    store4f(&local_right.geometry.upper,rightSceneBoundsMax);
-    store4f(&local_right.centroid2.lower,rightCentroidBoundsMin);
-    store4f(&local_right.centroid2.upper,rightCentroidBoundsMax);
-
-
-  }
-
-  void BVH4HairBuilder::parallelPartitioningGlobal(const size_t threadID, const size_t numThreads)
-  {
-    BuildRecord &current = global_sharedData.rec;
-
-    const unsigned int items = current.items();
-    const unsigned int startID = current.begin + ((threadID+0)*items/numThreads);
-    const unsigned int endID   = current.begin + ((threadID+1)*items/numThreads);
-   
- 
-    const unsigned int bestSplitDim     = global_sharedData.split.dim;
-    const unsigned int bestSplit        = global_sharedData.split.pos;
-    const unsigned int bestSplitNumLeft = global_sharedData.split.numLeft;
-
-
-    const mic_i lnum    = prefix_sum(global_bin16[threadID].thread_count[bestSplitDim]);
-    const unsigned int local_numLeft = lnum[bestSplit-1];
-    const unsigned int local_numRight = (endID-startID) - lnum[bestSplit-1];
- 
-    const unsigned int thread_start_left  = global_sharedData.lCounter.add(local_numLeft);
-    const unsigned int thread_start_right = global_sharedData.rCounter.add(local_numRight);
-
-    Bezier1i  *__restrict__ const tmp_prims = (Bezier1i*)accel;
-
-    Bezier1i * __restrict__ l_source = tmp_prims + startID;
-    Bezier1i * __restrict__ r_source = tmp_prims + endID;
-
-    Bezier1i * __restrict__ l_dest     = prims + current.begin + thread_start_left;
-    Bezier1i * __restrict__ r_dest     = prims + current.begin + thread_start_right + bestSplitNumLeft;
-
-    __aligned(64) Centroid_Scene_AABB local_left;
-    __aligned(64) Centroid_Scene_AABB local_right; // just one local
-
-    parallelPartitioning(current,l_source,r_source,l_dest,r_dest,global_sharedData.split,local_left,local_right);
-
-    global_sharedData.left.extend_atomic(local_left); 
-    global_sharedData.right.extend_atomic(local_right);  
-  }
-
-
   void BVH4HairBuilder::parallelBinningLocal(const size_t localThreadID,const size_t globalThreadID)
   {
     const size_t globalCoreID = globalThreadID/4;
@@ -440,9 +319,7 @@ namespace embree
     const mic_f centroidDiagonal_2  = centroidMax-centroidMin;
     const mic_f scale = select(centroidDiagonal_2 != 0.0f,rcp(centroidDiagonal_2) * mic_f(16.0f * 0.99f),mic_f::zero());
 
-    Bezier1i  *__restrict__ const tmp_prims = (Bezier1i*)accel;
-
-    fastbin_copy<Bezier1i,false>(prims,tmp_prims,startID,endID,centroidBoundsMin_2,scale,global_bin16[globalThreadID]);    
+    fastbin<Bezier1i>(prims,startID,endID,centroidBoundsMin_2,scale,global_bin16[globalThreadID]);    
 
     localTaskScheduler[globalCoreID].syncThreads(localThreadID);
 
@@ -493,51 +370,6 @@ namespace embree
 	  }
       }
 
-  }
-
-
-  void BVH4HairBuilder::parallelPartitioningLocal(const size_t localThreadID,const size_t globalThreadID)
-  {
-    const size_t threads = 4;
-    const size_t globalCoreID = globalThreadID/threads;
-
-    SharedBinningPartitionData &sd = local_sharedData[globalCoreID];    
-    BuildRecord &current = sd.rec;
-    Bin16 &bin16 = global_bin16[globalThreadID];
-
-    // ----------------------------------------------
-
-    const unsigned int items = current.items();
-    const unsigned int startID = current.begin + ((localThreadID+0)*items/threads);
-    const unsigned int endID   = current.begin + ((localThreadID+1)*items/threads);
-   
-    const unsigned int bestSplitDim     = sd.split.dim;
-    const unsigned int bestSplit        = sd.split.pos;
-    const unsigned int bestSplitNumLeft = sd.split.numLeft;
-
-    const mic_i lnum    = prefix_sum(bin16.thread_count[bestSplitDim]);
-    const unsigned int local_numLeft = lnum[bestSplit-1];
-    const unsigned int local_numRight = (endID-startID) - lnum[bestSplit-1];
- 
-    const unsigned int thread_start_left  = sd.lCounter.add(local_numLeft);
-    const unsigned int thread_start_right = sd.rCounter.add(local_numRight);
-
-    Bezier1i  *__restrict__ const tmp_prims = (Bezier1i*)accel;
-
-    Bezier1i * __restrict__ l_source = tmp_prims + startID;
-    Bezier1i * __restrict__ r_source = tmp_prims + endID;
-
-    Bezier1i * __restrict__ l_dest     = prims + current.begin + thread_start_left;
-    Bezier1i * __restrict__ r_dest     = prims + current.begin + thread_start_right + bestSplitNumLeft;
-
-    __aligned(64) Centroid_Scene_AABB local_left;
-    __aligned(64) Centroid_Scene_AABB local_right; 
-
-    parallelPartitioning(current,l_source,r_source,l_dest,r_dest,sd.split,local_left,local_right);
-
-    sd.left.extend_atomic(local_left); 
-    sd.right.extend_atomic(local_right);  
-    
   }
 
 
@@ -861,12 +693,78 @@ namespace embree
 	 global_sharedData.left.reset();
 	 global_sharedData.right.reset();
 
-	 global_sharedData.lCounter.reset(0);
-	 global_sharedData.rCounter.reset(0); 
+	 const BinPartitionMapping mapping(global_sharedData.split,global_sharedData.rec.bounds);
 
-	 scene->lockstep_scheduler.dispatchTask( task_parallelPartitioningGlobal, this, threadID, numThreads );
+	 auto part = [&] (Bezier1i* const t_array,
+			  const size_t size) 
+	   {                                               
+	     CentroidGeometryAABB leftReduction;
+	     CentroidGeometryAABB rightReduction;
+	     leftReduction.reset();
+	     rightReduction.reset();
 
-	 const unsigned int mid = current.begin + global_sharedData.split.numLeft;
+	     Bezier1i* l = t_array;
+	     Bezier1i* r = t_array + size - 1;
+
+	     while(1)
+	       {
+		 /* *l < pivot */
+		 while (likely(l <= r)) 
+		   {
+		     const mic2f bounds = l->getBounds();
+		     evictL1(((char*)l)-2*64);
+		     const mic_f b_min  = bounds.x;
+		     const mic_f b_max  = bounds.y;
+		     prefetch<PFHINT_L1EX>(((char*)l)+4*64);
+
+		     if (unlikely(mapping.ge_split(b_min,b_max))) break;
+
+		     prefetch<PFHINT_L2EX>(((char*)l)+20*64);
+
+		     leftReduction.extend(b_min,b_max);
+		     ++l;
+		   }
+		 /* *r >= pivot) */
+		 while (likely(l <= r))
+		   {
+		     const mic2f bounds = r->getBounds();
+		     evictL1(((char*)r)+2*64);
+		     const mic_f b_min  = bounds.x;
+		     const mic_f b_max  = bounds.y;
+		     prefetch<PFHINT_L1EX>(((char*)r)-4*64);	  
+
+		     if (unlikely(mapping.lt_split(b_min,b_max))) break;
+		     prefetch<PFHINT_L2EX>(((char*)r)-20*64);	  
+
+		     rightReduction.extend(b_min,b_max);
+		     --r;
+		   }
+
+		 if (r<l) break;
+
+		 rightReduction.extend(l->getBounds().x,l->getBounds().y);
+		 leftReduction.extend(r->getBounds().x,r->getBounds().y);
+
+		 xchg(*l,*r);
+		 l++; r--;
+	       }
+      
+	     Centroid_Scene_AABB cs_left ( leftReduction );
+	     Centroid_Scene_AABB cs_right ( rightReduction );
+
+	     global_sharedData.left.extend_atomic(cs_left);
+	     global_sharedData.right.extend_atomic(cs_right);
+	    
+	     return l - t_array;        
+
+	   };
+
+	 size_t mid_parallel = parallel_in_place_partitioning_static<Bezier1i>(&prims[current.begin],
+									       current.size(),
+									       part,
+									       scene->lockstep_scheduler);
+
+	const unsigned int mid = current.begin + mid_parallel;
 
 	if (unlikely(current.begin == mid || mid == current.end)) 
 	  {
@@ -924,12 +822,78 @@ namespace embree
 	 sd.left.reset();
 	 sd.right.reset();
 
-	 sd.lCounter.reset(0);
-	 sd.rCounter.reset(0); 
+	 const BinPartitionMapping mapping(sd.split,sd.rec.bounds);
 
-	 localTaskScheduler[globalCoreID].dispatchTask( task_parallelPartitioningLocal, this, localThreadID, globalThreadID );
+	 auto part = [&] (Bezier1i* const t_array,
+			  const size_t size) 
+	   {                                               
+	     CentroidGeometryAABB leftReduction;
+	     CentroidGeometryAABB rightReduction;
+	     leftReduction.reset();
+	     rightReduction.reset();
 
-	 const unsigned int mid = current.begin + sd.split.numLeft;
+	     Bezier1i* l = t_array;
+	     Bezier1i* r = t_array + size - 1;
+
+	     while(1)
+	       {
+		 /* *l < pivot */
+		 while (likely(l <= r)) 
+		   {
+		     const mic2f bounds = l->getBounds();
+		     evictL1(((char*)l)-2*64);
+		     const mic_f b_min  = bounds.x;
+		     const mic_f b_max  = bounds.y;
+		     prefetch<PFHINT_L1EX>(((char*)l)+4*64);
+
+		     if (unlikely(mapping.ge_split(b_min,b_max))) break;
+
+		     prefetch<PFHINT_L2EX>(((char*)l)+20*64);
+
+		     leftReduction.extend(b_min,b_max);
+		     ++l;
+		   }
+		 /* *r >= pivot) */
+		 while (likely(l <= r))
+		   {
+		     const mic2f bounds = r->getBounds();
+		     evictL1(((char*)r)+2*64);
+		     const mic_f b_min  = bounds.x;
+		     const mic_f b_max  = bounds.y;
+		     prefetch<PFHINT_L1EX>(((char*)r)-4*64);	  
+
+		     if (unlikely(mapping.lt_split(b_min,b_max))) break;
+		     prefetch<PFHINT_L2EX>(((char*)r)-20*64);	  
+
+		     rightReduction.extend(b_min,b_max);
+		     --r;
+		   }
+
+		 if (r<l) break;
+
+		 rightReduction.extend(l->getBounds().x,l->getBounds().y);
+		 leftReduction.extend(r->getBounds().x,r->getBounds().y);
+
+		 xchg(*l,*r);
+		 l++; r--;
+	       }
+      
+	     Centroid_Scene_AABB cs_left ( leftReduction );
+	     Centroid_Scene_AABB cs_right ( rightReduction );
+
+	     sd.left.extend_atomic(cs_left);
+	     sd.right.extend_atomic(cs_right);
+	    
+	     return l - t_array;        
+
+	   };
+
+	 size_t mid_parallel = parallel_in_place_partitioning_static<Bezier1i>(&prims[sd.rec.begin],
+									       current.size(),
+									       part,
+									       scene->lockstep_scheduler);
+	 const unsigned int mid = current.begin + mid_parallel;
+
 
 	 if (unlikely(mid == current.begin || mid == current.end)) 
 	   {

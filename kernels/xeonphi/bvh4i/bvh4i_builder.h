@@ -98,9 +98,7 @@ namespace embree
     TASK_FUNCTION(BVH4iBuilder,computePrimRefsTriangles);
     TASK_FUNCTION(BVH4iBuilder,createTriangle1Accel);
     TASK_FUNCTION(BVH4iBuilder,parallelBinningGlobal);
-    TASK_FUNCTION(BVH4iBuilder,parallelPartitioningGlobal);
     LOCAL_TASK_FUNCTION(BVH4iBuilder,parallelBinningLocal);
-    LOCAL_TASK_FUNCTION(BVH4iBuilder,parallelPartitioningLocal);
 
   public:
 
