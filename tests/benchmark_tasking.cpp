@@ -18,13 +18,19 @@
 #include "tasking/taskscheduler_new.h"
 
 #include "math/math.h"
-//#include "kernels/algorithms/sort.h"
+#include "math/bbox.h"
+
 #include <tbb/tbb.h>
 #include "tbb/tbb_stddef.h"
 
 #define OUTPUT 1
 #define PROFILE 1
 
+#define ENABLE_FIB_BENCHMARK 0
+#define ENABLE_REDUCE_BENCHMARK 0
+#define ENABLE_BOX_REDUCE_BENCHMARK 1
+
+// ================ TBB ===============
 
 #define USE_TASK_ARENA_CURRENT_SLOT 1 /* For Intel(R) TBB 4.2 U1 and later (TBB_INTERFACE_VERSION >= 7001) */
 #define LOG_PINNING 0
@@ -131,12 +137,151 @@ public:
     int get_concurrency() { return num_threads; }
 };
 
+////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////
+
 namespace embree
 {
   std::fstream fs;
 
   static const size_t ITER = 10;
   TaskSchedulerNew* newscheduler = NULL;
+
+  struct box_benchmark
+  {
+    box_benchmark() 
+      : N(0), array(NULL) {}
+    
+    size_t N;
+    BBox3fa* array;
+    BBox3fa threadReductions[1024];
+
+    static BBox3fa result;
+
+    void init(size_t N)
+    {
+      this->N = N;
+      array = new BBox3fa[N];
+      srand48(N*32323);
+
+      for (size_t i=0; i<N; i++) 
+	{
+	  float x = drand48();
+	  float y = drand48();
+	  float z = drand48();
+	  BBox3fa b;
+	  const float f = 0.1f;
+	  b.lower = Vec3fa(x-f,y-f,z-f);
+	  b.upper = Vec3fa(x+f,y+f,z+f);
+	  array[i] = b;
+	}      
+    }
+
+    TASK_FUNCTION_(box_benchmark,reduce);
+    
+    void reduce(size_t threadIndex, size_t threadCount)
+    {
+      const size_t begin = (threadIndex+0)*N/threadCount;
+      const size_t end   = (threadIndex+1)*N/threadCount;
+      BBox3fa b( empty );
+      for (size_t i=begin; i<end; i++) 
+	b.extend(array[i]);
+      threadReductions[threadIndex] = b;
+    }
+
+    BBox3fa reduce_sequential(size_t N)
+    {
+      BBox3fa b( empty );
+      for (size_t i=0; i<N; i++) 
+	b.extend(array[i]);
+      return b;
+    }
+
+    double run_sequential (size_t N) 
+    {
+      double t0 = getSeconds();
+      result = reduce_sequential(N);
+      double t1 = getSeconds();
+
+      /*double sum = reduce_sequential(N);
+      if (abs(sum-c0) > 1E-5) {
+        std::cerr << "internal error: " << sum << " != " << c0 << std::endl;
+        exit(1);
+        }*/
+      return t1-t0;
+    }  
+
+
+    double run_locksteptaskscheduler(size_t N)
+    {
+      double t0 = getSeconds();
+      this->N = N;
+      LockStepTaskScheduler* scheduler = LockStepTaskScheduler::instance();
+      scheduler->dispatchTask( task_reduce, this, 0, scheduler->getNumThreads() );
+      
+      BBox3fa b( empty );
+      for (size_t i=0; i<scheduler->getNumThreads(); i++) 
+        b.extend( threadReductions[i] );
+      result = b;
+
+      double t1 = getSeconds();
+
+      return t1-t0;
+    }
+    
+    double run_tbb(size_t N)
+    {
+      double t0 = getSeconds();
+      
+      result = tbb::parallel_reduce(tbb::blocked_range<size_t>(0,N,128), BBox3fa( empty ), 
+                                [&](const tbb::blocked_range<size_t>& r, BBox3fa c) -> BBox3fa {
+                                  BBox3fa b( empty ); 
+                                  for (size_t i=r.begin(); i<r.end(); i++) {
+				      b.extend(array[i]); 
+				  }
+                                  return c.extend(b);
+                                },
+                                std::plus<BBox3fa>());
+      double t1 = getSeconds();
+
+      return t1-t0;
+    }
+
+    BBox3fa myreduce(size_t n0, size_t n1)
+    {
+      BBox3fa b( empty );
+      if (n1-n0<128) {
+	for (size_t i=n0; i<n1; i++)
+	  b.extend( array[i] );
+	return b;
+      }
+      else {
+	size_t center = (n0+n1)/2;
+	BBox3fa c0; TaskSchedulerNew::spawn(center-n0,[&](){ c0=myreduce(n0,center); });
+	BBox3fa c1; TaskSchedulerNew::spawn(n1-center,[&](){ c1=myreduce(center,n1); });
+	TaskSchedulerNew::wait();
+	c0.extend( c1 );
+	return c0;
+      }
+    }
+
+    double run_mytbb(size_t N)
+    {
+      double t0 = getSeconds();
+      BBox3fa c2( empty );
+      newscheduler->spawn_root([&](){ c2 = myreduce(0,N); });
+      result = c2;
+      double t1 = getSeconds();
+      
+      return t1-t0;
+    }
+
+
+
+  };
+
+  BBox3fa box_benchmark::result;
 
   struct reduce_benchmark
   {
@@ -283,6 +428,12 @@ namespace embree
     const char* name;
   };
 
+#if ENABLE_REDUCE_BENCHMARK == 1
+    reduce_benchmark reduce;
+#elif ENABLE_BOX_REDUCE_BENCHMARK == 1
+    box_benchmark reduce;
+#endif
+
   template<typename Closure>
   void benchmark(size_t N0, size_t N1, const char* name, const Closure& closure)
   {
@@ -313,7 +464,6 @@ namespace embree
     }
   }
 
-  reduce_benchmark reduce;
 
   const int CUTOFF = 20;
 
@@ -437,7 +587,7 @@ namespace embree
 
   void main(int argc, const char* argv[])
   {
-#if 0
+#if ENABLE_FIB_BENCHMARK == 1
     const size_t N = 40;
     //const size_t N = 22;
     //tbb::task_arena limited(2);
@@ -531,6 +681,19 @@ namespace embree
       delete newscheduler;
     }
 
+#endif
+  }
+}
+
+int main(int argc, const char* argv[]) 
+{
+  embree::main(argc,argv);
+  return 0;
+}
+  
+  
+
+
 #if 0
     /* parallel sort */
     int* src = new int[N];
@@ -585,17 +748,6 @@ namespace embree
     TaskScheduler::destroy();
     fs.close();
 #endif
-#endif
-  }
-}
-
-int main(int argc, const char* argv[]) 
-{
-  embree::main(argc,argv);
-  return 0;
-}
-  
-  
   
   
   
