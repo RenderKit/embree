@@ -35,7 +35,7 @@
 #define TIMER(x) 
 #define DBG(x) 
 
-//#define PROFILE
+#define PROFILE
 #define PROFILE_ITERATIONS 20
 
 #define MEASURE_MEMORY_ALLOCATION_TIME 0
@@ -224,7 +224,7 @@ namespace embree
     numPrimitives = totalNumPrimitives;
     if (numPrimitivesOld != numPrimitives)
       {
-	const size_t numPrims = numPrimitives+4;
+	const size_t numPrims = numPrimitives+BVH4i::N;
 	const size_t minAllocNodes = (threadCount+1) * ALLOCATOR_NODE_BLOCK_SIZE; 
 	const size_t numNodes = (size_t)((numPrims+3)/4) + minAllocNodes;
 	allocateMemoryPools(numPrims,numNodes,sizeof(BVH4i::Node),sizeof(Triangle1));
@@ -1574,10 +1574,11 @@ namespace embree
   
   bool BVH4iBuilder::split_fallback(PrimRef * __restrict__ const primref, BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild)
   {
-    unsigned int blocks4 = (current.items()+3)/4;
-    unsigned int center = current.begin + (blocks4/2)*4; // (current.begin + current.end)/2;
+    assert( BVH4i::N == 4 );
+    unsigned int blocks4 = (current.items()+BVH4i::N-1)/BVH4i::N;
+    unsigned int center = current.begin + (blocks4/2)*BVH4i::N; // (current.begin + current.end)/2;
 
-    if (unlikely(current.items() <= 4))
+    if (unlikely(current.items() <= BVH4i::N))
       {
 	center = current.begin + 1;
       }
@@ -1633,7 +1634,7 @@ namespace embree
 
 
     /* allocate next four nodes */
-    size_t numChildren = 4;
+    size_t numChildren = BVH4i::N;
     if (current.items() <= 4 )
       numChildren = current.items();
 

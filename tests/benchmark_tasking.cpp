@@ -24,7 +24,7 @@
 #include "tbb/tbb_stddef.h"
 
 #define OUTPUT 1
-#define PROFILE 10
+#define PROFILE 1
 
 #define ENABLE_FIB_BENCHMARK 0
 #define ENABLE_REDUCE_BENCHMARK 0
