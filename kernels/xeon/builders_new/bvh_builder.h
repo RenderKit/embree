@@ -219,11 +219,8 @@ namespace embree
           numChildren++;
           
         } while (numChildren < branchingFactor);
-        
-        /* create leaf node if no split is possible */
-        if (numChildren == 1)
-          return createLargeLeaf(current,alloc);
-
+        assert(numChildren > 1);
+	
 	/* sort buildrecords for optimal cache locality */
 	std::sort(&children[0],&children[numChildren]);
         
