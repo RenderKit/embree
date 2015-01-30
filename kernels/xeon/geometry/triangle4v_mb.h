@@ -164,11 +164,14 @@ namespace embree
     }
     
     /*! fill triangle from triangle list */
-    __forceinline void fill(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, const bool list)
+    __forceinline std::pair<BBox3fa,BBox3fa> fill(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, const bool list)
     {
       ssei vgeomID = -1, vprimID = -1, vmask = -1;
       sse3f va0 = zero, vb0 = zero, vc0 = zero;
       sse3f va1 = zero, vb1 = zero, vc1 = zero;
+
+      BBox3fa bounds0 = empty;
+      BBox3fa bounds1 = empty;
       
       for (size_t i=0; i<4 && begin<end; i++, begin++)
       {
@@ -177,12 +180,12 @@ namespace embree
         const size_t primID = prim.primID();
         const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
         const TriangleMesh::Triangle& tri = mesh->triangle(primID);
-	const Vec3fa& a0 = mesh->vertex(tri.v[0],0);
-	const Vec3fa& a1 = mesh->vertex(tri.v[0],1);
-        const Vec3fa& b0 = mesh->vertex(tri.v[1],0);
-	const Vec3fa& b1 = mesh->vertex(tri.v[1],1);
-        const Vec3fa& c0 = mesh->vertex(tri.v[2],0);
-	const Vec3fa& c1 = mesh->vertex(tri.v[2],1);
+	const Vec3fa& a0 = mesh->vertex(tri.v[0],0); bounds0.extend(a0);
+	const Vec3fa& a1 = mesh->vertex(tri.v[0],1); bounds1.extend(a1);
+        const Vec3fa& b0 = mesh->vertex(tri.v[1],0); bounds0.extend(b0);
+	const Vec3fa& b1 = mesh->vertex(tri.v[1],1); bounds1.extend(b1);
+        const Vec3fa& c0 = mesh->vertex(tri.v[2],0); bounds0.extend(c0);
+	const Vec3fa& c1 = mesh->vertex(tri.v[2],1); bounds1.extend(c1);
         vgeomID [i] = geomID;
         vprimID [i] = primID;
         vmask   [i] = mesh->mask;
@@ -194,6 +197,7 @@ namespace embree
 	vc1.x[i] = c1.x; vc1.y[i] = c1.y; vc1.z[i] = c1.z;
       }
       new (this) Triangle4vMB(va0,va1,vb0,vb1,vc0,vc1,vgeomID,vprimID,vmask,list && begin>=end);
+      return std::make_pair(bounds0,bounds1);
     }
    
   public:

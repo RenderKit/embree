@@ -201,11 +201,15 @@ namespace embree
         size_t start = current.prims.begin();
         Primitive* accel = (Primitive*) alloc->alloc1.malloc(items*sizeof(Primitive));
         BVH4::NodeRef node = bvh->encodeLeaf((char*)accel,items);
+	BBox3fa bounds0 = empty;
+	BBox3fa bounds1 = empty;
         for (size_t i=0; i<items; i++) {
-          accel[i].fill(prims,start,current.prims.end(),bvh->scene,false);
+          auto bounds = accel[i].fill(prims,start,current.prims.end(),bvh->scene,false);
+	  bounds0.extend(bounds.first);
+	  bounds1.extend(bounds.second);
         }
         *current.parent = node;
-	return bvh->primTy.update2((char*)accel,items,bvh->scene);
+	return std::make_pair(bounds0,bounds1);
       }
 
       BVH4* bvh;
