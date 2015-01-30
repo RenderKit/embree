@@ -15,7 +15,7 @@
 // ======================================================================== //
 
 #include "bvh4.h"
-#include "bvh4_statistics.h"
+#include "common/profile.h"
 
 #include "builders_new/primrefgen.h"
 #include "builders_new/bvh_builder.h"
@@ -28,8 +28,6 @@
 #include "geometry/triangle1v.h"
 #include "geometry/triangle4v.h"
 #include "geometry/triangle4i.h"
-
-#define PROFILE 
 
 namespace embree
 {
@@ -83,7 +81,7 @@ namespace embree
 
       BVH4* bvh;
     };
-   
+	  
     template<typename Mesh, typename Primitive>
     struct BVH4BuilderBinnedSAH : public Builder
     {
@@ -104,14 +102,8 @@ namespace embree
 
       void build(size_t, size_t) 
       {
-        /* start measurement */
-        double t0 = 0.0f;
-        if (g_verbose >= 1) t0 = getSeconds();
-
-        /* calculate scene size */
-        const size_t numPrimitives = mesh ? mesh->size() : scene->getNumPrimitives<Mesh,1>();
-        
         /* skip build for empty scene */
+	const size_t numPrimitives = mesh ? mesh->size() : scene->getNumPrimitives<Mesh,1>();
         if (numPrimitives == 0) {
           prims.resize(numPrimitives);
           bvh->set(BVH4::emptyNode,empty,0);
@@ -120,62 +112,30 @@ namespace embree
       
         /* verbose mode */
         if (g_verbose >= 1)
-          std::cout << "building BVH4<" << bvh->primTy.name << "> with " << TOSTRING(isa) "::BVH4BuilderBinnedSAH ... " << std::flush;
+	  std::cout << "building BVH4<" << bvh->primTy.name << "> with " << TOSTRING(isa) "::BVH4BuilderBinnedSAH ... " << std::flush;
 
-#if defined(PROFILE)
-      
-        double dt_min = pos_inf;
-        double dt_avg = 0.0f;
-        double dt_max = neg_inf;
-        for (size_t i=0; i<20; i++) 
-        {
-          double t0 = getSeconds();
-#endif
-          
-          /* reserve data */
-          bvh->alloc2.init(numPrimitives*sizeof(PrimRef),numPrimitives*sizeof(BVH4::Node)); 
-          prims.resize(numPrimitives);
-          
-          /* build BVH */
-          PrimInfo pinfo = mesh ? createPrimRefArray<Mesh>(mesh,prims) : createPrimRefArray<Mesh,1>(scene,prims);
-          BVH4::NodeRef root = bvh_builder_binned_sah_internal<BVH4::NodeRef>(
-            CreateAlloc(bvh),CreateBVH4Node(bvh),CreateLeaf<Primitive>(bvh),
-            prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,sahBlockSize,minLeafSize,maxLeafSize);
+	double t0 = 0.0f, dt = 0.0f;
+	profile("BVH4BuilderBinnedSAH",2,20,numPrimitives,[&] () {
+	    
+	    if (g_verbose >= 1) t0 = getSeconds();
+	    
+	    bvh->alloc2.init(numPrimitives*sizeof(PrimRef),numPrimitives*sizeof(BVH4::Node)); 
+	    prims.resize(numPrimitives);
+	    const PrimInfo pinfo = mesh ? createPrimRefArray<Mesh>(mesh,prims) : createPrimRefArray<Mesh,1>(scene,prims);
+	    BVH4::NodeRef root = bvh_builder_binned_sah_internal<BVH4::NodeRef>
+	      (CreateAlloc(bvh),CreateBVH4Node(bvh),CreateLeaf<Primitive>(bvh),
+	       prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,sahBlockSize,minLeafSize,maxLeafSize);
+	    bvh->set(root,pinfo.geomBounds,pinfo.size());
 
-          bvh->set(root,pinfo.geomBounds,pinfo.size());
-          
-#if defined(PROFILE)
-          double dt = getSeconds()-t0;
-          dt_min = min(dt_min,dt);
-          dt_avg = dt_avg + dt;
-          dt_max = max(dt_max,dt);
-        }
-        dt_avg /= double(20);
-        
-        std::cout << "[DONE]" << std::endl;
-        std::cout << "  min = " << 1000.0f*dt_min << "ms (" << numPrimitives/dt_min*1E-6 << " Mtris/s)" << std::endl;
-        std::cout << "  avg = " << 1000.0f*dt_avg << "ms (" << numPrimitives/dt_avg*1E-6 << " Mtris/s)" << std::endl;
-        std::cout << "  max = " << 1000.0f*dt_max << "ms (" << numPrimitives/dt_max*1E-6 << " Mtris/s)" << std::endl;
-#endif
-        
-        /* stop measurement */
-        double dt = 0.0f;
-        if (g_verbose >= 1) dt = getSeconds()-t0;
-        
-        /* verbose mode */
-        if (g_verbose >= 1) {
-          std::cout << "[DONE] " << 1000.0f*dt << "ms (" << numPrimitives/dt*1E-6 << " Mtris/s)" << std::endl;
-          std::cout << "  bvh4::alloc : "; bvh->alloc.print_statistics();
-          std::cout << "  bvh4::alloc2: "; bvh->alloc2.print_statistics();
-        }
-        if (g_verbose >= 2)
-          std::cout << BVH4Statistics(bvh).str();
-
-        /* benchmark mode */
-        if (g_benchmark) {
-          BVH4Statistics stat(bvh);
-          std::cout << "BENCHMARK_BUILD " << dt << " " << double(numPrimitives)/dt << " " << stat.sah() << " " << stat.bytesUsed() << std::endl;
-        }
+	    if (g_verbose >= 1) dt = getSeconds()-t0;
+	    
+	  });
+	
+	/* verbose mode */
+	if (g_verbose >= 1)
+	  std::cout << "[DONE] " << 1000.0f*dt << "ms (" << numPrimitives/dt*1E-6 << " Mtris/s)" << std::endl;
+	if (g_verbose >= 2)
+	  bvh->printStatistics();
       }
     };
     

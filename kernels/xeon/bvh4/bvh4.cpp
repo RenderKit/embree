@@ -15,6 +15,7 @@
 // ======================================================================== //
 
 #include "bvh4.h"
+#include "bvh4_statistics.h"
 
 #include "geometry/bezier1v.h"
 #include "geometry/bezier1i.h"
@@ -507,6 +508,13 @@ namespace embree
     this->bounds = bounds;
     this->numPrimitives = numPrimitives;
   }
+
+  void BVH4::printStatistics()
+  {
+    std::cout << BVH4Statistics(this).str();
+    std::cout << "  "; alloc.print_statistics();
+    std::cout << "  "; alloc2.print_statistics();
+  }	
 
   void BVH4::clearBarrier(NodeRef& node)
   {
