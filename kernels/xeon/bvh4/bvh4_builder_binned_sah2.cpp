@@ -47,7 +47,7 @@ namespace embree
     {
       __forceinline CreateBVH4Node (BVH4* bvh) : bvh(bvh) {}
       
-      __forceinline void operator() (const isa::BuildRecord2<BVH4::NodeRef>& current, BuildRecord2<BVH4::NodeRef>** children, const size_t N, Allocator* alloc) 
+      __forceinline int operator() (const isa::BuildRecord2<BVH4::NodeRef>& current, BuildRecord2<BVH4::NodeRef>** children, const size_t N, Allocator* alloc) 
       {
         BVH4::Node* node = (BVH4::Node*) alloc->alloc0.malloc(sizeof(BVH4::Node)); node->clear();
         for (size_t i=0; i<N; i++) {
@@ -55,6 +55,7 @@ namespace embree
           children[i]->parent = &node->child(i);
         }
         *current.parent = bvh->encodeNode(node);
+	return 0;
       }
 
       BVH4* bvh;
@@ -65,7 +66,7 @@ namespace embree
     {
       __forceinline CreateLeaf (BVH4* bvh) : bvh(bvh) {}
       
-      __forceinline void operator() (const BuildRecord2<BVH4::NodeRef>& current, PrimRef* prims, Allocator* alloc) // FIXME: why are prims passed here but not for createNode
+      __forceinline int operator() (const BuildRecord2<BVH4::NodeRef>& current, PrimRef* prims, Allocator* alloc) // FIXME: why are prims passed here but not for createNode
       {
         size_t items = Primitive::blocks(current.prims.size());
         size_t start = current.prims.begin();
@@ -75,6 +76,7 @@ namespace embree
           accel[i].fill(prims,start,current.prims.end(),bvh->scene,false);
         }
         *current.parent = node;
+	return 1;
       }
 
       BVH4* bvh;

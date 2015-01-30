@@ -29,13 +29,15 @@ namespace embree
 #if defined(TASKING_TBB)
 #  define SPAWN_BEGIN tbb::task_group __internal_task_group
 #  define SPAWN(closure) __internal_task_group.run(closure)
-#  define SPAWN_END __internal_task_group.wait();
+#  define SPAWN_END __internal_task_group.wait()
+#  define SPAWN_ROOT(closure) closure()
 #endif
 
 #if defined(TASKING_TBB_INTERNAL)
 #  define SPAWN_BEGIN TaskSchedulerNew* __internal_scheduler = TaskSchedulerNew::instance();
 #  define SPAWN(closure) __internal_scheduler->spawn(closure)
 #  define SPAWN_END __internal_scheduler->wait();
+#  define SPAWN_ROOT(closure) g_instance->spawn_root(closure)
 #endif
 
   struct TaskSchedulerNew
@@ -307,6 +309,9 @@ namespace embree
       condition.notify_all();
       while (thread.tasks.execute_local(thread,NULL));
       atomic_add(&anyTasksRunning,-1);
+
+      threadLocal[0] = NULL;
+      thread_local_thread = NULL;
       active = false;
     }
 

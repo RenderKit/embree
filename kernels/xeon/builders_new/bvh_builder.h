@@ -108,11 +108,11 @@ namespace embree
           THROW_RUNTIME_ERROR("depth limit reached");
         
         /* create leaf for few primitives */
-        if (current.size() <= maxLeafSize) {
+        if (current.size() <= maxLeafSize)
           return createLeaf(current,prims,alloc);
-        }
 
         /* fill all children by always splitting the largest one */
+	ReductionTy values[MAX_BRANCHING_FACTOR];
 	BuildRecord<NodeRef>* pchildren[MAX_BRANCHING_FACTOR];
         BuildRecord<NodeRef> children[MAX_BRANCHING_FACTOR];
         size_t numChildren = 1;
@@ -154,12 +154,15 @@ namespace embree
         } while (numChildren < branchingFactor);
 
         /* create node */
-        createNode(current,pchildren,numChildren,alloc);
+        auto node = createNode(current,pchildren,numChildren,alloc);
 
-        /* recurse into each child */
+	/* recurse into each child  and perform reduction */
 	ReductionTy v = identity;
-        for (size_t i=0; i<numChildren; i++) 
-          v = reduce(v, createLargeLeaf(children[i],alloc));
+	for (size_t i=0; i<numChildren; i++)
+	  v = reduce(v, values[i] = createLargeLeaf(children[i],alloc));
+	
+	/* passed reduced values to node */
+	updateNode(node,v,values,numChildren);
 	return v;
       }
 
@@ -250,11 +253,8 @@ namespace embree
 	{
 	  /* perform reduction */
 	  ReductionTy v = identity;
-	  for (size_t i=0; i<numChildren; i++) {
-	    const ReductionTy r = recurse(children[i],alloc);
-	    values[i] = r;
-	    v = reduce(v,r);
-	  }
+	  for (size_t i=0; i<numChildren; i++)
+	    v = reduce(v, values[i] = recurse(children[i],alloc));
 	  
 	  /* passed reduced values to node */
 	  updateNode(node,v,values,numChildren);
@@ -312,22 +312,11 @@ namespace embree
                                      PrimRef* prims, const PrimInfo& pinfo, 
                                      const size_t branchingFactor, const size_t maxDepth, const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize)
     {
-      HeuristicArrayBinningSAH<PrimRef> heuristic(prims);
-      const size_t logBlockSize = __bsr(blockSize);
-      assert((blockSize ^ (1L << logBlockSize)) == 0);
-      return execute_closure([&]() -> NodeRef 
-      {
-	auto plus = std::plus<int>();
-	auto updateNode = [] (int node, int, int*, size_t) {};
-	BVHBuilderSAH<NodeRef,HeuristicArrayBinningSAH<PrimRef>,int,decltype(plus),decltype(createAlloc()),CreateAllocFunc,CreateNodeFunc,decltype(updateNode),CreateLeafFunc> builder
-	  (heuristic,0,plus,createAlloc,createNode,updateNode,createLeaf,prims,pinfo,branchingFactor,maxDepth,logBlockSize,minLeafSize,maxLeafSize);
-
-	  NodeRef root;
-	  BuildRecord<NodeRef> br(pinfo,1,&root);
-	  br.prims = range<size_t>(0,pinfo.size());
-          builder(br);
-	  return root;
-        });
+      NodeRef root;
+      SPAWN_ROOT(([&] {
+	    root = bvh_builder_binned_sah_internal<NodeRef>(createAlloc,createNode,createLeaf,prims,pinfo,branchingFactor,maxDepth,blockSize,minLeafSize,maxLeafSize);
+	  }));
+      return root;
     }
   }
 }
