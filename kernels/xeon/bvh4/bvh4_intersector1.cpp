@@ -234,7 +234,7 @@ namespace embree
           /*! process nodes with unaligned bounds and motion blur */
           else if (unlikely(cur.isUnalignedNodeMB(types)))
             mask = cur.unalignedNodeMB()->intersect(pre1,org,dir,ray_near,ray_far,ray.time,tNear);
-	  
+
           /*! if no child is hit, pop next node */
 	  const BVH4::BaseNode* node = cur.baseNode(types);
           if (unlikely(mask == 0))

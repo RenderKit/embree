@@ -227,11 +227,11 @@ namespace embree
           
         } while (numChildren < branchingFactor);
         
-        /*! create an inner node */
-        auto node = createNode(current,pchildren,numChildren,alloc);
-
 	/* sort buildrecords for optimal cache locality */
 	std::sort(&children[0],&children[numChildren]);
+
+        /*! create an inner node */
+        auto node = createNode(current,pchildren,numChildren,alloc);
 
 	/* spawn tasks */
 	if (current.size() > 4096) 

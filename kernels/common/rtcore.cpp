@@ -303,11 +303,11 @@ namespace embree
             g_tri_builder_replication_factor = parseInt (cfg,pos);
 
       	else if ((tok == "tri_accel_mb" || tok == "accel_mb") && parseSymbol (cfg,'=',pos))
-            g_tri_accel = parseIdentifier (cfg,pos);
+            g_tri_accel_mb = parseIdentifier (cfg,pos);
 	else if ((tok == "tri_builder_mb" || tok == "builder_mb") && parseSymbol (cfg,'=',pos))
-	    g_tri_builder = parseIdentifier (cfg,pos);
+	    g_tri_builder_mb = parseIdentifier (cfg,pos);
         else if ((tok == "tri_traverser_mb" || tok == "traverser_mb") && parseSymbol (cfg,'=',pos))
-            g_tri_traverser = parseIdentifier (cfg,pos);
+            g_tri_traverser_mb = parseIdentifier (cfg,pos);
 
         else if (tok == "hair_accel" && parseSymbol (cfg,'=',pos))
             g_hair_accel = parseIdentifier (cfg,pos);
