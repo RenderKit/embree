@@ -158,6 +158,7 @@ namespace embree
     BBox3fa threadReductions[1024];
 
     static BBox3fa result;
+    static const bool showResult = false;
 
     void init(size_t N)
     {
@@ -204,11 +205,9 @@ namespace embree
       result = reduce_sequential(N);
       double t1 = getSeconds();
 
-      /*double sum = reduce_sequential(N);
-      if (abs(sum-c0) > 1E-5) {
-        std::cerr << "internal error: " << sum << " != " << c0 << std::endl;
-        exit(1);
-        }*/
+      if (showResult)
+	DBG_PRINT( result );
+
       return t1-t0;
     }  
 
@@ -227,6 +226,9 @@ namespace embree
 
       double t1 = getSeconds();
 
+      if (showResult)
+	DBG_PRINT( result );
+
       return t1-t0;
     }
     
@@ -235,15 +237,18 @@ namespace embree
       double t0 = getSeconds();
       
       result = tbb::parallel_reduce(tbb::blocked_range<size_t>(0,N,128), BBox3fa( empty ), 
-                                [&](const tbb::blocked_range<size_t>& r, BBox3fa c) -> BBox3fa {
-                                  BBox3fa b( empty ); 
-                                  for (size_t i=r.begin(); i<r.end(); i++) {
-				      b.extend(array[i]); 
-				  }
-                                  return c.extend(b);
-                                },
-                                std::plus<BBox3fa>());
+				    [&](const tbb::blocked_range<size_t>& r, BBox3fa c) -> BBox3fa {
+				      BBox3fa b( empty ); 
+				      for (size_t i=r.begin(); i<r.end(); i++) {
+					b.extend(array[i]); 
+				      }
+				      return c.extend(b);
+				    },
+				    [](const BBox3fa &a,const BBox3fa &b) { BBox3fa c = a; return c.extend(b); });
       double t1 = getSeconds();
+
+      if (showResult)
+	DBG_PRINT( result );
 
       return t1-t0;
     }
@@ -273,6 +278,9 @@ namespace embree
       newscheduler->spawn_root([&](){ c2 = myreduce(0,N); });
       result = c2;
       double t1 = getSeconds();
+
+      if (showResult)
+	DBG_PRINT( result );
       
       return t1-t0;
     }
@@ -613,8 +621,6 @@ namespace embree
 #else
 
     const size_t N_start = 1000;
-    //const size_t N_start = 10*1024*1024-1;
-
     const size_t N = 10*1024*1024;
     const size_t N_seq = 10*1024*1024;
 
