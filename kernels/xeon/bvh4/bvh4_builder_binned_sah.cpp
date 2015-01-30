@@ -119,7 +119,7 @@ namespace embree
 	    
 	    if (g_verbose >= 1) t0 = getSeconds();
 	    
-	    bvh->alloc2.init(numPrimitives*sizeof(PrimRef),numPrimitives*sizeof(BVH4::Node)); 
+	    bvh->alloc2.init(numPrimitives*sizeof(PrimRef),numPrimitives*sizeof(BVH4::Node));  // FIXME: better estimate
 	    prims.resize(numPrimitives);
 	    const PrimInfo pinfo = mesh ? createPrimRefArray<Mesh>(mesh,prims) : createPrimRefArray<Mesh,1>(scene,prims);
 	    BVH4::NodeRef root = bvh_builder_binned_sah_internal<BVH4::NodeRef>

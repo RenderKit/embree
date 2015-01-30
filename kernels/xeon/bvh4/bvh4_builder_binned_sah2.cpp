@@ -80,6 +80,11 @@ namespace embree
       BVH4* bvh;
     };
     
+    /************************************************************************************/ 
+    /************************************************************************************/
+    /************************************************************************************/
+    /************************************************************************************/
+
     template<typename Mesh, typename Primitive>
     struct BVH4BuilderBinnedSAH2 : public Builder
     {
@@ -117,7 +122,7 @@ namespace embree
 	    
 	    if (g_verbose >= 1) t0 = getSeconds();
 	    
-	    bvh->alloc2.init(numPrimitives*sizeof(PrimRef),numPrimitives*sizeof(BVH4::Node)); 
+	    bvh->alloc2.init(numPrimitives*sizeof(PrimRef),numPrimitives*sizeof(BVH4::Node));  // FIXME: better estimate
 	    prims.resize(numPrimitives);
 	    const PrimInfo pinfo = mesh ? createPrimRefArray<Mesh>(mesh,prims) : createPrimRefArray<Mesh,1>(scene,prims);
 	    BVH4::NodeRef root = bvh_builder_binned_sah2_internal<BVH4::NodeRef>
@@ -140,7 +145,7 @@ namespace embree
 	  bvh->printStatistics();
       }
     };
-    
+
     /* entry functions for the scene builder */
     Builder* BVH4Triangle1SceneBuilderBinnedSAH2  (void* bvh, Scene* scene, size_t mode) { return new BVH4BuilderBinnedSAH2<TriangleMesh,Triangle1>((BVH4*)bvh,scene,1,1,1.0f,2,inf); }
     Builder* BVH4Triangle4SceneBuilderBinnedSAH2  (void* bvh, Scene* scene, size_t mode) { return new BVH4BuilderBinnedSAH2<TriangleMesh,Triangle4>((BVH4*)bvh,scene,4,4,1.0f,4,inf); }
@@ -160,5 +165,127 @@ namespace embree
     Builder* BVH4Triangle1vMeshBuilderBinnedSAH2 (void* bvh, TriangleMesh* mesh, size_t mode) { return new BVH4BuilderBinnedSAH2<TriangleMesh,Triangle1v>((BVH4*)bvh,mesh,1,1,1.0f,2,inf); }
     Builder* BVH4Triangle4vMeshBuilderBinnedSAH2 (void* bvh, TriangleMesh* mesh, size_t mode) { return new BVH4BuilderBinnedSAH2<TriangleMesh,Triangle4v>((BVH4*)bvh,mesh,2,2,1.0f,4,inf); }
     Builder* BVH4Triangle4iMeshBuilderBinnedSAH2 (void* bvh, TriangleMesh* mesh, size_t mode) { return new BVH4BuilderBinnedSAH2<TriangleMesh,Triangle4i>((BVH4*)bvh,mesh,2,2,1.0f,4,inf); }
+
+    /************************************************************************************/ 
+    /************************************************************************************/
+    /************************************************************************************/
+    /************************************************************************************/
+
+    struct CreateBVH4NodeMB
+    {
+      __forceinline CreateBVH4NodeMB (BVH4* bvh) : bvh(bvh) {}
+      
+      __forceinline BVH4::NodeMB* operator() (const isa::BuildRecord2<BVH4::NodeRef>& current, BuildRecord2<BVH4::NodeRef>** children, const size_t N, Allocator* alloc) 
+      {
+        BVH4::NodeMB* node = (BVH4::NodeMB*) alloc->alloc0.malloc(sizeof(BVH4::NodeMB)); node->clear();
+        for (size_t i=0; i<N; i++) {
+          //node->set(i,children[i]->pinfo.geomBounds);
+          children[i]->parent = &node->child(i);
+        }
+        *current.parent = bvh->encodeNode(node);
+	return node;
+      }
+
+      BVH4* bvh;
+    };
+
+    template<typename Primitive>
+    struct CreateLeafMB
+    {
+      __forceinline CreateLeafMB (BVH4* bvh) : bvh(bvh) {}
+      
+      __forceinline std::pair<BBox3fa,BBox3fa> operator() (const BuildRecord2<BVH4::NodeRef>& current, PrimRef* prims, Allocator* alloc) // FIXME: why are prims passed here but not for createNode
+      {
+        size_t items = Primitive::blocks(current.prims.size());
+        size_t start = current.prims.begin();
+        Primitive* accel = (Primitive*) alloc->alloc1.malloc(items*sizeof(Primitive));
+        BVH4::NodeRef node = bvh->encodeLeaf((char*)accel,items);
+        for (size_t i=0; i<items; i++) {
+          accel[i].fill(prims,start,current.prims.end(),bvh->scene,false);
+        }
+        *current.parent = node;
+	return bvh->primTy.update2(accel,items,scene);
+      }
+
+      BVH4* bvh;
+    };
+
+    template<typename Mesh, typename Primitive>
+    struct BVH4BuilderMblurBinnedSAH : public Builder
+    {
+      BVH4* bvh;
+      Scene* scene;
+      Mesh* mesh;
+      vector_t<PrimRef> prims; // FIXME: use os_malloc in vector_t for large allocations
+      const size_t sahBlockSize;
+      const float intCost;
+      const size_t minLeafSize;
+      const size_t maxLeafSize;
+
+      BVH4BuilderMblurBinnedSAH (BVH4* bvh, Scene* scene, const size_t leafBlockSize, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize)
+        : bvh(bvh), scene(scene), mesh(NULL), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,leafBlockSize*BVH4::maxLeafBlocks)) {}
+
+      BVH4BuilderMblurBinnedSAH (BVH4* bvh, Mesh* mesh, const size_t leafBlockSize, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize)
+        : bvh(bvh), scene(NULL), mesh(mesh), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,leafBlockSize*BVH4::maxLeafBlocks)) {}
+
+      void build(size_t, size_t) 
+      {
+	/* skip build for empty scene */
+	const size_t numPrimitives = mesh ? mesh->size() : scene->getNumPrimitives<Mesh,2>();
+        if (numPrimitives == 0) {
+          prims.resize(numPrimitives);
+          bvh->set(BVH4::emptyNode,empty,0);
+          return;
+        }
+      
+	/* reduction function */
+	auto reduce = [] (BVH4::NodeMB* node, const std::pair<BBox3fa,BBox3fa>& b, const std::pair<BBox3fa,BBox3fa>* bounds, const size_t N) 
+	{
+	  assert(N <= BVH4::N);
+	  BBox3fa first  = empty;
+	  BBpx3fa second = empty;
+	  for (size_t i=0; i<N; i++) {
+	    const BBox3fa b0 = bounds[i].first;
+	    const BBox3fa b1 = bounds[i].second;
+	    node->set(i,b0,b1);
+	    first  = merge(first ,b0);
+	    second = merge(second,b1);
+	  }
+	  return std::pair<BBox3fa,BBox3fa>(bounds0,bounds1);
+	}
+	auto identity = make_pair(BBox3fa(empty),BBox3fa(empty));
+
+        /* verbose mode */
+        if (g_verbose >= 1)
+	  std::cout << "building BVH4<" << bvh->primTy.name << "> with " << TOSTRING(isa) "::BVH4BuilderMblurBinnedSAH ... " << std::flush;
+
+	double t0 = 0.0f, dt = 0.0f;
+	profile("BVH4BuilderMblurBinnedSAH",2,20,numPrimitives,[&] () {
+	    
+	    if (g_verbose >= 1) t0 = getSeconds();
+	    
+	    bvh->alloc2.init(numPrimitives*sizeof(PrimRef),numPrimitives*sizeof(BVH4::NodeMB));  // FIXME: better estimate
+	    prims.resize(numPrimitives);
+	    const PrimInfo pinfo = mesh ? createPrimRefArray<Mesh>(mesh,prims) : createPrimRefArray<Mesh,2>(scene,prims);
+	    BVH4::NodeRef root = bvh_builder_reduce_binned_sah2_internal<BVH4::NodeRef>
+	      (CreateAlloc(bvh),identity,reduce,CreateBVH4NodeMB(bvh),CreateLeaf<Primitive>(bvh),
+	       prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,sahBlockSize,minLeafSize,maxLeafSize,BVH4::travCost,intCost);
+	    bvh->set(root,pinfo.geomBounds,pinfo.size());
+
+	    if (g_verbose >= 1) dt = getSeconds()-t0;
+	    
+	  });
+
+	/* clear temporary data for static geometry */
+	bool staticGeom = mesh ? mesh->isStatic() : scene->isStatic();
+	if (staticGeom) prims.resize(0,true);
+	
+	/* verbose mode */
+	if (g_verbose >= 1)
+	  std::cout << "[DONE] " << 1000.0f*dt << "ms (" << numPrimitives/dt*1E-6 << " Mtris/s)" << std::endl;
+	if (g_verbose >= 2)
+	  bvh->printStatistics();
+      }
+    };
   }
 }

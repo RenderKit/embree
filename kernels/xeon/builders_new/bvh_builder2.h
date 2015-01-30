@@ -296,6 +296,28 @@ namespace embree
       const float intCost;
     };
     
+    template<typename NodeRef, typename CreateAllocFunc, typename ReductionTy, typename ReductionFunc, typename CreateNodeFunc, typename UpdateNodeFunc, typename CreateLeafFunc>
+      NodeRef bvh_builder_reduce_binned_sah2_internal(CreateAllocFunc createAlloc, 
+						      const ReductionTy& identity, ReductionFunc reduction,
+						      CreateNodeFunc createNode, UpdateNodeFunc updateNode, CreateLeafFunc createLeaf, 
+						      PrimRef* prims, const PrimInfo& pinfo, 
+						      const size_t branchingFactor, const size_t maxDepth, const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize,
+						      const float travCost, const float intCost)
+    {
+      const size_t logBlockSize = __bsr(blockSize);
+      assert((blockSize ^ (1L << logBlockSize)) == 0);
+      HeuristicArrayBinningSAH<PrimRef> heuristic(prims);
+      
+      BVHBuilderSAH2<NodeRef,decltype(heuristic),ReductionTy,ReductionFunc,decltype(createAlloc()),CreateAllocFunc,CreateNodeFunc,UpdateNodeFunc,CreateLeafFunc> builder
+        (heuristic,itentity,reduction,createAlloc,createNode,updateNode,createLeaf,prims,pinfo,branchingFactor,maxDepth,logBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
+
+      NodeRef root;
+      BuildRecord2<NodeRef> br(pinfo,1,&root);
+      br.prims = range<size_t>(0,pinfo.size());
+      builder(br);
+      return root;
+    }
+
     template<typename NodeRef, typename CreateAllocFunc, typename CreateNodeFunc, typename CreateLeafFunc>
       NodeRef bvh_builder_binned_sah2_internal(CreateAllocFunc createAlloc, CreateNodeFunc createNode, CreateLeafFunc createLeaf, 
                                                PrimRef* prims, const PrimInfo& pinfo, 
