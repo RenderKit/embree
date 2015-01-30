@@ -130,6 +130,10 @@ namespace embree
 	    if (g_verbose >= 1) dt = getSeconds()-t0;
 	    
 	  });
+
+	/* clear temporary data for static geometry */
+	bool staticGeom = mesh ? mesh->isStatic() : scene->isStatic();
+	if (staticGeom) prims.resize(0,true);
 	
 	/* verbose mode */
 	if (g_verbose >= 1)
