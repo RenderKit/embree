@@ -20,12 +20,13 @@
 #include "math/math.h"
 //#include "kernels/algorithms/sort.h"
 #include <tbb/tbb.h>
+#include "tbb/tbb_stddef.h"
 
 #define OUTPUT 1
 #define PROFILE 1
 
 
-#define USE_TASK_ARENA_CURRENT_SLOT 0 /* For Intel(R) TBB 4.2 U1 and later (TBB_INTERFACE_VERSION >= 7001) */
+#define USE_TASK_ARENA_CURRENT_SLOT 1 /* For Intel(R) TBB 4.2 U1 and later (TBB_INTERFACE_VERSION >= 7001) */
 #define LOG_PINNING 0
 
 #if USE_TASK_ARENA_CURRENT_SLOT
@@ -71,7 +72,7 @@ public:
     const int num_cpus = CPU_COUNT_S( size, mask );
     int thr_idx =
 #if USE_TASK_ARENA_CURRENT_SLOT
-        tbb::task_arena::current_slot();
+        tbb::task_arena::current_thread_index();
 #else
         thread_index++;
 #endif
@@ -498,6 +499,7 @@ namespace embree
 
       tbb::task_scheduler_init init(tbb::task_scheduler_init::default_num_threads());
       DBG_PRINT( TBB_INTERFACE_VERSION );
+      DBG_PRINT( tbb::TBB_runtime_interface_version() );
 
       pinning_observer pinner( 4 /* the number of hyper threads on each core */ );
       pinner.observe( use_pinning );

@@ -14,13 +14,16 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-FIND_PATH(TBB_INCLUDE_DIR tbb/task_scheduler_init.h PATHS /opt/intel/composerxe/tbb/include)
-FIND_LIBRARY(TBB_LIBRARY tbb PATHS /opt/intel/composerxe/tbb/lib/mic)
-FIND_LIBRARY(TBB_LIBRARY_MALLOC tbbmalloc PATHS /opt/intel/composerxe/tbb/lib/mic)
+SET(TBB_ROOT /opt/intel/composerxe/tbb/)
+#SET(TBB_ROOT /opt/intel/tbb43_20141204oss/)
+
+FIND_PATH(TBB_INCLUDE_DIR tbb/task_scheduler_init.h PATHS ${TBB_ROOT}/include)
+FIND_LIBRARY(TBB_LIBRARY tbb PATHS ${TBB_ROOT}/lib/mic)
+FIND_LIBRARY(TBB_LIBRARY_MALLOC tbbmalloc PATHS ${TBB_ROOT}/lib/mic)
  
-FIND_PATH(TBB_INCLUDE_DIR_MIC tbb/task_scheduler_init.h NO_DEFAULT_PATH PATHS /opt/intel/composerxe/tbb/include)
-FIND_LIBRARY(TBB_LIBRARY_MIC tbb NO_DEFAULT_PATH PATHS /opt/intel/composerxe/tbb/lib/mic)
-FIND_LIBRARY(TBB_LIBRARY_MALLOC_MIC tbbmalloc NO_DEFAULT_PATH PATHS /opt/intel/composerxe/tbb/lib/mic)
+FIND_PATH(TBB_INCLUDE_DIR_MIC tbb/task_scheduler_init.h NO_DEFAULT_PATH PATHS ${TBB_ROOT}/include)
+FIND_LIBRARY(TBB_LIBRARY_MIC tbb NO_DEFAULT_PATH PATHS ${TBB_ROOT}/lib/mic)
+FIND_LIBRARY(TBB_LIBRARY_MALLOC_MIC tbbmalloc NO_DEFAULT_PATH PATHS ${TBB_ROOT}/lib/mic)
 
 IF (TBB_INCLUDE_DIR AND TBB_LIBRARY AND TBB_LIBRARY_MALLOC)
   SET(TBB_FOUND TRUE)
