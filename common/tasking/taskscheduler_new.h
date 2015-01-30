@@ -120,9 +120,12 @@ namespace embree
 	if (try_switch_state(INITIALIZED,DONE))
 	{
 	  Task* prevTask = thread.task; 
+
           thread.task = this;
+	  /* set estimate working size here */
           closure->execute();
 	  thread.task = prevTask;
+
 	  add_dependencies(-1);
 	}
         
@@ -135,11 +138,6 @@ namespace embree
 	/* now signal our parent task that we are finished */
         if (parent) 
 	  parent->add_dependencies(-1);
-      }
-
-      /*! return approximate size of the task */
-      __forceinline size_t size() const {
-	return N;
       }
 
     public:
@@ -214,6 +212,13 @@ namespace embree
         thread.tasks.right++;
         return true;
       }
+      
+      /* we steal from the left */
+      size_t getTaskSizeAtLeft() 
+      {	
+	if (left >= right) return 0;
+	return tasks[left].N;
+      }
 
     public:
 
@@ -237,6 +242,7 @@ namespace embree
       TaskQueue tasks;                 //!< local task queue
       Task* task;                      //!< current active task
       TaskSchedulerNew* scheduler;     //!< pointer to task scheduler
+
     };
     
     TaskSchedulerNew (size_t numThreads = 0, bool spinning = false);
