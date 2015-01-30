@@ -59,7 +59,7 @@ namespace embree
       if (ptr) ptr->refDec();
     }
 
-    __forceinline Ref& operator =( const Ref& input )
+    __forceinline Ref& operator= ( const Ref& input )
     {
       if ( input.ptr ) input.ptr->refInc();
       if (ptr) ptr->refDec();
@@ -67,7 +67,15 @@ namespace embree
       return *this;
     }
 
-    __forceinline Ref& operator =( NullTy ) {
+    __forceinline Ref& operator= ( Type* const input )
+    {
+      if ( input ) input->refInc();
+      if (ptr) ptr->refDec();
+      *(Type**)&ptr = input;
+      return *this;
+    }
+
+    __forceinline Ref& operator= ( NullTy ) {
       if (ptr) ptr->refDec();
       *(Type**)&ptr = NULL;
       return *this;
