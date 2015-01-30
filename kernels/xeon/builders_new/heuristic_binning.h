@@ -350,9 +350,13 @@ namespace embree
       /*! array partitioning */
       void split(const Split& split, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset) 
       {
+	if (!split.valid()) {
+	  deterministic_order(set);
+	  return splitFallback(set,left,lset,right,rset);
+	}
+
 	const size_t begin = set.begin();
 	const size_t end   = set.end();
-	//assert(valid());
 	CentGeomBBox3fa local_left(empty);
 	CentGeomBBox3fa local_right(empty);
 	const unsigned int splitPos = split.pos;
@@ -372,6 +376,11 @@ namespace embree
       /*! array partitioning */
       void parallel_split(const Split& split, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset)
       {
+	if (!split.valid()) {
+	  deterministic_order(set);
+	  return splitFallback(set,left,lset,right,rset);
+	}
+
 	const size_t begin = set.begin();
 	const size_t end   = set.end();
 	left.reset(); 
@@ -380,8 +389,6 @@ namespace embree
 	const unsigned int splitPos = split.pos;
 	const unsigned int splitDim = split.dim;
 
-	//LockStepTaskScheduler* scheduler = LockStepTaskScheduler::instance();
-	
 	const size_t mid = parallel_in_place_partitioning<128,PrimRef,PrimInfo>
 	  (&prims[begin],end-begin,init,left,right,
 	   [&] (const PrimRef &ref) { return split.mapping.bin_unsafe(center2(ref.bounds()))[splitDim] < splitPos; },
@@ -396,12 +403,18 @@ namespace embree
 	new (&rset) range<size_t>(center,end);
       }
 
+      void deterministic_order(const Set& set) 
+      {
+	/* required as parallel partition destroys original primitive order */
+	std::sort(&prims[set.begin()],&prims[set.end()]);
+      }
+
       void splitFallback(const Set& set, PrimInfo& linfo, Set& lset, PrimInfo& rinfo, Set& rset)
       {
 	const size_t begin = set.begin();
 	const size_t end   = set.end();
         const size_t center = (begin + end)/2;
-        
+
         CentGeomBBox3fa left; left.reset();
         for (size_t i=begin; i<center; i++)
           left.extend(prims[i].bounds());

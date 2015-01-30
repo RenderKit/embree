@@ -78,28 +78,16 @@ namespace embree
 
       __forceinline void splitSequential(const BuildRecord<NodeRef>& current, BuildRecord<NodeRef>& leftChild, BuildRecord<NodeRef>& rightChild)
       {
-        /* calculate binning function */
-        PrimInfo pinfo(current.size(),current.geomBounds,current.centBounds);
-        Split split = heuristic.find(current.prims,pinfo,logBlockSize);
-
-        /* if we cannot find a valid split, enforce an arbitrary split */
-        if (unlikely(!split.valid())) heuristic.splitFallback(current.prims,leftChild,leftChild.prims,rightChild,rightChild.prims);
-        
-        /* partitioning of items */
-        else heuristic.split(split, current.prims, leftChild, leftChild.prims, rightChild, rightChild.prims);
+        const PrimInfo pinfo(current.size(),current.geomBounds,current.centBounds);
+        const Split split = heuristic.find(current.prims,pinfo,logBlockSize);
+	heuristic.split(split, current.prims, leftChild, leftChild.prims, rightChild, rightChild.prims);
       }
 
       void splitParallel(const BuildRecord<NodeRef>& current, BuildRecord<NodeRef>& leftChild, BuildRecord<NodeRef>& rightChild)
       {
-        /* calculate binning function */
-        PrimInfo pinfo(current.size(),current.geomBounds,current.centBounds);
-        Split split = heuristic.parallel_find(current.prims,pinfo,logBlockSize);
-        
-        /* if we cannot find a valid split, enforce an arbitrary split */
-        if (unlikely(!split.valid())) heuristic.splitFallback(current.prims,leftChild,leftChild.prims,rightChild,rightChild.prims);
-        
-        /* partitioning of items */
-        else heuristic.parallel_split(split, current.prims, leftChild, leftChild.prims, rightChild, rightChild.prims);
+        const PrimInfo pinfo(current.size(),current.geomBounds,current.centBounds);
+        const Split split = heuristic.parallel_find(current.prims,pinfo,logBlockSize);
+	heuristic.parallel_split(split, current.prims, leftChild, leftChild.prims, rightChild, rightChild.prims);
       }
 
       const ReductionTy createLargeLeaf(const BuildRecord<NodeRef>& current, Allocator alloc)
@@ -177,6 +165,7 @@ namespace embree
         
         /* create leaf node */
 	if (current.depth+MIN_LARGE_LEAF_LEVELS >= maxDepth || current.size() <= minLeafSize) {
+	  heuristic.deterministic_order(current.prims);
 	  return createLargeLeaf(current,alloc);
 	}
                 
