@@ -50,7 +50,7 @@ namespace embree
       NodeRef* parent;        //!< reference pointing to us
     };
     
-    template<typename NodeRef, typename Heuristic, typename ReductionTy, typename ReductionFunc, typename Allocator, typename CreateAllocFunc, typename CreateNodeFunc, typename UpdateNodeFunc, typename CreateLeafFunc>
+    template<typename NodeRef, typename Heuristic, typename ReductionTy, typename Allocator, typename CreateAllocFunc, typename CreateNodeFunc, typename UpdateNodeFunc, typename CreateLeafFunc>
       class BVHBuilderSAH
     {
       typedef typename Heuristic::Split Split;
@@ -60,13 +60,13 @@ namespace embree
     public:
 
       BVHBuilderSAH (Heuristic& heuristic,
-		     const ReductionTy& identity, ReductionFunc& reduce,
+		     const ReductionTy& identity,
 		     CreateAllocFunc& createAlloc, CreateNodeFunc& createNode, UpdateNodeFunc& updateNode, CreateLeafFunc& createLeaf,
 		     PrimRef* prims, const PrimInfo& pinfo,
 		     const size_t branchingFactor, const size_t maxDepth, 
 		     const size_t logBlockSize, const size_t minLeafSize, const size_t maxLeafSize)
         : heuristic(heuristic), 
-	  identity(identity), reduce(reduce),
+	  identity(identity), 
 	  createAlloc(createAlloc), createNode(createNode), updateNode(updateNode), createLeaf(createLeaf), 
           prims(prims), pinfo(pinfo), 
           branchingFactor(branchingFactor), maxDepth(maxDepth),
@@ -144,14 +144,12 @@ namespace embree
         /* create node */
         auto node = createNode(current,pchildren,numChildren,alloc);
 
-	/* recurse into each child  and perform reduction */
-	ReductionTy v = identity;
+	/* recurse into each child */
 	for (size_t i=0; i<numChildren; i++)
-	  v = reduce(v, values[i] = createLargeLeaf(children[i],alloc));
+	  values[i] = createLargeLeaf(children[i],alloc);
 	
-	/* passed reduced values to node */
-	updateNode(node,v,values,numChildren);
-	return v;
+	/* perform reduction */
+	return updateNode(node,values,numChildren);
       }
 
       const ReductionTy recurse(const BuildRecord<NodeRef>& current, Allocator alloc)
@@ -225,26 +223,17 @@ namespace embree
 	    SPAWN(([&,i] { values[i] = recurse(children[i],NULL); }));
 	  SPAWN_END;
 	  
-	  /* perform reduction */
-	  ReductionTy v = values[0];
-	  for (size_t i=1; i<numChildren; i++)
-	    v = reduce(v,values[i]);
-
 	  /* passed reduced values to node */
-	  updateNode(node,v,values,numChildren);
-	  return v;
+	  return updateNode(node,values,numChildren);
 	}
 	/* recurse into each child */
 	else 
 	{
-	  /* perform reduction */
-	  ReductionTy v = identity;
 	  for (size_t i=0; i<numChildren; i++)
-	    v = reduce(v, values[i] = recurse(children[i],alloc));
+	    values[i] = recurse(children[i],alloc);
 	  
-	  /* passed reduced values to node */
-	  updateNode(node,v,values,numChildren);
-	  return v;
+	  /* perform reduction */
+	  return updateNode(node,values,numChildren);
 	}
       }
 
@@ -256,7 +245,6 @@ namespace embree
     private:
       Heuristic& heuristic;
       const ReductionTy identity;
-      ReductionFunc& reduce;
       CreateAllocFunc& createAlloc;
       CreateNodeFunc& createNode;
       UpdateNodeFunc& updateNode;
@@ -281,10 +269,9 @@ namespace embree
       assert((blockSize ^ (1L << logBlockSize)) == 0);
       HeuristicArrayBinningSAH<PrimRef> heuristic(prims);
       
-      auto plus = std::plus<int>();
-      auto updateNode = [] (int node, int, int*, size_t) {};
-      BVHBuilderSAH<NodeRef,decltype(heuristic),int,decltype(plus),decltype(createAlloc()),CreateAllocFunc,CreateNodeFunc,decltype(updateNode),CreateLeafFunc> builder
-        (heuristic,0,plus,createAlloc,createNode,updateNode,createLeaf,prims,pinfo,branchingFactor,maxDepth,logBlockSize,minLeafSize,maxLeafSize);
+      auto updateNode = [] (int node, int*, size_t) -> int { return 0; };
+      BVHBuilderSAH<NodeRef,decltype(heuristic),int,decltype(createAlloc()),CreateAllocFunc,CreateNodeFunc,decltype(updateNode),CreateLeafFunc> builder
+        (heuristic,0,createAlloc,createNode,updateNode,createLeaf,prims,pinfo,branchingFactor,maxDepth,logBlockSize,minLeafSize,maxLeafSize);
 
       NodeRef root;
       BuildRecord<NodeRef> br(pinfo,1,&root);

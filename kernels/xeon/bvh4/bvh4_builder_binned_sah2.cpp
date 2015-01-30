@@ -26,6 +26,7 @@
 #include "geometry/triangle1v.h"
 #include "geometry/triangle4v.h"
 #include "geometry/triangle4i.h"
+#include "geometry/triangle4v_mb.h"
 
 namespace embree
 {
@@ -204,14 +205,14 @@ namespace embree
           accel[i].fill(prims,start,current.prims.end(),bvh->scene,false);
         }
         *current.parent = node;
-	return bvh->primTy.update2(accel,items,scene);
+	return bvh->primTy.update2((char*)accel,items,bvh->scene);
       }
 
       BVH4* bvh;
     };
 
     template<typename Mesh, typename Primitive>
-    struct BVH4BuilderMblurBinnedSAH : public Builder
+    struct BVH4BuilderMblurBinnedSAH2 : public Builder
     {
       BVH4* bvh;
       Scene* scene;
@@ -222,10 +223,10 @@ namespace embree
       const size_t minLeafSize;
       const size_t maxLeafSize;
 
-      BVH4BuilderMblurBinnedSAH (BVH4* bvh, Scene* scene, const size_t leafBlockSize, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize)
+      BVH4BuilderMblurBinnedSAH2 (BVH4* bvh, Scene* scene, const size_t leafBlockSize, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize)
         : bvh(bvh), scene(scene), mesh(NULL), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,leafBlockSize*BVH4::maxLeafBlocks)) {}
 
-      BVH4BuilderMblurBinnedSAH (BVH4* bvh, Mesh* mesh, const size_t leafBlockSize, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize)
+      BVH4BuilderMblurBinnedSAH2 (BVH4* bvh, Mesh* mesh, const size_t leafBlockSize, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize)
         : bvh(bvh), scene(NULL), mesh(mesh), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,leafBlockSize*BVH4::maxLeafBlocks)) {}
 
       void build(size_t, size_t) 
@@ -239,21 +240,21 @@ namespace embree
         }
       
 	/* reduction function */
-	auto reduce = [] (BVH4::NodeMB* node, const std::pair<BBox3fa,BBox3fa>& b, const std::pair<BBox3fa,BBox3fa>* bounds, const size_t N) 
+	auto reduce = [] (BVH4::NodeMB* node, const std::pair<BBox3fa,BBox3fa>* bounds, const size_t N) 
 	{
 	  assert(N <= BVH4::N);
-	  BBox3fa first  = empty;
-	  BBpx3fa second = empty;
+	  BBox3fa bounds0 = empty;
+	  BBox3fa bounds1 = empty;
 	  for (size_t i=0; i<N; i++) {
 	    const BBox3fa b0 = bounds[i].first;
 	    const BBox3fa b1 = bounds[i].second;
 	    node->set(i,b0,b1);
-	    first  = merge(first ,b0);
-	    second = merge(second,b1);
+	    bounds0 = merge(bounds0,b0);
+	    bounds1 = merge(bounds1,b1);
 	  }
 	  return std::pair<BBox3fa,BBox3fa>(bounds0,bounds1);
-	}
-	auto identity = make_pair(BBox3fa(empty),BBox3fa(empty));
+	};
+	auto identity = std::make_pair(BBox3fa(empty),BBox3fa(empty));
 
         /* verbose mode */
         if (g_verbose >= 1)
@@ -268,7 +269,7 @@ namespace embree
 	    prims.resize(numPrimitives);
 	    const PrimInfo pinfo = mesh ? createPrimRefArray<Mesh>(mesh,prims) : createPrimRefArray<Mesh,2>(scene,prims);
 	    BVH4::NodeRef root = bvh_builder_reduce_binned_sah2_internal<BVH4::NodeRef>
-	      (CreateAlloc(bvh),identity,reduce,CreateBVH4NodeMB(bvh),CreateLeaf<Primitive>(bvh),
+	      (CreateAlloc(bvh),identity,CreateBVH4NodeMB(bvh),reduce,CreateLeafMB<Primitive>(bvh),
 	       prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,sahBlockSize,minLeafSize,maxLeafSize,BVH4::travCost,intCost);
 	    bvh->set(root,pinfo.geomBounds,pinfo.size());
 
@@ -287,5 +288,7 @@ namespace embree
 	  bvh->printStatistics();
       }
     };
+
+    Builder* BVH4Triangle4vMBSceneBuilderBinnedSAH2  (void* bvh, Scene* scene, size_t mode) { return new BVH4BuilderMblurBinnedSAH2<TriangleMesh,Triangle4vMB>((BVH4*)bvh,scene,4,4,1.0f,4,inf); }
   }
 }

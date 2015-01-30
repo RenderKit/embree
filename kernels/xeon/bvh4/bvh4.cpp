@@ -186,7 +186,7 @@ namespace embree
   DECLARE_SCENE_BUILDER(BVH4Triangle4vSceneBuilderBinnedSAH2);
   DECLARE_SCENE_BUILDER(BVH4Triangle4iSceneBuilderBinnedSAH2);
   //DECLARE_SCENE_BUILDER(BVH4Triangle1vMBBuilder);
-  //DECLARE_SCENE_BUILDER(BVH4Triangle4vMBBuilder);
+  DECLARE_SCENE_BUILDER(BVH4Triangle4vMBSceneBuilderBinnedSAH2);
 
   DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle1MeshBuilderBinnedSAH2);
   DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle4MeshBuilderBinnedSAH2);
@@ -328,7 +328,7 @@ namespace embree
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4vSceneBuilderBinnedSAH2);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4iSceneBuilderBinnedSAH2);
     //SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle1vMBBuilder);
-    //SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4vMBBuilder);
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4vMBSceneBuilderBinnedSAH2);
     
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle1MeshBuilderBinnedSAH2);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4MeshBuilderBinnedSAH2);
@@ -880,7 +880,10 @@ namespace embree
   {
     BVH4* accel = new BVH4(Triangle4vMB::type,scene,LeafMode);
     Accel::Intersectors intersectors = BVH4Triangle4vMBIntersectors(accel);
-    Builder* builder = BVH4Triangle4vMBBuilder(accel,scene,LeafMode);
+    Builder* builder = NULL;
+    if       (g_tri_builder_mb == "default"    ) builder = BVH4Triangle4vMBBuilder(accel,scene,LeafMode);
+    else  if (g_tri_builder_mb == "binned_sah2") builder = BVH4Triangle4vMBSceneBuilderBinnedSAH2(accel,scene,LeafMode);
+    else THROW_RUNTIME_ERROR("unknown builder "+g_tri_builder_mb+" for BVH4<Triangle4vMB>");
     return new AccelInstance(accel,builder,intersectors);
   }
 
