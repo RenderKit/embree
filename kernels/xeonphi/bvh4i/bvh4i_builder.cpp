@@ -861,183 +861,6 @@ namespace embree
   }
 
   
-  void BVH4iBuilder::parallelPartitioning(BuildRecord& current,
-					  PrimRef * __restrict__ l_source,
-					  PrimRef * __restrict__ r_source,
-					  PrimRef * __restrict__ l_dest,
-					  PrimRef * __restrict__ r_dest,
-					  const Split &split,
-					  Centroid_Scene_AABB &local_left,
-					  Centroid_Scene_AABB &local_right)
-  {
-    const mic_f centroidMin = broadcast4to16f(&current.bounds.centroid2.lower);
-    const mic_f centroidMax = broadcast4to16f(&current.bounds.centroid2.upper);
-
-    const mic_f centroidBoundsMin_2 = centroidMin;
-    const mic_f centroidDiagonal_2  = centroidMax-centroidMin;
-    const mic_f scale = select(centroidDiagonal_2 != 0.0f,rcp(centroidDiagonal_2) * mic_f(16.0f * 0.99f),mic_f::zero());
- 
-    const unsigned int bestSplitDim = split.dim;
-    const unsigned int bestSplit    = split.pos;
-
-    const mic_f c = mic_f(centroidBoundsMin_2[bestSplitDim]);
-    const mic_f s = mic_f(scale[bestSplitDim]);
-
-    mic_f leftSceneBoundsMin((float)pos_inf);
-    mic_f leftSceneBoundsMax((float)neg_inf);
-    mic_f leftCentroidBoundsMin((float)pos_inf);
-    mic_f leftCentroidBoundsMax((float)neg_inf);
-
-    mic_f rightSceneBoundsMin((float)pos_inf);
-    mic_f rightSceneBoundsMax((float)neg_inf);
-    mic_f rightCentroidBoundsMin((float)pos_inf);
-    mic_f rightCentroidBoundsMax((float)neg_inf);
-
-    /* local queues for NGO stores */
-    __aligned(64) PrimRef local_left_queue[2];
-    __aligned(64) PrimRef local_right_queue[2];
-    size_t num_local_left  = 0;
-    size_t num_local_right = 0;
-
-    const mic_m dim_mask = mic_m::shift1[bestSplitDim];
-
-
-
-
-    for (;l_source<r_source;)
-      {
-	evictL1(l_source-2);	
-	    
-	prefetch<PFHINT_NT>(l_source+2);
-	prefetch<PFHINT_L2>(l_source + L2_PREFETCH_ITEMS + 4);
-
-	const mic2f b = l_source->getBounds();
-	const mic_f b_min = b.x;
-	const mic_f b_max = b.y;
-	// const mic_f b_min = broadcast4to16f(&l_source->lower);
-	// const mic_f b_max = broadcast4to16f(&l_source->upper);
-	const mic_f b_centroid2 = b_min + b_max;
-
-	if (likely(lt_split(b_min,b_max,dim_mask,c,s,mic_f(bestSplit)))) 
-	  {
-	    store4f(&local_left_queue[num_local_left].lower,b_min);
-	    store4f(&local_left_queue[num_local_left].upper,b_max);
-	    num_local_left++;
-	    l_source++;
-
-	    leftSceneBoundsMin = min(leftSceneBoundsMin,b_min);
-	    leftSceneBoundsMax = max(leftSceneBoundsMax,b_max);
-
-	    leftCentroidBoundsMin = min(leftCentroidBoundsMin,b_centroid2);
-	    leftCentroidBoundsMax = max(leftCentroidBoundsMax,b_centroid2);
-	    
-	    if (unlikely(((size_t)l_dest % 64) != 0) && num_local_left == 1) 
-	      {
-		*l_dest++ = local_left_queue[0];
-		num_local_left--;
-	      }
-	    else
-	      {
-		if (num_local_left == 2)
-		  {
-		    const mic_f twoAABBs = load16f(local_left_queue);
-		    num_local_left = 0;
-		    store16f_ngo(l_dest,twoAABBs);
-		    l_dest+=2;
-		  }
-	      }	
-
-	  }
-	else
-	  {
-	    store4f(&local_right_queue[num_local_right].lower,b_min);
-	    store4f(&local_right_queue[num_local_right].upper,b_max);
-	    num_local_right++;
-	    l_source++;
-
-	    rightSceneBoundsMin = min(rightSceneBoundsMin,b_min);
-	    rightSceneBoundsMax = max(rightSceneBoundsMax,b_max);
-	    rightCentroidBoundsMin = min(rightCentroidBoundsMin,b_centroid2);
-	    rightCentroidBoundsMax = max(rightCentroidBoundsMax,b_centroid2);
-	    
-	    if (unlikely(((size_t)r_dest % 64) != 0) && num_local_right == 1)
-	      {
-		*r_dest++ = local_right_queue[0];
-		num_local_right--;
-	      }
-	    else
-	      {
-		if (num_local_right == 2)
-		  {
-		    const mic_f twoAABBs = load16f(local_right_queue);
-		    num_local_right = 0;
-		    store16f_ngo(r_dest,twoAABBs);
-		    r_dest+=2;
-		  }
-	      }	
-	  }
-      }
-
-    /* flush local queues */
-
-    if (num_local_left % 2 != 0)
-      *l_dest = local_left_queue[0];
-
-    if (num_local_right % 2 != 0)
-      *r_dest = local_right_queue[0];
-    
-    store4f(&local_left.geometry.lower,leftSceneBoundsMin);
-    store4f(&local_left.geometry.upper,leftSceneBoundsMax);
-    store4f(&local_left.centroid2.lower,leftCentroidBoundsMin);
-    store4f(&local_left.centroid2.upper,leftCentroidBoundsMax);
-
-    store4f(&local_right.geometry.lower,rightSceneBoundsMin);
-    store4f(&local_right.geometry.upper,rightSceneBoundsMax);
-    store4f(&local_right.centroid2.lower,rightCentroidBoundsMin);
-    store4f(&local_right.centroid2.upper,rightCentroidBoundsMax);
-
-
-  }
-
-  
-  void BVH4iBuilder::parallelPartitioningGlobal(const size_t threadID, const size_t numThreads)
-  {
-    BuildRecord &current = global_sharedData.rec;
-
-    const unsigned int items = current.items();
-    const unsigned int startID = current.begin + ((threadID+0)*items/numThreads);
-    const unsigned int endID   = current.begin + ((threadID+1)*items/numThreads);
-   
- 
-    const unsigned int bestSplitDim     = global_sharedData.split.dim;
-    const unsigned int bestSplit        = global_sharedData.split.pos;
-    const unsigned int bestSplitNumLeft = global_sharedData.split.numLeft;
-
-
-    const mic_i lnum    = prefix_sum(global_bin16[threadID].thread_count[bestSplitDim]);
-    const unsigned int local_numLeft = lnum[bestSplit-1];
-    const unsigned int local_numRight = (endID-startID) - lnum[bestSplit-1];
- 
-    const unsigned int thread_start_left  = global_sharedData.lCounter.add(local_numLeft);
-    const unsigned int thread_start_right = global_sharedData.rCounter.add(local_numRight);
-
-    PrimRef  *__restrict__ const tmp_prims = (PrimRef*)accel;
-
-    PrimRef * __restrict__ l_source = tmp_prims + startID;
-    PrimRef * __restrict__ r_source = tmp_prims + endID;
-
-    PrimRef * __restrict__ l_dest     = prims + current.begin + thread_start_left;
-    PrimRef * __restrict__ r_dest     = prims + current.begin + thread_start_right + bestSplitNumLeft;
-
-    __aligned(64) Centroid_Scene_AABB local_left;
-    __aligned(64) Centroid_Scene_AABB local_right; // just one local
-
-    parallelPartitioning(current,l_source,r_source,l_dest,r_dest,global_sharedData.split,local_left,local_right);
-
-    global_sharedData.left.extend_atomic(local_left); 
-    global_sharedData.right.extend_atomic(local_right);  
-  }
-
 
   // =======================================================================================================
   // =======================================================================================================
@@ -1119,24 +942,6 @@ namespace embree
 	const unsigned int mid = partitionPrimitives<L2_PREFETCH_ITEMS>(prims ,current.begin, current.end-1, split.pos, split.dim, centroidBoundsMin_2, scale, leftChild.bounds, rightChild.bounds);
 
 	assert(area(leftChild.bounds.geometry) >= 0.0f);
-
-#if defined(DEBUG)
-	if (current.begin + mid != current.begin + split.numLeft)
-	  {
-	    mtx.lock();	    
-	    DBG_PRINT(current);
-	    DBG_PRINT(mid);
-	    DBG_PRINT(split);
-	    DBG_PRINT(leftNum[0]);
-	    DBG_PRINT(leftNum[1]);
-	    DBG_PRINT(leftNum[2]);
-
-	    checkBuildRecord(current);
-	    
-	    mtx.unlock();
-	  }
-#endif
-
 	assert(current.begin + mid == current.begin + split.numLeft);
 
 	if (unlikely(current.begin + mid == current.begin || current.begin + mid == current.end)) 
@@ -1203,59 +1008,7 @@ namespace embree
 	global_sharedData.left.reset();
 	global_sharedData.right.reset();
 
-#if USE_IN_PLACE_PARTITIONING == 0
-	global_sharedData.lCounter.reset(0);
-	global_sharedData.rCounter.reset(0); 
-
-
-	{
-	  const mic_f centroidMin = broadcast4to16f(&global_sharedData.rec.bounds.centroid2.lower);
-	  const mic_f centroidMax = broadcast4to16f(&global_sharedData.rec.bounds.centroid2.upper);
-
-	  const mic_f centroidBoundsMin_2 = centroidMin;
-	  const mic_f centroidDiagonal_2  = centroidMax-centroidMin;
-	  const mic_f scale = select(centroidDiagonal_2 != 0.0f,rcp(centroidDiagonal_2) * mic_f(16.0f * 0.99f),mic_f::zero());
- 
-	  const unsigned int bestSplitDim =  global_sharedData.split.dim;
-	  const unsigned int bestSplit    =  global_sharedData.split.pos;
-
-	  const mic_f c = mic_f(centroidBoundsMin_2[bestSplitDim]);
-	  const mic_f s = mic_f(scale[bestSplitDim]);
-	  const mic_m dim_mask = mic_m::shift1[bestSplitDim];
-	  
-	  /*
-	  DBG_PRINT(c);
-	  DBG_PRINT(s);
-	  DBG_PRINT(dim_mask);
-	  */
-
-	}
-
-	scene->lockstep_scheduler.dispatchTask( task_parallelPartitioningGlobal, this, threadID, numThreads );
-	const unsigned int mid = current.begin + global_sharedData.split.numLeft;
-
-	/*
-	DBG_PRINT(mid);
-	DBG_PRINT(global_sharedData.left);
-	DBG_PRINT(global_sharedData.right);
-	*/
-
-#else
-
-	const unsigned int bestSplitDim     = global_sharedData.split.dim;
-	const unsigned int bestSplit        = global_sharedData.split.pos;
-	const unsigned int bestSplitNumLeft = global_sharedData.split.numLeft;
-
-	const mic_f centroidMin = broadcast4to16f(&global_sharedData.rec.bounds.centroid2.lower);
-	const mic_f centroidMax = broadcast4to16f(&global_sharedData.rec.bounds.centroid2.upper);
-
-	const mic_f centroidBoundsMin_2 = centroidMin;
-	const mic_f centroidDiagonal_2  = centroidMax-centroidMin;
-	const mic_f scale = select(centroidDiagonal_2 != 0.0f,rcp(centroidDiagonal_2) * mic_f(16.0f * 0.99f),mic_f::zero());
-	const mic_f c = mic_f(centroidBoundsMin_2[bestSplitDim]);
-	const mic_f s = mic_f(scale[bestSplitDim]);
-	const mic_f bestSplit_f = mic_f(bestSplit);
-	const mic_m dim_mask = mic_m::shift1[bestSplitDim];
+	const BinMapping mapping(global_sharedData.split,global_sharedData.rec.bounds);
 
 	auto part = [&] (PrimRef* const t_array,
 			 const size_t size) 
@@ -1265,7 +1018,6 @@ namespace embree
 	    leftReduction.reset();
 	    rightReduction.reset();
 
-	    const mic_m m_mask = mic_m::shift1[bestSplitDim];
 	    PrimRef* l = t_array;
 	    PrimRef* r = t_array + size - 1;
 
@@ -1280,7 +1032,8 @@ namespace embree
 		    const mic_f b_max  = bounds.y;
 		    prefetch<PFHINT_L1EX>(((char*)l)+4*64);
 
-		    if (unlikely(ge_split(b_min,b_max,m_mask,c,s,bestSplit_f))) break;
+		    if (unlikely(mapping.ge_split(b_min,b_max))) break;
+
 		    prefetch<PFHINT_L2EX>(((char*)l)+20*64);
 
 		    leftReduction.extend(b_min,b_max);
@@ -1295,7 +1048,7 @@ namespace embree
 		    const mic_f b_max  = bounds.y;
 		    prefetch<PFHINT_L1EX>(((char*)r)-4*64);	  
 
-		    if (unlikely(lt_split(b_min,b_max,m_mask,c,s,bestSplit_f))) break;
+		    if (unlikely(mapping.lt_split(b_min,b_max))) break;
 		    prefetch<PFHINT_L2EX>(((char*)r)-20*64);	  
 
 		    rightReduction.extend(b_min,b_max);
@@ -1326,19 +1079,15 @@ namespace embree
 	size_t mid_parallel = parallel_in_place_partitioning_static<PrimRef>(&prims[current.begin],
 									     current.size(),
 									     [&] (const PrimRef &ref) { 
-									       const mic_f bf = bestSplit_f;
 									       const mic2f b = ref.getBounds();
-									       const mic_f b_min = b.x;
-									       const mic_f b_max = b.y;
-									       const mic_f b_centroid2 = b_min + b_max;
-									       return any(lt_split(b_min,b_max,dim_mask,c,s,bf));
+									       return any(mapping.lt_split(b.x,b.y));
+
 									     },
 									     part,
 									     scene->lockstep_scheduler
 									     );
 	assert(mid_parallel == global_sharedData.split.numLeft);
 	const unsigned int mid = current.begin + mid_parallel;
-#endif
 
 	TIMER(
 	      msec = getSeconds()-msec;    
@@ -1412,22 +1161,7 @@ namespace embree
 	sd.left.reset();
 	sd.right.reset();
 
-#if USE_IN_PLACE_PARTITIONING == 1
-	const unsigned int bestSplitDim     = sd.split.dim;
-	const unsigned int bestSplit        = sd.split.pos;
-	const unsigned int bestSplitNumLeft = sd.split.numLeft;
-
-	const mic_f centroidMin = broadcast4to16f(&sd.rec.bounds.centroid2.lower);
-	const mic_f centroidMax = broadcast4to16f(&sd.rec.bounds.centroid2.upper);
-
-	const mic_f centroidBoundsMin_2 = centroidMin;
-	const mic_f centroidDiagonal_2  = centroidMax-centroidMin;
-	const mic_f scale = select(centroidDiagonal_2 != 0.0f,rcp(centroidDiagonal_2) * mic_f(16.0f * 0.99f),mic_f::zero());
-	const mic_f c = mic_f(centroidBoundsMin_2[bestSplitDim]);
-	const mic_f s = mic_f(scale[bestSplitDim]);
-	const mic_f bestSplit_f = mic_f(bestSplit);
-	const mic_m dim_mask = mic_m::shift1[bestSplitDim];
-
+	const BinMapping mapping(sd.split,sd.rec.bounds);
 
 	auto part_local = [&] (PrimRef* const t_array,
 			 const size_t size) 
@@ -1436,7 +1170,7 @@ namespace embree
 	    CentroidGeometryAABB rightReduction;
 	    leftReduction.reset();
 	    rightReduction.reset();
-	    const mic_m m_mask = mic_m::shift1[bestSplitDim];
+	    //const mic_m m_mask = mic_m::shift1[bestSplitDim];
 	    PrimRef* l = t_array;
 	    PrimRef* r = t_array + size - 1;
 
@@ -1451,7 +1185,8 @@ namespace embree
 		    const mic_f b_max  = bounds.y;
 		    prefetch<PFHINT_L1EX>(((char*)l)+4*64);
 
-		    if (unlikely(ge_split(b_min,b_max,m_mask,c,s,bestSplit_f))) break;
+		    if (unlikely(mapping.ge_split(b_min,b_max))) break;
+
 		    prefetch<PFHINT_L2EX>(((char*)l)+20*64);
 
 		    leftReduction.extend(b_min,b_max);
@@ -1466,7 +1201,8 @@ namespace embree
 		    const mic_f b_max  = bounds.y;
 		    prefetch<PFHINT_L1EX>(((char*)r)-4*64);	  
 
-		    if (unlikely(lt_split(b_min,b_max,m_mask,c,s,bestSplit_f))) break;
+		    if (unlikely(mapping.lt_split(b_min,b_max))) break;
+
 		    prefetch<PFHINT_L2EX>(((char*)r)-20*64);	  
 
 		    rightReduction.extend(b_min,b_max);
@@ -1495,12 +1231,8 @@ namespace embree
 	size_t mid_parallel = parallel_in_place_partitioning_static<PrimRef>(&prims[sd.rec.begin],
 									     sd.rec.size(),
 									     [&] (const PrimRef &ref) { 
-									       const mic_f bf = bestSplit_f;
 									       const mic2f b = ref.getBounds();
-									       const mic_f b_min = b.x;
-									       const mic_f b_max = b.y;
-									       const mic_f b_centroid2 = b_min + b_max;
-									       return any(lt_split(b_min,b_max,dim_mask,c,s,bf));
+									       return any(mapping.lt_split(b.x,b.y));
 									     },
 									     part_local,
 									     localTaskScheduler[globalCoreID]
@@ -1509,13 +1241,6 @@ namespace embree
 	assert(mid_parallel == sd.split.numLeft);
 	const unsigned int mid = current.begin + mid_parallel;
 	
-#else
-	sd.lCounter.reset(0);
-	sd.rCounter.reset(0); 
-
-	localTaskScheduler[globalCoreID].dispatchTask( task_parallelPartitioningLocal, this, localThreadID, globalThreadID );
-	const unsigned int mid = current.begin + sd.split.numLeft;
-#endif
 
 	if (unlikely(mid == current.begin || mid == current.end)) 
 	  {
@@ -1877,49 +1602,6 @@ namespace embree
   }
 
   
-  void BVH4iBuilder::parallelPartitioningLocal(const size_t localThreadID,const size_t globalThreadID)
-  {
-    const size_t threads = 4;
-    const size_t globalCoreID = globalThreadID/threads;
-
-    SharedBinningPartitionData &sd = local_sharedData[globalCoreID];    
-    BuildRecord &current = sd.rec;
-    Bin16 &bin16 = global_bin16[globalThreadID];
-
-    // ----------------------------------------------
-
-    const unsigned int items = current.items();
-    const unsigned int startID = current.begin + ((localThreadID+0)*items/threads);
-    const unsigned int endID   = current.begin + ((localThreadID+1)*items/threads);
-   
-    const unsigned int bestSplitDim     = sd.split.dim;
-    const unsigned int bestSplit        = sd.split.pos;
-    const unsigned int bestSplitNumLeft = sd.split.numLeft;
-
-    const mic_i lnum    = prefix_sum(bin16.thread_count[bestSplitDim]);
-    const unsigned int local_numLeft = lnum[bestSplit-1];
-    const unsigned int local_numRight = (endID-startID) - lnum[bestSplit-1];
- 
-    const unsigned int thread_start_left  = sd.lCounter.add(local_numLeft);
-    const unsigned int thread_start_right = sd.rCounter.add(local_numRight);
-
-    PrimRef  *__restrict__ const tmp_prims = (PrimRef*)accel;
-
-    PrimRef * __restrict__ l_source = tmp_prims + startID;
-    PrimRef * __restrict__ r_source = tmp_prims + endID;
-
-    PrimRef * __restrict__ l_dest     = prims + current.begin + thread_start_left;
-    PrimRef * __restrict__ r_dest     = prims + current.begin + thread_start_right + bestSplitNumLeft;
-
-    __aligned(64) Centroid_Scene_AABB local_left;
-    __aligned(64) Centroid_Scene_AABB local_right; 
-
-    parallelPartitioning(current,l_source,r_source,l_dest,r_dest,sd.split,local_left,local_right);
-
-    sd.left.extend_atomic(local_left); 
-    sd.right.extend_atomic(local_right);  
-    
-  }
 
   
   void BVH4iBuilder::computePrimRefs(const size_t threadIndex, const size_t threadCount)
@@ -2047,192 +1729,5 @@ namespace embree
 #endif
       dt = getSeconds()-t0;
   }
-
-#if 0
-    // will be removed soon, just for testing 
-    static void test_partition()
-    {
-#if 1
-#define MAX_SIZE 1024*1024*128
-
-        PING;
-        PrimRef *test_array  = (PrimRef*)_mm_malloc(MAX_SIZE*sizeof(PrimRef),64);
-        double t_parallel,t_serial;
-
-        double t_parallel_total,t_serial_total;
-
-	for (size_t s=1;s<MAX_SIZE;s+=s)        
-          {
-            DBG_PRINT(s);
-            srand48(s*32323);
-
-
-            t_parallel_total = 0.0;
-#define ITERATIONS 20
-
-            size_t mids[ITERATIONS];
-            Centroid_Scene_AABB total;
-            total.reset();
-
-            for (size_t j=0;j<ITERATIONS;j++)
-              {
-                for (size_t i=0;i<s;i++)
-                  {
-                    float x = drand48();
-                    float y = drand48();
-                    float z = drand48();
-                    BBox3fa b;
-                    const float f = 0.1f;
-                    b.lower = Vec3fa(x-f,y-f,z-f);
-                    b.upper = Vec3fa(x+f,y+f,z+f);
-                    test_array[i] = PrimRef(b,i);
-                    //total.add(b,b,1);
-                  }
-
-                t_parallel = getSeconds();        
-                    
-
-                Centroid_Scene_AABB leftInfo;
-                Centroid_Scene_AABB rightInfo;
-                Centroid_Scene_AABB init;
-                leftInfo.reset();
-                rightInfo.reset();
-                init.reset();
-
-                //parallel_partition pp(test_array,s, [] (unsigned int &t) { DBG_PRINT(t);} );
-                //size_t mid = pp.parition(pivot);
-
-		// size_t numLeft = 0;
-		// size_t numRight = 0;
-		// size_t init = 0;
-
-#if 1
-
-                size_t mid = parallel_in_place_partitioning_static<PrimRef,Centroid_Scene_AABB>(test_array,              
-												s,
-												init,
-												leftInfo,
-												rightInfo,
-												[] (const PrimRef &ref) { return ref.lower.x < 0.5f; },
-												[] (Centroid_Scene_AABB &pinfo,const PrimRef &ref) { pinfo.extend(ref.bounds()); },
-												[] (Centroid_Scene_AABB &pinfo0,const Centroid_Scene_AABB &pinfo1) { pinfo0.extend(pinfo1); },
-												[] () {}
-												
-                                                                                   );
-#else
-                    
-                size_t mid = parallel_in_place_partitioning<128,PrimRef,Centroid_Scene_AABB>(test_array,
-										s,
-										init,
-										leftInfo,
-										rightInfo,
-										[] (const PrimRef &ref) { return ref.lower.x < 0.5f; },
-										[] (Centroid_Scene_AABB &pinfo,const PrimRef &ref) { pinfo.extend(ref.bounds()); },
-										[] (Centroid_Scene_AABB &pinfo0,const Centroid_Scene_AABB &pinfo1) { pinfo0.extend(pinfo1); }
-										);
-#endif
-
-                t_parallel = getSeconds() - t_parallel;        
-                t_parallel_total += t_parallel;
-
-		/*
-		DBG_PRINT(numLeft);
-		DBG_PRINT(numRight);
-		DBG_PRINT(numLeft+numRight);
-		DBG_PRINT(s);
-		DBG_PRINT(mid);
-		*/
-
-                mids[j] = mid;
-                for (size_t i=0;i<mid;i++)
-                  if (test_array[i].lower.x >= 0.5f)
-                    {
-                      DBG_PRINT("left error");
-                      DBG_PRINT(i);
-                      DBG_PRINT(test_array[i]);
-                    }
-
-                for (size_t i=mid;i<s;i++)
-                  if (test_array[i].lower.x < 0.5f)
-                    {
-                      DBG_PRINT("right error");
-                      DBG_PRINT(i);
-                      DBG_PRINT(test_array[i]);
-                    }
-		//assert(numLeft+numRight == s);
-              }
-            t_parallel_total /= ITERATIONS;
-
-            srand48(s*32323);
-#if 1
-            t_serial_total = 0.0;
-            for (size_t j=0;j<ITERATIONS;j++)
-              {
-                for (size_t i=0;i<s;i++)
-                  {
-                    float x = drand48();
-                    float y = drand48();
-                    float z = drand48();
-                    BBox3fa b;
-                    const float f = 0.1f;
-                    b.lower = Vec3fa(x-f,y-f,z-f);
-                    b.upper = Vec3fa(x+f,y+f,z+f);
-                    test_array[i] = PrimRef(b,i);
-                  }
-
-
-                t_serial = getSeconds();        
-
-                Centroid_Scene_AABB leftInfo;
-                Centroid_Scene_AABB rightInfo;
-                Centroid_Scene_AABB init;
-                leftInfo.reset();
-                rightInfo.reset();
-                init.reset();
-
-                size_t mid_serial = serial_in_place_partitioning<PrimRef,Centroid_Scene_AABB>(test_array,
-                                                                                   s,
-                                                                                   init,
-                                                                                   leftInfo,
-                                                                                   rightInfo,
-                                                                                   [] (const PrimRef &ref) { return ref.lower.x < 0.5f; },
-                                                                                   [] (Centroid_Scene_AABB &pinfo,const PrimRef &ref) { pinfo.extend(ref.bounds()); },
-                                                                                   [] (Centroid_Scene_AABB &pinfo0,const Centroid_Scene_AABB &pinfo1) { pinfo0.extend(pinfo1); }
-                                                                                   );
-
-                t_serial = getSeconds() - t_serial;        
-                t_serial_total += t_serial;
-                assert(mid_serial == mids[j]);
-
-                for (size_t i=0;i<mid_serial;i++)
-                  if (test_array[i].lower.x >= 0.5f)
-                    {
-                      DBG_PRINT("left error");
-                      DBG_PRINT(i);
-                      DBG_PRINT(test_array[i]);
-                    }
-
-                for (size_t i=mid_serial;i<s;i++)
-                  if (test_array[i].lower.x < 0.5f)
-                    {
-                      DBG_PRINT("right error");
-                      DBG_PRINT(i);
-                      DBG_PRINT(test_array[i]);
-                    }
-
-              }
-            t_serial_total /= ITERATIONS;
-#endif
-            std::cout << " t_parallel_total = " << 1000.0f*t_parallel_total << "ms, perf = " << 1E-6*double(s)/t_parallel_total << " Mprim/s" << std::endl;
-            std::cout << " t_serial_total = " << 1000.0f*t_serial_total << "ms, perf = " << 1E-6*double(s)/t_serial_total << " Mprim/s" << std::endl;
-            DBG_PRINT(t_serial_total/t_parallel_total);
-            
-             
-          }
-        exit(0);
-
-#endif
-  }
-#endif
 
 };

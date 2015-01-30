@@ -21,6 +21,79 @@
 namespace embree
 {
 
+  struct Split 
+  {
+    __forceinline void reset()
+    {
+      dim = -1;
+      pos = -1;
+      numLeft = -1;
+      cost = pos_inf;
+    }
+
+    __forceinline Split () 
+    {
+      reset();
+    }
+    
+    /*! stream output */
+    friend std::ostream& operator<<(std::ostream& cout, const Split& split) {
+      return cout << "Split { " << 
+        "dim = " << split.dim << 
+        ", pos = " << split.pos << 
+        ", numLeft = " << split.numLeft <<
+        ", sah = " << split.cost << "}";
+    }
+
+  public:
+    int dim;
+    int pos;
+    int numLeft;
+    float cost;
+  };
+
+  struct BinMapping {
+
+    mic_f c;
+    mic_f s;
+    mic_f bestSplit_f;
+    mic_m dim_mask;
+
+    BinMapping(const Split &split, const Centroid_Scene_AABB &bounds) 
+    {
+      const unsigned int bestSplitDim     = split.dim;
+      const unsigned int bestSplit        = split.pos;
+      const unsigned int bestSplitNumLeft = split.numLeft;
+      const mic_f centroidMin = broadcast4to16f(&bounds.centroid2.lower);
+      const mic_f centroidMax = broadcast4to16f(&bounds.centroid2.upper);      
+      const mic_f centroidBoundsMin_2 = centroidMin;
+      const mic_f centroidDiagonal_2  = centroidMax-centroidMin;
+      const mic_f scale = select(centroidDiagonal_2 != 0.0f,rcp(centroidDiagonal_2) * mic_f(16.0f * 0.99f),mic_f::zero());
+      c = mic_f(centroidBoundsMin_2[bestSplitDim]);
+      s = mic_f(scale[bestSplitDim]);
+      bestSplit_f = mic_f(bestSplit);
+      dim_mask = mic_m::shift1[bestSplitDim];      
+    }
+
+    __forceinline mic_m lt_split(const mic_f &b_min,
+				 const mic_f &b_max) const
+    {
+      const mic_f centroid_2 = b_min + b_max;
+      const mic_f binID = (centroid_2 - c)*s;
+      return lt(dim_mask,binID,bestSplit_f);    
+    }
+
+    __forceinline mic_m ge_split(const mic_f &b_min,
+				 const mic_f &b_max) const
+    {
+      const mic_f centroid_2 = b_min + b_max;
+      const mic_f binID = (centroid_2 - c)*s;
+      return ge(dim_mask,binID,bestSplit_f);    
+    }
+    
+  };
+
+  
 
   __aligned(64) static const int identity[16]         = { 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15 };
   __aligned(64) static const int reverse_identity[16] = { 15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0 };
@@ -80,14 +153,9 @@ namespace embree
     return prefix_sum(c);
   }
 
-  static __forceinline mic_m lt_split_new(const mic_f &centroid2,
-					  const mic_f &c,
-					  const mic_f &s,
-					  const mic_f &bestSplit_f)
-  {
-    const mic_f binID = (centroid2 - c)*s;
-    return lt(binID,bestSplit_f);    
-  }
+
+
+
 
   static __forceinline mic_m lt_split(const mic_f &b_min,
 				      const mic_f &b_max,
@@ -1302,37 +1370,6 @@ namespace embree
 
       return l - (aabb + begin);
     }
-
-  struct Split 
-  {
-    __forceinline void reset()
-    {
-      dim = -1;
-      pos = -1;
-      numLeft = -1;
-      cost = pos_inf;
-    }
-
-    __forceinline Split () 
-    {
-      reset();
-    }
-    
-    /*! stream output */
-    friend std::ostream& operator<<(std::ostream& cout, const Split& split) {
-      return cout << "Split { " << 
-        "dim = " << split.dim << 
-        ", pos = " << split.pos << 
-        ", numLeft = " << split.numLeft <<
-        ", sah = " << split.cost << "}";
-    }
-
-  public:
-    int dim;
-    int pos;
-    int numLeft;
-    float cost;
-  };
 
 
 
