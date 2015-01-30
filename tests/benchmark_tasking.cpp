@@ -236,7 +236,9 @@ namespace embree
     {
       double t0 = getSeconds();
       
-      result = tbb::parallel_reduce(tbb::blocked_range<size_t>(0,N,128), BBox3fa( empty ), 
+#define threshold 256
+
+      result = tbb::parallel_reduce(tbb::blocked_range<size_t>(0,N,threshold), BBox3fa( empty ), 
 				    [&](const tbb::blocked_range<size_t>& r, BBox3fa c) -> BBox3fa {
 				      BBox3fa b( empty ); 
 				      for (size_t i=r.begin(); i<r.end(); i++) {
