@@ -9,18 +9,18 @@ developed at Intel. The target user of Embree are graphics application
 engineers that want to improve the performance of their application by
 leveraging the optimized ray tracing kernels of Embree. The kernels are
 optimized for photo-realistic rendering on the latest Intel® processors
-with support for SSE, AVX, AVX2, and the 16-wide Xeon Phi™ vector
-instructions. Embree supports runtime code selection to choose the
-traversal and build algorithms that best matches the instruction set of
-your CPU. We recommend using Embree through its API to get the highest
-benefit from future improvements. Embree is released as Open Source
-under the [Apache 2.0
+with support for SSE, AVX, AVX2, and the 16-wide Intel® Xeon Phi™
+coprocessor vector instructions. Embree supports runtime code selection
+to choose the traversal and build algorithms that best matches the
+instruction set of your CPU. We recommend using Embree through its API
+to get the highest benefit from future improvements. Embree is released
+as Open Source under the [Apache 2.0
 license](http://www.apache.org/licenses/LICENSE-2.0).
 
 Embree supports applications written with the Intel SPMD Programm
 Compiler (ISPC, <https://ispc.github.io/>) by also providing an ISPC
 interface to the core ray tracing algorithms. This makes it possible to
-write a renderer in ISPC that leverages SSE, AVX, AVX2, and Xeon Phi™
+write a renderer in ISPC that leverages SSE, AVX, AVX2, and Xeon Phi
 instructions without any code change. ISPC also supports runtime code
 selection, thus ISPC will select the best code path for your
 application, while Embree selects the optimal code path for the ray
@@ -31,7 +31,7 @@ Monte Carlo ray tracing algorithms) and coherent workloads (e.g. primary
 visibility and hard shadow rays). For standard CPUs, the single-ray
 traversal kernels in Embree provide the best performance for incoherent
 workloads and are very easy to integrate into existing rendering
-applications. For Xeon Phi™, a renderer written in ISPC using the
+applications. For Xeon Phi, a renderer written in ISPC using the
 default hybrid ray/packet traversal algorithms have shown to perform
 best, but requires writing the renderer in ISPC. In general for coherent
 workloads, ISPC outperforms the single ray mode on each platform. Embree
@@ -41,10 +41,10 @@ spatial index structure construction algorithms.
 In addition to the ray tracing kernels, Embree provides some tutorials
 to demonstrate how to use the [Embree API]. The example photorealistic
 renderer that was originally included in the Embree kernel package is
-now available in a separate GIT repository (see
-[Embree Example Renderer]). Please also check out the OSPRay Ray
-Tracing based Rendering Engine for High-Fidelity Visualization
-(<https://ospray.github.io/>) which builds on Embree.
+now available in a separate GIT repository (see [Embree Example
+Renderer]). Please also check out the OSPRay Ray Tracing based Rendering
+Engine for High-Fidelity Visualization (<https://ospray.github.io/>)
+which builds on Embree.
 
 Supported Platforms
 -------------------
@@ -60,10 +60,9 @@ Performance also varies across different operating systems. Embree is
 optimized for Intel CPUs supporting SSE, AVX, and AVX2 instructions,
 and requires at least a CPU with support for SSE2.
 
-The Xeon Phi™ version of Embree only works under Linux in 64\ bit mode.
-For compilation of the the Xeon Phi™ code the Intel Compiler is
-required. The host side code compiles with GCC, CLANG, and the Intel
-Compiler.
+The Xeon Phi version of Embree only works under Linux in 64\ bit mode.
+For compilation of the the Xeon Phi code the Intel Compiler is required.
+The host side code compiles with GCC, CLANG, and the Intel Compiler.
 
 Embree Support and Contact
 --------------------------
@@ -80,42 +79,225 @@ list](https://groups.google.com/d/forum/embree/).
 For information about compiler optimizations, see our [Optimization
 Notice](http://software.intel.com/en-us/articles/optimization-notice#opt-en).
 
-Installation of Embree
-======================
-
-Windows
--------
-
-To install the Embree library on your system add the folder `lib/x64` to
-your `PATH`. To compile applications with Embree you also have to set
-the "Include Directories" path in Visual Studio to the `include/` folder
-of Embree.
-
-Before you can run the tutorials in the `bin/x64` folder you have to
-install the Embree library.
+Compiling Embree
+================
 
 Linux and Mac OS\ X
 -------------------
 
-To install the Embree library and Embree header files on your system
-type the following:
+Embree is tested with Intel® Compiler 15.0.0, CLANG 3.4.2, and GCC
+4.8.2. If the GCC that comes with your Fedora/Redhat/CentOS distribution
+is too old then you can run the provided script
+`scripts/install_linux_gcc.sh` to locally install a recent GCC into
+`$HOME/devtools-2`. We recommend to install the Intel® SPMD Program
+Compiler (ISPC). If you do not want to use ISPC, simply disable
+ENABLE_ISPC_SUPPORT in cmake. Otherwise, download and install the ISPC
+binaries (we have tested ISPC version 1.8.0) from
+[ispc.github.io](https://ispc.github.io/downloads.html). After
+installation, either put the path to the `ispc` executable permanently
+into your `PATH`:
 
-    sudo ./install.sh
+    export PATH=path-to-ispc:$PATH
 
-Instead of installing the Embree library, you can also source the file
-`paths.sh`:
+Or provide the path to the `ispc` executable to CMake via the
+`ISPC_EXECUTABLE` variable.
 
-    source ./paths.sh
+You additionally have to install CMake 2.8.12 or higher and the
+developer version of GLUT. Under Mac OS\ X, these dependencies can be
+installed using [MacPorts](http://www.macports.org/):
 
-Linking ISPC applications with Embree
--------------------------------------
+    sudo port install cmake freeglut
 
-The precompiled Embree library uses the multi-target mode of ISPC. For
-your ISPC application to properly link against Embree you also have to
-enable this mode. You can do this by specifying multiple targets when
-compiling your application with ISPC, e.g.:
+Under Linux you can install these dependencies using `yum` or `apt-get`.
+Depending on your Linux distribution, some of these packages might
+already be installed or might have slightly different names.
 
-    ispc --target sse2,sse4,avx,avx2 -o code.o code.ispc
+Type the following to install the dependencies using `yum`:
+
+    sudo yum install cmake.x86_64
+    sudo yum install freeglut.x86_64 freeglut-devel.x86_64
+    sudo yum install libXmu.x86_64 libXi.x86_64
+    sudo yum install libXmu-devel.x86_64 libXi-devel.x86_64
+
+Type the following to install the dependencies using `apt-get`:
+
+    sudo apt-get install cmake-curses-gui
+    sudo apt-get install freeglut3-dev
+    sudo apt-get install libxmu-dev libxi-dev
+
+Finally you can compile Embree using CMake. Create a build directory and
+execute "ccmake .." inside this directory.
+
+    mkdir build
+    cd build
+    ccmake ..
+
+This will open a configuration dialog where you can perform various
+configurations as described below. After having configured Embree, press
+c (for configure) and g (for generate) to generate a Makefile and leave
+the configuration. The code can be compiled by executing make.
+
+    make
+
+The executables will be generated inside the build folder. We recommend
+to finally install the Embree library and header files on your system:
+
+    sudo make install
+
+If you cannot install Embree on your system (e.g. when you don't have
+administrator rights) you need to add embree_root_directory/build to
+your `LD_LIBRARY_PATH` (and `SINK_LD_LIBRARY_PATH` in case you want to
+use Embree on Intel® Xeon Phi™ coprocessors).
+
+The default configuration in the configuration dialog should be
+appropriate for most usages. The following table described all
+parameters that can be configured:
+
+  ---------------------------- -------------------------------- --------
+  Option                       Description                      Default
+  ---------------------------- -------------------------------- --------
+  CMAKE_BUILD_TYPE             Can be used to switch between    Release
+                               Debug mode (Debug) and Release
+                               mode (Release).
+
+  COMPILER                     Select either GCC, ICC, or       GCC
+                               CLANG as compiler.
+
+  ENABLE_ISPC_SUPPORT          Enables ISPC support of Embree.  ON
+
+  ENABLE_STATIC_LIB            Builds Embree as a static        OFF
+                               library.
+
+  ENABLE_TUTORIALS             Enables build of Embree          ON
+                               tutorials.
+
+  ENABLE_XEON_PHI_SUPPORT      Enables generation of the        OFF
+                               Xeon Phi version of Embree.
+
+  RTCORE_BACKFACE_CULLING      Enables backface culling, i.e.   OFF
+                               only surfaces facing a ray can
+                               be hit.
+
+  RTCORE_BUFFER_STRIDE         Enables the buffer stride        ON
+                               feature.
+
+  RTCORE_INTERSECTION_FILTER   Enables the intersection filter  ON
+                               feature.
+
+  RTCORE_RAY_MASK              Enables the ray masking feature. OFF
+
+  RTCORE_RETURN_SUBDIV_NORMAL  Instead of the triangle normal   OFF
+                               the ray returns a smooth normal
+                               based on evaluating the
+                               subdivision surface patch.
+
+  RTCORE_SPINLOCKS             Enables faster spinlocks for     OFF
+                               some builders.
+
+  RTCORE_TASKING_SYSTEM        Selects the used tasking system. LOCKSTEP
+                               Choose between an internal
+                               implementation (LOCKSTEP) or
+                               Intel® Threading Building Blocks
+                               (TBB).
+
+  XEON_ISA                     Select highest supported ISA on  AVX2
+                               Intel® Xeon® CPUs (SSE2, SSE3,
+                               SSSE3, SSE4.1, SSE4.2, AVX,
+                               AVX-I, or AVX2).
+  ---------------------------- -------------------------------- --------
+  : CMake build options for Embree.
+
+
+Intel® Xeon Phi™ coprocessor
+----------------------------
+
+Embree supports the Intel® Xeon Phi™ coprocessor under Linux. To compile
+Embree for Xeon Phi you need to enable the `XEON_PHI_ISA` option in
+CMake and have the Intel Compiler and the Intel® [Manycore Platform Software
+Stack](https://software.intel.com/en-us/articles/intel-manycore-platform-software-stack-mpss)
+(Intel® MPSS) installed.
+
+Enabling the buffer stride feature reduces performance for building
+spatial hierarchies on Xeon Phi.
+
+Windows
+-------
+
+Embree requires Visual Studio 12 2013 and the Intel SPMD Program
+Compiler (ISPC) to compile. We have tested ISPC version 1.8.0, but
+more recent versions of ISPC should also work. You can download and
+install the ISPC binaries from
+[ispc.github.io](https://ispc.github.io/downloads.html). After
+installation, put the path to `ispc.exe` permanently into your `PATH`
+environment variable or you need to correctly set the
+`ISPC_EXECUTABLE` variable during CMake configuration.
+
+You additionally have to install [CMake](http://www.cmake.org/download/)
+(version 2.8.12 or higher). Note that you need a native Windows CMake
+installation, because CMake under Cygwin cannot generate solution files
+for Visual Studio.
+
+### Using the IDE
+
+Run `cmake-gui`, browse to the Embree sources, set the build directory
+and click Configure. Now you can select the Generator, e.g. "Visual
+Studio 12 2013" for a 32\ bit build or "Visual Studio 12 2013 Win64" for
+a 64\ bit build. Most configuration parameters described for the [Linux
+build](#linux-and-mac-osx) can be set under Windows as well. Finally,
+click "Generate" to create the Visual Studio solution files.
+
+  ------------------------- ------------------ ----------------------------
+  Option                    Description        Default
+  ------------------------- ------------------ ----------------------------
+  CMAKE_CONFIGURATION_TYPE  List of generated  Debug;Release;RelWithDebInfo
+                            configurations.
+
+  USE_STATIC_RUNTIME        Use the static     OFF
+                            version of the
+                            C/C++ runtime
+                            library.
+  ------------------------- ------------------ ----------------------------
+  : Windows-specific CMake build options for Embree.
+
+For compilation of Embree under Windows use the generated Visual Studio
+solution file `embree.sln`. The solution is by default setup to use the
+Microsoft Compiler. You can switch to the Intel Compiler by right
+clicking onto the solution in the Solution Explorer and then selecting
+the Intel Compiler. We recommend using 64\ bit mode and the Intel
+Compiler for best performance.
+
+To build Embree with support for the AVX2 instruction set you need at
+least Visual Studio 2013 Update\ 4. When switching to the Intel Compiler
+to build with AVX2 you currently need to manually *remove* the switch
+`/arch:AVX2` from the `embree_avx2` project, which can be found under
+Properties ⇒ C/C++ ⇒ All Options ⇒ Additional Options.
+
+To build all projects of the solution it is recommend to build the CMake
+utility project `ALL_BUILD`, which depends on all projects. Using "Build
+Solution" would also build all other CMake utility projects (such as
+`INSTALL`), which is usually not wanted.
+
+We recommend enabling syntax highlighting for the `.ispc` source and
+`.isph` header files. To do so open Visual Studio 2008, go to Tools ⇒
+Options ⇒ Text Editor ⇒ File Extension and add the isph and ispc
+extension for the "Microsoft Visual C++" editor.
+
+### Using the Command Line
+
+Embree can also be configured and built without the IDE using the Visual
+Studio command prompt:
+
+    cd path\to\embree
+    mkdir build
+    cd build
+    cmake -G "Visual Studio 12 2013 Win64" ..
+    cmake --build . --config Release
+
+You can also build only some projects with the `--target` switch.
+Additional parameters after "`--`" will be passed to `msbuild`. For
+example, to build the Embree library in parallel use
+
+    cmake --build . --config Release --target embree -- /m
 
 Embree API
 ==========
@@ -281,12 +463,10 @@ The following flags can be used to tune the traversal algorithm that is
 used by Embree. These flags are only hints and may be ignored by the
 implementation.
 
-  ------------------ --------------------------------------------
   Scene Flag         Description
-  ------------------ --------------------------------------------
-  RTC_SCENE_ROBUST   Avoid optimizations that reduce arithmetic
-                     accuracy.
-  ------------------ --------------------------------------------
+  ------------------ ----------------------------------------------------
+  RTC_SCENE_ROBUST   Avoid optimizations that reduce arithmetic accuracy.
+  ------------------ ----------------------------------------------------
   : Traversal algorithm flags for `rtcNewScene`.
 
 The second argument of the `rtcNewScene` function are algorithm flags,
@@ -637,9 +817,9 @@ the following way:
 
 One has to call `rtcCommit` on scene B before one calls `rtcCommit` on
 scene A. When modifying scene B one has to call `rtcModified` for all
-instances of that scene. If a ray hits the instance, then the geomID
-and primID members of the ray are set to the geometry ID and primitive
-ID of the primitive hit in scene B, and the instID member of the ray
+instances of that scene. If a ray hits the instance, then the `geomID`
+and `primID` members of the ray are set to the geometry ID and primitive
+ID of the primitive hit in scene B, and the `instID` member of the ray
 is set to the instance ID returned from the `rtcNewInstance` function.
 
 The `rtcSetTransform` call can be passed an affine transformation matrix
@@ -730,8 +910,9 @@ of 4, 8, or 16 rays, is 16, 32, and 64 bytes respectively, for the valid
 mask and the ray. To operate on packets of 4 rays, the CPU has to
 support SSE, to operate on packets of 8 rays, the CPU has to support
 AVX-256, and to operate on packets of 16 rays, the CPU has to support
-the Xeon Phi™ instructions. Additionally, the required ISA has to be
-enabled in Embree at compile time to use the desired packet size.
+the Intel® Xeon Phi™ coprocessor instructions. Additionally, the
+required ISA has to be enabled in Embree at compile time to use the
+desired packet size.
 
 Finding the closest hit distance is done through the `rtcIntersect`
 functions. These get the activity mask, the scene, and a ray as input.
@@ -805,7 +986,7 @@ stride allows the application quite some freedom in the data layout of
 these buffers, however, some restrictions apply. Index buffers always
 store 32\ bit indices and vertex buffers always store single precision
 floating point data. The start address ptr+offset and stride always have
-to be aligned to 4 bytes on Xeon CPUs and 16 bytes on Xeon Phi™
+to be aligned to 4 bytes on Intel® Xeon® CPUs and 16 bytes on Xeon Phi
 accelerators, otherwise the `rtcSetBuffer` function will fail. For
 vertex buffers, the 4 bytes after the z-coordinate of the last vertex
 have to be readable memory, thus padding is required for some layouts.
@@ -945,7 +1126,7 @@ The API supports displacement mapping for subdivision meshes. A
 displacement function can be set for some subdivision mesh using the
 `rtcSetDisplacementFunction` API call.
 
-    void rtcSetDisplacementFunction(RTCScene, unsigned geomID, RTCDisplacementFunc, RTCBounds* bounds);
+    void rtcSetDisplacementFunction(RTCScene, unsigned geomID, RTCDisplacementFunc, RTCBounds*);
 
 A displacement function of NULL will delete an already set
 displacement function. The bounds parameter is optional. If NULL is
