@@ -153,43 +153,40 @@ namespace embree
           createLargeLeaf(children[i],alloc);
       }
 
-      template<bool toplevel>
-        __forceinline const typename Heuristic::Split find(BuildRecord& current) {
-        if (toplevel) return heuristic.parallel_find(current.prims,current.pinfo,logBlockSize);
-        else          return heuristic.find         (current.prims,current.pinfo,logBlockSize);
+      __forceinline const typename Heuristic::Split find(BuildRecord& current) {
+        if (current.size() > 10000) return heuristic.parallel_find(current.prims,current.pinfo,logBlockSize);
+        else                        return heuristic.find         (current.prims,current.pinfo,logBlockSize);
       }
 
-      template<bool toplevel>
       __forceinline void partition(const BuildRecord& brecord, BuildRecord& lrecord, BuildRecord& rrecord) 
       {
         if (brecord.split.sah == float(inf)) 
 	  heuristic.splitFallback(brecord.prims,lrecord.pinfo,lrecord.prims,rrecord.pinfo,rrecord.prims);
         else {
-          if (toplevel) heuristic.parallel_split(brecord.split,brecord.prims,lrecord.pinfo,lrecord.prims,rrecord.pinfo,rrecord.prims);
-          else          heuristic.split         (brecord.split,brecord.prims,lrecord.pinfo,lrecord.prims,rrecord.pinfo,rrecord.prims);
+          if (brecord.size() > 10000) heuristic.parallel_split(brecord.split,brecord.prims,lrecord.pinfo,lrecord.prims,rrecord.pinfo,rrecord.prims);
+          else                        heuristic.split         (brecord.split,brecord.prims,lrecord.pinfo,lrecord.prims,rrecord.pinfo,rrecord.prims);
         }
       }
 
-      template<bool toplevel, typename Spawn>
-        inline void recurse(const BuildRecord& record, Allocator& alloc, Spawn& spawn)
+      void recurse(const BuildRecord& current, Allocator alloc)
       {
+	if (alloc == NULL) 
+          alloc = createAlloc();
+
         /*! compute leaf and split cost */
-        const float leafSAH  = intCost*record.pinfo.leafSAH(logBlockSize);
-        const float splitSAH = travCost*halfArea(record.pinfo.geomBounds)+intCost*record.split.splitSAH();
-        //PRINT(record.pinfo);
-        //PRINT3(record.depth,leafSAH,splitSAH);
-        assert(record.pinfo.size() == 0 || leafSAH >= 0 && splitSAH >= 0);
+        const float leafSAH  = intCost*current.pinfo.leafSAH(logBlockSize);
+        const float splitSAH = travCost*halfArea(current.pinfo.geomBounds)+intCost*current.split.splitSAH();
+        assert(current.pinfo.size() == 0 || leafSAH >= 0 && splitSAH >= 0);
         
         /*! create a leaf node when threshold reached or SAH tells us to stop */
-        if (record.pinfo.size() <= minLeafSize || record.depth+MIN_LARGE_LEAF_LEVELS >= maxDepth || (record.pinfo.size() <= maxLeafSize && leafSAH <= splitSAH)) {
-          //PRINT("leaf");
-          createLargeLeaf(record,alloc); return;
+        if (current.pinfo.size() <= minLeafSize || current.depth+MIN_LARGE_LEAF_LEVELS >= maxDepth || (current.pinfo.size() <= maxLeafSize && leafSAH <= splitSAH)) {
+          createLargeLeaf(current,alloc); return;
         }
         
         /*! initialize child list */
 	BuildRecord2<NodeRef>* pchildren[MAX_BRANCHING_FACTOR];
         BuildRecord children[MAX_BRANCHING_FACTOR];
-        children[0] = record;
+        children[0] = current;
 	pchildren[0] = &children[0];
         size_t numChildren = 1;
         
@@ -208,19 +205,16 @@ namespace embree
             //if (area(children[i].pinfo.geomBounds) > bestSAH) { bestChild = i; bestSAH = area(children[i].pinfo.geomBounds); }
           }
           if (bestChild == -1) break;
-          //PRINT(bestChild);
           
           /* perform best found split */
           BuildRecord& brecord = children[bestChild];
-          BuildRecord lrecord(record.depth+1);
-          BuildRecord rrecord(record.depth+1);
-          partition<toplevel>(brecord,lrecord,rrecord);
+          BuildRecord lrecord(current.depth+1);
+          BuildRecord rrecord(current.depth+1);
+	  partition(brecord,lrecord,rrecord);
           
           /* find new splits */
-          lrecord.split = find<toplevel>(lrecord);
-          rrecord.split = find<toplevel>(rrecord);
-          //PRINT2(lrecord.split,lrecord.pinfo);
-          //PRINT2(rrecord.split,rrecord.pinfo);
+          lrecord.split = find(lrecord);
+          rrecord.split = find(rrecord);
           children[bestChild  ] = lrecord;
           children[numChildren] = rrecord;
 	  pchildren[numChildren] = &children[numChildren];
@@ -228,30 +222,54 @@ namespace embree
           
         } while (numChildren < branchingFactor);
         
-        //for (size_t i=0; i<numChildren; i++) PRINT2(i,children[i].split);
-        //for (size_t i=0; i<numChildren; i++) PRINT2(i,children[i].pinfo);
-        
         /*! create an inner node */
-        createNode(record,pchildren,numChildren,alloc);
-        
-        /* recurse into each child */
-        for (size_t i=0; i<numChildren; i++) 
-          spawn(children[i]);
+        createNode(current,pchildren,numChildren,alloc);
+
+	/* sort buildrecords for optimal cache locality */
+	std::sort(&children[0],&children[numChildren]);
+
+	/* spawn tasks */
+	if (current.size() > 4096) 
+	{
+	  SPAWN_BEGIN;
+	  //for (ssize_t i=numChildren-1; i>=0; i--)  // FIXME: this should be better!
+	  for (size_t i=0; i<numChildren; i++) 
+	    SPAWN(([&,i] { /*values[i] =*/ recurse(children[i],NULL); }));
+	  SPAWN_END;
+	  
+	  /* perform reduction */
+	  //ReductionTy v = values[0];
+	  //for (size_t i=1; i<numChildren; i++)
+	  //v = reduce(v,values[i]);
+
+	  /* passed reduced values to node */
+	  //updateNode(node,v,values,numChildren);
+	  //return v;
+	}
+	/* recurse into each child */
+	else 
+	{
+	  /* perform reduction */
+	  //ReductionTy v = identity;
+	  for (size_t i=0; i<numChildren; i++) {
+	    //const ReductionTy r = 
+	    recurse(children[i],alloc);
+	    //values[i] = r;
+	    //v = reduce(v,r);
+	  }
+	  
+	  /* passed reduced values to node */
+	  //updateNode(node,v,values,numChildren);
+	  //return v;
+	}
       }
       
       /*! builder entry function */
       __forceinline void operator() (BuildRecord2<NodeRef>& record)
       {
 	BuildRecord br(record);
-        br.split = find<true>(br); 
-#if 0
-        sequential_create_tree(br, createAlloc, 
-                               [&](const BuildRecord& br, Allocator& alloc, ParallelContinue<BuildRecord >& cont) { recurse<false>(br,alloc,cont); });
-#else   
-        parallel_create_tree<50000,128>(br, createAlloc, 
-                                        [&](const BuildRecord& br, Allocator& alloc, ParallelContinue<BuildRecord >& cont) { recurse<true>(br,alloc,cont); } ,
-                                        [&](const BuildRecord& br, Allocator& alloc, ParallelContinue<BuildRecord >& cont) { recurse<false>(br,alloc,cont); });
-#endif
+        br.split = find(br); 
+	return recurse(br,NULL);
       }
       
     private:
