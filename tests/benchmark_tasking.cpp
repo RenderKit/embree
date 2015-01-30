@@ -22,7 +22,113 @@
 #include <tbb/tbb.h>
 
 #define OUTPUT 1
-#define PROFILE 0
+#define PROFILE 1
+
+
+#define USE_TASK_ARENA_CURRENT_SLOT 0 /* For Intel(R) TBB 4.2 U1 and later (TBB_INTERFACE_VERSION >= 7001) */
+#define LOG_PINNING 0
+
+#if USE_TASK_ARENA_CURRENT_SLOT
+#define TBB_PREVIEW_TASK_ARENA 1 /* To enable tbb::task_arena::current_slot() method */
+#include <tbb/task_arena.h>
+#endif
+#include <tbb/task_scheduler_observer.h>
+#include <tbb/atomic.h>
+
+#include <tbb/task_scheduler_init.h>
+#include <tbb/parallel_reduce.h>
+#include <tbb/blocked_range.h>
+#include <tbb/tick_count.h>
+
+class pinning_observer: public tbb::task_scheduler_observer {
+    cpu_set_t *mask;
+    int ncpus;
+
+    const int pinning_step;
+    tbb::atomic<int> thread_index;
+public:
+    pinning_observer( int pinning_step=1 ) : pinning_step(pinning_step), thread_index() {
+        for ( ncpus = sizeof(cpu_set_t)/CHAR_BIT; ncpus < 16*1024 /* some reasonable limit */; ncpus <<= 1 ) {
+            mask = CPU_ALLOC( ncpus );
+            if ( !mask ) break;
+            const size_t size = CPU_ALLOC_SIZE( ncpus );
+            CPU_ZERO_S( size, mask );
+            const int err = sched_getaffinity( 0, size, mask );
+            if ( !err ) break;
+
+            CPU_FREE( mask );
+            mask = NULL;
+            if ( errno != EINVAL )  break;
+        }
+        if ( !mask )
+            std::cout << "Warning: Failed to obtain process affinity mask. Thread affinitization is disabled." << std::endl;
+    }
+
+/*override*/ void on_scheduler_entry( bool ) {
+    if ( !mask ) return;
+
+    const size_t size = CPU_ALLOC_SIZE( ncpus );
+    const int num_cpus = CPU_COUNT_S( size, mask );
+    int thr_idx =
+#if USE_TASK_ARENA_CURRENT_SLOT
+        tbb::task_arena::current_slot();
+#else
+        thread_index++;
+#endif
+#if __MIC__
+    thr_idx += 1; // To avoid logical thread zero for the master thread on Intel(R) Xeon Phi(tm)
+#endif
+    thr_idx %= num_cpus; // To limit unique number in [0; num_cpus-1] range
+
+        // Place threads with specified step
+        int cpu_idx = 0;
+        for ( int i = 0, offset = 0; i<thr_idx; ++i ) {
+            cpu_idx += pinning_step;
+            if ( cpu_idx >= num_cpus )
+                cpu_idx = ++offset;
+        }
+
+        // Find index of 'cpu_idx'-th bit equal to 1
+        int mapped_idx = -1;
+        while ( cpu_idx >= 0 ) {
+            if ( CPU_ISSET_S( ++mapped_idx, size, mask ) )
+                --cpu_idx;
+        }
+
+        cpu_set_t *target_mask = CPU_ALLOC( ncpus );
+        CPU_ZERO_S( size, target_mask );
+        CPU_SET_S( mapped_idx, size, target_mask );
+        const int err = sched_setaffinity( 0, size, target_mask );
+
+        if ( err ) {
+            std::cout << "Failed to set thread affinity!\n";
+            exit( EXIT_FAILURE );
+        }
+#if LOG_PINNING
+        else {
+            std::stringstream ss;
+            ss << "Set thread affinity: Thread " << thr_idx << ": CPU " << mapped_idx << std::endl;
+            std::cerr << ss.str();
+        }
+#endif
+        CPU_FREE( target_mask );
+    }
+
+    ~pinning_observer() {
+        if ( mask )
+            CPU_FREE( mask );
+    }
+};
+
+class concurrency_tracker: public tbb::task_scheduler_observer {
+    tbb::atomic<int> num_threads;
+public:
+    concurrency_tracker() : num_threads() { observe(true); }
+    /*override*/ void on_scheduler_entry( bool ) { ++num_threads; }
+    /*override*/ void on_scheduler_exit( bool ) { --num_threads; }
+
+    int get_concurrency() { return num_threads; }
+};
 
 namespace embree
 {
@@ -316,6 +422,7 @@ namespace embree
     }
   }
 
+  /*
   struct myobserver : public tbb::task_scheduler_observer
   {
     virtual void on_scheduler_entry( bool is_worker ) {
@@ -325,6 +432,7 @@ namespace embree
       PRINT("on_scheduler_exit");
     }
   };
+  */
 
   void main(int argc, const char* argv[])
   {
@@ -386,11 +494,26 @@ namespace embree
     {
       fs.open ("benchmark_reduce_tbb.csv", std::fstream::out);
       //tbb::task_scheduler_init init(128);
+      const bool use_pinning = true;
+
       tbb::task_scheduler_init init(tbb::task_scheduler_init::default_num_threads());
+      DBG_PRINT( TBB_INTERFACE_VERSION );
+
+      pinning_observer pinner( 4 /* the number of hyper threads on each core */ );
+      pinner.observe( use_pinning );
+
+      // Warmer
+      concurrency_tracker tracker;
+
 #if PROFILE == 1
       while(1)
 #endif
 	benchmark(N_start,N,"reduce_tbb",[] (size_t N) -> double { return reduce.run_tbb(N); });
+
+      // Always disable observation before observers destruction
+      tracker.observe( false );
+      pinner.observe( false );
+      
       fs.close();
     }
 
