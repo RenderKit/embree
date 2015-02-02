@@ -545,8 +545,9 @@ namespace embree
 
 #if TASKING_TBB || TASKING_TBB_INTERNAL // FIXME: sort should get split into stages
 	  const size_t numThreads = min(TaskSchedulerNew::threadCount(),MAX_THREADS);
-	  parent->barrier.init(numThreads);
-	  parallel_for(numThreads,[&] (size_t taskIndex) { radixsort(taskIndex,numThreads); });
+	  //parent->barrier.init(numThreads);
+	  //parallel_for(numThreads,[&] (size_t taskIndex) { radixsort(taskIndex,numThreads); });
+          tbbRadixSort(numThreads);
 #endif
 	}
       }
@@ -600,7 +601,7 @@ namespace embree
 	if (!last) 
 	  parent->barrier.wait(threadIndex,threadCount);
       }
-      
+
       void radixsort(const size_t threadIndex, const size_t numThreads)
       {
 	const size_t startID = (threadIndex+0)*N/numThreads;
@@ -626,6 +627,94 @@ namespace embree
       static void task_radixsort (void* data, const size_t threadIndex, const size_t threadCount) { 
 	((Task*)data)->radixsort(threadIndex,threadCount);                          
       }
+
+#if TASKING_TBB || TASKING_TBB_INTERNAL 
+
+      __forceinline void tbbRadixIteration0(const Key shift,
+                              const Ty* __restrict src, Ty* __restrict dst, 
+                               const size_t threadIndex, const size_t threadCount) // FIXME: can this be put to end of state 1??
+      {
+        const size_t startID = (threadIndex+0)*N/threadCount;
+	const size_t endID   = (threadIndex+1)*N/threadCount;
+
+	/* mask to extract some number of bits */
+	const Key mask = BUCKETS-1;
+        
+	/* count how many items go into the buckets */
+	for (size_t i=0; i<BUCKETS; i++)
+	  parent->radixCount[threadIndex][i] = 0;
+	
+	for (size_t i=startID; i<endID; i++) {
+	  const Key index = ((Key)src[i] >> shift) & mask;
+	  parent->radixCount[threadIndex][index]++;
+	}
+      }
+
+      __forceinline void tbbRadixIteration1(const Key shift,
+                              const Ty* __restrict src, Ty* __restrict dst, 
+                              const size_t threadIndex, const size_t threadCount)
+      {
+        const size_t startID = (threadIndex+0)*N/threadCount;
+	const size_t endID   = (threadIndex+1)*N/threadCount;
+
+        /* mask to extract some number of bits */
+	const Key mask = BUCKETS-1;
+
+	/* calculate total number of items for each bucket */
+	__aligned(64) size_t total[BUCKETS];
+	for (size_t i=0; i<BUCKETS; i++)
+	  total[i] = 0;
+	
+	for (size_t i=0; i<threadCount; i++)
+	  for (size_t j=0; j<BUCKETS; j++)
+	    total[j] += parent->radixCount[i][j];
+	
+	/* calculate start offset of each bucket */
+	__aligned(64) size_t offset[BUCKETS];
+	offset[0] = 0;
+	for (size_t i=1; i<BUCKETS; i++)    
+	  offset[i] = offset[i-1] + total[i-1];
+	
+	/* calculate start offset of each bucket for this thread */
+	for (size_t i=0; i<threadIndex; i++)
+	  for (size_t j=0; j<BUCKETS; j++)
+	    offset[j] += parent->radixCount[i][j];
+	
+	/* copy items into their buckets */
+	for (size_t i=startID; i<endID; i++) {
+	  const Ty elt = src[i];
+	  const Key index = ((Key)src[i] >> shift) & mask;
+	  dst[offset[index]++] = elt;
+	}
+      }
+
+      void tbbRadixIteration(const Key shift, const bool last,
+                              const Ty* __restrict src, Ty* __restrict dst,
+                              const size_t numTasks)
+      {
+        parallel_for(numTasks,[&] (size_t taskIndex) { tbbRadixIteration0(shift,src,dst,taskIndex,numTasks); });
+        parallel_for(numTasks,[&] (size_t taskIndex) { tbbRadixIteration1(shift,src,dst,taskIndex,numTasks); });
+      }
+      
+      void tbbRadixSort(const size_t numThreads)
+      {
+	if (sizeof(Key) == sizeof(uint32)) {
+	  tbbRadixIteration(0*BITS,0,src,dst,numThreads);
+	  tbbRadixIteration(1*BITS,0,dst,src,numThreads);
+	  tbbRadixIteration(2*BITS,1,src,dst,numThreads);
+	}
+	else if (sizeof(Key) == sizeof(uint64))
+	{
+	  Ty* src = this->src;
+	  Ty* dst = this->dst;
+	  for (uint64 shift=0*BITS; shift<64; shift+=BITS) {
+	    tbbRadixIteration(shift,0,src,dst,numThreads);
+	    std::swap(src,dst);
+	  }
+	  tbbRadixIteration(5*BITS,1,src,dst,numThreads); // required to copy into destination buffer
+	}
+      }
+#endif
 
     private:
       ParallelRadixSortCopy* const parent;
