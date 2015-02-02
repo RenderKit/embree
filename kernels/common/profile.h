@@ -24,6 +24,8 @@ namespace embree
   {
     static const size_t N = 20;
     
+    ProfileTimer () {}
+
     ProfileTimer (const size_t numSkip) : i(0), j(0), maxJ(0), numSkip(numSkip), t0(0)
     {
       for (size_t i=0; i<N; i++) names[i] = "unknown";
@@ -102,6 +104,20 @@ namespace embree
     void profile(const size_t numSkip, const size_t numIter, const size_t numElements, const Closure& closure) 
     {
       ProfileTimer timer(numSkip);
+      
+      for (size_t i=0; i<numSkip+numIter; i++) 
+      {
+        timer.begin();
+	closure(timer);
+        timer.end();
+      }
+      timer.print(numElements);
+    }
+
+  template<typename Closure>
+    void profile(ProfileTimer& timer, const size_t numSkip, const size_t numIter, const size_t numElements, const Closure& closure) 
+    {
+      new (&timer) ProfileTimer(numSkip);
       
       for (size_t i=0; i<numSkip+numIter; i++) 
       {
