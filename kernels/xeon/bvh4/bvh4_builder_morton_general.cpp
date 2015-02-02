@@ -469,7 +469,7 @@ namespace embree
 	  std::cout << "building BVH4<" << bvh->primTy.name << "> with " << TOSTRING(isa) "::BVH4MeshBuilderMortonGeneral ... " << std::flush;
 
 	double t0 = 0.0f, dt = 0.0f;
-	profile("BVH4MeshBuilderMortonGeneral",2,20,numPrimitives,[&] () {
+	//profile(2,20,numPrimitives,[&] (ProfileTimer& timer) {
 	    
             if (g_verbose >= 1) t0 = getSeconds();
 	    
@@ -486,6 +486,8 @@ namespace embree
                   return bounds;
                 }, [] (const BBox3fa& a, const BBox3fa& b) { return merge(a,b); });
             
+            //timer("compute_bounds");
+
             /* compute morton codes */
             MortonID32Bit* dest = (MortonID32Bit*) bvh->alloc2.ptr();
             MortonCodeGenerator::MortonCodeMapping mapping(centBounds);
@@ -498,6 +500,8 @@ namespace embree
                   }
                 });
             
+            //timer("compute_morton_codes");
+
             /* create BVH */
             AllocBVH4Node allocNode;
             SetBVH4Bounds setBounds;
@@ -508,8 +512,12 @@ namespace embree
               allocNode,setBounds,createLeaf,calculateBounds,
               dest,morton,numPrimitives,4,BVH4::maxBuildDepth,minLeafSize,maxLeafSize);
             bvh->set(node_bounds.first,node_bounds.second,numPrimitives);
+
+            //timer("compute_tree");
+
+            if (g_verbose >= 1) dt = getSeconds()-t0;
             
-          });
+            //});
         
         /* clear temporary data for static geometry */
 	//bool staticGeom = mesh ? mesh->isStatic() : scene->isStatic(); // FIXME: implement
@@ -596,7 +604,7 @@ namespace embree
 	  std::cout << "building BVH4<" << bvh->primTy.name << "> with " << TOSTRING(isa) "::BVH4SceneBuilderMortonGeneral ... " << std::flush;
 
 	double t0 = 0.0f, dt = 0.0f;
-	profile("BVH4SceneBuilderMortonGeneral",2,20,numPrimitives,[&] () {
+	profile(2,20,numPrimitives,[&] (ProfileTimer& timer) {
 	    
             if (g_verbose >= 1) t0 = getSeconds();
 	    
@@ -614,6 +622,8 @@ namespace embree
                   return bounds;
                 }, [] (const BBox3fa& a, const BBox3fa& b) { return merge(a,b); });
             
+            timer("compute_bounds");
+
             /* compute morton codes */
             Scene::Iterator<Mesh,1> iter(scene);
             MortonID32Bit* dest = (MortonID32Bit*) bvh->alloc2.ptr();
@@ -627,6 +637,8 @@ namespace embree
                   }
                 });
             
+            timer("compute_morton_codes");
+
             /* create BVH */
             AllocBVH4Node allocNode;
             SetBVH4Bounds setBounds;
@@ -638,6 +650,10 @@ namespace embree
               dest,morton,numPrimitives,4,BVH4::maxBuildDepth,minLeafSize,maxLeafSize);
             bvh->set(node_bounds.first,node_bounds.second,numPrimitives);
             
+            timer("compute_tree");
+
+            if (g_verbose >= 1) dt = getSeconds()-t0;
+
           });
         
         /* clear temporary data for static geometry */
