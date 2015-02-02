@@ -23,7 +23,7 @@
 
 #define DBG_PART(x) 
 #define DBG_PART2(x) 
-#define DBG_CHECK(x) x
+#define DBG_CHECK(x) 
 
 namespace embree
 {
