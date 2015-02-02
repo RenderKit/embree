@@ -403,19 +403,22 @@ namespace embree
   
   class __aligned(64) LockStepTaskScheduler4ThreadsLocalCore
   {
-  public:
+  private:
 
-    static const unsigned int WAIT_CYCLES       = 256;
-    
     void (* taskPtr)(void* data, const size_t localThreadID, const size_t globalThreadID);
     void* volatile data;
     volatile unsigned char threadState[2][4];
     volatile unsigned int mode;
+    unsigned int coreID;
 
-    __aligned(64) AtomicMutex mutex;
+  public:
 
-
+    static const unsigned int WAIT_CYCLES       = 256;
+    
     LockStepTaskScheduler4ThreadsLocalCore();
+
+    __forceinline void setCoreID(const unsigned int ID) { coreID = ID; }
+
     bool dispatchTask(const size_t localThreadID, const size_t globalThreadID);
     
     void dispatchTaskMainLoop(const size_t localThreadID, const size_t globalThreadID);

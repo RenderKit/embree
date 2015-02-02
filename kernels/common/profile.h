@@ -20,30 +20,111 @@
 
 namespace embree
 {
-  template<typename Closure>
-    void profile(const std::string& name, const size_t numSkip, const size_t numIter, const size_t numElements, const Closure& closure) 
+  struct ProfileTimer
+  {
+    static const size_t N = 20;
+    
+    ProfileTimer () {}
+
+    ProfileTimer (const size_t numSkip) : i(0), j(0), maxJ(0), numSkip(numSkip), t0(0)
     {
-      std::cout << "profiling " << name << ": " << std::endl;
-      double dt_fst = 0.0f;
-      double dt_min = pos_inf;
-      double dt_avg = 0.0f;
-      double dt_max = neg_inf;
+      for (size_t i=0; i<N; i++) names[i] = "unknown";
+      for (size_t i=0; i<N; i++) dt_fst[i] = 0.0;
+      for (size_t i=0; i<N; i++) dt_min[i] = pos_inf;
+      for (size_t i=0; i<N; i++) dt_avg[i] = 0.0;
+      for (size_t i=0; i<N; i++) dt_max[i] = neg_inf;
+    }
+    
+    __forceinline void begin() 
+    {
+      j=0;
+      t0 = getSeconds();
+    }
+
+    __forceinline void end() {
+      i++;
+    }
+
+    __forceinline void operator() (const char* name) 
+    {
+      const double t1 = getSeconds();
+      const double dt = t1-t0;
+      t0 = t1;
+      names[j] = name;
+      if (i == 0) dt_fst[j] = dt;
+      if (i>=numSkip) {
+        dt_min[j] = min(dt_min[j],dt);
+        dt_avg[j] = dt_avg[j] + dt;
+        dt_max[j] = max(dt_max[j],dt);
+      }
+      j++;
+      maxJ = max(maxJ,j);
+    }
+
+    void print(size_t numElements) 
+    {
+      printf("  profile:\n");
+
+      for (size_t k=0; k<N; k++) 
+        dt_avg[k] /= double(i-numSkip);
+
+      for (size_t j=0; j<maxJ; j++) {
+        printf("%20s:  fst = %7.2f M/s, min = %7.2f M/s, avg = %7.2f M/s, max = %7.2f M/s\n",
+               names[j],numElements/dt_fst[j]*1E-6,numElements/dt_max[j]*1E-6,numElements/dt_avg[j]*1E-6,numElements/dt_min[j]*1E-6);
+      }
+    }
+
+    void print() 
+    {
+      printf("  profile:\n");
+
+      for (size_t k=0; k<N; k++) 
+        dt_avg[k] /= double(i-numSkip);
+
+      for (size_t j=0; j<maxJ; j++) {
+        printf("%20s:  fst = %7.2f ms, min = %7.2f ms, avg = %7.2f ms, max = %7.2fms\n",
+               names[j],1000.0*dt_fst[j],1000.0*dt_min[j],1000.0*dt_avg[j],1000.0*dt_max[j]);
+      }
+    }
+    
+  private:
+    size_t i;
+    size_t j;
+    size_t maxJ;
+    size_t numSkip;
+    double t0;
+    const char* names[N];
+    double dt_fst[N];
+    double dt_min[N];
+    double dt_avg[N];
+    double dt_max[N];
+  };
+
+  template<typename Closure>
+    void profile(const size_t numSkip, const size_t numIter, const size_t numElements, const Closure& closure) 
+    {
+      ProfileTimer timer(numSkip);
+      
       for (size_t i=0; i<numSkip+numIter; i++) 
       {
-	double t0 = getSeconds();
-	closure();
-	double dt = getSeconds()-t0;
-	if (i == 0) dt_fst = dt;
-	if (i<numSkip) continue;
-	dt_min = min(dt_min,dt);
-	dt_avg = dt_avg + dt;
-	dt_max = max(dt_max,dt);
+        timer.begin();
+	closure(timer);
+        timer.end();
       }
-      dt_avg /= double(numIter);
+      timer.print(numElements);
+    }
+
+  template<typename Closure>
+    void profile(ProfileTimer& timer, const size_t numSkip, const size_t numIter, const size_t numElements, const Closure& closure) 
+    {
+      new (&timer) ProfileTimer(numSkip);
       
-      std::cout << "  fst = " << 1000.0f*dt_fst << "ms (" << numElements/dt_fst*1E-6 << " M/s)" << std::endl;
-      std::cout << "  min = " << 1000.0f*dt_min << "ms (" << numElements/dt_min*1E-6 << " M/s)" << std::endl;
-      std::cout << "  avg = " << 1000.0f*dt_avg << "ms (" << numElements/dt_avg*1E-6 << " M/s)" << std::endl;
-      std::cout << "  max = " << 1000.0f*dt_max << "ms (" << numElements/dt_max*1E-6 << " M/s)" << std::endl;
+      for (size_t i=0; i<numSkip+numIter; i++) 
+      {
+        timer.begin();
+	closure(timer);
+        timer.end();
+      }
+      timer.print(numElements);
     }
 }

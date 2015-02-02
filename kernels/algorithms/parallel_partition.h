@@ -627,7 +627,7 @@ namespace embree
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-  template<typename T, typename Compare, typename ThreadLocalPartition, typename Scheduler>
+  template<typename T, typename ThreadLocalPartition, typename Scheduler>
   class __aligned(64) parallel_partition_static
     {
     private:
@@ -654,7 +654,6 @@ namespace embree
 	}
       };
 
-      const Compare& cmp;
       const ThreadLocalPartition& threadLocalPartition;
       
       size_t N;
@@ -662,54 +661,28 @@ namespace embree
       size_t schedulerNumThreads;
       T* array;
 
-      __aligned(64) unsigned int counter_start[MAX_MIC_THREADS];
-      __aligned(64) unsigned int counter_left[MAX_MIC_THREADS];     
-      __aligned(64) Range leftMisplacedRanges[MAX_MIC_THREADS];
-      __aligned(64) Range rightMisplacedRanges[MAX_MIC_THREADS];
       size_t numMisplacedRangesLeft;
       size_t numMisplacedRangesRight;
       size_t numMisplacedItems;
 
+      __aligned(64) unsigned int counter_start[MAX_MIC_THREADS];
+      __aligned(64) unsigned int counter_left[MAX_MIC_THREADS];     
+      __aligned(64) Range leftMisplacedRanges[MAX_MIC_THREADS];
+      __aligned(64) Range rightMisplacedRanges[MAX_MIC_THREADS];
+
+
       
-      /* check left part of array */
-      void checkLeft(T* const t_array,const size_t begin, const size_t end)
-      {
-        for (size_t i=begin;i<end;i++)
-          if (!cmp(t_array[i]))
-            {
-              DBG_PRINT(i);
-              DBG_PRINT(array[i]);
-              FATAL("partition error on left side");
-            }
-      }
-
-      /* check right part of array */
-      void checkRight(T* const t_array,const size_t begin, const size_t end)
-      {
-        for (size_t i=begin;i<end;i++)
-          if (cmp(t_array[i]))
-            {
-              DBG_PRINT(i);
-              DBG_PRINT(array[i]);
-              FATAL("partition error on right side");
-            }
-      }
-
       size_t partition_serial(T* const t_array,
 			      const size_t size)
       {
 	const size_t mid = threadLocalPartition(t_array,size); 
-        DBG_CHECK(
-		  checkLeft(t_array,0,mid);
-		  checkRight(t_array,mid,size);
-                 );        
         return mid;
       }
 
 
       static void task_thread_partition(void* data, const size_t threadID, const size_t old_numThreads) {
 
-        parallel_partition_static<T,Compare,ThreadLocalPartition,Scheduler>* p = (parallel_partition_static<T,Compare,ThreadLocalPartition,Scheduler>*)data;
+        parallel_partition_static<T,ThreadLocalPartition,Scheduler>* p = (parallel_partition_static<T,ThreadLocalPartition,Scheduler>*)data;
 
 	const size_t numThreads = p->schedulerNumThreads /*workaround*/;
 
@@ -746,7 +719,7 @@ namespace embree
 
       static void task_thread_move_misplaced(void* data, const size_t threadID, const size_t numThreads) {
 
-        parallel_partition_static<T,Compare,ThreadLocalPartition,Scheduler>* p = (parallel_partition_static<T,Compare,ThreadLocalPartition,Scheduler>*)data;
+        parallel_partition_static<T,ThreadLocalPartition,Scheduler>* p = (parallel_partition_static<T,ThreadLocalPartition,Scheduler>*)data;
 
 	p->move_misplaced(threadID,p->schedulerNumThreads/*numThreads*/);
       } 
@@ -811,8 +784,6 @@ namespace embree
 		prefetch<PFHINT_L1EX>(((char*)&l[j]) + 4*64);
 		prefetch<PFHINT_L1EX>(((char*)&r[j]) + 4*64);	  
 #endif
-		assert( !cmp(l[j]) );
-		assert(  cmp(r[j]) );
 		xchg(l[j],r[j]);
 	      }
 	    leftLocalIndex += items;
@@ -888,9 +859,8 @@ namespace embree
       /* initialize atomic counters */
       __forceinline parallel_partition_static(T *array, 
 					      size_t N, 
-					      const Compare& cmp,
 					      const ThreadLocalPartition& threadLocalPartition) : 
-      array(array), N(N), cmp(cmp), threadLocalPartition(threadLocalPartition) 
+      array(array), N(N), threadLocalPartition(threadLocalPartition) 
       {
 	numMisplacedRangesLeft  = 0;
 	numMisplacedRangesRight = 0;
@@ -911,10 +881,6 @@ namespace embree
 		     );
 
             size_t mid = partition_serial(array,N);
-            DBG_CHECK(
-		      checkLeft(array,0,mid);
-		      checkRight(array,mid,N);
-                     );
             return mid;
           }
 
@@ -1045,11 +1011,6 @@ namespace embree
 	////////////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////////////
-
-        DBG_CHECK(
-		  checkLeft(array,0,global_mid);
-		  checkRight(array,global_mid,N);
-                 );
         
         return global_mid;
       }
@@ -1057,16 +1018,40 @@ namespace embree
 
     };
 
-  template<typename T, typename Compare, typename ThreadLocalPartition, typename Scheduler>
+  template<typename T,  typename ThreadLocalPartition, typename Scheduler>
     __forceinline size_t parallel_in_place_partitioning_static(T *array, 
 							       size_t N, 
-							       const Compare& cmp,
 							       const ThreadLocalPartition& threadLocalPartition,
 							       Scheduler &scheduler)
   {
-    parallel_partition_static<T,Compare,ThreadLocalPartition,Scheduler> p(array,N,cmp,threadLocalPartition);
+    parallel_partition_static<T,ThreadLocalPartition,Scheduler> p(array,N,threadLocalPartition);
     return p.partition_parallel(scheduler);    
   }
 
+  template<typename T, typename Compare>
+    __forceinline bool parallel_in_place_partitioning_static_verify(T *array, 
+								    size_t N, 
+								    size_t mid,
+								    const Compare& cmp)
+  {
+    for (size_t i=0;i<mid;i++)
+      if (!cmp(array[i]))
+	{
+	  DBG_PRINT("left side partition");
+	  DBG_PRINT(i);
+	  DBG_PRINT(array[i]);
+	  return false;
+	}
 
- };
+    for (size_t i=mid;i<N;i++)
+      if (cmp(array[i]))
+	{
+	  DBG_PRINT("right side partition");
+	  DBG_PRINT(i);
+	  DBG_PRINT(array[i]);
+	  return false;
+	}
+    return true;
+  }
+
+};

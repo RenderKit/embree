@@ -98,9 +98,7 @@ namespace embree
     TASK_FUNCTION(BVH4iBuilder,computePrimRefsTriangles);
     TASK_FUNCTION(BVH4iBuilder,createTriangle1Accel);
     TASK_FUNCTION(BVH4iBuilder,parallelBinningGlobal);
-    TASK_FUNCTION(BVH4iBuilder,parallelPartitioningGlobal);
     LOCAL_TASK_FUNCTION(BVH4iBuilder,parallelBinningLocal);
-    LOCAL_TASK_FUNCTION(BVH4iBuilder,parallelPartitioningLocal);
 
   public:
 
@@ -110,16 +108,6 @@ namespace embree
 
     /*! perform sequential binning and splitting */
     bool splitSequential(BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild);
-
-    /*! perform parallel splitting */
-    void parallelPartitioning(BuildRecord& current,
-			      PrimRef * __restrict__ l_source,
-			      PrimRef * __restrict__ r_source,
-			      PrimRef * __restrict__ l_dest,
-			      PrimRef * __restrict__ r_dest,
-			      const Split &split,
-			      Centroid_Scene_AABB &local_left,
-			      Centroid_Scene_AABB &local_right);			      
 			      
     /*! perform parallel binning and splitting using all threads on all cores*/
     bool splitParallelGlobal(BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild, const size_t threadID, const size_t threads);

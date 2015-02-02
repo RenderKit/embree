@@ -26,7 +26,7 @@
 #include "geometry/triangle4i.h"
 
 #define DBG(x) 
-//#define PROFILE
+#define PROFILE
 
 namespace embree 
 {

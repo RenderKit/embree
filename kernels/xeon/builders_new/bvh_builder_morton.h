@@ -20,11 +20,14 @@
 #include "tbb/tbb.h"
 #include "algorithms/parallel_reduce.h"
 #include "algorithms/parallel_for_for.h"
+#include "common/profile.h" // FIXME: remove
 
 namespace embree
 {
   namespace isa
   {
+    extern ProfileTimer g_timer;
+
     template<typename NodeRef>
       class MortonBuildRecord 
     {
@@ -381,6 +384,8 @@ namespace embree
         /* sort morton codes */
         morton = tmp;
         radix_sort_copy_u32(src,morton,numPrimitives);
+
+        //g_timer("sort");
         
         /* build BVH */
         NodeRef root;
@@ -392,6 +397,9 @@ namespace embree
         BBox3fa bounds = empty;
         //LockStepTaskScheduler::execute_tbb([&] { bounds = recurse(br, NULL); });
         bounds = recurse(br, NULL); // FIXME: why is this faster??
+
+        //g_timer("create_tree");
+
         return std::make_pair(root,bounds);
       }
       

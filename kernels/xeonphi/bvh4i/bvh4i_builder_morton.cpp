@@ -26,7 +26,7 @@
 #define PROFILE_ITERATIONS 200
 
 #define TIMER(x) 
-#define DBG(x) 
+#define DBG(x) x
 
 #define L1_PREFETCH_ITEMS 8
 #define L2_PREFETCH_ITEMS 44
@@ -590,7 +590,7 @@ namespace embree
   }
 
 
-  void BVH4iBuilderMorton::radixsort(const size_t threadID, const size_t numThreads)
+  void BVH4iBuilderMorton::radixsort_block(const size_t threadID, const size_t numThreads)
   {
     const size_t numBlocks = (numPrimitives+NUM_MORTON_IDS_PER_BLOCK-1) / NUM_MORTON_IDS_PER_BLOCK;
     const size_t startID   = ((threadID+0)*numBlocks/numThreads) * NUM_MORTON_IDS_PER_BLOCK;
@@ -603,7 +603,6 @@ namespace embree
     MortonID32Bit* __restrict__ mortonID[2];
     mortonID[0] = (MortonID32Bit*) morton; 
     mortonID[1] = (MortonID32Bit*) node;
-
 
     /* we need 4 iterations to process all 32 bits */
     for (size_t b=0; b<4; b++)
@@ -1216,12 +1215,11 @@ namespace embree
 
     TIMER(msec = getSeconds()-msec);    
     TIMER(std::cout << "task_computeMortonCodes " << 1000. * msec << " ms" << std::endl << std::flush);
-
- 
-
     /* sort morton codes */
     TIMER(msec = getSeconds());
-    scene->lockstep_scheduler.dispatchTask( task_radixsort, this, threadIndex, threadCount );
+    //scene->lockstep_scheduler.dispatchTask( task_radixsort_block, this, threadIndex, threadCount);
+    //radix_sort_copy_u32((MortonID32Bit*)morton,(MortonID32Bit*)node,numPrimitives);
+    quicksort_ascending(dest,0,numPrimitives);
 
 #if defined(DEBUG)
     for (size_t i=1; i<((numPrimitives+7)&(-8)); i++)
