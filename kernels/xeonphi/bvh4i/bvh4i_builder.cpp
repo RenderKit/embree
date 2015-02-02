@@ -360,10 +360,9 @@ namespace embree
     }
 
     // === start with first group containing startID ===
-    mic_f bounds_scene_min((float)pos_inf);
-    mic_f bounds_scene_max((float)neg_inf);
-    mic_f bounds_centroid_min((float)pos_inf);
-    mic_f bounds_centroid_max((float)neg_inf);
+
+    CentroidGeometryAABB bounds_cs;
+    bounds_cs.reset();
 
     unsigned int num = 0;
     unsigned int currentID = startID;
@@ -408,11 +407,7 @@ namespace embree
 		const mic_f bmin  = min(min(v[0],v[1]),v[2]);
 		const mic_f bmax  = max(max(v[0],v[1]),v[2]);
 
-		bounds_scene_min = min(bounds_scene_min,bmin);
-		bounds_scene_max = max(bounds_scene_max,bmax);
-		const mic_f centroid2 = bmin+bmax;
-		bounds_centroid_min = min(bounds_centroid_min,centroid2);
-		bounds_centroid_max = max(bounds_centroid_max,centroid2);
+		bounds_cs.extend(bmin,bmax);	
 
 		store4f(&local_prims[numLocalPrims].lower,bmin);
 		store4f(&local_prims[numLocalPrims].upper,bmax);	
@@ -447,13 +442,8 @@ namespace embree
       *dest = local_prims[0];
 
     /* update global bounds */
-    Centroid_Scene_AABB bounds;
+    Centroid_Scene_AABB bounds ( bounds_cs );
     
-    store4f(&bounds.centroid2.lower,bounds_centroid_min);
-    store4f(&bounds.centroid2.upper,bounds_centroid_max);
-    store4f(&bounds.geometry.lower,bounds_scene_min);
-    store4f(&bounds.geometry.upper,bounds_scene_max);
-
     global_bounds.extend_atomic(bounds);    
   }
 
@@ -1084,7 +1074,7 @@ namespace embree
 
   
   void BVH4iBuilder::computePrimRefs(const size_t threadIndex, const size_t threadCount)
-  {
+  {    
     scene->lockstep_scheduler.dispatchTask( task_computePrimRefsTriangles, this, threadIndex, threadCount );
   }
 
@@ -1153,14 +1143,6 @@ namespace embree
 	BuildRecord br;
 	if (!global_workStack.pop_nolock_largest(br)) break;
 
-#if 0
-	if (unlikely(br.items() < 4096)) 
-	  {
-	    global_workStack.push_nolock(br);
-	    break;
-	  }
-#endif
-	
 	DBG(DBG_PRINT(br));
 	recurseSAH(br,alloc,BUILD_TOP_LEVEL,threadIndex,threadCount);      
       }

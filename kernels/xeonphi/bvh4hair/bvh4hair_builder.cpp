@@ -124,11 +124,10 @@ namespace embree
       numSkipped += numPrims;
     }
 
+    CentroidGeometryAABB bounds_cs;
+    bounds_cs.reset();
+
     /* start with first group containing startID */
-    mic_f bounds_scene_min((float)pos_inf);
-    mic_f bounds_scene_max((float)neg_inf);
-    mic_f bounds_centroid_min((float)pos_inf);
-    mic_f bounds_centroid_max((float)neg_inf);
 
     unsigned int num = 0;
     unsigned int currentID = startID;
@@ -148,13 +147,8 @@ namespace embree
 	  const mic2f b2 = geom->bounds_mic2f(i);
 	  const mic_f bmin = b2.x;
 	  const mic_f bmax = b2.y;
+	  bounds_cs.extend(bmin,bmax);	
           
-          bounds_scene_min = min(bounds_scene_min,bmin);
-          bounds_scene_max = max(bounds_scene_max,bmax);
-          const mic_f centroid2 = bmin+bmax;
-          bounds_centroid_min = min(bounds_centroid_min,centroid2);
-          bounds_centroid_max = max(bounds_centroid_max,centroid2);
-
 	  bptr[currentID].p = geom->fristVertexPtr(i); // FIXME: this does not support strides!!
           bptr[currentID].geomID = g;
           bptr[currentID].primID = i;
@@ -164,13 +158,8 @@ namespace embree
       }
 
     /* update global bounds */
-    Centroid_Scene_AABB bounds;
+    Centroid_Scene_AABB bounds (bounds_cs);
     
-    store4f(&bounds.centroid2.lower,bounds_centroid_min);
-    store4f(&bounds.centroid2.upper,bounds_centroid_max);
-    store4f(&bounds.geometry.lower,bounds_scene_min);
-    store4f(&bounds.geometry.upper,bounds_scene_max);
-
     global_bounds.extend_atomic(bounds);    
   }
 
