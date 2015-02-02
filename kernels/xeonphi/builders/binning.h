@@ -42,8 +42,8 @@ namespace embree
       cost = default_cost;
     }
 
-    __forceinline bool   valid() { return pos != -1; }
-    __forceinline bool invalid() { return pos == -1; }
+    __forceinline bool   valid() const { return pos != -1; } 
+    __forceinline bool invalid() const { return pos == -1; } 
 
     
     /*! stream output */

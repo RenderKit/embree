@@ -573,7 +573,7 @@ namespace embree
 
     const Split split = getBestSplit(current,leftArea,rightArea,leftNum,mapping.getValidDimMask());
 
-    if (unlikely(split.pos == -1)) 
+    if (unlikely(split.invalid())) 
       split_fallback(prims,current,leftChild,rightChild);
     else 
       {
@@ -642,7 +642,7 @@ namespace embree
      
     scene->lockstep_scheduler.dispatchTask( task_parallelBinningGlobal, this, threadID, numThreads );
 
-    if (unlikely(global_sharedData.split.pos == -1)) 
+    if (unlikely(global_sharedData.split.invalid())) 
       split_fallback(prims,current,leftChild,rightChild);
     else
       {
@@ -686,9 +686,6 @@ namespace embree
 	if (unlikely(current.begin == mid || mid == current.end)) 
 	  {
 	    std::cout << "WARNING: mid == current.begin || mid == current.end " << std::endl;
-	    DBG_PRINT(global_sharedData.split);
-	    DBG_PRINT(current);
-	    DBG_PRINT(mid);
 	    split_fallback(prims,current,leftChild,rightChild);	    
 	  }
 	else
@@ -741,7 +738,7 @@ namespace embree
 
     localTaskScheduler[globalCoreID].dispatchTask( task_parallelBinningLocal, this, localThreadID, globalThreadID );
 
-    if (unlikely(sd.split.pos == -1)) 
+    if (unlikely(sd.split.invalid())) 
       split_fallback(prims,current,leftChild,rightChild);
     else
       {
@@ -778,9 +775,6 @@ namespace embree
 	if (unlikely(mid == current.begin || mid == current.end)) 
 	  {
 	    std::cout << "WARNING: mid == current.begin || mid == current.end " << std::endl;
-	    DBG_PRINT(sd.split);
-	    DBG_PRINT(current);
-	    DBG_PRINT(mid);
 	    split_fallback(prims,current,leftChild,rightChild);	    
 	  }
 	else
@@ -1081,44 +1075,7 @@ namespace embree
 	for (size_t i=1;i<4;i++)
 	  bin16.merge(global_bin16[globalThreadID+i]);
 
-	const float voxelArea = area(current.bounds.geometry);
-
-	local_sharedData[globalCoreID].split.cost = items * voxelArea;	
-
-	for (size_t dim=0;dim<3;dim++)
-	  {
-	    if (unlikely(mapping.centroidDiagonal_2[dim] == 0.0f)) continue;
-
-	    const mic_f rArea = prefix_area_rl(bin16.min_x[dim],bin16.min_y[dim],bin16.min_z[dim],
-					       bin16.max_x[dim],bin16.max_y[dim],bin16.max_z[dim]);
-	    const mic_f lArea = prefix_area_lr(bin16.min_x[dim],bin16.min_y[dim],bin16.min_z[dim],
-					       bin16.max_x[dim],bin16.max_y[dim],bin16.max_z[dim]);
-	    const mic_i lnum  = prefix_count(bin16.count[dim]);
-
-	    const mic_i rnum    = mic_i(items) - lnum;
-	    const mic_i lblocks = (lnum + mic_i(3)) >> 2;
-	    const mic_i rblocks = (rnum + mic_i(3)) >> 2;
-	    const mic_m m_lnum  = lnum == 0;
-	    const mic_m m_rnum  = rnum == 0;
-	    const mic_f cost    = select(m_lnum|m_rnum,mic_f::inf(),lArea * mic_f(lblocks) + rArea * mic_f(rblocks) + voxelArea );
-
-	    if (lt(cost,mic_f(local_sharedData[globalCoreID].split.cost)))
-	      {
-
-		const mic_f min_cost    = vreduce_min(cost); 
-		const mic_m m_pos       = min_cost == cost;
-		const unsigned long pos = bitscan64(m_pos);	    
-
-		assert(pos < 15);
-		if (pos < 15)
-		  {
-		    local_sharedData[globalCoreID].split.cost    = cost[pos];
-		    local_sharedData[globalCoreID].split.pos     = pos+1;
-		    local_sharedData[globalCoreID].split.dim     = dim;	    
-		    local_sharedData[globalCoreID].split.numLeft = lnum[pos];
-		  }
-	      }
-	  }
+	local_sharedData[globalCoreID].split = bin16.bestSplit(current,mapping.getValidDimMask());
       }
 
   }

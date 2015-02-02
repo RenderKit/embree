@@ -33,7 +33,6 @@ namespace embree
 #define ENABLE_AABB_NODES 1
 
 #define BVH4HAIR_NODE_PREALLOC_FACTOR  0.7f
-#define INTERSECTION_COST              1.0f
 
 #define AABB_OBB_SWITCH_THRESHOLD      1.1f
 #define THRESHOLD_SWITCH
@@ -254,46 +253,7 @@ namespace embree
     
     if (threadID == 0)
       {
-	const float voxelArea = area(current.bounds.geometry);
-
-	global_sharedData.split.cost = items * voxelArea * INTERSECTION_COST;;
-	
-	const Bin16 &bin16 = global_bin16[0];
-
-	for (size_t dim=0;dim<3;dim++)
-	  {
-	    if (unlikely(mapping.centroidDiagonal_2[dim] == 0.0f)) continue;
-
-	    const mic_f rArea = prefix_area_rl(bin16.min_x[dim],bin16.min_y[dim],bin16.min_z[dim],
-					       bin16.max_x[dim],bin16.max_y[dim],bin16.max_z[dim]);
-	    const mic_f lArea = prefix_area_lr(bin16.min_x[dim],bin16.min_y[dim],bin16.min_z[dim],
-					       bin16.max_x[dim],bin16.max_y[dim],bin16.max_z[dim]);
-	    const mic_i lnum  = prefix_count(bin16.count[dim]);
-
-	    const mic_i rnum    = mic_i(items) - lnum;
-	    const mic_i lblocks = (lnum + mic_i(3)) >> 2;
-	    const mic_i rblocks = (rnum + mic_i(3)) >> 2;
-	    const mic_m m_lnum  = lnum == 0;
-	    const mic_m m_rnum  = rnum == 0;
-	    const mic_f cost    = select(m_lnum|m_rnum,mic_f::inf(),lArea * mic_f(lblocks) + rArea * mic_f(rblocks) + voxelArea );
-
-	    if (lt(cost,mic_f(global_sharedData.split.cost)))
-	      {
-
-		const mic_f min_cost    = vreduce_min(cost); 
-		const mic_m m_pos       = min_cost == cost;
-		const unsigned long pos = bitscan64(m_pos);	    
-		
-		assert(pos < 15);
-		if (pos < 15)
-		  {
-		    global_sharedData.split.cost    = cost[pos];
-		    global_sharedData.split.pos     = pos+1;
-		    global_sharedData.split.dim     = dim;	    
-		    global_sharedData.split.numLeft = lnum[pos];
-		  }
-	      }
-	  }
+	global_sharedData.split = global_bin16[0].bestSplit(current,mapping.getValidDimMask());
       }
   }
 
@@ -320,44 +280,7 @@ namespace embree
 	for (size_t i=1;i<4;i++)
 	  bin16.merge(global_bin16[globalThreadID+i]);
 
-	const float voxelArea = area(current.bounds.geometry);
-
-	local_sharedData[globalCoreID].split.cost = items * voxelArea * INTERSECTION_COST;	
-
-	for (size_t dim=0;dim<3;dim++)
-	  {
-	    if (unlikely(mapping.centroidDiagonal_2[dim] == 0.0f)) continue;
-
-	    const mic_f rArea = prefix_area_rl(bin16.min_x[dim],bin16.min_y[dim],bin16.min_z[dim],
-					       bin16.max_x[dim],bin16.max_y[dim],bin16.max_z[dim]);
-	    const mic_f lArea = prefix_area_lr(bin16.min_x[dim],bin16.min_y[dim],bin16.min_z[dim],
-					       bin16.max_x[dim],bin16.max_y[dim],bin16.max_z[dim]);
-	    const mic_i lnum  = prefix_count(bin16.count[dim]);
-
-	    const mic_i rnum    = mic_i(items) - lnum;
-	    const mic_i lblocks = (lnum + mic_i(3)) >> 2;
-	    const mic_i rblocks = (rnum + mic_i(3)) >> 2;
-	    const mic_m m_lnum  = lnum == 0;
-	    const mic_m m_rnum  = rnum == 0;
-	    const mic_f cost    = select(m_lnum|m_rnum,mic_f::inf(),lArea * mic_f(lblocks) + rArea * mic_f(rblocks) + voxelArea );
-
-	    if (lt(cost,mic_f(local_sharedData[globalCoreID].split.cost)))
-	      {
-
-		const mic_f min_cost    = vreduce_min(cost); 
-		const mic_m m_pos       = min_cost == cost;
-		const unsigned long pos = bitscan64(m_pos);	    
-
-		assert(pos < 15);
-		if (pos < 15)
-		  {
-		    local_sharedData[globalCoreID].split.cost    = cost[pos];
-		    local_sharedData[globalCoreID].split.pos     = pos+1;
-		    local_sharedData[globalCoreID].split.dim     = dim;	    
-		    local_sharedData[globalCoreID].split.numLeft = lnum[pos];
-		  }
-	      }
-	  }
+	local_sharedData[globalCoreID].split = bin16.bestSplit(current,mapping.getValidDimMask());
       }
 
   }
@@ -570,46 +493,9 @@ namespace embree
 
     fastbin<Bezier1i>(prims,current.begin,current.end,mapping,leftArea,rightArea,leftNum);
 
-    const unsigned int items = current.items();
-    const float voxelArea = area(current.bounds.geometry);
-    Split split;
-    split.cost = items * voxelArea * INTERSECTION_COST;;
+    const Split split = getBestSplit(current,leftArea,rightArea,leftNum,mapping.getValidDimMask());
 
-    for (size_t dim = 0;dim < 3;dim++) 
-      {
-	if (unlikely(mapping.centroidDiagonal_2[dim] == 0.0f)) continue;
-
-	const mic_f rArea   = rightArea[dim]; // bin16.prefix_area_rl(dim);
-	const mic_f lArea   = leftArea[dim];  // bin16.prefix_area_lr(dim);      
-	const mic_i lnum    = leftNum[dim];   // bin16.prefix_count(dim);
-
-	const mic_i rnum    = mic_i(items) - lnum;
-	const mic_i lblocks = (lnum + mic_i(3)) >> 2;
-	const mic_i rblocks = (rnum + mic_i(3)) >> 2;
-	const mic_m m_lnum  = lnum == 0;
-	const mic_m m_rnum  = rnum == 0;
-	const mic_f cost    = select(m_lnum|m_rnum,mic_f::inf(),lArea * mic_f(lblocks) + rArea * mic_f(rblocks) + voxelArea );
-
-	if (lt(cost,mic_f(split.cost)))
-	  {
-
-	    const mic_f min_cost    = vreduce_min(cost); 
-	    const mic_m m_pos       = min_cost == cost;
-	    const unsigned long pos = bitscan64(m_pos);	    
-
-	    assert(pos < 15);
-
-	    if (pos < 15)
-	      {
-		split.cost    = cost[pos];
-		split.pos     = pos+1;
-		split.dim     = dim;	    
-		split.numLeft = lnum[pos];
-	      }
-	  }
-      };
-
-    if (unlikely(split.pos == -1)) 
+    if (unlikely(split.invalid())) 
       split_fallback(prims,current,leftChild,rightChild);
    // /* partitioning of items */
     else 
@@ -672,7 +558,7 @@ namespace embree
      
      scene->lockstep_scheduler.dispatchTask( task_parallelBinningGlobal, this, threadID, numThreads );
 
-     if (unlikely(global_sharedData.split.pos == -1)) 
+     if (unlikely(global_sharedData.split.invalid())) 
        split_fallback(prims,current,leftChild,rightChild);
      else
        {
@@ -742,7 +628,7 @@ namespace embree
 
     localTaskScheduler[globalCoreID].dispatchTask( task_parallelBinningLocal, this, localThreadID, globalThreadID );
 
-    if (unlikely(sd.split.pos == -1)) 
+    if (unlikely(sd.split.invalid())) 
       split_fallback(prims,current,leftChild,rightChild);
     else
       {
@@ -990,7 +876,7 @@ namespace embree
 
       /*! split best child into left and right child */
       __aligned(64) BuildRecordOBB left, right;
-      if (!splitSequentialOBB(children[bestChild],left,right,false)) 
+      if (!splitSequentialOBB(children[bestChild],left,right)) 
         continue;
       
       /* add new children left and right */
@@ -1072,7 +958,7 @@ namespace embree
   }
 
 
-  __forceinline bool BVH4HairBuilder::splitSequentialOBB(BuildRecordOBB& current, BuildRecordOBB& leftChild, BuildRecordOBB& rightChild, const bool binAABB)
+  __forceinline bool BVH4HairBuilder::splitSequentialOBB(BuildRecordOBB& current, BuildRecordOBB& leftChild, BuildRecordOBB& rightChild)
   {
     DBG(PING);
     DBG(DBG_PRINT(current));
@@ -1088,11 +974,7 @@ namespace embree
 
 
     const unsigned int items = current.items();
-    const float voxelArea = area(current.bounds.geometry); 
-
-    Split split;
-    split.cost = items * voxelArea * INTERSECTION_COST;;
-    
+    const float voxelArea = area(current.bounds.geometry);     
     const BinMapping mapping(current.bounds);
 
     mic_f leftArea[3];
@@ -1105,78 +987,9 @@ namespace embree
     fastbin_xfm<Bezier1i>(prims,cmat,current.begin,current.end,mapping,leftArea,rightArea,leftNum);
 
 
-    for (size_t dim = 0;dim < 3;dim++) 
-      {
-	if (unlikely(mapping.centroidDiagonal_2[dim] == 0.0f)) continue;
+    Split split = getBestSplit(current,leftArea,rightArea,leftNum,mapping.getValidDimMask());
 
-	const mic_f rArea   = rightArea[dim]; // bin16.prefix_area_rl(dim);
-	const mic_f lArea   = leftArea[dim];  // bin16.prefix_area_lr(dim);      
-	const mic_i lnum    = leftNum[dim];   // bin16.prefix_count(dim);
-
-	const mic_i rnum    = mic_i(items) - lnum;
-	const mic_i lblocks = (lnum + mic_i(3)) >> 2;
-	const mic_i rblocks = (rnum + mic_i(3)) >> 2;
-	const mic_m m_lnum  = lnum == 0;
-	const mic_m m_rnum  = rnum == 0;
-	const mic_f cost    = select(m_lnum|m_rnum,mic_f::inf(),lArea * mic_f(lblocks) + rArea * mic_f(rblocks) + voxelArea );
-
-	if (lt(cost,mic_f(split.cost)))
-	  {
-	    const mic_f min_cost    = vreduce_min(cost); 
-	    const mic_m m_pos       = min_cost == cost;
-	    const unsigned long pos = bitscan64(m_pos);	    
-	    assert(pos < 15);
-	    if (pos < 15)
-	      {
-		split.cost    = cost[pos];
-		split.pos     = pos+1;
-		split.dim     = dim;	    
-		split.numLeft = lnum[pos];
-	      }
-	  }
-      };
-
-    if (binAABB)
-      {
-	Split splitAABB;
-	splitAABB.cost = items * voxelArea * INTERSECTION_COST;
-
-	fastbin<Bezier1i>(prims,current.begin,current.end,mapping,leftArea,rightArea,leftNum);
-
-	for (size_t dim = 0;dim < 3;dim++) 
-	  {
-	    if (unlikely(mapping.centroidDiagonal_2[dim] == 0.0f)) continue;
-
-	    const mic_f rArea   = rightArea[dim]; // bin16.prefix_area_rl(dim);
-	    const mic_f lArea   = leftArea[dim];  // bin16.prefix_area_lr(dim);      
-	    const mic_i lnum    = leftNum[dim];   // bin16.prefix_count(dim);
-
-	    const mic_i rnum    = mic_i(items) - lnum;
-	    const mic_i lblocks = (lnum + mic_i(3)) >> 2;
-	    const mic_i rblocks = (rnum + mic_i(3)) >> 2;
-	    const mic_m m_lnum  = lnum == 0;
-	    const mic_m m_rnum  = rnum == 0;
-	    const mic_f cost    = select(m_lnum|m_rnum,mic_f::inf(),lArea * mic_f(lblocks) + rArea * mic_f(rblocks) + voxelArea );
-
-	    if (lt(cost,mic_f(splitAABB.cost)))
-	      {
-		const mic_f min_cost    = vreduce_min(cost); 
-		const mic_m m_pos       = min_cost == cost;
-		const unsigned long pos = bitscan64(m_pos);	    
-		assert(pos < 15);
-		if (pos < 15)
-		  {
-		    splitAABB.cost    = cost[pos];
-		    splitAABB.pos     = pos+1;
-		    splitAABB.dim     = dim;	    
-		    splitAABB.numLeft = lnum[pos];
-		  }
-	      }
-	  };
-
-      }
-
-    if (unlikely(split.pos == -1)) 
+    if (unlikely(split.invalid())) 
       {
 	split_fallback(prims,current,leftChild,rightChild);
       }
