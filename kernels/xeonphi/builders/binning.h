@@ -154,34 +154,6 @@ namespace embree
   }
 
 
-
-
-
-  static __forceinline mic_m lt_split(const mic_f &b_min,
-				      const mic_f &b_max,
-				      const mic_m &dim_mask,
-				      const mic_f &c,
-				      const mic_f &s,
-				      const mic_f &bestSplit_f)
-  {
-    const mic_f centroid_2 = b_min + b_max;
-    const mic_f binID = (centroid_2 - c)*s;
-    return lt(dim_mask,binID,bestSplit_f);    
-  }
-
-  static __forceinline mic_m ge_split(const mic_f &b_min,
-				      const mic_f &b_max,
-				      const mic_m &dim_mask,
-				      const mic_f &c,
-				      const mic_f &s,
-				      const mic_f &bestSplit_f)
-  {
-    const mic_f centroid_2 = b_min + b_max;
-    const mic_f binID = (centroid_2 - c)*s;
-    return ge(dim_mask,binID,bestSplit_f);    
-  }
-
-
   template<class Primitive>
   __forceinline void fastbin(const Primitive * __restrict__ const aabb,
 			     const unsigned int thread_start,
@@ -559,34 +531,19 @@ namespace embree
 						       const mic3f &cmat,
 						       const unsigned int begin,
 						       const unsigned int end,
-						       const unsigned int bestSplit,
-						       const unsigned int bestSplitDim,
-						       const mic_f &centroidBoundsMin_2,
-						       const mic_f &scale,
+						       const BinPartitionMapping &mapping,
 						       Centroid_Scene_AABB & local_left,
 						       Centroid_Scene_AABB & local_right)
     {
       assert(begin <= end);
 
       Primitive *__restrict__ l = aabb + begin;
-      Primitive *__restrict__ r = aabb + end;
+      Primitive *__restrict__ r = aabb + end - 1;
 
-      const mic_f c = mic_f(centroidBoundsMin_2[bestSplitDim]);
-      const mic_f s = mic_f(scale[bestSplitDim]);
-
-      mic_f left_centroidMinAABB = broadcast4to16f(&local_left.centroid2.lower);
-      mic_f left_centroidMaxAABB = broadcast4to16f(&local_left.centroid2.upper);
-      mic_f left_sceneMinAABB    = broadcast4to16f(&local_left.geometry.lower);
-      mic_f left_sceneMaxAABB    = broadcast4to16f(&local_left.geometry.upper);
-
-      mic_f right_centroidMinAABB = broadcast4to16f(&local_right.centroid2.lower);
-      mic_f right_centroidMaxAABB = broadcast4to16f(&local_right.centroid2.upper);
-      mic_f right_sceneMinAABB    = broadcast4to16f(&local_right.geometry.lower);
-      mic_f right_sceneMaxAABB    = broadcast4to16f(&local_right.geometry.upper);
-
-      const mic_f bestSplit_f = mic_f(bestSplit);
-
-      const mic_m dim_mask = mic_m::shift1[bestSplitDim];
+      CentroidGeometryAABB leftReduction;
+      CentroidGeometryAABB rightReduction;
+      leftReduction.reset();
+      rightReduction.reset();
 
       const mic_f c0 = cmat.x;
       const mic_f c1 = cmat.y;
@@ -594,71 +551,46 @@ namespace embree
 
       while(1)
 	{
-	  while (likely(l < r)) 
+	  while (likely(l <= r)) 
 	    {
 	      
 	      const mic2f bounds = l->getBounds(c0,c1,c2);
 	      const mic_f b_min  = bounds.x;
 	      const mic_f b_max  = bounds.y;
 
-	      prefetch<PFHINT_L1EX>(l+2);	  
-	      if (unlikely(ge_split(b_min,b_max,dim_mask,c,s,bestSplit_f))) break;
-	      prefetch<PFHINT_L2EX>(l + DISTANCE + 4);	  
-	      const mic_f centroid2 = b_min+b_max;
-	      left_centroidMinAABB = min(left_centroidMinAABB,centroid2);
-	      left_centroidMaxAABB = max(left_centroidMaxAABB,centroid2);
-	      left_sceneMinAABB    = min(left_sceneMinAABB,b_min);
-	      left_sceneMaxAABB    = max(left_sceneMaxAABB,b_max);
+	      prefetch<PFHINT_L1EX>(((char*)l)+4*64);
+	      if (unlikely(mapping.ge_split(b_min,b_max))) break;
+	      prefetch<PFHINT_L2EX>(((char*)l)+20*64);
+ 
+	      leftReduction.extend(b_min,b_max);
 	      ++l;
 	    }
-	  while (likely(l < r)) 
+	  while (likely(l <= r)) 
 	    {
 	      const mic2f bounds = r->getBounds(c0,c1,c2);
 	      const mic_f b_min  = bounds.x;
 	      const mic_f b_max  = bounds.y;
 
-	      prefetch<PFHINT_L1EX>(r-2);	  
-	      if (unlikely(lt_split(b_min,b_max,dim_mask,c,s,bestSplit_f))) break;
-	      prefetch<PFHINT_L2EX>(r - DISTANCE - 4);
-	      const mic_f centroid2 = b_min+b_max;
-	      right_centroidMinAABB = min(right_centroidMinAABB,centroid2);
-	      right_centroidMaxAABB = max(right_centroidMaxAABB,centroid2);
-	      right_sceneMinAABB    = min(right_sceneMinAABB,b_min);
-	      right_sceneMaxAABB    = max(right_sceneMaxAABB,b_max);
+	      prefetch<PFHINT_L1EX>(((char*)r)-4*64);	  
+	      if (unlikely(mapping.lt_split(b_min,b_max))) break;
+	      prefetch<PFHINT_L2EX>(((char*)r)-20*64);	  
+	      rightReduction.extend(b_min,b_max);
 	      --r;
 	    }
 
-	  if (unlikely(l == r)) {
-	    const mic2f bounds = r->getBounds(c0,c1,c2);
-	    const mic_f b_min  = bounds.x;
-	    const mic_f b_max  = bounds.y;
-
-	    if ( ge_split(b_min,b_max,dim_mask,c,s,bestSplit_f))
-	      {
-		const mic_f centroid2 = b_min+b_max;
-		right_centroidMinAABB = min(right_centroidMinAABB,centroid2);
-		right_centroidMaxAABB = max(right_centroidMaxAABB,centroid2);
-		right_sceneMinAABB    = min(right_sceneMinAABB,b_min);
-		right_sceneMaxAABB    = max(right_sceneMaxAABB,b_max);
-	      }
-	    else 
-	      l++; 
+	  if (unlikely(r<l)) {
 	    break;
 	  }
 
+	  rightReduction.extend(l->getBounds());
+	  leftReduction.extend(r->getBounds());
+
 	  xchg(*l,*r);
+	  l++; r--;
 	}
 
-
-      store4f(&local_left.centroid2.lower,left_centroidMinAABB);
-      store4f(&local_left.centroid2.upper,left_centroidMaxAABB);
-      store4f(&local_left.geometry.lower,left_sceneMinAABB);
-      store4f(&local_left.geometry.upper,left_sceneMaxAABB);
-
-      store4f(&local_right.centroid2.lower,right_centroidMinAABB);
-      store4f(&local_right.centroid2.upper,right_centroidMaxAABB);
-      store4f(&local_right.geometry.lower,right_sceneMinAABB);
-      store4f(&local_right.geometry.upper,right_sceneMaxAABB);
+      local_left  = Centroid_Scene_AABB( leftReduction );
+      local_right = Centroid_Scene_AABB( rightReduction );
 
       assert( aabb + begin <= l && l <= aabb + end);
       assert( aabb + begin <= r && r <= aabb + end);
@@ -992,7 +924,7 @@ namespace embree
     return ge(binID,bestSplit_f);    
   }
 
-  template<class Primitive>
+  template<class Primitive, bool EXTEND_ATOMIC>
   __forceinline size_t partitionPrimitives(Primitive *__restrict__ const t_array,
 					   const size_t size,
 					   const BinPartitionMapping &mapping,
@@ -1013,7 +945,6 @@ namespace embree
 	  while (likely(l <= r)) 
 	    {
 	      const mic2f bounds = l->getBounds();
-	      evictL1(((char*)l)-2*64);
 	      const mic_f b_min  = bounds.x;
 	      const mic_f b_max  = bounds.y;
 	      prefetch<PFHINT_L1EX>(((char*)l)+4*64);
@@ -1029,7 +960,6 @@ namespace embree
 	  while (likely(l <= r))
 	    {
 	      const mic2f bounds = r->getBounds();
-	      evictL1(((char*)r)+2*64);
 	      const mic_f b_min  = bounds.x;
 	      const mic_f b_max  = bounds.y;
 	      prefetch<PFHINT_L1EX>(((char*)r)-4*64);	  
@@ -1050,8 +980,18 @@ namespace embree
 	  l++; r--;
 	}
       
-      local_left  = Centroid_Scene_AABB( leftReduction );
-      local_right = Centroid_Scene_AABB( rightReduction );
+      if (!EXTEND_ATOMIC)
+	{
+	  local_left  = Centroid_Scene_AABB( leftReduction );
+	  local_right = Centroid_Scene_AABB( rightReduction );
+	}
+      else
+	{
+	  Centroid_Scene_AABB update_left  = Centroid_Scene_AABB( leftReduction );
+	  Centroid_Scene_AABB update_right = Centroid_Scene_AABB( rightReduction );
+	  local_left.extend_atomic( update_left );
+	  local_right.extend_atomic( update_right );
+	}
 
       return l - t_array;              
     }
