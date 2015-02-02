@@ -536,16 +536,8 @@ namespace embree
     const unsigned int startID = current.begin + ((threadID+0)*items/numThreads);
     const unsigned int endID   = current.begin + ((threadID+1)*items/numThreads);
 
-    const mic_f centroidMin = broadcast4to16f(&current.bounds.centroid2.lower);
-    const mic_f centroidMax = broadcast4to16f(&current.bounds.centroid2.upper);
-
-    const mic_f centroidBoundsMin_2 = centroidMin;
-    const mic_f centroidDiagonal_2  = centroidMax-centroidMin;
-    const mic_f scale = select(centroidDiagonal_2 != 0.0f,rcp(centroidDiagonal_2) * mic_f(16.0f * 0.99f),mic_f::zero());
-
-    PrimRef  *__restrict__ const tmp_prims = (PrimRef*)accel;
-
-    fastbin<PrimRef>(prims,startID,endID,centroidBoundsMin_2,scale,global_bin16[threadID]);    
+    const BinMapping mapping(current.bounds);
+    fastbin<PrimRef>(prims,startID,endID,mapping,global_bin16[threadID]);    
 
     scene->lockstep_scheduler.syncThreadsWithReduction( threadID, numThreads, reduceBinsParallel, global_bin16 );
     
@@ -559,7 +551,7 @@ namespace embree
 
 	for (size_t dim=0;dim<3;dim++)
 	  {
-	    if (unlikely(centroidDiagonal_2[dim] == 0.0f)) continue;
+	    if (unlikely(mapping.centroidDiagonal_2[dim] == 0.0f)) continue;
 
 	    const mic_f rArea = prefix_area_rl(bin16.min_x[dim],bin16.min_y[dim],bin16.min_z[dim],
 					       bin16.max_x[dim],bin16.max_y[dim],bin16.max_z[dim]);
@@ -612,19 +604,14 @@ namespace embree
       current.createLeaf();
       return false;
     }
-    
-    const mic_f centroidMin = broadcast4to16f(&current.bounds.centroid2.lower);
-    const mic_f centroidMax = broadcast4to16f(&current.bounds.centroid2.upper);
 
-    const mic_f centroidBoundsMin_2 = centroidMin;
-    const mic_f centroidDiagonal_2  = centroidMax-centroidMin;
-    const mic_f scale = select(centroidDiagonal_2 != 0.0f,rcp(centroidDiagonal_2) * mic_f(16.0f * 0.99f),mic_f::zero());
+    const BinMapping mapping(current.bounds);
 
     mic_f leftArea[3];
     mic_f rightArea[3];
     mic_i leftNum[3];
 
-    fastbin<PrimRef>(prims,current.begin,current.end,centroidBoundsMin_2,scale,leftArea,rightArea,leftNum);
+    fastbin<PrimRef>(prims,current.begin,current.end,mapping,leftArea,rightArea,leftNum);
 
     const unsigned int items = current.items();
     const float voxelArea = area(current.bounds.geometry);
@@ -633,7 +620,7 @@ namespace embree
 
     for (size_t dim = 0;dim < 3;dim++) 
       {
-	if (unlikely(centroidDiagonal_2[dim] == 0.0f)) continue;
+	if (unlikely(mapping.centroidDiagonal_2[dim] == 0.0f)) continue;
 
 	const mic_f rArea   = rightArea[dim]; // bin16.prefix_area_rl(dim);
 	const mic_f lArea   = leftArea[dim];  // bin16.prefix_area_lr(dim);      
@@ -1161,14 +1148,8 @@ namespace embree
     const unsigned int startID = current.begin + ((localThreadID+0)*items/4);
     const unsigned int endID   = current.begin + ((localThreadID+1)*items/4);
     
-    const mic_f centroidMin = broadcast4to16f(&current.bounds.centroid2.lower);
-    const mic_f centroidMax = broadcast4to16f(&current.bounds.centroid2.upper);
-
-    const mic_f centroidBoundsMin_2 = centroidMin;
-    const mic_f centroidDiagonal_2  = centroidMax-centroidMin;
-    const mic_f scale = select(centroidDiagonal_2 != 0.0f,rcp(centroidDiagonal_2) * mic_f(16.0f * 0.99f),mic_f::zero());
-
-    fastbin<PrimRef>(prims,startID,endID,centroidBoundsMin_2,scale,global_bin16[globalThreadID]);    
+    const BinMapping mapping(current.bounds);
+    fastbin<PrimRef>(prims,startID,endID,mapping,global_bin16[globalThreadID]);    
 
     localTaskScheduler[globalCoreID].syncThreads(localThreadID);
 
@@ -1185,7 +1166,7 @@ namespace embree
 
 	for (size_t dim=0;dim<3;dim++)
 	  {
-	    if (unlikely(centroidDiagonal_2[dim] == 0.0f)) continue;
+	    if (unlikely(mapping.centroidDiagonal_2[dim] == 0.0f)) continue;
 
 	    const mic_f rArea = prefix_area_rl(bin16.min_x[dim],bin16.min_y[dim],bin16.min_z[dim],
 					       bin16.max_x[dim],bin16.max_y[dim],bin16.max_z[dim]);

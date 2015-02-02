@@ -274,6 +274,7 @@ namespace embree
       for (size_t i=0;i<4;i++)
 	threadState[j][i] = 0;
     mode = 0;
+    coreID = 0;
   }
 
   void LockStepTaskScheduler4ThreadsLocalCore::syncThreads(const size_t localThreadID) {
