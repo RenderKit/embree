@@ -52,6 +52,27 @@ namespace embree
     float cost;
   };
 
+  struct BinMapping {
+    mic_f centroidDiagonal_2;
+    mic_f centroidBoundsMin_2;
+    mic_f scale;
+
+    __forceinline BinMapping(const Centroid_Scene_AABB &bounds) 
+    {
+      const mic_f centroidMin = broadcast4to16f(&bounds.centroid2.lower);
+      const mic_f centroidMax = broadcast4to16f(&bounds.centroid2.upper);
+      centroidDiagonal_2  = centroidMax-centroidMin;
+      centroidBoundsMin_2 = centroidMin;
+      scale               = select(centroidDiagonal_2 != 0.0f,rcp(centroidDiagonal_2) * mic_f(16.0f * 0.99f),mic_f::zero());      
+    }
+
+    __forceinline mic_i getBinID(const mic_f &centroid_2) const
+    {
+      return convert_uint32((centroid_2 - centroidBoundsMin_2)*scale);
+    }
+    
+  };
+
   struct BinPartitionMapping {
 
     mic_f c;
@@ -59,7 +80,7 @@ namespace embree
     mic_f bestSplit_f;
     mic_m dim_mask;
 
-    BinPartitionMapping(const Split &split, const Centroid_Scene_AABB &bounds) 
+     __forceinline BinPartitionMapping(const Split &split, const Centroid_Scene_AABB &bounds) 
     {
       const unsigned int bestSplitDim     = split.dim;
       const unsigned int bestSplit        = split.pos;
@@ -158,8 +179,7 @@ namespace embree
   __forceinline void fastbin(const Primitive * __restrict__ const aabb,
 			     const unsigned int thread_start,
 			     const unsigned int thread_end,
-			     const mic_f &centroidBoundsMin_2,
-			     const mic_f &scale,
+			     const BinMapping &mapping,
 			     mic_f lArea[3],
 			     mic_f rArea[3],
 			     mic_i lNum[3])
@@ -211,7 +231,7 @@ namespace embree
 	const mic_f b_max = bounds.y;
 
 	const mic_f centroid_2 = b_min + b_max; 
-	const mic_i binID = convert_uint32((centroid_2 - centroidBoundsMin_2)*scale);
+	const mic_i binID = mapping.getBinID(centroid_2); // convert_uint32((centroid_2 - centroidBoundsMin_2)*scale);
 	// ------------------------------------------------------------------------      
 	assert(0 <= binID[0] && binID[0] < 16);
 	assert(0 <= binID[1] && binID[1] < 16);
@@ -260,7 +280,7 @@ namespace embree
 	const mic_f b_max = bounds.y;
 
 	const mic_f centroid_2 = b_min + b_max; 
-	const mic_i binID = convert_uint32((centroid_2 - centroidBoundsMin_2)*scale);
+	const mic_i binID = mapping.getBinID(centroid_2); // const mic_i binID = convert_uint32((centroid_2 - centroidBoundsMin_2)*scale);
 	// ------------------------------------------------------------------------      
 	assert(0 <= binID[0] && binID[0] < 16);
 	assert(0 <= binID[1] && binID[1] < 16);
@@ -324,7 +344,7 @@ namespace embree
 	    const mic_f b_max  = bounds.y;
 
 	    const mic_f centroid_2 = b_min + b_max;
-	    const mic_i binID = convert_uint32((centroid_2 - centroidBoundsMin_2)*scale);
+	    const mic_i binID = mapping.getBinID(centroid_2); // const mic_i binID = convert_uint32((centroid_2 - centroidBoundsMin_2)*scale);
 
 	    assert(0 <= binID[0] && binID[0] < 16);
 	    assert(0 <= binID[1] && binID[1] < 16);
@@ -394,8 +414,7 @@ namespace embree
 				 const mic3f &cmat,
 				 const unsigned int thread_start,
 				 const unsigned int thread_end,
-				 const mic_f &centroidBoundsMin_2,
-				 const mic_f &scale,
+				 const BinMapping &mapping,
 				 mic_f lArea[3],
 				 mic_f rArea[3],
 				 mic_i lNum[3])
@@ -463,7 +482,7 @@ namespace embree
 	const mic_f b_max  = bounds.y;
 
 	const mic_f centroid_2 = b_min + b_max;
-	const mic_i binID_noclamp = convert_uint32((centroid_2 - centroidBoundsMin_2)*scale);
+	const mic_i binID_noclamp = mapping.getBinID(centroid_2); // convert_uint32((centroid_2 - centroidBoundsMin_2)*scale);
 	const mic_i binID = min(max(binID_noclamp,mic_i::zero()),mic_i(15));
 	assert(0 <= binID[0] && binID[0] < 16);
 	assert(0 <= binID[1] && binID[1] < 16);
@@ -759,8 +778,7 @@ namespace embree
   __forceinline void fastbin(const Primitive * __restrict__ const aabb,
 			     const unsigned int thread_start,
 			     const unsigned int thread_end,
-			     const mic_f &centroidBoundsMin_2,
-			     const mic_f &scale,
+			     const BinMapping &mapping,
 			     Bin16 &bin16)
   {
     const mic_f init_min = mic_f::inf();
@@ -820,7 +838,7 @@ namespace embree
 	const mic_f b_max  = bounds.y;
 
 	const mic_f centroid_2 = b_min + b_max; 
-	const mic_i binID = convert_uint32((centroid_2 - centroidBoundsMin_2)*scale);
+	const mic_i binID = mapping.getBinID(centroid_2); // convert_uint32((centroid_2 - centroidBoundsMin_2)*scale);
 
 	assert(0 <= binID[0] && binID[0] < 16); 
 	assert(0 <= binID[1] && binID[1] < 16); 

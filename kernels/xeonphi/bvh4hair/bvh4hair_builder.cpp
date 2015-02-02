@@ -244,16 +244,11 @@ namespace embree
     const unsigned int startID = current.begin + ((threadID+0)*items/numThreads);
     const unsigned int endID   = current.begin + ((threadID+1)*items/numThreads);
 
-    const mic_f centroidMin = broadcast4to16f(&current.bounds.centroid2.lower);
-    const mic_f centroidMax = broadcast4to16f(&current.bounds.centroid2.upper);
-
-    const mic_f centroidBoundsMin_2 = centroidMin;
-    const mic_f centroidDiagonal_2  = centroidMax-centroidMin;
-    const mic_f scale = select(centroidDiagonal_2 != 0.0f,rcp(centroidDiagonal_2) * mic_f(16.0f * 0.99f),mic_f::zero());
+    const BinMapping mapping(current.bounds);  
 
     Bezier1i  *__restrict__ const tmp_prims = (Bezier1i*)accel;
 
-    fastbin<Bezier1i>(prims,startID,endID,centroidBoundsMin_2,scale,global_bin16[threadID]);    
+    fastbin<Bezier1i>(prims,startID,endID,mapping,global_bin16[threadID]);    
 
     scene->lockstep_scheduler.syncThreadsWithReduction( threadID, numThreads, reduceBinsParallel, global_bin16 );
     
@@ -267,7 +262,7 @@ namespace embree
 
 	for (size_t dim=0;dim<3;dim++)
 	  {
-	    if (unlikely(centroidDiagonal_2[dim] == 0.0f)) continue;
+	    if (unlikely(mapping.centroidDiagonal_2[dim] == 0.0f)) continue;
 
 	    const mic_f rArea = prefix_area_rl(bin16.min_x[dim],bin16.min_y[dim],bin16.min_z[dim],
 					       bin16.max_x[dim],bin16.max_y[dim],bin16.max_z[dim]);
@@ -312,14 +307,9 @@ namespace embree
     const unsigned int startID = current.begin + ((localThreadID+0)*items/4);
     const unsigned int endID   = current.begin + ((localThreadID+1)*items/4);
     
-    const mic_f centroidMin = broadcast4to16f(&current.bounds.centroid2.lower);
-    const mic_f centroidMax = broadcast4to16f(&current.bounds.centroid2.upper);
+    const BinMapping mapping(current.bounds);
 
-    const mic_f centroidBoundsMin_2 = centroidMin;
-    const mic_f centroidDiagonal_2  = centroidMax-centroidMin;
-    const mic_f scale = select(centroidDiagonal_2 != 0.0f,rcp(centroidDiagonal_2) * mic_f(16.0f * 0.99f),mic_f::zero());
-
-    fastbin<Bezier1i>(prims,startID,endID,centroidBoundsMin_2,scale,global_bin16[globalThreadID]);    
+    fastbin<Bezier1i>(prims,startID,endID,mapping,global_bin16[globalThreadID]);    
 
     localTaskScheduler[globalCoreID].syncThreads(localThreadID);
 
@@ -336,7 +326,7 @@ namespace embree
 
 	for (size_t dim=0;dim<3;dim++)
 	  {
-	    if (unlikely(centroidDiagonal_2[dim] == 0.0f)) continue;
+	    if (unlikely(mapping.centroidDiagonal_2[dim] == 0.0f)) continue;
 
 	    const mic_f rArea = prefix_area_rl(bin16.min_x[dim],bin16.min_y[dim],bin16.min_z[dim],
 					       bin16.max_x[dim],bin16.max_y[dim],bin16.max_z[dim]);
@@ -571,19 +561,14 @@ namespace embree
       current.createLeaf();
       return false;
     }
-    
-    const mic_f centroidMin = broadcast4to16f(&current.bounds.centroid2.lower);
-    const mic_f centroidMax = broadcast4to16f(&current.bounds.centroid2.upper);
 
-    const mic_f centroidBoundsMin_2 = centroidMin;
-    const mic_f centroidDiagonal_2  = centroidMax-centroidMin;
-    const mic_f scale = select(centroidDiagonal_2 != 0.0f,rcp(centroidDiagonal_2) * mic_f(16.0f * 0.99f),mic_f::zero());
+    const BinMapping mapping(current.bounds);
 
     mic_f leftArea[3];
     mic_f rightArea[3];
     mic_i leftNum[3];
 
-    fastbin<Bezier1i>(prims,current.begin,current.end,centroidBoundsMin_2,scale,leftArea,rightArea,leftNum);
+    fastbin<Bezier1i>(prims,current.begin,current.end,mapping,leftArea,rightArea,leftNum);
 
     const unsigned int items = current.items();
     const float voxelArea = area(current.bounds.geometry);
@@ -592,7 +577,7 @@ namespace embree
 
     for (size_t dim = 0;dim < 3;dim++) 
       {
-	if (unlikely(centroidDiagonal_2[dim] == 0.0f)) continue;
+	if (unlikely(mapping.centroidDiagonal_2[dim] == 0.0f)) continue;
 
 	const mic_f rArea   = rightArea[dim]; // bin16.prefix_area_rl(dim);
 	const mic_f lArea   = leftArea[dim];  // bin16.prefix_area_lr(dim);      
@@ -698,66 +683,8 @@ namespace embree
 
 	 auto part = [&] (Bezier1i* const t_array,
 			  const size_t size) 
-	   {                                               
-	     CentroidGeometryAABB leftReduction;
-	     CentroidGeometryAABB rightReduction;
-	     leftReduction.reset();
-	     rightReduction.reset();
-
-	     Bezier1i* l = t_array;
-	     Bezier1i* r = t_array + size - 1;
-
-	     while(1)
-	       {
-		 /* *l < pivot */
-		 while (likely(l <= r)) 
-		   {
-		     const mic2f bounds = l->getBounds();
-		     evictL1(((char*)l)-2*64);
-		     const mic_f b_min  = bounds.x;
-		     const mic_f b_max  = bounds.y;
-		     prefetch<PFHINT_L1EX>(((char*)l)+4*64);
-
-		     if (unlikely(mapping.ge_split(b_min,b_max))) break;
-
-		     prefetch<PFHINT_L2EX>(((char*)l)+20*64);
-
-		     leftReduction.extend(b_min,b_max);
-		     ++l;
-		   }
-		 /* *r >= pivot) */
-		 while (likely(l <= r))
-		   {
-		     const mic2f bounds = r->getBounds();
-		     evictL1(((char*)r)+2*64);
-		     const mic_f b_min  = bounds.x;
-		     const mic_f b_max  = bounds.y;
-		     prefetch<PFHINT_L1EX>(((char*)r)-4*64);	  
-
-		     if (unlikely(mapping.lt_split(b_min,b_max))) break;
-		     prefetch<PFHINT_L2EX>(((char*)r)-20*64);	  
-
-		     rightReduction.extend(b_min,b_max);
-		     --r;
-		   }
-
-		 if (r<l) break;
-
-		 rightReduction.extend(l->getBounds().x,l->getBounds().y);
-		 leftReduction.extend(r->getBounds().x,r->getBounds().y);
-
-		 xchg(*l,*r);
-		 l++; r--;
-	       }
-      
-	     Centroid_Scene_AABB cs_left ( leftReduction );
-	     Centroid_Scene_AABB cs_right ( rightReduction );
-
-	     global_sharedData.left.extend_atomic(cs_left);
-	     global_sharedData.right.extend_atomic(cs_right);
-	    
-	     return l - t_array;        
-
+	   {             
+	    return partitionPrimitives<Bezier1i,true>(t_array,size,mapping,global_sharedData.left,global_sharedData.right);
 	   };
 
 	 size_t mid_parallel = parallel_in_place_partitioning_static<Bezier1i>(&prims[current.begin],
@@ -827,66 +754,8 @@ namespace embree
 
 	 auto part = [&] (Bezier1i* const t_array,
 			  const size_t size) 
-	   {                                               
-	     CentroidGeometryAABB leftReduction;
-	     CentroidGeometryAABB rightReduction;
-	     leftReduction.reset();
-	     rightReduction.reset();
-
-	     Bezier1i* l = t_array;
-	     Bezier1i* r = t_array + size - 1;
-
-	     while(1)
-	       {
-		 /* *l < pivot */
-		 while (likely(l <= r)) 
-		   {
-		     const mic2f bounds = l->getBounds();
-		     evictL1(((char*)l)-2*64);
-		     const mic_f b_min  = bounds.x;
-		     const mic_f b_max  = bounds.y;
-		     prefetch<PFHINT_L1EX>(((char*)l)+4*64);
-
-		     if (unlikely(mapping.ge_split(b_min,b_max))) break;
-
-		     prefetch<PFHINT_L2EX>(((char*)l)+20*64);
-
-		     leftReduction.extend(b_min,b_max);
-		     ++l;
-		   }
-		 /* *r >= pivot) */
-		 while (likely(l <= r))
-		   {
-		     const mic2f bounds = r->getBounds();
-		     evictL1(((char*)r)+2*64);
-		     const mic_f b_min  = bounds.x;
-		     const mic_f b_max  = bounds.y;
-		     prefetch<PFHINT_L1EX>(((char*)r)-4*64);	  
-
-		     if (unlikely(mapping.lt_split(b_min,b_max))) break;
-		     prefetch<PFHINT_L2EX>(((char*)r)-20*64);	  
-
-		     rightReduction.extend(b_min,b_max);
-		     --r;
-		   }
-
-		 if (r<l) break;
-
-		 rightReduction.extend(l->getBounds().x,l->getBounds().y);
-		 leftReduction.extend(r->getBounds().x,r->getBounds().y);
-
-		 xchg(*l,*r);
-		 l++; r--;
-	       }
-      
-	     Centroid_Scene_AABB cs_left ( leftReduction );
-	     Centroid_Scene_AABB cs_right ( rightReduction );
-
-	     sd.left.extend_atomic(cs_left);
-	     sd.right.extend_atomic(cs_right);
-	    
-	     return l - t_array;        
-
+	   {               
+	    return partitionPrimitives<Bezier1i,true>(t_array,size,mapping,sd.left,sd.right);
 	   };
 
 	 size_t mid_parallel = parallel_in_place_partitioning_static<Bezier1i>(&prims[sd.rec.begin],
@@ -1224,12 +1093,7 @@ namespace embree
     Split split;
     split.cost = items * voxelArea * INTERSECTION_COST;;
     
-    const mic_f centroidMin = broadcast4to16f(&current.bounds.centroid2.lower);
-    const mic_f centroidMax = broadcast4to16f(&current.bounds.centroid2.upper);
-
-    const mic_f centroidBoundsMin_2 = centroidMin;
-    const mic_f centroidDiagonal_2  = centroidMax-centroidMin;
-    const mic_f scale = select(centroidDiagonal_2 != 0.0f,rcp(centroidDiagonal_2) * mic_f(16.0f * 0.99f),mic_f::zero());
+    const BinMapping mapping(current.bounds);
 
     mic_f leftArea[3];
     mic_f rightArea[3];
@@ -1238,12 +1102,12 @@ namespace embree
 
     const mic3f cmat = convert(current.xfm);
     
-    fastbin_xfm<Bezier1i>(prims,cmat,current.begin,current.end,centroidBoundsMin_2,scale,leftArea,rightArea,leftNum);
+    fastbin_xfm<Bezier1i>(prims,cmat,current.begin,current.end,mapping,leftArea,rightArea,leftNum);
 
 
     for (size_t dim = 0;dim < 3;dim++) 
       {
-	if (unlikely(centroidDiagonal_2[dim] == 0.0f)) continue;
+	if (unlikely(mapping.centroidDiagonal_2[dim] == 0.0f)) continue;
 
 	const mic_f rArea   = rightArea[dim]; // bin16.prefix_area_rl(dim);
 	const mic_f lArea   = leftArea[dim];  // bin16.prefix_area_lr(dim);      
@@ -1277,11 +1141,11 @@ namespace embree
 	Split splitAABB;
 	splitAABB.cost = items * voxelArea * INTERSECTION_COST;
 
-	fastbin<Bezier1i>(prims,current.begin,current.end,centroidBoundsMin_2,scale,leftArea,rightArea,leftNum);
+	fastbin<Bezier1i>(prims,current.begin,current.end,mapping,leftArea,rightArea,leftNum);
 
 	for (size_t dim = 0;dim < 3;dim++) 
 	  {
-	    if (unlikely(centroidDiagonal_2[dim] == 0.0f)) continue;
+	    if (unlikely(mapping.centroidDiagonal_2[dim] == 0.0f)) continue;
 
 	    const mic_f rArea   = rightArea[dim]; // bin16.prefix_area_rl(dim);
 	    const mic_f lArea   = leftArea[dim];  // bin16.prefix_area_lr(dim);      
@@ -1381,12 +1245,6 @@ namespace embree
 
     current.PreQuantizeMatrix();
 
-#if 0
-    PING;
-    DBG_PRINT( current.xfm );
-    DBG_PRINT( current.xfm );
-
-#endif
     DBG(DBG_PRINT(current.xfm));
   }
 
