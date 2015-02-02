@@ -624,7 +624,7 @@ namespace embree
                   return bounds;
                 }, [] (const BBox3fa& a, const BBox3fa& b) { return merge(a,b); });
             
-            timer("compute_bounds");
+            //timer("compute_bounds");
 
             /* compute morton codes */
             Scene::Iterator<Mesh,1> iter(scene);
@@ -639,7 +639,7 @@ namespace embree
                   }
                 });
             
-            timer("compute_morton_codes");
+            //timer("compute_morton_codes");
 
             /* create BVH */
             AllocBVH4Node allocNode;
@@ -652,7 +652,7 @@ namespace embree
               dest,morton,numPrimitives,4,BVH4::maxBuildDepth,minLeafSize,maxLeafSize);
             bvh->set(node_bounds.first,node_bounds.second,numPrimitives);
             
-            //timer("compute_tree");
+            timer("compute_tree");
 
             if (g_verbose >= 1) dt = getSeconds()-t0;
 

@@ -385,7 +385,7 @@ namespace embree
         morton = tmp;
         radix_sort_copy_u32(src,morton,numPrimitives);
 
-        g_timer("sort");
+        //g_timer("sort");
         
         /* build BVH */
         NodeRef root;
@@ -398,7 +398,7 @@ namespace embree
         //LockStepTaskScheduler::execute_tbb([&] { bounds = recurse(br, NULL); });
         bounds = recurse(br, NULL); // FIXME: why is this faster??
 
-        g_timer("create_tree");
+        //g_timer("create_tree");
 
         return std::make_pair(root,bounds);
       }
