@@ -924,7 +924,7 @@ namespace embree
     return ge(binID,bestSplit_f);    
   }
 
-  template<class Primitive>
+  template<class Primitive, bool EXTEND_ATOMIC>
   __forceinline size_t partitionPrimitives(Primitive *__restrict__ const t_array,
 					   const size_t size,
 					   const BinPartitionMapping &mapping,
@@ -945,7 +945,6 @@ namespace embree
 	  while (likely(l <= r)) 
 	    {
 	      const mic2f bounds = l->getBounds();
-	      evictL1(((char*)l)-2*64);
 	      const mic_f b_min  = bounds.x;
 	      const mic_f b_max  = bounds.y;
 	      prefetch<PFHINT_L1EX>(((char*)l)+4*64);
@@ -961,7 +960,6 @@ namespace embree
 	  while (likely(l <= r))
 	    {
 	      const mic2f bounds = r->getBounds();
-	      evictL1(((char*)r)+2*64);
 	      const mic_f b_min  = bounds.x;
 	      const mic_f b_max  = bounds.y;
 	      prefetch<PFHINT_L1EX>(((char*)r)-4*64);	  
@@ -982,8 +980,18 @@ namespace embree
 	  l++; r--;
 	}
       
-      local_left  = Centroid_Scene_AABB( leftReduction );
-      local_right = Centroid_Scene_AABB( rightReduction );
+      if (!EXTEND_ATOMIC)
+	{
+	  local_left  = Centroid_Scene_AABB( leftReduction );
+	  local_right = Centroid_Scene_AABB( rightReduction );
+	}
+      else
+	{
+	  Centroid_Scene_AABB update_left  = Centroid_Scene_AABB( leftReduction );
+	  Centroid_Scene_AABB update_right = Centroid_Scene_AABB( rightReduction );
+	  local_left.extend_atomic( update_left );
+	  local_right.extend_atomic( update_right );
+	}
 
       return l - t_array;              
     }
