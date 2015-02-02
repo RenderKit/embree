@@ -137,7 +137,7 @@ namespace embree
 	
 	/* verbose mode */
 	if (g_verbose >= 1)
-	  std::cout << "[DONE] " << 1000.0f*dt << "ms (" << numPrimitives/dt*1E-6 << " Mtris/s)" << std::endl;
+	  std::cout << "[DONE] " << 1000.0f*dt << "ms (" << numPrimitives/dt*1E-6 << " Mprim/s)" << std::endl;
 	if (g_verbose >= 2)
 	  bvh->printStatistics();
       }
