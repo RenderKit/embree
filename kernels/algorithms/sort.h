@@ -246,7 +246,7 @@ namespace embree
 	  scheduler->dispatchTask(task_radixsort,this,0,numThreads);
 #endif
 
-#if TASKING_TBB || TASKING_TBB_INTERNAL // FIXME: sort should get split into stages
+#if TASKING_TBB || TASKING_TBB_INTERNAL // FIXME: sort should get split into stages, IMPORTANT FOR TBB!!
 	  const size_t numThreads = min(TaskSchedulerNew::threadCount(),MAX_THREADS);
 	  parent->barrier.init(numThreads);
 	  parallel_for(numThreads,[&] (size_t taskIndex) { radixsort(taskIndex,numThreads); });
@@ -543,10 +543,8 @@ namespace embree
 	  scheduler->dispatchTask(task_radixsort,this,0,numThreads);
 #endif
 
-#if TASKING_TBB || TASKING_TBB_INTERNAL // FIXME: sort should get split into stages
+#if TASKING_TBB || TASKING_TBB_INTERNAL
 	  const size_t numThreads = min(TaskSchedulerNew::threadCount(),MAX_THREADS);
-	  //parent->barrier.init(numThreads);
-	  //parallel_for(numThreads,[&] (size_t taskIndex) { radixsort(taskIndex,numThreads); });
           tbbRadixSort(numThreads);
 #endif
 	}
