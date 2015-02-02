@@ -35,6 +35,16 @@ namespace embree
     {
       reset();
     }
+
+    __forceinline Split (const float default_cost) 
+    {
+      reset();
+      cost = default_cost;
+    }
+
+    __forceinline bool   valid() { return pos != -1; }
+    __forceinline bool invalid() { return pos == -1; }
+
     
     /*! stream output */
     friend std::ostream& operator<<(std::ostream& cout, const Split& split) {
@@ -56,7 +66,6 @@ namespace embree
     mic_f centroidDiagonal_2;
     mic_f centroidBoundsMin_2;
     mic_f scale;
-
     __forceinline BinMapping(const Centroid_Scene_AABB &bounds) 
     {
       const mic_f centroidMin = broadcast4to16f(&bounds.centroid2.lower);
@@ -69,6 +78,11 @@ namespace embree
     __forceinline mic_i getBinID(const mic_f &centroid_2) const
     {
       return convert_uint32((centroid_2 - centroidBoundsMin_2)*scale);
+    }
+
+    __forceinline mic_m getValidDimMask() const
+    {
+      return (centroidDiagonal_2 > 0.0f) & (mic_m)0x7;
     }
     
   };
@@ -172,6 +186,58 @@ namespace embree
   __forceinline mic_i prefix_count(const mic_i c)
   {
     return prefix_sum(c);
+  }
+
+
+  __forceinline Split getBestSplit(const BuildRecord& current,
+				   const mic_f leftArea[3],
+				   const mic_f rightArea[3],
+				   const mic_i leftNum[3],
+				   const mic_m &m_dim)
+  {
+    const unsigned int items        = current.items();
+    const float voxelArea           = area(current.bounds.geometry);
+    //const mic_f centroidMin         = broadcast4to16f(&current.bounds.centroid2.lower);
+    //const mic_f centroidMax         = broadcast4to16f(&current.bounds.centroid2.upper);
+    //const mic_f centroidDiagonal_2  = centroidMax-centroidMin;
+
+    Split split( items * voxelArea );
+ 
+    long dim = -1;
+    while((dim = bitscan64(dim,m_dim)) != BITSCAN_NO_BIT_SET_64) 
+      {	    
+	//assert(centroidDiagonal_2[dim] > 0.0f);
+
+	const mic_f rArea   = rightArea[dim]; // bin16.prefix_area_rl(dim);
+	const mic_f lArea   = leftArea[dim];  // bin16.prefix_area_lr(dim);      
+	const mic_i lnum    = leftNum[dim];   // bin16.prefix_count(dim);
+
+	const mic_i rnum    = mic_i(items) - lnum;
+	const mic_i lblocks = (lnum + mic_i(3)) >> 2;
+	const mic_i rblocks = (rnum + mic_i(3)) >> 2;
+	const mic_m m_lnum  = lnum == 0;
+	const mic_m m_rnum  = rnum == 0;
+	const mic_f cost    = select(m_lnum|m_rnum,mic_f::inf(),lArea * mic_f(lblocks) + rArea * mic_f(rblocks) + voxelArea );
+
+	if (lt(cost,mic_f(split.cost)))
+	  {
+
+	    const mic_f min_cost    = vreduce_min(cost); 
+	    const mic_m m_pos       = min_cost == cost;
+	    const unsigned long pos = bitscan64(m_pos);	    
+
+	    assert(pos < 15);
+
+	    if (pos < 15)
+	      {
+		split.cost    = cost[pos];
+		split.pos     = pos+1;
+		split.dim     = dim;	    
+		split.numLeft = lnum[pos];
+	      }
+	  }
+      };
+    return split;
   }
 
 
@@ -727,8 +793,29 @@ namespace embree
 
 	  count[i] += b.count[i];
 	}
-
     } 
+
+
+    __forceinline Split bestSplit(const BuildRecord& current,const mic_m &m_dim) const
+    {
+      mic_f lArea[3];
+      mic_f rArea[3];
+      mic_i leftNum[3];
+
+      long dim = -1;
+      while((dim = bitscan64(dim,m_dim)) != BITSCAN_NO_BIT_SET_64) 
+	{	
+	  rArea[dim]   = prefix_area_rl(min_x[dim],min_y[dim],min_z[dim],
+					max_x[dim],max_y[dim],max_z[dim]);
+	  lArea[dim]   = prefix_area_lr(min_x[dim],min_y[dim],min_z[dim],
+					max_x[dim],max_y[dim],max_z[dim]);
+	  leftNum[dim] = prefix_count(count[dim]);
+	}    
+
+      return getBestSplit(current,lArea,rArea,leftNum,m_dim);
+      
+    }
+
 
   };
 
@@ -908,38 +995,6 @@ namespace embree
     bin16.thread_count[0] = count0; 
     bin16.thread_count[1] = count1; 
     bin16.thread_count[2] = count2;     
-  }
-
-
-
-  template<class Primitive>
-  static __forceinline mic_m lt_split(const Primitive *__restrict__ const aabb,
-				      const unsigned int dim,
-				      const mic_f &c,
-				      const mic_f &s,
-				      const mic_f &bestSplit_f)
-  {
-    const mic2f b = aabb->getBounds();
-    const mic_f b_min = b.x;
-    const mic_f b_max = b.y;
-    const mic_f centroid_2 = b_min + b_max;
-    const mic_f binID = (centroid_2 - c)*s;
-    return lt(binID,bestSplit_f);    
-  }
-
-  template<class Primitive>
-  static __forceinline mic_m ge_split(const Primitive *__restrict__ const aabb,
-				      const unsigned int dim,
-				      const mic_f &c,
-				      const mic_f &s,
-				      const mic_f &bestSplit_f)
-  {
-    const mic2f b = aabb->getBounds();
-    const mic_f b_min = b.x;
-    const mic_f b_max = b.y;
-    const mic_f centroid_2 = b_min + b_max;
-    const mic_f binID = (centroid_2 - c)*s;
-    return ge(binID,bestSplit_f);    
   }
 
   template<class Primitive, bool EXTEND_ATOMIC>
