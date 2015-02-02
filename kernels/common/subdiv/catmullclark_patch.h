@@ -196,6 +196,8 @@ namespace embree
 
       //////////////////////////////
       dest.eval_start_index       = (8-offset)>>1;
+      if (dest.eval_start_index >= dest.face_valence) dest.eval_start_index -= dest.face_valence;
+      assert( dest.eval_start_index < dest.face_valence );
       dest.eval_unique_identifier = 0;
       //////////////////////////////
     }

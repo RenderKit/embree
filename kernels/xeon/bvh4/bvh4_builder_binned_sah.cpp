@@ -115,7 +115,7 @@ namespace embree
 	  std::cout << "building BVH4<" << bvh->primTy.name << "> with " << TOSTRING(isa) "::BVH4BuilderBinnedSAH ... " << std::flush;
 
 	double t0 = 0.0f, dt = 0.0f;
-	//profile("BVH4BuilderBinnedSAH",2,20,numPrimitives,[&] () {
+	profile("BVH4BuilderBinnedSAH",2,2000,numPrimitives,[&] () {
 	    
 	    if (g_verbose >= 1) t0 = getSeconds();
 	    
@@ -129,7 +129,7 @@ namespace embree
 
 	    if (g_verbose >= 1) dt = getSeconds()-t0;
 	    
-	    //});
+	    });
 
 	/* clear temporary data for static geometry */
 	bool staticGeom = mesh ? mesh->isStatic() : scene->isStatic();
