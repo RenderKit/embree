@@ -936,7 +936,7 @@ PRINT(CORRECT_numPrims);
     if (numPrimitivesOld != numPrimitives)
       {
 #if DEBUG
-	std::cout << "REALLOC node/accel arrays!" << std::endl;
+	//std::cout << "REALLOC node/accel arrays!" << std::endl;
 #endif      
 	const size_t numPrims = numPrimitives+4;
 	const size_t minAllocNodes =  ALLOCATOR_NODE_BLOCK_SIZE * MAX_MIC_THREADS; // (threadCount+1) 
@@ -947,9 +947,6 @@ PRINT(CORRECT_numPrims);
 
 	allocateMemoryPools(numPrims,numNodes,sizeof(BVH4i::Node),sizeof(SubdivPatch1),1.0f);
 
-#if DEBUG
-	DBG_PRINT( numAllocated64BytesBlocks );
-#endif
       }
 
     org_accel = accel;

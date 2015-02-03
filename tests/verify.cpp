@@ -2961,10 +2961,11 @@ namespace embree
 #endif
 #endif
 
+#endif
+
     POSITIVE("regression_static",         rtcore_regression(rtcore_regression_static_thread,false));
     POSITIVE("regression_dynamic",        rtcore_regression(rtcore_regression_dynamic_thread,false));
 
-#endif
 
 #if !defined(__MIC__)
     POSITIVE("regression_static_user_threads", rtcore_regression(rtcore_regression_static_thread,true));

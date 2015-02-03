@@ -32,7 +32,7 @@
 #define TIMER(x) 
 #define DBG(x) 
 
-#define PROFILE
+//#define PROFILE
 #define PROFILE_ITERATIONS 20
 
 #define MEASURE_MEMORY_ALLOCATION_TIME 0

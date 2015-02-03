@@ -32,16 +32,12 @@ namespace embree
 #define ENABLE_OBB_BVH4 1
 #define ENABLE_AABB_NODES 1
 
-#define BVH4HAIR_NODE_PREALLOC_FACTOR  0.7f
+#define BVH4HAIR_NODE_PREALLOC_FACTOR  0.8f
 
 #define AABB_OBB_SWITCH_THRESHOLD      1.1f
 #define THRESHOLD_SWITCH
 
 #define TIMER(x)  
-
-#if defined(DEBUG)
-  extern AtomicMutex mtx;
-#endif
 
   static double dt = 0.0f;
 
@@ -193,17 +189,17 @@ namespace embree
     const size_t size_accel    = numPrims * sizeAccelInBytes   + additional_size;
 
     numAllocated64BytesBlocks = size_node / sizeof(BVH4Hair::UnalignedNode); // FIXME: do memory handling in 64 byte blocks
-      
-#if DEBUG
-    DBG_PRINT(numAllocated64BytesBlocks);
-    DBG_PRINT(sizeNodeInBytes);
-    DBG_PRINT(sizePrimRefInBytes);
-    DBG_PRINT(sizeAccelInBytes);
 
-    DBG_PRINT(size_primrefs);
-    DBG_PRINT(size_node);
-    DBG_PRINT(size_accel);
-#endif
+    DBG(
+	DBG_PRINT(numAllocated64BytesBlocks);
+	DBG_PRINT(sizeNodeInBytes);
+	DBG_PRINT(sizePrimRefInBytes);
+	DBG_PRINT(sizeAccelInBytes);
+	
+	DBG_PRINT(size_primrefs);
+	DBG_PRINT(size_node);
+	DBG_PRINT(size_accel);
+	);
 
     prims = (Bezier1i                 *) os_malloc(size_primrefs); 
     node  = (BVH4Hair::UnalignedNode  *) os_malloc(size_node);
@@ -636,7 +632,7 @@ namespace embree
 	 size_t mid_parallel = parallel_in_place_partitioning_static<Bezier1i>(&prims[sd.rec.begin],
 									       current.size(),
 									       part,
-									       scene->lockstep_scheduler);
+									       localTaskScheduler[globalCoreID]);
 	 const unsigned int mid = current.begin + mid_parallel;
 
 
