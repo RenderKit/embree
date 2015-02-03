@@ -32,8 +32,6 @@ namespace embree
 {
   namespace isa
   {
-    ProfileTimer g_timer; // FIXME: remove
-
     struct AllocBVH4Node
     {
       __forceinline BVH4::Node* operator() (MortonBuildRecord<BVH4::NodeRef>& current, MortonBuildRecord<BVH4::NodeRef>* children, size_t numChildren, FastAllocator::ThreadLocal2* alloc)
@@ -471,7 +469,7 @@ namespace embree
 	  std::cout << "building BVH4<" << bvh->primTy.name << "> with " << TOSTRING(isa) "::BVH4MeshBuilderMortonGeneral ... " << std::flush;
 
 	double t0 = 0.0f, dt = 0.0f;
-	//profile(g_timer,2,20,numPrimitives,[&] (ProfileTimer& timer) {
+	profile(2,20,numPrimitives,[&] (ProfileTimer& timer) {
 	    
             if (g_verbose >= 1) t0 = getSeconds();
 	    
@@ -516,10 +514,11 @@ namespace embree
             bvh->set(node_bounds.first,node_bounds.second,numPrimitives);
 
             //timer("compute_tree");
+            timer("bvh4_builder_morton_new");
 
             if (g_verbose >= 1) dt = getSeconds()-t0;
             
-            // });
+          });
         
         /* clear temporary data for static geometry */
 	//bool staticGeom = mesh ? mesh->isStatic() : scene->isStatic(); // FIXME: implement
@@ -606,7 +605,7 @@ namespace embree
 	  std::cout << "building BVH4<" << bvh->primTy.name << "> with " << TOSTRING(isa) "::BVH4SceneBuilderMortonGeneral ... " << std::flush;
 
 	double t0 = 0.0f, dt = 0.0f;
-	profile(g_timer,2,20,numPrimitives,[&] (ProfileTimer& timer) {
+	//profile(2,20,numPrimitives,[&] (ProfileTimer& timer) {
 	    
             if (g_verbose >= 1) t0 = getSeconds();
 	    
@@ -652,11 +651,11 @@ namespace embree
               dest,morton,numPrimitives,4,BVH4::maxBuildDepth,minLeafSize,maxLeafSize);
             bvh->set(node_bounds.first,node_bounds.second,numPrimitives);
             
-            timer("compute_tree");
+            //timer("compute_tree");
 
             if (g_verbose >= 1) dt = getSeconds()-t0;
 
-          });
+            //});
         
         /* clear temporary data for static geometry */
 	//bool staticGeom = mesh ? mesh->isStatic() : scene->isStatic(); // FIXME: implement

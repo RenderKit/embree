@@ -115,7 +115,7 @@ namespace embree
 	  std::cout << "building BVH4<" << bvh->primTy.name << "> with " << TOSTRING(isa) "::BVH4BuilderBinnedSAH ... " << std::flush;
 
 	double t0 = 0.0f, dt = 0.0f;
-	profile("BVH4BuilderBinnedSAH",2,2000,numPrimitives,[&] () {
+	profile(2,2000,numPrimitives,[&] (ProfileTimer& timer) {
 	    
 	    if (g_verbose >= 1) t0 = getSeconds();
 	    
@@ -126,6 +126,7 @@ namespace embree
 	      (CreateAlloc(bvh),CreateBVH4Node(bvh),CreateLeaf<Primitive>(bvh),
 	       prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,sahBlockSize,minLeafSize,maxLeafSize);
 	    bvh->set(root,pinfo.geomBounds,pinfo.size());
+            timer("bvh4_builder_binned_sah");
 
 	    if (g_verbose >= 1) dt = getSeconds()-t0;
 	    

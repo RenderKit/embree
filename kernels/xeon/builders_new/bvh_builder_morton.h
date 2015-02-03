@@ -26,8 +26,6 @@ namespace embree
 {
   namespace isa
   {
-    extern ProfileTimer g_timer;
-
     template<typename NodeRef>
       class MortonBuildRecord 
     {
