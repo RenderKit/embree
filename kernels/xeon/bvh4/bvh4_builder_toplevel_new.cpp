@@ -33,22 +33,29 @@ namespace embree
 
     void BVH4BuilderTopLevelNew::build(size_t threadIndex, size_t threadCount) 
     {
-      double t0 = 0.0, dt = 0.0;
-      if (g_verbose >= 1) {
-	std::cout << "building BVH4<" << bvh->primTy.name << "> with " << TOSTRING(isa) << "::TwoLevel SAH builder ... " << std::flush;
-        t0 = getSeconds();
-      }
-
       /* delete some objects */
       size_t N = scene->size();
-      const size_t numPrimitives = scene->getNumPrimitives<TriangleMesh,1>();
       parallel_for(N, objects.size(), [&] (const range<size_t>& r) {
         for (size_t i=r.begin(); i<r.end(); i++) {
           delete builders[i]; builders[i] = NULL;
           delete objects[i]; objects[i] = NULL;
         }
       });
+
+      /* skip build for empty scene */
+      const size_t numPrimitives = scene->getNumPrimitives<TriangleMesh,1>();
+      if (numPrimitives == 0) {
+        prims.resize(0);
+        bvh->set(BVH4::emptyNode,empty,0);
+        return;
+      }
       
+      double t0 = 0.0, dt = 0.0;
+      if (g_verbose >= 1) {
+	std::cout << "building BVH4<" << bvh->primTy.name << "> with " << TOSTRING(isa) << "::TwoLevel SAH builder ... " << std::flush;
+        t0 = getSeconds();
+      }
+
       /* resize object array if scene got larger */
       if (objects.size() < N) {
         objects.resize(N);
