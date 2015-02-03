@@ -2448,6 +2448,7 @@ namespace embree
       AssertNoError();
       rtcCommit(scene);
       AssertNoError();
+      if (i%2 == 0) std::cout << "." << std::flush;
     }
     rtcCommit (scene);
     AssertNoError();
@@ -2868,7 +2869,7 @@ namespace embree
 #endif
 
 
-#if 1
+#if 0
     POSITIVE("empty_static",              rtcore_empty(RTC_SCENE_STATIC));
     POSITIVE("empty_dynamic",             rtcore_empty(RTC_SCENE_DYNAMIC));
     POSITIVE("flags_static_static",       rtcore_dynamic_flag(RTC_SCENE_STATIC, RTC_GEOMETRY_STATIC));
@@ -2893,12 +2894,16 @@ namespace embree
     POSITIVE("update_dynamic",            rtcore_update(RTC_GEOMETRY_DYNAMIC));
     POSITIVE("overlapping_triangles",     rtcore_overlapping_triangles(100000));
     POSITIVE("overlapping_hair",          rtcore_overlapping_hair(100000));
+    POSITIVE("new_delete_geometry",       rtcore_new_delete_geometry());
+
+#endif
 
     rtcore_build();
 
-#if !defined(__MIC__)
-    POSITIVE("new_delete_geometry",       rtcore_new_delete_geometry());
-#endif
+    const Vec3fa pos = Vec3fa(148376.0f,1234.0f,-223423.0f);
+
+    //rtcore_watertight_closed1("sphere", pos);
+    //exit(0);
 
 #if defined(RTCORE_RAY_MASK)
     rtcore_ray_masks_all();
@@ -2914,7 +2919,6 @@ namespace embree
 
     rtcore_packet_write_test_all();
 
-    const Vec3fa pos = Vec3fa(148376.0f,1234.0f,-223423.0f);
     rtcore_watertight_closed1("sphere", pos);
     rtcore_watertight_closed1("cube",pos);
     rtcore_watertight_plane1(100000);
@@ -2961,7 +2965,6 @@ namespace embree
 #endif
 #endif
 
-#endif
 
     POSITIVE("regression_static",         rtcore_regression(rtcore_regression_static_thread,false));
     POSITIVE("regression_dynamic",        rtcore_regression(rtcore_regression_dynamic_thread,false));

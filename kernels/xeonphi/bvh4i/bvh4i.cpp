@@ -136,6 +136,7 @@ namespace embree
     Accel::Intersectors intersectors;
     intersectors.ptr = bvh;
     intersectors.intersector1  = robust ? BVH4iTriangle1Intersector1Robust : BVH4iTriangle1Intersector1;
+
     if (robust)
       {
 	intersectors.intersector16          = BVH4iTriangle1Intersector16SingleMoellerRobust;

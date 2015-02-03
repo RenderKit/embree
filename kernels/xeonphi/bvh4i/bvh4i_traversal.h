@@ -62,11 +62,20 @@ namespace embree
 	    
 	    /* intersect single ray with 4 bounding boxes */
 
-	    tLowerXYZ = mask_msub(m_rdir1,tLowerXYZ,load16f(plower),org_rdir_xyz);
-	    tUpperXYZ = mask_msub(m_rdir0,tUpperXYZ,load16f(plower),org_rdir_xyz);
-
-	    tLowerXYZ = mask_msub(m_rdir0,tLowerXYZ,load16f(pupper),org_rdir_xyz);
-	    tUpperXYZ = mask_msub(m_rdir1,tUpperXYZ,load16f(pupper),org_rdir_xyz);
+	    if (ROBUST)
+	      {
+		tLowerXYZ = mask_msub_round_down(m_rdir1,tLowerXYZ,load16f(plower),org_rdir_xyz);
+		tUpperXYZ = mask_msub_round_up(m_rdir0,tUpperXYZ,load16f(plower),org_rdir_xyz);
+		tLowerXYZ = mask_msub_round_down(m_rdir0,tLowerXYZ,load16f(pupper),org_rdir_xyz);
+		tUpperXYZ = mask_msub_round_up(m_rdir1,tUpperXYZ,load16f(pupper),org_rdir_xyz);
+	      }
+	    else
+	      {
+		tLowerXYZ = mask_msub(m_rdir1,tLowerXYZ,load16f(plower),org_rdir_xyz);
+		tUpperXYZ = mask_msub(m_rdir0,tUpperXYZ,load16f(plower),org_rdir_xyz);
+		tLowerXYZ = mask_msub(m_rdir0,tLowerXYZ,load16f(pupper),org_rdir_xyz);
+		tUpperXYZ = mask_msub(m_rdir1,tUpperXYZ,load16f(pupper),org_rdir_xyz);
+	      }
 	  }
 	else
 	  {
@@ -105,8 +114,7 @@ namespace embree
 	  {
 	    const float round_down = 1.0f-2.0f*float(ulp);
 	    const float round_up   = 1.0f+2.0f*float(ulp);
-
-	    hitm = le(hitm,round_down*tNear,round_up*tFar);
+	    hitm = le(hitm,mul_round_down(round_down,tNear),mul_round_up(round_up,tFar));
 	  }
 	else
 	  hitm = le(hitm,tNear,tFar);

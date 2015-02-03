@@ -196,6 +196,10 @@ namespace embree
   __forceinline mic_f div_round_down (const mic_f& a, const mic_f& b) { return _mm512_div_round_ps(a,b,_MM_FROUND_TO_NEG_INF); }
   __forceinline mic_f div_round_up   (const mic_f& a, const mic_f& b) { return _mm512_div_round_ps(a,b,_MM_FROUND_TO_POS_INF); }
 
+  __forceinline mic_f mask_msub_round_down (const mic_m& mask,const mic_f& a, const mic_f& b, const mic_f& c) { return _mm512_mask_fmsub_round_ps(a,mask,b,c,_MM_FROUND_TO_NEG_INF); }
+
+  __forceinline mic_f mask_msub_round_up (const mic_m& mask,const mic_f& a, const mic_f& b, const mic_f& c) { return _mm512_mask_fmsub_round_ps(a,mask,b,c,_MM_FROUND_TO_POS_INF); }
+
   ////////////////////////////////////////////////////////////////////////////////
   /// Assignment Operators
   ////////////////////////////////////////////////////////////////////////////////
