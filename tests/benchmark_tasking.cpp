@@ -47,14 +47,25 @@
 #include <tbb/blocked_range.h>
 #include <tbb/tick_count.h>
 
-class pinning_observer: public tbb::task_scheduler_observer {
+#if defined(__MACOSX__)
+#define ENABLE_PINNING 0
+#else
+#define ENABLE_PINNING 1
+#endif
+
+class pinning_observer: public tbb::task_scheduler_observer
+{
+#if ENABLE_PINNING
     cpu_set_t *mask;
     int ncpus;
-
+#endif
+  
     const int pinning_step;
     tbb::atomic<int> thread_index;
 public:
-    pinning_observer( int pinning_step=1 ) : pinning_step(pinning_step), thread_index() {
+    pinning_observer( int pinning_step=1 ) : pinning_step(pinning_step), thread_index()
+    {
+#if ENABLE_PINNING
         for ( ncpus = sizeof(cpu_set_t)/CHAR_BIT; ncpus < 16*1024 /* some reasonable limit */; ncpus <<= 1 ) {
             mask = CPU_ALLOC( ncpus );
             if ( !mask ) break;
@@ -69,11 +80,13 @@ public:
         }
         if ( !mask )
             std::cout << "Warning: Failed to obtain process affinity mask. Thread affinitization is disabled." << std::endl;
+#endif
     }
 
-/*override*/ void on_scheduler_entry( bool ) {
+/*override*/ void on_scheduler_entry( bool )
+  {
+#if ENABLE_PINNING
     if ( !mask ) return;
-
     const size_t size = CPU_ALLOC_SIZE( ncpus );
     const int num_cpus = CPU_COUNT_S( size, mask );
     int thr_idx =
@@ -119,11 +132,18 @@ public:
         }
 #endif
         CPU_FREE( target_mask );
+#else
+        static std::once_flag flag;
+        std::call_once(flag, [](){ std::cout << "disabled setting of thread affinity" << std::endl; });
+#endif
     }
 
-    ~pinning_observer() {
+    ~pinning_observer()
+    {
+#if ENABLE_PINNING
         if ( mask )
             CPU_FREE( mask );
+#endif
     }
 };
 
