@@ -62,14 +62,14 @@ namespace embree
       BVH4* bvh;
     };
 
-    struct BVH4BuilderSubdivBinnedSAH : public Builder
+    struct BVH4SubdivGridBuilderBinnedSAHClass : public Builder
     {
       BVH4* bvh;
       Scene* scene;
       vector_t<PrimRef> prims; // FIXME: use os_malloc in vector_t for large allocations
       ParallelForForPrefixSumState<PrimInfo> pstate;
       
-      BVH4BuilderSubdivBinnedSAH (BVH4* bvh, Scene* scene)
+      BVH4SubdivGridBuilderBinnedSAHClass (BVH4* bvh, Scene* scene)
         : bvh(bvh), scene(scene) {}
 
       void build(size_t, size_t) 
@@ -85,7 +85,7 @@ namespace embree
 
         /* verbose mode */
         if (g_verbose >= 1)
-	  std::cout << "building BVH4<" << bvh->primTy.name << "> with " << TOSTRING(isa) "::BVH4BuilderSubdivBinnedSAH ... " << std::flush;
+	  std::cout << "building BVH4<" << bvh->primTy.name << "> with " << TOSTRING(isa) "::BVH4SubdivGridBuilderBinnedSAH ... " << std::flush;
 
 	double t0 = 0.0f, dt = 0.0f;
         if (g_verbose >= 1) t0 = getSeconds();
@@ -195,8 +195,256 @@ namespace embree
 	  bvh->printStatistics();
       }
     };
+
+    struct BVH4SubdivGridEagerBuilderBinnedSAHClass : public Builder
+    {
+      BVH4* bvh;
+      Scene* scene;
+      vector_t<PrimRef> prims; // FIXME: use os_malloc in vector_t for large allocations
+      ParallelForForPrefixSumState<PrimInfo> pstate;
+      
+      BVH4SubdivGridEagerBuilderBinnedSAHClass (BVH4* bvh, Scene* scene)
+        : bvh(bvh), scene(scene) {}
+
+      void build(size_t, size_t) 
+      {
+        /* skip build for empty scene */
+	const size_t numPrimitives = scene->getNumPrimitives<SubdivMesh,1>();
+        if (numPrimitives == 0) {
+          prims.resize(numPrimitives);
+          bvh->set(BVH4::emptyNode,empty,0);
+          return;
+        }
+        bvh->alloc2.reset();
+
+        /* verbose mode */
+        if (g_verbose >= 1)
+	  std::cout << "building BVH4<" << bvh->primTy.name << "> with " << TOSTRING(isa) "::BVH4SubdivGridEagerBuilderBinnedSAH ... " << std::flush;
+
+	double t0 = 0.0f, dt = 0.0f;
+        if (g_verbose >= 1) t0 = getSeconds();
+
+        /* initialize all half edge structures */
+        Scene::Iterator<SubdivMesh> iter(scene);
+        for (size_t i=0; i<iter.size(); i++) // FIXME: parallelize
+          if (iter[i]) iter[i]->initializeHalfEdgeStructures();
+        
+        /* initialize allocator and parallel_for_for_prefix_sum */
+        pstate.init(iter,size_t(1024));
+        PrimInfo pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
+        {
+          size_t s = 0;
+          for (size_t f=r.begin(); f!=r.end(); ++f) 
+          {
+            if (!mesh->valid(f)) continue;
+            
+            feature_adaptive_subdivision_eval(mesh->getHalfEdge(f),mesh->getVertexBuffer(),
+					    [&](const CatmullClarkPatch& patch, const Vec2f uv[4], const int subdiv[4], const int id)
+            {
+              const float l0 = patch.ring[0].edge_level;
+              const float l1 = patch.ring[1].edge_level;
+              const float l2 = patch.ring[2].edge_level;
+              const float l3 = patch.ring[3].edge_level;
+              const DiscreteTessellationPattern pattern0(l0,subdiv[0]);
+              const DiscreteTessellationPattern pattern1(l1,subdiv[1]);
+              const DiscreteTessellationPattern pattern2(l2,subdiv[2]);
+              const DiscreteTessellationPattern pattern3(l3,subdiv[3]);
+              const DiscreteTessellationPattern pattern_x = pattern0.size() > pattern2.size() ? pattern0 : pattern2;
+              const DiscreteTessellationPattern pattern_y = pattern1.size() > pattern3.size() ? pattern1 : pattern3;
+              s += Grid::getNumEagerLeaves(pattern_x.size(),pattern_y.size());
+            });
+          }
+          return PrimInfo(s,empty,empty);
+        }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo(a.size()+b.size(),empty,empty); });
+        
+        prims.resize(pinfo.size());
+
+        pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
+        {
+          FastAllocator::ThreadLocal& alloc = *bvh->alloc2.threadLocal();
+          
+          PrimInfo s(empty);
+          for (size_t f=r.begin(); f!=r.end(); ++f) {
+            if (!mesh->valid(f)) continue;
+            
+            feature_adaptive_subdivision_eval(mesh->getHalfEdge(f),mesh->getVertexBuffer(),
+                                              [&](const CatmullClarkPatch& patch, const Vec2f uv[4], const int subdiv[4], const int id)
+            {
+              const float l0 = patch.ring[0].edge_level;
+              const float l1 = patch.ring[1].edge_level;
+              const float l2 = patch.ring[2].edge_level;
+              const float l3 = patch.ring[3].edge_level;
+              const DiscreteTessellationPattern pattern0(l0,subdiv[0]);
+              const DiscreteTessellationPattern pattern1(l1,subdiv[1]);
+              const DiscreteTessellationPattern pattern2(l2,subdiv[2]);
+              const DiscreteTessellationPattern pattern3(l3,subdiv[3]);
+              const DiscreteTessellationPattern pattern_x = pattern0.size() > pattern2.size() ? pattern0 : pattern2;
+              const DiscreteTessellationPattern pattern_y = pattern1.size() > pattern3.size() ? pattern1 : pattern3;
+              const int nx = pattern_x.size();
+              const int ny = pattern_y.size();
+              size_t N = Grid::createEager(mesh->id,f,scene,patch,alloc,&prims[base.size()+s.size()],0,nx,0,ny,uv,pattern0,pattern1,pattern2,pattern3,pattern_x,pattern_y);
+              assert(N == Grid::getNumEagerLeaves(nx,ny));
+              for (size_t i=0; i<N; i++)
+                s.add(prims[base.size()+s.size()].bounds());
+            });
+          }
+          return s;
+        }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a,b); });
+        
+        BVH4::NodeRef root = bvh_builder_binned_sah_internal<BVH4::NodeRef>
+          (CreateAlloc(bvh),CreateBVH4Node(bvh),
+           [&] (const BuildRecord<BVH4::NodeRef>& current, PrimRef* prims, Allocator* alloc) {
+             if (current.size() != 1) THROW_RUNTIME_ERROR("bvh4_builder_subdiv: internal error");
+             *current.parent = (BVH4::NodeRef) prims[current.begin].ID();
+             return 0;
+           },
+           prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,1,1,1);
+        bvh->set(root,pinfo.geomBounds,pinfo.size());
+        
+        if (g_verbose >= 1) dt = getSeconds()-t0;
+
+	/* clear temporary data for static geometry */
+	bool staticGeom = scene->isStatic();
+	if (staticGeom) prims.resize(0,true);
+        bvh->alloc2.cleanup();
+	
+	/* verbose mode */
+	if (g_verbose >= 1)
+	  std::cout << "[DONE] " << 1000.0f*dt << "ms (" << numPrimitives/dt*1E-6 << " Mprim/s)" << std::endl;
+	if (g_verbose >= 2)
+	  bvh->printStatistics();
+      }
+    };
+
+    struct BVH4SubdivGridLazyBuilderBinnedSAHClass : public Builder
+    {
+      BVH4* bvh;
+      Scene* scene;
+      vector_t<PrimRef> prims; // FIXME: use os_malloc in vector_t for large allocations
+      ParallelForForPrefixSumState<PrimInfo> pstate;
+      
+      BVH4SubdivGridLazyBuilderBinnedSAHClass (BVH4* bvh, Scene* scene)
+        : bvh(bvh), scene(scene) {}
+
+      void build(size_t, size_t) 
+      {
+        /* skip build for empty scene */
+	const size_t numPrimitives = scene->getNumPrimitives<SubdivMesh,1>();
+        if (numPrimitives == 0) {
+          prims.resize(numPrimitives);
+          bvh->set(BVH4::emptyNode,empty,0);
+          return;
+        }
+        bvh->alloc2.reset();
+
+        /* verbose mode */
+        if (g_verbose >= 1)
+	  std::cout << "building BVH4<" << bvh->primTy.name << "> with " << TOSTRING(isa) "::BVH4SubdivGridLazyBuilderBinnedSAH ... " << std::flush;
+
+	double t0 = 0.0f, dt = 0.0f;
+        if (g_verbose >= 1) t0 = getSeconds();
+
+        /* initialize all half edge structures */
+        Scene::Iterator<SubdivMesh> iter(scene);
+        for (size_t i=0; i<iter.size(); i++) // FIXME: parallelize
+          if (iter[i]) iter[i]->initializeHalfEdgeStructures();
+        
+        /* initialize allocator and parallel_for_for_prefix_sum */
+        pstate.init(iter,size_t(1024));
+        PrimInfo pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
+        {
+          size_t s = 0;
+          for (size_t f=r.begin(); f!=r.end(); ++f) 
+          {
+            if (!mesh->valid(f)) continue;
+            
+            feature_adaptive_subdivision_eval(mesh->getHalfEdge(f),mesh->getVertexBuffer(),
+                                              [&](const CatmullClarkPatch& patch, const Vec2f uv[4], const int subdiv[4], const int id)
+	    {
+              const float l0 = patch.ring[0].edge_level;
+              const float l1 = patch.ring[1].edge_level;
+              const float l2 = patch.ring[2].edge_level;
+              const float l3 = patch.ring[3].edge_level;
+              const DiscreteTessellationPattern pattern0(l0,subdiv[0]);
+              const DiscreteTessellationPattern pattern1(l1,subdiv[1]);
+              const DiscreteTessellationPattern pattern2(l2,subdiv[2]);
+              const DiscreteTessellationPattern pattern3(l3,subdiv[3]);
+              const DiscreteTessellationPattern pattern_x = pattern0.size() > pattern2.size() ? pattern0 : pattern2;
+              const DiscreteTessellationPattern pattern_y = pattern1.size() > pattern3.size() ? pattern1 : pattern3;
+              s += Grid::getNumLazyLeaves(pattern_x.size(),pattern_y.size());
+            });
+          }
+          return PrimInfo(s,empty,empty);
+        }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo(a.size()+b.size(),empty,empty); });
+        
+        prims.resize(pinfo.size());
+
+        pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
+        {
+          FastAllocator::ThreadLocal& alloc = *bvh->alloc2.threadLocal();
+          
+          PrimInfo s(empty);
+          for (size_t f=r.begin(); f!=r.end(); ++f) {
+            if (!mesh->valid(f)) continue;
+            
+            feature_adaptive_subdivision_eval(mesh->getHalfEdge(f),mesh->getVertexBuffer(),
+                                              [&](const CatmullClarkPatch& patch, const Vec2f uv[4], const int subdiv[4], const int id)
+	    {
+              const float l0 = patch.ring[0].edge_level;
+              const float l1 = patch.ring[1].edge_level;
+              const float l2 = patch.ring[2].edge_level;
+              const float l3 = patch.ring[3].edge_level;
+              const DiscreteTessellationPattern pattern0(l0,subdiv[0]);
+              const DiscreteTessellationPattern pattern1(l1,subdiv[1]);
+              const DiscreteTessellationPattern pattern2(l2,subdiv[2]);
+              const DiscreteTessellationPattern pattern3(l3,subdiv[3]);
+              const DiscreteTessellationPattern pattern_x = pattern0.size() > pattern2.size() ? pattern0 : pattern2;
+              const DiscreteTessellationPattern pattern_y = pattern1.size() > pattern3.size() ? pattern1 : pattern3;
+              const int nx = pattern_x.size();
+              const int ny = pattern_y.size();
+              size_t N = Grid::createLazy(bvh,NULL,mesh->id,f,id,nx,ny,alloc,&prims[base.size()+s.size()]);
+              assert(N == Grid::getNumLazyLeaves(nx,ny));
+              for (size_t i=0; i<N; i++)
+                s.add(prims[base.size()+s.size()].bounds());
+            });
+          }
+          return s;
+        }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a,b); });
+        
+        BVH4::NodeRef root = bvh_builder_binned_sah_internal<BVH4::NodeRef>
+          (CreateAlloc(bvh),CreateBVH4Node(bvh),
+           [&] (const BuildRecord<BVH4::NodeRef>& current, PrimRef* prims, Allocator* alloc) {
+            assert(current.size() == 1);
+            BVH4::NodeRef node = prims[current.begin].ID();
+            size_t ty = 0;
+            Grid::LazyLeaf* leaf = (Grid::LazyLeaf*) node.leaf(ty);
+            leaf->parent = current.parent;
+            *current.parent = node;
+            assert(ty == 1);
+            return 0;
+          },
+          prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,1,1,1);
+        bvh->set(root,pinfo.geomBounds,pinfo.size());
+        
+        if (g_verbose >= 1) dt = getSeconds()-t0;
+
+	/* clear temporary data for static geometry */
+	bool staticGeom = scene->isStatic();
+	if (staticGeom) prims.resize(0,true);
+        bvh->alloc2.cleanup();
+	
+	/* verbose mode */
+	if (g_verbose >= 1)
+	  std::cout << "[DONE] " << 1000.0f*dt << "ms (" << numPrimitives/dt*1E-6 << " Mprim/s)" << std::endl;
+	if (g_verbose >= 2)
+	  bvh->printStatistics();
+      }
+    };
+
     
     /* entry functions for the scene builder */
-    Builder* BVH4SubdivGridBuilderBinnedSAH   (void* bvh, Scene* scene, size_t mode) { return new BVH4BuilderSubdivBinnedSAH((BVH4*)bvh,scene); }
+    Builder* BVH4SubdivGridBuilderBinnedSAH   (void* bvh, Scene* scene, size_t mode) { return new BVH4SubdivGridBuilderBinnedSAHClass((BVH4*)bvh,scene); }
+    Builder* BVH4SubdivGridEagerBuilderBinnedSAH   (void* bvh, Scene* scene, size_t mode) { return new BVH4SubdivGridEagerBuilderBinnedSAHClass((BVH4*)bvh,scene); }
+    Builder* BVH4SubdivGridLazyBuilderBinnedSAH   (void* bvh, Scene* scene, size_t mode) { return new BVH4SubdivGridLazyBuilderBinnedSAHClass((BVH4*)bvh,scene); }
   }
 }

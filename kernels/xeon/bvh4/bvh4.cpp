@@ -202,11 +202,11 @@ namespace embree
   DECLARE_SCENE_BUILDER(BVH4Triangle1vSceneBuilderBinnedSAH);
   DECLARE_SCENE_BUILDER(BVH4Triangle4vSceneBuilderBinnedSAH);
   DECLARE_SCENE_BUILDER(BVH4Triangle4iSceneBuilderBinnedSAH);
-  //DECLARE_SCENE_BUILDER(BVH4SubdivPatch1BuilderBinnedSAH);
-  //DECLARE_SCENE_BUILDER(BVH4SubdivPatch1CachedBuilderBinnedSAH);
+  DECLARE_SCENE_BUILDER(BVH4SubdivPatch1BuilderBinnedSAH);
+  DECLARE_SCENE_BUILDER(BVH4SubdivPatch1CachedBuilderBinnedSAH);
   DECLARE_SCENE_BUILDER(BVH4SubdivGridBuilderBinnedSAH);
-  //DECLARE_SCENE_BUILDER(BVH4SubdivGridEagerBuilderBinnedSAH);
-  //DECLARE_SCENE_BUILDER(BVH4SubdivGridLazyBuilderBinnedSAH);
+  DECLARE_SCENE_BUILDER(BVH4SubdivGridEagerBuilderBinnedSAH);
+  DECLARE_SCENE_BUILDER(BVH4SubdivGridLazyBuilderBinnedSAH);
   DECLARE_SCENE_BUILDER(BVH4VirtualSceneBuilderBinnedSAH);
 
   DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle1MeshRefitBinnedSAH2);
@@ -344,8 +344,8 @@ namespace embree
     //SELECT_SYMBOL_DEFAULT_AVX(features,BVH4SubdivPatch1BuilderBinnedSAH);
     //SELECT_SYMBOL_DEFAULT_AVX(features,BVH4SubdivPatch1CachedBuilderBinnedSAH);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4SubdivGridBuilderBinnedSAH);
-    //SELECT_SYMBOL_DEFAULT_AVX(features,BVH4SubdivGridEagerBuilderBinnedSAH);
-    //SELECT_SYMBOL_DEFAULT_AVX(features,BVH4SubdivGridLazyBuilderBinnedSAH);
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4SubdivGridEagerBuilderBinnedSAH);
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4SubdivGridLazyBuilderBinnedSAH);
 
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle1MeshRefitBinnedSAH2);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4MeshRefitBinnedSAH2);
@@ -1276,7 +1276,11 @@ namespace embree
     intersectors.intersector4 = BVH4GridIntersector4;
     intersectors.intersector8 = BVH4GridIntersector8;
     intersectors.intersector16 = NULL;
+#if defined(TASKING_TBB) || defined(TASKING_TBB_INTERNAL)
+    Builder* builder = BVH4SubdivGridEagerBuilderBinnedSAH(accel,scene,LeafMode);
+#else
     Builder* builder = BVH4SubdivGridEagerBuilderFast(accel,scene,LeafMode);
+#endif
     return new AccelInstance(accel,builder,intersectors);
   }
 
@@ -1289,7 +1293,11 @@ namespace embree
     intersectors.intersector4 = BVH4GridLazyIntersector4;
     intersectors.intersector8 = BVH4GridLazyIntersector8;
     intersectors.intersector16 = NULL;
+#if defined(TASKING_TBB) || defined(TASKING_TBB_INTERNAL)
+    Builder* builder = BVH4SubdivGridLazyBuilderBinnedSAH(accel,scene,LeafMode);
+#else
     Builder* builder = BVH4SubdivGridLazyBuilderFast(accel,scene,LeafMode);
+#endif
     return new AccelInstance(accel,builder,intersectors);
   }
 
