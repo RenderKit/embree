@@ -82,7 +82,7 @@ namespace embree
           const size_t index = morton[start+i].index;
           const size_t primID = index & encodeMask; 
           const size_t geomID = this->mesh ? this->mesh->id : (index >> encodeShift); 
-          const TriangleMesh* mesh = scene->getTriangleMesh(geomID);
+          const TriangleMesh* mesh = this->mesh ? this->mesh : scene->getTriangleMesh(geomID);
           const TriangleMesh::Triangle& tri = mesh->triangle(primID);
           
           const ssef v0 = select(0x7,(ssef)mesh->vertex(tri.v[0]),zero);
@@ -140,7 +140,7 @@ namespace embree
           const size_t index = morton[start+i].index;
           const size_t primID = index & encodeMask; 
           const size_t geomID = this->mesh ? this->mesh->id : (index >> encodeShift); 
-          const TriangleMesh* mesh = scene->getTriangleMesh(geomID);
+          const TriangleMesh* mesh = this->mesh ? this->mesh : scene->getTriangleMesh(geomID);
           const TriangleMesh::Triangle& tri = mesh->triangle(primID);
           const Vec3fa& p0 = mesh->vertex(tri.v[0]);
           const Vec3fa& p1 = mesh->vertex(tri.v[1]);
@@ -196,7 +196,7 @@ namespace embree
           const size_t index = morton[start+i].index;
           const size_t primID = index & encodeMask; 
           const size_t geomID = this->mesh ? this->mesh->id : (index >> encodeShift); 
-          const TriangleMesh* mesh = scene->getTriangleMesh(geomID);
+          const TriangleMesh* mesh = this->mesh ? this->mesh : scene->getTriangleMesh(geomID);
           const TriangleMesh::Triangle& tri = mesh->triangle(primID);
           const Vec3fa& p0 = mesh->vertex(tri.v[0]);
           const Vec3fa& p1 = mesh->vertex(tri.v[1]);
@@ -247,7 +247,7 @@ namespace embree
           const size_t index = morton[start+i].index;
           const size_t primID = index & encodeMask; 
           const size_t geomID = this->mesh ? this->mesh->id : (index >> encodeShift); 
-          const TriangleMesh* mesh = scene->getTriangleMesh(geomID);
+          const TriangleMesh* mesh = this->mesh ? this->mesh : scene->getTriangleMesh(geomID);
           const TriangleMesh::Triangle& tri = mesh->triangle(primID);
           
           const ssef v0 = select(0x7,(ssef)mesh->vertex(tri.v[0]),zero);
@@ -297,13 +297,13 @@ namespace embree
         
         ssei vgeomID = -1, vprimID = -1, vmask = -1;
         sse3f v0 = zero, v1 = zero, v2 = zero;
-        
+
         for (size_t i=0; i<items; i++)
         {
           const size_t index = morton[start+i].index;
           const size_t primID = index & encodeMask; 
           const size_t geomID = this->mesh ? this->mesh->id : (index >> encodeShift); 
-          const TriangleMesh* mesh = scene->getTriangleMesh(geomID);
+          const TriangleMesh* mesh = this->mesh ? this->mesh : scene->getTriangleMesh(geomID);
           const TriangleMesh::Triangle& tri = mesh->triangle(primID);
           const Vec3fa& p0 = mesh->vertex(tri.v[0]);
           const Vec3fa& p1 = mesh->vertex(tri.v[1]);
@@ -357,7 +357,7 @@ namespace embree
           const size_t index = morton[start+i].index;
           const size_t primID = index & encodeMask; 
           const size_t geomID = this->mesh ? this->mesh->id : (index >> encodeShift); 
-          const TriangleMesh* mesh = scene->getTriangleMesh(geomID);
+          const TriangleMesh* mesh = this->mesh ? this->mesh : scene->getTriangleMesh(geomID);
           const TriangleMesh::Triangle& tri = mesh->triangle(primID);
           const Vec3fa& p0 = mesh->vertex(tri.v[0]);
           const Vec3fa& p1 = mesh->vertex(tri.v[1]);
@@ -469,7 +469,7 @@ namespace embree
 	  std::cout << "building BVH4<" << bvh->primTy.name << "> with " << TOSTRING(isa) "::BVH4MeshBuilderMortonGeneral ... " << std::flush;
 
 	double t0 = 0.0f, dt = 0.0f;
-	profile(2,20,numPrimitives,[&] (ProfileTimer& timer) {
+	//profile(2,20,numPrimitives,[&] (ProfileTimer& timer) {
 	    
             if (g_verbose >= 1) t0 = getSeconds();
 	    
@@ -514,11 +514,11 @@ namespace embree
             bvh->set(node_bounds.first,node_bounds.second,numPrimitives);
 
             //timer("compute_tree");
-            timer("bvh4_builder_morton_new");
+            //timer("bvh4_builder_morton_new");
 
             if (g_verbose >= 1) dt = getSeconds()-t0;
             
-          });
+            //});
         
         /* clear temporary data for static geometry */
 	//bool staticGeom = mesh ? mesh->isStatic() : scene->isStatic(); // FIXME: implement

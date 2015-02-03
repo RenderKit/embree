@@ -66,15 +66,21 @@ namespace embree
       
       /* schedule refit tasks */
 #if defined(TASKING_TBB) || defined(TASKING_TBB_INTERNAL)
-      parallel_for(size_t(0), roots.size(), [&] (const range<size_t>& r)
-      {
-        for (size_t i=r.begin(); i<r.end(); i++) {
-          NodeRef& ref = *roots[i];
-          recurse_bottom(ref);
-          ref.setBarrier();
-        }
-      });
-      bvh->bounds = recurse_top(bvh->root);
+      size_t numRoots = roots.size();
+      if (numRoots <= 1) {
+        refit_sequential(threadIndex,threadCount);
+      }
+      else {
+        parallel_for(size_t(0), roots.size(), [&] (const range<size_t>& r)
+        {
+          for (size_t i=r.begin(); i<r.end(); i++) {
+            NodeRef& ref = *roots[i];
+            recurse_bottom(ref);
+            ref.setBarrier();
+          }
+        });
+        bvh->bounds = recurse_top(bvh->root);
+      }
 #else
       size_t numRoots = roots.size();
       if (numRoots <= 1) {
