@@ -328,6 +328,7 @@ namespace embree
 
   /*! creates thread local storage */
   tls_t createTls() {
+    static int cntr = 0;
     pthread_key_t* key = new pthread_key_t;
     if (pthread_key_create(key,NULL) != 0)
       THROW_RUNTIME_ERROR("pthread_key_create");

@@ -135,6 +135,7 @@ namespace embree
 	/* clear temporary data for static geometry */
 	bool staticGeom = mesh ? mesh->isStatic() : scene->isStatic();
 	if (staticGeom) prims.resize(0,true);
+        bvh->alloc2.cleanup();
 	
 	/* verbose mode */
 	if (g_verbose >= 1)

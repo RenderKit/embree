@@ -138,7 +138,8 @@ namespace embree
 	/* clear temporary data for static geometry */
 	bool staticGeom = mesh ? mesh->isStatic() : scene->isStatic();
 	if (staticGeom) prims.resize(0,true);
-	
+	bvh->alloc2.cleanup();
+
 	/* verbose mode */
 	if (g_verbose >= 1)
 	  std::cout << "[DONE] " << 1000.0f*dt << "ms (" << numPrimitives/dt*1E-6 << " Mtris/s)" << std::endl;
@@ -284,7 +285,8 @@ namespace embree
 	/* clear temporary data for static geometry */
 	bool staticGeom = mesh ? mesh->isStatic() : scene->isStatic();
 	if (staticGeom) prims.resize(0,true);
-	
+	bvh->alloc2.cleanup();
+
 	/* verbose mode */
 	if (g_verbose >= 1)
 	  std::cout << "[DONE] " << 1000.0f*dt << "ms (" << numPrimitives/dt*1E-6 << " Mprim/s)" << std::endl;

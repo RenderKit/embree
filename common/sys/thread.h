@@ -66,11 +66,16 @@ namespace embree
     __forceinline ThreadLocalData (void* init) 
       : ptr(NULL), init(init) {}
 
-    __forceinline ~ThreadLocalData () 
+    __forceinline ~ThreadLocalData () {
+      clear();
+    }
+
+    __forceinline void clear() 
     {
-      if (ptr) destroyTls(ptr);
+      if (ptr) destroyTls(ptr); ptr = NULL;
       for (size_t i=0; i<threads.size(); i++)
 	delete threads[i];
+      threads.clear();
     }
 
     /*! disallow copy */

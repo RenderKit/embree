@@ -406,7 +406,7 @@ namespace embree
     /*! Two thread local structures. */
     struct __aligned(64) ThreadLocal2
     {
-	  ALIGNED_STRUCT;
+      ALIGNED_STRUCT;
 
       /*! Constructor for usage with ThreadLocalData */
       __forceinline ThreadLocal2 (void* alloc) 
@@ -450,6 +450,12 @@ namespace embree
     /*! returns a fast thread local allocator */
     __forceinline ThreadLocal2* threadLocal2() {
       return thread_local_allocators2.get();
+    }
+
+    /*! frees state not required after build */
+    __forceinline void cleanup() {
+      thread_local_allocators.clear();
+      thread_local_allocators2.clear();
     }
 
     /*! initializes the allocator */

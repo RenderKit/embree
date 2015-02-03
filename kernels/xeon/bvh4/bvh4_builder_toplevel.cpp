@@ -87,6 +87,8 @@ namespace embree
       
       BVH4TopLevelBuilderFastT::build(threadIndex,threadCount,prims.begin(),prims.size());
 
+      bvh->alloc2.cleanup();
+
       if (g_verbose >= 2) {
 	std::cout << "[DONE] " << std::endl;
       }
