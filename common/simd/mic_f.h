@@ -163,6 +163,7 @@ namespace embree
   ////////////////////////////////////////////////////////////////////////////////
 
   __forceinline mic_f madd (const mic_f& a, const mic_f& b, const mic_f& c) { return _mm512_fmadd_ps(a,b,c); }
+
   __forceinline mic_f msub (const mic_f& a, const mic_f& b, const mic_f& c) { return _mm512_fmsub_ps(a,b,c); }
   __forceinline mic_f nmadd (const mic_f& a, const mic_f& b, const mic_f& c) { return _mm512_fnmadd_ps(a,b,c); }
   __forceinline mic_f nmsub (const mic_f& a, const mic_f& b, const mic_f& c) { return _mm512_fnmsub_ps(a,b,c); }
@@ -173,6 +174,27 @@ namespace embree
   __forceinline mic_f msub213 (const mic_f& a, const mic_f& b, const mic_f& c) { return _mm512_fmsub_ps(a,b,c); }
   __forceinline mic_f msub231 (const mic_f& a, const mic_f& b, const mic_f& c) { return _mm512_fmsub_ps(c,b,a); }
   __forceinline mic_f msubr231(const mic_f& a, const mic_f& b, const mic_f& c) { return _mm512_fnmadd_ps(c,b,a); }
+
+
+  ////////////////////////////////////////////////////////////////////////////////
+  /// Operators with rounding
+  ////////////////////////////////////////////////////////////////////////////////
+
+  __forceinline mic_f madd_round_down (const mic_f& a, const mic_f& b, const mic_f& c) { return _mm512_fmadd_round_ps(a,b,c,_MM_FROUND_TO_NEG_INF); }
+
+  __forceinline mic_f madd_round_up (const mic_f& a, const mic_f& b, const mic_f& c) { return _mm512_fmadd_round_ps(a,b,c,_MM_FROUND_TO_POS_INF); }
+
+  __forceinline mic_f mul_round_down (const mic_f& a, const mic_f& b) { return _mm512_mul_round_ps(a,b,_MM_FROUND_TO_NEG_INF); }
+  __forceinline mic_f mul_round_up   (const mic_f& a, const mic_f& b) { return _mm512_mul_round_ps(a,b,_MM_FROUND_TO_POS_INF); }
+
+  __forceinline mic_f add_round_down (const mic_f& a, const mic_f& b) { return _mm512_add_round_ps(a,b,_MM_FROUND_TO_NEG_INF); }
+  __forceinline mic_f add_round_up   (const mic_f& a, const mic_f& b) { return _mm512_add_round_ps(a,b,_MM_FROUND_TO_POS_INF); }
+
+  __forceinline mic_f sub_round_down (const mic_f& a, const mic_f& b) { return _mm512_sub_round_ps(a,b,_MM_FROUND_TO_NEG_INF); }
+  __forceinline mic_f sub_round_up   (const mic_f& a, const mic_f& b) { return _mm512_sub_round_ps(a,b,_MM_FROUND_TO_POS_INF); }
+
+  __forceinline mic_f div_round_down (const mic_f& a, const mic_f& b) { return _mm512_div_round_ps(a,b,_MM_FROUND_TO_NEG_INF); }
+  __forceinline mic_f div_round_up   (const mic_f& a, const mic_f& b) { return _mm512_div_round_ps(a,b,_MM_FROUND_TO_POS_INF); }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Assignment Operators

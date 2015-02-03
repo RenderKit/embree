@@ -313,7 +313,12 @@ namespace embree
 
       __forceinline mic_f decompress_lowerXYZ(const mic_f &s, const mic_f &d)  const
       {
-	return s + d * lowerXYZ();
+	return madd_round_down(d,lowerXYZ(),s);
+      }
+
+      __forceinline mic_f decompress_upperXYZ(const mic_f &s, const mic_f &d)  const
+      {	
+	return madd_round_up(d,upperXYZ(),s);
       }
 
       __forceinline mic_f upperXYZ()  const
@@ -340,10 +345,6 @@ namespace embree
         return BBox3fa(l,u);
       }
 
-      __forceinline mic_f decompress_upperXYZ(const mic_f &s, const mic_f &d)  const
-      {
-	return s + d * upperXYZ();
-      }
 
       __forceinline mic_f decompress_startXYZ() const
       {
@@ -371,8 +372,6 @@ namespace embree
 	const mic_f maxXYZ = select(0x7777,max(max(u0,u1),max(u2,u3)),mic_f::one());
 	const mic_f diffXYZ = maxXYZ - minXYZ;
 
-	const mic_f rcp_diffXYZ = mic_f(255.0f) / diffXYZ;
- 
 	const mic_f nlower = load16f(node.lower);
 	const mic_f nupper = load16f(node.upper);
 	const mic_m isInvalid = eq(0x7777,nlower,pos_inf);
@@ -380,8 +379,8 @@ namespace embree
 	const mic_f node_lowerXYZ = select(mic_m(0x7777) ^ isInvalid,nlower,minXYZ); 
 	const mic_f node_upperXYZ = select(mic_m(0x7777) ^ isInvalid,nupper,minXYZ); 
 
-	mic_f local_lowerXYZ = ((node_lowerXYZ - minXYZ) * rcp_diffXYZ) - 0.5f;
-	mic_f local_upperXYZ = ((node_upperXYZ - minXYZ) * rcp_diffXYZ) + 0.5f;
+	mic_f local_lowerXYZ = floor(( (node_lowerXYZ - minXYZ) * mic_f(255.0f) / diffXYZ) - 0.5f);
+	mic_f local_upperXYZ =  ceil(( (node_upperXYZ - minXYZ) * mic_f(255.0f) / diffXYZ) + 0.5f);
 
 	store4f(&start,minXYZ);
 	store4f(&diff ,diffXYZ * (1.0f/255.0f));
@@ -404,13 +403,16 @@ namespace embree
 	if ( any(gt(0x7777,decompress_lower_XYZ,node_lowerXYZ)) ) 
 	   { 
 	     DBG_PRINT(node_lowerXYZ);  
-	     DBG_PRINT(decompress_lower_XYZ);  
+	     DBG_PRINT(decompress_lower_XYZ); 
+	     DBG_PRINT(decompress_lower_XYZ-node_lowerXYZ); 
 	   } 
 
 	if ( any(lt(0x7777,decompress_upper_XYZ,node_upperXYZ)) )
 	  {
 	    DBG_PRINT(node_upperXYZ);
 	    DBG_PRINT(decompress_upper_XYZ);
+	    DBG_PRINT(decompress_upper_XYZ-node_upperXYZ);
+	    exit(0);
 	  }
 #endif
       }
