@@ -33,15 +33,22 @@ namespace embree
 
     void BVH4BuilderTopLevelNew::build(size_t threadIndex, size_t threadCount) 
     {
+      double t0 = 0.0, dt = 0.0;
+      if (g_verbose >= 1) {
+	std::cout << "building BVH4<" << bvh->primTy.name << "> with " << TOSTRING(isa) << "::TwoLevel SAH builder ... " << std::flush;
+        t0 = getSeconds();
+      }
+
       /* delete some objects */
       size_t N = scene->size();
+      const size_t numPrimitives = scene->getNumPrimitives<TriangleMesh,1>();
       parallel_for(N, objects.size(), [&] (const range<size_t>& r) {
         for (size_t i=r.begin(); i<r.end(); i++) {
           delete builders[i]; builders[i] = NULL;
           delete objects[i]; objects[i] = NULL;
         }
       });
-                   
+      
       /* resize object array if scene got larger */
       if (objects.size() < N) {
         objects.resize(N);
@@ -103,12 +110,6 @@ namespace embree
       });
       
       refs.resize(nextRef);
-      
-      double t0 = 0.0, dt = 0.0;
-      if (g_verbose >= 1) {
-	std::cout << "building BVH4<" << bvh->primTy.name << "> with " << TOSTRING(isa) << "::TopLevel SAH builder ... " << std::flush;
-        t0 = getSeconds();
-      }
 
       /* open all large nodes */
       open_sequential();
@@ -146,12 +147,14 @@ namespace embree
          },
          prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,1,1,1);
 
-      bvh->set(root,pinfo.geomBounds,pinfo.size());
+      bvh->set(root,pinfo.geomBounds,numPrimitives);
 
       if (g_verbose >= 1) {
         dt = getSeconds()-t0;
-        std::cout << "[DONE] " << 1000.0f*dt << "ms (" << refs.size()/dt*1E-6 << " Mprim/s)" << std::endl;
+        std::cout << "[DONE] " << 1000.0f*dt << "ms (" << numPrimitives/dt*1E-6 << " Mprim/s)" << std::endl;
       }
+      if (g_verbose >= 2)
+        bvh->printStatistics();
     }
 
     void BVH4BuilderTopLevelNew::open_sequential()

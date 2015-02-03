@@ -115,13 +115,13 @@ namespace embree
         }
       
         /* verbose mode */
-        if (g_verbose >= 1)
+        if (g_verbose >= 1 && mesh == NULL)
 	  std::cout << "building BVH4<" << bvh->primTy.name << "> with " << TOSTRING(isa) "::BVH4BuilderBinnedSAH2 ... " << std::flush;
 
 	double t0 = 0.0f, dt = 0.0f;
 	//profile("BVH4BuilderBinnedSAH2",2,20,numPrimitives,[&] () {
 	    
-	    if (g_verbose >= 1) t0 = getSeconds();
+	    if (g_verbose >= 1 && mesh == NULL) t0 = getSeconds();
 	    
 	    bvh->alloc2.init(numPrimitives*sizeof(PrimRef),numPrimitives*sizeof(BVH4::Node));  // FIXME: better estimate
 	    prims.resize(numPrimitives);
@@ -131,7 +131,7 @@ namespace embree
 	       prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,sahBlockSize,minLeafSize,maxLeafSize,BVH4::travCost,intCost);
 	    bvh->set(root,pinfo.geomBounds,pinfo.size());
 
-	    if (g_verbose >= 1) dt = getSeconds()-t0;
+	    if (g_verbose >= 1 && mesh == NULL) dt = getSeconds()-t0;
 	    
 	    //});
 
@@ -141,9 +141,9 @@ namespace embree
 	bvh->alloc2.cleanup();
 
 	/* verbose mode */
-	if (g_verbose >= 1)
+	if (g_verbose >= 1 && mesh == NULL)
 	  std::cout << "[DONE] " << 1000.0f*dt << "ms (" << numPrimitives/dt*1E-6 << " Mtris/s)" << std::endl;
-	if (g_verbose >= 2)
+	if (g_verbose >= 2 && mesh == NULL)
 	  bvh->printStatistics();
       }
     };
