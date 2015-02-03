@@ -2902,9 +2902,6 @@ namespace embree
 
     const Vec3fa pos = Vec3fa(148376.0f,1234.0f,-223423.0f);
 
-    //rtcore_watertight_closed1("sphere", pos);
-    //exit(0);
-
 #if defined(RTCORE_RAY_MASK)
     rtcore_ray_masks_all();
 #endif
