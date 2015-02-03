@@ -212,12 +212,12 @@ namespace embree
 
   //DECLARE_USERGEOMETRY_BUILDER(BVH4UserGeometryMeshBuilderFast);
 
-  DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle1MeshRefitBinnedSAH);
-  DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle4MeshRefitBinnedSAH);
-  DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle8MeshRefitBinnedSAH);
-  DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle1vMeshRefitBinnedSAH);
-  DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle4vMeshRefitBinnedSAH);
-  DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle4iMeshRefitBinnedSAH);
+  DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle1MeshRefitBinnedSAH2);
+  DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle4MeshRefitBinnedSAH2);
+  DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle8MeshRefitBinnedSAH2);
+  DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle1vMeshRefitBinnedSAH2);
+  DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle4vMeshRefitBinnedSAH2);
+  DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle4iMeshRefitBinnedSAH2);
 
   DECLARE_SCENE_BUILDER(BVH4Triangle1SceneBuilderMortonGeneral);
   DECLARE_SCENE_BUILDER(BVH4Triangle4SceneBuilderMortonGeneral);
@@ -352,12 +352,12 @@ namespace embree
     //SELECT_SYMBOL_DEFAULT_AVX(features,BVH4SubdivGridLazyBuilderFast);
     //SELECT_SYMBOL_DEFAULT_AVX(features,BVH4UserGeometryMeshBuilderFast);
 
-    //SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle1MeshRefitFast);
-    //SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4MeshRefitFast);
-    //SELECT_SYMBOL_AVX        (features,BVH4Triangle8MeshRefitFast);
-    //SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle1vMeshRefitFast);
-    //SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4vMeshRefitFast);
-    //SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4iMeshRefitFast);
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle1MeshRefitBinnedSAH2);
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4MeshRefitBinnedSAH2);
+    SELECT_SYMBOL_AVX        (features,BVH4Triangle8MeshRefitBinnedSAH2);
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle1vMeshRefitBinnedSAH2);
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4vMeshRefitBinnedSAH2);
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4iMeshRefitBinnedSAH2);
 
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle1SceneBuilderMortonGeneral);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4SceneBuilderMortonGeneral);
@@ -942,7 +942,7 @@ namespace embree
     switch (mesh->flags) {
 #if defined(TASKING_TBB) || defined(TASKING_TBB_INTERNAL)
     case RTC_GEOMETRY_STATIC:     builder = BVH4Triangle1MeshBuilderBinnedSAH2(accel,mesh,LeafMode); break;
-    case RTC_GEOMETRY_DEFORMABLE: builder = BVH4Triangle1MeshRefitBinnedSAH(accel,mesh,LeafMode); break;
+    case RTC_GEOMETRY_DEFORMABLE: builder = BVH4Triangle1MeshRefitBinnedSAH2(accel,mesh,LeafMode); break;
     case RTC_GEOMETRY_DYNAMIC:    builder = BVH4Triangle1MeshBuilderMortonGeneral(accel,mesh,LeafMode); break;
 #else
     case RTC_GEOMETRY_STATIC:     builder = BVH4Triangle1MeshBuilderFast(accel,mesh,LeafMode); break;
@@ -960,7 +960,7 @@ namespace embree
     switch (mesh->flags) {
 #if defined(TASKING_TBB) || defined(TASKING_TBB_INTERNAL)
     case RTC_GEOMETRY_STATIC:     builder = BVH4Triangle4MeshBuilderBinnedSAH2(accel,mesh,LeafMode); break;
-    case RTC_GEOMETRY_DEFORMABLE: builder = BVH4Triangle4MeshRefitBinnedSAH(accel,mesh,LeafMode); break;
+    case RTC_GEOMETRY_DEFORMABLE: builder = BVH4Triangle4MeshRefitBinnedSAH2(accel,mesh,LeafMode); break;
     case RTC_GEOMETRY_DYNAMIC:    builder = BVH4Triangle4MeshBuilderMortonGeneral(accel,mesh,LeafMode); break;
 #else
     case RTC_GEOMETRY_STATIC:     builder = BVH4Triangle4MeshBuilderFast(accel,mesh,LeafMode); break;
@@ -978,7 +978,7 @@ namespace embree
     switch (mesh->flags) {
 #if defined(TASKING_TBB) || defined(TASKING_TBB_INTERNAL)
     case RTC_GEOMETRY_STATIC:     builder = BVH4Triangle1vMeshBuilderBinnedSAH2(accel,mesh,LeafMode); break;
-    case RTC_GEOMETRY_DEFORMABLE: builder = BVH4Triangle1vMeshRefitBinnedSAH  (accel,mesh,LeafMode); break;
+    case RTC_GEOMETRY_DEFORMABLE: builder = BVH4Triangle1vMeshRefitBinnedSAH2  (accel,mesh,LeafMode); break;
     case RTC_GEOMETRY_DYNAMIC:    builder = BVH4Triangle1vMeshBuilderMortonGeneral(accel,mesh,LeafMode); break;
 #else
     case RTC_GEOMETRY_STATIC:     builder = BVH4Triangle1vMeshBuilderFast(accel,mesh,LeafMode); break;
@@ -996,7 +996,7 @@ namespace embree
     switch (mesh->flags) {
 #if defined(TASKING_TBB) || defined(TASKING_TBB_INTERNAL)
     case RTC_GEOMETRY_STATIC:     builder = BVH4Triangle4vMeshBuilderBinnedSAH2(accel,mesh,LeafMode); break;
-    case RTC_GEOMETRY_DEFORMABLE: builder = BVH4Triangle4vMeshRefitBinnedSAH(accel,mesh,LeafMode); break;
+    case RTC_GEOMETRY_DEFORMABLE: builder = BVH4Triangle4vMeshRefitBinnedSAH2(accel,mesh,LeafMode); break;
     case RTC_GEOMETRY_DYNAMIC:    builder = BVH4Triangle4vMeshBuilderMortonGeneral(accel,mesh,LeafMode); break;
 #else
     case RTC_GEOMETRY_STATIC:     builder = BVH4Triangle4vMeshBuilderFast(accel,mesh,LeafMode); break;
@@ -1014,7 +1014,7 @@ namespace embree
     switch (mesh->flags) {
 #if defined(TASKING_TBB) || defined(TASKING_TBB_INTERNAL)
     case RTC_GEOMETRY_STATIC:     builder = BVH4Triangle4iMeshBuilderBinnedSAH2(accel,mesh,LeafMode); break;
-    case RTC_GEOMETRY_DEFORMABLE: builder = BVH4Triangle4iMeshRefitBinnedSAH(accel,mesh,LeafMode); break;
+    case RTC_GEOMETRY_DEFORMABLE: builder = BVH4Triangle4iMeshRefitBinnedSAH2(accel,mesh,LeafMode); break;
     case RTC_GEOMETRY_DYNAMIC:    builder = BVH4Triangle4iMeshBuilderMortonGeneral(accel,mesh,LeafMode); break;
 #else
     case RTC_GEOMETRY_STATIC:     builder = BVH4Triangle4iMeshBuilderFast(accel,mesh,LeafMode); break;
@@ -1344,7 +1344,7 @@ namespace embree
   {
     BVH4* accel = new BVH4(TriangleMeshTriangle4::type,mesh->parent,LeafMode);
 #if defined(TASKING_TBB) || defined(TASKING_TBB_INTERNAL)
-    Builder* builder = BVH4Triangle4MeshRefitBinnedSAH(accel,mesh,LeafMode);
+    Builder* builder = BVH4Triangle4MeshRefitBinnedSAH2(accel,mesh,LeafMode);
 #else
     Builder* builder = BVH4Triangle4MeshRefitFast(accel,mesh,LeafMode);
 #endif
