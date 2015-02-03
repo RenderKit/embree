@@ -16,11 +16,11 @@
 
 #pragma once
 
+#include "tasking/taskscheduler_new.h"
 #include "common/builder.h"
 #include "tbb/tbb.h"
 #include "algorithms/parallel_reduce.h"
 #include "algorithms/parallel_for_for.h"
-#include "common/profile.h" // FIXME: remove
 
 namespace embree
 {

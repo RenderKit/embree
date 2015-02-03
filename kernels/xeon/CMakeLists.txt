@@ -40,7 +40,8 @@ IF (TASKING_TBB OR TASKING_TBB_INTERNAL)
   SET(EMBREE_BUILDERS_NEW
     bvh4/bvh4_builder_morton_general.cpp
     bvh4/bvh4_builder_binned_sah.cpp
-    bvh4/bvh4_builder_binned_sah2.cpp)
+    bvh4/bvh4_builder_binned_sah2.cpp
+    bvh4/bvh4_builder_toplevel_new.cpp)
 ENDIF()
 
 ADD_ISPC_LIBRARY(embree ${EMBREE_LIB_TYPE}
