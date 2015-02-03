@@ -379,11 +379,11 @@ namespace embree
 	const mic_f node_lowerXYZ = select(mic_m(0x7777) ^ isInvalid,nlower,minXYZ); 
 	const mic_f node_upperXYZ = select(mic_m(0x7777) ^ isInvalid,nupper,minXYZ); 
 
-	mic_f local_lowerXYZ = floor(( (node_lowerXYZ - minXYZ) * mic_f(255.0f) / diffXYZ) - 0.5f);
-	mic_f local_upperXYZ =  ceil(( (node_upperXYZ - minXYZ) * mic_f(255.0f) / diffXYZ) + 0.5f);
+	mic_f local_lowerXYZ = floor(( (node_lowerXYZ - minXYZ) * mic_f(255.0f) / diffXYZ) /* - 0.5f */);
+	mic_f local_upperXYZ =  ceil(( (node_upperXYZ - minXYZ) * mic_f(255.0f) / diffXYZ) /* + 0.5f */);
 
 	store4f(&start,minXYZ);
-	store4f(&diff ,diffXYZ * (1.0f/255.0f));
+	store4f(&diff ,mul_round_up(diffXYZ,(1.0f/255.0f)));
 	compactustore16f_low_uint8(0x7777,lower,local_lowerXYZ);
 	compactustore16f_low_uint8(0x7777,upper,local_upperXYZ);
 
@@ -412,7 +412,6 @@ namespace embree
 	    DBG_PRINT(node_upperXYZ);
 	    DBG_PRINT(decompress_upper_XYZ);
 	    DBG_PRINT(decompress_upper_XYZ-node_upperXYZ);
-	    exit(0);
 	  }
 #endif
       }
