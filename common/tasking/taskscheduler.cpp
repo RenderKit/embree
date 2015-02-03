@@ -221,16 +221,13 @@ namespace embree
   {
     if (threadID == 0) {
       taskCounter.reset(0);
-      insideTask = true;
     }
     
     syncThreads(threadID, numThreads);
 
-    if (taskPtr) 
-    {
+    if (taskPtr) {
       (*taskPtr)((void*)data,threadID,numThreads);
       syncThreads(threadID, numThreads);
-      if (threadID == 0) insideTask = false;
       return false;
     }
 
@@ -241,7 +238,6 @@ namespace embree
         (*taskPtr2)((void*)data,threadID,numThreads,taskID,numTasks);
       }
       syncThreads(threadID, numThreads);
-      if (threadID == 0) insideTask = false;
       return false;
     }
     return true;

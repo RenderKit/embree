@@ -248,8 +248,8 @@ namespace embree
 	  if (threadIndex == 0) {
             scheduler->taskBarrier.init(threadCount);
             scheduler->threadCount = threadCount;
+	    setInstance(scheduler);
           }
-          setInstance(scheduler);
           setThreadIndex(threadIndex);
 	  scheduler->barrier.wait(threadCount);
 	  scheduler->enter(threadIndex,threadCount);
@@ -260,8 +260,8 @@ namespace embree
 	if (threadIndex == 0 && threadCount != 0) {
 	  scheduler->leave(threadIndex,threadCount);
 	  scheduler->barrier.reset();
-        }
-        setInstance(NULL);
+	  setInstance(NULL);
+	}
       }
 
       size_t threadIndex, threadCount;
@@ -290,7 +290,7 @@ namespace embree
     size_t numTasks;
     volatile bool insideTask;
 
-    size_t getNumThreads() const { return insideTask ? 1 : threadCount; }
+    size_t getNumThreads() const { return threadCount; }
     size_t threadCount;
     __aligned(64) void* volatile data;
 
@@ -310,55 +310,34 @@ namespace embree
     void dispatchTaskMainLoop(const size_t threadID, const size_t numThreads);
     void releaseThreads(const size_t numThreads);
 
-    __forceinline void dispatchTask(runFunction task, void* data) {
-      dispatchTask(task, data, 0, threadCount);
+    __forceinline bool dispatchTask(runFunction task, void* data) {
+      return dispatchTask(task, data, 0, threadCount);
     }
   
-    __forceinline void dispatchTask(runFunction task, void* data, const size_t threadID, const size_t numThreads)
+    __forceinline bool dispatchTask(runFunction task, void* data, const size_t threadID, const size_t numThreads)
     {
-      if (insideTask) {
-        for (size_t i=0; i<numThreads; i++)
-          task(data,i,numThreads);
-      }
-      else
-      {
-        LockStepTaskScheduler::taskPtr = task;
-        LockStepTaskScheduler::taskPtr2 = NULL;
-        LockStepTaskScheduler::data = data;
-        LockStepTaskScheduler::dispatchTask(threadID, numThreads);
-      }
+      LockStepTaskScheduler::taskPtr = task;
+      LockStepTaskScheduler::taskPtr2 = NULL;
+      LockStepTaskScheduler::data = data;
+      return LockStepTaskScheduler::dispatchTask(threadID, numThreads);
     }
 
-    __forceinline void dispatchTask(const size_t threadID, const size_t numThreads, runFunction2 task, void* data, const size_t numTasks, const char* name = "")
+    __forceinline bool dispatchTask(const size_t threadID, const size_t numThreads, runFunction2 task, void* data, const size_t numTasks, const char* name = "")
     {
-      if (insideTask) {
-        for (size_t i=0; i<numTasks; i++)
-          task(data,threadID,numThreads,i,numTasks);
-      }
-      else
-      {
-        LockStepTaskScheduler::taskPtr = NULL;
-        LockStepTaskScheduler::taskPtr2 = task;
-        LockStepTaskScheduler::data = data;
-        LockStepTaskScheduler::numTasks = numTasks;
-        LockStepTaskScheduler::dispatchTask(threadID, numThreads);
-      }
+      LockStepTaskScheduler::taskPtr = NULL;
+      LockStepTaskScheduler::taskPtr2 = task;
+      LockStepTaskScheduler::data = data;
+      LockStepTaskScheduler::numTasks = numTasks;
+      return LockStepTaskScheduler::dispatchTask(threadID, numThreads);
     }
 
-    __forceinline void dispatchTaskSet(runFunction2 task, void* data, const size_t numTasks)
+    __forceinline bool dispatchTaskSet(runFunction2 task, void* data, const size_t numTasks)
     {
-      if (insideTask) {
-        for (size_t i=0; i<numTasks; i++)
-          task(data,0,1,i,numTasks);
-      }
-      else
-      {
-        LockStepTaskScheduler::taskPtr = NULL;
-        LockStepTaskScheduler::taskPtr2 = task;
-        LockStepTaskScheduler::data = data;
-        LockStepTaskScheduler::numTasks = numTasks;
-        LockStepTaskScheduler::dispatchTask(0, threadCount);
-      }
+      LockStepTaskScheduler::taskPtr = NULL;
+      LockStepTaskScheduler::taskPtr2 = task;
+      LockStepTaskScheduler::data = data;
+      LockStepTaskScheduler::numTasks = numTasks;
+      return LockStepTaskScheduler::dispatchTask(0, threadCount);
     }
 
     template<typename Closure>
