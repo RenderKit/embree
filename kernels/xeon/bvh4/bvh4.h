@@ -1197,7 +1197,6 @@ namespace embree
     ~BVH4 ();
 
     /*! BVH4 instantiations */
-    static Accel* BVH4Triangle1vMB(Scene* scene);
     static Accel* BVH4Triangle4vMB(Scene* scene);
 
     static Accel* BVH4Bezier1v(Scene* scene);

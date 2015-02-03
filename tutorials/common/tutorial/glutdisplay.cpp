@@ -111,6 +111,9 @@ namespace embree
     case '\033': case 'q': case 'Q':
       cleanup();
       glutDestroyWindow(g_window);
+#if defined(__MACOSX__)
+      exit(1);
+#endif
       break;
     }
   }
