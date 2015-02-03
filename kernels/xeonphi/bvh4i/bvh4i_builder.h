@@ -245,14 +245,13 @@ namespace embree
   class BVH4iBuilderSubdivMesh : public BVH4iBuilder
   {
   protected:
-    void *org_accel;
     Scene::Iterator<SubdivMesh> iter;
     ParallelForForPrefixSumState<PrimInfo> pstate;
     bool fastUpdateMode;
     size_t fastUpdateMode_numFaces;
 
   public:
-    BVH4iBuilderSubdivMesh (BVH4i* bvh, void* geometry) : BVH4iBuilder(bvh,geometry),org_accel(NULL),fastUpdateMode(false),fastUpdateMode_numFaces(0)
+    BVH4iBuilderSubdivMesh (BVH4i* bvh, void* geometry) : BVH4iBuilder(bvh,geometry),fastUpdateMode(false),fastUpdateMode_numFaces(0)
       {}
 
     virtual void build            (const size_t threadIndex, const size_t threadCount);
