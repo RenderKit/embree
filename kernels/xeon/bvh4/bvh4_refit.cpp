@@ -47,7 +47,7 @@ namespace embree
       /* build initial BVH */
       if (builder) {
         builder->build(threadIndex,threadCount);
-        if (bvh->numPrimitives > 50000) {
+        if (false && bvh->numPrimitives > 50000) {
           annotate_tree_sizes(bvh->root);
           calculate_refit_roots();
           needAllThreads = false;
