@@ -152,21 +152,20 @@ namespace embree
         bestSAH = min(unalignedObjectSAH,bestSAH);
         //}
       
-      /* perform best split */
-      if (bestSAH == float(inf)) {
-        alignedHeuristic.splitFallback(pinfo,linfo,rinfo);
-        return true;
-      }
-      else if (bestSAH == alignedObjectSAH) {
+      /* perform aligned split if this is best */
+      if (bestSAH == alignedObjectSAH) {
         alignedHeuristic.split(alignedObjectSplit,pinfo,linfo,rinfo);
         return true;
       }
+      /* perform unaligned split if this is best */
       else if (bestSAH == unalignedObjectSAH) {
         unalignedHeuristic.split(unalignedObjectSplit,uspace,pinfo,linfo,rinfo);
         return false;
       }
+      /* otherwise perform fallback split */
       else {
-        THROW_RUNTIME_ERROR("bvh4hair_builder: internal error"); // FIXME: remove
+        alignedHeuristic.deterministic_order(pinfo);
+        alignedHeuristic.splitFallback(pinfo,linfo,rinfo);
         return true;
       }
     }
@@ -175,13 +174,10 @@ namespace embree
     BVH4::NodeRef BVH4BuilderHairNew<Primitive>::recurse(size_t depth, const PrimInfo& pinfo, FastAllocator::ThreadLocal2* alloc)
     {
       if (alloc == NULL) 
-        //alloc = createAlloc();
         alloc = bvh->alloc2.threadLocal2();
 	
       //ReductionTy values[MAX_BRANCHING_FACTOR];
-      //PrimInfo children[MAX_BRANCHING_FACTOR];
       PrimInfo children[BVH4::N];
-      //__aligned(64) PrimInfo children[MAX_BRANCHING_FACTOR];
         
       /* create leaf node */
       if (depth+MIN_LARGE_LEAF_LEVELS >= maxDepth || pinfo.size() <= minLeafSize) {
@@ -192,7 +188,6 @@ namespace embree
       /* fill all children by always splitting the one with the largest surface area */
       size_t numChildren = 1;
       children[0] = pinfo;
-      //pchildren[0] = &children[0];
       bool aligned = true;
 
       do {
@@ -219,24 +214,17 @@ namespace embree
         aligned &= split(children[bestChild],left,right);
         
         /* add new children left and right */
-        //left.init(current.depth+1); 
-        //right.init(current.depth+1);
         children[bestChild] = children[numChildren-1];
         children[numChildren-1] = left;
         children[numChildren+0] = right;
-        //pchildren[numChildren] = &children[numChildren];
         numChildren++;
           
-      } while (numChildren < BVH4::N); //branchingFactor);
+      } while (numChildren < BVH4::N); 
       assert(numChildren > 1);
 	
-      /* create node */
-      //auto node = createNode(current,pchildren,numChildren,alloc);
-      
       /* create aligned node */
       if (aligned) 
       {
-        //BVH4::Node* node = bvh->allocNode(alloc);
         BVH4::Node* node = (BVH4::Node*) alloc->alloc0.malloc(sizeof(BVH4::Node),16); node->clear();
 
         for (size_t i=0; i<numChildren; i++)
@@ -261,7 +249,6 @@ namespace embree
       /* create unaligned node */
       else 
       {
-        //BVH4::UnalignedNode* node = bvh->allocUnalignedNode(alloc);
         BVH4::UnalignedNode* node = (BVH4::UnalignedNode*) alloc->alloc0.malloc(sizeof(BVH4::UnalignedNode),16); node->clear();
         for (size_t i=0; i<numChildren; i++) 
         {
