@@ -51,9 +51,10 @@ namespace embree
       const mic_f org_xyz      = loadAOS4to16f(ray.org.x,ray.org.y,ray.org.z);
       const mic_f dir_xyz      = loadAOS4to16f(ray.dir.x,ray.dir.y,ray.dir.z);
       const mic_f rdir_xyz     = loadAOS4to16f(rdir16.x[0],rdir16.y[0],rdir16.z[0]);
-      const mic_f org_rdir_xyz = org_xyz * rdir_xyz;
+      //const mic_f org_rdir_xyz = org_xyz * rdir_xyz;
       const mic_f min_dist_xyz = broadcast1to16f(&ray.tnear);
       mic_f       max_dist_xyz = broadcast1to16f(&ray.tfar);
+      const Precalculations precalculations(org_xyz,rdir_xyz);
 	  
       const unsigned int leaf_mask = BVH4I_LEAF_MASK;
       while (1)
@@ -63,8 +64,7 @@ namespace embree
 
 	  traverse_single_intersect<ENABLE_COMPRESSED_BVH4I_NODES,ROBUST>(curNode,
 									  sindex,
-									  rdir_xyz,
-									  org_rdir_xyz,
+									  precalculations,
 									  min_dist_xyz,
 									  max_dist_xyz,
 									  stack_node,
@@ -114,9 +114,10 @@ namespace embree
       const mic_f org_xyz      = loadAOS4to16f(ray.org.x,ray.org.y,ray.org.z);
       const mic_f dir_xyz      = loadAOS4to16f(ray.dir.x,ray.dir.y,ray.dir.z);
       const mic_f rdir_xyz     = loadAOS4to16f(rdir16.x[0],rdir16.y[0],rdir16.z[0]);
-      const mic_f org_rdir_xyz = org_xyz * rdir_xyz;
+      //const mic_f org_rdir_xyz = org_xyz * rdir_xyz;
       const mic_f min_dist_xyz = broadcast1to16f(&ray.tnear);
       const mic_f max_dist_xyz = broadcast1to16f(&ray.tfar);
+      const Precalculations precalculations(org_xyz,rdir_xyz);
 
       const unsigned int leaf_mask = BVH4I_LEAF_MASK;
 	  
@@ -128,8 +129,7 @@ namespace embree
 	  
 	  traverse_single_occluded< ENABLE_COMPRESSED_BVH4I_NODES,ROBUST>(curNode,
 									  sindex,
-									  rdir_xyz,
-									  org_rdir_xyz,
+									  precalculations,
 									  min_dist_xyz,
 									  max_dist_xyz,
 									  stack_node,

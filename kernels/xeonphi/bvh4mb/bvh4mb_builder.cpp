@@ -431,11 +431,11 @@ namespace embree
 
       }
 
-#if defined(DEBUG)
-    std::cout << "checking tree..." << std::flush;
-    check_tree(bvh->root);
-    std::cout << "done" << std::endl << std::flush;
-#endif
+    DBG(
+	std::cout << "checking tree..." << std::flush;
+	check_tree(bvh->root);
+	std::cout << "done" << std::endl << std::flush;
+	);
 
 
     TIMER(msec = getSeconds());

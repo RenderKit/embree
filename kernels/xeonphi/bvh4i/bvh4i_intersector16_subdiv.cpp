@@ -457,11 +457,12 @@ namespace embree
 	  const mic_f org_xyz      = loadAOS4to16f(rayIndex,ray16.org.x,ray16.org.y,ray16.org.z);
 	  const mic_f dir_xyz      = loadAOS4to16f(rayIndex,ray16.dir.x,ray16.dir.y,ray16.dir.z);
 	  const mic_f rdir_xyz     = loadAOS4to16f(rayIndex,rdir16.x,rdir16.y,rdir16.z);
-	  const mic_f org_rdir_xyz = org_xyz * rdir_xyz;
+	  //const mic_f org_rdir_xyz = org_xyz * rdir_xyz;
 	  const mic_f min_dist_xyz = broadcast1to16f(&ray16.tnear[rayIndex]);
 	  mic_f       max_dist_xyz = broadcast1to16f(&ray16.tfar[rayIndex]);
 
 	  const unsigned int leaf_mask = BVH4I_LEAF_MASK;
+	  const Precalculations precalculations(org_xyz,rdir_xyz);
 
 	  while (1)
 	    {
@@ -471,8 +472,7 @@ namespace embree
 
 	      traverse_single_intersect<false,true>(curNode,
 						    sindex,
-						    rdir_xyz,
-						    org_rdir_xyz,
+						    precalculations,
 						    min_dist_xyz,
 						    max_dist_xyz,
 						    stack_node,
@@ -524,8 +524,7 @@ namespace embree
 
 		  traverse_single_intersect<false, true>(curNode,
 							 sub_sindex,
-							 rdir_xyz,
-							 org_rdir_xyz,
+							 precalculations,
 							 min_dist_xyz,
 							 max_dist_xyz,
 							 sub_stack_node,
@@ -640,11 +639,12 @@ namespace embree
 	  const mic_f org_xyz      = loadAOS4to16f(rayIndex,ray16.org.x,ray16.org.y,ray16.org.z);
 	  const mic_f dir_xyz      = loadAOS4to16f(rayIndex,ray16.dir.x,ray16.dir.y,ray16.dir.z);
 	  const mic_f rdir_xyz     = loadAOS4to16f(rayIndex,rdir16.x,rdir16.y,rdir16.z);
-	  const mic_f org_rdir_xyz = org_xyz * rdir_xyz;
+	  //const mic_f org_rdir_xyz = org_xyz * rdir_xyz;
 	  const mic_f min_dist_xyz = broadcast1to16f(&ray16.tnear[rayIndex]);
 	  const mic_f max_dist_xyz = broadcast1to16f(&ray16.tfar[rayIndex]);
 	  const mic_i v_invalidNode(BVH4i::invalidNode);
 	  const unsigned int leaf_mask = BVH4I_LEAF_MASK;
+	  const Precalculations precalculations(org_xyz,rdir_xyz);
 
 	  while (1)
 	    {
@@ -653,8 +653,7 @@ namespace embree
 
 	      traverse_single_occluded< false, true >(curNode,
 						      sindex,
-						      rdir_xyz,
-						      org_rdir_xyz,
+						      precalculations,
 						      min_dist_xyz,
 						      max_dist_xyz,
 						      stack_node,
@@ -707,8 +706,7 @@ namespace embree
 
 		      traverse_single_occluded<false, true>(curNode,
 							    sub_sindex,
-							    rdir_xyz,
-							    org_rdir_xyz,
+							    precalculations,
 							    min_dist_xyz,
 							    max_dist_xyz,
 							    sub_stack_node,
@@ -794,11 +792,12 @@ namespace embree
       const mic_f org_xyz      = loadAOS4to16f(ray.org.x,ray.org.y,ray.org.z);
       const mic_f dir_xyz      = loadAOS4to16f(ray.dir.x,ray.dir.y,ray.dir.z);
       const mic_f rdir_xyz     = loadAOS4to16f(rdir16.x[0],rdir16.y[0],rdir16.z[0]);
-      const mic_f org_rdir_xyz = org_xyz * rdir_xyz;
+      //const mic_f org_rdir_xyz = org_xyz * rdir_xyz;
       const mic_f min_dist_xyz = broadcast1to16f(&ray.tnear);
       mic_f       max_dist_xyz = broadcast1to16f(&ray.tfar);
 	  
       const unsigned int leaf_mask = BVH4I_LEAF_MASK;
+      const Precalculations precalculations(org_xyz,rdir_xyz);
 	  
       while (1)
 	{
@@ -807,8 +806,7 @@ namespace embree
 
 	  traverse_single_intersect<false, true>(curNode,
 						 sindex,
-						 rdir_xyz,
-						 org_rdir_xyz,
+						 precalculations,
 						 min_dist_xyz,
 						 max_dist_xyz,
 						 stack_node,
@@ -859,8 +857,7 @@ namespace embree
 
 	      traverse_single_intersect<false,true>(curNode,
 						    sub_sindex,
-						    rdir_xyz,
-						    org_rdir_xyz,
+						    precalculations,
 						    min_dist_xyz,
 						    max_dist_xyz,
 						    sub_stack_node,
@@ -928,11 +925,12 @@ namespace embree
       const mic_f org_xyz      = loadAOS4to16f(ray.org.x,ray.org.y,ray.org.z);
       const mic_f dir_xyz      = loadAOS4to16f(ray.dir.x,ray.dir.y,ray.dir.z);
       const mic_f rdir_xyz     = loadAOS4to16f(rdir16.x[0],rdir16.y[0],rdir16.z[0]);
-      const mic_f org_rdir_xyz = org_xyz * rdir_xyz;
+      //const mic_f org_rdir_xyz = org_xyz * rdir_xyz;
       const mic_f min_dist_xyz = broadcast1to16f(&ray.tnear);
       const mic_f max_dist_xyz = broadcast1to16f(&ray.tfar);
 
       const unsigned int leaf_mask = BVH4I_LEAF_MASK;
+      const Precalculations precalculations(org_xyz,rdir_xyz);
 	  
       while (1)
 	{
@@ -942,8 +940,7 @@ namespace embree
 	  
 	  traverse_single_occluded< false, true >(curNode,
 						  sindex,
-						  rdir_xyz,
-						  org_rdir_xyz,
+						  precalculations,
 						  min_dist_xyz,
 						  max_dist_xyz,
 						  stack_node,
@@ -996,8 +993,7 @@ namespace embree
 
 		  traverse_single_occluded<false,true>(curNode,
 						       sub_sindex,
-						       rdir_xyz,
-						       org_rdir_xyz,
+						       precalculations,
 						       min_dist_xyz,
 						       max_dist_xyz,
 						       sub_stack_node,

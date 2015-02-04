@@ -325,7 +325,8 @@ namespace embree
 
 	const mic_f e0 = v2 - v0;
 	const mic_f e1 = v0 - v1;	     
-	const mic_f e2 = v1 - v2;	     
+	const mic_f e2 = v1 - v2;	  
+	
 
 	const mic_f Ng1     = lcross_xyz(e1,e0);
 	const mic_f Ng      = Ng1+Ng1;

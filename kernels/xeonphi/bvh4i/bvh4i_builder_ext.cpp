@@ -928,32 +928,15 @@ PRINT(CORRECT_numPrims);
 
   void BVH4iBuilderSubdivMesh::allocateData(const size_t threadCount, const size_t totalNumPrimitives)
   {
-    /* per core filling requires second array for paritioning -> disabled */
-    enablePerCoreWorkQueueFill = false; 
-
     size_t numPrimitivesOld = numPrimitives;
     numPrimitives = totalNumPrimitives;
     if (numPrimitivesOld != numPrimitives)
       {
-#if DEBUG
-	std::cout << "REALLOC node/accel arrays!" << std::endl;
-#endif      
 	const size_t numPrims = numPrimitives+4;
 	const size_t minAllocNodes =  ALLOCATOR_NODE_BLOCK_SIZE * MAX_MIC_THREADS; // (threadCount+1) 
 	const size_t numNodes = (size_t)((float)(numPrims+2)/2) + minAllocNodes;
-
-	if (numNodes * sizeof(BVH4i::Node) < (sizeof(BBox3fa) * numPrimitives + sizeof(BVH4i::Node) * 128))
-	  FATAL("node memory to small for temporary bounds storage");
-
 	allocateMemoryPools(numPrims,numNodes,sizeof(BVH4i::Node),sizeof(SubdivPatch1),1.0f);
-
-#if DEBUG
-	DBG_PRINT( numAllocated64BytesBlocks );
-#endif
       }
-
-    org_accel = accel;
-    accel = (Triangle1*)((char*)node + sizeof(BVH4i::Node) * 128 * 2);
   }
 
 
@@ -1097,7 +1080,7 @@ PRINT(CORRECT_numPrims);
 #else
 
     PrimInfo pinfo( empty );
-    SubdivPatch1 *subdiv_patches = (SubdivPatch1*)org_accel;
+    SubdivPatch1 *subdiv_patches = (SubdivPatch1*)accel;
 
       pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
       {
@@ -1210,7 +1193,7 @@ PRINT(CORRECT_numPrims);
     unsigned int currentID = startID;
     unsigned int offset = startID - numSkipped;
 
-    SubdivPatch1 *acc = (SubdivPatch1*)org_accel;
+    SubdivPatch1 *acc = (SubdivPatch1*)accel;
 
     for (; g<numTotalGroups; g++) 
       {
@@ -1339,8 +1322,7 @@ PRINT(CORRECT_numPrims);
 
     if (threadIndex == 0)
       {
-	bvh->accel = org_accel;
-	accel = (Triangle1*)org_accel;
+	bvh->accel = accel;
       }
 
   }

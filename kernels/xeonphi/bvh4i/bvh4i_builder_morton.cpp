@@ -26,7 +26,7 @@
 #define PROFILE_ITERATIONS 200
 
 #define TIMER(x) 
-#define DBG(x) x
+#define DBG(x) 
 
 #define L1_PREFETCH_ITEMS 8
 #define L2_PREFETCH_ITEMS 44
@@ -86,15 +86,16 @@ namespace embree
     encodeMask = ((size_t)1 << encodeShift)-1;
     size_t maxGroups = ((size_t)1 << (31-encodeShift))-1;
 
-#if 0
-    DBG_PRINT(numGroups);
-    DBG_PRINT(maxPrimsPerGroup);
-    DBG_PRINT(numPrimitives);
-    DBG_PRINT(encodeMask);
-    DBG_PRINT(encodeShift);
-    DBG_PRINT(maxGroups);
-    DBG_PRINT(size_morton);
-#endif
+    DBG(
+	DBG_PRINT(numGroups);
+	DBG_PRINT(maxPrimsPerGroup);
+	DBG_PRINT(numPrimitives);
+	DBG_PRINT(encodeMask);
+	DBG_PRINT(encodeShift);
+	DBG_PRINT(maxGroups);
+	DBG_PRINT(size_morton);
+	);
+
     if (maxPrimsPerGroup > encodeMask || numGroups > maxGroups)
     {
       DBG_PRINT(numGroups);
@@ -631,8 +632,8 @@ namespace embree
 	  }
       }
 
-      scene->lockstep_scheduler.syncThreads(threadID,numThreads);
 
+      scene->lockstep_scheduler.syncThreads(threadID,numThreads);
 
       /* calculate total number of items for each bucket */
 
@@ -1217,9 +1218,10 @@ namespace embree
     TIMER(std::cout << "task_computeMortonCodes " << 1000. * msec << " ms" << std::endl << std::flush);
     /* sort morton codes */
     TIMER(msec = getSeconds());
-    //scene->lockstep_scheduler.dispatchTask( task_radixsort_block, this, threadIndex, threadCount);
+    scene->lockstep_scheduler.dispatchTask( task_radixsort_block, this, threadIndex, threadCount);
     //radix_sort_copy_u32((MortonID32Bit*)morton,(MortonID32Bit*)node,numPrimitives);
-    quicksort_ascending(dest,0,numPrimitives);
+    //quicksort_ascending(dest,0,numPrimitives);
+    //exit(0);
 
 #if defined(DEBUG)
     for (size_t i=1; i<((numPrimitives+7)&(-8)); i++)

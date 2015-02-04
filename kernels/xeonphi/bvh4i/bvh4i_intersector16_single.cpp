@@ -55,15 +55,16 @@ namespace embree
         {
 	  stack_node[1] = bvh->root;
 	  size_t sindex = 2;
-
-	  const mic_f org_xyz      = loadAOS4to16f(rayIndex,ray16.org.x,ray16.org.y,ray16.org.z);
 	  const mic_f dir_xyz      = loadAOS4to16f(rayIndex,ray16.dir.x,ray16.dir.y,ray16.dir.z);
+	  const mic_f org_xyz      = loadAOS4to16f(rayIndex,ray16.org.x,ray16.org.y,ray16.org.z);
 	  const mic_f rdir_xyz     = loadAOS4to16f(rayIndex,rdir16.x,rdir16.y,rdir16.z);
-	  const mic_f org_rdir_xyz = org_xyz * rdir_xyz;
+	  //const mic_f org_rdir_xyz = org_xyz * rdir_xyz;
 	  const mic_f min_dist_xyz = broadcast1to16f(&ray16.tnear[rayIndex]);
 	  mic_f       max_dist_xyz = broadcast1to16f(&ray16.tfar[rayIndex]);
 
 	  const unsigned int leaf_mask = BVH4I_LEAF_MASK;
+	  
+	  const Precalculations precalculations(org_xyz,rdir_xyz);
 
 	  while (1)
 	    {
@@ -72,15 +73,14 @@ namespace embree
 	      sindex--;
 
 	      traverse_single_intersect<ENABLE_COMPRESSED_BVH4I_NODES,ROBUST>(curNode,
-								      sindex,
-								      rdir_xyz,
-								      org_rdir_xyz,
-								      min_dist_xyz,
-								      max_dist_xyz,
-								      stack_node,
-								      stack_dist,
-								      nodes,
-								      leaf_mask);
+									      sindex,
+									      precalculations,
+									      min_dist_xyz,
+									      max_dist_xyz,
+									      stack_node,
+									      stack_dist,
+									      nodes,
+									      leaf_mask);
 		   
 
 
@@ -139,11 +139,13 @@ namespace embree
 	  const mic_f org_xyz      = loadAOS4to16f(rayIndex,ray16.org.x,ray16.org.y,ray16.org.z);
 	  const mic_f dir_xyz      = loadAOS4to16f(rayIndex,ray16.dir.x,ray16.dir.y,ray16.dir.z);
 	  const mic_f rdir_xyz     = loadAOS4to16f(rayIndex,rdir16.x,rdir16.y,rdir16.z);
-	  const mic_f org_rdir_xyz = org_xyz * rdir_xyz;
+	  //const mic_f org_rdir_xyz = org_xyz * rdir_xyz;
 	  const mic_f min_dist_xyz = broadcast1to16f(&ray16.tnear[rayIndex]);
 	  const mic_f max_dist_xyz = broadcast1to16f(&ray16.tfar[rayIndex]);
 	  const mic_i v_invalidNode(BVH4i::invalidNode);
 	  const unsigned int leaf_mask = BVH4I_LEAF_MASK;
+
+	  const Precalculations precalculations(org_xyz,rdir_xyz);
 
 	  while (1)
 	    {
@@ -151,14 +153,13 @@ namespace embree
 	      sindex--;
 
 	      traverse_single_occluded< ENABLE_COMPRESSED_BVH4I_NODES,ROBUST >(curNode,
-								       sindex,
-								       rdir_xyz,
-								       org_rdir_xyz,
-								       min_dist_xyz,
-								       max_dist_xyz,
-								       stack_node,
-								       nodes,
-								       leaf_mask);
+									       sindex,
+									       precalculations,
+									       min_dist_xyz,
+									       max_dist_xyz,
+									       stack_node,
+									       nodes,
+									       leaf_mask);
 
 	      /* return if stack is empty */
 	      if (unlikely(curNode == BVH4i::invalidNode)) break;
