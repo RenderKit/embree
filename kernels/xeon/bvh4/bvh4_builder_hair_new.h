@@ -24,7 +24,8 @@ namespace embree
 {
   namespace isa
   {
-    class BVH4BuilderHairNew : public Builder
+    template<typename Primitive>
+      class BVH4BuilderHairNew : public Builder
     {
       ALIGNED_CLASS;
     public:

@@ -28,10 +28,12 @@ namespace embree
     static const size_t MAX_BRANCHING_FACTOR = 16;  //!< maximal supported BVH branching factor
     static const size_t MIN_LARGE_LEAF_LEVELS = 8;  //!< create balanced tree of we are that many levels before the maximal tree depth
 
-    BVH4BuilderHairNew::BVH4BuilderHairNew (BVH4* bvh, Scene* scene, size_t mode)
+    template<typename Primitive>
+    BVH4BuilderHairNew<Primitive>::BVH4BuilderHairNew (BVH4* bvh, Scene* scene, size_t mode)
       : scene(scene), maxDepth(BVH4::maxBuildDepthLeaf), minLeafSize(1), maxLeafSize(BVH4::maxLeafBlocks), bvh(bvh) {}
     
-    BVH4::NodeRef BVH4BuilderHairNew::createLeaf(Allocator& alloc, size_t depth, const PrimInfo& pinfo)
+    template<typename Primitive>
+    BVH4::NodeRef BVH4BuilderHairNew<Primitive>::createLeaf(Allocator& alloc, size_t depth, const PrimInfo& pinfo)
     {
       /*if (g_verbose >= 2) {
         static atomic_t N = 0;
@@ -41,7 +43,7 @@ namespace embree
 
       size_t items = pinfo.size();
       size_t start = pinfo.begin;
-      Bezier1v* accel = (Bezier1v*) alloc.malloc(items*sizeof(Bezier1v));
+      Primitive* accel = (Primitive*) alloc.malloc(items*sizeof(Primitive));
       BVH4::NodeRef node = bvh->encodeLeaf((char*)accel,items);
       for (size_t i=0; i<items; i++) {
         accel[i].fill(prims.data(),start,pinfo.end,bvh->scene,false);
@@ -49,7 +51,8 @@ namespace embree
       return node;
     }
 
-    BVH4::NodeRef BVH4BuilderHairNew::createLargeLeaf(Allocator& alloc, size_t depth, const PrimInfo& pinfo)
+    template<typename Primitive>
+    BVH4::NodeRef BVH4BuilderHairNew<Primitive>::createLargeLeaf(Allocator& alloc, size_t depth, const PrimInfo& pinfo)
     {
       //if (current.depth > maxDepth) 
       //  THROW_RUNTIME_ERROR("depth limit reached");
@@ -117,7 +120,8 @@ namespace embree
       //return updateNode(node,values,numChildren);
     }
 
-    bool BVH4BuilderHairNew::split(const PrimInfo& pinfo, PrimInfo& linfo, PrimInfo& rinfo)
+    template<typename Primitive>
+    bool BVH4BuilderHairNew<Primitive>::split(const PrimInfo& pinfo, PrimInfo& linfo, PrimInfo& rinfo)
     {
       /* variable to track the SAH of the best splitting approach */
       float bestSAH = inf;
@@ -164,10 +168,9 @@ namespace embree
       }
     }
     
-    BVH4::NodeRef BVH4BuilderHairNew::recurse(Allocator& alloc, size_t depth, const PrimInfo& pinfo)
+    template<typename Primitive>
+    BVH4::NodeRef BVH4BuilderHairNew<Primitive>::recurse(Allocator& alloc, size_t depth, const PrimInfo& pinfo)
     {
-      //PRINT2(depth,pinfo);
-
       //if (alloc == NULL) 
       //  alloc = createAlloc();
 	
@@ -257,22 +260,22 @@ namespace embree
       }
     }
 
-    void BVH4BuilderHairNew::build(size_t threadIndex, size_t threadCount) 
+    template<typename Primitive>
+    void BVH4BuilderHairNew<Primitive>::build(size_t threadIndex, size_t threadCount) 
     {
       /* fast path for empty BVH */
-      //size_t numPrimitives = scene->numBezierCurves;
       const size_t numPrimitives = scene->getNumPrimitives<BezierCurves,1>();
-      //size_t maxPrimitives = max(numPrimitives,(size_t)(g_hair_builder_replication_factor*numPrimitives));
       bvh->init(sizeof(BVH4::UnalignedNode),numPrimitives,threadCount);
       if (numPrimitives == 0) return;
-      //numGeneratedPrims = 0;
-      
+            
       double t0 = 0.0;
       if (g_verbose >= 2) {
         std::cout << "building BVH4<" + bvh->primTy.name + "> using " << TOSTRING(isa) << "::BVH4BuilderHairNew ..." << std::flush;
         t0 = getSeconds();
       }
       
+      /* create primref array */
+      bvh->alloc2.init(numPrimitives*sizeof(Primitive),numPrimitives*sizeof(BVH4::Node));
       prims.resize(numPrimitives);
       new (  &alignedHeuristic)          HeuristicArrayBinningSAH<BezierPrim>(prims.data());
       new (&unalignedHeuristic) UnalignedHeuristicArrayBinningSAH<BezierPrim>(prims.data());
@@ -281,6 +284,11 @@ namespace embree
       Allocator alloc(&bvh->alloc);
       BVH4::NodeRef root = recurse(alloc,1,pinfo);
       bvh->set(root,pinfo.geomBounds,pinfo.size());
+
+      /* clear temporary data for static geometry */
+      bool staticGeom = scene->isStatic();
+      if (staticGeom) prims.resize(0,true);
+      bvh->alloc2.cleanup();
 
       if (g_verbose >= 2) {
         double t1 = getSeconds();
@@ -292,6 +300,7 @@ namespace embree
     }
     
     /*! entry functions for the builder */
-    Builder* BVH4Bezier1vBuilder_OBB_New (void* bvh, Scene* scene, size_t mode) { return new BVH4BuilderHairNew((BVH4*)bvh,scene,mode); }
+    Builder* BVH4Bezier1vBuilder_OBB_New (void* bvh, Scene* scene, size_t mode) { return new BVH4BuilderHairNew<Bezier1v>((BVH4*)bvh,scene,mode); }
+    Builder* BVH4Bezier1iBuilder_OBB_New (void* bvh, Scene* scene, size_t mode) { return new BVH4BuilderHairNew<Bezier1i>((BVH4*)bvh,scene,mode); }
   }
 }

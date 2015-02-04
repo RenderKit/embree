@@ -91,6 +91,18 @@ namespace embree
       new (this) Bezier1i(vertexID,geomID,primID,list && i>=end);
     }
 
+    /*! fill triangle from triangle list */
+    __forceinline void fill(const Bezier1v* prims, size_t& i, size_t end, Scene* scene, const bool list)
+    {
+      const Bezier1v& curve = prims[i]; i++;
+      const unsigned geomID = curve.geomID<0>();
+      const unsigned primID = curve.primID<0>();
+      const BezierCurves* curves = scene->getBezierCurves(geomID);
+      const size_t vertexID = curves->curve(primID);
+      //const Vec3fa& p0 = curves->vertex(vertexID+0);
+      new (this) Bezier1i(vertexID,geomID,primID,list && i>=end);
+    }
+
   public:
     //const Vec3fa* p;      //!< pointer to first control point (x,y,z,r)
     unsigned int vertexID; //!< index of start vertex
@@ -140,6 +152,19 @@ namespace embree
       //const Vec3fa& p1 = in->vertex(in->curve(primID),1);
       const size_t vertexID = in->curve(primID);
       new (this) Bezier1iMB(vertexID,geomID,primID,list && !iter);
+    }
+
+    /*! fill triangle from triangle list */
+    __forceinline void fill(const Bezier1v* prims, size_t& i, size_t end, Scene* scene, const bool list)
+    {
+      const Bezier1v& curve = prims[i]; i++;
+      const unsigned geomID = curve.geomID<0>();
+      const unsigned primID = curve.primID<0>();
+      const BezierCurves* in = (BezierCurves*) scene->get(geomID);
+      //const Vec3fa& p0 = in->vertex(in->curve(primID),0);
+      //const Vec3fa& p1 = in->vertex(in->curve(primID),1);
+      const size_t vertexID = in->curve(primID);
+      new (this) Bezier1iMB(vertexID,geomID,primID,list && i == end);
     }
 
   public:
