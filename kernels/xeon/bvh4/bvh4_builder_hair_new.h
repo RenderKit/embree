@@ -40,16 +40,16 @@ namespace embree
       typedef LinearAllocatorPerThread::ThreadAllocator Allocator;
       
       /*! creates a leaf node */
-      BVH4::NodeRef createLeaf(Allocator& alloc, size_t depth, const PrimInfo& pinfo);
+      BVH4::NodeRef createLeaf(size_t depth, const PrimInfo& pinfo, FastAllocator::ThreadLocal2* alloc);
       
       /*! creates a large leaf that could be larger than supported by the BVH */
-      BVH4::NodeRef createLargeLeaf(Allocator& alloc, size_t depth, const PrimInfo& pinfo);
+      BVH4::NodeRef createLargeLeaf(size_t depth, const PrimInfo& pinfo, FastAllocator::ThreadLocal2* alloc);
     
       /*! performs split */
       bool split(const PrimInfo& pinfo, PrimInfo& linfo, PrimInfo& rinfo);
       
       /*! recursive build */
-      BVH4::NodeRef recurse(Allocator& alloc, size_t depth, const PrimInfo& pinfo);
+      BVH4::NodeRef recurse(size_t depth, const PrimInfo& pinfo, FastAllocator::ThreadLocal2* alloc);
       
     public:
       Scene* scene;          //!< source
