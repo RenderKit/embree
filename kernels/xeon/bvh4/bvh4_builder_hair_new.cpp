@@ -21,6 +21,8 @@
 #include "geometry/bezier1v.h"
 #include "geometry/bezier1i.h"
 
+#include "common/profile.h"
+
 namespace embree
 {
   namespace isa
@@ -183,7 +185,7 @@ namespace embree
         
       /* create leaf node */
       if (depth+MIN_LARGE_LEAF_LEVELS >= maxDepth || pinfo.size() <= minLeafSize) {
-        //heuristic.deterministic_order(current.prims);
+        alignedHeuristic.deterministic_order(pinfo);
         return createLargeLeaf(depth,pinfo,alloc);
       }
                 
@@ -214,8 +216,6 @@ namespace embree
         
         /*! split best child into left and right child */
         PrimInfo left, right;
-        //if (children[bestChild].size() > 10000) splitParallel  (children[bestChild],left,right);
-        //else                                    splitSequential(children[bestChild],left,right);
         aligned &= split(children[bestChild],left,right);
         
         /* add new children left and right */
@@ -230,9 +230,6 @@ namespace embree
       } while (numChildren < BVH4::N); //branchingFactor);
       assert(numChildren > 1);
 	
-      /* sort buildrecords for optimal cache locality */
-      //std::sort(&children[0],&children[numChildren]);
-      
       /* create node */
       //auto node = createNode(current,pchildren,numChildren,alloc);
       
@@ -306,17 +303,22 @@ namespace embree
         std::cout << "building BVH4<" + bvh->primTy.name + "> using " << TOSTRING(isa) << "::BVH4BuilderHairNew ..." << std::flush;
         t0 = getSeconds();
       }
+
+      //profile(1,5,numPrimitives,[&] (ProfileTimer& timer) {
+
+          /* create primref array */
+          bvh->alloc2.init(numPrimitives*sizeof(Primitive));
+          prims.resize(numPrimitives);
+          new (  &alignedHeuristic)          HeuristicArrayBinningSAH<BezierPrim>(prims.data());
+          new (&unalignedHeuristic) UnalignedHeuristicArrayBinningSAH<BezierPrim>(prims.data());
+          
+          const PrimInfo pinfo = createBezierRefArray<1>(scene,prims);
+          const BVH4::NodeRef root = recurse(1,pinfo,NULL);
+          bvh->set(root,pinfo.geomBounds,pinfo.size());
+
+          // timer("BVH4BuilderHairNew");
+          //});
       
-      /* create primref array */
-      bvh->alloc2.init(numPrimitives*sizeof(Primitive));
-      prims.resize(numPrimitives);
-      new (  &alignedHeuristic)          HeuristicArrayBinningSAH<BezierPrim>(prims.data());
-      new (&unalignedHeuristic) UnalignedHeuristicArrayBinningSAH<BezierPrim>(prims.data());
-
-      const PrimInfo pinfo = createBezierRefArray<1>(scene,prims);
-      const BVH4::NodeRef root = recurse(1,pinfo,NULL);
-      bvh->set(root,pinfo.geomBounds,pinfo.size());
-
       /* clear temporary data for static geometry */
       const bool staticGeom = scene->isStatic();
       if (staticGeom) prims.resize(0,true);

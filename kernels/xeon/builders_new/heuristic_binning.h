@@ -436,6 +436,12 @@ namespace embree
           /* required as parallel partition destroys original primitive order */
           std::sort(&prims[set.begin()],&prims[set.end()]);
         }
+
+         void deterministic_order(const PrimInfo& pinfo) 
+        {
+          /* required as parallel partition destroys original primitive order */
+          std::sort(&prims[pinfo.begin],&prims[pinfo.end]);
+        }
         
         /*! array partitioning */
         void splitFallback(const PrimInfo& pinfo, PrimInfo& left, PrimInfo& right) 
