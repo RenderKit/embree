@@ -184,6 +184,12 @@ namespace embree
       new (this) Bezier1v(p0,p1,p2,p3,0.0f,1.0f,geomID,primID,list && i>=end);
     }
 
+    /*! fill triangle from triangle list */
+    __forceinline void fill(const Bezier1v* prims, size_t& i, size_t end, Scene* scene, const bool list) {
+      *this = prims[i];
+      i++;
+    }
+
     /*! returns size of t range */
     __forceinline float dt() const {
       return t1-t0;
@@ -338,6 +344,14 @@ namespace embree
       if (p0p < pos) subdivide(left_o,right_o,0.5f*(u0+u1));
       else           subdivide(right_o,left_o,0.5f*(u0+u1));
       return true;
+    }
+
+    __forceinline uint64 id64() const {
+      return (((uint64)prim) << 32) + (uint64)geom;
+    }
+
+    friend __forceinline bool operator<(const Bezier1v& p0, const Bezier1v& p1) {
+      return p0.id64() < p1.id64();
     }
 
     friend std::ostream& operator<<(std::ostream& cout, const Bezier1v& b) {

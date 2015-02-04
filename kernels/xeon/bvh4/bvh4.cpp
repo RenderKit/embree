@@ -176,7 +176,7 @@ namespace embree
   
   DECLARE_TOPLEVEL_BUILDER(BVH4BuilderTopLevelBinnedSAH);
 
-  //DECLARE_SCENE_BUILDER(BVH4Bezier1vBuilder_OBB);
+  DECLARE_SCENE_BUILDER(BVH4Bezier1vBuilder_OBB_New);
   //DECLARE_SCENE_BUILDER(BVH4Bezier1iBuilder_OBB);
   //DECLARE_SCENE_BUILDER(BVH4Bezier1iMBBuilder_OBB);
   DECLARE_SCENE_BUILDER(BVH4Triangle1SceneBuilderBinnedSAH2);
@@ -307,7 +307,7 @@ namespace embree
 
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4BuilderTopLevelBinnedSAH);
 
-    //SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Bezier1vBuilder_OBB);
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Bezier1vBuilder_OBB_New);
     //SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Bezier1iBuilder_OBB);
     //SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Bezier1iMBBuilder_OBB);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle1SceneBuilderBinnedSAH2);
@@ -743,7 +743,11 @@ namespace embree
   { 
     BVH4* accel = new BVH4(Bezier1vType::type,scene,LeafMode);
     Accel::Intersectors intersectors = BVH4Bezier1vIntersectors_OBB(accel);
+#if defined(TASKING_TBB) || defined(TASKING_TBB_INTERNAL)
+    Builder* builder = BVH4Bezier1vBuilder_OBB_New(accel,scene,0); // FIXME: enable high quality mode
+#else
     Builder* builder = BVH4Bezier1vBuilder_OBB(accel,scene,LeafMode | (highQuality ? MODE_HIGH_QUALITY : 0));
+#endif
     return new AccelInstance(accel,builder,intersectors);
   }
 

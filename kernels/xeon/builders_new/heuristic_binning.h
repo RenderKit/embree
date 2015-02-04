@@ -145,20 +145,6 @@ namespace embree
 	}
       }
       
-      /*! bins an array of bezier curves */
-      __forceinline void bin (const BezierPrim* prims, size_t N, const BinMapping<BINS>& mapping)
-      {
-	for (size_t i=0; i<N; i++)
-          {
-            const BBox3fa cbounds = prims[i].bounds();
-            const Vec3fa  center  = prims[i].center();
-            const ssei bin = ssei(mapping.bin(center));
-            const int b0 = bin[0]; counts[b0][0]++; bounds[b0][0].extend(cbounds);
-            const int b1 = bin[1]; counts[b1][1]++; bounds[b1][1].extend(cbounds);
-            const int b2 = bin[2]; counts[b2][2]++; bounds[b2][2].extend(cbounds);
-          }
-      }
-      
       /*! bins an array of primitives */
       __forceinline void bin (const PrimRef* prims, size_t N, const BinMapping<BINS>& mapping)
       {
@@ -199,24 +185,6 @@ namespace embree
 	bin(prims+begin,end-begin,mapping);
       }
     
-#if 0  
-      /*! bins a list of bezier curves */
-      __forceinline void bin(BezierRefList& prims, const BinMapping<BINS>& mapping)
-      {
-	BezierRefList::iterator i=prims;
-	while (BezierRefList::item* block = i.next())
-	  bin(block->base(),block->size(),mapping);
-      }
-      
-      /*! bins a list of primitives */
-      __forceinline void bin(PrimRefList& prims, const BinMapping<BINS>& mapping)
-      {
-	PrimRefList::iterator i=prims;
-	while (PrimRefList::item* block = i.next())
-	  bin(block->base(),block->size(),mapping);
-      }
-#endif     
- 
       /*! merges in other binning information */
       __forceinline void merge (const BinInfo& other, size_t numBins)
       {
@@ -323,10 +291,20 @@ namespace embree
       typedef BinInfo<BINS,PrimRef> Binner;
       typedef range<size_t> Set;
 
+      __forceinline HeuristicArrayBinningSAH ()
+        : prims(NULL) {}
+
       /*! remember prim array */
       __forceinline HeuristicArrayBinningSAH (PrimRef* prims)
       : prims(prims) {}
-            
+       
+      /*! finds the best split */
+      const Split find(const PrimInfo& pinfo, const size_t logBlockSize)
+      {
+        Set set(pinfo.begin,pinfo.end);
+        return find(set,pinfo,logBlockSize);
+      }
+
       /*! finds the best split */
       const Split find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize)
       {
@@ -347,6 +325,14 @@ namespace embree
         return binner.best(mapping,logBlockSize);
       }
       
+      /*! array partitioning */
+      void split(const Split& spliti, const PrimInfo& pinfo, PrimInfo& left, PrimInfo& right) 
+      {
+        Set lset,rset;
+        Set set(pinfo.begin,pinfo.end);
+        split(spliti,set,left,lset,right,rset);
+      }
+
       /*! array partitioning */
       void split(const Split& split, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset) 
       {
@@ -407,6 +393,14 @@ namespace embree
       {
 	/* required as parallel partition destroys original primitive order */
 	std::sort(&prims[set.begin()],&prims[set.end()]);
+      }
+
+      /*! array partitioning */
+      void splitFallback(const PrimInfo& pinfo, PrimInfo& left, PrimInfo& right) 
+      {
+        Set lset,rset;
+        Set set(pinfo.begin,pinfo.end);
+        splitFallback(set,left,lset,right,rset);
       }
 
       void splitFallback(const Set& set, PrimInfo& linfo, Set& lset, PrimInfo& rinfo, Set& rset)
