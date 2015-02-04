@@ -140,7 +140,7 @@ namespace embree
       __forceinline void clear() 
       {
 	for (size_t i=0; i<BINS; i++) {
-	  bounds[i][0] = bounds[i][1] = bounds[i][2] = bounds[i][3] = empty;
+	  bounds[i][0] = bounds[i][1] = bounds[i][2] = empty;
 	  counts[i] = 0;
 	}
       }
@@ -154,18 +154,31 @@ namespace embree
 	for (i=0; i<N-1; i+=2)
         {
           /*! map even and odd primitive to bin */
-          const BBox3fa prim0 = prims[i+0].bounds(); const Vec3fa center0 = Vec3fa(center2(prim0)); const Vec3ia bin0 = mapping.bin(center0); 
-          const BBox3fa prim1 = prims[i+1].bounds(); const Vec3fa center1 = Vec3fa(center2(prim1)); const Vec3ia bin1 = mapping.bin(center1); 
+          const BBox3fa prim0 = prims[i+0].bounds(); 
+          const Vec3fa center0 = Vec3fa(center2(prim0)); 
+          const Vec3ia bin0 = mapping.bin(center0); 
+          
+          const BBox3fa prim1 = prims[i+1].bounds(); 
+          const Vec3fa center1 = Vec3fa(center2(prim1)); 
+          const Vec3ia bin1 = mapping.bin(center1); 
           
           /*! increase bounds for bins for even primitive */
-          const int b00 = bin0.x; counts[b00][0]++; bounds[b00][0].extend(prim0);
-          const int b01 = bin0.y; counts[b01][1]++; bounds[b01][1].extend(prim0);
-          const int b02 = bin0.z; counts[b02][2]++; bounds[b02][2].extend(prim0);
+          const unsigned int b00 = bin0.x; bounds[b00][0].extend(prim0);
+          const unsigned int b01 = bin0.y; bounds[b01][1].extend(prim0);
+          const unsigned int b02 = bin0.z; bounds[b02][2].extend(prim0);
           
+          counts[b00][0]++;
+          counts[b01][1]++;
+          counts[b02][2]++;
+
           /*! increase bounds of bins for odd primitive */
-          const int b10 = bin1.x; counts[b10][0]++; bounds[b10][0].extend(prim1);
-          const int b11 = bin1.y; counts[b11][1]++; bounds[b11][1].extend(prim1);
-          const int b12 = bin1.z; counts[b12][2]++; bounds[b12][2].extend(prim1);
+          const unsigned int b10 = bin1.x;  bounds[b10][0].extend(prim1);
+          const unsigned int b11 = bin1.y;  bounds[b11][1].extend(prim1);
+          const unsigned int b12 = bin1.z;  bounds[b12][2].extend(prim1);
+
+          counts[b10][0]++;
+          counts[b11][1]++;
+          counts[b12][2]++;
         }
 	
 	/*! for uneven number of primitives */
@@ -318,7 +331,7 @@ namespace embree
       }
       
     private:
-      BBox3fa bounds[BINS][4]; //!< geometry bounds for each bin in each dimension
+      BBox3fa bounds[BINS][3]; //!< geometry bounds for each bin in each dimension
       ssei    counts[BINS];    //!< counts number of primitives that map into the bins
     };
     
