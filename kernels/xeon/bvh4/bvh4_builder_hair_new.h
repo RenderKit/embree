@@ -24,7 +24,7 @@ namespace embree
 {
   namespace isa
   {
-    template<typename CreateAllocFunc, typename CreateLeafFunc>
+    template<typename CreateAllocFunc, typename CreateAlignedNodeFunc, typename CreateUnalignedNodeFunc, typename CreateLeafFunc>
       class BVH4BuilderHairNew 
     {
       ALIGNED_CLASS;
@@ -36,12 +36,12 @@ namespace embree
       
        /*! Constructor. */
        BVH4BuilderHairNew (BezierPrim* prims, 
-                           const CreateAllocFunc& createAlloc, const CreateLeafFunc& createLeaf,
+                           const CreateAllocFunc& createAlloc, const CreateAlignedNodeFunc& createAlignedNode, const CreateUnalignedNodeFunc& createUnalignedNode, const CreateLeafFunc& createLeaf,
                            const size_t branchingFactor, const size_t maxDepth, const size_t logBlockSize, const size_t minLeafSize, const size_t maxLeafSize )
          : prims(prims), 
            branchingFactor(branchingFactor), maxDepth(maxDepth), logBlockSize(logBlockSize), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize),
            alignedHeuristic(prims), unalignedHeuristic(prims), 
-           createAlloc(createAlloc), createLeaf(createLeaf) {}
+           createAlloc(createAlloc), createAlignedNode(createAlignedNode), createUnalignedNode(createUnalignedNode), createLeaf(createLeaf) {}
 
        BVH4::NodeRef operator() (const PrimInfo& pinfo) {
         return recurse(1,pinfo,NULL);
@@ -203,11 +203,8 @@ namespace embree
         /* create aligned node */
         if (aligned) 
         {
-          BVH4::Node* node = (BVH4::Node*) alloc->alloc0.malloc(sizeof(BVH4::Node),16); node->clear();
-          
-          for (size_t i=0; i<numChildren; i++)
-            node->set(i,children[i].geomBounds);
-          
+          auto node = createAlignedNode(children,numChildren,alignedHeuristic,alloc);
+
           /* spawn tasks or ... */
           if (pinfo.size() > 4096)
           {
@@ -227,13 +224,7 @@ namespace embree
         /* create unaligned node */
         else 
         {
-          BVH4::UnalignedNode* node = (BVH4::UnalignedNode*) alloc->alloc0.malloc(sizeof(BVH4::UnalignedNode),16); node->clear();
-          for (size_t i=0; i<numChildren; i++) 
-          {
-            const LinearSpace3fa space = unalignedHeuristic.computeAlignedSpace(children[i]); 
-            const PrimInfo       sinfo = unalignedHeuristic.computePrimInfo(children[i],space);
-            node->set(i,NAABBox3fa(space,sinfo.geomBounds));
-          }
+          auto node = createUnalignedNode(children,numChildren,unalignedHeuristic,alloc);
           
           /* spawn tasks or ... */
           if (pinfo.size() > 4096)
@@ -263,14 +254,17 @@ namespace embree
       HeuristicArrayBinningSAH<BezierPrim> alignedHeuristic;
       UnalignedHeuristicArrayBinningSAH<BezierPrim> unalignedHeuristic;
       const CreateAllocFunc& createAlloc;
+      const CreateAlignedNodeFunc& createAlignedNode;
+      const CreateUnalignedNodeFunc& createUnalignedNode;
       const CreateLeafFunc& createLeaf;
     };
 
-    template<typename CreateAllocFunc, typename CreateLeafFunc>
-      BVH4::NodeRef bvh_obb_builder_binned_sah_internal (const CreateAllocFunc& createAlloc, const CreateLeafFunc& createLeaf, BezierPrim* prims, const PrimInfo& pinfo,
+    template<typename CreateAllocFunc, typename CreateAlignedNodeFunc, typename CreateUnalignedNodeFunc, typename CreateLeafFunc>
+      BVH4::NodeRef bvh_obb_builder_binned_sah_internal (const CreateAllocFunc& createAlloc, const CreateAlignedNodeFunc& createAlignedNode, const CreateUnalignedNodeFunc& createUnalignedNode, const CreateLeafFunc& createLeaf, 
+                                                         BezierPrim* prims, const PrimInfo& pinfo,
                                                          const size_t branchingFactor, const size_t maxDepth, const size_t logBlockSize, const size_t minLeafSize, const size_t maxLeafSize) 
     {
-      BVH4BuilderHairNew<CreateAllocFunc,CreateLeafFunc> builder(prims,createAlloc,createLeaf,branchingFactor,maxDepth,logBlockSize,minLeafSize,maxLeafSize);
+      BVH4BuilderHairNew<CreateAllocFunc,CreateAlignedNodeFunc,CreateUnalignedNodeFunc,CreateLeafFunc> builder(prims,createAlloc,createAlignedNode,createUnalignedNode,createLeaf,branchingFactor,maxDepth,logBlockSize,minLeafSize,maxLeafSize);
       return builder(pinfo);
     }
   }

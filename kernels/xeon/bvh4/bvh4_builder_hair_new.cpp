@@ -64,6 +64,27 @@ namespace embree
         BVH4::NodeRef root = bvh_obb_builder_binned_sah_internal
           (
             [&] () { return bvh->alloc2.threadLocal2(); },
+
+            [&] (const PrimInfo* children, const size_t numChildren, HeuristicArrayBinningSAH<BezierPrim> alignedHeuristic, FastAllocator::ThreadLocal2* alloc) 
+            {
+              BVH4::Node* node = (BVH4::Node*) alloc->alloc0.malloc(sizeof(BVH4::Node),16); node->clear();
+              for (size_t i=0; i<numChildren; i++)
+                node->set(i,children[i].geomBounds);
+              return node;
+            },
+            
+            [&] (const PrimInfo* children, const size_t numChildren, UnalignedHeuristicArrayBinningSAH<BezierPrim> unalignedHeuristic, FastAllocator::ThreadLocal2* alloc)
+            {
+              BVH4::UnalignedNode* node = (BVH4::UnalignedNode*) alloc->alloc0.malloc(sizeof(BVH4::UnalignedNode),16); node->clear();
+              for (size_t i=0; i<numChildren; i++) 
+              {
+                const LinearSpace3fa space = unalignedHeuristic.computeAlignedSpace(children[i]); 
+                const PrimInfo       sinfo = unalignedHeuristic.computePrimInfo(children[i],space);
+                node->set(i,NAABBox3fa(space,sinfo.geomBounds));
+              }
+              return node;
+            },
+
             [&] (size_t depth, const PrimInfo& pinfo, FastAllocator::ThreadLocal2* alloc) -> BVH4::NodeRef
             {
               size_t items = pinfo.size();
