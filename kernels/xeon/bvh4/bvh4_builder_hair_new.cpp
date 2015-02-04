@@ -63,6 +63,7 @@ namespace embree
         
         BVH4::NodeRef root = bvh_obb_builder_binned_sah_internal
           (
+            [&] () { return bvh->alloc2.threadLocal2(); },
             [&] (size_t depth, const PrimInfo& pinfo, FastAllocator::ThreadLocal2* alloc) -> BVH4::NodeRef
             {
               size_t items = pinfo.size();
@@ -74,7 +75,7 @@ namespace embree
               }
               return node;
             },
-            prims.data(),pinfo,bvh,scene); //,BVH4::N,BVH4::maxBuildDepthLeaf,sahBlockSize,minLeafSize,maxLeafSize);
+            prims.data(),pinfo); //,BVH4::N,BVH4::maxBuildDepthLeaf,sahBlockSize,minLeafSize,maxLeafSize);
         
         bvh->set(root,pinfo.geomBounds,pinfo.size());
         

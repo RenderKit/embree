@@ -24,7 +24,7 @@ namespace embree
 {
   namespace isa
   {
-    template<typename CreateLeafFunc>
+    template<typename CreateAllocFunc, typename CreateLeafFunc>
       class BVH4BuilderHairNew 
     {
       ALIGNED_CLASS;
@@ -35,9 +35,10 @@ namespace embree
     public:
       
        /*! Constructor. */
-       BVH4BuilderHairNew (BVH4* bvh, Scene* scene, BezierPrim* prims, const CreateLeafFunc& createLeaf)
-        : scene(scene), prims(prims), maxDepth(BVH4::maxBuildDepthLeaf), minLeafSize(1), maxLeafSize(BVH4::maxLeafBlocks), bvh(bvh),
-         alignedHeuristic(prims), unalignedHeuristic(prims), createLeaf(createLeaf) {}
+       BVH4BuilderHairNew (BezierPrim* prims, const CreateAllocFunc& createAlloc, const CreateLeafFunc& createLeaf)
+        : prims(prims), maxDepth(BVH4::maxBuildDepthLeaf), minLeafSize(1), maxLeafSize(BVH4::maxLeafBlocks),
+         alignedHeuristic(prims), unalignedHeuristic(prims), 
+         createAlloc(createAlloc), createLeaf(createLeaf) {}
 
        BVH4::NodeRef operator() (const PrimInfo& pinfo) {
         return recurse(1,pinfo,NULL);
@@ -149,7 +150,7 @@ namespace embree
       BVH4::NodeRef recurse(size_t depth, const PrimInfo& pinfo, FastAllocator::ThreadLocal2* alloc)
       {
         if (alloc == NULL) 
-          alloc = bvh->alloc2.threadLocal2();
+          alloc = createAlloc();
 	
         PrimInfo children[BVH4::N];
         
@@ -249,9 +250,7 @@ namespace embree
       }
 
     public:
-      Scene* scene;          //!< source
       BezierPrim* prims;
-      BVH4* bvh;         //!< output
       size_t maxDepth;
       size_t minLeafSize;    //!< minimal size of a leaf
       size_t maxLeafSize;    //!< maximal size of a leaf
@@ -259,13 +258,14 @@ namespace embree
       HeuristicArrayBinningSAH<BezierPrim> alignedHeuristic;
       UnalignedHeuristicArrayBinningSAH<BezierPrim> unalignedHeuristic;
       //BezierPrim* prims;
+      const CreateAllocFunc& createAlloc;
       const CreateLeafFunc& createLeaf;
     };
 
-    template<typename CreateLeafFunc>
-      BVH4::NodeRef bvh_obb_builder_binned_sah_internal (const CreateLeafFunc& createLeaf, BezierPrim* prims, const PrimInfo& pinfo, BVH4* bvh, Scene* scene) 
+    template<typename CreateAllocFunc, typename CreateLeafFunc>
+      BVH4::NodeRef bvh_obb_builder_binned_sah_internal (const CreateAllocFunc& createAlloc, const CreateLeafFunc& createLeaf, BezierPrim* prims, const PrimInfo& pinfo) 
     {
-      BVH4BuilderHairNew<CreateLeafFunc> builder(bvh,scene,prims,createLeaf);
+      BVH4BuilderHairNew<CreateAllocFunc,CreateLeafFunc> builder(prims,createAlloc,createLeaf);
       return builder(pinfo);
     }
   }
