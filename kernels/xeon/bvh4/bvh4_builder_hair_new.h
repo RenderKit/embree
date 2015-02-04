@@ -97,11 +97,7 @@ namespace embree
         } while (numChildren < branchingFactor);
         
         /* create node */
-        BVH4::Node* node = (BVH4::Node*) alloc->alloc0.malloc(sizeof(BVH4::Node),16); node->clear();
-        for (size_t i=0; i<numChildren; i++) {
-          node->set(i,children[i].geomBounds);
-          node->set(i,createLargeLeaf(depth+1,children[i],alloc));
-        }
+        auto node = createAlignedNode(children,numChildren,alignedHeuristic,alloc);
         return BVH4::encodeNode(node);
       }
             

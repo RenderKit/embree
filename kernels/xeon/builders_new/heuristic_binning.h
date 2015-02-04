@@ -337,7 +337,22 @@ namespace embree
         /*! remember prim array */
         __forceinline HeuristicArrayBinningSAH (PrimRef* prims)
           : prims(prims) {}
-        
+
+        const std::pair<BBox3fa,BBox3fa> computePrimInfoMB(Scene* scene, const PrimInfo& pinfo)
+        {
+          BBox3fa bounds0 = empty;
+          BBox3fa bounds1 = empty;
+          for (size_t i=pinfo.begin; i<pinfo.end; i++) // FIXME: parallelize
+          {
+            Bezier1v& prim = prims[i];
+            const size_t geomID = prim.geomID<0>();
+            const BezierCurves* curves = scene->getBezierCurves(geomID);
+            bounds0.extend(curves->bounds(prim.primID<0>(),0));
+            bounds1.extend(curves->bounds(prim.primID<0>(),1));
+          }
+          return std::pair<BBox3fa,BBox3fa>(bounds0,bounds1);
+        }
+
         /*! finds the best split */
         const Split find(const PrimInfo& pinfo, const size_t logBlockSize)
         {
@@ -483,7 +498,16 @@ namespace embree
         typedef BinSplit<BINS> Split;
         typedef BinInfo<BINS,PrimRef> Binner;
         typedef range<size_t> Set;
-        
+
+         /*! computes bounding box of bezier curves for motion blur */
+        struct PrimInfoMB 
+        {
+          PrimInfo pinfo;
+          BBox3fa s0t0;
+          BBox3fa s0t1_s1t0;
+          BBox3fa s1t1;
+        };
+
         __forceinline UnalignedHeuristicArrayBinningSAH ()
           : prims(NULL) {}
         
@@ -507,6 +531,85 @@ namespace embree
           return frame(axis).transposed();
         }
 
+        const std::pair<AffineSpace3fa,AffineSpace3fa> computeAlignedSpaceMB(Scene* scene, const PrimInfo& pinfo)
+        {
+          /*! find first curve that defines valid direction */
+          Vec3fa p0(0,0,0);
+          Vec3fa p1(0,0,0);
+          Vec3fa axis0(0,0,1), axisb0(0,1,0);
+          Vec3fa axis1(0,0,1), axisb1(0,1,0);
+          //Vec3fa axis2(0,1,0);
+          for (size_t i=pinfo.begin; i<pinfo.end; i++)
+          {
+            const Bezier1v& prim = prims[i];
+            const size_t geomID = prim.geomID<0>();
+            const size_t primID = prim.primID<0>();
+            const BezierCurves* curves = scene->getBezierCurves(geomID);
+            const int curve = curves->curve(primID);
+            
+            const Vec3fa a3 = curves->vertex(curve+3,0);
+            const Vec3fa a2 = curves->vertex(curve+2,0);
+            const Vec3fa a1 = curves->vertex(curve+1,0);
+            const Vec3fa a0 = curves->vertex(curve+0,0);
+            
+            const Vec3fa b3 = curves->vertex(curve+3,1);
+            const Vec3fa b2 = curves->vertex(curve+2,1);
+            const Vec3fa b1 = curves->vertex(curve+1,1);
+            const Vec3fa b0 = curves->vertex(curve+0,1);
+            
+            if (length(a3 - a0) > 1E-9f && length(a1 - a0) > 1E-9f &&
+                length(b3 - b0) > 1E-9f && length(b1 - b0) > 1E-9f) 
+            {
+              axis0 = normalize(a3 - a0); axisb0 = normalize(a1 - a0); 
+              axis1 = normalize(b3 - b0); axisb1 = normalize(b1 - b0); 
+              p0 = a0; p1 = b0;
+              /*if (length(b3-a3) > 1E-9f) axis2 = b3-a3;
+                else if (length(b0-a0) > 1E-9f) axis2 = b0-a0;
+                else axis2 = Vec3fa(1,0,0);*/ // FIXME: not correct
+              break;
+            }
+          }
+#if 1
+          //LinearSpace3fa space01 = frame(0.5f*axis0 + 0.5f*axis1).transposed();
+          //AffineSpace3fa space0 = frame(axis0).transposed();
+          //AffineSpace3fa space1 = frame(axis1).transposed();
+          
+          const Vec3fa space0_dx = normalize(axis0);
+          const Vec3fa space0_dy = normalize(cross(space0_dx,axisb0));
+          const Vec3fa space0_dz = normalize(cross(space0_dx,space0_dy));
+          LinearSpace3fa space0(space0_dz,space0_dy,space0_dx);
+          space0 = space0.transposed();
+          
+          const Vec3fa space1_dx = normalize(axis1);
+          const Vec3fa space1_dy = normalize(cross(space1_dx,axisb1));
+          const Vec3fa space1_dz = normalize(cross(space1_dx,space1_dy));
+          LinearSpace3fa space1(space1_dz,space1_dy,space1_dx);
+          space1 = space1.transposed();
+          
+          //space0.p = -xfmVector(space0.l,p0);
+          //space1.p = -xfmVector(space1.l,p1);
+          //space0 = space01;
+          //space1 = space0;
+#else
+          const Vec3fa space0_dx = normalize(axis0);
+          const Vec3fa space0_dy = normalize(cross(space0_dx,axis2));
+          const Vec3fa space0_dz = normalize(cross(space0_dx,space0_dy));
+          AffineSpace3fa space0(space0_dz,space0_dy,space0_dx,zero);
+          space0.l = space0.l.transposed();
+          
+          const Vec3fa space1_dx = normalize(axis1);
+          const Vec3fa space1_dy = normalize(cross(space1_dx,axis2));
+          const Vec3fa space1_dz = normalize(cross(space1_dx,space1_dy));
+          AffineSpace3fa space1(space1_dz,space1_dy,space1_dx,zero);
+          space1.l = space1.l.transposed();
+          
+          space0.p = -xfmVector(space0.l,p0);
+          space1.p = -xfmVector(space1.l,p1);
+#endif 
+          
+          return std::pair<AffineSpace3fa,AffineSpace3fa>(space0,space1);
+        }
+        
         const PrimInfo computePrimInfo(const PrimInfo& pinfo, const LinearSpace3fa& space)
         {
           BBox3fa geomBounds = empty;
@@ -517,6 +620,36 @@ namespace embree
             centBounds.extend(center2(bounds));
           }
           return PrimInfo(pinfo.begin,pinfo.end,geomBounds,centBounds);
+        }
+        
+        const PrimInfoMB computePrimInfoMB(Scene* scene, const PrimInfo& pinfo, const std::pair<AffineSpace3fa,AffineSpace3fa>& spaces)
+        {
+          size_t N = 0;
+          BBox3fa centBounds = empty;
+          BBox3fa geomBounds = empty;
+          BBox3fa s0t0 = empty, s0t1_s1t0 = empty, s1t1 = empty;
+          for (size_t i=pinfo.begin; i<pinfo.end; i++)  // FIXME: parallelize
+          {
+            const Bezier1v& prim = prims[i];
+            const size_t geomID = prim.geomID<0>();
+            const size_t primID = prim.primID<0>();
+
+            N++;
+            geomBounds.extend(prim.bounds(spaces.first));
+            centBounds.extend(prim.center(spaces.first));
+
+            const BezierCurves* curves = scene->getBezierCurves(prim.geomID<0>());
+            s0t0.extend(curves->bounds(spaces.first,prim.primID<0>(),0));
+            s0t1_s1t0.extend(curves->bounds(spaces.first,spaces.second,prim.primID<0>()));
+            s1t1.extend(curves->bounds(spaces.second,prim.primID<0>(),1));
+          }
+          
+          PrimInfoMB ret;
+          ret.pinfo = PrimInfo(N,geomBounds,centBounds);
+          ret.s0t0 = s0t0;
+          ret.s0t1_s1t0 = s0t1_s1t0;
+          ret.s1t1 = s1t1;
+          return ret;
         }
         
         /*! finds the best split */

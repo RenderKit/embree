@@ -232,7 +232,6 @@ namespace embree
 	strandSAH = BVH4::travCostUnaligned*halfArea(bounds.bounds) + BVH4::intCost*strandSplit.splitSAH();
 	bestSAH = min(strandSAH,bestSAH);
       }
-
       
       /* return best split */
       if      (bestSAH == float(inf)        ) return Split();

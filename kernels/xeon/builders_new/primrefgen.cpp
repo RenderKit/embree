@@ -187,6 +187,7 @@ namespace embree
     template PrimInfo createPrimRefArray<UserGeometryBase,1>(Scene* scene, vector_t<PrimRef>& prims);
 
     template PrimInfo createBezierRefArray<1>(Scene* scene, vector_t<BezierPrim>& prims);
+    template PrimInfo createBezierRefArray<2>(Scene* scene, vector_t<BezierPrim>& prims);
   }
 }
 
