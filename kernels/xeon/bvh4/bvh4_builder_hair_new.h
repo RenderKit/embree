@@ -58,6 +58,7 @@ namespace embree
       size_t maxLeafSize;    //!< maximal size of a leaf
 
       HeuristicArrayBinningSAH<BezierPrim> alignedHeuristic;
+      UnalignedHeuristicArrayBinningSAH<BezierPrim> unalignedHeuristic;
       vector_t<BezierPrim> prims;
     };
   }

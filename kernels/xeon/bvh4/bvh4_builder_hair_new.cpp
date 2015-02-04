@@ -126,22 +126,24 @@ namespace embree
       /* perform standard binning in aligned space */
       float alignedObjectSAH = inf;
       HeuristicArrayBinningSAH<BezierPrim>::Split alignedObjectSplit;
-      alignedObjectSplit = alignedHeuristic.find(pinfo,0);
-      alignedObjectSAH = BVH4::travCostAligned*halfArea(pinfo.geomBounds) + BVH4::intCost*alignedObjectSplit.splitSAH();
-      bestSAH = min(alignedObjectSAH,bestSAH);
-      
-#if 0
+      //if (pinfo.size() > 100) {
+        alignedObjectSplit = alignedHeuristic.find(pinfo,0);
+        alignedObjectSAH = BVH4::travCostAligned*halfArea(pinfo.geomBounds) + BVH4::intCost*alignedObjectSplit.splitSAH();
+        bestSAH = min(alignedObjectSAH,bestSAH);
+        //}
+
       /* perform standard binning in unaligned space */
-      ObjectPartitionUnaligned::Split unalignedObjectSplit;
+      UnalignedHeuristicArrayBinningSAH<BezierPrim>::Split unalignedObjectSplit;
+      LinearSpace3fa uspace;
       float unalignedObjectSAH = inf;
-      if (alignedObjectSAH > 0.7f*leafSAH) {
-        const LinearSpace3fa space = ObjectPartitionUnaligned::computeAlignedSpace(prims); 
-        const PrimInfo       sinfo = ObjectPartitionUnaligned::computePrimInfo(prims,space);
-        unalignedObjectSplit = ObjectPartitionUnaligned::find(sinfo,space);
-      }    	
-      unalignedObjectSAH = BVH4::travCostUnaligned*halfArea(pinfo.geomBounds) + BVH4::intCost*unalignedObjectSplit.splitSAH();
-      bestSAH = min(unalignedObjectSAH,bestSAH);
-#endif
+      //if (alignedObjectSAH > 0.7f*leafSAH) {
+      //if (pinfo.size() <= 100) {
+        uspace = unalignedHeuristic.computeAlignedSpace(pinfo); 
+        const PrimInfo       sinfo = unalignedHeuristic.computePrimInfo(pinfo,uspace);
+        unalignedObjectSplit = unalignedHeuristic.find(sinfo,0,uspace);    	
+        unalignedObjectSAH = BVH4::travCostUnaligned*halfArea(pinfo.geomBounds) + BVH4::intCost*unalignedObjectSplit.splitSAH();
+        bestSAH = min(unalignedObjectSAH,bestSAH);
+        //}
       
       /* perform best split */
       if (bestSAH == float(inf)) {
@@ -152,12 +154,10 @@ namespace embree
         alignedHeuristic.split(alignedObjectSplit,pinfo,linfo,rinfo);
         return true;
       }
-#if 0
       else if (bestSAH == unalignedObjectSAH) {
-        unalignedHeuristic.split(unalignedObjectSplit,pinfo,linfo,rinfo);
+        unalignedHeuristic.split(unalignedObjectSplit,uspace,pinfo,linfo,rinfo);
         return false;
       }
-#endif
       else {
         THROW_RUNTIME_ERROR("bvh4hair_builder: internal error"); // FIXME: remove
         return true;
@@ -245,18 +245,15 @@ namespace embree
       /* create unaligned node */
       else 
       {
-        assert(false);
-#if 0
         BVH4::UnalignedNode* node = bvh->allocUnalignedNode(alloc);
         for (size_t i=0; i<numChildren; i++) 
         {
-          const LinearSpace3fa space = ObjectPartitionUnaligned::computeAlignedSpace(prims); 
-          const PrimInfo       sinfo = ObjectPartitionUnaligned::computePrimInfo(prims,space);
-          node->set(i,NAABBox3fa(sinfo.geomBounds,space));
+          const LinearSpace3fa space = unalignedHeuristic.computeAlignedSpace(children[i]); 
+          const PrimInfo       sinfo = unalignedHeuristic.computePrimInfo(children[i],space);
+          node->set(i,NAABBox3fa(space,sinfo.geomBounds));
           node->child(i) = recurse(alloc,depth+1,children[i]);
         }
         return BVH4::encodeNode(node);
-#endif
       }
     }
 
@@ -277,7 +274,8 @@ namespace embree
       }
       
       prims.resize(numPrimitives);
-      new (&alignedHeuristic) HeuristicArrayBinningSAH<BezierPrim>(prims.data());
+      new (  &alignedHeuristic)          HeuristicArrayBinningSAH<BezierPrim>(prims.data());
+      new (&unalignedHeuristic) UnalignedHeuristicArrayBinningSAH<BezierPrim>(prims.data());
 
       const PrimInfo pinfo = createBezierRefArray<1>(scene,prims);
       Allocator alloc(&bvh->alloc);
@@ -288,6 +286,7 @@ namespace embree
         double t1 = getSeconds();
         std::cout << " [DONE]" << std::endl;
         std::cout << "  dt = " << 1000.0f*(t1-t0) << "ms, perf = " << 1E-6*double(numPrimitives)/(t1-t0) << " Mprim/s" << std::endl;
+        bvh->printStatistics();
         //std::cout << BVH4Statistics(bvh).str();
       }
     }
