@@ -133,24 +133,21 @@ namespace embree
       /* perform standard binning in aligned space */
       float alignedObjectSAH = inf;
       HeuristicArrayBinningSAH<BezierPrim>::Split alignedObjectSplit;
-      //if (pinfo.size() > 100) {
-        alignedObjectSplit = alignedHeuristic.find(pinfo,0);
-        alignedObjectSAH = BVH4::travCostAligned*halfArea(pinfo.geomBounds) + BVH4::intCost*alignedObjectSplit.splitSAH();
-        bestSAH = min(alignedObjectSAH,bestSAH);
-        //}
-
+      alignedObjectSplit = alignedHeuristic.find(pinfo,0);
+      alignedObjectSAH = BVH4::travCostAligned*halfArea(pinfo.geomBounds) + BVH4::intCost*alignedObjectSplit.splitSAH();
+      bestSAH = min(alignedObjectSAH,bestSAH);
+      
       /* perform standard binning in unaligned space */
       UnalignedHeuristicArrayBinningSAH<BezierPrim>::Split unalignedObjectSplit;
       LinearSpace3fa uspace;
       float unalignedObjectSAH = inf;
-      //if (alignedObjectSAH > 0.7f*leafSAH) {
-      //if (pinfo.size() <= 100) {
+      if (alignedObjectSAH > 0.7f*leafSAH) {
         uspace = unalignedHeuristic.computeAlignedSpace(pinfo); 
         const PrimInfo       sinfo = unalignedHeuristic.computePrimInfo(pinfo,uspace);
         unalignedObjectSplit = unalignedHeuristic.find(sinfo,0,uspace);    	
         unalignedObjectSAH = BVH4::travCostUnaligned*halfArea(pinfo.geomBounds) + BVH4::intCost*unalignedObjectSplit.splitSAH();
         bestSAH = min(unalignedObjectSAH,bestSAH);
-        //}
+      }
       
       /* perform aligned split if this is best */
       if (bestSAH == alignedObjectSAH) {
