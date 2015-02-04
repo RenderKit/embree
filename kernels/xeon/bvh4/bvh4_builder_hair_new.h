@@ -35,10 +35,13 @@ namespace embree
     public:
       
        /*! Constructor. */
-       BVH4BuilderHairNew (BezierPrim* prims, const CreateAllocFunc& createAlloc, const CreateLeafFunc& createLeaf)
-        : prims(prims), maxDepth(BVH4::maxBuildDepthLeaf), minLeafSize(1), maxLeafSize(BVH4::maxLeafBlocks),
-         alignedHeuristic(prims), unalignedHeuristic(prims), 
-         createAlloc(createAlloc), createLeaf(createLeaf) {}
+       BVH4BuilderHairNew (BezierPrim* prims, 
+                           const CreateAllocFunc& createAlloc, const CreateLeafFunc& createLeaf,
+                           const size_t branchingFactor, const size_t maxDepth, const size_t logBlockSize, const size_t minLeafSize, const size_t maxLeafSize )
+         : prims(prims), 
+           branchingFactor(branchingFactor), maxDepth(maxDepth), logBlockSize(logBlockSize), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize),
+           alignedHeuristic(prims), unalignedHeuristic(prims), 
+           createAlloc(createAlloc), createLeaf(createLeaf) {}
 
        BVH4::NodeRef operator() (const PrimInfo& pinfo) {
         return recurse(1,pinfo,NULL);
@@ -58,7 +61,7 @@ namespace embree
           return createLeaf(depth,pinfo,alloc);
         
         /* fill all children by always splitting the largest one */
-        PrimInfo children[BVH4::N];
+        PrimInfo children[MAX_BRANCHING_FACTOR];
         size_t numChildren = 1;
         children[0] = pinfo;
         
@@ -91,7 +94,7 @@ namespace embree
           children[numChildren+0] = right;
           numChildren++;
           
-        } while (numChildren < BVH4::N);
+        } while (numChildren < branchingFactor);
         
         /* create node */
         BVH4::Node* node = (BVH4::Node*) alloc->alloc0.malloc(sizeof(BVH4::Node),16); node->clear();
@@ -152,7 +155,7 @@ namespace embree
         if (alloc == NULL) 
           alloc = createAlloc();
 	
-        PrimInfo children[BVH4::N];
+        PrimInfo children[MAX_BRANCHING_FACTOR];
         
         /* create leaf node */
         if (depth+MIN_LARGE_LEAF_LEVELS >= maxDepth || pinfo.size() <= minLeafSize) {
@@ -194,7 +197,7 @@ namespace embree
           children[numChildren+0] = right;
           numChildren++;
           
-        } while (numChildren < BVH4::N); 
+        } while (numChildren < branchingFactor); 
         assert(numChildren > 1);
 	
         /* create aligned node */
@@ -251,21 +254,23 @@ namespace embree
 
     public:
       BezierPrim* prims;
-      size_t maxDepth;
-      size_t minLeafSize;    //!< minimal size of a leaf
-      size_t maxLeafSize;    //!< maximal size of a leaf
+      const size_t branchingFactor;
+      const size_t maxDepth;
+      const size_t logBlockSize;
+      const size_t minLeafSize;
+      const size_t maxLeafSize;
       
       HeuristicArrayBinningSAH<BezierPrim> alignedHeuristic;
       UnalignedHeuristicArrayBinningSAH<BezierPrim> unalignedHeuristic;
-      //BezierPrim* prims;
       const CreateAllocFunc& createAlloc;
       const CreateLeafFunc& createLeaf;
     };
 
     template<typename CreateAllocFunc, typename CreateLeafFunc>
-      BVH4::NodeRef bvh_obb_builder_binned_sah_internal (const CreateAllocFunc& createAlloc, const CreateLeafFunc& createLeaf, BezierPrim* prims, const PrimInfo& pinfo) 
+      BVH4::NodeRef bvh_obb_builder_binned_sah_internal (const CreateAllocFunc& createAlloc, const CreateLeafFunc& createLeaf, BezierPrim* prims, const PrimInfo& pinfo,
+                                                         const size_t branchingFactor, const size_t maxDepth, const size_t logBlockSize, const size_t minLeafSize, const size_t maxLeafSize) 
     {
-      BVH4BuilderHairNew<CreateAllocFunc,CreateLeafFunc> builder(prims,createAlloc,createLeaf);
+      BVH4BuilderHairNew<CreateAllocFunc,CreateLeafFunc> builder(prims,createAlloc,createLeaf,branchingFactor,maxDepth,logBlockSize,minLeafSize,maxLeafSize);
       return builder(pinfo);
     }
   }

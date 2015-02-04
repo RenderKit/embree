@@ -75,7 +75,7 @@ namespace embree
               }
               return node;
             },
-            prims.data(),pinfo); //,BVH4::N,BVH4::maxBuildDepthLeaf,sahBlockSize,minLeafSize,maxLeafSize);
+            prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,1,1,BVH4::maxLeafBlocks);
         
         bvh->set(root,pinfo.geomBounds,pinfo.size());
         
