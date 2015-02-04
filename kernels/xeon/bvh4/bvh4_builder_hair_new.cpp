@@ -37,12 +37,6 @@ namespace embree
     template<typename Primitive>
     BVH4::NodeRef BVH4BuilderHairNew<Primitive>::createLeaf(size_t depth, const PrimInfo& pinfo, FastAllocator::ThreadLocal2* alloc)
     {
-      /*if (g_verbose >= 2) {
-        static atomic_t N = 0;
-        size_t n = atomic_add(&N,pinfo.size());
-        if (n>1024) { std::cout << "." << std::flush; N = 0; }
-        }*/
-
       size_t items = pinfo.size();
       size_t start = pinfo.begin;
       Primitive* accel = (Primitive*) alloc->alloc1.malloc(items*sizeof(Primitive));
@@ -56,20 +50,17 @@ namespace embree
     template<typename Primitive>
     BVH4::NodeRef BVH4BuilderHairNew<Primitive>::createLargeLeaf(size_t depth, const PrimInfo& pinfo, FastAllocator::ThreadLocal2* alloc)
     {
-      //if (current.depth > maxDepth) 
-      //  THROW_RUNTIME_ERROR("depth limit reached");
+      if (depth > maxDepth) 
+        THROW_RUNTIME_ERROR("depth limit reached");
       
       /* create leaf for few primitives */
       if (pinfo.size() <= maxLeafSize)
         return createLeaf(depth,pinfo,alloc);
       
       /* fill all children by always splitting the largest one */
-      //ReductionTy values[MAX_BRANCHING_FACTOR];
-      //PrimInfo* pchildren[MAX_BRANCHING_FACTOR];
-      PrimInfo children[BVH4::N]; //MAX_BRANCHING_FACTOR];
+      PrimInfo children[BVH4::N];
       size_t numChildren = 1;
       children[0] = pinfo;
-      //pchildren[0] = &children[0];
       
       do {
         
@@ -95,32 +86,20 @@ namespace embree
         alignedHeuristic.splitFallback(children[bestChild],left,right);
         
         /* add new children left and right */
-        //left.init(pinfo.depth+1); 
-        //right.init(pinfo.depth+1);
         children[bestChild] = children[numChildren-1];
         children[numChildren-1] = left;
         children[numChildren+0] = right;
-        //pchildren[numChildren] = &children[numChildren];
         numChildren++;
         
-      } while (numChildren < BVH4::N); // branchingFactor);
+      } while (numChildren < BVH4::N);
       
       /* create node */
-      //auto node = createNode(pinfo,pchildren,numChildren,alloc);
-      //BVH4::Node* node = bvh->allocNode(alloc);
       BVH4::Node* node = (BVH4::Node*) alloc->alloc0.malloc(sizeof(BVH4::Node),16); node->clear();
       for (size_t i=0; i<numChildren; i++) {
         node->set(i,children[i].geomBounds);
         node->set(i,createLargeLeaf(depth+1,children[i],alloc));
       }
       return BVH4::encodeNode(node);
-      
-      /* recurse into each child */
-      //for (size_t i=0; i<numChildren; i++)
-      //values[i] = createLargeLeaf(children[i],alloc);
-      
-      /* perform reduction */
-      //return updateNode(node,values,numChildren);
     }
 
     template<typename Primitive>
@@ -173,7 +152,6 @@ namespace embree
       if (alloc == NULL) 
         alloc = bvh->alloc2.threadLocal2();
 	
-      //ReductionTy values[MAX_BRANCHING_FACTOR];
       PrimInfo children[BVH4::N];
         
       /* create leaf node */
