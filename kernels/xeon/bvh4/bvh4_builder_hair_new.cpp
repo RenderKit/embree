@@ -242,22 +242,21 @@ namespace embree
         //BVH4::Node* node = bvh->allocNode(alloc);
         BVH4::Node* node = (BVH4::Node*) alloc->alloc0.malloc(sizeof(BVH4::Node),16); node->clear();
 
-        /* spawn tasks */
-//        if (pinfo.size() > 4096)
-        //      {
-
-        //for (size_t i=0; i<numChildren; i++)
-        //  node->set(i,children[i].geomBounds);
-
-        //SPAWN_BEGIN;
-	  //for (ssize_t i=numChildren-1; i>=0; i--)  // FIXME: this should be better!
-	  //for (size_t i=0; i<numChildren; i++) 
-        //SPAWN(([&,i] { /*values[i] =*/ recurse(children[i],NULL); }));
-        // SPAWN_END;
-
-        for (size_t i=0; i<numChildren; i++) {
+        for (size_t i=0; i<numChildren; i++)
           node->set(i,children[i].geomBounds);
-          node->child(i) = recurse(depth+1,children[i],alloc);
+
+        /* spawn tasks or ... */
+        if (pinfo.size() > 4096)
+        {
+          SPAWN_BEGIN;
+          for (size_t i=0; i<numChildren; i++) 
+            SPAWN(([&,i] { node->child(i) = recurse(depth+1,children[i],NULL); }));
+          SPAWN_END;
+        }
+        /* ... continue sequential */
+        else {
+          for (size_t i=0; i<numChildren; i++) 
+            node->child(i) = recurse(depth+1,children[i],alloc);
         }
         return BVH4::encodeNode(node);
       }
@@ -272,7 +271,20 @@ namespace embree
           const LinearSpace3fa space = unalignedHeuristic.computeAlignedSpace(children[i]); 
           const PrimInfo       sinfo = unalignedHeuristic.computePrimInfo(children[i],space);
           node->set(i,NAABBox3fa(space,sinfo.geomBounds));
-          node->child(i) = recurse(depth+1,children[i],alloc);
+        }
+
+        /* spawn tasks or ... */
+        if (pinfo.size() > 4096)
+        {
+          SPAWN_BEGIN;
+          for (size_t i=0; i<numChildren; i++) 
+            SPAWN(([&,i] { node->child(i) = recurse(depth+1,children[i],NULL); }));
+          SPAWN_END;
+        }
+        /* ... continue sequential */
+        else {
+          for (size_t i=0; i<numChildren; i++) 
+            node->child(i) = recurse(depth+1,children[i],alloc);
         }
         return BVH4::encodeNode(node);
       }
