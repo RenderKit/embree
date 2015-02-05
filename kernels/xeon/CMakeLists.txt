@@ -205,6 +205,7 @@ IF (TARGET_AVX)
 
     bvh8/bvh8.cpp
     bvh8/bvh8_builder.cpp
+    bvh8/bvh8_builder_binned_sah2.cpp
     bvh8/bvh8_statistics.cpp
     bvh8/bvh8_intersector1.cpp
     bvh8/bvh8_intersector4_hybrid.cpp
