@@ -77,18 +77,11 @@ namespace embree
           THROW_RUNTIME_ERROR("bvh_builder: branching factor too large");
       }
 
-      __forceinline void splitSequential(const BuildRecord<NodeRef>& current, BuildRecord<NodeRef>& leftChild, BuildRecord<NodeRef>& rightChild)
+      __forceinline void split(const BuildRecord<NodeRef>& current, BuildRecord<NodeRef>& leftChild, BuildRecord<NodeRef>& rightChild)
       {
         const PrimInfo pinfo(current.size(),current.geomBounds,current.centBounds);
         const Split split = heuristic.find(current.prims,pinfo,logBlockSize);
-	heuristic.split(split, current.prims, leftChild, leftChild.prims, rightChild, rightChild.prims);
-      }
-
-      void splitParallel(const BuildRecord<NodeRef>& current, BuildRecord<NodeRef>& leftChild, BuildRecord<NodeRef>& rightChild)
-      {
-        const PrimInfo pinfo(current.size(),current.geomBounds,current.centBounds);
-        const Split split = heuristic.parallel_find(current.prims,pinfo,logBlockSize);
-	heuristic.parallel_split(split, current.prims, leftChild, leftChild.prims, rightChild, rightChild.prims);
+	heuristic.split(split, current, current.prims, leftChild, leftChild.prims, rightChild, rightChild.prims);
       }
 
       const ReductionTy createLargeLeaf(const BuildRecord<NodeRef>& current, Allocator alloc)
@@ -194,8 +187,7 @@ namespace embree
           
           /*! split best child into left and right child */
           __aligned(64) BuildRecord<NodeRef> left, right;
-          if (children[bestChild].size() > 10000) splitParallel  (children[bestChild],left,right);
-          else                                    splitSequential(children[bestChild],left,right);
+          split(children[bestChild],left,right);
           
           /* add new children left and right */
           left.init(current.depth+1); 

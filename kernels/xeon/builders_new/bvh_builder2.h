@@ -160,16 +160,12 @@ namespace embree
 	return updateNode(node,values,numChildren);
       }
 
-      __forceinline const typename Heuristic::Split find(BuildRecord& current) 
-      {
-        if (current.size() > 10000) return heuristic.parallel_find(current.prims,current.pinfo,logBlockSize);
-        else                        return heuristic.find         (current.prims,current.pinfo,logBlockSize);
+      __forceinline const typename Heuristic::Split find(BuildRecord& current) {
+        return heuristic.find (current.prims,current.pinfo,logBlockSize);
       }
 
-      __forceinline void partition(const BuildRecord& brecord, BuildRecord& lrecord, BuildRecord& rrecord) 
-      {
-	if (brecord.size() > 10000) heuristic.parallel_split(brecord.split,brecord.prims,lrecord.pinfo,lrecord.prims,rrecord.pinfo,rrecord.prims);
-	else                        heuristic.split         (brecord.split,brecord.prims,lrecord.pinfo,lrecord.prims,rrecord.pinfo,rrecord.prims);
+      __forceinline void partition(const BuildRecord& brecord, BuildRecord& lrecord, BuildRecord& rrecord) {
+	heuristic.split(brecord.split,brecord.pinfo,brecord.prims,lrecord.pinfo,lrecord.prims,rrecord.pinfo,rrecord.prims);
       }
 
       const ReductionTy recurse(const BuildRecord& current, Allocator alloc)

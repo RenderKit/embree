@@ -371,12 +371,19 @@ namespace embree
         const Split find(const PrimInfo& pinfo, const size_t logBlockSize)
         {
           Set set(pinfo.begin,pinfo.end);
-          if (likely(pinfo.size() < 10000)) return          find(set,pinfo,logBlockSize);
-          else                              return parallel_find(set,pinfo,logBlockSize);
+          if (likely(pinfo.size() < 10000)) return sequential_find(set,pinfo,logBlockSize);
+          else                              return   parallel_find(set,pinfo,logBlockSize);
+        }
+
+        /*! finds the best split */
+        const Split find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize)
+        {
+          if (likely(pinfo.size() < 10000)) return sequential_find(set,pinfo,logBlockSize);
+          else                              return   parallel_find(set,pinfo,logBlockSize);
         }
         
         /*! finds the best split */
-        const Split find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize)
+        const Split sequential_find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize)
         {
           Binner binner(empty);
           const BinMapping<BINS> mapping(pinfo);
@@ -400,12 +407,19 @@ namespace embree
         {
           Set lset,rset;
           Set set(pinfo.begin,pinfo.end);
-          if (likely(pinfo.size() < 10000))          split(spliti,set,left,lset,right,rset);
-          else                              parallel_split(spliti,set,left,lset,right,rset);
+          if (likely(pinfo.size() < 10000)) sequential_split(spliti,set,left,lset,right,rset);
+          else                                parallel_split(spliti,set,left,lset,right,rset);
         }
         
         /*! array partitioning */
-        void split(const Split& split, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset) 
+        void split(const Split& split, const PrimInfo& pinfo, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset) 
+        {
+          if (likely(pinfo.size() < 10000)) sequential_split(split,set,left,lset,right,rset);
+          else                                parallel_split(split,set,left,lset,right,rset);
+        }
+
+        /*! array partitioning */
+        void sequential_split(const Split& split, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset) 
         {
           if (!split.valid()) {
             deterministic_order(set);
@@ -670,12 +684,19 @@ namespace embree
         const Split find(const PrimInfo& pinfo, const size_t logBlockSize, const LinearSpace3fa& space)
         {
           Set set(pinfo.begin,pinfo.end);
-          if (likely(pinfo.size() < 10000)) return          find(set,pinfo,logBlockSize,space);
-          else                              return parallel_find(set,pinfo,logBlockSize,space);
+          if (likely(pinfo.size() < 10000)) return sequential_find(set,pinfo,logBlockSize,space);
+          else                              return   parallel_find(set,pinfo,logBlockSize,space);
         }
         
         /*! finds the best split */
         const Split find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize, const LinearSpace3fa& space)
+        {
+          if (likely(pinfo.size() < 10000)) return sequential_find(set,pinfo,logBlockSize,space);
+          else                              return   parallel_find(set,pinfo,logBlockSize,space);
+        }
+
+        /*! finds the best split */
+        const Split sequential_find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize, const LinearSpace3fa& space)
         {
           Binner binner(empty);
           const BinMapping<BINS> mapping(pinfo);
@@ -699,12 +720,19 @@ namespace embree
         {
           Set lset,rset;
           Set set(pinfo.begin,pinfo.end);
-          if (likely(pinfo.size() < 10000))          split(spliti,space,set,left,lset,right,rset);
-          else                              parallel_split(spliti,space,set,left,lset,right,rset);
+          if (likely(pinfo.size() < 10000)) sequential_split(spliti,space,set,left,lset,right,rset);
+          else                                parallel_split(spliti,space,set,left,lset,right,rset);
+        }
+
+        /*! array partitioning */
+        void split(const Split& split, const LinearSpace3fa& space, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset) 
+        {
+          if (likely(pinfo.size() < 10000)) sequential_split(split,space,set,left,lset,right,rset);
+          else                                parallel_split(split,space,set,left,lset,right,rset);
         }
         
         /*! array partitioning */
-        void split(const Split& split, const LinearSpace3fa& space, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset) 
+        void sequential_split(const Split& split, const LinearSpace3fa& space, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset) 
         {
           if (!split.valid()) {
             deterministic_order(set);

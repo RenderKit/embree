@@ -121,7 +121,7 @@ namespace embree
 	  std::cout << "building BVH4<" << bvh->primTy.name << "> with " << TOSTRING(isa) "::BVH4BuilderBinnedSAH " << (presplitFactor != 1.0f ? "presplit" : "") << " ... " << std::flush;
 
 	double t0 = 0.0f, dt = 0.0f;
-	//profile(2,200,numPrimitives,[&] (ProfileTimer& timer) {
+	profile(2,20,numPrimitives,[&] (ProfileTimer& timer) {
 	    
 	    if (g_verbose >= 1) t0 = getSeconds();
 	    
@@ -138,11 +138,11 @@ namespace embree
 	       prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,sahBlockSize,minLeafSize,maxLeafSize);
 	    bvh->set(root,pinfo.geomBounds,pinfo.size());
             
-            //timer("bvh4_builder_binned_sah");
+            timer("bvh4_builder_binned_sah");
 
 	    if (g_verbose >= 1) dt = getSeconds()-t0;
 	    
-            //});
+          });
 
 	/* clear temporary data for static geometry */
 	bool staticGeom = mesh ? mesh->isStatic() : scene->isStatic();
