@@ -85,7 +85,7 @@ OPTION(RTCORE_SPINLOCKS "Use spinning locks.")
 OPTION(RTCORE_TASKLOGGER "Allows creating scheduling diagram of tasks.")
 OPTION(RTCORE_EXPORT_ALL_SYMBOLS "Lets Embree library export all symbols.")
 OPTION(RTCORE_ENABLE_RAYSTREAM_LOGGER "Enables ray stream logger.")
-OPTION(RTCORE_RETURN_SUBDIV_NORMAL "Returns smooth subdivision surface normal in ray structure instead of triangle normal." OFF)
+OPTION(RTCORE_RETURN_SUBDIV_NORMAL "Returns smooth subdivision surface normal in ray structure instead of triangle normal.")
 
 SET(RTCORE_TASKING_SYSTEM "LOCKSTEP" CACHE STRING "Selects tasking system")
 SET_PROPERTY(CACHE RTCORE_TASKING_SYSTEM PROPERTY STRINGS LOCKSTEP TBB TBB_INTERNAL)
@@ -291,19 +291,30 @@ INSTALL(DIRECTORY include/embree2 DESTINATION include)
 
 
 # currently CMake does not support solution folders without projects
-# SOURCE_GROUP("doc" FILES README.md readme.pdf)
+# SOURCE_GROUP("Documentation" FILES README.md CHANGELOG.md readme.pdf)
 
-# install scripts
-IF (NOT WIN32)
-  IF (APPLE)
-    SET(SCRIPT_DIR install_macos)
-  ELSE()
-    SET(SCRIPT_DIR install_linux)
-  ENDIF()
-  CONFIGURE_FILE(
-    scripts/${SCRIPT_DIR}/install.sh
-    "${PROJECT_BINARY_DIR}/install.sh"
-    @ONLY
-  )
-  INSTALL(PROGRAMS "${PROJECT_BINARY_DIR}/install.sh" scripts/${SCRIPT_DIR}/paths.sh DESTINATION ./)
-ENDIF()
+##############################################################
+# Create Binary Packages
+##############################################################
+SET(CPACK_PACKAGE_VERSION_MAJOR ${EMBREE_VERSION_MAJOR})
+SET(CPACK_PACKAGE_VERSION_MINOR ${EMBREE_VERSION_MINOR})
+SET(CPACK_PACKAGE_VERSION_PATCH ${EMBREE_VERSION_PATCH})
+SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "High Performance Ray Tracing Kernels")
+SET(CPACK_PACKAGE_VENDOR "Intel Corporation")
+SET(CPACK_PACKAGE_CONTACT embree_support@intel.com)
+SET(CPACK_GENERATOR RPM TGZ) #DEB
+SET(CPACK_PACKAGE_DESCRIPTION_FILE "${PROJECT_SOURCE_DIR}/README.md")
+SET(CPACK_STRIP_FILES OFF) # strip failes on Xeon Phi executables
+STRING(TOLOWER ${CMAKE_SYSTEM_NAME} CPACK_SYSTEM_NAME)
+
+# RPM specific settings
+SET(CPACK_RPM_PACKAGE_LICENSE "ASL 2.0") # Apache Software License, Version 2.0
+SET(CPACK_RPM_PACKAGE_GROUP "Development/Libraries")
+#SET(CPACK_RPM_CHANGELOG_FILE "") # ChangeLog of the RPM; also CHANGELOG.md is not in the required format
+SET(CPACK_RPM_PACKAGE_ARCHITECTURE x86_64)
+SET(CPACK_RPM_PACKAGE_URL http://embree.github.io/)
+#SET(CPACK_RPM_USER_FILELIST "%doc ${PROJECT_SOURCE_DIR}/README.md")
+#SET(CPACK_RPM_USER_FILELIST "%doc ${PROJECT_SOURCE_DIR}/CHANGELOG.md")
+#SET(CPACK_RPM_USER_FILELIST "%doc ${PROJECT_SOURCE_DIR}/readme.pdf")
+
+INCLUDE(CPack)
