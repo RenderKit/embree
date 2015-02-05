@@ -142,7 +142,7 @@ namespace embree
 
 	    if (g_verbose >= 1) dt = getSeconds()-t0;
 	    
-            });
+          });
 
 	/* clear temporary data for static geometry */
 	bool staticGeom = mesh ? mesh->isStatic() : scene->isStatic();
