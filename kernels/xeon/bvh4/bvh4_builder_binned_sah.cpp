@@ -97,34 +97,36 @@ namespace embree
       const size_t maxLeafSize;
       const float presplitFactor;
 
-      BVH4BuilderBinnedSAH (BVH4* bvh, Scene* scene, const size_t leafBlockSize, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const float presplitFactor = 1.0f)
-        : bvh(bvh), scene(scene), mesh(NULL), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,leafBlockSize*BVH4::maxLeafBlocks)), presplitFactor(presplitFactor) {}
+      BVH4BuilderBinnedSAH (BVH4* bvh, Scene* scene, const size_t leafBlockSize, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
+        : bvh(bvh), scene(scene), mesh(NULL), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,leafBlockSize*BVH4::maxLeafBlocks)), 
+          presplitFactor((mode & MODE_HIGH_QUALITY) ? 1.5f : 1.0f) {}
 
-      BVH4BuilderBinnedSAH (BVH4* bvh, Mesh* mesh, const size_t leafBlockSize, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const float presplitFactor = 1.0f)
-        : bvh(bvh), scene(mesh->parent), mesh(mesh), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,leafBlockSize*BVH4::maxLeafBlocks)), presplitFactor(presplitFactor) {}
+      BVH4BuilderBinnedSAH (BVH4* bvh, Mesh* mesh, const size_t leafBlockSize, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
+        : bvh(bvh), scene(mesh->parent), mesh(mesh), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,leafBlockSize*BVH4::maxLeafBlocks)), 
+          presplitFactor((mode & MODE_HIGH_QUALITY) ? 1.5f : 1.0f) {}
       
       void build(size_t, size_t) 
       {
         /* skip build for empty scene */
-	size_t numPrimitives = mesh ? mesh->size() : scene->getNumPrimitives<Mesh,1>();
+	const size_t numPrimitives = mesh ? mesh->size() : scene->getNumPrimitives<Mesh,1>();
         if (numPrimitives == 0) {
           prims.resize(0,true);
           bvh->set(BVH4::emptyNode,empty,0);
           return;
         }
-        numPrimitives = max(numPrimitives,size_t(presplitFactor*numPrimitives));
+        const size_t numSplitPrimitives = max(numPrimitives,size_t(presplitFactor*numPrimitives));
 
         /* verbose mode */
         if (g_verbose >= 1)
-	  std::cout << "building BVH4<" << bvh->primTy.name << "> with " << TOSTRING(isa) "::BVH4BuilderBinnedSAH ... " << std::flush;
+	  std::cout << "building BVH4<" << bvh->primTy.name << "> with " << TOSTRING(isa) "::BVH4BuilderBinnedSAH " << (presplitFactor != 1.0f ? "presplit" : "") << " ... " << std::flush;
 
 	double t0 = 0.0f, dt = 0.0f;
 	//profile(2,200,numPrimitives,[&] (ProfileTimer& timer) {
 	    
 	    if (g_verbose >= 1) t0 = getSeconds();
 	    
-	    prims.resize(numPrimitives);
-	    bvh->alloc2.init(numPrimitives*sizeof(PrimRef),numPrimitives*sizeof(BVH4::Node));  // FIXME: better estimate
+	    prims.resize(numSplitPrimitives);
+	    bvh->alloc2.init(numSplitPrimitives*sizeof(PrimRef),numSplitPrimitives*sizeof(BVH4::Node));  // FIXME: better estimate
             
 	    PrimInfo pinfo = mesh ? createPrimRefArray<Mesh>(mesh,prims) : createPrimRefArray<Mesh,1>(scene,prims);
 
@@ -156,26 +158,26 @@ namespace embree
     };
     
     /* entry functions for the scene builder */
-    Builder* BVH4Bezier1vSceneBuilderBinnedSAH   (void* bvh, Scene* scene, size_t mode) { return new BVH4BuilderBinnedSAH<BezierCurves,Bezier1v>((BVH4*)bvh,scene,1,1,1.0f,1,1); }
-    Builder* BVH4Bezier1iSceneBuilderBinnedSAH   (void* bvh, Scene* scene, size_t mode) { return new BVH4BuilderBinnedSAH<BezierCurves,Bezier1i>((BVH4*)bvh,scene,1,1,1.0f,1,1); }
-    Builder* BVH4Triangle1SceneBuilderBinnedSAH  (void* bvh, Scene* scene, size_t mode) { return new BVH4BuilderBinnedSAH<TriangleMesh,Triangle1>((BVH4*)bvh,scene,1,1,1.0f,2,inf); }
-    Builder* BVH4Triangle4SceneBuilderBinnedSAH  (void* bvh, Scene* scene, size_t mode) { return new BVH4BuilderBinnedSAH<TriangleMesh,Triangle4>((BVH4*)bvh,scene,4,4,1.0f,4,inf); }
+    Builder* BVH4Bezier1vSceneBuilderBinnedSAH   (void* bvh, Scene* scene, size_t mode) { return new BVH4BuilderBinnedSAH<BezierCurves,Bezier1v>((BVH4*)bvh,scene,1,1,1.0f,1,1,mode); }
+    Builder* BVH4Bezier1iSceneBuilderBinnedSAH   (void* bvh, Scene* scene, size_t mode) { return new BVH4BuilderBinnedSAH<BezierCurves,Bezier1i>((BVH4*)bvh,scene,1,1,1.0f,1,1,mode); }
+    Builder* BVH4Triangle1SceneBuilderBinnedSAH  (void* bvh, Scene* scene, size_t mode) { return new BVH4BuilderBinnedSAH<TriangleMesh,Triangle1>((BVH4*)bvh,scene,1,1,1.0f,2,inf,mode); }
+    Builder* BVH4Triangle4SceneBuilderBinnedSAH  (void* bvh, Scene* scene, size_t mode) { return new BVH4BuilderBinnedSAH<TriangleMesh,Triangle4>((BVH4*)bvh,scene,4,4,1.0f,4,inf,mode); }
 #if defined(__AVX__)
-    Builder* BVH4Triangle8SceneBuilderBinnedSAH  (void* bvh, Scene* scene, size_t mode) { return new BVH4BuilderBinnedSAH<TriangleMesh,Triangle8>((BVH4*)bvh,scene,8,4,1.0f,8,inf); }
+    Builder* BVH4Triangle8SceneBuilderBinnedSAH  (void* bvh, Scene* scene, size_t mode) { return new BVH4BuilderBinnedSAH<TriangleMesh,Triangle8>((BVH4*)bvh,scene,8,4,1.0f,8,inf,mode); }
 #endif
-    Builder* BVH4Triangle1vSceneBuilderBinnedSAH (void* bvh, Scene* scene, size_t mode) { return new BVH4BuilderBinnedSAH<TriangleMesh,Triangle1v>((BVH4*)bvh,scene,1,1,1.0f,2,inf); }
-    Builder* BVH4Triangle4vSceneBuilderBinnedSAH (void* bvh, Scene* scene, size_t mode) { return new BVH4BuilderBinnedSAH<TriangleMesh,Triangle4v>((BVH4*)bvh,scene,4,4,1.0f,4,inf); }
-    Builder* BVH4Triangle4iSceneBuilderBinnedSAH (void* bvh, Scene* scene, size_t mode) { return new BVH4BuilderBinnedSAH<TriangleMesh,Triangle4i>((BVH4*)bvh,scene,4,4,1.0f,4,inf); }
-    Builder* BVH4VirtualSceneBuilderBinnedSAH    (void* bvh, Scene* scene, size_t mode) { return new BVH4BuilderBinnedSAH<UserGeometryBase,AccelSetItem>((BVH4*)bvh,scene,1,1,1.0f,1,1); }
+    Builder* BVH4Triangle1vSceneBuilderBinnedSAH (void* bvh, Scene* scene, size_t mode) { return new BVH4BuilderBinnedSAH<TriangleMesh,Triangle1v>((BVH4*)bvh,scene,1,1,1.0f,2,inf,mode); }
+    Builder* BVH4Triangle4vSceneBuilderBinnedSAH (void* bvh, Scene* scene, size_t mode) { return new BVH4BuilderBinnedSAH<TriangleMesh,Triangle4v>((BVH4*)bvh,scene,4,4,1.0f,4,inf,mode); }
+    Builder* BVH4Triangle4iSceneBuilderBinnedSAH (void* bvh, Scene* scene, size_t mode) { return new BVH4BuilderBinnedSAH<TriangleMesh,Triangle4i>((BVH4*)bvh,scene,4,4,1.0f,4,inf,mode); }
+    Builder* BVH4VirtualSceneBuilderBinnedSAH    (void* bvh, Scene* scene, size_t mode) { return new BVH4BuilderBinnedSAH<UserGeometryBase,AccelSetItem>((BVH4*)bvh,scene,1,1,1.0f,1,1,mode); }
 
     /* entry functions for the mesh builders */
-    Builder* BVH4Triangle1MeshBuilderBinnedSAH  (void* bvh, TriangleMesh* mesh, size_t mode) { return new BVH4BuilderBinnedSAH<TriangleMesh,Triangle1>((BVH4*)bvh,mesh,1,1,1.0f,2,inf); }
-    Builder* BVH4Triangle4MeshBuilderBinnedSAH  (void* bvh, TriangleMesh* mesh, size_t mode) { return new BVH4BuilderBinnedSAH<TriangleMesh,Triangle4>((BVH4*)bvh,mesh,4,4,1.0f,4,inf); }
+    Builder* BVH4Triangle1MeshBuilderBinnedSAH  (void* bvh, TriangleMesh* mesh, size_t mode) { return new BVH4BuilderBinnedSAH<TriangleMesh,Triangle1>((BVH4*)bvh,mesh,1,1,1.0f,2,inf,mode); }
+    Builder* BVH4Triangle4MeshBuilderBinnedSAH  (void* bvh, TriangleMesh* mesh, size_t mode) { return new BVH4BuilderBinnedSAH<TriangleMesh,Triangle4>((BVH4*)bvh,mesh,4,4,1.0f,4,inf,mode); }
 #if defined(__AVX__)
-    Builder* BVH4Triangle8MeshBuilderBinnedSAH  (void* bvh, TriangleMesh* mesh, size_t mode) { return new BVH4BuilderBinnedSAH<TriangleMesh,Triangle8>((BVH4*)bvh,mesh,8,4,1.0f,8,inf); }
+    Builder* BVH4Triangle8MeshBuilderBinnedSAH  (void* bvh, TriangleMesh* mesh, size_t mode) { return new BVH4BuilderBinnedSAH<TriangleMesh,Triangle8>((BVH4*)bvh,mesh,8,4,1.0f,8,inf,mode); }
 #endif
-    Builder* BVH4Triangle1vMeshBuilderBinnedSAH (void* bvh, TriangleMesh* mesh, size_t mode) { return new BVH4BuilderBinnedSAH<TriangleMesh,Triangle1v>((BVH4*)bvh,mesh,1,1,1.0f,2,inf); }
-    Builder* BVH4Triangle4vMeshBuilderBinnedSAH (void* bvh, TriangleMesh* mesh, size_t mode) { return new BVH4BuilderBinnedSAH<TriangleMesh,Triangle4v>((BVH4*)bvh,mesh,4,4,1.0f,4,inf); }
-    Builder* BVH4Triangle4iMeshBuilderBinnedSAH (void* bvh, TriangleMesh* mesh, size_t mode) { return new BVH4BuilderBinnedSAH<TriangleMesh,Triangle4i>((BVH4*)bvh,mesh,4,4,1.0f,4,inf); }
+    Builder* BVH4Triangle1vMeshBuilderBinnedSAH (void* bvh, TriangleMesh* mesh, size_t mode) { return new BVH4BuilderBinnedSAH<TriangleMesh,Triangle1v>((BVH4*)bvh,mesh,1,1,1.0f,2,inf,mode); }
+    Builder* BVH4Triangle4vMeshBuilderBinnedSAH (void* bvh, TriangleMesh* mesh, size_t mode) { return new BVH4BuilderBinnedSAH<TriangleMesh,Triangle4v>((BVH4*)bvh,mesh,4,4,1.0f,4,inf,mode); }
+    Builder* BVH4Triangle4iMeshBuilderBinnedSAH (void* bvh, TriangleMesh* mesh, size_t mode) { return new BVH4BuilderBinnedSAH<TriangleMesh,Triangle4i>((BVH4*)bvh,mesh,4,4,1.0f,4,inf,mode); }
   }
 }

@@ -21,6 +21,8 @@
 #include "builders/priminfo.h"
 #include "geometry/bezier1v.h"
 
+#include "algorithms/parallel_prefix_sum.h"
+
 namespace embree
 {
   namespace isa
@@ -107,18 +109,21 @@ namespace embree
       for (size_t i=0; i<pinfo.size(); i++)
         A += area(prims[i]);
 
-      /* calculate total number of split primitives */
+      /* try to calculate a number of splits per primitive, such that
+       * we do not generate more primitives than the size of the prims
+       * array */
+      ParallelPrefixSumState<size_t> state;
       float f = float(prims.size())/float(pinfo.size())/0.9f;
       size_t N = 0;
       do {
         f *= 0.9f;
-        N = parallel_reduce (size_t(0), pinfo.size(), size_t(0),[&] (const range<size_t>& r) 
+        N = pinfo.size() + parallel_prefix_sum (state, size_t(0), pinfo.size(), size_t(1024), size_t(0), [&] (const range<size_t>& r, const size_t sum) 
         { 
           size_t N=0;
           for (size_t i=r.begin(); i<r.end(); i++) {
             const float nf = ceil(f*pinfo.size()*area(prims[i])/A);
             const size_t n = min(ssize_t(4096), max(ssize_t(1), ssize_t(nf)));
-            N += n;
+            N+=n-1;
           }
           return N;
         },std::plus<size_t>());
@@ -126,19 +131,27 @@ namespace embree
       assert(N <= prims.size());
 
       /* split all primitives */
-      size_t j = pinfo.size();
-      for (size_t i=0; i<pinfo.size(); i++) 
+      parallel_prefix_sum (state, size_t(0), pinfo.size(), size_t(1024), size_t(0), [&] (const range<size_t>& r, size_t ofs) 
       {
-        const float nf = ceil(f*pinfo.size()*area(prims[i])/A);
-        const size_t n = min(ssize_t(4096), max(ssize_t(1), ssize_t(nf)));
-        split_primref(pinfo,split,prims[i],&prims[j],n);
-        j+=n-1;
-      }
+        size_t N = 0;
+        for (size_t i=r.begin(); i<r.end(); i++) {
+          const float nf = ceil(f*pinfo.size()*area(prims[i])/A);
+          const size_t n = min(ssize_t(4096), max(ssize_t(1), ssize_t(nf)));
+          split_primref(pinfo,split,prims[i],&prims[pinfo.size()+ofs+N],n);
+          N+=n-1;
+        }
+        return N;
+      },std::plus<size_t>());
 
       /* compute new priminfo */
-      PrimInfo pinfo_o(empty);
-      for (size_t i=0; i<N; i++)
-        pinfo_o.add(prims[i].bounds());
+      const PrimInfo pinfo_o = parallel_reduce (size_t(0), size_t(N), PrimInfo(empty), [&] (const range<size_t>& r)
+      {
+        PrimInfo pinfo(empty);
+        for (size_t i=r.begin(); i<r.end(); i++)
+          pinfo.add(prims[i].bounds());
+        return pinfo;
+      },[](const PrimInfo& a, const PrimInfo& b) { return PrimInfo::merge(a,b); });
+
       return pinfo_o;
     }
 
