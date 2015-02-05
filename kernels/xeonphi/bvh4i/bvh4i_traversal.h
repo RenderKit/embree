@@ -72,11 +72,13 @@ namespace embree
 
 	    if (ROBUST)
 	      {
-	       
-		tLowerXYZ = mask_mul_round_down(m_rdir1,tLowerXYZ,sub_round_down(load16f(plower),calc.org_xyz),calc.rdir_xyz);
-		tUpperXYZ = mask_mul_round_up(  m_rdir0,tUpperXYZ,sub_round_down(load16f(plower),calc.org_xyz),calc.rdir_xyz);
-		tLowerXYZ = mask_mul_round_down(m_rdir0,tLowerXYZ,sub_round_down(load16f(pupper),calc.org_xyz),calc.rdir_xyz);
-		tUpperXYZ = mask_mul_round_up(  m_rdir1,tUpperXYZ,sub_round_down(load16f(pupper),calc.org_xyz),calc.rdir_xyz);
+		const mic_f lower_org = load16f(plower) - calc.org_xyz;
+		const mic_f upper_org = load16f(pupper) - calc.org_xyz;
+
+		tLowerXYZ = mask_mul_round_down(m_rdir1,tLowerXYZ,lower_org,calc.rdir_xyz);
+		tUpperXYZ = mask_mul_round_up(  m_rdir0,tUpperXYZ,lower_org,calc.rdir_xyz);
+		tLowerXYZ = mask_mul_round_down(m_rdir0,tLowerXYZ,upper_org,calc.rdir_xyz);
+		tUpperXYZ = mask_mul_round_up(  m_rdir1,tUpperXYZ,upper_org,calc.rdir_xyz);
 	      }
 	    else
 	      {
@@ -119,6 +121,7 @@ namespace embree
 
 	const mic_f tNear = vreduce_max4(tLower);
 	const mic_f tFar  = vreduce_min4(tUpper);  
+#if 0
 	if (ROBUST)
 	  {
 	    const float round_down = 1.0f-2.0f*float(ulp);
@@ -126,6 +129,7 @@ namespace embree
 	    hitm = le(hitm,mul_round_down(round_down,tNear),mul_round_up(round_up,tFar));
 	  }
 	else
+#endif
 	  hitm = le(hitm,tNear,tFar);
 		  
 	const mic_f tNear_pos = select(hitm,tNear,inf);
@@ -241,11 +245,24 @@ namespace embree
 	    
 	    /* intersect single ray with 4 bounding boxes */
 
-	    tLowerXYZ = mask_msub(m_rdir1,tLowerXYZ,load16f(plower),calc.org_rdir_xyz);
-	    tUpperXYZ = mask_msub(m_rdir0,tUpperXYZ,load16f(plower),calc.org_rdir_xyz);
+	    if (ROBUST)
+	      {
+		const mic_f lower_org = load16f(plower) - calc.org_xyz;
+		const mic_f upper_org = load16f(pupper) - calc.org_xyz;
 
-	    tLowerXYZ = mask_msub(m_rdir0,tLowerXYZ,load16f(pupper),calc.org_rdir_xyz);
-	    tUpperXYZ = mask_msub(m_rdir1,tUpperXYZ,load16f(pupper),calc.org_rdir_xyz);
+		tLowerXYZ = mask_mul_round_down(m_rdir1,tLowerXYZ,lower_org,calc.rdir_xyz);
+		tUpperXYZ = mask_mul_round_up(  m_rdir0,tUpperXYZ,lower_org,calc.rdir_xyz);
+		tLowerXYZ = mask_mul_round_down(m_rdir0,tLowerXYZ,upper_org,calc.rdir_xyz);
+		tUpperXYZ = mask_mul_round_up(  m_rdir1,tUpperXYZ,upper_org,calc.rdir_xyz);
+	      }
+	    else
+	      {
+		tLowerXYZ = mask_msub(m_rdir1,tLowerXYZ,load16f(plower),calc.org_rdir_xyz);
+		tUpperXYZ = mask_msub(m_rdir0,tUpperXYZ,load16f(plower),calc.org_rdir_xyz);
+		tLowerXYZ = mask_msub(m_rdir0,tLowerXYZ,load16f(pupper),calc.org_rdir_xyz);
+		tUpperXYZ = mask_msub(m_rdir1,tUpperXYZ,load16f(pupper),calc.org_rdir_xyz);
+	      }
+
 	  }
 	else
 	  {
@@ -279,6 +296,7 @@ namespace embree
 	const mic_f tNear = vreduce_max4(tLower);
 	const mic_f tFar  = vreduce_min4(tUpper);  
 
+#if 0
 	if (ROBUST)
 	  {
 	    const float round_down = 1.0f-2.0f*float(ulp);
@@ -287,6 +305,7 @@ namespace embree
 	    hitm = le(hitm,round_down*tNear,round_up*tFar);
 	  }
 	else
+#endif
 	  hitm = le(hitm,tNear,tFar);		  
 
 	const mic_f tNear_pos = select(hitm,tNear,inf);
