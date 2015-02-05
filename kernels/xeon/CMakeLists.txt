@@ -44,6 +44,9 @@ IF (TASKING_TBB OR TASKING_TBB_INTERNAL)
     bvh4/bvh4_builder_binned_sah2.cpp
     bvh4/bvh4_builder_toplevel_new.cpp
     bvh4/bvh4_builder_subdiv.cpp)
+
+  SET(EMBREE_BUILDERS_NEW_AVX
+    bvh8/bvh8_builder_binned_sah2.cpp)
 ENDIF()
 
 ADD_ISPC_LIBRARY(embree ${EMBREE_LIB_TYPE}
@@ -205,14 +208,14 @@ IF (TARGET_AVX)
 
     bvh8/bvh8.cpp
     bvh8/bvh8_builder.cpp
-    bvh8/bvh8_builder_binned_sah2.cpp
     bvh8/bvh8_statistics.cpp
     bvh8/bvh8_intersector1.cpp
     bvh8/bvh8_intersector4_hybrid.cpp
     bvh8/bvh8_intersector8_chunk.cpp
     bvh8/bvh8_intersector8_hybrid.cpp
 
-    ${EMBREE_BUILDERS_NEW}   
+    ${EMBREE_BUILDERS_NEW}
+    ${EMBREE_BUILDERS_NEW_AVX}
   )
 
   SET_TARGET_PROPERTIES(embree_avx PROPERTIES COMPILE_FLAGS "${FLAGS_AVX}")
