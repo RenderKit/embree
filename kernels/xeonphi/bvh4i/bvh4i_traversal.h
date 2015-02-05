@@ -82,6 +82,7 @@ namespace embree
 	      }
 	    else
 	      {
+
 		tLowerXYZ = mask_msub(m_rdir1,tLowerXYZ,load16f(plower),calc.org_rdir_xyz);
 		tUpperXYZ = mask_msub(m_rdir0,tUpperXYZ,load16f(plower),calc.org_rdir_xyz);
 		tLowerXYZ = mask_msub(m_rdir0,tLowerXYZ,load16f(pupper),calc.org_rdir_xyz);
@@ -99,11 +100,24 @@ namespace embree
 	    const mic_f clower   = compressed_node->decompress_lowerXYZ(startXYZ,diffXYZ);
 	    const mic_f cupper   = compressed_node->decompress_upperXYZ(startXYZ,diffXYZ);
 
-	    tLowerXYZ = mask_msub(m_rdir1,tLowerXYZ,clower,calc.org_rdir_xyz);
-	    tUpperXYZ = mask_msub(m_rdir0,tUpperXYZ,clower,calc.org_rdir_xyz);
+	    if (ROBUST)
+	      {
+		const mic_f lower_org = clower - calc.org_xyz;
+		const mic_f upper_org = cupper - calc.org_xyz;
 
-	    tLowerXYZ = mask_msub(m_rdir0,tLowerXYZ,cupper,calc.org_rdir_xyz);
-	    tUpperXYZ = mask_msub(m_rdir1,tUpperXYZ,cupper,calc.org_rdir_xyz);	    
+		tLowerXYZ = mask_mul_round_down(m_rdir1,tLowerXYZ,lower_org,calc.rdir_xyz);
+		tUpperXYZ = mask_mul_round_up(  m_rdir0,tUpperXYZ,lower_org,calc.rdir_xyz);
+		tLowerXYZ = mask_mul_round_down(m_rdir0,tLowerXYZ,upper_org,calc.rdir_xyz);
+		tUpperXYZ = mask_mul_round_up(  m_rdir1,tUpperXYZ,upper_org,calc.rdir_xyz);
+
+	      }
+	    else
+	      {
+		tLowerXYZ = mask_msub(m_rdir1,tLowerXYZ,clower,calc.org_rdir_xyz);
+		tUpperXYZ = mask_msub(m_rdir0,tUpperXYZ,clower,calc.org_rdir_xyz);
+		tLowerXYZ = mask_msub(m_rdir0,tLowerXYZ,cupper,calc.org_rdir_xyz);
+		tUpperXYZ = mask_msub(m_rdir1,tUpperXYZ,cupper,calc.org_rdir_xyz);	    
+	      }
 	  }
 
 	const mic_f tLower = tLowerXYZ;
@@ -274,11 +288,24 @@ namespace embree
 	    const mic_f clower   = compressed_node->decompress_lowerXYZ(startXYZ,diffXYZ);
 	    const mic_f cupper   = compressed_node->decompress_upperXYZ(startXYZ,diffXYZ);
 
-	    tLowerXYZ = mask_msub(m_rdir1,tLowerXYZ,clower,calc.org_rdir_xyz);
-	    tUpperXYZ = mask_msub(m_rdir0,tUpperXYZ,clower,calc.org_rdir_xyz);
+	    if (ROBUST)
+	      {
+		const mic_f lower_org = clower - calc.org_xyz;
+		const mic_f upper_org = cupper - calc.org_xyz;
 
-	    tLowerXYZ = mask_msub(m_rdir0,tLowerXYZ,cupper,calc.org_rdir_xyz);
-	    tUpperXYZ = mask_msub(m_rdir1,tUpperXYZ,cupper,calc.org_rdir_xyz);	    
+		tLowerXYZ = mask_mul_round_down(m_rdir1,tLowerXYZ,lower_org,calc.rdir_xyz);
+		tUpperXYZ = mask_mul_round_up(  m_rdir0,tUpperXYZ,lower_org,calc.rdir_xyz);
+		tLowerXYZ = mask_mul_round_down(m_rdir0,tLowerXYZ,upper_org,calc.rdir_xyz);
+		tUpperXYZ = mask_mul_round_up(  m_rdir1,tUpperXYZ,upper_org,calc.rdir_xyz);
+
+	      }
+	    else
+	      {
+		tLowerXYZ = mask_msub(m_rdir1,tLowerXYZ,clower,calc.org_rdir_xyz);
+		tUpperXYZ = mask_msub(m_rdir0,tUpperXYZ,clower,calc.org_rdir_xyz);
+		tLowerXYZ = mask_msub(m_rdir0,tLowerXYZ,cupper,calc.org_rdir_xyz);
+		tUpperXYZ = mask_msub(m_rdir1,tUpperXYZ,cupper,calc.org_rdir_xyz);	    
+	      }
 	  }
 
 	const mic_f tLower = tLowerXYZ;
@@ -640,32 +667,4 @@ namespace embree
     
   }
 
-
-  /* BVH4i::QuantizedNode* __restrict__ const node = (BVH4i::QuantizedNode*)curNode.node(nodes); */
-  /* prefetch<PFHINT_L1>((char*)node + 0); */
-
-  /* const float* __restrict const plower = (float*)node; */
-		  
-  /* const mic_f startXYZ = node->decompress_startXYZ(); */
-  /* const mic_f diffXYZ  = node->decompress_diffXYZ(); */
-  /* const mic_f lower   = node->decompress_lowerXYZ(startXYZ,diffXYZ); */
-  /* const mic_f upper   = node->decompress_upperXYZ(startXYZ,diffXYZ); */
-
-  /* mic_f tLowerXYZ = lower * rdir_xyz - org_rdir_xyz; */
-  /* mic_f tUpperXYZ = upper * rdir_xyz - org_rdir_xyz; */
-
-
-  /* BVH4i::QuantizedNode* __restrict__ const node = (BVH4i::QuantizedNode*)curNode.node(nodes); */
-  /* prefetch<PFHINT_L1>((char*)node + 0); */
-
-  /* const float* __restrict const plower = (float*)node; */
-		  
-  /* const mic_f startXYZ = node->decompress_startXYZ(); */
-  /* const mic_f diffXYZ  = node->decompress_diffXYZ(); */
-  /* const mic_f lower   = node->decompress_lowerXYZ(startXYZ,diffXYZ); */
-  /* const mic_f upper   = node->decompress_upperXYZ(startXYZ,diffXYZ); */
-
-  /* const mic_f tLowerXYZ = lower * rdir_xyz - org_rdir_xyz; */
-  /* const mic_f tUpperXYZ = upper * rdir_xyz - org_rdir_xyz; */
-  
 };
