@@ -102,6 +102,7 @@ namespace embree
               ray.Ng.z = tri.Ng.z[i];
               ray.geomID = geomID;
               ray.primID = tri.primID<list>(i);
+              //ray.primID = (unsigned) (size_t) &tri.Ng.x[i]; 
               
 #if defined(RTCORE_INTERSECTION_FILTER)
               return;

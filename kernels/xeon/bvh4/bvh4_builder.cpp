@@ -424,7 +424,7 @@ namespace embree
       /* free all temporary memory blocks */
       Alloc::global.clear();
       //TaskScheduler::enableThreads(threadCountOld); // FIXME: enable
-      
+
       if (g_verbose >= 2 || g_benchmark) 
 	t1 = getSeconds();
 

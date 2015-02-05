@@ -16,9 +16,10 @@
 
 #pragma once
 
+#include "builders/priminfo.h"
 #include "geometry/bezier1v.h"
 #include "builders/primrefalloc.h"
-#include "builders/heuristic_fallback.h"
+//#include "builders/heuristic_fallback.h"
 #include "algorithms/range.h"
 #include "algorithms/parallel_reduce.h"
 #include "algorithms/parallel_partition.h"

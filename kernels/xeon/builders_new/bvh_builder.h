@@ -18,7 +18,7 @@
 
 #include "tasking/taskscheduler_new.h"
 #include "builders_new/heuristic_binning.h"
-#include "algorithms/parallel_create_tree.h"
+//#include "algorithms/parallel_create_tree.h"
 
 namespace embree
 {
