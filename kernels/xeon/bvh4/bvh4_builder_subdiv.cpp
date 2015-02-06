@@ -173,7 +173,7 @@ namespace embree
         
         BVH4::NodeRef root = bvh_builder_binned_sah_internal<BVH4::NodeRef>
           (CreateAlloc(bvh),CreateBVH4Node(bvh),
-           [&] (const BuildRecord<BVH4::NodeRef>& current, PrimRef* prims, Allocator* alloc) {
+           [&] (const BuildRecord<BVH4::NodeRef>& current, Allocator* alloc) {
              if (current.size() != 1) THROW_RUNTIME_ERROR("bvh4_builder_subdiv: internal error");
              *current.parent = (BVH4::NodeRef) prims[current.begin].ID();
              return 0;
@@ -293,7 +293,7 @@ namespace embree
         
         BVH4::NodeRef root = bvh_builder_binned_sah_internal<BVH4::NodeRef>
           (CreateAlloc(bvh),CreateBVH4Node(bvh),
-           [&] (const BuildRecord<BVH4::NodeRef>& current, PrimRef* prims, Allocator* alloc) {
+           [&] (const BuildRecord<BVH4::NodeRef>& current, Allocator* alloc) {
              if (current.size() != 1) THROW_RUNTIME_ERROR("bvh4_builder_subdiv: internal error");
              *current.parent = (BVH4::NodeRef) prims[current.begin].ID();
              return 0;
@@ -413,7 +413,7 @@ namespace embree
         
         BVH4::NodeRef root = bvh_builder_binned_sah_internal<BVH4::NodeRef>
           (CreateAlloc(bvh),CreateBVH4Node(bvh),
-           [&] (const BuildRecord<BVH4::NodeRef>& current, PrimRef* prims, Allocator* alloc) {
+           [&] (const BuildRecord<BVH4::NodeRef>& current, Allocator* alloc) {
             assert(current.size() == 1);
             BVH4::NodeRef node = prims[current.begin].ID();
             size_t ty = 0;
@@ -909,7 +909,7 @@ namespace embree
       {
         BVH4::NodeRef root = bvh_builder_binned_sah_internal<BVH4::NodeRef>
           (CreateAlloc(bvh),CreateBVH4Node(bvh),
-           [&] (const BuildRecord<BVH4::NodeRef>& current, PrimRef* prims, Allocator* alloc) {
+           [&] (const BuildRecord<BVH4::NodeRef>& current, Allocator* alloc) {
             size_t items = current.size();
             assert(items == 1);
             const unsigned int patchIndex = prims[current.begin].ID();

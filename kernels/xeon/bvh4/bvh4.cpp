@@ -181,6 +181,7 @@ namespace embree
   DECLARE_SCENE_BUILDER(BVH4Bezier1iMBBuilder_OBB_New);
   DECLARE_SCENE_BUILDER(BVH4Triangle1SceneBuilderBinnedSAH2);
   DECLARE_SCENE_BUILDER(BVH4Triangle4SceneBuilderBinnedSAH2);
+  DECLARE_SCENE_BUILDER(BVH4Triangle4SceneListBuilderBinnedSAH2);
   DECLARE_SCENE_BUILDER(BVH4Triangle8SceneBuilderBinnedSAH2);
   DECLARE_SCENE_BUILDER(BVH4Triangle1vSceneBuilderBinnedSAH2);
   DECLARE_SCENE_BUILDER(BVH4Triangle4vSceneBuilderBinnedSAH2);
@@ -312,6 +313,7 @@ namespace embree
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Bezier1iMBBuilder_OBB_New);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle1SceneBuilderBinnedSAH2);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4SceneBuilderBinnedSAH2);
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4SceneListBuilderBinnedSAH2);
     SELECT_SYMBOL_AVX        (features,BVH4Triangle8SceneBuilderBinnedSAH2);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle1vSceneBuilderBinnedSAH2);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4vSceneBuilderBinnedSAH2);
@@ -817,6 +819,7 @@ namespace embree
     if      (g_tri_builder == "default"     ) builder = BVH4Triangle4SceneBuilderBinnedSAH2(accel,scene,0);
     else if (g_tri_builder == "binned_sah"  ) builder = BVH4Triangle4SceneBuilderBinnedSAH(accel,scene,0);
     else if (g_tri_builder == "binned_sah2" ) builder = BVH4Triangle4SceneBuilderBinnedSAH2(accel,scene,0);
+    else if (g_tri_builder == "list_binned_sah2" ) builder = BVH4Triangle4SceneListBuilderBinnedSAH2(accel,scene,0);
     else if (g_tri_builder == "binned_sah_presplit" ) builder = BVH4Triangle4SceneBuilderBinnedSAH(accel,scene,MODE_HIGH_QUALITY);
     else if (g_tri_builder == "binned_sah2_presplit") builder = BVH4Triangle4SceneBuilderBinnedSAH2(accel,scene,MODE_HIGH_QUALITY);
     else if (g_tri_builder == "morton"      ) builder = BVH4Triangle4SceneBuilderMortonGeneral(accel,scene,0);

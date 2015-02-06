@@ -106,7 +106,7 @@ namespace embree
     {
       /* calculate total surface area */
       float A = 0.0f;
-      for (size_t i=0; i<pinfo.size(); i++)
+      for (size_t i=0; i<pinfo.size(); i++) // FIXME: parallelize
         A += area(prims[i]);
 
       /* try to calculate a number of splits per primitive, such that

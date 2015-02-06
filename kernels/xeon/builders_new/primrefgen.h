@@ -31,6 +31,9 @@ namespace embree
     template<typename Mesh, size_t timeSteps>
       PrimInfo createPrimRefArray(Scene* scene, vector_t<PrimRef>& prims);
 
+    template<typename Mesh, size_t timeSteps>
+      PrimInfo createPrimRefList(Scene* scene, PrimRefList& prims);
+
     template<size_t timeSteps>
       PrimInfo createBezierRefArray(Scene* scene, vector_t<BezierPrim>& prims);
   }
