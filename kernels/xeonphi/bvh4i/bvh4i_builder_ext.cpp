@@ -212,28 +212,12 @@ PRINT(CORRECT_numPrims);
 
     scene->lockstep_scheduler.dispatchTask( task_countAndComputePrimRefsPreSplits, this, threadIndex, threadCount );
 
-    /* === padding to 8-wide blocks === */
     const unsigned int preSplits        = dest1;
-    const unsigned int preSplits_padded = ((preSplits+NUM_PRESPLIT_IDS_PER_BLOCK-1)&(-NUM_PRESPLIT_IDS_PER_BLOCK));
-    PreSplitID* __restrict__ const dest = (PreSplitID*)accel;
-    
-    for (size_t i=preSplits; i<preSplits_padded; i++) {
-      dest[i].code  = 0xffffffff; 
-      dest[i].sah = 0;
-      dest[i].groupID = 0;
-      dest[i].primID = 0;
-    }
 
     TIMER(msec = getSeconds()-msec);    
     TIMER(std::cout << "task_countAndComputePrimRefsPreSplits " << 1000. * msec << " ms" << std::endl << std::flush);
 
-
-    const size_t step = (numMaxPreSplits+NUM_PRESPLITS_PER_TRIANGLE-1) / NUM_PRESPLITS_PER_TRIANGLE;
-    const size_t startPreSplits = (step <= preSplits) ? preSplits - step : preSplits;
-
     TIMER(msec = getSeconds());
-
-    //scene->lockstep_scheduler.dispatchTask( task_radixSortPreSplitIDs, this, threadIndex, threadCount );
 
     radix_sort_u32((PreSplitID*)accel,((PreSplitID*)accel) + preSplits,preSplits);
 
@@ -438,121 +422,6 @@ PRINT(CORRECT_numPrims);
   }
 
 
-  void BVH4iBuilderPreSplits::radixSortPreSplitIDs(const size_t threadID, const size_t numThreads)
-  {
-    const unsigned int preSplits = dest1;
-    const size_t numBlocks = (preSplits+NUM_PRESPLIT_IDS_PER_BLOCK-1) / NUM_PRESPLIT_IDS_PER_BLOCK;
-    const size_t startID   = ((threadID+0)*numBlocks/numThreads) * NUM_PRESPLIT_IDS_PER_BLOCK;
-    const size_t endID     = ((threadID+1)*numBlocks/numThreads) * NUM_PRESPLIT_IDS_PER_BLOCK;
-    assert(startID % NUM_PRESPLIT_IDS_PER_BLOCK == 0);
-    assert(endID % NUM_PRESPLIT_IDS_PER_BLOCK == 0);
-
-    assert(((numThreads)*numBlocks/numThreads) * NUM_PRESPLIT_IDS_PER_BLOCK == ((preSplits+7)&(-8)));
-
-
-    PreSplitID* __restrict__ presplitID[2];
-    presplitID[0] = (PreSplitID*)accel; 
-    presplitID[1] = (PreSplitID*)accel + ((preSplits+NUM_PRESPLIT_IDS_PER_BLOCK-1)&(-NUM_PRESPLIT_IDS_PER_BLOCK));
-
-
-    /* we need 4 iterations to process all 32 bits */
-    for (size_t b=0; b<4; b++)
-      {
-	const PreSplitID* __restrict__ const src = (PreSplitID*)presplitID[((b+0)%2)];
-	PreSplitID*       __restrict__ const dst = (PreSplitID*)presplitID[((b+1)%2)];
-
-	__assume_aligned(&radixCount[threadID][0],64);
-      
-	/* count how many items go into the buckets */
-
-#pragma unroll(16)
-	for (size_t i=0; i<16; i++)
-	  store16i(&radixCount[threadID][i*16],mic_i::zero());
-
-
-	for (size_t i=startID; i<endID; i+=NUM_PRESPLIT_IDS_PER_BLOCK) {
-	  prefetch<PFHINT_NT>(&src[i+L1_PREFETCH_ITEMS]);
-	  prefetch<PFHINT_L2>(&src[i+L2_PREFETCH_ITEMS]);
-	
-#pragma unroll(NUM_PRESPLIT_IDS_PER_BLOCK)
-	  for (unsigned long j=0;j<NUM_PRESPLIT_IDS_PER_BLOCK;j++)
-	    {
-	      const unsigned int index = src[i+j].getByte(b);
-	      radixCount[threadID][index]++;
-	    }
-	}
-
-	scene->lockstep_scheduler.syncThreads(threadID,numThreads);
-
-
-	/* calculate total number of items for each bucket */
-	mic_i count[16];
-#pragma unroll(16)
-	for (size_t i=0; i<16; i++)
-	  count[i] = mic_i::zero();
-
-
-	for (size_t i=0; i<threadID; i++)
-#pragma unroll(16)
-	  for (size_t j=0; j<16; j++)
-	    count[j] += load16i((int*)&radixCount[i][j*16]);
-      
-	__aligned(64) unsigned int inner_offset[RADIX_BUCKETS];
-
-#pragma unroll(16)
-	for (size_t i=0; i<16; i++)
-	  store16i(&inner_offset[i*16],count[i]);
-
-#pragma unroll(16)
-	for (size_t i=0; i<16; i++)
-	  count[i] = load16i((int*)&inner_offset[i*16]);
-
-	for (size_t i=threadID; i<numThreads; i++)
-#pragma unroll(16)
-	  for (size_t j=0; j<16; j++)
-	    count[j] += load16i((int*)&radixCount[i][j*16]);	  
-
-	__aligned(64) unsigned int total[RADIX_BUCKETS];
-
-#pragma unroll(16)
-	for (size_t i=0; i<16; i++)
-	  store16i(&total[i*16],count[i]);
-
-	__aligned(64) unsigned int offset[RADIX_BUCKETS];
-
-	/* calculate start offset of each bucket */
-	offset[0] = 0;
-	for (size_t i=1; i<RADIX_BUCKETS; i++)    
-	  offset[i] = offset[i-1] + total[i-1];
-      
-	/* calculate start offset of each bucket for this thread */
-
-#pragma unroll(RADIX_BUCKETS)
-	for (size_t j=0; j<RADIX_BUCKETS; j++)
-          offset[j] += inner_offset[j];
-
-	/* copy items into their buckets */
-	for (size_t i=startID; i<endID; i+=NUM_PRESPLIT_IDS_PER_BLOCK) {
-	  prefetch<PFHINT_NT>(&src[i+L1_PREFETCH_ITEMS]);
-	  prefetch<PFHINT_L2>(&src[i+L2_PREFETCH_ITEMS]);
-
-#pragma nounroll
-	  for (unsigned long j=0;j<NUM_PRESPLIT_IDS_PER_BLOCK;j++)
-	    {
-	      const unsigned int index = src[i+j].getByte(b);
-	      assert(index < RADIX_BUCKETS);
-	      dst[offset[index]] = src[i+j];
-	      prefetch<PFHINT_L2EX>(&dst[offset[index]+L1_PREFETCH_ITEMS]);
-	      offset[index]++;
-	    }
-	  evictL2(&src[i]);
-	}
-
-	if (b<3) scene->lockstep_scheduler.syncThreads(threadID,numThreads);
-
-      }
-  }
-
   void BVH4iBuilderPreSplits::computePrimRefsFromPreSplitIDs(const size_t threadID, const size_t numThreads) 
   {
     const size_t preSplitIDs    = dest1;
@@ -644,11 +513,6 @@ PRINT(CORRECT_numPrims);
 
   void BVH4iBuilderPreSplits::finalize(const size_t threadIndex, const size_t threadCount)
   {
-#if 0
-    std::cout << "TREE ROTATIONS" << std::endl;
-    for (size_t i=0;i<4;i++)
-      BVH4iRotate::rotate(bvh,bvh->root);
-#endif
   }
 
   /* =================================================================================== */

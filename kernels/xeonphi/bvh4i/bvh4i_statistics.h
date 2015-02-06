@@ -75,7 +75,7 @@ namespace embree
     size_t bytesTotalAllocated = bvh->bytes();
     stream.setf(std::ios::fixed, std::ios::floatfield);
     stream.precision(4);
-    stream << "  prims  =" << numPrims << std::endl;
+    stream << "  prims  = " << numPrims << std::endl;
     stream << "  sah    = " << bvhSAH << ", leafSAH = " << leafSAH;
     stream.setf(std::ios::fixed, std::ios::floatfield);
     stream.precision(1);
