@@ -18,6 +18,8 @@
 
 #include "tasking/taskscheduler_new.h"
 #include "builders_new/heuristic_binning_array_aligned.h"
+#include "builders_new/heuristic_binning_list_aligned.h"
+#include "builders_new/heuristic_spatial_list.h"
 
 namespace embree
 {
@@ -311,6 +313,29 @@ namespace embree
       const size_t logBlockSize = __bsr(blockSize);
       assert((blockSize ^ (1L << logBlockSize)) == 0);
       HeuristicArrayBinningSAH<PrimRef> heuristic(prims);
+      
+      auto updateNode = [] (int node, int*, size_t) -> int { return 0; };
+      BVHBuilderSAH2<NodeRef,decltype(heuristic),int,decltype(createAlloc()),CreateAllocFunc,CreateNodeFunc,decltype(updateNode),CreateLeafFunc> builder
+        (heuristic,0,createAlloc,createNode,updateNode,createLeaf,prims,pinfo,branchingFactor,maxDepth,logBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
+
+      NodeRef root;
+      BuildRecord2<NodeRef> br(pinfo,1,&root);
+      br.prims = range<size_t>(0,pinfo.size());
+      builder(br);
+      return root;
+    }
+
+    template<typename NodeRef, typename CreateAllocFunc, typename CreateNodeFunc, typename CreateLeafFunc>
+      NodeRef bvh_builder_spatial_sah2_internal(CreateAllocFunc createAlloc, CreateNodeFunc createNode, CreateLeafFunc createLeaf, 
+                                               PrimRef* prims, const PrimInfo& pinfo, 
+                                               const size_t branchingFactor, const size_t maxDepth, const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize,
+                                               const float travCost, const float intCost)
+    {
+      const size_t logBlockSize = __bsr(blockSize);
+      assert((blockSize ^ (1L << logBlockSize)) == 0);
+
+      HeuristicListBinningSAH<PrimRef> heuristic;
+      HeuristicSpatialBlockListBinningSAH<PrimRef> heuristic2(NULL); // FIXME: pass scene
       
       auto updateNode = [] (int node, int*, size_t) -> int { return 0; };
       BVHBuilderSAH2<NodeRef,decltype(heuristic),int,decltype(createAlloc()),CreateAllocFunc,CreateNodeFunc,decltype(updateNode),CreateLeafFunc> builder

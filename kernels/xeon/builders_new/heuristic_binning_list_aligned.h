@@ -16,27 +16,27 @@
 
 #pragma once
 
-#include "heuristic_spatial.h"
-#include "builders/primrefblock.h"
+#include "heuristic_binning.h"
 
 namespace embree
 {
   namespace isa
-  {
+  { 
     /*! Performs standard object binning */
-    template<typename PrimRef, size_t BINS = 16>
-      struct HeuristicSpatialBlockListBinningSAH
+    template<typename PrimRef, size_t BINS = 32>
+      struct HeuristicListBinningSAH
       {
-        typedef SpatialBinSplit<BINS> Split;
-        typedef SpatialBinInfo<BINS,PrimRef> Binner;
+        typedef BinSplit<BINS> Split;
+        typedef BinInfo<BINS,PrimRef> Binner;
         typedef atomic_set<PrimRefBlockT<PrimRef> > Set;
         
-        __forceinline HeuristicSpatialBlockListBinningSAH () {}
-
-        /*! remember scene for later splits */
-        __forceinline HeuristicSpatialBlockListBinningSAH (Scene* scene) 
-          : scene(scene) {}
+        __forceinline HeuristicListBinningSAH ()
+          : prims(NULL) {}
         
+        /*! remember prim array */
+        __forceinline HeuristicListBinningSAH (PrimRef* prims)
+          : prims(prims) {}
+
         /*! finds the best split */
         const Split find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize)
         {
@@ -46,7 +46,7 @@ namespace embree
         }
         
         /*! finds the best split */
-        const Split sequential_find(const Set& prims, const PrimInfo& pinfo, const size_t logBlockSize)
+        const Split sequential_find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize)
         {
           Binner binner(empty);
           const BinMapping<BINS> mapping(pinfo);
@@ -55,7 +55,7 @@ namespace embree
             bin(block->base(),block->size(),pinfo,mapping);
           return binner.best(pinfo,mapping,logBlockSize);
         }
-        
+
         /*! splits a list of primitives */
         void split(const Split& split, const PrimInfo& pinfo, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset) 
         {
@@ -65,12 +65,11 @@ namespace embree
         }
 
         /*! array partitioning */
-        void sequential_split(const Split& split, const Set& prims, 
-                              PrimInfo& linfo_o, Set& lprims_o, PrimInfo& rinfo_o, Set& rprims_o) 
+        void sequential_split(const Split& split, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset) 
         {
           if (!split.valid()) {
-            //deterministic_order(set); // FIXME: enable
-            return splitFallback(prims,linfo_o,lprims_o,rinfo_o,rprims_o);
+            //deterministic_order(set);
+            return splitFallback(set,left,lset,right,rset);
           }
           
           Set::item* lblock = lprims_o.insert(new Set::item);
@@ -78,71 +77,49 @@ namespace embree
           linfo_o.reset();
           rinfo_o.reset();
           
-          /* sort each primitive to left, right, or left and right */
+          size_t numLeft = 0; CentGeomBBox3fa leftBounds(empty);
+          size_t numRight = 0; CentGeomBBox3fa rightBounds(empty);
+      
           while (Set::item* block = prims.take()) 
           {
             for (size_t i=0; i<block->size(); i++) 
             {
               const PrimRef& prim = block->at(i); 
-              const BBox3fa bounds = prim.bounds();
-              const int bin0 = mapping.bin(bounds.lower)[dim];
-              const int bin1 = mapping.bin(bounds.upper)[dim];
+              const Vec3fa center = center2(prim.bounds());
+              const ssei bin = ssei(mapping.bin_unsafe(center));
               
-              /* sort to the left side */
-              if (bin1 < pos)
+              if (bin[dim] < pos) 
               {
-                linfo_o.add(bounds,center2(bounds));
+                leftBounds.extend(prim.bounds()); numLeft++;
+                //linfo_o.add(prim.bounds(),center);
+                //if (++lblock->num > PrimRefBlock::blockSize)
+                //lblock = lprims_o.insert(alloc.malloc(threadIndex));
                 if (likely(lblock->insert(prim))) continue; 
                 lblock = lprims_o.insert(alloc.malloc(threadIndex));
                 lblock->insert(prim);
-                continue;
-              }
-              
-              /* sort to the right side */
-              if (bin0 >= pos)
+              } 
+              else 
               {
-                rinfo_o.add(bounds,center2(bounds));
+                rightBounds.extend(prim.bounds()); numRight++;
+                //rinfo_o.add(prim.bounds(),center);
+                //if (++rblock->num > PrimRefBlock::blockSize)
+                //rblock = rprims_o.insert(alloc.malloc(threadIndex));
                 if (likely(rblock->insert(prim))) continue;
                 rblock = rprims_o.insert(alloc.malloc(threadIndex));
                 rblock->insert(prim);
-                continue;
-              }
-              
-              /* split and sort to left and right */
-              TriangleMesh* mesh = (TriangleMesh*) scene->get(prim.geomID());
-              TriangleMesh::Triangle tri = mesh->triangle(prim.primID());
-              const Vec3fa v0 = mesh->vertex(tri.v[0]);
-              const Vec3fa v1 = mesh->vertex(tri.v[1]);
-              const Vec3fa v2 = mesh->vertex(tri.v[2]);
-              
-              PrimRef left,right;
-              float fpos = mapping.pos(pos,dim);
-              splitTriangle(prim,dim,fpos,v0,v1,v2,left,right);
-              
-              if (!left.bounds().empty()) {
-                linfo_o.add(left.bounds(),center2(left.bounds()));
-                if (!lblock->insert(left)) {
-                  lblock = lprims_o.insert(alloc.malloc(threadIndex));
-                  lblock->insert(left);
-                }
-              }
-              
-              if (!right.bounds().empty()) {
-                rinfo_o.add(right.bounds(),center2(right.bounds()));
-                if (!rblock->insert(right)) {
-                  rblock = rprims_o.insert(alloc.malloc(threadIndex));
-                  rblock->insert(right);
-                }
               }
             }
             delete block;
           }
+
+          linfo_o.add(leftBounds.geomBounds,leftBounds.centBounds,numLeft);
+          rinfo_o.add(rightBounds.geomBounds,rightBounds.centBounds,numRight);
         }
         
         //void deterministic_order(const Set& set) 
         //{
-        /* required as parallel partition destroys original primitive order */
-        //std::sort(&prims[set.begin()],&prims[set.end()]);
+          /* required as parallel partition destroys original primitive order */
+          //std::sort(&prims[set.begin()],&prims[set.end()]);
         //}
 
         void splitFallback(const Set& prims, PrimInfo& linfo_o, Set& lprims_o, PrimInfo& rinfo_o, Set& rprims_o)
@@ -179,10 +156,10 @@ namespace embree
             delete block;
           }
         }
-
+        
       private:
-        Scene* scene;
+        PrimRef* const prims;
       };
+
   }
 }
-

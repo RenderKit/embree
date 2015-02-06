@@ -89,11 +89,11 @@ namespace embree
         float sah;                 //!< SAH cost of the split
         int   dim;                 //!< split dimension
         int   pos;                 //!< split position
-        SpatialBinMapping mapping; //!< mapping into bins
+        SpatialBinMapping<BINS> mapping; //!< mapping into bins
       };    
     
     /*! stores all binning information */
-    template<size_t BINS>
+    template<size_t BINS, typename PrimRef>
       struct __aligned(64) SpatialBinInfo
     {
       SpatialBinInfo() {
@@ -114,7 +114,7 @@ namespace embree
       }
       
       /*! bins an array of triangles */
-      __forceinline void bin(Scene* scene, const PrimRef* prims, size_t N, const PrimInfo& pinfo, const SpatialBinMapping& mapping)
+      __forceinline void bin(Scene* scene, const PrimRef* prims, size_t N, const PrimInfo& pinfo, const SpatialBinMapping<BINS>& mapping)
       {
         for (size_t i=0; i<N; i++)
         {
@@ -173,7 +173,7 @@ namespace embree
       }
       
       /*! finds the best split by scanning binning information */
-      Split best(const PrimInfo& pinfo, const SpatialBinMapping<BINS>& mapping, const size_t blocks_shift)
+      SpatialBinSplit<BINS> best(const PrimInfo& pinfo, const SpatialBinMapping<BINS>& mapping, const size_t blocks_shift)
       {
         /* sweep from right to left and compute parallel prefix of merged bounds */
         ssef rAreas[BINS];
