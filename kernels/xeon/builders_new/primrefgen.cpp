@@ -108,6 +108,31 @@ namespace embree
       return pinfo;
     }
 
+    template<typename Mesh, size_t timeSteps>
+      PrimInfo createPrimRefList(Scene* scene, PrimRefList& prims_o)
+    {
+      PrimRefList::item* block = prims_o.insert(new PrimRefList::item); 
+
+      Scene::Iterator<Mesh,timeSteps> iter(scene);
+      PrimInfo pinfo = parallel_for_for_reduce( iter, PrimInfo(empty), [&](Mesh* mesh, const range<size_t>& r, size_t k) -> PrimInfo
+      {
+        PrimInfo pinfo(empty);
+        for (size_t j=r.begin(); j<r.end(); j++)
+        {
+          BBox3fa bounds = empty;
+          if (!mesh->valid(j,&bounds)) continue;
+          const PrimRef prim(bounds,mesh->id,j);
+          pinfo.add(prim.bounds(),prim.center2());
+          if (likely(block->insert(prim))) continue; 
+          block = prims_o.insert(new PrimRefList::item);
+          block->insert(prim);
+        }
+        return pinfo;
+      }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a,b); });
+      
+      return pinfo;
+    }
+
     template<size_t timeSteps>
     PrimInfo createBezierRefArray(Scene* scene, vector_t<BezierPrim>& prims)
     {
@@ -188,6 +213,8 @@ namespace embree
 
     template PrimInfo createBezierRefArray<1>(Scene* scene, vector_t<BezierPrim>& prims);
     template PrimInfo createBezierRefArray<2>(Scene* scene, vector_t<BezierPrim>& prims);
+
+    template PrimInfo createPrimRefList<TriangleMesh,1>(Scene* scene, PrimRefList& prims);
   }
 }
 
