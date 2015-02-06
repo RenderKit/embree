@@ -32,7 +32,7 @@
 #define TIMER(x) 
 #define DBG(x) 
 
-//#define PROFILE
+#define PROFILE
 #define PROFILE_ITERATIONS 20
 
 #define MEASURE_MEMORY_ALLOCATION_TIME 0
@@ -476,18 +476,8 @@ namespace embree
     store16f_ngo(acc,tri_accel);
   }
 
-  
-  void BVH4iBuilder::createAccel(const size_t threadIndex, const size_t threadCount)
+  void BVH4iBuilder::createTriangle1AccelRange(const size_t startID, const size_t endID)
   {
-    scene->lockstep_scheduler.dispatchTask( task_createTriangle1Accel, this, threadIndex, threadCount );   
-  }
-
-  
-  void BVH4iBuilder::createTriangle1Accel(const size_t threadID, const size_t numThreads)
-  {
-    const size_t startID = (threadID+0)*numPrimitives/numThreads;
-    const size_t endID   = (threadID+1)*numPrimitives/numThreads;
-
     Triangle1    * __restrict__  acc  = accel + startID;
     const PrimRef* __restrict__  bptr = prims + startID;
 
@@ -500,6 +490,21 @@ namespace embree
 
 	computeAccelerationData(bptr->geomID(),bptr->primID(),scene,acc);
       }
+  }
+
+  
+  void BVH4iBuilder::createAccel(const size_t threadIndex, const size_t threadCount)
+  {
+    //scene->lockstep_scheduler.dispatchTask( task_createTriangle1Accel, this, threadIndex, threadCount );   
+    parallel_for(size_t(0), numPrimitives, [&](const range<size_t>& r) { createTriangle1AccelRange(r.begin(),r.end()); });
+  }
+
+  
+  void BVH4iBuilder::createTriangle1Accel(const size_t threadID, const size_t numThreads)
+  {
+    const size_t startID = (threadID+0)*numPrimitives/numThreads;
+    const size_t endID   = (threadID+1)*numPrimitives/numThreads;   
+    createTriangle1AccelRange(startID,endID);    
   }
 
   
@@ -1075,7 +1080,13 @@ namespace embree
   
   void BVH4iBuilder::computePrimRefs(const size_t threadIndex, const size_t threadCount)
   {    
+#if 1
     scene->lockstep_scheduler.dispatchTask( task_computePrimRefsTriangles, this, threadIndex, threadCount );
+#else
+    Scene::Iterator<TriangleMesh> iter;
+    ParallelForForPrefixSumState<PrimInfo> pstate;
+#endif    
+
   }
 
 
@@ -1165,6 +1176,7 @@ namespace embree
 
     /* create triangle acceleration structure */
     TIMER(msec = getSeconds());        
+
     createAccel(threadIndex, threadCount );
     TIMER(msec = getSeconds()-msec);    
     TIMER(std::cout << "task_createAccel " << 1000. * msec << " ms" << std::endl << std::flush);

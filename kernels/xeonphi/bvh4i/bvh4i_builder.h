@@ -94,6 +94,7 @@ namespace embree
     void checkBuildRecord(const BuildRecord &current);
     void checkLeafNode(const BVH4i::NodeRef &ref, const BBox3fa &bounds);
 
+    void createTriangle1AccelRange(const size_t startID, const size_t endID);
 
     TASK_FUNCTION(BVH4iBuilder,computePrimRefsTriangles);
     TASK_FUNCTION(BVH4iBuilder,createTriangle1Accel);
