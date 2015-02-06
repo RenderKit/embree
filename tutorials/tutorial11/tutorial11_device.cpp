@@ -15,6 +15,7 @@
 // ======================================================================== //
 
 #include "../common/tutorial/tutorial_device.h"
+#include "kernels/common/alloc.h"
 #include "kernels/xeon/builders_new/bvh_builder.h"
 #include "kernels/xeon/builders_new/bvh_builder_morton.h"
 #include "kernels/xeon/builders/priminfo.h"

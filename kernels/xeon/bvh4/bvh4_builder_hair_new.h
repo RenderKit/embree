@@ -18,7 +18,8 @@
 
 #include "geometry/primitive.h"
 #include "geometry/bezier1v.h"
-#include "builders_new/heuristic_binning.h"
+#include "builders_new/heuristic_binning_array_aligned.h"
+#include "builders_new/heuristic_binning_array_unaligned.h"
 
 namespace embree
 {
