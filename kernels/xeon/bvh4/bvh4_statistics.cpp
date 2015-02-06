@@ -29,7 +29,7 @@ namespace embree
     hash = 0;
     float A = max(0.0f,halfArea(bvh->bounds));
     statistics(bvh->root,A,depth);
-    bvhSAH /= area(bvh->bounds);
+    bvhSAH /= halfArea(bvh->bounds);
     assert(depth <= BVH4::maxDepth);
   }
 

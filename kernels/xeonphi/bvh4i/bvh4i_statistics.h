@@ -56,11 +56,12 @@ namespace embree
   {
     numNodes = numLeaves = numPrimBlocks = numPrimBlocks4 = numPrims = depth = 0;
     numValidBoxes = 0;
-    bvhSAH = leafSAH = 0.0f;
+    bvhSAH = halfArea(bvh->bounds);
+    leafSAH = 0.0f;
     if (bvh->root != BVH4i::invalidNode)
       statistics(bvh->root,bvh->bounds,depth);
-    bvhSAH /= area(bvh->bounds);
-    leafSAH /= area(bvh->bounds);
+    bvhSAH /= halfArea(bvh->bounds);
+    leafSAH /= halfArea(bvh->bounds);
     assert(depth <= BVH4i::maxDepth);
   }
 
@@ -97,7 +98,7 @@ namespace embree
   template<typename NodeType>
   void BVH4iStatistics<NodeType>::statistics(NodeRef node, BBox3fa bounds, size_t& depth)
   {
-    float A = bounds.empty() ? 0.0f : area(bounds);
+    float A = bounds.empty() ? 0.0f : halfArea(bounds);
     
     if (!isfinite(A))
       {
@@ -114,7 +115,7 @@ namespace embree
       size_t cdepth = 0;
       Node* n = (Node*)node.node((Node*)bvh->nodePtr());
 
-      bvhSAH += A*BVH4i::travCost;
+      bvhSAH += A;
 
       for (size_t i=0; i<BVH4i::N; i++) {
 	if (n->child(i) == BVH4i::invalidNode) { break; }
