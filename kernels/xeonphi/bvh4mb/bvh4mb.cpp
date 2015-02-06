@@ -48,7 +48,7 @@ namespace embree
     else if (g_tri_traverser == "hybrid" ) intersectors.intersector16 = BVH4mbTriangle1Intersector16HybridMoeller;
     else if (g_tri_traverser == "chunk"  ) intersectors.intersector16 = BVH4mbTriangle1Intersector16ChunkMoeller;
     else if (g_tri_traverser == "single" ) intersectors.intersector16 = BVH4mbTriangle1Intersector16SingleMoeller;
-    else if (g_tri_traverser == "test" ) intersectors.intersector16 = BVH4mbTriangle1Intersector16SingleMoeller;
+    else if (g_tri_traverser == "test" )   intersectors.intersector16 = BVH4mbTriangle1Intersector16SingleMoeller;
     else THROW_RUNTIME_ERROR("unknown traverser "+g_tri_traverser+" for BVH4mb<Triangle1>");      
 
     return intersectors;

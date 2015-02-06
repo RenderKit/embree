@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [ "$#" -ne 1 ]; then
-  echo "Usage: ./release_linux.sh path-to-bin-folder"
+  echo "Usage: ./scripts/release_linux.sh path-to-bin-folder"
   exit 1
 fi
 
@@ -19,6 +19,9 @@ cmake \
 make -j 8 preinstall
 cmake -D CMAKE_INSTALL_PREFIX="$destdir" -P cmake_install.cmake
 cd ..
+
+# install scripts
+cp scripts/install_linux/install.sh scripts/install_linux/paths.sh "$destdir"
 
 # assumes documentation repo cloned into embree-doc
 make -C embree-doc docbin

@@ -540,11 +540,11 @@ namespace embree
     
   private:
     __aligned(64) TyRadixCount radixCount;
-/* #if defined(__MIC__) */
-/*     __aligned(64) QuadTreeBarrier barrier; */
-/* #else */
+#if 0 // defined(__MIC__) 
+     __aligned(64) QuadTreeBarrier barrier; 
+ #else 
     LinearBarrierActive barrier; // FIXME: should be able to speficy number of threads here
-/* #endif */
+ #endif 
   };
 
   /*! shared state for parallel radix sort */
@@ -630,6 +630,7 @@ namespace embree
 	else 
 	{
 #if defined(TASKING_LOCKSTEP)
+	  
 	  LockStepTaskScheduler* scheduler = LockStepTaskScheduler::instance();
 	  const size_t numThreads = min(scheduler->getNumThreads(),MAX_THREADS);
 	  parent->barrier.init(numThreads);

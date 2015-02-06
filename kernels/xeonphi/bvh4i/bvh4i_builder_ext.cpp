@@ -48,6 +48,8 @@ namespace embree
     unsigned int groupID;
     unsigned int primID;
             
+    __forceinline operator unsigned int() const { return code; }
+
     __forceinline unsigned int get(const unsigned int shift, const unsigned and_mask) const {
       return (code >> shift) & and_mask;
     }
@@ -231,7 +233,9 @@ PRINT(CORRECT_numPrims);
 
     TIMER(msec = getSeconds());
 
-    scene->lockstep_scheduler.dispatchTask( task_radixSortPreSplitIDs, this, threadIndex, threadCount );
+    //scene->lockstep_scheduler.dispatchTask( task_radixSortPreSplitIDs, this, threadIndex, threadCount );
+
+    radix_sort_u32((PreSplitID*)accel,((PreSplitID*)accel) + preSplits,preSplits);
 
     TIMER(msec = getSeconds()-msec);    
     TIMER(std::cout << "task_radixSortPreSplitIDs " << 1000. * msec << " ms" << std::endl << std::flush);

@@ -56,11 +56,12 @@ namespace embree
   {
     numNodes = numLeaves = numPrimBlocks = numPrimBlocks4 = numPrims = depth = 0;
     numValidBoxes = 0;
-    bvhSAH = leafSAH = 0.0f;
+    bvhSAH = halfArea(bvh->bounds);
+    leafSAH = 0.0f;
     if (bvh->root != BVH4i::invalidNode)
       statistics(bvh->root,bvh->bounds,depth);
-    bvhSAH /= area(bvh->bounds);
-    leafSAH /= area(bvh->bounds);
+    bvhSAH /= halfArea(bvh->bounds);
+    leafSAH /= halfArea(bvh->bounds);
     assert(depth <= BVH4i::maxDepth);
   }
 
@@ -74,13 +75,14 @@ namespace embree
     size_t bytesTotalAllocated = bvh->bytes();
     stream.setf(std::ios::fixed, std::ios::floatfield);
     stream.precision(4);
-    stream << "  sah = " << bvhSAH << ", leafSAH = " << leafSAH;
+    stream << "  prims  =" << numPrims << std::endl;
+    stream << "  sah    = " << bvhSAH << ", leafSAH = " << leafSAH;
     stream.setf(std::ios::fixed, std::ios::floatfield);
     stream.precision(1);
-    stream << ", depth = " << depth;
-    stream << ", size = " << bytesTotalAllocated/1E6 << " MB " << std::endl;
+    stream << ", depth  = " << depth;
+    stream << ", size   = " << bytesTotalAllocated/1E6 << " MB " << std::endl;
     stream.precision(1);
-    stream << "  nodes = "  << numNodes << " "
+    stream << "  nodes  = "  << numNodes << " "
            << "(" << double(sizeof(NodeType)*numNodes)/1E6 << " MB used of " << bytesNodes/1E6  << " MB pre-allocated) "
            << "(" << 100.0*double(bytesNodes)/double(bytesTotal) << "% of total " << bytesTotalAllocated/1E6 << " MB) "
            << "(" << 100.0*double(sizeof(NodeType)*numNodes)/double(bytesNodes) << "% of allocated nodes used)" 
@@ -95,59 +97,59 @@ namespace embree
   }
 
   template<typename NodeType>
-  void BVH4iStatistics<NodeType>::statistics(NodeRef node, BBox3fa bounds, size_t& depth)
-  {
-    float A = bounds.empty() ? 0.0f : area(bounds);
+    void BVH4iStatistics<NodeType>::statistics(NodeRef node, BBox3fa bounds, size_t& depth)
+    {
+      float A = bounds.empty() ? 0.0f : halfArea(bounds);
     
-    if (!isfinite(A))
-      {
-	DBG_PRINT(node);
-	DBG_PRINT(bounds);
-	DBG_PRINT(depth);
-	FATAL("error in sah");
-      }
+      if (!isfinite(A))
+	{
+	  DBG_PRINT(node);
+	  DBG_PRINT(bounds);
+	  DBG_PRINT(depth);
+	  FATAL("error in sah");
+	}
 
-    if (node.isNode())
-    {
-      numNodes++;
-      depth = 0;
-      size_t cdepth = 0;
-      Node* n = (Node*)node.node((Node*)bvh->nodePtr());
+      if (node.isNode())
+	{
+	  numNodes++;
+	  depth = 0;
+	  size_t cdepth = 0;
+	  Node* n = (Node*)node.node((Node*)bvh->nodePtr());
 
-      bvhSAH += A*BVH4i::travCost;
+	  bvhSAH += A;
 
-      for (size_t i=0; i<BVH4i::N; i++) {
-	if (n->child(i) == BVH4i::invalidNode) { break; }
-	numValidBoxes++;
+	  for (size_t i=0; i<BVH4i::N; i++) {
+	    if (n->child(i) == BVH4i::invalidNode) { break; }
+	    numValidBoxes++;
 
-	BBox3fa b = n->bounds(i);
-	if (!(isfinite(b.lower.x) && isfinite(b.lower.y) && isfinite(b.lower.z)))
-	  FATAL("lower");
+	    BBox3fa b = n->bounds(i);
+	    if (!(isfinite(b.lower.x) && isfinite(b.lower.y) && isfinite(b.lower.z)))
+	      FATAL("lower");
 
-	if (!(isfinite(b.upper.x) && isfinite(b.upper.y) && isfinite(b.upper.z)))
-	  FATAL("upper");
+	    if (!(isfinite(b.upper.x) && isfinite(b.upper.y) && isfinite(b.upper.z)))
+	      FATAL("upper");
 
-        statistics(n->child(i),n->bounds(i),cdepth); 
-        depth=max(depth,cdepth);
-      }
-      depth++;
-      return;
-    }
-    else
-    {
-      depth = 0;
-      unsigned int prims; const char* tri = node.leaf(bvh->triPtr(),prims);
-      assert(prims > 0);
-      if (!prims) return;
+	    statistics(n->child(i),n->bounds(i),cdepth); 
+	    depth=max(depth,cdepth);
+	  }
+	  depth++;
+	  return;
+	}
+      else
+	{
+	  depth = 0;
+	  unsigned int prims; const char* tri = node.leaf(bvh->triPtr(),prims);
+	  assert(prims > 0);
+	  if (!prims) return;
       
-      numLeaves++;
-      numPrimBlocks  += 1;
-      numPrims       += prims;
-      numPrimBlocks4 += (prims+3)/4;
-      float sah = A * bvh->primTy.intCost * 1;
-      bvhSAH += sah;
-      leafSAH += sah;
+	  numLeaves++;
+	  numPrimBlocks  += 1;
+	  numPrims       += prims;
+	  numPrimBlocks4 += (prims+3)/4;
+	  float sah = A * bvh->primTy.intCost * 1;
+	  bvhSAH += sah;
+	  leafSAH += sah;
+	}
     }
-  }
 
 }

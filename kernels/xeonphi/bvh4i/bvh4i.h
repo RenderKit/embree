@@ -58,9 +58,6 @@ namespace embree
     static const size_t maxBuildDepthLeaf = maxBuildDepth+6;
     static const size_t maxDepth = maxBuildDepth + maxBuildDepthLeaf;
     
-    /*! Cost of one traversal step. */
-    static const int travCost = 1;
-
     static const size_t hybridSIMDUtilSwitchThreshold = 7;
 
     /*! References a Node or list of Triangles */

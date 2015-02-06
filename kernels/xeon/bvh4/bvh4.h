@@ -90,7 +90,7 @@ namespace embree
     static const int travCost = 1;
     static const int travCostAligned = 2;
     static const int travCostUnaligned = 3; // FIXME: find best cost
-    static const int intCost = 6;
+    static const int intCost = 1; // set to 1 for statistics /  6;
 
     /*! Pointer that points to a node or a list of primitives */
     struct NodeRef
