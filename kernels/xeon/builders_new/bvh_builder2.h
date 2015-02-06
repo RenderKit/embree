@@ -83,14 +83,14 @@ namespace embree
       BVHBuilderSAH2 (Heuristic& heuristic, 
 		      const ReductionTy& identity,
 		      CreateAllocFunc& createAlloc, CreateNodeFunc& createNode, UpdateNodeFunc& updateNode, CreateLeafFunc& createLeaf,
-                      PrimRef* prims, const PrimInfo& pinfo,
+                      const PrimInfo& pinfo,
                       const size_t branchingFactor, const size_t maxDepth, 
                       const size_t logBlockSize, const size_t minLeafSize, const size_t maxLeafSize,
                       const float travCost, const float intCost)
         : heuristic(heuristic), 
 	identity(identity), 
 	createAlloc(createAlloc), createNode(createNode), updateNode(updateNode), createLeaf(createLeaf), 
-        prims(prims), pinfo(pinfo), 
+        pinfo(pinfo), 
         branchingFactor(branchingFactor), maxDepth(maxDepth),
         logBlockSize(logBlockSize), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize),
         travCost(travCost), intCost(intCost)
@@ -106,7 +106,7 @@ namespace embree
         
         /* create leaf for few primitives */
         if (current.pinfo.size() <= maxLeafSize)
-          return createLeaf(current,prims,alloc);
+          return createLeaf(current,alloc);
 
         /* fill all children by always splitting the largest one */
 	ReductionTy values[MAX_BRANCHING_FACTOR];
@@ -270,7 +270,6 @@ namespace embree
       CreateLeafFunc& createLeaf;
       
     private:
-      PrimRef* prims;
       const PrimInfo& pinfo;
       const size_t branchingFactor;
       const size_t maxDepth;
@@ -294,7 +293,7 @@ namespace embree
       HeuristicArrayBinningSAH<PrimRef> heuristic(prims);
       
       BVHBuilderSAH2<NodeRef,decltype(heuristic),ReductionTy,decltype(createAlloc()),CreateAllocFunc,CreateNodeFunc,UpdateNodeFunc,CreateLeafFunc> builder
-        (heuristic,identity,createAlloc,createNode,updateNode,createLeaf,prims,pinfo,branchingFactor,maxDepth,logBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
+        (heuristic,identity,createAlloc,createNode,updateNode,createLeaf,pinfo,branchingFactor,maxDepth,logBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
 
       NodeRef root;
       BuildRecord2<NodeRef> br(pinfo,1,&root);
@@ -315,7 +314,7 @@ namespace embree
       
       auto updateNode = [] (int node, int*, size_t) -> int { return 0; };
       BVHBuilderSAH2<NodeRef,decltype(heuristic),int,decltype(createAlloc()),CreateAllocFunc,CreateNodeFunc,decltype(updateNode),CreateLeafFunc> builder
-        (heuristic,0,createAlloc,createNode,updateNode,createLeaf,prims,pinfo,branchingFactor,maxDepth,logBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
+        (heuristic,0,createAlloc,createNode,updateNode,createLeaf,pinfo,branchingFactor,maxDepth,logBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
 
       NodeRef root;
       BuildRecord2<NodeRef> br(pinfo,1,&root);
@@ -337,7 +336,7 @@ namespace embree
       
       auto updateNode = [] (int node, int*, size_t) -> int { return 0; };
       BVHBuilderSAH2<NodeRef,decltype(heuristic),int,decltype(createAlloc()),CreateAllocFunc,CreateNodeFunc,decltype(updateNode),CreateLeafFunc> builder
-        (heuristic,0,createAlloc,createNode,updateNode,createLeaf,prims,pinfo,branchingFactor,maxDepth,logBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
+        (heuristic,0,createAlloc,createNode,updateNode,createLeaf,pinfo,branchingFactor,maxDepth,logBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
 
       NodeRef root;
       BuildRecord2<NodeRef> br(pinfo,1,&root);

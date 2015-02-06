@@ -59,9 +59,9 @@ namespace embree
     template<typename Primitive>
     struct CreateLeaf
     {
-      __forceinline CreateLeaf (BVH8* bvh) : bvh(bvh) {}
+      __forceinline CreateLeaf (BVH8* bvh, PrimRef* prims) : bvh(bvh), prims(prims) {}
       
-      __forceinline int operator() (const BuildRecord2<BVH8::NodeRef>& current, PrimRef* prims, Allocator* alloc) // FIXME: why are prims passed here but not for createNode
+      __forceinline int operator() (const BuildRecord2<BVH8::NodeRef>& current, Allocator* alloc) // FIXME: why are prims passed here but not for createNode
       {
         size_t items = Primitive::blocks(current.prims.size());
         size_t start = current.prims.begin();
@@ -75,6 +75,7 @@ namespace embree
       }
 
       BVH8* bvh;
+      PrimRef* prims;
     };
     
     /************************************************************************************/ 
@@ -131,7 +132,7 @@ namespace embree
               pinfo = presplit<Mesh>(scene, pinfo, prims);
 
 	    BVH8::NodeRef root = bvh_builder_binned_sah2_internal<BVH8::NodeRef>
-	      (CreateAlloc(bvh),CreateBVH8Node(bvh),CreateLeaf<Primitive>(bvh),
+	      (CreateAlloc(bvh),CreateBVH8Node(bvh),CreateLeaf<Primitive>(bvh,prims.data()),
 	       prims.data(),pinfo,BVH8::N,BVH8::maxBuildDepthLeaf,sahBlockSize,minLeafSize,maxLeafSize,BVH8::travCost,intCost);
 	    bvh->set(root,pinfo.geomBounds,pinfo.size());
 
