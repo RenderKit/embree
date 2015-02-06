@@ -83,10 +83,17 @@ namespace embree
           {
             for (size_t i=0; i<block->size(); i++) 
             {
-              const PrimRef& prim = block->at(i); 
+              PrimRef& prim = block->at(i); 
               const BBox3fa bounds = prim.bounds();
-              const int bin0 = split.mapping.bin(bounds.lower)[split.dim];
-              const int bin1 = split.mapping.bin(bounds.upper)[split.dim];
+              int bin0 = split.mapping.bin(bounds.lower)[split.dim];
+              int bin1 = split.mapping.bin(bounds.upper)[split.dim];
+
+              if ((prim.geomID() >> 24) == 0) {
+                const ssei bin = split.mapping.bin(center(prim.bounds()));
+                bin0 = bin1 = bin[split.dim];
+              } else {
+                prim.lower.a -= 0x01000000;
+              }
               
               /* sort to the left side */
               if (bin1 < split.pos)
@@ -107,7 +114,8 @@ namespace embree
                 rblock->insert(prim);
                 continue;
               }
-              
+              //assert(prim.geomID() >> 24);
+
               /* split and sort to left and right */
               //TriangleMesh* mesh = (TriangleMesh*) scene->get(prim.geomID());
               TriangleMesh* mesh = (TriangleMesh*) scene->get(prim.geomID() & 0x00FFFFFF); // FIXME: hack !!

@@ -120,37 +120,54 @@ namespace embree
         {
           const PrimRef prim = prims[i];
           //TriangleMesh* mesh = (TriangleMesh*) scene->get(prim.geomID());
-          TriangleMesh* mesh = (TriangleMesh*) scene->get(prim.geomID() & 0x00FFFFFF); // FIXME: hack !!
-          TriangleMesh::Triangle tri = mesh->triangle(prim.primID());
-          const Vec3fa v0 = mesh->vertex(tri.v[0]);
-          const Vec3fa v1 = mesh->vertex(tri.v[1]);
-          const Vec3fa v2 = mesh->vertex(tri.v[2]);
-          const ssei bin0 = mapping.bin(prim.bounds().lower);
-          const ssei bin1 = mapping.bin(prim.bounds().upper);
-          
-          for (size_t dim=0; dim<3; dim++) 
+          unsigned geomID = prim.geomID() & 0x00FFFFFF; // FIXME: hack !!
+          unsigned splits = prim.geomID() >> 24;
+
+          if (splits == 0)
           {
-            size_t bin;
-            PrimRef rest = prim;
-            size_t l = bin0[dim];
-            size_t r = bin1[dim];
-            for (bin=bin0[dim]; bin<bin1[dim]; bin++) 
+            const ssei bin = mapping.bin(center(prim.bounds()));
+            for (size_t dim=0; dim<3; dim++) 
             {
-              const float pos = mapping.pos(bin+1,dim);
-              
-              PrimRef left,right;
-              splitTriangle(rest,dim,pos,v0,v1,v2,left,right);
-              if (left.bounds().empty()) l++;
-              
-              bounds[bin][dim].extend(left.bounds());
-              rest = right;
+              assert(bin[dim] >= 0 && bin[dim] < BINS);
+              numBegin[bin[dim]][dim]++;
+              numEnd  [bin[dim]][dim]++;
+              bounds  [bin[dim]][dim].extend(prim.bounds());
             }
-            if (rest.bounds().empty()) r--;
-            //numBegin[bin0[dim]][dim]++;
-            //numEnd  [bin1[dim]][dim]++;
-            numBegin[l][dim]++;
-            numEnd  [r][dim]++;
-            bounds  [bin][dim].extend(rest.bounds());
+          } 
+          else
+          {
+            TriangleMesh* mesh = (TriangleMesh*) scene->get(geomID); 
+            TriangleMesh::Triangle tri = mesh->triangle(prim.primID());
+            const Vec3fa v0 = mesh->vertex(tri.v[0]);
+            const Vec3fa v1 = mesh->vertex(tri.v[1]);
+            const Vec3fa v2 = mesh->vertex(tri.v[2]);
+            const ssei bin0 = mapping.bin(prim.bounds().lower);
+            const ssei bin1 = mapping.bin(prim.bounds().upper);
+            
+            for (size_t dim=0; dim<3; dim++) 
+            {
+              size_t bin;
+              PrimRef rest = prim;
+              size_t l = bin0[dim];
+              size_t r = bin1[dim];
+              for (bin=bin0[dim]; bin<bin1[dim]; bin++) 
+              {
+                const float pos = mapping.pos(bin+1,dim);
+                
+                PrimRef left,right;
+                splitTriangle(rest,dim,pos,v0,v1,v2,left,right);
+                if (left.bounds().empty()) l++;
+                
+                bounds[bin][dim].extend(left.bounds());
+                rest = right;
+              }
+              if (rest.bounds().empty()) r--;
+              //numBegin[bin0[dim]][dim]++;
+              //numEnd  [bin1[dim]][dim]++;
+              numBegin[l][dim]++;
+              numEnd  [r][dim]++;
+              bounds  [bin][dim].extend(rest.bounds());
+            }
           }
         }
       }
