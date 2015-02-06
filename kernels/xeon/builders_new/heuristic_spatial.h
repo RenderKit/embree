@@ -114,7 +114,8 @@ namespace embree
       }
       
       /*! bins an array of triangles */
-      __forceinline void bin(Scene* scene, const PrimRef* prims, size_t N, const PrimInfo& pinfo, const SpatialBinMapping<BINS>& mapping)
+      template<typename SplitPrimitive>
+        __forceinline void bin(const SplitPrimitive& splitPrimitive, const PrimRef* prims, size_t N, const PrimInfo& pinfo, const SpatialBinMapping<BINS>& mapping)
       {
         for (size_t i=0; i<N; i++)
         {
@@ -136,11 +137,11 @@ namespace embree
           } 
           else
           {
-            TriangleMesh* mesh = (TriangleMesh*) scene->get(geomID); 
-            TriangleMesh::Triangle tri = mesh->triangle(prim.primID());
-            const Vec3fa v0 = mesh->vertex(tri.v[0]);
-            const Vec3fa v1 = mesh->vertex(tri.v[1]);
-            const Vec3fa v2 = mesh->vertex(tri.v[2]);
+            //TriangleMesh* mesh = (TriangleMesh*) scene->get(geomID); 
+            //TriangleMesh::Triangle tri = mesh->triangle(prim.primID());
+            //const Vec3fa v0 = mesh->vertex(tri.v[0]);
+            //const Vec3fa v1 = mesh->vertex(tri.v[1]);
+            //const Vec3fa v2 = mesh->vertex(tri.v[2]);
             const ssei bin0 = mapping.bin(prim.bounds().lower);
             const ssei bin1 = mapping.bin(prim.bounds().upper);
             
@@ -155,7 +156,8 @@ namespace embree
                 const float pos = mapping.pos(bin+1,dim);
                 
                 PrimRef left,right;
-                splitTriangle(rest,dim,pos,v0,v1,v2,left,right);
+                //splitTriangle(rest,dim,pos,v0,v1,v2,left,right);
+                splitPrimitive(rest,dim,pos,left,right);
                 if (left.bounds().empty()) l++;
                 
                 bounds[bin][dim].extend(left.bounds());
@@ -173,8 +175,9 @@ namespace embree
       }
       
       /*! bins a range of primitives inside an array */
-      void bin(Scene* scene, const PrimRef* prims, size_t begin, size_t end, const SpatialBinMapping<BINS>& mapping) {
-	bin(scene,prims+begin,end-begin,mapping);
+      template<typename SplitPrimitive>
+        void bin(const SplitPrimitive& splitPrimitive, const PrimRef* prims, size_t begin, size_t end, const SpatialBinMapping<BINS>& mapping) {
+	bin(splitPrimitive,prims+begin,end-begin,mapping);
       }
       
       /*! merges in other binning information */

@@ -346,6 +346,15 @@ namespace embree
 
 	    BVH4::NodeRef root = bvh_builder_spatial_sah2_internal<BVH4::NodeRef>
 	      (scene,CreateAlloc(bvh),CreateListBVH4Node(bvh),CreateListLeaf<Primitive>(bvh),
+               [&] (const PrimRef& prim, int dim, float pos, PrimRef& left_o, PrimRef& right_o)
+               {
+                TriangleMesh* mesh = (TriangleMesh*) scene->get(prim.geomID() & 0x00FFFFFF); 
+                TriangleMesh::Triangle tri = mesh->triangle(prim.primID());
+                const Vec3fa v0 = mesh->vertex(tri.v[0]);
+                const Vec3fa v1 = mesh->vertex(tri.v[1]);
+                const Vec3fa v2 = mesh->vertex(tri.v[2]);
+                splitTriangle(prim,dim,pos,v0,v1,v2,left_o,right_o);
+              },
 	       prims,pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,sahBlockSize,minLeafSize,maxLeafSize,BVH4::travCost,intCost);
 	    bvh->set(root,pinfo.geomBounds,pinfo.size());
 

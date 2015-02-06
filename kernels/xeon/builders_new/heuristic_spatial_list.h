@@ -24,7 +24,7 @@ namespace embree
   namespace isa
   {
     /*! Performs standard object binning */
-    template<typename PrimRef, size_t BINS = 16>
+    template<typename SplitPrimitive, typename PrimRef, size_t BINS = 16>
       struct HeuristicSpatialBlockListBinningSAH
       {
         typedef SpatialBinSplit<BINS> Split;
@@ -34,8 +34,8 @@ namespace embree
         __forceinline HeuristicSpatialBlockListBinningSAH () {}
 
         /*! remember scene for later splits */
-        __forceinline HeuristicSpatialBlockListBinningSAH (Scene* scene) 
-          : scene(scene) {}
+        __forceinline HeuristicSpatialBlockListBinningSAH (const SplitPrimitive& splitPrimitive) 
+          : splitPrimitive(splitPrimitive) {}
         
         /*! finds the best split */
         const Split find(Set& set, const PrimInfo& pinfo, const size_t logBlockSize)
@@ -52,7 +52,7 @@ namespace embree
           const SpatialBinMapping<BINS> mapping(pinfo);
           PrimRefList::iterator i=prims;
           while (PrimRefList::item* block = i.next())
-            binner.bin(scene,block->base(),block->size(),pinfo,mapping);
+            binner.bin(splitPrimitive,block->base(),block->size(),pinfo,mapping);
           return binner.best(pinfo,mapping,logBlockSize);
         }
         
@@ -117,15 +117,16 @@ namespace embree
 
               /* split and sort to left and right */
               //TriangleMesh* mesh = (TriangleMesh*) scene->get(prim.geomID());
-              TriangleMesh* mesh = (TriangleMesh*) scene->get(prim.geomID() & 0x00FFFFFF); // FIXME: hack !!
-              TriangleMesh::Triangle tri = mesh->triangle(prim.primID());
-              const Vec3fa v0 = mesh->vertex(tri.v[0]);
-              const Vec3fa v1 = mesh->vertex(tri.v[1]);
-              const Vec3fa v2 = mesh->vertex(tri.v[2]);
+              //TriangleMesh* mesh = (TriangleMesh*) scene->get(prim.geomID() & 0x00FFFFFF); // FIXME: hack !!
+              //TriangleMesh::Triangle tri = mesh->triangle(prim.primID());
+              //const Vec3fa v0 = mesh->vertex(tri.v[0]);
+              //const Vec3fa v1 = mesh->vertex(tri.v[1]);
+              //const Vec3fa v2 = mesh->vertex(tri.v[2]);
               
               PrimRef left,right;
               float fpos = split.mapping.pos(split.pos,split.dim);
-              splitTriangle(prim,split.dim,fpos,v0,v1,v2,left,right);
+              //splitTriangle(prim,split.dim,fpos,v0,v1,v2,left,right);
+              splitPrimitive(prim,split.dim,fpos,left,right);
               int lsplits = splits/2, rsplits = lsplits+splits%2;
               
               if (!left.bounds().empty()) 
@@ -196,7 +197,7 @@ namespace embree
         }
 
       private:
-        Scene* scene;
+        const SplitPrimitive& splitPrimitive;
       };
   }
 }

@@ -27,7 +27,7 @@ namespace embree
   namespace isa
   {
     /*! Performs standard object binning */
-    template<typename PrimRef, size_t BINS = 32>
+    template<typename PrimRef, typename SplitPrimitive, size_t BINS = 32>
       struct HeuristicSpatialSplitAndObjectSplitBlockListBinningSAH
       {
         typedef BinSplit<BINS> ObjectSplit;
@@ -78,8 +78,8 @@ namespace embree
         }
 
         /*! remember scene for later splits */
-        __forceinline HeuristicSpatialSplitAndObjectSplitBlockListBinningSAH (Scene* scene) 
-          : spatial_binning(scene) {}
+        __forceinline HeuristicSpatialSplitAndObjectSplitBlockListBinningSAH (const SplitPrimitive& splitPrimitive) 
+          : spatial_binning(splitPrimitive) {}
         
         /*! finds the best split */
         const Split find(Set& set, const PrimInfo& pinfo, const size_t logBlockSize)
@@ -111,7 +111,7 @@ namespace embree
 
       private:
         HeuristicListBinningSAH<PrimRef> object_binning;
-        HeuristicSpatialBlockListBinningSAH<PrimRef> spatial_binning;
+        HeuristicSpatialBlockListBinningSAH<SplitPrimitive,PrimRef> spatial_binning;
       };
   }
 }

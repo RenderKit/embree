@@ -323,8 +323,8 @@ namespace embree
       return root;
     }
 
-    template<typename NodeRef, typename CreateAllocFunc, typename CreateNodeFunc, typename CreateLeafFunc>
-      NodeRef bvh_builder_spatial_sah2_internal(Scene* scene, CreateAllocFunc createAlloc, CreateNodeFunc createNode, CreateLeafFunc createLeaf, 
+    template<typename NodeRef, typename CreateAllocFunc, typename CreateNodeFunc, typename CreateLeafFunc, typename SplitPrimitiveFunc>
+      NodeRef bvh_builder_spatial_sah2_internal(Scene* scene, CreateAllocFunc createAlloc, CreateNodeFunc createNode, CreateLeafFunc createLeaf, SplitPrimitiveFunc splitPrimitive,
                                                PrimRefList& prims, const PrimInfo& pinfo, 
                                                const size_t branchingFactor, const size_t maxDepth, const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize,
                                                const float travCost, const float intCost)
@@ -333,7 +333,7 @@ namespace embree
       assert((blockSize ^ (1L << logBlockSize)) == 0);
 
       //HeuristicListBinningSAH<PrimRef> heuristic;
-      HeuristicSpatialSplitAndObjectSplitBlockListBinningSAH<PrimRef> heuristic(scene);
+      HeuristicSpatialSplitAndObjectSplitBlockListBinningSAH<PrimRef,SplitPrimitiveFunc> heuristic(splitPrimitive);
       
       auto updateNode = [] (int node, int*, size_t) -> int { return 0; };
       BVHBuilderSAH2<PrimRefList,NodeRef,decltype(heuristic),int,decltype(createAlloc()),CreateAllocFunc,CreateNodeFunc,decltype(updateNode),CreateLeafFunc> builder
