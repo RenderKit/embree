@@ -114,7 +114,6 @@ namespace embree
 	numAlignedNodes++;
 	AlignedNode* n = node.node();
 	bvhSAH += A*BVH4::travCostAligned;
-
 	depth = 0;
 	for (size_t i=0; i<BVH4::N; i++) {
 	  if (n->child(i) == BVH4::emptyNode) continue;
