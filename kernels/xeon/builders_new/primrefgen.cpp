@@ -111,12 +111,11 @@ namespace embree
     template<typename Mesh, size_t timeSteps>
       PrimInfo createPrimRefList(Scene* scene, PrimRefList& prims_o)
     {
-      PrimRefList::item* block = prims_o.insert(new PrimRefList::item); 
-
       Scene::Iterator<Mesh,timeSteps> iter(scene);
       PrimInfo pinfo = parallel_for_for_reduce( iter, PrimInfo(empty), [&](Mesh* mesh, const range<size_t>& r, size_t k) -> PrimInfo
       {
         PrimInfo pinfo(empty);
+        PrimRefList::item* block = prims_o.insert(new PrimRefList::item); // FIXME: should store last block in thread local variable!?
         for (size_t j=r.begin(); j<r.end(); j++)
         {
           BBox3fa bounds = empty;

@@ -46,8 +46,9 @@ namespace embree
           Binner binner(empty);
           const BinMapping<BINS> mapping(pinfo);
           typename Set::iterator i=set;
-          while (typename Set::item* block = i.next())
+          while (typename Set::item* block = i.next()) {
             binner.bin(block->base(),block->size(),mapping);
+          }
           return binner.best(mapping,logBlockSize);
         }
 
