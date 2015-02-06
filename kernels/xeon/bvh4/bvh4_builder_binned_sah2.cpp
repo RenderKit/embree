@@ -294,6 +294,34 @@ namespace embree
 	    //PrimInfo pinfo = mesh ? createPrimRefArray<Mesh>(mesh,prims) : createPrimRefArray<Mesh,1>(scene,prims);
             PrimRefList prims;
             PrimInfo pinfo = createPrimRefList<Mesh,1>(scene,prims);
+            //PRINT(pinfo.size());
+
+            /* calculate total surface area */
+            float A = 0.0f;
+            for (PrimRefList::block_iterator_unsafe iter = prims; iter; iter++) {
+              A += area(*iter);
+              iter++;
+            }
+
+            /* try to calculate a number of splits per primitive, such that
+             * we do not generate more primitives than the size of the prims
+             * array */
+            float spatialSplitFactor = 1.5f;
+            float f = spatialSplitFactor/0.9f;
+            size_t N = 0;
+            do {
+              f *= 0.9f;
+              N = 0;
+              
+              for (PrimRefList::block_iterator_unsafe iter = prims; iter; iter++) {
+                const float nf = ceil(f*pinfo.size()*area(*iter)/A);
+                const size_t n = min(ssize_t(255), max(ssize_t(1), ssize_t(nf)));
+                N+=n;
+              }
+            } while (N>spatialSplitFactor*pinfo.size());
+
+            //PRINT(spatialSplitFactor*pinfo.size());
+            //PRINT(N);
 
             /*vector_t<std::pair<int,int>> geomIDprimID;
             geomIDprimID.resize(pinfo.size());
@@ -303,12 +331,14 @@ namespace embree
               geomIDprimID[i].second = iter->upper.a;
               iter->lower.a = i;
               iter->upper.a = 16;
+              iter++;
               }*/
 
-            PrimRefList::block_iterator_unsafe iter = prims;
-            for (size_t i=0; i<pinfo.size(); i++, iter++) {
+            for (PrimRefList::block_iterator_unsafe iter = prims; iter; iter++) {
               assert((iter->lower.a & 0xFF000000) == 0);
-              iter->lower.a |= 0x10000000;
+              const float nf = ceil(f*pinfo.size()*area(*iter)/A);
+              const size_t n = min(ssize_t(255), max(ssize_t(1), ssize_t(nf)));
+              iter->lower.a |= n << 24;
             }
 
             //if (presplitFactor > 1.0f)

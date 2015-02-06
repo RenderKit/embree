@@ -77,7 +77,7 @@ namespace embree
           PrimRefList::item* rblock = rprims_o.insert(new PrimRefList::item);
           linfo_o.reset();
           rinfo_o.reset();
-          
+
           /* sort each primitive to left, right, or left and right */
           while (PrimRefList::item* block = prims.take()) 
           {
@@ -88,13 +88,12 @@ namespace embree
               int bin0 = split.mapping.bin(bounds.lower)[split.dim];
               int bin1 = split.mapping.bin(bounds.upper)[split.dim];
 
-              if ((prim.geomID() >> 24) == 0) {
+              const int splits = prim.geomID() >> 24;
+              if (splits == 0) {
                 const ssei bin = split.mapping.bin(center(prim.bounds()));
                 bin0 = bin1 = bin[split.dim];
-              } else {
-                prim.lower.a -= 0x01000000;
               }
-              
+
               /* sort to the left side */
               if (bin1 < split.pos)
               {
@@ -127,8 +126,12 @@ namespace embree
               PrimRef left,right;
               float fpos = split.mapping.pos(split.pos,split.dim);
               splitTriangle(prim,split.dim,fpos,v0,v1,v2,left,right);
+              int lsplits = splits/2, rsplits = lsplits+splits%2;
               
-              if (!left.bounds().empty()) {
+              if (!left.bounds().empty()) 
+              {
+                left.lower.a = (left.lower.a & 0x00FFFFFF) | (lsplits << 24);
+                
                 linfo_o.add(left.bounds(),center2(left.bounds()));
                 if (!lblock->insert(left)) {
                   lblock = lprims_o.insert(new PrimRefList::item);
@@ -136,7 +139,10 @@ namespace embree
                 }
               }
               
-              if (!right.bounds().empty()) {
+              if (!right.bounds().empty()) 
+              {
+                right.lower.a = (right.lower.a & 0x00FFFFFF) | (rsplits << 24);
+
                 rinfo_o.add(right.bounds(),center2(right.bounds()));
                 if (!rblock->insert(right)) {
                   rblock = rprims_o.insert(new PrimRefList::item);
