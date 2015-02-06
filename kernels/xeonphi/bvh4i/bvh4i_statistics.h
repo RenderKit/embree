@@ -56,7 +56,8 @@ namespace embree
   {
     numNodes = numLeaves = numPrimBlocks = numPrimBlocks4 = numPrims = depth = 0;
     numValidBoxes = 0;
-    bvhSAH = halfArea(bvh->bounds);
+    bvhSAH =  0.0f; // halfArea(bvh->bounds);
+    DBG_PRINT( halfArea(bvh->bounds) );
     leafSAH = 0.0f;
     if (bvh->root != BVH4i::invalidNode)
       statistics(bvh->root,bvh->bounds,depth);
@@ -133,7 +134,6 @@ namespace embree
 	    depth=max(depth,cdepth);
 	  }
 	  depth++;
-	  return;
 	}
       else
 	{
