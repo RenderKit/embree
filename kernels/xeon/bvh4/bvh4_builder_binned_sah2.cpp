@@ -61,6 +61,8 @@ namespace embree
       BVH4* bvh;
     };
 
+    //BVH4::NodeRef lastLeaf;
+
     template<typename Primitive>
     struct CreateLeaf
     {
@@ -75,6 +77,7 @@ namespace embree
         for (size_t i=0; i<items; i++) {
           accel[i].fill(prims,start,current.prims.end(),bvh->scene,false);
         }
+        //lastLeaf = node;
         *current.parent = node;
 	return 1;
       }
@@ -140,6 +143,7 @@ namespace embree
 	      (CreateAlloc(bvh),CreateBVH4Node(bvh),CreateLeaf<Primitive>(bvh,prims.data()),
 	       prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,sahBlockSize,minLeafSize,maxLeafSize,BVH4::travCost,intCost);
 	    bvh->set(root,pinfo.geomBounds,pinfo.size());
+            //bvh->set(lastLeaf,pinfo.geomBounds,pinfo.size());
 
 	    if (g_verbose >= 1 && mesh == NULL) dt = getSeconds()-t0;
 

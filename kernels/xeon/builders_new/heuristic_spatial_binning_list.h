@@ -36,11 +36,27 @@ namespace embree
         
         struct Split
         {
-          bool spatial;
-          float sah;
+          __forceinline Split () {}
+
+          __forceinline Split (const Split& other) 
+          {
+            spatial = other.spatial;
+            sah = other.sah;
+            if (spatial) spatialSplit = other.spatialSplit;
+            else         objectSplit = other.objectSplit;
+          }
+
+          __forceinline Split& operator= (const Split& other) 
+          {
+            spatial = other.spatial;
+            sah = other.sah;
+            if (spatial) spatialSplit = other.spatialSplit;
+            else         objectSplit = other.objectSplit;
+            return *this;
+          }
 
           __forceinline Split (const ObjectSplit& objectSplit, float sah)
-            : spatial(false), sah(sah), objectSplit(objectSplit) {}
+              : spatial(false), sah(sah), objectSplit(objectSplit) {}
 
           __forceinline Split (const SpatialSplit& spatialSplit, float sah)
             : spatial(true), sah(sah), spatialSplit(spatialSplit) {}
@@ -49,6 +65,9 @@ namespace embree
             return sah; 
           }
 
+        public:
+          bool spatial;
+          float sah;
           union {
             ObjectSplit objectSplit;
             SpatialSplit spatialSplit;
@@ -63,7 +82,7 @@ namespace embree
           : spatial_binning(scene) {}
         
         /*! finds the best split */
-        const Split find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize)
+        const Split find(Set& set, const PrimInfo& pinfo, const size_t logBlockSize)
         {
           const ObjectSplit  objectSplit  = object_binning.find(set,pinfo,logBlockSize);
           const SpatialSplit spatialSplit = spatial_binning.find(set,pinfo,logBlockSize);
@@ -74,14 +93,20 @@ namespace embree
         }
         
         /*! splits a list of primitives */
-        void split(const Split& split, const PrimInfo& pinfo, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset) 
+        void split(const Split& split, const PrimInfo& pinfo, Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset) 
         {
           if (split.spatial) return spatial_binning.split(split.spatialSplit,pinfo,set,left,lset,right,rset);
           else               return  object_binning.split(split.objectSplit ,pinfo,set,left,lset,right,rset);
         }
 
-        void splitFallback(const Set& prims, PrimInfo& linfo_o, Set& lprims_o, PrimInfo& rinfo_o, Set& rprims_o) {
-          object_binning.splitFallback(prims,linfo_o,lprims_o,rinfo_i,rprims_o);
+        __forceinline void deterministic_order(const Set& set) 
+        {
+          /* required as parallel partition destroys original primitive order */
+          //std::sort(&prims[set.begin()],&prims[set.end()]);
+        }
+
+        void splitFallback(Set& prims, PrimInfo& linfo_o, Set& lprims_o, PrimInfo& rinfo_o, Set& rprims_o) {
+          object_binning.splitFallback(prims,linfo_o,lprims_o,rinfo_o,rprims_o);
         }
 
       private:

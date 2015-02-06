@@ -38,7 +38,7 @@ namespace embree
           : scene(scene) {}
         
         /*! finds the best split */
-        const Split find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize)
+        const Split find(Set& set, const PrimInfo& pinfo, const size_t logBlockSize)
         {
           //if (likely(pinfo.size() < 10000)) // FIXME: implement parallel code path
             return sequential_find(set,pinfo,logBlockSize);
@@ -46,18 +46,18 @@ namespace embree
         }
         
         /*! finds the best split */
-        const Split sequential_find(const Set& prims, const PrimInfo& pinfo, const size_t logBlockSize)
+        const Split sequential_find(Set& prims, const PrimInfo& pinfo, const size_t logBlockSize)
         {
           Binner binner(empty);
-          const BinMapping<BINS> mapping(pinfo);
-          Set::iterator i=prims;
-          while (Set::item* block = i.next())
-            bin(block->base(),block->size(),pinfo,mapping);
+          const SpatialBinMapping<BINS> mapping(pinfo);
+          PrimRefList::iterator i=prims;
+          while (PrimRefList::item* block = i.next())
+            binner.bin(scene,block->base(),block->size(),pinfo,mapping);
           return binner.best(pinfo,mapping,logBlockSize);
         }
         
         /*! splits a list of primitives */
-        void split(const Split& split, const PrimInfo& pinfo, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset) 
+        void split(const Split& split, const PrimInfo& pinfo, Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset) 
         {
           //if (likely(pinfo.size() < 10000)) // FIXME: implement parallel code path
             sequential_split(split,set,left,lset,right,rset);
@@ -65,7 +65,7 @@ namespace embree
         }
 
         /*! array partitioning */
-        void sequential_split(const Split& split, const Set& prims, 
+        void sequential_split(const Split& split, Set& prims, 
                               PrimInfo& linfo_o, Set& lprims_o, PrimInfo& rinfo_o, Set& rprims_o) 
         {
           if (!split.valid()) {
@@ -73,37 +73,37 @@ namespace embree
             return splitFallback(prims,linfo_o,lprims_o,rinfo_o,rprims_o);
           }
           
-          Set::item* lblock = lprims_o.insert(new Set::item);
-          Set::item* rblock = rprims_o.insert(new Set::item);
+          PrimRefList::item* lblock = lprims_o.insert(new PrimRefList::item);
+          PrimRefList::item* rblock = rprims_o.insert(new PrimRefList::item);
           linfo_o.reset();
           rinfo_o.reset();
           
           /* sort each primitive to left, right, or left and right */
-          while (Set::item* block = prims.take()) 
+          while (PrimRefList::item* block = prims.take()) 
           {
             for (size_t i=0; i<block->size(); i++) 
             {
               const PrimRef& prim = block->at(i); 
               const BBox3fa bounds = prim.bounds();
-              const int bin0 = mapping.bin(bounds.lower)[dim];
-              const int bin1 = mapping.bin(bounds.upper)[dim];
+              const int bin0 = split.mapping.bin(bounds.lower)[split.dim];
+              const int bin1 = split.mapping.bin(bounds.upper)[split.dim];
               
               /* sort to the left side */
-              if (bin1 < pos)
+              if (bin1 < split.pos)
               {
                 linfo_o.add(bounds,center2(bounds));
                 if (likely(lblock->insert(prim))) continue; 
-                lblock = lprims_o.insert(alloc.malloc(threadIndex));
+                lblock = lprims_o.insert(new PrimRefList::item);
                 lblock->insert(prim);
                 continue;
               }
               
               /* sort to the right side */
-              if (bin0 >= pos)
+              if (bin0 >= split.pos)
               {
                 rinfo_o.add(bounds,center2(bounds));
                 if (likely(rblock->insert(prim))) continue;
-                rblock = rprims_o.insert(alloc.malloc(threadIndex));
+                rblock = rprims_o.insert(new PrimRefList::item);
                 rblock->insert(prim);
                 continue;
               }
@@ -116,13 +116,13 @@ namespace embree
               const Vec3fa v2 = mesh->vertex(tri.v[2]);
               
               PrimRef left,right;
-              float fpos = mapping.pos(pos,dim);
-              splitTriangle(prim,dim,fpos,v0,v1,v2,left,right);
+              float fpos = split.mapping.pos(split.pos,split.dim);
+              splitTriangle(prim,split.dim,fpos,v0,v1,v2,left,right);
               
               if (!left.bounds().empty()) {
                 linfo_o.add(left.bounds(),center2(left.bounds()));
                 if (!lblock->insert(left)) {
-                  lblock = lprims_o.insert(alloc.malloc(threadIndex));
+                  lblock = lprims_o.insert(new PrimRefList::item);
                   lblock->insert(left);
                 }
               }
@@ -130,7 +130,7 @@ namespace embree
               if (!right.bounds().empty()) {
                 rinfo_o.add(right.bounds(),center2(right.bounds()));
                 if (!rblock->insert(right)) {
-                  rblock = rprims_o.insert(alloc.malloc(threadIndex));
+                  rblock = rprims_o.insert(new PrimRefList::item);
                   rblock->insert(right);
                 }
               }
@@ -145,16 +145,16 @@ namespace embree
         //std::sort(&prims[set.begin()],&prims[set.end()]);
         //}
 
-        void splitFallback(const Set& prims, PrimInfo& linfo_o, Set& lprims_o, PrimInfo& rinfo_o, Set& rprims_o)
+        void splitFallback(Set& prims, PrimInfo& linfo_o, Set& lprims_o, PrimInfo& rinfo_o, Set& rprims_o)
         {
           size_t num = 0;
           BBox3fa lbounds = empty, rbounds = empty;
-          Set::item* lblock = lprims_o.insert(new Set::item);
-          Set::item* rblock = rprims_o.insert(new Set::item);
+          PrimRefList::item* lblock = lprims_o.insert(new PrimRefList::item);
+          PrimRefList::item* rblock = rprims_o.insert(new PrimRefList::item);
           linfo_o.reset();
           rinfo_o.reset();
           
-          while (Set::item* block = prims.take()) 
+          while (PrimRefList::item* block = prims.take()) 
           {
             for (size_t i=0; i<block->size(); i++) 
             {
@@ -165,14 +165,14 @@ namespace embree
               {
                 linfo_o.add(bounds,prim.center2()); 
                 if (likely(lblock->insert(prim))) continue; 
-                lblock = lprims_o.insert(alloc.malloc(threadIndex));
+                lblock = lprims_o.insert(new PrimRefList::item);
                 lblock->insert(prim);
               } 
               else 
               {
                 rinfo_o.add(bounds,prim.center2()); 
                 if (likely(rblock->insert(prim))) continue;
-                rblock = rprims_o.insert(alloc.malloc(threadIndex));
+                rblock = rprims_o.insert(new PrimRefList::item);
                 rblock->insert(prim);
               }
             }

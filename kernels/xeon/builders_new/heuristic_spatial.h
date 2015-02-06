@@ -227,10 +227,10 @@ namespace embree
         
         /* return invalid split if no split found */
         if (bestDim == -1) 
-          return Split(inf,-1,0,mapping);
+          return SpatialBinSplit<BINS>(inf,-1,0,mapping);
         
         /* return best found split */
-        return Split(bestSAH,bestDim,bestPos,mapping);
+        return SpatialBinSplit<BINS>(bestSAH,bestDim,bestPos,mapping);
       }
       
     private:

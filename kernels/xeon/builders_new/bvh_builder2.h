@@ -204,7 +204,7 @@ namespace embree
             if (children[i].pinfo.size() <= minLeafSize) continue; 
             if (children[i].pinfo.size() > maxLeafSize) dSAH = min(0.0f,dSAH); //< force split for large jobs
             if (dSAH <= bestSAH) { bestChild = i; bestSAH = dSAH; }
-            //if (area(children[i].pinfo.geomBounds) > bestSAH) { bestChild = i; bestSAH = area(children[i].pinfo.geomBounds); }
+            //if (area(children[i].pinfo.geomBounds) > bestSAH) { bestChild = i; bestSAH = area(children[i].pinfo.geomBounds); } // FIXME: measure over all scenes if this line creates better tree
           }
           if (bestChild == -1) break;
           
@@ -332,8 +332,8 @@ namespace embree
       const size_t logBlockSize = __bsr(blockSize);
       assert((blockSize ^ (1L << logBlockSize)) == 0);
 
-      HeuristicListBinningSAH<PrimRef> heuristic;
-      //HeuristicSpatialSplitAndObjectSplitBlockListBinningSAH<PrimRef> heuristic(scene);
+      //HeuristicListBinningSAH<PrimRef> heuristic;
+      HeuristicSpatialSplitAndObjectSplitBlockListBinningSAH<PrimRef> heuristic(scene);
       
       auto updateNode = [] (int node, int*, size_t) -> int { return 0; };
       BVHBuilderSAH2<PrimRefList,NodeRef,decltype(heuristic),int,decltype(createAlloc()),CreateAllocFunc,CreateNodeFunc,decltype(updateNode),CreateLeafFunc> builder
