@@ -109,7 +109,8 @@ namespace embree
               }
               
               /* split and sort to left and right */
-              TriangleMesh* mesh = (TriangleMesh*) scene->get(prim.geomID());
+              //TriangleMesh* mesh = (TriangleMesh*) scene->get(prim.geomID());
+              TriangleMesh* mesh = (TriangleMesh*) scene->get(prim.geomID() & 0x00FFFFFF); // FIXME: hack !!
               TriangleMesh::Triangle tri = mesh->triangle(prim.primID());
               const Vec3fa v0 = mesh->vertex(tri.v[0]);
               const Vec3fa v1 = mesh->vertex(tri.v[1]);

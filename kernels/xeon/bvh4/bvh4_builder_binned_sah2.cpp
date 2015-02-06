@@ -218,6 +218,19 @@ namespace embree
         Primitive* leaf = (Primitive*) alloc->alloc1.malloc(N*sizeof(Primitive));
         BVH4::NodeRef node = bvh->encodeLeaf((char*)leaf,N);
 
+        /*PrimRefList::block_iterator_unsafe iter1(current.prims);
+        while (iter1) {
+          const int i = iter1->lower.a;
+          iter1->lower.a = geomIDprimID[i].first;
+          iter1->upper.a = geomIDprimID[i].second;
+          iter1++;
+          }*/
+        PrimRefList::block_iterator_unsafe iter1(current.prims);
+        while (iter1) {
+          iter1->lower.a &= 0x00FFFFFF; // FIXME: hack
+          iter1++;
+        }
+
         /* insert all triangles */
         PrimRefList::block_iterator_unsafe iter(current.prims);
         for (size_t i=0; i<N; i++) leaf[i].fill(iter,bvh->scene,false);
@@ -226,12 +239,13 @@ namespace embree
         /* free all primitive blocks */
         while (PrimRefList::item* block = current.prims.take())
           delete block;
-        
+
         *current.parent = node;
 	return 1;
       }
 
       BVH4* bvh;
+      //const vector_t<std::pair<int,int>>& geomIDprimID;
     };
 
     template<typename Mesh, typename Primitive>
@@ -280,6 +294,22 @@ namespace embree
 	    //PrimInfo pinfo = mesh ? createPrimRefArray<Mesh>(mesh,prims) : createPrimRefArray<Mesh,1>(scene,prims);
             PrimRefList prims;
             PrimInfo pinfo = createPrimRefList<Mesh,1>(scene,prims);
+
+            /*vector_t<std::pair<int,int>> geomIDprimID;
+            geomIDprimID.resize(pinfo.size());
+            PrimRefList::block_iterator_unsafe iter = prims;
+            for (size_t i=0; i<pinfo.size(); i++) {
+              geomIDprimID[i].first  = iter->lower.a;
+              geomIDprimID[i].second = iter->upper.a;
+              iter->lower.a = i;
+              iter->upper.a = 16;
+              }*/
+
+            PrimRefList::block_iterator_unsafe iter = prims;
+            for (size_t i=0; i<pinfo.size(); i++, iter++) {
+              assert((iter->lower.a & 0xFF000000) == 0);
+              iter->lower.a |= 0x10000000;
+            }
 
             //if (presplitFactor > 1.0f)
             //pinfo = presplit<Mesh>(scene, pinfo, prims);
