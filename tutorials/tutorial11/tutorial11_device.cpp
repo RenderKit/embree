@@ -15,6 +15,7 @@
 // ======================================================================== //
 
 #include "../common/tutorial/tutorial_device.h"
+#include "kernels/common/alloc.h"
 #include "kernels/xeon/builders_new/bvh_builder.h"
 #include "kernels/xeon/builders_new/bvh_builder_morton.h"
 #include "kernels/xeon/builders/priminfo.h"
@@ -121,7 +122,7 @@ void build_sah(std::vector<PrimRef>& prims, isa::PrimInfo& pinfo)
       },
 
       /* lambda function that creates BVH leaves */
-      [&](const isa::BuildRecord<Node*>& current, PrimRef* prims, FastAllocator::ThreadLocal* alloc) 
+      [&](const isa::BuildRecord<Node*>& current, FastAllocator::ThreadLocal* alloc) 
       {
         assert(current.size() == 1);
         Node* node = new (alloc->malloc(sizeof(LeafNode))) LeafNode(prims[current.begin].ID(),prims[current.begin].bounds());

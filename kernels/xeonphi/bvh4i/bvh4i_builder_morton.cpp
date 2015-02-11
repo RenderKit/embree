@@ -1219,7 +1219,7 @@ namespace embree
     /* sort morton codes */
     TIMER(msec = getSeconds());
     scene->lockstep_scheduler.dispatchTask( task_radixsort_block, this, threadIndex, threadCount);
-    //radix_sort_copy_u32((MortonID32Bit*)morton,(MortonID32Bit*)node,numPrimitives);
+    //radix_sort_u32((MortonID32Bit*)morton,(MortonID32Bit*)node,numPrimitives);
     //quicksort_ascending(dest,0,numPrimitives);
     //exit(0);
 

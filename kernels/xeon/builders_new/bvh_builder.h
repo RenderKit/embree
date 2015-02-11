@@ -17,8 +17,7 @@
 #pragma once
 
 #include "tasking/taskscheduler_new.h"
-#include "builders_new/heuristic_binning.h"
-#include "algorithms/parallel_create_tree.h"
+#include "builders_new/heuristic_binning_array_aligned.h"
 
 namespace embree
 {
@@ -63,13 +62,13 @@ namespace embree
       BVHBuilderSAH (Heuristic& heuristic,
 		     const ReductionTy& identity,
 		     CreateAllocFunc& createAlloc, CreateNodeFunc& createNode, UpdateNodeFunc& updateNode, CreateLeafFunc& createLeaf,
-		     PrimRef* prims, const PrimInfo& pinfo,
+		     const PrimInfo& pinfo,
 		     const size_t branchingFactor, const size_t maxDepth, 
 		     const size_t logBlockSize, const size_t minLeafSize, const size_t maxLeafSize)
         : heuristic(heuristic), 
 	  identity(identity), 
 	  createAlloc(createAlloc), createNode(createNode), updateNode(updateNode), createLeaf(createLeaf), 
-          prims(prims), pinfo(pinfo), 
+          pinfo(pinfo), 
           branchingFactor(branchingFactor), maxDepth(maxDepth),
           logBlockSize(logBlockSize), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize)
       {
@@ -77,18 +76,11 @@ namespace embree
           THROW_RUNTIME_ERROR("bvh_builder: branching factor too large");
       }
 
-      __forceinline void splitSequential(const BuildRecord<NodeRef>& current, BuildRecord<NodeRef>& leftChild, BuildRecord<NodeRef>& rightChild)
+      __forceinline void split(const BuildRecord<NodeRef>& current, BuildRecord<NodeRef>& leftChild, BuildRecord<NodeRef>& rightChild)
       {
         const PrimInfo pinfo(current.size(),current.geomBounds,current.centBounds);
         const Split split = heuristic.find(current.prims,pinfo,logBlockSize);
-	heuristic.split(split, current.prims, leftChild, leftChild.prims, rightChild, rightChild.prims);
-      }
-
-      void splitParallel(const BuildRecord<NodeRef>& current, BuildRecord<NodeRef>& leftChild, BuildRecord<NodeRef>& rightChild)
-      {
-        const PrimInfo pinfo(current.size(),current.geomBounds,current.centBounds);
-        const Split split = heuristic.parallel_find(current.prims,pinfo,logBlockSize);
-	heuristic.parallel_split(split, current.prims, leftChild, leftChild.prims, rightChild, rightChild.prims);
+	heuristic.split(split, current, current.prims, leftChild, leftChild.prims, rightChild, rightChild.prims);
       }
 
       const ReductionTy createLargeLeaf(const BuildRecord<NodeRef>& current, Allocator alloc)
@@ -98,7 +90,7 @@ namespace embree
         
         /* create leaf for few primitives */
         if (current.size() <= maxLeafSize)
-          return createLeaf(current,prims,alloc);
+          return createLeaf(current,alloc);
 
         /* fill all children by always splitting the largest one */
 	ReductionTy values[MAX_BRANCHING_FACTOR];
@@ -194,8 +186,7 @@ namespace embree
           
           /*! split best child into left and right child */
           __aligned(64) BuildRecord<NodeRef> left, right;
-          if (children[bestChild].size() > 10000) splitParallel  (children[bestChild],left,right);
-          else                                    splitSequential(children[bestChild],left,right);
+          split(children[bestChild],left,right);
           
           /* add new children left and right */
           left.init(current.depth+1); 
@@ -252,7 +243,6 @@ namespace embree
       CreateLeafFunc& createLeaf;
       
     private:
-      PrimRef* prims;
       const PrimInfo& pinfo;
       const size_t branchingFactor;
       const size_t maxDepth;
@@ -272,7 +262,7 @@ namespace embree
       
       auto updateNode = [] (int node, int*, size_t) -> int { return 0; };
       BVHBuilderSAH<NodeRef,decltype(heuristic),int,decltype(createAlloc()),CreateAllocFunc,CreateNodeFunc,decltype(updateNode),CreateLeafFunc> builder
-        (heuristic,0,createAlloc,createNode,updateNode,createLeaf,prims,pinfo,branchingFactor,maxDepth,logBlockSize,minLeafSize,maxLeafSize);
+        (heuristic,0,createAlloc,createNode,updateNode,createLeaf,pinfo,branchingFactor,maxDepth,logBlockSize,minLeafSize,maxLeafSize);
 
       NodeRef root;
       BuildRecord<NodeRef> br(pinfo,1,&root);

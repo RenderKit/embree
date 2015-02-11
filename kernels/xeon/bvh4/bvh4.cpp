@@ -176,11 +176,12 @@ namespace embree
   
   DECLARE_TOPLEVEL_BUILDER(BVH4BuilderTopLevelBinnedSAH);
 
-  //DECLARE_SCENE_BUILDER(BVH4Bezier1vBuilder_OBB);
-  //DECLARE_SCENE_BUILDER(BVH4Bezier1iBuilder_OBB);
-  //DECLARE_SCENE_BUILDER(BVH4Bezier1iMBBuilder_OBB);
+  DECLARE_SCENE_BUILDER(BVH4Bezier1vBuilder_OBB_New);
+  DECLARE_SCENE_BUILDER(BVH4Bezier1iBuilder_OBB_New);
+  DECLARE_SCENE_BUILDER(BVH4Bezier1iMBBuilder_OBB_New);
   DECLARE_SCENE_BUILDER(BVH4Triangle1SceneBuilderBinnedSAH2);
   DECLARE_SCENE_BUILDER(BVH4Triangle4SceneBuilderBinnedSAH2);
+  DECLARE_SCENE_BUILDER(BVH4Triangle4SceneListBuilderBinnedSAH2);
   DECLARE_SCENE_BUILDER(BVH4Triangle8SceneBuilderBinnedSAH2);
   DECLARE_SCENE_BUILDER(BVH4Triangle1vSceneBuilderBinnedSAH2);
   DECLARE_SCENE_BUILDER(BVH4Triangle4vSceneBuilderBinnedSAH2);
@@ -307,11 +308,12 @@ namespace embree
 
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4BuilderTopLevelBinnedSAH);
 
-    //SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Bezier1vBuilder_OBB);
-    //SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Bezier1iBuilder_OBB);
-    //SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Bezier1iMBBuilder_OBB);
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Bezier1vBuilder_OBB_New);
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Bezier1iBuilder_OBB_New);
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Bezier1iMBBuilder_OBB_New);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle1SceneBuilderBinnedSAH2);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4SceneBuilderBinnedSAH2);
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4SceneListBuilderBinnedSAH2);
     SELECT_SYMBOL_AVX        (features,BVH4Triangle8SceneBuilderBinnedSAH2);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle1vSceneBuilderBinnedSAH2);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4vSceneBuilderBinnedSAH2);
@@ -737,7 +739,11 @@ namespace embree
   { 
     BVH4* accel = new BVH4(Bezier1vType::type,scene,LeafMode);
     Accel::Intersectors intersectors = BVH4Bezier1vIntersectors_OBB(accel);
+#if defined(TASKING_TBB) || defined(TASKING_TBB_INTERNAL)
+    Builder* builder = BVH4Bezier1vBuilder_OBB_New(accel,scene,MODE_HIGH_QUALITY); // FIXME: enable high quality mode
+#else
     Builder* builder = BVH4Bezier1vBuilder_OBB(accel,scene,LeafMode | (highQuality ? MODE_HIGH_QUALITY : 0));
+#endif
     return new AccelInstance(accel,builder,intersectors);
   }
 
@@ -745,7 +751,11 @@ namespace embree
   { 
     BVH4* accel = new BVH4(SceneBezier1i::type,scene,LeafMode);
     Accel::Intersectors intersectors = BVH4Bezier1iIntersectors_OBB(accel);
+#if defined(TASKING_TBB) || defined(TASKING_TBB_INTERNAL)
+    Builder* builder = BVH4Bezier1iBuilder_OBB_New(accel,scene,MODE_HIGH_QUALITY); // FIXME: enable high quality mode
+#else
     Builder* builder = BVH4Bezier1iBuilder_OBB(accel,scene,LeafMode | (highQuality ? MODE_HIGH_QUALITY : 0));
+#endif
     scene->needVertices = true;
     return new AccelInstance(accel,builder,intersectors);
   }
@@ -755,7 +765,11 @@ namespace embree
     scene->needVertices = true;
     BVH4* accel = new BVH4(Bezier1iMBType::type,scene,LeafMode);
     Accel::Intersectors intersectors = BVH4Bezier1iMBIntersectors_OBB(accel);
+#if defined(TASKING_TBB) || defined(TASKING_TBB_INTERNAL)
+    Builder* builder = BVH4Bezier1iMBBuilder_OBB_New(accel,scene,MODE_HIGH_QUALITY); // FIXME: support high quality mode
+#else
     Builder* builder = BVH4Bezier1iMBBuilder_OBB(accel,scene,LeafMode | (highQuality ? MODE_HIGH_QUALITY : 0));
+#endif
     return new AccelInstance(accel,builder,intersectors);
   }
 
@@ -766,10 +780,12 @@ namespace embree
     
     Builder* builder = NULL;
 #if defined(TASKING_TBB) || defined(TASKING_TBB_INTERNAL)
-    if      (g_tri_builder == "default"     ) builder = BVH4Triangle1SceneBuilderBinnedSAH2(accel,scene,LeafMode);
-    else if (g_tri_builder == "binned_sah"  ) builder = BVH4Triangle1SceneBuilderBinnedSAH(accel,scene,LeafMode);
-    else if (g_tri_builder == "binned_sah2" ) builder = BVH4Triangle1SceneBuilderBinnedSAH2(accel,scene,LeafMode);
-    else if (g_tri_builder == "morton"      ) builder = BVH4Triangle1SceneBuilderMortonGeneral(accel,scene,LeafMode);
+    if      (g_tri_builder == "default"             ) builder = BVH4Triangle1SceneBuilderBinnedSAH2(accel,scene,0);
+    else if (g_tri_builder == "binned_sah"          ) builder = BVH4Triangle1SceneBuilderBinnedSAH(accel,scene,0);
+    else if (g_tri_builder == "binned_sah2"         ) builder = BVH4Triangle1SceneBuilderBinnedSAH2(accel,scene,0);
+    else if (g_tri_builder == "binned_sah_presplit" ) builder = BVH4Triangle1SceneBuilderBinnedSAH(accel,scene,MODE_HIGH_QUALITY);
+    else if (g_tri_builder == "binned_sah2_presplit") builder = BVH4Triangle1SceneBuilderBinnedSAH2(accel,scene,MODE_HIGH_QUALITY);
+    else if (g_tri_builder == "morton"      ) builder = BVH4Triangle1SceneBuilderMortonGeneral(accel,scene,0);
 #else
     if      (g_tri_builder == "default"     ) builder = BVH4Triangle1Builder(accel,scene,LeafMode);
     else if (g_tri_builder == "spatialsplit") builder = BVH4Triangle1Builder(accel,scene,LeafMode | MODE_HIGH_QUALITY);
@@ -794,10 +810,13 @@ namespace embree
    
     Builder* builder = NULL;
 #if defined(TASKING_TBB) || defined(TASKING_TBB_INTERNAL)
-    if      (g_tri_builder == "default"     ) builder = BVH4Triangle4SceneBuilderBinnedSAH2(accel,scene,LeafMode);
-    else if (g_tri_builder == "binned_sah"  ) builder = BVH4Triangle4SceneBuilderBinnedSAH(accel,scene,LeafMode);
-    else if (g_tri_builder == "binned_sah2" ) builder = BVH4Triangle4SceneBuilderBinnedSAH2(accel,scene,LeafMode);
-    else if (g_tri_builder == "morton"      ) builder = BVH4Triangle4SceneBuilderMortonGeneral(accel,scene,LeafMode);
+    if      (g_tri_builder == "default"     ) builder = BVH4Triangle4SceneBuilderBinnedSAH2(accel,scene,0);
+    else if (g_tri_builder == "binned_sah"  ) builder = BVH4Triangle4SceneBuilderBinnedSAH(accel,scene,0);
+    else if (g_tri_builder == "binned_sah2" ) builder = BVH4Triangle4SceneBuilderBinnedSAH2(accel,scene,0);
+    else if (g_tri_builder == "list_binned_sah2" ) builder = BVH4Triangle4SceneListBuilderBinnedSAH2(accel,scene,0);
+    else if (g_tri_builder == "binned_sah_presplit" ) builder = BVH4Triangle4SceneBuilderBinnedSAH(accel,scene,MODE_HIGH_QUALITY);
+    else if (g_tri_builder == "binned_sah2_presplit") builder = BVH4Triangle4SceneBuilderBinnedSAH2(accel,scene,MODE_HIGH_QUALITY);
+    else if (g_tri_builder == "morton"      ) builder = BVH4Triangle4SceneBuilderMortonGeneral(accel,scene,0);
 #else
     if      (g_tri_builder == "default"     ) builder = BVH4Triangle4Builder(accel,scene,LeafMode);
     else if (g_tri_builder == "spatialsplit") builder = BVH4Triangle4Builder(accel,scene,LeafMode | MODE_HIGH_QUALITY);
@@ -824,10 +843,12 @@ namespace embree
    
     Builder* builder = NULL;
 #if defined(TASKING_TBB) || defined(TASKING_TBB_INTERNAL)
-    if      (g_tri_builder == "default"     ) builder = BVH4Triangle8SceneBuilderBinnedSAH2(accel,scene,LeafMode);
-    else if (g_tri_builder == "binned_sah"  ) builder = BVH4Triangle8SceneBuilderBinnedSAH(accel,scene,LeafMode);
-    else if (g_tri_builder == "binned_sah2" ) builder = BVH4Triangle8SceneBuilderBinnedSAH2(accel,scene,LeafMode);
-    else if (g_tri_builder == "morton"      ) builder = BVH4Triangle8SceneBuilderMortonGeneral(accel,scene,LeafMode);
+    if      (g_tri_builder == "default"     ) builder = BVH4Triangle8SceneBuilderBinnedSAH2(accel,scene,0);
+    else if (g_tri_builder == "binned_sah"  ) builder = BVH4Triangle8SceneBuilderBinnedSAH(accel,scene,0);
+    else if (g_tri_builder == "binned_sah2" ) builder = BVH4Triangle8SceneBuilderBinnedSAH2(accel,scene,0);
+    else if (g_tri_builder == "binned_sah_presplit"  ) builder = BVH4Triangle8SceneBuilderBinnedSAH(accel,scene,MODE_HIGH_QUALITY);
+    else if (g_tri_builder == "binned_sah2_presplit" ) builder = BVH4Triangle8SceneBuilderBinnedSAH2(accel,scene,MODE_HIGH_QUALITY);
+    else if (g_tri_builder == "morton"      ) builder = BVH4Triangle8SceneBuilderMortonGeneral(accel,scene,0);
 #else
     if      (g_tri_builder == "default"     ) builder = BVH4Triangle8Builder(accel,scene,LeafMode);
     else if (g_tri_builder == "spatialsplit") builder = BVH4Triangle8Builder(accel,scene,LeafMode | MODE_HIGH_QUALITY);
@@ -848,10 +869,12 @@ namespace embree
 
     Builder* builder = NULL;
 #if defined(TASKING_TBB) || defined(TASKING_TBB_INTERNAL)
-    if      (g_tri_builder == "default"     ) builder = BVH4Triangle1vSceneBuilderBinnedSAH2(accel,scene,LeafMode);
-    else if (g_tri_builder == "binned_sah"  ) builder = BVH4Triangle1vSceneBuilderBinnedSAH(accel,scene,LeafMode);
-    else if (g_tri_builder == "binned_sah2" ) builder = BVH4Triangle1vSceneBuilderBinnedSAH2(accel,scene,LeafMode);
-    else if (g_tri_builder == "morton"      ) builder = BVH4Triangle1vSceneBuilderMortonGeneral(accel,scene,LeafMode);
+    if      (g_tri_builder == "default"     ) builder = BVH4Triangle1vSceneBuilderBinnedSAH2(accel,scene,0);
+    else if (g_tri_builder == "binned_sah"  ) builder = BVH4Triangle1vSceneBuilderBinnedSAH(accel,scene,0);
+    else if (g_tri_builder == "binned_sah2" ) builder = BVH4Triangle1vSceneBuilderBinnedSAH2(accel,scene,0);
+    else if (g_tri_builder == "binned_sah_presplit"  ) builder = BVH4Triangle1vSceneBuilderBinnedSAH(accel,scene,MODE_HIGH_QUALITY);
+    else if (g_tri_builder == "binned_sah2_presplit" ) builder = BVH4Triangle1vSceneBuilderBinnedSAH2(accel,scene,MODE_HIGH_QUALITY);
+    else if (g_tri_builder == "morton"      ) builder = BVH4Triangle1vSceneBuilderMortonGeneral(accel,scene,0);
 #else
     if      (g_tri_builder == "default"     ) builder = BVH4Triangle1vBuilder(accel,scene,LeafMode);
     else if (g_tri_builder == "spatialsplit") builder = BVH4Triangle1vBuilder(accel,scene,LeafMode | MODE_HIGH_QUALITY);
@@ -870,8 +893,8 @@ namespace embree
     Accel::Intersectors intersectors = BVH4Triangle4vMBIntersectors(accel);
     Builder* builder = NULL;
 #if defined(TASKING_TBB) || defined(TASKING_TBB_INTERNAL)
-    if       (g_tri_builder_mb == "default"    ) builder = BVH4Triangle4vMBSceneBuilderBinnedSAH2(accel,scene,LeafMode);
-    else  if (g_tri_builder_mb == "binned_sah2") builder = BVH4Triangle4vMBSceneBuilderBinnedSAH2(accel,scene,LeafMode);
+    if       (g_tri_builder_mb == "default"    ) builder = BVH4Triangle4vMBSceneBuilderBinnedSAH2(accel,scene,0);
+    else  if (g_tri_builder_mb == "binned_sah2") builder = BVH4Triangle4vMBSceneBuilderBinnedSAH2(accel,scene,0);
     else THROW_RUNTIME_ERROR("unknown builder "+g_tri_builder_mb+" for BVH4<Triangle4vMB>");
 #else
     if       (g_tri_builder_mb == "default"    ) builder = BVH4Triangle4vMBBuilder(accel,scene,LeafMode);
@@ -892,10 +915,12 @@ namespace embree
 
     Builder* builder = NULL;
 #if defined(TASKING_TBB) || defined(TASKING_TBB_INTERNAL)
-    if      (g_tri_builder == "default"     ) builder = BVH4Triangle4vSceneBuilderBinnedSAH2(accel,scene,LeafMode);
-    else if (g_tri_builder == "binned_sah"  ) builder = BVH4Triangle4vSceneBuilderBinnedSAH(accel,scene,LeafMode);
-    else if (g_tri_builder == "binned_sah2" ) builder = BVH4Triangle4vSceneBuilderBinnedSAH2(accel,scene,LeafMode);
-    else if (g_tri_builder == "morton"      ) builder = BVH4Triangle4vSceneBuilderMortonGeneral(accel,scene,LeafMode);
+    if      (g_tri_builder == "default"     ) builder = BVH4Triangle4vSceneBuilderBinnedSAH2(accel,scene,0);
+    else if (g_tri_builder == "binned_sah"  ) builder = BVH4Triangle4vSceneBuilderBinnedSAH(accel,scene,0);
+    else if (g_tri_builder == "binned_sah2" ) builder = BVH4Triangle4vSceneBuilderBinnedSAH2(accel,scene,0);
+    else if (g_tri_builder == "binned_sah_presplit"  ) builder = BVH4Triangle4vSceneBuilderBinnedSAH(accel,scene,MODE_HIGH_QUALITY);
+    else if (g_tri_builder == "binned_sah2_presplit" ) builder = BVH4Triangle4vSceneBuilderBinnedSAH2(accel,scene,MODE_HIGH_QUALITY);
+    else if (g_tri_builder == "morton"      ) builder = BVH4Triangle4vSceneBuilderMortonGeneral(accel,scene,0);
 #else
     if      (g_tri_builder == "default"     ) builder = BVH4Triangle4vBuilder(accel,scene,LeafMode);
     else if (g_tri_builder == "spatialsplit") builder = BVH4Triangle4vBuilder(accel,scene,LeafMode | MODE_HIGH_QUALITY);
@@ -915,10 +940,12 @@ namespace embree
 
     Builder* builder = NULL;
 #if defined(TASKING_TBB) || defined(TASKING_TBB_INTERNAL)
-    if      (g_tri_builder == "default"     ) builder = BVH4Triangle4iSceneBuilderBinnedSAH2(accel,scene,LeafMode);
-    else if (g_tri_builder == "binned_sah"  ) builder = BVH4Triangle4iSceneBuilderBinnedSAH(accel,scene,LeafMode);
-    else if (g_tri_builder == "binned_sah2" ) builder = BVH4Triangle4iSceneBuilderBinnedSAH2(accel,scene,LeafMode);
-    else if (g_tri_builder == "morton"      ) builder = BVH4Triangle4iSceneBuilderMortonGeneral(accel,scene,LeafMode);
+    if      (g_tri_builder == "default"     ) builder = BVH4Triangle4iSceneBuilderBinnedSAH2(accel,scene,0);
+    else if (g_tri_builder == "binned_sah"  ) builder = BVH4Triangle4iSceneBuilderBinnedSAH(accel,scene,0);
+    else if (g_tri_builder == "binned_sah2" ) builder = BVH4Triangle4iSceneBuilderBinnedSAH2(accel,scene,0);
+    else if (g_tri_builder == "binned_sah_presplit"  ) builder = BVH4Triangle4iSceneBuilderBinnedSAH(accel,scene,MODE_HIGH_QUALITY);
+    else if (g_tri_builder == "binned_sah2_presplit" ) builder = BVH4Triangle4iSceneBuilderBinnedSAH2(accel,scene,MODE_HIGH_QUALITY);
+    else if (g_tri_builder == "morton"      ) builder = BVH4Triangle4iSceneBuilderMortonGeneral(accel,scene,0);
 #else
     if      (g_tri_builder == "default"     ) builder = BVH4Triangle4iBuilder(accel,scene,LeafMode);
     else if (g_tri_builder == "spatialsplit") builder = BVH4Triangle4iBuilder(accel,scene,LeafMode | MODE_HIGH_QUALITY);
@@ -1109,7 +1136,7 @@ namespace embree
   {
     BVH4* accel = new BVH4(Triangle1Type::type,scene,LeafMode);
 #if defined(TASKING_TBB) || defined(TASKING_TBB_INTERNAL)
-    Builder* builder = BVH4Triangle1SceneBuilderBinnedSAH2(accel,scene,LeafMode | MODE_HIGH_QUALITY); // FIXME: support spatial splits !!!!
+    Builder* builder = BVH4Triangle1SceneBuilderBinnedSAH2(accel,scene,MODE_HIGH_QUALITY); 
 #else
     Builder* builder = BVH4Triangle1Builder(accel,scene,LeafMode | MODE_HIGH_QUALITY);
 #endif
@@ -1121,7 +1148,7 @@ namespace embree
   {
     BVH4* accel = new BVH4(Triangle4Type::type,scene,LeafMode);
 #if defined(TASKING_TBB) || defined(TASKING_TBB_INTERNAL)
-    Builder* builder = BVH4Triangle4SceneBuilderBinnedSAH2(accel,scene,LeafMode | MODE_HIGH_QUALITY); // FIXME: support spatial splits !!!!
+    Builder* builder = BVH4Triangle4SceneBuilderBinnedSAH2(accel,scene,MODE_HIGH_QUALITY); 
 #else
     Builder* builder = BVH4Triangle4Builder(accel,scene,LeafMode | MODE_HIGH_QUALITY);
 #endif
@@ -1134,7 +1161,7 @@ namespace embree
   {
     BVH4* accel = new BVH4(Triangle8Type::type,scene,LeafMode);
 #if defined(TASKING_TBB) || defined(TASKING_TBB_INTERNAL)
-    Builder* builder = BVH4Triangle8SceneBuilderBinnedSAH2(accel,scene,LeafMode | MODE_HIGH_QUALITY); // FIXME: support spatial splits !!!!
+    Builder* builder = BVH4Triangle8SceneBuilderBinnedSAH2(accel,scene,MODE_HIGH_QUALITY);
 #else
     Builder* builder = BVH4Triangle8Builder(accel,scene,LeafMode | MODE_HIGH_QUALITY);
 #endif

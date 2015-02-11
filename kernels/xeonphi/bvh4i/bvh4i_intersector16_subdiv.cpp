@@ -590,6 +590,8 @@ namespace embree
 	    }
 #endif
 
+#if FORCE_TRIANGLE_UV == 0
+
 	  const Vec2f uv0 = subdiv_patch.getUV(0);
 	  const Vec2f uv1 = subdiv_patch.getUV(1);
 	  const Vec2f uv2 = subdiv_patch.getUV(2);
@@ -599,6 +601,7 @@ namespace embree
 	  const float patch_v = bilinear_interpolate(uv0.y,uv1.y,uv2.y,uv3.y,ray16.u[rayIndex],ray16.v[rayIndex]);
 	  ray16.u[rayIndex] = patch_u;
 	  ray16.v[rayIndex] = patch_v;
+#endif
 	}
 
     }

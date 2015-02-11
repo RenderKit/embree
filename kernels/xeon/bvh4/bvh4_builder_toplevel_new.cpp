@@ -146,7 +146,7 @@ namespace embree
            *current.parent = bvh->encodeNode(node);
            return 0;
          },
-         [&] (const BuildRecord<BVH4::NodeRef>& current, PrimRef* prims, FastAllocator::ThreadLocal2* alloc) // FIXME: why are prims passed here but not for createNode
+         [&] (const BuildRecord<BVH4::NodeRef>& current, FastAllocator::ThreadLocal2* alloc) // FIXME: why are prims passed here but not for createNode
          {
            assert(current.prims.size() == 1);
            *current.parent = (BVH4::NodeRef) prims[current.prims.begin()].ID();

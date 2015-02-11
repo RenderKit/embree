@@ -19,6 +19,7 @@
 #include "common/scene.h"
 #include "common/primref.h"
 #include "builders/priminfo.h"
+#include "geometry/bezier1v.h"
 
 namespace embree
 {
@@ -29,6 +30,12 @@ namespace embree
 
     template<typename Mesh, size_t timeSteps>
       PrimInfo createPrimRefArray(Scene* scene, vector_t<PrimRef>& prims);
+
+    template<typename Mesh, size_t timeSteps>
+      PrimInfo createPrimRefList(Scene* scene, PrimRefList& prims);
+
+    template<size_t timeSteps>
+      PrimInfo createBezierRefArray(Scene* scene, vector_t<BezierPrim>& prims);
   }
 }
 

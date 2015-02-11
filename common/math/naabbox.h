@@ -23,7 +23,7 @@ namespace embree
 {
   /*! Non-axis aligned bounds */
   template<typename T>
-    struct NAABBox
+    struct NAABBox // FIXME: rename to OBB
   {
   public:
     

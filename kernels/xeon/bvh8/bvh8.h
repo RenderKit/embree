@@ -231,10 +231,15 @@ namespace embree
     /*! initializes the acceleration structure */
     void init(size_t nodeSize, size_t numPrimitives, size_t numThreads);
 
+    void set (NodeRef root, const BBox3fa& bounds, size_t numPrimitives);
+
+    void printStatistics();
+
     /*! Clears the barrier bits of a subtree. */
     void clearBarrier(NodeRef& node);
 
     LinearAllocatorPerThread alloc;
+    FastAllocator alloc2;
 
 #if defined (__AVX__)
     __forceinline Node* allocNode(LinearAllocatorPerThread::ThreadAllocator& thread) {

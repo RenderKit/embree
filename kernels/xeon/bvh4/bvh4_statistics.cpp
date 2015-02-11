@@ -29,7 +29,7 @@ namespace embree
     hash = 0;
     float A = max(0.0f,halfArea(bvh->bounds));
     statistics(bvh->root,A,depth);
-    bvhSAH /= area(bvh->bounds);
+    bvhSAH /= halfArea(bvh->bounds);
     assert(depth <= BVH4::maxDepth);
   }
 
@@ -109,87 +109,90 @@ namespace embree
   void BVH4Statistics::statistics(NodeRef node, const float A, size_t& depth)
   {
     if (node.isNode())
-    {
-      hash += 0x1234;
-      numAlignedNodes++;
-      AlignedNode* n = node.node();
-      bvhSAH += A*BVH4::travCostAligned;
-
-      depth = 0;
-      for (size_t i=0; i<BVH4::N; i++) {
-        if (n->child(i) != BVH4::emptyNode) childrenAlignedNodes++;
-        const float Ai = max(0.0f,halfArea(n->extend(i)));
-        size_t cdepth; statistics(n->child(i),Ai,cdepth); 
-        depth=max(depth,cdepth);
+      {
+	hash += 0x1234;
+	numAlignedNodes++;
+	AlignedNode* n = node.node();
+	bvhSAH += A*BVH4::travCostAligned;
+	depth = 0;
+	for (size_t i=0; i<BVH4::N; i++) {
+	  if (n->child(i) == BVH4::emptyNode) continue;
+	  childrenAlignedNodes++;
+	  const float Ai = max(0.0f,halfArea(n->extend(i)));
+	  size_t cdepth; statistics(n->child(i),Ai,cdepth); 
+	  depth=max(depth,cdepth);
+	}
+	depth++;
+	hash += 0x76767*depth;
       }
-      depth++;
-      hash += 0x76767*depth;
-    }
     else if (node.isUnalignedNode())
-    {
-      hash += 0x1232344;
-      numUnalignedNodes++;
-      UnalignedNode* n = node.unalignedNode();
-      bvhSAH += A*BVH4::travCostUnaligned;
+      {
+	hash += 0x1232344;
+	numUnalignedNodes++;
+	UnalignedNode* n = node.unalignedNode();
+	bvhSAH += A*BVH4::travCostUnaligned;
 
-      depth = 0;
-      for (size_t i=0; i<BVH4::N; i++) {
-        if (n->child(i) != BVH4::emptyNode) childrenUnalignedNodes++;
-        const float Ai = max(0.0f,halfArea(n->extend(i)));
-        size_t cdepth; statistics(n->child(i),Ai,cdepth); 
-        depth=max(depth,cdepth);
+	depth = 0;
+	for (size_t i=0; i<BVH4::N; i++) {
+	  if (n->child(i) == BVH4::emptyNode) continue;
+	  childrenUnalignedNodes++;
+	  const float Ai = max(0.0f,halfArea(n->extend(i)));
+	  size_t cdepth; statistics(n->child(i),Ai,cdepth); 
+	  depth=max(depth,cdepth);
+	}
+	depth++;
+	hash += 0x76767*depth;
       }
-      depth++;
-      hash += 0x76767*depth;
-    }
     else if (node.isNodeMB())
-    {
-      hash += 0xEF343;
-      numAlignedNodesMB++;
-      BVH4::NodeMB* n = node.nodeMB();
-      bvhSAH += A*BVH4::travCostAligned;
+      {
+	hash += 0xEF343;
+	numAlignedNodesMB++;
+	BVH4::NodeMB* n = node.nodeMB();
+	bvhSAH += A*BVH4::travCostAligned;
 
-      depth = 0;
-      for (size_t i=0; i<BVH4::N; i++) {
-        if (n->child(i) != BVH4::emptyNode) childrenAlignedNodesMB++;
-        const float Ai = max(0.0f,halfArea(n->extend0(i)));
-        size_t cdepth; statistics(n->child(i),Ai,cdepth); 
-        depth=max(depth,cdepth);
+	depth = 0;
+	for (size_t i=0; i<BVH4::N; i++) {
+	  if (n->child(i) == BVH4::emptyNode) continue;
+	  childrenAlignedNodesMB++;
+	  const float Ai = max(0.0f,halfArea(n->extend0(i)));
+	  size_t cdepth; statistics(n->child(i),Ai,cdepth); 
+	  depth=max(depth,cdepth);
+	}
+	depth++;
+	hash += 0x76767*depth;
       }
-      depth++;
-      hash += 0x76767*depth;
-    }
     else if (node.isUnalignedNodeMB())
-    {
-      hash += 0x1EEF4;
-      numUnalignedNodesMB++;
-      BVH4::UnalignedNodeMB* n = node.unalignedNodeMB();
-      bvhSAH += A*BVH4::travCostUnaligned;
+      {
+	hash += 0x1EEF4;
+	numUnalignedNodesMB++;
+	BVH4::UnalignedNodeMB* n = node.unalignedNodeMB();
+	bvhSAH += A*BVH4::travCostUnaligned;
 
-      depth = 0;
-      for (size_t i=0; i<BVH4::N; i++) {
-        if (n->child(i) != BVH4::emptyNode) childrenUnalignedNodesMB++;
-        const float Ai = max(0.0f,halfArea(n->extend0(i)));
-        size_t cdepth; statistics(n->child(i),Ai,cdepth); 
-        depth=max(depth,cdepth);
+	depth = 0;
+	for (size_t i=0; i<BVH4::N; i++) {
+	  if (n->child(i) == BVH4::emptyNode) continue;
+	  childrenUnalignedNodesMB++;
+	  const float Ai = max(0.0f,halfArea(n->extend0(i)));
+	  size_t cdepth; statistics(n->child(i),Ai,cdepth); 
+	  depth=max(depth,cdepth);
+	}
+	depth++;
+	hash += 0x76767*depth;
       }
-      depth++;
-      hash += 0x76767*depth;
-    }
     else
-    {
-      depth = 0;
-      size_t num; const char* tri = node.leaf(num);
-      hash += 0xDD776*num+0x878;
-      if (!num) return;
+      {
+	depth = 0;
+	size_t num; const char* tri = node.leaf(num);
+	hash += 0xDD776*num+0x878;
+	if (!num) return;
 
-      hash += bvh->primTy.hash(tri,num);
+	hash += bvh->primTy.hash(tri,num);
       
-      numLeaves++;
-      numPrims += num;
-      float sah = A * BVH4::intCost * num;
-      bvhSAH += sah;
-    }
+	numLeaves++;
+	numPrims += num;
+	float sah = A * BVH4::intCost * num;
+	bvhSAH += sah;
+      }
   }
 
  

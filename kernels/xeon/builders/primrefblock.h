@@ -65,4 +65,5 @@ namespace embree
   };
   
   typedef PrimRefBlockT<PrimRef> PrimRefBlock;
+  typedef atomic_set<PrimRefBlockT<PrimRef> > PrimRefList;
 }

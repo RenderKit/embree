@@ -19,7 +19,7 @@
 
 #define PARALLEL_COMMIT
 
-#define FORCE_FIXED_EDGE_TESSELLATION
+//#define FORCE_FIXED_EDGE_TESSELLATION
 #define FIXED_EDGE_TESSELLATION_VALUE 4
 
 #define MAX_EDGE_LEVEL 64.0f
@@ -367,7 +367,8 @@ Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const unifo
   rtcIntersect(g_scene,ray);
   
   /* shade background black */
-  if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return make_Vec3f(0.0f,0.0f,1.0f);
+  if (ray.geomID == RTC_INVALID_GEOMETRY_ID) 
+    return make_Vec3f(0.0f,0.0f,1.0f);
   
   /* shade all rays that hit something */
   Vec3f color = make_Vec3f(1.0f);
