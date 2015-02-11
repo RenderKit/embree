@@ -62,6 +62,81 @@ namespace embree
       BVH4* bvh;
     };
 
+    template<typename Primitive>
+    struct CreateLeaf
+    {
+      __forceinline CreateLeaf (BVH4* bvh) : bvh(bvh) {}
+      
+      __forceinline int operator() (const BuildRecord<BVH4::NodeRef>& current, PrimRef* prims, Allocator* alloc) // FIXME: why are prims passed here but not for createNode
+      {
+        size_t items = Primitive::blocks(current.prims.size());
+        size_t start = current.prims.begin();
+        Primitive* accel = (Primitive*) alloc->alloc1.malloc(items*sizeof(Primitive));
+        BVH4::NodeRef node = bvh->encodeLeaf((char*)accel,items);
+        for (size_t i=0; i<items; i++) {
+          accel[i].fill(prims,start,current.prims.end(),bvh->scene,false);
+        }
+        *current.parent = node;
+	return 1;
+      }
+
+      BVH4* bvh;
+    };
+
+    struct BVH4SubdivPatch1BuilderBinnedSAHClass : public Builder
+    {
+      BVH4* bvh;
+      Scene* scene;
+      vector_t<PrimRef> prims; // FIXME: use os_malloc in vector_t for large allocations
+      
+      BVH4SubdivPatch1BuilderBinnedSAHClass (BVH4* bvh, Scene* scene)
+        : bvh(bvh), scene(scene) {}
+
+      void build(size_t, size_t) 
+      {
+        /* skip build for empty scene */
+	const size_t numPrimitives = scene->getNumPrimitives<SubdivMesh,1>();
+        if (numPrimitives == 0) {
+          prims.resize(numPrimitives);
+          bvh->set(BVH4::emptyNode,empty,0);
+          return;
+        }
+        bvh->alloc2.reset();
+
+        /* verbose mode */
+        if (g_verbose >= 1)
+	  std::cout << "building BVH4<" << bvh->primTy.name << "> with " << TOSTRING(isa) "::BVH4SubdivPatch1BuilderBinnedSAH ... " << std::flush;
+
+	double t0 = 0.0f, dt = 0.0f;
+        if (g_verbose >= 1) t0 = getSeconds();
+
+        /* initialize all half edge structures */
+        Scene::Iterator<SubdivMesh> iter(scene);
+        for (size_t i=0; i<iter.size(); i++) // FIXME: parallelize
+          if (iter[i]) iter[i]->initializeHalfEdgeStructures();
+
+        prims.resize(numPrimitives);
+        const PrimInfo pinfo = createPrimRefArray<SubdivMesh,1>(scene,prims);
+        BVH4::NodeRef root = bvh_builder_binned_sah_internal<BVH4::NodeRef>
+          (CreateAlloc(bvh),CreateBVH4Node(bvh),CreateLeaf<SubdivPatch1>(bvh),
+           prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,1,1,1);
+        bvh->set(root,pinfo.geomBounds,pinfo.size());
+
+        if (g_verbose >= 1) dt = getSeconds()-t0;
+
+	/* clear temporary data for static geometry */
+	bool staticGeom = scene->isStatic();
+	if (staticGeom) prims.resize(0,true);
+        bvh->alloc2.cleanup();
+	
+	/* verbose mode */
+	if (g_verbose >= 1)
+	  std::cout << "[DONE] " << 1000.0f*dt << "ms (" << numPrimitives/dt*1E-6 << " Mprim/s)" << std::endl;
+	if (g_verbose >= 2)
+	  bvh->printStatistics();
+      }
+    };
+    
     struct BVH4SubdivGridBuilderBinnedSAHClass : public Builder
     {
       BVH4* bvh;
@@ -937,6 +1012,7 @@ namespace embree
     };
     
     /* entry functions for the scene builder */
+    Builder* BVH4SubdivPatch1BuilderBinnedSAH   (void* bvh, Scene* scene, size_t mode) { return new BVH4SubdivPatch1BuilderBinnedSAHClass((BVH4*)bvh,scene); }
     Builder* BVH4SubdivGridBuilderBinnedSAH   (void* bvh, Scene* scene, size_t mode) { return new BVH4SubdivGridBuilderBinnedSAHClass((BVH4*)bvh,scene); }
     Builder* BVH4SubdivGridEagerBuilderBinnedSAH   (void* bvh, Scene* scene, size_t mode) { return new BVH4SubdivGridEagerBuilderBinnedSAHClass((BVH4*)bvh,scene); }
     Builder* BVH4SubdivGridLazyBuilderBinnedSAH   (void* bvh, Scene* scene, size_t mode) { return new BVH4SubdivGridLazyBuilderBinnedSAHClass((BVH4*)bvh,scene); }

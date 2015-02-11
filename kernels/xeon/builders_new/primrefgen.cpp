@@ -115,6 +115,7 @@ namespace embree
     template PrimInfo createPrimRefArray<TriangleMesh,1>(Scene* scene, vector_t<PrimRef>& prims);
     template PrimInfo createPrimRefArray<TriangleMesh,2>(Scene* scene, vector_t<PrimRef>& prims);
     template PrimInfo createPrimRefArray<BezierCurves,1>(Scene* scene, vector_t<PrimRef>& prims);
+    template PrimInfo createPrimRefArray<SubdivMesh,1>(Scene* scene, vector_t<PrimRef>& prims);
     template PrimInfo createPrimRefArray<UserGeometryBase,1>(Scene* scene, vector_t<PrimRef>& prims);
   }
 }

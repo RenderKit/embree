@@ -335,13 +335,7 @@ namespace embree
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4iSceneBuilderBinnedSAH);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4VirtualSceneBuilderBinnedSAH);
 
-    //SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle1MeshBuilderFast);
-    //SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4MeshBuilderBinnedSAH);
-    //SELECT_SYMBOL_AVX        (features,BVH4Triangle8MeshBuilderFast);
-    //SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle1vMeshBuilderFast);
-    //SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4vMeshBuilderFast);
-    //SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4iMeshBuilderFast);
-    //SELECT_SYMBOL_DEFAULT_AVX(features,BVH4SubdivPatch1BuilderBinnedSAH);
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4SubdivPatch1BuilderBinnedSAH);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4SubdivPatch1CachedBuilderBinnedSAH);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4SubdivGridBuilderBinnedSAH);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4SubdivGridEagerBuilderBinnedSAH);
@@ -1233,7 +1227,11 @@ namespace embree
     intersectors.intersector4 = BVH4Subdivpatch1Intersector4;
     intersectors.intersector8 = BVH4Subdivpatch1Intersector8;
     intersectors.intersector16 = NULL;
+#if defined(TASKING_TBB) || defined(TASKING_TBB_INTERNAL)
+    Builder* builder = BVH4SubdivPatch1BuilderBinnedSAH(accel,scene,LeafMode);
+#else
     Builder* builder = BVH4SubdivPatch1BuilderFast(accel,scene,LeafMode);
+#endif
     return new AccelInstance(accel,builder,intersectors);
   }
 

@@ -48,7 +48,7 @@ namespace embree
   namespace sse41 { extern Builder* symbol(void* accel, Scene* scene, size_t mode); } \
   namespace avx   { extern Builder* symbol(void* accel, Scene* scene, size_t mode); } \
   namespace avx2  { extern Builder* symbol(void* accel, Scene* scene, size_t mode); } \
-  void symbol##_error() { std::cerr << "Error: builder " << TOSTRING(symbol) << " not supported no your CPU" << std::endl; } \
+  void symbol##_error() { std::cerr << "Error: builder " << TOSTRING(symbol) << " not supported by your CPU" << std::endl; } \
   SceneBuilderFunc symbol = (SceneBuilderFunc) symbol##_error;
 
 #define DECLARE_TRIANGLEMESH_BUILDER(symbol)                            \
@@ -56,7 +56,7 @@ namespace embree
   namespace sse41 { extern Builder* symbol(void* accel, TriangleMesh* mesh, size_t mode); } \
   namespace avx   { extern Builder* symbol(void* accel, TriangleMesh* mesh, size_t mode); } \
   namespace avx2  { extern Builder* symbol(void* accel, TriangleMesh* mesh, size_t mode); } \
-  void symbol##_error() { std::cerr << "Error: builder " << TOSTRING(symbol) << " not supported no your CPU" << std::endl; } \
+  void symbol##_error() { std::cerr << "Error: builder " << TOSTRING(symbol) << " not supported by your CPU" << std::endl; } \
   TriangleMeshBuilderFunc symbol = (TriangleMeshBuilderFunc) symbol##_error;
 
 #define DECLARE_USERGEOMETRY_BUILDER(symbol)                            \
@@ -64,6 +64,6 @@ namespace embree
   namespace sse41 { extern Builder* symbol(void* accel, UserGeometryBase* mesh, size_t mode); } \
   namespace avx   { extern Builder* symbol(void* accel, UserGeometryBase* mesh, size_t mode); } \
   namespace avx2  { extern Builder* symbol(void* accel, UserGeometryBase* mesh, size_t mode); } \
-  void symbol##_error() { std::cerr << "Error: builder " << TOSTRING(symbol) << " not supported no your CPU" << std::endl; } \
+  void symbol##_error() { std::cerr << "Error: builder " << TOSTRING(symbol) << " not supported by your CPU" << std::endl; } \
   UserGeometryBuilderFunc symbol = (UserGeometryBuilderFunc) symbol##_error;
 }
