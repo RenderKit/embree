@@ -579,11 +579,12 @@ namespace embree
     {
       static Block* create(size_t bytesAllocate, size_t bytesReserve, Block* next = NULL)
       {
-        void* ptr = os_reserve(sizeof(Block)+bytesReserve);
-        os_commit(ptr,sizeof(Block)+bytesAllocate);
-        bytesAllocate = ((sizeof(Block)+bytesAllocate+4095) & ~(4095)) - sizeof(Block); // always consume full pages
-        bytesReserve  = ((sizeof(Block)+bytesReserve +4095) & ~(4095)) - sizeof(Block); // always consume full pages
-        return new (ptr) Block(bytesAllocate,bytesReserve,next);
+        const size_t sizeof_Header = offsetof(Block,data[0]);
+        bytesAllocate = ((sizeof_Header+bytesAllocate+4095) & ~(4095)); // always consume full pages
+        bytesReserve  = ((sizeof_Header+bytesReserve +4095) & ~(4095)); // always consume full pages
+        void* ptr = os_reserve(bytesReserve);
+        os_commit(ptr,bytesAllocate);
+        return new (ptr) Block(bytesAllocate-sizeof_Header,bytesReserve-sizeof_Header,next);
       }
 
       Block (size_t bytesAllocate, size_t bytesReserve, Block* next) 
@@ -594,7 +595,8 @@ namespace embree
 
       ~Block () {
 	if (next) next->~Block(); next = NULL;
-        os_free(this,sizeof(Block)+reserveEnd);
+        const size_t sizeof_Header = offsetof(Block,data[0]);
+        os_free(this,sizeof_Header+reserveEnd);
       }
 
       void* malloc(size_t bytes, size_t align = 16) 
