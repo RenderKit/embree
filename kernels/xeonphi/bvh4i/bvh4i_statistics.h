@@ -20,6 +20,8 @@
 
 namespace embree
 {
+  using std::isfinite;
+
   template<typename NodeType>
   class BVH4iStatistics 
   {
