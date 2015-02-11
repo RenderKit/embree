@@ -654,7 +654,7 @@ namespace embree
       size_t reserveEnd;         //!< end of the reserved memory region
       Block* next;               //!< pointer to next block in list
       char align[maxAlignment-4*sizeof(size_t)]; //!< align data to maxAlignment
-      char data[];               //!< here starts memory to use for allocations
+      char data[1];              //!< here starts memory to use for allocations
     };
 
   private:
