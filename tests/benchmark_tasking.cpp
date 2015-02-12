@@ -157,6 +157,23 @@ public:
     int get_concurrency() { return num_threads; }
 };
 
+template <typename R, typename S>
+R tbb_pi( S num_steps )
+{
+    const R step = R(1) / num_steps;
+    return step * tbb::parallel_reduce( tbb::blocked_range<S>( 0, num_steps ), R(0),
+        [step] ( const tbb::blocked_range<S> r, R local_sum ) -> R {
+            for ( S i = r.begin(); i < r.end(); ++i ) {
+                R x = (i + R(0.5)) * step;
+                local_sum += R(4) / (R(1) + x*x);
+            }
+            return local_sum;
+        },
+        std::plus<R>()
+    );
+}
+
+
 ////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////
@@ -257,7 +274,7 @@ namespace embree
       double t0 = getSeconds();
       
 #define threshold 256
-
+      tbb::affinity_partitioner ap;
       result = tbb::parallel_reduce(tbb::blocked_range<size_t>(0,N,threshold), BBox3fa( empty ), 
 				    [&](const tbb::blocked_range<size_t>& r, BBox3fa c) -> BBox3fa {
 				      BBox3fa b( empty ); 
@@ -266,7 +283,8 @@ namespace embree
 				      }
 				      return c.extend(b);
 				    },
-				    [](const BBox3fa &a,const BBox3fa &b) { BBox3fa c = a; return c.extend(b); });
+				    [](const BBox3fa &a,const BBox3fa &b) { BBox3fa c = a; return c.extend(b); },
+					ap);
       double t1 = getSeconds();
 
       if (showResult)
@@ -494,6 +512,37 @@ namespace embree
     }
   }
 
+  template<typename Closure>
+  void benchmark_fixed_n(size_t N, const char* name, const Closure& closure)
+  {
+#if OUTPUT == 1
+    std::cout << "# " << name << std::endl;
+    std::cout << "# N dt_min dt_avg dt_max M/s(min) M/s(avg) M/s(max)" << std::endl;
+#endif
+    //for (size_t N = N0; N < N1; N *= 1.5)  // orig for version
+    //for (size_t N = N1; N >= N0; N *= 1./1.5) 
+    for (size_t i = 0; i < 10; i++) 
+    {
+      double t_min = pos_inf;
+      double t_avg = 0.0f;
+      double t_max = neg_inf;
+      for (size_t i=0; i<10; i++)
+      {
+        double dt = closure(N);
+        t_min = min(t_min,dt);
+        if (i != 0) t_avg = t_avg + dt;
+        t_max = max(t_max,dt);
+      }
+      t_avg /= 9.0;
+#if OUTPUT == 1
+      std::cout << N << " " 
+		<< 1000.0f*t_min << " " << 1000.0f*t_avg << " " << 1000.0f*t_max << " " 
+		<< 1E-6*N/t_max << " " << 1E-6*N/t_avg << " " << 1E-6*N/t_min << std::endl;
+#endif
+    }
+  }
+
+
 
   const int CUTOFF = 20;
 
@@ -684,6 +733,7 @@ namespace embree
 
       // Warmer
       concurrency_tracker tracker;
+      while (tracker.get_concurrency() < tbb::task_scheduler_init::default_num_threads()) tbb_pi<double> (N);
 
 #if PROFILE == 1
       while(1)
@@ -707,6 +757,38 @@ namespace embree
 	benchmark(N_start,N,"reduce_mytbb",[] (size_t N) -> double { return reduce.run_mytbb(N); });
       fs.close();
       delete newscheduler;
+    }
+
+    if (test == 5)
+    {
+      fs.open ("benchmark_reduce_tbb.csv", std::fstream::out);
+      //tbb::task_scheduler_init init(128);
+      const bool use_pinning = true;
+
+      tbb::task_scheduler_init init(tbb::task_scheduler_init::default_num_threads());
+      DBG_PRINT( TBB_INTERFACE_VERSION );
+      DBG_PRINT( tbb::TBB_runtime_interface_version() );
+
+      pinning_observer pinner( 4 /* the number of hyper threads on each core */ );
+      pinner.observe( use_pinning );
+
+      // Warmer
+      concurrency_tracker tracker;
+      while (tracker.get_concurrency() < tbb::task_scheduler_init::default_num_threads()) tbb_pi<double> (N);
+	
+      TaskScheduler::create();
+
+      int n = 291871;	
+      while(1){
+          benchmark_fixed_n(n,"reduce_tbb",[] (size_t N) -> double { return reduce.run_tbb(N); });	
+          execute_closure([&] () -> double { benchmark_fixed_n(n,"reduce_lockstep",[] (size_t N) -> double { return reduce.run_locksteptaskscheduler(N); }); return 0.0; });
+      }	     
+      // Always disable observation before observers destruction
+      tracker.observe( false );
+      pinner.observe( false );
+      
+      fs.close();
+      TaskScheduler::destroy();
     }
 
 #endif
