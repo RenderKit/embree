@@ -765,6 +765,7 @@ namespace embree
       //tbb::task_scheduler_init init(128);
       const bool use_pinning = true;
 
+
       tbb::task_scheduler_init init(tbb::task_scheduler_init::default_num_threads());
       DBG_PRINT( TBB_INTERFACE_VERSION );
       DBG_PRINT( tbb::TBB_runtime_interface_version() );
@@ -777,11 +778,10 @@ namespace embree
       while (tracker.get_concurrency() < tbb::task_scheduler_init::default_num_threads()) tbb_pi<double> (N);
 	
       TaskScheduler::create();
-
       int n = 291871;	
+
       while(1){
           benchmark_fixed_n(n,"reduce_tbb",[] (size_t N) -> double { return reduce.run_tbb(N); });	
-          execute_closure([&] () -> double { benchmark_fixed_n(n,"reduce_lockstep",[] (size_t N) -> double { return reduce.run_locksteptaskscheduler(N); }); return 0.0; });
       }	     
       // Always disable observation before observers destruction
       tracker.observe( false );
@@ -790,6 +790,23 @@ namespace embree
       fs.close();
       TaskScheduler::destroy();
     }
+
+    if (test == 6)
+      {
+	fs.open ("benchmark_reduce_lockstep.csv", std::fstream::out);
+
+	TaskScheduler::create();
+      int n = 291871;	
+
+      while(1){
+	execute_closure([&] () -> double { benchmark_fixed_n(n,"reduce_lockstep",[] (size_t N) -> double { return reduce.run_locksteptaskscheduler(N); }); return 0.0; });
+
+
+      }
+      fs.close();
+      TaskScheduler::destroy();
+
+      }
 
 #endif
   }
