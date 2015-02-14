@@ -17,6 +17,7 @@
 #pragma once
 
 #include "platform.h"
+#include <atomic>
 
 #if defined(__SSE__)
 #include <xmmintrin.h>
@@ -231,6 +232,14 @@ __forceinline int32 atomic_cmpxchg(volatile int32* p, const int32 c, const int32
   return _InterlockedCompareExchange((volatile long*)p,v,c);
 }
 
+__forceinline int32 atomic_and(volatile int32* p, const int32 v) {
+  return _InterlockedAnd((volatile long*)p,v);
+}
+
+__forceinline int32 atomic_or(volatile int32* p, const int32 v) {
+  return _InterlockedOr((volatile long*)p,v);
+}
+
 
 #if defined(__X86_64__)
 
@@ -250,6 +259,14 @@ __forceinline int64 atomic_xchg(volatile int64 *p, int64 v) {
 
 __forceinline int64 atomic_cmpxchg(volatile int64* m, const int64 c, const int64 v) {
   return _InterlockedCompareExchange64(m,v,c);
+}
+
+__forceinline int64 atomic_and(volatile int64* p, const int64 v) {
+  return _InterlockedAnd64((volatile long*)p,v);
+}
+
+__forceinline int64 atomic_or(volatile int64* p, const int64 v) {
+  return _InterlockedOr64((volatile long*)p,v);
 }
 
 #endif
@@ -349,6 +366,7 @@ __forceinline size_t __bts(size_t v, size_t i) {
 __forceinline size_t __btr(size_t v, size_t i) {
   size_t r = 0; asm ("btr %1,%0" : "=r"(r) : "r"(i), "0"(v) : "flags"); return r;
 }
+
 
 __forceinline int bitscan(int v) {
 #if defined(__AVX2__) 
@@ -509,6 +527,14 @@ __forceinline int64 atomic_cmpxchg( int64 volatile* value, int64 comparand, cons
   return __sync_val_compare_and_swap(value, comparand, input);
 }
 
+__forceinline void atomic_or(int64 volatile* value, int64 new_data) {
+  std::atomic_fetch_or((std::atomic_long*)value,(std::atomic_long)new_data);
+}
+
+__forceinline void atomic_and(int64 volatile* value, int64 new_data) {
+  std::atomic_fetch_or((std::atomic_long*)value,(std::atomic_long)new_data);
+}
+
 #endif
 
 typedef int32 atomic32_t;
@@ -527,6 +553,14 @@ __forceinline int32 atomic_xchg( int32 volatile* value, int32 input ) {
 
 __forceinline int32 atomic_cmpxchg( int32 volatile* value, int32 comparand, const int32 input ) {
   return __sync_val_compare_and_swap(value, comparand, input);
+}
+
+__forceinline void atomic_or(int32 volatile* value, int32 new_data) {
+  std::atomic_fetch_or((std::atomic_int*)value,(std::atomic_int)new_data);
+}
+
+__forceinline void atomic_and(int32 volatile* value, int32 new_data) {
+  std::atomic_fetch_or((std::atomic_int*)value,(std::atomic_int)new_data);
 }
 
 typedef int8 atomic8_t;

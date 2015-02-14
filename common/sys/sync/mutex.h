@@ -18,6 +18,7 @@
 
 #include "../platform.h"
 #include "atomic.h"
+#include <atomic>
 
 namespace embree
 {
@@ -253,6 +254,60 @@ namespace embree
      atomic_add(&readers,1);     
      writer_mtx.unlock();
    }
+
+ };
+
+ class RWMutex
+ {
+ private:
+   volatile unsigned int data;
+
+   static const unsigned int WRITER          = 1;
+   static const unsigned int WRITER_REQUEST  = 2;
+   static const unsigned int SINGLE_READER   = 4;
+   static const unsigned int READERS         = ~(WRITER|WRITER_REQUEST);   
+   
+   static __forceinline bool busy(const unsigned int d) { return d & (WRITER|READERS); }
+
+   __forceinline unsigned int getData() { return data; }
+   
+   __forceinline int update_atomic_cmpxchg(const int old_data, const int new_data) {
+     return atomic_cmpxchg((int*)&data,old_data,new_data);
+   }
+
+   __forceinline void update_atomic_or(int new_data) {
+     atomic_or((int*)&data,new_data);
+   }
+
+   __forceinline void update_atomic_and(int new_data) {
+     atomic_and((int*)&data,new_data);
+   }
+
+ public:
+
+ RWMutex() : data(0) {}
+
+   static const unsigned int DELAY_CYCLES = 1024;
+   
+   __forceinline void reset()
+   {
+     data = 0;
+   }
+   __forceinline void pause()
+   {
+#if !defined(__MIC__)
+     _mm_pause(); 
+     _mm_pause();
+#else
+     _mm_delay_32(DELAY_CYCLES); 
+#endif      
+   }
+    
+   void read_lock();
+   void read_unlock();
+   void write_lock();
+   void write_unlock();
+   void upgrade_read_to_write_lock();
 
  };
 

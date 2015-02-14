@@ -68,5 +68,51 @@ namespace embree
     if (pthread_mutex_unlock((pthread_mutex_t*)mutex) != 0)
       THROW_RUNTIME_ERROR("pthread_mutex_unlock failed");
   }
-}
+
+
+  // ========== RW MUTEX =============
+  void RWMutex::read_lock()
+  {
+    while(1)
+      {
+        unsigned int d = getData();
+        if (!busy(d))
+          {
+            if (update_atomic_cmpxchg(d,WRITER)==d) break;           
+          }
+        else if ( !(d & WRITER_REQUEST) )
+          {
+            update_atomic_or(WRITER_REQUEST);
+          }
+        pause();
+      }
+  }
+
+  void RWMutex::read_unlock() {}
+  void RWMutex::write_lock()
+  {
+    while(1)
+      {
+        unsigned int d = getData();
+        if (!busy(d))
+          {
+            if (update_atomic_cmpxchg(d,WRITER)==d) break;           
+          }
+        else if ( !(d & WRITER_REQUEST) )
+          {
+            update_atomic_or(WRITER_REQUEST);
+          }
+        pause();
+      }
+  }
+  
+  void RWMutex::write_unlock()
+  {
+    update_atomic_and(READERS);
+  }
+  
+  void RWMutex::upgrade_read_to_write_lock() {}
+ 
+  
+};
 #endif
