@@ -76,19 +76,21 @@ namespace embree
     while(1)
       {
         unsigned int d = getData();
-        if (!busy(d))
+        if (!busy_writing(d))
           {
-            if (update_atomic_cmpxchg(d,WRITER)==d) break;           
-          }
-        else if ( !(d & WRITER_REQUEST) )
-          {
-            update_atomic_or(WRITER_REQUEST);
+            unsigned int r = update_atomic_add(SINGLE_READER);
+            if (!busy_writing(r)) break; // -request
+            update_atomic_add(-SINGLE_READER);
           }
         pause();
       }
   }
 
-  void RWMutex::read_unlock() {}
+  void RWMutex::read_unlock()
+  {
+    update_atomic_add(-SINGLE_READER);            
+  }
+  
   void RWMutex::write_lock()
   {
     while(1)
@@ -111,7 +113,10 @@ namespace embree
     update_atomic_and(READERS);
   }
   
-  void RWMutex::upgrade_read_to_write_lock() {}
+  void RWMutex::upgrade_read_to_write_lock()
+  {
+    FATAL("NOT YET IMPLEMENTED");
+  }
  
   
 };

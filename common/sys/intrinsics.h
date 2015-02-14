@@ -527,12 +527,12 @@ __forceinline int64 atomic_cmpxchg( int64 volatile* value, int64 comparand, cons
   return __sync_val_compare_and_swap(value, comparand, input);
 }
 
-__forceinline void atomic_or(int64 volatile* value, int64 new_data) {
-  std::atomic_fetch_or((std::atomic_long*)value,(std::atomic_long)new_data);
+__forceinline int64 atomic_or(int64 volatile* value, int64 new_data) {
+  return (int64)std::atomic_fetch_or((std::atomic_long*)value,(std::atomic_long)new_data);
 }
 
-__forceinline void atomic_and(int64 volatile* value, int64 new_data) {
-  std::atomic_fetch_or((std::atomic_long*)value,(std::atomic_long)new_data);
+__forceinline int64 atomic_and(int64 volatile* value, int64 new_data) {
+  return (int64)std::atomic_fetch_or((std::atomic_long*)value,(std::atomic_long)new_data);
 }
 
 #endif
@@ -555,12 +555,12 @@ __forceinline int32 atomic_cmpxchg( int32 volatile* value, int32 comparand, cons
   return __sync_val_compare_and_swap(value, comparand, input);
 }
 
-__forceinline void atomic_or(int32 volatile* value, int32 new_data) {
-  std::atomic_fetch_or((std::atomic_int*)value,(std::atomic_int)new_data);
+__forceinline int32 atomic_or(int32 volatile* value, int32 new_data) {
+  return (int32)std::atomic_fetch_or((std::atomic_int*)value,(std::atomic_int)new_data);
 }
 
-__forceinline void atomic_and(int32 volatile* value, int32 new_data) {
-  std::atomic_fetch_or((std::atomic_int*)value,(std::atomic_int)new_data);
+__forceinline int32 atomic_and(int32 volatile* value, int32 new_data) {
+  return (int32)std::atomic_fetch_or((std::atomic_int*)value,(std::atomic_int)new_data);
 }
 
 typedef int8 atomic8_t;

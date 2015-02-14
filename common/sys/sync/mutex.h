@@ -268,6 +268,8 @@ namespace embree
    static const unsigned int READERS         = ~(WRITER|WRITER_REQUEST);   
    
    static __forceinline bool busy(const unsigned int d) { return d & (WRITER|READERS); }
+   static __forceinline bool busy_writing(const unsigned int d) { return d & (WRITER|WRITER_REQUEST); }
+   static __forceinline bool busy_reading(const unsigned int d) { return d & READERS; }
 
    __forceinline unsigned int getData() { return data; }
    
@@ -275,12 +277,16 @@ namespace embree
      return atomic_cmpxchg((int*)&data,old_data,new_data);
    }
 
-   __forceinline void update_atomic_or(int new_data) {
-     atomic_or((int*)&data,new_data);
+   __forceinline int update_atomic_or(int new_data) {
+     return atomic_or((int*)&data,new_data);
    }
 
-   __forceinline void update_atomic_and(int new_data) {
-     atomic_and((int*)&data,new_data);
+   __forceinline int update_atomic_and(int new_data) {
+     return atomic_and((int*)&data,new_data);
+   }
+
+   __forceinline int update_atomic_add(int new_data) {
+     return atomic_add((int*)&data,new_data);
    }
 
  public:
