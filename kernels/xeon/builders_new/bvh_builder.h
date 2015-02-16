@@ -88,12 +88,10 @@ namespace embree
         if (current.depth > maxDepth) 
           THROW_RUNTIME_ERROR("depth limit reached");
 
-	FATAL("COMPILE ERROR BELOW UNDER LINUX");
-#if 0
         /* create leaf for few primitives */
         if (current.size() <= maxLeafSize)
           return createLeaf(current,alloc);
-#endif
+
         /* fill all children by always splitting the largest one */
 	ReductionTy values[MAX_BRANCHING_FACTOR];
 	BuildRecord<NodeRef>* pchildren[MAX_BRANCHING_FACTOR];

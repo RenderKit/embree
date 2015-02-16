@@ -117,9 +117,14 @@ namespace embree
 
         prims.resize(numPrimitives);
         const PrimInfo pinfo = createPrimRefArray<SubdivMesh,1>(scene,prims);
+#if 0
         BVH4::NodeRef root = bvh_builder_binned_sah_internal<BVH4::NodeRef>
           (CreateAlloc(bvh),CreateBVH4Node(bvh),CreateLeaf<SubdivPatch1>(bvh),
            prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,1,1,1);
+#else
+	FATAL("FIX COMPILER ERROR");
+	BVH4::NodeRef root;
+#endif
         bvh->set(root,pinfo.geomBounds,pinfo.size());
 
         if (g_verbose >= 1) dt = getSeconds()-t0;
