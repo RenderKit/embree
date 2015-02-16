@@ -38,6 +38,18 @@ namespace embree
   //   TessellationCache::cache_evictions = 0;          
   // }
 
+  /* alloc cache memory */
+  float *alloc_tessellation_cache_mem(const size_t blocks)
+  {
+    return (float*)_mm_malloc(64 * blocks,64);
+  }
+  
+  /* free cache memory */
+  void free_tessellation_cache_mem(void *mem)
+  {
+    assert(mem);
+    _mm_free(mem);
+  }
 
   
   AtomicCounter SharedTessellationCacheStats::cache_accesses  = 0;

@@ -133,7 +133,7 @@ namespace embree
 
           /* write unlock and read lock */
           DBG(DBG_PRINT("WRITE UNLOCK READ LOCK"));                                                      
-          t->write_unlock_set_read_lock();
+          t->upgrade_write_to_read_lock();
           DBG(DBG_PRINT(&t->mtx));
 
           DBG(DBG_PRINT(new_root));                                            

@@ -315,7 +315,7 @@ namespace embree
     }
 
 
-    __forceinline TessellationCacheTag *lookUpSharedTessellationCache(TessellationCache *local_cache,
+    __noinline TessellationCacheTag *lookUpSharedTessellationCache(TessellationCache *local_cache,
 								      const unsigned int patchIndex,
 								      const unsigned int commitCounter,
 								      const SubdivPatch1* const patches,
@@ -359,7 +359,7 @@ namespace embree
 	  assert( bvh4i_root == extractBVH4iNodeRef( t->getRootRef() ));
 	  assert( local_mem  == extractBVH4iPtr( t->getRootRef() ));
 	  assert( (size_t)extractBVH4iNodeRef( t->getRootRef() ) + (size_t)extractBVH4iPtr( t->getRootRef() ) == t->getRootRef() );
-          t->write_unlock_set_read_lock();
+          t->upgrade_write_to_read_lock();
 	  return t;
 	}
       CACHE_STATS(SharedTessellationCacheStats::cache_hits++);
@@ -682,6 +682,7 @@ namespace embree
 #else
 	      size_t cached_64bit_root = lookUpTessellationCache(local_cache,patchIndex,commitCounter,(SubdivPatch1*)accel,scene);
 #endif
+
 #else
 	      TessellationCacheTag *t = lookUpSharedTessellationCache(local_cache,patchIndex,commitCounter,(SubdivPatch1*)accel,scene);	      
 	      size_t cached_64bit_root = t->getRootRef();

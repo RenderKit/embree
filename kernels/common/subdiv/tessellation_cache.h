@@ -24,17 +24,10 @@ namespace embree
 {
   
   /* alloc cache memory */
-  static __forceinline float *alloc_tessellation_cache_mem(const size_t blocks)
-  {
-    return (float*)_mm_malloc(64 * blocks,64);
-  }
+  float *alloc_tessellation_cache_mem(const size_t blocks);
 
   /* free cache memory */
-  static __forceinline void free_tessellation_cache_mem(void *mem)
-  {
-    assert(mem);
-    _mm_free(mem);
-  }
+  void free_tessellation_cache_mem(void *mem);
 
 
 #if defined(__MIC__)
@@ -55,13 +48,18 @@ namespace embree
 
  class __aligned(32) TessellationCacheTag 
  {
+ public:
+   //typedef MultipleReaderSingleWriterMutex MutexType;
+   typedef RWMutex MutexType;
+
  private:
    unsigned int prim_tag;
    unsigned int commit_tag;
    unsigned int usedBlocks;
    unsigned int access_timestamp;
    size_t       subtree_root;     
-   MultipleReaderSingleWriterMutex mtx;
+   //MultipleReaderSingleWriterMutex mtx;
+   RWMutex mtx;
 
  public:
 
@@ -69,7 +67,7 @@ namespace embree
    __forceinline void read_unlock()  { mtx.read_unlock(); }
    __forceinline void write_lock()   { mtx.write_lock();   }
    __forceinline void write_unlock() { mtx.write_unlock(); }
-   __forceinline void write_unlock_set_read_lock() { mtx.write_unlock_set_read_lock(); }
+   __forceinline void upgrade_write_to_read_lock() { mtx.upgrade_write_to_read_lock(); }
 
 
    __forceinline TessellationCacheTag() {}
@@ -152,7 +150,7 @@ namespace embree
    __forceinline unsigned int getAccessTimeStamp() const { return access_timestamp; }
 
 
-   __forceinline MultipleReaderSingleWriterMutex* getMutexPtr()     { return &mtx;              }
+   __forceinline MutexType* getMutexPtr()     { return (MutexType*)&mtx;              }
    
 
    __forceinline bool empty() const { return prim_tag == (unsigned int)-1; }

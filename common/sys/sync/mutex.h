@@ -249,7 +249,7 @@ namespace embree
      writer_mtx.unlock();
    }
 
-   __forceinline void write_unlock_set_read_lock()
+   __forceinline void upgrade_write_to_read_lock()
    {
      atomic_add(&readers,1);     
      writer_mtx.unlock();
@@ -267,9 +267,9 @@ namespace embree
    static const unsigned int SINGLE_READER   = 4;
    static const unsigned int READERS         = ~(WRITER|WRITER_REQUEST);   
    
-   static __forceinline bool busy(const unsigned int d) { return d & (WRITER|READERS); }
-   static __forceinline bool busy_writing(const unsigned int d) { return d & (WRITER|WRITER_REQUEST); }
-   static __forceinline bool busy_reading(const unsigned int d) { return d & READERS; }
+   static __forceinline bool busy_rw(const unsigned int d) { return d & (WRITER|READERS); }
+   static __forceinline bool busy_w (const unsigned int d) { return d & (WRITER|WRITER_REQUEST); }
+   static __forceinline bool busy_r (const unsigned int d) { return d & READERS; }
 
    __forceinline unsigned int getData() { return data; }
    
@@ -314,7 +314,7 @@ namespace embree
    void write_lock();
    void write_unlock();
    void upgrade_read_to_write_lock();
-
+   void upgrade_write_to_read_lock();
  };
 
 }
