@@ -428,13 +428,13 @@ namespace embree
 						     const unsigned int commitCounter,
 						     mic_f *mem,
 						     const unsigned int blocks,
-						     const size_t root)
+						     const BVH4i::NodeRef root)
     {
-      PING;
+      //PING;
       InputTagType tag = (InputTagType)patchIndex;
       TessellationCacheTag *t = sharedTessellationCache.getTag(tag);
       assert(t);
-      DBG_PRINT(tag);
+      //DBG_PRINT(tag);
       if (t->try_write_lock())
 	{
 	  if (unlikely(t->match(tag,commitCounter)))
@@ -443,26 +443,26 @@ namespace embree
 	    }
 	  else
 	    {
-	      DBG_PRINT("WRITING...");
-	      DBG_PRINT( root );
+	      //DBG_PRINT("WRITING...");
+	      //DBG_PRINT( root );
 	      // FIXME: no realloc when equal size
 	      mic_f* old_mem = (mic_f*)t->getPtr();
-	      DBG_PRINT(old_mem);
-	      DBG_PRINT(t->getRootRef());
+	      //DBG_PRINT(old_mem);
+	      //DBG_PRINT(t->getRootRef());
 
 	      if (old_mem != NULL) free_tessellation_cache_mem(old_mem); 
 	      
 	      mic_f* local_mem = (mic_f*)alloc_tessellation_cache_mem(blocks);
-	      DBG_PRINT(local_mem);
+	      //DBG_PRINT(local_mem);
 	      memcpy(local_mem,mem,64 * blocks);
 	      
 	      t->set(tag,commitCounter,(size_t)local_mem,blocks);
 	      t->updateRootRef((size_t)root + (size_t)local_mem);	      
-	      t->print();
+	      //t->print();
 
-	      DBG_PRINT(blocks);
+	      //DBG_PRINT(blocks);
 
-	      assert( bvh4i_root == extractBVH4iNodeRef( t->getRootRef() ));
+	      assert( root == extractBVH4iNodeRef( t->getRootRef() ));
 	      assert( local_mem  == extractBVH4iPtr( t->getRootRef() ));
 	      assert( (size_t)extractBVH4iNodeRef( t->getRootRef() ) + (size_t)extractBVH4iPtr( t->getRootRef() ) == t->getRootRef() );
 
@@ -496,9 +496,9 @@ namespace embree
 
 	  if (t_l2 != NULL)
 	    {
-	      DBG_PRINT("READING...");
-	      DBG_PRINT("L2");
-	      t_l2->print();
+	      //DBG_PRINT("READING...");
+	      //DBG_PRINT("L2");
+	      //t_l2->print();
 
 
 	      /* L2 holds valid data */
@@ -507,28 +507,28 @@ namespace embree
 	      const unsigned int blocks = subdiv_patch.grid_subtree_size_64b_blocks;
 
 	      //const unsigned int blocks = t_l2->getNumBlocks();
-	      DBG_PRINT(blocks);
+	      //DBG_PRINT(blocks);
 
 	      TessellationCacheTag &t_l1 = local_cache->request(tag,commitCounter,blocks);		      
-	      DBG_PRINT("L1");
-	      t_l1.print();
+	      //DBG_PRINT("L1");
+	      //t_l1.print();
 
 	      mic_f *local_mem = (mic_f*)t_l1.getPtr(); 
-	      DBG_PRINT(local_mem);
-	      DBG_PRINT(t_l2->getPtr());
+	      //DBG_PRINT(local_mem);
+	      //DBG_PRINT(t_l2->getPtr());
 
 	      assert(t_l2->getNumBlocks() >= blocks);
 	      assert(t_l1.getNumBlocks() >= blocks);
 
 	      memcpy(local_mem,t_l2->getPtr(),64*blocks);
 	  
-	      DBG_PRINT("memcpy");
+	      //DBG_PRINT("memcpy");
 
 	      t_l2->read_unlock();
 
 	      t_l1.set(tag,commitCounter,(size_t)local_mem + (size_t)t_ref,blocks);
 
-	      DBG_PRINT("UPDATE");
+	      //DBG_PRINT("UPDATE");
 
 	      return t_l1.getRootRef();
 	    }
@@ -544,7 +544,7 @@ namespace embree
 	  TessellationCacheTag &t_l1 = local_cache->getCacheTag(tag,commitCounter);		      
 	  mic_f *local_mem = (mic_f*)t_l1.getPtr(); 
 	      
-	  try_writeSharedTessellationCache(patchIndex,commitCounter,local_mem,needed_blocks,subtree_root);
+	  try_writeSharedTessellationCache(patchIndex,commitCounter,local_mem,needed_blocks,extractBVH4iNodeRef(subtree_root));
 	      	  
 	  
 	  return subtree_root;
