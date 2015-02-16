@@ -292,27 +292,22 @@ namespace embree
  public:
 
  RWMutex() : data(0) {}
-
-   static const unsigned int DELAY_CYCLES = 1024;
    
    __forceinline void reset()
    {
      data = 0;
    }
-   __forceinline void pause()
-   {
-#if !defined(__MIC__)
-     _mm_pause(); 
-     _mm_pause();
-#else
-     _mm_delay_32(DELAY_CYCLES); 
-#endif      
-   }
+   void pause();
     
    void read_lock();
    void read_unlock();
    void write_lock();
    void write_unlock();
+
+   bool try_write_lock();
+   bool try_read_lock();
+
+
    void upgrade_read_to_write_lock();
    void upgrade_write_to_read_lock();
  };

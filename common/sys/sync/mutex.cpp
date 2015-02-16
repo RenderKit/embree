@@ -123,7 +123,38 @@ namespace embree
   {
     update_atomic_add(SINGLE_READER-WRITER);            
   }
+
+  void RWMutex::pause()
+   {
+     unsigned int DELAY_CYCLES = 256;
+
+#if !defined(__MIC__)
+     _mm_pause(); 
+     _mm_pause();
+#else
+     _mm_delay_32(DELAY_CYCLES); 
+#endif      
+   }
  
+  bool RWMutex::try_write_lock()
+  {
+    unsigned int d = getData();
+    if (busy_rw(d)) return false;
+    if (update_atomic_cmpxchg(d,WRITER)==d) return true;
+    return false;
+  }
+
+  bool RWMutex::try_read_lock()
+  {
+    unsigned int d = getData();
+    if (busy_w(d)) return false;
+
+    unsigned int r = update_atomic_add(SINGLE_READER);
+    if (!busy_w(r)) return true; // -request
+    update_atomic_add(-SINGLE_READER);
+    return false;
+  }
+
   
 };
 #endif

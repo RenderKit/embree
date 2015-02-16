@@ -69,6 +69,9 @@ namespace embree
    __forceinline void write_unlock() { mtx.write_unlock(); }
    __forceinline void upgrade_write_to_read_lock() { mtx.upgrade_write_to_read_lock(); }
 
+   __forceinline bool try_read_lock()  { return mtx.try_read_lock();   }
+   __forceinline bool try_write_lock() { return mtx.try_write_lock();  }
+
 
    __forceinline TessellationCacheTag() {}
 
@@ -213,7 +216,7 @@ namespace embree
     __forceinline void reset()
     {
       for (size_t i=0;i<CACHE_ENTRIES;i++)
-        tags[i].reset(PRE_ALLOC_BLOCKS);
+        tags[i].reset(); // PRE_ALLOC_BLOCKS);
     }
     
 
@@ -287,6 +290,12 @@ namespace embree
 
         tags[index].markAsMRU();
 
+        return tags[index];
+      }
+
+      __forceinline TessellationCacheTag &getCacheTag(size_t index)
+      {
+        assert(index < CACHE_WAYS);
         return tags[index];
       }
 
@@ -427,6 +436,18 @@ namespace embree
       assert( t.match(primID,commitCounter) );
       return t.getRootRef();
     }
+
+    __forceinline TessellationCacheTag &getCacheTag(InputTagType primID, 
+						    const unsigned int commitCounter)
+    {
+      CACHE_DBG(PING);
+      const size_t set = addrToCacheSetIndex(primID);
+      CACHE_DBG(DBG_PRINT(set));      
+      const size_t index = sets[set].lookup(primID,commitCounter);
+      assert(index != CACHE_MISS);      
+      TessellationCacheTag &t = sets[set].getCacheTag(index);
+      return t;      
+    }
     
     /* insert entry using 'neededBlocks' cachelines into cache */
     __forceinline TessellationCacheTag &request(InputTagType primID, 
@@ -442,6 +463,7 @@ namespace embree
       assert( t.getAccessTimeStamp() & ((unsigned int)1 << 31));
       assert(!t.match(primID,commitCounter));
 
+#if 1
       if (/* !t.empty() && */ t.getNumBlocks() >= neededBlocks)
         {
           assert(t.getNumBlocks() >= neededBlocks);
@@ -450,7 +472,7 @@ namespace embree
           t.update(primID,commitCounter);
           return t;
         }
-
+#endif
       /* allocate entry */
       CACHE_DBG(DBG_PRINT("NEW ALLOC"));
 
