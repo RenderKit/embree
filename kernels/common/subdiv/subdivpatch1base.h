@@ -389,6 +389,7 @@ namespace embree
       assert( size > 4 );
       const unsigned int blocks4 = (end-start+1+4-1)/4;
       const unsigned int center  = (start + (blocks4/2)*4)-1; 
+      assert ((center-start+1) % 4 == 0);
 #else
       // FIXME: for xeon the divide is 3!
       const unsigned int center = (start+end)/2;
@@ -396,7 +397,6 @@ namespace embree
 
       assert (center > start);
       assert (center < end);
-      assert ((center-start+1) % 4 == 0);
       return center;
     }
 
