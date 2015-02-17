@@ -36,6 +36,7 @@ namespace embree
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+#if 0
     /*! Returns BVH4 node reference for subtree over patch grid */
     size_t SubdivPatch1CachedIntersector1::getSubtreeRootNode(Precalculations& pre, const SubdivPatch1Cached* const subdiv_patch, const void* geom)
     {
@@ -151,6 +152,7 @@ namespace embree
       
       return root;
     }
+#endif
 
     void updateBVH4Refs(const BVH4::NodeRef &ref, const size_t old_ptr, const size_t new_ptr)
     {
@@ -204,9 +206,10 @@ namespace embree
       return 2 + size;
     }
     
-    size_t SubdivPatch1CachedIntersector1::getSubtreeRootNodeFromCacheHierarchy(Precalculations& pre,
-                                                                                const SubdivPatch1Cached* const subdiv_patch,
-                                                                                const void* geom)
+#if 0
+    TessellationCacheTag *SubdivPatch1CachedIntersector1::lookupCacheHierarchy(Precalculations& pre,
+									       const SubdivPatch1Cached* const subdiv_patch,
+									       const void* geom)
     {
       DBG(DBG_PRINT(pre.local_cache));                                            
     
@@ -214,11 +217,10 @@ namespace embree
       InputTagType tag = (InputTagType)subdiv_patch;
 
       DBG(DBG_PRINT((size_t)tag / 320));
-      BVH4::NodeRef root = pre.local_cache->lookup(tag,commitCounter);
-      root.prefetch(0);
+      TessellationCacheTag *t = pre.local_cache->lookup(tag,commitCounter);
       CACHE_STATS(DistributedTessellationCacheStats::cache_accesses++);
 
-      if (unlikely(root == (size_t)-1)) /* L1 cache miss ? */
+      if (unlikely(t == NULL)) /* L1 cache miss ? */
         {
           CACHE_STATS(DistributedTessellationCacheStats::cache_misses++);
 
@@ -354,7 +356,7 @@ namespace embree
       DBG(DBG_PRINT("L1 CACHE HIT"));                                            
       return root;          
     }
-    
+#endif    
 
     BVH4::NodeRef SubdivPatch1CachedIntersector1::buildSubdivPatchTree(const SubdivPatch1Cached &patch,
                                                                        void *const lazymem,

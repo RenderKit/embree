@@ -285,16 +285,17 @@ namespace embree
       
       
       /*! Returns BVH4 node reference for subtree over patch grid */
-      static __forceinline size_t getSubtreeRootNode(PerThreadTessellationCache *local_cache, const SubdivPatch1Cached* const subdiv_patch, const void* geom)
+      static __forceinline TessellationCacheTag *lookUpLocalTessellationCache(PerThreadTessellationCache *local_cache, const SubdivPatch1Cached* const subdiv_patch, const void* geom)
       {
         const unsigned int commitCounter = ((Scene*)geom)->commitCounter;
         InputTagType tag = (InputTagType)subdiv_patch;
         
-        BVH4::NodeRef root = local_cache->lookup(tag,commitCounter);
-        root.prefetch(0);
+        //BVH4::NodeRef root = local_cache->lookup(tag,commitCounter);
+	TessellationCacheTag *t = local_cache->lookup(tag,commitCounter);
+
         CACHE_STATS(DistributedTessellationCacheStats::cache_accesses++);
 
-        if (unlikely(root == (size_t)-1))
+        if (unlikely(t == NULL))
         {
           /* CACHE MISS */
           CACHE_STATS(DistributedTessellationCacheStats::cache_misses++);
@@ -302,33 +303,29 @@ namespace embree
           subdiv_patch->prefetchData();
           const unsigned int blocks = subdiv_patch->grid_subtree_size_64b_blocks;
           
-          TessellationCacheTag &t = local_cache->request(tag,commitCounter,blocks);
+          t = local_cache->request(tag,commitCounter,blocks);
 
-          BVH4::Node* node = (BVH4::Node*)t.getPtr();
-          prefetchL1(((float*)node + 0*16));
-          prefetchL1(((float*)node + 1*16));
-          prefetchL1(((float*)node + 2*16));
-          prefetchL1(((float*)node + 3*16));
+          BVH4::Node* node = (BVH4::Node*)t->getPtr();
           
           size_t new_root = (size_t)buildSubdivPatchTree(*subdiv_patch,node,((Scene*)geom)->getSubdivMesh(subdiv_patch->geom));
           assert( new_root != BVH4::invalidNode);
           
-          t.updateRootRef(new_root);
+          t->updateRootRef(new_root);
           
-          return new_root;
+          return t;
         }        
         /* CACHE HIT */
         CACHE_STATS(DistributedTessellationCacheStats::cache_hits++);
-        return root;   
+        return t;   
       }
 
 
       /*! Returns BVH4 node reference for subtree over patch grid */
-      static size_t getSubtreeRootNode(Precalculations& pre, const SubdivPatch1Cached* const subdiv_patch, const void* geom);
+      //static size_t getSubtreeRootNode(Precalculations& pre, const SubdivPatch1Cached* const subdiv_patch, const void* geom);
 
 
       /*! Returns BVH4 node reference for subtree over patch grid */
-      static size_t getSubtreeRootNodeFromCacheHierarchy(Precalculations& pre, const SubdivPatch1Cached* const subdiv_patch, const void* geom);
+      //static size_t getSubtreeRootNodeFromCacheHierarchy(Precalculations& pre, const SubdivPatch1Cached* const subdiv_patch, const void* geom);
 
       /*! Evaluates grid over patch and builds BVH4 tree over the grid. */
       static BVH4::NodeRef buildSubdivPatchTree(const SubdivPatch1Cached &patch,
@@ -374,7 +371,8 @@ namespace embree
           //lazy_node = getSubtreeRootNode(pre, prim, geom);
           lazy_node = getSubtreeRootNodeFromCacheHierarchy(pre, prim, geom);          
 #else          
-          lazy_node = getSubtreeRootNode(pre.local_cache, prim, geom);
+	  TessellationCacheTag *t = lookUpLocalTessellationCache(pre.local_cache, prim, geom);
+          lazy_node = t->getRootRef();
 #endif
           pre.current_patch = (SubdivPatch1Cached*)prim;
           
@@ -398,7 +396,9 @@ namespace embree
         }
         else 
         {
-          lazy_node = getSubtreeRootNode(pre.local_cache, prim, geom);        
+	  TessellationCacheTag *t = lookUpLocalTessellationCache(pre.local_cache, prim, geom);
+          lazy_node = t->getRootRef();
+
           pre.current_patch = (SubdivPatch1Cached*)prim;
         }             
         

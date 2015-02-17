@@ -274,37 +274,25 @@ namespace embree
 
   public:
 
-    static const size_t CACHE_MISS = (size_t)-1;
-
-
-
     class CacheTagSet {
     public:
       TessellationCacheTag tags[CACHE_WAYS];
 
-      __forceinline TessellationCacheTag &getCacheTagAndUpdateNFU(size_t index)
+      __forceinline void updateNFU_markMRU(TessellationCacheTag *t)
       {
-        assert(index < CACHE_WAYS);
         for (size_t i=0;i<CACHE_WAYS;i++)
           tags[i].updateNFUStat();
 
-        tags[index].markAsMRU();
-
-        return tags[index];
+        t->markAsMRU();
       }
 
-      __forceinline TessellationCacheTag &getCacheTag(size_t index)
-      {
-        assert(index < CACHE_WAYS);
-        return tags[index];
-      }
 
-      __forceinline size_t lookup(InputTagType primID, const unsigned int commitCounter)
+      __forceinline TessellationCacheTag *lookup(InputTagType primID, const unsigned int commitCounter)
       {
         for (size_t i=0;i<CACHE_WAYS;i++)
           if (tags[i].match(primID,commitCounter))
-            return i;
-        return CACHE_MISS;
+            return &tags[i];
+        return NULL;
       };
 
 
@@ -321,13 +309,14 @@ namespace embree
         return b;
       }
 
-      __forceinline TessellationCacheTag& getEvictionCandidate(const unsigned int neededBlocks)
+      __forceinline TessellationCacheTag* getEvictionCandidate(const unsigned int neededBlocks)
       {
         /* fill empty slots first */
         for (size_t i=0;i<CACHE_WAYS;i++)
           if (tags[i].empty()) 
             {
-              return getCacheTagAndUpdateNFU(i);
+	      updateNFU_markMRU(&tags[i]);
+	      return &tags[i];
             }
 
         unsigned int min_access_timestamp = (unsigned int)-1;
@@ -346,9 +335,8 @@ namespace embree
         assert(index != (size_t)-1);
 
         /* update NFU status */
-        return getCacheTagAndUpdateNFU(index);
-
-        //if (tags[i].blocks() >= neededBlocks)
+	updateNFU_markMRU(&tags[index]);
+	return &tags[index];
       }
       
       __forceinline void print() {
@@ -407,16 +395,16 @@ namespace embree
     }
 
     /* lookup cache entry using 64bit pointer as tag */
-    __forceinline size_t lookup(InputTagType primID, const unsigned int commitCounter)
+    __forceinline TessellationCacheTag *lookup(InputTagType primID, const unsigned int commitCounter)
     {
       CACHE_DBG(PING);
       /* direct mapped */
       const size_t set = addrToCacheSetIndex(primID);
       assert(set < CACHE_SETS);
-      const size_t index = sets[set].lookup(primID,commitCounter);
+      TessellationCacheTag *t = sets[set].lookup(primID,commitCounter);
 
       CACHE_DBG(
-                DBG_PRINT( index == CACHE_MISS );
+                DBG_PRINT( t == NULL );
 
                 DBG_PRINT(primID);
                 DBG_PRINT(toTag(primID));
@@ -426,31 +414,17 @@ namespace embree
                 sets[set].print();
                 );
 
-      if (unlikely(index == CACHE_MISS)) 
+      if (unlikely(t == NULL)) 
         {
-          return CACHE_MISS;
+          return NULL;
         }
 
-      TessellationCacheTag &t = sets[set].getCacheTagAndUpdateNFU(index);
-
-      assert( t.match(primID,commitCounter) );
-      return t.getRootRef();
-    }
-
-    __forceinline TessellationCacheTag &getCacheTag(InputTagType primID, 
-						    const unsigned int commitCounter)
-    {
-      CACHE_DBG(PING);
-      const size_t set = addrToCacheSetIndex(primID);
-      CACHE_DBG(DBG_PRINT(set));      
-      const size_t index = sets[set].lookup(primID,commitCounter);
-      assert(index != CACHE_MISS);      
-      TessellationCacheTag &t = sets[set].getCacheTag(index);
-      return t;      
+      sets[set].updateNFU_markMRU(t);
+      return t;
     }
     
     /* insert entry using 'neededBlocks' cachelines into cache */
-    __forceinline TessellationCacheTag &request(InputTagType primID, 
+    __forceinline TessellationCacheTag *request(InputTagType primID, 
                                                 const unsigned int commitCounter, 
                                                 const size_t neededBlocks)
     {
@@ -458,18 +432,18 @@ namespace embree
       const size_t set = addrToCacheSetIndex(primID);
       CACHE_DBG(DBG_PRINT(set));
       
-      TessellationCacheTag &t = sets[set].getEvictionCandidate(neededBlocks);
+      TessellationCacheTag *t = sets[set].getEvictionCandidate(neededBlocks);
       
-      assert( t.getAccessTimeStamp() & ((unsigned int)1 << 31));
-      assert(!t.match(primID,commitCounter));
+      assert( t->getAccessTimeStamp() & ((unsigned int)1 << 31));
+      assert(!t->match(primID,commitCounter));
 
 #if 1
-      if (/* !t.empty() && */ t.getNumBlocks() >= neededBlocks)
+      if (/* !t->empty() && */ t->getNumBlocks() >= neededBlocks)
         {
-          assert(t.getNumBlocks() >= neededBlocks);
+          assert(t->getNumBlocks() >= neededBlocks);
 	  CACHE_DBG(DBG_PRINT("EVICT"));
-          t.clearRootRefBits();
-          t.update(primID,commitCounter);
+          t->clearRootRefBits();
+          t->update(primID,commitCounter);
           return t;
         }
 #endif
@@ -477,25 +451,25 @@ namespace embree
       CACHE_DBG(DBG_PRINT("NEW ALLOC"));
 
       CACHE_DBG(DBG_PRINT(set));
-      CACHE_DBG(DBG_PRINT(t.getPtr()));
+      CACHE_DBG(DBG_PRINT(t->getPtr()));
       
-      if (t.getPtr() != NULL)
+      if (t->getPtr() != NULL)
         {
-          assert(t.getNumBlocks() != 0);
-          CACHE_DBG(DBG_PRINT(t.getPtr()));
-          free_tessellation_cache_mem(t.getPtr());
+          assert(t->getNumBlocks() != 0);
+          CACHE_DBG(DBG_PRINT(t->getPtr()));
+          free_tessellation_cache_mem(t->getPtr());
         }
       else
         {
-          assert(t.getNumBlocks() == 0);
-          assert(t.getPrimTag() == (unsigned int)-1);
+          assert(t->getNumBlocks() == 0);
+          assert(t->getPrimTag() == (unsigned int)-1);
         }
       float *new_mem = alloc_tessellation_cache_mem(neededBlocks);
       CACHE_DBG(DBG_PRINT(new_mem));
 
       /* insert new entry at the beginning */
-      CACHE_DBG(t.print());
-      t.set(primID,commitCounter,(size_t)new_mem,neededBlocks);
+      CACHE_DBG(t->print());
+      t->set(primID,commitCounter,(size_t)new_mem,neededBlocks);
       CACHE_DBG(sets[set].print());
       return t;     
     }

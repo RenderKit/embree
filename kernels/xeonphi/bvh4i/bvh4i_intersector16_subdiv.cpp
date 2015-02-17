@@ -27,15 +27,14 @@
 #define CACHE_STATS(x) 
 #endif
 
-#define SHARED_TESSELLATION_CACHE_ENTRIES      256
+#define SHARED_TESSELLATION_CACHE_ENTRIES 256
 #define LOCAL_TESSELLATION_CACHE_ENTRIES  32
-//#define LOCAL_TESSELLATION_CACHE_ENTRIES  4
 
 //#define PRE_ALLOC_BLOCKS 32
 #define PRE_ALLOC_BLOCKS 0
 
 //#define ONLY_SHARED_CACHE
-#define CACHE_HIERARCHY
+//#define CACHE_HIERARCHY
 
 namespace embree
 {
@@ -289,8 +288,8 @@ namespace embree
       const SubdivMesh* const geom = (SubdivMesh*)scene->get(subdiv_patch.geom); // FIXME: test flag first
       
       const unsigned int blocks = subdiv_patch.grid_subtree_size_64b_blocks;
-      TessellationCacheTag &t = local_cache->request(tag,commitCounter,blocks);		      
-      mic_f *local_mem = (mic_f*)t.getPtr(); 
+      TessellationCacheTag *t = local_cache->request(tag,commitCounter,blocks);		      
+      mic_f *local_mem = (mic_f*)t->getPtr(); 
 
       unsigned int currentIndex = 0;
       
@@ -298,12 +297,12 @@ namespace embree
       assert( bvh4i_root != BVH4i::invalidNode);
 
       //local_cache->updateRootRef(t,subtree_root);
-      t.updateRootRef((size_t)bvh4i_root + (size_t)local_mem);
+      t->updateRootRef((size_t)bvh4i_root + (size_t)local_mem);
 
-      assert( bvh4i_root == extractBVH4iNodeRef( t.getRootRef() ));
-      assert( local_mem  == extractBVH4iPtr( t.getRootRef() ));
-      assert( (size_t)extractBVH4iNodeRef( t.getRootRef() ) + (size_t)extractBVH4iPtr( t.getRootRef() ) == t.getRootRef() );
-      return &t;
+      assert( bvh4i_root == extractBVH4iNodeRef( t->getRootRef() ));
+      assert( local_mem  == extractBVH4iPtr( t->getRootRef() ));
+      assert( (size_t)extractBVH4iNodeRef( t->getRootRef() ) + (size_t)extractBVH4iPtr( t->getRootRef() ) == t->getRootRef() );
+      return t;
     }
 
     __forceinline TessellationCacheTag *lookUpLocalTessellationCache(TessellationCache *local_cache,
@@ -316,17 +315,15 @@ namespace embree
 
       InputTagType tag = (InputTagType)patchIndex;
 
-      size_t subtree_root = local_cache->lookup(tag,commitCounter);
-      if (unlikely(subtree_root == (size_t)-1))
+     TessellationCacheTag *t = local_cache->lookup(tag,commitCounter);
+      if (unlikely(t == NULL))
 	{
 	  CACHE_STATS(DistributedTessellationCacheStats::cache_misses++);
 	  return fillLocalTessellationCache(local_cache,patchIndex,commitCounter,patches,scene);
 	}
       CACHE_STATS(DistributedTessellationCacheStats::cache_hits++);
 
-      TessellationCacheTag &t = local_cache->getCacheTag(tag,commitCounter);		      
-
-      return &t;
+      return t;
     }
 
 
@@ -478,9 +475,9 @@ namespace embree
 
       InputTagType tag = (InputTagType)patchIndex;
 
-      size_t subtree_root = local_cache->lookup(tag,commitCounter);
+      TessellationCacheTag *t_l1 = local_cache->lookup(tag,commitCounter);
 
-      if (unlikely(subtree_root == (size_t)-1))
+      if (unlikely(t_l1 == NULL))
 	{
 	  CACHE_STATS(DistributedTessellationCacheStats::cache_misses++);
 
@@ -497,27 +494,27 @@ namespace embree
 	      const SubdivPatch1& subdiv_patch = patches[patchIndex];
 	      const unsigned int blocks = subdiv_patch.grid_subtree_size_64b_blocks;
 
-	      TessellationCacheTag &t_l1 = local_cache->request(tag,commitCounter,blocks);		      
+	      t_l1 = local_cache->request(tag,commitCounter,blocks);		      
 
-	      mic_f *local_mem = (mic_f*)t_l1.getPtr(); 
+	      mic_f *local_mem = (mic_f*)t_l1->getPtr(); 
 
 	      assert(t_l2->getNumBlocks() >= blocks);
-	      assert(t_l1.getNumBlocks() >= blocks);
+	      assert(t_l1->getNumBlocks() >= blocks);
 
 	      memcpy(local_mem,t_l2->getPtr(),64*blocks);
 	  
 	      t_l2->read_unlock();
 
-	      t_l1.set(tag,commitCounter,(size_t)local_mem + (size_t)t_ref,blocks);
+	      t_l1->set(tag,commitCounter,(size_t)local_mem + (size_t)t_ref,blocks);
 
-	      return &t_l1;
+	      return t_l1;
 	    }
 	  ////////////////////////////////////////////////////////////////////////////////////
 	  ////////////////////////////////////////////////////////////////////////////////////
 	  ////////////////////////////////////////////////////////////////////////////////////
 
 	  TessellationCacheTag *t_l1 = fillLocalTessellationCache(local_cache,patchIndex,commitCounter,patches,scene);
-	  subtree_root = t_l1->getRootRef();
+	  size_t subtree_root = t_l1->getRootRef();
 
 	  const SubdivPatch1& subdiv_patch = patches[patchIndex];
 	  const unsigned int needed_blocks = subdiv_patch.grid_subtree_size_64b_blocks;
@@ -537,26 +534,24 @@ namespace embree
 	  const unsigned int blocks = t_l2->getNumBlocks();
 
 	  TessellationCacheTag &t_l1 = local_cache->request(tag,commitCounter,blocks);		      
-	  mic_f *local_mem = (mic_f*)t_l1.getPtr(); 
+	  mic_f *local_mem = (mic_f*)t_l1->getPtr(); 
 	  memcpy(local_mem,t_l2->getPtr(),64*blocks);
 	  
 	  t_l2->read_unlock();
 
 	  //local_cache->updateRootRef(t,subtree_root);
-	  t_l1.set(tag,commitCounter,(size_t)local_mem + (size_t)t_ref,blocks);
+	  t_l1->set(tag,commitCounter,(size_t)local_mem + (size_t)t_ref,blocks);
 
-	  assert( t_ref == extractBVH4iNodeRef( t_l1.getRootRef() ));
-	  assert( local_mem  == extractBVH4iPtr( t_l1.getRootRef() ));
-	  assert( (size_t)extractBVH4iNodeRef( t_l1.getRootRef() ) + (size_t)extractBVH4iPtr( t_l1.getRootRef() ) == t_l1.getRootRef() );
+	  assert( t_ref == extractBVH4iNodeRef( t_l1->getRootRef() ));
+	  assert( local_mem  == extractBVH4iPtr( t_l1->getRootRef() ));
+	  assert( (size_t)extractBVH4iNodeRef( t_l1->getRootRef() ) + (size_t)extractBVH4iPtr( t_l1->getRootRef() ) == t_l1->getRootRef() );
 
-	  return &t_l1;
+	  return t_l1;
 #endif
 	}
       CACHE_STATS(DistributedTessellationCacheStats::cache_hits++);
 
-      TessellationCacheTag &t_l1 = local_cache->getCacheTag(tag,commitCounter);		      
-
-      return &t_l1;
+      return t_l1;
     }
 
     __forceinline TessellationCacheTag *lookUpTessellationCache(TessellationCache *local_cache,
