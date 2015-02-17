@@ -733,6 +733,19 @@ namespace embree
     return f;
   }
 
+  __forceinline mic_f gather16f_4f_unalign(const void *__restrict__ const ptr0,
+					   const void *__restrict__ const ptr1,
+					   const void *__restrict__ const ptr2,
+					   const void *__restrict__ const ptr3) 
+  {
+    mic_f v = permute<0>(uload16f((float*)ptr3));
+    v = align_shift_right<12>(v,permute<0>(uload16f((float*)ptr2)));
+    v = align_shift_right<12>(v,permute<0>(uload16f((float*)ptr1)));
+    v = align_shift_right<12>(v,permute<0>(uload16f((float*)ptr0)));
+    return v;
+  }
+
+
   __forceinline mic_f rcp_safe( const mic_f& a ) { return select(a != mic_f::zero(),_mm512_rcp23_ps(a),mic_f(1E-10f)); };
 
   ////////////////////////////////////////////////////////////////////////////////

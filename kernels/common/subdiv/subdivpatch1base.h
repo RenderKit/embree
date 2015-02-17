@@ -385,28 +385,13 @@ namespace embree
     static __forceinline unsigned int split(unsigned int start,unsigned int end)
     {
       const unsigned int size = end-start+1;
-#if defined(__MIC__) && 1
-      //DBG_PRINT( end-start+1 );
+#if defined(__MIC__)
       assert( size > 4 );
-      //DBG_PRINT( start );
-      //DBG_PRINT( end );
-
-      unsigned int blocks4 = (end-start+1+4-1)/4;
-
-      //DBG_PRINT( blocks4 );
-
-      unsigned int center  = (start + (blocks4/2)*4)-1; 
-
-      //DBG_PRINT( center );
-      //DBG_PRINT( center % 4);
-      //DBG_PRINT( (start+end)/2);
-
-
-      //PING;
-      //DBG_PRINT(center);
+      const unsigned int blocks4 = (end-start+1+4-1)/4;
+      const unsigned int center  = (start + (blocks4/2)*4)-1; 
 #else
       // FIXME: for xeon the divide is 3!
-      const unsigned int center = start + size/2 - 1; //(start+end)/2;
+      const unsigned int center = (start+end)/2;
 #endif
 
       assert (center > start);

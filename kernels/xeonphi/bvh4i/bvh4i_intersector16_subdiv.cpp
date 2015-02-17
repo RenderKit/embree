@@ -19,7 +19,7 @@
 #include "geometry/subdivpatch1.h"
 #include "common/subdiv/tessellation_cache.h"
 
-#define TIMER(x) 
+#define TIMER(x)
 
 #if defined(DEBUG)
 #define CACHE_STATS(x) 
@@ -127,7 +127,6 @@ namespace embree
 	  mic_f uu = mic_f::inf();
 	  mic_f vv = mic_f::inf();
 
-	  /* fast path */
 #if 0
 	  DBG_PRINT(u_start);
 	  DBG_PRINT(u_end);
@@ -136,35 +135,48 @@ namespace embree
 
 	  DBG_PRINT(u_size);
 	  DBG_PRINT(v_size);
-
-	  if (u_size == 4 && v_size == 4)
-	    PING;
 #endif
-	  for (unsigned int v=v_start;v<=v_end;v++)
+
+	  const size_t offset  = v_start * patch.grid_u_res + u_start;
+
+	  /* fast path */
+	  if (u_size == 4 && v_size == 4)
+	    {
+	      const size_t offset0 = offset + 0 * patch.grid_u_res;
+	      const size_t offset1 = offset + 1 * patch.grid_u_res;
+	      const size_t offset2 = offset + 2 * patch.grid_u_res;
+	      const size_t offset3 = offset + 3 * patch.grid_u_res;
+	      uu = gather16f_4f_unalign(&grid_u_array[offset0],&grid_u_array[offset1],&grid_u_array[offset2],&grid_u_array[offset3]);
+	      vv = gather16f_4f_unalign(&grid_v_array[offset0],&grid_v_array[offset1],&grid_v_array[offset2],&grid_v_array[offset3]);
+	    }
+	  else
+	    {
+	      for (unsigned int v=0;v<v_size;v++)
+		{
 #pragma novector
-	    for (unsigned int u=u_start;u<=u_end;u++)
-	      {
-		const unsigned int local_v = v - v_start;
-		const unsigned int local_u = u - u_start;
-		uu[4 * local_v + local_u] = grid_u_array[ v * patch.grid_u_res + u ];
-		vv[4 * local_v + local_u] = grid_v_array[ v * patch.grid_u_res + u ];
-	      }
+		  for (unsigned int u=0;u<u_size;u++)
+		    {
+		      uu[4 * v + u] = grid_u_array[ offset + v * patch.grid_u_res + u ];
+		      vv[4 * v + u] = grid_v_array[ offset + v * patch.grid_u_res + u ];
+		    }
+		}
 
-	  /* set invalid grid u,v value to border elements */
+	      /* set invalid grid u,v value to border elements */
 
-	  for (unsigned int x=u_size-1;x<4;x++)
-	    for (unsigned int y=0;y<4;y++)
-	      {
-		uu[4 * y + x] = uu[4 * y + u_size-1];
-		vv[4 * y + x] = vv[4 * y + u_size-1];
-	      }
+	      for (unsigned int x=u_size-1;x<4;x++)
+		for (unsigned int y=0;y<4;y++)
+		  {
+		    uu[4 * y + x] = uu[4 * y + u_size-1];
+		    vv[4 * y + x] = vv[4 * y + u_size-1];
+		  }
 
-	  for (unsigned int y=v_size-1;y<4;y++)
-	    for (unsigned int x=0;x<4;x++)
-	      {
-		uu[4 * y + x] = uu[4 * (v_size-1) + x];
-		vv[4 * y + x] = vv[4 * (v_size-1) + x];
-	      }
+	      for (unsigned int y=v_size-1;y<4;y++)
+		for (unsigned int x=0;x<4;x++)
+		  {
+		    uu[4 * y + x] = uu[4 * (v_size-1) + x];
+		    vv[4 * y + x] = vv[4 * (v_size-1) + x];
+		  }
+	    }
 	  
 	  mic3f vtx = patch.eval16(uu,vv);
 
