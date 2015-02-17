@@ -27,7 +27,7 @@ namespace embree
   float *alloc_tessellation_cache_mem(const size_t blocks);
 
   /* free cache memory */
-  void free_tessellation_cache_mem(void *mem);
+  void free_tessellation_cache_mem(void *mem, const size_t blocks);
 
 
 #if defined(__MIC__)
@@ -352,7 +352,7 @@ namespace embree
 
   private:
     CacheTagSet sets[CACHE_SETS];
-                    
+                        
     __forceinline size_t addrToCacheSetIndex(InputTagType primID)
     {      
       const size_t cache_set = toTag(primID) % CACHE_SETS;
@@ -457,7 +457,7 @@ namespace embree
         {
           assert(t->getNumBlocks() != 0);
           CACHE_DBG(DBG_PRINT(t->getPtr()));
-          free_tessellation_cache_mem(t->getPtr());
+          free_tessellation_cache_mem(t->getPtr(),t->getNumBlocks());
         }
       else
         {

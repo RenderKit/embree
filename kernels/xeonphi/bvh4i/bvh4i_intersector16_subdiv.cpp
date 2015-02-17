@@ -127,7 +127,21 @@ namespace embree
 	  mic_f uu = mic_f::inf();
 	  mic_f vv = mic_f::inf();
 
+	  /* fast path */
+#if 0
+	  DBG_PRINT(u_start);
+	  DBG_PRINT(u_end);
+	  DBG_PRINT(v_start);
+	  DBG_PRINT(v_end);
+
+	  DBG_PRINT(u_size);
+	  DBG_PRINT(v_size);
+
+	  if (u_size == 4 && v_size == 4)
+	    PING;
+#endif
 	  for (unsigned int v=v_start;v<=v_end;v++)
+#pragma novector
 	    for (unsigned int u=u_start;u<=u_end;u++)
 	      {
 		const unsigned int local_v = v - v_start;
@@ -225,10 +239,17 @@ namespace embree
 					   mic_f *lazymem,
 					   const SubdivMesh* const geom)
     {
-
+      TIMER(if (patch.grid_size_simd_blocks > 50) PING);
       TIMER(double msec = 0.0);
       TIMER(msec = getSeconds());
 
+#if 0
+      DBG_PRINT(patch.grid_size_simd_blocks);
+      DBG_PRINT(patch.grid_u_res);
+      DBG_PRINT(patch.grid_v_res);
+      DBG_PRINT(patch.grid_subtree_size_64b_blocks);
+      //exit(0);
+#endif
       __aligned(64) float u_array[(patch.grid_size_simd_blocks+1)*16]; // for unaligned access
       __aligned(64) float v_array[(patch.grid_size_simd_blocks+1)*16];
 
@@ -242,6 +263,9 @@ namespace embree
       if (patch.needsStiching())
 	stichUVGrid(patch.level,patch.grid_u_res,patch.grid_v_res,u_array,v_array);
 
+      TIMER(msec = getSeconds()-msec);    
+      TIMER(if (patch.grid_size_simd_blocks > 50) DBG_PRINT(1000. * msec));
+      TIMER(msec = getSeconds());
 
       BVH4i::NodeRef subtree_root = 0;
       const unsigned int oldIndex = currentIndex;
@@ -257,6 +281,7 @@ namespace embree
 
       assert(currentIndex - oldIndex == patch.grid_subtree_size_64b_blocks);
       TIMER(msec = getSeconds()-msec);    
+      TIMER(if (patch.grid_size_simd_blocks > 50) DBG_PRINT(1000. * msec));
       return subtree_root;
     }
 
@@ -354,7 +379,7 @@ namespace embree
 	  t->write_lock();
           mic_f* old_mem = (mic_f*)t->getPtr();
 	  if (old_mem != NULL)
-	    free_tessellation_cache_mem(old_mem); 
+	    free_tessellation_cache_mem(old_mem,t->getNumBlocks()); 
 
 	  t->set(tag,commitCounter,(size_t)local_mem,needed_blocks);
 	  t->updateRootRef((size_t)bvh4i_root + (size_t)local_mem);
@@ -446,7 +471,7 @@ namespace embree
 
 	      if (t->getNumBlocks() < blocks)
 		{
-		  if (local_mem != NULL) free_tessellation_cache_mem(local_mem); 	      
+		  if (local_mem != NULL) free_tessellation_cache_mem(local_mem,t->getNumBlocks()); 	      
 		  local_mem = (mic_f*)alloc_tessellation_cache_mem(blocks);
 		}
 

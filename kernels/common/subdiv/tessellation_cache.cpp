@@ -38,17 +38,103 @@ namespace embree
   //   TessellationCache::cache_evictions = 0;          
   // }
 
+  struct LocalTessellationCacheMemoryHandler
+  {
+    static const size_t SAVED_MEMORY_POINTERS =  16;
+
+    size_t numSaved;
+    struct SaveMem {
+      void *ptr;
+      size_t blocks;
+    } saved[SAVED_MEMORY_POINTERS];
+
+    __forceinline void reset()
+    {
+      numSaved = 0;
+    }
+
+    LocalTessellationCacheMemoryHandler() {
+      reset();
+    }
+
+    void insert(void *ptr, size_t blocks)
+    {
+      if (numSaved < SAVED_MEMORY_POINTERS)
+	{
+	  /* saved memory pointer */
+	  saved[numSaved].ptr    = ptr;
+	  saved[numSaved].blocks = blocks;
+	  numSaved++;
+	}
+      else
+	{
+	  /* select smallest item as eviction candidate */
+	  size_t size = saved[0].blocks;
+	  size_t index = 0;
+	  for (size_t i=1;i<numSaved;i++)
+	    if (saved[i].blocks < size)
+	      {
+		size = saved[i].blocks;
+		index = i;
+	      }
+	  /* free eviction candidate */
+	  _mm_free(saved[index].ptr);
+	  /* overwrite eviction candidate*/
+	  saved[index].ptr    = ptr;
+	  saved[index].blocks = blocks;
+	}
+    }
+
+    void *lookup(size_t blocks)
+    {
+      size_t index    = (size_t)-1;
+      size_t s_blocks = (size_t)-1;
+      for (size_t i=0;i<numSaved;i++)
+	if (saved[i].blocks >= blocks &&
+	    saved[i].blocks < s_blocks)
+	  {
+	    index = i;
+	    s_blocks = saved[i].blocks;
+	  }
+      if (index == (size_t)-1)
+	{
+	  return (float*)_mm_malloc(64 * blocks,64);
+	}
+
+      void *t = saved[index].ptr;
+      saved[index] = saved[numSaved-1];
+      numSaved--;
+      return t;
+    }
+  };
+
+  __thread LocalTessellationCacheMemoryHandler *perThreadMemHandler = NULL;
+
   /* alloc cache memory */
   float *alloc_tessellation_cache_mem(const size_t blocks)
   {
+#if 0
+    if (!perThreadMemHandler)
+      perThreadMemHandler = new LocalTessellationCacheMemoryHandler();
+
+    return (float*)perThreadMemHandler->lookup(blocks);
+#else
     return (float*)_mm_malloc(64 * blocks,64);
+#endif
   }
   
   /* free cache memory */
-  void free_tessellation_cache_mem(void *mem)
+  void free_tessellation_cache_mem(void *mem, const size_t blocks)
   {
     assert(mem);
+#if 0
+    if (!perThreadMemHandler)
+      perThreadMemHandler = new LocalTessellationCacheMemoryHandler();
+
+    perThreadMemHandler->insert(mem,blocks);
+#else
     _mm_free(mem);
+#endif
   }
 
   
