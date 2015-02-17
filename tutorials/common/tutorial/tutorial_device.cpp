@@ -23,7 +23,9 @@ extern RTCScene g_scene;
 unsigned int g_subdivision_levels = 0;
 
 /* intensity scaling for traversal cost visualization */
-float scale = 0.001f;
+//float scale = 0.001f;
+float scale = 1.0f / 1000000.0f;
+
 extern "C" bool g_changed = false;
 
 /* stores pointer to currently used rendePixel function */
@@ -210,7 +212,6 @@ Vec3fa renderPixelCycles(float x, float y, const Vec3fa& vx, const Vec3fa& vy, c
   int64 c0 = get_tsc();
   rtcIntersect(g_scene,ray);
   int64 c1 = get_tsc();
-  
   /* shade pixel */
   return Vec3fa((float)(c1-c0)*scale,0.0f,0.0f);
 }
@@ -313,11 +314,13 @@ extern "C" void device_key_pressed(int key)
   }
   else if (key == GLUT_KEY_F9) {
     if (renderPixel == renderPixelCycles) scale *= 1.1f;
+    DBG_PRINT(scale);
     renderPixel = renderPixelCycles;
     g_changed = true;
   }
   else if (key == GLUT_KEY_F10) {
     if (renderPixel == renderPixelCycles) scale *= 0.9f;
+    DBG_PRINT(scale);
     renderPixel = renderPixelCycles;
     g_changed = true;
   }
