@@ -28,8 +28,8 @@
 #endif
 
 #define SHARED_TESSELLATION_CACHE_ENTRIES      256
-//#define LOCAL_TESSELLATION_CACHE_ENTRIES  32
-#define LOCAL_TESSELLATION_CACHE_ENTRIES  4
+#define LOCAL_TESSELLATION_CACHE_ENTRIES  32
+//#define LOCAL_TESSELLATION_CACHE_ENTRIES  4
 
 //#define PRE_ALLOC_BLOCKS 32
 #define PRE_ALLOC_BLOCKS 0
@@ -430,11 +430,9 @@ namespace embree
 						     const unsigned int blocks,
 						     const BVH4i::NodeRef root)
     {
-      //PING;
       InputTagType tag = (InputTagType)patchIndex;
       TessellationCacheTag *t = sharedTessellationCache.getTag(tag);
       assert(t);
-      //DBG_PRINT(tag);
       if (t->try_write_lock())
 	{
 	  if (unlikely(t->match(tag,commitCounter)))
@@ -443,24 +441,17 @@ namespace embree
 	    }
 	  else
 	    {
-	      //DBG_PRINT("WRITING...");
-	      //DBG_PRINT( root );
 	      // FIXME: no realloc when equal size
 	      mic_f* old_mem = (mic_f*)t->getPtr();
-	      //DBG_PRINT(old_mem);
-	      //DBG_PRINT(t->getRootRef());
 
 	      if (old_mem != NULL) free_tessellation_cache_mem(old_mem); 
 	      
 	      mic_f* local_mem = (mic_f*)alloc_tessellation_cache_mem(blocks);
-	      //DBG_PRINT(local_mem);
 	      memcpy(local_mem,mem,64 * blocks);
 	      
 	      t->set(tag,commitCounter,(size_t)local_mem,blocks);
 	      t->updateRootRef((size_t)root + (size_t)local_mem);	      
 	      //t->print();
-
-	      //DBG_PRINT(blocks);
 
 	      assert( root == extractBVH4iNodeRef( t->getRootRef() ));
 	      assert( local_mem  == extractBVH4iPtr( t->getRootRef() ));
@@ -506,29 +497,18 @@ namespace embree
 	      const SubdivPatch1& subdiv_patch = patches[patchIndex];
 	      const unsigned int blocks = subdiv_patch.grid_subtree_size_64b_blocks;
 
-	      //const unsigned int blocks = t_l2->getNumBlocks();
-	      //DBG_PRINT(blocks);
-
 	      TessellationCacheTag &t_l1 = local_cache->request(tag,commitCounter,blocks);		      
-	      //DBG_PRINT("L1");
-	      //t_l1.print();
 
 	      mic_f *local_mem = (mic_f*)t_l1.getPtr(); 
-	      //DBG_PRINT(local_mem);
-	      //DBG_PRINT(t_l2->getPtr());
 
 	      assert(t_l2->getNumBlocks() >= blocks);
 	      assert(t_l1.getNumBlocks() >= blocks);
 
 	      memcpy(local_mem,t_l2->getPtr(),64*blocks);
 	  
-	      //DBG_PRINT("memcpy");
-
 	      t_l2->read_unlock();
 
 	      t_l1.set(tag,commitCounter,(size_t)local_mem + (size_t)t_ref,blocks);
-
-	      //DBG_PRINT("UPDATE");
 
 	      return t_l1.getRootRef();
 	    }
