@@ -19,6 +19,13 @@
 
 #define PARALLEL_COMMIT
 
+#undef TILE_SIZE_X
+#undef TILE_SIZE_Y
+
+#define TILE_SIZE_X 4
+#define TILE_SIZE_Y 4
+
+
 #define FORCE_FIXED_EDGE_TESSELLATION
 //#define FIXED_EDGE_TESSELLATION_VALUE 4
 #define FIXED_EDGE_TESSELLATION_VALUE 32
@@ -402,7 +409,7 @@ task void renderTile(uniform int* uniform pixels,
   const uniform int y0 = tileY * TILE_SIZE_Y;
   const uniform int y1 = min(y0+TILE_SIZE_Y,height);
 
-  foreach (y = y0 ... y1, x = x0 ... x1)
+  foreach_tiled (y = y0 ... y1, x = x0 ... x1)
   {
     /* calculate pixel color */
     Vec3f color = renderPixel(x,y,vx,vy,vz,p);

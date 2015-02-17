@@ -39,6 +39,7 @@ namespace embree
   static bool g_fullscreen = false;
   static FileName outFilename = "";
   static bool g_interactive = true;
+  static bool g_loop_mode = false;
 
   /* scene */
   OBJScene g_obj_scene;
@@ -112,6 +113,9 @@ namespace embree
       else if (term == "-pregenerate") 
 	g_subdiv_mode = ",subdiv_accel=bvh4.grid.eager";
 
+      else if (term == "-loop") 
+	g_loop_mode = true;
+
       /*! Skip unknown command line parameters. */
       else std::cerr << "Unknown command line parameter: " << getParameterString(cin, term) << std::endl;
 
@@ -124,12 +128,18 @@ namespace embree
     resize(g_width,g_height);
     AffineSpace3fa pixel2world = g_camera.pixel2world(g_width,g_height);
 
-    render(0.0f,
-           pixel2world.l.vx,
-           pixel2world.l.vy,
-           pixel2world.l.vz,
-           pixel2world.p);
-    
+    do {
+      double msec = getSeconds();
+      render(0.0f,
+	     pixel2world.l.vx,
+	     pixel2world.l.vy,
+	     pixel2world.l.vz,
+	     pixel2world.p);
+      msec = getSeconds() - msec;
+      std::cout << "render time " << 1.0/msec << " fps" << std::endl;
+
+    } while(g_loop_mode);
+ 
     void* ptr = map();
     Ref<Image> image = new Image4c(g_width, g_height, (Col4c*)ptr);
     storeImage(image, fileName);

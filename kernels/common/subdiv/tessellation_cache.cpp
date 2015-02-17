@@ -113,6 +113,8 @@ namespace embree
   /* alloc cache memory */
   float *alloc_tessellation_cache_mem(const size_t blocks)
   {
+    //DBG_PRINT(blocks);
+
 #if 0
     if (!perThreadMemHandler)
       perThreadMemHandler = new LocalTessellationCacheMemoryHandler();

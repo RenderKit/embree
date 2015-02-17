@@ -19,7 +19,7 @@
 #include "geometry/subdivpatch1.h"
 #include "common/subdiv/tessellation_cache.h"
 
-#define TIMER(x)
+#define TIMER(x) 
 
 #if defined(DEBUG)
 #define CACHE_STATS(x) 
@@ -27,8 +27,8 @@
 #define CACHE_STATS(x) 
 #endif
 
-#define SHARED_TESSELLATION_CACHE_ENTRIES 256
-#define LOCAL_TESSELLATION_CACHE_ENTRIES  32
+#define SHARED_TESSELLATION_CACHE_ENTRIES 2048
+#define LOCAL_TESSELLATION_CACHE_ENTRIES  16
 
 //#define PRE_ALLOC_BLOCKS 32
 #define PRE_ALLOC_BLOCKS 0
