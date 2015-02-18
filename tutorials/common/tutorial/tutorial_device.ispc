@@ -23,7 +23,7 @@ uniform unsigned int g_numThreads = 0;
 uniform unsigned int g_subdivision_levels = 0;
 
 /* intensity scaling for traversal cost visualization */
-uniform float scale = 0.0001f;
+uniform float scale = 1.0f / 1000000.0f;
 uniform bool g_changed = false;
 
 /* stores pointer to currently used rendePixel function */
