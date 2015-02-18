@@ -313,13 +313,13 @@ extern "C" void device_key_pressed(int key)
     g_changed = true;
   }
   else if (key == GLUT_KEY_F9) {
-    if (renderPixel == renderPixelCycles) scale *= 1.1f;
+    if (renderPixel == renderPixelCycles) scale *= 2.0f;
     DBG_PRINT(scale);
     renderPixel = renderPixelCycles;
     g_changed = true;
   }
   else if (key == GLUT_KEY_F10) {
-    if (renderPixel == renderPixelCycles) scale *= 0.9f;
+    if (renderPixel == renderPixelCycles) scale *= 0.5f;
     DBG_PRINT(scale);
     renderPixel = renderPixelCycles;
     g_changed = true;
