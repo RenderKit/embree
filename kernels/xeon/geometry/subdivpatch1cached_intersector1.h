@@ -27,7 +27,7 @@
 /* returns u,v based on individual triangles instead relative to original patch */
 #define FORCE_TRIANGLE_UV 0
 
-#define DISTRIBUTED_TESSELLATION_CACHE_ENTRIES  16
+#define DISTRIBUTED_TESSELLATION_CACHE_ENTRIES  32
 
 #define LAZY_BUILD 1
 

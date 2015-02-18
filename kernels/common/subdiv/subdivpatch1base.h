@@ -353,16 +353,22 @@ namespace embree
   }
 #endif
 
-  struct GridRange
+  struct __aligned(16) GridRange
   {
     unsigned int u_start;
     unsigned int u_end;
     unsigned int v_start;
     unsigned int v_end;
 
-    GridRange() {}
+    __forceinline GridRange() {}
 
-  GridRange(unsigned int u_start, unsigned int u_end, unsigned int v_start, unsigned int v_end) : u_start(u_start), u_end(u_end), v_start(v_start), v_end(v_end) {}
+#if defined(__MIC__)    
+    __forceinline void operator=(const GridRange& v) {
+      store4f((float*)this,broadcast4to16f((float*)&v));
+    };
+#endif
+
+    __forceinline GridRange(unsigned int u_start, unsigned int u_end, unsigned int v_start, unsigned int v_end) : u_start(u_start), u_end(u_end), v_start(v_start), v_end(v_end) {}
 
     __forceinline bool hasLeafSize() const
     {
@@ -425,14 +431,14 @@ namespace embree
       return true;
     }
 
-    unsigned int splitIntoSubRanges(GridRange r[4]) const
+    __forceinline unsigned int splitIntoSubRanges(GridRange r[4]) const
     {
-      unsigned int children = 1;
+      size_t children = 1;
       r[0] = *this;
-      while(children < 4)
+      while(1)
         {
-          ssize_t index = -1;
-          ssize_t extend = 0;
+          size_t index  = (size_t)-1;
+          size_t extend = 0;
           for (size_t i=0;i<children;i++)
             if (!r[i].hasLeafSize())
               if (r[i].largestExtend() > extend)
@@ -440,11 +446,12 @@ namespace embree
                   extend = r[i].largestExtend();
                   index = i;
                 }
-          if (index == -1) break;
+          if (index == (size_t)-1) break;
 
           GridRange tmp = r[index];
           tmp.split(r[index],r[children]);
           children++;          
+	  if (children >= 4) break;
         }
       return children;
     }
@@ -625,6 +632,8 @@ namespace embree
     {
       return grid_u_res*y+x;
     }
+
+    __forceinline void reset_ptr() { ptr = 0; }
 
   private:
 

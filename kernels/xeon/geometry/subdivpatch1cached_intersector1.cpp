@@ -22,7 +22,7 @@
 #define DBG(x) 
 
 
-#define ENABLE_TESSELLATION_CACHE_HIERARCHY 1
+#define ENABLE_TESSELLATION_CACHE_HIERARCHY 0
 
 #define SHARED_TESSELLATION_CACHE_ENTRIES 512
 #define PRE_ALLOC_BLOCKS 32
@@ -40,6 +40,7 @@ namespace embree
     {
       if (subdiv_patch->ptr != NULL && (size_t)subdiv_patch->ptr != 1) return (size_t)subdiv_patch->ptr;
 
+      /* lock subdiv patch */
       while(1)
 	{
 	  while(*(volatile size_t*)&subdiv_patch->ptr == 1)
@@ -58,6 +59,7 @@ namespace embree
       BVH4::Node* node = (BVH4::Node*)alloc_tessellation_cache_mem(needed_blocks);              
       size_t new_root = (size_t)buildSubdivPatchTree(*subdiv_patch,node,((Scene*)geom)->getSubdivMesh(subdiv_patch->geom));
 
+      /* write new subtree root and release lock */
       *(size_t*)&subdiv_patch->ptr = new_root;
       return (size_t)new_root;
     }

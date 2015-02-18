@@ -88,9 +88,19 @@ namespace embree
 
       __forceinline void set(const mic3f &v3, const mic_f &u, const mic_f &v)
       {
+#if 0
 	vtx = v3;
 	store16f_uint16(uu,u*65535.0f);
 	store16f_uint16(vv,v*65535.0f);
+#else
+	__aligned(64) unsigned short local[32]; 
+	store16f_uint16(local +  0,u*65535.0f);
+	store16f_uint16(local + 16,v*65535.0f);
+	store16f_ngo(&vtx.x,v3.x);
+	store16f_ngo(&vtx.y,v3.y);
+	store16f_ngo(&vtx.z,v3.z);
+	store16f_ngo(&uu,load16f(local));
+#endif
       }
 
     };
