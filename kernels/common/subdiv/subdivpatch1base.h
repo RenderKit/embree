@@ -663,12 +663,13 @@ namespace embree
     unsigned int flags;
     unsigned int geom;                          //!< geometry ID of the subdivision mesh this patch belongs to
     unsigned int prim;                          //!< primitive ID of this subdivision patch
-    unsigned int reserved;
+    unsigned short grid_u_res;
+    unsigned short grid_v_res;
 
-    unsigned int grid_u_res;
-    unsigned int grid_v_res;
     unsigned int grid_size_simd_blocks;
     unsigned int grid_subtree_size_64b_blocks;
+
+    void  *ptr;
 
     __aligned(64) BSplinePatch patch;
   };

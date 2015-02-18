@@ -27,7 +27,9 @@
 /* returns u,v based on individual triangles instead relative to original patch */
 #define FORCE_TRIANGLE_UV 0
 
-#define DISTRIBUTED_TESSELLATION_CACHE_ENTRIES  32
+#define DISTRIBUTED_TESSELLATION_CACHE_ENTRIES  16
+
+#define LAZY_BUILD 1
 
 #if defined(DEBUG)
 #define CACHE_STATS(x) 
@@ -268,12 +270,16 @@ namespace embree
         return true;
       };
       
+      static size_t lazyBuildPatch(const SubdivPatch1Cached* const subdiv_patch, const void* geom);
+
  
       static TessellationCacheTag *localTessellationCacheMissHandler(PerThreadTessellationCache *local_cache, const SubdivPatch1Cached* const subdiv_patch, const void* geom);
+
       static void secondLevelTessellationCacheMissHandler(TessellationCacheTag *firstLevelTag, const SubdivPatch1Cached* const subdiv_patch, const void* geom);
       
             
       /*! Returns a TessellationCacheTag from the local tessellation cache holding the BVH4 node reference for the subtree over the patch grid */
+
       static __forceinline TessellationCacheTag *lookUpLocalTessellationCache(PerThreadTessellationCache *local_cache, const SubdivPatch1Cached* const subdiv_patch, const void* geom)
       {
         const unsigned int commitCounter = ((Scene*)geom)->commitCounter;
@@ -332,8 +338,12 @@ namespace embree
         }
         else 
         {
+#if LAZY_BUILD == 1
+	  lazy_node = lazyBuildPatch(prim, geom);
+#else
 	  TessellationCacheTag *t = lookUpLocalTessellationCache(pre.local_cache, prim, geom);
           lazy_node = t->getRootRef();
+#endif
           pre.current_patch = (SubdivPatch1Cached*)prim;
           
         }             
@@ -356,8 +366,12 @@ namespace embree
         }
         else 
         {
+#if LAZY_BUILD == 1
+	  lazy_node = lazyBuildPatch(prim, geom);
+#else
 	  TessellationCacheTag *t = lookUpLocalTessellationCache(pre.local_cache, prim, geom);
           lazy_node = t->getRootRef();
+#endif
           pre.current_patch = (SubdivPatch1Cached*)prim;
         }             
         return false;
