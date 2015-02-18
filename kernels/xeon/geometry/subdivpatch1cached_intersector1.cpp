@@ -22,7 +22,7 @@
 #define DBG(x) 
 
 
-#define ENABLE_TESSELLATION_CACHE_HIERARCHY 1
+#define ENABLE_TESSELLATION_CACHE_HIERARCHY 0
 
 #define SHARED_TESSELLATION_CACHE_ENTRIES 256
 #define PRE_ALLOC_BLOCKS 32
@@ -175,7 +175,7 @@ namespace embree
       TessellationCacheTag *t = local_cache->request(tag,commitCounter,blocks);
 #if ENABLE_TESSELLATION_CACHE_HIERARCHY == 1
       secondLevelTessellationCacheMissHandler(t,subdiv_patch,geom);      
-#else      
+#else
       size_t new_root = (size_t)buildSubdivPatchTree(*subdiv_patch,(BVH4::Node*)t->getPtr(),((Scene*)geom)->getSubdivMesh(subdiv_patch->geom));
       t->updateRootRef(new_root);
       assert( new_root != BVH4::invalidNode);      
