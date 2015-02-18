@@ -23,7 +23,7 @@ uniform unsigned int g_numThreads = 0;
 uniform unsigned int g_subdivision_levels = 0;
 
 /* intensity scaling for traversal cost visualization */
-uniform float scale = 0.0001f;
+uniform float scale = 1.0f / 1000000.0f;
 uniform bool g_changed = false;
 
 /* stores pointer to currently used rendePixel function */
@@ -301,12 +301,12 @@ export void device_key_pressed(uniform int key)
     g_changed = true;
   }
   else if (key == GLUT_KEY_F9) {
-    if (renderPixel == renderPixelCycles) scale *= 1.1f;
+    if (renderPixel == renderPixelCycles) scale *= 2.0f;
     renderPixel = renderPixelCycles;
     g_changed = true;
   }
   else if (key == GLUT_KEY_F10) {
-    if (renderPixel == renderPixelCycles) scale *= 0.9f;
+    if (renderPixel == renderPixelCycles) scale *= 0.5f;
     renderPixel = renderPixelCycles;
     g_changed = true;
   }

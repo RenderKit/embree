@@ -27,10 +27,7 @@
 /* returns u,v based on individual triangles instead relative to original patch */
 #define FORCE_TRIANGLE_UV 0
 
-//#define SHARED_TESSELLATION_CACHE
-
-#define SHARED_TESSELLATION_CACHE_ENTRIES      1024
-#define DISTRIBUTED_TESSELLATION_CACHE_ENTRIES  128
+#define DISTRIBUTED_TESSELLATION_CACHE_ENTRIES  32
 
 #if defined(DEBUG)
 #define CACHE_STATS(x) 
@@ -66,10 +63,6 @@ namespace embree
         PerThreadTessellationCache *local_cache;
         Ray &r;
         
-#if defined(SHARED_TESSELLATION_CACHE)        
-        MultipleReaderSingleWriterMutex *rw_mtx;
-#endif
-        
         __forceinline Precalculations (Ray& ray) : r(ray) 
         {
           ray_rdir      = rcp_safe(ray.dir);
@@ -77,9 +70,6 @@ namespace embree
           current_patch = NULL;
           hit_patch     = NULL;
 
-#if defined(SHARED_TESSELLATION_CACHE)
-          rw_mtx = NULL;
-#endif
           /*! Initialize per thread tessellation cache */
           if (unlikely(!thread_cache))
             createTessellationCache();
@@ -91,9 +81,6 @@ namespace embree
           /*! Final per ray computations like smooth normal, patch u,v, etc. */        
         __forceinline ~Precalculations() 
         {
-#if defined(SHARED_TESSELLATION_CACHE)
-          if (rw_mtx) rw_mtx->read_unlock();            
-#endif
           if (unlikely(hit_patch != NULL))
           {
 
@@ -282,51 +269,29 @@ namespace embree
       };
       
  
+      static TessellationCacheTag *localTessellationCacheMissHandler(PerThreadTessellationCache *local_cache, const SubdivPatch1Cached* const subdiv_patch, const void* geom);
+      static void secondLevelTessellationCacheMissHandler(TessellationCacheTag *firstLevelTag, const SubdivPatch1Cached* const subdiv_patch, const void* geom);
       
-      
-      /*! Returns BVH4 node reference for subtree over patch grid */
+            
+      /*! Returns a TessellationCacheTag from the local tessellation cache holding the BVH4 node reference for the subtree over the patch grid */
       static __forceinline TessellationCacheTag *lookUpLocalTessellationCache(PerThreadTessellationCache *local_cache, const SubdivPatch1Cached* const subdiv_patch, const void* geom)
       {
         const unsigned int commitCounter = ((Scene*)geom)->commitCounter;
-        InputTagType tag = (InputTagType)subdiv_patch;
-        
-        //BVH4::NodeRef root = local_cache->lookup(tag,commitCounter);
+        InputTagType tag = (InputTagType)subdiv_patch;        
 	TessellationCacheTag *t = local_cache->lookup(tag,commitCounter);
 
         CACHE_STATS(DistributedTessellationCacheStats::cache_accesses++);
-
         if (unlikely(t == NULL))
         {
           /* CACHE MISS */
           CACHE_STATS(DistributedTessellationCacheStats::cache_misses++);
-
-          subdiv_patch->prefetchData();
-          const unsigned int blocks = subdiv_patch->grid_subtree_size_64b_blocks;
-          
-          t = local_cache->request(tag,commitCounter,blocks);
-
-          BVH4::Node* node = (BVH4::Node*)t->getPtr();
-          
-          size_t new_root = (size_t)buildSubdivPatchTree(*subdiv_patch,node,((Scene*)geom)->getSubdivMesh(subdiv_patch->geom));
-          assert( new_root != BVH4::invalidNode);
-          
-          t->updateRootRef(new_root);
-          
-          return t;
+          return localTessellationCacheMissHandler(local_cache,subdiv_patch,geom);
         }        
         /* CACHE HIT */
         CACHE_STATS(DistributedTessellationCacheStats::cache_hits++);
         return t;   
       }
-
-
-      /*! Returns BVH4 node reference for subtree over patch grid */
-      //static size_t getSubtreeRootNode(Precalculations& pre, const SubdivPatch1Cached* const subdiv_patch, const void* geom);
-
-
-      /*! Returns BVH4 node reference for subtree over patch grid */
-      //static size_t getSubtreeRootNodeFromCacheHierarchy(Precalculations& pre, const SubdivPatch1Cached* const subdiv_patch, const void* geom);
-
+      
       /*! Evaluates grid over patch and builds BVH4 tree over the grid. */
       static BVH4::NodeRef buildSubdivPatchTree(const SubdivPatch1Cached &patch,
                                                 void *const lazymem,
@@ -367,13 +332,8 @@ namespace embree
         }
         else 
         {
-#if defined(SHARED_TESSELLATION_CACHE)
-          //lazy_node = getSubtreeRootNode(pre, prim, geom);
-          lazy_node = getSubtreeRootNodeFromCacheHierarchy(pre, prim, geom);          
-#else          
 	  TessellationCacheTag *t = lookUpLocalTessellationCache(pre.local_cache, prim, geom);
           lazy_node = t->getRootRef();
-#endif
           pre.current_patch = (SubdivPatch1Cached*)prim;
           
         }             
@@ -398,11 +358,8 @@ namespace embree
         {
 	  TessellationCacheTag *t = lookUpLocalTessellationCache(pre.local_cache, prim, geom);
           lazy_node = t->getRootRef();
-
           pre.current_patch = (SubdivPatch1Cached*)prim;
         }             
-        
-        
         return false;
       }
       
