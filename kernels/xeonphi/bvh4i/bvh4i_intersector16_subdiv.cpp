@@ -82,8 +82,10 @@ namespace embree
     static const size_t CACHE_ENTRIES = 256;
     
     TessellationRefCacheTag tags[CACHE_ENTRIES];
+    unsigned int commitTag;
 
   public:
+
 
     __forceinline void reset()
     {
@@ -97,10 +99,17 @@ namespace embree
       return &tags[t];
     }
 
-    __forceinline TessellationRefCache() 
-      {
-	reset();
-      }
+    __forceinline void setNewCommitTag(const unsigned int ctag) { 
+      if (commitTag != ctag)
+	{
+	  reset();
+	}
+    }
+
+    __forceinline TessellationRefCache(const unsigned int commitTag) : commitTag(commitTag) 
+    {
+      reset();
+    }
 
   };
 
@@ -823,21 +832,6 @@ namespace embree
       __aligned(64) float   stack_dist[4*BVH4i::maxDepth+1];
       __aligned(64) NodeRef stack_node[4*BVH4i::maxDepth+1];
 
-#if LAZY_BUILD == 1
-      /* query per thread tessellation cache */
-      TessellationRefCache *local_ref_cache = NULL;
-      if (unlikely(!tess_ref_cache))
-	tess_ref_cache = new TessellationRefCache;
-      local_ref_cache = tess_ref_cache;
-
-#else
-      /* query per thread tessellation cache */
-      TessellationCache *local_cache = NULL;
-      if (!tess_cache)
-	createTessellationCache();
-      local_cache = tess_cache;
-#endif
-
       /* setup */
       const mic_m m_valid    = *(mic_i*)valid_i != mic_i(0);
       const mic3f rdir16     = rcp_safe(ray16.dir);
@@ -852,6 +846,21 @@ namespace embree
       const Node      * __restrict__ const nodes = (Node     *)bvh->nodePtr();
       Triangle1 * __restrict__ const accel       = (Triangle1*)bvh->triPtr();
       const unsigned int commitCounter           = scene->commitCounter;
+
+#if LAZY_BUILD == 1
+      /* query per thread tessellation cache */
+      TessellationRefCache *local_ref_cache = NULL;
+      if (unlikely(!tess_ref_cache))
+	tess_ref_cache = new TessellationRefCache( scene->commitCounter );
+      local_ref_cache = tess_ref_cache;
+      local_ref_cache->setNewCommitTag( scene->commitCounter );
+#else
+      /* query per thread tessellation cache */
+      TessellationCache *local_cache = NULL;
+      if (!tess_cache)
+	createTessellationCache();
+      local_cache = tess_cache;
+#endif
 
       stack_node[0] = BVH4i::invalidNode;
       long rayIndex = -1;
@@ -1015,21 +1024,6 @@ namespace embree
       /* near and node stack */
       __aligned(64) NodeRef stack_node[4*BVH4i::maxDepth+1];
 
-#if LAZY_BUILD == 1
-      /* query per thread tessellation cache */
-      TessellationRefCache *local_ref_cache = NULL;
-      if (unlikely(!tess_ref_cache))
-	tess_ref_cache = new TessellationRefCache;
-      local_ref_cache = tess_ref_cache;
-
-#else
-      /* query per thread tessellation cache */
-      TessellationCache *local_cache = NULL;
-      if (!tess_cache)
-	createTessellationCache();
-      local_cache = tess_cache;
-#endif
-
       /* setup */
       const mic_m m_valid = *(mic_i*)valid_i != mic_i(0);
       const mic3f rdir16  = rcp_safe(ray16.dir);
@@ -1041,6 +1035,21 @@ namespace embree
       const Node      * __restrict__ nodes = (Node     *)bvh->nodePtr();
       const Triangle1 * __restrict__ accel = (Triangle1*)bvh->triPtr();
       const unsigned int commitCounter           = scene->commitCounter;
+
+#if LAZY_BUILD == 1
+      /* query per thread tessellation cache */
+      TessellationRefCache *local_ref_cache = NULL;
+      if (unlikely(!tess_ref_cache))
+	tess_ref_cache = new TessellationRefCache( scene->commitCounter );
+      local_ref_cache = tess_ref_cache;
+      local_ref_cache->setNewCommitTag( scene->commitCounter );
+#else
+      /* query per thread tessellation cache */
+      TessellationCache *local_cache = NULL;
+      if (!tess_cache)
+	createTessellationCache();
+      local_cache = tess_cache;
+#endif
 
       stack_node[0] = BVH4i::invalidNode;
       ray16.primID = select(m_valid,mic_i(-1),ray16.primID);
@@ -1178,21 +1187,6 @@ namespace embree
       __aligned(64) float   stack_dist[3*BVH4i::maxDepth+1];
       __aligned(64) NodeRef stack_node[3*BVH4i::maxDepth+1];
 
-#if LAZY_BUILD == 1
-      /* query per thread tessellation cache */
-      TessellationRefCache *local_ref_cache = NULL;
-      if (unlikely(!tess_ref_cache))
-	tess_ref_cache = new TessellationRefCache;
-      local_ref_cache = tess_ref_cache;
-
-#else
-      /* query per thread tessellation cache */
-      TessellationCache *local_cache = NULL;
-      if (!tess_cache)
-	createTessellationCache();
-      local_cache = tess_cache;
-#endif
-
       /* setup */
       const mic3f rdir16     = rcp_safe(mic3f(mic_f(ray.dir.x),mic_f(ray.dir.y),mic_f(ray.dir.z)));
       const mic_f inf        = mic_f(pos_inf);
@@ -1204,6 +1198,21 @@ namespace embree
       const Triangle1 * __restrict__ accel = (Triangle1*)bvh->triPtr();
       Scene *const scene                   = (Scene*)bvh->geometry;
       const unsigned int commitCounter     = scene->commitCounter;
+
+#if LAZY_BUILD == 1
+      /* query per thread tessellation cache */
+      TessellationRefCache *local_ref_cache = NULL;
+      if (unlikely(!tess_ref_cache))
+	tess_ref_cache = new TessellationRefCache( scene->commitCounter );
+      local_ref_cache = tess_ref_cache;
+      local_ref_cache->setNewCommitTag( scene->commitCounter );
+#else
+      /* query per thread tessellation cache */
+      TessellationCache *local_cache = NULL;
+      if (!tess_cache)
+	createTessellationCache();
+      local_cache = tess_cache;
+#endif
 
       stack_node[0] = BVH4i::invalidNode;      
       stack_node[1] = bvh->root;
@@ -1321,21 +1330,6 @@ namespace embree
       /* near and node stack */
       __aligned(64) NodeRef stack_node[3*BVH4i::maxDepth+1];
 
-#if LAZY_BUILD == 1
-      /* query per thread tessellation cache */
-      TessellationRefCache *local_ref_cache = NULL;
-      if (unlikely(!tess_ref_cache))
-	tess_ref_cache = new TessellationRefCache;
-      local_ref_cache = tess_ref_cache;
-
-#else
-      /* query per thread tessellation cache */
-      TessellationCache *local_cache = NULL;
-      if (!tess_cache)
-	createTessellationCache();
-      local_cache = tess_cache;
-#endif
-
       /* setup */
       const mic3f rdir16      = rcp_safe(mic3f(ray.dir.x,ray.dir.y,ray.dir.z));
       const mic_f inf         = mic_f(pos_inf);
@@ -1345,6 +1339,21 @@ namespace embree
       const Triangle1 * __restrict__ accel = (Triangle1*)bvh->triPtr();
       Scene *const scene                   = (Scene*)bvh->geometry;
       const unsigned int commitCounter     = scene->commitCounter;
+
+#if LAZY_BUILD == 1
+      /* query per thread tessellation cache */
+      TessellationRefCache *local_ref_cache = NULL;
+      if (unlikely(!tess_ref_cache))
+	tess_ref_cache = new TessellationRefCache( scene->commitCounter );
+      local_ref_cache = tess_ref_cache;
+      local_ref_cache->setNewCommitTag( scene->commitCounter );
+#else
+      /* query per thread tessellation cache */
+      TessellationCache *local_cache = NULL;
+      if (!tess_cache)
+	createTessellationCache();
+      local_cache = tess_cache;
+#endif
 
       stack_node[0] = BVH4i::invalidNode;
       stack_node[1] = bvh->root;
