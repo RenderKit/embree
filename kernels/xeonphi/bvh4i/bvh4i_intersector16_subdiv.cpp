@@ -43,8 +43,66 @@ namespace embree
   typedef AdaptiveTessellationCache<LOCAL_TESSELLATION_CACHE_ENTRIES> TessellationCache;
   SharedTessellationCache<SHARED_TESSELLATION_CACHE_ENTRIES,PRE_ALLOC_BLOCKS> sharedTessellationCache;
 
+  struct __aligned(16) TessellationRefCacheTag {
+   unsigned int prim_tag;
+   unsigned int commit_tag;
+   size_t subtree_root;
+
+   __forceinline void set(const InputTagType primID, 
+                          const unsigned int commitCounter,
+                          const size_t root)
+   {
+     prim_tag     = toTag(primID);
+     commit_tag   = commitCounter;
+     subtree_root = root;
+   }
+
+   __forceinline void reset() 
+   {
+     assert(sizeof(TessellationRefCacheTag) == 16);
+     prim_tag         = (unsigned int)-1;
+     commit_tag       = (unsigned int)-1;
+     subtree_root     = 0;
+   }
+
+   __forceinline bool match(InputTagType primID, const unsigned int commitCounter)
+   {
+     return prim_tag == toTag(primID) && commit_tag == commitCounter;
+   }
+
+   __forceinline size_t getRootRef() 
+   {
+     return subtree_root;
+   }
+
+  };
+
+  class __aligned(64) TessellationRefCache {
+    static const size_t CACHE_ENTRIES = 64;
+    
+    TessellationRefCacheTag tags[CACHE_ENTRIES];
+
+  public:
+
+    __forceinline void reset()
+    {
+      for (size_t i=0;i<CACHE_ENTRIES;i++)
+        tags[i].reset(); 
+    }
+
+    __forceinline TessellationRefCacheTag *getTag(InputTagType primID)
+    {
+      const size_t t = toTag(primID) % CACHE_ENTRIES;
+      return &tags[t];
+    }
+
+
+  };
+
   namespace isa
   {
+
+    __thread TessellationRefCache *tess_ref_cache = NULL;
 
     __thread TessellationCache *tess_cache = NULL;
 
@@ -626,11 +684,22 @@ namespace embree
     __forceinline size_t lazyBuildPatch(const unsigned int patchIndex,
 					const unsigned int commitCounter,
 					SubdivPatch1* const patches,
-					Scene *const scene)
+					Scene *const scene,
+					TessellationRefCache *ref_cache)
     {
+      TessellationRefCacheTag *t = ref_cache->getTag(patchIndex);
+      if (likely(t->match(patchIndex,commitCounter)))
+	return t->getRootRef();
+
       SubdivPatch1* subdiv_patch = &patches[patchIndex];
-      
-      if (subdiv_patch->ptr != NULL && (size_t)subdiv_patch->ptr != 1) return (size_t)subdiv_patch->ptr;
+
+      atomic_add((int32*)&subdiv_patch->mutex,1);
+
+      if (subdiv_patch->ptr != NULL && (size_t)subdiv_patch->ptr != 1) 
+	{
+	  t->set(patchIndex,commitCounter,(size_t)subdiv_patch->ptr);
+	  return (size_t)subdiv_patch->ptr;
+	}
       /* lock subdiv patch */
       while(1)
 	{
@@ -643,7 +712,10 @@ namespace embree
 	  else if (old == 1)
 	    _mm_delay_32(1024);
 	  else
-	    return (size_t)subdiv_patch->ptr;
+	    {
+	      t->set(patchIndex,commitCounter,(size_t)subdiv_patch->ptr);
+	      return (size_t)subdiv_patch->ptr;
+	    }
 	}
 
       const unsigned int needed_blocks = subdiv_patch->grid_subtree_size_64b_blocks;          
@@ -657,6 +729,9 @@ namespace embree
 
       /* write new subtree root and release lock */
       *(size_t*)&subdiv_patch->ptr = new_root;
+
+      t->set(patchIndex,commitCounter,new_root);
+
       return (size_t)new_root;
 
  
@@ -677,12 +752,20 @@ namespace embree
       __aligned(64) float   stack_dist[4*BVH4i::maxDepth+1];
       __aligned(64) NodeRef stack_node[4*BVH4i::maxDepth+1];
 
+#if LAZY_BUILD == 1
+      /* query per thread tessellation cache */
+      TessellationRefCache *local_ref_cache = NULL;
+      if (unlikely(!tess_ref_cache))
+	tess_ref_cache = new TessellationRefCache;
+      local_ref_cache = tess_ref_cache;
+
+#else
       /* query per thread tessellation cache */
       TessellationCache *local_cache = NULL;
       if (!tess_cache)
 	createTessellationCache();
       local_cache = tess_cache;
-
+#endif
 
       /* setup */
       const mic_m m_valid    = *(mic_i*)valid_i != mic_i(0);
@@ -745,7 +828,8 @@ namespace embree
 
 	      // ----------------------------------------------------------------------------------------------------
 #if LAZY_BUILD == 1
-	      size_t cached_64bit_root = lazyBuildPatch(patchIndex,commitCounter,(SubdivPatch1*)accel,scene);
+	      SubdivPatch1 &subdiv_patch = ((SubdivPatch1*)accel)[patchIndex];
+	      size_t cached_64bit_root = lazyBuildPatch(patchIndex,commitCounter,(SubdivPatch1*)accel,scene,local_ref_cache);
 #else
 	      TessellationCacheTag *t = lookUpTessellationCache(local_cache,patchIndex,commitCounter,(SubdivPatch1*)accel,scene);
 	      size_t cached_64bit_root = t->getRootRef();	      
@@ -860,11 +944,20 @@ namespace embree
       /* near and node stack */
       __aligned(64) NodeRef stack_node[4*BVH4i::maxDepth+1];
 
+#if LAZY_BUILD == 1
+      /* query per thread tessellation cache */
+      TessellationRefCache *local_ref_cache = NULL;
+      if (unlikely(!tess_ref_cache))
+	tess_ref_cache = new TessellationRefCache;
+      local_ref_cache = tess_ref_cache;
+
+#else
       /* query per thread tessellation cache */
       TessellationCache *local_cache = NULL;
       if (!tess_cache)
 	createTessellationCache();
       local_cache = tess_cache;
+#endif
 
       /* setup */
       const mic_m m_valid = *(mic_i*)valid_i != mic_i(0);
@@ -926,7 +1019,7 @@ namespace embree
 
 	      // ----------------------------------------------------------------------------------------------------
 #if LAZY_BUILD == 1
-	      size_t cached_64bit_root = lazyBuildPatch(patchIndex,commitCounter,(SubdivPatch1*)accel,scene);
+	      size_t cached_64bit_root = lazyBuildPatch(patchIndex,commitCounter,(SubdivPatch1*)accel,scene,local_ref_cache);
 #else
 	      TessellationCacheTag *t = lookUpTessellationCache(local_cache,patchIndex,commitCounter,(SubdivPatch1*)accel,scene);
 	      size_t cached_64bit_root = t->getRootRef();	      
@@ -1014,11 +1107,20 @@ namespace embree
       __aligned(64) float   stack_dist[3*BVH4i::maxDepth+1];
       __aligned(64) NodeRef stack_node[3*BVH4i::maxDepth+1];
 
+#if LAZY_BUILD == 1
+      /* query per thread tessellation cache */
+      TessellationRefCache *local_ref_cache = NULL;
+      if (unlikely(!tess_ref_cache))
+	tess_ref_cache = new TessellationRefCache;
+      local_ref_cache = tess_ref_cache;
+
+#else
       /* query per thread tessellation cache */
       TessellationCache *local_cache = NULL;
       if (!tess_cache)
 	createTessellationCache();
       local_cache = tess_cache;
+#endif
 
       /* setup */
       const mic3f rdir16     = rcp_safe(mic3f(mic_f(ray.dir.x),mic_f(ray.dir.y),mic_f(ray.dir.z)));
@@ -1075,7 +1177,7 @@ namespace embree
 
 	  // ----------------------------------------------------------------------------------------------------
 #if LAZY_BUILD == 1
-	  size_t cached_64bit_root = lazyBuildPatch(patchIndex,commitCounter,(SubdivPatch1*)accel,scene);
+	  size_t cached_64bit_root = lazyBuildPatch(patchIndex,commitCounter,(SubdivPatch1*)accel,scene,local_ref_cache);
 #else
 	  TessellationCacheTag *t = lookUpTessellationCache(local_cache,patchIndex,commitCounter,(SubdivPatch1*)accel,scene);
 	  size_t cached_64bit_root = t->getRootRef();	      
@@ -1148,11 +1250,20 @@ namespace embree
       /* near and node stack */
       __aligned(64) NodeRef stack_node[3*BVH4i::maxDepth+1];
 
+#if LAZY_BUILD == 1
+      /* query per thread tessellation cache */
+      TessellationRefCache *local_ref_cache = NULL;
+      if (unlikely(!tess_ref_cache))
+	tess_ref_cache = new TessellationRefCache;
+      local_ref_cache = tess_ref_cache;
+
+#else
       /* query per thread tessellation cache */
       TessellationCache *local_cache = NULL;
       if (!tess_cache)
 	createTessellationCache();
       local_cache = tess_cache;
+#endif
 
       /* setup */
       const mic3f rdir16      = rcp_safe(mic3f(ray.dir.x,ray.dir.y,ray.dir.z));
@@ -1208,7 +1319,7 @@ namespace embree
 
 	  // ----------------------------------------------------------------------------------------------------
 #if LAZY_BUILD == 1
-	  size_t cached_64bit_root = lazyBuildPatch(patchIndex,commitCounter,(SubdivPatch1*)accel,scene);
+	  size_t cached_64bit_root = lazyBuildPatch(patchIndex,commitCounter,(SubdivPatch1*)accel,scene,local_ref_cache);
 #else
 	  TessellationCacheTag *t = lookUpTessellationCache(local_cache,patchIndex,commitCounter,(SubdivPatch1*)accel,scene);
 	  size_t cached_64bit_root = t->getRootRef();	      

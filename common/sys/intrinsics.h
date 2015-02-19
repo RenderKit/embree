@@ -773,3 +773,14 @@ __forceinline void prefetchL2EX(const void* ptr) {
   _mm_prefetch((const char*)ptr,_MM_HINT_T1); 
 #endif
 }
+
+#if defined(__MIC__)
+  __forceinline void evictL1(const void * __restrict__  m) { 
+    _mm_clevict(m,_MM_HINT_T0); 
+  }
+
+  __forceinline void evictL2(const void * __restrict__  m) { 
+    _mm_clevict(m,_MM_HINT_T1); 
+  }
+#endif
+

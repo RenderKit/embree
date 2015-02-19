@@ -635,6 +635,15 @@ namespace embree
 
     __forceinline void reset_ptr() { ptr = 0; }
 
+   __forceinline void read_lock()    { mutex.read_lock();   }
+   __forceinline void read_unlock()  { mutex.read_unlock(); }
+   __forceinline void write_lock()   { mutex.write_lock();   }
+   __forceinline void write_unlock() { mutex.write_unlock(); }
+   __forceinline void upgrade_write_to_read_lock() { mutex.upgrade_write_to_read_lock(); }
+   __forceinline void upgrade_read_to_write_lock() { mutex.upgrade_read_to_write_lock(); }
+   __forceinline bool try_read_lock()  { return mutex.try_read_lock();   }
+   __forceinline bool try_write_lock() { return mutex.try_write_lock();  }
+
   private:
 
     size_t get64BytesBlocksForGridSubTree(const GridRange &range,
@@ -675,9 +684,10 @@ namespace embree
     unsigned short grid_u_res;
     unsigned short grid_v_res;
 
-    unsigned int grid_size_simd_blocks;
-    unsigned int grid_subtree_size_64b_blocks;
+    unsigned short grid_size_simd_blocks;
+    unsigned short grid_subtree_size_64b_blocks;
 
+    RWMutex mutex;
     void  *ptr;
 
     __aligned(64) BSplinePatch patch;

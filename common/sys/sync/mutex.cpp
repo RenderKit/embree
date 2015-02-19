@@ -75,6 +75,10 @@ namespace embree
   {
     while(1)
       {
+#if defined(__MIC__)
+	prefetchL1EX((void*)&data);
+#endif
+
         unsigned int d = getData();
         if (!busy_w(d))
           {
@@ -88,6 +92,9 @@ namespace embree
 
   void RWMutex::read_unlock()
   {
+#if defined(__MIC__)
+    prefetchL1EX((void*)&data);
+#endif
     update_atomic_add(-SINGLE_READER);            
   }
   
@@ -95,6 +102,9 @@ namespace embree
   {
     while(1)
       {
+#if defined(__MIC__)
+	prefetchL1EX((void*)&data);
+#endif
         unsigned int d = getData();
         if (!busy_rw(d))
           {
@@ -110,6 +120,9 @@ namespace embree
   
   void RWMutex::write_unlock()
   {
+#if defined(__MIC__)
+    prefetchL1EX((void*)&data);
+#endif
     update_atomic_and(READERS);
   }
   
@@ -126,7 +139,7 @@ namespace embree
 
   void RWMutex::pause()
    {
-     unsigned int DELAY_CYCLES = 256;
+     unsigned int DELAY_CYCLES = 64;
 
 #if !defined(__MIC__)
      _mm_pause(); 
