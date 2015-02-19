@@ -70,15 +70,16 @@ namespace embree
      return prim_tag == toTag(primID) && commit_tag == commitCounter;
    }
 
-   __forceinline size_t getRootRef() 
-   {
-     return subtree_root;
-   }
+   __forceinline unsigned int getPrimTag()   const { return prim_tag;     }
+   __forceinline unsigned int getCommitTag() const { return commit_tag;   }
+   __forceinline size_t       getRootRef()   const { return subtree_root; }
+   __forceinline bool         empty()        const { return prim_tag == (unsigned int)-1; }
+
 
   };
 
   class __aligned(64) TessellationRefCache {
-    static const size_t CACHE_ENTRIES = 64;
+    static const size_t CACHE_ENTRIES = 256;
     
     TessellationRefCacheTag tags[CACHE_ENTRIES];
 
@@ -96,6 +97,10 @@ namespace embree
       return &tags[t];
     }
 
+    __forceinline TessellationRefCache() 
+      {
+	reset();
+      }
 
   };
 
@@ -691,9 +696,77 @@ namespace embree
       if (likely(t->match(patchIndex,commitCounter)))
 	return t->getRootRef();
 
+#if 1
+      /* release read_lock on previous entry */
+      if (!t->empty()) {
+	patches[t->getPrimTag()].read_unlock();
+	if (patches[t->getPrimTag()].try_write_lock())
+	  {
+	    assert( patches[t->getPrimTag()].ptr != NULL);
+	    assert( (size_t)patches[t->getPrimTag()].ptr != 1);
+
+	    
+	    free_tessellation_cache_mem(patches[t->getPrimTag()].ptr);
+
+	    patches[t->getPrimTag()].ptr = NULL;
+	    patches[t->getPrimTag()].write_unlock();
+	  }
+      }
+
+      SubdivPatch1 *subdiv_patch = &patches[patchIndex];
+      
+      /* obtain read lock for current patch */
+      subdiv_patch->read_lock();
+
+      /* already build, get pointer and update cache entry */
+      if (likely(subdiv_patch->ptr != NULL && (size_t)subdiv_patch->ptr != 1)) 
+	{
+	  t->set(patchIndex,commitCounter,(size_t)subdiv_patch->ptr);
+	  return (size_t)subdiv_patch->ptr;
+	}
+
+      /* lock subdiv patch */
+      while(1)
+	{
+	  while(*(volatile size_t*)&subdiv_patch->ptr == 1)
+	    _mm_delay_32(1024);
+
+	  size_t old = atomic_cmpxchg((volatile int64*)&subdiv_patch->ptr,(int64)0,(int64)1);
+	  if (old == 0) 
+	    break;
+	  else if (old == 1)
+	    _mm_delay_32(1024);
+	  else
+	    {
+	      t->set(patchIndex,commitCounter,(size_t)subdiv_patch->ptr);
+	      return (size_t)subdiv_patch->ptr;
+	    }
+	}
+
+      assert( (size_t)subdiv_patch->ptr == 1);
+
+      /* not build yet obtain write lock */
+
+      /* build subtree */
+      const unsigned int needed_blocks = subdiv_patch->grid_subtree_size_64b_blocks;          
+      const SubdivMesh* const geom = (SubdivMesh*)scene->get(subdiv_patch->geom); // FIXME: test flag first
+      mic_f* local_mem = (mic_f*)alloc_tessellation_cache_mem(needed_blocks);
+
+      unsigned int currentIndex = 0;
+      BVH4i::NodeRef bvh4i_root = initLocalLazySubdivTree(*subdiv_patch,currentIndex,local_mem,geom);		      
+      
+      size_t new_root = (size_t)bvh4i_root + (size_t)local_mem;
+
+      t->set(patchIndex,commitCounter,new_root);
+
+      /* write new subtree root */
+      *(size_t*)&subdiv_patch->ptr = new_root;
+
+      return new_root;
+#else
       SubdivPatch1* subdiv_patch = &patches[patchIndex];
 
-      atomic_add((int32*)&subdiv_patch->mutex,1);
+      //atomic_add((int32*)&subdiv_patch->mutex,1);
 
       if (subdiv_patch->ptr != NULL && (size_t)subdiv_patch->ptr != 1) 
 	{
@@ -733,7 +806,7 @@ namespace embree
       t->set(patchIndex,commitCounter,new_root);
 
       return (size_t)new_root;
-
+#endif
  
     }
 

@@ -27,7 +27,7 @@ namespace embree
   float *alloc_tessellation_cache_mem(const size_t blocks);
 
   /* free cache memory */
-  void free_tessellation_cache_mem(void *mem, const size_t blocks);
+  void free_tessellation_cache_mem(void *mem, const size_t blocks = 0);
 
 
 #if defined(__MIC__)
