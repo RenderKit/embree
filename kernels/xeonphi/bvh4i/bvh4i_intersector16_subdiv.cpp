@@ -27,7 +27,7 @@
 #define CACHE_STATS(x) 
 #endif
 
-#define SHARED_TESSELLATION_CACHE_ENTRIES 2048
+#define SHARED_TESSELLATION_CACHE_ENTRIES 256
 #define LOCAL_TESSELLATION_CACHE_ENTRIES  16
 
 //#define PRE_ALLOC_BLOCKS 32
@@ -35,6 +35,8 @@
 
 //#define ONLY_SHARED_CACHE
 //#define CACHE_HIERARCHY
+
+#define LAZY_BUILD 1
 
 namespace embree
 {
@@ -621,6 +623,46 @@ namespace embree
     }
 
 
+    __forceinline size_t lazyBuildPatch(const unsigned int patchIndex,
+					const unsigned int commitCounter,
+					SubdivPatch1* const patches,
+					Scene *const scene)
+    {
+      SubdivPatch1* subdiv_patch = &patches[patchIndex];
+      
+      if (subdiv_patch->ptr != NULL && (size_t)subdiv_patch->ptr != 1) return (size_t)subdiv_patch->ptr;
+      /* lock subdiv patch */
+      while(1)
+	{
+	  while(*(volatile size_t*)&subdiv_patch->ptr == 1)
+	    _mm_delay_32(1024);
+
+	  size_t old = atomic_cmpxchg((volatile int64*)&subdiv_patch->ptr,(int64)0,(int64)1);
+	  if (old == 0) 
+	    break;
+	  else if (old == 1)
+	    _mm_delay_32(1024);
+	  else
+	    return (size_t)subdiv_patch->ptr;
+	}
+
+      const unsigned int needed_blocks = subdiv_patch->grid_subtree_size_64b_blocks;          
+      const SubdivMesh* const geom = (SubdivMesh*)scene->get(subdiv_patch->geom); // FIXME: test flag first
+      mic_f* local_mem = (mic_f*)alloc_tessellation_cache_mem(needed_blocks);
+
+      unsigned int currentIndex = 0;
+      BVH4i::NodeRef bvh4i_root = initLocalLazySubdivTree(*subdiv_patch,currentIndex,local_mem,geom);		      
+      
+      size_t new_root = (size_t)bvh4i_root + (size_t)local_mem;
+
+      /* write new subtree root and release lock */
+      *(size_t*)&subdiv_patch->ptr = new_root;
+      return (size_t)new_root;
+
+ 
+    }
+
+
     static unsigned int BVH4I_LEAF_MASK = BVH4i::leaf_mask; // needed due to compiler efficiency bug
     static unsigned int M_LANE_7777 = 0x7777;               // needed due to compiler efficiency bug
 
@@ -702,8 +744,12 @@ namespace embree
 	      const unsigned int patchIndex = curNode.offsetIndex();
 
 	      // ----------------------------------------------------------------------------------------------------
+#if LAZY_BUILD == 1
+	      size_t cached_64bit_root = lazyBuildPatch(patchIndex,commitCounter,(SubdivPatch1*)accel,scene);
+#else
 	      TessellationCacheTag *t = lookUpTessellationCache(local_cache,patchIndex,commitCounter,(SubdivPatch1*)accel,scene);
 	      size_t cached_64bit_root = t->getRootRef();	      
+#endif
 	      BVH4i::NodeRef subtree_root = extractBVH4iNodeRef(cached_64bit_root); 
 	      mic_f     * const __restrict__ lazymem     = (mic_f*)extractBVH4iPtr(cached_64bit_root); 
 	      // ----------------------------------------------------------------------------------------------------
@@ -879,8 +925,12 @@ namespace embree
 	      const unsigned int patchIndex = curNode.offsetIndex();
 
 	      // ----------------------------------------------------------------------------------------------------
+#if LAZY_BUILD == 1
+	      size_t cached_64bit_root = lazyBuildPatch(patchIndex,commitCounter,(SubdivPatch1*)accel,scene);
+#else
 	      TessellationCacheTag *t = lookUpTessellationCache(local_cache,patchIndex,commitCounter,(SubdivPatch1*)accel,scene);
 	      size_t cached_64bit_root = t->getRootRef();	      
+#endif
 	      BVH4i::NodeRef subtree_root = extractBVH4iNodeRef(cached_64bit_root); 
 	      mic_f     * const __restrict__ lazymem     = (mic_f*)extractBVH4iPtr(cached_64bit_root); 
 	      // ----------------------------------------------------------------------------------------------------
@@ -1024,8 +1074,12 @@ namespace embree
 	  const unsigned int patchIndex = curNode.offsetIndex();
 
 	  // ----------------------------------------------------------------------------------------------------
+#if LAZY_BUILD == 1
+	  size_t cached_64bit_root = lazyBuildPatch(patchIndex,commitCounter,(SubdivPatch1*)accel,scene);
+#else
 	  TessellationCacheTag *t = lookUpTessellationCache(local_cache,patchIndex,commitCounter,(SubdivPatch1*)accel,scene);
 	  size_t cached_64bit_root = t->getRootRef();	      
+#endif
 	  BVH4i::NodeRef subtree_root = extractBVH4iNodeRef(cached_64bit_root); 
 	  mic_f     * const __restrict__ lazymem     = (mic_f*)extractBVH4iPtr(cached_64bit_root); 
 	  // ----------------------------------------------------------------------------------------------------
@@ -1153,8 +1207,12 @@ namespace embree
 	  const unsigned int patchIndex = curNode.offsetIndex();
 
 	  // ----------------------------------------------------------------------------------------------------
+#if LAZY_BUILD == 1
+	  size_t cached_64bit_root = lazyBuildPatch(patchIndex,commitCounter,(SubdivPatch1*)accel,scene);
+#else
 	  TessellationCacheTag *t = lookUpTessellationCache(local_cache,patchIndex,commitCounter,(SubdivPatch1*)accel,scene);
 	  size_t cached_64bit_root = t->getRootRef();	      
+#endif
 	  BVH4i::NodeRef subtree_root = extractBVH4iNodeRef(cached_64bit_root); 
 	  mic_f     * const __restrict__ lazymem     = (mic_f*)extractBVH4iPtr(cached_64bit_root); 
 	  // ----------------------------------------------------------------------------------------------------
