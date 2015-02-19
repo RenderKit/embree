@@ -791,10 +791,13 @@ PRINT(CORRECT_numPrims);
     
     DBG_CACHE_BUILDER(DBG_PRINT(fastUpdateMode));
 
+#if 1
     if (fastUpdateMode)
       {
+	PING;
 	scene->lockstep_scheduler.dispatchTask( task_deleteLazySubTrees, this, threadIndex, threadCount );	
       }
+#endif
 
     BVH4iBuilder::build(threadIndex,threadCount);
   }

@@ -27,14 +27,14 @@
 #define CACHE_STATS(x) 
 #endif
 
-#define SHARED_TESSELLATION_CACHE_ENTRIES 256
-#define LOCAL_TESSELLATION_CACHE_ENTRIES  16
+#define SHARED_TESSELLATION_CACHE_ENTRIES 1024
+#define LOCAL_TESSELLATION_CACHE_ENTRIES  32
 
 //#define PRE_ALLOC_BLOCKS 32
 #define PRE_ALLOC_BLOCKS 0
 
 //#define ONLY_SHARED_CACHE
-//#define CACHE_HIERARCHY
+#define CACHE_HIERARCHY
 
 #define LAZY_BUILD 1
 
@@ -530,10 +530,10 @@ namespace embree
 								       const unsigned int commitCounter)
     {
       InputTagType tag = (InputTagType)patchIndex;
-      CACHE_STATS(SharedTessellationCacheStats::cache_accesses++);
       TessellationCacheTag *t = sharedTessellationCache.getTag(tag);
       if (t->try_read_lock())
 	{
+	  CACHE_STATS(SharedTessellationCacheStats::cache_accesses++);
 	  if (unlikely(!t->match(tag,commitCounter)))
 	    {
 	      CACHE_STATS(SharedTessellationCacheStats::cache_misses++);
@@ -701,24 +701,35 @@ namespace embree
 					Scene *const scene,
 					TessellationRefCache *ref_cache)
     {
+      CACHE_STATS(DistributedTessellationCacheStats::cache_accesses++);
+
       TessellationRefCacheTag *t = ref_cache->getTag(patchIndex);
       if (likely(t->match(patchIndex,commitCounter)))
-	return t->getRootRef();
+	{
+	  CACHE_STATS(DistributedTessellationCacheStats::cache_hits++);
+	  return t->getRootRef();
+	}
+      CACHE_STATS(DistributedTessellationCacheStats::cache_misses++);
 
 #if 1
+
+
       /* release read_lock on previous entry */
       if (!t->empty()) {
 	patches[t->getPrimTag()].read_unlock();
+#if 1
 	if (patches[t->getPrimTag()].try_write_lock())
 	  {
-	    assert( patches[t->getPrimTag()].ptr != NULL);
-	    assert( (size_t)patches[t->getPrimTag()].ptr != 1);
+	    if ( patches[t->getPrimTag()].ptr == NULL)
+	      {
+		assert( (size_t)patches[t->getPrimTag()].ptr != 1);
+		free_tessellation_cache_mem(patches[t->getPrimTag()].ptr);
 
-	    free_tessellation_cache_mem(patches[t->getPrimTag()].ptr);
-
-	    patches[t->getPrimTag()].ptr = NULL;
+		patches[t->getPrimTag()].ptr = NULL;
+	      }
 	    patches[t->getPrimTag()].write_unlock();
 	  }
+#endif
       }
 
       SubdivPatch1 *subdiv_patch = &patches[patchIndex];
