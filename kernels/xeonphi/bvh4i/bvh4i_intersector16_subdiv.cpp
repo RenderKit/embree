@@ -705,7 +705,6 @@ namespace embree
 	    assert( patches[t->getPrimTag()].ptr != NULL);
 	    assert( (size_t)patches[t->getPrimTag()].ptr != 1);
 
-	    
 	    free_tessellation_cache_mem(patches[t->getPrimTag()].ptr);
 
 	    patches[t->getPrimTag()].ptr = NULL;
@@ -725,7 +724,9 @@ namespace embree
 	  return (size_t)subdiv_patch->ptr;
 	}
 
-      /* lock subdiv patch */
+      subdiv_patch->prefetchData();
+
+      /* only single thread can build the subdiv patch */
       while(1)
 	{
 	  while(*(volatile size_t*)&subdiv_patch->ptr == 1)
@@ -744,8 +745,6 @@ namespace embree
 	}
 
       assert( (size_t)subdiv_patch->ptr == 1);
-
-      /* not build yet obtain write lock */
 
       /* build subtree */
       const unsigned int needed_blocks = subdiv_patch->grid_subtree_size_64b_blocks;          
@@ -766,13 +765,12 @@ namespace embree
 #else
       SubdivPatch1* subdiv_patch = &patches[patchIndex];
 
-      //atomic_add((int32*)&subdiv_patch->mutex,1);
-
       if (subdiv_patch->ptr != NULL && (size_t)subdiv_patch->ptr != 1) 
 	{
 	  t->set(patchIndex,commitCounter,(size_t)subdiv_patch->ptr);
 	  return (size_t)subdiv_patch->ptr;
 	}
+
       /* lock subdiv patch */
       while(1)
 	{
