@@ -22,7 +22,7 @@
 #define TIMER(x) 
 
 #if defined(DEBUG)
-#define CACHE_STATS(x) x
+#define CACHE_STATS(x) 
 #else
 #define CACHE_STATS(x) 
 #endif
@@ -30,7 +30,7 @@
 #define SHARED_TESSELLATION_CACHE_ENTRIES 1024
 #define LOCAL_TESSELLATION_CACHE_ENTRIES  32
 
-#define TESSELLATION_REF_CACHE_ENTRIES  128
+#define TESSELLATION_REF_CACHE_ENTRIES  512
 
 //#define ONLY_SHARED_CACHE
 #define CACHE_HIERARCHY
@@ -80,8 +80,45 @@ namespace embree
 
   class __aligned(64) TessellationRefCache {
     static const size_t CACHE_ENTRIES = TESSELLATION_REF_CACHE_ENTRIES;
-    
+
+    static const size_t CACHE_WAYS    = 8;  
+    static const size_t CACHE_SETS    = CACHE_ENTRIES / CACHE_WAYS; 
+
     TessellationRefCacheTag tags[CACHE_ENTRIES];
+
+    class __aligned(4 * sizeof(CACHE_WAYS)) CacheTagSet {
+    public:
+      unsigned int NFU_stat[CACHE_WAYS];
+      
+      __forceinline void reset()
+      {
+	for (size_t i=0;i<CACHE_WAYS;i++)
+	  NFU_stat[i] = 0;	
+      }
+
+      __forceinline void updateNFUStat()
+      {
+	for (size_t i=0;i<CACHE_WAYS;i++)
+	  NFU_stat[i] >>= 1;	
+      }
+
+      __forceinline void markMRU(const size_t index)
+      {
+	NFU_stat[index] |= (unsigned int)1 << 31;
+      }
+      __forceinline size_t getNFUIndex()
+      {
+	size_t index = 0;
+	for (size_t i=0;i<CACHE_WAYS;i++)
+	  if (NFU_stat[i] < NFU_stat[index])
+	    index = i;
+	assert(index < CACHE_WAYS);
+	return index;
+      }
+    };
+
+    CacheTagSet sets[CACHE_SETS];
+
     unsigned int commitTag;
 
   public:
@@ -91,18 +128,33 @@ namespace embree
     {
       for (size_t i=0;i<CACHE_ENTRIES;i++)
         tags[i].reset(); 
+
+      for (size_t i=0;i<CACHE_SETS;i++)
+	sets[i].reset();
     }
 
-    __forceinline TessellationRefCacheTag *getTag(InputTagType primID)
+    __forceinline TessellationRefCacheTag *lookUpTag(InputTagType primID,
+						     const unsigned int commitCounter)
     {
+#if 0
       const size_t t = toTag(primID) % CACHE_ENTRIES;
       return &tags[t];
-    }
-
-    __forceinline TessellationRefCacheTag *requestTag(InputTagType primID)
-    {
-      const size_t t = toTag(primID) % CACHE_ENTRIES;
-      return &tags[t];
+#else
+      const size_t set_index = toTag(primID) % CACHE_SETS;
+      TessellationRefCacheTag *set_tags = &tags[set_index*CACHE_WAYS];
+      for (size_t i=0;i<CACHE_WAYS;i++)
+	if (set_tags[i].match(primID,commitCounter))
+	  {
+	    /* cache hit */
+	    sets[set_index].updateNFUStat();
+	    sets[set_index].markMRU(i);
+	    return &set_tags[i];
+	  }
+      /* cache miss */
+      size_t evict_index = sets[set_index].getNFUIndex();
+      sets[set_index].markMRU(evict_index);
+      return &set_tags[evict_index];
+#endif
     }
 
     __forceinline void setNewCommitTag(const unsigned int ctag) { 
@@ -699,28 +751,33 @@ namespace embree
 						const unsigned int commitCounter,
 						SubdivPatch1* const patches,
 						Scene *const scene,
-						TessellationRefCache *ref_cache)
+						TessellationRefCacheTag *t)
     {
       /* not in cache, need eviction candidate */
 
-      TessellationRefCacheTag *t = ref_cache->requestTag(patchIndex);
-
 #if ENABLE_EVICTION_IN_LAZY_BUILD == 1
+      void *ptr = NULL;
+      size_t previous_blocks = 0;
 
       /* release read_lock on previous entry */
       if (!t->empty()) {
-	patches[t->getPrimTag()].read_unlock();
+	const size_t tag = t->getPrimTag();
+	patches[tag].read_unlock();
 #if 1
-	if (patches[t->getPrimTag()].try_write_lock())
+	if (patches[tag].try_write_lock())
 	  {
-	    if ( patches[t->getPrimTag()].ptr != NULL)
-	      {
-		assert( (size_t)patches[t->getPrimTag()].ptr != 1);
-		free_tessellation_cache_mem(patches[t->getPrimTag()].ptr);
+	    ptr             = patches[tag].ptr;
+	    previous_blocks = patches[tag].grid_subtree_size_64b_blocks;
+	    patches[tag].ptr = NULL;
+	    patches[tag].write_unlock();
 
-		patches[t->getPrimTag()].ptr = NULL;
+	    if ( ptr != NULL)
+	      {
+		CACHE_STATS(DistributedTessellationCacheStats::cache_evictions++);              
+		assert( (size_t)ptr != 1);
+		//free_tessellation_cache_mem(ptr);
 	      }
-	    patches[t->getPrimTag()].write_unlock();
+
 	  }
 #endif
       }
@@ -733,36 +790,48 @@ namespace embree
       /* already build, get pointer and update cache entry */
       if (likely(subdiv_patch->ptr != NULL && (size_t)subdiv_patch->ptr != 1)) 
 	{
+
+	  if ( ptr != NULL)
+	    {
+	      CACHE_STATS(DistributedTessellationCacheStats::cache_evictions++);              
+	      assert( (size_t)ptr != 1);
+	      free_tessellation_cache_mem(ptr);
+	    }
+
+
 	  t->set(patchIndex,commitCounter,(size_t)subdiv_patch->ptr);
 	  return (size_t)subdiv_patch->ptr;
 	}
 
       subdiv_patch->prefetchData();
 
-      /* only single thread can build the subdiv patch */
-      while(1)
-	{
-	  while(*(volatile size_t*)&subdiv_patch->ptr == 1)
-	    _mm_delay_32(256);
+      const unsigned int needed_blocks = subdiv_patch->grid_subtree_size_64b_blocks;          
 
-	  size_t old = atomic_cmpxchg((volatile int64*)&subdiv_patch->ptr,(int64)0,(int64)1);
-	  if (old == 0) 
-	    break;
-	  else if (old == 1)
-	    _mm_delay_32(256);
-	  else
-	    {
-	      t->set(patchIndex,commitCounter,(size_t)subdiv_patch->ptr);
-	      return (size_t)subdiv_patch->ptr;
-	    }
+      /* only single thread can build the subdiv patch */
+      size_t new_ptr = subdiv_patch->isBlocked();
+      if (new_ptr) 
+	{
+	  t->set(patchIndex,commitCounter,new_ptr);
+	  return new_ptr;
 	}
+
 
       assert( (size_t)subdiv_patch->ptr == 1);
 
       /* build subtree */
-      const unsigned int needed_blocks = subdiv_patch->grid_subtree_size_64b_blocks;          
       const SubdivMesh* const geom = (SubdivMesh*)scene->get(subdiv_patch->geom); // FIXME: test flag first
-      mic_f* local_mem = (mic_f*)alloc_tessellation_cache_mem(needed_blocks);
+      mic_f* local_mem = NULL;
+
+      if (ptr != NULL)
+	{
+	  if (previous_blocks >= needed_blocks)
+	    local_mem = (mic_f*)ptr;
+	  else
+	    free_tessellation_cache_mem(ptr);
+	}
+
+      if (local_mem == NULL)
+	local_mem = (mic_f*)alloc_tessellation_cache_mem(needed_blocks);
 
       unsigned int currentIndex = 0;
       BVH4i::NodeRef bvh4i_root = initLocalLazySubdivTree(*subdiv_patch,currentIndex,local_mem,geom);		      
@@ -830,7 +899,7 @@ namespace embree
       /* lookup in per thread reference cache */
 
       CACHE_STATS(DistributedTessellationCacheStats::cache_accesses++);
-      TessellationRefCacheTag *t = ref_cache->getTag(patchIndex);
+      TessellationRefCacheTag *t = ref_cache->lookUpTag(patchIndex,commitCounter);
       if (likely(t->match(patchIndex,commitCounter)))
 	{
 	  CACHE_STATS(DistributedTessellationCacheStats::cache_hits++);
@@ -838,7 +907,7 @@ namespace embree
 	}
       CACHE_STATS(DistributedTessellationCacheStats::cache_misses++);
 
-      return lazyBuildPatchMissHandler(patchIndex,commitCounter,patches,scene,ref_cache);
+      return lazyBuildPatchMissHandler(patchIndex,commitCounter,patches,scene,t);
     }
 
 

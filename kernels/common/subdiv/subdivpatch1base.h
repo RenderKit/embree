@@ -644,6 +644,35 @@ namespace embree
    __forceinline bool try_read_lock()  { return mutex.try_read_lock();   }
    __forceinline bool try_write_lock() { return mutex.try_write_lock();  }
 
+   __forceinline size_t isBlocked()
+   {
+      while(1)
+	{
+	  while(*(volatile size_t*)&ptr == 1)
+#if defined(__MIC__)
+	    _mm_delay_32(256);
+#else
+	  _mm_pause();
+#endif
+
+	  size_t old = atomic_cmpxchg((volatile int64*)&ptr,(int64)0,(int64)1);
+	  if (old == 0) 
+	    break;
+	  else if (old == 1)
+#if defined(__MIC__)
+	    _mm_delay_32(256);
+#else
+	  _mm_pause();
+#endif
+
+	  else
+	    {
+	      return (size_t)ptr;
+	    }
+	}
+      return 0;
+   }
+
   private:
 
     size_t get64BytesBlocksForGridSubTree(const GridRange &range,
