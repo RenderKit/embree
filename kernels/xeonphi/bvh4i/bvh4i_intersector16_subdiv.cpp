@@ -756,18 +756,17 @@ namespace embree
       /* not in cache, need eviction candidate */
 
 #if ENABLE_EVICTION_IN_LAZY_BUILD == 1
-      void *ptr = NULL;
-      size_t previous_blocks = 0;
 
       /* release read_lock on previous entry */
       if (!t->empty()) {
 	const size_t tag = t->getPrimTag();
 	patches[tag].read_unlock();
-#if 1
+
+#if 0
 	if (patches[tag].try_write_lock())
 	  {
-	    ptr             = patches[tag].ptr;
-	    previous_blocks = patches[tag].grid_subtree_size_64b_blocks;
+	    void *ptr             = patches[tag].ptr;
+	    size_t previous_blocks = patches[tag].grid_subtree_size_64b_blocks;
 	    patches[tag].ptr = NULL;
 	    patches[tag].write_unlock();
 
@@ -775,9 +774,8 @@ namespace embree
 	      {
 		CACHE_STATS(DistributedTessellationCacheStats::cache_evictions++);              
 		assert( (size_t)ptr != 1);
-		//free_tessellation_cache_mem(ptr);
+		free_tessellation_cache_mem(ptr);
 	      }
-
 	  }
 #endif
       }
@@ -790,18 +788,36 @@ namespace embree
       /* already build, get pointer and update cache entry */
       if (likely(subdiv_patch->ptr != NULL && (size_t)subdiv_patch->ptr != 1)) 
 	{
-
-	  if ( ptr != NULL)
-	    {
-	      CACHE_STATS(DistributedTessellationCacheStats::cache_evictions++);              
-	      assert( (size_t)ptr != 1);
-	      free_tessellation_cache_mem(ptr);
-	    }
-
-
 	  t->set(patchIndex,commitCounter,(size_t)subdiv_patch->ptr);
 	  return (size_t)subdiv_patch->ptr;
 	}
+
+      ///////////////////////////////////////
+
+
+      if (!t->empty()) {
+	const size_t tag = t->getPrimTag();
+	if (patches[tag].try_write_lock())
+	  {
+	    //patches[tag].write_lock();
+	    void *ptr             = patches[tag].ptr;
+	    size_t previous_blocks = patches[tag].grid_subtree_size_64b_blocks;
+	    patches[tag].ptr = NULL;
+	    patches[tag].write_unlock();
+
+	    if ( ptr != NULL)
+	      {
+		CACHE_STATS(DistributedTessellationCacheStats::cache_evictions++);              
+		assert( (size_t)ptr != 1);
+		free_tessellation_cache_mem(ptr);
+	      }
+	  }
+      }
+
+
+      ///////////////////////////////////////
+
+
 
       subdiv_patch->prefetchData();
 
@@ -822,13 +838,13 @@ namespace embree
       const SubdivMesh* const geom = (SubdivMesh*)scene->get(subdiv_patch->geom); // FIXME: test flag first
       mic_f* local_mem = NULL;
 
-      if (ptr != NULL)
-	{
-	  if (previous_blocks >= needed_blocks)
-	    local_mem = (mic_f*)ptr;
-	  else
-	    free_tessellation_cache_mem(ptr);
-	}
+      // if (ptr != NULL)
+      // 	{
+      // 	  if (previous_blocks >= needed_blocks)
+      // 	    local_mem = (mic_f*)ptr;
+      // 	  else
+      // 	    free_tessellation_cache_mem(ptr);
+      // 	}
 
       if (local_mem == NULL)
 	local_mem = (mic_f*)alloc_tessellation_cache_mem(needed_blocks);
