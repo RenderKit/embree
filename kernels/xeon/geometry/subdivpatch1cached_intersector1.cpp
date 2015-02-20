@@ -25,7 +25,6 @@
 #define ENABLE_TESSELLATION_CACHE_HIERARCHY 0
 
 #define SHARED_TESSELLATION_CACHE_ENTRIES 512
-#define PRE_ALLOC_BLOCKS 32
 
 namespace embree
 {
@@ -33,7 +32,7 @@ namespace embree
   {  
     
     __thread PerThreadTessellationCache *SubdivPatch1CachedIntersector1::thread_cache = NULL;
-    SharedTessellationCache<SHARED_TESSELLATION_CACHE_ENTRIES,PRE_ALLOC_BLOCKS> sharedTessellationCache;
+    SharedTessellationCache<SHARED_TESSELLATION_CACHE_ENTRIES> sharedTessellationCache;
 
     /* build lazy subtree over patch */
     size_t SubdivPatch1CachedIntersector1::lazyBuildPatch(const SubdivPatch1Cached* const subdiv_patch, const void* geom)

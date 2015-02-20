@@ -22,7 +22,7 @@
 #define TIMER(x) 
 
 #if defined(DEBUG)
-#define CACHE_STATS(x) 
+#define CACHE_STATS(x) x
 #else
 #define CACHE_STATS(x) 
 #endif
@@ -30,18 +30,18 @@
 #define SHARED_TESSELLATION_CACHE_ENTRIES 1024
 #define LOCAL_TESSELLATION_CACHE_ENTRIES  32
 
-//#define PRE_ALLOC_BLOCKS 32
-#define PRE_ALLOC_BLOCKS 0
+#define TESSELLATION_REF_CACHE_ENTRIES  128
 
 //#define ONLY_SHARED_CACHE
 #define CACHE_HIERARCHY
 
 #define LAZY_BUILD 1
+#define ENABLE_EVICTION_IN_LAZY_BUILD 1
 
 namespace embree
 {
   typedef AdaptiveTessellationCache<LOCAL_TESSELLATION_CACHE_ENTRIES> TessellationCache;
-  SharedTessellationCache<SHARED_TESSELLATION_CACHE_ENTRIES,PRE_ALLOC_BLOCKS> sharedTessellationCache;
+  SharedTessellationCache<SHARED_TESSELLATION_CACHE_ENTRIES> sharedTessellationCache;
 
   struct __aligned(16) TessellationRefCacheTag {
    unsigned int prim_tag;
@@ -79,7 +79,7 @@ namespace embree
   };
 
   class __aligned(64) TessellationRefCache {
-    static const size_t CACHE_ENTRIES = 256;
+    static const size_t CACHE_ENTRIES = TESSELLATION_REF_CACHE_ENTRIES;
     
     TessellationRefCacheTag tags[CACHE_ENTRIES];
     unsigned int commitTag;
@@ -94,6 +94,12 @@ namespace embree
     }
 
     __forceinline TessellationRefCacheTag *getTag(InputTagType primID)
+    {
+      const size_t t = toTag(primID) % CACHE_ENTRIES;
+      return &tags[t];
+    }
+
+    __forceinline TessellationRefCacheTag *requestTag(InputTagType primID)
     {
       const size_t t = toTag(primID) % CACHE_ENTRIES;
       return &tags[t];
@@ -339,13 +345,6 @@ namespace embree
       TIMER(double msec = 0.0);
       TIMER(msec = getSeconds());
 
-#if 0
-      DBG_PRINT(patch.grid_size_simd_blocks);
-      DBG_PRINT(patch.grid_u_res);
-      DBG_PRINT(patch.grid_v_res);
-      DBG_PRINT(patch.grid_subtree_size_64b_blocks);
-      //exit(0);
-#endif
       __aligned(64) float u_array[(patch.grid_size_simd_blocks+1)*16]; // for unaligned access
       __aligned(64) float v_array[(patch.grid_size_simd_blocks+1)*16];
 
@@ -388,9 +387,10 @@ namespace embree
 
     void createTessellationCache()
     {
-      TessellationCache *cache = (TessellationCache *)_mm_malloc(sizeof(TessellationCache),64);
+      const size_t blocks = (sizeof(TessellationCache)+sizeof(TessellationCache)-1)/64;
+      TessellationCache *cache = (TessellationCache *)alloc_tessellation_cache_mem(blocks);
       assert( (size_t)cache % 64 == 0 );
-      cache->init(PRE_ALLOC_BLOCKS);	
+      cache->init();	
       tess_cache = cache;
     }
 
@@ -695,24 +695,17 @@ namespace embree
     }
 
 
-    __forceinline size_t lazyBuildPatch(const unsigned int patchIndex,
-					const unsigned int commitCounter,
-					SubdivPatch1* const patches,
-					Scene *const scene,
-					TessellationRefCache *ref_cache)
+    __noinline size_t lazyBuildPatchMissHandler(const unsigned int patchIndex,
+						const unsigned int commitCounter,
+						SubdivPatch1* const patches,
+						Scene *const scene,
+						TessellationRefCache *ref_cache)
     {
-      CACHE_STATS(DistributedTessellationCacheStats::cache_accesses++);
+      /* not in cache, need eviction candidate */
 
-      TessellationRefCacheTag *t = ref_cache->getTag(patchIndex);
-      if (likely(t->match(patchIndex,commitCounter)))
-	{
-	  CACHE_STATS(DistributedTessellationCacheStats::cache_hits++);
-	  return t->getRootRef();
-	}
-      CACHE_STATS(DistributedTessellationCacheStats::cache_misses++);
+      TessellationRefCacheTag *t = ref_cache->requestTag(patchIndex);
 
-#if 1
-
+#if ENABLE_EVICTION_IN_LAZY_BUILD == 1
 
       /* release read_lock on previous entry */
       if (!t->empty()) {
@@ -720,7 +713,7 @@ namespace embree
 #if 1
 	if (patches[t->getPrimTag()].try_write_lock())
 	  {
-	    if ( patches[t->getPrimTag()].ptr == NULL)
+	    if ( patches[t->getPrimTag()].ptr != NULL)
 	      {
 		assert( (size_t)patches[t->getPrimTag()].ptr != 1);
 		free_tessellation_cache_mem(patches[t->getPrimTag()].ptr);
@@ -750,13 +743,13 @@ namespace embree
       while(1)
 	{
 	  while(*(volatile size_t*)&subdiv_patch->ptr == 1)
-	    _mm_delay_32(1024);
+	    _mm_delay_32(256);
 
 	  size_t old = atomic_cmpxchg((volatile int64*)&subdiv_patch->ptr,(int64)0,(int64)1);
 	  if (old == 0) 
 	    break;
 	  else if (old == 1)
-	    _mm_delay_32(1024);
+	    _mm_delay_32(256);
 	  else
 	    {
 	      t->set(patchIndex,commitCounter,(size_t)subdiv_patch->ptr);
@@ -824,8 +817,28 @@ namespace embree
       t->set(patchIndex,commitCounter,new_root);
 
       return (size_t)new_root;
-#endif
- 
+#endif      
+    }
+
+    __forceinline size_t lazyBuildPatch(const unsigned int patchIndex,
+					const unsigned int commitCounter,
+					SubdivPatch1* const patches,
+					Scene *const scene,
+					TessellationRefCache *ref_cache)
+    {
+
+      /* lookup in per thread reference cache */
+
+      CACHE_STATS(DistributedTessellationCacheStats::cache_accesses++);
+      TessellationRefCacheTag *t = ref_cache->getTag(patchIndex);
+      if (likely(t->match(patchIndex,commitCounter)))
+	{
+	  CACHE_STATS(DistributedTessellationCacheStats::cache_hits++);
+	  return t->getRootRef();
+	}
+      CACHE_STATS(DistributedTessellationCacheStats::cache_misses++);
+
+      return lazyBuildPatchMissHandler(patchIndex,commitCounter,patches,scene,ref_cache);
     }
 
 

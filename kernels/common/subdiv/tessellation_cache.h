@@ -184,7 +184,7 @@ namespace embree
 
  };
 
- template<size_t CACHE_ENTRIES, size_t PRE_ALLOC_BLOCKS>
+ template<size_t CACHE_ENTRIES>
   class __aligned(64) SharedTessellationCache {
 
   private:
@@ -215,7 +215,7 @@ namespace embree
     __forceinline void reset()
     {
       for (size_t i=0;i<CACHE_ENTRIES;i++)
-        tags[i].reset(); // PRE_ALLOC_BLOCKS);
+        tags[i].reset();
     }
     
 
