@@ -20,7 +20,6 @@
 extern RTCScene g_scene;
 
 uniform unsigned int g_numThreads = 0;
-uniform unsigned int g_subdivision_levels = 0;
 
 /* intensity scaling for traversal cost visualization */
 uniform float scale = 1.0f / 1000000.0f;
@@ -231,6 +230,71 @@ Vec3f renderPixelUV16(float x, float y, const uniform Vec3f& vx, const uniform V
   else return make_Vec3f(ray.u,ray.v,1.0f-ray.u-ray.v);
 }
 
+/* renders a single pixel with ambient occlusion */
+Vec3f renderPixelAmbientOcclusion(float x, float y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p)
+{
+  /* initialize ray */
+  RTCRay ray;
+  ray.org = p;
+  ray.dir = normalize(x*vx + y*vy + vz);
+  ray.tnear = 0.0f;
+  ray.tfar = inf;
+  ray.geomID = RTC_INVALID_GEOMETRY_ID;
+  ray.primID = RTC_INVALID_GEOMETRY_ID;
+  ray.mask = -1;
+  ray.time = 0;
+
+  /* intersect ray with scene */
+  rtcIntersect(g_scene,ray);
+
+  /* shade pixel */
+  if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return make_Vec3f(0.0f);
+
+  Vec3f Ng = normalize(ray.Ng);
+  Vec3f col = make_Vec3f(min(1.f,.3f+.8f*abs(dot(Ng,normalize(ray.dir)))));
+
+  /* calculate hit point */
+  float intensity = 0;
+  Vec3f hitPos = ray.org + ray.tfar * ray.dir;
+
+#define AMBIENT_OCCLUSION_SAMPLES 16
+  /* trace some ambient occlusion rays */
+  int seed = 34*x+12*y;
+  for (uniform int i=0; i<AMBIENT_OCCLUSION_SAMPLES; i++) 
+     {
+      Vec3f dir; 
+      const float oneOver10000f = 1.f/10000.f;
+      seed = 1103515245 * seed + 12345;
+      dir.x = (seed%10000)*oneOver10000f;
+      seed = 1103515245 * seed + 12345;
+      dir.y = (seed%10000)*oneOver10000f;
+      seed = 1103515245 * seed + 12345;
+      dir.z = (seed%10000)*oneOver10000f;
+    
+      /* initialize shadow ray */
+      RTCRay shadow;
+      shadow.org = hitPos;
+      shadow.dir = dir;
+      shadow.tnear = 0.001f;
+      shadow.tfar = inf;
+      shadow.geomID = RTC_INVALID_GEOMETRY_ID;
+      shadow.primID = RTC_INVALID_GEOMETRY_ID;
+      shadow.mask = -1;
+      shadow.time = 0;
+    
+      /* trace shadow ray */
+      rtcOccluded(g_scene,shadow);
+    
+      /* add light contribution */
+      if (shadow.geomID == RTC_INVALID_GEOMETRY_ID)
+        intensity += 1.0f;   
+     }
+  intensity *= 1.0f/AMBIENT_OCCLUSION_SAMPLES;
+
+  /* shade pixel */
+  return col * intensity;
+}
+
 /* returns the point seen through specified pixel */
 export uniform bool device_pick(const uniform float x,
                                 const uniform float y, 
@@ -311,12 +375,10 @@ export void device_key_pressed(uniform int key)
     g_changed = true;
   }
   else if (key == GLUT_KEY_F11) {
-  if (g_subdivision_levels > 0)	
-    g_subdivision_levels--;
+    renderPixel = renderPixelAmbientOcclusion;
     g_changed = true;
   }
   else if (key == GLUT_KEY_F12) {
-      g_subdivision_levels++;
     g_changed = true;
   }
 

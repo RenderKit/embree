@@ -16,110 +16,29 @@
 
 #include "tessellation_cache.h"
 
+#include <tbb/scalable_allocator.h>
+using namespace tbb;
+
 namespace embree
 {
 
-  // void TessellationCache::printStats()
-  // {
-  //   assert(cache_hits + cache_misses == cache_accesses);
-  //   DBG_PRINT(cache_accesses);
-  //   DBG_PRINT(cache_misses);
-  //   DBG_PRINT(cache_hits);
-  //   DBG_PRINT(cache_evictions);
-  //   DBG_PRINT(100.0f * cache_hits / cache_accesses);
-  //   DBG_PRINT(cache_clears);
-  // }
+#if defined (__MIC__)
+#define USE_TBB_ALLOCATOR 1
+#else
+#define USE_TBB_ALLOCATOR 0
+#endif
 
-  // void TessellationCache::clearStats()
-  // {
-  //   TessellationCache::cache_accesses  = 0;
-  //   TessellationCache::cache_hits      = 0;
-  //   TessellationCache::cache_misses    = 0;
-  //   TessellationCache::cache_evictions = 0;          
-  // }
-
-  struct LocalTessellationCacheMemoryHandler
-  {
-    static const size_t SAVED_MEMORY_POINTERS =  16;
-
-    size_t numSaved;
-    struct SaveMem {
-      void *ptr;
-      size_t blocks;
-    } saved[SAVED_MEMORY_POINTERS];
-
-    __forceinline void reset()
-    {
-      numSaved = 0;
-    }
-
-    LocalTessellationCacheMemoryHandler() {
-      reset();
-    }
-
-    void insert(void *ptr, size_t blocks)
-    {
-      if (numSaved < SAVED_MEMORY_POINTERS)
-	{
-	  /* saved memory pointer */
-	  saved[numSaved].ptr    = ptr;
-	  saved[numSaved].blocks = blocks;
-	  numSaved++;
-	}
-      else
-	{
-	  /* select smallest item as eviction candidate */
-	  size_t size = saved[0].blocks;
-	  size_t index = 0;
-	  for (size_t i=1;i<numSaved;i++)
-	    if (saved[i].blocks < size)
-	      {
-		size = saved[i].blocks;
-		index = i;
-	      }
-	  /* free eviction candidate */
-	  _mm_free(saved[index].ptr);
-	  /* overwrite eviction candidate*/
-	  saved[index].ptr    = ptr;
-	  saved[index].blocks = blocks;
-	}
-    }
-
-    void *lookup(size_t blocks)
-    {
-      size_t index    = (size_t)-1;
-      size_t s_blocks = (size_t)-1;
-      for (size_t i=0;i<numSaved;i++)
-	if (saved[i].blocks >= blocks &&
-	    saved[i].blocks < s_blocks)
-	  {
-	    index = i;
-	    s_blocks = saved[i].blocks;
-	  }
-      if (index == (size_t)-1)
-	{
-	  return (float*)_mm_malloc(64 * blocks,64);
-	}
-
-      void *t = saved[index].ptr;
-      saved[index] = saved[numSaved-1];
-      numSaved--;
-      return t;
-    }
-  };
-
-  __thread LocalTessellationCacheMemoryHandler *perThreadMemHandler = NULL;
+  //void*scalable_aligned_malloc(size_t size, size_t align);
+  //void scalable_aligned_free(void* ptr );
+  //void*scalable_aligned_realloc(void* ptr,size_t size,size_t align);
 
   /* alloc cache memory */
   float *alloc_tessellation_cache_mem(const size_t blocks)
   {
     //DBG_PRINT(blocks);
 
-#if 0
-    if (!perThreadMemHandler)
-      perThreadMemHandler = new LocalTessellationCacheMemoryHandler();
-
-    return (float*)perThreadMemHandler->lookup(blocks);
+#if USE_TBB_ALLOCATOR == 1
+    return (float*)scalable_aligned_malloc(64 * blocks,64);
 #else
     return (float*)_mm_malloc(64 * blocks,64);
 #endif
@@ -129,11 +48,8 @@ namespace embree
   void free_tessellation_cache_mem(void *mem, const size_t blocks)
   {
     assert(mem);
-#if 0
-    if (!perThreadMemHandler)
-      perThreadMemHandler = new LocalTessellationCacheMemoryHandler();
-
-    perThreadMemHandler->insert(mem,blocks);
+#if USE_TBB_ALLOCATOR == 1
+    scalable_aligned_free(mem);
 #else
     _mm_free(mem);
 #endif
