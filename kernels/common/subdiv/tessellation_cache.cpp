@@ -14,19 +14,22 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "tessellation_cache.h"
-
-#include <tbb/scalable_allocator.h>
-using namespace tbb;
-
-namespace embree
-{
-
 #if defined (__MIC__)
 #define USE_TBB_ALLOCATOR 1
 #else
 #define USE_TBB_ALLOCATOR 0
 #endif
+
+#include "tessellation_cache.h"
+
+#if USE_TBB_ALLOCATOR == 1
+#include <tbb/scalable_allocator.h>
+using namespace tbb;
+#endif
+
+namespace embree
+{
+
 
   //void*scalable_aligned_malloc(size_t size, size_t align);
   //void scalable_aligned_free(void* ptr );
