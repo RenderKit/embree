@@ -214,6 +214,9 @@ namespace embree
 	return (unsigned int)m_box == (unsigned int)m_lane;
       }
 
+      struct Helper { float x,y,z; int a; }; 
+      static Helper initQBVHNode[4];
+
       __forceinline void setInvalid(size_t i) 
       {
 	lower[i].x = pos_inf;
@@ -242,8 +245,15 @@ namespace embree
 
       __forceinline void setInvalid() 
       {
+#if 1
+	mic_f lower = broadcast4to16f(&initQBVHNode[0]);
+	mic_f upper = broadcast4to16f(&initQBVHNode[1]);
+	store16f_ngo(((mic_f*)this)+0,lower); 
+	store16f_ngo(((mic_f*)this)+1,upper);             
+#else
 	for (size_t i=0;i<4;i++)
 	  setInvalid(i);
+#endif
       }
 
       __forceinline void setValid() 
@@ -481,9 +491,6 @@ namespace embree
 
     size_t numAllocated64BytesBlocks;
 
-    struct Helper { float x,y,z; int a; }; 
-
-    static Helper initQBVHNode[4];
 
     /*! swap the children of two nodes */
     __forceinline static void swap(Node* a, size_t i, Node* b, size_t j)

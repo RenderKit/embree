@@ -849,8 +849,8 @@ namespace embree
     const size_t currentIndex = alloc.get(1);
    
     /* init used/unused nodes */
-    mic_f init_lower = broadcast4to16f(&BVH4i::initQBVHNode[0]);
-    mic_f init_upper = broadcast4to16f(&BVH4i::initQBVHNode[1]);
+    mic_f init_lower = broadcast4to16f(&BVH4i::Node::initQBVHNode[0]);
+    mic_f init_upper = broadcast4to16f(&BVH4i::Node::initQBVHNode[1]);
 
     store16f_ngo((float*)&node[currentIndex].lower,init_lower);
     store16f_ngo((float*)&node[currentIndex].upper,init_upper);
@@ -987,8 +987,8 @@ namespace embree
     /* allocate next four nodes and prefetch them */
     const size_t currentIndex = allocGlobalNode(1);    
 
-    mic_f init_lower = broadcast4to16f(&BVH4i::initQBVHNode[0]);
-    mic_f init_upper = broadcast4to16f(&BVH4i::initQBVHNode[1]);
+    mic_f init_lower = broadcast4to16f(&BVH4i::Node::initQBVHNode[0]);
+    mic_f init_upper = broadcast4to16f(&BVH4i::Node::initQBVHNode[1]);
 
     store16f_ngo((float*)&node[currentIndex].lower,init_lower);
     store16f_ngo((float*)&node[currentIndex].upper,init_upper);
@@ -1067,8 +1067,8 @@ namespace embree
     const size_t currentIndex = alloc.get(1);    
 
     /* init used/unused nodes */
-    mic_f init_lower = broadcast4to16f(&BVH4i::initQBVHNode[0]);
-    mic_f init_upper = broadcast4to16f(&BVH4i::initQBVHNode[1]);
+    mic_f init_lower = broadcast4to16f(&BVH4i::Node::initQBVHNode[0]);
+    mic_f init_upper = broadcast4to16f(&BVH4i::Node::initQBVHNode[1]);
 
     store16f_ngo((float*)&node[currentIndex].lower,init_lower);
     store16f_ngo((float*)&node[currentIndex].upper,init_upper);

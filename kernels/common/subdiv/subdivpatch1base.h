@@ -648,12 +648,16 @@ namespace embree
    {
       while(1)
 	{
-	  while(*(volatile size_t*)&ptr == 1)
+	  if (*(volatile size_t*)&ptr)
+	    {
+	      while(*(volatile size_t*)&ptr == 1)
 #if defined(__MIC__)
-	    _mm_delay_32(256);
+		_mm_delay_32(256);
 #else
-	  _mm_pause();
-#endif
+	      _mm_pause();
+#endif	      
+	      return *(volatile size_t*)&ptr;
+	    }
 
 	  size_t old = atomic_cmpxchg((volatile int64*)&ptr,(int64)0,(int64)1);
 	  if (old == 0) 

@@ -24,7 +24,7 @@
 namespace embree
 {
 
-  __aligned(64) BVH4i::Helper BVH4i::initQBVHNode[4] = { 
+  __aligned(64) BVH4i::Node::Helper BVH4i::Node::initQBVHNode[4] = { 
     { pos_inf, pos_inf, pos_inf,BVH4i::invalidNode},
     { neg_inf, neg_inf, neg_inf,BVH4i::invalidNode},
     { pos_inf, pos_inf, pos_inf,BVH4i::invalidNode},

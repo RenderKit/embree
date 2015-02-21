@@ -242,8 +242,8 @@ namespace embree
 	return leaf_bounds;
       }
 
-    mic_f node_lower_t1 = broadcast4to16f(&BVH4i::initQBVHNode[0]);
-    mic_f node_upper_t1 = broadcast4to16f(&BVH4i::initQBVHNode[1]);
+    mic_f node_lower_t1 = broadcast4to16f(&BVH4i::Node::initQBVHNode[0]);
+    mic_f node_upper_t1 = broadcast4to16f(&BVH4i::Node::initQBVHNode[1]);
     mic_m m_lane = 0xf;
 
     BVH4mb::Node *n = (BVH4mb::Node*)ref.node(node);
@@ -348,8 +348,8 @@ namespace embree
 	return parentBounds;
       }
 
-    mic_f node_lower_t1 = broadcast4to16f(&BVH4i::initQBVHNode[0]);
-    mic_f node_upper_t1 = broadcast4to16f(&BVH4i::initQBVHNode[1]);
+    mic_f node_lower_t1 = broadcast4to16f(&BVH4i::Node::initQBVHNode[0]);
+    mic_f node_upper_t1 = broadcast4to16f(&BVH4i::Node::initQBVHNode[1]);
     mic_m m_lane = 0xf;
 
     BVH4mb::Node *n = (BVH4mb::Node*)ref.node(node);

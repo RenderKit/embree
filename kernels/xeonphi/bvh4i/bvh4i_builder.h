@@ -148,8 +148,8 @@ namespace embree
 				 BuildRecord *__restrict__ const br,
 				 const size_t numChildren)
     {
-      mic_f lower = broadcast4to16f(&BVH4i::initQBVHNode[0]);
-      mic_f upper = broadcast4to16f(&BVH4i::initQBVHNode[1]);
+      mic_f lower = broadcast4to16f(&BVH4i::Node::initQBVHNode[0]);
+      mic_f upper = broadcast4to16f(&BVH4i::Node::initQBVHNode[1]);
       BVH4i::Node &bvh = *(BVH4i::Node*)ptr;
 
       mic_m m_lane = 0xf;

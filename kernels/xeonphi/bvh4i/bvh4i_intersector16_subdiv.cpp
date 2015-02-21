@@ -366,7 +366,9 @@ namespace embree
       BVH4i::Node &node = *(BVH4i::Node*)curNode.node((BVH4i::Node*)lazymem);
 
       node.setInvalid();
-      GridRange r[4];
+
+      __aligned(64) GridRange r[4];
+      prefetch<PFHINT_L1EX>(r);
       
       const unsigned int children = range.splitIntoSubRanges(r);
       
@@ -762,7 +764,7 @@ namespace embree
 	const size_t tag = t->getPrimTag();
 	patches[tag].read_unlock();
 
-#if 0
+#if 1
 	if (patches[tag].try_write_lock())
 	  {
 	    void *ptr             = patches[tag].ptr;
@@ -794,7 +796,7 @@ namespace embree
 
       ///////////////////////////////////////
 
-
+#if 0
       if (!t->empty()) {
 	const size_t tag = t->getPrimTag();
 	if (patches[tag].try_write_lock())
@@ -813,7 +815,7 @@ namespace embree
 	      }
 	  }
       }
-
+#endif
 
       ///////////////////////////////////////
 
@@ -824,15 +826,17 @@ namespace embree
       const unsigned int needed_blocks = subdiv_patch->grid_subtree_size_64b_blocks;          
 
       /* only single thread can build the subdiv patch */
+#if 1
       size_t new_ptr = subdiv_patch->isBlocked();
       if (new_ptr) 
 	{
 	  t->set(patchIndex,commitCounter,new_ptr);
 	  return new_ptr;
 	}
-
-
       assert( (size_t)subdiv_patch->ptr == 1);
+
+#endif
+
 
       /* build subtree */
       const SubdivMesh* const geom = (SubdivMesh*)scene->get(subdiv_patch->geom); // FIXME: test flag first
@@ -853,6 +857,19 @@ namespace embree
       BVH4i::NodeRef bvh4i_root = initLocalLazySubdivTree(*subdiv_patch,currentIndex,local_mem,geom);		      
       
       size_t new_root = (size_t)bvh4i_root + (size_t)local_mem;
+
+      // ------------------------
+
+      // size_t new_ptr = subdiv_patch->isBlocked();
+      // if (new_ptr) 
+      // 	{
+      // 	  free_tessellation_cache_mem(local_mem);
+      // 	  t->set(patchIndex,commitCounter,new_ptr);
+      // 	  return new_ptr;
+      // 	}
+      
+      // ------------------------
+      
 
       t->set(patchIndex,commitCounter,new_root);
 
