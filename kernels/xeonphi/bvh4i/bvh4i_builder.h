@@ -184,10 +184,17 @@ namespace embree
   protected:
     size_t numMaxPrimitives;
     size_t numMaxPreSplits;
+    float averageBoxTriSAHRatio;
+
+    float PRESPLIT_AREA_THRESHOLD;
+    float PRESPLIT_MIN_AREA;
 
     __aligned(64) AlignedAtomicCounter32 dest0;
     __aligned(64) AlignedAtomicCounter32 dest1;
+    __aligned(64) float averageBoxSAH;
+    __aligned(64) float averageTriSAH;
 
+    TASK_FUNCTION(BVH4iBuilderPreSplits,getAverageBoundsSAH);
     TASK_FUNCTION(BVH4iBuilderPreSplits,countAndComputePrimRefsPreSplits);
     TASK_FUNCTION(BVH4iBuilderPreSplits,computePrimRefsFromPreSplitIDs);
     

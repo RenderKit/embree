@@ -708,6 +708,19 @@ __forceinline void atomic_max_ui32(volatile unsigned int *__restrict__ ptr, cons
   }
 }
 
+__forceinline void atomic_add_f32(volatile float *__restrict__ ptr, const float b)
+{
+  while (1)
+  {
+    float a = *ptr;
+    float ab = a + b;
+    const int int_a = *(int*)&a;
+    const int int_ab = *(int*)&ab;
+    const int result = atomic_cmpxchg((int*)ptr,int_a,int_ab);
+    if (result == int_a) break;
+  }
+}
+
 static const unsigned int BITSCAN_NO_BIT_SET_32 = 32;
 static const size_t       BITSCAN_NO_BIT_SET_64 = 64;
 

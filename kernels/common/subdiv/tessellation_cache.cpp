@@ -15,7 +15,7 @@
 // ======================================================================== //
 
 #if defined (__MIC__)
-#define USE_TBB_ALLOCATOR 1
+#define USE_TBB_ALLOCATOR 0
 #else
 #define USE_TBB_ALLOCATOR 0
 #endif

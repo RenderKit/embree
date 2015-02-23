@@ -702,6 +702,18 @@ namespace embree
      return (size_t)ptr;
    }
 
+   __forceinline bool isBlocked()
+   {
+     if ((size_t)ptr > 0) return true;
+
+     size_t old = atomic_cmpxchg((volatile int64*)&ptr,(int64)0,(int64)1);
+
+     if (old == 0) 
+       return false;
+
+     return true;
+   }
+
   private:
 
     size_t get64BytesBlocksForGridSubTree(const GridRange &range,
@@ -747,7 +759,7 @@ namespace embree
     unsigned short grid_subtree_size_64b_blocks;
 
     RWMutex mutex;
-    void  *ptr;
+    volatile void  *ptr;
 
     __aligned(64) BSplinePatch patch;
   };

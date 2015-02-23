@@ -20,11 +20,12 @@
 #include "common/subdiv/feature_adaptive_gregory.h"
 
 #define PRESPLIT_SPACE_FACTOR         1.30f
-#define PRESPLIT_AREA_THRESHOLD      20.0f
-#define PRESPLIT_MIN_AREA             0.01f
+
+// #define PRESPLIT_AREA_THRESHOLD      20.0f
+// #define PRESPLIT_MIN_AREA             0.01f
+
 #define NUM_PRESPLITS_PER_TRIANGLE    16
 #define PRESPLITS_TREE_DEPTH          4
-#define NUM_PRESPLIT_IDS_PER_BLOCK    8
 
 #define DBG(x) 
 #define TIMER(x) 
@@ -207,6 +208,32 @@ PRINT(CORRECT_numPrims);
     TIMER(double msec = 0.0);
     TIMER(msec = getSeconds());
 
+    // =============================================================================================================
+
+    averageBoxSAH = 0.0f;
+    averageTriSAH = 0.0f;
+
+    scene->lockstep_scheduler.dispatchTask( task_getAverageBoundsSAH, this, threadIndex, threadCount );
+
+    averageBoxSAH /= (float)numPrimitives;
+    averageTriSAH /= (float)numPrimitives;
+
+    averageBoxTriSAHRatio = averageBoxSAH / averageTriSAH;
+
+    DBG_PRINT(averageBoxSAH);
+    DBG_PRINT(averageTriSAH);
+    DBG_PRINT(averageBoxTriSAHRatio);
+    
+#if 1
+    PRESPLIT_AREA_THRESHOLD = 20.0f;
+    PRESPLIT_MIN_AREA       = 0.01f;
+#else
+    PRESPLIT_AREA_THRESHOLD = 10.0f *averageBoxTriSAHRatio;
+    PRESPLIT_MIN_AREA       = 1.6f * averageBoxSAH;
+
+#endif
+    // =============================================================================================================
+
     dest0.reset(0);
     dest1.reset(0);
 
@@ -238,6 +265,75 @@ PRINT(CORRECT_numPrims);
   }
 
 
+  void BVH4iBuilderPreSplits::getAverageBoundsSAH(const size_t threadID, const size_t numThreads) 
+  {
+    const size_t numGroups = scene->size();
+    const size_t startID = (threadID+0)*numPrimitives/numThreads;
+    const size_t endID   = (threadID+1)*numPrimitives/numThreads;
+    const size_t items   = endID - startID;
+
+    // === find first group containing startID ===
+    unsigned int startGroup=0, numSkipped = 0;
+    for (; startGroup<numGroups; startGroup++) {       
+      if (unlikely(scene->get(startGroup) == NULL)) continue;
+      if (unlikely(scene->get(startGroup)->type != TRIANGLE_MESH)) continue;
+      const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(startGroup);
+      if (unlikely(!mesh->isEnabled())) continue;
+      if (unlikely(mesh->numTimeSteps != 1)) continue;
+
+      const size_t numTriangles = mesh->numTriangles;
+      if (numSkipped + numTriangles > startID) break;
+      numSkipped += numTriangles;
+    }
+
+    float sahBox = 0.0f;
+    float sahTri = 0.0f;
+
+    // === determine presplit candidates ===
+    {
+      unsigned int currentID = startID;
+      unsigned int offset = startID - numSkipped;
+      for (unsigned int g=startGroup; g<numGroups; g++) 
+	{
+	  if (unlikely(scene->get(g) == NULL)) continue;
+	  if (unlikely(scene->get(g)->type != TRIANGLE_MESH)) continue;
+	  const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(g);
+	  if (unlikely(!mesh->isEnabled())) continue;
+	  if (unlikely(mesh->numTimeSteps != 1)) continue;
+
+	  if (offset < mesh->numTriangles)
+	    {
+	      const char* __restrict__ cptr_tri = (char*)&mesh->triangle(offset);
+	      const unsigned int stride = mesh->triangles.getBufferStride();
+
+	      for (unsigned int i=offset; i<mesh->numTriangles && currentID < endID; i++, currentID++,cptr_tri+=stride)	 
+		{ 			    
+		  const TriangleMesh::Triangle& tri = *(TriangleMesh::Triangle*)cptr_tri;
+		  prefetch<PFHINT_L2>(&tri + L2_PREFETCH_ITEMS);
+		  prefetch<PFHINT_L1>(&tri + L1_PREFETCH_ITEMS);
+
+		  const mic3f v = mesh->getTriangleVertices<PFHINT_L2>(tri);
+
+		  mic_f bmin = min(min(v[0],v[1]),v[2]);
+		  mic_f bmax = max(max(v[0],v[1]),v[2]);
+
+		  const mic_f area_tri = tri_sah(v[0],v[1],v[2]);
+		  const mic_f area_box = box_sah(bmin,bmax);
+		  const mic_f factor = area_box * rcp(area_tri);
+		  
+		  sahBox += area_box[0];
+		  sahTri += area_tri[0];
+
+		}
+	    }
+	  if (currentID == endID) break;
+	  offset = 0;
+	}
+    }
+
+    atomic_add_f32(&averageBoxSAH,sahBox);    
+    atomic_add_f32(&averageTriSAH,sahTri);    
+  }
 
   void BVH4iBuilderPreSplits::countAndComputePrimRefsPreSplits(const size_t threadID, const size_t numThreads) 
   {
@@ -492,6 +588,13 @@ PRINT(CORRECT_numPrims);
 	  const TriangleMesh::Triangle & tri = mesh->triangle(primID);
 
 	  const mic3f v = mesh->getTriangleVertices<PFHINT_L2>(tri);
+
+	  
+	  mic_f bmin = min(min(v[0],v[1]),v[2]);
+	  mic_f bmax = max(max(v[0],v[1]),v[2]);
+
+	  const mic_f area_tri = tri_sah(v[0],v[1],v[2]);
+	  const mic_f area_box = box_sah(bmin,bmax);
 
 	  // FIXME: use store4f
 	  Vec3fa vtxA = *(Vec3fa*)&v[0];
@@ -816,7 +919,7 @@ PRINT(CORRECT_numPrims);
 	{
 	  //std::cout << threadID << " -> " << i << " -> " << subdiv_patches[i].ptr << std::endl;
 
-	  _mm_free(subdiv_patches[i].ptr);
+	  _mm_free((void*)subdiv_patches[i].ptr);
 	  subdiv_patches[i].ptr = NULL;
 	}
 
