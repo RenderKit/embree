@@ -366,8 +366,8 @@ namespace embree
 
   __forceinline float reduce_add(mic_f a) { return _mm512_reduce_add_ps(a); }
   __forceinline float reduce_mul(mic_f a) { return _mm512_reduce_mul_ps(a); }
-  __forceinline float reduce_min(mic_f a) { return _mm512_reduce_min_ps(a); }
-  __forceinline float reduce_max(mic_f a) { return _mm512_reduce_max_ps(a); }
+  __forceinline float reduce_min(mic_f a) { return _mm512_reduce_gmin_ps(a); }
+  __forceinline float reduce_max(mic_f a) { return _mm512_reduce_gmax_ps(a); }
 
   __forceinline mic_f vreduce_min2(mic_f x) {                      return min(x,swizzle(x,_MM_SWIZ_REG_BADC)); }
   __forceinline mic_f vreduce_min4(mic_f x) { x = vreduce_min2(x); return min(x,swizzle(x,_MM_SWIZ_REG_CDAB)); }

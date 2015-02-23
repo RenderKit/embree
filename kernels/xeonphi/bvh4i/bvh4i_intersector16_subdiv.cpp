@@ -30,7 +30,8 @@
 #define SHARED_TESSELLATION_CACHE_ENTRIES 1024
 #define LOCAL_TESSELLATION_CACHE_ENTRIES  32
 
-#define TESSELLATION_REF_CACHE_ENTRIES  512
+#define TESSELLATION_REF_CACHE_ENTRIES  128
+#define NUM_SCRATCH_MEM_BLOCKS 1024
 
 //#define ONLY_SHARED_CACHE
 #define CACHE_HIERARCHY
@@ -118,7 +119,8 @@ namespace embree
     };
 
     CacheTagSet sets[CACHE_SETS];
-
+    float *scratch_mem;
+    size_t scratch_mem_blocks;
     unsigned int commitTag;
 
   public:
@@ -164,9 +166,21 @@ namespace embree
 	}
     }
 
-    __forceinline TessellationRefCache(const unsigned int commitTag) : commitTag(commitTag) 
+    __forceinline TessellationRefCache(const unsigned int commitTag,
+				       const size_t scratch_mem_blocks) : commitTag(commitTag), scratch_mem_blocks(scratch_mem_blocks)
     {
+      scratch_mem = (float*) alloc_tessellation_cache_mem(scratch_mem_blocks);
       reset();
+    }
+
+    __forceinline float *getScratchMemPtr()    { return scratch_mem; }
+    __forceinline size_t getScratchMemBlocks() { return scratch_mem_blocks; }
+
+    __forceinline void reallocScratchMem(size_t new_blocks) {
+      assert(scratch_mem);
+      scratch_mem_blocks = new_blocks;
+      free_tessellation_cache_mem(scratch_mem);
+      scratch_mem = alloc_tessellation_cache_mem(scratch_mem_blocks);
     }
 
   };
@@ -827,7 +841,7 @@ namespace embree
 
       /* only single thread can build the subdiv patch */
 #if 1
-      size_t new_ptr = subdiv_patch->isBlocked();
+      size_t new_ptr = subdiv_patch->waitIfBlocked();
       if (new_ptr) 
 	{
 	  t->set(patchIndex,commitCounter,new_ptr);
@@ -922,6 +936,31 @@ namespace embree
 #endif      
     }
 
+    __noinline size_t lazyBuildPatchIntoScratchMem(const unsigned int patchIndex,
+						   SubdivPatch1* const patches,
+						   Scene *const scene,
+						   TessellationRefCache *ref_cache)
+    {
+      SubdivPatch1* subdiv_patch = &patches[patchIndex];
+      subdiv_patch->prefetchData();
+      const unsigned int needed_blocks = subdiv_patch->grid_subtree_size_64b_blocks;          
+
+      if (unlikely(ref_cache->getScratchMemBlocks() < needed_blocks))
+	ref_cache->reallocScratchMem(needed_blocks);
+
+      mic_f *local_mem = (mic_f*)ref_cache->getScratchMemPtr();
+
+      /* build subtree */
+      const SubdivMesh* const geom = (SubdivMesh*)scene->get(subdiv_patch->geom); // FIXME: test flag first
+
+      unsigned int currentIndex = 0;
+      BVH4i::NodeRef bvh4i_root = initLocalLazySubdivTree(*subdiv_patch,currentIndex,local_mem,geom);		      
+      
+      size_t new_root = (size_t)bvh4i_root + (size_t)local_mem;
+      return new_root;
+
+    }
+
     __forceinline size_t lazyBuildPatch(const unsigned int patchIndex,
 					const unsigned int commitCounter,
 					SubdivPatch1* const patches,
@@ -930,7 +969,6 @@ namespace embree
     {
 
       /* lookup in per thread reference cache */
-
       CACHE_STATS(DistributedTessellationCacheStats::cache_accesses++);
       TessellationRefCacheTag *t = ref_cache->lookUpTag(patchIndex,commitCounter);
       if (likely(t->match(patchIndex,commitCounter)))
@@ -940,7 +978,11 @@ namespace embree
 	}
       CACHE_STATS(DistributedTessellationCacheStats::cache_misses++);
 
+#if 1
+      return lazyBuildPatchIntoScratchMem(patchIndex,patches,scene,ref_cache);
+#else
       return lazyBuildPatchMissHandler(patchIndex,commitCounter,patches,scene,t);
+#endif
     }
 
 
@@ -977,7 +1019,7 @@ namespace embree
       /* query per thread tessellation cache */
       TessellationRefCache *local_ref_cache = NULL;
       if (unlikely(!tess_ref_cache))
-	tess_ref_cache = new TessellationRefCache( scene->commitCounter );
+	tess_ref_cache = new TessellationRefCache( scene->commitCounter, NUM_SCRATCH_MEM_BLOCKS );
       local_ref_cache = tess_ref_cache;
       local_ref_cache->setNewCommitTag( scene->commitCounter );
 #else
@@ -1166,7 +1208,7 @@ namespace embree
       /* query per thread tessellation cache */
       TessellationRefCache *local_ref_cache = NULL;
       if (unlikely(!tess_ref_cache))
-	tess_ref_cache = new TessellationRefCache( scene->commitCounter );
+	tess_ref_cache = new TessellationRefCache( scene->commitCounter, NUM_SCRATCH_MEM_BLOCKS  );
       local_ref_cache = tess_ref_cache;
       local_ref_cache->setNewCommitTag( scene->commitCounter );
 #else
@@ -1329,7 +1371,7 @@ namespace embree
       /* query per thread tessellation cache */
       TessellationRefCache *local_ref_cache = NULL;
       if (unlikely(!tess_ref_cache))
-	tess_ref_cache = new TessellationRefCache( scene->commitCounter );
+	tess_ref_cache = new TessellationRefCache( scene->commitCounter, NUM_SCRATCH_MEM_BLOCKS  );
       local_ref_cache = tess_ref_cache;
       local_ref_cache->setNewCommitTag( scene->commitCounter );
 #else
@@ -1470,7 +1512,7 @@ namespace embree
       /* query per thread tessellation cache */
       TessellationRefCache *local_ref_cache = NULL;
       if (unlikely(!tess_ref_cache))
-	tess_ref_cache = new TessellationRefCache( scene->commitCounter );
+	tess_ref_cache = new TessellationRefCache( scene->commitCounter, NUM_SCRATCH_MEM_BLOCKS  );
       local_ref_cache = tess_ref_cache;
       local_ref_cache->setNewCommitTag( scene->commitCounter );
 #else

@@ -406,9 +406,10 @@ namespace embree
       return center;
     }
 
-    __forceinline bool split(GridRange &r0, GridRange &r1) const
+    __forceinline void split(GridRange &r0, GridRange &r1) const
     {
-      if (hasLeafSize()) return false;
+      //if (hasLeafSize()) return false;
+      assert( hasLeafSize() == false );
       const unsigned int u_size = u_end-u_start+1;
       const unsigned int v_size = v_end-v_start+1;
       r0 = *this;
@@ -428,11 +429,12 @@ namespace embree
           r0.v_end   = v_mid;
           r1.v_start = v_mid;
         }
-      return true;
     }
 
     __forceinline unsigned int splitIntoSubRanges(GridRange r[4]) const
     {
+      assert( !hasLeafSize() );
+#if 0
       size_t children = 1;
       r[0] = *this;
       while(1)
@@ -454,6 +456,33 @@ namespace embree
 	  if (children >= 4) break;
         }
       return children;
+#else
+      size_t children = 0;
+      GridRange first,second;
+      split(first,second);
+      if (first.hasLeafSize())
+	{
+	  children = 1;
+	  r[0] = first;
+	}
+      else
+	{
+	  first.split(r[0],r[1]);
+	  children = 2;
+	}
+
+      if (second.hasLeafSize())
+	{
+	  r[children] = second;
+	  children++;
+	}
+      else
+	{
+	  second.split(r[children+0],r[children+1]);
+	  children += 2;
+	}
+      return children;      
+#endif
     }
 
   };
@@ -644,37 +673,33 @@ namespace embree
    __forceinline bool try_read_lock()  { return mutex.try_read_lock();   }
    __forceinline bool try_write_lock() { return mutex.try_write_lock();  }
 
-   __forceinline size_t isBlocked()
+   __forceinline size_t waitIfBlocked()
    {
-      while(1)
-	{
-	  if (*(volatile size_t*)&ptr)
-	    {
-	      while(*(volatile size_t*)&ptr == 1)
+     if (*(volatile size_t*)&ptr)
+       {
+	 while(*(volatile size_t*)&ptr == 1)
 #if defined(__MIC__)
-		_mm_delay_32(256);
+	   _mm_delay_32(256);
 #else
-	      _mm_pause();
+	 _mm_pause();
 #endif	      
-	      return *(volatile size_t*)&ptr;
-	    }
+	 return *(volatile size_t*)&ptr;
+       }
 
-	  size_t old = atomic_cmpxchg((volatile int64*)&ptr,(int64)0,(int64)1);
-	  if (old == 0) 
-	    break;
-	  else if (old == 1)
+     size_t old = atomic_cmpxchg((volatile int64*)&ptr,(int64)0,(int64)1);
+
+     if (old == 0) 
+       return 0;
+     else if (old == 1)
+       {
+	 while(*(volatile size_t*)&ptr == 1)
 #if defined(__MIC__)
-	    _mm_delay_32(256);
+	   _mm_delay_32(256);
 #else
-	  _mm_pause();
-#endif
-
-	  else
-	    {
-	      return (size_t)ptr;
-	    }
-	}
-      return 0;
+	 _mm_pause();
+#endif	      
+       }
+     return (size_t)ptr;
    }
 
   private:
@@ -684,7 +709,7 @@ namespace embree
     {
       if (range.hasLeafSize()) return leafBlocks;
 
-      GridRange r[4];
+      __aligned(64) GridRange r[4];
 
       const unsigned int children = range.splitIntoSubRanges(r);
 
@@ -696,13 +721,14 @@ namespace embree
       return blocks;    
     }
 
+
+
+
+  public:
     __forceinline unsigned int getSubTreeSize64bBlocks(const unsigned int leafBlocks = 2)
     {
       return get64BytesBlocksForGridSubTree(GridRange(0,grid_u_res-1,0,grid_v_res-1),leafBlocks);
     }
-
-
-  public:
 
 
     // 16bit discritized u,v coordinates
