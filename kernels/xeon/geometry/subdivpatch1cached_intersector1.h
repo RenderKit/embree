@@ -27,9 +27,9 @@
 /* returns u,v based on individual triangles instead relative to original patch */
 #define FORCE_TRIANGLE_UV 0
 
-#define DISTRIBUTED_TESSELLATION_CACHE_ENTRIES  32
+#define DISTRIBUTED_TESSELLATION_CACHE_ENTRIES  4
 
-#define TESSELLATION_REF_CACHE_ENTRIES  128
+#define TESSELLATION_REF_CACHE_ENTRIES  16
 
 #define LAZY_BUILD 1
 
@@ -351,6 +351,7 @@ namespace embree
         {
 #if LAZY_BUILD == 1
 	  lazy_node = lazyBuildPatch((SubdivPatch1Cached*)prim, geom, pre.local_cache);
+	  assert(lazy_node);
 #else
 	  TessellationCacheTag *t = lookUpLocalTessellationCache(pre.local_cache, prim, geom);
           lazy_node = t->getRootRef();

@@ -43,6 +43,8 @@ namespace embree
    return prim;
 #else
    return prim / 320; // (((size_t)prim) >> 6);
+   //return (((size_t)prim) >> 6);
+
 #endif
  }
 
@@ -51,33 +53,26 @@ namespace embree
  ////////////////////////////////////////////////////////////////////////////////
 
 
-  struct __aligned(32) TessellationRefCacheTag {
+  struct __aligned(16) TessellationRefCacheTag {
    unsigned int prim_tag;
    unsigned int commit_tag;
    size_t subtree_root;
-   void  *patch_ptr;
-   size_t dummy;
 
    __forceinline void set(const InputTagType primID, 
                           const unsigned int commitCounter,
-                          const size_t root,
-			  void *ptr = NULL)
+                          const size_t root)
    {
      prim_tag     = toTag(primID);
      commit_tag   = commitCounter;
      subtree_root = root;
-     patch_ptr    = ptr;
-     dummy        = 0;
    }
 
    __forceinline void reset() 
    {
-     assert(sizeof(TessellationRefCacheTag) == 32);
+     assert(sizeof(TessellationRefCacheTag) == 16);
      prim_tag         = (unsigned int)-1;
      commit_tag       = (unsigned int)-1;
      subtree_root     = 0;
-     patch_ptr        = NULL;
-     dummy            = NULL;
    }
 
    __forceinline bool match(InputTagType primID, const unsigned int commitCounter)
@@ -88,8 +83,6 @@ namespace embree
    __forceinline unsigned int getPrimTag()    const { return prim_tag;     }
    __forceinline unsigned int getCommitTag()  const { return commit_tag;   }
    __forceinline size_t       getRootRef()    const { return subtree_root; }
-   __forceinline void        *getPatchPtr()   const { return patch_ptr;    }
-
    __forceinline bool         empty()        const { return prim_tag == (unsigned int)-1; }
 
 
@@ -98,7 +91,7 @@ namespace embree
   template<size_t CACHE_ENTRIES>
   class __aligned(64) TessellationRefCacheT {
 
-    static const size_t CACHE_WAYS    = 8;  
+    static const size_t CACHE_WAYS    = 4;  
     static const size_t CACHE_SETS    = CACHE_ENTRIES / CACHE_WAYS; 
 
     TessellationRefCacheTag tags[CACHE_ENTRIES];
@@ -186,9 +179,12 @@ namespace embree
 
     __forceinline void reallocScratchMem(size_t new_blocks) {
       assert(scratch_mem);
-      scratch_mem_blocks = new_blocks;
-      free_tessellation_cache_mem(scratch_mem);
-      scratch_mem = alloc_tessellation_cache_mem(scratch_mem_blocks);
+      if (unlikely(new_blocks > scratch_mem_blocks))
+	{
+	  scratch_mem_blocks = new_blocks;
+	  free_tessellation_cache_mem(scratch_mem);
+	  scratch_mem = alloc_tessellation_cache_mem(scratch_mem_blocks);
+	}
     }
 
   };
@@ -217,19 +213,20 @@ namespace embree
 
  public:
 
-   __forceinline void read_lock()    { mtx.read_lock();   }
-   __forceinline void read_unlock()  { mtx.read_unlock(); }
-   __forceinline void write_lock()   { mtx.write_lock();   }
-   __forceinline void write_unlock() { mtx.write_unlock(); }
+   __forceinline void read_lock()                  { mtx.read_lock();   }
+   __forceinline void read_unlock()                { mtx.read_unlock(); }
+   __forceinline void write_lock()                 { mtx.write_lock();   }
+   __forceinline void write_unlock()               { mtx.write_unlock(); }
    __forceinline void upgrade_write_to_read_lock() { mtx.upgrade_write_to_read_lock(); }
    __forceinline void upgrade_read_to_write_lock() { mtx.upgrade_read_to_write_lock(); }
-   __forceinline bool try_read_lock()  { return mtx.try_read_lock();   }
-   __forceinline bool try_write_lock() { return mtx.try_write_lock();  }
+   __forceinline bool try_read_lock()              { return mtx.try_read_lock();   }
+   __forceinline bool try_write_lock()             { return mtx.try_write_lock();  }
+   __forceinline unsigned int num_readers()        { return mtx.num_readers();   }
 
 
    __forceinline TessellationCacheTag() {}
 
-   __forceinline void reset(const size_t pre_alloc_blocks = 0) 
+   __forceinline void reset() 
    {
      assert(sizeof(TessellationCacheTag) == 32);
      prim_tag         = (unsigned int)-1;
@@ -238,14 +235,6 @@ namespace embree
      access_timestamp = 0;
      subtree_root     = 0;
      mtx.reset();    
-
-     if (pre_alloc_blocks != 0)
-       {
-	 float *mem   = alloc_tessellation_cache_mem(pre_alloc_blocks);
-	 usedBlocks   = pre_alloc_blocks;
-	 subtree_root = (size_t)mem;
-	 memset(mem,0,64*pre_alloc_blocks);
-       }
    }
 
    __forceinline void clearRootRefBits()
@@ -369,6 +358,7 @@ namespace embree
     /* reset cache */
     __forceinline void reset()
     {
+      PING;
       for (size_t i=0;i<CACHE_ENTRIES;i++)
         tags[i].reset();
     }
@@ -450,9 +440,9 @@ namespace embree
       };
 
 
-      __forceinline void reset(const size_t pre_alloc_blocks = 0) 
+      __forceinline void reset() 
       {
-        for (size_t i=0;i<CACHE_WAYS;i++) tags[i].reset(pre_alloc_blocks);
+        for (size_t i=0;i<CACHE_WAYS;i++) tags[i].reset();
       }
 
       __forceinline unsigned int getNumBlocks() 
@@ -514,10 +504,10 @@ namespace embree
     }
 
     /* reset cache */
-    __forceinline void reset(const size_t pre_alloc_blocks)
+    __forceinline void reset()
     {
       for (size_t i=0;i<CACHE_SETS;i++)
-        sets[i].reset(pre_alloc_blocks);
+        sets[i].reset();
     }
 
 
@@ -535,9 +525,9 @@ namespace embree
       }
 
     /* initialize cache */
-    void init(const size_t pre_alloc_blocks = 0)
+    void init()
     {
-      reset(pre_alloc_blocks);
+      reset();
     }
 
     __forceinline unsigned int allocated64ByteBlocks() 

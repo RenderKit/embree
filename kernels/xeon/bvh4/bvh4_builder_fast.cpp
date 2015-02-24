@@ -1097,13 +1097,6 @@ namespace embree
           SubdivPatch1Cached *sptr = (SubdivPatch1Cached*)ref.leaf(num);
           const size_t index = ((size_t)sptr - (size_t)this->bvh->data_mem) / sizeof(SubdivPatch1Cached);
           assert(index < numPrimitives);
-
-	  // FIXME: HACK TO FREE MEMORY
-	  if (sptr->ptr)
-	    {
-	      free_tessellation_cache_mem((void*)sptr->ptr);
-	      sptr->ptr = NULL;
-	    }
           return prims[index].bounds(); 
         }
       

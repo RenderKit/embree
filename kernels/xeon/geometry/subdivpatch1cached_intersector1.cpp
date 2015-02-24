@@ -24,15 +24,16 @@
 
 #define ENABLE_TESSELLATION_CACHE_HIERARCHY 0
 
-#define SHARED_TESSELLATION_CACHE_ENTRIES 512
+#define SHARED_TESSELLATION_CACHE_ENTRIES 1024*32
 
 #define NUM_SCRATCH_MEM_BLOCKS 1024
 
 namespace embree
 {
+  static SharedTessellationCache<SHARED_TESSELLATION_CACHE_ENTRIES> sharedTessellationCache;
+
   namespace isa
   {  
-
 #if LAZY_BUILD == 1    
     __thread TessellationRefCache *SubdivPatch1CachedIntersector1::thread_cache = NULL;
 
@@ -40,18 +41,16 @@ namespace embree
     __thread PerThreadTessellationCache *SubdivPatch1CachedIntersector1::thread_cache = NULL;
 #endif
 
-    SharedTessellationCache<SHARED_TESSELLATION_CACHE_ENTRIES> sharedTessellationCache;
-
     /* build lazy subtree over patch */
     size_t SubdivPatch1CachedIntersector1::lazyBuildPatch(SubdivPatch1Cached* const subdiv_patch, 
 							  const void* geom,
 							  TessellationRefCache *ref_cache)
     {
-
+      assert(geom);
       /* lookup in per thread reference cache */
       InputTagType tag = (InputTagType)subdiv_patch;        
       const unsigned int commitCounter = ((Scene*)geom)->commitCounter;
-
+      
       CACHE_STATS(DistributedTessellationCacheStats::cache_accesses++);
       TessellationRefCacheTag *t = ref_cache->lookUpTag(tag,commitCounter);
       if (likely(t->match(tag,commitCounter)))
@@ -64,6 +63,49 @@ namespace embree
 
       /* miss handler */
 
+      if (!t->empty()) {
+	TessellationCacheTag *old = sharedTessellationCache.getTag(t->getPrimTag());
+	old->read_unlock();
+	t->reset();
+      };      
+
+      TessellationCacheTag *s = sharedTessellationCache.getTag(tag);
+      s->read_lock();
+      if (s->match(tag,commitCounter))
+	{
+	  size_t patch_root = s->getRootRef();
+	  t->set(tag,commitCounter,patch_root);
+	  return patch_root;
+	}
+      s->read_unlock();
+
+      if (s->try_write_lock())
+	{
+	  BVH4::Node* node = (BVH4::Node*)s->getPtr();
+	  const unsigned int needed_blocks = subdiv_patch->grid_subtree_size_64b_blocks;          
+	  if (s->getNumBlocks() < needed_blocks)
+	    {
+	      if (node != NULL)
+		free_tessellation_cache_mem(node);
+	      node = (BVH4::Node*)alloc_tessellation_cache_mem(needed_blocks);              	      
+	    }
+
+	  size_t new_root = (size_t)buildSubdivPatchTree(*subdiv_patch,node,((Scene*)geom)->getSubdivMesh(subdiv_patch->geom));
+
+	  s->set(tag,commitCounter,new_root,needed_blocks);
+	  s->upgrade_write_to_read_lock();
+	  /* insert new patch data into local cache */
+	  t->set(tag,commitCounter,new_root);
+	  return new_root;
+	}
+
+      const unsigned int needed_blocks = subdiv_patch->grid_subtree_size_64b_blocks;          
+      ref_cache->reallocScratchMem(needed_blocks);
+      BVH4::Node* node = (BVH4::Node*)ref_cache->getScratchMemPtr();
+      size_t new_root = (size_t)buildSubdivPatchTree(*subdiv_patch,node,((Scene*)geom)->getSubdivMesh(subdiv_patch->geom));
+      return new_root;
+      
+#if 0
       if (!t->empty()) {
 	SubdivPatch1Cached* old_subdiv_patch = (SubdivPatch1Cached*)t->getPatchPtr();
 	assert( old_subdiv_patch != NULL );
@@ -115,6 +157,7 @@ namespace embree
       /* write new subtree root and release lock */
       *(size_t*)&subdiv_patch->ptr = new_root;
       return new_root;
+#endif
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

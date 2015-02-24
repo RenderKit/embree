@@ -404,8 +404,6 @@ namespace embree
 
       BBox3fa refit(NodeRef& ref);
 
-      TASK_SET_FUNCTION(BVH4SubdivPatch1CachedBuilderFast,deleteAllocatedSubTrees);
-
     public:
       BVH4SubdivPatch1CachedBuilderFast (BVH4* bvh, Scene* scene, size_t listMode);
       virtual void build(size_t threadIndex, size_t threadCount);
