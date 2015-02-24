@@ -950,9 +950,8 @@ namespace embree
       /* query per thread tessellation cache */
       TessellationRefCache *local_ref_cache = NULL;
       if (unlikely(!tess_ref_cache))
-	tess_ref_cache = new TessellationRefCache( scene->commitCounter, NUM_SCRATCH_MEM_BLOCKS );
+	tess_ref_cache = new TessellationRefCache(  NUM_SCRATCH_MEM_BLOCKS );
       local_ref_cache = tess_ref_cache;
-      local_ref_cache->setNewCommitTag( scene->commitCounter );
 #else
       /* query per thread tessellation cache */
       TessellationCache *local_cache = NULL;
@@ -1139,9 +1138,8 @@ namespace embree
       /* query per thread tessellation cache */
       TessellationRefCache *local_ref_cache = NULL;
       if (unlikely(!tess_ref_cache))
-	tess_ref_cache = new TessellationRefCache( scene->commitCounter, NUM_SCRATCH_MEM_BLOCKS  );
+	tess_ref_cache = new TessellationRefCache(  NUM_SCRATCH_MEM_BLOCKS  );
       local_ref_cache = tess_ref_cache;
-      local_ref_cache->setNewCommitTag( scene->commitCounter );
 #else
       /* query per thread tessellation cache */
       TessellationCache *local_cache = NULL;
@@ -1302,9 +1300,8 @@ namespace embree
       /* query per thread tessellation cache */
       TessellationRefCache *local_ref_cache = NULL;
       if (unlikely(!tess_ref_cache))
-	tess_ref_cache = new TessellationRefCache( scene->commitCounter, NUM_SCRATCH_MEM_BLOCKS  );
+	tess_ref_cache = new TessellationRefCache(  NUM_SCRATCH_MEM_BLOCKS  );
       local_ref_cache = tess_ref_cache;
-      local_ref_cache->setNewCommitTag( scene->commitCounter );
 #else
       /* query per thread tessellation cache */
       TessellationCache *local_cache = NULL;
@@ -1443,9 +1440,8 @@ namespace embree
       /* query per thread tessellation cache */
       TessellationRefCache *local_ref_cache = NULL;
       if (unlikely(!tess_ref_cache))
-	tess_ref_cache = new TessellationRefCache( scene->commitCounter, NUM_SCRATCH_MEM_BLOCKS  );
+	tess_ref_cache = new TessellationRefCache(  NUM_SCRATCH_MEM_BLOCKS  );
       local_ref_cache = tess_ref_cache;
-      local_ref_cache->setNewCommitTag( scene->commitCounter );
 #else
       /* query per thread tessellation cache */
       TessellationCache *local_cache = NULL;

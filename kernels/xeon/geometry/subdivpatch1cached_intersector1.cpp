@@ -26,41 +26,89 @@
 
 #define SHARED_TESSELLATION_CACHE_ENTRIES 512
 
+#define NUM_SCRATCH_MEM_BLOCKS 1024
+
 namespace embree
 {
   namespace isa
   {  
-    
+
+#if LAZY_BUILD == 1    
+    __thread TessellationRefCache *SubdivPatch1CachedIntersector1::thread_cache = NULL;
+
+#else
     __thread PerThreadTessellationCache *SubdivPatch1CachedIntersector1::thread_cache = NULL;
+#endif
+
     SharedTessellationCache<SHARED_TESSELLATION_CACHE_ENTRIES> sharedTessellationCache;
 
     /* build lazy subtree over patch */
-    size_t SubdivPatch1CachedIntersector1::lazyBuildPatch(const SubdivPatch1Cached* const subdiv_patch, const void* geom)
+    size_t SubdivPatch1CachedIntersector1::lazyBuildPatch(SubdivPatch1Cached* const subdiv_patch, 
+							  const void* geom,
+							  TessellationRefCache *ref_cache)
     {
-      if (subdiv_patch->ptr != NULL && (size_t)subdiv_patch->ptr != 1) return (size_t)subdiv_patch->ptr;
 
-      /* lock subdiv patch */
-      while(1)
+      /* lookup in per thread reference cache */
+      InputTagType tag = (InputTagType)subdiv_patch;        
+      const unsigned int commitCounter = ((Scene*)geom)->commitCounter;
+
+      CACHE_STATS(DistributedTessellationCacheStats::cache_accesses++);
+      TessellationRefCacheTag *t = ref_cache->lookUpTag(tag,commitCounter);
+      if (likely(t->match(tag,commitCounter)))
 	{
-	  while(*(volatile size_t*)&subdiv_patch->ptr == 1)
-	    _mm_pause();
-
-	  size_t old = atomic_cmpxchg((volatile int64*)&subdiv_patch->ptr,(int64)0,(int64)1);
-	  if (old == 0) 
-	    break;
-	  else if (old == 1)
-	    _mm_pause();
-	  else
-	    return (size_t)subdiv_patch->ptr;
+	  CACHE_STATS(DistributedTessellationCacheStats::cache_hits++);
+	  return t->getRootRef();
 	}
+      CACHE_STATS(DistributedTessellationCacheStats::cache_misses++);
 
+      /* miss handler */
+
+      if (!t->empty()) {
+	SubdivPatch1Cached* const old_subdiv_patch = (SubdivPatch1Cached*)t->getPatchPtr();
+	old_subdiv_patch->read_unlock();
+
+#if 0
+	if (old_subdiv_patch->try_write_lock())
+	  {
+	    void *ptr             = (void*)old_subdiv_patch->ptr;
+	    old_subdiv_patch->ptr = NULL;
+	    old_subdiv_patch->write_unlock();
+
+	    if ( ptr != NULL )
+	      {
+		CACHE_STATS(DistributedTessellationCacheStats::cache_evictions++);              
+		assert( (size_t)ptr != 1);
+		free_tessellation_cache_mem(ptr);
+	      }
+	  }
+#endif
+      }
+
+      /* need patch data, read lock the patch for this thread */
+      subdiv_patch->read_lock();
+
+      /* patch data has already been build */
+      if (*(volatile size_t*)&subdiv_patch->ptr > 1) {
+	t->set(tag,commitCounter,(size_t)subdiv_patch->ptr,subdiv_patch);
+	return (size_t)subdiv_patch->ptr;
+      }
+
+      /* wait if an other thread builds the patch tree */      
+      size_t patch_root = subdiv_patch->waitIfBlocked();
+      if (patch_root)
+	return patch_root;
+
+      /* build patch data */
       const unsigned int needed_blocks = subdiv_patch->grid_subtree_size_64b_blocks;          
       BVH4::Node* node = (BVH4::Node*)alloc_tessellation_cache_mem(needed_blocks);              
       size_t new_root = (size_t)buildSubdivPatchTree(*subdiv_patch,node,((Scene*)geom)->getSubdivMesh(subdiv_patch->geom));
 
+      /* insert new patch data into local cache */
+      t->set(tag,commitCounter,new_root,subdiv_patch);
+
       /* write new subtree root and release lock */
       *(size_t*)&subdiv_patch->ptr = new_root;
-      return (size_t)new_root;
+      return new_root;
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -403,16 +451,15 @@ namespace embree
     
     void SubdivPatch1CachedIntersector1::createTessellationCache()
     {
+#if LAZY_BUILD == 1
+      TessellationRefCache *cache = new TessellationRefCache(  NUM_SCRATCH_MEM_BLOCKS  );
+#else
       PerThreadTessellationCache *cache = (PerThreadTessellationCache *)_mm_malloc(sizeof(PerThreadTessellationCache),64);
       assert( (size_t)cache % 64 == 0 );
       cache->init();	
-#if defined(DEBUG) && 0
-      static AtomicMutex mtx;
-      mtx.lock();
-      std::cout << "Enabling tessellation cache with " << cache->allocated64ByteBlocks() << " blocks = " << cache->allocated64ByteBlocks()*64 << " bytes as default size" << std::endl;
-      mtx.unlock();
 #endif
       thread_cache = cache;
+
     }
     
   };

@@ -51,26 +51,33 @@ namespace embree
  ////////////////////////////////////////////////////////////////////////////////
 
 
-  struct __aligned(16) TessellationRefCacheTag {
+  struct __aligned(32) TessellationRefCacheTag {
    unsigned int prim_tag;
    unsigned int commit_tag;
    size_t subtree_root;
+   void  *patch_ptr;
+   size_t dummy;
 
    __forceinline void set(const InputTagType primID, 
                           const unsigned int commitCounter,
-                          const size_t root)
+                          const size_t root,
+			  void *ptr = NULL)
    {
      prim_tag     = toTag(primID);
      commit_tag   = commitCounter;
      subtree_root = root;
+     patch_ptr    = ptr;
+     dummy        = 0;
    }
 
    __forceinline void reset() 
    {
-     assert(sizeof(TessellationRefCacheTag) == 16);
+     assert(sizeof(TessellationRefCacheTag) == 32);
      prim_tag         = (unsigned int)-1;
      commit_tag       = (unsigned int)-1;
      subtree_root     = 0;
+     patch_ptr        = NULL;
+     dummy            = NULL;
    }
 
    __forceinline bool match(InputTagType primID, const unsigned int commitCounter)
@@ -78,9 +85,11 @@ namespace embree
      return prim_tag == toTag(primID) && commit_tag == commitCounter;
    }
 
-   __forceinline unsigned int getPrimTag()   const { return prim_tag;     }
-   __forceinline unsigned int getCommitTag() const { return commit_tag;   }
-   __forceinline size_t       getRootRef()   const { return subtree_root; }
+   __forceinline unsigned int getPrimTag()    const { return prim_tag;     }
+   __forceinline unsigned int getCommitTag()  const { return commit_tag;   }
+   __forceinline size_t       getRootRef()    const { return subtree_root; }
+   __forceinline void        *getPatchPtr()   const { return patch_ptr;    }
+
    __forceinline bool         empty()        const { return prim_tag == (unsigned int)-1; }
 
 
@@ -128,7 +137,6 @@ namespace embree
     CacheTagSet sets[CACHE_SETS];
     float *scratch_mem;
     size_t scratch_mem_blocks;
-    unsigned int commitTag;
 
   public:
 
@@ -167,13 +175,7 @@ namespace embree
 #endif
     }
 
-    __forceinline void setNewCommitTag(const unsigned int ctag) { 
-      if (commitTag != ctag)
-	  reset();
-    }
-
-    __forceinline TessellationRefCacheT(const unsigned int commitTag,
-					const size_t scratch_mem_blocks) : commitTag(commitTag), scratch_mem_blocks(scratch_mem_blocks)
+    __forceinline TessellationRefCacheT(const size_t scratch_mem_blocks) : scratch_mem_blocks(scratch_mem_blocks)
     {
       scratch_mem = (float*) alloc_tessellation_cache_mem(scratch_mem_blocks);
       reset();

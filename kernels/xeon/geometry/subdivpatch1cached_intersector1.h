@@ -52,8 +52,13 @@ namespace embree
     public:
       typedef SubdivPatch1Cached Primitive;
       
+#if LAZY_BUILD == 1
+      /*! Per thread tessellation ref cache */
+      static __thread TessellationRefCache *thread_cache;
+#else
       /*! Per thread tessellation cache */
       static __thread PerThreadTessellationCache *thread_cache;
+#endif
       
       /*! Creates per thread tessellation cache */
       static void createTessellationCache();
@@ -65,7 +70,11 @@ namespace embree
         Vec3fa ray_org_rdir;
         SubdivPatch1Cached *current_patch;
         SubdivPatch1Cached *hit_patch;
+#if LAZY_BUILD == 1
+	TessellationRefCache *local_cache;
+#else
         PerThreadTessellationCache *local_cache;
+#endif
         Ray &r;
         
         __forceinline Precalculations (Ray& ray) : r(ray) 
@@ -78,7 +87,6 @@ namespace embree
           /*! Initialize per thread tessellation cache */
           if (unlikely(!thread_cache))
             createTessellationCache();
-          
           local_cache = thread_cache;
           assert(local_cache != NULL);
         }
@@ -273,7 +281,7 @@ namespace embree
         return true;
       };
       
-      static size_t lazyBuildPatch(const SubdivPatch1Cached* const subdiv_patch, const void* geom);
+      static size_t lazyBuildPatch(SubdivPatch1Cached* const subdiv_patch, const void* geom,TessellationRefCache *ref_cache);
 
  
       static TessellationCacheTag *localTessellationCacheMissHandler(PerThreadTessellationCache *local_cache, const SubdivPatch1Cached* const subdiv_patch, const void* geom);
@@ -342,7 +350,7 @@ namespace embree
         else 
         {
 #if LAZY_BUILD == 1
-	  lazy_node = lazyBuildPatch(prim, geom);
+	  lazy_node = lazyBuildPatch((SubdivPatch1Cached*)prim, geom, pre.local_cache);
 #else
 	  TessellationCacheTag *t = lookUpLocalTessellationCache(pre.local_cache, prim, geom);
           lazy_node = t->getRootRef();
@@ -370,7 +378,7 @@ namespace embree
         else 
         {
 #if LAZY_BUILD == 1
-	  lazy_node = lazyBuildPatch(prim, geom);
+	  lazy_node = lazyBuildPatch((SubdivPatch1Cached*)prim, geom, pre.local_cache);
 #else
 	  TessellationCacheTag *t = lookUpLocalTessellationCache(pre.local_cache, prim, geom);
           lazy_node = t->getRootRef();
