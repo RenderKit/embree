@@ -56,6 +56,7 @@ namespace embree
       TessellationRefCacheTag *t = ref_cache->lookUpTag(tag,commitCounter);
       if (likely(t->match(tag,commitCounter)))
 	{
+	  assert( !t->empty() );
 	  CACHE_STATS(DistributedTessellationCacheStats::cache_hits++);
 	  return t->getRootRef();
 	}
@@ -64,12 +65,15 @@ namespace embree
       /* miss handler */
 
       if (!t->empty()) {
-	SubdivPatch1Cached* const old_subdiv_patch = (SubdivPatch1Cached*)t->getPatchPtr();
+	SubdivPatch1Cached* old_subdiv_patch = (SubdivPatch1Cached*)t->getPatchPtr();
+	assert( old_subdiv_patch != NULL );
+	assert(old_subdiv_patch->mutex.num_readers() > 0);
 	old_subdiv_patch->read_unlock();
 
-#if 0
 	if (old_subdiv_patch->try_write_lock())
 	  {
+#if 1
+
 	    void *ptr             = (void*)old_subdiv_patch->ptr;
 	    old_subdiv_patch->ptr = NULL;
 	    old_subdiv_patch->write_unlock();
@@ -80,23 +84,25 @@ namespace embree
 		assert( (size_t)ptr != 1);
 		free_tessellation_cache_mem(ptr);
 	      }
-	  }
+#else
+	    old_subdiv_patch->write_unlock();
 #endif
+
+	  }
       }
 
-      /* need patch data, read lock the patch for this thread */
+      /* need patch data, put a read lock on the patch */
       subdiv_patch->read_lock();
 
-      /* patch data has already been build */
-      if (*(volatile size_t*)&subdiv_patch->ptr > 1) {
-	t->set(tag,commitCounter,(size_t)subdiv_patch->ptr,subdiv_patch);
-	return (size_t)subdiv_patch->ptr;
-      }
+      assert(subdiv_patch->mutex.num_readers() > 0);
 
-      /* wait if an other thread builds the patch tree */      
+      /* wait if an other thread has already built the patch tree */      
       size_t patch_root = subdiv_patch->waitIfBlocked();
       if (patch_root)
-	return patch_root;
+	{	
+	  t->set(tag,commitCounter,patch_root,subdiv_patch);
+	  return patch_root;
+	}
 
       /* build patch data */
       const unsigned int needed_blocks = subdiv_patch->grid_subtree_size_64b_blocks;          

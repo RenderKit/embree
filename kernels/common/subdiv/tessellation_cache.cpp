@@ -14,7 +14,8 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#if defined (__MIC__)
+#if defined (__MIC__) 
+// || TASKING_TBB
 #define USE_TBB_ALLOCATOR 1
 #else
 #define USE_TBB_ALLOCATOR 0

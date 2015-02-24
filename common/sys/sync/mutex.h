@@ -289,6 +289,7 @@ namespace embree
      return atomic_add((int*)&data,new_data);
    }
 
+
  public:
 
  RWMutex() : data(0) {}
@@ -307,9 +308,13 @@ namespace embree
    bool try_write_lock();
    bool try_read_lock();
 
-
    void upgrade_read_to_write_lock();
    void upgrade_write_to_read_lock();
+
+   __forceinline unsigned int num_readers() {
+     return getData() & READERS;
+   }
+
  };
 
 }
