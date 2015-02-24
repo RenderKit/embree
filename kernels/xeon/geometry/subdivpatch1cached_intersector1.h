@@ -29,6 +29,8 @@
 
 #define DISTRIBUTED_TESSELLATION_CACHE_ENTRIES  32
 
+#define TESSELLATION_REF_CACHE_ENTRIES  32
+
 #define LAZY_BUILD 1
 
 #if defined(DEBUG)
@@ -40,6 +42,7 @@
 namespace embree
 {
   typedef AdaptiveTessellationCache<DISTRIBUTED_TESSELLATION_CACHE_ENTRIES> PerThreadTessellationCache;
+  typedef TessellationRefCacheT<TESSELLATION_REF_CACHE_ENTRIES> TessellationRefCache;
 
   namespace isa
   {
