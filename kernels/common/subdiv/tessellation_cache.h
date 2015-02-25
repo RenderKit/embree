@@ -54,9 +54,9 @@ namespace embree
 
 
   struct __aligned(16) TessellationRefCacheTag {
-   unsigned int prim_tag;
-   unsigned int commit_tag;
-   size_t subtree_root;
+    unsigned int prim_tag;
+    unsigned int commit_tag;
+    size_t subtree_root;
 
    __forceinline void set(const InputTagType primID, 
                           const unsigned int commitCounter,
@@ -174,6 +174,9 @@ namespace embree
       reset();
     }
 
+    __forceinline TessellationRefCacheTag *getTagsPtr() { return tags; }
+    __forceinline size_t getNumTags() { return CACHE_ENTRIES; }
+
     __forceinline float *getScratchMemPtr()    { return scratch_mem; }
     __forceinline size_t getScratchMemBlocks() { return scratch_mem_blocks; }
 
@@ -204,11 +207,11 @@ namespace embree
    typedef RWMutex MutexType;
 
  private:
-   unsigned int prim_tag;
-   unsigned int commit_tag;
-   unsigned int usedBlocks;
-   unsigned int access_timestamp;
-   size_t       subtree_root;     
+   volatile unsigned int prim_tag;
+   volatile unsigned int commit_tag;
+   volatile unsigned int usedBlocks;
+   volatile unsigned int access_timestamp;
+   volatile size_t       subtree_root;     
    RWMutex mtx;
 
  public:
@@ -302,7 +305,7 @@ namespace embree
    __forceinline bool empty() const { return prim_tag == (unsigned int)-1; }
 
    __forceinline void print() {
-     std::cout << "prim_tag " << prim_tag << " commit_tag " << commit_tag << " blocks " << usedBlocks << " subtree_root " << subtree_root << " ptr "<< getPtr() << " access time stamp " << access_timestamp << std::endl;
+     std::cout << "prim_tag " << prim_tag << " commit_tag " << commit_tag << " blocks " << usedBlocks << " subtree_root " << subtree_root << " ptr "<< getPtr() << " access time stamp " << access_timestamp << " readers " << num_readers() << std::endl;
    }
 
    __forceinline void *getPtr() const
@@ -321,6 +324,8 @@ namespace embree
    static AtomicCounter cache_hits;
    static AtomicCounter cache_misses;
    static AtomicCounter cache_evictions;                
+   static AtomicCounter cache_updates;                
+   static AtomicCounter cache_updates_successful;                
 
     /* print stats for debugging */                 
     static void printStats();
@@ -332,7 +337,7 @@ namespace embree
   class __aligned(64) SharedTessellationCache {
 
   private:
-    TessellationCacheTag tags[CACHE_ENTRIES];            
+   TessellationCacheTag tags[CACHE_ENTRIES];            
 
   public:
 
@@ -358,7 +363,6 @@ namespace embree
     /* reset cache */
     __forceinline void reset()
     {
-      PING;
       for (size_t i=0;i<CACHE_ENTRIES;i++)
         tags[i].reset();
     }
@@ -383,6 +387,15 @@ namespace embree
       CACHE_DBG(PING);
       /* direct mapped */
       const size_t t = toTag(primID) % CACHE_ENTRIES;
+      return &tags[t];
+    }
+
+    /* lookup cache entry using a 32bit identifier as tag */
+    __forceinline TessellationCacheTag *getTagBy32BitID(size_t primID)
+    {
+      CACHE_DBG(PING);
+      /* direct mapped */
+      const size_t t = primID % CACHE_ENTRIES;
       return &tags[t];
     }
 

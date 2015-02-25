@@ -312,7 +312,7 @@ namespace embree
    void upgrade_write_to_read_lock();
 
    __forceinline unsigned int num_readers() {
-     return getData() & READERS;
+     return (getData() & READERS) >> 2;
    }
 
  };

@@ -24,13 +24,15 @@
 
 #define ENABLE_TESSELLATION_CACHE_HIERARCHY 0
 
-#define SHARED_TESSELLATION_CACHE_ENTRIES 1024*32
 
 #define NUM_SCRATCH_MEM_BLOCKS 1024
+
+#define SHARED_TESSELLATION_CACHE_ENTRIES 1024*16
 
 namespace embree
 {
   static SharedTessellationCache<SHARED_TESSELLATION_CACHE_ENTRIES> sharedTessellationCache;
+
 
   namespace isa
   {  
@@ -40,6 +42,7 @@ namespace embree
 #else
     __thread PerThreadTessellationCache *SubdivPatch1CachedIntersector1::thread_cache = NULL;
 #endif
+
 
     /* build lazy subtree over patch */
     size_t SubdivPatch1CachedIntersector1::lazyBuildPatch(SubdivPatch1Cached* const subdiv_patch, 
@@ -53,6 +56,9 @@ namespace embree
       
       CACHE_STATS(DistributedTessellationCacheStats::cache_accesses++);
       TessellationRefCacheTag *t = ref_cache->lookUpTag(tag,commitCounter);
+      DBG(DBG_PRINT("LOCKUP TAG"));
+      DBG(DBG_PRINT(t->getPrimTag()));
+
       if (likely(t->match(tag,commitCounter)))
 	{
 	  assert( !t->empty() );
@@ -64,40 +70,85 @@ namespace embree
       /* miss handler */
 
       if (!t->empty()) {
-	TessellationCacheTag *old = sharedTessellationCache.getTag(t->getPrimTag());
+	TessellationCacheTag *old = sharedTessellationCache.getTagBy32BitID(t->getPrimTag());
+	DBG(DBG_PRINT("UNLOCK LAZY"));
+	DBG(DBG_PRINT(t->getPrimTag()));
+	DBG(sharedTessellationCache.print());
 	old->read_unlock();
+	DBG(sharedTessellationCache.print());
+
+	//assert(old->num_readers() == 0);
 	t->reset();
       };      
 
       TessellationCacheTag *s = sharedTessellationCache.getTag(tag);
-      s->read_lock();
+
+      CACHE_STATS(SharedTessellationCacheStats::cache_accesses++);
       if (s->match(tag,commitCounter))
 	{
-	  size_t patch_root = s->getRootRef();
-	  t->set(tag,commitCounter,patch_root);
-	  return patch_root;
-	}
-      s->read_unlock();
+	  s->read_lock();
+	  DBG(DBG_PRINT("LOCK"));
+	  DBG(DBG_PRINT(toTag(tag)));
 
+	  if (s->match(tag,commitCounter))
+	    {
+	      CACHE_STATS(SharedTessellationCacheStats::cache_hits++);
+	      size_t patch_root = s->getRootRef();
+	      t->set(tag,commitCounter,patch_root);
+	      return patch_root;
+	    }
+	  CACHE_STATS(else SharedTessellationCacheStats::cache_misses++);
+	  s->read_unlock();
+	  DBG(DBG_PRINT("UNLOCK"));
+	  DBG(DBG_PRINT(toTag(tag)));
+	}
+      CACHE_STATS(else SharedTessellationCacheStats::cache_misses++);
+
+      CACHE_STATS(SharedTessellationCacheStats::cache_updates++);
       if (s->try_write_lock())
 	{
-	  BVH4::Node* node = (BVH4::Node*)s->getPtr();
-	  const unsigned int needed_blocks = subdiv_patch->grid_subtree_size_64b_blocks;          
-	  if (s->getNumBlocks() < needed_blocks)
+	  CACHE_STATS(SharedTessellationCacheStats::cache_updates_successful++);
+	  DBG(DBG_PRINT("WRITE LOCK"));
+	  DBG(DBG_PRINT(toTag(tag)));
+
+	  if (s->match(tag,commitCounter))
 	    {
-	      if (node != NULL)
-		free_tessellation_cache_mem(node);
-	      node = (BVH4::Node*)alloc_tessellation_cache_mem(needed_blocks);              	      
+	      size_t patch_root = s->getRootRef();
+	      t->set(tag,commitCounter,patch_root);
+
+	      DBG(DBG_PRINT("UPGRADE WRITE TO READ LOCK"));
+	      DBG(DBG_PRINT(toTag(tag)));
+
+	      s->upgrade_write_to_read_lock();
+	      return patch_root;
 	    }
+	  else
+	    {
+	      DBG(DBG_PRINT("CREATE PATCH DATA"));
 
-	  size_t new_root = (size_t)buildSubdivPatchTree(*subdiv_patch,node,((Scene*)geom)->getSubdivMesh(subdiv_patch->geom));
+	      BVH4::Node* node = (BVH4::Node*)s->getPtr();
+	      const unsigned int needed_blocks = subdiv_patch->grid_subtree_size_64b_blocks;          
+	      if (s->getNumBlocks() < needed_blocks)
+		{
+		  if (node != NULL)
+		    free_tessellation_cache_mem(node);
+		  node = (BVH4::Node*)alloc_tessellation_cache_mem(needed_blocks);              	      
+		}
+	      
+	      size_t new_root = (size_t)buildSubdivPatchTree(*subdiv_patch,node,((Scene*)geom)->getSubdivMesh(subdiv_patch->geom));
 
-	  s->set(tag,commitCounter,new_root,needed_blocks);
-	  s->upgrade_write_to_read_lock();
-	  /* insert new patch data into local cache */
-	  t->set(tag,commitCounter,new_root);
-	  return new_root;
+	      s->set(tag,commitCounter,new_root,needed_blocks);
+	      /* insert new patch data into local cache */
+	      t->set(tag,commitCounter,new_root);
+
+	      DBG(DBG_PRINT("UPGRADE READ TO WRITE LOCK"));
+	      DBG(DBG_PRINT(toTag(tag)));
+	      s->upgrade_write_to_read_lock();
+	      return new_root;
+	    }
 	}
+
+      DBG(DBG_PRINT("FALLBACK"));
 
       const unsigned int needed_blocks = subdiv_patch->grid_subtree_size_64b_blocks;          
       ref_cache->reallocScratchMem(needed_blocks);

@@ -60,6 +60,7 @@ namespace embree
       static __thread PerThreadTessellationCache *thread_cache;
 #endif
       
+
       /*! Creates per thread tessellation cache */
       static void createTessellationCache();
       
