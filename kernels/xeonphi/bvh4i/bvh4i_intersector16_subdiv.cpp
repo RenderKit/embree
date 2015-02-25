@@ -27,7 +27,7 @@
 #define CACHE_STATS(x) 
 #endif
 
-#define SHARED_TESSELLATION_CACHE_ENTRIES 1024
+#define SHARED_TESSELLATION_CACHE_ENTRIES 16*1024
 #define LOCAL_TESSELLATION_CACHE_ENTRIES  32
 
 #define TESSELLATION_REF_CACHE_ENTRIES  32
@@ -624,178 +624,6 @@ namespace embree
     }
 
 
-    __noinline size_t lazyBuildPatchMissHandler(const unsigned int patchIndex,
-						const unsigned int commitCounter,
-						SubdivPatch1* const patches,
-						Scene *const scene,
-						TessellationRefCacheTag *t)
-    {
-      /* not in cache, need eviction candidate */
-
-#if ENABLE_EVICTION_IN_LAZY_BUILD == 1
-
-      /* release read_lock on previous entry */
-      if (!t->empty()) {
-	const size_t tag = t->getPrimTag();
-	patches[tag].read_unlock();
-
-#if 1
-	if (patches[tag].try_write_lock())
-	  {
-	    void *ptr              = (void*)patches[tag].ptr;
-	    size_t previous_blocks = patches[tag].grid_subtree_size_64b_blocks;
-	    patches[tag].ptr = NULL;
-	    patches[tag].write_unlock();
-
-	    if ( ptr != NULL)
-	      {
-		CACHE_STATS(DistributedTessellationCacheStats::cache_evictions++);              
-		assert( (size_t)ptr != 1);
-		free_tessellation_cache_mem(ptr);
-	      }
-	  }
-#endif
-      }
-
-      SubdivPatch1 *subdiv_patch = &patches[patchIndex];
-      
-      /* obtain read lock for current patch */
-      subdiv_patch->read_lock();
-
-      /* already build, get pointer and update cache entry */
-      if (likely(subdiv_patch->ptr != NULL && (size_t)subdiv_patch->ptr != 1)) 
-	{
-	  t->set(patchIndex,commitCounter,(size_t)subdiv_patch->ptr);
-	  return (size_t)subdiv_patch->ptr;
-	}
-
-      ///////////////////////////////////////
-
-#if 0
-      if (!t->empty()) {
-	const size_t tag = t->getPrimTag();
-	if (patches[tag].try_write_lock())
-	  {
-	    //patches[tag].write_lock();
-	    void *ptr              = (void*)patches[tag].ptr;
-	    size_t previous_blocks = patches[tag].grid_subtree_size_64b_blocks;
-	    patches[tag].ptr = NULL;
-	    patches[tag].write_unlock();
-
-	    if ( ptr != NULL)
-	      {
-		CACHE_STATS(DistributedTessellationCacheStats::cache_evictions++);              
-		assert( (size_t)ptr != 1);
-		free_tessellation_cache_mem(ptr);
-	      }
-	  }
-      }
-#endif
-
-      ///////////////////////////////////////
-
-
-
-      subdiv_patch->prefetchData();
-
-      const unsigned int needed_blocks = subdiv_patch->grid_subtree_size_64b_blocks;          
-
-      /* only single thread can build the subdiv patch */
-#if 1
-      size_t new_ptr = subdiv_patch->waitIfBlocked();
-      if (new_ptr) 
-	{
-	  t->set(patchIndex,commitCounter,new_ptr);
-	  return new_ptr;
-	}
-      assert( (size_t)subdiv_patch->ptr == 1);
-
-#endif
-
-
-      /* build subtree */
-      const SubdivMesh* const geom = (SubdivMesh*)scene->get(subdiv_patch->geom); // FIXME: test flag first
-      mic_f* local_mem = NULL;
-
-      // if (ptr != NULL)
-      // 	{
-      // 	  if (previous_blocks >= needed_blocks)
-      // 	    local_mem = (mic_f*)ptr;
-      // 	  else
-      // 	    free_tessellation_cache_mem(ptr);
-      // 	}
-
-      if (local_mem == NULL)
-	local_mem = (mic_f*)alloc_tessellation_cache_mem(needed_blocks);
-
-      unsigned int currentIndex = 0;
-      BVH4i::NodeRef bvh4i_root = initLocalLazySubdivTree(*subdiv_patch,currentIndex,local_mem,geom);		      
-      
-      size_t new_root = (size_t)bvh4i_root + (size_t)local_mem;
-
-      // ------------------------
-
-      // size_t new_ptr = subdiv_patch->isBlocked();
-      // if (new_ptr) 
-      // 	{
-      // 	  free_tessellation_cache_mem(local_mem);
-      // 	  t->set(patchIndex,commitCounter,new_ptr);
-      // 	  return new_ptr;
-      // 	}
-      
-      // ------------------------
-      
-
-      t->set(patchIndex,commitCounter,new_root);
-
-      /* write new subtree root */
-      *(size_t*)&subdiv_patch->ptr = new_root;
-
-      return new_root;
-#else
-      SubdivPatch1* subdiv_patch = &patches[patchIndex];
-
-      if (subdiv_patch->ptr != NULL && (size_t)subdiv_patch->ptr != 1) 
-	{
-	  t->set(patchIndex,commitCounter,(size_t)subdiv_patch->ptr);
-	  return (size_t)subdiv_patch->ptr;
-	}
-
-      /* lock subdiv patch */
-      while(1)
-	{
-	  while(*(volatile size_t*)&subdiv_patch->ptr == 1)
-	    _mm_delay_32(1024);
-
-	  size_t old = atomic_cmpxchg((volatile int64*)&subdiv_patch->ptr,(int64)0,(int64)1);
-	  if (old == 0) 
-	    break;
-	  else if (old == 1)
-	    _mm_delay_32(1024);
-	  else
-	    {
-	      t->set(patchIndex,commitCounter,(size_t)subdiv_patch->ptr);
-	      return (size_t)subdiv_patch->ptr;
-	    }
-	}
-
-      const unsigned int needed_blocks = subdiv_patch->grid_subtree_size_64b_blocks;          
-      const SubdivMesh* const geom = (SubdivMesh*)scene->get(subdiv_patch->geom); // FIXME: test flag first
-      mic_f* local_mem = (mic_f*)alloc_tessellation_cache_mem(needed_blocks);
-
-      unsigned int currentIndex = 0;
-      BVH4i::NodeRef bvh4i_root = initLocalLazySubdivTree(*subdiv_patch,currentIndex,local_mem,geom);		      
-      
-      size_t new_root = (size_t)bvh4i_root + (size_t)local_mem;
-
-      /* write new subtree root and release lock */
-      *(size_t*)&subdiv_patch->ptr = new_root;
-
-      t->set(patchIndex,commitCounter,new_root);
-
-      return (size_t)new_root;
-#endif      
-    }
 
     __noinline size_t lazyBuildPatchIntoScratchMem(const unsigned int patchIndex,
 						   const SubdivPatch1* const subdiv_patch,
@@ -820,12 +648,102 @@ namespace embree
 
     }
 
+    static __forceinline void flushLocalTessellationCache(TessellationRefCache *ref_cache)
+    {
+      TessellationRefCacheTag *t = ref_cache->getTagsPtr();
+      for (size_t i=0;i<ref_cache->getNumTags();i++)
+	if (!t[i].empty())
+	  {
+	    TessellationCacheTag *old = sharedTessellationCache.getTagBy32BitID(t[i].getPrimTag());
+	    old->read_unlock();
+	    t[i].reset();
+	  }
+    }
+
+    __noinline size_t lazyBuildPatchMissHandler(const unsigned int patchIndex,
+						const unsigned int commitCounter,
+						SubdivPatch1* const subdiv_patch,
+						Scene *const scene,
+						TessellationRefCacheTag *t,
+						TessellationRefCache *ref_cache)
+    {
+      const unsigned int tag = patchIndex;
+
+      if (!t->empty()) {
+	TessellationCacheTag *old = sharedTessellationCache.getTag(t->getPrimTag());
+	old->read_unlock();
+	t->reset();
+      };      
+
+      TessellationCacheTag *s = sharedTessellationCache.getTag(tag);
+
+      /* data is in shared cache ? */
+      CACHE_STATS(SharedTessellationCacheStats::cache_accesses++);
+      s->read_lock();
+      if (s->match(tag,commitCounter))
+	{
+	  CACHE_STATS(SharedTessellationCacheStats::cache_hits++);
+	  size_t patch_root = s->getRootRef();
+	  t->set(tag,commitCounter,patch_root);
+	  return patch_root;
+	}
+      CACHE_STATS(else SharedTessellationCacheStats::cache_misses++);
+      s->read_unlock();
+
+      CACHE_STATS(SharedTessellationCacheStats::cache_updates++);
+      if (s->try_write_lock())
+	{
+	  CACHE_STATS(SharedTessellationCacheStats::cache_updates_successful++);
+
+	  if (s->match(tag,commitCounter))
+	    {
+	      size_t patch_root = s->getRootRef();
+	      t->set(tag,commitCounter,patch_root);
+
+	      s->upgrade_write_to_read_lock();
+	      return patch_root;
+	    }
+	  else
+	    {
+	      mic_f* local_mem = (mic_f*)s->getPtr();
+	      const unsigned int needed_blocks = subdiv_patch->grid_subtree_size_64b_blocks;          
+	      if (s->getNumBlocks() < needed_blocks)
+		{
+		  if (local_mem != NULL)
+		    free_tessellation_cache_mem(local_mem);
+		  local_mem = (mic_f*)alloc_tessellation_cache_mem(needed_blocks);              	      
+		}
+	      
+	      const SubdivMesh* const geom = (SubdivMesh*)scene->get(subdiv_patch->geom); 
+	      unsigned int currentIndex = 0;
+	      BVH4i::NodeRef bvh4i_root = initLocalLazySubdivTree(*subdiv_patch,currentIndex,local_mem,geom);		      
+	      size_t new_root = (size_t)bvh4i_root + (size_t)local_mem;
+
+	      s->set(tag,commitCounter,new_root,needed_blocks);
+	      /* insert new patch data into local cache */
+	      t->set(tag,commitCounter,new_root);
+
+	      s->upgrade_write_to_read_lock();
+	      return new_root;
+	    }
+	}
+      
+      CACHE_STATS(SharedTessellationCacheStats::cache_fallbacks++);      
+      subdiv_patch->prefetchData();
+      size_t scratch_root = lazyBuildPatchIntoScratchMem(patchIndex,subdiv_patch,scene,ref_cache);
+      return scratch_root;
+    }
+
     __forceinline size_t lazyBuildPatch(const unsigned int patchIndex,
 					const unsigned int commitCounter,
 					SubdivPatch1* const patches,
 					Scene *const scene,
 					TessellationRefCache *ref_cache)
     {
+      /* new commitCounter flush local per thread cache */
+      if (unlikely(ref_cache->needCommitCounterUpdate(commitCounter)))
+	flushLocalTessellationCache(ref_cache);
+
 
       /* lookup in per thread reference cache */
       CACHE_STATS(DistributedTessellationCacheStats::cache_accesses++);
@@ -837,7 +755,7 @@ namespace embree
 	}
       CACHE_STATS(DistributedTessellationCacheStats::cache_misses++);
 
-#if 1
+#if 0
 
       /* release read_lock on previous entry */
       if (!t->empty()) {
@@ -912,7 +830,8 @@ namespace embree
       return final_root;
       
 #else
-      return lazyBuildPatchMissHandler(patchIndex,commitCounter,patches,scene,t);
+      SubdivPatch1* subdiv_patch = &patches[patchIndex];
+      return lazyBuildPatchMissHandler(patchIndex,commitCounter,subdiv_patch,scene,t,ref_cache);
 #endif
     }
 

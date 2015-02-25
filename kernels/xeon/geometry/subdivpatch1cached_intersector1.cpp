@@ -27,7 +27,7 @@
 
 #define NUM_SCRATCH_MEM_BLOCKS 1024
 
-#define SHARED_TESSELLATION_CACHE_ENTRIES 1024*16
+#define SHARED_TESSELLATION_CACHE_ENTRIES 1024*8
 
 namespace embree
 {
@@ -207,7 +207,6 @@ namespace embree
 							  const void* geom,
 							  TessellationRefCache *ref_cache)
     {
-      assert(geom);
       /* lookup in per thread reference cache */
       InputTagType tag = (InputTagType)subdiv_patch;        
       const unsigned int commitCounter = ((Scene*)geom)->commitCounter;
@@ -234,14 +233,7 @@ namespace embree
 
       if (!t->empty()) {
 	TessellationCacheTag *old = sharedTessellationCache.getTagBy32BitID(t->getPrimTag());
-	DBG(DBG_PRINT("UNLOCK LAZY"));
-	DBG(DBG_PRINT(t->getPrimTag()));
-	DBG(sharedTessellationCache.print());
-	assert( old->num_readers() > 0);
 	old->read_unlock();
-	DBG(sharedTessellationCache.print());
-
-	//assert(old->num_readers() == 0);
 	t->reset();
       };      
 
@@ -251,9 +243,6 @@ namespace embree
       //if (s->match(tag,commitCounter))
 	{
 	  s->read_lock();
-	  DBG(DBG_PRINT("LOCK"));
-	  DBG(DBG_PRINT(toTag(tag)));
-
 	  if (s->match(tag,commitCounter))
 	    {
 	      CACHE_STATS(SharedTessellationCacheStats::cache_hits++);
@@ -263,33 +252,24 @@ namespace embree
 	    }
 	  CACHE_STATS(else SharedTessellationCacheStats::cache_misses++);
 	  s->read_unlock();
-	  DBG(DBG_PRINT("UNLOCK"));
-	  DBG(DBG_PRINT(toTag(tag)));
 	}
-	//mmCACHE_STATS(else SharedTessellationCacheStats::cache_misses++);
+	//CACHE_STATS(else SharedTessellationCacheStats::cache_misses++);
 
       CACHE_STATS(SharedTessellationCacheStats::cache_updates++);
       if (s->try_write_lock())
 	{
 	  CACHE_STATS(SharedTessellationCacheStats::cache_updates_successful++);
-	  DBG(DBG_PRINT("WRITE LOCK"));
-	  DBG(DBG_PRINT(toTag(tag)));
 
 	  if (s->match(tag,commitCounter))
 	    {
 	      size_t patch_root = s->getRootRef();
 	      t->set(tag,commitCounter,patch_root);
 
-	      DBG(DBG_PRINT("UPGRADE WRITE TO READ LOCK"));
-	      DBG(DBG_PRINT(toTag(tag)));
-
 	      s->upgrade_write_to_read_lock();
 	      return patch_root;
 	    }
 	  else
 	    {
-	      DBG(DBG_PRINT("CREATE PATCH DATA"));
-
 	      BVH4::Node* node = (BVH4::Node*)s->getPtr();
 	      const unsigned int needed_blocks = subdiv_patch->grid_subtree_size_64b_blocks;          
 	      if (s->getNumBlocks() < needed_blocks)
@@ -305,14 +285,11 @@ namespace embree
 	      /* insert new patch data into local cache */
 	      t->set(tag,commitCounter,new_root);
 
-	      DBG(DBG_PRINT("UPGRADE READ TO WRITE LOCK"));
-	      DBG(DBG_PRINT(toTag(tag)));
 	      s->upgrade_write_to_read_lock();
 	      return new_root;
 	    }
 	}
 
-      DBG(DBG_PRINT("FALLBACK"));
       CACHE_STATS(SharedTessellationCacheStats::cache_fallbacks++);
 
       const unsigned int needed_blocks = subdiv_patch->grid_subtree_size_64b_blocks;          
