@@ -130,6 +130,7 @@ namespace embree
     CacheTagSet sets[CACHE_SETS];
     float *scratch_mem;
     size_t scratch_mem_blocks;
+    unsigned int commitCounter;
 
   public:
 
@@ -141,6 +142,8 @@ namespace embree
 
       for (size_t i=0;i<CACHE_SETS;i++)
 	sets[i].reset();
+
+      commitCounter      = 0;
     }
 
     __forceinline TessellationRefCacheTag *lookUpTag(InputTagType primID,
@@ -170,8 +173,8 @@ namespace embree
 
     __forceinline TessellationRefCacheT(const size_t scratch_mem_blocks) : scratch_mem_blocks(scratch_mem_blocks)
     {
-      scratch_mem = (float*) alloc_tessellation_cache_mem(scratch_mem_blocks);
       reset();
+      scratch_mem = (float*) alloc_tessellation_cache_mem(scratch_mem_blocks);
     }
 
     __forceinline TessellationRefCacheTag *getTagsPtr() { return tags; }
@@ -189,6 +192,16 @@ namespace embree
 	  scratch_mem = alloc_tessellation_cache_mem(scratch_mem_blocks);
 	}
     }
+
+    __forceinline bool needCommitCounterUpdate(unsigned int new_counter) {
+      if (commitCounter != new_counter)
+	{
+	  commitCounter = new_counter;
+	  return true;
+	}
+      return false;
+    }
+
 
   };
 
@@ -326,6 +339,7 @@ namespace embree
    static AtomicCounter cache_evictions;                
    static AtomicCounter cache_updates;                
    static AtomicCounter cache_updates_successful;                
+   static AtomicCounter cache_fallbacks;                
 
     /* print stats for debugging */                 
     static void printStats();
