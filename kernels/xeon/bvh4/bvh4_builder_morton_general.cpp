@@ -14,8 +14,6 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#define PROFILE_MORTON_GENERAL
-
 #include "bvh4.h"
 #include "bvh4_rotate.h"
 #include "common/profile.h"
@@ -29,7 +27,7 @@
 #include "geometry/triangle4v.h"
 #include "geometry/triangle4i.h"
 
-#define ROTATE_TREE 0
+#define ROTATE_TREE 5
 
 namespace embree 
 {
@@ -49,6 +47,9 @@ namespace embree
     
     struct SetBVH4Bounds
     {
+      BVH4* bvh;
+      __forceinline SetBVH4Bounds (BVH4* bvh) : bvh(bvh) {}
+
       __forceinline BBox3fa operator() (BVH4::Node* node, const BBox3fa* bounds, size_t N)
       {
         BBox3fa res = empty;
@@ -57,6 +58,24 @@ namespace embree
           res.extend(b);
           node->set(i,b);
         }
+
+#if ROTATE_TREE
+        size_t n = 0;
+        for (size_t i=0; i<N; i++) 
+          n += bounds[i].lower.a;
+
+        if (n >= 4096) {
+          for (size_t i=0; i<N; i++) {
+            if (bounds[i].lower.a < 4096) {
+              for (int j=0; j<ROTATE_TREE; j++) 
+                BVH4Rotate::rotate(bvh,node->child(i)); 
+              node->child(i).setBarrier();
+            }
+          }
+        }
+        res.lower.a = n;
+#endif
+
         return res;
       }
     };
@@ -105,6 +124,9 @@ namespace embree
           store4f_nt(&accel[i].Ng,cast(insert<3>(cast(normal),0)));
         }
         box_o = BBox3fa((Vec3fa)lower,(Vec3fa)upper);
+#if ROTATE_TREE
+        box_o.lower.a = current.size();
+#endif
       }
 
     private:
@@ -159,6 +181,9 @@ namespace embree
         }
         Triangle4::store_nt(accel,Triangle4(v0,v1,v2,vgeomID,vprimID,vmask,false));
         box_o = BBox3fa((Vec3fa)lower,(Vec3fa)upper);
+#if ROTATE_TREE
+        box_o.lower.a = current.size();
+#endif
       }
     
     private:
@@ -215,6 +240,9 @@ namespace embree
         }
         new (accel) Triangle8(v0,v1,v2,vgeomID,vprimID,vmask,false); // FIXME: use storent
         box_o = BBox3fa((Vec3fa)lower,(Vec3fa)upper);
+#if ROTATE_TREE
+        box_o.lower.a = current.size();
+#endif
       }
 
     private:
@@ -269,6 +297,9 @@ namespace embree
           store4f_nt(&accel[i].v2,cast(insert<3>(cast(v2),mesh->mask)));
         }
         box_o = BBox3fa((Vec3fa)lower,(Vec3fa)upper);
+#if ROTATE_TREE
+        box_o.lower.a = current.size();
+#endif
       }
     private:
       Scene* scene;
@@ -322,6 +353,9 @@ namespace embree
         }
         Triangle4v::store_nt(accel,Triangle4v(v0,v1,v2,vgeomID,vprimID,vmask,false));
         box_o = BBox3fa((Vec3fa)lower,(Vec3fa)upper);
+#if ROTATE_TREE
+        box_o.lower.a = current.size();
+#endif
       }
     private:
       Scene* scene;
@@ -385,6 +419,9 @@ namespace embree
         
         new (accel) Triangle4i(v0,v1,v2,vgeomID,vprimID,false);
         box_o = BBox3fa((Vec3fa)lower,(Vec3fa)upper);
+#if ROTATE_TREE
+        box_o.lower.a = current.size();
+#endif
       }
     private:
       Scene* scene;
@@ -507,7 +544,7 @@ namespace embree
 
             /* create BVH */
             AllocBVH4Node allocNode;
-            SetBVH4Bounds setBounds;
+            SetBVH4Bounds setBounds(bvh);
             CreateLeaf createLeaf(mesh,morton);
             CalculateMeshBounds<Mesh> calculateBounds(mesh);
             auto node_bounds = bvh_builder_center_internal<BVH4::NodeRef>(
@@ -516,6 +553,12 @@ namespace embree
               allocNode,setBounds,createLeaf,calculateBounds,
               dest,morton,numPrimitives,4,BVH4::maxBuildDepth,minLeafSize,maxLeafSize);
             bvh->set(node_bounds.first,node_bounds.second,numPrimitives);
+
+#if ROTATE_TREE
+            for (int i=0; i<ROTATE_TREE; i++) 
+              BVH4Rotate::rotate(bvh,bvh->root);
+            bvh->clearBarrier(bvh->root);
+#endif
 
             //timer("compute_tree");
             //timer("bvh4_builder_morton_new");
@@ -647,7 +690,7 @@ namespace embree
 
             /* create BVH */
             AllocBVH4Node allocNode;
-            SetBVH4Bounds setBounds;
+            SetBVH4Bounds setBounds(bvh);
             CreateLeaf createLeaf(scene,morton,encodeShift,encodeMask);
             CalculateBounds calculateBounds(scene,encodeShift,encodeMask);
             auto node_bounds = bvh_builder_center_internal<BVH4::NodeRef>(
@@ -656,7 +699,12 @@ namespace embree
               allocNode,setBounds,createLeaf,calculateBounds,
               dest,morton,numPrimitives,4,BVH4::maxBuildDepth,minLeafSize,maxLeafSize);
             bvh->set(node_bounds.first,node_bounds.second,numPrimitives);
-            
+
+#if ROTATE_TREE
+            for (int i=0; i<ROTATE_TREE; i++) 
+              BVH4Rotate::rotate(bvh,bvh->root);
+            bvh->clearBarrier(bvh->root);
+#endif
             //timer("compute_tree");
 
             if (g_verbose >= 1) dt = getSeconds()-t0;

@@ -124,7 +124,7 @@ namespace embree
         }
         const size_t numSplitPrimitives = max(numPrimitives,size_t(presplitFactor*numPrimitives));
       
-        /* reduction function */
+        /* tree rotations */
 	auto rotate = [&] (BVH4::Node* node, const size_t* counts, const size_t N) 
 	{
           size_t n = 0;
@@ -135,7 +135,8 @@ namespace embree
           if (n >= 4096) {
             for (size_t i=0; i<N; i++) {
               if (counts[i] < 4096) {
-                for (int j=0; j<5; j++) BVH4Rotate::rotate(bvh,node->child(i)); 
+                for (int j=0; j<ROTATE_TREE; j++) 
+                  BVH4Rotate::rotate(bvh,node->child(i)); 
                 node->child(i).setBarrier();
               }
             }
@@ -167,7 +168,8 @@ namespace embree
             //bvh->set(lastLeaf,pinfo.geomBounds,pinfo.size());
 
 #if ROTATE_TREE
-            for (int i=0; i<5; i++) BVH4Rotate::rotate(bvh,bvh->root);
+            for (int i=0; i<ROTATE_TREE; i++) 
+              BVH4Rotate::rotate(bvh,bvh->root);
             bvh->clearBarrier(bvh->root);
 #endif
 
@@ -318,7 +320,8 @@ namespace embree
           if (n >= 4096) {
             for (size_t i=0; i<N; i++) {
               if (counts[i] < 4096) {
-                for (int j=0; j<5; j++) BVH4Rotate::rotate(bvh,node->child(i)); 
+                for (int j=0; j<ROTATE_TREE; j++) 
+                  BVH4Rotate::rotate(bvh,node->child(i)); 
                 node->child(i).setBarrier();
               }
             }
@@ -406,7 +409,8 @@ namespace embree
 	    bvh->set(root,pinfo.geomBounds,pinfo.size());
 
 #if ROTATE_TREE
-            for (int i=0; i<5; i++) BVH4Rotate::rotate(bvh,bvh->root);
+            for (int i=0; i<ROTATE_TREE; i++) 
+              BVH4Rotate::rotate(bvh,bvh->root);
             bvh->clearBarrier(bvh->root);
 #endif
 
