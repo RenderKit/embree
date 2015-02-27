@@ -17,6 +17,7 @@
 #include "bvh4.h"
 #include "bvh4_rotate.h"
 #include "common/profile.h"
+#include "algorithms/parallel_prefix_sum.h"
 
 #include "builders_new/bvh_builder_morton.h"
 
@@ -516,7 +517,8 @@ namespace embree
             //bvh->alloc.init(numPrimitives*sizeof(BVH4::Node),numPrimitives*sizeof(BVH4::Node));
             size_t bytesAllocated = (numPrimitives+7)/8*sizeof(BVH4::Node) + size_t(1.2f*(numPrimitives+3)/4)*sizeof(Triangle4);
             bvh->alloc2.init(bytesAllocated,2*bytesAllocated); // FIXME: not working if scene size changes, initial block has to get reallocated as used as temporary data
-            
+
+#if 1
             /* compute scene bounds */
             const BBox3fa centBounds = parallel_reduce 
               ( size_t(0), numPrimitives, BBox3fa(empty), [&](const range<size_t>& r) -> BBox3fa
@@ -539,7 +541,43 @@ namespace embree
                     generator(mesh->bounds(i),i);
                   }
                 });
-            
+
+#else // FIXME: continue implementation of filtering of invalid geometry
+
+            ParallelPrefixSumState<PrimInfo> pstate;
+      
+            /* compute scene bounds */
+            const PrimInfo pinfo = parallel_prefix_sum( pstate, size_t(0), mesh->size(), size_t(1024), PrimInfo(empty), [&](const range<size_t>& r, const PrimInfo& base) -> PrimInfo
+            {
+              PrimInfo pinfo(empty);
+              for (size_t j=r.begin(); j<r.end(); j++)
+              {
+                BBox3fa bounds = empty;
+                if (!mesh->valid(j,&bounds)) continue;
+                pinfo.add(bounds);
+              }
+              return pinfo;
+            }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a,b); });
+            const BBox3fa centBounds = pinfo.centBounds;
+
+            /* compute morton codes */
+            MortonID32Bit* dest = (MortonID32Bit*) bvh->alloc2.ptr();
+            MortonCodeGenerator::MortonCodeMapping mapping(centBounds);
+            pinfo = parallel_prefix_sum( pstate, size_t(0), numPrimitives, size_t(1024), PrimInfo(empty), [&](const range<size_t>& r, const PrimInfo& base) -> PrimInfo
+            {
+              PrimInfo pinfo(empty);
+              MortonCodeGenerator generator(mapping,&dest[base.size()]);
+              for (ssize_t j=r.begin(); j<r.end(); j++)
+              {
+                BBox3fa bounds = empty;
+                if (!mesh->valid(j,&bounds)) continue;
+                pinfo.add(bounds);
+                generator(bounds,j);
+              }
+              return pinfo;
+            }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a,b); });
+
+#endif
             //timer("compute_morton_codes");
 
             /* create BVH */

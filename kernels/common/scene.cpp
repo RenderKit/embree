@@ -214,8 +214,8 @@ namespace embree
         else             accels.add(BVH4::BVH4SubdivGridEager(this));
       }
       else {
-        //accels.add(BVH4::BVH4SubdivPatch1Cached(this)); // FIXME: enable, does not run through regression tests
-        accels.add(BVH4::BVH4SubdivGridEager(this));
+        accels.add(BVH4::BVH4SubdivPatch1Cached(this)); // FIXME: enable, does not run through regression tests
+        //accels.add(BVH4::BVH4SubdivGridEager(this));
       }
     }
     else if (g_subdiv_accel == "bvh4.subdivpatch1"      ) accels.add(BVH4::BVH4SubdivPatch1(this));
