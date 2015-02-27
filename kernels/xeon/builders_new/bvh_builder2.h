@@ -302,6 +302,31 @@ namespace embree
       return root;
     }
 
+    template<typename NodeRef, typename CreateAllocFunc, typename ReductionTy, typename CreateNodeFunc, typename UpdateNodeFunc, typename CreateLeafFunc, typename SplitPrimitiveFunc>
+      NodeRef bvh_builder_reduce_spatial_sah2_internal(Scene* scene, CreateAllocFunc createAlloc, 
+                                                       const ReductionTy& identity, 
+                                                       CreateNodeFunc createNode, UpdateNodeFunc updateNode, CreateLeafFunc createLeaf, SplitPrimitiveFunc splitPrimitive,
+                                                       PrimRefList& prims, const PrimInfo& pinfo, 
+                                                       const size_t branchingFactor, const size_t maxDepth, const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize,
+                                                       const float travCost, const float intCost)
+    {
+      const size_t logBlockSize = __bsr(blockSize);
+      assert((blockSize ^ (1L << logBlockSize)) == 0);
+
+      //HeuristicListBinningSAH<PrimRef> heuristic;
+      HeuristicSpatialSplitAndObjectSplitBlockListBinningSAH<PrimRef,SplitPrimitiveFunc> heuristic(splitPrimitive);
+      
+      //auto updateNode = [] (int node, int*, size_t) -> int { return 0; };
+      BVHBuilderSAH2<PrimRefList,NodeRef,decltype(heuristic),ReductionTy,decltype(createAlloc()),CreateAllocFunc,CreateNodeFunc,UpdateNodeFunc,CreateLeafFunc> builder
+        (heuristic,identity,createAlloc,createNode,updateNode,createLeaf,pinfo,branchingFactor,maxDepth,logBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
+
+      NodeRef root;
+      BuildRecord2<NodeRef,PrimRefList> br(pinfo,1,&root);
+      br.prims = prims;
+      builder(br);
+      return root;
+    }
+
     template<typename NodeRef, typename CreateAllocFunc, typename CreateNodeFunc, typename CreateLeafFunc>
       NodeRef bvh_builder_binned_sah2_internal(CreateAllocFunc createAlloc, CreateNodeFunc createNode, CreateLeafFunc createLeaf, 
                                                PrimRef* prims, const PrimInfo& pinfo, 

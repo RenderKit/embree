@@ -15,6 +15,7 @@
 // ======================================================================== //
 
 #include "bvh4.h"
+#include "bvh4_rotate.h"
 #include "common/profile.h"
 
 #include "builders_new/primrefgen.h"
@@ -28,6 +29,8 @@
 #include "geometry/triangle4v.h"
 #include "geometry/triangle4i.h"
 #include "geometry/triangle4v_mb.h"
+
+#define ROTATE_TREE 0
 
 namespace embree
 {
@@ -47,7 +50,7 @@ namespace embree
     {
       __forceinline CreateBVH4Node (BVH4* bvh) : bvh(bvh) {}
       
-      __forceinline int operator() (const isa::BuildRecord2<BVH4::NodeRef>& current, BuildRecord2<BVH4::NodeRef>** children, const size_t N, Allocator* alloc) 
+      __forceinline BVH4::Node* operator() (const isa::BuildRecord2<BVH4::NodeRef>& current, BuildRecord2<BVH4::NodeRef>** children, const size_t N, Allocator* alloc) 
       {
         BVH4::Node* node = (BVH4::Node*) alloc->alloc0.malloc(sizeof(BVH4::Node)); node->clear();
         for (size_t i=0; i<N; i++) {
@@ -55,7 +58,7 @@ namespace embree
           children[i]->parent = &node->child(i);
         }
         *current.parent = bvh->encodeNode(node);
-	return 0;
+	return node;
       }
 
       BVH4* bvh;
@@ -66,9 +69,10 @@ namespace embree
     {
       __forceinline CreateLeaf (BVH4* bvh, PrimRef* prims) : bvh(bvh), prims(prims) {}
       
-      __forceinline int operator() (const BuildRecord2<BVH4::NodeRef>& current, Allocator* alloc) // FIXME: why are prims passed here but not for createNode
+      __forceinline size_t operator() (const BuildRecord2<BVH4::NodeRef>& current, Allocator* alloc) // FIXME: why are prims passed here but not for createNode
       {
-        size_t items = Primitive::blocks(current.prims.size());
+        size_t n = current.prims.size();
+        size_t items = Primitive::blocks(n);
         size_t start = current.prims.begin();
         Primitive* accel = (Primitive*) alloc->alloc1.malloc(items*sizeof(Primitive));
         BVH4::NodeRef node = bvh->encodeLeaf((char*)accel,items);
@@ -76,7 +80,7 @@ namespace embree
           accel[i].fill(prims,start,current.prims.end(),bvh->scene,false);
         }
         *current.parent = node;
-	return 1;
+	return n;
       }
 
       BVH4* bvh;
@@ -120,6 +124,26 @@ namespace embree
         }
         const size_t numSplitPrimitives = max(numPrimitives,size_t(presplitFactor*numPrimitives));
       
+        /* reduction function */
+	auto rotate = [&] (BVH4::Node* node, const size_t* counts, const size_t N) 
+	{
+          size_t n = 0;
+#if ROTATE_TREE
+	  assert(N <= BVH4::N);
+          for (size_t i=0; i<N; i++) 
+            n += counts[i];
+          if (n >= 4096) {
+            for (size_t i=0; i<N; i++) {
+              if (counts[i] < 4096) {
+                for (int j=0; j<5; j++) BVH4Rotate::rotate(bvh,node->child(i)); 
+                node->child(i).setBarrier();
+              }
+            }
+          }
+#endif
+	  return n;
+	};
+
         /* verbose mode */
         if (g_verbose >= 1 && mesh == NULL)
 	  std::cout << "building BVH4<" << bvh->primTy.name << "> with " << TOSTRING(isa) "::BVH4BuilderBinnedSAH2 " << (presplitFactor != 1.0f ? "presplit" : "") << " ... " << std::flush;
@@ -136,11 +160,16 @@ namespace embree
             if (presplitFactor > 1.0f)
               pinfo = presplit<Mesh>(scene, pinfo, prims);
 
-	    BVH4::NodeRef root = bvh_builder_binned_sah2_internal<BVH4::NodeRef>
-	      (CreateAlloc(bvh),CreateBVH4Node(bvh),CreateLeaf<Primitive>(bvh,prims.data()),
+	    BVH4::NodeRef root = bvh_builder_reduce_binned_sah2_internal<BVH4::NodeRef>
+	      (CreateAlloc(bvh),size_t(0),CreateBVH4Node(bvh),rotate,CreateLeaf<Primitive>(bvh,prims.data()),
 	       prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,sahBlockSize,minLeafSize,maxLeafSize,BVH4::travCost,intCost);
 	    bvh->set(root,pinfo.geomBounds,pinfo.size());
             //bvh->set(lastLeaf,pinfo.geomBounds,pinfo.size());
+
+#if ROTATE_TREE
+            for (int i=0; i<5; i++) BVH4Rotate::rotate(bvh,bvh->root);
+            bvh->clearBarrier(bvh->root);
+#endif
 
 	    if (g_verbose >= 1 && mesh == NULL) dt = getSeconds()-t0;
 
@@ -190,7 +219,7 @@ namespace embree
     {
       __forceinline CreateListBVH4Node (BVH4* bvh) : bvh(bvh) {}
       
-      __forceinline int operator() (const isa::BuildRecord2<BVH4::NodeRef,PrimRefList>& current, BuildRecord2<BVH4::NodeRef,PrimRefList>** children, const size_t N, Allocator* alloc) 
+      __forceinline BVH4::Node* operator() (const isa::BuildRecord2<BVH4::NodeRef,PrimRefList>& current, BuildRecord2<BVH4::NodeRef,PrimRefList>** children, const size_t N, Allocator* alloc) 
       {
         BVH4::Node* node = (BVH4::Node*) alloc->alloc0.malloc(sizeof(BVH4::Node)); node->clear();
         for (size_t i=0; i<N; i++) {
@@ -198,7 +227,7 @@ namespace embree
           children[i]->parent = &node->child(i);
         }
         *current.parent = bvh->encodeNode(node);
-	return 0;
+	return node;
       }
 
       BVH4* bvh;
@@ -209,9 +238,10 @@ namespace embree
     {
       __forceinline CreateListLeaf (BVH4* bvh) : bvh(bvh) {}
       
-      __forceinline int operator() (BuildRecord2<BVH4::NodeRef, PrimRefList>& current, Allocator* alloc) // FIXME: why are prims passed here but not for createNode
+      __forceinline size_t operator() (BuildRecord2<BVH4::NodeRef, PrimRefList>& current, Allocator* alloc) // FIXME: why are prims passed here but not for createNode
       {
-        size_t N = Primitive::blocks(current.pinfo.size());
+        size_t n = current.pinfo.size();
+        size_t N = Primitive::blocks(n);
         Primitive* leaf = (Primitive*) alloc->alloc1.malloc(N*sizeof(Primitive));
         BVH4::NodeRef node = bvh->encodeLeaf((char*)leaf,N);
 
@@ -238,7 +268,7 @@ namespace embree
           delete block;
 
         *current.parent = node;
-	return 1;
+	return n;
       }
 
       BVH4* bvh;
@@ -277,6 +307,26 @@ namespace embree
         }
         const size_t numSplitPrimitives = max(numPrimitives,size_t(presplitFactor*numPrimitives));
       
+        /* reduction function */
+	auto rotate = [&] (BVH4::Node* node, const size_t* counts, const size_t N) 
+	{
+          size_t n = 0;
+#if ROTATE_TREE
+	  assert(N <= BVH4::N);
+          for (size_t i=0; i<N; i++) 
+            n += counts[i];
+          if (n >= 4096) {
+            for (size_t i=0; i<N; i++) {
+              if (counts[i] < 4096) {
+                for (int j=0; j<5; j++) BVH4Rotate::rotate(bvh,node->child(i)); 
+                node->child(i).setBarrier();
+              }
+            }
+          }
+#endif
+	  return n;
+	};
+
         /* verbose mode */
         if (g_verbose >= 1 && mesh == NULL)
 	  std::cout << "building BVH4<" << bvh->primTy.name << "> with " << TOSTRING(isa) "::BVH4BuilderBinnedSAH2 " << (presplitFactor != 1.0f ? "presplit" : "") << " ... " << std::flush;
@@ -341,8 +391,8 @@ namespace embree
             //if (presplitFactor > 1.0f)
             //pinfo = presplit<Mesh>(scene, pinfo, prims);
 
-	    BVH4::NodeRef root = bvh_builder_spatial_sah2_internal<BVH4::NodeRef>
-	      (scene,CreateAlloc(bvh),CreateListBVH4Node(bvh),CreateListLeaf<Primitive>(bvh),
+	    BVH4::NodeRef root = bvh_builder_reduce_spatial_sah2_internal<BVH4::NodeRef>
+	      (scene,CreateAlloc(bvh),size_t(0),CreateListBVH4Node(bvh),rotate,CreateListLeaf<Primitive>(bvh),
                [&] (const PrimRef& prim, int dim, float pos, PrimRef& left_o, PrimRef& right_o)
                {
                 TriangleMesh* mesh = (TriangleMesh*) scene->get(prim.geomID() & 0x00FFFFFF); 
@@ -354,6 +404,11 @@ namespace embree
               },
 	       prims,pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,sahBlockSize,minLeafSize,maxLeafSize,BVH4::travCost,intCost);
 	    bvh->set(root,pinfo.geomBounds,pinfo.size());
+
+#if ROTATE_TREE
+            for (int i=0; i<5; i++) BVH4Rotate::rotate(bvh,bvh->root);
+            bvh->clearBarrier(bvh->root);
+#endif
 
 	    if (g_verbose >= 1 && mesh == NULL) dt = getSeconds()-t0;
 
@@ -383,6 +438,7 @@ namespace embree
     //Builder* BVH4Triangle1vSceneBuilderBinnedSAH2 (void* bvh, Scene* scene, size_t mode) { return new BVH4BuilderBinnedSAH2<TriangleMesh,Triangle1v>((BVH4*)bvh,scene,1,1,1.0f,2,inf,mode); }
     //Builder* BVH4Triangle4vSceneBuilderBinnedSAH2 (void* bvh, Scene* scene, size_t mode) { return new BVH4BuilderBinnedSAH2<TriangleMesh,Triangle4v>((BVH4*)bvh,scene,2,2,1.0f,4,inf,mode); }
     //Builder* BVH4Triangle4iSceneBuilderBinnedSAH2 (void* bvh, Scene* scene, size_t mode) { return new BVH4BuilderBinnedSAH2<TriangleMesh,Triangle4i>((BVH4*)bvh,scene,2,2,1.0f,4,inf,mode); }
+
 
     /************************************************************************************/ 
     /************************************************************************************/

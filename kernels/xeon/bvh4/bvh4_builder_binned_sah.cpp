@@ -163,7 +163,6 @@ namespace embree
 	       prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,sahBlockSize,minLeafSize,maxLeafSize);
 	    bvh->set(root,pinfo.geomBounds,pinfo.size());
             
-
 #if ROTATE_TREE
             for (int i=0; i<5; i++) BVH4Rotate::rotate(bvh,bvh->root);
             bvh->clearBarrier(bvh->root);
