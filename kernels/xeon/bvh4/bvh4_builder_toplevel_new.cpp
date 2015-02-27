@@ -133,28 +133,35 @@ namespace embree
         return pinfo;
       }, [] (const PrimInfo& a, const PrimInfo& b) { return PrimInfo::merge(a,b); });
 
-      /* build hierarchy */
-      BVH4::NodeRef root = bvh_builder_binned_sah_internal<BVH4::NodeRef>
-        ([&] { return bvh->alloc2.threadLocal2(); },
-         [&] (const isa::BuildRecord<BVH4::NodeRef>& current, BuildRecord<BVH4::NodeRef>** children, const size_t N, FastAllocator::ThreadLocal2* alloc) 
-         {
-           BVH4::Node* node = (BVH4::Node*) alloc->alloc0.malloc(sizeof(BVH4::Node)); node->clear();
-           for (size_t i=0; i<N; i++) {
-             node->set(i,children[i]->geomBounds);
-             children[i]->parent = &node->child(i);
-           }
-           *current.parent = bvh->encodeNode(node);
-           return 0;
-         },
-         [&] (const BuildRecord<BVH4::NodeRef>& current, FastAllocator::ThreadLocal2* alloc) // FIXME: why are prims passed here but not for createNode
-         {
-           assert(current.prims.size() == 1);
-           *current.parent = (BVH4::NodeRef) prims[current.prims.begin()].ID();
-           return 1;
-         },
-         prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,1,1,1);
+      /* skip if all objects where empty */
+      if (pinfo.size() == 0)
+        bvh->set(BVH4::emptyNode,empty,0);
 
-      bvh->set(root,pinfo.geomBounds,numPrimitives);
+      /* otherwise build toplevel hierarchy */
+      else
+      {
+        BVH4::NodeRef root = bvh_builder_binned_sah_internal<BVH4::NodeRef>
+          ([&] { return bvh->alloc2.threadLocal2(); },
+           [&] (const isa::BuildRecord<BVH4::NodeRef>& current, BuildRecord<BVH4::NodeRef>** children, const size_t N, FastAllocator::ThreadLocal2* alloc) 
+           {
+             BVH4::Node* node = (BVH4::Node*) alloc->alloc0.malloc(sizeof(BVH4::Node)); node->clear();
+             for (size_t i=0; i<N; i++) {
+               node->set(i,children[i]->geomBounds);
+               children[i]->parent = &node->child(i);
+             }
+             *current.parent = bvh->encodeNode(node);
+             return 0;
+           },
+           [&] (const BuildRecord<BVH4::NodeRef>& current, FastAllocator::ThreadLocal2* alloc) // FIXME: why are prims passed here but not for createNode
+           {
+             assert(current.prims.size() == 1);
+             *current.parent = (BVH4::NodeRef) prims[current.prims.begin()].ID();
+             return 1;
+           },
+           prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,1,1,1);
+        
+        bvh->set(root,pinfo.geomBounds,numPrimitives);
+      }
 
       if (g_verbose >= 1) {
         dt = getSeconds()-t0;

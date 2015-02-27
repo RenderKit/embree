@@ -205,6 +205,10 @@ namespace embree
         }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo(a.size()+b.size(),empty,empty); });
 
         prims.resize(pinfo.size());
+        if (pinfo.size() == 0) {
+          bvh->set(BVH4::emptyNode,empty,0);
+          return;
+        }
 
         pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
         {
@@ -254,10 +258,10 @@ namespace embree
         BVH4::NodeRef root = bvh_builder_binned_sah_internal<BVH4::NodeRef>
           (CreateAlloc(bvh),CreateBVH4Node(bvh),
            [&] (const BuildRecord<BVH4::NodeRef>& current, Allocator* alloc) {
-             if (current.size() != 1) THROW_RUNTIME_ERROR("bvh4_builder_subdiv: internal error");
-             *current.parent = (BVH4::NodeRef) prims[current.begin].ID();
-             return 0;
-           },
+            if (current.size() != 1) THROW_RUNTIME_ERROR("bvh4_builder_subdiv: internal error");
+            *current.parent = (BVH4::NodeRef) prims[current.begin].ID();
+            return 0;
+          },
            prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,1,1,1);
         bvh->set(root,pinfo.geomBounds,pinfo.size());
         
@@ -338,6 +342,10 @@ namespace embree
         }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo(a.size()+b.size(),empty,empty); });
         
         prims.resize(pinfo.size());
+        if (pinfo.size() == 0) {
+          bvh->set(BVH4::emptyNode,empty,0);
+          return;
+        }
 
         pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
         {
@@ -458,6 +466,10 @@ namespace embree
         }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo(a.size()+b.size(),empty,empty); });
         
         prims.resize(pinfo.size());
+        if (pinfo.size() == 0) {
+          bvh->set(BVH4::emptyNode,empty,0);
+          return;
+        }
 
         pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
         {
