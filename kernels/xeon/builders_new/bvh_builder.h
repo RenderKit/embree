@@ -223,7 +223,7 @@ namespace embree
 	{
 	  for (size_t i=0; i<numChildren; i++)
 	    values[i] = recurse(children[i],alloc);
-	  
+
 	  /* perform reduction */
 	  return updateNode(node,values,numChildren);
 	}
@@ -250,6 +250,27 @@ namespace embree
       const size_t minLeafSize;
       const size_t maxLeafSize;
     };
+
+    template<typename NodeRef, typename CreateAllocFunc, typename ReductionTy, typename CreateNodeFunc, typename UpdateNodeFunc, typename CreateLeafFunc>
+      NodeRef bvh_builder_reduce_binned_sah_internal(CreateAllocFunc createAlloc, 
+						      const ReductionTy& identity, 
+						      CreateNodeFunc createNode, UpdateNodeFunc updateNode, CreateLeafFunc createLeaf, 
+						      PrimRef* prims, const PrimInfo& pinfo, 
+						      const size_t branchingFactor, const size_t maxDepth, const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize)
+    {
+      const size_t logBlockSize = __bsr(blockSize);
+      assert((blockSize ^ (1L << logBlockSize)) == 0);
+      HeuristicArrayBinningSAH<PrimRef> heuristic(prims);
+      
+      BVHBuilderSAH<NodeRef,decltype(heuristic),ReductionTy,decltype(createAlloc()),CreateAllocFunc,CreateNodeFunc,UpdateNodeFunc,CreateLeafFunc> builder
+        (heuristic,identity,createAlloc,createNode,updateNode,createLeaf,pinfo,branchingFactor,maxDepth,logBlockSize,minLeafSize,maxLeafSize);
+
+      NodeRef root;
+      BuildRecord<NodeRef> br(pinfo,1,&root);
+      br.prims = range<size_t>(0,pinfo.size());
+      builder(br); // FIXME: return reduced value
+      return root;
+    }
 
     template<typename NodeRef, typename CreateAllocFunc, typename CreateNodeFunc, typename CreateLeafFunc>
       NodeRef bvh_builder_binned_sah_internal(CreateAllocFunc createAlloc, CreateNodeFunc createNode, CreateLeafFunc createLeaf, 

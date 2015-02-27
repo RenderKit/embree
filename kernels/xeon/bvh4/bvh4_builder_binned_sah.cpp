@@ -15,6 +15,7 @@
 // ======================================================================== //
 
 #include "bvh4.h"
+#include "bvh4_rotate.h"
 #include "common/profile.h"
 
 #include "builders_new/primrefgen.h"
@@ -30,6 +31,8 @@
 #include "geometry/triangle4v.h"
 #include "geometry/triangle4i.h"
 #include "geometry/virtual_accel.h"
+
+#define ROTATE_TREE 0
 
 namespace embree
 {
@@ -49,7 +52,7 @@ namespace embree
     {
       __forceinline CreateBVH4Node (BVH4* bvh) : bvh(bvh) {}
       
-      __forceinline int operator() (const isa::BuildRecord<BVH4::NodeRef>& current, BuildRecord<BVH4::NodeRef>** children, const size_t N, Allocator* alloc) 
+      __forceinline BVH4::Node* operator() (const isa::BuildRecord<BVH4::NodeRef>& current, BuildRecord<BVH4::NodeRef>** children, const size_t N, Allocator* alloc) 
       {
         BVH4::Node* node = (BVH4::Node*) alloc->alloc0.malloc(sizeof(BVH4::Node)); node->clear();
         for (size_t i=0; i<N; i++) {
@@ -57,7 +60,7 @@ namespace embree
           children[i]->parent = &node->child(i);
         }
         *current.parent = bvh->encodeNode(node);
-	return 0;
+	return node;
       }
 
       BVH4* bvh;
@@ -70,7 +73,8 @@ namespace embree
       
       __forceinline int operator() (const BuildRecord<BVH4::NodeRef>& current, Allocator* alloc) // FIXME: why are prims passed here but not for createNode
       {
-        size_t items = Primitive::blocks(current.prims.size());
+        size_t n = current.prims.size();
+        size_t items = Primitive::blocks(n);
         size_t start = current.prims.begin();
         Primitive* accel = (Primitive*) alloc->alloc1.malloc(items*sizeof(Primitive));
         BVH4::NodeRef node = bvh->encodeLeaf((char*)accel,items);
@@ -78,7 +82,7 @@ namespace embree
           accel[i].fill(prims,start,current.prims.end(),bvh->scene,false);
         }
         *current.parent = node;
-	return 1;
+	return n;
       }
 
       BVH4* bvh;
@@ -117,12 +121,32 @@ namespace embree
         }
         const size_t numSplitPrimitives = max(numPrimitives,size_t(presplitFactor*numPrimitives));
 
+        /* reduction function */
+	auto rotate = [&] (BVH4::Node* node, const size_t* counts, const size_t N) 
+	{
+          size_t n = 0;
+#if ROTATE_TREE
+	  assert(N <= BVH4::N);
+          for (size_t i=0; i<N; i++) 
+            n += counts[i];
+          if (n >= 4096) {
+            for (size_t i=0; i<N; i++) {
+              if (counts[i] < 4096) {
+                for (int j=0; j<5; j++) BVH4Rotate::rotate(bvh,node->child(i)); 
+                node->child(i).setBarrier();
+              }
+            }
+          }
+#endif
+	  return n;
+	};
+
         /* verbose mode */
         if (g_verbose >= 1)
 	  std::cout << "building BVH4<" << bvh->primTy.name << "> with " << TOSTRING(isa) "::BVH4BuilderBinnedSAH " << (presplitFactor != 1.0f ? "presplit" : "") << " ... " << std::flush;
 
 	double t0 = 0.0f, dt = 0.0f;
-	profile(2,20,numPrimitives,[&] (ProfileTimer& timer) {
+	//profile(2,20,numPrimitives,[&] (ProfileTimer& timer) {
 	    
 	    if (g_verbose >= 1) t0 = getSeconds();
 	    
@@ -134,16 +158,21 @@ namespace embree
             if (presplitFactor > 1.0f)
               pinfo = presplit<Mesh>(scene, pinfo, prims);
 
-	    BVH4::NodeRef root = bvh_builder_binned_sah_internal<BVH4::NodeRef>
-	      (CreateAlloc(bvh),CreateBVH4Node(bvh),CreateLeaf<Primitive>(bvh,prims.data()),
+	    BVH4::NodeRef root = bvh_builder_reduce_binned_sah_internal<BVH4::NodeRef>
+	      (CreateAlloc(bvh),size_t(0),CreateBVH4Node(bvh),rotate,CreateLeaf<Primitive>(bvh,prims.data()),
 	       prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,sahBlockSize,minLeafSize,maxLeafSize);
 	    bvh->set(root,pinfo.geomBounds,pinfo.size());
             
-            timer("bvh4_builder_binned_sah");
+
+#if ROTATE_TREE
+            for (int i=0; i<5; i++) BVH4Rotate::rotate(bvh,bvh->root);
+            bvh->clearBarrier(bvh->root);
+#endif
+            //timer("bvh4_builder_binned_sah");
 
 	    if (g_verbose >= 1) dt = getSeconds()-t0;
 	    
-            });
+            //});
 
 	/* clear temporary data for static geometry */
 	bool staticGeom = mesh ? mesh->isStatic() : scene->isStatic();

@@ -61,8 +61,6 @@ namespace embree
       BVH4* bvh;
     };
 
-    //BVH4::NodeRef lastLeaf;
-
     template<typename Primitive>
     struct CreateLeaf
     {
@@ -77,7 +75,6 @@ namespace embree
         for (size_t i=0; i<items; i++) {
           accel[i].fill(prims,start,current.prims.end(),bvh->scene,false);
         }
-        //lastLeaf = node;
         *current.parent = node;
 	return 1;
       }
