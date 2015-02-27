@@ -894,36 +894,9 @@ PRINT(CORRECT_numPrims);
     
     DBG_CACHE_BUILDER(DBG_PRINT(fastUpdateMode));
 
-#if 0
-    if (fastUpdateMode)
-      {
-	scene->lockstep_scheduler.dispatchTask( task_deleteLazySubTrees, this, threadIndex, threadCount );	
-      }
-#endif
-
     BVH4iBuilder::build(threadIndex,threadCount);
   }
 
-  void BVH4iBuilderSubdivMesh::deleteLazySubTrees(const size_t threadID, const size_t numThreads) 
-  {
-    const size_t numFaces  = numPrimitives;
-    const size_t startID   = (threadID+0)*numFaces/numThreads;
-    const size_t endID     = (threadID+1)*numFaces/numThreads; 
-
-    SubdivPatch1 *subdiv_patches = (SubdivPatch1*)accel;
-    assert( subdiv_patches );
-    assert( numFaces );
-
-    for (size_t i=startID;i<endID;i++)
-      if (subdiv_patches[i].ptr)
-	{
-	  //std::cout << threadID << " -> " << i << " -> " << subdiv_patches[i].ptr << std::endl;
-
-	  _mm_free((void*)subdiv_patches[i].ptr);
-	  subdiv_patches[i].ptr = NULL;
-	}
-
-  }
 
   void BVH4iBuilderSubdivMesh::allocateData(const size_t threadCount, const size_t totalNumPrimitives)
   {

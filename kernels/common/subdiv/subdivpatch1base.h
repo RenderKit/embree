@@ -662,57 +662,6 @@ namespace embree
       return grid_u_res*y+x;
     }
 
-    __forceinline void reset_ptr() { ptr = 0; }
-
-   __forceinline void read_lock()    { mutex.read_lock();   }
-   __forceinline void read_unlock()  { mutex.read_unlock(); }
-   __forceinline void write_lock()   { mutex.write_lock();   }
-   __forceinline void write_unlock() { mutex.write_unlock(); }
-   __forceinline void upgrade_write_to_read_lock() { mutex.upgrade_write_to_read_lock(); }
-   __forceinline void upgrade_read_to_write_lock() { mutex.upgrade_read_to_write_lock(); }
-   __forceinline bool try_read_lock()  { return mutex.try_read_lock();   }
-   __forceinline bool try_write_lock() { return mutex.try_write_lock();  }
-
-   __forceinline size_t waitIfBlocked()
-   {
-     if (*(volatile size_t*)&ptr)
-       {
-	 while(*(volatile size_t*)&ptr == 1)
-#if defined(__MIC__)
-	   _mm_delay_32(256);
-#else
-	 _mm_pause();
-#endif	      
-	 return *(volatile size_t*)&ptr;
-       }
-
-     size_t old = atomic_cmpxchg((volatile int64*)&ptr,(int64)0,(int64)1);
-
-     if (old == 0) 
-       return 0;
-     else if (old == 1)
-       {
-	 while(*(volatile size_t*)&ptr == 1)
-#if defined(__MIC__)
-	   _mm_delay_32(256);
-#else
-	 _mm_pause();
-#endif	      
-       }
-     return (size_t)ptr;
-   }
-
-   __forceinline bool isBlocked()
-   {
-     if ((size_t)ptr > 0) return true;
-
-     size_t old = atomic_cmpxchg((volatile int64*)&ptr,(int64)0,(int64)1);
-
-     if (old == 0) 
-       return false;
-
-     return true;
-   }
 
   private:
 
@@ -758,8 +707,8 @@ namespace embree
     unsigned short grid_size_simd_blocks;
     unsigned short grid_subtree_size_64b_blocks;
 
-    RWMutex mutex;
-    volatile void  *ptr;
+    unsigned int dumm2;
+    size_t dummy;
 
     __aligned(64) BSplinePatch patch;
   };
