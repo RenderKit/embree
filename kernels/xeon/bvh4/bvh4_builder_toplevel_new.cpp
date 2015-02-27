@@ -140,6 +140,12 @@ namespace embree
       /* otherwise build toplevel hierarchy */
       else
       {
+        //for (size_t i=0; i<prims.size(); i++) {
+        //  if (prims[i].bounds().upper.x > 1E10) {
+        //    PRINT2(i,prims[i]);
+        //  }
+        //}
+
         BVH4::NodeRef root = bvh_builder_binned_sah_internal<BVH4::NodeRef>
           ([&] { return bvh->alloc2.threadLocal2(); },
            [&] (const isa::BuildRecord<BVH4::NodeRef>& current, BuildRecord<BVH4::NodeRef>** children, const size_t N, FastAllocator::ThreadLocal2* alloc) 

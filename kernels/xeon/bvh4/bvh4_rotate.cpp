@@ -36,10 +36,10 @@ namespace embree
       
       /*! rotate all children first */
       ssei cdepth;
-      for (size_t c=0; c<4; c++)
+      for (size_t c=0; c<BVH4::N; c++)
 	cdepth[c] = (int)rotate(bvh,parent->child(c),depth+1);
       
-      /* compute current area of all children */
+      /* compute current areas of all children */
       ssef sizeX = parent->upper_x-parent->lower_x;
       ssef sizeY = parent->upper_y-parent->lower_y;
       ssef sizeZ = parent->upper_z-parent->lower_z;
@@ -54,7 +54,7 @@ namespace embree
 	and child2child. We perform the best such swap. */
       float bestArea = 0;
       int bestChild1 = -1, bestChild2 = -1, bestChild2Child = -1;
-      for (size_t c2=0; c2<4; c2++)
+      for (size_t c2=0; c2<BVH4::N; c2++)
       {
 	/*! ignore leaf nodes as we cannot descent into them */
 	if (parent->child(c2).isBarrier()) continue;
@@ -109,7 +109,7 @@ namespace embree
 	if (none(valid)) continue;
 	size_t c1 = select_min(valid,area0123);
 	float area = area0123[c1]; 
-	assert(c1 != c2);
+        if (c1 == c2) continue; // can happen if bounds are NANs
 	
 	/*! accept a swap when it reduces cost and is not swapping a node with itself */
 	if (area < bestArea) {

@@ -525,7 +525,7 @@ namespace embree
                   for (size_t i=r.begin(); i<r.end(); i++) bounds.extend(center2(mesh->bounds(i)));
                   return bounds;
                 }, [] (const BBox3fa& a, const BBox3fa& b) { return merge(a,b); });
-            
+           
             //timer("compute_bounds");
 
             /* compute morton codes */

@@ -2859,6 +2859,8 @@ namespace embree
 
     /* perform tests */
     rtcInit(g_rtcore.c_str());
+    //POSITIVE("regression_dynamic",        rtcore_regression(rtcore_regression_dynamic_thread,false));
+    //exit(1);
 
     POSITIVE("mutex_sys",                 test_mutex_sys());
 #if !defined(__MIC__)  // FIXME: hangs on MIC 
