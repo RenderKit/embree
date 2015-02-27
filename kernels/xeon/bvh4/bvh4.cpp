@@ -722,7 +722,11 @@ namespace embree
   { 
     BVH4* accel = new BVH4(Bezier1vType::type,scene,LeafMode);
     Accel::Intersectors intersectors = BVH4Bezier1vIntersectors(accel);
+#if defined(TASKING_TBB) || defined(TASKING_TBB_INTERNAL)
+    Builder* builder = BVH4Bezier1vSceneBuilderBinnedSAH(accel,scene,LeafMode);
+#else
     Builder* builder = BVH4Bezier1vBuilderFast(accel,scene,LeafMode);
+#endif
     return new AccelInstance(accel,builder,intersectors);
   }
 
@@ -730,7 +734,11 @@ namespace embree
   { 
     BVH4* accel = new BVH4(SceneBezier1i::type,scene,LeafMode);
     Accel::Intersectors intersectors = BVH4Bezier1iIntersectors(accel);
+#if defined(TASKING_TBB) || defined(TASKING_TBB_INTERNAL)
+    Builder* builder = BVH4Bezier1iSceneBuilderBinnedSAH(accel,scene,LeafMode);
+#else
     Builder* builder = BVH4Bezier1iBuilderFast(accel,scene,LeafMode);
+#endif
     scene->needVertices = true;
     return new AccelInstance(accel,builder,intersectors);
   }
