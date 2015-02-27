@@ -38,7 +38,8 @@ namespace embree
         {
           num = min(BINS,size_t(4.0f + 0.05f*pinfo.size()));
           const ssef diag = (ssef) pinfo.centBounds.size();
-          scale = select(diag > ssef(1E-19f),rcp(diag) * ssef(0.99f*num),ssef(0.0f));
+          //scale = select(diag > ssef(1E-19f),rcp(diag) * ssef(0.99f*num),ssef(0.0f));
+          scale = select(diag > ssef(zero),ssef(0.99f*num)/diag,ssef(0.0f));
           ofs  = (ssef) pinfo.centBounds.lower;
         }
         
