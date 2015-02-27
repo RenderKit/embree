@@ -163,6 +163,8 @@ void build_morton(std::vector<PrimRef>& prims, isa::PrimInfo& pinfo)
         return allocator.threadLocal(); 
       },
 
+      BBox3fa(empty),
+
       /* lambda function that allocates BVH nodes */
       [&] ( isa::MortonBuildRecord<Node*>& current, isa::MortonBuildRecord<Node*>* children, size_t N, FastAllocator::ThreadLocal* alloc ) -> InnerNode*
       {

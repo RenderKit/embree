@@ -144,7 +144,7 @@ namespace embree
       ssei ax, ay, az, ai;
     };
     
-    template<typename NodeRef, typename Allocator, typename CreateAllocator, typename AllocNodeFunc, typename SetNodeBoundsFunc, typename CreateLeafFunc, typename CalculateBounds>
+    template<typename NodeRef, typename ReductionTy, typename Allocator, typename CreateAllocator, typename AllocNodeFunc, typename SetNodeBoundsFunc, typename CreateLeafFunc, typename CalculateBounds>
       class BVHBuilderCenter
     {
       ALIGNED_CLASS;
@@ -155,9 +155,10 @@ namespace embree
       
     public:
       
-      BVHBuilderCenter (CreateAllocator& createAllocator, AllocNodeFunc& allocNode, SetNodeBoundsFunc& setBounds, CreateLeafFunc& createLeaf, CalculateBounds& calculateBounds,
-                                const size_t branchingFactor, const size_t maxDepth, const size_t minLeafSize, const size_t maxLeafSize)
-        : createAllocator(createAllocator), allocNode(allocNode), setBounds(setBounds), createLeaf(createLeaf), calculateBounds(calculateBounds),
+      BVHBuilderCenter (const ReductionTy& identity, 
+                        CreateAllocator& createAllocator, AllocNodeFunc& allocNode, SetNodeBoundsFunc& setBounds, CreateLeafFunc& createLeaf, CalculateBounds& calculateBounds,
+                        const size_t branchingFactor, const size_t maxDepth, const size_t minLeafSize, const size_t maxLeafSize)
+        : identity(identity), createAllocator(createAllocator), allocNode(allocNode), setBounds(setBounds), createLeaf(createLeaf), calculateBounds(calculateBounds),
           branchingFactor(branchingFactor), maxDepth(maxDepth), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize), 
           morton(NULL) {}
       
@@ -409,6 +410,7 @@ namespace embree
       const size_t maxLeafSize;
       
     public:
+      ReductionTy identity;
       CreateAllocator& createAllocator;
       AllocNodeFunc& allocNode;
       SetNodeBoundsFunc& setBounds;
@@ -417,20 +419,24 @@ namespace embree
     };
 
     
-    template<typename NodeRef, typename CreateAllocFunc, typename AllocNodeFunc, typename SetBoundsFunc, typename CreateLeafFunc, typename CalculateBoundsFunc>
-      std::pair<NodeRef,BBox3fa> bvh_builder_center_internal(CreateAllocFunc createAllocator, AllocNodeFunc allocNode, SetBoundsFunc setBounds, CreateLeafFunc createLeaf, CalculateBoundsFunc calculateBounds,
-                                       MortonID32Bit* src, MortonID32Bit* tmp, size_t numPrimitives,
-                                       const size_t branchingFactor, const size_t maxDepth, const size_t minLeafSize, const size_t maxLeafSize)
+    template<typename NodeRef, typename CreateAllocFunc, typename ReductionTy, typename AllocNodeFunc, typename SetBoundsFunc, typename CreateLeafFunc, typename CalculateBoundsFunc>
+      std::pair<NodeRef,BBox3fa> bvh_builder_center_internal(CreateAllocFunc createAllocator, 
+                                                             const ReductionTy& identity, 
+                                                             AllocNodeFunc allocNode, SetBoundsFunc setBounds, CreateLeafFunc createLeaf, CalculateBoundsFunc calculateBounds,
+                                                             MortonID32Bit* src, MortonID32Bit* tmp, size_t numPrimitives,
+                                                             const size_t branchingFactor, const size_t maxDepth, const size_t minLeafSize, const size_t maxLeafSize)
     {
-      BVHBuilderCenter<NodeRef,decltype(createAllocator()),CreateAllocFunc,AllocNodeFunc,SetBoundsFunc,CreateLeafFunc,CalculateBoundsFunc> builder
-        (createAllocator,allocNode,setBounds,createLeaf,calculateBounds,branchingFactor,maxDepth,minLeafSize,maxLeafSize);
+      BVHBuilderCenter<NodeRef,ReductionTy,decltype(createAllocator()),CreateAllocFunc,AllocNodeFunc,SetBoundsFunc,CreateLeafFunc,CalculateBoundsFunc> builder
+        (identity,createAllocator,allocNode,setBounds,createLeaf,calculateBounds,branchingFactor,maxDepth,minLeafSize,maxLeafSize);
       return builder.build(src,tmp,numPrimitives);
     }
 
-    template<typename NodeRef, typename CreateAllocFunc, typename AllocNodeFunc, typename SetBoundsFunc, typename CreateLeafFunc, typename CalculateBoundsFunc>
-      std::pair<NodeRef,BBox3fa> bvh_builder_center(CreateAllocFunc createAllocator, AllocNodeFunc allocNode, SetBoundsFunc setBounds, CreateLeafFunc createLeaf, CalculateBoundsFunc calculateBounds,
-                                       MortonID32Bit* src, MortonID32Bit* temp, size_t numPrimitives,
-                                       const size_t branchingFactor, const size_t maxDepth, const size_t minLeafSize, const size_t maxLeafSize)
+    template<typename NodeRef, typename CreateAllocFunc, typename ReductionTy, typename AllocNodeFunc, typename SetBoundsFunc, typename CreateLeafFunc, typename CalculateBoundsFunc>
+      std::pair<NodeRef,BBox3fa> bvh_builder_center(CreateAllocFunc createAllocator, 
+                                                    const ReductionTy& identity, 
+                                                    AllocNodeFunc allocNode, SetBoundsFunc setBounds, CreateLeafFunc createLeaf, CalculateBoundsFunc calculateBounds,
+                                                    MortonID32Bit* src, MortonID32Bit* temp, size_t numPrimitives,
+                                                    const size_t branchingFactor, const size_t maxDepth, const size_t minLeafSize, const size_t maxLeafSize)
     {
       std::pair<NodeRef,BBox3fa> ret;
 #if USE_TBB_INTERNAL
@@ -457,7 +463,7 @@ namespace embree
           });
 
           ret = bvh_builder_center_internal<NodeRef>(
-            createAllocator,allocNode,setBounds,createLeaf,calculateBounds,
+            createAllocator,identity,allocNode,setBounds,createLeaf,calculateBounds,
             temp,src,numPrimitives,branchingFactor,maxDepth,minLeafSize,maxLeafSize);
 
 #if USE_TBB_INTERNAL

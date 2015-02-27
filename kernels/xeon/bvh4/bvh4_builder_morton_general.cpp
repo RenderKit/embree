@@ -17,6 +17,7 @@
 #define PROFILE_MORTON_GENERAL
 
 #include "bvh4.h"
+#include "bvh4_rotate.h"
 #include "common/profile.h"
 
 #include "builders_new/bvh_builder_morton.h"
@@ -27,6 +28,8 @@
 #include "geometry/triangle1v.h"
 #include "geometry/triangle4v.h"
 #include "geometry/triangle4i.h"
+
+#define ROTATE_TREE 0
 
 namespace embree 
 {
@@ -509,6 +512,7 @@ namespace embree
             CalculateMeshBounds<Mesh> calculateBounds(mesh);
             auto node_bounds = bvh_builder_center_internal<BVH4::NodeRef>(
               [&] () { return bvh->alloc2.threadLocal2(); },
+              BBox3fa(empty),
               allocNode,setBounds,createLeaf,calculateBounds,
               dest,morton,numPrimitives,4,BVH4::maxBuildDepth,minLeafSize,maxLeafSize);
             bvh->set(node_bounds.first,node_bounds.second,numPrimitives);
@@ -648,6 +652,7 @@ namespace embree
             CalculateBounds calculateBounds(scene,encodeShift,encodeMask);
             auto node_bounds = bvh_builder_center_internal<BVH4::NodeRef>(
               [&] () { return bvh->alloc2.threadLocal2(); },
+              BBox3fa(empty),
               allocNode,setBounds,createLeaf,calculateBounds,
               dest,morton,numPrimitives,4,BVH4::maxBuildDepth,minLeafSize,maxLeafSize);
             bvh->set(node_bounds.first,node_bounds.second,numPrimitives);
