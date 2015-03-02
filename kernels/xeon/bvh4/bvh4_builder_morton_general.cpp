@@ -18,7 +18,9 @@
 #include "bvh4_rotate.h"
 #include "common/profile.h"
 #include "algorithms/parallel_prefix_sum.h"
+#include "algorithms/parallel_for_for_prefix_sum.h"
 
+#include "builders_new/primrefgen.h"
 #include "builders_new/bvh_builder_morton.h"
 
 #include "geometry/triangle1.h"
@@ -518,7 +520,7 @@ namespace embree
             size_t bytesAllocated = (numPrimitives+7)/8*sizeof(BVH4::Node) + size_t(1.2f*(numPrimitives+3)/4)*sizeof(Triangle4);
             bvh->alloc2.init(bytesAllocated,2*bytesAllocated); // FIXME: not working if scene size changes, initial block has to get reallocated as used as temporary data
 
-#if 1
+#if 0
             /* compute scene bounds */
             const BBox3fa centBounds = parallel_reduce 
               ( size_t(0), numPrimitives, BBox3fa(empty), [&](const range<size_t>& r) -> BBox3fa
@@ -542,12 +544,12 @@ namespace embree
                   }
                 });
 
-#else // FIXME: continue implementation of filtering of invalid geometry
+#else 
 
             ParallelPrefixSumState<PrimInfo> pstate;
       
             /* compute scene bounds */
-            const PrimInfo pinfo = parallel_prefix_sum( pstate, size_t(0), mesh->size(), size_t(1024), PrimInfo(empty), [&](const range<size_t>& r, const PrimInfo& base) -> PrimInfo
+            PrimInfo pinfo = parallel_prefix_sum( pstate, size_t(0), mesh->size(), size_t(1024), PrimInfo(empty), [&](const range<size_t>& r, const PrimInfo& base) -> PrimInfo
             {
               PrimInfo pinfo(empty);
               for (size_t j=r.begin(); j<r.end(); j++)
@@ -589,7 +591,7 @@ namespace embree
               [&] () { return bvh->alloc2.threadLocal2(); },
               BBox3fa(empty),
               allocNode,setBounds,createLeaf,calculateBounds,
-              dest,morton,numPrimitives,4,BVH4::maxBuildDepth,minLeafSize,maxLeafSize);
+              dest,morton,pinfo.size(),4,BVH4::maxBuildDepth,minLeafSize,maxLeafSize);
             bvh->set(node_bounds.first,node_bounds.second,numPrimitives);
 
 #if ROTATE_TREE
@@ -692,12 +694,14 @@ namespace embree
 
 	double t0 = 0.0f, dt = 0.0f;
 	//profile(2,20,numPrimitives,[&] (ProfileTimer& timer) {
-	    
+        
             if (g_verbose >= 1) t0 = getSeconds();
 	    
             //bvh->alloc.init(numPrimitives*sizeof(BVH4::Node),numPrimitives*sizeof(BVH4::Node));
             size_t bytesAllocated = (numPrimitives+7)/8*sizeof(BVH4::Node) + size_t(1.2f*(numPrimitives+3)/4)*sizeof(Triangle4);
             bvh->alloc2.init(bytesAllocated,2*bytesAllocated); // FIXME: not working if scene size changes, initial block has to get reallocated as used as temporary data
+
+#if 0
             
             /* compute scene bounds */
             Scene::Iterator<Mesh,1> iter1(scene);
@@ -726,6 +730,49 @@ namespace embree
             
             //timer("compute_morton_codes");
 
+#else 
+
+            Scene::Iterator<Mesh,1> iter1(scene);
+            ParallelForForPrefixSumState<PrimInfo> pstate;
+            pstate.init(iter1,size_t(1024));
+
+            /* compute scene bounds */
+            PrimInfo pinfo = parallel_for_for_prefix_sum( pstate, iter1, PrimInfo(empty), [&](Mesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
+            {
+              PrimInfo pinfo(empty);
+              for (size_t j=r.begin(); j<r.end(); j++)
+              {
+                BBox3fa bounds = empty;
+                if (!mesh->valid(j,&bounds)) continue;
+                pinfo.add(bounds);
+              }
+              return pinfo;
+            }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a,b); });
+            const BBox3fa centBounds = pinfo.centBounds;
+
+            //timer("compute_bounds");
+
+            /* compute morton codes */
+            MortonID32Bit* dest = (MortonID32Bit*) bvh->alloc2.ptr();
+            MortonCodeGenerator::MortonCodeMapping mapping(centBounds);
+            pinfo = parallel_for_for_prefix_sum( pstate, iter1, PrimInfo(empty), [&](Mesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
+            {
+              PrimInfo pinfo(empty);
+              MortonCodeGenerator generator(mapping,&dest[base.size()]);
+              for (ssize_t j=r.begin(); j<r.end(); j++)
+              {
+                BBox3fa bounds = empty;
+                if (!mesh->valid(j,&bounds)) continue;
+                pinfo.add(bounds);
+                generator(bounds,j | (mesh->id << encodeShift));
+              }
+              return pinfo;
+            }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a,b); });
+            
+            //timer("compute_morton_codes");
+            
+#endif
+
             /* create BVH */
             AllocBVH4Node allocNode;
             SetBVH4Bounds setBounds(bvh);
@@ -733,9 +780,9 @@ namespace embree
             CalculateBounds calculateBounds(scene,encodeShift,encodeMask);
             auto node_bounds = bvh_builder_center_internal<BVH4::NodeRef>(
               [&] () { return bvh->alloc2.threadLocal2(); },
-              BBox3fa(empty),
-              allocNode,setBounds,createLeaf,calculateBounds,
-              dest,morton,numPrimitives,4,BVH4::maxBuildDepth,minLeafSize,maxLeafSize);
+                BBox3fa(empty),
+                allocNode,setBounds,createLeaf,calculateBounds,
+                  dest,morton,pinfo.size(),4,BVH4::maxBuildDepth,minLeafSize,maxLeafSize);
             bvh->set(node_bounds.first,node_bounds.second,numPrimitives);
 
 #if ROTATE_TREE

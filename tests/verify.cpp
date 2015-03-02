@@ -2664,6 +2664,8 @@ namespace embree
 
     for (size_t i=0; i<task->sceneCount; i++) 
     {
+      //PRINT(task->sceneIndex*23565+i*3242);
+      //srand(30049);
       srand(task->sceneIndex*23565+i*3242);
       if (i%20 == 0) std::cout << "." << std::flush;
 
@@ -2859,8 +2861,8 @@ namespace embree
 
     /* perform tests */
     rtcInit(g_rtcore.c_str());
-    //POSITIVE("regression_dynamic",        rtcore_regression(rtcore_regression_dynamic_thread,false));
-    //exit(1);
+    POSITIVE("regression_dynamic",        rtcore_regression(rtcore_regression_dynamic_thread,false));
+    exit(1);
 
     POSITIVE("mutex_sys",                 test_mutex_sys());
 #if !defined(__MIC__)  // FIXME: hangs on MIC 

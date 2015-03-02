@@ -133,6 +133,8 @@ namespace embree
         return pinfo;
       }, [] (const PrimInfo& a, const PrimInfo& b) { return PrimInfo::merge(a,b); });
 
+      
+
       /* skip if all objects where empty */
       if (pinfo.size() == 0)
         bvh->set(BVH4::emptyNode,empty,0);
@@ -141,8 +143,8 @@ namespace embree
       else
       {
         //for (size_t i=0; i<prims.size(); i++)
-        //  PRINT2(i,prims[i]);
-       
+        //PRINT2(i,prims[i]);
+        
         BVH4::NodeRef root = bvh_builder_binned_sah_internal<BVH4::NodeRef>
           ([&] { return bvh->alloc2.threadLocal2(); },
            [&] (const isa::BuildRecord<BVH4::NodeRef>& current, BuildRecord<BVH4::NodeRef>** children, const size_t N, FastAllocator::ThreadLocal2* alloc) 
