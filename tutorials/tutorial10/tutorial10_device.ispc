@@ -25,8 +25,10 @@
 #define TILE_SIZE_X 4
 #define TILE_SIZE_Y 4
 
+//#define SPP 16
+#define SPP 1
 
-#define FORCE_FIXED_EDGE_TESSELLATION
+//#define FORCE_FIXED_EDGE_TESSELLATION
 //#define FIXED_EDGE_TESSELLATION_VALUE 4
 #define FIXED_EDGE_TESSELLATION_VALUE 32
 
@@ -391,6 +393,11 @@ Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const unifo
   return color;
 }
 
+inline float frand(int& seed) {
+  seed = 7 * seed + 5;
+  return (seed & 0xFFFF)/(float)0xFFFF;
+}
+
 /* task that renders a single screen tile */
 task void renderTile(uniform int* uniform pixels,
                      const uniform int width,
@@ -409,7 +416,9 @@ task void renderTile(uniform int* uniform pixels,
   const uniform int x1 = min(x0+TILE_SIZE_X,width);
   const uniform int y0 = tileY * TILE_SIZE_Y;
   const uniform int y1 = min(y0+TILE_SIZE_Y,height);
+  
 
+  if (SPP == 1)
   foreach_tiled (y = y0 ... y1, x = x0 ... x1)
   {
     /* calculate pixel color */
@@ -421,6 +430,29 @@ task void renderTile(uniform int* uniform pixels,
     unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
     pixels[y*width+x] = (b << 16) + (g << 8) + r;
   }
+ else
+  foreach_tiled (y = y0 ... y1, x = x0 ... x1)
+  {
+    /* calculate pixel color */
+  int seed = 21344*x+121233*y+234532;
+  float time = frand(seed);
+  Vec3f color = make_Vec3f(0.0f,0.0f,0.0f);
+  
+  for (uniform int i=0;i<SPP;i++)
+       {
+        const float sx = x + frand(seed);
+        const float sy = y + frand(seed);
+	color = color + renderPixel(sx,sy,vx,vy,vz,p);
+       }
+     color = color / (uniform float)SPP; 
+
+    /* write color to framebuffer */
+    unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
+    unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
+    unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
+    pixels[y*width+x] = (b << 16) + (g << 8) + r;
+  }
+
 }
 
 #if defined(PARALLEL_COMMIT)
