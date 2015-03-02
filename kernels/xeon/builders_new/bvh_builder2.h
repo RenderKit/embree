@@ -202,7 +202,7 @@ namespace embree
           {
             float dSAH = children[i].split.splitSAH()-children[i].pinfo.leafSAH(logBlockSize);
             if (children[i].pinfo.size() <= minLeafSize) continue; 
-            if (children[i].pinfo.size() > maxLeafSize) dSAH = min(0.0f,dSAH); //< force split for large jobs
+            if (children[i].pinfo.size() > maxLeafSize) dSAH = min(dSAH,0.0f); //< force split for large jobs
             if (dSAH <= bestSAH) { bestChild = i; bestSAH = dSAH; }
             //if (area(children[i].pinfo.geomBounds) > bestSAH) { bestChild = i; bestSAH = area(children[i].pinfo.geomBounds); } // FIXME: measure over all scenes if this line creates better tree
           }
@@ -245,8 +245,9 @@ namespace embree
 	/* recurse into each child */
 	else 
 	{
-	  for (size_t i=0; i<numChildren; i++)
+	  for (size_t i=0; i<numChildren; i++) {
 	    values[i] = recurse(children[i],alloc);
+          }
 	  
 	  /* perform reduction */
 	  return updateNode(node,values,numChildren);
