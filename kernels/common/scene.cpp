@@ -34,7 +34,7 @@ namespace embree
       numSubdivPatches(0), numSubdivPatches2(0), 
       numUserGeometries1(0), 
       numIntersectionFilters4(0), numIntersectionFilters8(0), numIntersectionFilters16(0),
-      commitCounter(0)
+      commitCounter(0), scheduler(NULL)
   {
 #if !defined(__MIC__)
     lockstep_scheduler.taskBarrier.init(TaskScheduler::getNumThreads());
@@ -340,9 +340,17 @@ namespace embree
 #endif
 
 #if TASKING_TBB_INTERNAL
-    if (threadCount != 0) {
-      process_error(RTC_INVALID_OPERATION,"TBB_INTERNAL does not support rtcCommitThread");
-      return;
+    if (threadCount != 0) 
+    {
+      {
+        Lock<MutexSys> lock(mutex);
+        if (scheduler == NULL) scheduler = new TaskSchedulerNew(-1);
+      }
+      if (threadIndex > 0) {
+        scheduler->join();
+        return;
+      } else
+        scheduler->wait_for_threads(threadCount);
     }
 #endif
 
@@ -395,7 +403,10 @@ namespace embree
 #endif
 
 #if TASKING_TBB_INTERNAL
-    TaskSchedulerNew::g_instance->spawn_root([&]() { accels.build(0,0); });
+    if (threadCount)
+      scheduler->spawn_root([&]() { accels.build(0,0); });
+    else
+      TaskSchedulerNew::g_instance->spawn_root([&]() { accels.build(0,0); });
 #endif
 
     /* make static geometry immutable */
@@ -446,6 +457,12 @@ namespace embree
     
     /* update commit counter */
     commitCounter++;
+
+#if TASKING_TBB_INTERNAL
+    if (threadCount != 0) {
+      delete scheduler; scheduler = NULL;
+    }
+#endif
   }
 
   void Scene::write(std::ofstream& file)

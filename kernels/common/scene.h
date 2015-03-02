@@ -217,6 +217,8 @@ namespace embree
     /*! global lock step task scheduler */
     __aligned(64) LockStepTaskScheduler lockstep_scheduler;
 
+    TaskSchedulerNew* volatile scheduler;
+
   public:
     atomic_t numTriangles;             //!< number of enabled triangles
     atomic_t numTriangles2;            //!< number of enabled motion blur triangles

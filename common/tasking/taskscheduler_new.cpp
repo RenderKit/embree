@@ -79,11 +79,21 @@ namespace embree
 
   void TaskSchedulerNew::terminateThreadLoop()
   {
+    /* decrement threadCount again */
+    atomic_add(&threadCounter,-1);
+
     /* signal threads to terminate */
     mutex.lock();
     terminate = true;
     mutex.unlock();
     condition.notify_all();
+
+    /* wait for all threads to terminate */
+    if (threads.size())
+      while (threadCounter > 0)
+        yield();
+
+    threadLocal[0] = NULL;
   }
 
   void TaskSchedulerNew::destroyThreads() 
@@ -155,7 +165,7 @@ namespace embree
     atomic_add(&threadCounter,-1);
 
     /* wait for all threads to terminate */
-    while (threadCounter > 1)
+    while (threadCounter > 0)
       yield();
 
     threadLocal[threadIndex] = NULL;

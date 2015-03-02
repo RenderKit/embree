@@ -2543,11 +2543,11 @@ namespace embree
 	{
 	  rtcCommitThread(task->scene,thread->threadIndex,task->numActiveThreads);
 	  CountErrors();
-	  
+          
 	  for (size_t i=0; i<100; i++)
-	    shootRays(task->scene);
+            shootRays(task->scene);
 	}
-	task->barrier.wait();
+        task->barrier.wait();
       }
       delete thread; thread = NULL;
       return;
@@ -2613,8 +2613,9 @@ namespace embree
       }
       CountErrors();
 
-      for (size_t i=0; i<100; i++)
+      for (size_t i=0; i<100; i++) {
         shootRays(task->scene);
+      }
 
       if (thread->threadCount) 
 	task->barrier.wait();
@@ -2664,8 +2665,6 @@ namespace embree
 
     for (size_t i=0; i<task->sceneCount; i++) 
     {
-      //PRINT(task->sceneIndex*23565+i*3242);
-      //srand(30049);
       srand(task->sceneIndex*23565+i*3242);
       if (i%20 == 0) std::cout << "." << std::flush;
 
@@ -2861,7 +2860,7 @@ namespace embree
 
     /* perform tests */
     rtcInit(g_rtcore.c_str());
-    //POSITIVE("regression_static",         rtcore_regression(rtcore_regression_static_thread,false));
+    //POSITIVE("regression_static",         rtcore_regression(rtcore_regression_static_thread,true));
     //POSITIVE("regression_dynamic",        rtcore_regression(rtcore_regression_dynamic_thread,false));
     //exit(1);
 
