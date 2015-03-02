@@ -81,7 +81,7 @@ namespace embree
     struct SubdivMesh 
     {
       vector_t<Vec3fa> positions;            //!< vertex positions
-	  vector_t<Vec3fa> normals;              //!< face vertex normals
+      vector_t<Vec3fa> normals;              //!< face vertex normals
       std::vector<Vec2f> texcoords;             //!< face texture coordinates
       std::vector<int> position_indices;        //!< position indices for all faces
       std::vector<int> normal_indices;          //!< normal indices for all faces

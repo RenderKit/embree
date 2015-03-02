@@ -19,9 +19,9 @@
 
 
 
-//#define FORCE_FIXED_EDGE_TESSELLATION
+#define FORCE_FIXED_EDGE_TESSELLATION
 //#define FIXED_EDGE_TESSELLATION_VALUE 4
-#define FIXED_EDGE_TESSELLATION_VALUE 32
+#define FIXED_EDGE_TESSELLATION_VALUE 64
 
 #define MAX_EDGE_LEVEL 64.0f
 #define MIN_EDGE_LEVEL 2.0f
@@ -218,6 +218,10 @@ void convertScene(ISPCScene* scene_in, const Vec3fa& p)
 
     rtcSetBuffer(g_scene, geomID, RTC_VERTEX_BUFFER, mesh->positions, 0, sizeof(Vec3fa  ));
     rtcSetBuffer(g_scene, geomID, RTC_LEVEL_BUFFER,  mesh->subdivlevel, 0, sizeof(float));
+
+    for (size_t i=0; i<mesh->numEdges; i++) 
+      mesh->subdivlevel[i] = FIXED_EDGE_TESSELLATION_VALUE;
+
     rtcSetBuffer(g_scene, geomID, RTC_INDEX_BUFFER,  mesh->position_indices  , 0, sizeof(unsigned int));
     rtcSetBuffer(g_scene, geomID, RTC_FACE_BUFFER,   mesh->verticesPerFace, 0, sizeof(unsigned int));
     rtcSetBuffer(g_scene, geomID, RTC_HOLE_BUFFER,   mesh->holes, 0, sizeof(unsigned int));

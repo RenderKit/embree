@@ -147,6 +147,90 @@ namespace embree
     cleanup();
   }
 
+
+  void addSubdivSphere (OBJScene &scene, const Vec3fa& pos)
+  {
+    OBJScene::SubdivMesh *subdiv_mesh = new OBJScene::SubdivMesh;
+    scene.subdiv.push_back(subdiv_mesh);
+
+    const float r = 4.0f;
+    size_t numPhi = 400;
+
+    size_t numTheta = 2*numPhi;
+    subdiv_mesh->positions.resize( numTheta*(numPhi+1) );
+
+    //vector_t<Vec3fa> vertices(numTheta*(numPhi+1));
+    //std::vector<int> indices;
+    //std::vector<int> faces;
+    //std::vector<int> offsets;
+    
+    /* create sphere geometry */
+    const float rcpNumTheta = rcp((float)numTheta);
+    const float rcpNumPhi   = rcp((float)numPhi);
+    for (int phi=0; phi<=numPhi; phi++)
+    {
+      for (int theta=0; theta<numTheta; theta++)
+      {
+	const float phif   = phi*float(pi)*rcpNumPhi;
+	const float thetaf = theta*2.0f*float(pi)*rcpNumTheta;
+	Vec3fa& v = subdiv_mesh->positions[phi*numTheta+theta];
+	Vec3fa P(pos.x + r*sin(phif)*sin(thetaf),
+		 pos.y + r*cos(phif),
+		 pos.z + r*sin(phif)*cos(thetaf));
+	v.x = P.x;
+	v.y = P.y;
+	v.z = P.z;
+      }
+      if (phi == 0) continue;
+      
+      if (phi == 1)
+      {
+	// for (int theta=1; theta<=numTheta; theta++) 
+	// {
+	//   int p00 = numTheta-1;
+	//   int p10 = phi*numTheta+theta-1;
+	//   int p11 = phi*numTheta+theta%numTheta;
+	//   offsets.push_back(indices.size());
+	//   indices.push_back(p10); 
+	//   indices.push_back(p00);
+	//   indices.push_back(p11);
+	//   faces.push_back(3);
+	// }
+      }
+      else if (phi == numPhi)
+      {
+	// for (int theta=1; theta<=numTheta; theta++) 
+	// {
+	//   int p00 = (phi-1)*numTheta+theta-1;
+	//   int p01 = (phi-1)*numTheta+theta%numTheta;
+	//   int p10 = numPhi*numTheta;
+	//   offsets.push_back(indices.size());
+	//   indices.push_back(p10);
+	//   indices.push_back(p00);
+	//   indices.push_back(p01);
+	//   faces.push_back(3);
+	// }
+      }
+      else
+      {
+	for (int theta=1; theta<=numTheta; theta++) 
+	{
+	  int p00 = (phi-1)*numTheta+theta-1;
+	  int p01 = (phi-1)*numTheta+theta%numTheta;
+	  int p10 = phi*numTheta+theta-1;
+	  int p11 = phi*numTheta+theta%numTheta;
+	  //subdiv_mesh->offsets.push_back(indices.size());
+	  subdiv_mesh->position_indices.push_back(p10);
+	  subdiv_mesh->position_indices.push_back(p00);
+	  subdiv_mesh->position_indices.push_back(p01);
+	  subdiv_mesh->position_indices.push_back(p11);
+	  subdiv_mesh->verticesPerFace.push_back(4);
+	}
+      }
+    }
+    
+  }
+
   void main(int argc, char **argv) 
   {
 #if defined(__USE_OPENSUBDIV__)
@@ -168,8 +252,12 @@ namespace embree
       //loadOBJ(filename,one,g_obj_scene,false);
     else if (strlwr(filename.ext()) == std::string("xml"))
       loadXML(filename,one,g_obj_scene);
-    else if (filename.ext() != "")
-      THROW_RUNTIME_ERROR("invalid scene type: "+strlwr(filename.ext()));
+    else 
+      {
+	std::cout << "generating test sphere...." << std::endl;
+	addSubdivSphere(g_obj_scene,g_camera.from);
+	//THROW_RUNTIME_ERROR("invalid scene type: "+strlwr(filename.ext()));
+      }
 
     /*! Initialize Embree state. */
     init(g_rtcore.c_str());
