@@ -2873,7 +2873,6 @@ namespace embree
 #endif
 
 
-#if 1
     POSITIVE("empty_static",              rtcore_empty(RTC_SCENE_STATIC));
     POSITIVE("empty_dynamic",             rtcore_empty(RTC_SCENE_DYNAMIC));
     POSITIVE("flags_static_static",       rtcore_dynamic_flag(RTC_SCENE_STATIC, RTC_GEOMETRY_STATIC));
@@ -2890,7 +2889,6 @@ namespace embree
     POSITIVE("buffer_stride",             rtcore_buffer_stride());
 #endif
 
-
     POSITIVE("dynamic_enable_disable",    rtcore_dynamic_enable_disable());
     POSITIVE("get_user_data"         ,    rtcore_get_user_data());
 
@@ -2899,8 +2897,6 @@ namespace embree
     POSITIVE("overlapping_triangles",     rtcore_overlapping_triangles(100000));
     POSITIVE("overlapping_hair",          rtcore_overlapping_hair(100000));
     POSITIVE("new_delete_geometry",       rtcore_new_delete_geometry());
-
-#endif
 
     rtcore_build();
 

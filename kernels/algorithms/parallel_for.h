@@ -75,13 +75,15 @@ namespace embree
   template<typename Index, typename Func>
     __forceinline void sequential_for( const Index first, const Index last, const Func& func) 
   {
+    assert(first <= last);
     func(range<Index>(first,last));
   }
-
+ 
   /* sequential for with range optimization and minimal granularity per thread */
   template<typename Index, typename Func>
     __forceinline void sequential_for( const Index first, const Index last, const Index minStepSize, const Func& func)
   {
+    assert(first <= last);
     func(range<Index>(first,last));
   }
 
@@ -89,6 +91,7 @@ namespace embree
   template<typename Index, typename Func>
     __forceinline void parallel_for( const Index first, const Index last, const Index minStepSize, const Func& func)
   {
+    assert(first <= last);
 #if TASKING_LOCKSTEP
     size_t taskCount = (last-first+minStepSize-1)/minStepSize;
     if (taskCount > 1) taskCount = min(taskCount,LockStepTaskScheduler::instance()->getNumThreads());
@@ -116,6 +119,7 @@ namespace embree
   template<typename Index, typename Func>
     __forceinline void parallel_for( const Index first, const Index last, const Func& func)
   {
+    assert(first <= last);
     parallel_for(first,last,(Index)1,func);
   }
 }

@@ -35,12 +35,14 @@ namespace embree
     {
       /* delete some objects */
       size_t N = scene->size();
-      parallel_for(N, objects.size(), [&] (const range<size_t>& r) {
-        for (size_t i=r.begin(); i<r.end(); i++) {
-          delete builders[i]; builders[i] = NULL;
-          delete objects[i]; objects[i] = NULL;
-        }
-      });
+      if (N < objects.size()) {
+        parallel_for(N, objects.size(), [&] (const range<size_t>& r) {
+            for (size_t i=r.begin(); i<r.end(); i++) {
+              delete builders[i]; builders[i] = NULL;
+              delete objects[i]; objects[i] = NULL;
+            }
+          });
+      }
 
       /* skip build for empty scene */
       const size_t numPrimitives = scene->getNumPrimitives<TriangleMesh,1>();

@@ -19,7 +19,7 @@
 #include "sys/sysinfo.h"
 #include <algorithm>
 
-#define SORTED_STEALING 1
+#define SORTED_STEALING 0
 
 namespace embree
 {
