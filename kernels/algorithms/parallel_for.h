@@ -63,11 +63,13 @@ namespace embree
 #endif
 
 #if TASKING_TBB_INTERNAL
-    TaskSchedulerNew::instance()->spawn(Index(0),N,Index(1),[&] (const range<Index>& r) {
-	assert(r.size() == 1);
-	func(r.begin());
-    });
-    TaskSchedulerNew::instance()->wait();
+    if (N) {
+      TaskSchedulerNew::instance()->spawn(Index(0),N,Index(1),[&] (const range<Index>& r) {
+          assert(r.size() == 1);
+          func(r.begin());
+        });
+      TaskSchedulerNew::instance()->wait();
+    }
 #endif
   }
 

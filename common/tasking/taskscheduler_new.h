@@ -284,7 +284,7 @@ namespace embree
     template<typename Closure>
     __forceinline void spawn(const size_t begin, const size_t end, const size_t blockSize, const Closure& closure) 
     {
-      spawn(begin-end, [=,&closure]() {
+      spawn(end-begin, [=,&closure]() {
 	  if (end-begin <= blockSize) {
 	    return closure(range<size_t>(begin,end));
 	  }
