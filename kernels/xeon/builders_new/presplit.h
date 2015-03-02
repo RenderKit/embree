@@ -127,8 +127,8 @@ namespace embree
           }
           return N;
         },std::plus<size_t>());
-      } while (N>prims.size());
-      assert(N <= prims.size());
+      } while (pinfo.size()+N > prims.size());
+      assert(pinfo.size()+N <= prims.size());
 
       /* split all primitives */
       parallel_prefix_sum (state, size_t(0), pinfo.size(), size_t(1024), size_t(0), [&] (const range<size_t>& r, size_t ofs) 

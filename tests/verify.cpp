@@ -2862,8 +2862,8 @@ namespace embree
     rtcInit(g_rtcore.c_str());
     //POSITIVE("regression_static",         rtcore_regression(rtcore_regression_static_thread,true));
     //POSITIVE("regression_dynamic",        rtcore_regression(rtcore_regression_dynamic_thread,false));
-    //POSITIVE("regression_garbage_geom",   rtcore_regression_garbage());
-    //exit(1);
+    POSITIVE("regression_garbage_geom",   rtcore_regression_garbage());
+    exit(1);
 
     POSITIVE("mutex_sys",                 test_mutex_sys());
 #if !defined(__MIC__)  // FIXME: hangs on MIC 
