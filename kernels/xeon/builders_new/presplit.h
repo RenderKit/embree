@@ -114,7 +114,7 @@ namespace embree
        * array */
       ParallelPrefixSumState<size_t> state;
       float f = float(prims.size())/float(pinfo.size())/0.9f;
-      size_t N = 0;
+      size_t N = 0, iter = 0;
       do {
         f *= 0.9f;
         N = pinfo.size() + parallel_prefix_sum (state, size_t(0), pinfo.size(), size_t(1024), size_t(0), [&] (const range<size_t>& r, const size_t sum) 
@@ -127,6 +127,9 @@ namespace embree
           }
           return N;
         },std::plus<size_t>());
+        if (iter++ == 10) // to avoid infinite loop, e.g. for pinfo.size()==1 and prims.size()==1
+          return pinfo;
+
       } while (pinfo.size()+N > prims.size());
       assert(pinfo.size()+N <= prims.size());
 
