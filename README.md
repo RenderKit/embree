@@ -91,7 +91,7 @@ is too old then you can run the provided script
 `scripts/install_linux_gcc.sh` to locally install a recent GCC into
 `$HOME/devtools-2`. We recommend to install the Intel® SPMD Program
 Compiler (ISPC). If you do not want to use ISPC, simply disable
-ENABLE_ISPC_SUPPORT in cmake. Otherwise, download and install the ISPC
+`ENABLE_ISPC_SUPPORT` in CMake. Otherwise, download and install the ISPC
 binaries (we have tested ISPC version 1.8.0) from
 [ispc.github.io](https://ispc.github.io/downloads.html). After
 installation, either put the path to the `ispc` executable permanently
@@ -102,7 +102,7 @@ into your `PATH`:
 Or provide the path to the `ispc` executable to CMake via the
 `ISPC_EXECUTABLE` variable.
 
-You additionally have to install CMake 2.8.12 or higher and the
+You additionally have to install CMake 2.8.11 or higher and the
 developer version of GLUT. Under Mac OS\ X, these dependencies can be
 installed using [MacPorts](http://www.macports.org/):
 
@@ -150,7 +150,7 @@ your `LD_LIBRARY_PATH` (and `SINK_LD_LIBRARY_PATH` in case you want to
 use Embree on Intel® Xeon Phi™ coprocessors).
 
 The default configuration in the configuration dialog should be
-appropriate for most usages. The following table described all
+appropriate for most usages. The following table describes all
 parameters that can be configured:
 
   ---------------------------- -------------------------------- --------
@@ -233,7 +233,7 @@ environment variable or you need to correctly set the
 `ISPC_EXECUTABLE` variable during CMake configuration.
 
 You additionally have to install [CMake](http://www.cmake.org/download/)
-(version 2.8.12 or higher). Note that you need a native Windows CMake
+(version 2.8.11 or higher). Note that you need a native Windows CMake
 installation, because CMake under Cygwin cannot generate solution files
 for Visual Studio.
 
@@ -710,7 +710,7 @@ The following example demonstrates how to create some hair geometry:
     // fill vertices here
     rtcUnmapBuffer(scene, geomID, RTC_VERTEX_BUFFER);
 
-    int* triangles = (int*) rtcMapBuffer(scene, geomID, RTC_INDEX_BUFFER);
+    int* curves = (int*) rtcMapBuffer(scene, geomID, RTC_INDEX_BUFFER);
     // fill indices here
     rtcUnmapBuffer(scene, geomID, RTC_INDEX_BUFFER);
 
@@ -1274,10 +1274,10 @@ c
 :   Prints camera parameters.
 
 ESC
-:   Exists the tutorial.
+:   Exits the tutorial.
 
 q
-:   Exists the tutorial.
+:   Exits the tutorial.
 
 Tutorial00
 ----------
