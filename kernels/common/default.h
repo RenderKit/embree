@@ -59,6 +59,9 @@ namespace embree
   __forceinline bool inFloatRange(const Vec3fa& v) {
     return all(gt_mask(v,Vec3fa_t(-VALID_FLOAT_RANGE)) & lt_mask(v,Vec3fa_t(+VALID_FLOAT_RANGE)));
   };
+  __forceinline bool inFloatRange(const ssef& v) {
+    return all((v > ssef(-VALID_FLOAT_RANGE)) & (v < ssef(+VALID_FLOAT_RANGE)));
+  };
   __forceinline bool inFloatRange(const BBox3fa& v) {
     return all(gt_mask(v.lower,Vec3fa_t(-VALID_FLOAT_RANGE)) & lt_mask(v.upper,Vec3fa_t(+VALID_FLOAT_RANGE)));
   };

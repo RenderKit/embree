@@ -727,7 +727,7 @@ namespace embree
   unsigned addGarbageTriangles (RTCScene scene, RTCGeometryFlags flag, size_t numTriangles, bool motion)
   {
     /* create a triangulated sphere */
-    size_t numTimeSteps = motion ? 1 : 2;
+    size_t numTimeSteps = motion ? 2 : 1;
     unsigned mesh = rtcNewTriangleMesh (scene, flag, numTriangles, 3*numTriangles,numTimeSteps);
     
     /* map triangle and vertex buffer */
@@ -756,7 +756,7 @@ namespace embree
   unsigned addGarbageHair (RTCScene scene, RTCGeometryFlags flag, size_t numCurves, bool motion)
   {
     /* create a triangulated sphere */
-    size_t numTimeSteps = motion ? 1 : 2;
+    size_t numTimeSteps = motion ? 2 : 1;
     unsigned mesh = rtcNewHairGeometry (scene, flag, numCurves, 4*numCurves,numTimeSteps);
     
     /* map triangle and vertex buffer */
@@ -2832,9 +2832,9 @@ namespace embree
 	size_t numTriangles = rand()%256;
         switch (rand()%4) {
         case 0: addGarbageTriangles(scene,RTC_GEOMETRY_STATIC,numTriangles,false); break;
-	case 1: addGarbageTriangles(scene,RTC_GEOMETRY_STATIC,numTriangles,true); break;
+        case 1: addGarbageTriangles(scene,RTC_GEOMETRY_STATIC,numTriangles,true); break;
         case 2: addGarbageHair     (scene,RTC_GEOMETRY_STATIC,numTriangles,false); break;
-	case 3: addGarbageHair     (scene,RTC_GEOMETRY_STATIC,numTriangles,true); break;
+        case 3: addGarbageHair     (scene,RTC_GEOMETRY_STATIC,numTriangles,true); break;
 	}
         AssertNoError();
       }
@@ -2862,6 +2862,7 @@ namespace embree
     rtcInit(g_rtcore.c_str());
     //POSITIVE("regression_static",         rtcore_regression(rtcore_regression_static_thread,true));
     //POSITIVE("regression_dynamic",        rtcore_regression(rtcore_regression_dynamic_thread,false));
+    //POSITIVE("regression_garbage_geom",   rtcore_regression_garbage());
     //exit(1);
 
     POSITIVE("mutex_sys",                 test_mutex_sys());
@@ -2962,15 +2963,15 @@ namespace embree
 #endif
 #endif
 
-
     POSITIVE("regression_static",         rtcore_regression(rtcore_regression_static_thread,false));
     POSITIVE("regression_dynamic",        rtcore_regression(rtcore_regression_dynamic_thread,false));
-
 
 #if !defined(__MIC__) && !defined(TASKING_TBB)
     POSITIVE("regression_static_user_threads", rtcore_regression(rtcore_regression_static_thread,true));
     POSITIVE("regression_dynamic_user_threads", rtcore_regression(rtcore_regression_dynamic_thread,true));
+#endif
 
+#if !defined(__MIC__)
     POSITIVE("regression_garbage_geom",   rtcore_regression_garbage());
 #endif
 
