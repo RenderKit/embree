@@ -16,6 +16,7 @@
 
 #include "bvh4.h"
 #include "bvh4_rotate.h"
+#include "bvh4_statistics.h"
 #include "common/profile.h"
 
 #include "builders_new/primrefgen.h"
@@ -31,6 +32,7 @@
 #include "geometry/triangle4v_mb.h"
 
 #define ROTATE_TREE 0
+#define PROFILE 0
 
 namespace embree
 {
@@ -150,9 +152,11 @@ namespace embree
 	  std::cout << "building BVH4<" << bvh->primTy.name << "> with " << TOSTRING(isa) "::BVH4BuilderBinnedSAH2 " << (presplitFactor != 1.0f ? "presplit" : "") << " ... " << std::flush;
 
 	double t0 = 0.0f, dt = 0.0f;
-	//profile(2,20,numPrimitives,[&] (ProfileTimer& timer) {
-	    
-	    if (g_verbose >= 1 && mesh == NULL) t0 = getSeconds();
+#if PROFILE
+	profile(2,20,numPrimitives,[&] (ProfileTimer& timer)
+        {
+#endif
+          if ((g_benchmark || g_verbose >= 1) && mesh == NULL) t0 = getSeconds();
 	    
 	    bvh->alloc2.init(numSplitPrimitives*sizeof(PrimRef),numSplitPrimitives*sizeof(BVH4::Node));  // FIXME: better estimate
 	    prims.resize(numSplitPrimitives);
@@ -173,11 +177,14 @@ namespace embree
             bvh->clearBarrier(bvh->root);
 #endif
 
-	    if (g_verbose >= 1 && mesh == NULL) dt = getSeconds()-t0;
+	    if ((g_benchmark || g_verbose >= 1) && mesh == NULL) dt = getSeconds()-t0;
 
             //  timer("BVH4BuilderBinnedSAH2");
-	    
-            //});
+            
+#if PROFILE
+           dt = timer.avg();
+        }); 
+#endif
 
 	/* clear temporary data for static geometry */
 	bool staticGeom = mesh ? mesh->isStatic() : scene->isStatic();
@@ -189,6 +196,12 @@ namespace embree
 	  std::cout << "[DONE] " << 1000.0f*dt << "ms (" << numPrimitives/dt*1E-6 << " Mtris/s)" << std::endl;
 	if (g_verbose >= 2 && mesh == NULL)
 	  bvh->printStatistics();
+
+        /* benchmark mode */
+        if (g_benchmark) {
+          BVH4Statistics stat(bvh);
+          std::cout << "BENCHMARK_BUILD " << dt << " " << double(numPrimitives)/dt << " " << stat.sah() << " " << stat.bytesUsed() << std::endl;
+        }
       }
     };
 

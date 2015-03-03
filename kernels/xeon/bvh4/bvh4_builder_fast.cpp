@@ -43,7 +43,7 @@
 
 #define DBG(x) 
 
-#define PROFILE 1
+#define PROFILE 0
 
 namespace embree
 {

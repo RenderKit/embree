@@ -34,7 +34,7 @@
 #include "geometry/virtual_accel.h"
 
 #define ROTATE_TREE 0
-#define PROFILE 1
+#define PROFILE 0
 
 namespace embree
 {
