@@ -18,6 +18,7 @@
 #include "bvh4_builder_fast.h"
 #include "bvh4_statistics.h"
 #include "builders/primrefgen.h"
+#include "common/profile.h"
 
 #include "geometry/bezier1v.h"
 #include "geometry/bezier1i.h"
@@ -42,7 +43,7 @@
 
 #define DBG(x) 
 
-//#define PROFILE
+#define PROFILE 0
 
 namespace embree
 {
@@ -145,10 +146,6 @@ namespace embree
     
     void BVH4BuilderFast::build(size_t threadIndex, size_t threadCount) 
     {
-      /* start measurement */
-      double t0 = 0.0f;
-      if (g_verbose >= 1) t0 = getSeconds();
-
       /* calculate size of scene */
       size_t numPrimitivesOld = numPrimitives;
       bvh->numPrimitives = numPrimitives = number_of_primitives();
@@ -175,16 +172,25 @@ namespace embree
         memset(prims,0,bytesPrims);
       }
 
-#if defined(PROFILE)
-      
-      double dt_min = pos_inf;
-      double dt_avg = 0.0f;
-      double dt_max = neg_inf;
-#define ITERATIONS 20
-      for (size_t i=0; i<ITERATIONS; i++) 
-      {
-        double t0 = getSeconds();
+//#if defined(PROFILE)
+//      double dt_min = pos_inf;
+//      double dt_avg = 0.0f;
+//      double dt_max = neg_inf;
+//#define ITERATIONS 20
+//      for (size_t i=0; i<ITERATIONS; i++) 
+//      {
+//        double t0 = getSeconds();
+//#endif
+      double dt = 0.0f;
+
+#if PROFILE
+	profile(2,20,numPrimitives,[&] (ProfileTimer& timer)
+        {
 #endif
+
+          /* start measurement */
+          double t0 = 0.0f;
+          if (g_verbose >= 1) t0 = getSeconds();
 
         if (!parallel) {
           build_sequential(threadIndex,threadCount);
@@ -197,28 +203,31 @@ namespace embree
           state.reset(NULL);
         }
 
-#if defined(PROFILE)
-        double dt = getSeconds()-t0;
-        dt_min = min(dt_min,dt);
-        dt_avg = dt_avg + dt;
-        dt_max = max(dt_max,dt);
-      }
-      dt_avg /= double(ITERATIONS);
-      
-      std::cout << "[DONE]" << std::endl;
-      std::cout << "  min = " << 1000.0f*dt_min << "ms (" << numPrimitives/dt_min*1E-6 << " Mtris/s)" << std::endl;
-      std::cout << "  avg = " << 1000.0f*dt_avg << "ms (" << numPrimitives/dt_avg*1E-6 << " Mtris/s)" << std::endl;
-      std::cout << "  max = " << 1000.0f*dt_max << "ms (" << numPrimitives/dt_max*1E-6 << " Mtris/s)" << std::endl;
-      std::cout << BVH4Statistics(bvh).str();
-#endif
+//#if defined(PROFILE)
+//        double dt = getSeconds()-t0;
+//        dt_min = min(dt_min,dt);
+//        dt_avg = dt_avg + dt;
+//        dt_max = max(dt_max,dt);
+//      }
+//      dt_avg /= double(ITERATIONS);
+//      std::cout << "[DONE]" << std::endl;
+//      std::cout << "  min = " << 1000.0f*dt_min << "ms (" << numPrimitives/dt_min*1E-6 << " Mtris/s)" << std::endl;
+//      std::cout << "  avg = " << 1000.0f*dt_avg << "ms (" << numPrimitives/dt_avg*1E-6 << " Mtris/s)" << std::endl;
+//      std::cout << "  max = " << 1000.0f*dt_max << "ms (" << numPrimitives/dt_max*1E-6 << " Mtris/s)" << std::endl;
+//      std::cout << BVH4Statistics(bvh).str();
+//#endif
       
       /* stop measurement */
-      double dt = 0.0f;
       if (g_verbose >= 1) dt = getSeconds()-t0;
+
+#if PROFILE
+      dt = timer.avg();
+      }); 
+#endif
 
       /* verbose mode */
       if (g_verbose >= 1) {
-	std::cout << "[DONE] " << 1000.0f*dt << "ms (" << numPrimitives/dt*1E-6 << " Mtris/s)" << std::endl;
+        std::cout << "[DONE] " << 1000.0f*dt << "ms (" << numPrimitives/dt*1E-6 << " Mtris/s)" << std::endl;
 	std::cout << "  bvh4::alloc : "; bvh->alloc.print_statistics();
 	std::cout << "  bvh4::alloc2: "; bvh->alloc2.print_statistics();
       }

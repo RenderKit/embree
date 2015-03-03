@@ -18,6 +18,8 @@
 #include "bvh4_builder_morton.h"
 #include "bvh4_statistics.h"
 
+#include "common/profile.h"
+
 #include "geometry/triangle1.h"
 #include "geometry/triangle4.h"
 #include "geometry/triangle8.h"
@@ -26,7 +28,7 @@
 #include "geometry/triangle4i.h"
 
 #define DBG(x) 
-//#define PROFILE
+#define PROFILE 0
 
 namespace embree 
 {
@@ -131,15 +133,15 @@ namespace embree
         morton = (MortonID32Bit* ) os_malloc(bytesMorton); memset(morton,0,bytesMorton);
       }
          
-#if defined(PROFILE)
-      
-      double dt_min = pos_inf;
-      double dt_avg = 0.0f;
-      double dt_max = neg_inf;
-      for (size_t i=0; i<20; i++) 
-      {
-        double t0 = getSeconds();
-#endif
+//#if defined(PROFILE)
+//      
+//      double dt_min = pos_inf;
+//      double dt_avg = 0.0f;
+//      double dt_max = neg_inf;
+//      for (size_t i=0; i<20; i++) 
+//      {
+//        double t0 = getSeconds();
+//#endif
 
       if (needAllThreads) 
       {
@@ -152,20 +154,20 @@ namespace embree
         build_sequential_morton(threadIndex,threadCount);
       }
 
-#if defined(PROFILE)
-        double dt = getSeconds()-t0;
-        dt_min = min(dt_min,dt);
-        if (i != 0) dt_avg = dt_avg + dt;
-        dt_max = max(dt_max,dt);
-      }
-      dt_avg /= double(19);
+//#if defined(PROFILE)
+//        double dt = getSeconds()-t0;
+//        dt_min = min(dt_min,dt);
+//        if (i != 0) dt_avg = dt_avg + dt;
+//        dt_max = max(dt_max,dt);
+//      }
+//      dt_avg /= double(19);
       
-      std::cout << "[DONE]" << std::endl;
-      std::cout << "  min = " << 1000.0f*dt_min << "ms (" << numPrimitives/dt_min*1E-6 << " Mtris/s)" << std::endl;
-      std::cout << "  avg = " << 1000.0f*dt_avg << "ms (" << numPrimitives/dt_avg*1E-6 << " Mtris/s)" << std::endl;
-      std::cout << "  max = " << 1000.0f*dt_max << "ms (" << numPrimitives/dt_max*1E-6 << " Mtris/s)" << std::endl;
-      std::cout << BVH4Statistics(bvh).str();
-#endif
+//      std::cout << "[DONE]" << std::endl;
+//      std::cout << "  min = " << 1000.0f*dt_min << "ms (" << numPrimitives/dt_min*1E-6 << " Mtris/s)" << std::endl;
+//      std::cout << "  avg = " << 1000.0f*dt_avg << "ms (" << numPrimitives/dt_avg*1E-6 << " Mtris/s)" << std::endl;
+//      std::cout << "  max = " << 1000.0f*dt_max << "ms (" << numPrimitives/dt_max*1E-6 << " Mtris/s)" << std::endl;
+//      std::cout << BVH4Statistics(bvh).str();
+//#endif
 
       if (g_verbose >= 2) {
         std::cout << "[DONE] " << 1000.0f*dt << "ms (" << numPrimitives/dt*1E-6 << " Mtris/s)" << std::endl;
@@ -1061,6 +1063,11 @@ namespace embree
 
     void BVH4BuilderMorton::build_sequential_morton(size_t threadIndex, size_t threadCount) 
     {
+#if PROFILE
+	profile(2,20,numPrimitives,[&] (ProfileTimer& timer)
+        {
+#endif
+
       /* start measurement */
       double t0 = 0.0f;
       if (g_verbose >= 2) t0 = getSeconds();
@@ -1097,10 +1104,20 @@ namespace embree
             
       /* stop measurement */
       if (g_verbose >= 2) dt = getSeconds()-t0;
+
+#if PROFILE
+      dt = timer.avg();
+      }); 
+#endif
     }
     
     void BVH4BuilderMorton::build_parallel_morton(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount) 
     {
+#if PROFILE
+	profile(2,20,numPrimitives,[&] (ProfileTimer& timer)
+        {
+#endif
+
       /* start measurement */
       double t0 = 0.0f;
       if (g_verbose >= 2) t0 = getSeconds();
@@ -1174,6 +1191,11 @@ namespace embree
 
       /* stop measurement */
       if (g_verbose >= 2) dt = getSeconds()-t0;
+
+#if PROFILE
+      dt = timer.avg();
+      }); 
+#endif
     }
 
     Builder* BVH4Triangle1BuilderMorton  (void* bvh, Scene* scene, size_t mode) { return new class BVH4Triangle1BuilderMorton ((BVH4*)bvh,scene,mode); }
