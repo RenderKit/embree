@@ -510,8 +510,8 @@ namespace embree
         }
       
         /* verbose mode */
-        if (g_verbose >= 1)
-	  std::cout << "building BVH4<" << bvh->primTy.name << "> with " << TOSTRING(isa) "::BVH4MeshBuilderMortonGeneral ... " << std::flush;
+        //if (g_verbose >= 1)
+        //std::cout << "building BVH4<" << bvh->primTy.name << "> with " << TOSTRING(isa) "::BVH4MeshBuilderMortonGeneral ... " << std::flush;
 
 	double t0 = 0.0f, dt = 0.0f;
 	//profile(2,20,numPrimitives,[&] (ProfileTimer& timer) {
@@ -632,10 +632,10 @@ namespace embree
         bvh->alloc2.cleanup();
 	
 	/* verbose mode */
-	if (g_verbose >= 1)
-	  std::cout << "[DONE] " << 1000.0f*dt << "ms (" << numPrimitives/dt*1E-6 << " Mprim/s)" << std::endl;
-	if (g_verbose >= 2)
-	  bvh->printStatistics();
+	//if (g_verbose >= 1)
+        //std::cout << "[DONE] " << 1000.0f*dt << "ms (" << numPrimitives/dt*1E-6 << " Mprim/s)" << std::endl;
+	//if (g_verbose >= 2)
+        //bvh->printStatistics();
       }
       
     public:
