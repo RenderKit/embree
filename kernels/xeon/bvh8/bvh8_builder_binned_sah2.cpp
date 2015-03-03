@@ -15,6 +15,7 @@
 // ======================================================================== //
 
 #include "bvh8.h"
+#include "bvh8_statistics.h"
 #include "common/profile.h"
 
 #include "builders_new/primrefgen.h"
@@ -23,6 +24,8 @@
 
 #include "geometry/triangle4.h"
 #include "geometry/triangle8.h"
+
+#define PROFILE 0
 
 namespace embree
 {
@@ -44,7 +47,11 @@ namespace embree
       
       __forceinline int operator() (const isa::BuildRecord2<BVH8::NodeRef>& current, BuildRecord2<BVH8::NodeRef>** children, const size_t N, Allocator* alloc) 
       {
-        BVH8::Node* node = (BVH8::Node*) alloc->alloc0.malloc(sizeof(BVH8::Node)); node->clear();
+        BVH8::Node* node = NULL;
+        //if (current.pinfo.size() > 4096) node = (BVH8::Node*)   bvh->alloc2.malloc(sizeof(BVH8::Node),sizeof(BVH8::Node));
+        //else
+        node = (BVH8::Node*) alloc->alloc0.malloc(sizeof(BVH8::Node)); 
+        node->clear();
         for (size_t i=0; i<N; i++) {
           node->set(i,children[i]->pinfo.geomBounds);
           children[i]->parent = &node->child(i);
@@ -120,9 +127,12 @@ namespace embree
 	  std::cout << "building BVH8<" << bvh->primTy.name << "> with " << TOSTRING(isa) "::BVH8BuilderBinnedSAH2 " << (presplitFactor != 1.0f ? "presplit" : "") << " ... " << std::flush;
 
 	double t0 = 0.0f, dt = 0.0f;
-	//profile("BVH8BuilderBinnedSAH2",2,20,numPrimitives,[&] () {
+#if PROFILE
+	profile(2,20,numPrimitives,[&] (ProfileTimer& timer)
+        {
+#endif
 	    
-	    if (g_verbose >= 1 && mesh == NULL) t0 = getSeconds();
+          if ((g_benchmark || g_verbose >= 1) && mesh == NULL) t0 = getSeconds();
 	    
 	    bvh->alloc2.init(numSplitPrimitives*sizeof(PrimRef),numSplitPrimitives*sizeof(BVH8::Node));  // FIXME: better estimate
 	    prims.resize(numSplitPrimitives);
@@ -134,9 +144,12 @@ namespace embree
 	       prims.data(),pinfo,BVH8::N,BVH8::maxBuildDepthLeaf,sahBlockSize,minLeafSize,maxLeafSize,BVH8::travCost,intCost);
 	    bvh->set(root,pinfo.geomBounds,pinfo.size());
 
-	    if (g_verbose >= 1 && mesh == NULL) dt = getSeconds()-t0;
-	    
-	    //});
+	    if ((g_benchmark || g_verbose >= 1) && mesh == NULL) dt = getSeconds()-t0;
+
+#if PROFILE
+           dt = timer.avg();
+        }); 
+#endif	
 
 	/* clear temporary data for static geometry */
 	bool staticGeom = mesh ? mesh->isStatic() : scene->isStatic();
@@ -148,6 +161,12 @@ namespace embree
 	  std::cout << "[DONE] " << 1000.0f*dt << "ms (" << numPrimitives/dt*1E-6 << " Mtris/s)" << std::endl;
 	if (g_verbose >= 2 && mesh == NULL)
 	  bvh->printStatistics();
+
+        /* benchmark mode */
+        if (g_benchmark) {
+          BVH8Statistics stat(bvh);
+          std::cout << "BENCHMARK_BUILD " << dt << " " << double(numPrimitives)/dt << " " << stat.sah() << " " << stat.bytesUsed() << std::endl;
+        }
       }
     };
 

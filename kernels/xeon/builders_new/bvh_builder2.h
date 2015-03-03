@@ -225,7 +225,7 @@ namespace embree
         } while (numChildren < branchingFactor);
         
 	/* sort buildrecords for optimal cache locality */
-	std::sort(&children[0],&children[numChildren]);
+	//std::sort(&children[0],&children[numChildren]); // FIXME: reduces traversal performance of bvh8.triangle4 !!
 
         /*! create an inner node */
         auto node = createNode(current,pchildren,numChildren,alloc);
