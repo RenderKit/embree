@@ -30,7 +30,7 @@
 #include "geometry/triangle4v.h"
 #include "geometry/triangle4i.h"
 
-#define ROTATE_TREE 5
+#define ROTATE_TREE 1
 
 namespace embree 
 {
