@@ -37,7 +37,6 @@
 #define CACHE_HIERARCHY
 
 #define LAZY_BUILD 1
-#define ENABLE_EVICTION_IN_LAZY_BUILD 1
 
 namespace embree
 {
@@ -50,10 +49,20 @@ namespace embree
 
   namespace isa
   {
+    struct LocalThreadInfo
+    {
+      unsigned int id;
+
+      LocalThreadInfo(const unsigned int id) : id(id) {}  
+    };
+
+    __thread LocalThreadInfo* localThreadInfo = NULL;
+
+
 
     class __aligned(64) SharedLazyTessellationCache 
     {
-      static const size_t SIZE = 6*1024*1024; // 1GB
+      static const size_t SIZE = 1024*1024*1024; // 1GB
 
     public:
     
@@ -73,6 +82,14 @@ namespace embree
       RWMutex init_mtx;
       __aligned(64) AtomicCounter sync_threads;
 
+      struct __aligned(64) ThreadWorkState {
+	unsigned int patchIndex;
+	
+	ThreadWorkState() { patchIndex = (unsigned int)-1; }
+      };
+
+      __aligned(64) ThreadWorkState threadWorkState[MAX_MIC_THREADS];
+
     public:
       SharedLazyTessellationCache()
 	{
@@ -85,6 +102,12 @@ namespace embree
 	  init_mtx.reset();
 	  sync_threads = 0;
 	}
+
+      __forceinline void markThreadWorkState(const unsigned int threadID,
+					     const unsigned int patchIndex)
+      {
+	threadWorkState[threadID].patchIndex = patchIndex;
+      }
 
       __forceinline unsigned int getCommitCounter()             { return commitCounter; }
     
@@ -161,6 +184,7 @@ namespace embree
 	init_mtx.write_unlock();      
       }
 
+
     __noinline void sync()
     {      
       const unsigned int id = sync_threads.add(1);
@@ -183,6 +207,14 @@ namespace embree
       //while(next_block != 0)
                   
     }
+
+      __forceinline void need_sync()
+      {      
+	if ( sync_threads )
+	  {
+	    sync();
+	  }
+      }
 
 
     };
@@ -880,11 +912,15 @@ namespace embree
 					SubdivPatch1* const patches,
 					Scene *const scene,
 					TessellationRefCache *ref_cache,
-					const size_t numPrimitives)
+					const size_t numPrimitives,
+					LocalThreadInfo *threadInfo)
     {
 #if 1
-      
+
       sharedLazyTessellationCache.init(commitCounter,numPrimitives);
+      sharedLazyTessellationCache.markThreadWorkState(threadInfo->id,patchIndex);
+
+      sharedLazyTessellationCache.need_sync();
 
       SharedLazyTessellationCache::Tag *tag = sharedLazyTessellationCache.getTag(patchIndex);
       CACHE_STATS(SharedTessellationCacheStats::cache_accesses++);
@@ -985,10 +1021,17 @@ namespace embree
       TessellationRefCache *local_ref_cache = NULL;
       if (unlikely(!tess_ref_cache))
 	{
-	  globalRenderThreads.add(1);
 	  tess_ref_cache = new TessellationRefCache(  NUM_SCRATCH_MEM_BLOCKS );
 	}
       local_ref_cache = tess_ref_cache;
+
+      LocalThreadInfo *threadInfo = NULL;
+      if (unlikely(!localThreadInfo))
+	{
+	  const unsigned int id = globalRenderThreads.add(1);
+	  localThreadInfo = new LocalThreadInfo( id );
+	}
+      threadInfo = localThreadInfo;
 #else
       /* query per thread tessellation cache */
       TessellationCache *local_cache = NULL;
@@ -1043,7 +1086,7 @@ namespace embree
 
 	      // ----------------------------------------------------------------------------------------------------
 #if LAZY_BUILD == 1
-	      size_t cached_64bit_root = lazyBuildPatch(patchIndex,commitCounter,(SubdivPatch1*)accel,scene,local_ref_cache,bvh->numPrimitives);
+	      size_t cached_64bit_root = lazyBuildPatch(patchIndex,commitCounter,(SubdivPatch1*)accel,scene,local_ref_cache,bvh->numPrimitives,threadInfo);
 #else
 	      TessellationCacheTag *t = lookUpTessellationCache(local_cache,patchIndex,commitCounter,(SubdivPatch1*)accel,scene);
 	      size_t cached_64bit_root = t->getRootRef();	      
@@ -1174,11 +1217,16 @@ namespace embree
       /* query per thread tessellation cache */
       TessellationRefCache *local_ref_cache = NULL;
       if (unlikely(!tess_ref_cache))
-	{
-	  globalRenderThreads.add(1);
-	  tess_ref_cache = new TessellationRefCache(  NUM_SCRATCH_MEM_BLOCKS  );
-	}
+	tess_ref_cache = new TessellationRefCache(  NUM_SCRATCH_MEM_BLOCKS  );
       local_ref_cache = tess_ref_cache;
+
+      LocalThreadInfo *threadInfo = NULL;
+      if (unlikely(!localThreadInfo))
+	{
+	  const unsigned int id = globalRenderThreads.add(1);
+	  localThreadInfo = new LocalThreadInfo( id );
+	}
+      threadInfo = localThreadInfo;
 #else
       /* query per thread tessellation cache */
       TessellationCache *local_cache = NULL;
@@ -1235,7 +1283,7 @@ namespace embree
 
 	      // ----------------------------------------------------------------------------------------------------
 #if LAZY_BUILD == 1
-	      size_t cached_64bit_root = lazyBuildPatch(patchIndex,commitCounter,(SubdivPatch1*)accel,scene,local_ref_cache,bvh->numPrimitives);
+	      size_t cached_64bit_root = lazyBuildPatch(patchIndex,commitCounter,(SubdivPatch1*)accel,scene,local_ref_cache,bvh->numPrimitives,threadInfo);
 #else
 	      TessellationCacheTag *t = lookUpTessellationCache(local_cache,patchIndex,commitCounter,(SubdivPatch1*)accel,scene);
 	      size_t cached_64bit_root = t->getRootRef();	      
@@ -1339,11 +1387,16 @@ namespace embree
       /* query per thread tessellation cache */
       TessellationRefCache *local_ref_cache = NULL;
       if (unlikely(!tess_ref_cache))
-	{
-	  globalRenderThreads.add(1);
-	  tess_ref_cache = new TessellationRefCache(  NUM_SCRATCH_MEM_BLOCKS  );
-	}
+	tess_ref_cache = new TessellationRefCache(  NUM_SCRATCH_MEM_BLOCKS  );
       local_ref_cache = tess_ref_cache;
+
+      LocalThreadInfo *threadInfo = NULL;
+      if (unlikely(!localThreadInfo))
+	{
+	  const unsigned int id = globalRenderThreads.add(1);
+	  localThreadInfo = new LocalThreadInfo( id );
+	}
+      threadInfo = localThreadInfo;
 #else
       /* query per thread tessellation cache */
       TessellationCache *local_cache = NULL;
@@ -1395,7 +1448,7 @@ namespace embree
 
 	  // ----------------------------------------------------------------------------------------------------
 #if LAZY_BUILD == 1
-	  size_t cached_64bit_root = lazyBuildPatch(patchIndex,commitCounter,(SubdivPatch1*)accel,scene,local_ref_cache,bvh->numPrimitives);
+	  size_t cached_64bit_root = lazyBuildPatch(patchIndex,commitCounter,(SubdivPatch1*)accel,scene,local_ref_cache,bvh->numPrimitives,threadInfo);
 #else
 	  TessellationCacheTag *t = lookUpTessellationCache(local_cache,patchIndex,commitCounter,(SubdivPatch1*)accel,scene);
 	  size_t cached_64bit_root = t->getRootRef();	      
@@ -1482,12 +1535,16 @@ namespace embree
       /* query per thread tessellation cache */
       TessellationRefCache *local_ref_cache = NULL;
       if (unlikely(!tess_ref_cache))
-	{
-	  globalRenderThreads.add(1);
-	  tess_ref_cache = new TessellationRefCache(  NUM_SCRATCH_MEM_BLOCKS  );
-	}
-
+	tess_ref_cache = new TessellationRefCache(  NUM_SCRATCH_MEM_BLOCKS  );
       local_ref_cache = tess_ref_cache;
+
+      LocalThreadInfo *threadInfo = NULL;
+      if (unlikely(!localThreadInfo))
+	{
+	  const unsigned int id = globalRenderThreads.add(1);
+	  localThreadInfo = new LocalThreadInfo( id );
+	}
+      threadInfo = localThreadInfo;
 #else
       /* query per thread tessellation cache */
       TessellationCache *local_cache = NULL;
@@ -1540,7 +1597,7 @@ namespace embree
 
 	  // ----------------------------------------------------------------------------------------------------
 #if LAZY_BUILD == 1
-	  size_t cached_64bit_root = lazyBuildPatch(patchIndex,commitCounter,(SubdivPatch1*)accel,scene,local_ref_cache,bvh->numPrimitives);
+	  size_t cached_64bit_root = lazyBuildPatch(patchIndex,commitCounter,(SubdivPatch1*)accel,scene,local_ref_cache,bvh->numPrimitives,threadInfo);
 #else
 	  TessellationCacheTag *t = lookUpTessellationCache(local_cache,patchIndex,commitCounter,(SubdivPatch1*)accel,scene);
 	  size_t cached_64bit_root = t->getRootRef();	      
