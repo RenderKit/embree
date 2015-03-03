@@ -734,7 +734,7 @@ namespace embree
                   return bounds;
                 }, [] (const BBox3fa& a, const BBox3fa& b) { return merge(a,b); });
             
-            timer("compute_bounds");
+            //timer("compute_bounds");
 
             /* compute morton codes */
             Scene::Iterator<Mesh,1> iter(scene);
@@ -750,7 +750,7 @@ namespace embree
                 });
 
             size_t numPrimitivesGen = numPrimitives;
-            timer("compute_morton_codes");
+            //timer("compute_morton_codes");
 
 #else 
 
@@ -764,7 +764,7 @@ namespace embree
                   return bounds;
                 }, [] (const BBox3fa& a, const BBox3fa& b) { return merge(a,b); });
             
-            timer("compute_bounds");
+            //timer("compute_bounds");
 
 
             ParallelForForPrefixSumState<size_t> pstate;
@@ -808,7 +808,7 @@ namespace embree
               }, std::plus<size_t>());
             }
             
-            timer("compute_morton_codes");
+            //timer("compute_morton_codes");
             
 #endif
 
@@ -830,11 +830,11 @@ namespace embree
             bvh->clearBarrier(bvh->root);
 #endif
             
+            //timer("compute_tree");
 
             if (g_benchmark || g_verbose >= 1) dt = getSeconds()-t0;
 
 #if PROFILE
-            timer("compute_tree");
             dt = timer.avg();
         }); 
 #endif

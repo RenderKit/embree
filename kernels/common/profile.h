@@ -28,7 +28,7 @@ namespace embree
 
     ProfileTimer (const size_t numSkip) : i(0), j(0), maxJ(0), numSkip(numSkip), t0(0)
     {
-      for (size_t i=0; i<N; i++) names[i] = "unknown";
+      for (size_t i=0; i<N; i++) names[i] = NULL;
       for (size_t i=0; i<N; i++) dt_fst[i] = 0.0;
       for (size_t i=0; i<N; i++) dt_min[i] = pos_inf;
       for (size_t i=0; i<N; i++) dt_avg[i] = 0.0;
@@ -38,18 +38,40 @@ namespace embree
     __forceinline void begin() 
     {
       j=0;
-      t0 = getSeconds();
+      t0 = tj = getSeconds();
     }
 
     __forceinline void end() {
+      absolute("total");
       i++;
     }
 
-    __forceinline void operator() (const char* name) 
+    __forceinline void operator() (const char* name) {
+      relative(name);
+    }
+
+    __forceinline void absolute (const char* name) 
     {
       const double t1 = getSeconds();
       const double dt = t1-t0;
-      t0 = t1;
+      assert(names[j] == NULL || names[j] == name);
+      names[j] = name;
+      if (i == 0) dt_fst[j] = dt;
+      if (i>=numSkip) {
+        dt_min[j] = min(dt_min[j],dt);
+        dt_avg[j] = dt_avg[j] + dt;
+        dt_max[j] = max(dt_max[j],dt);
+      }
+      j++;
+      maxJ = max(maxJ,j);
+    }
+
+    __forceinline void relative (const char* name) 
+    {
+      const double t1 = getSeconds();
+      const double dt = t1-tj;
+      tj = t1;
+      assert(names[j] == NULL || names[j] == name);
       names[j] = name;
       if (i == 0) dt_fst[j] = dt;
       if (i>=numSkip) {
@@ -100,6 +122,7 @@ namespace embree
     size_t maxJ;
     size_t numSkip;
     double t0;
+    double tj;
     const char* names[N];
     double dt_fst[N];
     double dt_min[N];
