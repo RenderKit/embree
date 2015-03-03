@@ -442,7 +442,8 @@ namespace embree
       accel(NULL),
       size_node(0),
       size_accel(0),
-      numAllocated64BytesBlocks(0)
+      numAllocated64BytesBlocks(0),
+      numPrimitives(0)
     {
     }
 
@@ -490,7 +491,7 @@ namespace embree
     
 
     size_t numAllocated64BytesBlocks;
-
+    size_t numPrimitives;
 
     /*! swap the children of two nodes */
     __forceinline static void swap(Node* a, size_t i, Node* b, size_t j)

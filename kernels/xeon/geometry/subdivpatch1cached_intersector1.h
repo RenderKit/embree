@@ -29,12 +29,12 @@
 
 #define DISTRIBUTED_TESSELLATION_CACHE_ENTRIES  4
 
-#define TESSELLATION_REF_CACHE_ENTRIES  32
+#define TESSELLATION_REF_CACHE_ENTRIES  4
 
 #define LAZY_BUILD 1
 
 #if defined(DEBUG)
-#define CACHE_STATS(x) 
+#define CACHE_STATS(x) x
 #else
 #define CACHE_STATS(x) 
 #endif

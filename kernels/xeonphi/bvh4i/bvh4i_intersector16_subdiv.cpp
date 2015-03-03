@@ -22,7 +22,7 @@
 #define TIMER(x) 
 
 #if defined(DEBUG)
-#define CACHE_STATS(x) 
+#define CACHE_STATS(x) x
 #else
 #define CACHE_STATS(x) 
 #endif
@@ -48,6 +48,116 @@ namespace embree
 
   namespace isa
   {
+
+    class __aligned(64) SharedLazyTessellationCache 
+    {
+      static const size_t SIZE = 1024*1024*1024; // 1GB
+
+    public:
+    
+      struct __aligned(16) Tag {
+	volatile size_t ref;
+	RWMutex mtx;
+      };
+
+
+    private:
+      float *data;
+      Tag   *root_table;
+      size_t maxBlocks;
+      volatile unsigned int commitCounter;
+      unsigned int numPrimitives;
+      AtomicCounter next_block;
+      RWMutex mtx;
+
+    public:
+      SharedLazyTessellationCache()
+	{
+	  data          = (float*)os_malloc(SIZE);
+	  maxBlocks     = SIZE/64;
+	  root_table    = NULL;
+	  commitCounter = (unsigned int)-1;
+	  numPrimitives = 0;
+	  next_block    = 0;
+	  mtx.reset();
+	}
+
+      __forceinline unsigned int getCommitCounter()             { return commitCounter; }
+    
+      __noinline void resetCache() 
+      {
+	memset((void*)root_table,0,sizeof(Tag)*numPrimitives);
+	next_block = 0;
+      }
+
+      __noinline size_t alloc(const size_t blocks)
+      {
+	size_t index = next_block.add(blocks);
+	assert(index + blocks < maxBlocks);
+	return index;
+      }
+
+      __forceinline size_t getPrimID(const InputTagType primID, const SubdivPatch1 *const subdiv_patches)
+      {
+	const unsigned int prim_tag = toTag((size_t)primID - (size_t)subdiv_patches);
+	assert(prim_tag < numPrimitives);
+	return root_table[prim_tag].ref;
+      }
+
+      __forceinline Tag *getTag(const InputTagType primID)
+      {
+	const unsigned int prim_tag = toTag(primID);
+	assert(prim_tag < numPrimitives);
+	return &root_table[prim_tag];
+      }
+
+      __forceinline mic_f *getBlockPtr(const size_t block_index)
+      {
+	return (mic_f*)&data[block_index*16];
+      }
+
+
+      __forceinline size_t getNumAllocatedBytes() { return next_block * 64; }
+
+      void init(const unsigned int counter, 
+		const unsigned int primitives)
+      {
+	/* already initialized? */
+	if (likely(commitCounter == counter)) return;
+
+	/* write lock */
+	mtx.write_lock();
+
+
+	/* already initialized? */
+	if (commitCounter != counter)
+	  {
+	    DBG_PRINT("INIT SHARED LAZY CACHE");
+	    DBG_PRINT(counter);
+	    DBG_PRINT(primitives);
+
+	    /* resize? */
+	    if (numPrimitives != primitives)
+	      {
+		if (root_table) os_free(root_table,sizeof(Tag)*numPrimitives);
+		numPrimitives = primitives;
+		root_table    = (Tag*)os_malloc(sizeof(Tag)*numPrimitives);
+	      }
+	    /* reset the cache */
+	    resetCache();
+	    
+	    /* finally set the new commit counter */
+	    commitCounter = counter;
+	  }
+
+	/* write unlock */      
+	mtx.write_unlock();      
+      }
+
+    };
+
+    SharedLazyTessellationCache sharedLazyTessellationCache;
+
 
     __thread TessellationRefCache *tess_ref_cache = NULL;
 
@@ -738,8 +848,49 @@ namespace embree
 					const unsigned int commitCounter,
 					SubdivPatch1* const patches,
 					Scene *const scene,
-					TessellationRefCache *ref_cache)
+					TessellationRefCache *ref_cache,
+					const size_t numPrimitives)
     {
+#if 1
+      
+      sharedLazyTessellationCache.init(commitCounter,numPrimitives);
+
+      SharedLazyTessellationCache::Tag *tag = sharedLazyTessellationCache.getTag(patchIndex);
+      CACHE_STATS(SharedTessellationCacheStats::cache_accesses++);
+      if (likely(tag->ref)) 
+	{
+	  CACHE_STATS(SharedTessellationCacheStats::cache_hits++);
+	  return tag->ref;
+	}
+      else
+	{
+	  CACHE_STATS(SharedTessellationCacheStats::cache_misses++);
+
+	  //DBG_PRINT("LOCK");
+	  tag->mtx.write_lock();
+	  if (tag->ref == 0)
+	    {
+
+	      SubdivPatch1* subdiv_patch = &patches[patchIndex];
+	      const SubdivMesh* const geom = (SubdivMesh*)scene->get(subdiv_patch->geom); 
+	      size_t block_index = sharedLazyTessellationCache.alloc(subdiv_patch->grid_subtree_size_64b_blocks);
+	      //DBG_PRINT( sharedLazyTessellationCache.getNumAllocatedBytes() );
+	      mic_f* local_mem   = sharedLazyTessellationCache.getBlockPtr(block_index);
+	      unsigned int currentIndex = 0;
+	      BVH4i::NodeRef bvh4i_root = initLocalLazySubdivTree(*subdiv_patch,currentIndex,local_mem,geom);		      
+	      size_t new_root = (size_t)bvh4i_root + (size_t)local_mem;
+	      tag->ref = new_root;
+	    }
+	  tag->mtx.write_unlock();
+	  //DBG_PRINT("UNLOCK");
+	  assert(tag->ref);
+	  return tag->ref;
+	}
+      
+
+	
+      
+#else
       /* new commitCounter flush local per thread cache */
       if (unlikely(ref_cache->needCommitCounterUpdate(commitCounter)))
 	flushLocalTessellationCache(ref_cache);
@@ -755,81 +906,6 @@ namespace embree
 	}
       CACHE_STATS(DistributedTessellationCacheStats::cache_misses++);
 
-#if 0
-
-      /* release read_lock on previous entry */
-      if (!t->empty()) {
-	const size_t tag = t->getPrimTag();
-
-	assert( (size_t)patches[tag].ptr == t->getRootRef() );
-
-	patches[tag].read_unlock();
-
-#if 0
-	if (patches[tag].try_write_lock())
-	  {
-	    if( (size_t)patches[tag].ptr != t->getRootRef() )
-	      {
-		DBG_PRINT( (size_t)patches[tag].ptr );
-		DBG_PRINT( (size_t)t->getRootRef() );
-	      }
-
-	    void *ptr              = (void*)patches[tag].ptr;
-	    size_t previous_blocks = patches[tag].grid_subtree_size_64b_blocks;
-	    patches[tag].ptr = NULL;
-	    patches[tag].write_unlock();
-
-	    if ( ptr != NULL )
-	      {
-		CACHE_STATS(DistributedTessellationCacheStats::cache_evictions++);              
-		assert( (size_t)ptr != 1);
-		free_tessellation_cache_mem(ptr);
-	      }
-	  }
-#endif
-      }
-
-
-      /* patch has already been build? */
-      SubdivPatch1* subdiv_patch = &patches[patchIndex];
-      subdiv_patch->read_lock();
-
-#if 1
-      size_t patch_root = (size_t)subdiv_patch->ptr;
-      if (likely(patch_root != NULL && patch_root != 1)) 
-	{
-	  assert( (size_t)patch_root != 0 && (size_t)patch_root != 1);
-	  assert( (size_t)subdiv_patch->ptr != t->getRootRef() );
-	  t->set(patchIndex,commitCounter,patch_root);
-	  return patch_root;
-	}
-#endif
-
-      subdiv_patch->prefetchData();
-
-      size_t scratch_root = lazyBuildPatchIntoScratchMem(patchIndex,subdiv_patch,scene,ref_cache);
-
-      if (subdiv_patch->isBlocked()) return scratch_root;
-      assert( (size_t)subdiv_patch->ptr == 1);
-
-      const unsigned int needed_blocks = subdiv_patch->grid_subtree_size_64b_blocks;          
-
-      mic_f* dest_mem = (mic_f*)alloc_tessellation_cache_mem(needed_blocks);
-      
-      BVH4i::NodeRef source_root = extractBVH4iNodeRef(scratch_root); 
-      mic_f *source_mem          = (mic_f*)extractBVH4iPtr(scratch_root); 
-
-      memcpy(dest_mem,source_mem,64*needed_blocks);
-
-      size_t final_root = (size_t)dest_mem + (size_t)source_root;
-
-      assert(final_root != 1);
-
-      t->set(patchIndex,commitCounter,final_root);
-      *(size_t*)&subdiv_patch->ptr = final_root;
-      return final_root;
-      
-#else
       SubdivPatch1* subdiv_patch = &patches[patchIndex];
       return lazyBuildPatchMissHandler(patchIndex,commitCounter,subdiv_patch,scene,t,ref_cache);
 #endif
@@ -925,8 +1001,7 @@ namespace embree
 
 	      // ----------------------------------------------------------------------------------------------------
 #if LAZY_BUILD == 1
-	      SubdivPatch1 &subdiv_patch = ((SubdivPatch1*)accel)[patchIndex];
-	      size_t cached_64bit_root = lazyBuildPatch(patchIndex,commitCounter,(SubdivPatch1*)accel,scene,local_ref_cache);
+	      size_t cached_64bit_root = lazyBuildPatch(patchIndex,commitCounter,(SubdivPatch1*)accel,scene,local_ref_cache,bvh->numPrimitives);
 #else
 	      TessellationCacheTag *t = lookUpTessellationCache(local_cache,patchIndex,commitCounter,(SubdivPatch1*)accel,scene);
 	      size_t cached_64bit_root = t->getRootRef();	      
@@ -1115,7 +1190,7 @@ namespace embree
 
 	      // ----------------------------------------------------------------------------------------------------
 #if LAZY_BUILD == 1
-	      size_t cached_64bit_root = lazyBuildPatch(patchIndex,commitCounter,(SubdivPatch1*)accel,scene,local_ref_cache);
+	      size_t cached_64bit_root = lazyBuildPatch(patchIndex,commitCounter,(SubdivPatch1*)accel,scene,local_ref_cache,bvh->numPrimitives);
 #else
 	      TessellationCacheTag *t = lookUpTessellationCache(local_cache,patchIndex,commitCounter,(SubdivPatch1*)accel,scene);
 	      size_t cached_64bit_root = t->getRootRef();	      
@@ -1272,7 +1347,7 @@ namespace embree
 
 	  // ----------------------------------------------------------------------------------------------------
 #if LAZY_BUILD == 1
-	  size_t cached_64bit_root = lazyBuildPatch(patchIndex,commitCounter,(SubdivPatch1*)accel,scene,local_ref_cache);
+	  size_t cached_64bit_root = lazyBuildPatch(patchIndex,commitCounter,(SubdivPatch1*)accel,scene,local_ref_cache,bvh->numPrimitives);
 #else
 	  TessellationCacheTag *t = lookUpTessellationCache(local_cache,patchIndex,commitCounter,(SubdivPatch1*)accel,scene);
 	  size_t cached_64bit_root = t->getRootRef();	      
@@ -1413,7 +1488,7 @@ namespace embree
 
 	  // ----------------------------------------------------------------------------------------------------
 #if LAZY_BUILD == 1
-	  size_t cached_64bit_root = lazyBuildPatch(patchIndex,commitCounter,(SubdivPatch1*)accel,scene,local_ref_cache);
+	  size_t cached_64bit_root = lazyBuildPatch(patchIndex,commitCounter,(SubdivPatch1*)accel,scene,local_ref_cache,bvh->numPrimitives);
 #else
 	  TessellationCacheTag *t = lookUpTessellationCache(local_cache,patchIndex,commitCounter,(SubdivPatch1*)accel,scene);
 	  size_t cached_64bit_root = t->getRootRef();	      
