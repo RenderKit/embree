@@ -89,6 +89,10 @@ namespace embree
                names[j],1000.0*dt_fst[j],1000.0*dt_min[j],1000.0*dt_avg[j],1000.0*dt_max[j]);
       }
     }
+
+    double avg() {
+      return dt_avg[maxJ-1]/double(i-numSkip);
+    }
     
   private:
     size_t i;

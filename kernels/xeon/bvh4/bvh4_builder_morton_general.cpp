@@ -16,6 +16,7 @@
 
 #include "bvh4.h"
 #include "bvh4_rotate.h"
+#include "bvh4_statistics.h"
 #include "common/profile.h"
 #include "algorithms/parallel_prefix_sum.h"
 #include "algorithms/parallel_for_for_prefix_sum.h"
@@ -30,7 +31,8 @@
 #include "geometry/triangle4v.h"
 #include "geometry/triangle4i.h"
 
-#define ROTATE_TREE 5
+#define ROTATE_TREE 1 // specifies number of tree rotation rounds to perform
+#define PROFILE 0
 
 namespace embree 
 {
@@ -693,9 +695,11 @@ namespace embree
 	  std::cout << "building BVH4<" << bvh->primTy.name << "> with " << TOSTRING(isa) "::BVH4SceneBuilderMortonGeneral ... " << std::flush;
 
 	double t0 = 0.0f, dt = 0.0f;
-	//profile(2,20,numPrimitives,[&] (ProfileTimer& timer) {
-        
-            if (g_verbose >= 1) t0 = getSeconds();
+#if PROFILE
+	profile(2,20,numPrimitives,[&] (ProfileTimer& timer)
+        {
+#endif
+            if (g_benchmark || g_verbose >= 1) t0 = getSeconds();
 	    
             //bvh->alloc.init(numPrimitives*sizeof(BVH4::Node),numPrimitives*sizeof(BVH4::Node));
             size_t bytesAllocated = (numPrimitives+7)/8*sizeof(BVH4::Node) + size_t(1.2f*(numPrimitives+3)/4)*sizeof(Triangle4);
@@ -790,11 +794,15 @@ namespace embree
               BVH4Rotate::rotate(bvh,bvh->root);
             bvh->clearBarrier(bvh->root);
 #endif
-            //timer("compute_tree");
+            
 
-            if (g_verbose >= 1) dt = getSeconds()-t0;
+            if (g_benchmark || g_verbose >= 1) dt = getSeconds()-t0;
 
-            //});
+#if PROFILE
+            timer("compute_tree");
+            dt = timer.avg();
+        }); 
+#endif
         
         /* clear temporary data for static geometry */
 	//bool staticGeom = mesh ? mesh->isStatic() : scene->isStatic(); // FIXME: implement
@@ -806,6 +814,12 @@ namespace embree
 	  std::cout << "[DONE] " << 1000.0f*dt << "ms (" << numPrimitives/dt*1E-6 << " Mprim/s)" << std::endl;
 	if (g_verbose >= 2)
 	  bvh->printStatistics();
+       
+        /* benchmark mode */
+        if (g_benchmark) {
+          BVH4Statistics stat(bvh);
+          std::cout << "BENCHMARK_BUILD " << dt << " " << double(numPrimitives)/(dt) << " " << stat.sah() << " " << stat.bytesUsed() << std::endl;
+        }
       }
       
     public:
