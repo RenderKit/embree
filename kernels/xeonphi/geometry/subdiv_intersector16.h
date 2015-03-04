@@ -23,7 +23,7 @@
 namespace embree
 {
 
-#define FORCE_TRIANGLE_UV 0
+#define FORCE_TRIANGLE_UV 1
 #define PRECISE_TRI_INTERSECTION 1
 
 

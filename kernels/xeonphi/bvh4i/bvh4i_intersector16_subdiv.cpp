@@ -40,6 +40,8 @@
 
 #define SHARED_LAZY_CACHE 1
 
+#define SIZE_SHARED_LAZY_CACHE 200*1024*1024
+
 namespace embree
 {
   __aligned(64) AtomicCounter globalRenderThreads = 0;
@@ -48,6 +50,8 @@ namespace embree
   SharedTessellationCache<SHARED_TESSELLATION_CACHE_ENTRIES> sharedTessellationCache;
 
   typedef TessellationRefCacheT<TESSELLATION_REF_CACHE_ENTRIES> TessellationRefCache;
+
+  static double msec = 0.0;
 
   namespace isa
   {
@@ -64,13 +68,14 @@ namespace embree
 
     class __aligned(64) SharedLazyTessellationCache 
     {
-      static const size_t SIZE = 512*1024*1024; // 1GB
-
+      static const size_t SIZE = SIZE_SHARED_LAZY_CACHE;
+      static const size_t CLEAR_BLOCK_SIZE = 128;
     private:
       float *data;
       size_t maxBlocks;
       __aligned(64) AtomicCounter next_block;
       __aligned(64) AtomicMutex reset_state;
+      __aligned(64) volatile size_t clear_index;
 
       struct __aligned(64) ThreadWorkState {
 	RWMutex mtx;	
@@ -85,6 +90,7 @@ namespace embree
 	  data         = (float*)os_malloc(SIZE);
 	  maxBlocks    = SIZE/64;
 	  next_block   = 0;
+	  clear_index  = 0;
 	  reset_state.reset();   
 	}
 
@@ -109,22 +115,67 @@ namespace embree
       {
 	threadWorkState[threadID].mtx.write_unlock();
       }
+
     
       __noinline void resetCache(SubdivPatch1* const patches,
 				 const size_t numPatches) 
       {
+
+#if 0
+
+	while( next_block >= maxBlocks )
+	  {
+	    size_t start = 0;
+	    size_t end   = 0;
+	    
+	    reset_state.lock();
+
+	    if (next_block >= maxBlocks)
+	      {
+		if (clear_index == 0) msec = getSeconds();
+
+		if (clear_index < numPatches)
+		  {
+		    start = clear_index;
+		    end   = min(start+CLEAR_BLOCK_SIZE,numPatches);
+		    assert(end <= numPatches);
+		    clear_index = end;
+		  }
+	      }	  
+	    reset_state.unlock();
+
+	    for (size_t i=start;i<end;i++)
+	      {
+		prefetch<PFHINT_L1EX>(&patches[i+2]);
+		prefetch<PFHINT_L2EX>(&patches[i+16]);
+		patches[i].write_lock();
+		patches[i].resetRootRef();
+		patches[i].write_unlock();
+
+	      }
+
+	    if (end == numPatches)
+	      {
+		next_block = 0;
+		clear_index = 0;
+	    
+		msec = getSeconds()-msec;    
+		DBG_PRINT( 1000.0f * msec );
+	      }
+	  }
+
+	
+
+#else
+
 	if (reset_state.try_lock())
 	  {
 	    if (next_block >= maxBlocks)
 	      {
-		double msec = 0.0;
 		msec = getSeconds();
 
-		//DBG_PRINT("WAIT FOR THREADS TO LOCK");
 		for (size_t i=0;i<globalRenderThreads;i++)
 		  writeLockThread(i);
-		//DBG_PRINT("DONE");
-
 
 		for (size_t i=0;i<numPatches;i++)
 		  {
@@ -133,12 +184,8 @@ namespace embree
 		    patches[i].resetRootRef();
 		  }
 
-
-		//DBG_PRINT("WAIT FOR THREADS TO UNLOCK");
 		for (size_t i=0;i<globalRenderThreads;i++)
 		  writeUnlockThread(i);
-		//DBG_PRINT("DONE");
-
 
 		next_block = 0;
 
@@ -150,6 +197,7 @@ namespace embree
 	  }
 	else
 	  reset_state.wait_until_unlocked();	
+#endif
       }
 
       __noinline size_t alloc(const size_t blocks)

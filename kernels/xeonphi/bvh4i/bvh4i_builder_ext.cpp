@@ -1045,11 +1045,78 @@ PRINT(CORRECT_numPrims);
       return b;
     }
 
+  void BVH4iBuilderSubdivMesh::updatePatchTessellation(const size_t threadID, const size_t numThreads) 
+  {
+    /* count total number of virtual objects */
+    const size_t startID   = (threadID+0)*numPrimitives/numThreads;
+    const size_t endID     = (threadID+1)*numPrimitives/numThreads; 
+
+    SubdivPatch1 *subdiv_patches = (SubdivPatch1*)accel;
+
+    mic_f bounds_scene_min((float)pos_inf);
+    mic_f bounds_scene_max((float)neg_inf);
+    mic_f bounds_centroid_min((float)pos_inf);
+    mic_f bounds_centroid_max((float)neg_inf);
+
+    for (size_t i=startID;i<endID;i++)
+      {
+	SubdivPatch1 &subdiv_patch = subdiv_patches[i];
+	prefetch<PFHINT_L1EX>(&subdiv_patch);
+	prefetch<PFHINT_L1EX>(&prims[i]);
+
+	prefetch<PFHINT_L2EX>(&subdiv_patch + 2);
+	prefetch<PFHINT_L2EX>(&prims[i+2]);
+
+	const SubdivMesh* const mesh = (SubdivMesh*) scene->get(subdiv_patch.geom);
+	const SubdivMesh::HalfEdge* first_half_edge = mesh->getHalfEdge(subdiv_patch.prim);
+
+	float edge_level[4] = {
+	  first_half_edge[0].edge_level,
+	  first_half_edge[1].edge_level,
+	  first_half_edge[2].edge_level,
+	  first_half_edge[3].edge_level
+	};
+ 
+	subdiv_patch.updateEdgeLevels(edge_level,mesh);
+	subdiv_patch.resetRootRef();
+	const BBox3fa bounds = getBounds(subdiv_patch,mesh);
+
+	assert(bounds.lower.x <= bounds.upper.x);
+	assert(bounds.lower.y <= bounds.upper.y);
+	assert(bounds.lower.z <= bounds.upper.z);
+
+	const mic_f bmin = broadcast4to16f(&bounds.lower); 
+	const mic_f bmax = broadcast4to16f(&bounds.upper);
+          
+	bounds_scene_min = min(bounds_scene_min,bmin);
+	bounds_scene_max = max(bounds_scene_max,bmax);
+	const mic_f centroid2 = bmin+bmax;
+	bounds_centroid_min = min(bounds_centroid_min,centroid2);
+	bounds_centroid_max = max(bounds_centroid_max,centroid2);
+
+						     
+	prims[i] = PrimRef(bounds,i);
+      }
+
+    Centroid_Scene_AABB bounds;
+    
+    store4f(&bounds.centroid2.lower,bounds_centroid_min);
+    store4f(&bounds.centroid2.upper,bounds_centroid_max);
+    store4f(&bounds.geometry.lower,bounds_scene_min);
+    store4f(&bounds.geometry.upper,bounds_scene_max);
+
+    global_bounds.extend_atomic(bounds);    
+  }
+
   void BVH4iBuilderSubdivMesh::computePrimRefs(const size_t threadIndex, const size_t threadCount)
   {
-#if 0
-    scene->lockstep_scheduler.dispatchTask( task_computePrimRefsSubdivMesh, this, threadIndex, threadCount );	
-#else
+#if 1
+    if (fastUpdateMode)
+      {
+	scene->lockstep_scheduler.dispatchTask( task_updatePatchTessellation, this, threadIndex, threadCount );	
+	return;
+      }
+#endif
 
     PrimInfo pinfo( empty );
     SubdivPatch1 *subdiv_patches = (SubdivPatch1*)accel;
@@ -1093,7 +1160,6 @@ PRINT(CORRECT_numPrims);
 	  else
 	    {
 	      const unsigned int patchIndex = base.size()+s.size();
-
 	      const SubdivMesh::HalfEdge* first_half_edge = mesh->getHalfEdge(f);
 	      float edge_level[4] = {
 		first_half_edge[0].edge_level,
@@ -1102,9 +1168,10 @@ PRINT(CORRECT_numPrims);
 		first_half_edge[3].edge_level
 	      };
 	      prefetch<PFHINT_L1EX>(&prims[patchIndex]);
+	      prefetch<PFHINT_L2EX>(&prims[patchIndex+16]);
  
 	      subdiv_patches[patchIndex].updateEdgeLevels(edge_level,mesh);
-
+	      subdiv_patches[patchIndex].resetRootRef();
 	      const BBox3fa bounds = getBounds(subdiv_patches[patchIndex],mesh);
 	      assert(bounds.lower.x <= bounds.upper.x);
 	      assert(bounds.lower.y <= bounds.upper.y);
@@ -1119,9 +1186,6 @@ PRINT(CORRECT_numPrims);
 
       global_bounds.centroid2 = pinfo.centBounds;
       global_bounds.geometry  = pinfo.geomBounds;
-
-#endif
-
 
   }
 
