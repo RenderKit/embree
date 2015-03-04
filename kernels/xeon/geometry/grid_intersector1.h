@@ -29,7 +29,7 @@ namespace embree
       typedef Grid::LazyLeaf Primitive;
       
       struct Precalculations {
-        __forceinline Precalculations (const Ray& ray) {}
+        __forceinline Precalculations (const Ray& ray, const void *ptr) {}
       };
       
       static __forceinline void intersect(const Precalculations& pre, Ray& ray, Primitive& prim, const Scene* scene, size_t& lazy_node) {
@@ -48,7 +48,7 @@ namespace embree
       
       struct Precalculations 
       {
-        __forceinline Precalculations (const Ray& ray) 
+        __forceinline Precalculations (const Ray& ray, const void *ptr) 
         {
 #if defined (__AVX__)
           

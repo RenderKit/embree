@@ -27,7 +27,7 @@ namespace embree
     {
       struct Precalculations 
       {
-        __forceinline Precalculations (const Ray& ray)
+        __forceinline Precalculations (const Ray& ray, const void *ptr)
           : depth_scale(rsqrt(dot(ray.dir,ray.dir))), ray_space(frame(depth_scale*ray.dir).transposed()) {}
         
         float depth_scale;

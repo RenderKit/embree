@@ -68,7 +68,7 @@ namespace embree
       
       /*! Precalculations for subdiv patch intersection */
       class Precalculations {
-	  public:
+      public:
         Vec3fa ray_rdir;
         Vec3fa ray_org_rdir;
         SubdivPatch1Cached *current_patch;
@@ -82,7 +82,7 @@ namespace embree
 #endif
         Ray &r;
         
-        __forceinline Precalculations (Ray& ray) : r(ray) 
+        __forceinline Precalculations (Ray& ray, const void *ptr) : r(ray) 
         {
           ray_rdir      = rcp_safe(ray.dir);
           ray_org_rdir  = ray.org*ray_rdir;

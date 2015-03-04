@@ -38,7 +38,7 @@ namespace embree
         typedef Triangle4vMB Primitive;
         
         struct Precalculations {
-          __forceinline Precalculations (const Ray& ray) {}
+          __forceinline Precalculations (const Ray& ray, const void *ptr) {}
         };
         
         /*! Intersect a ray with the 4 triangles and updates the hit. */

@@ -26,7 +26,7 @@ namespace embree
     void BVH8Intersector1<PrimitiveIntersector>::intersect(const BVH8* bvh, Ray& ray)
     {
       /*! perform per ray precalculations required by the primitive intersector */
-      Precalculations pre(ray);
+      Precalculations pre(ray,bvh);
 
       /*! stack state */
       StackItemInt32<NodeRef> stack[stackSize];  //!< stack of nodes 
@@ -184,7 +184,7 @@ namespace embree
     void BVH8Intersector1<PrimitiveIntersector>::occluded(const BVH8* bvh, Ray& ray)
     {
       /*! perform per ray precalculations required by the primitive intersector */
-      Precalculations pre(ray);
+      Precalculations pre(ray,bvh);
 
       /*! stack state */
       NodeRef stack[stackSize];  //!< stack of nodes that still need to get traversed

@@ -134,8 +134,8 @@ namespace embree
         
         struct Precalculations 
         {
-          __forceinline Precalculations (const Ray& ray) 
-            : pre1(ray), pre2(ray) {}
+          __forceinline Precalculations (const Ray& ray, const void *ptr) 
+            : pre1(ray,ptr), pre2(ray,ptr) {}
           
           typename Intersector1::Precalculations pre1;
           typename Intersector2::Precalculations pre2;

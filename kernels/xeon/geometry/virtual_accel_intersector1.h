@@ -28,7 +28,7 @@ namespace embree
       typedef AccelSetItem Primitive;
       
       struct Precalculations {
-        __forceinline Precalculations (const Ray& ray) {}
+        __forceinline Precalculations (const Ray& ray, const void *ptr) {}
       };
       
       static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Primitive& prim, Scene* scene) 

@@ -188,7 +188,7 @@ namespace embree
       struct Precalculations {
         Vec3fa ray_rdir, ray_org_rdir;
         
-        __forceinline Precalculations (const Ray& ray) 
+        __forceinline Precalculations (const Ray& ray, const void *ptr) 
         {
           ray_rdir     = rcp_safe(ray.dir);
           ray_org_rdir = ray.org*ray_rdir;	
