@@ -193,9 +193,24 @@ namespace embree
           bounds[i][2].extend(other.bounds[i][2]);
         }
       }
+
+      /*! merges in other binning information */
+      static __forceinline const SpatialBinInfo reduce (const SpatialBinInfo& a, const SpatialBinInfo& b) // FIXME: dont iterate over all bin
+      {
+        SpatialBinInfo c;
+        for (size_t i=0; i<BINS; i++) 
+        {
+          c.numBegin[i] += a.numBegin[i]+b.numBegin[i];
+          c.numEnd  [i] += a.numEnd  [i]+b.numEnd  [i];
+          c.bounds[i][0] = merge(a.bounds[i][0],b.bounds[i][0]);
+          c.bounds[i][1] = merge(a.bounds[i][1],b.bounds[i][1]);
+          c.bounds[i][2] = merge(a.bounds[i][2],b.bounds[i][2]);
+        }
+        return c;
+      }
       
       /*! finds the best split by scanning binning information */
-      SpatialBinSplit<BINS> best(const PrimInfo& pinfo, const SpatialBinMapping<BINS>& mapping, const size_t blocks_shift)
+      SpatialBinSplit<BINS> best(const PrimInfo& pinfo, const SpatialBinMapping<BINS>& mapping, const size_t blocks_shift) const
       {
         /* sweep from right to left and compute parallel prefix of merged bounds */
         ssef rAreas[BINS];

@@ -249,9 +249,23 @@ namespace embree
           bounds[i][2].extend(other.bounds[i][2]);
         }
       }
+
+      /*! reducesr binning information */
+      static __forceinline const BinInfo reduce (const BinInfo& a, const BinInfo& b)
+      {
+        BinInfo c;
+	for (size_t i=0; i<BINS; i++) 
+        {
+          c.counts[i] = a.counts[i]+b.counts[i];
+          c.bounds[i][0] = embree::merge(a.bounds[i][0],b.bounds[i][0]);
+          c.bounds[i][1] = embree::merge(a.bounds[i][1],b.bounds[i][1]);
+          c.bounds[i][2] = embree::merge(a.bounds[i][2],b.bounds[i][2]);
+        }
+        return c;
+      }
       
       /*! finds the best split by scanning binning information */
-      __forceinline Split best(const BinMapping<BINS>& mapping, const size_t blocks_shift)
+      __forceinline Split best(const BinMapping<BINS>& mapping, const size_t blocks_shift) const
       {
 	/* sweep from right to left and compute parallel prefix of merged bounds */
 	ssef rAreas[BINS];

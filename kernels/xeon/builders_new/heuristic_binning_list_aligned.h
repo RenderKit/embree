@@ -35,9 +35,8 @@ namespace embree
         /*! finds the best split */
         const Split find(Set& set, const PrimInfo& pinfo, const size_t logBlockSize, SplitInfo& sinfo_o)
         {
-          //if (likely(pinfo.size() < 10000)) // FIXME: implement parallel code path
-          return sequential_find(set,pinfo,logBlockSize,sinfo_o);
-            //else                              return   parallel_find(set,pinfo,logBlockSize,sinfo_o);
+          if (likely(pinfo.size() < 10000)) return sequential_find(set,pinfo,logBlockSize,sinfo_o);
+          else                              return   parallel_find(set,pinfo,logBlockSize,sinfo_o);
         }
         
         /*! finds the best split */
@@ -49,6 +48,26 @@ namespace embree
           while (typename Set::item* block = i.next()) {
             binner.bin(block->base(),block->size(),mapping);
           }
+          const Split split = binner.best(mapping,logBlockSize);
+          binner.getSplitInfo(mapping,split,sinfo_o);
+          return split;
+        }
+
+        /*! finds the best split */
+        const Split parallel_find(Set& set, const PrimInfo& pinfo, const size_t logBlockSize, SplitInfo& sinfo_o)
+        {
+          const BinMapping<BINS> mapping(pinfo);
+          typename Set::iterator i=set;
+          const size_t threadCount = TaskSchedulerNew::threadCount();
+          const Binner binner = parallel_reduce(size_t(0),threadCount,Binner(empty), [&] (const range<size_t>& r) 
+          {
+            Binner binner(empty);
+            while (typename Set::item* block = i.next()) {
+              binner.bin(block->base(),block->size(),mapping);
+            }
+            return binner;
+          },[](const Binner& a, const Binner& b) { return Binner::reduce(a,b); });
+          
           const Split split = binner.best(mapping,logBlockSize);
           binner.getSplitInfo(mapping,split,sinfo_o);
           return split;
