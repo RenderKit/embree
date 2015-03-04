@@ -76,16 +76,15 @@ namespace embree
         /*! splits a list of primitives */
         void split(const Split& split, const PrimInfo& pinfo, Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset) 
         {
-          //if (likely(pinfo.size() < 10000)) // FIXME: implement parallel code path
-            sequential_split(split,set,left,lset,right,rset);
-            //else                                parallel_split(split,set,left,lset,right,rset);
+          if (likely(pinfo.size() < 10000)) sequential_split(split,set,left,lset,right,rset);
+          else                                parallel_split(split,set,left,lset,right,rset);
         }
 
         /*! array partitioning */
         void sequential_split(const Split& split, Set& prims, PrimInfo& linfo_o, Set& lprims_o, PrimInfo& rinfo_o, Set& rprims_o) 
         {
           if (!split.valid()) {
-            //deterministic_order(prims);
+            deterministic_order(prims);
             return splitFallback(prims,linfo_o,lprims_o,rinfo_o,rprims_o);
           }
           
@@ -108,9 +107,6 @@ namespace embree
               if (bin[split.dim] < split.pos) 
               {
                 leftBounds.extend(prim.bounds()); numLeft++;
-                //linfo_o.add(prim.bounds(),center);
-                //if (++lblock->num > PrimRefBlock::blockSize)
-                //lblock = lprims_o.insert(alloc.malloc(threadIndex));
                 if (likely(lblock->insert(prim))) continue; 
                 lblock = lprims_o.insert(new PrimRefList::item);
                 lblock->insert(prim);
@@ -118,9 +114,6 @@ namespace embree
               else 
               {
                 rightBounds.extend(prim.bounds()); numRight++;
-                //rinfo_o.add(prim.bounds(),center);
-                //if (++rblock->num > PrimRefBlock::blockSize)
-                //rblock = rprims_o.insert(alloc.malloc(threadIndex));
                 if (likely(rblock->insert(prim))) continue;
                 rblock = rprims_o.insert(new PrimRefList::item);
                 rblock->insert(prim);
@@ -132,8 +125,79 @@ namespace embree
           linfo_o.add(leftBounds.geomBounds,leftBounds.centBounds,numLeft);
           rinfo_o.add(rightBounds.geomBounds,rightBounds.centBounds,numRight);
         }
+
+        /*! array partitioning */
+        void parallel_split(const Split& split, Set& prims, PrimInfo& linfo_o, Set& lprims_o, PrimInfo& rinfo_o, Set& rprims_o) 
+        {
+          if (!split.valid()) {
+            deterministic_order(prims);
+            return splitFallback(prims,linfo_o,lprims_o,rinfo_o,rprims_o);
+          }
+                    
+          linfo_o.reset();
+          rinfo_o.reset();
+          
+          struct PrimInfo2
+          {
+            __forceinline PrimInfo2(EmptyTy) 
+              : left(empty), right(empty) {}
+            
+            __forceinline PrimInfo2(const PrimInfo& left, const PrimInfo& right)
+              : left(left), right(right) {}
+
+            static __forceinline const PrimInfo2 merge (const PrimInfo2& a, const PrimInfo2& b) {
+              return PrimInfo2(PrimInfo::merge(a.left,b.left),PrimInfo::merge(a.right,b.right));
+            }
+
+          public:
+            PrimInfo left,right;
+          };
+
+          const size_t threadCount = TaskSchedulerNew::threadCount();
+          const PrimInfo2 info = parallel_reduce(size_t(0),threadCount,PrimInfo2(empty), [&] (const range<size_t>& r) 
+          {
+            PrimRefList::item* lblock = NULL;
+            PrimRefList::item* rblock = NULL;
+            size_t numLeft = 0; CentGeomBBox3fa leftBounds(empty);
+            size_t numRight = 0; CentGeomBBox3fa rightBounds(empty);
+
+            while (PrimRefList::item* block = prims.take()) 
+            {
+              if (lblock == NULL) lblock = lprims_o.insert(new PrimRefList::item);
+              if (rblock == NULL) rblock = rprims_o.insert(new PrimRefList::item);
+
+              for (size_t i=0; i<block->size(); i++) 
+              {
+                const PrimRef& prim = block->at(i); 
+                const Vec3fa center = center2(prim.bounds());
+                const ssei bin = ssei(split.mapping.bin_unsafe(center));
+                
+                if (bin[split.dim] < split.pos) 
+                {
+                  leftBounds.extend(prim.bounds()); numLeft++;
+                  if (likely(lblock->insert(prim))) continue; 
+                  lblock = lprims_o.insert(new PrimRefList::item);
+                  lblock->insert(prim);
+                } 
+                else 
+                {
+                  rightBounds.extend(prim.bounds()); numRight++;
+                  if (likely(rblock->insert(prim))) continue;
+                  rblock = rprims_o.insert(new PrimRefList::item);
+                  rblock->insert(prim);
+                }
+              }
+              delete block;
+            }
+            return PrimInfo2(PrimInfo(numLeft ,leftBounds .geomBounds,leftBounds .centBounds),
+                             PrimInfo(numRight,rightBounds.geomBounds,rightBounds.centBounds));
+          }, [] (const PrimInfo2& a, const PrimInfo2& b) { return PrimInfo2::merge(a,b); });
+
+          linfo_o.merge(info.left);
+          rinfo_o.merge(info.right);
+        }
         
-        __forceinline void deterministic_order(const Set& set) 
+        __forceinline void deterministic_order(const Set& set) // FIXME: implement me, without this trees are not deterministic
         {
           /* required as parallel partition destroys original primitive order */
           //std::sort(&prims[set.begin()],&prims[set.end()]);
