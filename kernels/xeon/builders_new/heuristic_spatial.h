@@ -125,7 +125,7 @@ namespace embree
           unsigned geomID = prim.geomID() & 0x00FFFFFF; // FIXME: hack !!
           unsigned splits = prim.geomID() >> 24;
 
-          if (splits == 0)
+          if (splits == 1)
           {
             const ssei bin = mapping.bin(center(prim.bounds()));
             for (size_t dim=0; dim<3; dim++) 

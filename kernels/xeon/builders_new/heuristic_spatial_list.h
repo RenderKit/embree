@@ -106,7 +106,7 @@ namespace embree
               int bin1 = split.mapping.bin(bounds.upper)[split.dim];
 
               const int splits = prim.geomID() >> 24;
-              if (splits == 0) {
+              if (splits == 1) {
                 const ssei bin = split.mapping.bin(center(prim.bounds()));
                 bin0 = bin1 = bin[split.dim];
               }
@@ -222,7 +222,7 @@ namespace embree
                 int bin1 = split.mapping.bin(bounds.upper)[split.dim];
                 
                 const int splits = prim.geomID() >> 24;
-                if (splits == 0) {
+                if (splits == 1) {
                   const ssei bin = split.mapping.bin(center(prim.bounds()));
                   bin0 = bin1 = bin[split.dim];
                 }

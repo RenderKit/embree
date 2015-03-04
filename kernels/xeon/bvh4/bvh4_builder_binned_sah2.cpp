@@ -290,6 +290,35 @@ namespace embree
       //const vector_t<std::pair<int,int>>& geomIDprimID;
     };
 
+    struct SpatialSplitHeuristic
+    {
+      Scene* scene;
+
+      SpatialSplitHeuristic(Scene* scene)
+        : scene(scene) {}
+
+      float operator() (const PrimRef& prim)
+      {
+        const size_t geomID = prim.geomID();
+        const size_t primID = prim.primID();
+        const TriangleMesh* mesh = scene->getTriangleMesh(geomID);
+        const TriangleMesh::Triangle& tri = mesh->triangle(primID);
+        const Vec3fa v0 = mesh->vertex(tri.v[0]);
+        const Vec3fa v1 = mesh->vertex(tri.v[1]);
+        const Vec3fa v2 = mesh->vertex(tri.v[2]);
+        const float triAreaX = triangleArea(Vec2f(v0.y,v0.z),Vec2f(v1.y,v1.z),Vec2f(v2.y,v2.z));
+        const float triAreaY = triangleArea(Vec2f(v0.x,v0.z),Vec2f(v1.x,v1.z),Vec2f(v2.x,v2.z));
+        const float triAreaZ = triangleArea(Vec2f(v0.x,v0.y),Vec2f(v1.x,v1.y),Vec2f(v2.x,v2.y));
+        const float triBoxArea = triAreaX+triAreaY+triAreaZ;
+        const float boxArea = area(prim.bounds());
+        //assert(boxArea>=2.0f*triBoxArea);
+        //return max(0.0f,boxArea-0.9f*2.0f*triBoxArea);
+        return boxArea;
+        //return triBoxArea;
+        //return boxArea-triBoxArea;
+      }
+    };
+
     template<typename Mesh, typename Primitive>
     struct BVH4BuilderSpatialBinnedSAH2 : public Builder
     {
@@ -352,68 +381,44 @@ namespace embree
 	profile(2,20,numPrimitives,[&] (ProfileTimer& timer)
         {
 #endif
-          if ((g_benchmark || g_verbose >= 1) && mesh == NULL) t0 = getSeconds();
+            if ((g_benchmark || g_verbose >= 1) && mesh == NULL) t0 = getSeconds();
 	    
 	    bvh->alloc2.init(numSplitPrimitives*sizeof(PrimRef),numSplitPrimitives*sizeof(BVH4::Node));  // FIXME: better estimate
 	    //prims.resize(numSplitPrimitives);
 	    //PrimInfo pinfo = mesh ? createPrimRefArray<Mesh>(mesh,prims) : createPrimRefArray<Mesh,1>(scene,prims);
             PrimRefList prims;
             PrimInfo pinfo = createPrimRefList<Mesh,1>(scene,prims);
-            //PRINT(pinfo.size());
+            
+            //SpatialSplitHeuristic heuristic(scene);
 
             /* calculate total surface area */
-            float A = 0.0f;
-            for (PrimRefList::block_iterator_unsafe iter = prims; iter; iter++) {
-              A += area(*iter);
-              iter++;
-            }
-
-            /* try to calculate a number of splits per primitive, such that
-             * we do not generate more primitives than the size of the prims
-             * array */
-            float spatialSplitFactor = 1.5f;
-            float f = spatialSplitFactor/0.9f;
-            size_t N = 0, iterations = 0;
-            do {
-              f *= 0.9f;
-              N = 0;
-              
-              for (PrimRefList::block_iterator_unsafe iter = prims; iter; iter++) {
-                const float nf = ceil(f*pinfo.size()*area(*iter)/A);
-                const size_t n = min(ssize_t(255), max(ssize_t(1), ssize_t(nf)));
-                N+=n;
+            PrimRefList::iterator iter = prims;
+            const size_t threadCount = TaskSchedulerNew::threadCount();
+            const double A = parallel_reduce(size_t(0),threadCount,0.0, [&] (const range<size_t>& r) // FIXME: this sum is not deterministic
+            {
+              double A = 0.0f;
+              while (PrimRefList::item* block = iter.next()) {
+                for (size_t i=0; i<block->size(); i++) 
+                  A += area(block->at(i));
+                //A += heuristic(block->at(i));
               }
-              if (iterations++ == 20) {
-                goto skip_spatial_splits;
-              }
-            } while (N>spatialSplitFactor*pinfo.size());
+              return A;
+            },std::plus<double>());
 
-            //PRINT(spatialSplitFactor*pinfo.size());
-            //PRINT(N);
-
-            /*vector_t<std::pair<int,int>> geomIDprimID;
-            geomIDprimID.resize(pinfo.size());
-            PrimRefList::block_iterator_unsafe iter = prims;
-            for (size_t i=0; i<pinfo.size(); i++) {
-              geomIDprimID[i].first  = iter->lower.a;
-              geomIDprimID[i].second = iter->upper.a;
-              iter->lower.a = i;
-              iter->upper.a = 16;
-              iter++;
-              }*/
-
+            /* estimate number of required spatial splits per primitive */
+            float f = 10.0f;
+            size_t N = 0;
             for (PrimRefList::block_iterator_unsafe iter = prims; iter; iter++) {
               assert((iter->lower.a & 0xFF000000) == 0);
-              const float nf = ceil(f*pinfo.size()*area(*iter)/A);
-              const size_t n = min(ssize_t(255), max(ssize_t(1), ssize_t(nf)));
+              const float a = area(*iter);
+              //const float a = heuristic(*iter);
+              const float nf = ceil(f*pinfo.size()*a/A);
+              const size_t n = 64;
+              //const size_t n = min(ssize_t(255), max(ssize_t(1), ssize_t(nf)));
+              N += n;
               iter->lower.a |= n << 24;
             }
-
-            //if (presplitFactor > 1.0f)
-            //pinfo = presplit<Mesh>(scene, pinfo, prims);
-
-      skip_spatial_splits:
-
+            
 	    BVH4::NodeRef root = bvh_builder_reduce_spatial_sah2_internal<BVH4::NodeRef>
 	      (scene,CreateAlloc(bvh),size_t(0),CreateListBVH4Node(bvh),rotate,CreateListLeaf<Primitive>(bvh),
                [&] (const PrimRef& prim, int dim, float pos, PrimRef& left_o, PrimRef& right_o)

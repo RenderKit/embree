@@ -840,8 +840,8 @@ extern "C" void device_init (int8* cfg)
 
   /* set start render mode */
   renderPixel = renderPixelStandard;
-  //  renderPixel = renderPixelEyeLight;
-
+  //renderPixel = renderPixelEyeLight;
+  
 } // device_init
 
 void convertTriangleMeshes(ISPCScene* scene_in, RTCScene scene_out, size_t numGeometries)
