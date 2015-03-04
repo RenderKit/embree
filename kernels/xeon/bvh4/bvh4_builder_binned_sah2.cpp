@@ -389,7 +389,7 @@ namespace embree
             PrimRefList prims;
             PrimInfo pinfo = createPrimRefList<Mesh,1>(scene,prims);
             
-            //SpatialSplitHeuristic heuristic(scene);
+            SpatialSplitHeuristic heuristic(scene);
 
             /* calculate total surface area */
             PrimRefList::iterator iter = prims;
@@ -405,20 +405,31 @@ namespace embree
               return A;
             },std::plus<double>());
 
-            /* estimate number of required spatial splits per primitive */
+            /* calculate number of maximal spatial splits per primitive */
             float f = 10.0f;
-            size_t N = 0;
-            for (PrimRefList::block_iterator_unsafe iter = prims; iter; iter++) {
-              assert((iter->lower.a & 0xFF000000) == 0);
-              const float a = area(*iter);
-              //const float a = heuristic(*iter);
-              const float nf = ceil(f*pinfo.size()*a/A);
-              const size_t n = 64;
-              //const size_t n = min(ssize_t(255), max(ssize_t(1), ssize_t(nf)));
-              N += n;
-              iter->lower.a |= n << 24;
-            }
-            
+            iter = prims;
+            const size_t N = parallel_reduce(size_t(0),threadCount,size_t(0), [&] (const range<size_t>& r)
+            {
+              size_t N = 0;
+              while (PrimRefList::item* block = iter.next()) {
+                for (size_t i=0; i<block->size(); i++) {
+                  PrimRef& prim = block->at(i);
+                  assert((prim.lower.a & 0xFF000000) == 0);
+                  const float nf = ceil(f*pinfo.size()*area(prim)/A);
+                  //const size_t n = 64;
+                  const size_t n = min(ssize_t(127), max(ssize_t(1), ssize_t(nf)));
+                  N += n;
+                  prim.lower.a |= n << 24;
+                }
+              }
+              return N;
+            },std::plus<size_t>());
+
+            //if (presplitFactor > 1.0f)
+            //pinfo = presplit<Mesh>(scene, pinfo, prims);
+
+            //if ((g_benchmark || g_verbose >= 1) && mesh == NULL) t0 = getSeconds();
+
 	    BVH4::NodeRef root = bvh_builder_reduce_spatial_sah2_internal<BVH4::NodeRef>
 	      (scene,CreateAlloc(bvh),size_t(0),CreateListBVH4Node(bvh),rotate,CreateListLeaf<Primitive>(bvh),
                [&] (const PrimRef& prim, int dim, float pos, PrimRef& left_o, PrimRef& right_o)
