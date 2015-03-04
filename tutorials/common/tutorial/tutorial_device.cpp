@@ -15,6 +15,7 @@
 // ======================================================================== //
 
 #include "tutorial_device.h"
+#include "kernels/algorithms/parallel_for.h"
 
 /* the scene to render */
 extern RTCScene g_scene;
@@ -438,11 +439,29 @@ void launch_renderTile (int numTiles,
                         int* pixels, const int width, const int height, const float time, 
                         const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p, const int numTilesX, const int numTilesY)
 {
+#if defined(TASKING_LOCKSTEP)
   TaskScheduler::EventSync event;
   RenderTileTask parms(pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY);
   TaskScheduler::Task task(&event,(TaskScheduler::runFunction)renderTile_parallel,&parms,numTiles,NULL,NULL,"render");
   TaskScheduler::addTask(-1,TaskScheduler::GLOBAL_FRONT,&task);
   event.sync();
+#endif
+
+#if defined(TASKING_TBB)
+  parallel_for(size_t(0),size_t(numTiles),[&] (const range<size_t>& r) {
+      for (size_t i=r.begin(); i<r.end(); i++)
+        renderTile(i,pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY);
+    });
+#endif
+
+#if defined(TASKING_TBB_INTERNAL)
+  TaskSchedulerNew::instance()->spawn_root([&] () {
+      parallel_for(size_t(0),size_t(numTiles),[&] (const range<size_t>& r) {
+          for (size_t i=r.begin(); i<r.end(); i++)
+            renderTile(i,pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY);
+        });
+    });
+#endif
 }
 
 typedef void (*animateSphereFunc) (int taskIndex, Vertex* vertices, 
@@ -486,11 +505,29 @@ void launch_animateSphere(animateSphereFunc func,
 			  const float r,
 			  const float f)
 {
-  TaskScheduler::EventSync event;
+#if defined(TASKING_LOCKSTEP)
+   TaskScheduler::EventSync event;
   AnimateSphereTask parms(func,vertices,rcpNumTheta,rcpNumPhi,pos,r,f);
   TaskScheduler::Task task(&event,(TaskScheduler::runFunction)animateSphere_parallel,&parms,taskSize,NULL,NULL,"render");
   TaskScheduler::addTask(-1,TaskScheduler::GLOBAL_FRONT,&task);
   event.sync();
+#endif
+
+#if defined(TASKING_TBB)
+  parallel_for(size_t(0),size_t(taskSize),[&] (const range<size_t>& m) {
+      for (size_t i=m.begin(); i<m.end(); i++)
+        func(i,vertices,rcpNumTheta,rcpNumPhi,pos,r,f);
+    });
+#endif
+
+#if defined(TASKING_TBB_INTERNAL)
+  TaskSchedulerNew::instance()->spawn_root([&] () {
+      parallel_for(size_t(0),size_t(taskSize),[&] (const range<size_t>& m) {
+          for (size_t i=m.begin(); i<m.end(); i++)
+            func(i,vertices,rcpNumTheta,rcpNumPhi,pos,r,f);
+        });
+    });
+#endif
 }
 
 static int p[513] = { 

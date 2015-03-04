@@ -25,6 +25,33 @@ namespace embree
 {
   size_t g_numThreads = 0;                              //!< number of threads to use in builders
 
+  /*! run this task */
+  __dllexport void TaskSchedulerNew::Task::run (Thread& thread) // FIXME: avoid as many __dllexports as possible
+  {
+    /* try to run if not already stolen */
+    if (try_switch_state(INITIALIZED,DONE))
+    {
+      Task* prevTask = thread.task; 
+      
+      thread.task = this;
+      /* set estimate working size here */
+      closure->execute();
+      thread.task = prevTask;
+      
+      add_dependencies(-1);
+    }
+    
+    /* steal until all dependencies have completed */
+    while (dependencies) {
+      if (thread.scheduler->steal_from_other_threads(thread))
+        while (thread.tasks.execute_local(thread,this));
+    }
+    
+    /* now signal our parent task that we are finished */
+    if (parent) 
+      parent->add_dependencies(-1);
+  }
+  
   TaskSchedulerNew::TaskSchedulerNew(size_t numThreads, bool spinning)
     : threadCounter(numThreads), createThreads(true), terminate(false), anyTasksRunning(0), active(false), spinning(spinning)
   {
@@ -69,7 +96,7 @@ namespace embree
     delete g_instance; g_instance = NULL;
   }
 
-  void TaskSchedulerNew::startThreads()
+  __dllexport void TaskSchedulerNew::startThreads()
   {
     createThreads = false;
     for (size_t i=1; i<threadCounter; i++) {
@@ -116,9 +143,9 @@ namespace embree
       __pause_cpu();
   }
 
-  __thread TaskSchedulerNew::Thread* TaskSchedulerNew::thread_local_thread = NULL;
+  __dllexport __thread TaskSchedulerNew::Thread* TaskSchedulerNew::thread_local_thread = NULL;
 
-  TaskSchedulerNew::Thread* TaskSchedulerNew::thread() {
+  __dllexport TaskSchedulerNew::Thread* TaskSchedulerNew::thread() {
     return thread_local_thread;
   }
 

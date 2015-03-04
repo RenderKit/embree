@@ -139,6 +139,8 @@ namespace embree
           
           struct PrimInfo2
           {
+            __forceinline PrimInfo2() {}
+
             __forceinline PrimInfo2(EmptyTy) 
               : left(empty), right(empty) {}
             

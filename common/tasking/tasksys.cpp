@@ -16,11 +16,14 @@
 
 #include "sys/platform.h"
 #include "tasking/taskscheduler.h"
+#include "algorithms/parallel_for.h" 
 
 namespace embree
 {
   /* Signature of ispc-generated 'task' functions */
   typedef void (*TaskFuncType)(void* data, int threadIndex, int threadCount, int taskIndex, int taskCount);
+
+#if defined(TASKING_LOCKSTEP)
 
   struct ISPCTask
   {
@@ -63,4 +66,49 @@ namespace embree
     ((TaskScheduler::EventSync*)task)->sync(); 
     delete (TaskScheduler::EventSync*)task;
   }
+
+#endif
+
+#if defined(TASKING_TBB)
+
+  __dllexport void* ISPCAlloc(void** taskPtr, int64 size, int32 alignment) {
+    return (char*)_mm_malloc(size,alignment);
+  }
+
+  __dllexport void ISPCLaunch(void** taskPtr, void* func, void* data, int count) 
+  {      
+    parallel_for(size_t(0), size_t(count),[&] (const range<size_t>& r) {
+        const size_t threadIndex = tbb::task_arena::current_thread_index();
+        const size_t threadCount = tbb::task_scheduler_init::default_num_threads();
+        for (size_t i=r.begin(); i<r.end(); i++) ((TaskFuncType)func)(data,threadIndex,threadCount,i,count);
+      });
+  }
+  
+  __dllexport void ISPCSync(void* task) {
+  }
+
+#endif
+
+#if defined(TASKING_TBB_INTERNAL)
+
+  __dllexport void* ISPCAlloc(void** taskPtr, int64 size, int32 alignment) {
+    return (char*)_mm_malloc(size,alignment);
+  }
+
+  __dllexport void ISPCLaunch(void** taskPtr, void* func, void* data, int count) 
+  {      
+    TaskSchedulerNew::instance()->spawn_root([&] () {
+        parallel_for(size_t(0), size_t(count), [&] (const range<size_t>& r) {
+            const size_t threadIndex = TaskSchedulerNew::thread()->threadIndex;
+            const size_t threadCount = TaskSchedulerNew::threadCount();
+            for (size_t i=r.begin(); i<r.end(); i++) 
+              ((TaskFuncType)func)(data,threadIndex,threadCount,i,count);
+          });
+      });
+  }
+  
+  __dllexport void ISPCSync(void* task) {
+  }
+
+#endif
 }

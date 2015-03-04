@@ -36,8 +36,10 @@ namespace embree
       numIntersectionFilters4(0), numIntersectionFilters8(0), numIntersectionFilters16(0),
       commitCounter(0), scheduler(NULL)
   {
-#if !defined(__MIC__)
+#if !defined(__MIC__) 
+#  if defined(TASKING_LOCKSTEP)
     lockstep_scheduler.taskBarrier.init(TaskScheduler::getNumThreads());
+#  endif
 #else
     lockstep_scheduler.taskBarrier.init(MAX_MIC_THREADS);
 #endif
@@ -326,20 +328,20 @@ namespace embree
 
   void Scene::build (size_t threadIndex, size_t threadCount) 
   {
-#if TASKING_LOCKSTEP
+#if defined(TASKING_LOCKSTEP)
     /* all user worker threads properly enter and leave the tasking system */
     LockStepTaskScheduler::Init init(threadIndex,threadCount,&lockstep_scheduler);
     if (threadIndex != 0) return;
 #endif
 
-#if TASKING_TBB
+#if defined(TASKING_TBB)
     if (threadCount != 0) {
       process_error(RTC_INVALID_OPERATION,"TBB does not support rtcCommitThread");
       return;
     }
 #endif
 
-#if TASKING_TBB_INTERNAL
+#if defined(TASKING_TBB_INTERNAL)
     if (threadCount != 0) 
     {
       {
@@ -382,7 +384,7 @@ namespace embree
     /* select fast code path if no intersection filter is present */
     accels.select(numIntersectionFilters4,numIntersectionFilters8,numIntersectionFilters16);
 
-#if TASKING_LOCKSTEP
+#if defined(TASKING_LOCKSTEP)
 
     /* if user provided threads use them */
     if (threadCount)
@@ -398,11 +400,11 @@ namespace embree
     }
 #endif
 
-#if TASKING_TBB
+#if defined(TASKING_TBB)
     accels.build(0,0);
 #endif
 
-#if TASKING_TBB_INTERNAL
+#if defined(TASKING_TBB_INTERNAL)
     if (threadCount)
       scheduler->spawn_root([&]() { accels.build(0,0); });
     else

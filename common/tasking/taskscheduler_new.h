@@ -114,31 +114,7 @@ namespace embree
       } 
       
       /*! run this task */
-      void run (Thread& thread) 
-      {
-	/* try to run if not already stolen */
-	if (try_switch_state(INITIALIZED,DONE))
-	{
-	  Task* prevTask = thread.task; 
-
-          thread.task = this;
-	  /* set estimate working size here */
-          closure->execute();
-	  thread.task = prevTask;
-
-	  add_dependencies(-1);
-	}
-        
-	/* steal until all dependencies have completed */
-        while (dependencies) {
-          if (thread.scheduler->steal_from_other_threads(thread))
-            while (thread.tasks.execute_local(thread,this));
-        }
-
-	/* now signal our parent task that we are finished */
-        if (parent) 
-	  parent->add_dependencies(-1);
-      }
+      void run (Thread& thread);
 
     public:
       volatile atomic32_t state;         //!< state this task is in

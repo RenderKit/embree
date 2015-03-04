@@ -416,9 +416,9 @@ namespace embree
     if (g_verbose >= 2) 
       printSettings();
 
-    //#if TASKING_LOCKSTEP    
+#if TASKING_LOCKSTEP    
     TaskScheduler::create(g_numThreads);
-    //#endif
+#endif
 
 #if TASKING_TBB
       if (g_numThreads == 0)
@@ -464,9 +464,9 @@ namespace embree
     if (!g_initialized) {
       return;
     }
-    //#if TASKING_LOCKSTEP   
+#if TASKING_LOCKSTEP   
     TaskScheduler::destroy();
-    //#endif
+#endif
 
 #if TASKING_TBB
     tbb_threads.terminate();
