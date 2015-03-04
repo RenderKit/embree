@@ -15,13 +15,16 @@
 // ======================================================================== //
 
 #include "bvh4_builder_toplevel_new.h"
+#include "bvh4_statistics.h"
+#include "common/profile.h"
+
+#define PROFILE 0
+#define MIN_OPEN_SIZE 2000
 
 namespace embree
 {
   namespace isa
   {
-#define MIN_OPEN_SIZE 2000
-
     BVH4BuilderTopLevelNew::BVH4BuilderTopLevelNew (BVH4* bvh, Scene* scene, const createTriangleMeshAccelTy createTriangleMeshAccel) 
       : bvh(bvh), objects(bvh->objects), scene(scene), createTriangleMeshAccel(createTriangleMeshAccel) {}
     
@@ -55,9 +58,14 @@ namespace embree
       double t0 = 0.0, dt = 0.0;
       if (g_verbose >= 1) {
 	std::cout << "building BVH4<" << bvh->primTy.name << "> with " << TOSTRING(isa) << "::TwoLevel SAH builder ... " << std::flush;
-        t0 = getSeconds();
       }
 
+#if PROFILE
+	profile(2,20,numPrimitives,[&] (ProfileTimer& timer)
+        {
+#endif
+      if (g_benchmark || g_verbose >= 1) t0 = getSeconds();
+          
       /* resize object array if scene got larger */
       if (objects.size() < N) {
         objects.resize(N);
@@ -107,7 +115,10 @@ namespace embree
           Builder* builder = builders[objectID]; assert(builder);
           
           /* build object if it got modified */
-          if (mesh->isModified()) {
+#if !PROFILE 
+          if (mesh->isModified()) 
+#endif
+          {
             builder->build(0,0);
             mesh->state = Geometry::ENABLED;
           }
@@ -134,8 +145,6 @@ namespace embree
         }
         return pinfo;
       }, [] (const PrimInfo& a, const PrimInfo& b) { return PrimInfo::merge(a,b); });
-
-      
 
       /* skip if all objects where empty */
       if (pinfo.size() == 0)
@@ -167,12 +176,23 @@ namespace embree
         bvh->set(root,pinfo.geomBounds,numPrimitives);
       }
 
-      if (g_verbose >= 1) {
-        dt = getSeconds()-t0;
+      if (g_benchmark || g_verbose >= 1) dt = getSeconds()-t0;
+ 
+#if PROFILE
+      dt = timer.avg();
+      }); 
+#endif
+
+      if (g_verbose >= 1)
         std::cout << "[DONE] " << 1000.0f*dt << "ms (" << numPrimitives/dt*1E-6 << " Mprim/s)" << std::endl;
-      }
       if (g_verbose >= 2)
         bvh->printStatistics();
+
+      /* benchmark mode */
+      if (g_benchmark) {
+        BVH4Statistics stat(bvh);
+        std::cout << "BENCHMARK_BUILD " << dt << " " << double(numPrimitives)/(dt) << " " << stat.sah() << " " << stat.bytesUsed() << std::endl;
+      }
     }
 
     void BVH4BuilderTopLevelNew::open_sequential()

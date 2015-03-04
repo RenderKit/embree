@@ -33,15 +33,15 @@ namespace embree
         __forceinline HeuristicListBinningSAH () {}
         
         /*! finds the best split */
-        const Split find(Set& set, const PrimInfo& pinfo, const size_t logBlockSize)
+        const Split find(Set& set, const PrimInfo& pinfo, const size_t logBlockSize, SplitInfo& sinfo_o)
         {
           //if (likely(pinfo.size() < 10000)) // FIXME: implement parallel code path
-            return sequential_find(set,pinfo,logBlockSize);
-            //else                              return   parallel_find(set,pinfo,logBlockSize);
+          return sequential_find(set,pinfo,logBlockSize,sinfo_o);
+            //else                              return   parallel_find(set,pinfo,logBlockSize,sinfo_o);
         }
         
         /*! finds the best split */
-        const Split sequential_find(Set& set, const PrimInfo& pinfo, const size_t logBlockSize)
+        const Split sequential_find(Set& set, const PrimInfo& pinfo, const size_t logBlockSize, SplitInfo& sinfo_o)
         {
           Binner binner(empty);
           const BinMapping<BINS> mapping(pinfo);
@@ -49,7 +49,9 @@ namespace embree
           while (typename Set::item* block = i.next()) {
             binner.bin(block->base(),block->size(),mapping);
           }
-          return binner.best(mapping,logBlockSize);
+          const Split split = binner.best(mapping,logBlockSize);
+          binner.getSplitInfo(mapping,split,sinfo_o);
+          return split;
         }
 
         /*! splits a list of primitives */

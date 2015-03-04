@@ -28,12 +28,14 @@
 #define NUM_SCRATCH_MEM_BLOCKS 1024
 
 //#define SHARED_TESSELLATION_CACHE_ENTRIES 1024*32
-//#define SHARED_TESSELLATION_CACHE_ENTRIES 1024*512
-#define SHARED_TESSELLATION_CACHE_ENTRIES 1024*64
+#define SHARED_TESSELLATION_CACHE_ENTRIES 16
+//#define SHARED_TESSELLATION_CACHE_ENTRIES 1024*128
 
 namespace embree
 {
   static SharedTessellationCache<SHARED_TESSELLATION_CACHE_ENTRIES> sharedTessellationCache;
+
+
 
   namespace isa
   {  
@@ -276,6 +278,7 @@ namespace embree
 	      const unsigned int needed_blocks = subdiv_patch->grid_subtree_size_64b_blocks;          
 	      if (s->getNumBlocks() < needed_blocks)
 		{
+		  //std::cout << needed_blocks << " -> " << s->getNumBlocks() << std::endl;
 		  if (node != NULL)
 		    free_tessellation_cache_mem(node);
 		  node = (BVH4::Node*)alloc_tessellation_cache_mem(needed_blocks);              	      
@@ -594,7 +597,19 @@ namespace embree
       
       return bounds;
     }
-    
+
+    std::size_t getThreadID()
+    {
+      const std::thread::id id = std::this_thread::get_id();
+      static std::size_t index = 0;
+      static std::mutex mutex;
+      static std::map<std::thread::id, std::size_t> ids;
+      std::lock_guard<std::mutex> lock(mutex);
+      if(ids.find(id) == ids.end())
+	ids[id] = index++;
+      return ids[id];
+    }
+
     void SubdivPatch1CachedIntersector1::createTessellationCache()
     {
 #if LAZY_BUILD == 1
@@ -604,6 +619,9 @@ namespace embree
       assert( (size_t)cache % 64 == 0 );
       cache->init();	
 #endif
+
+      
+      DBG_PRINT((size_t)getThreadID());
       thread_cache = cache;
 
     }

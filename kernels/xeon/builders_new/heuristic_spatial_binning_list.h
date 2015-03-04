@@ -84,9 +84,15 @@ namespace embree
         /*! finds the best split */
         const Split find(Set& set, const PrimInfo& pinfo, const size_t logBlockSize)
         {
-          const ObjectSplit  objectSplit  = object_binning.find(set,pinfo,logBlockSize);
-          const SpatialSplit spatialSplit = spatial_binning.find(set,pinfo,logBlockSize);
+          SplitInfo oinfo;
+          const ObjectSplit objectSplit  = object_binning.find(set,pinfo,logBlockSize,oinfo);
           const float objectSplitSAH = objectSplit.splitSAH();
+
+          const BBox3fa overlap = intersect(oinfo.leftBounds,oinfo.rightBounds);
+          if (safeArea(overlap) < 0.2f*safeArea(pinfo.geomBounds)) 
+            return Split(objectSplit,objectSplitSAH);
+
+          const SpatialSplit spatialSplit = spatial_binning.find(set,pinfo,logBlockSize);
           const float spatialSplitSAH = spatialSplit.splitSAH();
           if (objectSplitSAH < spatialSplitSAH) return Split(objectSplit,objectSplitSAH);
           else                                  return Split(spatialSplit,spatialSplitSAH);

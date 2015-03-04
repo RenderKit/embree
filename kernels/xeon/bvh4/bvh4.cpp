@@ -1023,6 +1023,7 @@ namespace embree
     case RTC_GEOMETRY_STATIC:     builder = BVH4Triangle4MeshBuilderBinnedSAH2(accel,mesh,LeafMode); break;
     case RTC_GEOMETRY_DEFORMABLE: builder = BVH4Triangle4MeshRefitBinnedSAH2(accel,mesh,LeafMode); break;
     case RTC_GEOMETRY_DYNAMIC:    builder = BVH4Triangle4MeshBuilderMortonGeneral(accel,mesh,LeafMode); break;
+    //default:                      builder = BVH4Triangle4MeshBuilderMortonGeneral(accel,mesh,LeafMode); break;
 #else
     case RTC_GEOMETRY_STATIC:     builder = BVH4Triangle4MeshBuilderFast(accel,mesh,LeafMode); break;
     case RTC_GEOMETRY_DEFORMABLE: builder = BVH4Triangle4MeshRefitFast(accel,mesh,LeafMode); break;

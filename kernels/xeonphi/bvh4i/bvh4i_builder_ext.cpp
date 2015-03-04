@@ -1294,7 +1294,8 @@ PRINT(CORRECT_numPrims);
 
     if (threadIndex == 0)
       {
-	bvh->accel = accel;
+	bvh->accel         = accel;
+	bvh->numPrimitives = numPrimitives;
       }
 
   }

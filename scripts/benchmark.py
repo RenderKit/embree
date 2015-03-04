@@ -131,8 +131,8 @@ def printData(name,model):
   sys.stdout.write(line)
 
 def printHeader():
-  tableWidth = 40 + 60
-  line  = '  ' + '{0:<20}'.format('') + ' |     Memory      Build    SAH      Render'
+  tableWidth = 55 + 60
+  line  = '  ' + '{0:<35}'.format('') + ' |     Memory      Build    SAH      Render'
   print(line)
   line = ''
   while (len(line) < tableWidth): line = line + '-'
@@ -144,12 +144,12 @@ def printDataLoop():
   for model in models:
     print(model)
     for name in names:
-      sys.stdout.write('  ' + '{0:<20}'.format(name) + ' | ')
+      sys.stdout.write('  ' + '{0:<35}'.format(name) + ' | ')
       printData(name,model)
   if len(models) > 1:
     print('average')
     for name in names:
-      sys.stdout.write('  ' + '{0:<20}'.format(name) + ' | ')
+      sys.stdout.write('  ' + '{0:<35}'.format(name) + ' | ')
       printData(name,'average')
 
   print('')
