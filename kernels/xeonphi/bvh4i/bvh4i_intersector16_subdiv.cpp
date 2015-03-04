@@ -38,6 +38,8 @@
 
 #define LAZY_BUILD 1
 
+#define SHARED_LAZY_CACHE 1
+
 namespace embree
 {
   __aligned(64) AtomicCounter globalRenderThreads = 0;
@@ -62,29 +64,16 @@ namespace embree
 
     class __aligned(64) SharedLazyTessellationCache 
     {
-      static const size_t SIZE = 128*1024*1024; // 1GB
-
-    public:
-    
-      struct __aligned(16) Tag {
-	volatile size_t ref;
-	RWMutex mtx;
-      };
-
+      static const size_t SIZE = 512*1024*1024; // 1GB
 
     private:
       float *data;
-      Tag   *root_table;
       size_t maxBlocks;
-      volatile unsigned int commitCounter;
-      unsigned int numPrimitives;
       __aligned(64) AtomicCounter next_block;
-      __aligned(64) AtomicCounter sync_threads;
-      RWMutex init_mtx;
+      __aligned(64) AtomicMutex reset_state;
 
       struct __aligned(64) ThreadWorkState {
-	RWMutex mtx;;
-	
+	RWMutex mtx;	
 	ThreadWorkState() { mtx.reset(); }
       };
 
@@ -93,34 +82,74 @@ namespace embree
     public:
       SharedLazyTessellationCache()
 	{
-	  data          = (float*)os_malloc(SIZE);
-	  maxBlocks     = SIZE/64;
-	  root_table    = NULL;
-	  commitCounter = (unsigned int)-1;
-	  numPrimitives = 0;
-	  next_block    = 0;
-	  init_mtx.reset();
-	  sync_threads = 0;
+	  data         = (float*)os_malloc(SIZE);
+	  maxBlocks    = SIZE/64;
+	  next_block   = 0;
+	  reset_state.reset();   
 	}
 
-      __forceinline void lockThread(const unsigned int threadID)
+      __forceinline void readLockThread(const unsigned int threadID)
       {
 	assert(threadWorkState[threadID].mtx.num_readers() == 0);
 	threadWorkState[threadID].mtx.read_lock();
       }
 
-      __forceinline void unlockThread(const unsigned int threadID)
+      __forceinline void readUnlockThread(const unsigned int threadID)
       {
 	assert(threadWorkState[threadID].mtx.num_readers() == 1);
 	threadWorkState[threadID].mtx.read_unlock();
       }
 
-      __forceinline unsigned int getCommitCounter() { return commitCounter; }
-    
-      __noinline void resetCache() 
+      __forceinline void writeLockThread(const unsigned int threadID)
       {
-	memset((void*)root_table,0,sizeof(Tag)*numPrimitives);
-	next_block = 0;
+	threadWorkState[threadID].mtx.write_lock();
+      }
+
+      __forceinline void writeUnlockThread(const unsigned int threadID)
+      {
+	threadWorkState[threadID].mtx.write_unlock();
+      }
+    
+      __noinline void resetCache(SubdivPatch1* const patches,
+				 const size_t numPatches) 
+      {
+	if (reset_state.try_lock())
+	  {
+	    if (next_block >= maxBlocks)
+	      {
+		double msec = 0.0;
+		msec = getSeconds();
+
+		//DBG_PRINT("WAIT FOR THREADS TO LOCK");
+		for (size_t i=0;i<globalRenderThreads;i++)
+		  writeLockThread(i);
+		//DBG_PRINT("DONE");
+
+
+		for (size_t i=0;i<numPatches;i++)
+		  {
+		    prefetch<PFHINT_L1EX>(&patches[i+2]);
+		    prefetch<PFHINT_L2EX>(&patches[i+16]);
+		    patches[i].resetRootRef();
+		  }
+
+
+		//DBG_PRINT("WAIT FOR THREADS TO UNLOCK");
+		for (size_t i=0;i<globalRenderThreads;i++)
+		  writeUnlockThread(i);
+		//DBG_PRINT("DONE");
+
+
+		next_block = 0;
+
+		msec = getSeconds()-msec;    
+		DBG_PRINT( 1000.0f * msec );
+
+	      }
+	    reset_state.unlock();
+	  }
+	else
+	  reset_state.wait_until_unlocked();	
       }
 
       __noinline size_t alloc(const size_t blocks)
@@ -128,20 +157,6 @@ namespace embree
 	size_t index = next_block.add(blocks);
 	if (unlikely(index + blocks >= maxBlocks)) return (size_t)-1;
 	return index;
-      }
-
-      __forceinline size_t getPrimID(const InputTagType primID, const SubdivPatch1 *const subdiv_patches)
-      {
-	const unsigned int prim_tag = toTag((size_t)primID - (size_t)subdiv_patches);
-	assert(prim_tag < numPrimitives);
-	return root_table[prim_tag].ref;
-      }
-
-      __forceinline Tag *getTag(const InputTagType primID)
-      {
-	const unsigned int prim_tag = toTag(primID);
-	assert(prim_tag < numPrimitives);
-	return &root_table[prim_tag];
       }
 
       __forceinline mic_f *getBlockPtr(const size_t block_index)
@@ -155,74 +170,40 @@ namespace embree
 	return next_block * 64; 
       }
 
-      __noinline void init(const unsigned int counter, 
-			   const unsigned int primitives)
-      {
-	/* already initialized? */
-	if (likely(commitCounter == counter)) return;
 
-	/* write lock */
-	init_mtx.write_lock();
-
-
-	/* already initialized? */
-	if (commitCounter != counter)
-	  {
-	    DBG_PRINT("INIT SHARED LAZY CACHE");
-	    DBG_PRINT(counter);
-	    DBG_PRINT(primitives);
-
-	    /* resize? */
-	    if (numPrimitives != primitives)
-	      {
-		if (root_table) os_free(root_table,sizeof(Tag)*numPrimitives);
-		numPrimitives = primitives;
-		root_table    = (Tag*)os_malloc(sizeof(Tag)*numPrimitives);
-	      }
-	    /* reset the cache */
-	    resetCache();
-	    
-	    /* finally set the new commit counter */
-	    commitCounter = counter;
-	  }
-
-	/* write unlock */      
-	init_mtx.write_unlock();      
-      }
-
-
-    __noinline void sync()
-    {      
-      const unsigned int id = sync_threads.add(1);
-
-      //DBG_PRINT(id);
-      //DBG_PRINT(globalRenderThreads);
-
-      if (id == 0)
-	{
-	  DBG_PRINT("WRITE LOCK ALL THREADS");
-	  for (size_t i=0;i<globalRenderThreads;i++)
-	    threadWorkState[i].mtx.write_lock();
-
-	  /* last thread */
-	  DBG_PRINT("CACHE FLUSH");
-	  resetCache();
-	  next_block = 0;
-	  sync_threads = 0;
-
-	  DBG_PRINT("WRITE UNLOCK ALL THREADS");
-	  for (size_t i=0;i<globalRenderThreads;i++)
-	    threadWorkState[i].mtx.write_lock();
-
-	  DBG_PRINT("DONE");
-	}
-
-      while(sync_threads != 0);
-      _mm_delay_32(256);
       
-      //while(next_block != 0)
+    // __noinline void sync()
+    // {      
+    //   const unsigned int id = sync_threads.add(1);
+
+    //   //DBG_PRINT(id);
+    //   //DBG_PRINT(globalRenderThreads);
+
+    //   if (id == 0)
+    // 	{
+    // 	  DBG_PRINT("WRITE LOCK ALL THREADS");
+    // 	  for (size_t i=0;i<globalRenderThreads;i++)
+    // 	    threadWorkState[i].mtx.write_lock();
+
+    // 	  /* last thread */
+    // 	  DBG_PRINT("CACHE FLUSH");
+    // 	  resetCache();
+    // 	  next_block = 0;
+    // 	  sync_threads = 0;
+
+    // 	  DBG_PRINT("WRITE UNLOCK ALL THREADS");
+    // 	  for (size_t i=0;i<globalRenderThreads;i++)
+    // 	    threadWorkState[i].mtx.write_lock();
+
+    // 	  DBG_PRINT("DONE");
+    // 	}
+
+    //   while(sync_threads != 0);
+    //   _mm_delay_32(256);
+      
+    //   //while(next_block != 0)
                   
-    }
+    // }
 
     };
 
@@ -485,7 +466,6 @@ namespace embree
 
       assert(currentIndex - oldIndex == patch.grid_subtree_size_64b_blocks);
       TIMER(msec = getSeconds()-msec);    
-      TIMER(if (patch.grid_size_simd_blocks > 50) DBG_PRINT(1000. * msec));
       return subtree_root;
     }
 
@@ -917,38 +897,43 @@ namespace embree
     __forceinline size_t lazyBuildPatch(const unsigned int patchIndex,
 					const unsigned int commitCounter,
 					SubdivPatch1* const patches,
+					const size_t numPatches,
 					Scene *const scene,
 					TessellationRefCache *ref_cache,
 					LocalThreadInfo *threadInfo)
     {
-#if 1
-      while(1)
-	{
-	  sharedLazyTessellationCache.lockThread(threadInfo->id);
-	  SharedLazyTessellationCache::Tag *tag = sharedLazyTessellationCache.getTag(patchIndex);
-	  CACHE_STATS(SharedTessellationCacheStats::cache_accesses++);
-	  if (likely(tag->ref)) 
-	    {
-	      CACHE_STATS(SharedTessellationCacheStats::cache_hits++);
-	      return tag->ref;
-	    }
-	  else
-	    {
-	      CACHE_STATS(SharedTessellationCacheStats::cache_misses++);
+#if SHARED_LAZY_CACHE == 1
+      sharedLazyTessellationCache.readLockThread(threadInfo->id);
+      SubdivPatch1* subdiv_patch = &patches[patchIndex];
 
-	      tag->mtx.write_lock();
-	      if (tag->ref == 0)
+	  
+      CACHE_STATS(SharedTessellationCacheStats::cache_accesses++);
+      if (likely(subdiv_patch->root_ref)) 
+	{
+	  CACHE_STATS(SharedTessellationCacheStats::cache_hits++);
+	  return subdiv_patch->root_ref;
+	}
+      else
+	{
+	  CACHE_STATS(SharedTessellationCacheStats::cache_misses++);
+	  sharedLazyTessellationCache.readUnlockThread(threadInfo->id);
+
+	  while(1)
+	    {
+	      sharedLazyTessellationCache.readLockThread(threadInfo->id);
+	      subdiv_patch->write_lock();
+	      if (subdiv_patch->root_ref == 0)
 		{
 
-		  SubdivPatch1* subdiv_patch = &patches[patchIndex];
 		  const SubdivMesh* const geom = (SubdivMesh*)scene->get(subdiv_patch->geom); 
 		  size_t block_index = sharedLazyTessellationCache.alloc(subdiv_patch->grid_subtree_size_64b_blocks);
 		  if (block_index == (size_t)-1)
 		    {
 		      /* cannot allocate => flush the cache */
-		      tag->mtx.write_unlock();
-		      sharedLazyTessellationCache.unlockThread(threadInfo->id);
-		      sharedLazyTessellationCache.sync();
+		      subdiv_patch->write_unlock();
+		      sharedLazyTessellationCache.readUnlockThread(threadInfo->id);
+
+		      sharedLazyTessellationCache.resetCache(patches,numPatches);
 		      continue;
 		    }
 		  //DBG_PRINT( sharedLazyTessellationCache.getNumAllocatedBytes() );
@@ -956,12 +941,11 @@ namespace embree
 		  unsigned int currentIndex = 0;
 		  BVH4i::NodeRef bvh4i_root = initLocalLazySubdivTree(*subdiv_patch,currentIndex,local_mem,geom);		      
 		  size_t new_root = (size_t)bvh4i_root + (size_t)local_mem;
-		  tag->ref = new_root;
+		  subdiv_patch->root_ref = new_root;
 		}
-	      tag->mtx.write_unlock();
-	      //DBG_PRINT("UNLOCK");
-	      assert(tag->ref);
-	      return tag->ref;
+	      subdiv_patch->write_unlock();
+	      assert(subdiv_patch->root_ref);
+	      return subdiv_patch->root_ref;
 	    }
 	}
 
@@ -1034,9 +1018,6 @@ namespace embree
 	  localThreadInfo = new LocalThreadInfo( id );
 	}
       threadInfo = localThreadInfo;
-
-      /* init shared lazy cache */
-      sharedLazyTessellationCache.init(commitCounter,bvh->numPrimitives);
 #else
       /* query per thread tessellation cache */
       TessellationCache *local_cache = NULL;
@@ -1091,7 +1072,7 @@ namespace embree
 
 	      // ----------------------------------------------------------------------------------------------------
 #if LAZY_BUILD == 1
-	      size_t cached_64bit_root = lazyBuildPatch(patchIndex,commitCounter,(SubdivPatch1*)accel,scene,local_ref_cache,threadInfo);
+	      size_t cached_64bit_root = lazyBuildPatch(patchIndex,commitCounter,(SubdivPatch1*)accel,bvh->numPrimitives,scene,local_ref_cache,threadInfo);
 #else
 	      TessellationCacheTag *t = lookUpTessellationCache(local_cache,patchIndex,commitCounter,(SubdivPatch1*)accel,scene);
 	      size_t cached_64bit_root = t->getRootRef();	      
@@ -1151,8 +1132,8 @@ namespace embree
 				    patchIndex);
 		}
 
-#if LAZY_BUILD == 1
-	      sharedLazyTessellationCache.unlockThread(threadInfo->id);
+#if SHARED_LAZY_CACHE == 1
+	      sharedLazyTessellationCache.readUnlockThread(threadInfo->id);
 #endif
 
 #if defined(ONLY_SHARED_CACHE)
@@ -1237,8 +1218,6 @@ namespace embree
 	}
       threadInfo = localThreadInfo;
 
-      /* init shared lazy cache */
-      sharedLazyTessellationCache.init(commitCounter,bvh->numPrimitives);
 #else
       /* query per thread tessellation cache */
       TessellationCache *local_cache = NULL;
@@ -1295,7 +1274,7 @@ namespace embree
 
 	      // ----------------------------------------------------------------------------------------------------
 #if LAZY_BUILD == 1
-	      size_t cached_64bit_root = lazyBuildPatch(patchIndex,commitCounter,(SubdivPatch1*)accel,scene,local_ref_cache,threadInfo);
+	      size_t cached_64bit_root = lazyBuildPatch(patchIndex,commitCounter,(SubdivPatch1*)accel,bvh->numPrimitives,scene,local_ref_cache,threadInfo);
 #else
 	      TessellationCacheTag *t = lookUpTessellationCache(local_cache,patchIndex,commitCounter,(SubdivPatch1*)accel,scene);
 	      size_t cached_64bit_root = t->getRootRef();	      
@@ -1358,8 +1337,8 @@ namespace embree
 		      }
 		  }
 
-#if LAZY_BUILD == 1
-		sharedLazyTessellationCache.unlockThread(threadInfo->id);
+#if SHARED_LAZY_CACHE == 1
+		sharedLazyTessellationCache.readUnlockThread(threadInfo->id);
 #endif
 
 #if defined(ONLY_SHARED_CACHE)
@@ -1414,8 +1393,6 @@ namespace embree
 	}
       threadInfo = localThreadInfo;
 
-      /* init shared lazy cache */
-      sharedLazyTessellationCache.init(commitCounter,bvh->numPrimitives);
 #else
       /* query per thread tessellation cache */
       TessellationCache *local_cache = NULL;
@@ -1467,7 +1444,7 @@ namespace embree
 
 	  // ----------------------------------------------------------------------------------------------------
 #if LAZY_BUILD == 1
-	  size_t cached_64bit_root = lazyBuildPatch(patchIndex,commitCounter,(SubdivPatch1*)accel,scene,local_ref_cache,threadInfo);
+	  size_t cached_64bit_root = lazyBuildPatch(patchIndex,commitCounter,(SubdivPatch1*)accel,bvh->numPrimitives,scene,local_ref_cache,threadInfo);
 #else
 	  TessellationCacheTag *t = lookUpTessellationCache(local_cache,patchIndex,commitCounter,(SubdivPatch1*)accel,scene);
 	  size_t cached_64bit_root = t->getRootRef();	      
@@ -1526,8 +1503,8 @@ namespace embree
 				patchIndex);
 	    }
 
-#if LAZY_BUILD == 1
-	  sharedLazyTessellationCache.unlockThread(threadInfo->id);
+#if SHARED_LAZY_CACHE == 1
+	  sharedLazyTessellationCache.readUnlockThread(threadInfo->id);
 #endif
 
 #if defined(ONLY_SHARED_CACHE)
@@ -1570,8 +1547,6 @@ namespace embree
 	}
       threadInfo = localThreadInfo;
 
-      /* init shared lazy cache */
-      sharedLazyTessellationCache.init(commitCounter,bvh->numPrimitives);
 #else
       /* query per thread tessellation cache */
       TessellationCache *local_cache = NULL;
@@ -1624,7 +1599,7 @@ namespace embree
 
 	  // ----------------------------------------------------------------------------------------------------
 #if LAZY_BUILD == 1
-	  size_t cached_64bit_root = lazyBuildPatch(patchIndex,commitCounter,(SubdivPatch1*)accel,scene,local_ref_cache,threadInfo);
+	  size_t cached_64bit_root = lazyBuildPatch(patchIndex,commitCounter,(SubdivPatch1*)accel,bvh->numPrimitives,scene,local_ref_cache,threadInfo);
 #else
 	  TessellationCacheTag *t = lookUpTessellationCache(local_cache,patchIndex,commitCounter,(SubdivPatch1*)accel,scene);
 	  size_t cached_64bit_root = t->getRootRef();	      
@@ -1683,8 +1658,8 @@ namespace embree
 					    patchIndex)))
 		{
 
-#if LAZY_BUILD == 1
-		  sharedLazyTessellationCache.unlockThread(threadInfo->id);
+#if SHARED_LAZY_CACHE == 1
+		  sharedLazyTessellationCache.readUnlockThread(threadInfo->id);
 #endif
 
 #if defined(ONLY_SHARED_CACHE)
@@ -1699,8 +1674,8 @@ namespace embree
 	  t->read_unlock();
 #endif
 
-#if LAZY_BUILD == 1
-	  sharedLazyTessellationCache.unlockThread(threadInfo->id);
+#if SHARED_LAZY_CACHE == 1
+	  sharedLazyTessellationCache.readUnlockThread(threadInfo->id);
 #endif
 
 

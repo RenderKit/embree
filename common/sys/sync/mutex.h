@@ -72,7 +72,7 @@ namespace embree
       }
     }
 
-    __forceinline bool tryLock()
+    __forceinline bool try_lock()
     {
       if (flag == 1) return false;
       return atomic_cmpxchg(&flag,0,1) == 0;
@@ -82,6 +82,23 @@ namespace embree
     {
       __memory_barrier();
       flag = 0;
+      __memory_barrier();
+    }
+
+
+    __forceinline void wait_until_unlocked() 
+    {
+      unsigned int wait = 128;
+      __memory_barrier();
+      while(flag == 1)
+	{
+#if !defined(__MIC__)
+	  _mm_pause(); 
+	  _mm_pause();
+#else
+	  _mm_delay_32(wait); 
+#endif	
+	}
       __memory_barrier();
     }
 
@@ -290,6 +307,7 @@ namespace embree
    }
 
 
+
  public:
 
  RWMutex() : data(0) {}
@@ -298,6 +316,9 @@ namespace embree
    {
      data = 0;
    }
+
+   __forceinline bool hasInitialState() { return data == 0; }
+
    void pause();
     
    void read_lock();

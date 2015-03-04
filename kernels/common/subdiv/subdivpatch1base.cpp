@@ -96,9 +96,11 @@ namespace embree
                                       const float edge_level[4]) 
     : geom(gID),
       prim(pID),  
-      flags(0)
+      flags(0),
+      root_ref(0)
   {
     assert(sizeof(SubdivPatch1Base) == 5 * 64);
+    mtx.reset();
 
     for (size_t i=0;i<4;i++)
       {
