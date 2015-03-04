@@ -297,9 +297,12 @@ namespace embree
 	  std::cout << "building BVH8<" << bvh->primTy.name << "> with " << TOSTRING(isa) "::BVH8BuilderBinnedSAH2 " << (presplitFactor != 1.0f ? "presplit" : "") << " ... " << std::flush;
 
 	double t0 = 0.0f, dt = 0.0f;
-	//profile(2,20,numPrimitives,[&] (ProfileTimer& timer) {
+#if PROFILE
+	profile(2,20,numPrimitives,[&] (ProfileTimer& timer)
+        {
+#endif
 	    
-	    if (g_verbose >= 1 && mesh == NULL) t0 = getSeconds();
+          if ((g_benchmark || g_verbose >= 1) && mesh == NULL) t0 = getSeconds();
 	    
 	    bvh->alloc2.init(numSplitPrimitives*sizeof(PrimRef),numSplitPrimitives*sizeof(BVH8::Node));  // FIXME: better estimate
 	    //prims.resize(numSplitPrimitives);
@@ -308,58 +311,41 @@ namespace embree
             PrimInfo pinfo = createPrimRefList<Mesh,1>(scene,prims);
             //PRINT(pinfo.size());
 
+            //SpatialSplitHeuristic heuristic(scene);
+
             /* calculate total surface area */
-            float A = 0.0f;
-            for (PrimRefList::block_iterator_unsafe iter = prims; iter; iter++) {
-              A += area(*iter);
-              iter++;
-            }
-
-            /* try to calculate a number of splits per primitive, such that
-             * we do not generate more primitives than the size of the prims
-             * array */
-            float spatialSplitFactor = 1.5f;
-            float f = spatialSplitFactor/0.9f;
-            size_t N = 0, iterations = 0;
-            do {
-              f *= 0.9f;
-              N = 0;
-              
-              for (PrimRefList::block_iterator_unsafe iter = prims; iter; iter++) {
-                const float nf = ceil(f*pinfo.size()*area(*iter)/A);
-                const size_t n = min(ssize_t(255), max(ssize_t(1), ssize_t(nf)));
-                N+=n;
+            PrimRefList::iterator iter = prims;
+            const size_t threadCount = TaskSchedulerNew::threadCount();
+            const double A = parallel_reduce(size_t(0),threadCount,0.0, [&] (const range<size_t>& r) // FIXME: this sum is not deterministic
+            {
+              double A = 0.0f;
+              while (PrimRefList::item* block = iter.next()) {
+                for (size_t i=0; i<block->size(); i++) 
+                  A += area(block->at(i));
+                //A += heuristic(block->at(i));
               }
-              if (iterations++ == 20) {
-                goto skip_spatial_splits;
+              return A;
+            },std::plus<double>());
+
+            /* calculate number of maximal spatial splits per primitive */
+            float f = 10.0f;
+            iter = prims;
+            const size_t N = parallel_reduce(size_t(0),threadCount,size_t(0), [&] (const range<size_t>& r)
+            {
+              size_t N = 0;
+              while (PrimRefList::item* block = iter.next()) {
+                for (size_t i=0; i<block->size(); i++) {
+                  PrimRef& prim = block->at(i);
+                  assert((prim.lower.a & 0xFF000000) == 0);
+                  const float nf = ceil(f*pinfo.size()*area(prim)/A);
+                  //const size_t n = 16;
+                  const size_t n = 4+min(ssize_t(127-4), max(ssize_t(1), ssize_t(nf)));
+                  N += n;
+                  prim.lower.a |= n << 24;
+                }
               }
-            } while (N>spatialSplitFactor*pinfo.size());
-
-            //PRINT(spatialSplitFactor*pinfo.size());
-            //PRINT(N);
-
-            /*vector_t<std::pair<int,int>> geomIDprimID;
-            geomIDprimID.resize(pinfo.size());
-            PrimRefList::block_iterator_unsafe iter = prims;
-            for (size_t i=0; i<pinfo.size(); i++) {
-              geomIDprimID[i].first  = iter->lower.a;
-              geomIDprimID[i].second = iter->upper.a;
-              iter->lower.a = i;
-              iter->upper.a = 16;
-              iter++;
-              }*/
-
-            for (PrimRefList::block_iterator_unsafe iter = prims; iter; iter++) {
-              assert((iter->lower.a & 0xFF000000) == 0);
-              const float nf = ceil(f*pinfo.size()*area(*iter)/A);
-              const size_t n = min(ssize_t(255), max(ssize_t(1), ssize_t(nf)));
-              iter->lower.a |= n << 24;
-            }
-
-            //if (presplitFactor > 1.0f)
-            //pinfo = presplit<Mesh>(scene, pinfo, prims);
-
-      skip_spatial_splits:
+              return N;
+            },std::plus<size_t>());
 
 	    BVH8::NodeRef root = bvh_builder_reduce_spatial_sah2_internal<BVH8::NodeRef>
 	      (scene,CreateAlloc(bvh),size_t(0),CreateListBVH8Node(bvh),rotate,CreateListLeaf<Primitive>(bvh),
@@ -381,22 +367,29 @@ namespace embree
             bvh->clearBarrier(bvh->root);
 #endif
 
-	    if (g_verbose >= 1 && mesh == NULL) dt = getSeconds()-t0;
-
-            //  timer("BVH8BuilderBinnedSAH2");
-	    
-            //});
+            if ((g_benchmark || g_verbose >= 1) && mesh == NULL) dt = getSeconds()-t0;
+            
+#if PROFILE
+            dt = timer.avg();
+        }); 
+#endif	
 
 	/* clear temporary data for static geometry */
 	//bool staticGeom = mesh ? mesh->isStatic() : scene->isStatic();
 	//if (staticGeom) prims.resize(0,true);
 	bvh->alloc2.cleanup();
 
-	/* verbose mode */
+        /* verbose mode */
 	if (g_verbose >= 1 && mesh == NULL)
 	  std::cout << "[DONE] " << 1000.0f*dt << "ms (" << numPrimitives/dt*1E-6 << " Mtris/s)" << std::endl;
 	if (g_verbose >= 2 && mesh == NULL)
 	  bvh->printStatistics();
+
+        /* benchmark mode */
+        if (g_benchmark) {
+          BVH8Statistics stat(bvh);
+          std::cout << "BENCHMARK_BUILD " << dt << " " << double(numPrimitives)/dt << " " << stat.sah() << " " << stat.bytesUsed() << std::endl;
+        }
       }
     };
 
