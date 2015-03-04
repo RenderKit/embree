@@ -202,9 +202,9 @@ namespace embree
         {
           c.numBegin[i] += a.numBegin[i]+b.numBegin[i];
           c.numEnd  [i] += a.numEnd  [i]+b.numEnd  [i];
-          c.bounds[i][0] = merge(a.bounds[i][0],b.bounds[i][0]);
-          c.bounds[i][1] = merge(a.bounds[i][1],b.bounds[i][1]);
-          c.bounds[i][2] = merge(a.bounds[i][2],b.bounds[i][2]);
+          c.bounds[i][0] = embree::merge(a.bounds[i][0],b.bounds[i][0]);
+          c.bounds[i][1] = embree::merge(a.bounds[i][1],b.bounds[i][1]);
+          c.bounds[i][2] = embree::merge(a.bounds[i][2],b.bounds[i][2]);
         }
         return c;
       }

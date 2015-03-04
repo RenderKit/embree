@@ -40,9 +40,8 @@ namespace embree
         /*! finds the best split */
         const Split find(Set& set, const PrimInfo& pinfo, const size_t logBlockSize)
         {
-          //if (likely(pinfo.size() < 10000)) // FIXME: implement parallel code path
-            return sequential_find(set,pinfo,logBlockSize);
-            //else                              return   parallel_find(set,pinfo,logBlockSize);
+          if (likely(pinfo.size() < 10000)) return sequential_find(set,pinfo,logBlockSize);
+          else                              return   parallel_find(set,pinfo,logBlockSize);
         }
         
         /*! finds the best split */
@@ -53,6 +52,25 @@ namespace embree
           PrimRefList::iterator i=prims;
           while (PrimRefList::item* block = i.next())
             binner.bin(splitPrimitive,block->base(),block->size(),pinfo,mapping);
+          return binner.best(pinfo,mapping,logBlockSize);
+        }
+
+        /*! finds the best split */
+        const Split parallel_find(Set& prims, const PrimInfo& pinfo, const size_t logBlockSize)
+        {
+          const SpatialBinMapping<BINS> mapping(pinfo);
+          PrimRefList::iterator i=prims;
+
+          const size_t threadCount = TaskSchedulerNew::threadCount();
+          const Binner binner = parallel_reduce(size_t(0),threadCount,Binner(empty), [&] (const range<size_t>& r) 
+          {
+            Binner binner(empty);
+            while (PrimRefList::item* block = i.next()) {
+              binner.bin(splitPrimitive,block->base(),block->size(),pinfo,mapping);
+            }
+            return binner;
+          },[](const Binner& a, const Binner& b) { return Binner::reduce(a,b); });
+          
           return binner.best(pinfo,mapping,logBlockSize);
         }
         
