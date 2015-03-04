@@ -77,9 +77,8 @@ namespace embree
         /*! splits a list of primitives */
         void split(const Split& split, const PrimInfo& pinfo, Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset) 
         {
-          //if (likely(pinfo.size() < 10000)) // FIXME: implement parallel code path
-            sequential_split(split,set,left,lset,right,rset);
-            //else                                parallel_split(split,set,left,lset,right,rset);
+          if (likely(pinfo.size() < 10000)) sequential_split(split,set,left,lset,right,rset);
+          else                                parallel_split(split,set,left,lset,right,rset);
         }
 
         /*! array partitioning */
@@ -87,7 +86,7 @@ namespace embree
                               PrimInfo& linfo_o, Set& lprims_o, PrimInfo& rinfo_o, Set& rprims_o) 
         {
           if (!split.valid()) {
-            //deterministic_order(set); // FIXME: enable
+            deterministic_order(prims);
             return splitFallback(prims,linfo_o,lprims_o,rinfo_o,rprims_o);
           }
           
@@ -172,12 +171,133 @@ namespace embree
             delete block;
           }
         }
+
+        /*! array partitioning */
+        void parallel_split(const Split& split, Set& prims, 
+                            PrimInfo& linfo_o, Set& lprims_o, PrimInfo& rinfo_o, Set& rprims_o) 
+        {
+          if (!split.valid()) {
+            deterministic_order(prims);
+            return splitFallback(prims,linfo_o,lprims_o,rinfo_o,rprims_o);
+          }
+
+          struct PrimInfo2
+          {
+            __forceinline PrimInfo2(EmptyTy) 
+              : left(empty), right(empty) {}
+            
+            __forceinline PrimInfo2(const PrimInfo& left, const PrimInfo& right)
+              : left(left), right(right) {}
+
+            static __forceinline const PrimInfo2 merge (const PrimInfo2& a, const PrimInfo2& b) {
+              return PrimInfo2(PrimInfo::merge(a.left,b.left),PrimInfo::merge(a.right,b.right));
+            }
+
+          public:
+            PrimInfo left,right;
+          };
+
+          linfo_o.reset();
+          rinfo_o.reset();
+
+          const size_t threadCount = TaskSchedulerNew::threadCount();
+          const PrimInfo2 info = parallel_reduce(size_t(0),threadCount,PrimInfo2(empty), [&] (const range<size_t>& r) 
+          {
+            PrimInfo linfo(empty);
+            PrimInfo rinfo(empty);
+            PrimRefList::item* lblock = NULL;
+            PrimRefList::item* rblock = NULL;
+
+            /* sort each primitive to left, right, or left and right */
+            while (PrimRefList::item* block = prims.take()) 
+            {
+              if (lblock == NULL) lblock = lprims_o.insert(new PrimRefList::item);
+              if (rblock == NULL) rblock = rprims_o.insert(new PrimRefList::item);
+              
+              for (size_t i=0; i<block->size(); i++) 
+              {
+                PrimRef& prim = block->at(i); 
+                const BBox3fa bounds = prim.bounds();
+                int bin0 = split.mapping.bin(bounds.lower)[split.dim];
+                int bin1 = split.mapping.bin(bounds.upper)[split.dim];
+                
+                const int splits = prim.geomID() >> 24;
+                if (splits == 0) {
+                  const ssei bin = split.mapping.bin(center(prim.bounds()));
+                  bin0 = bin1 = bin[split.dim];
+                }
+                
+                /* sort to the left side */
+                if (bin1 < split.pos)
+                {
+                  linfo.add(bounds,center2(bounds));
+                  if (likely(lblock->insert(prim))) continue; 
+                  lblock = lprims_o.insert(new PrimRefList::item);
+                  lblock->insert(prim);
+                  continue;
+                }
+                
+                /* sort to the right side */
+                if (bin0 >= split.pos)
+                {
+                  rinfo.add(bounds,center2(bounds));
+                  if (likely(rblock->insert(prim))) continue;
+                  rblock = rprims_o.insert(new PrimRefList::item);
+                  rblock->insert(prim);
+                  continue;
+                }
+                //assert(prim.geomID() >> 24);
+                
+                /* split and sort to left and right */
+                //TriangleMesh* mesh = (TriangleMesh*) scene->get(prim.geomID());
+                //TriangleMesh* mesh = (TriangleMesh*) scene->get(prim.geomID() & 0x00FFFFFF); // FIXME: hack !!
+                //TriangleMesh::Triangle tri = mesh->triangle(prim.primID());
+                //const Vec3fa v0 = mesh->vertex(tri.v[0]);
+                //const Vec3fa v1 = mesh->vertex(tri.v[1]);
+                //const Vec3fa v2 = mesh->vertex(tri.v[2]);
+                
+                PrimRef left,right;
+                float fpos = split.mapping.pos(split.pos,split.dim);
+                //splitTriangle(prim,split.dim,fpos,v0,v1,v2,left,right);
+                splitPrimitive(prim,split.dim,fpos,left,right);
+                int lsplits = splits/2, rsplits = lsplits+splits%2;
+                
+                if (!left.bounds().empty()) 
+                {
+                  left.lower.a = (left.lower.a & 0x00FFFFFF) | (lsplits << 24);
+                  
+                  linfo.add(left.bounds(),center2(left.bounds()));
+                  if (!lblock->insert(left)) {
+                    lblock = lprims_o.insert(new PrimRefList::item);
+                    lblock->insert(left);
+                  }
+                }
+                
+                if (!right.bounds().empty()) 
+                {
+                  right.lower.a = (right.lower.a & 0x00FFFFFF) | (rsplits << 24);
+                  
+                  rinfo.add(right.bounds(),center2(right.bounds()));
+                  if (!rblock->insert(right)) {
+                    rblock = rprims_o.insert(new PrimRefList::item);
+                    rblock->insert(right);
+                  }
+                }
+              }
+              delete block;
+            }
+            return PrimInfo2(linfo,rinfo);
+          }, [] (const PrimInfo2& a, const PrimInfo2& b) { return PrimInfo2::merge(a,b); });
+
+          linfo_o.merge(info.left);
+          rinfo_o.merge(info.right);
+        }
         
-        //void deterministic_order(const Set& set) 
-        //{
-        /* required as parallel partition destroys original primitive order */
-        //std::sort(&prims[set.begin()],&prims[set.end()]);
-        //}
+        void deterministic_order(const Set& set) // FIXME: implement me
+        {
+          /* required as parallel partition destroys original primitive order */
+          //std::sort(&prims[set.begin()],&prims[set.end()]);
+        }
 
         void splitFallback(Set& prims, PrimInfo& linfo_o, Set& lprims_o, PrimInfo& rinfo_o, Set& rprims_o)
         {
