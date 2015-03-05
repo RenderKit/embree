@@ -106,14 +106,12 @@ namespace embree
 
   __dllexport void ISPCLaunch(void** taskPtr, void* func, void* data, int count) 
   {      
-    SPAWN_ROOT(([&] () {
-        parallel_for(size_t(0), size_t(count), [&] (const range<size_t>& r) {
-            const size_t threadIndex = TaskSchedulerNew::thread()->threadIndex;
-            const size_t threadCount = TaskSchedulerNew::threadCount();
-            for (size_t i=r.begin(); i<r.end(); i++) 
-              ((TaskFuncType)func)(data,threadIndex,threadCount,i,count);
-          });
-        }));
+    parallel_for(size_t(0), size_t(count), [&] (const range<size_t>& r) {
+        const size_t threadIndex = TaskSchedulerNew::thread()->threadIndex;
+        const size_t threadCount = TaskSchedulerNew::threadCount();
+        for (size_t i=r.begin(); i<r.end(); i++) 
+          ((TaskFuncType)func)(data,threadIndex,threadCount,i,count);
+      });
   }
 
 #endif

@@ -42,7 +42,8 @@ IF (__XEON__)
   TARGET_LINK_LIBRARIES(retrace sys simd embree)
   SET_PROPERTY(TARGET retrace PROPERTY FOLDER tests)
 
-  IF (TASKING_TBB)
+  IF (TASKING_TBB) # FIXME: remove test
+    FIND_PACKAGE(TBB REQUIRED)
     ADD_EXECUTABLE(benchmark_tasking 
       benchmark_tasking.cpp
       ../../common/tasking/taskscheduler.cpp

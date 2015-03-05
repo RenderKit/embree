@@ -297,11 +297,8 @@ namespace embree
                                      PrimRef* prims, const PrimInfo& pinfo, 
                                      const size_t branchingFactor, const size_t maxDepth, const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize)
     {
-      NodeRef root;
-      SPAWN_ROOT(([&] {
-	    root = bvh_builder_binned_sah_internal<NodeRef>(createAlloc,createNode,createLeaf,prims,pinfo,branchingFactor,maxDepth,blockSize,minLeafSize,maxLeafSize);
-	  }));
-      return root;
+      return bvh_builder_binned_sah_internal<NodeRef>(createAlloc,createNode,createLeaf,prims,pinfo,
+                                                      branchingFactor,maxDepth,blockSize,minLeafSize,maxLeafSize);
     }
   }
 }

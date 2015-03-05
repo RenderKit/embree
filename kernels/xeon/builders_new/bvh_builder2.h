@@ -379,11 +379,8 @@ namespace embree
                                       const size_t branchingFactor, const size_t maxDepth, const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize,
                                       const float travCost, const float intCost)
     {
-      NodeRef root;
-      SPAWN_ROOT(([&] {
-	    root = bvh_builder_binned_sah2_internal<NodeRef>(createAlloc,createNode,createLeaf,prims,pinfo,branchingFactor,maxDepth,blockSize,minLeafSize,maxLeafSize,travCost,intCost);
-	  }));
-      return root;
+      return bvh_builder_binned_sah2_internal<NodeRef>(createAlloc,createNode,createLeaf,prims,pinfo,
+                                                       branchingFactor,maxDepth,blockSize,minLeafSize,maxLeafSize,travCost,intCost);
     }
   }
 }

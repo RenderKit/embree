@@ -32,12 +32,9 @@ namespace embree
     if (try_switch_state(INITIALIZED,DONE))
     {
       Task* prevTask = thread.task; 
-      
       thread.task = this;
-      /* set estimate working size here */
       closure->execute();
       thread.task = prevTask;
-      
       add_dependencies(-1);
     }
     
@@ -46,7 +43,7 @@ namespace embree
       if (thread.scheduler->steal_from_other_threads(thread))
         while (thread.tasks.execute_local(thread,this));
     }
-    
+   
     /* now signal our parent task that we are finished */
     if (parent) 
       parent->add_dependencies(-1);
@@ -91,8 +88,11 @@ namespace embree
 #endif
 
 #if TASKING_TBB_INTERNAL
-  __dllexport size_t TaskSchedulerNew::threadCount() {
-    return TaskSchedulerNew::thread()->scheduler->threadCounter;
+  __dllexport size_t TaskSchedulerNew::threadCount() 
+  {
+    Thread* thread = TaskSchedulerNew::thread();
+    if (thread) return thread->scheduler->threadCounter;
+    else        return g_instance->threadCounter;
   }
 #endif
 

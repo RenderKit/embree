@@ -30,14 +30,12 @@ namespace embree
 #  define SPAWN_BEGIN tbb::task_group __internal_task_group
 #  define SPAWN(closure) __internal_task_group.run(closure)
 #  define SPAWN_END __internal_task_group.wait()
-#  define SPAWN_ROOT(closure) closure()
 #endif
 
 #if defined(TASKING_TBB_INTERNAL)
-#  define SPAWN_BEGIN TaskSchedulerNew* __internal_scheduler = TaskSchedulerNew::instance();
-#  define SPAWN(closure) __internal_scheduler->spawn(closure)
-#  define SPAWN_END __internal_scheduler->wait();
-#  define SPAWN_ROOT(closure) TaskSchedulerNew::g_instance->spawn_root(closure)
+#  define SPAWN_BEGIN 
+#  define SPAWN(closure) TaskSchedulerNew::spawn(closure)
+#  define SPAWN_END TaskSchedulerNew::wait();
 #endif
 
   struct TaskSchedulerNew
@@ -140,10 +138,10 @@ namespace embree
       __forceinline void push_right(Thread& thread, const size_t size, const Closure& closure) 
       {
         assert(right < TASK_STACK_SIZE);
-
+        
 	/* allocate new task on right side of stack */
         size_t oldStackPtr = stackPtr;
-        TaskFunction* func = new (alloc(sizeof(Closure))) ClosureTaskFunction<Closure>(closure);
+        TaskFunction* func = new (alloc(sizeof(ClosureTaskFunction<Closure>))) ClosureTaskFunction<Closure>(closure);
         new (&tasks[right++]) Task(func,thread.task,oldStackPtr,size);
 
 	/* also move left pointer */
@@ -244,10 +242,37 @@ namespace embree
 
     /* spawn a new task at the top of the threads task stack */
     template<typename Closure>
+    __noinline void spawn_root(const Closure& closure, size_t size = 1) // important: has to be noinline as it allocates thread structure on stack
+    {
+      if (createThreads)
+	startThreads();
+
+      assert(!active);
+      active = true;
+      Thread thread(0,this);
+      threadLocal[0] = &thread;
+      thread_local_thread = &thread;
+      thread.tasks.push_right(thread,size,closure);
+      {
+	std::unique_lock<std::mutex> lock(mutex);
+	atomic_add(&anyTasksRunning,+1);
+      }
+      condition.notify_all();
+      while (thread.tasks.execute_local(thread,NULL));
+      atomic_add(&anyTasksRunning,-1);
+
+      threadLocal[0] = NULL;
+      thread_local_thread = NULL;
+      active = false;
+    }
+
+    /* spawn a new task at the top of the threads task stack */
+    template<typename Closure>
     static __forceinline void spawn(size_t size, const Closure& closure) 
     {
       Thread* thread = TaskSchedulerNew::thread();
-      thread->tasks.push_right(*thread,size,closure);
+      if (likely(thread != nullptr)) thread->tasks.push_right(*thread,size,closure);
+      else                           g_instance->spawn_root(closure,size);
     }
 
     /* spawn a new task at the top of the threads task stack */
@@ -258,7 +283,7 @@ namespace embree
 
     /* spawn a new task set  */
     template<typename Closure>
-    __forceinline void spawn(const size_t begin, const size_t end, const size_t blockSize, const Closure& closure) 
+    static void spawn(const size_t begin, const size_t end, const size_t blockSize, const Closure& closure) 
     {
       spawn(end-begin, [=,&closure]() {
 	  if (end-begin <= blockSize) {
@@ -271,6 +296,7 @@ namespace embree
 	});
     }
 
+#if 0
     /* spawn a new task at the top of the threads task stack */
     template<typename Closure>
     __forceinline void spawn_root(const Closure& closure) 
@@ -296,11 +322,13 @@ namespace embree
       thread_local_thread = NULL;
       active = false;
     }
+#endif
 
     /* work on spawned subtasks and wait until all have finished */
     static __forceinline void wait() 
     {
       Thread* thread = TaskSchedulerNew::thread();
+      if (thread == nullptr) return;
       while (thread->tasks.execute_local(*thread,thread->task)) {};
     }
 

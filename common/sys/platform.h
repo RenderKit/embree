@@ -273,6 +273,7 @@ typedef int32 ssize_t;
 #pragma warning(disable:94  ) // the size of an array must be greater than zero
 #pragma warning(disable:1599) // declaration hides parameter
 #pragma warning(disable:424 ) // extra ";" ignored
+#pragma warning(disable:2196) // routine is both "inline" and "noinline"
 #endif
 
 #if defined(_MSC_VER)
