@@ -110,30 +110,12 @@ namespace embree
     //////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-#if LAZY_BUILD == 1    
     __thread TessellationRefCache *SubdivPatch1CachedIntersector1::thread_cache = NULL;
-
-#else
-    __thread PerThreadTessellationCache *SubdivPatch1CachedIntersector1::thread_cache = NULL;
-#endif
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    void SubdivPatch1CachedIntersector1::flushLocalTessellationCache()
-    {
-      TessellationRefCacheTag *t = thread_cache->getTagsPtr();
-      for (size_t i=0;i<thread_cache->getNumTags();i++)
-	if (!t[i].empty())
-	  {
-	    TessellationCacheTag *old = sharedTessellationCache.getTagBy32BitID(t[i].getPrimTag());
-	    assert( old->num_readers() > 0);
-	    old->read_unlock();
-	    t[i].reset();
-	  }
-    }
-
     /* build lazy subtree over patch */
-#if 0
+#if 1
     size_t SubdivPatch1CachedIntersector1::lazyBuildPatch(Precalculations &pre,
 							  SubdivPatch1Cached* const subdiv_patch, 
 							  const void* geom,
@@ -332,73 +314,6 @@ namespace embree
 
     
     
-    void SubdivPatch1CachedIntersector1::secondLevelTessellationCacheMissHandler(TessellationCacheTag *firstLevelTag, const SubdivPatch1Cached* const subdiv_patch, const void* geom)
-    {
-      const unsigned int commitCounter = ((Scene*)geom)->commitCounter;
-      InputTagType tag = (InputTagType)subdiv_patch;        
-      const unsigned int blocks = subdiv_patch->grid_subtree_size_64b_blocks;
-      
-      TessellationCacheTag *t = sharedTessellationCache.getTag(tag);
-
-      /* read lock */
-      t->read_lock();
-
-      CACHE_STATS(SharedTessellationCacheStats::cache_accesses++);
-      
-      if (unlikely(!t->match(tag,commitCounter)))
-        {
-          /* data not in second level cache */
-          CACHE_STATS(SharedTessellationCacheStats::cache_misses++);
-          subdiv_patch->prefetchData();
-
-	  /* build subtree over patch grid */
-          const unsigned int needed_blocks = subdiv_patch->grid_subtree_size_64b_blocks;          
-          BVH4::Node* node = (BVH4::Node*)alloc_tessellation_cache_mem(needed_blocks);              
-          size_t new_root = (size_t)buildSubdivPatchTree(*subdiv_patch,node,((Scene*)geom)->getSubdivMesh(subdiv_patch->geom));
-          assert( new_root != BVH4::invalidNode);
-
-          /* upgrade read to write lock */
-          t->upgrade_read_to_write_lock();
- 
-	  CACHE_STATS(SharedTessellationCacheStats::cache_evictions++);                            
-
-	  /* free old allocated memory */
-	  if (t->getPtr() != NULL)
-	    free_tessellation_cache_mem(t->getPtr(),t->getNumBlocks());                 
-
-          /* update tag */
-	  t->set(tag,commitCounter,(size_t)node,needed_blocks);
-          t->updateRootRef(new_root);
-
-          /* upgrade write to read lock */
-          t->upgrade_write_to_read_lock();
-        }
-      else
-        CACHE_STATS(SharedTessellationCacheStats::cache_hits++);              
-
-      /* copy data from second to first level tess cache */
-      copyTessellationCacheTag(firstLevelTag,t);
-      
-      /* read unlock */      
-      t->read_unlock();
-    }
-    
-    TessellationCacheTag *SubdivPatch1CachedIntersector1::localTessellationCacheMissHandler(PerThreadTessellationCache *local_cache, const SubdivPatch1Cached* const subdiv_patch, const void* geom)
-    {
-      subdiv_patch->prefetchData();
-      const unsigned int commitCounter = ((Scene*)geom)->commitCounter;
-      InputTagType tag = (InputTagType)subdiv_patch;        
-      const unsigned int blocks = subdiv_patch->grid_subtree_size_64b_blocks;  // FIXME: need subdivpatch ptr to get #blocks       
-      TessellationCacheTag *t = local_cache->request(tag,commitCounter,blocks);
-#if ENABLE_TESSELLATION_CACHE_HIERARCHY == 1
-      secondLevelTessellationCacheMissHandler(t,subdiv_patch,geom);      
-#else
-      size_t new_root = (size_t)buildSubdivPatchTree(*subdiv_patch,(BVH4::Node*)t->getPtr(),((Scene*)geom)->getSubdivMesh(subdiv_patch->geom));
-      t->updateRootRef(new_root);
-      assert( new_root != BVH4::invalidNode);      
-#endif      
-      return t;
-    }    
     
     BVH4::NodeRef SubdivPatch1CachedIntersector1::buildSubdivPatchTree(const SubdivPatch1Cached &patch,
                                                                        void *const lazymem,
@@ -612,14 +527,7 @@ namespace embree
 
     void SubdivPatch1CachedIntersector1::createTessellationCache()
     {
-#if LAZY_BUILD == 1
       TessellationRefCache *cache = new TessellationRefCache(  NUM_SCRATCH_MEM_BLOCKS  );
-#else
-      PerThreadTessellationCache *cache = (PerThreadTessellationCache *)_mm_malloc(sizeof(PerThreadTessellationCache),64);
-      assert( (size_t)cache % 64 == 0 );
-      cache->init();	
-#endif
-
       
       DBG_PRINT((size_t)getThreadID());
       thread_cache = cache;
