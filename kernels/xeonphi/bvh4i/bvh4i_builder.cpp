@@ -21,7 +21,6 @@
 #include "algorithms/parallel_partition.h"
 
 
-
 #define THRESHOLD_FOR_SUBTREE_RECURSION         64
 #define BUILD_RECORD_PARALLEL_SPLIT_THRESHOLD 1024
 #define SINGLE_THREADED_BUILD_THRESHOLD        512
@@ -641,7 +640,7 @@ namespace embree
       split_fallback(prims,current,leftChild,rightChild);
     else
       {
-	TIMER(double msec = getSeconds());    
+	// TIMER(double msec = getSeconds());    
 
 	global_sharedData.left.reset();
 	global_sharedData.right.reset();
@@ -672,11 +671,11 @@ namespace embree
 	assert(mid_parallel == global_sharedData.split.numLeft);
 	const unsigned int mid = current.begin + mid_parallel;
 
-	TIMER(
-	      msec = getSeconds()-msec;    
-	      total_partition_time += msec;
-	      std::cout << "partition time " << 1000. * msec << " total " << 1000. * total_partition_time << " items = " << current.size() << std::endl;
-	      );
+	// TIMER(
+	//       msec = getSeconds()-msec;    
+	//       total_partition_time += msec;
+	//       std::cout << "partition time " << 1000. * msec << " total " << 1000. * total_partition_time << " items = " << current.size() << std::endl;
+	//       );
 	
 	if (unlikely(current.begin == mid || mid == current.end)) 
 	  {

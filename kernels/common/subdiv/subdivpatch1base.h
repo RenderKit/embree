@@ -691,6 +691,23 @@ namespace embree
       return get64BytesBlocksForGridSubTree(GridRange(0,grid_u_res-1,0,grid_v_res-1),leafBlocks);
     }
 
+    __forceinline void read_lock()      { mtx.read_lock();    }
+    __forceinline void read_unlock()    { mtx.read_unlock();  }
+    __forceinline void write_lock()     { mtx.write_lock();   }
+    __forceinline void write_unlock()   { mtx.write_unlock(); }
+    
+    __forceinline bool try_write_lock() { return mtx.try_read_lock(); }
+    __forceinline bool try_read_lock()  { return mtx.try_read_lock(); }
+    
+    __forceinline void upgrade_read_to_write_lock() { mtx.upgrade_read_to_write_lock(); }
+    __forceinline void upgrade_write_to_read_lock() { mtx.upgrade_write_to_read_lock(); }
+
+    __forceinline void resetRootRef()
+    {
+      assert( mtx.hasInitialState() );
+      root_ref = 0;
+    }
+
 
     // 16bit discritized u,v coordinates
 
@@ -707,8 +724,8 @@ namespace embree
     unsigned short grid_size_simd_blocks;
     unsigned short grid_subtree_size_64b_blocks;
 
-    unsigned int dumm2;
-    size_t dummy;
+    RWMutex mtx;
+    size_t root_ref;
 
     __aligned(64) BSplinePatch patch;
   };

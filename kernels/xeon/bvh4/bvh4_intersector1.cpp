@@ -41,7 +41,7 @@ namespace embree
     void BVH4Intersector1<types,robust,PrimitiveIntersector>::intersect(const BVH4* bvh, Ray& ray)
     {
       /*! perform per ray precalculations required by the primitive intersector */
-      Precalculations pre(ray);
+      Precalculations pre(ray,bvh);
       BVH4::UnalignedNodeMB::Precalculations pre1(ray);
 
       /*! stack state */
@@ -177,7 +177,7 @@ namespace embree
     void BVH4Intersector1<types,robust,PrimitiveIntersector>::occluded(const BVH4* bvh, Ray& ray)
     {
       /*! perform per ray precalculations required by the primitive intersector */
-      Precalculations pre(ray);
+      Precalculations pre(ray,bvh);
       BVH4::UnalignedNodeMB::Precalculations pre1(ray);
 
       /*! stack state */
