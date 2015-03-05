@@ -30,10 +30,10 @@ namespace embree
   {
   public:
     Camera () 
-      : from(0.0001f,0.0001f,-3.0f), to(0,0,0), up(0,1,0), fov(90) {}
+    : from(0.0001f,0.0001f,-3.0f), to(0,0,0), up(0,1,0), fov(90), anim(false) {}
 
     Camera (Vec3fa& from, Vec3fa& to, Vec3fa& up, float fov) 
-      : from(from), to(to), up(up), fov(fov) {}
+      : from(from), to(to), up(up), fov(fov), anim(false) {}
 
     AffineSpace3fa camera2world () { return AffineSpace3fa::lookat(from, to, up); }
     AffineSpace3fa world2camera () { return rcp(AffineSpace3fa::lookat(from, to, up)); }
@@ -42,6 +42,13 @@ namespace embree
 
     AffineSpace3fa pixel2world (size_t width, size_t height) 
     {
+
+      if (anim)
+	{
+	  const float step = 5.0f;
+	  rotateOrbit(-0.005f*step,0.005f*0);
+	}
+
       const float fovScale = 1.0f/tanf(deg2rad(0.5f*fov));
       const AffineSpace3fa local2world = AffineSpace3fa::lookat(from, to, up);
       return AffineSpace3fa(local2world.l.vx,
@@ -88,10 +95,13 @@ namespace embree
       from += length(to-from) * (1-k) * normalize(to-from);
     }
 
+    void enableAnimMode() { anim = true; PING; }
+
   public:
     Vec3fa from;   //!< position of camera
     Vec3fa to;     //!< look at point
     Vec3fa up;     //!< up vector
     float fov;       //!< field of view
+    bool anim;
   };
 }

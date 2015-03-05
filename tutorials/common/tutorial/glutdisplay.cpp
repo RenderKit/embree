@@ -200,6 +200,10 @@ namespace embree
 
   void displayFunc(void) 
   {
+    float dx = 0;
+    float dy = 5;
+
+
     AffineSpace3fa pixel2world = g_camera.pixel2world(g_width,g_height);
 
     /* render image using ISPC */
@@ -250,8 +254,11 @@ namespace embree
     glutPostRedisplay();
   }
 
-  void enterWindowRunLoop()
+  void enterWindowRunLoop(bool anim)
   {
+    if (anim)
+      g_camera.enableAnimMode();
+
     glutMainLoop();
   }
 

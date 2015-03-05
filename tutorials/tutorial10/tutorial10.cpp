@@ -40,6 +40,7 @@ namespace embree
   static FileName outFilename = "";
   static bool g_interactive = true;
   static bool g_loop_mode = false;
+  static bool g_anim_mode = false;
 
   /* scene */
   OBJScene g_obj_scene;
@@ -115,6 +116,9 @@ namespace embree
 
       else if (term == "-loop") 
 	g_loop_mode = true;
+
+      else if (term == "-anim") 
+	g_anim_mode = true;
 
       /*! Skip unknown command line parameters. */
       else std::cerr << "Unknown command line parameter: " << getParameterString(cin, term) << std::endl;
@@ -273,7 +277,7 @@ namespace embree
     if (g_interactive) {
       initWindowState(argc,argv,tutorialName, g_width, g_height, g_fullscreen);
 
-      enterWindowRunLoop();
+      enterWindowRunLoop(g_anim_mode);
     }
 
   }
