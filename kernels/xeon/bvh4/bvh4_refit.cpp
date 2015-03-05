@@ -27,8 +27,8 @@ namespace embree
     
     __forceinline bool compare(const BVH4::NodeRef* a, const BVH4::NodeRef* b)
     {
-      int sa = *(size_t*)a->node();
-      int sb = *(size_t*)b->node();
+      int sa = *(size_t*)&a->node()->lower_x;
+      int sb = *(size_t*)&b->node()->lower_x;
       return sa < sb;
     }
     
@@ -47,7 +47,7 @@ namespace embree
       /* build initial BVH */
       if (builder) {
         builder->build(threadIndex,threadCount);
-        if (false && bvh->numPrimitives > 50000) {
+        if (bvh->numPrimitives > 50000) {
           annotate_tree_sizes(bvh->root);
           calculate_refit_roots();
           needAllThreads = false;
@@ -111,7 +111,7 @@ namespace embree
           if (child == BVH4::emptyNode) continue;
           n += annotate_tree_sizes(child); 
         }
-        *((size_t*)node) = n;
+        *((size_t*)&node->lower_x) = n;
         return n;
       }
       else
@@ -134,7 +134,7 @@ namespace embree
         std::pop_heap(roots.begin(), roots.end(), compare);
         BVH4::NodeRef* node = roots.back();
         roots.pop_back();
-        if (*(size_t*)node->node() < block_size) 
+        if (*(size_t*)&node->node()->lower_x < block_size) 
           break;
         
         for (size_t i=0; i<BVH4::N; i++) {
