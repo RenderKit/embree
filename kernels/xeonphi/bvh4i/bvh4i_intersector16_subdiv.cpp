@@ -44,7 +44,6 @@
 
 namespace embree
 {
-  __aligned(64) AtomicCounter globalRenderThreads = 0;
 
   typedef AdaptiveTessellationCache<LOCAL_TESSELLATION_CACHE_ENTRIES> TessellationCache;
   SharedTessellationCache<SHARED_TESSELLATION_CACHE_ENTRIES> sharedTessellationCache;
@@ -55,57 +54,54 @@ namespace embree
 
   namespace isa
   {
-    struct LocalThreadInfo
+    struct LocalTessellationCacheThreadInfo
     {
       unsigned int id;
-
-      LocalThreadInfo(const unsigned int id) : id(id) {}  
+      LocalTessellationCacheThreadInfo(const unsigned int id) : id(id) {}  
     };
 
-    __thread LocalThreadInfo* localThreadInfo = NULL;
-
-
+    __thread LocalTessellationCacheThreadInfo* localThreadInfo = NULL;
 
     class __aligned(64) SharedLazyTessellationCache 
     {
-      static const size_t SIZE = SIZE_SHARED_LAZY_CACHE;
-      static const size_t CLEAR_BLOCK_SIZE = 128;
     private:
+      static const size_t SIZE = SIZE_SHARED_LAZY_CACHE;
+
       float *data;
       size_t maxBlocks;
+      
       __aligned(64) AtomicCounter index;
       __aligned(64) AtomicCounter next_block;
-      __aligned(64) AtomicMutex reset_state;
+      __aligned(64) AtomicMutex   reset_state;
+      __aligned(64) AtomicCounter numRenderThreads;
 
       struct __aligned(64) ThreadWorkState {
 	AtomicCounter counter;
-	ThreadWorkState() { counter.reset(); }
+	ThreadWorkState() { counter = 0; }
       };
 
       __aligned(64) ThreadWorkState threadWorkState[MAX_MIC_THREADS];
 
     public:
+
+      
       SharedLazyTessellationCache()
 	{
-	  data         = (float*)os_malloc(SIZE);
-	  maxBlocks    = SIZE/64;
-	  index        = 1;
-	  next_block   = 0;
+	  data             = (float*)os_malloc(SIZE);
+	  maxBlocks        = SIZE/64;
+	  index            = 1;
+	  next_block       = 0;
+	  numRenderThreads = 0;
 	  reset_state.reset();
 	}
+
+      __forceinline size_t getNextRenderThreadID() { return numRenderThreads.add(1); }
 
       __forceinline size_t getCurrentIndex() { return index; }
       __forceinline void   incCurrentIndex() { index.add(1); }
 
-      __forceinline unsigned int lockThread(const unsigned int threadID)
-      {
-	return threadWorkState[threadID].counter.add(1);
-      }
-
-      __forceinline unsigned int unlockThread(const unsigned int threadID)
-      {
-	return threadWorkState[threadID].counter.add(-1);
-      }
+      __forceinline unsigned int lockThread  (const unsigned int threadID) { return threadWorkState[threadID].counter.add(1);  }
+      __forceinline unsigned int unlockThread(const unsigned int threadID) { return threadWorkState[threadID].counter.add(-1); }
 
 
       __forceinline void waitForUsersLessEqual(const unsigned int threadID,
@@ -113,7 +109,12 @@ namespace embree
       {
 	while( !(threadWorkState[threadID].counter <= users) )
 	  {
+#if defined(__MIC__)
 	    _mm_delay_32(128);
+#else
+	    _mm_pause();
+	    _mm_pause();
+#endif
 	  }
       }
     
@@ -128,10 +129,10 @@ namespace embree
 
 		TIMER(double msec = getSeconds());
 
-		for (size_t i=0;i<globalRenderThreads;i++)
+		for (size_t i=0;i<numRenderThreads;i++)
 		  lockThread(i);
 
-		for (size_t i=0;i<globalRenderThreads;i++)
+		for (size_t i=0;i<numRenderThreads;i++)
 		  waitForUsersLessEqual(i,1);
 
 #if 1
@@ -152,7 +153,7 @@ namespace embree
 #endif
 		next_block = 0;
 
-		for (size_t i=0;i<globalRenderThreads;i++)
+		for (size_t i=0;i<numRenderThreads;i++)
 		  unlockThread(i);
 
 		TIMER(msec = getSeconds()-msec);    
@@ -166,7 +167,7 @@ namespace embree
 
       }
 
-      __noinline size_t alloc(const size_t blocks)
+      __forceinline size_t alloc(const size_t blocks)
       {
 	size_t index = next_block.add(blocks);
 	if (unlikely(index + blocks >= maxBlocks)) return (size_t)-1;
@@ -179,24 +180,18 @@ namespace embree
 	return (mic_f*)&data[block_index*16];
       }
 
-      __forceinline void* getDataPtr()
-      {
-	return data;
-      }
+      __forceinline void*  getDataPtr() { return data; }
+      __forceinline size_t getNumAllocatedBytes() { return next_block * 64; }
 
-
-      __forceinline size_t getNumAllocatedBytes() { 
-	return next_block * 64; 
-      }
+      static SharedLazyTessellationCache sharedLazyTessellationCache;
     
     };
 
-    SharedLazyTessellationCache sharedLazyTessellationCache;
+    SharedLazyTessellationCache SharedLazyTessellationCache::sharedLazyTessellationCache;
 
 
     __thread TessellationRefCache *tess_ref_cache = NULL;
 
-    __thread TessellationCache *tess_cache = NULL;
 
     static __forceinline void * extractBVH4iPtr(const size_t &subtree_root)
     {
@@ -450,15 +445,6 @@ namespace embree
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    void createTessellationCache()
-    {
-      const size_t blocks = (sizeof(TessellationCache)+sizeof(TessellationCache)-1)/64;
-      TessellationCache *cache = (TessellationCache *)alloc_tessellation_cache_mem(blocks);
-      assert( (size_t)cache % 64 == 0 );
-      cache->init();	
-      tess_cache = cache;
-    }
 
     __noinline TessellationCacheTag *fillLocalTessellationCache(TessellationCache *local_cache,
 								const unsigned int patchIndex,
@@ -877,7 +863,7 @@ namespace embree
 					const size_t numPatches,
 					Scene *const scene,
 					TessellationRefCache *ref_cache,
-					LocalThreadInfo *threadInfo)
+					LocalTessellationCacheThreadInfo *threadInfo)
     {
 #if SHARED_LAZY_CACHE == 1
 
@@ -886,12 +872,12 @@ namespace embree
 	  /* per thread lock */
 	  while(1)
 	    {
-	      unsigned int lock = sharedLazyTessellationCache.lockThread(threadInfo->id);	       
+	      unsigned int lock = SharedLazyTessellationCache::sharedLazyTessellationCache.lockThread(threadInfo->id);	       
 	      if (unlikely(lock == 1))
 		{
 		  /* lock failed wait until sync phase is over */
-		  sharedLazyTessellationCache.unlockThread(threadInfo->id);	       
-		  sharedLazyTessellationCache.waitForUsersLessEqual(threadInfo->id,0);
+		  SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(threadInfo->id);	       
+		  SharedLazyTessellationCache::sharedLazyTessellationCache.waitForUsersLessEqual(threadInfo->id,0);
 		}
 	      else
 		break;
@@ -909,10 +895,10 @@ namespace embree
 	    
 	    if (likely(subdiv_patch_root_ref)) 
 	      {
-		const size_t subdiv_patch_root = (subdiv_patch_root_ref & REF_TAG_MASK) + (size_t)sharedLazyTessellationCache.getDataPtr();
+		const size_t subdiv_patch_root = (subdiv_patch_root_ref & REF_TAG_MASK) + (size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();
 		const size_t subdiv_patch_cache_index = subdiv_patch_root_ref >> 32;
 		
-		if (likely( subdiv_patch_cache_index == sharedLazyTessellationCache.getCurrentIndex()))
+		if (likely( subdiv_patch_cache_index == SharedLazyTessellationCache::sharedLazyTessellationCache.getCurrentIndex()))
 		  {
 		    CACHE_STATS(SharedTessellationCacheStats::cache_hits++);	      
 		    return subdiv_patch_root;
@@ -929,31 +915,31 @@ namespace embree
 	    const size_t subdiv_patch_cache_index = subdiv_patch_root_ref >> 32;
 
 	    /* do we still need to create the subtree data? */
-	    if (subdiv_patch_root_ref == 0 || subdiv_patch_cache_index != sharedLazyTessellationCache.getCurrentIndex())
+	    if (subdiv_patch_root_ref == 0 || subdiv_patch_cache_index != SharedLazyTessellationCache::sharedLazyTessellationCache.getCurrentIndex())
 	      {	      
 		const SubdivMesh* const geom = (SubdivMesh*)scene->get(subdiv_patch->geom); 
-		size_t block_index = sharedLazyTessellationCache.alloc(subdiv_patch->grid_subtree_size_64b_blocks);
+		size_t block_index = SharedLazyTessellationCache::sharedLazyTessellationCache.alloc(subdiv_patch->grid_subtree_size_64b_blocks);
 		if (block_index == (size_t)-1)
 		  {
 		    /* cannot allocate => flush the cache */
 		    subdiv_patch->write_unlock();
-		    sharedLazyTessellationCache.unlockThread(threadInfo->id);		  
-		    sharedLazyTessellationCache.resetCache(patches,numPatches);
+		    SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(threadInfo->id);		  
+		    SharedLazyTessellationCache::sharedLazyTessellationCache.resetCache(patches,numPatches);
 		    continue;
 		  }
 		//DBG_PRINT( sharedLazyTessellationCache.getNumAllocatedBytes() );
-		mic_f* local_mem   = sharedLazyTessellationCache.getBlockPtr(block_index);
+		mic_f* local_mem   = SharedLazyTessellationCache::sharedLazyTessellationCache.getBlockPtr(block_index);
 		unsigned int currentIndex = 0;
 		BVH4i::NodeRef bvh4i_root = initLocalLazySubdivTree(*subdiv_patch,currentIndex,local_mem,geom);
-		size_t new_root_ref = (size_t)bvh4i_root + (size_t)local_mem - (size_t)sharedLazyTessellationCache.getDataPtr();
+		size_t new_root_ref = (size_t)bvh4i_root + (size_t)local_mem - (size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();
 		assert( !(new_root_ref & REF_TAG) );
 		new_root_ref |= REF_TAG;
-		new_root_ref |= sharedLazyTessellationCache.getCurrentIndex() << 32; 
+		new_root_ref |= SharedLazyTessellationCache::sharedLazyTessellationCache.getCurrentIndex() << 32; 
 		subdiv_patch->root_ref = new_root_ref;
 	      }
 	  }
 	  subdiv_patch->write_unlock();
-	  sharedLazyTessellationCache.unlockThread(threadInfo->id);		  
+	  SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(threadInfo->id);		  
 	}
 	
       
@@ -1017,11 +1003,11 @@ namespace embree
 	}
       local_ref_cache = tess_ref_cache;
 
-      LocalThreadInfo *threadInfo = NULL;
+      LocalTessellationCacheThreadInfo *threadInfo = NULL;
       if (unlikely(!localThreadInfo))
 	{
-	  const unsigned int id = globalRenderThreads.add(1);
-	  localThreadInfo = new LocalThreadInfo( id );
+	  const unsigned int id = SharedLazyTessellationCache::sharedLazyTessellationCache.getNextRenderThreadID();
+	  localThreadInfo = new LocalTessellationCacheThreadInfo( id );
 	}
       threadInfo = localThreadInfo;
 #else
@@ -1139,7 +1125,7 @@ namespace embree
 		}
 
 #if SHARED_LAZY_CACHE == 1
-	      sharedLazyTessellationCache.unlockThread(threadInfo->id);
+	      SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(threadInfo->id);
 #endif
 
 #if defined(ONLY_SHARED_CACHE)
@@ -1216,11 +1202,11 @@ namespace embree
 	tess_ref_cache = new TessellationRefCache(  NUM_SCRATCH_MEM_BLOCKS  );
       local_ref_cache = tess_ref_cache;
 
-      LocalThreadInfo *threadInfo = NULL;
+      LocalTessellationCacheThreadInfo *threadInfo = NULL;
       if (unlikely(!localThreadInfo))
 	{
-	  const unsigned int id = globalRenderThreads.add(1);
-	  localThreadInfo = new LocalThreadInfo( id );
+	  const unsigned int id = SharedLazyTessellationCache::sharedLazyTessellationCache.getNextRenderThreadID();
+	  localThreadInfo = new LocalTessellationCacheThreadInfo( id );
 	}
       threadInfo = localThreadInfo;
 
@@ -1344,7 +1330,7 @@ namespace embree
 		  }
 
 #if SHARED_LAZY_CACHE == 1
-		sharedLazyTessellationCache.unlockThread(threadInfo->id);
+		SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(threadInfo->id);
 #endif
 
 #if defined(ONLY_SHARED_CACHE)
@@ -1391,11 +1377,11 @@ namespace embree
 	tess_ref_cache = new TessellationRefCache(  NUM_SCRATCH_MEM_BLOCKS  );
       local_ref_cache = tess_ref_cache;
 
-      LocalThreadInfo *threadInfo = NULL;
+      LocalTessellationCacheThreadInfo *threadInfo = NULL;
       if (unlikely(!localThreadInfo))
 	{
-	  const unsigned int id = globalRenderThreads.add(1);
-	  localThreadInfo = new LocalThreadInfo( id );
+	  const unsigned int id = SharedLazyTessellationCache::sharedLazyTessellationCache.getNextRenderThreadID();
+	  localThreadInfo = new LocalTessellationCacheThreadInfo( id );
 	}
       threadInfo = localThreadInfo;
 
@@ -1510,7 +1496,7 @@ namespace embree
 	    }
 
 #if SHARED_LAZY_CACHE == 1
-	  sharedLazyTessellationCache.unlockThread(threadInfo->id);
+	  SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(threadInfo->id);
 #endif
 
 #if defined(ONLY_SHARED_CACHE)
@@ -1545,11 +1531,11 @@ namespace embree
 	tess_ref_cache = new TessellationRefCache(  NUM_SCRATCH_MEM_BLOCKS  );
       local_ref_cache = tess_ref_cache;
 
-      LocalThreadInfo *threadInfo = NULL;
+      LocalTessellationCacheThreadInfo *threadInfo = NULL;
       if (unlikely(!localThreadInfo))
 	{
-	  const unsigned int id = globalRenderThreads.add(1);
-	  localThreadInfo = new LocalThreadInfo( id );
+	  const unsigned int id = SharedLazyTessellationCache::sharedLazyTessellationCache.getNextRenderThreadID();
+	  localThreadInfo = new LocalTessellationCacheThreadInfo( id );
 	}
       threadInfo = localThreadInfo;
 
@@ -1665,7 +1651,7 @@ namespace embree
 		{
 
 #if SHARED_LAZY_CACHE == 1
-		  sharedLazyTessellationCache.unlockThread(threadInfo->id);
+		  SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(threadInfo->id);
 #endif
 
 #if defined(ONLY_SHARED_CACHE)
@@ -1681,7 +1667,7 @@ namespace embree
 #endif
 
 #if SHARED_LAZY_CACHE == 1
-	  sharedLazyTessellationCache.unlockThread(threadInfo->id);
+	  SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(threadInfo->id);
 #endif
 
 
