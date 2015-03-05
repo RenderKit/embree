@@ -31,6 +31,7 @@ using namespace tbb;
 namespace embree
 {
 
+   SharedLazyTessellationCache SharedLazyTessellationCache::sharedLazyTessellationCache;
 
   //void*scalable_aligned_malloc(size_t size, size_t align);
   //void scalable_aligned_free(void* ptr );

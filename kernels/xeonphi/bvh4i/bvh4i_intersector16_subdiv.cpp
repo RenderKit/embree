@@ -40,7 +40,6 @@
 
 #define SHARED_LAZY_CACHE 1
 
-#define SIZE_SHARED_LAZY_CACHE 50*1024*1024
 
 namespace embree
 {
@@ -54,142 +53,8 @@ namespace embree
 
   namespace isa
   {
-    struct LocalTessellationCacheThreadInfo
-    {
-      unsigned int id;
-      LocalTessellationCacheThreadInfo(const unsigned int id) : id(id) {}  
-    };
 
     __thread LocalTessellationCacheThreadInfo* localThreadInfo = NULL;
-
-    class __aligned(64) SharedLazyTessellationCache 
-    {
-    private:
-      static const size_t SIZE = SIZE_SHARED_LAZY_CACHE;
-
-      float *data;
-      size_t maxBlocks;
-      
-      __aligned(64) AtomicCounter index;
-      __aligned(64) AtomicCounter next_block;
-      __aligned(64) AtomicMutex   reset_state;
-      __aligned(64) AtomicCounter numRenderThreads;
-
-      struct __aligned(64) ThreadWorkState {
-	AtomicCounter counter;
-	ThreadWorkState() { counter = 0; }
-      };
-
-      __aligned(64) ThreadWorkState threadWorkState[MAX_MIC_THREADS];
-
-    public:
-
-      
-      SharedLazyTessellationCache()
-	{
-	  data             = (float*)os_malloc(SIZE);
-	  maxBlocks        = SIZE/64;
-	  index            = 1;
-	  next_block       = 0;
-	  numRenderThreads = 0;
-	  reset_state.reset();
-	}
-
-      __forceinline size_t getNextRenderThreadID() { return numRenderThreads.add(1); }
-
-      __forceinline size_t getCurrentIndex() { return index; }
-      __forceinline void   incCurrentIndex() { index.add(1); }
-
-      __forceinline unsigned int lockThread  (const unsigned int threadID) { return threadWorkState[threadID].counter.add(1);  }
-      __forceinline unsigned int unlockThread(const unsigned int threadID) { return threadWorkState[threadID].counter.add(-1); }
-
-
-      __forceinline void waitForUsersLessEqual(const unsigned int threadID,
-					       const unsigned int users)
-      {
-	while( !(threadWorkState[threadID].counter <= users) )
-	  {
-#if defined(__MIC__)
-	    _mm_delay_32(128);
-#else
-	    _mm_pause();
-	    _mm_pause();
-#endif
-	  }
-      }
-    
-      __noinline void resetCache(SubdivPatch1* const patches,
-				 const size_t numPatches) 
-      {
-
-	if (reset_state.try_lock())
-	  {
-	    if (next_block >= maxBlocks)
-	      {
-
-		TIMER(double msec = getSeconds());
-
-		for (size_t i=0;i<numRenderThreads;i++)
-		  lockThread(i);
-
-		for (size_t i=0;i<numRenderThreads;i++)
-		  waitForUsersLessEqual(i,1);
-
-#if 1
-		incCurrentIndex();
-#else
-		size_t i=0;
-		for (;i<numPatches-1;i+=2)
-		  {
-		    prefetch<PFHINT_L1EX>(&patches[i+2]);
-		    prefetch<PFHINT_L2EX>(&patches[i+12]);
-		    patches[i+0].resetRootRef();
-		    patches[i+1].resetRootRef();
-		    evictL1(&patches[i]);
-		  }
-
-		if(i<numPatches)
-		  patches[i].resetRootRef();
-#endif
-		next_block = 0;
-
-		for (size_t i=0;i<numRenderThreads;i++)
-		  unlockThread(i);
-
-		TIMER(msec = getSeconds()-msec);    
-		TIMER(DBG_PRINT( 1000.0f * msec ));
-
-	      }
-	    reset_state.unlock();
-	  }
-	else
-	  reset_state.wait_until_unlocked();	
-
-      }
-
-      __forceinline size_t alloc(const size_t blocks)
-      {
-	size_t index = next_block.add(blocks);
-	if (unlikely(index + blocks >= maxBlocks)) return (size_t)-1;
-	return index;
-      }
-
-      __forceinline mic_f *getBlockPtr(const size_t block_index)
-      {
-	assert(block_index < maxBlocks);
-	return (mic_f*)&data[block_index*16];
-      }
-
-      __forceinline void*  getDataPtr() { return data; }
-      __forceinline size_t getNumAllocatedBytes() { return next_block * 64; }
-
-      static SharedLazyTessellationCache sharedLazyTessellationCache;
-    
-    };
-
-    SharedLazyTessellationCache SharedLazyTessellationCache::sharedLazyTessellationCache;
-
-
     __thread TessellationRefCache *tess_ref_cache = NULL;
 
 
@@ -928,7 +793,7 @@ namespace embree
 		    continue;
 		  }
 		//DBG_PRINT( sharedLazyTessellationCache.getNumAllocatedBytes() );
-		mic_f* local_mem   = SharedLazyTessellationCache::sharedLazyTessellationCache.getBlockPtr(block_index);
+		mic_f* local_mem   = (mic_f*)SharedLazyTessellationCache::sharedLazyTessellationCache.getBlockPtr(block_index);
 		unsigned int currentIndex = 0;
 		BVH4i::NodeRef bvh4i_root = initLocalLazySubdivTree(*subdiv_patch,currentIndex,local_mem,geom);
 		size_t new_root_ref = (size_t)bvh4i_root + (size_t)local_mem - (size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();
