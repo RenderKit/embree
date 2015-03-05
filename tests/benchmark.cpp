@@ -174,7 +174,7 @@ namespace embree
       g_barrier_active.init(numThreads);
       for (size_t i=1; i<numThreads; i++)
 	g_threads.push_back(createThread(benchmark_barrier_active_thread,(void*)i,1000000,i));
-      //setAffinity(0);
+      setAffinity(0);
       
       g_barrier_active.wait(0,numThreads);
       double t0 = getSeconds();
@@ -771,9 +771,9 @@ namespace embree
 
   void create_benchmarks()
   {
-    benchmarks.push_back(new benchmark_mutex_sys());
-    benchmarks.push_back(new benchmark_barrier_sys());
-    benchmarks.push_back(new benchmark_barrier_active());
+    //benchmarks.push_back(new benchmark_mutex_sys());
+    //benchmarks.push_back(new benchmark_barrier_sys());
+    //benchmarks.push_back(new benchmark_barrier_active());
     benchmarks.push_back(new benchmark_atomic_inc());
     benchmarks.push_back(new benchmark_osmalloc());
     benchmarks.push_back(new benchmark_bandwidth());
