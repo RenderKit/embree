@@ -513,25 +513,11 @@ namespace embree
       return bounds;
     }
 
-    std::size_t getThreadID()
-    {
-      const std::thread::id id = std::this_thread::get_id();
-      static std::size_t index = 0;
-      static std::mutex mutex;
-      static std::map<std::thread::id, std::size_t> ids;
-      std::lock_guard<std::mutex> lock(mutex);
-      if(ids.find(id) == ids.end())
-	ids[id] = index++;
-      return ids[id];
-    }
-
     void SubdivPatch1CachedIntersector1::createTessellationCache()
     {
       TessellationRefCache *cache = new TessellationRefCache(  NUM_SCRATCH_MEM_BLOCKS  );
-      
-      DBG_PRINT((size_t)getThreadID());
       thread_cache = cache;
-
+      FATAL("xeon code is currently work in progress");
     }
     
   };
