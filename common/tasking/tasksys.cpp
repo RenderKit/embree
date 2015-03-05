@@ -54,7 +54,7 @@ namespace embree
 
   __dllexport void* ISPCAlloc(void** taskPtr, int64 size, int32 alignment) {
     if (*taskPtr == NULL) *taskPtr = new TaskScheduler::EventSync;
-    return (char*)_mm_malloc(size,alignment);
+    return (char*)_mm_malloc(size,alignment); 
   }
 
   __dllexport void ISPCLaunch(void** taskPtr, void* func, void* data, int count) {      
@@ -69,11 +69,27 @@ namespace embree
 
 #endif
 
-#if defined(TASKING_TBB)
+#if defined(TASKING_TBB) || defined(TASKING_TBB_INTERNAL)
 
-  __dllexport void* ISPCAlloc(void** taskPtr, int64 size, int32 alignment) {
-    return (char*)_mm_malloc(size,alignment);
+  __dllexport void* ISPCAlloc(void** taskPtr, int64 size, int32 alignment) 
+  {
+    if (*taskPtr == NULL) *taskPtr = new std::vector<void*>;
+    std::vector<void*>* lst = (std::vector<void*>*)(*taskPtr);
+    void* ptr = _mm_malloc(size,alignment);
+    lst->push_back(ptr);
+    return ptr;
   }
+
+ __dllexport void ISPCSync(void* task) 
+  {
+    std::vector<void*>* lst = (std::vector<void*>*)task;
+    for (size_t i=0; i<lst->size(); i++) _mm_free((*lst)[i]);
+    delete lst;
+  }
+
+#endif
+
+#if defined(TASKING_TBB)
 
   __dllexport void ISPCLaunch(void** taskPtr, void* func, void* data, int count) 
   {      
@@ -83,31 +99,21 @@ namespace embree
         for (size_t i=r.begin(); i<r.end(); i++) ((TaskFuncType)func)(data,threadIndex,threadCount,i,count);
       });
   }
-  
-  __dllexport void ISPCSync(void* task) {
-  }
-
-#endif
+#endif  
+ 
 
 #if defined(TASKING_TBB_INTERNAL)
 
-  __dllexport void* ISPCAlloc(void** taskPtr, int64 size, int32 alignment) {
-    return (char*)_mm_malloc(size,alignment);
-  }
-
   __dllexport void ISPCLaunch(void** taskPtr, void* func, void* data, int count) 
   {      
-    TaskSchedulerNew::instance()->spawn_root([&] () {
+    SPAWN_ROOT(([&] () {
         parallel_for(size_t(0), size_t(count), [&] (const range<size_t>& r) {
             const size_t threadIndex = TaskSchedulerNew::thread()->threadIndex;
             const size_t threadCount = TaskSchedulerNew::threadCount();
             for (size_t i=r.begin(); i<r.end(); i++) 
               ((TaskFuncType)func)(data,threadIndex,threadCount,i,count);
           });
-      });
-  }
-  
-  __dllexport void ISPCSync(void* task) {
+        }));
   }
 
 #endif

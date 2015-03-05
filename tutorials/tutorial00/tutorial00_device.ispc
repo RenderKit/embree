@@ -16,7 +16,7 @@
 
 #include "../common/tutorial/tutorial_device.isph"
 
-#define PARALLEL_COMMIT
+//#define PARALLEL_COMMIT
 
 /* scene data */
 RTCScene g_scene = NULL;

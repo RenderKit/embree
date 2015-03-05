@@ -16,7 +16,7 @@
 
 #include "../common/tutorial/tutorial_device.isph"
 
-#define PARALLEL_COMMIT
+//#define PARALLEL_COMMIT
 
 #if 0
 const uniform int numSpheres = 1000;

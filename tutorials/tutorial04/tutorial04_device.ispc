@@ -16,7 +16,7 @@
 
 #include "../common/tutorial/tutorial_device.isph"
 
-#define PARALLEL_COMMIT
+//#define PARALLEL_COMMIT
 
 /* render function to use */
 renderPixelFunc renderPixel;

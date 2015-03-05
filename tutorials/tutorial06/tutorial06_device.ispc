@@ -21,7 +21,7 @@
 
 #define __device__
 
-#define PARALLEL_COMMIT
+//#define PARALLEL_COMMIT
 
 struct DifferentialGeometry
 {

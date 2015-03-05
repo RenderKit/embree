@@ -37,7 +37,7 @@ namespace embree
 #  define SPAWN_BEGIN TaskSchedulerNew* __internal_scheduler = TaskSchedulerNew::instance();
 #  define SPAWN(closure) __internal_scheduler->spawn(closure)
 #  define SPAWN_END __internal_scheduler->wait();
-#  define SPAWN_ROOT(closure) g_instance->spawn_root(closure)
+#  define SPAWN_ROOT(closure) TaskSchedulerNew::g_instance->spawn_root(closure)
 #endif
 
   struct TaskSchedulerNew
@@ -305,21 +305,7 @@ namespace embree
     }
 
     /* work on spawned subtasks and wait until all have finished */
-#if TASKING_LOCKSTEP
-    static __forceinline size_t threadCount() {
-      return LockStepTaskScheduler::instance()->getNumThreads();
-    }
-#endif
-
-#if TASKING_TBB
     static size_t threadCount();
-#endif
-
-#if TASKING_TBB_INTERNAL
-    static __forceinline size_t threadCount() {
-      return TaskSchedulerNew::thread()->scheduler->threadCounter;
-    }
-#endif
 
     std::vector<std::thread> threads;
     Thread* threadLocal[MAX_THREADS];

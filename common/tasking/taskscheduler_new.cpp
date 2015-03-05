@@ -76,6 +76,12 @@ namespace embree
     destroyThreads();
   }
 
+#if TASKING_LOCKSTEP
+  __dllexport size_t TaskSchedulerNew::threadCount() {
+    return LockStepTaskScheduler::instance()->getNumThreads();
+  }
+#endif
+
 #if TASKING_TBB
   __dllexport size_t TaskSchedulerNew::threadCount()
   {
@@ -84,7 +90,13 @@ namespace embree
   }
 #endif
 
-  TaskSchedulerNew* TaskSchedulerNew::g_instance = NULL;
+#if TASKING_TBB_INTERNAL
+  __dllexport size_t TaskSchedulerNew::threadCount() {
+    return TaskSchedulerNew::thread()->scheduler->threadCounter;
+  }
+#endif
+
+  __dllexport TaskSchedulerNew* TaskSchedulerNew::g_instance = NULL;
 
   void TaskSchedulerNew::create(size_t numThreads)
   {

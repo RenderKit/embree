@@ -17,7 +17,7 @@
 #include "../common/tutorial/tutorial_device.isph"
 #include "../common/tutorial/scene_device.h"
 
-#define PARALLEL_COMMIT
+//#define PARALLEL_COMMIT
 
 /* scene data */
 extern uniform ISPCScene* uniform g_ispc_scene;

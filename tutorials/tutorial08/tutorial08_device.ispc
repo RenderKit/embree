@@ -17,7 +17,7 @@
 #include "../common/tutorial/tutorial_device.isph"
 
 /* configuration */
-#define PARALLEL_COMMIT
+//#define PARALLEL_COMMIT
 #define MIN_EDGE_LEVEL 2.0f
 #define MAX_EDGE_LEVEL 64.0f
 #define LEVEL_FACTOR 64.0f

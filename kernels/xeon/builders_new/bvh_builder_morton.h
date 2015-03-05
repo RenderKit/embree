@@ -439,9 +439,7 @@ namespace embree
                                                     const size_t branchingFactor, const size_t maxDepth, const size_t minLeafSize, const size_t maxLeafSize)
     {
       std::pair<NodeRef,BBox3fa> ret;
-#if USE_TBB_INTERNAL
-      TaskSchedulerNew::instance()->spawn_root([&]() {
-#endif
+      SPAWN_ROOT(([&]() {
 
           /* compute scene bounds */
           const BBox3fa centBounds = parallel_reduce ( size_t(0), numPrimitives, BBox3fa(empty), [&](const range<size_t>& r) -> BBox3fa
@@ -466,9 +464,7 @@ namespace embree
             createAllocator,identity,allocNode,setBounds,createLeaf,calculateBounds,
             temp,src,numPrimitives,branchingFactor,maxDepth,minLeafSize,maxLeafSize);
 
-#if USE_TBB_INTERNAL
-        });
-#endif
+          }));
 
       return ret;
     }

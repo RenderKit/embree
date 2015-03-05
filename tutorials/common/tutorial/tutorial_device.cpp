@@ -455,12 +455,12 @@ void launch_renderTile (int numTiles,
 #endif
 
 #if defined(TASKING_TBB_INTERNAL)
-  TaskSchedulerNew::instance()->spawn_root([&] () {
+  SPAWN_ROOT(([&] () {
       parallel_for(size_t(0),size_t(numTiles),[&] (const range<size_t>& r) {
           for (size_t i=r.begin(); i<r.end(); i++)
             renderTile(i,pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY);
         });
-    });
+      }));
 #endif
 }
 
@@ -521,12 +521,12 @@ void launch_animateSphere(animateSphereFunc func,
 #endif
 
 #if defined(TASKING_TBB_INTERNAL)
-  TaskSchedulerNew::instance()->spawn_root([&] () {
+  SPAWN_ROOT(([&] () {
       parallel_for(size_t(0),size_t(taskSize),[&] (const range<size_t>& m) {
           for (size_t i=m.begin(); i<m.end(); i++)
             func(i,vertices,rcpNumTheta,rcpNumPhi,pos,r,f);
         });
-    });
+      }));
 #endif
 }
 
