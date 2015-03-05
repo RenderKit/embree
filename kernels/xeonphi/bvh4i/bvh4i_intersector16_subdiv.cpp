@@ -19,7 +19,7 @@
 #include "geometry/subdivpatch1.h"
 #include "common/subdiv/tessellation_cache.h"
 
-#define TIMER(x) 
+#define TIMER(x) x 
 
 #if defined(DEBUG)
 #define CACHE_STATS(x) 
@@ -40,7 +40,7 @@
 
 #define SHARED_LAZY_CACHE 1
 
-#define SIZE_SHARED_LAZY_CACHE 25*1024*1024
+#define SIZE_SHARED_LAZY_CACHE 100*1024*1024
 
 namespace embree
 {
@@ -126,7 +126,7 @@ namespace embree
 	    if (next_block >= maxBlocks)
 	      {
 
-		msec = getSeconds();
+		TIMER(double msec = getSeconds());
 
 		for (size_t i=0;i<globalRenderThreads;i++)
 		  lockThread(i);
@@ -134,7 +134,9 @@ namespace embree
 		for (size_t i=0;i<globalRenderThreads;i++)
 		  waitForUsersLessEqual(i,1);
 
-
+#if 1
+		incCurrentIndex();
+#else
 		size_t i=0;
 		for (;i<numPatches-1;i+=2)
 		  {
@@ -147,14 +149,14 @@ namespace embree
 
 		if(i<numPatches)
 		  patches[i].resetRootRef();
-
+#endif
 		next_block = 0;
 
 		for (size_t i=0;i<globalRenderThreads;i++)
 		  unlockThread(i);
 
-		msec = getSeconds()-msec;    
-		DBG_PRINT( 1000.0f * msec );
+		TIMER(msec = getSeconds()-msec);    
+		TIMER(DBG_PRINT( 1000.0f * msec ));
 
 	      }
 	    reset_state.unlock();
@@ -413,10 +415,6 @@ namespace embree
 					   mic_f *lazymem,
 					   const SubdivMesh* const geom)
     {
-      TIMER(if (patch.grid_size_simd_blocks > 50) PING);
-      TIMER(double msec = 0.0);
-      TIMER(msec = getSeconds());
-
       __aligned(64) float u_array[(patch.grid_size_simd_blocks+1)*16]; // for unaligned access
       __aligned(64) float v_array[(patch.grid_size_simd_blocks+1)*16];
 
@@ -430,9 +428,6 @@ namespace embree
       if (patch.needsStiching())
 	stichUVGrid(patch.level,patch.grid_u_res,patch.grid_v_res,u_array,v_array);
 
-      TIMER(msec = getSeconds()-msec);    
-      TIMER(if (patch.grid_size_simd_blocks > 50) DBG_PRINT(1000. * msec));
-      TIMER(msec = getSeconds());
 
       BVH4i::NodeRef subtree_root = 0;
       const unsigned int oldIndex = currentIndex;
@@ -885,92 +880,81 @@ namespace embree
 					LocalThreadInfo *threadInfo)
     {
 #if SHARED_LAZY_CACHE == 1
+
       while(1)
 	{
-	  unsigned int lock = sharedLazyTessellationCache.lockThread(threadInfo->id);	       
-	  if (unlikely(lock == 1))
-	    {
-	      sharedLazyTessellationCache.unlockThread(threadInfo->id);	       
-	      sharedLazyTessellationCache.waitForUsersLessEqual(threadInfo->id,0);
-	    }
-	  else
-	    break;
-	}
-
-      SubdivPatch1* subdiv_patch = &patches[patchIndex];
-      
-      static const size_t REF_TAG      = 1;
-      static const size_t REF_TAG_MASK = ~REF_TAG;
-
-      CACHE_STATS(SharedTessellationCacheStats::cache_accesses++);
-      const size_t subdiv_patch_root_ref = subdiv_patch->root_ref;
-      if (likely(subdiv_patch_root_ref)) 
-	{
-	  const size_t subdiv_patch_root = (subdiv_patch_root_ref & REF_TAG_MASK) + (size_t)sharedLazyTessellationCache.getDataPtr();
-	  assert( subdiv_patch_root );
-	 
-
-	  CACHE_STATS(SharedTessellationCacheStats::cache_hits++);
-	  return subdiv_patch_root;
-	}
-      else
-	{
-	  CACHE_STATS(SharedTessellationCacheStats::cache_misses++);
-	  sharedLazyTessellationCache.unlockThread(threadInfo->id);
-
+	  /* per thread lock */
 	  while(1)
 	    {
-	      while(1)
+	      unsigned int lock = sharedLazyTessellationCache.lockThread(threadInfo->id);	       
+	      if (unlikely(lock == 1))
 		{
-		  unsigned int lock = sharedLazyTessellationCache.lockThread(threadInfo->id);	       
-		  if (unlikely(lock == 1))
-		    {
-		      sharedLazyTessellationCache.unlockThread(threadInfo->id);	       
-		      sharedLazyTessellationCache.waitForUsersLessEqual(threadInfo->id,0);
-		    }
-		  else
-		    break;
+		  /* lock failed wait until sync phase is over */
+		  sharedLazyTessellationCache.unlockThread(threadInfo->id);	       
+		  sharedLazyTessellationCache.waitForUsersLessEqual(threadInfo->id,0);
 		}
-
-	      size_t new_root_ref = 0;
-
-	      subdiv_patch->write_lock();
-	      if (subdiv_patch->root_ref == 0)
-		{
-
-		  const SubdivMesh* const geom = (SubdivMesh*)scene->get(subdiv_patch->geom); 
-		  size_t block_index = sharedLazyTessellationCache.alloc(subdiv_patch->grid_subtree_size_64b_blocks);
-		  if (block_index == (size_t)-1)
-		    {
-		      /* cannot allocate => flush the cache */
-		      subdiv_patch->write_unlock();
-		      sharedLazyTessellationCache.unlockThread(threadInfo->id);
-
-		      sharedLazyTessellationCache.resetCache(patches,numPatches);
-		      continue;
-		    }
-		  //DBG_PRINT( sharedLazyTessellationCache.getNumAllocatedBytes() );
-		  mic_f* local_mem   = sharedLazyTessellationCache.getBlockPtr(block_index);
-		  unsigned int currentIndex = 0;
-		  BVH4i::NodeRef bvh4i_root = initLocalLazySubdivTree(*subdiv_patch,currentIndex,local_mem,geom);
-		  new_root_ref = (size_t)bvh4i_root + (size_t)local_mem - (size_t)sharedLazyTessellationCache.getDataPtr();
-		  assert( !(new_root_ref & REF_TAG) );
-		  new_root_ref |= REF_TAG;
-		  //new_root_ref |= sharedLazyTessellationCache.getCurrentIndex() << 32; 
-		  subdiv_patch->root_ref = new_root_ref;
-		}
-	      subdiv_patch->write_unlock();
-
-	      const size_t subdiv_patch_root_ref = subdiv_patch->root_ref;
-	      if (likely(subdiv_patch_root_ref)) 
-		{
-		  const size_t subdiv_patch_root = (subdiv_patch_root_ref & REF_TAG_MASK) + (size_t)sharedLazyTessellationCache.getDataPtr();
-
-		  return subdiv_patch_root;
-		}
+	      else
+		break;
 	    }
-	}
 
+	  SubdivPatch1* subdiv_patch = &patches[patchIndex];
+      
+	  static const size_t REF_TAG      = 1;
+	  static const size_t REF_TAG_MASK = (~REF_TAG) & 0xffffffff;
+
+	  /* fast path for cache hit */
+	  {
+	    CACHE_STATS(SharedTessellationCacheStats::cache_accesses++);
+	    const size_t subdiv_patch_root_ref    = subdiv_patch->root_ref;
+	    
+	    if (likely(subdiv_patch_root_ref)) 
+	      {
+		const size_t subdiv_patch_root = (subdiv_patch_root_ref & REF_TAG_MASK) + (size_t)sharedLazyTessellationCache.getDataPtr();
+		const size_t subdiv_patch_cache_index = subdiv_patch_root_ref >> 32;
+		
+		if (likely( subdiv_patch_cache_index == sharedLazyTessellationCache.getCurrentIndex()))
+		  {
+		    CACHE_STATS(SharedTessellationCacheStats::cache_hits++);	      
+		    return subdiv_patch_root;
+		  }
+	      }
+	  }
+
+	  /* cache miss */
+	  CACHE_STATS(SharedTessellationCacheStats::cache_misses++);
+
+	  subdiv_patch->write_lock();
+	  {
+	    const size_t subdiv_patch_root_ref    = subdiv_patch->root_ref;
+	    const size_t subdiv_patch_cache_index = subdiv_patch_root_ref >> 32;
+
+	    /* do we still need to create the subtree data? */
+	    if (subdiv_patch_root_ref == 0 || subdiv_patch_cache_index != sharedLazyTessellationCache.getCurrentIndex())
+	      {	      
+		const SubdivMesh* const geom = (SubdivMesh*)scene->get(subdiv_patch->geom); 
+		size_t block_index = sharedLazyTessellationCache.alloc(subdiv_patch->grid_subtree_size_64b_blocks);
+		if (block_index == (size_t)-1)
+		  {
+		    /* cannot allocate => flush the cache */
+		    subdiv_patch->write_unlock();
+		    sharedLazyTessellationCache.unlockThread(threadInfo->id);		  
+		    sharedLazyTessellationCache.resetCache(patches,numPatches);
+		    continue;
+		  }
+		//DBG_PRINT( sharedLazyTessellationCache.getNumAllocatedBytes() );
+		mic_f* local_mem   = sharedLazyTessellationCache.getBlockPtr(block_index);
+		unsigned int currentIndex = 0;
+		BVH4i::NodeRef bvh4i_root = initLocalLazySubdivTree(*subdiv_patch,currentIndex,local_mem,geom);
+		size_t new_root_ref = (size_t)bvh4i_root + (size_t)local_mem - (size_t)sharedLazyTessellationCache.getDataPtr();
+		assert( !(new_root_ref & REF_TAG) );
+		new_root_ref |= REF_TAG;
+		new_root_ref |= sharedLazyTessellationCache.getCurrentIndex() << 32; 
+		subdiv_patch->root_ref = new_root_ref;
+	      }
+	  }
+	  subdiv_patch->write_unlock();
+	  sharedLazyTessellationCache.unlockThread(threadInfo->id);		  
+	}
 	
       
 #else
