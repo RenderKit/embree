@@ -17,7 +17,7 @@
 #include "../common/tutorial/tutorial_device.isph"
 #include "../common/tutorial/scene_device.isph"
 
-//#define PARALLEL_COMMIT
+#define PARALLEL_COMMIT
 
 #undef TILE_SIZE_X
 #undef TILE_SIZE_Y
@@ -25,8 +25,8 @@
 #define TILE_SIZE_X 4
 #define TILE_SIZE_Y 4
 
-//#define SPP 64
-#define SPP 1
+#define SPP 4
+//#define SPP 1
 
 //#define FORCE_FIXED_EDGE_TESSELLATION
 //#define FIXED_EDGE_TESSELLATION_VALUE 4

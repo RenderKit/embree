@@ -19,7 +19,7 @@
 #include "geometry/subdivpatch1.h"
 #include "common/subdiv/tessellation_cache.h"
 
-#define TIMER(x) x 
+#define TIMER(x) 
 
 #if defined(DEBUG)
 #define CACHE_STATS(x) 
@@ -40,7 +40,7 @@
 
 #define SHARED_LAZY_CACHE 1
 
-#define SIZE_SHARED_LAZY_CACHE 100*1024*1024
+#define SIZE_SHARED_LAZY_CACHE 50*1024*1024
 
 namespace embree
 {
