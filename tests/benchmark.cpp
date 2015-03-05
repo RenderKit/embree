@@ -100,7 +100,7 @@ namespace embree
       g_atomic_cntr = g_num_mutex_locks;
       for (size_t i=1; i<numThreads; i++)
 	g_threads.push_back(createThread(benchmark_mutex_sys_thread,NULL,1000000,i));
-      setAffinity(0);
+      //setAffinity(0);
       
       double t0 = getSeconds();
       benchmark_mutex_sys_thread(NULL);
@@ -135,7 +135,7 @@ namespace embree
       g_barrier.init(numThreads);
       for (size_t i=1; i<numThreads; i++)
 	g_threads.push_back(createThread(benchmark_barrier_sys_thread,(void*)i,1000000,i));
-      setAffinity(0);
+      //setAffinity(0);
       
       g_barrier.wait();
       double t0 = getSeconds();
@@ -174,7 +174,7 @@ namespace embree
       g_barrier_active.init(numThreads);
       for (size_t i=1; i<numThreads; i++)
 	g_threads.push_back(createThread(benchmark_barrier_active_thread,(void*)i,1000000,i));
-      setAffinity(0);
+      //setAffinity(0);
       
       g_barrier_active.wait(0,numThreads);
       double t0 = getSeconds();
@@ -218,7 +218,7 @@ namespace embree
       g_barrier_active.init(numThreads);
       for (size_t i=1; i<numThreads; i++)
 	g_threads.push_back(createThread(benchmark_atomic_inc_thread,(void*)i,1000000,i));
-      setAffinity(0);
+      //setAffinity(0);
       
       g_barrier_active.wait(0,numThreads);
       double t0 = getSeconds();
@@ -265,7 +265,7 @@ namespace embree
       g_barrier_active.init(numThreads);
       for (size_t i=1; i<numThreads; i++)
 	g_threads.push_back(createThread(benchmark_osmalloc_thread,(void*)i,1000000,i));
-      setAffinity(0);
+      //setAffinity(0);
       
       g_barrier_active.wait(0,numThreads);
       double t0 = getSeconds();
@@ -316,7 +316,7 @@ namespace embree
       g_barrier_active.init(numThreads);
       for (size_t i=1; i<numThreads; i++)
 	g_threads.push_back(createThread(benchmark_bandwidth_thread,(void*)i,1000000,i));
-      setAffinity(0);
+      //setAffinity(0);
       
       g_barrier_active.wait(0,numThreads);
       double t0 = getSeconds();

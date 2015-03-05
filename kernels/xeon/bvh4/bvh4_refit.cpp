@@ -50,7 +50,7 @@ namespace embree
         if (bvh->numPrimitives > 50000) {
           annotate_tree_sizes(bvh->root);
           calculate_refit_roots();
-          needAllThreads = false;
+          needAllThreads = true;
         } else {
           needAllThreads = false;
         }
