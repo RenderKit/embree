@@ -238,7 +238,12 @@ namespace embree
 	{
 #if TASKING_LOCKSTEP
 	  LockStepTaskScheduler* scheduler = LockStepTaskScheduler::instance();
+#if defined(__MIC__)
+	  const size_t numThreads = scheduler->getNumThreads(); 
+#else
 	  const size_t numThreads = min((N+blockSize-1)/blockSize,scheduler->getNumThreads(),size_t(MAX_THREADS));
+#endif
+
 	  parent->barrier.init(numThreads);
 	  scheduler->dispatchTask(task_radixsort,this,0,numThreads);
 #endif
