@@ -203,11 +203,9 @@ namespace embree
   public:
 
 #if defined(__MIC__)
-    static const size_t MAX_THREADS = MAX_MIC_THREADS;
-    static const size_t SINGLE_THREAD_THRESHOLD = MAX_MIC_THREADS*16;
+    enum { MAX_THREADS = MAX_MIC_THREADS };
 #else
-    static const size_t MAX_THREADS = 32;
-    static const size_t SINGLE_THREAD_THRESHOLD = 3000;
+    enum { MAX_THREADS = 32 };
 #endif
 
     static const size_t BITS = 8;
@@ -223,14 +221,13 @@ namespace embree
       }
 
     public:
-      Task (ParallelRadixSort* parent, 
-	    Ty* const src, 
-	    Ty* const tmp, 
-	    const size_t N)
+      Task (ParallelRadixSort* parent, Ty* const src, Ty* const tmp, const size_t N, const size_t blockSize)
 	: parent(parent), src(src), tmp(tmp), N(N) 
       {
+        assert(blockSize > 0);
+
 	/* perform single threaded sort for small N */
-	if (N<SINGLE_THREAD_THRESHOLD) 
+	if (N<=blockSize) // handles also special case of 0!
 	{	  
 	  /* do inplace sort inside destination array */
 	  std::sort(src,src+N,compare<Ty>);
@@ -241,13 +238,13 @@ namespace embree
 	{
 #if TASKING_LOCKSTEP
 	  LockStepTaskScheduler* scheduler = LockStepTaskScheduler::instance();
-	  const size_t numThreads = min(scheduler->getNumThreads(),MAX_THREADS);
+	  const size_t numThreads = min((N+blockSize-1)/blockSize,scheduler->getNumThreads(),size_t(MAX_THREADS));
 	  parent->barrier.init(numThreads);
 	  scheduler->dispatchTask(task_radixsort,this,0,numThreads);
 #endif
 
 #if TASKING_TBB || TASKING_TBB_INTERNAL
-	  const size_t numThreads = min(TaskSchedulerNew::threadCount(),MAX_THREADS);
+	  const size_t numThreads = min((N+blockSize-1)/blockSize,TaskSchedulerNew::threadCount(),size_t(MAX_THREADS));
           tbbRadixSort(numThreads);
 #endif
 	}
@@ -558,37 +555,37 @@ namespace embree
       : state(state) {} 
 
     template<typename Ty>
-    void operator() (Ty* const src, Ty* const tmp, const size_t N) {
-      ParallelRadixSort::Task<Ty,Key>(&state,src,tmp,N);
+    void operator() (Ty* const src, Ty* const tmp, const size_t N, const size_t blockSize = 4096) {
+      ParallelRadixSort::Task<Ty,Key>(&state,src,tmp,N,blockSize);
     }
 
     ParallelRadixSort& state;
   };
 
   template<typename Ty>
-    void radix_sort(Ty* const src, Ty* const tmp, const size_t N)
+    void radix_sort(Ty* const src, Ty* const tmp, const size_t N, const size_t blockSize = 4096)
   {
     ParallelRadixSort radix_sort_state;
     ParallelRadixSortT<Ty> sort(radix_sort_state);
-    sort(src,tmp,N);
+    sort(src,tmp,N,blockSize);
   }
 
   template<typename Ty, typename Key>
-    void radix_sort(Ty* const src, Ty* const tmp, const size_t N)
+    void radix_sort(Ty* const src, Ty* const tmp, const size_t N, const size_t blockSize = 4096)
   {
     ParallelRadixSort radix_sort_state;
     ParallelRadixSortT<Key> sort(radix_sort_state);
-    sort(src,tmp,N);
+    sort(src,tmp,N,blockSize);
   }
 
   template<typename Ty>
-    void radix_sort_u32(Ty* const src, Ty* const tmp, const size_t N) {
-    radix_sort<Ty,uint32>(src,tmp,N);
+    void radix_sort_u32(Ty* const src, Ty* const tmp, const size_t N, const size_t blockSize = 4096) {
+    radix_sort<Ty,uint32>(src,tmp,N,blockSize);
   }
 
   template<typename Ty>
-    void radix_sort_u64(Ty* const src, Ty* const tmp, const size_t N) {
-    radix_sort<Ty,uint64>(src,tmp,N);
+    void radix_sort_u64(Ty* const src, Ty* const tmp, const size_t N, const size_t blockSize = 4096) {
+    radix_sort<Ty,uint64>(src,tmp,N,blockSize);
   }
 
   //////////////////////////////////////////////////////////////////////////
@@ -598,7 +595,8 @@ namespace embree
   {
   public:
 
-    static const size_t MAX_THREADS = 32;
+    //static const size_t MAX_THREADS = 32;
+    enum { MAX_THREADS = 32 };
     static const size_t BITS = 11;
     static const size_t BUCKETS = (1 << BITS);
     typedef unsigned int TyRadixCount[MAX_THREADS][BUCKETS];
@@ -612,11 +610,13 @@ namespace embree
       }
 
     public:
-      Task (ParallelRadixSortCopy* parent, Ty* src, Ty* dst, const size_t N)
+      Task (ParallelRadixSortCopy* parent, Ty* src, Ty* dst, const size_t N, const size_t blockSize)
 	: parent(parent), src(src), dst(dst), N(N) 
       {
+        assert(blockSize > 0);
+
 	/* perform single threaded sort for small N */
-	if (N<3000) 
+	if (N<=blockSize) // special case of 0 is handled here too!
 	{
 	  /* copy data to destination array */
 	  for (size_t i=0; i<N; i++)
@@ -630,15 +630,14 @@ namespace embree
 	else 
 	{
 #if defined(TASKING_LOCKSTEP)
-	  
 	  LockStepTaskScheduler* scheduler = LockStepTaskScheduler::instance();
-	  const size_t numThreads = min(scheduler->getNumThreads(),MAX_THREADS);
+	  const size_t numThreads = min((N+blockSize-1)/blockSize,scheduler->getNumThreads(),size_t(MAX_THREADS));
 	  parent->barrier.init(numThreads);
 	  scheduler->dispatchTask(task_radixsort,this,0,numThreads);
 #endif
 
 #if TASKING_TBB || TASKING_TBB_INTERNAL
-	  const size_t numThreads = min(TaskSchedulerNew::threadCount(),MAX_THREADS);
+	  const size_t numThreads = min((N+blockSize-1)/blockSize,TaskSchedulerNew::threadCount(),size_t(MAX_THREADS));
           tbbRadixSort(numThreads);
 #endif
 	}
@@ -828,36 +827,36 @@ namespace embree
       : state(state) {} 
 
     template<typename Ty>
-    void operator() (Ty* const src, Ty* const dst, const size_t N) {
-      ParallelRadixSortCopy::Task<Ty,Key>(&state,src,dst,N);
+    void operator() (Ty* const src, Ty* const dst, const size_t N, const size_t blockSize = 4096) {
+      ParallelRadixSortCopy::Task<Ty,Key>(&state,src,dst,N,blockSize);
     }
 
     ParallelRadixSortCopy& state;
   };
 
   template<typename Ty>
-    void radix_sort_copy(Ty* const src, Ty* const dst, const size_t N)
+    void radix_sort_copy(Ty* const src, Ty* const dst, const size_t N, const size_t blockSize = 4096)
   {
     ParallelRadixSortCopy radix_sort_state;
     ParallelRadixSortCopyT<Ty> sort(radix_sort_state);
-    sort(src,dst,N);
+    sort(src,dst,N,blockSize);
   }
 
   template<typename Ty, typename Key>
-    void radix_sort_copy(Ty* const src, Ty* const dst, const size_t N)
+    void radix_sort_copy(Ty* const src, Ty* const dst, const size_t N, const size_t blockSize = 4096)
   {
     ParallelRadixSortCopy radix_sort_state;
     ParallelRadixSortCopyT<Key> sort(radix_sort_state);
-    sort(src,dst,N);
+    sort(src,dst,N,blockSize);
   }
 
   template<typename Ty>
-    void radix_sort_copy_u32(Ty* const src, Ty* const dst, const size_t N) {
-    radix_sort_copy<Ty,uint32>(src,dst,N);
+    void radix_sort_copy_u32(Ty* const src, Ty* const dst, const size_t N, const size_t blockSize = 4096) {
+    radix_sort_copy<Ty,uint32>(src,dst,N,blockSize);
   }
 
   template<typename Ty>
-    void radix_sort_copy_u64(Ty* const src, Ty* const dst, const size_t N) {
-    radix_sort_copy<Ty,uint64>(src,dst,N);
+    void radix_sort_copy_u64(Ty* const src, Ty* const dst, const size_t N, const size_t blockSize = 4096) {
+    radix_sort_copy<Ty,uint64>(src,dst,N,blockSize);
   } 
 }

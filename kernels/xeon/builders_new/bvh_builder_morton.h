@@ -366,7 +366,7 @@ namespace embree
             SPAWN(([&,i]{ bounds[i] = recurse(children[i],NULL); }));
           }
           SPAWN_END;
-        } 
+        }
         
         /* finish tree sequential */
         else {
@@ -383,6 +383,8 @@ namespace embree
         /* sort morton codes */
         morton = tmp;
         radix_sort_copy_u32(src,morton,numPrimitives);
+        //memcpy(morton,src,numPrimitives*sizeof(MortonID32Bit));
+        //std::sort(&morton[0],&morton[numPrimitives]);
 
         //g_timer("sort");
         
