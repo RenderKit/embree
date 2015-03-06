@@ -123,8 +123,7 @@ namespace embree
        {
 	 if (next_block >= maxBlocks)
 	   {
-	     PING;
-	     //TIMER(double msec = getSeconds());
+	     //double msec = getSeconds();
 
 	     for (size_t i=0;i<numRenderThreads;i++)
 	       lockThread(i);
@@ -139,8 +138,8 @@ namespace embree
 	     for (size_t i=0;i<numRenderThreads;i++)
 	       unlockThread(i);
 
-	     //TIMER(msec = getSeconds()-msec);    
-	     //TIMER(DBG_PRINT( 1000.0f * msec ));
+	     //msec = getSeconds()-msec;    
+	     //DBG_PRINT( 1000.0f * msec );
 
 	   }
 	 reset_state.unlock();
