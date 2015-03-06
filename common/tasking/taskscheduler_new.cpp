@@ -41,7 +41,9 @@ namespace embree
             body();
           }
         }
+#if !defined(__MIC__)
         yield();
+#endif
       }
     }
   }
@@ -261,7 +263,7 @@ namespace embree
       if (spinning) 
       {
 	while (!predicate())
-          __pause_cpu();
+          __pause_cpu(128);
       }
       
       /* ... or waiting inside some condition variable */
@@ -271,6 +273,8 @@ namespace embree
         condition.wait(lock, predicate);
       }
       if (terminate) break;
+      //executeTaskSet(thread); 
+      //continue;
       
       /* work on available task */
       steal_loop(thread,
