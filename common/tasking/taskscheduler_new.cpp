@@ -129,7 +129,11 @@ namespace embree
       createThreads = false;
     }
     else if (numThreads == 0) {
+#if defined(__MIC__)
+      threadCounter = getNumberOfLogicalThreads()-4;
+#else
       threadCounter = getNumberOfLogicalThreads();
+#endif
     }
     task_set_barrier.init(threadCounter);
   }
@@ -182,26 +186,36 @@ namespace embree
     delete g_instance; g_instance = NULL;
   }
 
-  /*void TaskSchedulerNew::threadFunction(void* ptr) try 
+  struct MyThread
   {
-    Thread thread = *(Thread*) ptr;
-    thread.scheduler->run(thread.threadIndex,thread.threadCount);
-    delete (Thread*) ptr;
+    MyThread (size_t threadIndex, size_t threadCount, TaskSchedulerNew* scheduler)
+      : threadIndex(threadIndex), threadCount(threadCount), scheduler(scheduler) {}
+    
+    size_t threadIndex;
+    size_t threadCount;
+    TaskSchedulerNew* scheduler;
+  };
+
+  void threadFunction(void* ptr) try 
+  {
+    MyThread thread = *(MyThread*) ptr;
+    thread.scheduler->thread_loop(thread.threadIndex);
+    delete (MyThread*) ptr;
   }
   catch (const std::exception& e) {
     std::cout << "Error: " << e.what() << std::endl;
     exit(1);
-    }*/
+  }
 
   __dllexport void TaskSchedulerNew::startThreads()
   {
     createThreads = false;
-    for (size_t i=1; i<threadCounter; i++) {
-      threads.push_back(std::thread([i,this]() { thread_loop(i); }));
-    }
-    //for (size_t t=1; t<numThreads; t++) {
-    //  threads.push_back(createThread((thread_func)threadFunction,new Thread(t,numThreads,this),4*1024*1024,t));
+    //for (size_t i=1; i<threadCounter; i++) {
+    //  threads.push_back(std::thread([i,this]() { thread_loop(i); }));
     //}
+    for (size_t t=1; t<threadCounter; t++) {
+      threads.push_back(createThread((thread_func)threadFunction,new MyThread(t,threadCounter,this),4*1024*1024,t));
+    }
   }
 
   void TaskSchedulerNew::terminateThreadLoop()
@@ -227,7 +241,8 @@ namespace embree
   {
     /* wait for threads to terminate */
     for (size_t i=0; i<threads.size(); i++) 
-      threads[i].join();
+      //threads[i].join();
+      embree::join(threads[i]);
   }
 
   void TaskSchedulerNew::join()

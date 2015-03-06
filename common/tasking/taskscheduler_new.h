@@ -336,7 +336,8 @@ namespace embree
     }
 
   private:
-    std::vector<std::thread> threads;
+    //std::vector<std::thread> threads;
+    std::vector<thread_t> threads;
     Thread* threadLocal[MAX_THREADS];
     volatile atomic_t threadCounter;
     volatile bool terminate;
