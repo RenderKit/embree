@@ -169,12 +169,15 @@ namespace embree
     {
       Thread (size_t threadIndex, TaskSchedulerNew* scheduler)
       : threadIndex(threadIndex), scheduler(scheduler), task(NULL) {}
+
+      __forceinline size_t threadCount() {
+        return scheduler->threadCounter;
+      }
       
       size_t threadIndex;              //!< ID of this thread
       TaskQueue tasks;                 //!< local task queue
       Task* task;                      //!< current active task
       TaskSchedulerNew* scheduler;     //!< pointer to task scheduler
-
     };
     
     TaskSchedulerNew (size_t numThreads = 0, bool spinning = false);

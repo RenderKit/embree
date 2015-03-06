@@ -111,7 +111,7 @@ namespace embree
 
   /*! the thread calling this function gets yielded */
   void yield() {
-    Sleep(0);
+    SwitchToThread();
   }
 
   /*! waits until the given thread has terminated */

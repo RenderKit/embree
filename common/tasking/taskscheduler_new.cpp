@@ -28,9 +28,21 @@ namespace embree
   template<typename Predicate, typename Body>
   __forceinline void TaskSchedulerNew::steal_loop(Thread& thread, const Predicate& pred, const Body& body)
   {
-    while (pred()) {
-      if (thread.scheduler->steal_from_other_threads(thread))
-        body();
+    while (true)
+    {
+      for (size_t i=0; i<32; i++)
+      {
+        const size_t threadCount = thread.threadCount();
+        for (size_t j=0; j<1024; j+=threadCount)
+        {
+          if (!pred()) return;
+          if (thread.scheduler->steal_from_other_threads(thread)) {
+            i=j=0;
+            body();
+          }
+        }
+        yield();
+      }
     }
   }
 
