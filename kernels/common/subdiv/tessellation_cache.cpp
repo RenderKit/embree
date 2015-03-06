@@ -15,7 +15,6 @@
 // ======================================================================== //
 
 #if defined (__MIC__) 
-// || TASKING_TBB
 #define USE_TBB_ALLOCATOR 0
 #else
 #define USE_TBB_ALLOCATOR 0
@@ -28,10 +27,17 @@
 using namespace tbb;
 #endif
 
+
 namespace embree
 {
+  SharedLazyTessellationCache SharedLazyTessellationCache::sharedLazyTessellationCache;
 
-   SharedLazyTessellationCache SharedLazyTessellationCache::sharedLazyTessellationCache;
+  void resizeTessellationCache(const size_t new_size)
+  {
+    if (SharedLazyTessellationCache::sharedLazyTessellationCache.getSize() != new_size)
+      SharedLazyTessellationCache::sharedLazyTessellationCache.realloc(new_size);
+  }
+
 
   //void*scalable_aligned_malloc(size_t size, size_t align);
   //void scalable_aligned_free(void* ptr );
@@ -61,7 +67,54 @@ namespace embree
 #endif
   }
 
-  
+  void SharedLazyTessellationCache::resetCache() 
+  {
+    if (reset_state.try_lock())
+      {
+	if (next_block >= maxBlocks)
+	  {
+	    //double msec = getSeconds();
+
+	    for (size_t i=0;i<numRenderThreads;i++)
+	      lockThread(i);
+
+	    for (size_t i=0;i<numRenderThreads;i++)
+	      waitForUsersLessEqual(i,1);
+
+	    incCurrentIndex();
+
+	    next_block = 0;
+
+	    for (size_t i=0;i<numRenderThreads;i++)
+	      unlockThread(i);
+
+	    //msec = getSeconds()-msec;    
+	    //DBG_PRINT( 1000.0f * msec );
+
+	  }
+	reset_state.unlock();
+      }
+    else
+      reset_state.wait_until_unlocked();	    
+  }
+
+  void SharedLazyTessellationCache::realloc(const size_t new_size)
+  {
+    if (data)
+      {
+	os_free(data,size);
+      }
+    size      = new_size;
+    data      = (float*)os_malloc(size);
+    maxBlocks = size/64;    
+    std::cout << "Reallocating tessellation cache to " << size << " bytes, " << maxBlocks << " 64-byte blocks" << std::endl;
+  }
+
+
+  ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
   AtomicCounter SharedTessellationCacheStats::cache_accesses           = 0;
   AtomicCounter SharedTessellationCacheStats::cache_hits               = 0;
   AtomicCounter SharedTessellationCacheStats::cache_misses             = 0;

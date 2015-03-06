@@ -82,12 +82,12 @@ namespace embree
   std::string g_tri_builder_mb = "default";            //!< builder to use for motion blur triangles
   std::string g_tri_traverser_mb = "default";          //!< traverser to use for triangles
 
-  std::string g_hair_accel = "default";                //!< hair acceleration structure to use
-  std::string g_hair_builder = "default";              //!< builder to use for hair
+  std::string g_hair_accel = "default";                 //!< hair acceleration structure to use
+  std::string g_hair_builder = "default";               //!< builder to use for hair
   std::string g_hair_traverser = "default";             //!< traverser to use for hair
   double      g_hair_builder_replication_factor = 3.0f; //!< maximally factor*N many primitives in accel
-  float       g_memory_preallocation_factor = 1.0f; 
-
+  float       g_memory_preallocation_factor     = 1.0f; 
+  size_t      g_tessellation_cache_size         = 0;    //!< size of the shared tessellation cache 
   std::string g_subdiv_accel = "default";               //!< acceleration structure to use for subdivision surfaces
 
   int g_scene_flags = -1;                               //!< scene flags to use
@@ -350,7 +350,14 @@ namespace embree
         else if (tok == "regression" && parseSymbol (cfg,'=',pos)) {
           g_regression_testing = parseInt (cfg,pos);
         }
-        
+	else if (tok == "tessellation_cache_size" && parseSymbol (cfg,'=',pos))
+	  {
+	    g_tessellation_cache_size = parseInt (cfg,pos) * 1024 * 1024; // in MBs
+	    {
+	      extern void resizeTessellationCache(const size_t new_size);
+	      resizeTessellationCache( g_tessellation_cache_size );
+	    }
+	  }        
       } while (findNext (cfg,',',pos));
     }
 

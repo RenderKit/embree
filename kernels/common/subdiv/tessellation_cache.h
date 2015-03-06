@@ -21,8 +21,10 @@
 
 #define CACHE_DBG(x) 
 
+
 namespace embree
 {
+  void resizeTessellationCache(const size_t new_size);
   
   /* alloc cache memory */
   float *alloc_tessellation_cache_mem(const size_t blocks);
@@ -37,35 +39,32 @@ namespace embree
  typedef size_t InputTagType;
 #endif
 
- // FIXME: must be the same of all, move outside class
  static __forceinline unsigned int toTag(InputTagType prim)
  {
 #if defined(__MIC__)
    return prim;
 #else
-   return prim / 320; // (((size_t)prim) >> 6);
-   //return (((size_t)prim) >> 6);
-
+   return prim / 320;
 #endif
  }
  ////////////////////////////////////////////////////////////////////////////////
  ////////////////////////////////////////////////////////////////////////////////
  ////////////////////////////////////////////////////////////////////////////////
 
+
  struct LocalTessellationCacheThreadInfo
  {
    unsigned int id;
- LocalTessellationCacheThreadInfo(const unsigned int id) : id(id) {}  
+   LocalTessellationCacheThreadInfo(const unsigned int id) : id(id) {}  
  };
-
-#define SIZE_SHARED_LAZY_CACHE 50*1024*1024
 
  class __aligned(64) SharedLazyTessellationCache 
  {
  private:
-   static const size_t SIZE = SIZE_SHARED_LAZY_CACHE;
+   static const size_t DEFAULT_TESSELLATION_CACHE_SIZE = 50*1024*1024; // 50 MB
 
    float *data;
+   size_t size;
    size_t maxBlocks;
       
    __aligned(64) AtomicCounter index;
@@ -85,8 +84,9 @@ namespace embree
       
    SharedLazyTessellationCache()
      {
-       data             = (float*)os_malloc(SIZE);
-       maxBlocks        = SIZE/64;
+       size             = DEFAULT_TESSELLATION_CACHE_SIZE;
+       data             = (float*)os_malloc(size);
+       maxBlocks        = size/64;
        index            = 1;
        next_block       = 0;
        numRenderThreads = 0;
@@ -116,39 +116,6 @@ namespace embree
        }
    }
     
-   __noinline void resetCache() 
-   {
-
-     if (reset_state.try_lock())
-       {
-	 if (next_block >= maxBlocks)
-	   {
-	     //double msec = getSeconds();
-
-	     for (size_t i=0;i<numRenderThreads;i++)
-	       lockThread(i);
-
-	     for (size_t i=0;i<numRenderThreads;i++)
-	       waitForUsersLessEqual(i,1);
-
-	     incCurrentIndex();
-
-	     next_block = 0;
-
-	     for (size_t i=0;i<numRenderThreads;i++)
-	       unlockThread(i);
-
-	     //msec = getSeconds()-msec;    
-	     //DBG_PRINT( 1000.0f * msec );
-
-	   }
-	 reset_state.unlock();
-       }
-     else
-       reset_state.wait_until_unlocked();	
-
-   }
-
    __forceinline size_t alloc(const size_t blocks)
    {
      size_t index = next_block.add(blocks);
@@ -162,8 +129,13 @@ namespace embree
      return (void*)&data[block_index*16];
    }
 
-   __forceinline void*  getDataPtr() { return data; }
-   __forceinline size_t getNumAllocatedBytes() { return next_block * 64; }
+   __forceinline void*  getDataPtr()      { return data; }
+   __forceinline size_t getNumUsedBytes() { return next_block * 64; }
+   __forceinline size_t getMaxBlocks()    { return maxBlocks; }
+   __forceinline size_t getSize()         { return size; }
+
+   void resetCache();
+   void realloc(const size_t newSize);
 
    static SharedLazyTessellationCache sharedLazyTessellationCache;
     
