@@ -861,7 +861,7 @@ namespace embree
             bvh->numPrimitives != fastUpdateMode_numFaces ||
             bvh->root          == BVH4::emptyNode)
           fastUpdateMode = false;
-        
+
         //fastUpdateMode = false;
         
         /* force sequential code path for fast update */
@@ -948,6 +948,8 @@ namespace embree
                                                      const unsigned int patchIndex = base.size()+s.size();
                                                      assert(patchIndex < numPrimitives);
                                                      subdiv_patches[patchIndex] = SubdivPatch1Cached(ipatch, mesh->id, f, mesh, uv, edge_level);
+						     subdiv_patches[patchIndex].resetRootRef();
+
               
                                                      /* compute patch bounds */
                                                      const BBox3fa bounds = getBounds1(subdiv_patches[patchIndex],mesh);
@@ -973,11 +975,11 @@ namespace embree
 	      const unsigned int patchIndex = base.size()+s.size();
               
 	      subdiv_patches[patchIndex].updateEdgeLevels(edge_level,mesh);
+	      subdiv_patches[patchIndex].resetRootRef();
               
 	      /* compute patch bounds */
 	      const BBox3fa bounds = getBounds1(subdiv_patches[patchIndex],mesh);
-              if (bounds.lower.x > bounds.upper.x)
-                DBG_PRINT(bounds);
+
 	      assert(bounds.lower.x <= bounds.upper.x);
 	      assert(bounds.lower.y <= bounds.upper.y);
 	      assert(bounds.lower.z <= bounds.upper.z);

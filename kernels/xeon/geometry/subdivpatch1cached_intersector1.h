@@ -25,21 +25,20 @@
 #include "geometry/subdivpatch1cached.h"
 
 /* returns u,v based on individual triangles instead relative to original patch */
-#define FORCE_TRIANGLE_UV 0
-
-#define DISTRIBUTED_TESSELLATION_CACHE_ENTRIES  4
+#define FORCE_TRIANGLE_UV 1
 
 #define TESSELLATION_REF_CACHE_ENTRIES  4
 
+#define SHARED_LAZY_CACHE 1
+
 #if defined(DEBUG)
-#define CACHE_STATS(x) x
+#define CACHE_STATS(x) 
 #else
 #define CACHE_STATS(x) 
 #endif
 
 namespace embree
 {
-  typedef AdaptiveTessellationCache<DISTRIBUTED_TESSELLATION_CACHE_ENTRIES> PerThreadTessellationCache;
   typedef TessellationRefCacheT<TESSELLATION_REF_CACHE_ENTRIES> TessellationRefCache;
 
   namespace isa
@@ -51,8 +50,9 @@ namespace embree
       typedef SubdivPatch1Cached Primitive;
       
       /*! Per thread tessellation ref cache */
-      static __thread TessellationRefCache *thread_cache;
-      
+      static __thread TessellationRefCache            * thread_cache;
+      static __thread LocalTessellationCacheThreadInfo* localThreadInfo;
+
 
       /*! Creates per thread tessellation cache */
       static void createTessellationCache();
@@ -62,11 +62,14 @@ namespace embree
       public:
         Vec3fa ray_rdir;
         Vec3fa ray_org_rdir;
-        SubdivPatch1Cached *current_patch;
-        SubdivPatch1Cached *hit_patch;
+        SubdivPatch1Cached   *current_patch;
+        SubdivPatch1Cached   *hit_patch;
+#if SHARED_LAZY_CACHE == 1
+	unsigned int threadID;
+#else
 	TessellationCacheTag *local_tag;
-
 	TessellationRefCache *local_cache;
+#endif
         Ray &r;
         
         __forceinline Precalculations (Ray& ray, const void *ptr) : r(ray) 
@@ -75,25 +78,37 @@ namespace embree
           ray_org_rdir  = ray.org*ray_rdir;
           current_patch = NULL;
           hit_patch     = NULL;
-	  local_tag     = NULL;
 
+#if SHARED_LAZY_CACHE == 1
+	  if (unlikely(!localThreadInfo))
+	    localThreadInfo = new LocalTessellationCacheThreadInfo( SharedLazyTessellationCache::sharedLazyTessellationCache.getNextRenderThreadID() );	      
+	  threadID = localThreadInfo->id;
+#else
           /*! Initialize per thread tessellation cache */
+	  local_tag     = NULL;
           if (unlikely(!thread_cache))
             createTessellationCache();
           local_cache = thread_cache;
           assert(local_cache != NULL);
+#endif
+	  
         }
 
           /*! Final per ray computations like smooth normal, patch u,v, etc. */        
         __forceinline ~Precalculations() 
         {
-	  //flushLocalTessellationCache();
+#if SHARED_LAZY_CACHE == 1
+	  if (current_patch)
+	    {
+	      SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(threadID);	       	      
+	    }
+#else
 	  if (local_tag)
 	    {
 	      local_tag->read_unlock();
 	      local_tag = NULL;
 	    }
-
+#endif
 
           if (unlikely(hit_patch != NULL))
           {
@@ -281,9 +296,12 @@ namespace embree
 #endif
         return true;
       };
-      
-      static size_t lazyBuildPatch(Precalculations &pre, SubdivPatch1Cached* const subdiv_patch, const void* geom,TessellationRefCache *ref_cache);
 
+#if SHARED_LAZY_CACHE == 1
+      static size_t lazyBuildPatch(Precalculations &pre, SubdivPatch1Cached* const subdiv_patch, const void* geom);
+#else      
+      static size_t lazyBuildPatch(Precalculations &pre, SubdivPatch1Cached* const subdiv_patch, const void* geom,TessellationRefCache *ref_cache);
+#endif
                   
       
       /*! Evaluates grid over patch and builds BVH4 tree over the grid. */
@@ -326,7 +344,11 @@ namespace embree
         }
         else 
         {
+#if SHARED_LAZY_CACHE == 1
+	  lazy_node = lazyBuildPatch(pre,(SubdivPatch1Cached*)prim, geom);
+#else
 	  lazy_node = lazyBuildPatch(pre,(SubdivPatch1Cached*)prim, geom, pre.local_cache);
+#endif
 	  assert(lazy_node);
           pre.current_patch = (SubdivPatch1Cached*)prim;
           
@@ -350,7 +372,11 @@ namespace embree
         }
         else 
         {
+#if SHARED_LAZY_CACHE == 1
+	  lazy_node = lazyBuildPatch(pre,(SubdivPatch1Cached*)prim, geom);
+#else
 	  lazy_node = lazyBuildPatch(pre,(SubdivPatch1Cached*)prim, geom, pre.local_cache);
+#endif
           pre.current_patch = (SubdivPatch1Cached*)prim;
         }             
         return false;
