@@ -116,15 +116,14 @@ namespace embree
        }
    }
     
-   __noinline void resetCache(SubdivPatch1Base* const patches,
-			      const size_t numPatches) 
+   __noinline void resetCache() 
    {
 
      if (reset_state.try_lock())
        {
 	 if (next_block >= maxBlocks)
 	   {
-
+	     PING;
 	     //TIMER(double msec = getSeconds());
 
 	     for (size_t i=0;i<numRenderThreads;i++)
@@ -133,22 +132,8 @@ namespace embree
 	     for (size_t i=0;i<numRenderThreads;i++)
 	       waitForUsersLessEqual(i,1);
 
-#if 1
 	     incCurrentIndex();
-#else
-	     size_t i=0;
-	     for (;i<numPatches-1;i+=2)
-	       {
-		 prefetch<PFHINT_L1EX>(&patches[i+2]);
-		 prefetch<PFHINT_L2EX>(&patches[i+12]);
-		 patches[i+0].resetRootRef();
-		 patches[i+1].resetRootRef();
-		 evictL1(&patches[i]);
-	       }
 
-	     if(i<numPatches)
-	       patches[i].resetRootRef();
-#endif
 	     next_block = 0;
 
 	     for (size_t i=0;i<numRenderThreads;i++)

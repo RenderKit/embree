@@ -974,7 +974,6 @@ namespace embree
        }
         
       SubdivPatch1Cached *const subdiv_patches = (SubdivPatch1Cached *)this->bvh->data_mem;
-
       double t0 = getSeconds();
 
       pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
@@ -1004,7 +1003,8 @@ namespace embree
                                                      const unsigned int patchIndex = base.size()+s.size();
                                                      assert(patchIndex < numPrimitives);
                                                      subdiv_patches[patchIndex] = SubdivPatch1Cached(ipatch, mesh->id, f, mesh, uv, edge_level);
-              
+						     subdiv_patches[patchIndex].resetRootRef();
+
                                                      /* compute patch bounds */
                                                      const BBox3fa bounds = getBounds(subdiv_patches[patchIndex],mesh);
                                                      assert(bounds.lower.x <= bounds.upper.x);
@@ -1029,7 +1029,7 @@ namespace embree
 	      const unsigned int patchIndex = base.size()+s.size();
               
 	      subdiv_patches[patchIndex].updateEdgeLevels(edge_level,mesh);
-              
+              subdiv_patches[patchIndex].resetRootRef();
 	      /* compute patch bounds */
 	      const BBox3fa bounds = getBounds(subdiv_patches[patchIndex],mesh);
               if (bounds.lower.x > bounds.upper.x)

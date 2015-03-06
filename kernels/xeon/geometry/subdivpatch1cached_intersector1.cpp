@@ -22,14 +22,8 @@
 #define DBG(x) 
 
 
-#define ENABLE_TESSELLATION_CACHE_HIERARCHY 0
-
-
 #define NUM_SCRATCH_MEM_BLOCKS 1024
-
-//#define SHARED_TESSELLATION_CACHE_ENTRIES 1024*32
 #define SHARED_TESSELLATION_CACHE_ENTRIES 16
-//#define SHARED_TESSELLATION_CACHE_ENTRIES 1024*128
 
 namespace embree
 {
@@ -39,6 +33,15 @@ namespace embree
 
   namespace isa
   {  
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////
+    
+    __thread TessellationRefCache *SubdivPatch1CachedIntersector1::thread_cache = NULL;
+
+    __thread LocalTessellationCacheThreadInfo* SubdivPatch1CachedIntersector1::localThreadInfo = NULL;
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////
+
     size_t countBlocks(const BVH4::NodeRef ref, const size_t range0, const size_t range1)
     {
       
@@ -109,13 +112,94 @@ namespace embree
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////
 
-
-    __thread TessellationRefCache *SubdivPatch1CachedIntersector1::thread_cache = NULL;
-
-    //////////////////////////////////////////////////////////////////////////////////////////////////////
-
     /* build lazy subtree over patch */
-#if 1
+#if SHARED_LAZY_CACHE == 1
+    
+    size_t SubdivPatch1CachedIntersector1::lazyBuildPatch(Precalculations &pre,
+							  SubdivPatch1Cached* const subdiv_patch, 
+							  const void* geom)
+    {
+      /* unlock previous patch */
+      if (pre.current_patch)
+	{
+	  SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(pre.threadID);	       	  
+	}
+
+      while(1)
+	{
+	  /* per thread lock */
+	  while(1)
+	    {
+	      unsigned int lock = SharedLazyTessellationCache::sharedLazyTessellationCache.lockThread(pre.threadID);	       
+	      if (unlikely(lock == 1))
+		{
+		  /* lock failed wait until sync phase is over */
+		  SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(pre.threadID);	       
+		  SharedLazyTessellationCache::sharedLazyTessellationCache.waitForUsersLessEqual(pre.threadID,0);
+		}
+	      else
+		break;
+	    }
+      
+	  static const size_t REF_TAG      = 1;
+	  static const size_t REF_TAG_MASK = (~REF_TAG) & 0xffffffff;
+
+	  /* fast path for cache hit */
+	  {
+	    CACHE_STATS(SharedTessellationCacheStats::cache_accesses++);
+	    const size_t subdiv_patch_root_ref    = subdiv_patch->root_ref;
+	    
+	    if (likely(subdiv_patch_root_ref)) 
+	      {
+		const size_t subdiv_patch_root = (subdiv_patch_root_ref & REF_TAG_MASK) + (size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();
+		const size_t subdiv_patch_cache_index = subdiv_patch_root_ref >> 32;
+		
+		if (likely( subdiv_patch_cache_index == SharedLazyTessellationCache::sharedLazyTessellationCache.getCurrentIndex()))
+		  {
+		    CACHE_STATS(SharedTessellationCacheStats::cache_hits++);	      
+		    return subdiv_patch_root;
+		  }
+	      }
+	  }
+
+	  /* cache miss */
+	  CACHE_STATS(SharedTessellationCacheStats::cache_misses++);
+
+	  subdiv_patch->write_lock();
+	  {
+	    const size_t subdiv_patch_root_ref    = subdiv_patch->root_ref;
+	    const size_t subdiv_patch_cache_index = subdiv_patch_root_ref >> 32;
+
+	    /* do we still need to create the subtree data? */
+	    if (subdiv_patch_root_ref == 0 || subdiv_patch_cache_index != SharedLazyTessellationCache::sharedLazyTessellationCache.getCurrentIndex())
+	      {	      
+		size_t block_index = SharedLazyTessellationCache::sharedLazyTessellationCache.alloc(subdiv_patch->grid_subtree_size_64b_blocks);
+		if (block_index == (size_t)-1)
+		  {
+		    /* cannot allocate => flush the cache */
+		    subdiv_patch->write_unlock();
+		    SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(pre.threadID);		  
+		    SharedLazyTessellationCache::sharedLazyTessellationCache.resetCache();
+		    continue;
+		  }
+		//DBG_PRINT( sharedLazyTessellationCache.getNumAllocatedBytes() );
+		BVH4::Node* node = (BVH4::Node*)SharedLazyTessellationCache::sharedLazyTessellationCache.getBlockPtr(block_index);
+		size_t new_root_ref = (size_t)buildSubdivPatchTree(*subdiv_patch,node,((Scene*)geom)->getSubdivMesh(subdiv_patch->geom));
+		new_root_ref -= (size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();
+		assert( new_root_ref <= 0xffffffff );
+		assert( !(new_root_ref & REF_TAG) );
+		new_root_ref |= REF_TAG;
+		new_root_ref |= SharedLazyTessellationCache::sharedLazyTessellationCache.getCurrentIndex() << 32; 
+		subdiv_patch->root_ref = new_root_ref;
+	      }
+	  }
+	  subdiv_patch->write_unlock();
+	  SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(pre.threadID);		  
+	}
+      
+    }
+
+#else
     size_t SubdivPatch1CachedIntersector1::lazyBuildPatch(Precalculations &pre,
 							  SubdivPatch1Cached* const subdiv_patch, 
 							  const void* geom,
@@ -186,133 +270,10 @@ namespace embree
 
       return new_root;                 
     }
-
-#else
-    size_t SubdivPatch1CachedIntersector1::lazyBuildPatch(Precalculations &pre,
-							  SubdivPatch1Cached* const subdiv_patch, 
-							  const void* geom,
-							  TessellationRefCache *ref_cache)
-    {
-      /* lookup in per thread reference cache */
-      InputTagType tag = (InputTagType)subdiv_patch;        
-      const unsigned int commitCounter = ((Scene*)geom)->commitCounter;
-      
-      if (unlikely(ref_cache->needCommitCounterUpdate(commitCounter)))
-	{
-	  flushLocalTessellationCache();
-	}
-
-      CACHE_STATS(DistributedTessellationCacheStats::cache_accesses++);
-      TessellationRefCacheTag *t = ref_cache->lookUpTag(tag,commitCounter);
-      DBG(DBG_PRINT("LOCKUP TAG"));
-      DBG(DBG_PRINT(t->getPrimTag()));
-
-      if (likely(t->match(tag,commitCounter)))
-	{
-	  assert( !t->empty() );
-	  CACHE_STATS(DistributedTessellationCacheStats::cache_hits++);
-	  return t->getRootRef();
-	}
-      CACHE_STATS(DistributedTessellationCacheStats::cache_misses++);
-
-      /* miss handler */
-
-      if (!t->empty()) {
-	TessellationCacheTag *old = sharedTessellationCache.getTagBy32BitID(t->getPrimTag());
-	old->read_unlock();
-	t->reset();
-      };      
-
-      TessellationCacheTag *s = sharedTessellationCache.getTag(tag);
-
-      CACHE_STATS(SharedTessellationCacheStats::cache_accesses++);
-      //if (s->match(tag,commitCounter))
-	{
-	  s->read_lock();
-	  if (s->match(tag,commitCounter))
-	    {
-	      CACHE_STATS(SharedTessellationCacheStats::cache_hits++);
-	      size_t patch_root = s->getRootRef();
-	      t->set(tag,commitCounter,patch_root);
-	      return patch_root;
-	    }
-	  CACHE_STATS(else SharedTessellationCacheStats::cache_misses++);
-	  s->read_unlock();
-	}
-	//CACHE_STATS(else SharedTessellationCacheStats::cache_misses++);
-
-      CACHE_STATS(SharedTessellationCacheStats::cache_updates++);
-      if (s->try_write_lock())
-	{
-	  CACHE_STATS(SharedTessellationCacheStats::cache_updates_successful++);
-
-	  if (s->match(tag,commitCounter))
-	    {
-	      size_t patch_root = s->getRootRef();
-	      t->set(tag,commitCounter,patch_root);
-
-	      s->upgrade_write_to_read_lock();
-	      return patch_root;
-	    }
-	  else
-	    {
-	      BVH4::Node* node = (BVH4::Node*)s->getPtr();
-	      const unsigned int needed_blocks = subdiv_patch->grid_subtree_size_64b_blocks;          
-	      if (s->getNumBlocks() < needed_blocks)
-		{
-		  //std::cout << needed_blocks << " -> " << s->getNumBlocks() << std::endl;
-		  if (node != NULL)
-		    free_tessellation_cache_mem(node);
-		  node = (BVH4::Node*)alloc_tessellation_cache_mem(needed_blocks);              	      
-		}
-	      
-	      size_t new_root = (size_t)buildSubdivPatchTree(*subdiv_patch,node,((Scene*)geom)->getSubdivMesh(subdiv_patch->geom));
-
-	      s->set(tag,commitCounter,new_root,needed_blocks);
-	      /* insert new patch data into local cache */
-	      t->set(tag,commitCounter,new_root);
-
-	      s->upgrade_write_to_read_lock();
-	      return new_root;
-	    }
-	}
-
-      CACHE_STATS(SharedTessellationCacheStats::cache_fallbacks++);
-
-      const unsigned int needed_blocks = subdiv_patch->grid_subtree_size_64b_blocks;          
-      ref_cache->reallocScratchMem(needed_blocks);
-      BVH4::Node* node = (BVH4::Node*)ref_cache->getScratchMemPtr();
-      size_t new_root = (size_t)buildSubdivPatchTree(*subdiv_patch,node,((Scene*)geom)->getSubdivMesh(subdiv_patch->geom));
-
-      // if (s->try_write_lock())
-      // 	{
-      // 	  PING;
-      // 	  CACHE_STATS(SharedTessellationCacheStats::cache_updates_successful++);
-      // 	  BVH4::Node* dest = (BVH4::Node*)s->getPtr();
-      // 	  const unsigned int needed_blocks = subdiv_patch->grid_subtree_size_64b_blocks;          
-      // 	  if (s->getNumBlocks() < needed_blocks)
-      // 	    {
-      // 	      if (node != NULL)
-      // 		free_tessellation_cache_mem(node);
-      // 	      dest = (BVH4::Node*)alloc_tessellation_cache_mem(needed_blocks);              	      
-      // 	    }
-      // 	  memcpy(dest,node,64*needed_blocks);
-      // 	  size_t source_root = new_root;
-      // 	  updateBVH4Refs(source_root,(size_t)node,(size_t)dest);
-      // 	  s->set(tag,commitCounter,(size_t)dest,needed_blocks);
-      // 	  s->updateRootRef( ((size_t)source_root - (size_t)node) + (size_t)dest );
-	  	  
-      // 	  s->upgrade_write_to_read_lock();
-      // 	}
-      
-      return new_root;      
-    }
 #endif
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    
     
     
     BVH4::NodeRef SubdivPatch1CachedIntersector1::buildSubdivPatchTree(const SubdivPatch1Cached &patch,
@@ -517,7 +478,6 @@ namespace embree
     {
       TessellationRefCache *cache = new TessellationRefCache(  NUM_SCRATCH_MEM_BLOCKS  );
       thread_cache = cache;
-      FATAL("xeon code is currently work in progress");
     }
     
   };
