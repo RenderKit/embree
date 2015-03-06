@@ -116,7 +116,8 @@ namespace embree
   }
   
   TaskSchedulerNew::TaskSchedulerNew(size_t numThreads, bool spinning)
-    : threadCounter(numThreads), createThreads(true), terminate(false), anyTasksRunning(0), active(false), spinning(spinning)
+    : threadCounter(numThreads), createThreads(true), terminate(false), anyTasksRunning(0), active(false), spinning(spinning),
+      task_set_function(nullptr)
   {
     for (size_t i=0; i<MAX_THREADS; i++)
       threadLocal[i] = NULL;
@@ -128,6 +129,7 @@ namespace embree
     else if (numThreads == 0) {
       threadCounter = getNumberOfLogicalThreads();
     }
+    task_set_barrier.init(threadCounter);
   }
   
   TaskSchedulerNew::~TaskSchedulerNew() 
@@ -167,7 +169,7 @@ namespace embree
   void TaskSchedulerNew::create(size_t numThreads)
   {
     if (g_instance) THROW_RUNTIME_ERROR("Embree threads already running.");
-    g_instance = new TaskSchedulerNew(numThreads);
+    g_instance = new TaskSchedulerNew(numThreads,false);
   }
 
   void TaskSchedulerNew::destroy() {
@@ -288,10 +290,37 @@ namespace embree
     exit(1);
   }
 
+  __dllexport bool TaskSchedulerNew::executeTaskSet(Thread& thread)
+  {
+    if (task_set_function)
+    {
+      const size_t threadIndex = thread.threadIndex;
+      const size_t threadCount = this->threadCounter;
+      TaskSetFunction* function = task_set_function;
+      task_set_barrier.wait(threadIndex,threadCount);
+      if (threadIndex == 0) task_set_function = NULL;
+      const size_t task_set_size = function->end-function->begin;
+      const size_t begin = function->begin+(threadIndex+0)*task_set_size/threadCount;
+      const size_t end   = function->begin+(threadIndex+1)*task_set_size/threadCount;
+      const size_t bs = function->blockSize;
+      for (size_t i=begin; i<end; i+=bs)
+        function->execute(range<size_t>(i,min(i+bs,end)));
+      task_set_barrier.wait(threadIndex,threadCount);
+      return true;
+    }
+    return false;
+  }
+
   bool TaskSchedulerNew::steal_from_other_threads(Thread& thread)
   {
     const size_t threadIndex = thread.threadIndex;
     const size_t threadCount = this->threadCounter;
+
+    /* special static load balancing for top level task sets */
+#if TASKSCHEDULER_STATIC_LOAD_BALANCING
+    if (executeTaskSet(thread))
+      return false;
+#endif
 
 #if SORTED_STEALING == 1
     size_t workingThreads = 0;

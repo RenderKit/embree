@@ -24,6 +24,12 @@
 #include <mutex>
 #include <condition_variable>
 
+#if defined(__MIC__)
+#define TASKSCHEDULER_STATIC_LOAD_BALANCING 1
+#else
+#define TASKSCHEDULER_STATIC_LOAD_BALANCING 0
+#endif
+
 namespace embree
 {
 #if defined(TASKING_TBB)
@@ -58,6 +64,25 @@ namespace embree
       Closure closure;
       __forceinline ClosureTaskFunction (const Closure& closure) : closure(closure) {}
       void execute() { closure(); };
+    };
+
+    /*! virtual interface for all tasks */
+    struct TaskSetFunction 
+    {
+      __forceinline TaskSetFunction(size_t begin, size_t end, size_t blockSize) 
+        : begin(begin), end(end), blockSize(blockSize) {}
+      virtual void execute(const range<size_t>& r) = 0;
+      size_t begin,end,blockSize;
+    };
+
+    /*! builds a task interface from a closure */
+    template<typename Closure>
+    struct ClosureTaskSetFunction : public TaskSetFunction
+    {
+      Closure closure;
+      __forceinline ClosureTaskSetFunction (const Closure& closure, size_t begin, size_t end, size_t blockSize) 
+        : closure(closure), TaskSetFunction(begin,end,blockSize) {}
+      void execute(const range<size_t>& r) { closure(r); };
     };
 
     struct __aligned(64) Task 
@@ -122,7 +147,7 @@ namespace embree
       size_t stackPtr;                   //!< stack location where closure is stored
       size_t N;                          //!< approximative size of task
     };
-    
+
     struct TaskQueue
     {
       TaskQueue ()
@@ -198,6 +223,7 @@ namespace embree
 
     void thread_loop(size_t threadIndex);
     bool steal_from_other_threads(Thread& thread);
+    bool executeTaskSet(Thread& thread);
 
     template<typename Predicate, typename Body>
       static void steal_loop(Thread& thread, const Predicate& pred, const Body& body);
@@ -219,7 +245,38 @@ namespace embree
 	std::unique_lock<std::mutex> lock(mutex);
 	atomic_add(&anyTasksRunning,+1);
       }
-      condition.notify_all();
+      if (!spinning) condition.notify_all();
+      while (thread.tasks.execute_local(thread,NULL));
+      atomic_add(&anyTasksRunning,-1);
+
+      threadLocal[0] = NULL;
+      thread_local_thread = NULL;
+      active = false;
+    }
+
+    /* spawn a new task at the top of the threads task stack */
+    template<typename Closure>
+    __noinline void spawn_root(const Closure& closure, size_t begin, size_t end, size_t blockSize) // important: has to be noinline as it allocates thread structure on stack
+    {
+      if (createThreads)
+	startThreads();
+
+      assert(!active);
+      active = true;
+      Thread thread(0,this);
+      threadLocal[0] = &thread;
+      thread_local_thread = &thread;
+
+      ClosureTaskSetFunction<Closure> func(closure,begin,end,blockSize);
+      task_set_function = &func;
+      __memory_barrier();
+      
+      {
+	std::unique_lock<std::mutex> lock(mutex);
+	atomic_add(&anyTasksRunning,+1);
+      }
+      if (!spinning) condition.notify_all();
+      executeTaskSet(thread);
       while (thread.tasks.execute_local(thread,NULL));
       atomic_add(&anyTasksRunning,-1);
 
@@ -247,7 +304,15 @@ namespace embree
     template<typename Closure>
     static void spawn(const size_t begin, const size_t end, const size_t blockSize, const Closure& closure) 
     {
-      spawn(end-begin, [=,&closure]() {
+#if TASKSCHEDULER_STATIC_LOAD_BALANCING
+      Thread* thread = TaskSchedulerNew::thread();
+      if (thread == nullptr) {
+        g_instance->spawn_root(closure,begin,end,blockSize);
+      }
+#endif
+
+      spawn(end-begin, [=,&closure]() 
+        {
 	  if (end-begin <= blockSize) {
 	    return closure(range<size_t>(begin,end));
 	  }
@@ -283,6 +348,15 @@ namespace embree
     std::mutex mutex;        
     std::condition_variable condition;
 
+    /* special toplevel taskset optimization */
+  private:
+#if defined(__MIC__)
+    __aligned(64) QuadTreeBarrier task_set_barrier;
+#else
+    __aligned(64) LinearBarrierActive task_set_barrier;
+#endif
+    TaskSetFunction* volatile task_set_function;
+    
   private:
     static TaskSchedulerNew* g_instance;
     static __thread Thread* thread_local_thread;

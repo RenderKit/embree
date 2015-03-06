@@ -16,6 +16,7 @@
 
 #include "tasking/taskscheduler.h"
 #include "tasking/taskscheduler_new.h"
+#include "kernels/algorithms/parallel_reduce.h"
 
 #include "math/math.h"
 #include "math/bbox.h"
@@ -24,7 +25,7 @@
 #include "tbb/tbb_stddef.h"
 
 #define OUTPUT 1
-#define PROFILE 1
+#define PROFILE 0
 
 #define ENABLE_FIB_BENCHMARK 0
 #define ENABLE_REDUCE_BENCHMARK 0
@@ -183,7 +184,7 @@ namespace embree
   std::fstream fs;
 
   static const size_t ITER = 10;
-  TaskSchedulerNew* newscheduler = NULL;
+  //TaskSchedulerNew* newscheduler = NULL;
 
   struct box_benchmark
   {
@@ -293,6 +294,7 @@ namespace embree
       return t1-t0;
     }
 
+#if 0
     BBox3fa myreduce(size_t n0, size_t n1)
     {
       BBox3fa b( empty );
@@ -315,7 +317,7 @@ namespace embree
     {
       double t0 = getSeconds();
       BBox3fa c2( empty );
-      newscheduler->spawn_root([&](){ c2 = myreduce(0,N); });
+      c2 = myreduce(0,N);
       result = c2;
       double t1 = getSeconds();
 
@@ -324,7 +326,29 @@ namespace embree
       
       return t1-t0;
     }
+#else
 
+    double run_mytbb(size_t N)
+    {
+      double t0 = getSeconds();
+      result = parallel_reduce(size_t(0), size_t(N), size_t(1024), BBox3fa(empty), [&] (const range<size_t>& r)
+                      { 
+                        BBox3fa c0(empty);
+                        for (size_t i=r.begin(); i<r.end(); i++)
+                          c0.extend(array[i]);
+                        return c0;
+                      },
+                      [] (const BBox3fa& a, const BBox3fa& b) { return merge(a,b); });
+
+      double t1 = getSeconds();
+
+      if (showResult)
+	DBG_PRINT( result );
+      
+      return t1-t0;
+    }
+
+#endif
 
 
   };
@@ -461,7 +485,7 @@ namespace embree
     {
       double t0 = getSeconds();
       double c2 = 0;
-      newscheduler->spawn_root([&](){ c2 = myreduce(0,N); });
+      c2 = myreduce(0,N);
       volatile double result = c2;
       double t1 = getSeconds();
       
@@ -749,14 +773,16 @@ namespace embree
 
     if (test == 4)
     {
-      newscheduler = new TaskSchedulerNew(0,true); // false
+      TaskSchedulerNew::create(0);
+      //newscheduler = new TaskSchedulerNew(0,true); // false
       fs.open ("benchmark_reduce_mytbb.csv", std::fstream::out);
 #if PROFILE == 1
       while(1)
 #endif
 	benchmark(N_start,N,"reduce_mytbb",[] (size_t N) -> double { return reduce.run_mytbb(N); });
       fs.close();
-      delete newscheduler;
+      //delete newscheduler;
+      TaskSchedulerNew::destroy();
     }
 
     if (test == 5)

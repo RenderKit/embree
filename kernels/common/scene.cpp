@@ -407,9 +407,11 @@ namespace embree
 #if defined(TASKING_TBB_INTERNAL)
     if (threadCount)
       scheduler->spawn_root([&]() { accels.build(0,0); });
-    else
+    else {
       //TaskSchedulerNew::g_instance->spawn_root([&]() { accels.build(0,0); });
       TaskSchedulerNew::spawn([&](){accels.build(0,0);});
+      //accels.build(0,0);
+    }
 #endif
 
     /* make static geometry immutable */
