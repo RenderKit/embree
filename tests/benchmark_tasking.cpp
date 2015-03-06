@@ -331,6 +331,9 @@ namespace embree
     double run_mytbb(size_t N)
     {
       double t0 = getSeconds();
+#if defined(__MIC__)
+      setAffinity(0);
+#endif
       result = parallel_reduce(size_t(0), size_t(N), size_t(1024), BBox3fa(empty), [&] (const range<size_t>& r)
                       { 
                         BBox3fa c0(empty);

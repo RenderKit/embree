@@ -169,7 +169,11 @@ namespace embree
   void TaskSchedulerNew::create(size_t numThreads)
   {
     if (g_instance) THROW_RUNTIME_ERROR("Embree threads already running.");
+#if __MIC__
+    g_instance = new TaskSchedulerNew(numThreads,true);
+#else
     g_instance = new TaskSchedulerNew(numThreads,false);
+#endif
   }
 
   void TaskSchedulerNew::destroy() {
@@ -239,6 +243,10 @@ namespace embree
 
   void TaskSchedulerNew::thread_loop(size_t threadIndex) try 
   {
+#if defined(__MIC__)
+    setAffinity(threadIndex);
+#endif
+
     /* allocate thread structure */
     Thread thread(threadIndex,this);
     threadLocal[threadIndex] = &thread;
@@ -253,7 +261,7 @@ namespace embree
       if (spinning) 
       {
 	while (!predicate())
-	  __pause_cpu();
+          __pause_cpu();
       }
       
       /* ... or waiting inside some condition variable */
