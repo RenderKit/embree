@@ -114,9 +114,22 @@ namespace embree
   {
     ISPCScene* out = new ISPCScene;
 
+    size_t total_triangles = 0;
+    size_t total_quads     = 0;
+    
     out->meshes = new ISPCMesh*[in->meshes.size()];
-    for (size_t i=0; i<in->meshes.size(); i++) out->meshes[i] = convertMesh(in->meshes[i]);
+    for (size_t i=0; i<in->meshes.size(); i++)
+      {
+        out->meshes[i] = convertMesh(in->meshes[i]);
+        total_triangles += out->meshes[i]->numTriangles;
+        total_quads     += out->meshes[i]->numQuads;        
+      }
+    
     out->numMeshes = in->meshes.size();
+
+    DBG_PRINT(total_triangles);
+    DBG_PRINT(total_quads);
+    DBG_PRINT(out->numMeshes);
 
     out->materials = (ISPCMaterial*) (in->materials.size() ? &in->materials[0] : NULL);
     out->numMaterials = in->materials.size();
@@ -138,7 +151,8 @@ namespace embree
     out->numDistantLights = in->distantLights.size();
 
     out->subdiv = new ISPCSubdivMesh*[in->subdiv.size()];
-    for (size_t i=0; i<in->subdiv.size(); i++) out->subdiv[i] = convertSubdivMesh(in->subdiv[i]);
+    for (size_t i=0; i<in->subdiv.size(); i++)
+      out->subdiv[i] = convertSubdivMesh(in->subdiv[i]);
     out->numSubdivMeshes = in->subdiv.size();
 
     g_ispc_scene = out;

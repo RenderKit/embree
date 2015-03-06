@@ -37,7 +37,6 @@ namespace embree
     //////////////////////////////////////////////////////////////////////////////////////////////////////
     
     __thread TessellationRefCache *SubdivPatch1CachedIntersector1::thread_cache = NULL;
-
     __thread LocalTessellationCacheThreadInfo* SubdivPatch1CachedIntersector1::localThreadInfo = NULL;
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -479,6 +478,11 @@ namespace embree
       TessellationRefCache *cache = new TessellationRefCache(  NUM_SCRATCH_MEM_BLOCKS  );
       thread_cache = cache;
     }
-    
+
+    void SubdivPatch1CachedIntersector1::createLocalThreadInfo()
+    {
+      localThreadInfo = new LocalTessellationCacheThreadInfo( SharedLazyTessellationCache::sharedLazyTessellationCache.getNextRenderThreadID() );	      
+    }
+
   };
 }

@@ -56,6 +56,7 @@ namespace embree
 
       /*! Creates per thread tessellation cache */
       static void createTessellationCache();
+      static void createLocalThreadInfo();
       
       /*! Precalculations for subdiv patch intersection */
       class Precalculations {
@@ -81,7 +82,8 @@ namespace embree
 
 #if SHARED_LAZY_CACHE == 1
 	  if (unlikely(!localThreadInfo))
-	    localThreadInfo = new LocalTessellationCacheThreadInfo( SharedLazyTessellationCache::sharedLazyTessellationCache.getNextRenderThreadID() );	      
+            createLocalThreadInfo();
+	    //localThreadInfo = new LocalTessellationCacheThreadInfo( SharedLazyTessellationCache::sharedLazyTessellationCache.getNextRenderThreadID() );	      
 	  threadID = localThreadInfo->id;
 #else
           /*! Initialize per thread tessellation cache */
