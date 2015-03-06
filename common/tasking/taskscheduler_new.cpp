@@ -24,6 +24,29 @@
 namespace embree
 {
   size_t g_numThreads = 0;                              //!< number of threads to use in builders
+  
+  template<typename Predicate, typename Body>
+  __forceinline void TaskSchedulerNew::steal_loop(Thread& thread, const Predicate& pred, const Body& body)
+  {
+    while (true)
+    {
+      for (size_t i=0; i<32; i++)
+      {
+        const size_t threadCount = thread.threadCount();
+        for (size_t j=0; j<1024; j+=threadCount)
+        {
+          if (!pred()) return;
+          if (thread.scheduler->steal_from_other_threads(thread)) {
+            i=j=0;
+            body();
+          }
+        }
+#if !defined(__MIC__)
+        yield();
+#endif
+      }
+    }
+  }
 
   /*! run this task */
   __dllexport void TaskSchedulerNew::Task::run (Thread& thread) // FIXME: avoid as many __dllexports as possible
@@ -39,18 +62,64 @@ namespace embree
     }
     
     /* steal until all dependencies have completed */
-    while (dependencies) {
-      if (thread.scheduler->steal_from_other_threads(thread))
-        while (thread.tasks.execute_local(thread,this));
-    }
+    steal_loop(thread,
+               [&] () { return dependencies > 0; },
+               [&] () { while (thread.tasks.execute_local(thread,this)); });
    
     /* now signal our parent task that we are finished */
     if (parent) 
       parent->add_dependencies(-1);
   }
+
+  __dllexport bool TaskSchedulerNew::TaskQueue::execute_local(Thread& thread, Task* parent)
+  {
+    /* stop if we run out of local tasks or reach the waiting task */
+    if (right == 0 || &tasks[right-1] == parent)
+      return false;
+    
+    /* execute task */
+    size_t oldRight = right;
+    tasks[right-1].run(thread);
+    if (right != oldRight) {
+      THROW_RUNTIME_ERROR("you have to wait for spawned subtasks");
+    }
+    
+    /* pop task and closure from stack */
+    right--;
+    if (tasks[right].stackPtr != -1)
+      stackPtr = tasks[right].stackPtr;
+    
+    /* also move left pointer */
+    if (left >= right) left = right;
+    
+    return right != 0;
+  }
+  
+  bool TaskSchedulerNew::TaskQueue::steal(Thread& thread) 
+  {
+    size_t l = left;
+    if (l < right) 
+      l = atomic_add(&left,1);
+    else 
+      return false;
+    
+    if (!tasks[l].try_steal(thread.tasks.tasks[thread.tasks.right]))
+      return false;
+    
+    thread.tasks.right++;
+    return true;
+  }
+  
+  /* we steal from the left */
+  size_t TaskSchedulerNew::TaskQueue::getTaskSizeAtLeft() 
+  {	
+    if (left >= right) return 0;
+    return tasks[left].N;
+  }
   
   TaskSchedulerNew::TaskSchedulerNew(size_t numThreads, bool spinning)
-    : threadCounter(numThreads), createThreads(true), terminate(false), anyTasksRunning(0), active(false), spinning(spinning)
+    : threadCounter(numThreads), createThreads(true), terminate(false), anyTasksRunning(0), active(false), spinning(spinning),
+      task_set_function(nullptr)
   {
     for (size_t i=0; i<MAX_THREADS; i++)
       threadLocal[i] = NULL;
@@ -60,8 +129,13 @@ namespace embree
       createThreads = false;
     }
     else if (numThreads == 0) {
+#if defined(__MIC__)
+      threadCounter = getNumberOfLogicalThreads()-4;
+#else
       threadCounter = getNumberOfLogicalThreads();
+#endif
     }
+    task_set_barrier.init(threadCounter);
   }
   
   TaskSchedulerNew::~TaskSchedulerNew() 
@@ -101,18 +175,46 @@ namespace embree
   void TaskSchedulerNew::create(size_t numThreads)
   {
     if (g_instance) THROW_RUNTIME_ERROR("Embree threads already running.");
-    g_instance = new TaskSchedulerNew(numThreads);
+#if __MIC__
+    g_instance = new TaskSchedulerNew(numThreads,true);
+#else
+    g_instance = new TaskSchedulerNew(numThreads,false);
+#endif
   }
 
   void TaskSchedulerNew::destroy() {
     delete g_instance; g_instance = NULL;
   }
 
+  struct MyThread
+  {
+    MyThread (size_t threadIndex, size_t threadCount, TaskSchedulerNew* scheduler)
+      : threadIndex(threadIndex), threadCount(threadCount), scheduler(scheduler) {}
+    
+    size_t threadIndex;
+    size_t threadCount;
+    TaskSchedulerNew* scheduler;
+  };
+
+  void threadFunction(void* ptr) try 
+  {
+    MyThread thread = *(MyThread*) ptr;
+    thread.scheduler->thread_loop(thread.threadIndex);
+    delete (MyThread*) ptr;
+  }
+  catch (const std::exception& e) {
+    std::cout << "Error: " << e.what() << std::endl;
+    exit(1);
+  }
+
   __dllexport void TaskSchedulerNew::startThreads()
   {
     createThreads = false;
-    for (size_t i=1; i<threadCounter; i++) {
-      threads.push_back(std::thread([i,this]() { thread_loop(i); }));
+    //for (size_t i=1; i<threadCounter; i++) {
+    //  threads.push_back(std::thread([i,this]() { thread_loop(i); }));
+    //}
+    for (size_t t=1; t<threadCounter; t++) {
+      threads.push_back(createThread((thread_func)threadFunction,new MyThread(t,threadCounter,this),4*1024*1024,t));
     }
   }
 
@@ -139,7 +241,8 @@ namespace embree
   {
     /* wait for threads to terminate */
     for (size_t i=0; i<threads.size(); i++) 
-      threads[i].join();
+      //threads[i].join();
+      embree::join(threads[i]);
   }
 
   void TaskSchedulerNew::join()
@@ -161,12 +264,40 @@ namespace embree
     return thread_local_thread;
   }
 
+  /* work on spawned subtasks and wait until all have finished */
+  __dllexport void TaskSchedulerNew::wait() 
+  {
+    Thread* thread = TaskSchedulerNew::thread();
+    if (thread == nullptr) return;
+    while (thread->tasks.execute_local(*thread,thread->task)) {};
+  }
+
   void TaskSchedulerNew::thread_loop(size_t threadIndex) try 
   {
+#if defined(__MIC__)
+    setAffinity(threadIndex);
+#endif
+
     /* allocate thread structure */
     Thread thread(threadIndex,this);
     threadLocal[threadIndex] = &thread;
     thread_local_thread = &thread;
+
+#if 0
+#if 0
+    while (true)
+      task_set_barrier.wait(threadIndex,thread.threadCount());
+#else
+    while (true)
+    {
+      while (!anyTasksRunning) __pause_cpu(128);
+      if (task_set_function) {
+        task_set_barrier.wait(threadIndex,thread.threadCount());
+        task_set_barrier.wait(threadIndex,thread.threadCount());
+      }
+    }
+#endif
+#endif
 
     /* main thread loop */
     while (!terminate)
@@ -177,7 +308,7 @@ namespace embree
       if (spinning) 
       {
 	while (!predicate())
-	  __pause_cpu();
+          __pause_cpu(128);
       }
       
       /* ... or waiting inside some condition variable */
@@ -187,17 +318,17 @@ namespace embree
         condition.wait(lock, predicate);
       }
       if (terminate) break;
+      //executeTaskSet(thread); 
+      //continue;
       
       /* work on available task */
-      while (anyTasksRunning) 
-      {
-	if (thread.scheduler->steal_from_other_threads(thread)) 
-	{
-	  atomic_add(&anyTasksRunning,+1);
-	  while (thread.tasks.execute_local(thread,NULL));
-	  atomic_add(&anyTasksRunning,-1);
-	}
-      }
+      steal_loop(thread,
+                 [&] () { return anyTasksRunning > 0; },
+                 [&] () { 
+                   atomic_add(&anyTasksRunning,+1);
+                   while (thread.tasks.execute_local(thread,NULL));
+                   atomic_add(&anyTasksRunning,-1);
+                 });
     }
 
     /* decrement threadCount again */
@@ -216,14 +347,47 @@ namespace embree
     exit(1);
   }
 
+  __dllexport bool TaskSchedulerNew::executeTaskSet(Thread& thread)
+  {
+    if (task_set_function)
+    {
+      const size_t threadIndex = thread.threadIndex;
+      const size_t threadCount = this->threadCounter;
+      TaskSetFunction* function = task_set_function;
+      task_set_barrier.wait(threadIndex,threadCount);
+      if (threadIndex == 0) task_set_function = NULL;
+      const size_t task_set_size = function->end-function->begin;
+      const size_t begin = function->begin+(threadIndex+0)*task_set_size/threadCount;
+      const size_t end   = function->begin+(threadIndex+1)*task_set_size/threadCount;
+      const size_t bs = function->blockSize;
+      for (size_t i=begin; i<end; i+=bs)
+        function->execute(range<size_t>(i,min(i+bs,end)));
+      task_set_barrier.wait(threadIndex,threadCount);
+      return true;
+    }
+    return false;
+  }
+
   bool TaskSchedulerNew::steal_from_other_threads(Thread& thread)
   {
     const size_t threadIndex = thread.threadIndex;
     const size_t threadCount = this->threadCounter;
 
+    /*if (task_set_function) {
+      task_set_barrier.wait(threadIndex,thread.threadCount());
+      task_set_barrier.wait(threadIndex,thread.threadCount());
+    }
+    return false;*/
+
+    /* special static load balancing for top level task sets */
+#if TASKSCHEDULER_STATIC_LOAD_BALANCING
+    if (executeTaskSet(thread))
+      return false;
+#endif
+    
 #if SORTED_STEALING == 1
     size_t workingThreads = 0;
-    std::pair<size_t,size_t> thread_task_size[MAX_MIC_THREADS];
+    std::pair<size_t,size_t> thread_task_size[MAX_THREADS];
 
     /* find thread with largest estimated size left */
     for (size_t i=1; i<threadCount; i++) 

@@ -446,10 +446,8 @@ namespace embree
 #endif
 
 #if TASKING_TBB_INTERNAL
-      TaskSchedulerNew::g_instance->spawn_root([&]() {
-        for (size_t i=0; i<regression_tests->size(); i++) 
-  	  (*(*regression_tests)[i])();
-      });
+      for (size_t i=0; i<regression_tests->size(); i++) 
+        (*(*regression_tests)[i])();
 #endif
     }
 
