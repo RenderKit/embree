@@ -334,6 +334,8 @@ namespace embree
 #if defined(__MIC__)
       setAffinity(0);
 #endif
+
+#if 1
       result = parallel_reduce(size_t(0), size_t(N), size_t(1024), BBox3fa(empty), [&] (const range<size_t>& r)
                       { 
                         BBox3fa c0(empty);
@@ -342,6 +344,19 @@ namespace embree
                         return c0;
                       },
                       [] (const BBox3fa& a, const BBox3fa& b) { return merge(a,b); });
+
+#endif
+
+#if 0
+      while (true) 
+      {
+        double t0 = getSeconds();
+        for (size_t i=0; i<1000; i++)
+          parallel_for(size_t(0),size_t(1024),size_t(1),[&](const range<size_t>& r) {});
+        double t1 = getSeconds();
+        PRINT((t1-t0)*1E9f/1000.0);
+      }
+#endif
 
       double t1 = getSeconds();
 

@@ -260,12 +260,43 @@ namespace embree
     {
       if (createThreads)
 	startThreads();
+      //setAffinity(0);
 
       assert(!active);
       active = true;
       Thread thread(0,this);
       threadLocal[0] = &thread;
       thread_local_thread = &thread;
+
+#if 0
+#if 0
+      while (true) 
+      {
+        double t0 = getSeconds();
+        for (size_t i=0; i<10000; i++)
+          task_set_barrier.wait(thread.threadIndex,thread.threadCount());
+        double t1 = getSeconds();
+        PRINT((t1-t0)*1E9f/10000.0);
+      }
+#else
+      while (true)
+      {
+        double t0 = getSeconds();
+        for (size_t i=0; i<10000; i++) {
+          task_set_function = (TaskSetFunction*)1;
+          __memory_barrier();
+          atomic_add(&anyTasksRunning,+1);
+          task_set_barrier.wait(thread.threadIndex,thread.threadCount());
+          task_set_function = (TaskSetFunction*)0;
+          task_set_barrier.wait(thread.threadIndex,thread.threadCount());
+          atomic_add(&anyTasksRunning,-1);
+        }
+
+        double t1 = getSeconds();
+        PRINT((t1-t0)*1E9f/10000.0);
+      }
+#endif
+#endif
 
       ClosureTaskSetFunction<Closure> func(closure,begin,end,blockSize);
       task_set_function = &func;
@@ -308,6 +339,7 @@ namespace embree
       Thread* thread = TaskSchedulerNew::thread();
       if (thread == nullptr) {
         g_instance->spawn_root(closure,begin,end,blockSize);
+        return;
       }
 #endif
 

@@ -283,6 +283,22 @@ namespace embree
     threadLocal[threadIndex] = &thread;
     thread_local_thread = &thread;
 
+#if 0
+#if 0
+    while (true)
+      task_set_barrier.wait(threadIndex,thread.threadCount());
+#else
+    while (true)
+    {
+      while (!anyTasksRunning) __pause_cpu(128);
+      if (task_set_function) {
+        task_set_barrier.wait(threadIndex,thread.threadCount());
+        task_set_barrier.wait(threadIndex,thread.threadCount());
+      }
+    }
+#endif
+#endif
+
     /* main thread loop */
     while (!terminate)
     {
@@ -357,12 +373,18 @@ namespace embree
     const size_t threadIndex = thread.threadIndex;
     const size_t threadCount = this->threadCounter;
 
+    /*if (task_set_function) {
+      task_set_barrier.wait(threadIndex,thread.threadCount());
+      task_set_barrier.wait(threadIndex,thread.threadCount());
+    }
+    return false;*/
+
     /* special static load balancing for top level task sets */
 #if TASKSCHEDULER_STATIC_LOAD_BALANCING
     if (executeTaskSet(thread))
       return false;
 #endif
-
+    
 #if SORTED_STEALING == 1
     size_t workingThreads = 0;
     std::pair<size_t,size_t> thread_task_size[MAX_THREADS];
