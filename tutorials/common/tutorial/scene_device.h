@@ -29,7 +29,7 @@ struct ISPCQuad
   int v0;                /*< first triangle vertex */
   int v1;                /*< second triangle vertex */
   int v2;                /*< third triangle vertex */
-  int v4;                /*< fourth triangle vertex */
+  int v3;                /*< fourth triangle vertex */
 };
 
 struct ISPCHair
