@@ -196,6 +196,9 @@ namespace embree
     void thread_loop(size_t threadIndex);
     bool steal_from_other_threads(Thread& thread);
 
+    template<typename Predicate, typename Body>
+      static void steal_loop(Thread& thread, const Predicate& pred, const Body& body);
+
     /* spawn a new task at the top of the threads task stack */
     template<typename Closure>
     __noinline void spawn_root(const Closure& closure, size_t size = 1) // important: has to be noinline as it allocates thread structure on stack

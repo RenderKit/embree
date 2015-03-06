@@ -24,6 +24,15 @@
 namespace embree
 {
   size_t g_numThreads = 0;                              //!< number of threads to use in builders
+  
+  template<typename Predicate, typename Body>
+  __forceinline void TaskSchedulerNew::steal_loop(Thread& thread, const Predicate& pred, const Body& body)
+  {
+    while (pred()) {
+      if (thread.scheduler->steal_from_other_threads(thread))
+        body();
+    }
+  }
 
   /*! run this task */
   __dllexport void TaskSchedulerNew::Task::run (Thread& thread) // FIXME: avoid as many __dllexports as possible
@@ -39,10 +48,9 @@ namespace embree
     }
     
     /* steal until all dependencies have completed */
-    while (dependencies) {
-      if (thread.scheduler->steal_from_other_threads(thread))
-        while (thread.tasks.execute_local(thread,this));
-    }
+    steal_loop(thread,
+               [&] () { return dependencies > 0; },
+               [&] () { while (thread.tasks.execute_local(thread,this)); });
    
     /* now signal our parent task that we are finished */
     if (parent) 
@@ -243,15 +251,13 @@ namespace embree
       if (terminate) break;
       
       /* work on available task */
-      while (anyTasksRunning) 
-      {
-	if (thread.scheduler->steal_from_other_threads(thread)) 
-	{
-	  atomic_add(&anyTasksRunning,+1);
-	  while (thread.tasks.execute_local(thread,NULL));
-	  atomic_add(&anyTasksRunning,-1);
-	}
-      }
+      steal_loop(thread,
+                 [&] () { return anyTasksRunning > 0; },
+                 [&] () { 
+                   atomic_add(&anyTasksRunning,+1);
+                   while (thread.tasks.execute_local(thread,NULL));
+                   atomic_add(&anyTasksRunning,-1);
+                 });
     }
 
     /* decrement threadCount again */
@@ -277,7 +283,7 @@ namespace embree
 
 #if SORTED_STEALING == 1
     size_t workingThreads = 0;
-    std::pair<size_t,size_t> thread_task_size[MAX_MIC_THREADS];
+    std::pair<size_t,size_t> thread_task_size[MAX_THREADS];
 
     /* find thread with largest estimated size left */
     for (size_t i=1; i<threadCount; i++) 
