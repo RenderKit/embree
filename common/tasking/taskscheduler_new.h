@@ -148,51 +148,9 @@ namespace embree
 	if (left >= right-1) left = right-1;
       }
       
-      bool execute_local(Thread& thread, Task* parent)
-      {
-	/* stop if we run out of local tasks or reach the waiting task */
-        if (right == 0 || &tasks[right-1] == parent)
-          return false;
-
-	/* execute task */
-	size_t oldRight = right;
-        tasks[right-1].run(thread);
-	if (right != oldRight) {
-	  THROW_RUNTIME_ERROR("you have to wait for spawned subtasks");
-	}
-
-	/* pop task and closure from stack */
-	right--;
-        if (tasks[right].stackPtr != -1)
-          stackPtr = tasks[right].stackPtr;
-
-	/* also move left pointer */
-	if (left >= right) left = right;
-
-	return right != 0;
-      }
-
-      bool steal(Thread& thread) 
-      {
-	size_t l = left;
-	if (l < right) 
-	  l = atomic_add(&left,1);
-	else 
-	  return false;
-	
-        if (!tasks[l].try_steal(thread.tasks.tasks[thread.tasks.right]))
-          return false;
-        
-        thread.tasks.right++;
-        return true;
-      }
-      
-      /* we steal from the left */
-      size_t getTaskSizeAtLeft() 
-      {	
-	if (left >= right) return 0;
-	return tasks[left].N;
-      }
+      bool execute_local(Thread& thread, Task* parent);
+      bool steal(Thread& thread);
+      size_t getTaskSizeAtLeft();
 
     public:
 
@@ -221,8 +179,6 @@ namespace embree
     
     TaskSchedulerNew (size_t numThreads = 0, bool spinning = false);
     ~TaskSchedulerNew ();
-    
-    static TaskSchedulerNew* g_instance;
 
     static void create(size_t numThreads);
     static void destroy();
@@ -296,45 +252,19 @@ namespace embree
 	});
     }
 
-#if 0
-    /* spawn a new task at the top of the threads task stack */
-    template<typename Closure>
-    __forceinline void spawn_root(const Closure& closure) 
-    {
-      if (createThreads)
-	startThreads();
-
-      assert(!active);
-      active = true;
-      Thread thread(0,this);
-      threadLocal[0] = &thread;
-      thread_local_thread = &thread;
-      spawn(closure);
-      {
-	std::unique_lock<std::mutex> lock(mutex);
-	atomic_add(&anyTasksRunning,+1);
-      }
-      condition.notify_all();
-      while (thread.tasks.execute_local(thread,NULL));
-      atomic_add(&anyTasksRunning,-1);
-
-      threadLocal[0] = NULL;
-      thread_local_thread = NULL;
-      active = false;
-    }
-#endif
-
     /* work on spawned subtasks and wait until all have finished */
-    static __forceinline void wait() 
-    {
-      Thread* thread = TaskSchedulerNew::thread();
-      if (thread == nullptr) return;
-      while (thread->tasks.execute_local(*thread,thread->task)) {};
-    }
+    static void wait();
 
     /* work on spawned subtasks and wait until all have finished */
     static size_t threadCount();
 
+    static Thread* thread();
+    
+    __forceinline static TaskSchedulerNew* instance() {
+      return thread()->scheduler;
+    }
+
+  private:
     std::vector<std::thread> threads;
     Thread* threadLocal[MAX_THREADS];
     volatile atomic_t threadCounter;
@@ -347,12 +277,9 @@ namespace embree
     std::mutex mutex;        
     std::condition_variable condition;
 
+  private:
+    static TaskSchedulerNew* g_instance;
     static __thread Thread* thread_local_thread;
-    static Thread* thread();
-
-    __forceinline static TaskSchedulerNew* instance() {
-      return thread()->scheduler;
-    }
   };
 };
 

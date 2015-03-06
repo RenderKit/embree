@@ -48,6 +48,52 @@ namespace embree
     if (parent) 
       parent->add_dependencies(-1);
   }
+
+  __dllexport bool TaskSchedulerNew::TaskQueue::execute_local(Thread& thread, Task* parent)
+  {
+    /* stop if we run out of local tasks or reach the waiting task */
+    if (right == 0 || &tasks[right-1] == parent)
+      return false;
+    
+    /* execute task */
+    size_t oldRight = right;
+    tasks[right-1].run(thread);
+    if (right != oldRight) {
+      THROW_RUNTIME_ERROR("you have to wait for spawned subtasks");
+    }
+    
+    /* pop task and closure from stack */
+    right--;
+    if (tasks[right].stackPtr != -1)
+      stackPtr = tasks[right].stackPtr;
+    
+    /* also move left pointer */
+    if (left >= right) left = right;
+    
+    return right != 0;
+  }
+  
+  bool TaskSchedulerNew::TaskQueue::steal(Thread& thread) 
+  {
+    size_t l = left;
+    if (l < right) 
+      l = atomic_add(&left,1);
+    else 
+      return false;
+    
+    if (!tasks[l].try_steal(thread.tasks.tasks[thread.tasks.right]))
+      return false;
+    
+    thread.tasks.right++;
+    return true;
+  }
+  
+  /* we steal from the left */
+  size_t TaskSchedulerNew::TaskQueue::getTaskSizeAtLeft() 
+  {	
+    if (left >= right) return 0;
+    return tasks[left].N;
+  }
   
   TaskSchedulerNew::TaskSchedulerNew(size_t numThreads, bool spinning)
     : threadCounter(numThreads), createThreads(true), terminate(false), anyTasksRunning(0), active(false), spinning(spinning)
@@ -159,6 +205,14 @@ namespace embree
 
   __dllexport TaskSchedulerNew::Thread* TaskSchedulerNew::thread() {
     return thread_local_thread;
+  }
+
+  /* work on spawned subtasks and wait until all have finished */
+  __dllexport void TaskSchedulerNew::wait() 
+  {
+    Thread* thread = TaskSchedulerNew::thread();
+    if (thread == nullptr) return;
+    while (thread->tasks.execute_local(*thread,thread->task)) {};
   }
 
   void TaskSchedulerNew::thread_loop(size_t threadIndex) try 
