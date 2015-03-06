@@ -150,9 +150,8 @@ namespace embree
   void TaskScheduler::threadFunction(void* ptr) try 
   {
     Thread thread = *(Thread*) ptr;
-    delete (Thread*) ptr;
-
     thread.scheduler->run(thread.threadIndex,thread.threadCount);
+    delete (Thread*) ptr;
   }
   catch (const std::exception& e) {
     std::cout << "Error: " << e.what() << std::endl;
