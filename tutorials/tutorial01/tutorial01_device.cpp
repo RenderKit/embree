@@ -16,7 +16,7 @@
 
 #include "../common/tutorial/tutorial_device.h"
 
-
+//
 
 #if 0
 const int numSpheres = 1000;

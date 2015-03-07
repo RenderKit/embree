@@ -17,7 +17,7 @@
 #include "../common/tutorial/tutorial_device.h"
 
 /* configuration */
-
+//
 #if defined(__XEON_PHI__)
 #define EDGE_LEVEL 64.0f
 #else

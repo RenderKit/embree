@@ -17,7 +17,7 @@
 #include "../common/tutorial/tutorial_device.h"
 #include "../common/tutorial/scene_device.h"
 
-
+//
 
 /* scene data */
 extern "C" ISPCScene* g_ispc_scene;
