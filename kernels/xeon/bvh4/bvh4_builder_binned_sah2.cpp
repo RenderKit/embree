@@ -117,7 +117,7 @@ namespace embree
 
       // FIXME: shrink bvh->alloc2 in destructor here an in other builders too
 
-      void build(size_t, size_t) try
+      void build(size_t, size_t) 
       {
 	/* skip build for empty scene */
 	const size_t numPrimitives = mesh ? mesh->size() : scene->getNumPrimitives<Mesh,1>();
@@ -205,12 +205,9 @@ namespace embree
           std::cout << "BENCHMARK_BUILD " << dt << " " << double(numPrimitives)/dt << " " << stat.sah() << " " << stat.bytesUsed() << std::endl;
         }
       }
-      catch(...)
-      {
-        bvh->set(BVH4::emptyNode,empty,0);
-        bvh->alloc2.clear();
+
+      void clear() {
         prims.clear();
-        throw;
       }
     };
 
@@ -349,7 +346,7 @@ namespace embree
         : bvh(bvh), scene(NULL), mesh(mesh), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,leafBlockSize*BVH4::maxLeafBlocks)),
           presplitFactor((mode & MODE_HIGH_QUALITY) ? 1.5f : 1.0f) {}
 
-      void build(size_t, size_t) try
+      void build(size_t, size_t) 
       {
 	/* skip build for empty scene */
 	const size_t numPrimitives = mesh ? mesh->size() : scene->getNumPrimitives<Mesh,1>();
@@ -482,11 +479,9 @@ namespace embree
           std::cout << "BENCHMARK_BUILD " << dt << " " << double(numPrimitives)/dt << " " << stat.sah() << " " << stat.bytesUsed() << std::endl;
         }
       }
-      catch(...)
-      {
-        bvh->set(BVH4::emptyNode,empty,0);
-        bvh->alloc2.clear();
-        throw;
+
+      void clear() {
+        //prims.clear();
       }
     };
 
@@ -568,7 +563,7 @@ namespace embree
       BVH4BuilderMblurBinnedSAH2 (BVH4* bvh, Mesh* mesh, const size_t leafBlockSize, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize)
         : bvh(bvh), scene(NULL), mesh(mesh), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,leafBlockSize*BVH4::maxLeafBlocks)) {}
 
-      void build(size_t, size_t) try
+      void build(size_t, size_t) 
       {
 	/* skip build for empty scene */
 	const size_t numPrimitives = mesh ? mesh->size() : scene->getNumPrimitives<Mesh,2>();
@@ -627,12 +622,9 @@ namespace embree
 	if (g_verbose >= 2)
 	  bvh->printStatistics();
       }
-      catch(...)
-      {
-        bvh->set(BVH4::emptyNode,empty,0);
-        bvh->alloc2.clear();
+
+      void clear() {
         prims.clear();
-        throw;
       }
     };
 

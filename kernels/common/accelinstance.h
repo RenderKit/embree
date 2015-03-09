@@ -42,6 +42,11 @@ namespace embree
       bounds = accel->bounds;
     }
 
+    void clear() {
+      accel->clear();
+      builder->clear();
+    }
+
   private:
     AccelData* accel;
     Builder* builder;

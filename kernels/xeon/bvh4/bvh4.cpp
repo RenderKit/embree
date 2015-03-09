@@ -497,6 +497,12 @@ namespace embree
     bounds = empty;
   }
 
+  void BVH4::clear() 
+  {
+    set(BVH4::emptyNode,empty,0);
+    alloc2.clear();
+  }
+
   void BVH4::set (NodeRef root, const BBox3fa& bounds, size_t numPrimitives)
   {
     this->root = root;

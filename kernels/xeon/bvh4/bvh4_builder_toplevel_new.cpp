@@ -195,6 +195,17 @@ namespace embree
       }
     }
 
+    void BVH4BuilderTopLevelNew::clear()
+    {
+      for (size_t i=0; i<objects.size(); i++) 
+        if (objects[i]) objects[i]->clear();
+
+      for (size_t i=0; i<builders.size(); i++) 
+	if (builders[i]) builders[i]->clear();
+
+      refs.clear();
+    }
+
     void BVH4BuilderTopLevelNew::open_sequential()
     {
       if (refs.size() == 0)

@@ -65,7 +65,9 @@ namespace embree
       
       /*! builder entry point */
       void build(size_t threadIndex, size_t threadCount);
-      
+
+      void clear();
+
       void open_sequential();
       
     public:

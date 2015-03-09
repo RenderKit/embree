@@ -1245,6 +1245,7 @@ namespace embree
     /*! initializes the acceleration structure */
     void init ();
     void init (size_t nodeSize, size_t numPrimitives, size_t numThreads);
+    void clear();
 
     /*! sets BVH members after build */
     void set (NodeRef root, const BBox3fa& bounds, size_t numPrimitives);

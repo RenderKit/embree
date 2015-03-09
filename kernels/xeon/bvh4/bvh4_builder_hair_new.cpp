@@ -37,7 +37,7 @@ namespace embree
       BVH4HairBuilderBinnedSAH (BVH4* bvh, Scene* scene)
         : bvh(bvh), scene(scene) {}
       
-      void build(size_t, size_t) try
+      void build(size_t, size_t) 
       {
         /* fast path for empty BVH */
         const size_t numPrimitives = scene->getNumPrimitives<BezierCurves,1>();
@@ -115,12 +115,9 @@ namespace embree
           bvh->printStatistics();
         }
       }
-      catch(...)
-      {
-        bvh->set(BVH4::emptyNode,empty,0);
-        bvh->alloc2.clear();
+
+      void clear() {
         prims.clear();
-        throw;
       }
     };
 
@@ -135,7 +132,7 @@ namespace embree
       BVH4HairMBBuilderBinnedSAH (BVH4* bvh, Scene* scene)
         : bvh(bvh), scene(scene) {}
       
-      void build(size_t, size_t) try
+      void build(size_t, size_t) 
       {
         /* fast path for empty BVH */
         const size_t numPrimitives = scene->getNumPrimitives<BezierCurves,2>();
@@ -248,12 +245,9 @@ namespace embree
           bvh->printStatistics();
         }
       }
-      catch(...)
-      {
-        bvh->set(BVH4::emptyNode,empty,0);
-        bvh->alloc2.clear();
+
+      void clear() {
         prims.clear();
-        throw;
       }
     };
     

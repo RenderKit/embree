@@ -114,13 +114,19 @@ namespace embree
     alloc.init(bytesAllocated,bytesReserved);
   }
 
-   void BVH8::set (NodeRef root, const BBox3fa& bounds, size_t numPrimitives)
-   {
-     this->root = root;
-     this->bounds = bounds;
-     this->numPrimitives = numPrimitives;
-   }
-
+  void BVH8::clear() 
+  {
+    set(BVH8::emptyNode,empty,0);
+    alloc2.clear();
+  }
+  
+  void BVH8::set (NodeRef root, const BBox3fa& bounds, size_t numPrimitives)
+  {
+    this->root = root;
+    this->bounds = bounds;
+    this->numPrimitives = numPrimitives;
+  }
+  
    void BVH8::printStatistics()
    {
      std::cout << BVH8Statistics(this).str();

@@ -166,4 +166,10 @@ namespace embree
     for (size_t i=0; i<N; i++) 
       accels[i]->intersectors.select(filter4,filter8,filter16);
   }
+
+  void AccelN::clear()
+  {
+    for (size_t i=0; i<N; i++) 
+      accels[i]->clear();
+  }
 }

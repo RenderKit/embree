@@ -639,7 +639,11 @@ namespace embree
 	//if (g_verbose >= 2)
         //bvh->printStatistics();
       }
-      
+
+      void clear() {
+        morton.clear();
+      }
+
     public:
       BVH4* bvh;               //!< Output BVH
       Mesh* mesh;
@@ -854,7 +858,11 @@ namespace embree
           std::cout << "BENCHMARK_BUILD " << dt << " " << double(numPrimitives)/(dt) << " " << stat.sah() << " " << stat.bytesUsed() << std::endl;
         }
       }
-      
+
+      void clear() {
+        morton.clear();
+      }
+
     public:
       BVH4* bvh;               //!< Output BVH
       Scene* scene;

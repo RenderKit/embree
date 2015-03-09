@@ -24,6 +24,7 @@ namespace embree
   class AccelData : public RefCount {
   public:
     AccelData () : bounds(empty) {}
+    virtual void clear() {} // FIXME: make pure virtual too see if implemented by all new builders
   public:
     BBox3fa bounds;
   };

@@ -319,6 +319,34 @@ namespace embree
     delete geometry;
   }
 
+  void Scene::updateInterface()
+  {
+    /* update bounds */
+    is_build = true;
+    bounds = accels.bounds;
+    intersectors = accels.intersectors;
+
+    /* enable only algorithms choosen by application */
+    if ((aflags & RTC_INTERSECT1) == 0) {
+      intersectors.intersector1.intersect = NULL;
+      intersectors.intersector1.occluded = NULL;
+    }
+    if ((aflags & RTC_INTERSECT4) == 0) {
+      intersectors.intersector4.intersect = NULL;
+      intersectors.intersector4.occluded = NULL;
+    }
+    if ((aflags & RTC_INTERSECT8) == 0) {
+      intersectors.intersector8.intersect = NULL;
+      intersectors.intersector8.occluded = NULL;
+    }
+    if ((aflags & RTC_INTERSECT16) == 0) {
+      intersectors.intersector16.intersect = NULL;
+      intersectors.intersector16.occluded = NULL;
+    }
+
+    /* update commit counter */
+    commitCounter++;
+  }
 
   void Scene::task_build_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
   {
@@ -401,17 +429,23 @@ namespace embree
 #endif
 
 #if defined(TASKING_TBB)
-    accels.build(0,0);
+    try {
+      accels.build(0,0);
+    } catch (...) {
+      accels.clear();
+      updateInterface();
+      throw;
+    }
 #endif
 
 #if defined(TASKING_TBB_INTERNAL)
-    if (threadCount)
-      scheduler->spawn_root([&]() { accels.build(0,0); });
-    else {
-      //TaskSchedulerNew::g_instance->spawn_root([&]() { accels.build(0,0); });
-      TaskSchedulerNew::spawn([&](){accels.build(0,0);});
-      //accels.build(0,0);
-    }
+      if (threadCount)
+        scheduler->spawn_root([&]() { accels.build(0,0); });
+      else {
+        //TaskSchedulerNew::g_instance->spawn_root([&]() { accels.build(0,0); });
+        TaskSchedulerNew::spawn([&](){accels.build(0,0);});
+        //accels.build(0,0);
+      }
 #endif
 
     /* make static geometry immutable */
@@ -430,28 +464,7 @@ namespace embree
       remove(geom);
     }
 
-    /* update bounds */
-    bounds = accels.bounds;
-    intersectors = accels.intersectors;
-    is_build = true;
-
-    /* enable only algorithms choosen by application */
-    if ((aflags & RTC_INTERSECT1) == 0) {
-      intersectors.intersector1.intersect = NULL;
-      intersectors.intersector1.occluded = NULL;
-    }
-    if ((aflags & RTC_INTERSECT4) == 0) {
-      intersectors.intersector4.intersect = NULL;
-      intersectors.intersector4.occluded = NULL;
-    }
-    if ((aflags & RTC_INTERSECT8) == 0) {
-      intersectors.intersector8.intersect = NULL;
-      intersectors.intersector8.occluded = NULL;
-    }
-    if ((aflags & RTC_INTERSECT16) == 0) {
-      intersectors.intersector16.intersect = NULL;
-      intersectors.intersector16.occluded = NULL;
-    }
+    updateInterface();
 
     if (g_verbose >= 2) {
       std::cout << "created scene intersector" << std::endl;
@@ -459,14 +472,10 @@ namespace embree
       std::cout << "selected scene intersector" << std::endl;
       intersectors.print(2);
     }
-    
-    /* update commit counter */
-    commitCounter++;
 
 #if TASKING_TBB_INTERNAL
     if (threadCount != 0) {
       delete scheduler; scheduler = NULL;
-    }
 #endif
   }
 

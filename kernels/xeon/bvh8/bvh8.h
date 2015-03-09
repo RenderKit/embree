@@ -230,6 +230,7 @@ namespace embree
 
     /*! initializes the acceleration structure */
     void init(size_t nodeSize, size_t numPrimitives, size_t numThreads);
+    void clear();
 
     void set (NodeRef root, const BBox3fa& bounds, size_t numPrimitives);
 

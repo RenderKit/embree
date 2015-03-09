@@ -115,6 +115,8 @@ namespace embree
     /*! stores scene into binary file */
     void write(std::ofstream& file);
 
+    void updateInterface();
+
     /*! build task */
     TASK_RUN_FUNCTION(Scene,task_build_parallel);
     TaskScheduler::Task task;

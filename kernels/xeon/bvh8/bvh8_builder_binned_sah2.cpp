@@ -111,7 +111,7 @@ namespace embree
         : bvh(bvh), scene(NULL), mesh(mesh), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,leafBlockSize*BVH8::maxLeafBlocks)),
           presplitFactor((mode & MODE_HIGH_QUALITY) ? 1.5f : 1.0f) {}
 
-      void build(size_t, size_t) try
+      void build(size_t, size_t) 
       {
 	/* skip build for empty scene */
 	const size_t numPrimitives = mesh ? mesh->size() : scene->getNumPrimitives<Mesh,1>();
@@ -168,12 +168,9 @@ namespace embree
           std::cout << "BENCHMARK_BUILD " << dt << " " << double(numPrimitives)/dt << " " << stat.sah() << " " << stat.bytesUsed() << std::endl;
         }
       }
-      catch(...)
-      {
-        bvh->set(BVH8::emptyNode,empty,0);
-        bvh->alloc2.clear();
+
+      void clear() {
         prims.clear();
-        throw;
       }
     };
 
@@ -267,7 +264,7 @@ namespace embree
         : bvh(bvh), scene(NULL), mesh(mesh), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,leafBlockSize*BVH8::maxLeafBlocks)),
           presplitFactor((mode & MODE_HIGH_QUALITY) ? 1.5f : 1.0f) {}
 
-      void build(size_t, size_t) try
+      void build(size_t, size_t) 
       {
 	/* skip build for empty scene */
 	const size_t numPrimitives = mesh ? mesh->size() : scene->getNumPrimitives<Mesh,1>();
@@ -398,11 +395,9 @@ namespace embree
           std::cout << "BENCHMARK_BUILD " << dt << " " << double(numPrimitives)/dt << " " << stat.sah() << " " << stat.bytesUsed() << std::endl;
         }
       }
-      catch(...)
-      {
-        bvh->set(BVH8::emptyNode,empty,0);
-        bvh->alloc2.clear();
-        throw;
+
+      void clear() {
+        //prims.clear();
       }
     };
 
