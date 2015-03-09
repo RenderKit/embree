@@ -18,7 +18,7 @@
 #include "xeon/bvh4/bvh4.h"
 #include "xeon/bvh4/bvh4_intersector1.h"
 
-#define TIMER(x)
+#define TIMER(x) 
 #define DBG(x) 
 
 
@@ -181,8 +181,9 @@ namespace embree
 		    SharedLazyTessellationCache::sharedLazyTessellationCache.resetCache();
 		    continue;
 		  }
-		//DBG_PRINT( sharedLazyTessellationCache.getNumAllocatedBytes() );
 		BVH4::Node* node = (BVH4::Node*)SharedLazyTessellationCache::sharedLazyTessellationCache.getBlockPtr(block_index);
+		//DBG_PRINT( SharedLazyTessellationCache::sharedLazyTessellationCache.getNumUsedBytes() );
+		
 		size_t new_root_ref = (size_t)buildSubdivPatchTree(*subdiv_patch,node,((Scene*)geom)->getSubdivMesh(subdiv_patch->geom));
 		new_root_ref -= (size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();
 		assert( new_root_ref <= 0xffffffff );
@@ -323,6 +324,10 @@ namespace embree
       assert(currentIndex == patch.grid_subtree_size_64b_blocks);
 
       TIMER(msec = getSeconds()-msec);            
+      TIMER(DBG_PRINT(1000*msec));
+      TIMER(DBG_PRINT(patch.grid_u_res));
+      TIMER(DBG_PRINT(patch.grid_v_res));
+      TIMER(DBG_PRINT(patch.grid_subtree_size_64b_blocks*64));
 
 #if defined(_MSC_VER) && !defined(__INTEL_COMPILER)
       _freea(ptr);
