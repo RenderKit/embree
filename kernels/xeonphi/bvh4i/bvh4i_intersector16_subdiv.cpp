@@ -19,7 +19,7 @@
 #include "geometry/subdivpatch1.h"
 #include "common/subdiv/tessellation_cache.h"
 
-#define TIMER(x) 
+#define TIMER(x) x
 
 #if defined(DEBUG)
 #define CACHE_STATS(x) 
@@ -129,6 +129,7 @@ namespace embree
 			  const SubdivPatch1 &patch,
 			  const float *const grid_u_array,
 			  const float *const grid_v_array,
+
 			  const GridRange &range,
 			  unsigned int &localCounter,
 			  const SubdivMesh* const geom)
@@ -278,6 +279,9 @@ namespace embree
       __aligned(64) float u_array[(patch.grid_size_simd_blocks+1)*16]; // for unaligned access
       __aligned(64) float v_array[(patch.grid_size_simd_blocks+1)*16];
 
+      TIMER(double msec);
+      TIMER(msec = getSeconds());    
+
       gridUVTessellator(patch.level,
 			patch.grid_u_res,
 			patch.grid_v_res,
@@ -288,6 +292,12 @@ namespace embree
       if (patch.needsStiching())
 	stichUVGrid(patch.level,patch.grid_u_res,patch.grid_v_res,u_array,v_array);
 
+      TIMER(msec = getSeconds()-msec);    
+      TIMER(DBG_PRINT("tess"));
+      TIMER(DBG_PRINT(patch.grid_u_res));
+      TIMER(DBG_PRINT(patch.grid_v_res));
+      TIMER(DBG_PRINT(1000.0f * msec));
+      TIMER(msec = getSeconds());    
 
       BVH4i::NodeRef subtree_root = 0;
       const unsigned int oldIndex = currentIndex;
@@ -303,6 +313,10 @@ namespace embree
 
       assert(currentIndex - oldIndex == patch.grid_subtree_size_64b_blocks);
       TIMER(msec = getSeconds()-msec);    
+      TIMER(DBG_PRINT("bvh"));
+      TIMER(DBG_PRINT(1000.0f * msec));
+      TIMER(DBG_PRINT(patch.grid_subtree_size_64b_blocks * 64));
+
       return subtree_root;
     }
 
