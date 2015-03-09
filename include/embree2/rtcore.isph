@@ -90,7 +90,7 @@ void rtcSetErrorFunction(uniform RTC_ERROR_FUNCTION func);
 
   This function is implementation specific and only for debugging
   purposes. Do not call it. */
-void rtcDebug(); 
+void rtcDebug();  // FIXME: remove
 
 /*! \} */
 

@@ -99,7 +99,7 @@ RTCORE_API void rtcSetErrorFunction(RTC_ERROR_FUNCTION func);
 
   This function is implementation specific and only for debugging
   purposes. Do not call it. */
-RTCORE_API void rtcDebug();
+RTCORE_API void rtcDebug(); // FIXME: remove
 
 /*! \brief Helper to easily combing scene flags */
 inline RTCSceneFlags operator|(const RTCSceneFlags a, const RTCSceneFlags b) {
