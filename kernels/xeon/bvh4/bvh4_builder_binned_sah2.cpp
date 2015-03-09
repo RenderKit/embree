@@ -115,6 +115,8 @@ namespace embree
         : bvh(bvh), scene(NULL), mesh(mesh), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,leafBlockSize*BVH4::maxLeafBlocks)),
           presplitFactor((mode & MODE_HIGH_QUALITY) ? 1.5f : 1.0f) {}
 
+      // FIXME: shrink bvh->alloc2 in destructor here an in other builders too
+
       void build(size_t, size_t) try
       {
 	/* skip build for empty scene */

@@ -478,14 +478,14 @@ namespace embree
     public:
       
       BVH4MeshBuilderMortonGeneral2 (BVH4* bvh, Mesh* mesh, const size_t minLeafSize, const size_t maxLeafSize)
-        : bvh(bvh), mesh(mesh), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize), morton(NULL), bytesMorton(0), numPrimitives(0) {}
+        : bvh(bvh), mesh(mesh), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize), numPrimitives(0) {}
       
 
       /*! Destruction */
       ~BVH4MeshBuilderMortonGeneral2 ()
       {
-        if (morton) os_free(morton,bytesMorton);
-        bvh->alloc.shrink();
+        //if (morton) os_free(morton,bytesMorton);
+        //bvh->alloc.shrink();
       }
       
       /* build function */
@@ -496,13 +496,13 @@ namespace embree
         numPrimitives = mesh->size();
         
         /* preallocate arrays */
-        if (numPrimitivesOld != numPrimitives)
-        {
-          bvh->init(sizeof(BVH4::Node),numPrimitives,threadCount);
-          if (morton) os_free(morton,bytesMorton);
-          bytesMorton = ((numPrimitives+4)&(-4)) * sizeof(MortonID32Bit);
-          morton = (MortonID32Bit* ) os_malloc(bytesMorton); memset(morton,0,bytesMorton); 
-        }
+        //if (numPrimitivesOld != numPrimitives) {
+          //bvh->init(sizeof(BVH4::Node),numPrimitives,threadCount);
+          //size_t bytesAllocated = (numPrimitives+7)/8*sizeof(BVH4::Node) + size_t(1.2f*(numPrimitives+3)/4)*sizeof(Triangle4);
+          //bytesAllocated = max(bytesAllocated,numPrimitives*sizeof(MortonID32Bit));
+          //bvh->alloc2.init(bytesAllocated,2*bytesAllocated);  // FIXME: better estimate
+        //morton.resize(numPrimitives);
+          //}
         
         /* skip build for empty scene */
         if (numPrimitives == 0) {
@@ -520,6 +520,7 @@ namespace embree
             if (g_verbose >= 1) t0 = getSeconds();
 	    
             //bvh->alloc.init(numPrimitives*sizeof(BVH4::Node),numPrimitives*sizeof(BVH4::Node));
+            morton.resize(numPrimitives);
             size_t bytesAllocated = (numPrimitives+7)/8*sizeof(BVH4::Node) + size_t(1.2f*(numPrimitives+3)/4)*sizeof(Triangle4);
             bvh->alloc2.init(bytesAllocated,2*bytesAllocated); // FIXME: not working if scene size changes, initial block has to get reallocated as used as temporary data
 
@@ -605,13 +606,13 @@ namespace embree
             /* create BVH */
             AllocBVH4Node allocNode;
             SetBVH4Bounds setBounds(bvh);
-            CreateLeaf createLeaf(mesh,morton);
+            CreateLeaf createLeaf(mesh,morton.data());
             CalculateMeshBounds<Mesh> calculateBounds(mesh);
             auto node_bounds = bvh_builder_center_internal<BVH4::NodeRef>(
               [&] () { return bvh->alloc2.threadLocal2(); },
               BBox3fa(empty),
               allocNode,setBounds,createLeaf,calculateBounds,
-              dest,morton,numPrimitivesGen,4,BVH4::maxBuildDepth,minLeafSize,maxLeafSize);
+              dest,morton.data(),numPrimitivesGen,4,BVH4::maxBuildDepth,minLeafSize,maxLeafSize);
             bvh->set(node_bounds.first,node_bounds.second,numPrimitives);
 
 #if ROTATE_TREE
@@ -646,8 +647,7 @@ namespace embree
       const size_t maxLeafSize;
       
     public:
-      MortonID32Bit* morton; // FIXME: use vector_t class
-      size_t bytesMorton;
+      vector_t<MortonID32Bit> morton;
       size_t numPrimitives;
     };
     
@@ -667,13 +667,13 @@ namespace embree
     public:
       
       BVH4SceneBuilderMortonGeneral2 (BVH4* bvh, Scene* scene, const size_t minLeafSize, const size_t maxLeafSize)
-        : bvh(bvh), scene(scene), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize), encodeShift(0), encodeMask(-1), morton(NULL), bytesMorton(0), numPrimitives(0) {}
+        : bvh(bvh), scene(scene), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize), encodeShift(0), encodeMask(-1), numPrimitives(0) {}
       
       /*! Destruction */
       ~BVH4SceneBuilderMortonGeneral2 ()
       {
-        if (morton) os_free(morton,bytesMorton);
-        bvh->alloc.shrink();
+        //if (morton) os_free(morton,bytesMorton);
+        //bvh->alloc.shrink();
       }
       
       /* build function */
@@ -694,13 +694,10 @@ namespace embree
           THROW_RUNTIME_ERROR("encoding error in morton builder");
         
         /* preallocate arrays */
-        if (numPrimitivesOld != numPrimitives)
-        {
-          bvh->init(sizeof(BVH4::Node),numPrimitives,threadCount);
-          if (morton) os_free(morton,bytesMorton);
-          bytesMorton = ((numPrimitives+4)&(-4)) * sizeof(MortonID32Bit);
-          morton = (MortonID32Bit* ) os_malloc(bytesMorton); memset(morton,0,bytesMorton); 
-        }
+        //if (numPrimitivesOld != numPrimitives) {
+          //bvh->alloc2.init(numPrimitives*sizeof(PrimRef),numPrimitives*sizeof(BVH4::Node));  // FIXME: better estimate
+          morton.resize(numPrimitives);
+          //}
 
         /* skip build for empty scene */
         if (numPrimitives == 0) {
@@ -816,13 +813,13 @@ namespace embree
             /* create BVH */
             AllocBVH4Node allocNode;
             SetBVH4Bounds setBounds(bvh);
-            CreateLeaf createLeaf(scene,morton,encodeShift,encodeMask);
+            CreateLeaf createLeaf(scene,morton.data(),encodeShift,encodeMask);
             CalculateBounds calculateBounds(scene,encodeShift,encodeMask);
             auto node_bounds = bvh_builder_center_internal<BVH4::NodeRef>(
               [&] () { return bvh->alloc2.threadLocal2(); },
                 BBox3fa(empty),
                 allocNode,setBounds,createLeaf,calculateBounds,
-                  dest,morton,numPrimitivesGen,4,BVH4::maxBuildDepth,minLeafSize,maxLeafSize);
+                dest,morton.data(),numPrimitivesGen,4,BVH4::maxBuildDepth,minLeafSize,maxLeafSize);
             bvh->set(node_bounds.first,node_bounds.second,numPrimitives);
 
 #if ROTATE_TREE
@@ -867,8 +864,7 @@ namespace embree
       size_t encodeMask;
       
     public:
-      MortonID32Bit* morton; // FIXME: use vector_t class
-      size_t bytesMorton;
+      vector_t<MortonID32Bit> morton;
       size_t numPrimitives;
     };
 
