@@ -19,7 +19,7 @@
 #include "geometry/subdivpatch1.h"
 #include "common/subdiv/tessellation_cache.h"
 
-#define TIMER(x) x
+#define TIMER(x) 
 
 #if defined(DEBUG)
 #define CACHE_STATS(x) 
@@ -129,7 +129,6 @@ namespace embree
 			  const SubdivPatch1 &patch,
 			  const float *const grid_u_array,
 			  const float *const grid_v_array,
-
 			  const GridRange &range,
 			  unsigned int &localCounter,
 			  const SubdivMesh* const geom)
@@ -803,9 +802,10 @@ namespace embree
 		    subdiv_patch->write_unlock();
 		    SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(threadInfo->id);		  
 		    SharedLazyTessellationCache::sharedLazyTessellationCache.resetCache();
+		    //DBG_PRINT("RESET");
 		    continue;
 		  }
-		//DBG_PRINT( sharedLazyTessellationCache.getNumAllocatedBytes() );
+		//DBG_PRINT( SharedLazyTessellationCache::sharedLazyTessellationCache.getNumUsedBytes() );
 		mic_f* local_mem   = (mic_f*)SharedLazyTessellationCache::sharedLazyTessellationCache.getBlockPtr(block_index);
 		unsigned int currentIndex = 0;
 		BVH4i::NodeRef bvh4i_root = initLocalLazySubdivTree(*subdiv_patch,currentIndex,local_mem,geom);
