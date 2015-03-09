@@ -112,7 +112,7 @@ namespace embree
         : bvh(bvh), scene(mesh->parent), mesh(mesh), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,leafBlockSize*BVH4::maxLeafBlocks)), 
           presplitFactor((mode & MODE_HIGH_QUALITY) ? 1.5f : 1.0f) {}
       
-      void build(size_t, size_t) 
+      void build(size_t, size_t) try
       {
         /* skip build for empty scene */
 	const size_t numPrimitives = mesh ? mesh->size() : scene->getNumPrimitives<Mesh,1>();
@@ -199,6 +199,13 @@ namespace embree
           BVH4Statistics stat(bvh);
           std::cout << "BENCHMARK_BUILD " << dt << " " << double(numPrimitives)/dt << " " << stat.sah() << " " << stat.bytesUsed() << std::endl;
         }
+      }
+      catch(...)
+      {
+        bvh->set(BVH4::emptyNode,empty,0);
+        bvh->alloc2.clear();
+        prims.clear();
+        throw;
       }
     };
     

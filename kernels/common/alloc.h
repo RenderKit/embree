@@ -438,6 +438,12 @@ namespace embree
         thread_local_allocators(this), thread_local_allocators2(this) {}
 
     ~FastAllocator () { 
+      clear();
+    }
+
+    __forceinline void clear()
+    {
+      cleanup();
       if (usedBlocks) usedBlocks->~Block(); usedBlocks = NULL;
       if (freeBlocks) freeBlocks->~Block(); freeBlocks = NULL;
     }

@@ -37,12 +37,12 @@ namespace embree
       BVH4HairBuilderBinnedSAH (BVH4* bvh, Scene* scene)
         : bvh(bvh), scene(scene) {}
       
-      void build(size_t, size_t) 
+      void build(size_t, size_t) try
       {
         /* fast path for empty BVH */
         const size_t numPrimitives = scene->getNumPrimitives<BezierCurves,1>();
         if (numPrimitives == 0) {
-          prims.resize(0,true);
+          prims.clear();
           bvh->set(BVH4::emptyNode,empty,0);
           return;
         }
@@ -105,7 +105,7 @@ namespace embree
         
         /* clear temporary data for static geometry */
         const bool staticGeom = scene->isStatic();
-        if (staticGeom) prims.resize(0,true);
+        if (staticGeom) prims.clear();
         bvh->alloc2.cleanup();
         
         if (g_verbose >= 2) {
@@ -114,6 +114,13 @@ namespace embree
           std::cout << "  dt = " << 1000.0f*(t1-t0) << "ms, perf = " << 1E-6*double(numPrimitives)/(t1-t0) << " Mprim/s" << std::endl;
           bvh->printStatistics();
         }
+      }
+      catch(...)
+      {
+        bvh->set(BVH4::emptyNode,empty,0);
+        bvh->alloc2.clear();
+        prims.clear();
+        throw;
       }
     };
 
@@ -128,7 +135,7 @@ namespace embree
       BVH4HairMBBuilderBinnedSAH (BVH4* bvh, Scene* scene)
         : bvh(bvh), scene(scene) {}
       
-      void build(size_t, size_t) 
+      void build(size_t, size_t) try
       {
         /* fast path for empty BVH */
         const size_t numPrimitives = scene->getNumPrimitives<BezierCurves,2>();
@@ -240,6 +247,13 @@ namespace embree
           std::cout << "  dt = " << 1000.0f*(t1-t0) << "ms, perf = " << 1E-6*double(numPrimitives)/(t1-t0) << " Mprim/s" << std::endl;
           bvh->printStatistics();
         }
+      }
+      catch(...)
+      {
+        bvh->set(BVH4::emptyNode,empty,0);
+        bvh->alloc2.clear();
+        prims.clear();
+        throw;
       }
     };
     
