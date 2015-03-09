@@ -23,6 +23,20 @@
 
 //
 
+//#define FORCE_FIXED_EDGE_TESSELLATION
+#define FIXED_EDGE_TESSELLATION_VALUE 8
+//#define FIXED_EDGE_TESSELLATION_VALUE 32
+
+#define MAX_EDGE_LEVEL 64.0f
+//#define MAX_EDGE_LEVEL 8.0f
+#define MIN_EDGE_LEVEL 4.0f
+#define ENABLE_DISPLACEMENTS 0
+#if ENABLE_DISPLACEMENTS
+#  define LEVEL_FACTOR 256.0f
+#else
+#  define LEVEL_FACTOR 64.0f
+#endif
+
 struct DifferentialGeometry
 {
   Vec3fa P;
@@ -822,6 +836,7 @@ Vec3fa g_accu_vy;
 Vec3fa g_accu_vz;
 Vec3fa g_accu_p;
 extern "C" bool g_changed;
+bool g_subdiv_mode = false;
 
 /* called by the C++ code for initialization */
 extern "C" void device_init (int8* cfg)
@@ -893,6 +908,48 @@ void convertTriangleMeshes(ISPCScene* scene_in, RTCScene scene_out, size_t numGe
 
 void convertSubdivMeshes(ISPCScene* scene_in, RTCScene scene_out, size_t numGeometries)
 {
+  for (int i=0; i<scene_in->numMeshes; i++)
+  {
+    ISPCMesh* mesh = scene_in->meshes[i];
+   
+    if (mesh->numQuads)
+     {
+      g_subdiv_mode = true;
+
+      size_t numPrimitives = mesh->numQuads;
+      size_t numEdges      = mesh->numQuads*4;
+      mesh->edge_level             = new float[numEdges];
+      int *index_buffer = new int[numEdges];
+      
+      for (size_t i=0; i<numEdges; i++) 
+	mesh->edge_level[i] = FIXED_EDGE_TESSELLATION_VALUE;
+      
+      /* create a triangle mesh */
+      unsigned int geomID = rtcNewSubdivisionMesh (scene_out, RTC_GEOMETRY_STATIC, numPrimitives, numEdges, mesh->numVertices, 0, 0, 0);
+      mesh->geomID = geomID;
+
+      unsigned int* faces = (unsigned int*) rtcMapBuffer(scene_out, geomID, RTC_FACE_BUFFER);
+      for (size_t i=0; i<mesh->numQuads    ; i++) faces[i] = 4;
+      
+      rtcUnmapBuffer(scene_out,geomID,RTC_FACE_BUFFER);
+
+      for (size_t i=0; i<mesh->numQuads; i++)
+      	 {
+	   index_buffer[4*i+0] = mesh->quads[i].v0;
+	   index_buffer[4*i+1] = mesh->quads[i].v1;
+	   index_buffer[4*i+2] = mesh->quads[i].v2;
+	   index_buffer[4*i+3] = mesh->quads[i].v3;	   
+	 }
+
+      rtcSetBuffer(scene_out, geomID, RTC_VERTEX_BUFFER, mesh->positions , 0, sizeof(Vec3fa  ));
+      rtcSetBuffer(scene_out, geomID, RTC_INDEX_BUFFER,  index_buffer    , 0, sizeof(unsigned int));
+      rtcSetBuffer(scene_out, geomID, RTC_LEVEL_BUFFER,  mesh->edge_level, 0, sizeof(float));
+      
+#if ENABLE_DISPLACEMENTS == 1
+      rtcSetDisplacementFunction(scene_out,geomID,(RTCDisplacementFunc)&displacementFunction,NULL);
+#endif
+     } 
+   }
   for (size_t i=0; i<g_ispc_scene->numSubdivMeshes; i++)
   {
     ISPCSubdivMesh* mesh = g_ispc_scene->subdiv[i];
