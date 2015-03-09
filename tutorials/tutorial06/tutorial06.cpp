@@ -27,6 +27,7 @@ namespace embree
   /* configuration */
   static std::string g_rtcore = "";
   static size_t g_numThreads = 0;
+  static std::string g_subdiv_mode = "";
 
   /* output settings */
   static size_t g_width = 512;
@@ -82,6 +83,17 @@ namespace embree
         outFilename = cin->getFileName();
 	g_interactive = false;
       }
+
+      /* subdivision mode */
+      else if (tag == "-cache") 
+	g_subdiv_mode = ",subdiv_accel=bvh4.subdivpatch1cached";
+
+      else if (tag == "-lazy") 
+	g_subdiv_mode = ",subdiv_accel=bvh4.grid.lazy";
+
+      else if (tag == "-pregenerate") 
+	g_subdiv_mode = ",subdiv_accel=bvh4.grid.eager";
+      
 
       /* number of frames to render in benchmark mode */
       else if (tag == "-benchmark") {
@@ -187,14 +199,25 @@ namespace embree
 
     /* parse command line */  
     parseCommandLine(stream, FileName());
+    
     if (g_numThreads) 
       g_rtcore += ",threads=" + std::stringOf(g_numThreads);
     if (g_numBenchmarkFrames)
       g_rtcore += ",benchmark=1";
 
+     g_rtcore += g_subdiv_mode;
+
     /* load scene */
-    if (strlwr(filename.ext()) == std::string("obj"))
-      loadOBJ(filename,one,g_obj_scene);
+     if (strlwr(filename.ext()) == std::string("obj"))
+       {
+         if (g_subdiv_mode != "")
+           {
+             std::cout << "enabling subdiv mode" << std::endl;
+             loadOBJ(filename,one,g_obj_scene,true);	
+           }
+         else
+           loadOBJ(filename,one,g_obj_scene);
+       }
     else if (strlwr(filename.ext()) == std::string("xml"))
       loadXML(filename,one,g_obj_scene);
     else if (filename.ext() != "")
