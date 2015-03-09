@@ -229,6 +229,10 @@ namespace embree
       threadReductions[threadIndex] = b;
     }
 
+    TASK_FUNCTION_(box_benchmark,nop);
+    
+    void nop(size_t threadIndex, size_t threadCount) {}
+
     BBox3fa reduce_sequential(size_t N)
     {
       BBox3fa b( empty );
@@ -252,6 +256,7 @@ namespace embree
 
     double run_locksteptaskscheduler(size_t N)
     {
+#if 1
       double t0 = getSeconds();
       this->N = N;
       LockStepTaskScheduler* scheduler = LockStepTaskScheduler::instance();
@@ -268,6 +273,23 @@ namespace embree
 	DBG_PRINT( result );
 
       return t1-t0;
+#endif
+
+#if 0
+      LockStepTaskScheduler* scheduler = LockStepTaskScheduler::instance();
+      const size_t threadCount = scheduler->getNumThreads();
+      PRINT(threadCount);
+      while (true) 
+      {
+        double t0 = getSeconds();
+        for (size_t i=0; i<1000; i++) 
+          scheduler->dispatchTask( task_nop, this, 0, threadCount );
+        double t1 = getSeconds();
+        //PRINT((t1-t0)*1E9f/1000.0);
+        PRINT(1000.0f*(t1-t0)/1000.0);
+      }
+      return 0;
+#endif
     }
     
     double run_tbb(size_t N)
@@ -347,14 +369,35 @@ namespace embree
 
 #endif
 
+#if 1
+      this->N = N;
+
+      const size_t threadCount = TaskSchedulerNew::threadCount();
+      parallel_for(size_t(threadCount),[&](size_t threadIndex) {
+          reduce(threadIndex,threadCount);
+        });
+      
+      BBox3fa b( empty );
+      for (size_t i=0; i<threadCount; i++) 
+        b.extend( threadReductions[i] );
+      result = b;
+      
+      if (showResult)
+	DBG_PRINT( result );
+
+#endif
+
 #if 0
+      const size_t threadCount = TaskSchedulerNew::threadCount();
+      PRINT(threadCount);
       while (true) 
       {
         double t0 = getSeconds();
         for (size_t i=0; i<1000; i++)
-          parallel_for(size_t(0),size_t(1024),size_t(1),[&](const range<size_t>& r) {});
+          parallel_for(size_t(0),size_t(threadCount),size_t(1),[&](const range<size_t>& r) {});
         double t1 = getSeconds();
-        PRINT((t1-t0)*1E9f/1000.0);
+        //PRINT((t1-t0)*1E9f/1000.0);
+        PRINT(1000.0*(t1-t0)/1000.0);
       }
 #endif
 

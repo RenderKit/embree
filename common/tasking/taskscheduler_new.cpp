@@ -283,22 +283,6 @@ namespace embree
     threadLocal[threadIndex] = &thread;
     thread_local_thread = &thread;
 
-#if 0
-#if 0
-    while (true)
-      task_set_barrier.wait(threadIndex,thread.threadCount());
-#else
-    while (true)
-    {
-      while (!anyTasksRunning) __pause_cpu(128);
-      if (task_set_function) {
-        task_set_barrier.wait(threadIndex,thread.threadCount());
-        task_set_barrier.wait(threadIndex,thread.threadCount());
-      }
-    }
-#endif
-#endif
-
     /* main thread loop */
     while (!terminate)
     {
@@ -308,7 +292,7 @@ namespace embree
       if (spinning) 
       {
 	while (!predicate())
-          __pause_cpu(128);
+          __pause_cpu(32);
       }
       
       /* ... or waiting inside some condition variable */
@@ -318,8 +302,12 @@ namespace embree
         condition.wait(lock, predicate);
       }
       if (terminate) break;
-      //executeTaskSet(thread); 
-      //continue;
+
+      /* special static load balancing for top level task sets */
+#if TASKSCHEDULER_STATIC_LOAD_BALANCING
+      if (executeTaskSet(thread))
+        continue;
+#endif
       
       /* work on available task */
       steal_loop(thread,
@@ -355,14 +343,16 @@ namespace embree
       const size_t threadCount = this->threadCounter;
       TaskSetFunction* function = task_set_function;
       task_set_barrier.wait(threadIndex,threadCount);
-      if (threadIndex == 0) task_set_function = NULL;
+      if (threadIndex == 0) {
+        task_set_function = NULL;
+        atomic_add(&anyTasksRunning,-1);
+      }
       const size_t task_set_size = function->end-function->begin;
       const size_t begin = function->begin+(threadIndex+0)*task_set_size/threadCount;
       const size_t end   = function->begin+(threadIndex+1)*task_set_size/threadCount;
       const size_t bs = function->blockSize;
-      for (size_t i=begin; i<end; i+=bs)
-        function->execute(range<size_t>(i,min(i+bs,end)));
-      task_set_barrier.wait(threadIndex,threadCount);
+      for (size_t i=begin; i<end; i+=bs) function->execute(range<size_t>(i,min(i+bs,end)));
+      task_set_barrier.wait(threadIndex,threadCount); // FIXME: should also steal here! 
       return true;
     }
     return false;
@@ -373,18 +363,6 @@ namespace embree
     const size_t threadIndex = thread.threadIndex;
     const size_t threadCount = this->threadCounter;
 
-    /*if (task_set_function) {
-      task_set_barrier.wait(threadIndex,thread.threadCount());
-      task_set_barrier.wait(threadIndex,thread.threadCount());
-    }
-    return false;*/
-
-    /* special static load balancing for top level task sets */
-#if TASKSCHEDULER_STATIC_LOAD_BALANCING
-    if (executeTaskSet(thread))
-      return false;
-#endif
-    
 #if SORTED_STEALING == 1
     size_t workingThreads = 0;
     std::pair<size_t,size_t> thread_task_size[MAX_THREADS];
@@ -430,8 +408,9 @@ namespace embree
 
 #else	      
     for (size_t i=1; i<threadCount; i++) 
+      //for (size_t i=1; i<32; i++) 
     {
-      __pause_cpu();
+      __pause_cpu(32);
       size_t otherThreadIndex = threadIndex+i;
       if (otherThreadIndex >= threadCount) otherThreadIndex -= threadCount;
 
