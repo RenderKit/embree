@@ -326,69 +326,71 @@ namespace embree
   void OBJLoader::flushFaceGroup()
   {
     if (curGroup.empty()) return;
-    OBJScene::Mesh* mesh = new OBJScene::Mesh;
-    model.meshes.push_back(mesh);
+    
+      {
+	OBJScene::Mesh* mesh = new OBJScene::Mesh;
+	model.meshes.push_back(mesh);
 
-    // merge three indices into one
-    std::map<Vertex, uint32> vertexMap;
-    for (size_t j=0; j < curGroup.size(); j++)
-    {
-      /* iterate over all faces */
-      const std::vector<Vertex>& face = curGroup[j];
+	// merge three indices into one
+	std::map<Vertex, uint32> vertexMap;
+	for (size_t j=0; j < curGroup.size(); j++)
+	  {
+	    /* iterate over all faces */
+	    const std::vector<Vertex>& face = curGroup[j];
 
-      /* for subdivision test scenes */
+	    /* for subdivision test scenes */
 
-      if (subdivMode && face.size() == 4)
-	{
-	  /* only look at position indices here */
-	  uint32 v0 = face[0].v;
-	  uint32 v1 = face[1].v;
-	  uint32 v2 = face[2].v;
-	  uint32 v3 = face[3].v;
+	    if (subdivMode && face.size() == 4)
+	      {
+		/* only look at position indices here */
+		uint32 v0 = face[0].v;
+		uint32 v1 = face[1].v;
+		uint32 v2 = face[2].v;
+		uint32 v3 = face[3].v;
 
-	  // DBG_PRINT( v0 );
-	  // DBG_PRINT( v1 );
-	  // DBG_PRINT( v2 );
-	  // DBG_PRINT( v3 );
+		// DBG_PRINT( v0 );
+		// DBG_PRINT( v1 );
+		// DBG_PRINT( v2 );
+		// DBG_PRINT( v3 );
 
-	  mesh->quads.push_back(OBJScene::Quad(v0,v1,v2,v3));
-	  continue;
-	}
+		mesh->quads.push_back(OBJScene::Quad(v0,v1,v2,v3));
+		continue;
+	      }
 
-      Vertex i0 = face[0], i1 = Vertex(-1), i2 = face[1];
+	    Vertex i0 = face[0], i1 = Vertex(-1), i2 = face[1];
 
-      /* triangulate the face with a triangle fan */
-      for (size_t k=2; k < face.size(); k++) {
-        i1 = i2; i2 = face[k];
-	uint32 v0,v1,v2;
+	    /* triangulate the face with a triangle fan */
+	    for (size_t k=2; k < face.size(); k++) {
+	      i1 = i2; i2 = face[k];
+	      uint32 v0,v1,v2;
+	      if (subdivMode)
+		{
+		  v0 = i0.v; 
+		  v1 = i1.v; 
+		  v2 = i2.v; 
+		}
+	      else
+		{
+		  v0 = getVertex(vertexMap, mesh, i0);
+		  v1 = getVertex(vertexMap, mesh, i1);
+		  v2 = getVertex(vertexMap, mesh, i2);
+		  assert(v0 < mesh->v.size());
+		  assert(v1 < mesh->v.size());
+		  assert(v2 < mesh->v.size());
+		}
+	      mesh->triangles.push_back(OBJScene::Triangle(v0,v1,v2,curMaterial));
+	    }
+	  }
+
+	/* use vertex array as it is in quad-only mode */
 	if (subdivMode)
 	  {
-	    v0 = i0.v; 
-	    v1 = i1.v; 
-	    v2 = i2.v; 
-	  }
-	else
-	  {
-	    v0 = getVertex(vertexMap, mesh, i0);
-	    v1 = getVertex(vertexMap, mesh, i1);
-	    v2 = getVertex(vertexMap, mesh, i2);
-            assert(v0 < mesh->v.size());
-            assert(v1 < mesh->v.size());
-            assert(v2 < mesh->v.size());
-	  }
-	mesh->triangles.push_back(OBJScene::Triangle(v0,v1,v2,curMaterial));
-      }
-    }
-
-    /* use vertex array as it is in quad-only mode */
-    if (subdivMode)
-      {
-	for (size_t i=0;i<v.size();i++)
-	  {
-	    mesh->v.push_back(v[i]);
+	    for (size_t i=0;i<v.size();i++)
+	      {
+		mesh->v.push_back(v[i]);
+	      }
 	  }
       }
-
     curGroup.clear();
   }
 
