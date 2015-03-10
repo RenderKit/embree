@@ -70,6 +70,7 @@ namespace embree
    __aligned(64) AtomicCounter index;
    __aligned(64) AtomicCounter next_block;
    __aligned(64) AtomicMutex   reset_state;
+   __aligned(64) AtomicCounter switch_block_threshold;
    __aligned(64) AtomicCounter numRenderThreads;
 
    struct __aligned(64) ThreadWorkState {
@@ -84,12 +85,13 @@ namespace embree
       
    SharedLazyTessellationCache()
      {
-       size             = DEFAULT_TESSELLATION_CACHE_SIZE;
-       data             = (float*)os_malloc(size);
-       maxBlocks        = size/64;
-       index            = 1;
-       next_block       = 0;
-       numRenderThreads = 0;
+       size                   = DEFAULT_TESSELLATION_CACHE_SIZE;
+       data                   = (float*)os_malloc(size);
+       maxBlocks              = size/64;
+       index                  = 1;
+       next_block             = 0;
+       numRenderThreads       = 0;
+       switch_block_threshold = maxBlocks/2;
        reset_state.reset();
      }
 
@@ -119,7 +121,7 @@ namespace embree
    __forceinline size_t alloc(const size_t blocks)
    {
      size_t index = next_block.add(blocks);
-     if (unlikely(index + blocks >= maxBlocks)) return (size_t)-1;
+     if (unlikely(index + blocks >= switch_block_threshold)) return (size_t)-1;
      return index;
    }
 
