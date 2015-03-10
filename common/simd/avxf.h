@@ -176,8 +176,8 @@ namespace embree
 #else
   __forceinline const avxf madd  ( const avxf& a, const avxf& b, const avxf& c) { return a*b+c; }
   __forceinline const avxf msub  ( const avxf& a, const avxf& b, const avxf& c) { return a*b-c; }
-  __forceinline const avxf nmadd ( const avxf& a, const avxf& b, const avxf& c) { return -a*b-c;}
-  __forceinline const avxf nmsub ( const avxf& a, const avxf& b, const avxf& c) { return c-a*b; }
+  __forceinline const avxf nmadd ( const avxf& a, const avxf& b, const avxf& c) { return -a*b+c;}
+  __forceinline const avxf nmsub ( const avxf& a, const avxf& b, const avxf& c) { return -a*b-c; }
 #endif
 
   ////////////////////////////////////////////////////////////////////////////////

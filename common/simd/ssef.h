@@ -174,8 +174,8 @@ namespace embree
 #else
   __forceinline const ssef madd  ( const ssef& a, const ssef& b, const ssef& c) { return a*b+c; }
   __forceinline const ssef msub  ( const ssef& a, const ssef& b, const ssef& c) { return a*b-c; }
-  __forceinline const ssef nmadd ( const ssef& a, const ssef& b, const ssef& c) { return -a*b-c;}
-  __forceinline const ssef nmsub ( const ssef& a, const ssef& b, const ssef& c) { return c-a*b; }
+  __forceinline const ssef nmadd ( const ssef& a, const ssef& b, const ssef& c) { return -a*b+c;}
+  __forceinline const ssef nmsub ( const ssef& a, const ssef& b, const ssef& c) { return -a*b-c; }
 #endif
 
   ////////////////////////////////////////////////////////////////////////////////

@@ -180,8 +180,8 @@ namespace embree
 #else
   __forceinline float madd  ( const float a, const float b, const float c) { return a*b+c; }
   __forceinline float msub  ( const float a, const float b, const float c) { return a*b-c; }
-  __forceinline float nmadd ( const float a, const float b, const float c) { return -a*b-c;}
-  __forceinline float nmsub ( const float a, const float b, const float c) { return c-a*b; }
+  __forceinline float nmadd ( const float a, const float b, const float c) { return -a*b+c;}
+  __forceinline float nmsub ( const float a, const float b, const float c) { return -a*b-c; }
 #endif
 
   /*! random functions */
