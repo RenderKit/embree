@@ -20,11 +20,14 @@
 namespace embree
 {
 #define size_t int  // FIXME: workaround of ISPC bug
+#define ssize_t int  // FIXME: workaround of ISPC bug
 
 #define CATCH_BEGIN try {
 #define CATCH_END                                                       \
   } catch (std::bad_alloc&) {                                           \
     process_error(RTC_OUT_OF_MEMORY,"out of memory");                   \
+  } catch (my_runtime_error& e) {                                       \
+    process_error(e.error,e.what());                                    \
   } catch (std::exception& e) {                                         \
     process_error(RTC_UNKNOWN_ERROR,e.what());                          \
  } catch (...) {                                                        \
@@ -58,7 +61,11 @@ namespace embree
   extern "C" void ispcSetErrorFunction(void* f) {
     return rtcSetErrorFunction((RTC_ERROR_FUNCTION)f);
   }
-  
+
+  extern "C" void ispcSetMemoryMonitorFunction(void* f) {
+    return rtcSetMemoryMonitorFunction((RTC_MEMORY_MONITOR_FUNCTION)f);
+  }
+
   extern "C" void ispcDebug() {
     rtcDebug();
   }

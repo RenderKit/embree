@@ -651,7 +651,7 @@ namespace embree
       const size_t maxLeafSize;
       
     public:
-      vector_t<MortonID32Bit> morton;
+      vector<MortonID32Bit> morton;
       size_t numPrimitives;
     };
     
@@ -872,7 +872,7 @@ namespace embree
       size_t encodeMask;
       
     public:
-      vector_t<MortonID32Bit> morton;
+      vector<MortonID32Bit> morton;
       size_t numPrimitives;
     };
 

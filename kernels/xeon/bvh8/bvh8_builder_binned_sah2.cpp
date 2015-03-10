@@ -96,7 +96,7 @@ namespace embree
       BVH8* bvh;
       Scene* scene;
       Mesh* mesh;
-      vector_t<PrimRef> prims; // FIXME: use os_malloc in vector_t for large allocations
+      vector<PrimRef> prims;
       const size_t sahBlockSize;
       const float intCost;
       const size_t minLeafSize;
@@ -242,7 +242,6 @@ namespace embree
       }
 
       BVH8* bvh;
-      //const vector_t<std::pair<int,int>>& geomIDprimID;
     };
 
     template<typename Mesh, typename Primitive>
@@ -251,7 +250,6 @@ namespace embree
       BVH8* bvh;
       Scene* scene;
       Mesh* mesh;
-      //vector_t<PrimRef> prims; // FIXME: use os_malloc in vector_t for large allocations
       const size_t sahBlockSize;
       const float intCost;
       const size_t minLeafSize;

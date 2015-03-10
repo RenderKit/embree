@@ -36,6 +36,8 @@ namespace embree
 #define CATCH_END                                                       \
   } catch (std::bad_alloc&) {                                           \
     process_error(RTC_OUT_OF_MEMORY,"out of memory");                   \
+  } catch (my_runtime_error& e) {                                       \
+    process_error(e.error,e.what());                                    \
   } catch (std::exception& e) {                                         \
     process_error(RTC_UNKNOWN_ERROR,e.what());                          \
  } catch (...) {                                                        \
@@ -159,10 +161,19 @@ namespace embree
   }
   
   /* error flag */
-  static tls_t g_error = NULL;
-  static std::vector<RTCError*> g_errors;
+  static tls_t g_error = NULL; // FIXME: use thread local
+  static std::vector<RTCError*> g_errors; // FIXME: use thread local
   static MutexSys g_errors_mutex;
   static RTC_ERROR_FUNCTION g_error_function = NULL;
+  static RTC_MEMORY_MONITOR_FUNCTION g_memory_monitor_function = NULL;
+
+  void memoryMonitor(ssize_t bytes)
+  {
+    if (g_memory_monitor_function) {
+      if (!g_memory_monitor_function(bytes))
+        THROW_MY_RUNTIME_ERROR(RTC_OUT_OF_MEMORY,"memory monitor forced termination");
+    }
+  }
 
   /* mutex to make API thread safe */
   static MutexSys g_mutex;
@@ -550,6 +561,10 @@ namespace embree
 
   RTCORE_API void rtcSetErrorFunction(RTC_ERROR_FUNCTION func) {
     g_error_function = func;
+  }
+
+  RTCORE_API void rtcSetMemoryMonitorFunction(RTC_MEMORY_MONITOR_FUNCTION func) {
+    g_memory_monitor_function = func;
   }
 
   RTCORE_API void rtcDebug()

@@ -48,8 +48,6 @@ namespace embree
 	unsigned int depth;         //!< depth from the root of the tree
 	float sArea;
 	BVH4::NodeRef* parent; 
-	
-        BuildRecord() {}
 
 #if defined(_MSC_VER)
         BuildRecord& operator=(const BuildRecord &arg) { 

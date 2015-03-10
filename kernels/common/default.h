@@ -37,6 +37,7 @@
 #include "simd/simd.h"
 #include "embree2/rtcore.h"
 #include "stat.h"
+#include "vector.h"
 
 #include <map>
 #include <set>
@@ -339,5 +340,24 @@ typedef void (*ErrorFunc) ();
   SELECT_SYMBOL_DEFAULT(features,intersector);                     \
   SELECT_SYMBOL_SSE41(features,intersector);                       \
   SELECT_SYMBOL_AVX(features,intersector);                        
+
+void memoryMonitor(ssize_t bytes);
+
+struct my_runtime_error : public std::exception
+{
+  __forceinline my_runtime_error(RTCError error, const std::string& str)
+    : error(error), str(str) {}
+  
+  const char* what () const throw () {
+    return str.c_str();
+  }
+
+  RTCError error;
+  std::string str;
+};
+
+#define THROW_MY_RUNTIME_ERROR(error,str)                                \
+  throw my_runtime_error(error,std::string(__FILE__) + " (" + std::stringOf(__LINE__) + "): " + std::string(str));
+
 
 }

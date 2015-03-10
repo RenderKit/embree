@@ -86,6 +86,14 @@ typedef void (*uniform RTC_ERROR_FUNCTION)(const uniform RTCError code, const un
 /*! \brief Sets a callback function that is called whenever an error occurs. */
 void rtcSetErrorFunction(uniform RTC_ERROR_FUNCTION func);
 
+/*! \brief Type of memory consumption callback function. */
+typedef uniform bool (*RTC_MEMORY_MONITOR_FUNCTION)(const uniform size_t bytes); // FIXME: should be ssize_t
+
+/*! \brief Sets the memory consumption callback function which is
+ *  called before the library allocates or after the library frees
+ *  memory. */
+RTCORE_API void rtcSetMemoryMonitorFunction(RTC_MEMORY_MONITOR_FUNCTION func);
+
 /*! \brief Implementation specific (do not call).
 
   This function is implementation specific and only for debugging

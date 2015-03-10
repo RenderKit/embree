@@ -17,11 +17,13 @@
 #include "../../include/embree2/rtcore.isph" 
 
 #define size_tt int // FIXME: workaround of ISPC bug
+#define ssize_tt int // FIXME: workaround of ISPC bug
 
 extern "C" void ispcInit(const uniform int8* uniform cfg);
 extern "C" void ispcExit();
 extern "C" uniform RTCError ispcGetError ();
 extern "C" void ispcSetErrorFunction (void* uniform ptr);
+extern "C" void ispcSetMemoryMonitorFunction (uniform ssize_tt bytes);
 extern "C" void ispcDebug();
 extern "C" RTCScene ispcNewScene (uniform RTCSceneFlags flags, uniform RTCAlgorithmFlags aflags);
 extern "C" void ispcCommitScene (RTCScene scene);
@@ -109,6 +111,10 @@ uniform RTCError rtcGetError() {
 
 void rtcSetErrorFunction(uniform RTC_ERROR_FUNCTION func) {
   ispcSetErrorFunction(func);
+}
+
+void rtcSetMemoryMonitorFunction(uniform RTC_MEMORY_MONITOR_FUNCTION func) {
+  ispcSetMemoryMonitorFunction(func);
 }
 
 void rtcDebug() {

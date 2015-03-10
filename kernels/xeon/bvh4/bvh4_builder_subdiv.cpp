@@ -87,7 +87,7 @@ namespace embree
     {
       BVH4* bvh;
       Scene* scene;
-      vector_t<PrimRef> prims; // FIXME: use os_malloc in vector_t for large allocations
+      vector<PrimRef> prims;
       
       BVH4SubdivPatch1BuilderBinnedSAHClass (BVH4* bvh, Scene* scene)
         : bvh(bvh), scene(scene) {}
@@ -146,7 +146,7 @@ namespace embree
     {
       BVH4* bvh;
       Scene* scene;
-      vector_t<PrimRef> prims; // FIXME: use os_malloc in vector_t for large allocations
+      vector<PrimRef> prims;
       ParallelForForPrefixSumState<PrimInfo> pstate;
       
       BVH4SubdivGridBuilderBinnedSAHClass (BVH4* bvh, Scene* scene)
@@ -284,7 +284,7 @@ namespace embree
     {
       BVH4* bvh;
       Scene* scene;
-      vector_t<PrimRef> prims; // FIXME: use os_malloc in vector_t for large allocations
+      vector<PrimRef> prims;
       ParallelForForPrefixSumState<PrimInfo> pstate;
       
       BVH4SubdivGridEagerBuilderBinnedSAHClass (BVH4* bvh, Scene* scene)
@@ -408,7 +408,7 @@ namespace embree
     {
       BVH4* bvh;
       Scene* scene;
-      vector_t<PrimRef> prims; // FIXME: use os_malloc in vector_t for large allocations
+      vector<PrimRef> prims; 
       ParallelForForPrefixSumState<PrimInfo> pstate;
       
       BVH4SubdivGridLazyBuilderBinnedSAHClass (BVH4* bvh, Scene* scene)
@@ -765,7 +765,7 @@ namespace embree
     {
       BVH4* bvh;
       Scene* scene;
-      vector_t<PrimRef> prims; // FIXME: use os_malloc in vector_t for large allocations
+      vector<PrimRef> prims; 
       ParallelForForPrefixSumState<PrimInfo> pstate;
       
       BVH4SubdivPatch1CachedBuilderBinnedSAHClass (BVH4* bvh, Scene* scene)

@@ -154,7 +154,7 @@ namespace embree
       __forceinline NodeArea(NodeRef& node, const BBox3fa& bounds)
         : node(&node), A(node.isLeaf() ? float(neg_inf) : area(bounds)) {}
 
-      __forceinline bool operator< (NodeArea other) {
+      __forceinline bool operator< (const NodeArea& other) const {
         return this->A < other.A;
       }
 
@@ -193,7 +193,7 @@ namespace embree
     else if (node.isNode()) 
     {
       Node* oldnode = node.node();
-      Node* newnode = (BVH8::Node*) alloc2.threadLocal2()->alloc0.malloc(sizeof(BVH8::Node)); 
+      Node* newnode = (BVH8::Node*) alloc2.threadLocal2()->alloc0.malloc(sizeof(BVH8::Node)); // FIXME: optimize access to threadLocal2 
       *newnode = *oldnode;
       for (size_t c=0; c<BVH8::N; c++)
         newnode->child(c) = layoutLargeNodesRecursion(oldnode->child(c));

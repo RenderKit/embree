@@ -54,6 +54,15 @@ task void parallelCommit(RTCScene scene) {
 }
 #endif
 
+/* This function called by the builder to signal progress. You can
+ * throw an exception to cancel the build operation. */
+namespace embree
+{
+  void memoryMonitor(ssize_t bytes)
+  {
+  }
+}
+
 struct Node
 {
   virtual float sah() = 0;

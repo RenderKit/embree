@@ -16,8 +16,9 @@
 
 #pragma once
 
-#include "sys/sysinfo.h"
-#include "sys/sync/mutex.h"
+#include "common/default.h"
+//#include "sys/sysinfo.h"
+//#include "sys/sync/mutex.h"
 #include "tasking/taskscheduler.h"
 #include "math/math.h"
 
@@ -588,6 +589,7 @@ namespace embree
         const size_t sizeof_Header = offsetof(Block,data[0]);
         bytesAllocate = ((sizeof_Header+bytesAllocate+4095) & ~(4095)); // always consume full pages
         bytesReserve  = ((sizeof_Header+bytesReserve +4095) & ~(4095)); // always consume full pages
+        memoryMonitor(bytesAllocate);
         void* ptr = os_reserve(bytesReserve);
         os_commit(ptr,bytesAllocate);
         return new (ptr) Block(bytesAllocate-sizeof_Header,bytesReserve-sizeof_Header,next);
@@ -602,9 +604,11 @@ namespace embree
       ~Block () {
 	if (next) next->~Block(); next = NULL;
         const size_t sizeof_Header = offsetof(Block,data[0]);
-        os_free(this,sizeof_Header+reserveEnd);
+        const size_t sizeof_This = sizeof_Header+reserveEnd;
+        os_free(this,sizeof_This);
+        memoryMonitor(-sizeof_This);
       }
-
+      
       void* malloc(size_t bytes, size_t align = 16) 
       {
         assert(align <= maxAlignment);
@@ -612,7 +616,10 @@ namespace embree
 	if (unlikely(cur+bytes > reserveEnd)) return NULL;
 	const size_t i = atomic_add(&cur,bytes);
 	if (unlikely(i+bytes > reserveEnd)) return NULL;
-	if (i+bytes > allocEnd) os_commit(&data[i],bytes); // FIXME: optimize, may get called frequently
+	if (i+bytes > allocEnd) {
+          memoryMonitor(bytes);
+          os_commit(&data[i],bytes); // FIXME: optimize, may get called frequently
+        }
 	return &data[i];
       }
       
@@ -622,7 +629,10 @@ namespace embree
         bytes = (bytes+(align-1)) & ~(align-1); // FIXME: works only if all alignments are equal
 	const size_t i = atomic_add(&cur,bytes);
 	if (unlikely(i+bytes > reserveEnd)) bytes = reserveEnd-i;
-	if (i+bytes > allocEnd) os_commit(&data[i],bytes); // FIXME: optimize, may get called frequently
+	if (i+bytes > allocEnd) {
+          memoryMonitor(bytes);
+          os_commit(&data[i],bytes); // FIXME: optimize, may get called frequently
+        }
 	return &data[i];
       }
 

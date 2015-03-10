@@ -164,6 +164,7 @@ namespace embree
       /*! recursive build */
       BVH4::NodeRef recurse(size_t depth, const PrimInfo& pinfo, FastAllocator::ThreadLocal2* alloc)
       {
+        bool topLevel = (bool) alloc;
         if (alloc == NULL) 
           alloc = createAlloc();
 	
@@ -246,8 +247,13 @@ namespace embree
               SPAWN(([&,i] { node->child(i) = recurse(depth+1,children[i],NULL); }));
             SPAWN_END;
           }
-          /* ... continue sequential */
-          else {
+          /* ... continue sequentially */
+          else
+          {
+            /* call memory monitor function to signal progress */
+            if (topLevel)
+              memoryMonitor(0);
+            
             for (size_t i=0; i<numChildren; i++) 
               node->child(i) = recurse(depth+1,children[i],alloc);
           }

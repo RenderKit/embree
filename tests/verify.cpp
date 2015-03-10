@@ -2542,10 +2542,13 @@ namespace embree
 	if (thread->threadIndex < task->numActiveThreads) 
 	{
 	  rtcCommitThread(task->scene,thread->threadIndex,task->numActiveThreads);
-	  CountErrors();
-          
-	  for (size_t i=0; i<100; i++)
-            shootRays(task->scene);
+	  //CountErrors();
+          if (rtcGetError() != RTC_NO_ERROR)
+            atomic_add(&errorCounter,1);
+          else {
+            for (size_t i=0; i<100; i++)
+              shootRays(task->scene);
+          }
 	}
         task->barrier.wait();
       }
@@ -2611,10 +2614,14 @@ namespace embree
       } else {
 	rtcCommit(task->scene);
       }
-      CountErrors();
+      //CountErrors();
 
-      for (size_t i=0; i<100; i++) {
-        shootRays(task->scene);
+      if (rtcGetError() != RTC_NO_ERROR)
+        atomic_add(&errorCounter,1);
+      else {
+        for (size_t i=0; i<100; i++) {
+          shootRays(task->scene);
+        }
       }
 
       if (thread->threadCount) 
@@ -2641,10 +2648,13 @@ namespace embree
 	if (thread->threadIndex < task->numActiveThreads) 
 	{
 	  rtcCommitThread(task->scene,thread->threadIndex,task->numActiveThreads);
-	  CountErrors();
-	  
-	  for (size_t i=0; i<100; i++)
-	    shootRays(task->scene);
+	  //CountErrors();
+          if (rtcGetError() != RTC_NO_ERROR)
+            atomic_add(&errorCounter,1);
+          else {
+            for (size_t i=0; i<100; i++)
+              shootRays(task->scene);
+          }
 	}
 	task->barrier.wait();
       }
@@ -2758,10 +2768,13 @@ namespace embree
       } else {
 	rtcCommit(task->scene);
       }
-      CountErrors();
+      //CountErrors();
 
-      for (size_t i=0; i<100; i++)
-        shootRays(task->scene);
+      if (rtcGetError() != RTC_NO_ERROR)
+        atomic_add(&errorCounter,1);
+      else
+        for (size_t i=0; i<100; i++)
+          shootRays(task->scene);
 
       if (thread->threadCount) 
 	task->barrier.wait();
@@ -2816,6 +2829,43 @@ namespace embree
     return errorCounter == 0;
   }
 
+  ssize_t monitorBreakInvokations = -1;
+  atomic_t monitorBytesUsed = 0;
+  atomic_t monitorInvokations = 0;
+  bool monitorFunction(ssize_t bytes) {
+    atomic_add(&monitorBytesUsed,bytes);
+    size_t n = atomic_add(&monitorInvokations,1);
+    if (n == monitorBreakInvokations) return false;
+    return true;
+  }
+  
+  bool rtcore_regression_memory_monitor (thread_func func)
+  {
+    rtcSetMemoryMonitorFunction(monitorFunction);
+    
+    errorCounter = 0;
+    size_t sceneIndex = 0;
+    while (sceneIndex < regressionN/5) 
+    {
+      monitorBreakInvokations = -1;
+      monitorBytesUsed = 0;
+      monitorInvokations = 0;
+      func(new ThreadRegressionTask(0,0,new RegressionTask(sceneIndex,5,0)));
+      monitorBreakInvokations = monitorInvokations * drand48();
+      monitorBytesUsed = 0;
+      monitorInvokations = 0;
+      func(new ThreadRegressionTask(0,0,new RegressionTask(sceneIndex,5,0)));
+      if (monitorBytesUsed) {
+        rtcSetMemoryMonitorFunction(NULL);
+        return false;
+      }
+      sceneIndex++;
+      clearBuffers();
+    }
+    rtcSetMemoryMonitorFunction(NULL);
+    return true;
+  }
+
   bool rtcore_regression_garbage()
   {
     for (size_t i=0; i<5*regressionN; i++) 
@@ -2863,7 +2913,10 @@ namespace embree
     //POSITIVE("regression_static",         rtcore_regression(rtcore_regression_static_thread,true));
     //POSITIVE("regression_dynamic",        rtcore_regression(rtcore_regression_dynamic_thread,false));
     //POSITIVE("regression_garbage_geom",   rtcore_regression_garbage());
+    //POSITIVE("regression_static_memory_monitor",         rtcore_regression_memory_monitor(rtcore_regression_static_thread));
+    //POSITIVE("regression_dynamic_memory_monitor",        rtcore_regression_memory_monitor(rtcore_regression_dynamic_thread));
     //exit(1);
+
 
     POSITIVE("mutex_sys",                 test_mutex_sys());
 #if !defined(__MIC__)  // FIXME: hangs on MIC 
@@ -2872,7 +2925,6 @@ namespace embree
 #if !defined(__MIC__) && !defined(_WIN32) // FIXME: hangs on MIC and Windows
     POSITIVE("condition_sys",             test_condition_sys());
 #endif
-
 
     POSITIVE("empty_static",              rtcore_empty(RTC_SCENE_STATIC));
     POSITIVE("empty_dynamic",             rtcore_empty(RTC_SCENE_DYNAMIC));
@@ -2965,6 +3017,9 @@ namespace embree
 
     POSITIVE("regression_static",         rtcore_regression(rtcore_regression_static_thread,false));
     POSITIVE("regression_dynamic",        rtcore_regression(rtcore_regression_dynamic_thread,false));
+
+    POSITIVE("regression_static_memory_monitor",         rtcore_regression_memory_monitor(rtcore_regression_static_thread));
+    POSITIVE("regression_dynamic_memory_monitor",        rtcore_regression_memory_monitor(rtcore_regression_dynamic_thread));
 
 #if !defined(__MIC__) && !defined(TASKING_TBB)
     POSITIVE("regression_static_user_threads", rtcore_regression(rtcore_regression_static_thread,true));
