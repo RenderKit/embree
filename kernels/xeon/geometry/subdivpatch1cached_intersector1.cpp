@@ -591,6 +591,7 @@ namespace embree
 		bounds.extend( Vec3fa(x,y,z) );
 	      }
 
+	  const size_t value = (grid_array_elements << 32) | final_offset;
 	  curNode = BVH4::encodeLeaf((void*)final_offset,2);
         
 	  return bounds;
