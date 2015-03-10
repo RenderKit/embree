@@ -21,6 +21,8 @@
 
 #define CACHE_DBG(x) 
 
+#define FORCE_SIMPLE_FLUSH 0
+
 
 namespace embree
 {
@@ -83,17 +85,7 @@ namespace embree
  public:
 
       
-   SharedLazyTessellationCache()
-     {
-       size                   = DEFAULT_TESSELLATION_CACHE_SIZE;
-       data                   = (float*)os_malloc(size);
-       maxBlocks              = size/64;
-       index                  = 1;
-       next_block             = 0;
-       numRenderThreads       = 0;
-       switch_block_threshold = maxBlocks/2;
-       reset_state.reset();
-     }
+   SharedLazyTessellationCache();
 
    __forceinline size_t getNextRenderThreadID() { return numRenderThreads.add(1); }
 
@@ -103,6 +95,14 @@ namespace embree
    __forceinline unsigned int lockThread  (const unsigned int threadID) { return threadWorkState[threadID].counter.add(1);  }
    __forceinline unsigned int unlockThread(const unsigned int threadID) { return threadWorkState[threadID].counter.add(-1); }
 
+   __forceinline bool validCacheIndex(const size_t i)
+   {
+#if FORCE_SIMPLE_FLUSH == 1
+     return i == index;
+#else
+     return i+1 >= index;
+#endif
+   }
 
    __forceinline void waitForUsersLessEqual(const unsigned int threadID,
 					    const unsigned int users)

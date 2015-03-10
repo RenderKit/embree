@@ -67,6 +67,24 @@ namespace embree
 #endif
   }
 
+
+  SharedLazyTessellationCache::SharedLazyTessellationCache()
+  {
+    size                   = DEFAULT_TESSELLATION_CACHE_SIZE;
+    data                   = (float*)os_malloc(size);
+    maxBlocks              = size/64;
+    index                  = 1;
+    next_block             = 0;
+    numRenderThreads       = 0;
+#if FORCE_SIMPLE_FLUSH == 1
+    switch_block_threshold = maxBlocks;
+#else
+    switch_block_threshold = maxBlocks/2;
+#endif
+
+    reset_state.reset();
+  }
+
   void SharedLazyTessellationCache::resetCache() 
   {
     if (reset_state.try_lock())
@@ -83,6 +101,10 @@ namespace embree
 
 	    incCurrentIndex();
 
+#if FORCE_SIMPLE_FLUSH == 1
+	    next_block = 0;
+	    switch_block_threshold = maxBlocks;
+#else
 	    if (switch_block_threshold == maxBlocks)
 	      {
 		next_block = 0;
@@ -93,7 +115,7 @@ namespace embree
 		next_block = maxBlocks/2;
 		switch_block_threshold = maxBlocks;		
 	      }
-
+#endif
 	    for (size_t i=0;i<numRenderThreads;i++)
 	      unlockThread(i);
 
@@ -116,6 +138,12 @@ namespace embree
     size      = new_size;
     data      = (float*)os_malloc(size);
     maxBlocks = size/64;    
+#if FORCE_SIMPLE_FLUSH == 1
+    switch_block_threshold = maxBlocks;
+#else
+    switch_block_threshold = maxBlocks/2;
+#endif
+
     std::cout << "Reallocating tessellation cache to " << size << " bytes, " << maxBlocks << " 64-byte blocks" << std::endl;
   }
 
