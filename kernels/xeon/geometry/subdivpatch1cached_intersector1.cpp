@@ -279,6 +279,63 @@ namespace embree
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     
     
+    BVH4::NodeRef SubdivPatch1CachedIntersector1::buildSubdivPatchTreeCompact(const SubdivPatch1Cached &patch,
+									      void *const lazymem,
+									      const SubdivMesh* const geom)
+    {      
+      TIMER(double msec = 0.0);
+      TIMER(msec = getSeconds());
+        
+      assert( patch.grid_size_simd_blocks >= 1 );
+
+      const size_t array_elements = (patch.grid_size_simd_blocks + 1) * 8;
+
+#if !defined(_MSC_VER) || defined(__INTEL_COMPILER)
+      __aligned(64) float grid_u[array_elements]; 
+      __aligned(64) float grid_v[array_elements];
+     
+#else
+      float *const ptr = (float*)_malloca(2 * array_elements * sizeof(float) + 64);
+      float *const grid_arrays = (float*)ALIGN_PTR(ptr,64);
+      float *grid_u = &grid_arrays[array_elements * 0];
+      float *grid_v = &grid_arrays[array_elements * 1];
+        
+#endif   
+      const size_t grid_offset = patch.grid_bvh_size_64b_blocks / 16;
+
+      float *grid_x  = (float*)lazymem + grid_offset + 0 * array_elements;
+      float *grid_y  = (float*)lazymem + grid_offset + 1 * array_elements;
+      float *grid_z  = (float*)lazymem + grid_offset + 2 * array_elements;
+      float *grid_uv = (float*)lazymem + grid_offset + 3 * array_elements;
+
+      evalGrid(patch,grid_x,grid_y,grid_z,grid_u,grid_v,geom);
+        
+      BVH4::NodeRef subtree_root = BVH4::encodeNode( (BVH4::Node*)lazymem);
+      unsigned int currentIndex = 0;
+      BBox3fa bounds = createSubTreeCompact( subtree_root,
+					     (float*)lazymem,
+					     patch,
+					     grid_x,
+					     array_elements,
+					     GridRange(0,patch.grid_u_res-1,0,patch.grid_v_res-1),
+					     currentIndex,
+					     geom);
+        
+      assert(currentIndex == patch.grid_bvh_size_64b_blocks);
+      exit(0);
+
+      TIMER(msec = getSeconds()-msec);            
+      TIMER(DBG_PRINT(1000*msec));
+      TIMER(DBG_PRINT(patch.grid_u_res));
+      TIMER(DBG_PRINT(patch.grid_v_res));
+      TIMER(DBG_PRINT(patch.grid_subtree_size_64b_blocks*64));
+
+#if defined(_MSC_VER) && !defined(__INTEL_COMPILER)
+      _freea(ptr);
+#endif
+      return subtree_root;
+    }
+
     BVH4::NodeRef SubdivPatch1CachedIntersector1::buildSubdivPatchTree(const SubdivPatch1Cached &patch,
                                                                        void *const lazymem,
                                                                        const SubdivMesh* const geom)
@@ -436,7 +493,7 @@ namespace embree
 #endif          
         
 	  BBox3fa bounds = qquad->bounds();
-	  curNode = BVH4::encodeLeaf(qquad,2);
+	  curNode = BVH4::encodeTypedLeaf(qquad,2);
         
 	  return bounds;
 	}
@@ -474,6 +531,101 @@ namespace embree
 						  r[i],						  
 						  localCounter,
 						  geom);
+	  node->set(i, bounds_subtree);
+	  bounds.extend( bounds_subtree );
+	}
+      
+      return bounds;
+    }
+
+
+    BBox3fa SubdivPatch1CachedIntersector1::createSubTreeCompact(BVH4::NodeRef &curNode,
+								 float *const lazymem,
+								 const SubdivPatch1Cached &patch,
+								 const float *const grid_array,
+								 const size_t grid_array_elements,
+								 const GridRange &range,
+								 unsigned int &localCounter,
+								 const SubdivMesh* const geom)
+    {
+      if (range.hasLeafSize())
+	{
+	  unsigned int u_start = range.u_start;
+	  unsigned int v_start = range.v_start;
+
+	  const unsigned int u_end   = range.u_end;
+	  const unsigned int v_end   = range.v_end;
+        
+	  const unsigned int u_size = u_end-u_start+1;
+	  const unsigned int v_size = v_end-v_start+1;
+        
+	  assert(u_size >= 1);
+	  assert(v_size >= 1);
+        
+	  assert(u_size == 3);
+	  assert(v_size == 3);
+
+	  const size_t grid_start_offset = grid_array - lazymem;
+	  const size_t grid_offset3x3    = v_start * patch.grid_u_res + u_start;
+	  const size_t final_offset      = grid_start_offset + grid_offset3x3;
+
+	  const float *const grid_x_array = grid_array + 0 * grid_array_elements;
+	  const float *const grid_y_array = grid_array + 1 * grid_array_elements;
+	  const float *const grid_z_array = grid_array + 2 * grid_array_elements;
+
+#if 0
+	  DBG_PRINT("LEAF");
+	  DBG_PRINT(u_start);
+	  DBG_PRINT(v_start);
+	  DBG_PRINT(u_end);
+	  DBG_PRINT(v_end);                
+#endif          
+        
+	  BBox3fa bounds( empty );
+	  for (size_t v = 0; v<3; v++)
+	    for (size_t u = 0; u<3; u++)
+	      {
+		const float x = grid_x_array[ grid_offset3x3 + v * grid_array_elements + u];
+		const float y = grid_y_array[ grid_offset3x3 + v * grid_array_elements + u];
+		const float z = grid_z_array[ grid_offset3x3 + v * grid_array_elements + u];
+		bounds.extend( Vec3fa(x,y,z) );
+	      }
+
+	  curNode = BVH4::encodeLeaf((void*)final_offset,2);
+        
+	  return bounds;
+	}
+      
+      
+      /* allocate new bvh4 node */
+      const size_t currentIndex = localCounter;
+      
+      /* 128 bytes == 2 x 64 bytes cachelines */
+      localCounter += 2; 
+      
+      BVH4::Node *node = (BVH4::Node *)&lazymem[currentIndex*16];
+      
+      curNode = BVH4::encodeNode( node );
+      
+      node->clear();
+      
+      GridRange r[4];
+      
+      const unsigned int children = range.splitIntoSubRanges(r);
+      
+      /* create four subtrees */
+      BBox3fa bounds( empty );
+      
+      for (unsigned int i=0;i<children;i++)
+	{
+	  BBox3fa bounds_subtree = createSubTreeCompact( node->child(i), 
+							 lazymem, 
+							 patch, 
+							 grid_array,
+							 grid_array_elements,
+							 r[i],						  
+							 localCounter,
+							 geom);
 	  node->set(i, bounds_subtree);
 	  bounds.extend( bounds_subtree );
 	}

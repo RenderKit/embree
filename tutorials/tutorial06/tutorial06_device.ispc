@@ -23,8 +23,8 @@
 
 //#define PARALLEL_COMMIT
 
-//#define FORCE_FIXED_EDGE_TESSELLATION
-#define FIXED_EDGE_TESSELLATION_VALUE 8
+#define FORCE_FIXED_EDGE_TESSELLATION
+#define FIXED_EDGE_TESSELLATION_VALUE 2
 //#define FIXED_EDGE_TESSELLATION_VALUE 32
 
 #define MAX_EDGE_LEVEL 64.0f
@@ -907,7 +907,41 @@ void convertTriangleMeshes(uniform ISPCScene* uniform scene_in, RTCScene scene_o
   }
 }
 
-void convertSubdivMeshes(uniform ISPCScene* uniform scene_in, RTCScene scene_out, uniform size_t numGeometries)
+void updateEdgeLevelBuffer( uniform ISPCMesh* uniform mesh, const uniform Vec3fa& cam_pos, uniform size_t startID, uniform size_t endID )
+{
+  for (uniform size_t f=startID; f<endID; f++) 
+  {
+    const uniform int N = 4;
+    for (uniform size_t i=0; i<N; i++) {
+      const uniform int * uniform index = (uniform int * uniform)&mesh->quads[f];	
+      const uniform Vec3fa v0 = mesh->positions[index[i]];
+      const uniform Vec3fa v1 = mesh->positions[index[(i+1)%N]];
+      const uniform Vec3fa edge = v1-v0;
+      const uniform Vec3fa P = 0.5f*(v1+v0);
+      const uniform Vec3fa dist = cam_pos - P;
+      mesh->edge_level[f*4+i] = max(min(LEVEL_FACTOR*(0.5f*length(edge)/length(dist)),MAX_EDGE_LEVEL),MIN_EDGE_LEVEL); // FIXME: map mesh subdivlevel buffer
+      assert( mesh->edge_level[f*4+i] >= 1.0f );
+    }
+  }
+}
+
+void updateEdgeLevels(uniform ISPCScene* uniform scene_in, const uniform Vec3fa& cam_pos)
+{
+  for (uniform int i=0; i<g_ispc_scene->numMeshes; i++)
+  {
+    uniform ISPCMesh* uniform mesh = g_ispc_scene->meshes[i];
+    if (mesh->numQuads == 0) continue;
+
+    if (mesh->edge_level) 
+    {
+      uniform unsigned int geomID = mesh->geomID;
+      updateEdgeLevelBuffer(mesh,cam_pos,0,mesh->numQuads);
+    }
+  }
+}
+
+
+void convertSubdivMeshes(uniform ISPCScene* uniform scene_in, RTCScene scene_out, uniform size_t numGeometries, const uniform Vec3fa& cam_pos)
 {
   for (uniform int i=0; i<scene_in->numMeshes; i++)
   {
@@ -922,9 +956,14 @@ void convertSubdivMeshes(uniform ISPCScene* uniform scene_in, RTCScene scene_out
       mesh->edge_level             = uniform new uniform float[numEdges];
       uniform int *uniform index_buffer = uniform new uniform int[numEdges];
       
+#if !defined(FORCE_FIXED_EDGE_TESSELLATION)
+      updateEdgeLevels(scene_in,cam_pos);
+#else
       for (uniform size_t i=0; i<numEdges; i++) 
 	mesh->edge_level[i] = FIXED_EDGE_TESSELLATION_VALUE;
-      
+#endif
+
+
       /* create a triangle mesh */
       uniform unsigned int geomID = rtcNewSubdivisionMesh (scene_out, RTC_GEOMETRY_STATIC, numPrimitives, numEdges, mesh->numVertices, 0, 0, 0);
       mesh->geomID = geomID;
@@ -960,7 +999,7 @@ void convertSubdivMeshes(uniform ISPCScene* uniform scene_in, RTCScene scene_out
     geomID_to_mesh[geomID] = mesh;
     geomID_to_type[geomID] = 1;
 
-    for (size_t i=0; i<mesh->numEdges; i++) mesh->subdivlevel[i] = 16;
+    for (size_t i=0; i<mesh->numEdges; i++) mesh->subdivlevel[i] = FIXED_EDGE_TESSELLATION_VALUE;
     rtcSetBuffer(scene_out, geomID, RTC_VERTEX_BUFFER, mesh->positions, 0, sizeof(uniform Vec3fa  ));
     rtcSetBuffer(scene_out, geomID, RTC_LEVEL_BUFFER,  mesh->subdivlevel, 0, sizeof(uniform float));
     rtcSetBuffer(scene_out, geomID, RTC_INDEX_BUFFER,  mesh->position_indices  , 0, sizeof(uniform unsigned int));
@@ -975,7 +1014,7 @@ void convertSubdivMeshes(uniform ISPCScene* uniform scene_in, RTCScene scene_out
 
 typedef void* uniform void_ptr;
 
-RTCScene convertScene(uniform ISPCScene* uniform scene_in)
+RTCScene convertScene(uniform ISPCScene* uniform scene_in,const uniform Vec3fa& cam_org)
 {
   uniform size_t numGeometries = scene_in->numMeshes + scene_in->numSubdivMeshes;
   geomID_to_mesh = uniform new void_ptr[numGeometries];
@@ -984,7 +1023,8 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
   /* create scene */
   RTCScene scene_out = rtcNewScene(RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT, RTC_INTERSECT_VARYING);
   convertTriangleMeshes(scene_in,scene_out,numGeometries);
-  convertSubdivMeshes(scene_in,scene_out,numGeometries);
+  convertSubdivMeshes(scene_in,scene_out,numGeometries,cam_org);
+
 
   /* commit changes to scene */
 #if !defined(PARALLEL_COMMIT)
@@ -1322,9 +1362,11 @@ export void device_render (uniform int* uniform pixels,
                            const uniform Vec3f& vz, 
                            const uniform Vec3f& p)
 {
+  uniform Vec3fa cam_org = make_Vec3fa(p.x,p.y,p.z);
+
   /* create scene */
   if (g_scene == NULL)
-    g_scene = convertScene(g_ispc_scene);
+    g_scene = convertScene(g_ispc_scene,cam_org);
 
   /* create accumulator */
   if (g_accu_width != width || g_accu_height != height) {

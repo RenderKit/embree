@@ -79,6 +79,9 @@ namespace embree
 #endif
     grid_subtree_size_64b_blocks = getSubTreeSize64bBlocks( leafBlocks ); // u,v,x,y,z 
 
+    grid_bvh_size_64b_blocks = getSubTreeSize64bBlocks( 0 );
+    //DBG_PRINT( grid_bvh_size_64b_blocks );
+
     /* has displacements? */
     flags &= ~HAS_DISPLACEMENT;
     if (mesh->displFunc != NULL)

@@ -310,6 +310,11 @@ namespace embree
       static BVH4::NodeRef buildSubdivPatchTree(const SubdivPatch1Cached &patch,
                                                 void *const lazymem,
                                                 const SubdivMesh* const geom);
+
+      /*! Evaluates grid over patch and builds BVH4 tree over the grid. */
+      static BVH4::NodeRef buildSubdivPatchTreeCompact(const SubdivPatch1Cached &patch,
+						       void *const lazymem,
+						       const SubdivMesh* const geom);
       
       /*! Create BVH4 tree over grid. */
       static BBox3fa createSubTree(BVH4::NodeRef &curNode,
@@ -323,6 +328,16 @@ namespace embree
                                    const GridRange &range,
                                    unsigned int &localCounter,
                                    const SubdivMesh* const geom);
+
+      /*! Create BVH4 tree over grid. */
+      static BBox3fa createSubTreeCompact(BVH4::NodeRef &curNode,
+					  float *const lazymem,
+					  const SubdivPatch1Cached &patch,
+					  const float *const grid_array,
+					  const size_t grid_array_elements,
+					  const GridRange &range,
+					  unsigned int &localCounter,
+					  const SubdivMesh* const geom);
       
 
         

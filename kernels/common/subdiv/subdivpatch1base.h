@@ -713,7 +713,8 @@ namespace embree
     unsigned short v[4];
     float level[4];
 
-    unsigned int flags;
+    unsigned short flags;
+    unsigned short grid_bvh_size_64b_blocks;
     unsigned int geom;                          //!< geometry ID of the subdivision mesh this patch belongs to
     unsigned int prim;                          //!< primitive ID of this subdivision patch
     unsigned short grid_u_res;
