@@ -239,6 +239,9 @@ namespace embree
     /*! Clears the barrier bits of a subtree. */
     void clearBarrier(NodeRef& node);
 
+    void layoutLargeNodes(size_t N);
+    NodeRef layoutLargeNodesRecursion(NodeRef& node);
+
     LinearAllocatorPerThread alloc;
     FastAllocator alloc2;
 

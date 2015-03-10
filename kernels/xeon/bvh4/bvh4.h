@@ -1256,6 +1256,10 @@ namespace embree
     /*! Clears the barrier bits of a subtree. */
     void clearBarrier(NodeRef& node);
 
+    /*! lays out N large nodes of the BVH */
+    void layoutLargeNodes(size_t N);
+    NodeRef layoutLargeNodesRecursion(NodeRef& node);
+
     /*! Propagate bounds for time t0 and time t1 up the tree. */
     std::pair<BBox3fa,BBox3fa> refit(Scene* scene, NodeRef node);
 

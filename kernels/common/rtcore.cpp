@@ -97,6 +97,7 @@ namespace embree
   size_t g_regression_testing = 0;                      //!< enables regression tests at startup
 
 #if defined(TASKING_TBB)
+  bool g_tbb_threads_initialized = false;
   tbb::task_scheduler_init tbb_threads(tbb::task_scheduler_init::deferred);
 #endif
 
@@ -428,8 +429,13 @@ namespace embree
 #endif
 
 #if TASKING_TBB
-      if (g_numThreads == 0) g_numThreads = tbb::task_scheduler_init::default_num_threads();
-      else                   tbb_threads.initialize(g_numThreads);
+    if (g_numThreads == 0) {
+      g_tbb_threads_initialized = false;
+      g_numThreads = tbb::task_scheduler_init::default_num_threads();
+    } else {
+      g_tbb_threads_initialized = true;
+      tbb_threads.initialize(g_numThreads);
+    }
 #endif
 
 #if TASKING_TBB_INTERNAL
@@ -473,7 +479,8 @@ namespace embree
 #endif
 
 #if TASKING_TBB
-    tbb_threads.terminate();
+    if (g_tbb_threads_initialized)
+      tbb_threads.terminate();
 #endif
 
 #if TASKING_TBB_INTERNAL

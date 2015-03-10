@@ -174,6 +174,9 @@ namespace embree
               BVH4Rotate::rotate(bvh,bvh->root);
             bvh->clearBarrier(bvh->root);
 #endif
+
+            bvh->layoutLargeNodes(pinfo.size()*0.005f);
+
             //timer("bvh4_builder_binned_sah");
 
 	    if (g_verbose >= 1) dt = getSeconds()-t0;

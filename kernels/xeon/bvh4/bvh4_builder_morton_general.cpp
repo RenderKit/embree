@@ -831,7 +831,7 @@ namespace embree
               BVH4Rotate::rotate(bvh,bvh->root);
             bvh->clearBarrier(bvh->root);
 #endif
-            
+
             //timer("compute_tree");
 
             if (g_benchmark || g_verbose >= 1) dt = getSeconds()-t0;
