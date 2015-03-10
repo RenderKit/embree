@@ -100,7 +100,7 @@ namespace embree
     }
 
     /*! returns required number of primitive blocks for N primitives */
-    static __forceinline size_t blocks(size_t N) { return (N+3)/4; }
+    static __forceinline size_t blocks(size_t N) { return (N+7)/8; }
 
     /*! checks if this is the last triangle in the list */
     __forceinline int last() const { 
