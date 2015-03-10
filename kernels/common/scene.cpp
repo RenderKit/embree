@@ -476,6 +476,7 @@ namespace embree
 #if TASKING_TBB_INTERNAL
     if (threadCount != 0) {
       delete scheduler; scheduler = NULL;
+    }
 #endif
   }
 
