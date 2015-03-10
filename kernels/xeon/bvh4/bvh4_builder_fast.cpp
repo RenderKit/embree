@@ -785,6 +785,7 @@ namespace embree
       b.upper.a = 0.0f;
 
 #if defined(DEBUG)
+      using namespace std;
       isfinite(b.lower.x);
       isfinite(b.lower.y);
       isfinite(b.lower.z);
