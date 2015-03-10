@@ -114,7 +114,8 @@ void rtcSetErrorFunction(uniform RTC_ERROR_FUNCTION func) {
 }
 
 void rtcSetMemoryMonitorFunction(uniform RTC_MEMORY_MONITOR_FUNCTION func) {
-  ispcSetMemoryMonitorFunction(func);
+  //ispcSetMemoryMonitorFunction(func);
+  print("COMPILE ERROR\n");
 }
 
 void rtcDebug() {

@@ -92,7 +92,7 @@ typedef uniform bool (*RTC_MEMORY_MONITOR_FUNCTION)(const uniform size_t bytes);
 /*! \brief Sets the memory consumption callback function which is
  *  called before the library allocates or after the library frees
  *  memory. */
-RTCORE_API void rtcSetMemoryMonitorFunction(RTC_MEMORY_MONITOR_FUNCTION func);
+void rtcSetMemoryMonitorFunction(RTC_MEMORY_MONITOR_FUNCTION func);
 
 /*! \brief Implementation specific (do not call).
 
