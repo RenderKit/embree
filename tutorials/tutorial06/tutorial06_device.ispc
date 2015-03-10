@@ -37,6 +37,8 @@
 #  define LEVEL_FACTOR 64.0f
 #endif
 
+uniform bool g_subdiv_mode = false;
+
 struct DifferentialGeometry
 {
   Vec3f P;
@@ -836,7 +838,6 @@ uniform Vec3f g_accu_vy;
 uniform Vec3f g_accu_vz;
 uniform Vec3f g_accu_p;
 extern uniform bool g_changed;
-uniform bool g_subdiv_mode = false;
 
 /* called by the C++ code for initialization */
 export void device_init (uniform int8* uniform cfg)
@@ -1120,7 +1121,7 @@ Vec3f renderPixelFunction(float x, float y, rand_state& state, const uniform Vec
       for (uniform size_t i=0; i<g_ispc_scene->numDistantLights; i++)
         L = L + Lw*DistantLight__eval(g_ispc_scene->distantLights[i],ray.dir); // FIXME: +=
 #endif
-
+      if (i==0) L = make_Vec3f(1.0f);	
       break;
     }
 
@@ -1141,6 +1142,9 @@ Vec3f renderPixelFunction(float x, float y, rand_state& state, const uniform Vec
       materialID = ((ISPCSubdivMesh* uniform) geomID_to_mesh[ray.geomID])->materialID; 
 #else
     int materialID = 0;
+    if (g_subdiv_mode)
+      materialID = 1;
+    else
     foreach_unique (geomID in ray.geomID) {
       if (geomID >= 0 && geomID < g_ispc_scene->numMeshes) { // FIXME: workaround for ISPC bug
 	if (geomID_to_type[geomID] == 0) 

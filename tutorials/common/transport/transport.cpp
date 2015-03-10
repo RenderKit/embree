@@ -134,6 +134,8 @@ namespace embree
     out->materials = (ISPCMaterial*) (in->materials.size() ? &in->materials[0] : NULL);
     out->numMaterials = in->materials.size();
 
+    DBG_PRINT( out->numMaterials );
+
     out->hairs = new ISPCHairSet*[in->hairsets.size()];
     for (size_t i=0; i<in->hairsets.size(); i++) out->hairs[i] = convertHair(in->hairsets[i]);
     out->numHairSets = in->hairsets.size();

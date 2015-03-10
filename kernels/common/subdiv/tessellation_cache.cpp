@@ -71,7 +71,7 @@ namespace embree
   {
     if (reset_state.try_lock())
       {
-	if (next_block >= maxBlocks)
+	if (next_block >= switch_block_threshold)
 	  {
 	    //double msec = getSeconds();
 
@@ -83,7 +83,16 @@ namespace embree
 
 	    incCurrentIndex();
 
-	    next_block = 0;
+	    if (switch_block_threshold == maxBlocks)
+	      {
+		next_block = 0;
+		switch_block_threshold = maxBlocks/2;
+	      }
+	    else
+	      {
+		next_block = maxBlocks/2;
+		switch_block_threshold = maxBlocks;		
+	      }
 
 	    for (size_t i=0;i<numRenderThreads;i++)
 	      unlockThread(i);
