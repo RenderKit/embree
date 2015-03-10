@@ -303,6 +303,7 @@ namespace embree
       
       BBox3fa recurse(MortonBuildRecord<NodeRef>& current, Allocator alloc) 
       {
+        bool topLevel = (bool) alloc;
         if (alloc == NULL) 
           alloc = createAllocator();
         
@@ -368,8 +369,13 @@ namespace embree
           SPAWN_END;
         }
         
-        /* finish tree sequential */
-        else {
+        /* finish tree sequentially */
+        else
+        {
+          /* call memory monitor function to signal progress */
+          if (topLevel)
+            memoryMonitor(0);
+
           for (size_t i=0; i<numChildren; i++) 
             bounds[i] = recurse(children[i],alloc);
         }
@@ -386,8 +392,6 @@ namespace embree
         //memcpy(morton,src,numPrimitives*sizeof(MortonID32Bit));
         //std::sort(&morton[0],&morton[numPrimitives]);
 
-        //g_timer("sort");
-        
         /* build BVH */
         NodeRef root;
         MortonBuildRecord<NodeRef> br;
@@ -395,12 +399,7 @@ namespace embree
         br.parent = &root;
         br.depth = 1;
         
-        BBox3fa bounds = empty;
-        //LockStepTaskScheduler::execute_tbb([&] { bounds = recurse(br, NULL); });
-        bounds = recurse(br, NULL); // FIXME: why is this faster??
-
-        //g_timer("create_tree");
-
+        const BBox3fa bounds = recurse(br, NULL);
         return std::make_pair(root,bounds);
       }
       

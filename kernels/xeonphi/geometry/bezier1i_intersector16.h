@@ -20,7 +20,7 @@
 #include "common/ray16.h"
 #include "geometry/filter.h"
 
-using namespace std;
+using namespace std; // FIXME: remove
 
 namespace embree
 {

@@ -102,7 +102,7 @@ namespace embree
     }
     
     template<typename Area, typename Split>
-      inline const PrimInfo presplit(const PrimInfo& pinfo, vector_t<PrimRef>& prims, const Area& area, const Split& split)
+      inline const PrimInfo presplit(const PrimInfo& pinfo, vector<PrimRef>& prims, const Area& area, const Split& split)
     {
       /* calculate total surface area */
       float A = 0.0f;
@@ -159,7 +159,7 @@ namespace embree
     }
 
     template<typename Mesh>
-      inline const PrimInfo presplit(Scene* scene, const PrimInfo& pinfo, vector_t<PrimRef>& prims)
+      inline const PrimInfo presplit(Scene* scene, const PrimInfo& pinfo, vector<PrimRef>& prims)
     {
       return pinfo;
     }
@@ -170,7 +170,7 @@ namespace embree
     }
 
     template<>
-      inline const PrimInfo presplit<TriangleMesh>(Scene* scene, const PrimInfo& pinfo, vector_t<PrimRef>& prims)
+      inline const PrimInfo presplit<TriangleMesh>(Scene* scene, const PrimInfo& pinfo, vector<PrimRef>& prims)
     {
       return presplit(pinfo,prims, 
                       [&] (const PrimRef& prim) { 

@@ -24,11 +24,12 @@ namespace embree
   namespace isa
   {
     template<typename Mesh>
-    PrimInfo createPrimRefArray(Mesh* mesh, vector_t<PrimRef>& prims)
+    PrimInfo createPrimRefArray(Mesh* mesh, vector<PrimRef>& prims)
     {
       ParallelPrefixSumState<PrimInfo> pstate;
       
       /* first try */
+      memoryMonitor(0);
       PrimInfo pinfo = parallel_prefix_sum( pstate, size_t(0), mesh->size(), size_t(1024), PrimInfo(empty), [&](const range<size_t>& r, const PrimInfo& base) -> PrimInfo
       {
         size_t k = r.begin();
@@ -43,10 +44,11 @@ namespace embree
         }
         return pinfo;
       }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a,b); });
-      
+
       /* if we need to filter out geometry, run again */
       if (pinfo.size() != prims.size())
       {
+        memoryMonitor(0);
         pinfo = parallel_prefix_sum( pstate, size_t(0), mesh->size(), size_t(1024), PrimInfo(empty), [&](const range<size_t>& r, const PrimInfo& base) -> PrimInfo
         {
           size_t k = base.size();
@@ -66,12 +68,13 @@ namespace embree
     }
 
     template<typename Mesh, size_t timeSteps>
-    PrimInfo createPrimRefArray(Scene* scene, vector_t<PrimRef>& prims)
+    PrimInfo createPrimRefArray(Scene* scene, vector<PrimRef>& prims)
     {
       ParallelForForPrefixSumState<PrimInfo> pstate;
       Scene::Iterator<Mesh,timeSteps> iter(scene);
 
       /* first try */
+      memoryMonitor(0);
       pstate.init(iter,size_t(1024));
       PrimInfo pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](Mesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
       {
@@ -90,6 +93,7 @@ namespace embree
       /* if we need to filter out geometry, run again */
       if (pinfo.size() != prims.size())
       {
+        memoryMonitor(0);
         pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](Mesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
         {
           k = base.size();
@@ -111,6 +115,7 @@ namespace embree
     template<typename Mesh, size_t timeSteps>
       PrimInfo createPrimRefList(Scene* scene, PrimRefList& prims_o)
     {
+      memoryMonitor(0);
       Scene::Iterator<Mesh,timeSteps> iter(scene);
       PrimInfo pinfo = parallel_for_for_reduce( iter, PrimInfo(empty), [&](Mesh* mesh, const range<size_t>& r, size_t k) -> PrimInfo
       {
@@ -133,12 +138,13 @@ namespace embree
     }
 
     template<size_t timeSteps>
-    PrimInfo createBezierRefArray(Scene* scene, vector_t<BezierPrim>& prims)
+    PrimInfo createBezierRefArray(Scene* scene, vector<BezierPrim>& prims)
     {
       ParallelForForPrefixSumState<PrimInfo> pstate;
       Scene::Iterator<BezierCurves,timeSteps> iter(scene);
 
       /* first try */
+      memoryMonitor(0);
       pstate.init(iter,size_t(1024));
       PrimInfo pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](BezierCurves* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
       {
@@ -173,6 +179,7 @@ namespace embree
       /* if we need to filter out geometry, run again */
       if (pinfo.size() != prims.size())
       {
+        memoryMonitor(0);
         pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](BezierCurves* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
         {
           k = base.size();
@@ -207,18 +214,18 @@ namespace embree
       return pinfo;
     }
     
-    template PrimInfo createPrimRefArray<TriangleMesh>(TriangleMesh* mesh, vector_t<PrimRef>& prims);
-    template PrimInfo createPrimRefArray<BezierCurves>(BezierCurves* mesh, vector_t<PrimRef>& prims);
-    template PrimInfo createPrimRefArray<UserGeometryBase>(UserGeometryBase* mesh, vector_t<PrimRef>& prims);
+    template PrimInfo createPrimRefArray<TriangleMesh>(TriangleMesh* mesh, vector<PrimRef>& prims);
+    template PrimInfo createPrimRefArray<BezierCurves>(BezierCurves* mesh, vector<PrimRef>& prims);
+    template PrimInfo createPrimRefArray<UserGeometryBase>(UserGeometryBase* mesh, vector<PrimRef>& prims);
 
-    template PrimInfo createPrimRefArray<TriangleMesh,1>(Scene* scene, vector_t<PrimRef>& prims);
-    template PrimInfo createPrimRefArray<TriangleMesh,2>(Scene* scene, vector_t<PrimRef>& prims);
-    template PrimInfo createPrimRefArray<BezierCurves,1>(Scene* scene, vector_t<PrimRef>& prims);
-    template PrimInfo createPrimRefArray<SubdivMesh,1>(Scene* scene, vector_t<PrimRef>& prims);
-    template PrimInfo createPrimRefArray<UserGeometryBase,1>(Scene* scene, vector_t<PrimRef>& prims);
+    template PrimInfo createPrimRefArray<TriangleMesh,1>(Scene* scene, vector<PrimRef>& prims);
+    template PrimInfo createPrimRefArray<TriangleMesh,2>(Scene* scene, vector<PrimRef>& prims);
+    template PrimInfo createPrimRefArray<BezierCurves,1>(Scene* scene, vector<PrimRef>& prims);
+    template PrimInfo createPrimRefArray<SubdivMesh,1>(Scene* scene, vector<PrimRef>& prims);
+    template PrimInfo createPrimRefArray<UserGeometryBase,1>(Scene* scene, vector<PrimRef>& prims);
 
-    template PrimInfo createBezierRefArray<1>(Scene* scene, vector_t<BezierPrim>& prims);
-    template PrimInfo createBezierRefArray<2>(Scene* scene, vector_t<BezierPrim>& prims);
+    template PrimInfo createBezierRefArray<1>(Scene* scene, vector<BezierPrim>& prims);
+    template PrimInfo createBezierRefArray<2>(Scene* scene, vector<BezierPrim>& prims);
 
     template PrimInfo createPrimRefList<TriangleMesh,1>(Scene* scene, PrimRefList& prims);
   }

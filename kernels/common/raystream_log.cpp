@@ -23,8 +23,6 @@
 
 namespace embree
 {
-  using namespace std;
-	 
   unsigned int getMask(int *ptr, const size_t width)
   {
     unsigned int mask = 0;
@@ -74,8 +72,8 @@ namespace embree
     std::ofstream geometryData;
     std::string path(DEFAULT_PATH_BINARY_FILES);
     FileName geometry_filename = path + DEFAULT_FILENAME_GEOMETRY;
-    geometryData.open(geometry_filename.c_str(),ios::out | ios::binary);
-    geometryData.seekp(0, ios::beg);
+    geometryData.open(geometry_filename.c_str(),std::ios::out | std::ios::binary);
+    geometryData.seekp(0, std::ios::beg);
     if (!geometryData) FATAL("could not dump geometry data to file");
     scene->write(geometryData);
     geometryData.close();

@@ -16,43 +16,43 @@
 
 #pragma once
 
-#include <stdio.h>
-#include <assert.h>
-
-#include "../platform.h"
-#include "../ref.h" 
+#include "default.h"
 
 namespace embree
 {
-  template<class T>
-    class vector_t : public RefCount
+  void memoryMonitor(ssize_t bytes);
+
+  template<class T> // FIXME: use os_malloc in vector for large allocations
+    class vector : public RefCount
     {
     public:
 
-      vector_t () : m_size(0), alloced(0), t(NULL) {}
+      vector () : m_size(0), alloced(0), t(NULL) {}
 
       void clear() {
         if (t) {
           alignedFree(t);
+          memoryMonitor(-alloced*sizeof(T));
         }
         m_size = alloced = 0;
         t = NULL;
       };
 
-      vector_t(size_t sz) {
+      vector(size_t sz) {
         m_size = 0; alloced = 0; t = NULL;
         if (sz) resize(sz);
       }
 
-      vector_t(const vector_t<T> &other)
+      vector(const vector<T> &other)
       {
         m_size = other.m_size;
         alloced = other.alloced;
+        memoryMonitor(alloced*sizeof(T));
         t = (T*)alignedMalloc(alloced*sizeof(T),64);
         for (size_t i=0; i<m_size; i++) t[i] = other.t[i];
       }
       
-      ~vector_t() {
+      ~vector() {
         clear();
       }
 
@@ -80,7 +80,7 @@ namespace embree
         m_size--;
       }
 
-      vector_t<T> &operator=(const vector_t<T> &other) {
+      vector<T> &operator=(const vector<T> &other) {
         resize(other.m_size);
         for (size_t i=0;i<m_size;i++) t[i] = other.t[i];
         return *this;
@@ -103,10 +103,12 @@ namespace embree
         if (new_sz < m_size) {
           if (exact) {
             T *old_t = t;
+            memoryMonitor(new_sz*sizeof(T));
             t = (T*)alignedMalloc(new_sz*sizeof(T),64);
             for (size_t i=0;i<new_sz;i++) t[i] = old_t[i];
             if (old_t) {
               alignedFree(old_t);
+              memoryMonitor(-alloced*sizeof(T));
             }
             alloced = new_sz;
           }
@@ -128,12 +130,14 @@ namespace embree
 
         T* old_t = t;
         assert(newAlloced > 0);
+        memoryMonitor(newAlloced*sizeof(T));
         t = (T*)alignedMalloc(newAlloced*sizeof(T),64);
 
         for (size_t i=0;i<m_size;i++) t[i] = old_t[i];
 
         if (old_t) {
           alignedFree(old_t);
+          memoryMonitor(-alloced*sizeof(T));
         }
         alloced = newAlloced;
       }

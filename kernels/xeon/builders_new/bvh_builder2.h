@@ -170,6 +170,7 @@ namespace embree
 
       const ReductionTy recurse(BuildRecord& current, Allocator alloc)
       {
+        bool topLevel = (bool) alloc;
 	if (alloc == NULL) 
           alloc = createAlloc();
 
@@ -245,6 +246,10 @@ namespace embree
 	/* recurse into each child */
 	else 
 	{
+          /* call memory monitor function to signal progress */
+          if (topLevel)
+            memoryMonitor(0);
+
           for (ssize_t i=numChildren-1; i>=0; i--) {
             //for (size_t i=0; i<numChildren; i++) {
 	    values[i] = recurse(children[i],alloc);

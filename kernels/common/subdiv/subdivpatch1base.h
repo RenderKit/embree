@@ -25,8 +25,6 @@
 #define USE_DISPLACEMENT_FOR_TESSELLATION_BOUNDS 1
 #define DISCRITIZED_UV 1
 
-using namespace std;
-
 namespace embree
 {
 

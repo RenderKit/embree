@@ -18,6 +18,7 @@
 #define __RTCORE_H__
 
 #include <stddef.h>
+#include <sys/types.h>
 
 #ifndef RTCORE_API
 #if defined(_WIN32) && !defined(ENABLE_STATIC_LIB)
@@ -94,6 +95,14 @@ typedef void (*RTC_ERROR_FUNCTION)(const RTCError code, const char* str);
 
 /*! \brief Sets a callback function that is called whenever an error occurs. */
 RTCORE_API void rtcSetErrorFunction(RTC_ERROR_FUNCTION func);
+
+/*! \brief Type of memory consumption callback function. */
+typedef bool (*RTC_MEMORY_MONITOR_FUNCTION)(const ssize_t bytes);
+
+/*! \brief Sets the memory consumption callback function which is
+ *  called before the library allocates or after the library frees
+ *  memory. */
+RTCORE_API void rtcSetMemoryMonitorFunction(RTC_MEMORY_MONITOR_FUNCTION func);
 
 /*! \brief Implementation specific (do not call).
 
