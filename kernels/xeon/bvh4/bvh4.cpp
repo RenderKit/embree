@@ -528,6 +528,63 @@ namespace embree
     }
   }
 
+  void BVH4::layoutLargeNodes(size_t N)
+  {
+    struct NodeArea 
+    {
+      __forceinline NodeArea() {}
+
+      __forceinline NodeArea(NodeRef& node, const BBox3fa& bounds)
+        : node(&node), A(node.isLeaf() ? float(neg_inf) : area(bounds)) {}
+
+      __forceinline bool operator< (NodeArea other) {
+        return this->A < other.A;
+      }
+
+      NodeRef* node;
+      float A;
+    };
+    std::vector<NodeArea> lst;
+    lst.reserve(N);
+    lst.push_back(NodeArea(root,empty));
+
+    while (lst.size() < N)
+    {
+      std::pop_heap(lst.begin(), lst.end());
+      NodeArea n = lst.back(); lst.pop_back();
+      if (!n.node->isNode()) break;
+      Node* node = n.node->node();
+      for (size_t i=0; i<BVH4::N; i++) {
+        if (node->child(i) == BVH4::emptyNode) continue;
+        lst.push_back(NodeArea(node->child(i),node->bounds(i)));
+        std::push_heap(lst.begin(), lst.end());
+      }
+    }
+
+    for (size_t i=0; i<lst.size(); i++)
+      lst[i].node->setBarrier();
+      
+    root = layoutLargeNodesRecursion(root);
+  }
+  
+  BVH4::NodeRef BVH4::layoutLargeNodesRecursion(NodeRef& node)
+  {
+    if (node.isBarrier()) {
+      node.clearBarrier();
+      return node;
+    }
+    else if (node.isNode()) 
+    {
+      Node* oldnode = node.node();
+      Node* newnode = (BVH4::Node*) alloc2.threadLocal2()->alloc0.malloc(sizeof(BVH4::Node)); 
+      *newnode = *oldnode;
+      for (size_t c=0; c<BVH4::N; c++)
+        newnode->child(c) = layoutLargeNodesRecursion(oldnode->child(c));
+      return encodeNode(newnode);
+    }
+    else return node;
+  }
+
   std::pair<BBox3fa,BBox3fa> BVH4::refit(Scene* scene, NodeRef node)
   {
     /*! merge bounds of triangles for both time steps */

@@ -142,7 +142,9 @@ namespace embree
 	    BVH8::NodeRef root = bvh_builder_binned_sah2_internal<BVH8::NodeRef>
 	      (CreateAlloc(bvh),CreateBVH8Node(bvh),CreateLeaf<Primitive>(bvh,prims.data()),
 	       prims.data(),pinfo,BVH8::N,BVH8::maxBuildDepthLeaf,sahBlockSize,minLeafSize,maxLeafSize,BVH8::travCost,intCost);
-	    bvh->set(root,pinfo.geomBounds,pinfo.size());
+
+            bvh->set(root,pinfo.geomBounds,pinfo.size());
+            bvh->layoutLargeNodes(numSplitPrimitives*0.005f);
 
 	    if ((g_benchmark || g_verbose >= 1) && mesh == NULL) dt = getSeconds()-t0;
 
@@ -364,12 +366,14 @@ namespace embree
               },
 	       prims,pinfo,BVH8::N,BVH8::maxBuildDepthLeaf,sahBlockSize,minLeafSize,maxLeafSize,BVH8::travCost,intCost);
 	    bvh->set(root,pinfo.geomBounds,pinfo.size());
-
+            
 #if ROTATE_TREE
             for (int i=0; i<ROTATE_TREE; i++) 
               BVH8Rotate::rotate(bvh,bvh->root);
             bvh->clearBarrier(bvh->root);
 #endif
+            
+            bvh->layoutLargeNodes(pinfo.size()*0.005f);
 
             if ((g_benchmark || g_verbose >= 1) && mesh == NULL) dt = getSeconds()-t0;
             

@@ -179,6 +179,8 @@ namespace embree
             bvh->clearBarrier(bvh->root);
 #endif
 
+            bvh->layoutLargeNodes(pinfo.size()*0.005f);
+
 	    if ((g_benchmark || g_verbose >= 1) && mesh == NULL) dt = getSeconds()-t0;
 
             //  timer("BVH4BuilderBinnedSAH2");
@@ -455,6 +457,9 @@ namespace embree
               BVH4Rotate::rotate(bvh,bvh->root);
             bvh->clearBarrier(bvh->root);
 #endif
+
+             bvh->layoutLargeNodes(pinfo.size()*0.005f);
+
             if ((g_benchmark || g_verbose >= 1) && mesh == NULL) dt = getSeconds()-t0;
 
 #if PROFILE
@@ -606,6 +611,8 @@ namespace embree
 	      (CreateAlloc(bvh),identity,CreateBVH4NodeMB(bvh),reduce,CreateLeafMB<Primitive>(bvh,prims.data()),
 	       prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,sahBlockSize,minLeafSize,maxLeafSize,BVH4::travCost,intCost);
 	    bvh->set(root,pinfo.geomBounds,pinfo.size());
+            
+            //bvh->layoutLargeNodes(pinfo.size()*0.005f); // FIXME: enable
 
 	    if (g_verbose >= 1) dt = getSeconds()-t0;
 	    
