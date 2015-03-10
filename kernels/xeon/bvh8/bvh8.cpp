@@ -154,7 +154,7 @@ namespace embree
       __forceinline NodeArea(NodeRef& node, const BBox3fa& bounds)
         : node(&node), A(node.isLeaf() ? float(neg_inf) : area(bounds)) {}
 
-      __forceinline bool operator< (NodeArea other) {
+      __forceinline bool operator< (const NodeArea& other) const {
         return this->A < other.A;
       }
 
