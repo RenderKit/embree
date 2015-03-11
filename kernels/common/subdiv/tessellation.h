@@ -16,7 +16,11 @@
 
 #pragma once
 
+#if defined(__AVX__)
 #define COMPACT 1
+#else
+#define COMPACT 0
+#endif
 
 namespace embree
 {

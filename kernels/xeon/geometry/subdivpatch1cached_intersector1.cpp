@@ -237,7 +237,7 @@ namespace embree
       evalGrid(patch,grid_x,grid_y,grid_z,grid_u,grid_v,geom);
 
       for (size_t i=0;i<array_elements;i++)
-        grid_uv[i] = (((int)(grid_u[i] * 65535.0f)) << 16) | ((int)(grid_v[i] * 65535.0f)); 
+        grid_uv[i] = (((unsigned int)(grid_v[i] * 65535.0f)) << 16) | ((unsigned int)(grid_u[i] * 65535.0f)); 
       
       BVH4::NodeRef subtree_root = 0;
       unsigned int currentIndex = 0;
@@ -287,6 +287,21 @@ namespace embree
     {
       if (range.hasLeafSize())
 	{
+	  const float *const grid_x_array = grid_array + 0 * grid_array_elements;
+	  const float *const grid_y_array = grid_array + 1 * grid_array_elements;
+	  const float *const grid_z_array = grid_array + 2 * grid_array_elements;
+
+	  /* compute the bounds just for the range! */
+	  BBox3fa bounds( empty );
+	  for (size_t v = range.v_start; v<=range.v_end; v++)
+	    for (size_t u = range.u_start; u<=range.u_end; u++)
+	      {
+		const float x = grid_x_array[ v * patch.grid_u_res + u];
+		const float y = grid_y_array[ v * patch.grid_u_res + u];
+		const float z = grid_z_array[ v * patch.grid_u_res + u];
+		bounds.extend( Vec3fa(x,y,z) );
+	      }
+
 	  unsigned int u_start = range.u_start;
 	  unsigned int v_start = range.v_start;
 
@@ -297,14 +312,20 @@ namespace embree
 	    { 
 	      //DBG_PRINT(u_start); 
 	      const unsigned int delta_u = 3 - (u_end-u_start+1);
-	      if (u_start >= delta_u) u_start -= delta_u; 
+	      if (u_start >= delta_u) 
+		u_start -= delta_u; 
+	      else
+		u_start = 0;
 	      //DBG_PRINT(u_start); 
 	    }
           if (unlikely(v_end-v_start+1 < 3)) 
 	    { 
 	      //DBG_PRINT(v_start); 
 	      const unsigned int delta_v = 3 - (v_end-v_start+1);
-	      if (v_start >= delta_v) v_start -= delta_v; 
+	      if (v_start >= delta_v) 
+		v_start -= delta_v; 
+	      else
+		v_start = 0;
 	      //DBG_PRINT(v_start); 
 	    }
           
@@ -316,28 +337,6 @@ namespace embree
         
 	  const size_t grid_offset3x3    = v_start * patch.grid_u_res + u_start;
 
-	  const float *const grid_x_array = grid_array + 0 * grid_array_elements;
-	  const float *const grid_y_array = grid_array + 1 * grid_array_elements;
-	  const float *const grid_z_array = grid_array + 2 * grid_array_elements;
-
-#if 0
-	  DBG_PRINT("LEAF");
-	  DBG_PRINT(u_start);
-	  DBG_PRINT(v_start);
-	  DBG_PRINT(u_end);
-	  DBG_PRINT(v_end);                
-#endif
-          const size_t grid_u_res = patch.grid_u_res;
-
-	  BBox3fa bounds( empty );
-	  for (size_t v = v_start; v<=v_end; v++)
-	    for (size_t u = u_start; u<=u_end; u++)
-	      {
-		const float x = grid_x_array[ v * grid_u_res + u];
-		const float y = grid_y_array[ v * grid_u_res + u];
-		const float z = grid_z_array[ v * grid_u_res + u];
-		bounds.extend( Vec3fa(x,y,z) );
-	      }
 
 	  size_t offset_bytes = (size_t)&grid_x_array[ grid_offset3x3 ] - (size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();
           size_t value = (offset_bytes << 4) + (size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();
@@ -346,6 +345,12 @@ namespace embree
 	  curNode = BVH4::encodeNonAlignedTypedLeaf((void*)value,2);
 
 #if 0
+	  DBG_PRINT("LEAF");
+	  DBG_PRINT(u_start);
+	  DBG_PRINT(v_start);
+	  DBG_PRINT(u_end);
+	  DBG_PRINT(v_end);                
+
           DBG_PRINT( offset_bytes );
           DBG_PRINT( &grid_x_array[ grid_offset3x3 ] );
           DBG_PRINT( &grid_y_array[ grid_offset3x3 ] );
