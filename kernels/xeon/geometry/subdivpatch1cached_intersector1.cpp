@@ -234,6 +234,8 @@ namespace embree
       float *const grid_z  = (float*)lazymem + grid_offset + 2 * array_elements;
       int   *const grid_uv = (int*)  lazymem + grid_offset + 3 * array_elements;
 
+      assert( patch.grid_subtree_size_64b_blocks * 16 >= grid_offset + 4 * array_elements);
+
       evalGrid(patch,grid_x,grid_y,grid_z,grid_u,grid_v,geom);
 
       for (size_t i=0;i<array_elements;i++)
@@ -310,25 +312,21 @@ namespace embree
 
           if (unlikely(u_end-u_start+1 < 3)) 
 	    { 
-	      //DBG_PRINT(u_start); 
 	      const unsigned int delta_u = 3 - (u_end-u_start+1);
 	      if (u_start >= delta_u) 
 		u_start -= delta_u; 
 	      else
 		u_start = 0;
-	      //DBG_PRINT(u_start); 
 	    }
           if (unlikely(v_end-v_start+1 < 3)) 
 	    { 
-	      //DBG_PRINT(v_start); 
 	      const unsigned int delta_v = 3 - (v_end-v_start+1);
 	      if (v_start >= delta_v) 
 		v_start -= delta_v; 
 	      else
 		v_start = 0;
-	      //DBG_PRINT(v_start); 
 	    }
-          
+
 	  const unsigned int u_size = u_end-u_start+1;
 	  const unsigned int v_size = v_end-v_start+1;
         
@@ -360,6 +358,18 @@ namespace embree
           DBG_PRINT( curNode );
           DBG_PRINT( bounds );
 #endif   
+
+#if defined(DEBUG)
+	  using namespace std;
+	  isfinite(bounds.lower.x);
+	  isfinite(bounds.lower.y);
+	  isfinite(bounds.lower.z);
+	  
+	  isfinite(bounds.upper.x);
+	  isfinite(bounds.upper.y);
+	  isfinite(bounds.upper.z);
+#endif
+
 	  return bounds;
 	}
       
