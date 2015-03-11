@@ -54,13 +54,16 @@ namespace embree
   }
 
   void Buffer::alloc() {
+    memoryMonitor(bytes,false);
     ptr = ptr_ofs = (char*) alignedMalloc(bytes);
   }
 
   void Buffer::free()
   {
     if (shared || !ptr) return;
-    alignedFree(ptr); ptr = NULL; ptr_ofs = NULL; bytes = 0;
+    alignedFree(ptr); 
+    memoryMonitor(-bytes,true);
+    ptr = NULL; ptr_ofs = NULL; bytes = 0;
   }
 
   void* Buffer::map(atomic_t& cntr)
