@@ -2829,39 +2829,53 @@ namespace embree
     return errorCounter == 0;
   }
 
-  ssize_t monitorBreakInvokations = -1;
-  atomic_t monitorBytesUsed = 0;
-  atomic_t monitorInvokations = 0;
-  bool monitorFunction(ssize_t bytes, bool post) 
+  ssize_t monitorMemoryBreak = -1;
+  atomic_t monitorMemoryBytesUsed = 0;
+  atomic_t monitorMemoryInvokations = 0;
+  bool monitorMemoryFunction(ssize_t bytes, bool post) 
   {
-    atomic_add(&monitorBytesUsed,bytes);
+    atomic_add(&monitorMemoryBytesUsed,bytes);
     if (bytes > 0) {
-      size_t n = atomic_add(&monitorInvokations,1);
-      if (n == monitorBreakInvokations) {
-        if (!post) atomic_add(&monitorBytesUsed,-bytes);
+      size_t n = atomic_add(&monitorMemoryInvokations,1);
+      if (n == monitorMemoryBreak) {
+        if (!post) atomic_add(&monitorMemoryBytesUsed,-bytes);
         return false;
       }
     }
     return true;
   }
+
+  ssize_t monitorProgressBreak = -1;
+  atomic_t monitorProgressInvokations = 0;
+  bool monitorProgressFunction(double dn) 
+  {
+    size_t n = atomic_add(&monitorProgressInvokations,1);
+    if (n == monitorProgressBreak) return false;
+    return true;
+  }
   
   bool rtcore_regression_memory_monitor (thread_func func)
   {
-    rtcSetMemoryMonitorFunction(monitorFunction);
+    rtcSetMemoryMonitorFunction(monitorMemoryFunction);
+    rtcSetProgressMonitorFunction(monitorProgressFunction);
     
     size_t sceneIndex = 0;
     while (sceneIndex < regressionN/5) 
     {
       errorCounter = 0;
-      monitorBreakInvokations = -1;
-      monitorBytesUsed = 0;
-      monitorInvokations = 0;
+      monitorMemoryBreak = -1;
+      monitorMemoryBytesUsed = 0;
+      monitorMemoryInvokations = 0;
+      monitorProgressBreak = -1;
+      monitorProgressInvokations = 0;
       func(new ThreadRegressionTask(0,0,new RegressionTask(sceneIndex,1,0)));
-      monitorBreakInvokations = monitorInvokations * drand48();
-      monitorBytesUsed = 0;
-      monitorInvokations = 0;
+      monitorMemoryBreak = monitorMemoryInvokations * drand48();
+      monitorMemoryBytesUsed = 0;
+      monitorMemoryInvokations = 0;
+      monitorProgressBreak = monitorProgressInvokations * 2.0f * drand48();
+      monitorProgressInvokations = 0;
       func(new ThreadRegressionTask(0,0,new RegressionTask(sceneIndex,1,0)));
-      if (monitorBytesUsed) {// || (monitorInvokations != 0 && errorCounter != 1)) {
+      if (monitorMemoryBytesUsed) { // || (monitorMemoryInvokations != 0 && errorCounter != 1)) {
         rtcSetMemoryMonitorFunction(NULL);
         return false;
       }
@@ -2869,6 +2883,7 @@ namespace embree
       clearBuffers();
     }
     rtcSetMemoryMonitorFunction(NULL);
+    rtcSetProgressMonitorFunction(NULL);
     return true;
   }
 
