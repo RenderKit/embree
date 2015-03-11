@@ -27,9 +27,7 @@
 /* returns u,v based on individual triangles instead relative to original patch */
 #define FORCE_TRIANGLE_UV 1
 
-#define TESSELLATION_REF_CACHE_ENTRIES  4
-
-#define SHARED_LAZY_CACHE 1
+#define COMPACT 0
 
 #if defined(DEBUG)
 #define CACHE_STATS(x) 
@@ -39,8 +37,6 @@
 
 namespace embree
 {
-  typedef TessellationRefCacheT<TESSELLATION_REF_CACHE_ENTRIES> TessellationRefCache;
-
   namespace isa
   {
 
@@ -50,7 +46,6 @@ namespace embree
       typedef SubdivPatch1Cached Primitive;
       
       /*! Per thread tessellation ref cache */
-      static __thread TessellationRefCache            * thread_cache;
       static __thread LocalTessellationCacheThreadInfo* localThreadInfo;
 
 
@@ -65,12 +60,7 @@ namespace embree
         Vec3fa ray_org_rdir;
         SubdivPatch1Cached   *current_patch;
         SubdivPatch1Cached   *hit_patch;
-#if SHARED_LAZY_CACHE == 1
 	unsigned int threadID;
-#else
-	TessellationCacheTag *local_tag;
-	TessellationRefCache *local_cache;
-#endif
         Ray &r;
         
         __forceinline Precalculations (Ray& ray, const void *ptr) : r(ray) 
@@ -80,38 +70,18 @@ namespace embree
           current_patch = NULL;
           hit_patch     = NULL;
 
-#if SHARED_LAZY_CACHE == 1
 	  if (unlikely(!localThreadInfo))
             createLocalThreadInfo();
-	    //localThreadInfo = new LocalTessellationCacheThreadInfo( SharedLazyTessellationCache::sharedLazyTessellationCache.getNextRenderThreadID() );	      
-	  threadID = localThreadInfo->id;
-#else
-          /*! Initialize per thread tessellation cache */
-	  local_tag     = NULL;
-          if (unlikely(!thread_cache))
-            createTessellationCache();
-          local_cache = thread_cache;
-          assert(local_cache != NULL);
-#endif
-	  
+          threadID = localThreadInfo->id;
+          
         }
 
           /*! Final per ray computations like smooth normal, patch u,v, etc. */        
         __forceinline ~Precalculations() 
         {
-#if SHARED_LAZY_CACHE == 1
 	  if (current_patch)
-	    {
-	      SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(threadID);	       	      
-	    }
-#else
-	  if (local_tag)
-	    {
-	      local_tag->read_unlock();
-	      local_tag = NULL;
-	    }
-#endif
-
+            SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(threadID);
+          
           if (unlikely(hit_patch != NULL))
           {
 
@@ -299,12 +269,7 @@ namespace embree
         return true;
       };
 
-#if SHARED_LAZY_CACHE == 1
-      static size_t lazyBuildPatch(Precalculations &pre, SubdivPatch1Cached* const subdiv_patch, const void* geom);
-#else      
-      static size_t lazyBuildPatch(Precalculations &pre, SubdivPatch1Cached* const subdiv_patch, const void* geom,TessellationRefCache *ref_cache);
-#endif
-                  
+      static size_t lazyBuildPatch(Precalculations &pre, SubdivPatch1Cached* const subdiv_patch, const void* geom);                  
       
       /*! Evaluates grid over patch and builds BVH4 tree over the grid. */
       static BVH4::NodeRef buildSubdivPatchTree(const SubdivPatch1Cached &patch,
@@ -352,20 +317,38 @@ namespace embree
         
         if (likely(ty == 2))
         {
+#if COMPACT == 1
+          __aligned(64) Quad2x2 q;
+          ssef grid_x_row[3];
+          ssef grid_y_row[3];
+          ssef grid_z_row[3];
+
+	  const size_t value = (size_t)prim - (size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();
+          const size_t final_offset = (value >> 4) & 0xffff;
+          const size_t grid_array_elements = value >> (4+16);
+
+          const float *const grid_x = (float*)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr() + final_offset;
+#if 0          
+          DBG_PRINT( value );          
+          DBG_PRINT( final_offset );
+          DBG_PRINT( grid_array_elements );          
+          exit(0);
+#endif          
+          q.init_xyz(grid_x_row,grid_y_row,grid_z_row);
+#else          
+          const Quad2x2 &q = *(Quad2x2*)prim;
+#endif
+          
 #if defined(__AVX__)
-          intersect1_precise<avxb,avxf>( ray, *(Quad2x2*)prim, (SubdivMesh*)geom,pre);
+          intersect1_precise<avxb,avxf>( ray, q, (SubdivMesh*)geom,pre);
 #else
-          intersect1_precise<sseb,ssef>( ray, *(Quad2x2*)prim, (SubdivMesh*)geom,pre,0);
-          intersect1_precise<sseb,ssef>( ray, *(Quad2x2*)prim, (SubdivMesh*)geom,pre,6);
+          intersect1_precise<sseb,ssef>( ray, q, (SubdivMesh*)geom,pre,0);
+          intersect1_precise<sseb,ssef>( ray, q, (SubdivMesh*)geom,pre,6);
 #endif
         }
         else 
         {
-#if SHARED_LAZY_CACHE == 1
 	  lazy_node = lazyBuildPatch(pre,(SubdivPatch1Cached*)prim, geom);
-#else
-	  lazy_node = lazyBuildPatch(pre,(SubdivPatch1Cached*)prim, geom, pre.local_cache);
-#endif
 	  assert(lazy_node);
           pre.current_patch = (SubdivPatch1Cached*)prim;
           
@@ -380,20 +363,17 @@ namespace embree
         
         if (likely(ty == 2))
         {
+          const Quad2x2 &q = *(Quad2x2*)prim;
 #if defined(__AVX__)
-          return occluded1_precise<avxb,avxf>( ray, *(Quad2x2*)prim, (SubdivMesh*)geom);
+          return occluded1_precise<avxb,avxf>( ray, q, (SubdivMesh*)geom);
 #else
-          if (occluded1_precise<sseb,ssef>( ray, *(Quad2x2*)prim, (SubdivMesh*)geom,0)) return true;
-          if (occluded1_precise<sseb,ssef>( ray, *(Quad2x2*)prim, (SubdivMesh*)geom,6)) return true;
+          if (occluded1_precise<sseb,ssef>( ray, q, (SubdivMesh*)geom,0)) return true;
+          if (occluded1_precise<sseb,ssef>( ray, q, (SubdivMesh*)geom,6)) return true;
 #endif
         }
         else 
         {
-#if SHARED_LAZY_CACHE == 1
 	  lazy_node = lazyBuildPatch(pre,(SubdivPatch1Cached*)prim, geom);
-#else
-	  lazy_node = lazyBuildPatch(pre,(SubdivPatch1Cached*)prim, geom, pre.local_cache);
-#endif
           pre.current_patch = (SubdivPatch1Cached*)prim;
         }             
         return false;
