@@ -605,8 +605,9 @@ namespace embree
 	if (next) next->~Block(); next = NULL;
         const size_t sizeof_Header = offsetof(Block,data[0]);
         const size_t sizeof_This = sizeof_Header+reserveEnd;
+        const size_t sizeof_Alloced = sizeof_Header+getBlockAllocatedBytes();
         os_free(this,sizeof_This);
-        memoryMonitor(-sizeof_This);
+        memoryMonitor(-sizeof_Alloced);
       }
       
       void* malloc(size_t bytes, size_t align = 16) 
@@ -617,7 +618,7 @@ namespace embree
 	const size_t i = atomic_add(&cur,bytes);
 	if (unlikely(i+bytes > reserveEnd)) return NULL;
 	if (i+bytes > allocEnd) {
-          memoryMonitor(bytes);
+          memoryMonitor(i+bytes-max(i,allocEnd));
           os_commit(&data[i],bytes); // FIXME: optimize, may get called frequently
         }
 	return &data[i];
@@ -652,6 +653,10 @@ namespace embree
         os_shrink(&data[0],cur,reserveEnd);
         reserveEnd = allocEnd = cur;
         if (next) next->shrink();
+      }
+
+      size_t getBlockAllocatedBytes() const {
+	return max(allocEnd,size_t(cur));
       }
 
       size_t getAllocatedBytes() const {

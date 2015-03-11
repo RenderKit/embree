@@ -2833,6 +2833,7 @@ namespace embree
   atomic_t monitorBytesUsed = 0;
   atomic_t monitorInvokations = 0;
   bool monitorFunction(ssize_t bytes) {
+    //if (bytes != 0) PRINT(bytes);
     atomic_add(&monitorBytesUsed,bytes);
     size_t n = atomic_add(&monitorInvokations,1);
     if (n == monitorBreakInvokations) return false;
@@ -2843,19 +2844,24 @@ namespace embree
   {
     rtcSetMemoryMonitorFunction(monitorFunction);
     
-    errorCounter = 0;
     size_t sceneIndex = 0;
     while (sceneIndex < regressionN/5) 
     {
+      errorCounter = 0;
       monitorBreakInvokations = -1;
       monitorBytesUsed = 0;
       monitorInvokations = 0;
       func(new ThreadRegressionTask(0,0,new RegressionTask(sceneIndex,5,0)));
+      //PRINT(monitorBytesUsed);
+      //exit(1);
       monitorBreakInvokations = monitorInvokations * drand48();
       monitorBytesUsed = 0;
       monitorInvokations = 0;
       func(new ThreadRegressionTask(0,0,new RegressionTask(sceneIndex,5,0)));
-      if (monitorBytesUsed) {
+      //PRINT(monitorBytesUsed);
+      //PRINT(errorCounter);
+      //exit(1);
+      if (monitorBytesUsed || errorCounter != 1) {
         rtcSetMemoryMonitorFunction(NULL);
         return false;
       }
@@ -3018,10 +3024,12 @@ namespace embree
     POSITIVE("regression_static",         rtcore_regression(rtcore_regression_static_thread,false));
     POSITIVE("regression_dynamic",        rtcore_regression(rtcore_regression_dynamic_thread,false));
 
-    POSITIVE("regression_static_memory_monitor",         rtcore_regression_memory_monitor(rtcore_regression_static_thread));
-    POSITIVE("regression_dynamic_memory_monitor",        rtcore_regression_memory_monitor(rtcore_regression_dynamic_thread));
+#if !defined(__MIC__)
+    POSITIVE("regression_static_memory_monitor",  rtcore_regression_memory_monitor(rtcore_regression_static_thread));
+    POSITIVE("regression_dynamic_memory_monitor", rtcore_regression_memory_monitor(rtcore_regression_dynamic_thread));
+#endif
 
-#if !defined(__MIC__) && !defined(TASKING_TBB)
+#if !defined(__MIC__) && !defined(TASKING_TBB) // FIXME: enable and implement for TBB tasking system
     POSITIVE("regression_static_user_threads", rtcore_regression(rtcore_regression_static_thread,true));
     POSITIVE("regression_dynamic_user_threads", rtcore_regression(rtcore_regression_dynamic_thread,true));
 #endif
