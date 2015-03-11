@@ -204,7 +204,7 @@ namespace embree
     {      
       TIMER(double msec = 0.0);
       TIMER(msec = getSeconds());
-        
+      TIMER(uint64 cycles = rdtsc());
       assert( patch.grid_size_simd_blocks >= 1 );
 
       const size_t array_elements = patch.grid_size_simd_blocks * 8;
@@ -234,15 +234,6 @@ namespace embree
       float *const grid_z  = (float*)lazymem + grid_offset + 2 * array_elements;
       int   *const grid_uv = (int*)  lazymem + grid_offset + 3 * array_elements;
 
-#if 0
-      DBG_PRINT(grid_offset);
-      DBG_PRINT( (float*)lazymem + grid_offset );
-      DBG_PRINT(grid_x);
-      DBG_PRINT(grid_y);
-      DBG_PRINT(grid_z);
-      DBG_PRINT(grid_uv);
-#endif
-
       evalGrid(patch,grid_x,grid_y,grid_z,grid_u,grid_v,geom);
 
       for (size_t i=0;i<array_elements;i++)
@@ -266,7 +257,14 @@ namespace embree
       
       assert(currentIndex == patch.grid_bvh_size_64b_blocks);
 
+      TIMER(cycles = rdtsc() - cycles);
       TIMER(msec = getSeconds()-msec);            
+      TIMER(double throughput = 1.0 / (1000*msec));
+      TIMER(double throughput2 = (2300*1E3) / (double)cycles);
+
+      TIMER(DBG_PRINT(throughput));
+      TIMER(DBG_PRINT(throughput2));
+
       TIMER(DBG_PRINT(1000*msec));
       TIMER(DBG_PRINT(patch.grid_u_res));
       TIMER(DBG_PRINT(patch.grid_v_res));

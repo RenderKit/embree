@@ -250,8 +250,8 @@ namespace embree
 
         /* init from 3x3 point grid */
     void init_xyz( const ssef grid_x[3],
-                   const ssef grid_y[3],
-                   const ssef grid_z[3] )
+		   const ssef grid_y[3],
+		   const ssef grid_z[3])
     {
       initFrom3x3Grid( grid_x, vtx_x);
       initFrom3x3Grid( grid_y, vtx_y);

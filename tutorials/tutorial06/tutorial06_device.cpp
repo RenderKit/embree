@@ -1175,17 +1175,17 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
     dg.Ns = face_forward(ray.dir,_Ns);
 
     /* shade all rays that hit something */
+   int materialID = 0;
+    if (g_subdiv_mode)
+      materialID = 1;
+    else
+{
 #if 1 // FIXME: pointer gather not implemented in ISPC for Xeon Phi
-    int materialID = 0;
     if (geomID_to_type[ray.geomID] == 0)
       materialID = ((ISPCMesh*) geomID_to_mesh[ray.geomID])->triangles[ray.primID].materialID; 
     else 
       materialID = ((ISPCSubdivMesh*) geomID_to_mesh[ray.geomID])->materialID; 
 #else
-    int materialID = 0;
-    if (g_subdiv_mode)
-      materialID = 1;
-    else
     foreach_unique (geomID in ray.geomID) {
       if (geomID >= 0 && geomID < g_ispc_scene->numMeshes) { // FIXME: workaround for ISPC bug
 	if (geomID_to_type[geomID] == 0) 
@@ -1195,7 +1195,7 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
       }
     }
 #endif
-
+}
     /*! Compute  simple volumetric effect. */
     Vec3fa c = Vec3fa(1.0f);
     const Vec3fa transmission = medium.transmission;

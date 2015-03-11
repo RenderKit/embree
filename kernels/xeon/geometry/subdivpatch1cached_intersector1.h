@@ -107,6 +107,130 @@ namespace embree
         }
         
       };
+
+      static __forceinline void getV012(const float *const grid,
+					const size_t offset0,
+					const size_t offset1,
+					Vec3<ssef> &v)
+      {
+	const ssef row_a0 = load4f(grid + offset0 + 0);
+	const ssef row_a1 = load4f(grid + offset0 + 1);
+	const ssef row_b0 = load4f(grid + offset1 + 0);
+	const ssef row_b1 = load4f(grid + offset1 + 1);	
+	v[0] = unpacklo(row_a0,row_b0); 
+	v[1] = unpacklo(row_b0,row_a1); 
+	v[2] = unpacklo(row_a1,row_b1); 
+      }
+      
+      static __forceinline void intersect1_precise_3x3(Ray& ray,
+						       const float *const grid_x,
+						       const float *const grid_y,
+						       const float *const grid_z,
+						       const size_t offset,
+						       const size_t line_offset,
+						       const void* geom,
+						       Precalculations &pre)
+      {
+	Vec3<ssef> tri012_x;
+	getV012(grid_x,offset,offset+line_offset,tri012_x);
+	Vec3<ssef> tri012_y;
+	getV012(grid_y,offset,offset+line_offset,tri012_y);
+	Vec3<ssef> tri012_z;
+	getV012(grid_z,offset,offset+line_offset,tri012_z);
+
+
+	const Vec3<ssef> v0_org(tri012_x[0],tri012_y[0],tri012_z[0]);
+	const Vec3<ssef> v1_org(tri012_x[1],tri012_y[1],tri012_z[1]);
+	const Vec3<ssef> v2_org(tri012_x[2],tri012_y[2],tri012_z[2]);
+        
+	const Vec3<ssef> O = ray.org;
+	const Vec3<ssef> D = ray.dir;
+        
+	const Vec3<ssef> v0 = v0_org - O;
+	const Vec3<ssef> v1 = v1_org - O;
+	const Vec3<ssef> v2 = v2_org - O;
+        
+	const Vec3<ssef> e0 = v2 - v0;
+	const Vec3<ssef> e1 = v0 - v1;	     
+	const Vec3<ssef> e2 = v1 - v2;	     
+        
+	/* calculate geometry normal and denominator */
+	const Vec3<ssef> Ng1 = cross(e1,e0);
+	const Vec3<ssef> Ng = Ng1+Ng1;
+	const ssef den = dot(Ng,D);
+	const ssef absDen = abs(den);
+	const ssef sgnDen = signmsk(den);
+        
+	sseb valid ( true );
+	/* perform edge tests */
+	const ssef U = dot(Vec3<ssef>(cross(v2+v0,e0)),D) ^ sgnDen;
+	valid &= U >= 0.0f;
+	if (likely(none(valid))) return;
+	const ssef V = dot(Vec3<ssef>(cross(v0+v1,e1)),D) ^ sgnDen;
+	valid &= V >= 0.0f;
+	if (likely(none(valid))) return;
+	const ssef W = dot(Vec3<ssef>(cross(v1+v2,e2)),D) ^ sgnDen;
+
+	valid &= W >= 0.0f;
+	if (likely(none(valid))) return;
+        
+	/* perform depth test */
+	const ssef _t = dot(v0,Ng) ^ sgnDen;
+	valid &= (_t >= absDen*ray.tnear) & (absDen*ray.tfar >= _t);
+	if (unlikely(none(valid))) return;
+        
+	/* perform backface culling */
+#if defined(RTCORE_BACKFACE_CULLING)
+	valid &= den > ssef(zero);
+	if (unlikely(none(valid))) return;
+#else
+	valid &= den != ssef(zero);
+	if (unlikely(none(valid))) return;
+#endif
+        
+	/* calculate hit information */
+	const ssef rcpAbsDen = rcp(absDen);
+	const ssef u =  U*rcpAbsDen;
+	const ssef v =  V*rcpAbsDen;
+	const ssef t = _t*rcpAbsDen;
+        
+#if FORCE_TRIANGLE_UV == 0
+	const Vec2<ssef> uv0 = qquad.getUV( 0, delta );
+	const Vec2<ssef> uv1 = qquad.getUV( 1, delta );
+	const Vec2<ssef> uv2 = qquad.getUV( 2, delta );
+        
+	const Vec2<ssef> uv = u * uv1 + v * uv2 + (1.0f-u-v) * uv0;
+        
+	const ssef u_final = uv[0];
+	const ssef v_final = uv[1];
+        
+#else
+	const ssef u_final = u;
+	const ssef v_final = v;
+#endif
+        
+	size_t i = select_min(valid,t);
+
+        
+	/* update hit information */
+	pre.hit_patch = pre.current_patch;
+
+	ray.u         = u_final[i];
+	ray.v         = v_final[i];
+	ray.tfar      = t[i];
+	if (i % 2)
+	  {
+	    ray.Ng.x      = Ng.x[i];
+	    ray.Ng.y      = Ng.y[i];
+	    ray.Ng.z      = Ng.z[i];
+	  }
+	else
+	  {
+	    ray.Ng.x      = -Ng.x[i];
+	    ray.Ng.y      = -Ng.y[i];
+	    ray.Ng.z      = -Ng.z[i];	    
+	  }
+      };
       
       
       /* intersect ray with Quad2x2 structure => 1 ray vs. 8 triangles */
@@ -324,8 +448,8 @@ namespace embree
           const float *const grid_x = (float*)(offset_bytes + (size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr());
           const float *const grid_y = grid_x + 1 * dim_offset;
           const float *const grid_z = grid_x + 2 * dim_offset;
-
           
+#if 1 // !defined(__AVX__)
           __aligned(64) Quad2x2 q;
           ssef grid_x_row[3];
           grid_x_row[0] = load4f(grid_x + 0 * line_offset);
@@ -339,22 +463,18 @@ namespace embree
           grid_z_row[0] = load4f(grid_z + 0 * line_offset);
           grid_z_row[1] = load4f(grid_z + 1 * line_offset);
           grid_z_row[2] = load4f(grid_z + 2 * line_offset);                    
-#if 0          
-          DBG_PRINT( offset_bytes );
-          DBG_PRINT( dim_offset );
-          DBG_PRINT( line_offset );          
-          DBG_PRINT( grid_x );
-          DBG_PRINT( grid_y );
-          DBG_PRINT( grid_z );
-
-#endif          
           q.init_xyz(grid_x_row,grid_y_row,grid_z_row);
+#endif
+
 #else          
           const Quad2x2 &q = *(Quad2x2*)prim;
 #endif
           
 #if defined(__AVX__)
           intersect1_precise<avxb,avxf>( ray, q, (SubdivMesh*)geom,pre);
+	  //intersect1_precise_3x3( ray, grid_x,grid_y,grid_z,0          ,line_offset, (SubdivMesh*)geom,pre);
+	  //intersect1_precise_3x3( ray, grid_x,grid_y,grid_z,line_offset,line_offset, (SubdivMesh*)geom,pre);
+
 #else
           intersect1_precise<sseb,ssef>( ray, q, (SubdivMesh*)geom,pre,0);
           intersect1_precise<sseb,ssef>( ray, q, (SubdivMesh*)geom,pre,6);
