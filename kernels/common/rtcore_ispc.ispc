@@ -23,7 +23,8 @@ extern "C" void ispcInit(const uniform int8* uniform cfg);
 extern "C" void ispcExit();
 extern "C" uniform RTCError ispcGetError ();
 extern "C" void ispcSetErrorFunction (void* uniform ptr);
-extern "C" void ispcSetMemoryMonitorFunction (uniform ssize_tt bytes);
+extern "C" void ispcSetMemoryMonitorFunction (void* uniform ptr);
+extern "C" void ispcSetProgressMonitorFunction (void* uniform ptr);
 extern "C" void ispcDebug();
 extern "C" RTCScene ispcNewScene (uniform RTCSceneFlags flags, uniform RTCAlgorithmFlags aflags);
 extern "C" void ispcCommitScene (RTCScene scene);
@@ -114,8 +115,11 @@ void rtcSetErrorFunction(uniform RTC_ERROR_FUNCTION func) {
 }
 
 void rtcSetMemoryMonitorFunction(uniform RTC_MEMORY_MONITOR_FUNCTION func) {
-  //ispcSetMemoryMonitorFunction(func);
-  print("COMPILE ERROR\n");
+  ispcSetMemoryMonitorFunction(func);
+}
+
+void rtcSetProgressMonitorFunction(uniform RTC_PROGRESS_MONITOR_FUNCTION func) {
+  ispcSetProgressMonitorFunction(func);
 }
 
 void rtcDebug() {

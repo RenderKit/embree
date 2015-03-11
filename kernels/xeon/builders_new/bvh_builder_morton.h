@@ -374,7 +374,7 @@ namespace embree
         {
           /* call memory monitor function to signal progress */
           if (topLevel)
-            memoryMonitor(0);
+            progressMonitor(current.size());
 
           for (size_t i=0; i<numChildren; i++) 
             bounds[i] = recurse(children[i],alloc);

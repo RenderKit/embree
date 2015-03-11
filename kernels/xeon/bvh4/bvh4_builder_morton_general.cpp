@@ -620,7 +620,7 @@ namespace embree
               BVH4Rotate::rotate(bvh,bvh->root);
             bvh->clearBarrier(bvh->root);
 #endif
-
+            
             //timer("compute_tree");
             //timer("bvh4_builder_morton_new");
 

@@ -37,6 +37,7 @@ void error_handler(const RTCError code, const int8* str)
   case RTC_INVALID_OPERATION: printf("RTC_INVALID_OPERATION"); break;
   case RTC_OUT_OF_MEMORY    : printf("RTC_OUT_OF_MEMORY"); break;
   case RTC_UNSUPPORTED_CPU  : printf("RTC_UNSUPPORTED_CPU"); break;
+  case RTC_CANCELLED        : printf("RTC_CANCELLED"); break;
   default                   : printf("invalid error code"); break;
   }
   if (str) { 
@@ -54,12 +55,18 @@ task void parallelCommit(RTCScene scene) {
 }
 #endif
 
-/* This function called by the builder to signal progress. You can
- * throw an exception to cancel the build operation. */
+/* These function called by the builder to signal progress and to
+ * report memory consumption. */
 namespace embree
 {
-  void memoryMonitor(ssize_t bytes)
+  void progressMonitor(double nprims)
   {
+    // throw an exception here to cancel the build operation
+  }
+
+  void memoryMonitor(ssize_t bytes, bool post)
+  {
+    // throw an exception here when nprims>0 to cancel the build operation
   }
 }
 

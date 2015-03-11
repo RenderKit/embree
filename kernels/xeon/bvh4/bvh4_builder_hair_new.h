@@ -252,7 +252,7 @@ namespace embree
           {
             /* call memory monitor function to signal progress */
             if (topLevel)
-              memoryMonitor(0);
+              progressMonitor(pinfo.size());
             
             for (size_t i=0; i<numChildren; i++) 
               node->child(i) = recurse(depth+1,children[i],alloc);

@@ -60,6 +60,8 @@ namespace embree
     tbb::parallel_for(Index(0),N,Index(1),[&](Index i) { 
 	func(i);
       });
+    if (tbb::task::self().group()->is_group_execution_cancelled())
+      throw std::runtime_error("task group cancelled");
 #endif
 
 #if TASKING_TBB_INTERNAL
@@ -109,6 +111,8 @@ namespace embree
     tbb::parallel_for(tbb::blocked_range<Index>(first,last,minStepSize),[&](const tbb::blocked_range<Index>& r) { 
       func(range<Index>(r.begin(),r.end()));
     });
+    if (tbb::task::self().group()->is_group_execution_cancelled())
+      throw std::runtime_error("task group cancelled");
 #endif
 
 #if TASKING_TBB_INTERNAL

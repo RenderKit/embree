@@ -54,7 +54,7 @@ namespace embree
         bvh->set(BVH4::emptyNode,empty,0);
         return;
       }
-      
+
       double t0 = 0.0, dt = 0.0;
       if (g_verbose >= 1) {
 	std::cout << "building BVH4<" << bvh->primTy.name << "> with " << TOSTRING(isa) << "::TwoLevel SAH builder ... " << std::flush;
@@ -100,7 +100,7 @@ namespace embree
             createTriangleMeshAccel(mesh,objects[objectID],builders[objectID]);
         }
       });
-      
+
       /* parallel build of acceleration structures */
       parallel_for(size_t(0), N, [&] (const range<size_t>& r) 
       {

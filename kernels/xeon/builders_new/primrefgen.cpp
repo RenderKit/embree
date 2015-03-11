@@ -29,7 +29,7 @@ namespace embree
       ParallelPrefixSumState<PrimInfo> pstate;
       
       /* first try */
-      memoryMonitor(0);
+      progressMonitor(0);
       PrimInfo pinfo = parallel_prefix_sum( pstate, size_t(0), mesh->size(), size_t(1024), PrimInfo(empty), [&](const range<size_t>& r, const PrimInfo& base) -> PrimInfo
       {
         size_t k = r.begin();
@@ -48,7 +48,7 @@ namespace embree
       /* if we need to filter out geometry, run again */
       if (pinfo.size() != prims.size())
       {
-        memoryMonitor(0);
+        progressMonitor(0);
         pinfo = parallel_prefix_sum( pstate, size_t(0), mesh->size(), size_t(1024), PrimInfo(empty), [&](const range<size_t>& r, const PrimInfo& base) -> PrimInfo
         {
           size_t k = base.size();
@@ -74,7 +74,7 @@ namespace embree
       Scene::Iterator<Mesh,timeSteps> iter(scene);
 
       /* first try */
-      memoryMonitor(0);
+      progressMonitor(0);
       pstate.init(iter,size_t(1024));
       PrimInfo pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](Mesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
       {
@@ -93,7 +93,7 @@ namespace embree
       /* if we need to filter out geometry, run again */
       if (pinfo.size() != prims.size())
       {
-        memoryMonitor(0);
+        progressMonitor(0);
         pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](Mesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
         {
           k = base.size();
@@ -115,7 +115,7 @@ namespace embree
     template<typename Mesh, size_t timeSteps>
       PrimInfo createPrimRefList(Scene* scene, PrimRefList& prims_o)
     {
-      memoryMonitor(0);
+      progressMonitor(0);
       Scene::Iterator<Mesh,timeSteps> iter(scene);
       PrimInfo pinfo = parallel_for_for_reduce( iter, PrimInfo(empty), [&](Mesh* mesh, const range<size_t>& r, size_t k) -> PrimInfo
       {
@@ -144,7 +144,7 @@ namespace embree
       Scene::Iterator<BezierCurves,timeSteps> iter(scene);
 
       /* first try */
-      memoryMonitor(0);
+      progressMonitor(0);
       pstate.init(iter,size_t(1024));
       PrimInfo pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](BezierCurves* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
       {
@@ -179,7 +179,7 @@ namespace embree
       /* if we need to filter out geometry, run again */
       if (pinfo.size() != prims.size())
       {
-        memoryMonitor(0);
+        progressMonitor(0);
         pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](BezierCurves* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
         {
           k = base.size();

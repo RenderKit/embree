@@ -160,7 +160,7 @@ namespace embree
 #endif
           if ((g_benchmark || g_verbose >= 1) && mesh == NULL) t0 = getSeconds();
 	    
-	    bvh->alloc2.init(numSplitPrimitives*sizeof(PrimRef),numSplitPrimitives*sizeof(BVH4::Node));  // FIXME: better estimate
+            bvh->alloc2.init(numSplitPrimitives*sizeof(PrimRef),numSplitPrimitives*sizeof(BVH4::Node));  // FIXME: better estimate
 	    prims.resize(numSplitPrimitives);
 	    PrimInfo pinfo = mesh ? createPrimRefArray<Mesh>(mesh,prims) : createPrimRefArray<Mesh,1>(scene,prims);
 

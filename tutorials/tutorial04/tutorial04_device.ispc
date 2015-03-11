@@ -31,6 +31,7 @@ void error_handler(const uniform RTCError code, const uniform int8* uniform str)
   case RTC_INVALID_OPERATION: print("RTC_INVALID_OPERATION"); break;
   case RTC_OUT_OF_MEMORY    : print("RTC_OUT_OF_MEMORY"); break;
   case RTC_UNSUPPORTED_CPU  : print("RTC_UNSUPPORTED_CPU"); break;
+  case RTC_CANCELLED        : print("RTC_CANCELLED"); break;
   default                   : print("invalid error code"); break;
   }
   if (str) { 
