@@ -277,7 +277,10 @@ namespace embree
 
 	  const unsigned int u_end   = range.u_end;
 	  const unsigned int v_end   = range.v_end;
-        
+
+          if (unlikely(u_end-u_start+1 < 3)) { DBG_PRINT(u_start); u_start -= 3 - (u_end-u_start+1); DBG_PRINT(u_start); }
+          if (unlikely(v_end-v_start+1 < 3)) { DBG_PRINT(v_start); v_start -= 3 - (v_end-v_start+1); DBG_PRINT(v_start); }
+          
 	  const unsigned int u_size = u_end-u_start+1;
 	  const unsigned int v_size = v_end-v_start+1;
         
@@ -287,40 +290,52 @@ namespace embree
 	  assert(u_size == 3);
 	  assert(v_size == 3);
 
-	  const size_t grid_start_offset = grid_array - lazymem;
 	  const size_t grid_offset3x3    = v_start * patch.grid_u_res + u_start;
-	  const size_t final_offset      = grid_start_offset + grid_offset3x3;
 
 	  const float *const grid_x_array = grid_array + 0 * grid_array_elements;
 	  const float *const grid_y_array = grid_array + 1 * grid_array_elements;
 	  const float *const grid_z_array = grid_array + 2 * grid_array_elements;
 
-#if 0
+#if 1
 	  DBG_PRINT("LEAF");
 	  DBG_PRINT(u_start);
 	  DBG_PRINT(v_start);
 	  DBG_PRINT(u_end);
 	  DBG_PRINT(v_end);                
-#endif          
+#endif
+          const size_t grid_u_res = patch.grid_u_res;
         
 	  BBox3fa bounds( empty );
-	  for (size_t v = 0; v<3; v++)
-	    for (size_t u = 0; u<3; u++)
+	  for (size_t v = v_start; v<=v_end; v++)
+	    for (size_t u = u_start; u<=u_end; u++)
 	      {
-		const float x = grid_x_array[ grid_offset3x3 + v * grid_array_elements + u];
-		const float y = grid_y_array[ grid_offset3x3 + v * grid_array_elements + u];
-		const float z = grid_z_array[ grid_offset3x3 + v * grid_array_elements + u];
+		const float x = grid_x_array[ v * grid_u_res + u];
+		const float y = grid_y_array[ v * grid_u_res + u];
+		const float z = grid_z_array[ v * grid_u_res + u];
+
+                DBG_PRINT(x);
+                DBG_PRINT(y);
+                DBG_PRINT(z);
+                
 		bounds.extend( Vec3fa(x,y,z) );
 	      }
 
-	  size_t value = ((grid_array_elements << 20) | (final_offset<<4));
+	  size_t offset_bytes = (size_t)&grid_x_array[ grid_offset3x3 ] - (size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();
+          size_t value = (offset_bytes << 4) + (size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();
+          assert( (value & 2) == 0 );
+          //value -= (size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();
+	  curNode = BVH4::encodeNonAlignedTypedLeaf((void*)value,2);
+
+#if 1
+          DBG_PRINT( offset_bytes );
+          DBG_PRINT( &grid_x_array[ grid_offset3x3 ] );
+          DBG_PRINT( &grid_y_array[ grid_offset3x3 ] );
+          DBG_PRINT( &grid_z_array[ grid_offset3x3 ] );         
           DBG_PRINT( grid_array_elements );
-          DBG_PRINT( final_offset );
           DBG_PRINT( value );
-          value += (size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();
-	  curNode = BVH4::encodeTypedLeaf((void*)value,2);
           DBG_PRINT( curNode );
-        
+          DBG_PRINT( bounds );
+#endif   
 	  return bounds;
 	}
       

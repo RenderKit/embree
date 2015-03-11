@@ -317,22 +317,37 @@ namespace embree
         
         if (likely(ty == 2))
         {
+          
 #if COMPACT == 1
+          const size_t dim_offset   = (pre.current_patch->grid_size_simd_blocks + 1) * 8;
+          const size_t line_offset  = pre.current_patch->grid_u_res;
+          const size_t offset_bytes = ((size_t)prim  - (size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr()) >> 4;   
+          const float *const grid_x = (float*)(offset_bytes + (size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr());
+          const float *const grid_y = grid_x + 1 * dim_offset;
+          const float *const grid_z = grid_x + 2 * dim_offset;
+
+          
           __aligned(64) Quad2x2 q;
           ssef grid_x_row[3];
+          grid_x_row[0] = load4f(grid_x + 0 * line_offset);
+          grid_x_row[1] = load4f(grid_x + 1 * line_offset);
+          grid_x_row[2] = load4f(grid_x + 2 * line_offset);          
           ssef grid_y_row[3];
+          grid_y_row[0] = load4f(grid_y + 0 * line_offset);
+          grid_y_row[1] = load4f(grid_y + 1 * line_offset);
+          grid_y_row[2] = load4f(grid_y + 2 * line_offset);                    
           ssef grid_z_row[3];
-
-	  const size_t value = (size_t)prim - (size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();
-          const size_t final_offset = (value >> 4) & 0xffff;
-          const size_t grid_array_elements = value >> (4+16);
-
-          const float *const grid_x = (float*)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr() + final_offset;
+          grid_z_row[0] = load4f(grid_z + 0 * line_offset);
+          grid_z_row[1] = load4f(grid_z + 1 * line_offset);
+          grid_z_row[2] = load4f(grid_z + 2 * line_offset);                    
 #if 0          
-          DBG_PRINT( value );          
-          DBG_PRINT( final_offset );
-          DBG_PRINT( grid_array_elements );          
-          exit(0);
+          DBG_PRINT( offset_bytes );
+          DBG_PRINT( dim_offset );
+          DBG_PRINT( line_offset );          
+          DBG_PRINT( grid_x );
+          DBG_PRINT( grid_y );
+          DBG_PRINT( grid_z );
+
 #endif          
           q.init_xyz(grid_x_row,grid_y_row,grid_z_row);
 #else          

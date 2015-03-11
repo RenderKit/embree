@@ -1331,7 +1331,12 @@ namespace embree
       assert(!((size_t)ptr & align_mask)); 
       return NodeRef((size_t)ptr | (tyLeaf+ty));
     }
-    
+
+    /*! Encodes a non 16-byte aligned leaf */
+    static __forceinline NodeRef encodeNonAlignedTypedLeaf(void* ptr, size_t ty) {
+      return NodeRef((size_t)ptr | (tyLeaf+ty));
+    }
+
   public:
     
     /*! calculates the amount of bytes allocated */
