@@ -25,7 +25,7 @@
 #include "geometry/subdivpatch1cached.h"
 
 /* returns u,v based on individual triangles instead relative to original patch */
-#define FORCE_TRIANGLE_UV 1
+#define FORCE_TRIANGLE_UV 0
 
 
 #if defined(DEBUG)
@@ -135,8 +135,8 @@ namespace embree
 	const avxi i_uv = cast(uv);
 	const avxi i_u  = i_uv & 0xffff;
 	const avxi i_v  = i_uv >> 16;
-	const avxf u    = (avxf)i_u * avxf(1.0f/65535.0f);
-	const avxf v    = (avxf)i_v * avxf(1.0f/65535.0f);
+	const avxf u    = (avxf)i_u * avxf(2.0f/65535.0f);
+	const avxf v    = (avxf)i_v * avxf(2.0f/65535.0f);
 	return Vec2<avxf>(u,v);
       }
       

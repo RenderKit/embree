@@ -239,7 +239,7 @@ namespace embree
       evalGrid(patch,grid_x,grid_y,grid_z,grid_u,grid_v,geom);
 
       for (size_t i=0;i<array_elements;i++)
-        grid_uv[i] = (((unsigned int)(grid_v[i] * 65535.0f)) << 16) | ((unsigned int)(grid_u[i] * 65535.0f)); 
+        grid_uv[i] = (((int)(grid_v[i] * 65535.0f/2.0f)) << 16) | ((int)(grid_u[i] * 65535.0f/2.0f)); 
       
       BVH4::NodeRef subtree_root = 0;
       unsigned int currentIndex = 0;
