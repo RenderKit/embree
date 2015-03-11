@@ -20,7 +20,7 @@
 
 namespace embree
 {
-  void memoryMonitor(ssize_t bytes);
+  void memoryMonitor(ssize_t bytes, bool post);
 
   template<class T> // FIXME: use os_malloc in vector for large allocations
     class vector : public RefCount
@@ -32,7 +32,7 @@ namespace embree
       void clear() {
         if (t) {
           alignedFree(t);
-          memoryMonitor(-alloced*sizeof(T));
+          memoryMonitor(-alloced*sizeof(T),true);
         }
         m_size = alloced = 0;
         t = NULL;
@@ -47,7 +47,7 @@ namespace embree
       {
         m_size = other.m_size;
         alloced = other.alloced;
-        memoryMonitor(alloced*sizeof(T));
+        memoryMonitor(alloced*sizeof(T),false);
         t = (T*)alignedMalloc(alloced*sizeof(T),64);
         for (size_t i=0; i<m_size; i++) t[i] = other.t[i];
       }
@@ -103,12 +103,12 @@ namespace embree
         if (new_sz < m_size) {
           if (exact) {
             T *old_t = t;
-            memoryMonitor(new_sz*sizeof(T));
+            memoryMonitor(new_sz*sizeof(T),false);
             t = (T*)alignedMalloc(new_sz*sizeof(T),64);
             for (size_t i=0;i<new_sz;i++) t[i] = old_t[i];
             if (old_t) {
               alignedFree(old_t);
-              memoryMonitor(-alloced*sizeof(T));
+              memoryMonitor(-alloced*sizeof(T),true);
             }
             alloced = new_sz;
           }
@@ -130,14 +130,14 @@ namespace embree
 
         T* old_t = t;
         assert(newAlloced > 0);
-        memoryMonitor(newAlloced*sizeof(T));
+        memoryMonitor(newAlloced*sizeof(T),false);
         t = (T*)alignedMalloc(newAlloced*sizeof(T),64);
 
         for (size_t i=0;i<m_size;i++) t[i] = old_t[i];
 
         if (old_t) {
           alignedFree(old_t);
-          memoryMonitor(-alloced*sizeof(T));
+          memoryMonitor(-alloced*sizeof(T),true);
         }
         alloced = newAlloced;
       }

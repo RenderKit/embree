@@ -59,12 +59,12 @@ task void parallelCommit(RTCScene scene) {
  * report memory consumption. */
 namespace embree
 {
-  void progressMonitor(size_t nprims)
+  void progressMonitor(double nprims)
   {
     // throw an exception here to cancel the build operation
   }
 
-  void memoryMonitor(ssize_t bytes)
+  void memoryMonitor(ssize_t bytes, bool post)
   {
     // throw an exception here when nprims>0 to cancel the build operation
   }

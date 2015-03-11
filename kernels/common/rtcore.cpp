@@ -168,10 +168,10 @@ namespace embree
   static RTC_MEMORY_MONITOR_FUNCTION g_memory_monitor_function = NULL;
   static RTC_PROGRESS_MONITOR_FUNCTION g_progress_monitor_function = NULL;
 
-  void memoryMonitor(ssize_t bytes)
+  void memoryMonitor(ssize_t bytes, bool post)
   {
     if (g_memory_monitor_function) {
-      if (!g_memory_monitor_function(bytes)) {
+      if (!g_memory_monitor_function(bytes,post)) {
         if (bytes > 0) { // only throw exception when we allocating memory to never throw inside a destructor
           THROW_MY_RUNTIME_ERROR(RTC_OUT_OF_MEMORY,"memory monitor forced termination");
         }
@@ -179,7 +179,7 @@ namespace embree
     }
   }
 
-  void progressMonitor(size_t nprims)
+  void progressMonitor(double nprims)
   {
     if (g_progress_monitor_function) {
       if (!g_progress_monitor_function(nprims))

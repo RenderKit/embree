@@ -2832,12 +2832,15 @@ namespace embree
   ssize_t monitorBreakInvokations = -1;
   atomic_t monitorBytesUsed = 0;
   atomic_t monitorInvokations = 0;
-  bool monitorFunction(ssize_t bytes) {
-    //if (bytes != 0) PRINT(bytes);
+  bool monitorFunction(ssize_t bytes, bool post) 
+  {
     atomic_add(&monitorBytesUsed,bytes);
     if (bytes > 0) {
       size_t n = atomic_add(&monitorInvokations,1);
-      if (n == monitorBreakInvokations) return false;
+      if (n == monitorBreakInvokations) {
+        if (!post) atomic_add(&monitorBytesUsed,-bytes);
+        return false;
+      }
     }
     return true;
   }
@@ -2853,17 +2856,20 @@ namespace embree
       monitorBreakInvokations = -1;
       monitorBytesUsed = 0;
       monitorInvokations = 0;
-      func(new ThreadRegressionTask(0,0,new RegressionTask(sceneIndex,5,0)));
+      func(new ThreadRegressionTask(0,0,new RegressionTask(sceneIndex,1,0)));
       //PRINT(monitorBytesUsed);
       //exit(1);
       monitorBreakInvokations = monitorInvokations * drand48();
+      //PRINT(monitorInvokations);
+      //PRINT(monitorBreakInvokations);
       monitorBytesUsed = 0;
       monitorInvokations = 0;
-      func(new ThreadRegressionTask(0,0,new RegressionTask(sceneIndex,5,0)));
+      func(new ThreadRegressionTask(0,0,new RegressionTask(sceneIndex,1,0)));
+      //PRINT(monitorInvokations);
       //PRINT(monitorBytesUsed);
       //PRINT(errorCounter);
       //exit(1);
-      if (monitorBytesUsed || errorCounter != 1) {
+      if (monitorBytesUsed) {// || (monitorInvokations != 0 && errorCounter != 1)) {
         rtcSetMemoryMonitorFunction(NULL);
         return false;
       }
@@ -2921,9 +2927,9 @@ namespace embree
     //POSITIVE("regression_static",         rtcore_regression(rtcore_regression_static_thread,true));
     //POSITIVE("regression_dynamic",        rtcore_regression(rtcore_regression_dynamic_thread,false));
     //POSITIVE("regression_garbage_geom",   rtcore_regression_garbage());
-    //POSITIVE("regression_static_memory_monitor",         rtcore_regression_memory_monitor(rtcore_regression_static_thread));
-    //POSITIVE("regression_dynamic_memory_monitor",        rtcore_regression_memory_monitor(rtcore_regression_dynamic_thread));
-    //exit(1);
+    POSITIVE("regression_static_memory_monitor",         rtcore_regression_memory_monitor(rtcore_regression_static_thread));
+    POSITIVE("regression_dynamic_memory_monitor",        rtcore_regression_memory_monitor(rtcore_regression_dynamic_thread));
+    exit(1);
 
 
     POSITIVE("mutex_sys",                 test_mutex_sys());

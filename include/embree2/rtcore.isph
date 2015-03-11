@@ -88,7 +88,7 @@ typedef void (*uniform RTC_ERROR_FUNCTION)(const uniform RTCError code, const un
 void rtcSetErrorFunction(uniform RTC_ERROR_FUNCTION func);
 
 /*! \brief Type of memory consumption callback function. */
-typedef uniform bool (*RTC_MEMORY_MONITOR_FUNCTION)(const uniform size_t bytes); // FIXME: should be ssize_t
+typedef uniform bool (*RTC_MEMORY_MONITOR_FUNCTION)(const uniform size_t bytes, const uniform bool post); // FIXME: should be ssize_t
 
 /*! \brief Sets the memory consumption callback function which is
  *  called before the library allocates or after the library frees
@@ -96,7 +96,7 @@ typedef uniform bool (*RTC_MEMORY_MONITOR_FUNCTION)(const uniform size_t bytes);
 void rtcSetMemoryMonitorFunction(RTC_MEMORY_MONITOR_FUNCTION func);
 
 /*! \brief Type of progress callback function. */
-typedef uniform bool (*RTC_PROGRESS_MONITOR_FUNCTION)(const uniform size_t prims);
+typedef uniform bool (*RTC_PROGRESS_MONITOR_FUNCTION)(const uniform double dn);
 
 /*! \brief Sets the progress callback function which is called during hierarchy build. */
 void rtcSetProgressMonitorFunction(RTC_PROGRESS_MONITOR_FUNCTION func);

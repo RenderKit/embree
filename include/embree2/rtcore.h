@@ -98,15 +98,14 @@ typedef void (*RTC_ERROR_FUNCTION)(const RTCError code, const char* str);
 RTCORE_API void rtcSetErrorFunction(RTC_ERROR_FUNCTION func);
 
 /*! \brief Type of memory consumption callback function. */
-typedef bool (*RTC_MEMORY_MONITOR_FUNCTION)(const ssize_t bytes);
+typedef bool (*RTC_MEMORY_MONITOR_FUNCTION)(const ssize_t bytes, const bool post);
 
 /*! \brief Sets the memory consumption callback function which is
- *  called before the library allocates or after the library frees
- *  memory. */
+ *  called before or after the library allocates or frees memory. */
 RTCORE_API void rtcSetMemoryMonitorFunction(RTC_MEMORY_MONITOR_FUNCTION func);
 
 /*! \brief Type of progress callback function. */
-typedef bool (*RTC_PROGRESS_MONITOR_FUNCTION)(const size_t prims);
+typedef bool (*RTC_PROGRESS_MONITOR_FUNCTION)(const double dn);
 
 /*! \brief Sets the progress callback function which is called during hierarchy build. */
 RTCORE_API void rtcSetProgressMonitorFunction(RTC_PROGRESS_MONITOR_FUNCTION func);

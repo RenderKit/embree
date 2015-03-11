@@ -341,8 +341,8 @@ typedef void (*ErrorFunc) ();
   SELECT_SYMBOL_SSE41(features,intersector);                       \
   SELECT_SYMBOL_AVX(features,intersector);                        
 
-void progressMonitor(size_t nprims);
-void memoryMonitor(ssize_t bytes);
+void progressMonitor(double nprims);
+void memoryMonitor(ssize_t bytes, bool post);
 
 struct my_runtime_error : public std::exception
 {

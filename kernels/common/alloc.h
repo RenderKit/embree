@@ -589,7 +589,7 @@ namespace embree
         const size_t sizeof_Header = offsetof(Block,data[0]);
         bytesAllocate = ((sizeof_Header+bytesAllocate+4095) & ~(4095)); // always consume full pages
         bytesReserve  = ((sizeof_Header+bytesReserve +4095) & ~(4095)); // always consume full pages
-        memoryMonitor(bytesAllocate);
+        memoryMonitor(bytesAllocate,false);
         void* ptr = os_reserve(bytesReserve);
         os_commit(ptr,bytesAllocate);
         return new (ptr) Block(bytesAllocate-sizeof_Header,bytesReserve-sizeof_Header,next);
@@ -607,7 +607,7 @@ namespace embree
         const size_t sizeof_This = sizeof_Header+reserveEnd;
         const size_t sizeof_Alloced = sizeof_Header+getBlockAllocatedBytes();
         os_free(this,sizeof_This);
-        memoryMonitor(-sizeof_Alloced);
+        memoryMonitor(-sizeof_Alloced,true);
       }
       
       void* malloc(size_t bytes, size_t align = 16) 
@@ -618,7 +618,7 @@ namespace embree
 	const size_t i = atomic_add(&cur,bytes);
 	if (unlikely(i+bytes > reserveEnd)) return NULL;
 	if (i+bytes > allocEnd) {
-          memoryMonitor(i+bytes-max(i,allocEnd));
+          memoryMonitor(i+bytes-max(i,allocEnd),true);
           os_commit(&data[i],bytes); // FIXME: optimize, may get called frequently
         }
 	return &data[i];
@@ -631,7 +631,7 @@ namespace embree
 	const size_t i = atomic_add(&cur,bytes);
 	if (unlikely(i+bytes > reserveEnd)) bytes = reserveEnd-i;
 	if (i+bytes > allocEnd) {
-          memoryMonitor(bytes);
+          memoryMonitor(i+bytes-max(i,allocEnd),true);
           os_commit(&data[i],bytes); // FIXME: optimize, may get called frequently
         }
 	return &data[i];
