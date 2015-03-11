@@ -19,8 +19,8 @@
 
 namespace embree
 {
-#define size_t int  // FIXME: workaround of ISPC bug
-#define ssize_t int  // FIXME: workaround of ISPC bug
+#define size_t int  // FIXME: workaround for ISPC bug
+#define ssize_t int  // FIXME: workaround for ISPC bug
 
 #define CATCH_BEGIN try {
 #define CATCH_END                                                       \
@@ -64,6 +64,10 @@ namespace embree
 
   extern "C" void ispcSetMemoryMonitorFunction(void* f) {
     return rtcSetMemoryMonitorFunction((RTC_MEMORY_MONITOR_FUNCTION)f);
+  }
+
+  extern "C" void ispcSetProgressMonitorFunction(void* f) {
+    return rtcSetProgressMonitorFunction((RTC_PROGRESS_MONITOR_FUNCTION)f);
   }
 
   extern "C" void ispcDebug() {

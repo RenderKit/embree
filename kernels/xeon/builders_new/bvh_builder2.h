@@ -248,7 +248,7 @@ namespace embree
 	{
           /* call memory monitor function to signal progress */
           if (topLevel)
-            memoryMonitor(0);
+            progressMonitor(current.size());
 
           for (ssize_t i=numChildren-1; i>=0; i--) {
             //for (size_t i=0; i<numChildren; i++) {

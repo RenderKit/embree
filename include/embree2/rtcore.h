@@ -81,6 +81,7 @@ enum RTCError {
   RTC_INVALID_OPERATION = 3, //!< The operation is not allowed for the specified object.
   RTC_OUT_OF_MEMORY = 4,     //!< There is not enough memory left to execute the command.
   RTC_UNSUPPORTED_CPU = 5,   //!< The CPU is not supported as it does not support SSE2.
+  RTC_CANCELLED = 6,         //!< The user has cancelled the operation through the RTC_PROGRESS_MONITOR_FUNCTION callback
 };
 
 /*! \brief Returns the value of the per-thread error flag. 
@@ -103,6 +104,12 @@ typedef bool (*RTC_MEMORY_MONITOR_FUNCTION)(const ssize_t bytes);
  *  called before the library allocates or after the library frees
  *  memory. */
 RTCORE_API void rtcSetMemoryMonitorFunction(RTC_MEMORY_MONITOR_FUNCTION func);
+
+/*! \brief Type of progress callback function. */
+typedef bool (*RTC_PROGRESS_MONITOR_FUNCTION)(const size_t prims);
+
+/*! \brief Sets the progress callback function which is called during hierarchy build. */
+RTCORE_API void rtcSetProgressMonitorFunction(RTC_PROGRESS_MONITOR_FUNCTION func);
 
 /*! \brief Implementation specific (do not call).
 

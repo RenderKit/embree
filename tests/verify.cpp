@@ -2835,8 +2835,10 @@ namespace embree
   bool monitorFunction(ssize_t bytes) {
     //if (bytes != 0) PRINT(bytes);
     atomic_add(&monitorBytesUsed,bytes);
-    size_t n = atomic_add(&monitorInvokations,1);
-    if (n == monitorBreakInvokations) return false;
+    if (bytes > 0) {
+      size_t n = atomic_add(&monitorInvokations,1);
+      if (n == monitorBreakInvokations) return false;
+    }
     return true;
   }
   
