@@ -2857,18 +2857,10 @@ namespace embree
       monitorBytesUsed = 0;
       monitorInvokations = 0;
       func(new ThreadRegressionTask(0,0,new RegressionTask(sceneIndex,1,0)));
-      //PRINT(monitorBytesUsed);
-      //exit(1);
       monitorBreakInvokations = monitorInvokations * drand48();
-      //PRINT(monitorInvokations);
-      //PRINT(monitorBreakInvokations);
       monitorBytesUsed = 0;
       monitorInvokations = 0;
       func(new ThreadRegressionTask(0,0,new RegressionTask(sceneIndex,1,0)));
-      //PRINT(monitorInvokations);
-      //PRINT(monitorBytesUsed);
-      //PRINT(errorCounter);
-      //exit(1);
       if (monitorBytesUsed) {// || (monitorInvokations != 0 && errorCounter != 1)) {
         rtcSetMemoryMonitorFunction(NULL);
         return false;
@@ -2927,10 +2919,9 @@ namespace embree
     //POSITIVE("regression_static",         rtcore_regression(rtcore_regression_static_thread,true));
     //POSITIVE("regression_dynamic",        rtcore_regression(rtcore_regression_dynamic_thread,false));
     //POSITIVE("regression_garbage_geom",   rtcore_regression_garbage());
-    POSITIVE("regression_static_memory_monitor",         rtcore_regression_memory_monitor(rtcore_regression_static_thread));
-    POSITIVE("regression_dynamic_memory_monitor",        rtcore_regression_memory_monitor(rtcore_regression_dynamic_thread));
-    exit(1);
-
+    //POSITIVE("regression_static_memory_monitor",         rtcore_regression_memory_monitor(rtcore_regression_static_thread));
+    //POSITIVE("regression_dynamic_memory_monitor",        rtcore_regression_memory_monitor(rtcore_regression_dynamic_thread));
+    //exit(1);
 
     POSITIVE("mutex_sys",                 test_mutex_sys());
 #if !defined(__MIC__)  // FIXME: hangs on MIC 
@@ -3032,7 +3023,7 @@ namespace embree
     POSITIVE("regression_static",         rtcore_regression(rtcore_regression_static_thread,false));
     POSITIVE("regression_dynamic",        rtcore_regression(rtcore_regression_dynamic_thread,false));
 
-#if !defined(__MIC__)
+#if !defined(__MIC__) && !defined(TASKING_TBB_INTERNAL)
     POSITIVE("regression_static_memory_monitor",  rtcore_regression_memory_monitor(rtcore_regression_static_thread));
     POSITIVE("regression_dynamic_memory_monitor", rtcore_regression_memory_monitor(rtcore_regression_dynamic_thread));
 #endif
