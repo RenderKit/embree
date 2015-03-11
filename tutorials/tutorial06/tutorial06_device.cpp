@@ -23,8 +23,8 @@
 
 //
 
-//#define FORCE_FIXED_EDGE_TESSELLATION
-#define FIXED_EDGE_TESSELLATION_VALUE 8
+#define FORCE_FIXED_EDGE_TESSELLATION
+#define FIXED_EDGE_TESSELLATION_VALUE 2
 //#define FIXED_EDGE_TESSELLATION_VALUE 32
 
 #define MAX_EDGE_LEVEL 64.0f
@@ -907,7 +907,41 @@ void convertTriangleMeshes(ISPCScene* scene_in, RTCScene scene_out, size_t numGe
   }
 }
 
-void convertSubdivMeshes(ISPCScene* scene_in, RTCScene scene_out, size_t numGeometries)
+void updateEdgeLevelBuffer( ISPCMesh* mesh, const Vec3fa& cam_pos, size_t startID, size_t endID )
+{
+  for (size_t f=startID; f<endID; f++) 
+  {
+    const int N = 4;
+    for (size_t i=0; i<N; i++) {
+      const int * index = (int *)&mesh->quads[f];	
+      const Vec3fa v0 = mesh->positions[index[i]];
+      const Vec3fa v1 = mesh->positions[index[(i+1)%N]];
+      const Vec3fa edge = v1-v0;
+      const Vec3fa P = 0.5f*(v1+v0);
+      const Vec3fa dist = cam_pos - P;
+      mesh->edge_level[f*4+i] = max(min(LEVEL_FACTOR*(0.5f*length(edge)/length(dist)),MAX_EDGE_LEVEL),MIN_EDGE_LEVEL); // FIXME: map mesh subdivlevel buffer
+      assert( mesh->edge_level[f*4+i] >= 1.0f );
+    }
+  }
+}
+
+void updateEdgeLevels(ISPCScene* scene_in, const Vec3fa& cam_pos)
+{
+  for (int i=0; i<g_ispc_scene->numMeshes; i++)
+  {
+    ISPCMesh* mesh = g_ispc_scene->meshes[i];
+    if (mesh->numQuads == 0) continue;
+
+    if (mesh->edge_level) 
+    {
+      unsigned int geomID = mesh->geomID;
+      updateEdgeLevelBuffer(mesh,cam_pos,0,mesh->numQuads);
+    }
+  }
+}
+
+
+void convertSubdivMeshes(ISPCScene* scene_in, RTCScene scene_out, size_t numGeometries, const Vec3fa& cam_pos)
 {
   for (int i=0; i<scene_in->numMeshes; i++)
   {
@@ -922,9 +956,14 @@ void convertSubdivMeshes(ISPCScene* scene_in, RTCScene scene_out, size_t numGeom
       mesh->edge_level             = new float[numEdges];
       int *index_buffer = new int[numEdges];
       
+#if !defined(FORCE_FIXED_EDGE_TESSELLATION)
+      updateEdgeLevels(scene_in,cam_pos);
+#else
       for (size_t i=0; i<numEdges; i++) 
 	mesh->edge_level[i] = FIXED_EDGE_TESSELLATION_VALUE;
-      
+#endif
+
+
       /* create a triangle mesh */
       unsigned int geomID = rtcNewSubdivisionMesh (scene_out, RTC_GEOMETRY_STATIC, numPrimitives, numEdges, mesh->numVertices, 0, 0, 0);
       mesh->geomID = geomID;
@@ -960,7 +999,7 @@ void convertSubdivMeshes(ISPCScene* scene_in, RTCScene scene_out, size_t numGeom
     geomID_to_mesh[geomID] = mesh;
     geomID_to_type[geomID] = 1;
 
-    for (size_t i=0; i<mesh->numEdges; i++) mesh->subdivlevel[i] = 16;
+    for (size_t i=0; i<mesh->numEdges; i++) mesh->subdivlevel[i] = FIXED_EDGE_TESSELLATION_VALUE;
     rtcSetBuffer(scene_out, geomID, RTC_VERTEX_BUFFER, mesh->positions, 0, sizeof(Vec3fa  ));
     rtcSetBuffer(scene_out, geomID, RTC_LEVEL_BUFFER,  mesh->subdivlevel, 0, sizeof(float));
     rtcSetBuffer(scene_out, geomID, RTC_INDEX_BUFFER,  mesh->position_indices  , 0, sizeof(unsigned int));
@@ -975,7 +1014,7 @@ void convertSubdivMeshes(ISPCScene* scene_in, RTCScene scene_out, size_t numGeom
 
 typedef void* void_ptr;
 
-RTCScene convertScene(ISPCScene* scene_in)
+RTCScene convertScene(ISPCScene* scene_in,const Vec3fa& cam_org)
 {
   size_t numGeometries = scene_in->numMeshes + scene_in->numSubdivMeshes;
   geomID_to_mesh = new void_ptr[numGeometries];
@@ -984,7 +1023,8 @@ RTCScene convertScene(ISPCScene* scene_in)
   /* create scene */
   RTCScene scene_out = rtcNewScene(RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT, RTC_INTERSECT1);
   convertTriangleMeshes(scene_in,scene_out,numGeometries);
-  convertSubdivMeshes(scene_in,scene_out,numGeometries);
+  convertSubdivMeshes(scene_in,scene_out,numGeometries,cam_org);
+
 
   /* commit changes to scene */
 #if !defined(PARALLEL_COMMIT)
@@ -1322,9 +1362,11 @@ extern "C" void device_render (int* pixels,
                            const Vec3fa& vz, 
                            const Vec3fa& p)
 {
+  Vec3fa cam_org = Vec3fa(p.x,p.y,p.z);
+
   /* create scene */
   if (g_scene == NULL)
-    g_scene = convertScene(g_ispc_scene);
+    g_scene = convertScene(g_ispc_scene,cam_org);
 
   /* create accumulator */
   if (g_accu_width != width || g_accu_height != height) {
