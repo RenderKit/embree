@@ -33,7 +33,13 @@ namespace embree
     static const size_t blockSize = 511;
     
     /*! default constructor */
-    PrimRefBlockT () : num(0) {}
+    PrimRefBlockT () : num(0) {
+      memoryMonitor(+sizeof(PrimRefBlockT),true);
+    }
+
+    ~PrimRefBlockT () {
+      memoryMonitor(-sizeof(PrimRefBlockT),false);
+    }
     
     /*! frees the block */
     __forceinline void clear(size_t n = 0) { num = n; }

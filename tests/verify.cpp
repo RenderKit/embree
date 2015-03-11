@@ -2915,6 +2915,7 @@ namespace embree
       func(new ThreadRegressionTask(0,0,new RegressionTask(sceneIndex,1,0)));
       if (monitorMemoryBytesUsed) { // || (monitorMemoryInvokations != 0 && errorCounter != 1)) {
         rtcSetMemoryMonitorFunction(NULL);
+        rtcSetProgressMonitorFunction(NULL);
         return false;
       }
       sceneIndex++;
