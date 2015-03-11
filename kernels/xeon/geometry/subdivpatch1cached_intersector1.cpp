@@ -207,28 +207,41 @@ namespace embree
         
       assert( patch.grid_size_simd_blocks >= 1 );
 
-      const size_t array_elements = (patch.grid_size_simd_blocks + 1) * 8;
+      const size_t array_elements = patch.grid_size_simd_blocks * 8;
 
+#if 0
       DBG_PRINT( patch.grid_u_res );
       DBG_PRINT( patch.grid_v_res );
-      
+      DBG_PRINT( array_elements );
+      DBG_PRINT( patch.grid_size_simd_blocks );
+      DBG_PRINT( patch.grid_subtree_size_64b_blocks );
+#endif
+ 
 #if !defined(_MSC_VER) || defined(__INTEL_COMPILER)
-      __aligned(64) float grid_u[array_elements]; 
-      __aligned(64) float grid_v[array_elements];
+      __aligned(64) float grid_u[array_elements+16]; 
+      __aligned(64) float grid_v[array_elements+16];
      
 #else
-      float *const ptr = (float*)_malloca(2 * array_elements * sizeof(float) + 64);
+      float *const ptr = (float*)_malloca(2 * array_elements * sizeof(float) + 2*64);
       float *const grid_arrays = (float*)ALIGN_PTR(ptr,64);
-      float *grid_u = &grid_arrays[array_elements * 0];
-      float *grid_v = &grid_arrays[array_elements * 1];
-        
+      float *grid_u = &grid_arrays[array_elements * 0 + 16];
+      float *grid_v = &grid_arrays[array_elements * 1 + 16];        
 #endif   
-      const size_t grid_offset = patch.grid_bvh_size_64b_blocks / 16;
+      const size_t grid_offset = patch.grid_bvh_size_64b_blocks * 16;
 
-      float *grid_x  = (float*)lazymem + grid_offset + 0 * array_elements;
-      float *grid_y  = (float*)lazymem + grid_offset + 1 * array_elements;
-      float *grid_z  = (float*)lazymem + grid_offset + 2 * array_elements;
-      int   *grid_uv = (int*)  lazymem + grid_offset + 3 * array_elements;
+      float *const grid_x  = (float*)lazymem + grid_offset + 0 * array_elements;
+      float *const grid_y  = (float*)lazymem + grid_offset + 1 * array_elements;
+      float *const grid_z  = (float*)lazymem + grid_offset + 2 * array_elements;
+      int   *const grid_uv = (int*)  lazymem + grid_offset + 3 * array_elements;
+
+#if 0
+      DBG_PRINT(grid_offset);
+      DBG_PRINT( (float*)lazymem + grid_offset );
+      DBG_PRINT(grid_x);
+      DBG_PRINT(grid_y);
+      DBG_PRINT(grid_z);
+      DBG_PRINT(grid_uv);
+#endif
 
       evalGrid(patch,grid_x,grid_y,grid_z,grid_u,grid_v,geom);
 
@@ -245,7 +258,11 @@ namespace embree
 					     GridRange(0,patch.grid_u_res-1,0,patch.grid_v_res-1),
 					     currentIndex,
 					     geom);
-      DBG_PRINT(subtree_root);
+      //DBG_PRINT(subtree_root);
+      
+      // for (size_t y=0;y<patch.grid_v_res;y++)
+      // 	for (size_t x=0;x<patch.grid_u_res;x++)
+      // 	  std::cout << "y " << y << " x " << x << " " << grid_x[y*patch.grid_u_res+x] << std::endl;
       
       assert(currentIndex == patch.grid_bvh_size_64b_blocks);
 
@@ -278,8 +295,20 @@ namespace embree
 	  const unsigned int u_end   = range.u_end;
 	  const unsigned int v_end   = range.v_end;
 
-          if (unlikely(u_end-u_start+1 < 3)) { DBG_PRINT(u_start); u_start -= 3 - (u_end-u_start+1); DBG_PRINT(u_start); }
-          if (unlikely(v_end-v_start+1 < 3)) { DBG_PRINT(v_start); v_start -= 3 - (v_end-v_start+1); DBG_PRINT(v_start); }
+          if (unlikely(u_end-u_start+1 < 3)) 
+	    { 
+	      //DBG_PRINT(u_start); 
+	      const unsigned int delta_u = 3 - (u_end-u_start+1);
+	      if (u_start >= delta_u) u_start -= delta_u; 
+	      //DBG_PRINT(u_start); 
+	    }
+          if (unlikely(v_end-v_start+1 < 3)) 
+	    { 
+	      //DBG_PRINT(v_start); 
+	      const unsigned int delta_v = 3 - (v_end-v_start+1);
+	      if (v_start >= delta_v) v_start -= delta_v; 
+	      //DBG_PRINT(v_start); 
+	    }
           
 	  const unsigned int u_size = u_end-u_start+1;
 	  const unsigned int v_size = v_end-v_start+1;
@@ -287,16 +316,13 @@ namespace embree
 	  assert(u_size >= 1);
 	  assert(v_size >= 1);
         
-	  assert(u_size == 3);
-	  assert(v_size == 3);
-
 	  const size_t grid_offset3x3    = v_start * patch.grid_u_res + u_start;
 
 	  const float *const grid_x_array = grid_array + 0 * grid_array_elements;
 	  const float *const grid_y_array = grid_array + 1 * grid_array_elements;
 	  const float *const grid_z_array = grid_array + 2 * grid_array_elements;
 
-#if 1
+#if 0
 	  DBG_PRINT("LEAF");
 	  DBG_PRINT(u_start);
 	  DBG_PRINT(v_start);
@@ -304,7 +330,7 @@ namespace embree
 	  DBG_PRINT(v_end);                
 #endif
           const size_t grid_u_res = patch.grid_u_res;
-        
+
 	  BBox3fa bounds( empty );
 	  for (size_t v = v_start; v<=v_end; v++)
 	    for (size_t u = u_start; u<=u_end; u++)
@@ -312,11 +338,6 @@ namespace embree
 		const float x = grid_x_array[ v * grid_u_res + u];
 		const float y = grid_y_array[ v * grid_u_res + u];
 		const float z = grid_z_array[ v * grid_u_res + u];
-
-                DBG_PRINT(x);
-                DBG_PRINT(y);
-                DBG_PRINT(z);
-                
 		bounds.extend( Vec3fa(x,y,z) );
 	      }
 
@@ -326,7 +347,7 @@ namespace embree
           //value -= (size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();
 	  curNode = BVH4::encodeNonAlignedTypedLeaf((void*)value,2);
 
-#if 1
+#if 0
           DBG_PRINT( offset_bytes );
           DBG_PRINT( &grid_x_array[ grid_offset3x3 ] );
           DBG_PRINT( &grid_y_array[ grid_offset3x3 ] );

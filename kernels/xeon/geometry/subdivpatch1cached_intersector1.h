@@ -27,7 +27,6 @@
 /* returns u,v based on individual triangles instead relative to original patch */
 #define FORCE_TRIANGLE_UV 1
 
-#define COMPACT 0
 
 #if defined(DEBUG)
 #define CACHE_STATS(x) 
@@ -319,7 +318,7 @@ namespace embree
         {
           
 #if COMPACT == 1
-          const size_t dim_offset   = (pre.current_patch->grid_size_simd_blocks + 1) * 8;
+          const size_t dim_offset   = pre.current_patch->grid_size_simd_blocks * 8;
           const size_t line_offset  = pre.current_patch->grid_u_res;
           const size_t offset_bytes = ((size_t)prim  - (size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr()) >> 4;   
           const float *const grid_x = (float*)(offset_bytes + (size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr());
