@@ -21,9 +21,12 @@
 
 #define __device__
 
+#define FIX_SAMPLING 1
+#define SAMPLES_PER_PIXEL 1
+
 //#define PARALLEL_COMMIT
 
-#define FORCE_FIXED_EDGE_TESSELLATION
+//#define FORCE_FIXED_EDGE_TESSELLATION
 #define FIXED_EDGE_TESSELLATION_VALUE 2
 //#define FIXED_EDGE_TESSELLATION_VALUE 32
 
@@ -38,6 +41,7 @@
 #endif
 
 uniform bool g_subdiv_mode = false;
+
 
 struct DifferentialGeometry
 {
@@ -1179,17 +1183,17 @@ Vec3f renderPixelFunction(float x, float y, rand_state& state, const uniform Vec
     dg.Ns = face_forward(ray.dir,_Ns);
 
     /* shade all rays that hit something */
+   int materialID = 0;
+    if (g_subdiv_mode)
+      materialID = 1;
+    else
+{
 #if 0 // FIXME: pointer gather not implemented in ISPC for Xeon Phi
-    int materialID = 0;
     if (geomID_to_type[ray.geomID] == 0)
       materialID = ((ISPCMesh* uniform) geomID_to_mesh[ray.geomID])->triangles[ray.primID].materialID; 
     else 
       materialID = ((ISPCSubdivMesh* uniform) geomID_to_mesh[ray.geomID])->materialID; 
 #else
-    int materialID = 0;
-    if (g_subdiv_mode)
-      materialID = 1;
-    else
     foreach_unique (geomID in ray.geomID) {
       if (geomID >= 0 && geomID < g_ispc_scene->numMeshes) { // FIXME: workaround for ISPC bug
 	if (geomID_to_type[geomID] == 0) 
@@ -1199,7 +1203,7 @@ Vec3f renderPixelFunction(float x, float y, rand_state& state, const uniform Vec
       }
     }
 #endif
-
+}
     /*! Compute  simple volumetric effect. */
     Vec3f c = make_Vec3f(1.0f);
     const Vec3f transmission = medium.transmission;
@@ -1307,16 +1311,19 @@ Vec3f renderPixelFunction(float x, float y, rand_state& state, const uniform Vec
 Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p)
 {
   rand_state state;
+
+  Vec3f L = make_Vec3f(0.0f,0.0f,0.0f);
+
+  for (uniform int i=0; i<SAMPLES_PER_PIXEL; i++) {
+
   init_rand(state,
             253*x+35*y+152*g_accu_count+54,
             1253*x+345*y+1452*g_accu_count+564,
-            10253*x+3435*y+52*g_accu_count+13);
+            10253*x+3435*y+52*g_accu_count+13+i*1793);
 
-  Vec3f L = make_Vec3f(0.0f,0.0f,0.0f);
-  //for (uniform int i=0; i<16; i++) {
-  L = L + renderPixelFunction(x,y,state,vx,vy,vz,p); // FIXME: +=
-  //}
-  //L = L*(1.0f/16.0f);
+  L = L + renderPixelFunction(x,y,state,vx,vy,vz,p); 
+  }
+  L = L*(1.0f/SAMPLES_PER_PIXEL);
   return L;
 }
   
@@ -1388,7 +1395,11 @@ export void device_render (uniform int* uniform pixels,
   camera_changed |= ne(g_accu_vy,vy); g_accu_vy = vy; // FIXME: use != operator
   camera_changed |= ne(g_accu_vz,vz); g_accu_vz = vz; // FIXME: use != operator
   camera_changed |= ne(g_accu_p,  p); g_accu_p  = p;  // FIXME: use != operator
+
+#if  FIX_SAMPLING == 0
   g_accu_count++;
+#endif
+
   if (camera_changed) {
     g_accu_count=0;
     memset(g_accu,0,width*height*sizeof(uniform Vec3fa));

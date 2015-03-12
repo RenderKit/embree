@@ -77,10 +77,16 @@ namespace embree
 #else
     const size_t leafBlocks = (sizeof(Quad2x2)+63) / 64;
 #endif
-    grid_subtree_size_64b_blocks = getSubTreeSize64bBlocks( leafBlocks ); // u,v,x,y,z 
 
     grid_bvh_size_64b_blocks = getSubTreeSize64bBlocks( 0 );
-    //DBG_PRINT( grid_bvh_size_64b_blocks );
+
+#if COMPACT == 1
+    const size_t grid_size_xyzuv = (grid_size_simd_blocks * 8) * 4;
+    grid_subtree_size_64b_blocks = grid_bvh_size_64b_blocks + (grid_size_xyzuv / 16);
+#else
+    grid_subtree_size_64b_blocks = getSubTreeSize64bBlocks( leafBlocks ); // u,v,x,y,z 
+#endif
+
 
     /* has displacements? */
     flags &= ~HAS_DISPLACEMENT;

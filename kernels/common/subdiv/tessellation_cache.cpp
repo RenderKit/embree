@@ -116,6 +116,9 @@ namespace embree
 		switch_block_threshold = maxBlocks;		
 	      }
 #endif
+
+	    CACHE_STATS(SharedTessellationCacheStats::cache_flushes++);
+
 	    for (size_t i=0;i<numRenderThreads;i++)
 	      unlockThread(i);
 
@@ -155,23 +158,15 @@ namespace embree
   AtomicCounter SharedTessellationCacheStats::cache_accesses           = 0;
   AtomicCounter SharedTessellationCacheStats::cache_hits               = 0;
   AtomicCounter SharedTessellationCacheStats::cache_misses             = 0;
-  AtomicCounter SharedTessellationCacheStats::cache_evictions          = 0;                
-  AtomicCounter SharedTessellationCacheStats::cache_updates            = 0;                
-  AtomicCounter SharedTessellationCacheStats::cache_updates_successful = 0;
-  AtomicCounter SharedTessellationCacheStats::cache_fallbacks          = 0;
+  AtomicCounter SharedTessellationCacheStats::cache_flushes            = 0;                
 
   void SharedTessellationCacheStats::printStats()
   {
     DBG_PRINT(cache_accesses);
     DBG_PRINT(cache_misses);
     DBG_PRINT(cache_hits);
-    DBG_PRINT(cache_evictions);
+    DBG_PRINT(cache_flushes);
     DBG_PRINT(100.0f * cache_hits / cache_accesses);
-    DBG_PRINT(cache_updates);
-    DBG_PRINT(cache_updates_successful);
-    DBG_PRINT(100.0f * cache_updates_successful / cache_updates);
-    DBG_PRINT(cache_fallbacks);
-
     assert(cache_hits + cache_misses == cache_accesses);                
   }
 
@@ -180,11 +175,7 @@ namespace embree
     SharedTessellationCacheStats::cache_accesses  = 0;
     SharedTessellationCacheStats::cache_hits      = 0;
     SharedTessellationCacheStats::cache_misses    = 0;
-    SharedTessellationCacheStats::cache_evictions = 0;          
-    SharedTessellationCacheStats::cache_updates            = 0;                
-    SharedTessellationCacheStats::cache_updates_successful = 0;
-    SharedTessellationCacheStats::cache_fallbacks = 0;
-
+    SharedTessellationCacheStats::cache_flushes   = 0;          
   }
 
 

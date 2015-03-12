@@ -16,6 +16,8 @@
 
 #pragma once
 
+#define COMPACT 1
+
 namespace embree
 {
   

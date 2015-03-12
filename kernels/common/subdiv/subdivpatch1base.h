@@ -250,8 +250,8 @@ namespace embree
 
         /* init from 3x3 point grid */
     void init_xyz( const ssef grid_x[3],
-                   const ssef grid_y[3],
-                   const ssef grid_z[3] )
+		   const ssef grid_y[3],
+		   const ssef grid_z[3])
     {
       initFrom3x3Grid( grid_x, vtx_x);
       initFrom3x3Grid( grid_y, vtx_y);
@@ -757,6 +757,7 @@ namespace embree
                                      float *__restrict__ const grid_v,
                                      const SubdivMesh* const geom)
   {
+    /* grid_u, grid_v need to be padded as we write with SIMD granularity */
     gridUVTessellator(patch.level,
                       patch.grid_u_res,
                       patch.grid_v_res,
@@ -777,8 +778,7 @@ namespace embree
         avxf uu = load8f(&grid_u[8*i]);
         avxf vv = load8f(&grid_v[8*i]);
         avx3f vtx = patch.eval8(uu,vv);
-          
-          
+                 
         if (unlikely(((SubdivMesh*)geom)->displFunc != NULL))
           {
             avx3f normal = patch.normal8(uu,vv);
@@ -804,8 +804,8 @@ namespace embree
         *(avxf*)&grid_x[8*i] = vtx.x;
         *(avxf*)&grid_y[8*i] = vtx.y;
         *(avxf*)&grid_z[8*i] = vtx.z;        
-        *(avxf*)&grid_u[8*i] = uu;
-        *(avxf*)&grid_v[8*i] = vv;
+        //*(avxf*)&grid_u[8*i] = uu;
+        //*(avxf*)&grid_v[8*i] = vv;
       }
 #else
     for (size_t i=0;i<patch.grid_size_simd_blocks*2;i++) // 4-wide blocks for SSE
@@ -840,8 +840,8 @@ namespace embree
         *(ssef*)&grid_x[4*i] = vtx.x;
         *(ssef*)&grid_y[4*i] = vtx.y;
         *(ssef*)&grid_z[4*i] = vtx.z;        
-        *(ssef*)&grid_u[4*i] = uu;
-        *(ssef*)&grid_v[4*i] = vv;
+        //*(ssef*)&grid_u[4*i] = uu;
+        //*(ssef*)&grid_v[4*i] = vv;
       }
 #endif        
   }
