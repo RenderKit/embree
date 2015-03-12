@@ -220,8 +220,6 @@ namespace embree
           BuildRecord lrecord(current.depth+1);
           BuildRecord rrecord(current.depth+1);
 	  partition(brecord,lrecord,rrecord);
-          if (lrecord.size() + rrecord.size() != brecord.size())
-            throw std::runtime_error("error");
           
           /* find new splits */
           lrecord.split = find(lrecord);
