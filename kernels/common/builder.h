@@ -29,6 +29,23 @@ namespace embree
     bool needAllThreads;
   };
 
+  struct BuildProgressMonitor {
+    virtual void operator() (size_t dn) = 0;
+  };
+
+  template<typename Closure>
+    struct ProgressMonitorClosure : BuildProgressMonitor
+  {
+  public:
+    ProgressMonitorClosure (const Closure& closure) : closure(closure) {}
+    void operator() (size_t dn) { closure(dn); }
+  private:
+    const Closure& closure;
+  };
+  template<typename Closure> __forceinline const ProgressMonitorClosure<Closure> BuildProgressMonitorFromClosure(const Closure& closure) {
+    return ProgressMonitorClosure<Closure>(closure);
+  }
+
   class Scene;
   struct TriangleMesh;
   struct UserGeometryBase;

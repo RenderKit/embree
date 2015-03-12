@@ -105,7 +105,7 @@ typedef bool (*RTC_MEMORY_MONITOR_FUNCTION)(const ssize_t bytes, const bool post
 RTCORE_API void rtcSetMemoryMonitorFunction(RTC_MEMORY_MONITOR_FUNCTION func);
 
 /*! \brief Type of progress callback function. */
-typedef bool (*RTC_PROGRESS_MONITOR_FUNCTION)(const double dn);
+typedef bool (*RTC_PROGRESS_MONITOR_FUNCTION)(RTCScene scene, const double dn);
 
 /*! \brief Sets the progress callback function which is called during hierarchy build. */
 RTCORE_API void rtcSetProgressMonitorFunction(RTC_PROGRESS_MONITOR_FUNCTION func);

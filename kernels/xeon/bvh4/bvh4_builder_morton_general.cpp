@@ -518,7 +518,9 @@ namespace embree
 	//profile(2,20,numPrimitives,[&] (ProfileTimer& timer) {
 	    
             if (g_verbose >= 1) t0 = getSeconds();
-	    
+
+            auto progress = [&] (size_t dn) { progressMonitor(bvh->scene,dn); };
+
             //bvh->alloc.init(numPrimitives*sizeof(BVH4::Node),numPrimitives*sizeof(BVH4::Node));
             morton.resize(numPrimitives);
             size_t bytesAllocated = (numPrimitives+7)/8*sizeof(BVH4::Node) + size_t(1.2f*(numPrimitives+3)/4)*sizeof(Triangle4);
@@ -611,7 +613,7 @@ namespace embree
             auto node_bounds = bvh_builder_center_internal<BVH4::NodeRef>(
               [&] () { return bvh->alloc2.threadLocal2(); },
               BBox3fa(empty),
-              allocNode,setBounds,createLeaf,calculateBounds,
+              allocNode,setBounds,createLeaf,calculateBounds,progress,
               dest,morton.data(),numPrimitivesGen,4,BVH4::maxBuildDepth,minLeafSize,maxLeafSize);
             bvh->set(node_bounds.first,node_bounds.second,numPrimitives);
 
@@ -719,7 +721,9 @@ namespace embree
         {
 #endif
             if (g_benchmark || g_verbose >= 1) t0 = getSeconds();
-	    
+
+            auto progress = [&] (size_t dn) { progressMonitor(bvh->scene,dn); };
+
             //bvh->alloc.init(numPrimitives*sizeof(BVH4::Node),numPrimitives*sizeof(BVH4::Node));
             size_t bytesAllocated = (numPrimitives+7)/8*sizeof(BVH4::Node) + size_t(1.2f*(numPrimitives+3)/4)*sizeof(Triangle4);
             bvh->alloc2.init(bytesAllocated,2*bytesAllocated); // FIXME: not working if scene size changes, initial block has to get reallocated as used as temporary data
@@ -822,7 +826,7 @@ namespace embree
             auto node_bounds = bvh_builder_center_internal<BVH4::NodeRef>(
               [&] () { return bvh->alloc2.threadLocal2(); },
                 BBox3fa(empty),
-                allocNode,setBounds,createLeaf,calculateBounds,
+              allocNode,setBounds,createLeaf,calculateBounds,progress,
                 dest,morton.data(),numPrimitivesGen,4,BVH4::maxBuildDepth,minLeafSize,maxLeafSize);
             bvh->set(node_bounds.first,node_bounds.second,numPrimitives);
 

@@ -133,14 +133,18 @@ namespace embree
 #endif
 	    
           if ((g_benchmark || g_verbose >= 1) && mesh == NULL) t0 = getSeconds();
-	    
+          
+          auto progress = [&] (size_t dn) { progressMonitor(bvh->scene,dn); };
+          auto virtualprogress = BuildProgressMonitorFromClosure(progress);
+          
 	    bvh->alloc2.init(numSplitPrimitives*sizeof(PrimRef),numSplitPrimitives*sizeof(BVH8::Node));  // FIXME: better estimate
 	    prims.resize(numSplitPrimitives);
-	    PrimInfo pinfo = mesh ? createPrimRefArray<Mesh>(mesh,prims) : createPrimRefArray<Mesh,1>(scene,prims);
+	    PrimInfo pinfo = mesh ? createPrimRefArray<Mesh>(mesh,prims,virtualprogress) : createPrimRefArray<Mesh,1>(scene,prims,virtualprogress);
             if (presplitFactor > 1.0f)
               pinfo = presplit<Mesh>(scene, pinfo, prims);
 	    BVH8::NodeRef root = bvh_builder_binned_sah2_internal<BVH8::NodeRef>
 	      (CreateAlloc(bvh),CreateBVH8Node(bvh),CreateLeaf<Primitive>(bvh,prims.data()),
+               progress,
 	       prims.data(),pinfo,BVH8::N,BVH8::maxBuildDepthLeaf,sahBlockSize,minLeafSize,maxLeafSize,BVH8::travCost,intCost);
 
             bvh->set(root,pinfo.geomBounds,pinfo.size());
@@ -308,11 +312,14 @@ namespace embree
 	    
           if ((g_benchmark || g_verbose >= 1) && mesh == NULL) t0 = getSeconds();
 	    
+            auto progress = [&] (size_t dn) { progressMonitor(bvh->scene,dn); };
+            auto virtualprogress = BuildProgressMonitorFromClosure(progress);
+
 	    bvh->alloc2.init(numSplitPrimitives*sizeof(PrimRef),numSplitPrimitives*sizeof(BVH8::Node));  // FIXME: better estimate
 	    //prims.resize(numSplitPrimitives);
 	    //PrimInfo pinfo = mesh ? createPrimRefArray<Mesh>(mesh,prims) : createPrimRefArray<Mesh,1>(scene,prims);
             PrimRefList prims;
-            PrimInfo pinfo = createPrimRefList<Mesh,1>(scene,prims);
+            PrimInfo pinfo = createPrimRefList<Mesh,1>(scene,prims,virtualprogress);
             //PRINT(pinfo.size());
 
             //SpatialSplitHeuristic heuristic(scene);
@@ -362,6 +369,7 @@ namespace embree
                 const Vec3fa v2 = mesh->vertex(tri.v[2]);
                 splitTriangle(prim,dim,pos,v0,v1,v2,left_o,right_o);
               },
+               progress,
 	       prims,pinfo,BVH8::N,BVH8::maxBuildDepthLeaf,sahBlockSize,minLeafSize,maxLeafSize,BVH8::travCost,intCost);
 	    bvh->set(root,pinfo.geomBounds,pinfo.size());
             

@@ -2885,7 +2885,7 @@ namespace embree
 
   ssize_t monitorProgressBreak = -1;
   atomic_t monitorProgressInvokations = 0;
-  bool monitorProgressFunction(double dn) 
+  bool monitorProgressFunction(RTCScene scene, double dn) 
   {
     size_t n = atomic_add(&monitorProgressInvokations,1);
     if (n == monitorProgressBreak) return false;
@@ -2973,9 +2973,9 @@ namespace embree
     //POSITIVE("regression_static",         rtcore_regression(rtcore_regression_static_thread,true));
     //POSITIVE("regression_dynamic",        rtcore_regression(rtcore_regression_dynamic_thread,false));
     //POSITIVE("regression_garbage_geom",   rtcore_regression_garbage());
-    POSITIVE("regression_static_memory_monitor",         rtcore_regression_memory_monitor(rtcore_regression_static_thread));
-    POSITIVE("regression_dynamic_memory_monitor",        rtcore_regression_memory_monitor(rtcore_regression_dynamic_thread));
-    exit(1);
+    //POSITIVE("regression_static_memory_monitor",         rtcore_regression_memory_monitor(rtcore_regression_static_thread));
+    //POSITIVE("regression_dynamic_memory_monitor",        rtcore_regression_memory_monitor(rtcore_regression_dynamic_thread));
+    //exit(1);
 
     POSITIVE("mutex_sys",                 test_mutex_sys());
 #if !defined(__MIC__)  // FIXME: hangs on MIC 
@@ -3077,7 +3077,7 @@ namespace embree
     POSITIVE("regression_static",         rtcore_regression(rtcore_regression_static_thread,false));
     POSITIVE("regression_dynamic",        rtcore_regression(rtcore_regression_dynamic_thread,false));
 
-#if !defined(__MIC__) && !defined(TASKING_TBB_INTERNAL)
+#if !defined(__MIC__) && defined(TASKING_TBB)
     POSITIVE("regression_static_memory_monitor",  rtcore_regression_memory_monitor(rtcore_regression_static_thread));
     POSITIVE("regression_dynamic_memory_monitor", rtcore_regression_memory_monitor(rtcore_regression_dynamic_thread));
 #endif

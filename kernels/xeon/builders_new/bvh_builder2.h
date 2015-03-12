@@ -43,7 +43,7 @@ namespace embree
 	PrimInfo   pinfo;    //!< Bounding info of primitives.
       };
 
-    template<typename Set, typename NodeRef, typename Heuristic, typename ReductionTy, typename Allocator, typename CreateAllocFunc, typename CreateNodeFunc, typename UpdateNodeFunc, typename CreateLeafFunc>
+    template<typename Set, typename NodeRef, typename Heuristic, typename ReductionTy, typename Allocator, typename CreateAllocFunc, typename CreateNodeFunc, typename UpdateNodeFunc, typename CreateLeafFunc, typename ProgressMonitor>
       class BVHBuilderSAH2
     {
       static const size_t MAX_BRANCHING_FACTOR = 16;  //!< maximal supported BVH branching factor
@@ -83,6 +83,7 @@ namespace embree
       BVHBuilderSAH2 (Heuristic& heuristic, 
 		      const ReductionTy& identity,
 		      CreateAllocFunc& createAlloc, CreateNodeFunc& createNode, UpdateNodeFunc& updateNode, CreateLeafFunc& createLeaf,
+                      ProgressMonitor& progressMonitor,
                       const PrimInfo& pinfo,
                       const size_t branchingFactor, const size_t maxDepth, 
                       const size_t logBlockSize, const size_t minLeafSize, const size_t maxLeafSize,
@@ -90,6 +91,7 @@ namespace embree
         : heuristic(heuristic), 
 	identity(identity), 
 	createAlloc(createAlloc), createNode(createNode), updateNode(updateNode), createLeaf(createLeaf), 
+        progressMonitor(progressMonitor),
         pinfo(pinfo), 
         branchingFactor(branchingFactor), maxDepth(maxDepth),
         logBlockSize(logBlockSize), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize),
@@ -275,6 +277,7 @@ namespace embree
       CreateNodeFunc& createNode;
       UpdateNodeFunc& updateNode;
       CreateLeafFunc& createLeaf;
+      ProgressMonitor& progressMonitor;
       
     private:
       const PrimInfo& pinfo;
@@ -287,10 +290,11 @@ namespace embree
       const float intCost;
     };
     
-    template<typename NodeRef, typename CreateAllocFunc, typename ReductionTy, typename CreateNodeFunc, typename UpdateNodeFunc, typename CreateLeafFunc>
+    template<typename NodeRef, typename CreateAllocFunc, typename ReductionTy, typename CreateNodeFunc, typename UpdateNodeFunc, typename CreateLeafFunc, typename ProgressMonitor>
       NodeRef bvh_builder_reduce_binned_sah2_internal(CreateAllocFunc createAlloc, 
 						      const ReductionTy& identity, 
 						      CreateNodeFunc createNode, UpdateNodeFunc updateNode, CreateLeafFunc createLeaf, 
+                                                      ProgressMonitor& progressMonitor,
 						      PrimRef* prims, const PrimInfo& pinfo, 
 						      const size_t branchingFactor, const size_t maxDepth, const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize,
 						      const float travCost, const float intCost)
@@ -299,8 +303,8 @@ namespace embree
       assert((blockSize ^ (1L << logBlockSize)) == 0);
       HeuristicArrayBinningSAH<PrimRef> heuristic(prims);
       
-      BVHBuilderSAH2<range<size_t>,NodeRef,decltype(heuristic),ReductionTy,decltype(createAlloc()),CreateAllocFunc,CreateNodeFunc,UpdateNodeFunc,CreateLeafFunc> builder
-        (heuristic,identity,createAlloc,createNode,updateNode,createLeaf,pinfo,branchingFactor,maxDepth,logBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
+      BVHBuilderSAH2<range<size_t>,NodeRef,decltype(heuristic),ReductionTy,decltype(createAlloc()),CreateAllocFunc,CreateNodeFunc,UpdateNodeFunc,CreateLeafFunc,ProgressMonitor> builder
+        (heuristic,identity,createAlloc,createNode,updateNode,createLeaf,progressMonitor,pinfo,branchingFactor,maxDepth,logBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
 
       NodeRef root;
       BuildRecord2<NodeRef> br(pinfo,1,&root);
@@ -309,10 +313,11 @@ namespace embree
       return root;
     }
 
-    template<typename NodeRef, typename CreateAllocFunc, typename ReductionTy, typename CreateNodeFunc, typename UpdateNodeFunc, typename CreateLeafFunc, typename SplitPrimitiveFunc>
+    template<typename NodeRef, typename CreateAllocFunc, typename ReductionTy, typename CreateNodeFunc, typename UpdateNodeFunc, typename CreateLeafFunc, typename SplitPrimitiveFunc, typename ProgressMonitor>
       NodeRef bvh_builder_reduce_spatial_sah2_internal(Scene* scene, CreateAllocFunc createAlloc, 
                                                        const ReductionTy& identity, 
                                                        CreateNodeFunc createNode, UpdateNodeFunc updateNode, CreateLeafFunc createLeaf, SplitPrimitiveFunc splitPrimitive,
+                                                       ProgressMonitor& progressMonitor,
                                                        PrimRefList& prims, const PrimInfo& pinfo, 
                                                        const size_t branchingFactor, const size_t maxDepth, const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize,
                                                        const float travCost, const float intCost)
@@ -324,8 +329,8 @@ namespace embree
       HeuristicSpatialSplitAndObjectSplitBlockListBinningSAH<PrimRef,SplitPrimitiveFunc> heuristic(splitPrimitive);
       
       //auto updateNode = [] (int node, int*, size_t) -> int { return 0; };
-      BVHBuilderSAH2<PrimRefList,NodeRef,decltype(heuristic),ReductionTy,decltype(createAlloc()),CreateAllocFunc,CreateNodeFunc,UpdateNodeFunc,CreateLeafFunc> builder
-        (heuristic,identity,createAlloc,createNode,updateNode,createLeaf,pinfo,branchingFactor,maxDepth,logBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
+      BVHBuilderSAH2<PrimRefList,NodeRef,decltype(heuristic),ReductionTy,decltype(createAlloc()),CreateAllocFunc,CreateNodeFunc,UpdateNodeFunc,CreateLeafFunc,ProgressMonitor> builder
+        (heuristic,identity,createAlloc,createNode,updateNode,createLeaf,progressMonitor,pinfo,branchingFactor,maxDepth,logBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
 
       NodeRef root;
       BuildRecord2<NodeRef,PrimRefList> br(pinfo,1,&root);
@@ -334,8 +339,9 @@ namespace embree
       return root;
     }
 
-    template<typename NodeRef, typename CreateAllocFunc, typename CreateNodeFunc, typename CreateLeafFunc>
+    template<typename NodeRef, typename CreateAllocFunc, typename CreateNodeFunc, typename CreateLeafFunc, typename ProgressMonitor>
       NodeRef bvh_builder_binned_sah2_internal(CreateAllocFunc createAlloc, CreateNodeFunc createNode, CreateLeafFunc createLeaf, 
+                                               ProgressMonitor& progressMonitor, 
                                                PrimRef* prims, const PrimInfo& pinfo, 
                                                const size_t branchingFactor, const size_t maxDepth, const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize,
                                                const float travCost, const float intCost)
@@ -345,8 +351,8 @@ namespace embree
       HeuristicArrayBinningSAH<PrimRef> heuristic(prims);
       
       auto updateNode = [] (int node, int*, size_t) -> int { return 0; };
-      BVHBuilderSAH2<range<size_t>,NodeRef,decltype(heuristic),int,decltype(createAlloc()),CreateAllocFunc,CreateNodeFunc,decltype(updateNode),CreateLeafFunc> builder
-        (heuristic,0,createAlloc,createNode,updateNode,createLeaf,pinfo,branchingFactor,maxDepth,logBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
+      BVHBuilderSAH2<range<size_t>,NodeRef,decltype(heuristic),int,decltype(createAlloc()),CreateAllocFunc,CreateNodeFunc,decltype(updateNode),CreateLeafFunc,ProgressMonitor> builder
+        (heuristic,0,createAlloc,createNode,updateNode,createLeaf,progressMonitor,pinfo,branchingFactor,maxDepth,logBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
 
       NodeRef root;
       BuildRecord2<NodeRef> br(pinfo,1,&root);
@@ -355,11 +361,12 @@ namespace embree
       return root;
     }
 
-    template<typename NodeRef, typename CreateAllocFunc, typename CreateNodeFunc, typename CreateLeafFunc, typename SplitPrimitiveFunc>
+    template<typename NodeRef, typename CreateAllocFunc, typename CreateNodeFunc, typename CreateLeafFunc, typename SplitPrimitiveFunc, typename ProgressMonitor>
       NodeRef bvh_builder_spatial_sah2_internal(Scene* scene, CreateAllocFunc createAlloc, CreateNodeFunc createNode, CreateLeafFunc createLeaf, SplitPrimitiveFunc splitPrimitive,
-                                               PrimRefList& prims, const PrimInfo& pinfo, 
-                                               const size_t branchingFactor, const size_t maxDepth, const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize,
-                                               const float travCost, const float intCost)
+                                                ProgressMonitor& progressMonitor,
+                                                PrimRefList& prims, const PrimInfo& pinfo, 
+                                                const size_t branchingFactor, const size_t maxDepth, const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize,
+                                                const float travCost, const float intCost) // FIXME: move these constants into struct!
     {
       const size_t logBlockSize = __bsr(blockSize);
       assert((blockSize ^ (1L << logBlockSize)) == 0);
@@ -368,8 +375,8 @@ namespace embree
       HeuristicSpatialSplitAndObjectSplitBlockListBinningSAH<PrimRef,SplitPrimitiveFunc> heuristic(splitPrimitive);
       
       auto updateNode = [] (int node, int*, size_t) -> int { return 0; };
-      BVHBuilderSAH2<PrimRefList,NodeRef,decltype(heuristic),int,decltype(createAlloc()),CreateAllocFunc,CreateNodeFunc,decltype(updateNode),CreateLeafFunc> builder
-        (heuristic,0,createAlloc,createNode,updateNode,createLeaf,pinfo,branchingFactor,maxDepth,logBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
+      BVHBuilderSAH2<PrimRefList,NodeRef,decltype(heuristic),int,decltype(createAlloc()),CreateAllocFunc,CreateNodeFunc,decltype(updateNode),CreateLeafFunc,ProgressMonitor> builder
+        (heuristic,0,createAlloc,createNode,updateNode,createLeaf,progressMonitor,pinfo,branchingFactor,maxDepth,logBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
 
       NodeRef root;
       BuildRecord2<NodeRef,PrimRefList> br(pinfo,1,&root);
@@ -378,13 +385,14 @@ namespace embree
       return root;
     }
 
-    template<typename NodeRef, typename CreateAllocFunc, typename CreateNodeFunc, typename CreateLeafFunc>
+    template<typename NodeRef, typename CreateAllocFunc, typename CreateNodeFunc, typename CreateLeafFunc, typename ProgressMonitor> // FIXME: remove this function
       NodeRef bvh_builder_binned_sah2(CreateAllocFunc createAlloc, CreateNodeFunc createNode, CreateLeafFunc createLeaf, 
+                                      ProgressMonitor& progressMonitor,
                                      PrimRef* prims, const PrimInfo& pinfo, 
                                       const size_t branchingFactor, const size_t maxDepth, const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize,
                                       const float travCost, const float intCost)
     {
-      return bvh_builder_binned_sah2_internal<NodeRef>(createAlloc,createNode,createLeaf,prims,pinfo,
+      return bvh_builder_binned_sah2_internal<NodeRef>(createAlloc,createNode,createLeaf,progressMonitor,prims,pinfo,
                                                        branchingFactor,maxDepth,blockSize,minLeafSize,maxLeafSize,travCost,intCost);
     }
   }

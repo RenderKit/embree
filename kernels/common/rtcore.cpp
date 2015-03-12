@@ -172,18 +172,22 @@ namespace embree
   {
     if (g_memory_monitor_function) {
       if (!g_memory_monitor_function(bytes,post)) {
+#if !defined(TASKING_LOCKSTEP) && !defined(TASKING_TBB_INTERNAL)
         if (bytes > 0) { // only throw exception when we allocating memory to never throw inside a destructor
           THROW_MY_RUNTIME_ERROR(RTC_OUT_OF_MEMORY,"memory monitor forced termination");
+#endif
         }
       }
     }
   }
 
-  void progressMonitor(double nprims)
+  void progressMonitor(Scene* scene, double nprims)
   {
     if (g_progress_monitor_function) {
-      if (!g_progress_monitor_function(nprims))
+      if (!g_progress_monitor_function((RTCScene)scene,nprims))
+#if !defined(TASKING_LOCKSTEP) && !defined(TASKING_TBB_INTERNAL)
         THROW_MY_RUNTIME_ERROR(RTC_CANCELLED,"progress monitor forced termination");
+#endif
     }
   }
 

@@ -50,7 +50,7 @@ namespace embree
       NodeRef* parent;        //!< reference pointing to us
     };
     
-    template<typename NodeRef, typename Heuristic, typename ReductionTy, typename Allocator, typename CreateAllocFunc, typename CreateNodeFunc, typename UpdateNodeFunc, typename CreateLeafFunc>
+    template<typename NodeRef, typename Heuristic, typename ReductionTy, typename Allocator, typename CreateAllocFunc, typename CreateNodeFunc, typename UpdateNodeFunc, typename CreateLeafFunc, typename ProgressMonitor>
       class BVHBuilderSAH
     {
       typedef typename Heuristic::Split Split;
@@ -62,12 +62,14 @@ namespace embree
       BVHBuilderSAH (Heuristic& heuristic,
 		     const ReductionTy& identity,
 		     CreateAllocFunc& createAlloc, CreateNodeFunc& createNode, UpdateNodeFunc& updateNode, CreateLeafFunc& createLeaf,
+                     ProgressMonitor& progressMonitor,
 		     const PrimInfo& pinfo,
 		     const size_t branchingFactor, const size_t maxDepth, 
 		     const size_t logBlockSize, const size_t minLeafSize, const size_t maxLeafSize)
         : heuristic(heuristic), 
 	  identity(identity), 
 	  createAlloc(createAlloc), createNode(createNode), updateNode(updateNode), createLeaf(createLeaf), 
+          progressMonitor(progressMonitor),
           pinfo(pinfo), 
           branchingFactor(branchingFactor), maxDepth(maxDepth),
           logBlockSize(logBlockSize), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize)
@@ -246,6 +248,7 @@ namespace embree
       CreateNodeFunc& createNode;
       UpdateNodeFunc& updateNode;
       CreateLeafFunc& createLeaf;
+      ProgressMonitor& progressMonitor;
       
     private:
       const PrimInfo& pinfo;
@@ -256,10 +259,11 @@ namespace embree
       const size_t maxLeafSize;
     };
 
-    template<typename NodeRef, typename CreateAllocFunc, typename ReductionTy, typename CreateNodeFunc, typename UpdateNodeFunc, typename CreateLeafFunc>
+    template<typename NodeRef, typename CreateAllocFunc, typename ReductionTy, typename CreateNodeFunc, typename UpdateNodeFunc, typename CreateLeafFunc, typename ProgressMonitor>
       NodeRef bvh_builder_reduce_binned_sah_internal(CreateAllocFunc createAlloc, 
 						      const ReductionTy& identity, 
-						      CreateNodeFunc createNode, UpdateNodeFunc updateNode, CreateLeafFunc createLeaf, 
+						      CreateNodeFunc createNode, UpdateNodeFunc updateNode, CreateLeafFunc createLeaf,
+                                                      ProgressMonitor& progressMonitor,
 						      PrimRef* prims, const PrimInfo& pinfo, 
 						      const size_t branchingFactor, const size_t maxDepth, const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize)
     {
@@ -267,8 +271,8 @@ namespace embree
       assert((blockSize ^ (1L << logBlockSize)) == 0);
       HeuristicArrayBinningSAH<PrimRef> heuristic(prims);
       
-      BVHBuilderSAH<NodeRef,decltype(heuristic),ReductionTy,decltype(createAlloc()),CreateAllocFunc,CreateNodeFunc,UpdateNodeFunc,CreateLeafFunc> builder
-        (heuristic,identity,createAlloc,createNode,updateNode,createLeaf,pinfo,branchingFactor,maxDepth,logBlockSize,minLeafSize,maxLeafSize);
+      BVHBuilderSAH<NodeRef,decltype(heuristic),ReductionTy,decltype(createAlloc()),CreateAllocFunc,CreateNodeFunc,UpdateNodeFunc,CreateLeafFunc,ProgressMonitor> builder
+        (heuristic,identity,createAlloc,createNode,updateNode,createLeaf,progressMonitor,pinfo,branchingFactor,maxDepth,logBlockSize,minLeafSize,maxLeafSize);
 
       NodeRef root;
       BuildRecord<NodeRef> br(pinfo,1,&root);
@@ -277,8 +281,9 @@ namespace embree
       return root;
     }
 
-    template<typename NodeRef, typename CreateAllocFunc, typename CreateNodeFunc, typename CreateLeafFunc>
-      NodeRef bvh_builder_binned_sah_internal(CreateAllocFunc createAlloc, CreateNodeFunc createNode, CreateLeafFunc createLeaf, 
+    template<typename NodeRef, typename CreateAllocFunc, typename CreateNodeFunc, typename CreateLeafFunc, typename ProgressMonitor>
+      NodeRef bvh_builder_binned_sah_internal(CreateAllocFunc createAlloc, CreateNodeFunc createNode, CreateLeafFunc createLeaf,
+                                              ProgressMonitor progressMonitor,
                                               PrimRef* prims, const PrimInfo& pinfo, 
                                               const size_t branchingFactor, const size_t maxDepth, const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize)
     {
@@ -287,8 +292,8 @@ namespace embree
       HeuristicArrayBinningSAH<PrimRef> heuristic(prims);
       
       auto updateNode = [] (int node, int*, size_t) -> int { return 0; };
-      BVHBuilderSAH<NodeRef,decltype(heuristic),int,decltype(createAlloc()),CreateAllocFunc,CreateNodeFunc,decltype(updateNode),CreateLeafFunc> builder
-        (heuristic,0,createAlloc,createNode,updateNode,createLeaf,pinfo,branchingFactor,maxDepth,logBlockSize,minLeafSize,maxLeafSize);
+      BVHBuilderSAH<NodeRef,decltype(heuristic),int,decltype(createAlloc()),CreateAllocFunc,CreateNodeFunc,decltype(updateNode),CreateLeafFunc,ProgressMonitor> builder
+        (heuristic,0,createAlloc,createNode,updateNode,createLeaf,progressMonitor,pinfo,branchingFactor,maxDepth,logBlockSize,minLeafSize,maxLeafSize);
 
       NodeRef root;
       BuildRecord<NodeRef> br(pinfo,1,&root);
@@ -297,12 +302,13 @@ namespace embree
       return root;
     }
 
-    template<typename NodeRef, typename CreateAllocFunc, typename CreateNodeFunc, typename CreateLeafFunc>
+    template<typename NodeRef, typename CreateAllocFunc, typename CreateNodeFunc, typename CreateLeafFunc, typename ProgressMonitor> // FIXME: remove this function
       NodeRef bvh_builder_binned_sah(CreateAllocFunc createAlloc, CreateNodeFunc createNode, CreateLeafFunc createLeaf, 
+                                     ProgressMonitor progressMonitor,
                                      PrimRef* prims, const PrimInfo& pinfo, 
                                      const size_t branchingFactor, const size_t maxDepth, const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize)
     {
-      return bvh_builder_binned_sah_internal<NodeRef>(createAlloc,createNode,createLeaf,prims,pinfo,
+      return bvh_builder_binned_sah_internal<NodeRef>(createAlloc,createNode,createLeaf,progressMonitor,prims,pinfo,
                                                       branchingFactor,maxDepth,blockSize,minLeafSize,maxLeafSize);
     }
   }

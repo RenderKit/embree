@@ -26,16 +26,16 @@ namespace embree
   namespace isa
   {
     template<typename Mesh>
-      PrimInfo createPrimRefArray(Mesh* mesh, vector<PrimRef>& prims);
+      PrimInfo createPrimRefArray(Mesh* mesh, vector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);
 
     template<typename Mesh, size_t timeSteps>
-      PrimInfo createPrimRefArray(Scene* scene, vector<PrimRef>& prims);
+      PrimInfo createPrimRefArray(Scene* scene, vector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);
 
     template<typename Mesh, size_t timeSteps>
-      PrimInfo createPrimRefList(Scene* scene, PrimRefList& prims);
+      PrimInfo createPrimRefList(Scene* scene, PrimRefList& prims, BuildProgressMonitor& progressMonitor);
 
     template<size_t timeSteps>
-      PrimInfo createBezierRefArray(Scene* scene, vector<BezierPrim>& prims);
+      PrimInfo createBezierRefArray(Scene* scene, vector<BezierPrim>& prims, BuildProgressMonitor& progressMonitor);
   }
 }
 

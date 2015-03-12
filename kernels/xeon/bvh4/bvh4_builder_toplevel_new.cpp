@@ -171,6 +171,7 @@ namespace embree
              *current.parent = (BVH4::NodeRef) prims[current.prims.begin()].ID();
              return 1;
            },
+           [&] (size_t dn) { progressMonitor(bvh->scene,0); },
            prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,1,1,1);
         
         bvh->set(root,pinfo.geomBounds,numPrimitives);

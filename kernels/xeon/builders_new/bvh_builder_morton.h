@@ -144,7 +144,7 @@ namespace embree
       ssei ax, ay, az, ai;
     };
     
-    template<typename NodeRef, typename ReductionTy, typename Allocator, typename CreateAllocator, typename AllocNodeFunc, typename SetNodeBoundsFunc, typename CreateLeafFunc, typename CalculateBounds>
+    template<typename NodeRef, typename ReductionTy, typename Allocator, typename CreateAllocator, typename AllocNodeFunc, typename SetNodeBoundsFunc, typename CreateLeafFunc, typename CalculateBounds, typename ProgressMonitor>
       class BVHBuilderCenter
     {
       ALIGNED_CLASS;
@@ -157,8 +157,10 @@ namespace embree
       
       BVHBuilderCenter (const ReductionTy& identity, 
                         CreateAllocator& createAllocator, AllocNodeFunc& allocNode, SetNodeBoundsFunc& setBounds, CreateLeafFunc& createLeaf, CalculateBounds& calculateBounds,
+                        ProgressMonitor& progressMonitor,
                         const size_t branchingFactor, const size_t maxDepth, const size_t minLeafSize, const size_t maxLeafSize)
         : identity(identity), createAllocator(createAllocator), allocNode(allocNode), setBounds(setBounds), createLeaf(createLeaf), calculateBounds(calculateBounds),
+        progressMonitor(progressMonitor),
           branchingFactor(branchingFactor), maxDepth(maxDepth), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize), 
           morton(NULL) {}
       
@@ -417,25 +419,28 @@ namespace embree
       SetNodeBoundsFunc& setBounds;
       CreateLeafFunc& createLeaf;
       CalculateBounds& calculateBounds;
+      ProgressMonitor& progressMonitor;
     };
 
     
-    template<typename NodeRef, typename CreateAllocFunc, typename ReductionTy, typename AllocNodeFunc, typename SetBoundsFunc, typename CreateLeafFunc, typename CalculateBoundsFunc>
+    template<typename NodeRef, typename CreateAllocFunc, typename ReductionTy, typename AllocNodeFunc, typename SetBoundsFunc, typename CreateLeafFunc, typename CalculateBoundsFunc, typename ProgressMonitor>
       std::pair<NodeRef,BBox3fa> bvh_builder_center_internal(CreateAllocFunc createAllocator, 
                                                              const ReductionTy& identity, 
                                                              AllocNodeFunc allocNode, SetBoundsFunc setBounds, CreateLeafFunc createLeaf, CalculateBoundsFunc calculateBounds,
+                                                             ProgressMonitor progressMonitor,
                                                              MortonID32Bit* src, MortonID32Bit* tmp, size_t numPrimitives,
                                                              const size_t branchingFactor, const size_t maxDepth, const size_t minLeafSize, const size_t maxLeafSize)
     {
-      BVHBuilderCenter<NodeRef,ReductionTy,decltype(createAllocator()),CreateAllocFunc,AllocNodeFunc,SetBoundsFunc,CreateLeafFunc,CalculateBoundsFunc> builder
-        (identity,createAllocator,allocNode,setBounds,createLeaf,calculateBounds,branchingFactor,maxDepth,minLeafSize,maxLeafSize);
+      BVHBuilderCenter<NodeRef,ReductionTy,decltype(createAllocator()),CreateAllocFunc,AllocNodeFunc,SetBoundsFunc,CreateLeafFunc,CalculateBoundsFunc,ProgressMonitor> builder
+        (identity,createAllocator,allocNode,setBounds,createLeaf,calculateBounds,progressMonitor,branchingFactor,maxDepth,minLeafSize,maxLeafSize);
       return builder.build(src,tmp,numPrimitives);
     }
 
-    template<typename NodeRef, typename CreateAllocFunc, typename ReductionTy, typename AllocNodeFunc, typename SetBoundsFunc, typename CreateLeafFunc, typename CalculateBoundsFunc>
+    template<typename NodeRef, typename CreateAllocFunc, typename ReductionTy, typename AllocNodeFunc, typename SetBoundsFunc, typename CreateLeafFunc, typename CalculateBoundsFunc,typename ProgressMonitor>
       std::pair<NodeRef,BBox3fa> bvh_builder_center(CreateAllocFunc createAllocator, 
                                                     const ReductionTy& identity, 
                                                     AllocNodeFunc allocNode, SetBoundsFunc setBounds, CreateLeafFunc createLeaf, CalculateBoundsFunc calculateBounds,
+                                                    ProgressMonitor progressMonitor,
                                                     MortonID32Bit* src, MortonID32Bit* temp, size_t numPrimitives,
                                                     const size_t branchingFactor, const size_t maxDepth, const size_t minLeafSize, const size_t maxLeafSize)
     {
@@ -461,7 +466,7 @@ namespace embree
           });
 
           ret = bvh_builder_center_internal<NodeRef>(
-            createAllocator,identity,allocNode,setBounds,createLeaf,calculateBounds,
+            createAllocator,identity,allocNode,setBounds,createLeaf,calculateBounds,progressMonitor,
             temp,src,numPrimitives,branchingFactor,maxDepth,minLeafSize,maxLeafSize);
 
       return ret;
