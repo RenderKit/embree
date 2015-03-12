@@ -56,6 +56,7 @@ namespace embree
       typedef typename Heuristic::Split Split;
       static const size_t MAX_BRANCHING_FACTOR = 16;  //!< maximal supported BVH branching factor
       static const size_t MIN_LARGE_LEAF_LEVELS = 8;  //!< create balanced tree of we are that many levels before the maximal tree depth
+      static const size_t SINGLE_THREADED_THRESHOLD = 4096;
 
     public:
 
@@ -147,11 +148,14 @@ namespace embree
 	return updateNode(node,values,numChildren);
       }
 
-      const ReductionTy recurse(const BuildRecord<NodeRef>& current, Allocator alloc)
+      const ReductionTy recurse(const BuildRecord<NodeRef>& current, Allocator alloc, bool toplevel)
       {
-        bool topLevel = (bool) alloc;
 	if (alloc == NULL) 
           alloc = createAlloc();
+
+        /* call memory monitor function to signal progress */
+        if (toplevel && current.size() <= SINGLE_THREADED_THRESHOLD)
+          progressMonitor(current.size());
 	
 	ReductionTy values[MAX_BRANCHING_FACTOR];
 	BuildRecord<NodeRef>* pchildren[MAX_BRANCHING_FACTOR];
@@ -210,12 +214,12 @@ namespace embree
 	auto node = createNode(current,pchildren,numChildren,alloc);
 
 	/* spawn tasks */
-	if (current.size() > 4096) 
+	if (current.size() >  SINGLE_THREADED_THRESHOLD) 
 	{
 	  SPAWN_BEGIN;
 	  //for (ssize_t i=numChildren-1; i>=0; i--)  // FIXME: this should be better!
 	  for (size_t i=0; i<numChildren; i++) 
-	    SPAWN(([&,i] { values[i] = recurse(children[i],NULL); }));
+	    SPAWN(([&,i] { values[i] = recurse(children[i],NULL,true); }));
 	  SPAWN_END;
 	  
 	  /* passed reduced values to node */
@@ -224,12 +228,8 @@ namespace embree
 	/* recurse into each child */
 	else 
 	{
-          /* call memory monitor function to signal progress */
-          if (topLevel)
-            progressMonitor(current.size());
-
 	  for (size_t i=0; i<numChildren; i++)
-	    values[i] = recurse(children[i],alloc);
+	    values[i] = recurse(children[i],alloc,false);
 
 	  /* perform reduction */
 	  return updateNode(node,values,numChildren);
@@ -238,7 +238,7 @@ namespace embree
 
       /*! builder entry function */
       __forceinline const ReductionTy operator() (BuildRecord<NodeRef>& br) { 
-	return recurse(br,NULL);
+	return recurse(br,NULL,true);
       }
 
     private:

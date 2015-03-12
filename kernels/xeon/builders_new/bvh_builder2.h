@@ -48,6 +48,7 @@ namespace embree
     {
       static const size_t MAX_BRANCHING_FACTOR = 16;  //!< maximal supported BVH branching factor
       static const size_t MIN_LARGE_LEAF_LEVELS = 8;  //!< create balanced tree of we are that many levels before the maximal tree depth
+      static const size_t SINGLE_THREADED_THRESHOLD = 4096;
 
       struct BuildRecord : public BuildRecord2<NodeRef,Set>
       {
@@ -170,11 +171,14 @@ namespace embree
 	heuristic.split(brecord.split,brecord.pinfo,brecord.prims,lrecord.pinfo,lrecord.prims,rrecord.pinfo,rrecord.prims);
       }
 
-      const ReductionTy recurse(BuildRecord& current, Allocator alloc)
+      const ReductionTy recurse(BuildRecord& current, Allocator alloc, bool toplevel)
       {
-        bool topLevel = (bool) alloc;
-	if (alloc == NULL) 
+	if (alloc == NULL)
           alloc = createAlloc();
+
+        /* call memory monitor function to signal progress */
+        if (toplevel && current.size() <= SINGLE_THREADED_THRESHOLD)
+          progressMonitor(current.size());
 
         /*! compute leaf and split cost */
         const float leafSAH  = intCost*current.pinfo.leafSAH(logBlockSize);
@@ -216,6 +220,8 @@ namespace embree
           BuildRecord lrecord(current.depth+1);
           BuildRecord rrecord(current.depth+1);
 	  partition(brecord,lrecord,rrecord);
+          if (lrecord.size() + rrecord.size() != brecord.size())
+            throw std::runtime_error("error");
           
           /* find new splits */
           lrecord.split = find(lrecord);
@@ -234,12 +240,12 @@ namespace embree
         auto node = createNode(current,pchildren,numChildren,alloc);
 
 	/* spawn tasks */
-	if (current.size() > 4096) 
+	if (current.size() > SINGLE_THREADED_THRESHOLD) 
 	{
 	  SPAWN_BEGIN;
 	  for (ssize_t i=numChildren-1; i>=0; i--)  // FIXME: this should be better!
             //for (size_t i=0; i<numChildren; i++) 
-	    SPAWN(([&,i] { values[i] = recurse(children[i],NULL); }));
+	    SPAWN(([&,i] { values[i] = recurse(children[i],NULL,true); }));
 	  SPAWN_END;
 	  
 	  /* perform reduction */
@@ -248,13 +254,9 @@ namespace embree
 	/* recurse into each child */
 	else 
 	{
-          /* call memory monitor function to signal progress */
-          if (topLevel)
-            progressMonitor(current.size());
-
           for (ssize_t i=numChildren-1; i>=0; i--) {
             //for (size_t i=0; i<numChildren; i++) {
-	    values[i] = recurse(children[i],alloc);
+	    values[i] = recurse(children[i],alloc,false);
           }
 	  
 	  /* perform reduction */
@@ -267,7 +269,7 @@ namespace embree
       {
 	BuildRecord br(record);
         br.split = find(br); 
-	return recurse(br,NULL);
+	return recurse(br,NULL,true);
       }
       
     private:

@@ -685,3 +685,10 @@ Vec3fa noise3D(const Vec3fa& p)
   float z = noise(p.z+192.0f);
   return Vec3fa(x,y,z);
 }
+
+static atomic_t dots = 0;
+bool progressMonitor(void* ptr, double n)
+{
+  //PRINT(100.0*n);
+  return true;
+}

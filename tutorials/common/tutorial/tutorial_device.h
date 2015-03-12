@@ -104,5 +104,4 @@ struct Sample3f
 float noise(const Vec3fa& p);
 Vec3fa noise3D(const Vec3fa& p);
 
-
-
+bool progressMonitor(void* ptr, double dn);

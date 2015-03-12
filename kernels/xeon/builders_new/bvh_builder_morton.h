@@ -152,7 +152,8 @@ namespace embree
     protected:
       static const size_t MAX_BRANCHING_FACTOR = 16;  //!< maximal supported BVH branching factor
       static const size_t MIN_LARGE_LEAF_LEVELS = 8;  //!< create balanced tree of we are that many levels before the maximal tree depth
-      
+      static const size_t SINGLE_THREADED_THRESHOLD = 4096;
+
     public:
       
       BVHBuilderCenter (const ReductionTy& identity, 
@@ -303,11 +304,14 @@ namespace embree
         right.init(center,current.end);
       }
       
-      BBox3fa recurse(MortonBuildRecord<NodeRef>& current, Allocator alloc) 
+      BBox3fa recurse(MortonBuildRecord<NodeRef>& current, Allocator alloc, bool toplevel) 
       {
-        bool topLevel = (bool) alloc;
         if (alloc == NULL) 
           alloc = createAllocator();
+
+        /* call memory monitor function to signal progress */
+        if (toplevel && current.size() <= SINGLE_THREADED_THRESHOLD)
+          progressMonitor(current.size());
         
         __aligned(64) MortonBuildRecord<NodeRef> children[MAX_BRANCHING_FACTOR];
         
@@ -362,11 +366,11 @@ namespace embree
         
         /* process top parts of tree parallel */
         BBox3fa bounds[4];
-        if (current.size() > 4096)
+        if (current.size() > SINGLE_THREADED_THRESHOLD)
         {
           SPAWN_BEGIN;
           for (size_t i=0; i<numChildren; i++) {
-            SPAWN(([&,i]{ bounds[i] = recurse(children[i],NULL); }));
+            SPAWN(([&,i]{ bounds[i] = recurse(children[i],NULL,true); }));
           }
           SPAWN_END;
         }
@@ -374,12 +378,8 @@ namespace embree
         /* finish tree sequentially */
         else
         {
-          /* call memory monitor function to signal progress */
-          if (topLevel)
-            progressMonitor(current.size());
-
           for (size_t i=0; i<numChildren; i++) 
-            bounds[i] = recurse(children[i],alloc);
+            bounds[i] = recurse(children[i],alloc,false);
         }
         
         return setBounds(node,bounds,numChildren);
@@ -401,7 +401,7 @@ namespace embree
         br.parent = &root;
         br.depth = 1;
         
-        const BBox3fa bounds = recurse(br, NULL);
+        const BBox3fa bounds = recurse(br, NULL, true);
         return std::make_pair(root,bounds);
       }
       
