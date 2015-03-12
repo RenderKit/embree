@@ -159,7 +159,7 @@ namespace embree
 	    prims.resize(numSplitPrimitives);
 	    bvh->alloc2.init(numSplitPrimitives*sizeof(PrimRef),numSplitPrimitives*sizeof(BVH4::Node));  // FIXME: better estimate
             
-            auto progress = [&] (size_t dn) { progressMonitor(bvh->scene,dn); };
+            auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
             auto virtualprogress = BuildProgressMonitorFromClosure(progress);
 	    PrimInfo pinfo = mesh ? createPrimRefArray<Mesh>(mesh,prims,virtualprogress) 
               : createPrimRefArray<Mesh,1>(scene,prims,virtualprogress);

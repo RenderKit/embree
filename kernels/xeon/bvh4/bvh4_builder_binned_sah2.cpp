@@ -162,7 +162,7 @@ namespace embree
 	    
             bvh->alloc2.init(numSplitPrimitives*sizeof(PrimRef),numSplitPrimitives*sizeof(BVH4::Node));  // FIXME: better estimate
 	    prims.resize(numSplitPrimitives);
-            auto progress = [&] (size_t dn) { progressMonitor(bvh->scene,dn); };
+            auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
             auto virtualprogress = BuildProgressMonitorFromClosure(progress);
 	    PrimInfo pinfo = mesh ? createPrimRefArray<Mesh>(mesh,prims,virtualprogress) 
               : createPrimRefArray<Mesh,1>(scene,prims,virtualprogress);
@@ -398,7 +398,7 @@ namespace embree
 	    //prims.resize(numSplitPrimitives);
 	    //PrimInfo pinfo = mesh ? createPrimRefArray<Mesh>(mesh,prims) : createPrimRefArray<Mesh,1>(scene,prims);
             PrimRefList prims;
-            auto progress = [&] (size_t dn) { progressMonitor(bvh->scene,dn); };
+            auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
             auto virtualprogress = BuildProgressMonitorFromClosure(progress);
             PrimInfo pinfo = createPrimRefList<Mesh,1>(scene,prims,virtualprogress);
             
@@ -612,7 +612,7 @@ namespace embree
 	    
 	    bvh->alloc2.init(numPrimitives*sizeof(PrimRef),numPrimitives*sizeof(BVH4::NodeMB));  // FIXME: better estimate
 	    prims.resize(numPrimitives);
-            auto progress = [&] (size_t dn) { progressMonitor(bvh->scene,dn); };
+            auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
             auto virtualprogress = BuildProgressMonitorFromClosure(progress);
 	    const PrimInfo pinfo = mesh ? createPrimRefArray<Mesh>(mesh,prims,virtualprogress) 
               : createPrimRefArray<Mesh,2>(scene,prims,virtualprogress);

@@ -224,6 +224,12 @@ namespace embree
     TaskSchedulerNew* volatile scheduler;
 
   public:
+    RTC_PROGRESS_MONITOR_FUNCTION progress_monitor_function;
+    void* progress_monitor_ptr;
+    void progressMonitor(double nprims);
+    void setProgressMonitorFunction(RTC_PROGRESS_MONITOR_FUNCTION func, void* ptr);
+
+  public:
     atomic_t numTriangles;             //!< number of enabled triangles
     atomic_t numTriangles2;            //!< number of enabled motion blur triangles
     atomic_t numBezierCurves;          //!< number of enabled curves

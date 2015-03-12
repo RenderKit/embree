@@ -134,7 +134,7 @@ namespace embree
 	    
           if ((g_benchmark || g_verbose >= 1) && mesh == NULL) t0 = getSeconds();
           
-          auto progress = [&] (size_t dn) { progressMonitor(bvh->scene,dn); };
+          auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
           auto virtualprogress = BuildProgressMonitorFromClosure(progress);
           
 	    bvh->alloc2.init(numSplitPrimitives*sizeof(PrimRef),numSplitPrimitives*sizeof(BVH8::Node));  // FIXME: better estimate
@@ -312,7 +312,7 @@ namespace embree
 	    
           if ((g_benchmark || g_verbose >= 1) && mesh == NULL) t0 = getSeconds();
 	    
-            auto progress = [&] (size_t dn) { progressMonitor(bvh->scene,dn); };
+            auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
             auto virtualprogress = BuildProgressMonitorFromClosure(progress);
 
 	    bvh->alloc2.init(numSplitPrimitives*sizeof(PrimRef),numSplitPrimitives*sizeof(BVH8::Node));  // FIXME: better estimate

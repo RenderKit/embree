@@ -118,7 +118,7 @@ namespace embree
           if (iter[i]) iter[i]->initializeHalfEdgeStructures();
 
         prims.resize(numPrimitives);
-        auto progress = [&] (size_t dn) { progressMonitor(bvh->scene,dn); };
+        auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
         auto virtualprogress = BuildProgressMonitorFromClosure(progress);
         const PrimInfo pinfo = createPrimRefArray<SubdivMesh,1>(scene,prims,virtualprogress);
         BVH4::NodeRef root = bvh_builder_binned_sah_internal<BVH4::NodeRef>
@@ -169,7 +169,7 @@ namespace embree
 	double t0 = 0.0f, dt = 0.0f;
         if (g_verbose >= 1) t0 = getSeconds();
 
-        auto progress = [&] (size_t dn) { progressMonitor(bvh->scene,dn); };
+        auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
         auto virtualprogress = BuildProgressMonitorFromClosure(progress);
 
         /* initialize all half edge structures */
@@ -311,7 +311,7 @@ namespace embree
 	double t0 = 0.0f, dt = 0.0f;
         if (g_verbose >= 1) t0 = getSeconds();
 
-        auto progress = [&] (size_t dn) { progressMonitor(bvh->scene,dn); };
+        auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
         auto virtualprogress = BuildProgressMonitorFromClosure(progress);
 
         /* initialize all half edge structures */
@@ -439,7 +439,7 @@ namespace embree
 	double t0 = 0.0f, dt = 0.0f;
         if (g_verbose >= 1) t0 = getSeconds();
 
-        auto progress = [&] (size_t dn) { progressMonitor(bvh->scene,dn); };
+        auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
         auto virtualprogress = BuildProgressMonitorFromClosure(progress);
 
         /* initialize all half edge structures */
@@ -853,7 +853,7 @@ namespace embree
         bool fastUpdateMode = true;
         size_t fastUpdateMode_numFaces = 0;
 
-        auto progress = [&] (size_t dn) { progressMonitor(bvh->scene,dn); };
+        auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
         auto virtualprogress = BuildProgressMonitorFromClosure(progress);
 
         /* initialize all half edge structures */

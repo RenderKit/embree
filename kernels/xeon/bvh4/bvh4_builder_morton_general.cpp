@@ -519,7 +519,7 @@ namespace embree
 	    
             if (g_verbose >= 1) t0 = getSeconds();
 
-            auto progress = [&] (size_t dn) { progressMonitor(bvh->scene,dn); };
+            auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
 
             //bvh->alloc.init(numPrimitives*sizeof(BVH4::Node),numPrimitives*sizeof(BVH4::Node));
             morton.resize(numPrimitives);
@@ -722,7 +722,7 @@ namespace embree
 #endif
             if (g_benchmark || g_verbose >= 1) t0 = getSeconds();
 
-            auto progress = [&] (size_t dn) { progressMonitor(bvh->scene,dn); };
+            auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
 
             //bvh->alloc.init(numPrimitives*sizeof(BVH4::Node),numPrimitives*sizeof(BVH4::Node));
             size_t bytesAllocated = (numPrimitives+7)/8*sizeof(BVH4::Node) + size_t(1.2f*(numPrimitives+3)/4)*sizeof(Triangle4);

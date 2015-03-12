@@ -59,7 +59,7 @@ namespace embree
         bvh->alloc2.init(numPrimitives*sizeof(Primitive));
         prims.resize(numPrimitives);
 
-        auto progress = [&] (size_t dn) { progressMonitor(bvh->scene,dn); };
+        auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
         auto virtualprogress = BuildProgressMonitorFromClosure(progress);
         const PrimInfo pinfo = createBezierRefArray<1>(scene,prims,virtualprogress);
         
@@ -157,7 +157,7 @@ namespace embree
         bvh->alloc2.init(numPrimitives*sizeof(Primitive));
         prims.resize(numPrimitives);
 
-        auto progress = [&] (size_t dn) { progressMonitor(bvh->scene,dn); };
+        auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
         auto virtualprogress = BuildProgressMonitorFromClosure(progress);
         const PrimInfo pinfo = createBezierRefArray<2>(scene,prims,virtualprogress);
         

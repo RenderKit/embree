@@ -166,7 +166,6 @@ namespace embree
   static MutexSys g_errors_mutex;
   static RTC_ERROR_FUNCTION g_error_function = NULL;
   static RTC_MEMORY_MONITOR_FUNCTION g_memory_monitor_function = NULL;
-  static RTC_PROGRESS_MONITOR_FUNCTION g_progress_monitor_function = NULL;
 
   void memoryMonitor(ssize_t bytes, bool post)
   {
@@ -178,16 +177,6 @@ namespace embree
 #endif
         }
       }
-    }
-  }
-
-  void progressMonitor(Scene* scene, double nprims)
-  {
-    if (g_progress_monitor_function) {
-      if (!g_progress_monitor_function((RTCScene)scene,nprims))
-#if !defined(TASKING_LOCKSTEP) && !defined(TASKING_TBB_INTERNAL)
-        THROW_MY_RUNTIME_ERROR(RTC_CANCELLED,"progress monitor forced termination");
-#endif
     }
   }
 
@@ -583,10 +572,6 @@ namespace embree
     g_memory_monitor_function = func;
   }
 
-  RTCORE_API void rtcSetProgressMonitorFunction(RTC_PROGRESS_MONITOR_FUNCTION func) {
-    g_progress_monitor_function = func;
-  }
-
   RTCORE_API void rtcDebug()
   {
     Lock<MutexSys> lock(g_mutex);
@@ -610,6 +595,15 @@ namespace embree
     return (RTCScene) new Scene(flags,aflags);
     CATCH_END;
     return NULL;
+  }
+
+  RTCORE_API void rtcSetProgressMonitorFunction(RTCScene scene, RTC_PROGRESS_MONITOR_FUNCTION func, void* ptr) 
+  {
+    CATCH_BEGIN;
+    TRACE(rtcSetProgressMonitorFunction);
+    VERIFY_HANDLE(scene);
+    ((Scene*)scene)->setProgressMonitorFunction(func,ptr);
+    CATCH_END;
   }
   
   RTCORE_API void rtcCommit (RTCScene scene) 
