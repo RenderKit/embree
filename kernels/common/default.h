@@ -347,6 +347,8 @@ struct my_runtime_error : public std::exception
 {
   __forceinline my_runtime_error(RTCError error, const std::string& str)
     : error(error), str(str) {}
+
+  ~my_runtime_error() throw() {}
   
   const char* what () const throw () {
     return str.c_str();

@@ -554,3 +554,14 @@ Vec3fa noise3D(const Vec3fa& p)
   float z = noise(p.z+192.0f);
   return make_Vec3fa(x,y,z);
 }
+
+/* draws progress bar */
+void progressStart() {
+}
+
+uniform bool progressMonitor(void* uniform ptr, const uniform double n) {
+  return true;
+}
+
+void progressEnd() {
+}
