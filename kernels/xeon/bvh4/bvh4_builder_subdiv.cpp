@@ -1009,6 +1009,19 @@ namespace embree
       t0 = getSeconds()-t0;
       DBG_CACHE_BUILDER(std::cout << "create prims in " << 1000.0f*t0 << "ms " << std::endl);
 
+ #if 0
+      // to dump tessellated patches in obj format
+        {
+          std::cout << "# OBJ FILE" << std::endl;
+          std::cout << "# " << numPrimitives << " base primitives" << std::endl;
+          SubdivPatch1Cached *const subdiv_patches = (SubdivPatch1Cached *)this->bvh->data_mem;
+          size_t vertex_index = 0;
+          for (size_t i=0;i<numPrimitives;i++)
+            subdiv_patches[i].evalToOBJ(scene,vertex_index);
+        }
+
+#endif
+     
       if (fastUpdateMode)
       {
         if (bvh->root != BVH4::emptyNode)
@@ -1043,6 +1056,7 @@ namespace embree
 	  std::cout << "[DONE] " << 1000.0f*dt << "ms (" << numPrimitives/dt*1E-6 << " Mprim/s)" << std::endl;
 	if (g_verbose >= 2)
 	  bvh->printStatistics();
+
       }
     };
     
