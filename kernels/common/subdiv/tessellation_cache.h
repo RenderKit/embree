@@ -23,6 +23,12 @@
 
 #define FORCE_SIMPLE_FLUSH 0
 
+#if defined(DEBUG)
+#define CACHE_STATS(x) 
+#else
+#define CACHE_STATS(x) 
+#endif
+
 
 namespace embree
 {
@@ -431,10 +437,7 @@ namespace embree
    static AtomicCounter cache_accesses;
    static AtomicCounter cache_hits;
    static AtomicCounter cache_misses;
-   static AtomicCounter cache_evictions;                
-   static AtomicCounter cache_updates;                
-   static AtomicCounter cache_updates_successful;                
-   static AtomicCounter cache_fallbacks;                
+   static AtomicCounter cache_flushes;                
 
     /* print stats for debugging */                 
     static void printStats();

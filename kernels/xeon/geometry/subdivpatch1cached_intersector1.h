@@ -28,11 +28,6 @@
 #define FORCE_TRIANGLE_UV 0
 
 
-#if defined(DEBUG)
-#define CACHE_STATS(x) 
-#else
-#define CACHE_STATS(x) 
-#endif
 
 namespace embree
 {

@@ -174,7 +174,7 @@ namespace embree
 		//DBG_PRINT(SharedLazyTessellationCache::sharedLazyTessellationCache.getMaxBlocks());
 
 		BVH4::Node* node = (BVH4::Node*)SharedLazyTessellationCache::sharedLazyTessellationCache.getBlockPtr(block_index);
-		//DBG_PRINT( SharedLazyTessellationCache::sharedLazyTessellationCache.getNumUsedBytes() );
+		//DBG_PRINT( (double)SharedLazyTessellationCache::sharedLazyTessellationCache.getNumUsedBytes() / (1024.0 * 1024.0) );
 #if COMPACT == 1
                 size_t new_root_ref = (size_t)buildSubdivPatchTreeCompact(*subdiv_patch,node,((Scene*)geom)->getSubdivMesh(subdiv_patch->geom));                                
 #else                
