@@ -66,10 +66,6 @@ namespace embree
     return rtcSetMemoryMonitorFunction((RTC_MEMORY_MONITOR_FUNCTION)f);
   }
 
-  extern "C" void ispcSetProgressMonitorFunction(void* f) {
-    return rtcSetProgressMonitorFunction((RTC_PROGRESS_MONITOR_FUNCTION)f);
-  }
-
   extern "C" void ispcDebug() {
     rtcDebug();
   }
@@ -79,7 +75,11 @@ namespace embree
     if (!isCoherent(flags) && !isIncoherent(flags)) flags = RTCSceneFlags(flags | RTC_SCENE_COHERENT);
     return rtcNewScene(flags,aflags);
   }
-  
+
+  extern "C" void ispcSetProgressMonitorFunction(RTCScene scene, void* func, void* ptr) {
+    return rtcSetProgressMonitorFunction(scene,(RTC_PROGRESS_MONITOR_FUNCTION)func,ptr);
+  }
+
   extern "C" void ispcCommitScene (RTCScene scene) {
     return rtcCommit(scene);
   }

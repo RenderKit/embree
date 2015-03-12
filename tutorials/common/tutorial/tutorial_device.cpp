@@ -16,6 +16,7 @@
 
 #include "tutorial_device.h"
 #include "kernels/algorithms/parallel_for.h"
+#include "sys/sysinfo.h"
 
 /* the scene to render */
 extern RTCScene g_scene;
@@ -684,4 +685,29 @@ Vec3fa noise3D(const Vec3fa& p)
   float y = noise(p.y+64.0f);
   float z = noise(p.z+192.0f);
   return Vec3fa(x,y,z);
+}
+
+/* draws progress bar */
+static int      progressWidth = 0;
+static atomic_t progressDots = 0;
+
+void progressStart() 
+{
+  progressDots = 0;
+  progressWidth = max(3,getTerminalWidth());
+  std::cout << "[" << std::flush;
+}
+
+bool progressMonitor(void* ptr, const double n)
+{
+  size_t olddots = progressDots;
+  size_t maxdots = progressWidth-2;
+  size_t newdots = min(size_t(maxdots),size_t(n*double(maxdots)));
+  if (atomic_cmpxchg(&progressDots,olddots,newdots) == olddots)
+    for (size_t i=olddots; i<newdots; i++) std::cout << "." << std::flush;
+  return true;
+}
+
+void progressEnd() {
+  std::cout << "]" << std::endl;
 }

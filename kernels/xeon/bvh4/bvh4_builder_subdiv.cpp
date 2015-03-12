@@ -65,9 +65,10 @@ namespace embree
     template<typename Primitive>
     struct CreateLeaf
     {
-      __forceinline CreateLeaf (BVH4* bvh) : bvh(bvh) {}
+      __forceinline CreateLeaf (BVH4* bvh, PrimRef* prims) 
+        : bvh(bvh), prims(prims) {}
       
-      __forceinline int operator() (const BuildRecord<BVH4::NodeRef>& current, PrimRef* prims, Allocator* alloc) // FIXME: why are prims passed here but not for createNode
+      __forceinline int operator() (const BuildRecord<BVH4::NodeRef>& current, Allocator* alloc)
       {
         size_t items = Primitive::blocks(current.prims.size());
         size_t start = current.prims.begin();
@@ -81,6 +82,7 @@ namespace embree
       }
 
       BVH4* bvh;
+      PrimRef* prims;
     };
 
     struct BVH4SubdivPatch1BuilderBinnedSAHClass : public Builder
@@ -116,15 +118,12 @@ namespace embree
           if (iter[i]) iter[i]->initializeHalfEdgeStructures();
 
         prims.resize(numPrimitives);
-        const PrimInfo pinfo = createPrimRefArray<SubdivMesh,1>(scene,prims);
-#if 0
+        auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
+        auto virtualprogress = BuildProgressMonitorFromClosure(progress);
+        const PrimInfo pinfo = createPrimRefArray<SubdivMesh,1>(scene,prims,virtualprogress);
         BVH4::NodeRef root = bvh_builder_binned_sah_internal<BVH4::NodeRef>
-          (CreateAlloc(bvh),CreateBVH4Node(bvh),CreateLeaf<SubdivPatch1>(bvh),
+          (CreateAlloc(bvh),CreateBVH4Node(bvh),CreateLeaf<SubdivPatch1>(bvh,prims.data()),virtualprogress,
            prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,1,1,1);
-#else
-	FATAL("FIX COMPILER ERROR");
-	BVH4::NodeRef root;
-#endif
         bvh->set(root,pinfo.geomBounds,pinfo.size());
 
         if (g_verbose >= 1) dt = getSeconds()-t0;
@@ -169,6 +168,9 @@ namespace embree
 
 	double t0 = 0.0f, dt = 0.0f;
         if (g_verbose >= 1) t0 = getSeconds();
+
+        auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
+        auto virtualprogress = BuildProgressMonitorFromClosure(progress);
 
         /* initialize all half edge structures */
         Scene::Iterator<SubdivMesh> iter(scene);
@@ -262,6 +264,7 @@ namespace embree
             *current.parent = (BVH4::NodeRef) prims[current.begin].ID();
             return 0;
           },
+           progress,
            prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,1,1,1);
         bvh->set(root,pinfo.geomBounds,pinfo.size());
         
@@ -307,6 +310,9 @@ namespace embree
 
 	double t0 = 0.0f, dt = 0.0f;
         if (g_verbose >= 1) t0 = getSeconds();
+
+        auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
+        auto virtualprogress = BuildProgressMonitorFromClosure(progress);
 
         /* initialize all half edge structures */
         Scene::Iterator<SubdivMesh> iter(scene);
@@ -386,6 +392,7 @@ namespace embree
              *current.parent = (BVH4::NodeRef) prims[current.begin].ID();
              return 0;
            },
+           progress,
            prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,1,1,1);
         bvh->set(root,pinfo.geomBounds,pinfo.size());
         
@@ -431,6 +438,9 @@ namespace embree
 
 	double t0 = 0.0f, dt = 0.0f;
         if (g_verbose >= 1) t0 = getSeconds();
+
+        auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
+        auto virtualprogress = BuildProgressMonitorFromClosure(progress);
 
         /* initialize all half edge structures */
         Scene::Iterator<SubdivMesh> iter(scene);
@@ -515,6 +525,7 @@ namespace embree
             assert(ty == 1);
             return 0;
           },
+          progress,
           prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,1,1,1);
         bvh->set(root,pinfo.geomBounds,pinfo.size());
         
@@ -841,7 +852,10 @@ namespace embree
 
         bool fastUpdateMode = true;
         size_t fastUpdateMode_numFaces = 0;
-        
+
+        auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
+        auto virtualprogress = BuildProgressMonitorFromClosure(progress);
+
         /* initialize all half edge structures */
         Scene::Iterator<SubdivMesh> iter(scene);
         for (size_t i=0; i<iter.size(); i++)
@@ -1012,6 +1026,7 @@ namespace embree
             *current.parent = bvh->encodeLeaf((char*)&subdiv_patches[patchIndex],1);
             return 0;
            },
+           progress,
            prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,1,1,1);
         bvh->set(root,pinfo.geomBounds,pinfo.size());
       }

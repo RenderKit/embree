@@ -58,8 +58,10 @@ namespace embree
         /* create primref array */
         bvh->alloc2.init(numPrimitives*sizeof(Primitive));
         prims.resize(numPrimitives);
-        
-        const PrimInfo pinfo = createBezierRefArray<1>(scene,prims);
+
+        auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
+        auto virtualprogress = BuildProgressMonitorFromClosure(progress);
+        const PrimInfo pinfo = createBezierRefArray<1>(scene,prims,virtualprogress);
         
         BVH4::NodeRef root = bvh_obb_builder_binned_sah_internal
           (
@@ -96,6 +98,7 @@ namespace embree
               }
               return node;
             },
+            progress,
             prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,1,1,BVH4::maxLeafBlocks);
         
         bvh->set(root,pinfo.geomBounds,pinfo.size());
@@ -153,8 +156,10 @@ namespace embree
         /* create primref array */
         bvh->alloc2.init(numPrimitives*sizeof(Primitive));
         prims.resize(numPrimitives);
-        
-        const PrimInfo pinfo = createBezierRefArray<2>(scene,prims);
+
+        auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
+        auto virtualprogress = BuildProgressMonitorFromClosure(progress);
+        const PrimInfo pinfo = createBezierRefArray<2>(scene,prims,virtualprogress);
         
         BVH4::NodeRef root = bvh_obb_builder_binned_sah_internal
           (
@@ -226,6 +231,7 @@ namespace embree
               }
               return node;
             },
+            progress,
             prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,1,1,BVH4::maxLeafBlocks);
         
         bvh->set(root,pinfo.geomBounds,pinfo.size());

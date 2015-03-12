@@ -59,11 +59,6 @@ task void parallelCommit(RTCScene scene) {
  * report memory consumption. */
 namespace embree
 {
-  void progressMonitor(double nprims)
-  {
-    // throw an exception here to cancel the build operation
-  }
-
   void memoryMonitor(ssize_t bytes, bool post)
   {
     // throw an exception here when nprims>0 to cancel the build operation
@@ -145,6 +140,12 @@ void build_sah(std::vector<PrimRef>& prims, isa::PrimInfo& pinfo)
         *current.parent = node;
 	return 0;
       },
+
+      /* progress monitor function */
+      [&] (size_t dn) { 
+        // throw an exception here to cancel the build operation
+      },
+
       prims.data(),pinfo,2,1024,1,1,1);
     
     double t1 = getSeconds();
@@ -220,6 +221,12 @@ void build_morton(std::vector<PrimRef>& prims, isa::PrimInfo& pinfo)
       [&] (const isa::MortonID32Bit& morton) -> BBox3fa {
         return prims[morton.index].bounds();
       },
+
+      /* progress monitor function */
+      [&] (size_t dn) { 
+        // throw an exception here to cancel the build operation
+      },
+
       morton_src.data(),morton_tmp.data(),prims.size(),2,1024,1,1);
 
     Node* root = node_bounds.first;

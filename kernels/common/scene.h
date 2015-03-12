@@ -224,6 +224,13 @@ namespace embree
     TaskSchedulerNew* volatile scheduler;
 
   public:
+    RTC_PROGRESS_MONITOR_FUNCTION progress_monitor_function;
+    void* progress_monitor_ptr;
+    atomic_t progress_monitor_counter;
+    void progressMonitor(double nprims);
+    void setProgressMonitorFunction(RTC_PROGRESS_MONITOR_FUNCTION func, void* ptr);
+
+  public:
     atomic_t numTriangles;             //!< number of enabled triangles
     atomic_t numTriangles2;            //!< number of enabled motion blur triangles
     atomic_t numBezierCurves;          //!< number of enabled curves
@@ -231,6 +238,10 @@ namespace embree
     atomic_t numSubdivPatches;         //!< number of enabled subdivision patches
     atomic_t numSubdivPatches2;        //!< number of enabled motion blur subdivision patches
     atomic_t numUserGeometries1;       //!< number of enabled user geometries
+
+    __forceinline size_t numPrimitives() const {
+    return numTriangles + numTriangles2 + numBezierCurves + numBezierCurves2 + numSubdivPatches + numSubdivPatches2 + numUserGeometries1;
+   }
 
     template<typename Mesh, int timeSteps> __forceinline size_t getNumPrimitives                    () const { THROW_RUNTIME_ERROR("NOT IMPLEMENTED"); }
    

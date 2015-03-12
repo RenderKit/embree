@@ -34,7 +34,8 @@ namespace embree
       numSubdivPatches(0), numSubdivPatches2(0), 
       numUserGeometries1(0), 
       numIntersectionFilters4(0), numIntersectionFilters8(0), numIntersectionFilters16(0),
-      commitCounter(0), scheduler(NULL)
+      commitCounter(0), scheduler(NULL),
+      progress_monitor_function(NULL), progress_monitor_ptr(NULL), progress_monitor_counter(0)
   {
 #if !defined(__MIC__) 
 #  if defined(TASKING_LOCKSTEP)
@@ -387,6 +388,8 @@ namespace embree
     /* allow only one build at a time */
     Lock<MutexSys> lock(mutex);
 
+    progress_monitor_counter = 0;
+
     if (isStatic() && isBuild()) {
       process_error(RTC_INVALID_OPERATION,"static geometries cannot get committed twice");
       return;
@@ -472,7 +475,7 @@ namespace embree
       std::cout << "selected scene intersector" << std::endl;
       intersectors.print(2);
     }
-
+    
 #if TASKING_TBB_INTERNAL
     if (threadCount != 0) {
       delete scheduler; scheduler = NULL;
@@ -489,6 +492,24 @@ namespace embree
     for (size_t i=0; i<numGroups; i++) {
       if (geometries[i]) geometries[i]->write(file);
       else { int type = -1; file.write((char*)&type,sizeof(type)); }
+    }
+  }
+
+  void Scene::setProgressMonitorFunction(RTC_PROGRESS_MONITOR_FUNCTION func, void* ptr) 
+  {
+    Lock<MutexSys> lock(mutex);
+    progress_monitor_function = func;
+    progress_monitor_ptr      = ptr;
+  }
+
+  void Scene::progressMonitor(double dn)
+  {
+    if (progress_monitor_function) {
+      size_t n = atomic_t(dn) + atomic_add(&progress_monitor_counter,atomic_t(dn));
+      if (!progress_monitor_function(progress_monitor_ptr,n/(double(numPrimitives()))))
+#if !defined(TASKING_LOCKSTEP) && !defined(TASKING_TBB_INTERNAL)
+        THROW_MY_RUNTIME_ERROR(RTC_CANCELLED,"progress monitor forced termination");
+#endif
     }
   }
 }

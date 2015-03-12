@@ -162,13 +162,17 @@ namespace embree
 	    
             bvh->alloc2.init(numSplitPrimitives*sizeof(PrimRef),numSplitPrimitives*sizeof(BVH4::Node));  // FIXME: better estimate
 	    prims.resize(numSplitPrimitives);
-	    PrimInfo pinfo = mesh ? createPrimRefArray<Mesh>(mesh,prims) : createPrimRefArray<Mesh,1>(scene,prims);
+            auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
+            auto virtualprogress = BuildProgressMonitorFromClosure(progress);
+	    PrimInfo pinfo = mesh ? createPrimRefArray<Mesh>(mesh,prims,virtualprogress) 
+              : createPrimRefArray<Mesh,1>(scene,prims,virtualprogress);
 
             if (presplitFactor > 1.0f)
               pinfo = presplit<Mesh>(scene, pinfo, prims);
 
 	    BVH4::NodeRef root = bvh_builder_reduce_binned_sah2_internal<BVH4::NodeRef>
 	      (CreateAlloc(bvh),size_t(0),CreateBVH4Node(bvh),rotate,CreateLeaf<Primitive>(bvh,prims.data()),
+               progress,
 	       prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,sahBlockSize,minLeafSize,maxLeafSize,BVH4::travCost,intCost);
 	    bvh->set(root,pinfo.geomBounds,pinfo.size());
             //bvh->set(lastLeaf,pinfo.geomBounds,pinfo.size());
@@ -394,7 +398,9 @@ namespace embree
 	    //prims.resize(numSplitPrimitives);
 	    //PrimInfo pinfo = mesh ? createPrimRefArray<Mesh>(mesh,prims) : createPrimRefArray<Mesh,1>(scene,prims);
             PrimRefList prims;
-            PrimInfo pinfo = createPrimRefList<Mesh,1>(scene,prims);
+            auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
+            auto virtualprogress = BuildProgressMonitorFromClosure(progress);
+            PrimInfo pinfo = createPrimRefList<Mesh,1>(scene,prims,virtualprogress);
             
             SpatialSplitHeuristic heuristic(scene);
 
@@ -448,6 +454,7 @@ namespace embree
                 const Vec3fa v2 = mesh->vertex(tri.v[2]);
                 splitTriangle(prim,dim,pos,v0,v1,v2,left_o,right_o);
               },
+               progress,
 	       prims,pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,sahBlockSize,minLeafSize,maxLeafSize,BVH4::travCost,intCost);
 	    bvh->set(root,pinfo.geomBounds,pinfo.size());
 
@@ -605,9 +612,13 @@ namespace embree
 	    
 	    bvh->alloc2.init(numPrimitives*sizeof(PrimRef),numPrimitives*sizeof(BVH4::NodeMB));  // FIXME: better estimate
 	    prims.resize(numPrimitives);
-	    const PrimInfo pinfo = mesh ? createPrimRefArray<Mesh>(mesh,prims) : createPrimRefArray<Mesh,2>(scene,prims);
+            auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
+            auto virtualprogress = BuildProgressMonitorFromClosure(progress);
+	    const PrimInfo pinfo = mesh ? createPrimRefArray<Mesh>(mesh,prims,virtualprogress) 
+              : createPrimRefArray<Mesh,2>(scene,prims,virtualprogress);
 	    BVH4::NodeRef root = bvh_builder_reduce_binned_sah2_internal<BVH4::NodeRef>
 	      (CreateAlloc(bvh),identity,CreateBVH4NodeMB(bvh),reduce,CreateLeafMB<Primitive>(bvh,prims.data()),
+               progress,
 	       prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,sahBlockSize,minLeafSize,maxLeafSize,BVH4::travCost,intCost);
 	    bvh->set(root,pinfo.geomBounds,pinfo.size());
             

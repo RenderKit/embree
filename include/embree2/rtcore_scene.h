@@ -58,6 +58,12 @@ typedef struct __RTCScene {}* RTCScene;
 /*! Creates a new scene. */
 RTCORE_API RTCScene rtcNewScene (RTCSceneFlags flags, RTCAlgorithmFlags aflags);
 
+/*! \brief Type of progress callback function. */
+typedef bool (*RTC_PROGRESS_MONITOR_FUNCTION)(void* ptr, const double n);
+
+/*! \brief Sets the progress callback function which is called during hierarchy build of this scene. */
+RTCORE_API void rtcSetProgressMonitorFunction(RTCScene scene, RTC_PROGRESS_MONITOR_FUNCTION func, void* ptr);
+
 /*! Commits the geometry of the scene. After initializing or modifying
  *  geometries, commit has to get called before tracing
  *  rays. */

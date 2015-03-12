@@ -1032,11 +1032,15 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in,const uniform Vec3fa& 
 
 
   /* commit changes to scene */
+  progressStart();
+  rtcSetProgressMonitorFunction(scene_out,progressMonitor,NULL);
 #if !defined(PARALLEL_COMMIT)
   rtcCommit (scene_out);
 #else
   launch[ getNumHWThreads() ] parallelCommit(scene_out); sync;
 #endif
+  rtcSetProgressMonitorFunction(scene_out,NULL,NULL);
+  progressEnd();
 
   return scene_out;
 } // convertScene

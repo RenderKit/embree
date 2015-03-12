@@ -159,13 +159,17 @@ namespace embree
 	    prims.resize(numSplitPrimitives);
 	    bvh->alloc2.init(numSplitPrimitives*sizeof(PrimRef),numSplitPrimitives*sizeof(BVH4::Node));  // FIXME: better estimate
             
-	    PrimInfo pinfo = mesh ? createPrimRefArray<Mesh>(mesh,prims) : createPrimRefArray<Mesh,1>(scene,prims);
+            auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
+            auto virtualprogress = BuildProgressMonitorFromClosure(progress);
+	    PrimInfo pinfo = mesh ? createPrimRefArray<Mesh>(mesh,prims,virtualprogress) 
+              : createPrimRefArray<Mesh,1>(scene,prims,virtualprogress);
 
             if (presplitFactor > 1.0f)
               pinfo = presplit<Mesh>(scene, pinfo, prims);
 
 	    BVH4::NodeRef root = bvh_builder_reduce_binned_sah_internal<BVH4::NodeRef>
 	      (CreateAlloc(bvh),size_t(0),CreateBVH4Node(bvh),rotate,CreateLeaf<Primitive>(bvh,prims.data()),
+               progress,
 	       prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,sahBlockSize,minLeafSize,maxLeafSize);
 	    bvh->set(root,pinfo.geomBounds,pinfo.size());
             
