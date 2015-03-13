@@ -27,7 +27,7 @@
 
 #if defined(TASKING_TBB)
 #define NOMINMAX
-#define __TBB_NO_IMPLICIT_LINKAGE 0
+#define __TBB_NO_IMPLICIT_LINKAGE 1
 #include "tbb/tbb.h"
 #endif
 
