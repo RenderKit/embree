@@ -35,6 +35,45 @@ namespace embree
   void MutexSys::unlock( void ) { ReleaseMutex((HANDLE)mutex); }
 #endif
 
+}
+#endif
+
+#if defined(__UNIX__) || defined(PTHREADS_WIN32)
+#include <pthread.h>
+namespace embree
+{
+  /*! system mutex using pthreads */
+  MutexSys::MutexSys( void ) 
+  { 
+    mutex = new pthread_mutex_t; 
+    if (pthread_mutex_init((pthread_mutex_t*)mutex, NULL) != 0)
+      THROW_RUNTIME_ERROR("pthread_mutex_init failed");
+  }
+  
+  MutexSys::~MutexSys( void ) 
+  { 
+    if (pthread_mutex_destroy((pthread_mutex_t*)mutex) != 0)
+      THROW_RUNTIME_ERROR("pthread_mutex_destroy failed");
+    
+    delete (pthread_mutex_t*)mutex; 
+  }
+  
+  void MutexSys::lock( void ) 
+  { 
+    if (pthread_mutex_lock((pthread_mutex_t*)mutex) != 0) 
+      THROW_RUNTIME_ERROR("pthread_mutex_lock failed");
+  }
+  
+  void MutexSys::unlock( void ) 
+  { 
+    if (pthread_mutex_unlock((pthread_mutex_t*)mutex) != 0)
+      THROW_RUNTIME_ERROR("pthread_mutex_unlock failed");
+  }
+};
+#endif
+
+namespace embree
+{
   // ========== RW MUTEX =============
   void RWMutex::read_lock()
   {
@@ -133,38 +172,3 @@ namespace embree
     return false;
   }
 }
-#endif
-
-#if defined(__UNIX__) || defined(PTHREADS_WIN32)
-#include <pthread.h>
-namespace embree
-{
-  /*! system mutex using pthreads */
-  MutexSys::MutexSys( void ) 
-  { 
-    mutex = new pthread_mutex_t; 
-    if (pthread_mutex_init((pthread_mutex_t*)mutex, NULL) != 0)
-      THROW_RUNTIME_ERROR("pthread_mutex_init failed");
-  }
-  
-  MutexSys::~MutexSys( void ) 
-  { 
-    if (pthread_mutex_destroy((pthread_mutex_t*)mutex) != 0)
-      THROW_RUNTIME_ERROR("pthread_mutex_destroy failed");
-    
-    delete (pthread_mutex_t*)mutex; 
-  }
-  
-  void MutexSys::lock( void ) 
-  { 
-    if (pthread_mutex_lock((pthread_mutex_t*)mutex) != 0) 
-      THROW_RUNTIME_ERROR("pthread_mutex_lock failed");
-  }
-  
-  void MutexSys::unlock( void ) 
-  { 
-    if (pthread_mutex_unlock((pthread_mutex_t*)mutex) != 0)
-      THROW_RUNTIME_ERROR("pthread_mutex_unlock failed");
-  }
-};
-#endif
