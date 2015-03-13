@@ -702,7 +702,7 @@ bool progressMonitor(void* ptr, const double n)
 {
   size_t olddots = progressDots;
   size_t maxdots = progressWidth-2;
-  size_t newdots = min(size_t(maxdots),size_t(n*double(maxdots)));
+  size_t newdots = max(olddots,min(size_t(maxdots),size_t(n*double(maxdots))));
   if (atomic_cmpxchg(&progressDots,olddots,newdots) == olddots)
     for (size_t i=olddots; i<newdots; i++) std::cout << "." << std::flush;
   return true;

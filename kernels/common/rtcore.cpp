@@ -169,7 +169,7 @@ namespace embree
 
   void memoryMonitor(ssize_t bytes, bool post)
   {
-    if (g_memory_monitor_function) {
+    if (g_memory_monitor_function && bytes != 0) {
       if (!g_memory_monitor_function(bytes,post)) {
 #if !defined(TASKING_LOCKSTEP) && !defined(TASKING_TBB_INTERNAL)
         if (bytes > 0) { // only throw exception when we allocate memory to never throw inside a destructor
@@ -385,6 +385,15 @@ namespace embree
       std::cout << "  Platform : " << getPlatformName() << std::endl;
       std::cout << "  CPU      : " << stringOfCPUFeatures(getCPUFeatures()) << std::endl;
       std::cout << "  Features : ";
+#if defined(TASKING_TBB)
+      std::cout << "tbb ";
+#endif
+#if defined(TASKING_TBB_INTERNAL)
+      std::cout << "internal_tbb ";
+#endif
+#if defined(TASKING_LOCKSTEP)
+      std::cout << "internal_tasking_system ";
+#endif
 #if defined(RTCORE_RAY_MASK)
       std::cout << "raymasks ";
 #endif
