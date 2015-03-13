@@ -805,8 +805,6 @@ namespace embree
         *(avxf*)&grid_x[8*i] = vtx.x;
         *(avxf*)&grid_y[8*i] = vtx.y;
         *(avxf*)&grid_z[8*i] = vtx.z;        
-        //*(avxf*)&grid_u[8*i] = uu;
-        //*(avxf*)&grid_v[8*i] = vv;
       }
 #else
     for (size_t i=0;i<patch.grid_size_simd_blocks*2;i++) // 4-wide blocks for SSE
@@ -841,8 +839,6 @@ namespace embree
         *(ssef*)&grid_x[4*i] = vtx.x;
         *(ssef*)&grid_y[4*i] = vtx.y;
         *(ssef*)&grid_z[4*i] = vtx.z;        
-        //*(ssef*)&grid_u[4*i] = uu;
-        //*(ssef*)&grid_v[4*i] = vv;
       }
 #endif        
   }

@@ -21,7 +21,7 @@
 
 #define __device__
 
-#define FIX_SAMPLING 1
+#define FIX_SAMPLING 0
 #define SAMPLES_PER_PIXEL 1
 
 //#define PARALLEL_COMMIT

@@ -38,6 +38,7 @@ namespace embree
   static int g_numBenchmarkFrames = 0;
   static bool g_interactive = true;
   static bool g_only_subdivs = false;
+  static bool g_anim_mode = false;
   
   /* scene */
   OBJScene g_obj_scene;
@@ -94,6 +95,8 @@ namespace embree
       else if (tag == "-pregenerate") 
 	g_subdiv_mode = ",subdiv_accel=bvh4.grid.eager";
       
+      else if (tag == "-anim") 
+	g_anim_mode = true;
 
       /* number of frames to render in benchmark mode */
       else if (tag == "-benchmark") {
@@ -244,7 +247,8 @@ namespace embree
     /* interactive mode */
     if (g_interactive) {
       initWindowState(argc,argv,tutorialName, g_width, g_height, g_fullscreen);
-      enterWindowRunLoop();
+      enterWindowRunLoop(g_anim_mode);
+
     }
 
     return 0;
