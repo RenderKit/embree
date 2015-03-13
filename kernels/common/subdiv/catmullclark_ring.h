@@ -176,6 +176,9 @@ namespace embree
 
       edge_valence = i;
       face_valence = i >> 1;
+
+      assert( hasValidPositions() );
+
     }
       
     __forceinline void subdivide(CatmullClark1Ring& dest) const
@@ -569,7 +572,17 @@ namespace embree
     __forceinline Vec3fa getEdgeCenter(const size_t index) const {
       return (vtx + ring[index*2]) * 0.5f;
     }
-    
+
+    bool hasValidPositions() const
+    {
+      for (size_t i=0; i<edge_valence; i++) {
+	if ( !std::isfinite(ring[i].x) ) return false;
+	if ( !std::isfinite(ring[i].y) ) return false;
+	if ( !std::isfinite(ring[i].z) ) return false;
+      }	
+      return true;
+    }
+
     friend __forceinline std::ostream &operator<<(std::ostream &o, const CatmullClark1Ring &c)
     {
       o << "vtx " << c.vtx << " size = " << c.edge_valence << ", " << 

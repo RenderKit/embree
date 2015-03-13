@@ -361,13 +361,13 @@ namespace embree
 
 #if defined(DEBUG)
 	  using namespace std;
-	  isfinite(bounds.lower.x);
-	  isfinite(bounds.lower.y);
-	  isfinite(bounds.lower.z);
+	  assert( isfinite(bounds.lower.x) );
+	  assert( isfinite(bounds.lower.y) );
+	  assert( isfinite(bounds.lower.z) );
 	  
-	  isfinite(bounds.upper.x);
-	  isfinite(bounds.upper.y);
-	  isfinite(bounds.upper.z);
+	  assert( isfinite(bounds.upper.x) );
+	  assert( isfinite(bounds.upper.y) );
+	  assert( isfinite(bounds.upper.z) );
 #endif
 
 	  return bounds;

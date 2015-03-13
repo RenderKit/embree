@@ -169,9 +169,18 @@ namespace embree
       
       f_m_vtx = 1.0f / d * (c_e_m * p_vtx + (d - 2.0f*c - c_e_m) * e0_m_vtx + 2.0f*c* e3_p_vtx + r_e_m);      
     }
-    
+
     void init(const CatmullClarkPatch& patch)
     {
+      //      if (!( patch.ring[1].hasValidPositions() ))
+      //DBG_PRINT( patch.ring[1] );
+
+      assert( patch.ring[0].hasValidPositions() );
+      assert( patch.ring[1].hasValidPositions() );
+      assert( patch.ring[2].hasValidPositions() );
+      assert( patch.ring[3].hasValidPositions() );
+      
+
       p0() = initCornerVertex(patch,0);
       p1() = initCornerVertex(patch,1);
       p2() = initCornerVertex(patch,2);

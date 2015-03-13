@@ -638,13 +638,20 @@ namespace embree
 
 #if defined(DEBUG)
       using namespace std;
-      isfinite(b.lower.x);
-      isfinite(b.lower.y);
-      isfinite(b.lower.z);
 
-      isfinite(b.upper.x);
-      isfinite(b.upper.y);
-      isfinite(b.upper.z);
+      assert( isfinite(b.lower.x) );
+      assert( isfinite(b.lower.y) );
+      assert( isfinite(b.lower.z) );
+
+      assert( isfinite(b.upper.x) );
+      assert( isfinite(b.upper.y) );
+      assert( isfinite(b.upper.z) );
+
+
+      assert(b.lower.x <= b.upper.x);
+      assert(b.lower.y <= b.upper.y);
+      assert(b.lower.z <= b.upper.z);
+
 #endif
 
 #else
@@ -820,7 +827,7 @@ namespace embree
 	double t0 = 0.0f, dt = 0.0f;
         if (g_verbose >= 1) t0 = getSeconds();
 
-        bool fastUpdateMode = true;
+        bool fastUpdateMode = false;
         size_t fastUpdateMode_numFaces = 0;
 
         auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };

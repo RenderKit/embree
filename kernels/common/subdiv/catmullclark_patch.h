@@ -31,6 +31,8 @@ namespace embree
     {
       for (size_t i=0; i<4; i++)
         ring[i].init(first_half_edge+i,vertices);
+
+      checkPositions();
     }
 
     __forceinline Vec3fa normal(const float uu, const float vv) const // FIXME: remove
@@ -330,6 +332,21 @@ namespace embree
           FATAL("equalRingEval(patch[3].ring[1],patch[0].ring[2])"); 
         }       
 #endif
+
+#if DEBUG
+      patch[0].checkPositions();
+      patch[1].checkPositions();
+      patch[2].checkPositions();
+      patch[3].checkPositions();
+#endif
+    }
+
+    void checkPositions()
+    {
+      assert( ring[0].hasValidPositions() );
+      assert( ring[1].hasValidPositions() );
+      assert( ring[2].hasValidPositions() );
+      assert( ring[3].hasValidPositions() );      
     }
 
     __forceinline void init( FinalQuad& quad ) const
