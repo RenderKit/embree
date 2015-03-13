@@ -300,7 +300,7 @@ namespace embree
 						      const float travCost, const float intCost)
     {
       const size_t logBlockSize = __bsr(blockSize);
-      assert((blockSize ^ (1L << logBlockSize)) == 0);
+      assert((blockSize ^ (size_t(1) << logBlockSize)) == 0);
       HeuristicArrayBinningSAH<PrimRef> heuristic(prims);
       
       BVHBuilderSAH2<range<size_t>,NodeRef,decltype(heuristic),ReductionTy,decltype(createAlloc()),CreateAllocFunc,CreateNodeFunc,UpdateNodeFunc,CreateLeafFunc,ProgressMonitor> builder
@@ -323,7 +323,7 @@ namespace embree
                                                        const float travCost, const float intCost)
     {
       const size_t logBlockSize = __bsr(blockSize);
-      assert((blockSize ^ (1L << logBlockSize)) == 0);
+      assert((blockSize ^ (size_t(1) << logBlockSize)) == 0);
 
       //HeuristicListBinningSAH<PrimRef> heuristic;
       HeuristicSpatialSplitAndObjectSplitBlockListBinningSAH<PrimRef,SplitPrimitiveFunc> heuristic(splitPrimitive);
@@ -347,7 +347,7 @@ namespace embree
                                                const float travCost, const float intCost)
     {
       const size_t logBlockSize = __bsr(blockSize);
-      assert((blockSize ^ (1L << logBlockSize)) == 0);
+      assert((blockSize ^ (size_t(1) << logBlockSize)) == 0);
       HeuristicArrayBinningSAH<PrimRef> heuristic(prims);
       
       auto updateNode = [] (int node, int*, size_t) -> int { return 0; };

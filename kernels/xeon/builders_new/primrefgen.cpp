@@ -72,7 +72,7 @@ namespace embree
     {
       ParallelForForPrefixSumState<PrimInfo> pstate;
       Scene::Iterator<Mesh,timeSteps> iter(scene);
-
+      
       /* first try */
       progressMonitor(0);
       pstate.init(iter,size_t(1024));

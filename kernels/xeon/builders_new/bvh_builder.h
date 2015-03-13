@@ -268,7 +268,7 @@ namespace embree
 						      const size_t branchingFactor, const size_t maxDepth, const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize)
     {
       const size_t logBlockSize = __bsr(blockSize);
-      assert((blockSize ^ (1L << logBlockSize)) == 0);
+      assert((blockSize ^ (size_t(1) << logBlockSize)) == 0);
       HeuristicArrayBinningSAH<PrimRef> heuristic(prims);
       
       BVHBuilderSAH<NodeRef,decltype(heuristic),ReductionTy,decltype(createAlloc()),CreateAllocFunc,CreateNodeFunc,UpdateNodeFunc,CreateLeafFunc,ProgressMonitor> builder
@@ -288,7 +288,7 @@ namespace embree
                                               const size_t branchingFactor, const size_t maxDepth, const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize)
     {
       const size_t logBlockSize = __bsr(blockSize);
-      assert((blockSize ^ (1L << logBlockSize)) == 0);
+      assert((blockSize ^ (size_t(1) << logBlockSize)) == 0);
       HeuristicArrayBinningSAH<PrimRef> heuristic(prims);
       
       auto updateNode = [] (int node, int*, size_t) -> int { return 0; };
