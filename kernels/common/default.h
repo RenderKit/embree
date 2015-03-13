@@ -21,6 +21,7 @@
 #include "sys/intrinsics.h"
 #include "sys/sysinfo.h"
 #include "sys/sync/atomic.h"
+#include "sys/sync/mutex.h"
 #include "sys/stl/vector.h"
 #include "sys/stl/string.h"
 #include "sys/stl/array2d.h"

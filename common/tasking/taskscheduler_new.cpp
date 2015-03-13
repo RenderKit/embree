@@ -170,7 +170,11 @@ namespace embree
   }
 #endif
 
-  __dllexport TaskSchedulerNew* TaskSchedulerNew::g_instance = NULL;
+  TaskSchedulerNew* TaskSchedulerNew::g_instance = NULL;
+
+  __dllexport TaskSchedulerNew* TaskSchedulerNew::global_instance() {
+    return g_instance;
+  }
 
   void TaskSchedulerNew::create(size_t numThreads)
   {
@@ -258,10 +262,14 @@ namespace embree
       __pause_cpu();
   }
 
-  __dllexport __thread TaskSchedulerNew::Thread* TaskSchedulerNew::thread_local_thread = NULL;
+  __thread TaskSchedulerNew::Thread* TaskSchedulerNew::thread_local_thread = NULL;
 
   __dllexport TaskSchedulerNew::Thread* TaskSchedulerNew::thread() {
     return thread_local_thread;
+  }
+
+  __dllexport void TaskSchedulerNew::setThread(Thread* thread) {
+	  thread_local_thread = thread;
   }
 
   /* work on spawned subtasks and wait until all have finished */

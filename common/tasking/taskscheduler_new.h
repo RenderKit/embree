@@ -139,7 +139,7 @@ namespace embree
       } 
       
       /*! run this task */
-      void run (Thread& thread);
+	  __dllexport2 void run(Thread& thread);
 
     public:
       volatile atomic32_t state;         //!< state this task is in
@@ -175,7 +175,7 @@ namespace embree
 	if (left >= right-1) left = right-1;
       }
       
-      bool execute_local(Thread& thread, Task* parent);
+	  __dllexport2 bool execute_local(Thread& thread, Task* parent);
       bool steal(Thread& thread);
       size_t getTaskSizeAtLeft();
 
@@ -221,13 +221,13 @@ namespace embree
     /*! wait for some number of threads available (threadCount includes main thread) */
     void wait_for_threads(size_t threadCount);
 
-    void startThreads();
+	__dllexport2 void startThreads();
     void terminateThreadLoop();
     void destroyThreads();
 
     void thread_loop(size_t threadIndex);
     bool steal_from_other_threads(Thread& thread);
-    bool executeTaskSet(Thread& thread);
+	__dllexport2 bool executeTaskSet(Thread& thread);
 
     template<typename Predicate, typename Body>
       static void steal_loop(Thread& thread, const Predicate& pred, const Body& body);
@@ -243,7 +243,7 @@ namespace embree
       active = true;
       Thread thread(0,this);
       threadLocal[0] = &thread;
-      thread_local_thread = &thread;
+      setThread(&thread);
       thread.tasks.push_right(thread,size,closure);
       {
 	std::unique_lock<std::mutex> lock(mutex);
@@ -254,7 +254,7 @@ namespace embree
       atomic_add(&anyTasksRunning,-1);
 
       threadLocal[0] = NULL;
-      thread_local_thread = NULL;
+      setThread(NULL);
       active = false;
     }
 
@@ -269,7 +269,7 @@ namespace embree
       active = true;
       Thread thread(0,this);
       threadLocal[0] = &thread;
-      thread_local_thread = &thread;
+      setThread(&thread);
 
       ClosureTaskSetFunction<Closure> func(closure,begin,end,blockSize);
       task_set_function = &func;
@@ -284,7 +284,7 @@ namespace embree
       //atomic_add(&anyTasksRunning,-1);
 
       threadLocal[0] = NULL;
-      thread_local_thread = NULL;
+      setThread(NULL);
       active = false;
     }
 
@@ -294,7 +294,7 @@ namespace embree
     {
       Thread* thread = TaskSchedulerNew::thread();
       if (likely(thread != nullptr)) thread->tasks.push_right(*thread,size,closure);
-      else                           g_instance->spawn_root(closure,size);
+      else                           global_instance()->spawn_root(closure,size);
     }
 
     /* spawn a new task at the top of the threads task stack */
@@ -310,7 +310,7 @@ namespace embree
 #if TASKSCHEDULER_STATIC_LOAD_BALANCING
       Thread* thread = TaskSchedulerNew::thread();
       if (thread == nullptr) {
-        g_instance->spawn_root(closure,begin,end,blockSize);
+        global_instance()->spawn_root(closure,begin,end,blockSize);
         return;
       }
 #endif
@@ -328,13 +328,14 @@ namespace embree
     }
 
     /* work on spawned subtasks and wait until all have finished */
-    static void wait();
+	__dllexport2 static void wait();
 
     /* work on spawned subtasks and wait until all have finished */
-    static size_t threadCount();
+	__dllexport2 static size_t threadCount();
 
-    static Thread* thread();
-    
+	__dllexport2 static Thread* thread();
+	__dllexport2 static void setThread(Thread* thread);
+
     __forceinline static TaskSchedulerNew* instance() {
       return thread()->scheduler;
     }
@@ -361,10 +362,13 @@ namespace embree
     __aligned(64) LinearBarrierActive task_set_barrier;
 #endif
     TaskSetFunction* volatile task_set_function;
-    
+
+    __dllexport2 static TaskSchedulerNew* global_instance();
+
   private:
-    static TaskSchedulerNew* g_instance;
-    static __thread Thread* thread_local_thread;
+	  static TaskSchedulerNew* g_instance;
+	  static __thread Thread* thread_local_thread;
+
   };
 };
 

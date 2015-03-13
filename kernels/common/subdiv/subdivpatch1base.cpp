@@ -16,6 +16,7 @@
 
 #include "common/scene_subdiv_mesh.h"
 #include "subdivpatch1base.h"
+#include "common/scene.h"
 
 namespace embree
 {
@@ -145,7 +146,56 @@ namespace embree
 
   }
 
+  void SubdivPatch1Base::evalToOBJ(Scene *scene,size_t &vertex_index)
+  {
+#if defined(__MIC__)
+    FATAL("EVALTOOBJ NOT SUPPORTED ON MIC");
+#else
 
+#if !defined(_MSC_VER) || defined(__INTEL_COMPILER)
+    __aligned(64) float grid_x[(grid_size_simd_blocks+1)*8]; 
+    __aligned(64) float grid_y[(grid_size_simd_blocks+1)*8];
+    __aligned(64) float grid_z[(grid_size_simd_blocks+1)*8]; 
+    
+    __aligned(64) float grid_u[(grid_size_simd_blocks+1)*8]; 
+    __aligned(64) float grid_v[(grid_size_simd_blocks+1)*8];
+     
+#else
+      const size_t array_elements = (patch.grid_size_simd_blocks + 1) * 8;
+      float *const ptr = (float*)_malloca(5 * array_elements * sizeof(float) + 64);
+      float *const grid_arrays = (float*)ALIGN_PTR(ptr,64);
 
+      float *grid_x = &grid_arrays[array_elements * 0];
+      float *grid_y = &grid_arrays[array_elements * 1];
+      float *grid_z = &grid_arrays[array_elements * 2];
+      float *grid_u = &grid_arrays[array_elements * 3];
+      float *grid_v = &grid_arrays[array_elements * 4];        
+#endif
+      SubdivMesh *mesh = (SubdivMesh *)scene->getSubdivMesh(geom);
+  
+      evalGrid(*this,grid_x,grid_y,grid_z,grid_u,grid_v,mesh);
+
+      for (size_t v=0;v<grid_v_res;v++)
+        for (size_t u=0;u<grid_u_res;u++)
+          {
+            size_t offset = v * grid_u_res + u;
+            std::cout << "v " << grid_x[offset] << " " << grid_y[offset] << " " << grid_z[offset] << std::endl;
+          }
+        
+      for (size_t v=0;v<grid_v_res-1;v++)
+        for (size_t u=0;u<grid_u_res-1;u++)
+          {
+            size_t offset0 = vertex_index + v * grid_u_res + u;
+            size_t offset1 = vertex_index + offset0 + grid_u_res;
+            std::cout << "f " << offset0+1 << " " << offset0+2 << " " << offset1+2 << " " << offset1+1 << std::endl;
+          }
+      vertex_index += grid_u_res*grid_v_res;
+      
+#if defined(_MSC_VER) && !defined(__INTEL_COMPILER)
+      _freea(ptr);
+#endif      
+
+#endif
+  }
 
 }

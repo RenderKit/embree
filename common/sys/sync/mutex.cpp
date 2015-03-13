@@ -34,6 +34,7 @@ namespace embree
   void MutexSys::lock( void ) { WaitForSingleObject((HANDLE)mutex,INFINITE); }
   void MutexSys::unlock( void ) { ReleaseMutex((HANDLE)mutex); }
 #endif
+
 }
 #endif
 
@@ -68,8 +69,11 @@ namespace embree
     if (pthread_mutex_unlock((pthread_mutex_t*)mutex) != 0)
       THROW_RUNTIME_ERROR("pthread_mutex_unlock failed");
   }
+};
+#endif
 
-
+namespace embree
+{
   // ========== RW MUTEX =============
   void RWMutex::read_lock()
   {
@@ -167,7 +171,4 @@ namespace embree
     update_atomic_add(-SINGLE_READER);
     return false;
   }
-
-  
-};
-#endif
+}

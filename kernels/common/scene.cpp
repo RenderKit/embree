@@ -504,12 +504,13 @@ namespace embree
 
   void Scene::progressMonitor(double dn)
   {
-    if (progress_monitor_function) {
-      size_t n = atomic_t(dn) + atomic_add(&progress_monitor_counter,atomic_t(dn));
-      if (!progress_monitor_function(progress_monitor_ptr,n/(double(numPrimitives()))))
+	  if (progress_monitor_function) {
+	    size_t n = atomic_t(dn) + atomic_add(&progress_monitor_counter, atomic_t(dn));
+	    if (!progress_monitor_function(progress_monitor_ptr, n / (double(numPrimitives())))) {
 #if !defined(TASKING_LOCKSTEP) && !defined(TASKING_TBB_INTERNAL)
-        THROW_MY_RUNTIME_ERROR(RTC_CANCELLED,"progress monitor forced termination");
+	      THROW_MY_RUNTIME_ERROR(RTC_CANCELLED,"progress monitor forced termination");
 #endif
+      }
     }
   }
 }
