@@ -764,7 +764,15 @@ namespace embree
                       patch.grid_v_res,
                       grid_u,
                       grid_v);
-        
+
+    /* set last elements in u,v array to 1.0f */
+    for (size_t i=patch.grid_u_res*patch.grid_v_res;i<patch.grid_size_simd_blocks*8;i++)
+      {
+	grid_u[i] = 1.0f;
+	grid_v[i] = 1.0f;
+      }
+
+    /* stitch edges if necessary */
     if (unlikely(patch.needsStiching()))
       stichUVGrid(patch.level,patch.grid_u_res,patch.grid_v_res,grid_u,grid_v);
         
