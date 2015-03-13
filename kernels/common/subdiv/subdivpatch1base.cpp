@@ -161,7 +161,7 @@ namespace embree
     __aligned(64) float grid_v[(grid_size_simd_blocks+1)*8];
      
 #else
-      const size_t array_elements = (patch.grid_size_simd_blocks + 1) * 8;
+      const size_t array_elements = (grid_size_simd_blocks + 1) * 8;
       float *const ptr = (float*)_malloca(5 * array_elements * sizeof(float) + 64);
       float *const grid_arrays = (float*)ALIGN_PTR(ptr,64);
 

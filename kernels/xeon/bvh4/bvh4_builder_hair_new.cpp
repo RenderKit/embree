@@ -260,6 +260,6 @@ namespace embree
     /*! entry functions for the builder */
     Builder* BVH4Bezier1vBuilder_OBB_New (void* bvh, Scene* scene, size_t mode) { return new BVH4HairBuilderBinnedSAH<Bezier1v>((BVH4*)bvh,scene); }
     Builder* BVH4Bezier1iBuilder_OBB_New (void* bvh, Scene* scene, size_t mode) { return new BVH4HairBuilderBinnedSAH<Bezier1i>((BVH4*)bvh,scene); }
-    Builder* BVH4Bezier1iMBBuilder_OBB_New (void* bvh, Scene* scene, size_t mode) { return new class BVH4HairMBBuilderBinnedSAH<Bezier1iMB> ((BVH4*)bvh,scene); }
+    Builder* BVH4Bezier1iMBBuilder_OBB_New (void* bvh, Scene* scene, size_t mode) { return new BVH4HairMBBuilderBinnedSAH<Bezier1iMB> ((BVH4*)bvh,scene); }
   }
 }

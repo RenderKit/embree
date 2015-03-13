@@ -197,7 +197,7 @@ namespace embree
 
     TessellationRefCacheTag tags[CACHE_ENTRIES];
 
-    class __aligned(4 * sizeof(CACHE_WAYS)) CacheTagSet {
+    class __aligned(32) CacheTagSet {
     public:
       unsigned int NFU_stat[CACHE_WAYS];
       

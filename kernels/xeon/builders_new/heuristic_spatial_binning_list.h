@@ -42,24 +42,36 @@ namespace embree
           {
             spatial = other.spatial;
             sah = other.sah;
-            if (spatial) spatialSplit = other.spatialSplit;
-            else         objectSplit = other.objectSplit;
+            if (spatial) spatialSplit() = other.spatialSplit();
+            else         objectSplit()  = other.objectSplit();
           }
 
           __forceinline Split& operator= (const Split& other) 
           {
             spatial = other.spatial;
             sah = other.sah;
-            if (spatial) spatialSplit = other.spatialSplit;
-            else         objectSplit = other.objectSplit;
+            if (spatial) spatialSplit() = other.spatialSplit();
+            else         objectSplit()  = other.objectSplit();
             return *this;
           }
 
+          __forceinline       ObjectSplit&  objectSplit()        { return *(      ObjectSplit*)data; }
+          __forceinline const ObjectSplit&  objectSplit() const  { return *(const ObjectSplit*)data; }
+
+          __forceinline       SpatialSplit& spatialSplit()       { return *(      SpatialSplit*)data; }
+          __forceinline const SpatialSplit& spatialSplit() const { return *(const SpatialSplit*)data; }
+
           __forceinline Split (const ObjectSplit& objectSplit, float sah)
-              : spatial(false), sah(sah), objectSplit(objectSplit) {}
+              : spatial(false), sah(sah) 
+          {
+            new (data) ObjectSplit(objectSplit);
+          }
 
           __forceinline Split (const SpatialSplit& spatialSplit, float sah)
-            : spatial(true), sah(sah), spatialSplit(spatialSplit) {}
+            : spatial(true), sah(sah) 
+          {
+            new (data) SpatialSplit(spatialSplit);
+          }
 
           __forceinline float splitSAH() const { 
             return sah; 
@@ -68,10 +80,11 @@ namespace embree
         public:
           bool spatial;
           float sah;
-          union {
+          char data[sizeof(ObjectSplit) > sizeof(SpatialSplit) ? sizeof(ObjectSplit) : sizeof(SpatialSplit)];
+          /*union {
             ObjectSplit objectSplit;
             SpatialSplit spatialSplit;
-          };
+          };*/
         };
 
         __forceinline HeuristicSpatialSplitAndObjectSplitBlockListBinningSAH () {
@@ -101,8 +114,8 @@ namespace embree
         /*! splits a list of primitives */
         void split(const Split& split, const PrimInfo& pinfo, Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset) 
         {
-          if (split.spatial) return spatial_binning.split(split.spatialSplit,pinfo,set,left,lset,right,rset);
-          else               return  object_binning.split(split.objectSplit ,pinfo,set,left,lset,right,rset);
+          if (split.spatial) return spatial_binning.split(split.spatialSplit(),pinfo,set,left,lset,right,rset);
+          else               return  object_binning.split(split.objectSplit() ,pinfo,set,left,lset,right,rset);
         }
 
         __forceinline void deterministic_order(const Set& set) 

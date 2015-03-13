@@ -287,6 +287,7 @@ typedef int32 ssize_t;
 #pragma warning(disable:4018) // '<' : signed / unsigned mismatch
 #pragma warning(disable:4305) // 'initializing' : truncation from 'double' to 'float'
 #pragma warning(disable:4068) // unknown pragma
+#pragma warning(disable:4146) // : unary minus operator applied to unsigned type, result still unsigned
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
