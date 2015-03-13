@@ -262,11 +262,11 @@ __forceinline int64 atomic_cmpxchg(volatile int64* m, const int64 c, const int64
 }
 
 __forceinline int64 atomic_and(volatile int64* p, const int64 v) {
-  return _InterlockedAnd64((volatile long*)p,v);
+  return _InterlockedAnd64((volatile int64*)p,v);
 }
 
 __forceinline int64 atomic_or(volatile int64* p, const int64 v) {
-  return _InterlockedOr64((volatile long*)p,v);
+  return _InterlockedOr64((volatile int64*)p,v);
 }
 
 #endif

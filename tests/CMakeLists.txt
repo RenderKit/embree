@@ -42,7 +42,7 @@ IF (__XEON__)
   TARGET_LINK_LIBRARIES(retrace sys simd embree)
   SET_PROPERTY(TARGET retrace PROPERTY FOLDER tests)
 
-  IF (TASKING_TBB OR TASKING_TBB_INTERNAL) # FIXME: remove test
+  IF (TASKING_TBB) # FIXME: remove test
     FIND_PACKAGE(TBB REQUIRED)
     ADD_EXECUTABLE(benchmark_tasking 
       benchmark_tasking.cpp
@@ -73,7 +73,7 @@ ELSE ()
   TARGET_LINK_LIBRARIES(retrace_xeonphi sys_xeonphi embree_xeonphi)
   SET_PROPERTY(TARGET retrace_xeonphi PROPERTY FOLDER tests)
 
-  IF (TASKING_TBB OR TASKING_TBB_INTERNAL) # FIXME: remove test
+  IF (TASKING_TBB) # FIXME: remove test
     FIND_PACKAGE(TBB REQUIRED)
     ADD_EXECUTABLE(benchmark_tasking_xeonphi 
       benchmark_tasking.cpp

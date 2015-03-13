@@ -20,6 +20,14 @@
 #include <stddef.h>
 #include <sys/types.h>
 
+#if defined(_WIN32)
+#if defined(_M_X64)
+typedef long long ssize_t;
+#else
+typedef int ssize_t;
+#endif
+#endif
+
 #ifndef RTCORE_API
 #if defined(_WIN32) && !defined(ENABLE_STATIC_LIB)
 #  define RTCORE_API extern "C" __declspec(dllimport) 

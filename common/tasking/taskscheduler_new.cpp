@@ -258,10 +258,14 @@ namespace embree
       __pause_cpu();
   }
 
-  __dllexport __thread TaskSchedulerNew::Thread* TaskSchedulerNew::thread_local_thread = NULL;
+  __thread TaskSchedulerNew::Thread* TaskSchedulerNew::thread_local_thread = NULL;
 
   __dllexport TaskSchedulerNew::Thread* TaskSchedulerNew::thread() {
     return thread_local_thread;
+  }
+
+  __dllexport void TaskSchedulerNew::setThread(Thread* thread) {
+	  thread_local_thread = thread;
   }
 
   /* work on spawned subtasks and wait until all have finished */

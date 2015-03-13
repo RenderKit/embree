@@ -22,7 +22,7 @@
 #include "math/bbox.h"
 
 #include <tbb/tbb.h>
-#include "tbb/tbb_stddef.h"
+#include <tbb/tbb_stddef.h>
 
 #define OUTPUT 1
 #define PROFILE 0
