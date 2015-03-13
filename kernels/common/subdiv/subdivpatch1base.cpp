@@ -148,6 +148,10 @@ namespace embree
 
   void SubdivPatch1Base::evalToOBJ(Scene *scene,size_t &vertex_index)
   {
+#if defined(__MIC__)
+    FATAL("EVALTOOBJ NOT SUPPORTED ON MIC");
+#else
+
 #if !defined(_MSC_VER) || defined(__INTEL_COMPILER)
     __aligned(64) float grid_x[(grid_size_simd_blocks+1)*8]; 
     __aligned(64) float grid_y[(grid_size_simd_blocks+1)*8];
@@ -191,9 +195,7 @@ namespace embree
       _freea(ptr);
 #endif      
 
+#endif
   }
-
-
-
 
 }
