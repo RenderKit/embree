@@ -294,7 +294,7 @@ namespace embree
     {
       Thread* thread = TaskSchedulerNew::thread();
       if (likely(thread != nullptr)) thread->tasks.push_right(*thread,size,closure);
-      else                           g_instance->spawn_root(closure,size);
+      else                           global_instance()->spawn_root(closure,size);
     }
 
     /* spawn a new task at the top of the threads task stack */
@@ -310,7 +310,7 @@ namespace embree
 #if TASKSCHEDULER_STATIC_LOAD_BALANCING
       Thread* thread = TaskSchedulerNew::thread();
       if (thread == nullptr) {
-        g_instance->spawn_root(closure,begin,end,blockSize);
+        global_instance()->spawn_root(closure,begin,end,blockSize);
         return;
       }
 #endif
@@ -362,9 +362,11 @@ namespace embree
     __aligned(64) LinearBarrierActive task_set_barrier;
 #endif
     TaskSetFunction* volatile task_set_function;
-    
+
+    __dllexport2 static TaskSchedulerNew* global_instance();
+
   private:
-	  __dllexport2 static TaskSchedulerNew* g_instance;
+	  static TaskSchedulerNew* g_instance;
 	  static __thread Thread* thread_local_thread;
 
   };

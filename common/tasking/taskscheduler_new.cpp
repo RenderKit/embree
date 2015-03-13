@@ -170,7 +170,11 @@ namespace embree
   }
 #endif
 
-  __dllexport TaskSchedulerNew* TaskSchedulerNew::g_instance = NULL;
+  TaskSchedulerNew* TaskSchedulerNew::g_instance = NULL;
+
+  __dllexport TaskSchedulerNew* TaskSchedulerNew::global_instance() {
+    return g_instance;
+  }
 
   void TaskSchedulerNew::create(size_t numThreads)
   {
