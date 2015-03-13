@@ -668,117 +668,87 @@ namespace embree
 
 #define DBG_CACHE_BUILDER(x) 
 
-    BBox3fa getBounds(const SubdivPatch1Base &p, const SubdivMesh* const mesh)
+    BBox3fa getBounds(const SubdivPatch1Base &patch, const SubdivMesh* const mesh)
     {
 #if FORCE_TESSELLATION_BOUNDS == 1
       
 #if !defined(_MSC_VER) || defined(__INTEL_COMPILER)
-      __aligned(64) float u_array[(p.grid_size_simd_blocks + 1) * 16]; // +16 for unaligned access
-      __aligned(64) float v_array[(p.grid_size_simd_blocks + 1) * 16]; // +16 for unaligned access
+      __aligned(64) float grid_x[(patch.grid_size_simd_blocks+1)*8]; 
+      __aligned(64) float grid_y[(patch.grid_size_simd_blocks+1)*8];
+      __aligned(64) float grid_z[(patch.grid_size_simd_blocks+1)*8];         
+      __aligned(64) float grid_u[(patch.grid_size_simd_blocks+1)*8]; 
+      __aligned(64) float grid_v[(patch.grid_size_simd_blocks+1)*8];
 
 #else
-      const size_t array_elements = (p.grid_size_simd_blocks + 1) * 8;
+      const size_t array_elements = (patch.grid_size_simd_blocks + 1) * 8;
+      float *const ptr = (float*)_malloca(5 * array_elements * sizeof(float) + 64);
+      float *const grid_arrays = (float*)ALIGN_PTR(ptr,64);
 
-      float *const ptr = (float*)_malloca(2 *array_elements * sizeof(float) + 64);
-      float *const uv_arrays = (float*)ALIGN_PTR(ptr, 64);
-      float *const u_array = &uv_arrays[array_elements*0];
-      float *const v_array = &uv_arrays[array_elements*1];
+      float *grid_x = &grid_arrays[array_elements * 0];
+      float *grid_y = &grid_arrays[array_elements * 1];
+      float *grid_z = &grid_arrays[array_elements * 2];
+      float *grid_u = &grid_arrays[array_elements * 3];
+      float *grid_v = &grid_arrays[array_elements * 4];
 #endif
+      evalGrid(patch,grid_x,grid_y,grid_z,grid_u,grid_v,mesh);
 
-      gridUVTessellator(p.level, p.grid_u_res, p.grid_v_res, u_array, v_array);
-
-      if (unlikely(p.needsStiching()))
-        stichUVGrid(p.level, p.grid_u_res, p.grid_v_res, u_array, v_array);
-
-      const unsigned int real_grid_size = p.grid_u_res*p.grid_v_res;
-      for (size_t i = real_grid_size; i<p.grid_size_simd_blocks * 16; i++)
-          {
-            u_array[i] = 1.0f;
-            v_array[i] = 1.0f;
-          }
-
-      
       BBox3fa b(empty);
-      assert(p.grid_size_simd_blocks >= 1);
+      assert(patch.grid_size_simd_blocks >= 1);
 
-#if !defined(__AVX__)
-
-      for (size_t i = 0; i<p.grid_size_simd_blocks * 2; i++)
+#if !defined(__AVX__)      
+      ssef bounds_min_x = pos_inf;
+      ssef bounds_min_y = pos_inf;
+      ssef bounds_min_z = pos_inf;
+      ssef bounds_max_x = neg_inf;
+      ssef bounds_max_y = neg_inf;
+      ssef bounds_max_z = neg_inf;
+      for (size_t i = 0; i<patch.grid_size_simd_blocks * 2; i++)
         {
-          ssef u = load4f(&u_array[i * 4]);
-          ssef v = load4f(&v_array[i * 4]);
+          ssef x = load4f(&grid_x[i * 4]);
+          ssef y = load4f(&grid_y[i * 4]);
+          ssef z = load4f(&grid_z[i * 4]);
+	  bounds_min_x = min(bounds_min_x,x);
+	  bounds_min_y = min(bounds_min_y,y);
+	  bounds_min_z = min(bounds_min_z,z);
 
-          sse3f vtx = p.eval4(u, v);
-
-          /* eval displacement function */
-          if (unlikely(mesh->displFunc != NULL))
-            {
-              const Vec2f uv0 = p.getUV(0);
-              const Vec2f uv1 = p.getUV(1);
-              const Vec2f uv2 = p.getUV(2);
-              const Vec2f uv3 = p.getUV(3);
-
-              const ssef patch_uu = bilinear_interpolate(uv0.x, uv1.x, uv2.x, uv3.x, u, v);
-              const ssef patch_vv = bilinear_interpolate(uv0.y, uv1.y, uv2.y, uv3.y, u, v);
-
-              sse3f nor = p.normal4(u, v);
-
-              nor = normalize_safe(nor);
-
-              mesh->displFunc(mesh->userPtr,
-                              p.geom,
-                              p.prim,
-                              (const float*)&patch_uu,
-                              (const float*)&patch_vv,
-                              (const float*)&nor.x,
-                              (const float*)&nor.y,
-                              (const float*)&nor.z,
-                              (float*)&vtx.x,
-                              (float*)&vtx.y,
-                              (float*)&vtx.z,
-                              4);
-            }
-          b.extend(getBBox3fa(vtx));
+	  bounds_max_x = max(bounds_max_x,x);
+	  bounds_max_y = max(bounds_max_y,y);
+	  bounds_max_z = max(bounds_max_z,z);
         }
 
+      b.lower.x = reduce_min(bounds_min_x);
+      b.lower.y = reduce_min(bounds_min_y);
+      b.lower.z = reduce_min(bounds_min_z);
+      b.upper.x = reduce_max(bounds_max_x);
+      b.upper.y = reduce_max(bounds_max_y);
+      b.upper.z = reduce_max(bounds_max_z);
 #else
-
-      for (size_t i = 0; i<p.grid_size_simd_blocks; i++)
+      avxf bounds_min_x = pos_inf;
+      avxf bounds_min_y = pos_inf;
+      avxf bounds_min_z = pos_inf;
+      avxf bounds_max_x = neg_inf;
+      avxf bounds_max_y = neg_inf;
+      avxf bounds_max_z = neg_inf;
+      for (size_t i = 0; i<patch.grid_size_simd_blocks; i++)
         {
-          avxf u = load8f(&u_array[i * 8]);
-          avxf v = load8f(&v_array[i * 8]);          
-          avx3f vtx = p.eval8(u, v);
+          avxf x = load8f(&grid_x[i * 8]);
+          avxf y = load8f(&grid_y[i * 8]);
+          avxf z = load8f(&grid_z[i * 8]);
+	  bounds_min_x = min(bounds_min_x,x);
+	  bounds_min_y = min(bounds_min_y,y);
+	  bounds_min_z = min(bounds_min_z,z);
 
-          /* eval displacement function */
-          if (unlikely(mesh->displFunc != NULL))
-            {
-              const Vec2f uv0 = p.getUV(0);
-              const Vec2f uv1 = p.getUV(1);
-              const Vec2f uv2 = p.getUV(2);
-              const Vec2f uv3 = p.getUV(3);
-
-              const avxf patch_uu = bilinear_interpolate(uv0.x, uv1.x, uv2.x, uv3.x, u, v);
-              const avxf patch_vv = bilinear_interpolate(uv0.y, uv1.y, uv2.y, uv3.y, u, v);
-
-              avx3f nor = p.normal8(u, v);
-
-              nor = normalize_safe(nor);
-
-              mesh->displFunc(mesh->userPtr,
-                              p.geom,
-                              p.prim,
-                              (const float*)&patch_uu,
-                              (const float*)&patch_vv,
-                              (const float*)&nor.x,
-                              (const float*)&nor.y,
-                              (const float*)&nor.z,
-                              (float*)&vtx.x,
-                              (float*)&vtx.y,
-                              (float*)&vtx.z,
-                              8);
-            }
-          b.extend(getBBox3fa(vtx));
+	  bounds_max_x = max(bounds_max_x,x);
+	  bounds_max_y = max(bounds_max_y,y);
+	  bounds_max_z = max(bounds_max_z,z);
         }
+
+      b.lower.x = reduce_min(bounds_min_x);
+      b.lower.y = reduce_min(bounds_min_y);
+      b.lower.z = reduce_min(bounds_min_z);
+      b.upper.x = reduce_max(bounds_max_x);
+      b.upper.y = reduce_max(bounds_max_y);
+      b.upper.z = reduce_max(bounds_max_z);
 #endif
 
       b.lower.a = 0.0f;

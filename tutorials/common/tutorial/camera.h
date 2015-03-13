@@ -29,11 +29,12 @@ namespace embree
   struct Camera 
   {
   public:
+    size_t frames;
     Camera () 
-    : from(0.0001f,0.0001f,-3.0f), to(0,0,0), up(0,1,0), fov(90), anim(false) {}
+    : from(0.0001f,0.0001f,-3.0f), to(0,0,0), up(0,1,0), fov(90), anim(false),frames(0) {}
 
     Camera (Vec3fa& from, Vec3fa& to, Vec3fa& up, float fov) 
-      : from(from), to(to), up(up), fov(fov), anim(false) {}
+      : from(from), to(to), up(up), fov(fov), anim(false),frames(0) {}
 
     AffineSpace3fa camera2world () { return AffineSpace3fa::lookat(from, to, up); }
     AffineSpace3fa world2camera () { return rcp(AffineSpace3fa::lookat(from, to, up)); }
@@ -46,7 +47,9 @@ namespace embree
       if (anim)
 	{
 	  const float step = 5.0f;
-	  rotateOrbit(-0.005f*step,0.005f*0);
+	  //if (frames % 2) 
+	    rotateOrbit(-0.005f*step,0.005f*0);
+	  frames++;
 	}
 
       const float fovScale = 1.0f/tanf(deg2rad(0.5f*fov));
