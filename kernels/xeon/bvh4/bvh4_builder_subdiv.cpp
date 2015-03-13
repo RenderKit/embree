@@ -938,6 +938,16 @@ namespace embree
               
                                                      /* compute patch bounds */
                                                      const BBox3fa bounds = getBounds1(subdiv_patches[patchIndex],mesh);
+						     if ( !(bounds.lower.x <= bounds.upper.x) )
+						       {
+							 DBG_PRINT( subdiv_patches[patchIndex] );
+							 DBG_PRINT( bounds );
+							 DBG_PRINT( edge_level[0] );
+							 DBG_PRINT( edge_level[1] );
+							 DBG_PRINT( edge_level[2] );
+							 DBG_PRINT( edge_level[3] );
+							 exit(0);
+						       }
                                                      assert(bounds.lower.x <= bounds.upper.x);
                                                      assert(bounds.lower.y <= bounds.upper.y);
                                                      assert(bounds.lower.z <= bounds.upper.z);

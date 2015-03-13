@@ -62,7 +62,7 @@ namespace embree
           const Binner binner = parallel_reduce(size_t(0),threadCount,Binner(empty), [&] (const range<size_t>& r) 
           {
             Binner binner(empty);
-            while (Set::item* block = i.next()) {
+            while (typename Set::item* block = i.next()) {
               binner.bin(block->base(),block->size(),mapping);
             }
             return binner;
