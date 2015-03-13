@@ -174,6 +174,9 @@ namespace embree
       SubdivMesh *mesh = (SubdivMesh *)scene->getSubdivMesh(geom);
   
       evalGrid(*this,grid_x,grid_y,grid_z,grid_u,grid_v,mesh);
+      
+      std::cout << "# grid_u_res " << grid_u_res << std::endl;
+      std::cout << "# grid_v_res " << grid_v_res << std::endl;
 
       for (size_t v=0;v<grid_v_res;v++)
         for (size_t u=0;u<grid_u_res;u++)
@@ -186,7 +189,7 @@ namespace embree
         for (size_t u=0;u<grid_u_res-1;u++)
           {
             size_t offset0 = vertex_index + v * grid_u_res + u;
-            size_t offset1 = vertex_index + offset0 + grid_u_res;
+            size_t offset1 = offset0 + grid_u_res;
             std::cout << "f " << offset0+1 << " " << offset0+2 << " " << offset1+2 << " " << offset1+1 << std::endl;
           }
       vertex_index += grid_u_res*grid_v_res;
