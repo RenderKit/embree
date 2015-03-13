@@ -186,8 +186,13 @@ namespace embree
 
   /*! random functions */
   template<typename T> T          random() { return T(0); }
+#if defined(_WIN32)
+  template<> __forceinline int    random() { return int(rand()) ^ (int(rand()) << 8) ^ (int(rand()) << 16); }
+  template<> __forceinline uint32 random() { return uint32(rand()) ^ (uint32(rand()) << 8) ^ (uint32(rand()) << 16); }
+#else
   template<> __forceinline int    random() { return int(rand()); }
-  template<> __forceinline uint32 random() { return uint32(rand()); }
+  template<> __forceinline uint32 random() { return uint32(rand()) ^ (uint32(rand()) << 16); }
+#endif
   template<> __forceinline float  random() { return random<uint32>()/float(RAND_MAX); }
   template<> __forceinline double random() { return random<uint32>()/double(RAND_MAX); }
 

@@ -606,9 +606,9 @@ namespace embree
     for (size_t i=0; i<numEdgeCreases; i++) 
     {
       if (faces.size()) {
-	int f = rand() % faces.size();
+	int f = random<int>() % faces.size();
 	int n = faces[f];
-	int e = rand() % n;
+	int e = random<int>() % n;
 	edgeCreaseIndices[2*i+0] = indices[offsets[f]+(e+0)%n];
 	edgeCreaseIndices[2*i+1] = indices[offsets[f]+(e+1)%n];
       } else {
@@ -627,7 +627,7 @@ namespace embree
 
     for (size_t i=0; i<numVertexCreases; i++) 
     {
-      int v = numTheta-1 + rand() % (vertices.size()+2-2*numTheta);
+      int v = numTheta-1 + random<int>() % (vertices.size()+2-2*numTheta);
       vertexCreaseIndices[i] = v;
       vertexCreaseWeights[i] = 10.0f*drand48();
     }
@@ -636,7 +636,7 @@ namespace embree
     
     int* holeBuffer  = (int*) rtcMapBuffer(scene,mesh,RTC_HOLE_BUFFER);
     for (size_t i=0; i<numHoles; i++) {
-      holeBuffer[i] = rand() % faces.size();
+      holeBuffer[i] = random<int>() % faces.size();
     }
     rtcUnmapBuffer(scene,mesh,RTC_HOLE_BUFFER); 
     
@@ -751,20 +751,20 @@ namespace embree
     /* map triangle and vertex buffer */
     if (numTimeSteps >= 1) {
       int* v = (int*) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER0); 
-      for (size_t i=0; i<4*3*numTriangles; i++) v[i] = rand();
+      for (size_t i=0; i<4*3*numTriangles; i++) v[i] = random<uint32>();
       rtcUnmapBuffer(scene,mesh,RTC_VERTEX_BUFFER0); 
     }
     if (numTimeSteps >= 2) {
       int* v = (int*) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER1); 
-      for (size_t i=0; i<4*3*numTriangles; i++) v[i] = rand();
+      for (size_t i=0; i<4*3*numTriangles; i++) v[i] = random<uint32>();
       rtcUnmapBuffer(scene,mesh,RTC_VERTEX_BUFFER1); 
     }
     
     Triangle* triangles = (Triangle*) rtcMapBuffer(scene,mesh,RTC_INDEX_BUFFER);
     for (size_t i=0; i<numTriangles; i++) {
-      triangles[i].v0 = (rand() % 32 == 0) ? rand() : 3*i+0;
-      triangles[i].v1 = (rand() % 32 == 0) ? rand() : 3*i+1;
-      triangles[i].v2 = (rand() % 32 == 0) ? rand() : 3*i+2;
+      triangles[i].v0 = (random<int>() % 32 == 0) ? random<uint32>() : 3*i+0;
+      triangles[i].v1 = (random<int>() % 32 == 0) ? random<uint32>() : 3*i+1;
+      triangles[i].v2 = (random<int>() % 32 == 0) ? random<uint32>() : 3*i+2;
     }
     rtcUnmapBuffer(scene,mesh,RTC_INDEX_BUFFER);
 
@@ -780,18 +780,18 @@ namespace embree
     /* map triangle and vertex buffer */
     if (numTimeSteps >= 1) {
       int* v = (int*) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER0); 
-      for (size_t i=0; i<4*4*numCurves; i++) v[i] = rand();
+      for (size_t i=0; i<4*4*numCurves; i++) v[i] = random<uint32>();
       rtcUnmapBuffer(scene,mesh,RTC_VERTEX_BUFFER0); 
     }
     if (numTimeSteps >= 2) {
       int* v = (int*) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER1); 
-      for (size_t i=0; i<4*4*numCurves; i++) v[i] = rand();
+      for (size_t i=0; i<4*4*numCurves; i++) v[i] = random<uint32>();
       rtcUnmapBuffer(scene,mesh,RTC_VERTEX_BUFFER1); 
     }
     
     int* curves = (int*) rtcMapBuffer(scene,mesh,RTC_INDEX_BUFFER);
     for (size_t i=0; i<numCurves; i++) 
-      curves[i] = (rand() % 32 == 0) ? rand() : 4*i;
+      curves[i] = (random<int>() % 32 == 0) ? random<uint32>() : 4*i;
     rtcUnmapBuffer(scene,mesh,RTC_INDEX_BUFFER);
 
     return mesh;
@@ -2443,10 +2443,10 @@ namespace embree
 
     for (size_t i=0; i<50; i++) {
       for (size_t j=0; j<10; j++) {
-        int index = rand()%128;
+        int index = random<int>()%128;
         Vec3fa pos = 100.0f*Vec3fa(drand48(),drand48(),drand48());
         if (geom[index] == -1) {
-          switch (rand()%4) {
+          switch (random<int>()%4) {
           case 0: geom[index] = addSphere(scene,RTC_GEOMETRY_STATIC,pos,2.0f,10); break;
           case 1: geom[index] = addHair  (scene,RTC_GEOMETRY_STATIC,pos,1.0f,2.0f,10); break;
 	  case 2: geom[index] = addSubdivSphere(scene,RTC_GEOMETRY_STATIC,pos,2.0f,4,4); break;
@@ -2610,19 +2610,19 @@ namespace embree
       for (size_t j=0; j<10; j++) 
       {
         Vec3fa pos = 100.0f*Vec3fa(drand48(),drand48(),drand48());
-	int type = 0; //rand()%6; // FIXME: enable all types
+	int type = random<int>()%6; // FIXME: enable all types
 #if !defined(__MIC__) 
-        switch (rand()%16) {
+        switch (random<int>()%16) {
         case 0: pos = Vec3fa(nan); break;
         case 1: pos = Vec3fa(inf); break;
         case 2: pos = Vec3fa(1E30f); break;
         default: break;
         };
 #endif
-	size_t numPhi = rand()%100;
-	if (type == 2) numPhi = rand()%10;
+	size_t numPhi = random<int>()%100;
+	if (type == 2) numPhi = random<int>()%10;
         size_t numTriangles = 2*2*numPhi*(numPhi-1);
-	numTriangles = rand()%(numTriangles+1);
+	numTriangles = random<int>()%(numTriangles+1);
         switch (type) {
         case 0: addSphere(task->scene,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles,0.0f); break;
 	case 1: addSphere(task->scene,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles,1.0f); break;
@@ -2643,7 +2643,7 @@ namespace embree
       }
       
       if (thread->threadCount) {
-	task->numActiveThreads = max(size_t(1),rand() % thread->threadCount);
+	task->numActiveThreads = max(size_t(1),random<int>() % thread->threadCount);
 	task->barrier.wait();
 	rtcCommitThread(task->scene,thread->threadIndex,task->numActiveThreads);
       } else {
@@ -2724,23 +2724,23 @@ namespace embree
 
       for (size_t j=0; j<40; j++) 
       {
-        int index = rand()%1024;
+        int index = random<int>()%1024;
         if (geom[index] == -1) 
         {
-          int type = rand()%10;
+          int type = random<int>()%10;
           Vec3fa pos = 100.0f*Vec3fa(drand48(),drand48(),drand48());
 #if !defined(__MIC__)
-          switch (rand()%16) {
+          switch (random<int>()%16) {
           case 0: pos = Vec3fa(nan); break;
           case 1: pos = Vec3fa(inf); break;
           case 2: pos = Vec3fa(1E30f); break;
           default: break;
           };
 #endif
-          size_t numPhi = rand()%100;
-	  if (type >= 3 || type <= 5) numPhi = rand()%10;
+          size_t numPhi = random<int>()%100;
+	  if (type >= 3 || type <= 5) numPhi = random<int>()%10;
           size_t numTriangles = 2*2*numPhi*(numPhi-1);
-          numTriangles = rand()%(numTriangles+1);
+          numTriangles = random<int>()%(numTriangles+1);
           types[index] = type;
           numVertices[index] = 2*numPhi*(numPhi+1);
           switch (type) {
@@ -2783,7 +2783,7 @@ namespace embree
           case 5:
 	  case 7: 
           case 8: {
-            int op = rand()%2;
+            int op = random<int>()%2;
             switch (op) {
             case 0: {
               rtcDeleteGeometry(task->scene,geom[index]);     
@@ -2815,7 +2815,7 @@ namespace embree
       }
 
       if (thread->threadCount) {
-	task->numActiveThreads = max(size_t(1),rand() % thread->threadCount);
+	task->numActiveThreads = max(size_t(1),random<int>() % thread->threadCount);
 	task->barrier.wait();
 	rtcCommitThread(task->scene,thread->threadIndex,task->numActiveThreads);
       } else {
@@ -2859,7 +2859,7 @@ namespace embree
       
 	while (numThreads) 
 	{
-	  size_t N = max(size_t(1),rand()%numThreads); numThreads -= N;
+	  size_t N = max(size_t(1),random<int>()%numThreads); numThreads -= N;
 	  RegressionTask* task = new RegressionTask(sceneIndex++,5,N);
 	  tasks.push_back(task);
 
@@ -2947,8 +2947,8 @@ namespace embree
 
       for (size_t j=0; j<20; j++) 
       {
-	size_t numTriangles = rand()%256;
-        switch (rand()%4) {
+	size_t numTriangles = random<int>()%256;
+        switch (random<int>()%4) {
         case 0: addGarbageTriangles(scene,RTC_GEOMETRY_STATIC,numTriangles,false); break;
         case 1: addGarbageTriangles(scene,RTC_GEOMETRY_STATIC,numTriangles,true); break;
         case 2: addGarbageHair     (scene,RTC_GEOMETRY_STATIC,numTriangles,false); break;
@@ -2983,6 +2983,7 @@ namespace embree
     //POSITIVE("regression_garbage_geom",   rtcore_regression_garbage());
     //POSITIVE("regression_static_memory_monitor",         rtcore_regression_memory_monitor(rtcore_regression_static_thread));
     //POSITIVE("regression_dynamic_memory_monitor",        rtcore_regression_memory_monitor(rtcore_regression_dynamic_thread));
+    //POSITIVE("regression_garbage_geom",   rtcore_regression_garbage());
     //exit(1);
 
     POSITIVE("mutex_sys",                 test_mutex_sys());
