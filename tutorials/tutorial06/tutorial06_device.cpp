@@ -21,7 +21,7 @@
 
 
 
-#define FIX_SAMPLING 1
+#define FIX_SAMPLING 0
 #define SAMPLES_PER_PIXEL 1
 
 //
