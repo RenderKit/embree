@@ -26,6 +26,8 @@
 #include <vector>
 
 #if defined(TASKING_TBB)
+#define NOMINMAX
+#define __TBB_NO_IMPLICIT_LINKAGE 0
 #include "tbb/tbb.h"
 #endif
 
