@@ -81,7 +81,7 @@ namespace embree
 
     grid_bvh_size_64b_blocks = getSubTreeSize64bBlocks( 0 );
 
-#if COMPACT == 1
+#if COMPACT == 1 && !defined(__MIC__)
     const size_t grid_size_xyzuv = (grid_size_simd_blocks * 8) * 4;
     grid_subtree_size_64b_blocks = grid_bvh_size_64b_blocks + (grid_size_xyzuv / 16);
 #else
