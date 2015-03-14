@@ -521,7 +521,7 @@ namespace embree
                       const Vec2f uv[4],
                       const float edge_level[4]);
 
-    __forceinline bool needsStiching() const
+    __forceinline bool needsStitching() const
     {
       return (flags & TRANSITION_PATCH) == TRANSITION_PATCH;      
     }
@@ -748,7 +748,6 @@ namespace embree
     return o;
   } 
 
-#if !defined(__MIC__)
   /* eval grid over patch and stich edges when required */      
   static __forceinline void evalGrid(const SubdivPatch1Base &patch,
                                      float *__restrict__ const grid_x,
@@ -766,21 +765,68 @@ namespace embree
                       grid_v);
 
     /* set last elements in u,v array to 1.0f */
+#if !defined(__MIC__)
     for (size_t i=patch.grid_u_res*patch.grid_v_res;i<patch.grid_size_simd_blocks*8;i++)
+#else
+    for (size_t i=patch.grid_u_res*patch.grid_v_res;i<patch.grid_size_simd_blocks*16;i++)
+#endif
       {
 	grid_u[i] = 1.0f;
 	grid_v[i] = 1.0f;
       }
 
     /* stitch edges if necessary */
-    if (unlikely(patch.needsStiching()))
-      stichUVGrid(patch.level,patch.grid_u_res,patch.grid_v_res,grid_u,grid_v);
+    if (unlikely(patch.needsStitching()))
+      stitchUVGrid(patch.level,patch.grid_u_res,patch.grid_v_res,grid_u,grid_v);
         
-    const Vec2f uv0 = patch.getUV(0);
-    const Vec2f uv1 = patch.getUV(1);
-    const Vec2f uv2 = patch.getUV(2);
-    const Vec2f uv3 = patch.getUV(3);
-        
+#if defined(__MIC__)
+
+       for (size_t i = 0; i<patch.grid_size_simd_blocks; i++)
+        {
+          const mic_f u = load16f(&grid_u[i * 16]);
+          const mic_f v = load16f(&grid_v[i * 16]);
+
+	  prefetch<PFHINT_L2EX>(&grid_x[16*i]);
+	  prefetch<PFHINT_L2EX>(&grid_y[16*i]);
+	  prefetch<PFHINT_L2EX>(&grid_z[16*i]);
+
+          mic3f vtx = patch.eval16(u, v);
+
+          /* eval displacement function */
+	  if (unlikely(((SubdivMesh*)geom)->displFunc != NULL))
+            {
+              mic3f normal = patch.normal16(u, v);
+              normal = normalize(normal);
+
+              const Vec2f uv0 = patch.getUV(0);
+              const Vec2f uv1 = patch.getUV(1);
+              const Vec2f uv2 = patch.getUV(2);
+              const Vec2f uv3 = patch.getUV(3);
+
+              const mic_f patch_uu = bilinear_interpolate(uv0.x, uv1.x, uv2.x, uv3.x, u, v);
+              const mic_f patch_vv = bilinear_interpolate(uv0.y, uv1.y, uv2.y, uv3.y, u, v);
+
+              ((SubdivMesh*)geom)->displFunc(((SubdivMesh*)geom)->userPtr,
+					     patch.geom,
+					     patch.prim,
+					     (const float*)&patch_uu,
+					     (const float*)&patch_vv,
+					     (const float*)&normal.x,
+					     (const float*)&normal.y,
+					     (const float*)&normal.z,
+					     (float*)&vtx.x,
+					     (float*)&vtx.y,
+					     (float*)&vtx.z,
+					     16);
+
+            }
+
+	  store16f(&grid_x[16*i],vtx.x);
+	  store16f(&grid_y[16*i],vtx.y);
+	  store16f(&grid_z[16*i],vtx.z);
+        }
+   
+#else        
 #if defined(__AVX__)
     for (size_t i=0;i<patch.grid_size_simd_blocks;i++)
       {
@@ -790,6 +836,11 @@ namespace embree
                  
         if (unlikely(((SubdivMesh*)geom)->displFunc != NULL))
           {
+	    const Vec2f uv0 = patch.getUV(0);
+	    const Vec2f uv1 = patch.getUV(1);
+	    const Vec2f uv2 = patch.getUV(2);
+	    const Vec2f uv3 = patch.getUV(3);
+
             avx3f normal = patch.normal8(uu,vv);
             normal = normalize_safe(normal) ;
             
@@ -824,6 +875,11 @@ namespace embree
           
         if (unlikely(((SubdivMesh*)geom)->displFunc != NULL))
           {
+	    const Vec2f uv0 = patch.getUV(0);
+	    const Vec2f uv1 = patch.getUV(1);
+	    const Vec2f uv2 = patch.getUV(2);
+	    const Vec2f uv3 = patch.getUV(3);
+
             sse3f normal = patch.normal4(uu,vv);
             normal = normalize_safe(normal);
 
@@ -848,9 +904,9 @@ namespace embree
         *(ssef*)&grid_y[4*i] = vtx.y;
         *(ssef*)&grid_z[4*i] = vtx.z;        
       }
+#endif
 #endif        
   }
-#endif
 
 
 }

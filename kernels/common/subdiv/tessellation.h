@@ -21,7 +21,7 @@
 namespace embree
 {
   
-  __forceinline void stichGridEdges(const unsigned int low_rate,
+  __forceinline void stitchGridEdges(const unsigned int low_rate,
 				    const unsigned int high_rate,
 				    float * __restrict__ const uv_array,
 				    const unsigned int uv_array_step)
@@ -53,11 +53,11 @@ namespace embree
     }
   }
   
-  __forceinline void stichUVGrid(const float edge_levels[4],
-				 const unsigned int grid_u_res,
-				 const unsigned int grid_v_res,
-				 float * __restrict__ const u_array,
-				 float * __restrict__ const v_array)
+  __forceinline void stitchUVGrid(const float edge_levels[4],
+				  const unsigned int grid_u_res,
+				  const unsigned int grid_v_res,
+				  float * __restrict__ const u_array,
+				  float * __restrict__ const v_array)
   {
     const unsigned int int_edge_points0 = (unsigned int)edge_levels[0] + 1;
     const unsigned int int_edge_points1 = (unsigned int)edge_levels[1] + 1;
@@ -65,16 +65,16 @@ namespace embree
     const unsigned int int_edge_points3 = (unsigned int)edge_levels[3] + 1;
     
     if (unlikely(int_edge_points0 < grid_u_res))
-      stichGridEdges(int_edge_points0,grid_u_res,u_array,1);
+      stitchGridEdges(int_edge_points0,grid_u_res,u_array,1);
     
     if (unlikely(int_edge_points2 < grid_u_res))
-      stichGridEdges(int_edge_points2,grid_u_res,&u_array[(grid_v_res-1)*grid_u_res],1);
+      stitchGridEdges(int_edge_points2,grid_u_res,&u_array[(grid_v_res-1)*grid_u_res],1);
     
     if (unlikely(int_edge_points1 < grid_v_res))
-      stichGridEdges(int_edge_points1,grid_v_res,&v_array[grid_u_res-1],grid_u_res);
+      stitchGridEdges(int_edge_points1,grid_v_res,&v_array[grid_u_res-1],grid_u_res);
     
     if (unlikely(int_edge_points3 < grid_v_res))
-      stichGridEdges(int_edge_points3,grid_v_res,v_array,grid_u_res);  
+      stitchGridEdges(int_edge_points3,grid_v_res,v_array,grid_u_res);  
   }
   
   __forceinline void gridUVTessellator(const float edge_levels[4],

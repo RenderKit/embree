@@ -249,8 +249,7 @@ namespace embree
 					     grid_x,
 					     array_elements,
 					     GridRange(0,patch.grid_u_res-1,0,patch.grid_v_res-1),
-					     currentIndex,
-					     geom);
+					     currentIndex);
       //DBG_PRINT(subtree_root);
       
       // for (size_t y=0;y<patch.grid_v_res;y++)
@@ -284,8 +283,7 @@ namespace embree
 								 const float *const grid_array,
 								 const size_t grid_array_elements,
 								 const GridRange &range,
-								 unsigned int &localCounter,
-								 const SubdivMesh* const geom)
+								 unsigned int &localCounter)
     {
       if (range.hasLeafSize())
 	{
@@ -401,8 +399,7 @@ namespace embree
 							 grid_array,
 							 grid_array_elements,
 							 r[i],						  
-							 localCounter,
-							 geom);
+							 localCounter);
 	  node->set(i, bounds_subtree);
 	  bounds.extend( bounds_subtree );
 	}

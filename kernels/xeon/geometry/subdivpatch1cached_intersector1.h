@@ -710,8 +710,7 @@ namespace embree
 					  const float *const grid_array,
 					  const size_t grid_array_elements,
 					  const GridRange &range,
-					  unsigned int &localCounter,
-					  const SubdivMesh* const geom);
+					  unsigned int &localCounter);
       
 
         
