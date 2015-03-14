@@ -17,7 +17,7 @@
 #include "../common/tutorial/tutorial_device.isph"
 #include "../common/tutorial/scene_device.isph"
 
-//#define PARALLEL_COMMIT
+#define PARALLEL_COMMIT
 
 #undef TILE_SIZE_X
 #undef TILE_SIZE_Y
@@ -193,10 +193,10 @@ void convertScene(uniform ISPCScene* uniform scene_in, const uniform Vec3fa& p)
     /* get ith mesh */
     uniform ISPCMesh* uniform mesh = scene_in->meshes[i];
 
-    if (mesh->numQuads || mesh->numTriangles)
+    if (mesh->numQuads /*|| mesh->numTriangles*/)
     {
-      uniform size_t numPrimitives = mesh->numQuads + mesh->numTriangles;
-      uniform size_t numEdges      = mesh->numQuads*4 + mesh->numTriangles*3;
+      uniform size_t numPrimitives = mesh->numQuads; /* + mesh->numTriangles */;
+      uniform size_t numEdges      = mesh->numQuads*4; /* + mesh->numTriangles*3 */;
       mesh->edge_level             = uniform new uniform float[numEdges];
       uniform int *uniform index_buffer = uniform new uniform int[numEdges];
       
@@ -210,7 +210,7 @@ void convertScene(uniform ISPCScene* uniform scene_in, const uniform Vec3fa& p)
       uniform unsigned int* faces = (uniform unsigned int*) rtcMapBuffer(g_scene, geomID, RTC_FACE_BUFFER);
       uniform size_t index = 0;
       for (uniform size_t i=0; i<mesh->numQuads    ; i++,index++) faces[index] = 4;
-      for (uniform size_t i=0; i<mesh->numTriangles; i++,index++) faces[index] = 3;
+      //for (uniform size_t i=0; i<mesh->numTriangles; i++,index++) faces[index] = 3;
       
       rtcUnmapBuffer(g_scene,geomID,RTC_FACE_BUFFER);
 
@@ -224,12 +224,14 @@ void convertScene(uniform ISPCScene* uniform scene_in, const uniform Vec3fa& p)
 
        uniform size_t offset = mesh->numQuads*4;
 
+#if 0
       for (uniform size_t i=0; i<mesh->numTriangles; i++)
       	 {
 	   index_buffer[offset+3*i+0] = mesh->triangles[i].v0;
 	   index_buffer[offset+3*i+1] = mesh->triangles[i].v1;
 	   index_buffer[offset+3*i+2] = mesh->triangles[i].v2;
 	 }
+#endif
 
       rtcSetBuffer(g_scene, geomID, RTC_VERTEX_BUFFER, mesh->positions , 0, sizeof(uniform Vec3fa  ));
       rtcSetBuffer(g_scene, geomID, RTC_INDEX_BUFFER,  index_buffer    , 0, sizeof(uniform unsigned int));

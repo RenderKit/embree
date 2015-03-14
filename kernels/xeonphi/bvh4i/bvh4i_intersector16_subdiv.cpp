@@ -27,6 +27,9 @@
 #define CACHE_STATS(x) 
 #endif
 
+#define TEST_COMPACT 0
+// FIXME: instead of 4x4 better 3x5?
+
 namespace embree
 {
 
@@ -60,6 +63,30 @@ namespace embree
       unsigned short uu[16];
       unsigned short vv[16];
 
+      __forceinline void init(size_t offset, 
+			      const SubdivPatch1Base &patch,
+			      float *lazyCachePtr)
+      {
+	const size_t dim_offset    = patch.grid_size_simd_blocks * 16;
+	const size_t line_offset   = patch.grid_u_res;
+	const size_t offset_bytes  = offset >> 4;   
+	const float *const grid_x  = (float*)(offset_bytes + (size_t)lazyCachePtr);
+	const float *const grid_y  = grid_x + 1 * dim_offset;
+	const float *const grid_z  = grid_x + 2 * dim_offset;
+	const float *const grid_uv = grid_x + 3 * dim_offset;
+	const size_t offset0 = 0*line_offset;
+	const size_t offset1 = 1*line_offset;
+	const size_t offset2 = 2*line_offset;
+	const size_t offset3 = 3*line_offset;
+
+	vtx.x = gather16f_4f_unalign(&grid_x[offset0],&grid_x[offset1],&grid_x[offset2],&grid_x[offset3]);
+	vtx.y = gather16f_4f_unalign(&grid_y[offset0],&grid_y[offset1],&grid_y[offset2],&grid_y[offset3]);
+	vtx.z = gather16f_4f_unalign(&grid_z[offset0],&grid_z[offset1],&grid_z[offset2],&grid_z[offset3]);
+
+	const mic_f uv = gather16f_4f_unalign(&grid_uv[offset0],&grid_uv[offset1],&grid_uv[offset2],&grid_uv[offset3]);
+	store16f((float*)uu,uv);
+       
+      }
       __forceinline void prefetchData() const
       {
 	prefetch<PFHINT_NT>(&vtx.x);
@@ -70,12 +97,24 @@ namespace embree
       
       __forceinline mic_f getU() const
       {
+#if TEST_COMPACT == 1
+	mic_i uv = load16i((int*)uu);
+	mic_i  v = uv & 0xffff;
+	return mic_f(v) * 1.0f/65535.0f;
+#else
 	return load16f_uint16(uu);
+#endif
       }
 
       __forceinline mic_f getV() const
       {
+#if TEST_COMPACT == 1
+	mic_i uv = load16i((int*)uu);
+	mic_i  v = uv >> 16;
+	return mic_f(v) * 1.0f/65535.0f;
+#else
 	return load16f_uint16(vv);
+#endif
       }
 
       __forceinline void set(const mic3f &v3, const mic_f &u, const mic_f &v)
@@ -303,7 +342,7 @@ namespace embree
           //const size_t value = (offset_bytes << 4) + (size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();
           //assert( (value & 2) == 0 );
 
-	  createSubPatchBVH4iLeaf( curNode, offset_bytes);	  
+	  createSubPatchBVH4iLeaf( curNode, (offset_bytes << 4));	  
 	  return bounds;
 	}
       /* allocate new bvh4i node */
@@ -516,7 +555,11 @@ namespace embree
 		//DBG_PRINT( SharedLazyTessellationCache::sharedLazyTessellationCache.getNumUsedBytes() );
 		mic_f* local_mem   = (mic_f*)SharedLazyTessellationCache::sharedLazyTessellationCache.getBlockPtr(block_index);
 		unsigned int currentIndex = 0;
+#if TEST_COMPACT == 1
+		BVH4i::NodeRef bvh4i_root = initLocalLazySubdivTreeCompact(*subdiv_patch,currentIndex,local_mem,geom);
+#else
 		BVH4i::NodeRef bvh4i_root = initLocalLazySubdivTree(*subdiv_patch,currentIndex,local_mem,geom);
+#endif
 		size_t new_root_ref = (size_t)bvh4i_root + (size_t)local_mem - (size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();
 		assert( !(new_root_ref & REF_TAG) );
 		new_root_ref |= REF_TAG;
@@ -612,6 +655,8 @@ namespace embree
 	      const unsigned int patchIndex = curNode.offsetIndex();
 
 	      // ----------------------------------------------------------------------------------------------------
+	      SubdivPatch1 &patch = ((SubdivPatch1*)accel)[patchIndex];
+
 	      size_t cached_64bit_root = lazyBuildPatch(patchIndex,commitCounter,(SubdivPatch1*)accel,scene,threadInfo);
 	      BVH4i::NodeRef subtree_root = extractBVH4iNodeRef(cached_64bit_root); 
 	      mic_f     * const __restrict__ lazymem     = (mic_f*)extractBVH4iPtr(cached_64bit_root); 
@@ -648,19 +693,28 @@ namespace embree
 		  /* return if stack is empty */
 		  if (unlikely(curNode == BVH4i::invalidNode)) break;
 
-		  const unsigned int uvIndex = curNode.offsetIndex();
 		  
 		  const mic_m m_active = 0x777;
+#if TEST_COMPACT == 1
+		  float *lazyCachePtr = (float*)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();
+		  Quad4x4 quad4x4;
+		  quad4x4.init( curNode, patch, lazyCachePtr);
+		  const mic_f uu = quad4x4.getU();
+		  const mic_f vv = quad4x4.getV();
+		  const mic3f &vtx = quad4x4.vtx;
+#else
+		  const unsigned int uvIndex = curNode.offsetIndex();
 		  const Quad4x4 *__restrict__ const quad4x4 = (Quad4x4*)&lazymem[uvIndex];
 		  quad4x4->prefetchData();
 		  const mic_f uu = quad4x4->getU();
 		  const mic_f vv = quad4x4->getV();
-
+		  const mic3f &vtx = quad4x4->vtx;
+#endif
 		  intersect1_quad16(rayIndex, 
 				    dir_xyz,
 				    org_xyz,
 				    ray16,
-				    quad4x4->vtx,
+				    vtx,
 				    uu,
 				    vv,
 				    4,

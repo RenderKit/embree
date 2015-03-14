@@ -890,9 +890,11 @@ PRINT(CORRECT_numPrims);
 	numPrimitives != fastUpdateMode_numFaces ||
 	bvh->root     == BVH4i::emptyNode ||
 	bvh->qbvh     == NULL)
-      fastUpdateMode = false;
+      {
+	fastUpdateMode = false;
+      }
     
-    DBG_CACHE_BUILDER(DBG_PRINT(fastUpdateMode));
+    //DBG_PRINT(fastUpdateMode);
 
     BVH4iBuilder::build(threadIndex,threadCount);
   }

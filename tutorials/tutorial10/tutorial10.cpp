@@ -130,10 +130,12 @@ namespace embree
   void renderToFile(const FileName& fileName)
   {
     resize(g_width,g_height);
-    AffineSpace3fa pixel2world = g_camera.pixel2world(g_width,g_height);
+    if (g_anim_mode) g_camera.anim = true;
 
     do {
       double msec = getSeconds();
+      AffineSpace3fa pixel2world = g_camera.pixel2world(g_width,g_height);
+
       render(0.0f,
 	     pixel2world.l.vx,
 	     pixel2world.l.vy,
