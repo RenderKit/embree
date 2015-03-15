@@ -299,17 +299,43 @@ namespace embree
 	  /* compute the bounds just for the range! */
 	  //BBox3fa bounds( empty );
 	  size_t offset = range.v_start * patch.grid_u_res + range.u_start;
-	  float min_x = pos_inf;
-	  float min_y = pos_inf;
-	  float min_z = pos_inf;
-	  float max_x = neg_inf;
-	  float max_y = neg_inf;
-	  float max_z = neg_inf;
+	  mic_f min_x = pos_inf;
+	  mic_f min_y = pos_inf;
+	  mic_f min_z = pos_inf;
+	  mic_f max_x = neg_inf;
+	  mic_f max_y = neg_inf;
+	  mic_f max_z = neg_inf;
 
 	  const unsigned int u_size = range.u_end-range.u_start+1;
 	  const unsigned int v_size = range.v_end-range.v_start+1;
-	  
+	  const mic_m m_mask = ((unsigned int)1 << u_size)-1;
+
+#if 0
+	  size_t local_offset = 0;
+	  for (size_t v = 0; v<v_size; v++)
+	    {
+	      const mic_f x = uload16f(&grid_x_array[ offset ]);
+	      const mic_f y = uload16f(&grid_y_array[ offset ]);
+	      const mic_f z = uload16f(&grid_z_array[ offset ]);
+	      compactustore16f_low(m_mask,&min_x[local_offset],x);
+	      compactustore16f_low(m_mask,&max_x[local_offset],x);
+	      compactustore16f_low(m_mask,&min_y[local_offset],y);
+	      compactustore16f_low(m_mask,&max_y[local_offset],y);
+	      compactustore16f_low(m_mask,&min_z[local_offset],z);
+	      compactustore16f_low(m_mask,&max_z[local_offset],z);
+	      offset       += patch.grid_u_res;
+	      local_offset += u_size;
+	    }	  
+	  min_x = vreduce_min(min_x);
+	  min_y = vreduce_min(min_y);
+	  min_z = vreduce_min(min_z);
+
+	  max_x = vreduce_max(max_x);
+	  max_y = vreduce_max(max_y);
+	  max_z = vreduce_max(max_z);
+#else
 	  for (size_t v = 0; v<v_size; v++,offset+=patch.grid_u_res)
+	    {
 #pragma novector
 	    for (size_t u = 0; u<u_size; u++)
 	      {
@@ -326,13 +352,19 @@ namespace embree
 		max_z = max(max_z,z);
 
 	      }
+	    }
+
+#endif
+
 	  BBox3fa bounds;
-	  bounds.lower.x = min_x;
-	  bounds.lower.y = min_y;
-	  bounds.lower.z = min_z;
-	  bounds.upper.x = max_x;
-	  bounds.upper.y = max_y;
-	  bounds.upper.z = max_z;
+	  store1f(&bounds.lower.x,min_x);
+	  store1f(&bounds.lower.y,min_y);
+	  store1f(&bounds.lower.z,min_z);
+	  store1f(&bounds.upper.x,max_x);
+	  store1f(&bounds.upper.y,max_y);
+	  store1f(&bounds.upper.z,max_z);
+
+	  
 
 
 	  unsigned int u_start = range.u_start;
@@ -363,7 +395,6 @@ namespace embree
 	  const size_t grid_offset4x4    = v_start * patch.grid_u_res + u_start;
 
 	  const size_t offset_bytes = (size_t)&grid_x_array[ grid_offset4x4 ] - (size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();
-          //const size_t value = (offset_bytes << 4) + (size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();
           //assert( (value & 2) == 0 );
 
 	  createSubPatchBVH4iLeaf( curNode, offset_bytes);	  
@@ -486,6 +517,15 @@ namespace embree
 	  const mic_i uv_i = (v_i << 16) | u_i;
 	  store16i(&grid_uv[i],uv_i);
 	}
+
+#if 0
+      TIMER(msec = getSeconds()-msec);    
+      TIMER(DBG_PRINT("tess"));
+      TIMER(DBG_PRINT(patch.grid_u_res));
+      TIMER(DBG_PRINT(patch.grid_v_res));
+      TIMER(DBG_PRINT(1000.0f * msec));
+      TIMER(msec = getSeconds());    
+#endif
 
       BVH4i::NodeRef subtree_root = 0;
       const unsigned int oldIndex = currentIndex;

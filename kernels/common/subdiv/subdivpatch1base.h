@@ -788,9 +788,9 @@ namespace embree
           const mic_f u = load16f(&grid_u[i * 16]);
           const mic_f v = load16f(&grid_v[i * 16]);
 
-	  prefetch<PFHINT_L2EX>(&grid_x[16*i]);
-	  prefetch<PFHINT_L2EX>(&grid_y[16*i]);
-	  prefetch<PFHINT_L2EX>(&grid_z[16*i]);
+	  //prefetch<PFHINT_L2EX>(&grid_x[16*i]);
+	  //prefetch<PFHINT_L2EX>(&grid_y[16*i]);
+	  //prefetch<PFHINT_L2EX>(&grid_z[16*i]);
 
           mic3f vtx = patch.eval16(u, v);
 
@@ -822,13 +822,13 @@ namespace embree
 					     16);
 
             }
-	  prefetch<PFHINT_L1EX>(&grid_x[16*i]);
-	  prefetch<PFHINT_L1EX>(&grid_y[16*i]);
-	  prefetch<PFHINT_L1EX>(&grid_z[16*i]);
+	  //prefetch<PFHINT_L1EX>(&grid_x[16*i]);
+	  //prefetch<PFHINT_L1EX>(&grid_y[16*i]);
+	  //prefetch<PFHINT_L1EX>(&grid_z[16*i]);
 
-	  store16f(&grid_x[16*i],vtx.x);
-	  store16f(&grid_y[16*i],vtx.y);
-	  store16f(&grid_z[16*i],vtx.z);
+	  store16f_ngo(&grid_x[16*i],vtx.x);
+	  store16f_ngo(&grid_y[16*i],vtx.y);
+	  store16f_ngo(&grid_z[16*i],vtx.z);
         }
    
 #else        
