@@ -297,15 +297,43 @@ namespace embree
 	  const float *const grid_z_array = grid_array + 2 * grid_array_elements;
 
 	  /* compute the bounds just for the range! */
-	  BBox3fa bounds( empty );
-	  for (size_t v = range.v_start; v<=range.v_end; v++)
-	    for (size_t u = range.u_start; u<=range.u_end; u++)
+	  //BBox3fa bounds( empty );
+	  size_t offset = range.v_start * patch.grid_u_res + range.u_start;
+	  float min_x = pos_inf;
+	  float min_y = pos_inf;
+	  float min_z = pos_inf;
+	  float max_x = neg_inf;
+	  float max_y = neg_inf;
+	  float max_z = neg_inf;
+
+	  const unsigned int u_size = range.u_end-range.u_start+1;
+	  const unsigned int v_size = range.v_end-range.v_start+1;
+	  
+	  for (size_t v = 0; v<v_size; v++,offset+=patch.grid_u_res)
+#pragma novector
+	    for (size_t u = 0; u<u_size; u++)
 	      {
-		const float x = grid_x_array[ v * patch.grid_u_res + u];
-		const float y = grid_y_array[ v * patch.grid_u_res + u];
-		const float z = grid_z_array[ v * patch.grid_u_res + u];
-		bounds.extend( Vec3fa(x,y,z) );
+		const float x = grid_x_array[ offset + u ];
+		const float y = grid_y_array[ offset + u ];
+		const float z = grid_z_array[ offset + u ];
+		//bounds.extend( Vec3fa(x,y,z) );
+		min_x = min(min_x,x);
+		min_y = min(min_y,y);
+		min_z = min(min_z,z);
+
+		max_x = max(max_x,x);
+		max_y = max(max_y,y);
+		max_z = max(max_z,z);
+
 	      }
+	  BBox3fa bounds;
+	  bounds.lower.x = min_x;
+	  bounds.lower.y = min_y;
+	  bounds.lower.z = min_z;
+	  bounds.upper.x = max_x;
+	  bounds.upper.y = max_y;
+	  bounds.upper.z = max_z;
+
 
 	  unsigned int u_start = range.u_start;
 	  unsigned int v_start = range.v_start;
@@ -331,8 +359,6 @@ namespace embree
 	    }
 
 
-	  const unsigned int u_size = u_end-u_start+1;
-	  const unsigned int v_size = v_end-v_start+1;
 	  
 	  const size_t grid_offset4x4    = v_start * patch.grid_u_res + u_start;
 
@@ -477,8 +503,13 @@ namespace embree
       TIMER(DBG_PRINT("tess+bvh"));
       TIMER(DBG_PRINT(patch.grid_u_res));
       TIMER(DBG_PRINT(patch.grid_v_res));
+      TIMER(DBG_PRINT(patch.grid_subtree_size_64b_blocks*64));
+
       TIMER(DBG_PRINT(1000.0f * msec));
+      TIMER(double throughput = 1.0 / (1000*msec));
+
       TIMER(msec = getSeconds());    
+      TIMER(DBG_PRINT(throughput));
 
       return subtree_root;
     }
