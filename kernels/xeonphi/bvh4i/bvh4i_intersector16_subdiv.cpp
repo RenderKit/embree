@@ -27,7 +27,6 @@
 #define CACHE_STATS(x) 
 #endif
 
-#define TEST_COMPACT 0
 // FIXME: instead of 4x4 better 3x5?
 
 namespace embree
@@ -63,13 +62,12 @@ namespace embree
       unsigned short uu[16];
       unsigned short vv[16];
 
-      __forceinline void init(size_t offset, 
+      __forceinline void init(size_t offset_bytes, 
 			      const SubdivPatch1Base &patch,
 			      float *lazyCachePtr)
       {
 	const size_t dim_offset    = patch.grid_size_simd_blocks * 16;
 	const size_t line_offset   = patch.grid_u_res;
-	const size_t offset_bytes  = offset >> 4;   
 	const float *const grid_x  = (float*)(offset_bytes + (size_t)lazyCachePtr);
 	const float *const grid_y  = grid_x + 1 * dim_offset;
 	const float *const grid_z  = grid_x + 2 * dim_offset;
@@ -97,10 +95,10 @@ namespace embree
       
       __forceinline mic_f getU() const
       {
-#if TEST_COMPACT == 1
+#if COMPACT == 1
 	mic_i uv = load16i((int*)uu);
-	mic_i  v = uv & 0xffff;
-	return mic_f(v) * 1.0f/65535.0f;
+	mic_i  u = uv & 0xffff;
+	return mic_f(u) * 2.0f/65535.0f;
 #else
 	return load16f_uint16(uu);
 #endif
@@ -108,10 +106,10 @@ namespace embree
 
       __forceinline mic_f getV() const
       {
-#if TEST_COMPACT == 1
+#if COMPACT == 1
 	mic_i uv = load16i((int*)uu);
 	mic_i  v = uv >> 16;
-	return mic_f(v) * 1.0f/65535.0f;
+	return mic_f(v) * 2.0f/65535.0f;
 #else
 	return load16f_uint16(vv);
 #endif
@@ -342,7 +340,7 @@ namespace embree
           //const size_t value = (offset_bytes << 4) + (size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();
           //assert( (value & 2) == 0 );
 
-	  createSubPatchBVH4iLeaf( curNode, (offset_bytes << 4));	  
+	  createSubPatchBVH4iLeaf( curNode, offset_bytes);	  
 	  return bounds;
 	}
       /* allocate new bvh4i node */
@@ -452,9 +450,16 @@ namespace embree
 
       evalGrid(patch,grid_x,grid_y,grid_z,grid_u,grid_v,geom);
       
-      /* FIXME: simdify ! */
-      for (size_t i=0;i<array_elements;i++)
-        grid_uv[i] = (((int)(grid_v[i] * 65535.0f/2.0f)) << 16) | ((int)(grid_u[i] * 65535.0f/2.0f)); 
+      for (size_t i=0;i<array_elements;i+=16)
+	{
+	  prefetch<PFHINT_L1EX>(&grid_uv[i]);
+	  const mic_f u = load16f(&grid_u[i]);
+	  const mic_f v = load16f(&grid_v[i]);
+	  const mic_i u_i = mic_i(u * 65535.0f/2.0f);
+	  const mic_i v_i = mic_i(v * 65535.0f/2.0f);
+	  const mic_i uv_i = (v_i << 16) | u_i;
+	  store16i(&grid_uv[i],uv_i);
+	}
 
       BVH4i::NodeRef subtree_root = 0;
       const unsigned int oldIndex = currentIndex;
@@ -467,7 +472,7 @@ namespace embree
 					     GridRange(0,patch.grid_u_res-1,0,patch.grid_v_res-1),
 					     currentIndex);
 
-      assert(currentIndex - oldIndex == patch.grid_subtree_size_64b_blocks);
+      assert(currentIndex - oldIndex == patch.grid_bvh_size_64b_blocks);
       TIMER(msec = getSeconds()-msec);    
       TIMER(DBG_PRINT("tess+bvh"));
       TIMER(DBG_PRINT(patch.grid_u_res));
@@ -555,7 +560,7 @@ namespace embree
 		//DBG_PRINT( SharedLazyTessellationCache::sharedLazyTessellationCache.getNumUsedBytes() );
 		mic_f* local_mem   = (mic_f*)SharedLazyTessellationCache::sharedLazyTessellationCache.getBlockPtr(block_index);
 		unsigned int currentIndex = 0;
-#if TEST_COMPACT == 1
+#if COMPACT == 1
 		BVH4i::NodeRef bvh4i_root = initLocalLazySubdivTreeCompact(*subdiv_patch,currentIndex,local_mem,geom);
 #else
 		BVH4i::NodeRef bvh4i_root = initLocalLazySubdivTree(*subdiv_patch,currentIndex,local_mem,geom);
@@ -695,10 +700,10 @@ namespace embree
 
 		  
 		  const mic_m m_active = 0x777;
-#if TEST_COMPACT == 1
+#if COMPACT == 1
 		  float *lazyCachePtr = (float*)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();
 		  Quad4x4 quad4x4;
-		  quad4x4.init( curNode, patch, lazyCachePtr);
+		  quad4x4.init( curNode.offsetIndex(), patch, lazyCachePtr);
 		  const mic_f uu = quad4x4.getU();
 		  const mic_f vv = quad4x4.getV();
 		  const mic3f &vtx = quad4x4.vtx;

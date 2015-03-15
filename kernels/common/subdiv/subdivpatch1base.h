@@ -764,12 +764,14 @@ namespace embree
                       grid_u,
                       grid_v);
 
-    /* set last elements in u,v array to 1.0f */
-#if !defined(__MIC__)
-    for (size_t i=patch.grid_u_res*patch.grid_v_res;i<patch.grid_size_simd_blocks*8;i++)
+#if defined(__MIC__)
+    const size_t SIMD_WIDTH = 16;
 #else
-    for (size_t i=patch.grid_u_res*patch.grid_v_res;i<patch.grid_size_simd_blocks*16;i++)
+    const size_t SIMD_WIDTH = 8;
 #endif
+
+    /* set last elements in u,v array to 1.0f */
+    for (size_t i=patch.grid_u_res*patch.grid_v_res;i<patch.grid_size_simd_blocks*SIMD_WIDTH;i++)
       {
 	grid_u[i] = 1.0f;
 	grid_v[i] = 1.0f;
@@ -820,6 +822,9 @@ namespace embree
 					     16);
 
             }
+	  prefetch<PFHINT_L1EX>(&grid_x[16*i]);
+	  prefetch<PFHINT_L1EX>(&grid_y[16*i]);
+	  prefetch<PFHINT_L1EX>(&grid_z[16*i]);
 
 	  store16f(&grid_x[16*i],vtx.x);
 	  store16f(&grid_y[16*i],vtx.y);

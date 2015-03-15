@@ -38,7 +38,13 @@ namespace embree
     assert( edge_level[1] >= 0.0f );
     assert( edge_level[2] >= 0.0f );
     assert( edge_level[3] >= 0.0f );
-      
+
+#if defined(__MIC__)
+    const size_t SIMD_WIDTH = 16;
+#else
+    const size_t SIMD_WIDTH = 8;
+#endif
+
     level[0] = max(ceilf(edge_level[0]),1.0f);
     level[1] = max(ceilf(edge_level[1]),1.0f);
     level[2] = max(ceilf(edge_level[2]),1.0f);
@@ -81,8 +87,8 @@ namespace embree
 
     grid_bvh_size_64b_blocks = getSubTreeSize64bBlocks( 0 );
 
-#if COMPACT == 1 && !defined(__MIC__)
-    const size_t grid_size_xyzuv = (grid_size_simd_blocks * 8) * 4;
+#if COMPACT == 1
+    const size_t grid_size_xyzuv = (grid_size_simd_blocks * SIMD_WIDTH) * 4;
     grid_subtree_size_64b_blocks = grid_bvh_size_64b_blocks + (grid_size_xyzuv / 16);
 #else
     grid_subtree_size_64b_blocks = getSubTreeSize64bBlocks( leafBlocks ); // u,v,x,y,z 

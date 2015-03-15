@@ -17,7 +17,7 @@
 #include "../common/tutorial/tutorial_device.h"
 #include "../common/tutorial/scene_device.h"
 
-//
+
 
 #undef TILE_SIZE_X
 #undef TILE_SIZE_Y
@@ -29,7 +29,7 @@
 #define SPP 1
 
 //#define FORCE_FIXED_EDGE_TESSELLATION
-#define FIXED_EDGE_TESSELLATION_VALUE 3
+#define FIXED_EDGE_TESSELLATION_VALUE 2
 //#define FIXED_EDGE_TESSELLATION_VALUE 63
 
 #define MAX_EDGE_LEVEL 64.0f
@@ -193,10 +193,10 @@ void convertScene(ISPCScene* scene_in, const Vec3fa& p)
     /* get ith mesh */
     ISPCMesh* mesh = scene_in->meshes[i];
 
-    if (mesh->numQuads || mesh->numTriangles)
+    if (mesh->numQuads /*|| mesh->numTriangles*/)
     {
-      size_t numPrimitives = mesh->numQuads + mesh->numTriangles;
-      size_t numEdges      = mesh->numQuads*4 + mesh->numTriangles*3;
+      size_t numPrimitives = mesh->numQuads; /* + mesh->numTriangles */;
+      size_t numEdges      = mesh->numQuads*4; /* + mesh->numTriangles*3 */;
       mesh->edge_level             = new float[numEdges];
       int *index_buffer = new int[numEdges];
       
@@ -210,7 +210,7 @@ void convertScene(ISPCScene* scene_in, const Vec3fa& p)
       unsigned int* faces = (unsigned int*) rtcMapBuffer(g_scene, geomID, RTC_FACE_BUFFER);
       size_t index = 0;
       for (size_t i=0; i<mesh->numQuads    ; i++,index++) faces[index] = 4;
-      for (size_t i=0; i<mesh->numTriangles; i++,index++) faces[index] = 3;
+      //for (size_t i=0; i<mesh->numTriangles; i++,index++) faces[index] = 3;
       
       rtcUnmapBuffer(g_scene,geomID,RTC_FACE_BUFFER);
 
@@ -224,12 +224,14 @@ void convertScene(ISPCScene* scene_in, const Vec3fa& p)
 
        size_t offset = mesh->numQuads*4;
 
+#if 0
       for (size_t i=0; i<mesh->numTriangles; i++)
       	 {
 	   index_buffer[offset+3*i+0] = mesh->triangles[i].v0;
 	   index_buffer[offset+3*i+1] = mesh->triangles[i].v1;
 	   index_buffer[offset+3*i+2] = mesh->triangles[i].v2;
 	 }
+#endif
 
       rtcSetBuffer(g_scene, geomID, RTC_VERTEX_BUFFER, mesh->positions , 0, sizeof(Vec3fa  ));
       rtcSetBuffer(g_scene, geomID, RTC_INDEX_BUFFER,  index_buffer    , 0, sizeof(unsigned int));
