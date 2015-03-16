@@ -37,9 +37,9 @@ namespace embree
   {
     ALIGNED_CLASS;
   public:
-    ISPCMesh (int numTriangles, int numQuads, int numVertices) 
+    ISPCMesh (int numTriangles, int numQuads, int numVertices, int meshMaterialID) 
       : numTriangles(numTriangles), numQuads(numQuads), numVertices(numVertices),
-        positions(NULL), positions2(NULL), normals(NULL), texcoords(NULL), triangles(NULL), quads(NULL), edge_level(NULL)
+        positions(NULL), positions2(NULL), normals(NULL), texcoords(NULL), triangles(NULL), quads(NULL), edge_level(NULL), meshMaterialID(meshMaterialID)
     {
       sizePositions = 0;
       sizeNormals   = 0;
@@ -77,6 +77,7 @@ namespace embree
     int numTriangles;
     int numQuads;
     int geomID;
+    int meshMaterialID;
     size_t sizePositions;
     size_t sizeNormals;
     size_t sizeTexCoords;
@@ -244,7 +245,7 @@ namespace embree
     DBG_PRINT( in_pMiscData->numVertices );
 #endif
 
-    ISPCMesh* mesh = new ISPCMesh(in_pMiscData->numTriangles,in_pMiscData->numQuads,in_pMiscData->numVertices);
+    ISPCMesh* mesh = new ISPCMesh(in_pMiscData->numTriangles,in_pMiscData->numQuads,in_pMiscData->numVertices,in_pMiscData->meshMaterialID);
     assert( mesh );
     assert( in_pMiscData->numTriangles*sizeof(OBJScene::Triangle) == in_pBufferLengths[3] );
     assert( in_pMiscData->numQuads*sizeof(OBJScene::Quad) == in_pBufferLengths[4] );

@@ -58,6 +58,7 @@ namespace embree
     out->numTriangles = in->triangles.size();
     out->numQuads = in->quads.size();   
     out->geomID = -1;
+    out->meshMaterialID = in->meshMaterialID;
     return out;
   }
 

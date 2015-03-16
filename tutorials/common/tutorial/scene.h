@@ -75,6 +75,7 @@ namespace embree
       std::vector<Vec2f> vt;
       std::vector<Triangle> triangles;
       std::vector<Quad> quads;
+      int meshMaterialID;
     };
 
     /*! Subdivision Mesh. */

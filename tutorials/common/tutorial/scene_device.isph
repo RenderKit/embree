@@ -45,6 +45,7 @@ struct ISPCMesh
   int numTriangles;
   int numQuads;
   int geomID;
+  int meshMaterialID;
 };
 
 struct ISPCSubdivMesh
@@ -70,6 +71,7 @@ struct ISPCSubdivMesh
   int numHoles;
   int materialID;
   int geomID;
+  int meshMaterialID;
 };
 
 struct ISPCHair

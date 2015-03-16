@@ -46,6 +46,7 @@ namespace embree
     int numVertices;
     int numTriangles;
     int numQuads;
+    int meshMaterialID;
   };
 
   struct CreateHairSetData

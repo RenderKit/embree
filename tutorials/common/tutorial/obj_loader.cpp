@@ -216,7 +216,6 @@ namespace embree
     }
     flushFaceGroup();
 
-
     cin.close();
   }
 
@@ -390,6 +389,7 @@ namespace embree
 		mesh->v.push_back(v[i]);
 	      }
 	  }
+	mesh->meshMaterialID = curMaterial;	
       }
     curGroup.clear();
   }

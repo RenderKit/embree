@@ -459,6 +459,7 @@ __device__ Vec3f MirrorMaterial__sample(MirrorMaterial* uniform This, const BRDF
 
 __device__ void OBJMaterial__preprocess(uniform OBJMaterial* uniform material, BRDF& brdf, const Vec3f& wo, const DifferentialGeometry& dg, const Medium& medium)  
 {
+
     float d = material->d;
     //if (material->map_d) { d *= material->map_d.get(s,t); }
     brdf.Ka = make_Vec3f(material->Ka);
@@ -726,6 +727,7 @@ inline void Material__preprocess(ISPCMaterial* uniform materials, int materialID
   {
     if (id < 0 || id >= numMaterials) continue;
   ISPCMaterial* uniform material = &materials[id];
+
   switch (material->ty) {
   case MATERIAL_OBJ  : OBJMaterial__preprocess  ((uniform OBJMaterial* uniform)  material,brdf,wo,dg,medium); break;
   case MATERIAL_METAL: MetalMaterial__preprocess((uniform MetalMaterial* uniform)material,brdf,wo,dg,medium); break;
@@ -956,6 +958,7 @@ void convertSubdivMeshes(uniform ISPCScene* uniform scene_in, RTCScene scene_out
      {
       g_subdiv_mode = true;
 
+
       uniform size_t numPrimitives = mesh->numQuads;
       uniform size_t numEdges      = mesh->numQuads*4;
       mesh->edge_level             = uniform new uniform float[numEdges];
@@ -972,6 +975,10 @@ void convertSubdivMeshes(uniform ISPCScene* uniform scene_in, RTCScene scene_out
       /* create a triangle mesh */
       uniform unsigned int geomID = rtcNewSubdivisionMesh (scene_out, RTC_GEOMETRY_STATIC, numPrimitives, numEdges, mesh->numVertices, 0, 0, 0);
       mesh->geomID = geomID;
+
+      geomID_to_mesh[geomID] = mesh;
+      geomID_to_type[geomID] = 1;
+      print("mesh->meshMaterialID %\n",mesh->meshMaterialID);
 
       uniform unsigned int* faces = (uniform unsigned int*) rtcMapBuffer(scene_out, geomID, RTC_FACE_BUFFER);
       for (uniform size_t i=0; i<mesh->numQuads    ; i++) faces[i] = 4;
@@ -1022,6 +1029,8 @@ typedef void* uniform void_ptr;
 RTCScene convertScene(uniform ISPCScene* uniform scene_in,const uniform Vec3fa& cam_org)
 {
   uniform size_t numGeometries = scene_in->numMeshes + scene_in->numSubdivMeshes;
+  print("numGeometries %\n",numGeometries);
+
   geomID_to_mesh = uniform new void_ptr[numGeometries];
   geomID_to_type = uniform new uniform int[numGeometries];
 
@@ -1184,9 +1193,6 @@ Vec3f renderPixelFunction(float x, float y, rand_state& state, const uniform Vec
 
     /* shade all rays that hit something */
    int materialID = 0;
-    if (g_subdiv_mode)
-      materialID = 1;
-    else
 {
 #if 0 // FIXME: pointer gather not implemented in ISPC for Xeon Phi
     if (geomID_to_type[ray.geomID] == 0)
@@ -1195,11 +1201,21 @@ Vec3f renderPixelFunction(float x, float y, rand_state& state, const uniform Vec
       materialID = ((ISPCSubdivMesh* uniform) geomID_to_mesh[ray.geomID])->materialID; 
 #else
     foreach_unique (geomID in ray.geomID) {
+     if (g_subdiv_mode)
+       {
+        uniform ISPCMesh* uniform mesh = ((ISPCMesh* uniform) geomID_to_mesh[geomID]);
+	//print("mesh %\n",mesh);
+	  materialID = ((ISPCMesh* uniform) geomID_to_mesh[geomID])->meshMaterialID; 
+	//print("materialID %\n",materialID);
+       }
+     else
+      {
       if (geomID >= 0 && geomID < g_ispc_scene->numMeshes) { // FIXME: workaround for ISPC bug
 	if (geomID_to_type[geomID] == 0) 
 	  materialID = ((ISPCMesh* uniform) geomID_to_mesh[geomID])->triangles[ray.primID].materialID; 
 	else                             
 	  materialID = ((ISPCSubdivMesh* uniform) geomID_to_mesh[geomID])->materialID; 
+      }
       }
     }
 #endif
@@ -1228,16 +1244,18 @@ Vec3f renderPixelFunction(float x, float y, rand_state& state, const uniform Vec
       Vec3f L0 = make_Vec3f(0.0f);
       Sample3f wi0; float tMax0;
       Vec3f Ll0 = AmbientLight__sample(g_ispc_scene->ambientLights[i],dg,wi0,tMax0,make_Vec2f(frand(state),frand(state)));
+      //print("ambient % \n",g_ispc_scene->ambientLights[i].L.x);
+
       if (wi0.pdf > 0.0f) {
         RTCRay shadow = make_Ray(dg.P,wi0.v,0.001f,tMax0);
         rtcOccluded(g_scene,shadow);
         if (shadow.geomID == RTC_INVALID_GEOMETRY_ID) {
           L0 = Ll0/wi0.pdf*Material__eval(material_array,materialID,numMaterials,brdf,wo,dg,wi0.v);
         }
+
         L = L + Lw*L0;
       }
 #endif
-
 #if 0
       Vec3f L1 = make_Vec3f(0.0f);
       Vec3f Ll1 = AmbientLight__eval(g_ispc_scene->ambientLights[i],wi1.v);

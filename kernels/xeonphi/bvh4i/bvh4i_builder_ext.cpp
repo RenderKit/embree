@@ -1082,7 +1082,6 @@ PRINT(CORRECT_numPrims);
     /* count total number of virtual objects */
     const size_t startID   = (threadID+0)*numPrimitives/numThreads;
     const size_t endID     = (threadID+1)*numPrimitives/numThreads; 
-    PING;
     SubdivPatch1 *subdiv_patches = (SubdivPatch1*)accel;
 
     mic_f bounds_scene_min((float)pos_inf);

@@ -240,6 +240,8 @@ namespace embree
     parms.numVertices = mesh->v.size();
     parms.numTriangles = mesh->triangles.size();
     parms.numQuads = mesh->quads.size();
+    parms.meshMaterialID = mesh->meshMaterialID;
+
     COI_ACCESS_FLAGS flags[5] = { COI_SINK_READ, COI_SINK_READ, COI_SINK_READ, COI_SINK_READ, COI_SINK_READ };
 
     COIEVENT event;
