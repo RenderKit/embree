@@ -128,29 +128,23 @@ namespace embree
     
     out->numMeshes = in->meshes.size();
 
-    DBG_PRINT(total_triangles);
-    DBG_PRINT(total_quads);
-    DBG_PRINT(out->numMeshes);
-
     out->materials = (ISPCMaterial*) (in->materials.size() ? &in->materials[0] : NULL);
     out->numMaterials = in->materials.size();
-
-    DBG_PRINT( out->numMaterials );
 
     out->hairs = new ISPCHairSet*[in->hairsets.size()];
     for (size_t i=0; i<in->hairsets.size(); i++) out->hairs[i] = convertHair(in->hairsets[i]);
     out->numHairSets = in->hairsets.size();
 
-    out->ambientLights = (ISPCAmbientLight*) (in->ambientLights.size() ? &in->ambientLights[0] : NULL);
+    out->ambientLights = (ISPCAmbientLight*) (in->ambientLights.size() ? &*in->ambientLights.begin() : NULL);
     out->numAmbientLights = in->ambientLights.size();
 
-    out->pointLights = (ISPCPointLight*) (in->pointLights.size() ? &in->pointLights[0] : NULL);
+    out->pointLights = (ISPCPointLight*) (in->pointLights.size() ? &*in->pointLights.begin() : NULL);
     out->numPointLights = in->pointLights.size();
 
-    out->dirLights = (ISPCDirectionalLight*) (in->directionalLights.size() ? &in->directionalLights[0] : NULL);
+    out->dirLights = (ISPCDirectionalLight*) (in->directionalLights.size() ? &*in->directionalLights.begin() : NULL);
     out->numDirectionalLights = in->directionalLights.size();
 
-    out->distantLights = (ISPCDistantLight*) (in->distantLights.size() ? &in->distantLights[0] : NULL);
+    out->distantLights = (ISPCDistantLight*) (in->distantLights.size() ? &*in->distantLights.begin() : NULL);
     out->numDistantLights = in->distantLights.size();
 
     out->subdiv = new ISPCSubdivMesh*[in->subdiv.size()];

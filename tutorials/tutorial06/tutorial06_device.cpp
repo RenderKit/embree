@@ -175,6 +175,7 @@ inline Vec3fa DistantLight__sample(const ISPCDistantLight& light,
 {
   wi = UniformSampleCone(s.x,s.y,light.radHalfAngle,Vec3fa((Vec3fa)neg(light.D)));
   tMax = 1e20f;
+
   return Vec3fa(light.L);
 }
 
@@ -459,6 +460,7 @@ inline DielectricLayerLambertian make_DielectricLayerLambertian(const Vec3fa& T,
 
  void OBJMaterial__preprocess(OBJMaterial* material, BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Medium& medium)  
 {
+
     float d = material->d;
     //if (material->map_d) { d *= material->map_d.get(s,t); }
     brdf.Ka = Vec3fa(material->Ka);
@@ -471,6 +473,7 @@ inline DielectricLayerLambertian make_DielectricLayerLambertian(const Vec3fa& T,
     //if (material->map_Ns) { brdf.Ns *= material->map_Ns.get(dg.st); }
     brdf.Kt = (1.0f-d)*Vec3fa(material->Kt);
     brdf.Ni = material->Ni;
+
 }
 
  Vec3fa OBJMaterial__eval(OBJMaterial* material, const BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Vec3fa& wi) 
@@ -726,6 +729,7 @@ inline void Material__preprocess(ISPCMaterial* materials, int materialID, int nu
   {
     
   ISPCMaterial* material = &materials[materialID];
+
   switch (material->ty) {
   case MATERIAL_OBJ  : OBJMaterial__preprocess  ((OBJMaterial*)  material,brdf,wo,dg,medium); break;
   case MATERIAL_METAL: MetalMaterial__preprocess((MetalMaterial*)material,brdf,wo,dg,medium); break;
@@ -870,8 +874,11 @@ void convertTriangleMeshes(ISPCScene* scene_in, RTCScene scene_out, size_t numGe
   /* add all meshes to the scene */
   for (int i=0; i<scene_in->numMeshes; i++)
   {
+
     /* get ith mesh */
     ISPCMesh* mesh = scene_in->meshes[i];
+
+    if (mesh->numQuads) continue;
 
     /* create a triangle mesh */
     unsigned int geomID = rtcNewTriangleMesh (scene_out, RTC_GEOMETRY_STATIC, mesh->numTriangles, mesh->numVertices);
@@ -956,6 +963,7 @@ void convertSubdivMeshes(ISPCScene* scene_in, RTCScene scene_out, size_t numGeom
      {
       g_subdiv_mode = true;
 
+
       size_t numPrimitives = mesh->numQuads;
       size_t numEdges      = mesh->numQuads*4;
       mesh->edge_level             = new float[numEdges];
@@ -972,6 +980,9 @@ void convertSubdivMeshes(ISPCScene* scene_in, RTCScene scene_out, size_t numGeom
       /* create a triangle mesh */
       unsigned int geomID = rtcNewSubdivisionMesh (scene_out, RTC_GEOMETRY_STATIC, numPrimitives, numEdges, mesh->numVertices, 0, 0, 0);
       mesh->geomID = geomID;
+
+      geomID_to_mesh[geomID] = mesh;
+      geomID_to_type[geomID] = 2;
 
       unsigned int* faces = (unsigned int*) rtcMapBuffer(scene_out, geomID, RTC_FACE_BUFFER);
       for (size_t i=0; i<mesh->numQuads    ; i++) faces[i] = 4;
@@ -1022,6 +1033,7 @@ typedef void* void_ptr;
 RTCScene convertScene(ISPCScene* scene_in,const Vec3fa& cam_org)
 {
   size_t numGeometries = scene_in->numMeshes + scene_in->numSubdivMeshes;
+
   geomID_to_mesh = new void_ptr[numGeometries];
   geomID_to_type = new int[numGeometries];
 
@@ -1184,24 +1196,27 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
 
     /* shade all rays that hit something */
    int materialID = 0;
-    if (g_subdiv_mode)
-      materialID = 1;
-    else
 {
 #if 1 // FIXME: pointer gather not implemented in ISPC for Xeon Phi
     if (geomID_to_type[ray.geomID] == 0)
       materialID = ((ISPCMesh*) geomID_to_mesh[ray.geomID])->triangles[ray.primID].materialID; 
-    else 
+    else if (geomID_to_type[ray.geomID] == 1)                             
       materialID = ((ISPCSubdivMesh*) geomID_to_mesh[ray.geomID])->materialID; 
-#else
+    else
+      materialID = ((ISPCMesh*) geomID_to_mesh[ray.geomID])->meshMaterialID; 
+#else 
     foreach_unique (geomID in ray.geomID) {
       if (geomID >= 0 && geomID < g_ispc_scene->numMeshes) { // FIXME: workaround for ISPC bug
 	if (geomID_to_type[geomID] == 0) 
 	  materialID = ((ISPCMesh*) geomID_to_mesh[geomID])->triangles[ray.primID].materialID; 
-	else                             
+	else if (geomID_to_type[geomID] == 1)                             
 	  materialID = ((ISPCSubdivMesh*) geomID_to_mesh[geomID])->materialID; 
+	else {
+	  materialID = ((ISPCMesh*) geomID_to_mesh[geomID])->meshMaterialID; 
+        }
       }
     }
+
 #endif
 }
     /*! Compute  simple volumetric effect. */
@@ -1228,16 +1243,17 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
       Vec3fa L0 = Vec3fa(0.0f);
       Sample3f wi0; float tMax0;
       Vec3fa Ll0 = AmbientLight__sample(g_ispc_scene->ambientLights[i],dg,wi0,tMax0,Vec2f(frand(state),frand(state)));
+
       if (wi0.pdf > 0.0f) {
         RTCRay shadow = RTCRay(dg.P,wi0.v,0.001f,tMax0);
         rtcOccluded(g_scene,shadow);
         if (shadow.geomID == RTC_INVALID_GEOMETRY_ID) {
           L0 = Ll0/wi0.pdf*Material__eval(material_array,materialID,numMaterials,brdf,wo,dg,wi0.v);
         }
+
         L = L + Lw*L0;
       }
 #endif
-
 #if 0
       Vec3fa L1 = Vec3fa(0.0f);
       Vec3fa Ll1 = AmbientLight__eval(g_ispc_scene->ambientLights[i],wi1.v);
@@ -1291,6 +1307,7 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
     for (size_t i=0; i<g_ispc_scene->numDistantLights; i++)
     {
       Vec3fa Ll = DistantLight__sample(g_ispc_scene->distantLights[i],dg,wi,tMax,Vec2f(frand(state),frand(state)));
+
       if (wi.pdf <= 0.0f) continue;
       RTCRay shadow = RTCRay(dg.P,wi.v,0.001f,tMax);
       rtcOccluded(g_scene,shadow);

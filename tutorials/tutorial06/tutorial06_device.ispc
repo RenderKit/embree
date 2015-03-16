@@ -175,6 +175,7 @@ inline varying Vec3f DistantLight__sample(const uniform ISPCDistantLight& light,
 {
   wi = UniformSampleCone(s.x,s.y,light.radHalfAngle,make_Vec3f((varying Vec3fa)neg(light.D)));
   tMax = 1e20f;
+
   return make_Vec3f(light.L);
 }
 
@@ -472,6 +473,7 @@ __device__ void OBJMaterial__preprocess(uniform OBJMaterial* uniform material, B
     //if (material->map_Ns) { brdf.Ns *= material->map_Ns.get(dg.st); }
     brdf.Kt = (1.0f-d)*make_Vec3f(material->Kt);
     brdf.Ni = material->Ni;
+
 }
 
 __device__ Vec3f OBJMaterial__eval(OBJMaterial* uniform material, const BRDF& brdf, const Vec3f& wo, const DifferentialGeometry& dg, const Vec3f& wi) 
@@ -872,8 +874,11 @@ void convertTriangleMeshes(uniform ISPCScene* uniform scene_in, RTCScene scene_o
   /* add all meshes to the scene */
   for (uniform int i=0; i<scene_in->numMeshes; i++)
   {
+
     /* get ith mesh */
     uniform ISPCMesh* uniform mesh = scene_in->meshes[i];
+
+    if (mesh->numQuads) continue;
 
     /* create a triangle mesh */
     uniform unsigned int geomID = rtcNewTriangleMesh (scene_out, RTC_GEOMETRY_STATIC, mesh->numTriangles, mesh->numVertices);
@@ -977,8 +982,7 @@ void convertSubdivMeshes(uniform ISPCScene* uniform scene_in, RTCScene scene_out
       mesh->geomID = geomID;
 
       geomID_to_mesh[geomID] = mesh;
-      geomID_to_type[geomID] = 1;
-      print("mesh->meshMaterialID %\n",mesh->meshMaterialID);
+      geomID_to_type[geomID] = 2;
 
       uniform unsigned int* faces = (uniform unsigned int*) rtcMapBuffer(scene_out, geomID, RTC_FACE_BUFFER);
       for (uniform size_t i=0; i<mesh->numQuads    ; i++) faces[i] = 4;
@@ -1029,7 +1033,6 @@ typedef void* uniform void_ptr;
 RTCScene convertScene(uniform ISPCScene* uniform scene_in,const uniform Vec3fa& cam_org)
 {
   uniform size_t numGeometries = scene_in->numMeshes + scene_in->numSubdivMeshes;
-  print("numGeometries %\n",numGeometries);
 
   geomID_to_mesh = uniform new void_ptr[numGeometries];
   geomID_to_type = uniform new uniform int[numGeometries];
@@ -1197,27 +1200,23 @@ Vec3f renderPixelFunction(float x, float y, rand_state& state, const uniform Vec
 #if 0 // FIXME: pointer gather not implemented in ISPC for Xeon Phi
     if (geomID_to_type[ray.geomID] == 0)
       materialID = ((ISPCMesh* uniform) geomID_to_mesh[ray.geomID])->triangles[ray.primID].materialID; 
-    else 
+    else if (geomID_to_type[ray.geomID] == 1)                             
       materialID = ((ISPCSubdivMesh* uniform) geomID_to_mesh[ray.geomID])->materialID; 
-#else
+    else
+      materialID = ((ISPCMesh* uniform) geomID_to_mesh[ray.geomID])->meshMaterialID; 
+#else 
     foreach_unique (geomID in ray.geomID) {
-     if (g_subdiv_mode)
-       {
-        uniform ISPCMesh* uniform mesh = ((ISPCMesh* uniform) geomID_to_mesh[geomID]);
-	//print("mesh %\n",mesh);
-	  materialID = ((ISPCMesh* uniform) geomID_to_mesh[geomID])->meshMaterialID; 
-	//print("materialID %\n",materialID);
-       }
-     else
-      {
       if (geomID >= 0 && geomID < g_ispc_scene->numMeshes) { // FIXME: workaround for ISPC bug
 	if (geomID_to_type[geomID] == 0) 
 	  materialID = ((ISPCMesh* uniform) geomID_to_mesh[geomID])->triangles[ray.primID].materialID; 
-	else                             
+	else if (geomID_to_type[geomID] == 1)                             
 	  materialID = ((ISPCSubdivMesh* uniform) geomID_to_mesh[geomID])->materialID; 
-      }
+	else {
+	  materialID = ((ISPCMesh* uniform) geomID_to_mesh[geomID])->meshMaterialID; 
+        }
       }
     }
+
 #endif
 }
     /*! Compute  simple volumetric effect. */
@@ -1244,7 +1243,6 @@ Vec3f renderPixelFunction(float x, float y, rand_state& state, const uniform Vec
       Vec3f L0 = make_Vec3f(0.0f);
       Sample3f wi0; float tMax0;
       Vec3f Ll0 = AmbientLight__sample(g_ispc_scene->ambientLights[i],dg,wi0,tMax0,make_Vec2f(frand(state),frand(state)));
-      //print("ambient % \n",g_ispc_scene->ambientLights[i].L.x);
 
       if (wi0.pdf > 0.0f) {
         RTCRay shadow = make_Ray(dg.P,wi0.v,0.001f,tMax0);
@@ -1309,6 +1307,7 @@ Vec3f renderPixelFunction(float x, float y, rand_state& state, const uniform Vec
     for (uniform size_t i=0; i<g_ispc_scene->numDistantLights; i++)
     {
       Vec3f Ll = DistantLight__sample(g_ispc_scene->distantLights[i],dg,wi,tMax,make_Vec2f(frand(state),frand(state)));
+
       if (wi.pdf <= 0.0f) continue;
       RTCRay shadow = make_Ray(dg.P,wi.v,0.001f,tMax);
       rtcOccluded(g_scene,shadow);

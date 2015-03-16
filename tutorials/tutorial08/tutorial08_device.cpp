@@ -28,6 +28,7 @@
 #define EDGE_LEVEL 256.0f
 #endif
 
+
 /* scene data */
 RTCScene g_scene = NULL;
 
@@ -198,12 +199,13 @@ extern "C" void device_init (int8* cfg)
   /* add ground plane */
   addGroundPlane(g_scene);
 
-    /* commit changes to scene */
+/* commit changes to scene */
 #if !defined(PARALLEL_COMMIT)
   rtcCommit (g_scene);
 #else
   launch[ getNumHWThreads() ] parallelCommit(g_scene); 
 #endif
+
 
   /* set start render mode */
   renderPixel = renderPixelStandard;
@@ -298,14 +300,14 @@ extern "C" void device_render (int* pixels,
                            const Vec3fa& p)
 {
   /* recompute levels */
-  //updateEdgeLevelBuffer(g_scene,0,p);
+  updateEdgeLevelBuffer(g_scene,0,p);
     
   /* rebuild scene */
-//#if !defined(PARALLEL_COMMIT)
-//  rtcCommit (g_scene);
-//#else
-//  launch[ getNumHWThreads() ] parallelCommit(g_scene); 
-//#endif
+#if !defined(PARALLEL_COMMIT)
+  rtcCommit (g_scene);
+#else
+  launch[ getNumHWThreads() ] parallelCommit(g_scene); 
+#endif
   
   /* render image */
   const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
