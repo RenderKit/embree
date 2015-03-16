@@ -223,6 +223,7 @@ namespace embree
       TriangleMesh* geom;   //!< input mesh
     };
 
+#if 0
     template<typename Primitive>
     class BVH4TriangleBuilderFastSweep : public BVH4TriangleBuilderFast<Primitive>
     {
@@ -269,7 +270,7 @@ namespace embree
     public:
       BVH4TriangleBuilderFastSweep (BVH4* bvh, Scene* scene, size_t listMode);
     };
-
+#endif
   
     template<typename Primitive>
     class BVH4UserGeometryBuilderFastT : public BVH4BuilderFastT<Primitive>

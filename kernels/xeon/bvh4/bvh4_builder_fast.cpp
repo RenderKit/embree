@@ -126,7 +126,8 @@ namespace embree
     
     } 
 
-    
+
+#if 0
     template<> BVH4TriangleBuilderFastSweep<Triangle4> ::BVH4TriangleBuilderFastSweep (BVH4* bvh, Scene *scene, size_t listMode) 
       : BVH4TriangleBuilderFast<Triangle4> (bvh,scene,listMode),tmp(NULL) {
       centroids[0] = NULL;
@@ -134,7 +135,8 @@ namespace embree
       centroids[2] = NULL;      
       needAllThreads = false;
     }
-
+#endif
+    
     BVH4TopLevelBuilderFastT::BVH4TopLevelBuilderFastT (LockStepTaskScheduler* scheduler, BVH4* bvh) 
       : prims_i(NULL), N(0), BVH4BuilderFast(scheduler,bvh,0,0,0,false,0,1,1) {}
 
@@ -1511,6 +1513,7 @@ namespace embree
       *current.parent = makeLeaf(leafAlloc, &prims[current.begin], current.size());
     }
 
+#if 0
     // =======================================================================================================
     // =======================================================================================================
     // =======================================================================================================
@@ -1943,7 +1946,7 @@ namespace embree
     // =======================================================================================================
     // =======================================================================================================
 
-
+#endif
 
 
 
@@ -1956,7 +1959,7 @@ namespace embree
     Builder* BVH4Triangle1BuilderFast  (void* bvh, Scene* scene, size_t mode) { return new class BVH4TriangleBuilderFast<Triangle1> ((BVH4*)bvh,scene,mode); }
     Builder* BVH4Triangle4BuilderFast  (void* bvh, Scene* scene, size_t mode) { return new class BVH4TriangleBuilderFast<Triangle4> ((BVH4*)bvh,scene,mode); }
 
-    Builder* BVH4Triangle4BuilderFastSweep  (void* bvh, Scene* scene, size_t mode) { return new class BVH4TriangleBuilderFastSweep<Triangle4> ((BVH4*)bvh,scene,mode); }
+    //Builder* BVH4Triangle4BuilderFastSweep  (void* bvh, Scene* scene, size_t mode) { return new class BVH4TriangleBuilderFastSweep<Triangle4> ((BVH4*)bvh,scene,mode); }
 
 
 #if defined(__AVX__)
