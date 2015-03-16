@@ -97,6 +97,8 @@ namespace embree
 	  const float r3 = radius(index+3,j);
 	  if (!inFloatRange(r0) || !inFloatRange(r1) || !inFloatRange(r2) || !inFloatRange(r3))
 	    return false;
+          if (min(r0,r1,r2,r3) < 0.0f)
+            return false;
 
 	  const Vec3fa& v0 = vertex(index+0,j);
 	  const Vec3fa& v1 = vertex(index+1,j);

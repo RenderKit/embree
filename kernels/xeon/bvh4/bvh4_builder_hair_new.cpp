@@ -147,7 +147,7 @@ namespace embree
         
         double t0 = 0.0;
         if (g_verbose >= 2) {
-          std::cout << "building BVH4<" + bvh->primTy.name + "> using " << TOSTRING(isa) << "::BVH4BuilderHairNew ..." << std::flush;
+          std::cout << "building BVH4<" + bvh->primTy.name + "> using " << TOSTRING(isa) << "::BVH4BuilderHairNewMB ..." << std::flush;
           t0 = getSeconds();
         }
         
