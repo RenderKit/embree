@@ -908,11 +908,21 @@ PRINT(CORRECT_numPrims);
 
 	/* initialize atomic node counter */
 	atomicID.reset(0);
+
+	/* reset numSubTrees */
+	numSubTrees = 0;
+
 	/* update BVH4i */
 	bvh->bounds = global_bounds.geometry;
 
 	TIMER(msec = getSeconds());	
+#if 1
+	extract_refit_subtrees(bvh->root,0);
+	scene->lockstep_scheduler.dispatchTask( task_refitSubTrees, this, threadIndex, threadCount );	
+	refit_top_level(bvh->root,0);
+#else	
 	refit(bvh->root);	
+#endif
 	TIMER(msec = getSeconds()-msec);    
 	TIMER(std::cout << "refit " << 1000. * msec << " ms" << std::endl << std::flush);
 
@@ -1417,6 +1427,77 @@ PRINT(CORRECT_numPrims);
     return parentBounds;
   }    
 
+  void BVH4iBuilderSubdivMesh::extract_refit_subtrees(const BVH4i::NodeRef &ref,const size_t depth)
+  {
+    if (depth == GENERATE_SUBTREES_MAX_TREE_DEPTH || ref.isLeaf())
+      {
+	assert(numSubTrees < MAX_SUBTREES);
+	subtree_refs[numSubTrees++] = ref;
+	return;
+      }
+
+    BVH4i::Node *n = (BVH4i::Node*)ref.node(node);
+
+    for (size_t i=0;i<4;i++)
+      {
+	if (n->child(i) == BVH4i::invalidNode) break;
+	extract_refit_subtrees(n->child(i),depth+1);
+      }
+  }
 
 
+  BBox3fa BVH4iBuilderSubdivMesh::refit_top_level(const BVH4i::NodeRef &ref, 
+						  const size_t depth)
+  {    
+    if (unlikely(ref.isLeaf()))
+      {
+	const unsigned int patchIndex = ref.offsetIndex();
+	return prims[patchIndex].bounds();
+      }
+
+    BVH4i::Node *n = (BVH4i::Node*)ref.node(node);
+
+    if (depth == GENERATE_SUBTREES_MAX_TREE_DEPTH)
+      {
+	BBox3fa parentBounds = empty;
+	for (size_t i=0;i<4;i++)
+	  {
+	    if (n->child(i) == BVH4i::invalidNode) break;
+	    parentBounds.extend( n->bounds(i) );
+	  }
+	return parentBounds;
+      }
+
+    BBox3fa parentBounds = empty;
+
+    for (size_t i=0;i<BVH4i::N;i++)
+      {
+	if (n->child(i) == BVH4i::invalidNode) break;
+	
+	if (n->child(i).isLeaf())
+	  {
+	    parentBounds.extend( n->bounds(i) );
+	  }
+	else
+	  {
+	    BBox3fa bounds = refit_top_level( n->child(i),depth+1 );
+
+	    n->setBounds(i,bounds);
+	    parentBounds.extend( bounds );
+	  }
+      }
+    return parentBounds;
+  }    
+
+  void BVH4iBuilderSubdivMesh::refitSubTrees(const size_t threadID, const size_t numThreads) 
+  {
+    while(1)
+      {
+	unsigned int ID = atomicID.inc();
+	if (ID >= numSubTrees) break;
+	const BVH4i::NodeRef &ref = subtree_refs[ID];
+	BBox3fa bounds = refit(ref);
+      }
+    
+  }
 };
