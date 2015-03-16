@@ -252,6 +252,12 @@ namespace embree
     bool fastUpdateMode;
     size_t fastUpdateMode_numFaces;
 
+    static const size_t MAX_SUBTREES = 2048;
+    static const size_t GENERATE_SUBTREES_MAX_TREE_DEPTH = 5;
+
+    size_t numSubTrees;
+    BVH4i::NodeRef subtree_refs[MAX_SUBTREES];
+
   public:
     BVH4iBuilderSubdivMesh (BVH4i* bvh, void* geometry) : BVH4iBuilder(bvh,geometry),fastUpdateMode(false),fastUpdateMode_numFaces(0)
       {}
@@ -264,12 +270,20 @@ namespace embree
     virtual void printBuilderName();
     virtual void finalize         (const size_t threadIndex, const size_t threadCount);
 
+    void extract_refit_subtrees(const BVH4i::NodeRef &ref, 
+				const size_t depth);
+
     BBox3fa refit(const BVH4i::NodeRef &ref);
+
+    BBox3fa refit_top_level(const BVH4i::NodeRef &ref, 
+				const size_t depth);
 
   protected:
     TASK_FUNCTION(BVH4iBuilderSubdivMesh,updatePatchTessellation);
     TASK_FUNCTION(BVH4iBuilderSubdivMesh,computePrimRefsSubdivMesh);
     TASK_FUNCTION(BVH4iBuilderSubdivMesh,updateLeaves);    
+    TASK_FUNCTION(BVH4iBuilderSubdivMesh,refitSubTrees);    
+
   };
 
 }
