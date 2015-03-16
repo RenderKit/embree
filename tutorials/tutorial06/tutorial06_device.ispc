@@ -1149,6 +1149,7 @@ inline Vec3f interpolate_normal(RTCRay& ray)
 
 Vec3f renderPixelFunction(float x, float y, rand_state& state, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p)
 {
+
   /* radiance accumulator and weight */
   Vec3f L = make_Vec3f(0.0f);
   Vec3f Lw = make_Vec3f(1.0f);
@@ -1196,7 +1197,7 @@ Vec3f renderPixelFunction(float x, float y, rand_state& state, const uniform Vec
 
     /* shade all rays that hit something */
    int materialID = 0;
-{
+
 #if 0 // FIXME: pointer gather not implemented in ISPC for Xeon Phi
     if (geomID_to_type[ray.geomID] == 0)
       materialID = ((ISPCMesh* uniform) geomID_to_mesh[ray.geomID])->triangles[ray.primID].materialID; 
@@ -1206,6 +1207,8 @@ Vec3f renderPixelFunction(float x, float y, rand_state& state, const uniform Vec
       materialID = ((ISPCMesh* uniform) geomID_to_mesh[ray.geomID])->meshMaterialID; 
 #else 
     foreach_unique (geomID in ray.geomID) {
+     //print("geomID %\n",geomID);
+     //print("geomID_to_type[geomID] %\n",geomID_to_type[geomID]);
       if (geomID >= 0 && geomID < g_ispc_scene->numMeshes) { // FIXME: workaround for ISPC bug
 	if (geomID_to_type[geomID] == 0) 
 	  materialID = ((ISPCMesh* uniform) geomID_to_mesh[geomID])->triangles[ray.primID].materialID; 
@@ -1216,9 +1219,8 @@ Vec3f renderPixelFunction(float x, float y, rand_state& state, const uniform Vec
         }
       }
     }
-
+    //print("materialID %\n",materialID);
 #endif
-}
     /*! Compute  simple volumetric effect. */
     Vec3f c = make_Vec3f(1.0f);
     const Vec3f transmission = medium.transmission;
@@ -1230,16 +1232,19 @@ Vec3f renderPixelFunction(float x, float y, rand_state& state, const uniform Vec
     uniform int numMaterials = g_ispc_scene->numMaterials;
     //uniform ISPCMaterial* material = &g_ispc_scene->materials[materialID];
     uniform ISPCMaterial* uniform material_array = &g_ispc_scene->materials[0];
+
+
     Material__preprocess(material_array,materialID,numMaterials,brdf,wo,dg,medium);
+
 
     /* sample BRDF at hit point */
     Sample3f wi1;
     c = c * Material__sample(material_array,materialID,numMaterials,brdf,Lw, wo, dg, wi1, medium, make_Vec2f(frand(state),frand(state)));
 
+    
     /* iterate over ambient lights */
     for (uniform size_t i=0; i<g_ispc_scene->numAmbientLights; i++)
     {
-#if 1
       Vec3f L0 = make_Vec3f(0.0f);
       Sample3f wi0; float tMax0;
       Vec3f Ll0 = AmbientLight__sample(g_ispc_scene->ambientLights[i],dg,wi0,tMax0,make_Vec2f(frand(state),frand(state)));
@@ -1253,7 +1258,6 @@ Vec3f renderPixelFunction(float x, float y, rand_state& state, const uniform Vec
 
         L = L + Lw*L0;
       }
-#endif
 #if 0
       Vec3f L1 = make_Vec3f(0.0f);
       Vec3f Ll1 = AmbientLight__eval(g_ispc_scene->ambientLights[i],wi1.v);
@@ -1278,7 +1282,7 @@ Vec3f renderPixelFunction(float x, float y, rand_state& state, const uniform Vec
       }
 #endif
     }
-
+#if 0
     Sample3f wi; float tMax;
 
     /* iterate over point lights */
@@ -1314,8 +1318,8 @@ Vec3f renderPixelFunction(float x, float y, rand_state& state, const uniform Vec
       if (shadow.geomID != RTC_INVALID_GEOMETRY_ID) continue;
       L = L + Lw*Ll/wi.pdf*Material__eval(material_array,materialID,numMaterials,brdf,wo,dg,wi.v); // FIXME: +=
     }
-
     if (wi1.pdf <= 0.0f) break;
+#endif
     Lw = Lw*c/wi1.pdf; // FIXME: *=
 
     /* setup secondary ray */

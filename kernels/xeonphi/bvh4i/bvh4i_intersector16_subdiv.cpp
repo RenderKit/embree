@@ -933,6 +933,7 @@ namespace embree
 	      
 
 	      const unsigned int patchIndex = curNode.offsetIndex();
+	      SubdivPatch1 &patch = ((SubdivPatch1*)accel)[patchIndex];
 
 	      // ----------------------------------------------------------------------------------------------------
 	      size_t cached_64bit_root = lazyBuildPatch(patchIndex,commitCounter,(SubdivPatch1*)accel,scene,threadInfo);
@@ -973,16 +974,32 @@ namespace embree
 		    const unsigned int uvIndex = curNode.offsetIndex();
 		  
 		    const mic_m m_active = 0x777;
+		    // const Quad4x4 *__restrict__ const quad4x4 = (Quad4x4*)&lazymem[uvIndex];
+		    // quad4x4->prefetchData();
+		    // const mic_f uu = quad4x4->getU();
+		    // const mic_f vv = quad4x4->getV();
+
+#if COMPACT == 1
+		    float *lazyCachePtr = (float*)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();
+		    Quad4x4 quad4x4;
+		    quad4x4.init( curNode.offsetIndex(), patch, lazyCachePtr);
+		    const mic_f uu = quad4x4.getU();
+		    const mic_f vv = quad4x4.getV();
+		    const mic3f &vtx = quad4x4.vtx;
+#else
+		    const unsigned int uvIndex = curNode.offsetIndex();
 		    const Quad4x4 *__restrict__ const quad4x4 = (Quad4x4*)&lazymem[uvIndex];
 		    quad4x4->prefetchData();
 		    const mic_f uu = quad4x4->getU();
 		    const mic_f vv = quad4x4->getV();
+		    const mic3f &vtx = quad4x4->vtx;
+#endif
 		  
 		    if (unlikely(occluded1_quad16(rayIndex, 
 						  dir_xyz,
 						  org_xyz,
 						  ray16,
-						  quad4x4->vtx,
+						  vtx,
 						  uu,
 						  vv,
 						  4,
@@ -1077,6 +1094,7 @@ namespace embree
 	  //////////////////////////////////////////////////////////////////////////////////////////////////
 
 	  const unsigned int patchIndex = curNode.offsetIndex();
+	  SubdivPatch1 &patch = ((SubdivPatch1*)accel)[patchIndex];
 
 	  // ----------------------------------------------------------------------------------------------------
 	  size_t cached_64bit_root = lazyBuildPatch(patchIndex,commitCounter,(SubdivPatch1*)accel,scene,threadInfo);
@@ -1118,15 +1136,27 @@ namespace embree
 	      const unsigned int uvIndex = curNode.offsetIndex();
 		  
 	      const mic_m m_active = 0x777;
+
+#if COMPACT == 1
+	      float *lazyCachePtr = (float*)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();
+	      Quad4x4 quad4x4;
+	      quad4x4.init( curNode.offsetIndex(), patch, lazyCachePtr);
+	      const mic_f uu = quad4x4.getU();
+	      const mic_f vv = quad4x4.getV();
+	      const mic3f &vtx = quad4x4.vtx;
+#else
+	      const unsigned int uvIndex = curNode.offsetIndex();
 	      const Quad4x4 *__restrict__ const quad4x4 = (Quad4x4*)&lazymem[uvIndex];
 	      quad4x4->prefetchData();
 	      const mic_f uu = quad4x4->getU();
 	      const mic_f vv = quad4x4->getV();
+	      const mic3f &vtx = quad4x4->vtx;
+#endif
 
 	      intersect1_quad16(dir_xyz,
 				org_xyz,
 				ray,
-				quad4x4->vtx,
+				vtx,
 				uu,
 				vv,
 				4,
@@ -1203,6 +1233,7 @@ namespace embree
 	      
 
 	  const unsigned int patchIndex = curNode.offsetIndex();
+	  SubdivPatch1 &patch = ((SubdivPatch1*)accel)[patchIndex];
 
 	  // ----------------------------------------------------------------------------------------------------
 	  size_t cached_64bit_root = lazyBuildPatch(patchIndex,commitCounter,(SubdivPatch1*)accel,scene,threadInfo);
@@ -1244,15 +1275,26 @@ namespace embree
 	      const unsigned int uvIndex = curNode.offsetIndex();
 		  
 	      const mic_m m_active = 0x777;
+#if COMPACT == 1
+	      float *lazyCachePtr = (float*)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();
+	      Quad4x4 quad4x4;
+	      quad4x4.init( curNode.offsetIndex(), patch, lazyCachePtr);
+	      const mic_f uu = quad4x4.getU();
+	      const mic_f vv = quad4x4.getV();
+	      const mic3f &vtx = quad4x4.vtx;
+#else
+	      const unsigned int uvIndex = curNode.offsetIndex();
 	      const Quad4x4 *__restrict__ const quad4x4 = (Quad4x4*)&lazymem[uvIndex];
 	      quad4x4->prefetchData();
 	      const mic_f uu = quad4x4->getU();
 	      const mic_f vv = quad4x4->getV();
+	      const mic3f &vtx = quad4x4->vtx;
+#endif
 		  
 	      if (unlikely(occluded1_quad16(dir_xyz,
 					    org_xyz,
 					    ray,
-					    quad4x4->vtx,
+					    vtx,
 					    uu,
 					    vv,
 					    4,
