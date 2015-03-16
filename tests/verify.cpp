@@ -28,6 +28,7 @@
 #include "../kernels/common/default.h"
 #include <vector>
 
+//#define DEFAULT_STACK_SIZE 4*1024*1024
 //#define DEFAULT_STACK_SIZE 2*1024*1024
 //#define DEFAULT_STACK_SIZE 512*1024
 #define DEFAULT_STACK_SIZE 0
@@ -2921,7 +2922,7 @@ namespace embree
       monitorProgressBreak = monitorProgressInvokations * 2.0f * drand48();
       monitorProgressInvokations = 0;
       func(new ThreadRegressionTask(0,0,new RegressionTask(sceneIndex,1,0)));
-      if (monitorMemoryBytesUsed) { // || (monitorMemoryInvokations != 0 && errorCounter != 1)) {
+      if (monitorMemoryBytesUsed) { // || (monitorMemoryInvokations != 0 && errorCounter != 1)) { // FIXME: test that rtcCommit has returned with error code
         rtcSetMemoryMonitorFunction(NULL);
         //rtcSetProgressMonitorFunction(NULL);
         return false;
@@ -2978,7 +2979,7 @@ namespace embree
 
     /* perform tests */
     rtcInit(g_rtcore.c_str());
-    //POSITIVE("regression_static",         rtcore_regression(rtcore_regression_static_thread,false));
+    //POSITIVE("regression_static",         rtcore_regression(rtcore_regression_static_thread,true));
     //POSITIVE("regression_dynamic",        rtcore_regression(rtcore_regression_dynamic_thread,false));
     //POSITIVE("regression_garbage_geom",   rtcore_regression_garbage());
     //POSITIVE("regression_static_memory_monitor",         rtcore_regression_memory_monitor(rtcore_regression_static_thread));
