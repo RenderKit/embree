@@ -32,6 +32,7 @@ namespace std
 {
   __forceinline bool isinf ( const float x ) { return !_finite(x); }
   __forceinline bool isnan ( const float x ) { return _isnan(x); }
+  __forceinline bool isfinite (const float x) { return _finite(x); }
 }
 #endif
 #endif

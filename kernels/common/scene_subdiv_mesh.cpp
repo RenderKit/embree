@@ -283,9 +283,9 @@ namespace embree
 	  edge->edge_level             = edge_level;
 
 	  if (unlikely(holeSet.lookup(f))) 
-	    halfEdges1[e+de] = KeyHalfEdge(-1,edge);
+	    halfEdges1[e+de] = SubdivMesh::KeyHalfEdge(-1,edge);
 	  else
-	    halfEdges1[e+de] = KeyHalfEdge(key,edge);
+	    halfEdges1[e+de] = SubdivMesh::KeyHalfEdge(key,edge);
 	}
       }
     });

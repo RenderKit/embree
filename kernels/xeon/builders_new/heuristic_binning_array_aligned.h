@@ -86,8 +86,8 @@ namespace embree
           Binner binner(empty);
           const BinMapping<BINS> mapping(pinfo);
           binner = parallel_reduce(set.begin(),set.end(),PARALLEL_FIND_BLOCK_SIZE,binner,
-                                   [&] (const range<size_t>& r) { Binner binner(empty); binner.bin(prims+r.begin(),r.size(),mapping); return binner; },
-                                   [&] (const Binner& b0, const Binner& b1) { Binner r = b0; r.merge(b1,mapping.size()); return r; });
+                                   [&] (const range<size_t>& r) -> Binner { Binner binner(empty); binner.bin(prims+r.begin(),r.size(),mapping); return binner; },
+                                   [&] (const Binner& b0, const Binner& b1) -> Binner { Binner r = b0; r.merge(b1,mapping.size()); return r; });
           return binner.best(mapping,logBlockSize);
         }
         

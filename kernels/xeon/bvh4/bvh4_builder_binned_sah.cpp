@@ -124,7 +124,7 @@ namespace embree
         const size_t numSplitPrimitives = max(numPrimitives,size_t(presplitFactor*numPrimitives));
 
         /* reduction function */
-	auto rotate = [&] (BVH4::Node* node, const size_t* counts, const size_t N) 
+	auto rotate = [&] (BVH4::Node* node, const size_t* counts, const size_t N) -> size_t
 	{
           size_t n = 0;
 #if ROTATE_TREE
