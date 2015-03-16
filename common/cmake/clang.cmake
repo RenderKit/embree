@@ -25,7 +25,7 @@ SET(FLAGS_AVX512 "-mavx512")
 
 SET(CMAKE_CXX_COMPILER "clang++")
 SET(CMAKE_C_COMPILER "clang")
-SET(CMAKE_CXX_FLAGS "-fPIC -std=c++11 -fno-strict-aliasing -Wno-narrowing")
+SET(CMAKE_CXX_FLAGS "-fPIC -std=c++11 -fno-strict-aliasing -Wno-narrowing -Wno-deprecated-register")
 SET(CMAKE_CXX_FLAGS_DEBUG          "-DDEBUG  -g -O0 -Wstrict-aliasing=1")
 SET(CMAKE_CXX_FLAGS_RELEASE        "-DNDEBUG    -O3 -Wstrict-aliasing=1")
 SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-DDEBUG  -g -O3 -Wstrict-aliasing=1")

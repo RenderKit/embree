@@ -230,8 +230,8 @@ namespace embree
         /*! array partitioning */
         void split(const Split& split, const LinearSpace3fa& space, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset) 
         {
-          if (likely(pinfo.size() < 10000)) sequential_split(split,space,set,left,lset,right,rset);
-          else                                parallel_split(split,space,set,left,lset,right,rset);
+          if (likely(set.size() < 10000)) sequential_split(split,space,set,left,lset,right,rset);
+          else                              parallel_split(split,space,set,left,lset,right,rset);
         }
         
         /*! array partitioning */
