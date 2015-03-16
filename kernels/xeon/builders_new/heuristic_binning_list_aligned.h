@@ -29,6 +29,7 @@ namespace embree
         typedef BinSplit<BINS> Split;
         typedef BinInfo<BINS,PrimRef> Binner;
         typedef atomic_set<PrimRefBlockT<PrimRef> > Set;
+        typedef typename atomic_set<PrimRefBlockT<PrimRef> >::item Set_item;
         
         __forceinline HeuristicListBinningSAH () {}
         
@@ -62,7 +63,7 @@ namespace embree
           const Binner binner = parallel_reduce(size_t(0),threadCount,Binner(empty), [&] (const range<size_t>& r) 
           {
             Binner binner(empty);
-            while (typename Set::item* block = i.next()) {
+            while (Set_item* block = i.next()) {
               binner.bin(block->base(),block->size(),mapping);
             }
             return binner;
