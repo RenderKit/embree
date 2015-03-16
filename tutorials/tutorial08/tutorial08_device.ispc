@@ -22,6 +22,13 @@
 #define MAX_EDGE_LEVEL 64.0f
 #define LEVEL_FACTOR 64.0f
 
+#if defined(__XEON_PHI__)
+#define EDGE_LEVEL 64.0f
+#else
+#define EDGE_LEVEL 256.0f
+#endif
+
+
 /* scene data */
 RTCScene g_scene = NULL;
 
@@ -121,6 +128,10 @@ uniform unsigned int addCube (RTCScene scene_i)
   rtcSetBuffer(scene_i, geomID, RTC_INDEX_BUFFER,  cube_indices , 0, sizeof(uniform unsigned int));
   rtcSetBuffer(scene_i, geomID, RTC_FACE_BUFFER,   cube_faces,    0, sizeof(uniform unsigned int));
 
+  uniform float* uniform level = (uniform float* uniform) rtcMapBuffer(scene_i, geomID, RTC_LEVEL_BUFFER);
+  for (uniform size_t i=0; i<NUM_INDICES; i++) level[i] = EDGE_LEVEL;
+  rtcUnmapBuffer(scene_i, geomID, RTC_LEVEL_BUFFER);
+
   return geomID;
 }
 
@@ -187,6 +198,14 @@ export void device_init (uniform int8* uniform cfg)
 
   /* add ground plane */
   addGroundPlane(g_scene);
+
+/* commit changes to scene */
+#if !defined(PARALLEL_COMMIT)
+  rtcCommit (g_scene);
+#else
+  launch[ getNumHWThreads() ] parallelCommit(g_scene); 
+#endif
+
 
   /* set start render mode */
   renderPixel = renderPixelStandard;
