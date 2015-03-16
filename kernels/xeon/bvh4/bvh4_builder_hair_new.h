@@ -164,6 +164,15 @@ namespace embree
         }
       }
       
+      struct Recurse {
+        __forceinline Recurse (BVH4BuilderHairNew* This, size_t depth, BVH4::NodeRef& dst, PrimInfo& src) : This(This), depth(depth), dst(dst), src(src) {}
+        __forceinline void operator() () { dst = This->recurse(depth,src,NULL,true); }
+        BVH4BuilderHairNew* This;
+        size_t depth;
+        BVH4::NodeRef& dst;
+        PrimInfo& src;
+      };
+
       /*! recursive build */
       BVH4::NodeRef recurse(size_t depth, const PrimInfo& pinfo, FastAllocator::ThreadLocal2* alloc, bool toplevel)
       {
@@ -229,7 +238,8 @@ namespace embree
           {
             SPAWN_BEGIN;
             for (size_t i=0; i<numChildren; i++) 
-              SPAWN(([&,i] { node->child(i) = recurse(depth+1,children[i],NULL,true); }));
+              //SPAWN(([&,i] { node->child(i) = recurse(depth+1,children[i],NULL,true); })); // FIXME: triggers ICC compiler bug under Windows
+              SPAWN((Recurse(this,depth+1,node->child(i),children[i])));
             SPAWN_END;
           }
           /* ... continue sequential */
@@ -250,7 +260,8 @@ namespace embree
           {
             SPAWN_BEGIN;
             for (size_t i=0; i<numChildren; i++) 
-              SPAWN(([&,i] { node->child(i) = recurse(depth+1,children[i],NULL,true); }));
+              //SPAWN(([&,i] { node->child(i) = recurse(depth+1,children[i],NULL,true); })); // FIXME: triggers ICC compiler bug under Windows
+              SPAWN((Recurse(this,depth+1,node->child(i),children[i])));
             SPAWN_END;
           }
           /* ... continue sequentially */
