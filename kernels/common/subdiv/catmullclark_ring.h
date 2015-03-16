@@ -576,9 +576,9 @@ namespace embree
     bool hasValidPositions() const
     {
       for (size_t i=0; i<edge_valence; i++) {
-	if ( !std::isfinite(ring[i].x) ) return false;
-	if ( !std::isfinite(ring[i].y) ) return false;
-	if ( !std::isfinite(ring[i].z) ) return false;
+	if ( !inFloatRange(ring[i].x) ) return false;
+	if ( !inFloatRange(ring[i].y) ) return false;
+	if ( !inFloatRange(ring[i].z) ) return false;
       }	
       return true;
     }
