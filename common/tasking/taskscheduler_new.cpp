@@ -234,8 +234,8 @@ namespace embree
     condition.notify_all();
 
     /* wait for all threads to terminate */
-    if (threads.size())
-      while (threadCounter > 0)
+    if (createThreads == false) // wait if we either are in user thread mode, or already created threads
+      while (threadCounter > 0) 
         yield();
 
     threadLocal[0] = NULL;
