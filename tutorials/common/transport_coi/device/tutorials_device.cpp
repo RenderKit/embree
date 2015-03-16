@@ -270,6 +270,18 @@ namespace embree
     mesh->sizeTriangles = in_pBufferLengths[3];
     mesh->sizeQuads     = in_pBufferLengths[4];
     
+#if 1
+    if (mesh->quads[0].v0 == 0,
+	mesh->quads[0].v1 == 0,
+	mesh->quads[0].v2 == 0,
+	mesh->quads[0].v3 == 0)
+      {
+	mesh->quads = NULL;
+	mesh->numQuads = 0;
+	mesh->sizeQuads = 0;
+      }
+#endif
+
 #if 0
     DBG_PRINT( mesh->sizePositions );
     DBG_PRINT( mesh->sizeNormals );

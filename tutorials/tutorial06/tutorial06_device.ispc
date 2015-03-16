@@ -1282,7 +1282,6 @@ Vec3f renderPixelFunction(float x, float y, rand_state& state, const uniform Vec
       }
 #endif
     }
-#if 0
     Sample3f wi; float tMax;
 
     /* iterate over point lights */
@@ -1319,7 +1318,6 @@ Vec3f renderPixelFunction(float x, float y, rand_state& state, const uniform Vec
       L = L + Lw*Ll/wi.pdf*Material__eval(material_array,materialID,numMaterials,brdf,wo,dg,wi.v); // FIXME: +=
     }
     if (wi1.pdf <= 0.0f) break;
-#endif
     Lw = Lw*c/wi1.pdf; // FIXME: *=
 
     /* setup secondary ray */
