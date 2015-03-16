@@ -101,7 +101,7 @@ namespace embree
 
 	    incCurrentIndex();
 
-	    
+
 #if FORCE_SIMPLE_FLUSH == 1
 	    next_block = 0;
 	    switch_block_threshold = maxBlocks;

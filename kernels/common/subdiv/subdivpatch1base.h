@@ -865,7 +865,6 @@ namespace embree
                                            (float*)&vtx.z,
                                            8);
           }
-          
         *(avxf*)&grid_x[8*i] = vtx.x;
         *(avxf*)&grid_y[8*i] = vtx.y;
         *(avxf*)&grid_z[8*i] = vtx.z;        

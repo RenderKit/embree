@@ -98,7 +98,7 @@ namespace embree
       from += length(to-from) * (1-k) * normalize(to-from);
     }
 
-    void enableAnimMode() { anim = true; PING; }
+    void enableAnimMode() { anim = true; }
 
   public:
     Vec3fa from;   //!< position of camera

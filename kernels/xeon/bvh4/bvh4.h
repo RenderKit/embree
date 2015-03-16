@@ -331,7 +331,7 @@ namespace embree
           const float round_up   = 1.0f+2.0f*float(ulp);
           const ssef tNear = max(tNearX,tNearY,tNearZ,tnear);
           const ssef tFar  = min(tFarX ,tFarY ,tFarZ ,tfar);
-          const sseb vmask = round_down*tNear <= round_up*tFar;
+          const sseb vmask = (round_down*tNear <= round_up*tFar) & (lower_x != ssef(pos_inf)); //workaround as inf,-inf seem not to work to avoid hits in robust mode
           const size_t mask = movemask(vmask);
           dist = tNear;
           return mask;

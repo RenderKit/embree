@@ -32,6 +32,34 @@ namespace embree
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    void verifySubTreeBVH(const BVH4::NodeRef ref)
+    {
+      assert(ref != BVH4::invalidNode );
+
+      /* this is a leaf node */
+      if (unlikely(ref.isLeaf()))
+        return;
+      
+      const BVH4::Node* node = ref.node();
+      
+      for (size_t i=0;i<4;i++)
+	{
+	  assert(node->child(i) != BVH4::emptyNode);
+	  
+	  BBox3fa bounds = node->bounds(i);
+
+	  assert( std::isfinite(bounds.lower.x) );
+	  assert( std::isfinite(bounds.lower.y) );
+	  assert( std::isfinite(bounds.lower.z) );
+
+	  assert( std::isfinite(bounds.upper.x) );
+	  assert( std::isfinite(bounds.upper.y) );
+	  assert( std::isfinite(bounds.upper.z) );
+
+	  verifySubTreeBVH(node->child(i));
+	}
+    }
+
     size_t countBlocks(const BVH4::NodeRef ref, const size_t range0, const size_t range1)
     {
       
@@ -110,7 +138,7 @@ namespace embree
       /* unlock previous patch */
       if (pre.current_patch)
 	{
-	  SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(pre.threadID);	       	  
+	  SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(pre.threadID);
 	}
 
       while(1)
@@ -144,7 +172,7 @@ namespace embree
 		
 		if (likely( SharedLazyTessellationCache::sharedLazyTessellationCache.validCacheIndex(subdiv_patch_cache_index) ))
 		  {
-		    CACHE_STATS(SharedTessellationCacheStats::cache_hits++);	      
+		    CACHE_STATS(SharedTessellationCacheStats::cache_hits++);
 		    return subdiv_patch_root;
 		  }
 	      }
@@ -250,6 +278,15 @@ namespace embree
 					     array_elements,
 					     GridRange(0,patch.grid_u_res-1,0,patch.grid_v_res-1),
 					     currentIndex);
+
+      assert( std::isfinite(bounds.lower.x) );
+      assert( std::isfinite(bounds.lower.y) );
+      assert( std::isfinite(bounds.lower.z) );
+
+      assert( std::isfinite(bounds.upper.x) );
+      assert( std::isfinite(bounds.upper.y) );
+      assert( std::isfinite(bounds.upper.z) );
+
       //DBG_PRINT(subtree_root);
       
       // for (size_t y=0;y<patch.grid_v_res;y++)
@@ -301,7 +338,6 @@ namespace embree
 		const float z = grid_z_array[ v * patch.grid_u_res + u];
 		bounds.extend( Vec3fa(x,y,z) );
 	      }
-
 	  unsigned int u_start = range.u_start;
 	  unsigned int v_start = range.v_start;
 
