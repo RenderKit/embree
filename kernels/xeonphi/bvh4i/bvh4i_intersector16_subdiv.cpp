@@ -299,6 +299,11 @@ namespace embree
 	  /* compute the bounds just for the range! */
 	  //BBox3fa bounds( empty );
 	  size_t offset = range.v_start * patch.grid_u_res + range.u_start;
+
+	  const unsigned int u_size = range.u_end-range.u_start+1;
+	  const unsigned int v_size = range.v_end-range.v_start+1;
+	  const mic_m m_mask = ((unsigned int)1 << u_size)-1;
+
 	  mic_f min_x = pos_inf;
 	  mic_f min_y = pos_inf;
 	  mic_f min_z = pos_inf;
@@ -306,36 +311,48 @@ namespace embree
 	  mic_f max_y = neg_inf;
 	  mic_f max_z = neg_inf;
 
-	  const unsigned int u_size = range.u_end-range.u_start+1;
-	  const unsigned int v_size = range.v_end-range.v_start+1;
-	  const mic_m m_mask = ((unsigned int)1 << u_size)-1;
-
-#if 0
-	  size_t local_offset = 0;
+#if 1
 	  for (size_t v = 0; v<v_size; v++)
 	    {
+	      prefetch<PFHINT_NT>(&grid_x_array[ offset ]);
+	      prefetch<PFHINT_NT>(&grid_y_array[ offset ]);
+	      prefetch<PFHINT_NT>(&grid_z_array[ offset ]);
+
 	      const mic_f x = uload16f(&grid_x_array[ offset ]);
 	      const mic_f y = uload16f(&grid_y_array[ offset ]);
 	      const mic_f z = uload16f(&grid_z_array[ offset ]);
-	      compactustore16f_low(m_mask,&min_x[local_offset],x);
-	      compactustore16f_low(m_mask,&max_x[local_offset],x);
-	      compactustore16f_low(m_mask,&min_y[local_offset],y);
-	      compactustore16f_low(m_mask,&max_y[local_offset],y);
-	      compactustore16f_low(m_mask,&min_z[local_offset],z);
-	      compactustore16f_low(m_mask,&max_z[local_offset],z);
+	      min_x = min(min_x,x);
+	      max_x = max(max_x,x);
+	      min_y = min(min_y,y);
+	      max_y = max(max_y,y);
+	      min_z = min(min_z,z);
+	      max_z = max(max_z,z);
 	      offset       += patch.grid_u_res;
-	      local_offset += u_size;
-	    }	  
-	  min_x = vreduce_min(min_x);
-	  min_y = vreduce_min(min_y);
-	  min_z = vreduce_min(min_z);
+	    }	
+	  min_x = select(m_mask,min_x,pos_inf);
+	  min_y = select(m_mask,min_y,pos_inf);
+	  min_z = select(m_mask,min_z,pos_inf);
 
-	  max_x = vreduce_max(max_x);
-	  max_y = vreduce_max(max_y);
-	  max_z = vreduce_max(max_z);
+	  max_x = select(m_mask,max_x,neg_inf);
+	  max_y = select(m_mask,max_y,neg_inf);
+	  max_z = select(m_mask,max_z,neg_inf);
+
+	  min_x = vreduce_min4(min_x);
+	  min_y = vreduce_min4(min_y);
+	  min_z = vreduce_min4(min_z);
+
+	  max_x = vreduce_max4(max_x);
+	  max_y = vreduce_max4(max_y);
+	  max_z = vreduce_max4(max_z);
 #else
+
 	  for (size_t v = 0; v<v_size; v++,offset+=patch.grid_u_res)
 	    {
+	      prefetch<PFHINT_NT>(&grid_x_array[ offset ]);
+	      prefetch<PFHINT_NT>(&grid_y_array[ offset ]);
+	      prefetch<PFHINT_NT>(&grid_z_array[ offset ]);
+
+
 #pragma novector
 	    for (size_t u = 0; u<u_size; u++)
 	      {

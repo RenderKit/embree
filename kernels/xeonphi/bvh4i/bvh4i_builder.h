@@ -264,6 +264,8 @@ namespace embree
     virtual void printBuilderName();
     virtual void finalize         (const size_t threadIndex, const size_t threadCount);
 
+    BBox3fa refit(const BVH4i::NodeRef &ref);
+
   protected:
     TASK_FUNCTION(BVH4iBuilderSubdivMesh,updatePatchTessellation);
     TASK_FUNCTION(BVH4iBuilderSubdivMesh,computePrimRefsSubdivMesh);
