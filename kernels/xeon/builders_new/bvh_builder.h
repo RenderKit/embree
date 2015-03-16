@@ -148,6 +148,14 @@ namespace embree
 	return updateNode(node,values,numChildren);
       }
 
+   struct Recurse {
+        __forceinline Recurse (BVHBuilderSAH* This, ReductionTy& dst, BuildRecord<NodeRef>& src) : This(This), dst(dst), src(src) {}
+        __forceinline void operator() () { dst = This->recurse(src,NULL,true); }
+        BVHBuilderSAH* This;
+        ReductionTy& dst;
+        BuildRecord<NodeRef>& src;
+      };
+
       const ReductionTy recurse(const BuildRecord<NodeRef>& current, Allocator alloc, bool toplevel)
       {
 	if (alloc == NULL) 
@@ -219,7 +227,8 @@ namespace embree
 	  SPAWN_BEGIN;
 	  //for (ssize_t i=numChildren-1; i>=0; i--)  // FIXME: this should be better!
 	  for (size_t i=0; i<numChildren; i++) 
-	    SPAWN(([&,i] { values[i] = recurse(children[i],NULL,true); }));
+ 	    //SPAWN([&,i] { values[i] = recurse(children[i],NULL,true); }); // FIXME: triggers ICC compiler bug under Windows
+      SPAWN((Recurse(this,values[i],children[i])));
 	  SPAWN_END;
 	  
 	  /* passed reduced values to node */

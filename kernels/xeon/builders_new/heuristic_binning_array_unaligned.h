@@ -166,8 +166,9 @@ namespace embree
             const size_t primID = prim.primID<0>();
 
             N++;
-            geomBounds.extend(prim.bounds(spaces.first));
-            centBounds.extend(prim.center(spaces.first));
+            const BBox3fa bounds = prim.bounds(spaces.first);
+            geomBounds.extend(bounds);
+            centBounds.extend(center2(bounds));
 
             const BezierCurves* curves = scene->getBezierCurves(prim.geomID<0>());
             s0t0.extend(curves->bounds(spaces.first,prim.primID<0>(),0));

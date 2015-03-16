@@ -17,7 +17,7 @@
 #pragma once
 
 #include "platform.h"
-#include <atomic>
+//#include <atomic>
 
 #if defined(__SSE__)
 #include <xmmintrin.h>

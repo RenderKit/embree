@@ -174,7 +174,7 @@ namespace embree
       inline const PrimInfo presplit<TriangleMesh>(Scene* scene, const PrimInfo& pinfo, vector<PrimRef>& prims)
     {
       return presplit(pinfo,prims, 
-                      [&] (const PrimRef& prim) { 
+                      [&] (const PrimRef& prim) -> float { 
                         const size_t geomID = prim.geomID();
                         const size_t primID = prim.primID();
                         const TriangleMesh* mesh = scene->getTriangleMesh(geomID);

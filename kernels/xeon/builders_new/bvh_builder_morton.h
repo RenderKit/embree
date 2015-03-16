@@ -303,6 +303,14 @@ namespace embree
         right.init(center,current.end);
       }
       
+      struct Recurse {
+        __forceinline Recurse (BVHBuilderCenter* This, BBox3fa& dst, MortonBuildRecord<NodeRef>& src) : This(This), dst(dst), src(src) {}
+        __forceinline void operator() () { dst = This->recurse(src,NULL,true); }
+        BVHBuilderCenter* This;
+        BBox3fa& dst;
+        MortonBuildRecord<NodeRef>& src;
+      };
+
       BBox3fa recurse(MortonBuildRecord<NodeRef>& current, Allocator alloc, bool toplevel) 
       {
         if (alloc == NULL) 
@@ -369,7 +377,8 @@ namespace embree
         {
           SPAWN_BEGIN;
           for (size_t i=0; i<numChildren; i++) {
-            SPAWN(([&,i]{ bounds[i] = recurse(children[i],NULL,true); }));
+            //SPAWN(([&,i]{ bounds[i] = recurse(children[i],NULL,true); })); // FIXME: triggers ICC compiler bug under Windows
+            SPAWN((Recurse(this,bounds[i],children[i])));
           }
           SPAWN_END;
         }

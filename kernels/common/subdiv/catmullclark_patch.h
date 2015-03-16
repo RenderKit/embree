@@ -333,7 +333,7 @@ namespace embree
         }       
 #endif
 
-#if DEBUG
+#if _DEBUG
       patch[0].checkPositions();
       patch[1].checkPositions();
       patch[2].checkPositions();
