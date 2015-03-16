@@ -21,6 +21,7 @@
 #include "builders/priminfo.h"
 #include "geometry/bezier1v.h"
 
+#include "algorithms/parallel_reduce.h"
 #include "algorithms/parallel_prefix_sum.h"
 
 namespace embree

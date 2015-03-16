@@ -371,7 +371,7 @@ namespace embree
 	  {
 	    g_tessellation_cache_size = parseInt (cfg,pos) * 1024 * 1024; // in MBs
 	    {
-	      extern void resizeTessellationCache(const size_t new_size);
+	      //void resizeTessellationCache(const size_t new_size);
 	      resizeTessellationCache( g_tessellation_cache_size );
 	    }
 	  }        
