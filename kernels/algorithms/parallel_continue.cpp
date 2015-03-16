@@ -59,8 +59,8 @@ namespace embree
           if (N < 5) return;
           const size_t N0 = N/5, N1 = N-N0;
           atomic_add(&cntr,2);
-          cont(Continuation(N0));
-          cont(Continuation(N1));
+          cont(parallel_continue_regression_test::Continuation(N0));
+          cont(parallel_continue_regression_test::Continuation(N1));
         }, []() { return 0; });
         passed = cntr == 0;
       }

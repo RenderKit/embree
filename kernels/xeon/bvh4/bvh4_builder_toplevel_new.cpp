@@ -136,7 +136,7 @@ namespace embree
       prims.resize(refs.size());
 
       /* compute PrimRefs */
-      const PrimInfo pinfo = parallel_reduce(size_t(0), refs.size(), size_t(1024), PrimInfo(empty), [&] (const range<size_t>& r)
+      const PrimInfo pinfo = parallel_reduce(size_t(0), refs.size(), size_t(1024), PrimInfo(empty), [&] (const range<size_t>& r) -> PrimInfo
       {
         PrimInfo pinfo(empty);
         for (size_t i=r.begin(); i<r.end(); i++) {
@@ -155,7 +155,7 @@ namespace embree
       {
         BVH4::NodeRef root = bvh_builder_binned_sah_internal<BVH4::NodeRef>
           ([&] { return bvh->alloc2.threadLocal2(); },
-           [&] (const isa::BuildRecord<BVH4::NodeRef>& current, BuildRecord<BVH4::NodeRef>** children, const size_t N, FastAllocator::ThreadLocal2* alloc) 
+           [&] (const isa::BuildRecord<BVH4::NodeRef>& current, BuildRecord<BVH4::NodeRef>** children, const size_t N, FastAllocator::ThreadLocal2* alloc) -> int
            {
              BVH4::Node* node = (BVH4::Node*) alloc->alloc0.malloc(sizeof(BVH4::Node)); node->clear();
              for (size_t i=0; i<N; i++) {
@@ -165,7 +165,7 @@ namespace embree
              *current.parent = bvh->encodeNode(node);
              return 0;
            },
-           [&] (const BuildRecord<BVH4::NodeRef>& current, FastAllocator::ThreadLocal2* alloc) // FIXME: why are prims passed here but not for createNode
+           [&] (const BuildRecord<BVH4::NodeRef>& current, FastAllocator::ThreadLocal2* alloc) -> int // FIXME: why are prims passed here but not for createNode
            {
              assert(current.prims.size() == 1);
              *current.parent = (BVH4::NodeRef) prims[current.prims.begin()].ID();
