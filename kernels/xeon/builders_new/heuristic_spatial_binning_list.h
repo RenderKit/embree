@@ -80,7 +80,7 @@ namespace embree
         public:
           bool spatial;
           float sah;
-          char data[sizeof(ObjectSplit) > sizeof(SpatialSplit) ? sizeof(ObjectSplit) : sizeof(SpatialSplit)];
+          __aligned(16) char data[sizeof(ObjectSplit) > sizeof(SpatialSplit) ? sizeof(ObjectSplit) : sizeof(SpatialSplit)];
           /*union {
             ObjectSplit objectSplit;
             SpatialSplit spatialSplit;
