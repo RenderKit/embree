@@ -895,8 +895,28 @@ PRINT(CORRECT_numPrims);
       }
     
     //DBG_PRINT(fastUpdateMode);
+    if (!fastUpdateMode)
+      BVH4iBuilder::build(threadIndex,threadCount);
+    else
+      {
+	TIMER(double msec = getSeconds());
+	/* recalculate list of primrefs */
+	global_bounds.reset();
+	computePrimRefs(threadIndex,threadCount);
+	TIMER(msec = getSeconds()-msec);    
+	TIMER(std::cout << "task_computePrimRefs " << 1000. * msec << " ms" << std::endl << std::flush);
 
-    BVH4iBuilder::build(threadIndex,threadCount);
+	/* initialize atomic node counter */
+	atomicID.reset(0);
+	/* update BVH4i */
+	bvh->bounds = global_bounds.geometry;
+
+	TIMER(msec = getSeconds());	
+	refit(bvh->root);	
+	TIMER(msec = getSeconds()-msec);    
+	TIMER(std::cout << "refit " << 1000. * msec << " ms" << std::endl << std::flush);
+
+      }
   }
 
 
@@ -1365,6 +1385,38 @@ PRINT(CORRECT_numPrims);
       }
 
   }
+
+  BBox3fa BVH4iBuilderSubdivMesh::refit(const BVH4i::NodeRef &ref)
+  {    
+    if (unlikely(ref.isLeaf()))
+      {
+	const unsigned int patchIndex = ref.offsetIndex();
+	return prims[patchIndex].bounds();
+      }
+
+    BVH4i::Node *n = (BVH4i::Node*)ref.node(node);
+
+    BBox3fa parentBounds = empty;
+
+    for (size_t i=0;i<BVH4i::N;i++)
+      {
+	if (n->child(i) == BVH4i::invalidNode) break;
+	
+	if (n->child(i).isLeaf())
+	  {
+	    parentBounds.extend( n->bounds(i) );
+	  }
+	else
+	  {
+	    BBox3fa bounds = refit( n->child(i) );
+
+	    n->setBounds(i,bounds);
+	    parentBounds.extend( bounds );
+	  }
+      }
+    return parentBounds;
+  }    
+
 
 
 };
