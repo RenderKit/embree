@@ -38,6 +38,10 @@ namespace embree
       SharedLazyTessellationCache::sharedLazyTessellationCache.realloc(new_size);
   }
 
+  void clearTessellationCache()
+  {
+    SharedLazyTessellationCache::sharedLazyTessellationCache.addCurrentIndex(SharedLazyTessellationCache::NUM_CACHE_REGIONS);
+  }
 
   //void*scalable_aligned_malloc(size_t size, size_t align);
   //void scalable_aligned_free(void* ptr );
@@ -99,7 +103,7 @@ namespace embree
 	    for (size_t i=0;i<numRenderThreads;i++)
 	      waitForUsersLessEqual(i,1);
 
-	    incCurrentIndex();
+	    addCurrentIndex();
 
 	    CACHE_STATS(DBG_PRINT("RESET TESS CACHE"));
 

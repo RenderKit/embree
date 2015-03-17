@@ -33,7 +33,8 @@
 namespace embree
 {
   void resizeTessellationCache(const size_t new_size);
-  
+  void clearTessellationCache();
+
   /* alloc cache memory */
   float *alloc_tessellation_cache_mem(const size_t blocks);
 
@@ -71,7 +72,6 @@ namespace embree
  private:
    static const size_t DEFAULT_TESSELLATION_CACHE_SIZE = 50*1024*1024; // 50 MB
 
-   static const size_t NUM_CACHE_REGIONS = 8;
 
    float *data;
    size_t size;
@@ -92,13 +92,15 @@ namespace embree
 
  public:
 
+   static const size_t NUM_CACHE_REGIONS = 4;
+
       
    SharedLazyTessellationCache();
 
    __forceinline size_t getNextRenderThreadID() { return numRenderThreads.add(1); }
 
    __forceinline size_t getCurrentIndex() { return index; }
-   __forceinline void   incCurrentIndex() { index.add(1); }
+   __forceinline void   addCurrentIndex(const size_t i=1) { index.add(i); }
 
    __forceinline unsigned int lockThread  (const unsigned int threadID) { return threadWorkState[threadID].counter.add(1);  }
    __forceinline unsigned int unlockThread(const unsigned int threadID) { return threadWorkState[threadID].counter.add(-1); }

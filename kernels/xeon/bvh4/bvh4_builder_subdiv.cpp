@@ -827,7 +827,7 @@ namespace embree
 	double t0 = 0.0f, dt = 0.0f;
         if (g_verbose >= 1) t0 = getSeconds();
 
-        bool fastUpdateMode = false;
+        bool fastUpdateMode = true;
         size_t fastUpdateMode_numFaces = 0;
 
         auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
@@ -853,6 +853,8 @@ namespace embree
             bvh->numPrimitives != fastUpdateMode_numFaces ||
             bvh->root          == BVH4::emptyNode)
           fastUpdateMode = false;
+
+
 
         //fastUpdateMode = false;
         
@@ -965,7 +967,6 @@ namespace embree
 	      };
               
 	      const unsigned int patchIndex = base.size()+s.size();
-              
 	      subdiv_patches[patchIndex].updateEdgeLevels(edge_level,mesh);
 	      subdiv_patches[patchIndex].resetRootRef();
               

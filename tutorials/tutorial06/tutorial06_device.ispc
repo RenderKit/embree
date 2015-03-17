@@ -1038,7 +1038,7 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in,const uniform Vec3fa& 
   geomID_to_type = uniform new uniform int[numGeometries];
 
   /* create scene */
-  RTCScene scene_out = rtcNewScene(RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT, RTC_INTERSECT_VARYING);
+  RTCScene scene_out = rtcNewScene(RTC_SCENE_DYNAMIC | RTC_SCENE_INCOHERENT, RTC_INTERSECT_VARYING);
   convertTriangleMeshes(scene_in,scene_out,numGeometries);
   convertSubdivMeshes(scene_in,scene_out,numGeometries,cam_org);
 
@@ -1422,6 +1422,17 @@ export void device_render (uniform int* uniform pixels,
   if (camera_changed) {
     g_accu_count=0;
     memset(g_accu,0,width*height*sizeof(uniform Vec3fa));
+
+#if 0
+   updateEdgeLevels(g_ispc_scene, cam_org);
+
+#if !defined(PARALLEL_COMMIT)
+     rtcCommit (g_scene);
+#else
+     launch[ getNumHWThreads() ] parallelCommit(g_scene); sync;
+#endif
+#endif
+
   }
 
   /* render image */

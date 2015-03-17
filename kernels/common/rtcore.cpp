@@ -590,6 +590,13 @@ namespace embree
     Stat::print(std::cout);
     Stat::clear();
 #endif
+
+#if 0
+    using namespace embree;
+    extern void clearTessellationCache();
+    clearTessellationCache();
+#endif
+
 #if defined(DEBUG) && 0
     extern void printTessCacheStats();
     printTessCacheStats();
