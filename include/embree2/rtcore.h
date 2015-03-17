@@ -42,6 +42,14 @@ typedef int ssize_t;
 #  define RTCORE_ALIGN(...) __attribute__((aligned(__VA_ARGS__)))
 #endif
 
+#ifdef __GNUC__
+  #define DEPRECATED __attribute__((deprecated))
+#elif defined(_MSC_VER)
+  #define DEPRECATED __declspec(deprecated)
+#else
+  #define DEPRECATED
+#endif
+
 #include "rtcore_scene.h"
 #include "rtcore_geometry.h"
 #include "rtcore_geometry_user.h"
@@ -116,7 +124,7 @@ RTCORE_API void rtcSetMemoryMonitorFunction(RTC_MEMORY_MONITOR_FUNCTION func);
 
   This function is implementation specific and only for debugging
   purposes. Do not call it. */
-RTCORE_API void rtcDebug(); // FIXME: remove
+RTCORE_API DEPRECATED void rtcDebug(); // FIXME: remove
 
 /*! \brief Helper to easily combing scene flags */
 inline RTCSceneFlags operator|(const RTCSceneFlags a, const RTCSceneFlags b) {
