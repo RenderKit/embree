@@ -27,7 +27,7 @@
 //
 
 //#define FORCE_FIXED_EDGE_TESSELLATION
-#define FIXED_EDGE_TESSELLATION_VALUE 4
+#define FIXED_EDGE_TESSELLATION_VALUE 2
 //#define FIXED_EDGE_TESSELLATION_VALUE 32
 
 #define MAX_EDGE_LEVEL 64.0f
@@ -1282,7 +1282,6 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
       }
 #endif
     }
-#if 0
     Sample3f wi; float tMax;
 
     /* iterate over point lights */
@@ -1318,8 +1317,7 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
       if (shadow.geomID != RTC_INVALID_GEOMETRY_ID) continue;
       L = L + Lw*Ll/wi.pdf*Material__eval(material_array,materialID,numMaterials,brdf,wo,dg,wi.v); // FIXME: +=
     }
-    if (wi1.pdf <= 0.0f) break;
-#endif
+    if (wi1.pdf <= 1E-4f /* 0.0f */) break;
     Lw = Lw*c/wi1.pdf; // FIXME: *=
 
     /* setup secondary ray */

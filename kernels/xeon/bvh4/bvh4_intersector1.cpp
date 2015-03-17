@@ -140,7 +140,11 @@ namespace embree
           assert(stackPtr < stackEnd); 
           r = __bscf(mask);
           NodeRef c = node->child(r); c.prefetch(types); unsigned int d = ((unsigned int*)&tNear)[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
-	  	      
+
+	  if (c == BVH4::emptyNode)
+	    {
+	      DBG_PRINT(ray);
+	    }
           assert(c != BVH4::emptyNode);
           if (likely(mask == 0)) {
             sort(stackPtr[-1],stackPtr[-2],stackPtr[-3]);

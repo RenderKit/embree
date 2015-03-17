@@ -1317,7 +1317,7 @@ Vec3f renderPixelFunction(float x, float y, rand_state& state, const uniform Vec
       if (shadow.geomID != RTC_INVALID_GEOMETRY_ID) continue;
       L = L + Lw*Ll/wi.pdf*Material__eval(material_array,materialID,numMaterials,brdf,wo,dg,wi.v); // FIXME: +=
     }
-    if (wi1.pdf <= 0.0f) break;
+    if (wi1.pdf <= 1E-4f /* 0.0f */) break;
     Lw = Lw*c/wi1.pdf; // FIXME: *=
 
     /* setup secondary ray */
