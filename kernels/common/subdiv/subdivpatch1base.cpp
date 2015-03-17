@@ -165,38 +165,79 @@ namespace embree
     
     __aligned(64) float grid_u[(grid_size_simd_blocks+1)*8]; 
     __aligned(64) float grid_v[(grid_size_simd_blocks+1)*8];
-     
+
+    __aligned(64) float grid_nx[(grid_size_simd_blocks+1)*8]; 
+    __aligned(64) float grid_ny[(grid_size_simd_blocks+1)*8];
+    __aligned(64) float grid_nz[(grid_size_simd_blocks+1)*8]; 
+ 
 #else
       const size_t array_elements = (grid_size_simd_blocks + 1) * 8;
-      float *const ptr = (float*)_malloca(5 * array_elements * sizeof(float) + 64);
+      float *const ptr = (float*)_malloca(8 * array_elements * sizeof(float) + 64);
       float *const grid_arrays = (float*)ALIGN_PTR(ptr,64);
 
       float *grid_x = &grid_arrays[array_elements * 0];
       float *grid_y = &grid_arrays[array_elements * 1];
       float *grid_z = &grid_arrays[array_elements * 2];
       float *grid_u = &grid_arrays[array_elements * 3];
-      float *grid_v = &grid_arrays[array_elements * 4];        
+      float *grid_v = &grid_arrays[array_elements * 4];
+
+      float *grid_nx = &grid_arrays[array_elements * 5];
+      float *grid_ny = &grid_arrays[array_elements * 6];
+      float *grid_nz = &grid_arrays[array_elements * 7];
+
 #endif
       SubdivMesh *mesh = (SubdivMesh *)scene->getSubdivMesh(geom);
   
       evalGrid(*this,grid_x,grid_y,grid_z,grid_u,grid_v,mesh);
+
+#if defined(__AVX__)
+    for (size_t i=0;i<grid_size_simd_blocks;i++)
+      {
+        avxf uu = load8f(&grid_u[8*i]);
+        avxf vv = load8f(&grid_v[8*i]);
+        avx3f normal = normalize(patch.normal8(uu,vv));
+        *(avxf*)&grid_nx[8*i] = normal.x;
+        *(avxf*)&grid_ny[8*i] = normal.y;
+        *(avxf*)&grid_nz[8*i] = normal.z;        
+      }
+#else
+    for (size_t i=0;i<grid_size_simd_blocks*2;i++) // 4-wide blocks for SSE
+      {
+        ssef uu      = load4f(&grid_u[4*i]);
+        ssef vv      = load4f(&grid_v[4*i]);
+        sse3f normal = normalize(patch.normal4(uu,vv));
+        *(ssef*)&grid_nx[4*i] = normal.x;
+        *(ssef*)&grid_ny[4*i] = normal.y;
+        *(ssef*)&grid_nz[4*i] = normal.z;        
+      }
+#endif
       
       std::cout << "# grid_u_res " << grid_u_res << std::endl;
       std::cout << "# grid_v_res " << grid_v_res << std::endl;
 
+      /* vertex */
       for (size_t v=0;v<grid_v_res;v++)
         for (size_t u=0;u<grid_u_res;u++)
           {
             size_t offset = v * grid_u_res + u;
             std::cout << "v " << grid_x[offset] << " " << grid_y[offset] << " " << grid_z[offset] << std::endl;
           }
-        
+
+      /* normal */
+      for (size_t v=0;v<grid_v_res;v++)
+        for (size_t u=0;u<grid_u_res;u++)
+          {
+            size_t offset = v * grid_u_res + u;
+            std::cout << "vn " << grid_nx[offset] << " " << grid_ny[offset] << " " << grid_nz[offset] << std::endl;
+          }
+
       for (size_t v=0;v<grid_v_res-1;v++)
         for (size_t u=0;u<grid_u_res-1;u++)
           {
             size_t offset0 = vertex_index + v * grid_u_res + u;
             size_t offset1 = offset0 + grid_u_res;
-            std::cout << "f " << offset0+1 << " " << offset0+2 << " " << offset1+2 << " " << offset1+1 << std::endl;
+            //std::cout << "f " << offset0+1 << " " << offset0+2 << " " << offset1+2 << " " << offset1+1 << std::endl;
+            std::cout << "f " << offset0+1 << "//" << offset0+1 << " " << offset0+2<< "//" << offset0+2 << " " << offset1+2<< "//" << offset1+2 << " " << offset1+1<< "//" << offset1+1 << std::endl;
           }
       vertex_index += grid_u_res*grid_v_res;
       

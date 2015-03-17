@@ -996,6 +996,11 @@ namespace embree
           size_t vertex_index = 0;
           for (size_t i=0;i<numPrimitives;i++)
             subdiv_patches[i].evalToOBJ(scene,vertex_index);
+          std::cout << "# " << vertex_index << " vertices " << (double)vertex_index * sizeof(Vec3fa) / 1024.0 / 1024.0f << " MB " << std::endl;
+
+          std::cout << "# " << vertex_index << " normals " << (double)vertex_index * sizeof(Vec3fa) / 1024.0 / 1024.0f << " MB " << std::endl;
+ 
+          exit(0);
         }
 
 #endif
