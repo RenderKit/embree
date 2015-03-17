@@ -306,8 +306,9 @@ namespace embree
       /* ... or waiting inside some condition variable */
       else
       {
-        std::unique_lock<std::mutex> lock(mutex);
-        condition.wait(lock, predicate);
+        //std::unique_lock<std::mutex> lock(mutex);
+        Lock<MutexSys> lock(mutex);
+        condition.wait(mutex, predicate);
       }
       if (terminate) break;
 

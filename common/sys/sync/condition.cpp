@@ -42,6 +42,10 @@ namespace embree
       WakeAllConditionVariable(&cond);
     }
 
+    __forceinline void notify_all() {
+      broadcast();
+    }
+
   public:
     CONDITION_VARIABLE cond;
   };
@@ -92,6 +96,10 @@ namespace embree
           THROW_RUNTIME_ERROR("SetEvent failed");
     }
 
+    __forceinline void notify_all() {
+      broadcast();
+    }
+
   public:
     HANDLE event;
     volatile atomic_t count;
@@ -122,6 +130,10 @@ namespace embree
       pthread_cond_broadcast(&cond); 
     }
 
+    __forceinline void notify_all() { 
+      pthread_cond_broadcast(&cond); 
+    }
+    
   public:
     pthread_cond_t cond;
   };
@@ -144,5 +156,9 @@ namespace embree
 
   void ConditionSys::broadcast() { 
     ((ConditionImplementation*) cond)->broadcast();
+  }
+
+  void ConditionSys::notify_all() { 
+    ((ConditionImplementation*) cond)->notify_all();
   }
 }

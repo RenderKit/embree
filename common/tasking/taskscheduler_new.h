@@ -21,8 +21,11 @@
 #include "../../kernels/algorithms/range.h"
 
 //#include <thread>
-#include <mutex>
-#include <condition_variable>
+//#include <mutex>
+//#include <condition_variable>
+
+#include "sys/sync/mutex.h"
+#include "sys/sync/condition.h"
 
 #if defined(__MIC__)
 #define TASKSCHEDULER_STATIC_LOAD_BALANCING 1
@@ -246,9 +249,11 @@ namespace embree
       setThread(&thread);
       thread.tasks.push_right(thread,size,closure);
       {
-	std::unique_lock<std::mutex> lock(mutex);
+	//std::unique_lock<std::mutex> lock(mutex);
+        Lock<MutexSys> lock(mutex);
 	atomic_add(&anyTasksRunning,+1);
       }
+      //if (!spinning) condition.notify_all();
       if (!spinning) condition.notify_all();
       while (thread.tasks.execute_local(thread,NULL));
       atomic_add(&anyTasksRunning,-1);
@@ -276,7 +281,8 @@ namespace embree
       __memory_barrier();
       
       {
-	std::unique_lock<std::mutex> lock(mutex);
+	//std::unique_lock<std::mutex> lock(mutex);
+        Lock<MutexSys> lock(mutex);
 	atomic_add(&anyTasksRunning,+1);
       }
       if (!spinning) condition.notify_all();
@@ -351,8 +357,10 @@ namespace embree
     bool createThreads;
     bool spinning;
 
-    std::mutex mutex;        
-    std::condition_variable condition;
+    //std::mutex mutex;        
+    //std::condition_variable condition;
+    MutexSys mutex;
+    ConditionSys condition;
 
     /* special toplevel taskset optimization */
   private:
