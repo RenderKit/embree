@@ -20,7 +20,10 @@
 #include "geometry/bezier1v.h"
 #include "builders_new/heuristic_binning_array_aligned.h"
 #include "builders_new/heuristic_binning_array_unaligned.h"
+
+#if !defined(_WIN32) || _MSC_VER >= 1700 // workaround of internal compiler bug in VS2010
 #include "builders_new/heuristic_strand_array.h"
+#endif
 
 namespace embree
 {
@@ -44,7 +47,10 @@ namespace embree
                            const size_t branchingFactor, const size_t maxDepth, const size_t logBlockSize, const size_t minLeafSize, const size_t maxLeafSize )
          : prims(prims), 
            branchingFactor(branchingFactor), maxDepth(maxDepth), logBlockSize(logBlockSize), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize),
-           alignedHeuristic(prims), unalignedHeuristic(prims), strandHeuristic(prims),
+           alignedHeuristic(prims), unalignedHeuristic(prims), 
+#if !defined(_WIN32) || _MSC_VER >= 1700 // workaround of internal compiler bug in VS2010
+		   strandHeuristic(prims),
+#endif
            createAlloc(createAlloc), createAlignedNode(createAlignedNode), createUnalignedNode(createUnalignedNode), createLeaf(createLeaf),
            progressMonitor(progressMonitor) {}
 
@@ -133,6 +139,7 @@ namespace embree
         }
 
         /* perform splitting into two strands */
+#if !defined(_WIN32) || _MSC_VER >= 1700 // workaround of internal compiler bug in VS2010
         HeuristicStrandSplit::Split strandSplit;
         float strandSAH = inf;
         if (alignedObjectSAH > 0.6f*leafSAH) {
@@ -140,6 +147,7 @@ namespace embree
           strandSAH = BVH4::travCostUnaligned*halfArea(pinfo.geomBounds) + BVH4::intCost*strandSplit.splitSAH();
           bestSAH = min(strandSAH,bestSAH);
         }
+#endif
         
         /* perform aligned split if this is best */
         if (bestSAH == alignedObjectSAH) {
@@ -152,10 +160,12 @@ namespace embree
           return false;
         }
         /* perform strand split if this is best */
+#if !defined(_WIN32) || _MSC_VER >= 1700 // workaround of internal compiler bug in VS2010
         else if (bestSAH == strandSAH) {
           strandHeuristic.split(strandSplit,pinfo,linfo,rinfo);
           return false;
         }
+#endif
         /* otherwise perform fallback split */
         else {
           alignedHeuristic.deterministic_order(pinfo);
@@ -285,7 +295,9 @@ namespace embree
     public:      
       HeuristicArrayBinningSAH<BezierPrim> alignedHeuristic;
       UnalignedHeuristicArrayBinningSAH<BezierPrim> unalignedHeuristic;
+#if !defined(_WIN32) || _MSC_VER >= 1700 // workaround of internal compiler bug in VS2010
       HeuristicStrandSplit strandHeuristic;
+#endif
       const CreateAllocFunc& createAlloc;
       const CreateAlignedNodeFunc& createAlignedNode;
       const CreateUnalignedNodeFunc& createUnalignedNode;

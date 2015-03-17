@@ -67,7 +67,7 @@ namespace embree
           (
             [&] () { return bvh->alloc2.threadLocal2(); },
 
-            [&] (const PrimInfo* children, const size_t numChildren, HeuristicArrayBinningSAH<BezierPrim> alignedHeuristic, FastAllocator::ThreadLocal2* alloc) 
+            [&] (const PrimInfo* children, const size_t numChildren, HeuristicArrayBinningSAH<BezierPrim> alignedHeuristic, FastAllocator::ThreadLocal2* alloc) -> BVH4::Node* 
             {
               BVH4::Node* node = (BVH4::Node*) alloc->alloc0.malloc(sizeof(BVH4::Node),16); node->clear();
               for (size_t i=0; i<numChildren; i++)
@@ -75,7 +75,7 @@ namespace embree
               return node;
             },
             
-            [&] (const PrimInfo* children, const size_t numChildren, UnalignedHeuristicArrayBinningSAH<BezierPrim> unalignedHeuristic, FastAllocator::ThreadLocal2* alloc)
+            [&] (const PrimInfo* children, const size_t numChildren, UnalignedHeuristicArrayBinningSAH<BezierPrim> unalignedHeuristic, FastAllocator::ThreadLocal2* alloc) -> BVH4::UnalignedNode*
             {
               BVH4::UnalignedNode* node = (BVH4::UnalignedNode*) alloc->alloc0.malloc(sizeof(BVH4::UnalignedNode),16); node->clear();
               for (size_t i=0; i<numChildren; i++) 
@@ -165,7 +165,7 @@ namespace embree
           (
             [&] () { return bvh->alloc2.threadLocal2(); },
 
-            [&] (const PrimInfo* children, const size_t numChildren, HeuristicArrayBinningSAH<BezierPrim> alignedHeuristic, FastAllocator::ThreadLocal2* alloc) 
+            [&] (const PrimInfo* children, const size_t numChildren, HeuristicArrayBinningSAH<BezierPrim> alignedHeuristic, FastAllocator::ThreadLocal2* alloc) -> BVH4::NodeMB*
             {
               BVH4::NodeMB* node = (BVH4::NodeMB*) alloc->alloc0.malloc(sizeof(BVH4::NodeMB),16); node->clear();
               for (size_t i=0; i<numChildren; i++) 
@@ -176,7 +176,7 @@ namespace embree
               return node;
             },
             
-            [&] (const PrimInfo* children, const size_t numChildren, UnalignedHeuristicArrayBinningSAH<BezierPrim> unalignedHeuristic, FastAllocator::ThreadLocal2* alloc)
+            [&] (const PrimInfo* children, const size_t numChildren, UnalignedHeuristicArrayBinningSAH<BezierPrim> unalignedHeuristic, FastAllocator::ThreadLocal2* alloc) -> BVH4::UnalignedNodeMB*
             {
               BVH4::UnalignedNodeMB* node = (BVH4::UnalignedNodeMB*) alloc->alloc0.malloc(sizeof(BVH4::UnalignedNodeMB),16); node->clear();
               for (size_t i=0; i<numChildren; i++) 

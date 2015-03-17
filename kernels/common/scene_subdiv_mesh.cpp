@@ -267,7 +267,7 @@ namespace embree
 	  unsigned int nextIndex = de + 1;
 	  if (unlikely(nextIndex >= N)) nextIndex -=N; 
 	  const unsigned int endVertex   = vertexIndices[e + nextIndex]; 
-	  const uint64 key = Edge(startVertex,endVertex);
+	  const uint64 key = SubdivMesh::Edge(startVertex,endVertex);
 	  
 	  float edge_level = 1.0f;
 	  if (levels) edge_level = levels[e+de];
@@ -354,7 +354,7 @@ namespace embree
 	
 	if (updateEdgeCreases) {
 	  const unsigned int endVertex   = edge.next()->vtx_index;
-	  const uint64 key = Edge(startVertex,endVertex);
+	  const uint64 key = SubdivMesh::Edge(startVertex,endVertex);
 	  edge.edge_crease_weight = edgeCreaseMap.lookup(key,0.0f);
 	}
 

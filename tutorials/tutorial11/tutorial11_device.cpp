@@ -120,7 +120,7 @@ void build_sah(std::vector<PrimRef>& prims, isa::PrimInfo& pinfo)
       },
 
       /* lambda function that creates BVH nodes */
-      [&](const isa::BuildRecord<Node*>& current, isa::BuildRecord<Node*>** children, const size_t N, FastAllocator::ThreadLocal* alloc)
+      [&](const isa::BuildRecord<Node*>& current, isa::BuildRecord<Node*>** children, const size_t N, FastAllocator::ThreadLocal* alloc) -> int
       {
         assert(N <= 2);
         InnerNode* node = new (alloc->malloc(sizeof(InnerNode))) InnerNode;
@@ -133,7 +133,7 @@ void build_sah(std::vector<PrimRef>& prims, isa::PrimInfo& pinfo)
       },
 
       /* lambda function that creates BVH leaves */
-      [&](const isa::BuildRecord<Node*>& current, FastAllocator::ThreadLocal* alloc) 
+      [&](const isa::BuildRecord<Node*>& current, FastAllocator::ThreadLocal* alloc) -> int
       {
         assert(current.size() == 1);
         Node* node = new (alloc->malloc(sizeof(LeafNode))) LeafNode(prims[current.begin].ID(),prims[current.begin].bounds());

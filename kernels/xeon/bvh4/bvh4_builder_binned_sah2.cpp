@@ -585,7 +585,7 @@ namespace embree
         }
       
 	/* reduction function */
-	auto reduce = [] (BVH4::NodeMB* node, const std::pair<BBox3fa,BBox3fa>* bounds, const size_t N) 
+	auto reduce = [] (BVH4::NodeMB* node, const std::pair<BBox3fa,BBox3fa>* bounds, const size_t N) -> std::pair<BBox3fa,BBox3fa>
 	{
 	  assert(N <= BVH4::N);
 	  BBox3fa bounds0 = empty;

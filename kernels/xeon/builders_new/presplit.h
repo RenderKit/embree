@@ -118,7 +118,7 @@ namespace embree
       size_t N = 0, iter = 0;
       do {
         f *= 0.9f;
-        N = pinfo.size() + parallel_prefix_sum (state, size_t(0), pinfo.size(), size_t(1024), size_t(0), [&] (const range<size_t>& r, const size_t sum) 
+        N = pinfo.size() + parallel_prefix_sum (state, size_t(0), pinfo.size(), size_t(1024), size_t(0), [&] (const range<size_t>& r, const size_t sum) -> size_t
         { 
           size_t N=0;
           for (size_t i=r.begin(); i<r.end(); i++) {
@@ -135,7 +135,7 @@ namespace embree
       assert(pinfo.size()+N <= prims.size());
 
       /* split all primitives */
-      parallel_prefix_sum (state, size_t(0), pinfo.size(), size_t(1024), size_t(0), [&] (const range<size_t>& r, size_t ofs) 
+      parallel_prefix_sum (state, size_t(0), pinfo.size(), size_t(1024), size_t(0), [&] (const range<size_t>& r, size_t ofs) -> size_t
       {
         size_t N = 0;
         for (size_t i=r.begin(); i<r.end(); i++) {
@@ -148,7 +148,7 @@ namespace embree
       },std::plus<size_t>());
 
       /* compute new priminfo */
-      const PrimInfo pinfo_o = parallel_reduce (size_t(0), size_t(N), PrimInfo(empty), [&] (const range<size_t>& r)
+      const PrimInfo pinfo_o = parallel_reduce (size_t(0), size_t(N), PrimInfo(empty), [&] (const range<size_t>& r) -> PrimInfo
       {
         PrimInfo pinfo(empty);
         for (size_t i=r.begin(); i<r.end(); i++)

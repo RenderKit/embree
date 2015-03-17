@@ -125,7 +125,7 @@ namespace embree
           
           /* create build primitive */
           if (!object->bounds.empty())
-            refs[nextRef++] = BuildRef(object->bounds,object->root);
+            refs[nextRef++] = BVH4BuilderTopLevelNew::BuildRef(object->bounds,object->root);
         }
       });
       

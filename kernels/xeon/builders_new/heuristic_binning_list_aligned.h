@@ -60,14 +60,14 @@ namespace embree
           const BinMapping<BINS> mapping(pinfo);
           typename Set::iterator i=set;
           const size_t threadCount = TaskSchedulerNew::threadCount();
-          const Binner binner = parallel_reduce(size_t(0),threadCount,Binner(empty), [&] (const range<size_t>& r) 
+          const Binner binner = parallel_reduce(size_t(0),threadCount,Binner(empty), [&] (const range<size_t>& r) -> Binner
           {
             Binner binner(empty);
             while (Set_item* block = i.next()) {
               binner.bin(block->base(),block->size(),mapping);
             }
             return binner;
-          },[](const Binner& a, const Binner& b) { return Binner::reduce(a,b); });
+          },[](const Binner& a, const Binner& b) -> Binner { return HeuristicListBinningSAH<PrimRef,BINS>::Binner::reduce(a,b); });
           
           const Split split = binner.best(mapping,logBlockSize);
           binner.getSplitInfo(mapping,split,sinfo_o);
@@ -138,26 +138,8 @@ namespace embree
           linfo_o.reset();
           rinfo_o.reset();
           
-          struct PrimInfo2
-          {
-            __forceinline PrimInfo2() {}
-
-            __forceinline PrimInfo2(EmptyTy) 
-              : left(empty), right(empty) {}
-            
-            __forceinline PrimInfo2(const PrimInfo& left, const PrimInfo& right)
-              : left(left), right(right) {}
-
-            static __forceinline const PrimInfo2 merge (const PrimInfo2& a, const PrimInfo2& b) {
-              return PrimInfo2(PrimInfo::merge(a.left,b.left),PrimInfo::merge(a.right,b.right));
-            }
-
-          public:
-            PrimInfo left,right;
-          };
-
           const size_t threadCount = TaskSchedulerNew::threadCount();
-          const PrimInfo2 info = parallel_reduce(size_t(0),threadCount,PrimInfo2(empty), [&] (const range<size_t>& r) 
+          const PrimInfo2 info = parallel_reduce(size_t(0),threadCount,PrimInfo2(empty), [&] (const range<size_t>& r) -> PrimInfo2
           {
             PrimRefList::item* lblock = NULL;
             PrimRefList::item* rblock = NULL;
@@ -194,7 +176,7 @@ namespace embree
             }
             return PrimInfo2(PrimInfo(numLeft ,leftBounds .geomBounds,leftBounds .centBounds),
                              PrimInfo(numRight,rightBounds.geomBounds,rightBounds.centBounds));
-          }, [] (const PrimInfo2& a, const PrimInfo2& b) { return PrimInfo2::merge(a,b); });
+          }, [] (const PrimInfo2& a, const PrimInfo2& b) -> PrimInfo2 { return PrimInfo2::merge(a,b); });
 
           linfo_o.merge(info.left);
           rinfo_o.merge(info.right);
