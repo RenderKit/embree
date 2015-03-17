@@ -73,13 +73,13 @@ namespace embree
     size                   = DEFAULT_TESSELLATION_CACHE_SIZE;
     data                   = (float*)os_malloc(size);
     maxBlocks              = size/64;
-    index                  = 1;
+    index                  = 0; // 1
     next_block             = 0;
     numRenderThreads       = 0;
 #if FORCE_SIMPLE_FLUSH == 1
     switch_block_threshold = maxBlocks;
 #else
-    switch_block_threshold = maxBlocks/2;
+    switch_block_threshold = maxBlocks/NUM_CACHE_REGIONS;
 #endif
 
     reset_state.reset();
@@ -101,21 +101,27 @@ namespace embree
 
 	    incCurrentIndex();
 
+	    CACHE_STATS(DBG_PRINT("RESET TESS CACHE"));
 
 #if FORCE_SIMPLE_FLUSH == 1
 	    next_block = 0;
 	    switch_block_threshold = maxBlocks;
 #else
-	    if (switch_block_threshold == maxBlocks)
-	      {
-		next_block = 0;
-		switch_block_threshold = maxBlocks/2;
-	      }
-	    else
-	      {
-		next_block = maxBlocks/2;
-		switch_block_threshold = maxBlocks;		
-	      }
+	    const size_t region = index % NUM_CACHE_REGIONS;
+	    next_block = region * (maxBlocks/NUM_CACHE_REGIONS);
+	    switch_block_threshold = next_block + (maxBlocks/NUM_CACHE_REGIONS);
+
+#if 0
+	    DBG_PRINT( region );
+	    DBG_PRINT( maxBlocks );
+	    DBG_PRINT( NUM_CACHE_REGIONS );
+	    DBG_PRINT( maxBlocks/NUM_CACHE_REGIONS );
+	    DBG_PRINT( next_block );
+	    DBG_PRINT( switch_block_threshold );
+#endif
+
+	    assert( switch_block_threshold <= maxBlocks );
+
 #endif
 
 	    CACHE_STATS(SharedTessellationCacheStats::cache_flushes++);
@@ -145,7 +151,7 @@ namespace embree
 #if FORCE_SIMPLE_FLUSH == 1
     switch_block_threshold = maxBlocks;
 #else
-    switch_block_threshold = maxBlocks/2;
+    switch_block_threshold = maxBlocks/NUM_CACHE_REGIONS;
 #endif
 
     std::cout << "Reallocating tessellation cache to " << size << " bytes, " << maxBlocks << " 64-byte blocks" << std::endl;

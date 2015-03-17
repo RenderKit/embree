@@ -71,6 +71,8 @@ namespace embree
  private:
    static const size_t DEFAULT_TESSELLATION_CACHE_SIZE = 50*1024*1024; // 50 MB
 
+   static const size_t NUM_CACHE_REGIONS = 8;
+
    float *data;
    size_t size;
    size_t maxBlocks;
@@ -106,7 +108,7 @@ namespace embree
 #if FORCE_SIMPLE_FLUSH == 1
      return i == index;
 #else
-     return i+1 >= index;
+     return i+(NUM_CACHE_REGIONS-1) >= index;
 #endif
    }
 
