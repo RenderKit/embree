@@ -456,12 +456,10 @@ void launch_renderTile (int numTiles,
 #endif
 
 #if defined(TASKING_TBB)
-#if 0
+#if 1
   atomic_t tileID = 0;
   parallel_for(size_t(0),size_t(32),[&] (const range<size_t>& r) {
       for (size_t tid=r.begin(); tid<r.end(); tid++) {
-        setAffinity(tbb::task_arena::current_thread_index());
-        //setAffinity(0);
         while (true) {
           size_t i = atomic_add(&tileID,1);
           if (i >= numTiles) break;
