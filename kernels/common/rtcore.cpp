@@ -101,6 +101,15 @@ namespace embree
 #if defined(TASKING_TBB)
   bool g_tbb_threads_initialized = false;
   tbb::task_scheduler_init tbb_threads(tbb::task_scheduler_init::deferred);
+
+  class TBBAffinity: public tbb::task_scheduler_observer
+  {
+    void on_scheduler_entry( bool )
+    {
+      int tid = tbb::task_arena::current_thread_index();
+      setAffinity(tid);
+    }
+  } tbb_affinity;
 #endif
 
   void initSettings()
@@ -460,6 +469,7 @@ namespace embree
     } else {
       g_tbb_threads_initialized = true;
       tbb_threads.initialize(g_numThreads);
+      tbb_affinity.observe(true);
     }
 #endif
 

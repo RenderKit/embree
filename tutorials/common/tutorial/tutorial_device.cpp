@@ -433,13 +433,20 @@ public:
 };
 
 void renderTile_parallel(RenderTileTask* task, size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) {
-  renderTile(taskIndex,task->pixels,task->width,task->height,task->time,task->vx,task->vy,task->vz,task->p,task->numTilesX,task->numTilesY);
+  renderTile(taskCount-1-taskIndex,task->pixels,task->width,task->height,task->time,task->vx,task->vy,task->vz,task->p,task->numTilesX,task->numTilesY);
 }
 
 void launch_renderTile (int numTiles, 
                         int* pixels, const int width, const int height, const float time, 
                         const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p, const int numTilesX, const int numTilesY)
 {
+  /*TaskScheduler::EventSync event;
+  RenderTileTask parms(pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY);
+  TaskScheduler::Task task(&event,(TaskScheduler::runFunction)renderTile_parallel,&parms,numTiles,NULL,NULL,"render");
+  TaskScheduler::addTask(-1,TaskScheduler::GLOBAL_FRONT,&task);
+  event.sync();
+  return;*/
+
 #if defined(TASKING_LOCKSTEP)
   TaskScheduler::EventSync event;
   RenderTileTask parms(pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY);
