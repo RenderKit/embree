@@ -15,7 +15,7 @@
 ## ======================================================================== ##
 
 IF (TASKING_TBB)
-  INCLUDE_DIRECTORIES(${TBB_INCLUDE_PATH_MIC})
+  INCLUDE_DIRECTORIES(${TBB_INCLUDE_DIRS_MIC})
   SET(ADDITIONAL_LIBRARIES ${TBB_LIBRARIES_MIC})
 ENDIF()
 
