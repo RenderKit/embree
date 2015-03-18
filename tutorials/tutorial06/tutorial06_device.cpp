@@ -937,17 +937,33 @@ void updateEdgeLevelBuffer( ISPCMesh* mesh, const Vec3fa& cam_pos, size_t startI
   }
 }
 
+#if defined(ISPC)
+task void updateEdgeLevelBufferTask( ISPCMesh* mesh, const Vec3fa& cam_pos )
+{
+  const size_t size = mesh->numQuads;
+  const size_t startID = ((taskIndex+0)*size)/taskCount;
+  const size_t endID   = ((taskIndex+1)*size)/taskCount;
+  updateEdgeLevelBuffer(mesh,cam_pos,startID,endID);
+}
+#endif
+
+
 void updateEdgeLevels(ISPCScene* scene_in, const Vec3fa& cam_pos)
 {
   for (int i=0; i<g_ispc_scene->numMeshes; i++)
   {
     ISPCMesh* mesh = g_ispc_scene->meshes[i];
-    if (mesh->numQuads == 0) continue;
 
+    if (mesh->numQuads == 0) continue;
     if (mesh->edge_level) 
     {
       unsigned int geomID = mesh->geomID;
+#if defined(ISPC)
+      launch[  getNumHWThreads() ] updateEdgeLevelBufferTask(mesh,cam_pos); 	           
+#else
       updateEdgeLevelBuffer(mesh,cam_pos,0,mesh->numQuads);
+#endif
+      rtcUpdateBuffer(g_scene,geomID,RTC_LEVEL_BUFFER);
     }
   }
 }
@@ -969,13 +985,8 @@ void convertSubdivMeshes(ISPCScene* scene_in, RTCScene scene_out, size_t numGeom
       mesh->edge_level             = new float[numEdges];
       int *index_buffer = new int[numEdges];
       
-#if !defined(FORCE_FIXED_EDGE_TESSELLATION)
-      updateEdgeLevels(scene_in,cam_pos);
-#else
       for (size_t i=0; i<numEdges; i++) 
 	mesh->edge_level[i] = FIXED_EDGE_TESSELLATION_VALUE;
-#endif
-
 
       /* create a triangle mesh */
       unsigned int geomID = rtcNewSubdivisionMesh (scene_out, RTC_GEOMETRY_STATIC, numPrimitives, numEdges, mesh->numVertices, 0, 0, 0);
@@ -1032,13 +1043,27 @@ typedef void* void_ptr;
 
 RTCScene convertScene(ISPCScene* scene_in,const Vec3fa& cam_org)
 {
+
+  for (int i=0; i<scene_in->numMeshes; i++)
+    {
+     ISPCMesh* mesh = scene_in->meshes[i];
+    if (mesh->numQuads)
+       g_subdiv_mode = true;
+    }
+
+   
   size_t numGeometries = scene_in->numMeshes + scene_in->numSubdivMeshes;
 
   geomID_to_mesh = new void_ptr[numGeometries];
   geomID_to_type = new int[numGeometries];
 
   /* create scene */
-  RTCScene scene_out = rtcNewScene(RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT, RTC_INTERSECT1);
+  int scene_flags = RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT;
+
+  if (g_subdiv_mode)   
+    scene_flags = RTC_SCENE_DYNAMIC | RTC_SCENE_INCOHERENT;
+
+  RTCScene scene_out = rtcNewScene((RTCSceneFlags)scene_flags, RTC_INTERSECT1);
   convertTriangleMeshes(scene_in,scene_out,numGeometries);
   convertSubdivMeshes(scene_in,scene_out,numGeometries,cam_org);
 
@@ -1397,7 +1422,14 @@ extern "C" void device_render (int* pixels,
 
   /* create scene */
   if (g_scene == NULL)
-    g_scene = convertScene(g_ispc_scene,cam_org);
+   {
+     g_scene = convertScene(g_ispc_scene,cam_org);
+#if !defined(FORCE_FIXED_EDGE_TESSELLATION)
+    if (g_subdiv_mode)
+      updateEdgeLevels(g_ispc_scene, cam_org);
+#endif
+
+   }
 
   /* create accumulator */
   if (g_accu_width != width || g_accu_height != height) {
@@ -1423,15 +1455,15 @@ extern "C" void device_render (int* pixels,
     g_accu_count=0;
     memset(g_accu,0,width*height*sizeof(Vec3fa));
 
-#if 0
-   updateEdgeLevels(g_ispc_scene, cam_org);
-
+    if (g_subdiv_mode)
+      {
+       updateEdgeLevels(g_ispc_scene, cam_org);
 #if !defined(PARALLEL_COMMIT)
-     rtcCommit (g_scene);
+       rtcCommit (g_scene);
 #else
-     launch[ getNumHWThreads() ] parallelCommit(g_scene); 
+       launch[ getNumHWThreads() ] parallelCommit(g_scene); 
 #endif
-#endif
+      }
 
   }
 
