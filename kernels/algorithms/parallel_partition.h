@@ -117,20 +117,20 @@ namespace embree
       __forceinline bool needBothBlocks(const size_t mode) { return needLeftBlock(mode) && needRightBlock(mode); }
       
       /* get left/right atomic block id */
-      __forceinline size_t getBlockID(const size_t mode)
+      __forceinline int64 getBlockID(const size_t mode)
       {
-        size_t v = 0;
+        int64 v = 0;
         if (needLeftBlock(mode))  v |= 1;
-        if (needRightBlock(mode)) v |= (size_t)1 << 32;
-        size_t val = blockID.add(v);
+        if (needRightBlock(mode)) v |= (int64)1 << 32;
+        int64 val = blockID.add(v);
         return val;
       }
 
       /* get left index from block id */
-      __forceinline size_t getLeftBlockIndex(const size_t id) { return id & 0xffffffff; }
+      __forceinline int32 getLeftBlockIndex(const int64 id) { return id & 0xffffffff; }
 
       /* get right index from block id */
-      __forceinline size_t getRightBlockIndex(const size_t id) { return id >> 32; }
+      __forceinline int32 getRightBlockIndex(const int64 id) { return id >> 32; }
  
      /* get left array index from block index */
       __forceinline void getLeftArrayIndex(const size_t blockIndex, size_t &begin, size_t &end) 
@@ -147,7 +147,7 @@ namespace embree
       }
 
       /* is block id valid? */
-      __forceinline bool validBlockID(const size_t id)
+      __forceinline bool validBlockID(const int64 id)
       {
         const size_t numLeftBlocks  = getLeftBlockIndex(id) + 1;
         const size_t numRightBlocks = getRightBlockIndex(id) + 1;
@@ -353,7 +353,7 @@ namespace embree
                      DBG_PRINT("NEXT ITERATION");
                      );
 
-            size_t id = getBlockID(mode);
+            int64 id = getBlockID(mode);
 
             DBG_PART(
                      DBG_PRINT(id);

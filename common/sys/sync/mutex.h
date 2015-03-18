@@ -17,8 +17,7 @@
 #pragma once
 
 #include "../platform.h"
-#include "atomic.h"
-//#include <atomic> // FIXME: why including two times atomic.h ?
+#include "../intrinsics.h"
 
 namespace embree
 {

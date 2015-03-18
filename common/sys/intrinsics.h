@@ -69,8 +69,7 @@
 
 #include <intrin.h>
 
-//FIXME
-__forceinline size_t read_tsc()  {
+__forceinline size_t read_tsc()  { //FIXME
 	return 0;
 }
 

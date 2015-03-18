@@ -17,6 +17,7 @@
 #pragma once
 
 #include "../intrinsics.h"
+#include "mutex.h"
 
 namespace embree
 {
@@ -78,6 +79,19 @@ namespace embree
 
   class __aligned(64) AlignedAtomicCounter64
   {
+#if !defined(__X86_64__)
+
+    typedef int64 atomic64_t;
+
+    __forceinline atomic64_t atomic_add(volatile atomic64_t* ptr, atomic_t x) {
+      mutex.lock();
+      atomic64_t old = data;
+      data += x;
+      mutex.unlock();
+      return old;
+    }
+#endif
+
   public:
     __forceinline AlignedAtomicCounter64 () : data(0) {}
     __forceinline AlignedAtomicCounter64 (const atomic64_t v) {  *(volatile atomic64_t*)&data = v; }
@@ -88,18 +102,18 @@ namespace embree
   public:
     __forceinline size_t sub(const atomic64_t i) { return atomic_add(&data, -i); }
     __forceinline size_t add(const atomic64_t i) { return atomic_add(&data, +i); }
-    __forceinline friend atomic64_t operator +=( AlignedAtomicCounter64& value, const atomic64_t input ) { return atomic_add(&value.data, +input) + input; }
-    __forceinline friend atomic64_t operator -=( AlignedAtomicCounter64& value, const atomic64_t input ) { return atomic_add(&value.data, -input) - input; }
-    __forceinline friend atomic64_t operator ++( AlignedAtomicCounter64& value ) { return atomic_add(&value.data,  1) + 1; }
-    __forceinline friend atomic64_t operator --( AlignedAtomicCounter64& value ) { return atomic_add(&value.data, -1) - 1; }
-    __forceinline friend atomic64_t operator ++( AlignedAtomicCounter64& value, int ) { return atomic_add(&value.data,  1); }
-    __forceinline friend atomic64_t operator --( AlignedAtomicCounter64& value, int ) { return atomic_add(&value.data, -1); }
+    __forceinline friend atomic64_t operator +=( AlignedAtomicCounter64& value, const atomic64_t input ) { return value.add(+input) + input; }
+    __forceinline friend atomic64_t operator -=( AlignedAtomicCounter64& value, const atomic64_t input ) { return value.add(-input) - input; }
+    __forceinline friend atomic64_t operator ++( AlignedAtomicCounter64& value ) { return value.add(1) + 1; }
+    __forceinline friend atomic64_t operator --( AlignedAtomicCounter64& value ) { return value.add(-1) - 1; }
+    __forceinline friend atomic64_t operator ++( AlignedAtomicCounter64& value, int ) { return value.add(1); }
+    __forceinline friend atomic64_t operator --( AlignedAtomicCounter64& value, int ) { return value.add(-1); }
     __forceinline atomic64_t inc() { return atomic_add(&data,+1); }
     __forceinline atomic64_t dec() { return atomic_add(&data,-1); }
 
   private:
     volatile atomic64_t data;
-    char align[64-sizeof(atomic64_t)]; // one counter per cache line
+    AtomicMutex mutex;
+    char align[64-sizeof(atomic64_t)-sizeof(AtomicMutex)]; // one counter per cache line
   };
-
 }

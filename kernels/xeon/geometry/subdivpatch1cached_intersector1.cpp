@@ -163,7 +163,7 @@ namespace embree
 	  /* fast path for cache hit */
 	  {
 	    CACHE_STATS(SharedTessellationCacheStats::cache_accesses++);
-	    const size_t subdiv_patch_root_ref    = subdiv_patch->root_ref;
+	    const size_t subdiv_patch_root_ref    = subdiv_patch->root_ref; // FIXME: size_t not always 64 bit, use int64 type instead
 	    
 	    if (likely(subdiv_patch_root_ref)) 
 	      {
