@@ -90,8 +90,8 @@ namespace embree
 
       AlignedAtomicCounter64 blockID;
 
-      AlignedAtomicCounter64 numLeftRemainderBlocks;
-      AlignedAtomicCounter64 numRightRemainderBlocks;
+      AlignedAtomicCounter64 numLeftRemainderBlocks; // FIXME: has to be 64 bit?
+      AlignedAtomicCounter64 numRightRemainderBlocks; // FIXME: has to be 64 bit?
       AlignedAtomicCounter32 maxLeftBlockID;
       AlignedAtomicCounter32 maxRightBlockID;
       
@@ -618,8 +618,12 @@ namespace embree
                                                         const Reduction_V& reduction_v)
   //							Scheduler &scheduler)
   {
+#if defined(__X86_64__) // FIXME: enable parallel partition also in 32 bit mode
     parallel_partition<BLOCK_SIZE,T,V,Compare,Reduction_T,Reduction_V> p(array,N,init,cmp,reduction_t,reduction_v);
     return p.partition_parallel(leftReduction,rightReduction);    
+#else
+  return serial_partitioning(array,size_t(0),N,leftReduction,rightReduction,cmp,reduction_t);
+#endif
   }
 
 
