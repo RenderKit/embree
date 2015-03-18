@@ -1455,6 +1455,7 @@ extern "C" void device_render (int* pixels,
     g_accu_count=0;
     memset(g_accu,0,width*height*sizeof(Vec3fa));
 
+#if !defined(FORCE_FIXED_EDGE_TESSELLATION)
     if (g_subdiv_mode)
       {
        updateEdgeLevels(g_ispc_scene, cam_org);
@@ -1464,6 +1465,7 @@ extern "C" void device_render (int* pixels,
        launch[ getNumHWThreads() ] parallelCommit(g_scene); 
 #endif
       }
+#endif
 
   }
 

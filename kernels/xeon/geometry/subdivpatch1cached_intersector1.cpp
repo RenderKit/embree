@@ -490,11 +490,13 @@ namespace embree
         
       assert(currentIndex == patch.grid_subtree_size_64b_blocks);
 
-      TIMER(msec = getSeconds()-msec);            
-      TIMER(DBG_PRINT(1000*msec));
-      TIMER(DBG_PRINT(patch.grid_u_res));
-      TIMER(DBG_PRINT(patch.grid_v_res));
-      TIMER(DBG_PRINT(patch.grid_subtree_size_64b_blocks*64));
+      TIMER(msec = getSeconds()-msec);    
+	{
+         TIMER(DBG_PRINT(1000*msec));
+         TIMER(DBG_PRINT(patch.grid_u_res));
+         TIMER(DBG_PRINT(patch.grid_v_res));
+         TIMER(DBG_PRINT(patch.grid_subtree_size_64b_blocks*64));
+        }
 
 #if defined(_MSC_VER) && !defined(__INTEL_COMPILER)
       _freea(ptr);

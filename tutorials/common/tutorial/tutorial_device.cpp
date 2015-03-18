@@ -86,7 +86,7 @@ Vec3fa renderPixelWireframe(float x, float y, const Vec3fa& vx, const Vec3fa& vy
   rtcIntersect(g_scene,ray);
 
   /* return black if nothing hit */
-  if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return Vec3fa(0.0f);
+  if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return Vec3fa(1.0f);
 
   /* calculate wireframe around triangles */
   const float border = 0.05f;

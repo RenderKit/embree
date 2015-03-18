@@ -104,7 +104,6 @@ namespace embree
 	      waitForUsersLessEqual(i,1);
 
 	    addCurrentIndex();
-
 	    CACHE_STATS(DBG_PRINT("RESET TESS CACHE"));
 
 #if FORCE_SIMPLE_FLUSH == 1
