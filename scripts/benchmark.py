@@ -31,7 +31,8 @@ modelDir  = ''
 tutorial = 'tutorial03'
 statDir = 'stat'
 name = ''
-modelDir = '~/models/embree/benchmarking'
+#modelDir = '~/models/embree/benchmarking'
+modelDir = '%HOMEPATH%/models/embree/benchmarking'
 
 ########################## rendering ##########################
 
@@ -87,7 +88,7 @@ def extract(name,model,prevname):
     logFile = open(logFileName, 'r')
     for line in logFile:
       if line.count('BENCHMARK_BUILD ') == 1:
-        numbers = map(float, line[16:].split(" "))
+        numbers = map(float, line[(line.index('BENCHMARK_BUILD ')+16):].split(" "))
         buildperf[base] = numbers[1]
         sah   [base] = numbers[2]
         memory[base] = numbers[3]

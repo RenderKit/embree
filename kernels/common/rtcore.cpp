@@ -469,8 +469,9 @@ namespace embree
     } else {
       g_tbb_threads_initialized = true;
       tbb_threads.initialize(g_numThreads);
-      tbb_affinity.observe(true);
+      tbb_affinity.observe(true); 
     }
+    //tbb_affinity.observe(true); // FIXME: should not always be enabled, however, improves performance !!!
 #endif
 
 #if TASKING_TBB_INTERNAL

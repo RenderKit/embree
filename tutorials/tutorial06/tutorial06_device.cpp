@@ -1038,7 +1038,7 @@ RTCScene convertScene(ISPCScene* scene_in,const Vec3fa& cam_org)
   geomID_to_type = new int[numGeometries];
 
   /* create scene */
-  RTCScene scene_out = rtcNewScene(RTC_SCENE_DYNAMIC | RTC_SCENE_INCOHERENT, RTC_INTERSECT1);
+  RTCScene scene_out = rtcNewScene(RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT, RTC_INTERSECT1);
   convertTriangleMeshes(scene_in,scene_out,numGeometries);
   convertSubdivMeshes(scene_in,scene_out,numGeometries,cam_org);
 
