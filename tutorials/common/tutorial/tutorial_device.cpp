@@ -433,13 +433,20 @@ public:
 };
 
 void renderTile_parallel(RenderTileTask* task, size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) {
-  renderTile(taskCount-1-taskIndex,task->pixels,task->width,task->height,task->time,task->vx,task->vy,task->vz,task->p,task->numTilesX,task->numTilesY);
+  renderTile(taskIndex,task->pixels,task->width,task->height,task->time,task->vx,task->vy,task->vz,task->p,task->numTilesX,task->numTilesY);
 }
 
 void launch_renderTile (int numTiles, 
                         int* pixels, const int width, const int height, const float time, 
                         const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p, const int numTilesX, const int numTilesY)
 {
+  /*{TaskScheduler::EventSync event;
+  RenderTileTask parms(pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY);
+  TaskScheduler::Task task(&event,(TaskScheduler::runFunction)renderTile_parallel,&parms,numTiles,NULL,NULL,"render");
+  TaskScheduler::addTask(-1,TaskScheduler::GLOBAL_FRONT,&task);
+  event.sync();
+  return;}*/
+
 #if defined(TASKING_LOCKSTEP)
   TaskScheduler::EventSync event;
   RenderTileTask parms(pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY);
@@ -449,10 +456,25 @@ void launch_renderTile (int numTiles,
 #endif
 
 #if defined(TASKING_TBB)
+#if 0
+  atomic_t tileID = 0;
+  parallel_for(size_t(0),size_t(32),[&] (const range<size_t>& r) {
+      for (size_t tid=r.begin(); tid<r.end(); tid++) {
+        setAffinity(tbb::task_arena::current_thread_index());
+        //setAffinity(0);
+        while (true) {
+          size_t i = atomic_add(&tileID,1);
+          if (i >= numTiles) break;
+          renderTile(i,pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY);
+        }
+      }
+    });
+#else
   parallel_for(size_t(0),size_t(numTiles),[&] (const range<size_t>& r) {
       for (size_t i=r.begin(); i<r.end(); i++)
         renderTile(i,pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY);
     });
+#endif
 #endif
 
 #if defined(TASKING_TBB_INTERNAL)
