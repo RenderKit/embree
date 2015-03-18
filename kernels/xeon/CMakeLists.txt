@@ -38,6 +38,7 @@ ENDIF()
 
 IF (TASKING_TBB OR TASKING_TBB_INTERNAL)
   SET(EMBREE_BUILDERS_NEW
+    builders_new/primrefgen.cpp
     bvh4/bvh4_builder_hair_new.cpp
     bvh4/bvh4_builder_morton_general.cpp
     bvh4/bvh4_builder_binned_sah.cpp
@@ -46,7 +47,14 @@ IF (TASKING_TBB OR TASKING_TBB_INTERNAL)
     bvh4/bvh4_builder_subdiv.cpp)
 
   SET(EMBREE_BUILDERS_NEW_AVX
-    bvh8/bvh8_builder_binned_sah2.cpp)
+    builders_new/primrefgen.avx.cpp
+    bvh4/bvh4_builder_hair_new.avx.cpp
+    bvh4/bvh4_builder_morton_general.avx.cpp
+    bvh4/bvh4_builder_binned_sah.avx.cpp
+    bvh4/bvh4_builder_binned_sah2.avx.cpp
+    bvh4/bvh4_builder_toplevel_new.avx.cpp
+    bvh4/bvh4_builder_subdiv.avx.cpp
+    bvh8/bvh8_builder_binned_sah2.avx.cpp)
 ENDIF()
 
 ADD_ISPC_LIBRARY(embree ${EMBREE_LIB_TYPE}
@@ -85,8 +93,6 @@ ADD_ISPC_LIBRARY(embree ${EMBREE_LIB_TYPE}
   ../algorithms/pset.cpp
   ../algorithms/pmap.cpp
   ../algorithms/prefix.cpp
-
-  builders_new/primrefgen.cpp
 
   builders/bezierrefgen.cpp
   builders/primrefgen.cpp
@@ -170,8 +176,6 @@ ENDIF ()
 IF (TARGET_AVX)
   ADD_LIBRARY(embree_avx STATIC
 
-    builders_new/primrefgen.cpp
-
     builders/bezierrefgen.cpp
     builders/primrefgen.cpp
     builders/heuristic_object_partition_unaligned.cpp
@@ -196,7 +200,7 @@ IF (TARGET_AVX)
     bvh4/bvh4_builder_mb.cpp
     bvh4/bvh4_builder_hair.cpp
     bvh4/bvh4_builder_hair_mb.cpp
-    bvh4/bvh4_refit.cpp
+    bvh4/bvh4_refit.avx.cpp
 
     bvh4/bvh4_intersector1.cpp
     bvh4/bvh4_intersector4_single.cpp
@@ -214,7 +218,6 @@ IF (TARGET_AVX)
     bvh8/bvh8_intersector8_chunk.cpp
     bvh8/bvh8_intersector8_hybrid.cpp
 
-    ${EMBREE_BUILDERS_NEW}
     ${EMBREE_BUILDERS_NEW_AVX}
   )
 
