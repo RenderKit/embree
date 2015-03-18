@@ -701,7 +701,6 @@ export void device_render (uniform int* uniform pixels,
   enableFilterDispatch = renderPixel == renderPixelStandard; 
   launch[numTilesX*numTilesY] renderTile(pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY); sync;
   enableFilterDispatch = false;
-  rtcDebug();
 }
 
 /* called by the C++ code for cleanup */

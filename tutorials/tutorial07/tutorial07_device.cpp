@@ -701,7 +701,6 @@ extern "C" void device_render (int* pixels,
   enableFilterDispatch = renderPixel == renderPixelStandard; 
   launch_renderTile(numTilesX*numTilesY,pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY); 
   enableFilterDispatch = false;
-  rtcDebug();
 }
 
 /* called by the C++ code for cleanup */
