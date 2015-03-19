@@ -222,7 +222,7 @@ namespace embree
   OBJLoader::~OBJLoader() {
   }
 
-  PtexTexture* loadPtex(const FileName& fname)
+  void* loadPtex(const FileName& fname)
   {
 #if defined(USE_PTEX)
     Ptex::String error;
