@@ -915,6 +915,34 @@ void convertTriangleMeshes(ISPCScene* scene_in, RTCScene scene_out, size_t numGe
   }
 }
 
+void displacementFunction(void* ptr, unsigned int geomID, int unsigned primID, 
+                      const float* u,      /*!< u coordinates (source) */
+                      const float* v,      /*!< v coordinates (source) */
+                      const float* nx,     /*!< x coordinates of normal at point to displace (source) */
+                      const float* ny,     /*!< y coordinates of normal at point to displace (source) */
+                      const float* nz,     /*!< z coordinates of normal at point to displace (source) */
+                      float* px,           /*!< x coordinates of points to displace (source and target) */
+                      float* py,           /*!< y coordinates of points to displace (source and target) */
+                      float* pz,           /*!< z coordinates of points to displace (source and target) */
+                      size_t N)
+{
+  int materialID = ((ISPCMesh*) geomID_to_mesh[geomID])->meshMaterialID; 
+  ISPCMaterial* materials = &g_ispc_scene->materials[0];
+  ISPCMaterial* material = &materials[materialID];
+  if (material->ty != MATERIAL_OBJ) return;
+  void* tex = ((OBJMaterial*)  material)->map_Displ_ptex;
+  if (tex == NULL) return;
+    
+  for (size_t i = 0; i<N; i++)
+  {
+    const Vec3fa P = Vec3fa(px[i],py[i],pz[i]);
+    const Vec3fa Ng = Vec3fa(nx[i],ny[i],nz[i]);
+    const float  dN = getPtexTexel1f(tex,primID,u[i],v[i]);  
+    const Vec3fa dP = 0.05f*dN*normalize(Ng);
+    px[i] += dP.x; py[i] += dP.y; pz[i] += dP.z;
+  }
+}
+
 void updateEdgeLevelBuffer( ISPCMesh* mesh, const Vec3fa& cam_pos, size_t startID, size_t endID )
 {
   for (size_t f=startID; f<endID; f++) 
