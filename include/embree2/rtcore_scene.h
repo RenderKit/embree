@@ -74,7 +74,7 @@ RTCORE_API void rtcCommit (RTCScene scene);
  *  'numThreads' threads have called this function. After initializing
  *  or modifying geometries, commit has to get called before
  *  tracing rays. */
-RTCORE_API void rtcCommitThread(RTCScene scene, unsigned int threadID, unsigned int numThreads);
+RTCORE_API RTCORE_DEPRECATED void rtcCommitThread(RTCScene scene, unsigned int threadID, unsigned int numThreads);
 
 /*! Intersects a single ray with the scene. The ray has to be aligned
  *  to 16 bytes. This function can only be called for scenes with the

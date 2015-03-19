@@ -17,12 +17,13 @@
 #ifndef __RTCORE_ISPH__
 #define __RTCORE_ISPH__
 
-
 #ifdef _WIN32
 #  define RTCORE_ALIGN(...) // FIXME: need to specify alignment
 #else
 #  define RTCORE_ALIGN(...) // FIXME: need to specify alignment
 #endif
+
+#define RTCORE_DEPRECATED // FIXME: deprecation not supported by ISPC
 
 #include "rtcore_scene.isph"
 #include "rtcore_geometry.isph"
@@ -99,7 +100,7 @@ void rtcSetMemoryMonitorFunction(RTC_MEMORY_MONITOR_FUNCTION func);
 
   This function is implementation specific and only for debugging
   purposes. Do not call it. */
-void rtcDebug();  // FIXME: remove
+RTCORE_DEPRECATED void rtcDebug();  // FIXME: remove
 
 /*! \} */
 

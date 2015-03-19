@@ -43,11 +43,11 @@ typedef int ssize_t;
 #endif
 
 #ifdef __GNUC__
-  #define DEPRECATED __attribute__((deprecated))
+  #define RTCORE_DEPRECATED __attribute__((deprecated))
 #elif defined(_MSC_VER)
-  #define DEPRECATED __declspec(deprecated)
+  #define RTCORE_DEPRECATED __declspec(deprecated)
 #else
-  #define DEPRECATED
+  #define RTCORE_DEPRECATED
 #endif
 
 #include "rtcore_scene.h"
@@ -124,7 +124,7 @@ RTCORE_API void rtcSetMemoryMonitorFunction(RTC_MEMORY_MONITOR_FUNCTION func);
 
   This function is implementation specific and only for debugging
   purposes. Do not call it. */
-RTCORE_API DEPRECATED void rtcDebug(); // FIXME: remove
+RTCORE_API RTCORE_DEPRECATED void rtcDebug(); // FIXME: remove
 
 /*! \brief Helper to easily combing scene flags */
 inline RTCSceneFlags operator|(const RTCSceneFlags a, const RTCSceneFlags b) {
