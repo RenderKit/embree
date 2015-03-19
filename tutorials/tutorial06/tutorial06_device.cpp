@@ -34,6 +34,7 @@
 //#define MAX_EDGE_LEVEL 8.0f
 #define MIN_EDGE_LEVEL 4.0f
 #define ENABLE_DISPLACEMENTS 0
+
 #if ENABLE_DISPLACEMENTS
 #  define LEVEL_FACTOR 256.0f
 #else
