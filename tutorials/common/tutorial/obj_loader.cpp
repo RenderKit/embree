@@ -222,9 +222,9 @@ namespace embree
   OBJLoader::~OBJLoader() {
   }
 
-  void* loadPtex(const FileName& fname)
-  {
 #if defined(USE_PTEX)
+  PtexTexture* loadPtex(const FileName& fname)
+  {
     Ptex::String error;
     std::cout << "loading " << fname.str() << " ... " << std::flush;
     PtexTexture* tex = PtexTexture::open(fname.c_str(),error);
@@ -235,10 +235,10 @@ namespace embree
       THROW_RUNTIME_ERROR("cannot open ptex file: "+fname.str());
     }
     return tex;
-#else
-    return NULL;
-#endif
   }
+#else
+  void* loadPtex(const FileName& fname) { return NULL; }
+#endif
   
   /* load material file */
   void OBJLoader::loadMTL(const FileName &fileName)
