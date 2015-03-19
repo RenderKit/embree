@@ -70,7 +70,11 @@ void rtcCommit (RTCScene scene);
  *  'numThreads' threads have called this function. After initializing
  *  or modifying geometries, commit has to get called before
  *  tracing rays. */
+#if defined(__MIC__)
+void rtcCommitThread(RTCScene scene, uniform unsigned int threadID, uniform unsigned int numThreads);
+#else
 RTCORE_DEPRECATED void rtcCommitThread(RTCScene scene, uniform unsigned int threadID, uniform unsigned int numThreads);
+#endif
 
 /*! Intersects a uniform ray with the scene. This function can only be
  *  called for scenes with the RTC_INTERSECT_UNIFORM flag set. The ray
