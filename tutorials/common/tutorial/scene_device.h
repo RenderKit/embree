@@ -152,7 +152,9 @@ struct OBJMaterial
   Vec3fa Kd;              /*< diffuse reflectivity */
   Vec3fa Ks;              /*< specular reflectivity */
   Vec3fa Kt;              /*< transmission filter */
-  Vec3fa v[2];
+  void* map_Kd_ptex;      /*< ptex Kd map */
+  void* map_Displ_ptex;       /*< ptex displacement map */
+  //Vec3fa v[2];
 };
 
 struct MetalMaterial

@@ -22,6 +22,10 @@
 #include "math/vec3.h"
 #include "math/affinespace.h"
 
+#if defined(USE_PTEX)
+#include "Ptexture.h"
+#endif
+
 #include <vector>
 #include <memory>
 
@@ -160,10 +164,17 @@ namespace embree
     {
     public:
       OBJMaterial ()
-      : ty(MATERIAL_OBJ), illum(0), d(1.f), Ns(1.f), Ni(1.f), Ka(0.f), Kd(1.f), Ks(0.f), Tf(1.f) {};
+      : ty(MATERIAL_OBJ), illum(0), d(1.f), Ns(1.f), Ni(1.f), Ka(0.f), Kd(1.f), Ks(0.f), Tf(1.f), map_Kd_ptex(NULL), map_Displ_ptex(NULL) {};
 
       OBJMaterial (float d, const Vec3fa& Kd, const Vec3fa& Ks, const float Ns)
-      : ty(MATERIAL_OBJ), illum(0), d(d), Ns(Ns), Ni(1.f), Ka(0.f), Kd(Kd), Ks(Ks), Tf(1.f) {};
+      : ty(MATERIAL_OBJ), illum(0), d(d), Ns(Ns), Ni(1.f), Ka(0.f), Kd(Kd), Ks(Ks), Tf(1.f), map_Kd_ptex(NULL), map_Displ_ptex(NULL) {}
+
+      ~OBJMaterial() { // FIXME: destructor never called!
+#if defined(USE_PTEX)
+        if (map_Displ_ptex) map_Displ_ptex->release();  
+        if (map_Kd_ptex) map_Kd_ptex->release();  
+#endif
+      }
       
     public:
       int ty;
@@ -178,6 +189,13 @@ namespace embree
       Vec3fa Kd;              /*< diffuse reflectivity */
       Vec3fa Ks;              /*< specular reflectivity */
       Vec3fa Tf;              /*< transmission filter */
+#if defined(USE_PTEX)
+      PtexTexture* map_Displ_ptex;   /*< ptex displacement */
+      PtexTexture* map_Kd_ptex;  /*< ptex Kd map */
+#else
+      void* map_Displ_ptex;       /*< dummy */
+      void* map_Kd_ptex;       /*< dummy */
+#endif
     };
 
     struct MetalMaterial

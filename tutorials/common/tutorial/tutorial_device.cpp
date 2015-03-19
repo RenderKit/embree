@@ -18,6 +18,10 @@
 #include "kernels/algorithms/parallel_for.h"
 #include "sys/sysinfo.h"
 
+#if defined(USE_PTEX)
+#include "Ptexture.h"
+#endif
+
 /* the scene to render */
 extern RTCScene g_scene;
 
@@ -723,4 +727,22 @@ bool progressMonitor(void* ptr, const double n)
 
 void progressEnd() {
   std::cout << "]" << std::endl;
+}
+
+float getPtexTexel1f(void* ptex, int faceId, float u, float v)
+{
+  float result = zero;
+#if USE_PTEX
+  ((PtexTexture*)ptex)->getPixel(faceId,u,v,(float*)&result,0,1,Ptex::Res());
+#endif
+  return result;
+}
+
+Vec3fa getPtexTexel3f(void* ptex, int faceId, float u, float v)
+{
+  Vec3fa result = zero;
+#if USE_PTEX
+  ((PtexTexture*)ptex)->getPixel(faceId,u,v,(float*)&result,0,3,Ptex::Res());
+#endif
+  return result;
 }

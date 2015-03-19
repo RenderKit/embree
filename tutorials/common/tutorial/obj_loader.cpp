@@ -222,6 +222,24 @@ namespace embree
   OBJLoader::~OBJLoader() {
   }
 
+  PtexTexture* loadPtex(const FileName& fname)
+  {
+#if defined(USE_PTEX)
+    Ptex::String error;
+    std::cout << "loading " << fname.str() << " ... " << std::flush;
+    PtexTexture* tex = PtexTexture::open(fname.c_str(),error);
+    if (tex)
+      std::cout << "[DONE]" << std::endl;
+    else {
+      std::cout << "[FAILED]" << std::endl;
+      THROW_RUNTIME_ERROR("cannot open ptex file: "+fname.str());
+    }
+    return tex;
+#else
+    return NULL;
+#endif
+  }
+  
   /* load material file */
   void OBJLoader::loadMTL(const FileName &fileName)
   {
@@ -268,6 +286,12 @@ namespace embree
       if (!strncmp(token, "Ns", 2)) { parseSep(token += 2);  model.materials[cur].obj().Ns = getFloat(token); continue; }
       if (!strncmp(token, "Ni", 2)) { parseSep(token += 2);  model.materials[cur].obj().Ni = getFloat(token); continue; }
 
+      if (!strncmp(token, "Ka_map", 6)) { continue; }
+      if (!strncmp(token, "Kd_map", 6)) { parseSep(token += 6); model.materials[cur].obj().map_Kd_ptex = loadPtex(path + FileName(token)); continue; }
+      if (!strncmp(token, "Ks_map", 6)) { continue; }
+      if (!strncmp(token, "Tf_map", 6)) { continue; }
+      if (!strncmp(token, "Displ_map", 9)) { parseSep(token += 9); model.materials[cur].obj().map_Displ_ptex = loadPtex(path + FileName(token)); continue; }
+      
       if (!strncmp(token, "Ka", 2)) { parseSep(token += 2);  model.materials[cur].obj().Ka = getVec3f(token); continue; }
       if (!strncmp(token, "Kd", 2)) { parseSep(token += 2);  model.materials[cur].obj().Kd = getVec3f(token); continue; }
       if (!strncmp(token, "Ks", 2)) { parseSep(token += 2);  model.materials[cur].obj().Ks = getVec3f(token); continue; }

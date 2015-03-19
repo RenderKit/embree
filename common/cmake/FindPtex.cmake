@@ -14,5 +14,14 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-INCLUDE(tutorial)
-ADD_TUTORIAL(tutorial06)
+SET(PTEX_ROOT ${PROJECT_SOURCE_DIR}/ptex CACHE STRING "Root of Ptex installation")
+
+FIND_PATH   (PTEX_INCLUDE_DIRS Ptexture.h PATHS ${PTEX_ROOT}/include ${PTEX_ROOT}/src/ptex )
+FIND_LIBRARY(PTEX_LIBRARIES    Ptex       PATHS ${PTEX_ROOT}/lib     ${PTEX_ROOT}/build/ptex )
+ 
+INCLUDE(FindPackageHandleStandardArgs)
+FIND_PACKAGE_HANDLE_STANDARD_ARGS(PTEX DEFAULT_MSG PTEX_INCLUDE_DIRS PTEX_LIBRARIES)
+
+MARK_AS_ADVANCED(PTEX_INCLUDE_DIRS)
+MARK_AS_ADVANCED(PTEX_LIBRARIES)
+

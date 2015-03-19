@@ -108,3 +108,6 @@ Vec3fa noise3D(const Vec3fa& p);
 void progressStart();
 bool progressMonitor(void* ptr, const double dn);
 void progressEnd();
+
+float  getPtexTexel1f(void* ptex, int faceId, float u, float v);
+Vec3fa getPtexTexel3f(void* ptex, int faceId, float u, float v);
