@@ -31,6 +31,17 @@
 
 namespace embree
 {
+  __forceinline mic_f load4x4f_unalign(const void *__restrict__ const ptr0,
+				       const void *__restrict__ const ptr1,
+				       const void *__restrict__ const ptr2,
+				       const void *__restrict__ const ptr3) 
+  {
+    mic_f v = uload16f((float*)ptr0);
+    v = uload16f(v,0xf0,(float*)ptr1);
+    v = uload16f(v,0xf00,(float*)ptr2);
+    v = uload16f(v,0xf000,(float*)ptr3);
+    return v;
+  }
 
   static double msec = 0.0;
 
@@ -77,10 +88,15 @@ namespace embree
 	const size_t offset2 = 2*line_offset;
 	const size_t offset3 = 3*line_offset;
 
+#if 0
+	vtx.x = load4x4f_unalign(&grid_x[offset0],&grid_x[offset1],&grid_x[offset2],&grid_x[offset3]);
+	vtx.y = load4x4f_unalign(&grid_y[offset0],&grid_y[offset1],&grid_y[offset2],&grid_y[offset3]);
+	vtx.z = load4x4f_unalign(&grid_z[offset0],&grid_z[offset1],&grid_z[offset2],&grid_z[offset3]);
+#else
 	vtx.x = gather16f_4f_unalign(&grid_x[offset0],&grid_x[offset1],&grid_x[offset2],&grid_x[offset3]);
 	vtx.y = gather16f_4f_unalign(&grid_y[offset0],&grid_y[offset1],&grid_y[offset2],&grid_y[offset3]);
 	vtx.z = gather16f_4f_unalign(&grid_z[offset0],&grid_z[offset1],&grid_z[offset2],&grid_z[offset3]);
-
+#endif
 	const mic_f uv = gather16f_4f_unalign(&grid_uv[offset0],&grid_uv[offset1],&grid_uv[offset2],&grid_uv[offset3]);
 	store16f((float*)uu,uv);
        
@@ -95,24 +111,16 @@ namespace embree
       
       __forceinline mic_f getU() const
       {
-#if COMPACT == 1
 	mic_i uv = load16i((int*)uu);
 	mic_i  u = uv & 0xffff;
 	return mic_f(u) * 2.0f/65535.0f;
-#else
-	return load16f_uint16(uu);
-#endif
       }
 
       __forceinline mic_f getV() const
       {
-#if COMPACT == 1
 	mic_i uv = load16i((int*)uu);
 	mic_i  v = uv >> 16;
 	return mic_f(v) * 2.0f/65535.0f;
-#else
-	return load16f_uint16(vv);
-#endif
       }
 
       __forceinline void set(const mic3f &v3, const mic_f &u, const mic_f &v)
@@ -648,11 +656,7 @@ namespace embree
 		//DBG_PRINT( SharedLazyTessellationCache::sharedLazyTessellationCache.getNumUsedBytes() );
 		mic_f* local_mem   = (mic_f*)SharedLazyTessellationCache::sharedLazyTessellationCache.getBlockPtr(block_index);
 		unsigned int currentIndex = 0;
-#if COMPACT == 1
 		BVH4i::NodeRef bvh4i_root = initLocalLazySubdivTreeCompact(*subdiv_patch,currentIndex,local_mem,geom);
-#else
-		BVH4i::NodeRef bvh4i_root = initLocalLazySubdivTree(*subdiv_patch,currentIndex,local_mem,geom);
-#endif
 		size_t new_root_ref = (size_t)bvh4i_root + (size_t)local_mem - (size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();
 		assert( !(new_root_ref & REF_TAG) );
 		new_root_ref |= REF_TAG;
@@ -788,21 +792,13 @@ namespace embree
 
 		  
 		  const mic_m m_active = 0x777;
-#if COMPACT == 1
+
 		  float *lazyCachePtr = (float*)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();
 		  Quad4x4 quad4x4;
 		  quad4x4.init( curNode.offsetIndex(), patch, lazyCachePtr);
 		  const mic_f uu = quad4x4.getU();
 		  const mic_f vv = quad4x4.getV();
 		  const mic3f &vtx = quad4x4.vtx;
-#else
-		  const unsigned int uvIndex = curNode.offsetIndex();
-		  const Quad4x4 *__restrict__ const quad4x4 = (Quad4x4*)&lazymem[uvIndex];
-		  quad4x4->prefetchData();
-		  const mic_f uu = quad4x4->getU();
-		  const mic_f vv = quad4x4->getV();
-		  const mic3f &vtx = quad4x4->vtx;
-#endif
 		  intersect1_quad16(rayIndex, 
 				    dir_xyz,
 				    org_xyz,
@@ -979,21 +975,12 @@ namespace embree
 		    // const mic_f uu = quad4x4->getU();
 		    // const mic_f vv = quad4x4->getV();
 
-#if COMPACT == 1
 		    float *lazyCachePtr = (float*)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();
 		    Quad4x4 quad4x4;
 		    quad4x4.init( curNode.offsetIndex(), patch, lazyCachePtr);
 		    const mic_f uu = quad4x4.getU();
 		    const mic_f vv = quad4x4.getV();
 		    const mic3f &vtx = quad4x4.vtx;
-#else
-		    const unsigned int uvIndex = curNode.offsetIndex();
-		    const Quad4x4 *__restrict__ const quad4x4 = (Quad4x4*)&lazymem[uvIndex];
-		    quad4x4->prefetchData();
-		    const mic_f uu = quad4x4->getU();
-		    const mic_f vv = quad4x4->getV();
-		    const mic3f &vtx = quad4x4->vtx;
-#endif
 		  
 		    if (unlikely(occluded1_quad16(rayIndex, 
 						  dir_xyz,
@@ -1137,21 +1124,12 @@ namespace embree
 		  
 	      const mic_m m_active = 0x777;
 
-#if COMPACT == 1
 	      float *lazyCachePtr = (float*)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();
 	      Quad4x4 quad4x4;
 	      quad4x4.init( curNode.offsetIndex(), patch, lazyCachePtr);
 	      const mic_f uu = quad4x4.getU();
 	      const mic_f vv = quad4x4.getV();
 	      const mic3f &vtx = quad4x4.vtx;
-#else
-	      const unsigned int uvIndex = curNode.offsetIndex();
-	      const Quad4x4 *__restrict__ const quad4x4 = (Quad4x4*)&lazymem[uvIndex];
-	      quad4x4->prefetchData();
-	      const mic_f uu = quad4x4->getU();
-	      const mic_f vv = quad4x4->getV();
-	      const mic3f &vtx = quad4x4->vtx;
-#endif
 
 	      intersect1_quad16(dir_xyz,
 				org_xyz,
@@ -1275,22 +1253,12 @@ namespace embree
 	      const unsigned int uvIndex = curNode.offsetIndex();
 		  
 	      const mic_m m_active = 0x777;
-#if COMPACT == 1
 	      float *lazyCachePtr = (float*)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();
 	      Quad4x4 quad4x4;
 	      quad4x4.init( curNode.offsetIndex(), patch, lazyCachePtr);
 	      const mic_f uu = quad4x4.getU();
 	      const mic_f vv = quad4x4.getV();
 	      const mic3f &vtx = quad4x4.vtx;
-#else
-	      const unsigned int uvIndex = curNode.offsetIndex();
-	      const Quad4x4 *__restrict__ const quad4x4 = (Quad4x4*)&lazymem[uvIndex];
-	      quad4x4->prefetchData();
-	      const mic_f uu = quad4x4->getU();
-	      const mic_f vv = quad4x4->getV();
-	      const mic3f &vtx = quad4x4->vtx;
-#endif
-		  
 	      if (unlikely(occluded1_quad16(dir_xyz,
 					    org_xyz,
 					    ray,

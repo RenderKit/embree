@@ -111,22 +111,22 @@ namespace embree
         }
     }
 
-    void copyTessellationCacheTag(TessellationCacheTag *dest, TessellationCacheTag *source)
-    {
-      assert( dest->getNumBlocks() >= source->getNumBlocks() );
-      const size_t needed_blocks = source->getNumBlocks();
+    // void copyTessellationCacheTag(TessellationCacheTag *dest, TessellationCacheTag *source)
+    // {
+    //   assert( dest->getNumBlocks() >= source->getNumBlocks() );
+    //   const size_t needed_blocks = source->getNumBlocks();
       
-      memcpy(dest->getPtr(),source->getPtr(),64*needed_blocks);
-      size_t source_root = source->getRootRef();
-      updateBVH4Refs(source_root,(size_t)source->getPtr(),(size_t)dest->getPtr());
-      dest->updateRootRef( ((size_t)source_root - (size_t)source->getPtr()) + (size_t)dest->getPtr() );
+    //   memcpy(dest->getPtr(),source->getPtr(),64*needed_blocks);
+    //   size_t source_root = source->getRootRef();
+    //   updateBVH4Refs(source_root,(size_t)source->getPtr(),(size_t)dest->getPtr());
+    //   dest->updateRootRef( ((size_t)source_root - (size_t)source->getPtr()) + (size_t)dest->getPtr() );
 
-      const size_t l1_range0 = (size_t)dest->getPtr();
-      const size_t l1_range1 = l1_range0 + 64*needed_blocks;
-      size_t l1_blocks = countBlocks(BVH4::NodeRef(dest->getRootRef()),l1_range0,l1_range1);
+    //   const size_t l1_range0 = (size_t)dest->getPtr();
+    //   const size_t l1_range1 = l1_range0 + 64*needed_blocks;
+    //   size_t l1_blocks = countBlocks(BVH4::NodeRef(dest->getRootRef()),l1_range0,l1_range1);
               
-      assert(l1_blocks >= needed_blocks);              
-    }
+    //   assert(l1_blocks >= needed_blocks);              
+    // }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////
 
