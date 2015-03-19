@@ -201,13 +201,6 @@ void renderTile(int taskIndex, int* pixels,
   }
 }
 
-/* rtcCommitThread called by all ISPC worker threads to enable parallel build */
-#if defined(PARALLEL_COMMIT)
-task void parallelCommit(RTCScene scene) {
-  rtcCommitThread (scene,threadIndex,threadCount); 
-}
-#endif
-
 /* called by the C++ code to render */
 extern "C" void device_render (int* pixels,
                            const int width,
@@ -219,14 +212,9 @@ extern "C" void device_render (int* pixels,
                            const Vec3fa& p)
 {
   /* create scene */
-  if (g_scene == NULL)
-  { 
+  if (g_scene == NULL) { 
     g_scene = convertScene(g_ispc_scene);
-#if !defined(PARALLEL_COMMIT)
-  rtcCommit (g_scene);
-#else
-  launch[ getNumHWThreads() ] parallelCommit(g_scene); 
-#endif
+    rtcCommit (g_scene);
   }
 
   /* render image */

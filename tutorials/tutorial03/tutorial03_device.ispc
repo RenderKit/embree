@@ -17,8 +17,6 @@
 #include "../common/tutorial/tutorial_device.isph"
 #include "../common/tutorial/scene_device.h"
 
-//#define PARALLEL_COMMIT
-
 /* scene data */
 extern uniform ISPCScene* uniform g_ispc_scene;
 RTCScene g_scene = NULL;
@@ -201,13 +199,6 @@ task void renderTile(uniform int* uniform pixels,
   }
 }
 
-/* rtcCommitThread called by all ISPC worker threads to enable parallel build */
-#if defined(PARALLEL_COMMIT)
-task void parallelCommit(RTCScene scene) {
-  rtcCommitThread (scene,threadIndex,threadCount); 
-}
-#endif
-
 /* called by the C++ code to render */
 export void device_render (uniform int* uniform pixels,
                            const uniform int width,
@@ -219,14 +210,9 @@ export void device_render (uniform int* uniform pixels,
                            const uniform Vec3f& p)
 {
   /* create scene */
-  if (g_scene == NULL)
-  { 
+  if (g_scene == NULL) { 
     g_scene = convertScene(g_ispc_scene);
-#if !defined(PARALLEL_COMMIT)
-  rtcCommit (g_scene);
-#else
-  launch[ getNumHWThreads() ] parallelCommit(g_scene); sync;
-#endif
+    rtcCommit (g_scene);
   }
 
   /* render image */

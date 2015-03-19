@@ -16,8 +16,6 @@
 
 #include "../common/tutorial/tutorial_device.isph"
 
-//#define PARALLEL_COMMIT
-
 #if 0
 const uniform int numSpheres = 1000;
 const uniform int numPhi = 5; 
@@ -114,13 +112,6 @@ uniform unsigned int createSphere (uniform RTCGeometryFlags flags, const uniform
   return mesh;
 }
 
-/* rtcCommitThread called by all ISPC worker threads to enable parallel build */
-#if defined(PARALLEL_COMMIT)
-task void parallelCommit(RTCScene scene) {
-  rtcCommitThread (scene,threadIndex,threadCount); 
-}
-#endif
-
 /* adds a ground plane to the scene */
 uniform unsigned int addGroundPlane (RTCScene scene_i)
 {
@@ -178,11 +169,7 @@ export void device_init (uniform int8* uniform cfg)
   colors[id] = make_Vec3f(1.0f,1.0f,1.0f);
 
   /* commit changes to scene */
-#if !defined(PARALLEL_COMMIT)
   rtcCommit (g_scene);
-#else
-  launch[ getNumHWThreads() ] parallelCommit(g_scene); sync;
-#endif
 
   /* set start render mode */
   renderPixel = renderPixelStandard;
@@ -333,12 +320,7 @@ export void device_render (uniform int* uniform pixels,
     animateSphere(i,time+i);
 
   /* commit changes to scene */
-#if !defined(PARALLEL_COMMIT)
   rtcCommit (g_scene);
-#else
-  launch[ getNumHWThreads() ] parallelCommit(g_scene); sync;
-#endif
-
  
   /* render all pixels */
   const uniform int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;

@@ -24,8 +24,6 @@
 #define FIX_SAMPLING 0
 #define SAMPLES_PER_PIXEL 1
 
-//#define PARALLEL_COMMIT
-
 //#define FORCE_FIXED_EDGE_TESSELLATION
 #define FIXED_EDGE_TESSELLATION_VALUE 2
 //#define FIXED_EDGE_TESSELLATION_VALUE 32
@@ -809,13 +807,6 @@ void occlusionFilterReject(void* uniform ptr, RTCRay& ray) {
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
 }
 
-/* rtcCommitThread called by all ISPC worker threads to enable parallel build */
-#if defined(PARALLEL_COMMIT)
-task void parallelCommit(RTCScene scene) {
-  rtcCommitThread (scene,threadIndex,threadCount); 
-}
-#endif
-
 /* error reporting function */
 void error_handler(const uniform RTCError code, const uniform int8* uniform str)
 {
@@ -1071,11 +1062,7 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in,const uniform Vec3fa& 
   /* commit changes to scene */
   progressStart();
   rtcSetProgressMonitorFunction(scene_out,progressMonitor,NULL);
-#if !defined(PARALLEL_COMMIT)
   rtcCommit (scene_out);
-#else
-  launch[ getNumHWThreads() ] parallelCommit(scene_out); sync;
-#endif
   rtcSetProgressMonitorFunction(scene_out,NULL,NULL);
   progressEnd();
 
@@ -1459,11 +1446,7 @@ export void device_render (uniform int* uniform pixels,
     if (g_subdiv_mode)
       {
        updateEdgeLevels(g_ispc_scene, cam_org);
-#if !defined(PARALLEL_COMMIT)
        rtcCommit (g_scene);
-#else
-       launch[ getNumHWThreads() ] parallelCommit(g_scene); sync;
-#endif
       }
 #endif
 

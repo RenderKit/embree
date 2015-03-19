@@ -809,13 +809,6 @@ void occlusionFilterReject(void* ptr, RTCRay& ray) {
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
 }
 
-/* rtcCommitThread called by all ISPC worker threads to enable parallel build */
-#if defined(PARALLEL_COMMIT)
-task void parallelCommit(RTCScene scene) {
-  rtcCommitThread (scene,threadIndex,threadCount); 
-}
-#endif
-
 /* error reporting function */
 void error_handler(const RTCError code, const int8* str)
 {
@@ -1071,11 +1064,7 @@ RTCScene convertScene(ISPCScene* scene_in,const Vec3fa& cam_org)
   /* commit changes to scene */
   progressStart();
   rtcSetProgressMonitorFunction(scene_out,progressMonitor,NULL);
-#if !defined(PARALLEL_COMMIT)
   rtcCommit (scene_out);
-#else
-  launch[ getNumHWThreads() ] parallelCommit(scene_out); 
-#endif
   rtcSetProgressMonitorFunction(scene_out,NULL,NULL);
   progressEnd();
 
@@ -1459,11 +1448,7 @@ extern "C" void device_render (int* pixels,
     if (g_subdiv_mode)
       {
        updateEdgeLevels(g_ispc_scene, cam_org);
-#if !defined(PARALLEL_COMMIT)
        rtcCommit (g_scene);
-#else
-       launch[ getNumHWThreads() ] parallelCommit(g_scene); 
-#endif
       }
 #endif
 

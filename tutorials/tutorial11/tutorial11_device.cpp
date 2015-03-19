@@ -48,13 +48,6 @@ void error_handler(const RTCError code, const int8* str)
   abort();
 }
 
-/* rtcCommitThread called by all ISPC worker threads to enable parallel build */
-#if defined(PARALLEL_COMMIT)
-task void parallelCommit(RTCScene scene) {
-  rtcCommitThread (scene,threadIndex,threadCount); 
-}
-#endif
-
 /* These function called by the builder to signal progress and to
  * report memory consumption. */
 namespace embree

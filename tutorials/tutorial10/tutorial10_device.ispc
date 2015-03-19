@@ -17,8 +17,6 @@
 #include "../common/tutorial/tutorial_device.isph"
 #include "../common/tutorial/scene_device.isph"
 
-//#define PARALLEL_COMMIT
-
 #undef TILE_SIZE_X
 #undef TILE_SIZE_Y
 
@@ -484,12 +482,6 @@ task void renderTile(uniform int* uniform pixels,
 
 }
 
-#if defined(PARALLEL_COMMIT)
-task void parallelCommit(RTCScene scene) {
-  rtcCommitThread (scene,threadIndex,threadCount); 
-}
-#endif
-
 export void toggleOpenSubdiv(uniform int key, uniform int x, uniform int y)
 {
 #if defined(__USE_OPENSUBDIV__)
@@ -527,31 +519,19 @@ export void device_render (uniform int* uniform pixels,
 #endif
 
     old_p = p;
-
-#if !defined(PARALLEL_COMMIT)
-  rtcCommit (g_scene);
-#else
-  launch[ getNumHWThreads() ] parallelCommit(g_scene); sync;
-#endif
+    rtcCommit (g_scene);
   }
 
 #if !defined(FORCE_FIXED_EDGE_TESSELLATION)
   {
     if ((p.x != old_p.x | p.y != old_p.y | p.z != old_p.z))
     {
-     old_p = p;
-
-   updateEdgeLevels(g_ispc_scene, cam_org);
-
-#if !defined(PARALLEL_COMMIT)
-     rtcCommit (g_scene);
-#else
-     launch[ getNumHWThreads() ] parallelCommit(g_scene); sync;
-#endif
+      old_p = p;
+      updateEdgeLevels(g_ispc_scene, cam_org);
+      rtcCommit (g_scene);
     }
-   }
+  }
 #endif
-
 
   /* render image */
   const uniform int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;

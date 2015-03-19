@@ -484,12 +484,6 @@ void renderTile(int taskIndex, int* pixels,
 
 }
 
-#if defined(PARALLEL_COMMIT)
-task void parallelCommit(RTCScene scene) {
-  rtcCommitThread (scene,threadIndex,threadCount); 
-}
-#endif
-
 extern "C" void toggleOpenSubdiv(int key, int x, int y)
 {
 #if defined(__USE_OPENSUBDIV__)
@@ -528,11 +522,7 @@ extern "C" void device_render (int* pixels,
 
     old_p = p;
 
-#if !defined(PARALLEL_COMMIT)
-  rtcCommit (g_scene);
-#else
-  launch[ getNumHWThreads() ] parallelCommit(g_scene); 
-#endif
+    rtcCommit (g_scene);
   }
 
 #if !defined(FORCE_FIXED_EDGE_TESSELLATION)
@@ -540,14 +530,8 @@ extern "C" void device_render (int* pixels,
     if ((p.x != old_p.x | p.y != old_p.y | p.z != old_p.z))
     {
      old_p = p;
-
-   updateEdgeLevels(g_ispc_scene, cam_org);
-
-#if !defined(PARALLEL_COMMIT)
+     updateEdgeLevels(g_ispc_scene, cam_org);
      rtcCommit (g_scene);
-#else
-     launch[ getNumHWThreads() ] parallelCommit(g_scene); 
-#endif
     }
    }
 #endif

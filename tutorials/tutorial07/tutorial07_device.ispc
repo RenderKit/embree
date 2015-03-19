@@ -17,8 +17,6 @@
 #include "../common/tutorial/tutorial_device.isph"
 #include "../common/tutorial/scene_device.isph"
 
-//#define PARALLEL_COMMIT
-
 #if 0
 #undef TILE_SIZE_X
 #undef TILE_SIZE_Y
@@ -96,13 +94,6 @@ void error_handler(const uniform RTCError code, const uniform int8* uniform str)
   }
   abort();
 }
-
-/* rtcCommitThread called by all ISPC worker threads to enable parallel build */
-#if defined(PARALLEL_COMMIT)
-task void parallelCommit(RTCScene scene) {
-  rtcCommitThread (scene,threadIndex,threadCount); 
-}
-#endif
 
 /* render function to use */
 renderPixelFunc renderPixel;
@@ -197,11 +188,7 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
 
 
   /* commit changes to scene */
-#if !defined(PARALLEL_COMMIT)
   rtcCommit (scene_out);
-#else
-  launch[ getNumHWThreads() ] parallelCommit(scene_out); sync;
-#endif
 
   return scene_out;
 }

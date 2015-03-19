@@ -330,13 +330,6 @@ Instance* g_instance3 = NULL;
 
 Vec3fa colors[5][4];
 
-/* rtcCommitThread called by all ISPC worker threads to enable parallel build */
-#if defined(PARALLEL_COMMIT)
-task void parallelCommit(RTCScene scene) {
-  rtcCommitThread (scene,threadIndex,threadCount); 
-}
-#endif
-
 /* called by the C++ code for initialization */
 extern "C" void device_init (int8* cfg)
 {
@@ -356,11 +349,7 @@ extern "C" void device_init (int8* cfg)
   spheres[1].p = Vec3fa(+1, 0, 0); spheres[1].r = 0.5f;
   spheres[2].p = Vec3fa( 0, 0,-1); spheres[2].r = 0.5f;
   spheres[3].p = Vec3fa(-1, 0, 0); spheres[3].r = 0.5f;
-#if !defined(PARALLEL_COMMIT)
   rtcCommit(g_scene0);
-#else
-  launch[ getNumHWThreads() ] parallelCommit(g_scene0); 
-#endif
 
   /* create scene with 4 triangulated spheres */
   g_scene1 = rtcNewScene(RTC_SCENE_STATIC,RTC_INTERSECT1);
@@ -368,11 +357,7 @@ extern "C" void device_init (int8* cfg)
   createTriangulatedSphere(g_scene1,Vec3fa(+1, 0, 0),0.5);
   createTriangulatedSphere(g_scene1,Vec3fa( 0, 0,-1),0.5);
   createTriangulatedSphere(g_scene1,Vec3fa(-1, 0, 0),0.5);
-#if !defined(PARALLEL_COMMIT)
   rtcCommit(g_scene1);
-#else
-  launch[ getNumHWThreads() ] parallelCommit(g_scene1); 
-#endif
 
   /* create scene with 2 triangulated and 2 analytical spheres */
   g_scene2 = rtcNewScene(RTC_SCENE_STATIC,RTC_INTERSECT1);
@@ -380,11 +365,7 @@ extern "C" void device_init (int8* cfg)
   createAnalyticalSphere  (g_scene2,Vec3fa(+1, 0, 0),0.5);
   createTriangulatedSphere(g_scene2,Vec3fa( 0, 0,-1),0.5);
   createAnalyticalSphere  (g_scene2,Vec3fa(-1, 0, 0),0.5);
-#if !defined(PARALLEL_COMMIT)
   rtcCommit(g_scene2);
-#else
-  launch[ getNumHWThreads() ] parallelCommit(g_scene2); 
-#endif
 
   /* instantiate geometry */
   createGroundPlane(g_scene);
@@ -524,11 +505,7 @@ extern "C" void device_render (int* pixels,
   updateInstance(g_scene,g_instance1);
   updateInstance(g_scene,g_instance2);
   updateInstance(g_scene,g_instance3);
-#if !defined(PARALLEL_COMMIT)
   rtcCommit (g_scene);
-#else
-  launch[ getNumHWThreads() ] parallelCommit(g_scene); 
-#endif
 
   /* render all pixels */
   const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;

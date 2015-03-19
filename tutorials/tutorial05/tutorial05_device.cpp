@@ -46,13 +46,6 @@ void error_handler(const RTCError code, const int8* str)
   abort();
 }
 
-/* rtcCommitThread called by all ISPC worker threads to enable parallel build */
-#if defined(PARALLEL_COMMIT)
-task void parallelCommit(RTCScene scene) {
-  rtcCommitThread (scene,threadIndex,threadCount); 
-}
-#endif
-
 /* extended ray structure that includes total transparency along the ray */
 struct RTCRay2
 {
@@ -199,11 +192,7 @@ extern "C" void device_init (int8* cfg)
   addGroundPlane(g_scene);
 
   /* commit changes to scene */
-#if !defined(PARALLEL_COMMIT)
   rtcCommit (g_scene);
-#else
-  launch[ getNumHWThreads() ] parallelCommit(g_scene); 
-#endif
 
   /* set start render mode */
   renderPixel = renderPixelStandard;

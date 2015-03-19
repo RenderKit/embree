@@ -17,7 +17,6 @@
 #include "../common/tutorial/tutorial_device.isph"
 
 /* configuration */
-//#define PARALLEL_COMMIT
 #if defined(__XEON_PHI__)
 #define EDGE_LEVEL 64.0f
 #else
@@ -53,13 +52,6 @@ void error_handler(const uniform RTCError code, const uniform int8* uniform str)
   }
   abort();
 }
-
-/* rtcCommitThread called by all ISPC worker threads to enable parallel build */
-#if defined(PARALLEL_COMMIT)
-task void parallelCommit(RTCScene scene) {
-  rtcCommitThread (scene,threadIndex,threadCount); 
-}
-#endif
 
 uniform float cube_vertices[8][4] = 
 {
@@ -198,11 +190,7 @@ export void device_init (uniform int8* uniform cfg)
   addGroundPlane(g_scene);
 
   /* commit changes to scene */
-#if !defined(PARALLEL_COMMIT)
   rtcCommit (g_scene);
-#else
-  launch[ getNumHWThreads() ] parallelCommit(g_scene); sync;
-#endif
 
   /* set start render mode */
   renderPixel = renderPixelStandard;
