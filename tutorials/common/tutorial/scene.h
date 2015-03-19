@@ -190,11 +190,11 @@ namespace embree
       Vec3fa Ks;              /*< specular reflectivity */
       Vec3fa Tf;              /*< transmission filter */
 #if defined(USE_PTEX)
-      PtexTexture* map_Displ_ptex;   /*< ptex displacement */
       PtexTexture* map_Kd_ptex;  /*< ptex Kd map */
+      PtexTexture* map_Displ_ptex;   /*< ptex displacement */
 #else
-      void* map_Displ_ptex;       /*< dummy */
       void* map_Kd_ptex;       /*< dummy */
+      void* map_Displ_ptex;       /*< dummy */
 #endif
     };
 
