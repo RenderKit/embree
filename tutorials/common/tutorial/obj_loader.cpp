@@ -223,7 +223,7 @@ namespace embree
   }
 
 #if defined(USE_PTEX)
-  PtexTexture* loadPtex(const FileName& fname)
+  PtexFilter* loadPtex(const FileName& fname)
   {
     Ptex::String error;
     std::cout << "loading " << fname.str() << " ... " << std::flush;
@@ -234,7 +234,9 @@ namespace embree
       std::cout << "[FAILED]" << std::endl;
       THROW_RUNTIME_ERROR("cannot open ptex file: "+fname.str());
     }
-    return tex;
+    PtexFilter::Options opts(PtexFilter::f_point, 0, 1.0);
+    //PtexFilter::Options opts(PtexFilter::f_bicubic, 0, 1.0);
+    return PtexFilter::getFilter(tex, opts);
   }
 #else
   void* loadPtex(const FileName& fname) { return NULL; }

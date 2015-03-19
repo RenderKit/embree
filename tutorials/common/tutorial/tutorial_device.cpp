@@ -732,28 +732,20 @@ void progressEnd() {
   std::cout << "]" << std::endl;
 }
 
-float getPtexTexel1f(void* ptex, int faceId, float u, float v)
+float getPtexTexel1f(void* filter, int faceId, float u, float v)
 {
   float result = zero;
 #if USE_PTEX
-  PtexTexture* tex =  (PtexTexture*)ptex;
-  PtexFilter::Options opts(PtexFilter::f_point, 0, 1.0);
-  //PtexFilter::Options opts(PtexFilter::f_bicubic, 0, 1.0);
-  PtexPtr<PtexFilter> f ( PtexFilter::getFilter(tex, opts) );
-  f->eval((float*)&result, 0, 1, faceId, v, u, 0, 0, 0, 0);
+  ((PtexFilter*)filter)->eval((float*)&result, 0, 1, faceId, v, u, 0, 0, 0, 0);
 #endif
   return result;
 }
 
-Vec3fa getPtexTexel3f(void* ptex, int faceId, float u, float v)
+Vec3fa getPtexTexel3f(void* filter, int faceId, float u, float v)
 {
   Vec3fa result = zero;
 #if USE_PTEX
-  PtexTexture* tex =  (PtexTexture*)ptex;
-  PtexFilter::Options opts(PtexFilter::f_point, 0, 1.0);
-  //PtexFilter::Options opts(PtexFilter::f_bicubic, 0, 1.0);
-  PtexPtr<PtexFilter> f ( PtexFilter::getFilter(tex, opts) );
-  f->eval((float*)&result, 0, 3, faceId, v, u, 0, 0, 0, 0);
+  ((PtexFilter*)filter)->eval((float*)&result, 0, 3, faceId, v, u, 0, 0, 0, 0);
 #endif
   return result;
 }
