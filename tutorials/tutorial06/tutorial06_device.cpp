@@ -1222,7 +1222,7 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
 #if 1 // FIXME: pointer gather not implemented in ISPC for Xeon Phi
     if (geomID_to_type[ray.geomID] == 0)
       materialID = ((ISPCMesh*) geomID_to_mesh[ray.geomID])->triangles[ray.primID].materialID; 
-    else if (geomID_to_type[ray.geomID] == 1)                             
+    else if (geomID_to_type[ray.geomID] == 1)
       materialID = ((ISPCSubdivMesh*) geomID_to_mesh[ray.geomID])->materialID; 
     else
       materialID = ((ISPCMesh*) geomID_to_mesh[ray.geomID])->meshMaterialID; 
@@ -1231,7 +1231,7 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
      //printf("geomID %\n",geomID);
      //printf("geomID_to_type[geomID] %\n",geomID_to_type[geomID]);
       if (geomID >= 0 && geomID < g_ispc_scene->numMeshes) { // FIXME: workaround for ISPC bug
-	if (geomID_to_type[geomID] == 0) 
+	if (geomID_to_type[geomID] == 0)  
 	  materialID = ((ISPCMesh*) geomID_to_mesh[geomID])->triangles[ray.primID].materialID; 
 	else if (geomID_to_type[geomID] == 1)                             
 	  materialID = ((ISPCSubdivMesh*) geomID_to_mesh[geomID])->materialID; 
@@ -1256,8 +1256,7 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
 
 
     Material__preprocess(material_array,materialID,numMaterials,brdf,wo,dg,medium);
-
-
+    
     /* sample BRDF at hit point */
     Sample3f wi1;
     c = c * Material__sample(material_array,materialID,numMaterials,brdf,Lw, wo, dg, wi1, medium, Vec2f(frand(state),frand(state)));

@@ -363,27 +363,20 @@ namespace embree
 	    const std::vector<Vertex>& face = curGroup[j];
 
 	    /* for subdivision test scenes */
-
-	    if (subdivMode && face.size() == 4)
-	      {
-		/* only look at position indices here */
-		uint32 v0 = face[0].v;
-		uint32 v1 = face[1].v;
-		uint32 v2 = face[2].v;
-		uint32 v3 = face[3].v;
-
-		// DBG_PRINT( v0 );
-		// DBG_PRINT( v1 );
-		// DBG_PRINT( v2 );
-		// DBG_PRINT( v3 );
-
-		mesh->quads.push_back(OBJScene::Quad(v0,v1,v2,v3));
-		continue;
-	      }
-
-	    Vertex i0 = face[0], i1 = Vertex(-1), i2 = face[1];
-
+	    if (subdivMode)
+            {
+              if (face.size() == 4)
+                mesh->quads.push_back(OBJScene::Quad(face[0].v,face[1].v,face[2].v,face[3].v));
+              else {
+                mesh->quads.push_back(OBJScene::Quad(0,0,0,0));
+                mesh->quads.push_back(OBJScene::Quad(0,0,0,0));
+                mesh->quads.push_back(OBJScene::Quad(0,0,0,0));
+              }
+              continue;
+            }
+            
 	    /* triangulate the face with a triangle fan */
+	    Vertex i0 = face[0], i1 = Vertex(-1), i2 = face[1];
 	    for (size_t k=2; k < face.size(); k++) {
 	      i1 = i2; i2 = face[k];
 	      uint32 v0,v1,v2;
