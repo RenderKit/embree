@@ -25,12 +25,6 @@
 
 #include <vector>
 
-#if defined(TASKING_TBB)
-#define NOMINMAX
-#define __TBB_NO_IMPLICIT_LINKAGE 1
-#include "tbb/tbb.h"
-#endif
-
 namespace embree
 {
   /*! Interface to different task scheduler implementations. */

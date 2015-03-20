@@ -453,10 +453,8 @@ void launch_renderTile (int numTiles,
   TaskScheduler::Task task(&event,(TaskScheduler::runFunction)renderTile_parallel,&parms,numTiles,NULL,NULL,"render");
   TaskScheduler::addTask(-1,TaskScheduler::GLOBAL_FRONT,&task);
   event.sync();
-#endif
 
-#if defined(TASKING_TBB)
-#if 1
+#elif 1
   atomic_t tileID = 0;
   parallel_for(size_t(0),size_t(32),[&] (const range<size_t>& r) {
       for (size_t tid=r.begin(); tid<r.end(); tid++) {
@@ -467,20 +465,12 @@ void launch_renderTile (int numTiles,
         }
       }
     });
+
 #else
   parallel_for(size_t(0),size_t(numTiles),[&] (const range<size_t>& r) {
       for (size_t i=r.begin(); i<r.end(); i++)
         renderTile(i,pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY);
     });
-#endif
-#endif
-
-#if defined(TASKING_TBB_INTERNAL)
-  parallel_for(size_t(0),size_t(numTiles),[&] (const range<size_t>& r) {
-        for (size_t i=r.begin(); i<r.end(); i++) {
-          renderTile(i,pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY);
-        }
-      });
 #endif
 }
 
@@ -531,16 +521,8 @@ void launch_animateSphere(animateSphereFunc func,
   TaskScheduler::Task task(&event,(TaskScheduler::runFunction)animateSphere_parallel,&parms,taskSize,NULL,NULL,"render");
   TaskScheduler::addTask(-1,TaskScheduler::GLOBAL_FRONT,&task);
   event.sync();
-#endif
 
-#if defined(TASKING_TBB)
-  parallel_for(size_t(0),size_t(taskSize),[&] (const range<size_t>& m) {
-      for (size_t i=m.begin(); i<m.end(); i++)
-        func(i,vertices,rcpNumTheta,rcpNumPhi,pos,r,f);
-    });
-#endif
-
-#if defined(TASKING_TBB_INTERNAL)
+#else
   parallel_for(size_t(0),size_t(taskSize),[&] (const range<size_t>& m) {
       for (size_t i=m.begin(); i<m.end(); i++)
         func(i,vertices,rcpNumTheta,rcpNumPhi,pos,r,f);

@@ -37,17 +37,11 @@ namespace embree
       commitCounter(0), scheduler(NULL),
       progress_monitor_function(NULL), progress_monitor_ptr(NULL), progress_monitor_counter(0)
   {
-#if !defined(__MIC__) 
-#  if defined(TASKING_LOCKSTEP)
-    lockstep_scheduler.taskBarrier.init(TaskScheduler::getNumThreads());
-#  endif
-#else
+#if defined(__MIC__) 
     lockstep_scheduler.taskBarrier.init(MAX_MIC_THREADS);
 #endif
     if (g_scene_flags != -1)
       flags = (RTCSceneFlags) g_scene_flags;
-
-    geometries.reserve(128);
 
 #if defined(__MIC__)
     accels.add( BVH4mb::BVH4mbTriangle1ObjectSplitBinnedSAH(this) );
@@ -56,67 +50,64 @@ namespace embree
     accels.add( BVH4i::BVH4iSubdivMeshBinnedSAH(this, isRobust() ));
 
     if (g_verbose >= 1)
-      {
-	std::cout << "scene flags: static " << isStatic() << " compact = " << isCompact() << " high quality = " << isHighQuality() << " robust = " << isRobust() << std::endl;
-      }
-
+    {
+      std::cout << "scene flags: static " << isStatic() << " compact = " << isCompact() << " high quality = " << isHighQuality() << " robust = " << isRobust() << std::endl;
+    }
+    
     if (g_tri_accel == "default" || g_tri_accel == "bvh4i")   
+    {
+      if (g_tri_builder == "default") 
       {
-	if (g_tri_builder == "default") 
-	  {
-	    if (isStatic())
-	      {
-		if (g_verbose >= 1) std::cout << "STATIC BUILDER MODE" << std::endl;
-		if ( isCompact() )
-		  accels.add(BVH4i::BVH4iTriangle1MemoryConservativeBinnedSAH(this,isRobust()));		    
-		else if ( isHighQuality() )
-		  accels.add(BVH4i::BVH4iTriangle1ObjectSplitBinnedSAH(this,isRobust()));
-		else
-		  accels.add(BVH4i::BVH4iTriangle1ObjectSplitBinnedSAH(this,isRobust()));
-	      }
-	    else
-	      {
-		if (g_verbose >= 1) std::cout << "DYNAMIC BUILDER MODE" << std::endl;
-		accels.add(BVH4i::BVH4iTriangle1ObjectSplitMorton(this,isRobust()));
-	      }
-	  }
-	else
-	  {
-	    if (g_tri_builder == "sah" || g_tri_builder == "bvh4i" || g_tri_builder == "bvh4i.sah") {
-	      accels.add(BVH4i::BVH4iTriangle1ObjectSplitBinnedSAH(this,isRobust()));
-	    }
-	    else if (g_tri_builder == "fast" || g_tri_builder == "morton") {
-	      accels.add(BVH4i::BVH4iTriangle1ObjectSplitMorton(this,isRobust()));
-	    }
-	    else if (g_tri_builder == "fast_enhanced" || g_tri_builder == "morton.enhanced") {
-	      accels.add(BVH4i::BVH4iTriangle1ObjectSplitEnhancedMorton(this,isRobust()));
-	    }
-	    else if (g_tri_builder == "high_quality" || g_tri_builder == "presplits") {
-	      accels.add(BVH4i::BVH4iTriangle1PreSplitsBinnedSAH(this,isRobust()));
-	    }
-	    else if (g_tri_builder == "compact" ||
-		     g_tri_builder == "memory_conservative") {
-	      accels.add(BVH4i::BVH4iTriangle1MemoryConservativeBinnedSAH(this,isRobust()));
-	    }
-	    else if (g_tri_builder == "morton64") {
-	      accels.add(BVH4i::BVH4iTriangle1ObjectSplitMorton64Bit(this,isRobust()));
-	    }
-
-	    else THROW_RUNTIME_ERROR("unknown builder "+g_tri_builder+" for BVH4i<Triangle1>");
-	  }
+        if (isStatic())
+        {
+          if (g_verbose >= 1) std::cout << "STATIC BUILDER MODE" << std::endl;
+          if ( isCompact() )
+            accels.add(BVH4i::BVH4iTriangle1MemoryConservativeBinnedSAH(this,isRobust()));		    
+          else if ( isHighQuality() )
+            accels.add(BVH4i::BVH4iTriangle1ObjectSplitBinnedSAH(this,isRobust()));
+          else
+            accels.add(BVH4i::BVH4iTriangle1ObjectSplitBinnedSAH(this,isRobust()));
+        }
+        else
+        {
+          if (g_verbose >= 1) std::cout << "DYNAMIC BUILDER MODE" << std::endl;
+          accels.add(BVH4i::BVH4iTriangle1ObjectSplitMorton(this,isRobust()));
+        }
       }
+      else
+      {
+        if (g_tri_builder == "sah" || g_tri_builder == "bvh4i" || g_tri_builder == "bvh4i.sah") {
+          accels.add(BVH4i::BVH4iTriangle1ObjectSplitBinnedSAH(this,isRobust()));
+        }
+        else if (g_tri_builder == "fast" || g_tri_builder == "morton") {
+          accels.add(BVH4i::BVH4iTriangle1ObjectSplitMorton(this,isRobust()));
+        }
+        else if (g_tri_builder == "fast_enhanced" || g_tri_builder == "morton.enhanced") {
+          accels.add(BVH4i::BVH4iTriangle1ObjectSplitEnhancedMorton(this,isRobust()));
+        }
+        else if (g_tri_builder == "high_quality" || g_tri_builder == "presplits") {
+          accels.add(BVH4i::BVH4iTriangle1PreSplitsBinnedSAH(this,isRobust()));
+        }
+        else if (g_tri_builder == "compact" ||
+                 g_tri_builder == "memory_conservative") {
+          accels.add(BVH4i::BVH4iTriangle1MemoryConservativeBinnedSAH(this,isRobust()));
+        }
+        else if (g_tri_builder == "morton64") {
+          accels.add(BVH4i::BVH4iTriangle1ObjectSplitMorton64Bit(this,isRobust()));
+        }
+        
+        else THROW_RUNTIME_ERROR("unknown builder "+g_tri_builder+" for BVH4i<Triangle1>");
+      }
+    }
     else THROW_RUNTIME_ERROR("unknown accel "+g_tri_accel);
-
-
+    
 #else
     createTriangleAccel();
-    //accels.add(BVH4::BVH4Triangle1vMB(this));
     accels.add(BVH4::BVH4Triangle4vMB(this));
     accels.add(BVH4::BVH4UserGeometry(this));
     createHairAccel();
     accels.add(BVH4::BVH4OBBBezier1iMB(this,false));
     createSubdivAccel();
-
 #endif
   }
 
@@ -358,16 +349,8 @@ namespace embree
   void Scene::build (size_t threadIndex, size_t threadCount) 
   {
 #if defined(TASKING_LOCKSTEP)
-    /* all user worker threads properly enter and leave the tasking system */
     LockStepTaskScheduler::Init init(threadIndex,threadCount,&lockstep_scheduler);
     if (threadIndex != 0) return;
-#endif
-
-#if defined(TASKING_TBB)
-    if (threadCount != 0) {
-      process_error(RTC_INVALID_OPERATION,"TBB does not support rtcCommitThread");
-      return;
-    }
 #endif
 
 #if defined(TASKING_TBB_INTERNAL)
@@ -382,6 +365,13 @@ namespace embree
         return;
       } else
         scheduler->wait_for_threads(threadCount);
+    }
+#endif
+
+#if defined(TASKING_TBB)
+    if (threadCount != 0) {
+      process_error(RTC_INVALID_OPERATION,"TBB does not support rtcCommitThread");
+      return;
     }
 #endif
 
@@ -431,6 +421,11 @@ namespace embree
     }
 #endif
 
+#if defined(TASKING_TBB_INTERNAL)
+      if (threadCount) scheduler->spawn_root  ([&]() { accels.build(0,0); });
+      else             TaskSchedulerNew::spawn([&]() { accels.build(0,0); });
+#endif
+
 #if defined(TASKING_TBB)
     try {
       accels.build(0,0);
@@ -439,16 +434,6 @@ namespace embree
       updateInterface();
       throw;
     }
-#endif
-
-#if defined(TASKING_TBB_INTERNAL)
-      if (threadCount)
-        scheduler->spawn_root([&]() { accels.build(0,0); });
-      else {
-        //TaskSchedulerNew::g_instance->spawn_root([&]() { accels.build(0,0); });
-        TaskSchedulerNew::spawn([&](){accels.build(0,0);});
-        //accels.build(0,0);
-      }
 #endif
 
     /* make static geometry immutable */
@@ -476,7 +461,7 @@ namespace embree
       intersectors.print(2);
     }
     
-#if TASKING_TBB_INTERNAL
+#if defined(TASKING_TBB_INTERNAL)
     if (threadCount != 0) {
       delete scheduler; scheduler = NULL;
     }
@@ -504,11 +489,11 @@ namespace embree
 
   void Scene::progressMonitor(double dn)
   {
-	  if (progress_monitor_function) {
-	    size_t n = atomic_t(dn) + atomic_add(&progress_monitor_counter, atomic_t(dn));
-	    if (!progress_monitor_function(progress_monitor_ptr, n / (double(numPrimitives())))) {
-#if !defined(TASKING_LOCKSTEP) && !defined(TASKING_TBB_INTERNAL)
-	      THROW_MY_RUNTIME_ERROR(RTC_CANCELLED,"progress monitor forced termination");
+    if (progress_monitor_function) {
+      size_t n = atomic_t(dn) + atomic_add(&progress_monitor_counter, atomic_t(dn));
+      if (!progress_monitor_function(progress_monitor_ptr, n / (double(numPrimitives())))) {
+#if defined(TASKING_TBB)
+        THROW_MY_RUNTIME_ERROR(RTC_CANCELLED,"progress monitor forced termination");
 #endif
       }
     }

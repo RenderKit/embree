@@ -20,9 +20,11 @@
 #include "tasking/taskscheduler.h"
 #include "../../kernels/algorithms/range.h"
 
-//#include <thread>
-//#include <mutex>
-//#include <condition_variable>
+#if !defined(TASKING_TBB_INTERNAL)
+#define NOMINMAX
+#define __TBB_NO_IMPLICIT_LINKAGE 1
+#include "tbb/tbb.h"
+#endif
 
 #include "sys/sync/mutex.h"
 #include "sys/sync/condition.h"
@@ -35,15 +37,13 @@
 
 namespace embree
 {
-#if defined(TASKING_TBB)
+#if !defined(TASKING_TBB_INTERNAL)
 #  define SPAWN_BEGIN tbb::task_group __internal_task_group
 #  define SPAWN(closure) __internal_task_group.run(closure)
 #  define SPAWN_END __internal_task_group.wait();                       \
   if (tbb::task::self().group()->is_group_execution_cancelled())        \
     throw std::runtime_error("task group cancelled");
-#endif
-
-#if defined(TASKING_TBB_INTERNAL)
+#else
 #  define SPAWN_BEGIN 
 #  define SPAWN(closure) TaskSchedulerNew::spawn(closure)
 #  define SPAWN_END TaskSchedulerNew::wait();
