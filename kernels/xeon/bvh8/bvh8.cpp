@@ -36,9 +36,6 @@ namespace embree
   DECLARE_SYMBOL(Accel::Intersector8,BVH8Triangle8Intersector8HybridMoeller);
   DECLARE_SYMBOL(Accel::Intersector8,BVH8Triangle8Intersector8HybridMoellerNoFilter);
 
-  DECLARE_SCENE_BUILDER(BVH8Triangle4Builder);
-  DECLARE_SCENE_BUILDER(BVH8Triangle8Builder);
-
   DECLARE_SCENE_BUILDER(BVH8Triangle4SceneBuilderBinnedSAH2);
   DECLARE_SCENE_BUILDER(BVH8Triangle8SceneBuilderBinnedSAH2);
 
@@ -50,16 +47,11 @@ namespace embree
     int features = getCPUFeatures();
 
     /* select builders */
-    SELECT_SYMBOL_AVX(features,BVH8Triangle4Builder);
-    SELECT_SYMBOL_AVX(features,BVH8Triangle8Builder);
-
-#if defined(TASKING_TBB) || defined(TASKING_TBB_INTERNAL)
     SELECT_SYMBOL_AVX(features,BVH8Triangle4SceneBuilderBinnedSAH2);
     SELECT_SYMBOL_AVX(features,BVH8Triangle8SceneBuilderBinnedSAH2);
     
     SELECT_SYMBOL_AVX(features,BVH8Triangle4SceneBuilderSpatialBinnedSAH2);
     SELECT_SYMBOL_AVX(features,BVH8Triangle8SceneBuilderSpatialBinnedSAH2);
-#endif
  
     /* select intersectors1 */
     SELECT_SYMBOL_AVX_AVX2(features,BVH8Triangle4Intersector1Moeller);

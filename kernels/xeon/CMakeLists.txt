@@ -88,19 +88,10 @@ ADD_ISPC_LIBRARY(embree ${EMBREE_LIB_TYPE}
   ../algorithms/parallel_prefix_sum.cpp
   ../algorithms/parallel_for_for.cpp
   ../algorithms/parallel_for_for_prefix_sum.cpp
-  ../algorithms/parallel_continue.cpp
   ../algorithms/sort.cpp
   ../algorithms/pset.cpp
   ../algorithms/pmap.cpp
   ../algorithms/prefix.cpp
-
-  builders/bezierrefgen.cpp
-  builders/primrefgen.cpp
-  builders/heuristic_object_partition_unaligned.cpp
-  builders/heuristic_object_partition.cpp
-  builders/heuristic_spatial_split.cpp
-  builders/heuristic_strand_partition.cpp
-  builders/heuristic_fallback.cpp
 
   geometry/primitive.cpp
   geometry/bezier1v.cpp
@@ -122,13 +113,6 @@ ADD_ISPC_LIBRARY(embree ${EMBREE_LIB_TYPE}
   bvh4/bvh4.cpp
   bvh4/bvh4_rotate.cpp
   bvh4/bvh4_refit.cpp
-  bvh4/bvh4_builder.cpp
-  bvh4/bvh4_builder_mb.cpp
-  bvh4/bvh4_builder_hair.cpp
-  bvh4/bvh4_builder_hair_mb.cpp
-  bvh4/bvh4_builder_fast.cpp
-  bvh4/bvh4_builder_morton.cpp
-  bvh4/bvh4_builder_toplevel.cpp
   bvh4/bvh4_intersector1.cpp
   bvh4/bvh4_intersector4_single.cpp
   bvh4/bvh4_intersector4_chunk.cpp
@@ -176,14 +160,6 @@ ENDIF ()
 IF (TARGET_AVX)
   ADD_LIBRARY(embree_avx STATIC
 
-    builders/bezierrefgen.cpp
-    builders/primrefgen.cpp
-    builders/heuristic_object_partition_unaligned.cpp
-    builders/heuristic_object_partition.cpp
-    builders/heuristic_spatial_split.cpp
-    builders/heuristic_strand_partition.cpp
-    builders/heuristic_fallback.cpp
-
     geometry/triangle8.cpp
 
     geometry/instance_intersector1.cpp
@@ -193,13 +169,6 @@ IF (TARGET_AVX)
     geometry/subdivpatch1cached_intersector1.cpp
 
     bvh4/bvh4_rotate.cpp
-    bvh4/bvh4_builder_toplevel.cpp
-    bvh4/bvh4_builder_morton.cpp
-    bvh4/bvh4_builder_fast.cpp
-    bvh4/bvh4_builder.cpp
-    bvh4/bvh4_builder_mb.cpp
-    bvh4/bvh4_builder_hair.cpp
-    bvh4/bvh4_builder_hair_mb.cpp
     bvh4/bvh4_refit.avx.cpp
 
     bvh4/bvh4_intersector1.cpp
@@ -211,7 +180,6 @@ IF (TARGET_AVX)
     bvh4/bvh4_intersector8_hybrid.cpp
 
     bvh8/bvh8.cpp
-    bvh8/bvh8_builder.cpp
     bvh8/bvh8_statistics.cpp
     bvh8/bvh8_intersector1.cpp
     bvh8/bvh8_intersector4_hybrid.cpp
