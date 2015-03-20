@@ -38,7 +38,7 @@ namespace embree
       void clear();
 
       /*! Constructor. */
-      BVH4Refit (BVH4* bvh, Builder* builder, TriangleMesh* mesh, bool listMode);
+      BVH4Refit (BVH4* bvh, Builder* builder, TriangleMesh* mesh, size_t mode);
 
       ~BVH4Refit();
 
@@ -58,7 +58,6 @@ namespace embree
       
     private:
       TriangleMesh* mesh;
-      LockStepTaskScheduler* scheduler; // FIXME: remove
       bool listMode;
       
     public:

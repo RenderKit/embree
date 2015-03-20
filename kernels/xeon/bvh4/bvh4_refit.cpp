@@ -32,11 +32,8 @@ namespace embree
       return sa < sb;
     }
     
-    BVH4Refit::BVH4Refit (BVH4* bvh, Builder* builder, TriangleMesh* mesh, bool listMode)
-      : builder(builder), listMode(listMode), mesh(mesh), primTy(bvh->primTy), bvh(bvh), scheduler(&mesh->parent->lockstep_scheduler) 
-    {
-      needAllThreads = builder->needAllThreads;
-    }
+    BVH4Refit::BVH4Refit (BVH4* bvh, Builder* builder, TriangleMesh* mesh, size_t mode)
+      : builder(builder), mesh(mesh), primTy(bvh->primTy), bvh(bvh) {}
 
     BVH4Refit::~BVH4Refit () {
       delete builder;
@@ -56,9 +53,6 @@ namespace embree
         if (bvh->numPrimitives > 50000) {
           annotate_tree_sizes(bvh->root);
           calculate_refit_roots();
-          needAllThreads = true;
-        } else {
-          needAllThreads = false;
         }
         delete builder; builder = NULL;
       }
@@ -71,7 +65,6 @@ namespace embree
       }
       
       /* schedule refit tasks */
-#if defined(TASKING_TBB) || defined(TASKING_TBB_INTERNAL)
       size_t numRoots = roots.size();
       if (numRoots <= 1) {
         refit_sequential(threadIndex,threadCount);
@@ -87,16 +80,6 @@ namespace embree
         });
         bvh->bounds = recurse_top(bvh->root);
       }
-#else
-      size_t numRoots = roots.size();
-      if (numRoots <= 1) {
-        refit_sequential(threadIndex,threadCount);
-      }
-      else {
-        scheduler->dispatchTask(threadIndex,threadCount,_task_refit_parallel,this,numRoots,"BVH4Refit::parallel");
-	bvh->bounds = recurse_top(bvh->root);
-      }
-#endif
 
       if (g_verbose >= 2) {
         double t1 = getSeconds();
@@ -157,7 +140,7 @@ namespace embree
     {
       size_t num; char* tri = ref.leaf(num);
       if (unlikely(ref == BVH4::emptyNode)) return empty;
-      return bvh->primTy.update(tri,listMode ? -1 : num,mesh);
+      return bvh->primTy.update(tri,num,mesh);
     }
     
     __forceinline BBox3fa BVH4Refit::node_bounds(NodeRef& ref)

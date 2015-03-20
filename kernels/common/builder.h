@@ -20,13 +20,14 @@
 
 namespace embree
 {
+  /*! virtual interface for all hierarchy builders */
   class Builder : public RefCount {
   public:
-    Builder () : needAllThreads(false) {}
-    virtual void build(size_t threadIndex, size_t threadCount) = 0;
+    /*! initiates the hierarchy builder */
+    virtual void build(size_t threadIndex = 0, size_t threadCount = 0) = 0;
+
+    /*! clears internal builder state */
     virtual void clear() = 0;
-  public:
-    bool needAllThreads;
   };
 
   struct BuildProgressMonitor {
