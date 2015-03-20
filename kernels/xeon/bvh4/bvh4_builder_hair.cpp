@@ -15,7 +15,7 @@
 // ======================================================================== //
 
 #include "bvh4.h"
-#include "bvh4_builder_hair_new.h"
+#include "bvh4_builder_hair.h"
 #include "builders/primrefgen.h"
 
 #include "geometry/bezier1v.h"
@@ -49,7 +49,7 @@ namespace embree
         
         double t0 = 0.0;
         if (g_verbose >= 2) {
-          std::cout << "building BVH4<" + bvh->primTy.name + "> using " << TOSTRING(isa) << "::BVH4BuilderHairNew ..." << std::flush;
+          std::cout << "building BVH4<" + bvh->primTy.name + "> using " << TOSTRING(isa) << "::BVH4BuilderHair ..." << std::flush;
           t0 = getSeconds();
         }
         
@@ -103,7 +103,7 @@ namespace embree
         
         bvh->set(root,pinfo.geomBounds,pinfo.size());
         
-        // timer("BVH4BuilderHairNew");
+        // timer("BVH4BuilderHair");
         //});
         
         /* clear temporary data for static geometry */
@@ -147,7 +147,7 @@ namespace embree
         
         double t0 = 0.0;
         if (g_verbose >= 2) {
-          std::cout << "building BVH4<" + bvh->primTy.name + "> using " << TOSTRING(isa) << "::BVH4BuilderHairNewMB ..." << std::flush;
+          std::cout << "building BVH4<" + bvh->primTy.name + "> using " << TOSTRING(isa) << "::BVH4BuilderHairMB ..." << std::flush;
           t0 = getSeconds();
         }
         
@@ -236,7 +236,7 @@ namespace embree
         
         bvh->set(root,pinfo.geomBounds,pinfo.size());
 
-        // timer("BVH4BuilderHairNew");
+        // timer("BVH4BuilderHair");
         //});
         
         /* clear temporary data for static geometry */

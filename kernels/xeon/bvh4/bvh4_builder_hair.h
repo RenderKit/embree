@@ -30,7 +30,7 @@ namespace embree
   namespace isa
   {
     template<typename CreateAllocFunc, typename CreateAlignedNodeFunc, typename CreateUnalignedNodeFunc, typename CreateLeafFunc, typename ProgressMonitor>
-      class BVH4BuilderHairNew 
+      class BVH4BuilderHair 
     {
       ALIGNED_CLASS;
 
@@ -41,7 +41,7 @@ namespace embree
     public:
       
        /*! Constructor. */
-       BVH4BuilderHairNew (BezierPrim* prims, 
+       BVH4BuilderHair (BezierPrim* prims, 
                            const CreateAllocFunc& createAlloc, const CreateAlignedNodeFunc& createAlignedNode, const CreateUnalignedNodeFunc& createUnalignedNode, const CreateLeafFunc& createLeaf,
                            const ProgressMonitor& progressMonitor,
                            const size_t branchingFactor, const size_t maxDepth, const size_t logBlockSize, const size_t minLeafSize, const size_t maxLeafSize )
@@ -174,9 +174,9 @@ namespace embree
       }
       
       struct Recurse {
-        __forceinline Recurse (BVH4BuilderHairNew* This, size_t depth, BVH4::NodeRef& dst, PrimInfo& src) : This(This), depth(depth), dst(dst), src(src) {}
+        __forceinline Recurse (BVH4BuilderHair* This, size_t depth, BVH4::NodeRef& dst, PrimInfo& src) : This(This), depth(depth), dst(dst), src(src) {}
         __forceinline void operator() () { dst = This->recurse(depth,src,NULL,true); }
-        BVH4BuilderHairNew* This;
+        BVH4BuilderHair* This;
         size_t depth;
         BVH4::NodeRef& dst;
         PrimInfo& src;
@@ -310,7 +310,7 @@ namespace embree
                                                          BezierPrim* prims, const PrimInfo& pinfo,
                                                          const size_t branchingFactor, const size_t maxDepth, const size_t logBlockSize, const size_t minLeafSize, const size_t maxLeafSize) 
     {
-      BVH4BuilderHairNew<CreateAllocFunc,CreateAlignedNodeFunc,CreateUnalignedNodeFunc,CreateLeafFunc,ProgressMonitor> builder(prims,createAlloc,createAlignedNode,createUnalignedNode,createLeaf,progressMonitor,branchingFactor,maxDepth,logBlockSize,minLeafSize,maxLeafSize);
+      BVH4BuilderHair<CreateAllocFunc,CreateAlignedNodeFunc,CreateUnalignedNodeFunc,CreateLeafFunc,ProgressMonitor> builder(prims,createAlloc,createAlignedNode,createUnalignedNode,createLeaf,progressMonitor,branchingFactor,maxDepth,logBlockSize,minLeafSize,maxLeafSize);
       return builder(pinfo);
     }
   }
