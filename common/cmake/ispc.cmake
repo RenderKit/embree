@@ -143,7 +143,7 @@ MACRO (ispc_compile)
       -o ${outdir}/${fname}.dev${ISPC_TARGET_EXT}
       ${CMAKE_CURRENT_SOURCE_DIR}/${src}
       DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${src} ${deps}
-      COMMENT "Building with Intel SPMD Compiler (ISPC): ${CMAKE_CURRENT_SOURCE_DIR}/${src}"
+      COMMENT "Building ISPC object ${outdir}/${fname}.dev${ISPC_TARGET_EXT}"
     )
 
     SET(ISPC_OBJECTS ${ISPC_OBJECTS} ${results})
