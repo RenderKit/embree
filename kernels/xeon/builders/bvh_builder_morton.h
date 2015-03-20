@@ -144,7 +144,7 @@ namespace embree
     };
     
     template<typename NodeRef, typename ReductionTy, typename Allocator, typename CreateAllocator, typename AllocNodeFunc, typename SetNodeBoundsFunc, typename CreateLeafFunc, typename CalculateBounds, typename ProgressMonitor>
-      class BVHBuilderCenter
+      class BVHBuilderMorton
     {
       ALIGNED_CLASS;
       
@@ -155,7 +155,7 @@ namespace embree
 
     public:
       
-      BVHBuilderCenter (const ReductionTy& identity, 
+      BVHBuilderMorton (const ReductionTy& identity, 
                         CreateAllocator& createAllocator, AllocNodeFunc& allocNode, SetNodeBoundsFunc& setBounds, CreateLeafFunc& createLeaf, CalculateBounds& calculateBounds,
                         ProgressMonitor& progressMonitor,
                         const size_t branchingFactor, const size_t maxDepth, const size_t minLeafSize, const size_t maxLeafSize)
@@ -304,9 +304,9 @@ namespace embree
       }
       
       struct Recurse {
-        __forceinline Recurse (BVHBuilderCenter* This, BBox3fa& dst, MortonBuildRecord<NodeRef>& src) : This(This), dst(dst), src(src) {}
+        __forceinline Recurse (BVHBuilderMorton* This, BBox3fa& dst, MortonBuildRecord<NodeRef>& src) : This(This), dst(dst), src(src) {}
         __forceinline void operator() () { dst = This->recurse(src,NULL,true); }
-        BVHBuilderCenter* This;
+        BVHBuilderMorton* This;
         BBox3fa& dst;
         MortonBuildRecord<NodeRef>& src;
       };
@@ -439,7 +439,7 @@ namespace embree
                                                              MortonID32Bit* src, MortonID32Bit* tmp, size_t numPrimitives,
                                                              const size_t branchingFactor, const size_t maxDepth, const size_t minLeafSize, const size_t maxLeafSize)
     {
-      BVHBuilderCenter<NodeRef,ReductionTy,decltype(createAllocator()),CreateAllocFunc,AllocNodeFunc,SetBoundsFunc,CreateLeafFunc,CalculateBoundsFunc,ProgressMonitor> builder
+      BVHBuilderMorton<NodeRef,ReductionTy,decltype(createAllocator()),CreateAllocFunc,AllocNodeFunc,SetBoundsFunc,CreateLeafFunc,CalculateBoundsFunc,ProgressMonitor> builder
         (identity,createAllocator,allocNode,setBounds,createLeaf,calculateBounds,progressMonitor,branchingFactor,maxDepth,minLeafSize,maxLeafSize);
       return builder.build(src,tmp,numPrimitives);
     }
