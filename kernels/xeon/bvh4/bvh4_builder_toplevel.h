@@ -24,7 +24,7 @@ namespace embree
 {
   namespace isa
   {
-    class BVH4BuilderTopLevelNew : public Builder
+    class BVH4BuilderTopLevel : public Builder
     {
       ALIGNED_CLASS;
     public:
@@ -58,10 +58,10 @@ namespace embree
     };
       
       /*! Constructor. */
-      BVH4BuilderTopLevelNew (BVH4* bvh, Scene* scene, const createTriangleMeshAccelTy createTriangleMeshAccel);
+      BVH4BuilderTopLevel (BVH4* bvh, Scene* scene, const createTriangleMeshAccelTy createTriangleMeshAccel);
       
       /*! Destructor */
-      ~BVH4BuilderTopLevelNew ();
+      ~BVH4BuilderTopLevel ();
       
       /*! builder entry point */
       void build(size_t threadIndex, size_t threadCount);

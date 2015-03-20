@@ -14,7 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "bvh4_builder_toplevel_new.h"
+#include "bvh4_builder_toplevel.h"
 #include "bvh4_statistics.h"
 #include "common/profile.h"
 
@@ -25,16 +25,16 @@ namespace embree
 {
   namespace isa
   {
-    BVH4BuilderTopLevelNew::BVH4BuilderTopLevelNew (BVH4* bvh, Scene* scene, const createTriangleMeshAccelTy createTriangleMeshAccel) 
+    BVH4BuilderTopLevel::BVH4BuilderTopLevel (BVH4* bvh, Scene* scene, const createTriangleMeshAccelTy createTriangleMeshAccel) 
       : bvh(bvh), objects(bvh->objects), scene(scene), createTriangleMeshAccel(createTriangleMeshAccel) {}
     
-    BVH4BuilderTopLevelNew::~BVH4BuilderTopLevelNew ()
+    BVH4BuilderTopLevel::~BVH4BuilderTopLevel ()
     {
       for (size_t i=0; i<builders.size(); i++) 
 	delete builders[i];
     }
 
-    void BVH4BuilderTopLevelNew::build(size_t threadIndex, size_t threadCount) 
+    void BVH4BuilderTopLevel::build(size_t threadIndex, size_t threadCount) 
     {
       /* delete some objects */
       size_t N = scene->size();
@@ -125,7 +125,7 @@ namespace embree
           
           /* create build primitive */
           if (!object->bounds.empty())
-            refs[nextRef++] = BVH4BuilderTopLevelNew::BuildRef(object->bounds,object->root);
+            refs[nextRef++] = BVH4BuilderTopLevel::BuildRef(object->bounds,object->root);
         }
       });
       
@@ -196,7 +196,7 @@ namespace embree
       }
     }
 
-    void BVH4BuilderTopLevelNew::clear()
+    void BVH4BuilderTopLevel::clear()
     {
       for (size_t i=0; i<objects.size(); i++) 
         if (objects[i]) objects[i]->clear();
@@ -207,7 +207,7 @@ namespace embree
       refs.clear();
     }
 
-    void BVH4BuilderTopLevelNew::open_sequential()
+    void BVH4BuilderTopLevel::open_sequential()
     {
       if (refs.size() == 0)
 	return;
@@ -233,7 +233,7 @@ namespace embree
     }
     
     Builder* BVH4BuilderTopLevelBinnedSAH (BVH4* bvh, Scene* scene, const createTriangleMeshAccelTy createTriangleMeshAccel) {
-      return new BVH4BuilderTopLevelNew(bvh,scene,createTriangleMeshAccel);
+      return new BVH4BuilderTopLevel(bvh,scene,createTriangleMeshAccel);
     }
   }
 }

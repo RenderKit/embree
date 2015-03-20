@@ -45,7 +45,7 @@ ENDIF()
     bvh4/bvh4_builder_morton_general.cpp
     bvh4/bvh4_builder_binned_sah.cpp
     bvh4/bvh4_builder_binned_sah2.cpp
-    bvh4/bvh4_builder_toplevel_new.cpp
+    bvh4/bvh4_builder_toplevel.cpp
     bvh4/bvh4_builder_subdiv.cpp)
 
   SET(EMBREE_BUILDERS_AVX
@@ -54,7 +54,7 @@ ENDIF()
     bvh4/bvh4_builder_morton_general.avx.cpp
     bvh4/bvh4_builder_binned_sah.avx.cpp
     bvh4/bvh4_builder_binned_sah2.avx.cpp
-    bvh4/bvh4_builder_toplevel_new.avx.cpp
+    bvh4/bvh4_builder_toplevel.avx.cpp
     bvh4/bvh4_builder_subdiv.avx.cpp
     bvh8/bvh8_builder_binned_sah2.avx.cpp)
 
