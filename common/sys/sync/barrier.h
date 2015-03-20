@@ -21,13 +21,6 @@
 
 namespace embree
 {
-#if defined(RTCORE_SPINLOCKS)
-#define Barrier LinearBarrierActive
-  //#define Barrier BarrierActive
-#else
-#define Barrier BarrierSys
-#endif
-
   /*! system barrier using operating system */
   class BarrierSys
   {

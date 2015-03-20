@@ -19,7 +19,6 @@
 #  ADD_LIBRARY(tasking STATIC
 #    taskscheduler.cpp
 #    taskscheduler_sys.cpp
-#    tasklogger.cpp
 #    tasksys.cpp
 #  )
 
@@ -34,7 +33,6 @@
 #    taskscheduler.cpp
 #    taskscheduler_sys.cpp
 #    taskscheduler_mic.cpp
-#    tasklogger.cpp
 #    tasksys.cpp
 #  )
 

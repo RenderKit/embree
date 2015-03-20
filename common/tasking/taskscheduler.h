@@ -301,7 +301,7 @@ namespace embree
     //__aligned(64) LinearBarrierActive taskBarrier; //FIXME
 
 #else
-    __aligned(64) Barrier taskBarrier;
+    __aligned(64) LinearBarrierActive taskBarrier;
 #endif
 
     __dllexport2 bool enter(size_t threadIndex, size_t threadCount);

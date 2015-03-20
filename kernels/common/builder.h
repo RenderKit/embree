@@ -30,10 +30,12 @@ namespace embree
     virtual void clear() = 0;
   };
 
+  /*! virtual interface for progress monitor class */
   struct BuildProgressMonitor {
     virtual void operator() (size_t dn) = 0;
   };
 
+  /*! build the progress monitor interface from a closure */
   template<typename Closure>
     struct ProgressMonitorClosure : BuildProgressMonitor
   {
@@ -50,17 +52,10 @@ namespace embree
   class Scene;
   struct TriangleMesh;
   struct UserGeometryBase;
-  struct BuildSource;
-
-  typedef Builder* (*TriangleMeshBuilderFuncOld)(void* accel, TriangleMesh* mesh, const size_t minLeafSize, const size_t maxLeafSize);
-  typedef Builder* (*BuilderFunc)            (void* accel, BuildSource* source, Scene* scene, const size_t minLeafSize, const size_t maxLeafSize);
-
+  
+  typedef Builder* (*SceneBuilderFunc)       (void* accel, Scene* scene, size_t mode);
   typedef Builder* (*TriangleMeshBuilderFunc)(void* accel, TriangleMesh* mesh, size_t mode); 
   typedef Builder* (*UserGeometryBuilderFunc)(void* accel, UserGeometryBase* mesh, size_t mode);
-  typedef Builder* (*SceneBuilderFunc)       (void* accel, Scene* scene, size_t mode);
-
-#define ADD_BUILDER(NAME,BUILDER,LEAFMIN,LEAFMAX)              \
-  builders.add(ISA,NAME,BUILDER,LEAFMIN,LEAFMAX);
 
 #define DECLARE_SCENE_BUILDER(symbol)                                         \
   namespace isa   { extern Builder* symbol(void* accel, Scene* scene, size_t mode); } \
