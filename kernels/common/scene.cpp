@@ -340,11 +340,13 @@ namespace embree
     commitCounter++;
   }
 
+#if defined(TASKING_LOCKSTEP)
   void Scene::task_build_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
   {
     LockStepTaskScheduler::Init init(threadIndex,threadCount,&lockstep_scheduler);
     if (threadIndex == 0) accels.build(threadIndex,threadCount);
   }
+#endif
 
   void Scene::build (size_t threadIndex, size_t threadCount) 
   {
@@ -445,7 +447,7 @@ namespace embree
     }
 
     /* delete geometry that is scheduled for delete */
-    for (size_t i=0; i<geometries.size(); i++) 
+    for (size_t i=0; i<geometries.size(); i++) // FIXME: this late deletion is inefficient in case of many geometries
     {
       Geometry* geom = geometries[i];
       if (geom == NULL || geom->state != Geometry::ERASING) continue;

@@ -219,7 +219,9 @@ namespace embree
     AtomicMutex geometriesMutex;
     
     /*! global lock step task scheduler */
+#if defined(__MIC__)
     __aligned(64) LockStepTaskScheduler lockstep_scheduler;
+#endif
 
     TaskSchedulerNew* volatile scheduler;
 

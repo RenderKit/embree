@@ -14,13 +14,6 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-IF (TASKING_INTERNAL)
-  ADD_DEFINITIONS(-DTASKING_TBB_INTERNAL)
-ELSE()
-  ADD_DEFINITIONS(-DTASKING_TBB)
-  SET(EMBREE_LIBRARIES ${EMBREE_LIBRARIES} ${TBB_LIBRARIES})
-ENDIF()
-
 INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
 
 IF (TARGET_SSE41)
@@ -39,29 +32,19 @@ IF (TARGET_AVX2)
  ADD_DEFINITIONS(-D__TARGET_AVX2__)
 ENDIF()
 
-  SET(EMBREE_BUILDERS
-    builders/primrefgen.cpp
-    bvh4/bvh4_builder_hair.cpp
-    bvh4/bvh4_builder_morton_general.cpp
-    bvh4/bvh4_builder_binned_sah.cpp
-    bvh4/bvh4_builder_binned_sah2.cpp
-    bvh4/bvh4_builder_toplevel.cpp
-    bvh4/bvh4_builder_subdiv.cpp)
+IF (TASKING_INTERNAL)
+  ADD_DEFINITIONS(-DTASKING_TBB_INTERNAL)
+ENDIF()
 
-  SET(EMBREE_BUILDERS_AVX
-    builders/primrefgen.avx.cpp
-    bvh4/bvh4_builder_hair.avx.cpp
-    bvh4/bvh4_builder_morton_general.avx.cpp
-    bvh4/bvh4_builder_binned_sah.avx.cpp
-    bvh4/bvh4_builder_binned_sah2.avx.cpp
-    bvh4/bvh4_builder_toplevel.avx.cpp
-    bvh4/bvh4_builder_subdiv.avx.cpp
-    bvh8/bvh8_builder_binned_sah2.avx.cpp)
+IF (TASKING_TBB)
+  ADD_DEFINITIONS(-DTASKING_TBB)
+  SET(EMBREE_LIBRARIES ${EMBREE_LIBRARIES} ${TBB_LIBRARIES})
+ENDIF()
 
 ADD_ISPC_LIBRARY(embree ${EMBREE_LIB_TYPE}
+
   embree.rc
-  ../../common/tasking/taskscheduler.cpp
-  ../../common/tasking/taskscheduler_sys.cpp
+
   ../../common/tasking/taskscheduler_new.cpp
   ../../common/tasking/tasksys.cpp
 
@@ -117,7 +100,13 @@ ADD_ISPC_LIBRARY(embree ${EMBREE_LIB_TYPE}
   bvh4/bvh4_intersector4_chunk.cpp
   bvh4/bvh4_statistics.cpp
 
-  ${EMBREE_BUILDERS}
+  builders/primrefgen.cpp
+    bvh4/bvh4_builder_hair.cpp
+    bvh4/bvh4_builder_morton_general.cpp
+    bvh4/bvh4_builder_binned_sah.cpp
+    bvh4/bvh4_builder_binned_sah2.cpp
+    bvh4/bvh4_builder_toplevel.cpp
+    bvh4/bvh4_builder_subdiv.cpp
 )
 SET_PROPERTY(TARGET embree PROPERTY FOLDER kernels)
 SOURCE_GROUP("Source Files\\bvh4" "/bvh4/" )
@@ -185,7 +174,14 @@ IF (TARGET_AVX)
     bvh8/bvh8_intersector8_chunk.cpp
     bvh8/bvh8_intersector8_hybrid.cpp
 
-    ${EMBREE_BUILDERS_AVX}
+    builders/primrefgen.avx.cpp
+    bvh4/bvh4_builder_hair.avx.cpp
+    bvh4/bvh4_builder_morton_general.avx.cpp
+    bvh4/bvh4_builder_binned_sah.avx.cpp
+    bvh4/bvh4_builder_binned_sah2.avx.cpp
+    bvh4/bvh4_builder_toplevel.avx.cpp
+    bvh4/bvh4_builder_subdiv.avx.cpp
+    bvh8/bvh8_builder_binned_sah2.avx.cpp
   )
 
   SET_TARGET_PROPERTIES(embree_avx PROPERTIES COMPILE_FLAGS "${FLAGS_AVX}")
