@@ -14,7 +14,7 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-#IF (RTCORE_TASKING_INTERNAL)
+#IF (TASKING_INTERNAL)
   ADD_DEFINITIONS(-DTASKING_LOCKSTEP)
 #ELSE()
 #  ADD_DEFINITIONS(-DTASKING_TBB)

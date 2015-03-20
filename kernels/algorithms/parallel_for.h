@@ -52,19 +52,10 @@ namespace embree
   template<typename Index, typename Func>
     __forceinline void parallel_for( const Index N, const Func& func)
   {
-#if TASKING_LOCKSTEP
+#if defined(TASKING_LOCKSTEP)
     ParallelForTask<Index,Func>(N,func);
-#endif
 
-#if TASKING_TBB
-    tbb::parallel_for(Index(0),N,Index(1),[&](Index i) { 
-	func(i);
-      });
-    if (tbb::task::self().group()->is_group_execution_cancelled())
-      throw std::runtime_error("task group cancelled");
-#endif
-
-#if TASKING_TBB_INTERNAL
+#elif defined(TASKING_TBB_INTERNAL)
     if (N) {
       TaskSchedulerNew::spawn(Index(0),N,Index(1),[&] (const range<Index>& r) {
           assert(r.size() == 1);
@@ -72,6 +63,13 @@ namespace embree
         });
       TaskSchedulerNew::wait();
     }
+
+#else 
+    tbb::parallel_for(Index(0),N,Index(1),[&](Index i) { 
+	func(i);
+      });
+    if (tbb::task::self().group()->is_group_execution_cancelled())
+      throw std::runtime_error("task group cancelled");
 #endif
   }
 
@@ -96,7 +94,7 @@ namespace embree
     __forceinline void parallel_for( const Index first, const Index last, const Index minStepSize, const Func& func)
   {
     assert(first <= last);
-#if TASKING_LOCKSTEP
+#if defined(TASKING_LOCKSTEP)
     size_t taskCount = (last-first+minStepSize-1)/minStepSize;
     if (taskCount > 1) taskCount = min(taskCount,LockStepTaskScheduler::instance()->getNumThreads());
 
@@ -105,19 +103,17 @@ namespace embree
         const size_t k1 = first+(taskIndex+1)*(last-first)/taskCount;
         func(range<Index>(k0,k1));
       });
-#endif
 
-#if TASKING_TBB
+#elif defined(TASKING_TBB_INTERNAL)
+    TaskSchedulerNew::spawn(first,last,minStepSize,func);
+    TaskSchedulerNew::wait();
+
+#else
     tbb::parallel_for(tbb::blocked_range<Index>(first,last,minStepSize),[&](const tbb::blocked_range<Index>& r) { 
       func(range<Index>(r.begin(),r.end()));
     });
     if (tbb::task::self().group()->is_group_execution_cancelled())
       throw std::runtime_error("task group cancelled");
-#endif
-
-#if TASKING_TBB_INTERNAL
-    TaskSchedulerNew::spawn(first,last,minStepSize,func);
-    TaskSchedulerNew::wait();
 #endif
   }
 
