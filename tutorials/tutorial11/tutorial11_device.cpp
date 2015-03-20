@@ -165,7 +165,7 @@ void build_morton(std::vector<PrimRef>& prims, isa::PrimInfo& pinfo)
     
     allocator.reset();
 
-    std::pair<Node*,BBox3fa> node_bounds = isa::bvh_builder_center<Node*>(
+    std::pair<Node*,BBox3fa> node_bounds = isa::bvh_builder_morton<Node*>(
 
       /* thread local allocator for fast allocations */
       [&] () -> FastAllocator::ThreadLocal* { 

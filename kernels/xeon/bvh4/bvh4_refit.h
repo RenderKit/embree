@@ -34,7 +34,9 @@ namespace embree
     public:
       
       void build(size_t threadIndex, size_t threadCount);
-      
+
+      void clear();
+
       /*! Constructor. */
       BVH4Refit (BVH4* bvh, Builder* builder, TriangleMesh* mesh, bool listMode);
 
@@ -55,10 +57,8 @@ namespace embree
       BBox3fa recurse_top(NodeRef& ref);
       
     private:
-      //BuildSource* source;           //!< input geometry
-      //void* geometry;                //!< input geometry
       TriangleMesh* mesh;
-      LockStepTaskScheduler* scheduler;
+      LockStepTaskScheduler* scheduler; // FIXME: remove
       bool listMode;
       
     public:

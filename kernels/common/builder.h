@@ -24,7 +24,7 @@ namespace embree
   public:
     Builder () : needAllThreads(false) {}
     virtual void build(size_t threadIndex, size_t threadCount) = 0;
-    virtual void clear() {} // FIXME: make pure virtual to see if all new builders implement this
+    virtual void clear() = 0;
   public:
     bool needAllThreads;
   };

@@ -139,6 +139,10 @@ namespace embree
 	if (g_verbose >= 2)
 	  bvh->printStatistics();
       }
+
+      void clear() {
+        prims.clear();
+      }
     };
     
     struct BVH4SubdivGridBuilderBinnedSAHClass : public Builder
@@ -281,6 +285,10 @@ namespace embree
 	if (g_verbose >= 2)
 	  bvh->printStatistics();
       }
+
+      void clear() {
+        prims.clear();
+      }
     };
 
     struct BVH4SubdivGridEagerBuilderBinnedSAHClass : public Builder
@@ -408,6 +416,10 @@ namespace embree
 	  std::cout << "[DONE] " << 1000.0f*dt << "ms (" << numPrimitives/dt*1E-6 << " Mprim/s)" << std::endl;
 	if (g_verbose >= 2)
 	  bvh->printStatistics();
+      }
+
+      void clear() {
+        prims.clear();
       }
     };
 
@@ -541,6 +553,10 @@ namespace embree
 	  std::cout << "[DONE] " << 1000.0f*dt << "ms (" << numPrimitives/dt*1E-6 << " Mprim/s)" << std::endl;
 	if (g_verbose >= 2)
 	  bvh->printStatistics();
+      }
+
+      void clear() {
+        prims.clear();
       }
     };
 
@@ -1040,6 +1056,10 @@ namespace embree
 	if (g_verbose >= 2)
 	  bvh->printStatistics();
 
+      }
+
+      void clear() {
+        prims.clear();
       }
     };
     

@@ -41,6 +41,12 @@ namespace embree
     BVH4Refit::~BVH4Refit () {
       delete builder;
     }
+
+    void BVH4Refit::clear()
+    {
+      if (builder) 
+        builder->clear();
+    }
     
     void BVH4Refit::build(size_t threadIndex, size_t threadCount) 
     {

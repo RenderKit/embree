@@ -610,7 +610,7 @@ namespace embree
             SetBVH4Bounds setBounds(bvh);
             CreateLeaf createLeaf(mesh,morton.data());
             CalculateMeshBounds<Mesh> calculateBounds(mesh);
-            auto node_bounds = bvh_builder_center_internal<BVH4::NodeRef>(
+            auto node_bounds = bvh_builder_morton_internal<BVH4::NodeRef>(
               [&] () { return bvh->alloc2.threadLocal2(); },
               BBox3fa(empty),
               allocNode,setBounds,createLeaf,calculateBounds,progress,
@@ -823,7 +823,7 @@ namespace embree
             SetBVH4Bounds setBounds(bvh);
             CreateLeaf createLeaf(scene,morton.data(),encodeShift,encodeMask);
             CalculateBounds calculateBounds(scene,encodeShift,encodeMask);
-            auto node_bounds = bvh_builder_center_internal<BVH4::NodeRef>(
+            auto node_bounds = bvh_builder_morton_internal<BVH4::NodeRef>(
               [&] () { return bvh->alloc2.threadLocal2(); },
                 BBox3fa(empty),
               allocNode,setBounds,createLeaf,calculateBounds,progress,

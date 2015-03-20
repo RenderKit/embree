@@ -16,10 +16,8 @@
 
 #pragma once
 
-#include "tasking/taskscheduler_new.h"
 #include "common/builder.h"
 #include "algorithms/parallel_reduce.h"
-#include "algorithms/parallel_for_for.h"
 
 namespace embree
 {
@@ -303,14 +301,6 @@ namespace embree
         right.init(center,current.end);
       }
       
-      struct Recurse {
-        __forceinline Recurse (BVHBuilderMorton* This, BBox3fa& dst, MortonBuildRecord<NodeRef>& src) : This(This), dst(dst), src(src) {}
-        __forceinline void operator() () { dst = This->recurse(src,NULL,true); }
-        BVHBuilderMorton* This;
-        BBox3fa& dst;
-        MortonBuildRecord<NodeRef>& src;
-      };
-
       BBox3fa recurse(MortonBuildRecord<NodeRef>& current, Allocator alloc, bool toplevel) 
       {
         if (alloc == NULL) 
@@ -377,8 +367,7 @@ namespace embree
         {
           SPAWN_BEGIN;
           for (size_t i=0; i<numChildren; i++) {
-            //SPAWN(([&,i]{ bounds[i] = recurse(children[i],NULL,true); })); // FIXME: triggers ICC compiler bug under Windows
-            SPAWN((Recurse(this,bounds[i],children[i])));
+            SPAWN(([&,i]{ bounds[i] = recurse(children[i],NULL,true); }));
           }
           SPAWN_END;
         }
@@ -432,7 +421,7 @@ namespace embree
 
     
     template<typename NodeRef, typename CreateAllocFunc, typename ReductionTy, typename AllocNodeFunc, typename SetBoundsFunc, typename CreateLeafFunc, typename CalculateBoundsFunc, typename ProgressMonitor>
-      std::pair<NodeRef,BBox3fa> bvh_builder_center_internal(CreateAllocFunc createAllocator, 
+      std::pair<NodeRef,BBox3fa> bvh_builder_morton_internal(CreateAllocFunc createAllocator, 
                                                              const ReductionTy& identity, 
                                                              AllocNodeFunc allocNode, SetBoundsFunc setBounds, CreateLeafFunc createLeaf, CalculateBoundsFunc calculateBounds,
                                                              ProgressMonitor progressMonitor,
@@ -445,7 +434,7 @@ namespace embree
     }
 
     template<typename NodeRef, typename CreateAllocFunc, typename ReductionTy, typename AllocNodeFunc, typename SetBoundsFunc, typename CreateLeafFunc, typename CalculateBoundsFunc,typename ProgressMonitor>
-      std::pair<NodeRef,BBox3fa> bvh_builder_center(CreateAllocFunc createAllocator, 
+      std::pair<NodeRef,BBox3fa> bvh_builder_morton(CreateAllocFunc createAllocator, 
                                                     const ReductionTy& identity, 
                                                     AllocNodeFunc allocNode, SetBoundsFunc setBounds, CreateLeafFunc createLeaf, CalculateBoundsFunc calculateBounds,
                                                     ProgressMonitor progressMonitor,
@@ -454,30 +443,28 @@ namespace embree
     {
       std::pair<NodeRef,BBox3fa> ret;
 
-          /* compute scene bounds */
-          const BBox3fa centBounds = parallel_reduce ( size_t(0), numPrimitives, BBox3fa(empty), [&](const range<size_t>& r) -> BBox3fa
-          {
-            BBox3fa bounds(empty);
-            for (size_t i=r.begin(); i<r.end(); i++) 
-              bounds.extend(center2(calculateBounds(src[i])));
-            return bounds;
-          }, [] (const BBox3fa& a, const BBox3fa& b) { return merge(a,b); });
-
-          /* compute morton codes */
-          MortonCodeGenerator::MortonCodeMapping mapping(centBounds);
-          parallel_for ( size_t(0), numPrimitives, [&](const range<size_t>& r) 
-          {
-            MortonCodeGenerator generator(mapping,&temp[r.begin()]);
-            for (size_t i=r.begin(); i<r.end(); i++) {
-              generator(calculateBounds(src[i]),src[i].index);
-            }
-          });
-
-          ret = bvh_builder_center_internal<NodeRef>(
-            createAllocator,identity,allocNode,setBounds,createLeaf,calculateBounds,progressMonitor,
-            temp,src,numPrimitives,branchingFactor,maxDepth,minLeafSize,maxLeafSize);
-
-      return ret;
+      /* compute scene bounds */
+      const BBox3fa centBounds = parallel_reduce ( size_t(0), numPrimitives, BBox3fa(empty), [&](const range<size_t>& r) -> BBox3fa
+      {
+        BBox3fa bounds(empty);
+        for (size_t i=r.begin(); i<r.end(); i++) 
+          bounds.extend(center2(calculateBounds(src[i])));
+        return bounds;
+      }, [] (const BBox3fa& a, const BBox3fa& b) { return merge(a,b); });
+      
+      /* compute morton codes */
+      MortonCodeGenerator::MortonCodeMapping mapping(centBounds);
+      parallel_for ( size_t(0), numPrimitives, [&](const range<size_t>& r) 
+      {
+        MortonCodeGenerator generator(mapping,&temp[r.begin()]);
+        for (size_t i=r.begin(); i<r.end(); i++) {
+          generator(calculateBounds(src[i]),src[i].index);
+        }
+      });
+      
+      return bvh_builder_morton_internal<NodeRef>(
+        createAllocator,identity,allocNode,setBounds,createLeaf,calculateBounds,progressMonitor,
+        temp,src,numPrimitives,branchingFactor,maxDepth,minLeafSize,maxLeafSize);
     }
   }
 }

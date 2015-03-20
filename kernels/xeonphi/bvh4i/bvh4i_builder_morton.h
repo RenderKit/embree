@@ -117,6 +117,8 @@ namespace embree
     /*! Destructor. */
     ~BVH4iBuilderMorton();
 
+    void clear() {}
+
     /*! creates the builder */
     static Builder* create (void* accel, void* geometry, bool tree_rotations) { 
       return new BVH4iBuilderMorton((BVH4i*)accel,geometry,tree_rotations);
@@ -300,6 +302,8 @@ namespace embree
 
     /*! Destructor. */
     ~BVH4iBuilderMorton64Bit();
+
+    void clear() {}
 
     /*! creates the builder */
     static Builder* create (void* accel, void* geometry) { 
