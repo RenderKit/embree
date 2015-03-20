@@ -23,8 +23,7 @@
 namespace embree
 {
 
-#define FORCE_TRIANGLE_UV 1
-#define PRECISE_TRI_INTERSECTION 1
+#define FORCE_TRIANGLE_UV 0
 
   __forceinline mic_f load3x5f_unalign(const void *__restrict__ const ptr0,
 				       const void *__restrict__ const ptr1,

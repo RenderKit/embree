@@ -27,8 +27,6 @@
 #define CACHE_STATS(x) 
 #endif
 
-// FIXME: instead of 4x4 better 3x5?
-
 namespace embree
 {
 
@@ -93,10 +91,6 @@ namespace embree
 				 const GridRange &range,
 				 unsigned int &localCounter)
     {
-      // PING;
-      // DBG_PRINT( range );
-      // DBG_PRINT( range.hasLeafSize() );
-
       if (range.hasLeafSize())
 	{
 	  const float *const grid_x_array = grid_array + 0 * grid_array_elements;
@@ -109,10 +103,6 @@ namespace embree
 
 	  unsigned int u_start = range.u_start * (U_BLOCK_SIZE-1);
 	  unsigned int v_start = range.v_start * (V_BLOCK_SIZE-1);
-
-	  //DBG_PRINT("grid");
-	  //DBG_PRINT(u_start);
-	  //DBG_PRINT(v_start);
 
 	  const unsigned int u_end   = min(u_start+U_BLOCK_SIZE,patch.grid_u_res);
 	  const unsigned int v_end   = min(v_start+V_BLOCK_SIZE,patch.grid_v_res);
@@ -309,7 +299,7 @@ namespace embree
 	  const mic_f v = load16f(&grid_v[i]);
 	  const mic_i u_i = mic_i(u * 65535.0f/2.0f);
 	  const mic_i v_i = mic_i(v * 65535.0f/2.0f);
-	  const mic_i uv_i = (v_i << 16) | u_i;
+	  const mic_i uv_i = (u_i << 16) | v_i;
 	  store16i(&grid_uv[i],uv_i);
 	}
 
@@ -598,7 +588,7 @@ namespace embree
 
 	  if (unlikely(!subdiv_patch.hasDisplacement()))
 	    {
-	      const Vec3fa normal    = subdiv_patch.normal(ray16.u[rayIndex],ray16.v[rayIndex]);
+	      const Vec3fa normal    = subdiv_patch.normal(ray16.v[rayIndex],ray16.u[rayIndex]);
 	      ray16.Ng.x[rayIndex]   = normal.x;
 	      ray16.Ng.y[rayIndex]   = normal.y;
 	      ray16.Ng.z[rayIndex]   = normal.z;
