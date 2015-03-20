@@ -31,8 +31,8 @@ modelDir  = ''
 tutorial = 'tutorial03'
 statDir = 'stat'
 name = ''
-#modelDir = '~/models/embree/benchmarking'
-modelDir = '%HOMEPATH%/models/embree/benchmarking'
+modelDir = '~/models/embree/benchmarking'
+#modelDir = '%HOMEPATH%/models/embree/benchmarking'
 
 ########################## rendering ##########################
 
