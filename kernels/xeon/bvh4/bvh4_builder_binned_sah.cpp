@@ -19,9 +19,9 @@
 #include "bvh4_statistics.h"
 #include "common/profile.h"
 
-#include "builders_new/primrefgen.h"
-#include "builders_new/presplit.h"
-#include "builders_new/bvh_builder.h"
+#include "builders/primrefgen.h"
+#include "builders/presplit.h"
+#include "builders/bvh_builder.h"
 
 #include "geometry/bezier1v.h"
 #include "geometry/bezier1i.h"

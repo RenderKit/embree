@@ -37,8 +37,8 @@ IF (TARGET_AVX2)
 ENDIF()
 
 IF (TASKING_TBB OR TASKING_TBB_INTERNAL)
-  SET(EMBREE_BUILDERS_NEW
-    builders_new/primrefgen.cpp
+  SET(EMBREE_BUILDERS
+    builders/primrefgen.cpp
     bvh4/bvh4_builder_hair_new.cpp
     bvh4/bvh4_builder_morton_general.cpp
     bvh4/bvh4_builder_binned_sah.cpp
@@ -46,8 +46,8 @@ IF (TASKING_TBB OR TASKING_TBB_INTERNAL)
     bvh4/bvh4_builder_toplevel_new.cpp
     bvh4/bvh4_builder_subdiv.cpp)
 
-  SET(EMBREE_BUILDERS_NEW_AVX
-    builders_new/primrefgen.avx.cpp
+  SET(EMBREE_BUILDERS_AVX
+    builders/primrefgen.avx.cpp
     bvh4/bvh4_builder_hair_new.avx.cpp
     bvh4/bvh4_builder_morton_general.avx.cpp
     bvh4/bvh4_builder_binned_sah.avx.cpp
@@ -117,7 +117,7 @@ ADD_ISPC_LIBRARY(embree ${EMBREE_LIB_TYPE}
   bvh4/bvh4_intersector4_chunk.cpp
   bvh4/bvh4_statistics.cpp
 
-  ${EMBREE_BUILDERS_NEW}
+  ${EMBREE_BUILDERS}
 )
 SET_PROPERTY(TARGET embree PROPERTY FOLDER kernels)
 SOURCE_GROUP("Source Files\\bvh4" "/bvh4/" )
@@ -185,7 +185,7 @@ IF (TARGET_AVX)
     bvh8/bvh8_intersector8_chunk.cpp
     bvh8/bvh8_intersector8_hybrid.cpp
 
-    ${EMBREE_BUILDERS_NEW_AVX}
+    ${EMBREE_BUILDERS_AVX}
   )
 
   SET_TARGET_PROPERTIES(embree_avx PROPERTIES COMPILE_FLAGS "${FLAGS_AVX}")

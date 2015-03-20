@@ -17,8 +17,8 @@
 #include "bvh4.h"
 #include "common/profile.h"
 
-#include "builders_new/primrefgen.h"
-#include "builders_new/bvh_builder.h"
+#include "builders/primrefgen.h"
+#include "builders/bvh_builder.h"
 
 #include "algorithms/parallel_for_for.h"
 #include "algorithms/parallel_for_for_prefix_sum.h"

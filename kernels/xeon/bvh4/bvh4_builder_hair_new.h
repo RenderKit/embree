@@ -18,11 +18,11 @@
 
 #include "geometry/primitive.h"
 #include "geometry/bezier1v.h"
-#include "builders_new/heuristic_binning_array_aligned.h"
-#include "builders_new/heuristic_binning_array_unaligned.h"
+#include "../builders/heuristic_binning_array_aligned.h"
+#include "../builders/heuristic_binning_array_unaligned.h"
 
 #if !defined(_WIN32) || _MSC_VER >= 1700 // workaround of internal compiler bug in VS2010
-#include "builders_new/heuristic_strand_array.h"
+#include "../builders/heuristic_strand_array.h"
 #endif
 
 namespace embree

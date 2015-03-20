@@ -16,7 +16,7 @@
 
 #include "bvh4.h"
 #include "bvh4_builder_hair_new.h"
-#include "builders_new/primrefgen.h"
+#include "builders/primrefgen.h"
 
 #include "geometry/bezier1v.h"
 #include "geometry/bezier1i.h"

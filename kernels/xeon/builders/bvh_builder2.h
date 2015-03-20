@@ -17,8 +17,8 @@
 #pragma once
 
 #include "tasking/taskscheduler_new.h"
-#include "builders_new/heuristic_binning_array_aligned.h"
-#include "builders_new/heuristic_spatial_binning_list.h"
+#include "heuristic_binning_array_aligned.h"
+#include "heuristic_spatial_binning_list.h"
 
 namespace embree
 {
