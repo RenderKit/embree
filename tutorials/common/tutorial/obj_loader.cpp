@@ -370,7 +370,7 @@ namespace embree
               if (face.size() == 4)
                 mesh->quads.push_back(OBJScene::Quad(face[0].v,face[1].v,face[2].v,face[3].v));
               else {
-                mesh->quads.push_back(OBJScene::Quad(0,0,0,0));
+                //mesh->quads.push_back(OBJScene::Quad(0,0,0,0));
                 //mesh->quads.push_back(OBJScene::Quad(0,0,0,0));
                 //mesh->quads.push_back(OBJScene::Quad(0,0,0,0));
               }
