@@ -14,6 +14,9 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
+SET(TASKING_LOCKSTEP ON)
+ADD_DEFINITIONS(-DTASKING_LOCKSTEP)
+
 IF (TASKING_TBB)
   INCLUDE_DIRECTORIES(${TBB_INCLUDE_DIRS_MIC})
   SET(ADDITIONAL_LIBRARIES ${TBB_LIBRARIES_MIC})

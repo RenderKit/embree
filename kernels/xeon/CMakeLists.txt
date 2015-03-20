@@ -14,6 +14,16 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
+IF (RTCORE_TASKING_SYSTEM STREQUAL "TBB")
+  SET(TASKING_TBB ON)
+  FIND_PACKAGE(TBB REQUIRED)
+  ADD_DEFINITIONS(-DTASKING_TBB)
+  INCLUDE_DIRECTORIES(${TBB_INCLUDE_DIRS})
+ELSE()
+  SET(TASKING_TBB_INTERNAL ON)
+  ADD_DEFINITIONS(-DTASKING_TBB_INTERNAL)
+ENDIF()
+
 IF (TASKING_TBB)
   SET(EMBREE_LIBRARIES ${EMBREE_LIBRARIES} ${TBB_LIBRARIES})
 ENDIF()
@@ -36,7 +46,6 @@ IF (TARGET_AVX2)
  ADD_DEFINITIONS(-D__TARGET_AVX2__)
 ENDIF()
 
-IF (TASKING_TBB OR TASKING_TBB_INTERNAL)
   SET(EMBREE_BUILDERS
     builders/primrefgen.cpp
     bvh4/bvh4_builder_hair.cpp
@@ -55,7 +64,6 @@ IF (TASKING_TBB OR TASKING_TBB_INTERNAL)
     bvh4/bvh4_builder_toplevel_new.avx.cpp
     bvh4/bvh4_builder_subdiv.avx.cpp
     bvh8/bvh8_builder_binned_sah2.avx.cpp)
-ENDIF()
 
 ADD_ISPC_LIBRARY(embree ${EMBREE_LIB_TYPE}
   embree.rc

@@ -227,16 +227,10 @@ namespace embree
     Accel::Intersectors intersectors= BVH8Triangle4Intersectors(accel);
     
     Builder* builder = NULL;
-#if defined(TASKING_TBB) || defined(TASKING_TBB_INTERNAL)
     if      (g_tri_builder == "default"     ) builder = BVH8Triangle4SceneBuilderBinnedSAH2(accel,scene,0);
     else if (g_tri_builder == "binned_sah2" ) builder = BVH8Triangle4SceneBuilderBinnedSAH2(accel,scene,0);
     else if (g_tri_builder == "binned_sah2_spatial" ) builder = BVH8Triangle4SceneBuilderSpatialBinnedSAH2(accel,scene,0);
     else if (g_tri_builder == "binned_sah2_presplit" ) builder = BVH8Triangle4SceneBuilderBinnedSAH2(accel,scene,MODE_HIGH_QUALITY);
-#else
-    if      (g_tri_builder == "default"     ) builder = BVH8Triangle4Builder(accel,scene,0);
-    else if (g_tri_builder == "spatialsplit") builder = BVH8Triangle4Builder(accel,scene,MODE_HIGH_QUALITY);
-    else if (g_tri_builder == "objectsplit" ) builder = BVH8Triangle4Builder(accel,scene,0);
-#endif
     else THROW_RUNTIME_ERROR("unknown builder "+g_tri_builder+" for BVH8<Triangle4>");
     
     return new AccelInstance(accel,builder,intersectors);
@@ -246,11 +240,7 @@ namespace embree
   {
     BVH8* accel = new BVH8(Triangle4Type::type,scene);
     Accel::Intersectors intersectors= BVH8Triangle4Intersectors(accel);
-#if defined(TASKING_TBB) || defined(TASKING_TBB_INTERNAL)
     Builder* builder = BVH8Triangle4SceneBuilderBinnedSAH2(accel,scene,0);
-#else
-    Builder* builder = BVH8Triangle4Builder(accel,scene,0);
-#endif
     return new AccelInstance(accel,builder,intersectors);
   }
 
@@ -258,11 +248,7 @@ namespace embree
   {
     BVH8* accel = new BVH8(Triangle4Type::type,scene);
     Accel::Intersectors intersectors= BVH8Triangle4Intersectors(accel);
-#if defined(TASKING_TBB) || defined(TASKING_TBB_INTERNAL)
     Builder* builder = BVH8Triangle4SceneBuilderSpatialBinnedSAH2(accel,scene,0);
-#else
-    Builder* builder = BVH8Triangle4Builder(accel,scene,MODE_HIGH_QUALITY);
-#endif
     return new AccelInstance(accel,builder,intersectors);
   }
 
@@ -272,16 +258,10 @@ namespace embree
     Accel::Intersectors intersectors= BVH8Triangle8Intersectors(accel);
     
     Builder* builder = NULL;
-#if defined(TASKING_TBB) || defined(TASKING_TBB_INTERNAL)
     if      (g_tri_builder == "default"     ) builder = BVH8Triangle8SceneBuilderBinnedSAH2(accel,scene,0);
     else if (g_tri_builder == "binned_sah2" ) builder = BVH8Triangle8SceneBuilderBinnedSAH2(accel,scene,0);
     else if (g_tri_builder == "binned_sah2_spatial" ) builder = BVH8Triangle8SceneBuilderSpatialBinnedSAH2(accel,scene,0);
     else if (g_tri_builder == "binned_sah2_presplit" ) builder = BVH8Triangle8SceneBuilderBinnedSAH2(accel,scene,MODE_HIGH_QUALITY);
-#else
-    if      (g_tri_builder == "default"     ) builder = BVH8Triangle8Builder(accel,scene,0);
-    else if (g_tri_builder == "spatialsplit") builder = BVH8Triangle8Builder(accel,scene,MODE_HIGH_QUALITY);
-    else if (g_tri_builder == "objectsplit" ) builder = BVH8Triangle8Builder(accel,scene,0);
-#endif
     else THROW_RUNTIME_ERROR("unknown builder "+g_tri_builder+" for BVH8<Triangle8>");
     
     return new AccelInstance(accel,builder,intersectors);
@@ -291,11 +271,7 @@ namespace embree
   {
     BVH8* accel = new BVH8(Triangle8Type::type,scene);
     Accel::Intersectors intersectors= BVH8Triangle8Intersectors(accel);
-#if defined(TASKING_TBB) || defined(TASKING_TBB_INTERNAL)
     Builder* builder = BVH8Triangle8SceneBuilderBinnedSAH2(accel,scene,0);
-#else
-    Builder* builder = BVH8Triangle8Builder(accel,scene,0);
-#endif
     return new AccelInstance(accel,builder,intersectors);
   }
 
@@ -303,11 +279,7 @@ namespace embree
   {
     BVH8* accel = new BVH8(Triangle8Type::type,scene);
     Accel::Intersectors intersectors= BVH8Triangle8Intersectors(accel);
-#if defined(TASKING_TBB) || defined(TASKING_TBB_INTERNAL)
     Builder* builder = BVH8Triangle8SceneBuilderSpatialBinnedSAH2(accel,scene,0);
-#else
-    Builder* builder = BVH8Triangle8Builder(accel,scene,MODE_HIGH_QUALITY);
-#endif
     return new AccelInstance(accel,builder,intersectors);
   }
 }
