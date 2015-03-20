@@ -59,7 +59,6 @@ namespace embree
        }
 
     private:
-      typedef LinearAllocatorPerThread::ThreadAllocator Allocator;
       
       /*! creates a large leaf that could be larger than supported by the BVH */
       BVH4::NodeRef createLargeLeaf(size_t depth, const PrimInfo& pinfo, FastAllocator::ThreadLocal2* alloc)

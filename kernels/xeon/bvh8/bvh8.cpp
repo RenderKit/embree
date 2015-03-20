@@ -81,6 +81,7 @@ namespace embree
       delete objects[i];
   }
 
+#if 0 // FIXME: remove
   void BVH8::init(size_t nodeSize, size_t numPrimitives, size_t numThreads)
   {
     /* allocate as much memory as likely needed and reserve conservative amounts of memory */
@@ -105,6 +106,7 @@ namespace embree
     bounds = empty;
     alloc.init(bytesAllocated,bytesReserved);
   }
+#endif
 
   void BVH8::clear() 
   {
@@ -122,7 +124,6 @@ namespace embree
    void BVH8::printStatistics()
    {
      std::cout << BVH8Statistics(this).str();
-     std::cout << "  "; alloc.print_statistics();
      std::cout << "  "; alloc2.print_statistics();
    }	
   

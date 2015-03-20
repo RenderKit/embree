@@ -529,7 +529,6 @@ namespace embree
       destroyTls(g_error);
       g_errors.clear();
     }
-    Alloc::global.clear();
     g_error_function = NULL;
     g_initialized = false;
     CATCH_END;

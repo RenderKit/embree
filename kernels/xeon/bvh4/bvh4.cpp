@@ -326,6 +326,7 @@ namespace embree
       delete objects[i];
   }
 
+#if 0 // FIXME: remove
   void BVH4::init(size_t nodeSize, size_t numPrimitives, size_t numThreads)
   {
     /* allocate as much memory as likely needed and reserve conservative amounts of memory */
@@ -350,12 +351,15 @@ namespace embree
     
     init();
   }
+#endif
 
+#if 0 // FIXME: remove
   void BVH4::init()
   {
     root = emptyNode;
     bounds = empty;
   }
+#endif
 
   void BVH4::clear() 
   {
@@ -373,7 +377,6 @@ namespace embree
   void BVH4::printStatistics()
   {
     std::cout << BVH4Statistics(this).str();
-    std::cout << "  "; alloc.print_statistics();
     std::cout << "  "; alloc2.print_statistics();
   }	
 
