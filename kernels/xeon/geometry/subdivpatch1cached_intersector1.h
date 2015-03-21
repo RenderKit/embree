@@ -310,9 +310,9 @@ namespace embree
 						    const size_t offset1,
 						    const size_t offset2)
       {
-	const ssef row_a0 = load4f(grid + offset0 + 0); 
-	const ssef row_b0 = load4f(grid + offset1 + 0);
-	const ssef row_c0 = load4f(grid + offset2 + 0);
+	const ssef row_a0 = loadu4f(grid + offset0 + 0); 
+	const ssef row_b0 = loadu4f(grid + offset1 + 0);
+	const ssef row_c0 = loadu4f(grid + offset2 + 0);
 	const avxf row_ab = avxf( row_a0, row_b0 );
 	const avxf row_bc = avxf( row_b0, row_c0 );
 
