@@ -907,6 +907,12 @@ namespace embree
           DBG_CACHE_BUILDER( DBG_PRINT(pinfo) );
         }
         
+        if (numPrimitives == 0) {
+          prims.resize(numPrimitives);
+          bvh->set(BVH4::emptyNode,empty,0);
+          return;
+        }
+
         prims.resize(numPrimitives);
         
       /* Allocate memory for gregory and b-spline patches */
@@ -923,6 +929,9 @@ namespace embree
        {
          DBG_CACHE_BUILDER(std::cout << "ALLOCATING SUBDIVPATCH1CACHED MEMORY FOR " << numPrimitives << " PRIMITIVES" << std::endl);
          this->bvh->size_data_mem = sizeof(SubdivPatch1Cached) * numPrimitives;
+
+	 //DBG_PRINT( numPrimitives );
+	 //DBG_PRINT( this->bvh->size_data_mem );
 	 if ( this->bvh->size_data_mem != 0)
 	   this->bvh->data_mem      = os_malloc( this->bvh->size_data_mem );        
 	 else
@@ -1021,6 +1030,7 @@ namespace embree
 
       t0 = getSeconds()-t0;
       DBG_CACHE_BUILDER(std::cout << "create prims in " << 1000.0f*t0 << "ms " << std::endl);
+      DBG_CACHE_BUILDER(std::cout << "pinfo.bounds " << pinfo << std::endl);
 
  #if 0
       // to dump tessellated patches in obj format
@@ -1051,6 +1061,8 @@ namespace embree
       {
 	if (numPrimitives)
 	  {
+	    DBG_CACHE_BUILDER(std::cout << "start building..." << std::endl);
+
 	    BVH4::NodeRef root = bvh_builder_binned_sah_internal<BVH4::NodeRef>
 	      (CreateAlloc(bvh),CreateBVH4Node(bvh),
 	       [&] (const BuildRecord<BVH4::NodeRef>& current, Allocator* alloc) -> int {
@@ -1062,8 +1074,10 @@ namespace embree
 		return 0;
 	      },
 	       progress,
-	       prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,1,1,1);
+	       prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,1,1,1);	    
 	    bvh->set(root,pinfo.geomBounds,pinfo.size());
+	    DBG_CACHE_BUILDER(std::cout << "finsihed building" << std::endl);
+
 	  }
 	else
 	  bvh->set(BVH4::emptyNode,empty,0);	  

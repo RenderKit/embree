@@ -209,7 +209,7 @@ namespace embree
     if (g_subdiv_accel == "default") 
     {
      
-#if 1
+#if 1 //FIXME: remove
       if (isIncoherent(flags)) {
         if (isCompact()) accels.add(BVH4::BVH4SubdivGridLazy(this));
         else             accels.add(BVH4::BVH4SubdivGridEager(this));
