@@ -28,6 +28,7 @@ namespace embree
       userPtr(NULL)
   {
     id = parent->add(this);
+    parent->setModified();
   }
 
   void Geometry::enable () 
@@ -51,10 +52,12 @@ namespace embree
     case MODIFIED:
       break;
     case DISABLING: 
+      parent->setModified();
       state = MODIFIED;
       enabling();
       break;
     case DISABLED: 
+      parent->setModified();
       state = ENABLING;
       enabling();
       break;
@@ -74,6 +77,7 @@ namespace embree
     case ENABLING:
       break;
     case ENABLED:
+      parent->setModified();
       state = MODIFIED;
       break;
     case MODIFIED:
@@ -102,14 +106,17 @@ namespace embree
 
     switch (state) {
     case ENABLING:
+      parent->setModified();
       state = DISABLED;
       disabling();
       break;
     case ENABLED:
+      parent->setModified();
       state = DISABLING;
       disabling();
       break;
     case MODIFIED:
+      parent->setModified();
       state = DISABLING;
       disabling();
       break;
@@ -131,21 +138,26 @@ namespace embree
 
     switch (state) {
     case ENABLING:
+      parent->setModified();
       state = ERASING;
       disabling();
       break;
     case ENABLED:
+      parent->setModified();
       state = ERASING;
       disabling();
       break;
     case MODIFIED:
+      parent->setModified();
       state = ERASING;
       disabling();
       break;
     case DISABLING: 
+      parent->setModified();
       state = ERASING;
       break;
     case DISABLED: 
+      parent->setModified();
       state = ERASING;
       break;
     case ERASING:

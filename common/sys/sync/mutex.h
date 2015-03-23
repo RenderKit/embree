@@ -29,6 +29,7 @@ namespace embree
     ~MutexSys( void );
 
     void lock( void );
+    bool try_lock( void );
     void unlock( void );
 
   protected:
@@ -151,6 +152,17 @@ namespace embree
     ~Lock() { mutex.unlock(); }
   protected:
     Mutex& mutex;
+  };
+
+  /*! safe mutex try_lock and unlock helper */
+  template<typename Mutex> class TryLock {
+  public:
+    TryLock (Mutex& mutex) : mutex(mutex), locked(mutex.try_lock()) {}
+    ~TryLock() { if (locked) mutex.unlock(); }
+    __forceinline bool isLocked() const { return locked; }
+  protected:
+    Mutex& mutex;
+    bool locked;
   };
 
   class TicketMutex
