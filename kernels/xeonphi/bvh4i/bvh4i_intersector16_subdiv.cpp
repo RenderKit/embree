@@ -388,7 +388,7 @@ namespace embree
 		const size_t subdiv_patch_root = (subdiv_patch_root_ref & REF_TAG_MASK); // + (size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();
 		const size_t subdiv_patch_cache_index = subdiv_patch_root_ref >> 32;
 		
-		if (likely( subdiv_patch_cache_index == SharedLazyTessellationCache::sharedLazyTessellationCache.getCurrentIndex()))
+		if (likely( SharedLazyTessellationCache::sharedLazyTessellationCache.validCacheIndex(subdiv_patch_cache_index) ))
 		  {
 		    CACHE_STATS(SharedTessellationCacheStats::cache_hits++);	      
 		    return subdiv_patch_root;
@@ -405,7 +405,7 @@ namespace embree
 	    const size_t subdiv_patch_cache_index = subdiv_patch_root_ref >> 32;
 
 	    /* do we still need to create the subtree data? */
-	    if (subdiv_patch_root_ref == 0 || subdiv_patch_cache_index != SharedLazyTessellationCache::sharedLazyTessellationCache.getCurrentIndex())
+	    if (subdiv_patch_root_ref == 0 || !SharedLazyTessellationCache::sharedLazyTessellationCache.validCacheIndex(subdiv_patch_cache_index))
 	      {	      
 		const SubdivMesh* const geom = (SubdivMesh*)scene->get(subdiv_patch->geom); 
 		size_t block_index = SharedLazyTessellationCache::sharedLazyTessellationCache.alloc(subdiv_patch->grid_subtree_size_64b_blocks);

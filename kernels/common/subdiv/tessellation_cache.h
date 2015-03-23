@@ -21,6 +21,7 @@
 
 #define CACHE_DBG(x) 
 
+/* force a complete cache invalidation when running out of allocation space */
 #define FORCE_SIMPLE_FLUSH 0
 
 #if defined(DEBUG)
@@ -70,7 +71,7 @@ namespace embree
  class __aligned(64) SharedLazyTessellationCache 
  {
  private:
-   static const size_t DEFAULT_TESSELLATION_CACHE_SIZE = 50*1024*1024; // 50 MB
+   static const size_t DEFAULT_TESSELLATION_CACHE_SIZE = 250*1024*1024; // 250 MB
 
 
    float *data;
