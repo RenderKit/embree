@@ -349,42 +349,52 @@ namespace embree
     commitCounter++;
   }
 
+  void Scene::build_task ()
+  {
+    /* select fast code path if no intersection filter is present */
+    accels.select(numIntersectionFilters4,numIntersectionFilters8,numIntersectionFilters16);
+  
+    /* build all hierarchies of this scene */
+    accels.build(0,0);
+    
+    /* make static geometry immutable */
+    if (isStatic()) 
+    {
+      accels.immutable();
+      for (size_t i=0; i<geometries.size(); i++)
+        if (geometries[i]) geometries[i]->immutable();
+    }
+
+    /* delete geometry that is scheduled for delete */
+    for (size_t i=0; i<geometries.size(); i++) // FIXME: this late deletion is inefficient in case of many geometries
+    {
+      Geometry* geom = geometries[i];
+      if (geom == NULL || geom->state != Geometry::ERASING) continue;
+      remove(geom);
+    }
+
+    updateInterface();
+
+    if (g_verbose >= 2) {
+      std::cout << "created scene intersector" << std::endl;
+      accels.print(2);
+      std::cout << "selected scene intersector" << std::endl;
+      intersectors.print(2);
+    }
+  }
+
 #if defined(TASKING_LOCKSTEP)
+
   void Scene::task_build_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
   {
     LockStepTaskScheduler::Init init(threadIndex,threadCount,&lockstep_scheduler);
     if (threadIndex == 0) accels.build(threadIndex,threadCount);
   }
-#endif
 
   void Scene::build (size_t threadIndex, size_t threadCount) 
   {
-#if defined(TASKING_LOCKSTEP)
     LockStepTaskScheduler::Init init(threadIndex,threadCount,&lockstep_scheduler);
     if (threadIndex != 0) return;
-#endif
-
-#if defined(TASKING_TBB_INTERNAL)
-    if (threadCount != 0) 
-    {
-      {
-        Lock<MutexSys> lock(mutex);
-        if (scheduler == NULL) scheduler = new TaskSchedulerNew(-1);
-      }
-      if (threadIndex > 0) {
-        scheduler->join();
-        return;
-      } else
-        scheduler->wait_for_threads(threadCount);
-    }
-#endif
-
-#if defined(TASKING_TBB)
-    if (threadCount != 0) {
-      process_error(RTC_INVALID_OPERATION,"TBB does not support rtcCommitThread");
-      return;
-    }
-#endif
 
     /* allow only one build at a time */
     Lock<MutexSys> lock(mutex);
@@ -401,22 +411,8 @@ namespace embree
       return;
     }
 
-    /* verify geometry in debug mode  */
-#if 0 && defined(DEBUG) // FIXME: enable
-    for (size_t i=0; i<geometries.size(); i++) {
-      if (geometries[i]) {
-        if (!geometries[i]->verify()) {
-          process_error(RTC_INVALID_OPERATION,"invalid geometry specified");
-          return;
-        }
-      }
-    }
-#endif
-
     /* select fast code path if no intersection filter is present */
     accels.select(numIntersectionFilters4,numIntersectionFilters8,numIntersectionFilters16);
-
-#if defined(TASKING_LOCKSTEP)
 
     /* if user provided threads use them */
     if (threadCount)
@@ -430,26 +426,6 @@ namespace embree
       TaskScheduler::addTask(-1,TaskScheduler::GLOBAL_FRONT,&task);
       event.sync();
     }
-#endif
-
-#if defined(TASKING_TBB_INTERNAL)
-      if (threadCount) scheduler->spawn_root  ([&]() { accels.build(0,0); });
-      else             TaskSchedulerNew::spawn([&]() { accels.build(0,0); });
-#endif
-
-#if defined(TASKING_TBB)
-    try {
-      group->run_and_wait([&]{ 
-          tbb::task::self().group()->set_priority(tbb::priority_high);
-          accels.build(0,0); 
-        }); 
-    } catch (...) {
-      accels.clear();
-      updateInterface();
-      // FIXME: clear cancelling state of task_group_context
-      throw;
-    }
-#endif
 
     /* make static geometry immutable */
     if (isStatic()) 
@@ -475,13 +451,99 @@ namespace embree
       std::cout << "selected scene intersector" << std::endl;
       intersectors.print(2);
     }
-    
+  }
+
+#endif
+
 #if defined(TASKING_TBB_INTERNAL)
-    if (threadCount != 0) {
+
+  void Scene::build (size_t threadIndex, size_t threadCount) 
+  {
+    if (threadCount != 0) 
+    {
+      {
+        Lock<MutexSys> lock(mutex);
+        if (scheduler == NULL) scheduler = new TaskSchedulerNew(-1);
+      }
+      if (threadIndex > 0) {
+        scheduler->join();
+        return;
+      } else
+        scheduler->wait_for_threads(threadCount);
+    }
+
+    /* allow only one build at a time */
+    Lock<MutexSys> lock(mutex);
+
+    progress_monitor_counter = 0;
+
+    if (isStatic() && isBuild()) {
+      process_error(RTC_INVALID_OPERATION,"static geometries cannot get committed twice");
+      return;
+    }
+
+    if (!ready()) {
+      process_error(RTC_INVALID_OPERATION,"not all buffers are unmapped");
+      return;
+    }
+
+    if (threadCount) {
+      scheduler->spawn_root  ([&]() { build_task(); });
       delete scheduler; scheduler = NULL;
     }
-#endif
+    else {
+      TaskSchedulerNew::spawn([&]() { build_task(); });
+    }
   }
+
+#endif
+
+#if defined(TASKING_TBB)
+
+  void Scene::build (size_t threadIndex, size_t threadCount) 
+  {
+    /* let thread wait for build to finish in rtcCommitThread mode */
+    if (threadCount != 0) {
+      if (threadIndex > 0) {
+        group_barrier.wait(threadCount); // FIXME: use barrier that waits in condition
+        group->wait();
+        return;
+      }
+    }
+
+    /* allow only one build at a time */
+    Lock<MutexSys> lock(mutex);
+
+    progress_monitor_counter = 0;
+
+    if (isStatic() && isBuild()) {
+      process_error(RTC_INVALID_OPERATION,"static geometries cannot get committed twice");
+      return;
+    }
+
+    if (!ready()) {
+      process_error(RTC_INVALID_OPERATION,"not all buffers are unmapped");
+      return;
+    }
+
+    try {
+      group->run([&]{ 
+          tbb::task::self().group()->set_priority(tbb::priority_high);
+          build_task();
+        }); 
+      if (threadCount) 
+        group_barrier.wait(threadCount);
+      group->wait();
+    } 
+    catch (...) {
+      accels.clear();
+      updateInterface();
+      // FIXME: clear cancelling state of task_group_context
+      throw;
+    }
+  }
+
+#endif
 
   void Scene::write(std::ofstream& file)
   {

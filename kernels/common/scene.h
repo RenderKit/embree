@@ -111,6 +111,7 @@ namespace embree
 
     /*! Builds acceleration structure for the scene. */
     void build (size_t threadIndex, size_t threadCount);
+    void build_task ();
 
     /*! stores scene into binary file */
     void write(std::ofstream& file);
@@ -225,6 +226,7 @@ namespace embree
     TaskSchedulerNew* volatile scheduler;
 #else
     tbb::task_group* group;
+    BarrierActiveAutoReset group_barrier;
 #endif
     
   public:

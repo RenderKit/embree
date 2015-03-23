@@ -3092,7 +3092,7 @@ namespace embree
     POSITIVE("regression_dynamic_memory_monitor", rtcore_regression_memory_monitor(rtcore_regression_dynamic_thread));
 #endif
 
-#if defined(TASKING_TBB_INTERNAL) // FIXME: enable and implement for TBB tasking system
+#if defined(TASKING_TBB) || defined(TASKING_TBB_INTERNAL)
     POSITIVE("regression_static_user_threads", rtcore_regression(rtcore_regression_static_thread,true));
     POSITIVE("regression_dynamic_user_threads", rtcore_regression(rtcore_regression_dynamic_thread,true));
 #endif
