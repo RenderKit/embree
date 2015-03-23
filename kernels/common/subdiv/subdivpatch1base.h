@@ -648,7 +648,7 @@ namespace embree
       return grid_u_res*y+x;
     }
 
-    void evalToOBJ(Scene *scene, size_t &vertex_index);
+    void evalToOBJ(Scene *scene, size_t &vertex_index,size_t &numTotalTriangles);
     
   private:
 

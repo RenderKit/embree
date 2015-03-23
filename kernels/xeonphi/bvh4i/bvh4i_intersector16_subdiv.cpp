@@ -59,20 +59,28 @@ namespace embree
     __thread LocalTessellationCacheThreadInfo* localThreadInfo = NULL;
 
 
-    static __forceinline void * extractBVH4iPtr(const size_t &subtree_root)
+    static __forceinline size_t extractBVH4iOffset(const size_t &subtree_root)
     {
+#if 0
       if (likely(subtree_root & ((size_t)1<<3)))
 	return (void*)(subtree_root & ~(((size_t)1 << 4)-1));
       else
 	return (void*)(subtree_root & ~(((size_t)1 << 5)-1));
+#else
+      return subtree_root & ~(((size_t)1 << 6)-1);
+#endif
     }
 
     static __forceinline BVH4i::NodeRef extractBVH4iNodeRef(const size_t &subtree_root)
     {
+#if 0
       if (likely(subtree_root & ((size_t)1<<3)))
 	return (unsigned int)(subtree_root & (((size_t)1 << 4)-1));
       else
 	return (unsigned int)(subtree_root & (((size_t)1 << 5)-1));
+#else
+      return (unsigned int)(subtree_root & (((size_t)1 << 6)-1));      
+#endif
     }
 
 
@@ -98,8 +106,6 @@ namespace embree
 	  const float *const grid_z_array = grid_array + 2 * grid_array_elements;
 
 	  /* compute the bounds just for the range! */
-	  //BBox3fa bounds( empty );
-
 
 	  unsigned int u_start = range.u_start * (U_BLOCK_SIZE-1);
 	  unsigned int v_start = range.v_start * (V_BLOCK_SIZE-1);
@@ -182,11 +188,9 @@ namespace embree
 		const float x = grid_x_array[ offset + u ];
 		const float y = grid_y_array[ offset + u ];
 		const float z = grid_z_array[ offset + u ];
-		//bounds.extend( Vec3fa(x,y,z) );
 		min_x = min(min_x,x);
 		min_y = min(min_y,y);
 		min_z = min(min_z,z);
-
 		max_x = max(max_x,x);
 		max_y = max(max_y,y);
 		max_z = max(max_z,z);
@@ -218,16 +222,9 @@ namespace embree
 	    }
 #endif
 
-
-	  //DBG_PRINT("final");
-	  //DBG_PRINT(u_start);
-	  //DBG_PRINT(v_start);
-
 	  const size_t grid_offset4x4 = v_start * patch.grid_u_res + u_start;
 
-	  const size_t offset_bytes = (size_t)&grid_x_array[ grid_offset4x4 ] - (size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();
-          //assert( (value & 2) == 0 );
-	  //DBG_PRINT(offset_bytes);
+	  const size_t offset_bytes = (size_t)&grid_x_array[ grid_offset4x4 ] - (size_t)lazymem; //(size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();
 	  createSubPatchBVH4iLeaf( curNode, offset_bytes);	  
 	  return bounds;
 	}
@@ -321,15 +318,17 @@ namespace embree
       //DBG_PRINT(grid_u_blocks);
       //DBG_PRINT(grid_v_blocks);
 
+      unsigned int localCounter = 0;
       BBox3fa bounds = createSubTreeCompact( subtree_root,
 					     basemem,
 					     patch,
 					     grid_x,
 					     array_elements,
 					     GridRange(0,grid_u_blocks,0,grid_v_blocks),
-					     currentIndex);
+					     localCounter);
 
-      assert(currentIndex - oldIndex == patch.grid_bvh_size_64b_blocks);
+      //assert(currentIndex - oldIndex == patch.grid_bvh_size_64b_blocks);
+      assert(localCounter == patch.grid_bvh_size_64b_blocks);
       TIMER(msec = getSeconds()-msec);    
       TIMER(DBG_PRINT("tess+bvh"));
       TIMER(DBG_PRINT(patch.grid_u_res));
@@ -419,12 +418,14 @@ namespace embree
 		    continue;
 		  }
 		//DBG_PRINT( SharedLazyTessellationCache::sharedLazyTessellationCache.getNumUsedBytes() );
-		//mic_f* local_mem   = (mic_f*)SharedLazyTessellationCache::sharedLazyTessellationCache.getBlockPtr(block_index);
-		mic_f* local_mem   = (mic_f*)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();
-		//unsigned int currentIndex = 0;
-		unsigned int currentIndex = block_index;
+		mic_f* local_mem   = (mic_f*)SharedLazyTessellationCache::sharedLazyTessellationCache.getBlockPtr(block_index);
+		//mic_f* local_mem   = (mic_f*)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();
+		unsigned int currentIndex = 0;
+		//unsigned int currentIndex = block_index;
 		BVH4i::NodeRef bvh4i_root = initLocalLazySubdivTreeCompact(*subdiv_patch,currentIndex,local_mem,geom);
-		size_t new_root_ref = (size_t)bvh4i_root; // + (size_t)local_mem - (size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();
+		//size_t new_root_ref = (size_t)bvh4i_root; // + (size_t)local_mem - (size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();
+		size_t new_root_ref = (size_t)bvh4i_root + (size_t)local_mem - (size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();
+
 		assert( !(new_root_ref & REF_TAG) );
 		new_root_ref |= REF_TAG;
 		new_root_ref |= SharedLazyTessellationCache::sharedLazyTessellationCache.getCurrentIndex() << 32; 
@@ -516,15 +517,13 @@ namespace embree
 
 	      //////////////////////////////////////////////////////////////////////////////////////////////////
 
-	      const unsigned int patchIndex = curNode.offsetIndex();
 
 	      // ----------------------------------------------------------------------------------------------------
+	      const unsigned int patchIndex = curNode.offsetIndex();
 	      SubdivPatch1 &patch = ((SubdivPatch1*)accel)[patchIndex];
-
-	      size_t cached_64bit_root = lazyBuildPatch(patchIndex,commitCounter,(SubdivPatch1*)accel,scene,threadInfo);
-	      BVH4i::NodeRef subtree_root = (unsigned int)cached_64bit_root; 
-	      float *lazyCachePtr = (float*)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();
-
+	      const size_t cached_64bit_root = lazyBuildPatch(patchIndex,commitCounter,(SubdivPatch1*)accel,scene,threadInfo);
+	      const BVH4i::NodeRef subtree_root = extractBVH4iNodeRef(cached_64bit_root); 
+	      float *const lazyCachePtr = (float*)((size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr() + (size_t)extractBVH4iOffset(cached_64bit_root));
 	      // ----------------------------------------------------------------------------------------------------
 
 
@@ -680,13 +679,12 @@ namespace embree
 
 	      
 
+	      // ----------------------------------------------------------------------------------------------------
 	      const unsigned int patchIndex = curNode.offsetIndex();
 	      SubdivPatch1 &patch = ((SubdivPatch1*)accel)[patchIndex];
-
-	      // ----------------------------------------------------------------------------------------------------
-	      size_t cached_64bit_root = lazyBuildPatch(patchIndex,commitCounter,(SubdivPatch1*)accel,scene,threadInfo);
-	      BVH4i::NodeRef subtree_root = (unsigned int)cached_64bit_root; 
-	      float *lazyCachePtr = (float*)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();
+	      const size_t cached_64bit_root = lazyBuildPatch(patchIndex,commitCounter,(SubdivPatch1*)accel,scene,threadInfo);
+	      const BVH4i::NodeRef subtree_root = extractBVH4iNodeRef(cached_64bit_root); 
+	      float *const lazyCachePtr = (float*)((size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr() + (size_t)extractBVH4iOffset(cached_64bit_root));
 	      // ----------------------------------------------------------------------------------------------------
 
 	      {
@@ -813,13 +811,12 @@ namespace embree
 
 	  //////////////////////////////////////////////////////////////////////////////////////////////////
 
+	  // ----------------------------------------------------------------------------------------------------
 	  const unsigned int patchIndex = curNode.offsetIndex();
 	  SubdivPatch1 &patch = ((SubdivPatch1*)accel)[patchIndex];
-
-	  // ----------------------------------------------------------------------------------------------------
-	  size_t cached_64bit_root = lazyBuildPatch(patchIndex,commitCounter,(SubdivPatch1*)accel,scene,threadInfo);
-	  BVH4i::NodeRef subtree_root = (unsigned int)cached_64bit_root; 
-	  float *lazyCachePtr = (float*)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();
+	  const size_t cached_64bit_root = lazyBuildPatch(patchIndex,commitCounter,(SubdivPatch1*)accel,scene,threadInfo);
+	  const BVH4i::NodeRef subtree_root = extractBVH4iNodeRef(cached_64bit_root); 
+	  float *const lazyCachePtr = (float*)((size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr() + (size_t)extractBVH4iOffset(cached_64bit_root));
 	  // ----------------------------------------------------------------------------------------------------
 
 
@@ -925,15 +922,12 @@ namespace embree
 	  //////////////////////////////////////////////////////////////////////////////////////////////////
 
 	      
-
+	  // ----------------------------------------------------------------------------------------------------
 	  const unsigned int patchIndex = curNode.offsetIndex();
 	  SubdivPatch1 &patch = ((SubdivPatch1*)accel)[patchIndex];
-
-	  // ----------------------------------------------------------------------------------------------------
-	  size_t cached_64bit_root = lazyBuildPatch(patchIndex,commitCounter,(SubdivPatch1*)accel,scene,threadInfo);
-	  BVH4i::NodeRef subtree_root = (unsigned int)cached_64bit_root; 
-	  float *lazyCachePtr = (float*)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();
-
+	  const size_t cached_64bit_root = lazyBuildPatch(patchIndex,commitCounter,(SubdivPatch1*)accel,scene,threadInfo);
+	  const BVH4i::NodeRef subtree_root = extractBVH4iNodeRef(cached_64bit_root); 
+	  float *const lazyCachePtr = (float*)((size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr() + (size_t)extractBVH4iOffset(cached_64bit_root));
 	  // ----------------------------------------------------------------------------------------------------
 
 

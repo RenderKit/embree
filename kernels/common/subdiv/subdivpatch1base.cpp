@@ -156,7 +156,7 @@ namespace embree
 
   }
 
-  void SubdivPatch1Base::evalToOBJ(Scene *scene,size_t &vertex_index)
+  void SubdivPatch1Base::evalToOBJ(Scene *scene,size_t &vertex_index, size_t &numTotalTriangles)
   {
 #if defined(__MIC__)
     FATAL("EVALTOOBJ NOT SUPPORTED ON MIC");
@@ -242,6 +242,7 @@ namespace embree
             size_t offset1 = offset0 + grid_u_res;
             //std::cout << "f " << offset0+1 << " " << offset0+2 << " " << offset1+2 << " " << offset1+1 << std::endl;
             std::cout << "f " << offset0+1 << "//" << offset0+1 << " " << offset0+2<< "//" << offset0+2 << " " << offset1+2<< "//" << offset1+2 << " " << offset1+1<< "//" << offset1+1 << std::endl;
+	    numTotalTriangles += 2;
           }
       vertex_index += grid_u_res*grid_v_res;
       
