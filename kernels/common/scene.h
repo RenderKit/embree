@@ -219,12 +219,14 @@ namespace embree
     AtomicMutex geometriesMutex;
     
     /*! global lock step task scheduler */
-#if defined(__MIC__)
+#if defined(TASKING_LOCKSTEP)
     __aligned(64) LockStepTaskScheduler lockstep_scheduler;
-#endif
-
+#elif defined(TASKING_TBB_INTERNAL)
     TaskSchedulerNew* volatile scheduler;
-
+#else
+    tbb::task_group* group;
+#endif
+    
   public:
     RTC_PROGRESS_MONITOR_FUNCTION progress_monitor_function;
     void* progress_monitor_ptr;

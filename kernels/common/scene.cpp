@@ -34,12 +34,17 @@ namespace embree
       numSubdivPatches(0), numSubdivPatches2(0), 
       numUserGeometries1(0), 
       numIntersectionFilters4(0), numIntersectionFilters8(0), numIntersectionFilters16(0),
-      commitCounter(0), scheduler(NULL),
+      commitCounter(0), 
       progress_monitor_function(NULL), progress_monitor_ptr(NULL), progress_monitor_counter(0)
   {
-#if defined(__MIC__) 
+#if defined(TASKING_LOCKSTEP) 
     lockstep_scheduler.taskBarrier.init(MAX_MIC_THREADS);
+#elif defined(TASKING_TBB_INTERNAL)
+    scheduler = NULL;
+#else
+    group = new tbb::task_group;
 #endif
+
     if (g_scene_flags != -1)
       flags = (RTCSceneFlags) g_scene_flags;
 
@@ -226,6 +231,10 @@ namespace embree
   {
     for (size_t i=0; i<geometries.size(); i++)
       delete geometries[i];
+
+#if TASKING_TBB
+    delete group; group = NULL;
+#endif
   }
 
   unsigned Scene::newUserGeometry (size_t items) 
@@ -430,10 +439,14 @@ namespace embree
 
 #if defined(TASKING_TBB)
     try {
-      accels.build(0,0);
+      group->run_and_wait([&]{ 
+          tbb::task::self().group()->set_priority(tbb::priority_high);
+          accels.build(0,0); 
+        }); 
     } catch (...) {
       accels.clear();
       updateInterface();
+      // FIXME: clear cancelling state of task_group_context
       throw;
     }
 #endif
