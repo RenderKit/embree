@@ -23,18 +23,11 @@
 
 namespace embree
 {
-#if 1
   MutexSys::MutexSys( void ) { mutex = new CRITICAL_SECTION; InitializeCriticalSection((CRITICAL_SECTION*)mutex); }
   MutexSys::~MutexSys( void ) { DeleteCriticalSection((CRITICAL_SECTION*)mutex); delete (CRITICAL_SECTION*)mutex; }
   void MutexSys::lock( void ) { EnterCriticalSection((CRITICAL_SECTION*)mutex); }
+  bool MutexSys::try_lock( void ) { return TryEnterCriticalSection((CRITICAL_SECTION*)mutex); }
   void MutexSys::unlock( void ) { LeaveCriticalSection((CRITICAL_SECTION*)mutex); }
-#else
-  MutexSys::MutexSys( void ) { mutex = (void*) CreateMutex(NULL,FALSE,NULL); } // Mutex is very slow under Windows
-  MutexSys::~MutexSys( void ) { CloseHandle((HANDLE)mutex); }
-  void MutexSys::lock( void ) { WaitForSingleObject((HANDLE)mutex,INFINITE); }
-  void MutexSys::unlock( void ) { ReleaseMutex((HANDLE)mutex); }
-#endif
-
 }
 #endif
 
@@ -62,6 +55,10 @@ namespace embree
   { 
     if (pthread_mutex_lock((pthread_mutex_t*)mutex) != 0) 
       THROW_RUNTIME_ERROR("pthread_mutex_lock failed");
+  }
+
+  bool MutexSys::try_lock( void ) { 
+    return pthread_mutex_trylock((pthread_mutex_t*)mutex) == 0;
   }
   
   void MutexSys::unlock( void ) 

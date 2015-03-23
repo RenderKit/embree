@@ -134,6 +134,12 @@ namespace embree
     /* determines of the scene is ready to get build */
     bool ready() { return numMappedBuffers == 0; }
 
+    /* determines if scene is modified */
+    __forceinline bool isModified() const { return modified; }
+
+    /* sets modified flag */
+    __forceinline void setModified(bool f = true) { modified = f; }
+
     /* get mesh by ID */
     __forceinline       Geometry* get(size_t i)       { assert(i < geometries.size()); return geometries[i]; }
     __forceinline const Geometry* get(size_t i) const { assert(i < geometries.size()); return geometries[i]; }
@@ -216,8 +222,9 @@ namespace embree
     bool needTriangles; 
     bool needVertices; // FIXME: this flag is also used for hair geometry, but there should be a second flag
     bool is_build;
-    MutexSys mutex;
+    MutexSys buildMutex;
     AtomicMutex geometriesMutex;
+    bool modified;                   //!< true if scene got modified
     
     /*! global lock step task scheduler */
 #if defined(TASKING_LOCKSTEP)

@@ -28,7 +28,7 @@
 namespace embree
 {
   Scene::Scene (RTCSceneFlags sflags, RTCAlgorithmFlags aflags)
-    : flags(sflags), aflags(aflags), numMappedBuffers(0), is_build(false), needTriangles(false), needVertices(false),
+    : flags(sflags), aflags(aflags), numMappedBuffers(0), is_build(false), modified(true), needTriangles(false), needVertices(false),
       numTriangles(0), numTriangles2(0), 
       numBezierCurves(0), numBezierCurves2(0), 
       numSubdivPatches(0), numSubdivPatches2(0), 
@@ -351,6 +351,8 @@ namespace embree
 
   void Scene::build_task ()
   {
+    progress_monitor_counter = 0;
+
     /* select fast code path if no intersection filter is present */
     accels.select(numIntersectionFilters4,numIntersectionFilters8,numIntersectionFilters16);
   
@@ -369,8 +371,10 @@ namespace embree
     for (size_t i=0; i<geometries.size(); i++) // FIXME: this late deletion is inefficient in case of many geometries
     {
       Geometry* geom = geometries[i];
-      if (geom == NULL || geom->state != Geometry::ERASING) continue;
-      remove(geom);
+      if (!geom) continue;
+      if (geom->state == Geometry::ENABLING) geom->state = Geometry::ENABLED;
+      if (geom->state == Geometry::DISABLING) geom->state = Geometry::DISABLED;
+      if (geom->state == Geometry::ERASING) remove(geom);
     }
 
     updateInterface();
@@ -397,14 +401,14 @@ namespace embree
     if (threadIndex != 0) return;
 
     /* allow only one build at a time */
-    Lock<MutexSys> lock(mutex);
+    Lock<MutexSys> lock(buildMutex);
 
     progress_monitor_counter = 0;
 
-    if (isStatic() && isBuild()) {
-      process_error(RTC_INVALID_OPERATION,"static geometries cannot get committed twice");
-      return;
-    }
+    //if (isStatic() && isBuild()) {
+    //  process_error(RTC_INVALID_OPERATION,"static geometries cannot get committed twice");
+    //  return;
+    //}
 
     if (!ready()) {
       process_error(RTC_INVALID_OPERATION,"not all buffers are unmapped");
@@ -439,8 +443,10 @@ namespace embree
     for (size_t i=0; i<geometries.size(); i++) // FIXME: this late deletion is inefficient in case of many geometries
     {
       Geometry* geom = geometries[i];
-      if (geom == NULL || geom->state != Geometry::ERASING) continue;
-      remove(geom);
+      if (!geom) continue;
+      if (geom->state == Geometry::ENABLING) geom->state = Geometry::ENABLED;
+      if (geom->state == Geometry::DISABLING) geom->state = Geometry::DISABLED;
+      if (geom->state == Geometry::ERASING) remove(geom);
     }
 
     updateInterface();
@@ -462,7 +468,7 @@ namespace embree
     if (threadCount != 0) 
     {
       {
-        Lock<MutexSys> lock(mutex);
+        Lock<MutexSys> lock(buildMutex);
         if (scheduler == NULL) scheduler = new TaskSchedulerNew(-1);
       }
       if (threadIndex > 0) {
@@ -473,14 +479,14 @@ namespace embree
     }
 
     /* allow only one build at a time */
-    Lock<MutexSys> lock(mutex);
+    Lock<MutexSys> lock(buildMutex);
 
     progress_monitor_counter = 0;
 
-    if (isStatic() && isBuild()) {
-      process_error(RTC_INVALID_OPERATION,"static geometries cannot get committed twice");
-      return;
-    }
+    //if (isStatic() && isBuild()) {
+    //  process_error(RTC_INVALID_OPERATION,"static geometries cannot get committed twice");
+    //  return;
+    //}
 
     if (!ready()) {
       process_error(RTC_INVALID_OPERATION,"not all buffers are unmapped");
@@ -502,7 +508,7 @@ namespace embree
 
   void Scene::build (size_t threadIndex, size_t threadCount) 
   {
-    /* let thread wait for build to finish in rtcCommitThread mode */
+    /* let threads wait for build to finish in rtcCommitThread mode */
     if (threadCount != 0) {
       if (threadIndex > 0) {
         group_barrier.wait(threadCount); // FIXME: use barrier that waits in condition
@@ -511,13 +517,22 @@ namespace embree
       }
     }
 
-    /* allow only one build at a time */
-    Lock<MutexSys> lock(mutex);
+    /* try to obtain build lock */
+    TryLock<MutexSys> lock(buildMutex);
 
-    progress_monitor_counter = 0;
+    /* join hierarchy build */
+    if (!lock.isLocked()) {
+      group->wait();
+      while (!buildMutex.try_lock()) {
+        __pause_cpu();
+        yield();
+        group->wait();
+      }
+      buildMutex.unlock();
+      return;
+    }
 
-    if (isStatic() && isBuild()) {
-      process_error(RTC_INVALID_OPERATION,"static geometries cannot get committed twice");
+    if (!isModified()) {
       return;
     }
 
@@ -531,9 +546,9 @@ namespace embree
           tbb::task::self().group()->set_priority(tbb::priority_high);
           build_task();
         }); 
-      if (threadCount) 
-        group_barrier.wait(threadCount);
+      if (threadCount) group_barrier.wait(threadCount);
       group->wait();
+      setModified(false);
     } 
     catch (...) {
       accels.clear();
@@ -542,7 +557,6 @@ namespace embree
       throw;
     }
   }
-
 #endif
 
   void Scene::write(std::ofstream& file)
@@ -559,9 +573,11 @@ namespace embree
 
   void Scene::setProgressMonitorFunction(RTC_PROGRESS_MONITOR_FUNCTION func, void* ptr) 
   {
-    Lock<MutexSys> lock(mutex);
+    static MutexSys mutex;
+    mutex.lock();
     progress_monitor_function = func;
     progress_monitor_ptr      = ptr;
+    mutex.unlock();
   }
 
   void Scene::progressMonitor(double dn)
