@@ -208,6 +208,8 @@ namespace embree
   {
     if (g_subdiv_accel == "default") 
     {
+     
+#if 0
       if (isIncoherent(flags)) {
         if (isCompact()) accels.add(BVH4::BVH4SubdivGridLazy(this));
         else             accels.add(BVH4::BVH4SubdivGridEager(this));
@@ -216,6 +218,9 @@ namespace embree
         //accels.add(BVH4::BVH4SubdivPatch1Cached(this)); // FIXME: enable, does not run through regression tests
         accels.add(BVH4::BVH4SubdivGridEager(this));
       }
+#else
+      accels.add(BVH4::BVH4SubdivPatch1Cached(this));
+#endif
     }
     else if (g_subdiv_accel == "bvh4.subdivpatch1"      ) accels.add(BVH4::BVH4SubdivPatch1(this));
     else if (g_subdiv_accel == "bvh4.subdivpatch1cached") accels.add(BVH4::BVH4SubdivPatch1Cached(this));

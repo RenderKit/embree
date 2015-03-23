@@ -2641,6 +2641,7 @@ namespace embree
         //CountErrors();
         if (rtcGetError() != RTC_NO_ERROR) {
           atomic_add(&errorCounter,1);
+
           hasError = true;
           break;
         }
@@ -2993,6 +2994,7 @@ namespace embree
     //POSITIVE("regression_dynamic_memory_monitor",        rtcore_regression_memory_monitor(rtcore_regression_dynamic_thread));
     //POSITIVE("regression_garbage_geom",   rtcore_regression_garbage());
     //exit(1);
+#if 1
 
     POSITIVE("mutex_sys",                 test_mutex_sys());
 #if !defined(__MIC__)  // FIXME: hangs on MIC 
@@ -3089,6 +3091,8 @@ namespace embree
     rtcore_nan("nan_test_16",RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,16);
     rtcore_inf("inf_test_16",RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,16);
 #endif
+#endif
+
 #endif
 
     POSITIVE("regression_static",         rtcore_regression(rtcore_regression_static_thread,0));

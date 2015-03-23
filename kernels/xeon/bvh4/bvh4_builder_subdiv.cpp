@@ -905,7 +905,6 @@ namespace embree
           numPrimitives = pinfo.size();
           DBG_CACHE_BUILDER( DBG_PRINT(fastUpdateMode) );
           DBG_CACHE_BUILDER( DBG_PRINT(pinfo) );
-          DBG_CACHE_BUILDER( DBG_PRINT(needAllThreads) );
         }
         
         prims.resize(numPrimitives);
@@ -924,7 +923,10 @@ namespace embree
        {
          DBG_CACHE_BUILDER(std::cout << "ALLOCATING SUBDIVPATCH1CACHED MEMORY FOR " << numPrimitives << " PRIMITIVES" << std::endl);
          this->bvh->size_data_mem = sizeof(SubdivPatch1Cached) * numPrimitives;
-         this->bvh->data_mem      = os_malloc( this->bvh->size_data_mem );        
+	 if ( this->bvh->size_data_mem != 0)
+	   this->bvh->data_mem      = os_malloc( this->bvh->size_data_mem );        
+	 else
+	   this->bvh->data_mem      = NULL;
        }
         
       SubdivPatch1Cached *const subdiv_patches = (SubdivPatch1Cached *)this->bvh->data_mem;
@@ -967,6 +969,14 @@ namespace embree
                                                      assert(bounds.lower.y <= bounds.upper.y);
                                                      assert(bounds.lower.z <= bounds.upper.z);
               
+						     assert( std::isfinite(bounds.lower.x) );
+						     assert( std::isfinite(bounds.lower.y) );
+						     assert( std::isfinite(bounds.lower.z) );
+						     
+						     assert( std::isfinite(bounds.upper.x) );
+						     assert( std::isfinite(bounds.upper.y) );
+						     assert( std::isfinite(bounds.upper.z) );
+
                                                      prims[patchIndex] = PrimRef(bounds,patchIndex);
                                                      s.add(bounds);
                                                    });
@@ -992,6 +1002,15 @@ namespace embree
 	      assert(bounds.lower.x <= bounds.upper.x);
 	      assert(bounds.lower.y <= bounds.upper.y);
 	      assert(bounds.lower.z <= bounds.upper.z);
+
+	      assert( std::isfinite(bounds.lower.x) );
+	      assert( std::isfinite(bounds.lower.y) );
+	      assert( std::isfinite(bounds.lower.z) );
+	      
+	      assert( std::isfinite(bounds.upper.x) );
+	      assert( std::isfinite(bounds.upper.y) );
+	      assert( std::isfinite(bounds.upper.z) );
+
 	      
 	      prims[patchIndex] = PrimRef(bounds,patchIndex);
 	      s.add(bounds);	      
@@ -1030,19 +1049,24 @@ namespace embree
       }
       else
       {
-        BVH4::NodeRef root = bvh_builder_binned_sah_internal<BVH4::NodeRef>
-          (CreateAlloc(bvh),CreateBVH4Node(bvh),
-           [&] (const BuildRecord<BVH4::NodeRef>& current, Allocator* alloc) -> int {
-            size_t items = current.size();
-            assert(items == 1);
-            const unsigned int patchIndex = prims[current.begin].ID();
-            SubdivPatch1Cached *const subdiv_patches = (SubdivPatch1Cached *)this->bvh->data_mem;
-            *current.parent = bvh->encodeLeaf((char*)&subdiv_patches[patchIndex],1);
-            return 0;
-           },
-           progress,
-           prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,1,1,1);
-        bvh->set(root,pinfo.geomBounds,pinfo.size());
+	if (numPrimitives)
+	  {
+	    BVH4::NodeRef root = bvh_builder_binned_sah_internal<BVH4::NodeRef>
+	      (CreateAlloc(bvh),CreateBVH4Node(bvh),
+	       [&] (const BuildRecord<BVH4::NodeRef>& current, Allocator* alloc) -> int {
+		size_t items = current.size();
+		assert(items == 1);
+		const unsigned int patchIndex = prims[current.begin].ID();
+		SubdivPatch1Cached *const subdiv_patches = (SubdivPatch1Cached *)this->bvh->data_mem;
+		*current.parent = bvh->encodeLeaf((char*)&subdiv_patches[patchIndex],1);
+		return 0;
+	      },
+	       progress,
+	       prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,1,1,1);
+	    bvh->set(root,pinfo.geomBounds,pinfo.size());
+	  }
+	else
+	  bvh->set(BVH4::emptyNode,empty,0);	  
       }
       
         if (g_verbose >= 1) dt = getSeconds()-t0;
