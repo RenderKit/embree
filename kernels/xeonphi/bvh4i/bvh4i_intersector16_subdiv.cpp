@@ -479,6 +479,9 @@ namespace embree
       long rayIndex = -1;
       while((rayIndex = bitscan64(rayIndex,toInt(m_valid))) != BITSCAN_NO_BIT_SET_64)	    
         {
+
+	  STAT3(normal.travs,1,1,1);
+
 	  stack_node[1] = bvh->root;
 	  size_t sindex = 2;
 
@@ -512,9 +515,6 @@ namespace embree
 	      /* return if stack is empty */
 	      if (unlikely(curNode == BVH4i::invalidNode)) break;
 
-	      STAT3(normal.trav_leaves,1,1,1);
-	      STAT3(normal.trav_prims,1,1,1);
-
 	      //////////////////////////////////////////////////////////////////////////////////////////////////
 
 
@@ -526,6 +526,7 @@ namespace embree
 	      float *const lazyCachePtr = (float*)((size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr() + (size_t)extractBVH4iOffset(cached_64bit_root));
 	      // ----------------------------------------------------------------------------------------------------
 
+	      STAT3(normal.trav_prims,1,1,1);
 
 	      // -------------------------------------
 	      // -------------------------------------
@@ -645,6 +646,8 @@ namespace embree
 	  stack_node[1] = bvh->root;
 	  size_t sindex = 2;
 
+	  STAT3(shadow.travs,1,1,1);
+
 	  const mic_f org_xyz      = loadAOS4to16f(rayIndex,ray16.org.x,ray16.org.y,ray16.org.z);
 	  const mic_f dir_xyz      = loadAOS4to16f(rayIndex,ray16.dir.x,ray16.dir.y,ray16.dir.z);
 	  const mic_f rdir_xyz     = loadAOS4to16f(rayIndex,rdir16.x,rdir16.y,rdir16.z);
@@ -672,13 +675,10 @@ namespace embree
 	      /* return if stack is empty */
 	      if (unlikely(curNode == BVH4i::invalidNode)) break;
 
-	      STAT3(shadow.trav_leaves,1,1,1);
-	      STAT3(shadow.trav_prims,1,1,1);
-
 	      //////////////////////////////////////////////////////////////////////////////////////////////////
 
+	      STAT3(shadow.trav_prims,1,1,1);
 	      
-
 	      // ----------------------------------------------------------------------------------------------------
 	      const unsigned int patchIndex = curNode.offsetIndex();
 	      SubdivPatch1 &patch = ((SubdivPatch1*)accel)[patchIndex];
@@ -752,6 +752,8 @@ namespace embree
       __aligned(64) float   stack_dist[3*BVH4i::maxDepth+1];
       __aligned(64) NodeRef stack_node[3*BVH4i::maxDepth+1];
 
+      STAT3(normal.travs,1,1,1);
+
       /* setup */
       const mic3f rdir16     = rcp_safe(mic3f(mic_f(ray.dir.x),mic_f(ray.dir.y),mic_f(ray.dir.z)));
       const mic_f inf        = mic_f(pos_inf);
@@ -805,8 +807,6 @@ namespace embree
 	  /* return if stack is empty */
 	  if (unlikely(curNode == BVH4i::invalidNode)) break;
 
-	  STAT3(normal.trav_leaves,1,1,1);
-	  STAT3(normal.trav_prims,1,1,1);
 
 
 	  //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -819,6 +819,7 @@ namespace embree
 	  float *const lazyCachePtr = (float*)((size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr() + (size_t)extractBVH4iOffset(cached_64bit_root));
 	  // ----------------------------------------------------------------------------------------------------
 
+	  STAT3(normal.trav_prims,1,1,1);
 
 	  // -------------------------------------
 	  // -------------------------------------
@@ -864,6 +865,8 @@ namespace embree
     {
       /* near and node stack */
       __aligned(64) NodeRef stack_node[3*BVH4i::maxDepth+1];
+
+      STAT3(shadow.travs,1,1,1);
 
       /* setup */
       const mic3f rdir16      = rcp_safe(mic3f(ray.dir.x,ray.dir.y,ray.dir.z));
@@ -915,13 +918,11 @@ namespace embree
 	  /* return if stack is empty */
 	  if (unlikely(curNode == BVH4i::invalidNode)) break;
 
-
-	  STAT3(shadow.trav_leaves,1,1,1);
-	  STAT3(shadow.trav_prims,1,1,1);
-
 	  //////////////////////////////////////////////////////////////////////////////////////////////////
 
-	      
+	 
+	  STAT3(shadow.trav_prims,1,1,1);
+     
 	  // ----------------------------------------------------------------------------------------------------
 	  const unsigned int patchIndex = curNode.offsetIndex();
 	  SubdivPatch1 &patch = ((SubdivPatch1*)accel)[patchIndex];
