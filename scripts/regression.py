@@ -81,14 +81,14 @@ builds_unix = ['RelWithDebInfo']
 builds = []
 
 #ISAs_win  = ['SSE2']
-ISAs_win  = ['SSE2', 'SSE4.2', 'AVX', 'AVX2']
+ISAs_win  = ['SSE4.2', 'AVX', 'AVX2']
 #ISAs_unix = ['AVX2']
 ISAs_unix = ['SSE2', 'SSE4.2', 'AVX', 'AVX2']
 ISAs = []
 
 supported_configurations = [
-  'V100_Win32_RelWithDebInfo_SSE2',
-  'V100_x64_RelWithDebInfo_SSE2',
+  'V100_Win32_RelWithDebInfo_SSE2', 'V100_Win32_RelWithDebInfo_SSE4.2',
+  'V100_x64_RelWithDebInfo_SSE2',   'V100_x64_RelWithDebInfo_SSE4.2',
   'V110_Win32_RelWithDebInfo_SSE2', 'V120_Win32_RelWithDebInfo_SSE4.2', 'V120_Win32_RelWithDebInfo_AVX',
   'V110_x64_RelWithDebInfo_SSE2',   'V120_x64_RelWithDebInfo_SSE4.2',   'V120_x64_RelWithDebInfo_AVX',  
   'V120_Win32_RelWithDebInfo_SSE2', 'V120_Win32_RelWithDebInfo_SSE4.2', 'V120_Win32_RelWithDebInfo_AVX', 'V120_Win32_RelWithDebInfo_AVX2', 
