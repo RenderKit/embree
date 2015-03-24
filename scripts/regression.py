@@ -208,7 +208,7 @@ def compileLoop(OS):
 
 ########################## rendering ##########################
 
-def render(OS, compiler, platform, build, isa, tasking, tutorial, scene, flags):
+def render(OS, compiler, platform, build, isa, tasking, tutorial, args, scene, flags):
   sys.stdout.write("  "+tutorial)
   if scene != '': sys.stdout.write(' '+scene)
   if flags != '': sys.stdout.write(' '+flags)
@@ -219,8 +219,8 @@ def render(OS, compiler, platform, build, isa, tasking, tutorial, scene, flags):
   if os.path.exists(logFile):
     sys.stdout.write(" [skipped]\n")
   else:
-    if OS == 'windows': command = 'build' + '\\' + build + '\\' + tutorial + ' '
-    else:               command = 'build' + '/' + tutorial + ' '
+    if OS == 'windows': command = 'build' + '\\' + build + '\\' + tutorial + ' ' + args + ' '
+    else:               command = 'build' + '/' + tutorial + ' ' + args + ' '
     if tutorial == 'regression':
       command += '-regressions 2000 '
     if tutorial[0:8] == 'tutorial':
@@ -228,24 +228,25 @@ def render(OS, compiler, platform, build, isa, tasking, tutorial, scene, flags):
       if flags != "": command += ",flags=" + flags
       command += ' -size 1024 1024 -o ' + imageFile
     command += ' > ' + logFile
+    sys.stdout.write(command)
     ret = os.system(command)
     if ret == 0: sys.stdout.write(" [passed]\n")
     else       : sys.stdout.write(" [failed]\n")
 
 def render_tutorial03(OS, compiler, platform, build, isa, tasking, ty, scene, flags):
-  render(OS,compiler,platform,build,isa,tasking,"tutorial03"+ty+" -c " + modelDir + dash + scene + dash + scene + '_regression.ecs ',scene,flags)
+  render(OS,compiler,platform,build,isa,tasking,"tutorial03",ty+" -c " + modelDir + dash + scene + dash + scene + '_regression.ecs ',scene,flags)
 
 def render_tutorial06(OS, compiler, platform, build, isa, tasking, ty, scene, flags):
-  render(OS,compiler,platform,build,isa,tasking,"tutorial06"+ty+" -c " + modelDir + dash + scene + dash + scene + '_regression.ecs ',scene,flags)
+  render(OS,compiler,platform,build,isa,tasking,"tutorial06",ty+" -c " + modelDir + dash + scene + dash + scene + '_regression.ecs ',scene,flags)
 
 def render_tutorial07(OS, compiler, platform, build, isa, tasking, ty, scene, flags):
-  render(OS,compiler,platform,build,isa,tasking,"tutorial07"+ty+" -c " + modelDir + dash + scene + dash + scene + '_regression.ecs ',scene,flags)
+  render(OS,compiler,platform,build,isa,tasking,"tutorial07",ty+" -c " + modelDir + dash + scene + dash + scene + '_regression.ecs ',scene,flags)
 
 def render_tutorial10(OS, compiler, platform, build, isa, tasking, ty, scene, flags):
   if scene[0:6] == 'subdiv':
-    render(OS,compiler,platform,build,isa,tasking,"tutorial10"+ty+" -i tutorials/tutorial10/" + scene + '.xml',scene,flags)
+    render(OS,compiler,platform,build,isa,tasking,"tutorial10",ty+" -i tutorials/tutorial10/" + scene + '.xml',scene,flags)
   else:
-    render(OS,compiler,platform,build,isa,tasking,"tutorial10"+ty+" -c " + modelDir + dash + scene + dash + scene + '_regression.ecs ',scene,flags)
+    render(OS,compiler,platform,build,isa,tasking,"tutorial10",ty+" -c " + modelDir + dash + scene + dash + scene + '_regression.ecs ',scene,flags)
 
 def processConfiguration(OS, compiler, platform, build, isa, tasking, models):
   sys.stdout.write('compiling configuration ' + compiler + ' ' + platform + ' ' + build + ' ' + isa + ' ' + tasking)
@@ -255,14 +256,14 @@ def processConfiguration(OS, compiler, platform, build, isa, tasking, models):
   else:        
     sys.stdout.write(" [passed]\n")
                     
-    render(OS, compiler, platform, build, isa, tasking, 'verify', '', '')
-    render(OS, compiler, platform, build, isa, tasking, 'benchmark', '', '')
+    render(OS, compiler, platform, build, isa, tasking, 'verify', '', '', '')
+    render(OS, compiler, platform, build, isa, tasking, 'benchmark', '', '', '')
 
-    render(OS, compiler, platform, build, isa, tasking, 'tutorial11', '', '')
+    render(OS, compiler, platform, build, isa, tasking, 'tutorial11', '', '', '')
     for ty in ['','_ispc']:
-      render(OS, compiler, platform, build, isa, tasking, 'tutorial00'+ty, '', '')
-      render(OS, compiler, platform, build, isa, tasking, 'tutorial01'+ty, '', '')
-      render(OS, compiler, platform, build, isa, tasking, 'tutorial02'+ty, '', '')
+      render(OS, compiler, platform, build, isa, tasking, 'tutorial00'+ty, '', '', '')
+      render(OS, compiler, platform, build, isa, tasking, 'tutorial01'+ty, '', '', '')
+      render(OS, compiler, platform, build, isa, tasking, 'tutorial02'+ty, '', '', '')
       for model in models:
         render_tutorial03(OS, compiler, platform, build, isa, tasking, ty, model, 'static')
         render_tutorial03(OS, compiler, platform, build, isa, tasking, ty, model, 'dynamic')
@@ -270,19 +271,19 @@ def processConfiguration(OS, compiler, platform, build, isa, tasking, models):
         render_tutorial03(OS, compiler, platform, build, isa, tasking, ty, model, 'robust')
         render_tutorial03(OS, compiler, platform, build, isa, tasking, ty, model, 'compact')
 
-      render(OS, compiler, platform, build, isa, tasking, 'tutorial04'+ty, '', '')
-      render(OS, compiler, platform, build, isa, tasking, 'tutorial05'+ty, '', '')
+      render(OS, compiler, platform, build, isa, tasking, 'tutorial04'+ty, '', '', '')
+      render(OS, compiler, platform, build, isa, tasking, 'tutorial05'+ty, '', '', '')
 
       for model in models:
         render_tutorial06(OS, compiler, platform, build, isa, tasking, ty, model, '')
 
-      render(OS, compiler, platform, build, isa, tasking, 'tutorial07', '', '')
+      render(OS, compiler, platform, build, isa, tasking, 'tutorial07', '', '', '')
       render_tutorial07(OS, compiler, platform, build, isa, tasking, ty, 'tighten', '')
       render_tutorial07(OS, compiler, platform, build, isa, tasking, ty, 'sophie', '')
       render_tutorial07(OS, compiler, platform, build, isa, tasking, ty, 'sophie_mblur', '')
 
-      render(OS, compiler, platform, build, isa, tasking, 'tutorial08'+ty, '', '')
-      render(OS, compiler, platform, build, isa, tasking, 'tutorial09'+ty, '', '')
+      render(OS, compiler, platform, build, isa, tasking, 'tutorial08'+ty, '', '', '')
+      render(OS, compiler, platform, build, isa, tasking, 'tutorial09'+ty, '', '', '')
     
       render_tutorial10(OS, compiler, platform, build, isa, tasking, ty, 'subdiv0', 'static')
       render_tutorial10(OS, compiler, platform, build, isa, tasking, ty, 'subdiv1', 'dynamic')
