@@ -233,19 +233,19 @@ def render(OS, compiler, platform, build, isa, tasking, tutorial, args, scene, f
     else       : sys.stdout.write(" [failed]\n")
 
 def render_tutorial03(OS, compiler, platform, build, isa, tasking, ty, scene, flags):
-  render(OS,compiler,platform,build,isa,tasking,"tutorial03",ty+" -c " + modelDir + dash + scene + dash + scene + '_regression.ecs ',scene,flags)
+  render(OS,compiler,platform,build,isa,tasking,"tutorial03"+ty," -c " + modelDir + dash + scene + dash + scene + '_regression.ecs ',scene,flags)
 
 def render_tutorial06(OS, compiler, platform, build, isa, tasking, ty, scene, flags):
-  render(OS,compiler,platform,build,isa,tasking,"tutorial06",ty+" -c " + modelDir + dash + scene + dash + scene + '_regression.ecs ',scene,flags)
+  render(OS,compiler,platform,build,isa,tasking,"tutorial06"+ty," -c " + modelDir + dash + scene + dash + scene + '_regression.ecs ',scene,flags)
 
 def render_tutorial07(OS, compiler, platform, build, isa, tasking, ty, scene, flags):
-  render(OS,compiler,platform,build,isa,tasking,"tutorial07",ty+" -c " + modelDir + dash + scene + dash + scene + '_regression.ecs ',scene,flags)
+  render(OS,compiler,platform,build,isa,tasking,"tutorial07"+ty," -c " + modelDir + dash + scene + dash + scene + '_regression.ecs ',scene,flags)
 
 def render_tutorial10(OS, compiler, platform, build, isa, tasking, ty, scene, flags):
   if scene[0:6] == 'subdiv':
-    render(OS,compiler,platform,build,isa,tasking,"tutorial10",ty+" -i tutorials/tutorial10/" + scene + '.xml',scene,flags)
+    render(OS,compiler,platform,build,isa,tasking,"tutorial10"+ty," -i tutorials/tutorial10/" + scene + '.xml',scene,flags)
   else:
-    render(OS,compiler,platform,build,isa,tasking,"tutorial10",ty+" -c " + modelDir + dash + scene + dash + scene + '_regression.ecs ',scene,flags)
+    render(OS,compiler,platform,build,isa,tasking,"tutorial10"+ty," -c " + modelDir + dash + scene + dash + scene + '_regression.ecs ',scene,flags)
 
 def processConfiguration(OS, compiler, platform, build, isa, tasking, models):
   sys.stdout.write('compiling configuration ' + compiler + ' ' + platform + ' ' + build + ' ' + isa + ' ' + tasking)
