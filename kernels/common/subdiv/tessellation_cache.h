@@ -73,23 +73,26 @@ namespace embree
  private:
    static const size_t DEFAULT_TESSELLATION_CACHE_SIZE = 250*1024*1024; // 250 MB
 
+   struct __aligned(64) ThreadWorkState {
+     AtomicCounter counter;
+     ThreadWorkState() { counter = 0; }
+   __forceinline void reset() { counter = 0; }
+   };
 
    float *data;
    size_t size;
    size_t maxBlocks;
+   size_t numMaxRenderThreads;
+   ThreadWorkState *threadWorkState;
       
    __aligned(64) AtomicCounter index;
    __aligned(64) AtomicCounter next_block;
    __aligned(64) AtomicMutex   reset_state;
    __aligned(64) AtomicCounter switch_block_threshold;
    __aligned(64) AtomicCounter numRenderThreads;
+   __aligned(64) AtomicMutex   mtx_threads;
 
-   struct __aligned(64) ThreadWorkState {
-     AtomicCounter counter;
-     ThreadWorkState() { counter = 0; }
-   };
 
-   __aligned(64) ThreadWorkState threadWorkState[MAX_MIC_THREADS];
 
  public:
 
@@ -98,7 +101,7 @@ namespace embree
       
    SharedLazyTessellationCache();
 
-   __forceinline size_t getNextRenderThreadID() { return numRenderThreads.add(1); }
+   size_t getNextRenderThreadID();
 
    __forceinline size_t getCurrentIndex() { return index; }
    __forceinline void   addCurrentIndex(const size_t i=1) { index.add(i); }
@@ -115,19 +118,8 @@ namespace embree
 #endif
    }
 
-   __forceinline void waitForUsersLessEqual(const unsigned int threadID,
-					    const unsigned int users)
-   {
-     while( !(threadWorkState[threadID].counter <= users) )
-       {
-#if defined(__MIC__)
-	 _mm_delay_32(128);
-#else
-	 _mm_pause();
-	 _mm_pause();
-#endif
-       }
-   }
+   void waitForUsersLessEqual(const unsigned int threadID,
+			      const unsigned int users);
     
    __forceinline size_t alloc(const size_t blocks)
    {

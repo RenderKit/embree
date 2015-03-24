@@ -429,10 +429,10 @@ namespace embree
   private:
 
     /*! fast lookup table to find the first half edge for some face */
-    vector<uint32> faceStartEdge;
+    std::vector<uint32> faceStartEdge;
 
     /*! Half edge structure. */
-    vector<HalfEdge> halfEdges;
+    std::vector<HalfEdge> halfEdges;
 
     /*! set with all holes */
     pset<uint32> holeSet;
@@ -442,8 +442,8 @@ namespace embree
   private:
 
     /*! two arrays used to sort the half edges */
-    vector<KeyHalfEdge> halfEdges0;
-    vector<KeyHalfEdge> halfEdges1;
+    std::vector<KeyHalfEdge> halfEdges0;
+    std::vector<KeyHalfEdge> halfEdges1;
 
     /*! map with all vertex creases */
     pmap<uint32,float> vertexCreaseMap;
