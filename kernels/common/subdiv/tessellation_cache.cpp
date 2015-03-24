@@ -64,9 +64,42 @@ namespace embree
 #else
     switch_block_threshold = maxBlocks/NUM_CACHE_REGIONS;
 #endif
-
+    numMaxRenderThreads = MAX_MIC_THREADS;
+    threadWorkState     = (ThreadWorkState*)malloc(sizeof(ThreadWorkState)*numMaxRenderThreads);
     reset_state.reset();
   }
+
+  size_t SharedLazyTessellationCache::getNextRenderThreadID() 
+  {
+    mtx_threads.lock();
+    const size_t id = numRenderThreads.add(1); 
+    if (numRenderThreads >= numMaxRenderThreads)
+      {
+	numMaxRenderThreads *= 2;
+	threadWorkState      = (ThreadWorkState*)std::realloc(threadWorkState,sizeof(ThreadWorkState)*numMaxRenderThreads);
+	assert( threadWorkState );
+	if (!threadWorkState)
+	  FATAL("realloc threadWorkState");
+      }    
+    mtx_threads.unlock();
+    return id;
+  }
+
+  void SharedLazyTessellationCache::waitForUsersLessEqual(const unsigned int threadID,
+							  const unsigned int users)
+   {
+     while( !(threadWorkState[threadID].counter <= users) )
+       {
+#if defined(__MIC__)
+	 _mm_delay_32(128);
+#else
+	 _mm_pause();
+	 _mm_pause();
+	 _mm_pause();
+	 _mm_pause();
+#endif
+       }
+   }
 
   void SharedLazyTessellationCache::resetCache() 
   {
