@@ -66,6 +66,10 @@ namespace embree
 #endif
     numMaxRenderThreads = MAX_MIC_THREADS;
     threadWorkState     = (ThreadWorkState*)malloc(sizeof(ThreadWorkState)*numMaxRenderThreads);
+
+    for (size_t i=0;i<numMaxRenderThreads;i++)
+      threadWorkState[i].reset();
+
     reset_state.reset();
   }
 
@@ -77,6 +81,10 @@ namespace embree
       { 
 	numMaxRenderThreads *= 2;
 	threadWorkState      = (ThreadWorkState*)std::realloc(threadWorkState,sizeof(ThreadWorkState)*numMaxRenderThreads);
+
+	for (size_t i=id;i<numMaxRenderThreads;i++)
+	  threadWorkState[i].reset();
+
 	assert( threadWorkState );
 	if (!threadWorkState)
 	  FATAL("realloc threadWorkState");

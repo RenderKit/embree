@@ -76,6 +76,7 @@ namespace embree
    struct __aligned(64) ThreadWorkState {
      AtomicCounter counter;
      ThreadWorkState() { counter = 0; }
+   __forceinline void reset() { counter = 0; }
    };
 
    float *data;
