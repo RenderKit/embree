@@ -378,6 +378,7 @@ namespace embree
       Geometry* geom = geometries[i];
       if (!geom) continue;
       if (geom->state == Geometry::ENABLING) geom->state = Geometry::ENABLED;
+      if (geom->state == Geometry::MODIFIED) geom->state = Geometry::ENABLED;
       if (geom->state == Geometry::DISABLING) geom->state = Geometry::DISABLED;
       if (geom->state == Geometry::ERASING) remove(geom);
     }
@@ -450,6 +451,7 @@ namespace embree
       Geometry* geom = geometries[i];
       if (!geom) continue;
       if (geom->state == Geometry::ENABLING) geom->state = Geometry::ENABLED;
+      if (geom->state == Geometry::MODIFIED) geom->state = Geometry::ENABLED;
       if (geom->state == Geometry::DISABLING) geom->state = Geometry::DISABLED;
       if (geom->state == Geometry::ERASING) remove(geom);
     }
