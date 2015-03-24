@@ -228,7 +228,6 @@ def render(OS, compiler, platform, build, isa, tasking, tutorial, args, scene, f
       if flags != "": command += ",flags=" + flags
       command += ' -size 1024 1024 -o ' + imageFile
     command += ' > ' + logFile
-    sys.stdout.write(command)
     ret = os.system(command)
     if ret == 0: sys.stdout.write(" [passed]\n")
     else       : sys.stdout.write(" [failed]\n")
