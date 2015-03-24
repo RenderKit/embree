@@ -59,11 +59,11 @@ dash = '/'
 
 #compilers_win = ['V120']
 #compilers_win = ['ICC']
-compilers_win  = ['V120', 'ICC']
-#compilers_win  = ['V100', 'V110', 'V120', 'ICC']
+#compilers_win  = ['V120', 'ICC']
+compilers_win  = ['V100', 'V110', 'V120', 'ICC']
 #compilers_unix = ['ICC']
-compilers_unix = ['GCC', 'CLANG']
-#compilers_unix = ['GCC', 'CLANG', 'ICC']
+#compilers_unix = ['GCC', 'CLANG']
+compilers_unix = ['GCC', 'CLANG', 'ICC']
 compilers      = []
 
 #platforms_win  = ['Win32']
