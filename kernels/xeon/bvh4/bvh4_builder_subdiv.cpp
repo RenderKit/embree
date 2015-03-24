@@ -87,6 +87,8 @@ namespace embree
 
     struct BVH4SubdivPatch1BuilderBinnedSAHClass : public Builder
     {
+      ALIGNED_STRUCT;
+
       BVH4* bvh;
       Scene* scene;
       vector<PrimRef> prims;
@@ -147,6 +149,8 @@ namespace embree
     
     struct BVH4SubdivGridBuilderBinnedSAHClass : public Builder
     {
+      ALIGNED_STRUCT;
+
       BVH4* bvh;
       Scene* scene;
       vector<PrimRef> prims;
@@ -293,6 +297,8 @@ namespace embree
 
     struct BVH4SubdivGridEagerBuilderBinnedSAHClass : public Builder
     {
+      ALIGNED_STRUCT;
+
       BVH4* bvh;
       Scene* scene;
       vector<PrimRef> prims;
@@ -425,6 +431,8 @@ namespace embree
 
     struct BVH4SubdivGridLazyBuilderBinnedSAHClass : public Builder
     {
+      ALIGNED_STRUCT;
+
       BVH4* bvh;
       Scene* scene;
       vector<PrimRef> prims; 
@@ -768,6 +776,8 @@ namespace embree
 
     struct BVH4SubdivPatch1CachedBuilderBinnedSAHClass : public Builder
     {
+      ALIGNED_STRUCT;
+
       BVH4* bvh;
       Scene* scene;
       vector<PrimRef> prims; 
