@@ -324,6 +324,13 @@ namespace embree
   BVH4::~BVH4 () {
     for (size_t i=0; i<objects.size(); i++) 
       delete objects[i];
+
+    if (data_mem)
+      {
+	os_free( data_mem, size_data_mem );        
+	data_mem = NULL;
+	size_data_mem = 0;
+      }
   }
 
 #if 0 // FIXME: remove
@@ -365,6 +372,12 @@ namespace embree
   {
     set(BVH4::emptyNode,empty,0);
     alloc2.clear();
+    // if (data_mem)
+    //   {
+    // 	os_free( data_mem, size_data_mem );        
+    // 	data_mem = NULL;
+    // 	size_data_mem = 0;
+    //   }
   }
 
   void BVH4::set (NodeRef root, const BBox3fa& bounds, size_t numPrimitives)

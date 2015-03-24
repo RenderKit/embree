@@ -74,7 +74,8 @@ namespace embree
     mtx_threads.lock();
     const size_t id = numRenderThreads.add(1); 
     if (numRenderThreads >= numMaxRenderThreads)
-      {
+      { 
+	DBG_PRINT( numMaxRenderThreads );
 	numMaxRenderThreads *= 2;
 	threadWorkState      = (ThreadWorkState*)std::realloc(threadWorkState,sizeof(ThreadWorkState)*numMaxRenderThreads);
 	assert( threadWorkState );
