@@ -39,6 +39,7 @@ namespace embree
     int numPointLights;
     int numDirectionalLights;
     int numDistantLights;
+    int numSubdivMeshes;
   };
 
   struct CreateMeshData
@@ -47,6 +48,23 @@ namespace embree
     int numTriangles;
     int numQuads;
     int meshMaterialID;
+  };
+
+  struct CreateSubdivMeshData
+  {
+    int numPositions;
+    int numNormals;
+    int numTextureCoords;
+    int numPositionIndices;
+    int numNormalIndices;
+    int numTexCoordIndices;
+    int numVerticesPerFace;
+    int numHoles;
+    int numEdgeCreases;
+    int numEdgeCreaseWeights;
+    int numVertexCreases;
+    int numVertexCreasesWeights;
+    int materialID;
   };
 
   struct CreateHairSetData

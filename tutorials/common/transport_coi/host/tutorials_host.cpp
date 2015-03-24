@@ -39,6 +39,7 @@ namespace embree
   COIFUNCTION runPick;
   COIFUNCTION runRender;
   COIFUNCTION runCleanup;
+  COIFUNCTION runCreateSubdivMesh;
 
   COIBUFFER frameBuffer;
   COIMAPINSTANCE mapInst;
@@ -98,8 +99,8 @@ namespace embree
       THROW_RUNTIME_ERROR(std::string("COIPipelineCreate failed: ") + COIResultGetName(result));
 
     /* get run functions */
-    const char *fctNameArray[8] = { "run_init", "run_key_pressed", "run_create_mesh", "run_create_hairset", "run_create_scene", "run_pick", "run_render", "run_cleanup" };
-    result = COIProcessGetFunctionHandles (process, 8, fctNameArray, &runInit);
+    const char *fctNameArray[9] = { "run_init", "run_key_pressed", "run_create_mesh", "run_create_hairset", "run_create_scene", "run_pick", "run_render", "run_cleanup", "run_create_subdiv_mesh" };
+    result = COIProcessGetFunctionHandles (process, 9, fctNameArray, &runInit);
     if (result != COI_SUCCESS) 
       THROW_RUNTIME_ERROR("COIProcessGetFunctionHandles failed: "+std::string(COIResultGetName(result)));
 
@@ -164,6 +165,8 @@ namespace embree
 
   void send_mesh (OBJScene::Mesh* mesh)
   {
+    PING;
+
     COIRESULT result;
     struct {
       COIBUFFER position;      //!< vertex position array
@@ -267,6 +270,90 @@ namespace embree
     if (result != COI_SUCCESS) THROW_RUNTIME_ERROR("COIPipelineRunFunction failed: "+std::string(COIResultGetName(result)));
   }
 
+
+  void send_subdiv_mesh (OBJScene::SubdivMesh* mesh)
+  {
+
+    COIRESULT result;
+    struct {
+      COIBUFFER positions;      
+      COIBUFFER position_indices;  
+      COIBUFFER vertices_per_face; 
+    } buffers;
+
+    assert( mesh->positions.size() );
+    assert( mesh->position_indices.size() );
+    assert( mesh->verticesPerFace.size() );
+
+    DBG_PRINT( mesh->positions.size() );
+    DBG_PRINT( mesh->position_indices.size() );
+    DBG_PRINT( mesh->verticesPerFace.size() );
+
+    /* positions */
+    result = COIBufferCreateFromMemory(mesh->positions.size()*sizeof(Vec3fa),
+				       COI_BUFFER_NORMAL,
+				       0,&mesh->positions.front(),
+				       1,
+				       &process,
+				       &buffers.positions);
+    if (result != COI_SUCCESS) THROW_RUNTIME_ERROR("COIBufferCreate failed: " + std::string(COIResultGetName(result)));
+
+    /* position_indices */
+    result = COIBufferCreateFromMemory(mesh->position_indices.size()*sizeof(int),
+				       COI_BUFFER_NORMAL,
+				       0,&mesh->position_indices.front(),
+				       1,
+				       &process,
+				       &buffers.position_indices);
+    if (result != COI_SUCCESS) THROW_RUNTIME_ERROR("COIBufferCreate failed: " + std::string(COIResultGetName(result)));
+
+    /* vertices_per_face */
+    result = COIBufferCreateFromMemory(mesh->verticesPerFace.size()*sizeof(int),
+				       COI_BUFFER_NORMAL,
+				       0,&mesh->verticesPerFace.front(),
+				       1,
+				       &process,
+				       &buffers.vertices_per_face);
+    if (result != COI_SUCCESS) THROW_RUNTIME_ERROR("COIBufferCreate failed: " + std::string(COIResultGetName(result)));
+
+
+    CreateSubdivMeshData parms;
+    parms.numPositions            = mesh->positions.size();
+    parms.numNormals              = 0;
+    parms.numTextureCoords        = 0;
+    parms.numPositionIndices      = mesh->position_indices.size();
+    parms.numNormalIndices        = 0;
+    parms.numTexCoordIndices      = 0;
+    parms.numVerticesPerFace      = mesh->verticesPerFace.size();
+    parms.numHoles                = 0;
+    parms.numEdgeCreases          = 0;
+    parms.numEdgeCreaseWeights    = 0;
+    parms.numVertexCreases        = 0;
+    parms.numVertexCreasesWeights = 0;
+    parms.materialID              = mesh->materialID;
+    
+    COI_ACCESS_FLAGS flags[5] = { COI_SINK_READ, COI_SINK_READ, COI_SINK_READ};
+
+    COIEVENT event;
+    memset(&event,0,sizeof(event));
+
+    /* run set scene runfunction */
+    result = COIPipelineRunFunction (pipeline, runCreateSubdivMesh, 3, &buffers.positions, flags, 0, NULL, &parms, sizeof(parms), NULL, 0, &event);
+    if (result != COI_SUCCESS) THROW_RUNTIME_ERROR("COIPipelineRunFunction failed: "+std::string(COIResultGetName(result)));
+ 
+    result = COIEventWait(1,&event,-1,1,NULL,NULL);
+    if (result != COI_SUCCESS) THROW_RUNTIME_ERROR("COIEventWait failed: "+std::string(COIResultGetName(result)));
+
+    /* destroy buffers again */
+    result = COIBufferDestroy(buffers.positions);
+    if (result != COI_SUCCESS) THROW_RUNTIME_ERROR("COIPipelineRunFunction failed: "+std::string(COIResultGetName(result)));
+    result = COIBufferDestroy(buffers.position_indices);
+    if (result != COI_SUCCESS) THROW_RUNTIME_ERROR("COIPipelineRunFunction failed: "+std::string(COIResultGetName(result)));
+    result = COIBufferDestroy(buffers.vertices_per_face);
+    if (result != COI_SUCCESS) THROW_RUNTIME_ERROR("COIPipelineRunFunction failed: "+std::string(COIResultGetName(result)));
+  }
+
+
   /* set scene to use */
   void set_scene (OBJScene* scene)
   {
@@ -316,6 +403,7 @@ namespace embree
     parms.numPointLights = scene->pointLights.size();
     parms.numDirectionalLights = scene->directionalLights.size();
     parms.numDistantLights = scene->distantLights.size();
+    parms.numSubdivMeshes  = scene->subdiv.size();
 
     COIEVENT event;
     memset(&event,0,sizeof(event));
@@ -338,6 +426,11 @@ namespace embree
     /* send all hairsets */
     for (size_t i=0; i<scene->hairsets.size(); i++) 
       send_hairset(scene->hairsets[i]);
+
+    /* send all subdiv meshes */
+    for (size_t i=0; i<scene->subdiv.size(); i++) 
+      send_subdiv_mesh(scene->subdiv[i]);
+
   }
 
   void resize(int32_t width, int32_t height)

@@ -85,6 +85,46 @@ namespace embree
     size_t sizeQuads;
   };
 
+
+struct ISPCSubdivMesh
+{
+  ALIGNED_CLASS;
+public:
+  ISPCSubdivMesh(int numVertices, int numFaces, int numEdges, int materialID) : numVertices(numVertices), numFaces(numFaces), numEdges(numEdges), materialID(materialID), 
+										positions(NULL),normals(NULL),position_indices(NULL),
+								normal_indices(NULL),texcoord_indices(NULL), verticesPerFace(NULL),
+								holes(NULL), subdivlevel(NULL), 
+								edge_creases(NULL), edge_crease_weights(NULL), vertex_creases(NULL), 
+								vertex_crease_weights(NULL)
+  {
+    //DBG_PRINT(numVertices);
+    //DBG_PRINT(numFaces);
+    //DBG_PRINT(numEdges);
+  }
+
+  Vec3fa* positions;       //!< vertex positions
+  Vec3fa* normals;         //!< face vertex normals
+  Vec2f* texcoords;        //!< face texture coordinates
+  int* position_indices;   //!< position indices for all faces
+  int* normal_indices;     //!< normal indices for all faces
+  int* texcoord_indices;   //!< texcoord indices for all faces
+  int* verticesPerFace;    //!< number of indices of each face
+  int* holes;              //!< face ID of holes
+  float* subdivlevel;      //!< subdivision level
+  Vec2i* edge_creases;          //!< crease index pairs
+  float* edge_crease_weights;   //!< weight for each crease
+  int* vertex_creases;          //!< indices of vertex creases
+  float* vertex_crease_weights; //!< weight for each vertex crease
+  int numVertices;
+  int numFaces;
+  int numEdges;
+  int numEdgeCreases;
+  int numVertexCreases;
+  int numHoles;
+  int materialID;
+  int geomID;
+};
+
   /* ISPC compatible scene */
   struct ISPCHair
   {
@@ -125,7 +165,8 @@ namespace embree
                void* ambientLights_in, int numAmbientLights,
                void* pointLights_in, int numPointLights,
                void* directionalLights_in, int numDirectionalLights,
-               void* distantLights_in, int numDistantLights)
+               void* distantLights_in, int numDistantLights,
+	       int numSubdivMeshes)
 
       : meshes(NULL), numMeshes(numMeshes), numHairSets(numHairSets), 
         materials(NULL), numMaterials(numMaterials),
@@ -133,7 +174,7 @@ namespace embree
         pointLights(NULL), numPointLights(numPointLights),
         directionalLights(NULL), numDirectionalLights(numDirectionalLights),
         distantLights(NULL), numDistantLights(numDistantLights),
-	subdiv(NULL), numSubdivMeshes(0)
+	subdiv(NULL), numSubdivMeshes(numSubdivMeshes)
       {
         meshes = new ISPCMesh*[numMeshes];
         for (size_t i=0; i<numMeshes; i++)
@@ -157,6 +198,10 @@ namespace embree
 
         distantLights = new OBJScene::DistantLight[numDistantLights];
         memcpy(distantLights,distantLights_in,numDistantLights*sizeof(OBJScene::DistantLight));
+
+        subdiv = new ISPCSubdivMesh*[numSubdivMeshes];
+        for (size_t i=0; i<numSubdivMeshes; i++)
+          subdiv[i] = NULL;
       }
 
     ~ISPCScene () 
@@ -196,8 +241,7 @@ namespace embree
     OBJScene::DistantLight* distantLights;
     int numDistantLights;
 
-    //ISPCSubdivMesh** subdiv;
-    void* subdiv;
+    ISPCSubdivMesh** subdiv;
     int numSubdivMeshes; 
   };
 
@@ -293,6 +337,45 @@ namespace embree
     g_ispc_scene->meshes[meshID] = mesh;
   }
 
+
+  extern "C" void run_create_subdiv_mesh(uint32_t         in_BufferCount,
+					 void**           in_ppBufferPointers,
+					 uint64_t*        in_pBufferLengths,
+					 CreateSubdivMeshData*  in_pMiscData,
+					 uint16_t         in_MiscDataLength,
+					 void*            in_pReturnValue,
+					 uint16_t         in_ReturnValueLength)
+  {
+    size_t meshID = g_meshID++;
+
+#if 0
+    DBG_PRINT( in_pMiscData->numPositions );
+    DBG_PRINT( in_pMiscData->numPositionIndices );
+    DBG_PRINT( in_pMiscData->numVerticesPerFace );
+#endif
+
+    ISPCSubdivMesh* mesh = new ISPCSubdivMesh(in_pMiscData->numPositions,
+					      in_pMiscData->numVerticesPerFace,
+					      in_pMiscData->numPositionIndices,
+					      in_pMiscData->materialID);
+    assert( mesh );
+
+    assert( in_pMiscData->numPositions*sizeof(Vec3fa)    == in_pBufferLengths[0] );
+    assert( in_pMiscData->numPositionIndices*sizeof(int) == in_pBufferLengths[1] );
+    assert( in_pMiscData->numVerticesPerFace*sizeof(int) == in_pBufferLengths[2] );
+
+    mesh->positions        = (Vec3fa*)os_malloc(in_pBufferLengths[0]);
+    mesh->position_indices = (int*)os_malloc(in_pBufferLengths[1]);
+    mesh->verticesPerFace  = (int*)os_malloc(in_pBufferLengths[2]);
+    mesh->subdivlevel      = (float*)os_malloc(in_pBufferLengths[1]);
+
+    memcpy(mesh->positions       ,in_ppBufferPointers[0],in_pBufferLengths[0]);
+    memcpy(mesh->position_indices,in_ppBufferPointers[1],in_pBufferLengths[1]);
+    memcpy(mesh->verticesPerFace ,in_ppBufferPointers[2],in_pBufferLengths[2]);
+
+    g_ispc_scene->subdiv[meshID] = mesh;
+  }
+
   extern "C" void run_create_hairset(uint32_t         in_BufferCount,
 				     void**           in_ppBufferPointers,
 				     uint64_t*        in_pBufferLengths,
@@ -323,7 +406,8 @@ namespace embree
                                  in_ppBufferPointers[1],in_pMiscData->numAmbientLights,
                                  in_ppBufferPointers[2],in_pMiscData->numPointLights,
                                  in_ppBufferPointers[3],in_pMiscData->numDirectionalLights,
-                                 in_ppBufferPointers[4],in_pMiscData->numDistantLights);
+                                 in_ppBufferPointers[4],in_pMiscData->numDistantLights,
+				 in_pMiscData->numSubdivMeshes);
   }
 
   extern "C" void run_pick(uint32_t         in_BufferCount,
