@@ -32,6 +32,7 @@ namespace embree
     /*! set item */
     class item : public T
     {
+      ALIGNED_CLASS;
     public:
       
       /*! default constructor */

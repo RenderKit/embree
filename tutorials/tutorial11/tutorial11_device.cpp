@@ -90,7 +90,7 @@ struct LeafNode : public Node
   }
 };
 
-void build_sah(std::vector<PrimRef>& prims, isa::PrimInfo& pinfo)
+void build_sah(vector_t<PrimRef>& prims, isa::PrimInfo& pinfo)
 {
   size_t N = pinfo.size();
 
@@ -146,12 +146,12 @@ void build_sah(std::vector<PrimRef>& prims, isa::PrimInfo& pinfo)
   }
 }
 
-void build_morton(std::vector<PrimRef>& prims, isa::PrimInfo& pinfo)
+void build_morton(vector_t<PrimRef>& prims, isa::PrimInfo& pinfo)
 {
   size_t N = pinfo.size();
   /* array for morton builder */
-  std::vector<isa::MortonID32Bit> morton_src(N);
-  std::vector<isa::MortonID32Bit> morton_tmp(N);
+  vector_t<isa::MortonID32Bit> morton_src(N);
+  vector_t<isa::MortonID32Bit> morton_tmp(N);
   for (size_t i=0; i<N; i++) 
     morton_src[i].index = i;
 
@@ -244,7 +244,7 @@ extern "C" void device_init (int8* cfg)
   /* create random bounding boxes */
   const size_t N = 2300000;
   isa::PrimInfo pinfo(empty);
-  std::vector<PrimRef> prims; // FIXME: does not support alignment
+  vector_t<PrimRef> prims; 
   for (size_t i=0; i<N; i++) {
     const Vec3fa p = 1000.0f*Vec3fa(drand48(),drand48(),drand48());
     const BBox3fa b = BBox3fa(p,p+Vec3fa(1.0f));

@@ -32,9 +32,14 @@ ELSE ()
   SET(TBB_ROOT /opt/intel/composerxe/tbb/ CACHE STRING "Root of TBB installation")
 
   FIND_PATH(TBB_INCLUDE_DIR tbb/task_scheduler_init.h PATHS ${TBB_ROOT}/include)
-  FIND_LIBRARY(TBB_LIBRARY tbb PATHS ${TBB_ROOT}/lib/intel64/gcc4.4)
-  FIND_LIBRARY(TBB_LIBRARY_MALLOC tbbmalloc PATHS ${TBB_ROOT}/lib/intel64/gcc4.4)
- 
+  IF (APPLE)
+    FIND_LIBRARY(TBB_LIBRARY tbb PATHS ${TBB_ROOT}/lib)
+    FIND_LIBRARY(TBB_LIBRARY_MALLOC tbbmalloc PATHS ${TBB_ROOT}/lib)
+  ELSE()
+    FIND_LIBRARY(TBB_LIBRARY tbb PATHS ${TBB_ROOT}/lib/intel64/gcc4.4)
+    FIND_LIBRARY(TBB_LIBRARY_MALLOC tbbmalloc PATHS ${TBB_ROOT}/lib/intel64/gcc4.4)
+  ENDIF()
+
   FIND_PATH(TBB_INCLUDE_DIR_MIC tbb/task_scheduler_init.h NO_DEFAULT_PATH PATHS ${TBB_ROOT}/include)
   FIND_LIBRARY(TBB_LIBRARY_MIC tbb NO_DEFAULT_PATH PATHS ${TBB_ROOT}/lib/mic)
   FIND_LIBRARY(TBB_LIBRARY_MALLOC_MIC tbbmalloc NO_DEFAULT_PATH PATHS ${TBB_ROOT}/lib/mic)

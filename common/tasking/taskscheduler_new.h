@@ -51,6 +51,8 @@ namespace embree
 
   struct TaskSchedulerNew
   {
+    ALIGNED_STRUCT;
+
     static const size_t MAX_THREADS = 1024;
     static const size_t TASK_STACK_SIZE = 1024;
     static const size_t CLOSURE_STACK_SIZE = 256*1024;
