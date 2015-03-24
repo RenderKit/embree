@@ -19,9 +19,9 @@
 #include "bvh4_statistics.h"
 #include "common/profile.h"
 
-#include "builders_new/primrefgen.h"
-#include "builders_new/presplit.h"
-#include "builders_new/bvh_builder2.h"
+#include "builders/primrefgen.h"
+#include "builders/presplit.h"
+#include "builders/bvh_builder2.h"
 
 #include "geometry/triangle1.h"
 #include "geometry/triangle4.h"

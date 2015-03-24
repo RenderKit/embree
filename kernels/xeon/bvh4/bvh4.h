@@ -1243,8 +1243,8 @@ namespace embree
     static Accel* BVH4Triangle4Refit(TriangleMesh* mesh);
 
     /*! initializes the acceleration structure */
-    void init ();
-    void init (size_t nodeSize, size_t numPrimitives, size_t numThreads);
+    //void init ();
+    //void init (size_t nodeSize, size_t numPrimitives, size_t numThreads);
     void clear();
 
     /*! sets BVH members after build */
@@ -1263,34 +1263,10 @@ namespace embree
     /*! Propagate bounds for time t0 and time t1 up the tree. */
     std::pair<BBox3fa,BBox3fa> refit(Scene* scene, NodeRef node);
 
-    LinearAllocatorPerThread alloc;
-
     FastAllocator alloc2;
 
     void *data_mem; /* additional memory, currently used for subdivpatch1cached memory */
     size_t size_data_mem;
-
-    __forceinline Node* allocNode(LinearAllocatorPerThread::ThreadAllocator& thread) {
-      Node* node = (Node*) thread.malloc(sizeof(Node),1 << alignment); node->clear(); return node; // FIXME: why 16 bytes aligned and not 64 bytes?
-    }
-
-    __forceinline NodeMB* allocNodeMB(LinearAllocatorPerThread::ThreadAllocator& thread) {
-      NodeMB* node = (NodeMB*) thread.malloc(sizeof(NodeMB),1 << alignment); node->clear(); return node;
-    }
-
-    /*! allocates a new unaligned node */
-    __forceinline UnalignedNode* allocUnalignedNode(LinearAllocatorPerThread::ThreadAllocator& thread) {
-      UnalignedNode* node = (UnalignedNode*) thread.malloc(sizeof(UnalignedNode),1 << alignment); node->clear(); return node;
-    }
-
-    /*! allocates a new unaligned node */
-    __forceinline UnalignedNodeMB* allocUnalignedNodeMB(LinearAllocatorPerThread::ThreadAllocator& thread) {
-      UnalignedNodeMB* node = (UnalignedNodeMB*) thread.malloc(sizeof(UnalignedNodeMB),1 << alignment); node->clear(); return node;
-    }
-
-    __forceinline char* allocPrimitiveBlocks(LinearAllocatorPerThread::ThreadAllocator& thread, size_t num) {
-      return (char*) thread.malloc(num*primTy.bytes,1 << alignment);
-    }
 
     /*! Encodes a node */
     static __forceinline NodeRef encodeNode2(Node* node) {  // FIXME: make all static
@@ -1341,7 +1317,7 @@ namespace embree
     
     /*! calculates the amount of bytes allocated */
     size_t bytesAllocated() {
-      return alloc.bytes();
+      return alloc2.getAllocatedBytes();
     }
 
   public:

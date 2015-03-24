@@ -20,7 +20,6 @@
 #include "taskscheduler_mic.h"
 #endif
 #include "sys/sysinfo.h"
-#include "tasklogger.h"
 #include "sys/sync/atomic.h"
 #include "math/math.h"
 
@@ -143,7 +142,7 @@ namespace embree
       threads.push_back(createThread((thread_func)threadFunction,new Thread(t,numThreads,this),4*1024*1024,t));
     }
 
-    TaskLogger::init(numThreads);
+    //TaskLogger::init(numThreads);
     //taskBarrier.init(numThreads);
   }
 

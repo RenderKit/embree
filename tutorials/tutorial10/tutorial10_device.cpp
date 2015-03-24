@@ -29,7 +29,7 @@
 #define SPP 1
 
 //#define FORCE_FIXED_EDGE_TESSELLATION
-#define FIXED_EDGE_TESSELLATION_VALUE 31
+#define FIXED_EDGE_TESSELLATION_VALUE 1
 //#define FIXED_EDGE_TESSELLATION_VALUE 63
 
 #define MAX_EDGE_LEVEL 64.0f
@@ -417,6 +417,16 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
 #else
   /* apply ambient light */
   Vec3fa Ng = normalize(ray.Ng);
+#if 0
+  ISPCMesh* mesh = g_ispc_scene->meshes[ray.geomID];
+  size_t materialID = mesh->meshMaterialID; 
+
+  OBJMaterial* material = (OBJMaterial*)&g_ispc_scene->materials[materialID];
+
+  float d = material->d;
+  color = d * Vec3fa(material->Kd);  
+  if (material->map_Kd_ptex) color *= getPtexTexel3f(material->map_Kd_ptex,ray.primID,ray.u,ray.v);  
+#endif
   color = color*abs(dot(ray.dir,Ng));   
 #endif
   return color;

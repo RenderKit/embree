@@ -21,13 +21,6 @@
 
 namespace embree
 {
-#if defined(RTCORE_SPINLOCKS)
-#define Barrier LinearBarrierActive
-  //#define Barrier BarrierActive
-#else
-#define Barrier BarrierSys
-#endif
-
   /*! system barrier using operating system */
   class BarrierSys
   {
@@ -80,7 +73,30 @@ namespace embree
 
   private:
     volatile atomic_t cntr;
-    char align[64-sizeof(atomic_t)];
+    //char align[64-sizeof(atomic_t)];
+  };
+
+  struct __aligned(64) BarrierActiveAutoReset
+  {
+  public:
+    BarrierActiveAutoReset () 
+      : cntr0(0), cntr1(0) {}
+
+    void wait (size_t numThreads) 
+    {
+      atomic_add((atomic_t*)&cntr0,1);
+      while (cntr0 != numThreads) __pause_cpu();
+      atomic_add((atomic_t*)&cntr1,1);
+      while (cntr1 != numThreads) __pause_cpu();
+      atomic_add((atomic_t*)&cntr0,-1);
+      while (cntr0 != 0) __pause_cpu();
+      atomic_add((atomic_t*)&cntr1,-1);
+      while (cntr1 != 0) __pause_cpu();
+    }
+
+  private:
+    volatile atomic_t cntr0;
+    volatile atomic_t cntr1;
   };
 
   // =================================================

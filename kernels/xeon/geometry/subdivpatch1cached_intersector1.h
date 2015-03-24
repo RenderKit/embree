@@ -82,7 +82,7 @@ namespace embree
 #if defined(RTCORE_RETURN_SUBDIV_NORMAL)
 	    if (likely(!hit_patch->hasDisplacement()))
 	      {		 
-		Vec3fa normal = hit_patch->normal(r.u,r.v);
+		Vec3fa normal = hit_patch->normal(r.v,r.u);
 		r.Ng = normal;
 	      }
 #endif
@@ -207,20 +207,14 @@ namespace embree
 	const Vec2<ssef> uv1 = decodeUV(tri012_uv[1]);
 	const Vec2<ssef> uv2 = decodeUV(tri012_uv[2]);        
 	const Vec2<ssef> uv = u * uv1 + v * uv2 + (1.0f-u-v) * uv0;        
-	const ssef u_final = uv[0];
-	const ssef v_final = uv[1];
-        
+	const ssef u_final = uv[1];
+	const ssef v_final = uv[0];        
 #else
 	const ssef u_final = u;
 	const ssef v_final = v;
 #endif
-        //DBG_PRINT(valid);
-        //DBG_PRINT(t);
-
 	size_t i = select_min(valid,t);
-        //DBG_PRINT(i);
 
-        
 	/* update hit information */
 	pre.hit_patch = pre.current_patch;
 
@@ -316,9 +310,9 @@ namespace embree
 						    const size_t offset1,
 						    const size_t offset2)
       {
-	const ssef row_a0 = load4f(grid + offset0 + 0); 
-	const ssef row_b0 = load4f(grid + offset1 + 0);
-	const ssef row_c0 = load4f(grid + offset2 + 0);
+	const ssef row_a0 = loadu4f(grid + offset0 + 0); 
+	const ssef row_b0 = loadu4f(grid + offset1 + 0);
+	const ssef row_c0 = loadu4f(grid + offset2 + 0);
 	const avxf row_ab = avxf( row_a0, row_b0 );
 	const avxf row_bc = avxf( row_b0, row_c0 );
 
@@ -419,10 +413,9 @@ namespace embree
 	const Vec2<avxf> uv0 = decodeUV(tri012_uv[0]);
 	const Vec2<avxf> uv1 = decodeUV(tri012_uv[1]);
 	const Vec2<avxf> uv2 = decodeUV(tri012_uv[2]);        
-	const Vec2<avxf> uv = u * uv1 + v * uv2 + (1.0f-u-v) * uv0;        
-	const avxf u_final = uv[0];
-	const avxf v_final = uv[1];
-        
+	const Vec2<avxf> uv = u * uv1 + v * uv2 + (1.0f-u-v) * uv0;
+	const avxf u_final = uv[1];
+	const avxf v_final = uv[0];
 #else
 	const avxf u_final = u;
 	const avxf v_final = v;

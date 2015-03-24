@@ -341,6 +341,11 @@ namespace embree
     return _mm512_castsi512_ps(_mm512_permutev_epi32(index,_mm512_castps_si512(v)));  
   }
 
+  __forceinline mic_f permute16f(__m512i index, mic_f v)
+  {
+    return _mm512_castsi512_ps(_mm512_permutev_epi32(index,_mm512_castps_si512(v)));  
+  }
+
   template<int i>
   __forceinline mic_f align_shift_right(const mic_f &a, const mic_f &b)
   {
@@ -590,6 +595,12 @@ namespace embree
 
   __forceinline mic_f uload16f(const mic_m& mask,const float *const addr) {
     mic_f r = mic_f::undefined();
+    r =_mm512_mask_extloadunpacklo_ps(r, mask,addr, _MM_UPCONV_PS_NONE, _MM_HINT_NONE);
+    r = _mm512_mask_extloadunpackhi_ps(r, mask, addr+16, _MM_UPCONV_PS_NONE, _MM_HINT_NONE);  
+    return r;
+  }
+
+  __forceinline mic_f uload16f(mic_f &r, const mic_m& mask, const float *const addr) {
     r =_mm512_mask_extloadunpacklo_ps(r, mask,addr, _MM_UPCONV_PS_NONE, _MM_HINT_NONE);
     r = _mm512_mask_extloadunpackhi_ps(r, mask, addr+16, _MM_UPCONV_PS_NONE, _MM_HINT_NONE);  
     return r;

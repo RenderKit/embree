@@ -21,8 +21,8 @@
 #include "algorithms/parallel_prefix_sum.h"
 #include "algorithms/parallel_for_for_prefix_sum.h"
 
-#include "builders_new/primrefgen.h"
-#include "builders_new/bvh_builder_morton.h"
+#include "builders/primrefgen.h"
+#include "builders/bvh_builder_morton.h"
 
 #include "geometry/triangle1.h"
 #include "geometry/triangle4.h"
@@ -610,7 +610,7 @@ namespace embree
             SetBVH4Bounds setBounds(bvh);
             CreateLeaf createLeaf(mesh,morton.data());
             CalculateMeshBounds<Mesh> calculateBounds(mesh);
-            auto node_bounds = bvh_builder_center_internal<BVH4::NodeRef>(
+            auto node_bounds = bvh_builder_morton_internal<BVH4::NodeRef>(
               [&] () { return bvh->alloc2.threadLocal2(); },
               BBox3fa(empty),
               allocNode,setBounds,createLeaf,calculateBounds,progress,
@@ -823,7 +823,7 @@ namespace embree
             SetBVH4Bounds setBounds(bvh);
             CreateLeaf createLeaf(scene,morton.data(),encodeShift,encodeMask);
             CalculateBounds calculateBounds(scene,encodeShift,encodeMask);
-            auto node_bounds = bvh_builder_center_internal<BVH4::NodeRef>(
+            auto node_bounds = bvh_builder_morton_internal<BVH4::NodeRef>(
               [&] () { return bvh->alloc2.threadLocal2(); },
                 BBox3fa(empty),
               allocNode,setBounds,createLeaf,calculateBounds,progress,

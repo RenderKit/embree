@@ -111,6 +111,7 @@ namespace embree
 
     /*! Builds acceleration structure for the scene. */
     void build (size_t threadIndex, size_t threadCount);
+    void build_task ();
 
     /*! stores scene into binary file */
     void write(std::ofstream& file);
@@ -132,6 +133,12 @@ namespace embree
 
     /* determines of the scene is ready to get build */
     bool ready() { return numMappedBuffers == 0; }
+
+    /* determines if scene is modified */
+    __forceinline bool isModified() const { return modified; }
+
+    /* sets modified flag */
+    __forceinline void setModified(bool f = true) { modified = f; }
 
     /* get mesh by ID */
     __forceinline       Geometry* get(size_t i)       { assert(i < geometries.size()); return geometries[i]; }
@@ -215,14 +222,20 @@ namespace embree
     bool needTriangles; 
     bool needVertices; // FIXME: this flag is also used for hair geometry, but there should be a second flag
     bool is_build;
-    MutexSys mutex;
+    MutexSys buildMutex;
     AtomicMutex geometriesMutex;
+    bool modified;                   //!< true if scene got modified
     
     /*! global lock step task scheduler */
+#if defined(TASKING_LOCKSTEP)
     __aligned(64) LockStepTaskScheduler lockstep_scheduler;
-
+#elif defined(TASKING_TBB_INTERNAL)
     TaskSchedulerNew* volatile scheduler;
-
+#else
+    tbb::task_group* group;
+    BarrierActiveAutoReset group_barrier;
+#endif
+    
   public:
     RTC_PROGRESS_MONITOR_FUNCTION progress_monitor_function;
     void* progress_monitor_ptr;

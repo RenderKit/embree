@@ -19,8 +19,8 @@
 #include "heuristic_spatial.h"
 #include "builders/primrefblock.h"
 
-#include "builders_new/heuristic_binning_list_aligned.h"
-#include "builders_new/heuristic_spatial_list.h"
+#include "heuristic_binning_list_aligned.h"
+#include "heuristic_spatial_list.h"
 
 namespace embree
 {

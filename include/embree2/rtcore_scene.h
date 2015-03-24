@@ -69,16 +69,17 @@ RTCORE_API void rtcSetProgressMonitorFunction(RTCScene scene, RTC_PROGRESS_MONIT
  *  rays. */
 RTCORE_API void rtcCommit (RTCScene scene);
 
-/*! Commits the geometry of the scene. The calling threads will be used
- *  internally as a worker threads. The function will wait until
- *  'numThreads' threads have called this function. After initializing
- *  or modifying geometries, commit has to get called before
- *  tracing rays. */
-#if defined(__MIC__)
+/*! Commits the geometry of the scene. The calling threads will be
+ *  used internally as a worker threads on some implementations. The
+ *  function will wait until 'numThreads' threads have called this
+ *  function and all threads return from the function after the scene
+ *  commit is finished. The application threads will not be used as
+ *  worker threads when the TBB tasking system is enabled (which is
+ *  the default). On CPUs, we recommend also using TBB inside your
+ *  application to share threads. We recommend using the
+ *  rtcCommitThread feature to share threads on the Xeon Phi
+ *  coprocessor. */
 RTCORE_API void rtcCommitThread(RTCScene scene, unsigned int threadID, unsigned int numThreads);
-#else
-RTCORE_API RTCORE_DEPRECATED void rtcCommitThread(RTCScene scene, unsigned int threadID, unsigned int numThreads);
-#endif
 
 /*! Intersects a single ray with the scene. The ray has to be aligned
  *  to 16 bytes. This function can only be called for scenes with the

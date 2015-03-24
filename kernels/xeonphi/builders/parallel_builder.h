@@ -56,6 +56,8 @@ namespace embree
     virtual size_t getNumPrimitives() = 0;
     virtual void printBuilderName()   = 0;
 
+    void clear() {}
+
     virtual void buildSubTree(BuildRecord& current, 
 			      NodeAllocator& alloc, 
 			      const size_t mode,

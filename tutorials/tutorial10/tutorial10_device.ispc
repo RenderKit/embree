@@ -27,7 +27,7 @@
 #define SPP 1
 
 //#define FORCE_FIXED_EDGE_TESSELLATION
-#define FIXED_EDGE_TESSELLATION_VALUE 31
+#define FIXED_EDGE_TESSELLATION_VALUE 1
 //#define FIXED_EDGE_TESSELLATION_VALUE 63
 
 #define MAX_EDGE_LEVEL 64.0f
@@ -537,6 +537,7 @@ export void device_render (uniform int* uniform pixels,
   const uniform int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   const uniform int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
   launch[numTilesX*numTilesY] renderTile(pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY); sync;
+  rtcDebug();
 }
 
 /* called by the C++ code for cleanup */

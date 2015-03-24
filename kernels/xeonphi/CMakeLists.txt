@@ -14,10 +14,13 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-IF (TASKING_TBB)
-  INCLUDE_DIRECTORIES(${TBB_INCLUDE_DIRS_MIC})
-  SET(ADDITIONAL_LIBRARIES ${TBB_LIBRARIES_MIC})
-ENDIF()
+#IF (TASKING_INTERNAL)
+  ADD_DEFINITIONS(-DTASKING_LOCKSTEP)
+#ELSE()
+#  ADD_DEFINITIONS(-DTASKING_TBB)
+#  INCLUDE_DIRECTORIES(${TBB_INCLUDE_DIRS_MIC})
+#  SET(ADDITIONAL_LIBRARIES ${TBB_LIBRARIES_MIC})
+#ENDIF()
 
 INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
 
@@ -31,12 +34,10 @@ ADD_ISPC_LIBRARY(embree_xeonphi ${EMBREE_LIB_TYPE}
   ../../common/tasking/taskscheduler_sys.cpp
   ../../common/tasking/taskscheduler_new.cpp
   ../../common/tasking/taskscheduler_mic.cpp
-  ../../common/tasking/tasklogger.cpp
   ../../common/tasking/tasksys.cpp
 
   ../common/stat.cpp 
   ../common/globals.cpp 
-  ../common/alloc.cpp 
   ../common/acceln.cpp
   ../common/rtcore.cpp 
   ../common/rtcore_ispc.cpp 

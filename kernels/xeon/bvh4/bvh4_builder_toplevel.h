@@ -17,14 +17,14 @@
 #pragma once
 
 #include "bvh4.h"
-#include "bvh4_builder_fast.h"
+#include "builders/bvh_builder.h"
 #include "common/scene_triangle_mesh.h"
 
 namespace embree
 {
   namespace isa
   {
-    class BVH4BuilderTopLevel : public BVH4TopLevelBuilderFastT
+    class BVH4BuilderTopLevel : public Builder
     {
       ALIGNED_CLASS;
     public:
@@ -65,25 +65,22 @@ namespace embree
       
       /*! builder entry point */
       void build(size_t threadIndex, size_t threadCount);
-      
-      /*! parallel rebuild of geometry */
-      TASK_SET_FUNCTION(BVH4BuilderTopLevel,task_build_parallel);
 
-      void create_object(size_t objectID);
-      void build (size_t threadIndex, size_t threadCount, size_t objectID);
+      void clear();
+
       void open_sequential();
       
     public:
+      BVH4* bvh;
       std::vector<BVH4*>& objects;
       std::vector<Builder*> builders;
-      std::vector<size_t> allThreadBuilds;    
       
     public:
       Scene* scene;
       createTriangleMeshAccelTy createTriangleMeshAccel;
       
-      vector_t<BuildRef> refs;
-      vector_t<PrimRef> prims;
+      vector<BuildRef> refs;
+      vector<PrimRef> prims;
       AlignedAtomicCounter32 nextRef;
     };
   }

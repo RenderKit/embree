@@ -380,30 +380,31 @@ namespace embree
 
     __forceinline bool hasLeafSize() const
     {
+
+#if defined(__MIC__)
+      return u_end-u_start <= 1 && v_end-v_start <= 1;
+#else
       const unsigned int u_size = u_end-u_start+1;
       const unsigned int v_size = v_end-v_start+1;
-#if defined(__MIC__)
-      return u_size <= 4 && v_size <= 4;
-#else
+      assert(u_size >= 1);
+      assert(v_size >= 1);
+
       return u_size <= 3 && v_size <= 3;
 #endif
     }
 
-    __forceinline unsigned int largestExtend() const
-    {
-      const int u_size = u_end-u_start+1;
-      const int v_size = v_end-v_start+1;
-      return max(u_size,v_size);
-    }
 
     static __forceinline unsigned int split(unsigned int start,unsigned int end)
     {
       const unsigned int size = end-start+1;
 #if defined(__MIC__)
-      assert( size > 4 );
-      const unsigned int blocks4 = (end-start+1+4-1)/4;
-      const unsigned int center  = (start + (blocks4/2)*4)-1; 
-      assert ((center-start+1) % 4 == 0);
+      //assert( size > 4 );
+      //const unsigned int blocks4 = (end-start+1+4-1)/4;
+      //const unsigned int center  = (start + (blocks4/2)*4)-1; 
+      //assert ((center-start+1) % 4 == 0);
+      const unsigned int center = (start+end)/2;
+      assert(center<end);
+      return center;
 #else
       // FIXME: for xeon the divide is 3!
       const unsigned int center = (start+end)/2;
@@ -425,46 +426,24 @@ namespace embree
 
       if (u_size >= v_size)
         {
-          assert(u_size >= 3);
+          //assert(u_size >= 3);
           const unsigned int u_mid = split(u_start,u_end);
           r0.u_end   = u_mid;
           r1.u_start = u_mid;
         }
       else
         {
-          assert(v_size >= 3);
+          //assert(v_size >= 3);
           const unsigned int v_mid = split(v_start,v_end);
           r0.v_end   = v_mid;
           r1.v_start = v_mid;
         }
+
     }
 
     __forceinline unsigned int splitIntoSubRanges(GridRange r[4]) const
     {
       assert( !hasLeafSize() );
-#if 0
-      size_t children = 1;
-      r[0] = *this;
-      while(1)
-        {
-          size_t index  = (size_t)-1;
-          size_t extend = 0;
-          for (size_t i=0;i<children;i++)
-            if (!r[i].hasLeafSize())
-              if (r[i].largestExtend() > extend)
-                {
-                  extend = r[i].largestExtend();
-                  index = i;
-                }
-          if (index == (size_t)-1) break;
-
-          GridRange tmp = r[index];
-          tmp.split(r[index],r[children]);
-          children++;          
-	  if (children >= 4) break;
-        }
-      return children;
-#else
       size_t children = 0;
       GridRange first,second;
       split(first,second);
@@ -490,7 +469,6 @@ namespace embree
 	  children += 2;
 	}
       return children;      
-#endif
     }
 
   };
@@ -670,7 +648,7 @@ namespace embree
       return grid_u_res*y+x;
     }
 
-    void evalToOBJ(Scene *scene, size_t &vertex_index);
+    void evalToOBJ(Scene *scene, size_t &vertex_index,size_t &numTotalTriangles);
     
   private:
 
@@ -697,7 +675,17 @@ namespace embree
   public:
     __forceinline unsigned int getSubTreeSize64bBlocks(const unsigned int leafBlocks = 2)
     {
+#if defined(__MIC__)
+      const unsigned int U_BLOCK_SIZE = 5;
+      const unsigned int V_BLOCK_SIZE = 3;
+
+      const unsigned int grid_u_blocks = (grid_u_res + U_BLOCK_SIZE-2) / (U_BLOCK_SIZE-1);
+      const unsigned int grid_v_blocks = (grid_v_res + V_BLOCK_SIZE-2) / (V_BLOCK_SIZE-1);
+
+      return get64BytesBlocksForGridSubTree(GridRange(0,grid_u_blocks,0,grid_v_blocks),leafBlocks);
+#else
       return get64BytesBlocksForGridSubTree(GridRange(0,grid_u_res-1,0,grid_v_res-1),leafBlocks);
+#endif
     }
 
     __forceinline void read_lock()      { mtx.read_lock();    }

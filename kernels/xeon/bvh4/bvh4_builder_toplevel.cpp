@@ -16,20 +16,17 @@
 
 #include "bvh4_builder_toplevel.h"
 #include "bvh4_statistics.h"
+#include "common/profile.h"
 
-#include "geometry/triangle1.h"
-#include "geometry/triangle4.h"
-#include "geometry/triangle1v.h"
-#include "geometry/triangle4v.h"
+#define PROFILE 0
+#define MIN_OPEN_SIZE 2000
 
 namespace embree
 {
   namespace isa
   {
-#define MIN_OPEN_SIZE 2000
-
     BVH4BuilderTopLevel::BVH4BuilderTopLevel (BVH4* bvh, Scene* scene, const createTriangleMeshAccelTy createTriangleMeshAccel) 
-      : objects(bvh->objects), scene(scene), createTriangleMeshAccel(createTriangleMeshAccel), BVH4TopLevelBuilderFastT(&scene->lockstep_scheduler,bvh) {}
+      : bvh(bvh), objects(bvh->objects), scene(scene), createTriangleMeshAccel(createTriangleMeshAccel) {}
     
     BVH4BuilderTopLevel::~BVH4BuilderTopLevel ()
     {
@@ -41,116 +38,175 @@ namespace embree
     {
       /* delete some objects */
       size_t N = scene->size();
-      for (size_t i=N; i<objects.size(); i++) {
-        delete builders[i]; builders[i] = NULL;
-        delete objects[i]; objects[i] = NULL;
+      if (N < objects.size()) {
+        parallel_for(N, objects.size(), [&] (const range<size_t>& r) {
+            for (size_t i=r.begin(); i<r.end(); i++) {
+              delete builders[i]; builders[i] = NULL;
+              delete objects[i]; objects[i] = NULL;
+            }
+          });
       }
-      
+
+      /* skip build for empty scene */
+      const size_t numPrimitives = scene->getNumPrimitives<TriangleMesh,1>();
+      if (numPrimitives == 0) {
+        prims.resize(0);
+        bvh->set(BVH4::emptyNode,empty,0);
+        return;
+      }
+
+      double t0 = 0.0, dt = 0.0;
+      if (g_verbose >= 1) {
+	std::cout << "building BVH4<" << bvh->primTy.name << "> with " << TOSTRING(isa) << "::TwoLevel SAH builder ... " << std::flush;
+      }
+
+#if PROFILE
+	profile(2,20,numPrimitives,[&] (ProfileTimer& timer)
+        {
+#endif
+      if (g_benchmark || g_verbose >= 1) t0 = getSeconds();
+          
       /* resize object array if scene got larger */
       if (objects.size() < N) {
         objects.resize(N);
         builders.resize(N);
+        refs.resize(N);
       }
-      
-      refs.resize(N);
       nextRef = 0;
       
-      /* sequential create of acceleration structures */
-      for (size_t i=0; i<N; i++) 
-        create_object(i);
-      
+      /* create of acceleration structures */
+      parallel_for(size_t(0), N, [&] (const range<size_t>& r) 
+      {
+        for (size_t objectID=r.begin(); objectID<r.end(); objectID++)
+        {
+          TriangleMesh* mesh = scene->getTriangleMeshSafe(objectID);
+          
+          /* verify meshes got deleted properly */
+          if (mesh == NULL || mesh->numTimeSteps != 1) {
+            assert(objectID < objects.size () && objects[objectID] == NULL);
+            assert(objectID < builders.size() && builders[objectID] == NULL);
+            continue;
+          }
+          
+          /* delete BVH and builder for meshes that are scheduled for deletion */
+          if (mesh->state == Geometry::ERASING) {
+            delete builders[objectID]; builders[objectID] = NULL;
+            delete objects [objectID]; objects [objectID] = NULL;
+            continue;
+          }
+          
+          /* create BVH and builder for new meshes */
+          if (objects[objectID] == NULL)
+            createTriangleMeshAccel(mesh,objects[objectID],builders[objectID]);
+        }
+      });
+
       /* parallel build of acceleration structures */
-      if (N) scheduler->dispatchTask(threadIndex,threadCount,_task_build_parallel,this,N,"toplevel_build_parallel");
+      parallel_for(size_t(0), N, [&] (const range<size_t>& r) 
+      {
+        for (size_t objectID=r.begin(); objectID<r.end(); objectID++)
+        {
+          /* ignore if no triangle mesh or not enabled */
+          TriangleMesh* mesh = scene->getTriangleMeshSafe(objectID);
+          if (mesh == NULL || !mesh->isEnabled() || mesh->numTimeSteps != 1) 
+            continue;
+        
+          BVH4*    object  = objects [objectID]; assert(object);
+          Builder* builder = builders[objectID]; assert(builder);
+          
+          /* build object if it got modified */
+#if !PROFILE 
+          if (mesh->isModified()) 
+#endif
+          {
+            builder->build(0,0);
+            mesh->state = Geometry::ENABLED;
+          }
+          
+          /* create build primitive */
+          if (!object->bounds.empty())
+            refs[nextRef++] = BVH4BuilderTopLevel::BuildRef(object->bounds,object->root);
+        }
+      });
       
-      /* perform builds that need all threads */
-      for (size_t i=0; i<allThreadBuilds.size(); i++) {
-        build(threadIndex,threadCount,allThreadBuilds[i]);
-      }
-      allThreadBuilds.clear();
-      
-      /* ignore empty scenes */
       refs.resize(nextRef);
-      
-      double t0 = 0.0;
-      if (g_verbose >= 2) {
-	std::cout << "building BVH4<" << bvh->primTy.name << "> with " << TOSTRING(isa) << "::TopLevel SAH builder ... " << std::flush;
-        t0 = getSeconds();
-      }
 
       /* open all large nodes */
       open_sequential();
-
       prims.resize(refs.size());
-      for (size_t i=0; i<refs.size(); i++) {
-	prims[i] = PrimRef(refs[i].bounds(),(size_t)refs[i].node);
-      }
-      
-      BVH4TopLevelBuilderFastT::build(threadIndex,threadCount,prims.begin(),prims.size());
 
-      if (g_verbose >= 2) {
-	std::cout << "[DONE] " << std::endl;
+      /* compute PrimRefs */
+      const PrimInfo pinfo = parallel_reduce(size_t(0), refs.size(), size_t(1024), PrimInfo(empty), [&] (const range<size_t>& r) -> PrimInfo
+      {
+        PrimInfo pinfo(empty);
+        for (size_t i=r.begin(); i<r.end(); i++) {
+          pinfo.add(refs[i].bounds());
+          prims[i] = PrimRef(refs[i].bounds(),(size_t)refs[i].node);
+        }
+        return pinfo;
+      }, [] (const PrimInfo& a, const PrimInfo& b) { return PrimInfo::merge(a,b); });
+
+      /* skip if all objects where empty */
+      if (pinfo.size() == 0)
+        bvh->set(BVH4::emptyNode,empty,0);
+
+      /* otherwise build toplevel hierarchy */
+      else
+      {
+        BVH4::NodeRef root = bvh_builder_binned_sah_internal<BVH4::NodeRef>
+          ([&] { return bvh->alloc2.threadLocal2(); },
+           [&] (const isa::BuildRecord<BVH4::NodeRef>& current, BuildRecord<BVH4::NodeRef>** children, const size_t N, FastAllocator::ThreadLocal2* alloc) -> int
+           {
+             BVH4::Node* node = (BVH4::Node*) alloc->alloc0.malloc(sizeof(BVH4::Node)); node->clear();
+             for (size_t i=0; i<N; i++) {
+               node->set(i,children[i]->geomBounds);
+               children[i]->parent = &node->child(i);
+             }
+             *current.parent = bvh->encodeNode(node);
+             return 0;
+           },
+           [&] (const BuildRecord<BVH4::NodeRef>& current, FastAllocator::ThreadLocal2* alloc) -> int // FIXME: why are prims passed here but not for createNode
+           {
+             assert(current.prims.size() == 1);
+             *current.parent = (BVH4::NodeRef) prims[current.prims.begin()].ID();
+             return 1;
+           },
+           [&] (size_t dn) { bvh->scene->progressMonitor(0); },
+           prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,1,1,1);
+        
+        bvh->set(root,pinfo.geomBounds,numPrimitives);
+      }
+
+      if (g_benchmark || g_verbose >= 1) dt = getSeconds()-t0;
+ 
+#if PROFILE
+      dt = timer.avg();
+      }); 
+#endif
+
+      if (g_verbose >= 1)
+        std::cout << "[DONE] " << 1000.0f*dt << "ms (" << numPrimitives/dt*1E-6 << " Mprim/s)" << std::endl;
+      if (g_verbose >= 2)
+        bvh->printStatistics();
+
+      /* benchmark mode */
+      if (g_benchmark) {
+        BVH4Statistics stat(bvh);
+        std::cout << "BENCHMARK_BUILD " << dt << " " << double(numPrimitives)/(dt) << " " << stat.sah() << " " << stat.bytesUsed() << std::endl;
       }
     }
 
-    void BVH4BuilderTopLevel::create_object(size_t objectID)
+    void BVH4BuilderTopLevel::clear()
     {
-      TriangleMesh* mesh = scene->getTriangleMeshSafe(objectID);
-      
-      /* verify meshes got deleted properly */
-      if (mesh == NULL || mesh->numTimeSteps != 1) {
-        assert(objectID < objects.size () && objects[objectID] == NULL);
-        assert(objectID < builders.size() && builders[objectID] == NULL);
-        return;
-      }
-      
-      /* delete BVH and builder for meshes that are scheduled for deletion */
-      if (mesh->state == Geometry::ERASING) {
-        delete builders[objectID]; builders[objectID] = NULL;
-        delete objects [objectID]; objects [objectID] = NULL;
-        return;
-      }
-      
-      /* create BVH and builder for new meshes */
-      if (objects[objectID] == NULL)
-        createTriangleMeshAccel((TriangleMesh*)mesh,objects[objectID],builders[objectID]);
-      
-      /* remember meshes that need all threads to get built */
-      if (builders[objectID]->needAllThreads) 
-	allThreadBuilds.push_back(objectID);
+      for (size_t i=0; i<objects.size(); i++) 
+        if (objects[i]) objects[i]->clear();
+
+      for (size_t i=0; i<builders.size(); i++) 
+	if (builders[i]) builders[i]->clear();
+
+      refs.clear();
     }
-    
-    void BVH4BuilderTopLevel::build (size_t threadIndex, size_t threadCount, size_t objectID)
-    {
-      /* ignore if no triangle mesh or not enabled */
-      TriangleMesh* mesh = scene->getTriangleMeshSafe(objectID);
-      if (mesh == NULL || !mesh->isEnabled() || mesh->numTimeSteps != 1) 
-        return;
-      
-      BVH4*    object  = objects [objectID]; assert(object);
-      Builder* builder = builders[objectID]; assert(builder);
-            
-      /* build object if it got modified */
-      if (mesh->isModified()) {
-        builder->build(threadIndex,threadCount);
-        mesh->state = Geometry::ENABLED;
-      }
-      
-      /* create build primitive */
-      if (!object->bounds.empty())
-	refs[nextRef++] = BuildRef(object->bounds,object->root);
-    }
-    
-    void BVH4BuilderTopLevel::task_build_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount)
-    {
-      /* ignore meshes that need all threads */
-      size_t objectID = taskIndex;
-      if (builders[objectID] && builders[objectID]->needAllThreads) 
-        return;
-      
-      /* build all other meshes */
-      build(threadIndex,threadCount,objectID);
-    }
-    
+
     void BVH4BuilderTopLevel::open_sequential()
     {
       if (refs.size() == 0)
@@ -176,7 +232,7 @@ namespace embree
       }
     }
     
-    Builder* BVH4BuilderTopLevelFast (BVH4* bvh, Scene* scene, const createTriangleMeshAccelTy createTriangleMeshAccel) {
+    Builder* BVH4BuilderTopLevelBinnedSAH (BVH4* bvh, Scene* scene, const createTriangleMeshAccelTy createTriangleMeshAccel) {
       return new BVH4BuilderTopLevel(bvh,scene,createTriangleMeshAccel);
     }
   }

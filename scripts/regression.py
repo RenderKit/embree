@@ -59,11 +59,11 @@ dash = '/'
 
 #compilers_win = ['V120']
 #compilers_win = ['ICC']
-compilers_win  = ['V120', 'ICC']
-#compilers_win  = ['V100', 'V110', 'V120', 'ICC']
+#compilers_win  = ['V120', 'ICC']
+compilers_win  = ['V110', 'V120', 'ICC']
 #compilers_unix = ['ICC']
-compilers_unix = ['GCC', 'CLANG']
-#compilers_unix = ['GCC', 'CLANG', 'ICC']
+#compilers_unix = ['GCC', 'CLANG']
+compilers_unix = ['GCC', 'CLANG', 'ICC']
 compilers      = []
 
 #platforms_win  = ['Win32']
@@ -73,11 +73,11 @@ platforms_unix = ['x64']
 platforms      = []
 
 #builds_win = ['Debug']
-builds_win = ['Release']
-#builds_win = ['Release', 'Debug']
+builds_win = ['RelWithDebInfo']
+#builds_win = ['RelWithDebInfo', 'Debug']
 #builds_unix = ['Debug']
-builds_unix = ['Release']
-#builds_unix = ['Release', 'Debug']
+builds_unix = ['RelWithDebInfo']
+#builds_unix = ['RelWithDebInfo', 'Debug']
 builds = []
 
 #ISAs_win  = ['SSE2']
@@ -87,20 +87,17 @@ ISAs_unix = ['SSE2', 'SSE4.2', 'AVX', 'AVX2']
 ISAs = []
 
 supported_configurations = [
-  'V120_Win32_Debug_SSE2',   'V120_Win32_Debug_SSE4.2',   'V120_Win32_Debug_AVX',   'V120_Win32_Debug_AVX2', 
-  'V120_Win32_Release_SSE2', 'V120_Win32_Release_SSE4.2', 'V120_Win32_Release_AVX', 'V120_Win32_Release_AVX2', 
-  'V120_x64_Debug_SSE2',     'V120_x64_Debug_SSE4.2',     'V120_x64_Debug_AVX',     'V120_x64_Debug_AVX2', 
-  'V120_x64_Release_SSE2',   'V120_x64_Release_SSE4.2',   'V120_x64_Release_AVX',   'V120_x64_Release_AVX2', 
-  'ICC_Win32_Debug_SSE2',    'ICC_Win32_Debug_SSE4.2',    'ICC_Win32_Debug_AVX',    'ICC_Win32_Debug_AVX2', 
-  'ICC_Win32_Release_SSE2',  'ICC_Win32_Release_SSE4.2',  'ICC_Win32_Release_AVX',  'ICC_Win32_Release_AVX2', 
-  'ICC_x64_Debug_SSE2',      'ICC_x64_Debug_SSE4.2',      'ICC_x64_Debug_AVX',      'ICC_x64_Debug_AVX2', 
-  'ICC_x64_Release_SSE2',    'ICC_x64_Release_SSE4.2',    'ICC_x64_Release_AVX',    'ICC_x64_Release_AVX2', 
-  'GCC_x64_Debug_SSE2',      'GCC_x64_Debug_SSE4.2',      'GCC_x64_Debug_AVX',      'GCC_x64_Debug_AVX2', 
-  'GCC_x64_Release_SSE2',    'GCC_x64_Release_SSE4.2',    'GCC_x64_Release_AVX',    'GCC_x64_Release_AVX2', 
-  'CLANG_x64_Debug_SSE2',    'CLANG_x64_Debug_SSE4.2',    'CLANG_x64_Debug_AVX',    'CLANG_x64_Debug_AVX2',  
-  'CLANG_x64_Release_SSE2',  'CLANG_x64_Release_SSE4.2',  'CLANG_x64_Release_AVX',  'CLANG_x64_Release_AVX2',  
+  'V100_Win32_RelWithDebInfo_SSE2', 'V100_Win32_RelWithDebInfo_SSE4.2',
+  'V100_x64_RelWithDebInfo_SSE2',   'V100_x64_RelWithDebInfo_SSE4.2',
+  'V110_Win32_RelWithDebInfo_SSE2', 'V120_Win32_RelWithDebInfo_SSE4.2', 'V120_Win32_RelWithDebInfo_AVX',
+  'V110_x64_RelWithDebInfo_SSE2',   'V120_x64_RelWithDebInfo_SSE4.2',   'V120_x64_RelWithDebInfo_AVX',  
+  'V120_Win32_RelWithDebInfo_SSE2', 'V120_Win32_RelWithDebInfo_SSE4.2', 'V120_Win32_RelWithDebInfo_AVX', 'V120_Win32_RelWithDebInfo_AVX2', 
+  'V120_x64_RelWithDebInfo_SSE2',   'V120_x64_RelWithDebInfo_SSE4.2',   'V120_x64_RelWithDebInfo_AVX',   'V120_x64_RelWithDebInfo_AVX2', 
+  'ICC_Win32_RelWithDebInfo_SSE2',  'ICC_Win32_RelWithDebInfo_SSE4.2',  'ICC_Win32_RelWithDebInfo_AVX',  'ICC_Win32_RelWithDebInfo_AVX2', 
+  'ICC_x64_RelWithDebInfo_SSE2',    'ICC_x64_RelWithDebInfo_SSE4.2',    'ICC_x64_RelWithDebInfo_AVX',    'ICC_x64_RelWithDebInfo_AVX2', 
+  'GCC_x64_RelWithDebInfo_SSE2',    'GCC_x64_RelWithDebInfo_SSE4.2',    'GCC_x64_RelWithDebInfo_AVX',    'GCC_x64_RelWithDebInfo_AVX2', 
+  'CLANG_x64_RelWithDebInfo_SSE2',  'CLANG_x64_RelWithDebInfo_SSE4.2',  'CLANG_x64_RelWithDebInfo_AVX',  'CLANG_x64_RelWithDebInfo_AVX2',  
   ]
-
 
 models = {}
 models['Win32'] = [ 'conference', 'sponza', 'headlight', 'crown', 'bentley' ]
@@ -109,8 +106,8 @@ models['x64'  ] = [ 'conference', 'sponza', 'headlight', 'crown', 'bentley', 'xy
 modelDir  = ''
 testDir = ''
 
-def configName(OS, compiler, platform, build, isa, tutorial, scene, flags):
-  cfg = OS + '_' + compiler + '_' + platform + '_' + build + '_' + isa
+def configName(OS, compiler, platform, build, isa, tasking, tutorial, scene, flags):
+  cfg = OS + '_' + compiler + '_' + platform + '_' + build + '_' + isa + '_' + tasking
   if tutorial != '':
     cfg += '_' + tutorial
   if scene != '':
@@ -121,9 +118,9 @@ def configName(OS, compiler, platform, build, isa, tutorial, scene, flags):
 
 ########################## compiling ##########################
 
-def compile(OS,compiler,platform,build,isa):
+def compile(OS,compiler,platform,build,isa,tasking):
 
-  base = configName(OS, compiler, platform, build, isa, 'build', '', '')
+  base = configName(OS, compiler, platform, build, isa, tasking, 'build', '', '')
   logFile = testDir + dash + base + '.log'
 
   if OS == 'windows':
@@ -152,6 +149,13 @@ def compile(OS,compiler,platform,build,isa):
     command += ' -D RTCORE_INTERSECTION_FILTER=ON'
     command += ' -D RTCORE_BUFFER_STRIDE=ON'
     command += ' -D RTCORE_STAT_COUNTERS=OFF'
+    if tasking == 'tbb':
+      command += ' -D RTCORE_TASKING_SYSTEM=TBB'
+    elif tasking == 'internal':
+      command += ' -D RTCORE_TASKING_SYSTEM=INTERNAL'
+    else:
+      sys.stdout.write("invalid tasking system: "+tasking)
+      return 1
     command += ' ..'
     os.system('echo ' + command + ' > ' + logFile)
     ret = os.system('cd build && ' + command + ' >> ../' + logFile)
@@ -178,6 +182,13 @@ def compile(OS,compiler,platform,build,isa):
     command += ' -D RTCORE_INTERSECTION_FILTER=ON'
     command += ' -D RTCORE_BUFFER_STRIDE=ON'
     command += ' -D RTCORE_STAT_COUNTERS=OFF'
+    if tasking == 'tbb':
+      command += ' -D RTCORE_TASKING_SYSTEM=TBB'
+    elif tasking == 'internal':
+      command += ' -D RTCORE_TASKING_SYSTEM=INTERNAL'
+    else:
+      sys.stdout.write("invalid tasking system: "+tasking)
+      return 1
     command += ' .. && make clean && make -j 8'
     command += ' &> ../' + logFile
     return os.system(command)
@@ -187,110 +198,110 @@ def compileLoop(OS):
       for platform in platforms:
         for build in builds:
           for isa in ISAs:
-            if (compiler + '_' + platform + '_' + build + '_' + isa) in supported_configurations:
-              sys.stdout.write(OS + ' ' + compiler + ' ' + platform + ' ' + build + ' ' + isa)
-              sys.stdout.flush()
-              ret = compile(OS,compiler,platform,build,isa)
-              if ret != 0: sys.stdout.write(" [failed]\n")
-              else:        sys.stdout.write(" [passed]\n")
+            for tasking in ['tbb','internal']:
+              if (compiler + '_' + platform + '_' + build + '_' + isa) in supported_configurations:
+                sys.stdout.write(OS + ' ' + compiler + ' ' + platform + ' ' + build + ' ' + isa + ' ' + tasking)
+                sys.stdout.flush()
+                ret = compile(OS,compiler,platform,build,isa,tasking)
+                if ret != 0: sys.stdout.write(" [failed]\n")
+                else:        sys.stdout.write(" [passed]\n")
 
 ########################## rendering ##########################
 
-def render(OS, compiler, platform, build, isa, tutorial, scene, flags):
+def render(OS, compiler, platform, build, isa, tasking, tutorial, args, scene, flags):
   sys.stdout.write("  "+tutorial)
   if scene != '': sys.stdout.write(' '+scene)
   if flags != '': sys.stdout.write(' '+flags)
   sys.stdout.flush()
-  base = configName(OS, compiler, platform, build, isa, tutorial, scene, flags)
+  base = configName(OS, compiler, platform, build, isa, tasking, tutorial, scene, flags)
   logFile = testDir + dash + base + '.log'
   imageFile = testDir + dash + base + '.tga'
   if os.path.exists(logFile):
     sys.stdout.write(" [skipped]\n")
   else:
-    if OS == 'windows': command = 'build' + '\\' + build + '\\' + tutorial + ' '
-    else:               command = 'build' + '/' + tutorial + ' '
-    if tutorial[0:10] == 'tutorial10':
-      command += '-i tutorials/tutorial10/' + scene + '.xml '
-    elif scene != '':
-      command += '-c ' + modelDir + dash + scene + dash + scene + '_regression.ecs '
+    if OS == 'windows': command = 'build' + '\\' + build + '\\' + tutorial + ' ' + args + ' '
+    else:               command = 'build' + '/' + tutorial + ' ' + args + ' '
     if tutorial == 'regression':
       command += '-regressions 2000 '
     if tutorial[0:8] == 'tutorial':
-      command += '-rtcore verbose=2 -size 1024 1024 -o ' + imageFile
+      command += '-rtcore verbose=2'
+      if flags != "": command += ",flags=" + flags
+      command += ' -size 1024 1024 -o ' + imageFile
     command += ' > ' + logFile
     ret = os.system(command)
     if ret == 0: sys.stdout.write(" [passed]\n")
     else       : sys.stdout.write(" [failed]\n")
 
-def processConfiguration(OS, compiler, platform, build, isa, models):
-  sys.stdout.write('compiling configuration ' + compiler + ' ' + platform + ' ' + build + ' ' + isa)
+def render_tutorial03(OS, compiler, platform, build, isa, tasking, ty, scene, flags):
+  render(OS,compiler,platform,build,isa,tasking,"tutorial03",ty+" -c " + modelDir + dash + scene + dash + scene + '_regression.ecs ',scene,flags)
+
+def render_tutorial06(OS, compiler, platform, build, isa, tasking, ty, scene, flags):
+  render(OS,compiler,platform,build,isa,tasking,"tutorial06",ty+" -c " + modelDir + dash + scene + dash + scene + '_regression.ecs ',scene,flags)
+
+def render_tutorial07(OS, compiler, platform, build, isa, tasking, ty, scene, flags):
+  render(OS,compiler,platform,build,isa,tasking,"tutorial07",ty+" -c " + modelDir + dash + scene + dash + scene + '_regression.ecs ',scene,flags)
+
+def render_tutorial10(OS, compiler, platform, build, isa, tasking, ty, scene, flags):
+  if scene[0:6] == 'subdiv':
+    render(OS,compiler,platform,build,isa,tasking,"tutorial10",ty+" -i tutorials/tutorial10/" + scene + '.xml',scene,flags)
+  else:
+    render(OS,compiler,platform,build,isa,tasking,"tutorial10",ty+" -c " + modelDir + dash + scene + dash + scene + '_regression.ecs ',scene,flags)
+
+def processConfiguration(OS, compiler, platform, build, isa, tasking, models):
+  sys.stdout.write('compiling configuration ' + compiler + ' ' + platform + ' ' + build + ' ' + isa + ' ' + tasking)
   sys.stdout.flush()
-  ret = compile(OS,compiler,platform,build,isa)
+  ret = compile(OS,compiler,platform,build,isa,tasking)
   if ret != 0: sys.stdout.write(" [failed]\n")
   else:        
     sys.stdout.write(" [passed]\n")
                     
-    render(OS, compiler, platform, build, isa, 'verify', '', '')
-    render(OS, compiler, platform, build, isa, 'benchmark', '', '')
+    render(OS, compiler, platform, build, isa, tasking, 'verify', '', '', '')
+    render(OS, compiler, platform, build, isa, tasking, 'benchmark', '', '', '')
 
-    render(OS, compiler, platform, build, isa, 'tutorial00', '', '')
-    render(OS, compiler, platform, build, isa, 'tutorial01', '', '')
-    render(OS, compiler, platform, build, isa, 'tutorial02', '', '')
-    for model in models:
-      render(OS, compiler, platform, build, isa, 'tutorial03', model, 'static')
-      render(OS, compiler, platform, build, isa, 'tutorial03', model, 'dynamic')
-      render(OS, compiler, platform, build, isa, 'tutorial03', model, 'high_quality')
-      render(OS, compiler, platform, build, isa, 'tutorial03', model, 'robust')
-      render(OS, compiler, platform, build, isa, 'tutorial03', model, 'compact')
+    render(OS, compiler, platform, build, isa, tasking, 'tutorial11', '', '', '')
+    for ty in ['','_ispc']:
+      render(OS, compiler, platform, build, isa, tasking, 'tutorial00'+ty, '', '', '')
+      render(OS, compiler, platform, build, isa, tasking, 'tutorial01'+ty, '', '', '')
+      render(OS, compiler, platform, build, isa, tasking, 'tutorial02'+ty, '', '', '')
+      for model in models:
+        render_tutorial03(OS, compiler, platform, build, isa, tasking, ty, model, 'static')
+        render_tutorial03(OS, compiler, platform, build, isa, tasking, ty, model, 'dynamic')
+        render_tutorial03(OS, compiler, platform, build, isa, tasking, ty, model, 'high_quality')
+        render_tutorial03(OS, compiler, platform, build, isa, tasking, ty, model, 'robust')
+        render_tutorial03(OS, compiler, platform, build, isa, tasking, ty, model, 'compact')
 
-    render(OS, compiler, platform, build, isa, 'tutorial04', '', '')
-    render(OS, compiler, platform, build, isa, 'tutorial05', '', '')
-    for model in models:
-      render(OS, compiler, platform, build, isa, 'tutorial06', model, '')
-    render(OS, compiler, platform, build, isa, 'tutorial07', '', '')
+      render(OS, compiler, platform, build, isa, tasking, 'tutorial04'+ty, '', '', '')
+      render(OS, compiler, platform, build, isa, tasking, 'tutorial05'+ty, '', '', '')
 
-    render(OS, compiler, platform, build, isa, 'tutorial08', '', '')
-    render(OS, compiler, platform, build, isa, 'tutorial09', '', '')
+      for model in models:
+        render_tutorial06(OS, compiler, platform, build, isa, tasking, ty, model, '')
 
-    render(OS, compiler, platform, build, isa, 'tutorial10', 'subdiv0', 'static')
-    render(OS, compiler, platform, build, isa, 'tutorial10', 'subdiv1', 'dynamic')
-    render(OS, compiler, platform, build, isa, 'tutorial10', 'subdiv2', 'robust')
-    render(OS, compiler, platform, build, isa, 'tutorial10', 'subdiv3', 'high_quality')
-    render(OS, compiler, platform, build, isa, 'tutorial10', 'subdiv4', 'static')
-    render(OS, compiler, platform, build, isa, 'tutorial10', 'subdiv5', 'dynamic')
-    render(OS, compiler, platform, build, isa, 'tutorial10', 'subdiv6', 'robust')
+      render(OS, compiler, platform, build, isa, tasking, 'tutorial07', '', '', '')
+      render_tutorial07(OS, compiler, platform, build, isa, tasking, ty, 'tighten', '')
+      render_tutorial07(OS, compiler, platform, build, isa, tasking, ty, 'sophie', '')
+      render_tutorial07(OS, compiler, platform, build, isa, tasking, ty, 'sophie_mblur', '')
+
+      render(OS, compiler, platform, build, isa, tasking, 'tutorial08'+ty, '', '', '')
+      render(OS, compiler, platform, build, isa, tasking, 'tutorial09'+ty, '', '', '')
+    
+      render_tutorial10(OS, compiler, platform, build, isa, tasking, ty, 'subdiv0', '')
+      render_tutorial10(OS, compiler, platform, build, isa, tasking, ty, 'subdiv1', '')
+      render_tutorial10(OS, compiler, platform, build, isa, tasking, ty, 'subdiv2', '')
+      render_tutorial10(OS, compiler, platform, build, isa, tasking, ty, 'subdiv3', '')
+      render_tutorial10(OS, compiler, platform, build, isa, tasking, ty, 'subdiv4', '')
+      render_tutorial10(OS, compiler, platform, build, isa, tasking, ty, 'subdiv5', '')
+      render_tutorial10(OS, compiler, platform, build, isa, tasking, ty, 'subdiv6', '')
+      render_tutorial10(OS, compiler, platform, build, isa, tasking, ty, 'bigguy', '')
+      render_tutorial10(OS, compiler, platform, build, isa, tasking, ty, 'cupid', '')
 			    
-    render(OS, compiler, platform, build, isa, 'tutorial00_ispc', '', '')
-    render(OS, compiler, platform, build, isa, 'tutorial01_ispc', '', '')
-    render(OS, compiler, platform, build, isa, 'tutorial02_ispc', '', '')
-    for model in models:
-      render(OS, compiler, platform, build, isa, 'tutorial03_ispc', model, '')
-    render(OS, compiler, platform, build, isa, 'tutorial04_ispc', '', '')
-    render(OS, compiler, platform, build, isa, 'tutorial05_ispc', '', '')
-    for model in models:
-      render(OS, compiler, platform, build, isa, 'tutorial06_ispc', model, '')
-    render(OS, compiler, platform, build, isa, 'tutorial07_ispc', '', 'static')
-    render(OS, compiler, platform, build, isa, 'tutorial07_ispc', '', 'dynamic')
-    render(OS, compiler, platform, build, isa, 'tutorial07_ispc', '', 'high_quality')
-
-    render(OS, compiler, platform, build, isa, 'tutorial08_ispc', '', '')
-    render(OS, compiler, platform, build, isa, 'tutorial09_ispc', '', '')
-
-    render(OS, compiler, platform, build, isa, 'tutorial10_ispc', 'subdiv0', 'static')
-    render(OS, compiler, platform, build, isa, 'tutorial10_ispc', 'subdiv1', 'dynamic')
-    render(OS, compiler, platform, build, isa, 'tutorial10_ispc', 'subdiv2', 'robust')
-    render(OS, compiler, platform, build, isa, 'tutorial10_ispc', 'subdiv3', 'high_quality')
-    render(OS, compiler, platform, build, isa, 'tutorial10_ispc', 'subdiv4', 'static')
-    render(OS, compiler, platform, build, isa, 'tutorial10_ispc', 'subdiv5', 'dynamic')
-    render(OS, compiler, platform, build, isa, 'tutorial10_ispc', 'subdiv6', 'robust')
-
 def renderLoop(OS):
     for compiler in compilers:
       for platform in platforms:
         for build in builds:
           for isa in ISAs:
-            if (compiler + '_' + platform + '_' + build + '_' + isa) in supported_configurations:
-              processConfiguration(OS, compiler, platform, build, isa, models[platform])
+            for tasking in ['tbb','internal']:
+              if (compiler + '_' + platform + '_' + build + '_' + isa) in supported_configurations:
+                processConfiguration(OS, compiler, platform, build, isa, tasking, models[platform])
 
 ########################## command line parsing ##########################
 

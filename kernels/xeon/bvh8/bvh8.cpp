@@ -36,9 +36,6 @@ namespace embree
   DECLARE_SYMBOL(Accel::Intersector8,BVH8Triangle8Intersector8HybridMoeller);
   DECLARE_SYMBOL(Accel::Intersector8,BVH8Triangle8Intersector8HybridMoellerNoFilter);
 
-  DECLARE_SCENE_BUILDER(BVH8Triangle4Builder);
-  DECLARE_SCENE_BUILDER(BVH8Triangle8Builder);
-
   DECLARE_SCENE_BUILDER(BVH8Triangle4SceneBuilderBinnedSAH2);
   DECLARE_SCENE_BUILDER(BVH8Triangle8SceneBuilderBinnedSAH2);
 
@@ -50,16 +47,11 @@ namespace embree
     int features = getCPUFeatures();
 
     /* select builders */
-    SELECT_SYMBOL_AVX(features,BVH8Triangle4Builder);
-    SELECT_SYMBOL_AVX(features,BVH8Triangle8Builder);
-
-#if defined(TASKING_TBB) || defined(TASKING_TBB_INTERNAL)
     SELECT_SYMBOL_AVX(features,BVH8Triangle4SceneBuilderBinnedSAH2);
     SELECT_SYMBOL_AVX(features,BVH8Triangle8SceneBuilderBinnedSAH2);
     
     SELECT_SYMBOL_AVX(features,BVH8Triangle4SceneBuilderSpatialBinnedSAH2);
     SELECT_SYMBOL_AVX(features,BVH8Triangle8SceneBuilderSpatialBinnedSAH2);
-#endif
  
     /* select intersectors1 */
     SELECT_SYMBOL_AVX_AVX2(features,BVH8Triangle4Intersector1Moeller);
@@ -89,6 +81,7 @@ namespace embree
       delete objects[i];
   }
 
+#if 0 // FIXME: remove
   void BVH8::init(size_t nodeSize, size_t numPrimitives, size_t numThreads)
   {
     /* allocate as much memory as likely needed and reserve conservative amounts of memory */
@@ -113,6 +106,7 @@ namespace embree
     bounds = empty;
     alloc.init(bytesAllocated,bytesReserved);
   }
+#endif
 
   void BVH8::clear() 
   {
@@ -130,7 +124,6 @@ namespace embree
    void BVH8::printStatistics()
    {
      std::cout << BVH8Statistics(this).str();
-     std::cout << "  "; alloc.print_statistics();
      std::cout << "  "; alloc2.print_statistics();
    }	
   
@@ -234,16 +227,10 @@ namespace embree
     Accel::Intersectors intersectors= BVH8Triangle4Intersectors(accel);
     
     Builder* builder = NULL;
-#if defined(TASKING_TBB) || defined(TASKING_TBB_INTERNAL)
     if      (g_tri_builder == "default"     ) builder = BVH8Triangle4SceneBuilderBinnedSAH2(accel,scene,0);
     else if (g_tri_builder == "binned_sah2" ) builder = BVH8Triangle4SceneBuilderBinnedSAH2(accel,scene,0);
     else if (g_tri_builder == "binned_sah2_spatial" ) builder = BVH8Triangle4SceneBuilderSpatialBinnedSAH2(accel,scene,0);
     else if (g_tri_builder == "binned_sah2_presplit" ) builder = BVH8Triangle4SceneBuilderBinnedSAH2(accel,scene,MODE_HIGH_QUALITY);
-#else
-    if      (g_tri_builder == "default"     ) builder = BVH8Triangle4Builder(accel,scene,0);
-    else if (g_tri_builder == "spatialsplit") builder = BVH8Triangle4Builder(accel,scene,MODE_HIGH_QUALITY);
-    else if (g_tri_builder == "objectsplit" ) builder = BVH8Triangle4Builder(accel,scene,0);
-#endif
     else THROW_RUNTIME_ERROR("unknown builder "+g_tri_builder+" for BVH8<Triangle4>");
     
     return new AccelInstance(accel,builder,intersectors);
@@ -253,11 +240,7 @@ namespace embree
   {
     BVH8* accel = new BVH8(Triangle4Type::type,scene);
     Accel::Intersectors intersectors= BVH8Triangle4Intersectors(accel);
-#if defined(TASKING_TBB) || defined(TASKING_TBB_INTERNAL)
     Builder* builder = BVH8Triangle4SceneBuilderBinnedSAH2(accel,scene,0);
-#else
-    Builder* builder = BVH8Triangle4Builder(accel,scene,0);
-#endif
     return new AccelInstance(accel,builder,intersectors);
   }
 
@@ -265,11 +248,7 @@ namespace embree
   {
     BVH8* accel = new BVH8(Triangle4Type::type,scene);
     Accel::Intersectors intersectors= BVH8Triangle4Intersectors(accel);
-#if defined(TASKING_TBB) || defined(TASKING_TBB_INTERNAL)
     Builder* builder = BVH8Triangle4SceneBuilderSpatialBinnedSAH2(accel,scene,0);
-#else
-    Builder* builder = BVH8Triangle4Builder(accel,scene,MODE_HIGH_QUALITY);
-#endif
     return new AccelInstance(accel,builder,intersectors);
   }
 
@@ -279,16 +258,10 @@ namespace embree
     Accel::Intersectors intersectors= BVH8Triangle8Intersectors(accel);
     
     Builder* builder = NULL;
-#if defined(TASKING_TBB) || defined(TASKING_TBB_INTERNAL)
     if      (g_tri_builder == "default"     ) builder = BVH8Triangle8SceneBuilderBinnedSAH2(accel,scene,0);
     else if (g_tri_builder == "binned_sah2" ) builder = BVH8Triangle8SceneBuilderBinnedSAH2(accel,scene,0);
     else if (g_tri_builder == "binned_sah2_spatial" ) builder = BVH8Triangle8SceneBuilderSpatialBinnedSAH2(accel,scene,0);
     else if (g_tri_builder == "binned_sah2_presplit" ) builder = BVH8Triangle8SceneBuilderBinnedSAH2(accel,scene,MODE_HIGH_QUALITY);
-#else
-    if      (g_tri_builder == "default"     ) builder = BVH8Triangle8Builder(accel,scene,0);
-    else if (g_tri_builder == "spatialsplit") builder = BVH8Triangle8Builder(accel,scene,MODE_HIGH_QUALITY);
-    else if (g_tri_builder == "objectsplit" ) builder = BVH8Triangle8Builder(accel,scene,0);
-#endif
     else THROW_RUNTIME_ERROR("unknown builder "+g_tri_builder+" for BVH8<Triangle8>");
     
     return new AccelInstance(accel,builder,intersectors);
@@ -298,11 +271,7 @@ namespace embree
   {
     BVH8* accel = new BVH8(Triangle8Type::type,scene);
     Accel::Intersectors intersectors= BVH8Triangle8Intersectors(accel);
-#if defined(TASKING_TBB) || defined(TASKING_TBB_INTERNAL)
     Builder* builder = BVH8Triangle8SceneBuilderBinnedSAH2(accel,scene,0);
-#else
-    Builder* builder = BVH8Triangle8Builder(accel,scene,0);
-#endif
     return new AccelInstance(accel,builder,intersectors);
   }
 
@@ -310,11 +279,7 @@ namespace embree
   {
     BVH8* accel = new BVH8(Triangle8Type::type,scene);
     Accel::Intersectors intersectors= BVH8Triangle8Intersectors(accel);
-#if defined(TASKING_TBB) || defined(TASKING_TBB_INTERNAL)
     Builder* builder = BVH8Triangle8SceneBuilderSpatialBinnedSAH2(accel,scene,0);
-#else
-    Builder* builder = BVH8Triangle8Builder(accel,scene,MODE_HIGH_QUALITY);
-#endif
     return new AccelInstance(accel,builder,intersectors);
   }
 }

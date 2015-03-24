@@ -17,8 +17,6 @@
 #pragma once
 
 #include "common/default.h"
-//#include "sys/sysinfo.h"
-//#include "sys/sync/mutex.h"
 #include "tasking/taskscheduler.h"
 #include "math/math.h"
 
@@ -26,277 +24,6 @@
 
 namespace embree
 {
-  /*! Global memory pool. Node, triangle, and intermediary build data
-      is allocated from this memory pool and returned to it. The pool
-      does not return memory to the operating system unless the clear function
-      is called. */
-  class Alloc
-  {
-  public:
-
-    /*! Allocation block size. */
-    //enum { blockSize = 512*4096 };
-    enum { blockSize = 16*4096 };
-    //enum { blockSize = 4*4096 };
-    
-    /*! single allocator object */
-    static Alloc global;
-
-    /*! Allocator default construction. */
-    Alloc ();
-
-    /*! Allocator destructor. */
-    ~Alloc ();
-
-    /*! returns size of memory pool */
-    size_t size() const;
-    
-    /*! frees all available memory */
-    void clear();
-    
-    /*! allocates a memory block */
-    void* malloc();
-    
-    /*! frees a memory block */
-    void free(void* ptr);
-    
-  private:
-    MutexSys mutex;                 //<! Mutex to protect access to blocks vector
-    std::vector<void*> blocks;      //<! list of available memory blocks
-  };
-
-  /*! Base class for a each memory allocator. Allocates from blocks of the 
-    Alloc class and returns these blocks on destruction. */
-  class AllocatorBase 
-  {
-  public:
-
-    /*! Default constructor. */
-    AllocatorBase () : ptr(NULL), cur(0), end(0) {
-    }
-    
-    /*! Returns all allocated blocks to Alloc class. */
-    ~AllocatorBase () {
-      clear();
-    }
-
-    /*! clears the allocator */
-    void clear () 
-    {
-      for (size_t i=0; i<blocks.size(); i++) {
-        Alloc::global.free(blocks[i]); 
-      }
-      ptr = NULL;
-      cur = end = 0;
-      blocks.resize(0);
-    }
-
-    /*! returns number of bytes allocated */
-    size_t bytes () {
-      return blocks.size() * Alloc::blockSize;
-    }
-
-    /*! Allocates some number of bytes. */
-    void* malloc(size_t bytes) 
-    {
-      Lock<MutexSys> lock(mutex);
-      cur += bytes;
-      if (cur <= end) return &ptr[cur - bytes];
-      ptr = (char*) Alloc::global.malloc();
-      blocks.push_back(ptr);
-      cur = 0;
-      end = Alloc::blockSize;
-      assert(bytes<=Alloc::blockSize);
-      cur += bytes;
-      return &ptr[cur - bytes];
-    }
-    
-  private:
-    MutexSys mutex;                  //!< mutex to protect access to this class
-    char*  ptr;                      //!< pointer to memory block
-    size_t cur;                      //!< Current location of the allocator.
-    size_t end;                      //!< End of the memory block.
-    std::vector<void*> blocks;       //!< available memory blocks
-  };
-
-  /*! This class implements an efficient multi-threaded memory
-   *  allocation scheme. The per thread allocator allocates from its
-   *  current memory block or requests a new block from the slower
-   *  global allocator when its block is full. */
-  class LinearAllocatorPerThread : public RefCount
-  {
-    ALIGNED_CLASS;
-
-  public:
-
-     /*! each thread handles block of that many bytes locally */
-    enum { allocBlockSize = 4096 };
-
-    /*! Per thread structure holding the current memory block. */
-    struct __aligned(64) ThreadAllocator 
-    {
-      ALIGNED_CLASS_(64);
-    public:
-
-       /*! each thread handles block of that many bytes locally */
-      enum { blockSize = allocBlockSize };
-
-      /*! Default constructor. */
-      __forceinline ThreadAllocator (LinearAllocatorPerThread* alloc = NULL) 
-	: alloc(alloc), ptr(NULL), cur(0), end(0) {}
-
-      /* Allocate aligned memory from the threads memory block. */
-      __forceinline void* malloc(size_t bytes, size_t align = 16) 
-      {
-        cur += bytes + ((align - cur) & (align-1));
-        if (likely(cur <= end)) return &ptr[cur - bytes];
-        ptr = (char*) alloc->block.malloc(allocBlockSize);
-        cur = 0;
-        end = allocBlockSize;
-        if (bytes > allocBlockSize) 
-          THROW_RUNTIME_ERROR("allocated block is too large");
-        cur += bytes;
-        return &ptr[cur - bytes];
-      }
-
-      /*! clears the allocator */
-      void clear () {
-        ptr = NULL;
-        cur = end = 0;
-      }
-
-    public:
-      LinearAllocatorPerThread* alloc;
-      char*  ptr;      //!< pointer to memory block
-      size_t cur;      //!< Current location of the allocator.
-      size_t end;      //!< End of the memory block.
-    };
-
-    /*! Allocator default construction. */
-    LinearAllocatorPerThread () {}
-
-    /*! Return pointer to start of memory region */
-    __forceinline       void* base()       { return block.ptr; }
-    __forceinline const void* base() const { return block.ptr; }
-    __forceinline       void* curPtr()     { return block.ptr+block.cur; }
-
-    /*! clears the allocator */
-    void clear () {
-      block.clear();
-    }
-
-    /*! initializes the allocator */
-    void init (size_t bytesAllocate, size_t bytesReserve) 
-    {
-      clear();
-      const size_t numThreads = getNumberOfLogicalThreads(); // FIXME: should get passed from outside
-      bytesReserve = max(bytesAllocate,bytesReserve);
-      size_t bytesReserved = max(bytesReserve,size_t(allocBlockSize*numThreads));
-      block.init(bytesAllocate,bytesReserved);
-    }
-
-    /*! returns number of committed bytes */
-    size_t bytes () const {
-      return block.cur;
-    }
-
-    void shrink () {
-      block.shrink();
-    }
-
-    void print_statistics()
-    {
-      size_t bytesAllocated = block.getAllocatedBytes();
-      size_t bytesReserved = block.getReservedBytes();
-      size_t bytesUsed = block.getUsedBytes();
-      size_t bytesFree = block.getFreeBytes();
-      
-      printf("allocated = %3.2fMB, reserved = %3.2fMB, used = %3.2fMB (%3.2f%%), free = %3.2fMB (%3.2f%%)\n",
-	     1E-6f*bytesAllocated, 1E-6f*bytesReserved,
-	     1E-6f*bytesUsed, 100.0f*bytesUsed/bytesAllocated,
-	     1E-6f*bytesFree, 100.0f*bytesFree/bytesAllocated);
-    }
-
-  private:
-
-    struct Block 
-    {
-      Block () 
-      : ptr(NULL), cur(0), reserveEnd(0), allocEnd(0), next(NULL) {}
-      
-      Block (size_t bytes, Block* next = NULL) 
-      : ptr(NULL), cur(0), reserveEnd(bytes), allocEnd(0), next(next) {}
-
-      ~Block () {
-	if (ptr) os_free(ptr,reserveEnd); ptr = NULL;
-	cur = reserveEnd = 0;
-	if (next) delete next; next = NULL;
-      }
-
-      __forceinline void init (size_t bytesAllocate, size_t bytesReserved)
-      {
-	if (bytesReserved != size_t(reserveEnd) || bytesAllocate != allocEnd) 
-	{
-	  allocEnd = bytesAllocate;
-	  if (ptr) os_free(ptr,reserveEnd);
-	  ptr = (char*) os_reserve(bytesReserved);
-	  os_commit(ptr,allocEnd);
-	  reserveEnd = bytesReserved;
-	}
-      }
-
-      __forceinline void clear() {
-	cur = 0;
-      }
-
-      /*! Allocates some number of bytes. */
-      void* malloc(size_t bytes) 
-      {
-	ssize_t i = atomic_add(&cur,bytes);
-	if (unlikely(i+(ssize_t)bytes > reserveEnd)) THROW_RUNTIME_ERROR("build out of memory");
-	void* p = &ptr[i];
-	if (i+(ssize_t)bytes > allocEnd)
-	  os_commit(p,bytes);
-	return p;
-      }
-
-      void shrink () {
-	if (ptr == NULL) return;
-	os_shrink(ptr,cur,reserveEnd);
-	reserveEnd = cur;
-	allocEnd = cur;
-      }
-
-      size_t getAllocatedBytes() const {
-	return allocEnd;
-      }
-
-      size_t getReservedBytes() const {
-	return reserveEnd;
-      }
-
-      size_t getUsedBytes() const {
-	return cur;
-      }
-
-      size_t getFreeBytes() const {
-	return allocEnd-cur;
-      }
-
-    public:
-      char*  ptr;                //!< pointer to memory
-      atomic_t cur;              //!< Current location of the allocator.
-      atomic_t allocEnd;
-      atomic_t reserveEnd;              //!< End of the memory block.
-      Block* next;
-    };
-
-  private:
-    Block block;
-  };
-
-
-
   class FastAllocator 
   {
     /*! maximal supported alignment */
@@ -540,39 +267,68 @@ namespace embree
       return usedBlocks->ptr();
     }
 
-    void print_statistics()
+    size_t getAllocatedBytes() const 
+    {
+      size_t bytesAllocated = 0;
+      if (freeBlocks) bytesAllocated += freeBlocks->getAllocatedBytes();
+      if (usedBlocks) bytesAllocated += usedBlocks->getAllocatedBytes();
+      return bytesAllocated;
+    }
+
+    size_t getReservedBytes() const 
+    {
+      size_t bytesReserved = 0;
+      if (freeBlocks) bytesReserved += freeBlocks->getReservedBytes();
+      if (usedBlocks) bytesReserved += usedBlocks->getReservedBytes();
+      return bytesReserved;
+    }
+
+    size_t getUsedBytes() const 
+    {
+      size_t bytesUsed = 0;
+
+      for (size_t t=0; t<thread_local_allocators.threads.size(); t++)
+	bytesUsed += thread_local_allocators.threads[t]->getUsedBytes();
+
+      for (size_t t=0; t<thread_local_allocators2.threads.size(); t++)
+	bytesUsed += thread_local_allocators2.threads[t]->getUsedBytes();
+
+      return bytesUsed;
+    }
+
+    size_t getFreeBytes() const 
     {
       size_t bytesFree = 0;
-      size_t bytesAllocated = 0;
-      size_t bytesReserved = 0;
-      size_t bytesUsed = 0;
-      size_t bytesWasted = 0;
+      if (freeBlocks) bytesFree += freeBlocks->getAllocatedBytes();
+      if (usedBlocks) bytesFree += usedBlocks->getFreeBytes();
+      return bytesFree;
+    }
 
-      if (freeBlocks) {
-	bytesFree += freeBlocks->getAllocatedBytes();
-	bytesAllocated += freeBlocks->getAllocatedBytes();
-	bytesReserved += freeBlocks->getReservedBytes();
-      }
+    size_t getWastedBytes() const 
+    {
+      size_t bytesWasted = 0;
       if (usedBlocks) {
-	bytesFree += usedBlocks->getFreeBytes();
-	bytesAllocated += usedBlocks->getAllocatedBytes();
-	bytesReserved += usedBlocks->getReservedBytes();
-	
 	Block* cur = usedBlocks;
 	while ((cur = cur->next) != NULL)
 	  bytesWasted += cur->getFreeBytes();
       }
 
-      for (size_t t=0; t<thread_local_allocators.threads.size(); t++) {
-	bytesUsed   += thread_local_allocators.threads[t]->getUsedBytes();
+      for (size_t t=0; t<thread_local_allocators.threads.size(); t++)
 	bytesWasted += thread_local_allocators.threads[t]->getWastedBytes();
-      }
 
-      for (size_t t=0; t<thread_local_allocators2.threads.size(); t++) {
-	bytesUsed   += thread_local_allocators2.threads[t]->getUsedBytes();
+      for (size_t t=0; t<thread_local_allocators2.threads.size(); t++)
 	bytesWasted += thread_local_allocators2.threads[t]->getWastedBytes();
-      }
       
+      return bytesWasted;
+    }
+
+    void print_statistics()
+    {
+      size_t bytesFree = getFreeBytes();
+      size_t bytesAllocated = getAllocatedBytes();
+      size_t bytesReserved = getReservedBytes();
+      size_t bytesUsed = getUsedBytes();
+      size_t bytesWasted = getWastedBytes();
       printf("allocated = %3.2fMB, reserved = %3.2fMB, used = %3.2fMB (%3.2f%%), wasted = %3.2fMB (%3.2f%%), free = %3.2fMB (%3.2f%%)\n",
 	     1E-6f*bytesAllocated, 1E-6f*bytesReserved,
 	     1E-6f*bytesUsed, 100.0f*bytesUsed/bytesAllocated,

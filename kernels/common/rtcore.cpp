@@ -252,7 +252,7 @@ namespace embree
 #endif
   }
 
-#if TASKING_LOCKSTEP
+#if defined(TASKING_LOCKSTEP)
 
   LockStepTaskScheduler regression_task_scheduler;
 
@@ -398,7 +398,7 @@ namespace embree
       std::cout << "tbb ";
 #endif
 #if defined(TASKING_TBB_INTERNAL)
-      std::cout << "internal_tbb ";
+      std::cout << "internal_tasking_system ";
 #endif
 #if defined(TASKING_LOCKSTEP)
       std::cout << "internal_tasking_system ";
@@ -458,11 +458,15 @@ namespace embree
     if (g_verbose >= 2) 
       printSettings();
 
-#if TASKING_LOCKSTEP    
+#if defined(TASKING_LOCKSTEP)
     TaskScheduler::create(g_numThreads);
 #endif
 
-#if TASKING_TBB
+#if defined(TASKING_TBB_INTERNAL)
+    TaskSchedulerNew::create(g_numThreads);
+#endif
+
+#if defined(TASKING_TBB)
     if (g_numThreads == 0) {
       g_tbb_threads_initialized = false;
       g_numThreads = tbb::task_scheduler_init::default_num_threads();
@@ -471,31 +475,19 @@ namespace embree
       tbb_threads.initialize(g_numThreads);
       tbb_affinity.observe(true); 
     }
-    //tbb_affinity.observe(true); // FIXME: should not always be enabled, however, improves performance !!!
-#endif
-
-#if TASKING_TBB_INTERNAL
-    TaskSchedulerNew::create(g_numThreads);
 #endif
 
     /* execute regression tests */
     if (g_regression_testing) 
     {
-#if TASKING_LOCKSTEP
+#if defined(TASKING_LOCKSTEP)
       TaskScheduler::EventSync event;
       TaskScheduler::Task task(&event,task_regression_testing,NULL,TaskScheduler::getNumThreads(),NULL,NULL,"regression_testing");
       TaskScheduler::addTask(-1,TaskScheduler::GLOBAL_FRONT,&task);
       event.sync();
-#endif
-      
-#if TASKING_TBB
+#else
       for (size_t i=0; i<regression_tests->size(); i++) 
 	(*(*regression_tests)[i])();
-#endif
-
-#if TASKING_TBB_INTERNAL
-      for (size_t i=0; i<regression_tests->size(); i++) 
-        (*(*regression_tests)[i])();
 #endif
     }
 
@@ -510,17 +502,17 @@ namespace embree
     if (!g_initialized) {
       return;
     }
-#if TASKING_LOCKSTEP   
+#if defined(TASKING_LOCKSTEP)
     TaskScheduler::destroy();
 #endif
 
-#if TASKING_TBB
-    if (g_tbb_threads_initialized)
-      tbb_threads.terminate();
+#if defined(TASKING_TBB_INTERNAL)
+    TaskSchedulerNew::destroy();
 #endif
 
-#if TASKING_TBB_INTERNAL
-    TaskSchedulerNew::destroy();
+#if defined(TASKING_TBB)
+    if (g_tbb_threads_initialized)
+      tbb_threads.terminate();
 #endif
     {
       Lock<MutexSys> lock(g_errors_mutex);
@@ -529,7 +521,6 @@ namespace embree
       destroyTls(g_error);
       g_errors.clear();
     }
-    Alloc::global.clear();
     g_error_function = NULL;
     g_initialized = false;
     CATCH_END;
@@ -602,7 +593,7 @@ namespace embree
     Stat::clear();
 #endif
 
-#if 0
+#if 0 //FIXME: remove for release
     using namespace embree;
     extern void clearTessellationCache();
     clearTessellationCache();

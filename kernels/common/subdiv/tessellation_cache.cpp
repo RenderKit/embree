@@ -14,18 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#if defined (__MIC__) 
-#define USE_TBB_ALLOCATOR 0
-#else
-#define USE_TBB_ALLOCATOR 0
-#endif
-
 #include "tessellation_cache.h"
-
-#if USE_TBB_ALLOCATOR == 1
-#include <tbb/scalable_allocator.h>
-using namespace tbb;
-#endif
 
 
 namespace embree
@@ -34,41 +23,31 @@ namespace embree
 
   void resizeTessellationCache(const size_t new_size)
   {
+    if(new_size <= 1024 * 1024)
+      FATAL("tessellation cache size is too small");
+
     if (SharedLazyTessellationCache::sharedLazyTessellationCache.getSize() != new_size)
-      SharedLazyTessellationCache::sharedLazyTessellationCache.realloc(new_size);
+      {
+	SharedLazyTessellationCache::sharedLazyTessellationCache.realloc(new_size);
+      }
   }
 
   void clearTessellationCache()
   {
     SharedLazyTessellationCache::sharedLazyTessellationCache.addCurrentIndex(SharedLazyTessellationCache::NUM_CACHE_REGIONS);
   }
-
-  //void*scalable_aligned_malloc(size_t size, size_t align);
-  //void scalable_aligned_free(void* ptr );
-  //void*scalable_aligned_realloc(void* ptr,size_t size,size_t align);
-
   
   /* alloc cache memory */
   float *alloc_tessellation_cache_mem(const size_t blocks)
   {
-    //DBG_PRINT(blocks);
-
-#if USE_TBB_ALLOCATOR == 1
-    return (float*)scalable_aligned_malloc(64 * blocks,64);
-#else
     return (float*)_mm_malloc(64 * blocks,64);
-#endif
   }
   
   /* free cache memory */
   void free_tessellation_cache_mem(void *mem, const size_t blocks)
   {
     assert(mem);
-#if USE_TBB_ALLOCATOR == 1
-    scalable_aligned_free(mem);
-#else
     _mm_free(mem);
-#endif
   }
 
 
@@ -188,38 +167,6 @@ namespace embree
     SharedTessellationCacheStats::cache_flushes   = 0;          
   }
 
-
-
-  AtomicCounter DistributedTessellationCacheStats::cache_accesses  = 0;
-  AtomicCounter DistributedTessellationCacheStats::cache_hits      = 0;
-  AtomicCounter DistributedTessellationCacheStats::cache_misses    = 0;
-  AtomicCounter DistributedTessellationCacheStats::cache_evictions = 0;                
-  
-  void DistributedTessellationCacheStats::printStats()
-  {
-    DBG_PRINT(cache_accesses);
-    DBG_PRINT(cache_misses);
-    DBG_PRINT(cache_hits);
-    DBG_PRINT(cache_evictions);
-    DBG_PRINT(100.0f * cache_hits / cache_accesses);
-    assert(cache_hits + cache_misses == cache_accesses);                
-  }
-
-
-  void DistributedTessellationCacheStats::clearStats()
-  {
-    DistributedTessellationCacheStats::cache_accesses  = 0;
-    DistributedTessellationCacheStats::cache_hits      = 0;
-    DistributedTessellationCacheStats::cache_misses    = 0;
-    DistributedTessellationCacheStats::cache_evictions = 0;          
-  }
-  
-  // AtomicCounter TessellationCache::cache_accesses  = 0;
-  // AtomicCounter TessellationCache::cache_hits      = 0;
-  // AtomicCounter TessellationCache::cache_misses    = 0;
-  // AtomicCounter TessellationCache::cache_clears    = 0;
-  // AtomicCounter TessellationCache::cache_evictions = 0;                
-
 };
 
 extern "C" void printTessCacheStats()
@@ -227,13 +174,4 @@ extern "C" void printTessCacheStats()
   DBG_PRINT("SHARED TESSELLATION CACHE");
   embree::SharedTessellationCacheStats::printStats();
   embree::SharedTessellationCacheStats::clearStats();
-#if 1
-  DBG_PRINT("PER THREAD TESSELLATION CACHE");  
-  embree::DistributedTessellationCacheStats::printStats();
-  embree::DistributedTessellationCacheStats::clearStats();
-#else
-  DBG_PRINT("PER THREAD TESSELLATION CACHE");  
-  embree::TessellationCache::printStats();
-  embree::TessellationCache::clearStats();
-#endif  
 }

@@ -14,11 +14,16 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-IF (TASKING_TBB)
-  SET(EMBREE_LIBRARIES ${EMBREE_LIBRARIES} ${TBB_LIBRARIES})
-ENDIF()
-
 INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
+
+SOURCE_GROUP("Source Files\\bvh4" "/bvh4/" )
+SOURCE_GROUP("Source Files\\bvh8" "/bvh8/" )
+SOURCE_GROUP("Source Files\\geometry" "/geometry/" )
+SOURCE_GROUP("Source Files\\builders" "/builders.*/" )
+SOURCE_GROUP("Source Files\\common" "/kernels/common/" )
+SOURCE_GROUP("Source Files\\tasking" "/tasking/" )
+SOURCE_GROUP("Source Files\\algorithms" "/algorithms/")
+SOURCE_GROUP("" FILES embree.rc)
 
 IF (TARGET_SSE41)
  ADD_DEFINITIONS(-D__TARGET_SSE41__)
@@ -36,38 +41,33 @@ IF (TARGET_AVX2)
  ADD_DEFINITIONS(-D__TARGET_AVX2__)
 ENDIF()
 
-IF (TASKING_TBB OR TASKING_TBB_INTERNAL)
-  SET(EMBREE_BUILDERS_NEW
-    builders_new/primrefgen.cpp
-    bvh4/bvh4_builder_hair_new.cpp
-    bvh4/bvh4_builder_morton_general.cpp
-    bvh4/bvh4_builder_binned_sah.cpp
-    bvh4/bvh4_builder_binned_sah2.cpp
-    bvh4/bvh4_builder_toplevel_new.cpp
-    bvh4/bvh4_builder_subdiv.cpp)
+IF (TASKING_INTERNAL)
+  ADD_DEFINITIONS(-DTASKING_TBB_INTERNAL)
+ENDIF()
 
-  SET(EMBREE_BUILDERS_NEW_AVX
-    builders_new/primrefgen.avx.cpp
-    bvh4/bvh4_builder_hair_new.avx.cpp
-    bvh4/bvh4_builder_morton_general.avx.cpp
-    bvh4/bvh4_builder_binned_sah.avx.cpp
-    bvh4/bvh4_builder_binned_sah2.avx.cpp
-    bvh4/bvh4_builder_toplevel_new.avx.cpp
-    bvh4/bvh4_builder_subdiv.avx.cpp
-    bvh8/bvh8_builder_binned_sah2.avx.cpp)
+IF (TASKING_TBB)
+  ADD_DEFINITIONS(-DTASKING_TBB)
+  SET(EMBREE_LIBRARIES ${EMBREE_LIBRARIES} ${TBB_LIBRARIES})
 ENDIF()
 
 ADD_ISPC_LIBRARY(embree ${EMBREE_LIB_TYPE}
+
   embree.rc
-  ../../common/tasking/taskscheduler.cpp
-  ../../common/tasking/taskscheduler_sys.cpp
+
   ../../common/tasking/taskscheduler_new.cpp
-  ../../common/tasking/tasklogger.cpp
   ../../common/tasking/tasksys.cpp
+  ../algorithms/parallel_for.cpp
+  ../algorithms/parallel_reduce.cpp
+  ../algorithms/parallel_prefix_sum.cpp
+  ../algorithms/parallel_for_for.cpp
+  ../algorithms/parallel_for_for_prefix_sum.cpp
+  ../algorithms/sort.cpp
+  ../algorithms/pset.cpp
+  ../algorithms/pmap.cpp
+  ../algorithms/prefix.cpp
 
   ../common/stat.cpp
   ../common/globals.cpp
-  ../common/alloc.cpp
   ../common/acceln.cpp
   ../common/rtcore.cpp
   ../common/rtcore_ispc.cpp
@@ -82,25 +82,6 @@ ADD_ISPC_LIBRARY(embree ${EMBREE_LIB_TYPE}
   ../common/raystream_log.cpp
   ../common/subdiv/tessellation_cache.cpp
   ../common/subdiv/subdivpatch1base.cpp
-
-  ../algorithms/parallel_for.cpp
-  ../algorithms/parallel_reduce.cpp
-  ../algorithms/parallel_prefix_sum.cpp
-  ../algorithms/parallel_for_for.cpp
-  ../algorithms/parallel_for_for_prefix_sum.cpp
-  ../algorithms/parallel_continue.cpp
-  ../algorithms/sort.cpp
-  ../algorithms/pset.cpp
-  ../algorithms/pmap.cpp
-  ../algorithms/prefix.cpp
-
-  builders/bezierrefgen.cpp
-  builders/primrefgen.cpp
-  builders/heuristic_object_partition_unaligned.cpp
-  builders/heuristic_object_partition.cpp
-  builders/heuristic_spatial_split.cpp
-  builders/heuristic_strand_partition.cpp
-  builders/heuristic_fallback.cpp
 
   geometry/primitive.cpp
   geometry/bezier1v.cpp
@@ -118,46 +99,34 @@ ADD_ISPC_LIBRARY(embree ${EMBREE_LIB_TYPE}
   geometry/subdivpatch1_intersector1.cpp
   geometry/subdivpatch1cached_intersector1.cpp		
   geometry/subdivpatch1cached.cpp
+  builders/primrefgen.cpp
 
   bvh4/bvh4.cpp
+  bvh4/bvh4_statistics.cpp
   bvh4/bvh4_rotate.cpp
   bvh4/bvh4_refit.cpp
-  bvh4/bvh4_builder.cpp
-  bvh4/bvh4_builder_mb.cpp
   bvh4/bvh4_builder_hair.cpp
-  bvh4/bvh4_builder_hair_mb.cpp
-  bvh4/bvh4_builder_fast.cpp
-  bvh4/bvh4_builder_morton.cpp
+  bvh4/bvh4_builder_morton_general.cpp
+  bvh4/bvh4_builder_binned_sah.cpp
+  bvh4/bvh4_builder_binned_sah2.cpp
   bvh4/bvh4_builder_toplevel.cpp
+  bvh4/bvh4_builder_subdiv.cpp
+
   bvh4/bvh4_intersector1.cpp
   bvh4/bvh4_intersector4_single.cpp
   bvh4/bvh4_intersector4_chunk.cpp
-  bvh4/bvh4_statistics.cpp
-
-  ${EMBREE_BUILDERS_NEW}
 )
 SET_PROPERTY(TARGET embree PROPERTY FOLDER kernels)
-SOURCE_GROUP("Source Files\\bvh4" "/bvh4/" )
-SOURCE_GROUP("Source Files\\bvh8" "/bvh8/" )
-SOURCE_GROUP("Source Files\\geometry" "/geometry/" )
-SOURCE_GROUP("Source Files\\builders" "/builders.*/" )
-SOURCE_GROUP("Source Files\\common" "/kernels/common/" )
-SOURCE_GROUP("Source Files\\tasking" "/tasking/" )
-SOURCE_GROUP("Source Files\\algorithms" "/algorithms/")
-SOURCE_GROUP("" FILES embree.rc)
-IF (WIN32 AND ENABLE_ISPC_SUPPORT)
-  LIST(GET ISPC_TARGETS -1 MAX_ISA)
-  SET_TARGET_PROPERTIES(embree PROPERTIES LINK_FLAGS "/DEF:${CMAKE_CURRENT_SOURCE_DIR}/embree_${MAX_ISA}.def")
-ENDIF()
 
 IF (TARGET_SSE41)
   ADD_LIBRARY(embree_sse41 STATIC
-    bvh4/bvh4_intersector1.cpp
-    bvh4/bvh4_intersector4_single.cpp
-    bvh4/bvh4_intersector4_chunk.cpp
 
     geometry/subdivpatch1_intersector1.cpp
     geometry/subdivpatch1cached_intersector1.cpp
+
+    bvh4/bvh4_intersector1.cpp
+    bvh4/bvh4_intersector4_single.cpp
+    bvh4/bvh4_intersector4_chunk.cpp
   )
   SET_TARGET_PROPERTIES(embree_sse41 PROPERTIES COMPILE_FLAGS "${FLAGS_SSE41}")
   SET_PROPERTY(TARGET embree_sse41 PROPERTY FOLDER kernels)
@@ -176,31 +145,22 @@ ENDIF ()
 IF (TARGET_AVX)
   ADD_LIBRARY(embree_avx STATIC
 
-    builders/bezierrefgen.cpp
-    builders/primrefgen.cpp
-    builders/heuristic_object_partition_unaligned.cpp
-    builders/heuristic_object_partition.cpp
-    builders/heuristic_spatial_split.cpp
-    builders/heuristic_strand_partition.cpp
-    builders/heuristic_fallback.cpp
-
     geometry/triangle8.cpp
-
     geometry/instance_intersector1.cpp
     geometry/instance_intersector4.cpp
     geometry/instance_intersector8.cpp
     geometry/subdivpatch1_intersector1.cpp
     geometry/subdivpatch1cached_intersector1.cpp
+    builders/primrefgen.avx.cpp
 
     bvh4/bvh4_rotate.cpp
-    bvh4/bvh4_builder_toplevel.cpp
-    bvh4/bvh4_builder_morton.cpp
-    bvh4/bvh4_builder_fast.cpp
-    bvh4/bvh4_builder.cpp
-    bvh4/bvh4_builder_mb.cpp
-    bvh4/bvh4_builder_hair.cpp
-    bvh4/bvh4_builder_hair_mb.cpp
     bvh4/bvh4_refit.avx.cpp
+    bvh4/bvh4_builder_hair.avx.cpp
+    bvh4/bvh4_builder_morton_general.avx.cpp
+    bvh4/bvh4_builder_binned_sah.avx.cpp
+    bvh4/bvh4_builder_binned_sah2.avx.cpp
+    bvh4/bvh4_builder_toplevel.avx.cpp
+    bvh4/bvh4_builder_subdiv.avx.cpp
 
     bvh4/bvh4_intersector1.cpp
     bvh4/bvh4_intersector4_single.cpp
@@ -211,14 +171,13 @@ IF (TARGET_AVX)
     bvh4/bvh4_intersector8_hybrid.cpp
 
     bvh8/bvh8.cpp
-    bvh8/bvh8_builder.cpp
     bvh8/bvh8_statistics.cpp
+    bvh8/bvh8_builder_binned_sah2.avx.cpp
+
     bvh8/bvh8_intersector1.cpp
     bvh8/bvh8_intersector4_hybrid.cpp
     bvh8/bvh8_intersector8_chunk.cpp
     bvh8/bvh8_intersector8_hybrid.cpp
-
-    ${EMBREE_BUILDERS_NEW_AVX}
   )
 
   SET_TARGET_PROPERTIES(embree_avx PROPERTIES COMPILE_FLAGS "${FLAGS_AVX}")
@@ -253,7 +212,6 @@ IF (TARGET_AVX2)
   SET(EMBREE_LIBRARIES ${EMBREE_LIBRARIES} embree_avx2)
 ENDIF()
 
-
 IF (TARGET_AVX512)
   ADD_LIBRARY(embree_avx512 STATIC
 
@@ -280,8 +238,15 @@ IF (TARGET_AVX512)
 ENDIF()
 
 TARGET_LINK_LIBRARIES(embree ${EMBREE_LIBRARIES} sys simd)
+
+IF (WIN32 AND ENABLE_ISPC_SUPPORT)
+  LIST(GET ISPC_TARGETS -1 MAX_ISA)
+  SET_TARGET_PROPERTIES(embree PROPERTIES LINK_FLAGS "/DEF:${CMAKE_CURRENT_SOURCE_DIR}/embree_${MAX_ISA}.def")
+ENDIF()
+
 SET_TARGET_PROPERTIES(embree PROPERTIES
   VERSION "${EMBREE_VERSION_MAJOR}.${EMBREE_VERSION_MINOR}.${EMBREE_VERSION_PATCH}"
   SOVERSION ${EMBREE_VERSION_MAJOR}
 )
+
 INSTALL(TARGETS embree DESTINATION lib)

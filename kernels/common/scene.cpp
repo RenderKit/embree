@@ -28,26 +28,25 @@
 namespace embree
 {
   Scene::Scene (RTCSceneFlags sflags, RTCAlgorithmFlags aflags)
-    : flags(sflags), aflags(aflags), numMappedBuffers(0), is_build(false), needTriangles(false), needVertices(false),
+    : flags(sflags), aflags(aflags), numMappedBuffers(0), is_build(false), modified(true), needTriangles(false), needVertices(false),
       numTriangles(0), numTriangles2(0), 
       numBezierCurves(0), numBezierCurves2(0), 
       numSubdivPatches(0), numSubdivPatches2(0), 
       numUserGeometries1(0), 
       numIntersectionFilters4(0), numIntersectionFilters8(0), numIntersectionFilters16(0),
-      commitCounter(0), scheduler(NULL),
+      commitCounter(0), 
       progress_monitor_function(NULL), progress_monitor_ptr(NULL), progress_monitor_counter(0)
   {
-#if !defined(__MIC__) 
-#  if defined(TASKING_LOCKSTEP)
-    lockstep_scheduler.taskBarrier.init(TaskScheduler::getNumThreads());
-#  endif
-#else
+#if defined(TASKING_LOCKSTEP) 
     lockstep_scheduler.taskBarrier.init(MAX_MIC_THREADS);
+#elif defined(TASKING_TBB_INTERNAL)
+    scheduler = NULL;
+#else
+    group = new tbb::task_group;
 #endif
+
     if (g_scene_flags != -1)
       flags = (RTCSceneFlags) g_scene_flags;
-
-    geometries.reserve(128);
 
 #if defined(__MIC__)
     accels.add( BVH4mb::BVH4mbTriangle1ObjectSplitBinnedSAH(this) );
@@ -56,67 +55,64 @@ namespace embree
     accels.add( BVH4i::BVH4iSubdivMeshBinnedSAH(this, isRobust() ));
 
     if (g_verbose >= 1)
-      {
-	std::cout << "scene flags: static " << isStatic() << " compact = " << isCompact() << " high quality = " << isHighQuality() << " robust = " << isRobust() << std::endl;
-      }
-
+    {
+      std::cout << "scene flags: static " << isStatic() << " compact = " << isCompact() << " high quality = " << isHighQuality() << " robust = " << isRobust() << std::endl;
+    }
+    
     if (g_tri_accel == "default" || g_tri_accel == "bvh4i")   
+    {
+      if (g_tri_builder == "default") 
       {
-	if (g_tri_builder == "default") 
-	  {
-	    if (isStatic())
-	      {
-		if (g_verbose >= 1) std::cout << "STATIC BUILDER MODE" << std::endl;
-		if ( isCompact() )
-		  accels.add(BVH4i::BVH4iTriangle1MemoryConservativeBinnedSAH(this,isRobust()));		    
-		else if ( isHighQuality() )
-		  accels.add(BVH4i::BVH4iTriangle1ObjectSplitBinnedSAH(this,isRobust()));
-		else
-		  accels.add(BVH4i::BVH4iTriangle1ObjectSplitBinnedSAH(this,isRobust()));
-	      }
-	    else
-	      {
-		if (g_verbose >= 1) std::cout << "DYNAMIC BUILDER MODE" << std::endl;
-		accels.add(BVH4i::BVH4iTriangle1ObjectSplitMorton(this,isRobust()));
-	      }
-	  }
-	else
-	  {
-	    if (g_tri_builder == "sah" || g_tri_builder == "bvh4i" || g_tri_builder == "bvh4i.sah") {
-	      accels.add(BVH4i::BVH4iTriangle1ObjectSplitBinnedSAH(this,isRobust()));
-	    }
-	    else if (g_tri_builder == "fast" || g_tri_builder == "morton") {
-	      accels.add(BVH4i::BVH4iTriangle1ObjectSplitMorton(this,isRobust()));
-	    }
-	    else if (g_tri_builder == "fast_enhanced" || g_tri_builder == "morton.enhanced") {
-	      accels.add(BVH4i::BVH4iTriangle1ObjectSplitEnhancedMorton(this,isRobust()));
-	    }
-	    else if (g_tri_builder == "high_quality" || g_tri_builder == "presplits") {
-	      accels.add(BVH4i::BVH4iTriangle1PreSplitsBinnedSAH(this,isRobust()));
-	    }
-	    else if (g_tri_builder == "compact" ||
-		     g_tri_builder == "memory_conservative") {
-	      accels.add(BVH4i::BVH4iTriangle1MemoryConservativeBinnedSAH(this,isRobust()));
-	    }
-	    else if (g_tri_builder == "morton64") {
-	      accels.add(BVH4i::BVH4iTriangle1ObjectSplitMorton64Bit(this,isRobust()));
-	    }
-
-	    else THROW_RUNTIME_ERROR("unknown builder "+g_tri_builder+" for BVH4i<Triangle1>");
-	  }
+        if (isStatic())
+        {
+          if (g_verbose >= 1) std::cout << "STATIC BUILDER MODE" << std::endl;
+          if ( isCompact() )
+            accels.add(BVH4i::BVH4iTriangle1MemoryConservativeBinnedSAH(this,isRobust()));		    
+          else if ( isHighQuality() )
+            accels.add(BVH4i::BVH4iTriangle1ObjectSplitBinnedSAH(this,isRobust()));
+          else
+            accels.add(BVH4i::BVH4iTriangle1ObjectSplitBinnedSAH(this,isRobust()));
+        }
+        else
+        {
+          if (g_verbose >= 1) std::cout << "DYNAMIC BUILDER MODE" << std::endl;
+          accels.add(BVH4i::BVH4iTriangle1ObjectSplitMorton(this,isRobust()));
+        }
       }
+      else
+      {
+        if (g_tri_builder == "sah" || g_tri_builder == "bvh4i" || g_tri_builder == "bvh4i.sah") {
+          accels.add(BVH4i::BVH4iTriangle1ObjectSplitBinnedSAH(this,isRobust()));
+        }
+        else if (g_tri_builder == "fast" || g_tri_builder == "morton") {
+          accels.add(BVH4i::BVH4iTriangle1ObjectSplitMorton(this,isRobust()));
+        }
+        else if (g_tri_builder == "fast_enhanced" || g_tri_builder == "morton.enhanced") {
+          accels.add(BVH4i::BVH4iTriangle1ObjectSplitEnhancedMorton(this,isRobust()));
+        }
+        else if (g_tri_builder == "high_quality" || g_tri_builder == "presplits") {
+          accels.add(BVH4i::BVH4iTriangle1PreSplitsBinnedSAH(this,isRobust()));
+        }
+        else if (g_tri_builder == "compact" ||
+                 g_tri_builder == "memory_conservative") {
+          accels.add(BVH4i::BVH4iTriangle1MemoryConservativeBinnedSAH(this,isRobust()));
+        }
+        else if (g_tri_builder == "morton64") {
+          accels.add(BVH4i::BVH4iTriangle1ObjectSplitMorton64Bit(this,isRobust()));
+        }
+        
+        else THROW_RUNTIME_ERROR("unknown builder "+g_tri_builder+" for BVH4i<Triangle1>");
+      }
+    }
     else THROW_RUNTIME_ERROR("unknown accel "+g_tri_accel);
-
-
+    
 #else
     createTriangleAccel();
-    //accels.add(BVH4::BVH4Triangle1vMB(this));
     accels.add(BVH4::BVH4Triangle4vMB(this));
     accels.add(BVH4::BVH4UserGeometry(this));
     createHairAccel();
     accels.add(BVH4::BVH4OBBBezier1iMB(this,false));
     createSubdivAccel();
-
 #endif
   }
 
@@ -212,6 +208,8 @@ namespace embree
   {
     if (g_subdiv_accel == "default") 
     {
+     
+#if 1 //FIXME: remove
       if (isIncoherent(flags)) {
         if (isCompact()) accels.add(BVH4::BVH4SubdivGridLazy(this));
         else             accels.add(BVH4::BVH4SubdivGridEager(this));
@@ -220,6 +218,9 @@ namespace embree
         //accels.add(BVH4::BVH4SubdivPatch1Cached(this)); // FIXME: enable, does not run through regression tests
         accels.add(BVH4::BVH4SubdivGridEager(this));
       }
+#else
+      accels.add(BVH4::BVH4SubdivPatch1Cached(this));
+#endif
     }
     else if (g_subdiv_accel == "bvh4.subdivpatch1"      ) accels.add(BVH4::BVH4SubdivPatch1(this));
     else if (g_subdiv_accel == "bvh4.subdivpatch1cached") accels.add(BVH4::BVH4SubdivPatch1Cached(this));
@@ -235,6 +236,10 @@ namespace embree
   {
     for (size_t i=0; i<geometries.size(); i++)
       delete geometries[i];
+
+#if TASKING_TBB
+    delete group; group = NULL;
+#endif
   }
 
   unsigned Scene::newUserGeometry (size_t items) 
@@ -349,6 +354,47 @@ namespace embree
     commitCounter++;
   }
 
+  void Scene::build_task ()
+  {
+    progress_monitor_counter = 0;
+
+    /* select fast code path if no intersection filter is present */
+    accels.select(numIntersectionFilters4,numIntersectionFilters8,numIntersectionFilters16);
+  
+    /* build all hierarchies of this scene */
+    accels.build(0,0);
+    
+    /* make static geometry immutable */
+    if (isStatic()) 
+    {
+      accels.immutable();
+      for (size_t i=0; i<geometries.size(); i++)
+        if (geometries[i]) geometries[i]->immutable();
+    }
+
+    /* delete geometry that is scheduled for delete */
+    for (size_t i=0; i<geometries.size(); i++) // FIXME: this late deletion is inefficient in case of many geometries
+    {
+      Geometry* geom = geometries[i];
+      if (!geom) continue;
+      if (geom->state == Geometry::ENABLING) geom->state = Geometry::ENABLED;
+      if (geom->state == Geometry::MODIFIED) geom->state = Geometry::ENABLED;
+      if (geom->state == Geometry::DISABLING) geom->state = Geometry::DISABLED;
+      if (geom->state == Geometry::ERASING) remove(geom);
+    }
+
+    updateInterface();
+
+    if (g_verbose >= 2) {
+      std::cout << "created scene intersector" << std::endl;
+      accels.print(2);
+      std::cout << "selected scene intersector" << std::endl;
+      intersectors.print(2);
+    }
+  }
+
+#if defined(TASKING_LOCKSTEP)
+
   void Scene::task_build_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
   {
     LockStepTaskScheduler::Init init(threadIndex,threadCount,&lockstep_scheduler);
@@ -357,65 +403,26 @@ namespace embree
 
   void Scene::build (size_t threadIndex, size_t threadCount) 
   {
-#if defined(TASKING_LOCKSTEP)
-    /* all user worker threads properly enter and leave the tasking system */
     LockStepTaskScheduler::Init init(threadIndex,threadCount,&lockstep_scheduler);
     if (threadIndex != 0) return;
-#endif
-
-#if defined(TASKING_TBB)
-    if (threadCount != 0) {
-      process_error(RTC_INVALID_OPERATION,"TBB does not support rtcCommitThread");
-      return;
-    }
-#endif
-
-#if defined(TASKING_TBB_INTERNAL)
-    if (threadCount != 0) 
-    {
-      {
-        Lock<MutexSys> lock(mutex);
-        if (scheduler == NULL) scheduler = new TaskSchedulerNew(-1);
-      }
-      if (threadIndex > 0) {
-        scheduler->join();
-        return;
-      } else
-        scheduler->wait_for_threads(threadCount);
-    }
-#endif
 
     /* allow only one build at a time */
-    Lock<MutexSys> lock(mutex);
+    Lock<MutexSys> lock(buildMutex);
 
     progress_monitor_counter = 0;
 
-    if (isStatic() && isBuild()) {
-      process_error(RTC_INVALID_OPERATION,"static geometries cannot get committed twice");
-      return;
-    }
+    //if (isStatic() && isBuild()) {
+    //  process_error(RTC_INVALID_OPERATION,"static geometries cannot get committed twice");
+    //  return;
+    //}
 
     if (!ready()) {
       process_error(RTC_INVALID_OPERATION,"not all buffers are unmapped");
       return;
     }
 
-    /* verify geometry in debug mode  */
-#if 0 && defined(DEBUG) // FIXME: enable
-    for (size_t i=0; i<geometries.size(); i++) {
-      if (geometries[i]) {
-        if (!geometries[i]->verify()) {
-          process_error(RTC_INVALID_OPERATION,"invalid geometry specified");
-          return;
-        }
-      }
-    }
-#endif
-
     /* select fast code path if no intersection filter is present */
     accels.select(numIntersectionFilters4,numIntersectionFilters8,numIntersectionFilters16);
-
-#if defined(TASKING_LOCKSTEP)
 
     /* if user provided threads use them */
     if (threadCount)
@@ -429,27 +436,6 @@ namespace embree
       TaskScheduler::addTask(-1,TaskScheduler::GLOBAL_FRONT,&task);
       event.sync();
     }
-#endif
-
-#if defined(TASKING_TBB)
-    try {
-      accels.build(0,0);
-    } catch (...) {
-      accels.clear();
-      updateInterface();
-      throw;
-    }
-#endif
-
-#if defined(TASKING_TBB_INTERNAL)
-      if (threadCount)
-        scheduler->spawn_root([&]() { accels.build(0,0); });
-      else {
-        //TaskSchedulerNew::g_instance->spawn_root([&]() { accels.build(0,0); });
-        TaskSchedulerNew::spawn([&](){accels.build(0,0);});
-        //accels.build(0,0);
-      }
-#endif
 
     /* make static geometry immutable */
     if (isStatic()) 
@@ -460,11 +446,14 @@ namespace embree
     }
 
     /* delete geometry that is scheduled for delete */
-    for (size_t i=0; i<geometries.size(); i++) 
+    for (size_t i=0; i<geometries.size(); i++) // FIXME: this late deletion is inefficient in case of many geometries
     {
       Geometry* geom = geometries[i];
-      if (geom == NULL || geom->state != Geometry::ERASING) continue;
-      remove(geom);
+      if (!geom) continue;
+      if (geom->state == Geometry::ENABLING) geom->state = Geometry::ENABLED;
+      if (geom->state == Geometry::MODIFIED) geom->state = Geometry::ENABLED;
+      if (geom->state == Geometry::DISABLING) geom->state = Geometry::DISABLED;
+      if (geom->state == Geometry::ERASING) remove(geom);
     }
 
     updateInterface();
@@ -475,13 +464,107 @@ namespace embree
       std::cout << "selected scene intersector" << std::endl;
       intersectors.print(2);
     }
-    
-#if TASKING_TBB_INTERNAL
-    if (threadCount != 0) {
+  }
+
+#endif
+
+#if defined(TASKING_TBB_INTERNAL)
+
+  void Scene::build (size_t threadIndex, size_t threadCount) 
+  {
+    if (threadCount != 0) 
+    {
+      {
+        Lock<MutexSys> lock(buildMutex);
+        if (scheduler == NULL) scheduler = new TaskSchedulerNew(-1);
+      }
+      if (threadIndex > 0) {
+        scheduler->join();
+        return;
+      } else
+        scheduler->wait_for_threads(threadCount);
+    }
+
+    /* allow only one build at a time */
+    Lock<MutexSys> lock(buildMutex);
+
+    progress_monitor_counter = 0;
+
+    //if (isStatic() && isBuild()) {
+    //  process_error(RTC_INVALID_OPERATION,"static geometries cannot get committed twice");
+    //  return;
+    //}
+
+    if (!ready()) {
+      process_error(RTC_INVALID_OPERATION,"not all buffers are unmapped");
+      return;
+    }
+
+    if (threadCount) {
+      scheduler->spawn_root  ([&]() { build_task(); });
       delete scheduler; scheduler = NULL;
     }
-#endif
+    else {
+      TaskSchedulerNew::spawn([&]() { build_task(); });
+    }
   }
+
+#endif
+
+#if defined(TASKING_TBB)
+
+  void Scene::build (size_t threadIndex, size_t threadCount) 
+  {
+    /* let threads wait for build to finish in rtcCommitThread mode */
+    if (threadCount != 0) {
+      if (threadIndex > 0) {
+        group_barrier.wait(threadCount); // FIXME: use barrier that waits in condition
+        group->wait();
+        return;
+      }
+    }
+
+    /* try to obtain build lock */
+    TryLock<MutexSys> lock(buildMutex);
+
+    /* join hierarchy build */
+    if (!lock.isLocked()) {
+      group->wait();
+      while (!buildMutex.try_lock()) {
+        __pause_cpu();
+        yield();
+        group->wait();
+      }
+      buildMutex.unlock();
+      return;
+    }
+
+    if (!isModified()) {
+      return;
+    }
+
+    if (!ready()) {
+      process_error(RTC_INVALID_OPERATION,"not all buffers are unmapped");
+      return;
+    }
+
+    try {
+      group->run([&]{ 
+          tbb::task::self().group()->set_priority(tbb::priority_high);
+          build_task();
+        }); 
+      if (threadCount) group_barrier.wait(threadCount);
+      group->wait();
+      setModified(false);
+    } 
+    catch (...) {
+      accels.clear();
+      updateInterface();
+      // FIXME: clear cancelling state of task_group_context
+      throw;
+    }
+  }
+#endif
 
   void Scene::write(std::ofstream& file)
   {
@@ -497,18 +580,20 @@ namespace embree
 
   void Scene::setProgressMonitorFunction(RTC_PROGRESS_MONITOR_FUNCTION func, void* ptr) 
   {
-    Lock<MutexSys> lock(mutex);
+    static MutexSys mutex;
+    mutex.lock();
     progress_monitor_function = func;
     progress_monitor_ptr      = ptr;
+    mutex.unlock();
   }
 
   void Scene::progressMonitor(double dn)
   {
-	  if (progress_monitor_function) {
-	    size_t n = atomic_t(dn) + atomic_add(&progress_monitor_counter, atomic_t(dn));
-	    if (!progress_monitor_function(progress_monitor_ptr, n / (double(numPrimitives())))) {
-#if !defined(TASKING_LOCKSTEP) && !defined(TASKING_TBB_INTERNAL)
-	      THROW_MY_RUNTIME_ERROR(RTC_CANCELLED,"progress monitor forced termination");
+    if (progress_monitor_function) {
+      size_t n = atomic_t(dn) + atomic_add(&progress_monitor_counter, atomic_t(dn));
+      if (!progress_monitor_function(progress_monitor_ptr, n / (double(numPrimitives())))) {
+#if defined(TASKING_TBB)
+        THROW_MY_RUNTIME_ERROR(RTC_CANCELLED,"progress monitor forced termination");
 #endif
       }
     }

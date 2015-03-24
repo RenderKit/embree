@@ -14,28 +14,9 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#pragma once
+// We cannot compile the same file containing lambda functions for two
+// ISAs, as a lambda name mangling bug of ICC under Windows causes
+// symbols to conflict.
 
-#include "common/scene.h"
-#include "common/primref.h"
-#include "builders/priminfo.h"
-#include "geometry/bezier1v.h"
-
-namespace embree
-{
-  namespace isa
-  {
-    template<typename Mesh>
-      PrimInfo createPrimRefArray(Mesh* mesh, vector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);
-
-    template<typename Mesh, size_t timeSteps>
-      PrimInfo createPrimRefArray(Scene* scene, vector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);
-
-    template<typename Mesh, size_t timeSteps>
-      PrimInfo createPrimRefList(Scene* scene, PrimRefList& prims, BuildProgressMonitor& progressMonitor);
-
-    template<size_t timeSteps>
-      PrimInfo createBezierRefArray(Scene* scene, vector<BezierPrim>& prims, BuildProgressMonitor& progressMonitor);
-  }
-}
+#include "bvh4_builder_toplevel.cpp"
 

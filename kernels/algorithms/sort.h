@@ -236,19 +236,16 @@ namespace embree
 	/* perform parallel sort for large N */
 	else 
 	{
-#if TASKING_LOCKSTEP
+#if defined(TASKING_LOCKSTEP)
 	  LockStepTaskScheduler* scheduler = LockStepTaskScheduler::instance();
 #if defined(__MIC__)
 	  const size_t numThreads = scheduler->getNumThreads(); 
 #else
 	  const size_t numThreads = min((N+blockSize-1)/blockSize,scheduler->getNumThreads(),size_t(MAX_THREADS));
 #endif
-
 	  parent->barrier.init(numThreads);
 	  scheduler->dispatchTask(task_radixsort,this,0,numThreads);
-#endif
-
-#if TASKING_TBB || TASKING_TBB_INTERNAL
+#else
 	  const size_t numThreads = min((N+blockSize-1)/blockSize,TaskSchedulerNew::threadCount(),size_t(MAX_THREADS));
           tbbRadixSort(numThreads);
 #endif
@@ -256,59 +253,9 @@ namespace embree
       }
       
     private:
-      
-      void radixIteration(const Key shift, 
-			  const bool last,
-			  Ty* __restrict const src, 
-			  Ty* __restrict const dst, 
-			  const size_t startID, const size_t endID, 
-			  const size_t threadIndex, const size_t threadCount)
-      {
-	/* mask to extract some number of bits */
-	const Key mask = BUCKETS-1;
-        
-	/* count how many items go into the buckets */
-	for (size_t i=0; i<BUCKETS; i++)
-	  parent->radixCount[threadIndex][i] = 0;
-	
-	for (size_t i=startID; i<endID; i++) {
-	  const Key index = ((Key)src[i] >> shift) & mask;
-	  parent->radixCount[threadIndex][index]++;
-	}
-	parent->barrier.wait(threadIndex,threadCount);
-	
-	/* calculate total number of items for each bucket */
-	__aligned(64) size_t total[BUCKETS];
-	for (size_t i=0; i<BUCKETS; i++)
-	  total[i] = 0;
-	
-	for (size_t i=0; i<threadCount; i++)
-	  for (size_t j=0; j<BUCKETS; j++)
-	    total[j] += parent->radixCount[i][j];
-	
-	/* calculate start offset of each bucket */
-	__aligned(64) size_t offset[BUCKETS];
-	offset[0] = 0;
-	for (size_t i=1; i<BUCKETS; i++)    
-	  offset[i] = offset[i-1] + total[i-1];
-	
-	/* calculate start offset of each bucket for this thread */
-	for (size_t i=0; i<threadIndex; i++)
-	  for (size_t j=0; j<BUCKETS; j++)
-	    offset[j] += parent->radixCount[i][j];
-	
-	/* copy items into their buckets */
-	for (size_t i=startID; i<endID; i++) {
-	  const Ty elt = src[i];
-	  const Key index = ((Key)src[i] >> shift) & mask;
-	  dst[offset[index]++] = elt;
-	}
-	if (!last) 
-	  parent->barrier.wait(threadIndex,threadCount);
-      }
-      
+     
 #if defined(__MIC__)
-
+ 
       void radixIteration(Ty* __restrict const src, 
 			  Ty* __restrict const dst, 
 			  const size_t startID, 
@@ -398,49 +345,24 @@ namespace embree
 	    if (b<byte_iteration-1) parent->barrier.wait(threadIndex,threadCount);
 	    std::swap(src,dst);
 	  }
-	
       }
-
-      
-#endif
 
       void radixsort(const size_t threadIndex, const size_t numThreads)
       {
 	const size_t startID = (threadIndex+0)*N/numThreads;
 	const size_t endID   = (threadIndex+1)*N/numThreads;
-
-#if !defined(__MIC__)
-	if (sizeof(Key) == sizeof(uint32)) {
-	  radixIteration(0*BITS,0,src,tmp,startID,endID,threadIndex,numThreads);
-	  radixIteration(1*BITS,0,tmp,src,startID,endID,threadIndex,numThreads);
-	  radixIteration(2*BITS,0,src,tmp,startID,endID,threadIndex,numThreads);
-	  radixIteration(3*BITS,1,tmp,src,startID,endID,threadIndex,numThreads);
-	}
-	else if (sizeof(Key) == sizeof(uint64))
-	{
-	  radixIteration(0*BITS,0,src,tmp,startID,endID,threadIndex,numThreads);
-	  radixIteration(1*BITS,0,tmp,src,startID,endID,threadIndex,numThreads);
-	  radixIteration(2*BITS,0,src,tmp,startID,endID,threadIndex,numThreads);
-	  radixIteration(3*BITS,0,tmp,src,startID,endID,threadIndex,numThreads);
-	  radixIteration(4*BITS,0,src,tmp,startID,endID,threadIndex,numThreads);
-	  radixIteration(5*BITS,0,tmp,src,startID,endID,threadIndex,numThreads);
-	  radixIteration(6*BITS,0,src,tmp,startID,endID,threadIndex,numThreads);
-	  radixIteration(7*BITS,1,tmp,src,startID,endID,threadIndex,numThreads);
-	}
-#else
+        
 	if (sizeof(Key) == sizeof(uint32)) 
 	  radixIteration(src,tmp,startID,endID,threadIndex,numThreads,4);
 	else if (sizeof(Key) == sizeof(uint64)) 
 	  radixIteration(src,tmp,startID,endID,threadIndex,numThreads,8);
-#endif
-
       }
       
       static void task_radixsort (void* data, const size_t threadIndex, const size_t threadCount) { 
 	((Task*)data)->radixsort(threadIndex,threadCount);                          
       }
 
-#if TASKING_TBB || TASKING_TBB_INTERNAL 
+#else
 
       void tbbRadixIteration0(const Key shift, 
                               const Ty* __restrict const src, 
@@ -542,15 +464,12 @@ namespace embree
     
   private:
     __aligned(64) TyRadixCount radixCount;
-#if 0 // defined(__MIC__) 
+#if 0 // defined(__MIC__)  // FIXME: why not use quadtreebarrier?
      __aligned(64) QuadTreeBarrier barrier; 
  #else 
-    LinearBarrierActive barrier; // FIXME: should be able to speficy number of threads here
+LinearBarrierActive barrier; // FIXME: should be able to speficy number of threads here
  #endif 
   };
-
-  /*! shared state for parallel radix sort */
-  //extern ParallelRadixSort shared_radix_sort_state;
 
   /*! parallel radix sort */
   template<typename Key>
@@ -600,7 +519,6 @@ namespace embree
   {
   public:
 
-    //static const size_t MAX_THREADS = 32;
     enum { MAX_THREADS = 32 };
     static const size_t BITS = 11;
     static const size_t BUCKETS = (1 << BITS);
@@ -634,98 +552,13 @@ namespace embree
 	/* perform parallel sort for large N */
 	else 
 	{
-#if defined(TASKING_LOCKSTEP)
-	  LockStepTaskScheduler* scheduler = LockStepTaskScheduler::instance();
-	  const size_t numThreads = min((N+blockSize-1)/blockSize,scheduler->getNumThreads(),size_t(MAX_THREADS));
-	  parent->barrier.init(numThreads);
-	  scheduler->dispatchTask(task_radixsort,this,0,numThreads);
-#endif
-
-#if TASKING_TBB || TASKING_TBB_INTERNAL
 	  const size_t numThreads = min((N+blockSize-1)/blockSize,TaskSchedulerNew::threadCount(),size_t(MAX_THREADS));
           tbbRadixSort(numThreads);
-#endif
 	}
       }
       
     private:
       
-      void radixIteration(const Key shift, const bool last,
-			  const Ty* __restrict src, Ty* __restrict dst, 
-			  const size_t startID, const size_t endID, 
-			  const size_t threadIndex, const size_t threadCount)
-      {
-	/* mask to extract some number of bits */
-	const Key mask = BUCKETS-1;
-        
-	/* count how many items go into the buckets */
-	for (size_t i=0; i<BUCKETS; i++)
-	  parent->radixCount[threadIndex][i] = 0;
-	
-	for (size_t i=startID; i<endID; i++) {
-	  const Key index = ((Key)src[i] >> shift) & mask;
-	  parent->radixCount[threadIndex][index]++;
-	}
-	parent->barrier.wait(threadIndex,threadCount);
-	
-	/* calculate total number of items for each bucket */
-	__aligned(64) size_t total[BUCKETS];
-	for (size_t i=0; i<BUCKETS; i++)
-	  total[i] = 0;
-	
-	for (size_t i=0; i<threadCount; i++)
-	  for (size_t j=0; j<BUCKETS; j++)
-	    total[j] += parent->radixCount[i][j];
-	
-	/* calculate start offset of each bucket */
-	__aligned(64) size_t offset[BUCKETS];
-	offset[0] = 0;
-	for (size_t i=1; i<BUCKETS; i++)    
-	  offset[i] = offset[i-1] + total[i-1];
-	
-	/* calculate start offset of each bucket for this thread */
-	for (size_t i=0; i<threadIndex; i++)
-	  for (size_t j=0; j<BUCKETS; j++)
-	    offset[j] += parent->radixCount[i][j];
-	
-	/* copy items into their buckets */
-	for (size_t i=startID; i<endID; i++) {
-	  const Ty elt = src[i];
-	  const Key index = ((Key)src[i] >> shift) & mask;
-	  dst[offset[index]++] = elt;
-	}
-	if (!last) 
-	  parent->barrier.wait(threadIndex,threadCount);
-      }
-
-      void radixsort(const size_t threadIndex, const size_t numThreads)
-      {
-	const size_t startID = (threadIndex+0)*N/numThreads;
-	const size_t endID   = (threadIndex+1)*N/numThreads;
-
-	if (sizeof(Key) == sizeof(uint32)) {
-	  radixIteration(0*BITS,0,src,dst,startID,endID,threadIndex,numThreads);
-	  radixIteration(1*BITS,0,dst,src,startID,endID,threadIndex,numThreads);
-	  radixIteration(2*BITS,1,src,dst,startID,endID,threadIndex,numThreads);
-	}
-	else if (sizeof(Key) == sizeof(uint64))
-	{
-	  Ty* src = this->src;
-	  Ty* dst = this->dst;
-	  for (uint64 shift=0*BITS; shift<64; shift+=BITS) {
-	    radixIteration(shift,0,src,dst,startID,endID,threadIndex,numThreads);
-	    std::swap(src,dst);
-	  }
-	  radixIteration(5*BITS,1,src,dst,startID,endID,threadIndex,numThreads); // required to copy into destination buffer
-	}
-      }
-      
-      static void task_radixsort (void* data, const size_t threadIndex, const size_t threadCount) { 
-	((Task*)data)->radixsort(threadIndex,threadCount);                          
-      }
-
-#if TASKING_TBB || TASKING_TBB_INTERNAL 
-
       __forceinline void tbbRadixIteration0(const Key shift,
                               const Ty* __restrict src, Ty* __restrict dst, 
                                const size_t threadIndex, const size_t threadCount) // FIXME: can this be put to end of state 1??
@@ -810,7 +643,6 @@ namespace embree
 	  tbbRadixIteration(5*BITS,1,src,dst,numThreads); // required to copy into destination buffer
 	}
       }
-#endif
 
     private:
       ParallelRadixSortCopy* const parent;

@@ -17,8 +17,8 @@
 #include "bvh4.h"
 #include "common/profile.h"
 
-#include "builders_new/primrefgen.h"
-#include "builders_new/bvh_builder.h"
+#include "builders/primrefgen.h"
+#include "builders/bvh_builder.h"
 
 #include "algorithms/parallel_for_for.h"
 #include "algorithms/parallel_for_for_prefix_sum.h"
@@ -87,6 +87,8 @@ namespace embree
 
     struct BVH4SubdivPatch1BuilderBinnedSAHClass : public Builder
     {
+      ALIGNED_STRUCT;
+
       BVH4* bvh;
       Scene* scene;
       vector<PrimRef> prims;
@@ -139,10 +141,16 @@ namespace embree
 	if (g_verbose >= 2)
 	  bvh->printStatistics();
       }
+
+      void clear() {
+        prims.clear();
+      }
     };
     
     struct BVH4SubdivGridBuilderBinnedSAHClass : public Builder
     {
+      ALIGNED_STRUCT;
+
       BVH4* bvh;
       Scene* scene;
       vector<PrimRef> prims;
@@ -281,10 +289,16 @@ namespace embree
 	if (g_verbose >= 2)
 	  bvh->printStatistics();
       }
+
+      void clear() {
+        prims.clear();
+      }
     };
 
     struct BVH4SubdivGridEagerBuilderBinnedSAHClass : public Builder
     {
+      ALIGNED_STRUCT;
+
       BVH4* bvh;
       Scene* scene;
       vector<PrimRef> prims;
@@ -409,10 +423,16 @@ namespace embree
 	if (g_verbose >= 2)
 	  bvh->printStatistics();
       }
+
+      void clear() {
+        prims.clear();
+      }
     };
 
     struct BVH4SubdivGridLazyBuilderBinnedSAHClass : public Builder
     {
+      ALIGNED_STRUCT;
+
       BVH4* bvh;
       Scene* scene;
       vector<PrimRef> prims; 
@@ -541,6 +561,10 @@ namespace embree
 	  std::cout << "[DONE] " << 1000.0f*dt << "ms (" << numPrimitives/dt*1E-6 << " Mprim/s)" << std::endl;
 	if (g_verbose >= 2)
 	  bvh->printStatistics();
+      }
+
+      void clear() {
+        prims.clear();
       }
     };
 
@@ -752,6 +776,8 @@ namespace embree
 
     struct BVH4SubdivPatch1CachedBuilderBinnedSAHClass : public Builder
     {
+      ALIGNED_STRUCT;
+
       BVH4* bvh;
       Scene* scene;
       vector<PrimRef> prims; 
@@ -889,9 +915,14 @@ namespace embree
           numPrimitives = pinfo.size();
           DBG_CACHE_BUILDER( DBG_PRINT(fastUpdateMode) );
           DBG_CACHE_BUILDER( DBG_PRINT(pinfo) );
-          DBG_CACHE_BUILDER( DBG_PRINT(needAllThreads) );
         }
         
+        if (numPrimitives == 0) {
+          prims.resize(numPrimitives);
+          bvh->set(BVH4::emptyNode,empty,0);
+          return;
+        }
+
         prims.resize(numPrimitives);
         
       /* Allocate memory for gregory and b-spline patches */
@@ -908,7 +939,13 @@ namespace embree
        {
          DBG_CACHE_BUILDER(std::cout << "ALLOCATING SUBDIVPATCH1CACHED MEMORY FOR " << numPrimitives << " PRIMITIVES" << std::endl);
          this->bvh->size_data_mem = sizeof(SubdivPatch1Cached) * numPrimitives;
-         this->bvh->data_mem      = os_malloc( this->bvh->size_data_mem );        
+
+	 //DBG_PRINT( numPrimitives );
+	 //DBG_PRINT( this->bvh->size_data_mem );
+	 if ( this->bvh->size_data_mem != 0)
+	   this->bvh->data_mem      = os_malloc( this->bvh->size_data_mem );        
+	 else
+	   this->bvh->data_mem      = NULL;
        }
         
       SubdivPatch1Cached *const subdiv_patches = (SubdivPatch1Cached *)this->bvh->data_mem;
@@ -951,6 +988,14 @@ namespace embree
                                                      assert(bounds.lower.y <= bounds.upper.y);
                                                      assert(bounds.lower.z <= bounds.upper.z);
               
+						     assert( std::isfinite(bounds.lower.x) );
+						     assert( std::isfinite(bounds.lower.y) );
+						     assert( std::isfinite(bounds.lower.z) );
+						     
+						     assert( std::isfinite(bounds.upper.x) );
+						     assert( std::isfinite(bounds.upper.y) );
+						     assert( std::isfinite(bounds.upper.z) );
+
                                                      prims[patchIndex] = PrimRef(bounds,patchIndex);
                                                      s.add(bounds);
                                                    });
@@ -976,6 +1021,15 @@ namespace embree
 	      assert(bounds.lower.x <= bounds.upper.x);
 	      assert(bounds.lower.y <= bounds.upper.y);
 	      assert(bounds.lower.z <= bounds.upper.z);
+
+	      assert( std::isfinite(bounds.lower.x) );
+	      assert( std::isfinite(bounds.lower.y) );
+	      assert( std::isfinite(bounds.lower.z) );
+	      
+	      assert( std::isfinite(bounds.upper.x) );
+	      assert( std::isfinite(bounds.upper.y) );
+	      assert( std::isfinite(bounds.upper.z) );
+
 	      
 	      prims[patchIndex] = PrimRef(bounds,patchIndex);
 	      s.add(bounds);	      
@@ -986,19 +1040,22 @@ namespace embree
 
       t0 = getSeconds()-t0;
       DBG_CACHE_BUILDER(std::cout << "create prims in " << 1000.0f*t0 << "ms " << std::endl);
+      DBG_CACHE_BUILDER(std::cout << "pinfo.bounds " << pinfo << std::endl);
 
  #if 0
       // to dump tessellated patches in obj format
         {
+	  size_t numTotalTriangles = 0;
           std::cout << "# OBJ FILE" << std::endl;
           std::cout << "# " << numPrimitives << " base primitives" << std::endl;
           SubdivPatch1Cached *const subdiv_patches = (SubdivPatch1Cached *)this->bvh->data_mem;
           size_t vertex_index = 0;
           for (size_t i=0;i<numPrimitives;i++)
-            subdiv_patches[i].evalToOBJ(scene,vertex_index);
+            subdiv_patches[i].evalToOBJ(scene,vertex_index,numTotalTriangles);
           std::cout << "# " << vertex_index << " vertices " << (double)vertex_index * sizeof(Vec3fa) / 1024.0 / 1024.0f << " MB " << std::endl;
 
           std::cout << "# " << vertex_index << " normals " << (double)vertex_index * sizeof(Vec3fa) / 1024.0 / 1024.0f << " MB " << std::endl;
+          std::cout << "# " << numTotalTriangles << " numTotalTriangles" << std::endl;
  
           exit(0);
         }
@@ -1012,19 +1069,28 @@ namespace embree
       }
       else
       {
-        BVH4::NodeRef root = bvh_builder_binned_sah_internal<BVH4::NodeRef>
-          (CreateAlloc(bvh),CreateBVH4Node(bvh),
-           [&] (const BuildRecord<BVH4::NodeRef>& current, Allocator* alloc) -> int {
-            size_t items = current.size();
-            assert(items == 1);
-            const unsigned int patchIndex = prims[current.begin].ID();
-            SubdivPatch1Cached *const subdiv_patches = (SubdivPatch1Cached *)this->bvh->data_mem;
-            *current.parent = bvh->encodeLeaf((char*)&subdiv_patches[patchIndex],1);
-            return 0;
-           },
-           progress,
-           prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,1,1,1);
-        bvh->set(root,pinfo.geomBounds,pinfo.size());
+	if (numPrimitives)
+	  {
+	    DBG_CACHE_BUILDER(std::cout << "start building..." << std::endl);
+
+	    BVH4::NodeRef root = bvh_builder_binned_sah_internal<BVH4::NodeRef>
+	      (CreateAlloc(bvh),CreateBVH4Node(bvh),
+	       [&] (const BuildRecord<BVH4::NodeRef>& current, Allocator* alloc) -> int {
+		size_t items = current.size();
+		assert(items == 1);
+		const unsigned int patchIndex = prims[current.begin].ID();
+		SubdivPatch1Cached *const subdiv_patches = (SubdivPatch1Cached *)this->bvh->data_mem;
+		*current.parent = bvh->encodeLeaf((char*)&subdiv_patches[patchIndex],1);
+		return 0;
+	      },
+	       progress,
+	       prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,1,1,1);	    
+	    bvh->set(root,pinfo.geomBounds,pinfo.size());
+	    DBG_CACHE_BUILDER(std::cout << "finsihed building" << std::endl);
+
+	  }
+	else
+	  bvh->set(BVH4::emptyNode,empty,0);	  
       }
       
         if (g_verbose >= 1) dt = getSeconds()-t0;
@@ -1040,6 +1106,10 @@ namespace embree
 	if (g_verbose >= 2)
 	  bvh->printStatistics();
 
+      }
+
+      void clear() {
+        prims.clear();
       }
     };
     

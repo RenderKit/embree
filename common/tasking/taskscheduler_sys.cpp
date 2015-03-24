@@ -15,91 +15,7 @@
 // ======================================================================== //
 
 #include "taskscheduler_sys.h"
-#include "tasklogger.h"
  
-#if 0
- 
-namespace embree
-{
-  TaskSchedulerSys::TaskSchedulerSys()
-    : begin(0), end(0), tasks(16*1024) {}
-
-  void TaskSchedulerSys::add(ssize_t threadIndex, QUEUE queue, Task* task)
-  {
-    if (task->event) 
-      task->event->inc();
-
-    mutex.lock();
-
-    /*! insert task to correct end of list */
-    switch (queue) {
-    case GLOBAL_FRONT: { size_t i = (--begin)&(tasks.size()-1); tasks[i] = task; break; }
-    case GLOBAL_BACK : { size_t i = (end++  )&(tasks.size()-1); tasks[i] = task; break; }
-    default          : THROW_RUNTIME_ERROR("invalid task queue");
-    }
-    
-    condition.broadcast();
-    mutex.unlock();
-  }
-
-  void TaskSchedulerSys::run(size_t threadIndex, size_t threadCount)
-  {
-    while (true)
-    {      
-      /* wait for available task */
-      mutex.lock();
-      while ((end-begin) == 0 && !terminateThreads) {
-        condition.wait(mutex); continue;
-      }
-      
-      /* terminate this thread */
-      if (terminateThreads) {
-        mutex.unlock(); return;
-      }
-
-      /* take next task from stack */
-      size_t i = (end-1)&(tasks.size()-1);
-      Task* task = tasks[i]; 
-      if (task == NULL || task->started <= 0) {
-        tasks[i] = NULL; end--; mutex.unlock(); continue;
-      }
-      task->locks++;
-      mutex.unlock();
-
-      TaskScheduler::Event* event = task->event;
-      thread2event[threadIndex].event = event; 
-
-      /* run the task */
-      while (true) {
-        ssize_t elt = --task->started;
-        if (elt < 0) break;
-        if (task->run) task->run(task->runData,threadIndex,threadCount,elt,task->elts,task->event);
-      }
-
-      /* complete the task */
-      mutex.lock();
-      if (--task->locks == 0) {
-        tasks[i] = NULL;
-        mutex.unlock();
-        if (task->complete) task->complete(task->completeData,threadIndex,threadCount,task->event);
-        if (event) event->dec();
-      } 
-      else 
-        mutex.unlock();
-    }
-  }
-
-  void TaskSchedulerSys::terminate() 
-  {
-    mutex.lock();
-    terminateThreads = true;
-    condition.broadcast(); 
-    mutex.unlock();
-  }
-}
-
-#else
-
 namespace embree
 {
   TaskSchedulerSys::TaskSchedulerSys()
@@ -171,17 +87,17 @@ namespace embree
     /* run the task */
     TaskScheduler::Event* event = task->event;
     if (task->run) {
-      size_t taskID = TaskLogger::beginTask(threadIndex,task->name,elt);
+      //size_t taskID = TaskLogger::beginTask(threadIndex,task->name,elt);
       task->run(task->runData,threadIndex,numEnabledThreads,elt,task->elts,task->event);
-      TaskLogger::endTask(threadIndex,taskID);
+      //TaskLogger::endTask(threadIndex,taskID);
     }
     
     /* complete the task */
     if (--task->completed == 0) {
       if (task->complete) {
-        size_t taskID = TaskLogger::beginTask(threadIndex,task->name,0);
+        //size_t taskID = TaskLogger::beginTask(threadIndex,task->name,0);
         task->complete(task->completeData,threadIndex,numEnabledThreads,task->event);
-        TaskLogger::endTask(threadIndex,taskID);
+        //TaskLogger::endTask(threadIndex,taskID);
       }
       if (event) event->dec();
     }
@@ -201,5 +117,3 @@ namespace embree
     mutex.unlock();
   }
 }
-
-#endif

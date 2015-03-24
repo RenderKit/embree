@@ -14,12 +14,9 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "heuristic_object_partition.h"
+// We cannot compile the same file containing lambda functions for two
+// ISAs, as a lambda name mangling bug of ICC under Windows causes
+// symbols to conflict.
 
-namespace embree
-{
-  namespace isa
-  {
-    // FIXME: remove file
-  }
-}
+#include "bvh4_builder_hair.cpp"
+

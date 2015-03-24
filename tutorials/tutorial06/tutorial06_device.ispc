@@ -21,6 +21,12 @@
 
 #define __device__
 
+#undef TILE_SIZE_X
+#undef TILE_SIZE_Y
+
+#define TILE_SIZE_X 4
+#define TILE_SIZE_Y 4
+
 #define FIX_SAMPLING 0
 #define SAMPLES_PER_PIXEL 1
 
@@ -1377,7 +1383,7 @@ task void renderTile(uniform int* uniform pixels,
   const uniform int y0 = tileY * TILE_SIZE_Y;
   const uniform int y1 = min(y0+TILE_SIZE_Y,height);
 
-  foreach (y = y0 ... y1, x = x0 ... x1)
+  foreach_tiled (y = y0 ... y1, x = x0 ... x1)
   {
     //if (x != 200 || y != 450) continue;
 
@@ -1456,6 +1462,7 @@ export void device_render (uniform int* uniform pixels,
   const uniform int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   const uniform int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
   launch[numTilesX*numTilesY] renderTile(pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY); sync;
+  rtcDebug();
 } // device_render
 
 /* called by the C++ code for cleanup */

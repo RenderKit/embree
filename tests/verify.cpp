@@ -1095,8 +1095,8 @@ namespace embree
     AssertNoError();
     rtcCommit (scene);
     AssertNoError();
-    rtcCommit (scene); // cannot commit static scene twice
-    AssertAnyError();
+    //rtcCommit (scene); // cannot commit static scene twice
+    //AssertAnyError();
     rtcDisable(scene,geom0); // static scene cannot get modified anymore after commit
     AssertAnyError();
     rtcDeleteScene (scene);
@@ -2527,6 +2527,8 @@ namespace embree
 #endif
   }
 
+  static bool build_join_test = false;
+
   struct RegressionTask
   {
     RegressionTask (size_t sceneIndex, size_t sceneCount, size_t threadCount)
@@ -2569,7 +2571,8 @@ namespace embree
 	task->barrier.wait();
 	if (thread->threadIndex < task->numActiveThreads) 
 	{
-	  rtcCommitThread(task->scene,thread->threadIndex,task->numActiveThreads);
+          if (build_join_test) rtcCommit(task->scene);
+          else                 rtcCommitThread(task->scene,thread->threadIndex,task->numActiveThreads);
 	  //CountErrors();
           if (rtcGetError() != RTC_NO_ERROR) {
             atomic_add(&errorCounter,1);
@@ -2638,6 +2641,7 @@ namespace embree
         //CountErrors();
         if (rtcGetError() != RTC_NO_ERROR) {
           atomic_add(&errorCounter,1);
+
           hasError = true;
           break;
         }
@@ -2646,7 +2650,8 @@ namespace embree
       if (thread->threadCount) {
 	task->numActiveThreads = max(size_t(1),random<int>() % thread->threadCount);
 	task->barrier.wait();
-	rtcCommitThread(task->scene,thread->threadIndex,task->numActiveThreads);
+        if (build_join_test) rtcCommit(task->scene);
+        else                 rtcCommitThread(task->scene,thread->threadIndex,task->numActiveThreads);
       } else {
         if (!hasError) {
           rtcCommit(task->scene);
@@ -2688,7 +2693,8 @@ namespace embree
 	task->barrier.wait();
 	if (thread->threadIndex < task->numActiveThreads) 
 	{
-	  rtcCommitThread(task->scene,thread->threadIndex,task->numActiveThreads);
+          if (build_join_test) rtcCommit(task->scene);
+          else	               rtcCommitThread(task->scene,thread->threadIndex,task->numActiveThreads);
 	  //CountErrors();
           if (rtcGetError() != RTC_NO_ERROR) {
             atomic_add(&errorCounter,1);
@@ -2818,7 +2824,8 @@ namespace embree
       if (thread->threadCount) {
 	task->numActiveThreads = max(size_t(1),random<int>() % thread->threadCount);
 	task->barrier.wait();
-	rtcCommitThread(task->scene,thread->threadIndex,task->numActiveThreads);
+        if (build_join_test) rtcCommit(task->scene);
+        else                 rtcCommitThread(task->scene,thread->threadIndex,task->numActiveThreads);
       } else {
         if (!hasError) 
           rtcCommit(task->scene);
@@ -2843,14 +2850,15 @@ namespace embree
     return;
   }
 
-  bool rtcore_regression (thread_func func, bool userThreads)
+  bool rtcore_regression (thread_func func, int mode)
   {
     errorCounter = 0;
     size_t sceneIndex = 0;
     while (sceneIndex < regressionN/5) 
     {
-      if (userThreads)
+      if (mode)
       {
+        build_join_test = (mode == 2);
 	size_t numThreads = getNumberOfLogicalThreads();
 #if defined (__MIC__)
 	numThreads -= 4;
@@ -2986,6 +2994,7 @@ namespace embree
     //POSITIVE("regression_dynamic_memory_monitor",        rtcore_regression_memory_monitor(rtcore_regression_dynamic_thread));
     //POSITIVE("regression_garbage_geom",   rtcore_regression_garbage());
     //exit(1);
+#if 1
 
     POSITIVE("mutex_sys",                 test_mutex_sys());
 #if !defined(__MIC__)  // FIXME: hangs on MIC 
@@ -3084,17 +3093,26 @@ namespace embree
 #endif
 #endif
 
-    POSITIVE("regression_static",         rtcore_regression(rtcore_regression_static_thread,false));
-    POSITIVE("regression_dynamic",        rtcore_regression(rtcore_regression_dynamic_thread,false));
 
-#if !defined(__MIC__) && defined(TASKING_TBB)
-    POSITIVE("regression_static_memory_monitor",  rtcore_regression_memory_monitor(rtcore_regression_static_thread));
-    POSITIVE("regression_dynamic_memory_monitor", rtcore_regression_memory_monitor(rtcore_regression_dynamic_thread));
+    POSITIVE("regression_static",         rtcore_regression(rtcore_regression_static_thread,0));
+    POSITIVE("regression_dynamic",        rtcore_regression(rtcore_regression_dynamic_thread,0));
+
+
+#if defined(TASKING_TBB) || defined(TASKING_TBB_INTERNAL)
+    POSITIVE("regression_static_user_threads", rtcore_regression(rtcore_regression_static_thread,1));
+    POSITIVE("regression_dynamic_user_threads", rtcore_regression(rtcore_regression_dynamic_thread,1));
 #endif
 
-#if !defined(__MIC__) && !defined(TASKING_TBB) // FIXME: enable and implement for TBB tasking system
-    POSITIVE("regression_static_user_threads", rtcore_regression(rtcore_regression_static_thread,true));
-    POSITIVE("regression_dynamic_user_threads", rtcore_regression(rtcore_regression_dynamic_thread,true));
+#endif
+
+#if defined(TASKING_TBB)
+    POSITIVE("regression_static_build_join", rtcore_regression(rtcore_regression_static_thread,2));
+    POSITIVE("regression_dynamic_build_join", rtcore_regression(rtcore_regression_dynamic_thread,2));
+#endif
+
+#if defined(TASKING_TBB)
+    POSITIVE("regression_static_memory_monitor",  rtcore_regression_memory_monitor(rtcore_regression_static_thread));
+    POSITIVE("regression_dynamic_memory_monitor", rtcore_regression_memory_monitor(rtcore_regression_dynamic_thread));
 #endif
 
 #if !defined(__MIC__)

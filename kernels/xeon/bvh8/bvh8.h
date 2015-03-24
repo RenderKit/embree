@@ -229,7 +229,7 @@ namespace embree
     static Accel* BVH8Triangle8SpatialSplit(Scene* scene);
 
     /*! initializes the acceleration structure */
-    void init(size_t nodeSize, size_t numPrimitives, size_t numThreads);
+    //void init(size_t nodeSize, size_t numPrimitives, size_t numThreads);
     void clear();
 
     void set (NodeRef root, const BBox3fa& bounds, size_t numPrimitives);
@@ -242,17 +242,9 @@ namespace embree
     void layoutLargeNodes(size_t N);
     NodeRef layoutLargeNodesRecursion(NodeRef& node);
 
-    LinearAllocatorPerThread alloc;
     FastAllocator alloc2;
 
 #if defined (__AVX__)
-    __forceinline Node* allocNode(LinearAllocatorPerThread::ThreadAllocator& thread) {
-      Node* node = (Node*) thread.malloc(sizeof(Node),1 << alignment); node->clear(); return node;
-    }
-
-    __forceinline char* allocPrimitiveBlocks(LinearAllocatorPerThread::ThreadAllocator& thread, size_t num) {
-      return (char*) thread.malloc(num*primTy.bytes,1 << alignment);
-    }
 
     /*! Encodes a node */
     __forceinline NodeRef encodeNode(Node* node) { 
@@ -270,7 +262,7 @@ namespace embree
     
     /*! calculates the amount of bytes allocated */
     size_t bytesAllocated() {
-      return alloc.bytes();
+      return alloc2.getAllocatedBytes();
     }
 
   public:
