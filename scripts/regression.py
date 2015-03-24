@@ -284,15 +284,15 @@ def processConfiguration(OS, compiler, platform, build, isa, tasking, models):
       render(OS, compiler, platform, build, isa, tasking, 'tutorial08'+ty, '', '', '')
       render(OS, compiler, platform, build, isa, tasking, 'tutorial09'+ty, '', '', '')
     
-      render_tutorial10(OS, compiler, platform, build, isa, tasking, ty, 'subdiv0', 'static')
-      render_tutorial10(OS, compiler, platform, build, isa, tasking, ty, 'subdiv1', 'dynamic')
-      render_tutorial10(OS, compiler, platform, build, isa, tasking, ty, 'subdiv2', 'robust')
-      render_tutorial10(OS, compiler, platform, build, isa, tasking, ty, 'subdiv3', 'high_quality')
-      render_tutorial10(OS, compiler, platform, build, isa, tasking, ty, 'subdiv4', 'static')
-      render_tutorial10(OS, compiler, platform, build, isa, tasking, ty, 'subdiv5', 'dynamic')
-      render_tutorial10(OS, compiler, platform, build, isa, tasking, ty, 'subdiv6', 'robust')
-      render_tutorial10(OS, compiler, platform, build, isa, tasking, ty, 'bigguy', 'static')
-      render_tutorial10(OS, compiler, platform, build, isa, tasking, ty, 'cupid', 'dynamic')
+      render_tutorial10(OS, compiler, platform, build, isa, tasking, ty, 'subdiv0', '')
+      render_tutorial10(OS, compiler, platform, build, isa, tasking, ty, 'subdiv1', '')
+      render_tutorial10(OS, compiler, platform, build, isa, tasking, ty, 'subdiv2', '')
+      render_tutorial10(OS, compiler, platform, build, isa, tasking, ty, 'subdiv3', '')
+      render_tutorial10(OS, compiler, platform, build, isa, tasking, ty, 'subdiv4', '')
+      render_tutorial10(OS, compiler, platform, build, isa, tasking, ty, 'subdiv5', '')
+      render_tutorial10(OS, compiler, platform, build, isa, tasking, ty, 'subdiv6', '')
+      render_tutorial10(OS, compiler, platform, build, isa, tasking, ty, 'bigguy', '')
+      render_tutorial10(OS, compiler, platform, build, isa, tasking, ty, 'cupid', '')
 			    
 def renderLoop(OS):
     for compiler in compilers:
