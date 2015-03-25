@@ -18,7 +18,7 @@
 #include "common/profile.h"
 
 #include "builders/primrefgen.h"
-#include "builders/bvh_builder.h"
+#include "builders/bvh_builder2.h"
 
 #include "algorithms/parallel_for_for.h"
 #include "algorithms/parallel_for_for_prefix_sum.h"
@@ -48,11 +48,11 @@ namespace embree
     {
       __forceinline CreateBVH4Node (BVH4* bvh) : bvh(bvh) {}
       
-      __forceinline int operator() (const isa::BuildRecord<BVH4::NodeRef>& current, BuildRecord<BVH4::NodeRef>** children, const size_t N, Allocator* alloc) 
+      __forceinline int operator() (const isa::BuildRecord2<BVH4::NodeRef>& current, BuildRecord2<BVH4::NodeRef>** children, const size_t N, Allocator* alloc) 
       {
         BVH4::Node* node = (BVH4::Node*) alloc->alloc0.malloc(sizeof(BVH4::Node)); node->clear();
         for (size_t i=0; i<N; i++) {
-          node->set(i,children[i]->geomBounds);
+          node->set(i,children[i]->pinfo.geomBounds);
           children[i]->parent = &node->child(i);
         }
         *current.parent = bvh->encodeNode(node);
@@ -68,7 +68,7 @@ namespace embree
       __forceinline CreateLeaf (BVH4* bvh, PrimRef* prims) 
         : bvh(bvh), prims(prims) {}
       
-      __forceinline int operator() (const BuildRecord<BVH4::NodeRef>& current, Allocator* alloc)
+      __forceinline int operator() (const BuildRecord2<BVH4::NodeRef>& current, Allocator* alloc)
       {
         size_t items = Primitive::blocks(current.prims.size());
         size_t start = current.prims.begin();
@@ -123,9 +123,9 @@ namespace embree
         auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
         auto virtualprogress = BuildProgressMonitorFromClosure(progress);
         const PrimInfo pinfo = createPrimRefArray<SubdivMesh,1>(scene,prims,virtualprogress);
-        BVH4::NodeRef root = bvh_builder_binned_sah_internal<BVH4::NodeRef>
+        BVH4::NodeRef root = bvh_builder_binned_sah2_internal<BVH4::NodeRef>
           (CreateAlloc(bvh),CreateBVH4Node(bvh),CreateLeaf<SubdivPatch1>(bvh,prims.data()),virtualprogress,
-           prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,1,1,1);
+           prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,1,1,1,1.0f,1.0f);
         bvh->set(root,pinfo.geomBounds,pinfo.size());
 
         if (g_verbose >= 1) dt = getSeconds()-t0;
@@ -265,15 +265,15 @@ namespace embree
           return s;
         }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a,b); });
         
-        BVH4::NodeRef root = bvh_builder_binned_sah_internal<BVH4::NodeRef>
+        BVH4::NodeRef root = bvh_builder_binned_sah2_internal<BVH4::NodeRef>
           (CreateAlloc(bvh),CreateBVH4Node(bvh),
-           [&] (const BuildRecord<BVH4::NodeRef>& current, Allocator* alloc) -> int {
-            if (current.size() != 1) THROW_RUNTIME_ERROR("bvh4_builder_subdiv: internal error");
-            *current.parent = (BVH4::NodeRef) prims[current.begin].ID();
+           [&] (const BuildRecord2<BVH4::NodeRef>& current, Allocator* alloc) -> int {
+            if (current.pinfo.size() != 1) THROW_RUNTIME_ERROR("bvh4_builder_subdiv: internal error");
+            *current.parent = (BVH4::NodeRef) prims[current.prims.begin()].ID();
             return 0;
           },
            progress,
-           prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,1,1,1);
+           prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,1,1,1,1.0f,1.0f);
         bvh->set(root,pinfo.geomBounds,pinfo.size());
         
         if (g_verbose >= 1) dt = getSeconds()-t0;
@@ -399,15 +399,15 @@ namespace embree
           return s;
         }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a,b); });
         
-        BVH4::NodeRef root = bvh_builder_binned_sah_internal<BVH4::NodeRef>
+        BVH4::NodeRef root = bvh_builder_binned_sah2_internal<BVH4::NodeRef>
           (CreateAlloc(bvh),CreateBVH4Node(bvh),
-           [&] (const BuildRecord<BVH4::NodeRef>& current, Allocator* alloc) -> int {
-             if (current.size() != 1) THROW_RUNTIME_ERROR("bvh4_builder_subdiv: internal error");
-             *current.parent = (BVH4::NodeRef) prims[current.begin].ID();
+           [&] (const BuildRecord2<BVH4::NodeRef>& current, Allocator* alloc) -> int {
+             if (current.pinfo.size() != 1) THROW_RUNTIME_ERROR("bvh4_builder_subdiv: internal error");
+             *current.parent = (BVH4::NodeRef) prims[current.prims.begin()].ID();
              return 0;
            },
            progress,
-           prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,1,1,1);
+           prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,1,1,1,1.0f,1.0f);
         bvh->set(root,pinfo.geomBounds,pinfo.size());
         
         if (g_verbose >= 1) dt = getSeconds()-t0;
@@ -533,11 +533,11 @@ namespace embree
           return s;
         }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a,b); });
         
-        BVH4::NodeRef root = bvh_builder_binned_sah_internal<BVH4::NodeRef>
+        BVH4::NodeRef root = bvh_builder_binned_sah2_internal<BVH4::NodeRef>
           (CreateAlloc(bvh),CreateBVH4Node(bvh),
-           [&] (const BuildRecord<BVH4::NodeRef>& current, Allocator* alloc) -> int {
-            assert(current.size() == 1);
-            BVH4::NodeRef node = prims[current.begin].ID();
+           [&] (const BuildRecord2<BVH4::NodeRef>& current, Allocator* alloc) -> int {
+            assert(current.pinfo.size() == 1);
+            BVH4::NodeRef node = prims[current.prims.begin()].ID();
             size_t ty = 0;
             Grid::LazyLeaf* leaf = (Grid::LazyLeaf*) node.leaf(ty);
             leaf->parent = current.parent;
@@ -546,7 +546,7 @@ namespace embree
             return 0;
           },
           progress,
-          prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,1,1,1);
+           prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,1,1,1,1.0f,1.0f);
         bvh->set(root,pinfo.geomBounds,pinfo.size());
         
         if (g_verbose >= 1) dt = getSeconds()-t0;
@@ -1073,18 +1073,18 @@ namespace embree
 	  {
 	    DBG_CACHE_BUILDER(std::cout << "start building..." << std::endl);
 
-	    BVH4::NodeRef root = bvh_builder_binned_sah_internal<BVH4::NodeRef>
+	    BVH4::NodeRef root = bvh_builder_binned_sah2_internal<BVH4::NodeRef>
 	      (CreateAlloc(bvh),CreateBVH4Node(bvh),
-	       [&] (const BuildRecord<BVH4::NodeRef>& current, Allocator* alloc) -> int {
-		size_t items = current.size();
+	       [&] (const BuildRecord2<BVH4::NodeRef>& current, Allocator* alloc) -> int {
+		size_t items = current.pinfo.size();
 		assert(items == 1);
-		const unsigned int patchIndex = prims[current.begin].ID();
+		const unsigned int patchIndex = prims[current.prims.begin()].ID();
 		SubdivPatch1Cached *const subdiv_patches = (SubdivPatch1Cached *)this->bvh->data_mem;
 		*current.parent = bvh->encodeLeaf((char*)&subdiv_patches[patchIndex],1);
 		return 0;
 	      },
 	       progress,
-	       prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,1,1,1);	    
+	       prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,1,1,1,1.0f,1.0f);
 	    bvh->set(root,pinfo.geomBounds,pinfo.size());
 	    DBG_CACHE_BUILDER(std::cout << "finsihed building" << std::endl);
 

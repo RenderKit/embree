@@ -23,6 +23,8 @@
 #include "builders/presplit.h"
 #include "builders/bvh_builder2.h"
 
+#include "geometry/bezier1v.h"
+#include "geometry/bezier1i.h"
 #include "geometry/triangle1.h"
 #include "geometry/triangle4.h"
 #include "geometry/triangle8.h"
@@ -30,6 +32,7 @@
 #include "geometry/triangle4v.h"
 #include "geometry/triangle4i.h"
 #include "geometry/triangle4v_mb.h"
+#include "geometry/virtual_accel.h"
 
 #define ROTATE_TREE 0
 #define PROFILE 0
@@ -218,6 +221,9 @@ namespace embree
     };
 
     /* entry functions for the scene builder */
+    Builder* BVH4Bezier1vSceneBuilderBinnedSAH2   (void* bvh, Scene* scene, size_t mode) { return new BVH4BuilderBinnedSAH2<BezierCurves,Bezier1v>((BVH4*)bvh,scene,1,1,1.0f,1,1,mode); }
+    Builder* BVH4Bezier1iSceneBuilderBinnedSAH2   (void* bvh, Scene* scene, size_t mode) { return new BVH4BuilderBinnedSAH2<BezierCurves,Bezier1i>((BVH4*)bvh,scene,1,1,1.0f,1,1,mode); }
+
     Builder* BVH4Triangle1SceneBuilderBinnedSAH2  (void* bvh, Scene* scene, size_t mode) { return new BVH4BuilderBinnedSAH2<TriangleMesh,Triangle1>((BVH4*)bvh,scene,1,1,1.0f,2,inf,mode); }
     Builder* BVH4Triangle4SceneBuilderBinnedSAH2  (void* bvh, Scene* scene, size_t mode) { return new BVH4BuilderBinnedSAH2<TriangleMesh,Triangle4>((BVH4*)bvh,scene,4,4,1.0f,4,inf,mode); }
 #if defined(__AVX__)
@@ -226,6 +232,8 @@ namespace embree
     Builder* BVH4Triangle1vSceneBuilderBinnedSAH2 (void* bvh, Scene* scene, size_t mode) { return new BVH4BuilderBinnedSAH2<TriangleMesh,Triangle1v>((BVH4*)bvh,scene,1,1,1.0f,2,inf,mode); }
     Builder* BVH4Triangle4vSceneBuilderBinnedSAH2 (void* bvh, Scene* scene, size_t mode) { return new BVH4BuilderBinnedSAH2<TriangleMesh,Triangle4v>((BVH4*)bvh,scene,2,2,1.0f,4,inf,mode); }
     Builder* BVH4Triangle4iSceneBuilderBinnedSAH2 (void* bvh, Scene* scene, size_t mode) { return new BVH4BuilderBinnedSAH2<TriangleMesh,Triangle4i>((BVH4*)bvh,scene,2,2,1.0f,4,inf,mode); }
+
+    Builder* BVH4VirtualSceneBuilderBinnedSAH2    (void* bvh, Scene* scene, size_t mode) { return new BVH4BuilderBinnedSAH2<UserGeometryBase,AccelSetItem>((BVH4*)bvh,scene,1,1,1.0f,1,1,mode); }
 
     /* entry functions for the mesh builders */
     Builder* BVH4Triangle1MeshBuilderBinnedSAH2  (void* bvh, TriangleMesh* mesh, size_t mode) { return new BVH4BuilderBinnedSAH2<TriangleMesh,Triangle1>((BVH4*)bvh,mesh,1,1,1.0f,2,inf,mode); }

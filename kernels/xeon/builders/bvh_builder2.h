@@ -303,7 +303,7 @@ namespace embree
       NodeRef bvh_builder_reduce_binned_sah2_internal(CreateAllocFunc createAlloc, 
 						      const ReductionTy& identity, 
 						      CreateNodeFunc createNode, UpdateNodeFunc updateNode, CreateLeafFunc createLeaf, 
-                                                      ProgressMonitor& progressMonitor,
+                                                      ProgressMonitor progressMonitor,
 						      PrimRef* prims, const PrimInfo& pinfo, 
 						      const size_t branchingFactor, const size_t maxDepth, const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize,
 						      const float travCost, const float intCost)
@@ -326,7 +326,7 @@ namespace embree
       NodeRef bvh_builder_reduce_spatial_sah2_internal(Scene* scene, CreateAllocFunc createAlloc, 
                                                        const ReductionTy& identity, 
                                                        CreateNodeFunc createNode, UpdateNodeFunc updateNode, CreateLeafFunc createLeaf, SplitPrimitiveFunc splitPrimitive,
-                                                       ProgressMonitor& progressMonitor,
+                                                       ProgressMonitor progressMonitor,
                                                        PrimRefList& prims, const PrimInfo& pinfo, 
                                                        const size_t branchingFactor, const size_t maxDepth, const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize,
                                                        const float travCost, const float intCost)
@@ -350,7 +350,7 @@ namespace embree
 
     template<typename NodeRef, typename CreateAllocFunc, typename CreateNodeFunc, typename CreateLeafFunc, typename ProgressMonitor>
       NodeRef bvh_builder_binned_sah2_internal(CreateAllocFunc createAlloc, CreateNodeFunc createNode, CreateLeafFunc createLeaf, 
-                                               ProgressMonitor& progressMonitor, 
+                                               ProgressMonitor progressMonitor, 
                                                PrimRef* prims, const PrimInfo& pinfo, 
                                                const size_t branchingFactor, const size_t maxDepth, const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize,
                                                const float travCost, const float intCost)
@@ -372,7 +372,7 @@ namespace embree
 
     template<typename NodeRef, typename CreateAllocFunc, typename CreateNodeFunc, typename CreateLeafFunc, typename SplitPrimitiveFunc, typename ProgressMonitor>
       NodeRef bvh_builder_spatial_sah2_internal(Scene* scene, CreateAllocFunc createAlloc, CreateNodeFunc createNode, CreateLeafFunc createLeaf, SplitPrimitiveFunc splitPrimitive,
-                                                ProgressMonitor& progressMonitor,
+                                                ProgressMonitor progressMonitor,
                                                 PrimRefList& prims, const PrimInfo& pinfo, 
                                                 const size_t branchingFactor, const size_t maxDepth, const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize,
                                                 const float travCost, const float intCost) // FIXME: move these constants into struct!
@@ -396,7 +396,7 @@ namespace embree
 
     template<typename NodeRef, typename CreateAllocFunc, typename CreateNodeFunc, typename CreateLeafFunc, typename ProgressMonitor> // FIXME: remove this function
       NodeRef bvh_builder_binned_sah2(CreateAllocFunc createAlloc, CreateNodeFunc createNode, CreateLeafFunc createLeaf, 
-                                      ProgressMonitor& progressMonitor,
+                                      ProgressMonitor progressMonitor,
                                      PrimRef* prims, const PrimInfo& pinfo, 
                                       const size_t branchingFactor, const size_t maxDepth, const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize,
                                       const float travCost, const float intCost)

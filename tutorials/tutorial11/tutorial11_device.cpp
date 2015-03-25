@@ -16,7 +16,7 @@
 
 #include "../common/tutorial/tutorial_device.h"
 #include "kernels/common/alloc.h"
-#include "kernels/xeon/builders/bvh_builder.h"
+#include "kernels/xeon/builders/bvh_builder2.h"
 #include "kernels/xeon/builders/bvh_builder_morton.h"
 
 /* scene data */
@@ -104,7 +104,7 @@ void build_sah(vector_t<PrimRef>& prims, isa::PrimInfo& pinfo)
     
     allocator.reset();
 
-    Node* root = isa::bvh_builder_binned_sah<Node*>(
+    Node* root = isa::bvh_builder_binned_sah2<Node*>(
 
       /* thread local allocator for fast allocations */
       [&] () -> FastAllocator::ThreadLocal* { 
@@ -112,12 +112,12 @@ void build_sah(vector_t<PrimRef>& prims, isa::PrimInfo& pinfo)
       },
 
       /* lambda function that creates BVH nodes */
-      [&](const isa::BuildRecord<Node*>& current, isa::BuildRecord<Node*>** children, const size_t N, FastAllocator::ThreadLocal* alloc) -> int
+      [&](const isa::BuildRecord2<Node*>& current, isa::BuildRecord2<Node*>** children, const size_t N, FastAllocator::ThreadLocal* alloc) -> int
       {
         assert(N <= 2);
         InnerNode* node = new (alloc->malloc(sizeof(InnerNode))) InnerNode;
         for (size_t i=0; i<N; i++) {
-          node->bounds[i] = children[i]->geomBounds;
+          node->bounds[i] = children[i]->pinfo.geomBounds;
           children[i]->parent = &node->children[i];
         }
         *current.parent = node;
@@ -125,10 +125,10 @@ void build_sah(vector_t<PrimRef>& prims, isa::PrimInfo& pinfo)
       },
 
       /* lambda function that creates BVH leaves */
-      [&](const isa::BuildRecord<Node*>& current, FastAllocator::ThreadLocal* alloc) -> int
+      [&](const isa::BuildRecord2<Node*>& current, FastAllocator::ThreadLocal* alloc) -> int
       {
-        assert(current.size() == 1);
-        Node* node = new (alloc->malloc(sizeof(LeafNode))) LeafNode(prims[current.begin].ID(),prims[current.begin].bounds());
+        assert(current.prims.size() == 1);
+        Node* node = new (alloc->malloc(sizeof(LeafNode))) LeafNode(prims[current.prims.begin()].ID(),prims[current.prims.begin()].bounds());
         *current.parent = node;
 	return 0;
       },
@@ -138,7 +138,7 @@ void build_sah(vector_t<PrimRef>& prims, isa::PrimInfo& pinfo)
         // throw an exception here to cancel the build operation
       },
 
-      prims.data(),pinfo,2,1024,1,1,1);
+      prims.data(),pinfo,2,1024,1,1,1,1.0f,1.0f);
     
     double t1 = getSeconds();
 

@@ -17,6 +17,7 @@
 #include "bvh4_builder_toplevel.h"
 #include "bvh4_statistics.h"
 #include "common/profile.h"
+#include "builders/bvh_builder2.h"
 
 #define PROFILE 0
 #define MIN_OPEN_SIZE 2000
@@ -153,26 +154,26 @@ namespace embree
       /* otherwise build toplevel hierarchy */
       else
       {
-        BVH4::NodeRef root = bvh_builder_binned_sah_internal<BVH4::NodeRef>
+        BVH4::NodeRef root = bvh_builder_binned_sah2_internal<BVH4::NodeRef>
           ([&] { return bvh->alloc2.threadLocal2(); },
-           [&] (const isa::BuildRecord<BVH4::NodeRef>& current, BuildRecord<BVH4::NodeRef>** children, const size_t N, FastAllocator::ThreadLocal2* alloc) -> int
+           [&] (const isa::BuildRecord2<BVH4::NodeRef>& current, BuildRecord2<BVH4::NodeRef>** children, const size_t N, FastAllocator::ThreadLocal2* alloc) -> int
            {
              BVH4::Node* node = (BVH4::Node*) alloc->alloc0.malloc(sizeof(BVH4::Node)); node->clear();
              for (size_t i=0; i<N; i++) {
-               node->set(i,children[i]->geomBounds);
+               node->set(i,children[i]->pinfo.geomBounds);
                children[i]->parent = &node->child(i);
              }
              *current.parent = bvh->encodeNode(node);
              return 0;
            },
-           [&] (const BuildRecord<BVH4::NodeRef>& current, FastAllocator::ThreadLocal2* alloc) -> int // FIXME: why are prims passed here but not for createNode
+           [&] (const BuildRecord2<BVH4::NodeRef>& current, FastAllocator::ThreadLocal2* alloc) -> int // FIXME: why are prims passed here but not for createNode
            {
              assert(current.prims.size() == 1);
              *current.parent = (BVH4::NodeRef) prims[current.prims.begin()].ID();
              return 1;
            },
            [&] (size_t dn) { bvh->scene->progressMonitor(0); },
-           prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,1,1,1);
+           prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,1,1,1,1.0f,1.0f);
         
         bvh->set(root,pinfo.geomBounds,numPrimitives);
       }

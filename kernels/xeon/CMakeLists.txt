@@ -107,7 +107,6 @@ ADD_ISPC_LIBRARY(embree ${EMBREE_LIB_TYPE}
   bvh4/bvh4_refit.cpp
   bvh4/bvh4_builder_hair.cpp
   bvh4/bvh4_builder_morton_general.cpp
-  bvh4/bvh4_builder_binned_sah.cpp
   bvh4/bvh4_builder_binned_sah2.cpp
   bvh4/bvh4_builder_toplevel.cpp
   bvh4/bvh4_builder_subdiv.cpp
@@ -157,7 +156,6 @@ IF (TARGET_AVX)
     bvh4/bvh4_refit.avx.cpp
     bvh4/bvh4_builder_hair.avx.cpp
     bvh4/bvh4_builder_morton_general.avx.cpp
-    bvh4/bvh4_builder_binned_sah.avx.cpp
     bvh4/bvh4_builder_binned_sah2.avx.cpp
     bvh4/bvh4_builder_toplevel.avx.cpp
     bvh4/bvh4_builder_subdiv.avx.cpp
