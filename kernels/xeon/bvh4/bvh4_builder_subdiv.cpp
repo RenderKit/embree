@@ -107,12 +107,7 @@ namespace embree
         }
         bvh->alloc.reset();
 
-        /* verbose mode */
-        if (g_verbose >= 1)
-	  std::cout << "building BVH4<" << bvh->primTy.name << "> with " << TOSTRING(isa) "::BVH4SubdivPatch1BuilderBinnedSAH ... " << std::flush;
-
-	double t0 = 0.0f, dt = 0.0f;
-        if (g_verbose >= 1) t0 = getSeconds();
+        double t0 = bvh->preBuild(TOSTRING(isa) "::BVH4SubdivPatch1BuilderBinnedSAH");
 
         /* initialize all half edge structures */
         Scene::Iterator<SubdivMesh> iter(scene);
@@ -128,18 +123,11 @@ namespace embree
            prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,1,1,1,1.0f,1.0f);
         bvh->set(root,pinfo.geomBounds,pinfo.size());
 
-        if (g_verbose >= 1) dt = getSeconds()-t0;
-
 	/* clear temporary data for static geometry */
 	bool staticGeom = scene->isStatic();
-	if (staticGeom) prims.resize(0,true);
+	if (staticGeom) prims.clear();
         bvh->alloc.cleanup();
-	
-	/* verbose mode */
-	if (g_verbose >= 1)
-	  std::cout << "[DONE] " << 1000.0f*dt << "ms (" << numPrimitives/dt*1E-6 << " Mprim/s)" << std::endl;
-	if (g_verbose >= 2)
-	  bvh->printStatistics();
+        bvh->postBuild(t0);
       }
 
       void clear() {
@@ -170,12 +158,7 @@ namespace embree
         }
         bvh->alloc.reset();
 
-        /* verbose mode */
-        if (g_verbose >= 1)
-	  std::cout << "building BVH4<" << bvh->primTy.name << "> with " << TOSTRING(isa) "::BVH4SubdivGridBuilderBinnedSAH ... " << std::flush;
-
-	double t0 = 0.0f, dt = 0.0f;
-        if (g_verbose >= 1) t0 = getSeconds();
+        double t0 = bvh->preBuild(TOSTRING(isa) "::BVH4SubdivGridBuilderBinnedSAH");
 
         auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
         auto virtualprogress = BuildProgressMonitorFromClosure(progress);
@@ -276,18 +259,11 @@ namespace embree
            prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,1,1,1,1.0f,1.0f);
         bvh->set(root,pinfo.geomBounds,pinfo.size());
         
-        if (g_verbose >= 1) dt = getSeconds()-t0;
-
 	/* clear temporary data for static geometry */
 	bool staticGeom = scene->isStatic();
-	if (staticGeom) prims.resize(0,true);
+	if (staticGeom) prims.clear();
         bvh->alloc.cleanup();
-	
-	/* verbose mode */
-	if (g_verbose >= 1)
-	  std::cout << "[DONE] " << 1000.0f*dt << "ms (" << numPrimitives/dt*1E-6 << " Mprim/s)" << std::endl;
-	if (g_verbose >= 2)
-	  bvh->printStatistics();
+        bvh->postBuild(t0);
       }
 
       void clear() {
@@ -318,12 +294,7 @@ namespace embree
         }
         bvh->alloc.reset();
 
-        /* verbose mode */
-        if (g_verbose >= 1)
-	  std::cout << "building BVH4<" << bvh->primTy.name << "> with " << TOSTRING(isa) "::BVH4SubdivGridEagerBuilderBinnedSAH ... " << std::flush;
-
-	double t0 = 0.0f, dt = 0.0f;
-        if (g_verbose >= 1) t0 = getSeconds();
+        double t0 = bvh->preBuild(TOSTRING(isa) "::BVH4SubdivGridEagerBuilderBinnedSAH");
 
         auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
         auto virtualprogress = BuildProgressMonitorFromClosure(progress);
@@ -410,18 +381,11 @@ namespace embree
            prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,1,1,1,1.0f,1.0f);
         bvh->set(root,pinfo.geomBounds,pinfo.size());
         
-        if (g_verbose >= 1) dt = getSeconds()-t0;
-
 	/* clear temporary data for static geometry */
 	bool staticGeom = scene->isStatic();
 	if (staticGeom) prims.resize(0,true);
         bvh->alloc.cleanup();
-	
-	/* verbose mode */
-	if (g_verbose >= 1)
-	  std::cout << "[DONE] " << 1000.0f*dt << "ms (" << numPrimitives/dt*1E-6 << " Mprim/s)" << std::endl;
-	if (g_verbose >= 2)
-	  bvh->printStatistics();
+        bvh->postBuild(t0);
       }
 
       void clear() {
@@ -452,12 +416,7 @@ namespace embree
         }
         bvh->alloc.reset();
 
-        /* verbose mode */
-        if (g_verbose >= 1)
-	  std::cout << "building BVH4<" << bvh->primTy.name << "> with " << TOSTRING(isa) "::BVH4SubdivGridLazyBuilderBinnedSAH ... " << std::flush;
-
-	double t0 = 0.0f, dt = 0.0f;
-        if (g_verbose >= 1) t0 = getSeconds();
+        double t0 = bvh->preBuild(TOSTRING(isa) "::BVH4SubdivGridLazyBuilderBinnedSAH");
 
         auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
         auto virtualprogress = BuildProgressMonitorFromClosure(progress);
@@ -549,18 +508,11 @@ namespace embree
            prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,1,1,1,1.0f,1.0f);
         bvh->set(root,pinfo.geomBounds,pinfo.size());
         
-        if (g_verbose >= 1) dt = getSeconds()-t0;
-
 	/* clear temporary data for static geometry */
 	bool staticGeom = scene->isStatic();
 	if (staticGeom) prims.resize(0,true);
         bvh->alloc.cleanup();
-	
-	/* verbose mode */
-	if (g_verbose >= 1)
-	  std::cout << "[DONE] " << 1000.0f*dt << "ms (" << numPrimitives/dt*1E-6 << " Mprim/s)" << std::endl;
-	if (g_verbose >= 2)
-	  bvh->printStatistics();
+        bvh->postBuild(t0);
       }
 
       void clear() {
@@ -846,12 +798,7 @@ namespace embree
         }
         bvh->alloc.reset();
 
-        /* verbose mode */
-        if (g_verbose >= 1)
-	  std::cout << "building BVH4<" << bvh->primTy.name << "> with " << TOSTRING(isa) "::BVH4SubdivPatch1CachedBuilderBinnedSAH ... " << std::flush;
-
-	double t0 = 0.0f, dt = 0.0f;
-        if (g_verbose >= 1) t0 = getSeconds();
+        double t0 = bvh->preBuild(TOSTRING(isa) "::BVH4SubdivPatch1CachedBuilderBinnedSAH");
 
         bool fastUpdateMode = true;
         size_t fastUpdateMode_numFaces = 0;
@@ -868,9 +815,6 @@ namespace embree
             fastUpdateMode_numFaces += iter[i]->size();
             if (!iter[i]->checkLevelUpdate()) fastUpdateMode = false;
           }
-        DBG_CACHE_BUILDER( DBG_PRINT( fastUpdateMode_numFaces ) );
-        
-        //pstate.init(iter,size_t(1024));
         
         this->bvh->scene = this->scene; // FIXME: remove
         
@@ -879,19 +823,6 @@ namespace embree
             bvh->numPrimitives != fastUpdateMode_numFaces ||
             bvh->root          == BVH4::emptyNode)
           fastUpdateMode = false;
-
-
-
-        //fastUpdateMode = false;
-        
-        /* force sequential code path for fast update */
-        //if (fastUpdateMode)
-        //needAllThreads = false;
-        
-        /* initialize all half edge structures */
-        //Scene::Iterator<SubdivMesh> iter(scene);
-        //for (size_t i=0; i<iter.size(); i++) // FIXME: parallelize
-            //if (iter[i]) iter[i]->initializeHalfEdgeStructures();
         
         /* initialize allocator and parallel_for_for_prefix_sum */
         pstate.init(iter,size_t(1024));
@@ -913,8 +844,6 @@ namespace embree
             return PrimInfo(s,empty,empty);
           }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo(a.size()+b.size(),empty,empty); });
           numPrimitives = pinfo.size();
-          DBG_CACHE_BUILDER( DBG_PRINT(fastUpdateMode) );
-          DBG_CACHE_BUILDER( DBG_PRINT(pinfo) );
         }
         
         if (numPrimitives == 0) {
@@ -949,8 +878,6 @@ namespace embree
        }
         
       SubdivPatch1Cached *const subdiv_patches = (SubdivPatch1Cached *)this->bvh->data_mem;
-
-      t0 = getSeconds();
 
       PrimInfo pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
       {
@@ -1038,7 +965,6 @@ namespace embree
         return s;
       }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a, b); });
 
-      t0 = getSeconds()-t0;
       DBG_CACHE_BUILDER(std::cout << "create prims in " << 1000.0f*t0 << "ms " << std::endl);
       DBG_CACHE_BUILDER(std::cout << "pinfo.bounds " << pinfo << std::endl);
 
@@ -1093,19 +1019,11 @@ namespace embree
 	  bvh->set(BVH4::emptyNode,empty,0);	  
       }
       
-        if (g_verbose >= 1) dt = getSeconds()-t0;
-
 	/* clear temporary data for static geometry */
 	bool staticGeom = scene->isStatic();
 	if (staticGeom) prims.resize(0,true);
         bvh->alloc.cleanup();
-	
-	/* verbose mode */
-	if (g_verbose >= 1)
-	  std::cout << "[DONE] " << 1000.0f*dt << "ms (" << numPrimitives/dt*1E-6 << " Mprim/s)" << std::endl;
-	if (g_verbose >= 2)
-	  bvh->printStatistics();
-
+        bvh->postBuild(t0);
       }
 
       void clear() {
