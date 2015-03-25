@@ -500,7 +500,7 @@ namespace embree
           //bvh->init(sizeof(BVH4::Node),numPrimitives,threadCount);
           //size_t bytesAllocated = (numPrimitives+7)/8*sizeof(BVH4::Node) + size_t(1.2f*(numPrimitives+3)/4)*sizeof(Triangle4);
           //bytesAllocated = max(bytesAllocated,numPrimitives*sizeof(MortonID32Bit));
-          //bvh->alloc2.init(bytesAllocated,2*bytesAllocated);  // FIXME: better estimate
+          //bvh->alloc.init(bytesAllocated,2*bytesAllocated);  // FIXME: better estimate
         //morton.resize(numPrimitives);
           //}
         
@@ -524,7 +524,7 @@ namespace embree
             //bvh->alloc.init(numPrimitives*sizeof(BVH4::Node),numPrimitives*sizeof(BVH4::Node));
             morton.resize(numPrimitives);
             size_t bytesAllocated = (numPrimitives+7)/8*sizeof(BVH4::Node) + size_t(1.2f*(numPrimitives+3)/4)*sizeof(Triangle4);
-            bvh->alloc2.init(bytesAllocated,2*bytesAllocated); // FIXME: not working if scene size changes, initial block has to get reallocated as used as temporary data
+            bvh->alloc.init(bytesAllocated,2*bytesAllocated); // FIXME: not working if scene size changes, initial block has to get reallocated as used as temporary data
 
 #if 0
             /* compute scene bounds */
@@ -539,7 +539,7 @@ namespace embree
             //timer("compute_bounds");
 
             /* compute morton codes */
-            MortonID32Bit* dest = (MortonID32Bit*) bvh->alloc2.ptr();
+            MortonID32Bit* dest = (MortonID32Bit*) bvh->alloc.ptr();
             MortonCodeGenerator::MortonCodeMapping mapping(centBounds);
             parallel_for
               ( size_t(0), numPrimitives, size_t(BLOCK_SIZE), [&](const range<size_t>& r) 
@@ -567,7 +567,7 @@ namespace embree
             //timer("compute_bounds");
 
             /* compute morton codes */
-            MortonID32Bit* dest = (MortonID32Bit*) bvh->alloc2.ptr();
+            MortonID32Bit* dest = (MortonID32Bit*) bvh->alloc.ptr();
             MortonCodeGenerator::MortonCodeMapping mapping(centBounds);
             size_t numPrimitivesGen = parallel_prefix_sum( pstate, size_t(0), numPrimitives, size_t(BLOCK_SIZE), size_t(0), [&](const range<size_t>& r, const size_t base) -> size_t
             {
@@ -611,7 +611,7 @@ namespace embree
             CreateLeaf createLeaf(mesh,morton.data());
             CalculateMeshBounds<Mesh> calculateBounds(mesh);
             auto node_bounds = bvh_builder_morton_internal<BVH4::NodeRef>(
-              [&] () { return bvh->alloc2.threadLocal2(); },
+              [&] () { return bvh->alloc.threadLocal2(); },
               BBox3fa(empty),
               allocNode,setBounds,createLeaf,calculateBounds,progress,
               dest,morton.data(),numPrimitivesGen,4,BVH4::maxBuildDepth,minLeafSize,maxLeafSize);
@@ -633,7 +633,7 @@ namespace embree
         /* clear temporary data for static geometry */
 	//bool staticGeom = mesh ? mesh->isStatic() : scene->isStatic(); // FIXME: implement
 	//if (staticGeom) prims.resize(0,true);
-        bvh->alloc2.cleanup();
+        bvh->alloc.cleanup();
 	
 	/* verbose mode */
 	//if (g_verbose >= 1)
@@ -701,7 +701,7 @@ namespace embree
         
         /* preallocate arrays */
         //if (numPrimitivesOld != numPrimitives) {
-          //bvh->alloc2.init(numPrimitives*sizeof(PrimRef),numPrimitives*sizeof(BVH4::Node));  // FIXME: better estimate
+          //bvh->alloc.init(numPrimitives*sizeof(PrimRef),numPrimitives*sizeof(BVH4::Node));  // FIXME: better estimate
           morton.resize(numPrimitives);
           //}
 
@@ -726,7 +726,7 @@ namespace embree
 
             //bvh->alloc.init(numPrimitives*sizeof(BVH4::Node),numPrimitives*sizeof(BVH4::Node));
             size_t bytesAllocated = (numPrimitives+7)/8*sizeof(BVH4::Node) + size_t(1.2f*(numPrimitives+3)/4)*sizeof(Triangle4);
-            bvh->alloc2.init(bytesAllocated,2*bytesAllocated); // FIXME: not working if scene size changes, initial block has to get reallocated as used as temporary data
+            bvh->alloc.init(bytesAllocated,2*bytesAllocated); // FIXME: not working if scene size changes, initial block has to get reallocated as used as temporary data
 
 #if 0
             
@@ -744,7 +744,7 @@ namespace embree
 
             /* compute morton codes */
             Scene::Iterator<Mesh,1> iter(scene);
-            MortonID32Bit* dest = (MortonID32Bit*) bvh->alloc2.ptr();
+            MortonID32Bit* dest = (MortonID32Bit*) bvh->alloc.ptr();
             MortonCodeGenerator::MortonCodeMapping mapping(centBounds);
             parallel_for_for
               ( iter, size_t(BLOCK_SIZE), [&](Mesh* mesh, const range<size_t>& r, size_t k) 
@@ -777,7 +777,7 @@ namespace embree
             pstate.init(iter1,size_t(BLOCK_SIZE));
 
             /* compute morton codes */
-            MortonID32Bit* dest = (MortonID32Bit*) bvh->alloc2.ptr();
+            MortonID32Bit* dest = (MortonID32Bit*) bvh->alloc.ptr();
             MortonCodeGenerator::MortonCodeMapping mapping(centBounds);
             size_t numPrimitivesGen = parallel_for_for_prefix_sum( pstate, iter1, size_t(BLOCK_SIZE), size_t(0), [&](Mesh* mesh, const range<size_t>& r, size_t k, const size_t base) -> size_t
             {
@@ -824,7 +824,7 @@ namespace embree
             CreateLeaf createLeaf(scene,morton.data(),encodeShift,encodeMask);
             CalculateBounds calculateBounds(scene,encodeShift,encodeMask);
             auto node_bounds = bvh_builder_morton_internal<BVH4::NodeRef>(
-              [&] () { return bvh->alloc2.threadLocal2(); },
+              [&] () { return bvh->alloc.threadLocal2(); },
                 BBox3fa(empty),
               allocNode,setBounds,createLeaf,calculateBounds,progress,
                 dest,morton.data(),numPrimitivesGen,4,BVH4::maxBuildDepth,minLeafSize,maxLeafSize);
@@ -848,7 +848,7 @@ namespace embree
         /* clear temporary data for static geometry */
 	//bool staticGeom = mesh ? mesh->isStatic() : scene->isStatic(); // FIXME: implement
 	//if (staticGeom) prims.resize(0,true);
-        bvh->alloc2.cleanup();
+        bvh->alloc.cleanup();
 
 	/* verbose mode */
 	if (g_verbose >= 1)

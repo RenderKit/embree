@@ -155,7 +155,7 @@ namespace embree
       else
       {
         BVH4::NodeRef root = bvh_builder_binned_sah2_internal<BVH4::NodeRef>
-          ([&] { return bvh->alloc2.threadLocal2(); },
+          ([&] { return bvh->alloc.threadLocal2(); },
            [&] (const isa::BuildRecord2<BVH4::NodeRef>& current, BuildRecord2<BVH4::NodeRef>** children, const size_t N, FastAllocator::ThreadLocal2* alloc) -> int
            {
              BVH4::Node* node = (BVH4::Node*) alloc->alloc0.malloc(sizeof(BVH4::Node)); node->clear();

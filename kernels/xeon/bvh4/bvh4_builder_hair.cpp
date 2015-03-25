@@ -56,7 +56,7 @@ namespace embree
         //profile(1,5,numPrimitives,[&] (ProfileTimer& timer) {
         
         /* create primref array */
-        bvh->alloc2.init(numPrimitives*sizeof(Primitive));
+        bvh->alloc.init(numPrimitives*sizeof(Primitive));
         prims.resize(numPrimitives);
 
         auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
@@ -65,7 +65,7 @@ namespace embree
         
         BVH4::NodeRef root = bvh_obb_builder_binned_sah_internal
           (
-            [&] () { return bvh->alloc2.threadLocal2(); },
+            [&] () { return bvh->alloc.threadLocal2(); },
 
             [&] (const PrimInfo* children, const size_t numChildren, HeuristicArrayBinningSAH<BezierPrim> alignedHeuristic, FastAllocator::ThreadLocal2* alloc) -> BVH4::Node* 
             {
@@ -109,7 +109,7 @@ namespace embree
         /* clear temporary data for static geometry */
         const bool staticGeom = scene->isStatic();
         if (staticGeom) prims.clear();
-        bvh->alloc2.cleanup();
+        bvh->alloc.cleanup();
         
         if (g_verbose >= 2) {
           double t1 = getSeconds();
@@ -154,7 +154,7 @@ namespace embree
         //profile(1,5,numPrimitives,[&] (ProfileTimer& timer) {
         
         /* create primref array */
-        bvh->alloc2.init(numPrimitives*sizeof(Primitive));
+        bvh->alloc.init(numPrimitives*sizeof(Primitive));
         prims.resize(numPrimitives);
 
         auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
@@ -163,7 +163,7 @@ namespace embree
         
         BVH4::NodeRef root = bvh_obb_builder_binned_sah_internal
           (
-            [&] () { return bvh->alloc2.threadLocal2(); },
+            [&] () { return bvh->alloc.threadLocal2(); },
 
             [&] (const PrimInfo* children, const size_t numChildren, HeuristicArrayBinningSAH<BezierPrim> alignedHeuristic, FastAllocator::ThreadLocal2* alloc) -> BVH4::NodeMB*
             {
@@ -213,7 +213,7 @@ namespace embree
         /* clear temporary data for static geometry */
         const bool staticGeom = scene->isStatic();
         if (staticGeom) prims.resize(0,true);
-        bvh->alloc2.cleanup();
+        bvh->alloc.cleanup();
         
         if (g_verbose >= 2) {
           double t1 = getSeconds();

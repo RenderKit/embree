@@ -46,7 +46,7 @@ namespace embree
     struct CreateAlloc
     {
       __forceinline CreateAlloc (BVH4* bvh) : bvh(bvh) {}
-      __forceinline Allocator* operator() () const { return bvh->alloc2.threadLocal2();  }
+      __forceinline Allocator* operator() () const { return bvh->alloc.threadLocal2();  }
 
       BVH4* bvh;
     };
@@ -118,7 +118,7 @@ namespace embree
         : bvh(bvh), scene(NULL), mesh(mesh), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,leafBlockSize*BVH4::maxLeafBlocks)),
           presplitFactor((mode & MODE_HIGH_QUALITY) ? 1.5f : 1.0f) {}
 
-      // FIXME: shrink bvh->alloc2 in destructor here an in other builders too
+      // FIXME: shrink bvh->alloc in destructor here an in other builders too
 
       void build(size_t, size_t) 
       {
@@ -163,7 +163,7 @@ namespace embree
 #endif
           if ((g_benchmark || g_verbose >= 1) && mesh == NULL) t0 = getSeconds();
 	    
-            bvh->alloc2.init(numSplitPrimitives*sizeof(PrimRef),numSplitPrimitives*sizeof(BVH4::Node));  // FIXME: better estimate
+            bvh->alloc.init(numSplitPrimitives*sizeof(PrimRef),numSplitPrimitives*sizeof(BVH4::Node));  // FIXME: better estimate
 	    prims.resize(numSplitPrimitives);
             auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
             auto virtualprogress = BuildProgressMonitorFromClosure(progress);
@@ -200,7 +200,7 @@ namespace embree
 	/* clear temporary data for static geometry */
 	bool staticGeom = mesh ? mesh->isStatic() : scene->isStatic();
 	if (staticGeom) prims.resize(0,true);
-	bvh->alloc2.cleanup();
+	bvh->alloc.cleanup();
 
 	/* verbose mode */
 	if (g_verbose >= 1 && mesh == NULL)
@@ -402,7 +402,7 @@ namespace embree
 #endif
             if ((g_benchmark || g_verbose >= 1) && mesh == NULL) t0 = getSeconds();
 	    
-	    bvh->alloc2.init(numSplitPrimitives*sizeof(PrimRef),numSplitPrimitives*sizeof(BVH4::Node));  // FIXME: better estimate
+	    bvh->alloc.init(numSplitPrimitives*sizeof(PrimRef),numSplitPrimitives*sizeof(BVH4::Node));  // FIXME: better estimate
 	    //prims.resize(numSplitPrimitives);
 	    //PrimInfo pinfo = mesh ? createPrimRefArray<Mesh>(mesh,prims) : createPrimRefArray<Mesh,1>(scene,prims);
             PrimRefList prims;
@@ -484,7 +484,7 @@ namespace embree
 	/* clear temporary data for static geometry */
 	//bool staticGeom = mesh ? mesh->isStatic() : scene->isStatic();
 	//if (staticGeom) prims.resize(0,true);
-	bvh->alloc2.cleanup();
+	bvh->alloc.cleanup();
 
         /* verbose mode */
 	if (g_verbose >= 1 && mesh == NULL)
@@ -618,7 +618,7 @@ namespace embree
 	    
 	    if (g_verbose >= 1) t0 = getSeconds();
 	    
-	    bvh->alloc2.init(numPrimitives*sizeof(PrimRef),numPrimitives*sizeof(BVH4::NodeMB));  // FIXME: better estimate
+	    bvh->alloc.init(numPrimitives*sizeof(PrimRef),numPrimitives*sizeof(BVH4::NodeMB));  // FIXME: better estimate
 	    prims.resize(numPrimitives);
             auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
             auto virtualprogress = BuildProgressMonitorFromClosure(progress);
@@ -639,7 +639,7 @@ namespace embree
 	/* clear temporary data for static geometry */
 	bool staticGeom = mesh ? mesh->isStatic() : scene->isStatic();
 	if (staticGeom) prims.resize(0,true);
-	bvh->alloc2.cleanup();
+	bvh->alloc.cleanup();
 
 	/* verbose mode */
 	if (g_verbose >= 1)

@@ -39,7 +39,7 @@ namespace embree
     struct CreateAlloc
     {
       __forceinline CreateAlloc (BVH4* bvh) : bvh(bvh) {}
-      __forceinline Allocator* operator() () const { return bvh->alloc2.threadLocal2();  }
+      __forceinline Allocator* operator() () const { return bvh->alloc.threadLocal2();  }
 
       BVH4* bvh;
     };
@@ -105,7 +105,7 @@ namespace embree
           bvh->set(BVH4::emptyNode,empty,0);
           return;
         }
-        bvh->alloc2.reset();
+        bvh->alloc.reset();
 
         /* verbose mode */
         if (g_verbose >= 1)
@@ -133,7 +133,7 @@ namespace embree
 	/* clear temporary data for static geometry */
 	bool staticGeom = scene->isStatic();
 	if (staticGeom) prims.resize(0,true);
-        bvh->alloc2.cleanup();
+        bvh->alloc.cleanup();
 	
 	/* verbose mode */
 	if (g_verbose >= 1)
@@ -168,7 +168,7 @@ namespace embree
           bvh->set(BVH4::emptyNode,empty,0);
           return;
         }
-        bvh->alloc2.reset();
+        bvh->alloc.reset();
 
         /* verbose mode */
         if (g_verbose >= 1)
@@ -222,7 +222,7 @@ namespace embree
 
         pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
         {
-          FastAllocator::ThreadLocal& alloc = *bvh->alloc2.threadLocal();
+          FastAllocator::ThreadLocal& alloc = *bvh->alloc.threadLocal();
           
           PrimInfo s(empty);
           for (size_t f=r.begin(); f!=r.end(); ++f) {
@@ -233,7 +233,7 @@ namespace embree
             {
               /*if (!patch.isRegular())
                 {
-                Grid* leaf = (Grid*) bvh->alloc2.malloc(sizeof(Grid),16);
+                Grid* leaf = (Grid*) bvh->alloc.malloc(sizeof(Grid),16);
                 new (leaf) Grid(id,mesh->id,f);3
                 const BBox3fa bounds = leaf->quad(scene,patch,uv[0],uv[1],uv[2],uv[3]);
                 prims[base.size()+s.size()] = PrimRef(bounds,BVH4::encodeTypedLeaf(leaf,0));
@@ -281,7 +281,7 @@ namespace embree
 	/* clear temporary data for static geometry */
 	bool staticGeom = scene->isStatic();
 	if (staticGeom) prims.resize(0,true);
-        bvh->alloc2.cleanup();
+        bvh->alloc.cleanup();
 	
 	/* verbose mode */
 	if (g_verbose >= 1)
@@ -316,7 +316,7 @@ namespace embree
           bvh->set(BVH4::emptyNode,empty,0);
           return;
         }
-        bvh->alloc2.reset();
+        bvh->alloc.reset();
 
         /* verbose mode */
         if (g_verbose >= 1)
@@ -369,7 +369,7 @@ namespace embree
 
         pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
         {
-          FastAllocator::ThreadLocal& alloc = *bvh->alloc2.threadLocal();
+          FastAllocator::ThreadLocal& alloc = *bvh->alloc.threadLocal();
           
           PrimInfo s(empty);
           for (size_t f=r.begin(); f!=r.end(); ++f) {
@@ -415,7 +415,7 @@ namespace embree
 	/* clear temporary data for static geometry */
 	bool staticGeom = scene->isStatic();
 	if (staticGeom) prims.resize(0,true);
-        bvh->alloc2.cleanup();
+        bvh->alloc.cleanup();
 	
 	/* verbose mode */
 	if (g_verbose >= 1)
@@ -450,7 +450,7 @@ namespace embree
           bvh->set(BVH4::emptyNode,empty,0);
           return;
         }
-        bvh->alloc2.reset();
+        bvh->alloc.reset();
 
         /* verbose mode */
         if (g_verbose >= 1)
@@ -503,7 +503,7 @@ namespace embree
 
         pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
         {
-          FastAllocator::ThreadLocal& alloc = *bvh->alloc2.threadLocal();
+          FastAllocator::ThreadLocal& alloc = *bvh->alloc.threadLocal();
           
           PrimInfo s(empty);
           for (size_t f=r.begin(); f!=r.end(); ++f) {
@@ -554,7 +554,7 @@ namespace embree
 	/* clear temporary data for static geometry */
 	bool staticGeom = scene->isStatic();
 	if (staticGeom) prims.resize(0,true);
-        bvh->alloc2.cleanup();
+        bvh->alloc.cleanup();
 	
 	/* verbose mode */
 	if (g_verbose >= 1)
@@ -844,7 +844,7 @@ namespace embree
           bvh->set(BVH4::emptyNode,empty,0);
           return;
         }
-        bvh->alloc2.reset();
+        bvh->alloc.reset();
 
         /* verbose mode */
         if (g_verbose >= 1)
@@ -1098,7 +1098,7 @@ namespace embree
 	/* clear temporary data for static geometry */
 	bool staticGeom = scene->isStatic();
 	if (staticGeom) prims.resize(0,true);
-        bvh->alloc2.cleanup();
+        bvh->alloc.cleanup();
 	
 	/* verbose mode */
 	if (g_verbose >= 1)

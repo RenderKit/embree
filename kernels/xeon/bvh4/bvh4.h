@@ -1013,7 +1013,7 @@ namespace embree
     
     /*! calculates the amount of bytes allocated */
     size_t bytesAllocated() {
-      return alloc2.getAllocatedBytes();
+      return alloc.getAllocatedBytes();
     }
 
   public:
@@ -1061,7 +1061,7 @@ namespace embree
     /*! bvh data */
   public:
     NodeRef root;                      //!< Root node
-    FastAllocator alloc2;              //!< allocator used to allocate nodes
+    FastAllocator alloc;               //!< allocator used to allocate nodes
     Scene* scene;                      //!< scene pointer
 
     /*! statistics data */
@@ -1072,7 +1072,7 @@ namespace embree
     /*! data arrays for special builders */
   public:
     std::vector<BVH4*> objects;
-    void* data_mem; /* additional memory, currently used for subdivpatch1cached memory */
+    void* data_mem;                   //!< additional memory, currently used for subdivpatch1cached memory
     size_t size_data_mem;
   };
 }

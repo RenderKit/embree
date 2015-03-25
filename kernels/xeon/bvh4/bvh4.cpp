@@ -308,22 +308,22 @@ namespace embree
     : primTy(primTy), scene(scene), listMode(listMode),
       root(emptyNode), numPrimitives(0), numVertices(0), data_mem(NULL), size_data_mem(0) {}
 
-  BVH4::~BVH4 () {
+  BVH4::~BVH4 () 
+  {
     for (size_t i=0; i<objects.size(); i++) 
       delete objects[i];
-
-    if (data_mem)
-      {
-	os_free( data_mem, size_data_mem );        
-	data_mem = NULL;
-	size_data_mem = 0;
-      }
+    
+    if (data_mem) {
+      os_free( data_mem, size_data_mem );        
+      data_mem = NULL;
+      size_data_mem = 0;
+    }
   }
 
   void BVH4::clear() 
   {
     set(BVH4::emptyNode,empty,0);
-    alloc2.clear();
+    alloc.clear();
   }
 
   void BVH4::set (NodeRef root, const BBox3fa& bounds, size_t numPrimitives)
@@ -336,7 +336,7 @@ namespace embree
   void BVH4::printStatistics()
   {
     std::cout << BVH4Statistics(this).str();
-    std::cout << "  "; alloc2.print_statistics();
+    std::cout << "  "; alloc.print_statistics();
   }	
 
   void BVH4::clearBarrier(NodeRef& node)
@@ -398,7 +398,7 @@ namespace embree
     else if (node.isNode()) 
     {
       Node* oldnode = node.node();
-      Node* newnode = (BVH4::Node*) alloc2.threadLocal2()->alloc0.malloc(sizeof(BVH4::Node)); // FIXME: optimize access to threadLocal2 
+      Node* newnode = (BVH4::Node*) alloc.threadLocal2()->alloc0.malloc(sizeof(BVH4::Node)); // FIXME: optimize access to threadLocal2 
       *newnode = *oldnode;
       for (size_t c=0; c<BVH4::N; c++)
         newnode->child(c) = layoutLargeNodesRecursion(oldnode->child(c));

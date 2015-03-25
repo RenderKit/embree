@@ -966,7 +966,10 @@ namespace embree
       {
 	/* let only one thread lazily build this object */
 	if (atomic_add(&initializing,1) != 0) {
-	  while (!initialized) __pause_cpu();
+	  while (!initialized) {
+            __pause_cpu();
+            yield();
+          }
 	  return (size_t)*parent;
 	}
 
@@ -975,7 +978,7 @@ namespace embree
 	SubdivMesh* mesh = scene->getSubdivMesh(geomID);
 	BVH4::NodeRef node = BVH4::emptyNode;
         
-	FastAllocator::ThreadLocal& alloc = *bvh->alloc2.threadLocal();
+	FastAllocator::ThreadLocal& alloc = *bvh->alloc.threadLocal();
 	
 	feature_adaptive_subdivision_eval(mesh->getHalfEdge(primID),mesh->getVertexBuffer(), // FIXME: only recurse into one sub-quad
 					  [&](const CatmullClarkPatch& patch, const Vec2f uv[4], const int subdiv[4], const int id)
