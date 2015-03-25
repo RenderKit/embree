@@ -163,7 +163,7 @@ namespace embree
 	  /* fast path for cache hit */
 	  {
 	    CACHE_STATS(SharedTessellationCacheStats::cache_accesses++);
-	    const size_t subdiv_patch_root_ref    = subdiv_patch->root_ref; // FIXME: size_t not always 64 bit, use int64 type instead
+	    const int64 subdiv_patch_root_ref    = subdiv_patch->root_ref; 
 	    
 	    if (likely(subdiv_patch_root_ref)) 
 	      {
@@ -183,7 +183,7 @@ namespace embree
 
 	  subdiv_patch->write_lock();
 	  {
-	    const size_t subdiv_patch_root_ref    = subdiv_patch->root_ref;
+	    const int64 subdiv_patch_root_ref    = subdiv_patch->root_ref;
 	    const size_t subdiv_patch_cache_index = subdiv_patch_root_ref >> 32;
 
 	    /* do we still need to create the subtree data? */
@@ -204,15 +204,15 @@ namespace embree
 		BVH4::Node* node = (BVH4::Node*)SharedLazyTessellationCache::sharedLazyTessellationCache.getBlockPtr(block_index);
 		//DBG_PRINT( (double)SharedLazyTessellationCache::sharedLazyTessellationCache.getNumUsedBytes() / (1024.0 * 1024.0) );
 #if COMPACT == 1
-                size_t new_root_ref = (size_t)buildSubdivPatchTreeCompact(*subdiv_patch,node,((Scene*)geom)->getSubdivMesh(subdiv_patch->geom));                                
+                int64 new_root_ref = (int64)buildSubdivPatchTreeCompact(*subdiv_patch,node,((Scene*)geom)->getSubdivMesh(subdiv_patch->geom));                                
 #else                
 		size_t new_root_ref = (size_t)buildSubdivPatchTree(*subdiv_patch,node,((Scene*)geom)->getSubdivMesh(subdiv_patch->geom));
 #endif
-		new_root_ref -= (size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();                                
+		new_root_ref -= (int64)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();                                
 		assert( new_root_ref <= 0xffffffff );
 		assert( !(new_root_ref & REF_TAG) );
 		new_root_ref |= REF_TAG;
-		new_root_ref |= SharedLazyTessellationCache::sharedLazyTessellationCache.getCurrentIndex() << 32; 
+		new_root_ref |= (int64)SharedLazyTessellationCache::sharedLazyTessellationCache.getCurrentIndex() << 32; 
 		subdiv_patch->root_ref = new_root_ref;
 	      }
 	  }
