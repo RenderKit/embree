@@ -179,7 +179,7 @@ void convertScene(ISPCScene* scene_in, const Vec3fa& p)
   for (size_t i=0; i<scene_in->numSubdivMeshes; i++)
   {
     ISPCSubdivMesh* mesh = scene_in->subdiv[i];
-#if 1
+#if 0
     printf("numFaces    %\n",mesh->numFaces);
     printf("numEdges    %\n",mesh->numEdges);
     printf("numVertices %\n",mesh->numVertices);

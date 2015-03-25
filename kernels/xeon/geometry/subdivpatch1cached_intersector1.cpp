@@ -250,10 +250,12 @@ namespace embree
       __aligned(64) float grid_v[array_elements+16];
      
 #else
-#define MAX_GRID_SIZE 128*128
+#define MAX_GRID_SIZE 64*64
       assert(patch.grid_size_simd_blocks * 8 < MAX_GRID_SIZE);
-      __aligned(64) float grid_u[MAX_GRID_SIZE];
-      __aligned(64) float grid_v[MAX_GRID_SIZE];
+      __aligned(64) float local_grid_u[MAX_GRID_SIZE];
+      __aligned(64) float local_grid_v[MAX_GRID_SIZE];
+	  float *const grid_u = patch.grid_size_simd_blocks * 8 < MAX_GRID_SIZE ? local_grid_u : (float*)_mm_malloc((array_elements + 16)*sizeof(float),64);
+	  float *const grid_v = patch.grid_size_simd_blocks * 8 < MAX_GRID_SIZE ? local_grid_v : (float*)_mm_malloc((array_elements + 16)*sizeof(float),64);
 #endif   
       const size_t grid_offset = patch.grid_bvh_size_64b_blocks * 16;
 
@@ -308,9 +310,14 @@ namespace embree
       TIMER(DBG_PRINT(patch.grid_v_res));
       TIMER(DBG_PRINT(patch.grid_subtree_size_64b_blocks*64));
 
-//#if defined(_MSC_VER) && !defined(__INTEL_COMPILER)
-//      _freea(ptr);
-//#endif
+#if defined(_MSC_VER) && !defined(__INTEL_COMPILER)
+	
+	  if (patch.grid_size_simd_blocks * 8 >= MAX_GRID_SIZE)
+	  {
+	    free(grid_u);
+		free(grid_v);
+	  }
+#endif
       return subtree_root;
     }
 
