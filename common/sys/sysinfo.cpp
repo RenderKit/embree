@@ -142,22 +142,23 @@ namespace embree
   static const int CPU_FEATURE_BIT_AVX2  = 1 << 5;
   static const int CPU_FEATURE_BIT_BMI2  = 1 << 8;
 
-  bool check_xcr0_ymm() 
+  __noinline bool check_xcr0_ymm() 
   {
-    int xcr0;
 #if defined (__WIN32__)
-
+    int64 xcr0 = 0;
 #if defined(__INTEL_COMPILER) 
-    xcr0 = (int)_xgetbv(0);
+    xcr0 = _xgetbv(0);
 #elif (defined(_MSC_VER) && (_MSC_FULL_VER >= 160040219)) // min VS2010 SP1 compiler is required
-    xcr0 = (int)_xgetbv(0); 
+    xcr0 = _xgetbv(0); 
 #else
 #pragma message ("WARNING: AVX not supported by your compiler.")
     xcr0 = 0;
 #endif
+    return ((xcr0 & 6) == 6); /* checking if xmm and ymm state are enabled in XCR0 */
 
 #else
 
+    int xcr0 = 0;
 #if defined(__INTEL_COMPILER) 
     __asm__ ("xgetbv" : "=a" (xcr0) : "c" (0) : "%edx" );
 #elif ((__GNUC__ > 4) || (__GNUC__ == 4 && __GNUC_MINOR__ >= 4)) && (!defined(__MACOSX__) || defined(__TARGET_AVX__) || defined(__TARGET_AVX2__))
@@ -168,9 +169,8 @@ namespace embree
 #pragma message ("WARNING: AVX not supported by your compiler.")
     xcr0 = 0;
 #endif
-
-#endif
     return ((xcr0 & 6) == 6); /* checking if xmm and ymm state are enabled in XCR0 */
+#endif
   }
 
   int cpu_features = 0;
