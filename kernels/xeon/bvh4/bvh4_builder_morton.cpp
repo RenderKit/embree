@@ -710,18 +710,13 @@ namespace embree
           bvh->set(BVH4::emptyNode,empty,0);
           return;
         }
-      
-        /* verbose mode */
-        if (g_verbose >= 1)
-	  std::cout << "building BVH4<" << bvh->primTy.name << "> with " << TOSTRING(isa) "::BVH4SceneBuilderMortonGeneral ... " << std::flush;
 
-	double t0 = 0.0f, dt = 0.0f;
+        double t0 = bvh->preBuild(TOSTRING(isa) "::BVH4BuilderMorton");
+
 #if PROFILE
 	profile(2,20,numPrimitives,[&] (ProfileTimer& timer)
         {
 #endif
-            if (g_benchmark || g_verbose >= 1) t0 = getSeconds();
-
             auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
 
             //bvh->alloc.init(numPrimitives*sizeof(BVH4::Node),numPrimitives*sizeof(BVH4::Node));
@@ -836,31 +831,15 @@ namespace embree
             bvh->clearBarrier(bvh->root);
 #endif
 
-            //timer("compute_tree");
-
-            if (g_benchmark || g_verbose >= 1) dt = getSeconds()-t0;
-
 #if PROFILE
-            dt = timer.avg();
         }); 
 #endif
         
         /* clear temporary data for static geometry */
-	//bool staticGeom = mesh ? mesh->isStatic() : scene->isStatic(); // FIXME: implement
-	//if (staticGeom) prims.resize(0,true);
+	bool staticGeom = scene->isStatic(); 
+	if (staticGeom) morton.clear();
         bvh->alloc.cleanup();
-
-	/* verbose mode */
-	if (g_verbose >= 1)
-	  std::cout << "[DONE] " << 1000.0f*dt << "ms (" << numPrimitives/dt*1E-6 << " Mprim/s)" << std::endl;
-	if (g_verbose >= 2)
-	  bvh->printStatistics();
-       
-        /* benchmark mode */
-        if (g_benchmark) {
-          BVH4Statistics stat(bvh);
-          std::cout << "BENCHMARK_BUILD " << dt << " " << double(numPrimitives)/(dt) << " " << stat.sah() << " " << stat.bytesUsed() << std::endl;
-        }
+        bvh->postBuild(t0);
       }
 
       void clear() {
