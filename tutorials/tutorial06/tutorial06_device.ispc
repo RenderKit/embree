@@ -875,8 +875,6 @@ void convertTriangleMeshes(uniform ISPCScene* uniform scene_in, RTCScene scene_o
     /* get ith mesh */
     uniform ISPCMesh* uniform mesh = scene_in->meshes[i];
 
-    if (mesh->numQuads) continue;
-
     /* create a triangle mesh */
     uniform unsigned int geomID = rtcNewTriangleMesh (scene_out, RTC_GEOMETRY_STATIC, mesh->numTriangles, mesh->numVertices);
     assert(geomID < numGeometries);
@@ -951,7 +949,6 @@ void updateEdgeLevels(uniform ISPCScene* uniform scene_in, const uniform Vec3fa&
   {
     uniform ISPCMesh* uniform mesh = g_ispc_scene->meshes[i];
 
-    if (mesh->numQuads == 0) continue;
     if (mesh->edge_level) 
     {
       uniform unsigned int geomID = mesh->geomID;
@@ -968,52 +965,6 @@ void updateEdgeLevels(uniform ISPCScene* uniform scene_in, const uniform Vec3fa&
 
 void convertSubdivMeshes(uniform ISPCScene* uniform scene_in, RTCScene scene_out, uniform size_t numGeometries, const uniform Vec3fa& cam_pos)
 {
-  for (uniform int i=0; i<scene_in->numMeshes; i++)
-  {
-    uniform ISPCMesh* uniform mesh = scene_in->meshes[i];
-   
-    if (mesh->numQuads)
-     {
-      g_subdiv_mode = true;
-
-
-      uniform size_t numPrimitives = mesh->numQuads;
-      uniform size_t numEdges      = mesh->numQuads*4;
-      mesh->edge_level             = uniform new uniform float[numEdges];
-      uniform int *uniform index_buffer = uniform new uniform int[numEdges];
-      
-      for (uniform size_t i=0; i<numEdges; i++) 
-	mesh->edge_level[i] = FIXED_EDGE_TESSELLATION_VALUE;
-
-      /* create a triangle mesh */
-      uniform unsigned int geomID = rtcNewSubdivisionMesh (scene_out, RTC_GEOMETRY_STATIC, numPrimitives, numEdges, mesh->numVertices, 0, 0, 0);
-      mesh->geomID = geomID;
-
-      geomID_to_mesh[geomID] = mesh;
-      geomID_to_type[geomID] = 2;
-
-      uniform unsigned int* faces = (uniform unsigned int*) rtcMapBuffer(scene_out, geomID, RTC_FACE_BUFFER);
-      for (uniform size_t i=0; i<mesh->numQuads    ; i++) faces[i] = 4;
-      
-      rtcUnmapBuffer(scene_out,geomID,RTC_FACE_BUFFER);
-
-      for (uniform size_t i=0; i<mesh->numQuads; i++)
-      	 {
-	   index_buffer[4*i+0] = mesh->quads[i].v0;
-	   index_buffer[4*i+1] = mesh->quads[i].v1;
-	   index_buffer[4*i+2] = mesh->quads[i].v2;
-	   index_buffer[4*i+3] = mesh->quads[i].v3;	   
-	 }
-
-      rtcSetBuffer(scene_out, geomID, RTC_VERTEX_BUFFER, mesh->positions , 0, sizeof(uniform Vec3fa  ));
-      rtcSetBuffer(scene_out, geomID, RTC_INDEX_BUFFER,  index_buffer    , 0, sizeof(uniform unsigned int));
-      rtcSetBuffer(scene_out, geomID, RTC_LEVEL_BUFFER,  mesh->edge_level, 0, sizeof(uniform float));
-      
-#if ENABLE_DISPLACEMENTS == 1
-      rtcSetDisplacementFunction(scene_out,geomID,(RTCDisplacementFunc)&displacementFunction,NULL);
-#endif
-     } 
-   }
   for (uniform size_t i=0; i<g_ispc_scene->numSubdivMeshes; i++)
   {
     uniform ISPCSubdivMesh* uniform mesh = g_ispc_scene->subdiv[i];
@@ -1021,7 +972,7 @@ void convertSubdivMeshes(uniform ISPCScene* uniform scene_in, RTCScene scene_out
 						mesh->numEdgeCreases, mesh->numVertexCreases, mesh->numHoles);
     assert(geomID < numGeometries);
     geomID_to_mesh[geomID] = mesh;
-    geomID_to_type[geomID] = 1;
+    geomID_to_type[geomID] = 1; //2
 
     for (size_t i=0; i<mesh->numEdges; i++) mesh->subdivlevel[i] = FIXED_EDGE_TESSELLATION_VALUE;
     rtcSetBuffer(scene_out, geomID, RTC_VERTEX_BUFFER, mesh->positions, 0, sizeof(uniform Vec3fa  ));
@@ -1033,6 +984,9 @@ void convertSubdivMeshes(uniform ISPCScene* uniform scene_in, RTCScene scene_out
     rtcSetBuffer(scene_out, geomID, RTC_EDGE_CREASE_WEIGHT_BUFFER,   mesh->edge_crease_weights,   0, sizeof(uniform float));
     rtcSetBuffer(scene_out, geomID, RTC_VERTEX_CREASE_INDEX_BUFFER,  mesh->vertex_creases,        0, sizeof(uniform unsigned int));
     rtcSetBuffer(scene_out, geomID, RTC_VERTEX_CREASE_WEIGHT_BUFFER, mesh->vertex_crease_weights, 0, sizeof(uniform float));
+#if ENABLE_DISPLACEMENTS == 1
+      rtcSetDisplacementFunction(scene_out,geomID,(RTCDisplacementFunc)&displacementFunction,NULL);
+#endif
   }
 }      
 
@@ -1040,13 +994,8 @@ typedef void* uniform void_ptr;
 
 RTCScene convertScene(uniform ISPCScene* uniform scene_in,const uniform Vec3fa& cam_org)
 {
-
-  for (uniform int i=0; i<scene_in->numMeshes; i++)
-    {
-     uniform ISPCMesh* uniform mesh = scene_in->meshes[i];
-    if (mesh->numQuads)
+  if (g_ispc_scene->numSubdivMeshes > 0)
        g_subdiv_mode = true;
-    }
 
    
   uniform size_t numGeometries = scene_in->numMeshes + scene_in->numSubdivMeshes;
