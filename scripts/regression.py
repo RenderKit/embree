@@ -276,7 +276,7 @@ def processConfiguration(OS, compiler, platform, build, isa, tasking, models):
       for model in models:
         render_tutorial06(OS, compiler, platform, build, isa, tasking, ty, model, '')
 
-      render(OS, compiler, platform, build, isa, tasking, 'tutorial07', '', '', '')
+      render(OS, compiler, platform, build, isa, tasking, 'tutorial07'+ty, '', '', '')
       render_tutorial07(OS, compiler, platform, build, isa, tasking, ty, 'tighten', '')
       if platform == "x64":
         render_tutorial07(OS, compiler, platform, build, isa, tasking, ty, 'sophie', '')

@@ -353,6 +353,34 @@ namespace embree
   {
     if (curGroup.empty()) return;
     
+    if (subdivMode)
+      {
+	OBJScene::SubdivMesh* mesh = new OBJScene::SubdivMesh;
+	model.subdiv.push_back(mesh);
+#if 0
+	DBG_PRINT(curGroup.size());
+	DBG_PRINT(v.size());
+	DBG_PRINT(vn.size());
+	DBG_PRINT(vt.size());
+#endif	
+	for (size_t i=0;i<v.size();i++)  mesh->positions.push_back(v[i]);
+	for (size_t i=0;i<vn.size();i++) mesh->normals.push_back(vn[i]);
+	for (size_t i=0;i<vt.size();i++) mesh->texcoords.push_back(vt[i]);
+	
+
+	for (size_t j=0; j < curGroup.size(); j++)
+	  {
+	    /* iterate over all faces */
+	    const std::vector<Vertex>& face = curGroup[j];
+	    
+	    for (size_t i=0;i<face.size();i++)
+	      mesh->position_indices.push_back(face[i].v);
+	    mesh->verticesPerFace.push_back(face.size());
+            
+	    mesh->materialID = curMaterial;	
+	  }
+      }
+    else
       {
 	OBJScene::Mesh* mesh = new OBJScene::Mesh;
 	model.meshes.push_back(mesh);
@@ -364,51 +392,21 @@ namespace embree
 	    /* iterate over all faces */
 	    const std::vector<Vertex>& face = curGroup[j];
 
-	    /* for subdivision test scenes */
-	    if (subdivMode)
-            {
-              if (face.size() == 4)
-                mesh->quads.push_back(OBJScene::Quad(face[0].v,face[1].v,face[2].v,face[3].v));
-              else {
-                //mesh->quads.push_back(OBJScene::Quad(0,0,0,0));
-                //mesh->quads.push_back(OBJScene::Quad(0,0,0,0));
-                //mesh->quads.push_back(OBJScene::Quad(0,0,0,0));
-              }
-              continue;
-            }
-            
 	    /* triangulate the face with a triangle fan */
 	    Vertex i0 = face[0], i1 = Vertex(-1), i2 = face[1];
 	    for (size_t k=2; k < face.size(); k++) {
 	      i1 = i2; i2 = face[k];
 	      uint32 v0,v1,v2;
-	      if (subdivMode)
-		{
-		  v0 = i0.v; 
-		  v1 = i1.v; 
-		  v2 = i2.v; 
-		}
-	      else
-		{
-		  v0 = getVertex(vertexMap, mesh, i0);
-		  v1 = getVertex(vertexMap, mesh, i1);
-		  v2 = getVertex(vertexMap, mesh, i2);
-		  assert(v0 < mesh->v.size());
-		  assert(v1 < mesh->v.size());
-		  assert(v2 < mesh->v.size());
-		}
+	      v0 = getVertex(vertexMap, mesh, i0);
+	      v1 = getVertex(vertexMap, mesh, i1);
+	      v2 = getVertex(vertexMap, mesh, i2);
+	      assert(v0 < mesh->v.size());
+	      assert(v1 < mesh->v.size());
+	      assert(v2 < mesh->v.size());
 	      mesh->triangles.push_back(OBJScene::Triangle(v0,v1,v2,curMaterial));
 	    }
 	  }
 
-	/* use vertex array as it is in quad-only mode */
-	if (subdivMode)
-	  {
-	    for (size_t i=0;i<v.size();i++)
-	      {
-		mesh->v.push_back(v[i]);
-	      }
-	  }
 	mesh->meshMaterialID = curMaterial;	
       }
     curGroup.clear();
