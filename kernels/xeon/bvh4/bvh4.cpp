@@ -111,30 +111,30 @@ namespace embree
   DECLARE_SCENE_BUILDER(BVH4Bezier1iBuilder_OBB_New);
   DECLARE_SCENE_BUILDER(BVH4Bezier1iMBBuilder_OBB_New);
 
-  DECLARE_SCENE_BUILDER(BVH4Triangle1SceneBuilderBinnedSAH2);
-  DECLARE_SCENE_BUILDER(BVH4Triangle4SceneBuilderBinnedSAH2);
-  DECLARE_SCENE_BUILDER(BVH4Triangle8SceneBuilderBinnedSAH2);
-  DECLARE_SCENE_BUILDER(BVH4Triangle1vSceneBuilderBinnedSAH2);
-  DECLARE_SCENE_BUILDER(BVH4Triangle4vSceneBuilderBinnedSAH2);
-  DECLARE_SCENE_BUILDER(BVH4Triangle4iSceneBuilderBinnedSAH2);
-  DECLARE_SCENE_BUILDER(BVH4Triangle4vMBSceneBuilderBinnedSAH2);
+  DECLARE_SCENE_BUILDER(BVH4Triangle1SceneBuilderSAH);
+  DECLARE_SCENE_BUILDER(BVH4Triangle4SceneBuilderSAH);
+  DECLARE_SCENE_BUILDER(BVH4Triangle8SceneBuilderSAH);
+  DECLARE_SCENE_BUILDER(BVH4Triangle1vSceneBuilderSAH);
+  DECLARE_SCENE_BUILDER(BVH4Triangle4vSceneBuilderSAH);
+  DECLARE_SCENE_BUILDER(BVH4Triangle4iSceneBuilderSAH);
+  DECLARE_SCENE_BUILDER(BVH4Triangle4vMBSceneBuilderSAH);
 
-  DECLARE_SCENE_BUILDER(BVH4Triangle1SceneBuilderSpatialBinnedSAH2);
-  DECLARE_SCENE_BUILDER(BVH4Triangle4SceneBuilderSpatialBinnedSAH2);
-  DECLARE_SCENE_BUILDER(BVH4Triangle8SceneBuilderSpatialBinnedSAH2);
-  DECLARE_SCENE_BUILDER(BVH4Triangle1vSceneBuilderSpatialBinnedSAH2);
-  DECLARE_SCENE_BUILDER(BVH4Triangle4vSceneBuilderSpatialBinnedSAH2);
-  DECLARE_SCENE_BUILDER(BVH4Triangle4iSceneBuilderSpatialBinnedSAH2);
+  DECLARE_SCENE_BUILDER(BVH4Triangle1SceneBuilderSpatialSAH);
+  DECLARE_SCENE_BUILDER(BVH4Triangle4SceneBuilderSpatialSAH);
+  DECLARE_SCENE_BUILDER(BVH4Triangle8SceneBuilderSpatialSAH);
+  DECLARE_SCENE_BUILDER(BVH4Triangle1vSceneBuilderSpatialSAH);
+  DECLARE_SCENE_BUILDER(BVH4Triangle4vSceneBuilderSpatialSAH);
+  DECLARE_SCENE_BUILDER(BVH4Triangle4iSceneBuilderSpatialSAH);
 
-  DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle1MeshBuilderBinnedSAH2);
-  DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle4MeshBuilderBinnedSAH2);
-  DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle8MeshBuilderBinnedSAH2);
-  DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle1vMeshBuilderBinnedSAH2);
-  DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle4vMeshBuilderBinnedSAH2);
-  DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle4iMeshBuilderBinnedSAH2);
-  DECLARE_SCENE_BUILDER(BVH4Bezier1vSceneBuilderBinnedSAH2);
-  DECLARE_SCENE_BUILDER(BVH4Bezier1iSceneBuilderBinnedSAH2);
-  DECLARE_SCENE_BUILDER(BVH4VirtualSceneBuilderBinnedSAH2);
+  DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle1MeshBuilderSAH);
+  DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle4MeshBuilderSAH);
+  DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle8MeshBuilderSAH);
+  DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle1vMeshBuilderSAH);
+  DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle4vMeshBuilderSAH);
+  DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle4iMeshBuilderSAH);
+  DECLARE_SCENE_BUILDER(BVH4Bezier1vSceneBuilderSAH);
+  DECLARE_SCENE_BUILDER(BVH4Bezier1iSceneBuilderSAH);
+  DECLARE_SCENE_BUILDER(BVH4VirtualSceneBuilderSAH);
 
   DECLARE_SCENE_BUILDER(BVH4SubdivPatch1BuilderBinnedSAH);
   DECLARE_SCENE_BUILDER(BVH4SubdivPatch1CachedBuilderBinnedSAH);
@@ -142,12 +142,12 @@ namespace embree
   DECLARE_SCENE_BUILDER(BVH4SubdivGridEagerBuilderBinnedSAH);
   DECLARE_SCENE_BUILDER(BVH4SubdivGridLazyBuilderBinnedSAH);
 
-  DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle1MeshRefitBinnedSAH2);
-  DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle4MeshRefitBinnedSAH2);
-  DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle8MeshRefitBinnedSAH2);
-  DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle1vMeshRefitBinnedSAH2);
-  DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle4vMeshRefitBinnedSAH2);
-  DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle4iMeshRefitBinnedSAH2);
+  DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle1MeshRefitSAH);
+  DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle4MeshRefitSAH);
+  DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle8MeshRefitSAH);
+  DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle1vMeshRefitSAH);
+  DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle4vMeshRefitSAH);
+  DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle4iMeshRefitSAH);
 
   DECLARE_SCENE_BUILDER(BVH4Triangle1SceneBuilderMortonGeneral);
   DECLARE_SCENE_BUILDER(BVH4Triangle4SceneBuilderMortonGeneral);
@@ -174,30 +174,30 @@ namespace embree
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Bezier1iBuilder_OBB_New);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Bezier1iMBBuilder_OBB_New);
 
-    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle1SceneBuilderBinnedSAH2);
-    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4SceneBuilderBinnedSAH2);
-    SELECT_SYMBOL_AVX        (features,BVH4Triangle8SceneBuilderBinnedSAH2);
-    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle1vSceneBuilderBinnedSAH2);
-    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4vSceneBuilderBinnedSAH2);
-    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4iSceneBuilderBinnedSAH2);
-    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4vMBSceneBuilderBinnedSAH2);
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle1SceneBuilderSAH);
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4SceneBuilderSAH);
+    SELECT_SYMBOL_AVX        (features,BVH4Triangle8SceneBuilderSAH);
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle1vSceneBuilderSAH);
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4vSceneBuilderSAH);
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4iSceneBuilderSAH);
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4vMBSceneBuilderSAH);
 
-    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle1SceneBuilderSpatialBinnedSAH2);
-    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4SceneBuilderSpatialBinnedSAH2);
-    SELECT_SYMBOL_AVX        (features,BVH4Triangle8SceneBuilderSpatialBinnedSAH2);
-    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle1vSceneBuilderSpatialBinnedSAH2);
-    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4vSceneBuilderSpatialBinnedSAH2);
-    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4iSceneBuilderSpatialBinnedSAH2);
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle1SceneBuilderSpatialSAH);
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4SceneBuilderSpatialSAH);
+    SELECT_SYMBOL_AVX        (features,BVH4Triangle8SceneBuilderSpatialSAH);
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle1vSceneBuilderSpatialSAH);
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4vSceneBuilderSpatialSAH);
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4iSceneBuilderSpatialSAH);
     
-    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle1MeshBuilderBinnedSAH2);
-    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4MeshBuilderBinnedSAH2);
-    SELECT_SYMBOL_AVX        (features,BVH4Triangle8MeshBuilderBinnedSAH2);
-    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle1vMeshBuilderBinnedSAH2);
-    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4vMeshBuilderBinnedSAH2);
-    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4iMeshBuilderBinnedSAH2);
-    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Bezier1vSceneBuilderBinnedSAH2);
-    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Bezier1iSceneBuilderBinnedSAH2);
-    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4VirtualSceneBuilderBinnedSAH2);
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle1MeshBuilderSAH);
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4MeshBuilderSAH);
+    SELECT_SYMBOL_AVX        (features,BVH4Triangle8MeshBuilderSAH);
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle1vMeshBuilderSAH);
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4vMeshBuilderSAH);
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4iMeshBuilderSAH);
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Bezier1vSceneBuilderSAH);
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Bezier1iSceneBuilderSAH);
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4VirtualSceneBuilderSAH);
 
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4SubdivPatch1BuilderBinnedSAH);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4SubdivPatch1CachedBuilderBinnedSAH);
@@ -205,12 +205,12 @@ namespace embree
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4SubdivGridEagerBuilderBinnedSAH);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4SubdivGridLazyBuilderBinnedSAH);
 
-    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle1MeshRefitBinnedSAH2);
-    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4MeshRefitBinnedSAH2);
-    SELECT_SYMBOL_AVX        (features,BVH4Triangle8MeshRefitBinnedSAH2);
-    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle1vMeshRefitBinnedSAH2);
-    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4vMeshRefitBinnedSAH2);
-    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4iMeshRefitBinnedSAH2);
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle1MeshRefitSAH);
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4MeshRefitSAH);
+    SELECT_SYMBOL_AVX        (features,BVH4Triangle8MeshRefitSAH);
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle1vMeshRefitSAH);
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4vMeshRefitSAH);
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4iMeshRefitSAH);
 
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle1SceneBuilderMortonGeneral);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4SceneBuilderMortonGeneral);
@@ -320,51 +320,10 @@ namespace embree
       }
   }
 
-#if 0 // FIXME: remove
-  void BVH4::init(size_t nodeSize, size_t numPrimitives, size_t numThreads)
-  {
-    /* allocate as much memory as likely needed and reserve conservative amounts of memory */
-    size_t blockSize = LinearAllocatorPerThread::allocBlockSize;
-    
-    size_t numPrimBlocks = primTy.blocks(numPrimitives);
-    size_t numAllocatedNodes      = min(size_t(0.6*numPrimBlocks),numPrimitives);
-    size_t numAllocatedPrimitives = min(size_t(1.2*numPrimBlocks),numPrimitives);
-#if defined(__X86_64__)
-    size_t numReservedNodes = 2*numPrimitives;
-    size_t numReservedPrimitives = 2*numPrimitives;
-#else
-    size_t numReservedNodes = 1.5*numAllocatedNodes;
-    size_t numReservedPrimitives = 1.5*numAllocatedPrimitives;
-#endif
-    
-    size_t bytesAllocated = numAllocatedNodes * nodeSize + numAllocatedPrimitives * primTy.bytes; 
-    bytesAllocated = max(bytesAllocated,numPrimitives*sizeof(PrimRef)); // required also for parallel split stage in BVH4BuilderFast
-    size_t bytesReserved  = numReservedNodes  * nodeSize + numReservedPrimitives  * primTy.bytes;
-    if (numPrimitives) bytesReserved = (bytesReserved+blockSize-1)/blockSize*blockSize + numThreads*blockSize*2;
-    alloc.init(bytesAllocated,bytesReserved);
-    
-    init();
-  }
-#endif
-
-#if 0 // FIXME: remove
-  void BVH4::init()
-  {
-    root = emptyNode;
-    bounds = empty;
-  }
-#endif
-
   void BVH4::clear() 
   {
     set(BVH4::emptyNode,empty,0);
     alloc2.clear();
-    // if (data_mem)
-    //   {
-    // 	os_free( data_mem, size_data_mem );        
-    // 	data_mem = NULL;
-    // 	size_data_mem = 0;
-    //   }
   }
 
   void BVH4::set (NodeRef root, const BBox3fa& bounds, size_t numPrimitives)
@@ -662,7 +621,7 @@ namespace embree
   { 
     BVH4* accel = new BVH4(Bezier1vType::type,scene,LeafMode);
     Accel::Intersectors intersectors = BVH4Bezier1vIntersectors(accel);
-    Builder* builder = BVH4Bezier1vSceneBuilderBinnedSAH2(accel,scene,LeafMode);
+    Builder* builder = BVH4Bezier1vSceneBuilderSAH(accel,scene,LeafMode);
     return new AccelInstance(accel,builder,intersectors);
   }
 
@@ -670,7 +629,7 @@ namespace embree
   { 
     BVH4* accel = new BVH4(SceneBezier1i::type,scene,LeafMode);
     Accel::Intersectors intersectors = BVH4Bezier1iIntersectors(accel);
-    Builder* builder = BVH4Bezier1iSceneBuilderBinnedSAH2(accel,scene,LeafMode);
+    Builder* builder = BVH4Bezier1iSceneBuilderSAH(accel,scene,LeafMode);
     scene->needVertices = true;
     return new AccelInstance(accel,builder,intersectors);
   }
@@ -707,9 +666,9 @@ namespace embree
     Accel::Intersectors intersectors = BVH4Triangle1Intersectors(accel);
     
     Builder* builder = NULL;
-    if      (g_tri_builder == "default"             ) builder = BVH4Triangle1SceneBuilderBinnedSAH2(accel,scene,0);
-    else if (g_tri_builder == "binned_sah2"         ) builder = BVH4Triangle1SceneBuilderBinnedSAH2(accel,scene,0);
-    else if (g_tri_builder == "binned_sah2_presplit") builder = BVH4Triangle1SceneBuilderBinnedSAH2(accel,scene,MODE_HIGH_QUALITY);
+    if      (g_tri_builder == "default"     ) builder = BVH4Triangle1SceneBuilderSAH(accel,scene,0);
+    else if (g_tri_builder == "sah"         ) builder = BVH4Triangle1SceneBuilderSAH(accel,scene,0);
+    else if (g_tri_builder == "sah_presplit") builder = BVH4Triangle1SceneBuilderSAH(accel,scene,MODE_HIGH_QUALITY);
     else if (g_tri_builder == "morton"      ) builder = BVH4Triangle1SceneBuilderMortonGeneral(accel,scene,0);
     else THROW_RUNTIME_ERROR("unknown builder "+g_tri_builder+" for BVH4<Triangle1>");
 
@@ -727,10 +686,10 @@ namespace embree
     else THROW_RUNTIME_ERROR("unknown traverser "+g_tri_traverser+" for BVH4<Triangle4>");
    
     Builder* builder = NULL;
-    if      (g_tri_builder == "default"     ) builder = BVH4Triangle4SceneBuilderBinnedSAH2(accel,scene,0);
-    else if (g_tri_builder == "binned_sah2" ) builder = BVH4Triangle4SceneBuilderBinnedSAH2(accel,scene,0);
-    else if (g_tri_builder == "binned_sah2_spatial" ) builder = BVH4Triangle4SceneBuilderSpatialBinnedSAH2(accel,scene,0);
-    else if (g_tri_builder == "binned_sah2_presplit") builder = BVH4Triangle4SceneBuilderBinnedSAH2(accel,scene,MODE_HIGH_QUALITY);
+    if      (g_tri_builder == "default"     ) builder = BVH4Triangle4SceneBuilderSAH(accel,scene,0);
+    else if (g_tri_builder == "sah"         ) builder = BVH4Triangle4SceneBuilderSAH(accel,scene,0);
+    else if (g_tri_builder == "sah_spatial" ) builder = BVH4Triangle4SceneBuilderSpatialSAH(accel,scene,0);
+    else if (g_tri_builder == "sah_presplit") builder = BVH4Triangle4SceneBuilderSAH(accel,scene,MODE_HIGH_QUALITY);
     else if (g_tri_builder == "morton"      ) builder = BVH4Triangle4SceneBuilderMortonGeneral(accel,scene,0);
     else THROW_RUNTIME_ERROR("unknown builder "+g_tri_builder+" for BVH4<Triangle4>");
 
@@ -749,10 +708,10 @@ namespace embree
     else THROW_RUNTIME_ERROR("unknown traverser "+g_tri_traverser+" for BVH4<Triangle8>");
    
     Builder* builder = NULL;
-    if      (g_tri_builder == "default"     ) builder = BVH4Triangle8SceneBuilderBinnedSAH2(accel,scene,0);
-    else if (g_tri_builder == "binned_sah2" ) builder = BVH4Triangle8SceneBuilderBinnedSAH2(accel,scene,0);
-    else if (g_tri_builder == "binned_sah2_spatial" ) builder = BVH4Triangle8SceneBuilderSpatialBinnedSAH2(accel,scene,0);
-    else if (g_tri_builder == "binned_sah2_presplit" ) builder = BVH4Triangle8SceneBuilderBinnedSAH2(accel,scene,MODE_HIGH_QUALITY);
+    if      (g_tri_builder == "default"     ) builder = BVH4Triangle8SceneBuilderSAH(accel,scene,0);
+    else if (g_tri_builder == "sah"         ) builder = BVH4Triangle8SceneBuilderSAH(accel,scene,0);
+    else if (g_tri_builder == "sah_spatial" ) builder = BVH4Triangle8SceneBuilderSpatialSAH(accel,scene,0);
+    else if (g_tri_builder == "sah_presplit") builder = BVH4Triangle8SceneBuilderSAH(accel,scene,MODE_HIGH_QUALITY);
     else if (g_tri_builder == "morton"      ) builder = BVH4Triangle8SceneBuilderMortonGeneral(accel,scene,0);
     else THROW_RUNTIME_ERROR("unknown builder "+g_tri_builder+" for BVH4<Triangle8>");
 
@@ -766,10 +725,10 @@ namespace embree
     Accel::Intersectors intersectors = BVH4Triangle1vIntersectors(accel);
 
     Builder* builder = NULL;
-    if      (g_tri_builder == "default"     ) builder = BVH4Triangle1vSceneBuilderBinnedSAH2(accel,scene,0);
-    else if (g_tri_builder == "binned_sah2" ) builder = BVH4Triangle1vSceneBuilderBinnedSAH2(accel,scene,0);
-    else if (g_tri_builder == "binned_sah2_spatial" ) builder = BVH4Triangle1vSceneBuilderSpatialBinnedSAH2(accel,scene,0);
-    else if (g_tri_builder == "binned_sah2_presplit" ) builder = BVH4Triangle1vSceneBuilderBinnedSAH2(accel,scene,MODE_HIGH_QUALITY);
+    if      (g_tri_builder == "default"     ) builder = BVH4Triangle1vSceneBuilderSAH(accel,scene,0);
+    else if (g_tri_builder == "sah"         ) builder = BVH4Triangle1vSceneBuilderSAH(accel,scene,0);
+    else if (g_tri_builder == "sah_spatial" ) builder = BVH4Triangle1vSceneBuilderSpatialSAH(accel,scene,0);
+    else if (g_tri_builder == "sah_presplit") builder = BVH4Triangle1vSceneBuilderSAH(accel,scene,MODE_HIGH_QUALITY);
     else if (g_tri_builder == "morton"      ) builder = BVH4Triangle1vSceneBuilderMortonGeneral(accel,scene,0);
     else THROW_RUNTIME_ERROR("unknown builder "+g_tri_builder+" for BVH4<Triangle1v>");
         
@@ -781,8 +740,8 @@ namespace embree
     BVH4* accel = new BVH4(Triangle4vMB::type,scene,LeafMode);
     Accel::Intersectors intersectors = BVH4Triangle4vMBIntersectors(accel);
     Builder* builder = NULL;
-    if       (g_tri_builder_mb == "default"    ) builder = BVH4Triangle4vMBSceneBuilderBinnedSAH2(accel,scene,0);
-    else  if (g_tri_builder_mb == "binned_sah2") builder = BVH4Triangle4vMBSceneBuilderBinnedSAH2(accel,scene,0);
+    if       (g_tri_builder_mb == "default"    ) builder = BVH4Triangle4vMBSceneBuilderSAH(accel,scene,0);
+    else  if (g_tri_builder_mb == "sah") builder = BVH4Triangle4vMBSceneBuilderSAH(accel,scene,0);
     else THROW_RUNTIME_ERROR("unknown builder "+g_tri_builder_mb+" for BVH4<Triangle4vMB>");
     return new AccelInstance(accel,builder,intersectors);
   }
@@ -798,10 +757,10 @@ namespace embree
     else THROW_RUNTIME_ERROR("unknown traverser "+g_tri_traverser+" for BVH4<Triangle4>");
 
     Builder* builder = NULL;
-    if      (g_tri_builder == "default"     ) builder = BVH4Triangle4vSceneBuilderBinnedSAH2(accel,scene,0);
-    else if (g_tri_builder == "binned_sah2" ) builder = BVH4Triangle4vSceneBuilderBinnedSAH2(accel,scene,0);
-    else if (g_tri_builder == "binned_sah2_spatial" ) builder = BVH4Triangle4vSceneBuilderSpatialBinnedSAH2(accel,scene,0);
-    else if (g_tri_builder == "binned_sah2_presplit" ) builder = BVH4Triangle4vSceneBuilderBinnedSAH2(accel,scene,MODE_HIGH_QUALITY);
+    if      (g_tri_builder == "default"     ) builder = BVH4Triangle4vSceneBuilderSAH(accel,scene,0);
+    else if (g_tri_builder == "sah"         ) builder = BVH4Triangle4vSceneBuilderSAH(accel,scene,0);
+    else if (g_tri_builder == "sah_spatial" ) builder = BVH4Triangle4vSceneBuilderSpatialSAH(accel,scene,0);
+    else if (g_tri_builder == "sah_presplit") builder = BVH4Triangle4vSceneBuilderSAH(accel,scene,MODE_HIGH_QUALITY);
     else if (g_tri_builder == "morton"      ) builder = BVH4Triangle4vSceneBuilderMortonGeneral(accel,scene,0);
     else THROW_RUNTIME_ERROR("unknown builder "+g_tri_builder+" for BVH4<Triangle4v>");
 
@@ -814,10 +773,10 @@ namespace embree
     Accel::Intersectors intersectors = BVH4Triangle4iIntersectors(accel);
 
     Builder* builder = NULL;
-    if      (g_tri_builder == "default"     ) builder = BVH4Triangle4iSceneBuilderBinnedSAH2(accel,scene,0);
-    else if (g_tri_builder == "binned_sah2" ) builder = BVH4Triangle4iSceneBuilderBinnedSAH2(accel,scene,0);
-    else if (g_tri_builder == "binned_sah2_spatial" ) builder = BVH4Triangle4iSceneBuilderSpatialBinnedSAH2(accel,scene,0);
-    else if (g_tri_builder == "binned_sah2_presplit" ) builder = BVH4Triangle4iSceneBuilderBinnedSAH2(accel,scene,MODE_HIGH_QUALITY);
+    if      (g_tri_builder == "default"     ) builder = BVH4Triangle4iSceneBuilderSAH(accel,scene,0);
+    else if (g_tri_builder == "sah"         ) builder = BVH4Triangle4iSceneBuilderSAH(accel,scene,0);
+    else if (g_tri_builder == "sah_spatial" ) builder = BVH4Triangle4iSceneBuilderSpatialSAH(accel,scene,0);
+    else if (g_tri_builder == "sah_presplit") builder = BVH4Triangle4iSceneBuilderSAH(accel,scene,MODE_HIGH_QUALITY);
     else if (g_tri_builder == "morton"      ) builder = BVH4Triangle4iSceneBuilderMortonGeneral(accel,scene,0);
     else THROW_RUNTIME_ERROR("unknown builder "+g_tri_builder+" for BVH4<Triangle4i>");
 
@@ -837,8 +796,8 @@ namespace embree
     if (mesh->numTimeSteps != 1) THROW_RUNTIME_ERROR("internal error");
     accel = new BVH4(TriangleMeshTriangle1::type,mesh->parent,LeafMode);
     switch (mesh->flags) {
-    case RTC_GEOMETRY_STATIC:     builder = BVH4Triangle1MeshBuilderBinnedSAH2(accel,mesh,LeafMode); break;
-    case RTC_GEOMETRY_DEFORMABLE: builder = BVH4Triangle1MeshRefitBinnedSAH2(accel,mesh,LeafMode); break;
+    case RTC_GEOMETRY_STATIC:     builder = BVH4Triangle1MeshBuilderSAH(accel,mesh,LeafMode); break;
+    case RTC_GEOMETRY_DEFORMABLE: builder = BVH4Triangle1MeshRefitSAH(accel,mesh,LeafMode); break;
     case RTC_GEOMETRY_DYNAMIC:    builder = BVH4Triangle1MeshBuilderMortonGeneral(accel,mesh,LeafMode); break;
     default: THROW_RUNTIME_ERROR("internal error"); 
     }
@@ -849,8 +808,8 @@ namespace embree
     if (mesh->numTimeSteps != 1) THROW_RUNTIME_ERROR("internal error");
     accel = new BVH4(TriangleMeshTriangle4::type,mesh->parent,LeafMode);
     switch (mesh->flags) {
-    case RTC_GEOMETRY_STATIC:     builder = BVH4Triangle4MeshBuilderBinnedSAH2(accel,mesh,LeafMode); break;
-    case RTC_GEOMETRY_DEFORMABLE: builder = BVH4Triangle4MeshRefitBinnedSAH2(accel,mesh,LeafMode); break;
+    case RTC_GEOMETRY_STATIC:     builder = BVH4Triangle4MeshBuilderSAH(accel,mesh,LeafMode); break;
+    case RTC_GEOMETRY_DEFORMABLE: builder = BVH4Triangle4MeshRefitSAH(accel,mesh,LeafMode); break;
     case RTC_GEOMETRY_DYNAMIC:    builder = BVH4Triangle4MeshBuilderMortonGeneral(accel,mesh,LeafMode); break;
     default: THROW_RUNTIME_ERROR("internal error"); 
     }
@@ -861,8 +820,8 @@ namespace embree
     if (mesh->numTimeSteps != 1) THROW_RUNTIME_ERROR("internal error");
     accel = new BVH4(TriangleMeshTriangle1v::type,mesh->parent,LeafMode);
     switch (mesh->flags) {
-    case RTC_GEOMETRY_STATIC:     builder = BVH4Triangle1vMeshBuilderBinnedSAH2(accel,mesh,LeafMode); break;
-    case RTC_GEOMETRY_DEFORMABLE: builder = BVH4Triangle1vMeshRefitBinnedSAH2  (accel,mesh,LeafMode); break;
+    case RTC_GEOMETRY_STATIC:     builder = BVH4Triangle1vMeshBuilderSAH(accel,mesh,LeafMode); break;
+    case RTC_GEOMETRY_DEFORMABLE: builder = BVH4Triangle1vMeshRefitSAH  (accel,mesh,LeafMode); break;
     case RTC_GEOMETRY_DYNAMIC:    builder = BVH4Triangle1vMeshBuilderMortonGeneral(accel,mesh,LeafMode); break;
     default: THROW_RUNTIME_ERROR("internal error"); 
     }
@@ -873,8 +832,8 @@ namespace embree
     if (mesh->numTimeSteps != 1) THROW_RUNTIME_ERROR("internal error");
     accel = new BVH4(TriangleMeshTriangle4v::type,mesh->parent,LeafMode);
     switch (mesh->flags) {
-    case RTC_GEOMETRY_STATIC:     builder = BVH4Triangle4vMeshBuilderBinnedSAH2(accel,mesh,LeafMode); break;
-    case RTC_GEOMETRY_DEFORMABLE: builder = BVH4Triangle4vMeshRefitBinnedSAH2(accel,mesh,LeafMode); break;
+    case RTC_GEOMETRY_STATIC:     builder = BVH4Triangle4vMeshBuilderSAH(accel,mesh,LeafMode); break;
+    case RTC_GEOMETRY_DEFORMABLE: builder = BVH4Triangle4vMeshRefitSAH(accel,mesh,LeafMode); break;
     case RTC_GEOMETRY_DYNAMIC:    builder = BVH4Triangle4vMeshBuilderMortonGeneral(accel,mesh,LeafMode); break;
     default: THROW_RUNTIME_ERROR("internal error"); 
     }
@@ -885,8 +844,8 @@ namespace embree
     if (mesh->numTimeSteps != 1) THROW_RUNTIME_ERROR("internal error");
     accel = new BVH4(TriangleMeshTriangle4i::type,mesh->parent,LeafMode);
     switch (mesh->flags) {
-    case RTC_GEOMETRY_STATIC:     builder = BVH4Triangle4iMeshBuilderBinnedSAH2(accel,mesh,LeafMode); break;
-    case RTC_GEOMETRY_DEFORMABLE: builder = BVH4Triangle4iMeshRefitBinnedSAH2(accel,mesh,LeafMode); break;
+    case RTC_GEOMETRY_STATIC:     builder = BVH4Triangle4iMeshBuilderSAH(accel,mesh,LeafMode); break;
+    case RTC_GEOMETRY_DEFORMABLE: builder = BVH4Triangle4iMeshRefitSAH(accel,mesh,LeafMode); break;
     case RTC_GEOMETRY_DYNAMIC:    builder = BVH4Triangle4iMeshBuilderMortonGeneral(accel,mesh,LeafMode); break;
     default: THROW_RUNTIME_ERROR("internal error"); 
     }
@@ -943,7 +902,7 @@ namespace embree
   Accel* BVH4::BVH4Triangle1SpatialSplit(Scene* scene)
   {
     BVH4* accel = new BVH4(Triangle1Type::type,scene,LeafMode);
-    Builder* builder = BVH4Triangle1SceneBuilderSpatialBinnedSAH2(accel,scene,0); 
+    Builder* builder = BVH4Triangle1SceneBuilderSpatialSAH(accel,scene,0); 
     Accel::Intersectors intersectors = BVH4Triangle1Intersectors(accel);
     return new AccelInstance(accel,builder,intersectors);
   }
@@ -951,7 +910,7 @@ namespace embree
   Accel* BVH4::BVH4Triangle4SpatialSplit(Scene* scene)
   {
     BVH4* accel = new BVH4(Triangle4Type::type,scene,LeafMode);
-    Builder* builder = BVH4Triangle4SceneBuilderSpatialBinnedSAH2(accel,scene,0); 
+    Builder* builder = BVH4Triangle4SceneBuilderSpatialSAH(accel,scene,0); 
     Accel::Intersectors intersectors = BVH4Triangle4IntersectorsHybrid(accel);
     return new AccelInstance(accel,builder,intersectors);
   }
@@ -960,7 +919,7 @@ namespace embree
   Accel* BVH4::BVH4Triangle8SpatialSplit(Scene* scene)
   {
     BVH4* accel = new BVH4(Triangle8Type::type,scene,LeafMode);
-    Builder* builder = BVH4Triangle8SceneBuilderSpatialBinnedSAH2(accel,scene,0);
+    Builder* builder = BVH4Triangle8SceneBuilderSpatialSAH(accel,scene,0);
     Accel::Intersectors intersectors = BVH4Triangle8IntersectorsHybrid(accel);
     return new AccelInstance(accel,builder,intersectors);
   }
@@ -969,7 +928,7 @@ namespace embree
   Accel* BVH4::BVH4Triangle1ObjectSplit(Scene* scene)
   {
     BVH4* accel = new BVH4(Triangle1Type::type,scene,LeafMode);
-    Builder* builder = BVH4Triangle1SceneBuilderBinnedSAH2(accel,scene,LeafMode);
+    Builder* builder = BVH4Triangle1SceneBuilderSAH(accel,scene,LeafMode);
     Accel::Intersectors intersectors = BVH4Triangle1Intersectors(accel);
     return new AccelInstance(accel,builder,intersectors);
   }
@@ -977,7 +936,7 @@ namespace embree
   Accel* BVH4::BVH4Triangle4ObjectSplit(Scene* scene)
   {
     BVH4* accel = new BVH4(Triangle4Type::type,scene,LeafMode);
-    Builder* builder = BVH4Triangle4SceneBuilderBinnedSAH2(accel,scene,LeafMode);
+    Builder* builder = BVH4Triangle4SceneBuilderSAH(accel,scene,LeafMode);
     Accel::Intersectors intersectors = BVH4Triangle4IntersectorsHybrid(accel);
     return new AccelInstance(accel,builder,intersectors);
   }
@@ -986,7 +945,7 @@ namespace embree
   Accel* BVH4::BVH4Triangle8ObjectSplit(Scene* scene)
   {
     BVH4* accel = new BVH4(Triangle8Type::type,scene,LeafMode);
-    Builder* builder = BVH4Triangle8SceneBuilderBinnedSAH2(accel,scene,LeafMode);
+    Builder* builder = BVH4Triangle8SceneBuilderSAH(accel,scene,LeafMode);
     Accel::Intersectors intersectors = BVH4Triangle8IntersectorsHybrid(accel);
     return new AccelInstance(accel,builder,intersectors);
   }
@@ -995,7 +954,7 @@ namespace embree
   Accel* BVH4::BVH4Triangle1vObjectSplit(Scene* scene)
   {
     BVH4* accel = new BVH4(Triangle1vType::type,scene,LeafMode);
-    Builder* builder = BVH4Triangle1vSceneBuilderBinnedSAH2(accel,scene,LeafMode);
+    Builder* builder = BVH4Triangle1vSceneBuilderSAH(accel,scene,LeafMode);
     Accel::Intersectors intersectors = BVH4Triangle1vIntersectors(accel);
     return new AccelInstance(accel,builder,intersectors);
   }
@@ -1003,7 +962,7 @@ namespace embree
   Accel* BVH4::BVH4Triangle4vObjectSplit(Scene* scene)
   {
     BVH4* accel = new BVH4(Triangle4vType::type,scene,LeafMode);
-    Builder* builder = BVH4Triangle4vSceneBuilderBinnedSAH2(accel,scene,LeafMode);
+    Builder* builder = BVH4Triangle4vSceneBuilderSAH(accel,scene,LeafMode);
     Accel::Intersectors intersectors = BVH4Triangle4vIntersectorsHybrid(accel);
     return new AccelInstance(accel,builder,intersectors);
   }
@@ -1011,7 +970,7 @@ namespace embree
   Accel* BVH4::BVH4Triangle4iObjectSplit(Scene* scene)
   {
     BVH4* accel = new BVH4(Triangle4iType::type,scene,LeafMode);
-    Builder* builder = BVH4Triangle4iSceneBuilderBinnedSAH2(accel,scene,LeafMode);
+    Builder* builder = BVH4Triangle4iSceneBuilderSAH(accel,scene,LeafMode);
     Accel::Intersectors intersectors = BVH4Triangle4iIntersectors(accel);
     scene->needVertices = true;
     return new AccelInstance(accel,builder,intersectors);
@@ -1091,14 +1050,14 @@ namespace embree
     intersectors.intersector4 = BVH4VirtualIntersector4Chunk;
     intersectors.intersector8 = BVH4VirtualIntersector8Chunk;
     intersectors.intersector16 = NULL;
-    Builder* builder = BVH4VirtualSceneBuilderBinnedSAH2(accel,scene,LeafMode);
+    Builder* builder = BVH4VirtualSceneBuilderSAH(accel,scene,LeafMode);
     return new AccelInstance(accel,builder,intersectors);
   }
 
   Accel* BVH4::BVH4Triangle1ObjectSplit(TriangleMesh* mesh)
   {
     BVH4* accel = new BVH4(TriangleMeshTriangle1::type,mesh->parent,LeafMode);
-    Builder* builder = BVH4Triangle1MeshBuilderBinnedSAH2(accel,mesh,LeafMode);
+    Builder* builder = BVH4Triangle1MeshBuilderSAH(accel,mesh,LeafMode);
     Accel::Intersectors intersectors = BVH4Triangle1Intersectors(accel);
     return new AccelInstance(accel,builder,intersectors);
   }
@@ -1106,7 +1065,7 @@ namespace embree
   Accel* BVH4::BVH4Triangle4ObjectSplit(TriangleMesh* mesh)
   {
     BVH4* accel = new BVH4(TriangleMeshTriangle4::type,mesh->parent,LeafMode);
-    Builder* builder = BVH4Triangle4MeshBuilderBinnedSAH2(accel,mesh,LeafMode);
+    Builder* builder = BVH4Triangle4MeshBuilderSAH(accel,mesh,LeafMode);
     Accel::Intersectors intersectors = BVH4Triangle4IntersectorsHybrid(accel);
     return new AccelInstance(accel,builder,intersectors);
   }
@@ -1114,7 +1073,7 @@ namespace embree
   Accel* BVH4::BVH4Triangle1vObjectSplit(TriangleMesh* mesh)
   {
     BVH4* accel = new BVH4(TriangleMeshTriangle1v::type,mesh->parent,LeafMode);
-    Builder* builder = BVH4Triangle1vMeshBuilderBinnedSAH2(accel,mesh,LeafMode);
+    Builder* builder = BVH4Triangle1vMeshBuilderSAH(accel,mesh,LeafMode);
     Accel::Intersectors intersectors = BVH4Triangle1vIntersectors(accel);
     return new AccelInstance(accel,builder,intersectors);
   }
@@ -1122,7 +1081,7 @@ namespace embree
   Accel* BVH4::BVH4Triangle4vObjectSplit(TriangleMesh* mesh)
   {
     BVH4* accel = new BVH4(TriangleMeshTriangle4v::type,mesh->parent,LeafMode);
-    Builder* builder = BVH4Triangle4vMeshBuilderBinnedSAH2(accel,mesh,LeafMode);
+    Builder* builder = BVH4Triangle4vMeshBuilderSAH(accel,mesh,LeafMode);
     Accel::Intersectors intersectors = BVH4Triangle4vIntersectorsHybrid(accel);
     return new AccelInstance(accel,builder,intersectors);
   }
@@ -1130,7 +1089,7 @@ namespace embree
   Accel* BVH4::BVH4Triangle4Refit(TriangleMesh* mesh)
   {
     BVH4* accel = new BVH4(TriangleMeshTriangle4::type,mesh->parent,LeafMode);
-    Builder* builder = BVH4Triangle4MeshRefitBinnedSAH2(accel,mesh,LeafMode);
+    Builder* builder = BVH4Triangle4MeshRefitSAH(accel,mesh,LeafMode);
     Accel::Intersectors intersectors = BVH4Triangle4IntersectorsHybrid(accel);
     return new AccelInstance(accel,builder,intersectors);
   }
