@@ -25,7 +25,7 @@ namespace embree
   namespace isa
   {
     /*! the build record stores all information to continue the build of some subtree */
-    template<typename NodeRef, typename Set = range<size_t> >
+    template<typename Set = range<size_t> >
       struct BuildRecord2 
       {
       public:
@@ -33,36 +33,36 @@ namespace embree
         
 	__forceinline BuildRecord2 (size_t depth) : depth(depth), pinfo(empty) {}
         
-        __forceinline BuildRecord2 (const PrimInfo& pinfo, size_t depth, NodeRef* parent) 
+        __forceinline BuildRecord2 (const PrimInfo& pinfo, size_t depth, size_t* parent) 
           : pinfo(pinfo), depth(depth), parent(parent) {}
 
       public:
-	NodeRef*   parent;      //!< Pointer to the parent node's reference to us
+	size_t*   parent;    //!< Pointer to the parent node's reference to us
 	size_t     depth;    //!< Depth of the root of this subtree.
-	Set prims;            //!< The list of primitives.
+	Set prims;           //!< The list of primitives.
 	PrimInfo   pinfo;    //!< Bounding info of primitives.
       };
 
-    template<typename Set, typename NodeRef, typename Heuristic, typename ReductionTy, typename Allocator, typename CreateAllocFunc, typename CreateNodeFunc, typename UpdateNodeFunc, typename CreateLeafFunc, typename ProgressMonitor>
+    template<typename Set, typename Heuristic, typename ReductionTy, typename Allocator, typename CreateAllocFunc, typename CreateNodeFunc, typename UpdateNodeFunc, typename CreateLeafFunc, typename ProgressMonitor>
       class BVHBuilderSAH2
     {
       static const size_t MAX_BRANCHING_FACTOR = 16;  //!< maximal supported BVH branching factor
       static const size_t MIN_LARGE_LEAF_LEVELS = 8;  //!< create balanced tree of we are that many levels before the maximal tree depth
       static const size_t SINGLE_THREADED_THRESHOLD = 4096;
 
-      struct BuildRecord : public BuildRecord2<NodeRef,Set>
+      struct BuildRecord : public BuildRecord2<Set>
       {
       public:
 	__forceinline BuildRecord () {}
         
 	__forceinline BuildRecord (size_t depth) 
-	  : BuildRecord2<NodeRef,Set>(depth) {}
+	  : BuildRecord2<Set>(depth) {}
         
-        __forceinline BuildRecord (const PrimInfo& pinfo, size_t depth, NodeRef* parent) 
-	  : BuildRecord2<NodeRef,Set>(pinfo,depth,parent) {}
+        __forceinline BuildRecord (const PrimInfo& pinfo, size_t depth, size_t* parent)  // FIXME: remove??
+	  : BuildRecord2<Set>(pinfo,depth,parent) {}
 
-	__forceinline BuildRecord(const BuildRecord2<NodeRef,Set>& other)
-	  : BuildRecord2<NodeRef,Set>(other) {}
+	__forceinline BuildRecord(const BuildRecord2<Set>& other)
+	  : BuildRecord2<Set>(other) {}
 
 	__forceinline friend bool operator< (const BuildRecord& a, const BuildRecord& b) { return a.pinfo.size() < b.pinfo.size(); }
 	__forceinline friend bool operator> (const BuildRecord& a, const BuildRecord& b) { return a.pinfo.size() > b.pinfo.size(); }
@@ -113,7 +113,7 @@ namespace embree
 
         /* fill all children by always splitting the largest one */
 	ReductionTy values[MAX_BRANCHING_FACTOR];
-	BuildRecord2<NodeRef,Set>* pchildren[MAX_BRANCHING_FACTOR];
+	BuildRecord2<Set>* pchildren[MAX_BRANCHING_FACTOR];
         BuildRecord children[MAX_BRANCHING_FACTOR];
         size_t numChildren = 1;
         children[0] = current;
@@ -201,7 +201,7 @@ namespace embree
         
         /*! initialize child list */
 	ReductionTy values[MAX_BRANCHING_FACTOR];
-	BuildRecord2<NodeRef,Set>* pchildren[MAX_BRANCHING_FACTOR];
+	BuildRecord2<Set>* pchildren[MAX_BRANCHING_FACTOR];
         BuildRecord children[MAX_BRANCHING_FACTOR];
         children[0] = current;
 	pchildren[0] = &children[0];
@@ -272,7 +272,7 @@ namespace embree
       }
       
       /*! builder entry function */
-      __forceinline const ReductionTy operator() (BuildRecord2<NodeRef,Set>& record)
+      __forceinline const ReductionTy operator() (BuildRecord2<Set>& record)
       {
 	BuildRecord br(record);
         br.split = find(br); 
@@ -312,11 +312,11 @@ namespace embree
       assert((blockSize ^ (size_t(1) << logBlockSize)) == 0);
       HeuristicArrayBinningSAH<PrimRef> heuristic(prims);
       
-      BVHBuilderSAH2<range<size_t>,NodeRef,decltype(heuristic),ReductionTy,decltype(createAlloc()),CreateAllocFunc,CreateNodeFunc,UpdateNodeFunc,CreateLeafFunc,ProgressMonitor> builder
+      BVHBuilderSAH2<range<size_t>,decltype(heuristic),ReductionTy,decltype(createAlloc()),CreateAllocFunc,CreateNodeFunc,UpdateNodeFunc,CreateLeafFunc,ProgressMonitor> builder
         (heuristic,identity,createAlloc,createNode,updateNode,createLeaf,progressMonitor,pinfo,branchingFactor,maxDepth,logBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
 
       NodeRef root;
-      BuildRecord2<NodeRef> br(pinfo,1,&root);
+      BuildRecord2<> br(pinfo,1,(size_t*)&root);
       br.prims = range<size_t>(0,pinfo.size());
       builder(br); // FIXME: return reduced value
       return root;
@@ -338,11 +338,11 @@ namespace embree
       HeuristicSpatialSplitAndObjectSplitBlockListBinningSAH<PrimRef,SplitPrimitiveFunc> heuristic(splitPrimitive);
       
       //auto updateNode = [] (int node, int*, size_t) -> int { return 0; };
-      BVHBuilderSAH2<PrimRefList,NodeRef,decltype(heuristic),ReductionTy,decltype(createAlloc()),CreateAllocFunc,CreateNodeFunc,UpdateNodeFunc,CreateLeafFunc,ProgressMonitor> builder
+      BVHBuilderSAH2<PrimRefList,decltype(heuristic),ReductionTy,decltype(createAlloc()),CreateAllocFunc,CreateNodeFunc,UpdateNodeFunc,CreateLeafFunc,ProgressMonitor> builder
         (heuristic,identity,createAlloc,createNode,updateNode,createLeaf,progressMonitor,pinfo,branchingFactor,maxDepth,logBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
 
       NodeRef root;
-      BuildRecord2<NodeRef,PrimRefList> br(pinfo,1,&root);
+      BuildRecord2<PrimRefList> br(pinfo,1,(size_t*)&root);
       br.prims = prims;
       builder(br);
       return root;
@@ -360,11 +360,11 @@ namespace embree
       HeuristicArrayBinningSAH<PrimRef> heuristic(prims);
       
       auto updateNode = [] (int node, int*, size_t) -> int { return 0; };
-      BVHBuilderSAH2<range<size_t>,NodeRef,decltype(heuristic),int,decltype(createAlloc()),CreateAllocFunc,CreateNodeFunc,decltype(updateNode),CreateLeafFunc,ProgressMonitor> builder
+      BVHBuilderSAH2<range<size_t>,decltype(heuristic),int,decltype(createAlloc()),CreateAllocFunc,CreateNodeFunc,decltype(updateNode),CreateLeafFunc,ProgressMonitor> builder
         (heuristic,0,createAlloc,createNode,updateNode,createLeaf,progressMonitor,pinfo,branchingFactor,maxDepth,logBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
 
       NodeRef root;
-      BuildRecord2<NodeRef> br(pinfo,1,&root);
+      BuildRecord2<> br(pinfo,1,(size_t*)&root);
       br.prims = range<size_t>(0,pinfo.size());
       builder(br);
       return root;
@@ -384,11 +384,11 @@ namespace embree
       HeuristicSpatialSplitAndObjectSplitBlockListBinningSAH<PrimRef,SplitPrimitiveFunc> heuristic(splitPrimitive);
       
       auto updateNode = [] (int node, int*, size_t) -> int { return 0; };
-      BVHBuilderSAH2<PrimRefList,NodeRef,decltype(heuristic),int,decltype(createAlloc()),CreateAllocFunc,CreateNodeFunc,decltype(updateNode),CreateLeafFunc,ProgressMonitor> builder
+      BVHBuilderSAH2<PrimRefList,decltype(heuristic),int,decltype(createAlloc()),CreateAllocFunc,CreateNodeFunc,decltype(updateNode),CreateLeafFunc,ProgressMonitor> builder
         (heuristic,0,createAlloc,createNode,updateNode,createLeaf,progressMonitor,pinfo,branchingFactor,maxDepth,logBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
 
       NodeRef root;
-      BuildRecord2<NodeRef,PrimRefList> br(pinfo,1,&root);
+      BuildRecord2<PrimRefList> br(pinfo,1,(size_t*)&root);
       br.prims = prims;
       builder(br);
       return root;

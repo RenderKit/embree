@@ -45,7 +45,7 @@ namespace embree
     {
       __forceinline CreateBVH8Node (BVH8* bvh) : bvh(bvh) {}
       
-      __forceinline int operator() (const isa::BuildRecord2<BVH8::NodeRef>& current, BuildRecord2<BVH8::NodeRef>** children, const size_t N, Allocator* alloc) 
+      __forceinline int operator() (const isa::BuildRecord2<>& current, BuildRecord2<>** children, const size_t N, Allocator* alloc) 
       {
         BVH8::Node* node = NULL;
         //if (current.pinfo.size() > 4096) node = (BVH8::Node*)   bvh->alloc2.malloc(sizeof(BVH8::Node),sizeof(BVH8::Node));
@@ -54,7 +54,7 @@ namespace embree
         node->clear();
         for (size_t i=0; i<N; i++) {
           node->set(i,children[i]->pinfo.geomBounds);
-          children[i]->parent = &node->child(i);
+          children[i]->parent = (size_t*) &node->child(i);
         }
         *current.parent = bvh->encodeNode(node);
 	return 0;
@@ -68,7 +68,7 @@ namespace embree
     {
       __forceinline CreateLeaf (BVH8* bvh, PrimRef* prims) : bvh(bvh), prims(prims) {}
       
-      __forceinline int operator() (const BuildRecord2<BVH8::NodeRef>& current, Allocator* alloc) // FIXME: why are prims passed here but not for createNode
+      __forceinline int operator() (const BuildRecord2<>& current, Allocator* alloc) // FIXME: why are prims passed here but not for createNode
       {
         size_t items = Primitive::blocks(current.prims.size());
         size_t start = current.prims.begin();
@@ -193,12 +193,12 @@ namespace embree
     {
       __forceinline CreateListBVH8Node (BVH8* bvh) : bvh(bvh) {}
       
-      __forceinline BVH8::Node* operator() (const isa::BuildRecord2<BVH8::NodeRef,PrimRefList>& current, BuildRecord2<BVH8::NodeRef,PrimRefList>** children, const size_t N, Allocator* alloc) 
+      __forceinline BVH8::Node* operator() (const isa::BuildRecord2<PrimRefList>& current, BuildRecord2<PrimRefList>** children, const size_t N, Allocator* alloc) 
       {
         BVH8::Node* node = (BVH8::Node*) alloc->alloc0.malloc(sizeof(BVH8::Node)); node->clear();
         for (size_t i=0; i<N; i++) {
           node->set(i,children[i]->pinfo.geomBounds);
-          children[i]->parent = &node->child(i);
+          children[i]->parent = (size_t*) &node->child(i);
         }
         *current.parent = bvh->encodeNode(node);
 	return node;
@@ -212,7 +212,7 @@ namespace embree
     {
       __forceinline CreateListLeaf (BVH8* bvh) : bvh(bvh) {}
       
-      __forceinline size_t operator() (BuildRecord2<BVH8::NodeRef, PrimRefList>& current, Allocator* alloc) // FIXME: why are prims passed here but not for createNode
+      __forceinline size_t operator() (BuildRecord2<PrimRefList>& current, Allocator* alloc) // FIXME: why are prims passed here but not for createNode
       {
         size_t n = current.pinfo.size();
         size_t N = Primitive::blocks(n);
