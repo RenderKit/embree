@@ -86,7 +86,7 @@ namespace embree
     numFailedTests += !ok;                                              \
   }
 #define NEGATIVE(name,test) {                                       \
-    printf("%30s ... ",name);                                           \
+    printf("%30s ...",name);                                           \
     bool notok = test;                                                  \
     printf(" %s\n",notok ? RED("[FAILED]") : GREEN("[PASSED]")); \
     fflush(stdout);                                                     \
