@@ -88,19 +88,30 @@ export void device_init (uniform int8* uniform cfg)
 }
 
 
+inline uniform float updateEdgeLevel( uniform ISPCSubdivMesh* uniform mesh, const uniform Vec3fa& cam_pos, const uniform size_t e0, const uniform size_t e1)
+{
+  const uniform Vec3fa v0 = mesh->positions[mesh->position_indices[e0]];
+  const uniform Vec3fa v1 = mesh->positions[mesh->position_indices[e1]];
+  const uniform Vec3fa edge = v1-v0;
+  const uniform Vec3fa P = 0.5f*(v1+v0);
+  const uniform Vec3fa dist = cam_pos - P;
+  return max(min(LEVEL_FACTOR*(0.5f*length(edge)/length(dist)),MAX_EDGE_LEVEL),MIN_EDGE_LEVEL);
+}
+
 void updateEdgeLevelBuffer( uniform ISPCSubdivMesh* uniform mesh, const uniform Vec3fa& cam_pos, uniform size_t startID, uniform size_t endID )
 {
   for (uniform size_t f=startID; f<endID;f++) {
        uniform int e = mesh->face_offsets[f];
        uniform int N = mesh->verticesPerFace[f];
-      for (uniform size_t i=0; i<N; i++) {
-        const uniform Vec3fa v0 = mesh->positions[mesh->position_indices[e+(i+0)]];
-        const uniform Vec3fa v1 = mesh->positions[mesh->position_indices[e+(i+1)%N]];
-        const uniform Vec3fa edge = v1-v0;
-        const uniform Vec3fa P = 0.5f*(v1+v0);
-	const uniform Vec3fa dist = cam_pos - P;
-        mesh->subdivlevel[e+i] = max(min(LEVEL_FACTOR*(0.5f*length(edge)/length(dist)),MAX_EDGE_LEVEL),MIN_EDGE_LEVEL);
-      }
+       if (N == 4) /* fast path for quads */
+         for (uniform size_t i=0; i<4; i++) 
+           mesh->subdivlevel[e+i] =  updateEdgeLevel(mesh,cam_pos,e+(i+0),e+(i+1)%4);
+       else if (N == 3) /* fast path for triangles */
+         for (uniform size_t i=0; i<3; i++) 
+           mesh->subdivlevel[e+i] =  updateEdgeLevel(mesh,cam_pos,e+(i+0),e+(i+1)%3);
+       else /* fast path for general polygons */
+        for (uniform size_t i=0; i<N; i++) 
+           mesh->subdivlevel[e+i] =  updateEdgeLevel(mesh,cam_pos,e+(i+0),e+(i+1)%N);              
  }
 }
 
