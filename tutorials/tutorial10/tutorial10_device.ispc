@@ -191,6 +191,8 @@ void convertScene(uniform ISPCScene* uniform scene_in, const uniform Vec3fa& p)
 							mesh->numEdgeCreases, mesh->numVertexCreases, mesh->numHoles);
     mesh->geomID = geomID;
 
+    for (uniform size_t i = 0; i < mesh->numEdges; i++) mesh->subdivlevel[i] = FIXED_EDGE_TESSELLATION_VALUE;
+
     if (mesh->positions)             rtcSetBuffer(g_scene, geomID, RTC_VERTEX_BUFFER, mesh->positions, 0, sizeof(uniform Vec3fa  ));
     if (mesh->subdivlevel)           rtcSetBuffer(g_scene, geomID, RTC_LEVEL_BUFFER,  mesh->subdivlevel, 0, sizeof(uniform float));
     if (mesh->position_indices)      rtcSetBuffer(g_scene, geomID, RTC_INDEX_BUFFER,  mesh->position_indices  , 0, sizeof(uniform unsigned int));
