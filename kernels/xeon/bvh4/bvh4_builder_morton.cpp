@@ -478,13 +478,10 @@ namespace embree
     public:
       
       BVH4MeshBuilderMorton (BVH4* bvh, Mesh* mesh, const size_t minLeafSize, const size_t maxLeafSize)
-        : bvh(bvh), mesh(mesh), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize), numPrimitives(0) {}
-      
+        : bvh(bvh), mesh(mesh), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize) {}
 
       /*! Destruction */
-      ~BVH4MeshBuilderMorton ()
-      {
-        //if (morton) os_free(morton,bytesMorton);
+      ~BVH4MeshBuilderMorton () {
         //bvh->alloc.shrink();
       }
       
@@ -492,17 +489,7 @@ namespace embree
       void build(size_t threadIndex, size_t threadCount) 
       {
         /* calculate size of scene */
-        size_t numPrimitivesOld = numPrimitives;
-        numPrimitives = mesh->size();
-        
-        /* preallocate arrays */
-        //if (numPrimitivesOld != numPrimitives) {
-          //bvh->init(sizeof(BVH4::Node),numPrimitives,threadCount);
-          //size_t bytesAllocated = (numPrimitives+7)/8*sizeof(BVH4::Node) + size_t(1.2f*(numPrimitives+3)/4)*sizeof(Triangle4);
-          //bytesAllocated = max(bytesAllocated,numPrimitives*sizeof(MortonID32Bit));
-          //bvh->alloc.init(bytesAllocated,2*bytesAllocated);  // FIXME: better estimate
-        //morton.resize(numPrimitives);
-          //}
+        size_t numPrimitives = mesh->size();
         
         /* skip build for empty scene */
         if (numPrimitives == 0) {
@@ -510,21 +497,11 @@ namespace embree
           return;
         }
       
-        /* verbose mode */
-        //if (g_verbose >= 1)
-        //std::cout << "building BVH4<" << bvh->primTy.name << "> with " << TOSTRING(isa) "::BVH4MeshBuilderMortonGeneral ... " << std::flush;
-
-	double t0 = 0.0f, dt = 0.0f;
-	//profile(2,20,numPrimitives,[&] (ProfileTimer& timer) {
-	    
-            if (g_verbose >= 1) t0 = getSeconds();
-
-            auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
-
-            //bvh->alloc.init(numPrimitives*sizeof(BVH4::Node),numPrimitives*sizeof(BVH4::Node));
-            morton.resize(numPrimitives);
-            size_t bytesAllocated = (numPrimitives+7)/8*sizeof(BVH4::Node) + size_t(1.2f*(numPrimitives+3)/4)*sizeof(Triangle4);
-            bvh->alloc.init(bytesAllocated,2*bytesAllocated); // FIXME: not working if scene size changes, initial block has to get reallocated as used as temporary data
+        auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
+        
+        morton.resize(numPrimitives);
+        size_t bytesAllocated = (numPrimitives+7)/8*sizeof(BVH4::Node) + size_t(1.2f*(numPrimitives+3)/4)*sizeof(Triangle4);
+        bvh->alloc.init(bytesAllocated,2*bytesAllocated); // FIXME: not working if scene size changes, initial block has to get reallocated as used as temporary data
 
 #if 0
             /* compute scene bounds */
@@ -564,8 +541,6 @@ namespace embree
                   return bounds;
                 }, [] (const BBox3fa& a, const BBox3fa& b) { return merge(a,b); });
            
-            //timer("compute_bounds");
-
             /* compute morton codes */
             MortonID32Bit* dest = (MortonID32Bit*) bvh->alloc.ptr();
             MortonCodeGenerator::MortonCodeMapping mapping(centBounds);
@@ -603,8 +578,6 @@ namespace embree
             }
             
 #endif
-            //timer("compute_morton_codes");
-
             /* create BVH */
             AllocBVH4Node allocNode;
             SetBVH4Bounds setBounds(bvh);
@@ -623,38 +596,21 @@ namespace embree
             bvh->clearBarrier(bvh->root);
 #endif
             
-            //timer("compute_tree");
-            //timer("bvh4_builder_morton_new");
-
-            if (g_verbose >= 1) dt = getSeconds()-t0;
-            
-            //});
-        
         /* clear temporary data for static geometry */
-	//bool staticGeom = mesh ? mesh->isStatic() : scene->isStatic(); // FIXME: implement
-	//if (staticGeom) prims.resize(0,true);
+	if (mesh->isStatic()) morton.clear();
         bvh->alloc.cleanup();
-	
-	/* verbose mode */
-	//if (g_verbose >= 1)
-        //std::cout << "[DONE] " << 1000.0f*dt << "ms (" << numPrimitives/dt*1E-6 << " Mprim/s)" << std::endl;
-	//if (g_verbose >= 2)
-        //bvh->printStatistics();
       }
 
       void clear() {
         morton.clear();
       }
 
-    public:
-      BVH4* bvh;               //!< Output BVH
+    private:
+      BVH4* bvh;
       Mesh* mesh;
       const size_t minLeafSize;
       const size_t maxLeafSize;
-      
-    public:
       vector<MortonID32Bit> morton;
-      size_t numPrimitives;
     };
     
     Builder* BVH4Triangle1MeshBuilderMortonGeneral  (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4MeshBuilderMorton<TriangleMesh,CreateTriangle1Leaf> ((BVH4*)bvh,mesh,4,1*BVH4::maxLeafBlocks); }
@@ -673,12 +629,11 @@ namespace embree
     public:
       
       BVH4SceneBuilderMorton (BVH4* bvh, Scene* scene, const size_t minLeafSize, const size_t maxLeafSize)
-        : bvh(bvh), scene(scene), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize), encodeShift(0), encodeMask(-1), numPrimitives(0) {}
+        : bvh(bvh), scene(scene), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize), encodeShift(0), encodeMask(-1) {}
       
       /*! Destruction */
       ~BVH4SceneBuilderMorton ()
       {
-        //if (morton) os_free(morton,bytesMorton);
         //bvh->alloc.shrink();
       }
       
@@ -686,8 +641,7 @@ namespace embree
       void build(size_t threadIndex, size_t threadCount) 
       {
         /* calculate size of scene */
-        size_t numPrimitivesOld = numPrimitives;
-        numPrimitives = scene->getNumPrimitives<Mesh,1>();
+        size_t numPrimitives = scene->getNumPrimitives<Mesh,1>();
         
         /* calculate groupID, primID encoding */ // FIXME: does not work for all scenes, use 64 bit IDs !!!
         Scene::Iterator<Mesh,1> iter2(scene);
@@ -700,10 +654,7 @@ namespace embree
           THROW_RUNTIME_ERROR("encoding error in morton builder");
         
         /* preallocate arrays */
-        //if (numPrimitivesOld != numPrimitives) {
-          //bvh->alloc.init(numPrimitives*sizeof(PrimRef),numPrimitives*sizeof(BVH4::Node));  // FIXME: better estimate
-          morton.resize(numPrimitives);
-          //}
+        morton.resize(numPrimitives);
 
         /* skip build for empty scene */
         if (numPrimitives == 0) {
@@ -734,8 +685,6 @@ namespace embree
                   for (size_t i=r.begin(); i<r.end(); i++) bounds.extend(center2(mesh->bounds(i)));
                   return bounds;
                 }, [] (const BBox3fa& a, const BBox3fa& b) { return merge(a,b); });
-            
-            //timer("compute_bounds");
 
             /* compute morton codes */
             Scene::Iterator<Mesh,1> iter(scene);
@@ -751,7 +700,6 @@ namespace embree
                 });
 
             size_t numPrimitivesGen = numPrimitives;
-            //timer("compute_morton_codes");
 
 #else 
 
@@ -765,9 +713,6 @@ namespace embree
                   return bounds;
                 }, [] (const BBox3fa& a, const BBox3fa& b) { return merge(a,b); });
             
-            //timer("compute_bounds");
-
-
             ParallelForForPrefixSumState<size_t> pstate;
             pstate.init(iter1,size_t(BLOCK_SIZE));
 
@@ -846,17 +791,14 @@ namespace embree
         morton.clear();
       }
 
-    public:
-      BVH4* bvh;               //!< Output BVH
+    private:
+      BVH4* bvh; 
       Scene* scene;
       const size_t minLeafSize;
       const size_t maxLeafSize;
       size_t encodeShift;
       size_t encodeMask;
-      
-    public:
       vector<MortonID32Bit> morton;
-      size_t numPrimitives;
     };
 
     Builder* BVH4Triangle1SceneBuilderMortonGeneral  (void* bvh, Scene* scene, size_t mode) { return new class BVH4SceneBuilderMorton<TriangleMesh,CreateTriangle1Leaf> ((BVH4*)bvh,scene,4,1*BVH4::maxLeafBlocks); }
