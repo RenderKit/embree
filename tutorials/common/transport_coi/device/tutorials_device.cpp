@@ -374,6 +374,9 @@ public:
     memcpy(mesh->position_indices,in_ppBufferPointers[1],in_pBufferLengths[1]);
     memcpy(mesh->verticesPerFace ,in_ppBufferPointers[2],in_pBufferLengths[2]);
 
+    const size_t numEdges = in_pMiscData->numPositionIndices;
+    const size_t numFaces = in_pMiscData->numVerticesPerFace;
+    
     for (size_t i=0; i<numEdges; i++) out->subdivlevel[i] = 1.0f;
     int offset = 0;
     for (size_t i=0; i<numFaces; i++)
