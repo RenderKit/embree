@@ -473,16 +473,16 @@ namespace embree
     
 
     template<typename Mesh, typename CreateLeaf>
-      class BVH4MeshBuilderMortonGeneral2 : public Builder
+      class BVH4MeshBuilderMorton : public Builder
     {
     public:
       
-      BVH4MeshBuilderMortonGeneral2 (BVH4* bvh, Mesh* mesh, const size_t minLeafSize, const size_t maxLeafSize)
+      BVH4MeshBuilderMorton (BVH4* bvh, Mesh* mesh, const size_t minLeafSize, const size_t maxLeafSize)
         : bvh(bvh), mesh(mesh), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize), numPrimitives(0) {}
       
 
       /*! Destruction */
-      ~BVH4MeshBuilderMortonGeneral2 ()
+      ~BVH4MeshBuilderMorton ()
       {
         //if (morton) os_free(morton,bytesMorton);
         //bvh->alloc.shrink();
@@ -657,26 +657,26 @@ namespace embree
       size_t numPrimitives;
     };
     
-    Builder* BVH4Triangle1MeshBuilderMortonGeneral  (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4MeshBuilderMortonGeneral2<TriangleMesh,CreateTriangle1Leaf> ((BVH4*)bvh,mesh,4,1*BVH4::maxLeafBlocks); }
-    Builder* BVH4Triangle4MeshBuilderMortonGeneral  (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4MeshBuilderMortonGeneral2<TriangleMesh,CreateTriangle4Leaf> ((BVH4*)bvh,mesh,4,4*BVH4::maxLeafBlocks); }
+    Builder* BVH4Triangle1MeshBuilderMortonGeneral  (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4MeshBuilderMorton<TriangleMesh,CreateTriangle1Leaf> ((BVH4*)bvh,mesh,4,1*BVH4::maxLeafBlocks); }
+    Builder* BVH4Triangle4MeshBuilderMortonGeneral  (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4MeshBuilderMorton<TriangleMesh,CreateTriangle4Leaf> ((BVH4*)bvh,mesh,4,4*BVH4::maxLeafBlocks); }
 #if defined(__AVX__)
-    Builder* BVH4Triangle8MeshBuilderMortonGeneral  (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4MeshBuilderMortonGeneral2<TriangleMesh,CreateTriangle8Leaf> ((BVH4*)bvh,mesh,8,8*BVH4::maxLeafBlocks); }
+    Builder* BVH4Triangle8MeshBuilderMortonGeneral  (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4MeshBuilderMorton<TriangleMesh,CreateTriangle8Leaf> ((BVH4*)bvh,mesh,8,8*BVH4::maxLeafBlocks); }
 #endif
-    Builder* BVH4Triangle1vMeshBuilderMortonGeneral (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4MeshBuilderMortonGeneral2<TriangleMesh,CreateTriangle1vLeaf>((BVH4*)bvh,mesh,4,1*BVH4::maxLeafBlocks); }
-    Builder* BVH4Triangle4vMeshBuilderMortonGeneral (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4MeshBuilderMortonGeneral2<TriangleMesh,CreateTriangle4vLeaf>((BVH4*)bvh,mesh,4,4*BVH4::maxLeafBlocks); }
-    Builder* BVH4Triangle4iMeshBuilderMortonGeneral (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4MeshBuilderMortonGeneral2<TriangleMesh,CreateTriangle4iLeaf>((BVH4*)bvh,mesh,4,4*BVH4::maxLeafBlocks); }
+    Builder* BVH4Triangle1vMeshBuilderMortonGeneral (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4MeshBuilderMorton<TriangleMesh,CreateTriangle1vLeaf>((BVH4*)bvh,mesh,4,1*BVH4::maxLeafBlocks); }
+    Builder* BVH4Triangle4vMeshBuilderMortonGeneral (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4MeshBuilderMorton<TriangleMesh,CreateTriangle4vLeaf>((BVH4*)bvh,mesh,4,4*BVH4::maxLeafBlocks); }
+    Builder* BVH4Triangle4iMeshBuilderMortonGeneral (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4MeshBuilderMorton<TriangleMesh,CreateTriangle4iLeaf>((BVH4*)bvh,mesh,4,4*BVH4::maxLeafBlocks); }
 
 
     template<typename Mesh, typename CreateLeaf>
-      class BVH4SceneBuilderMortonGeneral2 : public Builder
+      class BVH4SceneBuilderMorton : public Builder
     {
     public:
       
-      BVH4SceneBuilderMortonGeneral2 (BVH4* bvh, Scene* scene, const size_t minLeafSize, const size_t maxLeafSize)
+      BVH4SceneBuilderMorton (BVH4* bvh, Scene* scene, const size_t minLeafSize, const size_t maxLeafSize)
         : bvh(bvh), scene(scene), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize), encodeShift(0), encodeMask(-1), numPrimitives(0) {}
       
       /*! Destruction */
-      ~BVH4SceneBuilderMortonGeneral2 ()
+      ~BVH4SceneBuilderMorton ()
       {
         //if (morton) os_free(morton,bytesMorton);
         //bvh->alloc.shrink();
@@ -880,14 +880,14 @@ namespace embree
       size_t numPrimitives;
     };
 
-    Builder* BVH4Triangle1SceneBuilderMortonGeneral  (void* bvh, Scene* scene, size_t mode) { return new class BVH4SceneBuilderMortonGeneral2<TriangleMesh,CreateTriangle1Leaf> ((BVH4*)bvh,scene,4,1*BVH4::maxLeafBlocks); }
-    Builder* BVH4Triangle4SceneBuilderMortonGeneral  (void* bvh, Scene* scene, size_t mode) { return new class BVH4SceneBuilderMortonGeneral2<TriangleMesh,CreateTriangle4Leaf> ((BVH4*)bvh,scene,4,4*BVH4::maxLeafBlocks); }
+    Builder* BVH4Triangle1SceneBuilderMortonGeneral  (void* bvh, Scene* scene, size_t mode) { return new class BVH4SceneBuilderMorton<TriangleMesh,CreateTriangle1Leaf> ((BVH4*)bvh,scene,4,1*BVH4::maxLeafBlocks); }
+    Builder* BVH4Triangle4SceneBuilderMortonGeneral  (void* bvh, Scene* scene, size_t mode) { return new class BVH4SceneBuilderMorton<TriangleMesh,CreateTriangle4Leaf> ((BVH4*)bvh,scene,4,4*BVH4::maxLeafBlocks); }
 #if defined(__AVX__)
-    Builder* BVH4Triangle8SceneBuilderMortonGeneral  (void* bvh, Scene* scene, size_t mode) { return new class BVH4SceneBuilderMortonGeneral2<TriangleMesh,CreateTriangle8Leaf> ((BVH4*)bvh,scene,8,8*BVH4::maxLeafBlocks); }
+    Builder* BVH4Triangle8SceneBuilderMortonGeneral  (void* bvh, Scene* scene, size_t mode) { return new class BVH4SceneBuilderMorton<TriangleMesh,CreateTriangle8Leaf> ((BVH4*)bvh,scene,8,8*BVH4::maxLeafBlocks); }
 #endif
-    Builder* BVH4Triangle1vSceneBuilderMortonGeneral (void* bvh, Scene* scene, size_t mode) { return new class BVH4SceneBuilderMortonGeneral2<TriangleMesh,CreateTriangle1vLeaf>((BVH4*)bvh,scene,4,1*BVH4::maxLeafBlocks); }
-    Builder* BVH4Triangle4vSceneBuilderMortonGeneral (void* bvh, Scene* scene, size_t mode) { return new class BVH4SceneBuilderMortonGeneral2<TriangleMesh,CreateTriangle4vLeaf>((BVH4*)bvh,scene,4,4*BVH4::maxLeafBlocks); }
-    Builder* BVH4Triangle4iSceneBuilderMortonGeneral (void* bvh, Scene* scene, size_t mode) { return new class BVH4SceneBuilderMortonGeneral2<TriangleMesh,CreateTriangle4iLeaf>((BVH4*)bvh,scene,4,4*BVH4::maxLeafBlocks); }
+    Builder* BVH4Triangle1vSceneBuilderMortonGeneral (void* bvh, Scene* scene, size_t mode) { return new class BVH4SceneBuilderMorton<TriangleMesh,CreateTriangle1vLeaf>((BVH4*)bvh,scene,4,1*BVH4::maxLeafBlocks); }
+    Builder* BVH4Triangle4vSceneBuilderMortonGeneral (void* bvh, Scene* scene, size_t mode) { return new class BVH4SceneBuilderMorton<TriangleMesh,CreateTriangle4vLeaf>((BVH4*)bvh,scene,4,4*BVH4::maxLeafBlocks); }
+    Builder* BVH4Triangle4iSceneBuilderMortonGeneral (void* bvh, Scene* scene, size_t mode) { return new class BVH4SceneBuilderMorton<TriangleMesh,CreateTriangle4iLeaf>((BVH4*)bvh,scene,4,4*BVH4::maxLeafBlocks); }
 
   }
 }
