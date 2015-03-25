@@ -152,7 +152,7 @@ namespace embree
 	  return n;
 	};
 
-        double t0 = bvh->preBuild(TOSTRING(isa) "::BVH4BuilderSAH");
+        double t0 = bvh->preBuild(mesh ? NULL : TOSTRING(isa) "::BVH4BuilderSAH");
 
 #if PROFILE
 	profile(2,20,numPrimitives,[&] (ProfileTimer& timer)
@@ -368,7 +368,7 @@ namespace embree
 	  return n;
 	};
 
-        double t0 = bvh->preBuild(mesh ? TOSTRING(isa) "::BVH4BuilderSpatialSAH" : NULL);
+        double t0 = bvh->preBuild(mesh ? NULL : TOSTRING(isa) "::BVH4BuilderSpatialSAH");
 
 #if PROFILE
 	profile(2,20,numPrimitives,[&] (ProfileTimer& timer)
@@ -557,7 +557,7 @@ namespace embree
 	};
 	auto identity = std::make_pair(BBox3fa(empty),BBox3fa(empty));
 
-        double t0 = bvh->preBuild(TOSTRING(isa) "::BVH4BuilderMblurSAH");
+        double t0 = bvh->preBuild(mesh ? NULL : TOSTRING(isa) "::BVH4BuilderMblurSAH");
 
 	//profile("BVH4BuilderMblurBinnedSAH",2,20,numPrimitives,[&] () {
 	    

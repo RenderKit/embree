@@ -56,16 +56,12 @@ namespace embree
         return;
       }
 
-      double t0 = 0.0, dt = 0.0;
-      if (g_verbose >= 1) {
-	std::cout << "building BVH4<" << bvh->primTy.name << "> with " << TOSTRING(isa) << "::TwoLevel SAH builder ... " << std::flush;
-      }
+      double t0 = bvh->preBuild(TOSTRING(isa) "::BVH4BuilderTwoLevel");
 
 #if PROFILE
 	profile(2,20,numPrimitives,[&] (ProfileTimer& timer)
         {
 #endif
-      if (g_benchmark || g_verbose >= 1) t0 = getSeconds();
           
       /* resize object array if scene got larger */
       if (objects.size() < N) {
@@ -178,23 +174,12 @@ namespace embree
         bvh->set(root,pinfo.geomBounds,numPrimitives);
       }
 
-      if (g_benchmark || g_verbose >= 1) dt = getSeconds()-t0;
- 
 #if PROFILE
-      dt = timer.avg();
       }); 
 #endif
 
-      if (g_verbose >= 1)
-        std::cout << "[DONE] " << 1000.0f*dt << "ms (" << numPrimitives/dt*1E-6 << " Mprim/s)" << std::endl;
-      if (g_verbose >= 2)
-        bvh->printStatistics();
-
-      /* benchmark mode */
-      if (g_benchmark) {
-        BVH4Statistics stat(bvh);
-        std::cout << "BENCHMARK_BUILD " << dt << " " << double(numPrimitives)/(dt) << " " << stat.sah() << " " << stat.bytesUsed() << std::endl;
-      }
+      bvh->alloc.cleanup();
+      bvh->postBuild(t0);
     }
 
     void BVH4BuilderTopLevel::clear()
