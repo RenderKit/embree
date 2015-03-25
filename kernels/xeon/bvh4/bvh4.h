@@ -41,7 +41,7 @@ namespace embree
 
     /*! branching width of the tree */
     static const size_t N = 4;
-
+    
     /*! Number of address bits the Node and primitives are aligned
         to. Maximally 2^alignment-1 many primitive blocks per leaf are
         supported. */
@@ -992,9 +992,7 @@ namespace embree
     static Accel* BVH4Triangle4vObjectSplit(TriangleMesh* mesh);
     static Accel* BVH4Triangle4Refit(TriangleMesh* mesh);
 
-    /*! initializes the acceleration structure */
-    //void init ();
-    //void init (size_t nodeSize, size_t numPrimitives, size_t numThreads);
+    /*! clears the acceleration structure */
     void clear();
 
     /*! sets BVH members after build */
@@ -1012,11 +1010,13 @@ namespace embree
 
     /*! Propagate bounds for time t0 and time t1 up the tree. */
     std::pair<BBox3fa,BBox3fa> refit(Scene* scene, NodeRef node);
+    
+    /*! calculates the amount of bytes allocated */
+    size_t bytesAllocated() {
+      return alloc2.getAllocatedBytes();
+    }
 
-    FastAllocator alloc2;
-
-    void *data_mem; /* additional memory, currently used for subdivpatch1cached memory */
-    size_t size_data_mem;
+  public:
 
     /*! Encodes a node */
     static __forceinline NodeRef encodeNode2(Node* node) {  // FIXME: make all static
@@ -1063,34 +1063,26 @@ namespace embree
       return NodeRef((size_t)ptr | (tyLeaf+ty));
     }
 
-  public:
-    
-    /*! calculates the amount of bytes allocated */
-    size_t bytesAllocated() {
-      return alloc2.getAllocatedBytes();
-    }
-
+    /*! bvh type information */
   public:
     const PrimitiveType& primTy;       //!< primitive type stored in the BVH
-    Scene* scene;                      //!< scene pointer
     bool listMode;                     //!< true if number of leaf items not encoded in NodeRef
-    NodeRef root;                      //!< Root node
-    size_t numPrimitives;
-    size_t numVertices;
 
-    /*! data arrays for fast builders */
+    /*! bvh data */
+  public:
+    NodeRef root;                      //!< Root node
+    FastAllocator alloc2;              //!< allocator used to allocate nodes
+    Scene* scene;                      //!< scene pointer
+
+    /*! statistics data */
+  public:
+    size_t numPrimitives;              //!< number of primitives the BVH is build over
+    size_t numVertices;                //!< number of vertices the BVH references
+    
+    /*! data arrays for special builders */
   public:
     std::vector<BVH4*> objects;
+    void* data_mem; /* additional memory, currently used for subdivpatch1cached memory */
+    size_t size_data_mem;
   };
-
-   // FIXME: move the below code to somewhere else
-  typedef void (*createTriangleMeshAccelTy)(TriangleMesh* mesh, BVH4*& accel, Builder*& builder); 
-  typedef Builder* (*BVH4BuilderTopLevelFunc)(BVH4* accel, Scene* scene, const createTriangleMeshAccelTy createTriangleMeshAccel);
-
-#define DECLARE_TOPLEVEL_BUILDER(symbol)                                         \
-  namespace isa   { extern Builder* symbol(BVH4* accel, Scene* scene, const createTriangleMeshAccelTy createTriangleMeshAccel); } \
-  namespace sse41 { extern Builder* symbol(BVH4* accel, Scene* scene, const createTriangleMeshAccelTy createTriangleMeshAccel); } \
-  namespace avx   { extern Builder* symbol(BVH4* accel, Scene* scene, const createTriangleMeshAccelTy createTriangleMeshAccel); } \
-  namespace avx2  { extern Builder* symbol(BVH4* accel, Scene* scene, const createTriangleMeshAccelTy createTriangleMeshAccel); } \
-  BVH4BuilderTopLevelFunc symbol;
 }

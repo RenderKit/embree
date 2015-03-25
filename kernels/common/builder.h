@@ -80,4 +80,14 @@ namespace embree
   namespace avx2  { extern Builder* symbol(void* accel, UserGeometryBase* mesh, size_t mode); } \
   void symbol##_error() { std::cerr << "Error: builder " << TOSTRING(symbol) << " not supported by your CPU" << std::endl; } \
   UserGeometryBuilderFunc symbol = (UserGeometryBuilderFunc) symbol##_error;
+
+  typedef void     (*createTriangleMeshAccelTy)(TriangleMesh* mesh, AccelData*& accel, Builder*& builder); 
+  typedef Builder* (*BVH4BuilderTopLevelFunc  )(void* accel, Scene* scene, const createTriangleMeshAccelTy createTriangleMeshAccel);
+
+#define DECLARE_TOPLEVEL_BUILDER(symbol)                                         \
+  namespace isa   { extern Builder* symbol(void* accel, Scene* scene, const createTriangleMeshAccelTy createTriangleMeshAccel); } \
+  namespace sse41 { extern Builder* symbol(void* accel, Scene* scene, const createTriangleMeshAccelTy createTriangleMeshAccel); } \
+  namespace avx   { extern Builder* symbol(void* accel, Scene* scene, const createTriangleMeshAccelTy createTriangleMeshAccel); } \
+  namespace avx2  { extern Builder* symbol(void* accel, Scene* scene, const createTriangleMeshAccelTy createTriangleMeshAccel); } \
+  BVH4BuilderTopLevelFunc symbol;
 }

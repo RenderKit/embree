@@ -784,14 +784,14 @@ namespace embree
     return new AccelInstance(accel,builder,intersectors);
   }
 
-  void createTriangleMeshTriangle1Morton(TriangleMesh* mesh, BVH4*& accel, Builder*& builder)
+  void createTriangleMeshTriangle1Morton(TriangleMesh* mesh, AccelData*& accel, Builder*& builder)
   {
     if (mesh->numTimeSteps != 1) THROW_RUNTIME_ERROR("internal error");
     accel = new BVH4(TriangleMeshTriangle1::type,mesh->parent,LeafMode);
     builder = BVH4Triangle1MeshBuilderMortonGeneral(accel,mesh,LeafMode);
   } 
 
-  void createTriangleMeshTriangle1(TriangleMesh* mesh, BVH4*& accel, Builder*& builder)
+  void createTriangleMeshTriangle1(TriangleMesh* mesh, AccelData*& accel, Builder*& builder)
   {
     if (mesh->numTimeSteps != 1) THROW_RUNTIME_ERROR("internal error");
     accel = new BVH4(TriangleMeshTriangle1::type,mesh->parent,LeafMode);
@@ -803,7 +803,7 @@ namespace embree
     }
   } 
 
-  void createTriangleMeshTriangle4(TriangleMesh* mesh, BVH4*& accel, Builder*& builder)
+  void createTriangleMeshTriangle4(TriangleMesh* mesh, AccelData*& accel, Builder*& builder)
   {
     if (mesh->numTimeSteps != 1) THROW_RUNTIME_ERROR("internal error");
     accel = new BVH4(TriangleMeshTriangle4::type,mesh->parent,LeafMode);
@@ -815,7 +815,7 @@ namespace embree
     }
   } 
 
-  void createTriangleMeshTriangle1v(TriangleMesh* mesh, BVH4*& accel, Builder*& builder)
+  void createTriangleMeshTriangle1v(TriangleMesh* mesh, AccelData*& accel, Builder*& builder)
   {
     if (mesh->numTimeSteps != 1) THROW_RUNTIME_ERROR("internal error");
     accel = new BVH4(TriangleMeshTriangle1v::type,mesh->parent,LeafMode);
@@ -827,7 +827,7 @@ namespace embree
     }
   } 
 
-  void createTriangleMeshTriangle4v(TriangleMesh* mesh, BVH4*& accel, Builder*& builder)
+  void createTriangleMeshTriangle4v(TriangleMesh* mesh, AccelData*& accel, Builder*& builder)
   {
     if (mesh->numTimeSteps != 1) THROW_RUNTIME_ERROR("internal error");
     accel = new BVH4(TriangleMeshTriangle4v::type,mesh->parent,LeafMode);
@@ -839,7 +839,7 @@ namespace embree
     }
   } 
 
-  void createTriangleMeshTriangle4i(TriangleMesh* mesh, BVH4*& accel, Builder*& builder)
+  void createTriangleMeshTriangle4i(TriangleMesh* mesh, AccelData*& accel, Builder*& builder)
   {
     if (mesh->numTimeSteps != 1) THROW_RUNTIME_ERROR("internal error");
     accel = new BVH4(TriangleMeshTriangle4i::type,mesh->parent,LeafMode);

@@ -98,7 +98,7 @@ namespace embree
           
           /* create BVH and builder for new meshes */
           if (objects[objectID] == NULL)
-            createTriangleMeshAccel(mesh,objects[objectID],builders[objectID]);
+            createTriangleMeshAccel(mesh,(AccelData*&)objects[objectID],builders[objectID]);
         }
       });
 
@@ -233,8 +233,8 @@ namespace embree
       }
     }
     
-    Builder* BVH4BuilderTopLevelBinnedSAH (BVH4* bvh, Scene* scene, const createTriangleMeshAccelTy createTriangleMeshAccel) {
-      return new BVH4BuilderTopLevel(bvh,scene,createTriangleMeshAccel);
+    Builder* BVH4BuilderTopLevelBinnedSAH (void* bvh, Scene* scene, const createTriangleMeshAccelTy createTriangleMeshAccel) {
+      return new BVH4BuilderTopLevel((BVH4*)bvh,scene,createTriangleMeshAccel);
     }
   }
 }
