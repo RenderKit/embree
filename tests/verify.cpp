@@ -2996,14 +2996,6 @@ namespace embree
     //exit(1);
 #if 1
 
-    POSITIVE("mutex_sys",                 test_mutex_sys());
-#if !defined(__MIC__)  // FIXME: hangs on MIC 
-    POSITIVE("barrier_sys",               test_barrier_sys());
-#endif
-#if !defined(__MIC__) && !defined(_WIN32) // FIXME: hangs on MIC and Windows
-    POSITIVE("condition_sys",             test_condition_sys());
-#endif
-
     POSITIVE("empty_static",              rtcore_empty(RTC_SCENE_STATIC));
     POSITIVE("empty_dynamic",             rtcore_empty(RTC_SCENE_DYNAMIC));
     POSITIVE("flags_static_static",       rtcore_dynamic_flag(RTC_SCENE_STATIC, RTC_GEOMETRY_STATIC));
