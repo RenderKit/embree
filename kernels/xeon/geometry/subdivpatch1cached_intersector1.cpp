@@ -374,7 +374,7 @@ namespace embree
           size_t value = (offset_bytes << 4) + (size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();
           assert( (value & 2) == 0 );
           //value -= (size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();
-	  curNode = BVH4::encodeNonAlignedTypedLeaf((void*)value,2);
+	  curNode = BVH4::encodeTypedLeaf((void*)value,2);
 
 #if 0
 	  DBG_PRINT("LEAF");

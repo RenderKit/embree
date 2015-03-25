@@ -1053,11 +1053,6 @@ namespace embree
       return NodeRef((size_t)ptr | (tyLeaf+ty));
     }
 
-    /*! Encodes a non 16-byte aligned leaf */
-    static __forceinline NodeRef encodeNonAlignedTypedLeaf(void* ptr, size_t ty) { // FIXME: this is unsafe !!!
-      return NodeRef((size_t)ptr | (tyLeaf+ty));
-    }
-
     /*! bvh type information */
   public:
     const PrimitiveType& primTy;       //!< primitive type stored in the BVH
