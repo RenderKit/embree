@@ -18,5 +18,5 @@
 // ISAs, as a lambda name mangling bug of ICC under Windows causes
 // symbols to conflict.
 
-#include "bvh8_builder_binned_sah2.cpp"
+#include "bvh8_builder_sah.cpp"
 
