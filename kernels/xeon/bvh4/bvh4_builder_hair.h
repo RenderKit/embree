@@ -16,8 +16,8 @@
 
 #pragma once
 
-#include "geometry/primitive.h"
-#include "geometry/bezier1v.h"
+#include "bvh4.h"
+#include "../geometry/primitive.h"
 #include "../builders/heuristic_binning_array_aligned.h"
 #include "../builders/heuristic_binning_array_unaligned.h"
 
@@ -29,43 +29,59 @@ namespace embree
 {
   namespace isa
   {
-    template<typename CreateAllocFunc, typename CreateAlignedNodeFunc, typename CreateUnalignedNodeFunc, typename CreateLeafFunc, typename ProgressMonitor>
+    template<typename CreateAllocFunc, 
+             typename CreateAlignedNodeFunc, 
+             typename CreateUnalignedNodeFunc, 
+             typename CreateLeafFunc, 
+             typename ProgressMonitor>
+
       class BVH4BuilderHair 
     {
       ALIGNED_CLASS;
 
-       static const size_t MAX_BRANCHING_FACTOR = 16;  //!< maximal supported BVH branching factor
-       static const size_t MIN_LARGE_LEAF_LEVELS = 8;  //!< create balanced tree of we are that many levels before the maximal tree depth
-       static const size_t SINGLE_THREADED_THRESHOLD = 4096;
+      typedef FastAllocator::ThreadLocal2* Allocator;
+
+      static const size_t MAX_BRANCHING_FACTOR = 16;         //!< maximal supported BVH branching factor
+      static const size_t MIN_LARGE_LEAF_LEVELS = 8;         //!< create balanced tree of we are that many levels before the maximal tree depth
+      static const size_t SINGLE_THREADED_THRESHOLD = 4096;  //!< threshold to switch to single threaded build
 
     public:
       
-       /*! Constructor. */
-       BVH4BuilderHair (BezierPrim* prims, 
-                           const CreateAllocFunc& createAlloc, const CreateAlignedNodeFunc& createAlignedNode, const CreateUnalignedNodeFunc& createUnalignedNode, const CreateLeafFunc& createLeaf,
-                           const ProgressMonitor& progressMonitor,
-                           const size_t branchingFactor, const size_t maxDepth, const size_t logBlockSize, const size_t minLeafSize, const size_t maxLeafSize )
-         : prims(prims), 
-           branchingFactor(branchingFactor), maxDepth(maxDepth), logBlockSize(logBlockSize), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize),
-           alignedHeuristic(prims), unalignedHeuristic(prims), 
+      BVH4BuilderHair (BezierPrim* prims, 
+                       const CreateAllocFunc& createAlloc, 
+                       const CreateAlignedNodeFunc& createAlignedNode, 
+                       const CreateUnalignedNodeFunc& createUnalignedNode, 
+                       const CreateLeafFunc& createLeaf,
+                       const ProgressMonitor& progressMonitor,
+                       const size_t branchingFactor, const size_t maxDepth, const size_t logBlockSize, 
+                       const size_t minLeafSize, const size_t maxLeafSize )
+        : prims(prims), 
+        createAlloc(createAlloc), 
+        createAlignedNode(createAlignedNode), 
+        createUnalignedNode(createUnalignedNode), 
+        createLeaf(createLeaf),
+        progressMonitor(progressMonitor),
+        branchingFactor(branchingFactor), maxDepth(maxDepth), logBlockSize(logBlockSize), 
+        minLeafSize(minLeafSize), maxLeafSize(maxLeafSize),
 #if !defined(_WIN32) || _MSC_VER >= 1700 // workaround of internal compiler bug in VS2010
-		   strandHeuristic(prims),
+        alignedHeuristic(prims), unalignedHeuristic(prims), strandHeuristic(prims) {}
+#else
+      alignedHeuristic(prims), unalignedHeuristic(prims) {}
 #endif
-           createAlloc(createAlloc), createAlignedNode(createAlignedNode), createUnalignedNode(createUnalignedNode), createLeaf(createLeaf),
-           progressMonitor(progressMonitor) {}
-
-       BVH4::NodeRef operator() (const PrimInfo& pinfo) {
-         return recurse(1,pinfo,NULL,true);
-       }
-
+       
+      /*! entry point into builder */
+      BVH4::NodeRef operator() (const PrimInfo& pinfo) {
+        return recurse(1,pinfo,NULL,true);
+      }
+      
     private:
       
       /*! creates a large leaf that could be larger than supported by the BVH */
-      BVH4::NodeRef createLargeLeaf(size_t depth, const PrimInfo& pinfo, FastAllocator::ThreadLocal2* alloc)
+      BVH4::NodeRef createLargeLeaf(size_t depth, const PrimInfo& pinfo, Allocator alloc)
       {
         if (depth > maxDepth) 
           THROW_RUNTIME_ERROR("depth limit reached");
-      
+        
         /* create leaf for few primitives */
         if (pinfo.size() <= maxLeafSize)
           return createLeaf(depth,pinfo,alloc);
@@ -173,17 +189,8 @@ namespace embree
         }
       }
       
-      struct Recurse {
-        __forceinline Recurse (BVH4BuilderHair* This, size_t depth, BVH4::NodeRef& dst, PrimInfo& src) : This(This), depth(depth), dst(dst), src(src) {}
-        __forceinline void operator() () { dst = This->recurse(depth,src,NULL,true); }
-        BVH4BuilderHair* This;
-        size_t depth;
-        BVH4::NodeRef& dst;
-        PrimInfo& src;
-      };
-
       /*! recursive build */
-      BVH4::NodeRef recurse(size_t depth, const PrimInfo& pinfo, FastAllocator::ThreadLocal2* alloc, bool toplevel)
+      BVH4::NodeRef recurse(size_t depth, const PrimInfo& pinfo, Allocator alloc, bool toplevel)
       {
         if (alloc == NULL) 
           alloc = createAlloc();
@@ -247,8 +254,7 @@ namespace embree
           {
             SPAWN_BEGIN;
             for (size_t i=0; i<numChildren; i++) 
-              //SPAWN(([&,i] { node->child(i) = recurse(depth+1,children[i],NULL,true); })); // FIXME: triggers ICC compiler bug under Windows
-              SPAWN((Recurse(this,depth+1,node->child(i),children[i])));
+              SPAWN(([&,i] { node->child(i) = recurse(depth+1,children[i],NULL,true); }));
             SPAWN_END;
           }
           /* ... continue sequential */
@@ -269,8 +275,7 @@ namespace embree
           {
             SPAWN_BEGIN;
             for (size_t i=0; i<numChildren; i++) 
-              //SPAWN(([&,i] { node->child(i) = recurse(depth+1,children[i],NULL,true); })); // FIXME: triggers ICC compiler bug under Windows
-              SPAWN((Recurse(this,depth+1,node->child(i),children[i])));
+              SPAWN(([&,i] { node->child(i) = recurse(depth+1,children[i],NULL,true); }));
             SPAWN_END;
           }
           /* ... continue sequentially */
@@ -283,34 +288,48 @@ namespace embree
         }
       }
 
-    public:
+    private:
       BezierPrim* prims;
       const size_t branchingFactor;
       const size_t maxDepth;
       const size_t logBlockSize;
       const size_t minLeafSize;
       const size_t maxLeafSize;
-
-    public:      
-      HeuristicArrayBinningSAH<BezierPrim> alignedHeuristic;
-      UnalignedHeuristicArrayBinningSAH<BezierPrim> unalignedHeuristic;
-#if !defined(_WIN32) || _MSC_VER >= 1700 // workaround of internal compiler bug in VS2010
-      HeuristicStrandSplit strandHeuristic;
-#endif
+      
+    private:      
       const CreateAllocFunc& createAlloc;
       const CreateAlignedNodeFunc& createAlignedNode;
       const CreateUnalignedNodeFunc& createUnalignedNode;
       const CreateLeafFunc& createLeaf;
       const ProgressMonitor& progressMonitor;
+
+    private:
+      HeuristicArrayBinningSAH<BezierPrim> alignedHeuristic;
+      UnalignedHeuristicArrayBinningSAH<BezierPrim> unalignedHeuristic;
+#if !defined(_WIN32) || _MSC_VER >= 1700 // workaround of internal compiler bug in VS2010
+      HeuristicStrandSplit strandHeuristic;
+#endif
     };
 
-    template<typename CreateAllocFunc, typename CreateAlignedNodeFunc, typename CreateUnalignedNodeFunc, typename CreateLeafFunc, typename ProgressMonitor>
-      BVH4::NodeRef bvh_obb_builder_binned_sah_internal (const CreateAllocFunc& createAlloc, const CreateAlignedNodeFunc& createAlignedNode, const CreateUnalignedNodeFunc& createUnalignedNode, const CreateLeafFunc& createLeaf, 
-                                                         const ProgressMonitor& progressMonitor,
-                                                         BezierPrim* prims, const PrimInfo& pinfo,
-                                                         const size_t branchingFactor, const size_t maxDepth, const size_t logBlockSize, const size_t minLeafSize, const size_t maxLeafSize) 
+    template<typename CreateAllocFunc, 
+             typename CreateAlignedNodeFunc, 
+             typename CreateUnalignedNodeFunc, 
+             typename CreateLeafFunc, 
+             typename ProgressMonitor>
+
+      BVH4::NodeRef bvh_obb_builder_binned_sah (const CreateAllocFunc& createAlloc, 
+                                                const CreateAlignedNodeFunc& createAlignedNode, 
+                                                const CreateUnalignedNodeFunc& createUnalignedNode, 
+                                                const CreateLeafFunc& createLeaf, 
+                                                const ProgressMonitor& progressMonitor,
+                                                BezierPrim* prims, 
+                                                const PrimInfo& pinfo,
+                                                const size_t branchingFactor, const size_t maxDepth, const size_t logBlockSize, 
+                                                const size_t minLeafSize, const size_t maxLeafSize) 
     {
-      BVH4BuilderHair<CreateAllocFunc,CreateAlignedNodeFunc,CreateUnalignedNodeFunc,CreateLeafFunc,ProgressMonitor> builder(prims,createAlloc,createAlignedNode,createUnalignedNode,createLeaf,progressMonitor,branchingFactor,maxDepth,logBlockSize,minLeafSize,maxLeafSize);
+      typedef BVH4BuilderHair<CreateAllocFunc,CreateAlignedNodeFunc,CreateUnalignedNodeFunc,CreateLeafFunc,ProgressMonitor> Builder;
+      Builder builder(prims,createAlloc,createAlignedNode,createUnalignedNode,createLeaf,progressMonitor,
+                      branchingFactor,maxDepth,logBlockSize,minLeafSize,maxLeafSize);
       return builder(pinfo);
     }
   }

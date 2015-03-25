@@ -125,8 +125,8 @@ namespace embree
 	/* skip build for empty scene */
 	const size_t numPrimitives = mesh ? mesh->size() : scene->getNumPrimitives<Mesh,1>();
         if (numPrimitives == 0) {
-          prims.resize(0,true);
-          bvh->set(BVH4::emptyNode,empty,0);
+          prims.clear();
+          bvh->clear();
           return;
         }
         const size_t numSplitPrimitives = max(numPrimitives,size_t(presplitFactor*numPrimitives));
@@ -152,17 +152,12 @@ namespace embree
 	  return n;
 	};
 
-        /* verbose mode */
-        if (g_verbose >= 1 && mesh == NULL)
-	  std::cout << "building BVH4<" << bvh->primTy.name << "> with " << TOSTRING(isa) "::BVH4BuilderSAH " << (presplitFactor != 1.0f ? "presplit" : "") << " ... " << std::flush;
+        double t0 = bvh->preBuild(TOSTRING(isa) "::BVH4BuilderSAH");
 
-	double t0 = 0.0f, dt = 0.0f;
 #if PROFILE
 	profile(2,20,numPrimitives,[&] (ProfileTimer& timer)
         {
 #endif
-          if ((g_benchmark || g_verbose >= 1) && mesh == NULL) t0 = getSeconds();
-	    
             bvh->alloc.init(numSplitPrimitives*sizeof(PrimRef),numSplitPrimitives*sizeof(BVH4::Node));  // FIXME: better estimate
 	    prims.resize(numSplitPrimitives);
             auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
@@ -178,7 +173,6 @@ namespace embree
                progress,
 	       prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,sahBlockSize,minLeafSize,maxLeafSize,BVH4::travCost,intCost);
 	    bvh->set(root,pinfo.geomBounds,pinfo.size());
-            //bvh->set(lastLeaf,pinfo.geomBounds,pinfo.size());
 
 #if ROTATE_TREE
             for (int i=0; i<ROTATE_TREE; i++) 
@@ -188,12 +182,7 @@ namespace embree
 
             bvh->layoutLargeNodes(pinfo.size()*0.005f);
 
-	    if ((g_benchmark || g_verbose >= 1) && mesh == NULL) dt = getSeconds()-t0;
-
-            //  timer("BVH4BuilderSAH");
-            
 #if PROFILE
-           dt = timer.avg();
         }); 
 #endif
 
@@ -201,18 +190,7 @@ namespace embree
 	bool staticGeom = mesh ? mesh->isStatic() : scene->isStatic();
 	if (staticGeom) prims.resize(0,true);
 	bvh->alloc.cleanup();
-
-	/* verbose mode */
-	if (g_verbose >= 1 && mesh == NULL)
-	  std::cout << "[DONE] " << 1000.0f*dt << "ms (" << numPrimitives/dt*1E-6 << " Mtris/s)" << std::endl;
-	if (g_verbose >= 2 && mesh == NULL)
-	  bvh->printStatistics();
-
-        /* benchmark mode */
-        if (g_benchmark) {
-          BVH4Statistics stat(bvh);
-          std::cout << "BENCHMARK_BUILD " << dt << " " << double(numPrimitives)/dt << " " << stat.sah() << " " << stat.bytesUsed() << std::endl;
-        }
+        bvh->postBuild(t0);
       }
 
       void clear() {
@@ -364,8 +342,7 @@ namespace embree
 	/* skip build for empty scene */
 	const size_t numPrimitives = mesh ? mesh->size() : scene->getNumPrimitives<Mesh,1>();
         if (numPrimitives == 0) {
-          //prims.resize(numPrimitives);
-          bvh->set(BVH4::emptyNode,empty,0);
+          bvh->clear();
           return;
         }
         const size_t numSplitPrimitives = max(numPrimitives,size_t(presplitFactor*numPrimitives));
@@ -391,17 +368,12 @@ namespace embree
 	  return n;
 	};
 
-        /* verbose mode */
-        if (g_verbose >= 1 && mesh == NULL)
-	  std::cout << "building BVH4<" << bvh->primTy.name << "> with " << TOSTRING(isa) "::BVH4BuilderSAH " << (presplitFactor != 1.0f ? "presplit" : "") << " ... " << std::flush;
+        double t0 = bvh->preBuild(mesh ? TOSTRING(isa) "::BVH4BuilderSpatialSAH" : NULL);
 
-	double t0 = 0.0f, dt = 0.0f;
 #if PROFILE
 	profile(2,20,numPrimitives,[&] (ProfileTimer& timer)
         {
 #endif
-            if ((g_benchmark || g_verbose >= 1) && mesh == NULL) t0 = getSeconds();
-	    
 	    bvh->alloc.init(numSplitPrimitives*sizeof(PrimRef),numSplitPrimitives*sizeof(BVH4::Node));  // FIXME: better estimate
 	    //prims.resize(numSplitPrimitives);
 	    //PrimInfo pinfo = mesh ? createPrimRefArray<Mesh>(mesh,prims) : createPrimRefArray<Mesh,1>(scene,prims);
@@ -446,11 +418,6 @@ namespace embree
               return N;
             },std::plus<size_t>());
 
-            //if (presplitFactor > 1.0f)
-            //pinfo = presplit<Mesh>(scene, pinfo, prims);
-
-            //if ((g_benchmark || g_verbose >= 1) && mesh == NULL) t0 = getSeconds();
-
 	    BVH4::NodeRef root = bvh_builder_reduce_spatial_sah2_internal<BVH4::NodeRef>
 	      (scene,CreateAlloc(bvh),size_t(0),CreateListBVH4Node(bvh),rotate,CreateListLeaf<Primitive>(bvh),
                [&] (const PrimRef& prim, int dim, float pos, PrimRef& left_o, PrimRef& right_o)
@@ -473,34 +440,16 @@ namespace embree
 #endif
 
              bvh->layoutLargeNodes(pinfo.size()*0.005f);
-
-            if ((g_benchmark || g_verbose >= 1) && mesh == NULL) dt = getSeconds()-t0;
-
 #if PROFILE
-           dt = timer.avg();
         }); 
 #endif
 
 	/* clear temporary data for static geometry */
-	//bool staticGeom = mesh ? mesh->isStatic() : scene->isStatic();
-	//if (staticGeom) prims.resize(0,true);
-	bvh->alloc.cleanup();
-
-        /* verbose mode */
-	if (g_verbose >= 1 && mesh == NULL)
-	  std::cout << "[DONE] " << 1000.0f*dt << "ms (" << numPrimitives/dt*1E-6 << " Mtris/s)" << std::endl;
-	if (g_verbose >= 2 && mesh == NULL)
-	  bvh->printStatistics();
-
-        /* benchmark mode */
-        if (g_benchmark) {
-          BVH4Statistics stat(bvh);
-          std::cout << "BENCHMARK_BUILD " << dt << " " << double(numPrimitives)/dt << " " << stat.sah() << " " << stat.bytesUsed() << std::endl;
-        }
+        bvh->alloc.cleanup();
+        bvh->postBuild(t0);
       }
 
       void clear() {
-        //prims.clear();
       }
     };
 
@@ -528,7 +477,6 @@ namespace embree
       {
         BVH4::NodeMB* node = (BVH4::NodeMB*) alloc->alloc0.malloc(sizeof(BVH4::NodeMB)); node->clear();
         for (size_t i=0; i<N; i++) {
-          //node->set(i,children[i]->pinfo.geomBounds);
           children[i]->parent = &node->child(i);
         }
         *current.parent = bvh->encodeNode(node);
@@ -588,7 +536,7 @@ namespace embree
 	const size_t numPrimitives = mesh ? mesh->size() : scene->getNumPrimitives<Mesh,2>();
         if (numPrimitives == 0) {
           prims.clear();
-          bvh->set(BVH4::emptyNode,empty,0);
+          bvh->clear();
           return;
         }
       
@@ -609,11 +557,8 @@ namespace embree
 	};
 	auto identity = std::make_pair(BBox3fa(empty),BBox3fa(empty));
 
-        /* verbose mode */
-        if (g_verbose >= 1)
-	  std::cout << "building BVH4<" << bvh->primTy.name << "> with " << TOSTRING(isa) "::BVH4BuilderMblurBinnedSAH ... " << std::flush;
+        double t0 = bvh->preBuild(TOSTRING(isa) "::BVH4BuilderMblurSAH");
 
-	double t0 = 0.0f, dt = 0.0f;
 	//profile("BVH4BuilderMblurBinnedSAH",2,20,numPrimitives,[&] () {
 	    
 	    if (g_verbose >= 1) t0 = getSeconds();
@@ -632,20 +577,13 @@ namespace embree
             
             //bvh->layoutLargeNodes(pinfo.size()*0.005f); // FIXME: enable
 
-	    if (g_verbose >= 1) dt = getSeconds()-t0;
-	    
-	    //});
+        //});
 
 	/* clear temporary data for static geometry */
 	bool staticGeom = mesh ? mesh->isStatic() : scene->isStatic();
 	if (staticGeom) prims.resize(0,true);
 	bvh->alloc.cleanup();
-
-	/* verbose mode */
-	if (g_verbose >= 1)
-	  std::cout << "[DONE] " << 1000.0f*dt << "ms (" << numPrimitives/dt*1E-6 << " Mprim/s)" << std::endl;
-	if (g_verbose >= 2)
-	  bvh->printStatistics();
+        bvh->postBuild(t0);
       }
 
       void clear() {

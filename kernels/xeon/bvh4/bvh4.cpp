@@ -432,6 +432,43 @@ namespace embree
     }
   }
 
+  double BVH4::preBuild(const char* builderName)
+  {
+    if (builderName == NULL) 
+      return inf;
+
+    if (g_verbose >= 1)
+      std::cout << "building BVH4<" << primTy.name << "> using " << builderName << " ..." << std::flush;
+
+    double t0 = 0.0;
+    if (g_benchmark || g_verbose >= 1) t0 = getSeconds();
+    return t0;
+  }  
+
+  void BVH4::postBuild(double t0)
+  {
+    if (t0 == double(inf))
+      return;
+    
+    double dt = 0.0;
+    if (g_benchmark || g_verbose >= 1) 
+      dt = getSeconds()-t0;
+
+    /* print statistics */
+    if (g_verbose >= 1) {
+      std::cout << " [DONE]" << "  " << 1000.0f*dt << "ms (" << 1E-6*double(numPrimitives)/dt << " Mprim/s)" << std::endl;
+    }
+    
+    if (g_verbose >= 2)
+      printStatistics();
+    
+    /* benchmark mode */
+    if (g_benchmark) {
+      BVH4Statistics stat(this);
+      std::cout << "BENCHMARK_BUILD " << dt << " " << double(numPrimitives)/dt << " " << stat.sah() << " " << stat.bytesUsed() << std::endl;
+    }
+  }
+
   Accel::Intersectors BVH4Bezier1vIntersectors(BVH4* bvh)
   {
     Accel::Intersectors intersectors;

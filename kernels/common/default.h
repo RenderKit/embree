@@ -39,6 +39,7 @@
 #include "embree2/rtcore.h"
 #include "stat.h"
 #include "vector.h"
+#include "profile.h"
 
 #include <map>
 #include <set>

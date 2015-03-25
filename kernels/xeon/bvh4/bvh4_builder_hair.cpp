@@ -14,31 +14,32 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "bvh4.h"
 #include "bvh4_builder_hair.h"
 #include "builders/primrefgen.h"
 
 #include "geometry/bezier1v.h"
 #include "geometry/bezier1i.h"
 
-#include "common/profile.h"
-
 namespace embree
 {
   namespace isa
   {
     template<typename Primitive>
-    struct BVH4HairBuilderBinnedSAH : public Builder
+    struct BVH4HairBuilderSAH : public Builder
     {
       BVH4* bvh;
       Scene* scene;
       vector<BezierPrim> prims;
 
-      BVH4HairBuilderBinnedSAH (BVH4* bvh, Scene* scene)
+      BVH4HairBuilderSAH (BVH4* bvh, Scene* scene)
         : bvh(bvh), scene(scene) {}
       
       void build(size_t, size_t) 
       {
+        /* progress monitor */
+        auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
+        auto virtualprogress = BuildProgressMonitorFromClosure(progress);
+
         /* fast path for empty BVH */
         const size_t numPrimitives = scene->getNumPrimitives<BezierCurves,1>();
         if (numPrimitives == 0) {
@@ -46,28 +47,24 @@ namespace embree
           bvh->set(BVH4::emptyNode,empty,0);
           return;
         }
-        
-        double t0 = 0.0;
-        if (g_verbose >= 2) {
-          std::cout << "building BVH4<" + bvh->primTy.name + "> using " << TOSTRING(isa) << "::BVH4BuilderHair ..." << std::flush;
-          t0 = getSeconds();
-        }
-        
+
+        double t0 = bvh->preBuild(TOSTRING(isa) "::BVH4BuilderHairSAH");
+
         //profile(1,5,numPrimitives,[&] (ProfileTimer& timer) {
         
         /* create primref array */
         bvh->alloc.init(numPrimitives*sizeof(Primitive));
         prims.resize(numPrimitives);
-
-        auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
-        auto virtualprogress = BuildProgressMonitorFromClosure(progress);
         const PrimInfo pinfo = createBezierRefArray<1>(scene,prims,virtualprogress);
         
-        BVH4::NodeRef root = bvh_obb_builder_binned_sah_internal
+        /* build hierarchy */
+        BVH4::NodeRef root = bvh_obb_builder_binned_sah
           (
             [&] () { return bvh->alloc.threadLocal2(); },
 
-            [&] (const PrimInfo* children, const size_t numChildren, HeuristicArrayBinningSAH<BezierPrim> alignedHeuristic, FastAllocator::ThreadLocal2* alloc) -> BVH4::Node* 
+            [&] (const PrimInfo* children, const size_t numChildren, 
+                 HeuristicArrayBinningSAH<BezierPrim> alignedHeuristic, 
+                 FastAllocator::ThreadLocal2* alloc) -> BVH4::Node* 
             {
               BVH4::Node* node = (BVH4::Node*) alloc->alloc0.malloc(sizeof(BVH4::Node),16); node->clear();
               for (size_t i=0; i<numChildren; i++)
@@ -75,7 +72,9 @@ namespace embree
               return node;
             },
             
-            [&] (const PrimInfo* children, const size_t numChildren, UnalignedHeuristicArrayBinningSAH<BezierPrim> unalignedHeuristic, FastAllocator::ThreadLocal2* alloc) -> BVH4::UnalignedNode*
+            [&] (const PrimInfo* children, const size_t numChildren, 
+                 UnalignedHeuristicArrayBinningSAH<BezierPrim> unalignedHeuristic, 
+                 FastAllocator::ThreadLocal2* alloc) -> BVH4::UnalignedNode*
             {
               BVH4::UnalignedNode* node = (BVH4::UnalignedNode*) alloc->alloc0.malloc(sizeof(BVH4::UnalignedNode),16); node->clear();
               for (size_t i=0; i<numChildren; i++) 
@@ -103,20 +102,12 @@ namespace embree
         
         bvh->set(root,pinfo.geomBounds,pinfo.size());
         
-        // timer("BVH4BuilderHair");
         //});
         
         /* clear temporary data for static geometry */
-        const bool staticGeom = scene->isStatic();
-        if (staticGeom) prims.clear();
+        if (scene->isStatic()) prims.clear();
         bvh->alloc.cleanup();
-        
-        if (g_verbose >= 2) {
-          double t1 = getSeconds();
-          std::cout << " [DONE]" << std::endl;
-          std::cout << "  dt = " << 1000.0f*(t1-t0) << "ms, perf = " << 1E-6*double(numPrimitives)/(t1-t0) << " Mprim/s" << std::endl;
-          bvh->printStatistics();
-        }
+        bvh->postBuild(t0);
       }
 
       void clear() {
@@ -126,17 +117,21 @@ namespace embree
 
 
     template<typename Primitive>
-    struct BVH4HairMBBuilderBinnedSAH : public Builder
+    struct BVH4HairMBBuilderSAH : public Builder
     {
       BVH4* bvh;
       Scene* scene;
       vector<BezierPrim> prims;
 
-      BVH4HairMBBuilderBinnedSAH (BVH4* bvh, Scene* scene)
+      BVH4HairMBBuilderSAH (BVH4* bvh, Scene* scene)
         : bvh(bvh), scene(scene) {}
       
       void build(size_t, size_t) 
       {
+        /* progress monitor */
+        auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
+        auto virtualprogress = BuildProgressMonitorFromClosure(progress);
+
         /* fast path for empty BVH */
         const size_t numPrimitives = scene->getNumPrimitives<BezierCurves,2>();
         if (numPrimitives == 0) {
@@ -145,23 +140,16 @@ namespace embree
           return;
         }
         
-        double t0 = 0.0;
-        if (g_verbose >= 2) {
-          std::cout << "building BVH4<" + bvh->primTy.name + "> using " << TOSTRING(isa) << "::BVH4BuilderHairMB ..." << std::flush;
-          t0 = getSeconds();
-        }
-        
+        double t0 = bvh->preBuild(TOSTRING(isa) "::BVH4BuilderMBHairSAH");
+
         //profile(1,5,numPrimitives,[&] (ProfileTimer& timer) {
-        
+
         /* create primref array */
         bvh->alloc.init(numPrimitives*sizeof(Primitive));
         prims.resize(numPrimitives);
-
-        auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
-        auto virtualprogress = BuildProgressMonitorFromClosure(progress);
         const PrimInfo pinfo = createBezierRefArray<2>(scene,prims,virtualprogress);
         
-        BVH4::NodeRef root = bvh_obb_builder_binned_sah_internal
+        BVH4::NodeRef root = bvh_obb_builder_binned_sah
           (
             [&] () { return bvh->alloc.threadLocal2(); },
 
@@ -207,20 +195,12 @@ namespace embree
         
         bvh->set(root,pinfo.geomBounds,pinfo.size());
 
-        // timer("BVH4BuilderHair");
         //});
         
         /* clear temporary data for static geometry */
-        const bool staticGeom = scene->isStatic();
-        if (staticGeom) prims.resize(0,true);
+        if (scene->isStatic()) prims.resize(0,true);
         bvh->alloc.cleanup();
-        
-        if (g_verbose >= 2) {
-          double t1 = getSeconds();
-          std::cout << " [DONE]" << std::endl;
-          std::cout << "  dt = " << 1000.0f*(t1-t0) << "ms, perf = " << 1E-6*double(numPrimitives)/(t1-t0) << " Mprim/s" << std::endl;
-          bvh->printStatistics();
-        }
+        bvh->postBuild(t0);
       }
 
       void clear() {
@@ -229,8 +209,8 @@ namespace embree
     };
     
     /*! entry functions for the builder */
-    Builder* BVH4Bezier1vBuilder_OBB_New (void* bvh, Scene* scene, size_t mode) { return new BVH4HairBuilderBinnedSAH<Bezier1v>((BVH4*)bvh,scene); }
-    Builder* BVH4Bezier1iBuilder_OBB_New (void* bvh, Scene* scene, size_t mode) { return new BVH4HairBuilderBinnedSAH<Bezier1i>((BVH4*)bvh,scene); }
-    Builder* BVH4Bezier1iMBBuilder_OBB_New (void* bvh, Scene* scene, size_t mode) { return new BVH4HairMBBuilderBinnedSAH<Bezier1iMB> ((BVH4*)bvh,scene); }
+    Builder* BVH4Bezier1vBuilder_OBB_New   (void* bvh, Scene* scene, size_t mode) { return new BVH4HairBuilderSAH<Bezier1v>((BVH4*)bvh,scene); }
+    Builder* BVH4Bezier1iBuilder_OBB_New   (void* bvh, Scene* scene, size_t mode) { return new BVH4HairBuilderSAH<Bezier1i>((BVH4*)bvh,scene); }
+    Builder* BVH4Bezier1iMBBuilder_OBB_New (void* bvh, Scene* scene, size_t mode) { return new BVH4HairMBBuilderSAH<Bezier1iMB>((BVH4*)bvh,scene); }
   }
 }

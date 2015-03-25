@@ -1016,6 +1016,12 @@ namespace embree
       return alloc.getAllocatedBytes();
     }
 
+    /*! called by all builders before build starts */
+    double preBuild(const char* builderName);
+
+    /*! called by all builders after build ended */
+    void postBuild(double t0);
+
   public:
 
     /*! Encodes a node */
