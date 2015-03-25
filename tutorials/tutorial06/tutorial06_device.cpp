@@ -356,7 +356,7 @@ inline Vec3fa DielectricLayerLambertian__eval(const DielectricLayerLambertian* T
 {
   const float cosThetaO = dot(wo,dg.Ns);
   const float cosThetaI = dot(wi,dg.Ns);
-  if (cosThetaI <= 0.0f | cosThetaO <= 0.0f) return Vec3fa(0.f);
+  if (cosThetaI <= 0.0f || cosThetaO <= 0.0f) return Vec3fa(0.f);
 
   float cosThetaO1; 
   const Sample3f wo1 = refract(wo,dg.Ns,This->etait,cosThetaO,cosThetaO1);
@@ -574,7 +574,7 @@ inline DielectricLayerLambertian make_DielectricLayerLambertian(const Vec3fa& T,
 
   const float cosThetaO = dot(wo,dg.Ns);
   const float cosThetaI = dot(wi,dg.Ns);
-  if (cosThetaI <= 0.0f | cosThetaO <= 0.0f) return Vec3fa(0.f);
+  if (cosThetaI <= 0.0f || cosThetaO <= 0.0f) return Vec3fa(0.f);
   const Vec3fa wh = normalize(wi+wo);
   const float cosThetaH = dot(wh, dg.Ns);
   const float cosTheta = dot(wi, wh); // = dot(wo, wh);
@@ -1340,8 +1340,6 @@ void renderTile(int taskIndex, int* pixels,
 
   for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)
   {
-    //if (x != 200 || y != 450) continue;
-
     /* calculate pixel color */
     Vec3fa color = renderPixel(x,y,vx,vy,vz,p);
 

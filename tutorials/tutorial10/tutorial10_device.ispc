@@ -179,7 +179,7 @@ void convertScene(uniform ISPCScene* uniform scene_in, const uniform Vec3fa& p)
   for (uniform size_t i=0; i<scene_in->numSubdivMeshes; i++)
   {
     uniform ISPCSubdivMesh* uniform mesh = scene_in->subdiv[i];
-#if 1
+#if 0
     print("numFaces    %\n",mesh->numFaces);
     print("numEdges    %\n",mesh->numEdges);
     print("numVertices %\n",mesh->numVertices);
@@ -191,19 +191,11 @@ void convertScene(uniform ISPCScene* uniform scene_in, const uniform Vec3fa& p)
 							mesh->numEdgeCreases, mesh->numVertexCreases, mesh->numHoles);
     mesh->geomID = geomID;
 
-    //print("mesh->geomID %\n",mesh->geomID);
-
     if (mesh->positions)             rtcSetBuffer(g_scene, geomID, RTC_VERTEX_BUFFER, mesh->positions, 0, sizeof(uniform Vec3fa  ));
     if (mesh->subdivlevel)           rtcSetBuffer(g_scene, geomID, RTC_LEVEL_BUFFER,  mesh->subdivlevel, 0, sizeof(uniform float));
     if (mesh->position_indices)      rtcSetBuffer(g_scene, geomID, RTC_INDEX_BUFFER,  mesh->position_indices  , 0, sizeof(uniform unsigned int));
     if (mesh->verticesPerFace)       rtcSetBuffer(g_scene, geomID, RTC_FACE_BUFFER,   mesh->verticesPerFace, 0, sizeof(uniform unsigned int));
     if (mesh->holes)                 rtcSetBuffer(g_scene, geomID, RTC_HOLE_BUFFER,   mesh->holes, 0, sizeof(uniform unsigned int));
-
-    //print("% \n",mesh->edge_creases);
-    //print("% \n",mesh->edge_crease_weights);
-    //print("% \n",mesh->vertex_creases);
-    //print("% \n",mesh->vertex_crease_weights);
-
 
     if (mesh->edge_creases)          rtcSetBuffer(g_scene, geomID, RTC_EDGE_CREASE_INDEX_BUFFER,    mesh->edge_creases,          0, 2*sizeof(uniform unsigned int));
     if (mesh->edge_crease_weights)   rtcSetBuffer(g_scene, geomID, RTC_EDGE_CREASE_WEIGHT_BUFFER,   mesh->edge_crease_weights,   0, sizeof(uniform float));
