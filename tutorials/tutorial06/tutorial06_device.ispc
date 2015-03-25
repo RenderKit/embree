@@ -356,7 +356,7 @@ inline Vec3f DielectricLayerLambertian__eval(const varying DielectricLayerLamber
 {
   const float cosThetaO = dot(wo,dg.Ns);
   const float cosThetaI = dot(wi,dg.Ns);
-  if (cosThetaI <= 0.0f | cosThetaO <= 0.0f) return make_Vec3f(0.f);
+  if (cosThetaI <= 0.0f || cosThetaO <= 0.0f) return make_Vec3f(0.f);
 
   float cosThetaO1; 
   const Sample3f wo1 = refract(wo,dg.Ns,This->etait,cosThetaO,cosThetaO1);
@@ -574,7 +574,7 @@ __device__ Vec3f MetalMaterial__eval(MetalMaterial* uniform This, const BRDF& br
 
   const float cosThetaO = dot(wo,dg.Ns);
   const float cosThetaI = dot(wi,dg.Ns);
-  if (cosThetaI <= 0.0f | cosThetaO <= 0.0f) return make_Vec3f(0.f);
+  if (cosThetaI <= 0.0f || cosThetaO <= 0.0f) return make_Vec3f(0.f);
   const Vec3f wh = normalize(wi+wo);
   const float cosThetaH = dot(wh, dg.Ns);
   const float cosTheta = dot(wi, wh); // = dot(wo, wh);
@@ -1340,8 +1340,6 @@ task void renderTile(uniform int* uniform pixels,
 
   foreach_tiled (y = y0 ... y1, x = x0 ... x1)
   {
-    //if (x != 200 || y != 450) continue;
-
     /* calculate pixel color */
     Vec3f color = renderPixel(x,y,vx,vy,vz,p);
 
