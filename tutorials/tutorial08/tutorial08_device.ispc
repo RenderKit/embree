@@ -58,7 +58,7 @@ void error_handler(const uniform RTCError code, const uniform int8* uniform str)
   abort();
 }
 
-uniform float cube_vertices[8][4] = 
+__aligned(16) uniform float cube_vertices[8][4] = 
 {
   { -1.0f, -1.0f, -1.0f, 0.0f },
   {  1.0f, -1.0f, -1.0f, 0.0f },

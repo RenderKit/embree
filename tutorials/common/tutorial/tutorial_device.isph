@@ -73,6 +73,7 @@ Vec3f renderPixelUV(float x, float y, const uniform Vec3f& vx, const uniform Vec
 uniform unsigned int getNumHWThreads();
 
 #define ALIGNED_STRUCT
+#define __aligned(x) 
 
 struct Sample3f
 {

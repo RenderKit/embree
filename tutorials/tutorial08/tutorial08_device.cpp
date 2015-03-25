@@ -59,7 +59,7 @@ void error_handler(const RTCError code, const int8* str)
   abort();
 }
 
-float cube_vertices[8][4] = 
+__aligned(16) float cube_vertices[8][4] = 
 {
   { -1.0f, -1.0f, -1.0f, 0.0f },
   {  1.0f, -1.0f, -1.0f, 0.0f },
