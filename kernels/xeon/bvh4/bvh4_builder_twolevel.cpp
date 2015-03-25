@@ -14,7 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "bvh4_builder_toplevel.h"
+#include "bvh4_builder_twolevel.h"
 #include "bvh4_statistics.h"
 #include "common/profile.h"
 #include "builders/bvh_builder_sah.h"
