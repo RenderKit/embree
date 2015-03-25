@@ -72,7 +72,7 @@ namespace embree
     {
       __forceinline CreateLeaf (BVH4* bvh, PrimRef* prims) : bvh(bvh), prims(prims) {}
       
-      __forceinline size_t operator() (const BuildRecord2<BVH4::NodeRef>& current, Allocator* alloc) // FIXME: why are prims passed here but not for createNode
+      __forceinline size_t operator() (const BuildRecord2<BVH4::NodeRef>& current, Allocator* alloc)
       {
         size_t n = current.prims.size();
         size_t items = Primitive::blocks(n);
@@ -250,23 +250,16 @@ namespace embree
     {
       __forceinline CreateListLeaf (BVH4* bvh) : bvh(bvh) {}
       
-      __forceinline size_t operator() (BuildRecord2<BVH4::NodeRef, PrimRefList>& current, Allocator* alloc) // FIXME: why are prims passed here but not for createNode
+      __forceinline size_t operator() (BuildRecord2<BVH4::NodeRef, PrimRefList>& current, Allocator* alloc)
       {
         size_t n = current.pinfo.size();
         size_t N = Primitive::blocks(n);
         Primitive* leaf = (Primitive*) alloc->alloc1.malloc(N*sizeof(Primitive));
         BVH4::NodeRef node = bvh->encodeLeaf((char*)leaf,N);
 
-        /*PrimRefList::block_iterator_unsafe iter1(current.prims);
-        while (iter1) {
-          const int i = iter1->lower.a;
-          iter1->lower.a = geomIDprimID[i].first;
-          iter1->upper.a = geomIDprimID[i].second;
-          iter1++;
-          }*/
         PrimRefList::block_iterator_unsafe iter1(current.prims);
         while (iter1) {
-          iter1->lower.a &= 0x00FFFFFF; // FIXME: hack
+          iter1->lower.a &= 0x00FFFFFF;
           iter1++;
         }
 
@@ -284,7 +277,6 @@ namespace embree
       }
 
       BVH4* bvh;
-      //const vector<std::pair<int,int>>& geomIDprimID;
     };
 
     struct SpatialSplitHeuristic
