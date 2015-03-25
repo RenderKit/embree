@@ -907,7 +907,7 @@ namespace embree
 	  node->set(i,child.first,child.second);
 	  bounds.extend(child.first);
 	}
-	return std::pair<BBox3fa,BVH4::NodeRef>(bounds,BVH4::encodeNode2(node));
+	return std::pair<BBox3fa,BVH4::NodeRef>(bounds,BVH4::encodeNode(node));
       }
     
     struct LazyLeaf

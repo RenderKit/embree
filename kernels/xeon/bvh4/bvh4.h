@@ -1019,13 +1019,7 @@ namespace embree
   public:
 
     /*! Encodes a node */
-    static __forceinline NodeRef encodeNode2(Node* node) {  // FIXME: make all static
-      assert(!((size_t)node & align_mask)); 
-      return NodeRef((size_t) node);
-    }
-
-    /*! Encodes a node */
-    static __forceinline NodeRef encodeNode(void* node) {  // FIXME: template these functions
+    static __forceinline NodeRef encodeNode(Node* node) {
       assert(!((size_t)node & align_mask)); 
       return NodeRef((size_t) node);
     }
@@ -1043,12 +1037,13 @@ namespace embree
 
     /*! Encodes an unaligned motion blur node */
     static __forceinline NodeRef encodeNode(UnalignedNodeMB* node) { 
-      return NodeRef((size_t) node |  tyUnalignedNodeMB);
+      return NodeRef((size_t) node | tyUnalignedNodeMB);
     }
     
     /*! Encodes a leaf */
     static __forceinline NodeRef encodeLeaf(void* tri, size_t num) {
       assert(!((size_t)tri & align_mask)); 
+      assert(num <= maxLeafBlocks);
       return NodeRef((size_t)tri | (tyLeaf+min(num,(size_t)maxLeafBlocks)));
     }
 
@@ -1059,7 +1054,7 @@ namespace embree
     }
 
     /*! Encodes a non 16-byte aligned leaf */
-    static __forceinline NodeRef encodeNonAlignedTypedLeaf(void* ptr, size_t ty) {
+    static __forceinline NodeRef encodeNonAlignedTypedLeaf(void* ptr, size_t ty) { // FIXME: this is unsafe !!!
       return NodeRef((size_t)ptr | (tyLeaf+ty));
     }
 
