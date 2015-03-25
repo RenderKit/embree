@@ -37,7 +37,10 @@ namespace embree
   {
     ALIGNED_CLASS;
   public:
-    ISPCMesh (int numTriangles, int numQuads, int numVertices, int meshMaterialID) 
+    ISPCMesh (int numTriangles, 
+	      int numQuads, 
+	      int numVertices, 
+	      int meshMaterialID) 
       : numTriangles(numTriangles), numQuads(numQuads), numVertices(numVertices),
         positions(NULL), positions2(NULL), normals(NULL), texcoords(NULL), triangles(NULL), quads(NULL), edge_level(NULL), meshMaterialID(meshMaterialID)
     {
@@ -349,10 +352,14 @@ public:
   {
     size_t meshID = g_meshID++;
 
+    const size_t numVertices = in_pMiscData->numPositions;
+    const size_t numEdges    = in_pMiscData->numPositionIndices;
+    const size_t numFaces    = in_pMiscData->numVerticesPerFace;
+
 #if 0
-    DBG_PRINT( in_pMiscData->numPositions );
-    DBG_PRINT( in_pMiscData->numPositionIndices );
-    DBG_PRINT( in_pMiscData->numVerticesPerFace );
+    DBG_PRINT( numVertices );
+    DBG_PRINT( numEdges );
+    DBG_PRINT( numFaces );
 #endif
 
     ISPCSubdivMesh* mesh = new ISPCSubdivMesh(in_pMiscData->numPositions,
@@ -366,18 +373,50 @@ public:
     assert( in_pMiscData->numVerticesPerFace*sizeof(int) == in_pBufferLengths[2] );
 
     mesh->positions        = (Vec3fa*)os_malloc(in_pBufferLengths[0]);
-    mesh->position_indices = (int*)os_malloc(in_pBufferLengths[1]);
-    mesh->verticesPerFace  = (int*)os_malloc(in_pBufferLengths[2]);
-    mesh->subdivlevel      = (float*)os_malloc(in_pBufferLengths[1]);
-    mesh->face_offsets     = (int*)os_malloc(sizeof(int) * in_pMiscData->numVerticesPerFace);
-
     memcpy(mesh->positions       ,in_ppBufferPointers[0],in_pBufferLengths[0]);
+
+    mesh->position_indices = (int*)   os_malloc(in_pBufferLengths[1]);
     memcpy(mesh->position_indices,in_ppBufferPointers[1],in_pBufferLengths[1]);
+
+    mesh->verticesPerFace  = (int*)   os_malloc(in_pBufferLengths[2]);
     memcpy(mesh->verticesPerFace ,in_ppBufferPointers[2],in_pBufferLengths[2]);
 
-    const size_t numEdges = in_pMiscData->numPositionIndices;
-    const size_t numFaces = in_pMiscData->numVerticesPerFace;
-    
+
+    mesh->subdivlevel      = (float*) os_malloc(in_pBufferLengths[1]);
+    mesh->face_offsets     = (int*)   os_malloc(sizeof(int) * in_pMiscData->numVerticesPerFace);
+
+
+    if ( in_pMiscData->numEdgeCreases )
+      {
+	assert(in_pBufferLengths[3] == sizeof(Vec2i) * in_pMiscData->numEdgeCreases);
+	mesh->edge_creases = (Vec2i*)os_malloc(sizeof(Vec2i) * in_pMiscData->numEdgeCreases); 
+	memcpy(mesh->edge_creases ,in_ppBufferPointers[3],in_pBufferLengths[3]);	
+	mesh->numEdgeCreases = in_pMiscData->numEdgeCreases;
+      }
+
+    if ( in_pMiscData->numEdgeCreaseWeights )
+      {
+	assert(in_pBufferLengths[4] == sizeof(float) * in_pMiscData->numEdgeCreaseWeights);
+	mesh->edge_crease_weights = (float*)os_malloc(sizeof(float) * in_pMiscData->numEdgeCreaseWeights); 
+	memcpy(mesh->edge_crease_weights ,in_ppBufferPointers[4],in_pBufferLengths[4]);	
+      }
+
+    if ( in_pMiscData->numVertexCreases )
+      {
+	mesh->numVertexCreases = in_pMiscData->numVertexCreases;
+	assert(in_pBufferLengths[5] == sizeof(int) * in_pMiscData->numVertexCreases);
+	mesh->vertex_creases = (int*)os_malloc(sizeof(int) *  in_pMiscData->numVertexCreases); 
+	memcpy(mesh->vertex_creases ,in_ppBufferPointers[5],in_pBufferLengths[5]);	
+      }
+
+    if ( in_pMiscData->numVertexCreaseWeights )
+      {
+	assert(in_pBufferLengths[6] == sizeof(float) * in_pMiscData->numVertexCreaseWeights);
+	mesh->vertex_crease_weights = (float*)os_malloc(sizeof(float) * in_pMiscData->numVertexCreaseWeights); 
+	memcpy(mesh->vertex_crease_weights ,in_ppBufferPointers[6],in_pBufferLengths[6]);	
+      }
+
+
     for (size_t i=0; i<numEdges; i++) mesh->subdivlevel[i] = 1.0f;
     int offset = 0;
     for (size_t i=0; i<numFaces; i++)

@@ -133,7 +133,7 @@ void updateEdgeLevels(uniform ISPCScene* uniform scene_in, const uniform Vec3fa&
     uniform unsigned int geomID = mesh->geomID;
 
 #if defined(ISPC)
-      launch[  getNumHWThreads() ] updateEdgeLevelBufferTask(mesh,cam_pos); sync;	           
+      launch[ getNumHWThreads() ] updateEdgeLevelBufferTask(mesh,cam_pos); sync;	           
 #else
       updateEdgeLevelBuffer(mesh,cam_pos,0,mesh->numFaces);
 #endif
@@ -179,7 +179,7 @@ void convertScene(uniform ISPCScene* uniform scene_in, const uniform Vec3fa& p)
   for (uniform size_t i=0; i<scene_in->numSubdivMeshes; i++)
   {
     uniform ISPCSubdivMesh* uniform mesh = scene_in->subdiv[i];
-#if 0
+#if 1
     print("numFaces    %\n",mesh->numFaces);
     print("numEdges    %\n",mesh->numEdges);
     print("numVertices %\n",mesh->numVertices);
@@ -198,6 +198,13 @@ void convertScene(uniform ISPCScene* uniform scene_in, const uniform Vec3fa& p)
     if (mesh->position_indices)      rtcSetBuffer(g_scene, geomID, RTC_INDEX_BUFFER,  mesh->position_indices  , 0, sizeof(uniform unsigned int));
     if (mesh->verticesPerFace)       rtcSetBuffer(g_scene, geomID, RTC_FACE_BUFFER,   mesh->verticesPerFace, 0, sizeof(uniform unsigned int));
     if (mesh->holes)                 rtcSetBuffer(g_scene, geomID, RTC_HOLE_BUFFER,   mesh->holes, 0, sizeof(uniform unsigned int));
+
+    //print("% \n",mesh->edge_creases);
+    //print("% \n",mesh->edge_crease_weights);
+    //print("% \n",mesh->vertex_creases);
+    //print("% \n",mesh->vertex_crease_weights);
+
+
     if (mesh->edge_creases)          rtcSetBuffer(g_scene, geomID, RTC_EDGE_CREASE_INDEX_BUFFER,    mesh->edge_creases,          0, 2*sizeof(uniform unsigned int));
     if (mesh->edge_crease_weights)   rtcSetBuffer(g_scene, geomID, RTC_EDGE_CREASE_WEIGHT_BUFFER,   mesh->edge_crease_weights,   0, sizeof(uniform float));
     if (mesh->vertex_creases)        rtcSetBuffer(g_scene, geomID, RTC_VERTEX_CREASE_INDEX_BUFFER,  mesh->vertex_creases,        0, sizeof(uniform unsigned int));

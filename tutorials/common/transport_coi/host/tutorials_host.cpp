@@ -279,15 +279,27 @@ namespace embree
       COIBUFFER positions;      
       COIBUFFER position_indices;  
       COIBUFFER vertices_per_face; 
+      COIBUFFER edge_creases; 
+      COIBUFFER edge_crease_weights; 
+      COIBUFFER vertex_creases; 
+      COIBUFFER vertex_crease_weights; 
     } buffers;
 
     assert( mesh->positions.size() );
     assert( mesh->position_indices.size() );
     assert( mesh->verticesPerFace.size() );
 
+#if 0
     DBG_PRINT( mesh->positions.size() );
     DBG_PRINT( mesh->position_indices.size() );
     DBG_PRINT( mesh->verticesPerFace.size() );
+    DBG_PRINT( mesh->edge_creases.size() );
+    DBG_PRINT( mesh->edge_crease_weights.size() );
+    DBG_PRINT( mesh->vertex_creases.size() );
+    DBG_PRINT( mesh->vertex_crease_weights.size() );
+#endif
+
+    void *dummy_buffer = &mesh->positions.front();
 
     /* positions */
     result = COIBufferCreateFromMemory(mesh->positions.size()*sizeof(Vec3fa),
@@ -316,29 +328,70 @@ namespace embree
 				       &buffers.vertices_per_face);
     if (result != COI_SUCCESS) THROW_RUNTIME_ERROR("COIBufferCreate failed: " + std::string(COIResultGetName(result)));
 
+    /* edge creases */
+    result = COIBufferCreateFromMemory(max((size_t)4,mesh->edge_creases.size()*sizeof(Vec2i)),
+				       COI_BUFFER_NORMAL,
+				       0,
+				       mesh->edge_creases.size() ? &mesh->edge_creases.front() : dummy_buffer,
+				       1,
+				       &process,
+				       &buffers.edge_creases);
+    if (result != COI_SUCCESS) THROW_RUNTIME_ERROR("COIBufferCreate failed: " + std::string(COIResultGetName(result)));
+
+    /* edge creases weights */
+    result = COIBufferCreateFromMemory(max((size_t)4,mesh->edge_crease_weights.size()*sizeof(float)),
+				       COI_BUFFER_NORMAL,
+				       0,
+				       mesh->edge_crease_weights.size() ? &mesh->edge_crease_weights.front() : dummy_buffer,
+				       1,
+				       &process,
+				       &buffers.edge_crease_weights);
+    if (result != COI_SUCCESS) THROW_RUNTIME_ERROR("COIBufferCreate failed: " + std::string(COIResultGetName(result)));
+
+    /* vertex creases */
+    result = COIBufferCreateFromMemory(max((size_t)4,mesh->vertex_creases.size()*sizeof(int)),
+				       COI_BUFFER_NORMAL,
+				       0,
+				       mesh->vertex_creases.size() ? &mesh->vertex_creases.front() : dummy_buffer,
+				       1,
+				       &process,
+				       &buffers.vertex_creases);
+    if (result != COI_SUCCESS) THROW_RUNTIME_ERROR("COIBufferCreate failed: " + std::string(COIResultGetName(result)));
+
+    /* vertex creases weights */
+    result = COIBufferCreateFromMemory(max((size_t)4,mesh->vertex_crease_weights.size()*sizeof(float)),
+				       COI_BUFFER_NORMAL,
+				       0,
+				       mesh->vertex_crease_weights.size() ? &mesh->vertex_crease_weights.front() : dummy_buffer,
+				       1,
+				       &process,
+				       &buffers.vertex_crease_weights);
+    if (result != COI_SUCCESS) THROW_RUNTIME_ERROR("COIBufferCreate failed: " + std::string(COIResultGetName(result)));
+
 
     CreateSubdivMeshData parms;
     parms.numPositions            = mesh->positions.size();
-    parms.numNormals              = 0;
-    parms.numTextureCoords        = 0;
+    parms.numNormals              = mesh->normals.size();
+    parms.numTextureCoords        = mesh->texcoords.size();
     parms.numPositionIndices      = mesh->position_indices.size();
-    parms.numNormalIndices        = 0;
-    parms.numTexCoordIndices      = 0;
+    parms.numNormalIndices        = mesh->normal_indices.size();
+    parms.numTexCoordIndices      = mesh->texcoord_indices.size();
     parms.numVerticesPerFace      = mesh->verticesPerFace.size();
-    parms.numHoles                = 0;
-    parms.numEdgeCreases          = 0;
-    parms.numEdgeCreaseWeights    = 0;
-    parms.numVertexCreases        = 0;
-    parms.numVertexCreasesWeights = 0;
+    parms.numHoles                = mesh->holes.size();
+    parms.numEdgeCreases          = mesh->edge_creases.size();
+    parms.numEdgeCreaseWeights    = mesh->edge_crease_weights.size();
+    parms.numVertexCreases        = mesh->vertex_creases.size();
+    parms.numVertexCreaseWeights  = mesh->vertex_crease_weights.size();
     parms.materialID              = mesh->materialID;
     
-    COI_ACCESS_FLAGS flags[5] = { COI_SINK_READ, COI_SINK_READ, COI_SINK_READ};
+
+    COI_ACCESS_FLAGS flags[7] = { COI_SINK_READ, COI_SINK_READ, COI_SINK_READ, COI_SINK_READ, COI_SINK_READ, COI_SINK_READ, COI_SINK_READ};
 
     COIEVENT event;
     memset(&event,0,sizeof(event));
 
     /* run set scene runfunction */
-    result = COIPipelineRunFunction (pipeline, runCreateSubdivMesh, 3, &buffers.positions, flags, 0, NULL, &parms, sizeof(parms), NULL, 0, &event);
+    result = COIPipelineRunFunction (pipeline, runCreateSubdivMesh, 7, &buffers.positions, flags, 0, NULL, &parms, sizeof(parms), NULL, 0, &event);
     if (result != COI_SUCCESS) THROW_RUNTIME_ERROR("COIPipelineRunFunction failed: "+std::string(COIResultGetName(result)));
  
     result = COIEventWait(1,&event,-1,1,NULL,NULL);

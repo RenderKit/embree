@@ -914,8 +914,31 @@ void convertTriangleMeshes(ISPCScene* scene_in, RTCScene scene_out, size_t numGe
   }
 }
 
+inline float updateEdgeLevel( ISPCSubdivMesh* mesh, const Vec3fa& cam_pos, const size_t e0, const size_t e1)
+{
+  const Vec3fa v0 = mesh->positions[mesh->position_indices[e0]];
+  const Vec3fa v1 = mesh->positions[mesh->position_indices[e1]];
+  const Vec3fa edge = v1-v0;
+  const Vec3fa P = 0.5f*(v1+v0);
+  const Vec3fa dist = cam_pos - P;
+  return max(min(LEVEL_FACTOR*(0.5f*length(edge)/length(dist)),MAX_EDGE_LEVEL),MIN_EDGE_LEVEL);
+}
+
 void updateEdgeLevelBuffer( ISPCSubdivMesh* mesh, const Vec3fa& cam_pos, size_t startID, size_t endID )
 {
+  for (size_t f=startID; f<endID;f++) {
+       int e = mesh->face_offsets[f];
+       int N = mesh->verticesPerFace[f];
+       if (N == 4) /* fast path for quads */
+         for (size_t i=0; i<4; i++) 
+           mesh->subdivlevel[e+i] =  updateEdgeLevel(mesh,cam_pos,e+(i+0),e+(i+1)%4);
+       else if (N == 3) /* fast path for triangles */
+         for (size_t i=0; i<3; i++) 
+           mesh->subdivlevel[e+i] =  updateEdgeLevel(mesh,cam_pos,e+(i+0),e+(i+1)%3);
+       else /* fast path for general polygons */
+        for (size_t i=0; i<N; i++) 
+           mesh->subdivlevel[e+i] =  updateEdgeLevel(mesh,cam_pos,e+(i+0),e+(i+1)%N);              
+ }
 }
 
 #if defined(ISPC)
@@ -928,33 +951,19 @@ task void updateEdgeLevelBufferTask( ISPCSubdivMesh* mesh, const Vec3fa& cam_pos
 }
 #endif
 
-
 void updateEdgeLevels(ISPCScene* scene_in, const Vec3fa& cam_pos)
 {
   for (size_t g=0; g<scene_in->numSubdivMeshes; g++)
   {
     ISPCSubdivMesh* mesh = g_ispc_scene->subdiv[g];
     unsigned int geomID = mesh->geomID;
-//#if defined(ISPC)
-//      launch[  getNumHWThreads() ] updateEdgeLevelBufferTask(mesh,cam_pos); 	           
-//#else
-//      updateEdgeLevelBuffer(mesh,cam_pos,0,mesh->numQuads);
-//#endif
-   
-    for (size_t f=0, e=0; f<mesh->numFaces; e+=mesh->verticesPerFace[f++]) {
-      int N = mesh->verticesPerFace[f];
-      for (size_t i=0; i<N; i++) {
-        const Vec3fa v0 = mesh->positions[mesh->position_indices[e+(i+0)]];
-        const Vec3fa v1 = mesh->positions[mesh->position_indices[e+(i+1)%N]];
-        const Vec3fa edge = v1-v0;
-        const Vec3fa P = 0.5f*(v1+v0);
-	const Vec3fa dist = cam_pos - P;
-        mesh->subdivlevel[e+i] = max(min(LEVEL_FACTOR*(0.5f*length(edge)/length(dist)),MAX_EDGE_LEVEL),MIN_EDGE_LEVEL);
-      }
-    }
 
-   rtcUpdateBuffer(g_scene,geomID,RTC_LEVEL_BUFFER);
-    
+#if defined(ISPC)
+      launch[ getNumHWThreads() ] updateEdgeLevelBufferTask(mesh,cam_pos); 	           
+#else
+      updateEdgeLevelBuffer(mesh,cam_pos,0,mesh->numFaces);
+#endif
+   rtcUpdateBuffer(g_scene,geomID,RTC_LEVEL_BUFFER);    
   }
 }
 

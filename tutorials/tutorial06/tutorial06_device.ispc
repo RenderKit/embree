@@ -959,7 +959,7 @@ void updateEdgeLevels(uniform ISPCScene* uniform scene_in, const uniform Vec3fa&
     uniform unsigned int geomID = mesh->geomID;
 
 #if defined(ISPC)
-      launch[  getNumHWThreads() ] updateEdgeLevelBufferTask(mesh,cam_pos); sync;	           
+      launch[ getNumHWThreads() ] updateEdgeLevelBufferTask(mesh,cam_pos); sync;	           
 #else
       updateEdgeLevelBuffer(mesh,cam_pos,0,mesh->numFaces);
 #endif
@@ -1181,14 +1181,15 @@ Vec3f renderPixelFunction(float x, float y, rand_state& state, const uniform Vec
     foreach_unique (geomID in ray.geomID) {
      //print("geomID %\n",geomID);
      //print("geomID_to_type[geomID] %\n",geomID_to_type[geomID]);
-      if (geomID >= 0 && geomID < g_ispc_scene->numMeshes) { // FIXME: workaround for ISPC bug
+     //print("g_ispc_scene->numMeshes %\n",g_ispc_scene->numMeshes);
+
+      if (geomID >= 0 && geomID < g_ispc_scene->numMeshes+g_ispc_scene->numSubdivMeshes) { // FIXME: workaround for ISPC bug
 	if (geomID_to_type[geomID] == 0) 
 	  materialID = ((ISPCMesh* uniform) geomID_to_mesh[geomID])->triangles[ray.primID].materialID; 
 	else if (geomID_to_type[geomID] == 1)                             
 	  materialID = ((ISPCSubdivMesh* uniform) geomID_to_mesh[geomID])->materialID; 
-	else {
-	  materialID = ((ISPCMesh* uniform) geomID_to_mesh[geomID])->meshMaterialID; 
-        }
+	else 
+	  materialID = ((ISPCMesh* uniform) geomID_to_mesh[geomID])->meshMaterialID;         
       }
     }
     //print("materialID %\n",materialID);
