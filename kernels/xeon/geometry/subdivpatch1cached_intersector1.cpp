@@ -250,10 +250,10 @@ namespace embree
       __aligned(64) float grid_v[array_elements+16];
      
 #else
-      float *const ptr = (float*)_malloca(2 * array_elements * sizeof(float) + 2*64);
-      float *const grid_arrays = (float*)ALIGN_PTR(ptr,64);
-      float *grid_u = &grid_arrays[array_elements * 0 + 16];
-      float *grid_v = &grid_arrays[array_elements * 1 + 16];        
+#define MAX_GRID_SIZE 128*128
+      assert(patch.grid_size_simd_blocks * 8 < MAX_GRID_SIZE);
+      __aligned(64) float grid_u[MAX_GRID_SIZE];
+      __aligned(64) float grid_v[MAX_GRID_SIZE];
 #endif   
       const size_t grid_offset = patch.grid_bvh_size_64b_blocks * 16;
 
@@ -308,9 +308,9 @@ namespace embree
       TIMER(DBG_PRINT(patch.grid_v_res));
       TIMER(DBG_PRINT(patch.grid_subtree_size_64b_blocks*64));
 
-#if defined(_MSC_VER) && !defined(__INTEL_COMPILER)
-      _freea(ptr);
-#endif
+//#if defined(_MSC_VER) && !defined(__INTEL_COMPILER)
+//      _freea(ptr);
+//#endif
       return subtree_root;
     }
 
