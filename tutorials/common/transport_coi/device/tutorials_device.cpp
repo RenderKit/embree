@@ -416,6 +416,14 @@ public:
 	memcpy(mesh->vertex_crease_weights ,in_ppBufferPointers[6],in_pBufferLengths[6]);	
       }
 
+    if ( in_pMiscData->numHoles )
+      {
+	mesh->numHoles = in_pMiscData->numHoles;
+	assert(in_pBufferLengths[7] == sizeof(int) * in_pMiscData->numHoles);
+	mesh->holes = (int*)os_malloc(sizeof(int) * in_pMiscData->numHoles); 
+	memcpy(mesh->holes ,in_ppBufferPointers[7],in_pBufferLengths[7]);	
+      }
+
 
     for (size_t i=0; i<numEdges; i++) mesh->subdivlevel[i] = 1.0f;
     int offset = 0;

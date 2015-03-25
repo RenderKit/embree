@@ -283,6 +283,7 @@ namespace embree
       COIBUFFER edge_crease_weights; 
       COIBUFFER vertex_creases; 
       COIBUFFER vertex_crease_weights; 
+      COIBUFFER holes; 
     } buffers;
 
     assert( mesh->positions.size() );
@@ -297,6 +298,7 @@ namespace embree
     DBG_PRINT( mesh->edge_crease_weights.size() );
     DBG_PRINT( mesh->vertex_creases.size() );
     DBG_PRINT( mesh->vertex_crease_weights.size() );
+    DBG_PRINT( mesh->holes.size() );
 #endif
 
     void *dummy_buffer = &mesh->positions.front();
@@ -368,6 +370,16 @@ namespace embree
 				       &buffers.vertex_crease_weights);
     if (result != COI_SUCCESS) THROW_RUNTIME_ERROR("COIBufferCreate failed: " + std::string(COIResultGetName(result)));
 
+    /* holes */
+    result = COIBufferCreateFromMemory(max((size_t)4,mesh->holes.size()*sizeof(int)),
+				       COI_BUFFER_NORMAL,
+				       0,
+				       mesh->holes.size() ? &mesh->holes.front() : dummy_buffer,
+				       1,
+				       &process,
+				       &buffers.holes);
+    if (result != COI_SUCCESS) THROW_RUNTIME_ERROR("COIBufferCreate failed: " + std::string(COIResultGetName(result)));
+
 
     CreateSubdivMeshData parms;
     parms.numPositions            = mesh->positions.size();
@@ -385,13 +397,13 @@ namespace embree
     parms.materialID              = mesh->materialID;
     
 
-    COI_ACCESS_FLAGS flags[7] = { COI_SINK_READ, COI_SINK_READ, COI_SINK_READ, COI_SINK_READ, COI_SINK_READ, COI_SINK_READ, COI_SINK_READ};
+    COI_ACCESS_FLAGS flags[8] = { COI_SINK_READ, COI_SINK_READ, COI_SINK_READ, COI_SINK_READ, COI_SINK_READ, COI_SINK_READ, COI_SINK_READ, COI_SINK_READ};
 
     COIEVENT event;
     memset(&event,0,sizeof(event));
 
     /* run set scene runfunction */
-    result = COIPipelineRunFunction (pipeline, runCreateSubdivMesh, 7, &buffers.positions, flags, 0, NULL, &parms, sizeof(parms), NULL, 0, &event);
+    result = COIPipelineRunFunction (pipeline, runCreateSubdivMesh, 8, &buffers.positions, flags, 0, NULL, &parms, sizeof(parms), NULL, 0, &event);
     if (result != COI_SUCCESS) THROW_RUNTIME_ERROR("COIPipelineRunFunction failed: "+std::string(COIResultGetName(result)));
  
     result = COIEventWait(1,&event,-1,1,NULL,NULL);
