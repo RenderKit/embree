@@ -16,8 +16,6 @@
 
 #include "bvh4.h"
 #include "bvh4_rotate.h"
-#include "bvh4_statistics.h"
-#include "common/profile.h"
 
 #include "builders/primrefgen.h"
 #include "builders/presplit.h"

@@ -105,7 +105,7 @@ namespace embree
   DECLARE_SYMBOL(Accel::Intersector8,BVH4GridLazyIntersector8);
   DECLARE_SYMBOL(Accel::Intersector8,BVH4VirtualIntersector8Chunk);
 
-  DECLARE_TOPLEVEL_BUILDER(BVH4BuilderTopLevelBinnedSAH);
+  DECLARE_TOPLEVEL_BUILDER(BVH4BuilderTwoLevelSAH);
 
   DECLARE_SCENE_BUILDER(BVH4Bezier1vBuilder_OBB_New);
   DECLARE_SCENE_BUILDER(BVH4Bezier1iBuilder_OBB_New);
@@ -168,7 +168,7 @@ namespace embree
     int features = getCPUFeatures();
 
     /* select builders */
-    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4BuilderTopLevelBinnedSAH);
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4BuilderTwoLevelSAH);
 
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Bezier1vBuilder_OBB_New);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Bezier1iBuilder_OBB_New);
@@ -894,7 +894,7 @@ namespace embree
   {
     BVH4* accel = new BVH4(TriangleMeshTriangle1::type,scene,LeafMode);
     Accel::Intersectors intersectors = BVH4Triangle1Intersectors(accel);
-    Builder* builder = BVH4BuilderTopLevelBinnedSAH(accel,scene,&createTriangleMeshTriangle1Morton);
+    Builder* builder = BVH4BuilderTwoLevelSAH(accel,scene,&createTriangleMeshTriangle1Morton);
     return new AccelInstance(accel,builder,intersectors);
   }
 
@@ -902,7 +902,7 @@ namespace embree
   {
     BVH4* accel = new BVH4(TriangleMeshTriangle1::type,scene,LeafMode);
     Accel::Intersectors intersectors = BVH4Triangle1Intersectors(accel);
-    Builder* builder = BVH4BuilderTopLevelBinnedSAH(accel,scene,&createTriangleMeshTriangle1);
+    Builder* builder = BVH4BuilderTwoLevelSAH(accel,scene,&createTriangleMeshTriangle1);
     return new AccelInstance(accel,builder,intersectors);
   }
 
@@ -910,7 +910,7 @@ namespace embree
   {
     BVH4* accel = new BVH4(TriangleMeshTriangle4::type,scene,LeafMode);
     Accel::Intersectors intersectors = BVH4Triangle4IntersectorsHybrid(accel);
-    Builder* builder = BVH4BuilderTopLevelBinnedSAH(accel,scene,&createTriangleMeshTriangle4);
+    Builder* builder = BVH4BuilderTwoLevelSAH(accel,scene,&createTriangleMeshTriangle4);
     return new AccelInstance(accel,builder,intersectors);
   }
 
@@ -918,7 +918,7 @@ namespace embree
   {
     BVH4* accel = new BVH4(TriangleMeshTriangle1v::type,scene,LeafMode);
     Accel::Intersectors intersectors = BVH4Triangle1vIntersectors(accel);
-    Builder* builder = BVH4BuilderTopLevelBinnedSAH(accel,scene,&createTriangleMeshTriangle1v);
+    Builder* builder = BVH4BuilderTwoLevelSAH(accel,scene,&createTriangleMeshTriangle1v);
     return new AccelInstance(accel,builder,intersectors);
   }
 
@@ -926,7 +926,7 @@ namespace embree
   {
     BVH4* accel = new BVH4(TriangleMeshTriangle4v::type,scene,LeafMode);
     Accel::Intersectors intersectors = BVH4Triangle4vIntersectorsHybrid(accel);
-    Builder* builder = BVH4BuilderTopLevelBinnedSAH(accel,scene,&createTriangleMeshTriangle4v);
+    Builder* builder = BVH4BuilderTwoLevelSAH(accel,scene,&createTriangleMeshTriangle4v);
     return new AccelInstance(accel,builder,intersectors);
   }
 
@@ -934,7 +934,7 @@ namespace embree
   {
     BVH4* accel = new BVH4(TriangleMeshTriangle4i::type,scene,LeafMode);
     Accel::Intersectors intersectors = BVH4Triangle4iIntersectors(accel);
-    Builder* builder = BVH4BuilderTopLevelBinnedSAH(accel,scene,&createTriangleMeshTriangle4i);
+    Builder* builder = BVH4BuilderTwoLevelSAH(accel,scene,&createTriangleMeshTriangle4i);
     return new AccelInstance(accel,builder,intersectors);
   }
 
