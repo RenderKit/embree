@@ -479,7 +479,7 @@ export void device_render (uniform int* uniform pixels,
 
 #if !defined(FORCE_FIXED_EDGE_TESSELLATION)
   {
-    if ((p.x != old_p.x | p.y != old_p.y | p.z != old_p.z))
+    if ((p.x != old_p.x || p.y != old_p.y || p.z != old_p.z))
     {
       old_p = p;
       updateEdgeLevels(g_ispc_scene, cam_org);

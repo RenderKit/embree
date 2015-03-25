@@ -1181,14 +1181,15 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
     foreach_unique (geomID in ray.geomID) {
      //printf("geomID %\n",geomID);
      //printf("geomID_to_type[geomID] %\n",geomID_to_type[geomID]);
-      if (geomID >= 0 && geomID < g_ispc_scene->numMeshes) { // FIXME: workaround for ISPC bug
+     //printf("g_ispc_scene->numMeshes %\n",g_ispc_scene->numMeshes);
+
+      if (geomID >= 0 && geomID < g_ispc_scene->numMeshes+g_ispc_scene->numSubdivMeshes) { // FIXME: workaround for ISPC bug
 	if (geomID_to_type[geomID] == 0) 
 	  materialID = ((ISPCMesh*) geomID_to_mesh[geomID])->triangles[ray.primID].materialID; 
 	else if (geomID_to_type[geomID] == 1)                             
 	  materialID = ((ISPCSubdivMesh*) geomID_to_mesh[geomID])->materialID; 
-	else {
-	  materialID = ((ISPCMesh*) geomID_to_mesh[geomID])->meshMaterialID; 
-        }
+	else 
+	  materialID = ((ISPCMesh*) geomID_to_mesh[geomID])->meshMaterialID;         
       }
     }
     //printf("materialID %\n",materialID);

@@ -179,7 +179,7 @@ void convertScene(ISPCScene* scene_in, const Vec3fa& p)
   for (size_t i=0; i<scene_in->numSubdivMeshes; i++)
   {
     ISPCSubdivMesh* mesh = scene_in->subdiv[i];
-#if 0
+#if 1
     printf("numFaces    %\n",mesh->numFaces);
     printf("numEdges    %\n",mesh->numEdges);
     printf("numVertices %\n",mesh->numVertices);
@@ -198,6 +198,13 @@ void convertScene(ISPCScene* scene_in, const Vec3fa& p)
     if (mesh->position_indices)      rtcSetBuffer(g_scene, geomID, RTC_INDEX_BUFFER,  mesh->position_indices  , 0, sizeof(unsigned int));
     if (mesh->verticesPerFace)       rtcSetBuffer(g_scene, geomID, RTC_FACE_BUFFER,   mesh->verticesPerFace, 0, sizeof(unsigned int));
     if (mesh->holes)                 rtcSetBuffer(g_scene, geomID, RTC_HOLE_BUFFER,   mesh->holes, 0, sizeof(unsigned int));
+
+    //printf("% \n",mesh->edge_creases);
+    //printf("% \n",mesh->edge_crease_weights);
+    //printf("% \n",mesh->vertex_creases);
+    //printf("% \n",mesh->vertex_crease_weights);
+
+
     if (mesh->edge_creases)          rtcSetBuffer(g_scene, geomID, RTC_EDGE_CREASE_INDEX_BUFFER,    mesh->edge_creases,          0, 2*sizeof(unsigned int));
     if (mesh->edge_crease_weights)   rtcSetBuffer(g_scene, geomID, RTC_EDGE_CREASE_WEIGHT_BUFFER,   mesh->edge_crease_weights,   0, sizeof(float));
     if (mesh->vertex_creases)        rtcSetBuffer(g_scene, geomID, RTC_VERTEX_CREASE_INDEX_BUFFER,  mesh->vertex_creases,        0, sizeof(unsigned int));
