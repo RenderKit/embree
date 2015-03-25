@@ -158,6 +158,7 @@ namespace embree
 	profile(2,20,numPrimitives,[&] (ProfileTimer& timer)
         {
 #endif
+          //bvh->alloc.init(0,0); // FIXME: this improves initial build time significantly but reduces rendering performance slightly
             bvh->alloc.init(numSplitPrimitives*sizeof(PrimRef),numSplitPrimitives*sizeof(BVH4::Node));  // FIXME: better estimate
 	    prims.resize(numSplitPrimitives);
             auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
