@@ -87,8 +87,16 @@ namespace embree
     out->geomID = -1;
 
     size_t numEdges = in->position_indices.size();
+    size_t numFaces = in->verticesPerFace.size();
     out->subdivlevel = new float[numEdges];
+    out->face_offsets = new int[numFaces];
     for (size_t i=0; i<numEdges; i++) out->subdivlevel[i] = 1.0f;
+    int offset = 0;
+    for (size_t i=0; i<numFaces; i++)
+      {
+        out->face_offsets[i] = offset;
+        offset+=out->verticesPerFace[i];       
+      }
     return out;
   }
 

@@ -359,7 +359,7 @@ public:
 					      in_pMiscData->numPositionIndices,
 					      in_pMiscData->materialID);
     assert( mesh );
-
+       
     assert( in_pMiscData->numPositions*sizeof(Vec3fa)    == in_pBufferLengths[0] );
     assert( in_pMiscData->numPositionIndices*sizeof(int) == in_pBufferLengths[1] );
     assert( in_pMiscData->numVerticesPerFace*sizeof(int) == in_pBufferLengths[2] );
@@ -368,11 +368,20 @@ public:
     mesh->position_indices = (int*)os_malloc(in_pBufferLengths[1]);
     mesh->verticesPerFace  = (int*)os_malloc(in_pBufferLengths[2]);
     mesh->subdivlevel      = (float*)os_malloc(in_pBufferLengths[1]);
+    mesh->face_offsets     = (float*)os_malloc(sizeof(int) * in_pMiscData->numVerticesPerFace);
 
     memcpy(mesh->positions       ,in_ppBufferPointers[0],in_pBufferLengths[0]);
     memcpy(mesh->position_indices,in_ppBufferPointers[1],in_pBufferLengths[1]);
     memcpy(mesh->verticesPerFace ,in_ppBufferPointers[2],in_pBufferLengths[2]);
 
+    for (size_t i=0; i<numEdges; i++) out->subdivlevel[i] = 1.0f;
+    int offset = 0;
+    for (size_t i=0; i<numFaces; i++)
+      {
+        mesh->face_offsets[i] = offset;
+        offset+=mesh->verticesPerFace[i];       
+      }
+ 
     g_ispc_scene->subdiv[meshID] = mesh;
   }
 

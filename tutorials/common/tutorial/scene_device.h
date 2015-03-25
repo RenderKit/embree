@@ -79,6 +79,7 @@ struct ISPCSubdivMesh
   float* edge_crease_weights;   //!< weight for each crease
   int* vertex_creases;          //!< indices of vertex creases
   float* vertex_crease_weights; //!< weight for each vertex crease
+  int *face_offsets;
   int numVertices;
   int numFaces;
   int numEdges;
