@@ -16,8 +16,6 @@
 
 #include "../common/tutorial/tutorial_device.h"
 
-//
-
 /* render function to use */
 renderPixelFunc renderPixel;
 

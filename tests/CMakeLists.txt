@@ -61,7 +61,7 @@ ENDIF()
   #  SET_PROPERTY(TARGET benchmark_tasking PROPERTY FOLDER tests)
   #ENDIF()
 
-  INSTALL(TARGETS verify benchmark retrace DESTINATION bin)
+  INSTALL(TARGETS verify benchmark retrace DESTINATION bin COMPONENT utilities)
 
 ELSE ()
 
@@ -92,6 +92,6 @@ ELSE ()
   #  SET_PROPERTY(TARGET benchmark_tasking_xeonphi PROPERTY FOLDER tests)
   #ENDIF()
 
-  INSTALL(TARGETS verify_xeonphi benchmark_xeonphi retrace_xeonphi DESTINATION bin)
+  INSTALL(TARGETS verify_xeonphi benchmark_xeonphi retrace_xeonphi DESTINATION bin COMPONENT utilities_xeonphi)
 
 ENDIF()

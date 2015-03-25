@@ -19,8 +19,6 @@
 const int numPhi = 5;
 const int numTheta = 2*numPhi;
 
-//
-
 /* render function to use */
 renderPixelFunc renderPixel;
 

@@ -16,8 +16,6 @@
 
 #include "../common/tutorial/tutorial_device.h"
 
-//
-
 /* scene data */
 RTCScene g_scene = NULL;
 Vec3fa* colors = NULL;

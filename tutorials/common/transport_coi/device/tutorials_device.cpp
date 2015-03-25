@@ -115,6 +115,7 @@ public:
   float* edge_crease_weights;   //!< weight for each crease
   int* vertex_creases;          //!< indices of vertex creases
   float* vertex_crease_weights; //!< weight for each vertex crease
+  int* face_offsets;
   int numVertices;
   int numFaces;
   int numEdges;
@@ -359,7 +360,7 @@ public:
 					      in_pMiscData->numPositionIndices,
 					      in_pMiscData->materialID);
     assert( mesh );
-
+       
     assert( in_pMiscData->numPositions*sizeof(Vec3fa)    == in_pBufferLengths[0] );
     assert( in_pMiscData->numPositionIndices*sizeof(int) == in_pBufferLengths[1] );
     assert( in_pMiscData->numVerticesPerFace*sizeof(int) == in_pBufferLengths[2] );
@@ -368,11 +369,23 @@ public:
     mesh->position_indices = (int*)os_malloc(in_pBufferLengths[1]);
     mesh->verticesPerFace  = (int*)os_malloc(in_pBufferLengths[2]);
     mesh->subdivlevel      = (float*)os_malloc(in_pBufferLengths[1]);
+    mesh->face_offsets     = (int*)os_malloc(sizeof(int) * in_pMiscData->numVerticesPerFace);
 
     memcpy(mesh->positions       ,in_ppBufferPointers[0],in_pBufferLengths[0]);
     memcpy(mesh->position_indices,in_ppBufferPointers[1],in_pBufferLengths[1]);
     memcpy(mesh->verticesPerFace ,in_ppBufferPointers[2],in_pBufferLengths[2]);
 
+    const size_t numEdges = in_pMiscData->numPositionIndices;
+    const size_t numFaces = in_pMiscData->numVerticesPerFace;
+    
+    for (size_t i=0; i<numEdges; i++) mesh->subdivlevel[i] = 1.0f;
+    int offset = 0;
+    for (size_t i=0; i<numFaces; i++)
+      {
+        mesh->face_offsets[i] = offset;
+        offset+=mesh->verticesPerFace[i];       
+      }
+ 
     g_ispc_scene->subdiv[meshID] = mesh;
   }
 

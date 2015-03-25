@@ -21,10 +21,14 @@
 
 
 
+#undef TILE_SIZE_X
+#undef TILE_SIZE_Y
+
+#define TILE_SIZE_X 4
+#define TILE_SIZE_Y 4
+
 #define FIX_SAMPLING 0
 #define SAMPLES_PER_PIXEL 1
-
-//
 
 //#define FORCE_FIXED_EDGE_TESSELLATION
 #define FIXED_EDGE_TESSELLATION_VALUE 2
@@ -34,7 +38,6 @@
 //#define MAX_EDGE_LEVEL 8.0f
 #define MIN_EDGE_LEVEL 4.0f
 #define ENABLE_DISPLACEMENTS 0
-
 #if ENABLE_DISPLACEMENTS
 #  define LEVEL_FACTOR 256.0f
 #else
@@ -46,9 +49,6 @@ bool g_subdiv_mode = false;
 
 struct DifferentialGeometry
 {
-  int geomID;
-  int primID;
-  float u,v;
   Vec3fa P;
   Vec3fa Ng;
   Vec3fa Ns;
@@ -470,7 +470,7 @@ inline DielectricLayerLambertian make_DielectricLayerLambertian(const Vec3fa& T,
     brdf.Ka = Vec3fa(material->Ka);
     //if (material->map_Ka) { brdf.Ka *= material->map_Ka->get(dg.st); }
     brdf.Kd = d * Vec3fa(material->Kd);  
-    if (material->map_Kd_ptex) brdf.Kd *= getPtexTexel3f(material->map_Kd_ptex,dg.primID,dg.u,dg.v);  
+    //if (material->map_Kd) brdf.Kd *= material->map_Kd->get(dg.st);  
     brdf.Ks = d * Vec3fa(material->Ks);  
     //if (material->map_Ks) brdf.Ks *= material->map_Ks->get(dg.st); 
     brdf.Ns = material->Ns;  
@@ -875,8 +875,6 @@ void convertTriangleMeshes(ISPCScene* scene_in, RTCScene scene_out, size_t numGe
     /* get ith mesh */
     ISPCMesh* mesh = scene_in->meshes[i];
 
-    if (mesh->numQuads) continue;
-
     /* create a triangle mesh */
     unsigned int geomID = rtcNewTriangleMesh (scene_out, RTC_GEOMETRY_STATIC, mesh->numTriangles, mesh->numVertices);
     assert(geomID < numGeometries);
@@ -916,56 +914,14 @@ void convertTriangleMeshes(ISPCScene* scene_in, RTCScene scene_out, size_t numGe
   }
 }
 
-void displacementFunction(void* ptr, unsigned int geomID, int unsigned primID, 
-                      const float* u,      /*!< u coordinates (source) */
-                      const float* v,      /*!< v coordinates (source) */
-                      const float* nx,     /*!< x coordinates of normal at point to displace (source) */
-                      const float* ny,     /*!< y coordinates of normal at point to displace (source) */
-                      const float* nz,     /*!< z coordinates of normal at point to displace (source) */
-                      float* px,           /*!< x coordinates of points to displace (source and target) */
-                      float* py,           /*!< y coordinates of points to displace (source and target) */
-                      float* pz,           /*!< z coordinates of points to displace (source and target) */
-                      size_t N)
+void updateEdgeLevelBuffer( ISPCSubdivMesh* mesh, const Vec3fa& cam_pos, size_t startID, size_t endID )
 {
-  int materialID = ((ISPCMesh*) geomID_to_mesh[geomID])->meshMaterialID; 
-  ISPCMaterial* materials = &g_ispc_scene->materials[0];
-  ISPCMaterial* material = &materials[materialID];
-  if (material->ty != MATERIAL_OBJ) return;
-  void* tex = ((OBJMaterial*)  material)->map_Displ_ptex;
-  if (tex == NULL) return;
-    
-  for (size_t i = 0; i<N; i++)
-  {
-    const Vec3fa P = Vec3fa(px[i],py[i],pz[i]);
-    const Vec3fa Ng = Vec3fa(nx[i],ny[i],nz[i]);
-    const float  dN = getPtexTexel1f(tex,primID,u[i],v[i]);  
-    const Vec3fa dP = 0.05f*dN*normalize(Ng);
-    px[i] += dP.x; py[i] += dP.y; pz[i] += dP.z;
-  }
-}
-
-void updateEdgeLevelBuffer( ISPCMesh* mesh, const Vec3fa& cam_pos, size_t startID, size_t endID )
-{
-  for (size_t f=startID; f<endID; f++) 
-  {
-    const int N = 4;
-    for (size_t i=0; i<N; i++) {
-      const int * index = (int *)&mesh->quads[f];	
-      const Vec3fa v0 = mesh->positions[index[i]];
-      const Vec3fa v1 = mesh->positions[index[(i+1)%N]];
-      const Vec3fa edge = v1-v0;
-      const Vec3fa P = 0.5f*(v1+v0);
-      const Vec3fa dist = cam_pos - P;
-      mesh->edge_level[f*4+i] = max(min(LEVEL_FACTOR*(0.5f*length(edge)/length(dist)),MAX_EDGE_LEVEL),MIN_EDGE_LEVEL); // FIXME: map mesh subdivlevel buffer
-      assert( mesh->edge_level[f*4+i] >= 1.0f );
-    }
-  }
 }
 
 #if defined(ISPC)
-task void updateEdgeLevelBufferTask( ISPCMesh* mesh, const Vec3fa& cam_pos )
+task void updateEdgeLevelBufferTask( ISPCSubdivMesh* mesh, const Vec3fa& cam_pos )
 {
-  const size_t size = mesh->numQuads;
+  const size_t size = mesh->numFaces;
   const size_t startID = ((taskIndex+0)*size)/taskCount;
   const size_t endID   = ((taskIndex+1)*size)/taskCount;
   updateEdgeLevelBuffer(mesh,cam_pos,startID,endID);
@@ -975,81 +931,45 @@ task void updateEdgeLevelBufferTask( ISPCMesh* mesh, const Vec3fa& cam_pos )
 
 void updateEdgeLevels(ISPCScene* scene_in, const Vec3fa& cam_pos)
 {
-  for (int i=0; i<g_ispc_scene->numMeshes; i++)
+  for (size_t g=0; g<scene_in->numSubdivMeshes; g++)
   {
-    ISPCMesh* mesh = g_ispc_scene->meshes[i];
-
-    if (mesh->numQuads == 0) continue;
-    if (mesh->edge_level) 
-    {
-      unsigned int geomID = mesh->geomID;
-#if defined(ISPC)
-      launch[  getNumHWThreads() ] updateEdgeLevelBufferTask(mesh,cam_pos); 	           
-#else
-      updateEdgeLevelBuffer(mesh,cam_pos,0,mesh->numQuads);
-#endif
-      rtcUpdateBuffer(g_scene,geomID,RTC_LEVEL_BUFFER);
+    ISPCSubdivMesh* mesh = g_ispc_scene->subdiv[g];
+    unsigned int geomID = mesh->geomID;
+//#if defined(ISPC)
+//      launch[  getNumHWThreads() ] updateEdgeLevelBufferTask(mesh,cam_pos); 	           
+//#else
+//      updateEdgeLevelBuffer(mesh,cam_pos,0,mesh->numQuads);
+//#endif
+   
+    for (size_t f=0, e=0; f<mesh->numFaces; e+=mesh->verticesPerFace[f++]) {
+      int N = mesh->verticesPerFace[f];
+      for (size_t i=0; i<N; i++) {
+        const Vec3fa v0 = mesh->positions[mesh->position_indices[e+(i+0)]];
+        const Vec3fa v1 = mesh->positions[mesh->position_indices[e+(i+1)%N]];
+        const Vec3fa edge = v1-v0;
+        const Vec3fa P = 0.5f*(v1+v0);
+	const Vec3fa dist = cam_pos - P;
+        mesh->subdivlevel[e+i] = max(min(LEVEL_FACTOR*(0.5f*length(edge)/length(dist)),MAX_EDGE_LEVEL),MIN_EDGE_LEVEL);
+      }
     }
+
+   rtcUpdateBuffer(g_scene,geomID,RTC_LEVEL_BUFFER);
+    
   }
 }
 
 
 void convertSubdivMeshes(ISPCScene* scene_in, RTCScene scene_out, size_t numGeometries, const Vec3fa& cam_pos)
 {
-  for (int i=0; i<scene_in->numMeshes; i++)
-  {
-    ISPCMesh* mesh = scene_in->meshes[i];
-   
-    if (mesh->numQuads)
-     {
-      g_subdiv_mode = true;
-
-
-      size_t numPrimitives = mesh->numQuads;
-      size_t numEdges      = mesh->numQuads*4;
-      mesh->edge_level             = new float[numEdges];
-      int *index_buffer = new int[numEdges];
-      
-      for (size_t i=0; i<numEdges; i++) 
-	mesh->edge_level[i] = FIXED_EDGE_TESSELLATION_VALUE;
-
-      /* create a triangle mesh */
-      unsigned int geomID = rtcNewSubdivisionMesh (scene_out, RTC_GEOMETRY_STATIC, numPrimitives, numEdges, mesh->numVertices, 0, 0, 0);
-      mesh->geomID = geomID;
-
-      geomID_to_mesh[geomID] = mesh;
-      geomID_to_type[geomID] = 2;
-
-      unsigned int* faces = (unsigned int*) rtcMapBuffer(scene_out, geomID, RTC_FACE_BUFFER);
-      for (size_t i=0; i<mesh->numQuads    ; i++) faces[i] = 4;
-      
-      rtcUnmapBuffer(scene_out,geomID,RTC_FACE_BUFFER);
-
-      for (size_t i=0; i<mesh->numQuads; i++)
-      	 {
-	   index_buffer[4*i+0] = mesh->quads[i].v0;
-	   index_buffer[4*i+1] = mesh->quads[i].v1;
-	   index_buffer[4*i+2] = mesh->quads[i].v2;
-	   index_buffer[4*i+3] = mesh->quads[i].v3;	   
-	 }
-
-      rtcSetBuffer(scene_out, geomID, RTC_VERTEX_BUFFER, mesh->positions , 0, sizeof(Vec3fa  ));
-      rtcSetBuffer(scene_out, geomID, RTC_INDEX_BUFFER,  index_buffer    , 0, sizeof(unsigned int));
-      rtcSetBuffer(scene_out, geomID, RTC_LEVEL_BUFFER,  mesh->edge_level, 0, sizeof(float));
-      
-#if ENABLE_DISPLACEMENTS == 1
-      rtcSetDisplacementFunction(scene_out,geomID,(RTCDisplacementFunc)&displacementFunction,NULL);
-#endif
-     } 
-   }
   for (size_t i=0; i<g_ispc_scene->numSubdivMeshes; i++)
   {
     ISPCSubdivMesh* mesh = g_ispc_scene->subdiv[i];
     unsigned int geomID = rtcNewSubdivisionMesh(scene_out, RTC_GEOMETRY_STATIC, mesh->numFaces, mesh->numEdges, mesh->numVertices, 
 						mesh->numEdgeCreases, mesh->numVertexCreases, mesh->numHoles);
+    mesh->geomID = geomID;												
     assert(geomID < numGeometries);
     geomID_to_mesh[geomID] = mesh;
-    geomID_to_type[geomID] = 1;
+    geomID_to_type[geomID] = 1; //2
 
     for (size_t i=0; i<mesh->numEdges; i++) mesh->subdivlevel[i] = FIXED_EDGE_TESSELLATION_VALUE;
     rtcSetBuffer(scene_out, geomID, RTC_VERTEX_BUFFER, mesh->positions, 0, sizeof(Vec3fa  ));
@@ -1061,6 +981,9 @@ void convertSubdivMeshes(ISPCScene* scene_in, RTCScene scene_out, size_t numGeom
     rtcSetBuffer(scene_out, geomID, RTC_EDGE_CREASE_WEIGHT_BUFFER,   mesh->edge_crease_weights,   0, sizeof(float));
     rtcSetBuffer(scene_out, geomID, RTC_VERTEX_CREASE_INDEX_BUFFER,  mesh->vertex_creases,        0, sizeof(unsigned int));
     rtcSetBuffer(scene_out, geomID, RTC_VERTEX_CREASE_WEIGHT_BUFFER, mesh->vertex_crease_weights, 0, sizeof(float));
+#if ENABLE_DISPLACEMENTS == 1
+      rtcSetDisplacementFunction(scene_out,geomID,(RTCDisplacementFunc)&displacementFunction,NULL);
+#endif
   }
 }      
 
@@ -1068,15 +991,9 @@ typedef void* void_ptr;
 
 RTCScene convertScene(ISPCScene* scene_in,const Vec3fa& cam_org)
 {
-
-  for (int i=0; i<scene_in->numMeshes; i++)
-    {
-     ISPCMesh* mesh = scene_in->meshes[i];
-    if (mesh->numQuads)
+  if (g_ispc_scene->numSubdivMeshes > 0)
        g_subdiv_mode = true;
-    }
-
-   
+  
   size_t numGeometries = scene_in->numMeshes + scene_in->numSubdivMeshes;
 
   geomID_to_mesh = new void_ptr[numGeometries];
@@ -1235,10 +1152,6 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
 
     /* compute differential geometry */
     DifferentialGeometry dg;
-    dg.geomID = ray.geomID;
-    dg.primID = ray.primID;
-    dg.u = ray.u;
-    dg.v = ray.v;
     dg.P  = ray.org+ray.tfar*ray.dir;
     dg.Ng = face_forward(ray.dir,normalize(ray.Ng));
     //Vec3fa _Ns = interpolate_normal(ray);
@@ -1251,7 +1164,7 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
 #if 1 // FIXME: pointer gather not implemented in ISPC for Xeon Phi
     if (geomID_to_type[ray.geomID] == 0)
       materialID = ((ISPCMesh*) geomID_to_mesh[ray.geomID])->triangles[ray.primID].materialID; 
-    else if (geomID_to_type[ray.geomID] == 1)
+    else if (geomID_to_type[ray.geomID] == 1)                             
       materialID = ((ISPCSubdivMesh*) geomID_to_mesh[ray.geomID])->materialID; 
     else
       materialID = ((ISPCMesh*) geomID_to_mesh[ray.geomID])->meshMaterialID; 
@@ -1260,7 +1173,7 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
      //printf("geomID %\n",geomID);
      //printf("geomID_to_type[geomID] %\n",geomID_to_type[geomID]);
       if (geomID >= 0 && geomID < g_ispc_scene->numMeshes) { // FIXME: workaround for ISPC bug
-	if (geomID_to_type[geomID] == 0)  
+	if (geomID_to_type[geomID] == 0) 
 	  materialID = ((ISPCMesh*) geomID_to_mesh[geomID])->triangles[ray.primID].materialID; 
 	else if (geomID_to_type[geomID] == 1)                             
 	  materialID = ((ISPCSubdivMesh*) geomID_to_mesh[geomID])->materialID; 
@@ -1285,7 +1198,8 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
 
 
     Material__preprocess(material_array,materialID,numMaterials,brdf,wo,dg,medium);
-    
+
+
     /* sample BRDF at hit point */
     Sample3f wi1;
     c = c * Material__sample(material_array,materialID,numMaterials,brdf,Lw, wo, dg, wi1, medium, Vec2f(frand(state),frand(state)));
