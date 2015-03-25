@@ -16,7 +16,7 @@
 
 #include "../common/tutorial/tutorial_device.h"
 #include "kernels/common/alloc.h"
-#include "kernels/xeon/builders/bvh_builder2.h"
+#include "kernels/xeon/builders/bvh_builder_sah.h"
 #include "kernels/xeon/builders/bvh_builder_morton.h"
 
 /* scene data */

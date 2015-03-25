@@ -17,7 +17,7 @@
 #include "bvh4_builder_toplevel.h"
 #include "bvh4_statistics.h"
 #include "common/profile.h"
-#include "builders/bvh_builder2.h"
+#include "builders/bvh_builder_sah.h"
 
 #define PROFILE 0
 #define MIN_OPEN_SIZE 2000

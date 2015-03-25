@@ -20,7 +20,7 @@
 
 #include "builders/primrefgen.h"
 #include "builders/presplit.h"
-#include "builders/bvh_builder2.h"
+#include "builders/bvh_builder_sah.h"
 
 #include "geometry/triangle4.h"
 #include "geometry/triangle8.h"

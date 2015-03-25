@@ -21,7 +21,7 @@
 
 #include "builders/primrefgen.h"
 #include "builders/presplit.h"
-#include "builders/bvh_builder2.h"
+#include "builders/bvh_builder_sah.h"
 
 #include "geometry/bezier1v.h"
 #include "geometry/bezier1i.h"
