@@ -2744,12 +2744,12 @@ namespace embree
           default: break;
           };
 #endif
-#if defined(__WIN32__)
-          size_t numPhi = random<int>()%40;
-#else
           size_t numPhi = random<int>()%100;
-#endif
 	  if (type >= 3 || type <= 5) numPhi = random<int>()%10;
+#if defined(__WIN32__)          
+    numPhi = random<int>() % 4;
+#endif
+
           size_t numTriangles = 2*2*numPhi*(numPhi-1);
           numTriangles = random<int>()%(numTriangles+1);
           types[index] = type;
