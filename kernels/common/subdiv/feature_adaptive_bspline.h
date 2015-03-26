@@ -39,6 +39,7 @@ namespace embree
 #else
       int neighborSubdiv[GeneralCatmullClarkPatch::SIZE];
       const GeneralCatmullClarkPatch patch(h,vertices);
+      assert( patch.size() <= GeneralCatmullClarkPatch::SIZE);
       for (size_t i=0; i<patch.size(); i++) {
 	neighborSubdiv[i] = h->hasOpposite() ? h->opposite()->noRegularFace() : 0; h = h->next();
       }

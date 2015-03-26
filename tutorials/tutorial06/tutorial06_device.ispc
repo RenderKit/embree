@@ -356,7 +356,7 @@ inline Vec3f DielectricLayerLambertian__eval(const varying DielectricLayerLamber
 {
   const float cosThetaO = dot(wo,dg.Ns);
   const float cosThetaI = dot(wi,dg.Ns);
-  if (cosThetaI <= 0.0f | cosThetaO <= 0.0f) return make_Vec3f(0.f);
+  if (cosThetaI <= 0.0f || cosThetaO <= 0.0f) return make_Vec3f(0.f);
 
   float cosThetaO1; 
   const Sample3f wo1 = refract(wo,dg.Ns,This->etait,cosThetaO,cosThetaO1);
@@ -574,7 +574,7 @@ __device__ Vec3f MetalMaterial__eval(MetalMaterial* uniform This, const BRDF& br
 
   const float cosThetaO = dot(wo,dg.Ns);
   const float cosThetaI = dot(wi,dg.Ns);
-  if (cosThetaI <= 0.0f | cosThetaO <= 0.0f) return make_Vec3f(0.f);
+  if (cosThetaI <= 0.0f || cosThetaO <= 0.0f) return make_Vec3f(0.f);
   const Vec3f wh = normalize(wi+wo);
   const float cosThetaH = dot(wh, dg.Ns);
   const float cosTheta = dot(wi, wh); // = dot(wo, wh);
@@ -959,7 +959,7 @@ void updateEdgeLevels(uniform ISPCScene* uniform scene_in, const uniform Vec3fa&
     uniform unsigned int geomID = mesh->geomID;
 
 #if defined(ISPC)
-      launch[  getNumHWThreads() ] updateEdgeLevelBufferTask(mesh,cam_pos); sync;	           
+      launch[ getNumHWThreads() ] updateEdgeLevelBufferTask(mesh,cam_pos); sync;	           
 #else
       updateEdgeLevelBuffer(mesh,cam_pos,0,mesh->numFaces);
 #endif
@@ -1181,14 +1181,15 @@ Vec3f renderPixelFunction(float x, float y, rand_state& state, const uniform Vec
     foreach_unique (geomID in ray.geomID) {
      //print("geomID %\n",geomID);
      //print("geomID_to_type[geomID] %\n",geomID_to_type[geomID]);
-      if (geomID >= 0 && geomID < g_ispc_scene->numMeshes) { // FIXME: workaround for ISPC bug
+     //print("g_ispc_scene->numMeshes %\n",g_ispc_scene->numMeshes);
+
+      if (geomID >= 0 && geomID < g_ispc_scene->numMeshes+g_ispc_scene->numSubdivMeshes) { // FIXME: workaround for ISPC bug
 	if (geomID_to_type[geomID] == 0) 
 	  materialID = ((ISPCMesh* uniform) geomID_to_mesh[geomID])->triangles[ray.primID].materialID; 
 	else if (geomID_to_type[geomID] == 1)                             
 	  materialID = ((ISPCSubdivMesh* uniform) geomID_to_mesh[geomID])->materialID; 
-	else {
-	  materialID = ((ISPCMesh* uniform) geomID_to_mesh[geomID])->meshMaterialID; 
-        }
+	else 
+	  materialID = ((ISPCMesh* uniform) geomID_to_mesh[geomID])->meshMaterialID;         
       }
     }
     //print("materialID %\n",materialID);
@@ -1339,8 +1340,6 @@ task void renderTile(uniform int* uniform pixels,
 
   foreach_tiled (y = y0 ... y1, x = x0 ... x1)
   {
-    //if (x != 200 || y != 450) continue;
-
     /* calculate pixel color */
     Vec3f color = renderPixel(x,y,vx,vy,vz,p);
 

@@ -22,6 +22,8 @@
 #include <vector>
 #include <string.h>
 
+#define FORCE_ONLY_QUADS 0
+
 namespace embree
 {
   /*! Three-index vertex, indexing start at 0, -1 means invalid vertex. */
@@ -372,10 +374,15 @@ namespace embree
 	  {
 	    /* iterate over all faces */
 	    const std::vector<Vertex>& face = curGroup[j];
-	    
-	    for (size_t i=0;i<face.size();i++)
-	      mesh->position_indices.push_back(face[i].v);
-	    mesh->verticesPerFace.push_back(face.size());
+
+#if FORCE_ONLY_QUADS == 1
+	    if ( face.size() == 4)
+#endif
+	      {
+		for (size_t i=0;i<face.size();i++)
+		  mesh->position_indices.push_back(face[i].v);
+		mesh->verticesPerFace.push_back(face.size());
+	      }
             
 	    mesh->materialID = curMaterial;	
 	  }
