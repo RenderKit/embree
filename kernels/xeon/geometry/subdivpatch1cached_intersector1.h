@@ -90,8 +90,8 @@ namespace embree
 	    const Vec2f uv2 = hit_patch->getUV(2);
 	    const Vec2f uv3 = hit_patch->getUV(3);
 	    
-	    const float patch_u = bilinear_interpolate(uv0.x,uv1.x,uv2.x,uv3.x,r.u,r.v);
-	    const float patch_v = bilinear_interpolate(uv0.y,uv1.y,uv2.y,uv3.y,r.u,r.v);
+	    const float patch_u = bilinear_interpolate(uv0.x,uv1.x,uv2.x,uv3.x,r.v,r.u);
+	    const float patch_v = bilinear_interpolate(uv0.y,uv1.y,uv2.y,uv3.y,r.v,r.u);
 
 	    r.u      = patch_u;
 	    r.v      = patch_v;

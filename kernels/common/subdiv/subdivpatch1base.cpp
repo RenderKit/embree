@@ -125,8 +125,8 @@ namespace embree
     for (size_t i=0;i<4;i++)
       {
         /* need to reverse input here */
-        u[i] = (unsigned short)(uv[i].y * 65535.0f);
-        v[i] = (unsigned short)(uv[i].x * 65535.0f);
+        u[i] = (unsigned short)(uv[i].x * 65535.0f);
+        v[i] = (unsigned short)(uv[i].y * 65535.0f);
       }
 
 
