@@ -48,12 +48,12 @@ namespace embree
     {
       __forceinline CreateBVH4Node (BVH4* bvh) : bvh(bvh) {}
       
-      __forceinline int operator() (const isa::BuildRecord2<>& current, BuildRecord2<>** children, const size_t N, Allocator* alloc) 
+      __forceinline int operator() (const isa::BVHBuilderBinnedSAH::BuildRecord& current, BVHBuilderBinnedSAH::BuildRecord* children, const size_t N, Allocator* alloc) 
       {
         BVH4::Node* node = (BVH4::Node*) alloc->alloc0.malloc(sizeof(BVH4::Node)); node->clear();
         for (size_t i=0; i<N; i++) {
-          node->set(i,children[i]->pinfo.geomBounds);
-          children[i]->parent = (size_t*)&node->child(i);
+          node->set(i,children[i].pinfo.geomBounds);
+          children[i].parent = (size_t*)&node->child(i);
         }
         *current.parent = bvh->encodeNode(node);
 	return 0;
@@ -68,7 +68,7 @@ namespace embree
       __forceinline CreateLeaf (BVH4* bvh, PrimRef* prims) 
         : bvh(bvh), prims(prims) {}
       
-      __forceinline int operator() (const BuildRecord2<>& current, Allocator* alloc)
+      __forceinline int operator() (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc)
       {
         size_t items = Primitive::blocks(current.prims.size());
         size_t start = current.prims.begin();
@@ -118,8 +118,9 @@ namespace embree
         auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
         auto virtualprogress = BuildProgressMonitorFromClosure(progress);
         const PrimInfo pinfo = createPrimRefArray<SubdivMesh,1>(scene,prims,virtualprogress);
-        BVH4::NodeRef root = bvh_builder_binned_sah2_internal<BVH4::NodeRef>
-          (CreateAlloc(bvh),CreateBVH4Node(bvh),CreateLeaf<SubdivPatch1>(bvh,prims.data()),virtualprogress,
+        BVH4::NodeRef root;
+        BVHBuilderBinnedSAH::build<BVH4::NodeRef>
+          (root,CreateAlloc(bvh),CreateBVH4Node(bvh),CreateLeaf<SubdivPatch1>(bvh,prims.data()),virtualprogress,
            prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,1,1,1,1.0f,1.0f);
         bvh->set(root,pinfo.geomBounds,pinfo.size());
 
@@ -248,9 +249,10 @@ namespace embree
           return s;
         }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a,b); });
         
-        BVH4::NodeRef root = bvh_builder_binned_sah2_internal<BVH4::NodeRef>
-          (CreateAlloc(bvh),CreateBVH4Node(bvh),
-           [&] (const BuildRecord2<>& current, Allocator* alloc) -> int {
+        BVH4::NodeRef root;
+        BVHBuilderBinnedSAH::build<BVH4::NodeRef>
+          (root,CreateAlloc(bvh),CreateBVH4Node(bvh),
+           [&] (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) -> int {
             if (current.pinfo.size() != 1) THROW_RUNTIME_ERROR("bvh4_builder_subdiv: internal error");
             *current.parent = (size_t) prims[current.prims.begin()].ID();
             return 0;
@@ -370,9 +372,10 @@ namespace embree
           return s;
         }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a,b); });
         
-        BVH4::NodeRef root = bvh_builder_binned_sah2_internal<BVH4::NodeRef>
-          (CreateAlloc(bvh),CreateBVH4Node(bvh),
-           [&] (const BuildRecord2<>& current, Allocator* alloc) -> int {
+        BVH4::NodeRef root;
+        BVHBuilderBinnedSAH::build<BVH4::NodeRef>
+          (root,CreateAlloc(bvh),CreateBVH4Node(bvh),
+           [&] (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) -> int {
              if (current.pinfo.size() != 1) THROW_RUNTIME_ERROR("bvh4_builder_subdiv: internal error");
              *current.parent = (size_t) prims[current.prims.begin()].ID();
              return 0;
@@ -492,9 +495,10 @@ namespace embree
           return s;
         }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a,b); });
         
-        BVH4::NodeRef root = bvh_builder_binned_sah2_internal<BVH4::NodeRef>
-          (CreateAlloc(bvh),CreateBVH4Node(bvh),
-           [&] (const BuildRecord2<>& current, Allocator* alloc) -> int {
+        BVH4::NodeRef root;
+        BVHBuilderBinnedSAH::build<BVH4::NodeRef>
+          (root,CreateAlloc(bvh),CreateBVH4Node(bvh),
+           [&] (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) -> int {
             assert(current.pinfo.size() == 1);
             BVH4::NodeRef node = prims[current.prims.begin()].ID();
             size_t ty = 0;
@@ -868,15 +872,13 @@ namespace embree
        {
          DBG_CACHE_BUILDER(std::cout << "ALLOCATING SUBDIVPATCH1CACHED MEMORY FOR " << numPrimitives << " PRIMITIVES" << std::endl);
          this->bvh->size_data_mem = sizeof(SubdivPatch1Cached) * numPrimitives;
-
-	 //DBG_PRINT( numPrimitives );
-	 //DBG_PRINT( this->bvh->size_data_mem );
+         //DBG_PRINT(this->bvh->size_data_mem);
 	 if ( this->bvh->size_data_mem != 0)
 	   this->bvh->data_mem      = os_malloc( this->bvh->size_data_mem );        
 	 else
 	   this->bvh->data_mem      = NULL;
        }
-        
+     assert(this->bvh->data_mem);
       SubdivPatch1Cached *const subdiv_patches = (SubdivPatch1Cached *)this->bvh->data_mem;
 
       PrimInfo pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
@@ -999,9 +1001,10 @@ namespace embree
 	  {
 	    DBG_CACHE_BUILDER(std::cout << "start building..." << std::endl);
 
-	    BVH4::NodeRef root = bvh_builder_binned_sah2_internal<BVH4::NodeRef>
-	      (CreateAlloc(bvh),CreateBVH4Node(bvh),
-	       [&] (const BuildRecord2<>& current, Allocator* alloc) -> int {
+	    BVH4::NodeRef root;
+            BVHBuilderBinnedSAH::build<BVH4::NodeRef>
+	      (root,CreateAlloc(bvh),CreateBVH4Node(bvh),
+	       [&] (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) -> int {
 		size_t items = current.pinfo.size();
 		assert(items == 1);
 		const unsigned int patchIndex = prims[current.prims.begin()].ID();

@@ -53,12 +53,12 @@ namespace embree
     {
       __forceinline CreateBVH4Node (BVH4* bvh) : bvh(bvh) {}
       
-      __forceinline BVH4::Node* operator() (const isa::BuildRecord2<>& current, BuildRecord2<>** children, const size_t N, Allocator* alloc) 
+      __forceinline BVH4::Node* operator() (const isa::BVHBuilderBinnedSAH::BuildRecord& current, BVHBuilderBinnedSAH::BuildRecord* children, const size_t N, Allocator* alloc) 
       {
         BVH4::Node* node = (BVH4::Node*) alloc->alloc0.malloc(sizeof(BVH4::Node)); node->clear();
         for (size_t i=0; i<N; i++) {
-          node->set(i,children[i]->pinfo.geomBounds);
-          children[i]->parent = (size_t*)&node->child(i);
+          node->set(i,children[i].pinfo.geomBounds);
+          children[i].parent = (size_t*)&node->child(i);
         }
         *current.parent = bvh->encodeNode(node);
 	return node;
@@ -72,7 +72,7 @@ namespace embree
     {
       __forceinline CreateLeaf (BVH4* bvh, PrimRef* prims) : bvh(bvh), prims(prims) {}
       
-      __forceinline size_t operator() (const BuildRecord2<>& current, Allocator* alloc)
+      __forceinline size_t operator() (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc)
       {
         size_t n = current.prims.size();
         size_t items = Primitive::blocks(n);
@@ -167,9 +167,9 @@ namespace embree
             if (presplitFactor > 1.0f)
               pinfo = presplit<Mesh>(scene, pinfo, prims);
 
-	    BVH4::NodeRef root = bvh_builder_reduce_binned_sah2_internal<BVH4::NodeRef>
-	      (CreateAlloc(bvh),size_t(0),CreateBVH4Node(bvh),rotate,CreateLeaf<Primitive>(bvh,prims.data()),
-               progress,
+	    BVH4::NodeRef root;
+            BVHBuilderBinnedSAH::build_reduce<BVH4::NodeRef>
+	      (root,CreateAlloc(bvh),size_t(0),CreateBVH4Node(bvh),rotate,CreateLeaf<Primitive>(bvh,prims.data()),progress,
 	       prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,sahBlockSize,minLeafSize,maxLeafSize,BVH4::travCost,intCost);
 	    bvh->set(root,pinfo.geomBounds,pinfo.size());
 
@@ -231,12 +231,12 @@ namespace embree
     {
       __forceinline CreateListBVH4Node (BVH4* bvh) : bvh(bvh) {}
       
-      __forceinline BVH4::Node* operator() (const isa::BuildRecord2<PrimRefList>& current, BuildRecord2<PrimRefList>** children, const size_t N, Allocator* alloc) 
+      __forceinline BVH4::Node* operator() (const isa::BVHBuilderBinnedSpatialSAH::BuildRecord& current, BVHBuilderBinnedSpatialSAH::BuildRecord* children, const size_t N, Allocator* alloc) 
       {
         BVH4::Node* node = (BVH4::Node*) alloc->alloc0.malloc(sizeof(BVH4::Node)); node->clear();
         for (size_t i=0; i<N; i++) {
-          node->set(i,children[i]->pinfo.geomBounds);
-          children[i]->parent = (size_t*)&node->child(i);
+          node->set(i,children[i].pinfo.geomBounds);
+          children[i].parent = (size_t*)&node->child(i);
         }
         *current.parent = bvh->encodeNode(node);
 	return node;
@@ -250,7 +250,7 @@ namespace embree
     {
       __forceinline CreateListLeaf (BVH4* bvh) : bvh(bvh) {}
       
-      __forceinline size_t operator() (BuildRecord2<PrimRefList>& current, Allocator* alloc)
+      __forceinline size_t operator() (BVHBuilderBinnedSpatialSAH::BuildRecord& current, Allocator* alloc)
       {
         size_t n = current.pinfo.size();
         size_t N = Primitive::blocks(n);
@@ -409,8 +409,9 @@ namespace embree
               return N;
             },std::plus<size_t>());
 
-	    BVH4::NodeRef root = bvh_builder_reduce_spatial_sah2_internal<BVH4::NodeRef>
-	      (scene,CreateAlloc(bvh),size_t(0),CreateListBVH4Node(bvh),rotate,CreateListLeaf<Primitive>(bvh),
+	    BVH4::NodeRef root;
+            BVHBuilderBinnedSpatialSAH::build_reduce<BVH4::NodeRef>
+	      (root,CreateAlloc(bvh),size_t(0),CreateListBVH4Node(bvh),rotate,CreateListLeaf<Primitive>(bvh),
                [&] (const PrimRef& prim, int dim, float pos, PrimRef& left_o, PrimRef& right_o)
                {
                 TriangleMesh* mesh = (TriangleMesh*) scene->get(prim.geomID() & 0x00FFFFFF); 
@@ -464,11 +465,11 @@ namespace embree
     {
       __forceinline CreateBVH4NodeMB (BVH4* bvh) : bvh(bvh) {}
       
-      __forceinline BVH4::NodeMB* operator() (const isa::BuildRecord2<>& current, BuildRecord2<>** children, const size_t N, Allocator* alloc) 
+      __forceinline BVH4::NodeMB* operator() (const isa::BVHBuilderBinnedSAH::BuildRecord& current, BVHBuilderBinnedSAH::BuildRecord* children, const size_t N, Allocator* alloc) 
       {
         BVH4::NodeMB* node = (BVH4::NodeMB*) alloc->alloc0.malloc(sizeof(BVH4::NodeMB)); node->clear();
         for (size_t i=0; i<N; i++) {
-          children[i]->parent = (size_t*)&node->child(i);
+          children[i].parent = (size_t*)&node->child(i);
         }
         *current.parent = bvh->encodeNode(node);
 	return node;
@@ -482,7 +483,7 @@ namespace embree
     {
       __forceinline CreateLeafMB (BVH4* bvh, PrimRef* prims) : bvh(bvh), prims(prims) {}
       
-      __forceinline std::pair<BBox3fa,BBox3fa> operator() (const BuildRecord2<>& current, Allocator* alloc) // FIXME: why are prims passed here but not for createNode
+      __forceinline std::pair<BBox3fa,BBox3fa> operator() (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc)
       {
         size_t items = Primitive::blocks(current.prims.size());
         size_t start = current.prims.begin();
@@ -560,9 +561,9 @@ namespace embree
             auto virtualprogress = BuildProgressMonitorFromClosure(progress);
 	    const PrimInfo pinfo = mesh ? createPrimRefArray<Mesh>(mesh,prims,virtualprogress) 
               : createPrimRefArray<Mesh,2>(scene,prims,virtualprogress);
-	    BVH4::NodeRef root = bvh_builder_reduce_binned_sah2_internal<BVH4::NodeRef>
-	      (CreateAlloc(bvh),identity,CreateBVH4NodeMB(bvh),reduce,CreateLeafMB<Primitive>(bvh,prims.data()),
-               progress,
+	    BVH4::NodeRef root;
+            BVHBuilderBinnedSAH::build_reduce<BVH4::NodeRef>
+	      (root,CreateAlloc(bvh),identity,CreateBVH4NodeMB(bvh),reduce,CreateLeafMB<Primitive>(bvh,prims.data()),progress,
 	       prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,sahBlockSize,minLeafSize,maxLeafSize,BVH4::travCost,intCost);
 	    bvh->set(root,pinfo.geomBounds,pinfo.size());
             

@@ -87,8 +87,32 @@ extern "C" void device_init (int8* cfg)
   //  renderPixel = renderPixelUV;	
 }
 
+
+inline float updateEdgeLevel( ISPCSubdivMesh* mesh, const Vec3fa& cam_pos, const size_t e0, const size_t e1)
+{
+  const Vec3fa v0 = mesh->positions[mesh->position_indices[e0]];
+  const Vec3fa v1 = mesh->positions[mesh->position_indices[e1]];
+  const Vec3fa edge = v1-v0;
+  const Vec3fa P = 0.5f*(v1+v0);
+  const Vec3fa dist = cam_pos - P;
+  return max(min(LEVEL_FACTOR*(0.5f*length(edge)/length(dist)),MAX_EDGE_LEVEL),MIN_EDGE_LEVEL);
+}
+
 void updateEdgeLevelBuffer( ISPCSubdivMesh* mesh, const Vec3fa& cam_pos, size_t startID, size_t endID )
 {
+  for (size_t f=startID; f<endID;f++) {
+       int e = mesh->face_offsets[f];
+       int N = mesh->verticesPerFace[f];
+       if (N == 4) /* fast path for quads */
+         for (size_t i=0; i<4; i++) 
+           mesh->subdivlevel[e+i] =  updateEdgeLevel(mesh,cam_pos,e+(i+0),e+(i+1)%4);
+       else if (N == 3) /* fast path for triangles */
+         for (size_t i=0; i<3; i++) 
+           mesh->subdivlevel[e+i] =  updateEdgeLevel(mesh,cam_pos,e+(i+0),e+(i+1)%3);
+       else /* fast path for general polygons */
+        for (size_t i=0; i<N; i++) 
+           mesh->subdivlevel[e+i] =  updateEdgeLevel(mesh,cam_pos,e+(i+0),e+(i+1)%N);              
+ }
 }
 
 #if defined(ISPC)
@@ -108,26 +132,12 @@ void updateEdgeLevels(ISPCScene* scene_in, const Vec3fa& cam_pos)
     ISPCSubdivMesh* mesh = g_ispc_scene->subdiv[g];
     unsigned int geomID = mesh->geomID;
 
-//#if defined(ISPC)
-//      launch[  getNumHWThreads() ] updateEdgeLevelBufferTask(mesh,cam_pos); 	           
-//#else
-//      updateEdgeLevelBuffer(mesh,cam_pos,0,mesh->numQuads);
-//#endif
-   
-    for (size_t f=0, e=0; f<mesh->numFaces; e+=mesh->verticesPerFace[f++]) {
-      int N = mesh->verticesPerFace[f];
-      for (size_t i=0; i<N; i++) {
-        const Vec3fa v0 = mesh->positions[mesh->position_indices[e+(i+0)]];
-        const Vec3fa v1 = mesh->positions[mesh->position_indices[e+(i+1)%N]];
-        const Vec3fa edge = v1-v0;
-        const Vec3fa P = 0.5f*(v1+v0);
-	const Vec3fa dist = cam_pos - P;
-        mesh->subdivlevel[e+i] = max(min(LEVEL_FACTOR*(0.5f*length(edge)/length(dist)),MAX_EDGE_LEVEL),MIN_EDGE_LEVEL);
-      }
-    }
-
-   rtcUpdateBuffer(g_scene,geomID,RTC_LEVEL_BUFFER);
-    
+#if defined(ISPC)
+      launch[ getNumHWThreads() ] updateEdgeLevelBufferTask(mesh,cam_pos); 	           
+#else
+      updateEdgeLevelBuffer(mesh,cam_pos,0,mesh->numFaces);
+#endif
+   rtcUpdateBuffer(g_scene,geomID,RTC_LEVEL_BUFFER);    
   }
 }
 
@@ -181,13 +191,14 @@ void convertScene(ISPCScene* scene_in, const Vec3fa& p)
 							mesh->numEdgeCreases, mesh->numVertexCreases, mesh->numHoles);
     mesh->geomID = geomID;
 
-    //printf("mesh->geomID %\n",mesh->geomID);
+    for (size_t i = 0; i < mesh->numEdges; i++) mesh->subdivlevel[i] = FIXED_EDGE_TESSELLATION_VALUE;
 
     if (mesh->positions)             rtcSetBuffer(g_scene, geomID, RTC_VERTEX_BUFFER, mesh->positions, 0, sizeof(Vec3fa  ));
     if (mesh->subdivlevel)           rtcSetBuffer(g_scene, geomID, RTC_LEVEL_BUFFER,  mesh->subdivlevel, 0, sizeof(float));
     if (mesh->position_indices)      rtcSetBuffer(g_scene, geomID, RTC_INDEX_BUFFER,  mesh->position_indices  , 0, sizeof(unsigned int));
     if (mesh->verticesPerFace)       rtcSetBuffer(g_scene, geomID, RTC_FACE_BUFFER,   mesh->verticesPerFace, 0, sizeof(unsigned int));
     if (mesh->holes)                 rtcSetBuffer(g_scene, geomID, RTC_HOLE_BUFFER,   mesh->holes, 0, sizeof(unsigned int));
+
     if (mesh->edge_creases)          rtcSetBuffer(g_scene, geomID, RTC_EDGE_CREASE_INDEX_BUFFER,    mesh->edge_creases,          0, 2*sizeof(unsigned int));
     if (mesh->edge_crease_weights)   rtcSetBuffer(g_scene, geomID, RTC_EDGE_CREASE_WEIGHT_BUFFER,   mesh->edge_crease_weights,   0, sizeof(float));
     if (mesh->vertex_creases)        rtcSetBuffer(g_scene, geomID, RTC_VERTEX_CREASE_INDEX_BUFFER,  mesh->vertex_creases,        0, sizeof(unsigned int));
@@ -197,6 +208,14 @@ void convertScene(ISPCScene* scene_in, const Vec3fa& p)
     rtcSetDisplacementFunction(g_scene, geomID, (RTCDisplacementFunc)&displacementFunction,NULL);
 #endif
 
+   /* generate face offset table for faster edge level updates */
+   int offset = 0;
+   for (size_t i=0; i<mesh->numFaces; i++)
+     {
+      mesh->face_offsets[i] = offset;
+      offset+=mesh->verticesPerFace[i];       
+     }
+ 
   }
 }
 
@@ -454,7 +473,7 @@ extern "C" void device_render (int* pixels,
 
 #if !defined(FORCE_FIXED_EDGE_TESSELLATION)
   {
-    if ((p.x != old_p.x | p.y != old_p.y | p.z != old_p.z))
+    if ((p.x != old_p.x || p.y != old_p.y || p.z != old_p.z))
     {
       old_p = p;
       updateEdgeLevels(g_ispc_scene, cam_org);
@@ -467,7 +486,7 @@ extern "C" void device_render (int* pixels,
   const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
   launch_renderTile(numTilesX*numTilesY,pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY); 
-  rtcDebug();
+  //rtcDebug();
 }
 
 /* called by the C++ code for cleanup */

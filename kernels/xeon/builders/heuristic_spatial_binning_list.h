@@ -26,6 +26,60 @@ namespace embree
 {
   namespace isa
   {
+    template<typename ObjectSplit, typename SpatialSplit>
+      struct Split2
+      {
+        __forceinline Split2 () {}
+        
+        __forceinline Split2 (const Split2& other) 
+        {
+          spatial = other.spatial;
+          sah = other.sah;
+          if (spatial) spatialSplit2() = other.spatialSplit();
+          else         objectSplit2()  = other.objectSplit();
+        }
+        
+        __forceinline Split2& operator= (const Split2& other) 
+        {
+          spatial = other.spatial;
+          sah = other.sah;
+          if (spatial) spatialSplit() = other.spatialSplit();
+          else         objectSplit()  = other.objectSplit();
+          return *this;
+        }
+          
+          __forceinline       ObjectSplit&  objectSplit()        { return *(      ObjectSplit*)data; }
+        __forceinline const ObjectSplit&  objectSplit() const  { return *(const ObjectSplit*)data; }
+        
+        __forceinline       SpatialSplit& spatialSplit()       { return *(      SpatialSplit*)data; }
+        __forceinline const SpatialSplit& spatialSplit() const { return *(const SpatialSplit*)data; }
+        
+        __forceinline Split2 (const ObjectSplit& objectSplit, float sah)
+          : spatial(false), sah(sah) 
+        {
+          new (data) ObjectSplit(objectSplit);
+        }
+        
+        __forceinline Split2 (const SpatialSplit& spatialSplit, float sah)
+          : spatial(true), sah(sah) 
+        {
+          new (data) SpatialSplit(spatialSplit);
+        }
+        
+        __forceinline float splitSAH() const { 
+          return sah; 
+        }
+        
+      public:
+        bool spatial;
+        float sah;
+        __aligned(16) char data[sizeof(ObjectSplit) > sizeof(SpatialSplit) ? sizeof(ObjectSplit) : sizeof(SpatialSplit)];
+        /*union {
+          ObjectSplit objectSplit;
+          SpatialSplit spatialSplit;
+          };*/
+      };
+    
     /*! Performs standard object binning */
     template<typename PrimRef, typename SplitPrimitive, size_t BINS = 32>
       struct HeuristicSpatialSplitAndObjectSplitBlockListBinningSAH
@@ -33,60 +87,8 @@ namespace embree
         typedef BinSplit<BINS> ObjectSplit;
         typedef SpatialBinSplit<16> SpatialSplit; // FIXME: also use 32 bins?
         typedef atomic_set<PrimRefBlockT<PrimRef> > Set;
+        typedef Split2<ObjectSplit,SpatialSplit> Split;
         
-        struct Split
-        {
-          __forceinline Split () {}
-
-          __forceinline Split (const Split& other) 
-          {
-            spatial = other.spatial;
-            sah = other.sah;
-            if (spatial) spatialSplit() = other.spatialSplit();
-            else         objectSplit()  = other.objectSplit();
-          }
-
-          __forceinline Split& operator= (const Split& other) 
-          {
-            spatial = other.spatial;
-            sah = other.sah;
-            if (spatial) spatialSplit() = other.spatialSplit();
-            else         objectSplit()  = other.objectSplit();
-            return *this;
-          }
-
-          __forceinline       ObjectSplit&  objectSplit()        { return *(      ObjectSplit*)data; }
-          __forceinline const ObjectSplit&  objectSplit() const  { return *(const ObjectSplit*)data; }
-
-          __forceinline       SpatialSplit& spatialSplit()       { return *(      SpatialSplit*)data; }
-          __forceinline const SpatialSplit& spatialSplit() const { return *(const SpatialSplit*)data; }
-
-          __forceinline Split (const ObjectSplit& objectSplit, float sah)
-              : spatial(false), sah(sah) 
-          {
-            new (data) ObjectSplit(objectSplit);
-          }
-
-          __forceinline Split (const SpatialSplit& spatialSplit, float sah)
-            : spatial(true), sah(sah) 
-          {
-            new (data) SpatialSplit(spatialSplit);
-          }
-
-          __forceinline float splitSAH() const { 
-            return sah; 
-          }
-
-        public:
-          bool spatial;
-          float sah;
-          __aligned(16) char data[sizeof(ObjectSplit) > sizeof(SpatialSplit) ? sizeof(ObjectSplit) : sizeof(SpatialSplit)];
-          /*union {
-            ObjectSplit objectSplit;
-            SpatialSplit spatialSplit;
-          };*/
-        };
-
         __forceinline HeuristicSpatialSplitAndObjectSplitBlockListBinningSAH () {
         }
 

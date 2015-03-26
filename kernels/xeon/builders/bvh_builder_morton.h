@@ -31,7 +31,12 @@ namespace embree
       unsigned int end;
       unsigned int depth;
       NodeRef* parent;
-      
+
+      __forceinline MortonBuildRecord() {}
+
+      __forceinline MortonBuildRecord(const unsigned begin, const unsigned end, NodeRef* parent, unsigned depth)
+        : begin(begin), end(end), parent(parent), depth(depth) {}
+
       __forceinline unsigned int size() const {
         return end - begin;
       }
@@ -43,12 +48,6 @@ namespace embree
         depth = 1;
         parent = NULL;
       }
-      
-      struct Greater {
-        __forceinline bool operator()(const MortonBuildRecord& a, const MortonBuildRecord& b) {
-          return a.size() > b.size();
-        }
-      };
     };
     
     struct __aligned(8) MortonID32Bit
@@ -141,26 +140,47 @@ namespace embree
       ssei ax, ay, az, ai;
     };
     
-    template<typename NodeRef, typename ReductionTy, typename Allocator, typename CreateAllocator, typename AllocNodeFunc, typename SetNodeBoundsFunc, typename CreateLeafFunc, typename CalculateBounds, typename ProgressMonitor>
-      class BVHBuilderMorton
+    template<
+      typename NodeRef, 
+      typename ReductionTy, 
+      typename Allocator, 
+      typename CreateAllocator, 
+      typename AllocNodeFunc, 
+      typename SetNodeBoundsFunc, 
+      typename CreateLeafFunc, 
+      typename CalculateBounds, 
+      typename ProgressMonitor>
+
+      class GeneralBVHBuilderMorton
     {
       ALIGNED_CLASS;
       
     protected:
-      static const size_t MAX_BRANCHING_FACTOR = 16;  //!< maximal supported BVH branching factor
-      static const size_t MIN_LARGE_LEAF_LEVELS = 8;  //!< create balanced tree of we are that many levels before the maximal tree depth
-      static const size_t SINGLE_THREADED_THRESHOLD = 4096;
+      static const size_t MAX_BRANCHING_FACTOR = 16;         //!< maximal supported BVH branching factor
+      static const size_t MIN_LARGE_LEAF_LEVELS = 8;         //!< create balanced tree of we are that many levels before the maximal tree depth
+      static const size_t SINGLE_THREADED_THRESHOLD = 4096;  //!< threshold to switch to single threaded build
 
     public:
       
-      BVHBuilderMorton (const ReductionTy& identity, 
-                        CreateAllocator& createAllocator, AllocNodeFunc& allocNode, SetNodeBoundsFunc& setBounds, CreateLeafFunc& createLeaf, CalculateBounds& calculateBounds,
+      GeneralBVHBuilderMorton (const ReductionTy& identity, 
+                        CreateAllocator& createAllocator, 
+                        AllocNodeFunc& allocNode, 
+                        SetNodeBoundsFunc& setBounds, 
+                        CreateLeafFunc& createLeaf, 
+                        CalculateBounds& calculateBounds,
                         ProgressMonitor& progressMonitor,
-                        const size_t branchingFactor, const size_t maxDepth, const size_t minLeafSize, const size_t maxLeafSize)
-        : identity(identity), createAllocator(createAllocator), allocNode(allocNode), setBounds(setBounds), createLeaf(createLeaf), calculateBounds(calculateBounds),
+                        const size_t branchingFactor, const size_t maxDepth, 
+                        const size_t minLeafSize, const size_t maxLeafSize)
+        : identity(identity), 
+        createAllocator(createAllocator), 
+        allocNode(allocNode), 
+        setBounds(setBounds), 
+        createLeaf(createLeaf), 
+        calculateBounds(calculateBounds),
         progressMonitor(progressMonitor),
-          branchingFactor(branchingFactor), maxDepth(maxDepth), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize), 
-          morton(NULL) {}
+        branchingFactor(branchingFactor), maxDepth(maxDepth), 
+        minLeafSize(minLeafSize), maxLeafSize(maxLeafSize), 
+        morton(NULL) {}
       
       void splitFallback(MortonBuildRecord<NodeRef>& current, MortonBuildRecord<NodeRef>& leftChild, MortonBuildRecord<NodeRef>& rightChild) const
       {
@@ -393,10 +413,7 @@ namespace embree
 
         /* build BVH */
         NodeRef root;
-        MortonBuildRecord<NodeRef> br;
-        br.init(0,numPrimitives);
-        br.parent = &root;
-        br.depth = 1;
+        MortonBuildRecord<NodeRef> br(0,numPrimitives,&root,1);
         
         const BBox3fa bounds = recurse(br, NULL, true);
         return std::make_pair(root,bounds);
@@ -420,26 +437,73 @@ namespace embree
     };
 
     
-    template<typename NodeRef, typename CreateAllocFunc, typename ReductionTy, typename AllocNodeFunc, typename SetBoundsFunc, typename CreateLeafFunc, typename CalculateBoundsFunc, typename ProgressMonitor>
+    template<
+      typename NodeRef, 
+      typename CreateAllocFunc, 
+      typename ReductionTy, 
+      typename AllocNodeFunc, 
+      typename SetBoundsFunc, 
+      typename CreateLeafFunc, 
+      typename CalculateBoundsFunc, 
+      typename ProgressMonitor>
+
       std::pair<NodeRef,BBox3fa> bvh_builder_morton_internal(CreateAllocFunc createAllocator, 
                                                              const ReductionTy& identity, 
-                                                             AllocNodeFunc allocNode, SetBoundsFunc setBounds, CreateLeafFunc createLeaf, CalculateBoundsFunc calculateBounds,
+                                                             AllocNodeFunc allocNode, 
+                                                             SetBoundsFunc setBounds, 
+                                                             CreateLeafFunc createLeaf, 
+                                                             CalculateBoundsFunc calculateBounds,
                                                              ProgressMonitor progressMonitor,
                                                              MortonID32Bit* src, MortonID32Bit* tmp, size_t numPrimitives,
-                                                             const size_t branchingFactor, const size_t maxDepth, const size_t minLeafSize, const size_t maxLeafSize)
+                                                             const size_t branchingFactor, const size_t maxDepth, 
+                                                             const size_t minLeafSize, const size_t maxLeafSize)
     {
-      BVHBuilderMorton<NodeRef,ReductionTy,decltype(createAllocator()),CreateAllocFunc,AllocNodeFunc,SetBoundsFunc,CreateLeafFunc,CalculateBoundsFunc,ProgressMonitor> builder
-        (identity,createAllocator,allocNode,setBounds,createLeaf,calculateBounds,progressMonitor,branchingFactor,maxDepth,minLeafSize,maxLeafSize);
+      typedef GeneralBVHBuilderMorton<
+        NodeRef,
+        ReductionTy,
+        decltype(createAllocator()),
+        CreateAllocFunc,
+        AllocNodeFunc,
+        SetBoundsFunc,
+        CreateLeafFunc,
+        CalculateBoundsFunc,
+        ProgressMonitor> Builder;
+
+      Builder builder(identity,
+                      createAllocator,
+                      allocNode,
+                      setBounds,
+                      createLeaf,
+                      calculateBounds,
+                      progressMonitor,
+                      branchingFactor,
+                      maxDepth,
+                      minLeafSize,
+                      maxLeafSize);
+
       return builder.build(src,tmp,numPrimitives);
     }
 
-    template<typename NodeRef, typename CreateAllocFunc, typename ReductionTy, typename AllocNodeFunc, typename SetBoundsFunc, typename CreateLeafFunc, typename CalculateBoundsFunc,typename ProgressMonitor>
+    template<
+      typename NodeRef, 
+      typename CreateAllocFunc, 
+      typename ReductionTy, 
+      typename AllocNodeFunc, 
+      typename SetBoundsFunc, 
+      typename CreateLeafFunc, 
+      typename CalculateBoundsFunc,
+      typename ProgressMonitor>
+
       std::pair<NodeRef,BBox3fa> bvh_builder_morton(CreateAllocFunc createAllocator, 
                                                     const ReductionTy& identity, 
-                                                    AllocNodeFunc allocNode, SetBoundsFunc setBounds, CreateLeafFunc createLeaf, CalculateBoundsFunc calculateBounds,
+                                                    AllocNodeFunc allocNode, 
+                                                    SetBoundsFunc setBounds, 
+                                                    CreateLeafFunc createLeaf, 
+                                                    CalculateBoundsFunc calculateBounds,
                                                     ProgressMonitor progressMonitor,
                                                     MortonID32Bit* src, MortonID32Bit* temp, size_t numPrimitives,
-                                                    const size_t branchingFactor, const size_t maxDepth, const size_t minLeafSize, const size_t maxLeafSize)
+                                                    const size_t branchingFactor, const size_t maxDepth, 
+                                                    const size_t minLeafSize, const size_t maxLeafSize)
     {
       std::pair<NodeRef,BBox3fa> ret;
 

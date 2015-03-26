@@ -45,7 +45,7 @@ namespace embree
     {
       __forceinline CreateBVH8Node (BVH8* bvh) : bvh(bvh) {}
       
-      __forceinline int operator() (const isa::BuildRecord2<>& current, BuildRecord2<>** children, const size_t N, Allocator* alloc) 
+      __forceinline int operator() (const isa::BVHBuilderBinnedSAH::BuildRecord& current, BVHBuilderBinnedSAH::BuildRecord* children, const size_t N, Allocator* alloc) 
       {
         BVH8::Node* node = NULL;
         //if (current.pinfo.size() > 4096) node = (BVH8::Node*)   bvh->alloc2.malloc(sizeof(BVH8::Node),sizeof(BVH8::Node));
@@ -53,8 +53,8 @@ namespace embree
         node = (BVH8::Node*) alloc->alloc0.malloc(sizeof(BVH8::Node)); 
         node->clear();
         for (size_t i=0; i<N; i++) {
-          node->set(i,children[i]->pinfo.geomBounds);
-          children[i]->parent = (size_t*) &node->child(i);
+          node->set(i,children[i].pinfo.geomBounds);
+          children[i].parent = (size_t*) &node->child(i);
         }
         *current.parent = bvh->encodeNode(node);
 	return 0;
@@ -68,7 +68,7 @@ namespace embree
     {
       __forceinline CreateLeaf (BVH8* bvh, PrimRef* prims) : bvh(bvh), prims(prims) {}
       
-      __forceinline int operator() (const BuildRecord2<>& current, Allocator* alloc) // FIXME: why are prims passed here but not for createNode
+      __forceinline int operator() (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc)
       {
         size_t items = Primitive::blocks(current.prims.size());
         size_t start = current.prims.begin();
@@ -142,10 +142,10 @@ namespace embree
 	    PrimInfo pinfo = mesh ? createPrimRefArray<Mesh>(mesh,prims,virtualprogress) : createPrimRefArray<Mesh,1>(scene,prims,virtualprogress);
             if (presplitFactor > 1.0f)
               pinfo = presplit<Mesh>(scene, pinfo, prims);
-	    BVH8::NodeRef root = bvh_builder_binned_sah2_internal<BVH8::NodeRef>
-	      (CreateAlloc(bvh),CreateBVH8Node(bvh),CreateLeaf<Primitive>(bvh,prims.data()),
-               progress,
-	       prims.data(),pinfo,BVH8::N,BVH8::maxBuildDepthLeaf,sahBlockSize,minLeafSize,maxLeafSize,BVH8::travCost,intCost);
+	    BVH8::NodeRef root; 
+            BVHBuilderBinnedSAH::build<BVH8::NodeRef>
+              (root,CreateAlloc(bvh),CreateBVH8Node(bvh),CreateLeaf<Primitive>(bvh,prims.data()), progress,
+               prims.data(),pinfo,BVH8::N,BVH8::maxBuildDepthLeaf,sahBlockSize,minLeafSize,maxLeafSize,BVH8::travCost,intCost);
 
             bvh->set(root,pinfo.geomBounds,pinfo.size());
             bvh->layoutLargeNodes(numSplitPrimitives*0.005f);
@@ -193,12 +193,12 @@ namespace embree
     {
       __forceinline CreateListBVH8Node (BVH8* bvh) : bvh(bvh) {}
       
-      __forceinline BVH8::Node* operator() (const isa::BuildRecord2<PrimRefList>& current, BuildRecord2<PrimRefList>** children, const size_t N, Allocator* alloc) 
+      __forceinline BVH8::Node* operator() (const isa::BVHBuilderBinnedSpatialSAH::BuildRecord& current, BVHBuilderBinnedSpatialSAH::BuildRecord* children, const size_t N, Allocator* alloc) 
       {
         BVH8::Node* node = (BVH8::Node*) alloc->alloc0.malloc(sizeof(BVH8::Node)); node->clear();
         for (size_t i=0; i<N; i++) {
-          node->set(i,children[i]->pinfo.geomBounds);
-          children[i]->parent = (size_t*) &node->child(i);
+          node->set(i,children[i].pinfo.geomBounds);
+          children[i].parent = (size_t*) &node->child(i);
         }
         *current.parent = bvh->encodeNode(node);
 	return node;
@@ -212,7 +212,7 @@ namespace embree
     {
       __forceinline CreateListLeaf (BVH8* bvh) : bvh(bvh) {}
       
-      __forceinline size_t operator() (BuildRecord2<PrimRefList>& current, Allocator* alloc) // FIXME: why are prims passed here but not for createNode
+      __forceinline size_t operator() (BVHBuilderBinnedSpatialSAH::BuildRecord& current, Allocator* alloc) // FIXME: why are prims passed here but not for createNode
       {
         size_t n = current.pinfo.size();
         size_t N = Primitive::blocks(n);
@@ -280,7 +280,7 @@ namespace embree
         const size_t numSplitPrimitives = max(numPrimitives,size_t(presplitFactor*numPrimitives));
       
         /* reduction function */
-	auto rotate = [&] (BVH8::Node* node, const size_t* counts, const size_t N) 
+	auto rotate = [&] (BVH8::Node* node, const size_t* counts, const size_t N) -> size_t
 	{
           size_t n = 0;
 #if ROTATE_TREE
@@ -327,7 +327,7 @@ namespace embree
             /* calculate total surface area */
             PrimRefList::iterator iter = prims;
             const size_t threadCount = TaskSchedulerNew::threadCount();
-            const double A = parallel_reduce(size_t(0),threadCount,0.0, [&] (const range<size_t>& r) // FIXME: this sum is not deterministic
+            const double A = parallel_reduce(size_t(0),threadCount,0.0, [&] (const range<size_t>& r) -> double // FIXME: this sum is not deterministic
             {
               double A = 0.0f;
               while (PrimRefList::item* block = iter.next()) {
@@ -341,7 +341,7 @@ namespace embree
             /* calculate number of maximal spatial splits per primitive */
             float f = 10.0f;
             iter = prims;
-            const size_t N = parallel_reduce(size_t(0),threadCount,size_t(0), [&] (const range<size_t>& r)
+            const size_t N = parallel_reduce(size_t(0),threadCount,size_t(0), [&] (const range<size_t>& r) -> size_t
             {
               size_t N = 0;
               while (PrimRefList::item* block = iter.next()) {
@@ -358,8 +358,9 @@ namespace embree
               return N;
             },std::plus<size_t>());
 
-	    BVH8::NodeRef root = bvh_builder_reduce_spatial_sah2_internal<BVH8::NodeRef>
-	      (scene,CreateAlloc(bvh),size_t(0),CreateListBVH8Node(bvh),rotate,CreateListLeaf<Primitive>(bvh),
+	    BVH8::NodeRef root;
+            BVHBuilderBinnedSpatialSAH::build_reduce<BVH8::NodeRef>
+	      (root,CreateAlloc(bvh),size_t(0),CreateListBVH8Node(bvh),rotate,CreateListLeaf<Primitive>(bvh),
                [&] (const PrimRef& prim, int dim, float pos, PrimRef& left_o, PrimRef& right_o)
                {
                 TriangleMesh* mesh = (TriangleMesh*) scene->get(prim.geomID() & 0x00FFFFFF); 

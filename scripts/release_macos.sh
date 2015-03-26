@@ -19,6 +19,10 @@ realpath() {
 
 realpath "$1"
 
+# assumes documentation repo cloned into embree-doc
+make -C embree-doc docbin
+#cp embree-doc/docbin/* "$destdir"
+
 mkdir -p build
 cd build
 rm CMakeCache.txt # make sure to use default settings
@@ -33,6 +37,3 @@ cd ..
 # install scripts
 cp scripts/install_macos/install.sh scripts/install_macos/paths.sh "$destdir"
 
-# assumes documentation repo cloned into embree-doc
-make -C embree-doc docbin
-cp embree-doc/docbin/* "$destdir"
