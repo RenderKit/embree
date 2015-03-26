@@ -143,7 +143,7 @@ namespace embree
             if (presplitFactor > 1.0f)
               pinfo = presplit<Mesh>(scene, pinfo, prims);
 	    BVH8::NodeRef root; 
-            BVHBuilderArrayBinnedSAH::build<BVH8::NodeRef>
+            BVHBuilderBinnedSAH::build<BVH8::NodeRef>
               (root,CreateAlloc(bvh),CreateBVH8Node(bvh),CreateLeaf<Primitive>(bvh,prims.data()), progress,
                prims.data(),pinfo,BVH8::N,BVH8::maxBuildDepthLeaf,sahBlockSize,minLeafSize,maxLeafSize,BVH8::travCost,intCost);
 

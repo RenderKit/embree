@@ -293,7 +293,7 @@ namespace embree
     };
     
     /* SAH builder that operates on an array of BuildRecords */
-    struct BVHBuilderArrayBinnedSAH // FIXME: rename to BVHBuilderBinnedSAH
+    struct BVHBuilderBinnedSAH
     {
       typedef range<size_t> Set;
       typedef BuildRecord2<Set> BuildRecord;

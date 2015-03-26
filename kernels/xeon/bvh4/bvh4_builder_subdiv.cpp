@@ -119,7 +119,7 @@ namespace embree
         auto virtualprogress = BuildProgressMonitorFromClosure(progress);
         const PrimInfo pinfo = createPrimRefArray<SubdivMesh,1>(scene,prims,virtualprogress);
         BVH4::NodeRef root;
-        BVHBuilderArrayBinnedSAH::build<BVH4::NodeRef>
+        BVHBuilderBinnedSAH::build<BVH4::NodeRef>
           (root,CreateAlloc(bvh),CreateBVH4Node(bvh),CreateLeaf<SubdivPatch1>(bvh,prims.data()),virtualprogress,
            prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,1,1,1,1.0f,1.0f);
         bvh->set(root,pinfo.geomBounds,pinfo.size());
@@ -250,7 +250,7 @@ namespace embree
         }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a,b); });
         
         BVH4::NodeRef root;
-        BVHBuilderArrayBinnedSAH::build<BVH4::NodeRef>
+        BVHBuilderBinnedSAH::build<BVH4::NodeRef>
           (root,CreateAlloc(bvh),CreateBVH4Node(bvh),
            [&] (const BuildRecord2<>& current, Allocator* alloc) -> int {
             if (current.pinfo.size() != 1) THROW_RUNTIME_ERROR("bvh4_builder_subdiv: internal error");
@@ -373,7 +373,7 @@ namespace embree
         }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a,b); });
         
         BVH4::NodeRef root;
-        BVHBuilderArrayBinnedSAH::build<BVH4::NodeRef>
+        BVHBuilderBinnedSAH::build<BVH4::NodeRef>
           (root,CreateAlloc(bvh),CreateBVH4Node(bvh),
            [&] (const BuildRecord2<>& current, Allocator* alloc) -> int {
              if (current.pinfo.size() != 1) THROW_RUNTIME_ERROR("bvh4_builder_subdiv: internal error");
@@ -496,7 +496,7 @@ namespace embree
         }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a,b); });
         
         BVH4::NodeRef root;
-        BVHBuilderArrayBinnedSAH::build<BVH4::NodeRef>
+        BVHBuilderBinnedSAH::build<BVH4::NodeRef>
           (root,CreateAlloc(bvh),CreateBVH4Node(bvh),
            [&] (const BuildRecord2<>& current, Allocator* alloc) -> int {
             assert(current.pinfo.size() == 1);
@@ -1004,7 +1004,7 @@ namespace embree
 	    DBG_CACHE_BUILDER(std::cout << "start building..." << std::endl);
 
 	    BVH4::NodeRef root;
-            BVHBuilderArrayBinnedSAH::build<BVH4::NodeRef>
+            BVHBuilderBinnedSAH::build<BVH4::NodeRef>
 	      (root,CreateAlloc(bvh),CreateBVH4Node(bvh),
 	       [&] (const BuildRecord2<>& current, Allocator* alloc) -> int {
 		size_t items = current.pinfo.size();
