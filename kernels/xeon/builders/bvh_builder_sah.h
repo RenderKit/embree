@@ -394,7 +394,7 @@ namespace embree
       typedef BuildRecord2<PrimRefList> BuildRecord;
 
       template<typename NodeRef, typename CreateAllocFunc, typename ReductionTy, typename CreateNodeFunc, typename UpdateNodeFunc, typename CreateLeafFunc, typename SplitPrimitiveFunc, typename ProgressMonitor>
-      static NodeRef build_reduce(Scene* scene, CreateAllocFunc createAlloc, 
+        static void build_reduce(NodeRef& root, Scene* scene, CreateAllocFunc createAlloc, 
                                                        const ReductionTy& identity, 
                                                        CreateNodeFunc createNode, UpdateNodeFunc updateNode, CreateLeafFunc createLeaf, SplitPrimitiveFunc splitPrimitive,
                                                        ProgressMonitor progressMonitor,
@@ -412,15 +412,14 @@ namespace embree
       BVHBuilderSAH2<PrimRefList,decltype(heuristic),ReductionTy,decltype(createAlloc()),CreateAllocFunc,CreateNodeFunc,UpdateNodeFunc,CreateLeafFunc,ProgressMonitor> builder
         (heuristic,identity,createAlloc,createNode,updateNode,createLeaf,progressMonitor,pinfo,branchingFactor,maxDepth,logBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
 
-      NodeRef root;
-      BuildRecord2<PrimRefList> br(pinfo,1,(size_t*)&root);
-      br.prims = prims;
+      //NodeRef root;
+      BuildRecord br(pinfo,1,(size_t*)&root,prims);
       builder(br);
-      return root;
+      //return root;
     }
 
       template<typename NodeRef, typename CreateAllocFunc, typename CreateNodeFunc, typename CreateLeafFunc, typename SplitPrimitiveFunc, typename ProgressMonitor>
-      static NodeRef build(Scene* scene, CreateAllocFunc createAlloc, CreateNodeFunc createNode, CreateLeafFunc createLeaf, SplitPrimitiveFunc splitPrimitive,
+        static void build(NodeRef& root, Scene* scene, CreateAllocFunc createAlloc, CreateNodeFunc createNode, CreateLeafFunc createLeaf, SplitPrimitiveFunc splitPrimitive,
                                                 ProgressMonitor progressMonitor,
                                                 PrimRefList& prims, const PrimInfo& pinfo, 
                                                 const size_t branchingFactor, const size_t maxDepth, const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize,
@@ -436,11 +435,10 @@ namespace embree
       BVHBuilderSAH2<PrimRefList,decltype(heuristic),int,decltype(createAlloc()),CreateAllocFunc,CreateNodeFunc,decltype(updateNode),CreateLeafFunc,ProgressMonitor> builder
         (heuristic,0,createAlloc,createNode,updateNode,createLeaf,progressMonitor,pinfo,branchingFactor,maxDepth,logBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
 
-      NodeRef root;
-      BuildRecord2<PrimRefList> br(pinfo,1,(size_t*)&root);
-      br.prims = prims;
+      //NodeRef root;
+      BuildRecord br(pinfo,1,(size_t*)&root,prims);
       builder(br);
-      return root;
+      //return root;
     }
     };
   }
