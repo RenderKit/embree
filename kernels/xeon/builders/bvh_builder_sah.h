@@ -293,7 +293,7 @@ namespace embree
     };
 
     /* SAH builder that operates on an array of BuildRecords */
-    struct BVHBuilderArrayBinnedSAH
+    struct BVHBuilderArrayBinnedSAH // FIXME: rename to BVHBuilderBinnedSAH
     {
       typedef range<size_t> Set;
       typedef BuildRecord2<Set> BuildRecord;
@@ -387,10 +387,14 @@ namespace embree
       }
     };
 
-
+    /* Spatial Split SAH builder that operates on lists of blocks of BuildRecords */
+    struct BVHBuilderBinnedSpatialSAH
+    {
+      typedef PrimRefList Set;
+      typedef BuildRecord2<PrimRefList> BuildRecord;
 
       template<typename NodeRef, typename CreateAllocFunc, typename ReductionTy, typename CreateNodeFunc, typename UpdateNodeFunc, typename CreateLeafFunc, typename SplitPrimitiveFunc, typename ProgressMonitor>
-      NodeRef bvh_builder_reduce_spatial_sah2_internal(Scene* scene, CreateAllocFunc createAlloc, 
+      static NodeRef build_reduce(Scene* scene, CreateAllocFunc createAlloc, 
                                                        const ReductionTy& identity, 
                                                        CreateNodeFunc createNode, UpdateNodeFunc updateNode, CreateLeafFunc createLeaf, SplitPrimitiveFunc splitPrimitive,
                                                        ProgressMonitor progressMonitor,
@@ -415,10 +419,8 @@ namespace embree
       return root;
     }
 
-   
-
-    template<typename NodeRef, typename CreateAllocFunc, typename CreateNodeFunc, typename CreateLeafFunc, typename SplitPrimitiveFunc, typename ProgressMonitor>
-      NodeRef bvh_builder_spatial_sah2_internal(Scene* scene, CreateAllocFunc createAlloc, CreateNodeFunc createNode, CreateLeafFunc createLeaf, SplitPrimitiveFunc splitPrimitive,
+      template<typename NodeRef, typename CreateAllocFunc, typename CreateNodeFunc, typename CreateLeafFunc, typename SplitPrimitiveFunc, typename ProgressMonitor>
+      static NodeRef build(Scene* scene, CreateAllocFunc createAlloc, CreateNodeFunc createNode, CreateLeafFunc createLeaf, SplitPrimitiveFunc splitPrimitive,
                                                 ProgressMonitor progressMonitor,
                                                 PrimRefList& prims, const PrimInfo& pinfo, 
                                                 const size_t branchingFactor, const size_t maxDepth, const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize,
@@ -440,5 +442,6 @@ namespace embree
       builder(br);
       return root;
     }
+    };
   }
 }

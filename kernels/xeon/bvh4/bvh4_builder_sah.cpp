@@ -409,7 +409,7 @@ namespace embree
               return N;
             },std::plus<size_t>());
 
-	    BVH4::NodeRef root = bvh_builder_reduce_spatial_sah2_internal<BVH4::NodeRef>
+	    BVH4::NodeRef root = BVHBuilderBinnedSpatialSAH::build_reduce<BVH4::NodeRef>
 	      (scene,CreateAlloc(bvh),size_t(0),CreateListBVH4Node(bvh),rotate,CreateListLeaf<Primitive>(bvh),
                [&] (const PrimRef& prim, int dim, float pos, PrimRef& left_o, PrimRef& right_o)
                {
