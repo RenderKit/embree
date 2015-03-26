@@ -36,6 +36,9 @@ namespace embree
         __forceinline BuildRecord2 (const PrimInfo& pinfo, size_t depth, size_t* parent) 
           : pinfo(pinfo), depth(depth), parent(parent) {}
 
+        __forceinline BuildRecord2 (const PrimInfo& pinfo, size_t depth, size_t* parent, Set prims) 
+          : pinfo(pinfo), depth(depth), parent(parent), prims(prims) {}
+
       public:
 	size_t*   parent;    //!< Pointer to the parent node's reference to us
 	size_t     depth;    //!< Depth of the root of this subtree.
@@ -321,13 +324,35 @@ namespace embree
                           const size_t minLeafSize, const size_t maxLeafSize,
                           const float travCost, const float intCost)
       {
+        /* builder wants log2 of blockSize as input */
         const size_t logBlockSize = __bsr(blockSize);
         assert((blockSize ^ (size_t(1) << logBlockSize)) == 0);
+
+        /* instantiate array binning heuristic */
         HeuristicArrayBinningSAH<PrimRef> heuristic(prims);
         
         auto updateNode = [] (int node, int*, size_t) -> int { return 0; };
-        BVHBuilderSAH2<Set,decltype(heuristic),int,decltype(createAlloc()),CreateAllocFunc,CreateNodeFunc,decltype(updateNode),CreateLeafFunc,ProgressMonitor> builder
-          (heuristic,0,createAlloc,createNode,updateNode,createLeaf,progressMonitor,pinfo,branchingFactor,maxDepth,logBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
+
+        typedef BVHBuilderSAH2<Set,
+          decltype(heuristic),
+          int,
+          decltype(createAlloc()),
+          CreateAllocFunc,
+          CreateNodeFunc,
+          decltype(updateNode),
+          CreateLeafFunc,
+          ProgressMonitor> Builder;
+
+        Builder builder(heuristic,
+                        0,
+                        createAlloc,
+                        createNode,
+                        updateNode,
+                        createLeaf,
+                        progressMonitor,
+                        pinfo,
+                        branchingFactor,maxDepth,logBlockSize,
+                        minLeafSize,maxLeafSize,travCost,intCost);
         
         //NodeRef root;
         BuildRecord br(pinfo,1,(size_t*)&root);
@@ -344,28 +369,48 @@ namespace embree
         typename CreateLeafFunc, 
         typename ProgressMonitor>
 
-        static void build_reduce(NodeRef& root,
-                                 CreateAllocFunc createAlloc, 
-                                 const ReductionTy& identity, 
-                                 CreateNodeFunc createNode, UpdateNodeFunc updateNode, CreateLeafFunc createLeaf, 
-                                 ProgressMonitor progressMonitor,
-                                 PrimRef* prims, const PrimInfo& pinfo, 
-                                 const size_t branchingFactor, const size_t maxDepth, const size_t blockSize, 
-                                 const size_t minLeafSize, const size_t maxLeafSize,
-                                 const float travCost, const float intCost)
+        static ReductionTy build_reduce(NodeRef& root,
+                                        CreateAllocFunc createAlloc, 
+                                        const ReductionTy& identity, 
+                                        CreateNodeFunc createNode, UpdateNodeFunc updateNode, CreateLeafFunc createLeaf, 
+                                        ProgressMonitor progressMonitor,
+                                        PrimRef* prims, const PrimInfo& pinfo, 
+                                        const size_t branchingFactor, const size_t maxDepth, const size_t blockSize, 
+                                        const size_t minLeafSize, const size_t maxLeafSize,
+                                        const float travCost, const float intCost)
       {
+        /* builder wants log2 of blockSize as input */
         const size_t logBlockSize = __bsr(blockSize);
         assert((blockSize ^ (size_t(1) << logBlockSize)) == 0);
+
+        /* instantiate array binning heuristic */
         HeuristicArrayBinningSAH<PrimRef> heuristic(prims);
+
+        typedef BVHBuilderSAH2<Set,
+          decltype(heuristic),
+          ReductionTy,
+          decltype(createAlloc()),
+          CreateAllocFunc,
+          CreateNodeFunc,
+          UpdateNodeFunc,
+          CreateLeafFunc,
+          ProgressMonitor> Builder;
+
+        /* instantiate builder */
+        Builder builder(heuristic,
+                        identity,
+                        createAlloc,
+                        createNode,
+                        updateNode,
+                        createLeaf,
+                        progressMonitor,
+                        pinfo,
+                        branchingFactor,maxDepth,logBlockSize,
+                        minLeafSize,maxLeafSize,travCost,intCost);
         
-        BVHBuilderSAH2<Set,decltype(heuristic),ReductionTy,decltype(createAlloc()),CreateAllocFunc,CreateNodeFunc,UpdateNodeFunc,CreateLeafFunc,ProgressMonitor> builder
-          (heuristic,identity,createAlloc,createNode,updateNode,createLeaf,progressMonitor,pinfo,branchingFactor,maxDepth,logBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
-        
-        //NodeRef root;
-        BuildRecord br(pinfo,1,(size_t*)&root);
-        br.prims = Set(0,pinfo.size());
-        builder(br); // FIXME: return reduced value
-        //return root;
+        /* build hierarchy */
+        BuildRecord br(pinfo,1,(size_t*)&root,Set(0,pinfo.size()));
+        return builder(br);
       }
     };
 
