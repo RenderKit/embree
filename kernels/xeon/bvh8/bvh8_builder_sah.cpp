@@ -142,10 +142,10 @@ namespace embree
 	    PrimInfo pinfo = mesh ? createPrimRefArray<Mesh>(mesh,prims,virtualprogress) : createPrimRefArray<Mesh,1>(scene,prims,virtualprogress);
             if (presplitFactor > 1.0f)
               pinfo = presplit<Mesh>(scene, pinfo, prims);
-	    BVH8::NodeRef root = BVHBuilderArrayBinnedSAH::build<BVH8::NodeRef>
-	      (CreateAlloc(bvh),CreateBVH8Node(bvh),CreateLeaf<Primitive>(bvh,prims.data()),
-               progress,
-	       prims.data(),pinfo,BVH8::N,BVH8::maxBuildDepthLeaf,sahBlockSize,minLeafSize,maxLeafSize,BVH8::travCost,intCost);
+	    BVH8::NodeRef root; 
+            BVHBuilderArrayBinnedSAH::build<BVH8::NodeRef>
+              (root,CreateAlloc(bvh),CreateBVH8Node(bvh),CreateLeaf<Primitive>(bvh,prims.data()), progress,
+               prims.data(),pinfo,BVH8::N,BVH8::maxBuildDepthLeaf,sahBlockSize,minLeafSize,maxLeafSize,BVH8::travCost,intCost);
 
             bvh->set(root,pinfo.geomBounds,pinfo.size());
             bvh->layoutLargeNodes(numSplitPrimitives*0.005f);

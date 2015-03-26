@@ -104,8 +104,9 @@ void build_sah(vector_t<PrimRef>& prims, isa::PrimInfo& pinfo)
     
     allocator.reset();
 
-    Node* root = isa::BVHBuilderArrayBinnedSAH::build<Node*>(
-
+    Node* root;
+    isa::BVHBuilderArrayBinnedSAH::build<Node*>(
+      root,
       /* thread local allocator for fast allocations */
       [&] () -> FastAllocator::ThreadLocal* { 
         return allocator.threadLocal(); 
