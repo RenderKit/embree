@@ -174,14 +174,6 @@ namespace embree
 	heuristic.split(brecord.split,brecord.pinfo,brecord.prims,lrecord.pinfo,lrecord.prims,rrecord.pinfo,rrecord.prims);
       }
 
-      struct Recurse {
-        __forceinline Recurse (BVHBuilderSAH2* This, ReductionTy& dst, BuildRecord& src) : This(This), dst(dst), src(src) {}
-        __forceinline void operator() () { dst = This->recurse(src,NULL,true); }
-        BVHBuilderSAH2* This;
-        ReductionTy& dst;
-        BuildRecord& src;
-      };
-
       const ReductionTy recurse(BuildRecord& current, Allocator alloc, bool toplevel)
       {
 	if (alloc == NULL)
@@ -252,10 +244,9 @@ namespace embree
 	if (current.size() > SINGLE_THREADED_THRESHOLD) 
 	{
 	  SPAWN_BEGIN;
-	  for (ssize_t i=numChildren-1; i>=0; i--)  // FIXME: this should be better!
-            //for (size_t i=0; i<numChildren; i++) 
-	    //SPAWN([&,i] { values[i] = recurse(children[i],NULL,true); }); // FIXME: triggers ICC compiler bug under Windows
-      SPAWN((Recurse(this,values[i],children[i])));
+          //for (size_t i=0; i<numChildren; i++) 
+	  for (ssize_t i=numChildren-1; i>=0; i--)
+            SPAWN(([&,i] { values[i] = recurse(children[i],NULL,true); }));
 	  SPAWN_END;
 	  
 	  /* perform reduction */
@@ -264,10 +255,9 @@ namespace embree
 	/* recurse into each child */
 	else 
 	{
-          for (ssize_t i=numChildren-1; i>=0; i--) {
-            //for (size_t i=0; i<numChildren; i++) {
+          //for (size_t i=0; i<numChildren; i++)
+          for (ssize_t i=numChildren-1; i>=0; i--)
 	    values[i] = recurse(children[i],alloc,false);
-          }
 	  
 	  /* perform reduction */
 	  return updateNode(node,values,numChildren);
@@ -308,6 +298,7 @@ namespace embree
       typedef range<size_t> Set;
       typedef BuildRecord2<Set> BuildRecord;
     
+      /*! standard build without reduction */
       template<typename NodeRef, 
         typename CreateAllocFunc, 
         typename CreateNodeFunc, 
@@ -324,43 +315,25 @@ namespace embree
                           const size_t minLeafSize, const size_t maxLeafSize,
                           const float travCost, const float intCost)
       {
-        /* builder wants log2 of blockSize as input */
-        const size_t logBlockSize = __bsr(blockSize);
-        assert((blockSize ^ (size_t(1) << logBlockSize)) == 0);
-
-        /* instantiate array binning heuristic */
-        HeuristicArrayBinningSAH<PrimRef> heuristic(prims);
-        
+        /* use dummy reduction over integers */
+        int identity = 0;
         auto updateNode = [] (int node, int*, size_t) -> int { return 0; };
-
-        typedef BVHBuilderSAH2<Set,
-          decltype(heuristic),
-          int,
-          decltype(createAlloc()),
-          CreateAllocFunc,
-          CreateNodeFunc,
-          decltype(updateNode),
-          CreateLeafFunc,
-          ProgressMonitor> Builder;
-
-        Builder builder(heuristic,
-                        0,
-                        createAlloc,
-                        createNode,
-                        updateNode,
-                        createLeaf,
-                        progressMonitor,
-                        pinfo,
-                        branchingFactor,maxDepth,logBlockSize,
-                        minLeafSize,maxLeafSize,travCost,intCost);
         
-        //NodeRef root;
-        BuildRecord br(pinfo,1,(size_t*)&root);
-        br.prims = Set(0,pinfo.size());
-        builder(br);
-        //return root;
+        /* initiate builder */
+        build_reduce(root,
+                     createAlloc,
+                     identity,
+                     createNode,
+                     updateNode,
+                     createLeaf,
+                     progressMonitor,
+                     prims,
+                     pinfo,
+                     branchingFactor,maxDepth,blockSize,
+                     minLeafSize,maxLeafSize,travCost,intCost);
       }
-      
+
+      /*! special builder that propagates reduction over the tree */
       template<typename NodeRef, 
         typename CreateAllocFunc, 
         typename ReductionTy, 
