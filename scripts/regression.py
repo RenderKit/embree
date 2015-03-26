@@ -278,7 +278,7 @@ def processConfiguration(OS, compiler, platform, build, isa, tasking, models):
 
       render(OS, compiler, platform, build, isa, tasking, 'tutorial07'+ty, '', '', '')
       render_tutorial07(OS, compiler, platform, build, isa, tasking, ty, 'tighten', '')
-      if platform == "x64":
+      if platform == "x64" and OS != 'macosx': # not enough memory on MacOSX test machine:
         render_tutorial07(OS, compiler, platform, build, isa, tasking, ty, 'sophie', '')
         render_tutorial07(OS, compiler, platform, build, isa, tasking, ty, 'sophie_mblur', '')
 
