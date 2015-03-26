@@ -154,12 +154,12 @@ namespace embree
         BVHBuilderBinnedSAH::build<BVH4::NodeRef>
           (root,
            [&] { return bvh->alloc.threadLocal2(); },
-           [&] (const isa::BVHBuilderBinnedSAH::BuildRecord& current, BVHBuilderBinnedSAH::BuildRecord** children, const size_t N, FastAllocator::ThreadLocal2* alloc) -> int
+           [&] (const isa::BVHBuilderBinnedSAH::BuildRecord& current, BVHBuilderBinnedSAH::BuildRecord* children, const size_t N, FastAllocator::ThreadLocal2* alloc) -> int
            {
              BVH4::Node* node = (BVH4::Node*) alloc->alloc0.malloc(sizeof(BVH4::Node)); node->clear();
              for (size_t i=0; i<N; i++) {
-               node->set(i,children[i]->pinfo.geomBounds);
-               children[i]->parent = (size_t*)&node->child(i);
+               node->set(i,children[i].pinfo.geomBounds);
+               children[i].parent = (size_t*)&node->child(i);
              }
              *current.parent = bvh->encodeNode(node);
              return 0;

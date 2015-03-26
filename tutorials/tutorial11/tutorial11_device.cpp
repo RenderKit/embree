@@ -113,13 +113,13 @@ void build_sah(vector_t<PrimRef>& prims, isa::PrimInfo& pinfo)
       },
 
       /* lambda function that creates BVH nodes */
-      [&](const isa::BVHBuilderBinnedSAH::BuildRecord& current, isa::BVHBuilderBinnedSAH::BuildRecord** children, const size_t N, FastAllocator::ThreadLocal* alloc) -> int
+      [&](const isa::BVHBuilderBinnedSAH::BuildRecord& current, isa::BVHBuilderBinnedSAH::BuildRecord* children, const size_t N, FastAllocator::ThreadLocal* alloc) -> int
       {
         assert(N <= 2);
         InnerNode* node = new (alloc->malloc(sizeof(InnerNode))) InnerNode;
         for (size_t i=0; i<N; i++) {
-          node->bounds[i] = children[i]->pinfo.geomBounds;
-          children[i]->parent = (size_t*) &node->children[i];
+          node->bounds[i] = children[i].pinfo.geomBounds;
+          children[i].parent = (size_t*) &node->children[i];
         }
         *current.parent = (size_t) node;
 	return 0;

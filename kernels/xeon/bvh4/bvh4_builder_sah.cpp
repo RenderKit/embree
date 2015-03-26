@@ -53,12 +53,12 @@ namespace embree
     {
       __forceinline CreateBVH4Node (BVH4* bvh) : bvh(bvh) {}
       
-      __forceinline BVH4::Node* operator() (const isa::BVHBuilderBinnedSAH::BuildRecord& current, BVHBuilderBinnedSAH::BuildRecord** children, const size_t N, Allocator* alloc) 
+      __forceinline BVH4::Node* operator() (const isa::BVHBuilderBinnedSAH::BuildRecord& current, BVHBuilderBinnedSAH::BuildRecord* children, const size_t N, Allocator* alloc) 
       {
         BVH4::Node* node = (BVH4::Node*) alloc->alloc0.malloc(sizeof(BVH4::Node)); node->clear();
         for (size_t i=0; i<N; i++) {
-          node->set(i,children[i]->pinfo.geomBounds);
-          children[i]->parent = (size_t*)&node->child(i);
+          node->set(i,children[i].pinfo.geomBounds);
+          children[i].parent = (size_t*)&node->child(i);
         }
         *current.parent = bvh->encodeNode(node);
 	return node;
@@ -231,12 +231,12 @@ namespace embree
     {
       __forceinline CreateListBVH4Node (BVH4* bvh) : bvh(bvh) {}
       
-      __forceinline BVH4::Node* operator() (const isa::BVHBuilderBinnedSpatialSAH::BuildRecord& current, BVHBuilderBinnedSpatialSAH::BuildRecord** children, const size_t N, Allocator* alloc) 
+      __forceinline BVH4::Node* operator() (const isa::BVHBuilderBinnedSpatialSAH::BuildRecord& current, BVHBuilderBinnedSpatialSAH::BuildRecord* children, const size_t N, Allocator* alloc) 
       {
         BVH4::Node* node = (BVH4::Node*) alloc->alloc0.malloc(sizeof(BVH4::Node)); node->clear();
         for (size_t i=0; i<N; i++) {
-          node->set(i,children[i]->pinfo.geomBounds);
-          children[i]->parent = (size_t*)&node->child(i);
+          node->set(i,children[i].pinfo.geomBounds);
+          children[i].parent = (size_t*)&node->child(i);
         }
         *current.parent = bvh->encodeNode(node);
 	return node;
@@ -465,11 +465,11 @@ namespace embree
     {
       __forceinline CreateBVH4NodeMB (BVH4* bvh) : bvh(bvh) {}
       
-      __forceinline BVH4::NodeMB* operator() (const isa::BVHBuilderBinnedSAH::BuildRecord& current, BVHBuilderBinnedSAH::BuildRecord** children, const size_t N, Allocator* alloc) 
+      __forceinline BVH4::NodeMB* operator() (const isa::BVHBuilderBinnedSAH::BuildRecord& current, BVHBuilderBinnedSAH::BuildRecord* children, const size_t N, Allocator* alloc) 
       {
         BVH4::NodeMB* node = (BVH4::NodeMB*) alloc->alloc0.malloc(sizeof(BVH4::NodeMB)); node->clear();
         for (size_t i=0; i<N; i++) {
-          children[i]->parent = (size_t*)&node->child(i);
+          children[i].parent = (size_t*)&node->child(i);
         }
         *current.parent = bvh->encodeNode(node);
 	return node;

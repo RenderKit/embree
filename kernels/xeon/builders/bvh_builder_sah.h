@@ -66,11 +66,9 @@ namespace embree
         
         /* fill all children by always splitting the largest one */
 	ReductionTy values[MAX_BRANCHING_FACTOR];
-	BuildRecord* pchildren[MAX_BRANCHING_FACTOR];
         BuildRecord children[MAX_BRANCHING_FACTOR];
         size_t numChildren = 1;
         children[0] = current;
-	pchildren[0] = &children[0];
         
         do {
           
@@ -100,13 +98,12 @@ namespace embree
           children[bestChild] = children[numChildren-1];
           children[numChildren-1] = left;
           children[numChildren+0] = right;
-	  pchildren[numChildren] = &children[numChildren];
           numChildren++;
           
         } while (numChildren < branchingFactor);
         
         /* create node */
-        auto node = createNode(current,pchildren,numChildren,alloc);
+        auto node = createNode(current,children,numChildren,alloc);
         
 	/* recurse into each child  and perform reduction */
 	for (size_t i=0; i<numChildren; i++)
@@ -146,10 +143,8 @@ namespace embree
         
         /*! initialize child list */
 	ReductionTy values[MAX_BRANCHING_FACTOR];
-	BuildRecord* pchildren[MAX_BRANCHING_FACTOR];
         BuildRecord children[MAX_BRANCHING_FACTOR];
         children[0] = current;
-	pchildren[0] = &children[0];
         size_t numChildren = 1;
         
         /*! split until node is full or SAH tells us to stop */
@@ -179,7 +174,6 @@ namespace embree
           rrecord.split = find(rrecord);
           children[bestChild  ] = lrecord;
           children[numChildren] = rrecord;
-	  pchildren[numChildren] = &children[numChildren];
           numChildren++;
           
         } while (numChildren < branchingFactor);
@@ -188,7 +182,7 @@ namespace embree
 	//std::sort(&children[0],&children[numChildren]); // FIXME: reduces traversal performance of bvh8.triangle4 !!
         
         /*! create an inner node */
-        auto node = createNode(current,pchildren,numChildren,alloc);
+        auto node = createNode(current,children,numChildren,alloc);
         
 	/* spawn tasks */
 	if (current.size() > SINGLE_THREADED_THRESHOLD) 
