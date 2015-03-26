@@ -281,7 +281,7 @@ SET(EMBREE_VERSION ${EMBREE_VERSION_MAJOR}.${EMBREE_VERSION_MINOR}.${EMBREE_VERS
 # Documentation
 ##############################################################
 FILE(GLOB DOC_FILES ${PROJECT_SOURCE_DIR}/embree-doc/docbin/*)
-IF (WIN32)
+IF (WIN32 OR APPLE)
   SET(DOC_INSTALL_DIR doc)
 ELSE()
   SET(DOC_INSTALL_DIR share/doc/embree-${EMBREE_VERSION})
