@@ -31,7 +31,12 @@ namespace embree
       unsigned int end;
       unsigned int depth;
       NodeRef* parent;
-      
+
+      __forceinline MortonBuildRecord() {}
+
+      __forceinline MortonBuildRecord(const unsigned begin, const unsigned end, NodeRef* parent, unsigned depth)
+        : begin(begin), end(end), parent(parent), depth(depth) {}
+
       __forceinline unsigned int size() const {
         return end - begin;
       }
@@ -43,12 +48,6 @@ namespace embree
         depth = 1;
         parent = NULL;
       }
-      
-      struct Greater {
-        __forceinline bool operator()(const MortonBuildRecord& a, const MortonBuildRecord& b) {
-          return a.size() > b.size();
-        }
-      };
     };
     
     struct __aligned(8) MortonID32Bit
@@ -152,7 +151,7 @@ namespace embree
       typename CalculateBounds, 
       typename ProgressMonitor>
 
-      class BVHBuilderMorton
+      class GeneralBVHBuilderMorton
     {
       ALIGNED_CLASS;
       
@@ -163,7 +162,7 @@ namespace embree
 
     public:
       
-      BVHBuilderMorton (const ReductionTy& identity, 
+      GeneralBVHBuilderMorton (const ReductionTy& identity, 
                         CreateAllocator& createAllocator, 
                         AllocNodeFunc& allocNode, 
                         SetNodeBoundsFunc& setBounds, 
@@ -414,10 +413,7 @@ namespace embree
 
         /* build BVH */
         NodeRef root;
-        MortonBuildRecord<NodeRef> br;
-        br.init(0,numPrimitives);
-        br.parent = &root;
-        br.depth = 1;
+        MortonBuildRecord<NodeRef> br(0,numPrimitives,&root,1);
         
         const BBox3fa bounds = recurse(br, NULL, true);
         return std::make_pair(root,bounds);
@@ -462,7 +458,7 @@ namespace embree
                                                              const size_t branchingFactor, const size_t maxDepth, 
                                                              const size_t minLeafSize, const size_t maxLeafSize)
     {
-      typedef BVHBuilderMorton<
+      typedef GeneralBVHBuilderMorton<
         NodeRef,
         ReductionTy,
         decltype(createAllocator()),
