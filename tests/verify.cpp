@@ -42,11 +42,7 @@ namespace embree
 #endif
   /* configuration */
   static std::string g_rtcore = "";
-#if defined(__WIN32__)
-  static size_t testN = 10000;
-#else
   static size_t testN = 100000;
-#endif  
   //static size_t testN = 10000000;
   static size_t regressionN = 200;
 
@@ -2748,7 +2744,11 @@ namespace embree
           default: break;
           };
 #endif
+#if defined(__WIN32__)
+          size_t numPhi = random<int>()%40;
+#else
           size_t numPhi = random<int>()%100;
+#endif
 	  if (type >= 3 || type <= 5) numPhi = random<int>()%10;
           size_t numTriangles = 2*2*numPhi*(numPhi-1);
           numTriangles = random<int>()%(numTriangles+1);
