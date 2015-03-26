@@ -873,14 +873,12 @@ namespace embree
          DBG_CACHE_BUILDER(std::cout << "ALLOCATING SUBDIVPATCH1CACHED MEMORY FOR " << numPrimitives << " PRIMITIVES" << std::endl);
          this->bvh->size_data_mem = sizeof(SubdivPatch1Cached) * numPrimitives;
 
-	 //DBG_PRINT( numPrimitives );
-	 //DBG_PRINT( this->bvh->size_data_mem );
 	 if ( this->bvh->size_data_mem != 0)
 	   this->bvh->data_mem      = os_malloc( this->bvh->size_data_mem );        
 	 else
 	   this->bvh->data_mem      = NULL;
        }
-        
+     assert(this->bvh->data_mem);
       SubdivPatch1Cached *const subdiv_patches = (SubdivPatch1Cached *)this->bvh->data_mem;
 
       PrimInfo pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo

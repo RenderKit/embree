@@ -2602,7 +2602,7 @@ namespace embree
 
     for (size_t i=0; i<task->sceneCount; i++) 
     {
-      srand(task->sceneIndex*23565+i*3242);
+      srand(task->sceneIndex*13565+i*3242);
       if (i%20 == 0) std::cout << "." << std::flush;
 
       RTCSceneFlags sflag = getSceneFlag(i); 
@@ -2726,7 +2726,7 @@ namespace embree
 
     for (size_t i=0; i<task->sceneCount; i++) 
     {
-      srand(task->sceneIndex*23565+i*3242);
+      srand(task->sceneIndex*23565+i*2242);
       if (i%20 == 0) std::cout << "." << std::flush;
 
       for (size_t j=0; j<40; j++) 
