@@ -360,7 +360,7 @@ namespace embree
 
 	    BVH8::NodeRef root;
             BVHBuilderBinnedSpatialSAH::build_reduce<BVH8::NodeRef>
-	      (root,scene,CreateAlloc(bvh),size_t(0),CreateListBVH8Node(bvh),rotate,CreateListLeaf<Primitive>(bvh),
+	      (root,CreateAlloc(bvh),size_t(0),CreateListBVH8Node(bvh),rotate,CreateListLeaf<Primitive>(bvh),
                [&] (const PrimRef& prim, int dim, float pos, PrimRef& left_o, PrimRef& right_o)
                {
                 TriangleMesh* mesh = (TriangleMesh*) scene->get(prim.geomID() & 0x00FFFFFF); 

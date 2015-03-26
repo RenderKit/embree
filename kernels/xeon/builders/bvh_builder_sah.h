@@ -393,22 +393,36 @@ namespace embree
       typedef PrimRefList Set;
       typedef BuildRecord2<PrimRefList> BuildRecord;
 
-      template<typename NodeRef, typename CreateAllocFunc, typename ReductionTy, typename CreateNodeFunc, typename UpdateNodeFunc, typename CreateLeafFunc, typename SplitPrimitiveFunc, typename ProgressMonitor>
-        static void build_reduce(NodeRef& root, Scene* scene, CreateAllocFunc createAlloc, 
-                                                       const ReductionTy& identity, 
-                                                       CreateNodeFunc createNode, UpdateNodeFunc updateNode, CreateLeafFunc createLeaf, SplitPrimitiveFunc splitPrimitive,
-                                                       ProgressMonitor progressMonitor,
-                                                       PrimRefList& prims, const PrimInfo& pinfo, 
-                                                       const size_t branchingFactor, const size_t maxDepth, const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize,
-                                                       const float travCost, const float intCost)
+      template<typename NodeRef, 
+        typename CreateAllocFunc, 
+        typename ReductionTy, 
+        typename CreateNodeFunc, 
+        typename UpdateNodeFunc, 
+        typename CreateLeafFunc, 
+        typename SplitPrimitiveFunc, 
+        typename ProgressMonitor>
+
+        static void build_reduce(NodeRef& root, 
+                                 CreateAllocFunc createAlloc, 
+                                 const ReductionTy& identity, 
+                                 CreateNodeFunc createNode, 
+                                 UpdateNodeFunc updateNode, 
+                                 CreateLeafFunc createLeaf, 
+                                 SplitPrimitiveFunc splitPrimitive,
+                                 ProgressMonitor progressMonitor,
+                                 PrimRefList& prims, 
+                                 const PrimInfo& pinfo, 
+                                 const size_t branchingFactor, const size_t maxDepth, const size_t blockSize, 
+                                 const size_t minLeafSize, const size_t maxLeafSize,
+                                 const float travCost, const float intCost)
     {
+      /* builder wants log2 of blockSize as input */
       const size_t logBlockSize = __bsr(blockSize);
       assert((blockSize ^ (size_t(1) << logBlockSize)) == 0);
 
       //HeuristicListBinningSAH<PrimRef> heuristic;
       HeuristicSpatialSplitAndObjectSplitBlockListBinningSAH<PrimRef,SplitPrimitiveFunc> heuristic(splitPrimitive);
       
-      //auto updateNode = [] (int node, int*, size_t) -> int { return 0; };
       BVHBuilderSAH2<PrimRefList,decltype(heuristic),ReductionTy,decltype(createAlloc()),CreateAllocFunc,CreateNodeFunc,UpdateNodeFunc,CreateLeafFunc,ProgressMonitor> builder
         (heuristic,identity,createAlloc,createNode,updateNode,createLeaf,progressMonitor,pinfo,branchingFactor,maxDepth,logBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
 
@@ -418,28 +432,42 @@ namespace embree
       //return root;
     }
 
-      template<typename NodeRef, typename CreateAllocFunc, typename CreateNodeFunc, typename CreateLeafFunc, typename SplitPrimitiveFunc, typename ProgressMonitor>
-        static void build(NodeRef& root, Scene* scene, CreateAllocFunc createAlloc, CreateNodeFunc createNode, CreateLeafFunc createLeaf, SplitPrimitiveFunc splitPrimitive,
-                                                ProgressMonitor progressMonitor,
-                                                PrimRefList& prims, const PrimInfo& pinfo, 
-                                                const size_t branchingFactor, const size_t maxDepth, const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize,
-                                                const float travCost, const float intCost) // FIXME: move these constants into struct!
-    {
-      const size_t logBlockSize = __bsr(blockSize);
-      assert((blockSize ^ (1L << logBlockSize)) == 0);
+      template<typename NodeRef, 
+        typename CreateAllocFunc, 
+        typename CreateNodeFunc, 
+        typename CreateLeafFunc, 
+        typename SplitPrimitiveFunc, 
+        typename ProgressMonitor>
 
-      //HeuristicListBinningSAH<PrimRef> heuristic;
-      HeuristicSpatialSplitAndObjectSplitBlockListBinningSAH<PrimRef,SplitPrimitiveFunc> heuristic(splitPrimitive);
-      
-      auto updateNode = [] (int node, int*, size_t) -> int { return 0; };
-      BVHBuilderSAH2<PrimRefList,decltype(heuristic),int,decltype(createAlloc()),CreateAllocFunc,CreateNodeFunc,decltype(updateNode),CreateLeafFunc,ProgressMonitor> builder
-        (heuristic,0,createAlloc,createNode,updateNode,createLeaf,progressMonitor,pinfo,branchingFactor,maxDepth,logBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
+        static void build(NodeRef& root, 
+                          CreateAllocFunc createAlloc, 
+                          CreateNodeFunc createNode, 
+                          CreateLeafFunc createLeaf, 
+                          SplitPrimitiveFunc splitPrimitive,
+                          ProgressMonitor progressMonitor,
+                          PrimRefList& prims, const PrimInfo& pinfo, 
+                          const size_t branchingFactor, const size_t maxDepth, const size_t blockSize, 
+                          const size_t minLeafSize, const size_t maxLeafSize,
+                          const float travCost, const float intCost) // FIXME: move these constants into struct!
+      {
+        /* use dummy reduction over integers */
+        int identity = 0;
+        auto updateNode = [] (int node, int*, size_t) -> int { return 0; };
 
-      //NodeRef root;
-      BuildRecord br(pinfo,1,(size_t*)&root,prims);
-      builder(br);
-      //return root;
-    }
+        /* initiate builder */
+        build_reduce(root, 
+                     createAlloc, 
+                     identity, 
+                     createNode, 
+                     updateNode, 
+                     createLeaf, 
+                     splitPrimitive,
+                     progressMonitor,
+                     prims, 
+                     pinfo, 
+                     branchingFactor, maxDepth, blockSize, 
+                     minLeafSize, maxLeafSize, travCost, intCost);
+      }
     };
   }
 }
