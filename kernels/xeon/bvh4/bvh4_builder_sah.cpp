@@ -167,7 +167,7 @@ namespace embree
             if (presplitFactor > 1.0f)
               pinfo = presplit<Mesh>(scene, pinfo, prims);
 
-	    BVH4::NodeRef root = bvh_builder_reduce_binned_sah2_internal<BVH4::NodeRef>
+	    BVH4::NodeRef root = BVHBuilderArrayBinnedSAH::build_reduce<BVH4::NodeRef>
 	      (CreateAlloc(bvh),size_t(0),CreateBVH4Node(bvh),rotate,CreateLeaf<Primitive>(bvh,prims.data()),
                progress,
 	       prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,sahBlockSize,minLeafSize,maxLeafSize,BVH4::travCost,intCost);
@@ -560,7 +560,7 @@ namespace embree
             auto virtualprogress = BuildProgressMonitorFromClosure(progress);
 	    const PrimInfo pinfo = mesh ? createPrimRefArray<Mesh>(mesh,prims,virtualprogress) 
               : createPrimRefArray<Mesh,2>(scene,prims,virtualprogress);
-	    BVH4::NodeRef root = bvh_builder_reduce_binned_sah2_internal<BVH4::NodeRef>
+	    BVH4::NodeRef root = BVHBuilderArrayBinnedSAH::build_reduce<BVH4::NodeRef>
 	      (CreateAlloc(bvh),identity,CreateBVH4NodeMB(bvh),reduce,CreateLeafMB<Primitive>(bvh,prims.data()),
                progress,
 	       prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,sahBlockSize,minLeafSize,maxLeafSize,BVH4::travCost,intCost);
