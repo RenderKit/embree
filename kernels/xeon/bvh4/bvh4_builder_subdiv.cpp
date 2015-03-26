@@ -48,7 +48,7 @@ namespace embree
     {
       __forceinline CreateBVH4Node (BVH4* bvh) : bvh(bvh) {}
       
-      __forceinline int operator() (const isa::BuildRecord2<>& current, BuildRecord2<>** children, const size_t N, Allocator* alloc) 
+      __forceinline int operator() (const isa::BVHBuilderBinnedSAH::BuildRecord& current, BVHBuilderBinnedSAH::BuildRecord** children, const size_t N, Allocator* alloc) 
       {
         BVH4::Node* node = (BVH4::Node*) alloc->alloc0.malloc(sizeof(BVH4::Node)); node->clear();
         for (size_t i=0; i<N; i++) {
@@ -68,7 +68,7 @@ namespace embree
       __forceinline CreateLeaf (BVH4* bvh, PrimRef* prims) 
         : bvh(bvh), prims(prims) {}
       
-      __forceinline int operator() (const BuildRecord2<>& current, Allocator* alloc)
+      __forceinline int operator() (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc)
       {
         size_t items = Primitive::blocks(current.prims.size());
         size_t start = current.prims.begin();
@@ -252,7 +252,7 @@ namespace embree
         BVH4::NodeRef root;
         BVHBuilderBinnedSAH::build<BVH4::NodeRef>
           (root,CreateAlloc(bvh),CreateBVH4Node(bvh),
-           [&] (const BuildRecord2<>& current, Allocator* alloc) -> int {
+           [&] (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) -> int {
             if (current.pinfo.size() != 1) THROW_RUNTIME_ERROR("bvh4_builder_subdiv: internal error");
             *current.parent = (size_t) prims[current.prims.begin()].ID();
             return 0;
@@ -375,7 +375,7 @@ namespace embree
         BVH4::NodeRef root;
         BVHBuilderBinnedSAH::build<BVH4::NodeRef>
           (root,CreateAlloc(bvh),CreateBVH4Node(bvh),
-           [&] (const BuildRecord2<>& current, Allocator* alloc) -> int {
+           [&] (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) -> int {
              if (current.pinfo.size() != 1) THROW_RUNTIME_ERROR("bvh4_builder_subdiv: internal error");
              *current.parent = (size_t) prims[current.prims.begin()].ID();
              return 0;
@@ -498,7 +498,7 @@ namespace embree
         BVH4::NodeRef root;
         BVHBuilderBinnedSAH::build<BVH4::NodeRef>
           (root,CreateAlloc(bvh),CreateBVH4Node(bvh),
-           [&] (const BuildRecord2<>& current, Allocator* alloc) -> int {
+           [&] (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) -> int {
             assert(current.pinfo.size() == 1);
             BVH4::NodeRef node = prims[current.prims.begin()].ID();
             size_t ty = 0;
@@ -1006,7 +1006,7 @@ namespace embree
 	    BVH4::NodeRef root;
             BVHBuilderBinnedSAH::build<BVH4::NodeRef>
 	      (root,CreateAlloc(bvh),CreateBVH4Node(bvh),
-	       [&] (const BuildRecord2<>& current, Allocator* alloc) -> int {
+	       [&] (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) -> int {
 		size_t items = current.pinfo.size();
 		assert(items == 1);
 		const unsigned int patchIndex = prims[current.prims.begin()].ID();

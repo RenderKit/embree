@@ -53,7 +53,7 @@ namespace embree
     {
       __forceinline CreateBVH4Node (BVH4* bvh) : bvh(bvh) {}
       
-      __forceinline BVH4::Node* operator() (const isa::BuildRecord2<>& current, BuildRecord2<>** children, const size_t N, Allocator* alloc) 
+      __forceinline BVH4::Node* operator() (const isa::BVHBuilderBinnedSAH::BuildRecord& current, BVHBuilderBinnedSAH::BuildRecord** children, const size_t N, Allocator* alloc) 
       {
         BVH4::Node* node = (BVH4::Node*) alloc->alloc0.malloc(sizeof(BVH4::Node)); node->clear();
         for (size_t i=0; i<N; i++) {
@@ -72,7 +72,7 @@ namespace embree
     {
       __forceinline CreateLeaf (BVH4* bvh, PrimRef* prims) : bvh(bvh), prims(prims) {}
       
-      __forceinline size_t operator() (const BuildRecord2<>& current, Allocator* alloc)
+      __forceinline size_t operator() (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc)
       {
         size_t n = current.prims.size();
         size_t items = Primitive::blocks(n);
@@ -231,7 +231,7 @@ namespace embree
     {
       __forceinline CreateListBVH4Node (BVH4* bvh) : bvh(bvh) {}
       
-      __forceinline BVH4::Node* operator() (const isa::BuildRecord2<PrimRefList>& current, BuildRecord2<PrimRefList>** children, const size_t N, Allocator* alloc) 
+      __forceinline BVH4::Node* operator() (const isa::BVHBuilderBinnedSpatialSAH::BuildRecord& current, BVHBuilderBinnedSpatialSAH::BuildRecord** children, const size_t N, Allocator* alloc) 
       {
         BVH4::Node* node = (BVH4::Node*) alloc->alloc0.malloc(sizeof(BVH4::Node)); node->clear();
         for (size_t i=0; i<N; i++) {
@@ -250,7 +250,7 @@ namespace embree
     {
       __forceinline CreateListLeaf (BVH4* bvh) : bvh(bvh) {}
       
-      __forceinline size_t operator() (BuildRecord2<PrimRefList>& current, Allocator* alloc)
+      __forceinline size_t operator() (BVHBuilderBinnedSpatialSAH::BuildRecord& current, Allocator* alloc)
       {
         size_t n = current.pinfo.size();
         size_t N = Primitive::blocks(n);
@@ -465,7 +465,7 @@ namespace embree
     {
       __forceinline CreateBVH4NodeMB (BVH4* bvh) : bvh(bvh) {}
       
-      __forceinline BVH4::NodeMB* operator() (const isa::BuildRecord2<>& current, BuildRecord2<>** children, const size_t N, Allocator* alloc) 
+      __forceinline BVH4::NodeMB* operator() (const isa::BVHBuilderBinnedSAH::BuildRecord& current, BVHBuilderBinnedSAH::BuildRecord** children, const size_t N, Allocator* alloc) 
       {
         BVH4::NodeMB* node = (BVH4::NodeMB*) alloc->alloc0.malloc(sizeof(BVH4::NodeMB)); node->clear();
         for (size_t i=0; i<N; i++) {
@@ -483,7 +483,7 @@ namespace embree
     {
       __forceinline CreateLeafMB (BVH4* bvh, PrimRef* prims) : bvh(bvh), prims(prims) {}
       
-      __forceinline std::pair<BBox3fa,BBox3fa> operator() (const BuildRecord2<>& current, Allocator* alloc) // FIXME: why are prims passed here but not for createNode
+      __forceinline std::pair<BBox3fa,BBox3fa> operator() (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc)
       {
         size_t items = Primitive::blocks(current.prims.size());
         size_t start = current.prims.begin();

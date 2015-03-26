@@ -23,29 +23,7 @@
 namespace embree
 {
   namespace isa
-  {
-    /*! the build record stores all information to continue the build of some subtree */
-    template<typename Set = range<size_t> >
-      struct BuildRecord2 
-      {
-      public:
-	__forceinline BuildRecord2 () {}
-        
-	__forceinline BuildRecord2 (size_t depth) : depth(depth), pinfo(empty) {}
-        
-        __forceinline BuildRecord2 (const PrimInfo& pinfo, size_t depth, size_t* parent) 
-          : pinfo(pinfo), depth(depth), parent(parent) {}
-        
-        __forceinline BuildRecord2 (const PrimInfo& pinfo, size_t depth, size_t* parent, Set prims) 
-          : pinfo(pinfo), depth(depth), parent(parent), prims(prims) {}
-        
-      public:
-	size_t*   parent;    //!< Pointer to the parent node's reference to us
-	size_t     depth;    //!< Depth of the root of this subtree.
-	Set prims;           //!< The list of primitives.
-	PrimInfo   pinfo;    //!< Bounding info of primitives.
-      };
-    
+  {  
     template<typename Set, typename BuildRecord, typename Heuristic, typename ReductionTy, typename Allocator, typename CreateAllocFunc, typename CreateNodeFunc, typename UpdateNodeFunc, typename CreateLeafFunc, typename ProgressMonitor>
       class BVHBuilderSAH2
     {
@@ -88,7 +66,7 @@ namespace embree
         
         /* fill all children by always splitting the largest one */
 	ReductionTy values[MAX_BRANCHING_FACTOR];
-	BuildRecord2<Set>* pchildren[MAX_BRANCHING_FACTOR];
+	BuildRecord* pchildren[MAX_BRANCHING_FACTOR];
         BuildRecord children[MAX_BRANCHING_FACTOR];
         size_t numChildren = 1;
         children[0] = current;
@@ -168,7 +146,7 @@ namespace embree
         
         /*! initialize child list */
 	ReductionTy values[MAX_BRANCHING_FACTOR];
-	BuildRecord2<Set>* pchildren[MAX_BRANCHING_FACTOR];
+	BuildRecord* pchildren[MAX_BRANCHING_FACTOR];
         BuildRecord children[MAX_BRANCHING_FACTOR];
         children[0] = current;
 	pchildren[0] = &children[0];
@@ -268,24 +246,23 @@ namespace embree
     struct BVHBuilderBinnedSAH
     {
       typedef range<size_t> Set;
-      //typedef BuildRecord2<Set> BuildRecord;
       typedef HeuristicArrayBinningSAH<PrimRef> Heuristic;
 
-      struct BuildRecord : public BuildRecord2<Set>
+      struct BuildRecord 
       {
       public:
 	__forceinline BuildRecord () {}
+
+        __forceinline BuildRecord (size_t depth) 
+          : depth(depth), pinfo(empty) {}
         
-	__forceinline BuildRecord (size_t depth) 
-	  : BuildRecord2<Set>(depth) {}
+        __forceinline BuildRecord (const PrimInfo& pinfo, size_t depth, size_t* parent) 
+          : pinfo(pinfo), depth(depth), parent(parent) {}
         
-        __forceinline BuildRecord (const PrimInfo& pinfo, size_t depth, size_t* parent)  // FIXME: remove??
-	  : BuildRecord2<Set>(pinfo,depth,parent) {}
+        __forceinline BuildRecord (const PrimInfo& pinfo, size_t depth, size_t* parent, Set prims) 
+          : pinfo(pinfo), depth(depth), parent(parent), prims(prims) {}
         
-	__forceinline BuildRecord(const BuildRecord2<Set>& other)
-	  : BuildRecord2<Set>(other) {}
-        
-	__forceinline friend bool operator< (const BuildRecord& a, const BuildRecord& b) { return a.pinfo.size() < b.pinfo.size(); }
+        __forceinline friend bool operator< (const BuildRecord& a, const BuildRecord& b) { return a.pinfo.size() < b.pinfo.size(); }
 	__forceinline friend bool operator> (const BuildRecord& a, const BuildRecord& b) { return a.pinfo.size() > b.pinfo.size(); }
         
         __forceinline size_t size() const { return this->pinfo.size(); }
@@ -297,8 +274,14 @@ namespace embree
         };
         
       public:
+        size_t*   parent;    //!< Pointer to the parent node's reference to us
+	size_t     depth;    //!< Depth of the root of this subtree.
+	Set prims;           //!< The list of primitives.
+	PrimInfo   pinfo;    //!< Bounding info of primitives.
 	typename Heuristic::Split split;    //!< The best split for the primitives.
       };
+        
+    public:
             
       /*! standard build without reduction */
       template<typename NodeRef, 
@@ -386,7 +369,7 @@ namespace embree
                         minLeafSize,maxLeafSize,travCost,intCost);
         
         /* build hierarchy */
-        BuildRecord br(BuildRecord2<>(pinfo,1,(size_t*)&root,Set(0,pinfo.size())));
+        BuildRecord br(pinfo,1,(size_t*)&root,Set(0,pinfo.size()));
         return builder(br);
       }
     };
@@ -395,25 +378,24 @@ namespace embree
     struct BVHBuilderBinnedSpatialSAH
     {
       typedef PrimRefList Set;
-      //typedef BuildRecord2<PrimRefList> BuildRecord;
       //typedef HeuristicListBinningSAH<PrimRef> Heuristic;
       typedef Split2<BinSplit<32>,SpatialBinSplit<16> > Split;
-      
-      struct BuildRecord : public BuildRecord2<Set>
+
+      struct BuildRecord 
       {
       public:
 	__forceinline BuildRecord () {}
+
+        __forceinline BuildRecord (size_t depth) 
+          : depth(depth), pinfo(empty) {}
         
-	__forceinline BuildRecord (size_t depth) 
-	  : BuildRecord2<Set>(depth) {}
+        __forceinline BuildRecord (const PrimInfo& pinfo, size_t depth, size_t* parent) 
+          : pinfo(pinfo), depth(depth), parent(parent) {}
         
-        __forceinline BuildRecord (const PrimInfo& pinfo, size_t depth, size_t* parent)  // FIXME: remove??
-	  : BuildRecord2<Set>(pinfo,depth,parent) {}
+        __forceinline BuildRecord (const PrimInfo& pinfo, size_t depth, size_t* parent, Set prims) 
+          : pinfo(pinfo), depth(depth), parent(parent), prims(prims) {}
         
-	__forceinline BuildRecord(const BuildRecord2<Set>& other)
-	  : BuildRecord2<Set>(other) {}
-        
-	__forceinline friend bool operator< (const BuildRecord& a, const BuildRecord& b) { return a.pinfo.size() < b.pinfo.size(); }
+        __forceinline friend bool operator< (const BuildRecord& a, const BuildRecord& b) { return a.pinfo.size() < b.pinfo.size(); }
 	__forceinline friend bool operator> (const BuildRecord& a, const BuildRecord& b) { return a.pinfo.size() > b.pinfo.size(); }
         
         __forceinline size_t size() const { return this->pinfo.size(); }
@@ -425,7 +407,11 @@ namespace embree
         };
         
       public:
-        Split split;    //!< The best split for the primitives.
+        size_t*   parent;    //!< Pointer to the parent node's reference to us
+	size_t     depth;    //!< Depth of the root of this subtree.
+	Set prims;           //!< The list of primitives.
+	PrimInfo   pinfo;    //!< Bounding info of primitives.
+	Split split;    //!< The best split for the primitives.
       };
       
       /*! standard spatial build without reduction */
@@ -521,7 +507,7 @@ namespace embree
                         minLeafSize,maxLeafSize,travCost,intCost);
         
         /* build hierarchy */
-        BuildRecord br(BuildRecord2<Set>(pinfo,1,(size_t*)&root,prims));
+        BuildRecord br(pinfo,1,(size_t*)&root,prims);
         return builder(br);
       }
     };
