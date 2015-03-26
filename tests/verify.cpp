@@ -42,7 +42,11 @@ namespace embree
 #endif
   /* configuration */
   static std::string g_rtcore = "";
+#if defined(__WIN32__)
+  static size_t testN = 10000;
+#else
   static size_t testN = 100000;
+#endif  
   //static size_t testN = 10000000;
   static size_t regressionN = 200;
 
