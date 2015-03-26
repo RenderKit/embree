@@ -63,7 +63,7 @@ namespace embree
     int numEdgeCreases;
     int numEdgeCreaseWeights;
     int numVertexCreases;
-    int numVertexCreasesWeights;
+    int numVertexCreaseWeights;
     int materialID;
   };
 
