@@ -280,7 +280,7 @@ namespace embree
         const size_t numSplitPrimitives = max(numPrimitives,size_t(presplitFactor*numPrimitives));
       
         /* reduction function */
-	auto rotate = [&] (BVH8::Node* node, const size_t* counts, const size_t N) 
+	auto rotate = [&] (BVH8::Node* node, const size_t* counts, const size_t N) -> size_t
 	{
           size_t n = 0;
 #if ROTATE_TREE
@@ -327,7 +327,7 @@ namespace embree
             /* calculate total surface area */
             PrimRefList::iterator iter = prims;
             const size_t threadCount = TaskSchedulerNew::threadCount();
-            const double A = parallel_reduce(size_t(0),threadCount,0.0, [&] (const range<size_t>& r) // FIXME: this sum is not deterministic
+            const double A = parallel_reduce(size_t(0),threadCount,0.0, [&] (const range<size_t>& r) -> double // FIXME: this sum is not deterministic
             {
               double A = 0.0f;
               while (PrimRefList::item* block = iter.next()) {
@@ -341,7 +341,7 @@ namespace embree
             /* calculate number of maximal spatial splits per primitive */
             float f = 10.0f;
             iter = prims;
-            const size_t N = parallel_reduce(size_t(0),threadCount,size_t(0), [&] (const range<size_t>& r)
+            const size_t N = parallel_reduce(size_t(0),threadCount,size_t(0), [&] (const range<size_t>& r) -> size_t
             {
               size_t N = 0;
               while (PrimRefList::item* block = iter.next()) {

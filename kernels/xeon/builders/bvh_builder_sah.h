@@ -35,7 +35,7 @@ namespace embree
         __forceinline GeneralBuildRecord (const PrimInfo& pinfo, size_t depth, size_t* parent) 
           : pinfo(pinfo), depth(depth), parent(parent) {}
         
-        __forceinline GeneralBuildRecord (const PrimInfo& pinfo, size_t depth, size_t* parent, Set prims) 
+        __forceinline GeneralBuildRecord (const PrimInfo& pinfo, size_t depth, size_t* parent, const Set &prims) 
           : pinfo(pinfo), depth(depth), parent(parent), prims(prims) {}
         
         __forceinline friend bool operator< (const GeneralBuildRecord& a, const GeneralBuildRecord& b) { return a.pinfo.size() < b.pinfo.size(); }

@@ -872,7 +872,7 @@ namespace embree
        {
          DBG_CACHE_BUILDER(std::cout << "ALLOCATING SUBDIVPATCH1CACHED MEMORY FOR " << numPrimitives << " PRIMITIVES" << std::endl);
          this->bvh->size_data_mem = sizeof(SubdivPatch1Cached) * numPrimitives;
-
+         //DBG_PRINT(this->bvh->size_data_mem);
 	 if ( this->bvh->size_data_mem != 0)
 	   this->bvh->data_mem      = os_malloc( this->bvh->size_data_mem );        
 	 else

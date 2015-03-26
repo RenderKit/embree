@@ -139,7 +139,7 @@ namespace embree
         
         const BestAxis best = parallel_reduce
           (set.begin(),set.end(),size_t(1024),BestAxis(inf,axis0),
-           [&] (const range<size_t>& r) 
+           [&] (const range<size_t>& r) -> BestAxis
            {
              BestAxis best(inf,axis0);
              for (size_t i=r.begin(); i<r.end(); i++)
@@ -152,7 +152,7 @@ namespace embree
                if (cos < best.cos) { best.cos = cos; best.axis = axisi; }
              }
              return best;
-           }, [] (const BestAxis& axis0, const BestAxis& axis1) {
+           }, [] (const BestAxis& axis0, const BestAxis& axis1) -> BestAxis {
             if (axis0.cos < axis1.cos) return axis0; else return axis1;
           });
         const Vec3fa axis1 = best.axis;
@@ -180,7 +180,7 @@ namespace embree
         
         Info info = parallel_reduce
           (set.begin(), set.end(), size_t(1024), Info(), 
-           [&] (const range<size_t>& r)
+           [&] (const range<size_t>& r) -> Info
            {
              Info info;
              for (size_t i=r.begin(); i<r.end(); i++)
@@ -232,7 +232,7 @@ namespace embree
         CentGeomBBox3fa local_left(empty);
         CentGeomBBox3fa local_right(empty);
 
-        auto primOnLeftSide = [&] (const BezierPrim& prim) { 
+        auto primOnLeftSide = [&] (const BezierPrim& prim) -> bool { 
           const Vec3fa axisi = normalize(prim.p3-prim.p0);
           const float cos0 = abs(dot(axisi,split.axis0));
           const float cos1 = abs(dot(axisi,split.axis1));
@@ -266,7 +266,7 @@ namespace embree
         left.reset(); 
         right.reset();
 
-        auto primOnLeftSide = [&] (const BezierPrim& prim) { 
+        auto primOnLeftSide = [&] (const BezierPrim& prim) -> bool { 
           const Vec3fa axisi = normalize(prim.p3-prim.p0);
           const float cos0 = abs(dot(axisi,split.axis0));
           const float cos1 = abs(dot(axisi,split.axis1));
