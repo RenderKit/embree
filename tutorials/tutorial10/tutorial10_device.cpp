@@ -191,20 +191,13 @@ void convertScene(ISPCScene* scene_in, const Vec3fa& p)
 							mesh->numEdgeCreases, mesh->numVertexCreases, mesh->numHoles);
     mesh->geomID = geomID;
 
-    //printf("mesh->geomID %\n",mesh->geomID);
-	for (size_t i = 0; i < mesh->numEdges; i++) mesh->subdivlevel[i] = FIXED_EDGE_TESSELLATION_VALUE;
+    for (size_t i = 0; i < mesh->numEdges; i++) mesh->subdivlevel[i] = FIXED_EDGE_TESSELLATION_VALUE;
 
     if (mesh->positions)             rtcSetBuffer(g_scene, geomID, RTC_VERTEX_BUFFER, mesh->positions, 0, sizeof(Vec3fa  ));
     if (mesh->subdivlevel)           rtcSetBuffer(g_scene, geomID, RTC_LEVEL_BUFFER,  mesh->subdivlevel, 0, sizeof(float));
     if (mesh->position_indices)      rtcSetBuffer(g_scene, geomID, RTC_INDEX_BUFFER,  mesh->position_indices  , 0, sizeof(unsigned int));
     if (mesh->verticesPerFace)       rtcSetBuffer(g_scene, geomID, RTC_FACE_BUFFER,   mesh->verticesPerFace, 0, sizeof(unsigned int));
     if (mesh->holes)                 rtcSetBuffer(g_scene, geomID, RTC_HOLE_BUFFER,   mesh->holes, 0, sizeof(unsigned int));
-
-    //printf("% \n",mesh->edge_creases);
-    //printf("% \n",mesh->edge_crease_weights);
-    //printf("% \n",mesh->vertex_creases);
-    //printf("% \n",mesh->vertex_crease_weights);
-
 
     if (mesh->edge_creases)          rtcSetBuffer(g_scene, geomID, RTC_EDGE_CREASE_INDEX_BUFFER,    mesh->edge_creases,          0, 2*sizeof(unsigned int));
     if (mesh->edge_crease_weights)   rtcSetBuffer(g_scene, geomID, RTC_EDGE_CREASE_WEIGHT_BUFFER,   mesh->edge_crease_weights,   0, sizeof(float));
@@ -493,7 +486,7 @@ extern "C" void device_render (int* pixels,
   const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
   launch_renderTile(numTilesX*numTilesY,pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY); 
-  rtcDebug();
+  //rtcDebug();
 }
 
 /* called by the C++ code for cleanup */
