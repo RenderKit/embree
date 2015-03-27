@@ -22,8 +22,12 @@ make -j 8 preinstall
 umask_org=`umask` # workaround for bug in CMake/CPack: need to reset umask
 umask 022
 cmake -D CMAKE_INSTALL_PREFIX="$destdir" -P cmake_install.cmake
+rm embree-*.rpm # remove stale RPM packages
 make -j 8 package
-cp embree-*.rpm "$destdir"
+for i in embree-*.rpm ; do # rename RPMs to have component name before version
+  newname=`echo $i | sed -e "s/embree-\(.\+\)-\([a-z_]\+\)\.rpm/embree-\2-\1.rpm/"`
+  cp $i "$destdir"/$newname
+done
 umask $umask_org
 cd ..
 
