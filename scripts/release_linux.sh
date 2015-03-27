@@ -7,9 +7,6 @@ fi
 
 destdir=`readlink -f "$1"`
 
-# assumes documentation repo cloned into embree-doc
-make -C embree-doc docbin
-
 mkdir -p build
 cd build
 rm CMakeCache.txt # make sure to use default settings
@@ -18,6 +15,10 @@ cmake \
 -D ENABLE_XEON_PHI_SUPPORT=ON \
 -D CMAKE_SKIP_INSTALL_RPATH=ON \
 ..
+
+# assumes documentation repo cloned into embree-doc
+make -C embree-doc docbin
+
 make -j 8 preinstall
 umask_org=`umask` # workaround for bug in CMake/CPack: need to reset umask
 umask 022

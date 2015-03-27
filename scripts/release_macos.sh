@@ -19,10 +19,6 @@ realpath() {
 
 realpath "$1"
 
-# assumes documentation repo cloned into embree-doc
-make -C embree-doc docbin
-#cp embree-doc/docbin/* "$destdir"
-
 mkdir -p build
 cd build
 rm CMakeCache.txt # make sure to use default settings
@@ -30,6 +26,10 @@ cmake \
 -D COMPILER=ICC \
 -D CMAKE_SKIP_INSTALL_RPATH=ON \
 ..
+
+# assumes documentation repo cloned into embree-doc
+make -C embree-doc docbin
+
 make -j 8 preinstall
 cmake -D CMAKE_INSTALL_PREFIX="$destdir" -P cmake_install.cmake
 cd ..
