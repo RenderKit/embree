@@ -35,8 +35,8 @@ namespace embree
         {
           spatial = other.spatial;
           sah = other.sah;
-          if (spatial) spatialSplit2() = other.spatialSplit();
-          else         objectSplit2()  = other.objectSplit();
+          if (spatial) spatialSplit() = other.spatialSplit();
+          else         objectSplit()  = other.objectSplit();
         }
         
         __forceinline Split2& operator= (const Split2& other) 
@@ -48,7 +48,7 @@ namespace embree
           return *this;
         }
           
-          __forceinline       ObjectSplit&  objectSplit()        { return *(      ObjectSplit*)data; }
+          __forceinline     ObjectSplit&  objectSplit()        { return *(      ObjectSplit*)data; }
         __forceinline const ObjectSplit&  objectSplit() const  { return *(const ObjectSplit*)data; }
         
         __forceinline       SpatialSplit& spatialSplit()       { return *(      SpatialSplit*)data; }
