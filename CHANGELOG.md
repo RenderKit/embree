@@ -1,6 +1,25 @@
 Version History
 ---------------
 
+### New Features in Embree 2.5.0
+
+- Improved hierarchy build performance on both Intel® Xeon® and Intel®
+  Xeon Phi™
+- Vastly improved tessellation cache for ray tracing subdivision surfaces
+- Added `rtcGetUserData` API call to query per geometry user pointer set
+  through `rtcSetUserData`.
+- Added support for memory monitor callback functions to track and
+  limit memory consumption.
+- Added support for progress monitor callback functions to track build
+  progress and cancel long build operations.
+- BVH builders can be used to build user defined hierarchies inside
+  the application (see [tutorial11])
+- Switched to TBB as default tasking system on Xeon to get even faster
+  hierarchy build times and better integration for applications that also
+  use TBB.
+- `rtcCommit` can get called from multiple TBB threads to join the
+  hierarchy build operations
+
 ### New Features in Embree 2.4
 
 -   Support for Catmull Clark subdivision surfaces (triangle/quad base
@@ -11,13 +30,13 @@ Version History
 
 ### New Features in Embree 2.3.3
 
--   BVH builders more robustly handle invalid input data (Intel® Xeon®
+-   BVH builders more robustly handle invalid input data (Intel Xeon
     processor family)
 -   Motion blur support for hair geometry (Xeon)
 -   Improved motion blur performance for triangle geometry (Xeon)
 -   Improved robust ray tracing mode (Xeon)
 -   Added `rtcCommitThread` API call for easier integration into
-    existing tasking systems (Xeon and Intel® Xeon Phi™ coprocessor)
+    existing tasking systems (Xeon and Intel Xeon Phi coprocessor)
 -   Added support for recording and replaying all
     `rtcIntersect`/`rtcOccluded` calls (Xeon and Xeon Phi)
 
