@@ -17,7 +17,7 @@ cmake \
 ..
 
 # assumes documentation repo cloned into embree-doc
-make -C embree-doc docbin
+make -C ../embree-doc docbin
 
 make -j 8 preinstall
 umask_org=`umask` # workaround for bug in CMake/CPack: need to reset umask

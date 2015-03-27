@@ -28,7 +28,7 @@ cmake \
 ..
 
 # assumes documentation repo cloned into embree-doc
-make -C embree-doc docbin
+make -C ../embree-doc docbin
 
 make -j 8 preinstall
 cmake -D CMAKE_INSTALL_PREFIX="$destdir" -P cmake_install.cmake
