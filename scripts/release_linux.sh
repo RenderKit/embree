@@ -18,7 +18,7 @@ cmake \
 cd ..
 
 # assumes documentation repo cloned into embree-doc
-make -C embree-doc docbin
+make -C ../embree-doc docbin
 
 cd build
 make -j 8 preinstall
