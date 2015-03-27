@@ -103,14 +103,14 @@ Version History
 ### Example Performance Numbers for Embree 2.1
 
 BVH rebuild performance (including triangle accel generation, excluding
-memory allocation) for scenes with 2-12 million triangles:
+memory allocation) for scenes with 2--12 million triangles:
 
 -   Intel® Core™ i7 (Haswell-based CPU, 4 cores @ 3.0\ GHz)
-    -   7-8 million triangles/s for the SAH-based BVH builder
-    -   30-36 million triangles/s for the Morton code-based BVH builder
+    -   7--8 million triangles/s for the SAH-based BVH builder
+    -   30--36 million triangles/s for the Morton code-based BVH builder
 -   Intel® Xeon Phi™ 7120
-    -   37-40 million triangles/s for the SAH-based BVH builder
-    -   140-160 million triangles/s for the Morton code-based BVH
+    -   37--40 million triangles/s for the SAH-based BVH builder
+    -   140--160 million triangles/s for the Morton code-based BVH
         builder
 
 Rendering of the Crown model (`crown.ecs`) with 4\ samples per pixel

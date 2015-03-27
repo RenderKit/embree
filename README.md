@@ -73,10 +73,6 @@ For questions please write us at <embree_support@intel.com>.
 To receive notifications of updates and new features of Embree please
 subscribe to the [Embree mailing
 list](https://groups.google.com/d/forum/embree/).
-
-For information about compiler optimizations, see our [Optimization
-Notice](http://software.intel.com/en-us/articles/optimization-notice#opt-en).
-
 Compiling Embree
 ================
 
@@ -1339,7 +1335,7 @@ in the range [0,1] estimating the completion amount of the
 operation. The callback function might get called from multiple
 threads concurrently.
 
-When returing `true` from the callback function, Embree will continue
+When returning `true` from the callback function, Embree will continue
 the build operation normally. When returning `false` Embree will
 cancel the build operation with the RTC_CANCELLED error code. Issuing
 multiple cancel requests for the same build operation is allowed.
