@@ -26,10 +26,12 @@ cmake \
 -D COMPILER=ICC \
 -D CMAKE_SKIP_INSTALL_RPATH=ON \
 ..
+cd ..
 
 # assumes documentation repo cloned into embree-doc
 make -C embree-doc docbin
 
+cd build
 make -j 8 preinstall
 cmake -D CMAKE_INSTALL_PREFIX="$destdir" -P cmake_install.cmake
 cd ..
