@@ -88,9 +88,9 @@ namespace embree
     grid_bvh_size_64b_blocks = getSubTreeSize64bBlocks( 0 );
     
 #if COMPACT == 1
-    //DBG_PRINT( grid_bvh_size_64b_blocks );
-    //DBG_PRINT( grid_u_res);
-    //DBG_PRINT( grid_v_res);
+    //PRINT( grid_bvh_size_64b_blocks );
+    //PRINT( grid_u_res);
+    //PRINT( grid_v_res);
 
     const size_t grid_size_xyzuv = (grid_size_simd_blocks * SIMD_WIDTH) * 4;
     grid_subtree_size_64b_blocks = grid_bvh_size_64b_blocks + ((grid_size_xyzuv+15) / 16);
@@ -147,11 +147,11 @@ namespace embree
         gpatch.exportDenseConrolPoints( patch.v );
       }
 #if 0
-    DBG_PRINT( grid_u_res );
-    DBG_PRINT( grid_v_res );
-    DBG_PRINT( grid_size_16wide_blocks );
-    DBG_PRINT( grid_mask );
-    DBG_PRINT( grid_subtree_size_64b_blocks );
+    PRINT( grid_u_res );
+    PRINT( grid_v_res );
+    PRINT( grid_size_16wide_blocks );
+    PRINT( grid_mask );
+    PRINT( grid_subtree_size_64b_blocks );
 #endif
 
   }
@@ -159,7 +159,7 @@ namespace embree
   void SubdivPatch1Base::evalToOBJ(Scene *scene,size_t &vertex_index, size_t &numTotalTriangles)
   {
 #if defined(__MIC__)
-    FATAL("EVALTOOBJ NOT SUPPORTED ON MIC");
+    THROW_RUNTIME_ERROR("EVALTOOBJ NOT SUPPORTED ON MIC");
 #else
 
 #if !defined(_MSC_VER) || defined(__INTEL_COMPILER)

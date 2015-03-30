@@ -14,21 +14,15 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#pragma once
+#include "string.h"
 
-#include "sys/platform.h"
-#include "sys/filename.h"
-#include "sys/vector.h"
-#include "math/vec2.h"
-#include "math/vec3.h"
-#include "math/affinespace.h"
-#include "scene.h"
-
-#include <vector>
-#include <memory>
+#include <algorithm>
+#include <ctype.h>
 
 namespace embree
 {
-  /*! read from disk */
-  void loadOBJ(const FileName& fileName, const AffineSpace3f& space, OBJScene& mesh, const bool subdivMode = false);
+  char to_lower(char c) { return char(tolower(int(c))); }
+  char to_upper(char c) { return char(toupper(int(c))); }
+  std::string strlwr(const std::string& s) { std::string dst(s); std::transform(dst.begin(), dst.end(), dst.begin(), to_lower); return dst; }
+  std::string strupr(const std::string& s) { std::string dst(s); std::transform(dst.begin(), dst.end(), dst.begin(), to_upper); return dst; }
 }

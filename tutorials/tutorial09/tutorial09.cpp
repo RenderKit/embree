@@ -145,7 +145,7 @@ namespace embree
     parseCommandLine(new ParseStream(new CommandLineStream(argc, argv)), FileName());
 
     /*! Set the thread count in the Embree configuration string. */
-    if (g_numThreads) g_rtcore += ",threads=" + std::stringOf(g_numThreads);
+    if (g_numThreads) g_rtcore += ",threads=" + std::to_string(g_numThreads);
     g_rtcore += g_subdiv_mode;
 
     /*! Initialize Embree state. */

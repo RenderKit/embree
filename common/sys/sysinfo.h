@@ -49,6 +49,9 @@ namespace embree
   /*! get microprocessor model */
   CPUModel getCPUModel(); 
 
+  /*! converts CPU model into string */
+  std::string stringOfCPUModel(CPUModel model);
+
   /*! CPU features */
   static const int CPU_FEATURE_SSE   = 1 << 0;
   static const int CPU_FEATURE_SSE2  = 1 << 1;
@@ -68,8 +71,10 @@ namespace embree
   static const int CPU_FEATURE_KNC   = 1 << 15;
 
   /*! get CPU features */
-  extern int cpu_features;
   int getCPUFeatures();
+
+  /*! set CPU features */
+  void setCPUFeatures(int features);
 
   /*! convert CPU features into a string */
   std::string stringOfCPUFeatures(int features);
@@ -77,9 +82,9 @@ namespace embree
   /*! return the number of logical threads of the system */
   size_t getNumberOfLogicalThreads();
   
-  /*! return the number of cores of the system */
-  size_t getNumberOfCores();
-  
   /*! returns the size of the terminal window in characters */
   int getTerminalWidth();
+
+  /*! returns performance counter in seconds */
+  double getSeconds();
 }

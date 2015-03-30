@@ -23,13 +23,12 @@ namespace embree
 
   void resizeTessellationCache(const size_t new_size)
   {
-    if(new_size <= 1024 * 1024)
-      FATAL("tessellation cache size is too small");
+    if (new_size <= 1024 * 1024)
+      THROW_RUNTIME_ERROR("tessellation cache size is too small");
 
-    if (SharedLazyTessellationCache::sharedLazyTessellationCache.getSize() != new_size)
-      {
-	SharedLazyTessellationCache::sharedLazyTessellationCache.realloc(new_size);
-      }
+    if (SharedLazyTessellationCache::sharedLazyTessellationCache.getSize() != new_size) {
+      SharedLazyTessellationCache::sharedLazyTessellationCache.realloc(new_size);
+    }
   }
 
   void clearTessellationCache()
@@ -87,7 +86,7 @@ namespace embree
 
 	assert( threadWorkState );
 	if (!threadWorkState)
-	  FATAL("realloc threadWorkState");
+          THROW_RUNTIME_ERROR("realloc threadWorkState");
       }    
     mtx_threads.unlock();
     return id;
@@ -124,8 +123,8 @@ namespace embree
 	      waitForUsersLessEqual(i,1);
 
 	    addCurrentIndex();
-	    CACHE_STATS(DBG_PRINT("RESET TESS CACHE"));
-      //DBG_PRINT("RESET TESS CACHE");
+	    CACHE_STATS(PRINT("RESET TESS CACHE"));
+      //PRINT("RESET TESS CACHE");
 
 #if FORCE_SIMPLE_FLUSH == 1
 	    next_block = 0;
@@ -136,12 +135,12 @@ namespace embree
 	    switch_block_threshold = next_block + (maxBlocks/NUM_CACHE_REGIONS);
 
 #if 0
-	    DBG_PRINT( region );
-	    DBG_PRINT( maxBlocks );
-	    DBG_PRINT( NUM_CACHE_REGIONS );
-	    DBG_PRINT( maxBlocks/NUM_CACHE_REGIONS );
-	    DBG_PRINT( next_block );
-	    DBG_PRINT( switch_block_threshold );
+	    PRINT( region );
+	    PRINT( maxBlocks );
+	    PRINT( NUM_CACHE_REGIONS );
+	    PRINT( maxBlocks/NUM_CACHE_REGIONS );
+	    PRINT( next_block );
+	    PRINT( switch_block_threshold );
 #endif
 
 	    assert( switch_block_threshold <= maxBlocks );
@@ -154,7 +153,7 @@ namespace embree
 	      unlockThread(i);
 
 	    //msec = getSeconds()-msec;    
-	    //DBG_PRINT( 1000.0f * msec );
+	    //PRINT( 1000.0f * msec );
 
 	  }
 	reset_state.unlock();
@@ -193,11 +192,11 @@ namespace embree
 
   void SharedTessellationCacheStats::printStats()
   {
-    DBG_PRINT(cache_accesses);
-    DBG_PRINT(cache_misses);
-    DBG_PRINT(cache_hits);
-    DBG_PRINT(cache_flushes);
-    DBG_PRINT(100.0f * cache_hits / cache_accesses);
+    PRINT(cache_accesses);
+    PRINT(cache_misses);
+    PRINT(cache_hits);
+    PRINT(cache_flushes);
+    PRINT(100.0f * cache_hits / cache_accesses);
     assert(cache_hits + cache_misses == cache_accesses);                
   }
 
@@ -213,7 +212,7 @@ namespace embree
 
 extern "C" void printTessCacheStats()
 {
-  DBG_PRINT("SHARED TESSELLATION CACHE");
+  PRINT("SHARED TESSELLATION CACHE");
   embree::SharedTessellationCacheStats::printStats();
   embree::SharedTessellationCacheStats::clearStats();
 }

@@ -17,7 +17,7 @@
 #pragma once
 
 #include "constants.h"
-#include "sync/atomic.h"
+#include "intrinsics.h"
 
 namespace embree
 {

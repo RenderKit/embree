@@ -293,11 +293,7 @@ namespace embree
       {
         for (size_t i=begin;i<end;i++)
           if (!cmp(array[i]))
-            {
-              DBG_PRINT(i);
-              DBG_PRINT(array[i]);
-              FATAL("partition error on left side");
-            }
+            THROW_RUNTIME_ERROR("partition error on left side");
       }
 
       /* check right part of array */
@@ -305,11 +301,7 @@ namespace embree
       {
         for (size_t i=begin;i<end;i++)
           if (cmp(array[i]))
-            {
-              DBG_PRINT(i);
-              DBG_PRINT(array[i]);
-              FATAL("partition error on right side");
-            }
+              THROW_RUNTIME_ERROR("partition error on right side");
       }
 
     public:
@@ -325,7 +317,7 @@ namespace embree
         
         blocks = N/BLOCK_SIZE;
         DBG_PART(
-                 DBG_PRINT(blocks);
+                 PRINT(blocks);
                  );
       }
 
@@ -350,14 +342,14 @@ namespace embree
           {
             DBG_PART(
                      std::cout << std::endl;
-                     DBG_PRINT("NEXT ITERATION");
+                     PRINT("NEXT ITERATION");
                      );
 
             int64 id = getBlockID(mode);
 
             DBG_PART(
-                     DBG_PRINT(id);
-                     DBG_PRINT(validBlockID(id));
+                     PRINT(id);
+                     PRINT(validBlockID(id));
                      );
 
             if (!validBlockID(id)) break;
@@ -371,8 +363,8 @@ namespace embree
                 currentLeftBlock = blockIndex;
 
                 DBG_PART(
-                         DBG_PRINT("LEFT BLOCK");
-                         DBG_PRINT(currentLeftBlock);
+                         PRINT("LEFT BLOCK");
+                         PRINT(currentLeftBlock);
                          );
 
               }
@@ -385,16 +377,16 @@ namespace embree
                 currentRightBlock = blockIndex;
 
                 DBG_PART(
-                         DBG_PRINT("RIGHT BLOCK");
-                         DBG_PRINT(currentRightBlock);
+                         PRINT("RIGHT BLOCK");
+                         PRINT(currentRightBlock);
                          );
               }
 
             DBG_PART(
-                     DBG_PRINT(left_begin);
-                     DBG_PRINT(left_end);
-                     DBG_PRINT(right_begin);
-                     DBG_PRINT(right_end);
+                     PRINT(left_begin);
+                     PRINT(left_end);
+                     PRINT(right_begin);
+                     PRINT(right_end);
                      );
             
             assert(left_begin  < left_end);
@@ -448,12 +440,12 @@ namespace embree
         if (N <= 2 * BLOCK_SIZE * numThreads) // need at least 1 block from the left and 1 block from the right per thread
           {
 #if defined(__MIC__)
-            DBG_PRINT("SERIAL FALLBACK");
-            DBG_PRINT("numThreads");
+            PRINT("SERIAL FALLBACK");
+            PRINT("numThreads");
 #endif
             size_t mid = serialPartitioning(0,N,leftReduction,rightReduction);
             DBG_PART(
-                     DBG_PRINT( mid );
+                     PRINT( mid );
                      checkLeft(0,mid);
                      checkRight(mid,N);
                      );
@@ -461,7 +453,7 @@ namespace embree
           }
 
         DBG_PART2(
-                 DBG_PRINT("PARALLEL MODE");
+                 PRINT("PARALLEL MODE");
                  );
 
 
@@ -486,14 +478,14 @@ namespace embree
 	    insertionsort_ascending<unsigned int>(rightRemainderBlockIDs,(unsigned int)numRightRemainderBlocks);
 
 	    DBG_PART(
-		     DBG_PRINT(numLeftRemainderBlocks);
+		     PRINT(numLeftRemainderBlocks);
 		     for (size_t i=0;i<numLeftRemainderBlocks;i++)
 		       std::cout << i << " -> " << leftRemainderBlockIDs[i] << std::endl;
-		     DBG_PRINT(numRightRemainderBlocks);
+		     PRINT(numRightRemainderBlocks);
 		     for (size_t i=0;i<numRightRemainderBlocks;i++)
 		       std::cout << i << " -> " << rightRemainderBlockIDs[i] << std::endl;
-		     DBG_PRINT(maxLeftBlockID);
-		     DBG_PRINT(maxRightBlockID);                 
+		     PRINT(maxLeftBlockID);
+		     PRINT(maxRightBlockID);                 
 		     );
 
 	    /* compact left remaining blocks */        
@@ -545,12 +537,12 @@ namespace embree
 	    /*   right_end -= BLOCK_SIZE; */
         
 	    DBG_PART(
-		     DBG_PRINT("CLEANUP");
+		     PRINT("CLEANUP");
                  
-		     DBG_PRINT(left_begin);
-		     DBG_PRINT(left_end);
-		     DBG_PRINT(right_begin);
-		     DBG_PRINT(right_end);
+		     PRINT(left_begin);
+		     PRINT(left_end);
+		     PRINT(right_begin);
+		     PRINT(right_end);
 
 		     //for (size_t i=0;i<N;i++)
 		     //std::cout << i << " -> " << array[i] << std::endl;
@@ -881,7 +873,7 @@ namespace embree
         if (N <= 4 * numThreads)
           {
 	    DBG_PART(
-		     DBG_PRINT(numThreads);
+		     PRINT(numThreads);
 		     );
 
             size_t mid = partition_serial(array,N);
@@ -889,7 +881,7 @@ namespace embree
           }
 
         DBG_PART2(
-                 DBG_PRINT("PARALLEL MODE");
+                 PRINT("PARALLEL MODE");
                  );
 #define TIME_PHASES 0
 
@@ -1041,18 +1033,18 @@ namespace embree
     for (size_t i=0;i<mid;i++)
       if (!cmp(array[i]))
 	{
-	  DBG_PRINT("left side partition");
-	  DBG_PRINT(i);
-	  DBG_PRINT(array[i]);
+	  PRINT("left side partition");
+	  PRINT(i);
+	  PRINT(array[i]);
 	  return false;
 	}
 
     for (size_t i=mid;i<N;i++)
       if (cmp(array[i]))
 	{
-	  DBG_PRINT("right side partition");
-	  DBG_PRINT(i);
-	  DBG_PRINT(array[i]);
+	  PRINT("right side partition");
+	  PRINT(i);
+	  PRINT(array[i]);
 	  return false;
 	}
     return true;

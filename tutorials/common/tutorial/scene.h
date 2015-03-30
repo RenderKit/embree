@@ -17,7 +17,7 @@
 #pragma once
 
 #include "sys/platform.h"
-#include "sys/stl/vector.h"
+#include "sys/vector.h"
 #include "math/vec2.h"
 #include "math/vec3.h"
 #include "math/affinespace.h"

@@ -258,13 +258,10 @@ namespace embree
 
   void task_regression_testing(void* This, size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* taskGroup) 
   {
-    if (regression_tests == NULL) return;
     LockStepTaskScheduler::setInstance(&regression_task_scheduler);
     LockStepTaskScheduler::Init init(threadIndex,threadCount,&regression_task_scheduler);
     if (threadIndex != 0) return;
-
-    for (size_t i=0; i<regression_tests->size(); i++) 
-      (*(*regression_tests)[i])();
+    runRegressionTests();
   }
 #endif
  
@@ -306,17 +303,17 @@ namespace embree
         else if (tok == "isa" && parseSymbol (cfg,'=',pos)) 
 	{
 	  std::string isa = parseIdentifier (cfg,pos);
-	  if      (isa == "sse" ) cpu_features = SSE;
-	  else if (isa == "sse2") cpu_features = SSE2;
-	  else if (isa == "sse3") cpu_features = SSE3;
-	  else if (isa == "ssse3") cpu_features = SSSE3;
-	  else if (isa == "sse41") cpu_features = SSE41;
-	  else if (isa == "sse4.1") cpu_features = SSE41;
-	  else if (isa == "sse42") cpu_features = SSE42;
-	  else if (isa == "sse4.2") cpu_features = SSE42;
-	  else if (isa == "avx") cpu_features = AVX;
-	  else if (isa == "avxi") cpu_features = AVXI;
-	  else if (isa == "avx2") cpu_features = AVX2;
+	  if      (isa == "sse" ) setCPUFeatures(SSE);
+	  else if (isa == "sse2") setCPUFeatures(SSE2);
+	  else if (isa == "sse3") setCPUFeatures(SSE3);
+	  else if (isa == "ssse3") setCPUFeatures(SSSE3);
+	  else if (isa == "sse41") setCPUFeatures(SSE41);
+	  else if (isa == "sse4.1") setCPUFeatures(SSE41);
+	  else if (isa == "sse42") setCPUFeatures(SSE42);
+	  else if (isa == "sse4.2") setCPUFeatures(SSE42);
+	  else if (isa == "avx") setCPUFeatures(AVX);
+	  else if (isa == "avxi") setCPUFeatures(AVXI);
+	  else if (isa == "avx2") setCPUFeatures(AVX2);
 	}
 
         else if ((tok == "tri_accel" || tok == "accel") && parseSymbol (cfg,'=',pos))
@@ -370,20 +367,17 @@ namespace embree
 	else if (tok == "memory_preallocation_factor" && parseSymbol (cfg,'=',pos))
 	  {
 	    g_memory_preallocation_factor = parseFloat (cfg,pos);
-	    DBG_PRINT( g_memory_preallocation_factor );
+	    PRINT( g_memory_preallocation_factor );
 	  }
 
         else if (tok == "regression" && parseSymbol (cfg,'=',pos)) {
           g_regression_testing = parseInt (cfg,pos);
         }
 	else if (tok == "tessellation_cache_size" && parseSymbol (cfg,'=',pos))
-	  {
-	    g_tessellation_cache_size = parseInt (cfg,pos) * 1024 * 1024; // in MBs
-	    {
-	      //void resizeTessellationCache(const size_t new_size);
-	      resizeTessellationCache( g_tessellation_cache_size );
-	    }
-	  }        
+        {
+          g_tessellation_cache_size = parseFloat (cfg,pos) * 1024 * 1024;
+          resizeTessellationCache( g_tessellation_cache_size );
+        }        
       } while (findNext (cfg,',',pos));
     }
 
@@ -392,10 +386,11 @@ namespace embree
       std::cout << "Embree Ray Tracing Kernels " << __EMBREE_VERSION__ << " (" << __DATE__ << ")" << std::endl;
       std::cout << "  Compiler : " << getCompilerName() << std::endl;
       std::cout << "  Platform : " << getPlatformName() << std::endl;
-      std::cout << "  CPU      : " << stringOfCPUFeatures(getCPUFeatures()) << std::endl;
-      std::cout << "  Features : ";
+      std::cout << "  CPU      : " << stringOfCPUModel(getCPUModel()) << " (" << getCPUVendor() << ")" << std::endl;
+      std::cout << "  ISA      : " << stringOfCPUFeatures(getCPUFeatures()) << std::endl;
+      std::cout << "  Config   : ";
 #if defined(TASKING_TBB)
-      std::cout << "tbb ";
+      std::cout << "TBB ";
 #endif
 #if defined(TASKING_TBB_INTERNAL)
       std::cout << "internal_tasking_system ";
@@ -486,8 +481,7 @@ namespace embree
       TaskScheduler::addTask(-1,TaskScheduler::GLOBAL_FRONT,&task);
       event.sync();
 #else
-      for (size_t i=0; i<regression_tests->size(); i++) 
-	(*(*regression_tests)[i])();
+      runRegressionTests();
 #endif
     }
 
@@ -648,7 +642,7 @@ namespace embree
 
 #if defined(__MIC__)
     if (unlikely(numThreads % 4 != 0 && numThreads != 1)) 
-      FATAL("MIC requires numThreads % 4 == 0 in rtcCommitThread");
+      process_error(RTC_INVALID_OPERATION,"MIC requires numThreads % 4 == 0 in rtcCommitThread");
 #endif
     
     ((Scene*)scene)->build(threadID,numThreads);

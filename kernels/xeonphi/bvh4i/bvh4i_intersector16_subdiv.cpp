@@ -120,12 +120,12 @@ namespace embree
 	  const unsigned int v_size = v_end-v_start;
 
 #if 0
-	  DBG_PRINT(u_start);
-	  DBG_PRINT(v_start);
-	  DBG_PRINT(u_end);
-	  DBG_PRINT(v_end);
-	  DBG_PRINT(u_size);
-	  DBG_PRINT(v_size);
+	  PRINT(u_start);
+	  PRINT(v_start);
+	  PRINT(u_end);
+	  PRINT(v_end);
+	  PRINT(u_size);
+	  PRINT(v_size);
 #endif
 	  //size_t offset = range.v_start * patch.grid_u_res + range.u_start;
 
@@ -302,10 +302,10 @@ namespace embree
 
 #if 0
       TIMER(msec = getSeconds()-msec);    
-      TIMER(DBG_PRINT("tess"));
-      TIMER(DBG_PRINT(patch.grid_u_res));
-      TIMER(DBG_PRINT(patch.grid_v_res));
-      TIMER(DBG_PRINT(1000.0f * msec));
+      TIMER(PRINT("tess"));
+      TIMER(PRINT(patch.grid_u_res));
+      TIMER(PRINT(patch.grid_v_res));
+      TIMER(PRINT(1000.0f * msec));
       TIMER(msec = getSeconds());    
 #endif
 
@@ -315,8 +315,8 @@ namespace embree
       const unsigned int grid_u_blocks = (patch.grid_u_res + U_BLOCK_SIZE-2) / (U_BLOCK_SIZE-1);
       const unsigned int grid_v_blocks = (patch.grid_v_res + V_BLOCK_SIZE-2) / (V_BLOCK_SIZE-1);
 
-      //DBG_PRINT(grid_u_blocks);
-      //DBG_PRINT(grid_v_blocks);
+      //PRINT(grid_u_blocks);
+      //PRINT(grid_v_blocks);
 
       unsigned int localCounter = 0;
       BBox3fa bounds = createSubTreeCompact( subtree_root,
@@ -330,16 +330,16 @@ namespace embree
       //assert(currentIndex - oldIndex == patch.grid_bvh_size_64b_blocks);
       assert(localCounter == patch.grid_bvh_size_64b_blocks);
       TIMER(msec = getSeconds()-msec);    
-      TIMER(DBG_PRINT("tess+bvh"));
-      TIMER(DBG_PRINT(patch.grid_u_res));
-      TIMER(DBG_PRINT(patch.grid_v_res));
-      TIMER(DBG_PRINT(patch.grid_subtree_size_64b_blocks*64));
+      TIMER(PRINT("tess+bvh"));
+      TIMER(PRINT(patch.grid_u_res));
+      TIMER(PRINT(patch.grid_v_res));
+      TIMER(PRINT(patch.grid_subtree_size_64b_blocks*64));
 
-      TIMER(DBG_PRINT(1000.0f * msec));
+      TIMER(PRINT(1000.0f * msec));
       TIMER(double throughput = 1.0 / (1000*msec));
 
       TIMER(msec = getSeconds());    
-      TIMER(DBG_PRINT(throughput));
+      TIMER(PRINT(throughput));
 
       return subtree_root;
     }
@@ -417,7 +417,7 @@ namespace embree
 		    SharedLazyTessellationCache::sharedLazyTessellationCache.resetCache();
 		    continue;
 		  }
-		//DBG_PRINT( SharedLazyTessellationCache::sharedLazyTessellationCache.getNumUsedBytes() );
+		//PRINT( SharedLazyTessellationCache::sharedLazyTessellationCache.getNumUsedBytes() );
 		mic_f* local_mem   = (mic_f*)SharedLazyTessellationCache::sharedLazyTessellationCache.getBlockPtr(block_index);
 		//mic_f* local_mem   = (mic_f*)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();
 		unsigned int currentIndex = 0;

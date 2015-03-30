@@ -100,9 +100,9 @@ public:
 								edge_creases(NULL), edge_crease_weights(NULL), vertex_creases(NULL), 
 								vertex_crease_weights(NULL)
   {
-    //DBG_PRINT(numVertices);
-    //DBG_PRINT(numFaces);
-    //DBG_PRINT(numEdges);
+    //PRINT(numVertices);
+    //PRINT(numFaces);
+    //PRINT(numEdges);
   }
 
   Vec3fa* positions;       //!< vertex positions
@@ -288,9 +288,9 @@ public:
     size_t meshID = g_meshID++;
 
 #if 0
-    DBG_PRINT( in_pMiscData->numTriangles );
-    DBG_PRINT( in_pMiscData->numQuads );
-    DBG_PRINT( in_pMiscData->numVertices );
+    PRINT( in_pMiscData->numTriangles );
+    PRINT( in_pMiscData->numQuads );
+    PRINT( in_pMiscData->numVertices );
 #endif
 
     ISPCMesh* mesh = new ISPCMesh(in_pMiscData->numTriangles,in_pMiscData->numQuads,in_pMiscData->numVertices,in_pMiscData->meshMaterialID);
@@ -331,11 +331,11 @@ public:
 #endif
 
 #if 0
-    DBG_PRINT( mesh->sizePositions );
-    DBG_PRINT( mesh->sizeNormals );
-    DBG_PRINT( mesh->sizeTexCoords );
-    DBG_PRINT( mesh->sizeTriangles );
-    DBG_PRINT( mesh->sizeQuads );
+    PRINT( mesh->sizePositions );
+    PRINT( mesh->sizeNormals );
+    PRINT( mesh->sizeTexCoords );
+    PRINT( mesh->sizeTriangles );
+    PRINT( mesh->sizeQuads );
 #endif
 
     g_ispc_scene->meshes[meshID] = mesh;
@@ -357,9 +357,9 @@ public:
     const size_t numFaces    = in_pMiscData->numVerticesPerFace;
 
 #if 0
-    DBG_PRINT( numVertices );
-    DBG_PRINT( numEdges );
-    DBG_PRINT( numFaces );
+    PRINT( numVertices );
+    PRINT( numEdges );
+    PRINT( numFaces );
 #endif
 
     ISPCSubdivMesh* mesh = new ISPCSubdivMesh(in_pMiscData->numPositions,

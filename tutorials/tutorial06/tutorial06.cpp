@@ -217,7 +217,7 @@ namespace embree
     parseCommandLine(stream, FileName());
     
     if (g_numThreads) 
-      g_rtcore += ",threads=" + std::stringOf(g_numThreads);
+      g_rtcore += ",threads=" + std::to_string(g_numThreads);
     if (g_numBenchmarkFrames)
       g_rtcore += ",benchmark=1";
 

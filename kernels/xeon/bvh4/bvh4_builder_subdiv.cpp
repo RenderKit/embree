@@ -677,14 +677,14 @@ namespace embree
         
 #endif   
 
-      DBG_PRINT( patch.grid_size_simd_blocks );
+      PRINT( patch.grid_size_simd_blocks );
 
       evalGrid(patch,grid_x,grid_y,grid_z,grid_u,grid_v,geom);
 
-      DBG_PRINT(patch.grid_u_res);
-      DBG_PRINT(patch.grid_v_res);
+      PRINT(patch.grid_u_res);
+      PRINT(patch.grid_v_res);
       
-      DBG_PRINT("top");
+      PRINT("top");
       for (size_t x=0;x<patch.grid_u_res;x++)
         {
           const size_t offset = patch.gridOffset(0,x);
@@ -694,7 +694,7 @@ namespace embree
           std::cout << std::endl;
         }
 
-      DBG_PRINT("right");
+      PRINT("right");
       for (size_t y=0;y<patch.grid_v_res;y++)
         {
           const size_t offset = patch.gridOffset(y,patch.grid_u_res-1);
@@ -704,7 +704,7 @@ namespace embree
           std::cout << std::endl;
         }
 
-      DBG_PRINT("buttom");
+      PRINT("buttom");
       for (ssize_t x=patch.grid_u_res-1;x>=0;x--)
         {
           const size_t offset = patch.gridOffset(patch.grid_v_res-1,x);
@@ -715,7 +715,7 @@ namespace embree
         }
 
 
-      DBG_PRINT("left");
+      PRINT("left");
       for (ssize_t y=patch.grid_v_res-1;y>=0;y--)
         {
           const size_t offset = patch.gridOffset(y,0);
@@ -872,7 +872,7 @@ namespace embree
        {
          DBG_CACHE_BUILDER(std::cout << "ALLOCATING SUBDIVPATCH1CACHED MEMORY FOR " << numPrimitives << " PRIMITIVES" << std::endl);
          this->bvh->size_data_mem = sizeof(SubdivPatch1Cached) * numPrimitives;
-         //DBG_PRINT(this->bvh->size_data_mem);
+         //PRINT(this->bvh->size_data_mem);
 	 if ( this->bvh->size_data_mem != 0)
 	   this->bvh->data_mem      = os_malloc( this->bvh->size_data_mem );        
 	 else

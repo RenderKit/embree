@@ -191,14 +191,14 @@ namespace embree
     numAllocated64BytesBlocks = size_node / sizeof(BVH4Hair::UnalignedNode); // FIXME: do memory handling in 64 byte blocks
 
     DBG(
-	DBG_PRINT(numAllocated64BytesBlocks);
-	DBG_PRINT(sizeNodeInBytes);
-	DBG_PRINT(sizePrimRefInBytes);
-	DBG_PRINT(sizeAccelInBytes);
+	PRINT(numAllocated64BytesBlocks);
+	PRINT(sizeNodeInBytes);
+	PRINT(sizePrimRefInBytes);
+	PRINT(sizeAccelInBytes);
 	
-	DBG_PRINT(size_primrefs);
-	DBG_PRINT(size_node);
-	DBG_PRINT(size_accel);
+	PRINT(size_primrefs);
+	PRINT(size_node);
+	PRINT(size_accel);
 	);
 
     prims = (Bezier1i                 *) os_malloc(size_primrefs); 
@@ -281,7 +281,7 @@ namespace embree
     const size_t totalNumPrimitives = getNumPrimitives();
 
 
-    DBG(DBG_PRINT(totalNumPrimitives));
+    DBG(PRINT(totalNumPrimitives));
 
     /* print builder name */
     if (unlikely(g_verbose >= 2)) 
@@ -390,7 +390,7 @@ namespace embree
     /* now process all created subtasks on multiple threads */    
     TIMER(msec = getSeconds());    
     scene->lockstep_scheduler.dispatchTask(task_buildSubTrees, this, threadIndex, threadCount );
-    DBG(DBG_PRINT(atomicID));
+    DBG(PRINT(atomicID));
     TIMER(msec = getSeconds()-msec);    
     TIMER(std::cout << "task_buildSubTrees " << 1000. * msec << " ms" << std::endl << std::flush);
 
@@ -436,7 +436,7 @@ namespace embree
 
    if (unlikely(mode == BUILD_TOP_LEVEL))
       {
-	DBG(DBG_PRINT("TOP_LEVEL"));
+	DBG(PRINT("TOP_LEVEL"));
 
 	if (current.items() >= BUILD_RECORD_PARALLEL_SPLIT_THRESHOLD && numThreads > 1)
 	  return splitParallelGlobal(current,left,right,threadID,numThreads);
@@ -497,9 +497,9 @@ namespace embree
 	if (unlikely(current.begin + mid == current.begin || current.begin + mid == current.end)) 
 	  {
 	    std::cout << "WARNING: mid == current.begin || mid == current.end " << std::endl;
-	    DBG_PRINT(split);
-	    DBG_PRINT(current);
-	    DBG_PRINT(mid);
+	    PRINT(split);
+	    PRINT(current);
+	    PRINT(mid);
 	    split_fallback(prims,current,leftChild,rightChild);	    
 	  }
 	else
@@ -568,9 +568,9 @@ namespace embree
 	if (unlikely(current.begin == mid || mid == current.end)) 
 	  {
 	    std::cout << "WARNING: mid == current.begin || mid == current.end " << std::endl;
-	    DBG_PRINT(global_sharedData.split);
-	    DBG_PRINT(current);
-	    DBG_PRINT(mid);
+	    PRINT(global_sharedData.split);
+	    PRINT(current);
+	    PRINT(mid);
 	    split_fallback(prims,current,leftChild,rightChild);	    
 	  }
 	else
@@ -639,9 +639,9 @@ namespace embree
 	 if (unlikely(mid == current.begin || mid == current.end)) 
 	   {
 	     std::cout << "WARNING: mid == current.begin || mid == current.end " << std::endl;
-	     DBG_PRINT(sd.split);
-	     DBG_PRINT(current);
-	     DBG_PRINT(mid);
+	     PRINT(sd.split);
+	     PRINT(current);
+	     PRINT(mid);
 	     split_fallback(prims,current,leftChild,rightChild);	    
 	   }
 	 else
@@ -781,7 +781,7 @@ namespace embree
       recurse(children[i],alloc,mode,threadID,numThreads);
     }    
 
-    DBG(DBG_PRINT(*current_node));
+    DBG(PRINT(*current_node));
 
   }
 
@@ -946,7 +946,7 @@ namespace embree
   __forceinline bool BVH4HairBuilder::splitSequentialOBB(BuildRecordOBB& current, BuildRecordOBB& leftChild, BuildRecordOBB& rightChild)
   {
     DBG(PING);
-    DBG(DBG_PRINT(current));
+    DBG(PRINT(current));
 
     //computeUnalignedSpace(current);
     //computeUnalignedSpaceBounds(current);
@@ -993,9 +993,9 @@ namespace embree
 	if (unlikely(current.begin + mid == current.begin || current.begin + mid == current.end)) 
 	  {
 	    std::cout << "WARNING: mid == current.begin || mid == current.end " << std::endl;
-	    DBG_PRINT(split);
-	    DBG_PRINT(current);
-	    DBG_PRINT(mid);
+	    PRINT(split);
+	    PRINT(current);
+	    PRINT(mid);
 	    split_fallback(prims,current,leftChild,rightChild);	    
 	  }
 	else
@@ -1043,7 +1043,7 @@ namespace embree
 
     current.PreQuantizeMatrix();
 
-    DBG(DBG_PRINT(current.xfm));
+    DBG(PRINT(current.xfm));
   }
 
   __forceinline void BVH4HairBuilder::computeUnalignedSpaceBounds( BuildRecordOBB& current )
@@ -1087,10 +1087,10 @@ namespace embree
 		const Vec3fa xfm_v = xfmPoint(current.xfm,v);
 		if (disjoint(current.bounds.geometry,xfm_v))
 		  {
-		    DBG_PRINT(v);
-		    DBG_PRINT(xfm_v);
-		    DBG_PRINT(current.xfm);
-		    DBG_PRINT(current.bounds.geometry);
+		    PRINT(v);
+		    PRINT(xfm_v);
+		    PRINT(current.xfm);
+		    PRINT(current.bounds.geometry);
 		    exit(0);
 		  }
 	      }

@@ -17,6 +17,7 @@
 #pragma once
 
 #include "sys/platform.h"
+#include "sys/sysinfo.h"
 #include "sys/ref.h"
 #include "lexers/streamfilters.h"
 #include "lexers/parsestream.h"

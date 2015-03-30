@@ -14,22 +14,24 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#pragma once
+#include "regression.h"
 
-#include "../platform.h"
-
-#include <stdio.h>
-#include <string>
-#include <cstring>
-#include <string.h>
-#include <sstream>
-
-namespace std
+namespace embree
 {
-  string strlwr(const string& s);
-  string strupr(const string& s);
+  static std::vector<RegressionTest*>* regression_tests;
 
-  template<typename T> __forceinline string stringOf( T const& v) {
-    stringstream s; s << v; return s.str();
+  void registerRegressionTest(RegressionTest* test) 
+  {
+    if (regression_tests == NULL) regression_tests = new std::vector<RegressionTest*>;
+    regression_tests->push_back(test);
+  }
+
+  void runRegressionTests()
+  {
+    if (regression_tests == NULL) 
+      return;
+
+    for (size_t i=0; i<regression_tests->size(); i++) 
+      (*(*regression_tests)[i])();
   }
 }

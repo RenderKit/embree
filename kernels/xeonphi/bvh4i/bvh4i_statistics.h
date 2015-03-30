@@ -17,6 +17,7 @@
 #pragma once
 
 #include "bvh4i.h"
+#include <sstream>
 
 namespace embree
 {
@@ -105,10 +106,10 @@ namespace embree
     
       if (!isfinite(A))
 	{
-	  DBG_PRINT(node);
-	  DBG_PRINT(bounds);
-	  DBG_PRINT(depth);
-	  FATAL("error in sah");
+	  PRINT(node);
+	  PRINT(bounds);
+	  PRINT(depth);
+	  THROW_RUNTIME_ERROR("error in sah");
 	}
 
       if (node.isNode())
@@ -126,10 +127,10 @@ namespace embree
 
 	    BBox3fa b = n->bounds(i);
 	    if (!(isfinite(b.lower.x) && isfinite(b.lower.y) && isfinite(b.lower.z)))
-	      FATAL("lower");
+	      THROW_RUNTIME_ERROR("lower");
 
 	    if (!(isfinite(b.upper.x) && isfinite(b.upper.y) && isfinite(b.upper.z)))
-	      FATAL("upper");
+	      THROW_RUNTIME_ERROR("upper");
 
 	    statistics(n->child(i),n->bounds(i),cdepth); 
 	    depth=max(depth,cdepth);

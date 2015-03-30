@@ -19,8 +19,9 @@
 #include <stdio.h>
 #include <assert.h>
 
-#include "../platform.h"
-#include "../ref.h" 
+#include "platform.h"
+#include "alloc.h"
+#include "ref.h" 
 
 namespace embree
 {

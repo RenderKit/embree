@@ -15,6 +15,7 @@
 // ======================================================================== //
 
 #include "bvh4_statistics.h"
+#include <sstream>
 
 namespace embree
 {

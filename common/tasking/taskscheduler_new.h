@@ -17,6 +17,7 @@
 #pragma once
 
 #include "sys/platform.h"
+#include "sys/alloc.h"
 #include "tasking/taskscheduler.h"
 #include "../../kernels/algorithms/range.h"
 
@@ -144,7 +145,7 @@ namespace embree
       } 
       
       /*! run this task */
-	  __dllexport2 void run(Thread& thread);
+      __dllexport void run(Thread& thread);
 
     public:
       volatile atomic32_t state;         //!< state this task is in
@@ -180,7 +181,7 @@ namespace embree
 	if (left >= right-1) left = right-1;
       }
       
-	  __dllexport2 bool execute_local(Thread& thread, Task* parent);
+      __dllexport bool execute_local(Thread& thread, Task* parent);
       bool steal(Thread& thread);
       size_t getTaskSizeAtLeft();
 
@@ -226,13 +227,13 @@ namespace embree
     /*! wait for some number of threads available (threadCount includes main thread) */
     void wait_for_threads(size_t threadCount);
 
-	__dllexport2 void startThreads();
+    __dllexport void startThreads();
     void terminateThreadLoop();
     void destroyThreads();
 
     void thread_loop(size_t threadIndex);
     bool steal_from_other_threads(Thread& thread);
-	__dllexport2 bool executeTaskSet(Thread& thread);
+    __dllexport bool executeTaskSet(Thread& thread);
 
     template<typename Predicate, typename Body>
       static void steal_loop(Thread& thread, const Predicate& pred, const Body& body);
@@ -336,13 +337,13 @@ namespace embree
     }
 
     /* work on spawned subtasks and wait until all have finished */
-	__dllexport2 static void wait();
+    __dllexport static void wait();
 
     /* work on spawned subtasks and wait until all have finished */
-	__dllexport2 static size_t threadCount();
+    __dllexport static size_t threadCount();
 
-	__dllexport2 static Thread* thread();
-	__dllexport2 static void setThread(Thread* thread);
+    __dllexport static Thread* thread();
+    __dllexport static void setThread(Thread* thread);
 
     __forceinline static TaskSchedulerNew* instance() {
       return thread()->scheduler;
@@ -373,7 +374,7 @@ namespace embree
 #endif
     TaskSetFunction* volatile task_set_function;
 
-    __dllexport2 static TaskSchedulerNew* global_instance();
+    __dllexport static TaskSchedulerNew* global_instance();
 
   private:
 	  static TaskSchedulerNew* g_instance;

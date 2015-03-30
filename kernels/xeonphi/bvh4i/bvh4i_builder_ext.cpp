@@ -93,9 +93,9 @@ PRINT(CORRECT_numPrims);
 
 	if (g_verbose >= 2)
 	  {
-	    DBG_PRINT(numPrimitives);
-	    DBG_PRINT(numMaxPrimitives);
-	    DBG_PRINT(numMaxPreSplits);
+	    PRINT(numPrimitives);
+	    PRINT(numMaxPrimitives);
+	    PRINT(numMaxPreSplits);
 	  };
 
 	allocateMemoryPools(numPrims,numNodes);
@@ -220,9 +220,9 @@ PRINT(CORRECT_numPrims);
 
     averageBoxTriSAHRatio = averageBoxSAH / averageTriSAH;
 
-    DBG_PRINT(averageBoxSAH);
-    DBG_PRINT(averageTriSAH);
-    DBG_PRINT(averageBoxTriSAHRatio);
+    PRINT(averageBoxSAH);
+    PRINT(averageTriSAH);
+    PRINT(averageBoxTriSAHRatio);
     
 #if 1
     PRESPLIT_AREA_THRESHOLD = 20.0f;
@@ -399,9 +399,9 @@ PRINT(CORRECT_numPrims);
 		  const mic_f factor = area_box * rcp(area_tri);
 
 		  DBG(
-		      DBG_PRINT(area_tri);
-		      DBG_PRINT(area_box);
-		      DBG_PRINT(factor);
+		      PRINT(area_tri);
+		      PRINT(area_box);
+		      PRINT(factor);
 		      );
 
 		  const mic_m m_factor = factor > PRESPLIT_AREA_THRESHOLD;
@@ -479,9 +479,9 @@ PRINT(CORRECT_numPrims);
 		  const mic_f factor = area_box * rcp(area_tri);
 
 		  DBG(
-		      DBG_PRINT(area_tri);
-		      DBG_PRINT(area_box);
-		      DBG_PRINT(factor);
+		      PRINT(area_tri);
+		      PRINT(area_box);
+		      PRINT(factor);
 		      );
 
 		  const mic_m m_factor = factor > PRESPLIT_AREA_THRESHOLD;
@@ -881,7 +881,7 @@ PRINT(CORRECT_numPrims);
 	  fastUpdateMode_numFaces += iter[i]->size();
 	  if (!iter[i]->checkLevelUpdate()) fastUpdateMode = false;
 	}
-    DBG_CACHE_BUILDER( DBG_PRINT( fastUpdateMode_numFaces ) );
+    DBG_CACHE_BUILDER( PRINT( fastUpdateMode_numFaces ) );
 
     pstate.init(iter,size_t(1024));
 
@@ -894,7 +894,7 @@ PRINT(CORRECT_numPrims);
 	fastUpdateMode = false;
       }
     
-    //DBG_PRINT(fastUpdateMode);
+    //PRINT(fastUpdateMode);
     if (!fastUpdateMode)
       BVH4iBuilder::build(threadIndex,threadCount);
     else

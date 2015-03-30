@@ -363,11 +363,9 @@ namespace embree
 
       }
 
-      __forceinline void setMatrix(const LinearSpace3fa &mat, BBox3fa &b, const size_t m)
-      {
-	FATAL("not implemented");
+      __forceinline void setMatrix(const LinearSpace3fa &mat, BBox3fa &b, const size_t m) {
+        NOT_IMPLEMENTED;
       }
-
     };
 
 

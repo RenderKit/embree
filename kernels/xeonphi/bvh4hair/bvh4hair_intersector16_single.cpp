@@ -196,7 +196,7 @@ namespace embree
         {
 	  Precalculations pre(ray16_space,inv_ray_length,rayIndex);
 	  DBG(std::cout << std::endl);
-	  DBG(DBG_PRINT(rayIndex));
+	  DBG(PRINT(rayIndex));
 
 	  stack_node[1] = bvh->root; 
 
@@ -243,7 +243,7 @@ namespace embree
 	      //////////////////////////////////////////////////////////////////////////////////////////////////
 	      BVH4Hair::NodeRef curNode4i = (unsigned int)curNode;
 
-	      DBG(DBG_PRINT(curNode));
+	      DBG(PRINT(curNode));
 
 	      const bool hit = LeafIntersector::intersect(curNode4i,
 							  rayIndex,

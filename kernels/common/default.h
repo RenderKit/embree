@@ -17,15 +17,41 @@
 #pragma once
 
 #include "sys/platform.h"
+#include "sys/constants.h"
+#include "sys/alloc.h"
 #include "sys/ref.h"
 #include "sys/intrinsics.h"
 #include "sys/sysinfo.h"
 #include "sys/sync/atomic.h"
 #include "sys/sync/mutex.h"
-#include "sys/stl/vector.h"
-#include "sys/stl/string.h"
-#include "sys/stl/array2d.h"
+#include "sys/vector.h"
+#include "sys/string.h"
+#include "sys/regression.h"
 #include "tasking/taskscheduler.h"
+
+#if defined(__MIC__)
+#define isa knc
+#elif defined (__AVX2__)
+#define isa avx2
+#elif defined(__AVXI__)
+#define isa avxi
+#elif defined(__AVX__)
+#define isa avx
+#elif defined (__SSE4_2__)
+#define isa sse42
+#elif defined (__SSE4_1__)
+#define isa sse41
+#elif defined(__SSSE3__)
+#define isa ssse3
+#elif defined(__SSE3__)
+#define isa sse3
+#elif defined(__SSE2__)
+#define isa sse2
+#elif defined(__SSE__)
+#define isa sse
+#else 
+#error Unknown ISA
+#endif
 
 #include "math/math.h"
 #include "math/vec2.h"
@@ -361,7 +387,7 @@ struct my_runtime_error : public std::exception
 };
 
 #define THROW_MY_RUNTIME_ERROR(error,str)                                \
-  throw my_runtime_error(error,std::string(__FILE__) + " (" + std::stringOf(__LINE__) + "): " + std::string(str));
+  throw my_runtime_error(error,std::string(__FILE__) + " (" + std::to_string(__LINE__) + "): " + std::string(str));
 
 
 }

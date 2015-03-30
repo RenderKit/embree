@@ -36,8 +36,8 @@ namespace embree
   {
     DBG(
 	PING;
-	DBG_PRINT(threadIndex);
-	DBG_PRINT(threadCount);
+	PRINT(threadIndex);
+	PRINT(threadCount);
 	);
 
   }

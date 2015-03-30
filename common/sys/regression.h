@@ -16,19 +16,20 @@
 
 #pragma once
 
-#include "sys/platform.h"
-#include "sys/filename.h"
-#include "sys/vector.h"
-#include "math/vec2.h"
-#include "math/vec3.h"
-#include "math/affinespace.h"
-#include "scene.h"
+#include "platform.h"
 
 #include <vector>
-#include <memory>
 
 namespace embree
 {
-  /*! read from disk */
-  void loadOBJ(const FileName& fileName, const AffineSpace3f& space, OBJScene& mesh, const bool subdivMode = false);
+  /*! virtual interface for all regression tests */
+  struct RegressionTest { 
+    virtual bool operator()() = 0;
+  };
+ 
+  /*! registers a regression test */
+  void registerRegressionTest(RegressionTest* test);
+
+  /*! run all regression tests */
+  void runRegressionTests();
 }

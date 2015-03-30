@@ -87,26 +87,26 @@ namespace embree
     size_t maxGroups = ((size_t)1 << (31-encodeShift))-1;
 
     DBG(
-	DBG_PRINT(numGroups);
-	DBG_PRINT(maxPrimsPerGroup);
-	DBG_PRINT(numPrimitives);
-	DBG_PRINT(encodeMask);
-	DBG_PRINT(encodeShift);
-	DBG_PRINT(maxGroups);
-	DBG_PRINT(size_morton);
+	PRINT(numGroups);
+	PRINT(maxPrimsPerGroup);
+	PRINT(numPrimitives);
+	PRINT(encodeMask);
+	PRINT(encodeShift);
+	PRINT(maxGroups);
+	PRINT(size_morton);
 	);
 
     if (maxPrimsPerGroup > encodeMask || numGroups > maxGroups)
     {
-      DBG_PRINT(numGroups);
-      DBG_PRINT(numPrimitives);
-      DBG_PRINT(maxPrimsPerGroup);
-      DBG_PRINT(encodeMask);
-      DBG_PRINT(maxGroups);
+      PRINT(numGroups);
+      PRINT(numPrimitives);
+      PRINT(maxPrimsPerGroup);
+      PRINT(encodeMask);
+      PRINT(maxGroups);
       unsigned int primIDEncodingBits   = encodeShift;
       unsigned int groupIDEncodingBits = __bsr((unsigned int)numGroups) + 1;
-      DBG_PRINT( primIDEncodingBits );
-      DBG_PRINT( groupIDEncodingBits );
+      PRINT( primIDEncodingBits );
+      PRINT( groupIDEncodingBits );
       FATAL("ENCODING ERROR: primIDEncodingBits + groupIDEncodingBits > 32");      
     }
   }
@@ -118,8 +118,8 @@ namespace embree
     if (numPrimitivesOld != numPrimitives)
     {
       DBG(
-	  DBG_PRINT( numPrimitivesOld );
-	  DBG_PRINT( numPrimitives );
+	  PRINT( numPrimitivesOld );
+	  PRINT( numPrimitives );
 	  );
 
       numPrimitivesOld = numPrimitives;
@@ -156,9 +156,9 @@ namespace embree
       numAllocatedNodes = size_node / sizeof(BVH4i::Node);
 
 
-      DBG(DBG_PRINT(size_morton_tmp));
-      DBG(DBG_PRINT(size_node));
-      DBG(DBG_PRINT(size_accel));
+      DBG(PRINT(size_morton_tmp));
+      DBG(PRINT(size_node));
+      DBG(PRINT(size_accel));
 
       morton = (MortonID32Bit* ) os_malloc(size_morton_tmp); 
       node   = (BVH4i::Node*)    os_malloc(size_node  );     
@@ -178,8 +178,8 @@ namespace embree
 
 
       DBG(
-	  DBG_PRINT( minAllocNodes );
-	  DBG_PRINT( numNodes );
+	  PRINT( minAllocNodes );
+	  PRINT( numNodes );
 	  );
 
     }
@@ -190,9 +190,9 @@ namespace embree
     bvh->size_accel = size_accel;
 
     DBG(
-	DBG_PRINT(bvh->size_node);
-	DBG_PRINT(bvh->size_accel);
-	DBG_PRINT(numAllocatedNodes);
+	PRINT(bvh->size_node);
+	PRINT(bvh->size_accel);
+	PRINT(numAllocatedNodes);
 	);
 
   }
@@ -250,7 +250,7 @@ namespace embree
     std::cout << BVH4iStatistics<BVH4i::Node>(bvh).str();
 
 #else
-    DBG(DBG_PRINT(numPrimitives));
+    DBG(PRINT(numPrimitives));
 
 
     if (likely(numPrimitives > SINGLE_THREADED_BUILD_THRESHOLD && threadCount > 1))
@@ -1200,7 +1200,7 @@ namespace embree
     scene->lockstep_scheduler.dispatchTask( task_computeBounds, this, threadIndex, threadCount );
     TIMER(msec = getSeconds()-msec);    
     TIMER(std::cout << "task_computeBounds " << 1000. * msec << " ms" << std::endl << std::flush);
-    TIMER(DBG_PRINT(global_bounds));
+    TIMER(PRINT(global_bounds));
     
     /* compute morton codes */
     TIMER(msec = getSeconds());
@@ -1228,9 +1228,9 @@ namespace embree
       {
 	if (morton[i-1].code > morton[i].code)
 	  {
-	    DBG_PRINT( i );
-	    DBG_PRINT( morton[i-1].code );
-	    DBG_PRINT( morton[i].code );
+	    PRINT( i );
+	    PRINT( morton[i-1].code );
+	    PRINT( morton[i].code );
 	  }
 
 	assert(morton[i-1].code <= morton[i].code);
@@ -1282,14 +1282,14 @@ namespace embree
 
     TIMER(msec = getSeconds()-msec);    
     TIMER(std::cout << "create top level " << 1000. * msec << " ms" << std::endl << std::flush);
-    TIMER(DBG_PRINT(numBuildRecords));
+    TIMER(PRINT(numBuildRecords));
 
     TIMER(msec = getSeconds());
     
     /* build sub-trees */
     scene->lockstep_scheduler.dispatchTask( task_recurseSubMortonTrees, this, threadIndex, threadCount );
 
-    DBG(DBG_PRINT(atomicID));
+    DBG(PRINT(atomicID));
 
     numNodes = atomicID;
 

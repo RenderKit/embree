@@ -28,16 +28,17 @@ IF (TARGET_AVX2)
 ENDIF()
 
 ADD_LIBRARY(sys STATIC
-  platform.cpp
   sysinfo.cpp
+  alloc.cpp
   filename.cpp
   library.cpp
   thread.cpp
   network.cpp
+  string.cpp
+  regression.cpp
   sync/mutex.cpp
   sync/condition.cpp
   sync/barrier.cpp
-  stl/string.cpp
 )
 
 TARGET_LINK_LIBRARIES(sys ${CMAKE_THREAD_LIBS_INIT} ${CMAKE_DL_LIBS})
@@ -50,16 +51,17 @@ ELSE ()
 INCLUDE(icc_xeonphi)
 
 ADD_LIBRARY(sys_xeonphi STATIC
-  platform.cpp
   sysinfo.cpp
+  alloc.cpp
   filename.cpp
   library.cpp
   thread.cpp
   network.cpp
+  string.cpp
+  regression.cpp
   sync/mutex.cpp
   sync/condition.cpp
   sync/barrier.cpp
-  stl/string.cpp
 )
 
 TARGET_LINK_LIBRARIES(sys_xeonphi ${CMAKE_THREAD_LIBS_INIT} ${CMAKE_DL_LIBS})

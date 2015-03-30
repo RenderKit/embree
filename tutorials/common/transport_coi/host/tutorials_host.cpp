@@ -17,7 +17,7 @@
 #include "transport/transport_host.h"
 #include "transport_coi/common.h"
 #include "tutorial/obj_loader.h"
-#include "sys/stl/string.h"
+#include "sys/string.h"
 
 #include <source/COIProcess_source.h>
 #include <source/COIEngine_source.h>
@@ -58,7 +58,7 @@ namespace embree
     COIRESULT result;
     result = COIEngineGetHandle( COI_ISA_MIC, 0, &engine );
     if (result != COI_SUCCESS)
-      THROW_RUNTIME_ERROR("Failed to load engine number " + std::stringOf(0) + ": " + COIResultGetName(result));
+      THROW_RUNTIME_ERROR("Failed to load engine number " + std::to_string(0) + ": " + COIResultGetName(result));
     
     /* print info of engine */
     COI_ENGINE_INFO info;
@@ -291,14 +291,14 @@ namespace embree
     assert( mesh->verticesPerFace.size() );
 
 #if 0
-    DBG_PRINT( mesh->positions.size() );
-    DBG_PRINT( mesh->position_indices.size() );
-    DBG_PRINT( mesh->verticesPerFace.size() );
-    DBG_PRINT( mesh->edge_creases.size() );
-    DBG_PRINT( mesh->edge_crease_weights.size() );
-    DBG_PRINT( mesh->vertex_creases.size() );
-    DBG_PRINT( mesh->vertex_crease_weights.size() );
-    DBG_PRINT( mesh->holes.size() );
+    PRINT( mesh->positions.size() );
+    PRINT( mesh->position_indices.size() );
+    PRINT( mesh->verticesPerFace.size() );
+    PRINT( mesh->edge_creases.size() );
+    PRINT( mesh->edge_crease_weights.size() );
+    PRINT( mesh->vertex_creases.size() );
+    PRINT( mesh->vertex_crease_weights.size() );
+    PRINT( mesh->holes.size() );
 #endif
 
     void *dummy_buffer = &mesh->positions.front();

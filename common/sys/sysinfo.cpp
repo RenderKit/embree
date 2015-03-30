@@ -16,7 +16,7 @@
 
 #include "sysinfo.h"
 #include "intrinsics.h"
-#include "stl/string.h"
+#include "string.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 /// All Platforms
@@ -61,10 +61,10 @@ namespace embree
     int icc_mayor = __INTEL_COMPILER / 100 % 100;
     int icc_minor = __INTEL_COMPILER % 100;
     std::string version = "Intel Compiler ";
-    version += std::stringOf(icc_mayor);
-    version += "." + std::stringOf(icc_minor);
+    version += std::to_string(icc_mayor);
+    version += "." + std::to_string(icc_minor);
 #if defined(__INTEL_COMPILER_UPDATE)
-    version += "." + std::stringOf(__INTEL_COMPILER_UPDATE);
+    version += "." + std::to_string(__INTEL_COMPILER_UPDATE);
 #endif
     return version;
 #elif defined(__clang__)
@@ -72,7 +72,7 @@ namespace embree
 #elif defined (__GNUC__)
     return "GCC " __VERSION__;
 #elif defined(_MSC_VER)
-    std::string version = std::stringOf(_MSC_FULL_VER);
+    std::string version = std::to_string(_MSC_FULL_VER);
     version.insert(4,".");
     version.insert(9,".");
     version.insert(2,".");
@@ -113,7 +113,20 @@ namespace embree
     if (model == 0x2C) return CPU_CORE_NEHALEM;      // Core i7, Xeon
     if (model == 0x2E) return CPU_CORE_NEHALEM;      // Core i7, Xeon
     if (model == 0x2A) return CPU_CORE_SANDYBRIDGE;  // Core i7, SandyBridge
+    if (model == 0x2D) return CPU_CORE_SANDYBRIDGE;  // Core i7, SandyBridge
+    // FIXME: add Haswell
     return CPU_UNKNOWN;
+  }
+
+  std::string stringOfCPUModel(CPUModel model)
+  {
+    switch (model) {
+    case CPU_CORE1           : return "Core1";
+    case CPU_CORE2           : return "Core2";
+    case CPU_CORE_NEHALEM    : return "Nehalem";
+    case CPU_CORE_SANDYBRIDGE: return "SandyBridge";
+    default                  : return "Unknown CPU";
+    }
   }
 
   /* cpuid[eax=0].ecx */
@@ -145,7 +158,7 @@ namespace embree
   __noinline bool check_xcr0_ymm() 
   {
 #if defined (__WIN32__)
-    int64 xcr0 = 0;
+    uint32_t xcr0 = 0;
 #if defined(__INTEL_COMPILER) 
     xcr0 = _xgetbv(0);
 #elif (defined(_MSC_VER) && (_MSC_FULL_VER >= 160040219)) // min VS2010 SP1 compiler is required
@@ -177,7 +190,8 @@ namespace embree
 
   int getCPUFeatures()
   {
-    if (cpu_features) return cpu_features;
+    if (cpu_features) 
+      return cpu_features;
     
     int info[4]; 
     __cpuid(info, 0x00000000);
@@ -223,6 +237,10 @@ namespace embree
     cpu_features |= CPU_FEATURE_KNC;
 #endif
     return cpu_features;
+  }
+
+  void setCPUFeatures(int features) {
+    cpu_features = features;
   }
   
   std::string stringOfCPUFeatures(int features)
@@ -280,13 +298,6 @@ namespace embree
 #endif
   }
 
-  size_t getNumberOfCores() {
-    static int nCores = -1;
-    if (nCores == -1) nCores = getNumberOfLogicalThreads(); // FIXME: detect if hyperthreading is enabled
-    if (nCores ==  0) nCores = 1;
-    return nCores;
-  }
-
   int getTerminalWidth() 
   {
     HANDLE handle = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -294,6 +305,13 @@ namespace embree
     CONSOLE_SCREEN_BUFFER_INFO info = { 0 };
     GetConsoleScreenBufferInfo(handle, &info);
     return info.dwSize.X;
+  }
+
+  double getSeconds() {
+    LARGE_INTEGER freq, val;
+    QueryPerformanceFrequency(&freq);
+    QueryPerformanceCounter(&val);
+    return (double)val.QuadPart / (double)freq.QuadPart;
   }
 }
 #endif
@@ -350,10 +368,7 @@ namespace embree
 
 #include <unistd.h>
 #include <sys/ioctl.h>
-
-#if defined(__USE_NUMA__)
-#include <numa.h>
-#endif
+#include <sys/time.h>
 
 namespace embree
 {
@@ -363,18 +378,46 @@ namespace embree
     return nThreads;
   }
 
-  size_t getNumberOfCores() {
-    static int nCores = -1;
-    if (nCores == -1) nCores = sysconf(_SC_NPROCESSORS_CONF)/2; // FIXME: detect if hyperthreading is enabled
-    if (nCores ==  0) nCores = 1;
-    return nCores;
-  }
-
   int getTerminalWidth() 
   {
     struct winsize info;
     if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &info) < 0) return 80;
     return info.ws_col;
+  }
+
+#if defined(__MIC__)
+
+  static double getFrequencyInMHz()
+  {
+    struct timeval tvstart, tvstop;
+    unsigned long long int cycles[2];
+    
+    gettimeofday(&tvstart, NULL);
+    cycles[0] = rdtsc();
+    gettimeofday(&tvstart, NULL);
+    usleep(250000);
+    gettimeofday(&tvstop, NULL);
+    cycles[1] = rdtsc();
+    gettimeofday(&tvstop, NULL);
+  
+    const unsigned long microseconds = ((tvstop.tv_sec-tvstart.tv_sec)*1000000) + (tvstop.tv_usec-tvstart.tv_usec);
+    unsigned long mhz = (unsigned long) (cycles[1]-cycles[0]) / microseconds;
+
+    //std::cout << "MIC frequency is " << mhz << " MHz" << std::endl;
+    return (double)mhz;
+  }
+
+  static double micFrequency = getFrequencyInMHz();
+
+#endif
+
+  double getSeconds() {
+#if !defined(__MIC__)
+    struct timeval tp; gettimeofday(&tp,NULL);
+    return double(tp.tv_sec) + double(tp.tv_usec)/1E6;
+#else
+    return double(rdtsc()) / double(micFrequency*1E6);
+#endif
   }
 }
 #endif

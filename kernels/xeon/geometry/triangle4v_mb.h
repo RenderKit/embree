@@ -61,7 +61,7 @@ namespace embree
 
     /*! Returns the number of stored triangles. */
     __forceinline size_t size() const {
-      return bitscan(~movemask(valid()));
+      return __bsf(~movemask(valid()));
     }
 
     /*! calculate the bounds of the triangles at t0 */
