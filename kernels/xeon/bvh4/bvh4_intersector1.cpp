@@ -143,7 +143,7 @@ namespace embree
 
 	  if (c == BVH4::emptyNode)
 	    {
-	      DBG_PRINT(ray);
+	      PRINT(ray);
 	    }
           assert(c != BVH4::emptyNode);
           if (likely(mask == 0)) {

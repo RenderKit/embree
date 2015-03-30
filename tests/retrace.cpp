@@ -582,7 +582,7 @@ namespace embree
 
     DBG(
         g_mutex.lock();
-        DBG_PRINT(id);
+        PRINT(id);
         g_mutex.unlock();
         );
 
@@ -617,10 +617,10 @@ namespace embree
     parseCommandLine(argc,argv);
 
     /* perform tests */
-    DBG_PRINT(g_rtcore.c_str());
+    PRINT(g_rtcore.c_str());
     rtcInit(g_rtcore.c_str());
 
-    DBG_PRINT(g_threadCount);
+    PRINT(g_threadCount);
 
     /* binary file path */
     g_binaries_path += "/";
@@ -661,8 +661,8 @@ namespace embree
     if (g_simd_width == 0)
       THROW_RUNTIME_ERROR("no valid ray stream data files found");
 
-    DBG_PRINT( rayStreamFileName );
-    DBG_PRINT( rayStreamVerifyFileName );
+    PRINT( rayStreamFileName );
+    PRINT( rayStreamVerifyFileName );
 
     if (!existsFile( rayStreamFileName )) THROW_RUNTIME_ERROR("ray stream file does not exists!");
     if (!existsFile( rayStreamVerifyFileName )) THROW_RUNTIME_ERROR("ray stream verify file does not exists!");
@@ -751,7 +751,7 @@ namespace embree
 
 
     /* retrace ray packets */
-    DBG_PRINT( g_threadCount );
+    PRINT( g_threadCount );
 
     std::cout << "Retracing logged rays:" << std::endl << std::flush;
     

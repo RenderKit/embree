@@ -53,7 +53,7 @@ namespace embree
   Builder* BVH4iBuilder::create (void* accel, void* geometry, size_t mode ) 
   { 
     DBG(PING);
-    DBG(DBG_PRINT(mode));
+    DBG(PRINT(mode));
 
     Builder* builder = NULL;
 
@@ -172,14 +172,14 @@ namespace embree
     numAllocated64BytesBlocks = size_node / sizeof(mic_f);
 
     DBG(
-	DBG_PRINT(numPrims);
-	DBG_PRINT(numNodes);
-	DBG_PRINT(sizeNodeInBytes);
-	DBG_PRINT(sizeAccelInBytes);
-	DBG_PRINT(numAllocated64BytesBlocks);
-	DBG_PRINT(size_primrefs);
-	DBG_PRINT(size_node);
-	DBG_PRINT(size_accel);
+	PRINT(numPrims);
+	PRINT(numNodes);
+	PRINT(sizeNodeInBytes);
+	PRINT(sizeAccelInBytes);
+	PRINT(numAllocated64BytesBlocks);
+	PRINT(size_primrefs);
+	PRINT(size_node);
+	PRINT(size_accel);
 	);
 
     prims = (PrimRef  *) os_malloc(size_primrefs); 
@@ -245,9 +245,9 @@ namespace embree
       printBuilderName();
 
       DBG(
-	  DBG_PRINT(totalNumPrimitives);
-	  DBG_PRINT(threadIndex);
-	  DBG_PRINT(threadCount);
+	  PRINT(totalNumPrimitives);
+	  PRINT(threadIndex);
+	  PRINT(threadCount);
 	  );
     }
 
@@ -1005,8 +1005,8 @@ namespace embree
 
     if (!(subset(leaf_prim_bounds,bounds))) 
       {
-	DBG_PRINT(bounds);
-	DBG_PRINT(leaf_prim_bounds);
+	PRINT(bounds);
+	PRINT(leaf_prim_bounds);
 	THROW_RUNTIME_ERROR("checkLeafNode");
       }
 
@@ -1029,9 +1029,9 @@ namespace embree
 	check_box.extend(aabb[i]);
 	if (!subset(aabb[i],box))
 	  {
-	    DBG_PRINT(current);
-	    DBG_PRINT(i);
-	    DBG_PRINT(prims[i]);
+	    PRINT(current);
+	    PRINT(i);
+	    PRINT(prims[i]);
 	    THROW_RUNTIME_ERROR("check build record => subset");
 	  }
       }
@@ -1039,9 +1039,9 @@ namespace embree
     //if (enablePreSplits) return;
     if (!(subset(check_box,box) && subset(box,check_box))) 
       {
-	DBG_PRINT(current);
-	DBG_PRINT(check_box);
-	DBG_PRINT(box);
+	PRINT(current);
+	PRINT(check_box);
+	PRINT(box);
 	THROW_RUNTIME_ERROR("check build record => subset(check_box,box) && subset(box,check_box)");
       }
 #endif
@@ -1153,7 +1153,7 @@ namespace embree
 	BuildRecord br;
 	if (!global_workStack.pop_nolock_largest(br)) break;
 
-	DBG(DBG_PRINT(br));
+	DBG(PRINT(br));
 	recurseSAH(br,alloc,BUILD_TOP_LEVEL,threadIndex,threadCount);      
       }
 
@@ -1190,7 +1190,7 @@ namespace embree
     for (size_t i=0;i<threadCount/4;i++)
       if (!local_workStack[i].isEmpty())
 	{
-	  DBG_PRINT(i);
+	  PRINT(i);
 	  THROW_RUNTIME_ERROR("local_workStack[i].size() != 0");
 	}
 #endif    

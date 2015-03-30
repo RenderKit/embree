@@ -248,7 +248,7 @@ namespace embree
       double t1 = getSeconds();
 
       if (showResult)
-	DBG_PRINT( result );
+	PRINT( result );
 
       return t1-t0;
     }  
@@ -270,7 +270,7 @@ namespace embree
       double t1 = getSeconds();
 
       if (showResult)
-	DBG_PRINT( result );
+	PRINT( result );
 
       return t1-t0;
 #endif
@@ -311,7 +311,7 @@ namespace embree
       double t1 = getSeconds();
 
       if (showResult)
-	DBG_PRINT( result );
+	PRINT( result );
 
       return t1-t0;
     }
@@ -344,7 +344,7 @@ namespace embree
       double t1 = getSeconds();
 
       if (showResult)
-	DBG_PRINT( result );
+	PRINT( result );
       
       return t1-t0;
     }
@@ -383,7 +383,7 @@ namespace embree
       result = b;
       
       if (showResult)
-	DBG_PRINT( result );
+	PRINT( result );
 
 #endif
 
@@ -404,7 +404,7 @@ namespace embree
       double t1 = getSeconds();
 
       if (showResult)
-	DBG_PRINT( result );
+	PRINT( result );
       
       return t1-t0;
     }
@@ -810,8 +810,8 @@ namespace embree
       const bool use_pinning = true;
 
       tbb::task_scheduler_init init(tbb::task_scheduler_init::default_num_threads());
-      DBG_PRINT( TBB_INTERFACE_VERSION );
-      DBG_PRINT( tbb::TBB_runtime_interface_version() );
+      PRINT( TBB_INTERFACE_VERSION );
+      PRINT( tbb::TBB_runtime_interface_version() );
 
       pinning_observer pinner( 4 /* the number of hyper threads on each core */ );
       pinner.observe( use_pinning );
@@ -854,8 +854,8 @@ namespace embree
 
 
       tbb::task_scheduler_init init(tbb::task_scheduler_init::default_num_threads());
-      DBG_PRINT( TBB_INTERFACE_VERSION );
-      DBG_PRINT( tbb::TBB_runtime_interface_version() );
+      PRINT( TBB_INTERFACE_VERSION );
+      PRINT( tbb::TBB_runtime_interface_version() );
 
       pinning_observer pinner( 4 /* the number of hyper threads on each core */ );
       pinner.observe( use_pinning );

@@ -173,7 +173,7 @@ namespace embree
     void init(const CatmullClarkPatch& patch)
     {
       //      if (!( patch.ring[1].hasValidPositions() ))
-      //DBG_PRINT( patch.ring[1] );
+      //PRINT( patch.ring[1] );
 
       assert( patch.ring[0].hasValidPositions() );
       assert( patch.ring[1].hasValidPositions() );

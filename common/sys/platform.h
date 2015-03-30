@@ -229,8 +229,6 @@
 #define PRINT3(x,y,z) std::cout << STRING(x) << " = " << (x) << ", " << STRING(y) << " = " << (y) << ", " << STRING(z) << " = " << (z) << std::endl
 #define PRINT4(x,y,z,w) std::cout << STRING(x) << " = " << (x) << ", " << STRING(y) << " = " << (y) << ", " << STRING(z) << " = " << (z) << ", " << STRING(w) << " = " << (w) << std::endl
 
-#define DBG_PRINT(x) std::cout << STRING(x) << " = " << (x) << std::endl
-
 #define THROW_RUNTIME_ERROR(str) \
   throw std::runtime_error(std::string(__FILE__) + " (" + std::to_string(__LINE__) + "): " + std::string(str));
 

@@ -663,8 +663,8 @@ namespace embree
       const unsigned int currentIndex = localNodeID + localNodeIDs;
 
       if (unlikely(currentIndex >= maxNodes)) {
-	DBG_PRINT(currentIndex);
-	DBG_PRINT(maxNodes);	
+	PRINT(currentIndex);
+	PRINT(maxNodes);	
         FATAL("AtomicIDBlock: not enough nodes allocated");
       }
 #else
@@ -692,8 +692,8 @@ namespace embree
 
       /* did we exceed the pre-allocated memory? */
       if (unlikely(currentIndex + i >= maxNodes)) {
-	DBG_PRINT(currentIndex);
-	DBG_PRINT(maxNodes);
+	PRINT(currentIndex);
+	PRINT(maxNodes);
         FATAL("not enough nodes allocated");
       }
       

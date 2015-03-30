@@ -846,15 +846,15 @@ namespace embree
 #pragma unroll(3)
     for (unsigned int i=0;i<3;i++)
       {
-	DBG_PRINT(v.min_x[i]);
-	DBG_PRINT(v.min_y[i]);
-	DBG_PRINT(v.min_z[i]);
+	PRINT(v.min_x[i]);
+	PRINT(v.min_y[i]);
+	PRINT(v.min_z[i]);
 
-	DBG_PRINT(v.max_x[i]);
-	DBG_PRINT(v.max_y[i]);
-	DBG_PRINT(v.max_z[i]);
+	PRINT(v.max_x[i]);
+	PRINT(v.max_y[i]);
+	PRINT(v.max_z[i]);
 
-	DBG_PRINT(v.count[i]);
+	PRINT(v.count[i]);
       }
 
     return o;

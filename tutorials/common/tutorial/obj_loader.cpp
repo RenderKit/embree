@@ -360,10 +360,10 @@ namespace embree
 	OBJScene::SubdivMesh* mesh = new OBJScene::SubdivMesh;
 	model.subdiv.push_back(mesh);
 #if 0
-	DBG_PRINT(curGroup.size());
-	DBG_PRINT(v.size());
-	DBG_PRINT(vn.size());
-	DBG_PRINT(vt.size());
+	PRINT(curGroup.size());
+	PRINT(v.size());
+	PRINT(vn.size());
+	PRINT(vt.size());
 #endif	
 	for (size_t i=0;i<v.size();i++)  mesh->positions.push_back(v[i]);
 	for (size_t i=0;i<vn.size();i++) mesh->normals.push_back(vn[i]);

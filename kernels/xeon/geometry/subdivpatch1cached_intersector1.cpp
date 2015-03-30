@@ -198,11 +198,11 @@ namespace embree
 		    SharedLazyTessellationCache::sharedLazyTessellationCache.resetCache();
 		    continue;
 		  }
-		//DBG_PRINT(block_index);
-		//DBG_PRINT(SharedLazyTessellationCache::sharedLazyTessellationCache.getMaxBlocks());
+		//PRINT(block_index);
+		//PRINT(SharedLazyTessellationCache::sharedLazyTessellationCache.getMaxBlocks());
 
 		BVH4::Node* node = (BVH4::Node*)SharedLazyTessellationCache::sharedLazyTessellationCache.getBlockPtr(block_index);
-		//DBG_PRINT( (double)SharedLazyTessellationCache::sharedLazyTessellationCache.getNumUsedBytes() / (1024.0 * 1024.0) );
+		//PRINT( (double)SharedLazyTessellationCache::sharedLazyTessellationCache.getNumUsedBytes() / (1024.0 * 1024.0) );
 #if COMPACT == 1
                 int64 new_root_ref = (int64)buildSubdivPatchTreeCompact(*subdiv_patch,node,((Scene*)geom)->getSubdivMesh(subdiv_patch->geom));                                
 #else                
@@ -238,11 +238,11 @@ namespace embree
       const size_t array_elements = patch.grid_size_simd_blocks * 8;
 
 #if 0
-      DBG_PRINT( patch.grid_u_res );
-      DBG_PRINT( patch.grid_v_res );
-      DBG_PRINT( array_elements );
-      DBG_PRINT( patch.grid_size_simd_blocks );
-      DBG_PRINT( patch.grid_subtree_size_64b_blocks );
+      PRINT( patch.grid_u_res );
+      PRINT( patch.grid_v_res );
+      PRINT( array_elements );
+      PRINT( patch.grid_size_simd_blocks );
+      PRINT( patch.grid_subtree_size_64b_blocks );
 #endif
  
 #if !defined(_MSC_VER) || defined(__INTEL_COMPILER)
@@ -288,7 +288,7 @@ namespace embree
       assert( std::isfinite(bounds.upper.y) );
       assert( std::isfinite(bounds.upper.z) );
 
-      //DBG_PRINT(subtree_root);
+      //PRINT(subtree_root);
       
       // for (size_t y=0;y<patch.grid_v_res;y++)
       // 	for (size_t x=0;x<patch.grid_u_res;x++)
@@ -301,13 +301,13 @@ namespace embree
       TIMER(double throughput = 1.0 / (1000*msec));
       TIMER(double throughput2 = (2300*1E3) / (double)cycles);
 
-      TIMER(DBG_PRINT(throughput));
-      TIMER(DBG_PRINT(throughput2));
+      TIMER(PRINT(throughput));
+      TIMER(PRINT(throughput2));
 
-      TIMER(DBG_PRINT(1000*msec));
-      TIMER(DBG_PRINT(patch.grid_u_res));
-      TIMER(DBG_PRINT(patch.grid_v_res));
-      TIMER(DBG_PRINT(patch.grid_subtree_size_64b_blocks*64));
+      TIMER(PRINT(1000*msec));
+      TIMER(PRINT(patch.grid_u_res));
+      TIMER(PRINT(patch.grid_v_res));
+      TIMER(PRINT(patch.grid_subtree_size_64b_blocks*64));
 
 #if defined(_MSC_VER) && !defined(__INTEL_COMPILER)
 	
@@ -383,20 +383,20 @@ namespace embree
 	  curNode = BVH4::encodeTypedLeaf((void*)value,2);
 
 #if 0
-	  DBG_PRINT("LEAF");
-	  DBG_PRINT(u_start);
-	  DBG_PRINT(v_start);
-	  DBG_PRINT(u_end);
-	  DBG_PRINT(v_end);                
+	  PRINT("LEAF");
+	  PRINT(u_start);
+	  PRINT(v_start);
+	  PRINT(u_end);
+	  PRINT(v_end);                
 
-          DBG_PRINT( offset_bytes );
-          DBG_PRINT( &grid_x_array[ grid_offset3x3 ] );
-          DBG_PRINT( &grid_y_array[ grid_offset3x3 ] );
-          DBG_PRINT( &grid_z_array[ grid_offset3x3 ] );         
-          DBG_PRINT( grid_array_elements );
-          DBG_PRINT( value );
-          DBG_PRINT( curNode );
-          DBG_PRINT( bounds );
+          PRINT( offset_bytes );
+          PRINT( &grid_x_array[ grid_offset3x3 ] );
+          PRINT( &grid_y_array[ grid_offset3x3 ] );
+          PRINT( &grid_z_array[ grid_offset3x3 ] );         
+          PRINT( grid_array_elements );
+          PRINT( value );
+          PRINT( curNode );
+          PRINT( bounds );
 #endif   
 
 #if defined(DEBUG)
@@ -498,10 +498,10 @@ namespace embree
 
       TIMER(msec = getSeconds()-msec);    
 	{
-         TIMER(DBG_PRINT(1000*msec));
-         TIMER(DBG_PRINT(patch.grid_u_res));
-         TIMER(DBG_PRINT(patch.grid_v_res));
-         TIMER(DBG_PRINT(patch.grid_subtree_size_64b_blocks*64));
+         TIMER(PRINT(1000*msec));
+         TIMER(PRINT(patch.grid_u_res));
+         TIMER(PRINT(patch.grid_v_res));
+         TIMER(PRINT(patch.grid_subtree_size_64b_blocks*64));
         }
 
 #if defined(_MSC_VER) && !defined(__INTEL_COMPILER)
@@ -591,11 +591,11 @@ namespace embree
 		       leaf_v_array);
         
 #if 0
-	  DBG_PRINT("LEAF");
-	  DBG_PRINT(u_start);
-	  DBG_PRINT(v_start);
-	  DBG_PRINT(u_end);
-	  DBG_PRINT(v_end);
+	  PRINT("LEAF");
+	  PRINT(u_start);
+	  PRINT(v_start);
+	  PRINT(u_end);
+	  PRINT(v_end);
         
 	  for (unsigned int y=0;y<3;y++)
 	    for (unsigned int x=0;x<3;x++)
@@ -603,7 +603,7 @@ namespace embree
 			<< " ->  x = " << leaf_x_array[y][x] << " y = " << leaf_v_array[y][x] << " z = " << leaf_z_array[y][x]
 			<< "   u = " << leaf_u_array[y][x] << " v = " << leaf_v_array[y][x] << std::endl;
         
-	  DBG_PRINT( *qquad );
+	  PRINT( *qquad );
         
 #endif          
         

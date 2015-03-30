@@ -291,14 +291,14 @@ namespace embree
     assert( mesh->verticesPerFace.size() );
 
 #if 0
-    DBG_PRINT( mesh->positions.size() );
-    DBG_PRINT( mesh->position_indices.size() );
-    DBG_PRINT( mesh->verticesPerFace.size() );
-    DBG_PRINT( mesh->edge_creases.size() );
-    DBG_PRINT( mesh->edge_crease_weights.size() );
-    DBG_PRINT( mesh->vertex_creases.size() );
-    DBG_PRINT( mesh->vertex_crease_weights.size() );
-    DBG_PRINT( mesh->holes.size() );
+    PRINT( mesh->positions.size() );
+    PRINT( mesh->position_indices.size() );
+    PRINT( mesh->verticesPerFace.size() );
+    PRINT( mesh->edge_creases.size() );
+    PRINT( mesh->edge_crease_weights.size() );
+    PRINT( mesh->vertex_creases.size() );
+    PRINT( mesh->vertex_crease_weights.size() );
+    PRINT( mesh->holes.size() );
 #endif
 
     void *dummy_buffer = &mesh->positions.front();

@@ -155,7 +155,7 @@ namespace embree
     DBG(PING);
     size_t numPrimitivesOld = numPrimitives;
     numPrimitives = totalNumPrimitives;
-    DBG(DBG_PRINT(numPrimitives));
+    DBG(PRINT(numPrimitives));
 
 
     if (numPrimitivesOld != numPrimitives)
@@ -289,9 +289,9 @@ namespace embree
 	
 	if (bounds != n->bounds_t1(i))
 	  {
-	    DBG_PRINT(bounds);
-	    DBG_PRINT(n->bounds_t1(i));
-	    DBG_PRINT(ref);
+	    PRINT(bounds);
+	    PRINT(n->bounds_t1(i));
+	    PRINT(ref);
 	    FATAL("bounds don't match");
 	  }
 	parentBounds.extend( n->bounds_t1(i) );
@@ -413,7 +413,7 @@ namespace embree
 	TIMER(msec = getSeconds()-msec);    
 	TIMER(std::cout << "generate subtrees " << 1000. * msec << " ms" << std::endl << std::flush);
 
-	DBG(DBG_PRINT(subtrees));
+	DBG(PRINT(subtrees));
 
 	TIMER(msec = getSeconds());
 	// ------------------------

@@ -105,9 +105,9 @@ namespace embree
     
       if (!isfinite(A))
 	{
-	  DBG_PRINT(node);
-	  DBG_PRINT(bounds);
-	  DBG_PRINT(depth);
+	  PRINT(node);
+	  PRINT(bounds);
+	  PRINT(depth);
 	  THROW_RUNTIME_ERROR("error in sah");
 	}
 

@@ -240,8 +240,8 @@ namespace embree
     if (numPrimitivesOld != numPrimitives)
     {
       DBG(
-	  DBG_PRINT( numPrimitivesOld );
-	  DBG_PRINT( numPrimitives );
+	  PRINT( numPrimitivesOld );
+	  PRINT( numPrimitives );
 	  );
 
       numPrimitivesOld = numPrimitives;
@@ -290,8 +290,8 @@ namespace embree
       size_morton = size_morton_tmp;
 
 #if DEBUG
-      DBG_PRINT( minAllocNodes );
-      DBG_PRINT( numNodes );
+      PRINT( minAllocNodes );
+      PRINT( numNodes );
 #endif
 
     }
@@ -302,9 +302,9 @@ namespace embree
     bvh->size_accel = size_accel;
 
 #if DEBUG
-    DBG_PRINT(bvh->size_node);
-    DBG_PRINT(bvh->size_accel);
-    DBG_PRINT(numAllocatedNodes);
+    PRINT(bvh->size_node);
+    PRINT(bvh->size_accel);
+    PRINT(numAllocatedNodes);
 #endif
 
   }
@@ -799,7 +799,7 @@ namespace embree
     std::cout << BVH4iStatistics<BVH4i::Node>(bvh).str();
 
 #else
-    DBG(DBG_PRINT(numPrimitives));
+    DBG(PRINT(numPrimitives));
 
 
     if (likely(numPrimitives > SINGLE_THREADED_BUILD_THRESHOLD && threadCount > 1))
@@ -1015,7 +1015,7 @@ namespace embree
 	store16i_ngo(dest,m64);	    
       }
 
-    //DBG_PRINT(__bsr(global_code));
+    //PRINT(__bsr(global_code));
   }
   
   void BVH4iBuilderMorton64Bit::radixsort(const size_t threadID, const size_t numThreads)
@@ -1246,7 +1246,7 @@ namespace embree
     scene->lockstep_scheduler.dispatchTask( task_computeBounds, this, threadIndex, threadCount );
     TIMER(msec = getSeconds()-msec);    
     TIMER(std::cout << "task_computeBounds " << 1000. * msec << " ms" << std::endl << std::flush);
-    TIMER(DBG_PRINT(global_bounds));
+    TIMER(PRINT(global_bounds));
 
     /* compute morton codes */
     TIMER(msec = getSeconds());
@@ -1318,7 +1318,7 @@ namespace embree
     /* build sub-trees */
     scene->lockstep_scheduler.dispatchTask( task_recurseSubMortonTrees, this, threadIndex, threadCount );
 
-    DBG(DBG_PRINT(atomicID));
+    DBG(PRINT(atomicID));
 
     numNodes = atomicID;
 
@@ -1344,9 +1344,9 @@ namespace embree
     bvh->bounds = node->child(0).isLeaf() ? node->bounds(0) : rootBounds;
 
 #if DEBUG
-    DBG_PRINT( bvh->root );
-    DBG_PRINT( bvh->bounds );
-    DBG_PRINT(numNodes);
+    PRINT( bvh->root );
+    PRINT( bvh->bounds );
+    PRINT(numNodes);
 #endif
 
     TIMER(msec = getSeconds());

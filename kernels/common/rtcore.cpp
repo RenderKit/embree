@@ -370,7 +370,7 @@ namespace embree
 	else if (tok == "memory_preallocation_factor" && parseSymbol (cfg,'=',pos))
 	  {
 	    g_memory_preallocation_factor = parseFloat (cfg,pos);
-	    DBG_PRINT( g_memory_preallocation_factor );
+	    PRINT( g_memory_preallocation_factor );
 	  }
 
         else if (tok == "regression" && parseSymbol (cfg,'=',pos)) {

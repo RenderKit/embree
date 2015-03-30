@@ -832,12 +832,12 @@ namespace embree
           size_t index_dest   = (start_index_dest   + i) % source.edge_valence;          
           if ( source.ring[index_source] != dest.ring[index_dest] )
             {
-              DBG_PRINT(source.eval_start_index);
-              DBG_PRINT(dest.eval_start_index);              
-              DBG_PRINT(index_source);
-              DBG_PRINT(index_dest);
-              DBG_PRINT(source.ring[index_source]);
-              DBG_PRINT(dest.ring[index_dest]);
+              PRINT(source.eval_start_index);
+              PRINT(dest.eval_start_index);              
+              PRINT(index_source);
+              PRINT(index_dest);
+              PRINT(source.ring[index_source]);
+              PRINT(dest.ring[index_dest]);
               return false;              
             }
         }

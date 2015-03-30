@@ -409,16 +409,16 @@ namespace embree
 
 	if ( any(gt(0x7777,decompress_lower_XYZ,node_lowerXYZ)) ) 
 	   { 
-	     DBG_PRINT(node_lowerXYZ);  
-	     DBG_PRINT(decompress_lower_XYZ); 
-	     DBG_PRINT(decompress_lower_XYZ-node_lowerXYZ); 
+	     PRINT(node_lowerXYZ);  
+	     PRINT(decompress_lower_XYZ); 
+	     PRINT(decompress_lower_XYZ-node_lowerXYZ); 
 	   } 
 
 	if ( any(lt(0x7777,decompress_upper_XYZ,node_upperXYZ)) )
 	  {
-	    DBG_PRINT(node_upperXYZ);
-	    DBG_PRINT(decompress_upper_XYZ);
-	    DBG_PRINT(decompress_upper_XYZ-node_upperXYZ);
+	    PRINT(node_upperXYZ);
+	    PRINT(decompress_upper_XYZ);
+	    PRINT(decompress_upper_XYZ-node_upperXYZ);
 	  }
 #endif
       }
