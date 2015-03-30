@@ -468,13 +468,13 @@ inline DielectricLayerLambertian make_DielectricLayerLambertian(const Vec3fa& T,
 
  void OBJMaterial__preprocess(OBJMaterial* material, BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Medium& medium)  
 {
-
     float d = material->d;
     //if (material->map_d) { d *= material->map_d.get(s,t); }
     brdf.Ka = Vec3fa(material->Ka);
     //if (material->map_Ka) { brdf.Ka *= material->map_Ka->get(dg.st); }
     brdf.Kd = d * Vec3fa(material->Kd);  
     //if (material->map_Kd_ptex) brdf.Kd *= getPtexTexel3f(material->map_Kd_ptex,dg.primID,dg.u,dg.v);
+    if (material->map_Kd) brdf.Kd *= getTextureTexel3f(material->map_Kd,dg.u,dg.v);
     //if (material->map_Kd) brdf.Kd *= material->map_Kd->get(dg.st);  
     brdf.Ks = d * Vec3fa(material->Ks);  
     //if (material->map_Ks) brdf.Ks *= material->map_Ks->get(dg.st); 

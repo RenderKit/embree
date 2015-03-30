@@ -102,9 +102,25 @@ namespace embree
     //update width and height based on png info
     texture->width = twidth;
     texture->height = theight;
-
+    
     PRINT(texture->width);
     PRINT(texture->height);
+    PRINT(bit_depth);
+    PRINT(color_type);
+    if (color_type == PNG_COLOR_TYPE_RGB && bit_depth == 8)
+      {
+        PRINT("RGB");
+        texture->format = OBJScene::Texture::RGB8;
+        texture->bytesPerTexel = 3;
+      }
+    else if (color_type == PNG_COLOR_TYPE_RGBA && bit_depth == 8)
+      {
+        PRINT("RGBA");
+        texture->format = OBJScene::Texture::RGBA8;
+        texture->bytesPerTexel = 4;        
+      }
+    else
+      PRINT("UNKNOWN");
     
  
     // Update the png info struct.
@@ -112,7 +128,9 @@ namespace embree
  
     // Row size in bytes.
     int rowbytes = png_get_rowbytes(png_ptr, info_ptr);
- 
+
+    PRINT(rowbytes);
+    
     // Allocate the image_data as a big block, to be given to opengl
     texture->data = new png_byte[rowbytes * texture->height];
     if (!texture->data) {

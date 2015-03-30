@@ -29,6 +29,7 @@ struct Triangle { int v0, v1, v2; };
 #include "embree2/rtcore.h"
 #include "ray.h"
 #include "tasking/taskscheduler.h"
+
 using namespace embree;
 
 /* returns time stamp counter */
@@ -111,3 +112,5 @@ void progressEnd();
 
 float  getPtexTexel1f(void* ptex, int faceId, float u, float v);
 Vec3fa getPtexTexel3f(void* ptex, int faceId, float u, float v);
+
+Vec3fa getTextureTexel3f(void *texture,float u, float v);

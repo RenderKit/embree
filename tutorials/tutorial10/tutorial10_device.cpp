@@ -45,6 +45,7 @@ extern "C" ISPCScene* g_ispc_scene;
 RTCScene g_scene = NULL;
 RTCScene g_embree_scene = NULL;
 RTCScene g_osd_scene = NULL;
+void** geomID_to_mesh = NULL;
 
 /* render function to use */
 renderPixelFunc renderPixel;
@@ -174,6 +175,7 @@ void displacementFunction(void* ptr, unsigned int geomID, int unsigned primID,
 
 void convertScene(ISPCScene* scene_in, const Vec3fa& p)
 {
+  geomID_to_mesh = new void*[scene_in->numSubdivMeshes];
   
   /* add all subdiv meshes to the scene */
   for (size_t i=0; i<scene_in->numSubdivMeshes; i++)
@@ -190,6 +192,9 @@ void convertScene(ISPCScene* scene_in, const Vec3fa& p)
     unsigned int geomID = rtcNewSubdivisionMesh(g_scene, RTC_GEOMETRY_STATIC, mesh->numFaces, mesh->numEdges, mesh->numVertices, 
 							mesh->numEdgeCreases, mesh->numVertexCreases, mesh->numHoles);
     mesh->geomID = geomID;
+    assert(geomID < scene_in->numSubdivMeshes);
+
+    geomID_to_mesh[geomID] = mesh;
 
     for (size_t i = 0; i < mesh->numEdges; i++) mesh->subdivlevel[i] = FIXED_EDGE_TESSELLATION_VALUE;
 
@@ -363,7 +368,12 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
 
   //Vec3fa color = Vec3fa((float)ray.primID / 10 + 0.2f);
   //Vec3fa color = rndColor(ray.primID);
-
+  ISPCSubdivMesh* mesh = (ISPCSubdivMesh*)geomID_to_mesh[ray.geomID];
+  int materialID = mesh->materialID;
+  int numMaterials = g_ispc_scene->numMaterials;
+  OBJMaterial* material = (OBJMaterial*)&g_ispc_scene->materials[materialID];
+  if (material->map_Kd) color *= getTextureTexel3f(material->map_Kd,ray.u,ray.v);
+      
 #if 0
     color = rndColor(ray.geomID);
 #else

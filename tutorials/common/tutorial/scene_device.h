@@ -139,6 +139,21 @@ struct MirrorMaterial
   Vec3fa reflectance;
 };
 
+enum TEXTURE_FORMAT {
+  RGBA8  = 1,
+  RGB8   = 2,
+  ALPHA8 = 4
+};
+
+struct Texture {      
+  int width;
+  int height;    
+  int format;
+  int bytesPerTexel;
+  void *data;
+};
+
+
 struct OBJMaterial
 {
   int ty;
@@ -153,9 +168,9 @@ struct OBJMaterial
   Vec3fa Kd;              /*< diffuse reflectivity */
   Vec3fa Ks;              /*< specular reflectivity */
   Vec3fa Kt;              /*< transmission filter */
-  void* map_Kd_ptex;      /*< ptex Kd map */
-  void* map_Displ_ptex;       /*< ptex displacement map */
-  //Vec3fa v[2];
+
+  Texture* map_Kd;       /*< dummy */
+  Texture* map_Displ;       /*< dummy */
 };
 
 struct MetalMaterial

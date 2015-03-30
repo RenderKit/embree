@@ -122,15 +122,18 @@ namespace embree
 
     struct Texture {
     enum {
-      RGBA_8bit = 1
+      RGBA8  = 1,
+      RGB8   = 2,
+      ALPHA8 = 4
     };
+      
     int width;
     int height;    
     int format;
     int bytesPerTexel;
     void *data;
 
-    Texture() : width(-1), height(-1), format(RGBA_8bit), bytesPerTexel(0), data(NULL)
+    Texture() : width(-1), height(-1), format(-1), bytesPerTexel(0), data(NULL)
       {
       }
     };

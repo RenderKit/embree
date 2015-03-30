@@ -17,6 +17,7 @@
 #include "tutorial_device.h"
 #include "kernels/algorithms/parallel_for.h"
 #include "sys/sysinfo.h"
+#include "scene_device.h"
 
 #if defined(USE_PTEX)
 #include "Ptexture.h"
@@ -730,4 +731,19 @@ Vec3fa getPtexTexel3f(void* filter, int faceId, float u, float v)
   ((PtexFilter*)filter)->eval((float*)&result, 0, 3, faceId, v, u, 0, 0, 0, 0);
 #endif
   return result;
+}
+
+Vec3fa getTextureTexel3f(void *_texture,float u, float v)
+{
+  Texture *texture = (Texture*)_texture;
+  if (texture->format == RGB8)
+    {
+      int iu = (int)(u * (float)texture->width);
+      int iv = (int)(v * (float)texture->height);
+      unsigned char *t = (unsigned char*)texture->data + (iv * texture->width + iu) * texture->bytesPerTexel;
+      return Vec3fa(  (float)t[0] * 1.0f/255.0f, (float)t[1] * 1.0f/255.0f, (float)t[2] * 1.0f/255.0f );
+    }
+  
+  Vec3fa color(1.0f);
+  return color;
 }
