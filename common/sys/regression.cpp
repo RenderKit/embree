@@ -14,18 +14,24 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#pragma once
+#include "regression.h"
 
-#include "sys/platform.h"
-#include "sys/sysinfo.h"
-#include "sys/ref.h"
-#include "lexers/streamfilters.h"
-#include "lexers/parsestream.h"
-#include "tutorial/glutdisplay.h"
-#include "transport/transport_host.h"
+namespace embree
+{
+  static std::vector<RegressionTest*>* regression_tests;
 
-#if defined __WIN32__
-inline double drand48() {
-  return (double)rand()/(double)RAND_MAX;
+  void registerRegressionTest(RegressionTest* test) 
+  {
+    if (regression_tests == NULL) regression_tests = new std::vector<RegressionTest*>;
+    regression_tests->push_back(test);
+  }
+
+  void runRegressionTests()
+  {
+    if (regression_tests == NULL) 
+      return;
+
+    for (size_t i=0; i<regression_tests->size(); i++) 
+      (*(*regression_tests)[i])();
+  }
 }
-#endif

@@ -63,13 +63,6 @@ namespace embree
   void* os_realloc (void* ptr, size_t bytesNew, size_t bytesOld) {
     NOT_IMPLEMENTED;
   }
-
-  double getSeconds() {
-    LARGE_INTEGER freq, val;
-    QueryPerformanceFrequency(&freq);
-    QueryPerformanceCounter(&val);
-    return (double)val.QuadPart / (double)freq.QuadPart;
-  }
 }
 #endif
 
@@ -79,7 +72,6 @@ namespace embree
 
 #if defined(__UNIX__)
 
-#include <sys/time.h>
 #include <sys/mman.h>
 #include <errno.h>
 #include <string.h>
@@ -176,41 +168,6 @@ namespace embree
 #endif
 
   }
-
-#if defined(__MIC__)
-
-  static double getFrequencyInMHz()
-  {
-    struct timeval tvstart, tvstop;
-    unsigned long long int cycles[2];
-    
-    gettimeofday(&tvstart, NULL);
-    cycles[0] = rdtsc();
-    gettimeofday(&tvstart, NULL);
-    usleep(250000);
-    gettimeofday(&tvstop, NULL);
-    cycles[1] = rdtsc();
-    gettimeofday(&tvstop, NULL);
-  
-    const unsigned long microseconds = ((tvstop.tv_sec-tvstart.tv_sec)*1000000) + (tvstop.tv_usec-tvstart.tv_usec);
-    unsigned long mhz = (unsigned long) (cycles[1]-cycles[0]) / microseconds;
-
-    //std::cout << "MIC frequency is " << mhz << " MHz" << std::endl;
-    return (double)mhz;
-  }
-
-  static double micFrequency = getFrequencyInMHz();
-
-#endif
-
-  double getSeconds() {
-#if !defined(__MIC__)
-    struct timeval tp; gettimeofday(&tp,NULL);
-    return double(tp.tv_sec) + double(tp.tv_usec)/1E6;
-#else
-    return double(rdtsc()) / double(micFrequency*1E6);
-#endif
-  }
 }
 
 #endif
@@ -224,8 +181,6 @@ namespace embree
 
 namespace embree
 {
-  std::vector<RegressionTest*>* regression_tests;
-
   void* alignedMalloc(size_t size, size_t align)
   {
     if (size == 0) return NULL;

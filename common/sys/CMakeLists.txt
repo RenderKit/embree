@@ -28,12 +28,13 @@ IF (TARGET_AVX2)
 ENDIF()
 
 ADD_LIBRARY(sys STATIC
-  platform.cpp
   sysinfo.cpp
+  alloc.cpp
   filename.cpp
   library.cpp
   thread.cpp
   network.cpp
+  regression.cpp
   sync/mutex.cpp
   sync/condition.cpp
   sync/barrier.cpp
@@ -50,12 +51,13 @@ ELSE ()
 INCLUDE(icc_xeonphi)
 
 ADD_LIBRARY(sys_xeonphi STATIC
-  platform.cpp
   sysinfo.cpp
+  alloc.cpp
   filename.cpp
   library.cpp
   thread.cpp
   network.cpp
+  regression.cpp
   sync/mutex.cpp
   sync/condition.cpp
   sync/barrier.cpp

@@ -14,18 +14,19 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include <map>
 #include "glutdisplay.h"
 #include "sys/filename.h"
+#include "sys/sysinfo.h"
 #include "lexers/streamfilters.h"
 #include "lexers/parsestream.h"
 #include "transport/transport_host.h"
+
+#include <map>
 
 /* include GLUT for display */
 #if defined(__MACOSX__)
 #  include <OpenGL/gl.h>
 #  include <GLUT/glut.h>
-//#  include <ApplicationServices/ApplicationServices.h>
 #elif defined(__WIN32__)
 #  include <windows.h>
 #  include <GL/gl.h>   

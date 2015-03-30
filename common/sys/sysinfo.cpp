@@ -295,6 +295,13 @@ namespace embree
     GetConsoleScreenBufferInfo(handle, &info);
     return info.dwSize.X;
   }
+
+  double getSeconds() {
+    LARGE_INTEGER freq, val;
+    QueryPerformanceFrequency(&freq);
+    QueryPerformanceCounter(&val);
+    return (double)val.QuadPart / (double)freq.QuadPart;
+  }
 }
 #endif
 
@@ -350,10 +357,7 @@ namespace embree
 
 #include <unistd.h>
 #include <sys/ioctl.h>
-
-#if defined(__USE_NUMA__)
-#include <numa.h>
-#endif
+#include <sys/time.h>
 
 namespace embree
 {
@@ -375,6 +379,41 @@ namespace embree
     struct winsize info;
     if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &info) < 0) return 80;
     return info.ws_col;
+  }
+
+#if defined(__MIC__)
+
+  static double getFrequencyInMHz()
+  {
+    struct timeval tvstart, tvstop;
+    unsigned long long int cycles[2];
+    
+    gettimeofday(&tvstart, NULL);
+    cycles[0] = rdtsc();
+    gettimeofday(&tvstart, NULL);
+    usleep(250000);
+    gettimeofday(&tvstop, NULL);
+    cycles[1] = rdtsc();
+    gettimeofday(&tvstop, NULL);
+  
+    const unsigned long microseconds = ((tvstop.tv_sec-tvstart.tv_sec)*1000000) + (tvstop.tv_usec-tvstart.tv_usec);
+    unsigned long mhz = (unsigned long) (cycles[1]-cycles[0]) / microseconds;
+
+    //std::cout << "MIC frequency is " << mhz << " MHz" << std::endl;
+    return (double)mhz;
+  }
+
+  static double micFrequency = getFrequencyInMHz();
+
+#endif
+
+  double getSeconds() {
+#if !defined(__MIC__)
+    struct timeval tp; gettimeofday(&tp,NULL);
+    return double(tp.tv_sec) + double(tp.tv_usec)/1E6;
+#else
+    return double(rdtsc()) / double(micFrequency*1E6);
+#endif
   }
 }
 #endif

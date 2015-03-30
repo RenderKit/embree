@@ -16,16 +16,20 @@
 
 #pragma once
 
-#include "sys/platform.h"
-#include "sys/sysinfo.h"
-#include "sys/ref.h"
-#include "lexers/streamfilters.h"
-#include "lexers/parsestream.h"
-#include "tutorial/glutdisplay.h"
-#include "transport/transport_host.h"
+#include "platform.h"
 
-#if defined __WIN32__
-inline double drand48() {
-  return (double)rand()/(double)RAND_MAX;
+#include <vector>
+
+namespace embree
+{
+  /*! virtual interface for all regression tests */
+  struct RegressionTest { 
+    virtual bool operator()() = 0;
+  };
+ 
+  /*! registers a regression test */
+  void registerRegressionTest(RegressionTest* test);
+
+  /*! run all regression tests */
+  void runRegressionTests();
 }
-#endif

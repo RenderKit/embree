@@ -82,4 +82,7 @@ namespace embree
   
   /*! returns the size of the terminal window in characters */
   int getTerminalWidth();
+
+  /*! returns performance counter in seconds */
+  double getSeconds();
 }

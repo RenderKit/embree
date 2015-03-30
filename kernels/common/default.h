@@ -24,6 +24,7 @@
 #include "sys/sync/mutex.h"
 #include "sys/stl/vector.h"
 #include "sys/stl/string.h"
+#include "sys/regression.h"
 #include "tasking/taskscheduler.h"
 
 #if defined(__MIC__)
