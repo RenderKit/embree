@@ -52,17 +52,17 @@ namespace embree
     delete this;
   }
 
-  __dllexport void* ISPCAlloc(void** taskPtr, int64 size, int32 alignment) {
+  extern "C" __dllexport void* ISPCAlloc(void** taskPtr, int64 size, int32 alignment) {
     if (*taskPtr == NULL) *taskPtr = new TaskScheduler::EventSync;
     return (char*)_mm_malloc(size,alignment); 
   }
 
-  __dllexport void ISPCLaunch(void** taskPtr, void* func, void* data, int count) {      
+  extern "C" __dllexport void ISPCLaunch(void** taskPtr, void* func, void* data, int count) {      
     ISPCTask* ispcTask = new ISPCTask((TaskScheduler::Event*)(*taskPtr),(TaskFuncType)func,data,count);
     TaskScheduler::addTask(-1, TaskScheduler::GLOBAL_BACK, &ispcTask->task);
   }
   
-  __dllexport void ISPCSync(void* task) { // FIXME: for join other tasks would need threadIndex here
+  extern "C" __dllexport void ISPCSync(void* task) { // FIXME: for join other tasks would need threadIndex here
     ((TaskScheduler::EventSync*)task)->sync(); 
     delete (TaskScheduler::EventSync*)task;
   }
@@ -71,7 +71,7 @@ namespace embree
 
 #if defined(TASKING_TBB) || defined(TASKING_TBB_INTERNAL)
 
-  __dllexport void* ISPCAlloc(void** taskPtr, int64 size, int32 alignment) 
+  extern "C" __dllexport void* ISPCAlloc(void** taskPtr, int64 size, int32 alignment) 
   {
     if (*taskPtr == NULL) *taskPtr = new std::vector<void*>;
     std::vector<void*>* lst = (std::vector<void*>*)(*taskPtr);
@@ -80,7 +80,7 @@ namespace embree
     return ptr;
   }
 
- __dllexport void ISPCSync(void* task) 
+ extern "C" __dllexport void ISPCSync(void* task) 
   {
     std::vector<void*>* lst = (std::vector<void*>*)task;
     for (size_t i=0; i<lst->size(); i++) _mm_free((*lst)[i]);
@@ -91,7 +91,7 @@ namespace embree
 
 #if defined(TASKING_TBB)
 
-  __dllexport void ISPCLaunch(void** taskPtr, void* func, void* data, int count) 
+  extern "C" __dllexport void ISPCLaunch(void** taskPtr, void* func, void* data, int count) 
   {      
     parallel_for(size_t(0), size_t(count),[&] (const range<size_t>& r) {
         const size_t threadIndex = tbb::task_arena::current_thread_index();
@@ -104,7 +104,7 @@ namespace embree
 
 #if defined(TASKING_TBB_INTERNAL)
 
-  __dllexport void ISPCLaunch(void** taskPtr, void* func, void* data, int count) 
+  extern "C" __dllexport void ISPCLaunch(void** taskPtr, void* func, void* data, int count) 
   {      
     parallel_for(size_t(0), size_t(count), [&] (const range<size_t>& r) {
         const size_t threadIndex = TaskSchedulerNew::thread()->threadIndex;
