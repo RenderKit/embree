@@ -279,7 +279,7 @@ namespace embree
       {
         const unsigned int code_start = morton[current.begin].code;
         const unsigned int code_end   = morton[current.end-1].code;
-        unsigned int bitpos = clz(code_start^code_end);
+        unsigned int bitpos = lzcnt(code_start^code_end);
         
         /* if all items mapped to same morton code, then create new morton codes for the items */
         if (unlikely(bitpos == 32)) // FIXME: maybe go here earlier to build better tree
@@ -287,7 +287,7 @@ namespace embree
           recreateMortonCodes(current);
           const unsigned int code_start = morton[current.begin].code;
           const unsigned int code_end   = morton[current.end-1].code;
-          bitpos = clz(code_start^code_end);
+          bitpos = lzcnt(code_start^code_end);
           
           /* if the morton code is still the same, goto fall back split */
           if (unlikely(bitpos == 32)) 

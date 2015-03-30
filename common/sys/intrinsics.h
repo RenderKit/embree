@@ -170,7 +170,7 @@ __forceinline size_t __bsr(size_t v) {
 }
 #endif
 
-__forceinline int clz(const int x)
+__forceinline int lzcnt(const int x)
 {
 #if defined(__AVX2__)
   return _lzcnt_u32(x);
@@ -210,8 +210,28 @@ __forceinline size_t __btr(size_t v, size_t i) {
 
 typedef int16 atomic16_t;
 
-__forceinline int16 atomic_add( int16 volatile* p, int16 v ) {
+__forceinline int16 atomic_add(volatile int16* p, const int16 v) {
   return _InterlockedExchangeAdd16((volatile short*)p,v);
+}
+
+__forceinline int16 atomic_sub(volatile int16* p, const int16 v) {
+  return _InterlockedExchangeAdd16((volatile short*)p,-v);
+}
+
+__forceinline int16 atomic_xchg(volatile int16 *p, int16 v) {
+  return _InterlockedExchange16((volatile short*)p, v);
+}
+
+__forceinline int16 atomic_cmpxchg(volatile int16* p, const int16 c, const int16 v) {
+  return _InterlockedCompareExchange16((volatile short*)p,v,c);
+}
+
+__forceinline int16 atomic_and(volatile int16* p, const int16 v) {
+  return _InterlockedAnd16((volatile short*)p,v);
+}
+
+__forceinline int16 atomic_or(volatile int16* p, const int16 v) {
+  return _InterlockedOr16((volatile short*)p,v);
 }
 
 typedef int32 atomic32_t;
@@ -239,7 +259,6 @@ __forceinline int32 atomic_and(volatile int32* p, const int32 v) {
 __forceinline int32 atomic_or(volatile int32* p, const int32 v) {
   return _InterlockedOr((volatile long*)p,v);
 }
-
 
 #if defined(__X86_64__)
 
@@ -401,6 +420,16 @@ __forceinline size_t __bsr(size_t v) {
 #endif
 }
 
+__forceinline int lzcnt(const int x)
+{
+#if defined(__AVX2__)
+  return _lzcnt_u32(x);
+#else
+  if (unlikely(x == 0)) return 32;
+  return 31 - __bsr(x);    
+#endif
+}
+
 __forceinline int __btc(int v, int i) {
   int r = 0; asm ("btc %1,%0" : "=r"(r) : "r"(i), "0"(v) : "flags" ); return r;
 }
@@ -425,17 +454,10 @@ __forceinline size_t __btr(size_t v, size_t i) {
   size_t r = 0; asm ("btr %1,%0" : "=r"(r) : "r"(i), "0"(v) : "flags"); return r;
 }
 
-__forceinline int clz(const int x)
-{
-#if defined(__AVX2__)
-  return _lzcnt_u32(x);
 #else
-  if (unlikely(x == 0)) return 32;
-  return 31 - __bsr(x);    
-#endif
-}
 
-#else
+static const unsigned int BITSCAN_NO_BIT_SET_32 = 32;
+static const size_t       BITSCAN_NO_BIT_SET_64 = 64;
 
 __forceinline unsigned int clz(const unsigned int x) {
   return _lzcnt_u32(x); 
@@ -507,6 +529,68 @@ __forceinline size_t __bsr(size_t v) {
 
 #endif
 
+typedef int8 atomic8_t;
+
+__forceinline int8 atomic_add( int8 volatile* value, int8 input ) {
+  return __sync_fetch_and_add(value, input);
+}
+
+__forceinline int8 atomic_sub( int8 volatile* value, int8 input ) {
+  return __sync_fetch_and_add(value, -input);
+}
+
+__forceinline int8 atomic_xchg( int8 volatile* value, int8 input ) {
+  return __sync_lock_test_and_set(value, input);
+}
+
+__forceinline int8 atomic_cmpxchg( int8 volatile* value, int8 comparand, const int8 input ) {
+  return __sync_val_compare_and_swap(value, comparand, input);
+}
+
+typedef int16 atomic16_t;
+
+__forceinline int16 atomic_add( int16 volatile* value, int16 input ) {
+  return __sync_fetch_and_add(value, input);
+}
+
+__forceinline int16 atomic_sub( int16 volatile* value, int16 input ) {
+  return __sync_fetch_and_add(value, -input);
+}
+
+__forceinline int16 atomic_xchg( int16 volatile* value, int16 input ) {
+  return __sync_lock_test_and_set(value, input);
+}
+
+__forceinline int16 atomic_cmpxchg( int16 volatile* value, int16 comparand, const int16 input ) {
+  return __sync_val_compare_and_swap(value, comparand, input);
+}
+
+typedef int32 atomic32_t;
+
+__forceinline int32 atomic_add( int32 volatile* value, int32 input ) {
+  return __sync_fetch_and_add(value, input);
+}
+
+__forceinline int32 atomic_sub( int32 volatile* value, int32 input ) {
+  return __sync_fetch_and_add(value, -input);
+}
+
+__forceinline int32 atomic_xchg( int32 volatile* value, int32 input ) {
+  return __sync_lock_test_and_set(value, input);
+}
+
+__forceinline int32 atomic_cmpxchg( int32 volatile* value, int32 comparand, const int32 input ) {
+  return __sync_val_compare_and_swap(value, comparand, input);
+}
+
+__forceinline int32 atomic_or(int32 volatile* value, int32 input) {
+  return __sync_fetch_and_or(value, input);
+}
+
+__forceinline int32 atomic_and(int32 volatile* value, int32 input) {
+  return __sync_fetch_and_and(value, input);
+}
+
 #if defined(__X86_64__)
 
 typedef int64 atomic64_t;
@@ -536,69 +620,6 @@ __forceinline int64 atomic_and(int64 volatile* value, int64 input) {
 }
 
 #endif
-
-typedef int32 atomic32_t;
-
-__forceinline int32 atomic_add( int32 volatile* value, int32 input ) {
-  return __sync_fetch_and_add(value, input);
-}
-
-__forceinline int32 atomic_sub( int32 volatile* value, int32 input ) {
-  return __sync_fetch_and_add(value, -input);
-}
-
-__forceinline int32 atomic_xchg( int32 volatile* value, int32 input ) {
-  return __sync_lock_test_and_set(value, input);
-}
-
-__forceinline int32 atomic_cmpxchg( int32 volatile* value, int32 comparand, const int32 input ) {
-  return __sync_val_compare_and_swap(value, comparand, input);
-}
-
-__forceinline int32 atomic_or(int32 volatile* value, int32 input) {
-  return __sync_fetch_and_or(value, input);
-}
-
-__forceinline int32 atomic_and(int32 volatile* value, int32 input) {
-  return __sync_fetch_and_and(value, input);
-}
-
-typedef int8 atomic8_t;
-
-__forceinline int8 atomic_add( int8 volatile* value, int8 input ) {
-  return __sync_fetch_and_add(value, input);
-}
-
-__forceinline int8 atomic_sub( int8 volatile* value, int8 input ) {
-  return __sync_fetch_and_add(value, -input);
-}
-
-__forceinline int8 atomic_xchg( int8 volatile* value, int8 input ) {
-  return __sync_lock_test_and_set(value, input);
-}
-
-__forceinline int8 atomic_cmpxchg( int8 volatile* value, int8 comparand, const int8 input ) {
-  return __sync_val_compare_and_swap(value, comparand, input);
-}
-
-
-typedef int16 atomic16_t;
-
-__forceinline int16 atomic_add( int16 volatile* value, int16 input ) {
-  return __sync_fetch_and_add(value, input);
-}
-
-__forceinline int16 atomic_sub( int16 volatile* value, int16 input ) {
-  return __sync_fetch_and_add(value, -input);
-}
-
-__forceinline int16 atomic_xchg( int16 volatile* value, int16 input ) {
-  return __sync_lock_test_and_set(value, input);
-}
-
-__forceinline int16 atomic_cmpxchg( int16 volatile* value, int16 comparand, const int16 input ) {
-  return __sync_val_compare_and_swap(value, comparand, input);
-}
 
 #endif
 
@@ -720,10 +741,6 @@ __forceinline void atomic_add_f32(volatile float *__restrict__ ptr, const float 
     if (result == int_a) break;
   }
 }
-
-static const unsigned int BITSCAN_NO_BIT_SET_32 = 32;
-static const size_t       BITSCAN_NO_BIT_SET_64 = 64;
-
 
 __forceinline uint64 rdtsc()
 {
