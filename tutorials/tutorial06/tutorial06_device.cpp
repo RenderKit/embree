@@ -49,6 +49,9 @@ bool g_subdiv_mode = false;
 
 struct DifferentialGeometry
 {
+  int geomID;
+  int primID;
+  float u,v;
   Vec3fa P;
   Vec3fa Ng;
   Vec3fa Ns;
@@ -470,6 +473,7 @@ inline DielectricLayerLambertian make_DielectricLayerLambertian(const Vec3fa& T,
     brdf.Ka = Vec3fa(material->Ka);
     //if (material->map_Ka) { brdf.Ka *= material->map_Ka->get(dg.st); }
     brdf.Kd = d * Vec3fa(material->Kd);  
+    if (material->map_Kd_ptex) brdf.Kd *= getPtexTexel3f(material->map_Kd_ptex,dg.primID,dg.u,dg.v);
     //if (material->map_Kd) brdf.Kd *= material->map_Kd->get(dg.st);  
     brdf.Ks = d * Vec3fa(material->Ks);  
     //if (material->map_Ks) brdf.Ks *= material->map_Ks->get(dg.st); 
@@ -1161,6 +1165,11 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
 
     /* compute differential geometry */
     DifferentialGeometry dg;
+    dg.geomID = ray.geomID;
+    dg.primID = ray.primID;
+    dg.u = ray.u;
+    dg.v = ray.v;
+
     dg.P  = ray.org+ray.tfar*ray.dir;
     dg.Ng = face_forward(ray.dir,normalize(ray.Ng));
     //Vec3fa _Ns = interpolate_normal(ray);

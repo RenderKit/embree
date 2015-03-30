@@ -34,6 +34,13 @@ namespace embree
     Vertex(int v, int vt, int vn) : v(v), vt(vt), vn(vn) {};
   };
 
+  struct Crease {
+    float w;
+    int a, b;
+    Crease() : w(0), a(-1), b(-1) {};
+    Crease(float w, int a, int b) : w(w), a(a), b(b) {};
+  };
+
   static inline bool operator < ( const Vertex& a, const Vertex& b ) {
     if (a.v  != b.v)  return a.v  < b.v;
     if (a.vn != b.vn) return a.vn < b.vn;
@@ -71,6 +78,14 @@ namespace embree
   static inline float getFloat(const char*& token) {
     token += strspn(token, " \t");
     float n = (float)atof(token);
+    token += strcspn(token, " \t\r");
+    return n;
+  }
+
+  /*! Read int from a string. */
+  static inline int getInt(const char*& token) {
+    token += strspn(token, " \t");
+    int n = (float)atoi(token);
     token += strcspn(token, " \t\r");
     return n;
   }
@@ -119,6 +134,7 @@ namespace embree
     vector_t<Vec3fa> v;
     vector_t<Vec3fa> vn;
     std::vector<Vec2f> vt;
+    std::vector<Crease> ec;
     std::vector<std::vector<Vertex> > curGroup;
     AffineSpace3f space;
 
@@ -196,6 +212,20 @@ namespace embree
         }
         curGroup.push_back(face);
         continue;
+      }
+
+      /*! parse edge crease */
+      if (token[0] == 'e' && token[1] == 'c' && isSep(token[2]))
+      {
+	parseSep(token += 2);
+	float w = getFloat(token);
+	parseSepOpt(token);
+	int a = fix_v(getInt(token));
+	parseSepOpt(token);
+	int b = fix_v(getInt(token));
+	parseSepOpt(token);
+	ec.push_back(Crease(w, a, b));
+	continue;
       }
 
       /*! use material */
@@ -369,6 +399,11 @@ namespace embree
 	for (size_t i=0;i<vn.size();i++) mesh->normals.push_back(vn[i]);
 	for (size_t i=0;i<vt.size();i++) mesh->texcoords.push_back(vt[i]);
 	
+	for (size_t i=0;i<ec.size();++i) {
+	  if (ec[i].a < v.size() && ec[i].b < v.size())
+	    mesh->edge_creases.push_back(Vec2i(ec[i].a, ec[i].b));
+	  mesh->edge_crease_weights.push_back(ec[i].w);
+	}
 
 	for (size_t j=0; j < curGroup.size(); j++)
 	  {
