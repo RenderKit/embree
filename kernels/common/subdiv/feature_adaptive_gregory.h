@@ -59,7 +59,6 @@ namespace embree
 	subdivide(qpatch,depth,uv,neighborSubdiv);
 	return;
       }
-
       /* subdivide patch */
       size_t N;
       CatmullClarkPatch patches[GeneralCatmullClarkPatch::SIZE]; 
@@ -68,7 +67,17 @@ namespace embree
       /* check if subpatches need further subdivision */
       bool childSubdiv[GeneralCatmullClarkPatch::SIZE];
       for (size_t i=0; i<N; i++)
-        childSubdiv[i] = !patches[i].isGregoryOrFinal(depth);
+	{
+	  if (!patches[i].checkPositions())
+	    {
+	      PRINT(patch);
+	      PRINT(i);
+	      PRINT(patches[i]);
+
+	    }
+	  assert( patches[i].checkPositions() );
+	  childSubdiv[i] = !patches[i].isGregoryOrFinal(depth);
+	}
 
       /* parametrization for triangles */
       if (N == 3) {

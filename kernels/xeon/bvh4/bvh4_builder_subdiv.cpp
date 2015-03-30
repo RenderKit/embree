@@ -893,8 +893,6 @@ namespace embree
             
               feature_adaptive_subdivision_gregory(f,mesh->getHalfEdge(f),mesh->getVertexBuffer(),[&](const CatmullClarkPatch& ipatch, const Vec2f uv[4], const int subdiv[4])
                                                    {
-                                                     //std::cout.precision(12);
-
                                                      float edge_level[4] = {
                                                        ipatch.ring[0].edge_level,
                                                        ipatch.ring[1].edge_level,

@@ -135,6 +135,13 @@ namespace embree
 
     /* determine whether patch is regular or not */
 
+    // if (!ipatch.checkPositions())
+    //   {
+    // 	PRINT(gID);
+    // 	PRINT(pID);
+    // 	exit(0);
+    //   }
+
     if (ipatch.isRegularOrFinal(0) && mesh->displFunc == NULL)
       {
         flags |= REGULAR_PATCH;

@@ -170,7 +170,7 @@ namespace embree
       f_m_vtx = 1.0f / d * (c_e_m * p_vtx + (d - 2.0f*c - c_e_m) * e0_m_vtx + 2.0f*c* e3_p_vtx + r_e_m);      
     }
 
-    void init(const CatmullClarkPatch& patch)
+    __noinline void init(const CatmullClarkPatch& patch)
     {
 #if 1
       if ( !patch.ring[0].hasValidPositions() )
@@ -216,7 +216,7 @@ namespace embree
       initFaceVertex(patch,3,p3(),e3_p(),e0_m(),face_valence_p0,e3_m(),e2_p(),face_valence_p3,f3_p(),f3_m() );
     }
     
-    void init(const GeneralCatmullClarkPatch& patch)
+    __noinline void init(const GeneralCatmullClarkPatch& patch)
     {
       assert(patch.size() == 4);
       CatmullClarkPatch qpatch; patch.init(qpatch);

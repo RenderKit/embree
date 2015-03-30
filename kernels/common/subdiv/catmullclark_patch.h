@@ -341,12 +341,13 @@ namespace embree
 #endif
     }
 
-    void checkPositions()
+    bool checkPositions() const
     {
-      assert( ring[0].hasValidPositions() );
-      assert( ring[1].hasValidPositions() );
-      assert( ring[2].hasValidPositions() );
-      assert( ring[3].hasValidPositions() );      
+      if( ring[0].hasValidPositions() &&
+	  ring[1].hasValidPositions() &&
+	  ring[2].hasValidPositions() &&
+	  ring[3].hasValidPositions() ) return true;
+      return false;
     }
 
     __forceinline void init( FinalQuad& quad ) const
@@ -455,6 +456,7 @@ namespace embree
     static __forceinline void init_regular(const Vec3fa_t &center, const Vec3fa_t center_ring[2*SIZE], const float vertex_level, const size_t N, const size_t offset, CatmullClark1Ring &dest)
     {
       assert(N<CatmullClark1Ring::MAX_FACE_VALENCE);
+      assert(2*N<CatmullClark1Ring::MAX_EDGE_VALENCE);
       dest.vertex_level = vertex_level;
       dest.face_valence = N;
       dest.edge_valence = 2*N;
@@ -463,22 +465,30 @@ namespace embree
       dest.vertex_crease_weight = 0.0f;
       dest.noForcedSubdivision = true;
       for (size_t i=0; i<2*N; i++) 
-	dest.ring[i] = (Vec3fa_t)center_ring[(2*N+offset+i-1)%(2*N)];
+	{
+	  dest.ring[i] = (Vec3fa_t)center_ring[(2*N+offset+i-1)%(2*N)];
+	  assert( inFloatRange(dest.ring[i].x) );
+	  assert( inFloatRange(dest.ring[i].y) );
+	  assert( inFloatRange(dest.ring[i].z) );
+	}
       for (size_t i=0; i<N; i++) 
         dest.crease_weight[i] = 0.0f;
     }
  
-    void subdivide(CatmullClarkPatch patch[SIZE], size_t& N_o) const
+    __noinline void subdivide(CatmullClarkPatch patch[SIZE], size_t& N_o) const
     {
       N_o = N;
-
+      assert( N );
       for (size_t i=0; i<N; i++) {
         size_t ip1 = (i+1)%N; // FIXME: %
         ring[i].subdivide(patch[i].ring[0]);
         patch[i]  .ring[0].edge_level = 0.5f*ring[i].edge_level;
         patch[ip1].ring[3].edge_level = 0.5f*ring[i].edge_level;
-      }
 
+	assert( patch[i].ring[0].hasValidPositions() );
+
+      }
+      assert(N < 2*SIZE);
       Vec3fa_t center = Vec3fa_t(0.0f);
       Vec3fa_t center_ring[2*SIZE];
       float center_vertex_level = 2.0f; // guarantees that irregular vertices get always isolated also for non-quads
@@ -489,6 +499,9 @@ namespace embree
         size_t im1 = (i+N-1)%N; // FIXME: %
         if (likely(ring[i].has_last_face())) init_regular(patch[i].ring[0],patch[ip1].ring[0],patch[i].ring[1],patch[ip1].ring[3]); 
         else                                 init_border (patch[i].ring[0],patch[ip1].ring[0],patch[i].ring[1],patch[ip1].ring[3]);
+
+	assert( patch[i].ring[1].hasValidPositions() );
+	assert( patch[ip1].ring[3].hasValidPositions() );
 
 	float level = 0.25f*(ring[im1].edge_level+ring[ip1].edge_level);
         patch[i].ring[1].edge_level = patch[ip1].ring[2].edge_level = level;
@@ -502,6 +515,8 @@ namespace embree
 
       for (size_t i=0; i<N; i++) {
         init_regular(center,center_ring,center_vertex_level,N,2*i,patch[i].ring[2]);
+
+	assert( patch[i].ring[2].hasValidPositions() );
       }
     }
 
