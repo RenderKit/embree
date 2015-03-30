@@ -359,6 +359,11 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
   
   /* shade all rays that hit something */
   Vec3fa color = Vec3fa(1.0f);
+
+
+  //Vec3fa color = Vec3fa((float)ray.primID / 10 + 0.2f);
+  //Vec3fa color = rndColor(ray.primID);
+
 #if 0
     color = rndColor(ray.geomID);
 #else

@@ -29,6 +29,7 @@
 
 #define FIX_SAMPLING 0
 #define SAMPLES_PER_PIXEL 1
+//#define SAMPLES_PER_PIXEL 64
 
 //#define FORCE_FIXED_EDGE_TESSELLATION
 #define FIXED_EDGE_TESSELLATION_VALUE 2
@@ -473,7 +474,7 @@ inline DielectricLayerLambertian make_DielectricLayerLambertian(const Vec3fa& T,
     brdf.Ka = Vec3fa(material->Ka);
     //if (material->map_Ka) { brdf.Ka *= material->map_Ka->get(dg.st); }
     brdf.Kd = d * Vec3fa(material->Kd);  
-    if (material->map_Kd_ptex) brdf.Kd *= getPtexTexel3f(material->map_Kd_ptex,dg.primID,dg.u,dg.v);
+    //if (material->map_Kd_ptex) brdf.Kd *= getPtexTexel3f(material->map_Kd_ptex,dg.primID,dg.u,dg.v);
     //if (material->map_Kd) brdf.Kd *= material->map_Kd->get(dg.st);  
     brdf.Ks = d * Vec3fa(material->Ks);  
     //if (material->map_Ks) brdf.Ks *= material->map_Ks->get(dg.st); 
@@ -1123,6 +1124,15 @@ inline Vec3fa interpolate_normal(RTCRay& ray)
 }
 #endif
 
+Vec3fa rndColor(const int ID) 
+{
+  int r = ((ID+13)*17*23) & 255;
+  int g = ((ID+15)*11*13) & 255;
+  int b = ((ID+17)* 7*19) & 255;
+  const float oneOver255f = 1.f/255.f;
+  return Vec3fa(r*oneOver255f,g*oneOver255f,b*oneOver255f);
+}
+
 Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
 {
 
@@ -1218,6 +1228,7 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
 
     Material__preprocess(material_array,materialID,numMaterials,brdf,wo,dg,medium);
 
+    //brdf.Kd = rndColor(rebuilds);; //rndColor(ray.primID);
 
     /* sample BRDF at hit point */
     Sample3f wi1;

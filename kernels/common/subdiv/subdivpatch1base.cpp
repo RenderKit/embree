@@ -160,7 +160,6 @@ namespace embree
     PRINT( grid_mask );
     PRINT( grid_subtree_size_64b_blocks );
 #endif
-
   }
 
   void SubdivPatch1Base::evalToOBJ(Scene *scene,size_t &vertex_index, size_t &numTotalTriangles)

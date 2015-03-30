@@ -205,6 +205,7 @@ namespace embree
 		//PRINT( (double)SharedLazyTessellationCache::sharedLazyTessellationCache.getNumUsedBytes() / (1024.0 * 1024.0) );
 #if COMPACT == 1
                 int64 new_root_ref = (int64)buildSubdivPatchTreeCompact(*subdiv_patch,node,((Scene*)geom)->getSubdivMesh(subdiv_patch->geom));                                
+
 #else                
 		size_t new_root_ref = (size_t)buildSubdivPatchTree(*subdiv_patch,node,((Scene*)geom)->getSubdivMesh(subdiv_patch->geom));
 #endif
