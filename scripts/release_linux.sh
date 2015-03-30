@@ -15,12 +15,11 @@ cmake \
 -D ENABLE_XEON_PHI_SUPPORT=ON \
 -D CMAKE_SKIP_INSTALL_RPATH=ON \
 ..
-cd ..
 
+# make docu after cmake to have correct version.h
 # assumes documentation repo cloned into embree-doc
 make -C ../embree-doc docbin
 
-cd build
 make -j 8 preinstall
 umask_org=`umask` # workaround for bug in CMake/CPack: need to reset umask
 umask 022
@@ -35,4 +34,6 @@ umask $umask_org
 cd ..
 
 # install scripts
-cp scripts/install_linux/install.sh scripts/install_linux/paths.sh "$destdir"
+install scripts/install_linux/paths.sh "$destdir"
+sed -e "s/@EMBREE_VERSION@/`cat embree-doc/version`/" scripts/install_linux/install.sh > "$destdir"/install.sh
+chmod 755 "$destdir"/install.sh
