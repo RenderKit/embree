@@ -16,14 +16,14 @@
 
 #pragma once
 
-#include <stddef.h>
-#include <assert.h>
+#include <cstddef>
+#include <cassert>
 #include <cstdlib>
 #include <cstdio>
 #include <memory>
 #include <stdexcept>
 #include <iostream>
-#include <sstream>
+//#include <sstream>
 #include <fstream>
 #include <string>
 #include <cstring>

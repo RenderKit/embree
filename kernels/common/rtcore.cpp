@@ -374,13 +374,10 @@ namespace embree
           g_regression_testing = parseInt (cfg,pos);
         }
 	else if (tok == "tessellation_cache_size" && parseSymbol (cfg,'=',pos))
-	  {
-	    g_tessellation_cache_size = parseInt (cfg,pos) * 1024 * 1024; // in MBs
-	    {
-	      //void resizeTessellationCache(const size_t new_size);
-	      resizeTessellationCache( g_tessellation_cache_size );
-	    }
-	  }        
+        {
+          g_tessellation_cache_size = parseFloat (cfg,pos) * 1024 * 1024;
+          resizeTessellationCache( g_tessellation_cache_size );
+        }        
       } while (findNext (cfg,',',pos));
     }
 
