@@ -222,37 +222,6 @@ namespace embree
 
 namespace embree
 {
-
-#if defined(__MIC__)
-
-  __forceinline void do_cpuid(unsigned int eax, unsigned int *p)
-  {
-    __asm __volatile("cpuid"
-		     : "=a" (p[0]), "=b" (p[1]), "=c" (p[2]), "=d" (p[3])
-		     :  "0" (eax));
-  }
-
-  void printThreadInfo()
-  {
-    pthread_t pth = pthread_self();
-
-    cpu_set_t cset;
-    CPU_ZERO(&cset);
-    int error = pthread_getaffinity_np(pth, sizeof(cset), &cset);
-    if (error != 0)
-      perror("pthread_getaffinity_np");
-
-    unsigned hw_ID = 0;
-    for (unsigned int j = 0; j < 256; j++)
-      if (CPU_ISSET(j, &cset))
-	hw_ID = j;
-	      
-    unsigned int regs[4];
-    do_cpuid(1, regs);
-    printf("tid %d on cpu %d APIC ID 0x%x\n",hw_ID, sched_getcpu(), (regs[1] & 0xFF800000) >> 24);    
-  }
-#endif
-
   struct ThreadStartupData 
   {
   public:
@@ -268,7 +237,7 @@ namespace embree
   {
     _mm_setcsr(_mm_getcsr() | /*FTZ:*/ (1<<15) | /*DAZ:*/ (1<<6));
 
-#if !defined(__LINUX__) || defined(__MIC__)
+#if !defined(__LINUX__)
     if (parg->affinity >= 0)
 	setAffinity(parg->affinity);
 #endif
@@ -289,7 +258,7 @@ namespace embree
     pthread_attr_t attr;
     pthread_attr_init(&attr);
     if (stack_size > 0) pthread_attr_setstacksize (&attr, stack_size);
-    //PRINT( stack_size );
+
     /* set affinity */
 #if defined(__LINUX__)
     if (threadID >= 0) {
