@@ -624,6 +624,16 @@ namespace embree
     __forceinline bool has_second_face() const {
       return (border_face == -1) || (border_face >= 2);
     }
+
+    bool hasValidPositions() const
+    {
+      for (size_t i=0; i<edge_valence; i++) {
+	if ( !inFloatRange(ring[i].x) ) return false;
+	if ( !inFloatRange(ring[i].y) ) return false;
+	if ( !inFloatRange(ring[i].z) ) return false;
+      }	
+      return true;
+    }
     
     __forceinline void init(const SubdivMesh::HalfEdge* const h, const BufferT<Vec3fa>& vertices)
     {
@@ -687,6 +697,8 @@ namespace embree
       
       edge_valence = e;
       face_valence = f;
+
+      assert( hasValidPositions() );
     }
     
     __forceinline void subdivide(CatmullClark1Ring& dest) const
@@ -801,6 +813,8 @@ namespace embree
       for (size_t i=0; i<edge_valence; i++) dst.ring[i] = ring[i];
 
       dst.updateEvalStartIndex();
+
+      assert( dst.hasValidPositions() );
     }
     
     friend __forceinline std::ostream &operator<<(std::ostream &o, const GeneralCatmullClark1Ring &c)

@@ -507,6 +507,7 @@ namespace embree
 
     void init(CatmullClarkPatch& patch) const
     {
+      PING;
       assert(size() == 4);
       ring[0].convert(patch.ring[0]);
       ring[1].convert(patch.ring[1]);
