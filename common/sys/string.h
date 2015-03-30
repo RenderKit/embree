@@ -16,16 +16,10 @@
 
 #pragma once
 
-#include "../platform.h"
+#include "platform.h"
 
-#include <sstream>
-
-namespace std
+namespace embree
 {
-  string strlwr(const string& s);
-  string strupr(const string& s);
-
-  template<typename T> __forceinline string stringOf( T const& v) {
-    stringstream s; s << v; return s.str();
-  }
+  std::string strlwr(const std::string& s);
+  std::string strupr(const std::string& s);
 }

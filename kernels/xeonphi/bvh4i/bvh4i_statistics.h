@@ -17,6 +17,7 @@
 #pragma once
 
 #include "bvh4i.h"
+#include <sstream>
 
 namespace embree
 {

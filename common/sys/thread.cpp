@@ -16,7 +16,7 @@
 
 #include "thread.h"
 #include "sysinfo.h"
-#include "sys/stl/string.h"
+#include "string.h"
 
 #include <iostream>
 #include <xmmintrin.h>

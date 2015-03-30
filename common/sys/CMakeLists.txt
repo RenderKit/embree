@@ -34,11 +34,11 @@ ADD_LIBRARY(sys STATIC
   library.cpp
   thread.cpp
   network.cpp
+  string.cpp
   regression.cpp
   sync/mutex.cpp
   sync/condition.cpp
   sync/barrier.cpp
-  stl/string.cpp
 )
 
 TARGET_LINK_LIBRARIES(sys ${CMAKE_THREAD_LIBS_INIT} ${CMAKE_DL_LIBS})
@@ -57,11 +57,11 @@ ADD_LIBRARY(sys_xeonphi STATIC
   library.cpp
   thread.cpp
   network.cpp
+  string.cpp
   regression.cpp
   sync/mutex.cpp
   sync/condition.cpp
   sync/barrier.cpp
-  stl/string.cpp
 )
 
 TARGET_LINK_LIBRARIES(sys_xeonphi ${CMAKE_THREAD_LIBS_INIT} ${CMAKE_DL_LIBS})

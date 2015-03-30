@@ -17,7 +17,7 @@
 #include "transport/transport_host.h"
 #include "transport_coi/common.h"
 #include "tutorial/obj_loader.h"
-#include "sys/stl/string.h"
+#include "sys/string.h"
 
 #include <source/COIProcess_source.h>
 #include <source/COIEngine_source.h>
@@ -58,7 +58,7 @@ namespace embree
     COIRESULT result;
     result = COIEngineGetHandle( COI_ISA_MIC, 0, &engine );
     if (result != COI_SUCCESS)
-      THROW_RUNTIME_ERROR("Failed to load engine number " + std::stringOf(0) + ": " + COIResultGetName(result));
+      THROW_RUNTIME_ERROR("Failed to load engine number " + std::to_string(0) + ": " + COIResultGetName(result));
     
     /* print info of engine */
     COI_ENGINE_INFO info;

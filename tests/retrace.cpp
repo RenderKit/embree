@@ -234,7 +234,7 @@ namespace embree
         if (tag == "") return;
 
         else if (tag == "-rtcore" && i+1<argc) {
-          g_rtcore += std::stringOf(',') + argv[++i];
+          g_rtcore += std::to_string(',') + argv[++i];
         }
         /* rtcore configuration */
         else if (tag == "-check") {
@@ -642,8 +642,8 @@ namespace embree
 
     if (g_simd_width != 0)
       {
-        rayStreamFileName = g_binaries_path + "ray" + std::stringOf(g_simd_width) + ".bin";
-        rayStreamVerifyFileName = g_binaries_path + "ray" + std::stringOf(g_simd_width) + "_verify.bin";
+        rayStreamFileName = g_binaries_path + "ray" + std::to_string(g_simd_width) + ".bin";
+        rayStreamVerifyFileName = g_binaries_path + "ray" + std::to_string(g_simd_width) + "_verify.bin";
       }
     else
       {
@@ -651,8 +651,8 @@ namespace embree
         for (size_t shift=0;shift<=4;shift++)
           {
             g_simd_width = (size_t)1 << shift;
-            rayStreamFileName = g_binaries_path + "ray" + std::stringOf(g_simd_width) + ".bin";
-            rayStreamVerifyFileName = g_binaries_path + "ray" + std::stringOf(g_simd_width) + "_verify.bin";
+            rayStreamFileName = g_binaries_path + "ray" + std::to_string(g_simd_width) + ".bin";
+            rayStreamVerifyFileName = g_binaries_path + "ray" + std::to_string(g_simd_width) + "_verify.bin";
             if (existsFile( rayStreamFileName )) break;
 
           }

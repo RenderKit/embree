@@ -19,7 +19,7 @@
 #include "sys/platform.h"
 #include "sys/ref.h"
 #include "sys/filename.h"
-#include "sys/stl/string.h"
+#include "sys/string.h"
 
 #include <vector>
 #include <iostream>
@@ -46,8 +46,8 @@ namespace embree
     {
       if (!fileName) return "unknown";
       std::string str = fileName->str;
-      if (lineNumber >= 0) str += " line " + std::stringOf(lineNumber);
-      if (lineNumber >= 0 && colNumber >= 0) str += " character " + std::stringOf(colNumber);
+      if (lineNumber >= 0) str += " line " + std::to_string(lineNumber);
+      if (lineNumber >= 0 && colNumber >= 0) str += " character " + std::to_string(colNumber);
       return str;
     }
 

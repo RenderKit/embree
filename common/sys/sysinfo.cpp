@@ -16,7 +16,7 @@
 
 #include "sysinfo.h"
 #include "intrinsics.h"
-#include "stl/string.h"
+#include "string.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 /// All Platforms
@@ -61,10 +61,10 @@ namespace embree
     int icc_mayor = __INTEL_COMPILER / 100 % 100;
     int icc_minor = __INTEL_COMPILER % 100;
     std::string version = "Intel Compiler ";
-    version += std::stringOf(icc_mayor);
-    version += "." + std::stringOf(icc_minor);
+    version += std::to_string(icc_mayor);
+    version += "." + std::to_string(icc_minor);
 #if defined(__INTEL_COMPILER_UPDATE)
-    version += "." + std::stringOf(__INTEL_COMPILER_UPDATE);
+    version += "." + std::to_string(__INTEL_COMPILER_UPDATE);
 #endif
     return version;
 #elif defined(__clang__)
@@ -72,7 +72,7 @@ namespace embree
 #elif defined (__GNUC__)
     return "GCC " __VERSION__;
 #elif defined(_MSC_VER)
-    std::string version = std::stringOf(_MSC_FULL_VER);
+    std::string version = std::to_string(_MSC_FULL_VER);
     version.insert(4,".");
     version.insert(9,".");
     version.insert(2,".");

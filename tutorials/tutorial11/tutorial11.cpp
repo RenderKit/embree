@@ -113,7 +113,7 @@ namespace embree
     /* parse command line */  
     parseCommandLine(stream, FileName());
     if (g_numThreads) 
-      g_rtcore += ",threads=" + std::stringOf(g_numThreads);
+      g_rtcore += ",threads=" + std::to_string(g_numThreads);
 
     /* initialize ray tracing core */
     init(g_rtcore.c_str());

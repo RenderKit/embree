@@ -15,7 +15,7 @@
 // ======================================================================== //
 
 #include "image.h"
-#include "sys/stl/string.h"
+#include "sys/string.h"
 
 #include <map>
 #include <iostream>
@@ -25,7 +25,7 @@ namespace embree
   /*! loads an image from a file with auto-detection of format */
   Ref<Image> loadImageFromDisk(const FileName& fileName) try
   {
-    std::string ext = std::strlwr(fileName.ext());
+    std::string ext = strlwr(fileName.ext());
 #ifdef USE_OPENEXR
     if (ext == "exr" ) return loadExr(fileName);
 #endif

@@ -22,6 +22,7 @@
 #include "transport/transport_host.h"
 
 #include <map>
+#include <sstream>
 
 /* include GLUT for display */
 #if defined(__MACOSX__)
