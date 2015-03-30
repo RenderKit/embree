@@ -814,3 +814,13 @@ __forceinline void prefetchL2EX(const void* ptr) {
   }
 #endif
 
+/* compiler memory barriers */
+#ifdef __GNUC__
+#  define __memory_barrier() asm volatile("" ::: "memory")
+#elif defined(__MIC__)
+#define __memory_barrier()
+#elif defined(__INTEL_COMPILER)
+//#define __memory_barrier() __memory_barrier()
+#elif  defined(_MSC_VER)
+#  define __memory_barrier() _ReadWriteBarrier()
+#endif
