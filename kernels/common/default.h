@@ -24,7 +24,6 @@
 #include "sys/sync/mutex.h"
 #include "sys/stl/vector.h"
 #include "sys/stl/string.h"
-#include "sys/stl/array2d.h"
 #include "tasking/taskscheduler.h"
 
 #include "math/math.h"
