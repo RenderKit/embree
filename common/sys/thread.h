@@ -19,6 +19,8 @@
 #include "platform.h"
 #include "sync/mutex.h"
 
+#include <vector>
+
 namespace embree
 {
   /*! type for thread */
