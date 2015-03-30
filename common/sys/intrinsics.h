@@ -17,7 +17,6 @@
 #pragma once
 
 #include "platform.h"
-//#include <atomic>
 
 #if defined(__SSE__)
 #include <xmmintrin.h>
@@ -69,8 +68,8 @@
 
 #include <intrin.h>
 
-__forceinline size_t read_tsc()  { //FIXME
-	return 0;
+__forceinline size_t read_tsc()  { // FIXME: use QueryPerformanceCounter
+  return 0;
 }
 
 #if defined(__SSE4_2__)
@@ -366,7 +365,6 @@ __forceinline size_t __btr(size_t v, size_t i) {
   size_t r = 0; asm ("btr %1,%0" : "=r"(r) : "r"(i), "0"(v) : "flags"); return r;
 }
 
-
 __forceinline int bitscan(int v) {
 #if defined(__AVX2__) 
   return _tzcnt_u32(v);
@@ -408,11 +406,7 @@ __forceinline int clz(const int x)
 __forceinline int __bscf(int& v) 
 {
   int i = bitscan(v);
-#if defined(__AVX2__)
   v &= v-1;
-#else
-  v = __btc(v,i);
-#endif
   return i;
 }
 
@@ -426,11 +420,7 @@ __forceinline unsigned int __bscf(unsigned int& v)
 __forceinline size_t __bscf(size_t& v) 
 {
   size_t i = bitscan(v);
-#if defined(__AVX2__)
   v &= v-1;
-#else
-  v = __btc(v,i);
-#endif
   return i;
 }
 

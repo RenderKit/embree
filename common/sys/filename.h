@@ -79,5 +79,4 @@ namespace embree
   private:
     std::string filename;
   };
-
 }
