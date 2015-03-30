@@ -50,7 +50,7 @@ namespace embree
 
     /*! Returns the number of stored triangles. */
     __forceinline size_t size() const {
-      return bitscan(~movemask(valid()));
+      return __bsf(~movemask(valid()));
     }
 
     /*! Returns a hash number for the geometry */
