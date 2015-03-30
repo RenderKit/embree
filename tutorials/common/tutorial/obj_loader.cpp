@@ -15,6 +15,7 @@
 // ======================================================================== //
 
 #include "obj_loader.h"
+#include "texture_loader.h"
 
 #include <fstream>
 #include <iostream>
@@ -277,6 +278,7 @@ namespace embree
   /* load material file */
   void OBJLoader::loadMTL(const FileName &fileName)
   {
+    PING;
     std::ifstream cin;
     cin.open(fileName.c_str());
     if (!cin.is_open()) {
@@ -321,10 +323,20 @@ namespace embree
       if (!strncmp(token, "Ni", 2)) { parseSep(token += 2);  model.materials[cur].obj().Ni = getFloat(token); continue; }
 
       if (!strncmp(token, "Ka_map", 6)) { continue; }
-      if (!strncmp(token, "Kd_map", 6)) { parseSep(token += 6); model.materials[cur].obj().map_Kd_ptex = loadPtex(path + FileName(token)); continue; }
+      if (!strncmp(token, "Kd_map", 6) || !strncmp(token, "map_Kd", 6)) {
+        parseSep(token += 6);
+        //model.materials[cur].obj().map_Kd = loadPtex(path + FileName(token));
+        model.materials[cur].obj().map_Kd = loadTextureFromPNG(path + FileName(token));
+        continue;
+      }
       if (!strncmp(token, "Ks_map", 6)) { continue; }
       if (!strncmp(token, "Tf_map", 6)) { continue; }
-      if (!strncmp(token, "Displ_map", 9)) { parseSep(token += 9); model.materials[cur].obj().map_Displ_ptex = loadPtex(path + FileName(token)); continue; }
+      if (!strncmp(token, "Displ_map", 9) || !strncmp(token, "map_Displ", 9)) {
+        parseSep(token += 9);
+        //model.materials[cur].obj().map_Displ = loadPtex(path + FileName(token));
+        model.materials[cur].obj().map_Displ = loadTextureFromPNG(path + FileName(token));
+        continue;
+      }
       
       if (!strncmp(token, "Ka", 2)) { parseSep(token += 2);  model.materials[cur].obj().Ka = getVec3f(token); continue; }
       if (!strncmp(token, "Kd", 2)) { parseSep(token += 2);  model.materials[cur].obj().Kd = getVec3f(token); continue; }

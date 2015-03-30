@@ -50,8 +50,10 @@ ADD_LIBRARY(tutorial STATIC
     xml_loader.cpp
     obj_loader.cpp
     hair_loader.cpp
+    texture_loader.cpp
     cy_hair_loader.cpp)
-TARGET_LINK_LIBRARIES(tutorial sys lexers ${OPENGL_LIBRARIES} ${GLUT_LIBRARIES} ${PTEX_LIBRARIES})
+TARGET_LINK_LIBRARIES(tutorial sys lexers ${OPENGL_LIBRARIES}
+${GLUT_LIBRARIES} ${PNG_LIBRARIES} ${PTEX_LIBRARIES})
 SET_PROPERTY(TARGET tutorial PROPERTY FOLDER tutorials/common)
 
 IF (WIN32)

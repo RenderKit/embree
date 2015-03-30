@@ -119,7 +119,22 @@ namespace embree
       vector_t<Vec3fa> v2;       //!< hair control points (x,y,z,r)
       std::vector<Hair> hairs;  //!< list of hairs
     };
-    
+
+    struct Texture {
+    enum {
+      RGBA_8bit = 1
+    };
+    int width;
+    int height;    
+    int format;
+    int bytesPerTexel;
+    void *data;
+
+    Texture() : width(-1), height(-1), format(RGBA_8bit), bytesPerTexel(0), data(NULL)
+      {
+      }
+    };
+
     enum MaterialTy { MATERIAL_OBJ, MATERIAL_THIN_DIELECTRIC, MATERIAL_METAL, MATERIAL_VELVET, MATERIAL_DIELECTRIC, MATERIAL_METALLIC_PAINT, MATERIAL_MATTE, MATERIAL_MIRROR, MATERIAL_REFLECTIVE_METAL };
 
     struct MatteMaterial
@@ -164,15 +179,15 @@ namespace embree
     {
     public:
       OBJMaterial ()
-      : ty(MATERIAL_OBJ), illum(0), d(1.f), Ns(1.f), Ni(1.f), Ka(0.f), Kd(1.f), Ks(0.f), Tf(1.f), map_Kd_ptex(NULL), map_Displ_ptex(NULL) {};
+      : ty(MATERIAL_OBJ), illum(0), d(1.f), Ns(1.f), Ni(1.f), Ka(0.f), Kd(1.f), Ks(0.f), Tf(1.f), map_Kd(NULL), map_Displ(NULL) {};
 
       OBJMaterial (float d, const Vec3fa& Kd, const Vec3fa& Ks, const float Ns)
-      : ty(MATERIAL_OBJ), illum(0), d(d), Ns(Ns), Ni(1.f), Ka(0.f), Kd(Kd), Ks(Ks), Tf(1.f), map_Kd_ptex(NULL), map_Displ_ptex(NULL) {}
+      : ty(MATERIAL_OBJ), illum(0), d(d), Ns(Ns), Ni(1.f), Ka(0.f), Kd(Kd), Ks(Ks), Tf(1.f), map_Kd(NULL), map_Displ(NULL) {}
 
       ~OBJMaterial() { // FIXME: destructor never called!
 #if defined(USE_PTEX)
-        if (map_Displ_ptex) map_Displ_ptex->release();  
-        if (map_Kd_ptex) map_Kd_ptex->release();  
+        //if (map_Displ) map_Displ_ptex->release();  
+        //if (map_Kd) map_Kd_ptex->release();  
 #endif
       }
       
@@ -190,11 +205,11 @@ namespace embree
       Vec3fa Ks;              /*< specular reflectivity */
       Vec3fa Tf;              /*< transmission filter */
 #if defined(USE_PTEX)
-      PtexFilter* map_Kd_ptex;  /*< ptex Kd map */
-      PtexFilter* map_Displ_ptex;   /*< ptex displacement */
+      PtexFilter* map_Kd;  /*< ptex Kd map */
+      PtexFilter* map_Displ;   /*< ptex displacement */
 #else
-      void* map_Kd_ptex;       /*< dummy */
-      void* map_Displ_ptex;       /*< dummy */
+      Texture* map_Kd;       /*< dummy */
+      Texture* map_Displ;       /*< dummy */
 #endif
     };
 
