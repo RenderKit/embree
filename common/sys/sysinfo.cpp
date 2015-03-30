@@ -113,7 +113,20 @@ namespace embree
     if (model == 0x2C) return CPU_CORE_NEHALEM;      // Core i7, Xeon
     if (model == 0x2E) return CPU_CORE_NEHALEM;      // Core i7, Xeon
     if (model == 0x2A) return CPU_CORE_SANDYBRIDGE;  // Core i7, SandyBridge
+    if (model == 0x2D) return CPU_CORE_SANDYBRIDGE;  // Core i7, SandyBridge
+    // FIXME: add Haswell
     return CPU_UNKNOWN;
+  }
+
+  std::string stringOfCPUModel(CPUModel model)
+  {
+    switch (model) {
+    case CPU_CORE1           : return "Core1";
+    case CPU_CORE2           : return "Core2";
+    case CPU_CORE_NEHALEM    : return "Nehalem";
+    case CPU_CORE_SANDYBRIDGE: return "SandyBridge";
+    default                  : return "Unknown CPU";
+    }
   }
 
   /* cpuid[eax=0].ecx */
@@ -177,7 +190,8 @@ namespace embree
 
   int getCPUFeatures()
   {
-    if (cpu_features) return cpu_features;
+    if (cpu_features) 
+      return cpu_features;
     
     int info[4]; 
     __cpuid(info, 0x00000000);
@@ -223,6 +237,10 @@ namespace embree
     cpu_features |= CPU_FEATURE_KNC;
 #endif
     return cpu_features;
+  }
+
+  void setCPUFeatures(int features) {
+    cpu_features = features;
   }
   
   std::string stringOfCPUFeatures(int features)
@@ -278,13 +296,6 @@ namespace embree
     GetSystemInfo(&sysinfo);
     return sysinfo.dwNumberOfProcessors;
 #endif
-  }
-
-  size_t getNumberOfCores() {
-    static int nCores = -1;
-    if (nCores == -1) nCores = getNumberOfLogicalThreads(); // FIXME: detect if hyperthreading is enabled
-    if (nCores ==  0) nCores = 1;
-    return nCores;
   }
 
   int getTerminalWidth() 
@@ -365,13 +376,6 @@ namespace embree
     static int nThreads = -1;
     if (nThreads == -1) nThreads = sysconf(_SC_NPROCESSORS_CONF);
     return nThreads;
-  }
-
-  size_t getNumberOfCores() {
-    static int nCores = -1;
-    if (nCores == -1) nCores = sysconf(_SC_NPROCESSORS_CONF)/2; // FIXME: detect if hyperthreading is enabled
-    if (nCores ==  0) nCores = 1;
-    return nCores;
   }
 
   int getTerminalWidth() 

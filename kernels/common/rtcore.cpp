@@ -303,17 +303,17 @@ namespace embree
         else if (tok == "isa" && parseSymbol (cfg,'=',pos)) 
 	{
 	  std::string isa = parseIdentifier (cfg,pos);
-	  if      (isa == "sse" ) cpu_features = SSE;
-	  else if (isa == "sse2") cpu_features = SSE2;
-	  else if (isa == "sse3") cpu_features = SSE3;
-	  else if (isa == "ssse3") cpu_features = SSSE3;
-	  else if (isa == "sse41") cpu_features = SSE41;
-	  else if (isa == "sse4.1") cpu_features = SSE41;
-	  else if (isa == "sse42") cpu_features = SSE42;
-	  else if (isa == "sse4.2") cpu_features = SSE42;
-	  else if (isa == "avx") cpu_features = AVX;
-	  else if (isa == "avxi") cpu_features = AVXI;
-	  else if (isa == "avx2") cpu_features = AVX2;
+	  if      (isa == "sse" ) setCPUFeatures(SSE);
+	  else if (isa == "sse2") setCPUFeatures(SSE2);
+	  else if (isa == "sse3") setCPUFeatures(SSE3);
+	  else if (isa == "ssse3") setCPUFeatures(SSSE3);
+	  else if (isa == "sse41") setCPUFeatures(SSE41);
+	  else if (isa == "sse4.1") setCPUFeatures(SSE41);
+	  else if (isa == "sse42") setCPUFeatures(SSE42);
+	  else if (isa == "sse4.2") setCPUFeatures(SSE42);
+	  else if (isa == "avx") setCPUFeatures(AVX);
+	  else if (isa == "avxi") setCPUFeatures(AVXI);
+	  else if (isa == "avx2") setCPUFeatures(AVX2);
 	}
 
         else if ((tok == "tri_accel" || tok == "accel") && parseSymbol (cfg,'=',pos))
@@ -386,8 +386,9 @@ namespace embree
       std::cout << "Embree Ray Tracing Kernels " << __EMBREE_VERSION__ << " (" << __DATE__ << ")" << std::endl;
       std::cout << "  Compiler : " << getCompilerName() << std::endl;
       std::cout << "  Platform : " << getPlatformName() << std::endl;
-      std::cout << "  CPU      : " << stringOfCPUFeatures(getCPUFeatures()) << std::endl;
-      std::cout << "  Features : ";
+      std::cout << "  CPU      : " << stringOfCPUModel(getCPUModel()) << " (" << getCPUVendor() << ")" << std::endl;
+      std::cout << "  ISA      : " << stringOfCPUFeatures(getCPUFeatures()) << std::endl;
+      std::cout << "  Config   : ";
 #if defined(TASKING_TBB)
       std::cout << "tbb ";
 #endif
