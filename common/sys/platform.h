@@ -341,26 +341,3 @@ namespace embree
   }
 }
 
-#if defined(__MIC__)
-#define isa knc
-#elif defined (__AVX2__)
-#define isa avx2
-#elif defined(__AVXI__)
-#define isa avxi
-#elif defined(__AVX__)
-#define isa avx
-#elif defined (__SSE4_2__)
-#define isa sse42
-#elif defined (__SSE4_1__)
-#define isa sse41
-#elif defined(__SSSE3__)
-#define isa ssse3
-#elif defined(__SSE3__)
-#define isa sse3
-#elif defined(__SSE2__)
-#define isa sse2
-#elif defined(__SSE__)
-#define isa sse
-#else 
-#error Unknown ISA
-#endif
