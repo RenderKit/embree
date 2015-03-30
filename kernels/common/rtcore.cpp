@@ -390,7 +390,7 @@ namespace embree
       std::cout << "  ISA      : " << stringOfCPUFeatures(getCPUFeatures()) << std::endl;
       std::cout << "  Config   : ";
 #if defined(TASKING_TBB)
-      std::cout << "tbb ";
+      std::cout << "TBB ";
 #endif
 #if defined(TASKING_TBB_INTERNAL)
       std::cout << "internal_tasking_system ";
