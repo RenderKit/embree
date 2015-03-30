@@ -17,6 +17,7 @@
 #pragma once
 
 #include "sys/platform.h"
+#include "sys/constants.h"
 #include "sys/intrinsics.h"
 //#include "sse_mic.h"
 

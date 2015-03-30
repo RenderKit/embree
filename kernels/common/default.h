@@ -17,6 +17,8 @@
 #pragma once
 
 #include "sys/platform.h"
+#include "sys/constants.h"
+#include "sys/alloc.h"
 #include "sys/ref.h"
 #include "sys/intrinsics.h"
 #include "sys/sysinfo.h"

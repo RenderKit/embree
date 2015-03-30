@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include "platform.h"
+
 namespace embree
 {
 #define ALIGN_PTR(ptr,alignment) \

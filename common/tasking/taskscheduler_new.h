@@ -17,6 +17,7 @@
 #pragma once
 
 #include "sys/platform.h"
+#include "sys/alloc.h"
 #include "tasking/taskscheduler.h"
 #include "../../kernels/algorithms/range.h"
 
