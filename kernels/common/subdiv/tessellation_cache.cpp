@@ -23,13 +23,12 @@ namespace embree
 
   void resizeTessellationCache(const size_t new_size)
   {
-    if(new_size <= 1024 * 1024)
-      FATAL("tessellation cache size is too small");
+    if (new_size <= 1024 * 1024)
+      THROW_RUNTIME_ERROR("tessellation cache size is too small");
 
-    if (SharedLazyTessellationCache::sharedLazyTessellationCache.getSize() != new_size)
-      {
-	SharedLazyTessellationCache::sharedLazyTessellationCache.realloc(new_size);
-      }
+    if (SharedLazyTessellationCache::sharedLazyTessellationCache.getSize() != new_size) {
+      SharedLazyTessellationCache::sharedLazyTessellationCache.realloc(new_size);
+    }
   }
 
   void clearTessellationCache()
@@ -87,7 +86,7 @@ namespace embree
 
 	assert( threadWorkState );
 	if (!threadWorkState)
-	  FATAL("realloc threadWorkState");
+          THROW_RUNTIME_ERROR("realloc threadWorkState");
       }    
     mtx_threads.unlock();
     return id;

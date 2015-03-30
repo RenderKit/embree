@@ -60,9 +60,8 @@ namespace embree
     VirtualFree(ptr,0,MEM_RELEASE);
   }
 
-  void *os_realloc (void* ptr, size_t bytesNew, size_t bytesOld)
-  {
-    FATAL("not implemented");
+  void* os_realloc (void* ptr, size_t bytesNew, size_t bytesOld) {
+    NOT_IMPLEMENTED;
   }
 
   double getSeconds() {
@@ -172,12 +171,11 @@ namespace embree
     }
     return ptr;
 #else
-    FATAL("not implemented");
+    NOT_IMPLEMENTED;
     return NULL;
 #endif
 
   }
-
 
 #if defined(__MIC__)
 

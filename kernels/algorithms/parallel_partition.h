@@ -293,11 +293,7 @@ namespace embree
       {
         for (size_t i=begin;i<end;i++)
           if (!cmp(array[i]))
-            {
-              DBG_PRINT(i);
-              DBG_PRINT(array[i]);
-              FATAL("partition error on left side");
-            }
+            THROW_RUNTIME_ERROR("partition error on left side");
       }
 
       /* check right part of array */
@@ -305,11 +301,7 @@ namespace embree
       {
         for (size_t i=begin;i<end;i++)
           if (cmp(array[i]))
-            {
-              DBG_PRINT(i);
-              DBG_PRINT(array[i]);
-              FATAL("partition error on right side");
-            }
+              THROW_RUNTIME_ERROR("partition error on right side");
       }
 
     public:

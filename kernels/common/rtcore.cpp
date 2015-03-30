@@ -648,7 +648,7 @@ namespace embree
 
 #if defined(__MIC__)
     if (unlikely(numThreads % 4 != 0 && numThreads != 1)) 
-      FATAL("MIC requires numThreads % 4 == 0 in rtcCommitThread");
+      process_error(RTC_INVALID_OPERATION,"MIC requires numThreads % 4 == 0 in rtcCommitThread");
 #endif
     
     ((Scene*)scene)->build(threadID,numThreads);

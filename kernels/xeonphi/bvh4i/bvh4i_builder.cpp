@@ -235,7 +235,7 @@ namespace embree
   void BVH4iBuilder::build(const size_t threadIndex, const size_t threadCount) 
   {
     if (threadIndex != 0) {
-      FATAL("threadIndex != 0");
+      THROW_RUNTIME_ERROR("threadIndex != 0");
     }
 
     const size_t totalNumPrimitives = getNumPrimitives();
@@ -397,7 +397,7 @@ namespace embree
 #if DEBUG
 		for (size_t k=0;k<3;k++)
 		  if (!(isfinite( mesh->vertex( tri.v[k] ).x) && isfinite( mesh->vertex( tri.v[k] ).y) && isfinite( mesh->vertex( tri.v[k] ).z)))
-		    FATAL("!isfinite in vertex for tri.v[k]");
+		    THROW_RUNTIME_ERROR("!isfinite in vertex for tri.v[k]");
 
 #endif
 
@@ -468,7 +468,7 @@ namespace embree
 #if DEBUG
     for (size_t k=0;k<3;k++)
       if (!(isfinite( mesh->vertex( tri.v[k] ).x) && isfinite( mesh->vertex( tri.v[k] ).y) && isfinite( mesh->vertex( tri.v[k] ).z)))
-	FATAL("!isfinite in vertex for tri.v[k]");
+	THROW_RUNTIME_ERROR("!isfinite in vertex for tri.v[k]");
 #endif
 
     const mic_f tri_accel = initTriangle1(v[0],v[1],v[2],gID,pID,mic_i(mesh->mask));
@@ -991,7 +991,7 @@ namespace embree
   void BVH4iBuilder::checkLeafNode(const BVH4i::NodeRef &ref, const BBox3fa &bounds)
   {
     if (!ref.isLeaf())
-      FATAL("no leaf");
+      THROW_RUNTIME_ERROR("no leaf");
 
     unsigned int accel_entries = ref.items();
     unsigned int accel_offset  = ref.offsetIndex();
@@ -1007,7 +1007,7 @@ namespace embree
       {
 	DBG_PRINT(bounds);
 	DBG_PRINT(leaf_prim_bounds);
-	FATAL("checkLeafNode");
+	THROW_RUNTIME_ERROR("checkLeafNode");
       }
 
   }
@@ -1032,7 +1032,7 @@ namespace embree
 	    DBG_PRINT(current);
 	    DBG_PRINT(i);
 	    DBG_PRINT(prims[i]);
-	    FATAL("check build record => subset");
+	    THROW_RUNTIME_ERROR("check build record => subset");
 	  }
       }
 
@@ -1042,7 +1042,7 @@ namespace embree
 	DBG_PRINT(current);
 	DBG_PRINT(check_box);
 	DBG_PRINT(box);
-	FATAL("check build record => subset(check_box,box) && subset(box,check_box)");
+	THROW_RUNTIME_ERROR("check build record => subset(check_box,box) && subset(box,check_box)");
       }
 #endif
   }
@@ -1191,7 +1191,7 @@ namespace embree
       if (!local_workStack[i].isEmpty())
 	{
 	  DBG_PRINT(i);
-	  FATAL("local_workStack[i].size() != 0");
+	  THROW_RUNTIME_ERROR("local_workStack[i].size() != 0");
 	}
 #endif    
 

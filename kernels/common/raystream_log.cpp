@@ -74,7 +74,7 @@ namespace embree
     FileName geometry_filename = path + DEFAULT_FILENAME_GEOMETRY;
     geometryData.open(geometry_filename.c_str(),std::ios::out | std::ios::binary);
     geometryData.seekp(0, std::ios::beg);
-    if (!geometryData) FATAL("could not dump geometry data to file");
+    if (!geometryData) THROW_RUNTIME_ERROR("could not dump geometry data to file");
     scene->write(geometryData);
     geometryData.close();
   }

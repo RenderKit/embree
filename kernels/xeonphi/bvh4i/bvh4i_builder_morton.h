@@ -231,7 +231,7 @@ namespace embree
     {
       const unsigned int currentIndex = atomicID.add(size);
       if (unlikely(currentIndex >= numAllocatedNodes)) {
-        FATAL("not enough nodes allocated");
+        THROW_RUNTIME_ERROR("not enough nodes allocated");
       }
       return currentIndex;
     }
@@ -414,7 +414,7 @@ namespace embree
     {
       const unsigned int currentIndex = atomicID.add(size);
       if (unlikely(currentIndex >= numAllocatedNodes)) {
-        FATAL("not enough nodes allocated");
+        THROW_RUNTIME_ERROR("not enough nodes allocated");
       }
       return currentIndex;
     }

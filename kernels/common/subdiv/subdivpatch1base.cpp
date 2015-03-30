@@ -159,7 +159,7 @@ namespace embree
   void SubdivPatch1Base::evalToOBJ(Scene *scene,size_t &vertex_index, size_t &numTotalTriangles)
   {
 #if defined(__MIC__)
-    FATAL("EVALTOOBJ NOT SUPPORTED ON MIC");
+    THROW_RUNTIME_ERROR("EVALTOOBJ NOT SUPPORTED ON MIC");
 #else
 
 #if !defined(_MSC_VER) || defined(__INTEL_COMPILER)

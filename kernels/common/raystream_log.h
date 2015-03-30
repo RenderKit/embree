@@ -62,11 +62,9 @@ namespace embree
         data.open(filename.c_str(),std::ios::out | std::ios::binary);
         data.seekp(0, std::ios::beg);
         
-        if (!data)
-          {
-            DBG_PRINT(filename);
-            FATAL("could not open data stream");
-          }
+        if (!data) {
+          THROW_RUNTIME_ERROR("could not open file: "+filename);
+        }
       }
       
     public:
