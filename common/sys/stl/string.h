@@ -18,10 +18,6 @@
 
 #include "../platform.h"
 
-#include <stdio.h>
-#include <string>
-#include <cstring>
-#include <string.h>
 #include <sstream>
 
 namespace std
