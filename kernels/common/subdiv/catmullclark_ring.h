@@ -378,7 +378,7 @@ namespace embree
     /* returns true if the vertex can be part of a dicable gregory patch (using gregory patches) */
     __forceinline bool isGregoryOrFinal(const size_t depth) const 
     {
-      if (depth < 10)
+      if (depth < 10)      
       //if (vertex_level > 1.0f) 
       {
 	if (vertex_crease_weight > 0.0f) 
