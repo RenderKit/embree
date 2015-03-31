@@ -699,7 +699,7 @@ float noise(float x, float y, float z)
     /* parse command line */  
     parseCommandLine(stream, FileName());
     if (g_numThreads) 
-      g_rtcore += ",threads=" + std::to_string(g_numThreads);
+      g_rtcore += ",threads=" + std::to_string((long long)g_numThreads);
 
     /* subdiv mode */
     g_rtcore += g_subdiv_mode;
