@@ -97,6 +97,7 @@ namespace embree
       std::cout.precision(10);
       std::cout << "-vp " << g_camera.from.x    << " " << g_camera.from.y    << " " << g_camera.from.z    << " " << std::endl
                 << "-vi " << g_camera.to.x << " " << g_camera.to.y << " " << g_camera.to.z << " " << std::endl
+                << "-vd " << g_camera.to.x-g_camera.from.x << " " << g_camera.to.y-g_camera.from.y << " " << g_camera.to.z-g_camera.from.z << " " << std::endl
                 << "-vu " << g_camera.up.x     << " " << g_camera.up.y     << " " << g_camera.up.z     << " " << std::endl
                 << "-fov " << g_camera.fov << std::endl;
       break;

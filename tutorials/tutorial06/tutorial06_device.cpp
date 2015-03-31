@@ -474,7 +474,10 @@ inline DielectricLayerLambertian make_DielectricLayerLambertian(const Vec3fa& T,
     //if (material->map_Ka) { brdf.Ka *= material->map_Ka->get(dg.st); }
     brdf.Kd = d * Vec3fa(material->Kd);  
     //if (material->map_Kd_ptex) brdf.Kd *= getPtexTexel3f(material->map_Kd_ptex,dg.primID,dg.u,dg.v);
-    if (material->map_Kd) brdf.Kd *= getTextureTexel3f(material->map_Kd,dg.u,dg.v);
+    if (material->map_Kd) 
+      {
+	brdf.Kd = getTextureTexel3f(material->map_Kd,dg.u,dg.v);	
+      }
     //if (material->map_Kd) brdf.Kd *= material->map_Kd->get(dg.st);  
     brdf.Ks = d * Vec3fa(material->Ks);  
     //if (material->map_Ks) brdf.Ks *= material->map_Ks->get(dg.st); 
@@ -1142,7 +1145,12 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
   Medium medium = make_Medium_Vacuum();
 
   /* initialize ray */
-  RTCRay ray = RTCRay(p,normalize(x*vx + y*vy + vz),0.0f,inf);
+
+  const float sx = frand(state);
+  const float sy = frand(state);
+
+  RTCRay ray = RTCRay(p,normalize((x+sx)*vx + (y+sy)*vy + vz),0.0f,inf);
+
 
   /* iterative path tracer loop */
   for (int i=0; i<8; i++)
@@ -1180,6 +1188,7 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
     dg.u = ray.u;
     dg.v = ray.v;
 
+
     dg.P  = ray.org+ray.tfar*ray.dir;
     dg.Ng = face_forward(ray.dir,normalize(ray.Ng));
     //Vec3fa _Ns = interpolate_normal(ray);
@@ -1193,7 +1202,12 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
     if (geomID_to_type[ray.geomID] == 0)
       materialID = ((ISPCMesh*) geomID_to_mesh[ray.geomID])->triangles[ray.primID].materialID; 
     else if (geomID_to_type[ray.geomID] == 1)                             
-      materialID = ((ISPCSubdivMesh*) geomID_to_mesh[ray.geomID])->materialID; 
+      {
+	materialID = ((ISPCSubdivMesh*) geomID_to_mesh[ray.geomID])->materialID; 
+	const Vec2f st = getTextureCoordinatesSubdivMesh((ISPCSubdivMesh*) geomID_to_mesh[ray.geomID],ray.primID,ray.u,ray.v);
+	dg.u = st.x;
+	dg.v = st.y;
+      }
     else
       materialID = ((ISPCMesh*) geomID_to_mesh[ray.geomID])->meshMaterialID; 
 #else 
@@ -1205,8 +1219,8 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
       if (geomID >= 0 && geomID < g_ispc_scene->numMeshes+g_ispc_scene->numSubdivMeshes) { // FIXME: workaround for ISPC bug
 	if (geomID_to_type[geomID] == 0) 
 	  materialID = ((ISPCMesh*) geomID_to_mesh[geomID])->triangles[ray.primID].materialID; 
-	else if (geomID_to_type[geomID] == 1)                             
-	  materialID = ((ISPCSubdivMesh*) geomID_to_mesh[geomID])->materialID; 
+	else if (geomID_to_type[geomID] == 1)                             	
+	    materialID = ((ISPCSubdivMesh*) geomID_to_mesh[geomID])->materialID; 
 	else 
 	  materialID = ((ISPCMesh*) geomID_to_mesh[geomID])->meshMaterialID;         
       }

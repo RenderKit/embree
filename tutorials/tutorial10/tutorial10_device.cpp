@@ -374,8 +374,7 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
   OBJMaterial* material = (OBJMaterial*)&g_ispc_scene->materials[materialID];
   if (material->map_Kd) 
     {
-      Vec2f st = getTextureCoordinatesSubdivMesh(mesh,ray.primID,ray.u,ray.v);
-      
+      const Vec2f st = getTextureCoordinatesSubdivMesh(mesh,ray.primID,ray.u,ray.v);      
       color *= getTextureTexel3f(material->map_Kd,st.x,st.y);
     }
       
