@@ -173,8 +173,8 @@ namespace embree
   static tls_t g_error = NULL; // FIXME: use thread local
   static std::vector<RTCError*> g_errors; // FIXME: use thread local
   static MutexSys g_errors_mutex;
-  static RTC_ERROR_FUNCTION g_error_function = NULL;
-  static RTC_MEMORY_MONITOR_FUNCTION g_memory_monitor_function = NULL;
+  static RTCErrorFunc g_error_function = NULL;
+  static RTCMemoryMonitorFunc g_memory_monitor_function = NULL;
 
   void memoryMonitor(ssize_t bytes, bool post)
   {
@@ -569,11 +569,11 @@ namespace embree
     return error;
   }
 
-  RTCORE_API void rtcSetErrorFunction(RTC_ERROR_FUNCTION func) {
+  RTCORE_API void rtcSetErrorFunction(RTCErrorFunc func) {
     g_error_function = func;
   }
 
-  RTCORE_API void rtcSetMemoryMonitorFunction(RTC_MEMORY_MONITOR_FUNCTION func) {
+  RTCORE_API void rtcSetMemoryMonitorFunction(RTCMemoryMonitorFunc func) {
     g_memory_monitor_function = func;
   }
 
@@ -609,7 +609,7 @@ namespace embree
     return NULL;
   }
 
-  RTCORE_API void rtcSetProgressMonitorFunction(RTCScene scene, RTC_PROGRESS_MONITOR_FUNCTION func, void* ptr) 
+  RTCORE_API void rtcSetProgressMonitorFunction(RTCScene scene, RTCProgressMonitorFunc func, void* ptr) 
   {
     CATCH_BEGIN;
     TRACE(rtcSetProgressMonitorFunction);

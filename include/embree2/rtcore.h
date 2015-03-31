@@ -108,17 +108,19 @@ enum RTCError {
 RTCORE_API RTCError rtcGetError();
 
 /*! \brief Type of error callback function. */
-typedef void (*RTC_ERROR_FUNCTION)(const RTCError code, const char* str);
+typedef void (*RTCErrorFunc)(const RTCError code, const char* str);
+RTCORE_DEPRECATED typedef RTCErrorFunc RTC_ERROR_FUNCTION;
 
 /*! \brief Sets a callback function that is called whenever an error occurs. */
-RTCORE_API void rtcSetErrorFunction(RTC_ERROR_FUNCTION func);
+RTCORE_API void rtcSetErrorFunction(RTCErrorFunc func);
 
 /*! \brief Type of memory consumption callback function. */
-typedef bool (*RTC_MEMORY_MONITOR_FUNCTION)(const ssize_t bytes, const bool post);
+typedef bool (*RTCMemoryMonitorFunc)(const ssize_t bytes, const bool post);
+RTCORE_DEPRECATED typedef RTCMemoryMonitorFunc RTC_MEMORY_MONITOR_FUNCTION;
 
 /*! \brief Sets the memory consumption callback function which is
  *  called before or after the library allocates or frees memory. */
-RTCORE_API void rtcSetMemoryMonitorFunction(RTC_MEMORY_MONITOR_FUNCTION func);
+RTCORE_API void rtcSetMemoryMonitorFunction(RTCMemoryMonitorFunc func);
 
 /*! \brief Implementation specific (do not call).
 

@@ -237,11 +237,11 @@ namespace embree
 #endif
     
   public:
-    RTC_PROGRESS_MONITOR_FUNCTION progress_monitor_function;
+    RTCProgressMonitorFunc progress_monitor_function;
     void* progress_monitor_ptr;
     atomic_t progress_monitor_counter;
     void progressMonitor(double nprims);
-    void setProgressMonitorFunction(RTC_PROGRESS_MONITOR_FUNCTION func, void* ptr);
+    void setProgressMonitorFunction(RTCProgressMonitorFunc func, void* ptr);
 
   public:
     atomic_t numTriangles;             //!< number of enabled triangles
