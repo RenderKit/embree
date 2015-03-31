@@ -23,6 +23,7 @@ FIND_PACKAGE(ImageMagick COMPONENTS Magick++)
 MARK_AS_ADVANCED(
   ImageMagick_EXECUTABLE_DIR
   ImageMagick_Magick++_INCLUDE_DIR
+  ImageMagick_Magick++_ARCH_INCLUDE_DIR
   ImageMagick_Magick++_LIBRARY
 )
 CMAKE_DEPENDENT_OPTION(USE_IMAGE_MAGICK "Enables BMP, GIF, PNG, TGA, TIFF image codecs." OFF "IMAGEMAGICK_FOUND" OFF)
