@@ -23,7 +23,7 @@ namespace embree
   class __aligned(64) CatmullClarkPatch
   {
   public:
-    CatmullClark1Ring ring[4];
+    array_t<CatmullClark1Ring,4> ring;
 
     __forceinline CatmullClarkPatch () {}
 
@@ -98,6 +98,7 @@ namespace embree
 					   CatmullClark1Ring& dest0,
 					   CatmullClark1Ring& dest1) 
     {
+      assert(p1.face_valence > 2);
       dest1.vertex_level = dest0.vertex_level = p0.edge_level;
       dest1.face_valence = dest0.face_valence = 4;
       dest1.edge_valence = dest0.edge_valence = 8;
@@ -204,7 +205,7 @@ namespace embree
       //////////////////////////////
     }
 
-    void subdivide(CatmullClarkPatch patch[4]) const
+    void subdivide(array_t<CatmullClarkPatch,4>& patch) const
     {
       ring[0].subdivide(patch[0].ring[0]);
       ring[1].subdivide(patch[1].ring[1]);
@@ -231,22 +232,26 @@ namespace embree
       patch[3].ring[2].edge_level = 0.5f*ring[2].edge_level;
       patch[3].ring[3].edge_level = 0.5f*ring[3].edge_level;
 
-      if (likely(ring[0].has_last_face()))
+      const bool regular0 = ring[0].has_last_face() && ring[1].face_valence > 2;
+      if (likely(regular0))
         init_regular(patch[0].ring[0],patch[1].ring[1],patch[0].ring[1],patch[1].ring[0]);
       else
         init_border(patch[0].ring[0],patch[1].ring[1],patch[0].ring[1],patch[1].ring[0]);
 
-      if (likely(ring[1].has_last_face()))
+      const bool regular1 = ring[1].has_last_face() && ring[2].face_valence > 2;
+      if (likely(regular1))
         init_regular(patch[1].ring[1],patch[2].ring[2],patch[1].ring[2],patch[2].ring[1]);
       else
         init_border(patch[1].ring[1],patch[2].ring[2],patch[1].ring[2],patch[2].ring[1]);
 
-      if (likely(ring[2].has_last_face()))
+      const bool regular2 = ring[2].has_last_face() && ring[3].face_valence > 2;
+      if (likely(regular2))
         init_regular(patch[2].ring[2],patch[3].ring[3],patch[2].ring[3],patch[3].ring[2]);
       else
         init_border(patch[2].ring[2],patch[3].ring[3],patch[2].ring[3],patch[3].ring[2]);
 
-      if (likely(ring[3].has_last_face()))
+      const bool regular3 = ring[3].has_last_face() && ring[0].face_valence > 2;
+      if (likely(regular3))
         init_regular(patch[3].ring[3],patch[0].ring[0],patch[3].ring[0],patch[0].ring[3]);
       else
         init_border(patch[3].ring[3],patch[0].ring[0],patch[3].ring[0],patch[0].ring[3]);
@@ -372,7 +377,7 @@ namespace embree
   {
   public:
     static const size_t SIZE = SubdivMesh::MAX_VALENCE;
-    GeneralCatmullClark1Ring ring[SIZE];
+    array_t<GeneralCatmullClark1Ring,SIZE> ring;
     size_t N;
 
     __forceinline GeneralCatmullClarkPatch () 
@@ -403,6 +408,7 @@ namespace embree
 					   CatmullClark1Ring& dest0,
 					   CatmullClark1Ring& dest1) 
     {
+      assert(p1.face_valence > 2);
       dest1.vertex_level = dest0.vertex_level = p0.edge_level;
       dest1.face_valence = dest0.face_valence = 4;
       dest1.edge_valence = dest0.edge_valence = 8;
@@ -453,7 +459,7 @@ namespace embree
       dest1.crease_weight[2] = dest0.crease_weight[1] = p0.crease_weight[0];
     }
 
-    static __forceinline void init_regular(const Vec3fa_t &center, const Vec3fa_t center_ring[2*SIZE], const float vertex_level, const size_t N, const size_t offset, CatmullClark1Ring &dest)
+    static __forceinline void init_regular(const Vec3fa_t &center, const array_t<Vec3fa_t,2*SIZE>& center_ring, const float vertex_level, const size_t N, const size_t offset, CatmullClark1Ring &dest)
     {
       assert(N<CatmullClark1Ring::MAX_FACE_VALENCE);
       assert(2*N<CatmullClark1Ring::MAX_EDGE_VALENCE);
@@ -475,7 +481,7 @@ namespace embree
         dest.crease_weight[i] = 0.0f;
     }
  
-    __noinline void subdivide(CatmullClarkPatch patch[SIZE], size_t& N_o) const
+    __noinline void subdivide(array_t<CatmullClarkPatch,SIZE>& patch, size_t& N_o) const
     {
       N_o = N;
       assert( N );
@@ -490,15 +496,16 @@ namespace embree
       }
       assert(N < 2*SIZE);
       Vec3fa_t center = Vec3fa_t(0.0f);
-      Vec3fa_t center_ring[2*SIZE];
+      array_t<Vec3fa_t,2*SIZE> center_ring;
       float center_vertex_level = 2.0f; // guarantees that irregular vertices get always isolated also for non-quads
 
       for (size_t i=0; i<N; i++)
       {
         size_t ip1 = (i+1)%N; // FIXME: %
         size_t im1 = (i+N-1)%N; // FIXME: %
-        if (likely(ring[i].has_last_face())) init_regular(patch[i].ring[0],patch[ip1].ring[0],patch[i].ring[1],patch[ip1].ring[3]); 
-        else                                 init_border (patch[i].ring[0],patch[ip1].ring[0],patch[i].ring[1],patch[ip1].ring[3]);
+        bool regular = ring[i].has_last_face() && ring[ip1].face_valence > 2;
+        if (likely(regular)) init_regular(patch[i].ring[0],patch[ip1].ring[0],patch[i].ring[1],patch[ip1].ring[3]); 
+        else                 init_border (patch[i].ring[0],patch[ip1].ring[0],patch[i].ring[1],patch[ip1].ring[3]);
 
 	assert( patch[i].ring[1].hasValidPositions() );
 	assert( patch[ip1].ring[3].hasValidPositions() );
@@ -515,7 +522,7 @@ namespace embree
 
       for (size_t i=0; i<N; i++) {
         init_regular(center,center_ring,center_vertex_level,N,2*i,patch[i].ring[2]);
-
+        
 	assert( patch[i].ring[2].hasValidPositions() );
       }
     }

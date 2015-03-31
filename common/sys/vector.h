@@ -16,132 +16,153 @@
 
 #pragma once
 
-#include <stdio.h>
-#include <assert.h>
-
-#include "platform.h"
 #include "alloc.h"
-#include "ref.h" 
 
 namespace embree
 {
-  template<class T>
-    class vector_t : public RefCount
+  template<typename T>
+    class vector_t
     {
     public:
 
-      vector_t () : m_size(0), alloced(0), t(NULL) {}
+      vector_t () 
+        : size_active(0), size_alloced(0), items(NULL) {}
 
-      void clear() {
-        if (t) {
-          alignedFree(t);
-        }
-        m_size = alloced = 0;
-        t = NULL;
-      };
+      vector_t (size_t sz) 
+        : size_active(0), size_alloced(0), items(NULL) { resize(sz); }
 
-      vector_t(size_t sz) {
-        m_size = 0; alloced = 0; t = NULL;
-        if (sz) resize(sz);
-      }
-
-      vector_t(const vector_t<T> &other)
-      {
-        m_size = other.m_size;
-        alloced = other.alloced;
-        t = (T*)alignedMalloc(alloced*sizeof(T),64);
-        for (size_t i=0; i<m_size; i++) t[i] = other.t[i];
-      }
-      
       ~vector_t() {
         clear();
       }
 
-      inline bool empty() const { return m_size == 0; }
-      inline size_t size() const { return m_size; };
-
-      T* begin() const { return t; };
-      T* end() const { return t+m_size; };
-
-	  __forceinline       T* data()       { return t; };
-	  __forceinline const T* data() const { return t; };
-
-
-      inline T& front() const { return t[0]; };
-      inline T& back () const { return t[m_size-1]; };
-
-      void push_back(const T &nt) {
-        T v = nt; // need local copy as input reference could point to this vector
-        reserve(m_size+1);
-        t[m_size] = v;
-        m_size++;
+      vector_t (const vector_t<T>& other)
+      {
+        size_active = other.size_active;
+        size_alloced = other.size_alloced;
+        items = (T*)alignedMalloc(size_alloced*sizeof(T),64);
+        for (size_t i=0; i<size_active; i++) items[i] = other.items[i];
       }
 
-	  void pop_back() {
-        m_size--;
-      }
-
-      vector_t<T> &operator=(const vector_t<T> &other) {
-        resize(other.m_size);
-        for (size_t i=0;i<m_size;i++) t[i] = other.t[i];
+      vector_t<T>& operator=(const vector_t<T>& other) 
+      {
+        resize(other.size_active);
+        for (size_t i=0; i<size_active; i++) items[i] = other.items[i];
         return *this;
       }
 
-      __forceinline T& operator[](size_t i) {
-        assert(t);
-        assert(i < m_size);
-        return t[i];
-      };
+      /********************** Iterators  ****************************/
 
-      __forceinline const T& operator[](size_t i) const {
-        assert(t);
-        assert(i < m_size);
-        return t[i];
-      };
+      __forceinline T* begin() const { return items; };
+      __forceinline T* end  () const { return items+size_active; };
 
-      void resize(size_t new_sz, bool exact = false)
-      {
-        if (new_sz < m_size) {
-          if (exact) {
-            T *old_t = t;
-            t = (T*)alignedMalloc(new_sz*sizeof(T),64);
-            for (size_t i=0;i<new_sz;i++) t[i] = old_t[i];
-            if (old_t) {
-              alignedFree(old_t);
-            }
-            alloced = new_sz;
-          }
-        } else {
-          reserve(new_sz,exact);
-        }
-        m_size = new_sz;
-      };
 
-      void reserve(size_t sz, bool exact = false)
-      {
-        if (sz <= alloced) return;
+      /********************** Capacity ****************************/
 
-        size_t newAlloced = alloced;
-        if (exact) newAlloced = sz;
-        else
-          while (newAlloced < sz)
-            newAlloced = (1 < (newAlloced * 2)) ? newAlloced * 2 : 1;
-
-        T* old_t = t;
-        assert(newAlloced > 0);
-        t = (T*)alignedMalloc(newAlloced*sizeof(T),64);
-
-        for (size_t i=0;i<m_size;i++) t[i] = old_t[i];
-
-        if (old_t) {
-          alignedFree(old_t);
-        }
-        alloced = newAlloced;
+      __forceinline bool   empty    () const { return size_active == 0; }
+      __forceinline size_t size     () const { return size_active; }
+      __forceinline size_t capacity () const { return size_alloced; }
+            
+      void resize(size_t new_size) {
+        internal_resize(new_size,size_alloced < new_size ? new_size : size_alloced);
       }
 
-    public:
-      size_t m_size;    // number of valid items
-      size_t alloced;   // number of items allocated
-      T *t;             // data array
+      void reserve(size_t new_alloced) 
+      {
+        /* do nothing if container already large enough */
+        if (new_alloced <= size_alloced) 
+          return;
+
+        /* resize exact otherwise */
+        internal_resize(size_active,new_alloced);
+      }
+
+      void shrink_to_fit() {
+        internal_resize(size_active,size_active);
+      }
+
+      /******************** Element access **************************/
+
+      __forceinline       T& operator[](size_t i)       { assert(i < size_active); return items[i]; }
+      __forceinline const T& operator[](size_t i) const { assert(i < size_active); return items[i]; }
+
+      __forceinline       T& at(size_t i)       { assert(i < size_active); return items[i]; }
+      __forceinline const T& at(size_t i) const { assert(i < size_active); return items[i]; }
+
+      __forceinline T& front() const { assert(size_active > 0); return items[0]; };
+      __forceinline T& back () const { assert(size_active > 0); return items[size_active-1]; };
+
+      __forceinline       T* data()       { return items; };
+      __forceinline const T* data() const { return items; };
+
+     
+      /******************** Modifiers **************************/
+
+      void push_back(const T& nt) 
+      {
+        const T v = nt; // need local copy as input reference could point to this vector
+        internal_grow(size_active+1);
+        items[size_active++] = v;
+      }
+
+      void pop_back() {
+        size_active--;
+      }
+
+      void clear() 
+      {
+        /* destroy elements */
+        for (size_t i=0; i<size_active; i++)
+          items[i].~T();
+        
+        /* free memory */
+        alignedFree(items); items = NULL;
+        size_active = size_alloced = 0;
+      }
+
+    private:
+
+      void internal_resize(size_t new_active, size_t new_alloced)
+      {
+        assert(new_active <= new_alloced); 
+
+        /* destroy elements */
+        for (size_t i=new_active; i<size_active; i++)
+          items[i].~T();
+
+        size_t size_copy = new_active < size_active ? new_active : size_active;
+        size_active = new_active;
+
+        /* only reallocate if necessary */
+        if (new_alloced == size_alloced) 
+          return;
+        
+        /* reallocate and copy items */
+        T* old_items = items;
+        items = (T*)alignedMalloc(new_alloced*sizeof(T),64);
+        for (size_t i=0; i<size_copy; i++) items[i] = old_items[i];
+        alignedFree(old_items);
+        size_alloced = new_alloced;
+      }
+
+      void internal_grow(size_t new_alloced)
+      {
+        /* do nothing if container already large enough */
+        if (new_alloced <= size_alloced) 
+          return;
+
+        /* resize to next power of 2 otherwise */
+        size_t new_size_alloced = size_alloced;
+        while (new_size_alloced < new_alloced) {
+          new_size_alloced = 2*new_size_alloced;
+          if (new_size_alloced == 0) new_size_alloced = 1;
+        }
+
+        internal_resize(size_active,new_size_alloced);
+      }
+
+    private:
+      size_t size_active;    // number of valid items
+      size_t size_alloced;   // number of items allocated
+      T* items;              // data array
     };
 }

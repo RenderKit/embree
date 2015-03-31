@@ -279,7 +279,6 @@ namespace embree
   /* load material file */
   void OBJLoader::loadMTL(const FileName &fileName)
   {
-    PING;
     std::ifstream cin;
     cin.open(fileName.c_str());
     if (!cin.is_open()) {

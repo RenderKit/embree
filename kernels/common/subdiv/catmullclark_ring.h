@@ -32,8 +32,8 @@ namespace embree
     static const size_t MAX_FACE_VALENCE = SubdivMesh::MAX_RING_FACE_VALENCE;
     static const size_t MAX_EDGE_VALENCE = SubdivMesh::MAX_RING_EDGE_VALENCE;
     
-    Vec3fa ring [MAX_EDGE_VALENCE];
-    float crease_weight[MAX_FACE_VALENCE];
+    array_t<Vec3fa,MAX_EDGE_VALENCE> ring ;
+    array_t<float,MAX_FACE_VALENCE> crease_weight;
     
     int border_index;
     Vec3fa vtx;
@@ -217,7 +217,7 @@ namespace embree
       
       /* calculate new edge points */
       size_t num_creases = 0;
-      size_t crease_id[MAX_FACE_VALENCE];
+      array_t<size_t,MAX_FACE_VALENCE> crease_id;
       Vec3fa_t C = Vec3fa_t(0.0f);
       for (size_t i=0; i<face_valence; i++)
       {
@@ -604,9 +604,9 @@ namespace embree
     static const size_t MAX_EDGE_VALENCE = SubdivMesh::MAX_RING_EDGE_VALENCE;
     
     Vec3fa vtx;
-    Vec3fa ring[MAX_EDGE_VALENCE]; 
-    int face_size[MAX_FACE_VALENCE];       // number of vertices-2 of nth face in ring
-    float crease_weight[MAX_FACE_VALENCE]; // FIXME: move into 4th component of ring entries
+    array_t<Vec3fa,MAX_EDGE_VALENCE> ring; 
+    array_t<int,MAX_FACE_VALENCE> face_size;       // number of vertices-2 of nth face in ring
+    array_t<float,MAX_FACE_VALENCE> crease_weight; // FIXME: move into 4th component of ring entries
     unsigned int face_valence;
     unsigned int edge_valence;
     int border_face;
@@ -722,7 +722,7 @@ namespace embree
       
       /* calculate new edge points */
       size_t num_creases = 0;
-      size_t crease_id[MAX_FACE_VALENCE];
+      array_t<size_t,MAX_FACE_VALENCE> crease_id;
       Vec3fa_t C = Vec3fa_t(0.0f);
       for (size_t i=0, j=0; i<face_valence; j+=face_size[i++])
       {

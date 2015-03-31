@@ -25,6 +25,7 @@
 #include "sys/sync/atomic.h"
 #include "sys/sync/mutex.h"
 #include "sys/vector.h"
+#include "sys/array.h"
 #include "sys/string.h"
 #include "sys/regression.h"
 #include "tasking/taskscheduler.h"
