@@ -357,7 +357,7 @@ namespace embree
       setAffinity(0);
 #endif
 
-#if 1
+#if 0
       result = parallel_reduce(size_t(0), size_t(N), size_t(1024), BBox3fa(empty), [&] (const range<size_t>& r)
                       { 
                         BBox3fa c0(empty);
@@ -369,7 +369,7 @@ namespace embree
 
 #endif
 
-#if 1
+#if 0
       this->N = N;
 
       const size_t threadCount = TaskSchedulerNew::threadCount();
@@ -524,6 +524,7 @@ namespace embree
       return t1-t0;
     }
 
+#if 0
     double myreduce(size_t n0, size_t n1)
     {
       double c = 0;
@@ -557,6 +558,7 @@ namespace embree
 	}*/
       return t1-t0;
     }
+#endif
     
     const char* name;
   };
