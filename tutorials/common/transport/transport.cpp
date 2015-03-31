@@ -156,8 +156,14 @@ namespace embree
     out->numDistantLights = in->distantLights.size();
 
     out->subdiv = new ISPCSubdivMesh*[in->subdiv.size()];
+
+    size_t coarse_primitives = 0;
     for (size_t i=0; i<in->subdiv.size(); i++)
-      out->subdiv[i] = convertSubdivMesh(in->subdiv[i]);
+      {
+	out->subdiv[i] = convertSubdivMesh(in->subdiv[i]);
+	coarse_primitives += out->subdiv[i]->numFaces;
+      }
+    PRINT( coarse_primitives );
     out->numSubdivMeshes = in->subdiv.size();
 
     g_ispc_scene = out;

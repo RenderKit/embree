@@ -29,7 +29,7 @@
 
 #define FIX_SAMPLING 0
 #define SAMPLES_PER_PIXEL 1
-//#define SAMPLES_PER_PIXEL 64
+//#define SAMPLES_PER_PIXEL 2
 
 //#define FORCE_FIXED_EDGE_TESSELLATION
 #define FIXED_EDGE_TESSELLATION_VALUE 2
@@ -1146,10 +1146,7 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
 
   /* initialize ray */
 
-  const float sx = frand(state);
-  const float sy = frand(state);
-
-  RTCRay ray = RTCRay(p,normalize((x+sx)*vx + (y+sy)*vy + vz),0.0f,inf);
+  RTCRay ray = RTCRay(p,normalize(x*vx + y*vy + vz),0.0f,inf);
 
 
   /* iterative path tracer loop */
@@ -1338,18 +1335,15 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
 {
   rand_state state;
 
-  Vec3fa L = Vec3fa(0.0f,0.0f,0.0f);
-
-  for (int i=0; i<SAMPLES_PER_PIXEL; i++) {
-
   init_rand(state,
             253*x+35*y+152*g_accu_count+54,
             1253*x+345*y+1452*g_accu_count+564,
-            10253*x+3435*y+52*g_accu_count+13+i*1793);
+            10253*x+3435*y+52*g_accu_count+13);
 
-  L = L + renderPixelFunction(x,y,state,vx,vy,vz,p); 
-  }
-  L = L*(1.0f/SAMPLES_PER_PIXEL);
+  const float sx = frand(state);
+  const float sy = frand(state);
+
+  Vec3fa L = renderPixelFunction(x+sx,y+sy,state,vx,vy,vz,p); 
   return L;
 }
   
@@ -1375,8 +1369,24 @@ void renderTile(int taskIndex, int* pixels,
   for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)
   {
     /* calculate pixel color */
-    Vec3fa color = renderPixel(x,y,vx,vy,vz,p);
 
+#if SAMPLES_PER_PIXEL > 1
+    rand_state state;
+    init_rand(state,
+	      253*x+35*y+152*g_accu_count+54,
+	      1253*x+345*y+1452*g_accu_count+564,
+	      10253*x+3435*y+52*g_accu_count+13);
+    Vec3fa color(0.0f);
+    for (int i=0; i<SAMPLES_PER_PIXEL; i++) 
+      {
+	const float sx = frand(state);
+	const float sy = frand(state);
+	color += renderPixel(x+sx,y+sy,vx,vy,vz,p);
+	}
+    color *= (1.0f/SAMPLES_PER_PIXEL);
+#else
+    Vec3fa color = renderPixel(x,y,vx,vy,vz,p);
+#endif
     /* write color to framebuffer */
     Vec3fa* dst = &g_accu[y*width+x];
     *dst = *dst + Vec3fa(color.x,color.y,color.z,1.0f); // FIXME: use += operator
