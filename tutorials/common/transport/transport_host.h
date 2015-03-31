@@ -33,6 +33,8 @@ namespace embree
   struct OBJScene;
   void set_scene (OBJScene* in);
 
+  void set_scene_keyframes(OBJScene** in, size_t numKeyFrames);
+
   /* pick event */
   bool pick(const float x, const float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p, Vec3fa& hitPos);
 

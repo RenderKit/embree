@@ -237,6 +237,11 @@ struct MetallicPaintMaterial
   float eta;
 };
 
+struct ISPCSubdivMeshKeyFrame {
+  ISPCSubdivMesh** subdiv;                   //!< list of subdiv meshes
+  int numSubdivMeshes;                       //!< number of subdiv meshes
+};
+
 struct ISPCScene {
 
   ISPCMesh** meshes;   //!< list of meshes
@@ -262,7 +267,8 @@ struct ISPCScene {
   ISPCSubdivMesh** subdiv;                   //!< list of subdiv meshes
   int numSubdivMeshes;                       //!< number of subdiv meshes
 
+  ISPCSubdivMeshKeyFrame** subdivMeshKeyFrames;
+  int numSubdivMeshKeyFrames;
 }; // ISPCScene
-
 
 

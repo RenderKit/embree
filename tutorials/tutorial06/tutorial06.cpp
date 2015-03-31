@@ -40,10 +40,12 @@ namespace embree
   static bool g_only_subdivs = false;
   static bool g_anim_mode = false;
   static bool g_loop_mode = false;
-  
+  static FileName keyframeList = "";
+
   /* scene */
   OBJScene g_obj_scene;
   static FileName filename = "";
+  std::vector<OBJScene*> g_keyframes;
 
   static void parseCommandLine(Ref<ParseStream> cin, const FileName& path)
   {
@@ -84,6 +86,10 @@ namespace embree
       else if (tag == "-o") {
         outFilename = cin->getFileName();
 	g_interactive = false;
+      }
+
+      else if (tag == "-objlist") {
+        keyframeList = cin->getFileName();
       }
 
       /* subdivision mode */
@@ -207,6 +213,52 @@ namespace embree
     cleanup();
   }
 
+  void loadKeyFrameAnimation(FileName &fileName)
+  {
+    PRINT(fileName);
+    std::ifstream cin;
+    cin.open(fileName.c_str());
+    if (!cin.is_open()) {
+      std::cerr << "cannot open " << fileName.str() << std::endl;
+      return;
+    }
+    
+    FileName path;
+    path = fileName.path();
+
+    char line[10000];
+    memset(line, 0, sizeof(line));
+
+    int cur = 0;
+    while (cin.peek() != -1)
+    {
+      /* load next multiline */
+      char* pline = line;
+      while (true) {
+        cin.getline(pline, sizeof(line) - (pline - line) - 16, '\n');
+        ssize_t last = strlen(pline) - 1;
+        if (last < 0 || pline[last] != '\\') break;
+        pline += last;
+        *pline++ = ' ';
+      }
+      OBJScene *scene = new OBJScene;
+      FileName keyframe = path + FileName(line);
+      loadOBJ(keyframe,one,*scene,true);	
+      PRINT(keyframe);
+      if (g_obj_scene.subdiv.size() != scene->subdiv.size())
+	FATAL("#subdiv meshes differ");
+      for (size_t i=0;i<g_obj_scene.subdiv.size();i++)
+	if (g_obj_scene.subdiv[i]->positions.size() != scene->subdiv[i]->positions.size())
+	  FATAL("#positions differ");
+
+      g_keyframes.push_back(scene);
+    } 
+    cin.close();
+
+    
+  }
+
+
   /* main function in embree namespace */
   int main(int argc, char** argv) 
   {
@@ -239,6 +291,13 @@ namespace embree
     else if (filename.ext() != "")
       THROW_RUNTIME_ERROR("invalid scene type: "+strlwr(filename.ext()));
 
+     /* load keyframes */
+
+     if (keyframeList.str() != "")
+       {
+	 loadKeyFrameAnimation(keyframeList);
+       }
+
     /* initialize ray tracing core */
     init(g_rtcore.c_str());
 
@@ -249,6 +308,10 @@ namespace embree
     /* send model */
     set_scene(&g_obj_scene);
     
+    /* send keyframes */
+    if (g_keyframes.size())
+      set_scene_keyframes(&*g_keyframes.begin(),g_keyframes.size());
+
     /* benchmark mode */
     if (g_numBenchmarkFrames)
       renderBenchmark(outFilename);

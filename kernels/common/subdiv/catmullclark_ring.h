@@ -31,7 +31,8 @@ namespace embree
   {
     static const size_t MAX_FACE_VALENCE = SubdivMesh::MAX_RING_FACE_VALENCE;
     static const size_t MAX_EDGE_VALENCE = SubdivMesh::MAX_RING_EDGE_VALENCE;
-    
+    static const size_t MAX_DEPTH_SUBDIVISION = 10;
+
     array_t<Vec3fa,MAX_EDGE_VALENCE> ring ; // FIXME: also store size in these arrays for more accurate checks
     array_t<float,MAX_FACE_VALENCE> crease_weight;
     
@@ -378,7 +379,7 @@ namespace embree
     /* returns true if the vertex can be part of a dicable gregory patch (using gregory patches) */
     __forceinline bool isGregoryOrFinal(const size_t depth) const 
     {
-      if (depth < 10)      
+      if (depth < MAX_DEPTH_SUBDIVISION)      
       //if (vertex_level > 1.0f) 
       {
 	if (vertex_crease_weight > 0.0f) 
