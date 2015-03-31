@@ -14,7 +14,9 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
+#if USE_LIBPNG
 #include "texture_loader.h"
+
 #include <png.h>
 
 namespace embree
@@ -22,16 +24,13 @@ namespace embree
   /*! read png texture from disk */
   OBJScene::Texture *loadTextureFromPNG(const FileName& fileName)
   {
-    //Texture texture;
-    PRINT(fileName);
-
     OBJScene::Texture *texture = new OBJScene::Texture();
     
     //header for testing if it is a png
     png_byte header[8];
  
     //open file as binary
-    FILE *fp = fopen(fileName.c_str(), "rb");
+    FILE* fp = fopen(fileName.c_str(), "rb");
     if (!fp) {
       FATAL("can't load texture, code 0");
       return NULL;
@@ -165,5 +164,5 @@ namespace embree
     
     return texture;
   }
-
-};
+}
+#endif

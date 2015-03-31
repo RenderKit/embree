@@ -326,7 +326,9 @@ namespace embree
       if (!strncmp(token, "Kd_map", 6) || !strncmp(token, "map_Kd", 6)) {
         parseSep(token += 6);
         //model.materials[cur].obj().map_Kd = loadPtex(path + FileName(token));
+#if defined(USE_LIBPNG)
         model.materials[cur].obj().map_Kd = loadTextureFromPNG(path + FileName(token));
+#endif
         continue;
       }
       if (!strncmp(token, "Ks_map", 6)) { continue; }
@@ -334,7 +336,9 @@ namespace embree
       if (!strncmp(token, "Displ_map", 9) || !strncmp(token, "map_Displ", 9)) {
         parseSep(token += 9);
         //model.materials[cur].obj().map_Displ = loadPtex(path + FileName(token));
+#if defined(USE_LIBPNG)
         model.materials[cur].obj().map_Displ = loadTextureFromPNG(path + FileName(token));
+#endif
         continue;
       }
       
