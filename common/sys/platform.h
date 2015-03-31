@@ -220,7 +220,7 @@
 #define PRINT4(x,y,z,w) std::cout << STRING(x) << " = " << (x) << ", " << STRING(y) << " = " << (y) << ", " << STRING(z) << " = " << (z) << ", " << STRING(w) << " = " << (w) << std::endl
 
 #define THROW_RUNTIME_ERROR(str) \
-  throw std::runtime_error(std::string(__FILE__) + " (" + std::to_string(__LINE__) + "): " + std::string(str));
+  throw std::runtime_error(std::string(__FILE__) + " (" + std::to_string((long long)__LINE__) + "): " + std::string(str));
 
 #if defined(__MIC__)
 #define FATAL(x) { std::cout << "FATAL error in " << __FUNCTION__ << " : " << x << std::endl << std::flush; exit(1); }
