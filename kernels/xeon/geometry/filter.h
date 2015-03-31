@@ -28,10 +28,6 @@
 #include "common/ray8.h"
 #endif
 
-#if defined(__MIC__)
-#include "common/ray16.h"
-#endif
-
 namespace embree
 {
   namespace isa
