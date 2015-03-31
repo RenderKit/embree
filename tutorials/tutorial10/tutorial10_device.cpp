@@ -372,7 +372,12 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
   int materialID = mesh->materialID;
   int numMaterials = g_ispc_scene->numMaterials;
   OBJMaterial* material = (OBJMaterial*)&g_ispc_scene->materials[materialID];
-  if (material->map_Kd) color *= getTextureTexel3f(material->map_Kd,ray.u,ray.v);
+  if (material->map_Kd) 
+    {
+      Vec2f st = getTextureCoordinatesSubdivMesh(mesh,ray.primID,ray.u,ray.v);
+      
+      color *= getTextureTexel3f(material->map_Kd,st.x,st.y);
+    }
       
 #if 0
     color = rndColor(ray.geomID);

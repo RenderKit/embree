@@ -105,7 +105,7 @@ namespace embree
       memcpy((char*)&serv_addr.sin_addr.s_addr, (char*)server->h_addr, server->h_length);
       
       if (::connect(sockfd,(struct sockaddr*) &serv_addr,sizeof(serv_addr)) < 0)
-        THROW_RUNTIME_ERROR("connection to "+std::string(host)+":"+std::to_string(port)+" failed");
+        THROW_RUNTIME_ERROR("connection to "+std::string(host)+":"+std::to_string((long long)port)+" failed");
 
       /*! enable TCP_NODELAY */
 #ifdef TCP_NODELAY
@@ -143,7 +143,7 @@ namespace embree
       serv_addr.sin_addr.s_addr = INADDR_ANY;
 
       if (::bind(sockfd, (struct sockaddr*) &serv_addr, sizeof(serv_addr)) < 0)
-        THROW_RUNTIME_ERROR("binding to port "+std::to_string(port)+" failed");
+        THROW_RUNTIME_ERROR("binding to port "+std::to_string((long long)port)+" failed");
       
       /*! listen to port, up to 5 pending connections */
       if (::listen(sockfd,5) < 0)

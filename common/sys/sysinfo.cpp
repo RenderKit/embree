@@ -61,10 +61,10 @@ namespace embree
     int icc_mayor = __INTEL_COMPILER / 100 % 100;
     int icc_minor = __INTEL_COMPILER % 100;
     std::string version = "Intel Compiler ";
-    version += std::to_string(icc_mayor);
-    version += "." + std::to_string(icc_minor);
+    version += std::to_string((long long)icc_mayor);
+    version += "." + std::to_string((long long)icc_minor);
 #if defined(__INTEL_COMPILER_UPDATE)
-    version += "." + std::to_string(__INTEL_COMPILER_UPDATE);
+    version += "." + std::to_string((long long)__INTEL_COMPILER_UPDATE);
 #endif
     return version;
 #elif defined(__clang__)

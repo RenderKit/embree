@@ -30,5 +30,5 @@
 namespace embree
 {
   /*! read png texture from disk */
-  OBJScene::Texture *loadTextureFromPNG(const FileName& fileName);
+  OBJScene::Texture *loadTexture(const FileName& fileName);
 }

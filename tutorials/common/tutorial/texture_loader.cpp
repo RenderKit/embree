@@ -16,152 +16,34 @@
 
 #if USE_LIBPNG
 #include "texture_loader.h"
+#include "image/image.h"
 
 #include <png.h>
 
 namespace embree
 {
+  bool isPowerOf2 (unsigned int x)
+  {
+    while (((x % 2) == 0) && x > 1)
+      x /= 2;
+    return (x == 1);
+  }
+
   /*! read png texture from disk */
-  OBJScene::Texture *loadTextureFromPNG(const FileName& fileName)
+  OBJScene::Texture *loadTexture(const FileName& fileName)
   {
     OBJScene::Texture *texture = new OBJScene::Texture();
     
-    //header for testing if it is a png
-    png_byte header[8];
- 
-    //open file as binary
-    FILE* fp = fopen(fileName.c_str(), "rb");
-    if (!fp) {
-      FATAL("can't load texture, code 0");
-      return NULL;
-    }
+    Ref<Image> img = loadImage(fileName);
 
-    //read the header
-    fread(header, 1, 8, fp);
- 
-    //test if png
-    int is_png = !png_sig_cmp(header, 0, 8);
-    if (!is_png) {
-      fclose(fp);
-       FATAL("can't load texture, code 1");
-      return NULL;
-    }
-
-    //create png struct
-    png_structp png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL,
-                                                 NULL, NULL);
-    if (!png_ptr) {
-      fclose(fp);
-      FATAL("can't load texture, code 2");      
-      return NULL;
-    }
- 
-    //create png info struct
-    png_infop info_ptr = png_create_info_struct(png_ptr);
-    if (!info_ptr) {
-      png_destroy_read_struct(&png_ptr, (png_infopp) NULL, (png_infopp) NULL);
-      fclose(fp);
-      FATAL("can't load texture, code 3");
-      return NULL;
-    }
- 
-    //create png info struct
-    png_infop end_info = png_create_info_struct(png_ptr);
-    if (!end_info) {
-      png_destroy_read_struct(&png_ptr, &info_ptr, (png_infopp) NULL);
-      fclose(fp);
-      FATAL("can't load texture, code 4");     
-      return NULL;
-    }
- 
-    //png error stuff, not sure libpng man suggests this.
-    //if (setjmp(png_jmpbuf(png_ptr))) {
-    //  png_destroy_read_struct(&png_ptr, &info_ptr, &end_info);
-    //  fclose(fp);
-    ///  return (TEXTURE_LOAD_ERROR);
-    //}
- 
-    //init png reading
-    png_init_io(png_ptr, fp);
- 
-    //let libpng know you already read the first 8 bytes
-    png_set_sig_bytes(png_ptr, 8);
- 
-    // read all the info up to the image data
-    png_read_info(png_ptr, info_ptr);
- 
-    //variables to pass to get info
-    int bit_depth, color_type;
-    png_uint_32 twidth, theight;
- 
-    // get info about png
-    png_get_IHDR(png_ptr, info_ptr, &twidth, &theight, &bit_depth, &color_type,
-                 NULL, NULL, NULL);
- 
-    //update width and height based on png info
-    texture->width = twidth;
-    texture->height = theight;
-    
-    PRINT(texture->width);
-    PRINT(texture->height);
-    PRINT(bit_depth);
-    PRINT(color_type);
-    if (color_type == PNG_COLOR_TYPE_RGB && bit_depth == 8)
-      {
-        PRINT("RGB");
-        texture->format = OBJScene::Texture::RGB8;
-        texture->bytesPerTexel = 3;
-      }
-    else if (color_type == PNG_COLOR_TYPE_RGBA && bit_depth == 8)
-      {
-        PRINT("RGBA");
-        texture->format = OBJScene::Texture::RGBA8;
-        texture->bytesPerTexel = 4;        
-      }
-    else
-      PRINT("UNKNOWN");
-    
- 
-    // Update the png info struct.
-    png_read_update_info(png_ptr, info_ptr);
- 
-    // Row size in bytes.
-    int rowbytes = png_get_rowbytes(png_ptr, info_ptr);
-
-    PRINT(rowbytes);
-    
-    // Allocate the image_data as a big block, to be given to opengl
-    texture->data = new png_byte[rowbytes * texture->height];
-    if (!texture->data) {
-      //clean up memory and close stuff
-      png_destroy_read_struct(&png_ptr, &info_ptr, &end_info);
-      fclose(fp);
-      FATAL("can't load texture, code 5");
-      return texture;
-    }
- 
-    //row_pointers is for pointing to image_data for reading the png with libpng
-    png_bytep *row_pointers = new png_bytep[texture->height];
-    if (!row_pointers) {
-      //clean up memory and close stuff
-      png_destroy_read_struct(&png_ptr, &info_ptr, &end_info);
-      delete[] texture->data;
-      fclose(fp);
-      FATAL("can't load texture, code 6");
-      return NULL;
-    }
-    // set the individual row_pointers to point at the correct offsets of image_data
-    for (int i = 0; i < texture->height; ++i)
-      row_pointers[texture->height - 1 - i] = (unsigned char*)texture->data + i * rowbytes;
- 
-    //read the png into image_data through row_pointers
-    png_read_image(png_ptr, row_pointers);
-  
-    //clean up memory and close stuff
-    png_destroy_read_struct(&png_ptr, &info_ptr, &end_info);
-    delete[] row_pointers;
-    fclose(fp);
-    
+    texture->width         = img.ptr->width;
+    texture->height        = img.ptr->height;    
+    texture->format        = OBJScene::Texture::RGBA8;
+    texture->bytesPerTexel = 4;
+    texture->data          = _mm_malloc(sizeof(int)*texture->width*texture->height,64);
+    texture->width_mask    = isPowerOf2(texture->width) ? texture->width-1 : 0;
+    texture->height_mask   = isPowerOf2(texture->height) ? texture->height-1 : 0;
+    img.ptr->convertToRGBA8((unsigned char*)texture->data);
     return texture;
   }
 }

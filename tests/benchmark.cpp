@@ -484,7 +484,7 @@ namespace embree
 
     double run(size_t numThreads)
     {
-      rtcInit((g_rtcore+",threads="+std::to_string(numThreads)).c_str());
+      rtcInit((g_rtcore+",threads="+std::to_string((long long)numThreads)).c_str());
 
       Mesh mesh; createSphereMesh (Vec3f(0,0,0), 1, numPhi, mesh);
       
@@ -523,7 +523,7 @@ namespace embree
   
     double run(size_t numThreads)
     {
-      rtcInit((g_rtcore+",threads="+std::to_string(numThreads)).c_str());
+      rtcInit((g_rtcore+",threads="+std::to_string((long long)numThreads)).c_str());
 
       Mesh mesh; createSphereMesh (Vec3f(0,0,0), 1, numPhi, mesh);
       RTCScene scene = rtcNewScene(RTC_SCENE_DYNAMIC,aflags);

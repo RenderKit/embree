@@ -208,7 +208,8 @@ namespace embree
 
         std::vector<Vertex> face;
         while (token[0]) {
-          face.push_back(getInt3(token));
+	  Vertex vtx = getInt3(token);
+          face.push_back(vtx);
           parseSepOpt(token);
         }
         curGroup.push_back(face);
@@ -326,9 +327,7 @@ namespace embree
       if (!strncmp(token, "Kd_map", 6) || !strncmp(token, "map_Kd", 6)) {
         parseSep(token += 6);
         //model.materials[cur].obj().map_Kd = loadPtex(path + FileName(token));
-#if defined(USE_LIBPNG)
-        model.materials[cur].obj().map_Kd = loadTextureFromPNG(path + FileName(token));
-#endif
+        model.materials[cur].obj().map_Kd = loadTexture(path + FileName(token));
         continue;
       }
       if (!strncmp(token, "Ks_map", 6)) { continue; }
@@ -336,9 +335,7 @@ namespace embree
       if (!strncmp(token, "Displ_map", 9) || !strncmp(token, "map_Displ", 9)) {
         parseSep(token += 9);
         //model.materials[cur].obj().map_Displ = loadPtex(path + FileName(token));
-#if defined(USE_LIBPNG)
-        model.materials[cur].obj().map_Displ = loadTextureFromPNG(path + FileName(token));
-#endif
+        model.materials[cur].obj().map_Displ = loadTexture(path + FileName(token));
         continue;
       }
       
@@ -411,9 +408,11 @@ namespace embree
 	PRINT(vn.size());
 	PRINT(vt.size());
 #endif	
+
 	for (size_t i=0;i<v.size();i++)  mesh->positions.push_back(v[i]);
 	for (size_t i=0;i<vn.size();i++) mesh->normals.push_back(vn[i]);
 	for (size_t i=0;i<vt.size();i++) mesh->texcoords.push_back(vt[i]);
+	
 	
 	for (size_t i=0;i<ec.size();++i) {
 	  if (ec[i].a < v.size() && ec[i].b < v.size())
@@ -431,7 +430,21 @@ namespace embree
 #endif
 	      {
 		for (size_t i=0;i<face.size();i++)
-		  mesh->position_indices.push_back(face[i].v);
+		  {
+		    mesh->position_indices.push_back(face[i].v);
+		    if (face[i].vt != -1)
+		      {
+			assert( face[i].vt < vt.size() );
+			mesh->texcoord_indices.push_back(face[i].vt);
+		      }
+		  }
+		if (mesh->texcoord_indices.size())
+		  {
+		    //PRINT( mesh->texcoord_indices.size() );
+		    //PRINT( mesh->position_indices.size() );
+
+		    //assert( mesh->texcoord_indices.size() == mesh->position_indices.size() );
+		  }
 		mesh->verticesPerFace.push_back(face.size());
 	      }
             

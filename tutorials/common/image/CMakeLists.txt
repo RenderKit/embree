@@ -57,6 +57,7 @@ ADD_LIBRARY(image STATIC
     pfm.cpp
     ppm.cpp
     tga.cpp
+    png.cpp
     ${ADDITIONAL_SOURCES}
   )
 TARGET_LINK_LIBRARIES(image sys ${ADDITIONAL_LIBRARIES})

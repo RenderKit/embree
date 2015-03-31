@@ -733,14 +733,68 @@ Vec3fa getPtexTexel3f(void* filter, int faceId, float u, float v)
   return result;
 }
 
-Vec3fa getTextureTexel3f(void *_texture,float u, float v)
+Vec2f getTextureCoordinatesSubdivMesh(void* _mesh, const unsigned int primID, const float u, const float v)
+{
+  ISPCSubdivMesh *mesh = (ISPCSubdivMesh *)_mesh;
+  Vec2f st;
+  st.x = u;
+  st.y = v;
+  if (mesh && mesh->texcoord_indices)
+    {
+      assert(primID < mesh->numFaces);
+      const size_t face_offset = mesh->face_offsets[primID];
+      if (mesh->verticesPerFace[primID] == 3)
+	{
+	  const size_t t0 = mesh->texcoord_indices[face_offset+0];
+	  const size_t t1 = mesh->texcoord_indices[face_offset+1];
+	  const size_t t2 = mesh->texcoord_indices[face_offset+2];
+	  const Vec2f &txt0 = mesh->texcoords[t0];
+	  const Vec2f &txt1 = mesh->texcoords[t1];
+	  const Vec2f &txt2 = mesh->texcoords[t2];
+	  const float w = 1.0f - u - v;
+	  st = w * txt0 + u * txt1 + v * txt2;
+	}
+      else if (mesh->verticesPerFace[primID] == 4)
+	{
+	  const size_t t0 = mesh->texcoord_indices[face_offset+0];
+	  const size_t t1 = mesh->texcoord_indices[face_offset+1];
+	  const size_t t2 = mesh->texcoord_indices[face_offset+2];
+	  const size_t t3 = mesh->texcoord_indices[face_offset+3];
+	  const Vec2f &txt0 = mesh->texcoords[t0];
+	  const Vec2f &txt1 = mesh->texcoords[t1];
+	  const Vec2f &txt2 = mesh->texcoords[t2];
+	  const Vec2f &txt3 = mesh->texcoords[t3];
+	  const float u0 = u;
+	  const float v0 = v;
+	  const float u1 = 1.0f - u;
+	  const float v1 = 1.0f - v;
+	  st = u1*v1 * txt0 + u0*v1* txt1 + u0*v0 * txt2 + u1*v0* txt3;	  
+	}
+      else
+	PRINT("not supported");
+    }
+  return st;
+}
+
+Vec3fa getTextureTexel3f(void *_texture,float s, float t)
 {
   Texture *texture = (Texture*)_texture;
-  if (texture->format == RGB8)
+  if (texture->format == RGBA8)
     {
-      int iu = (int)(u * (float)texture->width);
-      int iv = (int)(v * (float)texture->height);
-      unsigned char *t = (unsigned char*)texture->data + (iv * texture->width + iu) * texture->bytesPerTexel;
+      //u = max(min(u,1.0f),0.0f);
+      //v = max(min(v,1.0f),0.0f);
+     
+      int iu = (int)(s * (float)(texture->width));
+      if (texture->width_mask) 
+	iu &= texture->width_mask;
+      else
+	iu = min(iu,texture->width-1);
+      int iv = (int)(t * (float)(texture->height));
+      if (texture->height_mask) 
+	iv &= texture->height_mask;
+      else
+	iv = min(iv,texture->height-1);
+      unsigned char *t = (unsigned char*)texture->data + (iv * texture->width + iu) * 4; //texture->bytesPerTexel;
       return Vec3fa(  (float)t[0] * 1.0f/255.0f, (float)t[1] * 1.0f/255.0f, (float)t[2] * 1.0f/255.0f );
     }
   

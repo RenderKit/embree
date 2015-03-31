@@ -29,13 +29,18 @@ namespace embree
 #ifdef USE_OPENEXR
     if (ext == "exr" ) return loadExr(fileName);
 #endif
+
+#ifdef USE_LIBPNG
+    if (ext == "png" ) return loadPNG(fileName);
+#endif
+
 #ifdef USE_IMAGEMAGICK
     if (ext == "bmp" ) return loadMagick(fileName);
     if (ext == "gif" ) return loadMagick(fileName);
-    if (ext == "png" ) return loadMagick(fileName);
     if (ext == "tga" ) return loadMagick(fileName);
     if (ext == "tif" ) return loadMagick(fileName);
     if (ext == "tiff") return loadMagick(fileName);
+    if (ext == "png" ) return loadMagick(fileName);
 #endif
 #ifdef USE_LIBJPEG
     if (ext == "jpg" ) return loadJPEG(fileName);

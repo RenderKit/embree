@@ -388,7 +388,7 @@ struct my_runtime_error : public std::exception
 };
 
 #define THROW_MY_RUNTIME_ERROR(error,str)                                \
-  throw my_runtime_error(error,std::string(__FILE__) + " (" + std::to_string(__LINE__) + "): " + std::string(str));
+  throw my_runtime_error(error,std::string(__FILE__) + " (" + std::to_string((long long)__LINE__) + "): " + std::string(str));
 
 
 }
