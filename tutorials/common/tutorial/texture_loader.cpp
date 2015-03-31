@@ -22,6 +22,13 @@
 
 namespace embree
 {
+  bool isPowerOf2 (unsigned int x)
+  {
+    while (((x % 2) == 0) && x > 1)
+      x /= 2;
+    return (x == 1);
+  }
+
   /*! read png texture from disk */
   OBJScene::Texture *loadTexture(const FileName& fileName)
   {
@@ -34,6 +41,8 @@ namespace embree
     texture->format        = OBJScene::Texture::RGBA8;
     texture->bytesPerTexel = 4;
     texture->data          = _mm_malloc(sizeof(int)*texture->width*texture->height,64);
+    texture->width_mask    = isPowerOf2(texture->width) ? texture->width-1 : 0;
+    texture->height_mask   = isPowerOf2(texture->height) ? texture->height-1 : 0;
     img.ptr->convertToRGBA8((unsigned char*)texture->data);
     return texture;
   }

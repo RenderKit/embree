@@ -776,15 +776,24 @@ Vec2f getTextureCoordinatesSubdivMesh(void* _mesh, const unsigned int primID, co
   return st;
 }
 
-Vec3fa getTextureTexel3f(void *_texture,float u, float v)
+Vec3fa getTextureTexel3f(void *_texture,float s, float t)
 {
   Texture *texture = (Texture*)_texture;
   if (texture->format == RGBA8)
     {
-      u = max(min(u,1.0f),0.0f);
-      v = max(min(v,1.0f),0.0f);
-      int iu = (int)(u * (float)(texture->width-1));
-      int iv = (int)(v * (float)(texture->height-1));
+      //u = max(min(u,1.0f),0.0f);
+      //v = max(min(v,1.0f),0.0f);
+     
+      int iu = (int)(s * (float)(texture->width));
+      if (texture->width_mask) 
+	iu &= texture->width_mask;
+      else
+	iu = min(iu,texture->width-1);
+      int iv = (int)(t * (float)(texture->height));
+      if (texture->height_mask) 
+	iv &= texture->height_mask;
+      else
+	iv = min(iv,texture->height-1);
       unsigned char *t = (unsigned char*)texture->data + (iv * texture->width + iu) * 4; //texture->bytesPerTexel;
       return Vec3fa(  (float)t[0] * 1.0f/255.0f, (float)t[1] * 1.0f/255.0f, (float)t[2] * 1.0f/255.0f );
     }

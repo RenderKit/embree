@@ -150,6 +150,8 @@ struct Texture {
   int height;    
   int format;
   int bytesPerTexel;
+  int width_mask;
+  int height_mask;
   void *data;
 };
 
