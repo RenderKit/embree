@@ -647,7 +647,6 @@ namespace embree
       crease_weight[f] = p->edge_crease_weight;
       edge_level = vertex_level = p->edge_level;
       if (!p->hasOpposite()) crease_weight[f] = inf;
-      
       do 
       {
 	/* store first N-2 vertices of face */
@@ -664,7 +663,8 @@ namespace embree
 	face_size[f] = vn;
 	only_quads &= (vn == 2);
 	p = p_prev;
-	crease_weight[++f] = p->edge_crease_weight;
+	if (f+1 < MAX_FACE_VALENCE) //FIXME: is this right?
+	  crease_weight[++f] = p->edge_crease_weight;
 	vertex_level = max(vertex_level,p->edge_level);
 	
         /* continue with next face */
@@ -675,7 +675,7 @@ namespace embree
         else
         {
           /*! mark first border edge and store dummy vertex for face between the two border edges */
-	  assert(f < MAX_FACE_VALENCE);
+	  assert(f+1 < MAX_FACE_VALENCE);
           border_face = f;
 	  face_size[f] = 2;
           crease_weight[f] = inf; 
@@ -685,7 +685,8 @@ namespace embree
           e++;
 	  assert(e < MAX_EDGE_VALENCE);
           ring[e++] = vtx; // dummy vertex
-          crease_weight[++f] = inf;
+	  if (f+1 < MAX_FACE_VALENCE) //FIXME: is this right?
+	    crease_weight[++f] = inf;
 	  
           /*! goto other side of border */
           p = (SubdivMesh::HalfEdge*) h;
