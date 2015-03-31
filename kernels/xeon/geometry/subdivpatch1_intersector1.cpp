@@ -95,7 +95,7 @@ namespace embree
       }
       else
       {
-        CatmullClarkPatch subpatches[4];
+        array_t<CatmullClarkPatch,4> subpatches;
         patch.subdivide(subpatches);
         for (size_t i=0;i<4;i++)
           if (intersectBounds(pre,ray,subpatches[i].bounds()))
@@ -136,7 +136,7 @@ namespace embree
       }
       else
       {
-        CatmullClarkPatch subpatches[4];
+        array_t<CatmullClarkPatch,4> subpatches;
         patch.subdivide(subpatches);
         for (size_t i=0;i<4;i++)
           if (intersectBounds(pre,ray,subpatches[i].bounds()))

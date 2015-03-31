@@ -23,7 +23,7 @@ namespace embree
   class __aligned(64) CatmullClarkPatch
   {
   public:
-    CatmullClark1Ring ring[4];
+    array_t<CatmullClark1Ring,4> ring;
 
     __forceinline CatmullClarkPatch () {}
 
@@ -204,7 +204,7 @@ namespace embree
       //////////////////////////////
     }
 
-    void subdivide(CatmullClarkPatch patch[4]) const
+    void subdivide(array_t<CatmullClarkPatch,4>& patch) const
     {
       ring[0].subdivide(patch[0].ring[0]);
       ring[1].subdivide(patch[1].ring[1]);
@@ -372,7 +372,7 @@ namespace embree
   {
   public:
     static const size_t SIZE = SubdivMesh::MAX_VALENCE;
-    GeneralCatmullClark1Ring ring[SIZE];
+    array_t<GeneralCatmullClark1Ring,SIZE> ring;
     size_t N;
 
     __forceinline GeneralCatmullClarkPatch () 
@@ -453,7 +453,7 @@ namespace embree
       dest1.crease_weight[2] = dest0.crease_weight[1] = p0.crease_weight[0];
     }
 
-    static __forceinline void init_regular(const Vec3fa_t &center, const Vec3fa_t center_ring[2*SIZE], const float vertex_level, const size_t N, const size_t offset, CatmullClark1Ring &dest)
+    static __forceinline void init_regular(const Vec3fa_t &center, const array_t<Vec3fa_t,2*SIZE>& center_ring, const float vertex_level, const size_t N, const size_t offset, CatmullClark1Ring &dest)
     {
       assert(N<CatmullClark1Ring::MAX_FACE_VALENCE);
       assert(2*N<CatmullClark1Ring::MAX_EDGE_VALENCE);
@@ -475,7 +475,7 @@ namespace embree
         dest.crease_weight[i] = 0.0f;
     }
  
-    __noinline void subdivide(CatmullClarkPatch patch[SIZE], size_t& N_o) const
+    __noinline void subdivide(array_t<CatmullClarkPatch,SIZE>& patch, size_t& N_o) const
     {
       N_o = N;
       assert( N );
@@ -490,7 +490,7 @@ namespace embree
       }
       assert(N < 2*SIZE);
       Vec3fa_t center = Vec3fa_t(0.0f);
-      Vec3fa_t center_ring[2*SIZE];
+      array_t<Vec3fa_t,2*SIZE> center_ring;
       float center_vertex_level = 2.0f; // guarantees that irregular vertices get always isolated also for non-quads
 
       for (size_t i=0; i<N; i++)
@@ -515,7 +515,7 @@ namespace embree
 
       for (size_t i=0; i<N; i++) {
         init_regular(center,center_ring,center_vertex_level,N,2*i,patch[i].ring[2]);
-
+        
 	assert( patch[i].ring[2].hasValidPositions() );
       }
     }

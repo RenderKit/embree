@@ -110,7 +110,7 @@ namespace embree
       if (patch.isRegularOrFinal2(depth))
 	return dice(patch,srange,erange);
 
-      CatmullClarkPatch patches[4]; 
+      array_t<CatmullClarkPatch,4> patches; 
       patch.subdivide(patches);
 
       const Vec2f c = srange.center();
@@ -143,7 +143,7 @@ namespace embree
     __forceinline FeatureAdaptiveEvalSubdivision (const SubdivMesh::HalfEdge* h, const BufferT<Vec3fa>& vertices, Tessellator& tessellator)
       : tessellator(tessellator)
     {
-      int neighborSubdiv[GeneralCatmullClarkPatch::SIZE];
+      int neighborSubdiv[GeneralCatmullClarkPatch::SIZE]; // FIXME: use array_t
       const GeneralCatmullClarkPatch patch(h,vertices);
       for (size_t i=0; i<patch.size(); i++) {
 	neighborSubdiv[i] = h->hasOpposite() ? !h->opposite()->isGregoryFace() : 0; h = h->next();
@@ -164,11 +164,11 @@ namespace embree
 
       /* subdivide patch */
       size_t N;
-      CatmullClarkPatch patches[GeneralCatmullClarkPatch::SIZE]; 
+      array_t<CatmullClarkPatch,GeneralCatmullClarkPatch::SIZE> patches; 
       patch.subdivide(patches,N);
 
       /* check if subpatches need further subdivision */
-      bool childSubdiv[GeneralCatmullClarkPatch::SIZE];
+      array_t<bool,GeneralCatmullClarkPatch::SIZE> childSubdiv;
       for (size_t i=0; i<N; i++)
         childSubdiv[i] = !patches[i].isGregoryOrFinal(depth);
 
