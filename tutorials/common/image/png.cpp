@@ -23,7 +23,6 @@
 
 namespace embree
 {
-
   /*! read PNG file from disk */
   Ref<Image> loadPNG(const FileName& fileName)
   {
@@ -34,10 +33,8 @@ namespace embree
  
     //open file as binary
     FILE* fp = fopen(fileName.c_str(), "rb");
-    if (!fp) {
-      FATAL("can't load texture, code 0");
-      return NULL;
-    }
+    if (!fp) 
+      THROW_RUNTIME_ERROR("cannot open file "+fileName.str());
 
     //read the header
     fread(header, 1, 8, fp);
@@ -46,8 +43,7 @@ namespace embree
     int is_png = !png_sig_cmp(header, 0, 8);
     if (!is_png) {
       fclose(fp);
-       FATAL("can't load texture, code 1");
-      return NULL;
+      THROW_RUNTIME_ERROR("invalid PNG file "+fileName.str());
     }
 
     //create png struct
@@ -55,8 +51,7 @@ namespace embree
                                                  NULL, NULL);
     if (!png_ptr) {
       fclose(fp);
-      FATAL("can't load texture, code 2");      
-      return NULL;
+      THROW_RUNTIME_ERROR("invalid PNG file "+fileName.str());
     }
  
     //create png info struct
@@ -64,8 +59,7 @@ namespace embree
     if (!info_ptr) {
       png_destroy_read_struct(&png_ptr, (png_infopp) NULL, (png_infopp) NULL);
       fclose(fp);
-      FATAL("can't load texture, code 3");
-      return NULL;
+      THROW_RUNTIME_ERROR("invalid PNG file "+fileName.str());
     }
  
     //create png info struct
@@ -73,8 +67,7 @@ namespace embree
     if (!end_info) {
       png_destroy_read_struct(&png_ptr, &info_ptr, (png_infopp) NULL);
       fclose(fp);
-      FATAL("can't load texture, code 4");     
-      return NULL;
+      THROW_RUNTIME_ERROR("invalid PNG file "+fileName.str());
     }
  
     //png error stuff, not sure libpng man suggests this.
@@ -105,7 +98,7 @@ namespace embree
     width = twidth;
     height = theight;
     
-    PRINT(width);
+    PRINT(width); // FIXME: remove
     PRINT(height);
     PRINT(bit_depth);
     PRINT(color_type);
@@ -118,36 +111,34 @@ namespace embree
     // Row size in bytes.
     int rowbytes = png_get_rowbytes(png_ptr, info_ptr);
 
-    PRINT(rowbytes);
-    
     // Allocate the image_data as a big block, to be given to opengl
     unsigned char *data = new png_byte[rowbytes * height];
     if (!data) {
       //clean up memory and close stuff
       png_destroy_read_struct(&png_ptr, &info_ptr, &end_info);
       fclose(fp);
-      FATAL("can't load texture, code 5");
+      THROW_RUNTIME_ERROR("invalid PNG file "+fileName.str());
       return img;
     }
  
-    //row_pointers is for pointing to image_data for reading the png with libpng
+    // row_pointers is for pointing to image_data for reading the png with libpng
     png_bytep *row_pointers = new png_bytep[height];
     if (!row_pointers) {
       //clean up memory and close stuff
       png_destroy_read_struct(&png_ptr, &info_ptr, &end_info);
       delete[] data;
       fclose(fp);
-      FATAL("can't load texture, code 6");
-      return img;
+      THROW_RUNTIME_ERROR("invalid PNG file "+fileName.str());
     }
+
     // set the individual row_pointers to point at the correct offsets of image_data
     for (int i = 0; i < height; ++i)
       row_pointers[height - 1 - i] = (unsigned char*)data + i * rowbytes;
  
-    //read the png into image_data through row_pointers
+    // read the png into image_data through row_pointers
     png_read_image(png_ptr, row_pointers);
   
-    //clean up memory and close stuff
+    // clean up memory and close stuff
     png_destroy_read_struct(&png_ptr, &info_ptr, &end_info);
     delete[] row_pointers;
     fclose(fp);
@@ -155,7 +146,6 @@ namespace embree
 
     if (color_type == PNG_COLOR_TYPE_RGB && bit_depth == 8)
       {
-        PRINT("RGB");
 	for (size_t y=0;y<height;y++)
 	  for (size_t x=0;x<width;x++)
 	    {
@@ -166,7 +156,6 @@ namespace embree
       }
     else if (color_type == PNG_COLOR_TYPE_RGBA && bit_depth == 8)
       {
-        PRINT("RGBA");
 	for (size_t y=0;y<height;y++)
 	  for (size_t x=0;x<width;x++)
 	    {
@@ -176,7 +165,7 @@ namespace embree
 	    }
       }
     else
-      PRINT("UNKNOWN");
+      THROW_RUNTIME_ERROR("invalid color type in PNG file "+fileName.str());
 
     delete[] data;
       

@@ -242,7 +242,7 @@ namespace embree
 #if defined(__USE_OPENSUBDIV__)
     mapKeyToFunction('t', toggleOpenSubdiv);
 #endif
-	std::cout << " === Possible cmd line options: -lazy, -pregenerate, -cache === " << std::endl;
+    std::cout << " === Possible cmd line options: -lazy, -pregenerate, -cache === " << std::endl;
 
     /*! Parse command line options. */  
     parseCommandLine(new ParseStream(new CommandLineStream(argc, argv)), FileName());
@@ -278,7 +278,7 @@ namespace embree
     /* interactive mode */
     if (g_interactive) {
       initWindowState(argc,argv,tutorialName, g_width, g_height, g_fullscreen);
-
+      
       enterWindowRunLoop(g_anim_mode);
     }
 

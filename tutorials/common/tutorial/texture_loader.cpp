@@ -14,7 +14,6 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#if USE_LIBPNG
 #include "texture_loader.h"
 #include "image/image.h"
 
@@ -47,4 +46,4 @@ namespace embree
     return texture;
   }
 }
-#endif
+

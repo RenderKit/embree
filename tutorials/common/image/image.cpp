@@ -23,7 +23,7 @@
 namespace embree
 {
   /*! loads an image from a file with auto-detection of format */
-  Ref<Image> loadImageFromDisk(const FileName& fileName) try
+  Ref<Image> loadImageFromDisk(const FileName& fileName)
   {
     std::string ext = strlwr(fileName.ext());
 #ifdef USE_OPENEXR
@@ -49,10 +49,6 @@ namespace embree
     if (ext == "ppm" ) return loadPPM(fileName);
     THROW_RUNTIME_ERROR("image format " + ext + " not supported");
   }
-  catch (const std::exception& e) {
-    std::cout << "cannot read file " << fileName << ": " << e.what() << std::endl;
-    return null;
-  }
 
   /*! loads an image from a file with auto-detection of format */
   Ref<Image> loadImage(const FileName& fileName, bool cache)
@@ -69,7 +65,7 @@ namespace embree
   }
 
   /*! stores an image to file with auto-detection of format */
-  void storeImage(const Ref<Image>& img, const FileName& fileName) try
+  void storeImage(const Ref<Image>& img, const FileName& fileName)
   {
     std::string ext = strlwr(fileName.ext());
 #ifdef USE_OPENEXR
@@ -89,9 +85,6 @@ namespace embree
     if (ext == "ppm" ) { storePPM(img, fileName);  return; }
     if (ext == "tga" ) { storeTga(img, fileName);  return; }
     THROW_RUNTIME_ERROR("image format " + ext + " not supported");
-  }
-  catch (const std::exception& e) {
-    std::cout << "cannot write file " << fileName << ": " << e.what() << std::endl;
   }
 
   /*! template instantiations */
