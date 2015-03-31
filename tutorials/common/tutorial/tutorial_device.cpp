@@ -736,7 +736,7 @@ Vec3fa getPtexTexel3f(void* filter, int faceId, float u, float v)
 Vec3fa getTextureTexel3f(void *_texture,float u, float v)
 {
   Texture *texture = (Texture*)_texture;
-  if (texture->format == RGB8)
+  if (texture->format == RGBA8)
     {
       int iu = (int)(u * (float)texture->width);
       int iv = (int)(v * (float)texture->height);
