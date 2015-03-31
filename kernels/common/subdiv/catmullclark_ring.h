@@ -32,7 +32,7 @@ namespace embree
     static const size_t MAX_FACE_VALENCE = SubdivMesh::MAX_RING_FACE_VALENCE;
     static const size_t MAX_EDGE_VALENCE = SubdivMesh::MAX_RING_EDGE_VALENCE;
     
-    array_t<Vec3fa,MAX_EDGE_VALENCE> ring ;
+    array_t<Vec3fa,MAX_EDGE_VALENCE> ring ; // FIXME: also store size in these arrays for more accurate checks
     array_t<float,MAX_FACE_VALENCE> crease_weight;
     
     int border_index;
