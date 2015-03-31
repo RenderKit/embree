@@ -98,6 +98,7 @@ namespace embree
 					   CatmullClark1Ring& dest0,
 					   CatmullClark1Ring& dest1) 
     {
+      assert(p1.face_valence > 2);
       dest1.vertex_level = dest0.vertex_level = p0.edge_level;
       dest1.face_valence = dest0.face_valence = 4;
       dest1.edge_valence = dest0.edge_valence = 8;
@@ -231,22 +232,26 @@ namespace embree
       patch[3].ring[2].edge_level = 0.5f*ring[2].edge_level;
       patch[3].ring[3].edge_level = 0.5f*ring[3].edge_level;
 
-      if (likely(ring[0].has_last_face()))
+      const bool regular0 = ring[0].has_last_face() && ring[1].face_valence > 2;
+      if (likely(regular0))
         init_regular(patch[0].ring[0],patch[1].ring[1],patch[0].ring[1],patch[1].ring[0]);
       else
         init_border(patch[0].ring[0],patch[1].ring[1],patch[0].ring[1],patch[1].ring[0]);
 
-      if (likely(ring[1].has_last_face()))
+      const bool regular1 = ring[1].has_last_face() && ring[2].face_valence > 2;
+      if (likely(regular1))
         init_regular(patch[1].ring[1],patch[2].ring[2],patch[1].ring[2],patch[2].ring[1]);
       else
         init_border(patch[1].ring[1],patch[2].ring[2],patch[1].ring[2],patch[2].ring[1]);
 
-      if (likely(ring[2].has_last_face()))
+      const bool regular2 = ring[2].has_last_face() && ring[3].face_valence > 2;
+      if (likely(regular2))
         init_regular(patch[2].ring[2],patch[3].ring[3],patch[2].ring[3],patch[3].ring[2]);
       else
         init_border(patch[2].ring[2],patch[3].ring[3],patch[2].ring[3],patch[3].ring[2]);
 
-      if (likely(ring[3].has_last_face()))
+      const bool regular3 = ring[3].has_last_face() && ring[0].face_valence > 2;
+      if (likely(regular3))
         init_regular(patch[3].ring[3],patch[0].ring[0],patch[3].ring[0],patch[0].ring[3]);
       else
         init_border(patch[3].ring[3],patch[0].ring[0],patch[3].ring[0],patch[0].ring[3]);
@@ -403,6 +408,7 @@ namespace embree
 					   CatmullClark1Ring& dest0,
 					   CatmullClark1Ring& dest1) 
     {
+      assert(p1.face_valence > 2);
       dest1.vertex_level = dest0.vertex_level = p0.edge_level;
       dest1.face_valence = dest0.face_valence = 4;
       dest1.edge_valence = dest0.edge_valence = 8;
@@ -497,8 +503,9 @@ namespace embree
       {
         size_t ip1 = (i+1)%N; // FIXME: %
         size_t im1 = (i+N-1)%N; // FIXME: %
-        if (likely(ring[i].has_last_face())) init_regular(patch[i].ring[0],patch[ip1].ring[0],patch[i].ring[1],patch[ip1].ring[3]); 
-        else                                 init_border (patch[i].ring[0],patch[ip1].ring[0],patch[i].ring[1],patch[ip1].ring[3]);
+        bool regular = ring[i].has_last_face() && ring[ip1].face_valence > 2;
+        if (likely(regular)) init_regular(patch[i].ring[0],patch[ip1].ring[0],patch[i].ring[1],patch[ip1].ring[3]); 
+        else                 init_border (patch[i].ring[0],patch[ip1].ring[0],patch[i].ring[1],patch[ip1].ring[3]);
 
 	assert( patch[i].ring[1].hasValidPositions() );
 	assert( patch[ip1].ring[3].hasValidPositions() );
