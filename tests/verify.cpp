@@ -3089,7 +3089,6 @@ namespace embree
 #endif
 #endif
 
-
     POSITIVE("regression_static",         rtcore_regression(rtcore_regression_static_thread,0));
     POSITIVE("regression_dynamic",        rtcore_regression(rtcore_regression_dynamic_thread,0));
 

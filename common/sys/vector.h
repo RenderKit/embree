@@ -20,30 +20,30 @@
 
 namespace embree
 {
-  template<typename T>
-    class vector_t
+  template<typename T, typename allocator = std::allocator<T> >
+    class vector_base
     {
     public:
 
-      vector_t () 
+      vector_base () 
         : size_active(0), size_alloced(0), items(NULL) {}
 
-      vector_t (size_t sz) 
+      vector_base (size_t sz) 
         : size_active(0), size_alloced(0), items(NULL) { resize(sz); }
 
-      ~vector_t() {
+      ~vector_base() {
         clear();
       }
 
-      vector_t (const vector_t<T>& other)
+      vector_base (const vector_base<T>& other)
       {
         size_active = other.size_active;
         size_alloced = other.size_alloced;
-        items = (T*)alignedMalloc(size_alloced*sizeof(T),64);
+        items = alloc.allocate(size_alloced);
         for (size_t i=0; i<size_active; i++) items[i] = other.items[i];
       }
 
-      vector_t<T>& operator=(const vector_t<T>& other) 
+      vector_base<T>& operator=(const vector_base<T>& other) 
       {
         resize(other.size_active);
         for (size_t i=0; i<size_active; i++) items[i] = other.items[i];
@@ -112,10 +112,10 @@ namespace embree
       {
         /* destroy elements */
         for (size_t i=0; i<size_active; i++)
-          items[i].~T();
+          alloc.destroy(&items[i]);
         
         /* free memory */
-        alignedFree(items); items = NULL;
+        alloc.deallocate(items,size_alloced); items = NULL;
         size_active = size_alloced = 0;
       }
 
@@ -127,7 +127,7 @@ namespace embree
 
         /* destroy elements */
         for (size_t i=new_active; i<size_active; i++)
-          items[i].~T();
+          alloc.destroy(&items[i]);
 
         size_t size_copy = new_active < size_active ? new_active : size_active;
         size_active = new_active;
@@ -138,9 +138,9 @@ namespace embree
         
         /* reallocate and copy items */
         T* old_items = items;
-        items = (T*)alignedMalloc(new_alloced*sizeof(T),64);
+        items = alloc.allocate(new_alloced);
         for (size_t i=0; i<size_copy; i++) items[i] = old_items[i];
-        alignedFree(old_items);
+        alloc.deallocate(old_items,size_alloced);
         size_alloced = new_alloced;
       }
 
@@ -161,8 +161,12 @@ namespace embree
       }
 
     private:
+      allocator alloc;
       size_t size_active;    // number of valid items
       size_t size_alloced;   // number of items allocated
       T* items;              // data array
     };
+
+  template<typename T>
+    using vector_t = vector_base<T,aligned_allocator<T,std::alignment_of<T>::value> >;
 }
