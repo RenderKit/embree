@@ -165,8 +165,6 @@ namespace embree
 
   void send_mesh (OBJScene::Mesh* mesh)
   {
-    PING;
-
     COIRESULT result;
     struct {
       COIBUFFER position;      //!< vertex position array
@@ -273,7 +271,6 @@ namespace embree
 
   void send_subdiv_mesh (OBJScene::SubdivMesh* mesh)
   {
-
     COIRESULT result;
     struct {
       COIBUFFER positions;      

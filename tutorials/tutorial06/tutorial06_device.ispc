@@ -957,7 +957,7 @@ void updateEdgeLevels(uniform ISPCScene* uniform scene_in, const uniform Vec3fa&
   {
     uniform ISPCSubdivMesh* uniform mesh = g_ispc_scene->subdiv[g];
     uniform unsigned int geomID = mesh->geomID;
-
+    print("here\n");
 #if defined(ISPC)
       launch[ getNumHWThreads() ] updateEdgeLevelBufferTask(mesh,cam_pos); sync;	           
 #else
@@ -973,7 +973,7 @@ void convertSubdivMeshes(uniform ISPCScene* uniform scene_in, RTCScene scene_out
   for (uniform size_t i=0; i<g_ispc_scene->numSubdivMeshes; i++)
   {
     uniform ISPCSubdivMesh* uniform mesh = g_ispc_scene->subdiv[i];
-    uniform unsigned int geomID = rtcNewSubdivisionMesh(scene_out, RTC_GEOMETRY_STATIC, mesh->numFaces, mesh->numEdges, mesh->numVertices, 
+    uniform unsigned int geomID = rtcNewSubdivisionMesh(scene_out, RTC_GEOMETRY_DYNAMIC, mesh->numFaces, mesh->numEdges, mesh->numVertices, 
 						mesh->numEdgeCreases, mesh->numVertexCreases, mesh->numHoles);
     mesh->geomID = geomID;												
     assert(geomID < numGeometries);
@@ -999,10 +999,7 @@ void convertSubdivMeshes(uniform ISPCScene* uniform scene_in, RTCScene scene_out
 typedef void* uniform void_ptr;
 
 RTCScene convertScene(uniform ISPCScene* uniform scene_in,const uniform Vec3fa& cam_org)
-{
-  if (g_ispc_scene->numSubdivMeshes > 0)
-       g_subdiv_mode = true;
-  
+{  
   uniform size_t numGeometries = scene_in->numMeshes + scene_in->numSubdivMeshes;
 
   geomID_to_mesh = uniform new void_ptr[numGeometries];
@@ -1369,7 +1366,11 @@ export void device_render (uniform int* uniform pixels,
   /* create scene */
   if (g_scene == NULL)
    {
+     if (g_ispc_scene->numSubdivMeshes > 0)
+       g_subdiv_mode = true;
+
      g_scene = convertScene(g_ispc_scene,cam_org);
+
 #if !defined(FORCE_FIXED_EDGE_TESSELLATION)
     if (g_subdiv_mode)
       updateEdgeLevels(g_ispc_scene, cam_org);

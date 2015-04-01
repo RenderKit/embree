@@ -187,7 +187,7 @@ void convertScene(uniform ISPCScene* uniform scene_in, const uniform Vec3fa& p)
     print("numVertexCreases %\n",mesh->numVertexCreases);
     print("numHoles %\n",mesh->numHoles);
 #endif
-    uniform unsigned int geomID = rtcNewSubdivisionMesh(g_scene, RTC_GEOMETRY_STATIC, mesh->numFaces, mesh->numEdges, mesh->numVertices, 
+    uniform unsigned int geomID = rtcNewSubdivisionMesh(g_scene, RTC_GEOMETRY_DYNAMIC, mesh->numFaces, mesh->numEdges, mesh->numVertices, 
 							mesh->numEdgeCreases, mesh->numVertexCreases, mesh->numHoles);
     mesh->geomID = geomID;
 
