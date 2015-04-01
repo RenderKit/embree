@@ -380,20 +380,27 @@ namespace embree
     __forceinline bool isGregoryOrFinal(const size_t depth) const 
     {
       if (depth < MAX_DEPTH_SUBDIVISION)      
-      //if (vertex_level > 1.0f) 
       {
 	if (vertex_crease_weight > 0.0f) 
-	  return false;
+	  {
+	    return false;
+	  }
 	
 	for (size_t i=1; i<face_valence; i++) 
 	  if (crease_weight[i] > 0.0f && (2*i != border_index) && (2*(i-1) != border_index)) 
-	    return false;
+	    {
+	      return false;
+	    }
 	  
        	if (crease_weight[0] > 0.0f && (2*(face_valence-1) != border_index)) 
-	  return false;
+	  {
+	    return false;
+	  }
 
 	if (!noForcedSubdivision)
-	  return false;
+	  {
+	    return false;
+	  }
       }
       return true;
     }
