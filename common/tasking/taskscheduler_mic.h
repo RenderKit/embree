@@ -17,9 +17,9 @@
 #pragma once
 
 #include "taskscheduler.h"
-#include "sys/sync/mutex.h"
-#include "sys/sync/barrier.h"
-#include "sys/sync/atomic.h"
+#include "sys/mutex.h"
+#include "sys/barrier.h"
+#include "sys/atomic.h"
 
 namespace embree
 {

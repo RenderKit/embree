@@ -23,9 +23,9 @@
 #include "sys/intrinsics.h"
 #include "sys/thread.h"
 #include "sys/sysinfo.h"
-#include "sys/sync/barrier.h"
-#include "sys/sync/mutex.h"
-#include "sys/sync/condition.h"
+#include "sys/barrier.h"
+#include "sys/mutex.h"
+#include "sys/condition.h"
 #include <vector>
 #include <iostream>
 #include <fstream>

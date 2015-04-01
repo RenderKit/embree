@@ -17,7 +17,7 @@
 #pragma once
 
 #include "platform.h"
-#include "sync/mutex.h"
+#include "mutex.h"
 
 #include <vector>
 

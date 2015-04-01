@@ -36,15 +36,13 @@ ADD_LIBRARY(sys STATIC
   network.cpp
   string.cpp
   regression.cpp
-  sync/mutex.cpp
-  sync/condition.cpp
-  sync/barrier.cpp
+  mutex.cpp
+  condition.cpp
+  barrier.cpp
 )
 
 TARGET_LINK_LIBRARIES(sys ${CMAKE_THREAD_LIBS_INIT} ${CMAKE_DL_LIBS})
 SET_PROPERTY(TARGET sys PROPERTY FOLDER common)
-SOURCE_GROUP("Source Files\\sync" "sync/.*" )
-SOURCE_GROUP("Source Files\\stl" "stl/.*" )
 
 ELSE ()
  
@@ -59,9 +57,9 @@ ADD_LIBRARY(sys_xeonphi STATIC
   network.cpp
   string.cpp
   regression.cpp
-  sync/mutex.cpp
-  sync/condition.cpp
-  sync/barrier.cpp
+  mutex.cpp
+  condition.cpp
+  barrier.cpp
 )
 
 TARGET_LINK_LIBRARIES(sys_xeonphi ${CMAKE_THREAD_LIBS_INIT} ${CMAKE_DL_LIBS})
