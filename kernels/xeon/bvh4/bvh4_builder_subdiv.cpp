@@ -91,7 +91,7 @@ namespace embree
 
       BVH4* bvh;
       Scene* scene;
-      vector<PrimRef> prims;
+      mvector<PrimRef> prims;
       
       BVH4SubdivPatch1BuilderBinnedSAHClass (BVH4* bvh, Scene* scene)
         : bvh(bvh), scene(scene) {}
@@ -142,7 +142,7 @@ namespace embree
 
       BVH4* bvh;
       Scene* scene;
-      vector<PrimRef> prims;
+      mvector<PrimRef> prims;
       ParallelForForPrefixSumState<PrimInfo> pstate;
       
       BVH4SubdivGridBuilderBinnedSAHClass (BVH4* bvh, Scene* scene)
@@ -279,7 +279,7 @@ namespace embree
 
       BVH4* bvh;
       Scene* scene;
-      vector<PrimRef> prims;
+      mvector<PrimRef> prims;
       ParallelForForPrefixSumState<PrimInfo> pstate;
       
       BVH4SubdivGridEagerBuilderBinnedSAHClass (BVH4* bvh, Scene* scene)
@@ -402,7 +402,7 @@ namespace embree
 
       BVH4* bvh;
       Scene* scene;
-      vector<PrimRef> prims; 
+      mvector<PrimRef> prims; 
       ParallelForForPrefixSumState<PrimInfo> pstate;
       
       BVH4SubdivGridLazyBuilderBinnedSAHClass (BVH4* bvh, Scene* scene)
@@ -736,7 +736,7 @@ namespace embree
 
       BVH4* bvh;
       Scene* scene;
-      vector<PrimRef> prims; 
+      mvector<PrimRef> prims; 
       ParallelForForPrefixSumState<PrimInfo> pstate;
       
       BVH4SubdivPatch1CachedBuilderBinnedSAHClass (BVH4* bvh, Scene* scene)

@@ -20,22 +20,22 @@
 
 namespace embree
 {
-  template<typename T, typename allocator = std::allocator<T> >
-    class vector_base
+  template<typename T, typename allocator>
+    class vector_t
     {
     public:
 
-      vector_base () 
+      vector_t () 
         : size_active(0), size_alloced(0), items(NULL) {}
 
-      vector_base (size_t sz) 
+      vector_t (size_t sz) 
         : size_active(0), size_alloced(0), items(NULL) { resize(sz); }
 
-      ~vector_base() {
+      ~vector_t() {
         clear();
       }
 
-      vector_base (const vector_base<T>& other)
+      vector_t (const vector_t& other)
       {
         size_active = other.size_active;
         size_alloced = other.size_alloced;
@@ -43,7 +43,7 @@ namespace embree
         for (size_t i=0; i<size_active; i++) items[i] = other.items[i];
       }
 
-      vector_base<T>& operator=(const vector_base<T>& other) 
+      vector_t& operator=(const vector_t& other) 
       {
         resize(other.size_active);
         for (size_t i=0; i<size_active; i++) items[i] = other.items[i];
@@ -167,6 +167,11 @@ namespace embree
       T* items;              // data array
     };
 
+  /*! vector class that performs aligned allocations */
   template<typename T>
-    using vector_t = vector_base<T,aligned_allocator<T,std::alignment_of<T>::value> >;
+    using avector = vector_t<T,aligned_allocator<T,std::alignment_of<T>::value> >;
+  
+  /*! vector class that performs OS allocations */
+  template<typename T>
+    using ovector = vector_t<T,os_allocator<T> >;
 }

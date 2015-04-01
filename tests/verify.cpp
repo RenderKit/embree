@@ -507,7 +507,7 @@ namespace embree
   unsigned int addSubdivSphere (RTCScene scene, RTCGeometryFlags flags, const Vec3fa& pos, const float r, size_t numPhi, float level, size_t maxFaces = -1, float motion = 0.0f)
   {
     size_t numTheta = 2*numPhi;
-    vector_t<Vec3fa> vertices(numTheta*(numPhi+1));
+    avector<Vec3fa> vertices(numTheta*(numPhi+1));
     std::vector<int> indices;
     std::vector<int> faces;
     std::vector<int> offsets;
@@ -2609,7 +2609,7 @@ namespace embree
       task->scene = rtcNewScene(sflag,aflags);
       CountErrors();
       if (g_enable_build_cancel) rtcSetProgressMonitorFunction(task->scene,monitorProgressFunction,NULL);
-      vector_t<Sphere*> spheres;
+      avector<Sphere*> spheres;
       
       for (size_t j=0; j<10; j++) 
       {

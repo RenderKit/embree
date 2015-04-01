@@ -101,7 +101,7 @@ namespace embree
       BVH4* bvh;
       Scene* scene;
       Mesh* mesh;
-      vector<PrimRef> prims;
+      mvector<PrimRef> prims;
       const size_t sahBlockSize;
       const float intCost;
       const size_t minLeafSize;
@@ -510,7 +510,7 @@ namespace embree
       BVH4* bvh;
       Scene* scene;
       Mesh* mesh;
-      vector<PrimRef> prims; 
+      mvector<PrimRef> prims; 
       const size_t sahBlockSize;
       const float intCost;
       const size_t minLeafSize;

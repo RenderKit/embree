@@ -29,7 +29,7 @@ namespace embree
     {
       BVH4* bvh;
       Scene* scene;
-      vector<BezierPrim> prims;
+      mvector<BezierPrim> prims;
 
       BVH4HairBuilderSAH (BVH4* bvh, Scene* scene)
         : bvh(bvh), scene(scene) {}
@@ -121,7 +121,7 @@ namespace embree
     {
       BVH4* bvh;
       Scene* scene;
-      vector<BezierPrim> prims;
+      mvector<BezierPrim> prims;
 
       BVH4HairMBBuilderSAH (BVH4* bvh, Scene* scene)
         : bvh(bvh), scene(scene) {}

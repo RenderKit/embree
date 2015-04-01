@@ -78,8 +78,8 @@ namespace embree
       Scene* scene;
       createTriangleMeshAccelTy createTriangleMeshAccel;
       
-      vector<BuildRef> refs;
-      vector<PrimRef> prims;
+      mvector<BuildRef> refs;
+      mvector<PrimRef> prims;
       AlignedAtomicCounter32 nextRef;
     };
   }

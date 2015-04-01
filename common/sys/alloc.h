@@ -85,5 +85,34 @@ namespace embree
   void  os_shrink (void* ptr, size_t bytesNew, size_t bytesOld);
   void  os_free   (void* ptr, size_t bytes);
   void* os_realloc(void* ptr, size_t bytesNew, size_t bytesOld);
+
+  /*! allocator that performs OS allocations */
+  template<typename T>
+    struct os_allocator
+    {
+      typedef T value_type;
+      typedef T* pointer;
+      typedef const T* const_pointer;
+      typedef T& reference;
+      typedef const T& const_reference;
+      typedef std::size_t size_type;
+      typedef std::ptrdiff_t difference_type;
+
+      __forceinline pointer allocate( size_type n ) {
+        return (pointer) os_malloc(n*sizeof(value_type));
+      }
+
+      __forceinline void deallocate( pointer p, size_type n ) {
+        return os_free(p,n*sizeof(value_type));
+      }
+
+      __forceinline void construct( pointer p, const_reference val ) {
+        new (p) T(val);
+      }
+
+      __forceinline void destroy( pointer p ) {
+        p->~T();
+      }
+    };
 }
 

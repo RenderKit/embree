@@ -165,7 +165,7 @@ namespace embree
     size_t numTheta = 2*numPhi;
     subdiv_mesh->positions.resize( numTheta*(numPhi+1) );
 
-    //vector_t<Vec3fa> vertices(numTheta*(numPhi+1));
+    //avector<Vec3fa> vertices(numTheta*(numPhi+1));
     //std::vector<int> indices;
     //std::vector<int> faces;
     //std::vector<int> offsets;
