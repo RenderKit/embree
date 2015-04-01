@@ -85,6 +85,8 @@ namespace embree
 		r.Ng = normal;
 	      }
 #endif
+
+#if FORCE_TRIANGLE_UV == 0
 	    const Vec2f uv0 = hit_patch->getUV(0);
 	    const Vec2f uv1 = hit_patch->getUV(1);
 	    const Vec2f uv2 = hit_patch->getUV(2);
@@ -95,6 +97,7 @@ namespace embree
 
 	    r.u      = patch_u;
 	    r.v      = patch_v;
+#endif
             r.geomID = hit_patch->geom;
             r.primID = hit_patch->prim;
           }
