@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include "platform.h"
 #include "intrinsics.h"
 
 namespace embree

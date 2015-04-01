@@ -21,44 +21,72 @@
 
 namespace embree
 {
-  
   class EventSys
   {
   public:
-    EventSys() 
+    __forceinline EventSys() 
       : event(false) {}
     
-    void reset() {
+    __forceinline void reset() 
+    {
+      mutex.lock();
       event = false;
+      mutex.unlock();
     }
 
-    void signal() {
-#if defined(__MIC__)
-      event = true;
-#else
+    __forceinline void signal() 
+    {
       mutex.lock();
       event = true;
       condition.broadcast(); // this broadcast has to be protected!
       mutex.unlock();
-#endif
     }
 
-    void wait() {
-#if defined(__MIC__)
-      while (!event) __pause_cpu(1024);
-#else
+    __forceinline void wait() 
+    {
       mutex.lock();
       while (!event) condition.wait(mutex);
       mutex.unlock();
-#endif
 
     }
 
   protected:
     volatile bool event;
-#if !defined(__MIC__)
     MutexSys mutex;
     ConditionSys condition;
-#endif
   };
+
+  class EventActive
+  {
+  public:
+    __forceinline EventActive () 
+      : event(false) {}
+    
+    __forceinline void reset() 
+    {
+      __memory_barrier();
+      event = false;
+      __memory_barrier();
+    }
+
+    __forceinline void signal() 
+    {
+      __memory_barrier();
+      event = true;
+      __memory_barrier();
+    }
+
+    __forceinline void wait() {
+      while (!event) __pause_cpu(1024);
+    }
+
+  protected:
+    volatile bool event;
+  };
+
+#if defined(__MIC__)
+  typedef EventActive Event;
+#else
+  typedef EventSys Event;
+#endif
 }

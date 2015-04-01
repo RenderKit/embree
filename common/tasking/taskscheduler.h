@@ -124,7 +124,7 @@ namespace embree
       __forceinline void sync() { dec(); event.wait(); }
       void trigger() { event.signal(); }
     public:
-      EventSys event;
+      embree::Event event;
     };
 
   protected:
