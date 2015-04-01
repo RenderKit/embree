@@ -99,7 +99,7 @@ ELSE()
 ENDIF()
 
 CONFIGURE_FILE(
-  "${PROJECT_SOURCE_DIR}/common/sys/config.h.in"
+  "${PROJECT_SOURCE_DIR}/kernels/config.h.in"
   "${PROJECT_BINARY_DIR}/config.h"
 )
 

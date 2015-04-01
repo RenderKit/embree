@@ -23,7 +23,7 @@
 namespace embree
 {
   /*! Task scheduler implementing a stack of tasks. */
-  class __hidden TaskSchedulerSys : public TaskScheduler
+  class TaskSchedulerSys : public TaskScheduler
   {
   public:
 
