@@ -65,7 +65,7 @@
 #include "simd/simd.h"
 #include "embree2/rtcore.h"
 #include "stat.h"
-#include "vector.h"
+#include "monitor.h"
 #include "profile.h"
 
 #include <map>

@@ -386,7 +386,7 @@ namespace embree
         
 	/* clear temporary data for static geometry */
 	bool staticGeom = scene->isStatic();
-	if (staticGeom) prims.resize(0,true);
+	if (staticGeom) prims.clear();
         bvh->alloc.cleanup();
         bvh->postBuild(t0);
       }
@@ -514,7 +514,7 @@ namespace embree
         
 	/* clear temporary data for static geometry */
 	bool staticGeom = scene->isStatic();
-	if (staticGeom) prims.resize(0,true);
+	if (staticGeom) prims.clear();
         bvh->alloc.cleanup();
         bvh->postBuild(t0);
       }
@@ -1022,7 +1022,7 @@ namespace embree
       
 	/* clear temporary data for static geometry */
 	bool staticGeom = scene->isStatic();
-	if (staticGeom) prims.resize(0,true);
+	if (staticGeom) prims.clear();
         bvh->alloc.cleanup();
         bvh->postBuild(t0);
       }

@@ -135,7 +135,7 @@ namespace embree
         /* fast path for empty BVH */
         const size_t numPrimitives = scene->getNumPrimitives<BezierCurves,2>();
         if (numPrimitives == 0) {
-          prims.resize(0,true);
+          prims.clear();
           bvh->set(BVH4::emptyNode,empty,0);
           return;
         }
@@ -198,7 +198,7 @@ namespace embree
         //});
         
         /* clear temporary data for static geometry */
-        if (scene->isStatic()) prims.resize(0,true);
+        if (scene->isStatic()) prims.clear();
         bvh->alloc.cleanup();
         bvh->postBuild(t0);
       }
