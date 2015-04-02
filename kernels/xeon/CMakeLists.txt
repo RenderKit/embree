@@ -54,7 +54,7 @@ ADD_ISPC_LIBRARY(embree ${EMBREE_LIB_TYPE}
 
   embree.rc
 
-  ../../common/tasking/taskscheduler_new.cpp
+  ../../common/tasking/taskscheduler_new.cpp # FIXME: only compile this file if required 
   ../../common/tasking/tasksys.cpp
   ../algorithms/parallel_for.cpp
   ../algorithms/parallel_reduce.cpp
