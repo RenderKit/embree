@@ -124,7 +124,7 @@ namespace embree
 
 	    addCurrentIndex();
 	    CACHE_STATS(PRINT("RESET TESS CACHE"));
-      //PRINT("RESET TESS CACHE");
+	    //PRINT("RESET TESS CACHE");
 
 #if FORCE_SIMPLE_FLUSH == 1
 	    next_block = 0;

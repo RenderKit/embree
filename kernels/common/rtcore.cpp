@@ -588,7 +588,7 @@ namespace embree
     Stat::clear();
 #endif
 
-#if 0 //FIXME: remove for release
+#if 0//FIXME: remove for release
     using namespace embree;
     extern void clearTessellationCache();
     clearTessellationCache();
