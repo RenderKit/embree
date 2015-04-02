@@ -27,6 +27,7 @@
 #include "tasking/taskscheduler.h"
 #include "sys/thread.h"
 #include "raystream_log.h"
+#include "version.h"
 
 #define TRACE(x) //std::cout << #x << std::endl;
 

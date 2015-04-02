@@ -78,8 +78,6 @@
 #include <iomanip>
 #include <array>
 
-#include "version.h"
-
 namespace embree
 {
 
