@@ -14,8 +14,8 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-SET(EMBREE_VERSION_MAJOR 3)
-SET(EMBREE_VERSION_MINOR 0)
+SET(EMBREE_VERSION_MAJOR 2)
+SET(EMBREE_VERSION_MINOR 5)
 SET(EMBREE_VERSION_PATCH 1)
 SET(EMBREE_VERSION_NOTE " (devel)")
 SET(EMBREE_VERSION ${EMBREE_VERSION_MAJOR}.${EMBREE_VERSION_MINOR}.${EMBREE_VERSION_PATCH})
@@ -393,7 +393,9 @@ IF(WIN32)
   SET(CPACK_NSIS_CONTACT ${CPACK_PACKAGE_CONTACT})
 ELSEIF(APPLE)
   # MacOSX specific settings
-  SET(CPACK_GENERATOR PackageMaker) # Bundle
+  #SET(CPACK_GENERATOR PackageMaker)
+  SET(CPACK_GENERATOR Bundle)
+#  SET(CPACK_BUNDLE_NAME Embree)
 ELSE()
   SET(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_FILE_NAME}-${CPACK_RPM_PACKAGE_RELEASE}.x86_64")
   # RPM specific settings
