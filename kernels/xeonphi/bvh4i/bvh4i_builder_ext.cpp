@@ -867,6 +867,8 @@ PRINT(CORRECT_numPrims);
 
   void BVH4iBuilderSubdivMesh::build(const size_t threadIndex, const size_t threadCount)
   {
+    DBG_CACHE_BUILDER( PING );
+
     leafItemThreshold = 1;
 
     fastUpdateMode = true;
@@ -874,14 +876,20 @@ PRINT(CORRECT_numPrims);
 
       /* initialize all half edge structures */
     new (&iter) Scene::Iterator<SubdivMesh>(this->scene);
+
+    DBG_CACHE_BUILDER( PRINT( iter.size() ) );
+
     for (size_t i=0; i<iter.size(); i++)
       if (iter[i]) 
 	{
+	  DBG_CACHE_BUILDER( PRINT( i ) );
+	  DBG_CACHE_BUILDER( PRINT( iter[i] ) );
+
 	  iter[i]->initializeHalfEdgeStructures();
 	  fastUpdateMode_numFaces += iter[i]->size();
 	  if (!iter[i]->checkLevelUpdate()) fastUpdateMode = false;
 	}
-    DBG_CACHE_BUILDER( PRINT( fastUpdateMode_numFaces ) );
+    DBG_CACHE_BUILDER( PRINT( fastUpdateMode ) );
 
     pstate.init(iter,size_t(1024));
 
@@ -893,7 +901,7 @@ PRINT(CORRECT_numPrims);
       {
 	fastUpdateMode = false;
       }
-    
+
     if (!fastUpdateMode)
       BVH4iBuilder::build(threadIndex,threadCount);
     else

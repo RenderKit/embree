@@ -288,6 +288,7 @@ namespace embree
     assert( mesh->verticesPerFace.size() );
 
 #if 0
+    PRINT( "HOST" );
     PRINT( mesh->positions.size() );
     PRINT( mesh->position_indices.size() );
     PRINT( mesh->verticesPerFace.size() );

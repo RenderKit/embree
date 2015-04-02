@@ -369,17 +369,15 @@ namespace embree
     double t0 = getSeconds();
     /* allocate half edge array */
     halfEdges.resize(numEdges);
-
+    
     /* calculate start edge of each face */
     faceStartEdge.resize(numFaces);
     if (faceVertices.isModified()) 
       numHalfEdges = parallel_prefix_sum(faceVertices,faceStartEdge,numFaces);
 
-
     /* create set with all holes */
     if (holes.isModified())
       holeSet.init(holes);
-
 
     /* create set with all vertex creases */
     if (vertex_creases.isModified() || vertex_crease_weights.isModified())

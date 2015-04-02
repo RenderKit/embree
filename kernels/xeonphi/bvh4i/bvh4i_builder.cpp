@@ -237,7 +237,6 @@ namespace embree
     if (threadIndex != 0) {
       THROW_RUNTIME_ERROR("threadIndex != 0");
     }
-
     const size_t totalNumPrimitives = getNumPrimitives();
 
     /* print builder name */

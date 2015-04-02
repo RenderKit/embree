@@ -93,12 +93,14 @@ struct ISPCSubdivMesh
 {
   ALIGNED_CLASS;
 public:
-  ISPCSubdivMesh(int numVertices, int numFaces, int numEdges, int materialID) : numVertices(numVertices), numFaces(numFaces), numEdges(numEdges), materialID(materialID), 
-										positions(NULL),normals(NULL),position_indices(NULL),
-								normal_indices(NULL),texcoord_indices(NULL), verticesPerFace(NULL),
-								holes(NULL), subdivlevel(NULL), 
-								edge_creases(NULL), edge_crease_weights(NULL), vertex_creases(NULL), 
-								vertex_crease_weights(NULL)
+  ISPCSubdivMesh(int numVertices, int numFaces, int numEdges, int materialID) : 
+    numVertices(numVertices), numFaces(numFaces), numEdges(numEdges), materialID(materialID),
+    numEdgeCreases(0),numVertexCreases(0),numHoles(0),geomID(0),
+    positions(NULL),normals(NULL),position_indices(NULL),
+    normal_indices(NULL),texcoord_indices(NULL), verticesPerFace(NULL),
+    holes(NULL), subdivlevel(NULL), 
+    edge_creases(NULL), edge_crease_weights(NULL), vertex_creases(NULL), 
+    vertex_crease_weights(NULL)
   {
     //PRINT(numVertices);
     //PRINT(numFaces);
@@ -371,9 +373,9 @@ struct ISPCSubdivMeshKeyFrame {
     PRINT( numFaces );
 #endif
 
-    ISPCSubdivMesh* mesh = new ISPCSubdivMesh(in_pMiscData->numPositions,
-					      in_pMiscData->numVerticesPerFace,
-					      in_pMiscData->numPositionIndices,
+    ISPCSubdivMesh* mesh = new ISPCSubdivMesh(numVertices,
+					      numFaces,
+					      numEdges,
 					      in_pMiscData->materialID);
     assert( mesh );
        
@@ -393,7 +395,16 @@ struct ISPCSubdivMeshKeyFrame {
 
     mesh->subdivlevel      = (float*) os_malloc(in_pBufferLengths[1]);
     mesh->face_offsets     = (int*)   os_malloc(sizeof(int) * in_pMiscData->numVerticesPerFace);
-
+    
+#if 0
+    PRINT("DEVICE");
+    PRINT(mesh->numVertices);
+    PRINT(mesh->numEdges);
+    PRINT(mesh->numFaces);
+    PRINT(in_pMiscData->numEdgeCreases);
+    PRINT(in_pMiscData->numEdgeCreaseWeights);
+    PRINT(in_pMiscData->numVertexCreases);
+#endif
 
     if ( in_pMiscData->numEdgeCreases )
       {
@@ -430,9 +441,8 @@ struct ISPCSubdivMeshKeyFrame {
 	mesh->numHoles = in_pMiscData->numHoles;
 	assert(in_pBufferLengths[7] == sizeof(int) * in_pMiscData->numHoles);
 	mesh->holes = (int*)os_malloc(sizeof(int) * in_pMiscData->numHoles); 
-	memcpy(mesh->holes ,in_ppBufferPointers[7],in_pBufferLengths[7]);	
+	memcpy(mesh->holes ,in_ppBufferPointers[7],in_pBufferLengths[7]);
       }
-
 
     for (size_t i=0; i<numEdges; i++) mesh->subdivlevel[i] = 1.0f;
     int offset = 0;
