@@ -132,8 +132,8 @@ namespace embree
     bool subdivMode;
 
     /*! Geometry buffer. */
-    vector_t<Vec3fa> v;
-    vector_t<Vec3fa> vn;
+    avector<Vec3fa> v;
+    avector<Vec3fa> vn;
     std::vector<Vec2f> vt;
     std::vector<Crease> ec;
     std::vector<std::vector<Vertex> > curGroup;

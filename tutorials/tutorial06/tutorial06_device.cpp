@@ -28,8 +28,10 @@
 #define TILE_SIZE_Y 4
 
 #define FIX_SAMPLING 0
-#define SAMPLES_PER_PIXEL 1
-//#define SAMPLES_PER_PIXEL 64
+//#define SAMPLES_PER_PIXEL 1
+#define SAMPLES_PER_PIXEL 4
+
+#define ENABLE_TEXTURING 1
 
 //#define FORCE_FIXED_EDGE_TESSELLATION
 #define FIXED_EDGE_TESSELLATION_VALUE 2
@@ -46,7 +48,7 @@
 #endif
 
 bool g_subdiv_mode = false;
-
+unsigned int keyframeID = 0;
 
 struct DifferentialGeometry
 {
@@ -474,7 +476,13 @@ inline DielectricLayerLambertian make_DielectricLayerLambertian(const Vec3fa& T,
     //if (material->map_Ka) { brdf.Ka *= material->map_Ka->get(dg.st); }
     brdf.Kd = d * Vec3fa(material->Kd);  
     //if (material->map_Kd_ptex) brdf.Kd *= getPtexTexel3f(material->map_Kd_ptex,dg.primID,dg.u,dg.v);
-    if (material->map_Kd) brdf.Kd *= getTextureTexel3f(material->map_Kd,dg.u,dg.v);
+
+#if ENABLE_TEXTURING == 1
+    if (material->map_Kd) 
+      {
+	brdf.Kd = getTextureTexel3f(material->map_Kd,dg.u,dg.v);	
+      }
+#endif
     //if (material->map_Kd) brdf.Kd *= material->map_Kd->get(dg.st);  
     brdf.Ks = d * Vec3fa(material->Ks);  
     //if (material->map_Ks) brdf.Ks *= material->map_Ks->get(dg.st); 
@@ -956,6 +964,30 @@ task void updateEdgeLevelBufferTask( ISPCSubdivMesh* mesh, const Vec3fa& cam_pos
 }
 #endif
 
+void updateKeyFrame(ISPCScene* scene_in)
+{
+  for (size_t g=0; g<scene_in->numSubdivMeshes; g++)
+  {
+    ISPCSubdivMesh* mesh = g_ispc_scene->subdiv[g];
+    unsigned int geomID = mesh->geomID;
+
+    if (g_ispc_scene->subdivMeshKeyFrames)
+      {
+	ISPCSubdivMeshKeyFrame *keyframe = g_ispc_scene->subdivMeshKeyFrames[keyframeID];
+	ISPCSubdivMesh *keyframe_mesh = keyframe->subdiv[g];
+	rtcSetBuffer(g_scene, geomID, RTC_VERTEX_BUFFER, keyframe_mesh->positions, 0, sizeof(Vec3fa  ));
+	rtcUpdateBuffer(g_scene,geomID,RTC_VERTEX_BUFFER);    
+      }
+    
+    //updateEdgeLevelBuffer(mesh,cam_pos,0,mesh->numFaces);
+    //rtcUpdateBuffer(g_scene,geomID,RTC_LEVEL_BUFFER);    
+  }
+
+  keyframeID++;
+  if (keyframeID >= g_ispc_scene->numSubdivMeshKeyFrames)
+    keyframeID = 0;
+
+}
 void updateEdgeLevels(ISPCScene* scene_in, const Vec3fa& cam_pos)
 {
   for (size_t g=0; g<scene_in->numSubdivMeshes; g++)
@@ -970,6 +1002,7 @@ void updateEdgeLevels(ISPCScene* scene_in, const Vec3fa& cam_pos)
 #endif
    rtcUpdateBuffer(g_scene,geomID,RTC_LEVEL_BUFFER);    
   }
+
 }
 
 
@@ -1142,7 +1175,9 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
   Medium medium = make_Medium_Vacuum();
 
   /* initialize ray */
+
   RTCRay ray = RTCRay(p,normalize(x*vx + y*vy + vz),0.0f,inf);
+
 
   /* iterative path tracer loop */
   for (int i=0; i<8; i++)
@@ -1180,6 +1215,7 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
     dg.u = ray.u;
     dg.v = ray.v;
 
+
     dg.P  = ray.org+ray.tfar*ray.dir;
     dg.Ng = face_forward(ray.dir,normalize(ray.Ng));
     //Vec3fa _Ns = interpolate_normal(ray);
@@ -1193,7 +1229,14 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
     if (geomID_to_type[ray.geomID] == 0)
       materialID = ((ISPCMesh*) geomID_to_mesh[ray.geomID])->triangles[ray.primID].materialID; 
     else if (geomID_to_type[ray.geomID] == 1)                             
-      materialID = ((ISPCSubdivMesh*) geomID_to_mesh[ray.geomID])->materialID; 
+      {
+	materialID = ((ISPCSubdivMesh*) geomID_to_mesh[ray.geomID])->materialID; 
+#if ENABLE_TEXTURING == 1
+	const Vec2f st = getTextureCoordinatesSubdivMesh((ISPCSubdivMesh*) geomID_to_mesh[ray.geomID],ray.primID,ray.u,ray.v);
+	dg.u = st.x;
+	dg.v = st.y;
+#endif
+      }
     else
       materialID = ((ISPCMesh*) geomID_to_mesh[ray.geomID])->meshMaterialID; 
 #else 
@@ -1205,8 +1248,8 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
       if (geomID >= 0 && geomID < g_ispc_scene->numMeshes+g_ispc_scene->numSubdivMeshes) { // FIXME: workaround for ISPC bug
 	if (geomID_to_type[geomID] == 0) 
 	  materialID = ((ISPCMesh*) geomID_to_mesh[geomID])->triangles[ray.primID].materialID; 
-	else if (geomID_to_type[geomID] == 1)                             
-	  materialID = ((ISPCSubdivMesh*) geomID_to_mesh[geomID])->materialID; 
+	else if (geomID_to_type[geomID] == 1)                             	
+	    materialID = ((ISPCSubdivMesh*) geomID_to_mesh[geomID])->materialID; 
 	else 
 	  materialID = ((ISPCMesh*) geomID_to_mesh[geomID])->meshMaterialID;         
       }
@@ -1324,18 +1367,15 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
 {
   rand_state state;
 
-  Vec3fa L = Vec3fa(0.0f,0.0f,0.0f);
-
-  for (int i=0; i<SAMPLES_PER_PIXEL; i++) {
-
   init_rand(state,
             253*x+35*y+152*g_accu_count+54,
             1253*x+345*y+1452*g_accu_count+564,
-            10253*x+3435*y+52*g_accu_count+13+i*1793);
+            10253*x+3435*y+52*g_accu_count+13);
 
-  L = L + renderPixelFunction(x,y,state,vx,vy,vz,p); 
-  }
-  L = L*(1.0f/SAMPLES_PER_PIXEL);
+  const float sx = frand(state);
+  const float sy = frand(state);
+
+  Vec3fa L = renderPixelFunction(x+sx,y+sy,state,vx,vy,vz,p); 
   return L;
 }
   
@@ -1361,8 +1401,24 @@ void renderTile(int taskIndex, int* pixels,
   for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)
   {
     /* calculate pixel color */
-    Vec3fa color = renderPixel(x,y,vx,vy,vz,p);
 
+#if SAMPLES_PER_PIXEL > 1
+    rand_state state;
+    init_rand(state,
+	      253*x+35*y+152*g_accu_count+54,
+	      1253*x+345*y+1452*g_accu_count+564,
+	      10253*x+3435*y+52*g_accu_count+13);
+    Vec3fa color(0.0f);
+    for (int i=0; i<SAMPLES_PER_PIXEL; i++) 
+      {
+	const float sx = frand(state);
+	const float sy = frand(state);
+	color += renderPixel(x+sx,y+sy,vx,vy,vz,p);
+	}
+    color *= (1.0f/SAMPLES_PER_PIXEL);
+#else
+    Vec3fa color = renderPixel(x,y,vx,vy,vz,p);
+#endif
     /* write color to framebuffer */
     Vec3fa* dst = &g_accu[y*width+x];
     *dst = *dst + Vec3fa(color.x,color.y,color.z,1.0f); // FIXME: use += operator
@@ -1397,6 +1453,7 @@ extern "C" void device_render (int* pixels,
 
    }
 
+
   /* create accumulator */
   if (g_accu_width != width || g_accu_height != height) {
     alignedFree(g_accu);
@@ -1412,6 +1469,13 @@ extern "C" void device_render (int* pixels,
   camera_changed |= ne(g_accu_vy,vy); g_accu_vy = vy; // FIXME: use != operator
   camera_changed |= ne(g_accu_vz,vz); g_accu_vz = vz; // FIXME: use != operator
   camera_changed |= ne(g_accu_p,  p); g_accu_p  = p;  // FIXME: use != operator
+
+  if (g_ispc_scene->numSubdivMeshKeyFrames)
+    {
+      updateKeyFrame(g_ispc_scene);
+      rtcCommit(g_scene);
+      g_changed = true;
+    }
 
 #if  FIX_SAMPLING == 0
   g_accu_count++;

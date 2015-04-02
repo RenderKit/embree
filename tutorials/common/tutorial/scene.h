@@ -72,9 +72,9 @@ namespace embree
     {
       void set_motion_blur(const Mesh* other);
 
-      vector_t<Vec3fa> v;
-      vector_t<Vec3fa> v2;
-      vector_t<Vec3fa> vn;
+      avector<Vec3fa> v;
+      avector<Vec3fa> v2;
+      avector<Vec3fa> vn;
 
       std::vector<Vec2f> vt;
       std::vector<Triangle> triangles;
@@ -85,8 +85,8 @@ namespace embree
     /*! Subdivision Mesh. */
     struct SubdivMesh 
     {
-      vector_t<Vec3fa> positions;            //!< vertex positions
-      vector_t<Vec3fa> normals;              //!< face vertex normals
+      avector<Vec3fa> positions;            //!< vertex positions
+      avector<Vec3fa> normals;              //!< face vertex normals
       std::vector<Vec2f> texcoords;             //!< face texture coordinates
       std::vector<int> position_indices;        //!< position indices for all faces
       std::vector<int> normal_indices;          //!< normal indices for all faces
@@ -115,8 +115,8 @@ namespace embree
     {
       void set_motion_blur(const HairSet* other);
 
-      vector_t<Vec3fa> v;       //!< hair control points (x,y,z,r)
-      vector_t<Vec3fa> v2;       //!< hair control points (x,y,z,r)
+      avector<Vec3fa> v;       //!< hair control points (x,y,z,r)
+      avector<Vec3fa> v2;       //!< hair control points (x,y,z,r)
       std::vector<Hair> hairs;  //!< list of hairs
     };
 
@@ -381,13 +381,13 @@ namespace embree
     }
 
   public:
-    vector_t<Material> materials;                      //!< material list
+    avector<Material> materials;                      //!< material list
     std::vector<Mesh*> meshes;                         //!< list of meshes
     std::vector<HairSet*> hairsets;                    //!< list of hair sets
     std::vector<SubdivMesh*> subdiv;                  //!< list of subdivision meshes
-    vector_t<AmbientLight> ambientLights;           //!< list of ambient lights
-    vector_t<PointLight> pointLights;               //!< list of point lights
-    vector_t<DirectionalLight> directionalLights;   //!< list of directional lights
-    vector_t<DistantLight> distantLights;           //!< list of distant lights
+    avector<AmbientLight> ambientLights;           //!< list of ambient lights
+    avector<PointLight> pointLights;               //!< list of point lights
+    avector<DirectionalLight> directionalLights;   //!< list of directional lights
+    avector<DistantLight> distantLights;           //!< list of distant lights
   };
 }

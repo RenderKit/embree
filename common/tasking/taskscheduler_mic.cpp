@@ -15,7 +15,7 @@
 // ======================================================================== //
 
 #include "taskscheduler_mic.h"
-#include "sys/sync/mutex.h"
+#include "sys/mutex.h"
 
 
 namespace embree

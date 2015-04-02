@@ -14,21 +14,7 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-FIND_PATH(EMBREE_INCLUDE_PATH embree2/rtcore.h
-  /usr/include
-  /usr/local/include
-  /opt/local/include)
+SET(EMBREE_INCLUDE_DIRS /usr/include)
+SET(EMBREE_LIBRARY /usr/lib/libembree.so.@EMBREE_VERSION@)
 
-FIND_LIBRARY(EMBREE_LIBRARY NAMES embree PATHS 
-  /usr/lib 
-  /usr/local/lib 
-  /opt/local/lib)
-
-FIND_LIBRARY(EMBREE_LIBRARY_MIC NAMES embree_xeonphi PATHS 
-  /usr/lib 
-  /usr/local/lib 
-  /opt/local/lib)
-
-IF (EMBREE_INCLUDE_PATH AND EMBREE_LIBRARY)
-  SET(EMBREE_FOUND TRUE)
-ENDIF ()
+MARK_AS_ADVANCED(embree_DIR)

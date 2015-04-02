@@ -610,7 +610,7 @@ namespace embree
       Mesh* mesh;
       const size_t minLeafSize;
       const size_t maxLeafSize;
-      vector<MortonID32Bit> morton;
+      mvector<MortonID32Bit> morton;
     };
     
     Builder* BVH4Triangle1MeshBuilderMortonGeneral  (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4MeshBuilderMorton<TriangleMesh,CreateTriangle1Leaf> ((BVH4*)bvh,mesh,4,1*BVH4::maxLeafBlocks); }
@@ -798,7 +798,7 @@ namespace embree
       const size_t maxLeafSize;
       size_t encodeShift;
       size_t encodeMask;
-      vector<MortonID32Bit> morton;
+      mvector<MortonID32Bit> morton;
     };
 
     Builder* BVH4Triangle1SceneBuilderMortonGeneral  (void* bvh, Scene* scene, size_t mode) { return new class BVH4SceneBuilderMorton<TriangleMesh,CreateTriangle1Leaf> ((BVH4*)bvh,scene,4,1*BVH4::maxLeafBlocks); }

@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "../intrinsics.h"
+#include "intrinsics.h"
 #include "mutex.h"
 
 namespace embree

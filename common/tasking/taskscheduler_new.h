@@ -27,8 +27,8 @@
 #include "tbb/tbb.h"
 #endif
 
-#include "sys/sync/mutex.h"
-#include "sys/sync/condition.h"
+#include "sys/mutex.h"
+#include "sys/condition.h"
 
 #if defined(__MIC__)
 #define TASKSCHEDULER_STATIC_LOAD_BALANCING 1

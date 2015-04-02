@@ -165,8 +165,6 @@ namespace embree
 
   void send_mesh (OBJScene::Mesh* mesh)
   {
-    PING;
-
     COIRESULT result;
     struct {
       COIBUFFER position;      //!< vertex position array
@@ -273,7 +271,6 @@ namespace embree
 
   void send_subdiv_mesh (OBJScene::SubdivMesh* mesh)
   {
-
     COIRESULT result;
     struct {
       COIBUFFER positions;      
@@ -518,6 +515,11 @@ namespace embree
 
     if (result != COI_SUCCESS)  
       THROW_RUNTIME_ERROR("COIBufferCreate failed: " + std::string(COIResultGetName(result)));
+  }
+
+  void set_scene_keyframes(OBJScene** in, size_t numKeyFrames)
+  {
+    NOT_IMPLEMENTED;
   }
 
   bool pick(const float x, const float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p, Vec3fa& hitPos)

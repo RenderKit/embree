@@ -367,7 +367,6 @@ namespace embree
   void SubdivMesh::initializeHalfEdgeStructures ()
   {
     double t0 = getSeconds();
-
     /* allocate half edge array */
     halfEdges.resize(numEdges);
 
@@ -376,9 +375,11 @@ namespace embree
     if (faceVertices.isModified()) 
       numHalfEdges = parallel_prefix_sum(faceVertices,faceStartEdge,numFaces);
 
+
     /* create set with all holes */
     if (holes.isModified())
       holeSet.init(holes);
+
 
     /* create set with all vertex creases */
     if (vertex_creases.isModified() || vertex_crease_weights.isModified())
@@ -421,6 +422,7 @@ namespace embree
       edgeCreaseMap.clear();
     }
 
+
     /* clear modified state of all buffers */
     vertexIndices.setModified(false); 
     faceVertices.setModified(false);
@@ -432,6 +434,7 @@ namespace embree
     vertex_creases.setModified(false);
     vertex_crease_weights.setModified(false); 
     levels.setModified(false);
+
 
     double t1 = getSeconds();
 

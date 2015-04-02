@@ -34,6 +34,9 @@ namespace embree
   /* scene */
   extern "C" ISPCScene* g_ispc_scene = NULL;
 
+  extern "C" ISPCScene** g_ispc_scene_keyframes = NULL;
+  extern "C" size_t g_numframes = 0;
+
   ISPCHairSet* convertHair (OBJScene::HairSet* in)
   {
     ISPCHairSet* out = new ISPCHairSet;
@@ -156,11 +159,45 @@ namespace embree
     out->numDistantLights = in->distantLights.size();
 
     out->subdiv = new ISPCSubdivMesh*[in->subdiv.size()];
+
+    size_t coarse_primitives = 0;
     for (size_t i=0; i<in->subdiv.size(); i++)
-      out->subdiv[i] = convertSubdivMesh(in->subdiv[i]);
+      {
+	out->subdiv[i] = convertSubdivMesh(in->subdiv[i]);
+	coarse_primitives += out->subdiv[i]->numFaces;
+      }
+    PRINT( coarse_primitives );
     out->numSubdivMeshes = in->subdiv.size();
 
+    out->subdivMeshKeyFrames = NULL;
+    out->numSubdivMeshKeyFrames = 0;
+
     g_ispc_scene = out;
+  }
+
+  void set_scene_keyframes(OBJScene** in, size_t numKeyFrames)
+  {
+    if (g_ispc_scene)
+      {
+	PRINT(numKeyFrames);
+	g_ispc_scene->subdivMeshKeyFrames    = new ISPCSubdivMeshKeyFrame*[numKeyFrames];
+	g_ispc_scene->numSubdivMeshKeyFrames = numKeyFrames;
+	for (size_t k=0;k<numKeyFrames;k++)
+	  {
+	    PRINT(k);
+	    ISPCSubdivMeshKeyFrame *kf = new ISPCSubdivMeshKeyFrame;
+
+	    kf->subdiv = new ISPCSubdivMesh*[in[k]->subdiv.size()];
+
+	    for (size_t i=0; i<in[k]->subdiv.size(); i++)
+	      kf->subdiv[i] = convertSubdivMesh(in[k]->subdiv[i]);
+
+	    kf->numSubdivMeshes = in[k]->subdiv.size();
+
+	    g_ispc_scene->subdivMeshKeyFrames[k] = kf;
+	    
+	  }
+      }
   }
 
   bool pick(const float x, const float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p, Vec3fa& hitPos) {

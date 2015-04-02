@@ -24,7 +24,7 @@ namespace embree
   namespace isa
   {
     template<typename Mesh>
-    PrimInfo createPrimRefArray(Mesh* mesh, vector<PrimRef>& prims, BuildProgressMonitor& progressMonitor)
+    PrimInfo createPrimRefArray(Mesh* mesh, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor)
     {
       ParallelPrefixSumState<PrimInfo> pstate;
       
@@ -68,7 +68,7 @@ namespace embree
     }
 
     template<typename Mesh, size_t timeSteps>
-    PrimInfo createPrimRefArray(Scene* scene, vector<PrimRef>& prims, BuildProgressMonitor& progressMonitor)
+    PrimInfo createPrimRefArray(Scene* scene, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor)
     {
       ParallelForForPrefixSumState<PrimInfo> pstate;
       Scene::Iterator<Mesh,timeSteps> iter(scene);
@@ -138,7 +138,7 @@ namespace embree
     }
 
     template<size_t timeSteps>
-    PrimInfo createBezierRefArray(Scene* scene, vector<BezierPrim>& prims, BuildProgressMonitor& progressMonitor)
+    PrimInfo createBezierRefArray(Scene* scene, mvector<BezierPrim>& prims, BuildProgressMonitor& progressMonitor)
     {
       ParallelForForPrefixSumState<PrimInfo> pstate;
       Scene::Iterator<BezierCurves,timeSteps> iter(scene);
@@ -214,18 +214,18 @@ namespace embree
       return pinfo;
     }
     
-    template PrimInfo createPrimRefArray<TriangleMesh>(TriangleMesh* mesh, vector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);
-    template PrimInfo createPrimRefArray<BezierCurves>(BezierCurves* mesh, vector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);
-    template PrimInfo createPrimRefArray<UserGeometryBase>(UserGeometryBase* mesh, vector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);
+    template PrimInfo createPrimRefArray<TriangleMesh>(TriangleMesh* mesh, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);
+    template PrimInfo createPrimRefArray<BezierCurves>(BezierCurves* mesh, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);
+    template PrimInfo createPrimRefArray<UserGeometryBase>(UserGeometryBase* mesh, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);
 
-    template PrimInfo createPrimRefArray<TriangleMesh,1>(Scene* scene, vector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);
-    template PrimInfo createPrimRefArray<TriangleMesh,2>(Scene* scene, vector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);
-    template PrimInfo createPrimRefArray<BezierCurves,1>(Scene* scene, vector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);
-    template PrimInfo createPrimRefArray<SubdivMesh,1>(Scene* scene, vector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);
-    template PrimInfo createPrimRefArray<UserGeometryBase,1>(Scene* scene, vector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);
+    template PrimInfo createPrimRefArray<TriangleMesh,1>(Scene* scene, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);
+    template PrimInfo createPrimRefArray<TriangleMesh,2>(Scene* scene, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);
+    template PrimInfo createPrimRefArray<BezierCurves,1>(Scene* scene, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);
+    template PrimInfo createPrimRefArray<SubdivMesh,1>(Scene* scene, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);
+    template PrimInfo createPrimRefArray<UserGeometryBase,1>(Scene* scene, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);
 
-    template PrimInfo createBezierRefArray<1>(Scene* scene, vector<BezierPrim>& prims, BuildProgressMonitor& progressMonitor);
-    template PrimInfo createBezierRefArray<2>(Scene* scene, vector<BezierPrim>& prims, BuildProgressMonitor& progressMonitor);
+    template PrimInfo createBezierRefArray<1>(Scene* scene, mvector<BezierPrim>& prims, BuildProgressMonitor& progressMonitor);
+    template PrimInfo createBezierRefArray<2>(Scene* scene, mvector<BezierPrim>& prims, BuildProgressMonitor& progressMonitor);
 
     template PrimInfo createPrimRefList<TriangleMesh,1>(Scene* scene, PrimRefList& prims, BuildProgressMonitor& progressMonitor);
   }

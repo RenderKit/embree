@@ -14,16 +14,16 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-PROJECT(embree)
-
-CMAKE_MINIMUM_REQUIRED(VERSION 2.8.11)
-
-SET(EMBREE_VERSION_MAJOR 2)
-SET(EMBREE_VERSION_MINOR 5)
+SET(EMBREE_VERSION_MAJOR 3)
+SET(EMBREE_VERSION_MINOR 0)
 SET(EMBREE_VERSION_PATCH 1)
 SET(EMBREE_VERSION_NOTE " (devel)")
-# version of the RPM packages for this Embree version
+SET(EMBREE_VERSION ${EMBREE_VERSION_MAJOR}.${EMBREE_VERSION_MINOR}.${EMBREE_VERSION_PATCH})
 SET(CPACK_RPM_PACKAGE_RELEASE 1)
+
+PROJECT(embree${EMBREE_VERSION_MAJOR})
+
+CMAKE_MINIMUM_REQUIRED(VERSION 2.8.11)
 
 CONFIGURE_FILE(
   "${PROJECT_SOURCE_DIR}/kernels/version.h.in"
@@ -99,7 +99,7 @@ ELSE()
 ENDIF()
 
 CONFIGURE_FILE(
-  "${PROJECT_SOURCE_DIR}/common/sys/config.h.in"
+  "${PROJECT_SOURCE_DIR}/kernels/config.h.in"
   "${PROJECT_BINARY_DIR}/config.h"
 )
 
@@ -277,7 +277,15 @@ ENDIF()
 # Install Headers
 ##############################################################
 INSTALL(DIRECTORY include/embree2 DESTINATION include COMPONENT headers)
-SET(EMBREE_VERSION ${EMBREE_VERSION_MAJOR}.${EMBREE_VERSION_MINOR}.${EMBREE_VERSION_PATCH})
+
+##############################################################
+# Install Embree CMake Configuration
+##############################################################
+CONFIGURE_FILE("kernels/embree-config.cmake" "embree-config.cmake" @ONLY)
+CONFIGURE_FILE("kernels/embree-config-version.cmake" "embree-config-version.cmake" @ONLY)
+
+INSTALL(FILES "${PROJECT_BINARY_DIR}/embree-config.cmake" DESTINATION "lib/cmake/embree-${EMBREE_VERSION}" COMPONENT libraries)
+INSTALL(FILES "${PROJECT_BINARY_DIR}/embree-config-version.cmake" DESTINATION "lib/cmake/embree-${EMBREE_VERSION}" COMPONENT libraries)
 
 ##############################################################
 # Documentation
@@ -300,7 +308,7 @@ INSTALL(FILES ${PROJECT_SOURCE_DIR}/LICENSE.txt DESTINATION ${DOC_INSTALL_DIR} C
 SET(CPACK_PACKAGE_VERSION_MAJOR ${EMBREE_VERSION_MAJOR})
 SET(CPACK_PACKAGE_VERSION_MINOR ${EMBREE_VERSION_MINOR})
 SET(CPACK_PACKAGE_VERSION_PATCH ${EMBREE_VERSION_PATCH})
-SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "High Performance Ray Tracing Kernels")
+SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Embree: High Performance Ray Tracing Kernels")
 SET(CPACK_PACKAGE_VENDOR "Intel Corporation")
 SET(CPACK_PACKAGE_CONTACT embree_support@intel.com)
 
@@ -377,7 +385,7 @@ IF(WIN32)
   # NSIS specific settings
   SET(CPACK_GENERATOR NSIS)
   SET(CPACK_NSIS_INSTALL_ROOT "${PROGRAMFILES}\\\\Intel")
-  SET(CPACK_NSIS_DISPLAY_NAME "Intel Embree: High Performance Ray Tracing Kernels")
+  SET(CPACK_NSIS_DISPLAY_NAME "Embree: High Performance Ray Tracing Kernels")
   SET(CPACK_NSIS_PACKAGE_NAME "Embree ${EMBREE_VERSION}")
   SET(CPACK_NSIS_URL_INFO_ABOUT http://embree.github.io/)
 #  SET(CPACK_NSIS_HELP_LINK http://embree.github.io/downloads.html#windows)
@@ -403,6 +411,8 @@ ELSE()
   SET(CPACK_RPM_devel_POST_UNINSTALL_SCRIPT_FILE ${PROJECT_SOURCE_DIR}/common/cmake/rpm_ldconfig.sh)
   SET(CPACK_RPM_devel_xeonphi_POST_INSTALL_SCRIPT_FILE ${PROJECT_SOURCE_DIR}/common/cmake/rpm_ldconfig.sh)
   SET(CPACK_RPM_devel_xeonphi_POST_UNINSTALL_SCRIPT_FILE ${PROJECT_SOURCE_DIR}/common/cmake/rpm_ldconfig.sh)
+
+  
 ENDIF()
 
 INCLUDE(CPack)

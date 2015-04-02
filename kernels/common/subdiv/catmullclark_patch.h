@@ -90,7 +90,11 @@ namespace embree
 
     /*! returns true of the patch is a Gregory patch */
     __forceinline bool isGregoryOrFinal(const size_t depth) const {
-      return ring[0].isGregoryOrFinal(depth) && ring[1].isGregoryOrFinal(depth) && ring[2].isGregoryOrFinal(depth) && ring[3].isGregoryOrFinal(depth);
+      const bool ring0 = ring[0].isGregoryOrFinal(depth);
+      const bool ring1 = ring[1].isGregoryOrFinal(depth);
+      const bool ring2 = ring[2].isGregoryOrFinal(depth);
+      const bool ring3 = ring[3].isGregoryOrFinal(depth);
+      return ring0 && ring1 && ring2 && ring3;
     }
 
     static __forceinline void init_regular(const CatmullClark1Ring& p0,

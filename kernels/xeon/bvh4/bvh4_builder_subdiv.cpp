@@ -91,7 +91,7 @@ namespace embree
 
       BVH4* bvh;
       Scene* scene;
-      vector<PrimRef> prims;
+      mvector<PrimRef> prims;
       
       BVH4SubdivPatch1BuilderBinnedSAHClass (BVH4* bvh, Scene* scene)
         : bvh(bvh), scene(scene) {}
@@ -142,7 +142,7 @@ namespace embree
 
       BVH4* bvh;
       Scene* scene;
-      vector<PrimRef> prims;
+      mvector<PrimRef> prims;
       ParallelForForPrefixSumState<PrimInfo> pstate;
       
       BVH4SubdivGridBuilderBinnedSAHClass (BVH4* bvh, Scene* scene)
@@ -279,7 +279,7 @@ namespace embree
 
       BVH4* bvh;
       Scene* scene;
-      vector<PrimRef> prims;
+      mvector<PrimRef> prims;
       ParallelForForPrefixSumState<PrimInfo> pstate;
       
       BVH4SubdivGridEagerBuilderBinnedSAHClass (BVH4* bvh, Scene* scene)
@@ -386,7 +386,7 @@ namespace embree
         
 	/* clear temporary data for static geometry */
 	bool staticGeom = scene->isStatic();
-	if (staticGeom) prims.resize(0,true);
+	if (staticGeom) prims.clear();
         bvh->alloc.cleanup();
         bvh->postBuild(t0);
       }
@@ -402,7 +402,7 @@ namespace embree
 
       BVH4* bvh;
       Scene* scene;
-      vector<PrimRef> prims; 
+      mvector<PrimRef> prims; 
       ParallelForForPrefixSumState<PrimInfo> pstate;
       
       BVH4SubdivGridLazyBuilderBinnedSAHClass (BVH4* bvh, Scene* scene)
@@ -514,7 +514,7 @@ namespace embree
         
 	/* clear temporary data for static geometry */
 	bool staticGeom = scene->isStatic();
-	if (staticGeom) prims.resize(0,true);
+	if (staticGeom) prims.clear();
         bvh->alloc.cleanup();
         bvh->postBuild(t0);
       }
@@ -736,7 +736,7 @@ namespace embree
 
       BVH4* bvh;
       Scene* scene;
-      vector<PrimRef> prims; 
+      mvector<PrimRef> prims; 
       ParallelForForPrefixSumState<PrimInfo> pstate;
       
       BVH4SubdivPatch1CachedBuilderBinnedSAHClass (BVH4* bvh, Scene* scene)
@@ -1022,7 +1022,7 @@ namespace embree
       
 	/* clear temporary data for static geometry */
 	bool staticGeom = scene->isStatic();
-	if (staticGeom) prims.resize(0,true);
+	if (staticGeom) prims.clear();
         bvh->alloc.cleanup();
         bvh->postBuild(t0);
       }

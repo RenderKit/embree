@@ -20,7 +20,7 @@
 #include "taskscheduler_mic.h"
 #endif
 #include "sys/sysinfo.h"
-#include "sys/sync/atomic.h"
+#include "sys/atomic.h"
 #include "math/math.h"
 
 namespace embree

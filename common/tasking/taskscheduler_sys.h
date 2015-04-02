@@ -17,13 +17,13 @@
 #pragma once
 
 #include "taskscheduler.h"
-#include "sys/sync/mutex.h"
-#include "sys/sync/condition.h"
+#include "sys/mutex.h"
+#include "sys/condition.h"
 
 namespace embree
 {
   /*! Task scheduler implementing a stack of tasks. */
-  class __hidden TaskSchedulerSys : public TaskScheduler
+  class TaskSchedulerSys : public TaskScheduler
   {
   public:
 

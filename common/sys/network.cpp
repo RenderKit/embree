@@ -16,7 +16,7 @@
 
 #include "network.h"
 #include "string.h"
-#include "sync/mutex.h"
+#include "mutex.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 /// Platforms supporting Socket interface

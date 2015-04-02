@@ -31,7 +31,8 @@ namespace embree
   {
     static const size_t MAX_FACE_VALENCE = SubdivMesh::MAX_RING_FACE_VALENCE;
     static const size_t MAX_EDGE_VALENCE = SubdivMesh::MAX_RING_EDGE_VALENCE;
-    
+    static const size_t MAX_DEPTH_SUBDIVISION = 10;
+
     array_t<Vec3fa,MAX_EDGE_VALENCE> ring ; // FIXME: also store size in these arrays for more accurate checks
     array_t<float,MAX_FACE_VALENCE> crease_weight;
     
@@ -378,21 +379,28 @@ namespace embree
     /* returns true if the vertex can be part of a dicable gregory patch (using gregory patches) */
     __forceinline bool isGregoryOrFinal(const size_t depth) const 
     {
-      if (depth < 10)
-      //if (vertex_level > 1.0f) 
+      if (depth < MAX_DEPTH_SUBDIVISION)      
       {
 	if (vertex_crease_weight > 0.0f) 
-	  return false;
+	  {
+	    return false;
+	  }
 	
 	for (size_t i=1; i<face_valence; i++) 
 	  if (crease_weight[i] > 0.0f && (2*i != border_index) && (2*(i-1) != border_index)) 
-	    return false;
+	    {
+	      return false;
+	    }
 	  
        	if (crease_weight[0] > 0.0f && (2*(face_valence-1) != border_index)) 
-	  return false;
+	  {
+	    return false;
+	  }
 
 	if (!noForcedSubdivision)
-	  return false;
+	  {
+	    return false;
+	  }
       }
       return true;
     }
@@ -647,7 +655,6 @@ namespace embree
       crease_weight[f] = p->edge_crease_weight;
       edge_level = vertex_level = p->edge_level;
       if (!p->hasOpposite()) crease_weight[f] = inf;
-      
       do 
       {
 	/* store first N-2 vertices of face */
@@ -664,7 +671,8 @@ namespace embree
 	face_size[f] = vn;
 	only_quads &= (vn == 2);
 	p = p_prev;
-	crease_weight[++f] = p->edge_crease_weight;
+	if (f+1 < MAX_FACE_VALENCE) //FIXME: is this right?
+	  crease_weight[++f] = p->edge_crease_weight;
 	vertex_level = max(vertex_level,p->edge_level);
 	
         /* continue with next face */
@@ -675,7 +683,7 @@ namespace embree
         else
         {
           /*! mark first border edge and store dummy vertex for face between the two border edges */
-	  assert(f < MAX_FACE_VALENCE);
+	  assert(f+1 < MAX_FACE_VALENCE);
           border_face = f;
 	  face_size[f] = 2;
           crease_weight[f] = inf; 
@@ -685,7 +693,8 @@ namespace embree
           e++;
 	  assert(e < MAX_EDGE_VALENCE);
           ring[e++] = vtx; // dummy vertex
-          crease_weight[++f] = inf;
+	  if (f+1 < MAX_FACE_VALENCE) //FIXME: is this right?
+	    crease_weight[++f] = inf;
 	  
           /*! goto other side of border */
           p = (SubdivMesh::HalfEdge*) h;

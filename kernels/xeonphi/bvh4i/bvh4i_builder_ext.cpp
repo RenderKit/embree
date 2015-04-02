@@ -894,7 +894,6 @@ PRINT(CORRECT_numPrims);
 	fastUpdateMode = false;
       }
     
-    //PRINT(fastUpdateMode);
     if (!fastUpdateMode)
       BVH4iBuilder::build(threadIndex,threadCount);
     else

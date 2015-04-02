@@ -27,12 +27,16 @@
 #define SPP 1
 
 //#define FORCE_FIXED_EDGE_TESSELLATION
-#define FIXED_EDGE_TESSELLATION_VALUE 1
+#define FIXED_EDGE_TESSELLATION_VALUE 4
 //#define FIXED_EDGE_TESSELLATION_VALUE 63
+
+#define ENABLE_TEXTURING 0
 
 #define MAX_EDGE_LEVEL 64.0f
 //#define MAX_EDGE_LEVEL 8.0f
-#define MIN_EDGE_LEVEL 4.0f
+//#define MIN_EDGE_LEVEL 4.0f
+#define MIN_EDGE_LEVEL 8.0f
+
 #define ENABLE_DISPLACEMENTS 0
 #if ENABLE_DISPLACEMENTS
 #  define LEVEL_FACTOR 256.0f
@@ -372,13 +376,13 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
   int materialID = mesh->materialID;
   int numMaterials = g_ispc_scene->numMaterials;
   OBJMaterial* material = (OBJMaterial*)&g_ispc_scene->materials[materialID];
+#if ENABLE_TEXTURING == 1
   if (material->map_Kd) 
     {
-      Vec2f st = getTextureCoordinatesSubdivMesh(mesh,ray.primID,ray.u,ray.v);
-      
+      Vec2f st = getTextureCoordinatesSubdivMesh(mesh,ray.primID,ray.u,ray.v);      
       color *= getTextureTexel3f(material->map_Kd,st.x,st.y);
     }
-      
+#endif      
 #if 0
     color = rndColor(ray.geomID);
 #else

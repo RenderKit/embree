@@ -16,26 +16,77 @@
 
 #pragma once
 
-#include "common/scene.h"
-#include "common/primref.h"
-#include "builders/priminfo.h"
-#include "geometry/bezier1v.h"
+#include "mutex.h"
+#include "condition.h"
 
 namespace embree
 {
-  namespace isa
+  class EventSys
   {
-    template<typename Mesh>
-      PrimInfo createPrimRefArray(Mesh* mesh, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);
+  public:
+    __forceinline EventSys() 
+      : event(false) {}
+    
+    __forceinline void reset() 
+    {
+      mutex.lock();
+      event = false;
+      mutex.unlock();
+    }
 
-    template<typename Mesh, size_t timeSteps>
-      PrimInfo createPrimRefArray(Scene* scene, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);
+    __forceinline void signal() 
+    {
+      mutex.lock();
+      event = true;
+      condition.broadcast(); // this broadcast has to be protected!
+      mutex.unlock();
+    }
 
-    template<typename Mesh, size_t timeSteps>
-      PrimInfo createPrimRefList(Scene* scene, PrimRefList& prims, BuildProgressMonitor& progressMonitor);
+    __forceinline void wait() 
+    {
+      mutex.lock();
+      while (!event) condition.wait(mutex);
+      mutex.unlock();
 
-    template<size_t timeSteps>
-      PrimInfo createBezierRefArray(Scene* scene, mvector<BezierPrim>& prims, BuildProgressMonitor& progressMonitor);
-  }
+    }
+
+  protected:
+    volatile bool event;
+    MutexSys mutex;
+    ConditionSys condition;
+  };
+
+  class EventActive
+  {
+  public:
+    __forceinline EventActive () 
+      : event(false) {}
+    
+    __forceinline void reset() 
+    {
+      __memory_barrier();
+      event = false;
+      __memory_barrier();
+    }
+
+    __forceinline void signal() 
+    {
+      __memory_barrier();
+      event = true;
+      __memory_barrier();
+    }
+
+    __forceinline void wait() {
+      while (!event) __pause_cpu(1024);
+    }
+
+  protected:
+    volatile bool event;
+  };
+
+#if defined(__MIC__)
+  typedef EventActive Event;
+#else
+  typedef EventSys Event;
+#endif
 }
-

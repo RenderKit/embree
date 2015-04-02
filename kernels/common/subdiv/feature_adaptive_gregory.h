@@ -68,15 +68,9 @@ namespace embree
       bool childSubdiv[GeneralCatmullClarkPatch::SIZE];
       for (size_t i=0; i<N; i++)
 	{
-	  if (!patches[i].checkPositions()) // FIXME: remove
-	    {
-	      PRINT(patch);
-	      PRINT(i);
-	      PRINT(patches[i]);
-
-	    }
 	  assert( patches[i].checkPositions() );
 	  childSubdiv[i] = !patches[i].isGregoryOrFinal(depth);
+	  assert( childSubdiv[i] == false );
 	}
 
       /* parametrization for triangles */
@@ -140,7 +134,7 @@ namespace embree
 
     void subdivide(const CatmullClarkPatch& patch, int depth, const Vec2f uv[4], const int neighborSubdiv[4])
     {
-      if (depth == 0)
+      if (depth <= 1)
 	if (patch.isGregoryOrFinal(depth))
 	  return tessellator(patch,uv,neighborSubdiv);
       

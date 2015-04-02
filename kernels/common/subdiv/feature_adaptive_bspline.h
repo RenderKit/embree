@@ -133,7 +133,7 @@ namespace embree
 
     void subdivide(const CatmullClarkPatch& patch, int depth, const Vec2f uv[4], const int neighborSubdiv_i[4])
     {
-      if (depth == 0)
+      if (depth <= 1)
 	if (patch.isRegularOrFinal(depth))
 	  return tessellator(patch,uv,neighborSubdiv_i);
 

@@ -159,6 +159,12 @@ public:
     }
   };
 
+struct ISPCSubdivMeshKeyFrame {
+  ISPCSubdivMesh** subdiv;                   //!< list of subdiv meshes
+  int numSubdivMeshes;                       //!< number of subdiv meshes
+};
+
+
   /* ISPC compatible scene */
   struct ISPCScene
   {
@@ -178,7 +184,7 @@ public:
         pointLights(NULL), numPointLights(numPointLights),
         directionalLights(NULL), numDirectionalLights(numDirectionalLights),
         distantLights(NULL), numDistantLights(numDistantLights),
-	subdiv(NULL), numSubdivMeshes(numSubdivMeshes)
+	subdiv(NULL), numSubdivMeshes(numSubdivMeshes), subdivMeshKeyFrames(NULL), numSubdivMeshKeyFrames(0)
       {
         meshes = new ISPCMesh*[numMeshes];
         for (size_t i=0; i<numMeshes; i++)
@@ -247,6 +253,9 @@ public:
 
     ISPCSubdivMesh** subdiv;
     int numSubdivMeshes; 
+
+    ISPCSubdivMeshKeyFrame** subdivMeshKeyFrames;
+    int numSubdivMeshKeyFrames;
   };
 
   /* scene */

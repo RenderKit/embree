@@ -18,9 +18,9 @@
 #include "sys/ref.h"
 #include "sys/thread.h"
 #include "sys/sysinfo.h"
-#include "sys/sync/barrier.h"
-#include "sys/sync/mutex.h"
-#include "sys/sync/condition.h"
+#include "sys/barrier.h"
+#include "sys/mutex.h"
+#include "sys/condition.h"
 #include "math/vec3.h"
 #include "math/bbox.h"
 #include "embree2/rtcore.h"
@@ -507,7 +507,7 @@ namespace embree
   unsigned int addSubdivSphere (RTCScene scene, RTCGeometryFlags flags, const Vec3fa& pos, const float r, size_t numPhi, float level, size_t maxFaces = -1, float motion = 0.0f)
   {
     size_t numTheta = 2*numPhi;
-    vector_t<Vec3fa> vertices(numTheta*(numPhi+1));
+    avector<Vec3fa> vertices(numTheta*(numPhi+1));
     std::vector<int> indices;
     std::vector<int> faces;
     std::vector<int> offsets;
@@ -2609,7 +2609,7 @@ namespace embree
       task->scene = rtcNewScene(sflag,aflags);
       CountErrors();
       if (g_enable_build_cancel) rtcSetProgressMonitorFunction(task->scene,monitorProgressFunction,NULL);
-      vector_t<Sphere*> spheres;
+      avector<Sphere*> spheres;
       
       for (size_t j=0; j<10; j++) 
       {
@@ -3088,7 +3088,6 @@ namespace embree
     rtcore_inf("inf_test_16",RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,16);
 #endif
 #endif
-
 
     POSITIVE("regression_static",         rtcore_regression(rtcore_regression_static_thread,0));
     POSITIVE("regression_dynamic",        rtcore_regression(rtcore_regression_dynamic_thread,0));

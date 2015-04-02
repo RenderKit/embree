@@ -16,49 +16,47 @@
 
 #pragma once
 
-#include "mutex.h"
-#include "condition.h"
+#include "default.h"
 
 namespace embree
 {
-  
-  class EventSys
-  {
-  public:
-    EventSys() 
-      : event(false) {}
-    
-    void reset() {
-      event = false;
-    }
+  /*! memory monitor function */
+  void memoryMonitor(ssize_t bytes, bool post);
 
-    void signal() {
-#if defined(__MIC__)
-      event = true;
-#else
-      mutex.lock();
-      event = true;
-      condition.broadcast(); // this broadcast has to be protected!
-      mutex.unlock();
-#endif
-    }
+  /*! allocator that performs aligned monitored allocations */
+  template<typename T, size_t alignment = 64>
+    struct aligned_monitored_allocator
+    {
+      typedef T value_type;
+      typedef T* pointer;
+      typedef const T* const_pointer;
+      typedef T& reference;
+      typedef const T& const_reference;
+      typedef std::size_t size_type; // FIXME: also use std::size_t type under windows if available
+      typedef std::ptrdiff_t difference_type;
 
-    void wait() {
-#if defined(__MIC__)
-      while (!event) __pause_cpu(1024);
-#else
-      mutex.lock();
-      while (!event) condition.wait(mutex);
-      mutex.unlock();
-#endif
+      __forceinline pointer allocate( size_type n ) 
+      {
+        memoryMonitor(n*sizeof(T),false);
+        return (pointer) alignedMalloc(n*sizeof(value_type),alignment);
+      }
 
-    }
+      __forceinline void deallocate( pointer p, size_type n ) 
+      {
+        alignedFree(p);
+        memoryMonitor(-n*sizeof(T),true);
+      }
 
-  protected:
-    volatile bool event;
-#if !defined(__MIC__)
-    MutexSys mutex;
-    ConditionSys condition;
-#endif
-  };
+      __forceinline void construct( pointer p, const_reference val ) {
+        new (p) T(val);
+      }
+
+      __forceinline void destroy( pointer p ) {
+        p->~T();
+      }
+    };
+
+  /*! monitored vector */
+  template<typename T>
+    using mvector = vector_t<T,aligned_allocator<T,std::alignment_of<T>::value> >;
 }

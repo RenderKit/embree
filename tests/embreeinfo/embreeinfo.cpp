@@ -14,5 +14,11 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-int main() { return 0; }
+#include <embree2/rtcore.h>
 
+int main(int argc, char* argv[])
+{
+  rtcInit("verbose=1");
+  rtcExit();
+  return 0;
+}

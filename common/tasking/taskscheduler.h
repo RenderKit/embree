@@ -18,9 +18,9 @@
 
 #include "sys/platform.h"
 #include "sys/thread.h"
-#include "sys/sync/event.h"
-#include "sys/sync/atomic.h"
-#include "sys/sync/barrier.h"
+#include "sys/event.h"
+#include "sys/atomic.h"
+#include "sys/barrier.h"
 #include "sys/ref.h"
 
 #include <vector>
@@ -124,7 +124,7 @@ namespace embree
       __forceinline void sync() { dec(); event.wait(); }
       void trigger() { event.signal(); }
     public:
-      EventSys event;
+      embree::Event event;
     };
 
   protected:

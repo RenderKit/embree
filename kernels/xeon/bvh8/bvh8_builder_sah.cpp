@@ -96,7 +96,7 @@ namespace embree
       BVH8* bvh;
       Scene* scene;
       Mesh* mesh;
-      vector<PrimRef> prims;
+      mvector<PrimRef> prims;
       const size_t sahBlockSize;
       const float intCost;
       const size_t minLeafSize;
@@ -159,7 +159,7 @@ namespace embree
 
 	/* clear temporary data for static geometry */
 	bool staticGeom = mesh ? mesh->isStatic() : scene->isStatic();
-	if (staticGeom) prims.resize(0,true);
+	if (staticGeom) prims.clear();
 	bvh->alloc2.cleanup();
 
 	/* verbose mode */
