@@ -22,6 +22,8 @@ SET(EMBREE_VERSION_MAJOR 2)
 SET(EMBREE_VERSION_MINOR 5)
 SET(EMBREE_VERSION_PATCH 1)
 SET(EMBREE_VERSION_NOTE " (devel)")
+SET(EMBREE_VERSION ${EMBREE_VERSION_MAJOR}.${EMBREE_VERSION_MINOR}.${EMBREE_VERSION_PATCH})
+
 # version of the RPM packages for this Embree version
 SET(CPACK_RPM_PACKAGE_RELEASE 1)
 
@@ -277,7 +279,15 @@ ENDIF()
 # Install Headers
 ##############################################################
 INSTALL(DIRECTORY include/embree2 DESTINATION include COMPONENT headers)
-SET(EMBREE_VERSION ${EMBREE_VERSION_MAJOR}.${EMBREE_VERSION_MINOR}.${EMBREE_VERSION_PATCH})
+
+##############################################################
+# Install Embree CMake Configuration
+##############################################################
+CONFIGURE_FILE("kernels/embree-config.cmake" "embree-config.cmake" @ONLY)
+CONFIGURE_FILE("kernels/embree-config-version.cmake" "embree-config-version.cmake" @ONLY)
+
+INSTALL(FILES "${PROJECT_BINARY_DIR}/embree-config.cmake" DESTINATION "lib/cmake/embree-${EMBREE_VERSION}" COMPONENT libraries)
+INSTALL(FILES "${PROJECT_BINARY_DIR}/embree-config-version.cmake" DESTINATION "lib/cmake/embree-${EMBREE_VERSION}" COMPONENT libraries)
 
 ##############################################################
 # Documentation
@@ -403,6 +413,8 @@ ELSE()
   SET(CPACK_RPM_devel_POST_UNINSTALL_SCRIPT_FILE ${PROJECT_SOURCE_DIR}/common/cmake/rpm_ldconfig.sh)
   SET(CPACK_RPM_devel_xeonphi_POST_INSTALL_SCRIPT_FILE ${PROJECT_SOURCE_DIR}/common/cmake/rpm_ldconfig.sh)
   SET(CPACK_RPM_devel_xeonphi_POST_UNINSTALL_SCRIPT_FILE ${PROJECT_SOURCE_DIR}/common/cmake/rpm_ldconfig.sh)
+
+  
 ENDIF()
 
 INCLUDE(CPack)
