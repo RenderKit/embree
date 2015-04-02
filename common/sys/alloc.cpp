@@ -183,8 +183,8 @@ namespace embree
 {
   void* alignedMalloc(size_t size, size_t align)
   {
-    /* verify that alignment is power of two */
-    assert((align ^ (align-1)) == 0);
+    /* Verify that alignment is power of two */
+    assert((align & (align-1)) == 0);
 
     if (size == 0) return NULL;
     char* base = (char*)malloc(size+align+sizeof(int));
