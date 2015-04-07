@@ -49,18 +49,13 @@ namespace embree
     return ProgressMonitorClosure<Closure>(closure);
   }
 
-  template<typename Accel, typename Ty, typename Args>
-    struct BuilderFunc {
-      typedef Builder* (*type)(Accel* accel, Ty* mesh, Args args);
-    };
-
+// FIXME: simplify ISA selection
 #define DECLARE_BUILDER(Accel,Mesh,Args,symbol)                         \
   namespace isa   { extern Builder* symbol(Accel* accel, Mesh* scene, Args args); } \
   namespace sse41 { extern Builder* symbol(Accel* accel, Mesh* scene, Args args); } \
   namespace avx   { extern Builder* symbol(Accel* accel, Mesh* scene, Args args); } \
   namespace avx2  { extern Builder* symbol(Accel* accel, Mesh* scene, Args args); } \
-  void symbol##_error() { throw_RTCError(RTC_UNSUPPORTED_CPU,"builder " TOSTRING(symbol) " not supported by your CPU"); } \
-    typename BuilderFunc<Accel,Mesh,Args>::type symbol = (typename BuilderFunc<Accel,Mesh,Args>::type) symbol##_error;
+  std::function<Builder* (Accel* accel, Mesh* mesh, Args args)> symbol;
 
   class TriangleMesh;
   struct Scene;
