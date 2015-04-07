@@ -22,6 +22,9 @@
 
 #include <limits>
 
+#define _USE_MATH_DEFINES
+#include <cmath>
+
 namespace embree
 {
   static const float one_over_255 = 1.0f/255.0f;

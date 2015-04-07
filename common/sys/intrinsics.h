@@ -755,14 +755,6 @@ __forceinline uint64 rdtsc()
 #endif
 }
 
-__forceinline int cast_f2i(float f) {
-  union { float f; int i; } v; v.f = f; return v.i;
-}
-
-__forceinline float cast_i2f(int i) {
-  union { float f; int i; } v; v.i = i; return v.f;
-}
-
 #if defined(__MIC__)
 __forceinline void __pause_cpu (const unsigned int cycles = 1024) { 
   _mm_delay_32(cycles); 
