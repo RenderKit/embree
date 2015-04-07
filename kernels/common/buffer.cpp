@@ -41,7 +41,7 @@ namespace embree
   {
 #if !defined(RTCORE_BUFFER_STRIDE)
     if (stride_in != stride) {
-      process_error(RTC_INVALID_OPERATION,"buffer stride feature disabled at compile time and specified stride does not match default stride");
+      throw_RTCError(RTC_INVALID_OPERATION,"buffer stride feature disabled at compile time and specified stride does not match default stride");
       return;
     }
 #endif
@@ -70,7 +70,7 @@ namespace embree
   {
     /* report error if buffer is already mapped */
     if (mapped) {
-      process_error(RTC_INVALID_OPERATION,"buffer is already mapped");
+      throw_RTCError(RTC_INVALID_OPERATION,"buffer is already mapped");
       return NULL;
     }
 
@@ -88,7 +88,7 @@ namespace embree
   {
     /* report error if buffer not mapped */
     if (!mapped) {
-      process_error(RTC_INVALID_OPERATION,"buffer is not mapped");
+      throw_RTCError(RTC_INVALID_OPERATION,"buffer is not mapped");
       return;
     }
 

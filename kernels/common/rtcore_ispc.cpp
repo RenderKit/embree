@@ -34,6 +34,8 @@ namespace embree
   process_error(RTC_UNKNOWN_ERROR,"unknown exception caught");          \
   }
 
+  void process_error(RTCError error, const char* str);
+
 #define VERIFY_HANDLE(handle) \
   if (handle == NULL) {                                                 \
     process_error(RTC_INVALID_ARGUMENT,"invalid argument");             \

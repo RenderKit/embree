@@ -45,7 +45,7 @@ namespace embree
   void BezierCurves::setMask (unsigned mask) 
   {
     if (parent->isStatic() && parent->isBuild()) {
-      process_error(RTC_INVALID_OPERATION,"static geometries cannot get modified");
+      throw_RTCError(RTC_INVALID_OPERATION,"static geometries cannot get modified");
       return;
     }
     this->mask = mask; 
@@ -54,13 +54,13 @@ namespace embree
   void BezierCurves::setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride) 
   { 
     if (parent->isStatic() && parent->isBuild()) {
-      process_error(RTC_INVALID_OPERATION,"static geometries cannot get modified");
+      throw_RTCError(RTC_INVALID_OPERATION,"static geometries cannot get modified");
       return;
     }
 
     /* verify that all accesses are 4 bytes aligned */
     if (((size_t(ptr) + offset) & 0x3) || (stride & 0x3)) {
-      process_error(RTC_INVALID_OPERATION,"data must be 4 bytes aligned");
+      throw_RTCError(RTC_INVALID_OPERATION,"data must be 4 bytes aligned");
       return;
     }
 
@@ -68,7 +68,7 @@ namespace embree
 #if defined(__MIC__)
     if (type == RTC_VERTEX_BUFFER0 || type == RTC_VERTEX_BUFFER1) {
       if (((size_t(ptr) + offset) & 0xF) || (stride & 0xF)) {
-        process_error(RTC_INVALID_OPERATION,"data must be 16 bytes aligned");
+        throw_RTCError(RTC_INVALID_OPERATION,"data must be 16 bytes aligned");
         return;
       }
     }
@@ -85,7 +85,7 @@ namespace embree
       vertices[1].set(ptr,offset,stride); 
       break;
     default: 
-      process_error(RTC_INVALID_ARGUMENT,"unknown buffer type");
+      throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type");
       break;
     }
   }
@@ -93,7 +93,7 @@ namespace embree
   void* BezierCurves::map(RTCBufferType type) 
   {
     if (parent->isStatic() && parent->isBuild()) {
-      process_error(RTC_INVALID_OPERATION,"static geometries cannot get modified");
+      throw_RTCError(RTC_INVALID_OPERATION,"static geometries cannot get modified");
       return NULL;
     }
 
@@ -101,14 +101,14 @@ namespace embree
     case RTC_INDEX_BUFFER  : return curves.map(parent->numMappedBuffers);
     case RTC_VERTEX_BUFFER0: return vertices[0].map(parent->numMappedBuffers);
     case RTC_VERTEX_BUFFER1: return vertices[1].map(parent->numMappedBuffers);
-    default                : process_error(RTC_INVALID_ARGUMENT,"unknown buffer type"); return NULL;
+    default                : throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type"); return NULL;
     }
   }
 
   void BezierCurves::unmap(RTCBufferType type) 
   {
     if (parent->isStatic() && parent->isBuild()) {
-      process_error(RTC_INVALID_OPERATION,"static geometries cannot get modified");
+      throw_RTCError(RTC_INVALID_OPERATION,"static geometries cannot get modified");
       return;
     }
 
@@ -116,7 +116,7 @@ namespace embree
     case RTC_INDEX_BUFFER  : curves.unmap(parent->numMappedBuffers); break;
     case RTC_VERTEX_BUFFER0: vertices[0].unmap(parent->numMappedBuffers); break;
     case RTC_VERTEX_BUFFER1: vertices[1].unmap(parent->numMappedBuffers); break;
-    default                : process_error(RTC_INVALID_ARGUMENT,"unknown buffer type"); break;
+    default                : throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type"); break;
     }
   }
 

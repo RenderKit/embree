@@ -77,6 +77,8 @@ namespace embree
                                     void* ptr,         /*!< pointer to user data */
                                     RTCRay16& ray      /*!< Ray packet to test occlusion. */);
   
+    typedef void (*ErrorFunc) ();
+
     struct Intersector1
     {
       Intersector1 (ErrorFunc error = NULL) 

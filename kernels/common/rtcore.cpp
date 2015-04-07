@@ -188,11 +188,52 @@ namespace embree
       if (!g_memory_monitor_function(bytes,post)) {
 #if !defined(TASKING_LOCKSTEP) && !defined(TASKING_TBB_INTERNAL)
         if (bytes > 0) { // only throw exception when we allocate memory to never throw inside a destructor
-          THROW_MY_RUNTIME_ERROR(RTC_OUT_OF_MEMORY,"memory monitor forced termination");
+          throw_RTCError(RTC_OUT_OF_MEMORY,"memory monitor forced termination");
         }
 #endif
       }
     }
+  }
+
+  
+  RTCError* getThreadError() 
+  {
+    RTCError* stored_error = (RTCError*) getTls(g_error);
+    if (stored_error == NULL) {
+      Lock<MutexSys> lock(g_errors_mutex);
+      stored_error = new RTCError(RTC_NO_ERROR);
+      g_errors.push_back(stored_error);
+      setTls(g_error,stored_error);
+    }
+    return stored_error;
+  }
+
+  void process_error(RTCError error, const char* str)
+  { 
+    /* print error when in verbose mode */
+    if (g_verbose) 
+    {
+      switch (error) {
+      case RTC_NO_ERROR         : std::cerr << "Embree: No error"; break;
+      case RTC_UNKNOWN_ERROR    : std::cerr << "Embree: Unknown error"; break;
+      case RTC_INVALID_ARGUMENT : std::cerr << "Embree: Invalid argument"; break;
+      case RTC_INVALID_OPERATION: std::cerr << "Embree: Invalid operation"; break;
+      case RTC_OUT_OF_MEMORY    : std::cerr << "Embree: Out of memory"; break;
+      case RTC_UNSUPPORTED_CPU  : std::cerr << "Embree: Unsupported CPU"; break;
+      default                   : std::cerr << "Embree: Invalid error code"; break;                   
+      };
+      if (str) std::cerr << ", (" << str << ")";
+      std::cerr << std::endl;
+    }
+
+    /* call user specified error callback */
+    if (g_error_function) 
+      g_error_function(error,str); 
+
+    /* record error code */
+    RTCError* stored_error = getThreadError();
+    if (*stored_error == RTC_NO_ERROR)
+      *stored_error = error;
   }
 
   /* mutex to make API thread safe */
@@ -270,7 +311,7 @@ namespace embree
     runRegressionTests();
   }
 #endif
- 
+
   RTCORE_API void rtcInit(const char* cfg) 
   {
     Lock<MutexSys> lock(g_mutex);
@@ -524,46 +565,6 @@ namespace embree
     g_error_function = NULL;
     g_initialized = false;
     CATCH_END;
-  }
-
-  RTCError* getThreadError() 
-  {
-    RTCError* stored_error = (RTCError*) getTls(g_error);
-    if (stored_error == NULL) {
-      Lock<MutexSys> lock(g_errors_mutex);
-      stored_error = new RTCError(RTC_NO_ERROR);
-      g_errors.push_back(stored_error);
-      setTls(g_error,stored_error);
-    }
-    return stored_error;
-  }
-
-  void process_error(RTCError error, const char* str)
-  { 
-    /* print error when in verbose mode */
-    if (g_verbose) 
-    {
-      switch (error) {
-      case RTC_NO_ERROR         : std::cerr << "Embree: No error"; break;
-      case RTC_UNKNOWN_ERROR    : std::cerr << "Embree: Unknown error"; break;
-      case RTC_INVALID_ARGUMENT : std::cerr << "Embree: Invalid argument"; break;
-      case RTC_INVALID_OPERATION: std::cerr << "Embree: Invalid operation"; break;
-      case RTC_OUT_OF_MEMORY    : std::cerr << "Embree: Out of memory"; break;
-      case RTC_UNSUPPORTED_CPU  : std::cerr << "Embree: Unsupported CPU"; break;
-      default                   : std::cerr << "Embree: Invalid error code"; break;                   
-      };
-      if (str) std::cerr << ", (" << str << ")";
-      std::cerr << std::endl;
-    }
-
-    /* call user specified error callback */
-    if (g_error_function) 
-      g_error_function(error,str); 
-
-    /* record error code */
-    RTCError* stored_error = getThreadError();
-    if (*stored_error == RTC_NO_ERROR)
-      *stored_error = error;
   }
 
   RTCORE_API RTCError rtcGetError() 

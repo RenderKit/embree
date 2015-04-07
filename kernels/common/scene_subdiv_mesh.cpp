@@ -68,7 +68,7 @@ namespace embree
   void SubdivMesh::setMask (unsigned mask) 
   {
     if (parent->isStatic() && parent->isBuild()) {
-      process_error(RTC_INVALID_OPERATION,"static geometries cannot get modified");
+      throw_RTCError(RTC_INVALID_OPERATION,"static geometries cannot get modified");
       return;
     }
     this->mask = mask; 
@@ -77,13 +77,13 @@ namespace embree
   void SubdivMesh::setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride) 
   { 
     if (parent->isStatic() && parent->isBuild()) {
-      process_error(RTC_INVALID_OPERATION,"static geometries cannot get modified");
+      throw_RTCError(RTC_INVALID_OPERATION,"static geometries cannot get modified");
       return;
     }
 
     /* verify that all accesses are 4 bytes aligned */
     if (((size_t(ptr) + offset) & 0x3) || (stride & 0x3)) {
-      process_error(RTC_INVALID_OPERATION,"data must be 4 bytes aligned");
+      throw_RTCError(RTC_INVALID_OPERATION,"data must be 4 bytes aligned");
       return;
     }
 
@@ -91,7 +91,7 @@ namespace embree
 #if defined(__MIC__)
     if (type == RTC_VERTEX_BUFFER0 || type == RTC_VERTEX_BUFFER1) {
       if (((size_t(ptr) + offset) & 0xF) || (stride & 0xF)) {
-        process_error(RTC_INVALID_OPERATION,"data must be 16 bytes aligned");
+        throw_RTCError(RTC_INVALID_OPERATION,"data must be 16 bytes aligned");
         return;
       }
     }
@@ -124,7 +124,7 @@ namespace embree
       break;
 
     default: 
-      process_error(RTC_INVALID_ARGUMENT,"unknown buffer type");
+      throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type");
       break;
     }
   }
@@ -132,7 +132,7 @@ namespace embree
   void* SubdivMesh::map(RTCBufferType type) 
   {
     if (parent->isStatic() && parent->isBuild()) {
-      process_error(RTC_INVALID_OPERATION,"static geometries cannot get modified");
+      throw_RTCError(RTC_INVALID_OPERATION,"static geometries cannot get modified");
       return NULL;
     }
 
@@ -147,14 +147,14 @@ namespace embree
     case RTC_VERTEX_CREASE_INDEX_BUFFER  : return vertex_creases.map(parent->numMappedBuffers); 
     case RTC_VERTEX_CREASE_WEIGHT_BUFFER : return vertex_crease_weights.map(parent->numMappedBuffers); 
     case RTC_LEVEL_BUFFER                : return levels.map(parent->numMappedBuffers); 
-    default                              : process_error(RTC_INVALID_ARGUMENT,"unknown buffer type"); return NULL;
+    default                              : throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type"); return NULL;
     }
   }
 
   void SubdivMesh::unmap(RTCBufferType type) 
   {
     if (parent->isStatic() && parent->isBuild()) {
-      process_error(RTC_INVALID_OPERATION,"static geometries cannot get modified");
+      throw_RTCError(RTC_INVALID_OPERATION,"static geometries cannot get modified");
       return;
     }
 
@@ -169,7 +169,7 @@ namespace embree
     case RTC_VERTEX_CREASE_INDEX_BUFFER : vertex_creases.unmap(parent->numMappedBuffers); break;
     case RTC_VERTEX_CREASE_WEIGHT_BUFFER: vertex_crease_weights.unmap(parent->numMappedBuffers); break;
     case RTC_LEVEL_BUFFER               : levels.unmap(parent->numMappedBuffers); break;
-    default                             : process_error(RTC_INVALID_ARGUMENT,"unknown buffer type"); break;
+    default                             : throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type"); break;
     }
   }
 
@@ -201,7 +201,7 @@ namespace embree
     case RTC_VERTEX_CREASE_INDEX_BUFFER : vertex_creases.setModified(true); break;
     case RTC_VERTEX_CREASE_WEIGHT_BUFFER: vertex_crease_weights.setModified(true); break;
     case RTC_LEVEL_BUFFER               : levels.setModified(true); break;
-    default                             : process_error(RTC_INVALID_ARGUMENT,"unknown buffer type"); break;
+    default                             : throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type"); break;
     }
     Geometry::update();
   }
@@ -209,7 +209,7 @@ namespace embree
   void SubdivMesh::setDisplacementFunction (RTCDisplacementFunc func, RTCBounds* bounds) 
   {
     if (parent->isStatic() && parent->isBuild()) {
-      process_error(RTC_INVALID_OPERATION,"static geometries cannot get modified");
+      throw_RTCError(RTC_INVALID_OPERATION,"static geometries cannot get modified");
       return;
     }
     this->displFunc   = func;

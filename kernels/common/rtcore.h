@@ -41,11 +41,6 @@ namespace embree
   extern size_t g_benchmark;
   extern float g_memory_preallocation_factor;
 
-  /*! processes an error */
-  void process_error(RTCError error, const char* code);
-
-  typedef void (*ErrorFunc) ();
-
   /*! invokes the memory monitor callback */
   void memoryMonitor(ssize_t bytes, bool post);
 
@@ -87,12 +82,12 @@ namespace embree
     using mvector = vector_t<T,aligned_allocator<T,std::alignment_of<T>::value> >;
 
   /*! used to throw embree API errors */
-  struct my_runtime_error : public std::exception
+  struct rtcore_error : public std::exception
   {
-    __forceinline my_runtime_error(RTCError error, const std::string& str)
+    __forceinline rtcore_error(RTCError error, const std::string& str)
       : error(error), str(str) {}
     
-    ~my_runtime_error() throw() {}
+    ~rtcore_error() throw() {}
     
     const char* what () const throw () {
       return str.c_str();
@@ -102,8 +97,8 @@ namespace embree
     std::string str;
   };
   
-#define THROW_MY_RUNTIME_ERROR(error,str)                               \
-  throw my_runtime_error(error,std::string(__FILE__) + " (" + std::to_string((long long)__LINE__) + "): " + std::string(str));
+#define throw_RTCError(error,str)                               \
+  throw rtcore_error(error,std::string(__FILE__) + " (" + std::to_string((long long)__LINE__) + "): " + std::string(str));
 
    /* we consider floating point numbers in that range as valid input numbers */
 #define VALID_FLOAT_RANGE  1.844E18f

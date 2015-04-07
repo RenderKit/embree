@@ -250,12 +250,12 @@ namespace embree
   unsigned Scene::newTriangleMesh (RTCGeometryFlags gflags, size_t numTriangles, size_t numVertices, size_t numTimeSteps) 
   {
     if (isStatic() && (gflags != RTC_GEOMETRY_STATIC)) {
-      process_error(RTC_INVALID_OPERATION,"static scenes can only contain static geometries");
+      throw_RTCError(RTC_INVALID_OPERATION,"static scenes can only contain static geometries");
       return -1;
     }
 
     if (numTimeSteps == 0 || numTimeSteps > 2) {
-      process_error(RTC_INVALID_OPERATION,"only 1 or 2 time steps supported");
+      throw_RTCError(RTC_INVALID_OPERATION,"only 1 or 2 time steps supported");
       return -1;
     }
     
@@ -266,12 +266,12 @@ namespace embree
   unsigned Scene::newSubdivisionMesh (RTCGeometryFlags gflags, size_t numFaces, size_t numEdges, size_t numVertices, size_t numEdgeCreases, size_t numVertexCreases, size_t numHoles, size_t numTimeSteps) 
   {
     if (isStatic() && (gflags != RTC_GEOMETRY_STATIC)) {
-      process_error(RTC_INVALID_OPERATION,"static scenes can only contain static geometries");
+      throw_RTCError(RTC_INVALID_OPERATION,"static scenes can only contain static geometries");
       return -1;
     }
 
     if (numTimeSteps == 0 || numTimeSteps > 2) {
-      process_error(RTC_INVALID_OPERATION,"only 1 or 2 time steps supported");
+      throw_RTCError(RTC_INVALID_OPERATION,"only 1 or 2 time steps supported");
       return -1;
     }
     
@@ -283,12 +283,12 @@ namespace embree
   unsigned Scene::newBezierCurves (RTCGeometryFlags gflags, size_t numCurves, size_t numVertices, size_t numTimeSteps) 
   {
     if (isStatic() && (gflags != RTC_GEOMETRY_STATIC)) {
-      process_error(RTC_INVALID_OPERATION,"static scenes can only contain static geometries");
+      throw_RTCError(RTC_INVALID_OPERATION,"static scenes can only contain static geometries");
       return -1;
     }
 
     if (numTimeSteps == 0 || numTimeSteps > 2) {
-      process_error(RTC_INVALID_OPERATION,"only 1 or 2 time steps supported");
+      throw_RTCError(RTC_INVALID_OPERATION,"only 1 or 2 time steps supported");
       return -1;
     }
     
@@ -406,12 +406,12 @@ namespace embree
     progress_monitor_counter = 0;
 
     //if (isStatic() && isBuild()) {
-    //  process_error(RTC_INVALID_OPERATION,"static geometries cannot get committed twice");
+    //  throw_RTCError(RTC_INVALID_OPERATION,"static geometries cannot get committed twice");
     //  return;
     //}
 
     if (!ready()) {
-      process_error(RTC_INVALID_OPERATION,"not all buffers are unmapped");
+      throw_RTCError(RTC_INVALID_OPERATION,"not all buffers are unmapped");
       return;
     }
 
@@ -485,12 +485,12 @@ namespace embree
     progress_monitor_counter = 0;
 
     //if (isStatic() && isBuild()) {
-    //  process_error(RTC_INVALID_OPERATION,"static geometries cannot get committed twice");
+    //  throw_RTCError(RTC_INVALID_OPERATION,"static geometries cannot get committed twice");
     //  return;
     //}
 
     if (!ready()) {
-      process_error(RTC_INVALID_OPERATION,"not all buffers are unmapped");
+      throw_RTCError(RTC_INVALID_OPERATION,"not all buffers are unmapped");
       return;
     }
 
@@ -538,7 +538,7 @@ namespace embree
     }
 
     if (!ready()) {
-      process_error(RTC_INVALID_OPERATION,"not all buffers are unmapped");
+      throw_RTCError(RTC_INVALID_OPERATION,"not all buffers are unmapped");
       return;
     }
 
@@ -587,7 +587,7 @@ namespace embree
       size_t n = atomic_t(dn) + atomic_add(&progress_monitor_counter, atomic_t(dn));
       if (!progress_monitor_function(progress_monitor_ptr, n / (double(numPrimitives())))) {
 #if defined(TASKING_TBB)
-        THROW_MY_RUNTIME_ERROR(RTC_CANCELLED,"progress monitor forced termination");
+        throw_RTCError(RTC_CANCELLED,"progress monitor forced termination");
 #endif
       }
     }

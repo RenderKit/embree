@@ -52,6 +52,8 @@ namespace embree
     typedef void (*ISPCOccludedFunc16 )(void* ptr, RTCRay16& ray, size_t item, __mmask16 valid);
 #endif
 
+    typedef void (*ErrorFunc) ();
+
     struct Intersector1
     {
       Intersector1 (ErrorFunc error = NULL) 
