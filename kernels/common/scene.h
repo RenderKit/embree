@@ -103,6 +103,9 @@ namespace embree
 
     /*! Scene destruction */
     ~Scene ();
+    
+    /*! clears the scene */
+    void clear();
 
     /*! Creates new user geometry. */
     unsigned int newUserGeometry (size_t items);

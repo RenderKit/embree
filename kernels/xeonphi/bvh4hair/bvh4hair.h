@@ -368,6 +368,7 @@ namespace embree
       }
     };
 
+    void clear() {}
 
     NodeRef root;                      //!< Root node (can also be a leaf).
 

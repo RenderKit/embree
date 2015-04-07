@@ -233,6 +233,9 @@ namespace embree
 #endif
   }
 
+  void Scene::clear() {
+  }
+
   unsigned Scene::newUserGeometry (size_t items) 
   {
     Geometry* geom = new UserGeometry(this,items);

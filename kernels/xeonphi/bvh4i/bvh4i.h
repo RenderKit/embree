@@ -449,6 +449,8 @@ namespace embree
 
     ~BVH4i();
 
+    void clear() {}
+
     /*! BVH4i instantiations */
     static Accel* BVH4iTriangle1ObjectSplitBinnedSAH(Scene* scene,bool robust);
     static Accel* BVH4iTriangle1ObjectSplitMorton(Scene* scene,bool robust);

@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "common/default.h"
+#include "default.h"
 
 namespace embree
 {
@@ -24,7 +24,7 @@ namespace embree
   class AccelData : public RefCount {
   public:
     AccelData () : bounds(empty) {}
-    virtual void clear() {} // FIXME: make pure virtual too see if implemented by all new builders
+    virtual void clear() = 0;
   public:
     BBox3fa bounds;
   };

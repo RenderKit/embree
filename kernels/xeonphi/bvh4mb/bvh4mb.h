@@ -90,6 +90,7 @@ namespace embree
     {
     }
 
+    void clear() {}
 
     static Accel* BVH4mbTriangle1ObjectSplitBinnedSAH(Scene* scene);
 
