@@ -47,15 +47,12 @@ ENDIF()
 
 IF (TASKING_TBB)
   ADD_DEFINITIONS(-DTASKING_TBB)
-  SET(EMBREE_LIBRARIES ${EMBREE_LIBRARIES} ${TBB_LIBRARIES})
 ENDIF()
 
 ADD_ISPC_LIBRARY(embree ${EMBREE_LIB_TYPE}
 
   embree.rc
 
-  ../../common/tasking/taskscheduler_tbb.cpp # FIXME: only compile this file if required 
-  ../../common/tasking/tasksys.cpp
   ../algorithms/parallel_for.cpp
   ../algorithms/parallel_reduce.cpp
   ../algorithms/parallel_prefix_sum.cpp
@@ -235,7 +232,7 @@ IF (TARGET_AVX512)
   SET(EMBREE_LIBRARIES ${EMBREE_LIBRARIES} embree_avx512)
 ENDIF()
 
-TARGET_LINK_LIBRARIES(embree ${EMBREE_LIBRARIES} sys simd)
+TARGET_LINK_LIBRARIES(embree ${EMBREE_LIBRARIES} sys simd tasking)
 
 IF (WIN32 AND ENABLE_ISPC_SUPPORT)
   LIST(GET ISPC_TARGETS -1 MAX_ISA)

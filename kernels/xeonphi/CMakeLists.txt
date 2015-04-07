@@ -30,10 +30,6 @@ ADD_DEFINITIONS(-D__TARGET_XEON_PHI__)
 
 ADD_ISPC_LIBRARY(embree_xeonphi ${EMBREE_LIB_TYPE}
 
-  ../../common/tasking/taskscheduler_mic.cpp
-  ../../common/tasking/taskscheduler_new.cpp # FIXME: remove
-  ../../common/tasking/tasksys.cpp
-
   ../common/stat.cpp 
   ../common/globals.cpp 
   ../common/acceln.cpp
@@ -94,7 +90,7 @@ ADD_ISPC_LIBRARY(embree_xeonphi ${EMBREE_LIB_TYPE}
   bvh4hair/bvh4hair_intersector16_single.cpp
 )
 
-TARGET_LINK_LIBRARIES(embree_xeonphi sys_xeonphi simd_xeonphi ${ADDITIONAL_LIBRARIES})
+TARGET_LINK_LIBRARIES(embree_xeonphi sys_xeonphi simd_xeonphi tasking_xeonphi ${ADDITIONAL_LIBRARIES})
 SET_TARGET_PROPERTIES(embree_xeonphi PROPERTIES
   VERSION "${EMBREE_VERSION_MAJOR}.${EMBREE_VERSION_MINOR}.${EMBREE_VERSION_PATCH}"
   SOVERSION ${EMBREE_VERSION_MAJOR}

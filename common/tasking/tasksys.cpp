@@ -15,7 +15,7 @@
 // ======================================================================== //
 
 #include "sys/platform.h"
-#include "algorithms/parallel_for.h" 
+#include "kernels/algorithms/parallel_for.h" 
 
 #if defined(TASKING_LOCKSTEP)
 #include "tasking/taskscheduler_mic.h"
