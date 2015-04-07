@@ -59,11 +59,11 @@ namespace embree
   }
 
   extern "C" void ispcSetErrorFunction(void* f) {
-    return rtcSetErrorFunction((RTC_ERROR_FUNCTION)f);
+    return rtcSetErrorFunction((RTCErrorFunc)f);
   }
 
   extern "C" void ispcSetMemoryMonitorFunction(void* f) {
-    return rtcSetMemoryMonitorFunction((RTC_MEMORY_MONITOR_FUNCTION)f);
+    return rtcSetMemoryMonitorFunction((RTCMemoryMonitorFunc)f);
   }
 
   extern "C" void ispcDebug() {
@@ -77,7 +77,7 @@ namespace embree
   }
 
   extern "C" void ispcSetProgressMonitorFunction(RTCScene scene, void* func, void* ptr) {
-    return rtcSetProgressMonitorFunction(scene,(RTC_PROGRESS_MONITOR_FUNCTION)func,ptr);
+    return rtcSetProgressMonitorFunction(scene,(RTCProgressMonitorFunc)func,ptr);
   }
 
   extern "C" void ispcCommitScene (RTCScene scene) {

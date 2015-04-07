@@ -60,7 +60,7 @@ namespace embree
 
       /* subdivide patch */
       size_t N;
-      CatmullClarkPatch patches[GeneralCatmullClarkPatch::SIZE]; 
+      array_t<CatmullClarkPatch,GeneralCatmullClarkPatch::SIZE> patches; 
       patch.subdivide(patches,N);
 
       /* check if subpatches need further subdivision */
@@ -137,7 +137,7 @@ namespace embree
 	if (patch.isRegularOrFinal(depth))
 	  return tessellator(patch,uv,neighborSubdiv_i);
 
-      CatmullClarkPatch patches[4]; 
+      array_t<CatmullClarkPatch,4> patches; 
       patch.subdivide(patches);
 
       int neighborSubdiv[4];
