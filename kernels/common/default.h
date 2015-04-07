@@ -47,10 +47,10 @@
 #include "math/affinespace.h"
 
 #include "simd/simd.h"
-#include "embree2/rtcore.h"
 #include "stat.h"
 #include "monitor.h"
 #include "profile.h"
+#include "rtcore.h"
 
 #include <map>
 #include <set>
@@ -61,55 +61,6 @@
 
 namespace embree
 {
-
-  /* we consider floating point numbers in that range as valid input numbers */
-#define VALID_FLOAT_RANGE  1.844E18f
-
-  __forceinline bool inFloatRange(const float v) {
-    return (v > -VALID_FLOAT_RANGE) && (v < +VALID_FLOAT_RANGE);
-  };
-  __forceinline bool inFloatRange(const Vec3fa& v) {
-    return all(gt_mask(v,Vec3fa_t(-VALID_FLOAT_RANGE)) & lt_mask(v,Vec3fa_t(+VALID_FLOAT_RANGE)));
-  };
-#if defined(__SSE2__)
-  __forceinline bool inFloatRange(const ssef& v) {
-    return all((v > ssef(-VALID_FLOAT_RANGE)) & (v < ssef(+VALID_FLOAT_RANGE)));
-  };
-#endif
-  __forceinline bool inFloatRange(const BBox3fa& v) {
-    return all(gt_mask(v.lower,Vec3fa_t(-VALID_FLOAT_RANGE)) & lt_mask(v.upper,Vec3fa_t(+VALID_FLOAT_RANGE)));
-  };
-
-#define MODE_HIGH_QUALITY (1<<8)
-#define LeafMode 0
-
-  /* global settings */
-  extern size_t g_numThreads;
-  extern size_t g_verbose;
-
-  extern std::string g_tri_accel;
-  extern std::string g_tri_builder;
-  extern std::string g_tri_traverser;
-  extern double g_tri_builder_replication_factor;
-
-  extern std::string g_tri_accel_mb;
-  extern std::string g_tri_builder_mb;
-  extern std::string g_tri_traverser_mb;
-
-  extern std::string g_hair_accel;
-  extern std::string g_hair_builder;
-  extern std::string g_hair_traverser;
-  extern double g_hair_builder_replication_factor;
-
-  extern std::string g_subdiv_accel;
-
-  extern int g_scene_flags;
-  extern size_t g_benchmark;
-  extern float g_memory_preallocation_factor;
-
-  /*! processes an error */
-  void process_error(RTCError error, const char* code);
-
 #if defined (__SSE__) // || defined (__MIC__)
   typedef Vec2<sseb> sse2b;
   typedef Vec3<sseb> sse3b;
@@ -143,29 +94,4 @@ namespace embree
   typedef Vec4<mic_f> mic4f;
   typedef Vec4<mic_i> mic4i;
 #endif
-
-typedef void (*ErrorFunc) ();
-
-
-void memoryMonitor(ssize_t bytes, bool post);
-
-struct my_runtime_error : public std::exception
-{
-  __forceinline my_runtime_error(RTCError error, const std::string& str)
-    : error(error), str(str) {}
-
-  ~my_runtime_error() throw() {}
-  
-  const char* what () const throw () {
-    return str.c_str();
-  }
-
-  RTCError error;
-  std::string str;
-};
-
-#define THROW_MY_RUNTIME_ERROR(error,str)                                \
-  throw my_runtime_error(error,std::string(__FILE__) + " (" + std::to_string((long long)__LINE__) + "): " + std::string(str));
-
-
 }
