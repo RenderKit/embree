@@ -81,23 +81,7 @@ namespace embree
   };
 
 #define MODE_HIGH_QUALITY (1<<8)
-#define LIST_MODE_BITS 0xFF
-
-#if 0
-#define LeafMode 1
-#define LeafIterator1 ListIntersector1
-#define LeafIterator4 ListIntersector4
-#define LeafIterator4_1 ListIntersector4_1
-#define LeafIterator8 ListIntersector8
-#define LeafIterator8_1 ListIntersector8_1
-#else
 #define LeafMode 0
-#define LeafIterator1 ArrayIntersector1
-#define LeafIterator4 ArrayIntersector4
-#define LeafIterator4_1 ArrayIntersector4_1
-#define LeafIterator8 ArrayIntersector8
-#define LeafIterator8_1 ArrayIntersector8_1
-#endif
 
   /* global settings */
   extern size_t g_numThreads;

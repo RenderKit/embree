@@ -434,10 +434,10 @@ namespace embree
       AVX_ZERO_UPPER();
     }
     
-    DEFINE_INTERSECTOR8(BVH4Triangle4Intersector8HybridMoeller, BVH4Intersector8Hybrid<0x1 COMMA false COMMA LeafIterator8_1<Triangle4Intersector8MoellerTrumbore<LeafMode COMMA true> > >);
-    DEFINE_INTERSECTOR8(BVH4Triangle4Intersector8HybridMoellerNoFilter, BVH4Intersector8Hybrid<0x1 COMMA false COMMA LeafIterator8_1<Triangle4Intersector8MoellerTrumbore<LeafMode COMMA false> > >);
-    DEFINE_INTERSECTOR8(BVH4Triangle8Intersector8HybridMoeller, BVH4Intersector8Hybrid<0x1 COMMA false COMMA LeafIterator8_1<Triangle8Intersector8MoellerTrumbore<LeafMode COMMA true> > >);
-    DEFINE_INTERSECTOR8(BVH4Triangle8Intersector8HybridMoellerNoFilter, BVH4Intersector8Hybrid<0x1 COMMA false COMMA LeafIterator8_1<Triangle8Intersector8MoellerTrumbore<LeafMode COMMA false> > >);
-    DEFINE_INTERSECTOR8(BVH4Triangle4vIntersector8HybridPluecker, BVH4Intersector8Hybrid<0x1 COMMA true COMMA LeafIterator8_1<Triangle4vIntersector8Pluecker<LeafMode> > >);
+    DEFINE_INTERSECTOR8(BVH4Triangle4Intersector8HybridMoeller, BVH4Intersector8Hybrid<0x1 COMMA false COMMA ArrayIntersector8_1<Triangle4Intersector8MoellerTrumbore<LeafMode COMMA true> > >);
+    DEFINE_INTERSECTOR8(BVH4Triangle4Intersector8HybridMoellerNoFilter, BVH4Intersector8Hybrid<0x1 COMMA false COMMA ArrayIntersector8_1<Triangle4Intersector8MoellerTrumbore<LeafMode COMMA false> > >);
+    DEFINE_INTERSECTOR8(BVH4Triangle8Intersector8HybridMoeller, BVH4Intersector8Hybrid<0x1 COMMA false COMMA ArrayIntersector8_1<Triangle8Intersector8MoellerTrumbore<LeafMode COMMA true> > >);
+    DEFINE_INTERSECTOR8(BVH4Triangle8Intersector8HybridMoellerNoFilter, BVH4Intersector8Hybrid<0x1 COMMA false COMMA ArrayIntersector8_1<Triangle8Intersector8MoellerTrumbore<LeafMode COMMA false> > >);
+    DEFINE_INTERSECTOR8(BVH4Triangle4vIntersector8HybridPluecker, BVH4Intersector8Hybrid<0x1 COMMA true COMMA ArrayIntersector8_1<Triangle4vIntersector8Pluecker<LeafMode> > >);
   }
 }

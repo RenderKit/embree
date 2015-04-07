@@ -300,31 +300,31 @@ namespace embree
       AVX_ZERO_UPPER();
     }
 
-    DEFINE_INTERSECTOR1(BVH4Bezier1vIntersector1,BVH4Intersector1<0x1 COMMA false COMMA LeafIterator1<Bezier1vIntersector1<LeafMode> > >);
-    DEFINE_INTERSECTOR1(BVH4Bezier1iIntersector1,BVH4Intersector1<0x1 COMMA false COMMA LeafIterator1<Bezier1iIntersector1<LeafMode> > >);
+    DEFINE_INTERSECTOR1(BVH4Bezier1vIntersector1,BVH4Intersector1<0x1 COMMA false COMMA ArrayIntersector1<Bezier1vIntersector1<LeafMode> > >);
+    DEFINE_INTERSECTOR1(BVH4Bezier1iIntersector1,BVH4Intersector1<0x1 COMMA false COMMA ArrayIntersector1<Bezier1iIntersector1<LeafMode> > >);
     
-    DEFINE_INTERSECTOR1(BVH4Bezier1vIntersector1_OBB,BVH4Intersector1<0x101 COMMA false COMMA LeafIterator1<Bezier1vIntersector1<LeafMode> > >);
-    DEFINE_INTERSECTOR1(BVH4Bezier1iIntersector1_OBB,BVH4Intersector1<0x101 COMMA false COMMA LeafIterator1<Bezier1iIntersector1<LeafMode> > >);
-    DEFINE_INTERSECTOR1(BVH4Bezier1iMBIntersector1_OBB,BVH4Intersector1<0x1010 COMMA false COMMA LeafIterator1<Bezier1iIntersector1MB<LeafMode> > >);
+    DEFINE_INTERSECTOR1(BVH4Bezier1vIntersector1_OBB,BVH4Intersector1<0x101 COMMA false COMMA ArrayIntersector1<Bezier1vIntersector1<LeafMode> > >);
+    DEFINE_INTERSECTOR1(BVH4Bezier1iIntersector1_OBB,BVH4Intersector1<0x101 COMMA false COMMA ArrayIntersector1<Bezier1iIntersector1<LeafMode> > >);
+    DEFINE_INTERSECTOR1(BVH4Bezier1iMBIntersector1_OBB,BVH4Intersector1<0x1010 COMMA false COMMA ArrayIntersector1<Bezier1iIntersector1MB<LeafMode> > >);
 
-    DEFINE_INTERSECTOR1(BVH4Triangle1Intersector1Moeller,BVH4Intersector1<0x1 COMMA false COMMA LeafIterator1<Triangle1Intersector1MoellerTrumbore<LeafMode> > >);
-    DEFINE_INTERSECTOR1(BVH4Triangle4Intersector1Moeller,BVH4Intersector1<0x1 COMMA false COMMA LeafIterator1<Triangle4Intersector1MoellerTrumbore<LeafMode> > >);
+    DEFINE_INTERSECTOR1(BVH4Triangle1Intersector1Moeller,BVH4Intersector1<0x1 COMMA false COMMA ArrayIntersector1<Triangle1Intersector1MoellerTrumbore<LeafMode> > >);
+    DEFINE_INTERSECTOR1(BVH4Triangle4Intersector1Moeller,BVH4Intersector1<0x1 COMMA false COMMA ArrayIntersector1<Triangle4Intersector1MoellerTrumbore<LeafMode> > >);
 #if defined(__AVX__)
-    DEFINE_INTERSECTOR1(BVH4Triangle8Intersector1Moeller,BVH4Intersector1<0x1 COMMA false COMMA LeafIterator1<Triangle8Intersector1MoellerTrumbore<LeafMode> > >);
+    DEFINE_INTERSECTOR1(BVH4Triangle8Intersector1Moeller,BVH4Intersector1<0x1 COMMA false COMMA ArrayIntersector1<Triangle8Intersector1MoellerTrumbore<LeafMode> > >);
 #endif
-    DEFINE_INTERSECTOR1(BVH4Triangle1vIntersector1Pluecker,BVH4Intersector1<0x1 COMMA true COMMA LeafIterator1<Triangle1vIntersector1Pluecker<LeafMode> > >);
-    DEFINE_INTERSECTOR1(BVH4Triangle4vIntersector1Pluecker,BVH4Intersector1<0x1 COMMA true COMMA LeafIterator1<Triangle4vIntersector1Pluecker<LeafMode> > >);
-    DEFINE_INTERSECTOR1(BVH4Triangle4iIntersector1Pluecker,BVH4Intersector1<0x1 COMMA true COMMA LeafIterator1<Triangle4iIntersector1Pluecker<LeafMode> > >);
+    DEFINE_INTERSECTOR1(BVH4Triangle1vIntersector1Pluecker,BVH4Intersector1<0x1 COMMA true COMMA ArrayIntersector1<Triangle1vIntersector1Pluecker<LeafMode> > >);
+    DEFINE_INTERSECTOR1(BVH4Triangle4vIntersector1Pluecker,BVH4Intersector1<0x1 COMMA true COMMA ArrayIntersector1<Triangle4vIntersector1Pluecker<LeafMode> > >);
+    DEFINE_INTERSECTOR1(BVH4Triangle4iIntersector1Pluecker,BVH4Intersector1<0x1 COMMA true COMMA ArrayIntersector1<Triangle4iIntersector1Pluecker<LeafMode> > >);
 
-    DEFINE_INTERSECTOR1(BVH4Subdivpatch1Intersector1,BVH4Intersector1<0x1 COMMA true COMMA LeafIterator1<SubdivPatch1Intersector1 > >);
+    DEFINE_INTERSECTOR1(BVH4Subdivpatch1Intersector1,BVH4Intersector1<0x1 COMMA true COMMA ArrayIntersector1<SubdivPatch1Intersector1 > >);
     DEFINE_INTERSECTOR1(BVH4Subdivpatch1CachedIntersector1,BVH4Intersector1<0x1 COMMA true COMMA SubdivPatch1CachedIntersector1>);
 
     DEFINE_INTERSECTOR1(BVH4GridIntersector1,BVH4Intersector1<0x1 COMMA true COMMA GridIntersector1>);
     DEFINE_INTERSECTOR1(BVH4GridLazyIntersector1,BVH4Intersector1<0x1 COMMA true COMMA Switch2Intersector1<GridIntersector1 COMMA GridLazyIntersector1> >);
 
-    DEFINE_INTERSECTOR1(BVH4VirtualIntersector1,BVH4Intersector1<0x1 COMMA false COMMA LeafIterator1<VirtualAccelIntersector1> >);
+    DEFINE_INTERSECTOR1(BVH4VirtualIntersector1,BVH4Intersector1<0x1 COMMA false COMMA ArrayIntersector1<VirtualAccelIntersector1> >);
 
-    DEFINE_INTERSECTOR1(BVH4Triangle1vMBIntersector1Moeller,BVH4Intersector1<0x10 COMMA false COMMA LeafIterator1<Triangle1vIntersector1MoellerTrumboreMB<LeafMode> > >);
-    DEFINE_INTERSECTOR1(BVH4Triangle4vMBIntersector1Moeller,BVH4Intersector1<0x10 COMMA false COMMA LeafIterator1<Triangle4vMBIntersector1MoellerTrumbore<LeafMode> > >);
+    DEFINE_INTERSECTOR1(BVH4Triangle1vMBIntersector1Moeller,BVH4Intersector1<0x10 COMMA false COMMA ArrayIntersector1<Triangle1vIntersector1MoellerTrumboreMB<LeafMode> > >);
+    DEFINE_INTERSECTOR1(BVH4Triangle4vMBIntersector1Moeller,BVH4Intersector1<0x10 COMMA false COMMA ArrayIntersector1<Triangle4vMBIntersector1MoellerTrumbore<LeafMode> > >);
   }
 }

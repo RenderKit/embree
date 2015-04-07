@@ -357,21 +357,21 @@ namespace embree
       AVX_ZERO_UPPER();
     }
     
-    DEFINE_INTERSECTOR4(BVH4Bezier1vIntersector4Chunk, BVH4Intersector4Chunk<0x1 COMMA false COMMA LeafIterator4<Bezier1vIntersector4<LeafMode> > >);
-    DEFINE_INTERSECTOR4(BVH4Bezier1iIntersector4Chunk, BVH4Intersector4Chunk<0x1 COMMA false COMMA LeafIterator4<Bezier1iIntersector4<LeafMode> > >);
-    DEFINE_INTERSECTOR4(BVH4Triangle1Intersector4ChunkMoeller, BVH4Intersector4Chunk<0x1 COMMA false COMMA LeafIterator4<Triangle1Intersector4MoellerTrumbore<LeafMode> > >);
-    DEFINE_INTERSECTOR4(BVH4Triangle4Intersector4ChunkMoeller, BVH4Intersector4Chunk<0x1 COMMA false COMMA LeafIterator4<Triangle4Intersector4MoellerTrumbore<LeafMode COMMA true> > >);
-    DEFINE_INTERSECTOR4(BVH4Triangle4Intersector4ChunkMoellerNoFilter, BVH4Intersector4Chunk<0x1 COMMA false COMMA LeafIterator4<Triangle4Intersector4MoellerTrumbore<LeafMode COMMA false> > >);
+    DEFINE_INTERSECTOR4(BVH4Bezier1vIntersector4Chunk, BVH4Intersector4Chunk<0x1 COMMA false COMMA ArrayIntersector4<Bezier1vIntersector4<LeafMode> > >);
+    DEFINE_INTERSECTOR4(BVH4Bezier1iIntersector4Chunk, BVH4Intersector4Chunk<0x1 COMMA false COMMA ArrayIntersector4<Bezier1iIntersector4<LeafMode> > >);
+    DEFINE_INTERSECTOR4(BVH4Triangle1Intersector4ChunkMoeller, BVH4Intersector4Chunk<0x1 COMMA false COMMA ArrayIntersector4<Triangle1Intersector4MoellerTrumbore<LeafMode> > >);
+    DEFINE_INTERSECTOR4(BVH4Triangle4Intersector4ChunkMoeller, BVH4Intersector4Chunk<0x1 COMMA false COMMA ArrayIntersector4<Triangle4Intersector4MoellerTrumbore<LeafMode COMMA true> > >);
+    DEFINE_INTERSECTOR4(BVH4Triangle4Intersector4ChunkMoellerNoFilter, BVH4Intersector4Chunk<0x1 COMMA false COMMA ArrayIntersector4<Triangle4Intersector4MoellerTrumbore<LeafMode COMMA false> > >);
 #if defined (__AVX__)
-    DEFINE_INTERSECTOR4(BVH4Triangle8Intersector4ChunkMoeller, BVH4Intersector4Chunk<0x1 COMMA false COMMA LeafIterator4<Triangle8Intersector4MoellerTrumbore<LeafMode COMMA true> > >);
-    DEFINE_INTERSECTOR4(BVH4Triangle8Intersector4ChunkMoellerNoFilter, BVH4Intersector4Chunk<0x1 COMMA false COMMA LeafIterator4<Triangle8Intersector4MoellerTrumbore<LeafMode COMMA false> > >);
+    DEFINE_INTERSECTOR4(BVH4Triangle8Intersector4ChunkMoeller, BVH4Intersector4Chunk<0x1 COMMA false COMMA ArrayIntersector4<Triangle8Intersector4MoellerTrumbore<LeafMode COMMA true> > >);
+    DEFINE_INTERSECTOR4(BVH4Triangle8Intersector4ChunkMoellerNoFilter, BVH4Intersector4Chunk<0x1 COMMA false COMMA ArrayIntersector4<Triangle8Intersector4MoellerTrumbore<LeafMode COMMA false> > >);
 #endif
-    DEFINE_INTERSECTOR4(BVH4Triangle1vIntersector4ChunkPluecker, BVH4Intersector4Chunk<0x1 COMMA true COMMA LeafIterator4<Triangle1vIntersector4Pluecker<LeafMode> > >);
-    DEFINE_INTERSECTOR4(BVH4Triangle4vIntersector4ChunkPluecker, BVH4Intersector4Chunk<0x1 COMMA true COMMA LeafIterator4<Triangle4vIntersector4Pluecker<LeafMode> > >);
-    DEFINE_INTERSECTOR4(BVH4Triangle4iIntersector4ChunkPluecker, BVH4Intersector4Chunk<0x1 COMMA true COMMA LeafIterator4<Triangle4iIntersector4Pluecker<LeafMode> > >);
-    DEFINE_INTERSECTOR4(BVH4VirtualIntersector4Chunk, BVH4Intersector4Chunk<0x1 COMMA false COMMA LeafIterator4<VirtualAccelIntersector4> >);
+    DEFINE_INTERSECTOR4(BVH4Triangle1vIntersector4ChunkPluecker, BVH4Intersector4Chunk<0x1 COMMA true COMMA ArrayIntersector4<Triangle1vIntersector4Pluecker<LeafMode> > >);
+    DEFINE_INTERSECTOR4(BVH4Triangle4vIntersector4ChunkPluecker, BVH4Intersector4Chunk<0x1 COMMA true COMMA ArrayIntersector4<Triangle4vIntersector4Pluecker<LeafMode> > >);
+    DEFINE_INTERSECTOR4(BVH4Triangle4iIntersector4ChunkPluecker, BVH4Intersector4Chunk<0x1 COMMA true COMMA ArrayIntersector4<Triangle4iIntersector4Pluecker<LeafMode> > >);
+    DEFINE_INTERSECTOR4(BVH4VirtualIntersector4Chunk, BVH4Intersector4Chunk<0x1 COMMA false COMMA ArrayIntersector4<VirtualAccelIntersector4> >);
 
-    DEFINE_INTERSECTOR4(BVH4Triangle1vMBIntersector4ChunkMoeller, BVH4Intersector4Chunk<0x10 COMMA false COMMA LeafIterator4<Triangle1vIntersector4MoellerTrumboreMB<LeafMode> > >);
-    DEFINE_INTERSECTOR4(BVH4Triangle4vMBIntersector4ChunkMoeller, BVH4Intersector4Chunk<0x10 COMMA false COMMA LeafIterator4<Triangle4vMBIntersector4MoellerTrumbore<LeafMode COMMA true> > >);
+    DEFINE_INTERSECTOR4(BVH4Triangle1vMBIntersector4ChunkMoeller, BVH4Intersector4Chunk<0x10 COMMA false COMMA ArrayIntersector4<Triangle1vIntersector4MoellerTrumboreMB<LeafMode> > >);
+    DEFINE_INTERSECTOR4(BVH4Triangle4vMBIntersector4ChunkMoeller, BVH4Intersector4Chunk<0x10 COMMA false COMMA ArrayIntersector4<Triangle4vMBIntersector4MoellerTrumbore<LeafMode COMMA true> > >);
   }
 }
