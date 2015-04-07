@@ -43,7 +43,7 @@ IF(NOT ISPC_VERSION)
 
   SET(ISPC_VERSION ${ISPC_VERSION} CACHE STRING "ISPC Version")
   MARK_AS_ADVANCED(ISPC_VERSION)
-#  MARK_AS_ADVANCED(ISPC_EXECUTABLE)
+  MARK_AS_ADVANCED(ISPC_EXECUTABLE)
 ENDIF()
 
 GET_FILENAME_COMPONENT(ISPC_DIR ${ISPC_EXECUTABLE} PATH)
@@ -135,7 +135,6 @@ MACRO (ispc_compile)
       -O3
       --target=${ISPC_TARGET_ARGS}
       --woff
-#      --wno-perf
       --opt=fast-math
       ${ISPC_ADDITIONAL_ARGS}
       -h ${outdirh}/${fname}_ispc.h
@@ -171,8 +170,6 @@ MACRO (add_ispc_executable name)
       SET_SOURCE_FILES_PROPERTIES( ${src} PROPERTIES COMPILE_FLAGS -std=gnu++98 )
     ENDFOREACH()
   ENDIF()
-
-#  SET_TARGET_PROPERTIES(${name} PROPERTIES LINKER_LANGUAGE C)
 ENDMACRO()
 
 MACRO (add_ispc_library name type)
@@ -194,7 +191,6 @@ MACRO (add_ispc_library name type)
       SET_SOURCE_FILES_PROPERTIES( ${src} PROPERTIES COMPILE_FLAGS -std=gnu++98 )
     ENDFOREACH()
   ENDIF()
-#  SET_TARGET_PROPERTIES(${name} PROPERTIES LINKER_LANGUAGE C)
 ENDMACRO()
 
 ELSE (ENABLE_ISPC_SUPPORT)
