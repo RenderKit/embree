@@ -22,10 +22,6 @@
 #include "math/vec3.h"
 #include "math/affinespace.h"
 
-#if defined(USE_PTEX)
-#include "Ptexture.h"
-#endif
-
 #include <vector>
 #include <memory>
 
@@ -191,10 +187,6 @@ namespace embree
       : ty(MATERIAL_OBJ), illum(0), d(d), Ns(Ns), Ni(1.f), Ka(0.f), Kd(Kd), Ks(Ks), Tf(1.f), map_Kd(NULL), map_Displ(NULL) {}
 
       ~OBJMaterial() { // FIXME: destructor never called!
-#if defined(USE_PTEX)
-        //if (map_Displ) map_Displ_ptex->release();  
-        //if (map_Kd) map_Kd_ptex->release();  
-#endif
       }
       
     public:
@@ -210,13 +202,9 @@ namespace embree
       Vec3fa Kd;              /*< diffuse reflectivity */
       Vec3fa Ks;              /*< specular reflectivity */
       Vec3fa Tf;              /*< transmission filter */
-#if defined(USE_PTEX)
-      PtexFilter* map_Kd;  /*< ptex Kd map */
-      PtexFilter* map_Displ;   /*< ptex displacement */
-#else
+
       Texture* map_Kd;       /*< dummy */
       Texture* map_Displ;       /*< dummy */
-#endif
     };
 
     struct MetalMaterial

@@ -25,6 +25,10 @@
 
 #define FORCE_ONLY_QUADS 0
 
+#if defined(USE_PTEX)
+#include "Ptexture.h"
+#endif
+
 namespace embree
 {
   /*! Three-index vertex, indexing start at 0, -1 means invalid vertex. */
@@ -327,6 +331,11 @@ namespace embree
         parseSep(token += 6);
         //model.materials[cur].obj().map_Kd = loadPtex(path + FileName(token));
         model.materials[cur].obj().map_Kd = loadTexture(path + FileName(token));
+
+#if defined(USE_PTEX)
+	// need to convert ptex to linear textures
+#endif
+
         continue;
       }
       if (!strncmp(token, "Ks_map", 6)) { continue; }
@@ -339,7 +348,13 @@ namespace embree
       }
       
       if (!strncmp(token, "Ka", 2)) { parseSep(token += 2);  model.materials[cur].obj().Ka = getVec3f(token); continue; }
-      if (!strncmp(token, "Kd", 2)) { parseSep(token += 2);  model.materials[cur].obj().Kd = getVec3f(token); continue; }
+      if (!strncmp(token, "Kd", 2)) { parseSep(token += 2);  model.materials[cur].obj().Kd = getVec3f(token); 
+#if 0
+	if (model.materials[cur].obj().Kd == Vec3f(0,0,0))
+	  model.materials[cur].obj().Kd = Vec3f(1,1,1);
+#endif
+	continue; 
+      }
       if (!strncmp(token, "Ks", 2)) { parseSep(token += 2);  model.materials[cur].obj().Ks = getVec3f(token); continue; }
       if (!strncmp(token, "Tf", 2)) { parseSep(token += 2);  model.materials[cur].obj().Tf = getVec3f(token); continue; }
     }
