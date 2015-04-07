@@ -19,6 +19,9 @@
 #include "../common/default.h"
 #include "range.h"
 
+#if defined(TASKING_LOCKSTEP)
+#include "tasking/taskscheduler_mic.h"
+#endif // if defined(TASKING_TBB_INTERNAL) // FIXME
 #include "tasking/taskscheduler_new.h"
 
 namespace embree

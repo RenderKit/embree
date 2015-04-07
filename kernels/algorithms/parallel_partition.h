@@ -19,7 +19,7 @@
 #include "common/default.h"
 #include "sys/platform.h"
 #include "sys/sysinfo.h"
-#include "tasking/taskscheduler.h"
+//#include "tasking/taskscheduler.h"
 
 #define DBG_PART(x) 
 #define DBG_PART2(x) 

@@ -421,41 +421,11 @@ void renderTile(int taskIndex,
                 const int numTilesX, 
                 const int numTilesY);
 
-struct RenderTileTask
-{
-  RenderTileTask (int* pixels, const int width, const int height, const float time, 
-                  const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p, const int numTilesX, const int numTilesY)
-    : pixels(pixels), width(width), height(height), time(time), vx(vx), vy(vy), vz(vz), p(p), numTilesX(numTilesX), numTilesY(numTilesY) {}
-
-public:
-  int* pixels;
-  const int width;
-  const int height;
-  const float time;
-  const Vec3fa vx;
-  const Vec3fa vy;
-  const Vec3fa vz;
-  const Vec3fa p;
-  const int numTilesX;
-  const int numTilesY;
-};
-
-void renderTile_parallel(RenderTileTask* task, size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) {
-  renderTile(taskIndex,task->pixels,task->width,task->height,task->time,task->vx,task->vy,task->vz,task->p,task->numTilesX,task->numTilesY);
-}
-
 void launch_renderTile (int numTiles, 
                         int* pixels, const int width, const int height, const float time, 
                         const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p, const int numTilesX, const int numTilesY)
 {
-#if defined(TASKING_LOCKSTEP)
-  TaskScheduler::EventSync event;
-  RenderTileTask parms(pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY);
-  TaskScheduler::Task task(&event,(TaskScheduler::runFunction)renderTile_parallel,&parms,numTiles,NULL,NULL,"render");
-  TaskScheduler::addTask(-1,TaskScheduler::GLOBAL_FRONT,&task);
-  event.sync();
-
-#elif 1
+#if 1
   atomic_t tileID = 0;
   parallel_for(size_t(0),size_t(32),[&] (const range<size_t>& r) {
       for (size_t tid=r.begin(); tid<r.end(); tid++) {
@@ -482,31 +452,6 @@ typedef void (*animateSphereFunc) (int taskIndex, Vertex* vertices,
 				   const float r,
 				   const float f);
 
-struct AnimateSphereTask
-{
-  AnimateSphereTask (animateSphereFunc func,
-		     Vertex* vertices, 
-		     const float rcpNumTheta,
-		     const float rcpNumPhi,
-		     const Vec3fa& pos, 
-		     const float r,
-		     const float f)
-    : func(func), vertices(vertices), rcpNumTheta(rcpNumTheta), rcpNumPhi(rcpNumPhi), pos(pos), r(r), f(f) {}
-
-public:
-  animateSphereFunc func;
-  Vertex* vertices;
-  const float rcpNumTheta;
-  const float rcpNumPhi;
-  const Vec3fa pos;
-  const float r;
-  const float f;
-};
-
-void animateSphere_parallel(AnimateSphereTask* task, size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) {
-  task->func(taskIndex,task->vertices,task->rcpNumTheta,task->rcpNumPhi,task->pos,task->r,task->f);
-}
-
 void launch_animateSphere(animateSphereFunc func,
 			  int taskSize,
 			  Vertex* vertices, 
@@ -516,19 +461,10 @@ void launch_animateSphere(animateSphereFunc func,
 			  const float r,
 			  const float f)
 {
-#if defined(TASKING_LOCKSTEP)
-   TaskScheduler::EventSync event;
-  AnimateSphereTask parms(func,vertices,rcpNumTheta,rcpNumPhi,pos,r,f);
-  TaskScheduler::Task task(&event,(TaskScheduler::runFunction)animateSphere_parallel,&parms,taskSize,NULL,NULL,"render");
-  TaskScheduler::addTask(-1,TaskScheduler::GLOBAL_FRONT,&task);
-  event.sync();
-
-#else
   parallel_for(size_t(0),size_t(taskSize),[&] (const range<size_t>& m) {
       for (size_t i=m.begin(); i<m.end(); i++)
         func(i,vertices,rcpNumTheta,rcpNumPhi,pos,r,f);
     });
-#endif
 }
 
 static int p[513] = { 

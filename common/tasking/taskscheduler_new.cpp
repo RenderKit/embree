@@ -19,6 +19,10 @@
 #include "sys/sysinfo.h"
 #include <algorithm>
 
+#if TASKING_LOCKSTEP
+#include "taskscheduler_mic.h"
+#endif
+
 #define SORTED_STEALING 0
 
 namespace embree

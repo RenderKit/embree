@@ -18,7 +18,9 @@
 
 #include "sys/platform.h"
 #include "sys/alloc.h"
-#include "tasking/taskscheduler.h"
+#include "sys/barrier.h"
+#include "sys/thread.h"
+//#include "tasking/taskscheduler.h"
 #include "../../kernels/algorithms/range.h"
 
 #if !defined(TASKING_TBB_INTERNAL)

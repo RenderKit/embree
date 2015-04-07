@@ -18,8 +18,7 @@
 
 #include "sys/platform.h"
 #include "sys/sysinfo.h"
-#include "tasking/taskscheduler.h"
-#include "tasking/taskscheduler_new.h"
+#include "sys/barrier.h"
 #include "parallel_for.h"
 #include "math/math.h"
 #include <algorithm>

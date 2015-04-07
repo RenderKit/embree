@@ -24,10 +24,15 @@
 #include "common/alloc.h"
 #include "embree2/rtcore.h"
 #include "common/scene.h"
-#include "tasking/taskscheduler.h"
 #include "sys/thread.h"
 #include "raystream_log.h"
 #include "version.h"
+
+#if defined(TASKING_LOCKSTEP)
+#include "tasking/taskscheduler_mic.h"
+#elif defined(TASKING_TBB_INTERNAL)
+#include "tasking/taskscheduler_new.h"
+#endif
 
 #define TRACE(x) //std::cout << #x << std::endl;
 

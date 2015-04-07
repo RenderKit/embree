@@ -28,7 +28,6 @@ struct Triangle { int v0, v1, v2; };
 
 #include "embree2/rtcore.h"
 #include "ray.h"
-#include "tasking/taskscheduler.h"
 
 using namespace embree;
 

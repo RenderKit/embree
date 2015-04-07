@@ -42,10 +42,7 @@ namespace embree
 
       ~BVH4Refit();
 
-      //TASK_COMPLETE_FUNCTION(BVH4Refit,refit_sequential);
       void refit_sequential(size_t threadIndex, size_t threadCount);
-      
-      TASK_SET_FUNCTION(BVH4Refit,task_refit_parallel);
       
     private:
       size_t annotate_tree_sizes(NodeRef& ref);
@@ -62,7 +59,6 @@ namespace embree
       
     public:
       const PrimitiveType& primTy;   //!< primitve type stored in BVH
-      TaskScheduler::Task task;      //!< parallel refit task
       
     public:
       Builder* builder;

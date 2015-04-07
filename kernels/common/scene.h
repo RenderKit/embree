@@ -119,8 +119,10 @@ namespace embree
     void updateInterface();
 
     /*! build task */
+#if defined(TASKING_LOCKSTEP)
     TASK_RUN_FUNCTION(Scene,task_build_parallel);
     TaskScheduler::Task task;
+#endif
 
     /* return number of geometries */
     __forceinline size_t size() const { return geometries.size(); }

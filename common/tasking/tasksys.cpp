@@ -15,8 +15,15 @@
 // ======================================================================== //
 
 #include "sys/platform.h"
-#include "tasking/taskscheduler.h"
 #include "algorithms/parallel_for.h" 
+
+#if defined(TASKING_LOCKSTEP)
+#include "tasking/taskscheduler_mic.h"
+#endif
+
+#if defined(TASKING_TBB_INTERNAL)
+#include "tasking/taskscheduler_new.h"
+#endif
 
 namespace embree
 {

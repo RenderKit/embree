@@ -231,13 +231,6 @@ namespace embree
                     Vec3fa(upper_x,upper_y,upper_z));
     }
     
-    void BVH4Refit::task_refit_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount) 
-    {
-      NodeRef& ref = *roots[taskIndex];
-      recurse_bottom(ref);
-      ref.setBarrier();
-    }
-    
     void BVH4Refit::refit_sequential(size_t threadIndex, size_t threadCount) {
       bvh->bounds = recurse_bottom(bvh->root);
     }
