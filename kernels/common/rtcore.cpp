@@ -42,7 +42,7 @@ namespace embree
 #define CATCH_END                                                       \
   } catch (std::bad_alloc&) {                                           \
     process_error(RTC_OUT_OF_MEMORY,"out of memory");                   \
-  } catch (my_runtime_error& e) {                                       \
+  } catch (rtcore_error& e) {                                       \
     process_error(e.error,e.what());                                    \
   } catch (std::exception& e) {                                         \
     process_error(RTC_UNKNOWN_ERROR,e.what());                          \

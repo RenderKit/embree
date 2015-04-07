@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "common/default.h"
+#include "default.h"
 
 namespace embree
 {
@@ -31,10 +31,6 @@ namespace embree
     /*! Buffer destruction */
     ~Buffer ();
       
-    /*! disallow copy */
-    //Buffer(const Buffer&) = delete;
-    //Buffer& operator=(const Buffer&) = delete;
-
   public:
     
     /*! initialized the buffer */
@@ -118,6 +114,7 @@ namespace embree
 #endif
     }
 
+#if defined(__MIC__)
     __forceinline char* getPtr( size_t i = 0 ) const 
     {
 #if defined(RTCORE_BUFFER_STRIDE)
@@ -134,6 +131,7 @@ namespace embree
       return sizeof(T);
 #endif
     }
+#endif
   };
 
   /*! Implements a data stream inside a data buffer. */
@@ -168,6 +166,7 @@ namespace embree
 #endif
     }
 
+#if defined(__MIC__)
     __forceinline unsigned int getBufferStride() const {
 #if defined(RTCORE_BUFFER_STRIDE)
       return stride;
@@ -175,5 +174,6 @@ namespace embree
       return sizeof(Vec3fa);
 #endif
     }
+#endif
   };
 }

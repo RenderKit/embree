@@ -74,7 +74,8 @@ namespace embree
       assert(j < numTimeSteps);
       return vertices[j].getPtr(i);
     }
-    
+
+#if defined(__MIC__)    
     /*! returns the stride in bytes of the triangle buffer */
     __forceinline size_t getTriangleBufferStride() const {
       return triangles.getBufferStride();
@@ -84,6 +85,7 @@ namespace embree
     __forceinline size_t getVertexBufferStride() const {
       return vertices[0].getBufferStride();
     }
+#endif
 
     /*! check if the i'th primitive is valid */
     __forceinline bool valid(size_t i, BBox3fa* bbox = NULL) const 
