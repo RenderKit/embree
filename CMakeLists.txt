@@ -296,14 +296,14 @@ INSTALL(DIRECTORY include/embree2 DESTINATION include COMPONENT headers)
 # Install Embree CMake Configuration
 ##############################################################
 IF (WIN32)
-  CONFIGURE_FILE("kernels/embree-config-windows.cmake" "embree-config.cmake" @ONLY)
+  CONFIGURE_FILE("common/cmake/embree-config-windows.cmake" "embree-config.cmake" @ONLY)
 ELSEIF (APPLE)
-  CONFIGURE_FILE("kernels/embree-config-macosx.cmake" "embree-config.cmake" @ONLY)
+  CONFIGURE_FILE("common/cmake/embree-config-macosx.cmake" "embree-config.cmake" @ONLY)
 ELSE()
-  CONFIGURE_FILE("kernels/embree-config-linux.cmake" "embree-config.cmake" @ONLY)
+  CONFIGURE_FILE("common/cmake/embree-config-linux.cmake" "embree-config.cmake" @ONLY)
 ENDIF()
 
-CONFIGURE_FILE("kernels/embree-config-version.cmake" "embree-config-version.cmake" @ONLY)
+CONFIGURE_FILE("common/cmake/embree-config-version.cmake" "embree-config-version.cmake" @ONLY)
 
 INSTALL(FILES "${PROJECT_BINARY_DIR}/embree-config.cmake" DESTINATION "lib/cmake/embree-${EMBREE_VERSION}" COMPONENT libraries)
 INSTALL(FILES "${PROJECT_BINARY_DIR}/embree-config-version.cmake" DESTINATION "lib/cmake/embree-${EMBREE_VERSION}" COMPONENT libraries)
