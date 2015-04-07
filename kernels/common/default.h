@@ -50,16 +50,12 @@
 #include "profile.h"
 #include "rtcore.h"
 
-#include <map>
-#include <set>
 #include <vector>
 #include <algorithm>
-#include <iomanip>
-#include <array>
 
 namespace embree
 {
-#if defined (__SSE__) // || defined (__MIC__)
+#if defined (__SSE__)
   typedef Vec2<sseb> sse2b;
   typedef Vec3<sseb> sse3b;
   typedef Vec2<ssei> sse2i;
