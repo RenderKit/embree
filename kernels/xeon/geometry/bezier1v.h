@@ -228,8 +228,8 @@ namespace embree
 #endif
       const Vec3fa lower(reduce_min(pi.x),reduce_min(pi.y),reduce_min(pi.z));
       const Vec3fa upper(reduce_max(pi.x),reduce_max(pi.y),reduce_max(pi.z));
-      const Vec3fa upper_r = reduce_max(abs(pi.w));
-      return enlarge(BBox3fa(min(lower,p3),max(upper,p3)),max(upper_r,p3.w));
+      const Vec3fa upper_r = Vec3fa(reduce_max(abs(pi.w)));
+      return enlarge(BBox3fa(min(lower,p3),max(upper,p3)),max(upper_r,Vec3fa(p3.w)));
 #else
       const BBox3fa b = merge(BBox3fa(p0),BBox3fa(p1),BBox3fa(p2),BBox3fa(p3));
       return enlarge(b,Vec3fa(b.upper.w));
@@ -252,8 +252,8 @@ namespace embree
 #endif
       const Vec3fa lower(reduce_min(pi.x),reduce_min(pi.y),reduce_min(pi.z));
       const Vec3fa upper(reduce_max(pi.x),reduce_max(pi.y),reduce_max(pi.z));
-      const Vec3fa upper_r = reduce_max(abs(pi.w));
-      return enlarge(BBox3fa(min(lower,b3),max(upper,b3)),max(upper_r,b3.w));
+      const Vec3fa upper_r = Vec3fa(reduce_max(abs(pi.w)));
+      return enlarge(BBox3fa(min(lower,b3),max(upper,b3)),max(upper_r,Vec3fa(b3.w)));
 #else
       const BBox3fa b = merge(BBox3fa(b0),BBox3fa(b1),BBox3fa(b2),BBox3fa(b3));
       return enlarge(b,Vec3fa(b.upper.w));

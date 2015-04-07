@@ -688,7 +688,7 @@ namespace embree
     }
     else {
       std::cout << "Warning: unsupported material " << type << std::endl;
-      new (&material) OBJScene::OBJMaterial(1.0f,0.5f,0.0f,0.0f);
+      new (&material) OBJScene::OBJMaterial(1.0f,Vec3fa(0.5f),Vec3fa(0.0f),0.0f);
     }
     int materialID = scene.materials.size();
     scene.materials.push_back(material);

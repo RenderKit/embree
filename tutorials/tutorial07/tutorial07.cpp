@@ -61,8 +61,8 @@ namespace embree
   static float hairy_triangles_thickness = 0.1f;
   static int hairy_triangles_strands_per_triangle = 1;
 
-  Vec3fa offset = 0.0f;
-  Vec3fa offset_mb = 0.0f;
+  Vec3fa offset = zero;
+  Vec3fa offset_mb = zero;
 
   void addHairSegment(OBJScene::Mesh& mesh, int materialID, const Vec3fa& p0, const Vec3fa& p1)
   {

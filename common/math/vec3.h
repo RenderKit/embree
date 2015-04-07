@@ -18,18 +18,6 @@
 
 #include "math.h"
 
-#if defined __SSE__
-#include "simd/sse.h"
-#endif
-
-#if defined __AVX__
-#include "simd/avx.h"
-#endif
-
-#if defined __MIC__
-#include "simd/mic.h"
-#endif
-
 namespace embree
 {
   struct Vec3fa;
@@ -157,6 +145,10 @@ namespace embree
   template<typename T> __forceinline T       distance ( const Vec3<T>& a, const Vec3<T>& b ) { return length(a-b); }
   template<typename T> __forceinline Vec3<T> cross    ( const Vec3<T>& a, const Vec3<T>& b ) { return Vec3<T>(msub(a.y,b.z,a.z*b.y), msub(a.z,b.x,a.x*b.z), msub(a.x,b.y,a.y*b.x)); }
 
+  template<typename T> __forceinline      T  halfArea ( const Vec3<T>& d )                  { return d.x*(d.y+d.z)+d.y*d.z; }
+  template<typename T> __forceinline      T  area     ( const Vec3<T>& d )                  { return 2.0f*halfArea(d); }
+  template<typename T> __forceinline Vec3<T> reflect  ( const Vec3<T>& V, const Vec3fa& N ) { return 2.0f*dot(V,N)*N-V; }
+
   template<typename T> __forceinline Vec3<T> normalize_safe( const Vec3<T>& a ) { 
     const T d = dot(a,a); return select(d == T( zero ), a ,  a*rsqrt(d) );
   }
@@ -189,6 +181,7 @@ namespace embree
   ////////////////////////////////////////////////////////////////////////////////
   /// Comparison Operators
   ////////////////////////////////////////////////////////////////////////////////
+
   template<typename T> __forceinline Vec3<bool> eq_mask( const Vec3<T>& a, const Vec3<T>& b ) { return Vec3<bool>(a.x==b.x,a.y==b.y,a.z==b.z); }
   template<typename T> __forceinline Vec3<bool> neq_mask(const Vec3<T>& a, const Vec3<T>& b ) { return Vec3<bool>(a.x!=b.x,a.y!=b.y,a.z!=b.z); }
   template<typename T> __forceinline Vec3<bool> lt_mask( const Vec3<T>& a, const Vec3<T>& b ) { return Vec3<bool>(a.x< b.x,a.y< b.y,a.z< b.z); }
@@ -217,6 +210,22 @@ namespace embree
 #include "vec3ba.h" 
 #include "vec3ia.h" 
 #include "vec3fa.h" 
+#endif
+
+////////////////////////////////////////////////////////////////////////////////
+/// SSE / AVX / MIC specializations
+////////////////////////////////////////////////////////////////////////////////
+
+#if defined __SSE__
+#include "simd/sse.h"
+#endif
+
+#if defined __AVX__
+#include "simd/avx.h"
+#endif
+
+#if defined __MIC__
+#include "simd/mic.h"
 #endif
 
 namespace embree 
@@ -258,7 +267,6 @@ namespace embree
 #endif
 
 #if defined(__MIC__)
-  //template<> __forceinline Vec3<ssef>::Vec3( const Vec3fa& a ) : x(a.x), y(a.y), z(a.z) {}
   template<> __forceinline Vec3<mic_f>::Vec3( const Vec3fa& a ) : x(a.x), y(a.y), z(a.z) {}
 #endif
 }
