@@ -29,6 +29,15 @@
 #include "sys/string.h"
 #include "sys/regression.h"
 
+#include "math/math.h"
+#include "math/vec2.h"
+#include "math/vec3.h"
+#include "math/vec4.h"
+#include "math/bbox.h"
+#include "math/obbox.h"
+#include "math/affinespace.h"
+#include "simd/simd.h"
+
 #if defined(TASKING_LOCKSTEP)
 #include "tasking/taskscheduler_mic.h"
 #else // if defined(TASKING_TBB_INTERNAL) // FIXME
@@ -37,18 +46,7 @@
 
 #include "config.h"
 #include "isa.h"
-
-#include "math/math.h"
-#include "math/vec2.h"
-#include "math/vec3.h"
-#include "math/vec4.h"
-#include "math/bbox.h"
-#include "math/obbox.h"
-#include "math/affinespace.h"
-
-#include "simd/simd.h"
 #include "stat.h"
-#include "monitor.h"
 #include "profile.h"
 #include "rtcore.h"
 
