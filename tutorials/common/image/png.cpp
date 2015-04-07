@@ -103,7 +103,7 @@ namespace embree
     PRINT(bit_depth);
     PRINT(color_type);
     
-    Ref<Image> img = new Image4c(width,height,fileName);
+    Ref<Image> img = new Image4uc(width,height,fileName);
 
     // Update the png info struct.
     png_read_update_info(png_ptr, info_ptr);

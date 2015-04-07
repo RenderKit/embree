@@ -95,7 +95,7 @@ namespace embree
            pixel2world.p);
     
     void* ptr = map();
-    Ref<Image> image = new Image4c(g_width, g_height, (Col4c*)ptr);
+    Ref<Image> image = new Image4uc(g_width, g_height, (Col4uc*)ptr);
     storeImage(image, fileName);
     unmap();
     cleanup();

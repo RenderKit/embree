@@ -166,7 +166,7 @@ namespace embree
     AffineSpace3fa pixel2world = g_camera.pixel2world(g_width,g_height);
     render(0.0f,pixel2world.l.vx,pixel2world.l.vy,pixel2world.l.vz,pixel2world.p);
     void* ptr = map();
-    Ref<Image> image = new Image4c(g_width, g_height, (Col4c*)ptr);
+    Ref<Image> image = new Image4uc(g_width, g_height, (Col4uc*)ptr);
     storeImage(image, fileName);
     unmap();
     cleanup();

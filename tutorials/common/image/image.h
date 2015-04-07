@@ -118,9 +118,9 @@ namespace embree
   };
   
   /*! Shortcuts for common image types. */
-  typedef ImageT<Col3c> Image3c;
+  typedef ImageT<Col3uc> Image3uc;
   typedef ImageT<Col3f> Image3f;
-  typedef ImageT<Col4c> Image4c;
+  typedef ImageT<Col4uc> Image4uc;
   typedef ImageT<Col4f> Image4f;
   
   /*! Generate a JPEG encoded image from a RGB8 buffer in memory. */

@@ -88,7 +88,7 @@ namespace embree
   }
 
   /*! template instantiations */
-  template class ImageT<Col3c>;
+  template class ImageT<Col3uc>;
   template class ImageT<Col3f>;
 
 }

@@ -130,7 +130,7 @@ namespace embree
         unsigned char *rgb = decompress(&cinfo);  size_t width = cinfo.output_width;  size_t height = cinfo.output_height;
 
         /*! Allocate the Embree image. */
-        Ref<Image> image = new Image4c(width, height, filename);
+        Ref<Image> image = new Image4uc(width, height, filename);
 
         /*! Convert the image from unsigned char RGB to unsigned char RGBA. */
         for (size_t y=0, i=0 ; y < height ; y++) {
