@@ -728,7 +728,7 @@ namespace embree
 #endif
 
 #if defined(__TARGET_AVX__) || defined(__TARGET_AVX2__)
-    if (has_feature(AVX)) {
+    if (hasISA(AVX)) {
       rtcore_coherent_intersect8(scene);
     }
 #endif
@@ -752,7 +752,7 @@ namespace embree
 #endif
 
 #if defined(__TARGET_AVX__) || defined(__TARGET_AVX2__)
-    if (has_feature(AVX)) {
+    if (hasISA(AVX)) {
       rtcore_incoherent_intersect8(scene,numbers,N);
     }
 #endif

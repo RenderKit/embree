@@ -1339,7 +1339,7 @@ namespace embree
 #endif
 
 #if defined(__TARGET_AVX__) || defined(__TARGET_AVX2__)
-        if (has_feature(AVX)) 
+        if (hasISA(AVX)) 
         {
           RTCRay8 ray8; 
           setRay(ray8,0,ray0);
@@ -1443,7 +1443,7 @@ namespace embree
       }
 
 #if defined(__TARGET_AVX__) || defined(__TARGET_AVX2__)
-      if (has_feature(AVX))
+      if (hasISA(AVX))
       {
 	RTCRay ray0 = makeRay(pos0+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray0.mask = mask0;
 	RTCRay ray1 = makeRay(pos1+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray1.mask = mask1;
@@ -1561,7 +1561,7 @@ namespace embree
       }
 
 #if defined(__TARGET_AVX__) || defined(__TARGET_AVX2__)
-      if (has_feature(AVX)) 
+      if (hasISA(AVX)) 
       {
 	RTCRay ray0 = makeRay(pos0+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray0.mask = mask0;
 	RTCRay ray1 = makeRay(pos1+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray1.mask = mask1;
@@ -1747,7 +1747,7 @@ namespace embree
       }
 
 #if defined(__TARGET_AVX__) || defined(__TARGET_AVX2__)
-      if (has_feature(AVX))
+      if (hasISA(AVX))
       {
         RTCRay ray0 = makeRay(Vec3fa(float(ix),float(iy),0.0f),Vec3fa(0,0,-1));
 
@@ -1821,7 +1821,7 @@ namespace embree
       }
 
 #if defined(__TARGET_AVX__) || defined(__TARGET_AVX2__)
-      if (has_feature(AVX))
+      if (hasISA(AVX))
       {
         RTCRay ray0 = makeRay(Vec3fa(float(ix),float(iy),0.0f),Vec3fa(0,0,-1));
 
@@ -1908,7 +1908,7 @@ namespace embree
 #endif
 
 #if defined(__TARGET_AVX__) || defined(__TARGET_AVX2__)
-      if (has_feature(AVX)) {
+      if (hasISA(AVX)) {
         RTCRay8 ray8; 
         memset(&ray8,-1,sizeof(RTCRay8));
         setRay(ray8,i,ray);
@@ -2401,7 +2401,7 @@ namespace embree
     ray = backfacing;  rtcIntersectN(scene,ray,4); if (ray.geomID != -1) passed = false;
 #endif
 #if defined(__TARGET_AVX__) || defined(__TARGET_AVX2__)
-    if (has_feature(AVX)) {
+    if (hasISA(AVX)) {
       ray = frontfacing; rtcOccludedN(scene,ray,8);  if (ray.geomID != 0) passed = false;
       ray = frontfacing; rtcIntersectN(scene,ray,8); if (ray.geomID != 0) passed = false;
       ray = backfacing;  rtcOccludedN(scene,ray,8);  if (ray.geomID != -1) passed = false;
@@ -2499,7 +2499,7 @@ namespace embree
 #endif
 
 #if defined(__TARGET_AVX__) || defined(__TARGET_AVX2__)
-    if (has_feature(AVX)) {
+    if (hasISA(AVX)) {
       RTCRay8 ray8;
       for (size_t j=0; j<8; j++) {
         Vec3fa org(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
@@ -3053,7 +3053,7 @@ namespace embree
 #endif
 
 #if defined(__TARGET_AVX__) || defined(__TARGET_AVX2__)
-    if (has_feature(AVX)) {
+    if (hasISA(AVX)) {
       rtcore_watertight_closed8("sphere",pos);
       rtcore_watertight_closed8("cube",pos);
       rtcore_watertight_plane8(100000);
@@ -3077,7 +3077,7 @@ namespace embree
 #endif
 
 #if defined(__TARGET_AVX__) || defined(__TARGET_AVX2__)
-    if (has_feature(AVX)) {
+    if (hasISA(AVX)) {
       rtcore_nan("nan_test_8",RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,8);
       rtcore_inf("inf_test_8",RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,8);
     }

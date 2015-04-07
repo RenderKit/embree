@@ -266,24 +266,24 @@ namespace embree
     return str;
   }
 
-  bool has_feature(const int feature) 
+  bool hasISA(const int isa) 
   {
     int cpu_features = getCPUFeatures();
-    return (cpu_features & feature) == feature;
+    return (cpu_features & isa) == isa;
   }
   
-  std::string stringOfISA (int features)
+  std::string stringOfISA (int isa)
   {
-    if (features == SSE) return "SSE";
-    if (features == SSE2) return "SSE2";
-    if (features == SSE3) return "SSE3";
-    if (features == SSSE3) return "SSSE3";
-    if (features == SSE41) return "SSE4_1";
-    if (features == SSE42) return "SSE4_2";
-    if (features == AVX) return "AVX";
-    if (features == AVXI) return "AVXI";
-    if (features == AVX2) return "AVX2";
-    if (features == KNC) return "KNC";
+    if (isa == SSE) return "SSE";
+    if (isa == SSE2) return "SSE2";
+    if (isa == SSE3) return "SSE3";
+    if (isa == SSSE3) return "SSSE3";
+    if (isa == SSE41) return "SSE4_1";
+    if (isa == SSE42) return "SSE4_2";
+    if (isa == AVX) return "AVX";
+    if (isa == AVXI) return "AVXI";
+    if (isa == AVX2) return "AVX2";
+    if (isa == KNC) return "KNC";
     return "UNKNOWN";
   }
 }

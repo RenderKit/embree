@@ -427,7 +427,7 @@ namespace embree
 
     /* CPU has to support at least SSE2 */
 #if !defined (__MIC__)
-    if (!has_feature(SSE2)) {
+    if (!hasISA(SSE2)) {
       g_mutex.unlock();
       process_error(RTC_UNSUPPORTED_CPU,"CPU does not support SSE2");
       g_mutex.lock();
@@ -449,7 +449,7 @@ namespace embree
 
 #endif 
 #if defined(__TARGET_AVX__)
-    if (has_feature(AVX)) {
+    if (hasISA(AVX)) {
       BVH8Register();
     }
 #endif

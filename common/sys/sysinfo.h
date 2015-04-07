@@ -137,7 +137,7 @@ namespace embree
   static const int KNC   = CPU_FEATURE_KNC;
 
   /*! checks if the CPU has the specified ISA */
-  bool has_feature(const int feature);
+  bool hasISA(const int feature);
 
   /*! converts ISA bitvector into a string */
   std::string stringOfISA(int features);

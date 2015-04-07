@@ -127,7 +127,7 @@ namespace embree
         switch (mode) {
         case /*0b00*/ 0: 
 #if defined (__TARGET_AVX__)
-          if (has_feature(AVX))
+          if (hasISA(AVX))
 	  {
             if (isHighQuality()) accels.add(BVH8::BVH8Triangle4SpatialSplit(this)); 
             else                 accels.add(BVH8::BVH8Triangle4ObjectSplit(this)); 
