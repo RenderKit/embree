@@ -49,39 +49,23 @@ namespace embree
     return ProgressMonitorClosure<Closure>(closure);
   }
 
-  class Scene;
-  struct TriangleMesh;
-  struct UserGeometryBase;
-  
-  typedef Builder* (*SceneBuilderFunc)       (void* accel, Scene* scene, size_t mode);
-  typedef Builder* (*TriangleMeshBuilderFunc)(void* accel, TriangleMesh* mesh, size_t mode); 
-  typedef Builder* (*UserGeometryBuilderFunc)(void* accel, UserGeometryBase* mesh, size_t mode);
+  template<typename Accel, typename Ty, typename Args>
+    struct BuilderFunc {
+      typedef Builder* (*type)(Accel* accel, Ty* mesh, Args args);
+    };
 
-#define DECLARE_SCENE_BUILDER(symbol)                                         \
-  namespace isa   { extern Builder* symbol(void* accel, Scene* scene, size_t mode); } \
-  namespace sse41 { extern Builder* symbol(void* accel, Scene* scene, size_t mode); } \
-  namespace avx   { extern Builder* symbol(void* accel, Scene* scene, size_t mode); } \
-  namespace avx2  { extern Builder* symbol(void* accel, Scene* scene, size_t mode); } \
+#define DECLARE_BUILDER(Accel,Mesh,Args,symbol)                         \
+  namespace isa   { extern Builder* symbol(Accel* accel, Mesh* scene, Args args); } \
+  namespace sse41 { extern Builder* symbol(Accel* accel, Mesh* scene, Args args); } \
+  namespace avx   { extern Builder* symbol(Accel* accel, Mesh* scene, Args args); } \
+  namespace avx2  { extern Builder* symbol(Accel* accel, Mesh* scene, Args args); } \
   void symbol##_error() { throw_RTCError(RTC_UNSUPPORTED_CPU,"builder " TOSTRING(symbol) " not supported by your CPU"); } \
-  SceneBuilderFunc symbol = (SceneBuilderFunc) symbol##_error;
+    typename BuilderFunc<Accel,Mesh,Args>::type symbol = (typename BuilderFunc<Accel,Mesh,Args>::type) symbol##_error;
 
-#define DECLARE_TRIANGLEMESH_BUILDER(symbol)                            \
-  namespace isa   { extern Builder* symbol(void* accel, TriangleMesh* mesh, size_t mode); } \
-  namespace sse41 { extern Builder* symbol(void* accel, TriangleMesh* mesh, size_t mode); } \
-  namespace avx   { extern Builder* symbol(void* accel, TriangleMesh* mesh, size_t mode); } \
-  namespace avx2  { extern Builder* symbol(void* accel, TriangleMesh* mesh, size_t mode); } \
-  void symbol##_error() { throw_RTCError(RTC_UNSUPPORTED_CPU,"builder " TOSTRING(symbol) " not supported by your CPU"); } \
-  TriangleMeshBuilderFunc symbol = (TriangleMeshBuilderFunc) symbol##_error;
-
-#define DECLARE_USERGEOMETRY_BUILDER(symbol)                            \
-  namespace isa   { extern Builder* symbol(void* accel, UserGeometryBase* mesh, size_t mode); } \
-  namespace sse41 { extern Builder* symbol(void* accel, UserGeometryBase* mesh, size_t mode); } \
-  namespace avx   { extern Builder* symbol(void* accel, UserGeometryBase* mesh, size_t mode); } \
-  namespace avx2  { extern Builder* symbol(void* accel, UserGeometryBase* mesh, size_t mode); } \
-  void symbol##_error() { throw_RTCError(RTC_UNSUPPORTED_CPU,"builder " TOSTRING(symbol) " not supported by your CPU"); } \
-  UserGeometryBuilderFunc symbol = (UserGeometryBuilderFunc) symbol##_error;
-
+  class TriangleMesh;
+  struct Scene;
   typedef void     (*createTriangleMeshAccelTy)(TriangleMesh* mesh, AccelData*& accel, Builder*& builder); 
+
   typedef Builder* (*BVH4BuilderTopLevelFunc  )(void* accel, Scene* scene, const createTriangleMeshAccelTy createTriangleMeshAccel);
 
 #define DECLARE_TOPLEVEL_BUILDER(symbol)                                         \

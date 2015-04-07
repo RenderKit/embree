@@ -105,63 +105,63 @@ namespace embree
   DECLARE_SYMBOL(Accel::Intersector8,BVH4GridLazyIntersector8);
   DECLARE_SYMBOL(Accel::Intersector8,BVH4VirtualIntersector8Chunk);
 
-  DECLARE_TOPLEVEL_BUILDER(BVH4BuilderTwoLevelSAH);
+  DECLARE_BUILDER(void,Scene,const createTriangleMeshAccelTy,BVH4BuilderTwoLevelSAH);
 
-  DECLARE_SCENE_BUILDER(BVH4Bezier1vBuilder_OBB_New);
-  DECLARE_SCENE_BUILDER(BVH4Bezier1iBuilder_OBB_New);
-  DECLARE_SCENE_BUILDER(BVH4Bezier1iMBBuilder_OBB_New);
+  DECLARE_BUILDER(void,Scene,size_t,BVH4Bezier1vBuilder_OBB_New);
+  DECLARE_BUILDER(void,Scene,size_t,BVH4Bezier1iBuilder_OBB_New);
+  DECLARE_BUILDER(void,Scene,size_t,BVH4Bezier1iMBBuilder_OBB_New);
 
-  DECLARE_SCENE_BUILDER(BVH4Triangle1SceneBuilderSAH);
-  DECLARE_SCENE_BUILDER(BVH4Triangle4SceneBuilderSAH);
-  DECLARE_SCENE_BUILDER(BVH4Triangle8SceneBuilderSAH);
-  DECLARE_SCENE_BUILDER(BVH4Triangle1vSceneBuilderSAH);
-  DECLARE_SCENE_BUILDER(BVH4Triangle4vSceneBuilderSAH);
-  DECLARE_SCENE_BUILDER(BVH4Triangle4iSceneBuilderSAH);
-  DECLARE_SCENE_BUILDER(BVH4Triangle4vMBSceneBuilderSAH);
+  DECLARE_BUILDER(void,Scene,size_t,BVH4Triangle1SceneBuilderSAH);
+  DECLARE_BUILDER(void,Scene,size_t,BVH4Triangle4SceneBuilderSAH);
+  DECLARE_BUILDER(void,Scene,size_t,BVH4Triangle8SceneBuilderSAH);
+  DECLARE_BUILDER(void,Scene,size_t,BVH4Triangle1vSceneBuilderSAH);
+  DECLARE_BUILDER(void,Scene,size_t,BVH4Triangle4vSceneBuilderSAH);
+  DECLARE_BUILDER(void,Scene,size_t,BVH4Triangle4iSceneBuilderSAH);
+  DECLARE_BUILDER(void,Scene,size_t,BVH4Triangle4vMBSceneBuilderSAH);
 
-  DECLARE_SCENE_BUILDER(BVH4Triangle1SceneBuilderSpatialSAH);
-  DECLARE_SCENE_BUILDER(BVH4Triangle4SceneBuilderSpatialSAH);
-  DECLARE_SCENE_BUILDER(BVH4Triangle8SceneBuilderSpatialSAH);
-  DECLARE_SCENE_BUILDER(BVH4Triangle1vSceneBuilderSpatialSAH);
-  DECLARE_SCENE_BUILDER(BVH4Triangle4vSceneBuilderSpatialSAH);
-  DECLARE_SCENE_BUILDER(BVH4Triangle4iSceneBuilderSpatialSAH);
+  DECLARE_BUILDER(void,Scene,size_t,BVH4Triangle1SceneBuilderSpatialSAH);
+  DECLARE_BUILDER(void,Scene,size_t,BVH4Triangle4SceneBuilderSpatialSAH);
+  DECLARE_BUILDER(void,Scene,size_t,BVH4Triangle8SceneBuilderSpatialSAH);
+  DECLARE_BUILDER(void,Scene,size_t,BVH4Triangle1vSceneBuilderSpatialSAH);
+  DECLARE_BUILDER(void,Scene,size_t,BVH4Triangle4vSceneBuilderSpatialSAH);
+  DECLARE_BUILDER(void,Scene,size_t,BVH4Triangle4iSceneBuilderSpatialSAH);
 
-  DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle1MeshBuilderSAH);
-  DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle4MeshBuilderSAH);
-  DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle8MeshBuilderSAH);
-  DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle1vMeshBuilderSAH);
-  DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle4vMeshBuilderSAH);
-  DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle4iMeshBuilderSAH);
-  DECLARE_SCENE_BUILDER(BVH4Bezier1vSceneBuilderSAH);
-  DECLARE_SCENE_BUILDER(BVH4Bezier1iSceneBuilderSAH);
-  DECLARE_SCENE_BUILDER(BVH4VirtualSceneBuilderSAH);
+  DECLARE_BUILDER(void,TriangleMesh,size_t,BVH4Triangle1MeshBuilderSAH);
+  DECLARE_BUILDER(void,TriangleMesh,size_t,BVH4Triangle4MeshBuilderSAH);
+  DECLARE_BUILDER(void,TriangleMesh,size_t,BVH4Triangle8MeshBuilderSAH);
+  DECLARE_BUILDER(void,TriangleMesh,size_t,BVH4Triangle1vMeshBuilderSAH);
+  DECLARE_BUILDER(void,TriangleMesh,size_t,BVH4Triangle4vMeshBuilderSAH);
+  DECLARE_BUILDER(void,TriangleMesh,size_t,BVH4Triangle4iMeshBuilderSAH);
+  DECLARE_BUILDER(void,Scene,size_t,BVH4Bezier1vSceneBuilderSAH);
+  DECLARE_BUILDER(void,Scene,size_t,BVH4Bezier1iSceneBuilderSAH);
+  DECLARE_BUILDER(void,Scene,size_t,BVH4VirtualSceneBuilderSAH);
 
-  DECLARE_SCENE_BUILDER(BVH4SubdivPatch1BuilderBinnedSAH);
-  DECLARE_SCENE_BUILDER(BVH4SubdivPatch1CachedBuilderBinnedSAH);
-  DECLARE_SCENE_BUILDER(BVH4SubdivGridBuilderBinnedSAH);
-  DECLARE_SCENE_BUILDER(BVH4SubdivGridEagerBuilderBinnedSAH);
-  DECLARE_SCENE_BUILDER(BVH4SubdivGridLazyBuilderBinnedSAH);
+  DECLARE_BUILDER(void,Scene,size_t,BVH4SubdivPatch1BuilderBinnedSAH);
+  DECLARE_BUILDER(void,Scene,size_t,BVH4SubdivPatch1CachedBuilderBinnedSAH);
+  DECLARE_BUILDER(void,Scene,size_t,BVH4SubdivGridBuilderBinnedSAH);
+  DECLARE_BUILDER(void,Scene,size_t,BVH4SubdivGridEagerBuilderBinnedSAH);
+  DECLARE_BUILDER(void,Scene,size_t,BVH4SubdivGridLazyBuilderBinnedSAH);
 
-  DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle1MeshRefitSAH);
-  DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle4MeshRefitSAH);
-  DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle8MeshRefitSAH);
-  DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle1vMeshRefitSAH);
-  DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle4vMeshRefitSAH);
-  DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle4iMeshRefitSAH);
+  DECLARE_BUILDER(void,TriangleMesh,size_t,BVH4Triangle1MeshRefitSAH);
+  DECLARE_BUILDER(void,TriangleMesh,size_t,BVH4Triangle4MeshRefitSAH);
+  DECLARE_BUILDER(void,TriangleMesh,size_t,BVH4Triangle8MeshRefitSAH);
+  DECLARE_BUILDER(void,TriangleMesh,size_t,BVH4Triangle1vMeshRefitSAH);
+  DECLARE_BUILDER(void,TriangleMesh,size_t,BVH4Triangle4vMeshRefitSAH);
+  DECLARE_BUILDER(void,TriangleMesh,size_t,BVH4Triangle4iMeshRefitSAH);
 
-  DECLARE_SCENE_BUILDER(BVH4Triangle1SceneBuilderMortonGeneral);
-  DECLARE_SCENE_BUILDER(BVH4Triangle4SceneBuilderMortonGeneral);
-  DECLARE_SCENE_BUILDER(BVH4Triangle8SceneBuilderMortonGeneral);
-  DECLARE_SCENE_BUILDER(BVH4Triangle1vSceneBuilderMortonGeneral);
-  DECLARE_SCENE_BUILDER(BVH4Triangle4vSceneBuilderMortonGeneral);
-  DECLARE_SCENE_BUILDER(BVH4Triangle4iSceneBuilderMortonGeneral);
+  DECLARE_BUILDER(void,Scene,size_t,BVH4Triangle1SceneBuilderMortonGeneral);
+  DECLARE_BUILDER(void,Scene,size_t,BVH4Triangle4SceneBuilderMortonGeneral);
+  DECLARE_BUILDER(void,Scene,size_t,BVH4Triangle8SceneBuilderMortonGeneral);
+  DECLARE_BUILDER(void,Scene,size_t,BVH4Triangle1vSceneBuilderMortonGeneral);
+  DECLARE_BUILDER(void,Scene,size_t,BVH4Triangle4vSceneBuilderMortonGeneral);
+  DECLARE_BUILDER(void,Scene,size_t,BVH4Triangle4iSceneBuilderMortonGeneral);
 
-  DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle1MeshBuilderMortonGeneral);
-  DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle4MeshBuilderMortonGeneral);
-  DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle8MeshBuilderMortonGeneral);
-  DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle1vMeshBuilderMortonGeneral);
-  DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle4vMeshBuilderMortonGeneral);
-  DECLARE_TRIANGLEMESH_BUILDER(BVH4Triangle4iMeshBuilderMortonGeneral);
+  DECLARE_BUILDER(void,TriangleMesh,size_t,BVH4Triangle1MeshBuilderMortonGeneral);
+  DECLARE_BUILDER(void,TriangleMesh,size_t,BVH4Triangle4MeshBuilderMortonGeneral);
+  DECLARE_BUILDER(void,TriangleMesh,size_t,BVH4Triangle8MeshBuilderMortonGeneral);
+  DECLARE_BUILDER(void,TriangleMesh,size_t,BVH4Triangle1vMeshBuilderMortonGeneral);
+  DECLARE_BUILDER(void,TriangleMesh,size_t,BVH4Triangle4vMeshBuilderMortonGeneral);
+  DECLARE_BUILDER(void,TriangleMesh,size_t,BVH4Triangle4iMeshBuilderMortonGeneral);
 
   void BVH4Register () 
   {

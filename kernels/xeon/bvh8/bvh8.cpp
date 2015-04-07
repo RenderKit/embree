@@ -36,11 +36,11 @@ namespace embree
   DECLARE_SYMBOL(Accel::Intersector8,BVH8Triangle8Intersector8HybridMoeller);
   DECLARE_SYMBOL(Accel::Intersector8,BVH8Triangle8Intersector8HybridMoellerNoFilter);
 
-  DECLARE_SCENE_BUILDER(BVH8Triangle4SceneBuilderSAH);
-  DECLARE_SCENE_BUILDER(BVH8Triangle8SceneBuilderSAH);
+  DECLARE_BUILDER(void,Scene,size_t,BVH8Triangle4SceneBuilderSAH);
+  DECLARE_BUILDER(void,Scene,size_t,BVH8Triangle8SceneBuilderSAH);
 
-  DECLARE_SCENE_BUILDER(BVH8Triangle4SceneBuilderSpatialSAH);
-  DECLARE_SCENE_BUILDER(BVH8Triangle8SceneBuilderSpatialSAH);
+  DECLARE_BUILDER(void,Scene,size_t,BVH8Triangle4SceneBuilderSpatialSAH);
+  DECLARE_BUILDER(void,Scene,size_t,BVH8Triangle8SceneBuilderSpatialSAH);
 
   void BVH8Register () 
   {
