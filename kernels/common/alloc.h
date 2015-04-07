@@ -16,11 +16,8 @@
 
 #pragma once
 
-#include "common/default.h"
-//#include "tasking/taskscheduler.h"
+#include "default.h"
 #include "math/math.h"
-
-#include <vector>
 
 namespace embree
 {
@@ -369,7 +366,7 @@ namespace embree
       void* malloc(size_t bytes, size_t align = 16) 
       {
         assert(align <= maxAlignment);
-        bytes = (bytes+(align-1)) & ~(align-1); // FIXME: works only if all alignments are equal
+        bytes = (bytes+(align-1)) & ~(align-1);
 	if (unlikely(cur+bytes > reserveEnd)) return NULL;
 	const size_t i = atomic_add(&cur,bytes);
 	if (unlikely(i+bytes > reserveEnd)) return NULL;
@@ -383,7 +380,7 @@ namespace embree
       void* malloc_some(size_t& bytes, size_t align = 16) 
       {
         assert(align <= maxAlignment);
-        bytes = (bytes+(align-1)) & ~(align-1); // FIXME: works only if all alignments are equal
+        bytes = (bytes+(align-1)) & ~(align-1);
 	const size_t i = atomic_add(&cur,bytes);
 	if (unlikely(i+bytes > reserveEnd)) bytes = reserveEnd-i;
 	if (i+bytes > allocEnd) {
@@ -447,6 +444,6 @@ namespace embree
 
   private:
     size_t bytesWasted;    //!< number of bytes wasted
-    size_t bytesUsed; //!< bumber of total bytes allocated
+    size_t bytesUsed;      //!< bumber of total bytes allocated
   };
 }

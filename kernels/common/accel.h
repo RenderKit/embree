@@ -23,8 +23,12 @@ namespace embree
   /*! Base class for the acceleration structure data. */
   class AccelData : public RefCount {
   public:
-    AccelData () : bounds(empty) {}
+    AccelData () 
+      : bounds(empty) {}
+
+    /*! clears the acceleration structure data */
     virtual void clear() = 0;
+
   public:
     BBox3fa bounds;
   };
@@ -209,9 +213,9 @@ namespace embree
     virtual ~Accel() {}
 
     /*! makes the acceleration structure immutable */
-    virtual void immutable () {};
+    virtual void immutable () {}
     
-    /*! build accel */
+    /*! build acceleration structure */
     virtual void build (size_t threadIndex, size_t threadCount) = 0;
     
     /*! Intersects a single ray with the scene. */
@@ -266,21 +270,19 @@ namespace embree
     Intersectors intersectors;
   };
 
-#define COMMA ,
-
-#define DEFINE_INTERSECTOR1(symbol,intersector)                        \
+#define DEFINE_INTERSECTOR1(symbol,intersector)                         \
   Accel::Intersector1 symbol((Accel::IntersectFunc)intersector::intersect, \
-                             (Accel::OccludedFunc )intersector::occluded,  \
+                             (Accel::OccludedFunc )intersector::occluded, \
                              TOSTRING(isa) "::" TOSTRING(symbol));
-
+  
 #define DEFINE_INTERSECTOR4(symbol,intersector)                         \
   Accel::Intersector4 symbol((Accel::IntersectFunc4)intersector::intersect, \
-                             (Accel::OccludedFunc4)intersector::occluded,   \
+                             (Accel::OccludedFunc4)intersector::occluded, \
                              TOSTRING(isa) "::" TOSTRING(symbol));
-
+  
 #define DEFINE_INTERSECTOR8(symbol,intersector)                         \
   Accel::Intersector8 symbol((Accel::IntersectFunc8)intersector::intersect, \
-                             (Accel::OccludedFunc8)intersector::occluded,   \
+                             (Accel::OccludedFunc8)intersector::occluded, \
                              TOSTRING(isa) "::" TOSTRING(symbol));
 
 #define DEFINE_INTERSECTOR16(symbol,intersector)                         \

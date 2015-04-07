@@ -44,6 +44,8 @@
 #include "tasking/taskscheduler_tbb.h"
 #endif
 
+#define COMMA ,
+
 #include "config.h"
 #include "isa.h"
 #include "stat.h"

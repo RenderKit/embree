@@ -32,7 +32,7 @@ namespace embree
     }
 
     ~AccelInstance() {
-      delete builder; builder = NULL; // delete builder first!
+      delete builder; builder = NULL;
       delete accel;   accel = NULL;
     }
 

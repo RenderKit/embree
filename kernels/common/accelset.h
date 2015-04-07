@@ -16,8 +16,8 @@
 
 #pragma once
 
-#include "common/default.h"
-#include "common/builder.h"
+#include "default.h"
+#include "builder.h"
 
 namespace embree
 {
