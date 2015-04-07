@@ -22,7 +22,52 @@
   #define PAGE_SIZE 4096
 #endif
 
-#include "sys/platform.h"
+#include "platform.h"
+
+/* define isa namespace and ISA bitvector */
+#if defined(__MIC__)
+#define isa knc
+#  define ISA KNC
+#elif defined (__AVX2__)
+#define isa avx2
+#  define ISA AVX2
+#elif defined(__AVXI__)
+#define isa avxi
+#  define ISA AVXI
+#elif defined(__AVX__)
+#define isa avx
+#  define ISA AVX
+#elif defined (__SSE4_2__)
+#define isa sse42
+#  define ISA SSE42
+#elif defined (__SSE4_1__)
+#define isa sse41
+#  define ISA SSE41
+#elif defined(__SSSE3__)
+#define isa ssse3
+#  define ISA SSSE3
+#elif defined(__SSE3__)
+#define isa sse3
+#  define ISA SSE3
+#elif defined(__SSE2__)
+#define isa sse2
+#  define ISA SSE2
+#elif defined(__SSE__)
+#define isa sse
+#  define ISA SSE
+#else 
+#error Unknown ISA
+#endif
+
+#if defined (__MACOSX__)
+#if defined (__INTEL_COMPILER)
+#define DEFAULT_ISA SSSE3
+#else
+#define DEFAULT_ISA SSE3
+#endif
+#else
+#define DEFAULT_ISA SSE2
+#endif
 
 namespace embree
 {
@@ -78,6 +123,24 @@ namespace embree
 
   /*! convert CPU features into a string */
   std::string stringOfCPUFeatures(int features);
+
+  /*! ISAs */
+  static const int SSE   = CPU_FEATURE_SSE; 
+  static const int SSE2  = SSE | CPU_FEATURE_SSE2;
+  static const int SSE3  = SSE2 | CPU_FEATURE_SSE3;
+  static const int SSSE3 = SSE3 | CPU_FEATURE_SSSE3;
+  static const int SSE41 = SSSE3 | CPU_FEATURE_SSE41;
+  static const int SSE42 = SSE41 | CPU_FEATURE_SSE42 | CPU_FEATURE_POPCNT;
+  static const int AVX   = SSE42 | CPU_FEATURE_AVX;
+  static const int AVXI  = AVX | CPU_FEATURE_F16C | CPU_FEATURE_RDRAND;
+  static const int AVX2  = AVXI | CPU_FEATURE_AVX2 | CPU_FEATURE_FMA3 | CPU_FEATURE_BMI1 | CPU_FEATURE_BMI2 | CPU_FEATURE_LZCNT;
+  static const int KNC   = CPU_FEATURE_KNC;
+
+  /*! checks if the CPU has the specified ISA */
+  bool has_feature(const int feature);
+
+  /*! converts ISA bitvector into a string */
+  std::string stringOfISA(int features);
 
   /*! return the number of logical threads of the system */
   size_t getNumberOfLogicalThreads();

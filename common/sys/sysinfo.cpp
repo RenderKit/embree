@@ -243,7 +243,7 @@ namespace embree
   void setCPUFeatures(int features) {
     cpu_features = features;
   }
-  
+
   std::string stringOfCPUFeatures(int features)
   {
     std::string str;
@@ -264,6 +264,27 @@ namespace embree
     if (features & CPU_FEATURE_BMI2  ) str += "BMI2 ";
     if (features & CPU_FEATURE_KNC   ) str += "KNC ";
     return str;
+  }
+
+  bool has_feature(const int feature) 
+  {
+    int cpu_features = getCPUFeatures();
+    return (cpu_features & feature) == feature;
+  }
+  
+  std::string stringOfISA (int features)
+  {
+    if (features == SSE) return "SSE";
+    if (features == SSE2) return "SSE2";
+    if (features == SSE3) return "SSE3";
+    if (features == SSSE3) return "SSSE3";
+    if (features == SSE41) return "SSE4_1";
+    if (features == SSE42) return "SSE4_2";
+    if (features == AVX) return "AVX";
+    if (features == AVXI) return "AVXI";
+    if (features == AVX2) return "AVX2";
+    if (features == KNC) return "KNC";
+    return "UNKNOWN";
   }
 }
 
