@@ -31,7 +31,7 @@
 #if defined(TASKING_LOCKSTEP)
 #include "tasking/taskscheduler_mic.h"
 #elif defined(TASKING_TBB_INTERNAL)
-#include "tasking/taskscheduler_new.h"
+#include "tasking/taskscheduler_tbb.h"
 #endif
 
 #define TRACE(x) //std::cout << #x << std::endl;
@@ -464,7 +464,7 @@ namespace embree
 #endif
 
 #if defined(TASKING_TBB_INTERNAL)
-    TaskSchedulerNew::create(g_numThreads);
+    TaskSchedulerTBB::create(g_numThreads);
 #endif
 
 #if defined(TASKING_TBB)
@@ -507,7 +507,7 @@ namespace embree
 #endif
 
 #if defined(TASKING_TBB_INTERNAL)
-    TaskSchedulerNew::destroy();
+    TaskSchedulerTBB::destroy();
 #endif
 
 #if defined(TASKING_TBB)

@@ -61,7 +61,7 @@ namespace embree
           const SpatialBinMapping<BINS> mapping(pinfo);
           PrimRefList::iterator i=prims;
 
-          const size_t threadCount = TaskSchedulerNew::threadCount();
+          const size_t threadCount = TaskSchedulerTBB::threadCount();
           const Binner binner = parallel_reduce(size_t(0),threadCount,Binner(empty), [&] (const range<size_t>& r) -> Binner 
           {
             Binner binner(empty);
@@ -184,7 +184,7 @@ namespace embree
           linfo_o.reset();
           rinfo_o.reset();
 
-          const size_t threadCount = TaskSchedulerNew::threadCount();
+          const size_t threadCount = TaskSchedulerTBB::threadCount();
           const PrimInfo2 info = parallel_reduce(size_t(0),threadCount,PrimInfo2(empty), [&] (const range<size_t>& r) -> PrimInfo2
           {
             PrimInfo linfo(empty);

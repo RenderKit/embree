@@ -435,7 +435,7 @@ namespace embree
       {    
         leftReduction = init;
         rightReduction = init;
-	const size_t numThreads = TaskSchedulerNew::threadCount();
+	const size_t numThreads = TaskSchedulerTBB::threadCount();
 
         if (N <= 2 * BLOCK_SIZE * numThreads) // need at least 1 block from the left and 1 block from the right per thread
           {

@@ -40,7 +40,7 @@ namespace embree
 #else
     const size_t maxTasks = 64;
 #endif
-    const size_t threadCount = TaskSchedulerNew::threadCount();
+    const size_t threadCount = TaskSchedulerTBB::threadCount();
     taskCount = min(taskCount,threadCount,maxTasks);
 
     /* parallel invokation of all tasks */

@@ -22,7 +22,7 @@
 #endif
 
 #if defined(TASKING_TBB_INTERNAL)
-#include "tasking/taskscheduler_new.h"
+#include "tasking/taskscheduler_tbb.h"
 #endif
 
 namespace embree
@@ -114,8 +114,8 @@ namespace embree
   extern "C" __dllexport void ISPCLaunch(void** taskPtr, void* func, void* data, int count) 
   {      
     parallel_for(size_t(0), size_t(count), [&] (const range<size_t>& r) {
-        const size_t threadIndex = TaskSchedulerNew::thread()->threadIndex;
-        const size_t threadCount = TaskSchedulerNew::threadCount();
+        const size_t threadIndex = TaskSchedulerTBB::thread()->threadIndex;
+        const size_t threadCount = TaskSchedulerTBB::threadCount();
         for (size_t i=r.begin(); i<r.end(); i++) 
           ((TaskFuncType)func)(data,threadIndex,threadCount,i,count);
       });

@@ -22,7 +22,7 @@
 #if defined(TASKING_LOCKSTEP)
 #include "tasking/taskscheduler_mic.h"
 #endif // if defined(TASKING_TBB_INTERNAL) // FIXME
-#include "tasking/taskscheduler_new.h"
+#include "tasking/taskscheduler_tbb.h"
 
 namespace embree
 {
@@ -60,11 +60,11 @@ namespace embree
 
 #elif defined(TASKING_TBB_INTERNAL)
     if (N) {
-      TaskSchedulerNew::spawn(Index(0),N,Index(1),[&] (const range<Index>& r) {
+      TaskSchedulerTBB::spawn(Index(0),N,Index(1),[&] (const range<Index>& r) {
           assert(r.size() == 1);
           func(r.begin());
         });
-      TaskSchedulerNew::wait();
+      TaskSchedulerTBB::wait();
     }
 
 #else 
@@ -108,8 +108,8 @@ namespace embree
       });
 
 #elif defined(TASKING_TBB_INTERNAL)
-    TaskSchedulerNew::spawn(first,last,minStepSize,func);
-    TaskSchedulerNew::wait();
+    TaskSchedulerTBB::spawn(first,last,minStepSize,func);
+    TaskSchedulerTBB::wait();
 
 #else
     tbb::parallel_for(tbb::blocked_range<Index>(first,last,minStepSize),[&](const tbb::blocked_range<Index>& r) { 

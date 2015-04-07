@@ -232,7 +232,7 @@ namespace embree
 #if defined(TASKING_LOCKSTEP)
     __aligned(64) LockStepTaskScheduler lockstep_scheduler;
 #elif defined(TASKING_TBB_INTERNAL)
-    TaskSchedulerNew* volatile scheduler;
+    TaskSchedulerTBB* volatile scheduler;
 #else
     tbb::task_group* group;
     BarrierActiveAutoReset group_barrier;

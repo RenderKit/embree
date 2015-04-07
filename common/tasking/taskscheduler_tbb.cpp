@@ -14,7 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "taskscheduler_new.h"
+#include "taskscheduler_tbb.h"
 #include "math/math.h"
 #include "sys/sysinfo.h"
 #include <algorithm>
@@ -30,7 +30,7 @@ namespace embree
   size_t g_numThreads = 0;                              //!< number of threads to use in builders
   
   template<typename Predicate, typename Body>
-  __forceinline void TaskSchedulerNew::steal_loop(Thread& thread, const Predicate& pred, const Body& body)
+  __forceinline void TaskSchedulerTBB::steal_loop(Thread& thread, const Predicate& pred, const Body& body)
   {
     while (true)
     {
@@ -53,7 +53,7 @@ namespace embree
   }
 
   /*! run this task */
-  __dllexport void TaskSchedulerNew::Task::run (Thread& thread) // FIXME: avoid as many __dllexports as possible
+  __dllexport void TaskSchedulerTBB::Task::run (Thread& thread) // FIXME: avoid as many __dllexports as possible
   {
     /* try to run if not already stolen */
     if (try_switch_state(INITIALIZED,DONE))
@@ -75,7 +75,7 @@ namespace embree
       parent->add_dependencies(-1);
   }
 
-  __dllexport bool TaskSchedulerNew::TaskQueue::execute_local(Thread& thread, Task* parent)
+  __dllexport bool TaskSchedulerTBB::TaskQueue::execute_local(Thread& thread, Task* parent)
   {
     /* stop if we run out of local tasks or reach the waiting task */
     if (right == 0 || &tasks[right-1] == parent)
@@ -99,7 +99,7 @@ namespace embree
     return right != 0;
   }
   
-  bool TaskSchedulerNew::TaskQueue::steal(Thread& thread) 
+  bool TaskSchedulerTBB::TaskQueue::steal(Thread& thread) 
   {
     size_t l = left;
     if (l < right) 
@@ -115,13 +115,13 @@ namespace embree
   }
   
   /* we steal from the left */
-  size_t TaskSchedulerNew::TaskQueue::getTaskSizeAtLeft() 
+  size_t TaskSchedulerTBB::TaskQueue::getTaskSizeAtLeft() 
   {	
     if (left >= right) return 0;
     return tasks[left].N;
   }
   
-  TaskSchedulerNew::TaskSchedulerNew(size_t numThreads, bool spinning)
+  TaskSchedulerTBB::TaskSchedulerTBB(size_t numThreads, bool spinning)
     : threadCounter(numThreads), createThreads(true), terminate(false), anyTasksRunning(0), active(false), spinning(spinning),
       task_set_function(nullptr)
   {
@@ -142,7 +142,7 @@ namespace embree
     task_set_barrier.init(threadCounter);
   }
   
-  TaskSchedulerNew::~TaskSchedulerNew() 
+  TaskSchedulerTBB::~TaskSchedulerTBB() 
   {
     /* let all threads leave the thread loop */
     terminateThreadLoop();
@@ -152,13 +152,13 @@ namespace embree
   }
 
 #if TASKING_LOCKSTEP
-  __dllexport size_t TaskSchedulerNew::threadCount() {
+  __dllexport size_t TaskSchedulerTBB::threadCount() {
     return LockStepTaskScheduler::instance()->getNumThreads();
   }
 #endif
 
 #if TASKING_TBB
-  __dllexport size_t TaskSchedulerNew::threadCount()
+  __dllexport size_t TaskSchedulerTBB::threadCount()
   {
     return g_numThreads;
     //return tbb::task_scheduler_init::default_num_threads();
@@ -166,42 +166,42 @@ namespace embree
 #endif
 
 #if TASKING_TBB_INTERNAL
-  __dllexport size_t TaskSchedulerNew::threadCount() 
+  __dllexport size_t TaskSchedulerTBB::threadCount() 
   {
-    Thread* thread = TaskSchedulerNew::thread();
+    Thread* thread = TaskSchedulerTBB::thread();
     if (thread) return thread->scheduler->threadCounter;
     else        return g_instance->threadCounter;
   }
 #endif
 
-  TaskSchedulerNew* TaskSchedulerNew::g_instance = NULL;
+  TaskSchedulerTBB* TaskSchedulerTBB::g_instance = NULL;
 
-  __dllexport TaskSchedulerNew* TaskSchedulerNew::global_instance() {
+  __dllexport TaskSchedulerTBB* TaskSchedulerTBB::global_instance() {
     return g_instance;
   }
 
-  void TaskSchedulerNew::create(size_t numThreads)
+  void TaskSchedulerTBB::create(size_t numThreads)
   {
     if (g_instance) THROW_RUNTIME_ERROR("Embree threads already running.");
 #if __MIC__
-    g_instance = new TaskSchedulerNew(numThreads,true);
+    g_instance = new TaskSchedulerTBB(numThreads,true);
 #else
-    g_instance = new TaskSchedulerNew(numThreads,false);
+    g_instance = new TaskSchedulerTBB(numThreads,false);
 #endif
   }
 
-  void TaskSchedulerNew::destroy() {
+  void TaskSchedulerTBB::destroy() {
     delete g_instance; g_instance = NULL;
   }
 
   struct MyThread
   {
-    MyThread (size_t threadIndex, size_t threadCount, TaskSchedulerNew* scheduler)
+    MyThread (size_t threadIndex, size_t threadCount, TaskSchedulerTBB* scheduler)
       : threadIndex(threadIndex), threadCount(threadCount), scheduler(scheduler) {}
     
     size_t threadIndex;
     size_t threadCount;
-    TaskSchedulerNew* scheduler;
+    TaskSchedulerTBB* scheduler;
   };
 
   void threadFunction(void* ptr) try 
@@ -215,7 +215,7 @@ namespace embree
     exit(1);
   }
 
-  __dllexport void TaskSchedulerNew::startThreads()
+  __dllexport void TaskSchedulerTBB::startThreads()
   {
     createThreads = false;
     //for (size_t i=1; i<threadCounter; i++) {
@@ -226,7 +226,7 @@ namespace embree
     }
   }
 
-  void TaskSchedulerNew::terminateThreadLoop()
+  void TaskSchedulerTBB::terminateThreadLoop()
   {
     /* decrement threadCount again */
     atomic_add(&threadCounter,-1);
@@ -245,7 +245,7 @@ namespace embree
     threadLocal[0] = NULL;
   }
 
-  void TaskSchedulerNew::destroyThreads() 
+  void TaskSchedulerTBB::destroyThreads() 
   {
     /* wait for threads to terminate */
     for (size_t i=0; i<threads.size(); i++) 
@@ -253,38 +253,38 @@ namespace embree
       embree::join(threads[i]);
   }
 
-  void TaskSchedulerNew::join()
+  void TaskSchedulerTBB::join()
   {
     size_t threadIndex = atomic_add(&threadCounter,1);
     assert(threadIndex < MAX_THREADS);
     thread_loop(threadIndex);
   }
 
-  void TaskSchedulerNew::wait_for_threads(size_t threadCount)
+  void TaskSchedulerTBB::wait_for_threads(size_t threadCount)
   {
     while (threadCounter < threadCount)
       __pause_cpu();
   }
 
-  __thread TaskSchedulerNew::Thread* TaskSchedulerNew::thread_local_thread = NULL;
+  __thread TaskSchedulerTBB::Thread* TaskSchedulerTBB::thread_local_thread = NULL;
 
-  __dllexport TaskSchedulerNew::Thread* TaskSchedulerNew::thread() {
+  __dllexport TaskSchedulerTBB::Thread* TaskSchedulerTBB::thread() {
     return thread_local_thread;
   }
 
-  __dllexport void TaskSchedulerNew::setThread(Thread* thread) {
+  __dllexport void TaskSchedulerTBB::setThread(Thread* thread) {
 	  thread_local_thread = thread;
   }
 
   /* work on spawned subtasks and wait until all have finished */
-  __dllexport void TaskSchedulerNew::wait() 
+  __dllexport void TaskSchedulerTBB::wait() 
   {
-    Thread* thread = TaskSchedulerNew::thread();
+    Thread* thread = TaskSchedulerTBB::thread();
     if (thread == nullptr) return;
     while (thread->tasks.execute_local(*thread,thread->task)) {};
   }
 
-  void TaskSchedulerNew::thread_loop(size_t threadIndex) try 
+  void TaskSchedulerTBB::thread_loop(size_t threadIndex) try 
   {
 #if defined(__MIC__)
     setAffinity(threadIndex);
@@ -348,7 +348,7 @@ namespace embree
     exit(1);
   }
 
-  __dllexport bool TaskSchedulerNew::executeTaskSet(Thread& thread)
+  __dllexport bool TaskSchedulerTBB::executeTaskSet(Thread& thread)
   {
     if (task_set_function)
     {
@@ -371,7 +371,7 @@ namespace embree
     return false;
   }
 
-  bool TaskSchedulerNew::steal_from_other_threads(Thread& thread)
+  bool TaskSchedulerTBB::steal_from_other_threads(Thread& thread)
   {
     const size_t threadIndex = thread.threadIndex;
     const size_t threadCount = this->threadCounter;

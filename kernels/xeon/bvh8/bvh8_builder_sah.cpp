@@ -326,7 +326,7 @@ namespace embree
 
             /* calculate total surface area */
             PrimRefList::iterator iter = prims;
-            const size_t threadCount = TaskSchedulerNew::threadCount();
+            const size_t threadCount = TaskSchedulerTBB::threadCount();
             const double A = parallel_reduce(size_t(0),threadCount,0.0, [&] (const range<size_t>& r) -> double // FIXME: this sum is not deterministic
             {
               double A = 0.0f;

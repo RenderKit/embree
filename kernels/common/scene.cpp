@@ -467,7 +467,7 @@ namespace embree
     {
       {
         Lock<MutexSys> lock(buildMutex);
-        if (scheduler == NULL) scheduler = new TaskSchedulerNew(-1);
+        if (scheduler == NULL) scheduler = new TaskSchedulerTBB(-1);
       }
       if (threadIndex > 0) {
         scheduler->join();
@@ -496,7 +496,7 @@ namespace embree
       delete scheduler; scheduler = NULL;
     }
     else {
-      TaskSchedulerNew::spawn([&]() { build_task(); });
+      TaskSchedulerTBB::spawn([&]() { build_task(); });
     }
   }
 

@@ -48,11 +48,11 @@ namespace embree
     throw std::runtime_error("task group cancelled");
 #else
 #  define SPAWN_BEGIN 
-#  define SPAWN(closure) TaskSchedulerNew::spawn(closure)
-#  define SPAWN_END TaskSchedulerNew::wait();
+#  define SPAWN(closure) TaskSchedulerTBB::spawn(closure)
+#  define SPAWN_END TaskSchedulerTBB::wait();
 #endif
 
-  struct TaskSchedulerNew
+  struct TaskSchedulerTBB
   {
     ALIGNED_STRUCT;
 
@@ -204,7 +204,7 @@ namespace embree
     /*! thread local structure for each thread */
     struct Thread 
     {
-      Thread (size_t threadIndex, TaskSchedulerNew* scheduler)
+      Thread (size_t threadIndex, TaskSchedulerTBB* scheduler)
       : threadIndex(threadIndex), scheduler(scheduler), task(NULL) {}
 
       __forceinline size_t threadCount() {
@@ -214,11 +214,11 @@ namespace embree
       size_t threadIndex;              //!< ID of this thread
       TaskQueue tasks;                 //!< local task queue
       Task* task;                      //!< current active task
-      TaskSchedulerNew* scheduler;     //!< pointer to task scheduler
+      TaskSchedulerTBB* scheduler;     //!< pointer to task scheduler
     };
     
-    TaskSchedulerNew (size_t numThreads = 0, bool spinning = false);
-    ~TaskSchedulerNew ();
+    TaskSchedulerTBB (size_t numThreads = 0, bool spinning = false);
+    ~TaskSchedulerTBB ();
 
     static void create(size_t numThreads);
     static void destroy();
@@ -303,7 +303,7 @@ namespace embree
     template<typename Closure>
     static __forceinline void spawn(size_t size, const Closure& closure) 
     {
-      Thread* thread = TaskSchedulerNew::thread();
+      Thread* thread = TaskSchedulerTBB::thread();
       if (likely(thread != nullptr)) thread->tasks.push_right(*thread,size,closure);
       else                           global_instance()->spawn_root(closure,size);
     }
@@ -319,7 +319,7 @@ namespace embree
     static void spawn(const size_t begin, const size_t end, const size_t blockSize, const Closure& closure) 
     {
 #if TASKSCHEDULER_STATIC_LOAD_BALANCING
-      Thread* thread = TaskSchedulerNew::thread();
+      Thread* thread = TaskSchedulerTBB::thread();
       if (thread == nullptr) {
         global_instance()->spawn_root(closure,begin,end,blockSize);
         return;
@@ -347,7 +347,7 @@ namespace embree
     __dllexport static Thread* thread();
     __dllexport static void setThread(Thread* thread);
 
-    __forceinline static TaskSchedulerNew* instance() {
+    __forceinline static TaskSchedulerTBB* instance() {
       return thread()->scheduler;
     }
 
@@ -376,10 +376,10 @@ namespace embree
 #endif
     TaskSetFunction* volatile task_set_function;
 
-    __dllexport static TaskSchedulerNew* global_instance();
+    __dllexport static TaskSchedulerTBB* global_instance();
 
   private:
-	  static TaskSchedulerNew* g_instance;
+	  static TaskSchedulerTBB* g_instance;
 	  static __thread Thread* thread_local_thread;
 
   };

@@ -245,7 +245,7 @@ namespace embree
 	  parent->barrier.init(numThreads);
 	  scheduler->dispatchTask(task_radixsort,this,0,numThreads);
 #else
-	  const size_t numThreads = min((N+blockSize-1)/blockSize,TaskSchedulerNew::threadCount(),size_t(MAX_THREADS));
+	  const size_t numThreads = min((N+blockSize-1)/blockSize,TaskSchedulerTBB::threadCount(),size_t(MAX_THREADS));
           tbbRadixSort(numThreads);
 #endif
 	}
@@ -551,7 +551,7 @@ LinearBarrierActive barrier; // FIXME: should be able to speficy number of threa
 	/* perform parallel sort for large N */
 	else 
 	{
-	  const size_t numThreads = min((N+blockSize-1)/blockSize,TaskSchedulerNew::threadCount(),size_t(MAX_THREADS));
+	  const size_t numThreads = min((N+blockSize-1)/blockSize,TaskSchedulerTBB::threadCount(),size_t(MAX_THREADS));
           tbbRadixSort(numThreads);
 	}
       }

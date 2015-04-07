@@ -15,7 +15,7 @@
 // ======================================================================== //
 
 #include "tasking/taskscheduler.h"
-#include "tasking/taskscheduler_new.h"
+#include "tasking/taskscheduler_tbb.h"
 #include "kernels/algorithms/parallel_reduce.h"
 
 #include "math/math.h"
@@ -184,7 +184,7 @@ namespace embree
   std::fstream fs;
 
   static const size_t ITER = 10;
-  //TaskSchedulerNew* newscheduler = NULL;
+  //TaskSchedulerTBB* newscheduler = NULL;
 
   struct box_benchmark
   {
@@ -327,9 +327,9 @@ namespace embree
       }
       else {
 	size_t center = (n0+n1)/2;
-	BBox3fa c0; TaskSchedulerNew::spawn(center-n0,[&](){ c0=myreduce(n0,center); });
-	BBox3fa c1; TaskSchedulerNew::spawn(n1-center,[&](){ c1=myreduce(center,n1); });
-	TaskSchedulerNew::wait();
+	BBox3fa c0; TaskSchedulerTBB::spawn(center-n0,[&](){ c0=myreduce(n0,center); });
+	BBox3fa c1; TaskSchedulerTBB::spawn(n1-center,[&](){ c1=myreduce(center,n1); });
+	TaskSchedulerTBB::wait();
 	c0.extend( c1 );
 	return c0;
       }
@@ -372,7 +372,7 @@ namespace embree
 #if 0
       this->N = N;
 
-      const size_t threadCount = TaskSchedulerNew::threadCount();
+      const size_t threadCount = TaskSchedulerTBB::threadCount();
       parallel_for(size_t(threadCount),[&](size_t threadIndex) {
           reduce(threadIndex,threadCount);
         });
@@ -388,7 +388,7 @@ namespace embree
 #endif
 
 #if 0
-      const size_t threadCount = TaskSchedulerNew::threadCount();
+      const size_t threadCount = TaskSchedulerTBB::threadCount();
       PRINT(threadCount);
       while (true) 
       {
@@ -536,9 +536,9 @@ namespace embree
       }
       else {
 	size_t center = (n0+n1)/2;
-	double c0; TaskSchedulerNew::spawn(center-n0,[&](){ c0=myreduce(n0,center); });
-	double c1; TaskSchedulerNew::spawn(n1-center,[&](){ c1=myreduce(center,n1); });
-	TaskSchedulerNew::wait();
+	double c0; TaskSchedulerTBB::spawn(center-n0,[&](){ c0=myreduce(n0,center); });
+	double c1; TaskSchedulerTBB::spawn(n1-center,[&](){ c1=myreduce(center,n1); });
+	TaskSchedulerTBB::wait();
 	return c0+c1;
       }
     }
@@ -658,7 +658,7 @@ namespace embree
       fflush(stdout);
 
       /* create task scheduler */
-      TaskSchedulerNew* scheduler = new TaskSchedulerNew;
+      TaskSchedulerTBB* scheduler = new TaskSchedulerTBB;
 
 #if 1
       struct Fib
@@ -670,15 +670,15 @@ namespace embree
         
         void operator() () const
         {
-          //mutex.lock(); PRINT2(TaskSchedulerNew::thread()->threadIndex,i); mutex.unlock();
+          //mutex.lock(); PRINT2(TaskSchedulerTBB::thread()->threadIndex,i); mutex.unlock();
           if (i < CUTOFF) {
             r = fib(i); //i;
           } else {
             size_t r0; const Fib fib0(r0, i-1);
             size_t r1; const Fib fib1(r1, i-2);
-            TaskSchedulerNew::spawn(fib0);
-            TaskSchedulerNew::spawn(fib1);
-            TaskSchedulerNew::wait();
+            TaskSchedulerTBB::spawn(fib0);
+            TaskSchedulerTBB::spawn(fib1);
+            TaskSchedulerTBB::wait();
             r = r0+r1;
           }
         }
@@ -836,8 +836,8 @@ namespace embree
 
     if (test == 4)
     {
-      TaskSchedulerNew::create(0);
-      //newscheduler = new TaskSchedulerNew(0,true); // false
+      TaskSchedulerTBB::create(0);
+      //newscheduler = new TaskSchedulerTBB(0,true); // false
       fs.open ("benchmark_reduce_mytbb.csv", std::fstream::out);
 #if PROFILE == 1
       while(1)
@@ -845,7 +845,7 @@ namespace embree
 	benchmark(N_start,N,"reduce_mytbb",[] (size_t N) -> double { return reduce.run_mytbb(N); });
       fs.close();
       //delete newscheduler;
-      TaskSchedulerNew::destroy();
+      TaskSchedulerTBB::destroy();
     }
 
     if (test == 5)
