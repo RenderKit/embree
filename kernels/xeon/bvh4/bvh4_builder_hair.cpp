@@ -81,7 +81,7 @@ namespace embree
               {
                 const LinearSpace3fa space = unalignedHeuristic.computeAlignedSpace(children[i]); 
                 const PrimInfo       sinfo = unalignedHeuristic.computePrimInfo(children[i],space);
-                node->set(i,NAABBox3fa(space,sinfo.geomBounds));
+                node->set(i,OBBox3fa(space,sinfo.geomBounds));
               }
               return node;
             },

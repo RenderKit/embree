@@ -21,32 +21,32 @@
 
 namespace embree
 {
-  /*! Non-axis aligned bounds */
+  /*! Oriented bounding box */
   template<typename T>
-    struct NAABBox // FIXME: rename to OBB
+    struct OBBox 
   {
   public:
     
-    __forceinline NAABBox () {}
+    __forceinline OBBox () {}
     
-    __forceinline NAABBox (EmptyTy) 
+    __forceinline OBBox (EmptyTy) 
       : space(one), bounds(empty) {}
     
-    __forceinline NAABBox (const BBox<T>& bounds) 
+    __forceinline OBBox (const BBox<T>& bounds) 
       : space(one), bounds(bounds) {}
       
-    __forceinline NAABBox (const LinearSpace3<T>& space, const BBox<T>& bounds) 
+    __forceinline OBBox (const LinearSpace3<T>& space, const BBox<T>& bounds) 
       : space(space), bounds(bounds) {}
     
-    friend std::ostream& operator<<(std::ostream& cout, const NAABBox& p) {
+    friend std::ostream& operator<<(std::ostream& cout, const OBBox& p) {
       return std::cout << "{ space = " << p.space << ", bounds = " << p.bounds << "}";
     }
     
   public:
     LinearSpace3<T> space; //!< orthonormal transformation
-    BBox<T> bounds;       //!< bounds in transformed space
+    BBox<T> bounds;        //!< bounds in transformed space
   };
 
-  typedef NAABBox<Vec3f> NAABBox3f;
-  typedef NAABBox<Vec3fa> NAABBox3fa;
+  typedef OBBox<Vec3f> OBBox3f;
+  typedef OBBox<Vec3fa> OBBox3fa;
 }

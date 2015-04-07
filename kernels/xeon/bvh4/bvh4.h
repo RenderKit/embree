@@ -678,7 +678,7 @@ namespace embree
       }
 
       /*! Sets bounding box. */
-      __forceinline void set(size_t i, const NAABBox3fa& b) 
+      __forceinline void set(size_t i, const OBBox3fa& b) 
       {
         assert(i < N);
 
