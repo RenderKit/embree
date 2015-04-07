@@ -177,7 +177,7 @@ namespace embree
             const avxf v = V*rcpAbsDen;
             const avxf t = T*rcpAbsDen;
             const int primID = tri.primID<list>();
-            valid = runOcclusionFilter8(valid,geometry,ray,u,v,t,Ng,geomID,primID);
+            valid = runOcclusionFilter8(valid,geometry,ray,u,v,t,_Ng,geomID,primID);
           }
 #endif
           return valid;

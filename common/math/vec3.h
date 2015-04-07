@@ -16,8 +16,7 @@
 
 #pragma once
 
-#include "sys/platform.h"
-#include "math/math.h"
+#include "math.h"
 
 #if defined __SSE__
 #include "simd/sse.h"
@@ -26,10 +25,6 @@
 #if defined __AVX__
 #include "simd/avx.h"
 #endif
-
-//#if defined __MIC__
-//#include "simd/sse_mic.h"
-//#endif
 
 #if defined __MIC__
 #include "simd/mic.h"
@@ -55,8 +50,8 @@ namespace embree
     ////////////////////////////////////////////////////////////////////////////////
 
     __forceinline Vec3 ( ) {}
-    __forceinline Vec3 ( const T& a                         ) : x(a), y(a), z(a) {}
-    __forceinline Vec3 ( const T& x, const T& y, const T& z ) : x(x), y(y), z(z) {}
+    __forceinline explicit Vec3 ( const T& a                         ) : x(a), y(a), z(a) {}
+    __forceinline explicit Vec3 ( const T& x, const T& y, const T& z ) : x(x), y(y), z(z) {}
 
     __forceinline Vec3     ( const Vec3& other ) { x = other.x; y = other.y; z = other.z; }
     __forceinline Vec3     ( const Vec3fa& other );
@@ -159,14 +154,12 @@ namespace embree
   template<typename T> __forceinline T       dot      ( const Vec3<T>& a, const Vec3<T>& b ) { return madd(a.x,b.x,madd(a.y,b.y,a.z*b.z)); }
   template<typename T> __forceinline T       length   ( const Vec3<T>& a )                   { return sqrt(dot(a,a)); }
   template<typename T> __forceinline Vec3<T> normalize( const Vec3<T>& a )                   { return a*rsqrt(dot(a,a)); }
-
-  template<typename T> __forceinline Vec3<T> normalize_safe( const Vec3<T>& a ) { 
-    const T d = dot(a,a);
-    return select(d == T( zero ), a ,  a*rsqrt(d) );
-  }
-
   template<typename T> __forceinline T       distance ( const Vec3<T>& a, const Vec3<T>& b ) { return length(a-b); }
   template<typename T> __forceinline Vec3<T> cross    ( const Vec3<T>& a, const Vec3<T>& b ) { return Vec3<T>(msub(a.y,b.z,a.z*b.y), msub(a.z,b.x,a.x*b.z), msub(a.x,b.y,a.y*b.x)); }
+
+  template<typename T> __forceinline Vec3<T> normalize_safe( const Vec3<T>& a ) { 
+    const T d = dot(a,a); return select(d == T( zero ), a ,  a*rsqrt(d) );
+  }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Select
