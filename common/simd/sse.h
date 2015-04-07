@@ -17,8 +17,8 @@
 #pragma once
 
 #include "sys/platform.h"
-#include "sys/constants.h"
 #include "sys/intrinsics.h"
+#include "math/constants.h"
 #include "sse_special.h"
 
 namespace embree 

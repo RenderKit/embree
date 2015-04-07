@@ -26,9 +26,6 @@ namespace embree
 {
   static const float one_over_255 = 1.0f/255.0f;
 
-  static struct NullTy {
-  } null MAYBE_UNUSED;
-
   static struct TrueTy {
     __forceinline operator bool( ) const { return true; }
   } True MAYBE_UNUSED;

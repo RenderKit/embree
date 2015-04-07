@@ -17,8 +17,9 @@
 #pragma once
 
 #include "sys/platform.h"
-#include "sys/constants.h"
 #include "sys/intrinsics.h"
+
+#include "constants.h"
 
 #define _USE_MATH_DEFINES
 #include <math.h>

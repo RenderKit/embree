@@ -16,11 +16,13 @@
 
 #pragma once
 
-#include "constants.h"
 #include "intrinsics.h"
 
 namespace embree
 {
+  static struct NullTy {
+  } null MAYBE_UNUSED;
+
   class RefCount
   {
   public:

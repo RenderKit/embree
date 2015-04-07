@@ -16,9 +16,9 @@
 
 #pragma once
 
-#include "../sys/constants.h"
 #include "../simd/sse.h"
 
+#include "constants.h"
 #include "col3.h"
 #include "col4.h"
 
