@@ -20,6 +20,7 @@
 
 namespace embree
 {
+  /*! helper structure for the implementation of the profile functions below */
   struct ProfileTimer
   {
     static const size_t N = 20;
@@ -130,6 +131,16 @@ namespace embree
     double dt_max[N];
   };
 
+  /*! This function executes some code block multiple times and measured sections of it. 
+      Use the following way:
+
+      profile(1,10,1000,[&](ProfileTimer& timer) {
+        // code
+        timer("A");
+        // code 
+        timer("B");
+      });
+  */
   template<typename Closure>
     void profile(const size_t numSkip, const size_t numIter, const size_t numElements, const Closure& closure) 
     {
@@ -144,6 +155,7 @@ namespace embree
       timer.print(numElements);
     }
 
+  /*! similar as the function above, but the timer object comes externally */
   template<typename Closure>
     void profile(ProfileTimer& timer, const size_t numSkip, const size_t numIter, const size_t numElements, const Closure& closure) 
     {
