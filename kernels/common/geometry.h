@@ -42,6 +42,9 @@ namespace embree
     /*! writes geometry to disk */
     virtual void write(std::ofstream& file);
 
+    /*! updates intersection filter function counts in scene */
+    void updateIntersectionFilters(bool enable);
+
   public:
 
     /*! tests if geometry is enabled */
@@ -222,6 +225,17 @@ namespace embree
     }
 
   public:
+    __forceinline bool hasIntersectionFilter1() const { return intersectionFilter1 != NULL; }
+    __forceinline bool hasIntersectionFilter4() const { return intersectionFilter4 != NULL; }
+    __forceinline bool hasIntersectionFilter8() const { return intersectionFilter8 != NULL; }
+    __forceinline bool hasIntersectionFilter16() const { return intersectionFilter16 != NULL; }
+
+    __forceinline bool hasOcclusionFilter1() const { return occlusionFilter1 != NULL; }
+    __forceinline bool hasOcclusionFilter4() const { return occlusionFilter4 != NULL; }
+    __forceinline bool hasOcclusionFilter8() const { return occlusionFilter8 != NULL; }
+    __forceinline bool hasOcclusionFilter16() const { return occlusionFilter16 != NULL; }
+
+  public:
     Scene* parent;             //!< pointer to scene this mesh belongs to
     unsigned id;               //!< internal geometry ID
     Type type;                 //!< geometry type 
@@ -254,16 +268,5 @@ namespace embree
 
     bool ispcIntersectionFilter16;
     bool ispcOcclusionFilter16;
-
-  public:
-    __forceinline bool hasIntersectionFilter1() const { return intersectionFilter1 != NULL; }
-    __forceinline bool hasIntersectionFilter4() const { return intersectionFilter4 != NULL; }
-    __forceinline bool hasIntersectionFilter8() const { return intersectionFilter8 != NULL; }
-    __forceinline bool hasIntersectionFilter16() const { return intersectionFilter16 != NULL; }
-
-    __forceinline bool hasOcclusionFilter1() const { return occlusionFilter1 != NULL; }
-    __forceinline bool hasOcclusionFilter4() const { return occlusionFilter4 != NULL; }
-    __forceinline bool hasOcclusionFilter8() const { return occlusionFilter8 != NULL; }
-    __forceinline bool hasOcclusionFilter16() const { return occlusionFilter16 != NULL; }
   };
 }
