@@ -239,18 +239,21 @@ namespace embree
 
     RTCFilterFunc4 intersectionFilter4;
     RTCFilterFunc4 occlusionFilter4;
-    void* ispcIntersectionFilter4; // FIXME: this ISPC mode can be encoded more compactly
-    void* ispcOcclusionFilter4;
 
     RTCFilterFunc8 intersectionFilter8;
     RTCFilterFunc8 occlusionFilter8;
-    void* ispcIntersectionFilter8;
-    void* ispcOcclusionFilter8;
 
     RTCFilterFunc16 intersectionFilter16;
     RTCFilterFunc16 occlusionFilter16;
-    void* ispcIntersectionFilter16;
-    void* ispcOcclusionFilter16;
+
+    bool ispcIntersectionFilter4;	
+    bool ispcOcclusionFilter4;
+
+    bool ispcIntersectionFilter8;
+    bool ispcOcclusionFilter8;
+
+    bool ispcIntersectionFilter16;
+    bool ispcOcclusionFilter16;
 
   public:
     __forceinline bool hasIntersectionFilter1() const { return intersectionFilter1 != NULL; }
