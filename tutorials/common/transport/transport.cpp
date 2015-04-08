@@ -166,7 +166,6 @@ namespace embree
 	out->subdiv[i] = convertSubdivMesh(in->subdiv[i]);
 	coarse_primitives += out->subdiv[i]->numFaces;
       }
-    PRINT( coarse_primitives );
     out->numSubdivMeshes = in->subdiv.size();
 
     out->subdivMeshKeyFrames = NULL;
@@ -179,12 +178,10 @@ namespace embree
   {
     if (g_ispc_scene)
       {
-	PRINT(numKeyFrames);
 	g_ispc_scene->subdivMeshKeyFrames    = new ISPCSubdivMeshKeyFrame*[numKeyFrames];
 	g_ispc_scene->numSubdivMeshKeyFrames = numKeyFrames;
 	for (size_t k=0;k<numKeyFrames;k++)
 	  {
-	    PRINT(k);
 	    ISPCSubdivMeshKeyFrame *kf = new ISPCSubdivMeshKeyFrame;
 
 	    kf->subdiv = new ISPCSubdivMesh*[in[k]->subdiv.size()];

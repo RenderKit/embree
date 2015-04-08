@@ -86,7 +86,7 @@ namespace embree
           }
           
           /* delete BVH and builder for meshes that are scheduled for deletion */
-          if (mesh->state == Geometry::ERASING) {
+          if (mesh->isErasing()) {
             delete builders[objectID]; builders[objectID] = NULL;
             delete objects [objectID]; objects [objectID] = NULL;
             continue;
@@ -115,10 +115,7 @@ namespace embree
 #if !PROFILE 
           if (mesh->isModified()) 
 #endif
-          {
             builder->build(0,0);
-            mesh->state = Geometry::ENABLED;
-          }
           
           /* create build primitive */
           if (!object->bounds.empty())

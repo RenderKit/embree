@@ -20,7 +20,8 @@
 namespace embree
 {
   Geometry::Geometry (Scene* parent, Type type, size_t numPrimitives, size_t numTimeSteps, RTCGeometryFlags flags) 
-    : parent(parent), type(type), numPrimitives(numPrimitives), numTimeSteps(numTimeSteps), id(0), flags(flags), state(ENABLING),
+    : parent(parent), type(type), numPrimitives(numPrimitives), numTimeSteps(numTimeSteps), id(0), flags(flags),
+      enabled(true), modified(true), erasing(false),
       intersectionFilter1(NULL), occlusionFilter1(NULL),
       intersectionFilter4(NULL), occlusionFilter4(NULL), ispcIntersectionFilter4(NULL), ispcOcclusionFilter4(NULL), 
       intersectionFilter8(NULL), occlusionFilter8(NULL), ispcIntersectionFilter8(NULL), ispcOcclusionFilter8(NULL), 
@@ -31,6 +32,9 @@ namespace embree
     parent->setModified();
   }
 
+  Geometry::~Geometry() {
+  }
+
   void Geometry::enable () 
   {
     if (parent->isStatic()) {
@@ -38,32 +42,15 @@ namespace embree
       return;
     }
 
-    if (isDisabled()) {
-      atomic_add(&parent->numIntersectionFilters4,(intersectionFilter4 != NULL) + (occlusionFilter4 != NULL));
-      atomic_add(&parent->numIntersectionFilters8,(intersectionFilter8 != NULL) + (occlusionFilter8 != NULL));
-      atomic_add(&parent->numIntersectionFilters16,(intersectionFilter16 != NULL) + (occlusionFilter16 != NULL));
-    }
+    if (isEnabled() || isErasing()) 
+      return;
 
-    switch (state) {
-    case ENABLING:
-      break;
-    case ENABLED:
-      break;
-    case MODIFIED:
-      break;
-    case DISABLING: 
-      parent->setModified();
-      state = MODIFIED;
-      enabling();
-      break;
-    case DISABLED: 
-      parent->setModified();
-      state = ENABLING;
-      enabling();
-      break;
-    case ERASING:
-      break;
-    }
+    atomic_add(&parent->numIntersectionFilters4,(intersectionFilter4 != NULL) + (occlusionFilter4 != NULL));
+    atomic_add(&parent->numIntersectionFilters8,(intersectionFilter8 != NULL) + (occlusionFilter8 != NULL));
+    atomic_add(&parent->numIntersectionFilters16,(intersectionFilter16 != NULL) + (occlusionFilter16 != NULL));
+    parent->setModified();
+    enabled = true;
+    enabling();
   }
 
   void Geometry::update() 
@@ -73,22 +60,11 @@ namespace embree
       return;
     }
 
-    switch (state) {
-    case ENABLING:
-      break;
-    case ENABLED:
-      parent->setModified();
-      state = MODIFIED;
-      break;
-    case MODIFIED:
-      break;
-    case DISABLING: 
-      break;
-    case DISABLED: 
-      break;
-    case ERASING:
-      break;
-    }
+    if (isModified() || isErasing())
+      return;
+
+    parent->setModified();
+    modified = true;
   }
 
   void Geometry::disable () 
@@ -98,35 +74,15 @@ namespace embree
       return;
     }
 
-    if (isEnabled()) {
-      atomic_sub(&parent->numIntersectionFilters4,(intersectionFilter4 != NULL) + (occlusionFilter4 != NULL));
-      atomic_sub(&parent->numIntersectionFilters8,(intersectionFilter8 != NULL) + (occlusionFilter8 != NULL));
-      atomic_sub(&parent->numIntersectionFilters16,(intersectionFilter16 != NULL) + (occlusionFilter16 != NULL));
-    }
+    if (isDisabled() || isErasing()) 
+      return;
 
-    switch (state) {
-    case ENABLING:
-      parent->setModified();
-      state = DISABLED;
-      disabling();
-      break;
-    case ENABLED:
-      parent->setModified();
-      state = DISABLING;
-      disabling();
-      break;
-    case MODIFIED:
-      parent->setModified();
-      state = DISABLING;
-      disabling();
-      break;
-    case DISABLING: 
-      break;
-    case DISABLED: 
-      break;
-    case ERASING:
-      break;
-    }
+    atomic_sub(&parent->numIntersectionFilters4,(intersectionFilter4 != NULL) + (occlusionFilter4 != NULL));
+    atomic_sub(&parent->numIntersectionFilters8,(intersectionFilter8 != NULL) + (occlusionFilter8 != NULL));
+    atomic_sub(&parent->numIntersectionFilters16,(intersectionFilter16 != NULL) + (occlusionFilter16 != NULL));
+    parent->setModified();
+    enabled = false;
+    disabling();
   }
 
   void Geometry::erase () 
@@ -136,33 +92,20 @@ namespace embree
       return;
     }
 
-    switch (state) {
-    case ENABLING:
-      parent->setModified();
-      state = ERASING;
-      disabling();
-      break;
-    case ENABLED:
-      parent->setModified();
-      state = ERASING;
-      disabling();
-      break;
-    case MODIFIED:
-      parent->setModified();
-      state = ERASING;
-      disabling();
-      break;
-    case DISABLING: 
-      parent->setModified();
-      state = ERASING;
-      break;
-    case DISABLED: 
-      parent->setModified();
-      state = ERASING;
-      break;
-    case ERASING:
-      break;
-    }
+    if (isErasing())
+      return;
+
+    parent->setModified();
+    erasing = true;
+
+    if (isDisabled())
+      return;
+
+    atomic_sub(&parent->numIntersectionFilters4,(intersectionFilter4 != NULL) + (occlusionFilter4 != NULL));
+    atomic_sub(&parent->numIntersectionFilters8,(intersectionFilter8 != NULL) + (occlusionFilter8 != NULL));
+    atomic_sub(&parent->numIntersectionFilters16,(intersectionFilter16 != NULL) + (occlusionFilter16 != NULL));
+    enabled = false;
+    disabling();
   }
   
   void Geometry::setUserData (void* ptr)

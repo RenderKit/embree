@@ -30,29 +30,30 @@ namespace embree
     /*! type of geometry */
     enum Type { TRIANGLE_MESH = 1, USER_GEOMETRY = 2, BEZIER_CURVES = 4, SUBDIV_MESH = 8 /*, INSTANCES = 16*/ };
 
-    /*! state of a mesh */
-    enum State { ENABLING, ENABLED, MODIFIED, DISABLING, DISABLED, ERASING }; // FIXME: cleanup these states
-
   public:
     
     /*! Geometry constructor */
     Geometry (Scene* scene, Type type, size_t numPrimitives, size_t numTimeSteps, RTCGeometryFlags flags);
 
-    /*! Virtual destructor */
-    virtual ~Geometry() {}
+    /*! Geometry destructor */
+    virtual ~Geometry();
 
   public:
-    __forceinline bool isEnabled() const { 
-      return numPrimitives && (state >= ENABLING) && (state <= MODIFIED); 
-    }
 
-    __forceinline bool isDisabled() const { 
-      return !isEnabled();
-    }
+    /*! tests if geometry is enabled */
+    __forceinline bool isEnabled() const { return numPrimitives && enabled; }
 
-    __forceinline bool isModified() const { 
-      return numPrimitives && ((state == MODIFIED) || (state == ENABLING)); 
-    }
+    /*! tests if geometry is disabled */
+    __forceinline bool isDisabled() const { return !isEnabled(); }
+
+    /*! tests if geometry is modified */
+    __forceinline bool isModified() const { return numPrimitives && modified; }
+
+    /*! clears modified flag */
+    __forceinline void clearModified() { if (isEnabled()) modified = false; }
+
+    /*! tests if geometry is tagged for deletion */
+    __forceinline bool isErasing() const { return erasing; }
 
     /* test if this is a static geometry */
     __forceinline bool isStatic() const { return flags == RTC_GEOMETRY_STATIC; }
@@ -216,17 +217,19 @@ namespace embree
       int type = -1; file.write((char*)&type,sizeof(type));
     }
 
-  public:
+  public: // FIXME: make private
     Scene* parent;   //!< pointer to scene this mesh belongs to
     Type type;
     ssize_t numPrimitives;    //!< number of primitives of this geometry
     unsigned int numTimeSteps;        //!< number of time steps (1 or 2)
     unsigned int id;       //!< internal geometry ID
     RTCGeometryFlags flags;    //!< flags of geometry
-    State state;       //!< state of the geometry 
+    bool enabled;        //!< true if geometry is enabled
+    bool modified;       //!< true if geometry is modified
+    bool erasing;        //!< true if geometry is tagged for deletion
     void* userPtr;     //!< user pointer
 
-  public:
+  public: // FIXME: make private
     RTCFilterFunc intersectionFilter1;
     RTCFilterFunc occlusionFilter1;
 
