@@ -489,6 +489,7 @@ inline DielectricLayerLambertian make_DielectricLayerLambertian(const Vec3fa& T,
     brdf.Ns = material->Ns;  
     //if (material->map_Ns) { brdf.Ns *= material->map_Ns.get(dg.st); }
     brdf.Kt = (1.0f-d)*Vec3fa(material->Kt);
+    //brdf.Kt = Vec3fa(0,0,0);
     brdf.Ni = material->Ni;
 
 }

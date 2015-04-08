@@ -706,8 +706,10 @@ Vec2f getTextureCoordinatesSubdivMesh(void* _mesh, const unsigned int primID, co
 	  const float v1 = 1.0f - v;
 	  st = u1*v1 * txt0 + u0*v1* txt1 + u0*v0 * txt2 + u1*v0* txt3;	  
 	}
+#if DEBUG
       else
 	PRINT("not supported");
+#endif
     }
   return st;
 }
