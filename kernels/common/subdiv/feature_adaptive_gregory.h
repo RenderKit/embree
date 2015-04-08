@@ -66,12 +66,10 @@ namespace embree
 
       /* check if subpatches need further subdivision */
       bool childSubdiv[GeneralCatmullClarkPatch::SIZE];
-      for (size_t i=0; i<N; i++)
-	{
-	  assert( patches[i].checkPositions() );
-	  childSubdiv[i] = !patches[i].isGregoryOrFinal(depth);
-	  assert( childSubdiv[i] == false );
-	}
+      for (size_t i=0; i<N; i++) {
+        assert( patches[i].checkPositions() );
+        childSubdiv[i] = !patches[i].isGregoryOrFinal(depth);
+      }
 
       /* parametrization for triangles */
       if (N == 3) {
