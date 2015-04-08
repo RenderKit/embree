@@ -645,11 +645,11 @@ namespace embree
     TRACE(rtcCommitMT);
     VERIFY_HANDLE(scene);
     if (unlikely(numThreads == 0)) 
-      process_error(RTC_INVALID_OPERATION,"invalid number of threads specified");
+      throw_RTCError(RTC_INVALID_OPERATION,"invalid number of threads specified");
 
 #if defined(__MIC__)
     if (unlikely(numThreads % 4 != 0 && numThreads != 1)) 
-      process_error(RTC_INVALID_OPERATION,"MIC requires numThreads % 4 == 0 in rtcCommitThread");
+      throw_RTCError(RTC_INVALID_OPERATION,"MIC requires numThreads % 4 == 0 in rtcCommitThread");
 #endif
     
     ((Scene*)scene)->build(threadID,numThreads);
@@ -913,7 +913,7 @@ namespace embree
       break;
 
     default: 
-      process_error(RTC_INVALID_OPERATION,"Unknown matrix type");
+      throw_RTCError(RTC_INVALID_OPERATION,"Unknown matrix type");
       break;
     }
     ((Scene*) scene)->get_locked(geomID)->setTransform(transform);
