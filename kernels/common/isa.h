@@ -16,13 +16,13 @@
 
 #pragma once
 
-#define DECLARE_SYMBOL(type,name)                  \
-  namespace isa   { extern type name; }            \
+#define DECLARE_SYMBOL(type,name)                                       \
+  namespace isa   { extern type name; }                                 \
   namespace sse41 { extern type name; }                                 \
   namespace sse42 { extern type name; }                                 \
   namespace avx   { extern type name; }                                 \
   namespace avx2  { extern type name; }                                 \
-  void name##_error() { std::cerr << "Error: " << TOSTRING(name) << " not supported by your CPU" << std::endl; } \
+  void name##_error() { throw_RTCError(RTC_UNKNOWN_ERROR,"internal error in ISA selection for " TOSTRING(name)); } \
   type name((type)name##_error);
 
 #define SELECT_SYMBOL_DEFAULT(features,intersector) \

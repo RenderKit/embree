@@ -383,7 +383,7 @@ namespace embree
               double A = 0.0f;
               while (PrimRefList::item* block = iter.next()) {
                 for (size_t i=0; i<block->size(); i++) 
-                  A += area(block->at(i));
+                  A += area(block->at(i).bounds());
                 //A += heuristic(block->at(i));
               }
               return A;
@@ -399,7 +399,7 @@ namespace embree
                 for (size_t i=0; i<block->size(); i++) {
                   PrimRef& prim = block->at(i);
                   assert((prim.lower.a & 0xFF000000) == 0);
-                  const float nf = ceil(f*pinfo.size()*area(prim)/A);
+                  const float nf = ceil(f*pinfo.size()*area(prim.bounds())/A);
                   //const size_t n = 64;
                   const size_t n = min(ssize_t(127), max(ssize_t(1), ssize_t(nf)));
                   N += n;
