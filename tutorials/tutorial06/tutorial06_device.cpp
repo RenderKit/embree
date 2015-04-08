@@ -28,8 +28,8 @@
 #define TILE_SIZE_Y 4
 
 #define FIX_SAMPLING 0
-//#define SAMPLES_PER_PIXEL 1
-#define SAMPLES_PER_PIXEL 4
+#define SAMPLES_PER_PIXEL 1
+//#define SAMPLES_PER_PIXEL 4
 
 #define ENABLE_TEXTURING 1
 
