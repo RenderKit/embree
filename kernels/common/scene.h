@@ -60,7 +60,7 @@ namespace embree
         Geometry* geom = scene->geometries[i];
         if (geom == NULL) return NULL;
         if (!geom->isEnabled()) return NULL;
-        if (geom->type != Ty::geom_type) return NULL;
+        if (geom->getType() != Ty::geom_type) return NULL;
         if (geom->numTimeSteps != timeSteps) return NULL;
         return (Ty*) geom;
       }
@@ -170,43 +170,43 @@ namespace embree
     __forceinline TriangleMesh* getTriangleMesh(size_t i) { 
       assert(i < geometries.size()); 
       assert(geometries[i]);
-      assert(geometries[i]->type == Geometry::TRIANGLE_MESH);
+      assert(geometries[i]->getType() == Geometry::TRIANGLE_MESH);
       return (TriangleMesh*) geometries[i]; 
     }
     __forceinline const TriangleMesh* getTriangleMesh(size_t i) const { 
       assert(i < geometries.size()); 
       assert(geometries[i]);
-      assert(geometries[i]->type == Geometry::TRIANGLE_MESH);
+      assert(geometries[i]->getType() == Geometry::TRIANGLE_MESH);
       return (TriangleMesh*) geometries[i]; 
     }
     __forceinline TriangleMesh* getTriangleMeshSafe(size_t i) { 
       assert(i < geometries.size()); 
       if (geometries[i] == NULL) return NULL;
-      if (geometries[i]->type != Geometry::TRIANGLE_MESH) return NULL;
+      if (geometries[i]->getType() != Geometry::TRIANGLE_MESH) return NULL;
       else return (TriangleMesh*) geometries[i]; 
     }
     __forceinline SubdivMesh* getSubdivMesh(size_t i) { 
       assert(i < geometries.size()); 
       assert(geometries[i]);
-      assert(geometries[i]->type == Geometry::SUBDIV_MESH);
+      assert(geometries[i]->getType() == Geometry::SUBDIV_MESH);
       return (SubdivMesh*) geometries[i]; 
     }
     __forceinline const SubdivMesh* getSubdivMesh(size_t i) const { 
       assert(i < geometries.size()); 
       assert(geometries[i]);
-      assert(geometries[i]->type == Geometry::SUBDIV_MESH);
+      assert(geometries[i]->getType() == Geometry::SUBDIV_MESH);
       return (SubdivMesh*) geometries[i]; 
     }
     __forceinline UserGeometryBase* getUserGeometrySafe(size_t i) { 
       assert(i < geometries.size()); 
       if (geometries[i] == NULL) return NULL;
-      if (geometries[i]->type != Geometry::USER_GEOMETRY) return NULL;
+      if (geometries[i]->getType() != Geometry::USER_GEOMETRY) return NULL;
       else return (UserGeometryBase*) geometries[i]; 
     }
     __forceinline BezierCurves* getBezierCurves(size_t i) { 
       assert(i < geometries.size()); 
       assert(geometries[i]);
-      assert(geometries[i]->type == Geometry::BEZIER_CURVES);
+      assert(geometries[i]->getType() == Geometry::BEZIER_CURVES);
       return (BezierCurves*) geometries[i]; 
     }
 

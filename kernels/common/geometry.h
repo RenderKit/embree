@@ -25,10 +25,11 @@ namespace embree
   /*! Base class all geometries are derived from */
   class Geometry
   {
+    friend class Scene;
   public:
 
     /*! type of geometry */
-    enum Type { TRIANGLE_MESH = 1, USER_GEOMETRY = 2, BEZIER_CURVES = 4, SUBDIV_MESH = 8 /*, INSTANCES = 16*/ };
+    enum Type { TRIANGLE_MESH = 1, USER_GEOMETRY = 2, BEZIER_CURVES = 4, SUBDIV_MESH = 8 };
 
   public:
     
@@ -37,6 +38,9 @@ namespace embree
 
     /*! Geometry destructor */
     virtual ~Geometry();
+
+    /*! writes geometry to disk */
+    virtual void write(std::ofstream& file);
 
   public:
 
@@ -50,19 +54,25 @@ namespace embree
     __forceinline bool isModified() const { return numPrimitives && modified; }
 
     /*! clears modified flag */
-    __forceinline void clearModified() { if (isEnabled()) modified = false; }
+    __forceinline void clearModified() { modified = false; }
 
     /*! tests if geometry is tagged for deletion */
     __forceinline bool isErasing() const { return erasing; }
 
-    /* test if this is a static geometry */
+    /*! test if this is a static geometry */
     __forceinline bool isStatic() const { return flags == RTC_GEOMETRY_STATIC; }
 
-    /* test if this is a deformable geometry */
+    /*! test if this is a deformable geometry */
     __forceinline bool isDeformable() const { return flags == RTC_GEOMETRY_DEFORMABLE; }
 
-    /* test if this is a dynamic geometry */
+    /*! test if this is a dynamic geometry */
     __forceinline bool isDynamic() const { return flags == RTC_GEOMETRY_DYNAMIC; }
+
+    /*! returns geometry type */
+    __forceinline Type getType() const { return type; }
+
+    /*! returns number of primitives */
+    __forceinline size_t size() const { return numPrimitives; }
 
     /*! for all geometries */
   public:
@@ -96,7 +106,13 @@ namespace embree
     /*! called if geometry is switching from enabled to disabled state */
     virtual void disabling() = 0;
 
-    /*! for triangle mesh and bezier curves only */
+    /*! Set user data pointer. */
+    virtual void setUserData (void* ptr);
+      
+    /*! Get user data pointer. */
+    virtual void* getUserData ();
+
+    /*! for triangle meshes and bezier curves only */
   public:
 
     /*! Sets ray mask. */
@@ -149,7 +165,7 @@ namespace embree
     /*! Set occlusion filter function for ray packets of size 16. */
     virtual void setOcclusionFilterFunction16 (RTCFilterFunc16 filter16, bool ispc = false);
 
-    /*! instances only */
+    /*! for instances only */
   public:
     
     /*! Sets transformation of the instance */
@@ -157,14 +173,8 @@ namespace embree
       throw_RTCError(RTC_INVALID_OPERATION,"operation not supported for this geometry"); 
     };
 
-    /*! user geometry only */
+    /*! for user geometries only */
   public:
-
-    /*! Set user data pointer, which is also used for intersect and occluded functions. */
-    virtual void setUserData (void* ptr);
-      
-    /*! Get user data pointer. */
-    virtual void* getUserData ();
 
     /*! Set bounds function. */
     virtual void setBoundsFunction (RTCBoundsFunc bounds) { 
@@ -212,24 +222,18 @@ namespace embree
     }
 
   public:
-
-    virtual void write(std::ofstream& file) {
-      int type = -1; file.write((char*)&type,sizeof(type));
-    }
-
-  public: // FIXME: make private
-    Scene* parent;   //!< pointer to scene this mesh belongs to
-    Type type;
-    ssize_t numPrimitives;    //!< number of primitives of this geometry
-    unsigned int numTimeSteps;        //!< number of time steps (1 or 2)
-    unsigned int id;       //!< internal geometry ID
+    Scene* parent;             //!< pointer to scene this mesh belongs to
+    unsigned id;               //!< internal geometry ID
+    Type type;                 //!< geometry type 
+    ssize_t numPrimitives;     //!< number of primitives of this geometry
+    unsigned numTimeSteps;     //!< number of time steps (1 or 2)
     RTCGeometryFlags flags;    //!< flags of geometry
-    bool enabled;        //!< true if geometry is enabled
-    bool modified;       //!< true if geometry is modified
-    bool erasing;        //!< true if geometry is tagged for deletion
-    void* userPtr;     //!< user pointer
-
-  public: // FIXME: make private
+    bool enabled;              //!< true if geometry is enabled
+    bool modified;             //!< true if geometry is modified
+    bool erasing;              //!< true if geometry is tagged for deletion
+    void* userPtr;             //!< user pointer
+    
+  public:
     RTCFilterFunc intersectionFilter1;
     RTCFilterFunc occlusionFilter1;
 
@@ -248,6 +252,7 @@ namespace embree
     void* ispcIntersectionFilter16;
     void* ispcOcclusionFilter16;
 
+  public:
     __forceinline bool hasIntersectionFilter1() const { return intersectionFilter1 != NULL; }
     __forceinline bool hasIntersectionFilter4() const { return intersectionFilter4 != NULL; }
     __forceinline bool hasIntersectionFilter8() const { return intersectionFilter8 != NULL; }

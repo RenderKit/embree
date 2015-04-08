@@ -371,8 +371,8 @@ namespace embree
     {
       Geometry* geom = geometries[i];
       if (!geom) continue;
+      if (geom->isEnabled()) geom->clearModified(); // FIXME: should builders to this?
       if (geom->isErasing()) remove(geom);
-      else                   geom->clearModified(); // FIXME: should builders to this?
     }
 
     updateInterface();
@@ -442,8 +442,8 @@ namespace embree
     {
       Geometry* geom = geometries[i];
       if (!geom) continue;
+      if (geom->isEnabled()) geom->clearModified(); // FIXME: should builders to this?
       if (geom->isErasing()) remove(geom);
-      else                   geom->clearModified(); // FIXME: should builders do this?
     }
 
     updateInterface();

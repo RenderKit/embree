@@ -35,6 +35,10 @@ namespace embree
   Geometry::~Geometry() {
   }
 
+  void Geometry::write(std::ofstream& file) {
+    int type = -1; file.write((char*)&type,sizeof(type));
+  }
+
   void Geometry::enable () 
   {
     if (parent->isStatic()) {
