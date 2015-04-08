@@ -383,6 +383,8 @@ namespace embree
       std::cout << "selected scene intersector" << std::endl;
       intersectors.print(2);
     }
+
+    setModified(false);
   }
 
 #if defined(TASKING_LOCKSTEP)
@@ -447,6 +449,7 @@ namespace embree
     }
 
     updateInterface();
+    setModified(false);
 
     if (g_verbose >= 2) {
       std::cout << "created scene intersector" << std::endl;
@@ -545,7 +548,6 @@ namespace embree
         }); 
       if (threadCount) group_barrier.wait(threadCount);
       group->wait();
-      setModified(false);
     } 
     catch (...) {
       accels.clear();

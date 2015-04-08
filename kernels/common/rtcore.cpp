@@ -21,12 +21,10 @@
 #endif
 
 #include "default.h"
-#include "alloc.h"
-#include "embree2/rtcore.h"
-#include "scene.h"
-#include "sys/thread.h"
-#include "raystream_log.h"
 #include "version.h"
+#include "alloc.h"
+#include "scene.h"
+#include "raystream_log.h"
 
 #if defined(TASKING_LOCKSTEP)
 #include "tasking/taskscheduler_mic.h"
@@ -34,32 +32,8 @@
 #include "tasking/taskscheduler_tbb.h"
 #endif
 
-#define TRACE(x) //std::cout << #x << std::endl;
-
 namespace embree
-{
-#define CATCH_BEGIN try {
-#define CATCH_END                                                       \
-  } catch (std::bad_alloc&) {                                           \
-    process_error(RTC_OUT_OF_MEMORY,"out of memory");                   \
-  } catch (rtcore_error& e) {                                       \
-    process_error(e.error,e.what());                                    \
-  } catch (std::exception& e) {                                         \
-    process_error(RTC_UNKNOWN_ERROR,e.what());                          \
- } catch (...) {                                                        \
-    process_error(RTC_UNKNOWN_ERROR,"unknown exception caught");        \
-  }
-
-#define VERIFY_HANDLE(handle) \
-  if (handle == NULL) {                                                 \
-    throw_RTCError(RTC_INVALID_ARGUMENT,"invalid argument");             \
-  }
-
-#define VERIFY_GEOMID(id) \
-  if (id == -1) {                                                 \
-    throw_RTCError(RTC_INVALID_ARGUMENT,"invalid argument");       \
-  }
-  
+{  
   /* functions to initialize global state */
   void init_globals();
 
@@ -80,7 +54,7 @@ namespace embree
   DECLARE_SYMBOL(AccelSet::Intersector8,InstanceIntersector8);
   DECLARE_SYMBOL(AccelSet::Intersector16,InstanceIntersector16);
   
-  /* global settings */
+  /* global settings */ // FIXME: put all of this into separate struct
   std::string g_tri_accel = "default";                 //!< acceleration structure to use for triangles
   std::string g_tri_builder = "default";               //!< builder to use for triangles
   std::string g_tri_traverser = "default";             //!< traverser to use for triangles
@@ -110,10 +84,8 @@ namespace embree
 
   class TBBAffinity: public tbb::task_scheduler_observer
   {
-    void on_scheduler_entry( bool )
-    {
-      int tid = tbb::task_arena::current_thread_index();
-      setAffinity(tid);
+    void on_scheduler_entry( bool ) {
+      setAffinity(tbb::task_arena::current_thread_index());
     }
   } tbb_affinity;
 #endif
@@ -194,7 +166,6 @@ namespace embree
       }
     }
   }
-
   
   RTCError* getThreadError() 
   {
@@ -315,8 +286,8 @@ namespace embree
   RTCORE_API void rtcInit(const char* cfg) 
   {
     Lock<MutexSys> lock(g_mutex);
-    TRACE(rtcInit);
-    CATCH_BEGIN;
+    RTCORE_TRACE(rtcInit);
+    RTCORE_CATCH_BEGIN;
 
     if (g_initialized) {
       g_mutex.unlock();
@@ -459,10 +430,8 @@ namespace embree
 #endif
       std::cout << std::endl;
 
-#if defined (__MIC__)
-#if defined(RTCORE_BUFFER_STRIDE)
+#if defined (__MIC__) && defined(RTCORE_BUFFER_STRIDE)
       std::cout << "  WARNING: enabled 'bufferstride' support will lower BVH build performance" << std::endl;
-#endif
 #endif
     }
 
@@ -532,14 +501,14 @@ namespace embree
 #endif
     }
 
-    CATCH_END;
+    RTCORE_CATCH_END;
   }
   
   RTCORE_API void rtcExit() 
   {
     Lock<MutexSys> lock(g_mutex);
-    TRACE(rtcExit);
-    CATCH_BEGIN;
+    RTCORE_TRACE(rtcExit);
+    RTCORE_CATCH_BEGIN;
     if (!g_initialized) {
       return;
     }
@@ -564,31 +533,39 @@ namespace embree
     }
     g_error_function = NULL;
     g_initialized = false;
-    CATCH_END;
+    RTCORE_CATCH_END;
   }
 
   RTCORE_API RTCError rtcGetError() 
   {
-    TRACE(rtcGetError);
+    RTCORE_TRACE(rtcGetError);
     RTCError* stored_error = getThreadError();
     RTCError error = *stored_error;
     *stored_error = RTC_NO_ERROR;
     return error;
   }
 
-  RTCORE_API void rtcSetErrorFunction(RTCErrorFunc func) {
+  RTCORE_API void rtcSetErrorFunction(RTCErrorFunc func) 
+  {
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcSetErrorFunction);
     g_error_function = func;
+    RTCORE_CATCH_END;
   }
 
-  RTCORE_API void rtcSetMemoryMonitorFunction(RTCMemoryMonitorFunc func) {
+  RTCORE_API void rtcSetMemoryMonitorFunction(RTCMemoryMonitorFunc func) 
+  {
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcSetMemoryMonitorFunction);
     g_memory_monitor_function = func;
+    RTCORE_CATCH_END;
   }
 
   RTCORE_API void rtcDebug()
   {
-    Lock<MutexSys> lock(g_mutex);
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcDebug);
 
-    TRACE(rtcDebug);
 #if defined(RTCORE_STAT_COUNTERS)
     Stat::print(std::cout);
     Stat::clear();
@@ -604,46 +581,48 @@ namespace embree
     extern void printTessCacheStats();
     printTessCacheStats();
 #endif
+    RTCORE_CATCH_END;
   }
   
   RTCORE_API RTCScene rtcNewScene (RTCSceneFlags flags, RTCAlgorithmFlags aflags) 
   {
-    CATCH_BEGIN;
-    TRACE(rtcNewScene);
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcNewScene);
     if (!isCoherent(flags) && !isIncoherent(flags)) flags = RTCSceneFlags(flags | RTC_SCENE_INCOHERENT);
     return (RTCScene) new Scene(flags,aflags);
-    CATCH_END;
+    RTCORE_CATCH_END;
     return NULL;
   }
 
   RTCORE_API void rtcSetProgressMonitorFunction(RTCScene scene, RTCProgressMonitorFunc func, void* ptr) 
   {
-    CATCH_BEGIN;
-    TRACE(rtcSetProgressMonitorFunction);
-    VERIFY_HANDLE(scene);
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcSetProgressMonitorFunction);
+    RTCORE_VERIFY_HANDLE(scene);
     ((Scene*)scene)->setProgressMonitorFunction(func,ptr);
-    CATCH_END;
+    RTCORE_CATCH_END;
   }
   
   RTCORE_API void rtcCommit (RTCScene scene) 
   {
-    CATCH_BEGIN;
-    TRACE(rtcCommit);
-    VERIFY_HANDLE(scene);
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcCommit);
+    RTCORE_VERIFY_HANDLE(scene);
 
 #if defined(RTCORE_ENABLE_RAYSTREAM_LOGGER)
     RayStreamLogger::rayStreamLogger.dumpGeometry(scene);
 #endif
 
     ((Scene*)scene)->build(0,0);
-    CATCH_END;
+    RTCORE_CATCH_END;
   }
 
   RTCORE_API void rtcCommitThread(RTCScene scene, unsigned int threadID, unsigned int numThreads) 
   {
-    CATCH_BEGIN;
-    TRACE(rtcCommitMT);
-    VERIFY_HANDLE(scene);
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcCommitThread);
+    RTCORE_VERIFY_HANDLE(scene);
+
     if (unlikely(numThreads == 0)) 
       throw_RTCError(RTC_INVALID_OPERATION,"invalid number of threads specified");
 
@@ -654,42 +633,44 @@ namespace embree
     
     ((Scene*)scene)->build(threadID,numThreads);
 
-    CATCH_END;
+    RTCORE_CATCH_END;
   }
   
   RTCORE_API void rtcIntersect (RTCScene scene, RTCRay& ray) 
   {
-    CATCH_BEGIN;
-    TRACE(rtcIntersect);
-    STAT3(normal.travs,1,1,1);
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcIntersect);
 #if defined(DEBUG)
-    if (!((Scene*)scene)->is_build) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
-    if (((size_t)&ray) & 0x0F) throw_RTCError(RTC_INVALID_ARGUMENT,"ray not aligned to 16 bytes");   
+    RTCORE_VERIFY_HANDLE(scene);
+    if (((Scene*)scene)->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
+    if (((size_t)&ray) & 0x0F        ) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 16 bytes");   
 #endif
 
 #if defined(RTCORE_ENABLE_RAYSTREAM_LOGGER)
     RTCRay old_ray = ray;
 #endif
 
+    STAT3(normal.travs,1,1,1);
     ((Scene*)scene)->intersect(ray);
 
 #if defined(RTCORE_ENABLE_RAYSTREAM_LOGGER)
     RayStreamLogger::rayStreamLogger.logRay1Intersect(scene,old_ray,ray);
 #endif
-    CATCH_END;
+    RTCORE_CATCH_END;
   }
   
   RTCORE_API void rtcIntersect4 (const void* valid, RTCScene scene, RTCRay4& ray) 
   {
-    CATCH_BEGIN;
-    TRACE(rtcIntersect4);
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcIntersect4);
 #if !defined(__TARGET_SIMD4__)
     throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersect4 not supported");    
 #else
 #if defined(DEBUG)
-    if (!((Scene*)scene)->is_build) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
-    if (((size_t)valid) & 0x0F)  throw_RTCError(RTC_INVALID_ARGUMENT,"mask not aligned to 16 bytes");   
-    if (((size_t)&ray ) & 0x0F)  throw_RTCError(RTC_INVALID_ARGUMENT,"ray not aligned to 16 bytes");   
+    RTCORE_VERIFY_HANDLE(scene);
+    if (((Scene*)scene)->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
+    if (((size_t)valid) & 0x0F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "mask not aligned to 16 bytes");   
+    if (((size_t)&ray ) & 0x0F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 16 bytes");   
 #endif
     STAT(size_t cnt=0; for (size_t i=0; i<4; i++) cnt += ((int*)valid)[i] == -1;);
     STAT3(normal.travs,1,cnt,4);
@@ -705,20 +686,21 @@ namespace embree
 #endif
 
 #endif
-    CATCH_END;
+    RTCORE_CATCH_END;
   }
   
   RTCORE_API void rtcIntersect8 (const void* valid, RTCScene scene, RTCRay8& ray) 
   {
-    CATCH_BEGIN;
-    TRACE(rtcIntersect8);
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcIntersect8);
 #if !defined(__TARGET_SIMD8__)
     throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersect8 not supported");                                    
 #else
 #if defined(DEBUG)
-    if (!((Scene*)scene)->is_build) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
-    if (((size_t)valid) & 0x1F)  throw_RTCError(RTC_INVALID_ARGUMENT,"mask not aligned to 32 bytes");   
-    if (((size_t)&ray ) & 0x1F)  throw_RTCError(RTC_INVALID_ARGUMENT,"ray not aligned to 32 bytes");   
+    RTCORE_VERIFY_HANDLE(scene);
+    if (((Scene*)scene)->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
+    if (((size_t)valid) & 0x1F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "mask not aligned to 32 bytes");   
+    if (((size_t)&ray ) & 0x1F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 32 bytes");   
 #endif
     STAT(size_t cnt=0; for (size_t i=0; i<8; i++) cnt += ((int*)valid)[i] == -1;);
     STAT3(normal.travs,1,cnt,8);
@@ -734,20 +716,21 @@ namespace embree
 #endif
 
 #endif
-    CATCH_END;
+    RTCORE_CATCH_END;
   }
   
   RTCORE_API void rtcIntersect16 (const void* valid, RTCScene scene, RTCRay16& ray) 
   {
-    CATCH_BEGIN;
-    TRACE(rtcIntersect16);
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcIntersect16);
 #if !defined(__TARGET_SIMD16__)
     throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersect16 not supported");
 #else
 #if defined(DEBUG)
-    if (!((Scene*)scene)->is_build) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
-    if (((size_t)valid) & 0x3F)  throw_RTCError(RTC_INVALID_ARGUMENT,"mask not aligned to 64 bytes");   
-    if (((size_t)&ray ) & 0x3F)  throw_RTCError(RTC_INVALID_ARGUMENT,"ray not aligned to 64 bytes");   
+    RTCORE_VERIFY_HANDLE(scene);
+    if (((Scene*)scene)->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
+    if (((size_t)valid) & 0x3F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "mask not aligned to 64 bytes");   
+    if (((size_t)&ray ) & 0x3F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 64 bytes");   
 #endif
     STAT(size_t cnt=0; for (size_t i=0; i<16; i++) cnt += ((int*)valid)[i] == -1;);
     STAT3(normal.travs,1,cnt,16);
@@ -763,17 +746,18 @@ namespace embree
 #endif
 
 #endif
-    CATCH_END;
+    RTCORE_CATCH_END;
   }
   
   RTCORE_API void rtcOccluded (RTCScene scene, RTCRay& ray) 
   {
-    CATCH_BEGIN;
-    TRACE(rtcOccluded);
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcOccluded);
     STAT3(shadow.travs,1,1,1);
 #if defined(DEBUG)
-    if (!((Scene*)scene)->is_build) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
-    if (((size_t)&ray) & 0x0F) throw_RTCError(RTC_INVALID_ARGUMENT,"ray not aligned to 16 bytes");   
+    RTCORE_VERIFY_HANDLE(scene);
+    if (((Scene*)scene)->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
+    if (((size_t)&ray) & 0x0F        ) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 16 bytes");   
 #endif
 
 #if defined(RTCORE_ENABLE_RAYSTREAM_LOGGER)
@@ -785,20 +769,21 @@ namespace embree
 #if defined(RTCORE_ENABLE_RAYSTREAM_LOGGER)
     RayStreamLogger::rayStreamLogger.logRay1Occluded(scene,old_ray,ray);
 #endif
-    CATCH_END;
+    RTCORE_CATCH_END;
   }
   
   RTCORE_API void rtcOccluded4 (const void* valid, RTCScene scene, RTCRay4& ray) 
   {
-    CATCH_BEGIN;
-    TRACE(rtcOccluded4);
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcOccluded4);
 #if !defined(__TARGET_SIMD4__)
     throw_RTCError(RTC_INVALID_OPERATION,"rtcOccluded4 not supported");
 #else
 #if defined(DEBUG)
-    if (!((Scene*)scene)->is_build) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
-    if (((size_t)valid) & 0x0F)  throw_RTCError(RTC_INVALID_ARGUMENT,"mask not aligned to 16 bytes");   
-    if (((size_t)&ray ) & 0x0F)  throw_RTCError(RTC_INVALID_ARGUMENT,"ray not aligned to 16 bytes");   
+    RTCORE_VERIFY_HANDLE(scene);
+    if (((Scene*)scene)->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
+    if (((size_t)valid) & 0x0F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "mask not aligned to 16 bytes");   
+    if (((size_t)&ray ) & 0x0F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 16 bytes");   
 #endif
     STAT(size_t cnt=0; for (size_t i=0; i<4; i++) cnt += ((int*)valid)[i] == -1;);
     STAT3(shadow.travs,1,cnt,4);
@@ -814,20 +799,21 @@ namespace embree
 #endif
 
 #endif
-    CATCH_END;
+    RTCORE_CATCH_END;
   }
   
   RTCORE_API void rtcOccluded8 (const void* valid, RTCScene scene, RTCRay8& ray) 
   {
-    CATCH_BEGIN;
-    TRACE(rtcOccluded8);
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcOccluded8);
 #if !defined(__TARGET_SIMD8__)
     throw_RTCError(RTC_INVALID_OPERATION,"rtcOccluded8 not supported");
 #else
 #if defined(DEBUG)
-    if (!((Scene*)scene)->is_build) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
-    if (((size_t)valid) & 0x1F)  throw_RTCError(RTC_INVALID_ARGUMENT,"mask not aligned to 32 bytes");   
-    if (((size_t)&ray ) & 0x1F)  throw_RTCError(RTC_INVALID_ARGUMENT,"ray not aligned to 32 bytes");   
+    RTCORE_VERIFY_HANDLE(scene);
+    if (((Scene*)scene)->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
+    if (((size_t)valid) & 0x1F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "mask not aligned to 32 bytes");   
+    if (((size_t)&ray ) & 0x1F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 32 bytes");   
 #endif
     STAT(size_t cnt=0; for (size_t i=0; i<8; i++) cnt += ((int*)valid)[i] == -1;);
     STAT3(shadow.travs,1,cnt,8);
@@ -843,20 +829,21 @@ namespace embree
 #endif
 
 #endif
-    CATCH_END;
+    RTCORE_CATCH_END;
   }
   
   RTCORE_API void rtcOccluded16 (const void* valid, RTCScene scene, RTCRay16& ray) 
   {
-    CATCH_BEGIN;
-    TRACE(rtcOccluded16);
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcOccluded16);
 #if !defined(__TARGET_SIMD16__)
     throw_RTCError(RTC_INVALID_OPERATION,"rtcOccluded16 not supported");
 #else
 #if defined(DEBUG)
-    if (!((Scene*)scene)->is_build) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
-    if (((size_t)valid) & 0x3F)  throw_RTCError(RTC_INVALID_ARGUMENT,"mask not aligned to 64 bytes");   
-    if (((size_t)&ray ) & 0x3F)  throw_RTCError(RTC_INVALID_ARGUMENT,"ray not aligned to 64 bytes");   
+    RTCORE_VERIFY_HANDLE(scene);
+    if (((Scene*)scene)->isModified()) throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed");
+    if (((size_t)valid) & 0x3F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "mask not aligned to 64 bytes");   
+    if (((size_t)&ray ) & 0x3F       ) throw_RTCError(RTC_INVALID_ARGUMENT, "ray not aligned to 64 bytes");   
 #endif
     STAT(size_t cnt=0; for (size_t i=0; i<16; i++) cnt += ((int*)valid)[i] == -1;);
     STAT3(shadow.travs,1,cnt,16);
@@ -872,36 +859,36 @@ namespace embree
 #endif
 
 #endif
-  CATCH_END;
+  RTCORE_CATCH_END;
   }
   
   RTCORE_API void rtcDeleteScene (RTCScene scene) 
   {
-    CATCH_BEGIN;
-    TRACE(rtcDeleteScene);
-    VERIFY_HANDLE(scene);
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcDeleteScene);
+    RTCORE_VERIFY_HANDLE(scene);
     delete (Scene*) scene;
-    CATCH_END;
+    RTCORE_CATCH_END;
   }
 
   RTCORE_API unsigned rtcNewInstance (RTCScene target, RTCScene source) 
   {
-    CATCH_BEGIN;
-    TRACE(rtcNewInstance);
-    VERIFY_HANDLE(target);
-    VERIFY_HANDLE(source);
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcNewInstance);
+    RTCORE_VERIFY_HANDLE(target);
+    RTCORE_VERIFY_HANDLE(source);
     return ((Scene*) target)->newInstance((Scene*) source);
-    CATCH_END;
+    RTCORE_CATCH_END;
     return -1;
   }
 
   RTCORE_API void rtcSetTransform (RTCScene scene, unsigned geomID, RTCMatrixType layout, const float* xfm) 
   {
-    CATCH_BEGIN;
-    TRACE(rtcSetTransform);
-    VERIFY_HANDLE(scene);
-    VERIFY_GEOMID(geomID);
-    VERIFY_HANDLE(xfm);
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcSetTransform);
+    RTCORE_VERIFY_HANDLE(scene);
+    RTCORE_VERIFY_GEOMID(geomID);
+    RTCORE_VERIFY_HANDLE(xfm);
 
     AffineSpace3fa transform = one;
     switch (layout) 
@@ -933,341 +920,339 @@ namespace embree
     }
     ((Scene*) scene)->get_locked(geomID)->setTransform(transform);
 
-    CATCH_END;
+    RTCORE_CATCH_END;
   }
 
   RTCORE_API unsigned rtcNewUserGeometry (RTCScene scene, size_t numItems) 
   {
-    CATCH_BEGIN;
-    TRACE(rtcNewUserGeometry);
-    VERIFY_HANDLE(scene);
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcNewUserGeometry);
+    RTCORE_VERIFY_HANDLE(scene);
     return ((Scene*)scene)->newUserGeometry(numItems);
-    CATCH_END;
+    RTCORE_CATCH_END;
     return -1;
   }
 
   RTCORE_API unsigned rtcNewTriangleMesh (RTCScene scene, RTCGeometryFlags flags, size_t numTriangles, size_t numVertices, size_t numTimeSteps) 
   {
-    CATCH_BEGIN;
-    TRACE(rtcNewTriangleMesh);
-    VERIFY_HANDLE(scene);
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcNewTriangleMesh);
+    RTCORE_VERIFY_HANDLE(scene);
     return ((Scene*)scene)->newTriangleMesh(flags,numTriangles,numVertices,numTimeSteps);
-    CATCH_END;
+    RTCORE_CATCH_END;
     return -1;
   }
 
   RTCORE_API unsigned rtcNewHairGeometry (RTCScene scene, RTCGeometryFlags flags, size_t numCurves, size_t numVertices, size_t numTimeSteps) 
   {
-    CATCH_BEGIN;
-    TRACE(rtcNewHairGeometry);
-    VERIFY_HANDLE(scene);
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcNewHairGeometry);
+    RTCORE_VERIFY_HANDLE(scene);
     return ((Scene*)scene)->newBezierCurves(flags,numCurves,numVertices,numTimeSteps);
-    CATCH_END;
+    RTCORE_CATCH_END;
+    return -1;
+  }
+
+  RTCORE_API unsigned rtcNewSubdivisionMesh (RTCScene scene, RTCGeometryFlags flags, size_t numFaces, size_t numEdges, size_t numVertices, 
+                                             size_t numEdgeCreases, size_t numVertexCreases, size_t numHoles, size_t numTimeSteps) 
+  {
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcNewSubdivisionMesh);
+    RTCORE_VERIFY_HANDLE(scene);
+    return ((Scene*)scene)->newSubdivisionMesh(flags,numFaces,numEdges,numVertices,numEdgeCreases,numVertexCreases,numHoles,numTimeSteps);
+    RTCORE_CATCH_END;
     return -1;
   }
 
   RTCORE_API void rtcSetMask (RTCScene scene, unsigned geomID, int mask) 
   {
-    CATCH_BEGIN;
-    TRACE(rtcSetMask);
-    VERIFY_HANDLE(scene);
-    VERIFY_GEOMID(geomID);
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcSetMask);
+    RTCORE_VERIFY_HANDLE(scene);
+    RTCORE_VERIFY_GEOMID(geomID);
     ((Scene*)scene)->get_locked(geomID)->setMask(mask);
-    CATCH_END;
+    RTCORE_CATCH_END;
   }
 
   RTCORE_API void* rtcMapBuffer(RTCScene scene, unsigned geomID, RTCBufferType type) 
   {
-    CATCH_BEGIN;
-    TRACE(rtcMapBuffer);
-    VERIFY_HANDLE(scene);
-    VERIFY_GEOMID(geomID);
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcMapBuffer);
+    RTCORE_VERIFY_HANDLE(scene);
+    RTCORE_VERIFY_GEOMID(geomID);
     return ((Scene*)scene)->get_locked(geomID)->map(type);
-    CATCH_END;
+    RTCORE_CATCH_END;
     return NULL;
   }
 
   RTCORE_API void rtcUnmapBuffer(RTCScene scene, unsigned geomID, RTCBufferType type) 
   {
-    CATCH_BEGIN;
-    TRACE(rtcUnmapBuffer);
-    VERIFY_HANDLE(scene);
-    VERIFY_GEOMID(geomID);
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcUnmapBuffer);
+    RTCORE_VERIFY_HANDLE(scene);
+    RTCORE_VERIFY_GEOMID(geomID);
     ((Scene*)scene)->get_locked(geomID)->unmap(type);
-    CATCH_END;
+    RTCORE_CATCH_END;
   }
 
   RTCORE_API void rtcSetBuffer(RTCScene scene, unsigned geomID, RTCBufferType type, void* ptr, size_t offset, size_t stride)
   {
-    CATCH_BEGIN;
-    TRACE(rtcSetBuffer);
-    VERIFY_HANDLE(scene);
-    VERIFY_GEOMID(geomID);
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcSetBuffer);
+    RTCORE_VERIFY_HANDLE(scene);
+    RTCORE_VERIFY_GEOMID(geomID);
     ((Scene*)scene)->get_locked(geomID)->setBuffer(type,ptr,offset,stride);
-    CATCH_END;
+    RTCORE_CATCH_END;
   }
 
   RTCORE_API void rtcEnable (RTCScene scene, unsigned geomID) 
   {
-    CATCH_BEGIN;
-    TRACE(rtcEnable);
-    VERIFY_HANDLE(scene);
-    VERIFY_GEOMID(geomID);
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcEnable);
+    RTCORE_VERIFY_HANDLE(scene);
+    RTCORE_VERIFY_GEOMID(geomID);
     ((Scene*)scene)->get_locked(geomID)->enable();
-    CATCH_END;
+    RTCORE_CATCH_END;
   }
 
   RTCORE_API void rtcUpdate (RTCScene scene, unsigned geomID) 
   {
-    CATCH_BEGIN;
-    TRACE(rtcUpdate);
-    VERIFY_HANDLE(scene);
-    VERIFY_GEOMID(geomID);
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcUpdate);
+    RTCORE_VERIFY_HANDLE(scene);
+    RTCORE_VERIFY_GEOMID(geomID);
     ((Scene*)scene)->get_locked(geomID)->update();
-    CATCH_END;
+    RTCORE_CATCH_END;
   }
 
   RTCORE_API void rtcUpdateBuffer (RTCScene scene, unsigned geomID, RTCBufferType type) 
   {
-    CATCH_BEGIN;
-    TRACE(rtcUpdateBuffer);
-    VERIFY_HANDLE(scene);
-    VERIFY_GEOMID(geomID);
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcUpdateBuffer);
+    RTCORE_VERIFY_HANDLE(scene);
+    RTCORE_VERIFY_GEOMID(geomID);
     ((Scene*)scene)->get_locked(geomID)->updateBuffer(type);
-    CATCH_END;
+    RTCORE_CATCH_END;
   }
 
   RTCORE_API void rtcDisable (RTCScene scene, unsigned geomID) 
   {
-    CATCH_BEGIN;
-    TRACE(rtcDisable);
-    VERIFY_HANDLE(scene);
-    VERIFY_GEOMID(geomID);
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcDisable);
+    RTCORE_VERIFY_HANDLE(scene);
+    RTCORE_VERIFY_GEOMID(geomID);
     ((Scene*)scene)->get_locked(geomID)->disable();
-    CATCH_END;
+    RTCORE_CATCH_END;
   }
 
   RTCORE_API void rtcDeleteGeometry (RTCScene scene, unsigned geomID) 
   {
-    CATCH_BEGIN;
-    TRACE(rtcDeleteGeometry);
-    VERIFY_HANDLE(scene);
-    VERIFY_GEOMID(geomID);
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcDeleteGeometry);
+    RTCORE_VERIFY_HANDLE(scene);
+    RTCORE_VERIFY_GEOMID(geomID);
     ((Scene*)scene)->get_locked(geomID)->erase();
-    CATCH_END;
+    RTCORE_CATCH_END;
   }
 
   RTCORE_API void rtcSetUserData (RTCScene scene, unsigned geomID, void* ptr) 
   {
-    CATCH_BEGIN;
-    TRACE(rtcSetUserData);
-    VERIFY_HANDLE(scene);
-    VERIFY_GEOMID(geomID);
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcSetUserData);
+    RTCORE_VERIFY_HANDLE(scene);
+    RTCORE_VERIFY_GEOMID(geomID);
     ((Scene*)scene)->get_locked(geomID)->setUserData(ptr);
-    CATCH_END;
+    RTCORE_CATCH_END;
   }
 
   RTCORE_API void* rtcGetUserData (RTCScene scene, unsigned geomID)
   {
-    CATCH_BEGIN;
-    TRACE(rtcGetUserData);
-    VERIFY_HANDLE(scene);
-    VERIFY_GEOMID(geomID);
-    return ((Scene*)scene)->get(geomID)->getUserData();
-    CATCH_END;
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcGetUserData);
+    RTCORE_VERIFY_HANDLE(scene);
+    RTCORE_VERIFY_GEOMID(geomID);
+    return ((Scene*)scene)->get(geomID)->getUserData(); // this call is on purpose not thread safe
+    RTCORE_CATCH_END;
     return NULL;
   }
 
   RTCORE_API void rtcSetBoundsFunction (RTCScene scene, unsigned geomID, RTCBoundsFunc bounds)
   {
-    CATCH_BEGIN;
-    TRACE(rtcSetBoundsFunction);
-    VERIFY_HANDLE(scene);
-    VERIFY_GEOMID(geomID);
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcSetBoundsFunction);
+    RTCORE_VERIFY_HANDLE(scene);
+    RTCORE_VERIFY_GEOMID(geomID);
     ((Scene*)scene)->get_locked(geomID)->setBoundsFunction(bounds);
-    CATCH_END;
+    RTCORE_CATCH_END;
   }
 
   RTCORE_API void rtcSetDisplacementFunction (RTCScene scene, unsigned geomID, RTCDisplacementFunc func, RTCBounds* bounds)
   {
-    CATCH_BEGIN;
-    TRACE(rtcSetDisplacementFunction);
-    VERIFY_HANDLE(scene);
-    VERIFY_GEOMID(geomID);
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcSetDisplacementFunction);
+    RTCORE_VERIFY_HANDLE(scene);
+    RTCORE_VERIFY_GEOMID(geomID);
     ((Scene*)scene)->get_locked(geomID)->setDisplacementFunction(func,bounds);
-    CATCH_END;
+    RTCORE_CATCH_END;
   }
 
   RTCORE_API void rtcSetIntersectFunction (RTCScene scene, unsigned geomID, RTCIntersectFunc intersect) 
   {
-    CATCH_BEGIN;
-    TRACE(rtcSetIntersectFunction);
-    VERIFY_HANDLE(scene);
-    VERIFY_GEOMID(geomID);
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcSetIntersectFunction);
+    RTCORE_VERIFY_HANDLE(scene);
+    RTCORE_VERIFY_GEOMID(geomID);
     ((Scene*)scene)->get_locked(geomID)->setIntersectFunction(intersect);
-    CATCH_END;
+    RTCORE_CATCH_END;
   }
 
   RTCORE_API void rtcSetIntersectFunction4 (RTCScene scene, unsigned geomID, RTCIntersectFunc4 intersect4) 
   {
-    CATCH_BEGIN;
-    TRACE(rtcSetIntersectFunction4);
-    VERIFY_HANDLE(scene);
-    VERIFY_GEOMID(geomID);
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcSetIntersectFunction4);
+    RTCORE_VERIFY_HANDLE(scene);
+    RTCORE_VERIFY_GEOMID(geomID);
     ((Scene*)scene)->get_locked(geomID)->setIntersectFunction4(intersect4);
-    CATCH_END;
+    RTCORE_CATCH_END;
   }
 
   RTCORE_API void rtcSetIntersectFunction8 (RTCScene scene, unsigned geomID, RTCIntersectFunc8 intersect8) 
   {
-    CATCH_BEGIN;
-    TRACE(rtcSetIntersectFunction8);
-    VERIFY_HANDLE(scene);
-    VERIFY_GEOMID(geomID);
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcSetIntersectFunction8);
+    RTCORE_VERIFY_HANDLE(scene);
+    RTCORE_VERIFY_GEOMID(geomID);
     ((Scene*)scene)->get_locked(geomID)->setIntersectFunction8(intersect8);
-    CATCH_END;
+    RTCORE_CATCH_END;
   }
   
   RTCORE_API void rtcSetIntersectFunction16 (RTCScene scene, unsigned geomID, RTCIntersectFunc16 intersect16) 
   {
-    CATCH_BEGIN;
-    TRACE(rtcSetIntersectFunction16);
-    VERIFY_HANDLE(scene);
-    VERIFY_GEOMID(geomID);
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcSetIntersectFunction16);
+    RTCORE_VERIFY_HANDLE(scene);
+    RTCORE_VERIFY_GEOMID(geomID);
     ((Scene*)scene)->get_locked(geomID)->setIntersectFunction16(intersect16);
-    CATCH_END;
+    RTCORE_CATCH_END;
   }
 
   RTCORE_API void rtcSetOccludedFunction (RTCScene scene, unsigned geomID, RTCOccludedFunc occluded) 
   {
-    CATCH_BEGIN;
-    TRACE(rtcSetOccludedFunction);
-    VERIFY_HANDLE(scene);
-    VERIFY_GEOMID(geomID);
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcSetOccludedFunction);
+    RTCORE_VERIFY_HANDLE(scene);
+    RTCORE_VERIFY_GEOMID(geomID);
     ((Scene*)scene)->get_locked(geomID)->setOccludedFunction(occluded);
-    CATCH_END;
+    RTCORE_CATCH_END;
   }
 
   RTCORE_API void rtcSetOccludedFunction4 (RTCScene scene, unsigned geomID, RTCOccludedFunc4 occluded4) 
   {
-    CATCH_BEGIN;
-    TRACE(rtcSetOccludedFunction4);
-    VERIFY_HANDLE(scene);
-    VERIFY_GEOMID(geomID);
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcSetOccludedFunction4);
+    RTCORE_VERIFY_HANDLE(scene);
+    RTCORE_VERIFY_GEOMID(geomID);
     ((Scene*)scene)->get_locked(geomID)->setOccludedFunction4(occluded4);
-    CATCH_END;
+    RTCORE_CATCH_END;
   }
 
   RTCORE_API void rtcSetOccludedFunction8 (RTCScene scene, unsigned geomID, RTCOccludedFunc8 occluded8) 
   {
-    CATCH_BEGIN;
-    TRACE(rtcSetOccludedFunction8);
-    VERIFY_HANDLE(scene);
-    VERIFY_GEOMID(geomID);
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcSetOccludedFunction8);
+    RTCORE_VERIFY_HANDLE(scene);
+    RTCORE_VERIFY_GEOMID(geomID);
     ((Scene*)scene)->get_locked(geomID)->setOccludedFunction8(occluded8);
-    CATCH_END;
+    RTCORE_CATCH_END;
   }
 
   RTCORE_API void rtcSetOccludedFunction16 (RTCScene scene, unsigned geomID, RTCOccludedFunc16 occluded16) 
   {
-    CATCH_BEGIN;
-    TRACE(rtcSetOccludedFunction16);
-    VERIFY_HANDLE(scene);
-    VERIFY_GEOMID(geomID);
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcSetOccludedFunction16);
+    RTCORE_VERIFY_HANDLE(scene);
+    RTCORE_VERIFY_GEOMID(geomID);
     ((Scene*)scene)->get_locked(geomID)->setOccludedFunction16(occluded16);
-    CATCH_END;
+    RTCORE_CATCH_END;
   }
 
   RTCORE_API void rtcSetIntersectionFilterFunction (RTCScene scene, unsigned geomID, RTCFilterFunc intersect) 
   {
-    CATCH_BEGIN;
-    TRACE(rtcSetIntersectionFilterFunction);
-    VERIFY_HANDLE(scene);
-    VERIFY_GEOMID(geomID);
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcSetIntersectionFilterFunction);
+    RTCORE_VERIFY_HANDLE(scene);
+    RTCORE_VERIFY_GEOMID(geomID);
     ((Scene*)scene)->get_locked(geomID)->setIntersectionFilterFunction(intersect);
-    CATCH_END;
+    RTCORE_CATCH_END;
   }
 
   RTCORE_API void rtcSetIntersectionFilterFunction4 (RTCScene scene, unsigned geomID, RTCFilterFunc4 filter4) 
   {
-    CATCH_BEGIN;
-    TRACE(rtcSetIntersectionFilterFunction4);
-    VERIFY_HANDLE(scene);
-    VERIFY_GEOMID(geomID);
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcSetIntersectionFilterFunction4);
+    RTCORE_VERIFY_HANDLE(scene);
+    RTCORE_VERIFY_GEOMID(geomID);
     ((Scene*)scene)->get_locked(geomID)->setIntersectionFilterFunction4(filter4);
-    CATCH_END;
+    RTCORE_CATCH_END;
   }
 
   RTCORE_API void rtcSetIntersectionFilterFunction8 (RTCScene scene, unsigned geomID, RTCFilterFunc8 filter8) 
   {
-    CATCH_BEGIN;
-    TRACE(rtcSetIntersectionFilterFunction8);
-    VERIFY_HANDLE(scene);
-    VERIFY_GEOMID(geomID);
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcSetIntersectionFilterFunction8);
+    RTCORE_VERIFY_HANDLE(scene);
+    RTCORE_VERIFY_GEOMID(geomID);
     ((Scene*)scene)->get_locked(geomID)->setIntersectionFilterFunction8(filter8);
-    CATCH_END;
+    RTCORE_CATCH_END;
   }
   
   RTCORE_API void rtcSetIntersectionFilterFunction16 (RTCScene scene, unsigned geomID, RTCFilterFunc16 filter16) 
   {
-    CATCH_BEGIN;
-    TRACE(rtcSetIntersectionFilterFunction16);
-    VERIFY_HANDLE(scene);
-    VERIFY_GEOMID(geomID);
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcSetIntersectionFilterFunction16);
+    RTCORE_VERIFY_HANDLE(scene);
+    RTCORE_VERIFY_GEOMID(geomID);
     ((Scene*)scene)->get_locked(geomID)->setIntersectionFilterFunction16(filter16);
-    CATCH_END;
+    RTCORE_CATCH_END;
   }
 
   RTCORE_API void rtcSetOcclusionFilterFunction (RTCScene scene, unsigned geomID, RTCFilterFunc intersect) 
   {
-    CATCH_BEGIN;
-    TRACE(rtcSetOcclusionFilterFunction);
-    VERIFY_HANDLE(scene);
-    VERIFY_GEOMID(geomID);
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcSetOcclusionFilterFunction);
+    RTCORE_VERIFY_HANDLE(scene);
+    RTCORE_VERIFY_GEOMID(geomID);
     ((Scene*)scene)->get_locked(geomID)->setOcclusionFilterFunction(intersect);
-    CATCH_END;
+    RTCORE_CATCH_END;
   }
 
   RTCORE_API void rtcSetOcclusionFilterFunction4 (RTCScene scene, unsigned geomID, RTCFilterFunc4 filter4) 
   {
-    CATCH_BEGIN;
-    TRACE(rtcSetOcclusionFilterFunction4);
-    VERIFY_HANDLE(scene);
-    VERIFY_GEOMID(geomID);
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcSetOcclusionFilterFunction4);
+    RTCORE_VERIFY_HANDLE(scene);
+    RTCORE_VERIFY_GEOMID(geomID);
     ((Scene*)scene)->get_locked(geomID)->setOcclusionFilterFunction4(filter4);
-    CATCH_END;
+    RTCORE_CATCH_END;
   }
 
   RTCORE_API void rtcSetOcclusionFilterFunction8 (RTCScene scene, unsigned geomID, RTCFilterFunc8 filter8) 
   {
-    CATCH_BEGIN;
-    TRACE(rtcSetOcclusionFilterFunction8);
-    VERIFY_HANDLE(scene);
-    VERIFY_GEOMID(geomID);
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcSetOcclusionFilterFunction8);
+    RTCORE_VERIFY_HANDLE(scene);
+    RTCORE_VERIFY_GEOMID(geomID);
     ((Scene*)scene)->get_locked(geomID)->setOcclusionFilterFunction8(filter8);
-    CATCH_END;
+    RTCORE_CATCH_END;
   }
   
   RTCORE_API void rtcSetOcclusionFilterFunction16 (RTCScene scene, unsigned geomID, RTCFilterFunc16 filter16) 
   {
-    CATCH_BEGIN;
-    TRACE(rtcSetOcclusionFilterFunction16);
-    VERIFY_HANDLE(scene);
-    VERIFY_GEOMID(geomID);
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcSetOcclusionFilterFunction16);
+    RTCORE_VERIFY_HANDLE(scene);
+    RTCORE_VERIFY_GEOMID(geomID);
     ((Scene*)scene)->get_locked(geomID)->setOcclusionFilterFunction16(filter16);
-    CATCH_END;
+    RTCORE_CATCH_END;
   }
-
-  /* new support for subdivision surfaces */
-  RTCORE_API unsigned rtcNewSubdivisionMesh (RTCScene scene, RTCGeometryFlags flags, size_t numFaces, size_t numEdges, size_t numVertices, 
-                                             size_t numEdgeCreases, size_t numVertexCreases, size_t numHoles, size_t numTimeSteps) 
-  {
-    CATCH_BEGIN;
-    TRACE(rtcNewSubdivisionMesh);
-    VERIFY_HANDLE(scene);
-    return ((Scene*)scene)->newSubdivisionMesh(flags,numFaces,numEdges,numVertices,numEdgeCreases,numVertexCreases,numHoles,numTimeSteps);
-    CATCH_END;
-    return -1;
-  }
-
 }

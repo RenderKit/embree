@@ -120,4 +120,32 @@ namespace embree
 
 #define MODE_HIGH_QUALITY (1<<8)
 #define LeafMode 0 // FIXME: remove
+
+/*! processes error codes, do not call directly */
+void process_error(RTCError error, const char* str);
+
+#define RTCORE_CATCH_BEGIN try {
+#define RTCORE_CATCH_END                                                       \
+  } catch (std::bad_alloc&) {                                           \
+    process_error(RTC_OUT_OF_MEMORY,"out of memory");                   \
+  } catch (rtcore_error& e) {                                       \
+    process_error(e.error,e.what());                                    \
+  } catch (std::exception& e) {                                         \
+    process_error(RTC_UNKNOWN_ERROR,e.what());                          \
+ } catch (...) {                                                        \
+    process_error(RTC_UNKNOWN_ERROR,"unknown exception caught");        \
+  }
+
+#define RTCORE_VERIFY_HANDLE(handle) \
+  if (handle == NULL) {                                                 \
+    throw_RTCError(RTC_INVALID_ARGUMENT,"invalid argument");             \
+  }
+
+#define RTCORE_VERIFY_GEOMID(id) \
+  if (id == -1) {                                                 \
+    throw_RTCError(RTC_INVALID_ARGUMENT,"invalid argument");       \
+  }
+
+#define RTCORE_TRACE(x) //std::cout << #x << std::endl;
+
 }
