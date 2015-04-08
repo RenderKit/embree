@@ -16,11 +16,8 @@
 
 #pragma once
 
-#include "../kernels/common/default.h"
+#include "default.h"
 #include "embree2/rtcore_ray.h"
-#include <iostream>
-#include <fstream>
-//#include <pthread.h>
 
 namespace embree
 {
@@ -48,9 +45,9 @@ namespace embree
   class RayStreamLogger
   {
   public:
-
-
-    class DataStream {
+  
+    class DataStream 
+    {
     private:
       bool initialized;
 
@@ -62,43 +59,36 @@ namespace embree
         data.open(filename.c_str(),std::ios::out | std::ios::binary);
         data.seekp(0, std::ios::beg);
         
-        if (!data) {
+        if (!data)
           THROW_RUNTIME_ERROR("could not open file: "+filename);
-        }
       }
       
     public:
 
-    DataStream(std::string name) : initialized(false) 
-        {
-          filename = name;
-        }
+      DataStream (std::string name) 
+        : initialized(false), filename(name)  {}
 
-      ~DataStream() {
+      ~DataStream() 
+      {
         if (initialized)
-          {
-            data.close();
-          }
+          data.close();
       }
-    
+      
       void write(void *ptr, const size_t size)
       {
         if (unlikely(!initialized))
-          {
-            open();
-            initialized = true;
-          }
-
+        {
+          open();
+          initialized = true;
+        }
+        
         data.write((char*)ptr,size);
         data << std::flush;
       }
-
     };
 
   private:
-
     MutexSys mutex;
-
     DataStream *ray16;
     DataStream *ray16_verify;
     DataStream *ray8;
@@ -165,21 +155,21 @@ namespace embree
       }
     };
 
-      
-  static RayStreamLogger rayStreamLogger;
-
-  void logRay16Intersect(const void* valid, void* scene, RTCRay16& start, RTCRay16& end);
-  void logRay16Occluded (const void* valid, void* scene, RTCRay16& start, RTCRay16& end);
-
-  void logRay8Intersect(const void* valid, void* scene, RTCRay8& start, RTCRay8& end);
-  void logRay8Occluded (const void* valid, void* scene, RTCRay8& start, RTCRay8& end);
-
-  void logRay4Intersect(const void* valid, void* scene, RTCRay4& start, RTCRay4& end);
-  void logRay4Occluded (const void* valid, void* scene, RTCRay4& start, RTCRay4& end);
-
-  void logRay1Intersect(void* scene, RTCRay& start, RTCRay& end);
-  void logRay1Occluded (void* scene, RTCRay& start, RTCRay& end);
-
-  void dumpGeometry(void* scene);
+    static RayStreamLogger rayStreamLogger;
+    
+    void logRay16Intersect(const void* valid, void* scene, RTCRay16& start, RTCRay16& end);
+    void logRay16Occluded (const void* valid, void* scene, RTCRay16& start, RTCRay16& end);
+    
+    void logRay8Intersect(const void* valid, void* scene, RTCRay8& start, RTCRay8& end);
+    void logRay8Occluded (const void* valid, void* scene, RTCRay8& start, RTCRay8& end);
+    
+    void logRay4Intersect(const void* valid, void* scene, RTCRay4& start, RTCRay4& end);
+    void logRay4Occluded (const void* valid, void* scene, RTCRay4& start, RTCRay4& end);
+    
+    void logRay1Intersect(void* scene, RTCRay& start, RTCRay& end);
+    void logRay1Occluded (void* scene, RTCRay& start, RTCRay& end);
+    
+    void dumpGeometry(void* scene);
   };
-};
+}
+

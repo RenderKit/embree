@@ -15,11 +15,8 @@
 // ======================================================================== //
 
 #include "raystream_log.h"
-#include "common/scene.h"
-#include "common/scene_triangle_mesh.h"
+#include "scene.h"
 #include "sys/filename.h"
-
-#define DBG(x) 
 
 namespace embree
 {
@@ -210,7 +207,7 @@ namespace embree
 
 
  void RayStreamLogger::logRay1Intersect(void* scene, RTCRay& start, RTCRay& end)
-  {
+ {
     mutex.lock();
 
     LogRay1 logRay1;
@@ -233,7 +230,7 @@ namespace embree
     mutex.lock();
 
     LogRay1 logRay1;
-
+    
     logRay1.type  = RAY_OCCLUDED;
 
     /* ray before intersect */
@@ -248,5 +245,4 @@ namespace embree
   }
 
   RayStreamLogger RayStreamLogger::rayStreamLogger;
-
 };
