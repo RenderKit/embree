@@ -18,7 +18,7 @@
 
 namespace embree
 {
-  UserGeometryBase::UserGeometryBase (Scene* parent, GeometryTy ty, size_t items)
+  UserGeometryBase::UserGeometryBase (Scene* parent, Geometry::Type ty, size_t items)
     : Geometry(parent,ty,1,1,RTC_GEOMETRY_STATIC), AccelSet(items)
   {
     enabling();

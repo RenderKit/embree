@@ -16,32 +16,19 @@
 
 #pragma once
 
-#include "embree2/rtcore.h"
-#include "common/default.h"
+#include "default.h"
 
 namespace embree
 {
   class Scene;
 
-  /*! type of geometry */
-  enum GeometryTy { TRIANGLE_MESH = 1, USER_GEOMETRY = 2, BEZIER_CURVES = 4, SUBDIV_MESH = 8 /*, INSTANCES = 16*/ };
-  
-#if defined(__SSE__)
-  typedef void (*ISPCFilterFunc4)(void* ptr, RTCRay4& ray, __m128 valid);
-#endif
-
-#if defined(__AVX__)
-  typedef void (*ISPCFilterFunc8)(void* ptr, RTCRay8& ray, __m256 valid);
-#endif
-
-#if defined(__MIC__)
-  typedef void (*ISPCFilterFunc16)(void* ptr, RTCRay16& ray, __mmask16 valid);
-#endif
-
   /*! Base class all geometries are derived from */
   class Geometry
   {
   public:
+
+    /*! type of geometry */
+    enum Type { TRIANGLE_MESH = 1, USER_GEOMETRY = 2, BEZIER_CURVES = 4, SUBDIV_MESH = 8 /*, INSTANCES = 16*/ };
 
     /*! state of a mesh */
     enum State { ENABLING, ENABLED, MODIFIED, DISABLING, DISABLED, ERASING }; // FIXME: cleanup these states
@@ -49,7 +36,7 @@ namespace embree
   public:
     
     /*! Geometry constructor */
-    Geometry (Scene* scene, GeometryTy type, size_t numPrimitives, size_t numTimeSteps, RTCGeometryFlags flags);
+    Geometry (Scene* scene, Type type, size_t numPrimitives, size_t numTimeSteps, RTCGeometryFlags flags);
 
     /*! Virtual destructor */
     virtual ~Geometry() {}
@@ -231,7 +218,7 @@ namespace embree
 
   public:
     Scene* parent;   //!< pointer to scene this mesh belongs to
-    GeometryTy type;
+    Type type;
     ssize_t numPrimitives;    //!< number of primitives of this geometry
     unsigned int numTimeSteps;        //!< number of time steps (1 or 2)
     unsigned int id;       //!< internal geometry ID

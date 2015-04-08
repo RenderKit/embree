@@ -65,7 +65,7 @@ namespace embree
     for (size_t i=0;i<scene->size();i++)
       {
 	if (unlikely(scene->get(i) == NULL)) continue;
-	if (unlikely((scene->get(i)->type != BEZIER_CURVES))) continue;
+	if (unlikely((scene->get(i)->type != Geometry::BEZIER_CURVES))) continue;
 	if (unlikely(!scene->get(i)->isEnabled())) continue;
         BezierCurves* geom = (BezierCurves*) scene->getBezierCurves(i);
 	numCurves += geom->numCurves;
@@ -112,7 +112,7 @@ namespace embree
     unsigned int g=0, numSkipped = 0;
     for (; g<numTotalGroups; g++) {       
       if (unlikely(scene->get(g) == NULL)) continue;
-      if (unlikely((scene->get(g)->type != BEZIER_CURVES))) continue;
+      if (unlikely((scene->get(g)->type != Geometry::BEZIER_CURVES))) continue;
       if (unlikely(!scene->get(g)->isEnabled())) continue;
       BezierCurves* geom = (BezierCurves*) scene->getBezierCurves(g);
       const size_t numPrims = geom->numCurves;
@@ -132,7 +132,7 @@ namespace embree
     for (; g<numTotalGroups; g++) 
       {
 	if (unlikely(scene->get(g) == NULL)) continue;
-	if (unlikely((scene->get(g)->type != BEZIER_CURVES))) continue;
+	if (unlikely((scene->get(g)->type != Geometry::BEZIER_CURVES))) continue;
 	if (unlikely(!scene->get(g)->isEnabled())) continue;
 
 	BezierCurves* geom = (BezierCurves*) scene->getBezierCurves(g);

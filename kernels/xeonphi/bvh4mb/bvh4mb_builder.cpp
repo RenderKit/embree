@@ -58,7 +58,7 @@ namespace embree
     unsigned int g=0, numSkipped = 0;
     for (; g<numGroups; g++) {       
       if (unlikely(scene->get(g) == NULL)) continue;
-      if (unlikely(scene->get(g)->type != TRIANGLE_MESH)) continue;
+      if (unlikely(scene->get(g)->type != Geometry::TRIANGLE_MESH)) continue;
       const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(g);
       if (unlikely(!mesh->isEnabled())) continue;
       if (unlikely(mesh->numTimeSteps == 1)) continue;
@@ -85,7 +85,7 @@ namespace embree
     for (; g<numGroups; g++) 
     {
       if (unlikely(scene->get(g) == NULL)) continue;
-      if (unlikely(scene->get(g)->type != TRIANGLE_MESH)) continue;
+      if (unlikely(scene->get(g)->type != Geometry::TRIANGLE_MESH)) continue;
       const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(g);
       if (unlikely(!mesh->isEnabled())) continue;
       if (unlikely(mesh->numTimeSteps == 1)) continue;

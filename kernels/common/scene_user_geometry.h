@@ -25,10 +25,10 @@ namespace embree
 {
   struct UserGeometryBase : public Geometry, public AccelSet
   {
-    static const GeometryTy geom_type = USER_GEOMETRY;
+    static const Geometry::Type geom_type = Geometry::USER_GEOMETRY;
     
   public:
-    UserGeometryBase (Scene* parent, GeometryTy ty, size_t items);
+    UserGeometryBase (Scene* parent, Geometry::Type ty, size_t items);
     
     __forceinline size_t size() const {
       return numItems;

@@ -22,6 +22,8 @@
 
 namespace embree
 {
+  typedef void (*ISPCFilterFunc16)(void* ptr, RTCRay16& ray, __mmask16 valid);
+
   __forceinline bool runIntersectionFilter1(const Geometry* const geometry, Ray& ray, 
                                             const mic_f& u, const mic_f& v, const mic_f& t, const mic_f& Ngx, const mic_f& Ngy, const mic_f& Ngz, const mic_m wmask, 
                                             const int geomID, const int primID)

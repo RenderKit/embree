@@ -276,7 +276,7 @@ PRINT(CORRECT_numPrims);
     unsigned int startGroup=0, numSkipped = 0;
     for (; startGroup<numGroups; startGroup++) {       
       if (unlikely(scene->get(startGroup) == NULL)) continue;
-      if (unlikely(scene->get(startGroup)->type != TRIANGLE_MESH)) continue;
+      if (unlikely(scene->get(startGroup)->type != Geometry::TRIANGLE_MESH)) continue;
       const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(startGroup);
       if (unlikely(!mesh->isEnabled())) continue;
       if (unlikely(mesh->numTimeSteps != 1)) continue;
@@ -296,7 +296,7 @@ PRINT(CORRECT_numPrims);
       for (unsigned int g=startGroup; g<numGroups; g++) 
 	{
 	  if (unlikely(scene->get(g) == NULL)) continue;
-	  if (unlikely(scene->get(g)->type != TRIANGLE_MESH)) continue;
+	  if (unlikely(scene->get(g)->type != Geometry::TRIANGLE_MESH)) continue;
 	  const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(g);
 	  if (unlikely(!mesh->isEnabled())) continue;
 	  if (unlikely(mesh->numTimeSteps != 1)) continue;
@@ -346,7 +346,7 @@ PRINT(CORRECT_numPrims);
     unsigned int startGroup=0, numSkipped = 0;
     for (; startGroup<numGroups; startGroup++) {       
       if (unlikely(scene->get(startGroup) == NULL)) continue;
-      if (unlikely(scene->get(startGroup)->type != TRIANGLE_MESH)) continue;
+      if (unlikely(scene->get(startGroup)->type != Geometry::TRIANGLE_MESH)) continue;
       const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(startGroup);
       if (unlikely(!mesh->isEnabled())) continue;
       if (unlikely(mesh->numTimeSteps != 1)) continue;
@@ -372,7 +372,7 @@ PRINT(CORRECT_numPrims);
       for (unsigned int g=startGroup; g<numGroups; g++) 
 	{
 	  if (unlikely(scene->get(g) == NULL)) continue;
-	  if (unlikely(scene->get(g)->type != TRIANGLE_MESH)) continue;
+	  if (unlikely(scene->get(g)->type != Geometry::TRIANGLE_MESH)) continue;
 	  const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(g);
 	  if (unlikely(!mesh->isEnabled())) continue;
 	  if (unlikely(mesh->numTimeSteps != 1)) continue;
@@ -451,7 +451,7 @@ PRINT(CORRECT_numPrims);
       for (unsigned int g=startGroup; g<numGroups; g++) 
 	{
 	  if (unlikely(scene->get(g) == NULL)) continue;
-	  if (unlikely(scene->get(g)->type != TRIANGLE_MESH)) continue;
+	  if (unlikely(scene->get(g)->type != Geometry::TRIANGLE_MESH)) continue;
 	  const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(g);
 	  if (unlikely(!mesh->isEnabled())) continue;
 	  if (unlikely(mesh->numTimeSteps != 1)) continue;
@@ -634,7 +634,7 @@ PRINT(CORRECT_numPrims);
     for (size_t i=0;i<scene->size();i++)
       {
 	if (unlikely(scene->get(i) == NULL)) continue;
-	if (unlikely((scene->get(i)->type != USER_GEOMETRY) /*&& (scene->get(i)->type != INSTANCES)*/)) continue;
+	if (unlikely((scene->get(i)->type != Geometry::USER_GEOMETRY) /*&& (scene->get(i)->type != INSTANCES)*/)) continue;
 	if (unlikely(!scene->get(i)->isEnabled())) continue;
         UserGeometryBase* geom = (UserGeometryBase*) scene->get(i);
 	numVirtualObjects += geom->size();
@@ -667,7 +667,7 @@ PRINT(CORRECT_numPrims);
     unsigned int g=0, numSkipped = 0;
     for (; g<numTotalGroups; g++) {       
       if (unlikely(scene->get(g) == NULL)) continue;
-      if (unlikely((scene->get(g)->type != USER_GEOMETRY) /*&& (scene->get(g)->type != INSTANCES)*/)) continue;
+      if (unlikely((scene->get(g)->type != Geometry::USER_GEOMETRY) /*&& (scene->get(g)->type != INSTANCES)*/)) continue;
       if (unlikely(!scene->get(g)->isEnabled())) continue;
       const UserGeometryBase* const geom = (UserGeometryBase*) scene->get(g);
       const size_t numPrims = geom->size();
@@ -688,7 +688,7 @@ PRINT(CORRECT_numPrims);
     for (; g<numTotalGroups; g++) 
       {
 	if (unlikely(scene->get(g) == NULL)) continue;
-	if (unlikely((scene->get(g)->type != USER_GEOMETRY ) /*&& (scene->get(g)->type != INSTANCES)*/)) continue;
+	if (unlikely((scene->get(g)->type != Geometry::USER_GEOMETRY ) /*&& (scene->get(g)->type != INSTANCES)*/)) continue;
 	if (unlikely(!scene->get(g)->isEnabled())) continue;
 
 	UserGeometryBase *virtual_geometry = (UserGeometryBase *)scene->get(g);
@@ -977,7 +977,7 @@ PRINT(CORRECT_numPrims);
     // for (size_t i=0;i<scene->size();i++)
     //   {
     // 	if (unlikely(scene->get(i) == NULL)) continue;
-    // 	if (unlikely((scene->get(i)->type != SUBDIV_MESH) /*&& (scene->get(i)->type != INSTANCES)*/)) continue;
+    // 	if (unlikely((scene->get(i)->type != Geometry::SUBDIV_MESH) /*&& (scene->get(i)->type != INSTANCES)*/)) continue;
     // 	if (unlikely(!scene->get(i)->isEnabled())) continue;
     //     SubdivMesh* geom = (SubdivMesh*) scene->get(i);
     // 	numFaces += geom->size();
@@ -1249,7 +1249,7 @@ PRINT(CORRECT_numPrims);
     unsigned int g=0, numSkipped = 0;
     for (; g<numTotalGroups; g++) {       
       if (unlikely(scene->get(g) == NULL)) continue;
-      if (unlikely((scene->get(g)->type != SUBDIV_MESH) /*&& (scene->get(g)->type != INSTANCES)*/)) continue;
+      if (unlikely((scene->get(g)->type != Geometry::SUBDIV_MESH) /*&& (scene->get(g)->type != INSTANCES)*/)) continue;
       if (unlikely(!scene->get(g)->isEnabled())) continue;
       const SubdivMesh* const geom = (SubdivMesh*) scene->get(g);
       const size_t numPrims = geom->size();
@@ -1272,7 +1272,7 @@ PRINT(CORRECT_numPrims);
     for (; g<numTotalGroups; g++) 
       {
 	if (unlikely(scene->get(g) == NULL)) continue;
-	if (unlikely((scene->get(g)->type != SUBDIV_MESH ) /*&& (scene->get(g)->type != INSTANCES)*/)) continue;
+	if (unlikely((scene->get(g)->type != Geometry::SUBDIV_MESH ) /*&& (scene->get(g)->type != INSTANCES)*/)) continue;
 	if (unlikely(!scene->get(g)->isEnabled())) continue;
 
 	SubdivMesh *subdiv_mesh = (SubdivMesh *)scene->get(g);

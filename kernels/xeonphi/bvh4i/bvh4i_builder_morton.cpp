@@ -70,7 +70,7 @@ namespace embree
     for (size_t group=0; group<numGroups; group++) 
       {
 	if (unlikely(scene->get(group) == NULL)) continue;
-	if (scene->get(group)->type != TRIANGLE_MESH) continue;
+	if (scene->get(group)->type != Geometry::TRIANGLE_MESH) continue;
 	const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(group);
 	if (unlikely(!mesh->isEnabled())) continue;
 	if (unlikely(mesh->numTimeSteps != 1)) continue;
@@ -293,7 +293,7 @@ namespace embree
     for (; group<numGroups; group++) 
     {       
       if (unlikely(scene->get(group) == NULL)) continue;
-      if (scene->get(group)->type != TRIANGLE_MESH) continue;
+      if (scene->get(group)->type != Geometry::TRIANGLE_MESH) continue;
       const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(group);
       if (unlikely(!mesh->isEnabled())) continue;
       if (unlikely(mesh->numTimeSteps != 1)) continue;
@@ -330,7 +330,7 @@ namespace embree
     for (size_t group = startGroup; group<numGroups; group++) 
     {       
       if (unlikely(scene->get(group) == NULL)) continue;
-      if (unlikely(scene->get(group)->type != TRIANGLE_MESH)) continue;
+      if (unlikely(scene->get(group)->type != Geometry::TRIANGLE_MESH)) continue;
       const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(group);
       if (unlikely(!mesh->isEnabled())) continue;
       if (unlikely(mesh->numTimeSteps != 1)) continue;
@@ -401,7 +401,7 @@ namespace embree
     for (size_t group = thread_startGroup[threadID]; group<numGroups; group++) 
     {       
       if (unlikely(scene->get(group) == NULL)) continue;
-      if (unlikely(scene->get(group)->type != TRIANGLE_MESH)) continue;
+      if (unlikely(scene->get(group)->type != Geometry::TRIANGLE_MESH)) continue;
       const TriangleMesh* const mesh = scene->getTriangleMesh(group);
       if (unlikely(!mesh->isEnabled())) continue;
       if (unlikely(mesh->numTimeSteps != 1)) continue;

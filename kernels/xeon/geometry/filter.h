@@ -32,6 +32,14 @@ namespace embree
 {
   namespace isa
   {
+#if defined(__SSE__)
+    typedef void (*ISPCFilterFunc4)(void* ptr, RTCRay4& ray, __m128 valid);
+#endif
+    
+#if defined(__AVX__)
+  typedef void (*ISPCFilterFunc8)(void* ptr, RTCRay8& ray, __m256 valid);
+#endif
+
     __forceinline bool runIntersectionFilter1(const Geometry* const geometry, Ray& ray, 
                                               const float& u, const float& v, const float& t, const Vec3fa& Ng, const int geomID, const int primID)
     {
