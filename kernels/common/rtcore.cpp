@@ -20,10 +20,10 @@
 #  define RTCORE_API extern "C" __attribute__ ((visibility ("default")))
 #endif
 
-#include "common/default.h"
-#include "common/alloc.h"
+#include "default.h"
+#include "alloc.h"
 #include "embree2/rtcore.h"
-#include "common/scene.h"
+#include "scene.h"
 #include "sys/thread.h"
 #include "raystream_log.h"
 #include "version.h"

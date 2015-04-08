@@ -16,16 +16,16 @@
 
 #pragma once
 
-#include "common/default.h"
+#include "default.h"
 
 #include "scene_triangle_mesh.h"
 #include "scene_user_geometry.h"
 #include "scene_bezier_curves.h"
 #include "scene_subdiv_mesh.h"
 
-#include "common/subdiv/tessellation_cache.h"
+#include "subdiv/tessellation_cache.h"
 
-#include "common/acceln.h"
+#include "acceln.h"
 #include "geometry.h"
 
 namespace embree

@@ -16,8 +16,8 @@
 
 #pragma once
 
-#include "common/geometry.h"
-#include "common/buffer.h"
+#include "geometry.h"
+#include "buffer.h"
 #include "algorithms/pmap.h"
 #include "algorithms/pset.h"
 

@@ -14,7 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "common/default.h"
+#include "default.h"
 #include "scene.h"
 
 namespace embree

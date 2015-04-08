@@ -16,10 +16,10 @@
 
 #pragma once
 
-#include "common/default.h"
-#include "common/accel.h"
-#include "common/accelset.h"
-#include "common/geometry.h"
+#include "default.h"
+#include "accel.h"
+#include "accelset.h"
+#include "geometry.h"
 
 namespace embree
 {
