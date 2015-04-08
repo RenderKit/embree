@@ -46,6 +46,8 @@ namespace embree
     Crease(float w, int a, int b) : w(w), a(a), b(b) {};
   };
 
+
+
   static inline bool operator < ( const Vertex& a, const Vertex& b ) {
     if (a.v  != b.v)  return a.v  < b.v;
     if (a.vn != b.vn) return a.vn < b.vn;
@@ -140,6 +142,10 @@ namespace embree
     avector<Vec3fa> vn;
     std::vector<Vec2f> vt;
     std::vector<Crease> ec;
+
+    std::vector<int> vc;    
+    std::vector<float> vcw; 
+
     std::vector<std::vector<Vertex> > curGroup;
     AffineSpace3f space;
 
@@ -231,6 +237,14 @@ namespace embree
 	int b = fix_v(getInt(token));
 	parseSepOpt(token);
 	ec.push_back(Crease(w, a, b));
+
+	// HACK: EDGE CREASES FORCE VERTEX CREASES
+#if 1
+	vc.push_back(a);
+	vc.push_back(b);
+	vcw.push_back(w);
+	vcw.push_back(w);
+#endif
 	continue;
       }
 
@@ -433,6 +447,11 @@ namespace embree
 	    mesh->edge_creases.push_back(Vec2i(ec[i].a, ec[i].b));
 	  mesh->edge_crease_weights.push_back(ec[i].w);
 	}
+
+	for (size_t i=0;i<vc.size();++i) 
+	  mesh->vertex_creases.push_back(vc[i]);
+	for (size_t i=0;i<vcw.size();++i) 
+	  mesh->vertex_crease_weights.push_back(vcw[i]);	  
 
 	for (size_t j=0; j < curGroup.size(); j++)
 	  {

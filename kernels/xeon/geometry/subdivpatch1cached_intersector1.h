@@ -27,7 +27,6 @@
 /* returns u,v based on individual triangles instead relative to original patch */
 #define FORCE_TRIANGLE_UV 0
 
-
 namespace embree
 {
   namespace isa
