@@ -64,7 +64,7 @@ namespace embree
       
       reduction_t(leftReduction ,*r);
       reduction_t(rightReduction,*l);
-      std::swap(*l,*r);
+      xchg(*l,*r);
       l++; r--;
     }
     
@@ -159,7 +159,7 @@ namespace embree
       {
         assert(index0 != index1);
         for (size_t i=0;i<BLOCK_SIZE;i++)
-          std::swap(array[index0+i],array[index1+i]);                
+          xchg(array[index0+i],array[index1+i]);                
       }
 
       /* swap to left blocks */
@@ -224,7 +224,7 @@ namespace embree
 
             reduction_t(leftReduc ,*r);
             reduction_t(rightReduc,*l);
-            std::swap(*l,*r);
+            xchg(*l,*r);
             l++; r--;
           }
       
@@ -264,7 +264,7 @@ namespace embree
 
             if (unlikely(left_begin == left_end || right_begin == right_end)) break;
             
-            std::swap(array[left_begin++],array[right_begin++]);
+            xchg(array[left_begin++],array[right_begin++]);
           }
 
         size_t mode = 0;

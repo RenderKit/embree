@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "common/default.h"
+#include "default.h"
 
 namespace embree
 {
@@ -44,12 +44,14 @@ namespace embree
     }
 #endif
 
-    __forceinline PrimRef (const BBox3fa& bounds, unsigned geomID, unsigned primID) {
+    __forceinline PrimRef (const BBox3fa& bounds, unsigned geomID, unsigned primID) 
+    {
       lower = bounds.lower; lower.a = geomID;
       upper = bounds.upper; upper.a = primID;
     }
 
-    __forceinline PrimRef (const BBox3fa& bounds, size_t id) {
+    __forceinline PrimRef (const BBox3fa& bounds, size_t id) 
+    {
 #if defined(__X86_64__)
       lower = bounds.lower; lower.u = id & 0xFFFFFFFF;
       upper = bounds.upper; upper.u = (id >> 32) & 0xFFFFFFFF;
@@ -104,19 +106,20 @@ namespace embree
       return p0.ID64() < p1.ID64();
     }
 
+    /*! Outputs primitive reference to a stream. */
+    friend __forceinline std::ostream& operator<<(std::ostream& cout, const PrimRef& ref) {
+      return cout << "{ lower = " << ref.lower << ", upper = " << ref.upper << ", geomID = " << ref.geomID() << ", primID = " << ref.primID() << " }";
+    }
+
   public:
     Vec3fa lower;     //!< lower bounds and geomID
     Vec3fa upper;     //!< upper bounds and primID
   };
 
-  /*! Outputs primitive reference to a stream. */
-  inline std::ostream& operator<<(std::ostream& cout, const PrimRef& ref) {
-    return cout << "{ lower = " << ref.lower << ", upper = " << ref.upper << ", geomID = " << ref.geomID() << ", primID = " << ref.primID() << " }";
-  }
-
+  /*! fast exchange for PrimRefs */
   __forceinline void xchg(PrimRef& a, PrimRef& b)
   {
-#if defined(__AVX__) || defined(__AVX2__)
+#if defined(__AVX__)
     const avxf aa = load8f((float*)&a);
     const avxf bb = load8f((float*)&b);
     store8f((float*)&a,bb);
@@ -129,57 +132,5 @@ namespace embree
 #else
     std::swap(a,b);
 #endif
-  }
-
-#if 0
-  __forceinline bool subset(const PrimRef& a, const PrimRef& b)
-  { 
-    for ( size_t i = 0 ; i < 3 ; i++ ) if ( a.lower[i] < b.lower[i] ) return false;
-    for ( size_t i = 0 ; i < 3 ; i++ ) if ( a.upper[i] > b.upper[i] ) return false;
-    return true; 
-  }
-
-
-  __forceinline float area( const PrimRef& a ) 
-  { 
-    const Vec3fa d = a.upper - a.lower; 
-    return 2.0f*(d.x*(d.y+d.z)+d.y*d.z); 
-  }
-#endif
-
-  __forceinline void splitTriangle(const PrimRef& prim, int dim, float pos, 
-                                   const Vec3fa& a, const Vec3fa& b, const Vec3fa& c, PrimRef& left_o, PrimRef& right_o)
-  {
-    BBox3fa left = empty, right = empty;
-    const Vec3fa v[3] = { a,b,c };
-    
-    /* clip triangle to left and right box by processing all edges */
-    Vec3fa v1 = v[2];
-    for (size_t i=0; i<3; i++)
-    {
-      Vec3fa v0 = v1; v1 = v[i];
-      float v0d = v0[dim], v1d = v1[dim];
-      
-      if (v0d <= pos) left. extend(v0); // this point is on left side
-      if (v0d >= pos) right.extend(v0); // this point is on right side
-      
-      if ((v0d < pos && pos < v1d) || (v1d < pos && pos < v0d)) // the edge crosses the splitting location
-      {
-        assert((v1d-v0d) != 0.0f);
-        Vec3fa c = v0 + (pos-v0d)/(v1d-v0d)*(v1-v0);
-        left.extend(c);
-        right.extend(c);
-      }
-    }
-    //assert(!left.empty());  // happens if split does not hit triangle
-    //assert(!right.empty()); // happens if split does not hit triangle
-    
-    /* clip against current bounds */
-    BBox3fa bounds = prim.bounds();
-    BBox3fa cleft (max(left .lower,bounds.lower),min(left .upper,bounds.upper));
-    BBox3fa cright(max(right.lower,bounds.lower),min(right.upper,bounds.upper));
-    
-    new (&left_o ) PrimRef(cleft, prim.geomID(), prim.primID());
-    new (&right_o) PrimRef(cright,prim.geomID(), prim.primID());
   }
 }

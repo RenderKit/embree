@@ -19,6 +19,7 @@
 #include "common/scene.h"
 #include "common/primref.h"
 #include "builders/priminfo.h"
+#include "geometry/triangle1.h"
 #include "geometry/bezier1v.h"
 
 #include "algorithms/parallel_reduce.h"
