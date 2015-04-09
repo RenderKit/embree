@@ -15,7 +15,7 @@
 // ======================================================================== //
 
 #include "state.h"
-#include "lexers/tokenstream.h"
+#include "lexers/streamfilters.h"
 
 namespace embree
 {
@@ -70,19 +70,35 @@ namespace embree
     //  g_errors.clear();
   }
 
-  void State::parse(const char* cfg)
+  static std::vector<std::string> symbols { "=", ",", "|" };
+
+  bool State::parseFile(const FileName& fileName)
+  {
+    Ref<Stream<int> > file;
+    try {
+      file = new FileStream(fileName);
+    } catch (const std::runtime_error&) {
+      return false;
+    }
+    Ref<TokenStream> cin = new TokenStream(new LineCommentFilter(file,"#"),
+                                           TokenStream::alpha+TokenStream::ALPHA+TokenStream::numbers+"_.",
+                                           TokenStream::separators,symbols);
+    parse(cin);
+    return true;
+  }
+
+  void State::parseString(const char* cfg)
   {
     if (cfg == NULL) return;
 
-    /* create token stream */
-    std::vector<std::string> symbols;
-    symbols.push_back("=");
-    symbols.push_back(",");
-    symbols.push_back("|");
     Ref<TokenStream> cin = new TokenStream(new StrStream(cfg),
                                            TokenStream::alpha+TokenStream::ALPHA+TokenStream::numbers+"_.",
-                                           TokenStream::separators);
+                                           TokenStream::separators,symbols);
+    parse(cin);
+  }
 
+  void State::parse(Ref<TokenStream> cin)
+  {
     /* parse until end of stream */
     while (cin->peek() != Token::Eof())
     {

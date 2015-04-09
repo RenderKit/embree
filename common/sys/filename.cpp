@@ -14,8 +14,8 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "platform.h"
 #include "filename.h"
+#include "sysinfo.h"
 
 namespace embree
 {
@@ -46,6 +46,21 @@ namespace embree
         filename[i] = path_sep;
     while (!filename.empty() && filename[filename.size()-1] == path_sep)
       filename.resize(filename.size()-1);
+  }
+  
+  /*! returns path to home folder */
+  FileName FileName::homeFolder() 
+  {
+#ifdef __WIN32__
+    return getenv("UserProfile");
+#else
+    return getenv("HOME");
+#endif
+  }
+
+  /*! returns path to executable */
+  FileName FileName::executableFolder() {
+    return FileName(getExecutableFileName()).path();
   }
 
   /*! returns the path */

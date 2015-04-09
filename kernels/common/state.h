@@ -17,6 +17,7 @@
 #pragma once
 
 #include "default.h"
+#include "lexers/tokenstream.h"
 
 namespace embree
 {
@@ -31,8 +32,14 @@ namespace embree
     /*! clears the state to its defaults */
     void clear();
 
+    /*! parses state from a configuration file */
+    bool parseFile(const FileName& fileName);
+
     /*! parses the state from a string */
-    void parse(const char* cfg);
+    void parseString(const char* cfg);
+
+    /*! parses the state from a stream */
+    void parse(Ref<TokenStream> cin);
 
     /*! prints the state */
     void print();

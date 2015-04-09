@@ -142,8 +142,8 @@ namespace embree
 
   RTCORE_API void rtcInit(const char* cfg) 
   {
-    RTCORE_TRACE(rtcInit);
     RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcInit);
 
     Lock<MutexSys> lock(g_mutex);
     if (g_initialized)
@@ -151,11 +151,13 @@ namespace embree
 
     g_initialized = true;
 
-    /* reset global state */
-    State::instance()->clear();
-    State::instance()->parse(cfg);
+    /* initialize global state */
     init_globals();
-
+    State::instance()->clear();
+    State::instance()->parseString(cfg);
+    State::instance()->parseFile(FileName::executableFolder()+FileName(".embree"));
+    State::instance()->parseFile(FileName::homeFolder()+FileName(".embree"));
+    
     if (State::instance()->tessellation_cache_size)
       resizeTessellationCache( State::instance()->tessellation_cache_size );
 
@@ -262,8 +264,8 @@ namespace embree
   
   RTCORE_API void rtcExit() 
   {
-    RTCORE_TRACE(rtcExit);
     RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcExit);
     
     Lock<MutexSys> lock(g_mutex);
     if (!g_initialized)
