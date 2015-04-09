@@ -15,52 +15,10 @@
 // ======================================================================== //
 
 #include "state.h"
-#include "lexers/parsestream.h"
+#include "lexers/tokenstream.h"
 
 namespace embree
 {
-  void skipSpace(const char* str, size_t& pos) {
-    while (str[pos] == ' ') pos++;
-  }
-
-  int parseInt(const char* str, size_t& pos) 
-  {
-    skipSpace(str,pos);
-    size_t begin = pos;
-    while (isdigit(str[pos])) pos++;
-    return atoi(str+begin);
-  }
-
-  float parseFloat(const char* str, size_t& pos) 
-  {
-    skipSpace(str,pos);
-    size_t begin = pos;
-    while (isdigit(str[pos]) || str[pos] == '.') pos++;
-    return atof(str+begin);
-  }
-
-  std::string parseIdentifier(const char* str, size_t& pos) 
-  {
-    skipSpace(str,pos);
-    size_t begin = pos;
-    while (isalnum(str[pos]) || str[pos] == '_' || str[pos] == '.') pos++;
-    return std::string(str+begin,str+pos);
-  }
-
-  bool parseSymbol(const char* str, char c, size_t& pos) 
-  {
-    skipSpace(str,pos);
-    if (str[pos] == c) { pos++; return true; }
-    return false;
-  }
-
-  bool findNext(const char* str, char c, size_t& pos) 
-  {
-    while (str[pos] && str[pos] != c) pos++;
-    if (str[pos] == c) { pos++; return true; }
-    else return false;
-  }
-
   /* error flag */
   tls_t State::g_error = NULL; // FIXME: use thread local
   std::vector<RTCError*> State::g_errors; // FIXME: use thread local
@@ -116,25 +74,26 @@ namespace embree
   {
     if (cfg == NULL) return;
 
-#if 0
-
+    /* create token stream */
     std::vector<std::string> symbols;
     symbols.push_back("=");
-    Ref<ParseStream> stream = new TokenStream(new StrStream(cfg),
-                                              TokenStream::alpha+TokenStream::ALPHA+TokenStream::numbers+"_",
-                                              TokenStream::separators);
+    symbols.push_back(",");
+    symbols.push_back("|");
+    Ref<TokenStream> cin = new TokenStream(new StrStream(cfg),
+                                           TokenStream::alpha+TokenStream::ALPHA+TokenStream::numbers+"_.",
+                                           TokenStream::separators);
 
-    std::string tag = cin->getString();
-    if (tag == "") return;
+    /* parse until end of stream */
+    while (cin->peek() != Token::Eof())
+    {
+      const Token tok = cin->get();
 
-    std::string tok = parseIdentifier (cfg,pos);
+      if (tok == Token::Id("threads") && cin->trySymbol("=")) 
+        g_numThreads = cin->get().Int();
       
-      if (tok == "threads" && parseSymbol(cfg,'=',pos)) 
-        g_numThreads = parseInt(cfg,pos);
-
-      else if (tok == "isa" && parseSymbol (cfg,'=',pos)) 
+      else if (tok == Token::Id("isa") && cin->trySymbol("=")) 
       {
-        std::string isa = parseIdentifier (cfg,pos);
+        std::string isa = cin->get().Identifier();
         if      (isa == "sse" ) setCPUFeatures(SSE);
         else if (isa == "sse2") setCPUFeatures(SSE2);
         else if (isa == "sse3") setCPUFeatures(SSE3);
@@ -148,152 +107,65 @@ namespace embree
         else if (isa == "avx2") setCPUFeatures(AVX2);
       }
       
-      else if ((tok == "tri_accel" || tok == "accel") && parseSymbol (cfg,'=',pos))
-        tri_accel = parseIdentifier (cfg,pos);
-      else if ((tok == "tri_builder" || tok == "builder") && parseSymbol (cfg,'=',pos))
-        tri_builder = parseIdentifier (cfg,pos);
-      else if ((tok == "tri_traverser" || tok == "traverser") && parseSymbol (cfg,'=',pos))
-        tri_traverser = parseIdentifier (cfg,pos);
-      else if (tok == "tri_builder_replication_factor" && parseSymbol (cfg,'=',pos))
-        tri_builder_replication_factor = parseInt (cfg,pos);
+      else if ((tok == Token::Id("tri_accel") || tok == Token::Id("accel")) && cin->trySymbol("="))
+        tri_accel = cin->get().Identifier();
+      else if ((tok == Token::Id("tri_builder") || tok == Token::Id("builder")) && cin->trySymbol("="))
+        tri_builder = cin->get().Identifier();
+      else if ((tok == Token::Id("tri_traverser") || tok == Token::Id("traverser")) && cin->trySymbol("="))
+        tri_traverser = cin->get().Identifier();
+      else if (tok == Token::Id("tri_builder_replication_factor") && cin->trySymbol("="))
+        tri_builder_replication_factor = cin->get().Int();
       
-      else if ((tok == "tri_accel_mb" || tok == "accel_mb") && parseSymbol (cfg,'=',pos))
-        tri_accel_mb = parseIdentifier (cfg,pos);
-      else if ((tok == "tri_builder_mb" || tok == "builder_mb") && parseSymbol (cfg,'=',pos))
-        tri_builder_mb = parseIdentifier (cfg,pos);
-      else if ((tok == "tri_traverser_mb" || tok == "traverser_mb") && parseSymbol (cfg,'=',pos))
-        tri_traverser_mb = parseIdentifier (cfg,pos);
+      else if ((tok == Token::Id("tri_accel_mb") || tok == Token::Id("accel_mb")) && cin->trySymbol("="))
+        tri_accel_mb = cin->get().Identifier();
+      else if ((tok == Token::Id("tri_builder_mb") || tok == Token::Id("builder_mb")) && cin->trySymbol("="))
+        tri_builder_mb = cin->get().Identifier();
+      else if ((tok == Token::Id("tri_traverser_mb") || tok == Token::Id("traverser_mb")) && cin->trySymbol("="))
+        tri_traverser_mb = cin->get().Identifier();
       
-      else if (tok == "hair_accel" && parseSymbol (cfg,'=',pos))
-        hair_accel = parseIdentifier (cfg,pos);
-      else if (tok == "hair_builder" && parseSymbol (cfg,'=',pos))
-        hair_builder = parseIdentifier (cfg,pos);
-      else if (tok == "hair_traverser" && parseSymbol (cfg,'=',pos))
-        hair_traverser = parseIdentifier (cfg,pos);
-      else if (tok == "hair_builder_replication_factor" && parseSymbol (cfg,'=',pos))
-        hair_builder_replication_factor = parseInt (cfg,pos);
+      else if (tok == Token::Id("hair_accel") && cin->trySymbol("="))
+        hair_accel = cin->get().Identifier();
+      else if (tok == Token::Id("hair_builder") && cin->trySymbol("="))
+        hair_builder = cin->get().Identifier();
+      else if (tok == Token::Id("hair_traverser") && cin->trySymbol("="))
+        hair_traverser = cin->get().Identifier();
+      else if (tok == Token::Id("hair_builder_replication_factor") && cin->trySymbol("="))
+        hair_builder_replication_factor = cin->get().Int();
       
-      else if (tok == "subdiv_accel" && parseSymbol (cfg,'=',pos))
-        subdiv_accel = parseIdentifier (cfg,pos);
+      else if (tok == Token::Id("subdiv_accel") && cin->trySymbol("="))
+        subdiv_accel = cin->get().Identifier();
       
-      else if (tok == "verbose" && parseSymbol (cfg,'=',pos))
-        verbose = parseInt (cfg,pos);
-      else if (tok == "benchmark" && parseSymbol (cfg,'=',pos))
-        benchmark = parseInt (cfg,pos);
+      else if (tok == Token::Id("verbose") && cin->trySymbol("="))
+        verbose = cin->get().Int();
+      else if (tok == Token::Id("benchmark") && cin->trySymbol("="))
+        benchmark = cin->get().Int();
       
-      else if (tok == "flags") {
+      else if (tok == Token::Id("flags")) {
         scene_flags = 0;
-        if (parseSymbol (cfg,'=',pos)) {
+        if (cin->trySymbol("=")) {
           do {
-            std::string flag = parseIdentifier (cfg,pos);
-            if      (flag == "static" ) scene_flags |= RTC_SCENE_STATIC;
-            else if (flag == "dynamic") scene_flags |= RTC_SCENE_DYNAMIC;
-            else if (flag == "compact") scene_flags |= RTC_SCENE_COMPACT;
-            else if (flag == "coherent") scene_flags |= RTC_SCENE_COHERENT;
-            else if (flag == "incoherent") scene_flags |= RTC_SCENE_INCOHERENT;
-            else if (flag == "high_quality") scene_flags |= RTC_SCENE_HIGH_QUALITY;
-            else if (flag == "robust") scene_flags |= RTC_SCENE_ROBUST;
-          } while (parseSymbol (cfg,',',pos));
+            Token flag = cin->get();
+            if      (flag == Token::Id("static") ) scene_flags |= RTC_SCENE_STATIC;
+            else if (flag == Token::Id("dynamic")) scene_flags |= RTC_SCENE_DYNAMIC;
+            else if (flag == Token::Id("compact")) scene_flags |= RTC_SCENE_COMPACT;
+            else if (flag == Token::Id("coherent")) scene_flags |= RTC_SCENE_COHERENT;
+            else if (flag == Token::Id("incoherent")) scene_flags |= RTC_SCENE_INCOHERENT;
+            else if (flag == Token::Id("high_quality")) scene_flags |= RTC_SCENE_HIGH_QUALITY;
+            else if (flag == Token::Id("robust")) scene_flags |= RTC_SCENE_ROBUST;
+          } while (cin->trySymbol("|"));
         }
       }
-      else if (tok == "memory_preallocation_factor" && parseSymbol (cfg,'=',pos)) 
-        memory_preallocation_factor = parseFloat (cfg,pos);
+      else if (tok == Token::Id("memory_preallocation_factor") && cin->trySymbol("=")) 
+        memory_preallocation_factor = cin->get().Float();
+      
+      else if (tok == Token::Id("regression") && cin->trySymbol("=")) 
+        regression_testing = cin->get().Int();
+      
+      else if (tok == Token::Id("tessellation_cache_size") && cin->trySymbol("="))
+        tessellation_cache_size = cin->get().Float() * 1024 * 1024;
 
-      else if (tok == "regression" && parseSymbol (cfg,'=',pos)) 
-        regression_testing = parseInt (cfg,pos);
-
-      else if (tok == "tessellation_cache_size" && parseSymbol (cfg,'=',pos))
-      {
-        tessellation_cache_size = parseFloat (cfg,pos) * 1024 * 1024;
-        
-      }        
-    } while (findNext (cfg,',',pos));
-
-#else
-    size_t pos = 0;
-    do {
-      std::string tok = parseIdentifier (cfg,pos);
-      
-      if (tok == "threads" && parseSymbol(cfg,'=',pos)) 
-        g_numThreads = parseInt(cfg,pos);
-
-      else if (tok == "isa" && parseSymbol (cfg,'=',pos)) 
-      {
-        std::string isa = parseIdentifier (cfg,pos);
-        if      (isa == "sse" ) setCPUFeatures(SSE);
-        else if (isa == "sse2") setCPUFeatures(SSE2);
-        else if (isa == "sse3") setCPUFeatures(SSE3);
-        else if (isa == "ssse3") setCPUFeatures(SSSE3);
-        else if (isa == "sse41") setCPUFeatures(SSE41);
-        else if (isa == "sse4.1") setCPUFeatures(SSE41);
-        else if (isa == "sse42") setCPUFeatures(SSE42);
-        else if (isa == "sse4.2") setCPUFeatures(SSE42);
-        else if (isa == "avx") setCPUFeatures(AVX);
-        else if (isa == "avxi") setCPUFeatures(AVXI);
-        else if (isa == "avx2") setCPUFeatures(AVX2);
-      }
-      
-      else if ((tok == "tri_accel" || tok == "accel") && parseSymbol (cfg,'=',pos))
-        tri_accel = parseIdentifier (cfg,pos);
-      else if ((tok == "tri_builder" || tok == "builder") && parseSymbol (cfg,'=',pos))
-        tri_builder = parseIdentifier (cfg,pos);
-      else if ((tok == "tri_traverser" || tok == "traverser") && parseSymbol (cfg,'=',pos))
-        tri_traverser = parseIdentifier (cfg,pos);
-      else if (tok == "tri_builder_replication_factor" && parseSymbol (cfg,'=',pos))
-        tri_builder_replication_factor = parseInt (cfg,pos);
-      
-      else if ((tok == "tri_accel_mb" || tok == "accel_mb") && parseSymbol (cfg,'=',pos))
-        tri_accel_mb = parseIdentifier (cfg,pos);
-      else if ((tok == "tri_builder_mb" || tok == "builder_mb") && parseSymbol (cfg,'=',pos))
-        tri_builder_mb = parseIdentifier (cfg,pos);
-      else if ((tok == "tri_traverser_mb" || tok == "traverser_mb") && parseSymbol (cfg,'=',pos))
-        tri_traverser_mb = parseIdentifier (cfg,pos);
-      
-      else if (tok == "hair_accel" && parseSymbol (cfg,'=',pos))
-        hair_accel = parseIdentifier (cfg,pos);
-      else if (tok == "hair_builder" && parseSymbol (cfg,'=',pos))
-        hair_builder = parseIdentifier (cfg,pos);
-      else if (tok == "hair_traverser" && parseSymbol (cfg,'=',pos))
-        hair_traverser = parseIdentifier (cfg,pos);
-      else if (tok == "hair_builder_replication_factor" && parseSymbol (cfg,'=',pos))
-        hair_builder_replication_factor = parseInt (cfg,pos);
-      
-      else if (tok == "subdiv_accel" && parseSymbol (cfg,'=',pos))
-        subdiv_accel = parseIdentifier (cfg,pos);
-      
-      else if (tok == "verbose" && parseSymbol (cfg,'=',pos))
-        verbose = parseInt (cfg,pos);
-      else if (tok == "benchmark" && parseSymbol (cfg,'=',pos))
-        benchmark = parseInt (cfg,pos);
-      
-      else if (tok == "flags") {
-        scene_flags = 0;
-        if (parseSymbol (cfg,'=',pos)) {
-          do {
-            std::string flag = parseIdentifier (cfg,pos);
-            if      (flag == "static" ) scene_flags |= RTC_SCENE_STATIC;
-            else if (flag == "dynamic") scene_flags |= RTC_SCENE_DYNAMIC;
-            else if (flag == "compact") scene_flags |= RTC_SCENE_COMPACT;
-            else if (flag == "coherent") scene_flags |= RTC_SCENE_COHERENT;
-            else if (flag == "incoherent") scene_flags |= RTC_SCENE_INCOHERENT;
-            else if (flag == "high_quality") scene_flags |= RTC_SCENE_HIGH_QUALITY;
-            else if (flag == "robust") scene_flags |= RTC_SCENE_ROBUST;
-          } while (parseSymbol (cfg,',',pos));
-        }
-      }
-      else if (tok == "memory_preallocation_factor" && parseSymbol (cfg,'=',pos)) 
-        memory_preallocation_factor = parseFloat (cfg,pos);
-
-      else if (tok == "regression" && parseSymbol (cfg,'=',pos)) 
-        regression_testing = parseInt (cfg,pos);
-
-      else if (tok == "tessellation_cache_size" && parseSymbol (cfg,'=',pos))
-      {
-        tessellation_cache_size = parseFloat (cfg,pos) * 1024 * 1024;
-        
-      }        
-    } while (findNext (cfg,',',pos));
-#endif
+      cin->trySymbol(","); // optional , separator
+    }
   }
 
   RTCError* State::error() 

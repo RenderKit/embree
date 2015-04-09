@@ -142,13 +142,12 @@ namespace embree
   public:
     ParseLocation location() { return cin->loc(); }
     Token next();
+    bool trySymbol(const std::string& symbol);
 
   private:
-
     void skipSeparators();
     bool decDigits(std::string& str);
     bool decDigits1(std::string& str);
-    bool trySymbol(const std::string& symbol);
     bool trySymbols(Token& token, const ParseLocation& loc);
     bool tryFloat(Token& token, const ParseLocation& loc);
     bool tryInt(Token& token, const ParseLocation& loc);
