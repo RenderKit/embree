@@ -81,25 +81,6 @@ namespace embree
   template<typename T>
     using mvector = vector_t<T,aligned_allocator<T,std::alignment_of<T>::value> >;
 
-  /*! used to throw embree API errors */
-  struct rtcore_error : public std::exception
-  {
-    __forceinline rtcore_error(RTCError error, const std::string& str)
-      : error(error), str(str) {}
-    
-    ~rtcore_error() throw() {}
-    
-    const char* what () const throw () {
-      return str.c_str();
-    }
-    
-    RTCError error;
-    std::string str;
-  };
-  
-#define throw_RTCError(error,str)                               \
-  throw rtcore_error(error,std::string(__FILE__) + " (" + std::to_string((long long)__LINE__) + "): " + std::string(str));
-
    /* we consider floating point numbers in that range as valid input numbers */
 #define VALID_FLOAT_RANGE  1.844E18f
 
@@ -123,6 +104,8 @@ namespace embree
 
 /*! processes error codes, do not call directly */
 void process_error(RTCError error, const char* str);
+
+/*! Makros used in the rtcore API implementation */
 
 #define RTCORE_CATCH_BEGIN try {
 #define RTCORE_CATCH_END                                                       \
@@ -148,4 +131,22 @@ void process_error(RTCError error, const char* str);
 
 #define RTCORE_TRACE(x) //std::cout << #x << std::endl;
 
+  /*! used to throw embree API errors */
+  struct rtcore_error : public std::exception
+  {
+    __forceinline rtcore_error(RTCError error, const std::string& str)
+      : error(error), str(str) {}
+    
+    ~rtcore_error() throw() {}
+    
+    const char* what () const throw () {
+      return str.c_str();
+    }
+    
+    RTCError error;
+    std::string str;
+  };
+  
+#define throw_RTCError(error,str)                               \
+  throw rtcore_error(error,std::string(__FILE__) + " (" + std::to_string((long long)__LINE__) + "): " + std::string(str));
 }

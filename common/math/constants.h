@@ -37,7 +37,7 @@ namespace embree
   static struct FalseTy {
     __forceinline operator bool( ) const { return false; }
   } False MAYBE_UNUSED;
-
+  
   static struct ZeroTy
   {
     __forceinline operator          double   ( ) const { return 0; }
@@ -117,38 +117,38 @@ namespace embree
 
   static struct PiTy
   {
-    __forceinline operator double( ) const { return 3.14159265358979323846; }
-    __forceinline operator float ( ) const { return 3.14159265358979323846f; }
+    __forceinline operator double( ) const { return M_PI; }
+    __forceinline operator float ( ) const { return M_PI; }
   } pi MAYBE_UNUSED;
 
   static struct OneOverPiTy
   {
-    __forceinline operator double( ) const { return 0.31830988618379069122; }
-    __forceinline operator float ( ) const { return 0.31830988618379069122f; }
+    __forceinline operator double( ) const { return M_1_PI; }
+    __forceinline operator float ( ) const { return M_1_PI; }
   } one_over_pi MAYBE_UNUSED;
 
   static struct TwoPiTy
   {
-    __forceinline operator double( ) const { return 6.283185307179586232; }
-    __forceinline operator float ( ) const { return 6.283185307179586232f; }
+    __forceinline operator double( ) const { return 2.0*M_PI; }
+    __forceinline operator float ( ) const { return 2.0*M_PI; }
   } two_pi MAYBE_UNUSED;
 
   static struct OneOverTwoPiTy
   {
-    __forceinline operator double( ) const { return 0.15915494309189534561; }
-    __forceinline operator float ( ) const { return 0.15915494309189534561f; }
+    __forceinline operator double( ) const { return 0.5*M_1_PI; }
+    __forceinline operator float ( ) const { return 0.5*M_1_PI; }
   } one_over_two_pi MAYBE_UNUSED;
 
   static struct FourPiTy
   {
-    __forceinline operator double( ) const { return 12.566370614359172464; } 
-    __forceinline operator float ( ) const { return 12.566370614359172464f; }
+    __forceinline operator double( ) const { return 4.0*M_PI; } 
+    __forceinline operator float ( ) const { return 4.0*M_PI; }
   } four_pi MAYBE_UNUSED;
 
   static struct OneOverFourPiTy
   {
-    __forceinline operator double( ) const { return 0.079577471545947672804; }
-    __forceinline operator float ( ) const { return 0.079577471545947672804f; }
+    __forceinline operator double( ) const { return 0.25*M_1_PI; }
+    __forceinline operator float ( ) const { return 0.25*M_1_PI; }
   } one_over_four_pi MAYBE_UNUSED;
 
   static struct StepTy {

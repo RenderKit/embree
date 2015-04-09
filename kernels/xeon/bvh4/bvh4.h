@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "embree2/rtcore.h"
+#include "common/default.h"
 #include "common/alloc.h"
 #include "common/accel.h"
 #include "common/scene.h"
