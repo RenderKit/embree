@@ -33,6 +33,7 @@ ADD_ISPC_LIBRARY(embree_xeonphi ${EMBREE_LIB_TYPE}
   ../common/stat.cpp 
   ../common/globals.cpp 
   ../common/acceln.cpp
+  ../common/state.cpp
   ../common/rtcore.cpp 
   ../common/rtcore_ispc.cpp 
   ../common/rtcore_ispc.ispc 

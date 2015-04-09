@@ -50,6 +50,7 @@
 #include "isa.h"
 #include "stat.h"
 #include "profile.h"
+#include "state.h"
 #include "rtcore.h"
 
 #include <vector>

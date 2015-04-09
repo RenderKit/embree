@@ -45,8 +45,8 @@ namespace embree
     group = new tbb::task_group;
 #endif
 
-    if (g_scene_flags != -1)
-      flags = (RTCSceneFlags) g_scene_flags;
+    if (State::instance()->g_scene_flags != -1)
+      flags = (RTCSceneFlags) State::instance()->g_scene_flags;
 
 #if defined(__MIC__)
     accels.add( BVH4mb::BVH4mbTriangle1ObjectSplitBinnedSAH(this) );
@@ -54,18 +54,18 @@ namespace embree
     accels.add( BVH4Hair::BVH4HairBinnedSAH(this));
     accels.add( BVH4i::BVH4iSubdivMeshBinnedSAH(this, isRobust() ));
 
-    if (g_verbose >= 1)
+    if (State::instance()->verbosity(1))
     {
       std::cout << "scene flags: static " << isStatic() << " compact = " << isCompact() << " high quality = " << isHighQuality() << " robust = " << isRobust() << std::endl;
     }
     
-    if (g_tri_accel == "default" || g_tri_accel == "bvh4i")   
+    if (State::instance()->g_tri_accel == "default" || State::instance()->g_tri_accel == "bvh4i")   
     {
-      if (g_tri_builder == "default") 
+      if (State::instance()->g_tri_builder == "default") 
       {
         if (isStatic())
         {
-          if (g_verbose >= 1) std::cout << "STATIC BUILDER MODE" << std::endl;
+          if (State::instance()->verbosity(1)) std::cout << "STATIC BUILDER MODE" << std::endl;
           if ( isCompact() )
             accels.add(BVH4i::BVH4iTriangle1MemoryConservativeBinnedSAH(this,isRobust()));		    
           else if ( isHighQuality() )
@@ -75,36 +75,36 @@ namespace embree
         }
         else
         {
-          if (g_verbose >= 1) std::cout << "DYNAMIC BUILDER MODE" << std::endl;
+          if (State::instance()->verbosity(1)) std::cout << "DYNAMIC BUILDER MODE" << std::endl;
           accels.add(BVH4i::BVH4iTriangle1ObjectSplitMorton(this,isRobust()));
         }
       }
       else
       {
-        if (g_tri_builder == "sah" || g_tri_builder == "bvh4i" || g_tri_builder == "bvh4i.sah") {
+        if (State::instance()->g_tri_builder == "sah" || State::instance()->g_tri_builder == "bvh4i" || State::instance()->g_tri_builder == "bvh4i.sah") {
           accels.add(BVH4i::BVH4iTriangle1ObjectSplitBinnedSAH(this,isRobust()));
         }
-        else if (g_tri_builder == "fast" || g_tri_builder == "morton") {
+        else if (State::instance()->g_tri_builder == "fast" || State::instance()->g_tri_builder == "morton") {
           accels.add(BVH4i::BVH4iTriangle1ObjectSplitMorton(this,isRobust()));
         }
-        else if (g_tri_builder == "fast_enhanced" || g_tri_builder == "morton.enhanced") {
+        else if (State::instance()->g_tri_builder == "fast_enhanced" || State::instance()->g_tri_builder == "morton.enhanced") {
           accels.add(BVH4i::BVH4iTriangle1ObjectSplitEnhancedMorton(this,isRobust()));
         }
-        else if (g_tri_builder == "high_quality" || g_tri_builder == "presplits") {
+        else if (State::instance()->g_tri_builder == "high_quality" || State::instance()->g_tri_builder == "presplits") {
           accels.add(BVH4i::BVH4iTriangle1PreSplitsBinnedSAH(this,isRobust()));
         }
-        else if (g_tri_builder == "compact" ||
-                 g_tri_builder == "memory_conservative") {
+        else if (State::instance()->g_tri_builder == "compact" ||
+                 State::instance()->g_tri_builder == "memory_conservative") {
           accels.add(BVH4i::BVH4iTriangle1MemoryConservativeBinnedSAH(this,isRobust()));
         }
-        else if (g_tri_builder == "morton64") {
+        else if (State::instance()->g_tri_builder == "morton64") {
           accels.add(BVH4i::BVH4iTriangle1ObjectSplitMorton64Bit(this,isRobust()));
         }
         
-        else THROW_RUNTIME_ERROR("unknown builder "+g_tri_builder+" for BVH4i<Triangle1>");
+        else THROW_RUNTIME_ERROR("unknown builder "+State::instance()->g_tri_builder+" for BVH4i<Triangle1>");
       }
     }
-    else THROW_RUNTIME_ERROR("unknown accel "+g_tri_accel);
+    else THROW_RUNTIME_ERROR("unknown accel "+State::instance()->g_tri_accel);
     
 #else
     createTriangleAccel();
@@ -120,7 +120,7 @@ namespace embree
 
   void Scene::createTriangleAccel()
   {
-    if (g_tri_accel == "default") 
+    if (State::instance()->g_tri_accel == "default") 
     {
       if (isStatic()) {
         int mode =  2*(int)isCompact() + 1*(int)isRobust(); 
@@ -156,26 +156,26 @@ namespace embree
         }
       }
     }
-    else if (g_tri_accel == "bvh4.bvh4.triangle1")    accels.add(BVH4::BVH4BVH4Triangle1ObjectSplit(this));
-    else if (g_tri_accel == "bvh4.bvh4.triangle4")    accels.add(BVH4::BVH4BVH4Triangle4ObjectSplit(this));
-    else if (g_tri_accel == "bvh4.bvh4.triangle1v")   accels.add(BVH4::BVH4BVH4Triangle1vObjectSplit(this));
-    else if (g_tri_accel == "bvh4.bvh4.triangle4v")   accels.add(BVH4::BVH4BVH4Triangle4vObjectSplit(this));
-    else if (g_tri_accel == "bvh4.triangle1")         accels.add(BVH4::BVH4Triangle1(this));
-    else if (g_tri_accel == "bvh4.triangle4")         accels.add(BVH4::BVH4Triangle4(this));
-    else if (g_tri_accel == "bvh4.triangle1v")        accels.add(BVH4::BVH4Triangle1v(this));
-    else if (g_tri_accel == "bvh4.triangle4v")        accels.add(BVH4::BVH4Triangle4v(this));
-    else if (g_tri_accel == "bvh4.triangle4i")        accels.add(BVH4::BVH4Triangle4i(this));
+    else if (State::instance()->g_tri_accel == "bvh4.bvh4.triangle1")    accels.add(BVH4::BVH4BVH4Triangle1ObjectSplit(this));
+    else if (State::instance()->g_tri_accel == "bvh4.bvh4.triangle4")    accels.add(BVH4::BVH4BVH4Triangle4ObjectSplit(this));
+    else if (State::instance()->g_tri_accel == "bvh4.bvh4.triangle1v")   accels.add(BVH4::BVH4BVH4Triangle1vObjectSplit(this));
+    else if (State::instance()->g_tri_accel == "bvh4.bvh4.triangle4v")   accels.add(BVH4::BVH4BVH4Triangle4vObjectSplit(this));
+    else if (State::instance()->g_tri_accel == "bvh4.triangle1")         accels.add(BVH4::BVH4Triangle1(this));
+    else if (State::instance()->g_tri_accel == "bvh4.triangle4")         accels.add(BVH4::BVH4Triangle4(this));
+    else if (State::instance()->g_tri_accel == "bvh4.triangle1v")        accels.add(BVH4::BVH4Triangle1v(this));
+    else if (State::instance()->g_tri_accel == "bvh4.triangle4v")        accels.add(BVH4::BVH4Triangle4v(this));
+    else if (State::instance()->g_tri_accel == "bvh4.triangle4i")        accels.add(BVH4::BVH4Triangle4i(this));
 #if defined (__TARGET_AVX__)
-    else if (g_tri_accel == "bvh4.triangle8")         accels.add(BVH4::BVH4Triangle8(this));
-    else if (g_tri_accel == "bvh8.triangle4")         accels.add(BVH8::BVH8Triangle4(this));
-    else if (g_tri_accel == "bvh8.triangle8")         accels.add(BVH8::BVH8Triangle8(this));
+    else if (State::instance()->g_tri_accel == "bvh4.triangle8")         accels.add(BVH4::BVH4Triangle8(this));
+    else if (State::instance()->g_tri_accel == "bvh8.triangle4")         accels.add(BVH8::BVH8Triangle4(this));
+    else if (State::instance()->g_tri_accel == "bvh8.triangle8")         accels.add(BVH8::BVH8Triangle8(this));
 #endif
-    else THROW_RUNTIME_ERROR("unknown triangle acceleration structure "+g_tri_accel);
+    else THROW_RUNTIME_ERROR("unknown triangle acceleration structure "+State::instance()->g_tri_accel);
   }
 
   void Scene::createHairAccel()
   {
-    if (g_hair_accel == "default") 
+    if (State::instance()->g_hair_accel == "default") 
     {
       if (isStatic()) {
         int mode =  2*(int)isCompact() + 1*(int)isRobust(); 
@@ -197,28 +197,28 @@ namespace embree
         }
       }   
     }
-    else if (g_hair_accel == "bvh4.bezier1v"    ) accels.add(BVH4::BVH4Bezier1v(this));
-    else if (g_hair_accel == "bvh4.bezier1i"    ) accels.add(BVH4::BVH4Bezier1i(this));
-    else if (g_hair_accel == "bvh4obb.bezier1v" ) accels.add(BVH4::BVH4OBBBezier1v(this,false));
-    else if (g_hair_accel == "bvh4obb.bezier1i" ) accels.add(BVH4::BVH4OBBBezier1i(this,false));
-    else THROW_RUNTIME_ERROR("unknown hair acceleration structure "+g_hair_accel);
+    else if (State::instance()->g_hair_accel == "bvh4.bezier1v"    ) accels.add(BVH4::BVH4Bezier1v(this));
+    else if (State::instance()->g_hair_accel == "bvh4.bezier1i"    ) accels.add(BVH4::BVH4Bezier1i(this));
+    else if (State::instance()->g_hair_accel == "bvh4obb.bezier1v" ) accels.add(BVH4::BVH4OBBBezier1v(this,false));
+    else if (State::instance()->g_hair_accel == "bvh4obb.bezier1i" ) accels.add(BVH4::BVH4OBBBezier1i(this,false));
+    else THROW_RUNTIME_ERROR("unknown hair acceleration structure "+State::instance()->g_hair_accel);
   }
 
   void Scene::createSubdivAccel()
   {
-    if (g_subdiv_accel == "default") 
+    if (State::instance()->g_subdiv_accel == "default") 
     {
       if (isIncoherent(flags) && isStatic())
         accels.add(BVH4::BVH4SubdivGridEager(this));
       else
         accels.add(BVH4::BVH4SubdivPatch1Cached(this));
     }
-    else if (g_subdiv_accel == "bvh4.subdivpatch1"      ) accels.add(BVH4::BVH4SubdivPatch1(this));
-    else if (g_subdiv_accel == "bvh4.subdivpatch1cached") accels.add(BVH4::BVH4SubdivPatch1Cached(this));
-    else if (g_subdiv_accel == "bvh4.grid.adaptive"     ) accels.add(BVH4::BVH4SubdivGrid(this));
-    else if (g_subdiv_accel == "bvh4.grid.eager"        ) accels.add(BVH4::BVH4SubdivGridEager(this));
-    else if (g_subdiv_accel == "bvh4.grid.lazy"         ) accels.add(BVH4::BVH4SubdivGridLazy(this));
-    else THROW_RUNTIME_ERROR("unknown subdiv accel "+g_subdiv_accel);
+    else if (State::instance()->g_subdiv_accel == "bvh4.subdivpatch1"      ) accels.add(BVH4::BVH4SubdivPatch1(this));
+    else if (State::instance()->g_subdiv_accel == "bvh4.subdivpatch1cached") accels.add(BVH4::BVH4SubdivPatch1Cached(this));
+    else if (State::instance()->g_subdiv_accel == "bvh4.grid.adaptive"     ) accels.add(BVH4::BVH4SubdivGrid(this));
+    else if (State::instance()->g_subdiv_accel == "bvh4.grid.eager"        ) accels.add(BVH4::BVH4SubdivGridEager(this));
+    else if (State::instance()->g_subdiv_accel == "bvh4.grid.lazy"         ) accels.add(BVH4::BVH4SubdivGridLazy(this));
+    else THROW_RUNTIME_ERROR("unknown subdiv accel "+State::instance()->g_subdiv_accel);
   }
 
 #endif
@@ -377,7 +377,7 @@ namespace embree
 
     updateInterface();
 
-    if (g_verbose >= 2) {
+    if (State::instance()->verbosity(2)) {
       std::cout << "created scene intersector" << std::endl;
       accels.print(2);
       std::cout << "selected scene intersector" << std::endl;
@@ -451,7 +451,7 @@ namespace embree
     updateInterface();
     setModified(false);
 
-    if (g_verbose >= 2) {
+    if (State::instance()->verbosity(2)) {
       std::cout << "created scene intersector" << std::endl;
       accels.print(2);
       std::cout << "selected scene intersector" << std::endl;

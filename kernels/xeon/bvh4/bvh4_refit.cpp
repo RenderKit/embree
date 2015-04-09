@@ -59,7 +59,7 @@ namespace embree
       
       /* refit BVH */
       double t0 = 0.0;
-      if (g_verbose >= 2) {
+      if (State::instance()->verbosity(2)) {
         std::cout << "refitting BVH4 <" << bvh->primTy.name << "> ... " << std::flush;
         t0 = getSeconds();
       }
@@ -81,7 +81,8 @@ namespace embree
         bvh->bounds = recurse_top(bvh->root);
       }
 
-      if (g_verbose >= 2) {
+      if (State::instance()->verbosity(2)) 
+      {
         double t1 = getSeconds();
         std::cout << "[DONE]" << std::endl;
         std::cout << "  dt = " << 1000.0f*(t1-t0) << "ms, perf = " << 1E-6*double(mesh->numTriangles)/(t1-t0) << " Mprim/s" << std::endl;

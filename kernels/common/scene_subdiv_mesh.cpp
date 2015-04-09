@@ -437,7 +437,7 @@ namespace embree
     double t1 = getSeconds();
 
     /* print statistics in verbose mode */
-    if (g_verbose >= 2) 
+    if (State::instance()->verbosity(2)) 
     {
       size_t numRegularFaces = 0;
       size_t numIrregularFaces = 0;

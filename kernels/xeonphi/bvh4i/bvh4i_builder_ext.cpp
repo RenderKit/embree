@@ -91,7 +91,7 @@ PRINT(CORRECT_numPrims);
 	numMaxPrimitives = numPrims;
 	numMaxPreSplits  = numPrims - numPrimitives;
 
-	if (g_verbose >= 2)
+	if (State::instance()->verbosity(2))
 	  {
 	    PRINT(numPrimitives);
 	    PRINT(numMaxPrimitives);

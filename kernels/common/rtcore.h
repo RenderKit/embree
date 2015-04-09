@@ -18,29 +18,6 @@
 
 namespace embree
 {
-  extern size_t g_numThreads;
-  extern size_t g_verbose;
-
-  extern std::string g_tri_accel;
-  extern std::string g_tri_builder;
-  extern std::string g_tri_traverser;
-  extern double g_tri_builder_replication_factor;
-
-  extern std::string g_tri_accel_mb;
-  extern std::string g_tri_builder_mb;
-  extern std::string g_tri_traverser_mb;
-
-  extern std::string g_hair_accel;
-  extern std::string g_hair_builder;
-  extern std::string g_hair_traverser;
-  extern double g_hair_builder_replication_factor;
-
-  extern std::string g_subdiv_accel;
-
-  extern int g_scene_flags;
-  extern size_t g_benchmark;
-  extern float g_memory_preallocation_factor;
-
   /*! invokes the memory monitor callback */
   void memoryMonitor(ssize_t bytes, bool post);
 

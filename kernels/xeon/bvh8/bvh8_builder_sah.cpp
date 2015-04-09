@@ -123,7 +123,7 @@ namespace embree
         const size_t numSplitPrimitives = max(numPrimitives,size_t(presplitFactor*numPrimitives));
       
         /* verbose mode */
-        if (g_verbose >= 1 && mesh == NULL)
+        if (State::instance()->verbosity(1) && mesh == NULL)
 	  std::cout << "building BVH8<" << bvh->primTy.name << "> with " << TOSTRING(isa) "::BVH8BuilderSAH " << (presplitFactor != 1.0f ? "presplit" : "") << " ... " << std::flush;
 
 	double t0 = 0.0f, dt = 0.0f;
@@ -132,7 +132,7 @@ namespace embree
         {
 #endif
 	    
-          if ((g_benchmark || g_verbose >= 1) && mesh == NULL) t0 = getSeconds();
+          if ((State::instance()->g_benchmark || State::instance()->verbosity(1)) && mesh == NULL) t0 = getSeconds();
           
           auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
           auto virtualprogress = BuildProgressMonitorFromClosure(progress);
@@ -150,7 +150,7 @@ namespace embree
             bvh->set(root,pinfo.geomBounds,pinfo.size());
             bvh->layoutLargeNodes(numSplitPrimitives*0.005f);
 
-	    if ((g_benchmark || g_verbose >= 1) && mesh == NULL) dt = getSeconds()-t0;
+	    if ((State::instance()->g_benchmark || State::instance()->verbosity(1)) && mesh == NULL) dt = getSeconds()-t0;
 
 #if PROFILE
            dt = timer.avg();
@@ -163,13 +163,13 @@ namespace embree
 	bvh->alloc2.cleanup();
 
 	/* verbose mode */
-	if (g_verbose >= 1 && mesh == NULL)
+	if (State::instance()->verbosity(1) && mesh == NULL)
 	  std::cout << "[DONE] " << 1000.0f*dt << "ms (" << numPrimitives/dt*1E-6 << " Mtris/s)" << std::endl;
-	if (g_verbose >= 2 && mesh == NULL)
+	if (State::instance()->verbosity(2) && mesh == NULL)
 	  bvh->printStatistics();
 
         /* benchmark mode */
-        if (g_benchmark) {
+        if (State::instance()->g_benchmark) {
           BVH8Statistics stat(bvh);
           std::cout << "BENCHMARK_BUILD " << dt << " " << double(numPrimitives)/dt << " " << stat.sah() << " " << stat.bytesUsed() << std::endl;
         }
@@ -301,7 +301,7 @@ namespace embree
 	};
 
         /* verbose mode */
-        if (g_verbose >= 1 && mesh == NULL)
+        if (State::instance()->verbosity(1) && mesh == NULL)
 	  std::cout << "building BVH8<" << bvh->primTy.name << "> with " << TOSTRING(isa) "::BVH8BuilderSAH (spatial)" << (presplitFactor != 1.0f ? "presplit" : "") << " ... " << std::flush;
 
 	double t0 = 0.0f, dt = 0.0f;
@@ -310,7 +310,7 @@ namespace embree
         {
 #endif
 	    
-          if ((g_benchmark || g_verbose >= 1) && mesh == NULL) t0 = getSeconds();
+          if ((State::instance()->g_benchmark || State::instance()->verbosity(1)) && mesh == NULL) t0 = getSeconds();
 	    
             auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
             auto virtualprogress = BuildProgressMonitorFromClosure(progress);
@@ -382,7 +382,7 @@ namespace embree
             
             bvh->layoutLargeNodes(pinfo.size()*0.005f);
 
-            if ((g_benchmark || g_verbose >= 1) && mesh == NULL) dt = getSeconds()-t0;
+            if ((State::instance()->g_benchmark || State::instance()->verbosity(1)) && mesh == NULL) dt = getSeconds()-t0;
             
 #if PROFILE
             dt = timer.avg();
@@ -395,13 +395,13 @@ namespace embree
 	bvh->alloc2.cleanup();
 
         /* verbose mode */
-	if (g_verbose >= 1 && mesh == NULL)
+	if (State::instance()->verbosity(1) && mesh == NULL)
 	  std::cout << "[DONE] " << 1000.0f*dt << "ms (" << numPrimitives/dt*1E-6 << " Mtris/s)" << std::endl;
-	if (g_verbose >= 2 && mesh == NULL)
+	if (State::instance()->verbosity(2) && mesh == NULL)
 	  bvh->printStatistics();
 
         /* benchmark mode */
-        if (g_benchmark) {
+        if (State::instance()->g_benchmark) {
           BVH8Statistics stat(bvh);
           std::cout << "BENCHMARK_BUILD " << dt << " " << double(numPrimitives)/dt << " " << stat.sah() << " " << stat.bytesUsed() << std::endl;
         }

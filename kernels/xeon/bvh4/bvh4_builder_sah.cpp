@@ -553,7 +553,7 @@ namespace embree
 
 	//profile("BVH4BuilderMblurBinnedSAH",2,20,numPrimitives,[&] () {
 	    
-	    if (g_verbose >= 1) t0 = getSeconds();
+	    if (State::instance()->verbosity(1)) t0 = getSeconds();
 	    
 	    bvh->alloc.init(numPrimitives*sizeof(PrimRef),numPrimitives*sizeof(BVH4::NodeMB));  // FIXME: better estimate
 	    prims.resize(numPrimitives);
