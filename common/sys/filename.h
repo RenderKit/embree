@@ -79,9 +79,15 @@ namespace embree
     /*! removes the base from a filename (if possible) */
     FileName operator -( const FileName& base ) const;
 
+    /*! == operator */
+    friend bool operator==(const FileName& a, const FileName& b);
+
+    /*! != operator */
+    friend bool operator!=(const FileName& a, const FileName& b);
+
     /*! output operator */
     friend std::ostream& operator<<(std::ostream& cout, const FileName& filename);
-
+   
   private:
     std::string filename;
   };
