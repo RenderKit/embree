@@ -14,10 +14,18 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-ADD_LIBRARY(lexers STATIC
+IF (__XEON__)
+  SET(EXT)
+ELSE()
+  INCLUDE(icc_xeonphi)
+  SET(EXT _xeonphi)
+ENDIF()
+
+
+ADD_LIBRARY(lexers${EXT} STATIC
  stringstream.cpp
  tokenstream.cpp
 )
 
-TARGET_LINK_LIBRARIES(lexers sys)
-SET_PROPERTY(TARGET lexers PROPERTY FOLDER tutorials/common)
+TARGET_LINK_LIBRARIES(lexers${EXT} sys${EXT})
+SET_PROPERTY(TARGET lexers PROPERTY FOLDER common)
