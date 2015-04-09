@@ -444,8 +444,8 @@ namespace embree
 	for (size_t i=0;i<ec.size();++i) {
 	  if (ec[i].a < v.size() && ec[i].b < v.size())
 	    mesh->edge_creases.push_back(Vec2i(ec[i].a, ec[i].b));
-	  mesh->edge_crease_weights.push_back(ec[i].w);
-	  //mesh->edge_crease_weights.push_back(pos_inf);
+	  //mesh->edge_crease_weights.push_back(ec[i].w);
+	  mesh->edge_crease_weights.push_back(pos_inf);
 
 	}
 #endif
@@ -453,8 +453,8 @@ namespace embree
 	for (size_t i=0;i<vc.size();++i) 
 	  mesh->vertex_creases.push_back(vc[i]);
 	for (size_t i=0;i<vcw.size();++i) 
-	  //mesh->vertex_crease_weights.push_back(pos_inf);	  
-	mesh->vertex_crease_weights.push_back(vcw[i]);	  
+	  mesh->vertex_crease_weights.push_back(pos_inf);	  
+	  //mesh->vertex_crease_weights.push_back(vcw[i]);	  
 
 	for (size_t j=0; j < curGroup.size(); j++)
 	  {
