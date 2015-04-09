@@ -20,9 +20,6 @@
 
 namespace embree
 {
-  static struct NullTy {
-  } null MAYBE_UNUSED;
-
   class RefCount
   {
   public:
@@ -49,7 +46,7 @@ namespace embree
     ////////////////////////////////////////////////////////////////////////////////
 
     __forceinline Ref( void ) : ptr(nullptr) {}
-    __forceinline Ref(NullTy) : ptr(nullptr) {}
+    __forceinline Ref( std::nullptr_t ) : ptr(nullptr) {}
     __forceinline Ref( const Ref& input ) : ptr(input.ptr) { if ( ptr ) ptr->refInc(); }
 
     __forceinline Ref( Type* const input ) : ptr(input) {
@@ -77,7 +74,7 @@ namespace embree
       return *this;
     }
 
-    __forceinline Ref& operator= ( NullTy ) {
+    __forceinline Ref& operator= ( std::nullptr_t ) {
       if (ptr) ptr->refDec();
       *(Type**)&ptr = nullptr;
       return *this;
@@ -103,11 +100,11 @@ namespace embree
 
   template<typename Type> __forceinline  bool operator < ( const Ref<Type>& a, const Ref<Type>& b ) { return a.ptr <  b.ptr ; }
 
-  template<typename Type> __forceinline  bool operator ==( const Ref<Type>& a, NullTy             ) { return a.ptr == nullptr  ; }
-  template<typename Type> __forceinline  bool operator ==( NullTy            , const Ref<Type>& b ) { return nullptr  == b.ptr ; }
+  template<typename Type> __forceinline  bool operator ==( const Ref<Type>& a, std::nullptr_t     ) { return a.ptr == nullptr  ; }
+  template<typename Type> __forceinline  bool operator ==( std::nullptr_t    , const Ref<Type>& b ) { return nullptr  == b.ptr ; }
   template<typename Type> __forceinline  bool operator ==( const Ref<Type>& a, const Ref<Type>& b ) { return a.ptr == b.ptr ; }
 
-  template<typename Type> __forceinline  bool operator !=( const Ref<Type>& a, NullTy             ) { return a.ptr != nullptr  ; }
-  template<typename Type> __forceinline  bool operator !=( NullTy            , const Ref<Type>& b ) { return nullptr  != b.ptr ; }
+  template<typename Type> __forceinline  bool operator !=( const Ref<Type>& a, std::nullptr_t     ) { return a.ptr != nullptr  ; }
+  template<typename Type> __forceinline  bool operator !=( std::nullptr_t    , const Ref<Type>& b ) { return nullptr  != b.ptr ; }
   template<typename Type> __forceinline  bool operator !=( const Ref<Type>& a, const Ref<Type>& b ) { return a.ptr != b.ptr ; }
 }

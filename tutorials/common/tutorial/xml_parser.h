@@ -60,7 +60,7 @@ namespace embree
     {
       for (size_t i=0; i<children.size(); i++)
         if (children[i]->name == childID) return children[i];
-      return null;
+      return nullptr;
     }
 
     /*! adds a new parameter to the node */
