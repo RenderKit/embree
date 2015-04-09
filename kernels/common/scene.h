@@ -58,10 +58,10 @@ namespace embree
       __forceinline Ty* at(const size_t i)
       {
         Geometry* geom = scene->geometries[i];
-        if (geom == NULL) return NULL;
-        if (!geom->isEnabled()) return NULL;
-        if (geom->getType() != Ty::geom_type) return NULL;
-        if (geom->numTimeSteps != timeSteps) return NULL;
+        if (geom == nullptr) return nullptr;
+        if (!geom->isEnabled()) return nullptr;
+        if (geom->getType() != Ty::geom_type) return nullptr;
+        if (geom->numTimeSteps != timeSteps) return nullptr;
         return (Ty*) geom;
       }
 
@@ -82,7 +82,7 @@ namespace embree
         size_t ret = 0;
         for (size_t i=0; i<scene->size(); i++) {
           Ty* mesh = at(i);
-          if (mesh == NULL) continue;
+          if (mesh == nullptr) continue;
           ret = max(ret,mesh->size());
         }
         return ret;
@@ -181,8 +181,8 @@ namespace embree
     }
     __forceinline TriangleMesh* getTriangleMeshSafe(size_t i) { 
       assert(i < geometries.size()); 
-      if (geometries[i] == NULL) return NULL;
-      if (geometries[i]->getType() != Geometry::TRIANGLE_MESH) return NULL;
+      if (geometries[i] == nullptr) return nullptr;
+      if (geometries[i]->getType() != Geometry::TRIANGLE_MESH) return nullptr;
       else return (TriangleMesh*) geometries[i]; 
     }
     __forceinline SubdivMesh* getSubdivMesh(size_t i) { 
@@ -199,8 +199,8 @@ namespace embree
     }
     __forceinline UserGeometryBase* getUserGeometrySafe(size_t i) { 
       assert(i < geometries.size()); 
-      if (geometries[i] == NULL) return NULL;
-      if (geometries[i]->getType() != Geometry::USER_GEOMETRY) return NULL;
+      if (geometries[i] == nullptr) return nullptr;
+      if (geometries[i]->getType() != Geometry::USER_GEOMETRY) return nullptr;
       else return (UserGeometryBase*) geometries[i]; 
     }
     __forceinline BezierCurves* getBezierCurves(size_t i) { 

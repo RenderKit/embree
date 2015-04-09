@@ -16,10 +16,6 @@
 
 #pragma once
 
-#ifndef NULL
-#define NULL 0
-#endif
-
 #include <limits>
 
 #define _USE_MATH_DEFINES

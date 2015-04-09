@@ -42,8 +42,8 @@ namespace embree
       if (N < objects.size()) {
         parallel_for(N, objects.size(), [&] (const range<size_t>& r) {
             for (size_t i=r.begin(); i<r.end(); i++) {
-              delete builders[i]; builders[i] = NULL;
-              delete objects[i]; objects[i] = NULL;
+              delete builders[i]; builders[i] = nullptr;
+              delete objects[i]; objects[i] = nullptr;
             }
           });
       }
@@ -79,21 +79,21 @@ namespace embree
           TriangleMesh* mesh = scene->getTriangleMeshSafe(objectID);
           
           /* verify meshes got deleted properly */
-          if (mesh == NULL || mesh->numTimeSteps != 1) {
-            assert(objectID < objects.size () && objects[objectID] == NULL);
-            assert(objectID < builders.size() && builders[objectID] == NULL);
+          if (mesh == nullptr || mesh->numTimeSteps != 1) {
+            assert(objectID < objects.size () && objects[objectID] == nullptr);
+            assert(objectID < builders.size() && builders[objectID] == nullptr);
             continue;
           }
           
           /* delete BVH and builder for meshes that are scheduled for deletion */
           if (mesh->isErasing()) {
-            delete builders[objectID]; builders[objectID] = NULL;
-            delete objects [objectID]; objects [objectID] = NULL;
+            delete builders[objectID]; builders[objectID] = nullptr;
+            delete objects [objectID]; objects [objectID] = nullptr;
             continue;
           }
           
           /* create BVH and builder for new meshes */
-          if (objects[objectID] == NULL)
+          if (objects[objectID] == nullptr)
             createTriangleMeshAccel(mesh,(AccelData*&)objects[objectID],builders[objectID]);
         }
       });
@@ -105,7 +105,7 @@ namespace embree
         {
           /* ignore if no triangle mesh or not enabled */
           TriangleMesh* mesh = scene->getTriangleMeshSafe(objectID);
-          if (mesh == NULL || !mesh->isEnabled() || mesh->numTimeSteps != 1) 
+          if (mesh == nullptr || !mesh->isEnabled() || mesh->numTimeSteps != 1) 
             continue;
         
           BVH4*    object  = objects [objectID]; assert(object);

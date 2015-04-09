@@ -486,7 +486,7 @@ namespace embree
               const DiscreteTessellationPattern pattern_y = pattern1.size() > pattern3.size() ? pattern1 : pattern3;
               const int nx = pattern_x.size();
               const int ny = pattern_y.size();
-              size_t N = Grid::createLazy(bvh,NULL,mesh->id,f,id,nx,ny,alloc,&prims[base.size()+s.size()]);
+              size_t N = Grid::createLazy(bvh,nullptr,mesh->id,f,id,nx,ny,alloc,&prims[base.size()+s.size()]);
               assert(N == Grid::getNumLazyLeaves(nx,ny));
               for (size_t i=0; i<N; i++)
                 s.add(prims[base.size()+s.size()].bounds());
@@ -864,11 +864,11 @@ namespace embree
          DBG_CACHE_BUILDER(std::cout << "DEALLOCATING SUBDIVPATCH1CACHED MEMORY" << std::endl);
           if (this->bvh->data_mem) 
             os_free( this->bvh->data_mem, this->bvh->size_data_mem );
-          this->bvh->data_mem      = NULL;
+          this->bvh->data_mem      = nullptr;
           this->bvh->size_data_mem = 0;
         }
 
-     if (bvh->data_mem == NULL)
+     if (bvh->data_mem == nullptr)
        {
          DBG_CACHE_BUILDER(std::cout << "ALLOCATING SUBDIVPATCH1CACHED MEMORY FOR " << numPrimitives << " PRIMITIVES" << std::endl);
          this->bvh->size_data_mem = sizeof(SubdivPatch1Cached) * numPrimitives;
@@ -876,7 +876,7 @@ namespace embree
 	 if ( this->bvh->size_data_mem != 0)
 	   this->bvh->data_mem      = os_malloc( this->bvh->size_data_mem );        
 	 else
-	   this->bvh->data_mem      = NULL;
+	   this->bvh->data_mem      = nullptr;
        }
      assert(this->bvh->data_mem);
       SubdivPatch1Cached *const subdiv_patches = (SubdivPatch1Cached *)this->bvh->data_mem;

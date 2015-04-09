@@ -46,10 +46,10 @@
 
 /* scene data */
 extern "C" ISPCScene* g_ispc_scene;
-RTCScene g_scene = NULL;
-RTCScene g_embree_scene = NULL;
-RTCScene g_osd_scene = NULL;
-void** geomID_to_mesh = NULL;
+RTCScene g_scene = nullptr;
+RTCScene g_embree_scene = nullptr;
+RTCScene g_osd_scene = nullptr;
+void** geomID_to_mesh = nullptr;
 
 /* render function to use */
 renderPixelFunc renderPixel;
@@ -214,7 +214,7 @@ void convertScene(ISPCScene* scene_in, const Vec3fa& p)
     if (mesh->vertex_crease_weights) rtcSetBuffer(g_scene, geomID, RTC_VERTEX_CREASE_WEIGHT_BUFFER, mesh->vertex_crease_weights, 0, sizeof(float));
 
 #if ENABLE_DISPLACEMENTS == 1
-    rtcSetDisplacementFunction(g_scene, geomID, (RTCDisplacementFunc)&displacementFunction,NULL);
+    rtcSetDisplacementFunction(g_scene, geomID, (RTCDisplacementFunc)&displacementFunction,nullptr);
 #endif
 
    /* generate face offset table for faster edge level updates */
@@ -273,7 +273,7 @@ private:
 
 RTCScene constructSceneOpenSubdiv() 
 {
-  if (!g_ispc_scene) return NULL;
+  if (!g_ispc_scene) return nullptr;
 
   typedef Far::TopologyRefinerFactoryBase::TopologyDescriptor Descriptor;
 
@@ -458,7 +458,7 @@ void renderTile(int taskIndex, int* pixels,
 extern "C" void toggleOpenSubdiv(int key, int x, int y)
 {
 #if defined(__USE_OPENSUBDIV__)
-  if (g_osd_scene == NULL) {
+  if (g_osd_scene == nullptr) {
     g_osd_scene = constructSceneOpenSubdiv();
     g_embree_scene = g_scene;
   }
@@ -482,7 +482,7 @@ extern "C" void device_render (int* pixels,
    Vec3fa cam_org = Vec3fa(p.x,p.y,p.z);
 
    /* create scene */
-   if (g_scene == NULL)
+   if (g_scene == nullptr)
   { 
     g_scene = rtcNewScene(RTC_SCENE_DYNAMIC,RTC_INTERSECT1);
     convertScene(g_ispc_scene,cam_org);

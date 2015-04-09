@@ -97,7 +97,7 @@ void process_error(RTCError error, const char* str);
   }
 
 #define RTCORE_VERIFY_HANDLE(handle) \
-  if (handle == NULL) {                                                 \
+  if (handle == nullptr) {                                                 \
     throw_RTCError(RTC_INVALID_ARGUMENT,"invalid argument");             \
   }
 

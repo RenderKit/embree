@@ -214,7 +214,7 @@ namespace embree
   public:
 
     /*! BVH8 default constructor. */
-    BVH8 (const PrimitiveType& primTy, Scene* scene = NULL);
+    BVH8 (const PrimitiveType& primTy, Scene* scene = nullptr);
 
     /*! BVH8 destruction */
     ~BVH8 ();

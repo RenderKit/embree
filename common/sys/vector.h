@@ -26,10 +26,10 @@ namespace embree
     public:
 
       vector_t () 
-        : size_active(0), size_alloced(0), items(NULL) {}
+        : size_active(0), size_alloced(0), items(nullptr) {}
 
       vector_t (size_t sz) 
-        : size_active(0), size_alloced(0), items(NULL) { resize(sz); }
+        : size_active(0), size_alloced(0), items(nullptr) { resize(sz); }
 
       ~vector_t() {
         clear();
@@ -115,7 +115,7 @@ namespace embree
           alloc.destroy(&items[i]);
         
         /* free memory */
-        alloc.deallocate(items,size_alloced); items = NULL;
+        alloc.deallocate(items,size_alloced); items = nullptr;
         size_active = size_alloced = 0;
       }
 

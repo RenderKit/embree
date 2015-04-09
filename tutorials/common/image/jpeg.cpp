@@ -52,7 +52,7 @@ namespace embree
         JSAMPARRAY scanline = (*cinfo->mem->alloc_sarray)((j_common_ptr) cinfo, JPOOL_IMAGE, bytes, 1);
 
         /*! Allocate storage for the decompressed image. */
-        unsigned char *image = (unsigned char *) malloc(cinfo->output_height * bytes);  if (image == NULL) return(NULL);
+        unsigned char *image = (unsigned char *) malloc(cinfo->output_height * bytes);  if (image == nullptr) return(nullptr);
 
         /*! Here we use the library state variable 'output_scanline' as the loop index. */
         while (cinfo->output_scanline < cinfo->output_height) jpeg_read_scanlines(cinfo, scanline, 1), memcpy(&image[(cinfo->output_scanline - 1) * bytes], scanline[0], bytes);

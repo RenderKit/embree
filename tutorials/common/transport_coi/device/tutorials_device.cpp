@@ -42,7 +42,7 @@ namespace embree
 	      int numVertices, 
 	      int meshMaterialID) 
       : numTriangles(numTriangles), numQuads(numQuads), numVertices(numVertices),
-        positions(NULL), positions2(NULL), normals(NULL), texcoords(NULL), triangles(NULL), quads(NULL), edge_level(NULL), meshMaterialID(meshMaterialID)
+        positions(nullptr), positions2(nullptr), normals(nullptr), texcoords(nullptr), triangles(nullptr), quads(nullptr), edge_level(nullptr), meshMaterialID(meshMaterialID)
     {
       sizePositions = 0;
       sizeNormals   = 0;
@@ -59,12 +59,12 @@ namespace embree
       if (triangles)  os_free(triangles ,sizeTriangles);
       if (quads)      os_free(quads     ,sizeQuads);
 
-      positions = NULL;
-      positions2 = NULL;
-      normals   = NULL;
-      texcoords = NULL;
-      triangles = NULL;
-      quads = NULL;
+      positions = nullptr;
+      positions2 = nullptr;
+      normals   = nullptr;
+      texcoords = nullptr;
+      triangles = nullptr;
+      quads = nullptr;
     }
 
   public:
@@ -96,11 +96,11 @@ public:
   ISPCSubdivMesh(int numVertices, int numFaces, int numEdges, int materialID) : 
     numVertices(numVertices), numFaces(numFaces), numEdges(numEdges), materialID(materialID),
     numEdgeCreases(0),numVertexCreases(0),numHoles(0),geomID(0),
-    positions(NULL),normals(NULL),position_indices(NULL),
-    normal_indices(NULL),texcoord_indices(NULL), verticesPerFace(NULL),
-    holes(NULL), subdivlevel(NULL), 
-    edge_creases(NULL), edge_crease_weights(NULL), vertex_creases(NULL), 
-    vertex_crease_weights(NULL)
+    positions(nullptr),normals(nullptr),position_indices(nullptr),
+    normal_indices(nullptr),texcoord_indices(nullptr), verticesPerFace(nullptr),
+    holes(nullptr), subdivlevel(nullptr), 
+    edge_creases(nullptr), edge_crease_weights(nullptr), vertex_creases(nullptr), 
+    vertex_crease_weights(nullptr)
   {
     //PRINT(numVertices);
     //PRINT(numFaces);
@@ -153,7 +153,7 @@ public:
     int numVertices;
     int numHairs;
     ISPCHairSet(int numHairs, int numVertices) 
-      : numHairs(numHairs),numVertices(numVertices),positions(NULL),positions2(NULL),hairs(NULL) {}
+      : numHairs(numHairs),numVertices(numVertices),positions(nullptr),positions2(nullptr),hairs(nullptr) {}
     ~ISPCHairSet() {
       if (positions) free(positions);
       if (positions2) free(positions2);
@@ -180,21 +180,21 @@ struct ISPCSubdivMeshKeyFrame {
                void* distantLights_in, int numDistantLights,
 	       int numSubdivMeshes)
 
-      : meshes(NULL), numMeshes(numMeshes), numHairSets(numHairSets), 
-        materials(NULL), numMaterials(numMaterials),
-        ambientLights(NULL), numAmbientLights(numAmbientLights),
-        pointLights(NULL), numPointLights(numPointLights),
-        directionalLights(NULL), numDirectionalLights(numDirectionalLights),
-        distantLights(NULL), numDistantLights(numDistantLights),
-	subdiv(NULL), numSubdivMeshes(numSubdivMeshes), subdivMeshKeyFrames(NULL), numSubdivMeshKeyFrames(0)
+      : meshes(nullptr), numMeshes(numMeshes), numHairSets(numHairSets), 
+        materials(nullptr), numMaterials(numMaterials),
+        ambientLights(nullptr), numAmbientLights(numAmbientLights),
+        pointLights(nullptr), numPointLights(numPointLights),
+        directionalLights(nullptr), numDirectionalLights(numDirectionalLights),
+        distantLights(nullptr), numDistantLights(numDistantLights),
+	subdiv(nullptr), numSubdivMeshes(numSubdivMeshes), subdivMeshKeyFrames(nullptr), numSubdivMeshKeyFrames(0)
       {
         meshes = new ISPCMesh*[numMeshes];
         for (size_t i=0; i<numMeshes; i++)
-          meshes[i] = NULL;
+          meshes[i] = nullptr;
 
         hairsets = new ISPCHairSet*[numHairSets];
         for (size_t i=0; i<numHairSets; i++)
-          hairsets[i] = NULL;
+          hairsets[i] = nullptr;
         
         materials = new OBJScene::Material[numMaterials];
         memcpy(materials,materials_in,numMaterials*sizeof(OBJScene::Material));
@@ -213,7 +213,7 @@ struct ISPCSubdivMeshKeyFrame {
 
         subdiv = new ISPCSubdivMesh*[numSubdivMeshes];
         for (size_t i=0; i<numSubdivMeshes; i++)
-          subdiv[i] = NULL;
+          subdiv[i] = nullptr;
       }
 
     ~ISPCScene () 
@@ -228,7 +228,7 @@ struct ISPCSubdivMeshKeyFrame {
         for (size_t i=0; i<numMeshes; i++)
           if (meshes[i]) delete meshes[i];
 	delete[] meshes;
-	meshes = NULL;
+	meshes = nullptr;
       }
     }
 
@@ -264,7 +264,7 @@ struct ISPCSubdivMeshKeyFrame {
   static size_t g_meshID = 0;
   static size_t g_hairsetID = 0;
 
-  extern "C" ISPCScene* g_ispc_scene = NULL;
+  extern "C" ISPCScene* g_ispc_scene = nullptr;
 
   extern "C" void run_init(uint32_t         in_BufferCount,
                            void**           in_ppBufferPointers,
@@ -335,7 +335,7 @@ struct ISPCSubdivMeshKeyFrame {
 	mesh->quads[0].v2 == 0,
 	mesh->quads[0].v3 == 0)
       {
-	mesh->quads = NULL;
+	mesh->quads = nullptr;
 	mesh->numQuads = 0;
 	mesh->sizeQuads = 0;
       }
@@ -539,7 +539,7 @@ struct ISPCSubdivMeshKeyFrame {
                               uint16_t         in_ReturnValueLength)
   {
     device_cleanup();
-    if (g_ispc_scene) delete g_ispc_scene; g_ispc_scene = NULL;
+    if (g_ispc_scene) delete g_ispc_scene; g_ispc_scene = nullptr;
   }
 }
 

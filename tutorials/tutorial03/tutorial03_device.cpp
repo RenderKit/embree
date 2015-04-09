@@ -19,7 +19,7 @@
 
 /* scene data */
 extern "C" ISPCScene* g_ispc_scene;
-RTCScene g_scene = NULL;
+RTCScene g_scene = nullptr;
 
 /* render function to use */
 renderPixelFunc renderPixel;
@@ -210,7 +210,7 @@ extern "C" void device_render (int* pixels,
                            const Vec3fa& p)
 {
   /* create scene */
-  if (g_scene == NULL) { 
+  if (g_scene == nullptr) { 
     g_scene = convertScene(g_ispc_scene);
     rtcCommit (g_scene);
   }

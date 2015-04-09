@@ -46,7 +46,7 @@
 
 
 /* accumulation buffer */
-Vec3fa* g_accu = NULL;
+Vec3fa* g_accu = nullptr;
 size_t g_accu_width = 0;
 size_t g_accu_height = 0;
 size_t g_accu_count = 0;
@@ -72,7 +72,7 @@ void filterDispatch(void* ptr, struct RTCRay2& ray);
 
 /* scene data */
 extern "C" ISPCScene* g_ispc_scene;
-RTCScene g_scene = NULL;
+RTCScene g_scene = nullptr;
 
 /* error reporting function */
 void error_handler(const RTCError code, const int8* str)
@@ -172,7 +172,7 @@ RTCScene convertScene(ISPCScene* scene_in)
       rtcSetBuffer(scene_out, geomID, RTC_LEVEL_BUFFER,  mesh->edge_level, 0, sizeof(float));
       
 #if ENABLE_DISPLACEMENTS == 1
-      rtcSetDisplacementFunction(scene_out,geomID,(RTCDisplacementFunc)&displacementFunction,NULL);
+      rtcSetDisplacementFunction(scene_out,geomID,(RTCDisplacementFunc)&displacementFunction,nullptr);
 #endif
      } 
     else if (mesh->numTriangles)
@@ -429,7 +429,7 @@ Vec3fa renderPixelPathTrace(float x, float y, const Vec3fa& vx, const Vec3fa& vy
   ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
   ray.time = time;
-  ray.filter = NULL; 
+  ray.filter = nullptr; 
   
   Vec3fa color = Vec3fa(0.0f);
   Vec3fa weight = Vec3fa(1.0f);
@@ -539,7 +539,7 @@ Vec3fa renderPixelPathTrace(float x, float y, const Vec3fa& vx, const Vec3fa& vy
     ray.primID = RTC_INVALID_GEOMETRY_ID;
     ray.mask = -1;
     ray.time = time;
-    ray.filter = NULL;
+    ray.filter = nullptr;
     weight = weight * c/wi.w; // FIXME: use *= operator
 
 #else    
@@ -577,7 +577,7 @@ Vec3fa renderPixelTestEyeLight(float x, float y, const Vec3fa& vx, const Vec3fa&
   float weight = 1.0f;
 
   rtcIntersect(g_scene,*((RTCRay*)&ray)); // FIXME: use (RTCRay&) cast
-  ray.filter = NULL; 
+  ray.filter = nullptr; 
 
   if (ray.primID == -1)
     return Vec3fa(0.0f);
@@ -659,7 +659,7 @@ extern "C" void device_render (int* pixels,
                            const Vec3fa& p)
 {
   /* create scene */
-  if (g_scene == NULL)
+  if (g_scene == nullptr)
     g_scene = convertScene(g_ispc_scene);
 
   /* create accumulator */

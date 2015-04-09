@@ -29,7 +29,7 @@
 
 
 /* scene data */
-RTCScene g_scene = NULL;
+RTCScene g_scene = nullptr;
 
 /* render function to use */
 renderPixelFunc renderPixel;

@@ -35,7 +35,7 @@ namespace embree
     }
 
     /*! check if the i'th primitive is valid */
-    __forceinline bool valid(size_t i, BBox3fa* bbox = NULL) const 
+    __forceinline bool valid(size_t i, BBox3fa* bbox = nullptr) const 
     {
       const BBox3fa b = bounds(i);
       if (bbox) *bbox = b;

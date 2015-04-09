@@ -40,7 +40,7 @@ namespace embree
         };
 
         __forceinline UnalignedHeuristicArrayBinningSAH ()
-          : prims(NULL) {}
+          : prims(nullptr) {}
         
         /*! remember prim array */
         __forceinline UnalignedHeuristicArrayBinningSAH (PrimRef* prims)

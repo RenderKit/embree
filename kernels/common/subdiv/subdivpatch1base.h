@@ -783,7 +783,7 @@ namespace embree
           mic3f vtx = patch.eval16(u, v);
 
           /* eval displacement function */
-	  if (unlikely(((SubdivMesh*)geom)->displFunc != NULL))
+	  if (unlikely(((SubdivMesh*)geom)->displFunc != nullptr))
             {
               mic3f normal = patch.normal16(u, v);
               normal = normalize(normal);
@@ -827,7 +827,7 @@ namespace embree
         avxf vv = load8f(&grid_v[8*i]);
         avx3f vtx = patch.eval8(uu,vv);
                  
-        if (unlikely(((SubdivMesh*)geom)->displFunc != NULL))
+        if (unlikely(((SubdivMesh*)geom)->displFunc != nullptr))
           {
 	    const Vec2f uv0 = patch.getUV(0);
 	    const Vec2f uv1 = patch.getUV(1);
@@ -865,7 +865,7 @@ namespace embree
         sse3f vtx = patch.eval4(uu,vv);
           
           
-        if (unlikely(((SubdivMesh*)geom)->displFunc != NULL))
+        if (unlikely(((SubdivMesh*)geom)->displFunc != nullptr))
           {
 	    const Vec2f uv0 = patch.getUV(0);
 	    const Vec2f uv1 = patch.getUV(1);

@@ -76,7 +76,7 @@ public:
             if ( !err ) break;
 
             CPU_FREE( mask );
-            mask = NULL;
+            mask = nullptr;
             if ( errno != EINVAL )  break;
         }
         if ( !mask )
@@ -184,12 +184,12 @@ namespace embree
   std::fstream fs;
 
   static const size_t ITER = 10;
-  //TaskSchedulerTBB* newscheduler = NULL;
+  //TaskSchedulerTBB* newscheduler = nullptr;
 
   struct box_benchmark
   {
     box_benchmark() 
-      : N(0), array(NULL) {}
+      : N(0), array(nullptr) {}
     
     size_t N;
     BBox3fa* array;
@@ -419,7 +419,7 @@ namespace embree
   struct reduce_benchmark
   {
     reduce_benchmark() 
-      : N(0), array(NULL) {}
+      : N(0), array(nullptr) {}
     
     size_t N;
     double* array;
@@ -734,7 +734,7 @@ namespace embree
       size_t x, y;
       //for (volatile size_t i=0; ; i++);
       tbb::parallel_invoke([&]{x=Fib(n-1);}, [&]{y=Fib(n-2);});
-      //if (n == 40) *((char*)NULL) = 0;
+      //if (n == 40) *((char*)nullptr) = 0;
       return x+y;
     }
   }
@@ -771,7 +771,7 @@ namespace embree
       size_t r0 = Fib(N);
       double t1 = getSeconds();
       //sleep(1);
-      //*((char*)NULL) = 0;
+      //*((char*)nullptr) = 0;
       //Fib(N);
       printf("  tbb_fib(%zu) = %zu, %3.2fms\n",N,r0,1000.0f*(t1-t0));
 

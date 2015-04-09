@@ -69,14 +69,14 @@ namespace embree
     {
     public:
       __forceinline Task() 
-        : event(NULL), run(NULL), runData(NULL), complete(NULL), completeData(NULL), name(NULL), locks(0) {}
+        : event(nullptr), run(nullptr), runData(nullptr), complete(nullptr), completeData(nullptr), name(nullptr), locks(0) {}
 
       __forceinline Task(Event* event, runFunction run, void* runData, size_t elts, completeFunction complete, void* completeData, const char* name)
         : event(event), run(run), runData(runData), elts(elts), complete(complete), completeData(completeData), 
         started(elts), completed(elts), name(name), locks(0) {}
 
       __forceinline Task(Event* event, completeFunction complete, void* completeData, const char* name)
-        : event(event), run(NULL), runData(NULL), elts(1), complete(complete), completeData(completeData), 
+        : event(event), run(nullptr), runData(nullptr), elts(1), complete(complete), completeData(completeData), 
         started(1), completed(1), name(name), locks(0) {}
 
     public:
@@ -95,7 +95,7 @@ namespace embree
     /* an event that gets triggered by a task when completed */
     struct Event 
     {
-      __forceinline Event (int activeTasks = 1, Event* other = NULL) 
+      __forceinline Event (int activeTasks = 1, Event* other = nullptr) 
         : activeTasks(activeTasks), other(other) 
       {
         if (other) other->inc();
@@ -120,7 +120,7 @@ namespace embree
     /* a group of tasks that one can wait for */
     struct EventSync : public Event
     {
-      __forceinline EventSync (Event* other = NULL) : Event(1,other) {}
+      __forceinline EventSync (Event* other = nullptr) : Event(1,other) {}
       __forceinline void sync() { dec(); event.wait(); }
       void trigger() { event.signal(); }
     public:
@@ -256,7 +256,7 @@ namespace embree
 	if (threadIndex == 0 && threadCount != 0) {
 	  scheduler->leave(threadIndex,threadCount);
 	  scheduler->barrier.reset();
-	  setInstance(NULL);
+	  setInstance(nullptr);
 	}
       }
 
@@ -265,7 +265,7 @@ namespace embree
     };
 
     __forceinline LockStepTaskScheduler()
-      : numTasks(0), threadCount(0), insideTask(false), data(NULL) {}
+      : numTasks(0), threadCount(0), insideTask(false), data(nullptr) {}
 
     static __thread LockStepTaskScheduler* t_scheduler;
     static __dllexport LockStepTaskScheduler* instance();
@@ -313,14 +313,14 @@ namespace embree
     __forceinline bool dispatchTask(runFunction task, void* data, const size_t threadID, const size_t numThreads)
     {
       LockStepTaskScheduler::taskPtr = task;
-      LockStepTaskScheduler::taskPtr2 = NULL;
+      LockStepTaskScheduler::taskPtr2 = nullptr;
       LockStepTaskScheduler::data = data;
       return LockStepTaskScheduler::dispatchTask(threadID, numThreads);
     }
 
     __forceinline bool dispatchTask(const size_t threadID, const size_t numThreads, runFunction2 task, void* data, const size_t numTasks, const char* name = "")
     {
-      LockStepTaskScheduler::taskPtr = NULL;
+      LockStepTaskScheduler::taskPtr = nullptr;
       LockStepTaskScheduler::taskPtr2 = task;
       LockStepTaskScheduler::data = data;
       LockStepTaskScheduler::numTasks = numTasks;
@@ -329,7 +329,7 @@ namespace embree
 
     __forceinline bool dispatchTaskSet(runFunction2 task, void* data, const size_t numTasks)
     {
-      LockStepTaskScheduler::taskPtr = NULL;
+      LockStepTaskScheduler::taskPtr = nullptr;
       LockStepTaskScheduler::taskPtr2 = task;
       LockStepTaskScheduler::data = data;
       LockStepTaskScheduler::numTasks = numTasks;
@@ -421,7 +421,7 @@ namespace embree
       : closure(closure)
       {
         TaskScheduler::EventSync event;
-        TaskScheduler::Task task(&event,_task_execute_parallel,this,TaskScheduler::getNumThreads(),NULL,NULL,"executing_closure");
+        TaskScheduler::Task task(&event,_task_execute_parallel,this,TaskScheduler::getNumThreads(),nullptr,nullptr,"executing_closure");
         TaskScheduler::addTask(-1,TaskScheduler::GLOBAL_FRONT,&task);
         event.sync();
       }

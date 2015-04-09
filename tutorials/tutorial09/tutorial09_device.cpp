@@ -24,7 +24,7 @@
 #endif
 
 /* scene data */
-RTCScene g_scene = NULL;
+RTCScene g_scene = nullptr;
 
 /* render function to use */
 renderPixelFunc renderPixel;
@@ -143,7 +143,7 @@ unsigned int addCube (RTCScene scene_i)
   for (size_t i=0; i<NUM_INDICES; i++) level[i] = EDGE_LEVEL;
   rtcUnmapBuffer(scene_i, geomID, RTC_LEVEL_BUFFER);
 
-  rtcSetDisplacementFunction(scene_i,geomID,(RTCDisplacementFunc)&displacementFunction,NULL);
+  rtcSetDisplacementFunction(scene_i,geomID,(RTCDisplacementFunc)&displacementFunction,nullptr);
 
   return geomID;
 }

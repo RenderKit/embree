@@ -72,8 +72,8 @@ namespace embree
       }
 
       ~buffered_socket_t () {
-        delete[] ibuf; ibuf = NULL;
-        delete[] obuf; obuf = NULL;
+        delete[] ibuf; ibuf = nullptr;
+        delete[] obuf; obuf = nullptr;
       }
       
       SOCKET fd;               //!< file descriptor of the socket
@@ -95,7 +95,7 @@ namespace embree
       
       /*! perform DNS lookup */
       struct hostent* server = ::gethostbyname(host);
-      if (server == NULL) THROW_RUNTIME_ERROR("server "+std::string(host)+" not found");
+      if (server == nullptr) THROW_RUNTIME_ERROR("server "+std::string(host)+" not found");
       
       /*! perform connection */
       struct sockaddr_in serv_addr;

@@ -29,8 +29,8 @@ namespace embree
     __forceinline BarrierSysImplementation () 
       : i(0), enterCount(0), exitCount(0), barrierSize(0) 
     {
-      events[0] = CreateEvent(NULL, TRUE, FALSE, NULL);
-      events[1] = CreateEvent(NULL, TRUE, FALSE, NULL);
+      events[0] = CreateEvent(nullptr, TRUE, FALSE, nullptr);
+      events[1] = CreateEvent(nullptr, TRUE, FALSE, nullptr);
     }
     
     __forceinline ~BarrierSysImplementation ()

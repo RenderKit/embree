@@ -35,7 +35,7 @@ namespace embree
         static const size_t PARALLEL_PARITION_BLOCK_SIZE = 64;
 
         __forceinline HeuristicArrayBinningSAH ()
-          : prims(NULL) {}
+          : prims(nullptr) {}
         
         /*! remember prim array */
         __forceinline HeuristicArrayBinningSAH (PrimRef* prims)

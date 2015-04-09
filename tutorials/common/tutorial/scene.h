@@ -132,7 +132,7 @@ namespace embree
 
     void *data;
 
-    Texture() : width(-1), height(-1), format(-1), bytesPerTexel(0), data(NULL), width_mask(0), height_mask(0)
+    Texture() : width(-1), height(-1), format(-1), bytesPerTexel(0), data(nullptr), width_mask(0), height_mask(0)
       {
       }
     };
@@ -181,10 +181,10 @@ namespace embree
     {
     public:
       OBJMaterial ()
-      : ty(MATERIAL_OBJ), illum(0), d(1.f), Ns(1.f), Ni(1.f), Ka(0.f), Kd(1.f), Ks(0.f), Tf(0.0f), map_Kd(NULL), map_Displ(NULL) {};
+      : ty(MATERIAL_OBJ), illum(0), d(1.f), Ns(1.f), Ni(1.f), Ka(0.f), Kd(1.f), Ks(0.f), Tf(0.0f), map_Kd(nullptr), map_Displ(nullptr) {};
 
       OBJMaterial (float d, const Vec3fa& Kd, const Vec3fa& Ks, const float Ns)
-      : ty(MATERIAL_OBJ), illum(0), d(d), Ns(Ns), Ni(1.f), Ka(0.f), Kd(Kd), Ks(Ks), Tf(0.0f), map_Kd(NULL), map_Displ(NULL) {}
+      : ty(MATERIAL_OBJ), illum(0), d(d), Ns(Ns), Ni(1.f), Ka(0.f), Kd(Kd), Ks(Ks), Tf(0.0f), map_Kd(nullptr), map_Displ(nullptr) {}
 
       ~OBJMaterial() { // FIXME: destructor never called!
       }

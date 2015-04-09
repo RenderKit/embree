@@ -56,8 +56,8 @@ namespace embree
 
     struct Intersector1
     {
-      Intersector1 (ErrorFunc error = NULL) 
-      : intersect((IntersectFunc)error), occluded((OccludedFunc)error), name(NULL) {}
+      Intersector1 (ErrorFunc error = nullptr) 
+      : intersect((IntersectFunc)error), occluded((OccludedFunc)error), name(nullptr) {}
 
       Intersector1 (IntersectFunc intersect, OccludedFunc occluded, const char* name)
       : intersect(intersect), occluded(occluded), name(name) {}
@@ -73,8 +73,8 @@ namespace embree
       
       struct Intersector4 
       {
-        Intersector4 (ErrorFunc error = NULL) 
-        : intersect((void*)error), occluded((void*)error), name(NULL), ispc(false) {}
+        Intersector4 (ErrorFunc error = nullptr) 
+        : intersect((void*)error), occluded((void*)error), name(nullptr), ispc(false) {}
 
         Intersector4 (void* intersect, void* occluded, const char* name, bool ispc)
         : intersect(intersect), occluded(occluded), name(name), ispc(ispc) {}
@@ -91,8 +91,8 @@ namespace embree
       
       struct Intersector8 
       {
-        Intersector8 (ErrorFunc error = NULL) 
-        : intersect((void*)error), occluded((void*)error), name(NULL), ispc(false) {}
+        Intersector8 (ErrorFunc error = nullptr) 
+        : intersect((void*)error), occluded((void*)error), name(nullptr), ispc(false) {}
 
         Intersector8 (void* intersect, void* occluded, const char* name, bool ispc)
         : intersect(intersect), occluded(occluded), name(name), ispc(ispc) {}
@@ -109,8 +109,8 @@ namespace embree
       
       struct Intersector16 
       {
-        Intersector16 (ErrorFunc error = NULL) 
-        : intersect((void*)error), occluded((void*)error), name(NULL), ispc(false) {}
+        Intersector16 (ErrorFunc error = nullptr) 
+        : intersect((void*)error), occluded((void*)error), name(nullptr), ispc(false) {}
 
         Intersector16 (void* intersect, void* occluded, const char* name, bool ispc)
         : intersect(intersect), occluded(occluded), name(name), ispc(ispc) {}
@@ -129,7 +129,7 @@ namespace embree
       
       /*! Construction */
       AccelSet (size_t numItems) : numItems(numItems) {
-        intersectors.ptr = NULL; 
+        intersectors.ptr = nullptr; 
       }
       
       /*! Virtual destructor */
@@ -236,7 +236,7 @@ namespace embree
 
       struct Intersectors 
       {
-        Intersectors() : ptr(NULL) {}
+        Intersectors() : ptr(nullptr) {}
       public:
         void* ptr;
         Intersector1 intersector1;

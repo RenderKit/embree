@@ -22,11 +22,11 @@ namespace embree
   Geometry::Geometry (Scene* parent, Type type, size_t numPrimitives, size_t numTimeSteps, RTCGeometryFlags flags) 
     : parent(parent), type(type), numPrimitives(numPrimitives), numTimeSteps(numTimeSteps), id(0), flags(flags),
       enabled(true), modified(true), erasing(false),
-      intersectionFilter1(NULL), occlusionFilter1(NULL),
-      intersectionFilter4(NULL), occlusionFilter4(NULL), ispcIntersectionFilter4(false), ispcOcclusionFilter4(false), 
-      intersectionFilter8(NULL), occlusionFilter8(NULL), ispcIntersectionFilter8(false), ispcOcclusionFilter8(false), 
-      intersectionFilter16(NULL), occlusionFilter16(NULL), ispcIntersectionFilter16(false), ispcOcclusionFilter16(false), 
-      userPtr(NULL)
+      intersectionFilter1(nullptr), occlusionFilter1(nullptr),
+      intersectionFilter4(nullptr), occlusionFilter4(nullptr), ispcIntersectionFilter4(false), ispcOcclusionFilter4(false), 
+      intersectionFilter8(nullptr), occlusionFilter8(nullptr), ispcIntersectionFilter8(false), ispcOcclusionFilter8(false), 
+      intersectionFilter16(nullptr), occlusionFilter16(nullptr), ispcIntersectionFilter16(false), ispcOcclusionFilter16(false), 
+      userPtr(nullptr)
   {
     id = parent->add(this);
     parent->setModified();
@@ -42,13 +42,13 @@ namespace embree
   void Geometry::updateIntersectionFilters(bool enable)
   {
     if (enable) {
-      atomic_add(&parent->numIntersectionFilters4,(intersectionFilter4 != NULL) + (occlusionFilter4 != NULL));
-      atomic_add(&parent->numIntersectionFilters8,(intersectionFilter8 != NULL) + (occlusionFilter8 != NULL));
-      atomic_add(&parent->numIntersectionFilters16,(intersectionFilter16 != NULL) + (occlusionFilter16 != NULL));
+      atomic_add(&parent->numIntersectionFilters4,(intersectionFilter4 != nullptr) + (occlusionFilter4 != nullptr));
+      atomic_add(&parent->numIntersectionFilters8,(intersectionFilter8 != nullptr) + (occlusionFilter8 != nullptr));
+      atomic_add(&parent->numIntersectionFilters16,(intersectionFilter16 != nullptr) + (occlusionFilter16 != nullptr));
     } else {
-      atomic_sub(&parent->numIntersectionFilters4,(intersectionFilter4 != NULL) + (occlusionFilter4 != NULL));
-      atomic_sub(&parent->numIntersectionFilters8,(intersectionFilter8 != NULL) + (occlusionFilter8 != NULL));
-      atomic_sub(&parent->numIntersectionFilters16,(intersectionFilter16 != NULL) + (occlusionFilter16 != NULL));
+      atomic_sub(&parent->numIntersectionFilters4,(intersectionFilter4 != nullptr) + (occlusionFilter4 != nullptr));
+      atomic_sub(&parent->numIntersectionFilters8,(intersectionFilter8 != nullptr) + (occlusionFilter8 != nullptr));
+      atomic_sub(&parent->numIntersectionFilters16,(intersectionFilter16 != nullptr) + (occlusionFilter16 != nullptr));
     }
   }
 
@@ -142,8 +142,8 @@ namespace embree
     if (type != TRIANGLE_MESH && type != BEZIER_CURVES)
       throw_RTCError(RTC_INVALID_OPERATION,"filter functions only supported for triangle meshes and hair geometries"); 
 
-    atomic_sub(&parent->numIntersectionFilters4,intersectionFilter4 != NULL);
-    atomic_add(&parent->numIntersectionFilters4,filter != NULL);
+    atomic_sub(&parent->numIntersectionFilters4,intersectionFilter4 != nullptr);
+    atomic_add(&parent->numIntersectionFilters4,filter != nullptr);
     intersectionFilter4 = filter;
     ispcIntersectionFilter4 = ispc;
   }
@@ -156,8 +156,8 @@ namespace embree
     if (type != TRIANGLE_MESH && type != BEZIER_CURVES)
       throw_RTCError(RTC_INVALID_OPERATION,"filter functions only supported for triangle meshes and hair geometries"); 
 
-    atomic_sub(&parent->numIntersectionFilters8,intersectionFilter8 != NULL);
-    atomic_add(&parent->numIntersectionFilters8,filter != NULL);
+    atomic_sub(&parent->numIntersectionFilters8,intersectionFilter8 != nullptr);
+    atomic_add(&parent->numIntersectionFilters8,filter != nullptr);
     intersectionFilter8 = filter;
     ispcIntersectionFilter8 = ispc;
   }
@@ -170,8 +170,8 @@ namespace embree
     if (type != TRIANGLE_MESH && type != BEZIER_CURVES)
       throw_RTCError(RTC_INVALID_OPERATION,"filter functions only supported for triangle meshes and hair geometries"); 
 
-    atomic_sub(&parent->numIntersectionFilters16,intersectionFilter16 != NULL);
-    atomic_add(&parent->numIntersectionFilters16,filter != NULL);
+    atomic_sub(&parent->numIntersectionFilters16,intersectionFilter16 != nullptr);
+    atomic_add(&parent->numIntersectionFilters16,filter != nullptr);
     intersectionFilter16 = filter;
     ispcIntersectionFilter16 = ispc;
   }
@@ -195,8 +195,8 @@ namespace embree
     if (type != TRIANGLE_MESH && type != BEZIER_CURVES)
       throw_RTCError(RTC_INVALID_OPERATION,"filter functions only supported for triangle meshes and hair geometries"); 
 
-    atomic_sub(&parent->numIntersectionFilters4,occlusionFilter4 != NULL);
-    atomic_add(&parent->numIntersectionFilters4,filter != NULL);
+    atomic_sub(&parent->numIntersectionFilters4,occlusionFilter4 != nullptr);
+    atomic_add(&parent->numIntersectionFilters4,filter != nullptr);
     occlusionFilter4 = filter;
     ispcOcclusionFilter4 = ispc;
   }
@@ -209,8 +209,8 @@ namespace embree
     if (type != TRIANGLE_MESH && type != BEZIER_CURVES)
       throw_RTCError(RTC_INVALID_OPERATION,"filter functions only supported for triangle meshes and hair geometries"); 
 
-    atomic_sub(&parent->numIntersectionFilters8,occlusionFilter8 != NULL);
-    atomic_add(&parent->numIntersectionFilters8,filter != NULL);
+    atomic_sub(&parent->numIntersectionFilters8,occlusionFilter8 != nullptr);
+    atomic_add(&parent->numIntersectionFilters8,filter != nullptr);
     occlusionFilter8 = filter;
     ispcOcclusionFilter8 = ispc;
   }
@@ -223,8 +223,8 @@ namespace embree
     if (type != TRIANGLE_MESH && type != BEZIER_CURVES) 
       throw_RTCError(RTC_INVALID_OPERATION,"filter functions only supported for triangle meshes and hair geometries"); 
 
-    atomic_sub(&parent->numIntersectionFilters16,occlusionFilter16 != NULL);
-    atomic_add(&parent->numIntersectionFilters16,filter != NULL);
+    atomic_sub(&parent->numIntersectionFilters16,occlusionFilter16 != nullptr);
+    atomic_add(&parent->numIntersectionFilters16,filter != nullptr);
     occlusionFilter16 = filter;
     ispcOcclusionFilter16 = ispc;
   }

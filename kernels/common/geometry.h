@@ -126,7 +126,7 @@ namespace embree
     /*! Maps specified buffer. */
     virtual void* map(RTCBufferType type) { 
       throw_RTCError(RTC_INVALID_OPERATION,"operation not supported for this geometry"); 
-      return NULL; 
+      return nullptr; 
     }
 
     /*! Unmap specified buffer. */
@@ -225,15 +225,15 @@ namespace embree
     }
 
   public:
-    __forceinline bool hasIntersectionFilter1() const { return intersectionFilter1 != NULL; }
-    __forceinline bool hasIntersectionFilter4() const { return intersectionFilter4 != NULL; }
-    __forceinline bool hasIntersectionFilter8() const { return intersectionFilter8 != NULL; }
-    __forceinline bool hasIntersectionFilter16() const { return intersectionFilter16 != NULL; }
+    __forceinline bool hasIntersectionFilter1() const { return intersectionFilter1 != nullptr; }
+    __forceinline bool hasIntersectionFilter4() const { return intersectionFilter4 != nullptr; }
+    __forceinline bool hasIntersectionFilter8() const { return intersectionFilter8 != nullptr; }
+    __forceinline bool hasIntersectionFilter16() const { return intersectionFilter16 != nullptr; }
 
-    __forceinline bool hasOcclusionFilter1() const { return occlusionFilter1 != NULL; }
-    __forceinline bool hasOcclusionFilter4() const { return occlusionFilter4 != NULL; }
-    __forceinline bool hasOcclusionFilter8() const { return occlusionFilter8 != NULL; }
-    __forceinline bool hasOcclusionFilter16() const { return occlusionFilter16 != NULL; }
+    __forceinline bool hasOcclusionFilter1() const { return occlusionFilter1 != nullptr; }
+    __forceinline bool hasOcclusionFilter4() const { return occlusionFilter4 != nullptr; }
+    __forceinline bool hasOcclusionFilter8() const { return occlusionFilter8 != nullptr; }
+    __forceinline bool hasOcclusionFilter16() const { return occlusionFilter16 != nullptr; }
 
   public:
     Scene* parent;             //!< pointer to scene this mesh belongs to

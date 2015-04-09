@@ -46,7 +46,7 @@ namespace embree
         begin = _begin;
         end = _end;
         depth = 1;
-        parent = NULL;
+        parent = nullptr;
       }
     };
     
@@ -180,7 +180,7 @@ namespace embree
         progressMonitor(progressMonitor),
         branchingFactor(branchingFactor), maxDepth(maxDepth), 
         minLeafSize(minLeafSize), maxLeafSize(maxLeafSize), 
-        morton(NULL) {}
+        morton(nullptr) {}
       
       void splitFallback(MortonBuildRecord<NodeRef>& current, MortonBuildRecord<NodeRef>& leftChild, MortonBuildRecord<NodeRef>& rightChild) const
       {
@@ -323,7 +323,7 @@ namespace embree
       
       BBox3fa recurse(MortonBuildRecord<NodeRef>& current, Allocator alloc, bool toplevel) 
       {
-        if (alloc == NULL) 
+        if (alloc == nullptr) 
           alloc = createAllocator();
 
         /* call memory monitor function to signal progress */
@@ -387,7 +387,7 @@ namespace embree
         {
           SPAWN_BEGIN;
           for (size_t i=0; i<numChildren; i++) {
-            SPAWN(([&,i]{ bounds[i] = recurse(children[i],NULL,true); }));
+            SPAWN(([&,i]{ bounds[i] = recurse(children[i],nullptr,true); }));
           }
           SPAWN_END;
         }
@@ -415,7 +415,7 @@ namespace embree
         NodeRef root;
         MortonBuildRecord<NodeRef> br(0,numPrimitives,&root,1);
         
-        const BBox3fa bounds = recurse(br, NULL, true);
+        const BBox3fa bounds = recurse(br, nullptr, true);
         return std::make_pair(root,bounds);
       }
       

@@ -227,7 +227,7 @@ namespace embree
     {
       begin       = _begin;
       end         = _end;
-      parentPtr   = NULL;
+      parentPtr   = nullptr;
       sArea       = area(bounds.geometry);
       flags       = BUILD_RECORD_NODE;
     }

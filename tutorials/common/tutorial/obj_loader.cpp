@@ -291,7 +291,7 @@ namespace embree
     return PtexFilter::getFilter(tex, opts);
   }
 #else
-  void* loadPtex(const FileName& fname) { return NULL; }
+  void* loadPtex(const FileName& fname) { return nullptr; }
 #endif
   
   /* load material file */

@@ -316,15 +316,15 @@ unsigned int createGroundPlane (RTCScene scene)
 }
 
 /* scene data */
-RTCScene g_scene  = NULL;
-RTCScene g_scene0 = NULL;
-RTCScene g_scene1 = NULL;
-RTCScene g_scene2 = NULL;
+RTCScene g_scene  = nullptr;
+RTCScene g_scene0 = nullptr;
+RTCScene g_scene1 = nullptr;
+RTCScene g_scene2 = nullptr;
 
-Instance* g_instance0 = NULL;
-Instance* g_instance1 = NULL;
-Instance* g_instance2 = NULL;
-Instance* g_instance3 = NULL;
+Instance* g_instance0 = nullptr;
+Instance* g_instance1 = nullptr;
+Instance* g_instance2 = nullptr;
+Instance* g_instance3 = nullptr;
 
 Vec3fa colors[5][4];
 

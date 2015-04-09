@@ -161,7 +161,7 @@ namespace embree
         
         const ReductionTy recurse(BuildRecord& current, Allocator alloc, bool toplevel)
         {
-          if (alloc == NULL)
+          if (alloc == nullptr)
             alloc = createAlloc();
           
           /* call memory monitor function to signal progress */
@@ -228,7 +228,7 @@ namespace embree
             SPAWN_BEGIN;
             //for (size_t i=0; i<numChildren; i++) 
             for (ssize_t i=numChildren-1; i>=0; i--)
-              SPAWN(([&,i] { values[i] = recurse(children[i],NULL,true); }));
+              SPAWN(([&,i] { values[i] = recurse(children[i],nullptr,true); }));
             SPAWN_END;
             
             /* perform reduction */
@@ -251,7 +251,7 @@ namespace embree
         {
           //BuildRecord br(record);
           record.split = find(record); 
-          return recurse(record,NULL,true);
+          return recurse(record,nullptr,true);
         }
         
       private:

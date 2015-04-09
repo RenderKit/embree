@@ -434,12 +434,12 @@ namespace embree
   public:
 
     /*! BVH4 default constructor. */
-    BVH4i (const PrimitiveType& primTy, void* geometry = NULL)
+    BVH4i (const PrimitiveType& primTy, void* geometry = nullptr)
       : primTy(primTy), 
       geometry(geometry), 
       root(emptyNode), 
-      qbvh(NULL), 
-      accel(NULL),
+      qbvh(nullptr), 
+      accel(nullptr),
       size_node(0),
       size_accel(0),
       numAllocated64BytesBlocks(0),

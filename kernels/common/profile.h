@@ -29,7 +29,7 @@ namespace embree
 
     ProfileTimer (const size_t numSkip) : i(0), j(0), maxJ(0), numSkip(numSkip), t0(0)
     {
-      for (size_t i=0; i<N; i++) names[i] = NULL;
+      for (size_t i=0; i<N; i++) names[i] = nullptr;
       for (size_t i=0; i<N; i++) dt_fst[i] = 0.0;
       for (size_t i=0; i<N; i++) dt_min[i] = pos_inf;
       for (size_t i=0; i<N; i++) dt_avg[i] = 0.0;
@@ -55,7 +55,7 @@ namespace embree
     {
       const double t1 = getSeconds();
       const double dt = t1-t0;
-      assert(names[j] == NULL || names[j] == name);
+      assert(names[j] == nullptr || names[j] == name);
       names[j] = name;
       if (i == 0) dt_fst[j] = dt;
       if (i>=numSkip) {
@@ -72,7 +72,7 @@ namespace embree
       const double t1 = getSeconds();
       const double dt = t1-tj;
       tj = t1;
-      assert(names[j] == NULL || names[j] == name);
+      assert(names[j] == nullptr || names[j] == name);
       names[j] = name;
       if (i == 0) dt_fst[j] = dt;
       if (i>=numSkip) {

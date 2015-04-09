@@ -60,7 +60,7 @@ namespace embree
   }
 
   extern "C" __dllexport void* ISPCAlloc(void** taskPtr, int64 size, int32 alignment) {
-    if (*taskPtr == NULL) *taskPtr = new TaskScheduler::EventSync;
+    if (*taskPtr == nullptr) *taskPtr = new TaskScheduler::EventSync;
     return (char*)_mm_malloc(size,alignment); 
   }
 
@@ -80,7 +80,7 @@ namespace embree
 
   extern "C" __dllexport void* ISPCAlloc(void** taskPtr, int64 size, int32 alignment) 
   {
-    if (*taskPtr == NULL) *taskPtr = new std::vector<void*>;
+    if (*taskPtr == nullptr) *taskPtr = new std::vector<void*>;
     std::vector<void*>* lst = (std::vector<void*>*)(*taskPtr);
     void* ptr = _mm_malloc(size,alignment);
     lst->push_back(ptr);

@@ -104,7 +104,7 @@ namespace embree
     __forceinline void fill(atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, Scene* scene, const bool list)
     {
       ssei geomID = -1, primID = -1;
-      Vec3f* v0[4] = { NULL, NULL, NULL, NULL };
+      Vec3f* v0[4] = { nullptr, nullptr, nullptr, nullptr };
       ssei v1 = zero, v2 = zero;
       PrimRef& prim = *prims;
       
@@ -137,7 +137,7 @@ namespace embree
     __forceinline void fill(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, const bool list)
     {
       ssei geomID = -1, primID = -1;
-      Vec3f* v0[4] = { NULL, NULL, NULL, NULL };
+      Vec3f* v0[4] = { nullptr, nullptr, nullptr, nullptr };
       ssei v1 = zero, v2 = zero;
       const PrimRef* prim = &prims[begin];
       

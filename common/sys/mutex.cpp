@@ -39,7 +39,7 @@ namespace embree
   MutexSys::MutexSys( void ) 
   { 
     mutex = new pthread_mutex_t; 
-    if (pthread_mutex_init((pthread_mutex_t*)mutex, NULL) != 0)
+    if (pthread_mutex_init((pthread_mutex_t*)mutex, nullptr) != 0)
       THROW_RUNTIME_ERROR("pthread_mutex_init failed");
   }
   

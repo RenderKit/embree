@@ -180,7 +180,7 @@ namespace embree
     RTCORE_VERIFY_GEOMID(geomID);
     return ((Scene*)scene)->get(geomID)->getUserData(); // this call is on purpose not thread safe
     RTCORE_CATCH_END;
-    return NULL;
+    return nullptr;
   }
 
   extern "C" void ispcSetBoundsFunction (RTCScene scene, unsigned geomID, RTCBoundsFunc bounds) {

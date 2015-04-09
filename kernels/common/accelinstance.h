@@ -28,12 +28,12 @@ namespace embree
       : accel(accel), builder(builder), Accel(intersectors) {}
 
     void immutable () {
-      delete builder; builder = NULL;
+      delete builder; builder = nullptr;
     }
 
     ~AccelInstance() {
-      delete builder; builder = NULL;
-      delete accel;   accel = NULL;
+      delete builder; builder = nullptr;
+      delete accel;   accel = nullptr;
     }
 
   public:

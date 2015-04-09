@@ -66,7 +66,7 @@ namespace embree
   public:
 
     __forceinline ThreadLocalData (void* init) 
-      : ptr(NULL), init(init) {}
+      : ptr(nullptr), init(init) {}
 
     __forceinline ~ThreadLocalData () {
       clear();
@@ -74,7 +74,7 @@ namespace embree
 
     __forceinline void clear() 
     {
-      if (ptr) destroyTls(ptr); ptr = NULL;
+      if (ptr) destroyTls(ptr); ptr = nullptr;
       for (size_t i=0; i<threads.size(); i++)
 	delete threads[i];
       threads.clear();
@@ -92,12 +92,12 @@ namespace embree
     
     __forceinline Type* get() const
     {
-      if (ptr == NULL) {
+      if (ptr == nullptr) {
 	Lock<AtomicMutex> lock(mutex);
-	if (ptr == NULL) ptr = createTls();
+	if (ptr == nullptr) ptr = createTls();
       }
       Type* lptr = (Type*) getTls(ptr);
-      if (unlikely(lptr == NULL)) {
+      if (unlikely(lptr == nullptr)) {
 	setTls(ptr,lptr = new Type(init));
 	Lock<AtomicMutex> lock(mutex);
 	threads.push_back(lptr);

@@ -47,7 +47,7 @@ namespace embree
       
       __forceinline int operator() (const isa::BVHBuilderBinnedSAH::BuildRecord& current, BVHBuilderBinnedSAH::BuildRecord* children, const size_t N, Allocator* alloc) 
       {
-        BVH8::Node* node = NULL;
+        BVH8::Node* node = nullptr;
         //if (current.pinfo.size() > 4096) node = (BVH8::Node*)   bvh->alloc2.malloc(sizeof(BVH8::Node),sizeof(BVH8::Node));
         //else
         node = (BVH8::Node*) alloc->alloc0.malloc(sizeof(BVH8::Node)); 
@@ -104,11 +104,11 @@ namespace embree
       const float presplitFactor;
 
       BVH8BuilderSAH (BVH8* bvh, Scene* scene, const size_t leafBlockSize, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
-        : bvh(bvh), scene(scene), mesh(NULL), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,leafBlockSize*BVH8::maxLeafBlocks)),
+        : bvh(bvh), scene(scene), mesh(nullptr), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,leafBlockSize*BVH8::maxLeafBlocks)),
           presplitFactor((mode & MODE_HIGH_QUALITY) ? 1.5f : 1.0f) {}
 
       BVH8BuilderSAH (BVH8* bvh, Mesh* mesh, const size_t leafBlockSize, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
-        : bvh(bvh), scene(NULL), mesh(mesh), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,leafBlockSize*BVH8::maxLeafBlocks)),
+        : bvh(bvh), scene(nullptr), mesh(mesh), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,leafBlockSize*BVH8::maxLeafBlocks)),
           presplitFactor((mode & MODE_HIGH_QUALITY) ? 1.5f : 1.0f) {}
 
       void build(size_t, size_t) 
@@ -123,7 +123,7 @@ namespace embree
         const size_t numSplitPrimitives = max(numPrimitives,size_t(presplitFactor*numPrimitives));
       
         /* verbose mode */
-        if (State::instance()->verbosity(1) && mesh == NULL)
+        if (State::instance()->verbosity(1) && mesh == nullptr)
 	  std::cout << "building BVH8<" << bvh->primTy.name << "> with " << TOSTRING(isa) "::BVH8BuilderSAH " << (presplitFactor != 1.0f ? "presplit" : "") << " ... " << std::flush;
 
 	double t0 = 0.0f, dt = 0.0f;
@@ -132,7 +132,7 @@ namespace embree
         {
 #endif
 	    
-          if ((State::instance()->benchmark || State::instance()->verbosity(1)) && mesh == NULL) t0 = getSeconds();
+          if ((State::instance()->benchmark || State::instance()->verbosity(1)) && mesh == nullptr) t0 = getSeconds();
           
           auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
           auto virtualprogress = BuildProgressMonitorFromClosure(progress);
@@ -150,7 +150,7 @@ namespace embree
             bvh->set(root,pinfo.geomBounds,pinfo.size());
             bvh->layoutLargeNodes(numSplitPrimitives*0.005f);
 
-	    if ((State::instance()->benchmark || State::instance()->verbosity(1)) && mesh == NULL) dt = getSeconds()-t0;
+	    if ((State::instance()->benchmark || State::instance()->verbosity(1)) && mesh == nullptr) dt = getSeconds()-t0;
 
 #if PROFILE
            dt = timer.avg();
@@ -163,9 +163,9 @@ namespace embree
 	bvh->alloc2.cleanup();
 
 	/* verbose mode */
-	if (State::instance()->verbosity(1) && mesh == NULL)
+	if (State::instance()->verbosity(1) && mesh == nullptr)
 	  std::cout << "[DONE] " << 1000.0f*dt << "ms (" << numPrimitives/dt*1E-6 << " Mtris/s)" << std::endl;
-	if (State::instance()->verbosity(2) && mesh == NULL)
+	if (State::instance()->verbosity(2) && mesh == nullptr)
 	  bvh->printStatistics();
 
         /* benchmark mode */
@@ -261,11 +261,11 @@ namespace embree
       const float presplitFactor;
 
       BVH8BuilderSpatialSAH (BVH8* bvh, Scene* scene, const size_t leafBlockSize, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
-        : bvh(bvh), scene(scene), mesh(NULL), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,leafBlockSize*BVH8::maxLeafBlocks)),
+        : bvh(bvh), scene(scene), mesh(nullptr), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,leafBlockSize*BVH8::maxLeafBlocks)),
           presplitFactor((mode & MODE_HIGH_QUALITY) ? 1.5f : 1.0f) {}
 
       BVH8BuilderSpatialSAH (BVH8* bvh, Mesh* mesh, const size_t leafBlockSize, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
-        : bvh(bvh), scene(NULL), mesh(mesh), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,leafBlockSize*BVH8::maxLeafBlocks)),
+        : bvh(bvh), scene(nullptr), mesh(mesh), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,leafBlockSize*BVH8::maxLeafBlocks)),
           presplitFactor((mode & MODE_HIGH_QUALITY) ? 1.5f : 1.0f) {}
 
       void build(size_t, size_t) 
@@ -301,7 +301,7 @@ namespace embree
 	};
 
         /* verbose mode */
-        if (State::instance()->verbosity(1) && mesh == NULL)
+        if (State::instance()->verbosity(1) && mesh == nullptr)
 	  std::cout << "building BVH8<" << bvh->primTy.name << "> with " << TOSTRING(isa) "::BVH8BuilderSAH (spatial)" << (presplitFactor != 1.0f ? "presplit" : "") << " ... " << std::flush;
 
 	double t0 = 0.0f, dt = 0.0f;
@@ -310,7 +310,7 @@ namespace embree
         {
 #endif
 	    
-          if ((State::instance()->benchmark || State::instance()->verbosity(1)) && mesh == NULL) t0 = getSeconds();
+          if ((State::instance()->benchmark || State::instance()->verbosity(1)) && mesh == nullptr) t0 = getSeconds();
 	    
             auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
             auto virtualprogress = BuildProgressMonitorFromClosure(progress);
@@ -382,7 +382,7 @@ namespace embree
             
             bvh->layoutLargeNodes(pinfo.size()*0.005f);
 
-            if ((State::instance()->benchmark || State::instance()->verbosity(1)) && mesh == NULL) dt = getSeconds()-t0;
+            if ((State::instance()->benchmark || State::instance()->verbosity(1)) && mesh == nullptr) dt = getSeconds()-t0;
             
 #if PROFILE
             dt = timer.avg();
@@ -395,9 +395,9 @@ namespace embree
 	bvh->alloc2.cleanup();
 
         /* verbose mode */
-	if (State::instance()->verbosity(1) && mesh == NULL)
+	if (State::instance()->verbosity(1) && mesh == nullptr)
 	  std::cout << "[DONE] " << 1000.0f*dt << "ms (" << numPrimitives/dt*1E-6 << " Mtris/s)" << std::endl;
-	if (State::instance()->verbosity(2) && mesh == NULL)
+	if (State::instance()->verbosity(2) && mesh == nullptr)
 	  bvh->printStatistics();
 
         /* benchmark mode */

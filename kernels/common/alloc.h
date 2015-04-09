@@ -39,16 +39,16 @@ namespace embree
 
       /*! Constructor for usage with ThreadLocalData */
       __forceinline ThreadLocal (void* alloc) 
-	: alloc((FastAllocator*)alloc), ptr(NULL), cur(0), end(0), allocBlockSize(4096), bytesUsed(0), bytesWasted(0) {}
+	: alloc((FastAllocator*)alloc), ptr(nullptr), cur(0), end(0), allocBlockSize(4096), bytesUsed(0), bytesWasted(0) {}
 
       /*! Default constructor. */
       __forceinline ThreadLocal (FastAllocator* alloc, const size_t allocBlockSize = 4096) 
-	: alloc(alloc), ptr(NULL), cur(0), end(0), allocBlockSize(allocBlockSize), bytesUsed(0), bytesWasted(0)  {}
+	: alloc(alloc), ptr(nullptr), cur(0), end(0), allocBlockSize(allocBlockSize), bytesUsed(0), bytesWasted(0)  {}
 
       /*! resets the allocator */
       __forceinline void reset() 
       {
-	ptr = NULL;
+	ptr = nullptr;
 	cur = end = 0;
 	bytesWasted = bytesUsed = 0;
       }
@@ -102,12 +102,12 @@ namespace embree
 	
         /* should never happen as large allocations get handled specially above */
         assert(false);
-        return NULL;
+        return nullptr;
       }
 
       /* returns current address */
       __forceinline void* curPtr() {
-        if (ptr == NULL) ptr = (char*) alloc->malloc(allocBlockSize,maxAlignment);
+        if (ptr == nullptr) ptr = (char*) alloc->malloc(allocBlockSize,maxAlignment);
         return &ptr[bytesUsed];
       }
 
@@ -159,7 +159,7 @@ namespace embree
     };
 
     FastAllocator () 
-      : growSize(4096), usedBlocks(NULL), freeBlocks(NULL), 
+      : growSize(4096), usedBlocks(nullptr), freeBlocks(nullptr), 
         thread_local_allocators(this), thread_local_allocators2(this) {}
 
     ~FastAllocator () { 
@@ -169,8 +169,8 @@ namespace embree
     __forceinline void clear()
     {
       cleanup();
-      if (usedBlocks) usedBlocks->~Block(); usedBlocks = NULL;
-      if (freeBlocks) freeBlocks->~Block(); freeBlocks = NULL;
+      if (usedBlocks) usedBlocks->~Block(); usedBlocks = nullptr;
+      if (freeBlocks) freeBlocks->~Block(); freeBlocks = nullptr;
     }
 
     /*! returns a fast thread local allocator */
@@ -219,7 +219,7 @@ namespace embree
     /*! shrinks all memory blocks to the actually used size */
     void shrink () {
       usedBlocks->shrink();
-      if (freeBlocks) freeBlocks->~Block(); freeBlocks = NULL;
+      if (freeBlocks) freeBlocks->~Block(); freeBlocks = nullptr;
     }
 
     /*! thread safe allocation of memory */
@@ -306,7 +306,7 @@ namespace embree
       size_t bytesWasted = 0;
       if (usedBlocks) {
 	Block* cur = usedBlocks;
-	while ((cur = cur->next) != NULL)
+	while ((cur = cur->next) != nullptr)
 	  bytesWasted += cur->getFreeBytes();
       }
 
@@ -337,7 +337,7 @@ namespace embree
 
     struct Block 
     {
-      static Block* create(size_t bytesAllocate, size_t bytesReserve, Block* next = NULL)
+      static Block* create(size_t bytesAllocate, size_t bytesReserve, Block* next = nullptr)
       {
         const size_t sizeof_Header = offsetof(Block,data[0]);
         bytesAllocate = ((sizeof_Header+bytesAllocate+4095) & ~(4095)); // always consume full pages
@@ -355,7 +355,7 @@ namespace embree
       }
 
       ~Block () {
-	if (next) next->~Block(); next = NULL;
+	if (next) next->~Block(); next = nullptr;
         const size_t sizeof_Header = offsetof(Block,data[0]);
         const size_t sizeof_This = sizeof_Header+reserveEnd;
         const size_t sizeof_Alloced = sizeof_Header+getBlockAllocatedBytes();
@@ -367,9 +367,9 @@ namespace embree
       {
         assert(align <= maxAlignment);
         bytes = (bytes+(align-1)) & ~(align-1);
-	if (unlikely(cur+bytes > reserveEnd)) return NULL;
+	if (unlikely(cur+bytes > reserveEnd)) return nullptr;
 	const size_t i = atomic_add(&cur,bytes);
-	if (unlikely(i+bytes > reserveEnd)) return NULL;
+	if (unlikely(i+bytes > reserveEnd)) return nullptr;
 	if (i+bytes > allocEnd) {
           memoryMonitor(i+bytes-max(i,allocEnd),true);
           os_commit(&data[i],bytes); // FIXME: optimize, may get called frequently

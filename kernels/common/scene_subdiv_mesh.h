@@ -353,7 +353,7 @@ namespace embree
     }
 
     /*! check if the i'th primitive is valid */
-    __forceinline bool valid(size_t i, BBox3fa* bbox = NULL) const {
+    __forceinline bool valid(size_t i, BBox3fa* bbox = nullptr) const {
       if (bbox) *bbox = bounds(i);
       return getHalfEdge(i)->valid(vertices[0]) && !holeSet.lookup(i);
     }

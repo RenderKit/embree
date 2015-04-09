@@ -20,7 +20,7 @@
 namespace embree
 {
   /* error flag */
-  tls_t State::g_error = NULL; // FIXME: use thread local
+  tls_t State::g_error = nullptr; // FIXME: use thread local
   std::vector<RTCError*> State::g_errors; // FIXME: use thread local
   MutexSys State::g_errors_mutex;
 
@@ -57,11 +57,11 @@ namespace embree
 
     {
       Lock<MutexSys> lock(g_errors_mutex);
-      if (g_error == NULL) 
+      if (g_error == nullptr) 
         g_error = createTls();
     }
-    g_error_function = NULL;
-    g_memory_monitor_function = NULL;
+    g_error_function = nullptr;
+    g_memory_monitor_function = nullptr;
 
     //Lock<MutexSys> lock(g_errors_mutex);
     //  for (size_t i=0; i<g_errors.size(); i++)
@@ -89,7 +89,7 @@ namespace embree
 
   void State::parseString(const char* cfg)
   {
-    if (cfg == NULL) return;
+    if (cfg == nullptr) return;
 
     Ref<TokenStream> cin = new TokenStream(new StrStream(cfg),
                                            TokenStream::alpha+TokenStream::ALPHA+TokenStream::numbers+"_.",
@@ -187,7 +187,7 @@ namespace embree
   RTCError* State::error() 
   {
     RTCError* stored_error = (RTCError*) getTls(g_error);
-    if (stored_error == NULL) {
+    if (stored_error == nullptr) {
       Lock<MutexSys> lock(g_errors_mutex);
       stored_error = new RTCError(RTC_NO_ERROR);
       g_errors.push_back(stored_error);

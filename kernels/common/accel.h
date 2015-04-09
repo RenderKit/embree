@@ -81,8 +81,8 @@ namespace embree
 
     struct Intersector1
     {
-      Intersector1 (ErrorFunc error = NULL) 
-      : intersect((IntersectFunc)error), occluded((OccludedFunc)error), name(NULL) {}
+      Intersector1 (ErrorFunc error = nullptr) 
+      : intersect((IntersectFunc)error), occluded((OccludedFunc)error), name(nullptr) {}
 
       Intersector1 (IntersectFunc intersect, OccludedFunc occluded, const char* name)
       : intersect(intersect), occluded(occluded), name(name) {}
@@ -98,8 +98,8 @@ namespace embree
     
     struct Intersector4 
     {
-       Intersector4 (ErrorFunc error = NULL) 
-       : intersect((IntersectFunc4)error), occluded((OccludedFunc4)error), name(NULL) {}
+       Intersector4 (ErrorFunc error = nullptr) 
+       : intersect((IntersectFunc4)error), occluded((OccludedFunc4)error), name(nullptr) {}
 
       Intersector4 (IntersectFunc4 intersect, OccludedFunc4 occluded, const char* name)
       : intersect(intersect), occluded(occluded), name(name) {}
@@ -115,8 +115,8 @@ namespace embree
     
     struct Intersector8 
     {
-      Intersector8 (ErrorFunc error = NULL) 
-      : intersect((IntersectFunc8)error), occluded((OccludedFunc8)error), name(NULL) {}
+      Intersector8 (ErrorFunc error = nullptr) 
+      : intersect((IntersectFunc8)error), occluded((OccludedFunc8)error), name(nullptr) {}
 
       Intersector8 (IntersectFunc8 intersect, OccludedFunc8 occluded, const char* name)
       : intersect(intersect), occluded(occluded), name(name) {}
@@ -132,8 +132,8 @@ namespace embree
     
     struct Intersector16 
     {
-      Intersector16 (ErrorFunc error = NULL) 
-      : intersect((IntersectFunc16)error), occluded((OccludedFunc16)error), name(NULL) {}
+      Intersector16 (ErrorFunc error = nullptr) 
+      : intersect((IntersectFunc16)error), occluded((OccludedFunc16)error), name(nullptr) {}
 
       Intersector16 (IntersectFunc16 intersect, OccludedFunc16 occluded, const char* name)
       : intersect(intersect), occluded(occluded), name(name) {}
@@ -150,7 +150,7 @@ namespace embree
     struct Intersectors 
     {
       Intersectors() 
-        : ptr(NULL) {}
+        : ptr(nullptr) {}
 
       void print(size_t ident) 
       {

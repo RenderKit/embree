@@ -121,8 +121,8 @@ unsigned int createGroundPlane (RTCScene scene)
 }
 
 /* scene data */
-RTCScene g_scene  = NULL;
-RTCScene g_scene1 = NULL;
+RTCScene g_scene  = nullptr;
+RTCScene g_scene1 = nullptr;
 
 unsigned int g_instance0 = -1;
 unsigned int g_instance1 = -1;

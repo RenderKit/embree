@@ -205,7 +205,7 @@ namespace embree
     struct Thread 
     {
       Thread (size_t threadIndex, TaskSchedulerTBB* scheduler)
-      : threadIndex(threadIndex), scheduler(scheduler), task(NULL) {}
+      : threadIndex(threadIndex), scheduler(scheduler), task(nullptr) {}
 
       __forceinline size_t threadCount() {
         return scheduler->threadCounter;
@@ -260,11 +260,11 @@ namespace embree
       }
       //if (!spinning) condition.notify_all();
       if (!spinning) condition.notify_all();
-      while (thread.tasks.execute_local(thread,NULL));
+      while (thread.tasks.execute_local(thread,nullptr));
       atomic_add(&anyTasksRunning,-1);
 
-      threadLocal[0] = NULL;
-      setThread(NULL);
+      threadLocal[0] = nullptr;
+      setThread(nullptr);
       active = false;
     }
 
@@ -294,8 +294,8 @@ namespace embree
       executeTaskSet(thread);
       //atomic_add(&anyTasksRunning,-1);
 
-      threadLocal[0] = NULL;
-      setThread(NULL);
+      threadLocal[0] = nullptr;
+      setThread(nullptr);
       active = false;
     }
 

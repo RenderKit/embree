@@ -390,15 +390,15 @@ namespace embree
     }
 
 
-  BVH4Hair(const PrimitiveType& primTy, void* geometry = NULL) : primTy(primTy), 
+  BVH4Hair(const PrimitiveType& primTy, void* geometry = nullptr) : primTy(primTy), 
       geometry(geometry), 
       root(emptyNode), 
-      accel(NULL),
+      accel(nullptr),
       size_node(0),
       size_accel(0)
       {	
 	assert( sizeof(UnalignedNode) == 192 );
-	unaligned_nodes = NULL;
+	unaligned_nodes = nullptr;
       }
 
     

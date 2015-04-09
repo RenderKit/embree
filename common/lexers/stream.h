@@ -38,7 +38,7 @@ namespace embree
   class ParseLocation
   {
   public:
-    ParseLocation () : fileName(NULL), lineNumber(-1), colNumber(-1), charNumber(-1) {}
+    ParseLocation () : fileName(nullptr), lineNumber(-1), colNumber(-1), charNumber(-1) {}
     ParseLocation (Ref<String> fileName, ssize_t lineNumber, ssize_t colNumber, ssize_t charNumber)
       : fileName(fileName), lineNumber(lineNumber), colNumber(colNumber), charNumber(charNumber) {}
 
@@ -150,7 +150,7 @@ namespace embree
       : lineNumber(1), colNumber(0), charNumber(0), name(new String(fileName.str()))
     {
       file = fopen(fileName.c_str(),"r");
-      if (file == NULL) THROW_RUNTIME_ERROR("cannot open file " + fileName.str());
+      if (file == nullptr) THROW_RUNTIME_ERROR("cannot open file " + fileName.str());
     }
     ~FileStream() { fclose(file); }
 
@@ -184,7 +184,7 @@ namespace embree
 
   public:
     ParseLocation location() {
-      return ParseLocation(NULL,lineNumber,colNumber,charNumber);
+      return ParseLocation(nullptr,lineNumber,colNumber,charNumber);
     }
 
     int next() {
