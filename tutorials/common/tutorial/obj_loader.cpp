@@ -370,9 +370,7 @@ namespace embree
 	continue; 
       }
       if (!strncmp(token, "Ks", 2)) { parseSep(token += 2);  model.materials[cur].obj().Ks = getVec3f(token); continue; }
-#if 0
       if (!strncmp(token, "Tf", 2)) { parseSep(token += 2);  model.materials[cur].obj().Tf = getVec3f(token); continue; }
-#endif
     }
     cin.close();
 
