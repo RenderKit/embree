@@ -15,6 +15,7 @@
 // ======================================================================== //
 
 #include "state.h"
+#include "lexers/parsestream.h"
 
 namespace embree
 {
@@ -115,6 +116,100 @@ namespace embree
   {
     if (cfg == NULL) return;
 
+#if 0
+
+    std::vector<std::string> symbols;
+    symbols.push_back("=");
+    Ref<ParseStream> stream = new TokenStream(new StrStream(cfg),
+                                              TokenStream::alpha+TokenStream::ALPHA+TokenStream::numbers+"_",
+                                              TokenStream::separators);
+
+    std::string tag = cin->getString();
+    if (tag == "") return;
+
+    std::string tok = parseIdentifier (cfg,pos);
+      
+      if (tok == "threads" && parseSymbol(cfg,'=',pos)) 
+        g_numThreads = parseInt(cfg,pos);
+
+      else if (tok == "isa" && parseSymbol (cfg,'=',pos)) 
+      {
+        std::string isa = parseIdentifier (cfg,pos);
+        if      (isa == "sse" ) setCPUFeatures(SSE);
+        else if (isa == "sse2") setCPUFeatures(SSE2);
+        else if (isa == "sse3") setCPUFeatures(SSE3);
+        else if (isa == "ssse3") setCPUFeatures(SSSE3);
+        else if (isa == "sse41") setCPUFeatures(SSE41);
+        else if (isa == "sse4.1") setCPUFeatures(SSE41);
+        else if (isa == "sse42") setCPUFeatures(SSE42);
+        else if (isa == "sse4.2") setCPUFeatures(SSE42);
+        else if (isa == "avx") setCPUFeatures(AVX);
+        else if (isa == "avxi") setCPUFeatures(AVXI);
+        else if (isa == "avx2") setCPUFeatures(AVX2);
+      }
+      
+      else if ((tok == "tri_accel" || tok == "accel") && parseSymbol (cfg,'=',pos))
+        tri_accel = parseIdentifier (cfg,pos);
+      else if ((tok == "tri_builder" || tok == "builder") && parseSymbol (cfg,'=',pos))
+        tri_builder = parseIdentifier (cfg,pos);
+      else if ((tok == "tri_traverser" || tok == "traverser") && parseSymbol (cfg,'=',pos))
+        tri_traverser = parseIdentifier (cfg,pos);
+      else if (tok == "tri_builder_replication_factor" && parseSymbol (cfg,'=',pos))
+        tri_builder_replication_factor = parseInt (cfg,pos);
+      
+      else if ((tok == "tri_accel_mb" || tok == "accel_mb") && parseSymbol (cfg,'=',pos))
+        tri_accel_mb = parseIdentifier (cfg,pos);
+      else if ((tok == "tri_builder_mb" || tok == "builder_mb") && parseSymbol (cfg,'=',pos))
+        tri_builder_mb = parseIdentifier (cfg,pos);
+      else if ((tok == "tri_traverser_mb" || tok == "traverser_mb") && parseSymbol (cfg,'=',pos))
+        tri_traverser_mb = parseIdentifier (cfg,pos);
+      
+      else if (tok == "hair_accel" && parseSymbol (cfg,'=',pos))
+        hair_accel = parseIdentifier (cfg,pos);
+      else if (tok == "hair_builder" && parseSymbol (cfg,'=',pos))
+        hair_builder = parseIdentifier (cfg,pos);
+      else if (tok == "hair_traverser" && parseSymbol (cfg,'=',pos))
+        hair_traverser = parseIdentifier (cfg,pos);
+      else if (tok == "hair_builder_replication_factor" && parseSymbol (cfg,'=',pos))
+        hair_builder_replication_factor = parseInt (cfg,pos);
+      
+      else if (tok == "subdiv_accel" && parseSymbol (cfg,'=',pos))
+        subdiv_accel = parseIdentifier (cfg,pos);
+      
+      else if (tok == "verbose" && parseSymbol (cfg,'=',pos))
+        verbose = parseInt (cfg,pos);
+      else if (tok == "benchmark" && parseSymbol (cfg,'=',pos))
+        benchmark = parseInt (cfg,pos);
+      
+      else if (tok == "flags") {
+        scene_flags = 0;
+        if (parseSymbol (cfg,'=',pos)) {
+          do {
+            std::string flag = parseIdentifier (cfg,pos);
+            if      (flag == "static" ) scene_flags |= RTC_SCENE_STATIC;
+            else if (flag == "dynamic") scene_flags |= RTC_SCENE_DYNAMIC;
+            else if (flag == "compact") scene_flags |= RTC_SCENE_COMPACT;
+            else if (flag == "coherent") scene_flags |= RTC_SCENE_COHERENT;
+            else if (flag == "incoherent") scene_flags |= RTC_SCENE_INCOHERENT;
+            else if (flag == "high_quality") scene_flags |= RTC_SCENE_HIGH_QUALITY;
+            else if (flag == "robust") scene_flags |= RTC_SCENE_ROBUST;
+          } while (parseSymbol (cfg,',',pos));
+        }
+      }
+      else if (tok == "memory_preallocation_factor" && parseSymbol (cfg,'=',pos)) 
+        memory_preallocation_factor = parseFloat (cfg,pos);
+
+      else if (tok == "regression" && parseSymbol (cfg,'=',pos)) 
+        regression_testing = parseInt (cfg,pos);
+
+      else if (tok == "tessellation_cache_size" && parseSymbol (cfg,'=',pos))
+      {
+        tessellation_cache_size = parseFloat (cfg,pos) * 1024 * 1024;
+        
+      }        
+    } while (findNext (cfg,',',pos));
+
+#else
     size_t pos = 0;
     do {
       std::string tok = parseIdentifier (cfg,pos);
@@ -198,6 +293,7 @@ namespace embree
         
       }        
     } while (findNext (cfg,',',pos));
+#endif
   }
 
   RTCError* State::error() 

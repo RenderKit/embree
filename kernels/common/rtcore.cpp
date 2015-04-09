@@ -142,16 +142,13 @@ namespace embree
 
   RTCORE_API void rtcInit(const char* cfg) 
   {
-    Lock<MutexSys> lock(g_mutex);
     RTCORE_TRACE(rtcInit);
     RTCORE_CATCH_BEGIN;
 
-    if (g_initialized) {
-      g_mutex.unlock();
-      process_error(RTC_INVALID_OPERATION,"already initialized");
-      g_mutex.lock();
-      return;
-    }
+    Lock<MutexSys> lock(g_mutex);
+    if (g_initialized)
+      throw_RTCError(RTC_INVALID_OPERATION,"already initialized");
+
     g_initialized = true;
 
     /* reset global state */
@@ -163,12 +160,8 @@ namespace embree
       resizeTessellationCache( State::instance()->tessellation_cache_size );
 
 #if defined(__MIC__) // FIXME: put into State::verify function
-    if (!(g_numThreads == 1 || (g_numThreads % 4) == 0)) {
-      g_mutex.unlock();
-      process_error(RTC_INVALID_OPERATION,"Xeon Phi supports only number of threads % 4 == 0, or threads == 1");
-      g_mutex.lock();
-      return;
-    }
+    if (!(g_numThreads == 1 || (g_numThreads % 4) == 0))
+      throw_RTCError(RTC_INVALID_OPERATION,"Xeon Phi supports only number of threads % 4 == 0, or threads == 1");
 #endif
     
     if (State::instance()->verbosity(1))
@@ -209,12 +202,8 @@ namespace embree
 
     /* CPU has to support at least SSE2 */
 #if !defined (__MIC__)
-    if (!hasISA(SSE2)) {
-      g_mutex.unlock();
-      process_error(RTC_UNSUPPORTED_CPU,"CPU does not support SSE2");
-      g_mutex.lock();
-      return;
-    }
+    if (!hasISA(SSE2)) 
+      throw_RTCError(RTC_UNSUPPORTED_CPU,"CPU does not support SSE2");
 #endif
 
 #if !defined(__MIC__)
@@ -273,9 +262,10 @@ namespace embree
   
   RTCORE_API void rtcExit() 
   {
-    Lock<MutexSys> lock(g_mutex);
     RTCORE_TRACE(rtcExit);
     RTCORE_CATCH_BEGIN;
+    
+    Lock<MutexSys> lock(g_mutex);
     if (!g_initialized)
       throw_RTCError(RTC_INVALID_OPERATION,"rtcInit has to get called before rtcExit");
 

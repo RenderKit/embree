@@ -91,7 +91,7 @@ ADD_ISPC_LIBRARY(embree_xeonphi ${EMBREE_LIB_TYPE}
   bvh4hair/bvh4hair_intersector16_single.cpp
 )
 
-TARGET_LINK_LIBRARIES(embree_xeonphi sys_xeonphi simd_xeonphi tasking_xeonphi ${ADDITIONAL_LIBRARIES})
+TARGET_LINK_LIBRARIES(embree_xeonphi sys_xeonphi simd_xeonphi tasking_xeonphi lexers_xeonphi ${ADDITIONAL_LIBRARIES})
 
 # only add version to library when creating installer
 IF (CMAKE_SKIP_INSTALL_RPATH)

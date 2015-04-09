@@ -44,8 +44,8 @@ namespace embree
 
     std::string str() const
     {
-      if (!fileName) return "unknown";
-      std::string str = fileName->str;
+      std::string str = "unknown";
+      if (fileName) str = fileName->str;
       if (lineNumber >= 0) str += " line " + std::to_string((long long)lineNumber);
       if (lineNumber >= 0 && colNumber >= 0) str += " character " + std::to_string((long long)colNumber);
       return str;
@@ -172,6 +172,33 @@ namespace embree
     ssize_t colNumber;            /// the character number in the current line
     ssize_t charNumber;           /// the character in the file
     Ref<String> name;        /// name of buffer
+  };
+
+  /*! creates a stream from a string */
+  class StrStream : public Stream<int>
+  {
+  public:
+
+    StrStream (const char* str)
+      : str(str), lineNumber(1), colNumber(0), charNumber(0) {}
+
+  public:
+    ParseLocation location() {
+      return ParseLocation(NULL,lineNumber,colNumber,charNumber);
+    }
+
+    int next() {
+      int c = str[charNumber];
+      if (c == '\n') { lineNumber++; colNumber = 0; } else if (c != '\r') colNumber++;
+      charNumber++;
+      return c;
+    }
+
+  private:
+    const char* str;
+    ssize_t lineNumber;           /// the line number the token is from
+    ssize_t colNumber;            /// the character number in the current line
+    ssize_t charNumber;           /// the character in the file
   };
 
   /*! creates a character stream from a command line */
