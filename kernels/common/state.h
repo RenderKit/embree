@@ -45,36 +45,48 @@ namespace embree
       return &state;
     }
 
+    /*! returns thread local error code */
+    static RTCError* error();
+
   private:
     static State state;                      //!< single state object
 
   public:
-    std::string g_tri_accel;                 //!< acceleration structure to use for triangles
-    std::string g_tri_builder;               //!< builder to use for triangles
-    std::string g_tri_traverser;             //!< traverser to use for triangles
-    double      g_tri_builder_replication_factor; //!< maximally factor*N many primitives in accel
+    std::string tri_accel;                 //!< acceleration structure to use for triangles
+    std::string tri_builder;               //!< builder to use for triangles
+    std::string tri_traverser;             //!< traverser to use for triangles
+    double      tri_builder_replication_factor; //!< maximally factor*N many primitives in accel
 
   public:
-    std::string g_tri_accel_mb;              //!< acceleration structure to use for motion blur triangles
-    std::string g_tri_builder_mb;            //!< builder to use for motion blur triangles
-    std::string g_tri_traverser_mb;          //!< traverser to use for triangles
+    std::string tri_accel_mb;              //!< acceleration structure to use for motion blur triangles
+    std::string tri_builder_mb;            //!< builder to use for motion blur triangles
+    std::string tri_traverser_mb;          //!< traverser to use for triangles
 
   public:
-    std::string g_hair_accel;                //!< hair acceleration structure to use
-    std::string g_hair_builder;              //!< builder to use for hair
-    std::string g_hair_traverser;            //!< traverser to use for hair
-    double      g_hair_builder_replication_factor; //!< maximally factor*N many primitives in accel
+    std::string hair_accel;                //!< hair acceleration structure to use
+    std::string hair_builder;              //!< builder to use for hair
+    std::string hair_traverser;            //!< traverser to use for hair
+    double      hair_builder_replication_factor; //!< maximally factor*N many primitives in accel
 
   public:
-    float       g_memory_preallocation_factor; 
-    size_t      g_tessellation_cache_size;   //!< size of the shared tessellation cache 
-    std::string g_subdiv_accel;              //!< acceleration structure to use for subdivision surfaces
+    float       memory_preallocation_factor; 
+    size_t      tessellation_cache_size;   //!< size of the shared tessellation cache 
+    std::string subdiv_accel;              //!< acceleration structure to use for subdivision surfaces
 
   public:
-    int g_scene_flags;                       //!< scene flags to use
-    size_t g_verbose;                        //!< verbosity of output
-    //size_t g_numThreads;                   //!< number of threads to use in builders
-    size_t g_benchmark;                      //!< true
-    size_t g_regression_testing;             //!< enables regression tests at startup
+    int scene_flags;                       //!< scene flags to use
+    size_t verbose;                        //!< verbosity of output
+    //size_t numThreads;                   //!< number of threads to use in builders
+    size_t benchmark;                      //!< true
+    size_t regression_testing;             //!< enables regression tests at startup
+
+  public:
+    static tls_t g_error; // FIXME: use thread local
+    static std::vector<RTCError*> g_errors; // FIXME: use thread local
+    static MutexSys g_errors_mutex;
+
+  public:
+    RTCErrorFunc g_error_function;
+    RTCMemoryMonitorFunc g_memory_monitor_function;
   };
 }

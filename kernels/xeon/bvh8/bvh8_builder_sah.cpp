@@ -132,7 +132,7 @@ namespace embree
         {
 #endif
 	    
-          if ((State::instance()->g_benchmark || State::instance()->verbosity(1)) && mesh == NULL) t0 = getSeconds();
+          if ((State::instance()->benchmark || State::instance()->verbosity(1)) && mesh == NULL) t0 = getSeconds();
           
           auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
           auto virtualprogress = BuildProgressMonitorFromClosure(progress);
@@ -150,7 +150,7 @@ namespace embree
             bvh->set(root,pinfo.geomBounds,pinfo.size());
             bvh->layoutLargeNodes(numSplitPrimitives*0.005f);
 
-	    if ((State::instance()->g_benchmark || State::instance()->verbosity(1)) && mesh == NULL) dt = getSeconds()-t0;
+	    if ((State::instance()->benchmark || State::instance()->verbosity(1)) && mesh == NULL) dt = getSeconds()-t0;
 
 #if PROFILE
            dt = timer.avg();
@@ -169,7 +169,7 @@ namespace embree
 	  bvh->printStatistics();
 
         /* benchmark mode */
-        if (State::instance()->g_benchmark) {
+        if (State::instance()->benchmark) {
           BVH8Statistics stat(bvh);
           std::cout << "BENCHMARK_BUILD " << dt << " " << double(numPrimitives)/dt << " " << stat.sah() << " " << stat.bytesUsed() << std::endl;
         }
@@ -310,7 +310,7 @@ namespace embree
         {
 #endif
 	    
-          if ((State::instance()->g_benchmark || State::instance()->verbosity(1)) && mesh == NULL) t0 = getSeconds();
+          if ((State::instance()->benchmark || State::instance()->verbosity(1)) && mesh == NULL) t0 = getSeconds();
 	    
             auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
             auto virtualprogress = BuildProgressMonitorFromClosure(progress);
@@ -382,7 +382,7 @@ namespace embree
             
             bvh->layoutLargeNodes(pinfo.size()*0.005f);
 
-            if ((State::instance()->g_benchmark || State::instance()->verbosity(1)) && mesh == NULL) dt = getSeconds()-t0;
+            if ((State::instance()->benchmark || State::instance()->verbosity(1)) && mesh == NULL) dt = getSeconds()-t0;
             
 #if PROFILE
             dt = timer.avg();
@@ -401,7 +401,7 @@ namespace embree
 	  bvh->printStatistics();
 
         /* benchmark mode */
-        if (State::instance()->g_benchmark) {
+        if (State::instance()->benchmark) {
           BVH8Statistics stat(bvh);
           std::cout << "BENCHMARK_BUILD " << dt << " " << double(numPrimitives)/dt << " " << stat.sah() << " " << stat.bytesUsed() << std::endl;
         }

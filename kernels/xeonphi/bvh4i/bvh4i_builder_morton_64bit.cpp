@@ -273,7 +273,7 @@ namespace embree
 
       const size_t size_morton_tmp = numPrims * sizeof(MortonID64Bit) + additional_size;
 
-      size_node         = (double)((numNodes * MORTON_BVH4I_NODE_PREALLOC_FACTOR + minAllocNodes) * sizeNodeInBytes + additional_size) * State::instance()->g_memory_preallocation_factor;
+      size_node         = (double)((numNodes * MORTON_BVH4I_NODE_PREALLOC_FACTOR + minAllocNodes) * sizeNodeInBytes + additional_size) * State::instance()->memory_preallocation_factor;
       size_accel        = numPrims * sizeAccelInBytes + additional_size;
       numAllocatedNodes = size_node / sizeof(BVH4i::Node);
 

@@ -44,12 +44,12 @@ namespace embree
     intersectors.ptr = bvh;
     intersectors.intersector1  = BVH4mbTriangle1Intersector1;
 
-    if      (State::instance()->g_tri_traverser == "default") intersectors.intersector16 = BVH4mbTriangle1Intersector16HybridMoeller;
-    else if (State::instance()->g_tri_traverser == "hybrid" ) intersectors.intersector16 = BVH4mbTriangle1Intersector16HybridMoeller;
-    else if (State::instance()->g_tri_traverser == "chunk"  ) intersectors.intersector16 = BVH4mbTriangle1Intersector16ChunkMoeller;
-    else if (State::instance()->g_tri_traverser == "single" ) intersectors.intersector16 = BVH4mbTriangle1Intersector16SingleMoeller;
-    else if (State::instance()->g_tri_traverser == "test" )   intersectors.intersector16 = BVH4mbTriangle1Intersector16SingleMoeller;
-    else THROW_RUNTIME_ERROR("unknown traverser "+State::instance()->g_tri_traverser+" for BVH4mb<Triangle1>");      
+    if      (State::instance()->tri_traverser == "default") intersectors.intersector16 = BVH4mbTriangle1Intersector16HybridMoeller;
+    else if (State::instance()->tri_traverser == "hybrid" ) intersectors.intersector16 = BVH4mbTriangle1Intersector16HybridMoeller;
+    else if (State::instance()->tri_traverser == "chunk"  ) intersectors.intersector16 = BVH4mbTriangle1Intersector16ChunkMoeller;
+    else if (State::instance()->tri_traverser == "single" ) intersectors.intersector16 = BVH4mbTriangle1Intersector16SingleMoeller;
+    else if (State::instance()->tri_traverser == "test" )   intersectors.intersector16 = BVH4mbTriangle1Intersector16SingleMoeller;
+    else THROW_RUNTIME_ERROR("unknown traverser "+State::instance()->tri_traverser+" for BVH4mb<Triangle1>");      
 
     return intersectors;
   }

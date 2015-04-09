@@ -441,7 +441,7 @@ namespace embree
       std::cout << "building BVH4<" << primTy.name << "> using " << builderName << " ..." << std::flush;
 
     double t0 = 0.0;
-    if (State::instance()->g_benchmark || State::instance()->verbosity(1)) t0 = getSeconds();
+    if (State::instance()->benchmark || State::instance()->verbosity(1)) t0 = getSeconds();
     return t0;
   }  
 
@@ -453,7 +453,7 @@ namespace embree
       return;
     
     double dt = 0.0;
-    if (State::instance()->g_benchmark || State::instance()->verbosity(1)) 
+    if (State::instance()->benchmark || State::instance()->verbosity(1)) 
       dt = getSeconds()-t0;
 
     /* print statistics */
@@ -465,7 +465,7 @@ namespace embree
       printStatistics();
     
     /* benchmark mode */
-    if (State::instance()->g_benchmark) {
+    if (State::instance()->benchmark) {
       BVH4Statistics stat(this);
       std::cout << "BENCHMARK_BUILD " << dt << " " << double(numPrimitives)/dt << " " << stat.sah() << " " << stat.bytesUsed() << std::endl;
     }
@@ -705,11 +705,11 @@ namespace embree
     Accel::Intersectors intersectors = BVH4Triangle1Intersectors(accel);
     
     Builder* builder = NULL;
-    if      (State::instance()->g_tri_builder == "default"     ) builder = BVH4Triangle1SceneBuilderSAH(accel,scene,0);
-    else if (State::instance()->g_tri_builder == "sah"         ) builder = BVH4Triangle1SceneBuilderSAH(accel,scene,0);
-    else if (State::instance()->g_tri_builder == "sah_presplit") builder = BVH4Triangle1SceneBuilderSAH(accel,scene,MODE_HIGH_QUALITY);
-    else if (State::instance()->g_tri_builder == "morton"      ) builder = BVH4Triangle1SceneBuilderMortonGeneral(accel,scene,0);
-    else THROW_RUNTIME_ERROR("unknown builder "+State::instance()->g_tri_builder+" for BVH4<Triangle1>");
+    if      (State::instance()->tri_builder == "default"     ) builder = BVH4Triangle1SceneBuilderSAH(accel,scene,0);
+    else if (State::instance()->tri_builder == "sah"         ) builder = BVH4Triangle1SceneBuilderSAH(accel,scene,0);
+    else if (State::instance()->tri_builder == "sah_presplit") builder = BVH4Triangle1SceneBuilderSAH(accel,scene,MODE_HIGH_QUALITY);
+    else if (State::instance()->tri_builder == "morton"      ) builder = BVH4Triangle1SceneBuilderMortonGeneral(accel,scene,0);
+    else THROW_RUNTIME_ERROR("unknown builder "+State::instance()->tri_builder+" for BVH4<Triangle1>");
 
     return new AccelInstance(accel,builder,intersectors);
   }
@@ -719,18 +719,18 @@ namespace embree
     BVH4* accel = new BVH4(Triangle4Type::type,scene,LeafMode);
 
     Accel::Intersectors intersectors;
-    if      (State::instance()->g_tri_traverser == "default") intersectors = BVH4Triangle4IntersectorsHybrid(accel);
-    else if (State::instance()->g_tri_traverser == "chunk"  ) intersectors = BVH4Triangle4IntersectorsChunk(accel);
-    else if (State::instance()->g_tri_traverser == "hybrid" ) intersectors = BVH4Triangle4IntersectorsHybrid(accel);
-    else THROW_RUNTIME_ERROR("unknown traverser "+State::instance()->g_tri_traverser+" for BVH4<Triangle4>");
+    if      (State::instance()->tri_traverser == "default") intersectors = BVH4Triangle4IntersectorsHybrid(accel);
+    else if (State::instance()->tri_traverser == "chunk"  ) intersectors = BVH4Triangle4IntersectorsChunk(accel);
+    else if (State::instance()->tri_traverser == "hybrid" ) intersectors = BVH4Triangle4IntersectorsHybrid(accel);
+    else THROW_RUNTIME_ERROR("unknown traverser "+State::instance()->tri_traverser+" for BVH4<Triangle4>");
    
     Builder* builder = NULL;
-    if      (State::instance()->g_tri_builder == "default"     ) builder = BVH4Triangle4SceneBuilderSAH(accel,scene,0);
-    else if (State::instance()->g_tri_builder == "sah"         ) builder = BVH4Triangle4SceneBuilderSAH(accel,scene,0);
-    else if (State::instance()->g_tri_builder == "sah_spatial" ) builder = BVH4Triangle4SceneBuilderSpatialSAH(accel,scene,0);
-    else if (State::instance()->g_tri_builder == "sah_presplit") builder = BVH4Triangle4SceneBuilderSAH(accel,scene,MODE_HIGH_QUALITY);
-    else if (State::instance()->g_tri_builder == "morton"      ) builder = BVH4Triangle4SceneBuilderMortonGeneral(accel,scene,0);
-    else THROW_RUNTIME_ERROR("unknown builder "+State::instance()->g_tri_builder+" for BVH4<Triangle4>");
+    if      (State::instance()->tri_builder == "default"     ) builder = BVH4Triangle4SceneBuilderSAH(accel,scene,0);
+    else if (State::instance()->tri_builder == "sah"         ) builder = BVH4Triangle4SceneBuilderSAH(accel,scene,0);
+    else if (State::instance()->tri_builder == "sah_spatial" ) builder = BVH4Triangle4SceneBuilderSpatialSAH(accel,scene,0);
+    else if (State::instance()->tri_builder == "sah_presplit") builder = BVH4Triangle4SceneBuilderSAH(accel,scene,MODE_HIGH_QUALITY);
+    else if (State::instance()->tri_builder == "morton"      ) builder = BVH4Triangle4SceneBuilderMortonGeneral(accel,scene,0);
+    else THROW_RUNTIME_ERROR("unknown builder "+State::instance()->tri_builder+" for BVH4<Triangle4>");
 
     return new AccelInstance(accel,builder,intersectors);
   }
@@ -741,18 +741,18 @@ namespace embree
     BVH4* accel = new BVH4(Triangle8Type::type,scene,LeafMode);
 
     Accel::Intersectors intersectors;
-    if      (State::instance()->g_tri_traverser == "default") intersectors = BVH4Triangle8IntersectorsHybrid(accel);
-    else if (State::instance()->g_tri_traverser == "chunk"  ) intersectors = BVH4Triangle8IntersectorsChunk(accel);
-    else if (State::instance()->g_tri_traverser == "hybrid" ) intersectors = BVH4Triangle8IntersectorsHybrid(accel);
-    else THROW_RUNTIME_ERROR("unknown traverser "+State::instance()->g_tri_traverser+" for BVH4<Triangle8>");
+    if      (State::instance()->tri_traverser == "default") intersectors = BVH4Triangle8IntersectorsHybrid(accel);
+    else if (State::instance()->tri_traverser == "chunk"  ) intersectors = BVH4Triangle8IntersectorsChunk(accel);
+    else if (State::instance()->tri_traverser == "hybrid" ) intersectors = BVH4Triangle8IntersectorsHybrid(accel);
+    else THROW_RUNTIME_ERROR("unknown traverser "+State::instance()->tri_traverser+" for BVH4<Triangle8>");
    
     Builder* builder = NULL;
-    if      (State::instance()->g_tri_builder == "default"     ) builder = BVH4Triangle8SceneBuilderSAH(accel,scene,0);
-    else if (State::instance()->g_tri_builder == "sah"         ) builder = BVH4Triangle8SceneBuilderSAH(accel,scene,0);
-    else if (State::instance()->g_tri_builder == "sah_spatial" ) builder = BVH4Triangle8SceneBuilderSpatialSAH(accel,scene,0);
-    else if (State::instance()->g_tri_builder == "sah_presplit") builder = BVH4Triangle8SceneBuilderSAH(accel,scene,MODE_HIGH_QUALITY);
-    else if (State::instance()->g_tri_builder == "morton"      ) builder = BVH4Triangle8SceneBuilderMortonGeneral(accel,scene,0);
-    else THROW_RUNTIME_ERROR("unknown builder "+State::instance()->g_tri_builder+" for BVH4<Triangle8>");
+    if      (State::instance()->tri_builder == "default"     ) builder = BVH4Triangle8SceneBuilderSAH(accel,scene,0);
+    else if (State::instance()->tri_builder == "sah"         ) builder = BVH4Triangle8SceneBuilderSAH(accel,scene,0);
+    else if (State::instance()->tri_builder == "sah_spatial" ) builder = BVH4Triangle8SceneBuilderSpatialSAH(accel,scene,0);
+    else if (State::instance()->tri_builder == "sah_presplit") builder = BVH4Triangle8SceneBuilderSAH(accel,scene,MODE_HIGH_QUALITY);
+    else if (State::instance()->tri_builder == "morton"      ) builder = BVH4Triangle8SceneBuilderMortonGeneral(accel,scene,0);
+    else THROW_RUNTIME_ERROR("unknown builder "+State::instance()->tri_builder+" for BVH4<Triangle8>");
 
     return new AccelInstance(accel,builder,intersectors);
   }
@@ -764,12 +764,12 @@ namespace embree
     Accel::Intersectors intersectors = BVH4Triangle1vIntersectors(accel);
 
     Builder* builder = NULL;
-    if      (State::instance()->g_tri_builder == "default"     ) builder = BVH4Triangle1vSceneBuilderSAH(accel,scene,0);
-    else if (State::instance()->g_tri_builder == "sah"         ) builder = BVH4Triangle1vSceneBuilderSAH(accel,scene,0);
-    else if (State::instance()->g_tri_builder == "sah_spatial" ) builder = BVH4Triangle1vSceneBuilderSpatialSAH(accel,scene,0);
-    else if (State::instance()->g_tri_builder == "sah_presplit") builder = BVH4Triangle1vSceneBuilderSAH(accel,scene,MODE_HIGH_QUALITY);
-    else if (State::instance()->g_tri_builder == "morton"      ) builder = BVH4Triangle1vSceneBuilderMortonGeneral(accel,scene,0);
-    else THROW_RUNTIME_ERROR("unknown builder "+State::instance()->g_tri_builder+" for BVH4<Triangle1v>");
+    if      (State::instance()->tri_builder == "default"     ) builder = BVH4Triangle1vSceneBuilderSAH(accel,scene,0);
+    else if (State::instance()->tri_builder == "sah"         ) builder = BVH4Triangle1vSceneBuilderSAH(accel,scene,0);
+    else if (State::instance()->tri_builder == "sah_spatial" ) builder = BVH4Triangle1vSceneBuilderSpatialSAH(accel,scene,0);
+    else if (State::instance()->tri_builder == "sah_presplit") builder = BVH4Triangle1vSceneBuilderSAH(accel,scene,MODE_HIGH_QUALITY);
+    else if (State::instance()->tri_builder == "morton"      ) builder = BVH4Triangle1vSceneBuilderMortonGeneral(accel,scene,0);
+    else THROW_RUNTIME_ERROR("unknown builder "+State::instance()->tri_builder+" for BVH4<Triangle1v>");
         
     return new AccelInstance(accel,builder,intersectors);
   }
@@ -779,9 +779,9 @@ namespace embree
     BVH4* accel = new BVH4(Triangle4vMB::type,scene,LeafMode);
     Accel::Intersectors intersectors = BVH4Triangle4vMBIntersectors(accel);
     Builder* builder = NULL;
-    if       (State::instance()->g_tri_builder_mb == "default"    ) builder = BVH4Triangle4vMBSceneBuilderSAH(accel,scene,0);
-    else  if (State::instance()->g_tri_builder_mb == "sah") builder = BVH4Triangle4vMBSceneBuilderSAH(accel,scene,0);
-    else THROW_RUNTIME_ERROR("unknown builder "+State::instance()->g_tri_builder_mb+" for BVH4<Triangle4vMB>");
+    if       (State::instance()->tri_builder_mb == "default"    ) builder = BVH4Triangle4vMBSceneBuilderSAH(accel,scene,0);
+    else  if (State::instance()->tri_builder_mb == "sah") builder = BVH4Triangle4vMBSceneBuilderSAH(accel,scene,0);
+    else THROW_RUNTIME_ERROR("unknown builder "+State::instance()->tri_builder_mb+" for BVH4<Triangle4vMB>");
     return new AccelInstance(accel,builder,intersectors);
   }
 
@@ -790,18 +790,18 @@ namespace embree
     BVH4* accel = new BVH4(Triangle4vType::type,scene,LeafMode);
 
     Accel::Intersectors intersectors;
-    if      (State::instance()->g_tri_traverser == "default") intersectors = BVH4Triangle4vIntersectorsHybrid(accel);
-    else if (State::instance()->g_tri_traverser == "chunk"  ) intersectors = BVH4Triangle4vIntersectorsChunk(accel);
-    else if (State::instance()->g_tri_traverser == "hybrid" ) intersectors = BVH4Triangle4vIntersectorsHybrid(accel);
-    else THROW_RUNTIME_ERROR("unknown traverser "+State::instance()->g_tri_traverser+" for BVH4<Triangle4>");
+    if      (State::instance()->tri_traverser == "default") intersectors = BVH4Triangle4vIntersectorsHybrid(accel);
+    else if (State::instance()->tri_traverser == "chunk"  ) intersectors = BVH4Triangle4vIntersectorsChunk(accel);
+    else if (State::instance()->tri_traverser == "hybrid" ) intersectors = BVH4Triangle4vIntersectorsHybrid(accel);
+    else THROW_RUNTIME_ERROR("unknown traverser "+State::instance()->tri_traverser+" for BVH4<Triangle4>");
 
     Builder* builder = NULL;
-    if      (State::instance()->g_tri_builder == "default"     ) builder = BVH4Triangle4vSceneBuilderSAH(accel,scene,0);
-    else if (State::instance()->g_tri_builder == "sah"         ) builder = BVH4Triangle4vSceneBuilderSAH(accel,scene,0);
-    else if (State::instance()->g_tri_builder == "sah_spatial" ) builder = BVH4Triangle4vSceneBuilderSpatialSAH(accel,scene,0);
-    else if (State::instance()->g_tri_builder == "sah_presplit") builder = BVH4Triangle4vSceneBuilderSAH(accel,scene,MODE_HIGH_QUALITY);
-    else if (State::instance()->g_tri_builder == "morton"      ) builder = BVH4Triangle4vSceneBuilderMortonGeneral(accel,scene,0);
-    else THROW_RUNTIME_ERROR("unknown builder "+State::instance()->g_tri_builder+" for BVH4<Triangle4v>");
+    if      (State::instance()->tri_builder == "default"     ) builder = BVH4Triangle4vSceneBuilderSAH(accel,scene,0);
+    else if (State::instance()->tri_builder == "sah"         ) builder = BVH4Triangle4vSceneBuilderSAH(accel,scene,0);
+    else if (State::instance()->tri_builder == "sah_spatial" ) builder = BVH4Triangle4vSceneBuilderSpatialSAH(accel,scene,0);
+    else if (State::instance()->tri_builder == "sah_presplit") builder = BVH4Triangle4vSceneBuilderSAH(accel,scene,MODE_HIGH_QUALITY);
+    else if (State::instance()->tri_builder == "morton"      ) builder = BVH4Triangle4vSceneBuilderMortonGeneral(accel,scene,0);
+    else THROW_RUNTIME_ERROR("unknown builder "+State::instance()->tri_builder+" for BVH4<Triangle4v>");
 
     return new AccelInstance(accel,builder,intersectors);
   }
@@ -812,12 +812,12 @@ namespace embree
     Accel::Intersectors intersectors = BVH4Triangle4iIntersectors(accel);
 
     Builder* builder = NULL;
-    if      (State::instance()->g_tri_builder == "default"     ) builder = BVH4Triangle4iSceneBuilderSAH(accel,scene,0);
-    else if (State::instance()->g_tri_builder == "sah"         ) builder = BVH4Triangle4iSceneBuilderSAH(accel,scene,0);
-    else if (State::instance()->g_tri_builder == "sah_spatial" ) builder = BVH4Triangle4iSceneBuilderSpatialSAH(accel,scene,0);
-    else if (State::instance()->g_tri_builder == "sah_presplit") builder = BVH4Triangle4iSceneBuilderSAH(accel,scene,MODE_HIGH_QUALITY);
-    else if (State::instance()->g_tri_builder == "morton"      ) builder = BVH4Triangle4iSceneBuilderMortonGeneral(accel,scene,0);
-    else THROW_RUNTIME_ERROR("unknown builder "+State::instance()->g_tri_builder+" for BVH4<Triangle4i>");
+    if      (State::instance()->tri_builder == "default"     ) builder = BVH4Triangle4iSceneBuilderSAH(accel,scene,0);
+    else if (State::instance()->tri_builder == "sah"         ) builder = BVH4Triangle4iSceneBuilderSAH(accel,scene,0);
+    else if (State::instance()->tri_builder == "sah_spatial" ) builder = BVH4Triangle4iSceneBuilderSpatialSAH(accel,scene,0);
+    else if (State::instance()->tri_builder == "sah_presplit") builder = BVH4Triangle4iSceneBuilderSAH(accel,scene,MODE_HIGH_QUALITY);
+    else if (State::instance()->tri_builder == "morton"      ) builder = BVH4Triangle4iSceneBuilderMortonGeneral(accel,scene,0);
+    else THROW_RUNTIME_ERROR("unknown builder "+State::instance()->tri_builder+" for BVH4<Triangle4i>");
 
     scene->needVertices = true;
     return new AccelInstance(accel,builder,intersectors);

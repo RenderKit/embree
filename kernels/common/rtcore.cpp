@@ -64,18 +64,11 @@ namespace embree
     }
   } tbb_affinity;
 #endif
-  
-  /* error flag */
-  static tls_t g_error = NULL; // FIXME: use thread local
-  static std::vector<RTCError*> g_errors; // FIXME: use thread local
-  static MutexSys g_errors_mutex;
-  static RTCErrorFunc g_error_function = NULL;
-  static RTCMemoryMonitorFunc g_memory_monitor_function = NULL;
 
   void memoryMonitor(ssize_t bytes, bool post)
   {
-    if (g_memory_monitor_function && bytes != 0) {
-      if (!g_memory_monitor_function(bytes,post)) {
+    if (State::instance()->g_memory_monitor_function && bytes != 0) {
+      if (!State::instance()->g_memory_monitor_function(bytes,post)) {
 #if !defined(TASKING_LOCKSTEP) && !defined(TASKING_TBB_INTERNAL)
         if (bytes > 0) { // only throw exception when we allocate memory to never throw inside a destructor
           throw_RTCError(RTC_OUT_OF_MEMORY,"memory monitor forced termination");
@@ -83,18 +76,6 @@ namespace embree
 #endif
       }
     }
-  }
-  
-  RTCError* getThreadError() 
-  {
-    RTCError* stored_error = (RTCError*) getTls(g_error);
-    if (stored_error == NULL) {
-      Lock<MutexSys> lock(g_errors_mutex);
-      stored_error = new RTCError(RTC_NO_ERROR);
-      g_errors.push_back(stored_error);
-      setTls(g_error,stored_error);
-    }
-    return stored_error;
   }
 
   void process_error(RTCError error, const char* str)
@@ -116,11 +97,11 @@ namespace embree
     }
 
     /* call user specified error callback */
-    if (g_error_function) 
-      g_error_function(error,str); 
+    if (State::instance()->g_error_function) 
+      State::instance()->g_error_function(error,str); 
 
     /* record error code */
-    RTCError* stored_error = getThreadError();
+    RTCError* stored_error = State::error();
     if (*stored_error == RTC_NO_ERROR)
       *stored_error = error;
   }
@@ -176,9 +157,10 @@ namespace embree
     /* reset global state */
     State::instance()->clear();
     State::instance()->parse(cfg);
+    init_globals();
 
-    if (State::instance()->g_tessellation_cache_size)
-      resizeTessellationCache( State::instance()->g_tessellation_cache_size );
+    if (State::instance()->tessellation_cache_size)
+      resizeTessellationCache( State::instance()->tessellation_cache_size );
 
 #if defined(__MIC__) // FIXME: put into State::verify function
     if (!(g_numThreads == 1 || (g_numThreads % 4) == 0)) {
@@ -235,11 +217,6 @@ namespace embree
     }
 #endif
 
-    g_error = createTls();
-    g_error_function = NULL;
-
-    init_globals();
-
 #if !defined(__MIC__)
     BVH4Register();
 #else
@@ -279,7 +256,7 @@ namespace embree
 #endif
 
     /* execute regression tests */
-    if (State::instance()->g_regression_testing) 
+    if (State::instance()->regression_testing) 
     {
 #if defined(TASKING_LOCKSTEP)
       TaskScheduler::EventSync event;
@@ -299,9 +276,9 @@ namespace embree
     Lock<MutexSys> lock(g_mutex);
     RTCORE_TRACE(rtcExit);
     RTCORE_CATCH_BEGIN;
-    if (!g_initialized) {
-      return;
-    }
+    if (!g_initialized)
+      throw_RTCError(RTC_INVALID_OPERATION,"rtcInit has to get called before rtcExit");
+
 #if defined(TASKING_LOCKSTEP)
     TaskScheduler::destroy();
 #endif
@@ -314,14 +291,7 @@ namespace embree
     if (g_tbb_threads_initialized)
       tbb_threads.terminate();
 #endif
-    {
-      Lock<MutexSys> lock(g_errors_mutex);
-      for (size_t i=0; i<g_errors.size(); i++)
-        delete g_errors[i];
-      destroyTls(g_error);
-      g_errors.clear();
-    }
-    g_error_function = NULL;
+    State::instance()->clear();
     g_initialized = false;
     RTCORE_CATCH_END;
   }
@@ -329,7 +299,7 @@ namespace embree
   RTCORE_API RTCError rtcGetError() 
   {
     RTCORE_TRACE(rtcGetError);
-    RTCError* stored_error = getThreadError();
+    RTCError* stored_error = State::error();
     RTCError error = *stored_error;
     *stored_error = RTC_NO_ERROR;
     return error;
@@ -339,7 +309,7 @@ namespace embree
   {
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcSetErrorFunction);
-    g_error_function = func;
+    State::instance()->g_error_function = func;
     RTCORE_CATCH_END;
   }
 
@@ -347,7 +317,7 @@ namespace embree
   {
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcSetMemoryMonitorFunction);
-    g_memory_monitor_function = func;
+    State::instance()->g_memory_monitor_function = func;
     RTCORE_CATCH_END;
   }
 
