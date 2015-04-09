@@ -100,11 +100,6 @@ namespace embree
     width = twidth;
     height = theight;
     
-    PRINT(width); // FIXME: remove
-    PRINT(height);
-    PRINT(bit_depth);
-    PRINT(color_type);
-    
     Ref<Image> img = new Image4uc(width,height,fileName);
 
     // Update the png info struct.

@@ -243,9 +243,9 @@ task void renderTile(uniform int* uniform pixels,
    
   foreach (y = y0 ... y1, x = x0 ... x1)
   {
-   unsigned int seed = y * width + x + programIndex;
-   rand_xorshift(seed);
-   rand_xorshift(seed);
+    //unsigned int seed = y * width + x + programIndex;
+    //rand_xorshift(seed);
+    //rand_xorshift(seed);
 
     /* calculate pixel color */
     Vec3f color = renderPixel(x,y,vx,vy,vz,p);

@@ -373,7 +373,6 @@ namespace embree
       if (!strncmp(token, "Tf", 2)) { parseSep(token += 2);  model.materials[cur].obj().Tf = getVec3f(token); continue; }
     }
     cin.close();
-
   }
 
   /*! handles relative indices and starts indexing from 0 */
