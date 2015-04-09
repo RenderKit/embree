@@ -19,7 +19,7 @@
 #include <limits>
 
 #define _USE_MATH_DEFINES
-#include <cmath>
+#include <math.h> // using cmake causes issues under Windows
 #include <cfloat>
 
 namespace embree

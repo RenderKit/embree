@@ -14,6 +14,8 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
+#ifdef USE_LIBPNG
+
 #include "image/image.h"
 
 #include <iostream>
@@ -171,5 +173,7 @@ namespace embree
       
     return img;
   }
+}
 
-};
+#endif
+
