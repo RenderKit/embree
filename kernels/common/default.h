@@ -51,6 +51,7 @@
 #include "stat.h"
 #include "profile.h"
 #include "rtcore.h"
+#include "vector.h"
 #include "state.h"
 
 #include <vector>
