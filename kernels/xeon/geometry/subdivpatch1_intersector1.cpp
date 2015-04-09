@@ -43,14 +43,14 @@ namespace embree
                      vtx[2],
                      ray,
                      geomID,
-                     primID,NULL); 
+                     primID,nullptr); 
         
         intersectTri(vtx[2],
                      vtx[3],
                      vtx[0],
                      ray,
                      geomID,
-                     primID,NULL); 
+                     primID,nullptr); 
       }
       else
       {
@@ -84,14 +84,14 @@ namespace embree
                      finalQuad.vtx[2],
                      ray,
                      geomID,
-                     primID,NULL); 
+                     primID,nullptr); 
         
         intersectTri(finalQuad.vtx[2],
                      finalQuad.vtx[3],
                      finalQuad.vtx[0],
                      ray,
                      geomID,
-                     primID,NULL); 
+                     primID,nullptr); 
       }
       else
       {
@@ -125,14 +125,14 @@ namespace embree
                         finalQuad.vtx[2],
                         ray,
                         geomID,
-                        primID,NULL)) return true; 
+                        primID,nullptr)) return true; 
         
         if (occludedTri(finalQuad.vtx[2],
                         finalQuad.vtx[3],
                         finalQuad.vtx[0],
                         ray,
                         geomID,
-                        primID,NULL)) return false;
+                        primID,nullptr)) return false;
       }
       else
       {
@@ -169,14 +169,14 @@ namespace embree
                      finalQuad.vtx[2],
                      ray,
                      geomID,
-                     primID,NULL); 
+                     primID,nullptr); 
         
         intersectTri(finalQuad.vtx[2],
                      finalQuad.vtx[3],
                      finalQuad.vtx[0],
                      ray,
                      geomID,
-                     primID,NULL); 
+                     primID,nullptr); 
       }
       else
       {
@@ -211,14 +211,14 @@ namespace embree
                         finalQuad.vtx[2],
                         ray,
                         geomID,
-                        primID,NULL)) return true; 
+                        primID,nullptr)) return true; 
         
         if (occludedTri(finalQuad.vtx[2],
                         finalQuad.vtx[3],
                         finalQuad.vtx[0],
                         ray,
                         geomID,
-                        primID,NULL)) return false;
+                        primID,nullptr)) return false;
       }
       else
       {

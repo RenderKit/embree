@@ -71,7 +71,7 @@ namespace embree
        
       /*! entry point into builder */
       BVH4::NodeRef operator() (const PrimInfo& pinfo) {
-        return recurse(1,pinfo,NULL,true);
+        return recurse(1,pinfo,nullptr,true);
       }
       
     private:
@@ -192,7 +192,7 @@ namespace embree
       /*! recursive build */
       BVH4::NodeRef recurse(size_t depth, const PrimInfo& pinfo, Allocator alloc, bool toplevel)
       {
-        if (alloc == NULL) 
+        if (alloc == nullptr) 
           alloc = createAlloc();
 
         /* call memory monitor function to signal progress */
@@ -254,7 +254,7 @@ namespace embree
           {
             SPAWN_BEGIN;
             for (size_t i=0; i<numChildren; i++) 
-              SPAWN(([&,i] { node->child(i) = recurse(depth+1,children[i],NULL,true); }));
+              SPAWN(([&,i] { node->child(i) = recurse(depth+1,children[i],nullptr,true); }));
             SPAWN_END;
           }
           /* ... continue sequential */
@@ -275,7 +275,7 @@ namespace embree
           {
             SPAWN_BEGIN;
             for (size_t i=0; i<numChildren; i++) 
-              SPAWN(([&,i] { node->child(i) = recurse(depth+1,children[i],NULL,true); }));
+              SPAWN(([&,i] { node->child(i) = recurse(depth+1,children[i],nullptr,true); }));
             SPAWN_END;
           }
           /* ... continue sequentially */

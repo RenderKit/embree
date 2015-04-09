@@ -56,7 +56,7 @@ namespace embree
   namespace isa
   {
 
-    __thread LocalTessellationCacheThreadInfo* localThreadInfo = NULL;
+    __thread LocalTessellationCacheThreadInfo* localThreadInfo = nullptr;
 
 
     static __forceinline size_t extractBVH4iOffset(const size_t &subtree_root)
@@ -467,7 +467,7 @@ namespace embree
       Triangle1 * __restrict__ const accel       = (Triangle1*)bvh->triPtr();
       const unsigned int commitCounter           = scene->commitCounter;
 
-      LocalTessellationCacheThreadInfo *threadInfo = NULL;
+      LocalTessellationCacheThreadInfo *threadInfo = nullptr;
       if (unlikely(!localThreadInfo))
 	{
 	  const unsigned int id = SharedLazyTessellationCache::sharedLazyTessellationCache.getNextRenderThreadID();
@@ -628,7 +628,7 @@ namespace embree
       const Triangle1 * __restrict__ accel = (Triangle1*)bvh->triPtr();
       const unsigned int commitCounter           = scene->commitCounter;
 
-      LocalTessellationCacheThreadInfo *threadInfo = NULL;
+      LocalTessellationCacheThreadInfo *threadInfo = nullptr;
       if (unlikely(!localThreadInfo))
 	{
 	  const unsigned int id = SharedLazyTessellationCache::sharedLazyTessellationCache.getNextRenderThreadID();
@@ -766,7 +766,7 @@ namespace embree
       Scene *const scene                   = (Scene*)bvh->geometry;
       const unsigned int commitCounter     = scene->commitCounter;
 
-      LocalTessellationCacheThreadInfo *threadInfo = NULL;
+      LocalTessellationCacheThreadInfo *threadInfo = nullptr;
       if (unlikely(!localThreadInfo))
 	{
 	  const unsigned int id = SharedLazyTessellationCache::sharedLazyTessellationCache.getNextRenderThreadID();
@@ -907,7 +907,7 @@ namespace embree
       Scene *const scene                   = (Scene*)bvh->geometry;
       const unsigned int commitCounter     = scene->commitCounter;
 
-      LocalTessellationCacheThreadInfo *threadInfo = NULL;
+      LocalTessellationCacheThreadInfo *threadInfo = nullptr;
       if (unlikely(!localThreadInfo))
 	{
 	  const unsigned int id = SharedLazyTessellationCache::sharedLazyTessellationCache.getNextRenderThreadID();

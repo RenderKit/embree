@@ -20,8 +20,8 @@
 #include "kernels/xeon/builders/bvh_builder_morton.h"
 
 /* scene data */
-RTCScene g_scene = NULL;
-Vec3fa* colors = NULL;
+RTCScene g_scene = nullptr;
+Vec3fa* colors = nullptr;
 
 /* render function to use */
 renderPixelFunc renderPixel;
@@ -69,7 +69,7 @@ struct InnerNode : public Node
 
   InnerNode() {
     bounds[0] = bounds[1] = empty;
-    children[0] = children[1] = NULL;
+    children[0] = children[1] = nullptr;
   }
   
   float sah() {

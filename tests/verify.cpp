@@ -437,12 +437,12 @@ namespace embree
     unsigned mesh = rtcNewTriangleMesh (scene, flag, numTriangles, numVertices,numTimeSteps);
     
     /* map triangle and vertex buffer */
-    Vertex3f* vertices0 = NULL;
-    Vertex3f* vertices1 = NULL;
+    Vertex3f* vertices0 = nullptr;
+    Vertex3f* vertices1 = nullptr;
     if (numTimeSteps >= 1) rtcSetBuffer(scene,mesh,RTC_VERTEX_BUFFER0,vertices0 = (Vertex3f*) allocBuffer(numVertices*sizeof(Vertex3f)), 0, sizeof(Vertex3f)); 
     if (numTimeSteps >= 2) rtcSetBuffer(scene,mesh,RTC_VERTEX_BUFFER1,vertices1 = (Vertex3f*) allocBuffer(numVertices*sizeof(Vertex3f)), 0, sizeof(Vertex3f)); 
     Triangle* triangles = (Triangle*) rtcMapBuffer(scene,mesh,RTC_INDEX_BUFFER);
-    if (g_enable_build_cancel && triangles == NULL) return mesh;
+    if (g_enable_build_cancel && triangles == nullptr) return mesh;
 
     /* create sphere geometry */
     size_t tri = 0;
@@ -585,10 +585,10 @@ namespace embree
     size_t numVertexCreases = 10;
     size_t numHoles = 0; // do not test holes as this causes some tests that assume a closed sphere to fail
     unsigned int mesh = rtcNewSubdivisionMesh(scene, flags, numFaces, numEdges, numVertices, numEdgeCreases, numVertexCreases, numHoles);
-    Vec3fa* vertexBuffer = (Vec3fa*  ) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER);  if (g_enable_build_cancel && vertexBuffer == NULL) return mesh;
-    int*    indexBuffer  = (int     *) rtcMapBuffer(scene,mesh,RTC_INDEX_BUFFER);   if (g_enable_build_cancel && indexBuffer == NULL) return mesh;
-    int*    facesBuffer = (int     *) rtcMapBuffer(scene,mesh,RTC_FACE_BUFFER);     if (g_enable_build_cancel && facesBuffer == NULL) return mesh;
-    float*  levelBuffer  = (float   *) rtcMapBuffer(scene,mesh,RTC_LEVEL_BUFFER);   if (g_enable_build_cancel && levelBuffer == NULL) return mesh;
+    Vec3fa* vertexBuffer = (Vec3fa*  ) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER);  if (g_enable_build_cancel && vertexBuffer == nullptr) return mesh;
+    int*    indexBuffer  = (int     *) rtcMapBuffer(scene,mesh,RTC_INDEX_BUFFER);   if (g_enable_build_cancel && indexBuffer == nullptr) return mesh;
+    int*    facesBuffer = (int     *) rtcMapBuffer(scene,mesh,RTC_FACE_BUFFER);     if (g_enable_build_cancel && facesBuffer == nullptr) return mesh;
+    float*  levelBuffer  = (float   *) rtcMapBuffer(scene,mesh,RTC_LEVEL_BUFFER);   if (g_enable_build_cancel && levelBuffer == nullptr) return mesh;
 
     memcpy(vertexBuffer,vertices.data(),numVertices*sizeof(Vec3fa));
     memcpy(indexBuffer ,indices.data() ,numEdges*sizeof(int));
@@ -600,9 +600,9 @@ namespace embree
     rtcUnmapBuffer(scene,mesh,RTC_LEVEL_BUFFER);
     
     int* edgeCreaseIndices  = (int*) rtcMapBuffer(scene,mesh,RTC_EDGE_CREASE_INDEX_BUFFER);
-    if (g_enable_build_cancel && edgeCreaseIndices == NULL) return mesh;
+    if (g_enable_build_cancel && edgeCreaseIndices == nullptr) return mesh;
     float* edgeCreaseWeights = (float*) rtcMapBuffer(scene,mesh,RTC_EDGE_CREASE_WEIGHT_BUFFER);
-    if (g_enable_build_cancel && edgeCreaseWeights == NULL) return mesh;
+    if (g_enable_build_cancel && edgeCreaseWeights == nullptr) return mesh;
 
     for (size_t i=0; i<numEdgeCreases; i++) 
     {
@@ -622,9 +622,9 @@ namespace embree
     rtcUnmapBuffer(scene,mesh,RTC_EDGE_CREASE_WEIGHT_BUFFER); 
     
     int* vertexCreaseIndices  = (int*) rtcMapBuffer(scene,mesh,RTC_VERTEX_CREASE_INDEX_BUFFER);
-    if (g_enable_build_cancel && vertexCreaseIndices == NULL) return mesh;
+    if (g_enable_build_cancel && vertexCreaseIndices == nullptr) return mesh;
     float* vertexCreaseWeights = (float*) rtcMapBuffer(scene,mesh,RTC_VERTEX_CREASE_WEIGHT_BUFFER);
-    if (g_enable_build_cancel && vertexCreaseWeights == NULL) return mesh;
+    if (g_enable_build_cancel && vertexCreaseWeights == nullptr) return mesh;
 
     for (size_t i=0; i<numVertexCreases; i++) 
     {
@@ -651,7 +651,7 @@ namespace embree
     
     /* set vertices */
     Vec3fa* vertices = (Vec3fa*) rtcMapBuffer(scene_i,mesh,RTC_VERTEX_BUFFER); 
-    if (g_enable_build_cancel && vertices == NULL) return mesh;
+    if (g_enable_build_cancel && vertices == nullptr) return mesh;
     vertices[0] = pos + r*Vec3fa(-1,-1,-1); 
     vertices[1] = pos + r*Vec3fa(-1,-1,+1); 
     vertices[2] = pos + r*Vec3fa(-1,+1,-1); 
@@ -665,7 +665,7 @@ namespace embree
     /* set triangles and colors */
     int tri = 0;
     Triangle* triangles = (Triangle*) rtcMapBuffer(scene_i,mesh,RTC_INDEX_BUFFER);
-    if (g_enable_build_cancel && triangles == NULL) return mesh;
+    if (g_enable_build_cancel && triangles == nullptr) return mesh;
     
     // left side
     triangles[tri].v0 = 0; triangles[tri].v1 = 2; triangles[tri].v2 = 1; tri++;
@@ -702,18 +702,18 @@ namespace embree
     unsigned geomID = rtcNewHairGeometry (scene, flag, numHairs, numHairs*4, numTimeSteps);
     
     /* map triangle and vertex buffer */
-    Vec3fa* vertices0 = NULL;
-    Vec3fa* vertices1 = NULL;
+    Vec3fa* vertices0 = nullptr;
+    Vec3fa* vertices1 = nullptr;
     if (numTimeSteps >= 1) {
       vertices0 = (Vec3fa*) rtcMapBuffer(scene,geomID,RTC_VERTEX_BUFFER0); 
-      if (g_enable_build_cancel && vertices0 == NULL) return geomID;
+      if (g_enable_build_cancel && vertices0 == nullptr) return geomID;
     }
     if (numTimeSteps >= 2) {
       vertices1 = (Vec3fa*) rtcMapBuffer(scene,geomID,RTC_VERTEX_BUFFER1); 
-      if (g_enable_build_cancel && vertices1 == NULL) return geomID;
+      if (g_enable_build_cancel && vertices1 == nullptr) return geomID;
     }
     int* indices = (int*) rtcMapBuffer(scene,geomID,RTC_INDEX_BUFFER);
-    if (g_enable_build_cancel && indices == NULL) return geomID;
+    if (g_enable_build_cancel && indices == nullptr) return geomID;
 
     for (size_t i=0; i<numHairs; i++) 
     {
@@ -890,7 +890,7 @@ namespace embree
     g_atomic0 = 0;
     g_atomic1 = 0;
     for (size_t i=1; i<numThreads; i++)
-      g_threads.push_back(createThread(test_barrier_sys_thread,NULL,DEFAULT_STACK_SIZE,i));
+      g_threads.push_back(createThread(test_barrier_sys_thread,nullptr,DEFAULT_STACK_SIZE,i));
     setAffinity(0);
     
     bool ok = true;
@@ -982,7 +982,7 @@ namespace embree
     g_atomic0 = 0;
     g_atomic1 = 0;
     for (size_t i=1; i<numThreads; i++)
-      g_threads.push_back(createThread(test_condition_sys_thread,NULL,DEFAULT_STACK_SIZE,i));
+      g_threads.push_back(createThread(test_condition_sys_thread,nullptr,DEFAULT_STACK_SIZE,i));
     setAffinity(0);
     
     bool ok = true;
@@ -1035,7 +1035,7 @@ namespace embree
     g_barrier.init(numThreads);
     g_counter = 0;
     for (size_t i=1; i<numThreads; i++) 
-      g_threads.push_back(createThread(test_mutex_sys_thread,NULL,DEFAULT_STACK_SIZE,i));
+      g_threads.push_back(createThread(test_mutex_sys_thread,nullptr,DEFAULT_STACK_SIZE,i));
 
     setAffinity(0);
     
@@ -2532,7 +2532,7 @@ namespace embree
   struct RegressionTask
   {
     RegressionTask (size_t sceneIndex, size_t sceneCount, size_t threadCount)
-      : sceneIndex(sceneIndex), sceneCount(sceneCount), scene(NULL), numActiveThreads(0) { barrier.init(threadCount); }
+      : sceneIndex(sceneIndex), sceneCount(sceneCount), scene(nullptr), numActiveThreads(0) { barrier.init(threadCount); }
 
     size_t sceneIndex;
     size_t sceneCount;
@@ -2584,7 +2584,7 @@ namespace embree
 	}
         task->barrier.wait();
       }
-      delete thread; thread = NULL;
+      delete thread; thread = nullptr;
       return;
     }
 
@@ -2608,7 +2608,7 @@ namespace embree
       RTCSceneFlags sflag = getSceneFlag(i); 
       task->scene = rtcNewScene(sflag,aflags);
       CountErrors();
-      if (g_enable_build_cancel) rtcSetProgressMonitorFunction(task->scene,monitorProgressFunction,NULL);
+      if (g_enable_build_cancel) rtcSetProgressMonitorFunction(task->scene,monitorProgressFunction,nullptr);
       avector<Sphere*> spheres;
       
       for (size_t j=0; j<10; j++) 
@@ -2706,12 +2706,12 @@ namespace embree
 	}
 	task->barrier.wait();
       }
-      delete thread; thread = NULL;
+      delete thread; thread = nullptr;
       return;
     }
     task->scene = rtcNewScene(RTC_SCENE_DYNAMIC,aflags);
     CountErrors();
-    if (g_enable_build_cancel) rtcSetProgressMonitorFunction(task->scene,monitorProgressFunction,NULL);
+    if (g_enable_build_cancel) rtcSetProgressMonitorFunction(task->scene,monitorProgressFunction,nullptr);
     int geom[1024];
     int types[1024];
     Sphere spheres[1024];
@@ -2850,7 +2850,7 @@ namespace embree
     rtcDeleteScene (task->scene);
     CountErrors();
 
-    delete thread; thread = NULL;
+    delete thread; thread = nullptr;
     return;
   }
 
@@ -2935,15 +2935,15 @@ namespace embree
       monitorProgressInvokations = 0;
       func(new ThreadRegressionTask(0,0,new RegressionTask(sceneIndex,1,0)));
       if (monitorMemoryBytesUsed) { // || (monitorMemoryInvokations != 0 && errorCounter != 1)) { // FIXME: test that rtcCommit has returned with error code
-        rtcSetMemoryMonitorFunction(NULL);
-        //rtcSetProgressMonitorFunction(NULL);
+        rtcSetMemoryMonitorFunction(nullptr);
+        //rtcSetProgressMonitorFunction(nullptr);
         return false;
       }
       sceneIndex++;
       clearBuffers();
     }
     g_enable_build_cancel = false;
-    rtcSetMemoryMonitorFunction(NULL);
+    rtcSetMemoryMonitorFunction(nullptr);
     return true;
   }
 

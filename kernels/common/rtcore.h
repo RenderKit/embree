@@ -18,46 +18,6 @@
 
 namespace embree
 {
-  /*! invokes the memory monitor callback */
-  void memoryMonitor(ssize_t bytes, bool post);
-
-  /*! allocator that performs aligned monitored allocations */
-  template<typename T, size_t alignment = 64>
-    struct aligned_monitored_allocator
-    {
-      typedef T value_type;
-      typedef T* pointer;
-      typedef const T* const_pointer;
-      typedef T& reference;
-      typedef const T& const_reference;
-      typedef std::size_t size_type; // FIXME: also use std::size_t type under windows if available
-      typedef std::ptrdiff_t difference_type;
-
-      __forceinline pointer allocate( size_type n ) 
-      {
-        memoryMonitor(n*sizeof(T),false);
-        return (pointer) alignedMalloc(n*sizeof(value_type),alignment);
-      }
-
-      __forceinline void deallocate( pointer p, size_type n ) 
-      {
-        alignedFree(p);
-        memoryMonitor(-n*sizeof(T),true);
-      }
-
-      __forceinline void construct( pointer p, const_reference val ) {
-        new (p) T(val);
-      }
-
-      __forceinline void destroy( pointer p ) {
-        p->~T();
-      }
-    };
-
-  /*! monitored vector */
-  template<typename T>
-    using mvector = vector_t<T,aligned_allocator<T,std::alignment_of<T>::value> >;
-
    /* we consider floating point numbers in that range as valid input numbers */
 #define VALID_FLOAT_RANGE  1.844E18f
 
@@ -97,7 +57,7 @@ void process_error(RTCError error, const char* str);
   }
 
 #define RTCORE_VERIFY_HANDLE(handle) \
-  if (handle == NULL) {                                                 \
+  if (handle == nullptr) {                                                 \
     throw_RTCError(RTC_INVALID_ARGUMENT,"invalid argument");             \
   }
 

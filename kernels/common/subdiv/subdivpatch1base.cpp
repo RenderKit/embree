@@ -101,7 +101,7 @@ namespace embree
 
     /* has displacements? */
     flags &= ~HAS_DISPLACEMENT;
-    if (mesh->displFunc != NULL)
+    if (mesh->displFunc != nullptr)
       flags |= HAS_DISPLACEMENT;
 
   }
@@ -142,7 +142,7 @@ namespace embree
     // 	exit(0);
     //   }
 
-    if (ipatch.isRegularOrFinal(0) && mesh->displFunc == NULL)
+    if (ipatch.isRegularOrFinal(0) && mesh->displFunc == nullptr)
       {
         flags |= REGULAR_PATCH;
         patch.init( ipatch );

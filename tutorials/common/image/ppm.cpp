@@ -32,7 +32,7 @@ namespace embree
       return false;
     }
     char line[1024];
-    if(fgets(line, sizeof(line), file) == NULL) 
+    if(fgets(line, sizeof(line), file) == nullptr) 
       THROW_RUNTIME_ERROR("Error reading PPM file!");
     return true;
   }

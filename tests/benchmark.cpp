@@ -99,11 +99,11 @@ namespace embree
     {
       g_atomic_cntr = g_num_mutex_locks;
       for (size_t i=1; i<numThreads; i++)
-	g_threads.push_back(createThread(benchmark_mutex_sys_thread,NULL,1000000,i));
+	g_threads.push_back(createThread(benchmark_mutex_sys_thread,nullptr,1000000,i));
       //setAffinity(0);
       
       double t0 = getSeconds();
-      benchmark_mutex_sys_thread(NULL);
+      benchmark_mutex_sys_thread(nullptr);
       double t1 = getSeconds();
       
       for (size_t i=0; i<g_threads.size(); i++)	join(g_threads[i]);
@@ -222,7 +222,7 @@ namespace embree
       
       g_barrier_active.wait(0,numThreads);
       double t0 = getSeconds();
-      benchmark_atomic_inc_thread(NULL);
+      benchmark_atomic_inc_thread(nullptr);
       double t1 = getSeconds();
       g_barrier_active.wait(0,numThreads);
       
@@ -281,7 +281,7 @@ namespace embree
     }
   };
 
-  char* benchmark_osmalloc::ptr = NULL;
+  char* benchmark_osmalloc::ptr = nullptr;
 
   class benchmark_bandwidth : public Benchmark
   {
@@ -332,7 +332,7 @@ namespace embree
     }
   };
 
-  char* benchmark_bandwidth::ptr = NULL;
+  char* benchmark_bandwidth::ptr = nullptr;
 
   RTCRay makeRay(Vec3f org, Vec3f dir) 
   {

@@ -17,8 +17,6 @@
 #include "texture_loader.h"
 #include "image/image.h"
 
-#include <png.h>
-
 namespace embree
 {
   bool isPowerOf2 (unsigned int x)

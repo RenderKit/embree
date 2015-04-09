@@ -251,7 +251,7 @@ namespace embree
     {
 #if defined(TASKING_LOCKSTEP)
       TaskScheduler::EventSync event;
-      TaskScheduler::Task task(&event,task_regression_testing,NULL,TaskScheduler::getNumThreads(),NULL,NULL,"regression_testing");
+      TaskScheduler::Task task(&event,task_regression_testing,nullptr,TaskScheduler::getNumThreads(),nullptr,nullptr,"regression_testing");
       TaskScheduler::addTask(-1,TaskScheduler::GLOBAL_FRONT,&task);
       event.sync();
 #else
@@ -343,7 +343,7 @@ namespace embree
     if (!isCoherent(flags) && !isIncoherent(flags)) flags = RTCSceneFlags(flags | RTC_SCENE_INCOHERENT);
     return (RTCScene) new Scene(flags,aflags);
     RTCORE_CATCH_END;
-    return NULL;
+    return nullptr;
   }
 
   RTCORE_API void rtcSetProgressMonitorFunction(RTCScene scene, RTCProgressMonitorFunc func, void* ptr) 
@@ -734,7 +734,7 @@ namespace embree
     RTCORE_VERIFY_GEOMID(geomID);
     return ((Scene*)scene)->get_locked(geomID)->map(type);
     RTCORE_CATCH_END;
-    return NULL;
+    return nullptr;
   }
 
   RTCORE_API void rtcUnmapBuffer(RTCScene scene, unsigned geomID, RTCBufferType type) 
@@ -825,7 +825,7 @@ namespace embree
     RTCORE_VERIFY_GEOMID(geomID);
     return ((Scene*)scene)->get(geomID)->getUserData(); // this call is on purpose not thread safe
     RTCORE_CATCH_END;
-    return NULL;
+    return nullptr;
   }
 
   RTCORE_API void rtcSetBoundsFunction (RTCScene scene, unsigned geomID, RTCBoundsFunc bounds)

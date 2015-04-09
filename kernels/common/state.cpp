@@ -20,7 +20,7 @@
 namespace embree
 {
   /* error flag */
-  tls_t State::g_error = NULL; // FIXME: use thread local
+  tls_t State::g_error = nullptr; // FIXME: use thread local
   std::vector<RTCError*> State::g_errors; // FIXME: use thread local
   MutexSys State::g_errors_mutex;
 
@@ -57,11 +57,11 @@ namespace embree
 
     {
       Lock<MutexSys> lock(g_errors_mutex);
-      if (g_error == NULL) 
+      if (g_error == nullptr) 
         g_error = createTls();
     }
-    g_error_function = NULL;
-    g_memory_monitor_function = NULL;
+    g_error_function = nullptr;
+    g_memory_monitor_function = nullptr;
 
     //Lock<MutexSys> lock(g_errors_mutex);
     //  for (size_t i=0; i<g_errors.size(); i++)
@@ -70,9 +70,9 @@ namespace embree
     //  g_errors.clear();
   }
 
-  static std::vector<std::string> symbols { "=", ",", "|" };
+  const char* symbols[3] = { "=", ",", "|" };
 
-  bool State::parseFile(const FileName& fileName)
+   bool State::parseFile(const FileName& fileName)
   {
     Ref<Stream<int> > file;
     try {
@@ -80,20 +80,29 @@ namespace embree
     } catch (const std::runtime_error&) {
       return false;
     }
+
+    std::vector<std::string> syms;
+	  for (size_t i=0; i<sizeof(symbols)/sizeof(void*); i++) 
+      syms.push_back(symbols[i]);
+
     Ref<TokenStream> cin = new TokenStream(new LineCommentFilter(file,"#"),
                                            TokenStream::alpha+TokenStream::ALPHA+TokenStream::numbers+"_.",
-                                           TokenStream::separators,symbols);
+                                           TokenStream::separators,syms);
     parse(cin);
     return true;
   }
 
   void State::parseString(const char* cfg)
   {
-    if (cfg == NULL) return;
+    if (cfg == nullptr) return;
 
-    Ref<TokenStream> cin = new TokenStream(new StrStream(cfg),
+    std::vector<std::string> syms;
+	  for (size_t i=0; i<sizeof(symbols)/sizeof(void*); i++) 
+	  	syms.push_back(symbols[i]);
+    
+	  Ref<TokenStream> cin = new TokenStream(new StrStream(cfg),
                                            TokenStream::alpha+TokenStream::ALPHA+TokenStream::numbers+"_.",
-                                           TokenStream::separators,symbols);
+                                           TokenStream::separators,syms);
     parse(cin);
   }
 
@@ -187,7 +196,7 @@ namespace embree
   RTCError* State::error() 
   {
     RTCError* stored_error = (RTCError*) getTls(g_error);
-    if (stored_error == NULL) {
+    if (stored_error == nullptr) {
       Lock<MutexSys> lock(g_errors_mutex);
       stored_error = new RTCError(RTC_NO_ERROR);
       g_errors.push_back(stored_error);

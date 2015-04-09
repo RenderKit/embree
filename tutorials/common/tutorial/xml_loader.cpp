@@ -218,7 +218,7 @@ namespace embree
     void loadTriangleLight(const Ref<XML>& xml, const AffineSpace3f& space);
     void loadHDRILight(const Ref<XML>& xml, const AffineSpace3f& space);
     Parms loadMaterialParms(const Ref<XML>& parms);
-    int loadMaterial(const Ref<XML>& xml, std::string* name = NULL);
+    int loadMaterial(const Ref<XML>& xml, std::string* name = nullptr);
     void loadTriangleMesh(const Ref<XML>& xml, const AffineSpace3f& space);
     void loadSubdivMesh(const Ref<XML>& xml, const AffineSpace3f& space);
     void loadSphere(const Ref<XML>& xml, const AffineSpace3f& space);
@@ -263,7 +263,7 @@ namespace embree
   }
 
   template<> bool XMLLoader::load<bool>(const Ref<XML>& xml, const bool& opt) {
-    if (xml == null) return opt;
+    if (xml == nullptr) return opt;
     if (xml->body.size() != 1) THROW_RUNTIME_ERROR(xml->loc.str()+": wrong bool body");
     return xml->body[0].Int() != 0;
   }
@@ -294,7 +294,7 @@ namespace embree
   }
 
   template<> float XMLLoader::load<float>(const Ref<XML>& xml, const float& opt) {
-    if (xml == null) return opt;
+    if (xml == nullptr) return opt;
     if (xml->body.size() != 1) THROW_RUNTIME_ERROR(xml->loc.str()+": wrong float body");
     return xml->body[0].Float();
   }
@@ -310,7 +310,7 @@ namespace embree
   }
 
   template<> Vec3fa XMLLoader::load<Vec3fa>(const Ref<XML>& xml, const Vec3fa& opt) {
-    if (xml == null) return opt;
+    if (xml == nullptr) return opt;
     if (xml->body.size() != 3) THROW_RUNTIME_ERROR(xml->loc.str()+": wrong float3 body");
     return Vec3fa(xml->body[0].Float(),xml->body[1].Float(),xml->body[2].Float());
   }
@@ -373,7 +373,7 @@ namespace embree
     if (!xml) { return std::vector<float>(); }
 
     size_t size = 0;
-    float* data = NULL;
+    float* data = nullptr;
     if (xml->parm("ofs") != "") {
       data = (float*)loadBinary(xml,sizeof(float),size);
     } else {
@@ -395,7 +395,7 @@ namespace embree
     if (!xml) { return std::vector<Vec2f>(); }
 
     size_t size = 0;
-    Vec2f* data = NULL;
+    Vec2f* data = nullptr;
     if (xml->parm("ofs") != "") {
       data = (Vec2f*)loadBinary(xml,2*sizeof(float),size);
     } else {
@@ -418,7 +418,7 @@ namespace embree
     if (!xml) { return std::vector<Vec3f>(); }
 
     size_t size = 0;
-    Vec3f* data = NULL;
+    Vec3f* data = nullptr;
     if (xml->parm("ofs") != "") {
       data = (Vec3f*) loadBinary(xml,3*sizeof(float),size);
     }
@@ -442,7 +442,7 @@ namespace embree
     if (!xml) { return std::vector<int>(); }
 
     size_t size = 0;
-    int* data = NULL;
+    int* data = nullptr;
     if (xml->parm("ofs") != "") {
       data = (int*)loadBinary(xml,sizeof(int),size);
     } else {
@@ -464,7 +464,7 @@ namespace embree
     if (!xml) { return std::vector<Vec2i>(); }
     
     size_t size = 0;
-    Vec2i* data = NULL;
+    Vec2i* data = nullptr;
     if (xml->parm("ofs") != "") {
       data = (Vec2i*) loadBinary(xml,2*sizeof(int),size);
     }
@@ -488,7 +488,7 @@ namespace embree
     if (!xml) { return std::vector<Vec3i>(); }
     
     size_t size = 0;
-    Vec3i* data = NULL;
+    Vec3i* data = nullptr;
     if (xml->parm("ofs") != "") {
       data = (Vec3i*) loadBinary(xml,3*sizeof(int),size);
     }
@@ -819,7 +819,7 @@ namespace embree
     }
   }
 
-  XMLLoader::XMLLoader(const FileName& fileName, const AffineSpace3f& space, OBJScene& scene) : binFile(NULL), scene(scene)
+  XMLLoader::XMLLoader(const FileName& fileName, const AffineSpace3f& space, OBJScene& scene) : binFile(nullptr), scene(scene)
   {
     path = fileName.path();
     binFileName = fileName.setExt(".bin");

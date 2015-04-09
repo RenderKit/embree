@@ -126,7 +126,7 @@ namespace embree
       task_set_function(nullptr)
   {
     for (size_t i=0; i<MAX_THREADS; i++)
-      threadLocal[i] = NULL;
+      threadLocal[i] = nullptr;
 
     if (numThreads == -1) {
       threadCounter = 1;
@@ -174,7 +174,7 @@ namespace embree
   }
 #endif
 
-  TaskSchedulerTBB* TaskSchedulerTBB::g_instance = NULL;
+  TaskSchedulerTBB* TaskSchedulerTBB::g_instance = nullptr;
 
   __dllexport TaskSchedulerTBB* TaskSchedulerTBB::global_instance() {
     return g_instance;
@@ -191,7 +191,7 @@ namespace embree
   }
 
   void TaskSchedulerTBB::destroy() {
-    delete g_instance; g_instance = NULL;
+    delete g_instance; g_instance = nullptr;
   }
 
   struct MyThread
@@ -242,7 +242,7 @@ namespace embree
       while (threadCounter > 0) 
         yield();
 
-    threadLocal[0] = NULL;
+    threadLocal[0] = nullptr;
   }
 
   void TaskSchedulerTBB::destroyThreads() 
@@ -266,7 +266,7 @@ namespace embree
       __pause_cpu();
   }
 
-  __thread TaskSchedulerTBB::Thread* TaskSchedulerTBB::thread_local_thread = NULL;
+  __thread TaskSchedulerTBB::Thread* TaskSchedulerTBB::thread_local_thread = nullptr;
 
   __dllexport TaskSchedulerTBB::Thread* TaskSchedulerTBB::thread() {
     return thread_local_thread;
@@ -327,7 +327,7 @@ namespace embree
                  [&] () { return anyTasksRunning > 0; },
                  [&] () { 
                    atomic_add(&anyTasksRunning,+1);
-                   while (thread.tasks.execute_local(thread,NULL));
+                   while (thread.tasks.execute_local(thread,nullptr));
                    atomic_add(&anyTasksRunning,-1);
                  });
     }
@@ -339,12 +339,12 @@ namespace embree
     while (threadCounter > 0)
       yield();
 
-    threadLocal[threadIndex] = NULL;
+    threadLocal[threadIndex] = nullptr;
   }
   catch (const std::exception& e) 
   {
     std::cout << "Error: " << e.what() << std::endl; // FIXME: propagate to main thread
-    threadLocal[threadIndex] = NULL;
+    threadLocal[threadIndex] = nullptr;
     exit(1);
   }
 
@@ -357,7 +357,7 @@ namespace embree
       TaskSetFunction* function = task_set_function;
       task_set_barrier.wait(threadIndex,threadCount);
       if (threadIndex == 0) {
-        task_set_function = NULL;
+        task_set_function = nullptr;
         atomic_add(&anyTasksRunning,-1);
       }
       const size_t task_set_size = function->end-function->begin;

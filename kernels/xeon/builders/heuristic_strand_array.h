@@ -58,7 +58,7 @@ namespace embree
       };
 
       __forceinline HeuristicStrandSplit ()
-        : prims(NULL) {}
+        : prims(nullptr) {}
       
       /*! remember prim array */
       __forceinline HeuristicStrandSplit (BezierPrim* prims)

@@ -27,7 +27,7 @@ const int numPhi = 120;
 const int numTheta = 2*numPhi;
 
 /* scene data */
-RTCScene g_scene = NULL;
+RTCScene g_scene = nullptr;
 Vec3fa position[numSpheres];
 Vec3fa colors[numSpheres+1];
 float radius[numSpheres];

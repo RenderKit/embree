@@ -17,8 +17,8 @@
 #include "../common/tutorial/tutorial_device.h"
 
 /* scene data */
-RTCScene g_scene = NULL;
-Vec3fa* colors = NULL;
+RTCScene g_scene = nullptr;
+Vec3fa* colors = nullptr;
 
 /* render function to use */
 renderPixelFunc renderPixel;

@@ -57,7 +57,7 @@ namespace embree
   struct ConditionImplementation
   {
     __forceinline ConditionImplementation () : count(0) {
-      event = CreateEvent(NULL,TRUE,FALSE,NULL);
+      event = CreateEvent(nullptr,TRUE,FALSE,nullptr);
     }
 
     __forceinline ~ConditionImplementation () {
@@ -115,7 +115,7 @@ namespace embree
   struct ConditionImplementation
   {
     __forceinline ConditionImplementation () { 
-      pthread_cond_init(&cond,NULL); 
+      pthread_cond_init(&cond,nullptr); 
     }
     
     __forceinline ~ConditionImplementation() { 

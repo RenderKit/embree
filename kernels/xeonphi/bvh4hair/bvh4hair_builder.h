@@ -105,9 +105,9 @@ namespace embree
   BVH4HairBuilder(BVH4Hair* bvh, void* geometry) 
     : ParallelBinnedSAHBuilder(geometry),
       bvh4hair(bvh),
-      prims(NULL),
-      node(NULL),
-      accel(NULL),
+      prims(nullptr),
+      node(nullptr),
+      accel(nullptr),
       size_prims(0),
       size_nodes(0),
       size_accel(0),

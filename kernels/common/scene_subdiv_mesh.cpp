@@ -32,7 +32,7 @@ namespace embree
       numEdges(numEdges), 
       numHalfEdges(0),
       numVertices(numVertices),
-      displFunc(NULL), 
+      displFunc(nullptr), 
       displBounds(empty),
       levelUpdate(false)
   {
@@ -133,7 +133,7 @@ namespace embree
   {
     if (parent->isStatic() && parent->isBuild()) {
       throw_RTCError(RTC_INVALID_OPERATION,"static geometries cannot get modified");
-      return NULL;
+      return nullptr;
     }
 
     switch (type) {
@@ -147,7 +147,7 @@ namespace embree
     case RTC_VERTEX_CREASE_INDEX_BUFFER  : return vertex_creases.map(parent->numMappedBuffers); 
     case RTC_VERTEX_CREASE_WEIGHT_BUFFER : return vertex_crease_weights.map(parent->numMappedBuffers); 
     case RTC_LEVEL_BUFFER                : return levels.map(parent->numMappedBuffers); 
-    default                              : throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type"); return NULL;
+    default                              : throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type"); return nullptr;
     }
   }
 

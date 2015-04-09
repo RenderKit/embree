@@ -72,7 +72,7 @@ namespace embree
     if (lib) return lib_t(lib);
     FileName executable = getExecutableFileName();
     lib = dlopen((executable.path() + fullName).c_str(),RTLD_NOW);
-    if (lib == NULL) THROW_RUNTIME_ERROR(dlerror());
+    if (lib == nullptr) THROW_RUNTIME_ERROR(dlerror());
     return lib_t(lib);
   }
 

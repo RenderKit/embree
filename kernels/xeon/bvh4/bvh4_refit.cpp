@@ -54,7 +54,7 @@ namespace embree
           annotate_tree_sizes(bvh->root);
           calculate_refit_roots();
         }
-        delete builder; builder = NULL;
+        delete builder; builder = nullptr;
       }
       
       /* refit BVH */

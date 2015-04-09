@@ -815,9 +815,9 @@ inline Vec3fa Material__sample(ISPCMaterial* materials, int materialID, int numM
 
 /* scene data */
 extern "C" ISPCScene* g_ispc_scene;
-RTCScene g_scene = NULL;
-void** geomID_to_mesh = NULL;
-int* geomID_to_type = NULL;
+RTCScene g_scene = nullptr;
+void** geomID_to_mesh = nullptr;
+int* geomID_to_type = nullptr;
 
 /* render function to use */
 renderPixelFunc renderPixel;
@@ -849,7 +849,7 @@ void error_handler(const RTCError code, const int8* str)
 } // error handler
 
 /* accumulation buffer */
-Vec3fa* g_accu = NULL;
+Vec3fa* g_accu = nullptr;
 unsigned int g_accu_width = 0;
 unsigned int g_accu_height = 0;
 unsigned int g_accu_count = 0;
@@ -1030,7 +1030,7 @@ void convertSubdivMeshes(ISPCScene* scene_in, RTCScene scene_out, size_t numGeom
     rtcSetBuffer(scene_out, geomID, RTC_VERTEX_CREASE_INDEX_BUFFER,  mesh->vertex_creases,        0, sizeof(unsigned int));
     rtcSetBuffer(scene_out, geomID, RTC_VERTEX_CREASE_WEIGHT_BUFFER, mesh->vertex_crease_weights, 0, sizeof(float));
 #if ENABLE_DISPLACEMENTS == 1
-      rtcSetDisplacementFunction(scene_out,geomID,(RTCDisplacementFunc)&displacementFunction,NULL);
+      rtcSetDisplacementFunction(scene_out,geomID,(RTCDisplacementFunc)&displacementFunction,nullptr);
 #endif
   }
 }      
@@ -1060,9 +1060,9 @@ RTCScene convertScene(ISPCScene* scene_in,const Vec3fa& cam_org)
 
   /* commit changes to scene */
   progressStart();
-  rtcSetProgressMonitorFunction(scene_out,progressMonitor,NULL);
+  rtcSetProgressMonitorFunction(scene_out,progressMonitor,nullptr);
   rtcCommit (scene_out);
-  rtcSetProgressMonitorFunction(scene_out,NULL,NULL);
+  rtcSetProgressMonitorFunction(scene_out,nullptr,nullptr);
   progressEnd();
 
   return scene_out;
@@ -1444,7 +1444,7 @@ extern "C" void device_render (int* pixels,
   Vec3fa cam_org = Vec3fa(p.x,p.y,p.z);
 
   /* create scene */
-  if (g_scene == NULL)
+  if (g_scene == nullptr)
    {
      g_scene = convertScene(g_ispc_scene,cam_org);
 #if !defined(FORCE_FIXED_EDGE_TESSELLATION)

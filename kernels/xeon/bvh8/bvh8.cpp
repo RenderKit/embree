@@ -204,7 +204,7 @@ namespace embree
     intersectors.intersector4_nofilter = BVH8Triangle4Intersector4HybridMoellerNoFilter;
     intersectors.intersector8_filter = BVH8Triangle4Intersector8HybridMoeller;
     intersectors.intersector8_nofilter = BVH8Triangle4Intersector8HybridMoellerNoFilter;
-    intersectors.intersector16 = NULL;
+    intersectors.intersector16 = nullptr;
     return intersectors;
   }
 
@@ -217,7 +217,7 @@ namespace embree
     intersectors.intersector4_nofilter = BVH8Triangle8Intersector4HybridMoellerNoFilter;
     intersectors.intersector8_filter = BVH8Triangle8Intersector8HybridMoeller;
     intersectors.intersector8_nofilter = BVH8Triangle8Intersector8HybridMoellerNoFilter;
-    intersectors.intersector16 = NULL;
+    intersectors.intersector16 = nullptr;
     return intersectors;
   }
 
@@ -226,7 +226,7 @@ namespace embree
     BVH8* accel = new BVH8(Triangle4Type::type,scene);
     Accel::Intersectors intersectors= BVH8Triangle4Intersectors(accel);
     
-    Builder* builder = NULL;
+    Builder* builder = nullptr;
     if      (State::instance()->tri_builder == "default"     ) builder = BVH8Triangle4SceneBuilderSAH(accel,scene,0);
     else if (State::instance()->tri_builder == "binned_sah2" ) builder = BVH8Triangle4SceneBuilderSAH(accel,scene,0);
     else if (State::instance()->tri_builder == "binned_sah2_spatial" ) builder = BVH8Triangle4SceneBuilderSpatialSAH(accel,scene,0);
@@ -257,7 +257,7 @@ namespace embree
     BVH8* accel = new BVH8(Triangle8Type::type,scene);
     Accel::Intersectors intersectors= BVH8Triangle8Intersectors(accel);
     
-    Builder* builder = NULL;
+    Builder* builder = nullptr;
     if      (State::instance()->tri_builder == "default"     ) builder = BVH8Triangle8SceneBuilderSAH(accel,scene,0);
     else if (State::instance()->tri_builder == "binned_sah2" ) builder = BVH8Triangle8SceneBuilderSAH(accel,scene,0);
     else if (State::instance()->tri_builder == "binned_sah2_spatial" ) builder = BVH8Triangle8SceneBuilderSpatialSAH(accel,scene,0);

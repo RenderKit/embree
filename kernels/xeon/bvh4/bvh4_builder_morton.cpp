@@ -89,10 +89,10 @@ namespace embree
     struct CreateTriangle1Leaf
     {
       __forceinline CreateTriangle1Leaf (Scene* scene, MortonID32Bit* morton, size_t encodeShift, size_t encodeMask)
-        : scene(scene), mesh(NULL), morton(morton), encodeShift(encodeShift), encodeMask(encodeMask) {}
+        : scene(scene), mesh(nullptr), morton(morton), encodeShift(encodeShift), encodeMask(encodeMask) {}
 
        __forceinline CreateTriangle1Leaf (TriangleMesh* mesh, MortonID32Bit* morton)
-         : scene(NULL), mesh(mesh), morton(morton), encodeShift(0), encodeMask(-1) {}
+         : scene(nullptr), mesh(mesh), morton(morton), encodeShift(0), encodeMask(-1) {}
 
       void operator() (MortonBuildRecord<BVH4::NodeRef>& current, FastAllocator::ThreadLocal2* alloc, BBox3fa& box_o)
       {
@@ -146,10 +146,10 @@ namespace embree
     struct CreateTriangle4Leaf
     {
       __forceinline CreateTriangle4Leaf (Scene* scene, MortonID32Bit* morton, size_t encodeShift, size_t encodeMask)
-        : scene(scene), mesh(NULL), morton(morton), encodeShift(encodeShift), encodeMask(encodeMask) {}
+        : scene(scene), mesh(nullptr), morton(morton), encodeShift(encodeShift), encodeMask(encodeMask) {}
       
       __forceinline CreateTriangle4Leaf (TriangleMesh* mesh, MortonID32Bit* morton)
-        : scene(NULL), mesh(mesh), morton(morton), encodeShift(0), encodeMask(-1) {}
+        : scene(nullptr), mesh(mesh), morton(morton), encodeShift(0), encodeMask(-1) {}
 
       void operator() (MortonBuildRecord<BVH4::NodeRef>& current, FastAllocator::ThreadLocal2* alloc, BBox3fa& box_o)
       {
@@ -205,10 +205,10 @@ namespace embree
     struct CreateTriangle8Leaf
     {
       __forceinline CreateTriangle8Leaf (Scene* scene, MortonID32Bit* morton, size_t encodeShift, size_t encodeMask)
-        : scene(scene), mesh(NULL), morton(morton), encodeShift(encodeShift), encodeMask(encodeMask) {}
+        : scene(scene), mesh(nullptr), morton(morton), encodeShift(encodeShift), encodeMask(encodeMask) {}
       
       __forceinline CreateTriangle8Leaf (TriangleMesh* mesh, MortonID32Bit* morton)
-        : scene(NULL), mesh(mesh), morton(morton), encodeShift(0), encodeMask(-1) {}
+        : scene(nullptr), mesh(mesh), morton(morton), encodeShift(0), encodeMask(-1) {}
       
       void operator() (MortonBuildRecord<BVH4::NodeRef>& current, FastAllocator::ThreadLocal2* alloc, BBox3fa& box_o)
       {
@@ -263,10 +263,10 @@ namespace embree
     struct CreateTriangle1vLeaf
     {
       __forceinline CreateTriangle1vLeaf (Scene* scene, MortonID32Bit* morton, size_t encodeShift, size_t encodeMask)
-        : scene(scene), mesh(NULL), morton(morton), encodeShift(encodeShift), encodeMask(encodeMask) {}
+        : scene(scene), mesh(nullptr), morton(morton), encodeShift(encodeShift), encodeMask(encodeMask) {}
       
       __forceinline CreateTriangle1vLeaf (TriangleMesh* mesh, MortonID32Bit* morton)
-        : scene(NULL), mesh(mesh), morton(morton), encodeShift(0), encodeMask(-1) {}
+        : scene(nullptr), mesh(mesh), morton(morton), encodeShift(0), encodeMask(-1) {}
       
       void operator() (MortonBuildRecord<BVH4::NodeRef>& current, FastAllocator::ThreadLocal2* alloc, BBox3fa& box_o)
       {
@@ -318,10 +318,10 @@ namespace embree
     struct CreateTriangle4vLeaf
     {
       __forceinline CreateTriangle4vLeaf (Scene* scene, MortonID32Bit* morton, size_t encodeShift, size_t encodeMask)
-        : scene(scene), mesh(NULL), morton(morton), encodeShift(encodeShift), encodeMask(encodeMask) {}
+        : scene(scene), mesh(nullptr), morton(morton), encodeShift(encodeShift), encodeMask(encodeMask) {}
       
       __forceinline CreateTriangle4vLeaf (TriangleMesh* mesh, MortonID32Bit* morton)
-        : scene(NULL), mesh(mesh), morton(morton), encodeShift(0), encodeMask(-1) {}
+        : scene(nullptr), mesh(mesh), morton(morton), encodeShift(0), encodeMask(-1) {}
       
       void operator() (MortonBuildRecord<BVH4::NodeRef>& current, FastAllocator::ThreadLocal2* alloc, BBox3fa& box_o)
       {
@@ -374,10 +374,10 @@ namespace embree
     struct CreateTriangle4iLeaf
     {
       __forceinline CreateTriangle4iLeaf (Scene* scene, MortonID32Bit* morton, size_t encodeShift, size_t encodeMask)
-        : scene(scene), mesh(NULL), morton(morton), encodeShift(encodeShift), encodeMask(encodeMask) {}
+        : scene(scene), mesh(nullptr), morton(morton), encodeShift(encodeShift), encodeMask(encodeMask) {}
       
       __forceinline CreateTriangle4iLeaf (TriangleMesh* mesh, MortonID32Bit* morton)
-        : scene(NULL), mesh(mesh), morton(morton), encodeShift(0), encodeMask(-1) {}
+        : scene(nullptr), mesh(mesh), morton(morton), encodeShift(0), encodeMask(-1) {}
       
       void operator() (MortonBuildRecord<BVH4::NodeRef>& current, FastAllocator::ThreadLocal2* alloc, BBox3fa& box_o)
       {
@@ -392,7 +392,7 @@ namespace embree
         *current.parent = BVH4::encodeLeaf((char*)accel,1);
         
         ssei vgeomID = -1, vprimID = -1;
-        Vec3f* v0[4] = { NULL, NULL, NULL, NULL };
+        Vec3f* v0[4] = { nullptr, nullptr, nullptr, nullptr };
         ssei v1 = zero, v2 = zero;
         
         for (size_t i=0; i<items; i++)

@@ -55,7 +55,7 @@ namespace embree
     DBG(PING);
     DBG(PRINT(mode));
 
-    Builder* builder = NULL;
+    Builder* builder = nullptr;
 
     switch( mode )
       {
@@ -95,9 +95,9 @@ namespace embree
   BVH4iBuilder::BVH4iBuilder (BVH4i* bvh, void* geometry, const size_t bvh4iNodeSize)
     : ParallelBinnedSAHBuilder(geometry),
       bvh(bvh),       
-      prims(NULL), 
-      node(NULL), 
-      accel(NULL), 
+      prims(nullptr), 
+      node(nullptr), 
+      accel(nullptr), 
       size_prims(0),
       num64BytesBlocksPerNode(bvh4iNodeSize / 64),
       leafItemThreshold(BVH4i::N)
@@ -112,7 +112,7 @@ namespace embree
     if (prims)  {
       assert(size_prims > 0);
       os_free(prims,size_prims);
-      prims = NULL;
+      prims = nullptr;
     }    
   }
 
@@ -123,7 +123,7 @@ namespace embree
     size_t primitives = 0;       
     for (size_t i=0;i<scene->size();i++)
       {
-	if (unlikely(scene->get(i) == NULL)) continue;
+	if (unlikely(scene->get(i) == nullptr)) continue;
 	if (unlikely((scene->get(i)->getType() != Geometry::TRIANGLE_MESH))) continue;
 	if (unlikely(!scene->get(i)->isEnabled())) continue;
 	const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(i);
@@ -255,8 +255,8 @@ namespace embree
 	DBG(std::cout << "EMPTY SCENE BUILD" << std::endl);
 	bvh->root = BVH4i::invalidNode;
 	bvh->bounds = empty;
-	bvh->qbvh = NULL;
-	bvh->accel = NULL;
+	bvh->qbvh = nullptr;
+	bvh->accel = nullptr;
 	return;
       }
 
@@ -346,7 +346,7 @@ namespace embree
     // === find first group containing startID ===
     unsigned int g=0, numSkipped = 0;
     for (; g<numGroups; g++) {       
-      if (unlikely(scene->get(g) == NULL)) continue;
+      if (unlikely(scene->get(g) == nullptr)) continue;
       if (unlikely(scene->get(g)->getType() != Geometry::TRIANGLE_MESH)) continue;
       const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(g);
       if (unlikely(!mesh->isEnabled())) continue;
@@ -372,7 +372,7 @@ namespace embree
 
     for (; g<numGroups; g++) 
       {
-	if (unlikely(scene->get(g) == NULL)) continue;
+	if (unlikely(scene->get(g) == nullptr)) continue;
 	if (unlikely(scene->get(g)->getType() != Geometry::TRIANGLE_MESH)) continue;
 	const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(g);
 	if (unlikely(!mesh->isEnabled())) continue;

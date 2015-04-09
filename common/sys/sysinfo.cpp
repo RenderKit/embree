@@ -72,7 +72,7 @@ namespace embree
 #elif defined (__GNUC__)
     return "GCC " __VERSION__;
 #elif defined(_MSC_VER)
-    std::string version = std::to_string(_MSC_FULL_VER);
+    std::string version = std::to_string((long long)_MSC_FULL_VER);
     version.insert(4,".");
     version.insert(9,".");
     version.insert(2,".");
@@ -159,7 +159,7 @@ namespace embree
   __noinline bool check_xcr0_ymm() 
   {
 #if defined (__WIN32__)
-    uint32_t xcr0 = 0;
+    unsigned xcr0 = 0;
 #if defined(__INTEL_COMPILER) 
     xcr0 = _xgetbv(0);
 #elif (defined(_MSC_VER) && (_MSC_FULL_VER >= 160040219)) // min VS2010 SP1 compiler is required
@@ -301,7 +301,7 @@ namespace embree
 {
   std::string getExecutableFileName() {
     char filename[1024];
-    if (!GetModuleFileName(NULL, filename, sizeof(filename))) return std::string();
+    if (!GetModuleFileName(nullptr, filename, sizeof(filename))) return std::string();
     return std::string(filename);
   }
 
@@ -414,13 +414,13 @@ namespace embree
     struct timeval tvstart, tvstop;
     unsigned long long int cycles[2];
     
-    gettimeofday(&tvstart, NULL);
+    gettimeofday(&tvstart, nullptr);
     cycles[0] = rdtsc();
-    gettimeofday(&tvstart, NULL);
+    gettimeofday(&tvstart, nullptr);
     usleep(250000);
-    gettimeofday(&tvstop, NULL);
+    gettimeofday(&tvstop, nullptr);
     cycles[1] = rdtsc();
-    gettimeofday(&tvstop, NULL);
+    gettimeofday(&tvstop, nullptr);
   
     const unsigned long microseconds = ((tvstop.tv_sec-tvstart.tv_sec)*1000000) + (tvstop.tv_usec-tvstart.tv_usec);
     unsigned long mhz = (unsigned long) (cycles[1]-cycles[0]) / microseconds;
@@ -435,7 +435,7 @@ namespace embree
 
   double getSeconds() {
 #if !defined(__MIC__)
-    struct timeval tp; gettimeofday(&tp,NULL);
+    struct timeval tp; gettimeofday(&tp,nullptr);
     return double(tp.tv_sec) + double(tp.tv_usec)/1E6;
 #else
     return double(rdtsc()) / double(micFrequency*1E6);

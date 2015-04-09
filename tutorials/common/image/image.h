@@ -88,7 +88,7 @@ namespace embree
 
     /*! image destruction */
     virtual ~ImageT() {
-      if (data) free(data); data = NULL;
+      if (data) free(data); data = nullptr;
     }
     
     /*! returns pixel color */
@@ -109,7 +109,7 @@ namespace embree
     /*! returns and forgets about data pointer of image */
     __forceinline void* steal_ptr() {
       T* ptr = data;
-      data = NULL;
+      data = nullptr;
       return (void*)ptr;
     }
 

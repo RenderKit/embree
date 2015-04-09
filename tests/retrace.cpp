@@ -674,8 +674,8 @@ namespace embree
     size_t numLogRayStreamElements       = 0;
     size_t numLogRayStreamElementsVerify = 0;
 
-    void *raydata        = NULL;
-    void *raydata_verify = NULL;
+    void *raydata        = nullptr;
+    void *raydata_verify = nullptr;
 
     switch(g_simd_width)
       {

@@ -275,7 +275,7 @@ PRINT(CORRECT_numPrims);
     // === find first group containing startID ===
     unsigned int startGroup=0, numSkipped = 0;
     for (; startGroup<numGroups; startGroup++) {       
-      if (unlikely(scene->get(startGroup) == NULL)) continue;
+      if (unlikely(scene->get(startGroup) == nullptr)) continue;
       if (unlikely(scene->get(startGroup)->type != Geometry::TRIANGLE_MESH)) continue;
       const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(startGroup);
       if (unlikely(!mesh->isEnabled())) continue;
@@ -295,7 +295,7 @@ PRINT(CORRECT_numPrims);
       unsigned int offset = startID - numSkipped;
       for (unsigned int g=startGroup; g<numGroups; g++) 
 	{
-	  if (unlikely(scene->get(g) == NULL)) continue;
+	  if (unlikely(scene->get(g) == nullptr)) continue;
 	  if (unlikely(scene->get(g)->type != Geometry::TRIANGLE_MESH)) continue;
 	  const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(g);
 	  if (unlikely(!mesh->isEnabled())) continue;
@@ -345,7 +345,7 @@ PRINT(CORRECT_numPrims);
     // === find first group containing startID ===
     unsigned int startGroup=0, numSkipped = 0;
     for (; startGroup<numGroups; startGroup++) {       
-      if (unlikely(scene->get(startGroup) == NULL)) continue;
+      if (unlikely(scene->get(startGroup) == nullptr)) continue;
       if (unlikely(scene->get(startGroup)->type != Geometry::TRIANGLE_MESH)) continue;
       const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(startGroup);
       if (unlikely(!mesh->isEnabled())) continue;
@@ -371,7 +371,7 @@ PRINT(CORRECT_numPrims);
       unsigned int offset = startID - numSkipped;
       for (unsigned int g=startGroup; g<numGroups; g++) 
 	{
-	  if (unlikely(scene->get(g) == NULL)) continue;
+	  if (unlikely(scene->get(g) == nullptr)) continue;
 	  if (unlikely(scene->get(g)->type != Geometry::TRIANGLE_MESH)) continue;
 	  const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(g);
 	  if (unlikely(!mesh->isEnabled())) continue;
@@ -450,7 +450,7 @@ PRINT(CORRECT_numPrims);
       unsigned int offset = startID - numSkipped;
       for (unsigned int g=startGroup; g<numGroups; g++) 
 	{
-	  if (unlikely(scene->get(g) == NULL)) continue;
+	  if (unlikely(scene->get(g) == nullptr)) continue;
 	  if (unlikely(scene->get(g)->type != Geometry::TRIANGLE_MESH)) continue;
 	  const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(g);
 	  if (unlikely(!mesh->isEnabled())) continue;
@@ -633,7 +633,7 @@ PRINT(CORRECT_numPrims);
     size_t numVirtualObjects = 0;       
     for (size_t i=0;i<scene->size();i++)
       {
-	if (unlikely(scene->get(i) == NULL)) continue;
+	if (unlikely(scene->get(i) == nullptr)) continue;
 	if (unlikely((scene->get(i)->type != Geometry::USER_GEOMETRY) /*&& (scene->get(i)->type != INSTANCES)*/)) continue;
 	if (unlikely(!scene->get(i)->isEnabled())) continue;
         UserGeometryBase* geom = (UserGeometryBase*) scene->get(i);
@@ -666,7 +666,7 @@ PRINT(CORRECT_numPrims);
     // === find first group containing startID ===
     unsigned int g=0, numSkipped = 0;
     for (; g<numTotalGroups; g++) {       
-      if (unlikely(scene->get(g) == NULL)) continue;
+      if (unlikely(scene->get(g) == nullptr)) continue;
       if (unlikely((scene->get(g)->type != Geometry::USER_GEOMETRY) /*&& (scene->get(g)->type != INSTANCES)*/)) continue;
       if (unlikely(!scene->get(g)->isEnabled())) continue;
       const UserGeometryBase* const geom = (UserGeometryBase*) scene->get(g);
@@ -687,7 +687,7 @@ PRINT(CORRECT_numPrims);
 
     for (; g<numTotalGroups; g++) 
       {
-	if (unlikely(scene->get(g) == NULL)) continue;
+	if (unlikely(scene->get(g) == nullptr)) continue;
 	if (unlikely((scene->get(g)->type != Geometry::USER_GEOMETRY ) /*&& (scene->get(g)->type != INSTANCES)*/)) continue;
 	if (unlikely(!scene->get(g)->isEnabled())) continue;
 
@@ -809,7 +809,7 @@ PRINT(CORRECT_numPrims);
     prims[numPrimitives+2] = prims[numPrimitives-1];
 
     // === 'prims' became 'accel' === 
-    prims = NULL;
+    prims = nullptr;
     size_prims = 0;
 
   }
@@ -897,7 +897,7 @@ PRINT(CORRECT_numPrims);
     if (numPrimitives == 0 || 
 	numPrimitives != fastUpdateMode_numFaces ||
 	bvh->root     == BVH4i::emptyNode ||
-	bvh->qbvh     == NULL)
+	bvh->qbvh     == nullptr)
       {
 	fastUpdateMode = false;
       }
@@ -976,7 +976,7 @@ PRINT(CORRECT_numPrims);
     // size_t numFaces = 0;       
     // for (size_t i=0;i<scene->size();i++)
     //   {
-    // 	if (unlikely(scene->get(i) == NULL)) continue;
+    // 	if (unlikely(scene->get(i) == nullptr)) continue;
     // 	if (unlikely((scene->get(i)->type != Geometry::SUBDIV_MESH) /*&& (scene->get(i)->type != INSTANCES)*/)) continue;
     // 	if (unlikely(!scene->get(i)->isEnabled())) continue;
     //     SubdivMesh* geom = (SubdivMesh*) scene->get(i);
@@ -1021,7 +1021,7 @@ PRINT(CORRECT_numPrims);
 
 
           /* eval displacement function */
-          if (unlikely(mesh->displFunc != NULL))
+          if (unlikely(mesh->displFunc != nullptr))
             {
               mic3f normal = p.normal16(u, v);
               normal = normalize(normal);
@@ -1248,7 +1248,7 @@ PRINT(CORRECT_numPrims);
     // === find first group containing startID ===
     unsigned int g=0, numSkipped = 0;
     for (; g<numTotalGroups; g++) {       
-      if (unlikely(scene->get(g) == NULL)) continue;
+      if (unlikely(scene->get(g) == nullptr)) continue;
       if (unlikely((scene->get(g)->type != Geometry::SUBDIV_MESH) /*&& (scene->get(g)->type != INSTANCES)*/)) continue;
       if (unlikely(!scene->get(g)->isEnabled())) continue;
       const SubdivMesh* const geom = (SubdivMesh*) scene->get(g);
@@ -1271,7 +1271,7 @@ PRINT(CORRECT_numPrims);
 
     for (; g<numTotalGroups; g++) 
       {
-	if (unlikely(scene->get(g) == NULL)) continue;
+	if (unlikely(scene->get(g) == nullptr)) continue;
 	if (unlikely((scene->get(g)->type != Geometry::SUBDIV_MESH ) /*&& (scene->get(g)->type != INSTANCES)*/)) continue;
 	if (unlikely(!scene->get(g)->isEnabled())) continue;
 

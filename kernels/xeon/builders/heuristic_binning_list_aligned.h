@@ -141,15 +141,15 @@ namespace embree
           const size_t threadCount = TaskSchedulerTBB::threadCount();
           const PrimInfo2 info = parallel_reduce(size_t(0),threadCount,PrimInfo2(empty), [&] (const range<size_t>& r) -> PrimInfo2
           {
-            PrimRefList::item* lblock = NULL;
-            PrimRefList::item* rblock = NULL;
+            PrimRefList::item* lblock = nullptr;
+            PrimRefList::item* rblock = nullptr;
             size_t numLeft = 0; CentGeomBBox3fa leftBounds(empty);
             size_t numRight = 0; CentGeomBBox3fa rightBounds(empty);
 
             while (PrimRefList::item* block = prims.take()) 
             {
-              if (lblock == NULL) lblock = lprims_o.insert(new PrimRefList::item);
-              if (rblock == NULL) rblock = rprims_o.insert(new PrimRefList::item);
+              if (lblock == nullptr) lblock = lprims_o.insert(new PrimRefList::item);
+              if (rblock == nullptr) rblock = rprims_o.insert(new PrimRefList::item);
 
               for (size_t i=0; i<block->size(); i++) 
               {

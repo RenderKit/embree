@@ -189,14 +189,14 @@ namespace embree
           {
             PrimInfo linfo(empty);
             PrimInfo rinfo(empty);
-            PrimRefList::item* lblock = NULL;
-            PrimRefList::item* rblock = NULL;
+            PrimRefList::item* lblock = nullptr;
+            PrimRefList::item* rblock = nullptr;
 
             /* sort each primitive to left, right, or left and right */
             while (PrimRefList::item* block = prims.take()) 
             {
-              if (lblock == NULL) lblock = lprims_o.insert(new PrimRefList::item);
-              if (rblock == NULL) rblock = rprims_o.insert(new PrimRefList::item);
+              if (lblock == nullptr) lblock = lprims_o.insert(new PrimRefList::item);
+              if (rblock == nullptr) rblock = rprims_o.insert(new PrimRefList::item);
               
               for (size_t i=0; i<block->size(); i++) 
               {

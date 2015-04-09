@@ -88,7 +88,7 @@ namespace embree
 #endif
 
     /*! check if the i'th primitive is valid */
-    __forceinline bool valid(size_t i, BBox3fa* bbox = NULL) const 
+    __forceinline bool valid(size_t i, BBox3fa* bbox = nullptr) const 
     {
       const Triangle& tri = triangle(i);
       if (tri.v[0] >= numVertices) return false;

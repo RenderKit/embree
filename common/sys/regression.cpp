@@ -22,13 +22,13 @@ namespace embree
 
   void registerRegressionTest(RegressionTest* test) 
   {
-    if (regression_tests == NULL) regression_tests = new std::vector<RegressionTest*>;
+    if (regression_tests == nullptr) regression_tests = new std::vector<RegressionTest*>;
     regression_tests->push_back(test);
   }
 
   void runRegressionTests()
   {
-    if (regression_tests == NULL) 
+    if (regression_tests == nullptr) 
       return;
 
     for (size_t i=0; i<regression_tests->size(); i++) 

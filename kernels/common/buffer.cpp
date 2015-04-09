@@ -19,7 +19,7 @@
 namespace embree
 {
   Buffer::Buffer () 
-    : ptr(NULL), bytes(0), ptr_ofs(NULL), stride(0), num(0), shared(false), mapped(false), modified(true) {}
+    : ptr(nullptr), bytes(0), ptr_ofs(nullptr), stride(0), num(0), shared(false), mapped(false), modified(true) {}
   
   Buffer::~Buffer () {
     free();
@@ -27,9 +27,9 @@ namespace embree
 
   void Buffer::init(size_t num_in, size_t stride_in) 
   {
-    ptr = NULL;
+    ptr = nullptr;
     bytes = num_in*stride_in;
-    ptr_ofs = NULL;
+    ptr_ofs = nullptr;
     num = num_in;
     stride = stride_in;
     shared = false;
@@ -63,7 +63,7 @@ namespace embree
     if (shared || !ptr) return;
     alignedFree(ptr); 
     memoryMonitor(-bytes,true);
-    ptr = NULL; ptr_ofs = NULL; bytes = 0;
+    ptr = nullptr; ptr_ofs = nullptr; bytes = 0;
   }
 
   void* Buffer::map(atomic_t& cntr)
@@ -71,7 +71,7 @@ namespace embree
     /* report error if buffer is already mapped */
     if (mapped) {
       throw_RTCError(RTC_INVALID_OPERATION,"buffer is already mapped");
-      return NULL;
+      return nullptr;
     }
 
     /* allocate buffer */

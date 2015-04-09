@@ -40,7 +40,7 @@ namespace embree
     TaskScheduler* scheduler;
   };
   
-  TaskScheduler* TaskScheduler::instance = NULL;
+  TaskScheduler* TaskScheduler::instance = nullptr;
 
   __dllexport void TaskScheduler::create(size_t numThreads)
   {
@@ -92,7 +92,7 @@ namespace embree
                                   runFunction run, void* runData, size_t elts, const char* name)
   {
     TaskScheduler::Event event;
-    TaskScheduler::Task task(&event,run,runData,elts,NULL,NULL,name);
+    TaskScheduler::Task task(&event,run,runData,elts,nullptr,nullptr,name);
     instance->add(threadIndex,TaskScheduler::GLOBAL_FRONT,&task);
     instance->wait(threadIndex,threadCount,&event);
   }
@@ -101,7 +101,7 @@ namespace embree
                                   completeFunction complete, void* completeData, const char* name)
   {
     TaskScheduler::Event event;
-    TaskScheduler::Task task(&event,NULL,NULL,1,complete,completeData,name);
+    TaskScheduler::Task task(&event,nullptr,nullptr,1,complete,completeData,name);
     instance->add(threadIndex,TaskScheduler::GLOBAL_FRONT,&task);
     instance->wait(threadIndex,threadCount,&event);
   }
@@ -116,7 +116,7 @@ namespace embree
     if (instance) {
       instance->destroyThreads();
       delete instance; 
-      instance = NULL;
+      instance = nullptr;
     }
   }
   
@@ -160,7 +160,7 @@ namespace embree
     exit(1);
   }
 
-  __thread LockStepTaskScheduler* LockStepTaskScheduler::t_scheduler = NULL;
+  __thread LockStepTaskScheduler* LockStepTaskScheduler::t_scheduler = nullptr;
 
   __dllexport LockStepTaskScheduler* LockStepTaskScheduler::instance() {
     return t_scheduler;
@@ -252,9 +252,9 @@ namespace embree
 
   void LockStepTaskScheduler::releaseThreads(const size_t numThreads)
   {
-    taskPtr = NULL;
-    taskPtr2 = NULL;
-    data = NULL;
+    taskPtr = nullptr;
+    taskPtr2 = nullptr;
+    data = nullptr;
     numTasks = 0;
     dispatchTask(0,numThreads);  
   }
@@ -265,8 +265,8 @@ namespace embree
 
   LockStepTaskScheduler4ThreadsLocalCore::LockStepTaskScheduler4ThreadsLocalCore()
   {
-    taskPtr = NULL;
-    data = NULL;
+    taskPtr = nullptr;
+    data = nullptr;
     for (size_t j=0;j<2;j++)
       for (size_t i=0;i<4;i++)
 	threadState[j][i] = 0;
@@ -316,7 +316,7 @@ namespace embree
   {
     syncThreads(localThreadID);
 
-    if (taskPtr == NULL) 
+    if (taskPtr == nullptr) 
       return true;
 
     (*taskPtr)((void*)data,localThreadID,globalThreadID);
@@ -327,8 +327,8 @@ namespace embree
 
   void LockStepTaskScheduler4ThreadsLocalCore::releaseThreads(const size_t localThreadID, const size_t globalThreadID)
   {
-    taskPtr = NULL;
-    data = NULL;
+    taskPtr = nullptr;
+    data = nullptr;
     dispatchTask(localThreadID,globalThreadID);  
   }
 }
@@ -343,7 +343,7 @@ namespace embree
 
   TaskSchedulerMIC::TaskSchedulerMIC()     
   {
-    for (size_t i=0; i<NUM_TASKS; i++) tasks[i] = NULL;
+    for (size_t i=0; i<NUM_TASKS; i++) tasks[i] = nullptr;
     head_task_list = 0;
   }
 
@@ -409,14 +409,14 @@ namespace embree
 	__memory_barrier();
 	if (tasks[liveIndex]) THROW_RUNTIME_ERROR("task list full");
 	__memory_barrier();
-	assert(tasks[liveIndex] == NULL); 
+	assert(tasks[liveIndex] == nullptr); 
 	tasks[liveIndex] = task;
 
 	DBG( std::cout << "ADD TASK: head " << head_task_list << " liveIndex " << liveIndex << " threadIndex " << threadIndex << std::endl );
 
 	DBG( std::cout << "WAIT APP THREAD..." << std::endl << std::flush);
 	__memory_barrier();
-	while (tasks[liveIndex] != NULL) { 
+	while (tasks[liveIndex] != nullptr) { 
 	  __pause_cpu(1023); 
 	}
 	DBG( std::cout << "WAIT APP THREAD...DONE" << std::endl << std::flush);
@@ -446,7 +446,7 @@ namespace embree
 	unsigned int task_index = tail_task_list & (NUM_TASKS-1);
     	
 	Task *task = tasks[task_index];
-	if (task == NULL)
+	if (task == nullptr)
 	  {
 	    DBG(std::cout << "thread activated but no task found = threadIndex " << threadIndex << std::endl << std::flush);
 	  }
@@ -482,7 +482,7 @@ namespace embree
 		    );
 
 		__memory_barrier();
-		tasks[task_index] = NULL;
+		tasks[task_index] = nullptr;
 		__memory_barrier();
 
 

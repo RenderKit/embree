@@ -30,15 +30,15 @@ namespace embree
 {
   void* os_malloc(size_t bytes) 
   {
-    char* ptr = (char*) VirtualAlloc(NULL,bytes,MEM_COMMIT|MEM_RESERVE,PAGE_READWRITE);
-    if (ptr == NULL) throw std::bad_alloc();
+    char* ptr = (char*) VirtualAlloc(nullptr,bytes,MEM_COMMIT|MEM_RESERVE,PAGE_READWRITE);
+    if (ptr == nullptr) throw std::bad_alloc();
     return ptr;
   }
 
   void* os_reserve(size_t bytes)
   {
-    char* ptr = (char*) VirtualAlloc(NULL,bytes,MEM_RESERVE,PAGE_READWRITE);
-    if (ptr == NULL) throw std::bad_alloc();
+    char* ptr = (char*) VirtualAlloc(nullptr,bytes,MEM_RESERVE,PAGE_READWRITE);
+    if (ptr == nullptr) throw std::bad_alloc();
     return ptr;
   }
 
@@ -90,7 +90,7 @@ namespace embree
     }
 #endif
     char* ptr = (char*) mmap(0, bytes, PROT_READ | PROT_WRITE, flags, -1, 0);
-    if (ptr == NULL || ptr == MAP_FAILED) throw std::bad_alloc();
+    if (ptr == nullptr || ptr == MAP_FAILED) throw std::bad_alloc();
     return ptr;
   }
 
@@ -106,7 +106,7 @@ namespace embree
     }
 #endif
     char* ptr = (char*) mmap(0, bytes, PROT_READ | PROT_WRITE, flags, -1, 0);
-    if (ptr == NULL || ptr == MAP_FAILED) throw std::bad_alloc();
+    if (ptr == nullptr || ptr == MAP_FAILED) throw std::bad_alloc();
     return ptr;
   }
 
@@ -157,14 +157,14 @@ namespace embree
 
     char *ptr = (char*)mremap(old_ptr,bytesOld,bytesNew,MREMAP_MAYMOVE);
 
-    if (ptr == NULL || ptr == MAP_FAILED) {
+    if (ptr == nullptr || ptr == MAP_FAILED) {
       perror("os_realloc ");
       throw std::bad_alloc();
     }
     return ptr;
 #else
     NOT_IMPLEMENTED;
-    return NULL;
+    return nullptr;
 #endif
 
   }
@@ -186,9 +186,9 @@ namespace embree
     /* Verify that alignment is power of two */
     assert((align & (align-1)) == 0);
 
-    if (size == 0) return NULL;
+    if (size == 0) return nullptr;
     char* base = (char*)malloc(size+align+sizeof(int));
-    if (base == NULL) throw std::bad_alloc();
+    if (base == nullptr) throw std::bad_alloc();
 
     char* unaligned = base + sizeof(int);
     char*   aligned = unaligned + align - ((size_t)unaligned & (align-1));
@@ -197,7 +197,7 @@ namespace embree
   }
   
   void alignedFree(const void* ptr) {
-    if (ptr == NULL) return;
+    if (ptr == nullptr) return;
     int ofs = ((int*)ptr)[-1];
     free((char*)ptr-ofs);
   }

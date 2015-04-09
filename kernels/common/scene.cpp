@@ -35,12 +35,12 @@ namespace embree
       numUserGeometries1(0), 
       numIntersectionFilters4(0), numIntersectionFilters8(0), numIntersectionFilters16(0),
       commitCounter(0), 
-      progress_monitor_function(NULL), progress_monitor_ptr(NULL), progress_monitor_counter(0)
+      progress_monitor_function(nullptr), progress_monitor_ptr(nullptr), progress_monitor_counter(0)
   {
 #if defined(TASKING_LOCKSTEP) 
     lockstep_scheduler.taskBarrier.init(MAX_MIC_THREADS);
 #elif defined(TASKING_TBB_INTERNAL)
-    scheduler = NULL;
+    scheduler = nullptr;
 #else
     group = new tbb::task_group;
 #endif
@@ -229,7 +229,7 @@ namespace embree
       delete geometries[i];
 
 #if TASKING_TBB
-    delete group; group = NULL;
+    delete group; group = nullptr;
 #endif
   }
 
@@ -315,7 +315,7 @@ namespace embree
   {
     Lock<AtomicMutex> lock(geometriesMutex);
     usedIDs.push_back(geometry->id);
-    geometries[geometry->id] = NULL;
+    geometries[geometry->id] = nullptr;
     delete geometry;
   }
 
@@ -328,20 +328,20 @@ namespace embree
 
     /* enable only algorithms choosen by application */
     if ((aflags & RTC_INTERSECT1) == 0) {
-      intersectors.intersector1.intersect = NULL;
-      intersectors.intersector1.occluded = NULL;
+      intersectors.intersector1.intersect = nullptr;
+      intersectors.intersector1.occluded = nullptr;
     }
     if ((aflags & RTC_INTERSECT4) == 0) {
-      intersectors.intersector4.intersect = NULL;
-      intersectors.intersector4.occluded = NULL;
+      intersectors.intersector4.intersect = nullptr;
+      intersectors.intersector4.occluded = nullptr;
     }
     if ((aflags & RTC_INTERSECT8) == 0) {
-      intersectors.intersector8.intersect = NULL;
-      intersectors.intersector8.occluded = NULL;
+      intersectors.intersector8.intersect = nullptr;
+      intersectors.intersector8.occluded = nullptr;
     }
     if ((aflags & RTC_INTERSECT16) == 0) {
-      intersectors.intersector16.intersect = NULL;
-      intersectors.intersector16.occluded = NULL;
+      intersectors.intersector16.intersect = nullptr;
+      intersectors.intersector16.occluded = nullptr;
     }
 
     /* update commit counter */
@@ -426,7 +426,7 @@ namespace embree
     else
     {
       TaskScheduler::EventSync event;
-      new (&task) TaskScheduler::Task(&event,_task_build_parallel,this,TaskScheduler::getNumThreads(),NULL,NULL,"scene_build");
+      new (&task) TaskScheduler::Task(&event,_task_build_parallel,this,TaskScheduler::getNumThreads(),nullptr,nullptr,"scene_build");
       TaskScheduler::addTask(-1,TaskScheduler::GLOBAL_FRONT,&task);
       event.sync();
     }
@@ -469,7 +469,7 @@ namespace embree
     {
       {
         Lock<MutexSys> lock(buildMutex);
-        if (scheduler == NULL) scheduler = new TaskSchedulerTBB(-1);
+        if (scheduler == nullptr) scheduler = new TaskSchedulerTBB(-1);
       }
       if (threadIndex > 0) {
         scheduler->join();
@@ -495,7 +495,7 @@ namespace embree
 
     if (threadCount) {
       scheduler->spawn_root  ([&]() { build_task(); });
-      delete scheduler; scheduler = NULL;
+      delete scheduler; scheduler = nullptr;
     }
     else {
       TaskSchedulerTBB::spawn([&]() { build_task(); });

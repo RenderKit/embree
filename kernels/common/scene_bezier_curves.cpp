@@ -94,14 +94,14 @@ namespace embree
   {
     if (parent->isStatic() && parent->isBuild()) {
       throw_RTCError(RTC_INVALID_OPERATION,"static geometries cannot get modified");
-      return NULL;
+      return nullptr;
     }
 
     switch (type) {
     case RTC_INDEX_BUFFER  : return curves.map(parent->numMappedBuffers);
     case RTC_VERTEX_BUFFER0: return vertices[0].map(parent->numMappedBuffers);
     case RTC_VERTEX_BUFFER1: return vertices[1].map(parent->numMappedBuffers);
-    default                : throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type"); return NULL;
+    default                : throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type"); return nullptr;
     }
   }
 

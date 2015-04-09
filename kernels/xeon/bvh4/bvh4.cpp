@@ -306,7 +306,7 @@ namespace embree
 
   BVH4::BVH4 (const PrimitiveType& primTy, Scene* scene, bool listMode)
     : primTy(primTy), scene(scene), listMode(listMode),
-      root(emptyNode), numPrimitives(0), numVertices(0), data_mem(NULL), size_data_mem(0) {}
+      root(emptyNode), numPrimitives(0), numVertices(0), data_mem(nullptr), size_data_mem(0) {}
 
   BVH4::~BVH4 () 
   {
@@ -315,7 +315,7 @@ namespace embree
     
     if (data_mem) {
       os_free( data_mem, size_data_mem );        
-      data_mem = NULL;
+      data_mem = nullptr;
       size_data_mem = 0;
     }
   }
@@ -434,7 +434,7 @@ namespace embree
 
   double BVH4::preBuild(const char* builderName)
   {
-    if (builderName == NULL) 
+    if (builderName == nullptr) 
       return inf;
 
     if (State::instance()->verbosity(1))
@@ -478,7 +478,7 @@ namespace embree
     intersectors.intersector1 = BVH4Bezier1vIntersector1;
     intersectors.intersector4 = BVH4Bezier1vIntersector4Chunk;
     intersectors.intersector8 = BVH4Bezier1vIntersector8Chunk;
-    intersectors.intersector16 = NULL;
+    intersectors.intersector16 = nullptr;
     return intersectors;
   }
   
@@ -489,7 +489,7 @@ namespace embree
     intersectors.intersector1 = BVH4Bezier1iIntersector1;
     intersectors.intersector4 = BVH4Bezier1iIntersector4Chunk;
     intersectors.intersector8 = BVH4Bezier1iIntersector8Chunk;
-    intersectors.intersector16 = NULL;
+    intersectors.intersector16 = nullptr;
     return intersectors;
   }
 
@@ -500,7 +500,7 @@ namespace embree
     intersectors.intersector1 = BVH4Bezier1vIntersector1_OBB;
     intersectors.intersector4 = BVH4Bezier1vIntersector4Single_OBB;
     intersectors.intersector8 = BVH4Bezier1vIntersector8Single_OBB;
-    intersectors.intersector16 = NULL;
+    intersectors.intersector16 = nullptr;
     return intersectors;
   }
   
@@ -511,7 +511,7 @@ namespace embree
     intersectors.intersector1 = BVH4Bezier1iIntersector1_OBB;
     intersectors.intersector4 = BVH4Bezier1iIntersector4Single_OBB;
     intersectors.intersector8 = BVH4Bezier1iIntersector8Single_OBB;
-    intersectors.intersector16 = NULL;
+    intersectors.intersector16 = nullptr;
     return intersectors;
   }
 
@@ -522,7 +522,7 @@ namespace embree
     intersectors.intersector1 = BVH4Bezier1iMBIntersector1_OBB;
     intersectors.intersector4 = BVH4Bezier1iMBIntersector4Single_OBB;
     intersectors.intersector8 = BVH4Bezier1iMBIntersector8Single_OBB;
-    intersectors.intersector16 = NULL;
+    intersectors.intersector16 = nullptr;
     return intersectors;
   }
   
@@ -533,7 +533,7 @@ namespace embree
     intersectors.intersector1 = BVH4Triangle1Intersector1Moeller;
     intersectors.intersector4 = BVH4Triangle1Intersector4ChunkMoeller;
     intersectors.intersector8 = BVH4Triangle1Intersector8ChunkMoeller;
-    intersectors.intersector16 = NULL;
+    intersectors.intersector16 = nullptr;
     return intersectors;
   }
 
@@ -546,7 +546,7 @@ namespace embree
     intersectors.intersector4_nofilter = BVH4Triangle4Intersector4ChunkMoellerNoFilter;
     intersectors.intersector8_filter   = BVH4Triangle4Intersector8ChunkMoeller;
     intersectors.intersector8_nofilter = BVH4Triangle4Intersector8ChunkMoellerNoFilter;
-    intersectors.intersector16 = NULL;
+    intersectors.intersector16 = nullptr;
     return intersectors;
   }
 
@@ -559,7 +559,7 @@ namespace embree
     intersectors.intersector4_nofilter = BVH4Triangle4Intersector4HybridMoellerNoFilter;
     intersectors.intersector8_filter = BVH4Triangle4Intersector8HybridMoeller;
     intersectors.intersector8_nofilter = BVH4Triangle4Intersector8HybridMoellerNoFilter;
-    intersectors.intersector16 = NULL;
+    intersectors.intersector16 = nullptr;
     return intersectors;
   }
 
@@ -573,7 +573,7 @@ namespace embree
     intersectors.intersector8 = BVH4Triangle8Intersector8ChunkMoeller;
     intersectors.intersector8_filter   = BVH4Triangle8Intersector8ChunkMoeller;
     intersectors.intersector8_nofilter = BVH4Triangle8Intersector8ChunkMoellerNoFilter;
-    intersectors.intersector16 = NULL;
+    intersectors.intersector16 = nullptr;
     return intersectors;
   }
 
@@ -586,7 +586,7 @@ namespace embree
     intersectors.intersector4_nofilter = BVH4Triangle8Intersector4HybridMoellerNoFilter;
     intersectors.intersector8_filter   = BVH4Triangle8Intersector8HybridMoeller;
     intersectors.intersector8_nofilter = BVH4Triangle8Intersector8HybridMoellerNoFilter;
-    intersectors.intersector16 = NULL;
+    intersectors.intersector16 = nullptr;
     return intersectors;
   }
 
@@ -597,7 +597,7 @@ namespace embree
     intersectors.intersector1 = BVH4Triangle1vIntersector1Pluecker;
     intersectors.intersector4 = BVH4Triangle1vIntersector4ChunkPluecker;
     intersectors.intersector8 = BVH4Triangle1vIntersector8ChunkPluecker;
-    intersectors.intersector16 = NULL;
+    intersectors.intersector16 = nullptr;
     return intersectors;
   }
 
@@ -608,7 +608,7 @@ namespace embree
     intersectors.intersector1 = BVH4Triangle1vMBIntersector1Moeller;
     intersectors.intersector4 = BVH4Triangle1vMBIntersector4ChunkMoeller;
     intersectors.intersector8 = BVH4Triangle1vMBIntersector8ChunkMoeller;
-    intersectors.intersector16 = NULL;
+    intersectors.intersector16 = nullptr;
     return intersectors;
   }
 
@@ -619,7 +619,7 @@ namespace embree
     intersectors.intersector1 = BVH4Triangle4vMBIntersector1Moeller;
     intersectors.intersector4 = BVH4Triangle4vMBIntersector4ChunkMoeller;
     intersectors.intersector8 = BVH4Triangle4vMBIntersector8ChunkMoeller;
-    intersectors.intersector16 = NULL;
+    intersectors.intersector16 = nullptr;
     return intersectors;
   }
 
@@ -630,7 +630,7 @@ namespace embree
     intersectors.intersector1 = BVH4Triangle4vIntersector1Pluecker;
     intersectors.intersector4 = BVH4Triangle4vIntersector4ChunkPluecker;
     intersectors.intersector8 = BVH4Triangle4vIntersector8HybridPluecker;
-    intersectors.intersector16 = NULL;
+    intersectors.intersector16 = nullptr;
     return intersectors;
   }
 
@@ -641,7 +641,7 @@ namespace embree
     intersectors.intersector1 = BVH4Triangle4vIntersector1Pluecker;
     intersectors.intersector4 = BVH4Triangle4vIntersector4HybridPluecker;
     intersectors.intersector8 = BVH4Triangle4vIntersector8HybridPluecker;
-    intersectors.intersector16 = NULL;
+    intersectors.intersector16 = nullptr;
     return intersectors;
   }
 
@@ -652,7 +652,7 @@ namespace embree
     intersectors.intersector1 = BVH4Triangle4iIntersector1Pluecker;
     intersectors.intersector4 = BVH4Triangle4iIntersector4ChunkPluecker;
     intersectors.intersector8 = BVH4Triangle4iIntersector8ChunkPluecker;
-    intersectors.intersector16 = NULL;
+    intersectors.intersector16 = nullptr;
     return intersectors;
   }
 
@@ -704,7 +704,7 @@ namespace embree
     BVH4* accel = new BVH4(Triangle1Type::type,scene,LeafMode);
     Accel::Intersectors intersectors = BVH4Triangle1Intersectors(accel);
     
-    Builder* builder = NULL;
+    Builder* builder = nullptr;
     if      (State::instance()->tri_builder == "default"     ) builder = BVH4Triangle1SceneBuilderSAH(accel,scene,0);
     else if (State::instance()->tri_builder == "sah"         ) builder = BVH4Triangle1SceneBuilderSAH(accel,scene,0);
     else if (State::instance()->tri_builder == "sah_presplit") builder = BVH4Triangle1SceneBuilderSAH(accel,scene,MODE_HIGH_QUALITY);
@@ -724,7 +724,7 @@ namespace embree
     else if (State::instance()->tri_traverser == "hybrid" ) intersectors = BVH4Triangle4IntersectorsHybrid(accel);
     else THROW_RUNTIME_ERROR("unknown traverser "+State::instance()->tri_traverser+" for BVH4<Triangle4>");
    
-    Builder* builder = NULL;
+    Builder* builder = nullptr;
     if      (State::instance()->tri_builder == "default"     ) builder = BVH4Triangle4SceneBuilderSAH(accel,scene,0);
     else if (State::instance()->tri_builder == "sah"         ) builder = BVH4Triangle4SceneBuilderSAH(accel,scene,0);
     else if (State::instance()->tri_builder == "sah_spatial" ) builder = BVH4Triangle4SceneBuilderSpatialSAH(accel,scene,0);
@@ -746,7 +746,7 @@ namespace embree
     else if (State::instance()->tri_traverser == "hybrid" ) intersectors = BVH4Triangle8IntersectorsHybrid(accel);
     else THROW_RUNTIME_ERROR("unknown traverser "+State::instance()->tri_traverser+" for BVH4<Triangle8>");
    
-    Builder* builder = NULL;
+    Builder* builder = nullptr;
     if      (State::instance()->tri_builder == "default"     ) builder = BVH4Triangle8SceneBuilderSAH(accel,scene,0);
     else if (State::instance()->tri_builder == "sah"         ) builder = BVH4Triangle8SceneBuilderSAH(accel,scene,0);
     else if (State::instance()->tri_builder == "sah_spatial" ) builder = BVH4Triangle8SceneBuilderSpatialSAH(accel,scene,0);
@@ -763,7 +763,7 @@ namespace embree
     BVH4* accel = new BVH4(Triangle1vType::type,scene,LeafMode);
     Accel::Intersectors intersectors = BVH4Triangle1vIntersectors(accel);
 
-    Builder* builder = NULL;
+    Builder* builder = nullptr;
     if      (State::instance()->tri_builder == "default"     ) builder = BVH4Triangle1vSceneBuilderSAH(accel,scene,0);
     else if (State::instance()->tri_builder == "sah"         ) builder = BVH4Triangle1vSceneBuilderSAH(accel,scene,0);
     else if (State::instance()->tri_builder == "sah_spatial" ) builder = BVH4Triangle1vSceneBuilderSpatialSAH(accel,scene,0);
@@ -778,7 +778,7 @@ namespace embree
   {
     BVH4* accel = new BVH4(Triangle4vMB::type,scene,LeafMode);
     Accel::Intersectors intersectors = BVH4Triangle4vMBIntersectors(accel);
-    Builder* builder = NULL;
+    Builder* builder = nullptr;
     if       (State::instance()->tri_builder_mb == "default"    ) builder = BVH4Triangle4vMBSceneBuilderSAH(accel,scene,0);
     else  if (State::instance()->tri_builder_mb == "sah") builder = BVH4Triangle4vMBSceneBuilderSAH(accel,scene,0);
     else THROW_RUNTIME_ERROR("unknown builder "+State::instance()->tri_builder_mb+" for BVH4<Triangle4vMB>");
@@ -795,7 +795,7 @@ namespace embree
     else if (State::instance()->tri_traverser == "hybrid" ) intersectors = BVH4Triangle4vIntersectorsHybrid(accel);
     else THROW_RUNTIME_ERROR("unknown traverser "+State::instance()->tri_traverser+" for BVH4<Triangle4>");
 
-    Builder* builder = NULL;
+    Builder* builder = nullptr;
     if      (State::instance()->tri_builder == "default"     ) builder = BVH4Triangle4vSceneBuilderSAH(accel,scene,0);
     else if (State::instance()->tri_builder == "sah"         ) builder = BVH4Triangle4vSceneBuilderSAH(accel,scene,0);
     else if (State::instance()->tri_builder == "sah_spatial" ) builder = BVH4Triangle4vSceneBuilderSpatialSAH(accel,scene,0);
@@ -811,7 +811,7 @@ namespace embree
     BVH4* accel = new BVH4(Triangle4iType::type,scene,LeafMode);
     Accel::Intersectors intersectors = BVH4Triangle4iIntersectors(accel);
 
-    Builder* builder = NULL;
+    Builder* builder = nullptr;
     if      (State::instance()->tri_builder == "default"     ) builder = BVH4Triangle4iSceneBuilderSAH(accel,scene,0);
     else if (State::instance()->tri_builder == "sah"         ) builder = BVH4Triangle4iSceneBuilderSAH(accel,scene,0);
     else if (State::instance()->tri_builder == "sah_spatial" ) builder = BVH4Triangle4iSceneBuilderSpatialSAH(accel,scene,0);
@@ -1023,7 +1023,7 @@ namespace embree
     intersectors.intersector1 = BVH4Subdivpatch1Intersector1;
     intersectors.intersector4 = BVH4Subdivpatch1Intersector4;
     intersectors.intersector8 = BVH4Subdivpatch1Intersector8;
-    intersectors.intersector16 = NULL;
+    intersectors.intersector16 = nullptr;
     Builder* builder = BVH4SubdivPatch1BuilderBinnedSAH(accel,scene,LeafMode);
     return new AccelInstance(accel,builder,intersectors);
   }
@@ -1036,7 +1036,7 @@ namespace embree
     intersectors.intersector1 = BVH4Subdivpatch1CachedIntersector1;
     intersectors.intersector4 = BVH4Subdivpatch1CachedIntersector4;
     intersectors.intersector8 = BVH4Subdivpatch1CachedIntersector8;
-    intersectors.intersector16 = NULL;
+    intersectors.intersector16 = nullptr;
     Builder* builder = BVH4SubdivPatch1CachedBuilderBinnedSAH(accel,scene,LeafMode);
     return new AccelInstance(accel,builder,intersectors);
   }
@@ -1049,7 +1049,7 @@ namespace embree
     intersectors.intersector1 = BVH4GridIntersector1;
     intersectors.intersector4 = BVH4GridIntersector4;
     intersectors.intersector8 = BVH4GridIntersector8;
-    intersectors.intersector16 = NULL;
+    intersectors.intersector16 = nullptr;
     Builder* builder = BVH4SubdivGridBuilderBinnedSAH(accel,scene,LeafMode);
     return new AccelInstance(accel,builder,intersectors);
   }
@@ -1062,7 +1062,7 @@ namespace embree
     intersectors.intersector1 = BVH4GridIntersector1;
     intersectors.intersector4 = BVH4GridIntersector4;
     intersectors.intersector8 = BVH4GridIntersector8;
-    intersectors.intersector16 = NULL;
+    intersectors.intersector16 = nullptr;
     Builder* builder = BVH4SubdivGridEagerBuilderBinnedSAH(accel,scene,LeafMode);
     return new AccelInstance(accel,builder,intersectors);
   }
@@ -1075,7 +1075,7 @@ namespace embree
     intersectors.intersector1 = BVH4GridLazyIntersector1;
     intersectors.intersector4 = BVH4GridLazyIntersector4;
     intersectors.intersector8 = BVH4GridLazyIntersector8;
-    intersectors.intersector16 = NULL;
+    intersectors.intersector16 = nullptr;
     Builder* builder = BVH4SubdivGridLazyBuilderBinnedSAH(accel,scene,LeafMode);
     return new AccelInstance(accel,builder,intersectors);
   }
@@ -1088,7 +1088,7 @@ namespace embree
     intersectors.intersector1 = BVH4VirtualIntersector1;
     intersectors.intersector4 = BVH4VirtualIntersector4Chunk;
     intersectors.intersector8 = BVH4VirtualIntersector8Chunk;
-    intersectors.intersector16 = NULL;
+    intersectors.intersector16 = nullptr;
     Builder* builder = BVH4VirtualSceneBuilderSAH(accel,scene,LeafMode);
     return new AccelInstance(accel,builder,intersectors);
   }

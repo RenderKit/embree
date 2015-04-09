@@ -59,8 +59,8 @@ namespace embree
         {
           ray_rdir      = rcp_safe(ray.dir);
           ray_org_rdir  = ray.org*ray_rdir;
-          current_patch = NULL;
-          hit_patch     = NULL;
+          current_patch = nullptr;
+          hit_patch     = nullptr;
 
 	  if (unlikely(!localThreadInfo))
             createLocalThreadInfo();
@@ -74,7 +74,7 @@ namespace embree
 	  if (current_patch)
             SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(threadID);
           
-          if (unlikely(hit_patch != NULL))
+          if (unlikely(hit_patch != nullptr))
           {
 
 #if defined(RTCORE_RETURN_SUBDIV_NORMAL)

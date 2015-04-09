@@ -57,7 +57,7 @@ namespace embree
     // === find first group containing startID ===
     unsigned int g=0, numSkipped = 0;
     for (; g<numGroups; g++) {       
-      if (unlikely(scene->get(g) == NULL)) continue;
+      if (unlikely(scene->get(g) == nullptr)) continue;
       if (unlikely(scene->get(g)->type != Geometry::TRIANGLE_MESH)) continue;
       const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(g);
       if (unlikely(!mesh->isEnabled())) continue;
@@ -84,7 +84,7 @@ namespace embree
 
     for (; g<numGroups; g++) 
     {
-      if (unlikely(scene->get(g) == NULL)) continue;
+      if (unlikely(scene->get(g) == nullptr)) continue;
       if (unlikely(scene->get(g)->type != Geometry::TRIANGLE_MESH)) continue;
       const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(g);
       if (unlikely(!mesh->isEnabled())) continue;

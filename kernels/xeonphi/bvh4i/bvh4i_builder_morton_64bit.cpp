@@ -66,7 +66,7 @@ namespace embree
     for (size_t i=0;i<256;i++)
       endCount[i] = startCount[i];
 
-    startCount[256] = NULL;
+    startCount[256] = nullptr;
 
     MortonID64Bit *m_current = morton;
     MortonID64Bit *m_end     = morton + size;
@@ -220,7 +220,7 @@ namespace embree
   __aligned(64) static double dt = 0.0f;
 
   BVH4iBuilderMorton64Bit::BVH4iBuilderMorton64Bit(BVH4i* bvh, void* geometry)
-    : bvh(bvh), scene((Scene*)geometry), morton(NULL), node(NULL), accel(NULL), numPrimitives(0), numGroups(0),numNodes(0), numAllocatedNodes(0), size_morton(0), size_node(0), size_accel(0), numPrimitivesOld(-1), topLevelItemThreshold(0), numBuildRecords(0)
+    : bvh(bvh), scene((Scene*)geometry), morton(nullptr), node(nullptr), accel(nullptr), numPrimitives(0), numGroups(0),numNodes(0), numAllocatedNodes(0), size_morton(0), size_node(0), size_accel(0), numPrimitivesOld(-1), topLevelItemThreshold(0), numBuildRecords(0)
   {
   }
 
@@ -751,7 +751,7 @@ namespace embree
     numPrimitives = 0;       
     for (size_t i=0;i<scene->size();i++)
       {
-	if (unlikely(scene->get(i) == NULL)) continue;
+	if (unlikely(scene->get(i) == nullptr)) continue;
 	if (unlikely((scene->get(i)->type != Geometry::TRIANGLE_MESH))) continue;
 	if (unlikely(!scene->get(i)->isEnabled())) continue;
 	const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(i);
@@ -765,8 +765,8 @@ namespace embree
 	DBG(std::cout << "EMPTY SCENE BUILD" << std::endl);
 	bvh->root = BVH4i::invalidNode;
 	bvh->bounds = empty;
-	bvh->qbvh = NULL;
-	bvh->accel = NULL;
+	bvh->qbvh = nullptr;
+	bvh->accel = nullptr;
 	return;
       }
 
@@ -845,7 +845,7 @@ namespace embree
     size_t group = 0, skipped = 0;
     for (; group<numGroups; group++) 
     {       
-      if (unlikely(scene->get(group) == NULL)) continue;
+      if (unlikely(scene->get(group) == nullptr)) continue;
       if (scene->get(group)->type != Geometry::TRIANGLE_MESH) continue;
       const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(group);
       if (unlikely(!mesh->isEnabled())) continue;
@@ -882,7 +882,7 @@ namespace embree
 
     for (size_t group = startGroup; group<numGroups; group++) 
     {       
-      if (unlikely(scene->get(group) == NULL)) continue;
+      if (unlikely(scene->get(group) == nullptr)) continue;
       if (unlikely(scene->get(group)->type != Geometry::TRIANGLE_MESH)) continue;
       const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(group);
       if (unlikely(!mesh->isEnabled())) continue;
@@ -945,7 +945,7 @@ namespace embree
 
     for (size_t group = thread_startGroup[threadID]; group<numGroups; group++) 
     {       
-      if (unlikely(scene->get(group) == NULL)) continue;
+      if (unlikely(scene->get(group) == nullptr)) continue;
       if (unlikely(scene->get(group)->type != Geometry::TRIANGLE_MESH)) continue;
       const TriangleMesh* const mesh = scene->getTriangleMesh(group);
       if (unlikely(!mesh->isEnabled())) continue;

@@ -53,14 +53,14 @@ namespace embree
 
   RayStreamLogger::~RayStreamLogger()
   {
-    if (ray16)        { delete ray16;        ray16        = NULL; }
-    if (ray16_verify) { delete ray16_verify; ray16_verify = NULL; }
-    if (ray8)         { delete ray8;         ray8         = NULL; }
-    if (ray8_verify)  { delete ray8_verify;  ray8_verify  = NULL; }
-    if (ray4)         { delete ray4;         ray4         = NULL; }
-    if (ray4_verify)  { delete ray4_verify;  ray4_verify  = NULL; }
-    if (ray1)         { delete ray1;         ray1         = NULL; }
-    if (ray1_verify)  { delete ray1_verify;  ray1_verify  = NULL; }
+    if (ray16)        { delete ray16;        ray16        = nullptr; }
+    if (ray16_verify) { delete ray16_verify; ray16_verify = nullptr; }
+    if (ray8)         { delete ray8;         ray8         = nullptr; }
+    if (ray8_verify)  { delete ray8_verify;  ray8_verify  = nullptr; }
+    if (ray4)         { delete ray4;         ray4         = nullptr; }
+    if (ray4_verify)  { delete ray4_verify;  ray4_verify  = nullptr; }
+    if (ray1)         { delete ray1;         ray1         = nullptr; }
+    if (ray1_verify)  { delete ray1_verify;  ray1_verify  = nullptr; }
   }
 
   void RayStreamLogger::dumpGeometry(void* ptr)

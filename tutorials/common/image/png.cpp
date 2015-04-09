@@ -14,6 +14,8 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
+#ifdef USE_LIBPNG
+
 #include "image/image.h"
 
 #include <iostream>
@@ -47,8 +49,8 @@ namespace embree
     }
 
     //create png struct
-    png_structp png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL,
-                                                 NULL, NULL);
+    png_structp png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, nullptr,
+                                                 nullptr, nullptr);
     if (!png_ptr) {
       fclose(fp);
       THROW_RUNTIME_ERROR("invalid PNG file "+fileName.str());
@@ -57,7 +59,7 @@ namespace embree
     //create png info struct
     png_infop info_ptr = png_create_info_struct(png_ptr);
     if (!info_ptr) {
-      png_destroy_read_struct(&png_ptr, (png_infopp) NULL, (png_infopp) NULL);
+      png_destroy_read_struct(&png_ptr, (png_infopp) nullptr, (png_infopp) nullptr);
       fclose(fp);
       THROW_RUNTIME_ERROR("invalid PNG file "+fileName.str());
     }
@@ -65,7 +67,7 @@ namespace embree
     //create png info struct
     png_infop end_info = png_create_info_struct(png_ptr);
     if (!end_info) {
-      png_destroy_read_struct(&png_ptr, &info_ptr, (png_infopp) NULL);
+      png_destroy_read_struct(&png_ptr, &info_ptr, (png_infopp) nullptr);
       fclose(fp);
       THROW_RUNTIME_ERROR("invalid PNG file "+fileName.str());
     }
@@ -92,7 +94,7 @@ namespace embree
  
     // get info about png
     png_get_IHDR(png_ptr, info_ptr, &twidth, &theight, &bit_depth, &color_type,
-                 NULL, NULL, NULL);
+                 nullptr, nullptr, nullptr);
  
     //update width and height based on png info
     width = twidth;
@@ -171,5 +173,7 @@ namespace embree
       
     return img;
   }
+}
 
-};
+#endif
+
