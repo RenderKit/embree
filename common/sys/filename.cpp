@@ -52,10 +52,12 @@ namespace embree
   FileName FileName::homeFolder() 
   {
 #ifdef __WIN32__
-    return getenv("UserProfile");
+    const char* home = getenv("UserProfile");
 #else
-    return getenv("HOME");
+    const char* home = getenv("HOME");
 #endif
+    if (home) return home;
+    return "";
   }
 
   /*! returns path to executable */
@@ -130,6 +132,16 @@ namespace embree
     size_t pos = filename.find_first_of(base);
     if (pos == std::string::npos) return *this;
     return FileName(filename.substr(pos+1));
+  }
+
+  /*! == operator */
+  bool operator== (const FileName& a, const FileName& b) {
+    return a.filename == b.filename;
+  }
+  
+  /*! != operator */
+  bool operator!= (const FileName& a, const FileName& b) {
+    return a.filename != b.filename;
   }
 
   /*! output operator */
