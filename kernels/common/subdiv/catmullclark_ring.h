@@ -382,6 +382,7 @@ namespace embree
       if (depth < MAX_DEPTH_SUBDIVISION)      
 	{
 	  //if (vertex_crease_weight != (float)pos_inf && vertex_crease_weight > 0.0f)
+          if (vertex_crease_weight == (float)pos_inf) return true;
 	    {
 	      if (vertex_crease_weight > 0.0f) 
 		{
@@ -419,12 +420,15 @@ namespace embree
     /* computes the limit vertex */
     __forceinline Vec3fa getLimitVertex() const
     {
+      /* FIXME: is this correct ? */ 
+      if (unlikely(std::isinf(vertex_crease_weight)))
+        return vtx;
 
       /* border vertex rule */
       if (unlikely(border_index != -1))
       {
-	if (unlikely(std::isinf(vertex_crease_weight)))
-	  return vtx;
+	//if (unlikely(std::isinf(vertex_crease_weight)))
+        //return vtx;
 	
 	const unsigned int second_border_index = border_index+2 >= edge_valence ? 0 : border_index+2;
 	return (4.0f * vtx + (ring[border_index] + ring[second_border_index])) * 1.0f/6.0f;
@@ -459,11 +463,14 @@ namespace embree
     /* gets limit tangent in the direction of egde vtx -> ring[0] */
     __forceinline Vec3fa getLimitTangent() const 
     {
+      if (unlikely(std::isinf(vertex_crease_weight)))
+        return ring[0] - vtx;
+      
       /* border vertex rule */
       if (unlikely(border_index != -1))
       {
-	if (unlikely(std::isinf(vertex_crease_weight)))
-	  return ring[0] - vtx;
+	//if (unlikely(std::isinf(vertex_crease_weight)))
+        //return ring[0] - vtx;
 	
 	if (border_index != edge_valence-2 && face_valence != 2) {
 	  return ring[0] - vtx; 
@@ -512,12 +519,14 @@ namespace embree
     /* gets limit tangent in the direction of egde vtx -> ring[edge_valence-2] */
     __forceinline Vec3fa getSecondLimitTangent() const 
     {
-
+      if (unlikely(std::isinf(vertex_crease_weight)))
+        return ring[2] - vtx;
+ 
       /* border vertex rule */
       if (unlikely(border_index != -1))
       {
-        if (unlikely(std::isinf(vertex_crease_weight)))
-          return ring[2] - vtx;
+        //if (unlikely(std::isinf(vertex_crease_weight)))
+        //return ring[2] - vtx;
         
         //if (border_index == 0 && face_valence != 2) {
         if (border_index == edge_valence-2 && face_valence != 2) {
