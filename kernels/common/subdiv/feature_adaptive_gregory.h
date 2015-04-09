@@ -136,6 +136,7 @@ namespace embree
 	if (patch.isGregoryOrFinal(depth))
 	  return tessellator(patch,uv,neighborSubdiv);
       
+
       array_t<CatmullClarkPatch,4> patches; 
       patch.subdivide(patches);
 
