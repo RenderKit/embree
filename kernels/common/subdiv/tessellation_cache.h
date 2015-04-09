@@ -96,7 +96,7 @@ namespace embree
 
  public:
 
-   static const size_t NUM_CACHE_REGIONS = 4;
+   static const size_t NUM_CACHE_SEGMENTS = 4;
 
       
    SharedLazyTessellationCache();
@@ -114,7 +114,7 @@ namespace embree
 #if FORCE_SIMPLE_FLUSH == 1
      return i == index;
 #else
-     return i+(NUM_CACHE_REGIONS-1) >= index;
+     return i+(NUM_CACHE_SEGMENTS-1) >= index;
 #endif
    }
 
