@@ -153,12 +153,12 @@ namespace embree
           return PrimInfo(pinfo.begin,pinfo.end,geomBounds,centBounds);
         }
         
-        const PrimInfoMB computePrimInfoMB(Scene* scene, const PrimInfo& pinfo, const std::pair<AffineSpace3fa,AffineSpace3fa>& spaces)
+        const PrimInfoMB computePrimInfoMB(Scene* scene, const PrimInfo& pinfo, const AffineSpace3fa& space)
         {
           size_t N = 0;
           BBox3fa centBounds = empty;
           BBox3fa geomBounds = empty;
-          BBox3fa s0t0 = empty, s0t1_s1t0 = empty, s1t1 = empty;
+          BBox3fa s0t0 = empty, s1t1 = empty;
           for (size_t i=pinfo.begin; i<pinfo.end; i++)  // FIXME: parallelize
           {
             const Bezier1v& prim = prims[i];
@@ -166,20 +166,18 @@ namespace embree
             const size_t primID = prim.primID<0>();
 
             N++;
-            const BBox3fa bounds = prim.bounds(spaces.first);
+            const BBox3fa bounds = prim.bounds(space);
             geomBounds.extend(bounds);
             centBounds.extend(center2(bounds));
 
             const BezierCurves* curves = scene->getBezierCurves(prim.geomID<0>());
-            s0t0.extend(curves->bounds(spaces.first,prim.primID<0>(),0));
-            //s0t1_s1t0.extend(curves->bounds(spaces.first,spaces.second,prim.primID<0>()));
-            s1t1.extend(curves->bounds(spaces.second,prim.primID<0>(),1));
+            s0t0.extend(curves->bounds(space,prim.primID<0>(),0));
+            s1t1.extend(curves->bounds(space,prim.primID<0>(),1));
           }
           
           PrimInfoMB ret;
           ret.pinfo = PrimInfo(N,geomBounds,centBounds);
           ret.s0t0 = s0t0;
-          //ret.s0t1_s1t0 = s0t1_s1t0;
           ret.s1t1 = s1t1;
           return ret;
         }

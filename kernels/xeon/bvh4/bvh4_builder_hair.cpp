@@ -170,11 +170,10 @@ namespace embree
               for (size_t i=0; i<numChildren; i++) 
               {
                 std::pair<AffineSpace3fa,AffineSpace3fa> spaces = unalignedHeuristic.computeAlignedSpaceMB(scene,children[i]); 
-                
                 Vec3fa axis = normalize(spaces.first.l.row2()+spaces.second.l.row2());
-                spaces.first = spaces.second = frame(axis).transposed();
-                UnalignedHeuristicArrayBinningSAH<BezierPrim>::PrimInfoMB pinfo = unalignedHeuristic.computePrimInfoMB(scene,children[i],spaces);
-                node->set(i,spaces.first,pinfo.s0t0,pinfo.s1t1);
+                AffineSpace3fa space = frame(axis).transposed();
+                UnalignedHeuristicArrayBinningSAH<BezierPrim>::PrimInfoMB pinfo = unalignedHeuristic.computePrimInfoMB(scene,children[i],space);
+                node->set(i,space,pinfo.s0t0,pinfo.s1t1);
               }
               return node;
             },
