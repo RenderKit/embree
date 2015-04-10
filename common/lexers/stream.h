@@ -189,6 +189,7 @@ namespace embree
 
     int next() {
       int c = str[charNumber];
+      if (c == 0) return EOF;
       if (c == '\n') { lineNumber++; colNumber = 0; } else if (c != '\r') colNumber++;
       charNumber++;
       return c;

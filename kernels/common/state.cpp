@@ -97,10 +97,10 @@ namespace embree
     if (cfg == nullptr) return;
 
     std::vector<std::string> syms;
-	  for (size_t i=0; i<sizeof(symbols)/sizeof(void*); i++) 
-	  	syms.push_back(symbols[i]);
+    for (size_t i=0; i<sizeof(symbols)/sizeof(void*); i++) 
+      syms.push_back(symbols[i]);
     
-	  Ref<TokenStream> cin = new TokenStream(new StrStream(cfg),
+    Ref<TokenStream> cin = new TokenStream(new StrStream(cfg),
                                            TokenStream::alpha+TokenStream::ALPHA+TokenStream::numbers+"_.",
                                            TokenStream::separators,syms);
     parse(cin);
