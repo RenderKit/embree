@@ -76,18 +76,27 @@ namespace embree
 #include <errno.h>
 #include <string.h>
 
+#if defined(__MIC__)
+#define USE_HUGE_PAGES 1
+#else
+#define USE_HUGE_PAGES 0
+#endif
+
 namespace embree
 {
   void* os_malloc(size_t bytes)
   {
     int flags = MAP_PRIVATE | MAP_ANON;
-#if defined(__MIC__)
+#if USE_HUGE_PAGES
     if (bytes > 16*4096) {
-      flags |= MAP_HUGETLB | MAP_POPULATE;
+      flags |= MAP_HUGETLB;
       bytes = (bytes+2*1024*1024-1)&ssize_t(-2*1024*1024);
     } else {
       bytes = (bytes+4095)&ssize_t(-4096);
     }
+#endif
+#if __MIC__
+    flags |= MAP_POPULATE;
 #endif
     char* ptr = (char*) mmap(0, bytes, PROT_READ | PROT_WRITE, flags, -1, 0);
     if (ptr == nullptr || ptr == MAP_FAILED) throw std::bad_alloc();
@@ -97,7 +106,7 @@ namespace embree
   void* os_reserve(size_t bytes)
   {
     int flags = MAP_PRIVATE | MAP_ANON | MAP_NORESERVE;
-#if defined(__MIC__)
+#if USE_HUGE_PAGES
     if (bytes > 16*4096) {
       flags |= MAP_HUGETLB;
       bytes = (bytes+2*1024*1024-1)&ssize_t(-2*1024*1024);
@@ -116,7 +125,7 @@ namespace embree
   void os_shrink(void* ptr, size_t bytesNew, size_t bytesOld) 
   {
     size_t pageSize = 4096;
-#if defined(__MIC__)
+#if USE_HUGE_PAGES
     if (bytesOld > 16*4096) pageSize = 2*1024*1024;
 #endif
     if (bytesNew & (pageSize-1)) 
@@ -130,7 +139,7 @@ namespace embree
     if (bytes == 0)
       return;
 
-#if defined(__MIC__)
+#if USE_HUGE_PAGES
     if (bytes > 16*4096) {
       bytes = (bytes+2*1024*1024-1)&ssize_t(-2*1024*1024);
     } else {
