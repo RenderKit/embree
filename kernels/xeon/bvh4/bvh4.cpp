@@ -407,31 +407,6 @@ namespace embree
     else return node;
   }
 
-  std::pair<BBox3fa,BBox3fa> BVH4::refit(Scene* scene, NodeRef node)
-  {
-    /*! merge bounds of triangles for both time steps */
-    if (node.isLeaf()) 
-    {
-      size_t num; char* tri = node.leaf(num);
-      if (node == BVH4::emptyNode) return std::pair<BBox3fa,BBox3fa>(empty,empty);
-      return primTy.update2(tri,listMode ? -1 : num,scene);
-    }
-    /*! set and propagate merged bounds for both time steps */
-    else
-    {
-      NodeMB* n = node.nodeMB();
-      if (!n->hasBounds()) {
-        for (size_t i=0; i<4; i++) {
-          std::pair<BBox3fa,BBox3fa> bounds = refit(scene,n->child(i));
-          n->set(i,bounds.first,bounds.second);
-        }
-      }
-      BBox3fa bounds0 = merge(n->bounds0(0),n->bounds0(1),n->bounds0(2),n->bounds0(3));
-      BBox3fa bounds1 = merge(n->bounds1(0),n->bounds1(1),n->bounds1(2),n->bounds1(3));
-      return std::pair<BBox3fa,BBox3fa>(bounds0,bounds1);
-    }
-  }
-
   double BVH4::preBuild(const char* builderName)
   {
     if (builderName == nullptr) 

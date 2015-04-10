@@ -220,6 +220,5 @@ namespace embree
   struct TriangleMeshTriangle4v : public Triangle4vType
   {
     static TriangleMeshTriangle4v type;
-    BBox3fa update(char* prim, size_t num, void* geom) const;
   };
 }

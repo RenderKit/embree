@@ -172,6 +172,5 @@ namespace embree
   struct TriangleMeshTriangle1 : public Triangle1Type
   {
     static TriangleMeshTriangle1 type;
-    BBox3fa update(char* prim, size_t num, void* geom) const;
   };
 }

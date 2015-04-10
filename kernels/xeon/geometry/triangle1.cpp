@@ -32,44 +32,4 @@ namespace embree
   size_t Triangle1Type::size(const char* This) const {
     return 1;
   }
-
-  BBox3fa TriangleMeshTriangle1::update(char* prim_i, size_t num, void* geom) const // FIXME: these trianglemesh classes are not required anymore!
-  {
-    BBox3fa bounds = empty;
-    const TriangleMesh* mesh = (const TriangleMesh*) geom;
-    Triangle1* prim = (Triangle1*) prim_i;
-
-    if (num == -1)
-    {
-      while (true)
-      {
-	const unsigned geomID = prim->geomID<1>();
-	const unsigned primID = prim->primID<1>();
-	const TriangleMesh::Triangle& tri = mesh->triangle(primID);
-	const Vec3fa v0 = mesh->vertex(tri.v[0]);
-	const Vec3fa v1 = mesh->vertex(tri.v[1]);
-	const Vec3fa v2 = mesh->vertex(tri.v[2]);
-	const bool last = prim->last();
-	new (prim) Triangle1(v0,v1,v2,geomID,primID,mesh->mask,last);
-	bounds.extend(merge(BBox3fa(v0),BBox3fa(v1),BBox3fa(v2)));
-	if (last) break;
-	prim++;
-      }
-    }
-    else
-    {
-      for (size_t i=0; i<num; i++, prim++)
-      {
-	const unsigned geomID = prim->geomID<0>();
-	const unsigned primID = prim->primID<0>();
-	const TriangleMesh::Triangle& tri = mesh->triangle(primID);
-	const Vec3fa v0 = mesh->vertex(tri.v[0]);
-	const Vec3fa v1 = mesh->vertex(tri.v[1]);
-	const Vec3fa v2 = mesh->vertex(tri.v[2]);
-	new (prim) Triangle1(v0,v1,v2,geomID,primID,mesh->mask,false);
-	bounds.extend(merge(BBox3fa(v0),BBox3fa(v1),BBox3fa(v2)));
-      }
-    }
-    return bounds; 
-  }
 }

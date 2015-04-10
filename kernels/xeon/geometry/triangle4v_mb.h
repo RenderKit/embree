@@ -28,7 +28,6 @@ namespace embree
       Type ();
       size_t blocks(size_t x) const;
       size_t size(const char* This) const;
-      std::pair<BBox3fa,BBox3fa> update2(char* prim, size_t num, void* geom) const;
     };
 
     static Type type;

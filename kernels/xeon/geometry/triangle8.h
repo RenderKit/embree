@@ -244,6 +244,5 @@ namespace embree
   struct TriangleMeshTriangle8 : public Triangle8Type
   {
     static TriangleMeshTriangle8 type;
-    BBox3fa update(char* prim, size_t num, void* geom) const;
   };
 }

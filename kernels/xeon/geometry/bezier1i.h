@@ -184,7 +184,6 @@ namespace embree
   struct SceneBezier1i : public Bezier1iType
   {
     static SceneBezier1i type;
-    BBox3fa update(char* prim, size_t num, void* geom) const;
   };
 
   struct Bezier1iMBType : public PrimitiveType {

@@ -47,12 +47,6 @@ namespace embree
     /*! Returns a hash number for the leaf. */
     virtual size_t hash(const char* This, size_t num) const { return 0; }
 
-    /*! Updates all primitives stored in a leaf */
-    virtual BBox3fa update(char* prim, size_t num, void* geom) const { return BBox3fa(empty); } // FIXME: remove
-
-    /*! Updates all primitives stored in a leaf */
-    virtual std::pair<BBox3fa,BBox3fa> update2(char* prim, size_t num, void* geom) const { return std::pair<BBox3fa,BBox3fa>(empty,empty); } // FIXME: remove
-
   public:
     std::string name;       //!< name of this primitive type
     size_t bytes;           //!< number of bytes of the triangle data

@@ -1009,9 +1009,6 @@ namespace embree
     void layoutLargeNodes(size_t N);
     NodeRef layoutLargeNodesRecursion(NodeRef& node);
 
-    /*! Propagate bounds for time t0 and time t1 up the tree. */
-    std::pair<BBox3fa,BBox3fa> refit(Scene* scene, NodeRef node);
-    
     /*! calculates the amount of bytes allocated */
     size_t bytesAllocated() {
       return alloc.getAllocatedBytes();
