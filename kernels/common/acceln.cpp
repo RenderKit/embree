@@ -134,9 +134,14 @@ namespace embree
   void AccelN::build (size_t threadIndex, size_t threadCount) 
   {
     /* build all acceleration structures in parallel */
+#if defined(__MIC__)
+    for (size_t i=0; i<N; i++) 
+        accels[i]->build(threadIndex,threadCount);
+#else
     parallel_for (N, [&] (size_t i) { 
         accels[i]->build(threadIndex,threadCount);
       });
+#endif
 
     /* create list of non-empty acceleration structures */
     M = 0;
