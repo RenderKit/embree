@@ -35,7 +35,7 @@ namespace embree
         {
           PrimInfo pinfo;
           BBox3fa s0t0;
-          BBox3fa s0t1_s1t0;
+          //BBox3fa s0t1_s1t0;
           BBox3fa s1t1;
         };
 
@@ -172,14 +172,14 @@ namespace embree
 
             const BezierCurves* curves = scene->getBezierCurves(prim.geomID<0>());
             s0t0.extend(curves->bounds(spaces.first,prim.primID<0>(),0));
-            s0t1_s1t0.extend(curves->bounds(spaces.first,spaces.second,prim.primID<0>()));
+            //s0t1_s1t0.extend(curves->bounds(spaces.first,spaces.second,prim.primID<0>()));
             s1t1.extend(curves->bounds(spaces.second,prim.primID<0>(),1));
           }
           
           PrimInfoMB ret;
           ret.pinfo = PrimInfo(N,geomBounds,centBounds);
           ret.s0t0 = s0t0;
-          ret.s0t1_s1t0 = s0t1_s1t0;
+          //ret.s0t1_s1t0 = s0t1_s1t0;
           ret.s1t1 = s1t1;
           return ret;
         }

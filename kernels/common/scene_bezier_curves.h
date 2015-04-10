@@ -32,8 +32,10 @@ namespace embree
       static const Geometry::Type geom_type = Geometry::BEZIER_CURVES;
 
     public:
+      /*! bezier curve construction */
       BezierCurves (Scene* parent, RTCGeometryFlags flags, size_t numPrimitives, size_t numVertices, size_t numTimeSteps); 
     
+      /*! wirte the bezier curve geometry to disk */
       void write(std::ofstream& file);
 
     public:
@@ -71,16 +73,6 @@ namespace embree
         assert(i < numVertices);
         assert(j < numTimeSteps);
         return vertices[j][i].r;
-      }
-
-      __forceinline unsigned int maxSubdivisionSteps(const float eps, const Vec3fa& p0, const Vec3fa& p1, const Vec3fa& p2, const Vec3fa& p3) const {
-	const Vec3fa d0 = abs(p0 - 2.0f * p1 + p2);
-	const Vec3fa d1 = abs(p1 - 2.0f * p2 + p3);
-	const float d0_max = max(d0.x,d0.y,d0.z);
-	const float d1_max = max(d1.x,d1.y,d1.z);
-	const float L0 = max(d0_max,d1_max);
-	const float r0 = (sqrtf(2.0f) * 4 * (4-1) * L0) / (8.0f * eps);      
-	return (unsigned int)logf(r0);
       }
 
       /*! check if the i'th primitive is valid */
@@ -144,59 +136,6 @@ namespace embree
         return enlarge(b,Vec3fa(max(r0,r1,r2,r3)));
       }
 
-      /*! calculates residual bounding box of i'th bezier curve */
-      __forceinline BBox3fa bounds(const AffineSpace3fa& space0, const AffineSpace3fa& space1, size_t i) const 
-      {
-#if 1
-        const int index = curve(i);
-        const float r0 = radius(index+0,0) + radius(index+0,1); // FIXME: can one use max here?
-        const float r1 = radius(index+1,0) + radius(index+1,1);
-        const float r2 = radius(index+2,0) + radius(index+2,1);
-        const float r3 = radius(index+3,0) + radius(index+3,1);
-
-        const Vec3fa a0 = xfmPoint(space0,vertex(index+0,1));
-        const Vec3fa a1 = xfmPoint(space0,vertex(index+1,1));
-        const Vec3fa a2 = xfmPoint(space0,vertex(index+2,1));
-        const Vec3fa a3 = xfmPoint(space0,vertex(index+3,1));
-
-        const Vec3fa b0 = xfmPoint(space1,vertex(index+0,0));
-        const Vec3fa b1 = xfmPoint(space1,vertex(index+1,0));
-        const Vec3fa b2 = xfmPoint(space1,vertex(index+2,0));
-        const Vec3fa b3 = xfmPoint(space1,vertex(index+3,0));
-
-        const Vec3fa v0 = a0 + b0;
-        const Vec3fa v1 = a1 + b1;
-        const Vec3fa v2 = a2 + b2;
-        const Vec3fa v3 = a3 + b3;
-
-        const BBox3fa b = merge(BBox3fa(v0),BBox3fa(v1),BBox3fa(v2),BBox3fa(v3));
-        return enlarge(b,Vec3fa(max(r0,r1,r2,r3))); // FIXME: is radius used properly?
-#else
-
-        const int index = curve(i);
-        const float r0 = 0.5*radius(index+0,0) + 0.5*radius(index+0,1);
-        const float r1 = 0.5*radius(index+1,0) + 0.5*radius(index+1,1);
-        const float r2 = 0.5*radius(index+2,0) + 0.5*radius(index+2,1);
-        const float r3 = 0.5*radius(index+3,0) + 0.5*radius(index+3,1);
-
-        const Vec3fa p0 = 0.5f*vertex(index+0,0) + 0.5f*vertex(index+0,1);
-        const Vec3fa p1 = 0.5f*vertex(index+1,0) + 0.5f*vertex(index+1,1);
-        const Vec3fa p2 = 0.5f*vertex(index+2,0) + 0.5f*vertex(index+2,1);
-        const Vec3fa p3 = 0.5f*vertex(index+3,0) + 0.5f*vertex(index+3,1);
-
-        const AffineSpace3fa space = 0.5f*space0 + 0.5f*space1;
-        //const AffineSpace3fa space = frame(normalize(0.5f*space0.row2() + 0.5f*space1.row2())).transposed();
-        const Vec3fa v0 = xfmPoint(space,p0);
-        const Vec3fa v1 = xfmPoint(space,p1);
-        const Vec3fa v2 = xfmPoint(space,p2);
-        const Vec3fa v3 = xfmPoint(space,p3);
-
-        const BBox3fa b = merge(BBox3fa(v0),BBox3fa(v1),BBox3fa(v2),BBox3fa(v3));
-        return enlarge(b,Vec3fa(max(r0,r1,r2,r3)));
-
-#endif
-      }
-
       __forceinline const Vec3fa *fristVertexPtr(size_t i) const { // FIXME: remove, use buffer to access vertices instead!
         return &vertex(curve(i));
       }
@@ -234,47 +173,6 @@ namespace embree
       }
       
 #endif
-
-      __forceinline BBox3fa subBounds(size_t curveID, size_t segmentID) const 
-      {
-	assert(curveID < numPrimitives);
-	assert(segmentID < 8);
-        const int index = curve(curveID);
-        const float r0 = radius(index+0);
-        const float r1 = radius(index+1);
-        const float r2 = radius(index+2);
-        const float r3 = radius(index+3);
-        const Vec3fa& v0 = vertex(index+0);
-        const Vec3fa& v1 = vertex(index+1);
-        const Vec3fa& v2 = vertex(index+2);
-        const Vec3fa& v3 = vertex(index+3);
-
-	BBox3fa b(empty);
-	{
-	  unsigned int step = segmentID;
-	  float t1 = (float)step / 8.0f;
-	  float t0 = 1.0f - t1;
-	  const float coeff0 = t0 * t0 * t0;
-	  const float coeff1 = 3.0f * t1* t0 * t0;
-	  const float coeff2 = 3.0f * t1* t1 * t0;
-	  const float coeff3 = t1 * t1 * t1;
-	  const Vec3fa p = coeff0 * v0 + coeff1 * v1 + coeff2 * v2 + coeff3 * v3; 
-	  b.extend(p);
-	}
-
-	{
-	  unsigned int step = segmentID+1;
-	  float t1 = (float)step / 8.0f;
-	  float t0 = 1.0f - t1;
-	  const float coeff0 = t0 * t0 * t0;
-	  const float coeff1 = 3.0f * t1* t0 * t0;
-	  const float coeff2 = 3.0f * t1* t1 * t0;
-	  const float coeff3 = t1 * t1 * t1;
-	  const Vec3fa p = coeff0 * v0 + coeff1 * v1 + coeff2 * v2 + coeff3 * v3; 
-	  b.extend(p);
-	}
-        return enlarge(b,Vec3fa(max(r0,r1,r2,r3)));
-      }
 
     public:
       unsigned int mask;                //!< for masking out geometry
