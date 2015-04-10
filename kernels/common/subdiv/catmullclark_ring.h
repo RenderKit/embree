@@ -358,7 +358,7 @@ namespace embree
 	} 
 	else {
 	  if (face_valence == 2 && vertex_crease_weight > 1E5); // FIXME: use inf
-	  else if (face_valence == 3 && vertex_crease_weight == 0.0f);
+	  else if (face_valence == 3 && vertex_crease_weight == 0.0f); // FIXME: document
 	  else return false;
 	}
 
