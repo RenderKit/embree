@@ -1005,10 +1005,10 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in,const uniform Vec3fa& 
   geomID_to_type = uniform new uniform int[numGeometries];
 
   /* create scene */
-  uniform int scene_flags = RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT;
+  uniform int scene_flags = RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT | RTC_SCENE_ROBUST;
 
   if (g_subdiv_mode)   
-    scene_flags = RTC_SCENE_DYNAMIC | RTC_SCENE_INCOHERENT;
+    scene_flags = RTC_SCENE_DYNAMIC | RTC_SCENE_INCOHERENT | RTC_SCENE_ROBUST;
 
   RTCScene scene_out = rtcNewScene((RTCSceneFlags)scene_flags, RTC_INTERSECT_VARYING);
   convertTriangleMeshes(scene_in,scene_out,numGeometries);
