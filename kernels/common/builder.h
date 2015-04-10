@@ -20,6 +20,9 @@
 
 namespace embree
 {
+#define MODE_HIGH_QUALITY (1<<8)
+#define LeafMode 0 // FIXME: remove
+
   /*! virtual interface for all hierarchy builders */
   class Builder : public RefCount {
   public:
@@ -57,8 +60,8 @@ namespace embree
   namespace avx2  { extern Builder* symbol(Accel* accel, Mesh* scene, Args args); } \
   std::function<Builder* (Accel* accel, Mesh* mesh, Args args)> symbol;
 
-  class TriangleMesh;
-  struct Scene;
+  struct TriangleMesh;
+  class Scene;
   typedef void     (*createTriangleMeshAccelTy)(TriangleMesh* mesh, AccelData*& accel, Builder*& builder); 
 
   typedef Builder* (*BVH4BuilderTopLevelFunc  )(void* accel, Scene* scene, const createTriangleMeshAccelTy createTriangleMeshAccel);

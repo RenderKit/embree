@@ -132,7 +132,7 @@ namespace embree
   void TriangleMesh::immutable () 
   {
     bool freeTriangles = !parent->needTriangles;
-    bool freeVertices  = !parent->needVertices;
+    bool freeVertices  = !parent->needTriangleVertices;
     if (freeTriangles) triangles.free();
     if (freeVertices ) vertices[0].free();
     if (freeVertices ) vertices[1].free();
@@ -148,7 +148,7 @@ namespace embree
     for (size_t j=0; j<numTimeSteps; j++) {
       BufferT<Vec3fa>& verts = vertices[j];
       for (size_t i=0; i<numVertices; i++) {
-	if (!inFloatRange(verts[i])) 
+	if (!isvalid(verts[i])) 
 	  return false;
       }
     }

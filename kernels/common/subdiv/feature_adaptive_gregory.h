@@ -145,6 +145,7 @@ namespace embree
       const bool childSubdiv2 = !patches[2].isGregoryOrFinal(depth);
       const bool childSubdiv3 = !patches[3].isGregoryOrFinal(depth);
 
+
       const Vec2f uv01 = 0.5f*(uv[0]+uv[1]);
       const Vec2f uv12 = 0.5f*(uv[1]+uv[2]);
       const Vec2f uv23 = 0.5f*(uv[2]+uv[3]);

@@ -152,7 +152,7 @@ namespace embree
         for (size_t j=r.begin(); j<r.end(); j++)
         {
           const int ofs = mesh->curve(j);
-          if (ofs+3 >= mesh->numVertices)
+          if (ofs+3 >= mesh->numVertices())
             continue;
 
 	  Vec3fa p0 = mesh->vertex(ofs+0,0);
@@ -165,7 +165,7 @@ namespace embree
 	    p2 = 0.5f*(p2+mesh->vertex(ofs+2,1));
 	    p3 = 0.5f*(p3+mesh->vertex(ofs+3,1));
 	  }
-          if (!inFloatRange((ssef)p0) || !inFloatRange((ssef)p1) || !inFloatRange((ssef)p2) || !inFloatRange((ssef)p3))
+          if (!isvalid((ssef)p0) || !isvalid((ssef)p1) || !isvalid((ssef)p2) || !isvalid((ssef)p3))
               continue;
 
 	  const BezierPrim bezier(p0,p1,p2,p3,0,1,mesh->id,j,false);
@@ -187,7 +187,7 @@ namespace embree
           for (size_t j=r.begin(); j<r.end(); j++)
           {
             const int ofs = mesh->curve(j);
-            if (ofs+3 >= mesh->numVertices)
+            if (ofs+3 >= mesh->numVertices())
               continue;
 
             Vec3fa p0 = mesh->vertex(ofs+0,0);
@@ -200,7 +200,7 @@ namespace embree
               p2 = 0.5f*(p2+mesh->vertex(ofs+2,1));
               p3 = 0.5f*(p3+mesh->vertex(ofs+3,1));
             }
-            if (!inFloatRange((ssef)p0) || !inFloatRange((ssef)p1) || !inFloatRange((ssef)p2) || !inFloatRange((ssef)p3))
+            if (!isvalid((ssef)p0) || !isvalid((ssef)p1) || !isvalid((ssef)p2) || !isvalid((ssef)p3))
               continue;
             
             const BezierPrim bezier(p0,p1,p2,p3,0,1,mesh->id,j,false);

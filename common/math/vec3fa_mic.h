@@ -226,6 +226,10 @@ namespace embree
   __forceinline Vec3ba gt_mask( const Vec3fa_t& a, const Vec3fa_t& b ) { return _mm512_cmp_ps_mask(a,b,_MM_CMPINT_GT); }
   __forceinline Vec3ba ge_mask( const Vec3fa_t& a, const Vec3fa_t& b ) { return _mm512_cmp_ps_mask(a,b,_MM_CMPINT_GE); }
 
+  __forceinline bool isvalid ( const Vec3fa& v ) {
+    return all(gt_mask(v,Vec3fa_t(-FLT_LARGE)) & lt_mask(v,Vec3fa_t(+FLT_LARGE)));
+  }
+
  ////////////////////////////////////////////////////////////////////////////////
   /// Euclidian Space Operators
   ////////////////////////////////////////////////////////////////////////////////

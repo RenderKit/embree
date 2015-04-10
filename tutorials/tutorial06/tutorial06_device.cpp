@@ -28,16 +28,16 @@
 #define TILE_SIZE_Y 4
 
 #define FIX_SAMPLING 0
-//#define SAMPLES_PER_PIXEL 1
-#define SAMPLES_PER_PIXEL 4
+#define SAMPLES_PER_PIXEL 1
+//#define SAMPLES_PER_PIXEL 4
 
-#define ENABLE_TEXTURING 1
+#define ENABLE_TEXTURING 0
 
 //#define FORCE_FIXED_EDGE_TESSELLATION
 #define FIXED_EDGE_TESSELLATION_VALUE 2
 //#define FIXED_EDGE_TESSELLATION_VALUE 32
 
-#define MAX_EDGE_LEVEL 64.0f
+#define MAX_EDGE_LEVEL 128.0f
 //#define MIN_EDGE_LEVEL 8.0f
 #define MIN_EDGE_LEVEL 4.0f
 #define ENABLE_DISPLACEMENTS 0
@@ -1500,7 +1500,7 @@ extern "C" void device_render (int* pixels,
   const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
   launch_renderTile(numTilesX*numTilesY,pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY); 
-  //rtcDebug();
+  rtcDebug();
 } // device_render
 
 /* called by the C++ code for cleanup */

@@ -43,6 +43,8 @@ namespace embree
       ~BVH4Refit();
 
       void refit_sequential(size_t threadIndex, size_t threadCount);
+
+      virtual BBox3fa update(void* prim, size_t N, TriangleMesh* mesh) const = 0;
       
     private:
       size_t annotate_tree_sizes(NodeRef& ref);
@@ -58,12 +60,26 @@ namespace embree
       bool listMode;
       
     public:
-      const PrimitiveType& primTy;   //!< primitve type stored in BVH
-      
-    public:
       Builder* builder;
       BVH4* bvh;                      //!< BVH to refit
       std::vector<NodeRef*> roots;    //!< List of equal sized subtrees for bvh refit
+    };
+
+    template<typename Primitive>
+      class BVH4RefitT : public BVH4Refit
+    {
+    public:
+      BVH4RefitT (BVH4* bvh, Builder* builder, TriangleMesh* mesh, size_t mode)
+        : BVH4Refit(bvh,builder,mesh,mode) {}
+
+    private:      
+      BBox3fa update(void* prim, size_t N, TriangleMesh* mesh) const 
+      {
+        BBox3fa bounds = empty;
+        for (size_t i=0; i<N; i++)
+          bounds.extend(((Primitive*)prim)[i].update(mesh));
+        return bounds;
+      }
     };
   }
 }

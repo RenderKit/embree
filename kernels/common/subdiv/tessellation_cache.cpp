@@ -33,7 +33,7 @@ namespace embree
 
   void clearTessellationCache()
   {
-    SharedLazyTessellationCache::sharedLazyTessellationCache.addCurrentIndex(SharedLazyTessellationCache::NUM_CACHE_REGIONS);
+    SharedLazyTessellationCache::sharedLazyTessellationCache.addCurrentIndex(SharedLazyTessellationCache::NUM_CACHE_SEGMENTS);
   }
   
   /* alloc cache memory */
@@ -61,7 +61,7 @@ namespace embree
 #if FORCE_SIMPLE_FLUSH == 1
     switch_block_threshold = maxBlocks;
 #else
-    switch_block_threshold = maxBlocks/NUM_CACHE_REGIONS;
+    switch_block_threshold = maxBlocks/NUM_CACHE_SEGMENTS;
 #endif
     numMaxRenderThreads = MAX_MIC_THREADS;
     threadWorkState     = (ThreadWorkState*)malloc(sizeof(ThreadWorkState)*numMaxRenderThreads);
@@ -130,15 +130,15 @@ namespace embree
 	    next_block = 0;
 	    switch_block_threshold = maxBlocks;
 #else
-	    const size_t region = index % NUM_CACHE_REGIONS;
-	    next_block = region * (maxBlocks/NUM_CACHE_REGIONS);
-	    switch_block_threshold = next_block + (maxBlocks/NUM_CACHE_REGIONS);
+	    const size_t region = index % NUM_CACHE_SEGMENTS;
+	    next_block = region * (maxBlocks/NUM_CACHE_SEGMENTS);
+	    switch_block_threshold = next_block + (maxBlocks/NUM_CACHE_SEGMENTS);
 
 #if 0
 	    PRINT( region );
 	    PRINT( maxBlocks );
-	    PRINT( NUM_CACHE_REGIONS );
-	    PRINT( maxBlocks/NUM_CACHE_REGIONS );
+	    PRINT( NUM_CACHE_SEGMENTS );
+	    PRINT( maxBlocks/NUM_CACHE_SEGMENTS );
 	    PRINT( next_block );
 	    PRINT( switch_block_threshold );
 #endif
@@ -174,7 +174,7 @@ namespace embree
 #if FORCE_SIMPLE_FLUSH == 1
     switch_block_threshold = maxBlocks;
 #else
-    switch_block_threshold = maxBlocks/NUM_CACHE_REGIONS;
+    switch_block_threshold = maxBlocks/NUM_CACHE_SEGMENTS;
 #endif
 
     std::cout << "Reallocating tessellation cache to " << size << " bytes, " << maxBlocks << " 64-byte blocks" << std::endl;

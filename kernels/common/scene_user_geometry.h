@@ -39,7 +39,7 @@ namespace embree
     {
       const BBox3fa b = bounds(i);
       if (bbox) *bbox = b;
-      return inFloatRange(b);
+      return isvalid(b);
     }
 
     void enabling ();

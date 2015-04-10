@@ -80,6 +80,11 @@ namespace embree
   }
 #endif
 
+  /*! tests if box is finite */
+  __forceinline bool isvalid( const BBox<Vec3fa>& v ) {
+    return all(gt_mask(v.lower,Vec3fa_t(-FLT_LARGE)) & lt_mask(v.upper,Vec3fa_t(+FLT_LARGE)));
+  }
+
   /*! test if point contained in box */
   __forceinline bool inside ( const BBox<Vec3fa>& b, const Vec3fa& p ) { return all(ge_mask(p,b.lower) & le_mask(p,b.upper)); }
 

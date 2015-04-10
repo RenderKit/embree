@@ -235,7 +235,8 @@ namespace embree
     RTCSceneFlags flags;
     RTCAlgorithmFlags aflags;
     bool needTriangles; 
-    bool needVertices; // FIXME: this flag is also used for hair geometry, but there should be a second flag
+    bool needTriangleVertices; 
+    bool needBezierVertices;
     bool is_build;
     MutexSys buildMutex;
     AtomicMutex geometriesMutex;

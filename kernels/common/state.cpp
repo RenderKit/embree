@@ -70,9 +70,9 @@ namespace embree
     //  g_errors.clear();
   }
 
-  static std::vector<std::string> symbols { "=", ",", "|" };
+  const char* symbols[3] = { "=", ",", "|" };
 
-  bool State::parseFile(const FileName& fileName)
+   bool State::parseFile(const FileName& fileName)
   {
     Ref<Stream<int> > file;
     try {
@@ -80,9 +80,14 @@ namespace embree
     } catch (const std::runtime_error&) {
       return false;
     }
+
+    std::vector<std::string> syms;
+	  for (size_t i=0; i<sizeof(symbols)/sizeof(void*); i++) 
+      syms.push_back(symbols[i]);
+
     Ref<TokenStream> cin = new TokenStream(new LineCommentFilter(file,"#"),
                                            TokenStream::alpha+TokenStream::ALPHA+TokenStream::numbers+"_.",
-                                           TokenStream::separators,symbols);
+                                           TokenStream::separators,syms);
     parse(cin);
     return true;
   }
@@ -91,9 +96,13 @@ namespace embree
   {
     if (cfg == nullptr) return;
 
+    std::vector<std::string> syms;
+    for (size_t i=0; i<sizeof(symbols)/sizeof(void*); i++) 
+      syms.push_back(symbols[i]);
+    
     Ref<TokenStream> cin = new TokenStream(new StrStream(cfg),
                                            TokenStream::alpha+TokenStream::ALPHA+TokenStream::numbers+"_.",
-                                           TokenStream::separators,symbols);
+                                           TokenStream::separators,syms);
     parse(cin);
   }
 

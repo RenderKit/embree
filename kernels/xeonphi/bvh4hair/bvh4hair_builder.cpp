@@ -68,7 +68,7 @@ namespace embree
 	if (unlikely((scene->get(i)->type != Geometry::BEZIER_CURVES))) continue;
 	if (unlikely(!scene->get(i)->isEnabled())) continue;
         BezierCurves* geom = (BezierCurves*) scene->getBezierCurves(i);
-	numCurves += geom->numCurves;
+	numCurves += geom->size();
       }
     return numCurves;	
   }
@@ -115,7 +115,7 @@ namespace embree
       if (unlikely((scene->get(g)->type != Geometry::BEZIER_CURVES))) continue;
       if (unlikely(!scene->get(g)->isEnabled())) continue;
       BezierCurves* geom = (BezierCurves*) scene->getBezierCurves(g);
-      const size_t numPrims = geom->numCurves;
+      const size_t numPrims = geom->size();
       if (numSkipped + numPrims > startID) break;
       numSkipped += numPrims;
     }
@@ -137,7 +137,7 @@ namespace embree
 
 	BezierCurves* geom = (BezierCurves*) scene->getBezierCurves(g);
 
-        size_t N = geom->numCurves;
+        size_t N = geom->size();
         for (unsigned int i=offset; i<N && currentID < endID; i++, currentID++)	 
         { 			    
 	  const mic2f b2 = geom->bounds_mic2f(i);

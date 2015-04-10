@@ -263,7 +263,7 @@ namespace embree
   }
 
   template<> bool XMLLoader::load<bool>(const Ref<XML>& xml, const bool& opt) {
-    if (xml == nullptr) return opt;
+    if (xml == null) return opt;
     if (xml->body.size() != 1) THROW_RUNTIME_ERROR(xml->loc.str()+": wrong bool body");
     return xml->body[0].Int() != 0;
   }
@@ -294,7 +294,7 @@ namespace embree
   }
 
   template<> float XMLLoader::load<float>(const Ref<XML>& xml, const float& opt) {
-    if (xml == nullptr) return opt;
+    if (xml == null) return opt;
     if (xml->body.size() != 1) THROW_RUNTIME_ERROR(xml->loc.str()+": wrong float body");
     return xml->body[0].Float();
   }
@@ -310,7 +310,7 @@ namespace embree
   }
 
   template<> Vec3fa XMLLoader::load<Vec3fa>(const Ref<XML>& xml, const Vec3fa& opt) {
-    if (xml == nullptr) return opt;
+    if (xml == null) return opt;
     if (xml->body.size() != 3) THROW_RUNTIME_ERROR(xml->loc.str()+": wrong float3 body");
     return Vec3fa(xml->body[0].Float(),xml->body[1].Float(),xml->body[2].Float());
   }

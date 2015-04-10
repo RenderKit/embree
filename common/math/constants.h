@@ -19,12 +19,15 @@
 #include <limits>
 
 #define _USE_MATH_DEFINES
-#include <cmath>
+#include <math.h> // using cmake causes issues under Windows
 #include <cfloat>
 
 namespace embree
 {
   static const float one_over_255 = 1.0f/255.0f;
+
+  /* we consider floating point numbers in that range as valid input numbers */
+  static float FLT_LARGE = 1.844E18f;
 
   static struct TrueTy {
     __forceinline operator bool( ) const { return true; }

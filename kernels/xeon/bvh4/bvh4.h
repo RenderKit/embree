@@ -972,6 +972,7 @@ namespace embree
     static Accel* BVH4BVH4Triangle1Morton(Scene* scene);
     static Accel* BVH4BVH4Triangle1ObjectSplit(Scene* scene);
     static Accel* BVH4BVH4Triangle4ObjectSplit(Scene* scene);
+    static Accel* BVH4BVH4Triangle8ObjectSplit(Scene* scene);
     static Accel* BVH4BVH4Triangle1vObjectSplit(Scene* scene);
     static Accel* BVH4BVH4Triangle4vObjectSplit(Scene* scene);
     static Accel* BVH4BVH4Triangle4iObjectSplit(Scene* scene);
@@ -1008,9 +1009,6 @@ namespace embree
     void layoutLargeNodes(size_t N);
     NodeRef layoutLargeNodesRecursion(NodeRef& node);
 
-    /*! Propagate bounds for time t0 and time t1 up the tree. */
-    std::pair<BBox3fa,BBox3fa> refit(Scene* scene, NodeRef node);
-    
     /*! calculates the amount of bytes allocated */
     size_t bytesAllocated() {
       return alloc.getAllocatedBytes();

@@ -28,7 +28,8 @@
 namespace embree
 {
   Scene::Scene (RTCSceneFlags sflags, RTCAlgorithmFlags aflags)
-    : flags(sflags), aflags(aflags), numMappedBuffers(0), is_build(false), modified(true), needTriangles(false), needVertices(false),
+    : flags(sflags), aflags(aflags), numMappedBuffers(0), is_build(false), modified(true), 
+      needTriangles(false), needTriangleVertices(false), needBezierVertices(false),
       numTriangles(0), numTriangles2(0), 
       numBezierCurves(0), numBezierCurves2(0), 
       numSubdivPatches(0), numSubdivPatches2(0), 
@@ -160,12 +161,14 @@ namespace embree
     else if (State::instance()->tri_accel == "bvh4.bvh4.triangle4")    accels.add(BVH4::BVH4BVH4Triangle4ObjectSplit(this));
     else if (State::instance()->tri_accel == "bvh4.bvh4.triangle1v")   accels.add(BVH4::BVH4BVH4Triangle1vObjectSplit(this));
     else if (State::instance()->tri_accel == "bvh4.bvh4.triangle4v")   accels.add(BVH4::BVH4BVH4Triangle4vObjectSplit(this));
+    else if (State::instance()->tri_accel == "bvh4.bvh4.triangle4i")   accels.add(BVH4::BVH4BVH4Triangle4iObjectSplit(this));
     else if (State::instance()->tri_accel == "bvh4.triangle1")         accels.add(BVH4::BVH4Triangle1(this));
     else if (State::instance()->tri_accel == "bvh4.triangle4")         accels.add(BVH4::BVH4Triangle4(this));
     else if (State::instance()->tri_accel == "bvh4.triangle1v")        accels.add(BVH4::BVH4Triangle1v(this));
     else if (State::instance()->tri_accel == "bvh4.triangle4v")        accels.add(BVH4::BVH4Triangle4v(this));
     else if (State::instance()->tri_accel == "bvh4.triangle4i")        accels.add(BVH4::BVH4Triangle4i(this));
 #if defined (__TARGET_AVX__)
+    else if (State::instance()->tri_accel == "bvh4.bvh4.triangle8")    accels.add(BVH4::BVH4BVH4Triangle8ObjectSplit(this));
     else if (State::instance()->tri_accel == "bvh4.triangle8")         accels.add(BVH4::BVH4Triangle8(this));
     else if (State::instance()->tri_accel == "bvh8.triangle4")         accels.add(BVH8::BVH8Triangle4(this));
     else if (State::instance()->tri_accel == "bvh8.triangle8")         accels.add(BVH8::BVH8Triangle8(this));

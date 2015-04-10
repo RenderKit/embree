@@ -18,95 +18,37 @@
 
 namespace embree
 {
-  /*! invokes the memory monitor callback */
-  void memoryMonitor(ssize_t bytes, bool post);
-
-  /*! allocator that performs aligned monitored allocations */
-  template<typename T, size_t alignment = 64>
-    struct aligned_monitored_allocator
-    {
-      typedef T value_type;
-      typedef T* pointer;
-      typedef const T* const_pointer;
-      typedef T& reference;
-      typedef const T& const_reference;
-      typedef std::size_t size_type; // FIXME: also use std::size_t type under windows if available
-      typedef std::ptrdiff_t difference_type;
-
-      __forceinline pointer allocate( size_type n ) 
-      {
-        memoryMonitor(n*sizeof(T),false);
-        return (pointer) alignedMalloc(n*sizeof(value_type),alignment);
-      }
-
-      __forceinline void deallocate( pointer p, size_type n ) 
-      {
-        alignedFree(p);
-        memoryMonitor(-n*sizeof(T),true);
-      }
-
-      __forceinline void construct( pointer p, const_reference val ) {
-        new (p) T(val);
-      }
-
-      __forceinline void destroy( pointer p ) {
-        p->~T();
-      }
-    };
-
-  /*! monitored vector */
-  template<typename T>
-    using mvector = vector_t<T,aligned_allocator<T,std::alignment_of<T>::value> >;
-
-   /* we consider floating point numbers in that range as valid input numbers */
-#define VALID_FLOAT_RANGE  1.844E18f
-
-  __forceinline bool inFloatRange(const float v) {
-    return (v > -VALID_FLOAT_RANGE) && (v < +VALID_FLOAT_RANGE);
-  };
-  __forceinline bool inFloatRange(const Vec3fa& v) {
-    return all(gt_mask(v,Vec3fa_t(-VALID_FLOAT_RANGE)) & lt_mask(v,Vec3fa_t(+VALID_FLOAT_RANGE)));
-  };
-#if defined(__SSE2__)
-  __forceinline bool inFloatRange(const ssef& v) {
-    return all((v > ssef(-VALID_FLOAT_RANGE)) & (v < ssef(+VALID_FLOAT_RANGE)));
-  };
-#endif
-  __forceinline bool inFloatRange(const BBox3fa& v) {
-    return all(gt_mask(v.lower,Vec3fa_t(-VALID_FLOAT_RANGE)) & lt_mask(v.upper,Vec3fa_t(+VALID_FLOAT_RANGE)));
-  };
-
-#define MODE_HIGH_QUALITY (1<<8)
-#define LeafMode 0 // FIXME: remove
-
-/*! processes error codes, do not call directly */
-void process_error(RTCError error, const char* str);
+  /*! processes error codes, do not call directly */
+  void process_error(RTCError error, const char* str);
 
 /*! Makros used in the rtcore API implementation */
-
 #define RTCORE_CATCH_BEGIN try {
-#define RTCORE_CATCH_END                                                       \
+#define RTCORE_CATCH_END                                                \
   } catch (std::bad_alloc&) {                                           \
     process_error(RTC_OUT_OF_MEMORY,"out of memory");                   \
-  } catch (rtcore_error& e) {                                       \
+  } catch (rtcore_error& e) {                                           \
     process_error(e.error,e.what());                                    \
   } catch (std::exception& e) {                                         \
     process_error(RTC_UNKNOWN_ERROR,e.what());                          \
- } catch (...) {                                                        \
+  } catch (...) {                                                       \
     process_error(RTC_UNKNOWN_ERROR,"unknown exception caught");        \
+    }
+
+#define RTCORE_VERIFY_HANDLE(handle)                                    \
+  if (handle == nullptr) {                                              \
+    throw_RTCError(RTC_INVALID_ARGUMENT,"invalid argument");            \
   }
 
-#define RTCORE_VERIFY_HANDLE(handle) \
-  if (handle == nullptr) {                                                 \
-    throw_RTCError(RTC_INVALID_ARGUMENT,"invalid argument");             \
-  }
-
-#define RTCORE_VERIFY_GEOMID(id) \
-  if (id == -1) {                                                 \
+#define RTCORE_VERIFY_GEOMID(id)                                  \
+  if (id == -1) {                                                  \
     throw_RTCError(RTC_INVALID_ARGUMENT,"invalid argument");       \
   }
 
-#define RTCORE_TRACE(x) //std::cout << #x << std::endl;
+#if 0 // enable to debug print all API calls
+#define RTCORE_TRACE(x) std::cout << #x << std::endl;
+#else
+#define RTCORE_TRACE(x) 
+#endif
 
   /*! used to throw embree API errors */
   struct rtcore_error : public std::exception
@@ -124,6 +66,6 @@ void process_error(RTCError error, const char* str);
     std::string str;
   };
   
-#define throw_RTCError(error,str)                               \
+#define throw_RTCError(error,str) \
   throw rtcore_error(error,std::string(__FILE__) + " (" + std::to_string((long long)__LINE__) + "): " + std::string(str));
 }

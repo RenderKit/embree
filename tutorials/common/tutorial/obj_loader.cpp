@@ -373,7 +373,6 @@ namespace embree
       if (!strncmp(token, "Tf", 2)) { parseSep(token += 2);  model.materials[cur].obj().Tf = getVec3f(token); continue; }
     }
     cin.close();
-
   }
 
   /*! handles relative indices and starts indexing from 0 */
@@ -441,7 +440,7 @@ namespace embree
 	for (size_t i=0;i<vn.size();i++) mesh->normals.push_back(vn[i]);
 	for (size_t i=0;i<vt.size();i++) mesh->texcoords.push_back(vt[i]);
 	
-#if 0
+#if 1
 	for (size_t i=0;i<ec.size();++i) {
 	  if (ec[i].a < v.size() && ec[i].b < v.size())
 	    mesh->edge_creases.push_back(Vec2i(ec[i].a, ec[i].b));
@@ -455,7 +454,7 @@ namespace embree
 	  mesh->vertex_creases.push_back(vc[i]);
 	for (size_t i=0;i<vcw.size();++i) 
 	  mesh->vertex_crease_weights.push_back(pos_inf);	  
-	//mesh->vertex_crease_weights.push_back(vcw[i]);	  
+	  //mesh->vertex_crease_weights.push_back(vcw[i]);	  
 
 	for (size_t j=0; j < curGroup.size(); j++)
 	  {

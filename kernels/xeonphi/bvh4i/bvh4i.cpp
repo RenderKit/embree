@@ -270,14 +270,13 @@ namespace embree
     return new AccelInstance(accel,builder,intersectors);    
   }
 
-
   Accel* BVH4i::BVH4iTriangle1MemoryConservativeBinnedSAH(Scene* scene, bool robust)
   {
     BVH4i* accel = new BVH4i(SceneTriangle1::type,scene);
     
     Builder* builder = BVH4iBuilder::create(accel,scene,BVH4iBuilder::BVH4I_BUILDER_MEMORY_CONSERVATIVE);       
     Accel::Intersectors intersectors = BVH4iTriangle1mcIntersectors(accel,robust);
-    scene->needVertices = true;
+    scene->needTriangleVertices = true;
 
     return new AccelInstance(accel,builder,intersectors);    
   }
@@ -295,7 +294,6 @@ namespace embree
     BVH4i* accel = new BVH4i(SceneTriangle1::type,scene);    
     Builder* builder = BVH4iBuilder::create(accel,scene,BVH4iBuilder::BVH4I_BUILDER_SUBDIV_MESH);   
     Accel::Intersectors intersectors = BVH4iSubdivMeshIntersectors(accel,robust);
-    scene->needVertices = true;
     return new AccelInstance(accel,builder,intersectors);        
   }
 

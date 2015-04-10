@@ -315,8 +315,7 @@ namespace embree
      /* returns true if the vertex can be part of a dicable B-Spline patch or is a final Quad */
     __forceinline bool isRegularOrFinal(const size_t depth) const 
     {
-      if (depth < 10)
-      //if (vertex_level > 1.0f) 
+      if (depth < MAX_DEPTH_SUBDIVISION)
       {
 	if (border_index == -1) 
 	{
@@ -359,7 +358,7 @@ namespace embree
 	} 
 	else {
 	  if (face_valence == 2 && vertex_crease_weight > 1E5); // FIXME: use inf
-	  else if (face_valence == 3 && vertex_crease_weight == 0.0f);
+	  else if (face_valence == 3 && vertex_crease_weight == 0.0f); // FIXME: document
 	  else return false;
 	}
 
@@ -379,31 +378,29 @@ namespace embree
     /* returns true if the vertex can be part of a dicable gregory patch (using gregory patches) */
     __forceinline bool isGregoryOrFinal(const size_t depth) const 
     {
-      if (depth < MAX_DEPTH_SUBDIVISION)      
+      if (depth < MAX_DEPTH_SUBDIVISION && vertex_level > 1.0f )      
 	{
-	  //if (vertex_crease_weight != (float)pos_inf && vertex_crease_weight > 0.0f)
-	    {
-	      if (vertex_crease_weight > 0.0f) 
-		{
-		  return false;
-		}
+          if (vertex_crease_weight == (float)pos_inf) return true;
+
+	  if (vertex_crease_weight > 0.0f) 
+	      return false;
 	
-	      for (size_t i=1; i<face_valence; i++) 
-		if (crease_weight[i] > 0.0f && (2*i != border_index) && (2*(i-1) != border_index)) 
-		  {
-		    return false;
-		  }
+	  for (size_t i=1; i<face_valence; i++) 
+	    if (crease_weight[i] > 0.0f && (2*i != border_index) && (2*(i-1) != border_index)) 
+	      {
+		return false;
+	      }
 	  
-	      if (crease_weight[0] > 0.0f && (2*(face_valence-1) != border_index)) 
-		{
-		  return false;
-		}
+	  if (crease_weight[0] > 0.0f && (2*(face_valence-1) != border_index)) 
+	    {
+	      return false;
 	    }
 
-	if (!noForcedSubdivision)
-	  {
-	    return false;
-	  }
+
+	  if (!noForcedSubdivision)
+	    {
+	      return false;
+	    }
       }
       return true;
     }
@@ -419,12 +416,15 @@ namespace embree
     /* computes the limit vertex */
     __forceinline Vec3fa getLimitVertex() const
     {
+      /* FIXME: is this correct ? */ 
+      if (unlikely(std::isinf(vertex_crease_weight)))
+        return vtx;
 
       /* border vertex rule */
       if (unlikely(border_index != -1))
       {
-	if (unlikely(std::isinf(vertex_crease_weight)))
-	  return vtx;
+	//if (unlikely(std::isinf(vertex_crease_weight)))
+        //return vtx;
 	
 	const unsigned int second_border_index = border_index+2 >= edge_valence ? 0 : border_index+2;
 	return (4.0f * vtx + (ring[border_index] + ring[second_border_index])) * 1.0f/6.0f;
@@ -459,11 +459,14 @@ namespace embree
     /* gets limit tangent in the direction of egde vtx -> ring[0] */
     __forceinline Vec3fa getLimitTangent() const 
     {
+      if (unlikely(std::isinf(vertex_crease_weight)))
+        return ring[0] - vtx;
+      
       /* border vertex rule */
       if (unlikely(border_index != -1))
       {
-	if (unlikely(std::isinf(vertex_crease_weight)))
-	  return ring[0] - vtx;
+	//if (unlikely(std::isinf(vertex_crease_weight)))
+        //return ring[0] - vtx;
 	
 	if (border_index != edge_valence-2 && face_valence != 2) {
 	  return ring[0] - vtx; 
@@ -512,12 +515,14 @@ namespace embree
     /* gets limit tangent in the direction of egde vtx -> ring[edge_valence-2] */
     __forceinline Vec3fa getSecondLimitTangent() const 
     {
-
+      if (unlikely(std::isinf(vertex_crease_weight)))
+        return ring[2] - vtx;
+ 
       /* border vertex rule */
       if (unlikely(border_index != -1))
       {
-        if (unlikely(std::isinf(vertex_crease_weight)))
-          return ring[2] - vtx;
+        //if (unlikely(std::isinf(vertex_crease_weight)))
+        //return ring[2] - vtx;
         
         //if (border_index == 0 && face_valence != 2) {
         if (border_index == edge_valence-2 && face_valence != 2) {
@@ -587,9 +592,9 @@ namespace embree
     bool hasValidPositions() const
     {
       for (size_t i=0; i<edge_valence; i++) {
-	if ( !inFloatRange(ring[i].x) ) return false;
-	if ( !inFloatRange(ring[i].y) ) return false;
-	if ( !inFloatRange(ring[i].z) ) return false;
+	if ( !isvalid(ring[i].x) ) return false;
+	if ( !isvalid(ring[i].y) ) return false;
+	if ( !isvalid(ring[i].z) ) return false;
       }	
       return true;
     }
@@ -639,9 +644,9 @@ namespace embree
     bool hasValidPositions() const
     {
       for (size_t i=0; i<edge_valence; i++) {
-	if ( !inFloatRange(ring[i].x) ) return false;
-	if ( !inFloatRange(ring[i].y) ) return false;
-	if ( !inFloatRange(ring[i].z) ) return false;
+	if ( !isvalid(ring[i].x) ) return false;
+	if ( !isvalid(ring[i].y) ) return false;
+	if ( !isvalid(ring[i].z) ) return false;
       }	
       return true;
     }

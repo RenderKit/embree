@@ -121,8 +121,8 @@ namespace embree
 			Vec3fa &f_p_vtx,
 			Vec3fa &f_m_vtx)
     {
-      const unsigned int face_valence         = irreg_patch.ring[index].face_valence;
-      const unsigned int edge_valence         = irreg_patch.ring[index].edge_valence;
+      const unsigned int face_valence = irreg_patch.ring[index].face_valence;
+      const unsigned int edge_valence = irreg_patch.ring[index].edge_valence;
       const unsigned int border_index = irreg_patch.ring[index].border_index;
       
       const Vec3fa &vtx     = irreg_patch.ring[index].vtx;
@@ -131,7 +131,11 @@ namespace embree
       const Vec3fa e_i_m_1  = irreg_patch.ring[index].getEdgeCenter( 1 );
       
       Vec3fa c_i, e_i_p_1;
-      if (unlikely(border_index == edge_valence-2))
+      const bool hasHardEdge = \
+        std::isinf(irreg_patch.ring[index].vertex_crease_weight) &&
+        std::isinf(irreg_patch.ring[index].crease_weight[0]);
+                
+      if (unlikely(border_index == edge_valence-2) || hasHardEdge)
       {
         /* mirror quad center and edge mid-point */
         c_i     = c_i_m_1 + 2 * (e_i - c_i_m_1);
@@ -144,7 +148,7 @@ namespace embree
       }
       
       Vec3fa c_i_m_2, e_i_m_2;
-      if (unlikely(border_index == 2 || face_valence == 2))
+      if (unlikely(border_index == 2 || face_valence == 2 || hasHardEdge))
       {
         /* mirror quad center and edge mid-point */
         c_i_m_2  = c_i_m_1 + 2 * (e_i_m_1 - c_i_m_1);
@@ -172,16 +176,6 @@ namespace embree
 
     __noinline void init(const CatmullClarkPatch& patch)
     {
-#if 1
-      if ( !patch.ring[0].hasValidPositions() )
-	PRINT( patch.ring[0] );
-      if ( !patch.ring[1].hasValidPositions() )
-	PRINT( patch.ring[1] );
-      if ( !patch.ring[2].hasValidPositions() )
-	PRINT( patch.ring[2] );
-      if ( !patch.ring[3].hasValidPositions() )
-	PRINT( patch.ring[3] );
-#endif
       assert( patch.ring[0].hasValidPositions() );
       assert( patch.ring[1].hasValidPositions() );
       assert( patch.ring[2].hasValidPositions() );
@@ -204,7 +198,6 @@ namespace embree
       e2_m() = initNegativeEdgeVertex(patch,2, p2());
       e3_m() = initNegativeEdgeVertex(patch,3, p3());
 
-      
       const unsigned int face_valence_p0 = patch.ring[0].face_valence;
       const unsigned int face_valence_p1 = patch.ring[1].face_valence;
       const unsigned int face_valence_p2 = patch.ring[2].face_valence;

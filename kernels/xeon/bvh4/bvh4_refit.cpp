@@ -17,6 +17,13 @@
 #include "bvh4_refit.h"
 #include "bvh4_statistics.h"
 
+#include "geometry/triangle1.h"
+#include "geometry/triangle4.h"
+#include "geometry/triangle8.h"
+#include "geometry/triangle1v.h"
+#include "geometry/triangle4v.h"
+#include "geometry/triangle4i.h"
+
 #include <algorithm>
 
 namespace embree
@@ -33,7 +40,7 @@ namespace embree
     }
     
     BVH4Refit::BVH4Refit (BVH4* bvh, Builder* builder, TriangleMesh* mesh, size_t mode)
-      : builder(builder), mesh(mesh), primTy(bvh->primTy), bvh(bvh) {}
+      : builder(builder), mesh(mesh), bvh(bvh) {}
 
     BVH4Refit::~BVH4Refit () {
       delete builder;
@@ -141,7 +148,7 @@ namespace embree
     {
       size_t num; char* tri = ref.leaf(num);
       if (unlikely(ref == BVH4::emptyNode)) return empty;
-      return bvh->primTy.update(tri,num,mesh);
+      return update(tri,num,mesh);
     }
     
     __forceinline BBox3fa BVH4Refit::node_bounds(NodeRef& ref)
@@ -245,14 +252,14 @@ namespace embree
     Builder* BVH4Triangle4vMeshBuilderSAH (void* bvh, TriangleMesh* mesh, size_t mode);
     Builder* BVH4Triangle4iMeshBuilderSAH (void* bvh, TriangleMesh* mesh, size_t mode);
 
-    Builder* BVH4Triangle1MeshRefitSAH (void* accel, TriangleMesh* mesh, size_t mode) { return new BVH4Refit((BVH4*)accel,BVH4Triangle1MeshBuilderSAH(accel,mesh,mode),mesh,mode); }
-    Builder* BVH4Triangle4MeshRefitSAH (void* accel, TriangleMesh* mesh, size_t mode) { return new BVH4Refit((BVH4*)accel,BVH4Triangle4MeshBuilderSAH(accel,mesh,mode),mesh,mode); }
+    Builder* BVH4Triangle1MeshRefitSAH (void* accel, TriangleMesh* mesh, size_t mode) { return new BVH4RefitT<Triangle1>((BVH4*)accel,BVH4Triangle1MeshBuilderSAH(accel,mesh,mode),mesh,mode); }
+    Builder* BVH4Triangle4MeshRefitSAH (void* accel, TriangleMesh* mesh, size_t mode) { return new BVH4RefitT<Triangle4>((BVH4*)accel,BVH4Triangle4MeshBuilderSAH(accel,mesh,mode),mesh,mode); }
 #if defined(__AVX__)
-    Builder* BVH4Triangle8MeshRefitSAH (void* accel, TriangleMesh* mesh, size_t mode) { return new BVH4Refit((BVH4*)accel,BVH4Triangle8MeshBuilderSAH(accel,mesh,mode),mesh,mode); }
+    Builder* BVH4Triangle8MeshRefitSAH (void* accel, TriangleMesh* mesh, size_t mode) { return new BVH4RefitT<Triangle8>((BVH4*)accel,BVH4Triangle8MeshBuilderSAH(accel,mesh,mode),mesh,mode); }
 #endif
-    Builder* BVH4Triangle1vMeshRefitSAH (void* accel, TriangleMesh* mesh, size_t mode) { return new BVH4Refit((BVH4*)accel,BVH4Triangle1vMeshBuilderSAH(accel,mesh,mode),mesh,mode); }
-    Builder* BVH4Triangle4vMeshRefitSAH (void* accel, TriangleMesh* mesh, size_t mode) { return new BVH4Refit((BVH4*)accel,BVH4Triangle4vMeshBuilderSAH(accel,mesh,mode),mesh,mode); }
-    Builder* BVH4Triangle4iMeshRefitSAH (void* accel, TriangleMesh* mesh, size_t mode) { return new BVH4Refit((BVH4*)accel,BVH4Triangle4iMeshBuilderSAH(accel,mesh,mode),mesh,mode); }
+    Builder* BVH4Triangle1vMeshRefitSAH (void* accel, TriangleMesh* mesh, size_t mode) { return new BVH4RefitT<Triangle1v>((BVH4*)accel,BVH4Triangle1vMeshBuilderSAH(accel,mesh,mode),mesh,mode); }
+    Builder* BVH4Triangle4vMeshRefitSAH (void* accel, TriangleMesh* mesh, size_t mode) { return new BVH4RefitT<Triangle4v>((BVH4*)accel,BVH4Triangle4vMeshBuilderSAH(accel,mesh,mode),mesh,mode); }
+    Builder* BVH4Triangle4iMeshRefitSAH (void* accel, TriangleMesh* mesh, size_t mode) { return new BVH4RefitT<Triangle4i>((BVH4*)accel,BVH4Triangle4iMeshBuilderSAH(accel,mesh,mode),mesh,mode); }
   }
 }
 

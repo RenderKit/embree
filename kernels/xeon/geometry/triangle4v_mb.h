@@ -28,7 +28,6 @@ namespace embree
       Type ();
       size_t blocks(size_t x) const;
       size_t size(const char* This) const;
-      std::pair<BBox3fa,BBox3fa> update2(char* prim, size_t num, void* geom) const;
     };
 
     static Type type;
@@ -97,6 +96,11 @@ namespace embree
       upper.z = select(mask,upper.z,ssef(neg_inf));
       return BBox3fa(Vec3fa(reduce_min(lower.x),reduce_min(lower.y),reduce_min(lower.z)),
 		     Vec3fa(reduce_max(upper.x),reduce_max(upper.y),reduce_max(upper.z)));
+    }
+
+    /*! calculate primitive bounds */
+    __forceinline std::pair<BBox3fa,BBox3fa> bounds() {
+      return std::make_pair(bounds0(),bounds1());
     }
 
     /*! returns required number of primitive blocks for N primitives */

@@ -166,6 +166,27 @@ namespace embree
       new (this) Triangle4i(v0,v1,v2,geomID,primID,list && begin>=end); // FIXME: use non temporal store
     }
 
+    /*! updates the primitive */
+    __forceinline BBox3fa update(TriangleMesh* mesh)
+    {
+      BBox3fa bounds = empty;
+      ssei vgeomID = -1, vprimID = -1, vmask = -1;
+      sse3f v0 = zero, v1 = zero, v2 = zero;
+      
+      for (size_t i=0; i<4; i++)
+      {
+        if (primID<0>(i) == -1) break;
+        const unsigned geomId = geomID<0>(i);
+        const unsigned primId = primID<0>(i);
+        const TriangleMesh::Triangle& tri = mesh->triangle(primId);
+        const Vec3fa p0 = mesh->vertex(tri.v[0]);
+        const Vec3fa p1 = mesh->vertex(tri.v[1]);
+        const Vec3fa p2 = mesh->vertex(tri.v[2]);
+        bounds.extend(merge(BBox3fa(p0),BBox3fa(p1),BBox3fa(p2)));
+      }
+      return bounds;
+    }
+
   public:
     const Vec3f* v0[4];  //!< Pointer to 1st vertex.
     ssei v1;             //!< Offset to 2nd vertex.
@@ -187,6 +208,5 @@ namespace embree
   struct TriangleMeshTriangle4i : public Triangle4iType
   {
     static TriangleMeshTriangle4i type;
-    BBox3fa update(char* prim, size_t num, void* geom) const;
   };
 }

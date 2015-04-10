@@ -219,9 +219,16 @@ namespace embree
 
   void SubdivMesh::immutable () 
   {
-    bool freeVertices  = !parent->needVertices;
-    if (freeVertices ) vertices[0].free();
-    if (freeVertices ) vertices[1].free();
+    faceVertices.free();
+    vertexIndices.free();
+    vertices[0].free();
+    vertices[1].free();
+    edge_creases.free();
+    edge_crease_weights.free();
+    vertex_creases.free();
+    vertex_crease_weights.free();
+    levels.free();
+    holes.free();
   }
 
   __forceinline uint64 pair64(unsigned int x, unsigned int y) {
@@ -458,13 +465,10 @@ namespace embree
 
   bool SubdivMesh::verify () 
   {
-    float range = sqrtf(0.5f*FLT_MAX);
     for (size_t j=0; j<numTimeSteps; j++) {
       BufferT<Vec3fa>& verts = vertices[j];
       for (size_t i=0; i<numVertices; i++) {
-        if (!(verts[i].x > -range && verts[i].x < range)) return false;
-	if (!(verts[i].y > -range && verts[i].y < range)) return false;
-	if (!(verts[i].z > -range && verts[i].z < range)) return false;
+        if (!isvalid(verts[i])) return false;
       }
     }
     return true;

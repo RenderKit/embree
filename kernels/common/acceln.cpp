@@ -16,6 +16,7 @@
 
 #include "acceln.h"
 #include "embree2/rtcore_ray.h"
+#include "algorithms/parallel_for.h"
 
 namespace embree
 {
@@ -129,16 +130,22 @@ namespace embree
     for (size_t i=0; i<N; i++)
       accels[i]->immutable();
   }
-
+  
   void AccelN::build (size_t threadIndex, size_t threadCount) 
   {
-    /* build all acceleration structures */
-    M = 0;
-
+    /* build all acceleration structures in parallel */
+#if defined(__MIC__)
     for (size_t i=0; i<N; i++) 
-    {
-      accels[i]->build(threadIndex,threadCount);
+        accels[i]->build(threadIndex,threadCount);
+#else
+    parallel_for (N, [&] (size_t i) { 
+        accels[i]->build(threadIndex,threadCount);
+      });
+#endif
 
+    /* create list of non-empty acceleration structures */
+    M = 0;
+    for (size_t i=0; i<N; i++) {
       if (accels[i]->bounds.empty()) continue;
       validAccels[M++] = accels[i];
     }

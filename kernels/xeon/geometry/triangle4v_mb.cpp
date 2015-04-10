@@ -30,17 +30,4 @@ namespace embree
   size_t Triangle4vMB::Type::size(const char* This) const {
     return ((Triangle4vMB*)This)->size();
   }
-
-  std::pair<BBox3fa,BBox3fa> Triangle4vMB::Type::update2(char* prim, size_t num, void* geom) const 
-  {
-    BBox3fa bounds0 = empty, bounds1 = empty;
-    
-    for (size_t j=0; j<num; j++) 
-    {
-      const Triangle4vMB& tri = ((Triangle4vMB*) prim)[j];
-      bounds0.extend(tri.bounds0());
-      bounds1.extend(tri.bounds1());
-    }
-    return std::pair<BBox3fa,BBox3fa>(bounds0,bounds1);
-  }
 }

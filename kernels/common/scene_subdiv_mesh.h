@@ -240,11 +240,11 @@ namespace embree
       __forceinline bool validFace(const BufferT<Vec3fa>& vertices, size_t& N) const 
       {
         const Vec3fa v = vertices[getStartVertexIndex()];
-        if (!inFloatRange(v)) return false;
+        if (!isvalid(v)) return false;
         size_t n = 1;
         for (const HalfEdge* p = next(); p!=this; p=p->next(), n++) {
           const Vec3fa v = vertices[p->getStartVertexIndex()];
-          if (!inFloatRange(v)) return false;
+          if (!isvalid(v)) return false;
         }
         N += n-2;
         return n >= 3 && n <= MAX_VALENCE;

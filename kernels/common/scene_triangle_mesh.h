@@ -99,7 +99,7 @@ namespace embree
       const Vec3fa v0 = vertex(tri.v[0],j);
       const Vec3fa v1 = vertex(tri.v[1],j);
       const Vec3fa v2 = vertex(tri.v[2],j);
-      if (!inFloatRange(v0) || !inFloatRange(v1) || !inFloatRange(v2))
+      if (!isvalid(v0) || !isvalid(v1) || !isvalid(v2))
         return false;
       }
 

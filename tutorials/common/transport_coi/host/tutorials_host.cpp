@@ -512,7 +512,7 @@ namespace embree
     /* create new framebuffer */
     g_width  = width;
     g_height = height;
-    result = COIBufferCreate (width*height*4, COI_BUFFER_NORMAL, COI_OPTIMIZE_SOURCE_READ|COI_OPTIMIZE_SINK_WRITE|COI_OPTIMIZE_HUGE_PAGE_SIZE, nullptr, 1, &process, &frameBuffer);
+    result = COIBufferCreate (width*height*4+64, COI_BUFFER_NORMAL, COI_OPTIMIZE_SOURCE_READ|COI_OPTIMIZE_SINK_WRITE|COI_OPTIMIZE_HUGE_PAGE_SIZE, nullptr, 1, &process, &frameBuffer);
 
     if (result != COI_SUCCESS)  
       THROW_RUNTIME_ERROR("COIBufferCreate failed: " + std::string(COIResultGetName(result)));

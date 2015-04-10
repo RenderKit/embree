@@ -96,6 +96,19 @@ namespace embree
       store4f_nt(&v2,cast(insert<3>(cast(p2),mesh->mask)));
     }
 
+    /*! updates the primitive */
+    __forceinline BBox3fa update(TriangleMesh* mesh)
+    {
+      const unsigned geomId = geomID<0>();
+      const unsigned primId = primID<0>();
+      const TriangleMesh::Triangle& tri = mesh->triangle(primId);
+      const Vec3fa v0 = mesh->vertex(tri.v[0]);
+      const Vec3fa v1 = mesh->vertex(tri.v[1]);
+      const Vec3fa v2 = mesh->vertex(tri.v[2]);
+      new (this) Triangle1v(v0,v1,v2,geomId,primId,mesh->mask,false);
+      return merge(BBox3fa(v0),BBox3fa(v1),BBox3fa(v2));
+    }
+
   public:
     Vec3fa v0;          //!< first vertex and primitive ID
     Vec3fa v1;          //!< second vertex and geometry ID
@@ -128,6 +141,14 @@ namespace embree
                                 const Vec3fa& c0, const Vec3fa& c1, 
                                 const unsigned geomID, const unsigned primID, const unsigned mask, const bool last)
       : v0(a0,primID | (last << 31)), v1(b0,geomID), v2(c0,mask), d0(a1-a0), d1(b1-b0), d2(c1-c0) {}
+
+    /*! calculate primitive bounds */
+    __forceinline std::pair<BBox3fa,BBox3fa> bounds()
+    {
+      const BBox3fa bounds0 = merge(BBox3fa(v0),BBox3fa(v1),BBox3fa(v2));
+      const BBox3fa bounds1 = merge(BBox3fa(v0+d0),BBox3fa(v1+d1),BBox3fa(v2+d2));
+      return std::make_pair(bounds0,bounds1);
+    }
 
     /*! access hidden members */
     template<bool list>
@@ -175,12 +196,10 @@ namespace embree
     Triangle1vMBType ();
     size_t blocks(size_t x) const;
     size_t size(const char* This) const;
-    std::pair<BBox3fa,BBox3fa> update2(char* prim, size_t num, void* geom) const;
   };
 
   struct TriangleMeshTriangle1vMB : public Triangle1vMBType
   {
     static TriangleMeshTriangle1vMB type;
-    std::pair<BBox3fa,BBox3fa> update2(char* prim, size_t num, void* geom) const;
   };
 }

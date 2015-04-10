@@ -15,7 +15,6 @@
 // ======================================================================== //
 
 #include "bezier1i.h"
-#include "common/scene.h"
 
 namespace embree
 {
@@ -43,47 +42,5 @@ namespace embree
     
   size_t Bezier1iMBType::size(const char* This) const {
     return 1;
-  }
-
-  BBox3fa SceneBezier1i::update(char* prim_i, size_t num, void* geom) const 
-  {
-    BBox3fa bounds = empty;
-    Scene* scene = (Scene*) geom;
-    Bezier1i* prim = (Bezier1i*) prim_i;
-
-    if (num == -1)
-    {
-      while (true)
-      {
-	const unsigned geomID = prim->geomID<1>();
-	const unsigned primID = prim->primID<1>();
-	const BezierCurves* curves = scene->getBezierCurves(geomID);
-	const int vtx = curves->curve(primID);
-	bounds.extend(curves->vertex(vtx+0));
-	bounds.extend(curves->vertex(vtx+1));
-	bounds.extend(curves->vertex(vtx+2));
-	bounds.extend(curves->vertex(vtx+3));
-	//prim->mask = curves->mask;
-	const bool last = prim->last();
-	if (last) break;
-	prim++;
-      }
-    }
-    else
-    {
-      for (size_t i=0; i<num; i++, prim++)
-      {
-	const unsigned geomID = prim->geomID<0>();
-	const unsigned primID = prim->primID<0>();
-	const BezierCurves* curves = scene->getBezierCurves(geomID);
-	const int vtx = curves->curve(primID);
-	bounds.extend(curves->vertex(vtx+0));
-	bounds.extend(curves->vertex(vtx+1));
-	bounds.extend(curves->vertex(vtx+2));
-	bounds.extend(curves->vertex(vtx+3));
-	//prim->mask = curves->mask;
-      }
-    }
-    return bounds; 
   }
 }
