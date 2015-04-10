@@ -624,7 +624,7 @@ task void renderTile(uniform int* uniform pixels,
   //int seed = tileY*numTilesX+tileX+programIndex + g_accu_count;
   int seed = (tileY*numTilesX+tileX+programIndex) * g_accu_count;
 
-  foreach (y = y0 ... y1, x = x0 ... x1)
+  foreach_tiled (y = y0 ... y1, x = x0 ... x1)
   {
    int seed = (y*width+x+programIndex) * g_accu_count;
 
