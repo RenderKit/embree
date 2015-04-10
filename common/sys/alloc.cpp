@@ -28,6 +28,8 @@
 
 namespace embree
 {
+  // FIXME: implement large pages under Windows
+  
   void* os_malloc(size_t bytes) 
   {
     char* ptr = (char*) VirtualAlloc(nullptr,bytes,MEM_COMMIT|MEM_RESERVE,PAGE_READWRITE);
