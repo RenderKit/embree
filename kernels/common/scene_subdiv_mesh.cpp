@@ -219,9 +219,16 @@ namespace embree
 
   void SubdivMesh::immutable () 
   {
-    bool freeVertices  = !parent->needVertices;
-    if (freeVertices ) vertices[0].free();
-    if (freeVertices ) vertices[1].free();
+    faceVertices.free();
+    vertexIndices.free();
+    vertices[0].free();
+    vertices[1].free();
+    edge_creases.free();
+    edge_crease_weights.free();
+    vertex_creases.free();
+    vertex_crease_weights.free();
+    levels.free();
+    holes.free();
   }
 
   __forceinline uint64 pair64(unsigned int x, unsigned int y) {

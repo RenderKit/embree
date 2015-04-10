@@ -19,11 +19,11 @@
 
 namespace embree
 {
-  BezierCurves::BezierCurves (Scene* parent, RTCGeometryFlags flags, size_t numCurves, size_t numVertices, size_t numTimeSteps) 
-    : Geometry(parent,BEZIER_CURVES,numCurves,numTimeSteps,flags), 
-      mask(-1), numTimeSteps(numTimeSteps), numCurves(numCurves), numVertices(numVertices)
+  BezierCurves::BezierCurves (Scene* parent, RTCGeometryFlags flags, size_t numPrimitives, size_t numVertices, size_t numTimeSteps) 
+    : Geometry(parent,BEZIER_CURVES,numPrimitives,numTimeSteps,flags), 
+      mask(-1), numTimeSteps(numTimeSteps), numVertices(numVertices)
   {
-    curves.init(numCurves,sizeof(int));
+    curves.init(numPrimitives,sizeof(int));
     for (size_t i=0; i<numTimeSteps; i++) {
       vertices[i].init(numVertices,sizeof(Vertex));
     }
@@ -32,14 +32,14 @@ namespace embree
 
   void BezierCurves::enabling() 
   { 
-    if (numTimeSteps == 1) atomic_add(&parent->numBezierCurves ,numCurves); 
-    else                   atomic_add(&parent->numBezierCurves2,numCurves); 
+    if (numTimeSteps == 1) atomic_add(&parent->numBezierCurves ,numPrimitives); 
+    else                   atomic_add(&parent->numBezierCurves2,numPrimitives); 
   }
   
   void BezierCurves::disabling() 
   { 
-    if (numTimeSteps == 1) atomic_add(&parent->numBezierCurves ,-(ssize_t)numCurves); 
-	else                   atomic_add(&parent->numBezierCurves2,-(ssize_t)numCurves);
+    if (numTimeSteps == 1) atomic_add(&parent->numBezierCurves ,-(ssize_t)numPrimitives); 
+    else                   atomic_add(&parent->numBezierCurves2,-(ssize_t)numPrimitives);
   }
   
   void BezierCurves::setMask (unsigned mask) 
@@ -53,40 +53,26 @@ namespace embree
 
   void BezierCurves::setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride) 
   { 
-    if (parent->isStatic() && parent->isBuild()) {
+    if (parent->isStatic() && parent->isBuild())
       throw_RTCError(RTC_INVALID_OPERATION,"static geometries cannot get modified");
-      return;
-    }
 
     /* verify that all accesses are 4 bytes aligned */
-    if (((size_t(ptr) + offset) & 0x3) || (stride & 0x3)) {
+    if (((size_t(ptr) + offset) & 0x3) || (stride & 0x3)) 
       throw_RTCError(RTC_INVALID_OPERATION,"data must be 4 bytes aligned");
-      return;
-    }
 
     /* verify that all vertex accesses are 16 bytes aligned */
 #if defined(__MIC__)
     if (type == RTC_VERTEX_BUFFER0 || type == RTC_VERTEX_BUFFER1) {
-      if (((size_t(ptr) + offset) & 0xF) || (stride & 0xF)) {
+      if (((size_t(ptr) + offset) & 0xF) || (stride & 0xF))
         throw_RTCError(RTC_INVALID_OPERATION,"data must be 16 bytes aligned");
-        return;
-      }
     }
 #endif
 
     switch (type) {
-    case RTC_INDEX_BUFFER  : 
-      curves.set(ptr,offset,stride); 
-      break;
-    case RTC_VERTEX_BUFFER0: 
-      vertices[0].set(ptr,offset,stride); 
-      break;
-    case RTC_VERTEX_BUFFER1: 
-      vertices[1].set(ptr,offset,stride); 
-      break;
-    default: 
-      throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type");
-      break;
+    case RTC_INDEX_BUFFER  : curves.set(ptr,offset,stride); break;
+    case RTC_VERTEX_BUFFER0: vertices[0].set(ptr,offset,stride); break;
+    case RTC_VERTEX_BUFFER1: vertices[1].set(ptr,offset,stride); break;
+    default: throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type"); break;
     }
   }
 
@@ -101,7 +87,7 @@ namespace embree
     case RTC_INDEX_BUFFER  : return curves.map(parent->numMappedBuffers);
     case RTC_VERTEX_BUFFER0: return vertices[0].map(parent->numMappedBuffers);
     case RTC_VERTEX_BUFFER1: return vertices[1].map(parent->numMappedBuffers);
-    default                : throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type"); return nullptr;
+    default: throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type"); return nullptr;
     }
   }
 
@@ -116,14 +102,14 @@ namespace embree
     case RTC_INDEX_BUFFER  : curves.unmap(parent->numMappedBuffers); break;
     case RTC_VERTEX_BUFFER0: vertices[0].unmap(parent->numMappedBuffers); break;
     case RTC_VERTEX_BUFFER1: vertices[1].unmap(parent->numMappedBuffers); break;
-    default                : throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type"); break;
+    default: throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type"); break;
     }
   }
 
   void BezierCurves::immutable () 
   {
-    bool freeCurves    = true; //!parent->needCurves;
-    bool freeVertices  = !parent->needVertices;
+    bool freeCurves    = true;
+    bool freeVertices  = !parent->needBezierVertices;
     if (freeCurves   ) curves.free();
     if (freeVertices ) vertices[0].free();
     if (freeVertices ) vertices[1].free();
@@ -131,7 +117,7 @@ namespace embree
 
   bool BezierCurves::verify () 
   {
-    for (size_t i=0; i<numCurves; i++) {
+    for (size_t i=0; i<numPrimitives; i++) {
       if (curves[i]+3 >= numVertices) return false;
     }
     for (size_t j=0; j<numTimeSteps; j++) {
@@ -152,7 +138,7 @@ namespace embree
     file.write((char*)&type,sizeof(int));
     file.write((char*)&numTimeSteps,sizeof(int));
     file.write((char*)&numVertices,sizeof(int));
-    file.write((char*)&numCurves,sizeof(int));
+    file.write((char*)&numPrimitives,sizeof(int));
 
     for (size_t j=0; j<numTimeSteps; j++) {
       while ((file.tellp() % 16) != 0) { char c = 0; file.write(&c,1); }
@@ -160,6 +146,6 @@ namespace embree
     }
 
     while ((file.tellp() % 16) != 0) { char c = 0; file.write(&c,1); }
-    for (size_t i=0; i<numCurves; i++) file.write((char*)&curve(i),sizeof(int));  
+    for (size_t i=0; i<numPrimitives; i++) file.write((char*)&curve(i),sizeof(int));  
   }
 }

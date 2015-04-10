@@ -644,7 +644,7 @@ namespace embree
     BVH4* accel = new BVH4(SceneBezier1i::type,scene,LeafMode);
     Accel::Intersectors intersectors = BVH4Bezier1iIntersectors(accel);
     Builder* builder = BVH4Bezier1iSceneBuilderSAH(accel,scene,LeafMode);
-    scene->needVertices = true;
+    scene->needBezierVertices = true;
     return new AccelInstance(accel,builder,intersectors);
   }
 
@@ -661,16 +661,16 @@ namespace embree
     BVH4* accel = new BVH4(SceneBezier1i::type,scene,LeafMode);
     Accel::Intersectors intersectors = BVH4Bezier1iIntersectors_OBB(accel);
     Builder* builder = BVH4Bezier1iBuilder_OBB_New(accel,scene,MODE_HIGH_QUALITY); // FIXME: enable high quality mode
-    scene->needVertices = true;
+    scene->needBezierVertices = true;
     return new AccelInstance(accel,builder,intersectors);
   }
 
    Accel* BVH4::BVH4OBBBezier1iMB(Scene* scene, bool highQuality)
-  { 
-    scene->needVertices = true;
+  {
     BVH4* accel = new BVH4(Bezier1iMBType::type,scene,LeafMode);
     Accel::Intersectors intersectors = BVH4Bezier1iMBIntersectors_OBB(accel);
     Builder* builder = BVH4Bezier1iMBBuilder_OBB_New(accel,scene,MODE_HIGH_QUALITY); // FIXME: support high quality mode
+    scene->needBezierVertices = true;
     return new AccelInstance(accel,builder,intersectors);
   }
 
@@ -794,7 +794,7 @@ namespace embree
     else if (State::instance()->tri_builder == "morton"      ) builder = BVH4Triangle4iSceneBuilderMortonGeneral(accel,scene,0);
     else THROW_RUNTIME_ERROR("unknown builder "+State::instance()->tri_builder+" for BVH4<Triangle4i>");
 
-    scene->needVertices = true;
+    scene->needTriangleVertices = true;
     return new AccelInstance(accel,builder,intersectors);
   }
 
@@ -1010,7 +1010,7 @@ namespace embree
     BVH4* accel = new BVH4(Triangle4iType::type,scene,LeafMode);
     Builder* builder = BVH4Triangle4iSceneBuilderSAH(accel,scene,LeafMode);
     Accel::Intersectors intersectors = BVH4Triangle4iIntersectors(accel);
-    scene->needVertices = true;
+    scene->needTriangleVertices = true;
     return new AccelInstance(accel,builder,intersectors);
   }
 

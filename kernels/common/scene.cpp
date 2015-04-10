@@ -28,7 +28,8 @@
 namespace embree
 {
   Scene::Scene (RTCSceneFlags sflags, RTCAlgorithmFlags aflags)
-    : flags(sflags), aflags(aflags), numMappedBuffers(0), is_build(false), modified(true), needTriangles(false), needVertices(false),
+    : flags(sflags), aflags(aflags), numMappedBuffers(0), is_build(false), modified(true), 
+      needTriangles(false), needTriangleVertices(false), needBezierVertices(false),
       numTriangles(0), numTriangles2(0), 
       numBezierCurves(0), numBezierCurves2(0), 
       numSubdivPatches(0), numSubdivPatches2(0), 

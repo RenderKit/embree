@@ -32,7 +32,7 @@ namespace embree
       static const Geometry::Type geom_type = Geometry::BEZIER_CURVES;
 
     public:
-      BezierCurves (Scene* parent, RTCGeometryFlags flags, size_t numCurves, size_t numVertices, size_t numTimeSteps); 
+      BezierCurves (Scene* parent, RTCGeometryFlags flags, size_t numPrimitives, size_t numVertices, size_t numTimeSteps); 
     
       void write(std::ofstream& file);
 
@@ -50,12 +50,12 @@ namespace embree
 
       /*! returns number of bezier curves */
       __forceinline size_t size() const {
-	return numCurves;
+	return numPrimitives;
       }
 
       /*! returns the i'th curve */
       __forceinline const int& curve(size_t i) const {
-        assert(i < numCurves);
+        assert(i < numPrimitives);
         return curves[i];
       }
 
@@ -237,7 +237,7 @@ namespace embree
 
       __forceinline BBox3fa subBounds(size_t curveID, size_t segmentID) const 
       {
-	assert(curveID < numCurves);
+	assert(curveID < numPrimitives);
 	assert(segmentID < 8);
         const int index = curve(curveID);
         const float r0 = radius(index+0);
@@ -281,7 +281,6 @@ namespace embree
       unsigned char numTimeSteps;       //!< number of time steps (1 or 2) // FIXME: remove
 
       BufferT<int> curves;              //!< array of curve indices
-      size_t numCurves;                 //!< number of triangles
 
       BufferT<Vertex> vertices[2];      //!< vertex array
       size_t numVertices;               //!< number of vertices
