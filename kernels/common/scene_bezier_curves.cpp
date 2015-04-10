@@ -24,7 +24,7 @@ namespace embree
   {
     curves.init(numPrimitives,sizeof(int));
     for (size_t i=0; i<numTimeSteps; i++) {
-      vertices[i].init(numVertices,sizeof(Vertex));
+      vertices[i].init(numVertices,sizeof(Vec3fa));
     }
     enabling();
   }
@@ -120,12 +120,12 @@ namespace embree
       if (curves[i]+3 >= numVertices) return false;
     }
     for (size_t j=0; j<numTimeSteps; j++) {
-      BufferT<Vertex>& verts = vertices[j];
+      BufferT<Vec3fa>& verts = vertices[j];
       for (size_t i=0; i<numVertices; i++) {
         if (!isvalid(verts[i].x)) return false;
 	if (!isvalid(verts[i].y)) return false;
 	if (!isvalid(verts[i].z)) return false;
-	if (!isvalid(verts[i].r)) return false;
+	if (!isvalid(verts[i].w)) return false;
       }
     }
     return true;
@@ -141,7 +141,10 @@ namespace embree
 
     for (size_t j=0; j<numTimeSteps; j++) {
       while ((file.tellp() % 16) != 0) { char c = 0; file.write(&c,1); }
-      for (size_t i=0; i<numVertices; i++) file.write((char*)&vertex(i,j),sizeof(Vec3fa));  
+      for (size_t i=0; i<numVertices; i++) {
+        Vec3fa v = vertex(i,j);
+        file.write((char*)&v,sizeof(Vec3fa)); 
+      }
     }
 
     while ((file.tellp() % 16) != 0) { char c = 0; file.write(&c,1); }

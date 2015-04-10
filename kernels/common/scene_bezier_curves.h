@@ -25,13 +25,10 @@ namespace embree
 {
     struct BezierCurves : public Geometry
     {
-      struct Vertex {
-        float x,y,z,r;
-      };
-
       static const Geometry::Type geom_type = Geometry::BEZIER_CURVES;
 
     public:
+
       /*! bezier curve construction */
       BezierCurves (Scene* parent, RTCGeometryFlags flags, size_t numPrimitives, size_t numVertices, size_t numTimeSteps); 
     
@@ -62,17 +59,13 @@ namespace embree
       }
 
       /*! returns i'th vertex of j'th timestep */
-      __forceinline const Vec3fa& vertex(size_t i, size_t j = 0) const {
-        assert(i < numVertices);
-        assert(j < numTimeSteps);
-        return (Vec3fa&)vertices[j][i];
+      __forceinline Vec3fa vertex(size_t i, size_t j = 0) const {
+        return vertices[j][i];
       }
 
       /*! returns i'th radius of j'th timestep */
       __forceinline float radius(size_t i, size_t j = 0) const {
-        assert(i < numVertices);
-        assert(j < numTimeSteps);
-        return vertices[j][i].r;
+        return vertices[j][i].w;
       }
 
       /*! check if the i'th primitive is valid */
@@ -92,10 +85,10 @@ namespace embree
           if (min(r0,r1,r2,r3) < 0.0f)
             return false;
 
-	  const Vec3fa& v0 = vertex(index+0,j);
-	  const Vec3fa& v1 = vertex(index+1,j);
-	  const Vec3fa& v2 = vertex(index+2,j);
-	  const Vec3fa& v3 = vertex(index+3,j);
+	  const Vec3fa v0 = vertex(index+0,j);
+	  const Vec3fa v1 = vertex(index+1,j);
+	  const Vec3fa v2 = vertex(index+2,j);
+	  const Vec3fa v3 = vertex(index+3,j);
 	  if (!isvalid(v0) || !isvalid(v1) || !isvalid(v2) || !isvalid(v3))
 	    return false;
 	}
@@ -112,10 +105,10 @@ namespace embree
         const float r1 = radius(index+1,j);
         const float r2 = radius(index+2,j);
         const float r3 = radius(index+3,j);
-        const Vec3fa& v0 = vertex(index+0,j);
-        const Vec3fa& v1 = vertex(index+1,j);
-        const Vec3fa& v2 = vertex(index+2,j);
-        const Vec3fa& v3 = vertex(index+3,j);
+        const Vec3fa v0 = vertex(index+0,j);
+        const Vec3fa v1 = vertex(index+1,j);
+        const Vec3fa v2 = vertex(index+2,j);
+        const Vec3fa v3 = vertex(index+3,j);
         const BBox3fa b = merge(BBox3fa(v0),BBox3fa(v1),BBox3fa(v2),BBox3fa(v3));
         return enlarge(b,Vec3fa(max(r0,r1,r2,r3)));
       }
@@ -128,16 +121,16 @@ namespace embree
         const float r1 = radius(index+1,j);
         const float r2 = radius(index+2,j);
         const float r3 = radius(index+3,j);
-        const Vec3fa& v0 = xfmPoint(space,vertex(index+0,j));
-        const Vec3fa& v1 = xfmPoint(space,vertex(index+1,j));
-        const Vec3fa& v2 = xfmPoint(space,vertex(index+2,j));
-        const Vec3fa& v3 = xfmPoint(space,vertex(index+3,j));
+        const Vec3fa v0 = xfmPoint(space,vertex(index+0,j));
+        const Vec3fa v1 = xfmPoint(space,vertex(index+1,j));
+        const Vec3fa v2 = xfmPoint(space,vertex(index+2,j));
+        const Vec3fa v3 = xfmPoint(space,vertex(index+3,j));
         const BBox3fa b = merge(BBox3fa(v0),BBox3fa(v1),BBox3fa(v2),BBox3fa(v3));
         return enlarge(b,Vec3fa(max(r0,r1,r2,r3)));
       }
 
-      __forceinline const Vec3fa *fristVertexPtr(size_t i) const { // FIXME: remove, use buffer to access vertices instead!
-        return &vertex(curve(i));
+      __forceinline const Vec3fa* fristVertexPtr(size_t i) const { // FIXME: remove, use buffer to access vertices instead!
+        return (const Vec3fa*) vertices[0].getPtr(curve(i));
       }
 
 #if defined(__MIC__)
@@ -146,16 +139,16 @@ namespace embree
       __forceinline mic2f bounds_mic2f(size_t i) const 
       {
         const int index = curve(i);
-        const Vec3fa& cp0 = vertex(index+0);
-        const Vec3fa& cp1 = vertex(index+1);
-        const Vec3fa& cp2 = vertex(index+2);
-        const Vec3fa& cp3 = vertex(index+3);
+        const float* cp0 = (float*) vertices[0].getPtr(index+0);
+        const float* cp1 = (float*) vertices[0].getPtr(index+1);
+        const float* cp2 = (float*) vertices[0].getPtr(index+2);
+        const float* cp3 = (float*) vertices[0].getPtr(index+3);
 	
 	const mic_m m_4f = 0xf;
-	const mic_f v0 = permute<0,0,0,0>(uload16f(m_4f,(float*)&cp0));
-	const mic_f v1 = permute<0,0,0,0>(uload16f(m_4f,(float*)&cp1));
-	const mic_f v2 = permute<0,0,0,0>(uload16f(m_4f,(float*)&cp2));
-	const mic_f v3 = permute<0,0,0,0>(uload16f(m_4f,(float*)&cp3));
+	const mic_f v0 = permute<0,0,0,0>(uload16f(m_4f,cp0));
+	const mic_f v1 = permute<0,0,0,0>(uload16f(m_4f,cp1));
+	const mic_f v2 = permute<0,0,0,0>(uload16f(m_4f,cp2));
+	const mic_f v3 = permute<0,0,0,0>(uload16f(m_4f,cp3));
 
 	const mic_f b_min = min(min(v0,v1),min(v2,v3));
 	const mic_f b_max = max(max(v0,v1),max(v2,v3));
@@ -169,9 +162,9 @@ namespace embree
 #endif
 
     public:
-      unsigned int mask;                //!< for masking out geometry
-      BufferT<int> curves;              //!< array of curve indices
-      BufferT<Vertex> vertices[2];      //!< vertex array
-      size_t numVertices;               //!< number of vertices
+      unsigned int mask;                   //!< for masking out geometry
+      BufferT<int> curves;                 //!< array of curve indices
+      array_t<BufferT<Vec3fa>,2> vertices; //!< vertex array
+      size_t numVertices;                  //!< number of vertices
     };
 }
