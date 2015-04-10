@@ -106,6 +106,19 @@ namespace embree
       store4f_nt(&Ng,cast(insert<3>(cast(normal),0)));
     }
     
+    /*! updates the primitive */
+    __forceinline BBox3fa update(TriangleMesh* mesh)
+    {
+      const unsigned geomId = geomID<0>();
+      const unsigned primId = primID<0>();
+      const TriangleMesh::Triangle& tri = mesh->triangle(primId);
+      const Vec3fa v0 = mesh->vertex(tri.v[0]);
+      const Vec3fa v1 = mesh->vertex(tri.v[1]);
+      const Vec3fa v2 = mesh->vertex(tri.v[2]);
+      new (this) Triangle1(v0,v1,v2,geomId,primId,mesh->mask,false);
+      return merge(BBox3fa(v0),BBox3fa(v1),BBox3fa(v2));
+    }
+
   public:
     Vec3fa v0;          //!< first vertex and primitive ID
     Vec3fa v1;          //!< second vertex and geometry ID

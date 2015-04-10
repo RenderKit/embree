@@ -178,6 +178,46 @@ namespace embree
       Triangle8::store_nt(this,Triangle8(v0,v1,v2,vgeomID,vprimID,vmask,list && !prims));
     }
 
+    /*! updates the primitive */
+    __forceinline BBox3fa update(TriangleMesh* mesh)
+    {
+      BBox3fa bounds = empty;
+      avxi vgeomID = -1, vprimID = -1, vmask = -1;
+      avx3f v0 = zero, v1 = zero, v2 = zero;
+      
+      for (size_t i=0; i<8; i++)
+      {
+        if (primID<0>(i) == -1) break;
+        const unsigned geomId = geomID<0>(i);
+        const unsigned primId = primID<0>(i);
+        const TriangleMesh::Triangle& tri = mesh->triangle(primId);
+        const Vec3fa p0 = mesh->vertex(tri.v[0]);
+        const Vec3fa p1 = mesh->vertex(tri.v[1]);
+        const Vec3fa p2 = mesh->vertex(tri.v[2]);
+        bounds.extend(merge(BBox3fa(p0),BBox3fa(p1),BBox3fa(p2)));
+        vgeomID [i] = geomId;
+        vprimID [i] = primId;
+        vmask   [i] = mesh->mask;
+        v0.x[i] = p0.x; v0.y[i] = p0.y; v0.z[i] = p0.z;
+        v1.x[i] = p1.x; v1.y[i] = p1.y; v1.z[i] = p1.z;
+        v2.x[i] = p2.x; v2.y[i] = p2.y; v2.z[i] = p2.z;
+      }
+      Triangle8::store_nt(this,Triangle8(v0,v1,v2,vgeomID,vprimID,vmask,false));
+      return bounds;
+    }
+
+    /*! outputs primitive */
+    friend __forceinline std::ostream& operator<<(std::ostream& o, const Triangle8& tri)
+    {
+      o << "v0    " << tri.v0 << std::endl;
+      o << "e1    " << tri.e1 << std::endl;
+      o << "e2    " << tri.e2 << std::endl;
+      o << "Ng    " << tri.Ng << std::endl;
+      o << "geomID" << tri.geomID<1>() << std::endl;
+      o << "primID" << tri.primID<1>() << std::endl;
+      return o;
+    }
+
   public:
     avx3f v0;      //!< Base vertex of the triangles.
     avx3f e1;      //!< 1st edge of the triangles (v0-v1).
@@ -190,20 +230,6 @@ namespace embree
 #endif
 
   };
-#endif
-
-#if defined (__AVX__)
-
-  __forceinline std::ostream &operator<<(std::ostream &o, const Triangle8& tri)
-  {
-    o << "v0    " << tri.v0 << std::endl;
-    o << "e1    " << tri.e1 << std::endl;
-    o << "e2    " << tri.e2 << std::endl;
-    o << "Ng    " << tri.Ng << std::endl;
-    o << "geomID" << tri.geomID<1>() << std::endl;
-    o << "primID" << tri.primID<1>() << std::endl;
-    return o;
-  }
 #endif
 
   struct Triangle8Type : public PrimitiveType 

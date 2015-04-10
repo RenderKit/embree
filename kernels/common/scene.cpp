@@ -160,12 +160,14 @@ namespace embree
     else if (State::instance()->tri_accel == "bvh4.bvh4.triangle4")    accels.add(BVH4::BVH4BVH4Triangle4ObjectSplit(this));
     else if (State::instance()->tri_accel == "bvh4.bvh4.triangle1v")   accels.add(BVH4::BVH4BVH4Triangle1vObjectSplit(this));
     else if (State::instance()->tri_accel == "bvh4.bvh4.triangle4v")   accels.add(BVH4::BVH4BVH4Triangle4vObjectSplit(this));
+    else if (State::instance()->tri_accel == "bvh4.bvh4.triangle4i")   accels.add(BVH4::BVH4BVH4Triangle4iObjectSplit(this));
     else if (State::instance()->tri_accel == "bvh4.triangle1")         accels.add(BVH4::BVH4Triangle1(this));
     else if (State::instance()->tri_accel == "bvh4.triangle4")         accels.add(BVH4::BVH4Triangle4(this));
     else if (State::instance()->tri_accel == "bvh4.triangle1v")        accels.add(BVH4::BVH4Triangle1v(this));
     else if (State::instance()->tri_accel == "bvh4.triangle4v")        accels.add(BVH4::BVH4Triangle4v(this));
     else if (State::instance()->tri_accel == "bvh4.triangle4i")        accels.add(BVH4::BVH4Triangle4i(this));
 #if defined (__TARGET_AVX__)
+    else if (State::instance()->tri_accel == "bvh4.bvh4.triangle8")    accels.add(BVH4::BVH4BVH4Triangle8ObjectSplit(this));
     else if (State::instance()->tri_accel == "bvh4.triangle8")         accels.add(BVH4::BVH4Triangle8(this));
     else if (State::instance()->tri_accel == "bvh8.triangle4")         accels.add(BVH8::BVH8Triangle4(this));
     else if (State::instance()->tri_accel == "bvh8.triangle8")         accels.add(BVH8::BVH8Triangle8(this));

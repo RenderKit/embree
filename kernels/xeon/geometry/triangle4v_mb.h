@@ -99,6 +99,11 @@ namespace embree
 		     Vec3fa(reduce_max(upper.x),reduce_max(upper.y),reduce_max(upper.z)));
     }
 
+    /*! calculate primitive bounds */
+    __forceinline std::pair<BBox3fa,BBox3fa> bounds() {
+      return std::make_pair(bounds0(),bounds1());
+    }
+
     /*! returns required number of primitive blocks for N primitives */
     static __forceinline size_t blocks(size_t N) { return (N+3)/4; }
 
