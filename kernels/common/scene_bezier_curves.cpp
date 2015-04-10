@@ -20,7 +20,7 @@
 namespace embree
 {
   BezierCurves::BezierCurves (Scene* parent, RTCGeometryFlags flags, size_t numPrimitives, size_t numVertices, size_t numTimeSteps) 
-    : Geometry(parent,BEZIER_CURVES,numPrimitives,numTimeSteps,flags), mask(-1), numVertices(numVertices)
+    : Geometry(parent,BEZIER_CURVES,numPrimitives,numTimeSteps,flags), mask(-1)
   {
     curves.init(numPrimitives,sizeof(int));
     for (size_t i=0; i<numTimeSteps; i++) {
@@ -43,10 +43,9 @@ namespace embree
   
   void BezierCurves::setMask (unsigned mask) 
   {
-    if (parent->isStatic() && parent->isBuild()) {
+    if (parent->isStatic() && parent->isBuild())
       throw_RTCError(RTC_INVALID_OPERATION,"static geometries cannot get modified");
-      return;
-    }
+
     this->mask = mask; 
   }
 
@@ -92,10 +91,8 @@ namespace embree
 
   void BezierCurves::unmap(RTCBufferType type) 
   {
-    if (parent->isStatic() && parent->isBuild()) {
+    if (parent->isStatic() && parent->isBuild()) 
       throw_RTCError(RTC_INVALID_OPERATION,"static geometries cannot get modified");
-      return;
-    }
 
     switch (type) {
     case RTC_INDEX_BUFFER  : curves.unmap(parent->numMappedBuffers); break;
@@ -107,9 +104,8 @@ namespace embree
 
   void BezierCurves::immutable () 
   {
-    bool freeCurves    = true;
+    curves.free();
     bool freeVertices  = !parent->needBezierVertices;
-    if (freeCurves   ) curves.free();
     if (freeVertices ) vertices[0].free();
     if (freeVertices ) vertices[1].free();
   }
@@ -117,11 +113,11 @@ namespace embree
   bool BezierCurves::verify () 
   {
     for (size_t i=0; i<numPrimitives; i++) {
-      if (curves[i]+3 >= numVertices) return false;
+      if (curves[i]+3 >= numVertices()) return false;
     }
     for (size_t j=0; j<numTimeSteps; j++) {
       BufferT<Vec3fa>& verts = vertices[j];
-      for (size_t i=0; i<numVertices; i++) {
+      for (size_t i=0; i<verts.size(); i++) {
         if (!isvalid(verts[i].x)) return false;
 	if (!isvalid(verts[i].y)) return false;
 	if (!isvalid(verts[i].z)) return false;
@@ -136,12 +132,13 @@ namespace embree
     int type = BEZIER_CURVES;
     file.write((char*)&type,sizeof(int));
     file.write((char*)&numTimeSteps,sizeof(int));
-    file.write((char*)&numVertices,sizeof(int));
+    int numVerts = numVertices();
+    file.write((char*)&numVerts,sizeof(int));
     file.write((char*)&numPrimitives,sizeof(int));
 
     for (size_t j=0; j<numTimeSteps; j++) {
       while ((file.tellp() % 16) != 0) { char c = 0; file.write(&c,1); }
-      for (size_t i=0; i<numVertices; i++) {
+      for (size_t i=0; i<vertices[j].size(); i++) {
         Vec3fa v = vertex(i,j);
         file.write((char*)&v,sizeof(Vec3fa)); 
       }
