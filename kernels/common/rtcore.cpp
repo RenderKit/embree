@@ -155,9 +155,9 @@ namespace embree
     init_globals();
     State::instance()->clear();
     State::instance()->parseString(cfg);
-    State::instance()->parseFile(FileName::executableFolder()+FileName(".embree2"));
+    State::instance()->parseFile(FileName::executableFolder()+FileName(".embree" TOSTRING(__EMBREE_VERSION_MAJOR__)));
     if (FileName::homeFolder() != FileName("")) // home folder is not available on KNC
-      State::instance()->parseFile(FileName::homeFolder()+FileName(".embree2"));
+      State::instance()->parseFile(FileName::homeFolder()+FileName(".embree" TOSTRING(__EMBREE_VERSION_MAJOR__)));
     
     if (State::instance()->tessellation_cache_size)
       resizeTessellationCache( State::instance()->tessellation_cache_size );
