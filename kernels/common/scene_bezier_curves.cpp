@@ -137,10 +137,10 @@ namespace embree
     for (size_t j=0; j<numTimeSteps; j++) {
       BufferT<Vertex>& verts = vertices[j];
       for (size_t i=0; i<numVertices; i++) {
-        if (!inFloatRange(verts[i].x)) return false;
-	if (!inFloatRange(verts[i].y)) return false;
-	if (!inFloatRange(verts[i].z)) return false;
-	if (!inFloatRange(verts[i].r)) return false;
+        if (!isvalid(verts[i].x)) return false;
+	if (!isvalid(verts[i].y)) return false;
+	if (!isvalid(verts[i].z)) return false;
+	if (!isvalid(verts[i].r)) return false;
       }
     }
     return true;

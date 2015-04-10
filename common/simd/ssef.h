@@ -222,26 +222,30 @@ namespace embree
   __forceinline const sseb operator <=( const ssef& a, const float& b ) { return a <= ssef(b); }
   __forceinline const sseb operator <=( const float& a, const ssef& b ) { return ssef(a) <= b; }
 
- __forceinline const ssef select( const sseb& m, const ssef& t, const ssef& f ) { 
+  __forceinline const ssef select( const sseb& m, const ssef& t, const ssef& f ) { 
 #if defined(__SSE4_1__)
-    return _mm_blendv_ps(f, t, m); 
+   return _mm_blendv_ps(f, t, m); 
 #else
-    return _mm_or_ps(_mm_and_ps(m, t), _mm_andnot_ps(m, f)); 
+   return _mm_or_ps(_mm_and_ps(m, t), _mm_andnot_ps(m, f)); 
 #endif
- }
-
+  }
+  
 #if defined(__SSE4_1__) 
 #if defined(__clang__) || defined(_MSC_VER) && (!defined(__INTEL_COMPILER) || defined(_DEBUG))
-__forceinline const ssef select(const int mask, const ssef& t, const ssef& f) {
- return select(sseb(mask), t, f);
-}
+  __forceinline const ssef select(const int mask, const ssef& t, const ssef& f) {
+    return select(sseb(mask), t, f);
+  }
 #else
- __forceinline const ssef select(const int mask, const ssef& t, const ssef& f) {
-	 return _mm_blend_ps(f, t, mask);
- }
+  __forceinline const ssef select(const int mask, const ssef& t, const ssef& f) {
+    return _mm_blend_ps(f, t, mask);
+  }
 #endif
 #endif
-
+  
+  __forceinline bool isvalid ( const ssef& v ) {
+    return all((v > ssef(-FLT_LARGE)) & (v < ssef(+FLT_LARGE)));
+  }
+  
   ////////////////////////////////////////////////////////////////////////////////
   /// Rounding Functions
   ////////////////////////////////////////////////////////////////////////////////

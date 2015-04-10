@@ -592,9 +592,9 @@ namespace embree
     bool hasValidPositions() const
     {
       for (size_t i=0; i<edge_valence; i++) {
-	if ( !inFloatRange(ring[i].x) ) return false;
-	if ( !inFloatRange(ring[i].y) ) return false;
-	if ( !inFloatRange(ring[i].z) ) return false;
+	if ( !isvalid(ring[i].x) ) return false;
+	if ( !isvalid(ring[i].y) ) return false;
+	if ( !isvalid(ring[i].z) ) return false;
       }	
       return true;
     }
@@ -644,9 +644,9 @@ namespace embree
     bool hasValidPositions() const
     {
       for (size_t i=0; i<edge_valence; i++) {
-	if ( !inFloatRange(ring[i].x) ) return false;
-	if ( !inFloatRange(ring[i].y) ) return false;
-	if ( !inFloatRange(ring[i].z) ) return false;
+	if ( !isvalid(ring[i].x) ) return false;
+	if ( !isvalid(ring[i].y) ) return false;
+	if ( !isvalid(ring[i].z) ) return false;
       }	
       return true;
     }

@@ -95,7 +95,7 @@ namespace embree
 	  const float r1 = radius(index+1,j);
 	  const float r2 = radius(index+2,j);
 	  const float r3 = radius(index+3,j);
-	  if (!inFloatRange(r0) || !inFloatRange(r1) || !inFloatRange(r2) || !inFloatRange(r3))
+	  if (!isvalid(r0) || !isvalid(r1) || !isvalid(r2) || !isvalid(r3))
 	    return false;
           if (min(r0,r1,r2,r3) < 0.0f)
             return false;
@@ -104,7 +104,7 @@ namespace embree
 	  const Vec3fa& v1 = vertex(index+1,j);
 	  const Vec3fa& v2 = vertex(index+2,j);
 	  const Vec3fa& v3 = vertex(index+3,j);
-	  if (!inFloatRange(v0) || !inFloatRange(v1) || !inFloatRange(v2) || !inFloatRange(v3))
+	  if (!isvalid(v0) || !isvalid(v1) || !isvalid(v2) || !isvalid(v3))
 	    return false;
 	}
 
