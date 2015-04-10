@@ -829,6 +829,7 @@ namespace embree
     }
   } 
 
+#if defined (__TARGET_AVX__)
   void createTriangleMeshTriangle8(TriangleMesh* mesh, AccelData*& accel, Builder*& builder)
   {
     if (mesh->numTimeSteps != 1) THROW_RUNTIME_ERROR("internal error");
@@ -840,6 +841,7 @@ namespace embree
     default: THROW_RUNTIME_ERROR("internal error"); 
     }
   } 
+#endif
 
   void createTriangleMeshTriangle1v(TriangleMesh* mesh, AccelData*& accel, Builder*& builder)
   {
@@ -901,6 +903,7 @@ namespace embree
     return new AccelInstance(accel,builder,intersectors);
   }
 
+#if defined (__TARGET_AVX__)
   Accel* BVH4::BVH4BVH4Triangle8ObjectSplit(Scene* scene)
   {
     BVH4* accel = new BVH4(TriangleMeshTriangle8::type,scene,LeafMode);
@@ -908,6 +911,7 @@ namespace embree
     Builder* builder = BVH4BuilderTwoLevelSAH(accel,scene,&createTriangleMeshTriangle8);
     return new AccelInstance(accel,builder,intersectors);
   }
+#endif
 
   Accel* BVH4::BVH4BVH4Triangle1vObjectSplit(Scene* scene)
   {
