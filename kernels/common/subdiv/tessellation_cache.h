@@ -24,6 +24,13 @@
 /* force a complete cache invalidation when running out of allocation space */
 #define FORCE_SIMPLE_FLUSH 0
 
+#if defined(__MIC__)
+#define NEW_TCACHE_SYNC 0
+#else
+#define NEW_TCACHE_SYNC 0
+#endif
+
+
 #if defined(DEBUG)
 #define CACHE_STATS(x) 
 #else

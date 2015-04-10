@@ -110,6 +110,63 @@ namespace embree
 
   void SharedLazyTessellationCache::resetCache() 
   {
+#if NEW_TCACHE_SYNC == 1
+
+    if (reset_state.try_lock())
+      {
+	if (next_block >= switch_block_threshold)
+	  {
+	    //double msec = getSeconds();
+
+	    for (size_t i=0;i<numRenderThreads;i++)
+	      lockThread(i);
+
+	    addCurrentIndex();
+
+	    CACHE_STATS(PRINT("RESET TESS CACHE"));
+	    PRINT("RESET TESS CACHE");
+
+	    for (size_t i=0;i<numRenderThreads;i++)
+	      waitForUsersLessEqual(i,1);
+
+
+#if FORCE_SIMPLE_FLUSH == 1
+	    next_block = 0;
+	    switch_block_threshold = maxBlocks;
+#else
+	    const size_t region = index % NUM_CACHE_SEGMENTS;
+	    next_block = region * (maxBlocks/NUM_CACHE_SEGMENTS);
+	    switch_block_threshold = next_block + (maxBlocks/NUM_CACHE_SEGMENTS);
+
+#if 0
+	    PRINT( region );
+	    PRINT( maxBlocks );
+	    PRINT( NUM_CACHE_SEGMENTS );
+	    PRINT( maxBlocks/NUM_CACHE_SEGMENTS );
+	    PRINT( next_block );
+	    PRINT( switch_block_threshold );
+#endif
+
+	    assert( switch_block_threshold <= maxBlocks );
+
+#endif
+
+	    CACHE_STATS(SharedTessellationCacheStats::cache_flushes++);
+
+	    for (size_t i=0;i<numRenderThreads;i++)
+	      unlockThread(i);
+
+	    //msec = getSeconds()-msec;    
+	    //PRINT( 1000.0f * msec );
+
+	  }
+	reset_state.unlock();
+      }
+    else
+      reset_state.wait_until_unlocked();	   
+
+#else
+
     if (reset_state.try_lock())
       {
 	if (next_block >= switch_block_threshold)
@@ -159,7 +216,8 @@ namespace embree
 	reset_state.unlock();
       }
     else
-      reset_state.wait_until_unlocked();	    
+      reset_state.wait_until_unlocked();	   
+#endif 
   }
 
   void SharedLazyTessellationCache::realloc(const size_t new_size)
