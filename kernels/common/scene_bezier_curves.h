@@ -142,6 +142,7 @@ namespace embree
 
 #if defined(__MIC__)
 
+      /*! calculates bounding box of i'th bezier curve */
       __forceinline mic2f bounds_mic2f(size_t i) const 
       {
         const int index = curve(i);
@@ -150,18 +151,11 @@ namespace embree
         const Vec3fa& cp2 = vertex(index+2);
         const Vec3fa& cp3 = vertex(index+3);
 	
-#if 0
-	const mic_f v0 = broadcast4to16f((float*)&cp0);
-	const mic_f v1 = broadcast4to16f((float*)&cp1);
-	const mic_f v2 = broadcast4to16f((float*)&cp2);
-	const mic_f v3 = broadcast4to16f((float*)&cp3);
-#else
 	const mic_m m_4f = 0xf;
 	const mic_f v0 = permute<0,0,0,0>(uload16f(m_4f,(float*)&cp0));
 	const mic_f v1 = permute<0,0,0,0>(uload16f(m_4f,(float*)&cp1));
 	const mic_f v2 = permute<0,0,0,0>(uload16f(m_4f,(float*)&cp2));
 	const mic_f v3 = permute<0,0,0,0>(uload16f(m_4f,(float*)&cp3));
-#endif
 
 	const mic_f b_min = min(min(v0,v1),min(v2,v3));
 	const mic_f b_max = max(max(v0,v1),max(v2,v3));
@@ -176,10 +170,7 @@ namespace embree
 
     public:
       unsigned int mask;                //!< for masking out geometry
-      unsigned char numTimeSteps;       //!< number of time steps (1 or 2) // FIXME: remove
-
       BufferT<int> curves;              //!< array of curve indices
-
       BufferT<Vertex> vertices[2];      //!< vertex array
       size_t numVertices;               //!< number of vertices
     };
