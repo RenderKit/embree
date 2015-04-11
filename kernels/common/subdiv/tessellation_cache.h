@@ -83,7 +83,7 @@ namespace embree
    struct __aligned(64) ThreadWorkState {
      AtomicCounter counter;
      ThreadWorkState() { counter = 0; }
-   __forceinline void reset() { counter = 0; }
+     __forceinline void reset() { counter = 0; }
    };
 
    float *data;
@@ -115,6 +115,13 @@ namespace embree
 
    __forceinline unsigned int lockThread  (const unsigned int threadID) { return threadWorkState[threadID].counter.add(1);  }
    __forceinline unsigned int unlockThread(const unsigned int threadID) { return threadWorkState[threadID].counter.add(-1); }
+
+   __forceinline void prefetchThread(const unsigned int threadID) { 
+#if defined(__MIC__)
+     prefetch<PFHINT_L1EX>(&threadWorkState[threadID].counter);  
+#endif
+   }
+
 
    __forceinline bool validCacheIndex(const size_t i)
    {

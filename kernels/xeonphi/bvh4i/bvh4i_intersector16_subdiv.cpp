@@ -361,9 +361,9 @@ namespace embree
       while(1)
 	{
 	  /* per thread lock */
-	  unsigned int lock = SharedLazyTessellationCache::sharedLazyTessellationCache.lockThread(threadInfo->id);	       
+	 SharedLazyTessellationCache::sharedLazyTessellationCache.lockThread(threadInfo->id);	       
 
-	  SubdivPatch1* subdiv_patch = &patches[patchIndex];
+	 SubdivPatch1* subdiv_patch = &patches[patchIndex];
       
 	  static const size_t REF_TAG      = 1;
 	  static const size_t REF_TAG_MASK = (~REF_TAG) & 0xffffffff;
@@ -388,7 +388,9 @@ namespace embree
 
 	  /* cache miss */
 	  CACHE_STATS(SharedTessellationCacheStats::cache_misses++);
-	  SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(threadInfo->id);		  
+	  unsigned int lock = SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(threadInfo->id);		  
+	  if (unlikely(lock == 1))
+	      SharedLazyTessellationCache::sharedLazyTessellationCache.waitForUsersLessEqual(threadInfo->id,0);
 
 	  subdiv_patch->write_lock();
 	  {
@@ -400,17 +402,14 @@ namespace embree
 	      {	      
 		const SubdivMesh* const geom = (SubdivMesh*)scene->get(subdiv_patch->geom); 
 
-		size_t block_index = (size_t)-1;
-		while(1)
+		size_t block_index = block_index = SharedLazyTessellationCache::sharedLazyTessellationCache.alloc(subdiv_patch->grid_subtree_size_64b_blocks);
+		if (block_index == (size_t)-1)
 		  {
-		    block_index = SharedLazyTessellationCache::sharedLazyTessellationCache.alloc(subdiv_patch->grid_subtree_size_64b_blocks);
-		    if (block_index == (size_t)-1)
-		      {
-			/* cannot allocate => flush the cache */
-			SharedLazyTessellationCache::sharedLazyTessellationCache.resetCache();
-		      }
-		    else
-		      break;
+		    /* cannot allocate => flush the cache */
+		    subdiv_patch->write_unlock();
+		    SharedLazyTessellationCache::sharedLazyTessellationCache.resetCache();
+		    continue;
+		    
 		  }
 		mic_f* local_mem   = (mic_f*)SharedLazyTessellationCache::sharedLazyTessellationCache.getBlockPtr(block_index);
 		unsigned int currentIndex = 0;
@@ -487,13 +486,9 @@ namespace embree
 		    SharedLazyTessellationCache::sharedLazyTessellationCache.resetCache();
 		    continue;
 		  }
-		//PRINT( SharedLazyTessellationCache::sharedLazyTessellationCache.getNumUsedBytes() );
 		mic_f* local_mem   = (mic_f*)SharedLazyTessellationCache::sharedLazyTessellationCache.getBlockPtr(block_index);
-		//mic_f* local_mem   = (mic_f*)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();
 		unsigned int currentIndex = 0;
-		//unsigned int currentIndex = block_index;
 		BVH4i::NodeRef bvh4i_root = initLocalLazySubdivTreeCompact(*subdiv_patch,currentIndex,local_mem,geom);
-		//size_t new_root_ref = (size_t)bvh4i_root; // + (size_t)local_mem - (size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();
 		size_t new_root_ref = (size_t)bvh4i_root + (size_t)local_mem - (size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();
 
 		assert( !(new_root_ref & REF_TAG) );

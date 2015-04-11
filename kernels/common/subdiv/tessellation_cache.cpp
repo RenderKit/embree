@@ -124,7 +124,7 @@ namespace embree
 	    addCurrentIndex();
 
 	    CACHE_STATS(PRINT("RESET TESS CACHE"));
-	    PRINT("RESET TESS CACHE");
+	    //PRINT("RESET TESS CACHE");
 
 	    for (size_t i=0;i<numRenderThreads;i++)
 	      waitForUsersLessEqual(i,1);
@@ -175,6 +175,8 @@ namespace embree
 
 	    for (size_t i=0;i<numRenderThreads;i++)
 	      lockThread(i);
+	    //if (lockThread(i) == 1)
+	    //waitForUsersLessEqual(i,1);
 
 	    for (size_t i=0;i<numRenderThreads;i++)
 	      waitForUsersLessEqual(i,1);
@@ -208,7 +210,7 @@ namespace embree
 
 	    for (size_t i=0;i<numRenderThreads;i++)
 	      unlockThread(i);
-
+	    
 	    //msec = getSeconds()-msec;    
 	    //PRINT( 1000.0f * msec );
 
