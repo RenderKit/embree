@@ -103,8 +103,11 @@ namespace embree
 
  public:
 
+#if defined(__MIC__)
    static const size_t NUM_CACHE_SEGMENTS = 4;
-
+#else
+   static const size_t NUM_CACHE_SEGMENTS = 8;
+#endif
       
    SharedLazyTessellationCache();
 
