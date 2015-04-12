@@ -32,7 +32,7 @@
 
 
 #if defined(DEBUG)
-#define CACHE_STATS(x) 
+#define CACHE_STATS(x) x
 #else
 #define CACHE_STATS(x) 
 #endif
@@ -176,11 +176,14 @@ namespace embree
    static AtomicCounter cache_hits;
    static AtomicCounter cache_misses;
    static AtomicCounter cache_flushes;                
+   static AtomicCounter *cache_patch_builds;                
+   static size_t        cache_num_patches;
+   __aligned(64) static AtomicMutex mtx;
 
     /* print stats for debugging */                 
     static void printStats();
     static void clearStats();
-
+    static void incPatchBuild(const size_t ID, const size_t numPatches);
  };
 
   // =========================================================================================================

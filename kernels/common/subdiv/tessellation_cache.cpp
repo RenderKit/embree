@@ -174,12 +174,12 @@ namespace embree
 	    //double msec = getSeconds();
 
 	    for (size_t i=0;i<numRenderThreads;i++)
-	      lockThread(i);
-	    //if (lockThread(i) == 1)
-	    //waitForUsersLessEqual(i,1);
+	      //lockThread(i);
+	      if (lockThread(i) == 1)
+		waitForUsersLessEqual(i,1);
 
-	    for (size_t i=0;i<numRenderThreads;i++)
-	      waitForUsersLessEqual(i,1);
+	    //for (size_t i=0;i<numRenderThreads;i++)
+	    //waitForUsersLessEqual(i,1);
 
 	    addCurrentIndex();
 	    CACHE_STATS(PRINT("RESET TESS CACHE"));
@@ -248,8 +248,10 @@ namespace embree
   AtomicCounter SharedTessellationCacheStats::cache_accesses           = 0;
   AtomicCounter SharedTessellationCacheStats::cache_hits               = 0;
   AtomicCounter SharedTessellationCacheStats::cache_misses             = 0;
-  AtomicCounter SharedTessellationCacheStats::cache_flushes            = 0;                
-
+  AtomicCounter SharedTessellationCacheStats::cache_flushes            = 0;  
+  AtomicMutex   SharedTessellationCacheStats::mtx;  
+  AtomicCounter *SharedTessellationCacheStats::cache_patch_builds      = NULL;                
+  size_t SharedTessellationCacheStats::cache_num_patches               = 0;
   void SharedTessellationCacheStats::printStats()
   {
     PRINT(cache_accesses);
@@ -257,7 +259,19 @@ namespace embree
     PRINT(cache_hits);
     PRINT(cache_flushes);
     PRINT(100.0f * cache_hits / cache_accesses);
-    assert(cache_hits + cache_misses == cache_accesses);                
+    assert(cache_hits + cache_misses == cache_accesses);
+    PRINT(cache_num_patches);
+    size_t patches = 0;
+    size_t builds  = 0;
+    for (size_t i=0;i<cache_num_patches;i++)
+      if (cache_patch_builds[i])
+	{
+	  patches++;
+	  builds += cache_patch_builds[i];
+	}
+    PRINT(patches);
+    PRINT(builds);
+    PRINT((double)builds/patches);
   }
 
   void SharedTessellationCacheStats::clearStats()
@@ -265,7 +279,27 @@ namespace embree
     SharedTessellationCacheStats::cache_accesses  = 0;
     SharedTessellationCacheStats::cache_hits      = 0;
     SharedTessellationCacheStats::cache_misses    = 0;
-    SharedTessellationCacheStats::cache_flushes   = 0;          
+    SharedTessellationCacheStats::cache_flushes   = 0;
+    for (size_t i=0;i<cache_num_patches;i++)
+      cache_patch_builds[i] = 0;
+  }
+
+  void SharedTessellationCacheStats::incPatchBuild(const size_t ID, const size_t numPatches)
+  {
+    if (!cache_patch_builds)
+      {
+	mtx.lock();
+	if (!cache_patch_builds)
+	  {
+	    PRINT(numPatches);
+	    cache_num_patches = numPatches;
+	    cache_patch_builds = (AtomicCounter*)os_malloc(numPatches*sizeof(AtomicCounter));
+	    memset(cache_patch_builds,0,numPatches*sizeof(AtomicCounter));
+	  }
+	mtx.unlock();
+      }
+    assert(ID < cache_num_patches);
+    cache_patch_builds[ID].add(1);
   }
 
 };

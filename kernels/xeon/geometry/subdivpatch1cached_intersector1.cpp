@@ -198,11 +198,7 @@ namespace embree
 		    SharedLazyTessellationCache::sharedLazyTessellationCache.resetCache();
 		    continue;
 		  }
-		//PRINT(block_index);
-		//PRINT(SharedLazyTessellationCache::sharedLazyTessellationCache.getMaxBlocks());
-
 		BVH4::Node* node = (BVH4::Node*)SharedLazyTessellationCache::sharedLazyTessellationCache.getBlockPtr(block_index);
-		//PRINT( (double)SharedLazyTessellationCache::sharedLazyTessellationCache.getNumUsedBytes() / (1024.0 * 1024.0) );
 #if COMPACT == 1
                 int64 new_root_ref = (int64)buildSubdivPatchTreeCompact(*subdiv_patch,node,((Scene*)geom)->getSubdivMesh(subdiv_patch->geom));                                
 
@@ -215,6 +211,12 @@ namespace embree
 		new_root_ref |= REF_TAG;
 		new_root_ref |= (int64)SharedLazyTessellationCache::sharedLazyTessellationCache.getCurrentIndex() << 32; 
 		subdiv_patch->root_ref = new_root_ref;
+
+#if DEBUG
+		const size_t patchIndex = subdiv_patch - pre.array;
+		assert(patchIndex < pre.numPrimitives);
+		CACHE_STATS(SharedTessellationCacheStats::incPatchBuild(patchIndex,pre.numPrimitives));
+#endif
 	      }
 	  }
 	  subdiv_patch->write_unlock();

@@ -54,6 +54,10 @@ namespace embree
         SubdivPatch1Cached   *hit_patch;
 	unsigned int threadID;
         Ray &r;
+#if DEBUG
+	size_t numPrimitives;
+	SubdivPatch1Cached *array;
+#endif
         
         __forceinline Precalculations (Ray& ray, const void *ptr) : r(ray) 
         {
@@ -65,6 +69,11 @@ namespace embree
 	  if (unlikely(!localThreadInfo))
             createLocalThreadInfo();
           threadID = localThreadInfo->id;
+
+#if DEBUG
+	  numPrimitives = ((BVH4*)ptr)->numPrimitives;
+	  array         = (SubdivPatch1Cached*)(((BVH4*)ptr)->data_mem);
+#endif
           
         }
 
