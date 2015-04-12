@@ -252,6 +252,8 @@ namespace embree
   AtomicMutex   SharedTessellationCacheStats::mtx;  
   AtomicCounter *SharedTessellationCacheStats::cache_patch_builds      = NULL;                
   size_t SharedTessellationCacheStats::cache_num_patches               = 0;
+  float **SharedTessellationCacheStats::cache_new_delete_ptr           = NULL;
+
   void SharedTessellationCacheStats::printStats()
   {
     PRINT(cache_accesses);
@@ -300,6 +302,27 @@ namespace embree
       }
     assert(ID < cache_num_patches);
     cache_patch_builds[ID].add(1);
+  }
+
+  void SharedTessellationCacheStats::newDeletePatchPtr(const size_t ID, const size_t numPatches, const size_t size)
+  {
+    assert(ID < numPatches);
+    if(!cache_new_delete_ptr)
+      {
+	mtx.lock();
+	if(!cache_new_delete_ptr)
+	  {
+	    PRINT(numPatches);
+	    cache_num_patches = numPatches;
+	    cache_new_delete_ptr = new float*[numPatches];
+	    memset(cache_new_delete_ptr,0,sizeof(float*)*numPatches);
+	  }
+	mtx.unlock();
+      }
+    if (cache_new_delete_ptr[ID])
+      free(cache_new_delete_ptr[ID]);
+    cache_new_delete_ptr[ID] = (float*)malloc(size);
+    memset(cache_new_delete_ptr[ID],0,size);
   }
 
 };

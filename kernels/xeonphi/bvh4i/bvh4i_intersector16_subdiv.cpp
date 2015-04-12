@@ -21,12 +21,6 @@
 
 #define TIMER(x) 
 
-#if defined(DEBUG)
-#define CACHE_STATS(x) x
-#else
-#define CACHE_STATS(x) 
-#endif
-
 namespace embree
 {
 

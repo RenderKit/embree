@@ -216,6 +216,7 @@ namespace embree
 		const size_t patchIndex = subdiv_patch - pre.array;
 		assert(patchIndex < pre.numPrimitives);
 		CACHE_STATS(SharedTessellationCacheStats::incPatchBuild(patchIndex,pre.numPrimitives));
+		//SharedTessellationCacheStats::newDeletePatchPtr(patchIndex,pre.numPrimitives,subdiv_patch->grid_subtree_size_64b_blocks*64);
 #endif
 	      }
 	  }
