@@ -51,45 +51,38 @@ namespace embree
 
   void SubdivMesh::enabling() 
   { 
-    if (numTimeSteps == 1) { atomic_add(&parent->numSubdivPatches ,numFaces); }
-    else                   { atomic_add(&parent->numSubdivPatches2,numFaces); }
+    if (numTimeSteps == 1) atomic_add(&parent->numSubdivPatches ,numFaces); 
+    else                   atomic_add(&parent->numSubdivPatches2,numFaces); 
   }
   
   void SubdivMesh::disabling() 
   { 
-    if (numTimeSteps == 1) { atomic_add(&parent->numSubdivPatches ,-(ssize_t)numFaces); }
-    else                   { atomic_add(&parent->numSubdivPatches2, -(ssize_t)numFaces); }
+    if (numTimeSteps == 1) atomic_add(&parent->numSubdivPatches ,-(ssize_t)numFaces); 
+    else                   atomic_add(&parent->numSubdivPatches2,-(ssize_t)numFaces);
   }
 
   void SubdivMesh::setMask (unsigned mask) 
   {
-    if (parent->isStatic() && parent->isBuild()) {
+    if (parent->isStatic() && parent->isBuild()) 
       throw_RTCError(RTC_INVALID_OPERATION,"static geometries cannot get modified");
-      return;
-    }
+
     this->mask = mask; 
   }
 
   void SubdivMesh::setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride) 
   { 
-    if (parent->isStatic() && parent->isBuild()) {
+    if (parent->isStatic() && parent->isBuild()) 
       throw_RTCError(RTC_INVALID_OPERATION,"static geometries cannot get modified");
-      return;
-    }
 
     /* verify that all accesses are 4 bytes aligned */
-    if (((size_t(ptr) + offset) & 0x3) || (stride & 0x3)) {
+    if (((size_t(ptr) + offset) & 0x3) || (stride & 0x3)) 
       throw_RTCError(RTC_INVALID_OPERATION,"data must be 4 bytes aligned");
-      return;
-    }
 
     /* verify that all vertex accesses are 16 bytes aligned */
 #if defined(__MIC__)
     if (type == RTC_VERTEX_BUFFER0 || type == RTC_VERTEX_BUFFER1) {
-      if (((size_t(ptr) + offset) & 0xF) || (stride & 0xF)) {
+      if (((size_t(ptr) + offset) & 0xF) || (stride & 0xF))
         throw_RTCError(RTC_INVALID_OPERATION,"data must be 16 bytes aligned");
-        return;
-      }
     }
 #endif
 
@@ -121,16 +114,13 @@ namespace embree
 
     default: 
       throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type");
-      break;
     }
   }
 
   void* SubdivMesh::map(RTCBufferType type) 
   {
-    if (parent->isStatic() && parent->isBuild()) {
+    if (parent->isStatic() && parent->isBuild())
       throw_RTCError(RTC_INVALID_OPERATION,"static geometries cannot get modified");
-      return nullptr;
-    }
 
     switch (type) {
     case RTC_INDEX_BUFFER                : return vertexIndices.map(parent->numMappedBuffers);
@@ -149,10 +139,8 @@ namespace embree
 
   void SubdivMesh::unmap(RTCBufferType type) 
   {
-    if (parent->isStatic() && parent->isBuild()) {
+    if (parent->isStatic() && parent->isBuild())
       throw_RTCError(RTC_INVALID_OPERATION,"static geometries cannot get modified");
-      return;
-    }
 
     switch (type) {
     case RTC_INDEX_BUFFER               : vertexIndices.unmap(parent->numMappedBuffers); break;
@@ -204,10 +192,9 @@ namespace embree
 
   void SubdivMesh::setDisplacementFunction (RTCDisplacementFunc func, RTCBounds* bounds) 
   {
-    if (parent->isStatic() && parent->isBuild()) {
+    if (parent->isStatic() && parent->isBuild())
       throw_RTCError(RTC_INVALID_OPERATION,"static geometries cannot get modified");
-      return;
-    }
+
     this->displFunc   = func;
     if (bounds) this->displBounds = *(BBox3fa*)bounds; 
     else        this->displBounds = empty;
@@ -227,7 +214,8 @@ namespace embree
     holes.free();
   }
 
-  __forceinline uint64 pair64(unsigned int x, unsigned int y) {
+  __forceinline uint64 pair64(unsigned int x, unsigned int y) 
+  {
     if (x<y) std::swap(x,y);
     return (((uint64)x) << 32) | (uint64)y;
   }
