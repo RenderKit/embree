@@ -45,35 +45,20 @@ namespace embree
 
   void TriangleMesh::setMask (unsigned mask) 
   {
-    if (parent->isStatic() && parent->isBuild()) {
-      throw_RTCError(RTC_INVALID_OPERATION,"static geometries cannot get modified");
-      return;
-    }
+    if (parent->isStatic() && parent->isBuild())
+      throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
+
     this->mask = mask; 
   }
 
   void TriangleMesh::setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride) 
   { 
-    if (parent->isStatic() && parent->isBuild()) {
-      throw_RTCError(RTC_INVALID_OPERATION,"static geometries cannot get modified");
-      return;
-    }
+    if (parent->isStatic() && parent->isBuild()) 
+      throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
 
     /* verify that all accesses are 4 bytes aligned */
-    if (((size_t(ptr) + offset) & 0x3) || (stride & 0x3)) {
+    if (((size_t(ptr) + offset) & 0x3) || (stride & 0x3)) 
       throw_RTCError(RTC_INVALID_OPERATION,"data must be 4 bytes aligned");
-      return;
-    }
-
-    /* verify that all vertex accesses are 16 bytes aligned */
-#if defined(__MIC__)
-    // if (type == RTC_VERTEX_BUFFER0 || type == RTC_VERTEX_BUFFER1) {
-    //   if (((size_t(ptr) + offset) & 0xF) || (stride & 0xF)) {
-    //     throw_RTCError(RTC_INVALID_OPERATION,"data must be 16 bytes aligned");
-    //     return;
-    //   }
-    // }
-#endif
 
     switch (type) {
     case RTC_INDEX_BUFFER  : 
@@ -95,16 +80,13 @@ namespace embree
       break;
     default: 
       throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type");
-      break;
     }
   }
 
   void* TriangleMesh::map(RTCBufferType type) 
   {
-    if (parent->isStatic() && parent->isBuild()) {
-      throw_RTCError(RTC_INVALID_OPERATION,"static geometries cannot get modified");
-      return nullptr;
-    }
+    if (parent->isStatic() && parent->isBuild())
+      throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
 
     switch (type) {
     case RTC_INDEX_BUFFER  : return triangles  .map(parent->numMappedBuffers);
@@ -116,10 +98,8 @@ namespace embree
 
   void TriangleMesh::unmap(RTCBufferType type) 
   {
-    if (parent->isStatic() && parent->isBuild()) {
-      throw_RTCError(RTC_INVALID_OPERATION,"static geometries cannot get modified");
-      return;
-    }
+    if (parent->isStatic() && parent->isBuild())
+      throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
 
     switch (type) {
     case RTC_INDEX_BUFFER  : triangles  .unmap(parent->numMappedBuffers); break;
