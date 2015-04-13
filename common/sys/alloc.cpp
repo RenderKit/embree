@@ -25,9 +25,20 @@
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#include <malloc.h>
 
 namespace embree
 {
+  void* alignedMalloc(size_t size, size_t align) 
+  {
+    assert((align & (align-1)) == 0);
+    return _aligned_malloc(size,align);
+  }
+  
+  void alignedFree(const void* ptr) {
+    _aligned_free((void*0ptr);
+  }
+
   // FIXME: implement large pages under Windows
   
   void* os_malloc(size_t bytes) 
@@ -76,6 +87,7 @@ namespace embree
 
 #include <sys/mman.h>
 #include <errno.h>
+#include <malloc.h>
 #include <string.h>
 
 #if defined(__MIC__)
@@ -86,6 +98,15 @@ namespace embree
 
 namespace embree
 {
+  void* alignedMalloc(size_t size, size_t align) {
+    assert((align & (align-1)) == 0);
+    return memalign(align,size);
+  }
+  
+  void alignedFree(const void* ptr) {
+    free((void*)ptr);
+  }
+
   void* os_malloc(size_t bytes)
   {
     int flags = MAP_PRIVATE | MAP_ANON;
@@ -182,34 +203,3 @@ namespace embree
 }
 
 #endif
-
-////////////////////////////////////////////////////////////////////////////////
-/// All Platforms
-////////////////////////////////////////////////////////////////////////////////
-
-#include <stdlib.h>
-#include <string.h>
-
-namespace embree
-{
-  void* alignedMalloc(size_t size, size_t align)
-  {
-    /* Verify that alignment is power of two */
-    assert((align & (align-1)) == 0);
-
-    if (size == 0) return nullptr;
-    char* base = (char*)malloc(size+align+sizeof(int));
-    if (base == nullptr) throw std::bad_alloc();
-
-    char* unaligned = base + sizeof(int);
-    char*   aligned = unaligned + align - ((size_t)unaligned & (align-1));
-    ((int*)aligned)[-1] = (int)((size_t)aligned-(size_t)base);
-    return aligned;
-  }
-  
-  void alignedFree(const void* ptr) {
-    if (ptr == nullptr) return;
-    int ofs = ((int*)ptr)[-1];
-    free((char*)ptr-ofs);
-  }
-}
