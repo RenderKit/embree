@@ -27,7 +27,6 @@ namespace embree
 			  size_t numEdgeCreases, size_t numVertexCreases, size_t numHoles, size_t numTimeSteps)
     : Geometry(parent,SUBDIV_MESH,numFaces,numTimeSteps,flags), 
       mask(-1), 
-      numTimeSteps(numTimeSteps),
       numFaces(numFaces), 
       numEdges(numEdges), 
       numHalfEdges(0),
@@ -50,9 +49,6 @@ namespace embree
     enabling();
   }
 
-  SubdivMesh::~SubdivMesh () {
-  }
-  
   void SubdivMesh::enabling() 
   { 
     if (numTimeSteps == 1) { atomic_add(&parent->numSubdivPatches ,numFaces); }
@@ -407,11 +403,9 @@ namespace embree
     update |= vertex_creases.isModified();
     update |= vertex_crease_weights.isModified(); 
     update |= levels.isModified();
-
+    
     /* check whether we can simply update the bvh in cached mode */
-    levelUpdate = false;
-    if (!(recalculate || edge_creases.size() != 0 || vertex_creases.size() !=0) && levels.isModified())
-      levelUpdate = true;
+    levelUpdate = !recalculate && edge_creases.size() == 0 && vertex_creases.size() == 0 && levels.isModified();
 
     /* now either recalculate or update the half edges */
     if (recalculate) calculateHalfEdges();
@@ -427,7 +421,6 @@ namespace embree
       edgeCreaseMap.clear();
     }
 
-
     /* clear modified state of all buffers */
     vertexIndices.setModified(false); 
     faceVertices.setModified(false);
@@ -439,7 +432,6 @@ namespace embree
     vertex_creases.setModified(false);
     vertex_crease_weights.setModified(false); 
     levels.setModified(false);
-
 
     double t1 = getSeconds();
 
@@ -460,7 +452,6 @@ namespace embree
                 << "numRegularFaces = " << numRegularFaces << " (" << 100.0f * numRegularFaces / numFaces << "%), " 
                 << "numIrregularFaces " << numIrregularFaces << " (" << 100.0f * numIrregularFaces / numFaces << "%) " << std::endl;
     }
-
   }
 
   bool SubdivMesh::verify () 

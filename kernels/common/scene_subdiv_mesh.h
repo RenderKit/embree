@@ -28,10 +28,12 @@ namespace embree
     ALIGNED_CLASS;
   public:
 
+    /*! type of this geometry */
+    static const Geometry::Type geom_type = Geometry::SUBDIV_MESH;
+
     static const size_t MAX_VALENCE = 6;                //!< maximal number of vertices of a patch
     static const size_t MAX_RING_FACE_VALENCE = 32;     //!< maximal number of faces per ring
     static const size_t MAX_RING_EDGE_VALENCE = 2*32;   //!< maximal number of edges per ring
-    static const Geometry::Type geom_type = Geometry::SUBDIV_MESH;
 
     struct Edge 
     {
@@ -60,7 +62,7 @@ namespace embree
         : vtx_index(-1), next_half_edge_ofs(0), prev_half_edge_ofs(0), opposite_half_edge_ofs(0), edge_crease_weight(0), 
           vertex_crease_weight(0), edge_level(0), align(0) 
 	{
-	  assert(sizeof(HalfEdge) == 32);
+	  static_assert(sizeof(HalfEdge) == 32, "invalid half edge size");
 	}
 
       __forceinline bool hasOpposite() const { return opposite_half_edge_ofs != 0; }
@@ -122,7 +124,7 @@ namespace embree
 	return true;
       }
 
-      /*! tests if the face is a no regular b-spline face (0=regular, 1=irregular quad, 2=non-quad) */
+      /*! tests if the face is not a regular b-spline face (0=regular, 1=irregular quad, 2=non-quad) */
       __forceinline int noRegularFace() const 
       {
 	int ret = 0;
@@ -303,6 +305,7 @@ namespace embree
       float align;                    //!< aligns the structure to 32 bytes
     };
 
+    /*! structure used to sort half edges using radix sort by their key */
     struct KeyHalfEdge 
     {
       KeyHalfEdge() {}
@@ -324,10 +327,12 @@ namespace embree
     };
 
   public:
+
+    /*! bezier curve construction */
     SubdivMesh(Scene* parent, RTCGeometryFlags flags, size_t numFaces, size_t numEdges, size_t numVertices, 
                size_t numCreases, size_t numCorners, size_t numHoles, size_t numTimeSteps);
-    ~SubdivMesh();
 
+  public:
     void enabling();
     void disabling();
     void setMask (unsigned mask);
@@ -370,6 +375,7 @@ namespace embree
     void updateHalfEdges();
 
   public:
+
     /*! returns the start half edge for some face */
     __forceinline const HalfEdge* getHalfEdge ( const size_t f ) const { 
       return &halfEdges[faceStartEdge[f]]; 
@@ -379,13 +385,12 @@ namespace embree
     __forceinline const BufferT<Vec3fa>& getVertexBuffer( const size_t t = 0 ) const {
       return vertices[t];
     }
-    
-    //__forceinline const Vec3fa*   getVertexPositionPtr( const unsigned t = 0 ) const { return (Vec3fa*)vertices[t].getPtr(); } // FIXME: this function should never get used, always pass BufferT<Vec3fa> object
+
+     /* check for simple edge level update */
+    __forceinline bool checkLevelUpdate() const { return levelUpdate; }
 
   public:
-    unsigned int mask;                //!< for masking out geometry
-    unsigned int numTimeSteps;        //!< number of time steps (1 or 2)  // FIXME: remove
-
+    unsigned mask;                    //!< for masking out geometry
     RTCDisplacementFunc displFunc;    //!< displacement function
     BBox3fa             displBounds;  //!< bounds for maximal displacement 
 
@@ -429,13 +434,17 @@ namespace embree
   private:
 
     /*! fast lookup table to find the first half edge for some face */
-    std::vector<uint32> faceStartEdge;
+    mvector<uint32> faceStartEdge;
 
     /*! Half edge structure. */
-    std::vector<HalfEdge> halfEdges;
+    mvector<HalfEdge> halfEdges;
 
     /*! set with all holes */
     pset<uint32> holeSet;
+
+    /*! flag whether only the edge levels have changed and the mesh has no creases,
+     *  allows for simple bvh update instead of full rebuild in cached mode */
+    bool levelUpdate;
 
     /*! the following data is only required during construction of the
      *  half edge structure and can be cleared for static scenes */
@@ -450,14 +459,5 @@ namespace embree
 
     /*! map with all edge creases */
     pmap<uint64,float> edgeCreaseMap;
-
-    /*! flag whether only the edge levels have changed and the mesh has no creases,
-     *  allows for simple bvh update instead of full rebuild in cached mode */
-    bool levelUpdate;
-
-  public:
-    /* check for simple edge level update */
-    __forceinline bool checkLevelUpdate() { return levelUpdate; }
-
   };
 };
