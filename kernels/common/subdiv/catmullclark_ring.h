@@ -132,9 +132,8 @@ namespace embree
       crease_weight[i/2] = p->edge_crease_weight;
       edge_level = vertex_level = p->edge_level;
       if (!p->hasOpposite()) crease_weight[i/2] = inf;
-
-
-      do // FIXME: assertions!?
+  
+      do
       {
         /* store first two vertices of face */
         p = p->next();

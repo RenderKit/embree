@@ -159,8 +159,8 @@ namespace embree
 
   void SubdivMesh::update ()
   {
-    vertexIndices.setModified(true); 
     faceVertices.setModified(true);
+    vertexIndices.setModified(true); 
     holes.setModified(true);
     vertices[0].setModified(true); 
     vertices[1].setModified(true); 
@@ -256,14 +256,13 @@ namespace embree
 
 	  const unsigned int startVertex = vertexIndices[e+de];
 	  unsigned int nextIndex = de + 1;
-	  if (unlikely(nextIndex >= N)) nextIndex -=N; 
-	  const unsigned int endVertex   = vertexIndices[e + nextIndex]; 
+	  if (unlikely(nextIndex >= N)) nextIndex -= N; 
+	  const unsigned int endVertex = vertexIndices[e + nextIndex]; 
 	  const uint64 key = SubdivMesh::Edge(startVertex,endVertex);
 	  
 	  float edge_level = 1.0f;
 	  if (levels) edge_level = levels[e+de];
-	  edge_level = clamp(edge_level,1.0f,4096.0f);
-	  assert( edge_level >= 0.0f );
+	  edge_level = clamp(edge_level,1.0f,4096.0f); // FIXME: do we want to limit edge level?
 	  
 	  edge->vtx_index              = startVertex;
 	  edge->next_half_edge_ofs     = (de == (N-1)) ? -(N-1) : +1;
@@ -291,23 +290,32 @@ namespace embree
     parallel_for( size_t(0), numHalfEdges, size_t(4096), [&](const range<size_t>& r) 
 #endif
     {
+      /* skip if start of adjacent edges was not in our range */
       size_t e=r.begin();
-      if (e && (halfEdges1[e].key == halfEdges1[e-1].key)) {
+      if (e != 0 && (halfEdges1[e].key == halfEdges1[e-1].key)) {
 	const uint64 key = halfEdges1[e].key;
 	while (e<r.end() && halfEdges1[e].key == key) e++;
       }
 
+      /* process all adjacent edges starting in our range */
       while (e<r.end())
       {
 	const uint64 key = halfEdges1[e].key;
 	if (key == -1) break;
 	int N=1; while (e+N<numHalfEdges && halfEdges1[e+N].key == key) N++;
+
+        /* border edges are identified by not having an opposite edge set */
 	if (N == 1) {
 	}
+
+        /* standard edge shared between two faces */
 	else if (N == 2) {
 	  halfEdges1[e+0].edge->setOpposite(halfEdges1[e+1].edge);
 	  halfEdges1[e+1].edge->setOpposite(halfEdges1[e+0].edge);
-	} else {
+	}
+
+        /* non-manifold geometry is handled by keeping vertices fixed during subdivision */
+        else {
 	  for (size_t i=0; i<N; i++) {
 	    halfEdges1[e+i].edge->vertex_crease_weight = inf;
 	    halfEdges1[e+i].edge->next()->vertex_crease_weight = inf;
@@ -340,9 +348,9 @@ namespace embree
 	if (updateLevels) {
 	  float edge_level = 1.0f;
 	  if (levels) edge_level = levels[i];
-	  edge.edge_level = clamp(edge_level,1.0f,4096.0f);
+	  edge.edge_level = clamp(edge_level,1.0f,4096.0f); // FIXME: do we want to limit edge levels?
 	}
-	
+        
 	if (updateEdgeCreases) {
 	  const unsigned int endVertex   = edge.next()->vtx_index;
 	  const uint64 key = SubdivMesh::Edge(startVertex,endVertex);
@@ -358,6 +366,7 @@ namespace embree
   void SubdivMesh::initializeHalfEdgeStructures ()
   {
     double t0 = getSeconds();
+
     /* allocate half edge array */
     halfEdges.resize(numEdges);
     
