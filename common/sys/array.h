@@ -63,6 +63,12 @@ namespace embree
     {
     public:
 
+      __forceinline darray_t () : M(0) {}
+
+      __forceinline darray_t (const T& v) : M(0) {
+        for (size_t i=0; i<N; i++) items[i] = v;
+      }
+
       /********************** Iterators  ****************************/
 
       __forceinline T* begin() const { return items; };

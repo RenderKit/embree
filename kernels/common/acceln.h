@@ -49,10 +49,7 @@ namespace embree
     void clear ();
       
   public:
-    Accel* accels[16];  // FIXME: use array_t
-    size_t N;
-
-    Accel* validAccels[16]; // FIXME: use array_t
-    size_t M;
+    darray_t<Accel*,16> accels;
+    darray_t<Accel*,16> validAccels;
   };
 }
