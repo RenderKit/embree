@@ -14,12 +14,13 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
+#include "scene_user_geometry.h"
 #include "scene.h"
 
 namespace embree
 {
   UserGeometryBase::UserGeometryBase (Scene* parent, Geometry::Type ty, size_t items)
-    : Geometry(parent,ty,1,1,RTC_GEOMETRY_STATIC), AccelSet(items)
+    : Geometry(parent,ty,items,1,RTC_GEOMETRY_STATIC), AccelSet(items)
   {
     enabling();
   }

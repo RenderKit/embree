@@ -16,20 +16,23 @@
 
 #pragma once
 
-#include "default.h"
+#include "geometry.h"
 #include "accel.h"
 #include "accelset.h"
-#include "geometry.h"
 
 namespace embree
 {
   struct UserGeometryBase : public Geometry, public AccelSet
   {
+    /*! type of this geometry */
     static const Geometry::Type geom_type = Geometry::USER_GEOMETRY;
     
   public:
+
+    /*! user geometry construction */
     UserGeometryBase (Scene* parent, Geometry::Type ty, size_t items);
     
+    /*! returns number of items stored in user geometry */
     __forceinline size_t size() const {
       return numItems;
     }
@@ -42,10 +45,12 @@ namespace embree
       return isvalid(b);
     }
 
+  public:
     void enabling ();
     void disabling();
   };
-
+  
+  /*! */
   struct UserGeometry : public UserGeometryBase
   {
   public:
