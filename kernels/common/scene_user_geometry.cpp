@@ -104,30 +104,4 @@ namespace embree
     intersectors.intersector16.occluded = (void*)occluded16;
     intersectors.intersector16.ispc = ispc;
   }
-
-  extern RTCBoundsFunc InstanceBoundsFunc;
-  extern AccelSet::Intersector1 InstanceIntersector1;
-  extern AccelSet::Intersector4 InstanceIntersector4;
-  extern AccelSet::Intersector8 InstanceIntersector8;
-  extern AccelSet::Intersector16 InstanceIntersector16;
-
-  Instance::Instance (Scene* parent, Accel* object) 
-    : AccelSet(parent,1), local2world(one), world2local(one), object(object)
-  {
-    intersectors.ptr = this;
-    boundsFunc = InstanceBoundsFunc;
-    intersectors.intersector1 = InstanceIntersector1;
-    intersectors.intersector4 = InstanceIntersector4; 
-    intersectors.intersector8 = InstanceIntersector8; 
-    intersectors.intersector16 = InstanceIntersector16;
-  }
-  
-  void Instance::setTransform(AffineSpace3fa& xfm)
-  {
-    if (parent->isStatic() && parent->isBuild())
-      throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
-
-    local2world = xfm;
-    world2local = rcp(xfm);
-  }
 }

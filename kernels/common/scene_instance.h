@@ -16,17 +16,21 @@
 
 #pragma once
 
-#include "common/scene_instance.h"
-#include "common/ray8.h"
+#include "accelset.h"
 
 namespace embree
 {
-  namespace isa
+  /*! Instanced acceleration structure */
+  struct Instance : public AccelSet
   {
-    struct FastInstanceIntersector8
-    {
-      static void intersect(avxb* valid, const Instance* instance, Ray8& ray, size_t item);
-      static void occluded (avxb* valid, const Instance* instance, Ray8& ray, size_t item);
-    };
-  }
+  public:
+    Instance (Scene* parent, Accel* object); 
+    virtual void setTransform(const AffineSpace3fa& local2world);
+    virtual void build(size_t threadIndex, size_t threadCount) {}
+    
+  public:
+    AffineSpace3fa local2world; //!< transforms from local space to world space
+    AffineSpace3fa world2local; //!< transforms from world space to local space
+    Accel* object;              //!< pointer to instanced acceleration structure
+  };
 }

@@ -16,8 +16,6 @@
 
 #pragma once
 
-#include "geometry.h"
-#include "accel.h"
 #include "accelset.h"
 
 namespace embree
@@ -38,19 +36,5 @@ namespace embree
     virtual void setOccludedFunction8 (RTCOccludedFunc8 occluded8, bool ispc);
     virtual void setOccludedFunction16 (RTCOccludedFunc16 occluded16, bool ispc);
     virtual void build(size_t threadIndex, size_t threadCount) {}
-  };
-  
-  /*! Instanced acceleration structure */
-  struct Instance : public AccelSet
-  {
-  public:
-    Instance (Scene* parent, Accel* object); 
-    virtual void setTransform(AffineSpace3fa& local2world);
-    virtual void build(size_t threadIndex, size_t threadCount) {}
-    
-  public:
-    AffineSpace3fa local2world;
-    AffineSpace3fa world2local;
-    Accel* object;
   };
 }

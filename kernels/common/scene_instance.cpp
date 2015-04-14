@@ -14,19 +14,34 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#pragma once
-
-#include "common/scene_instance.h"
-#include "common/ray8.h"
+#include "scene_instance.h"
+#include "scene.h"
 
 namespace embree
 {
-  namespace isa
+  extern RTCBoundsFunc InstanceBoundsFunc;
+  extern AccelSet::Intersector1 InstanceIntersector1;
+  extern AccelSet::Intersector4 InstanceIntersector4;
+  extern AccelSet::Intersector8 InstanceIntersector8;
+  extern AccelSet::Intersector16 InstanceIntersector16;
+
+  Instance::Instance (Scene* parent, Accel* object) 
+    : AccelSet(parent,1), local2world(one), world2local(one), object(object)
   {
-    struct FastInstanceIntersector8
-    {
-      static void intersect(avxb* valid, const Instance* instance, Ray8& ray, size_t item);
-      static void occluded (avxb* valid, const Instance* instance, Ray8& ray, size_t item);
-    };
+    intersectors.ptr = this;
+    boundsFunc = InstanceBoundsFunc;
+    intersectors.intersector1 = InstanceIntersector1;
+    intersectors.intersector4 = InstanceIntersector4; 
+    intersectors.intersector8 = InstanceIntersector8; 
+    intersectors.intersector16 = InstanceIntersector16;
+  }
+  
+  void Instance::setTransform(const AffineSpace3fa& xfm)
+  {
+    if (parent->isStatic() && parent->isBuild())
+      throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
+
+    local2world = xfm;
+    world2local = rcp(xfm);
   }
 }
