@@ -319,6 +319,18 @@ INSTALL(FILES ${PROJECT_SOURCE_DIR}/LICENSE.txt DESTINATION ${DOC_INSTALL_DIR} C
 # SOURCE_GROUP("Documentation" FILES README.md CHANGELOG.md LICENSE.txt readme.pdf)
 
 ##############################################################
+# Uninstall
+##############################################################
+
+configure_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/common/cmake/uninstall.cmake.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/uninstall.cmake"
+    IMMEDIATE @ONLY)
+
+add_custom_target(uninstall
+    COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/uninstall.cmake)
+
+##############################################################
 # Create Binary Packages
 ##############################################################
 SET(CPACK_PACKAGE_VERSION_MAJOR ${EMBREE_VERSION_MAJOR})
