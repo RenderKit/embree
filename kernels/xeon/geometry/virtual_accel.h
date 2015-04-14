@@ -36,7 +36,7 @@ namespace embree
     __forceinline void fill(const PrimRef* prims, size_t& i, size_t end, Scene* scene, const bool list) // FIXME: use nontemporal stores
     {
       const PrimRef& prim = prims[i]; i++;
-      new (this) AccelSetItem((AccelSet*) (UserGeometryBase*) scene->get(prim.geomID()), prim.primID(), list && i>=end);
+      new (this) AccelSetItem((AccelSet*) scene->get(prim.geomID()), prim.primID(), list && i>=end);
     }
 
   public:

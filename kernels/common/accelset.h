@@ -18,14 +18,18 @@
 
 #include "default.h"
 #include "builder.h"
+#include "geometry.h"
 
 namespace embree
 {
   /*! Base class for set of acceleration structures. */
-  class AccelSet : public RefCount 
+  class AccelSet : public Geometry
   {
     ALIGNED_CLASS;
   public:
+
+    /*! type of this geometry */
+    static const Geometry::Type geom_type = Geometry::USER_GEOMETRY;
 
     typedef RTCIntersectFunc IntersectFunc;
     typedef RTCIntersectFunc4 IntersectFunc4;
@@ -127,13 +131,8 @@ namespace embree
       
     public:
       
-      /*! Construction */
-      AccelSet (size_t numItems) : numItems(numItems) {
-        intersectors.ptr = nullptr; 
-      }
-      
-      /*! Virtual destructor */
-      virtual ~AccelSet() {}
+      /*! construction */
+      AccelSet (Scene* parent, size_t items);
       
       /*! makes the acceleration structure immutable */
       virtual void immutable () {}
@@ -155,6 +154,19 @@ namespace embree
         return box;
       }
       
+      /*! check if the i'th primitive is valid */
+      __forceinline bool valid(size_t i, BBox3fa* bbox = nullptr) const 
+      {
+        const BBox3fa b = bounds(i);
+        if (bbox) *bbox = b;
+        return isvalid(b);
+      }
+      
+      void enabling ();
+      void disabling();
+
+  public:
+
       /*! Intersects a single ray with the scene. */
       __forceinline void intersect (RTCRay& ray, size_t item) 
       {
@@ -246,7 +258,7 @@ namespace embree
 #endif
       
     public:
-      size_t numItems;
+      size_t numItems; // FIXME: remove
       RTCBoundsFunc boundsFunc;
 
       struct Intersectors 

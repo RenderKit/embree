@@ -14,29 +14,23 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#pragma once
-
-#include "primitive.h"
+#include "accelset.h"
+#include "scene.h"
 
 namespace embree
 {
-  struct AccelSetItem // FIXME: rename to Object
+  AccelSet::AccelSet (Scene* parent, size_t numItems) 
+    : Geometry(parent,Geometry::USER_GEOMETRY,numItems,1,RTC_GEOMETRY_STATIC), numItems(numItems) 
   {
-  public:
+    intersectors.ptr = nullptr; 
+    enabling();
+  }
 
-    /*! fill triangle from triangle list */
-    __forceinline void fill(const PrimRef* prims, size_t& i, size_t end, Scene* scene) // FIXME: use nontemporal stores
-    {
-      const PrimRef& prim = prims[i];
-
-      accel = (AccelSet*) scene->get(prim.geomID());
-      item  = prim.primID();
-
-      i++;
-    }
-
-  public:
-    AccelSet* accel;
-    size_t item;
-  };
+  void AccelSet::enabling () { 
+    atomic_add(&parent->numUserGeometries1,numItems); 
+  }
+  
+  void AccelSet::disabling() { 
+    atomic_add(&parent->numUserGeometries1,-(ssize_t)numItems); 
+  }
 }

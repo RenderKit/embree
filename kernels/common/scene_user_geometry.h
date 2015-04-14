@@ -22,36 +22,8 @@
 
 namespace embree
 {
-  struct UserGeometryBase : public Geometry, public AccelSet
-  {
-    /*! type of this geometry */
-    static const Geometry::Type geom_type = Geometry::USER_GEOMETRY;
-    
-  public:
-
-    /*! user geometry construction */
-    UserGeometryBase (Scene* parent, Geometry::Type ty, size_t items);
-    
-    /*! returns number of items stored in user geometry */
-    __forceinline size_t size() const {
-      return numItems;
-    }
-
-    /*! check if the i'th primitive is valid */
-    __forceinline bool valid(size_t i, BBox3fa* bbox = nullptr) const 
-    {
-      const BBox3fa b = bounds(i);
-      if (bbox) *bbox = b;
-      return isvalid(b);
-    }
-
-  public:
-    void enabling ();
-    void disabling();
-  };
-  
   /*! */
-  struct UserGeometry : public UserGeometryBase
+  struct UserGeometry : public AccelSet
   {
   public:
     UserGeometry (Scene* parent, size_t items); 
@@ -68,7 +40,7 @@ namespace embree
     virtual void build(size_t threadIndex, size_t threadCount) {}
   };
   
-  struct Instance : public UserGeometryBase
+  struct Instance : public AccelSet
   {
   public:
     Instance (Scene* parent, Accel* object); 

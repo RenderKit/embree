@@ -17,6 +17,7 @@
 #pragma once
 
 #include "default.h"
+#include "accel.h"
 
 namespace embree
 {

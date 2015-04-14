@@ -19,22 +19,8 @@
 
 namespace embree
 {
-  UserGeometryBase::UserGeometryBase (Scene* parent, Geometry::Type ty, size_t items)
-    : Geometry(parent,ty,items,1,RTC_GEOMETRY_STATIC), AccelSet(items)
-  {
-    enabling();
-  }
-
-  void UserGeometryBase::enabling () { 
-    atomic_add(&parent->numUserGeometries1,numItems); 
-  }
-  
-  void UserGeometryBase::disabling() { 
-    atomic_add(&parent->numUserGeometries1,-(ssize_t)numItems); 
-  }
-
   UserGeometry::UserGeometry (Scene* parent, size_t items) 
-    : UserGeometryBase(parent,USER_GEOMETRY,items) {}
+    : AccelSet(parent,items) {}
   
   void UserGeometry::setUserData (void* ptr) {
     intersectors.ptr = ptr;
@@ -126,7 +112,7 @@ namespace embree
   extern AccelSet::Intersector16 InstanceIntersector16;
 
   Instance::Instance (Scene* parent, Accel* object) 
-    : UserGeometryBase(parent,USER_GEOMETRY,1), local2world(one), world2local(one), object(object)
+    : AccelSet(parent,1), local2world(one), world2local(one), object(object)
   {
     intersectors.ptr = this;
     boundsFunc = InstanceBoundsFunc;
