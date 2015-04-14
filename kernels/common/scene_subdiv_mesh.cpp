@@ -453,6 +453,26 @@ namespace embree
 
   bool SubdivMesh::verify () 
   {
+    if (numTimeSteps == 2 && vertices[0].size() != vertices[1].size())
+      return false;
+    
+    /*! verify vertex indices */
+    size_t ofs = 0;
+    for (size_t i=0; i<faceVertices.size(); i++) 
+    {
+      int valence = faceVertices[i];
+      for (size_t j=ofs; j<ofs+valence; j++) 
+      {
+        if (j >= vertexIndices.size())
+          return false;
+
+        if (vertexIndices[j] >= numVertices)
+          return false; 
+      }
+      ofs += valence;
+    }
+
+    /*! verify vertices */
     for (size_t j=0; j<numTimeSteps; j++) {
       BufferT<Vec3fa>& verts = vertices[j];
       for (size_t i=0; i<numVertices; i++) {

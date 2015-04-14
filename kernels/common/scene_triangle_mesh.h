@@ -28,8 +28,14 @@ namespace embree
     static const Geometry::Type geom_type = Geometry::TRIANGLE_MESH;
 
     /*! triangle indices */
-    struct Triangle {
+    struct Triangle 
+    {
       uint32 v[3];
+
+      /*! outputs triangle indices */
+      __forceinline friend std::ostream &operator<<(std::ostream& cout, const Triangle& t) {
+        return cout << "{ tri " << t.v[0] << ", " << t.v[1] << ", " << t.v[2] << " }";
+      }
     };
     
   public:
@@ -56,6 +62,11 @@ namespace embree
     /*! returns number of triangles */
     __forceinline size_t size() const {
       return triangles.size();
+    }
+
+    /*! returns number of vertices */
+    __forceinline size_t numVertices() const {
+      return vertices[0].size();
     }
     
     /*! returns i'th triangle*/
@@ -99,9 +110,9 @@ namespace embree
     __forceinline bool valid(size_t i, BBox3fa* bbox = nullptr) const 
     {
       const Triangle& tri = triangle(i);
-      if (tri.v[0] >= numVertices) return false;
-      if (tri.v[1] >= numVertices) return false;
-      if (tri.v[2] >= numVertices) return false;
+      if (tri.v[0] >= numVertices()) return false;
+      if (tri.v[1] >= numVertices()) return false;
+      if (tri.v[2] >= numVertices()) return false;
 
       for (size_t j=0; j<numTimeSteps; j++) 
       {
@@ -124,9 +135,9 @@ namespace embree
     template<unsigned int HINT=0>
       __forceinline mic3f getTriangleVertices(const Triangle &tri,const size_t dim=0) const 
       {
-	assert( tri.v[0] < numVertices );
-	assert( tri.v[1] < numVertices );
-	assert( tri.v[2] < numVertices );
+	assert( tri.v[0] < numVertices() );
+	assert( tri.v[1] < numVertices() );
+	assert( tri.v[2] < numVertices() );
 
 #if !defined(RTCORE_BUFFER_STRIDE)
 	
@@ -177,16 +188,8 @@ namespace embree
 #endif
     
   public:
-    unsigned mask;                    //!< for masking out geometry
-    BufferT<Triangle> triangles;      //!< array of triangles
+    unsigned mask;                        //!< for masking out geometry
+    BufferT<Triangle> triangles;          //!< array of triangles
     array_t<BufferT<Vec3fa>,2> vertices;  //!< vertex array
-    size_t numVertices;               //!< number of vertices
   };
-
-  __forceinline std::ostream &operator<<(std::ostream &o, const TriangleMesh::Triangle &t)
-  {
-    o << "tri " << t.v[0] << " " << t.v[1] << " " << t.v[2] << std::endl;
-    return o;
-  } 
-
 }

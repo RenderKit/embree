@@ -389,9 +389,9 @@ namespace embree
 		prefetch<PFHINT_L2>(cptr + L2_PREFETCH_ITEMS);
 		prefetch<PFHINT_L1>(cptr + L1_PREFETCH_ITEMS);
 
-		assert( tri.v[0] < mesh->numVertices );
-		assert( tri.v[1] < mesh->numVertices );
-		assert( tri.v[2] < mesh->numVertices );
+		assert( tri.v[0] < mesh->numVertices() );
+		assert( tri.v[1] < mesh->numVertices() );
+		assert( tri.v[2] < mesh->numVertices() );
 
 #if DEBUG
 		for (size_t k=0;k<3;k++)

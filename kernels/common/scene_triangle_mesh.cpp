@@ -20,8 +20,7 @@
 namespace embree
 {
   TriangleMesh::TriangleMesh (Scene* parent, RTCGeometryFlags flags, size_t numTriangles, size_t numVertices, size_t numTimeSteps)
-    : Geometry(parent,TRIANGLE_MESH,numTriangles,numTimeSteps,flags), 
-      mask(-1), numVertices(numVertices)
+    : Geometry(parent,TRIANGLE_MESH,numTriangles,numTimeSteps,flags), mask(-1)
   {
     triangles.init(numTriangles,sizeof(Triangle));
     for (size_t i=0; i<numTimeSteps; i++) {
@@ -65,16 +64,16 @@ namespace embree
       break;
     case RTC_VERTEX_BUFFER0: 
       vertices[0].set(ptr,offset,stride); 
-      if (numVertices) {
+      if (vertices[0].size()) {
         /* test if array is properly padded */
-        volatile int w = *((int*)vertices[0].getPtr(numVertices-1)+3); // FIXME: is failing hard avoidable?
+        volatile int w = *((int*)vertices[0].getPtr(vertices[0].size()-1)+3); // FIXME: is failing hard avoidable?
       }
       break;
     case RTC_VERTEX_BUFFER1: 
       vertices[1].set(ptr,offset,stride); 
-      if (numVertices) {
+      if (vertices[1].size()) {
         /* test if array is properly padded */
-        volatile int w = *((int*)vertices[1].getPtr(numVertices-1)+3); // FIXME: is failing hard avoidable?
+        volatile int w = *((int*)vertices[1].getPtr(vertices[1].size()-1)+3); // FIXME: is failing hard avoidable?
       }
       break;
     default: 
@@ -119,14 +118,17 @@ namespace embree
 
   bool TriangleMesh::verify () 
   {
+    if (numTimeSteps == 2 && vertices[0].size() != vertices[1].size())
+        return false;
+
     for (size_t i=0; i<triangles.size(); i++) {     
-      if (triangles[i].v[0] >= numVertices) return false; 
-      if (triangles[i].v[1] >= numVertices) return false; 
-      if (triangles[i].v[2] >= numVertices) return false; 
+      if (triangles[i].v[0] >= numVertices()) return false; 
+      if (triangles[i].v[1] >= numVertices()) return false; 
+      if (triangles[i].v[2] >= numVertices()) return false; 
     }
     for (size_t j=0; j<numTimeSteps; j++) {
       BufferT<Vec3fa>& verts = vertices[j];
-      for (size_t i=0; i<numVertices; i++) {
+      for (size_t i=0; i<verts.size(); i++) {
 	if (!isvalid(verts[i])) 
 	  return false;
       }
@@ -139,13 +141,14 @@ namespace embree
     int type = TRIANGLE_MESH;
     file.write((char*)&type,sizeof(int));
     file.write((char*)&numTimeSteps,sizeof(int));
-    file.write((char*)&numVertices,sizeof(int));
+    int numVerts = numVertices();
+    file.write((char*)&numVerts,sizeof(int));
     int numTriangles = triangles.size();
     file.write((char*)&numTriangles,sizeof(int));
 
     for (size_t j=0; j<numTimeSteps; j++) {
       while ((file.tellp() % 16) != 0) { char c = 0; file.write(&c,1); }
-      for (size_t i=0; i<numVertices; i++) file.write((char*)vertexPtr(i,j),sizeof(Vec3fa));  
+      for (size_t i=0; i<numVerts; i++) file.write((char*)vertexPtr(i,j),sizeof(Vec3fa));  
     }
 
     while ((file.tellp() % 16) != 0) { char c = 0; file.write(&c,1); }
