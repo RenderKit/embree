@@ -14,7 +14,7 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-SET(EMBREE_INCLUDE_DIRS /usr/include) # FIXME
-SET(EMBREE_LIBRARY /usr/lib/libembree.dll) # FIXME
+SET(EMBREE_INCLUDE_DIRS ${CMAKE_CURRENT_LIST_DIR}/../../../include)
+SET(EMBREE_LIBRARY ${CMAKE_CURRENT_LIST_DIR}/../../libembree.dll)
 
 MARK_AS_ADVANCED(embree_DIR)

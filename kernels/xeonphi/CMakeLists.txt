@@ -93,9 +93,6 @@ ADD_ISPC_LIBRARY(embree_xeonphi ${EMBREE_LIB_TYPE}
 
 TARGET_LINK_LIBRARIES(embree_xeonphi sys_xeonphi simd_xeonphi tasking_xeonphi lexers_xeonphi ${ADDITIONAL_LIBRARIES})
 
-# only add version to library when creating installer
-IF (CMAKE_SKIP_INSTALL_RPATH)
-  SET_TARGET_PROPERTIES(embree_xeonphi PROPERTIES VERSION ${EMBREE_VERSION} SOVERSION ${EMBREE_VERSION_MAJOR})
-ENDIF()
+SET_TARGET_PROPERTIES(embree_xeonphi PROPERTIES VERSION ${EMBREE_VERSION} SOVERSION ${EMBREE_VERSION_MAJOR})
 
 INSTALL(TARGETS embree_xeonphi LIBRARY DESTINATION lib COMPONENT libraries_xeonphi NAMELINK_SKIP)
