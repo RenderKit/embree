@@ -386,15 +386,13 @@ namespace embree
           //value -= (size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();
 	  curNode = BVH4::encodeTypedLeaf((void*)value,2);
 
-#if defined(DEBUG)
-	  assert( isfinite(bounds.lower.x) );
-	  assert( isfinite(bounds.lower.y) );
-	  assert( isfinite(bounds.lower.z) );
+	  assert( std::isfinite(bounds.lower.x) );
+	  assert( std::isfinite(bounds.lower.y) );
+	  assert( std::isfinite(bounds.lower.z) );
 	  
-	  assert( isfinite(bounds.upper.x) );
-	  assert( isfinite(bounds.upper.y) );
-	  assert( isfinite(bounds.upper.z) );
-#endif
+	  assert( std::isfinite(bounds.upper.x) );
+	  assert( std::isfinite(bounds.upper.y) );
+	  assert( std::isfinite(bounds.upper.z) );
 
 	  return bounds;
 	}

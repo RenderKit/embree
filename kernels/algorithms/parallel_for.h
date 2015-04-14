@@ -26,6 +26,7 @@
 
 namespace embree
 {
+#if defined(TASKING_LOCKSTEP)
   template<typename Index, typename Func>
     class ParallelForTask
   {
@@ -50,6 +51,7 @@ namespace embree
     private:
       const Func& func;
   };
+#endif
 
   /* simple parallel_for without range optimization (similar to a task set) */
   template<typename Index, typename Func>
