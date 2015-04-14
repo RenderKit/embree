@@ -64,17 +64,19 @@ namespace embree
       break;
     case RTC_VERTEX_BUFFER0: 
       vertices[0].set(ptr,offset,stride); 
-      if (vertices[0].size()) {
-        /* test if array is properly padded */
+
+      /* test if array is properly padded */
+      if (vertices[0].size()) 
         volatile int w = *((int*)vertices[0].getPtr(vertices[0].size()-1)+3); // FIXME: is failing hard avoidable?
-      }
+
       break;
     case RTC_VERTEX_BUFFER1: 
       vertices[1].set(ptr,offset,stride); 
-      if (vertices[1].size()) {
-        /* test if array is properly padded */
+
+      /* test if array is properly padded */
+      if (vertices[1].size()) 
         volatile int w = *((int*)vertices[1].getPtr(vertices[1].size()-1)+3); // FIXME: is failing hard avoidable?
-      }
+      
       break;
     default: 
       throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type");
@@ -118,15 +120,20 @@ namespace embree
 
   bool TriangleMesh::verify () 
   {
+    /*! verify consistent size of vertex arrays */
     if (numTimeSteps == 2 && vertices[0].size() != vertices[1].size())
         return false;
 
+    /*! verify proper triangle indices */
     for (size_t i=0; i<triangles.size(); i++) {     
       if (triangles[i].v[0] >= numVertices()) return false; 
       if (triangles[i].v[1] >= numVertices()) return false; 
       if (triangles[i].v[2] >= numVertices()) return false; 
     }
-    for (size_t j=0; j<numTimeSteps; j++) {
+
+    /*! verify proper triangle vertices */
+    for (size_t j=0; j<numTimeSteps; j++) 
+    {
       BufferT<Vec3fa>& verts = vertices[j];
       for (size_t i=0; i<verts.size(); i++) {
 	if (!isvalid(verts[i])) 
