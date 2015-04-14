@@ -20,24 +20,29 @@
 
 /* Makros to gather statistics */
 #ifdef RTCORE_STAT_COUNTERS
-#define STAT(x) x
-#define STAT3(s,x,y,z) \
+#  define STAT(x) x
+#  define STAT3(s,x,y,z) \
   STAT(Stat::get().code  .s+=x);               \
   STAT(Stat::get().active.s+=y);               \
   STAT(Stat::get().all   .s+=z);
 #else
-#define STAT(x)
-#define STAT3(s,x,y,z)
+#  define STAT(x)
+#  define STAT3(s,x,y,z)
 #endif
 
 namespace embree
 {
-  /*! Gathers ray tracing statistics. */
+  /*! Gathers ray tracing statistics. We count 1) how often a code
+   *  location is reached, 2) how many SIMD lanes are active, 3) how
+   *  many SIMD lanes reach the code location */
   class Stat
   { 
   public:
-    
+
+    /*! constructs stat counter class */
     Stat ();
+
+    /*! destructs stat counter class */
     ~Stat ();
 
     class Counters 
@@ -54,7 +59,8 @@ namespace embree
     public:
 
 	/* per packet and per ray stastics */
-	struct {
+	struct 
+        {
 	  /* normal and shadow ray statistics */
 	  struct {
 	    AtomicCounter travs;
@@ -69,7 +75,7 @@ namespace embree
 #endif
 
 	  } normal, shadow;
-	} all, active, code;
+	} all, active, code; 
 
     };
 
@@ -87,6 +93,7 @@ namespace embree
 
   private: 
     Counters cntrs;
+
   private:
     static Stat instance;
   };
