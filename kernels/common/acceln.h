@@ -20,6 +20,7 @@
 
 namespace embree
 {
+  /*! merges N acceleration structures together, by processing them in order */
   class AccelN : public Accel
   {
   public:

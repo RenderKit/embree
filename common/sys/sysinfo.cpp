@@ -102,6 +102,7 @@ namespace embree
     __cpuid(out, 1);
     int family = ((out[0] >> 8) & 0x0F) + ((out[0] >> 20) & 0xFF);
     int model  = ((out[0] >> 4) & 0x0F) | ((out[0] >> 12) & 0xF0);
+    if (family ==  11) return CPU_KNC;
     if (family !=   6) return CPU_UNKNOWN;           // earlier than P6
     if (model == 0x0E) return CPU_CORE1;             // Core 1
     if (model == 0x0F) return CPU_CORE2;             // Core 2, 65 nm
@@ -122,6 +123,7 @@ namespace embree
   std::string stringOfCPUModel(CPUModel model)
   {
     switch (model) {
+    case CPU_KNC             : return "Knights Corner";
     case CPU_CORE1           : return "Core1";
     case CPU_CORE2           : return "Core2";
     case CPU_CORE_NEHALEM    : return "Nehalem";

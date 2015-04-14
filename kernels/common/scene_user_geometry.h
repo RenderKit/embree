@@ -22,7 +22,7 @@
 
 namespace embree
 {
-  /*! */
+  /*! User geometry with user defined intersection functions */
   struct UserGeometry : public AccelSet
   {
   public:
@@ -40,6 +40,7 @@ namespace embree
     virtual void build(size_t threadIndex, size_t threadCount) {}
   };
   
+  /*! Instanced acceleration structure */
   struct Instance : public AccelSet
   {
   public:
