@@ -35,7 +35,7 @@ class BVH8Intersector8Hybrid
       typedef typename TriangleIntersector8::Primitive Triangle;
       typedef typename BVH8::NodeRef NodeRef;
       typedef typename BVH8::Node Node;
-      typedef StackItemT<NodeRef> StackItem;
+      //typedef StackItemT<NodeRef> StackItem;
       static const size_t stackSizeSingle = 1+3*BVH8::maxDepth;
       static const size_t stackSizeChunk = 4*BVH8::maxDepth+1;
 
