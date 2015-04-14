@@ -75,8 +75,8 @@ namespace embree
 	if (unlikely(!mesh->isEnabled())) continue;
 	if (unlikely(mesh->numTimeSteps != 1)) continue;
 
-	maxPrimsPerGroup = max(maxPrimsPerGroup,mesh->numTriangles);
-	numPrimitives   += mesh->numTriangles;
+	maxPrimsPerGroup = max(maxPrimsPerGroup,mesh->size());
+	numPrimitives   += mesh->size();
       }
 
     /* calculate groupID, primID encoding */
@@ -298,7 +298,7 @@ namespace embree
       if (unlikely(!mesh->isEnabled())) continue;
       if (unlikely(mesh->numTimeSteps != 1)) continue;
 
-      const size_t numTriangles = mesh->numTriangles;	
+      const size_t numTriangles = mesh->size();	
       if (skipped + numTriangles > startID) break;
       skipped += numTriangles;
     }
@@ -335,20 +335,20 @@ namespace embree
       if (unlikely(!mesh->isEnabled())) continue;
       if (unlikely(mesh->numTimeSteps != 1)) continue;
 
-      if (offset < mesh->numTriangles)
+      if (offset < mesh->size())
 	{
 	  const char* __restrict__ cptr_tri = (char*)&mesh->triangle(offset);
 	  const unsigned int stride = mesh->triangles.getBufferStride();
       
-	  for (size_t i=offset; i<mesh->numTriangles && currentID < endID; i++, currentID++,cptr_tri+=stride)	 
+	  for (size_t i=offset; i<mesh->size() && currentID < endID; i++, currentID++,cptr_tri+=stride)	 
 	    {
 	      const TriangleMesh::Triangle& tri = *(TriangleMesh::Triangle*)cptr_tri;
 	      prefetch<PFHINT_L1>(&tri + L1_PREFETCH_ITEMS);
 	      prefetch<PFHINT_L2>(&tri + L2_PREFETCH_ITEMS);
 
-	      assert( tri.v[0] < mesh->numVertices );
-	      assert( tri.v[1] < mesh->numVertices );
-	      assert( tri.v[2] < mesh->numVertices );
+	      assert( tri.v[0] < mesh->numVertices() );
+	      assert( tri.v[1] < mesh->numVertices() );
+	      assert( tri.v[2] < mesh->numVertices() );
 
 	      const mic3f v = mesh->getTriangleVertices<PFHINT_L2>(tri);
 
@@ -406,11 +406,11 @@ namespace embree
       if (unlikely(!mesh->isEnabled())) continue;
       if (unlikely(mesh->numTimeSteps != 1)) continue;
 
-      const size_t numTriangles = min(mesh->numTriangles-offset,endID-currentID);
+      const size_t numTriangles = min(mesh->size()-offset,endID-currentID);
        
       const unsigned int groupCode = (group << encodeShift);
 
-      if (offset < mesh->numTriangles)
+      if (offset < mesh->size())
 	{
 	  const char* __restrict__ cptr_tri = (char*)&mesh->triangle(offset);
 	  const unsigned int stride = mesh->triangles.getBufferStride();

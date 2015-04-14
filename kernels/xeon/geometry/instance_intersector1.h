@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "common/scene_user_geometry.h"
+#include "common/scene_instance.h"
 #include "common/ray.h"
 
 namespace embree

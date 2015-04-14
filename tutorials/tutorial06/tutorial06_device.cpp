@@ -1048,7 +1048,7 @@ RTCScene convertScene(ISPCScene* scene_in,const Vec3fa& cam_org)
   geomID_to_type = new int[numGeometries];
 
   /* create scene */
-  int scene_flags = RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT | RTC_SCENE_ROBUST;
+  int scene_flags = RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT;
 
   if (g_subdiv_mode)   
     scene_flags = RTC_SCENE_DYNAMIC | RTC_SCENE_INCOHERENT | RTC_SCENE_ROBUST;

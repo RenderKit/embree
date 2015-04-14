@@ -29,7 +29,7 @@ namespace embree
     {
       const PrimRef& prim = prims[i];
 
-      accel = (AccelSet*) (UserGeometryBase*) scene->get(prim.geomID());
+      accel = (AccelSet*) scene->get(prim.geomID());
       item  = prim.primID();
 
       i++;

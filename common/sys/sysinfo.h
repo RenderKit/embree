@@ -76,7 +76,8 @@ namespace embree
     CPU_CORE1,
     CPU_CORE2,
     CPU_CORE_NEHALEM,
-    CPU_CORE_SANDYBRIDGE
+    CPU_CORE_SANDYBRIDGE,
+    CPU_KNC
   };
 
   /*! get the full path to the running executable */

@@ -112,6 +112,9 @@ namespace embree
 
   bool BezierCurves::verify () 
   {
+    if (numTimeSteps == 2 && vertices[0].size() != vertices[1].size())
+        return false;
+
     for (size_t i=0; i<numPrimitives; i++) {
       if (curves[i]+3 >= numVertices()) return false;
     }

@@ -281,7 +281,7 @@ PRINT(CORRECT_numPrims);
       if (unlikely(!mesh->isEnabled())) continue;
       if (unlikely(mesh->numTimeSteps != 1)) continue;
 
-      const size_t numTriangles = mesh->numTriangles;
+      const size_t numTriangles = mesh->size();
       if (numSkipped + numTriangles > startID) break;
       numSkipped += numTriangles;
     }
@@ -301,12 +301,12 @@ PRINT(CORRECT_numPrims);
 	  if (unlikely(!mesh->isEnabled())) continue;
 	  if (unlikely(mesh->numTimeSteps != 1)) continue;
 
-	  if (offset < mesh->numTriangles)
+	  if (offset < mesh->size())
 	    {
 	      const char* __restrict__ cptr_tri = (char*)&mesh->triangle(offset);
 	      const unsigned int stride = mesh->triangles.getBufferStride();
 
-	      for (unsigned int i=offset; i<mesh->numTriangles && currentID < endID; i++, currentID++,cptr_tri+=stride)	 
+	      for (unsigned int i=offset; i<mesh->size() && currentID < endID; i++, currentID++,cptr_tri+=stride)	 
 		{ 			    
 		  const TriangleMesh::Triangle& tri = *(TriangleMesh::Triangle*)cptr_tri;
 		  prefetch<PFHINT_L2>(&tri + L2_PREFETCH_ITEMS);
@@ -351,7 +351,7 @@ PRINT(CORRECT_numPrims);
       if (unlikely(!mesh->isEnabled())) continue;
       if (unlikely(mesh->numTimeSteps != 1)) continue;
 
-      const size_t numTriangles = mesh->numTriangles;
+      const size_t numTriangles = mesh->size();
       if (numSkipped + numTriangles > startID) break;
       numSkipped += numTriangles;
     }
@@ -377,12 +377,12 @@ PRINT(CORRECT_numPrims);
 	  if (unlikely(!mesh->isEnabled())) continue;
 	  if (unlikely(mesh->numTimeSteps != 1)) continue;
 
-	  if (offset < mesh->numTriangles)
+	  if (offset < mesh->size())
 	    {
 	      const char* __restrict__ cptr_tri = (char*)&mesh->triangle(offset);
 	      const unsigned int stride = mesh->triangles.getBufferStride();
 
-	      for (unsigned int i=offset; i<mesh->numTriangles && currentID < endID; i++, currentID++,cptr_tri+=stride)	 
+	      for (unsigned int i=offset; i<mesh->size() && currentID < endID; i++, currentID++,cptr_tri+=stride)	 
 		{ 			    
 		  const TriangleMesh::Triangle& tri = *(TriangleMesh::Triangle*)cptr_tri;
 		  //const TriangleMesh::Triangle& tri = mesh->triangle(i);
@@ -456,12 +456,12 @@ PRINT(CORRECT_numPrims);
 	  if (unlikely(!mesh->isEnabled())) continue;
 	  if (unlikely(mesh->numTimeSteps != 1)) continue;
 
-	  if (offset < mesh->numTriangles)
+	  if (offset < mesh->size())
 	    {
 	      const char* __restrict__ cptr_tri = (char*)&mesh->triangle(offset);
 	      const unsigned int stride = mesh->triangles.getBufferStride();
 
-	      for (unsigned int i=offset; i<mesh->numTriangles && currentID < endID; i++, currentID++,cptr_tri+=stride)	 
+	      for (unsigned int i=offset; i<mesh->size() && currentID < endID; i++, currentID++,cptr_tri+=stride)	 
 		{ 			    
 		  //const TriangleMesh::Triangle& tri = mesh->triangle(i);
 		  const TriangleMesh::Triangle& tri = *(TriangleMesh::Triangle*)cptr_tri;
@@ -636,7 +636,7 @@ PRINT(CORRECT_numPrims);
 	if (unlikely(scene->get(i) == nullptr)) continue;
 	if (unlikely((scene->get(i)->type != Geometry::USER_GEOMETRY) /*&& (scene->get(i)->type != INSTANCES)*/)) continue;
 	if (unlikely(!scene->get(i)->isEnabled())) continue;
-        UserGeometryBase* geom = (UserGeometryBase*) scene->get(i);
+        AccelSet* geom = (AccelSet*) scene->get(i);
 	numVirtualObjects += geom->size();
       }
     return numVirtualObjects;	
@@ -669,7 +669,7 @@ PRINT(CORRECT_numPrims);
       if (unlikely(scene->get(g) == nullptr)) continue;
       if (unlikely((scene->get(g)->type != Geometry::USER_GEOMETRY) /*&& (scene->get(g)->type != INSTANCES)*/)) continue;
       if (unlikely(!scene->get(g)->isEnabled())) continue;
-      const UserGeometryBase* const geom = (UserGeometryBase*) scene->get(g);
+      const AccelSet* const geom = (AccelSet*) scene->get(g);
       const size_t numPrims = geom->size();
       if (numSkipped + numPrims > startID) break;
       numSkipped += numPrims;
@@ -691,7 +691,7 @@ PRINT(CORRECT_numPrims);
 	if (unlikely((scene->get(g)->type != Geometry::USER_GEOMETRY ) /*&& (scene->get(g)->type != INSTANCES)*/)) continue;
 	if (unlikely(!scene->get(g)->isEnabled())) continue;
 
-	UserGeometryBase *virtual_geometry = (UserGeometryBase *)scene->get(g);
+	AccelSet *virtual_geometry = (AccelSet *)scene->get(g);
 
         size_t N = virtual_geometry->size();
         for (unsigned int i=offset; i<N && currentID < endID; i++, currentID++)	 
@@ -741,7 +741,7 @@ PRINT(CORRECT_numPrims);
 	prefetch<PFHINT_NT>(bptr + L1_PREFETCH_ITEMS);
 	prefetch<PFHINT_L2>(bptr + L2_PREFETCH_ITEMS);
 	assert(bptr->geomID() < scene->size() );
-        AccelSet* _accel = (AccelSet*)(UserGeometryBase *) scene->get( bptr->geomID() );
+        AccelSet* _accel = (AccelSet*) scene->get( bptr->geomID() );
 	acc->accel = _accel;
         acc->item = bptr->primID();
       }
@@ -834,7 +834,7 @@ PRINT(CORRECT_numPrims);
 
 	const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
 
-	assert(primID < mesh->numTriangles );
+	assert(primID < mesh->size() );
 
 	const TriangleMesh::Triangle & tri = mesh->triangle(primID);
 

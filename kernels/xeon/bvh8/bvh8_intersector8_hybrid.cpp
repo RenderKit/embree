@@ -32,9 +32,9 @@ namespace embree
     __forceinline void BVH8Intersector8Hybrid<PrimitiveIntersector8>::intersect1(const BVH8* bvh, NodeRef root, const size_t k, Precalculations& pre, Ray8& ray,const avx3f &ray_org, const avx3f &ray_dir, const avx3f &ray_rdir, const avxf &ray_tnear, const avxf &ray_tfar, const avx3i& nearXYZ)
     {
       /*! stack state */
-      StackItemInt32<NodeRef> stack[stackSizeSingle];  //!< stack of nodes 
-      StackItemInt32<NodeRef>* stackPtr = stack+1;        //!< current stack pointer
-      StackItemInt32<NodeRef>* stackEnd = stack+stackSizeSingle;
+      StackItemT<NodeRef> stack[stackSizeSingle];  //!< stack of nodes 
+      StackItemT<NodeRef>* stackPtr = stack+1;        //!< current stack pointer
+      StackItemT<NodeRef>* stackEnd = stack+stackSizeSingle;
       stack[0].ptr = root;
       stack[0].dist = neg_inf;
       

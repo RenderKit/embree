@@ -34,7 +34,7 @@ namespace embree
     /*! bezier curve construction */
     BezierCurves (Scene* parent, RTCGeometryFlags flags, size_t numPrimitives, size_t numVertices, size_t numTimeSteps); 
     
-    /*! wirte the bezier curve geometry to disk */
+    /*! writes the bezier curve geometry to disk */
     void write(std::ofstream& file);
     
   public:
@@ -51,18 +51,16 @@ namespace embree
     
     /*! returns number of bezier curves */
     __forceinline size_t size() const {
-      return numPrimitives;
+      return curves.size();
     }
     
     /*! returns the number of vertices */
     __forceinline size_t numVertices() const {
-      assert(numTimeSteps == 1 || (vertices[0].size() == vertices[1].size()));
       return vertices[0].size();
     }
     
     /*! returns the i'th curve */
     __forceinline const int& curve(size_t i) const {
-      assert(i < numPrimitives);
       return curves[i];
     }
     

@@ -14,31 +14,23 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#pragma once
-
-#include "bvh4.h"
-#include "common/ray4.h"
-#include "common/stack_item.h"
+#include "accelset.h"
+#include "scene.h"
 
 namespace embree
 {
-  namespace isa 
+  AccelSet::AccelSet (Scene* parent, size_t numItems) 
+    : Geometry(parent,Geometry::USER_GEOMETRY,numItems,1,RTC_GEOMETRY_STATIC), numItems(numItems) 
   {
-    /*! BVH4 Hybrid Packet traversal implementation. Switched between packet and single ray traversal. */
-    template<int types, bool robust, typename PrimitiveIntersector>
-      class BVH4Intersector4Hybrid 
-    {
-      /* shortcuts for frequently used types */
-      typedef typename PrimitiveIntersector::Precalculations Precalculations;
-      typedef typename PrimitiveIntersector::Primitive Primitive;
-      typedef typename BVH4::NodeRef NodeRef;
-      typedef typename BVH4::Node Node;
-      static const size_t stackSizeSingle = 1+3*BVH4::maxDepth;
-      static const size_t stackSizeChunk = 4*BVH4::maxDepth+1;
+    intersectors.ptr = nullptr; 
+    enabling();
+  }
 
-    public:
-      static void intersect(sseb* valid, BVH4* bvh, Ray4& ray);
-      static void occluded (sseb* valid, BVH4* bvh, Ray4& ray);
-    };
+  void AccelSet::enabling () { 
+    atomic_add(&parent->numUserGeometries1,numItems); 
+  }
+  
+  void AccelSet::disabling() { 
+    atomic_add(&parent->numUserGeometries1,-(ssize_t)numItems); 
   }
 }

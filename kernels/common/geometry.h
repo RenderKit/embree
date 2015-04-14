@@ -172,9 +172,9 @@ namespace embree
   public:
     
     /*! Sets transformation of the instance */
-    virtual void setTransform(AffineSpace3fa& transform) {
+    virtual void setTransform(const AffineSpace3fa& transform) {
       throw_RTCError(RTC_INVALID_OPERATION,"operation not supported for this geometry"); 
-    };
+    }
 
     /*! for user geometries only */
   public:

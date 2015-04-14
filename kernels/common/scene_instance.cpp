@@ -14,31 +14,34 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#pragma once
-
-#include "bvh4.h"
-#include "common/ray4.h"
-#include "common/stack_item.h"
+#include "scene_instance.h"
+#include "scene.h"
 
 namespace embree
 {
-  namespace isa 
-  {
-    /*! BVH4 Hybrid Packet traversal implementation. Switched between packet and single ray traversal. */
-    template<int types, bool robust, typename PrimitiveIntersector>
-      class BVH4Intersector4Hybrid 
-    {
-      /* shortcuts for frequently used types */
-      typedef typename PrimitiveIntersector::Precalculations Precalculations;
-      typedef typename PrimitiveIntersector::Primitive Primitive;
-      typedef typename BVH4::NodeRef NodeRef;
-      typedef typename BVH4::Node Node;
-      static const size_t stackSizeSingle = 1+3*BVH4::maxDepth;
-      static const size_t stackSizeChunk = 4*BVH4::maxDepth+1;
+  extern RTCBoundsFunc InstanceBoundsFunc;
+  extern AccelSet::Intersector1 InstanceIntersector1;
+  extern AccelSet::Intersector4 InstanceIntersector4;
+  extern AccelSet::Intersector8 InstanceIntersector8;
+  extern AccelSet::Intersector16 InstanceIntersector16;
 
-    public:
-      static void intersect(sseb* valid, BVH4* bvh, Ray4& ray);
-      static void occluded (sseb* valid, BVH4* bvh, Ray4& ray);
-    };
+  Instance::Instance (Scene* parent, Accel* object) 
+    : AccelSet(parent,1), local2world(one), world2local(one), object(object)
+  {
+    intersectors.ptr = this;
+    boundsFunc = InstanceBoundsFunc;
+    intersectors.intersector1 = InstanceIntersector1;
+    intersectors.intersector4 = InstanceIntersector4; 
+    intersectors.intersector8 = InstanceIntersector8; 
+    intersectors.intersector16 = InstanceIntersector16;
+  }
+  
+  void Instance::setTransform(const AffineSpace3fa& xfm)
+  {
+    if (parent->isStatic() && parent->isBuild())
+      throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
+
+    local2world = xfm;
+    world2local = rcp(xfm);
   }
 }

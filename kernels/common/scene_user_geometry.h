@@ -16,37 +16,12 @@
 
 #pragma once
 
-#include "default.h"
-#include "accel.h"
 #include "accelset.h"
-#include "geometry.h"
 
 namespace embree
 {
-  struct UserGeometryBase : public Geometry, public AccelSet
-  {
-    static const Geometry::Type geom_type = Geometry::USER_GEOMETRY;
-    
-  public:
-    UserGeometryBase (Scene* parent, Geometry::Type ty, size_t items);
-    
-    __forceinline size_t size() const {
-      return numItems;
-    }
-
-    /*! check if the i'th primitive is valid */
-    __forceinline bool valid(size_t i, BBox3fa* bbox = nullptr) const 
-    {
-      const BBox3fa b = bounds(i);
-      if (bbox) *bbox = b;
-      return isvalid(b);
-    }
-
-    void enabling ();
-    void disabling();
-  };
-
-  struct UserGeometry : public UserGeometryBase
+  /*! User geometry with user defined intersection functions */
+  struct UserGeometry : public AccelSet
   {
   public:
     UserGeometry (Scene* parent, size_t items); 
@@ -61,18 +36,5 @@ namespace embree
     virtual void setOccludedFunction8 (RTCOccludedFunc8 occluded8, bool ispc);
     virtual void setOccludedFunction16 (RTCOccludedFunc16 occluded16, bool ispc);
     virtual void build(size_t threadIndex, size_t threadCount) {}
-  };
-  
-  struct Instance : public UserGeometryBase
-  {
-  public:
-    Instance (Scene* parent, Accel* object); 
-    virtual void setTransform(AffineSpace3fa& local2world);
-    virtual void build(size_t threadIndex, size_t threadCount) {}
-    
-  public:
-    AffineSpace3fa local2world;
-    AffineSpace3fa world2local;
-    Accel* object;
   };
 }

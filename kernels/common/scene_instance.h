@@ -16,29 +16,21 @@
 
 #pragma once
 
-#include "bvh4.h"
-#include "common/ray4.h"
-#include "common/stack_item.h"
+#include "accelset.h"
 
 namespace embree
 {
-  namespace isa 
+  /*! Instanced acceleration structure */
+  struct Instance : public AccelSet
   {
-    /*! BVH4 Hybrid Packet traversal implementation. Switched between packet and single ray traversal. */
-    template<int types, bool robust, typename PrimitiveIntersector>
-      class BVH4Intersector4Hybrid 
-    {
-      /* shortcuts for frequently used types */
-      typedef typename PrimitiveIntersector::Precalculations Precalculations;
-      typedef typename PrimitiveIntersector::Primitive Primitive;
-      typedef typename BVH4::NodeRef NodeRef;
-      typedef typename BVH4::Node Node;
-      static const size_t stackSizeSingle = 1+3*BVH4::maxDepth;
-      static const size_t stackSizeChunk = 4*BVH4::maxDepth+1;
-
-    public:
-      static void intersect(sseb* valid, BVH4* bvh, Ray4& ray);
-      static void occluded (sseb* valid, BVH4* bvh, Ray4& ray);
-    };
-  }
+  public:
+    Instance (Scene* parent, Accel* object); 
+    virtual void setTransform(const AffineSpace3fa& local2world);
+    virtual void build(size_t threadIndex, size_t threadCount) {}
+    
+  public:
+    AffineSpace3fa local2world; //!< transforms from local space to world space
+    AffineSpace3fa world2local; //!< transforms from world space to local space
+    Accel* object;              //!< pointer to instanced acceleration structure
+  };
 }

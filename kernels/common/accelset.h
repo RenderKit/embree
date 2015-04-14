@@ -18,14 +18,18 @@
 
 #include "default.h"
 #include "builder.h"
+#include "geometry.h"
 
 namespace embree
 {
   /*! Base class for set of acceleration structures. */
-  class AccelSet : public RefCount 
+  class AccelSet : public Geometry
   {
     ALIGNED_CLASS;
   public:
+
+    /*! type of this geometry */
+    static const Geometry::Type geom_type = Geometry::USER_GEOMETRY;
 
     typedef RTCIntersectFunc IntersectFunc;
     typedef RTCIntersectFunc4 IntersectFunc4;
@@ -127,16 +131,11 @@ namespace embree
       
     public:
       
-      /*! Construction */
-      AccelSet (size_t numItems) : numItems(numItems) {
-        intersectors.ptr = nullptr; 
-      }
-      
-      /*! Virtual destructor */
-      virtual ~AccelSet() {}
+      /*! construction */
+      AccelSet (Scene* parent, size_t items);
       
       /*! makes the acceleration structure immutable */
-      virtual void immutable () {};
+      virtual void immutable () {}
       
       /*! build accel */
       virtual void build (size_t threadIndex, size_t threadCount) = 0;
@@ -150,19 +149,37 @@ namespace embree
       __forceinline BBox3fa bounds (size_t item) const
       {
         BBox3fa box; 
+        assert(item < size());
         boundsFunc(intersectors.ptr,item,(RTCBounds&)box);
         return box;
       }
       
+      /*! check if the i'th primitive is valid */
+      __forceinline bool valid(size_t i, BBox3fa* bbox = nullptr) const 
+      {
+        const BBox3fa b = bounds(i);
+        if (bbox) *bbox = b;
+        return isvalid(b);
+      }
+      
+      void enabling ();
+      void disabling();
+
+  public:
+
       /*! Intersects a single ray with the scene. */
-      __forceinline void intersect (RTCRay& ray, size_t item) {
+      __forceinline void intersect (RTCRay& ray, size_t item) 
+      {
+        assert(item < size());
         assert(intersectors.intersector1.intersect);
         intersectors.intersector1.intersect(intersectors.ptr,ray,item);
       }
       
       /*! Intersects a packet of 4 rays with the scene. */
-      __forceinline void intersect4 (const void* valid, RTCRay4& ray, size_t item) {
+      __forceinline void intersect4 (const void* valid, RTCRay4& ray, size_t item) 
+      {
 #if defined(__SSE__)
+        assert(item < size());
         assert(intersectors.intersector4.intersect);
 	if (intersectors.intersector4.ispc) ((ISPCIntersectFunc4)intersectors.intersector4.intersect)(intersectors.ptr,ray,item,*(__m128*)valid);
         else                                ((    IntersectFunc4)intersectors.intersector4.intersect)(valid,intersectors.ptr,ray,item);
@@ -170,8 +187,10 @@ namespace embree
       }
       
       /*! Intersects a packet of 8 rays with the scene. */
-      __forceinline void intersect8 (const void* valid, RTCRay8& ray, size_t item) {
+      __forceinline void intersect8 (const void* valid, RTCRay8& ray, size_t item) 
+      {
 #if defined(__AVX__)
+        assert(item < size());
         assert(intersectors.intersector8.intersect);
 	if (intersectors.intersector8.ispc) ((ISPCIntersectFunc8)intersectors.intersector8.intersect)(intersectors.ptr,ray,item,*(__m256*)valid);
         else                                ((    IntersectFunc8)intersectors.intersector8.intersect)(valid,intersectors.ptr,ray,item);
@@ -179,8 +198,10 @@ namespace embree
       }
 
       /*! Intersects a packet of 16 rays with the scene. */
-      __forceinline void intersect16 (const void* valid, RTCRay16& ray, size_t item) {
+      __forceinline void intersect16 (const void* valid, RTCRay16& ray, size_t item) 
+      {
 #if defined(__MIC__)
+        assert(item < size());
         assert(intersectors.intersector16.occluded);
 	if (intersectors.intersector16.ispc) {
 	  const mic_i maski = *(mic_i*)valid;
@@ -200,7 +221,9 @@ namespace embree
       
       /*! Tests if a packet of 4 rays is occluded by the scene. */
 #if defined(__SSE__)
-      __forceinline void occluded4 (const void* valid, RTCRay4& ray, size_t item) {
+      __forceinline void occluded4 (const void* valid, RTCRay4& ray, size_t item) 
+      {
+        assert(item < size());
 	assert(intersectors.intersector4.occluded);
 	if (intersectors.intersector4.ispc) ((ISPCOccludedFunc4)intersectors.intersector4.occluded)(intersectors.ptr,ray,item,*(__m128*)valid);
         else                                ((    OccludedFunc4)intersectors.intersector4.occluded)(valid,intersectors.ptr,ray,item);
@@ -209,7 +232,9 @@ namespace embree
       
       /*! Tests if a packet of 8 rays is occluded by the scene. */
 #if defined(__AVX__)
-      __forceinline void occluded8 (const void* valid, RTCRay8& ray, size_t item) {
+      __forceinline void occluded8 (const void* valid, RTCRay8& ray, size_t item) 
+      {
+        assert(item < size());
 	assert(intersectors.intersector8.occluded);
 	if (intersectors.intersector8.ispc) ((ISPCOccludedFunc8)intersectors.intersector8.occluded)(intersectors.ptr,ray,item,*(__m256*)valid);
         else                                ((    OccludedFunc8)intersectors.intersector8.occluded)(valid,intersectors.ptr,ray,item);
@@ -218,7 +243,9 @@ namespace embree
       
       /*! Tests if a packet of 16 rays is occluded by the scene. */
 #if defined(__MIC__)
-      __forceinline void occluded16 (const void* valid, RTCRay16& ray, size_t item) {
+      __forceinline void occluded16 (const void* valid, RTCRay16& ray, size_t item) 
+      {
+        assert(item < size());
         assert(intersectors.intersector16.occluded);
 	if (intersectors.intersector16.ispc) {
 	  const mic_i maski = *(mic_i*)valid;
@@ -231,7 +258,7 @@ namespace embree
 #endif
       
     public:
-      size_t numItems;
+      size_t numItems; // FIXME: remove
       RTCBoundsFunc boundsFunc;
 
       struct Intersectors 

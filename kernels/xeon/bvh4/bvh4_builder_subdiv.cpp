@@ -616,23 +616,18 @@ namespace embree
       b.lower.a = 0.0f;
       b.upper.a = 0.0f;
 
-#if defined(DEBUG)
-      using namespace std;
+      assert( std::isfinite(b.lower.x) );
+      assert( std::isfinite(b.lower.y) );
+      assert( std::isfinite(b.lower.z) );
 
-      assert( isfinite(b.lower.x) );
-      assert( isfinite(b.lower.y) );
-      assert( isfinite(b.lower.z) );
-
-      assert( isfinite(b.upper.x) );
-      assert( isfinite(b.upper.y) );
-      assert( isfinite(b.upper.z) );
+      assert( std::isfinite(b.upper.x) );
+      assert( std::isfinite(b.upper.y) );
+      assert( std::isfinite(b.upper.z) );
 
 
       assert(b.lower.x <= b.upper.x);
       assert(b.lower.y <= b.upper.y);
       assert(b.lower.z <= b.upper.z);
-
-#endif
 
 #else
       BBox3fa b = patch.bounds();

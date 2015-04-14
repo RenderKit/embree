@@ -573,7 +573,7 @@ namespace embree
     }
   }
 
-  void Scene::setProgressMonitorFunction(RTC_PROGRESS_MONITOR_FUNCTION func, void* ptr) 
+  void Scene::setProgressMonitorFunction(RTCProgressMonitorFunc func, void* ptr) 
   {
     static MutexSys mutex;
     mutex.lock();

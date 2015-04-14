@@ -33,6 +33,7 @@ ADD_ISPC_LIBRARY(embree_xeonphi ${EMBREE_LIB_TYPE}
   ../common/stat.cpp 
   ../common/globals.cpp 
   ../common/acceln.cpp
+  ../common/accelset.cpp
   ../common/state.cpp
   ../common/rtcore.cpp 
   ../common/rtcore_ispc.cpp 
@@ -41,6 +42,7 @@ ADD_ISPC_LIBRARY(embree_xeonphi ${EMBREE_LIB_TYPE}
   ../common/scene.cpp
   ../common/geometry.cpp
   ../common/scene_user_geometry.cpp
+  ../common/scene_instance.cpp
   ../common/scene_triangle_mesh.cpp
   ../common/scene_bezier_curves.cpp
   ../common/scene_subdiv_mesh.cpp

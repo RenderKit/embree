@@ -20,6 +20,7 @@
 
 #include "scene_triangle_mesh.h"
 #include "scene_user_geometry.h"
+#include "scene_instance.h"
 #include "scene_bezier_curves.h"
 #include "scene_subdiv_mesh.h"
 
@@ -197,11 +198,11 @@ namespace embree
       assert(geometries[i]->getType() == Geometry::SUBDIV_MESH);
       return (SubdivMesh*) geometries[i]; 
     }
-    __forceinline UserGeometryBase* getUserGeometrySafe(size_t i) { 
+    __forceinline AccelSet* getUserGeometrySafe(size_t i) { 
       assert(i < geometries.size()); 
       if (geometries[i] == nullptr) return nullptr;
       if (geometries[i]->getType() != Geometry::USER_GEOMETRY) return nullptr;
-      else return (UserGeometryBase*) geometries[i]; 
+      else return (AccelSet*) geometries[i]; 
     }
     __forceinline BezierCurves* getBezierCurves(size_t i) { 
       assert(i < geometries.size()); 
@@ -285,5 +286,5 @@ namespace embree
   template<> __forceinline size_t Scene::getNumPrimitives<BezierCurves,2>() const { return numBezierCurves2; } 
   template<> __forceinline size_t Scene::getNumPrimitives<SubdivMesh,1>() const { return numSubdivPatches; } 
   template<> __forceinline size_t Scene::getNumPrimitives<SubdivMesh,2>() const { return numSubdivPatches2; } 
-  template<> __forceinline size_t Scene::getNumPrimitives<UserGeometryBase,1>() const { return numUserGeometries1; } 
+  template<> __forceinline size_t Scene::getNumPrimitives<AccelSet,1>() const { return numUserGeometries1; } 
 }
