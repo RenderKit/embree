@@ -21,8 +21,7 @@ namespace embree
 {
   TriangleMesh::TriangleMesh (Scene* parent, RTCGeometryFlags flags, size_t numTriangles, size_t numVertices, size_t numTimeSteps)
     : Geometry(parent,TRIANGLE_MESH,numTriangles,numTimeSteps,flags), 
-      mask(-1), numTimeSteps(numTimeSteps),
-      numTriangles(numTriangles), numVertices(numVertices)
+      mask(-1), numTriangles(numTriangles), numVertices(numVertices)
   {
     triangles.init(numTriangles,sizeof(Triangle));
     for (size_t i=0; i<numTimeSteps; i++) {
@@ -33,14 +32,14 @@ namespace embree
   
   void TriangleMesh::enabling() 
   { 
-    if (numTimeSteps == 1) { atomic_add(&parent->numTriangles ,numTriangles); }
-    else                   { atomic_add(&parent->numTriangles2,numTriangles); }
+    if (numTimeSteps == 1) atomic_add(&parent->numTriangles ,numTriangles);
+    else                   atomic_add(&parent->numTriangles2,numTriangles);
   }
   
   void TriangleMesh::disabling() 
   { 
-    if (numTimeSteps == 1) { atomic_add(&parent->numTriangles ,-(ssize_t)numTriangles); }
-    else                   { atomic_add(&parent->numTriangles2,-(ssize_t)numTriangles); }
+    if (numTimeSteps == 1) atomic_add(&parent->numTriangles ,-(ssize_t)numTriangles);
+    else                   atomic_add(&parent->numTriangles2,-(ssize_t)numTriangles);
   }
 
   void TriangleMesh::setMask (unsigned mask) 

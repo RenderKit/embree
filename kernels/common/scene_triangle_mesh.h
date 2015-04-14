@@ -24,15 +24,20 @@ namespace embree
   /*! Triangle Mesh */
   struct TriangleMesh : public Geometry
   {
+    /*! type of this geometry */
     static const Geometry::Type geom_type = Geometry::TRIANGLE_MESH;
 
+    /*! triangle indices */
     struct Triangle {
-      unsigned int v[3];
+      uint32 v[3];
     };
     
   public:
+
+    /*! triangle mesh construction */
     TriangleMesh (Scene* parent, RTCGeometryFlags flags, size_t numTriangles, size_t numVertices, size_t numTimeSteps); 
   
+    /*! writes the triangle mesh geometry to disk */
     void write(std::ofstream& file);
 
     /* geometry interface */
@@ -55,23 +60,16 @@ namespace embree
     
     /*! returns i'th triangle*/
     __forceinline const Triangle& triangle(size_t i) const {
-      assert(i < numTriangles);
       return triangles[i];
     }
 
     /*! returns i'th vertex of j'th timestep */
-    __forceinline const Vec3fa vertex(size_t i, size_t j = 0) const 
-    {
-      assert(i < numVertices);
-      assert(j < numTimeSteps);
+    __forceinline const Vec3fa vertex(size_t i, size_t j = 0) const {
       return vertices[j][i];
     }
 
     /*! returns i'th vertex of j'th timestep */
-    __forceinline const char* vertexPtr(size_t i, size_t j = 0) const 
-    {
-      assert(i < numVertices);
-      assert(j < numTimeSteps);
+    __forceinline const char* vertexPtr(size_t i, size_t j = 0) const {
       return vertices[j].getPtr(i);
     }
 
@@ -87,31 +85,6 @@ namespace embree
     }
 #endif
 
-    /*! check if the i'th primitive is valid */
-    __forceinline bool valid(size_t i, BBox3fa* bbox = nullptr) const 
-    {
-      const Triangle& tri = triangle(i);
-      if (tri.v[0] >= numVertices) return false;
-      if (tri.v[1] >= numVertices) return false;
-      if (tri.v[2] >= numVertices) return false;
-
-      for (size_t j=0; j<numTimeSteps; j++) {
-      const Vec3fa v0 = vertex(tri.v[0],j);
-      const Vec3fa v1 = vertex(tri.v[1],j);
-      const Vec3fa v2 = vertex(tri.v[2],j);
-      if (!isvalid(v0) || !isvalid(v1) || !isvalid(v2))
-        return false;
-      }
-
-      if (bbox) {
-	const Vec3fa v0 = vertex(tri.v[0]);
-	const Vec3fa v1 = vertex(tri.v[1]);
-	const Vec3fa v2 = vertex(tri.v[2]);
-	*bbox = BBox3fa(min(v0,v1,v2),max(v0,v1,v2));
-      }
-      return true;
-    }
-
     /*! calculates the bounds of the i'th triangle */
     __forceinline BBox3fa bounds(size_t i) const 
     {
@@ -120,6 +93,29 @@ namespace embree
       const Vec3fa v1 = vertex(tri.v[1]);
       const Vec3fa v2 = vertex(tri.v[2]);
       return BBox3fa(min(v0,v1,v2),max(v0,v1,v2));
+    }
+
+    /*! check if the i'th primitive is valid */
+    __forceinline bool valid(size_t i, BBox3fa* bbox = nullptr) const 
+    {
+      const Triangle& tri = triangle(i);
+      if (tri.v[0] >= numVertices) return false;
+      if (tri.v[1] >= numVertices) return false;
+      if (tri.v[2] >= numVertices) return false;
+
+      for (size_t j=0; j<numTimeSteps; j++) 
+      {
+        const Vec3fa v0 = vertex(tri.v[0],j);
+        const Vec3fa v1 = vertex(tri.v[1],j);
+        const Vec3fa v2 = vertex(tri.v[2],j);
+        if (!isvalid(v0) || !isvalid(v1) || !isvalid(v2))
+          return false;
+      }
+
+      if (bbox) 
+        *bbox = bounds(i);
+
+      return true;
     }
 
 #if defined(__MIC__)
@@ -176,20 +172,17 @@ namespace embree
 
 	return mic3f(select(0x7777,v0,mic_f::zero()),select(0x7777,v1,mic_f::zero()),select(0x7777,v2,mic_f::zero()));
 #endif	
-	
-	
       }
     
 #endif
     
   public:
-    unsigned int mask;                //!< for masking out geometry
-    unsigned int numTimeSteps;        //!< number of time steps (1 or 2) // FIXME: remove
+    unsigned mask;                    //!< for masking out geometry
     
     BufferT<Triangle> triangles;      //!< array of triangles
     size_t numTriangles;              //!< number of triangles
     
-    BufferT<Vec3fa> vertices[2];    //!< vertex array
+    array_t<BufferT<Vec3fa>,2> vertices;  //!< vertex array
     size_t numVertices;               //!< number of vertices
   };
 

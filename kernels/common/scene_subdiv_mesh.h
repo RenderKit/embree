@@ -328,7 +328,7 @@ namespace embree
 
   public:
 
-    /*! bezier curve construction */
+    /*! subdiv mesh construction */
     SubdivMesh(Scene* parent, RTCGeometryFlags flags, size_t numFaces, size_t numEdges, size_t numVertices, 
                size_t numCreases, size_t numCorners, size_t numHoles, size_t numTimeSteps);
 

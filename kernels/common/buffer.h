@@ -117,6 +117,7 @@ namespace embree
 #if defined(__MIC__)
     __forceinline char* getPtr( size_t i = 0 ) const 
     {
+      assert(i<num);
 #if defined(RTCORE_BUFFER_STRIDE)
       return ptr_ofs + i*stride;
 #else
@@ -159,6 +160,7 @@ namespace embree
 
     __forceinline char* getPtr( size_t i = 0 ) const 
     {
+      assert(i<num);
 #if defined(RTCORE_BUFFER_STRIDE)
       return ptr_ofs + i*stride;
 #else

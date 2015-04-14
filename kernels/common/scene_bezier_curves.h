@@ -34,7 +34,7 @@ namespace embree
     /*! bezier curve construction */
     BezierCurves (Scene* parent, RTCGeometryFlags flags, size_t numPrimitives, size_t numVertices, size_t numTimeSteps); 
     
-    /*! wirte the bezier curve geometry to disk */
+    /*! writes the bezier curve geometry to disk */
     void write(std::ofstream& file);
     
   public:
