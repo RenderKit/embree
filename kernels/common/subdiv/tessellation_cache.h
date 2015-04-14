@@ -107,6 +107,8 @@ namespace embree
    static const size_t NUM_CACHE_SEGMENTS = 4;
 #else
    static const size_t NUM_CACHE_SEGMENTS = 8;
+   //static const size_t NUM_CACHE_SEGMENTS = 16;
+
 #endif
       
    SharedLazyTessellationCache();

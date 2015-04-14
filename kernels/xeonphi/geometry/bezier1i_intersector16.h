@@ -194,9 +194,6 @@ namespace embree
       mic_f P,T;
       eval(uu,p0123,P,T);
       assert( T != mic_f::zero() );
-      assert( isfinite(T[0]) );
-      assert( isfinite(T[1]) );
-      assert( isfinite(T[2]) );
 
       ray.update(1,k,mic_f(t[i]),mic_f(uu),mic_f::zero(),swAAAA(T),swBBBB(T),swCCCC(T),curve_in.geomID,curve_in.primID);
 

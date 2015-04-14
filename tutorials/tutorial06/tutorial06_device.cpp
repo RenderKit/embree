@@ -28,8 +28,8 @@
 #define TILE_SIZE_Y 4
 
 #define FIX_SAMPLING 0
-#define SAMPLES_PER_PIXEL 1
-//#define SAMPLES_PER_PIXEL 4
+//#define SAMPLES_PER_PIXEL 1
+#define SAMPLES_PER_PIXEL 8
 
 #define ENABLE_TEXTURING 0
 
@@ -1379,6 +1379,35 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
   Vec3fa L = renderPixelFunction(x+sx,y+sy,state,vx,vy,vz,p); 
   return L;
 }
+
+
+int prime[] = { 2,3,5,7,11,13,17,19,23,29,31,37,41,43,47,53,59,61,67,71,73,79,83,89,97,101,103,107,109,113,127,131,137,139,149,151,157,163,167,173 };
+
+static float radicalInverse(int i, int prime)
+{
+  float result = 0.0f;
+  float rcp_prime = 1.0f / prime;
+  float base = rcp_prime;
+  while (i) {
+    int r = i % prime;
+    i = i / prime;
+    result += r*base;
+    base *= rcp_prime;
+  }
+  return result;
+}
+
+float *initPrimaryRNDs(int dim)
+{
+  float *t = new float[SAMPLES_PER_PIXEL];
+  for (size_t i=0;i<SAMPLES_PER_PIXEL;i++)
+    t[i] = radicalInverse(i,prime[dim]);
+  return t;
+}
+
+float *rnd_x = initPrimaryRNDs(0);
+float *rnd_y = initPrimaryRNDs(1);
+
   
 /* task that renders a single screen tile */
 void renderTile(int taskIndex, int* pixels,
@@ -1404,16 +1433,21 @@ void renderTile(int taskIndex, int* pixels,
     /* calculate pixel color */
 
 #if SAMPLES_PER_PIXEL > 1
+#if 0
     rand_state state;
     init_rand(state,
 	      253*x+35*y+152*g_accu_count+54,
 	      1253*x+345*y+1452*g_accu_count+564,
 	      10253*x+3435*y+52*g_accu_count+13);
+#endif
     Vec3fa color(0.0f);
     for (int i=0; i<SAMPLES_PER_PIXEL; i++) 
       {
-	const float sx = frand(state);
-	const float sy = frand(state);
+	//const float sx = frand(state);
+	//const float sy = frand(state);
+	const float sx = rnd_x[i];
+	const float sy = rnd_y[i];
+
 	color += renderPixel(x+sx,y+sy,vx,vy,vz,p);
 	}
     color *= (1.0f/SAMPLES_PER_PIXEL);

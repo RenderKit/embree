@@ -23,8 +23,8 @@
 #define TILE_SIZE_X 4
 #define TILE_SIZE_Y 4
 
-//#define SPP 4
-#define SPP 1
+#define SPP 8
+//#define SPP 1
 
 //#define FORCE_FIXED_EDGE_TESSELLATION
 #define FIXED_EDGE_TESSELLATION_VALUE 4
@@ -363,7 +363,7 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
   
   /* shade background black */
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID) 
-    return Vec3fa(0.0f,0.0f,1.0f);
+    return Vec3fa(1.0f,1.0f,1.0f);
   
   /* shade all rays that hit something */
   Vec3fa color = Vec3fa(1.0f);
