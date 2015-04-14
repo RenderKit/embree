@@ -61,7 +61,9 @@ namespace embree
       __forceinline bool   empty    () const { return size_active == 0; }
       __forceinline size_t size     () const { return size_active; }
       __forceinline size_t capacity () const { return size_alloced; }
-            
+      __forceinline size_t max_size () const { return size_t(inf); }
+
+
       void resize(size_t new_size) {
         internal_resize(new_size,size_alloced < new_size ? new_size : size_alloced);
       }
@@ -97,14 +99,15 @@ namespace embree
      
       /******************** Modifiers **************************/
 
-      void push_back(const T& nt) 
+      __forceinline void push_back(const T& nt) 
       {
         const T v = nt; // need local copy as input reference could point to this vector
         internal_grow(size_active+1);
         items[size_active++] = v;
       }
 
-      void pop_back() {
+      __forceinline void pop_back() {
+        assert(!empty());
         size_active--;
       }
 
