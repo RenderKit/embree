@@ -55,7 +55,7 @@ namespace embree
 
     /*! returns number of triangles */
     __forceinline size_t size() const {
-      return numTriangles;
+      return triangles.size();
     }
     
     /*! returns i'th triangle*/
@@ -178,10 +178,7 @@ namespace embree
     
   public:
     unsigned mask;                    //!< for masking out geometry
-    
     BufferT<Triangle> triangles;      //!< array of triangles
-    size_t numTriangles;              //!< number of triangles
-    
     array_t<BufferT<Vec3fa>,2> vertices;  //!< vertex array
     size_t numVertices;               //!< number of vertices
   };

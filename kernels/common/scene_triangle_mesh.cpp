@@ -21,7 +21,7 @@ namespace embree
 {
   TriangleMesh::TriangleMesh (Scene* parent, RTCGeometryFlags flags, size_t numTriangles, size_t numVertices, size_t numTimeSteps)
     : Geometry(parent,TRIANGLE_MESH,numTriangles,numTimeSteps,flags), 
-      mask(-1), numTriangles(numTriangles), numVertices(numVertices)
+      mask(-1), numVertices(numVertices)
   {
     triangles.init(numTriangles,sizeof(Triangle));
     for (size_t i=0; i<numTimeSteps; i++) {
@@ -32,14 +32,14 @@ namespace embree
   
   void TriangleMesh::enabling() 
   { 
-    if (numTimeSteps == 1) atomic_add(&parent->numTriangles ,numTriangles);
-    else                   atomic_add(&parent->numTriangles2,numTriangles);
+    if (numTimeSteps == 1) atomic_add(&parent->numTriangles ,triangles.size());
+    else                   atomic_add(&parent->numTriangles2,triangles.size());
   }
   
   void TriangleMesh::disabling() 
   { 
-    if (numTimeSteps == 1) atomic_add(&parent->numTriangles ,-(ssize_t)numTriangles);
-    else                   atomic_add(&parent->numTriangles2,-(ssize_t)numTriangles);
+    if (numTimeSteps == 1) atomic_add(&parent->numTriangles ,-(ssize_t)triangles.size());
+    else                   atomic_add(&parent->numTriangles2,-(ssize_t)triangles.size());
   }
 
   void TriangleMesh::setMask (unsigned mask) 
@@ -119,7 +119,7 @@ namespace embree
 
   bool TriangleMesh::verify () 
   {
-    for (size_t i=0; i<numTriangles; i++) {     
+    for (size_t i=0; i<triangles.size(); i++) {     
       if (triangles[i].v[0] >= numVertices) return false; 
       if (triangles[i].v[1] >= numVertices) return false; 
       if (triangles[i].v[2] >= numVertices) return false; 
@@ -140,6 +140,7 @@ namespace embree
     file.write((char*)&type,sizeof(int));
     file.write((char*)&numTimeSteps,sizeof(int));
     file.write((char*)&numVertices,sizeof(int));
+    int numTriangles = triangles.size();
     file.write((char*)&numTriangles,sizeof(int));
 
     for (size_t j=0; j<numTimeSteps; j++) {
@@ -151,6 +152,6 @@ namespace embree
     for (size_t i=0; i<numTriangles; i++) file.write((char*)&triangle(i),sizeof(Triangle));  
 
     while ((file.tellp() % 16) != 0) { char c = 0; file.write(&c,1); }
-    for (size_t i=0; i<numTriangles; i++) file.write((char*)&triangle(i),sizeof(Triangle));  
+    for (size_t i=0; i<numTriangles; i++) file.write((char*)&triangle(i),sizeof(Triangle));   // FIXME: why is this written twice?
   }
 }

@@ -63,7 +63,7 @@ namespace embree
       if (unlikely(!mesh->isEnabled())) continue;
       if (unlikely(mesh->numTimeSteps == 1)) continue;
 
-      const size_t numTriangles = mesh->numTriangles;
+      const size_t numTriangles = mesh->size();
       if (numSkipped + numTriangles > startID) break;
       numSkipped += numTriangles;
     }
@@ -90,7 +90,7 @@ namespace embree
       if (unlikely(!mesh->isEnabled())) continue;
       if (unlikely(mesh->numTimeSteps == 1)) continue;
 
-      for (unsigned int i=offset; i<mesh->numTriangles && currentID < endID; i++, currentID++)	 
+      for (unsigned int i=offset; i<mesh->size() && currentID < endID; i++, currentID++)	 
       { 			    
 	const TriangleMesh::Triangle& tri = mesh->triangle(i);
 	prefetch<PFHINT_L2>(&tri + L2_PREFETCH_ITEMS);

@@ -757,7 +757,7 @@ namespace embree
 	const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(i);
 	if (unlikely(mesh->numTimeSteps != 1)) continue;
 	numGroups++;
-	numPrimitives += mesh->numTriangles;
+	numPrimitives += mesh->size();
       }
 
     if (likely(numPrimitives == 0))
@@ -851,7 +851,7 @@ namespace embree
       if (unlikely(!mesh->isEnabled())) continue;
       if (unlikely(mesh->numTimeSteps != 1)) continue;
 
-      const size_t numTriangles = mesh->numTriangles;	
+      const size_t numTriangles = mesh->size();	
       if (skipped + numTriangles > startID) break;
       skipped += numTriangles;
     }
@@ -889,12 +889,12 @@ namespace embree
       if (unlikely(mesh->numTimeSteps != 1)) continue;
 
 
-      if (offset < mesh->numTriangles)
+      if (offset < mesh->size())
 	{
 	  const char* __restrict__ cptr_tri = (char*)&mesh->triangle(offset);
 	  const unsigned int stride = mesh->triangles.getBufferStride();
       
-	  for (size_t i=offset; i<mesh->numTriangles && currentID < endID; i++, currentID++,cptr_tri+=stride)	 
+	  for (size_t i=offset; i<mesh->size() && currentID < endID; i++, currentID++,cptr_tri+=stride)	 
 	    {
 	      const TriangleMesh::Triangle& tri = *(TriangleMesh::Triangle*)cptr_tri;
 	      prefetch<PFHINT_L1>(&tri + L1_PREFETCH_ITEMS);
@@ -951,9 +951,9 @@ namespace embree
       if (unlikely(!mesh->isEnabled())) continue;
       if (unlikely(mesh->numTimeSteps != 1)) continue;
 
-      const size_t numTriangles = min(mesh->numTriangles-offset,endID-currentID);
+      const size_t numTriangles = min(mesh->size()-offset,endID-currentID);
        
-      if (offset < mesh->numTriangles)
+      if (offset < mesh->size())
 	{
 
 	  const char* __restrict__ cptr_tri = (char*)&mesh->triangle(offset);

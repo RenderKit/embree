@@ -281,7 +281,7 @@ PRINT(CORRECT_numPrims);
       if (unlikely(!mesh->isEnabled())) continue;
       if (unlikely(mesh->numTimeSteps != 1)) continue;
 
-      const size_t numTriangles = mesh->numTriangles;
+      const size_t numTriangles = mesh->size();
       if (numSkipped + numTriangles > startID) break;
       numSkipped += numTriangles;
     }
@@ -301,12 +301,12 @@ PRINT(CORRECT_numPrims);
 	  if (unlikely(!mesh->isEnabled())) continue;
 	  if (unlikely(mesh->numTimeSteps != 1)) continue;
 
-	  if (offset < mesh->numTriangles)
+	  if (offset < mesh->size())
 	    {
 	      const char* __restrict__ cptr_tri = (char*)&mesh->triangle(offset);
 	      const unsigned int stride = mesh->triangles.getBufferStride();
 
-	      for (unsigned int i=offset; i<mesh->numTriangles && currentID < endID; i++, currentID++,cptr_tri+=stride)	 
+	      for (unsigned int i=offset; i<mesh->size() && currentID < endID; i++, currentID++,cptr_tri+=stride)	 
 		{ 			    
 		  const TriangleMesh::Triangle& tri = *(TriangleMesh::Triangle*)cptr_tri;
 		  prefetch<PFHINT_L2>(&tri + L2_PREFETCH_ITEMS);
@@ -351,7 +351,7 @@ PRINT(CORRECT_numPrims);
       if (unlikely(!mesh->isEnabled())) continue;
       if (unlikely(mesh->numTimeSteps != 1)) continue;
 
-      const size_t numTriangles = mesh->numTriangles;
+      const size_t numTriangles = mesh->size();
       if (numSkipped + numTriangles > startID) break;
       numSkipped += numTriangles;
     }
@@ -377,12 +377,12 @@ PRINT(CORRECT_numPrims);
 	  if (unlikely(!mesh->isEnabled())) continue;
 	  if (unlikely(mesh->numTimeSteps != 1)) continue;
 
-	  if (offset < mesh->numTriangles)
+	  if (offset < mesh->size())
 	    {
 	      const char* __restrict__ cptr_tri = (char*)&mesh->triangle(offset);
 	      const unsigned int stride = mesh->triangles.getBufferStride();
 
-	      for (unsigned int i=offset; i<mesh->numTriangles && currentID < endID; i++, currentID++,cptr_tri+=stride)	 
+	      for (unsigned int i=offset; i<mesh->size() && currentID < endID; i++, currentID++,cptr_tri+=stride)	 
 		{ 			    
 		  const TriangleMesh::Triangle& tri = *(TriangleMesh::Triangle*)cptr_tri;
 		  //const TriangleMesh::Triangle& tri = mesh->triangle(i);
@@ -456,12 +456,12 @@ PRINT(CORRECT_numPrims);
 	  if (unlikely(!mesh->isEnabled())) continue;
 	  if (unlikely(mesh->numTimeSteps != 1)) continue;
 
-	  if (offset < mesh->numTriangles)
+	  if (offset < mesh->size())
 	    {
 	      const char* __restrict__ cptr_tri = (char*)&mesh->triangle(offset);
 	      const unsigned int stride = mesh->triangles.getBufferStride();
 
-	      for (unsigned int i=offset; i<mesh->numTriangles && currentID < endID; i++, currentID++,cptr_tri+=stride)	 
+	      for (unsigned int i=offset; i<mesh->size() && currentID < endID; i++, currentID++,cptr_tri+=stride)	 
 		{ 			    
 		  //const TriangleMesh::Triangle& tri = mesh->triangle(i);
 		  const TriangleMesh::Triangle& tri = *(TriangleMesh::Triangle*)cptr_tri;
@@ -834,7 +834,7 @@ PRINT(CORRECT_numPrims);
 
 	const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
 
-	assert(primID < mesh->numTriangles );
+	assert(primID < mesh->size() );
 
 	const TriangleMesh::Triangle & tri = mesh->triangle(primID);
 

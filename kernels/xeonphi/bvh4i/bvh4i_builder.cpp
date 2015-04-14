@@ -128,7 +128,7 @@ namespace embree
 	if (unlikely(!scene->get(i)->isEnabled())) continue;
 	const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(i);
 	if (unlikely(mesh->numTimeSteps != 1)) continue;
-	primitives += mesh->numTriangles;
+	primitives += mesh->size();
       }
     return primitives;	
   
@@ -352,7 +352,7 @@ namespace embree
       if (unlikely(!mesh->isEnabled())) continue;
       if (unlikely(mesh->numTimeSteps != 1)) continue;
 
-      const size_t numTriangles = mesh->numTriangles;
+      const size_t numTriangles = mesh->size();
       if (numSkipped + numTriangles >= startID) break;
       numSkipped += numTriangles;
     }
@@ -378,12 +378,12 @@ namespace embree
 	if (unlikely(!mesh->isEnabled())) continue;
 	if (unlikely(mesh->numTimeSteps != 1)) continue;
 
-	if (offset < mesh->numTriangles)
+	if (offset < mesh->size())
 	  {
 	    const char *__restrict cptr = (char*)&mesh->triangle(offset);
 	    const size_t stride = mesh->getTriangleBufferStride();
 	
-	    for (unsigned int i=offset; i<mesh->numTriangles && (currentID < endID); i++, currentID++,cptr+=stride)	 
+	    for (unsigned int i=offset; i<mesh->size() && (currentID < endID); i++, currentID++,cptr+=stride)	 
 	      { 			    
 		const TriangleMesh::Triangle& tri = *(TriangleMesh::Triangle*)cptr;
 		prefetch<PFHINT_L2>(cptr + L2_PREFETCH_ITEMS);

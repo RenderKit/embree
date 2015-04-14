@@ -92,7 +92,7 @@ namespace embree
       {
         double t1 = getSeconds();
         std::cout << "[DONE]" << std::endl;
-        std::cout << "  dt = " << 1000.0f*(t1-t0) << "ms, perf = " << 1E-6*double(mesh->numTriangles)/(t1-t0) << " Mprim/s" << std::endl;
+        std::cout << "  dt = " << 1000.0f*(t1-t0) << "ms, perf = " << 1E-6*double(mesh->size())/(t1-t0) << " Mprim/s" << std::endl;
         std::cout << BVH4Statistics(bvh).str();
       }
     }
