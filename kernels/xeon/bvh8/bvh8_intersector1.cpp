@@ -29,9 +29,9 @@ namespace embree
       Precalculations pre(ray,bvh);
 
       /*! stack state */
-      StackItemInt32<NodeRef> stack[stackSize];  //!< stack of nodes 
-      StackItemInt32<NodeRef>* stackPtr = stack+1;        //!< current stack pointer
-      StackItemInt32<NodeRef>* stackEnd = stack+stackSize;
+      StackItemT<NodeRef> stack[stackSize];  //!< stack of nodes 
+      StackItemT<NodeRef>* stackPtr = stack+1;        //!< current stack pointer
+      StackItemT<NodeRef>* stackEnd = stack+stackSize;
       stack[0].ptr = bvh->root;
       stack[0].dist = neg_inf;
       

@@ -42,7 +42,6 @@ namespace embree
       typedef typename PrimitiveIntersector8::Primitive Primitive;
       typedef typename BVH4::NodeRef NodeRef;
       typedef typename BVH4::Node Node;
-      //typedef StackItemT<NodeRef> StackItem;
       static const size_t stackSizeSingle = 1+3*BVH4::maxDepth;
       static const size_t stackSizeChunk = 4*BVH4::maxDepth+1;
       
@@ -53,9 +52,9 @@ namespace embree
 					   const avx3i& nearXYZ)
     {
       /*! stack state */
-      StackItemInt32<NodeRef> stack[stackSizeSingle];  //!< stack of nodes 
-      StackItemInt32<NodeRef>* stackPtr = stack + 1;        //!< current stack pointer
-      StackItemInt32<NodeRef>* stackEnd = stack + stackSizeSingle;
+      StackItemT<NodeRef> stack[stackSizeSingle];  //!< stack of nodes 
+      StackItemT<NodeRef>* stackPtr = stack + 1;        //!< current stack pointer
+      StackItemT<NodeRef>* stackEnd = stack + stackSizeSingle;
       stack[0].ptr  = root;
       stack[0].dist = neg_inf;
       

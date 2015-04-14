@@ -16,13 +16,19 @@
 
 #pragma once
 
+#include "default.h"
+
 namespace embree
 {
   /*! An item on the stack holds the node ID and distance of that node. */
   template<typename T>
-    struct __aligned(16) StackItemInt32
+    struct __aligned(16) StackItemT
   {
-    __forceinline static void xchg(StackItemInt32& a, StackItemInt32& b) 
+    /*! assert that the xchg function works */
+    static_assert(sizeof(T) < 12, "sizeof(T) < 12 failed");
+
+    /*! use SSE instructions to swap stack items */
+    __forceinline static void xchg(StackItemT& a, StackItemT& b) 
     { 
       const ssef sse_a = load4f(&a); 
       const ssef sse_b = load4f(&b);
@@ -31,12 +37,12 @@ namespace embree
     }
 
     /*! Sort 2 stack items. */
-    __forceinline friend void sort(StackItemInt32& s1, StackItemInt32& s2) {
+    __forceinline friend void sort(StackItemT& s1, StackItemT& s2) {
       if (s2.dist < s1.dist) xchg(s2,s1);
     }
     
     /*! Sort 3 stack items. */
-    __forceinline friend void sort(StackItemInt32& s1, StackItemInt32& s2, StackItemInt32& s3)
+    __forceinline friend void sort(StackItemT& s1, StackItemT& s2, StackItemT& s3)
     {
       if (s2.dist < s1.dist) xchg(s2,s1);
       if (s3.dist < s2.dist) xchg(s3,s2);
@@ -44,7 +50,7 @@ namespace embree
     }
     
     /*! Sort 4 stack items. */
-    __forceinline friend void sort(StackItemInt32& s1, StackItemInt32& s2, StackItemInt32& s3, StackItemInt32& s4)
+    __forceinline friend void sort(StackItemT& s1, StackItemT& s2, StackItemT& s3, StackItemT& s4)
     {
       if (s2.dist < s1.dist) xchg(s2,s1);
       if (s4.dist < s3.dist) xchg(s4,s3);
@@ -55,6 +61,6 @@ namespace embree
     
   public:
     T ptr; 
-    unsigned int dist;
+    unsigned dist;
   };
 }
