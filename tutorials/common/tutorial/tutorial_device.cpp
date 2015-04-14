@@ -427,7 +427,7 @@ void launch_renderTile (int numTiles,
 {
 #if 1
   atomic_t tileID = 0;
-  parallel_for(size_t(0),size_t(32),[&] (const range<size_t>& r) {
+  parallel_for(size_t(0),size_t(getNumberOfLogicalThreads()),[&] (const range<size_t>& r) {
       for (size_t tid=r.begin(); tid<r.end(); tid++) {
         while (true) {
           size_t i = atomic_add(&tileID,1);
