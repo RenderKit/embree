@@ -386,25 +386,7 @@ namespace embree
           //value -= (size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();
 	  curNode = BVH4::encodeTypedLeaf((void*)value,2);
 
-#if 0
-	  PRINT("LEAF");
-	  PRINT(u_start);
-	  PRINT(v_start);
-	  PRINT(u_end);
-	  PRINT(v_end);                
-
-          PRINT( offset_bytes );
-          PRINT( &grid_x_array[ grid_offset3x3 ] );
-          PRINT( &grid_y_array[ grid_offset3x3 ] );
-          PRINT( &grid_z_array[ grid_offset3x3 ] );         
-          PRINT( grid_array_elements );
-          PRINT( value );
-          PRINT( curNode );
-          PRINT( bounds );
-#endif   
-
 #if defined(DEBUG)
-	  using namespace std;
 	  assert( isfinite(bounds.lower.x) );
 	  assert( isfinite(bounds.lower.y) );
 	  assert( isfinite(bounds.lower.z) );

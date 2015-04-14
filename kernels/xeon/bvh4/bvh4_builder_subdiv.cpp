@@ -617,7 +617,6 @@ namespace embree
       b.upper.a = 0.0f;
 
 #if defined(DEBUG)
-      using namespace std;
 
       assert( isfinite(b.lower.x) );
       assert( isfinite(b.lower.y) );
