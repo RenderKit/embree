@@ -1005,7 +1005,7 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in,const uniform Vec3fa& 
   geomID_to_type = uniform new uniform int[numGeometries];
 
   /* create scene */
-  uniform int scene_flags = RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT | RTC_SCENE_ROBUST;
+  uniform int scene_flags = RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT;
 
   if (g_subdiv_mode)   
     scene_flags = RTC_SCENE_DYNAMIC | RTC_SCENE_INCOHERENT | RTC_SCENE_ROBUST;
