@@ -35,6 +35,8 @@ namespace embree
      template<typename TriangleN>
        struct TriangleNIntersector1Moeller
        {
+         typedef TriangleN Primitive;
+
          /* type shortcuts */
          typedef typename TriangleN::simdb tsimdb;
          typedef typename TriangleN::simdf tsimdf;
@@ -198,6 +200,8 @@ namespace embree
      template<typename RayM, typename TriangleN, bool enableIntersectionFilter>
        struct TriangleNIntersectorMMoellerTrumbore
        {
+         typedef TriangleN Primitive;
+
          /* triangle SIMD type shortcuts */
          typedef typename TriangleN::simdb tsimdb;
          typedef typename TriangleN::simdf tsimdf;
