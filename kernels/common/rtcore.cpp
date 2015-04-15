@@ -245,6 +245,7 @@ namespace embree
       tbb_threads.initialize(g_numThreads);
       tbb_affinity.observe(true); 
     }
+    _mm_setcsr(_mm_getcsr() | /*FTZ:*/ (1<<15) | /*DAZ:*/ (1<<6)); // FIXME: this affects the application!
 #endif
 
     /* execute regression tests */
