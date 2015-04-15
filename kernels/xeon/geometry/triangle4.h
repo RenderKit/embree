@@ -27,6 +27,7 @@ namespace embree
   {
     typedef sseb simdb;
     typedef ssef simdf;
+
   public:
 
     /*! Default constructor. */
@@ -53,6 +54,11 @@ namespace embree
     /*! Returns the number of stored triangles. */
     __forceinline size_t size() const {
       return __bsf(~movemask(valid()));
+    }
+
+    /*! returns maximal size of triangle */
+    static __forceinline size_t max_size() {
+      return 4;
     }
 
     /*! Returns a hash number for the geometry */

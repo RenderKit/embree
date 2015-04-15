@@ -23,6 +23,10 @@ namespace embree
   /*! Ray structure for 4 rays. */
   struct Ray4
   {
+    typedef sseb simdb;
+    typedef ssef simdf;
+    typedef ssei simdi;
+
     /*! Default construction does nothing. */
     __forceinline Ray4() {}
 
@@ -32,6 +36,9 @@ namespace embree
                        const ssef& tnear = zero, const ssef& tfar = inf, 
                        const ssef& time = zero, const ssei& mask = -1)
       : org(org), dir(dir), tnear(tnear), tfar(tfar), geomID(-1), primID(-1), instID(-1), mask(mask), time(time) {}
+
+    /*! returns the size of the ray */
+    static __forceinline size_t size() { return 4; }
 
     /*! Tests if we hit something. */
     __forceinline operator sseb() const { return geomID != ssei(-1); }

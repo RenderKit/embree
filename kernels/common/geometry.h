@@ -235,6 +235,9 @@ namespace embree
     __forceinline bool hasOcclusionFilter8() const { return occlusionFilter8 != nullptr; }
     __forceinline bool hasOcclusionFilter16() const { return occlusionFilter16 != nullptr; }
 
+    template<typename simd> __forceinline bool hasIntersectionFilter() const { return false; } // FIXME: should be deleted!?
+    template<typename simd> __forceinline bool hasOcclusionFilter() const { return false; } // FIXME: should be deleted!?
+
   public:
     Scene* parent;             //!< pointer to scene this mesh belongs to
     unsigned id;               //!< internal geometry ID
@@ -269,4 +272,14 @@ namespace embree
     bool ispcIntersectionFilter16;
     bool ispcOcclusionFilter16;
   };
+
+#if defined(__SSE__)
+  template<> __forceinline bool Geometry::hasIntersectionFilter<ssef>() const { return intersectionFilter4 != nullptr; }
+  template<> __forceinline bool Geometry::hasOcclusionFilter   <ssef>() const { return occlusionFilter4    != nullptr; }
+#endif
+
+#if defined(__AVX__)
+  template<> __forceinline bool Geometry::hasIntersectionFilter<avxf>() const { return intersectionFilter8 != nullptr; }
+  template<> __forceinline bool Geometry::hasOcclusionFilter   <avxf>() const { return occlusionFilter8    != nullptr; }
+#endif
 }

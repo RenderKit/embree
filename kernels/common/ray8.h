@@ -24,6 +24,10 @@ namespace embree
    *  precomputed reciprocal direction. */
   struct Ray8
   {
+    typedef sseb simdb;
+    typedef ssef simdf;
+    typedef ssei simdi;
+
     /*! Default construction does nothing. */
     __forceinline Ray8() {}
 
@@ -34,6 +38,9 @@ namespace embree
                        const avxf& time = zero, const avxi& mask = -1)
       : org(org), dir(dir), tnear(tnear), tfar(tfar), geomID(-1), primID(-1), instID(-1), mask(mask), time(time)  {}
 
+    /*! returns the size of the ray */
+    static __forceinline size_t size() { return 8; }
+    
     /*! Tests if we hit something. */
     __forceinline operator avxb() const { return geomID != avxi(-1); }
 
