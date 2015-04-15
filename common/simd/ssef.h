@@ -93,27 +93,27 @@ namespace embree
     }
 #endif
 
-    static __forceinline void store ( float* ptr, const ssef& v ) {  
-      _mm_store_ps(ptr,v); 
+    static __forceinline void store ( ssef* ptr, const ssef& v ) {  
+      _mm_store_ps((float*)ptr,v); 
     }
 
     static __forceinline void storeu ( float* ptr, const ssef& v ) {
       _mm_storeu_ps(ptr,v);
     }
 
-    static __forceinline void store_nt ( float* ptr, const ssef& v) 
+    static __forceinline void store_nt ( ssef* ptr, const ssef& v) 
     {
 #if defined (__SSE4_1__)
-      _mm_stream_ps(ptr,v);
+      _mm_stream_ps((float*)ptr,v);
 #else
-      _mm_store_ps(ptr,v);
+      _mm_store_ps((float*)ptr,v);
 #endif
     }
     
-    static __forceinline void store ( const sseb& mask, float* ptr, const ssef& f ) 
+    static __forceinline void store ( const sseb& mask, ssef* ptr, const ssef& f ) 
     { 
 #if defined (__AVX__)
-      _mm_maskstore_ps(ptr,(__m128i)mask,f);
+      _mm_maskstore_ps((float*)ptr,(__m128i)mask,f);
 #else
       *(ssef*)ptr = select(mask,f,*(ssef*)ptr);
 #endif
