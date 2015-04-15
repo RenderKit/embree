@@ -33,7 +33,7 @@ namespace embree
      *  Ray-Triangle Intersection via Automated Search". */
 
      template<typename TriangleN>
-       struct TriangleNIntersector1Moeller
+       struct TriangleNIntersector1MoellerTrumbore
        {
          typedef TriangleN Primitive;
 

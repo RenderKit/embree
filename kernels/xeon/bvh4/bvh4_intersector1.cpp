@@ -15,14 +15,13 @@
 // ======================================================================== //
 
 #include "bvh4_intersector1.h"
+#include "geometry/triangle4.h"
+#include "geometry/triangle8.h"
 
 #include "geometry/bezier1v_intersector1.h"
 #include "geometry/bezier1i_intersector1.h"
 #include "geometry/triangle1_intersector1_moeller.h"
-#include "geometry/triangle4_intersector1_moeller.h"
-#if defined(__AVX__)
-#include "geometry/triangle8_intersector1_moeller.h"
-#endif
+#include "geometry/triangle_intersector_moeller.h"
 #include "geometry/triangle1v_intersector1_pluecker.h"
 #include "geometry/triangle4v_intersector1_pluecker.h"
 #include "geometry/triangle4v_intersector1_moeller_mb.h"
@@ -303,9 +302,9 @@ namespace embree
     DEFINE_INTERSECTOR1(BVH4Bezier1iMBIntersector1_OBB,BVH4Intersector1<0x1010 COMMA false COMMA ArrayIntersector1<Bezier1iIntersector1MB<LeafMode> > >);
 
     DEFINE_INTERSECTOR1(BVH4Triangle1Intersector1Moeller,BVH4Intersector1<0x1 COMMA false COMMA ArrayIntersector1<Triangle1Intersector1MoellerTrumbore<LeafMode> > >);
-    DEFINE_INTERSECTOR1(BVH4Triangle4Intersector1Moeller,BVH4Intersector1<0x1 COMMA false COMMA ArrayIntersector1<Triangle4Intersector1MoellerTrumbore<LeafMode> > >);
+    DEFINE_INTERSECTOR1(BVH4Triangle4Intersector1Moeller,BVH4Intersector1<0x1 COMMA false COMMA ArrayIntersector1<TriangleNIntersector1MoellerTrumbore<Triangle4> > >);
 #if defined(__AVX__)
-    DEFINE_INTERSECTOR1(BVH4Triangle8Intersector1Moeller,BVH4Intersector1<0x1 COMMA false COMMA ArrayIntersector1<Triangle8Intersector1MoellerTrumbore<LeafMode> > >);
+    DEFINE_INTERSECTOR1(BVH4Triangle8Intersector1Moeller,BVH4Intersector1<0x1 COMMA false COMMA ArrayIntersector1<TriangleNIntersector1MoellerTrumbore<Triangle8> > >);
 #endif
     DEFINE_INTERSECTOR1(BVH4Triangle1vIntersector1Pluecker,BVH4Intersector1<0x1 COMMA true COMMA ArrayIntersector1<Triangle1vIntersector1Pluecker<LeafMode> > >);
     DEFINE_INTERSECTOR1(BVH4Triangle4vIntersector1Pluecker,BVH4Intersector1<0x1 COMMA true COMMA ArrayIntersector1<Triangle4vIntersector1Pluecker<LeafMode> > >);
