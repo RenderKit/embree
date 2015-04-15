@@ -27,7 +27,7 @@ namespace embree
       struct Triangle4Intersector4MoellerTrumbore
       {
         typedef Triangle4 Primitive;
-        typedef TriangleNIntersector4MoellerTrumbore<Triangle4,enableIntersectionFilter> Intersector;
+        typedef TriangleNIntersectorMMoellerTrumbore<Ray4,Triangle4,enableIntersectionFilter> Intersector;
         typedef typename Intersector::Precalculations Precalculations;
 
         /*! Intersects a 4 rays with 4 triangles. */
