@@ -274,7 +274,7 @@ namespace embree
     __forceinline Vec3<avxf> broadcast<avxf,ssef>( const Vec3<ssef>& a, const size_t k ) {  
     return Vec3<avxf>(avxf::broadcast(&a.x[k]), avxf::broadcast(&a.y[k]), avxf::broadcast(&a.z[k]));
   }
-  template<avxf,avxf>
+  template<>
     __forceinline Vec3<avxf> broadcast<avxf,avxf>( const Vec3<avxf>& a, const size_t k ) {  
     return Vec3<avxf>(avxf::broadcast(&a.x[k]), avxf::broadcast(&a.y[k]), avxf::broadcast(&a.z[k]));
   }

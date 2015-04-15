@@ -84,16 +84,16 @@ namespace embree
       return _mm256_load_ps(a); 
     }
     
-    static __forceinline void store(float* ptr, const avxf& f ) { 
-      return _mm256_store_ps(ptr,f);
+    static __forceinline void store(avxf* ptr, const avxf& f ) { 
+      return _mm256_store_ps((float*)ptr,f);
     }
     
     static __forceinline void storeu(float* ptr, const avxf& f ) { 
       return _mm256_storeu_ps(ptr,f);
     }
     
-    static __forceinline void store( const avxb& mask, float* ptr, const avxf& f ) { 
-      return _mm256_maskstore_ps(ptr,(__m256i)mask,f);
+    static __forceinline void store( const avxb& mask, avxf* ptr, const avxf& f ) { 
+      return _mm256_maskstore_ps((float*)ptr,(__m256i)mask,f);
     }
     
 #if defined (__AVX2__)

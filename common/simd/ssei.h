@@ -71,23 +71,23 @@ namespace embree
     }
 #endif
 
-    static  __forceinline ssei load( const int* const a ) { 
+    static  __forceinline ssei load( const void* const a ) { 
       return _mm_load_si128((__m128i*)a); 
     }
     
-    static __forceinline ssei loadu( const int* const a ) { 
+    static __forceinline ssei loadu( const void* const a ) { 
       return _mm_loadu_si128((__m128i*)a); 
     }
     
-    static __forceinline void store(int* ptr, const ssei& v) {
+    static __forceinline void store(void* ptr, const ssei& v) {
       _mm_store_si128((__m128i*)ptr,v);
     }
     
-    static __forceinline void storeu(int* ptr, const ssei& v) {
+    static __forceinline void storeu(void* ptr, const ssei& v) {
       _mm_storeu_si128((__m128i*)ptr,v);
     }
     
-    static __forceinline void store( const sseb& mask, ssei* ptr, const ssei& i ) { 
+    static __forceinline void store( const sseb& mask, void* ptr, const ssei& i ) { 
 #if defined (__AVX__)
       _mm_maskstore_ps((float*)ptr,(__m128i)mask,_mm_castsi128_ps(i));
 #else
@@ -95,7 +95,7 @@ namespace embree
 #endif
     }
     
-    static __forceinline ssei load_nt (int* ptr) { 
+    static __forceinline ssei load_nt (void* ptr) { 
 #if defined(__SSE4_1__)
       return _mm_stream_load_si128((__m128i*)ptr); 
 #else
@@ -103,7 +103,7 @@ namespace embree
 #endif
     }
     
-    static __forceinline void store_nt(int* ptr, const ssei& v) { 
+    static __forceinline void store_nt(void* ptr, const ssei& v) { 
 #if defined(__SSE4_1__)
       _mm_stream_ps((float*)ptr,_mm_castsi128_ps(v)); 
 #else

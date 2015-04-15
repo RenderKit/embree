@@ -27,6 +27,7 @@ namespace embree
   {
     typedef sseb simdb;
     typedef ssef simdf;
+    typedef ssei simdi;
 
   public:
 

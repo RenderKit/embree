@@ -24,9 +24,9 @@ namespace embree
    *  precomputed reciprocal direction. */
   struct Ray8
   {
-    typedef sseb simdb;
-    typedef ssef simdf;
-    typedef ssei simdi;
+    typedef avxb simdb;
+    typedef avxf simdf;
+    typedef avxi simdi;
 
     /*! Default construction does nothing. */
     __forceinline Ray8() {}

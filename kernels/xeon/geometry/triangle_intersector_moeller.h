@@ -17,7 +17,6 @@
 #pragma once
 
 #include "common/ray.h"
-#include "common/ray4.h"
 #include "geometry/filter.h"
 
 namespace embree
@@ -190,7 +189,7 @@ namespace embree
          }
        };
 
-     /*! Intersector for 4 triangles with 4 rays. This intersector
+     /*! Intersector for N triangles with M rays. This intersector
      *  implements a modified version of the Moeller Trumbore
      *  intersector from the paper "Fast, Minimum Storage Ray-Triangle
      *  Intersection". In contrast to the paper we precalculate some

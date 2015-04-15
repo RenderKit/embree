@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include "common/ray4.h"
 #include "triangle4.h"
 #include "triangle_intersector_moeller.h"
 

@@ -29,6 +29,8 @@ namespace embree
   {
     typedef avxb simdb;
     typedef avxf simdf;
+    typedef avxi simdi;
+
   public:
 
     /*! Default constructor. */
@@ -58,6 +60,11 @@ namespace embree
     /*! Returns the number of stored triangles. */
     __forceinline unsigned int size() const {
       return __bsf(~movemask(valid()));
+    }
+
+    /*! returns maximal size of triangle */
+    static __forceinline size_t max_size() {
+      return 4;
     }
 
     /*! calculate the bounds of the triangle */
