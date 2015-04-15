@@ -15,8 +15,12 @@
 // ======================================================================== //
 
 #include "bvh8_intersector8_chunk.h"
-#include "geometry/triangle4_intersector8_moeller.h"
-#include "geometry/triangle8_intersector8_moeller.h"
+#include "geometry/triangle4.h"
+#if defined(__AVX__)
+#include "geometry/triangle8.h"
+#endif
+
+#include "geometry/triangle_intersector_moeller.h"
 
 #define DBG(x) 
 

@@ -15,8 +15,12 @@
 // ======================================================================== //
 
 #include "bvh8_intersector4_hybrid.h"
-#include "geometry/triangle4_intersector4_moeller.h"
-#include "geometry/triangle8_intersector4_moeller.h"
+#include "geometry/triangle4.h"
+#if defined(__AVX__)
+#include "geometry/triangle8.h"
+#endif
+
+#include "geometry/triangle_intersector_moeller.h"
 
 #define SWITCH_THRESHOLD 3
 

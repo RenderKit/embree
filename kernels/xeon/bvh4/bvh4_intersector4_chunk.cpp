@@ -15,14 +15,15 @@
 // ======================================================================== //
 
 #include "bvh4_intersector4_chunk.h"
+#include "geometry/triangle4.h"
+#if defined(__AVX__)
+#include "geometry/triangle8.h"
+#endif
 
 #include "geometry/bezier1v_intersector4.h"
 #include "geometry/bezier1i_intersector4.h"
 #include "geometry/triangle1_intersector4_moeller.h"
-#include "geometry/triangle4_intersector4_moeller.h"
-#if defined (__AVX__)
-#include "geometry/triangle8_intersector4_moeller.h"
-#endif
+#include "geometry/triangle_intersector_moeller.h"
 #include "geometry/triangle1v_intersector4_pluecker.h"
 #include "geometry/triangle4v_intersector4_pluecker.h"
 #include "geometry/triangle4i_intersector4.h"
