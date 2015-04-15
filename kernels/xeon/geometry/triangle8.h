@@ -27,6 +27,8 @@ namespace embree
       speed up intersection calculations. */
   struct Triangle8
   {
+    typedef avxb simdb;
+    typedef avxf simdf;
   public:
 
     /*! Default constructor. */
@@ -108,18 +110,18 @@ namespace embree
     }
 
     /*! returns the geometry IDs */
-    template<bool list>
+    template<bool list = false>
     __forceinline avxi geomID() const { return geomIDs; }
-    template<bool list>
+    template<bool list = false>
     __forceinline int  geomID(const size_t i) const { assert(i<8); return geomIDs[i]; }
 
     /*! returns the primitive IDs */
-    template<bool list>
+    template<bool list = false>
     __forceinline avxi primID() const { 
       if (list) return primIDs & 0x7FFFFFFF; 
       else      return primIDs;
     }
-    template<bool list>
+    template<bool list = false>
     __forceinline int  primID(const size_t i) const { 
       assert(i<8); 
       if (list) return primIDs[i] & 0x7FFFFFFF; 
