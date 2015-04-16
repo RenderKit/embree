@@ -29,6 +29,195 @@ namespace embree
 {
   namespace isa
   {
+    /*! Intersect a ray with the 4 triangles and updates the hit. */
+    template<typename tsimdb, typename tsimdf, typename tsimdi>
+    __forceinline void intersect(Ray& ray, 
+                                 const Vec3<tsimdf>& tri_v0, const Vec3<tsimdf>& tri_v1, const Vec3<tsimdf>& tri_v2,  
+                                 const tsimdi& tri_geomIDs, const tsimdi& tri_primIDs, Scene* scene)
+        {
+          /* calculate vertices relative to ray origin */
+          typedef Vec3<tsimdf> tsimd3f;
+          const tsimd3f O = tsimd3f(ray.org);
+          const tsimd3f D = tsimd3f(ray.dir);
+          const tsimd3f v0 = tri_v0-O;
+          const tsimd3f v1 = tri_v1-O;
+          const tsimd3f v2 = tri_v2-O;
+          
+          /* calculate triangle edges */
+          const tsimd3f e0 = v2-v0;
+          const tsimd3f e1 = v0-v1;
+          const tsimd3f e2 = v1-v2;
+          
+          /* calculate geometry normal and denominator */
+          const tsimd3f Ng1 = cross(e1,e0);
+          const tsimd3f Ng = Ng1+Ng1;
+          const tsimdf den = dot(Ng,D);
+          const tsimdf absDen = abs(den);
+          const tsimdf sgnDen = signmsk(den);
+          
+          /* perform edge tests */
+          const tsimdf U = dot(cross(v2+v0,e0),D) ^ sgnDen;
+          const tsimdf V = dot(cross(v0+v1,e1),D) ^ sgnDen;
+          const tsimdf W = dot(cross(v1+v2,e2),D) ^ sgnDen;
+          tsimdb valid = (U >= 0.0f) & (V >= 0.0f) & (W >= 0.0f);
+          if (unlikely(none(valid))) return;
+          
+          /* perform depth test */
+          const tsimdf T = dot(v0,Ng) ^ sgnDen;
+          valid &= (T >= absDen*tsimdf(ray.tnear)) & (absDen*tsimdf(ray.tfar) >= T);
+          if (unlikely(none(valid))) return;
+          
+          /* perform backface culling */
+#if defined(RTCORE_BACKFACE_CULLING)
+          valid &= den > tsimdf(zero);
+          if (unlikely(none(valid))) return;
+#else
+          valid &= den != tsimdf(zero);
+          if (unlikely(none(valid))) return;
+#endif
+          
+          /* ray masking test */
+#if defined(RTCORE_RAY_MASK)
+          valid &= (tri_mask & ray.mask) != 0;
+          if (unlikely(none(valid))) return;
+#endif
+          
+          /* calculate hit information */
+          const tsimdf u = U / absDen;
+          const tsimdf v = V / absDen;
+          const tsimdf t = T / absDen;
+          size_t i = select_min(valid,t);
+          int geomID = tri_geomIDs[i];
+          
+          /* intersection filter test */
+#if defined(RTCORE_INTERSECTION_FILTER)
+          while (true) 
+          {
+            Geometry* geometry = scene->get(geomID);
+            if (likely(!geometry->hasIntersectionFilter1())) 
+            {
+#endif
+              /* update hit information */
+              ray.u = u[i];
+              ray.v = v[i];
+              ray.tfar = t[i];
+              ray.Ng.x = Ng.x[i];
+              ray.Ng.y = Ng.y[i];
+              ray.Ng.z = Ng.z[i];
+              ray.geomID = geomID;
+              ray.primID = tri_primIDs[i];
+              
+#if defined(RTCORE_INTERSECTION_FILTER)
+              return;
+            }
+            
+            Vec3fa N = Vec3fa(Ng.x[i],Ng.y[i],Ng.z[i]);
+            if (runIntersectionFilter1(geometry,ray,u[i],v[i],t[i],N,geomID,tri_primIDs[i])) return;
+            valid[i] = 0;
+            if (none(valid)) return;
+            i = select_min(valid,t);
+            geomID = tri_geomIDs[i];
+          }
+#endif
+        }
+        
+        /*! Test if the ray is occluded by one of the triangles. */
+    template<typename tsimdb, typename tsimdf, typename tsimdi>
+      __forceinline bool occluded(Ray& ray, 
+                                 const Vec3<tsimdf>& tri_v0, const Vec3<tsimdf>& tri_v1, const Vec3<tsimdf>& tri_v2, 
+                                  const tsimdi& tri_geomIDs, const tsimdi& tri_primIDs,  Scene* scene)
+        {
+          /* calculate vertices relative to ray origin */
+          typedef Vec3<tsimdf> tsimd3f;
+          const tsimd3f O = tsimd3f(ray.org);
+          const tsimd3f D = tsimd3f(ray.dir);
+          const tsimd3f v0 = tri_v0-O;
+          const tsimd3f v1 = tri_v1-O;
+          const tsimd3f v2 = tri_v2-O;
+          
+          /* calculate triangle edges */
+          const tsimd3f e0 = v2-v0;
+          const tsimd3f e1 = v0-v1;
+          const tsimd3f e2 = v1-v2;
+          
+          /* calculate geometry normal and denominator */
+          const tsimd3f Ng1 = cross(e1,e0);
+          const tsimd3f Ng = Ng1+Ng1;
+          const tsimdf den = dot(Ng,D);
+          const tsimdf absDen = abs(den);
+          const tsimdf sgnDen = signmsk(den);
+          
+          /* perform edge tests */
+          const tsimdf U = dot(cross(v2+v0,e0),D) ^ sgnDen;
+          const tsimdf V = dot(cross(v0+v1,e1),D) ^ sgnDen;
+          const tsimdf W = dot(cross(v1+v2,e2),D) ^ sgnDen;
+          tsimdb valid = (U >= 0.0f) & (V >= 0.0f) & (W >= 0.0f);
+          if (unlikely(none(valid))) return false;
+          
+          /* perform depth test */
+          const tsimdf T = dot(v0,Ng) ^ sgnDen;
+          valid &= (T >= absDen*tsimdf(ray.tnear)) & (absDen*tsimdf(ray.tfar) >= T);
+          if (unlikely(none(valid))) return false;
+          
+          /* perform backface culling */
+#if defined(RTCORE_BACKFACE_CULLING)
+          valid &= den > tsimdf(zero);
+          if (unlikely(none(valid))) return false;
+#else
+          valid &= den != tsimdf(zero);
+          if (unlikely(none(valid))) return false;
+#endif
+          
+          /* ray masking test */
+#if defined(RTCORE_RAY_MASK)
+          valid &= (tri_mask & ray.mask) != 0;
+          if (unlikely(none(valid))) return false;
+#endif
+          
+          /* intersection filter test */
+#if defined(RTCORE_INTERSECTION_FILTER)
+          size_t m=movemask(valid), i=__bsf(m);
+          while (true)
+          {  
+            const int geomID = tri_geomIDs[i];
+            Geometry* geometry = scene->get(geomID);
+            
+            /* if we have no filter then the test patsimds */
+            if (likely(!geometry->hasOcclusionFilter1()))
+              break;
+            
+            /* calculate hit information */
+            const tsimdf rcpAbsDen = rcp(absDen);
+            const tsimdf u = U * rcpAbsDen;
+            const tsimdf v = V * rcpAbsDen;
+            const tsimdf t = T * rcpAbsDen;
+            const Vec3fa N = Vec3fa(Ng.x[i],Ng.y[i],Ng.z[i]);
+            if (runOcclusionFilter1(geometry,ray,u[i],v[i],t[i],N,geomID,tri_primIDs[i])) 
+              break;
+            
+            /* test if one more triangle hit */
+            m=__btc(m,i); i=__bsf(m);
+            if (m == 0) return false;
+          }
+#endif
+          
+          return true;
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     /*! Intersects N triangles with 1 ray */
     template<typename TriangleNv>
       struct TriangleNvIntersector1Pluecker
@@ -38,6 +227,7 @@ namespace embree
         /* type shortcuts */
         typedef typename TriangleNv::simdb tsimdb;
         typedef typename TriangleNv::simdf tsimdf;
+        typedef typename TriangleNv::simdi tsimdi;
         typedef Vec3<tsimdf> tsimd3f;
         
         struct Precalculations {
@@ -49,6 +239,9 @@ namespace embree
         {
           /* calculate vertices relative to ray origin */
           STAT3(normal.trav_prims,1,1,1);
+#if 1
+          embree::isa::intersect<tsimdb,tsimdf,tsimdi>(ray,tri.v0,tri.v1,tri.v2,tri.geomIDs,tri.primIDs,scene);// FIXME: add ray mask support
+#else
           const tsimd3f O = tsimd3f(ray.org);
           const tsimd3f D = tsimd3f(ray.dir);
           const tsimd3f v0 = tri.v0-O;
@@ -131,6 +324,7 @@ namespace embree
             geomID = tri.geomID(i);
           }
 #endif
+#endif
         }
         
         /*! Test if the ray is occluded by one of the triangles. */
@@ -138,6 +332,9 @@ namespace embree
         {
           /* calculate vertices relative to ray origin */
           STAT3(shadow.trav_prims,1,1,1);
+#if 1
+          return embree::isa::occluded<tsimdb,tsimdf,tsimdi>(ray,tri.v0,tri.v1,tri.v2,tri.geomIDs,tri.primIDs,scene);// FIXME: add ray mask support
+#else
           const tsimd3f O = tsimd3f(ray.org);
           const tsimd3f D = tsimd3f(ray.dir);
           const tsimd3f v0 = tri.v0-O;
@@ -211,6 +408,7 @@ namespace embree
 #endif
           
           return true;
+#endif
         }
       };
 
