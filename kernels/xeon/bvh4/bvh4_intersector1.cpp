@@ -315,6 +315,7 @@ namespace embree
 
     DEFINE_INTERSECTOR1(BVH4VirtualIntersector1,BVH4Intersector1<0x1 COMMA false COMMA ArrayIntersector1<VirtualAccelIntersector1> >);
 
-    DEFINE_INTERSECTOR1(BVH4Triangle4vMBIntersector1Moeller,BVH4Intersector1<0x10 COMMA false COMMA ArrayIntersector1<Triangle4vMBIntersector1MoellerTrumbore<LeafMode> > >);
+    //DEFINE_INTERSECTOR1(BVH4Triangle4vMBIntersector1Moeller,BVH4Intersector1<0x10 COMMA false COMMA ArrayIntersector1<Triangle4vMBIntersector1MoellerTrumbore<LeafMode> > >);
+    DEFINE_INTERSECTOR1(BVH4Triangle4vMBIntersector1Moeller,BVH4Intersector1<0x10 COMMA false COMMA ArrayIntersector1<TriangleNMblurIntersector1MoellerTrumbore<Triangle4vMB> > >);
   }
 }
