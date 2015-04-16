@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include "texture_loader.h"
+
 struct ISPCTriangle 
 {
   int v0;                /*< first triangle vertex */
@@ -173,13 +175,16 @@ struct OBJMaterial
 
   Texture* map_Kd;       /*< dummy */
   Texture* map_Displ;       /*< dummy */
+#ifdef USE_PTEX
+  ptex_file *ptex_Kd;
+  ptex_file* ptex_displ;
+#endif
 };
 
 struct MetalMaterial
 {
   int ty;
   int align[3];
-
   Vec3fa reflectance;
   Vec3fa eta;
   Vec3fa k;

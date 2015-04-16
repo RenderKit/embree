@@ -22,6 +22,9 @@
 #if defined(USE_PTEX)
 #include "Ptexture.h"
 #endif
+// #if defined(USE_PTEX)
+// #include "Ptexture.h"
+// #endif
 
 /* the scene to render */
 extern RTCScene g_scene;
@@ -651,6 +654,8 @@ void progressEnd() {
   std::cout << "]" << std::endl;
 }
 
+/*
+#endif
 float getPtexTexel1f(void* filter, int faceId, float u, float v)
 {
   float result = zero;
@@ -665,6 +670,28 @@ Vec3fa getPtexTexel3f(void* filter, int faceId, float u, float v)
   Vec3fa result = zero;
 #if USE_PTEX
   ((PtexFilter*)filter)->eval((float*)&result, 0, 3, faceId, v, u, 0, 0, 0, 0);
+#endif
+  return result;
+}
+#ifdef ./
+*/
+
+Vec3fa getPtexTexel3f(void* data, int faceId, float u, float v)
+{
+  Vec3fa result = zero;
+#if defined(USE_PTEX)
+  if (data) 
+    result = ((ptex_file*)data)->getNearest3f(faceId, u, v);
+#endif
+  return result;
+}
+
+float getPtexTexel1f(void* data, int faceId, float u, float v)
+{
+  float result = 0.0f;
+#if defined(USE_PTEX)
+  if (data) 
+    result = ((ptex_file*)data)->getNearest1f(faceId, u, v);
 #endif
   return result;
 }

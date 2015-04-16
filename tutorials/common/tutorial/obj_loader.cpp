@@ -345,13 +345,28 @@ namespace embree
         parseSep(token += 6);
         //model.materials[cur].obj().map_Kd = loadPtex(path + FileName(token));
         model.materials[cur].obj().map_Kd = loadTexture(path + FileName(token));
-
-#if defined(USE_PTEX)
-	// need to convert ptex to linear textures
-#endif
-
         continue;
       }
+
+#if defined(USE_PTEX)
+	  // need to convert ptex to linear textures
+	  if (!strncmp(token, "Kd_ptex", 7) || !strncmp(token, "ptex_Kd", 7)) {
+	    parseSep(token += 7);
+	    model.materials[cur].obj().ptex_Kd = loadPtexFile(path + FileName(token));
+	    continue;
+	  }
+#endif
+
+#if defined(USE_PTEX)
+	  // need to convert ptex to linear textures
+	  if (!strncmp(token, "displ_ptex", 10) || !strncmp(token, "ptex_displ", 10)) {
+	    parseSep(token += 10);
+	    model.materials[cur].obj().ptex_displ = loadPtexFile(path + FileName(token));
+	    continue;
+	  }
+#endif
+
+
       if (!strncmp(token, "Ks_map", 6)) { continue; }
       if (!strncmp(token, "Tf_map", 6)) { continue; }
       if (!strncmp(token, "Displ_map", 9) || !strncmp(token, "map_Displ", 9)) {

@@ -29,26 +29,27 @@
 
 #define FIX_SAMPLING 0
 //#define SAMPLES_PER_PIXEL 1
-#define SAMPLES_PER_PIXEL 8
+#define SAMPLES_PER_PIXEL 16
 
-#define ENABLE_TEXTURING 0
+#define ENABLE_TEXTURING 1
 
 //#define FORCE_FIXED_EDGE_TESSELLATION
-#define FIXED_EDGE_TESSELLATION_VALUE 2
+#define FIXED_EDGE_TESSELLATION_VALUE 32
 //#define FIXED_EDGE_TESSELLATION_VALUE 32
 
 #define MAX_EDGE_LEVEL 128.0f
 //#define MIN_EDGE_LEVEL 8.0f
 #define MIN_EDGE_LEVEL 4.0f
-#define ENABLE_DISPLACEMENTS 0
-#if ENABLE_DISPLACEMENTS
-#  define LEVEL_FACTOR 256.0f
-#else
-#  define LEVEL_FACTOR 64.0f
-#endif
+#define ENABLE_DISPLACEMENTS 1
+
+#define LEVEL_FACTOR 64.0f
+
+#define MAX_PATH_LENGTH 2
 
 bool g_subdiv_mode = false;
 unsigned int keyframeID = 0;
+
+
 
 struct DifferentialGeometry
 {
@@ -468,7 +469,7 @@ inline DielectricLayerLambertian make_DielectricLayerLambertian(const Vec3fa& T,
 //                          OBJ Material                                      //
 ////////////////////////////////////////////////////////////////////////////////
 
- void OBJMaterial__preprocess(OBJMaterial* material, BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Medium& medium)  
+void OBJMaterial__preprocess(OBJMaterial* material, BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Medium& medium, const RTCRay &ray)  
 {
     float d = material->d;
     //if (material->map_d) { d *= material->map_d.get(s,t); }
@@ -483,6 +484,20 @@ inline DielectricLayerLambertian make_DielectricLayerLambertian(const Vec3fa& T,
 	brdf.Kd = getTextureTexel3f(material->map_Kd,dg.u,dg.v);	
       }
 #endif
+#if defined(USE_PTEX)
+  if (material->ptex_Kd) {
+    //      int prim_id = ray.primID;
+    //      int offset = mesh->face_offsets[prim_id];
+    //      int verts = mesh->verticesPerFace[prim_id];
+//       std::cout << "PTEX hit ID=" << prim_id << "  ";
+//       for (int i = 0; i < verts; ++i)
+// 	 		std::cout << "  " << mesh->positions[mesh->position_indices[offset+i]];
+//       std::cout << std::endl;
+
+    brdf.Kd = d * getPtexTexel3f(material->ptex_Kd, ray.primID, ray.v, ray.u);
+  }
+#endif
+
     //if (material->map_Kd) brdf.Kd *= material->map_Kd->get(dg.st);  
     brdf.Ks = d * Vec3fa(material->Ks);  
     //if (material->map_Ks) brdf.Ks *= material->map_Ks->get(dg.st); 
@@ -741,7 +756,7 @@ inline DielectricLayerLambertian make_DielectricLayerLambertian(const Vec3fa& T,
 //                              Material                                      //
 ////////////////////////////////////////////////////////////////////////////////
 
-inline void Material__preprocess(ISPCMaterial* materials, int materialID, int numMaterials, BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Medium& medium)  
+inline void Material__preprocess(ISPCMaterial* materials, int materialID, int numMaterials, BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Medium& medium,const RTCRay& ray)  
 {
   
   {
@@ -749,7 +764,7 @@ inline void Material__preprocess(ISPCMaterial* materials, int materialID, int nu
   ISPCMaterial* material = &materials[materialID];
 
   switch (material->ty) {
-  case MATERIAL_OBJ  : OBJMaterial__preprocess  ((OBJMaterial*)  material,brdf,wo,dg,medium); break;
+  case MATERIAL_OBJ  : OBJMaterial__preprocess  ((OBJMaterial*)  material,brdf,wo,dg,medium,ray); break;
   case MATERIAL_METAL: MetalMaterial__preprocess((MetalMaterial*)material,brdf,wo,dg,medium); break;
   case MATERIAL_REFLECTIVE_METAL: ReflectiveMetalMaterial__preprocess((ReflectiveMetalMaterial*)material,brdf,wo,dg,medium); break;
   case MATERIAL_VELVET: VelvetMaterial__preprocess((VelvetMaterial*)material,brdf,wo,dg,medium); break;
@@ -822,9 +837,37 @@ int* geomID_to_type = nullptr;
 /* render function to use */
 renderPixelFunc renderPixel;
 
+#if 0
 /* occlusion filter function */
 void occlusionFilterReject(void* ptr, RTCRay& ray) {
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
+}
+#endif
+
+void displacementFunction(void* ptr, unsigned int geomID, int unsigned primID, 
+                      const float* u,      /*!< u coordinates (source) */
+                      const float* v,      /*!< v coordinates (source) */
+                      const float* nx,     /*!< x coordinates of normal at point to displace (source) */
+                      const float* ny,     /*!< y coordinates of normal at point to displace (source) */
+                      const float* nz,     /*!< z coordinates of normal at point to displace (source) */
+                      float* px,           /*!< x coordinates of points to displace (source and target) */
+                      float* py,           /*!< y coordinates of points to displace (source and target) */
+                      float* pz,           /*!< z coordinates of points to displace (source and target) */
+                      size_t N)
+{
+  ISPCSubdivMesh* mesh = (ISPCSubdivMesh*)geomID_to_mesh[geomID];
+  int materialID = mesh->materialID;
+  int numMaterials = g_ispc_scene->numMaterials;
+  OBJMaterial* material = (OBJMaterial*)&g_ispc_scene->materials[materialID];
+  if (material->ptex_displ)
+    for (size_t i=0;i<N;i++) // N == 1
+      {
+	const float displ = getPtexTexel1f(material->ptex_displ, primID, v[i], u[i]);
+	assert( isfinite(displ));
+	px[i] += nx[i] * displ;
+	py[i] += ny[i] * displ;
+	pz[i] += nz[i] * displ;
+      }
 }
 
 /* error reporting function */
@@ -923,8 +966,10 @@ void convertTriangleMeshes(ISPCScene* scene_in, RTCScene scene_out, size_t numGe
       else 
 	allTransparent = false;
     }
+#if 0
     if (allTransparent)
       rtcSetOcclusionFilterFunction(scene_out,geomID,(RTCFilterFunc)&occlusionFilterReject);
+#endif
   }
 }
 
@@ -1181,7 +1226,7 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
 
 
   /* iterative path tracer loop */
-  for (int i=0; i<8; i++)
+  for (int i=0; i<MAX_PATH_LENGTH; i++)
   {
     /* terminate if contribution too low */
     if (max(Lw.x,max(Lw.y,Lw.z)) < 0.01f)
@@ -1270,7 +1315,7 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
     ISPCMaterial* material_array = &g_ispc_scene->materials[0];
 
 
-    Material__preprocess(material_array,materialID,numMaterials,brdf,wo,dg,medium);
+    Material__preprocess(material_array,materialID,numMaterials,brdf,wo,dg,medium,ray);
 
     //brdf.Kd = rndColor(rebuilds);; //rndColor(ray.primID);
 
@@ -1283,42 +1328,23 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
     for (size_t i=0; i<g_ispc_scene->numAmbientLights; i++)
     {
       Vec3fa L0 = Vec3fa(0.0f);
-      Sample3f wi0; float tMax0;
+      Sample3f wi0; 
+      float tMax0;
       Vec3fa Ll0 = AmbientLight__sample(g_ispc_scene->ambientLights[i],dg,wi0,tMax0,Vec2f(frand(state),frand(state)));
 
-      if (wi0.pdf > 0.0f) {
-        RTCRay shadow = RTCRay(dg.P,wi0.v,0.001f,tMax0);
-        rtcOccluded(g_scene,shadow);
-        if (shadow.geomID == RTC_INVALID_GEOMETRY_ID) {
-          L0 = Ll0/wi0.pdf*Material__eval(material_array,materialID,numMaterials,brdf,wo,dg,wi0.v);
-        }
+      
+      if (wi0.pdf > 0.1f) {
+	RTCRay shadow = RTCRay(dg.P,wi0.v,0.001f,tMax0);
+	rtcOccluded(g_scene,shadow);
+	if (shadow.geomID == RTC_INVALID_GEOMETRY_ID) {
+	  L0 += Ll0/wi0.pdf * Material__eval(material_array,materialID,numMaterials,brdf,wo,dg,wi0.v);
+	}
+	L = L + Lw*L0;
+      }
 
-        L = L + Lw*L0;
-      }
-#if 0
-      Vec3fa L1 = Vec3fa(0.0f);
-      Vec3fa Ll1 = AmbientLight__eval(g_ispc_scene->ambientLights[i],wi1.v);
-      if (wi1.pdf > 0.0f) {
-        RTCRay shadow = RTCRay(dg.P,wi1.v,0.001f,inf);
-        rtcOccluded(g_scene,shadow);
-        if (shadow.geomID == RTC_INVALID_GEOMETRY_ID) {
-          L1 = Ll1/wi1.pdf*c;
-        }
-        L = L + Lw*L1;
-      }
-#endif
-
-#if 0
-      float s = wi0.pdf*wi0.pdf + wi1.pdf*wi1.pdf;
-      if (s > 0) {
-        float w0 = 0;
-        float w1 = 1;
-        //float w0 = wi0.pdf*wi0.pdf/s;
-        //float w1 = wi1.pdf*wi1.pdf/s;
-        L = L + Lw*(w0*L0+w1*L1);
-      }
-#endif
     }
+
+
     Sample3f wi; float tMax;
 
     /* iterate over point lights */
@@ -1377,6 +1403,10 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
   const float sy = frand(state);
 
   Vec3fa L = renderPixelFunction(x+sx,y+sy,state,vx,vy,vz,p); 
+  //L.x = min(L.x,1.0f);
+  //L.y = min(L.y,1.0f);
+  //L.z = min(L.z,1.0f);
+
   return L;
 }
 
