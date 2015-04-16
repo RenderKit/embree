@@ -718,11 +718,14 @@ namespace embree
             STAT3(shadow.trav_prims,1,popcnt(valid0),RayM::size());
             
             /* load edges and geometry normal */
-            rsimdb valid = valid0;
-            const rsimd3f p0 = broadcast<rsimdf>(tri.v0,i);
-            const rsimd3f e1 = broadcast<rsimdf>(tri.e1,i);
-            const rsimd3f e2 = broadcast<rsimdf>(tri.e2,i);
-            const rsimd3f Ng = broadcast<rsimdf>(tri.Ng,i);
+            const rsimdf time = ray.time;
+            const rsimd3f v0 = broadcast<rsimdf>(tri.v0,i) + time*broadcast<rsimdf>(tri.d0,i);
+            const rsimd3f v1 = broadcast<rsimdf>(tri.v1,i) + time*broadcast<rsimdf>(tri.d1,i);
+            const rsimd3f v2 = broadcast<rsimdf>(tri.v2,i) + time*broadcast<rsimdf>(tri.d2,i);
+            const rsimd3f p0 = v0;
+            const rsimd3f e1 = v0-v1;
+            const rsimd3f e2 = v2-v0;
+            const rsimd3f Ng = cross(e1,e2);
             embree::isa::occluded<enableIntersectionFilter>(valid0,ray,p0,e2,e1,Ng,tri.geomIDs,tri.primIDs,i,scene);
             if (none(valid0)) break;
           }

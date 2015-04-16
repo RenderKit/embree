@@ -366,6 +366,6 @@ namespace embree
     DEFINE_INTERSECTOR8(BVH4Triangle4iIntersector8ChunkPluecker, BVH4Intersector8Chunk<0x1 COMMA true COMMA ArrayIntersector8<Triangle4iIntersector8Pluecker<LeafMode> > >);
     DEFINE_INTERSECTOR8(BVH4VirtualIntersector8Chunk, BVH4Intersector8Chunk<0x1 COMMA false COMMA ArrayIntersector8<VirtualAccelIntersector8> >);
 
-    DEFINE_INTERSECTOR8(BVH4Triangle4vMBIntersector8ChunkMoeller, BVH4Intersector8Chunk<0x10 COMMA false COMMA ArrayIntersector8<Triangle4vMBIntersector8MoellerTrumbore<LeafMode COMMA true> > >);
+    DEFINE_INTERSECTOR8(BVH4Triangle4vMBIntersector8ChunkMoeller, BVH4Intersector8Chunk<0x10 COMMA false COMMA ArrayIntersector8<TriangleNMblurIntersectorMMoellerTrumbore<Ray8 COMMA Triangle4vMB COMMA true> > >);
   }
 }
