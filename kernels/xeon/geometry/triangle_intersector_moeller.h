@@ -64,12 +64,6 @@ namespace embree
       valid &= (T > absDen*tsimdf(ray.tnear)) & (T < absDen*tsimdf(ray.tfar));
       if (likely(none(valid))) return;
       
-      /* ray masking test */
-#if defined(RTCORE_RAY_MASK)
-      valid &= (tri_mask & ray.mask) != 0;
-      if (unlikely(none(valid))) return;
-#endif
-      
       /* calculate hit information */
       const tsimdf rcpAbsDen = rcp(absDen);
       const tsimdf u = U * rcpAbsDen;
@@ -79,10 +73,17 @@ namespace embree
       int geomID = tri_geomIDs[i];
       
       /* intersection filter test */
-#if defined(RTCORE_INTERSECTION_FILTER)
+#if defined(RTCORE_INTERSECTION_FILTER) || defined(RTCORE_RAY_MASK)
       while (true) 
       {
         Geometry* geometry = scene->get(geomID);
+
+#if defined(RTCORE_RAY_MASK)
+        /* goto next hit if mask test fails */
+        if ((geometry->mask & ray.mask) == 0) 
+          goto final;
+#endif
+
         if (likely(!geometry->hasIntersectionFilter1())) 
         {
 #endif
@@ -102,6 +103,7 @@ namespace embree
         
         Vec3fa Ng = Vec3fa(tri_Ng.x[i],tri_Ng.y[i],tri_Ng.z[i]);
         if (runIntersectionFilter1(geometry,ray,u[i],v[i],t[i],Ng,geomID,tri_primIDs[i])) return;
+      final:
         valid[i] = 0;
         if (none(valid)) return;
         i = select_min(valid,t);
@@ -144,21 +146,21 @@ namespace embree
       if (unlikely(none(valid))) return false;
 #endif
       
-      /* ray masking test */
-#if defined(RTCORE_RAY_MASK)
-      valid &= (tri_mask & ray.mask) != 0;
-      if (unlikely(none(valid))) return false;
-#endif
-      
       /* intersection filter test */
-#if defined(RTCORE_INTERSECTION_FILTER)
+#if defined(RTCORE_INTERSECTION_FILTER) || defined(RTCORE_RAY_MASK)
       size_t m=movemask(valid), i=__bsf(m);
       while (true)
       {  
         const int geomID = tri_geomIDs[i];
         Geometry* geometry = scene->get(geomID);
+
+#if defined(RTCORE_RAY_MASK)
+        /* goto next hit if mask test fails */
+        if ((geometry->mask & ray.mask) == 0) 
+          goto final
+#endif
         
-        /* if we have no filter then the test patsimds */
+        /* if we have no filter then the test passed */
         if (likely(!geometry->hasOcclusionFilter1()))
           break;
         
@@ -172,6 +174,7 @@ namespace embree
           break;
         
         /* test if one more triangle hit */
+      final:
         m=__btc(m,i); i=__bsf(m);
         if (m == 0) return false;
       }
