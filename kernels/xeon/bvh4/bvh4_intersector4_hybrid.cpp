@@ -446,5 +446,6 @@ namespace embree
     DEFINE_INTERSECTOR4(BVH4Triangle4vIntersector4HybridPluecker, BVH4Intersector4Hybrid<0x1 COMMA true COMMA ArrayIntersector4_1<TriangleNvIntersectorMPluecker<Ray4 COMMA Triangle4v> > >);
 
     // FIXME: add Triangle4vMblur intersector
+    // FIXME: add Triangle4i intersector
   }
 }

@@ -52,6 +52,11 @@ namespace embree
       return __bsf(~movemask(valid()));
     }
 
+    /*! returns maximal size of triangle */
+    static __forceinline size_t max_size() {
+      return 4;
+    }
+
     /*! calculate the bounds of the triangles */
     __forceinline const BBox3fa bounds() const 
     {

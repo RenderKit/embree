@@ -19,13 +19,14 @@
 #include "geometry/triangle4.h"
 #include "geometry/triangle4v.h"
 #include "geometry/triangle4v_mb.h"
+#include "geometry/triangle4i.h"
 #include "geometry/triangle8.h"
 
 #include "geometry/bezier1v_intersector1.h"
 #include "geometry/bezier1i_intersector1.h"
 #include "geometry/triangle_intersector_moeller.h"
 #include "geometry/triangle_intersector_pluecker.h"
-#include "geometry/triangle4i_intersector1.h"
+#include "geometry/triangle4i_intersector_pluecker.h"
 #include "geometry/subdivpatch1_intersector1.h"
 #include "geometry/subdivpatch1cached_intersector1.h"
 #include "geometry/grid_intersector1.h"
@@ -305,7 +306,7 @@ namespace embree
     DEFINE_INTERSECTOR1(BVH4Triangle8Intersector1Moeller,BVH4Intersector1<0x1 COMMA false COMMA ArrayIntersector1<TriangleNIntersector1MoellerTrumbore<Triangle8> > >);
 #endif
     DEFINE_INTERSECTOR1(BVH4Triangle4vIntersector1Pluecker,BVH4Intersector1<0x1 COMMA true COMMA ArrayIntersector1<TriangleNvIntersector1Pluecker<Triangle4v> > >);
-    DEFINE_INTERSECTOR1(BVH4Triangle4iIntersector1Pluecker,BVH4Intersector1<0x1 COMMA true COMMA ArrayIntersector1<Triangle4iIntersector1Pluecker<LeafMode> > >);
+    DEFINE_INTERSECTOR1(BVH4Triangle4iIntersector1Pluecker,BVH4Intersector1<0x1 COMMA true COMMA ArrayIntersector1<Triangle4iIntersector1Pluecker> >);
 
     DEFINE_INTERSECTOR1(BVH4Subdivpatch1Intersector1,BVH4Intersector1<0x1 COMMA true COMMA ArrayIntersector1<SubdivPatch1Intersector1 > >);
     DEFINE_INTERSECTOR1(BVH4Subdivpatch1CachedIntersector1,BVH4Intersector1<0x1 COMMA true COMMA SubdivPatch1CachedIntersector1>);
