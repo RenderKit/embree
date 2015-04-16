@@ -327,7 +327,7 @@ namespace embree
         {
           rsimdb valid0 = valid_i;
           
-          for (size_t i=0; i<TriangleN::max_size(); i++)
+          for (size_t i=0; i<TriangleNv::max_size(); i++)
           {
             if (!tri.valid(i)) break;
             STAT3(shadow.trav_prims,1,popcnt(valid_i),RayM::size());
@@ -394,7 +394,7 @@ namespace embree
               const rsimdf v = V / absDen;
               const rsimdf t = T / absDen;
               const int primID = tri.primID(i);
-              valid = runOcclusionFilter<rsimdf>(valid,geometry,ray,u,v,t,Ng,geomID,primID);
+              valid = runOcclusionFilter(valid,geometry,ray,u,v,t,Ng,geomID,primID);
             }
 #endif
             
@@ -485,7 +485,7 @@ namespace embree
             }
             
             const Vec3fa N(Ng.x[i],Ng.y[i],Ng.z[i]);
-            if (runIntersectionFilter<rsimdf>(geometry,ray,k,u[i],v[i],t[i],N,geomID,tri.primID(i))) return;
+            if (runIntersectionFilter(geometry,ray,k,u[i],v[i],t[i],N,geomID,tri.primID(i))) return;
             valid[i] = 0;
             if (unlikely(none(valid))) return;
             i = select_min(valid,t);
@@ -560,7 +560,7 @@ namespace embree
             const tsimdf v = V / absDen;
             const tsimdf t = T / absDen;
             const Vec3fa N(Ng.x[i],Ng.y[i],Ng.z[i]);
-            if (runOcclusionFilter<rsimdf>(geometry,ray,k,u[i],v[i],t[i],N,geomID,tri.primID(i))) break;
+            if (runOcclusionFilter(geometry,ray,k,u[i],v[i],t[i],N,geomID,tri.primID(i))) break;
             valid[i] = 0;
             if (unlikely(none(valid))) return false;
             i = select_min(valid,T);

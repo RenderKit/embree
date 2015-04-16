@@ -15,15 +15,15 @@
 // ======================================================================== //
 
 #include "bvh4_intersector4_chunk.h"
+
 #include "geometry/triangle4.h"
-#if defined(__AVX__)
+#include "geometry/triangle4v.h"
 #include "geometry/triangle8.h"
-#endif
 
 #include "geometry/bezier1v_intersector4.h"
 #include "geometry/bezier1i_intersector4.h"
 #include "geometry/triangle_intersector_moeller.h"
-#include "geometry/triangle4v_intersector4_pluecker.h"
+#include "geometry/triangle_intersector_pluecker.h"
 #include "geometry/triangle4i_intersector4.h"
 #include "geometry/virtual_accel_intersector4.h"
 #include "geometry/triangle4v_intersector4_moeller_mb.h"
@@ -363,7 +363,7 @@ namespace embree
     DEFINE_INTERSECTOR4(BVH4Triangle8Intersector4ChunkMoeller, BVH4Intersector4Chunk<0x1 COMMA false COMMA ArrayIntersector4<TriangleNIntersectorMMoellerTrumbore<Ray4 COMMA Triangle8 COMMA true> > >);
     DEFINE_INTERSECTOR4(BVH4Triangle8Intersector4ChunkMoellerNoFilter, BVH4Intersector4Chunk<0x1 COMMA false COMMA ArrayIntersector4<TriangleNIntersectorMMoellerTrumbore<Ray4 COMMA Triangle8 COMMA false> > >);
 #endif
-    DEFINE_INTERSECTOR4(BVH4Triangle4vIntersector4ChunkPluecker, BVH4Intersector4Chunk<0x1 COMMA true COMMA ArrayIntersector4<Triangle4vIntersector4Pluecker<LeafMode> > >);
+    DEFINE_INTERSECTOR4(BVH4Triangle4vIntersector4ChunkPluecker, BVH4Intersector4Chunk<0x1 COMMA true COMMA ArrayIntersector4<TriangleNvIntersectorMPluecker<Ray4 COMMA Triangle4v> > >);
     DEFINE_INTERSECTOR4(BVH4Triangle4iIntersector4ChunkPluecker, BVH4Intersector4Chunk<0x1 COMMA true COMMA ArrayIntersector4<Triangle4iIntersector4Pluecker<LeafMode> > >);
     DEFINE_INTERSECTOR4(BVH4VirtualIntersector4Chunk, BVH4Intersector4Chunk<0x1 COMMA false COMMA ArrayIntersector4<VirtualAccelIntersector4> >);
 
