@@ -19,62 +19,74 @@
 #include "common/ray.h"
 #include "geometry/filter.h"
 
-/*! This intersector implements a modified version of the Moeller
- *  Trumbore intersector from the paper "Fast, Minimum Storage
- *  Ray-Triangle Intersection". In contrast to the paper we
- *  precalculate some factors and factor the calculations differently
- *  to allow precalculating the cross product e1 x e2. The resulting
- *  algorithm is similar to the fastest one of the paper "Optimizing
- *  Ray-Triangle Intersection via Automated Search". */
+/*! Modified Pluecker ray/triangle intersector. The test first shifts the ray
+ *  origin into the origin of the coordinate system and then uses
+ *  Pluecker coordinates for the intersection. Due to the shift, the
+ *  Pluecker coordinate calculation simplifies. The edge equations
+ *  are watertight along the edge for neighboring triangles. */
 
 namespace embree
 {
   namespace isa
   {
     /*! Intersects N triangles with 1 ray */
-    template<typename TriangleN>
-      struct TriangleNIntersector1MoellerTrumbore
+    template<typename TriangleNv>
+      struct TriangleNvIntersector1Pluecker
       {
-        typedef TriangleN Primitive;
-        
+        typedef TriangleNv Primitive;
+
         /* type shortcuts */
-        typedef typename TriangleN::simdb tsimdb;
-        typedef typename TriangleN::simdf tsimdf;
+        typedef typename TriangleNv::simdb tsimdb;
+        typedef typename TriangleNv::simdf tsimdf;
         typedef Vec3<tsimdf> tsimd3f;
         
         struct Precalculations {
           __forceinline Precalculations (const Ray& ray, const void* ptr) {}
         };
         
-        /*! Intersect a ray with the N triangles and updates the hit. */
-        static __forceinline void intersect(const Precalculations& pre, Ray& ray, const TriangleN& tri, Scene* scene)
+        /*! Intersect a ray with the 4 triangles and updates the hit. */
+        static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Primitive& tri, Scene* scene)
         {
-          /* calculate denominator */
+          /* calculate vertices relative to ray origin */
           STAT3(normal.trav_prims,1,1,1);
           const tsimd3f O = tsimd3f(ray.org);
           const tsimd3f D = tsimd3f(ray.dir);
-          const tsimd3f C = tsimd3f(tri.v0) - O;
-          const tsimd3f R = cross(D,C);
-          const tsimdf den = dot(tsimd3f(tri.Ng),D);
+          const tsimd3f v0 = tri.v0-O;
+          const tsimd3f v1 = tri.v1-O;
+          const tsimd3f v2 = tri.v2-O;
+          
+          /* calculate triangle edges */
+          const tsimd3f e0 = v2-v0;
+          const tsimd3f e1 = v0-v1;
+          const tsimd3f e2 = v1-v2;
+          
+          /* calculate geometry normal and denominator */
+          const tsimd3f Ng1 = cross(e1,e0);
+          const tsimd3f Ng = Ng1+Ng1;
+          const tsimdf den = dot(Ng,D);
           const tsimdf absDen = abs(den);
           const tsimdf sgnDen = signmsk(den);
           
           /* perform edge tests */
-          const tsimdf U = dot(R,tsimd3f(tri.e2)) ^ sgnDen;
-          const tsimdf V = dot(R,tsimd3f(tri.e1)) ^ sgnDen;
+          const tsimdf U = dot(cross(v2+v0,e0),D) ^ sgnDen;
+          const tsimdf V = dot(cross(v0+v1,e1),D) ^ sgnDen;
+          const tsimdf W = dot(cross(v1+v2,e2),D) ^ sgnDen;
+          tsimdb valid = (U >= 0.0f) & (V >= 0.0f) & (W >= 0.0f);
+          if (unlikely(none(valid))) return;
+          
+          /* perform depth test */
+          const tsimdf T = dot(v0,Ng) ^ sgnDen;
+          valid &= (T >= absDen*tsimdf(ray.tnear)) & (absDen*tsimdf(ray.tfar) >= T);
+          if (unlikely(none(valid))) return;
           
           /* perform backface culling */
 #if defined(RTCORE_BACKFACE_CULLING)
-          tsimdb valid = (den > tsimdf(zero)) & (U >= 0.0f) & (V >= 0.0f) & (U+V<=absDen);
+          valid &= den > tsimdf(zero);
+          if (unlikely(none(valid))) return;
 #else
-          tsimdb valid = (den != tsimdf(zero)) & (U >= 0.0f) & (V >= 0.0f) & (U+V<=absDen);
+          valid &= den != tsimdf(zero);
+          if (unlikely(none(valid))) return;
 #endif
-          if (likely(none(valid))) return;
-          
-          /* perform depth test */
-          const tsimdf T = dot(tsimd3f(tri.Ng),C) ^ sgnDen;
-          valid &= (T > absDen*tsimdf(ray.tnear)) & (T < absDen*tsimdf(ray.tfar));
-          if (likely(none(valid))) return;
           
           /* ray masking test */
 #if defined(RTCORE_RAY_MASK)
@@ -83,10 +95,9 @@ namespace embree
 #endif
           
           /* calculate hit information */
-          const tsimdf rcpAbsDen = rcp(absDen);
-          const tsimdf u = U * rcpAbsDen;
-          const tsimdf v = V * rcpAbsDen;
-          const tsimdf t = T * rcpAbsDen;
+          const tsimdf u = U / absDen;
+          const tsimdf v = V / absDen;
+          const tsimdf t = T / absDen;
           size_t i = select_min(valid,t);
           int geomID = tri.geomID(i);
           
@@ -102,9 +113,9 @@ namespace embree
               ray.u = u[i];
               ray.v = v[i];
               ray.tfar = t[i];
-              ray.Ng.x = tri.Ng.x[i];
-              ray.Ng.y = tri.Ng.y[i];
-              ray.Ng.z = tri.Ng.z[i];
+              ray.Ng.x = Ng.x[i];
+              ray.Ng.y = Ng.y[i];
+              ray.Ng.z = Ng.z[i];
               ray.geomID = geomID;
               ray.primID = tri.primID(i);
               
@@ -112,8 +123,8 @@ namespace embree
               return;
             }
             
-            Vec3fa Ng = Vec3fa(tri.Ng.x[i],tri.Ng.y[i],tri.Ng.z[i]);
-            if (runIntersectionFilter1(geometry,ray,u[i],v[i],t[i],Ng,geomID,tri.primID(i))) return;
+            Vec3fa N = Vec3fa(Ng.x[i],Ng.y[i],Ng.z[i]);
+            if (runIntersectionFilter1(geometry,ray,u[i],v[i],t[i],N,geomID,tri.primID(i))) return;
             valid[i] = 0;
             if (none(valid)) return;
             i = select_min(valid,t);
@@ -122,34 +133,47 @@ namespace embree
 #endif
         }
         
-        /*! Test if the ray is occluded by one of N triangles. */
-        static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const TriangleN& tri, Scene* scene)
+        /*! Test if the ray is occluded by one of the triangles. */
+        static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Primitive& tri, Scene* scene)
         {
-          /* calculate denominator */
+          /* calculate vertices relative to ray origin */
           STAT3(shadow.trav_prims,1,1,1);
           const tsimd3f O = tsimd3f(ray.org);
           const tsimd3f D = tsimd3f(ray.dir);
-          const tsimd3f C = tsimd3f(tri.v0) - O;
-          const tsimd3f R = cross(D,C);
-          const tsimdf den = dot(tsimd3f(tri.Ng),D);
+          const tsimd3f v0 = tri.v0-O;
+          const tsimd3f v1 = tri.v1-O;
+          const tsimd3f v2 = tri.v2-O;
+          
+          /* calculate triangle edges */
+          const tsimd3f e0 = v2-v0;
+          const tsimd3f e1 = v0-v1;
+          const tsimd3f e2 = v1-v2;
+          
+          /* calculate geometry normal and denominator */
+          const tsimd3f Ng1 = cross(e1,e0);
+          const tsimd3f Ng = Ng1+Ng1;
+          const tsimdf den = dot(Ng,D);
           const tsimdf absDen = abs(den);
           const tsimdf sgnDen = signmsk(den);
           
           /* perform edge tests */
-          const tsimdf U = dot(R,tsimd3f(tri.e2)) ^ sgnDen;
-          const tsimdf V = dot(R,tsimd3f(tri.e1)) ^ sgnDen;
-          const tsimdf W = absDen-U-V;
+          const tsimdf U = dot(cross(v2+v0,e0),D) ^ sgnDen;
+          const tsimdf V = dot(cross(v0+v1,e1),D) ^ sgnDen;
+          const tsimdf W = dot(cross(v1+v2,e2),D) ^ sgnDen;
           tsimdb valid = (U >= 0.0f) & (V >= 0.0f) & (W >= 0.0f);
           if (unlikely(none(valid))) return false;
           
           /* perform depth test */
-          const tsimdf T = dot(tsimd3f(tri.Ng),C) ^ sgnDen;
-          valid &= (den != tsimdf(zero)) & (T >= absDen*tsimdf(ray.tnear)) & (absDen*tsimdf(ray.tfar) >= T);
+          const tsimdf T = dot(v0,Ng) ^ sgnDen;
+          valid &= (T >= absDen*tsimdf(ray.tnear)) & (absDen*tsimdf(ray.tfar) >= T);
           if (unlikely(none(valid))) return false;
           
           /* perform backface culling */
 #if defined(RTCORE_BACKFACE_CULLING)
           valid &= den > tsimdf(zero);
+          if (unlikely(none(valid))) return false;
+#else
+          valid &= den != tsimdf(zero);
           if (unlikely(none(valid))) return false;
 #endif
           
@@ -176,8 +200,8 @@ namespace embree
             const tsimdf u = U * rcpAbsDen;
             const tsimdf v = V * rcpAbsDen;
             const tsimdf t = T * rcpAbsDen;
-            const Vec3fa Ng = Vec3fa(tri.Ng.x[i],tri.Ng.y[i],tri.Ng.z[i]);
-            if (runOcclusionFilter1(geometry,ray,u[i],v[i],t[i],Ng,geomID,tri.primID(i))) 
+            const Vec3fa N = Vec3fa(Ng.x[i],Ng.y[i],Ng.z[i]);
+            if (runOcclusionFilter1(geometry,ray,u[i],v[i],t[i],N,geomID,tri.primID(i))) 
               break;
             
             /* test if one more triangle hit */
@@ -189,67 +213,68 @@ namespace embree
           return true;
         }
       };
-    
-    /*! Intersector for N triangles with M rays. */
-    template<typename RayM, typename TriangleN, bool enableIntersectionFilter>
-      struct TriangleNIntersectorMMoellerTrumbore
+
+    template<typename RayM, typename TriangleNv>
+      struct TriangleNvIntersectorMPluecker
       {
-        typedef TriangleN Primitive;
+        typedef TriangleNv Primitive;
         
         /* triangle SIMD type shortcuts */
-        typedef typename TriangleN::simdb tsimdb;
-        typedef typename TriangleN::simdf tsimdf;
+        typedef typename TriangleNv::simdb tsimdb;
+        typedef typename TriangleNv::simdf tsimdf;
         typedef Vec3<tsimdf> tsimd3f;
-        
+      
         /* ray SIMD type shortcuts */
         typedef typename RayM::simdb rsimdb;
         typedef typename RayM::simdf rsimdf;
         typedef typename RayM::simdi rsimdi;
         typedef Vec3<rsimdf> rsimd3f;
-        
+
         struct Precalculations {
           __forceinline Precalculations (const rsimdb& valid, const RayM& ray) {}
         };
         
         /*! Intersects a M rays with N triangles. */
-        static __forceinline void intersect(const rsimdb& valid_i, Precalculations& pre, RayM& ray, const TriangleN& tri, Scene* scene)
+        static __forceinline void intersect(const rsimdb& valid_i, Precalculations& pre, RayM& ray, const Primitive& tri, Scene* scene)
         {
-          for (size_t i=0; i<TriangleN::max_size(); i++)
+          for (size_t i=0; i<TriangleNv::max_size(); i++)
           {
             if (!tri.valid(i)) break;
             STAT3(normal.trav_prims,1,popcnt(valid_i),RayM::size());
             
-            /* load edges and geometry normal */
+            /* calculate vertices relative to ray origin */
             rsimdb valid = valid_i;
-            const rsimd3f p0 = broadcast<rsimdf>(tri.v0,i);
-            const rsimd3f e1 = broadcast<rsimdf>(tri.e1,i);
-            const rsimd3f e2 = broadcast<rsimdf>(tri.e2,i);
-            const rsimd3f Ng = broadcast<rsimdf>(tri.Ng,i);
+            const rsimd3f O = ray.org;
+            const rsimd3f D = ray.dir;
+            const rsimd3f v0 = broadcast<rsimdf>(tri.v0,i)-O;
+            const rsimd3f v1 = broadcast<rsimdf>(tri.v1,i)-O;
+            const rsimd3f v2 = broadcast<rsimdf>(tri.v2,i)-O;
             
-            /* calculate denominator */
-            const rsimd3f C = p0 - ray.org;
-            const rsimd3f R = cross(ray.dir,C);
-            const rsimdf den = dot(Ng,ray.dir);
+            /* calculate triangle edges */
+            const rsimd3f e0 = v2-v0;
+            const rsimd3f e1 = v0-v1;
+            const rsimd3f e2 = v1-v2;
+            
+            /* calculate geometry normal and denominator */
+            const rsimd3f Ng1 = cross(e1,e0);
+            const rsimd3f Ng = Ng1+Ng1;
+            const rsimdf den = dot(rsimd3f(Ng),D);
             const rsimdf absDen = abs(den);
             const rsimdf sgnDen = signmsk(den);
             
-            /* test against edge p2 p0 */
-            const rsimdf U = dot(R,e2) ^ sgnDen;
+            /* perform edge tests */
+            const rsimdf U = dot(rsimd3f(cross(v2+v0,e0)),D) ^ sgnDen;
             valid &= U >= 0.0f;
             if (likely(none(valid))) continue;
-            
-            /* test against edge p0 p1 */
-            const rsimdf V = dot(R,e1) ^ sgnDen;
+            const rsimdf V = dot(rsimd3f(cross(v0+v1,e1)),D) ^ sgnDen;
             valid &= V >= 0.0f;
             if (likely(none(valid))) continue;
-            
-            /* test against edge p1 p2 */
-            const rsimdf W = absDen-U-V;
+            const rsimdf W = dot(rsimd3f(cross(v1+v2,e2)),D) ^ sgnDen;
             valid &= W >= 0.0f;
             if (likely(none(valid))) continue;
             
             /* perform depth test */
-            const rsimdf T = dot(Ng,C) ^ sgnDen;
+            const rsimdf T = dot(v0,rsimd3f(Ng)) ^ sgnDen;
             valid &= (T >= absDen*ray.tnear) & (absDen*ray.tfar >= T);
             if (unlikely(none(valid))) continue;
             
@@ -270,20 +295,18 @@ namespace embree
             
             /* calculate hit information */
             const rsimdf rcpAbsDen = rcp(absDen);
-            const rsimdf u = U*rcpAbsDen;
-            const rsimdf v = V*rcpAbsDen;
-            const rsimdf t = T*rcpAbsDen;
+            const rsimdf u = U / absDen;
+            const rsimdf v = V / absDen;
+            const rsimdf t = T / absDen;
             const int geomID = tri.geomID(i);
             const int primID = tri.primID(i);
             
             /* intersection filter test */
 #if defined(RTCORE_INTERSECTION_FILTER)
-            if (enableIntersectionFilter) {
-              Geometry* geometry = scene->get(geomID);
-              if (unlikely(geometry->hasIntersectionFilter<rsimdf>())) {
-                runIntersectionFilter(valid,geometry,ray,u,v,t,Ng,geomID,primID);
-                continue;
-              }
+            Geometry* geometry = scene->get(geomID);
+            if (unlikely(geometry->hasIntersectionFilter<rsimdf>())) {
+              runIntersectionFilter(valid,geometry,ray,u,v,t,Ng,geomID,primID);
+              continue;
             }
 #endif
             
@@ -300,48 +323,49 @@ namespace embree
         }
         
         /*! Test for M rays if they are occluded by any of the N triangle. */
-        static __forceinline rsimdb occluded(const rsimdb& valid_i, Precalculations& pre, RayM& ray, const TriangleN& tri, Scene* scene)
+        static __forceinline rsimdb occluded(const rsimdb& valid_i, Precalculations& pre, RayM& ray, const Primitive& tri, Scene* scene)
         {
           rsimdb valid0 = valid_i;
           
           for (size_t i=0; i<TriangleN::max_size(); i++)
           {
             if (!tri.valid(i)) break;
-            STAT3(shadow.trav_prims,1,popcnt(valid0),RayM::size());
+            STAT3(shadow.trav_prims,1,popcnt(valid_i),RayM::size());
             
-            /* load edges and geometry normal */
+            /* calculate vertices relative to ray origin */
             rsimdb valid = valid0;
-            const rsimd3f p0 = broadcast<rsimdf>(tri.v0,i);
-            const rsimd3f e1 = broadcast<rsimdf>(tri.e1,i);
-            const rsimd3f e2 = broadcast<rsimdf>(tri.e2,i);
-            const rsimd3f Ng = broadcast<rsimdf>(tri.Ng,i);
+            const rsimd3f O = ray.org;
+            const rsimd3f D = ray.dir;
+            const rsimd3f v0 = broadcast<rsimdf>(tri.v0,i)-O;
+            const rsimd3f v1 = broadcast<rsimdf>(tri.v1,i)-O;
+            const rsimd3f v2 = broadcast<rsimdf>(tri.v2,i)-O;
             
-            /* calculate denominator */
-            const rsimd3f C = p0 - ray.org;
-            const rsimd3f R = cross(ray.dir,C);
-            const rsimdf den = dot(Ng,ray.dir);
+            /* calculate triangle edges */
+            const rsimd3f e0 = v2-v0;
+            const rsimd3f e1 = v0-v1;
+            const rsimd3f e2 = v1-v2;
+            
+            /* calculate geometry normal and denominator */
+            const rsimd3f Ng1 = cross(e1,e0);
+            const rsimd3f Ng = Ng1+Ng1;
+            const rsimdf den = dot(rsimd3f(Ng),D);
             const rsimdf absDen = abs(den);
             const rsimdf sgnDen = signmsk(den);
             
-            /* test against edge p2 p0 */
-            const rsimdf U = dot(R,e2) ^ sgnDen;
+            /* perform edge tests */
+            const rsimdf U = dot(rsimd3f(cross(v2+v0,e0)),D) ^ sgnDen;
             valid &= U >= 0.0f;
             if (likely(none(valid))) continue;
-            
-            /* test against edge p0 p1 */
-            const rsimdf V = dot(R,e1) ^ sgnDen;
+            const rsimdf V = dot(rsimd3f(cross(v0+v1,e1)),D) ^ sgnDen;
             valid &= V >= 0.0f;
             if (likely(none(valid))) continue;
-            
-            /* test against edge p1 p2 */
-            const rsimdf W = absDen-U-V;
+            const rsimdf W = dot(rsimd3f(cross(v1+v2,e2)),D) ^ sgnDen;
             valid &= W >= 0.0f;
             if (likely(none(valid))) continue;
             
             /* perform depth test */
-            const rsimdf T = dot(Ng,C) ^ sgnDen;
+            const rsimdf T = dot(v0,rsimd3f(Ng)) ^ sgnDen;
             valid &= (T >= absDen*ray.tnear) & (absDen*ray.tfar >= T);
-            if (unlikely(none(valid))) continue;
             
             /* perform backface culling */
 #if defined(RTCORE_BACKFACE_CULLING)
@@ -360,20 +384,17 @@ namespace embree
             
             /* intersection filter test */
 #if defined(RTCORE_INTERSECTION_FILTER)
-            if (enableIntersectionFilter) 
+            const int geomID = tri.geomID(i);
+            Geometry* geometry = scene->get(geomID);
+            if (unlikely(geometry->hasOcclusionFilter<rsimdf>()))
             {
-              const int geomID = tri.geomID(i);
-              Geometry* geometry = scene->get(geomID);
-              if (unlikely(geometry->hasOcclusionFilter<rsimdf>()))
-              {
-                /* calculate hit information */
-                const rsimdf rcpAbsDen = rcp(absDen);
-                const rsimdf u = U*rcpAbsDen;
-                const rsimdf v = V*rcpAbsDen;
-                const rsimdf t = T*rcpAbsDen;
-                const int primID = tri.primID(i);
-                valid = runOcclusionFilter(valid,geometry,ray,u,v,t,Ng,geomID,primID);
-              }
+              /* calculate hit information */
+              const rsimdf rcpAbsDen = rcp(absDen);
+              const rsimdf u = U / absDen;
+              const rsimdf v = V / absDen;
+              const rsimdf t = T / absDen;
+              const int primID = tri.primID(i);
+              valid = runOcclusionFilter<rsimdf>(valid,geometry,ray,u,v,t,Ng,geomID,primID);
             }
 #endif
             
@@ -384,35 +405,49 @@ namespace embree
           return !valid0;
         }
         
-        /*! Intersect a ray with the 4 triangles and updates the hit. */
-        static __forceinline void intersect(Precalculations& pre, RayM& ray, size_t k, const TriangleN& tri, Scene* scene)
+        /*! Intersect a ray with the N triangles and updates the hit. */
+        static __forceinline void intersect(Precalculations& pre, RayM& ray, size_t k, const Primitive& tri, Scene* scene)
         {
-          /* calculate denominator */
+          /* calculate vertices relative to ray origin */
           STAT3(normal.trav_prims,1,1,1);
           const tsimd3f O = broadcast<tsimdf>(ray.org,k);
           const tsimd3f D = broadcast<tsimdf>(ray.dir,k);
-          const tsimd3f C = tsimd3f(tri.v0) - O;
-          const tsimd3f R = cross(D,C);
-          const tsimdf den = dot(tsimd3f(tri.Ng),D);
+          const tsimd3f v0 = tri.v0-O;
+          const tsimd3f v1 = tri.v1-O;
+          const tsimd3f v2 = tri.v2-O;
+          
+          /* calculate triangle edges */
+          const tsimd3f e0 = v2-v0;
+          const tsimd3f e1 = v0-v1;
+          const tsimd3f e2 = v1-v2;
+          
+          /* calculate geometry normal and denominator */
+          const tsimd3f Ng1 = cross(e1,e0);
+          const tsimd3f Ng = Ng1+Ng1;
+          const tsimdf den = dot(Ng,D);
           const tsimdf absDen = abs(den);
           const tsimdf sgnDen = signmsk(den);
           
           /* perform edge tests */
-          const tsimdf U = dot(R,tsimd3f(tri.e2)) ^ sgnDen;
-          const tsimdf V = dot(R,tsimd3f(tri.e1)) ^ sgnDen;
+          const tsimdf U = dot(cross(v2+v0,e0),D) ^ sgnDen;
+          const tsimdf V = dot(cross(v0+v1,e1),D) ^ sgnDen;
+          const tsimdf W = dot(cross(v1+v2,e2),D) ^ sgnDen;
+          tsimdb valid = (U >= 0.0f) & (V >= 0.0f) & (W >= 0.0f);
+          if (unlikely(none(valid))) return;
+          
+          /* perform depth test */
+          const tsimdf T = dot(v0,Ng) ^ sgnDen;
+          valid &= (T >= absDen*tsimdf(ray.tnear[k])) & (absDen*tsimdf(ray.tfar[k]) >= T);
+          if (unlikely(none(valid))) return;
           
           /* perform backface culling */
 #if defined(RTCORE_BACKFACE_CULLING)
-          tsimdb valid = (den > tsimdf(zero)) & (U >= 0.0f) & (V >= 0.0f) & (U+V<=absDen);
+          valid &= den > tsimdf(zero);
+          if (unlikely(none(valid))) return;
 #else
-          tsimdb valid = (den != tsimdf(zero)) & (U >= 0.0f) & (V >= 0.0f) & (U+V<=absDen);
+          valid &= den != tsimdf(zero);
+          if (unlikely(none(valid))) return;
 #endif
-          if (likely(none(valid))) return;
-          
-          /* perform depth test */
-          const tsimdf T = dot(tsimd3f(tri.Ng),C) ^ sgnDen;
-          valid &= (T > absDen*tsimdf(ray.tnear[k])) & (T < absDen*tsimdf(ray.tfar[k]));
-          if (likely(none(valid))) return;
           
           /* ray masking test */
 #if defined(RTCORE_RAY_MASK)
@@ -421,10 +456,9 @@ namespace embree
 #endif
           
           /* calculate hit information */
-          const tsimdf rcpAbsDen = rcp(absDen);
-          const tsimdf u = U * rcpAbsDen;
-          const tsimdf v = V * rcpAbsDen;
-          const tsimdf t = T * rcpAbsDen;
+          const tsimdf u = U / absDen;
+          const tsimdf v = V / absDen;
+          const tsimdf t = T / absDen;
           size_t i = select_min(valid,t);
           int geomID = tri.geomID(i);
           
@@ -433,16 +467,16 @@ namespace embree
           while (true) 
           {
             Geometry* geometry = scene->get(geomID);
-            if (likely(!enableIntersectionFilter || !geometry->hasIntersectionFilter<rsimdf>())) 
+            if (likely(!geometry->hasIntersectionFilter<rsimdf>())) 
             {
 #endif
               /* update hit information */
               ray.u[k] = u[i];
               ray.v[k] = v[i];
               ray.tfar[k] = t[i];
-              ray.Ng.x[k] = tri.Ng.x[i];
-              ray.Ng.y[k] = tri.Ng.y[i];
-              ray.Ng.z[k] = tri.Ng.z[i];
+              ray.Ng.x[k] = Ng.x[i];
+              ray.Ng.y[k] = Ng.y[i];
+              ray.Ng.z[k] = Ng.z[i];
               ray.geomID[k] = geomID;
               ray.primID[k] = tri.primID(i);
               
@@ -450,8 +484,8 @@ namespace embree
               return;
             }
             
-            const Vec3fa Ng(tri.Ng.x[i],tri.Ng.y[i],tri.Ng.z[i]);
-            if (runIntersectionFilter(geometry,ray,k,u[i],v[i],t[i],Ng,geomID,tri.primID(i))) return;
+            const Vec3fa N(Ng.x[i],Ng.y[i],Ng.z[i]);
+            if (runIntersectionFilter<rsimdf>(geometry,ray,k,u[i],v[i],t[i],N,geomID,tri.primID(i))) return;
             valid[i] = 0;
             if (unlikely(none(valid))) return;
             i = select_min(valid,t);
@@ -461,27 +495,37 @@ namespace embree
         }
         
         /*! Test if the ray is occluded by one of the triangles. */
-        static __forceinline bool occluded(Precalculations& pre, RayM& ray, size_t k, const TriangleN& tri, Scene* scene)
+        static __forceinline bool occluded(Precalculations& pre, RayM& ray, size_t k, const Primitive& tri, Scene* scene)
         {
-          /* calculate denominator */
+          /* calculate vertices relative to ray origin */
           STAT3(shadow.trav_prims,1,1,1);
           const tsimd3f O = broadcast<tsimdf>(ray.org,k);
           const tsimd3f D = broadcast<tsimdf>(ray.dir,k);
-          const tsimd3f C = tsimd3f(tri.v0) - O;
-          const tsimd3f R = cross(D,C);
-          const tsimdf den = dot(tsimd3f(tri.Ng),D);
+          const tsimd3f v0 = tri.v0-O;
+          const tsimd3f v1 = tri.v1-O;
+          const tsimd3f v2 = tri.v2-O;
+          
+          /* calculate triangle edges */
+          const tsimd3f e0 = v2-v0;
+          const tsimd3f e1 = v0-v1;
+          const tsimd3f e2 = v1-v2;
+          
+          /* calculate geometry normal and denominator */
+          const tsimd3f Ng1 = cross(e1,e0);
+          const tsimd3f Ng = Ng1+Ng1;
+          const tsimdf den = dot(Ng,D);
           const tsimdf absDen = abs(den);
           const tsimdf sgnDen = signmsk(den);
           
           /* perform edge tests */
-          const tsimdf U = dot(R,tsimd3f(tri.e2)) ^ sgnDen;
-          const tsimdf V = dot(R,tsimd3f(tri.e1)) ^ sgnDen;
-          const tsimdf W = absDen-U-V;
+          const tsimdf U = dot(cross(v2+v0,e0),D) ^ sgnDen;
+          const tsimdf V = dot(cross(v0+v1,e1),D) ^ sgnDen;
+          const tsimdf W = dot(cross(v1+v2,e2),D) ^ sgnDen;
           tsimdb valid = (U >= 0.0f) & (V >= 0.0f) & (W >= 0.0f);
           if (unlikely(none(valid))) return false;
           
           /* perform depth test */
-          const tsimdf T = dot(tsimd3f(tri.Ng),C) ^ sgnDen;
+          const tsimdf T = dot(v0,Ng) ^ sgnDen;
           valid &= (T >= absDen*tsimdf(ray.tnear[k])) & (absDen*tsimdf(ray.tfar[k]) >= T);
           if (unlikely(none(valid))) return false;
           
@@ -509,15 +553,14 @@ namespace embree
           while (true) 
           {
             Geometry* geometry = scene->get(geomID);
-            if (likely(!enableIntersectionFilter || !geometry->hasOcclusionFilter<rsimdf>())) break;
+            if (likely(!geometry->hasOcclusionFilter<rsimdf>())) break;
             
             /* calculate hit information */
-            const tsimdf rcpAbsDen = rcp(absDen);
-            const tsimdf u = U * rcpAbsDen;
-            const tsimdf v = V * rcpAbsDen;
-            const tsimdf t = T * rcpAbsDen;
-            const Vec3fa Ng(tri.Ng.x[i],tri.Ng.y[i],tri.Ng.z[i]);
-            if (runOcclusionFilter(geometry,ray,k,u[i],v[i],t[i],Ng,geomID,tri.primID(i))) break;
+            const tsimdf u = U / absDen;
+            const tsimdf v = V / absDen;
+            const tsimdf t = T / absDen;
+            const Vec3fa N(Ng.x[i],Ng.y[i],Ng.z[i]);
+            if (runOcclusionFilter<rsimdf>(geometry,ray,k,u[i],v[i],t[i],N,geomID,tri.primID(i))) break;
             valid[i] = 0;
             if (unlikely(none(valid))) return false;
             i = select_min(valid,T);

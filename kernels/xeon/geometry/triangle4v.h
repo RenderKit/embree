@@ -22,7 +22,11 @@ namespace embree
 {
   /*! Stores the vertices of 4 triangles in struct of array layout. */
   struct Triangle4v
-  {
+  { 
+    typedef sseb simdb;
+    typedef ssef simdf;
+    typedef ssei simdi;
+
   public:
 
     /*! Default constructor. */
@@ -49,6 +53,11 @@ namespace embree
     /*! Returns the number of stored triangles. */
     __forceinline size_t size() const {
       return __bsf(~movemask(valid()));
+    }
+
+    /*! returns maximal size of triangle */
+    static __forceinline size_t max_size() {
+      return 4;
     }
 
     /*! calculate the bounds of the triangle */
@@ -95,22 +104,22 @@ namespace embree
     }
 
     /*! returns the geometry IDs */
-    template<bool list>
+    template<bool list = false>
     __forceinline ssei geomID() const { 
       return geomIDs; 
     }
-    template<bool list>
+    template<bool list = false>
     __forceinline int geomID(const size_t i) const { 
       assert(i<4); return geomIDs[i]; 
     }
 
     /*! returns the primitive IDs */
-    template<bool list>
+    template<bool list = false>
     __forceinline ssei primID() const { 
       if (list) return primIDs & 0x7FFFFFFF; 
       else      return primIDs;
     }
-    template<bool list>
+    template<bool list = false>
     __forceinline int  primID(const size_t i) const { 
       assert(i<4); 
       if (list) return primIDs[i] & 0x7FFFFFFF; 
