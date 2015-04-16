@@ -15,11 +15,11 @@
 // ======================================================================== //
 
 #include "bvh4_intersector8_chunk.h"
+
 #include "geometry/triangle4.h"
 #include "geometry/triangle4v.h"
-#if defined(__AVX__)
+#include "geometry/triangle4v_mb.h"
 #include "geometry/triangle8.h"
-#endif
 
 #include "geometry/bezier1v_intersector8.h"
 #include "geometry/bezier1i_intersector8.h"
@@ -27,7 +27,6 @@
 #include "geometry/triangle_intersector_pluecker.h"
 #include "geometry/triangle4i_intersector8.h"
 #include "geometry/virtual_accel_intersector8.h"
-#include "geometry/triangle4v_intersector8_moeller_mb.h"
 
 namespace embree
 {

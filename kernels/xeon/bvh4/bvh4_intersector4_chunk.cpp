@@ -18,6 +18,7 @@
 
 #include "geometry/triangle4.h"
 #include "geometry/triangle4v.h"
+#include "geometry/triangle4v_mb.h"
 #include "geometry/triangle8.h"
 
 #include "geometry/bezier1v_intersector4.h"
@@ -26,7 +27,6 @@
 #include "geometry/triangle_intersector_pluecker.h"
 #include "geometry/triangle4i_intersector4.h"
 #include "geometry/virtual_accel_intersector4.h"
-#include "geometry/triangle4v_intersector4_moeller_mb.h"
 
 namespace embree
 {
