@@ -80,6 +80,7 @@ namespace embree
     }
 
   protected:
+    bool initialized;//!< true if buffer got initialized
     char* ptr;       //!< pointer to buffer data
     size_t bytes;    //!< size of buffer in bytes
     char* ptr_ofs;   //!< base pointer plus offset
