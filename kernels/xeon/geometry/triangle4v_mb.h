@@ -23,6 +23,10 @@ namespace embree
   /*! Stores the vertices of 4 triangles in struct of array layout. */
   struct Triangle4vMB
   {
+    typedef sseb simdb;
+    typedef ssef simdf;
+    typedef ssei simdi;
+
     struct Type : public PrimitiveType 
     {
       Type ();
@@ -61,6 +65,11 @@ namespace embree
     /*! Returns the number of stored triangles. */
     __forceinline size_t size() const {
       return __bsf(~movemask(valid()));
+    }
+
+    /*! returns maximal size of triangle */
+    static __forceinline size_t max_size() {
+      return 4;
     }
 
     /*! calculate the bounds of the triangles at t0 */

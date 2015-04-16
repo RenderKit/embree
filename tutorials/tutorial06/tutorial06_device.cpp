@@ -890,7 +890,7 @@ void convertTriangleMeshes(ISPCScene* scene_in, RTCScene scene_out, size_t numGe
     ISPCMesh* mesh = scene_in->meshes[i];
 
     /* create a triangle mesh */
-    unsigned int geomID = rtcNewTriangleMesh (scene_out, RTC_GEOMETRY_STATIC, mesh->numTriangles, mesh->numVertices);
+    unsigned int geomID = rtcNewTriangleMesh (scene_out, RTC_GEOMETRY_STATIC, mesh->numTriangles, mesh->numVertices, 1);
     assert(geomID < numGeometries);
     geomID_to_mesh[geomID] = mesh;
     geomID_to_type[geomID] = 0;
@@ -903,6 +903,16 @@ void convertTriangleMeshes(ISPCScene* scene_in, RTCScene scene_out, size_t numGe
       vertices[j].z = mesh->positions[j].z;
     }
     rtcUnmapBuffer(scene_out,geomID,RTC_VERTEX_BUFFER); 
+
+    /*{
+    Vertex* vertices = (Vertex*) rtcMapBuffer(scene_out,geomID,RTC_VERTEX_BUFFER1); 
+    for (int j=0; j<mesh->numVertices; j++) {
+      vertices[j].x = mesh->positions[j].x;
+      vertices[j].y = mesh->positions[j].y;
+      vertices[j].z = mesh->positions[j].z;
+    }
+    rtcUnmapBuffer(scene_out,geomID,RTC_VERTEX_BUFFER1); 
+    }*/
 
     /* set triangles */
     Triangle* triangles = (Triangle*) rtcMapBuffer(scene_out,geomID,RTC_INDEX_BUFFER);
