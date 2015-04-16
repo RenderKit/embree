@@ -20,9 +20,7 @@
 
 #include "geometry/bezier1v_intersector1.h"
 #include "geometry/bezier1i_intersector1.h"
-#include "geometry/triangle1_intersector1_moeller.h"
 #include "geometry/triangle_intersector_moeller.h"
-#include "geometry/triangle1v_intersector1_pluecker.h"
 #include "geometry/triangle4v_intersector1_pluecker.h"
 #include "geometry/triangle4v_intersector1_moeller_mb.h"
 #include "geometry/triangle4i_intersector1.h"
@@ -30,7 +28,6 @@
 #include "geometry/subdivpatch1cached_intersector1.h"
 #include "geometry/grid_intersector1.h"
 #include "geometry/virtual_accel_intersector1.h"
-#include "geometry/triangle1v_intersector1_moeller_mb.h"
 
 namespace embree
 { 
@@ -301,12 +298,10 @@ namespace embree
     DEFINE_INTERSECTOR1(BVH4Bezier1iIntersector1_OBB,BVH4Intersector1<0x101 COMMA false COMMA ArrayIntersector1<Bezier1iIntersector1<LeafMode> > >);
     DEFINE_INTERSECTOR1(BVH4Bezier1iMBIntersector1_OBB,BVH4Intersector1<0x1010 COMMA false COMMA ArrayIntersector1<Bezier1iIntersector1MB<LeafMode> > >);
 
-    DEFINE_INTERSECTOR1(BVH4Triangle1Intersector1Moeller,BVH4Intersector1<0x1 COMMA false COMMA ArrayIntersector1<Triangle1Intersector1MoellerTrumbore<LeafMode> > >);
     DEFINE_INTERSECTOR1(BVH4Triangle4Intersector1Moeller,BVH4Intersector1<0x1 COMMA false COMMA ArrayIntersector1<TriangleNIntersector1MoellerTrumbore<Triangle4> > >);
 #if defined(__AVX__)
     DEFINE_INTERSECTOR1(BVH4Triangle8Intersector1Moeller,BVH4Intersector1<0x1 COMMA false COMMA ArrayIntersector1<TriangleNIntersector1MoellerTrumbore<Triangle8> > >);
 #endif
-    DEFINE_INTERSECTOR1(BVH4Triangle1vIntersector1Pluecker,BVH4Intersector1<0x1 COMMA true COMMA ArrayIntersector1<Triangle1vIntersector1Pluecker<LeafMode> > >);
     DEFINE_INTERSECTOR1(BVH4Triangle4vIntersector1Pluecker,BVH4Intersector1<0x1 COMMA true COMMA ArrayIntersector1<Triangle4vIntersector1Pluecker<LeafMode> > >);
     DEFINE_INTERSECTOR1(BVH4Triangle4iIntersector1Pluecker,BVH4Intersector1<0x1 COMMA true COMMA ArrayIntersector1<Triangle4iIntersector1Pluecker<LeafMode> > >);
 
@@ -318,7 +313,6 @@ namespace embree
 
     DEFINE_INTERSECTOR1(BVH4VirtualIntersector1,BVH4Intersector1<0x1 COMMA false COMMA ArrayIntersector1<VirtualAccelIntersector1> >);
 
-    DEFINE_INTERSECTOR1(BVH4Triangle1vMBIntersector1Moeller,BVH4Intersector1<0x10 COMMA false COMMA ArrayIntersector1<Triangle1vIntersector1MoellerTrumboreMB<LeafMode> > >);
     DEFINE_INTERSECTOR1(BVH4Triangle4vMBIntersector1Moeller,BVH4Intersector1<0x10 COMMA false COMMA ArrayIntersector1<Triangle4vMBIntersector1MoellerTrumbore<LeafMode> > >);
   }
 }

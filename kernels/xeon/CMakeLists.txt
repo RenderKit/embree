@@ -86,9 +86,7 @@ ADD_ISPC_LIBRARY(embree ${EMBREE_LIB_TYPE}
   geometry/primitive.cpp
   geometry/bezier1v.cpp
   geometry/bezier1i.cpp
-  geometry/triangle1.cpp
   geometry/triangle4.cpp
-  geometry/triangle1v.cpp
   geometry/triangle4v.cpp
   geometry/triangle4v_mb.cpp
   geometry/triangle4i.cpp

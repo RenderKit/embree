@@ -956,10 +956,8 @@ namespace embree
     static Accel* BVH4OBBBezier1i(Scene* scene, bool highQuality);
     static Accel* BVH4OBBBezier1iMB(Scene* scene, bool highQuality);
 
-    static Accel* BVH4Triangle1(Scene* scene);
     static Accel* BVH4Triangle4(Scene* scene);
     static Accel* BVH4Triangle8(Scene* scene);
-    static Accel* BVH4Triangle1v(Scene* scene);
     static Accel* BVH4Triangle4v(Scene* scene);
     static Accel* BVH4Triangle4i(Scene* scene);
     static Accel* BVH4SubdivPatch1(Scene* scene);
@@ -969,27 +967,19 @@ namespace embree
     static Accel* BVH4SubdivGridLazy(Scene* scene);
     static Accel* BVH4UserGeometry(Scene* scene);
     
-    static Accel* BVH4BVH4Triangle1Morton(Scene* scene);
-    static Accel* BVH4BVH4Triangle1ObjectSplit(Scene* scene);
     static Accel* BVH4BVH4Triangle4ObjectSplit(Scene* scene);
     static Accel* BVH4BVH4Triangle8ObjectSplit(Scene* scene);
-    static Accel* BVH4BVH4Triangle1vObjectSplit(Scene* scene);
     static Accel* BVH4BVH4Triangle4vObjectSplit(Scene* scene);
     static Accel* BVH4BVH4Triangle4iObjectSplit(Scene* scene);
 
-    static Accel* BVH4Triangle1SpatialSplit(Scene* scene);
     static Accel* BVH4Triangle4SpatialSplit(Scene* scene);
     static Accel* BVH4Triangle8SpatialSplit(Scene* scene);
-    static Accel* BVH4Triangle1ObjectSplit(Scene* scene);
     static Accel* BVH4Triangle4ObjectSplit(Scene* scene);
     static Accel* BVH4Triangle8ObjectSplit(Scene* scene);
-    static Accel* BVH4Triangle1vObjectSplit(Scene* scene);
     static Accel* BVH4Triangle4vObjectSplit(Scene* scene);
     static Accel* BVH4Triangle4iObjectSplit(Scene* scene);
 
-    static Accel* BVH4Triangle1ObjectSplit(TriangleMesh* mesh);
     static Accel* BVH4Triangle4ObjectSplit(TriangleMesh* mesh);
-    static Accel* BVH4Triangle1vObjectSplit(TriangleMesh* mesh);
     static Accel* BVH4Triangle4vObjectSplit(TriangleMesh* mesh);
     static Accel* BVH4Triangle4Refit(TriangleMesh* mesh);
 
