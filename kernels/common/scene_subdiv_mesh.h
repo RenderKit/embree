@@ -390,7 +390,6 @@ namespace embree
     __forceinline bool checkLevelUpdate() const { return levelUpdate; }
 
   public:
-    unsigned mask;                    //!< for masking out geometry
     RTCDisplacementFunc displFunc;    //!< displacement function
     BBox3fa             displBounds;  //!< bounds for maximal displacement 
 

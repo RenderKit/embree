@@ -188,7 +188,6 @@ namespace embree
 #endif
     
   public:
-    unsigned mask;                        //!< for masking out geometry
     BufferT<Triangle> triangles;          //!< array of triangles
     array_t<BufferT<Vec3fa>,2> vertices;  //!< vertex array
   };

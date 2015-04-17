@@ -394,12 +394,6 @@ namespace embree
       valid &= (T > absDen*tsimdf(ray.tnear[k])) & (T < absDen*tsimdf(ray.tfar[k]));
       if (likely(none(valid))) return;
       
-      /* ray masking test */
-#if defined(RTCORE_RAY_MASK)
-      valid &= (tri_mask & ray.mask[k]) != 0;
-      if (unlikely(none(valid))) return;
-#endif
-      
       /* calculate hit information */
       const tsimdf rcpAbsDen = rcp(absDen);
       const tsimdf u = U * rcpAbsDen;

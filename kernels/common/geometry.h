@@ -249,6 +249,7 @@ namespace embree
     bool modified;             //!< true if geometry is modified
     bool erasing;              //!< true if geometry is tagged for deletion
     void* userPtr;             //!< user pointer
+    unsigned mask;             //!< for masking out geometry
     
   public:
     RTCFilterFunc intersectionFilter1;
