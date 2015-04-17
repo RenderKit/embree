@@ -283,10 +283,8 @@ namespace embree
 
             /* ray masking test */
 #if defined(RTCORE_RAY_MASK)
-            //if (enableIntersectionFilter) {
-              valid &= (geometry->mask & ray.mask) != 0;
-              if (unlikely(none(valid))) return;
-              //}
+            valid &= (geometry->mask & ray.mask) != 0;
+            if (unlikely(none(valid))) return;
 #endif
 
             /* intersection filter test */
@@ -369,10 +367,8 @@ namespace embree
             const int geomID = tri_geomIDs[i];
             Geometry* geometry = scene->get(geomID);
 #if defined(RTCORE_RAY_MASK)
-            //if (enableIntersectionFilter) {
-              valid &= (geometry->mask & ray.mask) != 0;
-              if (unlikely(none(valid))) return;
-              //}
+            valid &= (geometry->mask & ray.mask) != 0;
+            if (unlikely(none(valid))) return;
 #endif
             
             /* occlusion filter test */
@@ -629,14 +625,14 @@ namespace embree
         static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Primitive& tri, Scene* scene)
         {
           STAT3(normal.trav_prims,1,1,1);
-          embree::isa::intersect<tsimdb,tsimdf,tsimdi>(ray,tri.v0,tri.v1,tri.v2,tri.geomIDs,tri.primIDs,scene);// FIXME: add ray mask support
+          embree::isa::intersect<tsimdb,tsimdf,tsimdi>(ray,tri.v0,tri.v1,tri.v2,tri.geomIDs,tri.primIDs,scene);
         }
         
         /*! Test if the ray is occluded by one of the triangles. */
         static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Primitive& tri, Scene* scene)
         {
           STAT3(shadow.trav_prims,1,1,1);
-          return embree::isa::occluded<tsimdb,tsimdf,tsimdi>(ray,tri.v0,tri.v1,tri.v2,tri.geomIDs,tri.primIDs,scene);// FIXME: add ray mask support
+          return embree::isa::occluded<tsimdb,tsimdf,tsimdi>(ray,tri.v0,tri.v1,tri.v2,tri.geomIDs,tri.primIDs,scene);
         }
       };
     

@@ -251,10 +251,8 @@ namespace embree
 
       /* ray masking test */
 #if defined(RTCORE_RAY_MASK)
-      if (enableIntersectionFilter) {
-        valid &= (geometry->mask & ray.mask) != 0;
-        if (unlikely(none(valid))) return;
-      }
+      valid &= (geometry->mask & ray.mask) != 0;
+      if (unlikely(none(valid))) return;
 #endif
       
       /* occlusion filter test */
@@ -331,10 +329,8 @@ namespace embree
     const int geomID = tri_geomIDs[i];
     Geometry* geometry = scene->get(geomID);
 #if defined(RTCORE_RAY_MASK)
-    if (enableIntersectionFilter) {
-      valid &= (geometry->mask & ray.mask) != 0;
-      if (unlikely(none(valid))) return;
-    }
+    valid &= (geometry->mask & ray.mask) != 0;
+    if (unlikely(none(valid))) return;
 #endif
     
     /* intersection filter test */
@@ -415,11 +411,9 @@ namespace embree
 
 #if defined(RTCORE_RAY_MASK)
         /* goto next hit if mask test fails */
-        if (enableIntersectionFilter) {
-          if ((geometry->mask & ray.mask[k]) == 0) {
-            valid[i] = 0;
-            continue;
-          }
+        if ((geometry->mask & ray.mask[k]) == 0) {
+          valid[i] = 0;
+          continue;
         }
 #endif
 
@@ -504,11 +498,9 @@ namespace embree
         
 #if defined(RTCORE_RAY_MASK)
         /* goto next hit if mask test fails */
-        if (enableIntersectionFilter) {
-          if ((geometry->mask & ray.mask[k]) == 0) {
-            m=__btc(m,i);
-            continue;
-          }
+        if ((geometry->mask & ray.mask[k]) == 0) {
+          m=__btc(m,i);
+          continue;
         }
 #endif
         
@@ -556,14 +548,14 @@ namespace embree
         static __forceinline void intersect(const Precalculations& pre, Ray& ray, const TriangleN& tri, Scene* scene)
         {
           STAT3(normal.trav_prims,1,1,1);
-          embree::isa::intersect1<tsimdb,tsimdf,tsimdi>(ray,tri.v0,tri.e2,tri.e1,tri.Ng,tri.geomIDs,tri.primIDs,scene);// FIXME: add ray mask support
+          embree::isa::intersect1<tsimdb,tsimdf,tsimdi>(ray,tri.v0,tri.e2,tri.e1,tri.Ng,tri.geomIDs,tri.primIDs,scene);
         }
         
         /*! Test if the ray is occluded by one of N triangles. */
         static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const TriangleN& tri, Scene* scene)
         {
           STAT3(shadow.trav_prims,1,1,1);
-          return embree::isa::occluded<tsimdb,tsimdf,tsimdi>(ray,tri.v0,tri.e2,tri.e1,tri.Ng,tri.geomIDs,tri.primIDs,scene);// FIXME: add ray mask support
+          return embree::isa::occluded<tsimdb,tsimdf,tsimdi>(ray,tri.v0,tri.e2,tri.e1,tri.Ng,tri.geomIDs,tri.primIDs,scene);
         }
       };
     
@@ -680,7 +672,7 @@ namespace embree
           const sse3f e1 = v0-v1;
           const sse3f e2 = v2-v0;
           const sse3f Ng = cross(e1,e2);
-          embree::isa::intersect1<tsimdb,tsimdf,tsimdi>(ray,p0,e2,e1,Ng,tri.geomIDs,tri.primIDs,scene);// FIXME: add ray mask support
+          embree::isa::intersect1<tsimdb,tsimdf,tsimdi>(ray,p0,e2,e1,Ng,tri.geomIDs,tri.primIDs,scene);
         }
         
         /*! Test if the ray is occluded by one of N triangles. */
@@ -695,7 +687,7 @@ namespace embree
           const sse3f e1 = v0-v1;
           const sse3f e2 = v2-v0;
           const sse3f Ng = cross(e1,e2);
-          return embree::isa::occluded<tsimdb,tsimdf,tsimdi>(ray,p0,e2,e1,Ng,tri.geomIDs,tri.primIDs,scene);// FIXME: add ray mask support
+          return embree::isa::occluded<tsimdb,tsimdf,tsimdi>(ray,p0,e2,e1,Ng,tri.geomIDs,tri.primIDs,scene);
         }
       };
     
