@@ -74,42 +74,45 @@ namespace embree
       
       /* intersection filter test */
 #if defined(RTCORE_INTERSECTION_FILTER) || defined(RTCORE_RAY_MASK)
+      goto entry;
       while (true) 
       {
+        if (none(valid)) return;
+        i = select_min(valid,t);
+        geomID = tri_geomIDs[i];
+      entry:
         Geometry* geometry = scene->get(geomID);
 
 #if defined(RTCORE_RAY_MASK)
         /* goto next hit if mask test fails */
-        if ((geometry->mask & ray.mask) == 0) 
-          goto final;
+        if ((geometry->mask & ray.mask) == 0) {
+          valid[i] = 0;
+          continue;
+        }
 #endif
 
-        if (likely(!geometry->hasIntersectionFilter1())) 
-        {
-#endif
-          /* update hit information */
-          ray.u = u[i];
-          ray.v = v[i];
-          ray.tfar = t[i];
-          ray.Ng.x = tri_Ng.x[i];
-          ray.Ng.y = tri_Ng.y[i];
-          ray.Ng.z = tri_Ng.z[i];
-          ray.geomID = geomID;
-          ray.primID = tri_primIDs[i];
-          
-#if defined(RTCORE_INTERSECTION_FILTER)
-          return;
+#if defined(RTCORE_INTERSECTION_FILTER) 
+        /* call intersection filter function */
+        if (unlikely(geometry->hasIntersectionFilter1())) {
+          Vec3fa Ng = Vec3fa(tri_Ng.x[i],tri_Ng.y[i],tri_Ng.z[i]);
+          if (runIntersectionFilter1(geometry,ray,u[i],v[i],t[i],Ng,geomID,tri_primIDs[i])) return;
+          valid[i] = 0;
+          continue;
         }
-        
-        Vec3fa Ng = Vec3fa(tri_Ng.x[i],tri_Ng.y[i],tri_Ng.z[i]);
-        if (runIntersectionFilter1(geometry,ray,u[i],v[i],t[i],Ng,geomID,tri_primIDs[i])) return;
-      final:
-        valid[i] = 0;
-        if (none(valid)) return;
-        i = select_min(valid,t);
-        geomID = tri_geomIDs[i];
+#endif
+        break;
       }
 #endif
+
+      /* update hit information */
+      ray.u = u[i];
+      ray.v = v[i];
+      ray.tfar = t[i];
+      ray.Ng.x = tri_Ng.x[i];
+      ray.Ng.y = tri_Ng.y[i];
+      ray.Ng.z = tri_Ng.z[i];
+      ray.geomID = geomID;
+      ray.primID = tri_primIDs[i];
     }
 
     /*! Test if the ray is occluded by one of N triangles. */
