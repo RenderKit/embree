@@ -87,7 +87,7 @@ namespace embree
 
 #include <sys/mman.h>
 #include <errno.h>
-#include <malloc.h>
+#include <stdlib.h>
 #include <string.h>
 
 #if defined(__MIC__)
@@ -98,9 +98,14 @@ namespace embree
 
 namespace embree
 {
-  void* alignedMalloc(size_t size, size_t align) {
+  void* alignedMalloc(size_t size, size_t align)
+  {
     assert((align & (align-1)) == 0);
-    return memalign(align,size);
+    void* ptr = NULL;
+    align = std::max(align,sizeof(void*));
+    size = (size+align-1)&~(align-1);
+    if (posix_memalign(&ptr,align,size) != 0) throw std::bad_alloc();
+    return ptr;
   }
   
   void alignedFree(const void* ptr) {
