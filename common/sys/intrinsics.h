@@ -47,13 +47,21 @@
 #endif
 
 #if defined(__BMI__) && defined(__GNUC__)
-#define _tzcnt_u32 __tzcnt_u32
-#define _tzcnt_u64 __tzcnt_u64
+  #if !defined(_tzcnt_u32)
+    #define _tzcnt_u32 __tzcnt_u32
+  #endif
+  #if !defined(_tzcnt_u64)
+    #define _tzcnt_u64 __tzcnt_u64
+  #endif
 #endif
 
 #if defined(__LZCNT__)
-#define _lzcnt_u32 __lzcnt32
-#define _lzcnt_u64 __lzcnt64
+  #if !defined(_lzcnt_u32)
+    #define _lzcnt_u32 __lzcnt32
+  #endif
+  #if !defined(_lzcnt_u64)
+    #define _lzcnt_u64 __lzcnt64
+  #endif
 #endif
 
 #if defined(__MIC__)
