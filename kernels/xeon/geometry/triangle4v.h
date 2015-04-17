@@ -33,13 +33,8 @@ namespace embree
     __forceinline Triangle4v () {}
 
     /*! Construction from vertices and IDs. */
-    __forceinline Triangle4v (const sse3f& v0, const sse3f& v1, const sse3f& v2, const ssei& geomIDs, const ssei& primIDs, const ssei& mask, const bool last)
-      : v0(v0), v1(v1), v2(v2), geomIDs(geomIDs), primIDs(primIDs | (last << 31))
-    {
-#if defined(RTCORE_RAY_MASK)
-      this->mask = mask;
-#endif
-    }
+    __forceinline Triangle4v (const sse3f& v0, const sse3f& v1, const sse3f& v2, const ssei& geomIDs, const ssei& primIDs, const bool last)
+      : v0(v0), v1(v1), v2(v2), geomIDs(geomIDs), primIDs(primIDs | (last << 31)) {}
 
     /*! Returns if the specified triangle is valid. */
     __forceinline bool valid(const size_t i) const { 
@@ -90,9 +85,6 @@ namespace embree
       store4f_nt(&dst->v2.z,src.v2.z);
       store4i_nt(&dst->geomIDs,src.geomIDs);
       store4i_nt(&dst->primIDs,src.primIDs);
-#if defined(RTCORE_RAY_MASK)
-      store4i_nt(&dst->mask,src.mask);
-#endif
     }
 
     /*! returns required number of primitive blocks for N primitives */
@@ -129,7 +121,7 @@ namespace embree
     /*! fill triangle from triangle list */
     __forceinline void fill(atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, Scene* scene, const bool list)
     {
-      ssei vgeomID = -1, vprimID = -1, vmask = -1;
+      ssei vgeomID = -1, vprimID = -1;
       sse3f v0 = zero, v1 = zero, v2 = zero;
       
       for (size_t i=0; i<4 && prims; i++, prims++)
@@ -144,18 +136,17 @@ namespace embree
         const Vec3fa& p2 = mesh->vertex(tri.v[2]);
         vgeomID [i] = geomID;
         vprimID [i] = primID;
-        vmask   [i] = mesh->mask;
         v0.x[i] = p0.x; v0.y[i] = p0.y; v0.z[i] = p0.z;
         v1.x[i] = p1.x; v1.y[i] = p1.y; v1.z[i] = p1.z;
         v2.x[i] = p2.x; v2.y[i] = p2.y; v2.z[i] = p2.z;
       }
-      Triangle4v::store_nt(this,Triangle4v(v0,v1,v2,vgeomID,vprimID,vmask,list && !prims));
+      Triangle4v::store_nt(this,Triangle4v(v0,v1,v2,vgeomID,vprimID,list && !prims));
     }
 
     /*! fill triangle from triangle list */
     __forceinline void fill(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, const bool list)
     {
-      ssei vgeomID = -1, vprimID = -1, vmask = -1;
+      ssei vgeomID = -1, vprimID = -1;
       sse3f v0 = zero, v1 = zero, v2 = zero;
       
       for (size_t i=0; i<4 && begin<end; i++, begin++)
@@ -170,19 +161,18 @@ namespace embree
         const Vec3fa& p2 = mesh->vertex(tri.v[2]);
         vgeomID [i] = geomID;
         vprimID [i] = primID;
-        vmask   [i] = mesh->mask;
         v0.x[i] = p0.x; v0.y[i] = p0.y; v0.z[i] = p0.z;
         v1.x[i] = p1.x; v1.y[i] = p1.y; v1.z[i] = p1.z;
         v2.x[i] = p2.x; v2.y[i] = p2.y; v2.z[i] = p2.z;
       }
-      Triangle4v::store_nt(this,Triangle4v(v0,v1,v2,vgeomID,vprimID,vmask,list && begin>=end));
+      Triangle4v::store_nt(this,Triangle4v(v0,v1,v2,vgeomID,vprimID,list && begin>=end));
     }
 
     /*! updates the primitive */
     __forceinline BBox3fa update(TriangleMesh* mesh)
     {
       BBox3fa bounds = empty;
-      ssei vgeomID = -1, vprimID = -1, vmask = -1;
+      ssei vgeomID = -1, vprimID = -1;
       sse3f v0 = zero, v1 = zero, v2 = zero;
 	
       for (size_t i=0; i<4; i++)
@@ -197,12 +187,11 @@ namespace embree
         bounds.extend(merge(BBox3fa(p0),BBox3fa(p1),BBox3fa(p2)));
         vgeomID [i] = geomId;
         vprimID [i] = primId;
-        vmask   [i] = mesh->mask;
         v0.x[i] = p0.x; v0.y[i] = p0.y; v0.z[i] = p0.z;
         v1.x[i] = p1.x; v1.y[i] = p1.y; v1.z[i] = p1.z;
         v2.x[i] = p2.x; v2.y[i] = p2.y; v2.z[i] = p2.z;
       }
-      new (this) Triangle4v(v0,v1,v2,vgeomID,vprimID,vmask,false);
+      new (this) Triangle4v(v0,v1,v2,vgeomID,vprimID,false);
       return bounds;
     }
    
@@ -212,9 +201,6 @@ namespace embree
     sse3f v2;      //!< 3rd vertex of the triangles.
     ssei geomIDs;   //!< user geometry ID
     ssei primIDs;   //!< primitive ID
-#if defined(RTCORE_RAY_MASK)
-    ssei mask;     //!< geometry mask
-#endif
   };
 
   struct Triangle4vType : public PrimitiveType 

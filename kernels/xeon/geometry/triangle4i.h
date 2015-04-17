@@ -175,7 +175,7 @@ namespace embree
     __forceinline BBox3fa update(TriangleMesh* mesh)
     {
       BBox3fa bounds = empty;
-      ssei vgeomID = -1, vprimID = -1, vmask = -1;
+      ssei vgeomID = -1, vprimID = -1;
       sse3f v0 = zero, v1 = zero, v2 = zero;
       
       for (size_t i=0; i<4; i++)

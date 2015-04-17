@@ -104,7 +104,7 @@ namespace embree
         Triangle4* accel = (Triangle4*) alloc->alloc1.malloc(sizeof(Triangle4));
         *current.parent = BVH4::encodeLeaf((char*)accel,1);
         
-        ssei vgeomID = -1, vprimID = -1, vmask = -1;
+        ssei vgeomID = -1, vprimID = -1;
         sse3f v0 = zero, v1 = zero, v2 = zero;
         
         for (size_t i=0; i<items; i++)
@@ -121,12 +121,11 @@ namespace embree
           upper = max(upper,(ssef)p0,(ssef)p1,(ssef)p2);
           vgeomID [i] = geomID;
           vprimID [i] = primID;
-          vmask   [i] = mesh->mask;
           v0.x[i] = p0.x; v0.y[i] = p0.y; v0.z[i] = p0.z;
           v1.x[i] = p1.x; v1.y[i] = p1.y; v1.z[i] = p1.z;
           v2.x[i] = p2.x; v2.y[i] = p2.y; v2.z[i] = p2.z;
         }
-        Triangle4::store_nt(accel,Triangle4(v0,v1,v2,vgeomID,vprimID,vmask,false));
+        Triangle4::store_nt(accel,Triangle4(v0,v1,v2,vgeomID,vprimID,false));
         box_o = BBox3fa((Vec3fa)lower,(Vec3fa)upper);
 #if ROTATE_TREE
         box_o.lower.a = current.size();
@@ -163,7 +162,7 @@ namespace embree
         Triangle8* accel = (Triangle8*) alloc->alloc1.malloc(sizeof(Triangle8));
         *current.parent = BVH4::encodeLeaf((char*)accel,1);
         
-        avxi vgeomID = -1, vprimID = -1, vmask = -1;
+        avxi vgeomID = -1, vprimID = -1;
         avx3f v0 = zero, v1 = zero, v2 = zero;
         
         for (size_t i=0; i<items; i++)
@@ -180,12 +179,11 @@ namespace embree
           upper = max(upper,(ssef)p0,(ssef)p1,(ssef)p2);
           vgeomID [i] = geomID;
           vprimID [i] = primID;
-          vmask   [i] = mesh->mask;
           v0.x[i] = p0.x; v0.y[i] = p0.y; v0.z[i] = p0.z;
           v1.x[i] = p1.x; v1.y[i] = p1.y; v1.z[i] = p1.z;
           v2.x[i] = p2.x; v2.y[i] = p2.y; v2.z[i] = p2.z;
         }
-        new (accel) Triangle8(v0,v1,v2,vgeomID,vprimID,vmask,false); // FIXME: use storent
+        new (accel) Triangle8(v0,v1,v2,vgeomID,vprimID,false); // FIXME: use storent
         box_o = BBox3fa((Vec3fa)lower,(Vec3fa)upper);
 #if ROTATE_TREE
         box_o.lower.a = current.size();
@@ -221,7 +219,7 @@ namespace embree
         Triangle4v* accel = (Triangle4v*) alloc->alloc1.malloc(sizeof(Triangle4v));
         *current.parent = BVH4::encodeLeaf((char*)accel,1);
         
-        ssei vgeomID = -1, vprimID = -1, vmask = -1;
+        ssei vgeomID = -1, vprimID = -1;
         sse3f v0 = zero, v1 = zero, v2 = zero;
 
         for (size_t i=0; i<items; i++)
@@ -238,12 +236,11 @@ namespace embree
           upper = max(upper,(ssef)p0,(ssef)p1,(ssef)p2);
           vgeomID [i] = geomID;
           vprimID [i] = primID;
-          vmask   [i] = mesh->mask;
           v0.x[i] = p0.x; v0.y[i] = p0.y; v0.z[i] = p0.z;
           v1.x[i] = p1.x; v1.y[i] = p1.y; v1.z[i] = p1.z;
           v2.x[i] = p2.x; v2.y[i] = p2.y; v2.z[i] = p2.z;
         }
-        Triangle4v::store_nt(accel,Triangle4v(v0,v1,v2,vgeomID,vprimID,vmask,false));
+        Triangle4v::store_nt(accel,Triangle4v(v0,v1,v2,vgeomID,vprimID,false));
         box_o = BBox3fa((Vec3fa)lower,(Vec3fa)upper);
 #if ROTATE_TREE
         box_o.lower.a = current.size();
