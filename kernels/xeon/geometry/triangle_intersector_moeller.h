@@ -240,12 +240,6 @@ namespace embree
       if (unlikely(none(valid))) return;
 #endif
       
-      /* ray masking test */
-#if defined(RTCORE_RAY_MASK)
-      valid &= (tri_mask[i] & ray.mask) != 0;
-      if (unlikely(none(valid))) return;
-#endif
-      
       /* calculate hit information */
       const rsimdf rcpAbsDen = rcp(absDen);
       const rsimdf u = U*rcpAbsDen;
@@ -253,11 +247,19 @@ namespace embree
       const rsimdf t = T*rcpAbsDen;
       const int geomID = tri_geomIDs[i];
       const int primID = tri_primIDs[i];
+      Geometry* geometry = scene->get(geomID);
+
+      /* ray masking test */
+#if defined(RTCORE_RAY_MASK)
+      if (enableIntersectionFilter) {
+        valid &= (geometry->mask & ray.mask) != 0;
+        if (unlikely(none(valid))) return;
+      }
+#endif
       
-      /* intersection filter test */
+      /* occlusion filter test */
 #if defined(RTCORE_INTERSECTION_FILTER)
       if (enableIntersectionFilter) {
-        Geometry* geometry = scene->get(geomID);
         if (unlikely(geometry->hasIntersectionFilter<rsimdf>())) {
           runIntersectionFilter(valid,geometry,ray,u,v,t,tri_Ng,geomID,primID);
           return;
@@ -326,17 +328,19 @@ namespace embree
 #endif
     
     /* ray masking test */
+    const int geomID = tri_geomIDs[i];
+    Geometry* geometry = scene->get(geomID);
 #if defined(RTCORE_RAY_MASK)
-    valid &= (tri_mask[i] & ray.mask) != 0;
-    if (unlikely(none(valid))) return;
+    if (enableIntersectionFilter) {
+      valid &= (geometry->mask & ray.mask) != 0;
+      if (unlikely(none(valid))) return;
+    }
 #endif
     
     /* intersection filter test */
 #if defined(RTCORE_INTERSECTION_FILTER)
     if (enableIntersectionFilter) 
     {
-      const int geomID = tri_geomIDs[i];
-      Geometry* geometry = scene->get(geomID);
       if (unlikely(geometry->hasOcclusionFilter<rsimdf>()))
       {
         /* calculate hit information */
