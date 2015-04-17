@@ -417,8 +417,8 @@ namespace embree
           
           /* calculate geometry normal and denominator */
           const tsimd3f Ng1 = cross(e1,e0);
-          const tsimd3f Ng = Ng1+Ng1;
-          const tsimdf den = dot(Ng,D);
+          const tsimd3f tri_Ng = Ng1+Ng1;
+          const tsimdf den = dot(tri_Ng,D);
           const tsimdf absDen = abs(den);
           const tsimdf sgnDen = signmsk(den);
           
@@ -430,7 +430,7 @@ namespace embree
           if (unlikely(none(valid))) return;
           
           /* perform depth test */
-          const tsimdf T = dot(v0,Ng) ^ sgnDen;
+          const tsimdf T = dot(v0,tri_Ng) ^ sgnDen;
           valid &= (T >= absDen*tsimdf(ray.tnear[k])) & (absDen*tsimdf(ray.tfar[k]) >= T);
           if (unlikely(none(valid))) return;
           
@@ -443,49 +443,58 @@ namespace embree
           if (unlikely(none(valid))) return;
 #endif
           
-          /* ray masking test */
-#if defined(RTCORE_RAY_MASK)
-          valid &= (tri_mask & ray.mask[k]) != 0;
-          if (unlikely(none(valid))) return;
-#endif
-          
           /* calculate hit information */
           const tsimdf u = U / absDen;
           const tsimdf v = V / absDen;
           const tsimdf t = T / absDen;
           size_t i = select_min(valid,t);
           int geomID = tri_geomIDs[i];
-          
-          /* intersection filter test */
-#if defined(RTCORE_INTERSECTION_FILTER)
-          while (true) 
-          {
-            Geometry* geometry = scene->get(geomID);
-            if (likely(!geometry->hasIntersectionFilter<rsimdf>())) 
-            {
-#endif
-              /* update hit information */
-              ray.u[k] = u[i];
-              ray.v[k] = v[i];
-              ray.tfar[k] = t[i];
-              ray.Ng.x[k] = Ng.x[i];
-              ray.Ng.y[k] = Ng.y[i];
-              ray.Ng.z[k] = Ng.z[i];
-              ray.geomID[k] = geomID;
-              ray.primID[k] = tri_primIDs[i];
-              
-#if defined(RTCORE_INTERSECTION_FILTER)
-              return;
-            }
-            
-            const Vec3fa N(Ng.x[i],Ng.y[i],Ng.z[i]);
-            if (runIntersectionFilter(geometry,ray,k,u[i],v[i],t[i],N,geomID,tri_primIDs[i])) return;
+
+/* intersection filter test */
+#if defined(RTCORE_INTERSECTION_FILTER) || defined(RTCORE_RAY_MASK)
+      goto entry;
+      while (true) 
+      {
+        if (unlikely(none(valid))) return;
+        i = select_min(valid,t);
+        geomID = tri_geomIDs[i];
+      entry:
+        Geometry* geometry = scene->get(geomID);
+
+#if defined(RTCORE_RAY_MASK)
+        /* goto next hit if mask test fails */
+        //if (enableIntersectionFilter) {
+          if ((geometry->mask & ray.mask[k]) == 0) {
             valid[i] = 0;
-            if (unlikely(none(valid))) return;
-            i = select_min(valid,t);
-            geomID = tri_geomIDs[i];
+            continue;
           }
+          //}
 #endif
+
+#if defined(RTCORE_INTERSECTION_FILTER) 
+        /* call intersection filter function */
+          //if (enableIntersectionFilter) {
+          if (unlikely(geometry->hasIntersectionFilter<rsimdf>())) {
+            Vec3fa Ng = Vec3fa(tri_Ng.x[i],tri_Ng.y[i],tri_Ng.z[i]);
+            if (runIntersectionFilter(geometry,ray,k,u[i],v[i],t[i],Ng,geomID,tri_primIDs[i])) return;
+            valid[i] = 0;
+            continue;
+          }
+          //}
+#endif
+        break;
+      }
+#endif
+
+      /* update hit information */
+      ray.u[k] = u[i];
+      ray.v[k] = v[i];
+      ray.tfar[k] = t[i];
+      ray.Ng.x[k] = tri_Ng.x[i];
+      ray.Ng.y[k] = tri_Ng.y[i];
+      ray.Ng.z[k] = tri_Ng.z[i];
+      ray.geomID[k] = geomID;
+      ray.primID[k] = tri_primIDs[i];
         }
         
         /*! Test if the ray is occluded by one of the triangles. */
@@ -513,8 +522,8 @@ namespace embree
           
           /* calculate geometry normal and denominator */
           const tsimd3f Ng1 = cross(e1,e0);
-          const tsimd3f Ng = Ng1+Ng1;
-          const tsimdf den = dot(Ng,D);
+          const tsimd3f tri_Ng = Ng1+Ng1;
+          const tsimdf den = dot(tri_Ng,D);
           const tsimdf absDen = abs(den);
           const tsimdf sgnDen = signmsk(den);
           
@@ -526,7 +535,7 @@ namespace embree
           if (unlikely(none(valid))) return false;
           
           /* perform depth test */
-          const tsimdf T = dot(v0,Ng) ^ sgnDen;
+          const tsimdf T = dot(v0,tri_Ng) ^ sgnDen;
           valid &= (T >= absDen*tsimdf(ray.tnear[k])) & (absDen*tsimdf(ray.tfar[k]) >= T);
           if (unlikely(none(valid))) return false;
           
@@ -538,38 +547,50 @@ namespace embree
           valid &= den != tsimdf(zero);
           if (unlikely(none(valid))) return false;
 #endif
-          
-          /* ray masking test */
+
+/* intersection filter test */
+#if defined(RTCORE_INTERSECTION_FILTER) || defined(RTCORE_RAY_MASK)
+      size_t m=movemask(valid);
+      goto entry;
+      while (true)
+      {  
+        if (unlikely(m == 0)) return false;
+      entry:
+        size_t i=__bsf(m);
+        const int geomID = tri_geomIDs[i];
+        Geometry* geometry = scene->get(geomID);
+        
 #if defined(RTCORE_RAY_MASK)
-          valid &= (tri_mask & ray.mask[k]) != 0;
-          if (unlikely(none(valid))) return false;
+        /* goto next hit if mask test fails */
+        //if (enableIntersectionFilter) {
+          if ((geometry->mask & ray.mask[k]) == 0) {
+            m=__btc(m,i);
+            continue;
+          }
+          //}
 #endif
-          
-          /* intersection filter test */
+        
 #if defined(RTCORE_INTERSECTION_FILTER)
-          
-          size_t i = select_min(valid,T);
-          int geomID = tri_geomIDs[i];
-          
-          while (true) 
+        /* execute occlusion filer */
+          //if (enableIntersectionFilter) {
+          if (unlikely(geometry->hasOcclusionFilter<rsimdf>())) 
           {
-            Geometry* geometry = scene->get(geomID);
-            if (likely(!geometry->hasOcclusionFilter<rsimdf>())) break;
-            
-            /* calculate hit information */
+            const tsimdf rcpAbsDen = rcp(absDen);
             const tsimdf u = U / absDen;
             const tsimdf v = V / absDen;
             const tsimdf t = T / absDen;
-            const Vec3fa N(Ng.x[i],Ng.y[i],Ng.z[i]);
-            if (runOcclusionFilter(geometry,ray,k,u[i],v[i],t[i],N,geomID,tri_primIDs[i])) break;
-            valid[i] = 0;
-            if (unlikely(none(valid))) return false;
-            i = select_min(valid,T);
-            geomID = tri_geomIDs[i];
+            const Vec3fa Ng = Vec3fa(tri_Ng.x[i],tri_Ng.y[i],tri_Ng.z[i]);
+            if (runOcclusionFilter(geometry,ray,k,u[i],v[i],t[i],Ng,geomID,tri_primIDs[i])) return true;
+            m=__btc(m,i);
+            continue;
           }
+          //}
 #endif
-          
-          return true;
+        break;
+      }
+#endif
+      
+      return true;
         }
 
 
@@ -810,7 +831,7 @@ namespace embree
             if (!tri.valid(i)) break;
             STAT3(normal.trav_prims,1,popcnt(valid_i),RayM::size());
             
-#if 0
+#if 1
             const rsimd3f v0 = broadcast<rsimdf>(tri.v0,i);
             const rsimd3f v1 = broadcast<rsimdf>(tri.v1,i);
             const rsimd3f v2 = broadcast<rsimdf>(tri.v2,i);
@@ -908,7 +929,7 @@ namespace embree
             if (!tri.valid(i)) break;
             STAT3(shadow.trav_prims,1,popcnt(valid_i),RayM::size());
 
-#if 0
+#if 1
             const rsimd3f v0 = broadcast<rsimdf>(tri.v0,i);
             const rsimd3f v1 = broadcast<rsimdf>(tri.v1,i);
             const rsimd3f v2 = broadcast<rsimdf>(tri.v2,i);
@@ -994,7 +1015,7 @@ namespace embree
         {
           /* calculate vertices relative to ray origin */
           STAT3(normal.trav_prims,1,1,1);
-#if 0
+#if 1
           embree::isa::intersect(ray,k,tri.v0,tri.v1,tri.v2,tri.geomIDs,tri.primIDs,scene);
 #else
           const tsimd3f O = broadcast<tsimdf>(ray.org,k);
@@ -1087,7 +1108,7 @@ namespace embree
         {
           /* calculate vertices relative to ray origin */
           STAT3(shadow.trav_prims,1,1,1);
-#if 0
+#if 1
           return embree::isa::occluded(ray,k,tri.v0,tri.v1,tri.v2,tri.geomIDs,tri.primIDs,scene);
 #else
           const tsimd3f O = broadcast<tsimdf>(ray.org,k);

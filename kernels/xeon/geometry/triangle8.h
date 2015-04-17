@@ -37,13 +37,8 @@ namespace embree
     __forceinline Triangle8 () {}
 
     /*! Construction from vertices and IDs. */
-    __forceinline Triangle8 (const avx3f& v0, const avx3f& v1, const avx3f& v2, const avxi& geomIDs, const avxi& primIDs, const avxi& mask, const bool last)
-      : v0(v0), e1(v0-v1), e2(v2-v0), Ng(cross(e1,e2)), geomIDs(geomIDs), primIDs(primIDs | (last << 31))
-    {
-#if defined(RTCORE_RAY_MASK)
-      this->mask = mask;
-#endif
-    }
+    __forceinline Triangle8 (const avx3f& v0, const avx3f& v1, const avx3f& v2, const avxi& geomIDs, const avxi& primIDs, const bool last)
+      : v0(v0), e1(v0-v1), e2(v2-v0), Ng(cross(e1,e2)), geomIDs(geomIDs), primIDs(primIDs | (last << 31)) {}
 
     /*! Returns if the specified triangle is valid. */
     __forceinline bool valid(const size_t i) const { 
@@ -103,9 +98,6 @@ namespace embree
       store8f_nt(&dst->Ng.z,src.Ng.z);
       store8i_nt(&dst->geomIDs,src.geomIDs);
       store8i_nt(&dst->primIDs,src.primIDs);
-#if defined(RTCORE_RAY_MASK)
-      store8i_nt(&dst->mask,src.mask);
-#endif
     }
 
     /*! returns required number of primitive blocks for N primitives */
@@ -138,7 +130,7 @@ namespace embree
     /*! fill triangle from triangle list */
     __forceinline void fill(atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, Scene* scene, const bool list)
     {
-      avxi vgeomID = -1, vprimID = -1, vmask = -1;
+      avxi vgeomID = -1, vprimID = -1;
       avx3f v0 = zero, v1 = zero, v2 = zero;
       
       for (size_t i=0; i<8 && prims; i++, prims++)
@@ -153,18 +145,17 @@ namespace embree
         const Vec3fa& p2 = mesh->vertex(tri.v[2]);
         vgeomID [i] = geomID;
         vprimID [i] = primID;
-        vmask   [i] = mesh->mask;
         v0.x[i] = p0.x; v0.y[i] = p0.y; v0.z[i] = p0.z;
         v1.x[i] = p1.x; v1.y[i] = p1.y; v1.z[i] = p1.z;
         v2.x[i] = p2.x; v2.y[i] = p2.y; v2.z[i] = p2.z;
       }
-      Triangle8::store_nt(this,Triangle8(v0,v1,v2,vgeomID,vprimID,vmask,!prims && list));
+      Triangle8::store_nt(this,Triangle8(v0,v1,v2,vgeomID,vprimID,!prims && list));
     }
 
     /*! fill triangle from triangle list */
     __forceinline void fill(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, const bool list)
     {
-      avxi vgeomID = -1, vprimID = -1, vmask = -1;
+      avxi vgeomID = -1, vprimID = -1;
       avx3f v0 = zero, v1 = zero, v2 = zero;
       
       for (size_t i=0; i<8 && begin<end; i++, begin++)
@@ -179,19 +170,18 @@ namespace embree
         const Vec3fa& p2 = mesh->vertex(tri.v[2]);
         vgeomID [i] = geomID;
         vprimID [i] = primID;
-        vmask   [i] = mesh->mask;
         v0.x[i] = p0.x; v0.y[i] = p0.y; v0.z[i] = p0.z;
         v1.x[i] = p1.x; v1.y[i] = p1.y; v1.z[i] = p1.z;
         v2.x[i] = p2.x; v2.y[i] = p2.y; v2.z[i] = p2.z;
       }
-      Triangle8::store_nt(this,Triangle8(v0,v1,v2,vgeomID,vprimID,vmask,list && !prims));
+      Triangle8::store_nt(this,Triangle8(v0,v1,v2,vgeomID,vprimID,list && !prims));
     }
 
     /*! updates the primitive */
     __forceinline BBox3fa update(TriangleMesh* mesh)
     {
       BBox3fa bounds = empty;
-      avxi vgeomID = -1, vprimID = -1, vmask = -1;
+      avxi vgeomID = -1, vprimID = -1;
       avx3f v0 = zero, v1 = zero, v2 = zero;
       
       for (size_t i=0; i<8; i++)
@@ -206,12 +196,11 @@ namespace embree
         bounds.extend(merge(BBox3fa(p0),BBox3fa(p1),BBox3fa(p2)));
         vgeomID [i] = geomId;
         vprimID [i] = primId;
-        vmask   [i] = mesh->mask;
         v0.x[i] = p0.x; v0.y[i] = p0.y; v0.z[i] = p0.z;
         v1.x[i] = p1.x; v1.y[i] = p1.y; v1.z[i] = p1.z;
         v2.x[i] = p2.x; v2.y[i] = p2.y; v2.z[i] = p2.z;
       }
-      Triangle8::store_nt(this,Triangle8(v0,v1,v2,vgeomID,vprimID,vmask,false));
+      Triangle8::store_nt(this,Triangle8(v0,v1,v2,vgeomID,vprimID,false));
       return bounds;
     }
 
@@ -234,10 +223,6 @@ namespace embree
     avx3f Ng;      //!< Geometry normal of the triangles.
     avxi geomIDs;   //!< user geometry ID
     avxi primIDs;   //!< primitive ID
-#if defined(RTCORE_RAY_MASK)
-    avxi mask;     //!< geometry mask
-#endif
-
   };
 #endif
 
