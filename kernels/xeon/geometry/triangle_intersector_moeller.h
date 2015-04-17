@@ -77,7 +77,7 @@ namespace embree
       goto entry;
       while (true) 
       {
-        if (none(valid)) return;
+        if (unlikely(none(valid))) return;
         i = select_min(valid,t);
         geomID = tri_geomIDs[i];
       entry:
@@ -151,35 +151,40 @@ namespace embree
       
       /* intersection filter test */
 #if defined(RTCORE_INTERSECTION_FILTER) || defined(RTCORE_RAY_MASK)
-      size_t m=movemask(valid), i=__bsf(m);
+      size_t m=movemask(valid);
+      goto entry;
       while (true)
       {  
+        if (unlikely(m == 0)) return false;
+      entry:
+        size_t i=__bsf(m);
         const int geomID = tri_geomIDs[i];
         Geometry* geometry = scene->get(geomID);
-
+        
 #if defined(RTCORE_RAY_MASK)
         /* goto next hit if mask test fails */
-        if ((geometry->mask & ray.mask) == 0) 
-          goto final
+        if ((geometry->mask & ray.mask) == 0) {
+          m=__btc(m,i);
+          continue;
+        }
 #endif
         
+#if defined(RTCORE_INTERSECTION_FILTER)
         /* if we have no filter then the test passed */
-        if (likely(!geometry->hasOcclusionFilter1()))
-          break;
-        
-        /* calculate hit information */
-        const tsimdf rcpAbsDen = rcp(absDen);
-        const tsimdf u = U * rcpAbsDen;
-        const tsimdf v = V * rcpAbsDen;
-        const tsimdf t = T * rcpAbsDen;
-        const Vec3fa Ng = Vec3fa(tri_Ng.x[i],tri_Ng.y[i],tri_Ng.z[i]);
-        if (runOcclusionFilter1(geometry,ray,u[i],v[i],t[i],Ng,geomID,tri_primIDs[i])) 
-          break;
-        
-        /* test if one more triangle hit */
-      final:
-        m=__btc(m,i); i=__bsf(m);
-        if (m == 0) return false;
+        if (unlikely(geometry->hasOcclusionFilter1())) 
+        {
+          /* calculate hit information */
+          const tsimdf rcpAbsDen = rcp(absDen);
+          const tsimdf u = U * rcpAbsDen;
+          const tsimdf v = V * rcpAbsDen;
+          const tsimdf t = T * rcpAbsDen;
+          const Vec3fa Ng = Vec3fa(tri_Ng.x[i],tri_Ng.y[i],tri_Ng.z[i]);
+          if (runOcclusionFilter1(geometry,ray,u[i],v[i],t[i],Ng,geomID,tri_primIDs[i])) return true;
+          m=__btc(m,i);
+          continue;
+        }
+#endif
+        break;
       }
 #endif
       
