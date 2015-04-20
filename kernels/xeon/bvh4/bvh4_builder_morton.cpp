@@ -125,7 +125,7 @@ namespace embree
           v1.x[i] = p1.x; v1.y[i] = p1.y; v1.z[i] = p1.z;
           v2.x[i] = p2.x; v2.y[i] = p2.y; v2.z[i] = p2.z;
         }
-        Triangle4::store_nt(accel,Triangle4(v0,v1,v2,vgeomID,vprimID,false));
+        Triangle4::store_nt(accel,Triangle4(v0,v1,v2,vgeomID,vprimID));
         box_o = BBox3fa((Vec3fa)lower,(Vec3fa)upper);
 #if ROTATE_TREE
         box_o.lower.a = current.size();
