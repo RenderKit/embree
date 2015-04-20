@@ -21,12 +21,8 @@ namespace embree
   SceneBezier1i SceneBezier1i::type;
 
   Bezier1iType::Bezier1iType () 
-    : PrimitiveType("bezier1i",sizeof(Bezier1i),1,true,1) {} 
+    : PrimitiveType("bezier1i",sizeof(Bezier1i),1) {} 
   
-  size_t Bezier1iType::blocks(size_t x) const {
-    return x;
-  }
-    
   size_t Bezier1iType::size(const char* This) const {
     return 1;
   }
@@ -34,12 +30,8 @@ namespace embree
   Bezier1iMBType Bezier1iMBType::type;
 
   Bezier1iMBType::Bezier1iMBType () 
-    : PrimitiveType("bezier1imb",sizeof(Bezier1iMB),1,true,1) {} 
+    : PrimitiveType("bezier1imb",sizeof(Bezier1iMB),1) {} 
   
-  size_t Bezier1iMBType::blocks(size_t x) const {
-    return x;
-  }
-    
   size_t Bezier1iMBType::size(const char* This) const {
     return 1;
   }

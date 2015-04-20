@@ -19,10 +19,6 @@
 
 namespace embree
 {
-  size_t Triangle8Type::blocks(size_t x) const {
-    return (x+7)/8;
-  }
-  
   size_t Triangle8Type::size(const char* This) const {
     return ((Triangle8*)This)->size();
   }

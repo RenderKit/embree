@@ -379,7 +379,6 @@ namespace embree
   {
     static Bezier1vType type;
     Bezier1vType ();
-    size_t blocks(size_t x) const;
     size_t size(const char* This) const;
   }; 
 

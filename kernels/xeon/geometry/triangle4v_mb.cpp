@@ -21,11 +21,7 @@ namespace embree
   Triangle4vMB::Type Triangle4vMB::type;
 
   Triangle4vMB::Type::Type () 
-  : PrimitiveType("triangle4vmb",sizeof(Triangle4vMB),4,false,1) {} 
-  
-  size_t Triangle4vMB::Type::blocks(size_t x) const {
-    return (x+3)/4;
-  }
+  : PrimitiveType("triangle4vmb",sizeof(Triangle4vMB),4) {} 
   
   size_t Triangle4vMB::Type::size(const char* This) const {
     return ((Triangle4vMB*)This)->size();

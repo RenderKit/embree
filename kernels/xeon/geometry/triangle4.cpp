@@ -26,30 +26,18 @@ namespace embree
   TriangleMeshTriangle4 TriangleMeshTriangle4::type;
 
   Triangle4Type::Triangle4Type () 
-  : PrimitiveType("triangle4",sizeof(Triangle4),4,false,1) {} 
+  : PrimitiveType("triangle4",sizeof(Triangle4),4) {} 
+
+  size_t Triangle4Type::size(const char* This) const {
+    return ((Triangle4*)This)->size();
+  }
 
 #if defined(__TARGET_AVX__)
   Triangle8Type Triangle8Type::type;
   TriangleMeshTriangle8 TriangleMeshTriangle8::type;
 
   Triangle8Type::Triangle8Type () 
-    : PrimitiveType("triangle8",2*sizeof(Triangle4),8,false,1) {}
+    : PrimitiveType("triangle8",2*sizeof(Triangle4),8) {}
 #endif
-  
-  size_t Triangle4Type::blocks(size_t x) const {
-    return (x+3)/4;
-  }
-  
-  size_t Triangle4Type::size(const char* This) const {
-    return ((Triangle4*)This)->size();
-  }
-  
-  size_t Triangle4Type::hash(const char* This, size_t num) const 
-  {
-    size_t hash = 0;
-    for (size_t i=0; i<num; i++)
-      hash += (i+1)*((Triangle4*)This)[i].hash();
-    return hash;
-  }
 }
 

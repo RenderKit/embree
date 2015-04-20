@@ -20,13 +20,9 @@ namespace embree
 {
   VirtualAccelObjectType VirtualAccelObjectType::type;
 
-  VirtualAccelObjectType::VirtualAccelObjectType () \
-    : PrimitiveType("object",sizeof(AccelSetItem),1,false,1) {} 
+  VirtualAccelObjectType::VirtualAccelObjectType () 
+    : PrimitiveType("object",sizeof(AccelSetItem),1) {} 
 
-  size_t VirtualAccelObjectType::blocks(size_t x) const {
-    return x;
-  }
-    
   size_t VirtualAccelObjectType::size(const char* This) const {
     return 1;
   }

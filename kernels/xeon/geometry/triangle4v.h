@@ -208,7 +208,6 @@ namespace embree
     static Triangle4vType type;
 
     Triangle4vType ();
-    size_t blocks(size_t x) const;
     size_t size(const char* This) const;
   };
 

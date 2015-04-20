@@ -43,12 +43,6 @@ namespace embree
     __forceinline Bezier1i (const unsigned vertexID, const unsigned int geomID, const unsigned int primID, const bool last)
       : vertexID(vertexID), geom(geomID), prim(primID | (last << 31)) {}
 
-    /*! calculate the bounds of the triangle */
-    //__forceinline BBox3fa bounds() const {
-    //const BBox3fa b = merge(BBox3fa(p[0]),BBox3fa(p[1]),BBox3fa(p[2]),BBox3fa(p[3]));
-    //return enlarge(b,Vec3fa(b.upper.w));
-    //}
-
     /*! returns required number of primitive blocks for N primitives */
     static __forceinline size_t blocks(size_t N) { return N; }
 
@@ -135,12 +129,6 @@ namespace embree
       return prim & 0x80000000; 
     }
 
-    /*! calculate the bounds of the triangle */
-    //__forceinline BBox3fa bounds0() const {
-    //const BBox3fa b = merge(BBox3fa(p0[0]),BBox3fa(p0[1]),BBox3fa(p0[2]),BBox3fa(p0[3]));
-    //return enlarge(b,Vec3fa(b.upper.w));
-    //}
-
     /*! fill from list */
     __forceinline void fill(atomic_set<PrimRefBlockT<BezierPrim> >::block_iterator_unsafe& iter, Scene* scene, const bool list)
     {
@@ -177,7 +165,6 @@ namespace embree
 
   struct Bezier1iType : public PrimitiveType {
     Bezier1iType ();
-    size_t blocks(size_t x) const;
     size_t size(const char* This) const;
   };
 
@@ -189,7 +176,6 @@ namespace embree
   struct Bezier1iMBType : public PrimitiveType {
     static Bezier1iMBType type;
     Bezier1iMBType ();
-    size_t blocks(size_t x) const;
     size_t size(const char* This) const;
   };
 }

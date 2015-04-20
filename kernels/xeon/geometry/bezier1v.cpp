@@ -21,12 +21,8 @@ namespace embree
   Bezier1vType Bezier1vType::type;
 
   Bezier1vType::Bezier1vType () 
-    : PrimitiveType("bezier1v",sizeof(Bezier1v),1,true,1) {} 
+    : PrimitiveType("bezier1v",sizeof(Bezier1v),1) {} 
   
-  size_t Bezier1vType::blocks(size_t x) const {
-    return x;
-  }
-    
   size_t Bezier1vType::size(const char* This) const {
     return 1;
   }

@@ -23,11 +23,7 @@ namespace embree
   TriangleMeshTriangle4i TriangleMeshTriangle4i::type;
 
   Triangle4iType::Triangle4iType () 
-    : PrimitiveType("triangle4i",sizeof(Triangle4i),4,true,1) {} 
-  
-  size_t Triangle4iType::blocks(size_t x) const {
-    return (x+3)/4;
-  }
+    : PrimitiveType("triangle4i",sizeof(Triangle4i),4) {} 
   
   size_t Triangle4iType::size(const char* This) const {
     return ((Triangle4i*)This)->size();

@@ -22,12 +22,8 @@ namespace embree
   SubdivPatch1::Type SubdivPatch1::type;
   
   SubdivPatch1::Type::Type () 
-    : PrimitiveType("subdivpatch1",sizeof(SubdivPatch1),1,false,1) {} 
+    : PrimitiveType("subdivpatch1",sizeof(SubdivPatch1),1) {} 
   
-  size_t SubdivPatch1::Type::blocks(size_t x) const {
-    return x;
-  }
-    
   size_t SubdivPatch1::Type::size(const char* This) const {
     return 1;
   }

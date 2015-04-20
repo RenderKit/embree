@@ -23,11 +23,7 @@ namespace embree
   TriangleMeshTriangle4v TriangleMeshTriangle4v::type;
 
   Triangle4vType::Triangle4vType () 
-  : PrimitiveType("triangle4v",sizeof(Triangle4v),4,false,1) {} 
-  
-  size_t Triangle4vType::blocks(size_t x) const {
-    return (x+3)/4;
-  }
+  : PrimitiveType("triangle4v",sizeof(Triangle4v),4) {} 
   
   size_t Triangle4vType::size(const char* This) const {
     return ((Triangle4v*)This)->size();
