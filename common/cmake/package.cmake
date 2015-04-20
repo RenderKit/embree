@@ -14,6 +14,8 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
+OPTION(ENABLE_INSTALLER "Switches between installer or ZIP file creation for 'make package'" ON)
+
 SET(CPACK_PACKAGE_VERSION_MAJOR ${EMBREE_VERSION_MAJOR})
 SET(CPACK_PACKAGE_VERSION_MINOR ${EMBREE_VERSION_MINOR})
 SET(CPACK_PACKAGE_VERSION_PATCH ${EMBREE_VERSION_PATCH})
@@ -87,7 +89,7 @@ SET(CPACK_RESOURCE_FILE_LICENSE ${PROJECT_SOURCE_DIR}/LICENSE.txt)
 #SET(CPACK_PACKAGE_ICON ${PROJECT_SOURCE_DIR}/embree-doc/images/icon.png)
 SET(CPACK_PACKAGE_FILE_NAME "embree-${EMBREE_VERSION}")
 
-
+# Windows specific settings
 IF(WIN32)
   SET(CPACK_COMPONENT_REDIST_DISABLED ON)
   SET(CPACK_COMPONENT_TUTORIALS_DEPENDS redist)
@@ -104,37 +106,50 @@ IF(WIN32)
   SET(CPACK_PACKAGE_NAME Embree)
 
   # NSIS specific settings
-  SET(CPACK_GENERATOR NSIS)
-  SET(CPACK_NSIS_INSTALL_ROOT "${PROGRAMFILES}\\\\Intel")
-  SET(CPACK_NSIS_DISPLAY_NAME "Embree: High Performance Ray Tracing Kernels")
-  SET(CPACK_NSIS_PACKAGE_NAME "Embree ${EMBREE_VERSION}")
-  SET(CPACK_NSIS_URL_INFO_ABOUT http://embree.github.io/)
-#  SET(CPACK_NSIS_HELP_LINK http://embree.github.io/downloads.html#windows)
-  SET(CPACK_NSIS_MUI_ICON ${PROJECT_SOURCE_DIR}/embree-doc/images/icon32.ico)
-  SET(CPACK_NSIS_CONTACT ${CPACK_PACKAGE_CONTACT})
+  IF (ENABLE_INSTALLER)
+    SET(CPACK_GENERATOR NSIS)
+    SET(CPACK_NSIS_INSTALL_ROOT "${PROGRAMFILES}\\\\Intel")
+    SET(CPACK_NSIS_DISPLAY_NAME "Embree: High Performance Ray Tracing Kernels")
+    SET(CPACK_NSIS_PACKAGE_NAME "Embree ${EMBREE_VERSION}")
+    SET(CPACK_NSIS_URL_INFO_ABOUT http://embree.github.io/)
+    #SET(CPACK_NSIS_HELP_LINK http://embree.github.io/downloads.html#windows)
+    SET(CPACK_NSIS_MUI_ICON ${PROJECT_SOURCE_DIR}/embree-doc/images/icon32.ico)
+    SET(CPACK_NSIS_CONTACT ${CPACK_PACKAGE_CONTACT})
+  ELSE()
+    SET(CPACK_GENERATOR ZIP)
+  ENDIF()
+
+# MacOSX specific settings
 ELSEIF(APPLE)
-  # MacOSX specific settings
-  SET(CPACK_GENERATOR PackageMaker)
-  SET(CPACK_OSX_PACKAGE_VERSION 10.7)
+  IF (ENABLE_INSTALLER)
+    SET(CPACK_GENERATOR PackageMaker)
+    SET(CPACK_OSX_PACKAGE_VERSION 10.7)
+  ELSE()
+    SET(CPACK_GENERATOR TGZ)
+  ENDIF()
+
+# Linux specific settings
 ELSE()
-  SET(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_FILE_NAME}-${CPACK_RPM_PACKAGE_RELEASE}.x86_64")
-  # RPM specific settings
-  SET(CPACK_GENERATOR RPM) #TGZ DEB
-  SET(CPACK_RPM_COMPONENT_INSTALL ON)
-#  SET(CPACK_ARCHIVE_COMPONENT_INSTALL ON) # for TGZ
-  SET(CPACK_RPM_PACKAGE_LICENSE "ASL 2.0") # Apache Software License, Version 2.0
-  SET(CPACK_RPM_PACKAGE_GROUP "Development/Libraries")
-#  SET(CPACK_RPM_CHANGELOG_FILE "") # ChangeLog of the RPM; also CHANGELOG.md is not in the required format
-  SET(CPACK_RPM_PACKAGE_ARCHITECTURE x86_64)
-  SET(CPACK_RPM_PACKAGE_URL http://embree.github.io/)
 
-  # need to use lower case component names
-  SET(CPACK_RPM_devel_POST_INSTALL_SCRIPT_FILE ${PROJECT_SOURCE_DIR}/common/cmake/rpm_ldconfig.sh)
-  SET(CPACK_RPM_devel_POST_UNINSTALL_SCRIPT_FILE ${PROJECT_SOURCE_DIR}/common/cmake/rpm_ldconfig.sh)
-  SET(CPACK_RPM_devel_xeonphi_POST_INSTALL_SCRIPT_FILE ${PROJECT_SOURCE_DIR}/common/cmake/rpm_ldconfig.sh)
-  SET(CPACK_RPM_devel_xeonphi_POST_UNINSTALL_SCRIPT_FILE ${PROJECT_SOURCE_DIR}/common/cmake/rpm_ldconfig.sh)
+  IF (ENABLE_INSTALLER)
+    SET(CPACK_GENERATOR RPM)
+    SET(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_FILE_NAME}.x86_64")
+    SET(CPACK_RPM_COMPONENT_INSTALL ON)
+    SET(CPACK_RPM_PACKAGE_LICENSE "ASL 2.0") # Apache Software License, Version 2.0
+    SET(CPACK_RPM_PACKAGE_GROUP "Development/Libraries")
+    #SET(CPACK_RPM_CHANGELOG_FILE "") # ChangeLog of the RPM; also CHANGELOG.md is not in the required format
+    SET(CPACK_RPM_PACKAGE_ARCHITECTURE x86_64)
+    SET(CPACK_RPM_PACKAGE_URL http://embree.github.io/)
 
+    # post install and uninstall scripts
+    SET(CPACK_RPM_devel_POST_INSTALL_SCRIPT_FILE ${PROJECT_SOURCE_DIR}/common/cmake/rpm_ldconfig.sh)
+    SET(CPACK_RPM_devel_POST_UNINSTALL_SCRIPT_FILE ${PROJECT_SOURCE_DIR}/common/cmake/rpm_ldconfig.sh)
+    SET(CPACK_RPM_devel_xeonphi_POST_INSTALL_SCRIPT_FILE ${PROJECT_SOURCE_DIR}/common/cmake/rpm_ldconfig.sh)
+    SET(CPACK_RPM_devel_xeonphi_POST_UNINSTALL_SCRIPT_FILE ${PROJECT_SOURCE_DIR}/common/cmake/rpm_ldconfig.sh)
+  ELSE()
+    SET(CPACK_GENERATOR TGZ)
+    SET(CPACK_ARCHIVE_COMPONENT_INSTALL ON)
+  ENDIF()
   
 ENDIF()
 
-INCLUDE(CPack)

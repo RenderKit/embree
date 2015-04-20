@@ -31,6 +31,7 @@ CONFIGURE_FILE(
 )
 INCLUDE_DIRECTORIES("${PROJECT_BINARY_DIR}")
 
+
 IF (WIN32)
   SET(DOC_INSTALL_DIR doc)
   SET(TUTORIALS_INSTALL_DIR bin)
@@ -64,6 +65,11 @@ MARK_AS_ADVANCED(CMAKE_OSX_SYSROOT)
 MARK_AS_ADVANCED(GLUT_cocoa_LIBRARY)
 
 SET(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/common/cmake ${CMAKE_MODULE_PATH})
+
+##############################################################
+# Create Binary Packages
+##############################################################
+include(package)
 
 ##############################################################
 # Embree configuration
@@ -331,6 +337,6 @@ add_custom_target(uninstall
     COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/uninstall.cmake)
 
 ##############################################################
-# Create Binary Packages
+# Has to be last
 ##############################################################
-include(package)
+INCLUDE(CPack)
