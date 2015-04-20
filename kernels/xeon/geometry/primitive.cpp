@@ -24,7 +24,7 @@
 #include "triangle8.h"
 #include "subdivpatch1.h"
 #include "subdivpatch1cached.h"
-#include "virtual_accel.h"
+#include "object.h"
 
 namespace embree
 {
@@ -151,15 +151,15 @@ namespace embree
   }
 #endif
 
-  /********************** VirtualAccel **************************/
+  /********************** Virtual Object **************************/
 
 #if !defined(__AVX__)
-  AccelSetItem::Type AccelSetItem::type;
+  Object::Type Object::type;
 
-  AccelSetItem::Type::Type () 
-    : PrimitiveType("object",sizeof(AccelSetItem),1) {} 
+  Object::Type::Type () 
+    : PrimitiveType("object",sizeof(Object),1) {} 
 
-  size_t AccelSetItem::Type::size(const char* This) const {
+  size_t Object::Type::size(const char* This) const {
     return 1;
   }
 #endif

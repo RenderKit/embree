@@ -30,7 +30,7 @@
 #include "geometry/subdivpatch1_intersector1.h"
 #include "geometry/subdivpatch1cached_intersector1.h"
 #include "geometry/grid_intersector1.h"
-#include "geometry/virtual_accel_intersector1.h"
+#include "geometry/object_intersector1.h"
 
 namespace embree
 { 
@@ -314,7 +314,7 @@ namespace embree
     DEFINE_INTERSECTOR1(BVH4GridIntersector1,BVH4Intersector1<0x1 COMMA true COMMA GridIntersector1>);
     DEFINE_INTERSECTOR1(BVH4GridLazyIntersector1,BVH4Intersector1<0x1 COMMA true COMMA Switch2Intersector1<GridIntersector1 COMMA GridLazyIntersector1> >);
 
-    DEFINE_INTERSECTOR1(BVH4VirtualIntersector1,BVH4Intersector1<0x1 COMMA false COMMA ArrayIntersector1<VirtualAccelIntersector1> >);
+    DEFINE_INTERSECTOR1(BVH4VirtualIntersector1,BVH4Intersector1<0x1 COMMA false COMMA ArrayIntersector1<ObjectIntersector1> >);
 
     DEFINE_INTERSECTOR1(BVH4Triangle4vMBIntersector1Moeller,BVH4Intersector1<0x10 COMMA false COMMA ArrayIntersector1<TriangleNMblurIntersector1MoellerTrumbore<Triangle4vMB COMMA true> > >);
   }

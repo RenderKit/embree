@@ -26,7 +26,7 @@
 #include "geometry/triangle4i.h"
 #include "geometry/subdivpatch1.h"
 #include "geometry/subdivpatch1cached.h"
-#include "geometry/virtual_accel.h"
+#include "geometry/object.h"
 
 #include "common/accelinstance.h"
 
@@ -894,7 +894,7 @@ namespace embree
 
   Accel* BVH4::BVH4UserGeometry(Scene* scene)
   {
-    BVH4* accel = new BVH4(AccelSetItem::type,scene,LeafMode);
+    BVH4* accel = new BVH4(Object::type,scene,LeafMode);
     Accel::Intersectors intersectors;
     intersectors.ptr = accel; 
     intersectors.intersector1 = BVH4VirtualIntersector1;
