@@ -17,7 +17,7 @@
 #pragma once
 
 #include "bezier1v.h"
-#include "bezier_intersector1.h"
+#include "bezier_intersector.h"
 
 namespace embree
 {
@@ -28,14 +28,14 @@ namespace embree
       struct Bezier1vIntersector1
       {
         typedef Bezier1v Primitive;
-        typedef BezierIntersector1::Precalculations Precalculations;
+        typedef Bezier1Intersector1::Precalculations Precalculations;
         
         static __forceinline void intersect(Precalculations& pre, Ray& ray, const Primitive& curve, Scene* scene) {
-          BezierIntersector1::intersect(ray,pre,curve.p0,curve.p1,curve.p2,curve.p3,curve.geomID<list>(),curve.primID<list>(),scene);
+          Bezier1Intersector1::intersect(ray,pre,curve.p0,curve.p1,curve.p2,curve.p3,curve.geomID<list>(),curve.primID<list>(),scene);
         }
         
         static __forceinline bool occluded(Precalculations& pre, Ray& ray, const Primitive& curve, Scene* scene) {
-          return BezierIntersector1::occluded(ray,pre,curve.p0,curve.p1,curve.p2,curve.p3,curve.geomID<list>(),curve.primID<list>(),scene);
+          return Bezier1Intersector1::occluded(ray,pre,curve.p0,curve.p1,curve.p2,curve.p3,curve.geomID<list>(),curve.primID<list>(),scene);
         }
       };
   }

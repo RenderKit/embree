@@ -17,7 +17,7 @@
 #pragma once
 
 #include "bezier1i.h"
-#include "bezier_intersector8.h"
+#include "bezier_intersector.h"
 
 namespace embree
 {
@@ -28,7 +28,7 @@ namespace embree
       struct Bezier1iIntersector8
       {
         typedef Bezier1i Primitive;
-        typedef BezierIntersector8::Precalculations Precalculations;
+        typedef typename Bezier1IntersectorN<Ray8>::Precalculations Precalculations;
         
         static __forceinline void intersect(Precalculations& pre, Ray8& ray, const size_t k, const Primitive& curve, Scene* scene) 
         {
@@ -37,7 +37,7 @@ namespace embree
           const Vec3fa a1 = in->vertex(curve.vertexID+1,0);
           const Vec3fa a2 = in->vertex(curve.vertexID+2,0);
           const Vec3fa a3 = in->vertex(curve.vertexID+3,0);
-          BezierIntersector8::intersect(pre,ray,k,a0,a1,a2,a3,curve.geomID<list>(),curve.primID<list>(),scene);
+          Bezier1IntersectorN<Ray8>::intersect(pre,ray,k,a0,a1,a2,a3,curve.geomID<list>(),curve.primID<list>(),scene);
         }
         
         static __forceinline void intersect(const avxb& valid_i, Precalculations& pre, Ray8& ray, const Primitive& curve, Scene* scene)
@@ -53,7 +53,7 @@ namespace embree
           const Vec3fa a1 = in->vertex(curve.vertexID+1,0);
           const Vec3fa a2 = in->vertex(curve.vertexID+2,0);
           const Vec3fa a3 = in->vertex(curve.vertexID+3,0);
-          return BezierIntersector8::occluded(pre,ray,k,a0,a1,a2,a3,curve.geomID<list>(),curve.primID<list>(),scene);
+          return Bezier1IntersectorN<Ray8>::occluded(pre,ray,k,a0,a1,a2,a3,curve.geomID<list>(),curve.primID<list>(),scene);
         }
         
         static __forceinline avxb occluded(const avxb& valid_i, Precalculations& pre, Ray8& ray, const Primitive& curve, Scene* scene)
@@ -73,7 +73,7 @@ namespace embree
       struct Bezier1iIntersector8MB
       {
         typedef Bezier1iMB Primitive;
-        typedef BezierIntersector8::Precalculations Precalculations;
+        typedef typename Bezier1IntersectorN<Ray8>::Precalculations Precalculations;
         
         static __forceinline void intersect(Precalculations& pre, Ray8& ray, const size_t k, const Primitive& curve, Scene* scene)
         {
@@ -91,7 +91,7 @@ namespace embree
           const Vec3fa p1 = t0*a1 + t1*b1;
           const Vec3fa p2 = t0*a2 + t1*b2;
           const Vec3fa p3 = t0*a3 + t1*b3;
-          BezierIntersector8::intersect(pre,ray,k,p0,p1,p2,p3,curve.geomID<list>(),curve.primID<list>(),scene);
+          Bezier1IntersectorN<Ray8>::intersect(pre,ray,k,p0,p1,p2,p3,curve.geomID<list>(),curve.primID<list>(),scene);
         }
         
         static __forceinline bool occluded(Precalculations& pre, Ray8& ray, const size_t k, const Primitive& curve, Scene* scene) 
@@ -110,7 +110,7 @@ namespace embree
           const Vec3fa p1 = t0*a1 + t1*b1;
           const Vec3fa p2 = t0*a2 + t1*b2;
           const Vec3fa p3 = t0*a3 + t1*b3;
-          return BezierIntersector8::occluded(pre,ray,k,p0,p1,p2,p3,curve.geomID<list>(),curve.primID<list>(),scene);
+          return Bezier1IntersectorN<Ray8>::occluded(pre,ray,k,p0,p1,p2,p3,curve.geomID<list>(),curve.primID<list>(),scene);
         }
       };
   }
