@@ -28,23 +28,24 @@
 #define TILE_SIZE_Y 4
 
 #define FIX_SAMPLING 0
-//#define SAMPLES_PER_PIXEL 1
 #define SAMPLES_PER_PIXEL 16
+//#define SAMPLES_PER_PIXEL 64
 
 #define ENABLE_TEXTURING 1
 
 //#define FORCE_FIXED_EDGE_TESSELLATION
-#define FIXED_EDGE_TESSELLATION_VALUE 32
+#define FIXED_EDGE_TESSELLATION_VALUE 16
 //#define FIXED_EDGE_TESSELLATION_VALUE 32
 
 #define MAX_EDGE_LEVEL 128.0f
-//#define MIN_EDGE_LEVEL 8.0f
 #define MIN_EDGE_LEVEL 4.0f
+//#define MIN_EDGE_LEVEL 4.0f
+
 #define ENABLE_DISPLACEMENTS 1
 
 #define LEVEL_FACTOR 64.0f
 
-#define MAX_PATH_LENGTH 2
+#define MAX_PATH_LENGTH 8
 
 bool g_subdiv_mode = false;
 unsigned int keyframeID = 0;

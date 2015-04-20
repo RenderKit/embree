@@ -23,8 +23,8 @@
 #define TILE_SIZE_X 4
 #define TILE_SIZE_Y 4
 
-//#define SPP 8
-#define SPP 1
+#define SPP 16
+//#define SPP 4
 
 //#define FORCE_FIXED_EDGE_TESSELLATION
 //#define FIXED_EDGE_TESSELLATION_VALUE 4
@@ -33,7 +33,7 @@
 #define ENABLE_TEXTURING 1
 
 #define MAX_EDGE_LEVEL 128.0f
-#define MIN_EDGE_LEVEL 4.0f
+#define MIN_EDGE_LEVEL 8.0f
 //#define MIN_EDGE_LEVEL 4.0f
 
 #define ENABLE_DISPLACEMENTS 1
