@@ -43,7 +43,7 @@ namespace embree
     static __forceinline size_t max_size() { return 4; }
     
      /*! returns required number of primitive blocks for N primitives */
-    static __forceinline size_t blocks(size_t N) { return (N+3)/4; }
+    static __forceinline size_t blocks(size_t N) { return (N+max_size()-1)/max_size(); }
 
   public:
 
