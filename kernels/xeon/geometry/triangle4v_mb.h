@@ -54,7 +54,7 @@ namespace embree
 				const sse3f& b0, const sse3f& b1,
 				const sse3f& c0, const sse3f& c1, 
 				const ssei& geomIDs, const ssei& primIDs)
-      : v0(a0), v1(b0), v2(c0), d0(a1-a0), d1(b1-b0), d2(c1-c0), geomIDs(geomIDs), primIDs(primIDs) {}
+      : v0(a0), v1(b0), v2(c0), dv0(a1-a0), dv1(b1-b0), dv2(c1-c0), geomIDs(geomIDs), primIDs(primIDs) {}
 
      /*! Returns a mask that tells which triangles are valid. */
     __forceinline sseb valid() const { return geomIDs != ssei(-1); }
@@ -92,9 +92,9 @@ namespace embree
     /*! calculate the bounds of the triangles at t1 */
     __forceinline BBox3fa bounds1() const 
     {
-      const sse3f p0 = v0+d0;
-      const sse3f p1 = v1+d1;
-      const sse3f p2 = v2+d2;
+      const sse3f p0 = v0+dv0;
+      const sse3f p1 = v1+dv1;
+      const sse3f p2 = v2+dv2;
       sse3f lower = min(p0,p1,p2);
       sse3f upper = max(p0,p1,p2);
       const sseb mask = valid();
@@ -185,9 +185,9 @@ namespace embree
     sse3f v0;      //!< 1st vertex of the triangles.
     sse3f v1;      //!< 2nd vertex of the triangles.
     sse3f v2;      //!< 3rd vertex of the triangles.
-    sse3f d0;      //!< difference vector between time steps t0 and t1 for first vertex
-    sse3f d1;      //!< difference vector between time steps t0 and t1 for second vertex
-    sse3f d2;      //!< difference vector between time steps t0 and t1 for third vertex
+    sse3f dv0;      //!< difference vector between time steps t0 and t1 for first vertex
+    sse3f dv1;      //!< difference vector between time steps t0 and t1 for second vertex
+    sse3f dv2;      //!< difference vector between time steps t0 and t1 for third vertex
     ssei geomIDs;  //!< geometry ID
     ssei primIDs;  //!< primitive ID
   };

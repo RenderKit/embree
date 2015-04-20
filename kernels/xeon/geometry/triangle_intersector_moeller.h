@@ -726,9 +726,9 @@ namespace embree
         {
           STAT3(normal.trav_prims,1,1,1);
           const tsimdf time = ray.time;
-          const tsimd3f v0 = tri.v0 + time*tri.d0;
-          const tsimd3f v1 = tri.v1 + time*tri.d1;
-          const tsimd3f v2 = tri.v2 + time*tri.d2;
+          const tsimd3f v0 = tri.v0 + time*tri.dv0;
+          const tsimd3f v1 = tri.v1 + time*tri.dv1;
+          const tsimd3f v2 = tri.v2 + time*tri.dv2;
           triangle_intersect_moeller_trumbore<enableIntersectionFilter,tsimdb,tsimdf,tsimdi>(ray,v0,v1,v2,tri.geomIDs,tri.primIDs,scene);
         }
         
@@ -737,9 +737,9 @@ namespace embree
         {
           STAT3(shadow.trav_prims,1,1,1);
           const tsimdf time = ray.time;
-          const tsimd3f v0 = tri.v0 + time*tri.d0;
-          const tsimd3f v1 = tri.v1 + time*tri.d1;
-          const tsimd3f v2 = tri.v2 + time*tri.d2;
+          const tsimd3f v0 = tri.v0 + time*tri.dv0;
+          const tsimd3f v1 = tri.v1 + time*tri.dv1;
+          const tsimd3f v2 = tri.v2 + time*tri.dv2;
           return triangle_occluded_moeller_trumbore<enableIntersectionFilter,tsimdb,tsimdf,tsimdi>(ray,v0,v1,v2,tri.geomIDs,tri.primIDs,scene);
         }
       };
@@ -773,9 +773,9 @@ namespace embree
             if (!tri.valid(i)) break;
             STAT3(normal.trav_prims,1,popcnt(valid_i),RayM::size());
             const rsimdf time = ray.time;
-            const rsimd3f v0 = broadcast<rsimdf>(tri.v0,i) + time*broadcast<rsimdf>(tri.d0,i);
-            const rsimd3f v1 = broadcast<rsimdf>(tri.v1,i) + time*broadcast<rsimdf>(tri.d1,i);
-            const rsimd3f v2 = broadcast<rsimdf>(tri.v2,i) + time*broadcast<rsimdf>(tri.d2,i);
+            const rsimd3f v0 = broadcast<rsimdf>(tri.v0,i) + time*broadcast<rsimdf>(tri.dv0,i);
+            const rsimd3f v1 = broadcast<rsimdf>(tri.v1,i) + time*broadcast<rsimdf>(tri.dv1,i);
+            const rsimd3f v2 = broadcast<rsimdf>(tri.v2,i) + time*broadcast<rsimdf>(tri.dv2,i);
             triangle_intersect_moeller_trumbore<enableIntersectionFilter>(valid_i,ray,v0,v1,v2,tri.geomIDs,tri.primIDs,i,scene);
           }
         }
@@ -790,9 +790,9 @@ namespace embree
             if (!tri.valid(i)) break;
             STAT3(shadow.trav_prims,1,popcnt(valid0),RayM::size());
             const rsimdf time = ray.time;
-            const rsimd3f v0 = broadcast<rsimdf>(tri.v0,i) + time*broadcast<rsimdf>(tri.d0,i);
-            const rsimd3f v1 = broadcast<rsimdf>(tri.v1,i) + time*broadcast<rsimdf>(tri.d1,i);
-            const rsimd3f v2 = broadcast<rsimdf>(tri.v2,i) + time*broadcast<rsimdf>(tri.d2,i);
+            const rsimd3f v0 = broadcast<rsimdf>(tri.v0,i) + time*broadcast<rsimdf>(tri.dv0,i);
+            const rsimd3f v1 = broadcast<rsimdf>(tri.v1,i) + time*broadcast<rsimdf>(tri.dv1,i);
+            const rsimd3f v2 = broadcast<rsimdf>(tri.v2,i) + time*broadcast<rsimdf>(tri.dv2,i);
             triangle_occluded_moeller_trumbore<enableIntersectionFilter>(valid0,ray,v0,v1,v2,tri.geomIDs,tri.primIDs,i,scene);
             if (none(valid0)) break;
           }
@@ -804,9 +804,9 @@ namespace embree
         {
           STAT3(normal.trav_prims,1,1,1);
           const tsimdf time = broadcast<tsimdf>(ray.time,k);
-          const tsimd3f v0 = tri.v0 + time*tri.d0;
-          const tsimd3f v1 = tri.v1 + time*tri.d1;
-          const tsimd3f v2 = tri.v2 + time*tri.d2;
+          const tsimd3f v0 = tri.v0 + time*tri.dv0;
+          const tsimd3f v1 = tri.v1 + time*tri.dv1;
+          const tsimd3f v2 = tri.v2 + time*tri.dv2;
           triangle_intersect_moeller_trumbore<enableIntersectionFilter>(ray,k,v0,v1,v2,tri.geomIDs,tri.primIDs,scene);
         }
         
@@ -815,9 +815,9 @@ namespace embree
         {
           STAT3(shadow.trav_prims,1,1,1);
           const tsimdf time = broadcast<tsimdf>(ray.time,k);
-          const tsimd3f v0 = tri.v0 + time*tri.d0;
-          const tsimd3f v1 = tri.v1 + time*tri.d1;
-          const tsimd3f v2 = tri.v2 + time*tri.d2;
+          const tsimd3f v0 = tri.v0 + time*tri.dv0;
+          const tsimd3f v1 = tri.v1 + time*tri.dv1;
+          const tsimd3f v2 = tri.v2 + time*tri.dv2;
           return triangle_occluded_moeller_trumbore<enableIntersectionFilter>(ray,k,v0,v1,v2,tri.geomIDs,tri.primIDs,scene);
         }
       };
