@@ -97,6 +97,7 @@ namespace embree
     stream << "  leaves = " << numLeaves << " "
            << "(" << bytesPrims/1E6  << " MB) "
            << "(" << 100.0*double(bytesPrims)/double(bytesTotal) << "% of total)"
+           << "(" << 100.0*double(numPrims)/double(bvh->primTy.blockSize*numPrimBlocks) << "% used)" 
            << std::endl;
     stream << "  vertices = " << numVertices << " "
            << "(" << bytesVertices/1E6 << " MB) " 
