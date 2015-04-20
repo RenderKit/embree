@@ -31,24 +31,22 @@ namespace embree
 
   public:
 
-    AccelSetItem (AccelSet* accel, unsigned item, const bool last) 
-    : accel(accel), item(item), isLast(last) {}
+    /*! constructs a virtual object */
+    AccelSetItem (AccelSet* accel, unsigned item) 
+    : accel(accel), item(item) {}
 
     /*! returns required number of primitive blocks for N primitives */
     static __forceinline size_t blocks(size_t N) { return N; }
-
-    __forceinline bool last() const { return isLast; }
 
     /*! fill triangle from triangle list */
     __forceinline void fill(const PrimRef* prims, size_t& i, size_t end, Scene* scene, const bool list) // FIXME: use nontemporal stores
     {
       const PrimRef& prim = prims[i]; i++;
-      new (this) AccelSetItem((AccelSet*) scene->get(prim.geomID()), prim.primID(), list && i>=end);
+      new (this) AccelSetItem((AccelSet*) scene->get(prim.geomID()), prim.primID());
     }
 
   public:
-    AccelSet* accel;
-    unsigned item;
-    bool isLast;
+    AccelSet* accel; //!< array of acceleration structure
+    unsigned item;   //!< the nth acceleration structure referenced
   };
 }
