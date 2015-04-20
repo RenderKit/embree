@@ -36,23 +36,23 @@ namespace embree
   {
     /*! constructs the primitive type */
     PrimitiveType (const std::string& name, size_t bytes, size_t blockSize, bool needVertices, int intCost) 
-      : name(name), bytes(bytes), blockSize(blockSize), needVertices(needVertices), intCost(intCost) {}
+    : name(name), bytes(bytes), blockSize(blockSize) {} //, needVertices(needVertices), intCost(intCost) {}
 
     /*! Computes the number of blocks required to store a number of triangles. */
-    virtual size_t blocks(size_t x) const = 0; // FIXME: are these still required
+    //virtual size_t blocks(size_t x) const = 0; // FIXME: are these still required
 
     /*! Returns the number of stored primitives in a block. */
     virtual size_t size(const char* This) const = 0;
 
     /*! Returns a hash number for the leaf. */
-    virtual size_t hash(const char* This, size_t num) const { return 0; }
+    //virtual size_t hash(const char* This, size_t num) const { return 0; }
 
   public:
     std::string name;       //!< name of this primitive type
     size_t bytes;           //!< number of bytes of the triangle data
     size_t blockSize;       //!< block size
-    bool   needVertices;    //!< determines if we need the vertex array
-    int    intCost;         //!< cost of one ray/primitive intersection
+    //bool   needVertices;    //!< determines if we need the vertex array
+    //int    intCost;         //!< cost of one ray/primitive intersection
   };
 
   //template<typename Primitive1, typename Primitive2>

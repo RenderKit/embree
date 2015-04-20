@@ -62,6 +62,7 @@ namespace embree
 
     /*! Cost of one traversal step. */
     static const int travCost = 1;
+    static const int intCost = 1;
 
     /*! Pointer that points to a node or a list of primitives */
     struct NodeRef
