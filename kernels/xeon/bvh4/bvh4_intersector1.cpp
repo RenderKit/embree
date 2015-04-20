@@ -21,14 +21,12 @@
 #include "geometry/triangle4v_mb.h"
 #include "geometry/triangle4i.h"
 #include "geometry/triangle8.h"
-
+#include "geometry/intersector_iterators.h"
 #include "geometry/bezier1v_intersector.h"
 #include "geometry/bezier1i_intersector.h"
-
 #include "geometry/triangle_intersector_moeller.h"
 #include "geometry/triangle_intersector_pluecker.h"
 #include "geometry/triangle4i_intersector_pluecker.h"
-
 #include "geometry/subdivpatch1_intersector1.h"
 #include "geometry/subdivpatch1cached_intersector1.h"
 #include "geometry/grid_intersector1.h"

@@ -15,16 +15,14 @@
 // ======================================================================== //
 
 #include "bvh4_intersector8_chunk.h"
-
 #include "geometry/triangle4.h"
 #include "geometry/triangle4i.h"
 #include "geometry/triangle4v.h"
 #include "geometry/triangle4v_mb.h"
 #include "geometry/triangle8.h"
-
+#include "geometry/intersector_iterators.h"
 #include "geometry/bezier1v_intersector.h"
 #include "geometry/bezier1i_intersector.h"
-
 #include "geometry/triangle_intersector_moeller.h"
 #include "geometry/triangle_intersector_pluecker.h"
 #include "geometry/triangle4i_intersector_pluecker.h"

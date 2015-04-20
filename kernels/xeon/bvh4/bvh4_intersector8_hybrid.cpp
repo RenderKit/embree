@@ -16,11 +16,10 @@
 
 #include "bvh4_intersector8_hybrid.h"
 #include "bvh4_intersector8_single.h"
-
 #include "geometry/triangle4.h"
 #include "geometry/triangle4v.h"
 #include "geometry/triangle8.h"
-
+#include "geometry/intersector_iterators.h"
 #include "geometry/triangle_intersector_moeller.h"
 #include "geometry/triangle_intersector_pluecker.h"
 

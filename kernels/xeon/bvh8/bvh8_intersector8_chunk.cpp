@@ -16,15 +16,11 @@
 
 #include "bvh8_intersector8_chunk.h"
 #include "geometry/triangle4.h"
-#if defined(__AVX__)
 #include "geometry/triangle8.h"
-#endif
-
+#include "geometry/intersector_iterators.h"
 #include "geometry/triangle_intersector_moeller.h"
 
 #define DBG(x) 
-
-#define START_SINDEX 5
 
 namespace embree
 {
