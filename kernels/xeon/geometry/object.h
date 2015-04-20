@@ -14,22 +14,39 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "triangle1.h"
-#include "common/scene.h"
+#pragma once
+
+#include "primitive.h"
 
 namespace embree
 {
-  Triangle1Type Triangle1Type::type;
-  TriangleMeshTriangle1 TriangleMeshTriangle1::type;
+  struct Object
+  {
+    struct Type : public PrimitiveType 
+    {
+      Type ();
+      size_t size(const char* This) const;
+    };
+    static Type type;
 
-  Triangle1Type::Triangle1Type () 
-      : PrimitiveType("triangle1",sizeof(Triangle1),1,false,1) {} 
-  
-  size_t Triangle1Type::blocks(size_t x) const {
-    return x;
-  }
-    
-  size_t Triangle1Type::size(const char* This) const {
-    return 1;
-  }
+  public:
+
+    /*! constructs a virtual object */
+    Object (AccelSet* accel, unsigned item) 
+    : accel(accel), item(item) {}
+
+    /*! returns required number of primitive blocks for N primitives */
+    static __forceinline size_t blocks(size_t N) { return N; }
+
+    /*! fill triangle from triangle list */
+    __forceinline void fill(const PrimRef* prims, size_t& i, size_t end, Scene* scene, const bool list) // FIXME: use nontemporal stores
+    {
+      const PrimRef& prim = prims[i]; i++;
+      new (this) Object((AccelSet*) scene->get(prim.geomID()), prim.primID());
+    }
+
+  public:
+    AccelSet* accel; //!< array of acceleration structure
+    unsigned item;   //!< the nth acceleration structure referenced
+  };
 }

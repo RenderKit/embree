@@ -64,6 +64,30 @@ namespace embree
     __forceinline avxi( StepTy   ) : m256(_mm256_set_epi32(7, 6, 5, 4, 3, 2, 1, 0)) {}
 
     ////////////////////////////////////////////////////////////////////////////////
+    /// Loads and Stores
+    ////////////////////////////////////////////////////////////////////////////////
+    
+    static __forceinline avxi load( const void* const a) { 
+      return _mm256_load_ps((float*)a); 
+    }
+
+    static __forceinline avxi loadu( const void* const a) { 
+      return _mm256_loadu_ps((float*)a); 
+    }
+    
+    static __forceinline void store(void* ptr, const avxi& f ) { 
+      return _mm256_store_ps((float*)ptr,_mm256_castsi256_ps(f));
+    }
+    
+    static __forceinline void storeu(void* ptr, const avxi& f ) { 
+      return _mm256_storeu_ps((float*)ptr,_mm256_castsi256_ps(f));
+    }
+    
+    static __forceinline void store( const avxb& mask, void* ptr, const avxi& f ) { 
+      return _mm256_maskstore_ps((float*)ptr,(__m256i)mask,_mm256_castsi256_ps(f));
+    }
+    
+    ////////////////////////////////////////////////////////////////////////////////
     /// Array Access
     ////////////////////////////////////////////////////////////////////////////////
 

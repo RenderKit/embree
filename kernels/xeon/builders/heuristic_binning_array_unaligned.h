@@ -73,8 +73,8 @@ namespace embree
           for (size_t i=pinfo.begin; i<pinfo.end; i++)
           {
             const Bezier1v& prim = prims[i];
-            const size_t geomID = prim.geomID<0>();
-            const size_t primID = prim.primID<0>();
+            const size_t geomID = prim.geomID();
+            const size_t primID = prim.primID();
             const BezierCurves* curves = scene->getBezierCurves(geomID);
             const int curve = curves->curve(primID);
             
@@ -162,17 +162,17 @@ namespace embree
           for (size_t i=pinfo.begin; i<pinfo.end; i++)  // FIXME: parallelize
           {
             const Bezier1v& prim = prims[i];
-            const size_t geomID = prim.geomID<0>();
-            const size_t primID = prim.primID<0>();
+            const size_t geomID = prim.geomID();
+            const size_t primID = prim.primID();
 
             N++;
             const BBox3fa bounds = prim.bounds(space);
             geomBounds.extend(bounds);
             centBounds.extend(center2(bounds));
 
-            const BezierCurves* curves = scene->getBezierCurves(prim.geomID<0>());
-            s0t0.extend(curves->bounds(space,prim.primID<0>(),0));
-            s1t1.extend(curves->bounds(space,prim.primID<0>(),1));
+            const BezierCurves* curves = scene->getBezierCurves(prim.geomID());
+            s0t0.extend(curves->bounds(space,prim.primID(),0));
+            s1t1.extend(curves->bounds(space,prim.primID(),1));
           }
           
           PrimInfoMB ret;

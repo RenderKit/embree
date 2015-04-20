@@ -54,7 +54,7 @@ namespace embree
     size_t childrenUnalignedNodesMB;     //!< Number of children of unaligned internal nodes.
     size_t numLeaves;                  //!< Number of leaf nodes.
     size_t numPrims;                   //!< Number of primitives.
+    size_t numPrimBlocks;              //!< Number of primitive blocks.
     size_t depth;                      //!< Depth of the tree.
-    size_t hash;
   };
 }

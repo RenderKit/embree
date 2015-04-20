@@ -169,7 +169,7 @@ namespace embree
       if (ENABLE_INTERSECTION_FILTER) 
 	{
 	  const Geometry* const gg = ((Scene*)geom)->get(curve_in.geomID);
-	  if (unlikely(gg->hasIntersectionFilter16())) 
+	  if (unlikely(gg->hasIntersectionFilter<mic_f>())) 
 	    {
 	      while(any(valid)) 
 		{
@@ -275,7 +275,7 @@ namespace embree
       if (ENABLE_INTERSECTION_FILTER) 
 	{
 	  const Geometry* const gg = ((Scene*)geom)->get(curve_in.geomID);
-	  if (likely(gg->hasOcclusionFilter16())) 
+	  if (likely(gg->hasOcclusionFilter<mic_f>())) 
 	    {
 	      while(any(valid)) 
 		{

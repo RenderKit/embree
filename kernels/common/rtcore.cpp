@@ -237,6 +237,7 @@ namespace embree
 #endif
 
 #if defined(TASKING_TBB)
+    _mm_setcsr(_mm_getcsr() | /*FTZ:*/ (1<<15) | /*DAZ:*/ (1<<6)); // FIXME: this affects the application!
     if (g_numThreads == 0) {
       g_tbb_threads_initialized = false;
       g_numThreads = tbb::task_scheduler_init::default_num_threads();

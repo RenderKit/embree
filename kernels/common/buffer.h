@@ -80,6 +80,7 @@ namespace embree
     }
 
   protected:
+    bool initialized;//!< true if buffer got initialized
     char* ptr;       //!< pointer to buffer data
     size_t bytes;    //!< size of buffer in bytes
     char* ptr_ofs;   //!< base pointer plus offset
@@ -151,7 +152,7 @@ namespace embree
 #if defined(__MIC__)
       return *(Vec3fa*)(ptr_ofs + i*stride);
 #else
-      return Vec3fa(ssef::loadu(ptr_ofs + i*stride));
+      return Vec3fa(ssef::loadu((float*)(ptr_ofs + i*stride)));
 #endif
 #else
       return *(Vec3fa*)(ptr_ofs + i*sizeof(Vec3fa));

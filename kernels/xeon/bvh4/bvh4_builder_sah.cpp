@@ -23,14 +23,12 @@
 
 #include "geometry/bezier1v.h"
 #include "geometry/bezier1i.h"
-#include "geometry/triangle1.h"
 #include "geometry/triangle4.h"
 #include "geometry/triangle8.h"
-#include "geometry/triangle1v.h"
 #include "geometry/triangle4v.h"
 #include "geometry/triangle4i.h"
 #include "geometry/triangle4v_mb.h"
-#include "geometry/virtual_accel.h"
+#include "geometry/object.h"
 
 #define ROTATE_TREE 0
 #define PROFILE 0
@@ -201,24 +199,20 @@ namespace embree
     Builder* BVH4Bezier1vSceneBuilderSAH   (void* bvh, Scene* scene, size_t mode) { return new BVH4BuilderSAH<BezierCurves,Bezier1v>((BVH4*)bvh,scene,1,1,1.0f,1,1,mode); }
     Builder* BVH4Bezier1iSceneBuilderSAH   (void* bvh, Scene* scene, size_t mode) { return new BVH4BuilderSAH<BezierCurves,Bezier1i>((BVH4*)bvh,scene,1,1,1.0f,1,1,mode); }
 
-    Builder* BVH4Triangle1SceneBuilderSAH  (void* bvh, Scene* scene, size_t mode) { return new BVH4BuilderSAH<TriangleMesh,Triangle1>((BVH4*)bvh,scene,1,1,1.0f,2,inf,mode); }
     Builder* BVH4Triangle4SceneBuilderSAH  (void* bvh, Scene* scene, size_t mode) { return new BVH4BuilderSAH<TriangleMesh,Triangle4>((BVH4*)bvh,scene,4,4,1.0f,4,inf,mode); }
 #if defined(__AVX__)
     Builder* BVH4Triangle8SceneBuilderSAH  (void* bvh, Scene* scene, size_t mode) { return new BVH4BuilderSAH<TriangleMesh,Triangle8>((BVH4*)bvh,scene,8,4,1.0f,8,inf,mode); }
 #endif
-    Builder* BVH4Triangle1vSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVH4BuilderSAH<TriangleMesh,Triangle1v>((BVH4*)bvh,scene,1,1,1.0f,2,inf,mode); }
     Builder* BVH4Triangle4vSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVH4BuilderSAH<TriangleMesh,Triangle4v>((BVH4*)bvh,scene,2,2,1.0f,4,inf,mode); }
     Builder* BVH4Triangle4iSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVH4BuilderSAH<TriangleMesh,Triangle4i>((BVH4*)bvh,scene,2,2,1.0f,4,inf,mode); }
     
-    Builder* BVH4VirtualSceneBuilderSAH    (void* bvh, Scene* scene, size_t mode) { return new BVH4BuilderSAH<AccelSet,AccelSetItem>((BVH4*)bvh,scene,1,1,1.0f,1,1,mode); }
+    Builder* BVH4VirtualSceneBuilderSAH    (void* bvh, Scene* scene, size_t mode) { return new BVH4BuilderSAH<AccelSet,Object>((BVH4*)bvh,scene,1,1,1.0f,1,1,mode); }
 
     /* entry functions for the mesh builders */
-    Builder* BVH4Triangle1MeshBuilderSAH  (void* bvh, TriangleMesh* mesh, size_t mode) { return new BVH4BuilderSAH<TriangleMesh,Triangle1>((BVH4*)bvh,mesh,1,1,1.0f,2,inf,mode); }
     Builder* BVH4Triangle4MeshBuilderSAH  (void* bvh, TriangleMesh* mesh, size_t mode) { return new BVH4BuilderSAH<TriangleMesh,Triangle4>((BVH4*)bvh,mesh,4,4,1.0f,4,inf,mode); }
 #if defined(__AVX__)
     Builder* BVH4Triangle8MeshBuilderSAH  (void* bvh, TriangleMesh* mesh, size_t mode) { return new BVH4BuilderSAH<TriangleMesh,Triangle8>((BVH4*)bvh,mesh,8,4,1.0f,8,inf,mode); }
 #endif
-    Builder* BVH4Triangle1vMeshBuilderSAH (void* bvh, TriangleMesh* mesh, size_t mode) { return new BVH4BuilderSAH<TriangleMesh,Triangle1v>((BVH4*)bvh,mesh,1,1,1.0f,2,inf,mode); }
     Builder* BVH4Triangle4vMeshBuilderSAH (void* bvh, TriangleMesh* mesh, size_t mode) { return new BVH4BuilderSAH<TriangleMesh,Triangle4v>((BVH4*)bvh,mesh,2,2,1.0f,4,inf,mode); }
     Builder* BVH4Triangle4iMeshBuilderSAH (void* bvh, TriangleMesh* mesh, size_t mode) { return new BVH4BuilderSAH<TriangleMesh,Triangle4i>((BVH4*)bvh,mesh,2,2,1.0f,4,inf,mode); }
 
@@ -446,12 +440,10 @@ namespace embree
     };
 
     /* entry functions for the scene builder */
-    Builder* BVH4Triangle1SceneBuilderSpatialSAH  (void* bvh, Scene* scene, size_t mode) { return new BVH4BuilderSpatialSAH<TriangleMesh,Triangle1>((BVH4*)bvh,scene,1,1,1.0f,2,inf,mode); }
     Builder* BVH4Triangle4SceneBuilderSpatialSAH  (void* bvh, Scene* scene, size_t mode) { return new BVH4BuilderSpatialSAH<TriangleMesh,Triangle4>((BVH4*)bvh,scene,4,4,1.0f,4,inf,mode); }
 #if defined(__AVX__)
     Builder* BVH4Triangle8SceneBuilderSpatialSAH  (void* bvh, Scene* scene, size_t mode) { return new BVH4BuilderSpatialSAH<TriangleMesh,Triangle8>((BVH4*)bvh,scene,8,4,1.0f,8,inf,mode); }
 #endif
-    Builder* BVH4Triangle1vSceneBuilderSpatialSAH (void* bvh, Scene* scene, size_t mode) { return new BVH4BuilderSpatialSAH<TriangleMesh,Triangle1v>((BVH4*)bvh,scene,1,1,1.0f,2,inf,mode); }
     Builder* BVH4Triangle4vSceneBuilderSpatialSAH (void* bvh, Scene* scene, size_t mode) { return new BVH4BuilderSpatialSAH<TriangleMesh,Triangle4v>((BVH4*)bvh,scene,2,2,1.0f,4,inf,mode); }
     Builder* BVH4Triangle4iSceneBuilderSpatialSAH (void* bvh, Scene* scene, size_t mode) { return new BVH4BuilderSpatialSAH<TriangleMesh,Triangle4i>((BVH4*)bvh,scene,2,2,1.0f,4,inf,mode); }
 

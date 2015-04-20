@@ -16,53 +16,18 @@
 
 #pragma once
 
+#include "common/default.h"
+
 namespace embree
 {
-  struct FractionalTessellationPattern
-  {
-    FractionalTessellationPattern (float tess, const bool sublevel = false)
-    : sublevel(sublevel)
-    {
-      rcp_tess = 1.0f/tess;
-      if (sublevel) tess *= 0.5f;
-      Nl = floor(tess);
-      Nh = Nl+1;
-      th = tess-float(Nh);
-      tl = float(Nl)-tess;
-      N = Nl+1+(Nl % 2);
-      if (sublevel) N *= 2;
-    }
-    
-    /* returns number of intervals (points-1) */
-    __forceinline int size() const {
-      return N;
-    }
-    
-    __forceinline float operator() (int i) const
-    {
-      float ofs = 0.0f;
-      if (sublevel && i>=N/2) {
-        ofs = 0.5f;
-        i-=N/2;
-      }
-      
-      const int Nl2 = Nl/2;
-      if (Nl % 2 == 0) {
-        const float f0 = float(i > Nl2) * th;
-        return min((float(i) + f0)*rcp_tess+ofs,1.0f);
-      } 
-      else {
-        const float f0 = (i > (Nl2+0)) * th;
-        const float f1 = (i > (Nl2+1)) * tl;
-        const float f2 = (i > (Nl2+2)) * th;
-        return min((float(i) + f0 + f1 + f2)*rcp_tess+ofs,1.0f);
-      }
-    }
-    
-  private:
-    bool sublevel;
-    float rcp_tess;
-    int   Nl, Nh, N;
-    float tl, th;
-  };
+#if defined(__SSE__)
+  extern ssef sse_coeff0[4];
+  extern ssef sse_coeff1[4];
+#endif
+
+#if defined(__AVX__)
+  extern avxf coeff0[4];
+  extern avxf coeff1[4];
+#endif
 }
+

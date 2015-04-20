@@ -14,22 +14,37 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "triangle4v.h"
-#include "common/scene.h"
+#pragma once
+
+#include "object.h"
+#include "common/ray.h"
 
 namespace embree
 {
-  Triangle4vType Triangle4vType::type;
-  TriangleMeshTriangle4v TriangleMeshTriangle4v::type;
-
-  Triangle4vType::Triangle4vType () 
-  : PrimitiveType("triangle4v",sizeof(Triangle4v),4,false,1) {} 
-  
-  size_t Triangle4vType::blocks(size_t x) const {
-    return (x+3)/4;
-  }
-  
-  size_t Triangle4vType::size(const char* This) const {
-    return ((Triangle4v*)This)->size();
+  namespace isa
+  {
+    struct ObjectIntersector1
+    {
+      typedef Object Primitive;
+      
+      struct Precalculations {
+        __forceinline Precalculations (const Ray& ray, const void *ptr) {}
+      };
+      
+      static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Primitive& prim, Scene* scene) 
+      {
+        AVX_ZERO_UPPER();
+        // FIXME: add ray mask test
+        prim.accel->intersect((RTCRay&)ray,prim.item);
+      }
+      
+      static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Primitive& prim, Scene* scene) 
+      {
+        AVX_ZERO_UPPER();
+        // FIXME: add ray mask test
+        prim.accel->occluded((RTCRay&)ray,prim.item);
+        return ray.geomID == 0;
+      }
+    };
   }
 }

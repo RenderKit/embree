@@ -14,20 +14,37 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "bezier1v.h"
+#pragma once
+
+#include "object.h"
+#include "common/ray4.h"
 
 namespace embree
 {
-  Bezier1vType Bezier1vType::type;
-
-  Bezier1vType::Bezier1vType () 
-    : PrimitiveType("bezier1v",sizeof(Bezier1v),1,true,1) {} 
-  
-  size_t Bezier1vType::blocks(size_t x) const {
-    return x;
-  }
-    
-  size_t Bezier1vType::size(const char* This) const {
-    return 1;
+  namespace isa
+  {
+    struct ObjectIntersector4
+    {
+      typedef Object Primitive;
+      
+      struct Precalculations {
+        __forceinline Precalculations (const sseb& valid, const Ray4& ray) {}
+      };
+      
+      static __forceinline void intersect(const sseb& valid_i, const Precalculations& pre, Ray4& ray, const Primitive& prim, Scene* scene) 
+      {
+        AVX_ZERO_UPPER();
+        // FIXME: add ray mask test
+        prim.accel->intersect4(&valid_i,(RTCRay4&)ray,prim.item);
+      }
+      
+      static __forceinline sseb occluded(const sseb& valid_i, const Precalculations& pre, const Ray4& ray, const Primitive& prim, Scene* scene) 
+      {
+        AVX_ZERO_UPPER();
+        // FIXME: add ray mask test
+        prim.accel->occluded4(&valid_i,(RTCRay4&)ray,prim.item);
+        return ray.geomID == 0;
+      }
+    };
   }
 }

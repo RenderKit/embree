@@ -16,19 +16,18 @@
 
 #include "bvh4_intersector4_chunk.h"
 
-#include "geometry/bezier1v_intersector4.h"
-#include "geometry/bezier1i_intersector4.h"
-#include "geometry/triangle1_intersector4_moeller.h"
-#include "geometry/triangle4_intersector4_moeller.h"
-#if defined (__AVX__)
-#include "geometry/triangle8_intersector4_moeller.h"
-#endif
-#include "geometry/triangle1v_intersector4_pluecker.h"
-#include "geometry/triangle4v_intersector4_pluecker.h"
-#include "geometry/triangle4i_intersector4.h"
-#include "geometry/virtual_accel_intersector4.h"
-#include "geometry/triangle1v_intersector4_moeller_mb.h"
-#include "geometry/triangle4v_intersector4_moeller_mb.h"
+#include "geometry/triangle4.h"
+#include "geometry/triangle4i.h"
+#include "geometry/triangle4v.h"
+#include "geometry/triangle4v_mb.h"
+#include "geometry/triangle8.h"
+#include "geometry/intersector_iterators.h"
+#include "geometry/bezier1v_intersector.h"
+#include "geometry/bezier1i_intersector.h"
+#include "geometry/triangle_intersector_moeller.h"
+#include "geometry/triangle_intersector_pluecker.h"
+#include "geometry/triangle4i_intersector_pluecker.h"
+#include "geometry/object_intersector4.h"
 
 namespace embree
 {
@@ -357,21 +356,18 @@ namespace embree
       AVX_ZERO_UPPER();
     }
     
-    DEFINE_INTERSECTOR4(BVH4Bezier1vIntersector4Chunk, BVH4Intersector4Chunk<0x1 COMMA false COMMA ArrayIntersector4<Bezier1vIntersector4<LeafMode> > >);
-    DEFINE_INTERSECTOR4(BVH4Bezier1iIntersector4Chunk, BVH4Intersector4Chunk<0x1 COMMA false COMMA ArrayIntersector4<Bezier1iIntersector4<LeafMode> > >);
-    DEFINE_INTERSECTOR4(BVH4Triangle1Intersector4ChunkMoeller, BVH4Intersector4Chunk<0x1 COMMA false COMMA ArrayIntersector4<Triangle1Intersector4MoellerTrumbore<LeafMode> > >);
-    DEFINE_INTERSECTOR4(BVH4Triangle4Intersector4ChunkMoeller, BVH4Intersector4Chunk<0x1 COMMA false COMMA ArrayIntersector4<Triangle4Intersector4MoellerTrumbore<LeafMode COMMA true> > >);
-    DEFINE_INTERSECTOR4(BVH4Triangle4Intersector4ChunkMoellerNoFilter, BVH4Intersector4Chunk<0x1 COMMA false COMMA ArrayIntersector4<Triangle4Intersector4MoellerTrumbore<LeafMode COMMA false> > >);
+    DEFINE_INTERSECTOR4(BVH4Bezier1vIntersector4Chunk, BVH4Intersector4Chunk<0x1 COMMA false COMMA ArrayIntersector4<Bezier1vIntersectorN<Ray4> > >);
+    DEFINE_INTERSECTOR4(BVH4Bezier1iIntersector4Chunk, BVH4Intersector4Chunk<0x1 COMMA false COMMA ArrayIntersector4<Bezier1iIntersectorN<Ray4> > >);
+    DEFINE_INTERSECTOR4(BVH4Triangle4Intersector4ChunkMoeller, BVH4Intersector4Chunk<0x1 COMMA false COMMA ArrayIntersector4<TriangleNIntersectorMMoellerTrumbore<Ray4 COMMA Triangle4 COMMA true> > >);
+    DEFINE_INTERSECTOR4(BVH4Triangle4Intersector4ChunkMoellerNoFilter, BVH4Intersector4Chunk<0x1 COMMA false COMMA ArrayIntersector4<TriangleNIntersectorMMoellerTrumbore<Ray4 COMMA Triangle4 COMMA false> > >);
 #if defined (__AVX__)
-    DEFINE_INTERSECTOR4(BVH4Triangle8Intersector4ChunkMoeller, BVH4Intersector4Chunk<0x1 COMMA false COMMA ArrayIntersector4<Triangle8Intersector4MoellerTrumbore<LeafMode COMMA true> > >);
-    DEFINE_INTERSECTOR4(BVH4Triangle8Intersector4ChunkMoellerNoFilter, BVH4Intersector4Chunk<0x1 COMMA false COMMA ArrayIntersector4<Triangle8Intersector4MoellerTrumbore<LeafMode COMMA false> > >);
+    DEFINE_INTERSECTOR4(BVH4Triangle8Intersector4ChunkMoeller, BVH4Intersector4Chunk<0x1 COMMA false COMMA ArrayIntersector4<TriangleNIntersectorMMoellerTrumbore<Ray4 COMMA Triangle8 COMMA true> > >);
+    DEFINE_INTERSECTOR4(BVH4Triangle8Intersector4ChunkMoellerNoFilter, BVH4Intersector4Chunk<0x1 COMMA false COMMA ArrayIntersector4<TriangleNIntersectorMMoellerTrumbore<Ray4 COMMA Triangle8 COMMA false> > >);
 #endif
-    DEFINE_INTERSECTOR4(BVH4Triangle1vIntersector4ChunkPluecker, BVH4Intersector4Chunk<0x1 COMMA true COMMA ArrayIntersector4<Triangle1vIntersector4Pluecker<LeafMode> > >);
-    DEFINE_INTERSECTOR4(BVH4Triangle4vIntersector4ChunkPluecker, BVH4Intersector4Chunk<0x1 COMMA true COMMA ArrayIntersector4<Triangle4vIntersector4Pluecker<LeafMode> > >);
-    DEFINE_INTERSECTOR4(BVH4Triangle4iIntersector4ChunkPluecker, BVH4Intersector4Chunk<0x1 COMMA true COMMA ArrayIntersector4<Triangle4iIntersector4Pluecker<LeafMode> > >);
-    DEFINE_INTERSECTOR4(BVH4VirtualIntersector4Chunk, BVH4Intersector4Chunk<0x1 COMMA false COMMA ArrayIntersector4<VirtualAccelIntersector4> >);
+    DEFINE_INTERSECTOR4(BVH4Triangle4vIntersector4ChunkPluecker, BVH4Intersector4Chunk<0x1 COMMA true COMMA ArrayIntersector4<TriangleNvIntersectorMPluecker<Ray4 COMMA Triangle4v COMMA true> > >);
+    DEFINE_INTERSECTOR4(BVH4Triangle4iIntersector4ChunkPluecker, BVH4Intersector4Chunk<0x1 COMMA true COMMA ArrayIntersector4<Triangle4iIntersectorMPluecker<Ray4 COMMA true> > >);
+    DEFINE_INTERSECTOR4(BVH4VirtualIntersector4Chunk, BVH4Intersector4Chunk<0x1 COMMA false COMMA ArrayIntersector4<ObjectIntersector4> >);
 
-    DEFINE_INTERSECTOR4(BVH4Triangle1vMBIntersector4ChunkMoeller, BVH4Intersector4Chunk<0x10 COMMA false COMMA ArrayIntersector4<Triangle1vIntersector4MoellerTrumboreMB<LeafMode> > >);
-    DEFINE_INTERSECTOR4(BVH4Triangle4vMBIntersector4ChunkMoeller, BVH4Intersector4Chunk<0x10 COMMA false COMMA ArrayIntersector4<Triangle4vMBIntersector4MoellerTrumbore<LeafMode COMMA true> > >);
+    DEFINE_INTERSECTOR4(BVH4Triangle4vMBIntersector4ChunkMoeller, BVH4Intersector4Chunk<0x10 COMMA false COMMA ArrayIntersector4<TriangleNMblurIntersectorMMoellerTrumbore<Ray4 COMMA Triangle4vMB COMMA true> > >);
   }
 }

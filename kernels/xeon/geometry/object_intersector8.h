@@ -16,31 +16,30 @@
 
 #pragma once
 
-#include "virtual_accel.h"
-#include "common/ray4.h"
+#include "object.h"
+#include "common/ray8.h"
 
 namespace embree
 {
   namespace isa
   {
-    struct VirtualAccelIntersector4
+    struct ObjectIntersector8
     {
-      typedef AccelSetItem Primitive;
+      typedef Object Primitive;
       
       struct Precalculations {
-        __forceinline Precalculations (const sseb& valid, const Ray4& ray) {}
+        __forceinline Precalculations (const avxb& valid, const Ray8& ray) {}
       };
       
-      static __forceinline void intersect(const sseb& valid_i, const Precalculations& pre, Ray4& ray, const Primitive& prim, Scene* scene) 
-      {
-        AVX_ZERO_UPPER();
-        prim.accel->intersect4(&valid_i,(RTCRay4&)ray,prim.item);
+      static __forceinline void intersect(const avxb& valid_i, const Precalculations& pre, Ray8& ray, const Primitive& prim, Scene* scene) {
+        // FIXME: add ray mask test
+        prim.accel->intersect8(&valid_i,(RTCRay8&)ray,prim.item);
       }
       
-      static __forceinline sseb occluded(const sseb& valid_i, const Precalculations& pre, const Ray4& ray, const Primitive& prim, Scene* scene) 
+      static __forceinline avxb occluded(const avxb& valid_i, const Precalculations& pre, const Ray8& ray, const Primitive& prim, Scene* scene) 
       {
-        AVX_ZERO_UPPER();
-        prim.accel->occluded4(&valid_i,(RTCRay4&)ray,prim.item);
+        // FIXME: add ray mask test
+        prim.accel->occluded8(&valid_i,(RTCRay8&)ray,prim.item);
         return ray.geomID == 0;
       }
     };

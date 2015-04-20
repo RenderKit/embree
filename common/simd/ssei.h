@@ -71,12 +71,60 @@ namespace embree
     }
 #endif
 
+    static  __forceinline ssei load( const void* const a ) { 
+      return _mm_load_si128((__m128i*)a); 
+    }
+    
+    static __forceinline ssei loadu( const void* const a ) { 
+      return _mm_loadu_si128((__m128i*)a); 
+    }
+    
+    static __forceinline void store(void* ptr, const ssei& v) {
+      _mm_store_si128((__m128i*)ptr,v);
+    }
+    
+    static __forceinline void storeu(void* ptr, const ssei& v) {
+      _mm_storeu_si128((__m128i*)ptr,v);
+    }
+    
+    static __forceinline void store( const sseb& mask, void* ptr, const ssei& i ) { 
+#if defined (__AVX__)
+      _mm_maskstore_ps((float*)ptr,(__m128i)mask,_mm_castsi128_ps(i));
+#else
+      *(ssei*)ptr = select(mask,i,*(ssei*)ptr);
+#endif
+    }
+    
+    static __forceinline ssei load_nt (void* ptr) { 
+#if defined(__SSE4_1__)
+      return _mm_stream_load_si128((__m128i*)ptr); 
+#else
+      return _mm_load_si128((__m128i*)ptr); 
+#endif
+    }
+    
+    static __forceinline void store_nt(void* ptr, const ssei& v) { 
+#if defined(__SSE4_1__)
+      _mm_stream_ps((float*)ptr,_mm_castsi128_ps(v)); 
+#else
+      _mm_store_si128((__m128i*)ptr,v);
+#endif
+    }
+
     ////////////////////////////////////////////////////////////////////////////////
     /// Array Access
     ////////////////////////////////////////////////////////////////////////////////
 
     __forceinline const int32& operator []( const size_t index ) const { assert(index < 4); return i[index]; }
     __forceinline       int32& operator []( const size_t index )       { assert(index < 4); return i[index]; }
+
+    friend __forceinline const ssei select( const sseb& m, const ssei& t, const ssei& f ) { 
+#if defined(__SSE4_1__)
+      return _mm_castps_si128(_mm_blendv_ps(_mm_castsi128_ps(f), _mm_castsi128_ps(t), m)); 
+#else
+      return _mm_or_si128(_mm_and_si128(m, t), _mm_andnot_si128(m, f)); 
+#endif
+    }
   };
 
   ////////////////////////////////////////////////////////////////////////////////
@@ -191,13 +239,7 @@ namespace embree
   __forceinline const sseb operator <=( const ssei& a, const int32& b ) { return a <= ssei(b); }
   __forceinline const sseb operator <=( const int32& a, const ssei& b ) { return ssei(a) <= b; }
 
-  __forceinline const ssei select( const sseb& m, const ssei& t, const ssei& f ) { 
-#if defined(__SSE4_1__)
-    return _mm_castps_si128(_mm_blendv_ps(_mm_castsi128_ps(f), _mm_castsi128_ps(t), m)); 
-#else
-    return _mm_or_si128(_mm_and_si128(m, t), _mm_andnot_si128(m, f)); 
-#endif
-  }
+ 
 
 #if defined(__SSE4_1__) 
 #if defined(__clang__) || defined(_MSC_VER) && !defined(__INTEL_COMPILER) // FIXME: can this get removed?

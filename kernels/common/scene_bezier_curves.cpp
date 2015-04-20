@@ -20,7 +20,7 @@
 namespace embree
 {
   BezierCurves::BezierCurves (Scene* parent, RTCGeometryFlags flags, size_t numPrimitives, size_t numVertices, size_t numTimeSteps) 
-    : Geometry(parent,BEZIER_CURVES,numPrimitives,numTimeSteps,flags), mask(-1)
+    : Geometry(parent,BEZIER_CURVES,numPrimitives,numTimeSteps,flags)
   {
     curves.init(numPrimitives,sizeof(int));
     for (size_t i=0; i<numTimeSteps; i++) {

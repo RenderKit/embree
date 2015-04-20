@@ -16,10 +16,12 @@
 
 #include "bvh4_intersector8_hybrid.h"
 #include "bvh4_intersector8_single.h"
-
-#include "geometry/triangle4_intersector8_moeller.h"
-#include "geometry/triangle8_intersector8_moeller.h"
-#include "geometry/triangle4v_intersector8_pluecker.h"
+#include "geometry/triangle4.h"
+#include "geometry/triangle4v.h"
+#include "geometry/triangle8.h"
+#include "geometry/intersector_iterators.h"
+#include "geometry/triangle_intersector_moeller.h"
+#include "geometry/triangle_intersector_pluecker.h"
 
 #define SWITCH_THRESHOLD 5
 #define SWITCH_DURING_DOWN_TRAVERSAL 1
@@ -434,10 +436,13 @@ namespace embree
       AVX_ZERO_UPPER();
     }
     
-    DEFINE_INTERSECTOR8(BVH4Triangle4Intersector8HybridMoeller, BVH4Intersector8Hybrid<0x1 COMMA false COMMA ArrayIntersector8_1<Triangle4Intersector8MoellerTrumbore<LeafMode COMMA true> > >);
-    DEFINE_INTERSECTOR8(BVH4Triangle4Intersector8HybridMoellerNoFilter, BVH4Intersector8Hybrid<0x1 COMMA false COMMA ArrayIntersector8_1<Triangle4Intersector8MoellerTrumbore<LeafMode COMMA false> > >);
-    DEFINE_INTERSECTOR8(BVH4Triangle8Intersector8HybridMoeller, BVH4Intersector8Hybrid<0x1 COMMA false COMMA ArrayIntersector8_1<Triangle8Intersector8MoellerTrumbore<LeafMode COMMA true> > >);
-    DEFINE_INTERSECTOR8(BVH4Triangle8Intersector8HybridMoellerNoFilter, BVH4Intersector8Hybrid<0x1 COMMA false COMMA ArrayIntersector8_1<Triangle8Intersector8MoellerTrumbore<LeafMode COMMA false> > >);
-    DEFINE_INTERSECTOR8(BVH4Triangle4vIntersector8HybridPluecker, BVH4Intersector8Hybrid<0x1 COMMA true COMMA ArrayIntersector8_1<Triangle4vIntersector8Pluecker<LeafMode> > >);
+    DEFINE_INTERSECTOR8(BVH4Triangle4Intersector8HybridMoeller, BVH4Intersector8Hybrid<0x1 COMMA false COMMA ArrayIntersector8_1<TriangleNIntersectorMMoellerTrumbore<Ray8 COMMA Triangle4 COMMA true> > >);
+    DEFINE_INTERSECTOR8(BVH4Triangle4Intersector8HybridMoellerNoFilter, BVH4Intersector8Hybrid<0x1 COMMA false COMMA ArrayIntersector8_1<TriangleNIntersectorMMoellerTrumbore<Ray8 COMMA Triangle4 COMMA false> > >);
+    DEFINE_INTERSECTOR8(BVH4Triangle8Intersector8HybridMoeller, BVH4Intersector8Hybrid<0x1 COMMA false COMMA ArrayIntersector8_1<TriangleNIntersectorMMoellerTrumbore<Ray8 COMMA Triangle8 COMMA true> > >);
+    DEFINE_INTERSECTOR8(BVH4Triangle8Intersector8HybridMoellerNoFilter, BVH4Intersector8Hybrid<0x1 COMMA false COMMA ArrayIntersector8_1<TriangleNIntersectorMMoellerTrumbore<Ray8 COMMA Triangle8 COMMA false> > >);
+    DEFINE_INTERSECTOR8(BVH4Triangle4vIntersector8HybridPluecker, BVH4Intersector8Hybrid<0x1 COMMA true COMMA ArrayIntersector8_1<TriangleNvIntersectorMPluecker<Ray8 COMMA Triangle4v COMMA true> > >);
+
+    // FIXME: add Triangle4vMB intersector
+    // FIXME: add Triangle4i intersector
   }
 }
