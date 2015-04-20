@@ -58,19 +58,6 @@ namespace embree
   }
 #endif
   
-  /********************** Bezier1iMB **************************/
-
-#if !defined(__AVX__)
-  Bezier1iMB::Type Bezier1iMB::type;
-
-  Bezier1iMB::Type::Type () 
-    : PrimitiveType("bezier1imb",sizeof(Bezier1iMB),1) {} 
-  
-  size_t Bezier1iMB::Type::size(const char* This) const {
-    return 1;
-  }
-#endif
-  
   /********************** Triangle4 **************************/
 
 #if !defined(__AVX__)

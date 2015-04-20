@@ -590,7 +590,7 @@ namespace embree
 
    Accel* BVH4::BVH4OBBBezier1iMB(Scene* scene, bool highQuality)
   {
-    BVH4* accel = new BVH4(Bezier1iMB::type,scene,LeafMode);
+    BVH4* accel = new BVH4(Bezier1i::type,scene,LeafMode);
     Accel::Intersectors intersectors = BVH4Bezier1iMBIntersectors_OBB(accel);
     Builder* builder = BVH4Bezier1iMBBuilder_OBB_New(accel,scene,MODE_HIGH_QUALITY); // FIXME: support high quality mode
     scene->needBezierVertices = true;

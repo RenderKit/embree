@@ -101,7 +101,7 @@ namespace embree
     
     struct Bezier1iIntersector1MB
     {
-      typedef Bezier1iMB Primitive;
+      typedef Bezier1i Primitive;
       typedef Bezier1Intersector1::Precalculations Precalculations;
       
       static __forceinline void intersect(Precalculations& pre, Ray& ray, const Primitive& curve, Scene* scene)
@@ -146,7 +146,7 @@ namespace embree
     template<typename RayN>
     struct Bezier1iIntersectorNMB
     {
-      typedef Bezier1iMB Primitive;
+      typedef Bezier1i Primitive;
       typedef typename Bezier1IntersectorN<RayN>::Precalculations Precalculations;
       
       static __forceinline void intersect(Precalculations& pre, RayN& ray, const size_t k, const Primitive& curve, Scene* scene)
