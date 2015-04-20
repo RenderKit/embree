@@ -44,13 +44,8 @@ namespace embree
     __forceinline Triangle4vMB (const sse3f& a0, const sse3f& a1, 
 				const sse3f& b0, const sse3f& b1,
 				const sse3f& c0, const sse3f& c1, 
-				const ssei& geomIDs, const ssei& primIDs, const ssei& mask, const bool last)
-      : v0(a0), v1(b0), v2(c0), d0(a1-a0), d1(b1-b0), d2(c1-c0), geomIDs(geomIDs), primIDs(primIDs | (last << 31))
-    {
-#if defined(RTCORE_RAY_MASK)
-      this->mask = mask;
-#endif
-    }
+				const ssei& geomIDs, const ssei& primIDs, const bool last)
+      : v0(a0), v1(b0), v2(c0), d0(a1-a0), d1(b1-b0), d2(c1-c0), geomIDs(geomIDs), primIDs(primIDs | (last << 31)) {}
 
     /*! Returns if the specified triangle is valid. */
     __forceinline bool valid(const size_t i) const { 
@@ -145,7 +140,7 @@ namespace embree
     /*! fill triangle from triangle list */
     __forceinline void fill(atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, Scene* scene, const bool list)
     {
-      ssei vgeomID = -1, vprimID = -1, vmask = -1;
+      ssei vgeomID = -1, vprimID = -1;
       sse3f va0 = zero, vb0 = zero, vc0 = zero;
       sse3f va1 = zero, vb1 = zero, vc1 = zero;
       
@@ -164,7 +159,6 @@ namespace embree
 	const Vec3fa& c1 = mesh->vertex(tri.v[2],1);
         vgeomID [i] = geomID;
         vprimID [i] = primID;
-        vmask   [i] = mesh->mask;
         va0.x[i] = a0.x; va0.y[i] = a0.y; va0.z[i] = a0.z;
 	va1.x[i] = a1.x; va1.y[i] = a1.y; va1.z[i] = a1.z;
 	vb0.x[i] = b0.x; vb0.y[i] = b0.y; vb0.z[i] = b0.z;
@@ -172,13 +166,13 @@ namespace embree
 	vc0.x[i] = c0.x; vc0.y[i] = c0.y; vc0.z[i] = c0.z;
 	vc1.x[i] = c1.x; vc1.y[i] = c1.y; vc1.z[i] = c1.z;
       }
-      new (this) Triangle4vMB(va0,va1,vb0,vb1,vc0,vc1,vgeomID,vprimID,vmask,list && !prims); // FIXME: store_nt
+      new (this) Triangle4vMB(va0,va1,vb0,vb1,vc0,vc1,vgeomID,vprimID,list && !prims); // FIXME: store_nt
     }
     
     /*! fill triangle from triangle list */
     __forceinline std::pair<BBox3fa,BBox3fa> fill(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, const bool list)
     {
-      ssei vgeomID = -1, vprimID = -1, vmask = -1;
+      ssei vgeomID = -1, vprimID = -1;
       sse3f va0 = zero, vb0 = zero, vc0 = zero;
       sse3f va1 = zero, vb1 = zero, vc1 = zero;
 
@@ -200,7 +194,6 @@ namespace embree
 	const Vec3fa& c1 = mesh->vertex(tri.v[2],1); bounds1.extend(c1);
         vgeomID [i] = geomID;
         vprimID [i] = primID;
-        vmask   [i] = mesh->mask;
         va0.x[i] = a0.x; va0.y[i] = a0.y; va0.z[i] = a0.z;
 	va1.x[i] = a1.x; va1.y[i] = a1.y; va1.z[i] = a1.z;
 	vb0.x[i] = b0.x; vb0.y[i] = b0.y; vb0.z[i] = b0.z;
@@ -208,7 +201,7 @@ namespace embree
 	vc0.x[i] = c0.x; vc0.y[i] = c0.y; vc0.z[i] = c0.z;
 	vc1.x[i] = c1.x; vc1.y[i] = c1.y; vc1.z[i] = c1.z;
       }
-      new (this) Triangle4vMB(va0,va1,vb0,vb1,vc0,vc1,vgeomID,vprimID,vmask,list && begin>=end);
+      new (this) Triangle4vMB(va0,va1,vb0,vb1,vc0,vc1,vgeomID,vprimID,list && begin>=end);
       return std::make_pair(bounds0,bounds1);
     }
    
@@ -221,8 +214,5 @@ namespace embree
     sse3f d2;      //!< difference vector between time steps t0 and t1 for third vertex
     ssei geomIDs;  //!< user geometry ID
     ssei primIDs;  //!< primitive ID
-#if defined(RTCORE_RAY_MASK)
-    ssei mask;     //!< geometry mask
-#endif
   };
 }

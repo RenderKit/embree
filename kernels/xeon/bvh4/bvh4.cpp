@@ -693,7 +693,7 @@ namespace embree
   void createTriangleMeshTriangle4(TriangleMesh* mesh, AccelData*& accel, Builder*& builder)
   {
     if (mesh->numTimeSteps != 1) THROW_RUNTIME_ERROR("internal error");
-    accel = new BVH4(TriangleMeshTriangle4::type,mesh->parent,LeafMode);
+    accel = new BVH4(Triangle4::type,mesh->parent,LeafMode);
     switch (mesh->flags) {
     case RTC_GEOMETRY_STATIC:     builder = BVH4Triangle4MeshBuilderSAH(accel,mesh,LeafMode); break;
     case RTC_GEOMETRY_DEFORMABLE: builder = BVH4Triangle4MeshRefitSAH(accel,mesh,LeafMode); break;
@@ -706,7 +706,7 @@ namespace embree
   void createTriangleMeshTriangle8(TriangleMesh* mesh, AccelData*& accel, Builder*& builder)
   {
     if (mesh->numTimeSteps != 1) THROW_RUNTIME_ERROR("internal error");
-    accel = new BVH4(TriangleMeshTriangle8::type,mesh->parent,LeafMode);
+    accel = new BVH4(Triangle8::type,mesh->parent,LeafMode);
     switch (mesh->flags) {
     case RTC_GEOMETRY_STATIC:     builder = BVH4Triangle8MeshBuilderSAH(accel,mesh,LeafMode); break;
     case RTC_GEOMETRY_DEFORMABLE: builder = BVH4Triangle8MeshRefitSAH(accel,mesh,LeafMode); break;
@@ -719,7 +719,7 @@ namespace embree
   void createTriangleMeshTriangle4v(TriangleMesh* mesh, AccelData*& accel, Builder*& builder)
   {
     if (mesh->numTimeSteps != 1) THROW_RUNTIME_ERROR("internal error");
-    accel = new BVH4(TriangleMeshTriangle4v::type,mesh->parent,LeafMode);
+    accel = new BVH4(Triangle4v::type,mesh->parent,LeafMode);
     switch (mesh->flags) {
     case RTC_GEOMETRY_STATIC:     builder = BVH4Triangle4vMeshBuilderSAH(accel,mesh,LeafMode); break;
     case RTC_GEOMETRY_DEFORMABLE: builder = BVH4Triangle4vMeshRefitSAH(accel,mesh,LeafMode); break;
@@ -731,7 +731,7 @@ namespace embree
   void createTriangleMeshTriangle4i(TriangleMesh* mesh, AccelData*& accel, Builder*& builder)
   {
     if (mesh->numTimeSteps != 1) THROW_RUNTIME_ERROR("internal error");
-    accel = new BVH4(TriangleMeshTriangle4i::type,mesh->parent,LeafMode);
+    accel = new BVH4(Triangle4i::type,mesh->parent,LeafMode);
     switch (mesh->flags) {
     case RTC_GEOMETRY_STATIC:     builder = BVH4Triangle4iMeshBuilderSAH(accel,mesh,LeafMode); break;
     case RTC_GEOMETRY_DEFORMABLE: builder = BVH4Triangle4iMeshRefitSAH(accel,mesh,LeafMode); break;
@@ -742,7 +742,7 @@ namespace embree
 
   Accel* BVH4::BVH4BVH4Triangle4ObjectSplit(Scene* scene)
   {
-    BVH4* accel = new BVH4(TriangleMeshTriangle4::type,scene,LeafMode);
+    BVH4* accel = new BVH4(Triangle4::type,scene,LeafMode);
     Accel::Intersectors intersectors = BVH4Triangle4IntersectorsHybrid(accel);
     Builder* builder = BVH4BuilderTwoLevelSAH(accel,scene,&createTriangleMeshTriangle4);
     return new AccelInstance(accel,builder,intersectors);
@@ -751,7 +751,7 @@ namespace embree
 #if defined (__TARGET_AVX__)
   Accel* BVH4::BVH4BVH4Triangle8ObjectSplit(Scene* scene)
   {
-    BVH4* accel = new BVH4(TriangleMeshTriangle8::type,scene,LeafMode);
+    BVH4* accel = new BVH4(Triangle8::type,scene,LeafMode);
     Accel::Intersectors intersectors = BVH4Triangle8IntersectorsHybrid(accel);
     Builder* builder = BVH4BuilderTwoLevelSAH(accel,scene,&createTriangleMeshTriangle8);
     return new AccelInstance(accel,builder,intersectors);
@@ -760,7 +760,7 @@ namespace embree
 
   Accel* BVH4::BVH4BVH4Triangle4vObjectSplit(Scene* scene)
   {
-    BVH4* accel = new BVH4(TriangleMeshTriangle4v::type,scene,LeafMode);
+    BVH4* accel = new BVH4(Triangle4v::type,scene,LeafMode);
     Accel::Intersectors intersectors = BVH4Triangle4vIntersectorsHybrid(accel);
     Builder* builder = BVH4BuilderTwoLevelSAH(accel,scene,&createTriangleMeshTriangle4v);
     return new AccelInstance(accel,builder,intersectors);
@@ -768,7 +768,7 @@ namespace embree
 
   Accel* BVH4::BVH4BVH4Triangle4iObjectSplit(Scene* scene)
   {
-    BVH4* accel = new BVH4(TriangleMeshTriangle4i::type,scene,LeafMode);
+    BVH4* accel = new BVH4(Triangle4i::type,scene,LeafMode);
     Accel::Intersectors intersectors = BVH4Triangle4iIntersectors(accel);
     Builder* builder = BVH4BuilderTwoLevelSAH(accel,scene,&createTriangleMeshTriangle4i);
     return new AccelInstance(accel,builder,intersectors);
@@ -907,7 +907,7 @@ namespace embree
 
   Accel* BVH4::BVH4Triangle4ObjectSplit(TriangleMesh* mesh)
   {
-    BVH4* accel = new BVH4(TriangleMeshTriangle4::type,mesh->parent,LeafMode);
+    BVH4* accel = new BVH4(Triangle4::type,mesh->parent,LeafMode);
     Builder* builder = BVH4Triangle4MeshBuilderSAH(accel,mesh,LeafMode);
     Accel::Intersectors intersectors = BVH4Triangle4IntersectorsHybrid(accel);
     return new AccelInstance(accel,builder,intersectors);
@@ -915,7 +915,7 @@ namespace embree
 
   Accel* BVH4::BVH4Triangle4vObjectSplit(TriangleMesh* mesh)
   {
-    BVH4* accel = new BVH4(TriangleMeshTriangle4v::type,mesh->parent,LeafMode);
+    BVH4* accel = new BVH4(Triangle4v::type,mesh->parent,LeafMode);
     Builder* builder = BVH4Triangle4vMeshBuilderSAH(accel,mesh,LeafMode);
     Accel::Intersectors intersectors = BVH4Triangle4vIntersectorsHybrid(accel);
     return new AccelInstance(accel,builder,intersectors);
@@ -923,7 +923,7 @@ namespace embree
 
   Accel* BVH4::BVH4Triangle4Refit(TriangleMesh* mesh)
   {
-    BVH4* accel = new BVH4(TriangleMeshTriangle4::type,mesh->parent,LeafMode);
+    BVH4* accel = new BVH4(Triangle4::type,mesh->parent,LeafMode);
     Builder* builder = BVH4Triangle4MeshRefitSAH(accel,mesh,LeafMode);
     Accel::Intersectors intersectors = BVH4Triangle4IntersectorsHybrid(accel);
     return new AccelInstance(accel,builder,intersectors);

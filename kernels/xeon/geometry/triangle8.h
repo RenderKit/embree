@@ -234,9 +234,4 @@ namespace embree
     avxi primIDs;   //!< primitive ID
 #endif
   };
-
-  struct TriangleMeshTriangle8 : public Triangle8::Type
-  {
-    static TriangleMeshTriangle8 type;
-  };
 }

@@ -210,11 +210,4 @@ namespace embree
     ssei geomIDs;   //!< user geometry ID
     ssei primIDs;   //!< primitive ID
   };
-
-  
-
-  struct TriangleMeshTriangle4v : public Triangle4v::Type
-  {
-    static TriangleMeshTriangle4v type;
-  };
 }

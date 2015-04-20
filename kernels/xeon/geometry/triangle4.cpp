@@ -22,7 +22,6 @@
 namespace embree
 {
   Triangle4::Type Triangle4::type;
-  TriangleMeshTriangle4 TriangleMeshTriangle4::type; // FIXME: remove
 
   Triangle4::Type::Type () 
     : PrimitiveType("triangle4",sizeof(Triangle4),4) {} 
@@ -33,7 +32,6 @@ namespace embree
 
 #if defined(__TARGET_AVX__)
   Triangle8::Type Triangle8::type;
-  TriangleMeshTriangle8 TriangleMeshTriangle8::type; // FIXME: remove
 
   Triangle8::Type::Type () 
     : PrimitiveType("triangle8",2*sizeof(Triangle4),8) {}

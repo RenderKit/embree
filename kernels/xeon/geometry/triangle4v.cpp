@@ -19,7 +19,6 @@
 namespace embree
 {
   Triangle4v::Type Triangle4v::type;
-  TriangleMeshTriangle4v TriangleMeshTriangle4v::type; // FIXME: remove
 
   Triangle4v::Type::Type () 
   : PrimitiveType("triangle4v",sizeof(Triangle4v),4) {} 
