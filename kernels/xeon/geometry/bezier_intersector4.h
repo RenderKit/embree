@@ -124,7 +124,7 @@ namespace embree
         /* intersection filter test */
 #if defined(RTCORE_INTERSECTION_FILTER)
         const Geometry* geometry = scene->get(geomID);
-        if (!likely(geometry->hasIntersectionFilter4())) 
+        if (!likely(geometry->hasIntersectionFilter<ssef>())) 
         {
 #endif
           /* update hit information */
@@ -234,7 +234,7 @@ namespace embree
 #if defined(RTCORE_INTERSECTION_FILTER)
         size_t i = select_min(valid,t);
         const Geometry* geometry = scene->get(geomID);
-        if (likely(!geometry->hasOcclusionFilter4())) return true;
+        if (likely(!geometry->hasOcclusionFilter<ssef>())) return true;
         
         while (true) 
         {

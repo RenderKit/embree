@@ -226,14 +226,14 @@ namespace embree
 
   public:
     __forceinline bool hasIntersectionFilter1() const { return intersectionFilter1 != nullptr; }
-    __forceinline bool hasIntersectionFilter4() const { return intersectionFilter4 != nullptr; }
-    __forceinline bool hasIntersectionFilter8() const { return intersectionFilter8 != nullptr; }
-    __forceinline bool hasIntersectionFilter16() const { return intersectionFilter16 != nullptr; }
+    //__forceinline bool hasIntersectionFilter4() const { return intersectionFilter4 != nullptr; }
+    //__forceinline bool hasIntersectionFilter8() const { return intersectionFilter8 != nullptr; }
+    //__forceinline bool hasIntersectionFilter16() const { return intersectionFilter16 != nullptr; }
 
     __forceinline bool hasOcclusionFilter1() const { return occlusionFilter1 != nullptr; }
-    __forceinline bool hasOcclusionFilter4() const { return occlusionFilter4 != nullptr; }
-    __forceinline bool hasOcclusionFilter8() const { return occlusionFilter8 != nullptr; }
-    __forceinline bool hasOcclusionFilter16() const { return occlusionFilter16 != nullptr; }
+    //__forceinline bool hasOcclusionFilter4() const { return occlusionFilter4 != nullptr; }
+    //__forceinline bool hasOcclusionFilter8() const { return occlusionFilter8 != nullptr; }
+    //__forceinline bool hasOcclusionFilter16() const { return occlusionFilter16 != nullptr; }
 
     template<typename simd> __forceinline bool hasIntersectionFilter() const { return false; } // FIXME: should be deleted!?
     template<typename simd> __forceinline bool hasOcclusionFilter() const { return false; } // FIXME: should be deleted!?
@@ -282,5 +282,10 @@ namespace embree
 #if defined(__AVX__)
   template<> __forceinline bool Geometry::hasIntersectionFilter<avxf>() const { return intersectionFilter8 != nullptr; }
   template<> __forceinline bool Geometry::hasOcclusionFilter   <avxf>() const { return occlusionFilter8    != nullptr; }
+#endif
+
+#if defined(__MIC__)
+  template<> __forceinline bool Geometry::hasIntersectionFilter<mic_f>() const { return intersectionFilter16 != nullptr; }
+  template<> __forceinline bool Geometry::hasOcclusionFilter   <mic_f>() const { return occlusionFilter16    != nullptr; }
 #endif
 }
