@@ -306,7 +306,7 @@ namespace embree
           v2[i] = 0;
         }
         
-        new (accel) Triangle4i(v0,v1,v2,vgeomID,vprimID,false);
+        new (accel) Triangle4i(v0,v1,v2,vgeomID,vprimID);
         box_o = BBox3fa((Vec3fa)lower,(Vec3fa)upper);
 #if ROTATE_TREE
         box_o.lower.a = current.size();
