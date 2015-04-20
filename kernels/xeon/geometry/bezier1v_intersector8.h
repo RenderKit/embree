@@ -24,37 +24,36 @@ namespace embree
   namespace isa
   {
     /*! Intersector for a single ray from a ray packet with a bezier curve. */
-    template<bool list>
-      struct Bezier1vIntersector8
+    struct Bezier1vIntersector8
+    {
+      typedef Bezier1v Primitive;
+      typedef typename Bezier1IntersectorN<Ray8>::Precalculations Precalculations;
+      
+      static __forceinline void intersect(Precalculations& pre, Ray8& ray, const size_t k, const Primitive& curve, Scene* scene) {
+        Bezier1IntersectorN<Ray8>::intersect(pre,ray,k,curve.p0,curve.p1,curve.p2,curve.p3,curve.geomID(),curve.primID(),scene);
+      }
+      
+      static __forceinline void intersect(const avxb& valid_i, Precalculations& pre, Ray8& ray, const Primitive& curve, Scene* scene)
       {
-        typedef Bezier1v Primitive;
-        typedef typename Bezier1IntersectorN<Ray8>::Precalculations Precalculations;
-        
-        static __forceinline void intersect(Precalculations& pre, Ray8& ray, const size_t k, const Primitive& curve, Scene* scene) {
-          Bezier1IntersectorN<Ray8>::intersect(pre,ray,k,curve.p0,curve.p1,curve.p2,curve.p3,curve.geomID<list>(),curve.primID<list>(),scene);
+        int mask = movemask(valid_i);
+        while (mask) intersect(pre,ray,__bscf(mask),curve,scene);
+      }
+      
+      static __forceinline bool occluded(Precalculations& pre, Ray8& ray, const size_t k, const Primitive& curve, Scene* scene) {
+        return Bezier1IntersectorN<Ray8>::occluded(pre,ray,k,curve.p0,curve.p1,curve.p2,curve.p3,curve.geomID(),curve.primID(),scene);
+      }
+      
+      static __forceinline avxb occluded(const avxb& valid_i, Precalculations& pre, Ray8& ray, const Primitive& curve, Scene* scene)
+      {
+        avxb valid_o = false;
+        int mask = movemask(valid_i);
+        while (mask) {
+          size_t k = __bscf(mask);
+          if (occluded(pre,ray,k,curve,scene))
+            valid_o[k] = -1;
         }
-        
-        static __forceinline void intersect(const avxb& valid_i, Precalculations& pre, Ray8& ray, const Primitive& curve, Scene* scene)
-        {
-          int mask = movemask(valid_i);
-          while (mask) intersect(pre,ray,__bscf(mask),curve,scene);
-        }
-        
-        static __forceinline bool occluded(Precalculations& pre, Ray8& ray, const size_t k, const Primitive& curve, Scene* scene) {
-          return Bezier1IntersectorN<Ray8>::occluded(pre,ray,k,curve.p0,curve.p1,curve.p2,curve.p3,curve.geomID<list>(),curve.primID<list>(),scene);
-        }
-        
-        static __forceinline avxb occluded(const avxb& valid_i, Precalculations& pre, Ray8& ray, const Primitive& curve, Scene* scene)
-        {
-          avxb valid_o = false;
-          int mask = movemask(valid_i);
-          while (mask) {
-            size_t k = __bscf(mask);
-            if (occluded(pre,ray,k,curve,scene))
-              valid_o[k] = -1;
-          }
-          return valid_o;
-        }
-      };
+        return valid_o;
+      }
+    };
   }
 }

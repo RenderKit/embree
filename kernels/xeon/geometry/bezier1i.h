@@ -52,12 +52,12 @@ namespace embree
     /*! returns required number of primitive blocks for N primitives */
     static __forceinline size_t blocks(size_t N) { return N; }
 
-    template<bool list>
+    template<bool list = false>
     __forceinline unsigned int primID() const { 
       if (list) return prim & 0x7FFFFFFF; 
       else      return prim;
     }
-    template<bool list>
+    template<bool list = false>
     __forceinline unsigned int geomID() const { 
       return geom; 
     }
@@ -121,12 +121,12 @@ namespace embree
     __forceinline Bezier1iMB (const unsigned vertexID, const unsigned int geomID, const unsigned int primID, const bool last)
       : vertexID(vertexID), geom(geomID), prim(primID | (last << 31)) {}
 
-    template<bool list>
+    template<bool list = false>
     __forceinline unsigned int primID() const { 
       if (list) return prim & 0x7FFFFFF; 
       else      return prim;
     }
-    template<bool list>
+    template<bool list = false>
     __forceinline unsigned int geomID() const { 
       return geom; 
     }

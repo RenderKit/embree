@@ -149,12 +149,12 @@ namespace embree
     static __forceinline size_t blocks(size_t N) { return N; }
 
     /*! access hidden members */
-    template<bool list>
+    template<bool list = false>
     __forceinline unsigned int primID() const { 
       if (list) return prim & 0x7FFFFFFF; 
       else      return prim;
     }
-    template<bool list>
+    template<bool list = false>
     __forceinline unsigned int geomID() const { 
       return geom; 
     }

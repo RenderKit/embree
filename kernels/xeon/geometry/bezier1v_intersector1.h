@@ -24,19 +24,18 @@ namespace embree
   namespace isa
   {
     /*! Intersector for a single ray with a bezier curve. */
-    template<bool list>
-      struct Bezier1vIntersector1
-      {
-        typedef Bezier1v Primitive;
-        typedef Bezier1Intersector1::Precalculations Precalculations;
-        
-        static __forceinline void intersect(Precalculations& pre, Ray& ray, const Primitive& curve, Scene* scene) {
-          Bezier1Intersector1::intersect(ray,pre,curve.p0,curve.p1,curve.p2,curve.p3,curve.geomID<list>(),curve.primID<list>(),scene);
-        }
-        
-        static __forceinline bool occluded(Precalculations& pre, Ray& ray, const Primitive& curve, Scene* scene) {
-          return Bezier1Intersector1::occluded(ray,pre,curve.p0,curve.p1,curve.p2,curve.p3,curve.geomID<list>(),curve.primID<list>(),scene);
-        }
-      };
+    struct Bezier1vIntersector1
+    {
+      typedef Bezier1v Primitive;
+      typedef Bezier1Intersector1::Precalculations Precalculations;
+      
+      static __forceinline void intersect(Precalculations& pre, Ray& ray, const Primitive& curve, Scene* scene) {
+        Bezier1Intersector1::intersect(ray,pre,curve.p0,curve.p1,curve.p2,curve.p3,curve.geomID(),curve.primID(),scene);
+      }
+      
+      static __forceinline bool occluded(Precalculations& pre, Ray& ray, const Primitive& curve, Scene* scene) {
+        return Bezier1Intersector1::occluded(ray,pre,curve.p0,curve.p1,curve.p2,curve.p3,curve.geomID(),curve.primID(),scene);
+      }
+    };
   }
 }
