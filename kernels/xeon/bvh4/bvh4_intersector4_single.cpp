@@ -17,8 +17,8 @@
 #include "bvh4_intersector4_single.h"
 #include "bvh4_intersector1.h"
 
-#include "geometry/bezier1v_intersector4.h"
-#include "geometry/bezier1i_intersector4.h"
+#include "geometry/bezier1v_intersector.h"
+#include "geometry/bezier1i_intersector.h"
 #include "geometry/subdivpatch1_intersector1.h"
 #include "geometry/subdivpatch1cached_intersector1.h"
 #include "geometry/grid_intersector1.h"
@@ -114,9 +114,9 @@ namespace embree
       AVX_ZERO_UPPER();
     }
 
-    DEFINE_INTERSECTOR4(BVH4Bezier1vIntersector4Single_OBB, BVH4Intersector4Single<0x101 COMMA false COMMA ArrayIntersector4_1<Bezier1vIntersector4> >);
-    DEFINE_INTERSECTOR4(BVH4Bezier1iIntersector4Single_OBB, BVH4Intersector4Single<0x101 COMMA false COMMA ArrayIntersector4_1<Bezier1iIntersector4> >);
-    DEFINE_INTERSECTOR4(BVH4Bezier1iMBIntersector4Single_OBB,BVH4Intersector4Single<0x1010 COMMA false COMMA ArrayIntersector4_1<Bezier1iIntersector4MB> >);
+    DEFINE_INTERSECTOR4(BVH4Bezier1vIntersector4Single_OBB, BVH4Intersector4Single<0x101 COMMA false COMMA ArrayIntersector4_1<Bezier1vIntersectorN<Ray4> > >);
+    DEFINE_INTERSECTOR4(BVH4Bezier1iIntersector4Single_OBB, BVH4Intersector4Single<0x101 COMMA false COMMA ArrayIntersector4_1<Bezier1iIntersectorN<Ray4> > >);
+    DEFINE_INTERSECTOR4(BVH4Bezier1iMBIntersector4Single_OBB,BVH4Intersector4Single<0x1010 COMMA false COMMA ArrayIntersector4_1<Bezier1iIntersectorNMB<Ray4> > >);
 
     DEFINE_INTERSECTOR4(BVH4Subdivpatch1Intersector4, BVH4Intersector4FromIntersector1<BVH4Intersector1<0x1 COMMA true COMMA ArrayIntersector1<SubdivPatch1Intersector1 > > >);
     DEFINE_INTERSECTOR4(BVH4Subdivpatch1CachedIntersector4,BVH4Intersector4FromIntersector1<BVH4Intersector1<0x1 COMMA true COMMA SubdivPatch1CachedIntersector1> >);
