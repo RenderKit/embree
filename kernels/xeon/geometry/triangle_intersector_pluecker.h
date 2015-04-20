@@ -30,7 +30,7 @@ namespace embree
   namespace isa
   {
     /*! Intersect a ray with the 4 triangles and updates the hit. */
-    template<typename tsimdb, typename tsimdf, typename tsimdi>
+    template<bool enableIntersectionFilter, typename tsimdb, typename tsimdf, typename tsimdi>
     __forceinline void intersect(Ray& ray, 
                                  const Vec3<tsimdf>& tri_v0, const Vec3<tsimdf>& tri_v1, const Vec3<tsimdf>& tri_v2,  
                                  const tsimdi& tri_geomIDs, const tsimdi& tri_primIDs, Scene* scene)
@@ -104,11 +104,13 @@ namespace embree
             
 #if defined(RTCORE_INTERSECTION_FILTER) 
             /* call intersection filter function */
-            if (unlikely(geometry->hasIntersectionFilter1())) {
-              Vec3fa Ng = Vec3fa(tri_Ng.x[i],tri_Ng.y[i],tri_Ng.z[i]);
-              if (runIntersectionFilter1(geometry,ray,u[i],v[i],t[i],Ng,geomID,tri_primIDs[i])) return;
-              valid[i] = 0;
-              continue;
+            if (enableIntersectionFilter) {
+              if (unlikely(geometry->hasIntersectionFilter1())) {
+                Vec3fa Ng = Vec3fa(tri_Ng.x[i],tri_Ng.y[i],tri_Ng.z[i]);
+                if (runIntersectionFilter1(geometry,ray,u[i],v[i],t[i],Ng,geomID,tri_primIDs[i])) return;
+                valid[i] = 0;
+                continue;
+              }
             }
 #endif
             break;
@@ -127,7 +129,7 @@ namespace embree
         }
         
         /*! Test if the ray is occluded by one of the triangles. */
-    template<typename tsimdb, typename tsimdf, typename tsimdi>
+    template<bool enableIntersectionFilter, typename tsimdb, typename tsimdf, typename tsimdi>
       __forceinline bool occluded(Ray& ray, 
                                  const Vec3<tsimdf>& tri_v0, const Vec3<tsimdf>& tri_v1, const Vec3<tsimdf>& tri_v2, 
                                   const tsimdi& tri_geomIDs, const tsimdi& tri_primIDs,  Scene* scene)
@@ -195,17 +197,19 @@ namespace embree
         
 #if defined(RTCORE_INTERSECTION_FILTER)
         /* if we have no filter then the test passed */
-        if (unlikely(geometry->hasOcclusionFilter1())) 
-        {
-          /* calculate hit information */
-          const tsimdf rcpAbsDen = rcp(absDen);
-          const tsimdf u = U * rcpAbsDen;
-          const tsimdf v = V * rcpAbsDen;
-          const tsimdf t = T * rcpAbsDen;
-          const Vec3fa Ng = Vec3fa(tri_Ng.x[i],tri_Ng.y[i],tri_Ng.z[i]);
-          if (runOcclusionFilter1(geometry,ray,u[i],v[i],t[i],Ng,geomID,tri_primIDs[i])) return true;
-          m=__btc(m,i);
-          continue;
+        if (enableIntersectionFilter) {
+          if (unlikely(geometry->hasOcclusionFilter1())) 
+          {
+            /* calculate hit information */
+            const tsimdf rcpAbsDen = rcp(absDen);
+            const tsimdf u = U * rcpAbsDen;
+            const tsimdf v = V * rcpAbsDen;
+            const tsimdf t = T * rcpAbsDen;
+            const Vec3fa Ng = Vec3fa(tri_Ng.x[i],tri_Ng.y[i],tri_Ng.z[i]);
+            if (runOcclusionFilter1(geometry,ray,u[i],v[i],t[i],Ng,geomID,tri_primIDs[i])) return true;
+            m=__btc(m,i);
+            continue;
+          }
         }
 #endif
         break;
@@ -216,7 +220,7 @@ namespace embree
 
 
     /*! Intersects a M rays with N triangles. */
-    template<typename tsimdf, typename tsimdi, typename RayM>
+    template<bool enableIntersectionFilter, typename tsimdf, typename tsimdi, typename RayM>
       __forceinline void intersect(const typename RayM::simdb& valid0, RayM& ray, 
                                    const Vec3<tsimdf>& tri_v0, const Vec3<tsimdf>& tri_v1, const Vec3<tsimdf>& tri_v2, 
                                    const tsimdi& tri_geomIDs, const tsimdi& tri_primIDs, const size_t i, Scene* scene)
@@ -289,10 +293,12 @@ namespace embree
 
             /* intersection filter test */
 #if defined(RTCORE_INTERSECTION_FILTER)
+            if (enableIntersectionFilter) {
               if (unlikely(geometry->hasIntersectionFilter<rsimdf>())) {
-          runIntersectionFilter(valid,geometry,ray,u,v,t,Ng,geomID,primID);
-          return;
+                runIntersectionFilter(valid,geometry,ray,u,v,t,Ng,geomID,primID);
+                return;
               }
+            }
 #endif
             
             /* update hit information */
@@ -308,7 +314,7 @@ namespace embree
 
         
         /*! Test for M rays if they are occluded by any of the N triangle. */
-  template<typename tsimdf, typename tsimdi, typename RayM>
+    template<bool enableIntersectionFilter, typename tsimdf, typename tsimdi, typename RayM>
     __forceinline void occluded(typename RayM::simdb& valid0, RayM& ray, 
                                   const Vec3<tsimdf>& tri_v0, const Vec3<tsimdf>& tri_v1, const Vec3<tsimdf>& tri_v2, 
                                   const tsimdi& tri_geomIDs, const tsimdi& tri_primIDs, const size_t i, Scene* scene)
@@ -373,14 +379,16 @@ namespace embree
             
             /* occlusion filter test */
 #if defined(RTCORE_INTERSECTION_FILTER)
-            if (unlikely(geometry->hasOcclusionFilter<rsimdf>()))
-            {
-              const rsimdf rcpAbsDen = rcp(absDen);
-              const rsimdf u = U / absDen;
-              const rsimdf v = V / absDen;
-              const rsimdf t = T / absDen;
-              const int primID = tri_primIDs[i];
-              valid = runOcclusionFilter(valid,geometry,ray,u,v,t,Ng,geomID,primID);
+            if (enableIntersectionFilter) {
+              if (unlikely(geometry->hasOcclusionFilter<rsimdf>()))
+              {
+                const rsimdf rcpAbsDen = rcp(absDen);
+                const rsimdf u = U / absDen;
+                const rsimdf v = V / absDen;
+                const rsimdf t = T / absDen;
+                const int primID = tri_primIDs[i];
+                valid = runOcclusionFilter(valid,geometry,ray,u,v,t,Ng,geomID,primID);
+              }
             }
 #endif
             
@@ -389,7 +397,7 @@ namespace embree
         }
         
         /*! Intersect a ray with the N triangles and updates the hit. */
-  template<typename tsimdf, typename tsimdi, typename RayM>
+    template<bool enableIntersectionFilter, typename tsimdf, typename tsimdi, typename RayM>
         __forceinline void intersect(RayM& ray, size_t k, 
                                      const Vec3<tsimdf>& tri_v0, const Vec3<tsimdf>& tri_v1, const Vec3<tsimdf>& tri_v2,
                                      const tsimdi& tri_geomIDs, const tsimdi& tri_primIDs, Scene* scene)
@@ -459,24 +467,22 @@ namespace embree
 
 #if defined(RTCORE_RAY_MASK)
         /* goto next hit if mask test fails */
-        //if (enableIntersectionFilter) {
           if ((geometry->mask & ray.mask[k]) == 0) {
             valid[i] = 0;
             continue;
           }
-          //}
 #endif
 
 #if defined(RTCORE_INTERSECTION_FILTER) 
         /* call intersection filter function */
-          //if (enableIntersectionFilter) {
-          if (unlikely(geometry->hasIntersectionFilter<rsimdf>())) {
-            Vec3fa Ng = Vec3fa(tri_Ng.x[i],tri_Ng.y[i],tri_Ng.z[i]);
-            if (runIntersectionFilter(geometry,ray,k,u[i],v[i],t[i],Ng,geomID,tri_primIDs[i])) return;
-            valid[i] = 0;
-            continue;
+          if (enableIntersectionFilter) {
+            if (unlikely(geometry->hasIntersectionFilter<rsimdf>())) {
+              Vec3fa Ng = Vec3fa(tri_Ng.x[i],tri_Ng.y[i],tri_Ng.z[i]);
+              if (runIntersectionFilter(geometry,ray,k,u[i],v[i],t[i],Ng,geomID,tri_primIDs[i])) return;
+              valid[i] = 0;
+              continue;
+            }
           }
-          //}
 #endif
         break;
       }
@@ -494,7 +500,7 @@ namespace embree
         }
         
         /*! Test if the ray is occluded by one of the triangles. */
-  template<typename tsimdf, typename tsimdi, typename RayM>
+    template<bool enableIntersectionFilter,typename tsimdf, typename tsimdi, typename RayM>
     __forceinline bool occluded(RayM& ray, size_t k, 
                                 const Vec3<tsimdf>& tri_v0, const Vec3<tsimdf>& tri_v1, const Vec3<tsimdf>& tri_v2, 
                                 const tsimdi& tri_geomIDs, const tsimdi& tri_primIDs, Scene* scene)
@@ -558,29 +564,27 @@ namespace embree
         
 #if defined(RTCORE_RAY_MASK)
         /* goto next hit if mask test fails */
-        //if (enableIntersectionFilter) {
           if ((geometry->mask & ray.mask[k]) == 0) {
             m=__btc(m,i);
             continue;
           }
-          //}
 #endif
         
 #if defined(RTCORE_INTERSECTION_FILTER)
         /* execute occlusion filer */
-          //if (enableIntersectionFilter) {
-          if (unlikely(geometry->hasOcclusionFilter<rsimdf>())) 
-          {
-            const tsimdf rcpAbsDen = rcp(absDen);
-            const tsimdf u = U / absDen;
-            const tsimdf v = V / absDen;
-            const tsimdf t = T / absDen;
-            const Vec3fa Ng = Vec3fa(tri_Ng.x[i],tri_Ng.y[i],tri_Ng.z[i]);
-            if (runOcclusionFilter(geometry,ray,k,u[i],v[i],t[i],Ng,geomID,tri_primIDs[i])) return true;
-            m=__btc(m,i);
-            continue;
+          if (enableIntersectionFilter) {
+            if (unlikely(geometry->hasOcclusionFilter<rsimdf>())) 
+            {
+              const tsimdf rcpAbsDen = rcp(absDen);
+              const tsimdf u = U / absDen;
+              const tsimdf v = V / absDen;
+              const tsimdf t = T / absDen;
+              const Vec3fa Ng = Vec3fa(tri_Ng.x[i],tri_Ng.y[i],tri_Ng.z[i]);
+              if (runOcclusionFilter(geometry,ray,k,u[i],v[i],t[i],Ng,geomID,tri_primIDs[i])) return true;
+              m=__btc(m,i);
+              continue;
+            }
           }
-          //}
 #endif
         break;
       }
@@ -606,7 +610,7 @@ namespace embree
 
 
     /*! Intersects N triangles with 1 ray */
-    template<typename TriangleNv>
+    template<typename TriangleNv, bool enableIntersectionFilter>
       struct TriangleNvIntersector1Pluecker
       {
         typedef TriangleNv Primitive;
@@ -625,18 +629,18 @@ namespace embree
         static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Primitive& tri, Scene* scene)
         {
           STAT3(normal.trav_prims,1,1,1);
-          embree::isa::intersect<tsimdb,tsimdf,tsimdi>(ray,tri.v0,tri.v1,tri.v2,tri.geomIDs,tri.primIDs,scene);
+          embree::isa::intersect<enableIntersectionFilter,tsimdb,tsimdf,tsimdi>(ray,tri.v0,tri.v1,tri.v2,tri.geomIDs,tri.primIDs,scene);
         }
         
         /*! Test if the ray is occluded by one of the triangles. */
         static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Primitive& tri, Scene* scene)
         {
           STAT3(shadow.trav_prims,1,1,1);
-          return embree::isa::occluded<tsimdb,tsimdf,tsimdi>(ray,tri.v0,tri.v1,tri.v2,tri.geomIDs,tri.primIDs,scene);
+          return embree::isa::occluded<enableIntersectionFilter,tsimdb,tsimdf,tsimdi>(ray,tri.v0,tri.v1,tri.v2,tri.geomIDs,tri.primIDs,scene);
         }
       };
     
-    template<typename RayM, typename TriangleNv>
+    template<typename RayM, typename TriangleNv, bool enableIntersectionFilter>
       struct TriangleNvIntersectorMPluecker
       {
         typedef TriangleNv Primitive;
@@ -666,7 +670,7 @@ namespace embree
             const rsimd3f v0 = broadcast<rsimdf>(tri.v0,i);
             const rsimd3f v1 = broadcast<rsimdf>(tri.v1,i);
             const rsimd3f v2 = broadcast<rsimdf>(tri.v2,i);
-            embree::isa::intersect(valid_i,ray,v0,v1,v2,tri.geomIDs,tri.primIDs,i,scene);
+            embree::isa::intersect<enableIntersectionFilter>(valid_i,ray,v0,v1,v2,tri.geomIDs,tri.primIDs,i,scene);
           }
         }
           
@@ -682,7 +686,7 @@ namespace embree
             const rsimd3f v0 = broadcast<rsimdf>(tri.v0,i);
             const rsimd3f v1 = broadcast<rsimdf>(tri.v1,i);
             const rsimd3f v2 = broadcast<rsimdf>(tri.v2,i);
-            embree::isa::occluded(valid0,ray,v0,v1,v2,tri.geomIDs,tri.primIDs,i,scene);
+            embree::isa::occluded<enableIntersectionFilter>(valid0,ray,v0,v1,v2,tri.geomIDs,tri.primIDs,i,scene);
             if (none(valid0)) break;
           }
           return !valid0;
@@ -692,14 +696,14 @@ namespace embree
         static __forceinline void intersect(Precalculations& pre, RayM& ray, size_t k, const Primitive& tri, Scene* scene)
         {
           STAT3(normal.trav_prims,1,1,1);
-          embree::isa::intersect(ray,k,tri.v0,tri.v1,tri.v2,tri.geomIDs,tri.primIDs,scene);
+          embree::isa::intersect<enableIntersectionFilter>(ray,k,tri.v0,tri.v1,tri.v2,tri.geomIDs,tri.primIDs,scene);
         }
         
         /*! Test if the ray is occluded by one of the triangles. */
         static __forceinline bool occluded(Precalculations& pre, RayM& ray, size_t k, const Primitive& tri, Scene* scene)
         {
           STAT3(shadow.trav_prims,1,1,1);
-          return embree::isa::occluded(ray,k,tri.v0,tri.v1,tri.v2,tri.geomIDs,tri.primIDs,scene);
+          return embree::isa::occluded<enableIntersectionFilter>(ray,k,tri.v0,tri.v1,tri.v2,tri.geomIDs,tri.primIDs,scene);
         }
       };
   }
