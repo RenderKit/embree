@@ -38,7 +38,7 @@ namespace embree
   };
 
   //template<typename Primitive1, typename Primitive2>
-    struct PrimitiveType2 : public PrimitiveType
+  struct PrimitiveType2 : public PrimitiveType // FIXME: remove
   {
     PrimitiveType2 () 
       : PrimitiveType("unknown", 0, 0) {}
