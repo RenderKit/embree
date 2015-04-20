@@ -50,7 +50,7 @@ namespace embree
           sse3f p0; transpose(a0,a1,a2,a3,p0.x,p0.y,p0.z);
           sse3f p1; transpose(b0,b1,b2,b3,p1.x,p1.y,p1.z);
           sse3f p2; transpose(c0,c1,c2,c3,p2.x,p2.y,p2.z);
-          embree::isa::intersect<enableIntersectionFilter,sseb,ssef,ssei>(ray,p0,p1,p2,tri.geomIDs,tri.primIDs,scene);
+          triangle_intersect_pluecker<enableIntersectionFilter,sseb,ssef,ssei>(ray,p0,p1,p2,tri.geomIDs,tri.primIDs,scene);
         }
         
         static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Primitive& tri, Scene* scene)
@@ -67,7 +67,7 @@ namespace embree
           sse3f p0; transpose(a0,a1,a2,a3,p0.x,p0.y,p0.z);
           sse3f p1; transpose(b0,b1,b2,b3,p1.x,p1.y,p1.z);
           sse3f p2; transpose(c0,c1,c2,c3,p2.x,p2.y,p2.z);
-          return embree::isa::occluded<enableIntersectionFilter,sseb,ssef,ssei>(ray,p0,p1,p2,tri.geomIDs,tri.primIDs,scene);
+          return triangle_occluded_pluecker<enableIntersectionFilter,sseb,ssef,ssei>(ray,p0,p1,p2,tri.geomIDs,tri.primIDs,scene);
         }
       };
 
@@ -99,7 +99,7 @@ namespace embree
             const rsimd3f v0 = rsimd3f(p0);
             const rsimd3f v1 = rsimd3f(p1);
             const rsimd3f v2 = rsimd3f(p2);
-            embree::isa::intersect<enableIntersectionFilter>(valid_i,ray,v0,v1,v2,tri.geomIDs,tri.primIDs,i,scene);
+            triangle_intersect_pluecker<enableIntersectionFilter>(valid_i,ray,v0,v1,v2,tri.geomIDs,tri.primIDs,i,scene);
           }
         }
         
@@ -117,7 +117,7 @@ namespace embree
             const rsimd3f v0 = rsimd3f(p0);
             const rsimd3f v1 = rsimd3f(p1);
             const rsimd3f v2 = rsimd3f(p2);
-            embree::isa::occluded<enableIntersectionFilter>(valid0,ray,v0,v1,v2,tri.geomIDs,tri.primIDs,i,scene);
+            triangle_occluded_pluecker<enableIntersectionFilter>(valid0,ray,v0,v1,v2,tri.geomIDs,tri.primIDs,i,scene);
             if (none(valid0)) break;
           }
           return !valid0;
