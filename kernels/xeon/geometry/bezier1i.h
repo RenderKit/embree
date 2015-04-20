@@ -17,21 +17,12 @@
 #pragma once
 
 #include "common/default.h"
+#include "common/globals.h"
 #include "primitive.h"
 #include "bezier1v.h"
 
 namespace embree
 {
-#if defined(__SSE__) // FIXME: move to other place
-  extern ssef sse_coeff0[4];
-  extern ssef sse_coeff1[4];
-#endif
-
-#if defined(__AVX__)
-  extern avxf coeff0[4];
-  extern avxf coeff1[4];
-#endif
-
   struct Bezier1i
   {
     struct Type : public PrimitiveType {
@@ -52,20 +43,13 @@ namespace embree
     /*! returns required number of primitive blocks for N primitives */
     static __forceinline size_t blocks(size_t N) { return N; }
 
-    template<bool list = false>
     __forceinline unsigned int primID() const { 
-      if (list) return prim & 0x7FFFFFFF; 
-      else      return prim;
+      return prim;
     }
-    template<bool list = false>
     __forceinline unsigned int geomID() const { 
       return geom; 
     }
-    //__forceinline unsigned int mask  () const { return mask; } // FIXME: not implemented yet
-    __forceinline int last  () const { 
-      return prim & 0x80000000; 
-    }
-    
+
     /*! fill from list */
     __forceinline void fill(atomic_set<PrimRefBlockT<BezierPrim> >::block_iterator_unsafe& iter, Scene* scene, const bool list)
     {
@@ -73,7 +57,6 @@ namespace embree
       const unsigned geomID = curve.geomID<0>();
       const unsigned primID = curve.primID<0>();
       const BezierCurves* in = (BezierCurves*) scene->get(geomID);
-      //const Vec3fa& p0 = in->vertex(in->curve(primID));
       const unsigned int vertexID = in->curve(primID);
       new (this) Bezier1i(vertexID,geomID,primID,list && !iter);
     }
@@ -87,7 +70,6 @@ namespace embree
       const size_t primID = prim.primID();
       const BezierCurves* curves = scene->getBezierCurves(geomID);
       const size_t vertexID = curves->curve(primID);
-      //const Vec3fa& p0 = curves->vertex(vertexID+0);
       new (this) Bezier1i(vertexID,geomID,primID,list && i>=end);
     }
 
@@ -99,12 +81,10 @@ namespace embree
       const unsigned primID = curve.primID<0>();
       const BezierCurves* curves = scene->getBezierCurves(geomID);
       const size_t vertexID = curves->curve(primID);
-      //const Vec3fa& p0 = curves->vertex(vertexID+0);
       new (this) Bezier1i(vertexID,geomID,primID,list && i>=end);
     }
 
   public:
-    //const Vec3fa* p;      //!< pointer to first control point (x,y,z,r)
     unsigned int vertexID; //!< index of start vertex
     unsigned int geom;  //!< geometry ID
     unsigned int prim;  //!< primitive ID
@@ -127,17 +107,14 @@ namespace embree
     __forceinline Bezier1iMB (const unsigned vertexID, const unsigned int geomID, const unsigned int primID, const bool last)
       : vertexID(vertexID), geom(geomID), prim(primID | (last << 31)) {}
 
-    template<bool list = false>
     __forceinline unsigned int primID() const { 
-      if (list) return prim & 0x7FFFFFF; 
-      else      return prim;
+          return prim;
     }
-    template<bool list = false>
     __forceinline unsigned int geomID() const { 
       return geom; 
     }
-    //__forceinline unsigned int mask  () const { return mask; } // FIXME: not implemented yet
-    __forceinline int last  () const { 
+  
+      __forceinline int last  () const { 
       return prim & 0x80000000; 
     }
 
@@ -148,8 +125,6 @@ namespace embree
       const unsigned geomID = curve.geomID<0>();
       const unsigned primID = curve.primID<0>();
       const BezierCurves* in = (BezierCurves*) scene->get(geomID);
-      //const Vec3fa& p0 = in->vertex(in->curve(primID),0);
-      //const Vec3fa& p1 = in->vertex(in->curve(primID),1);
       const size_t vertexID = in->curve(primID);
       new (this) Bezier1iMB(vertexID,geomID,primID,list && !iter);
     }
@@ -161,15 +136,11 @@ namespace embree
       const unsigned geomID = curve.geomID<0>();
       const unsigned primID = curve.primID<0>();
       const BezierCurves* in = (BezierCurves*) scene->get(geomID);
-      //const Vec3fa& p0 = in->vertex(in->curve(primID),0);
-      //const Vec3fa& p1 = in->vertex(in->curve(primID),1);
       const size_t vertexID = in->curve(primID);
       new (this) Bezier1iMB(vertexID,geomID,primID,list && i == end);
     }
 
   public:
-    //const Vec3fa* p0;      //!< pointer to first control point (x,y,z,r) for time t0
-    //const Vec3fa* p1;      //!< pointer to first control point (x,y,z,r) for time t1
     unsigned int vertexID; //!< index of start vertex
     unsigned int geom;  //!< geometry ID
     unsigned int prim;  //!< primitive ID
