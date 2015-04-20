@@ -27,6 +27,5 @@ namespace embree
   size_t SubdivPatch1Cached::Type::size(const char* This) const {
     return 1;
   }
-
-};
+}
 

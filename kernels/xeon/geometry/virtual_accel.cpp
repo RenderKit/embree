@@ -18,12 +18,12 @@
 
 namespace embree
 {
-  VirtualAccelObjectType VirtualAccelObjectType::type;
+  AccelSetItem::Type AccelSetItem::type;
 
-  VirtualAccelObjectType::VirtualAccelObjectType () 
+  AccelSetItem::Type::Type () 
     : PrimitiveType("object",sizeof(AccelSetItem),1) {} 
 
-  size_t VirtualAccelObjectType::size(const char* This) const {
+  size_t AccelSetItem::Type::size(const char* This) const {
     return 1;
   }
 }

@@ -34,6 +34,12 @@ namespace embree
 
   struct Bezier1i
   {
+    struct Type : public PrimitiveType {
+      Type ();
+      size_t size(const char* This) const;
+    };
+    static Type type;
+
   public:
 
     /*! Default constructor. */
@@ -106,6 +112,12 @@ namespace embree
 
   struct Bezier1iMB
   {
+    struct Type : public PrimitiveType {
+      Type ();
+      size_t size(const char* This) const;
+    };
+    static Type type;
+
   public:
 
     /*! Default constructor. */
@@ -161,21 +173,5 @@ namespace embree
     unsigned int vertexID; //!< index of start vertex
     unsigned int geom;  //!< geometry ID
     unsigned int prim;  //!< primitive ID
-  };
-
-  struct Bezier1iType : public PrimitiveType {
-    Bezier1iType ();
-    size_t size(const char* This) const;
-  };
-
-  struct SceneBezier1i : public Bezier1iType
-  {
-    static SceneBezier1i type;
-  };
-
-  struct Bezier1iMBType : public PrimitiveType {
-    static Bezier1iMBType type;
-    Bezier1iMBType ();
-    size_t size(const char* This) const;
   };
 }

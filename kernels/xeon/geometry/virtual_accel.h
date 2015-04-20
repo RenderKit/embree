@@ -22,6 +22,13 @@ namespace embree
 {
   struct AccelSetItem // FIXME: rename to Object
   {
+    struct Type : public PrimitiveType 
+    {
+      Type ();
+      size_t size(const char* This) const;
+    };
+    static Type type;
+
   public:
 
     AccelSetItem (AccelSet* accel, unsigned item, const bool last) 
@@ -43,13 +50,5 @@ namespace embree
     AccelSet* accel;
     unsigned item;
     bool isLast;
-  };
-
-  struct VirtualAccelObjectType : public PrimitiveType 
-  {
-    static VirtualAccelObjectType type;
-    
-    VirtualAccelObjectType ();
-    size_t size(const char* This) const;
   };
 }

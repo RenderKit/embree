@@ -28,6 +28,14 @@ namespace embree
     typedef ssei simdi;
 
   public:
+    struct Type : public PrimitiveType 
+    {
+      Type ();
+      size_t size(const char* This) const;
+    };
+    static Type type;
+
+  public:
 
     /*! Default constructor. */
     __forceinline Triangle4v () {}
@@ -203,15 +211,9 @@ namespace embree
     ssei primIDs;   //!< primitive ID
   };
 
-  struct Triangle4vType : public PrimitiveType 
-  {
-    static Triangle4vType type;
+  
 
-    Triangle4vType ();
-    size_t size(const char* This) const;
-  };
-
-  struct TriangleMeshTriangle4v : public Triangle4vType
+  struct TriangleMeshTriangle4v : public Triangle4v::Type
   {
     static TriangleMeshTriangle4v type;
   };

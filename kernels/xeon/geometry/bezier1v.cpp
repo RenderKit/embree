@@ -18,12 +18,12 @@
 
 namespace embree
 {
-  Bezier1vType Bezier1vType::type;
+  Bezier1v::Type Bezier1v::type;
 
-  Bezier1vType::Bezier1vType () 
+  Bezier1v::Type::Type () 
     : PrimitiveType("bezier1v",sizeof(Bezier1v),1) {} 
   
-  size_t Bezier1vType::size(const char* This) const {
+  size_t Bezier1v::Type::size(const char* This) const {
     return 1;
   }
 }

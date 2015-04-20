@@ -19,7 +19,7 @@
 
 namespace embree
 {
-  size_t Triangle8Type::size(const char* This) const {
+  size_t Triangle8::Type::size(const char* This) const {
     return ((Triangle8*)This)->size();
   }
 }

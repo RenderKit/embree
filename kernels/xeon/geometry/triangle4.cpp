@@ -18,25 +18,24 @@
 #if defined(__TARGET_AVX__)
 #include "triangle8.h"
 #endif
-#include "common/scene.h"
 
 namespace embree
 {
-  Triangle4Type Triangle4Type::type;
-  TriangleMeshTriangle4 TriangleMeshTriangle4::type;
+  Triangle4::Type Triangle4::type;
+  TriangleMeshTriangle4 TriangleMeshTriangle4::type; // FIXME: remove
 
-  Triangle4Type::Triangle4Type () 
-  : PrimitiveType("triangle4",sizeof(Triangle4),4) {} 
+  Triangle4::Type::Type () 
+    : PrimitiveType("triangle4",sizeof(Triangle4),4) {} 
 
-  size_t Triangle4Type::size(const char* This) const {
+  size_t Triangle4::Type::size(const char* This) const {
     return ((Triangle4*)This)->size();
   }
 
 #if defined(__TARGET_AVX__)
-  Triangle8Type Triangle8Type::type;
-  TriangleMeshTriangle8 TriangleMeshTriangle8::type;
+  Triangle8::Type Triangle8::type;
+  TriangleMeshTriangle8 TriangleMeshTriangle8::type; // FIXME: remove
 
-  Triangle8Type::Triangle8Type () 
+  Triangle8::Type::Type () 
     : PrimitiveType("triangle8",2*sizeof(Triangle4),8) {}
 #endif
 }

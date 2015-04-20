@@ -23,6 +23,14 @@ namespace embree
   /*! Stores 4 triangles from an indexed face set. */
   struct Triangle4i
   {
+    /*! virtual interface to query information about the triangle type */
+    struct Type : public PrimitiveType
+    {
+      Type ();
+      size_t size(const char* This) const;
+    };
+    static Type type;
+
   public:
 
     /*! Default constructor. */
@@ -200,16 +208,8 @@ namespace embree
     ssei primIDs;        //!< ID of primitive inside mesh.
   };
 
-  /*! virtual interface to query information about the triangle type */
-  struct Triangle4iType : public PrimitiveType
-  {
-    static Triangle4iType type;
-
-    Triangle4iType ();
-    size_t size(const char* This) const;
-  };
-
-  struct TriangleMeshTriangle4i : public Triangle4iType
+  
+  struct TriangleMeshTriangle4i : public Triangle4i::Type
   {
     static TriangleMeshTriangle4i type;
   };

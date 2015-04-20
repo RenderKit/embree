@@ -135,6 +135,13 @@ namespace embree
 
   struct Bezier1v
   {
+    struct Type : public PrimitiveType 
+    {
+      Type ();
+      size_t size(const char* This) const;
+    };
+    static Type type;
+
   public:
 
     /*! Default constructor. */
@@ -374,13 +381,6 @@ namespace embree
     unsigned geom;      //!< geometry ID
     unsigned prim;      //!< primitive ID
   };
-
-  struct Bezier1vType : public PrimitiveType 
-  {
-    static Bezier1vType type;
-    Bezier1vType ();
-    size_t size(const char* This) const;
-  }; 
 
   typedef Bezier1v BezierPrim; // FIXME: rename to BezierRef
 }

@@ -24,27 +24,25 @@ namespace embree
 
   struct __aligned(64) SubdivPatch1Cached : public SubdivPatch1Base
   {
-
-  SubdivPatch1Cached (const CatmullClarkPatch& ipatch,
-                      const unsigned int gID,
-                      const unsigned int pID,
-                      const SubdivMesh *const mesh,
-                      const Vec2f uv[4],
-                      const float edge_level[4]) : SubdivPatch1Base(ipatch,gID,pID,mesh,uv,edge_level)
-      {
-      }
-
     struct Type : public PrimitiveType 
     {
       Type ();
       size_t size(const char* This) const;
     };
-
+    
     static Type type;
 
+  public:
+
+    SubdivPatch1Cached (const CatmullClarkPatch& ipatch,
+                        const unsigned int gID,
+                        const unsigned int pID,
+                        const SubdivMesh *const mesh,
+                        const Vec2f uv[4],
+                        const float edge_level[4]) : SubdivPatch1Base(ipatch,gID,pID,mesh,uv,edge_level) {}
+
+    
     /*! returns required number of primitive blocks for N primitives */
     static __forceinline size_t blocks(size_t N) { return N; }
-
   };
-
 };

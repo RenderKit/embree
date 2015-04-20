@@ -20,17 +20,26 @@
 
 namespace embree
 {
-#if defined __AVX__
-
   /*! Precalculated representation for 8 triangles. Stores for each
       triangle a base vertex, two edges, and the geometry normal to
       speed up intersection calculations. */
   struct Triangle8
   {
+#if defined __AVX__
     typedef avxb simdb;
     typedef avxf simdf;
     typedef avxi simdi;
+#endif
 
+  public:
+    struct Type : public PrimitiveType 
+    {
+      Type ();
+      size_t size(const char* This) const;
+    };
+    static Type type;
+
+#if defined __AVX__
   public:
 
     /*! Default constructor. */
@@ -78,7 +87,7 @@ namespace embree
       upper.y = select(mask,upper.y,avxf(neg_inf));
       upper.z = select(mask,upper.z,avxf(neg_inf));
       return BBox3fa(Vec3fa(reduce_min(lower.x),reduce_min(lower.y),reduce_min(lower.z)),
-                    Vec3fa(reduce_max(upper.x),reduce_max(upper.y),reduce_max(upper.z)));
+                     Vec3fa(reduce_max(upper.x),reduce_max(upper.y),reduce_max(upper.z)));
     }
 
     /*! non temporal store */
@@ -223,18 +232,10 @@ namespace embree
     avx3f Ng;      //!< Geometry normal of the triangles.
     avxi geomIDs;   //!< user geometry ID
     avxi primIDs;   //!< primitive ID
-  };
 #endif
-
-  struct Triangle8Type : public PrimitiveType 
-  {
-    static Triangle8Type type;
-
-    Triangle8Type ();
-    size_t size(const char* This) const;
   };
 
-  struct TriangleMeshTriangle8 : public Triangle8Type
+  struct TriangleMeshTriangle8 : public Triangle8::Type
   {
     static TriangleMeshTriangle8 type;
   };

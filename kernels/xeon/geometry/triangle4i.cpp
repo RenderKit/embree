@@ -15,17 +15,16 @@
 // ======================================================================== //
 
 #include "triangle4i.h"
-#include "common/scene.h"
 
 namespace embree
 {
-  Triangle4iType Triangle4iType::type;
-  TriangleMeshTriangle4i TriangleMeshTriangle4i::type;
+  Triangle4i::Type Triangle4i::type;
+  TriangleMeshTriangle4i TriangleMeshTriangle4i::type; // FIXME: remove
 
-  Triangle4iType::Triangle4iType () 
+  Triangle4i::Type::Type () 
     : PrimitiveType("triangle4i",sizeof(Triangle4i),4) {} 
   
-  size_t Triangle4iType::size(const char* This) const {
+  size_t Triangle4i::Type::size(const char* This) const {
     return ((Triangle4i*)This)->size();
   }
 }

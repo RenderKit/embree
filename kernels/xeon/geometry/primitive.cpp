@@ -19,4 +19,6 @@
 namespace embree
 {
   PrimitiveType2 PrimitiveType2::type; 
+
+  
 }
