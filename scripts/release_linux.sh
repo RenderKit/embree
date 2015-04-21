@@ -14,6 +14,10 @@ cmake \
 -D COMPILER=ICC \
 -D ENABLE_XEON_PHI_SUPPORT=ON \
 -D CMAKE_SKIP_INSTALL_RPATH=ON \
+-D USE_IMAGE_MAGICK=OFF \
+-D USE_LIBJPEG=OFF \
+-D USE_LIBPNG=OFF \
+-D USE_OPENEXR=OFF \
 ..
 
 # make docu after cmake to have correct version.h
