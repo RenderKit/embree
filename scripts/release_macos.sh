@@ -19,12 +19,15 @@ realpath() {
 
 realpath "$1"
 
+TBB_PATH=$PWD/tbb
+
 mkdir -p build
 cd build
 rm CMakeCache.txt # make sure to use default settings
 cmake \
 -D COMPILER=ICC \
 -D CMAKE_SKIP_INSTALL_RPATH=ON \
+-D TBB_ROOT=$TBB_PATH \
 ..
 
 # make docu after cmake to have correct version.h
