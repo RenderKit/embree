@@ -171,6 +171,7 @@ ELSEIF(APPLE)
 
   IF (ENABLE_INSTALLER)
     SET(CPACK_GENERATOR PackageMaker)
+    #SET(CPACK_COMPONENTS_ALL libraries headers documentation tutorials utilities)
     SET(CPACK_MONOLITHIC_INSTALL 1)
     SET(CPACK_PACKAGE_VENDOR "intel") # creates short name com.intel.embree2.xxx in pkgutil
     SET(CPACK_OSX_PACKAGE_VERSION 10.7)
