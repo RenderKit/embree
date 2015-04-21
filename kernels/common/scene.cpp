@@ -50,6 +50,8 @@ namespace embree
       flags = (RTCSceneFlags) State::instance()->scene_flags;
 
 #if defined(__MIC__)
+    needBezierVertices = true;
+
     accels.add( BVH4mb::BVH4mbTriangle1ObjectSplitBinnedSAH(this) );
     accels.add( BVH4i::BVH4iVirtualGeometryBinnedSAH(this, isRobust()));
     accels.add( BVH4Hair::BVH4HairBinnedSAH(this));
