@@ -20,9 +20,6 @@ IF (NOT ENABLE_INSTALLER)
   SET(DOC_INSTALL_DIR doc)
   SET(TUTORIALS_INSTALL_DIR bin)
   SET(UTILITIES_INSTALL_DIR bin)
-  IF (APPLE)
-    INSTALL(PROGRAMS ${TBB_ROOT}/lib/libc++/libtbb.dylib ${TBB_ROOT}/lib/libc++/libtbbmalloc.dylib DESTINATION lib COMPONENT redist)
-  ENDIF()
 ELSEIF (WIN32)
   SET(DOC_INSTALL_DIR doc)
   SET(TUTORIALS_INSTALL_DIR bin)
@@ -36,6 +33,45 @@ ELSE()
   SET(TUTORIALS_INSTALL_DIR bin)
   SET(UTILITIES_INSTALL_DIR bin)
 ENDIF()
+
+##############################################################
+# Install Headers
+##############################################################
+INSTALL(DIRECTORY include/embree2 DESTINATION include COMPONENT headers)
+
+##############################################################
+# Install Embree CMake Configuration
+##############################################################
+IF (WIN32)
+  CONFIGURE_FILE(common/cmake/embree-config-windows.cmake embree-config.cmake @ONLY)
+ELSEIF (APPLE)
+  CONFIGURE_FILE(common/cmake/embree-config-macosx.cmake embree-config.cmake @ONLY)
+ELSE()
+  CONFIGURE_FILE(common/cmake/embree-config-linux.cmake embree-config.cmake @ONLY)
+ENDIF()
+
+CONFIGURE_FILE(common/cmake/embree-config-version.cmake embree-config-version.cmake @ONLY)
+
+IF (ENABLE_INSTALLER)
+  INSTALL(FILES "${PROJECT_BINARY_DIR}/embree-config.cmake" DESTINATION "lib/cmake/embree-${EMBREE_VERSION}" COMPONENT libraries)
+  INSTALL(FILES "${PROJECT_BINARY_DIR}/embree-config-version.cmake" DESTINATION "lib/cmake/embree-${EMBREE_VERSION}" COMPONENT libraries)
+ENDIF()
+
+##############################################################
+# Install TBB
+##############################################################
+
+IF (WIN32)
+  INSTALL(PROGRAMS ${TBB_LIBRARY} ${TBB_LIBRARY_MALLOC} DESTINATION bin COMPONENT tutorials)
+  INSTALL(PROGRAMS ${TBB_LIBRARY} ${TBB_LIBRARY_MALLOC} DESTINATION lib COMPONENT library)
+ELSEIF (APPLE)
+  INSTALL(PROGRAMS ${TBB_ROOT}/lib/libc++/libtbb.dylib ${TBB_ROOT}/lib/libc++/libtbbmalloc.dylib DESTINATION bin COMPONENT tutorials)
+  INSTALL(PROGRAMS ${TBB_ROOT}/lib/libc++/libtbb.dylib ${TBB_ROOT}/lib/libc++/libtbbmalloc.dylib DESTINATION lib COMPONENT library)
+ENDIF()
+
+##############################################################
+# CPack specific stuff
+##############################################################
 
 SET(CPACK_PACKAGE_NAME Embree)
 SET(CPACK_PACKAGE_FILE_NAME "embree-${EMBREE_VERSION}")
@@ -63,8 +99,8 @@ SET(CPACK_COMPONENT_TUTORIALS_DESCRIPTION "Tutorials demonstrating how to use Em
 SET(CPACK_COMPONENT_UTILITIES_DISPLAY_NAME "Utilities")
 SET(CPACK_COMPONENT_UTILITIES_DESCRIPTION "Tools to benchmark, test and debug Embree.")
 
-SET(CPACK_COMPONENT_REDIST_DISPLAY_NAME "Redistributables")
-SET(CPACK_COMPONENT_REDIST_DESCRIPTION "Installs 3rd-party redistributables needed by Embree.")
+#SET(CPACK_COMPONENT_REDIST_DISPLAY_NAME "Redistributables")
+#SET(CPACK_COMPONENT_REDIST_DESCRIPTION "Installs 3rd-party redistributables needed by Embree.")
 
 # devel install group
 SET(CPACK_COMPONENT_LIBRARIES_GROUP devel)
@@ -77,7 +113,7 @@ SET(CPACK_COMPONENT_DEVEL_DESCRIPTION ${CPACK_COMPONENT_GROUP_DEVEL_DESCRIPTION}
 # example install group
 SET(CPACK_COMPONENT_TUTORIALS_GROUP examples)
 SET(CPACK_COMPONENT_UTILITIES_GROUP examples)
-SET(CPACK_COMPONENT_REDIST_GROUP examples)
+#SET(CPACK_COMPONENT_REDIST_GROUP examples)
 SET(CPACK_COMPONENT_GROUP_EXAMPLES_DISPLAY_NAME "Examples")
 SET(CPACK_COMPONENT_GROUP_EXAMPLES_DESCRIPTION "Example tutorials and tools for Embree.")
 SET(CPACK_COMPONENT_EXAMPLES_DESCRIPTION ${CPACK_COMPONENT_GROUP_EXAMPLES_DESCRIPTION})
@@ -103,10 +139,10 @@ SET(CPACK_RESOURCE_FILE_LICENSE ${PROJECT_SOURCE_DIR}/LICENSE.txt)
 
 # Windows specific settings
 IF(WIN32)
-  SET(CPACK_COMPONENTS_ALL libraries headers documentation tutorials utilities redist)
-  SET(CPACK_COMPONENT_REDIST_DISABLED ON)
-  SET(CPACK_COMPONENT_TUTORIALS_DEPENDS redist)
-  SET(CPACK_COMPONENT_UTILITIES_DEPENDS redist)
+  SET(CPACK_COMPONENTS_ALL libraries headers documentation tutorials utilities)
+#  SET(CPACK_COMPONENT_REDIST_DISABLED OFF)
+#  SET(CPACK_COMPONENT_TUTORIALS_DEPENDS redist)
+#  SET(CPACK_COMPONENT_UTILITIES_DEPENDS redist)
 
   IF (CMAKE_SIZEOF_VOID_P EQUAL 8)
     SET(ARCH x64)
