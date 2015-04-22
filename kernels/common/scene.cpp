@@ -126,7 +126,7 @@ namespace embree
         int mode =  2*(int)isCompact() + 1*(int)isRobust(); 
         switch (mode) {
         case /*0b00*/ 0: 
-#if defined (__TARGET_AVX__)
+#if defined (__TARGET_AVX__) && !defined(RTCORE_RAY_MASK) // FIXME: workaround as BVH8 node alignment is broken when enabling ray masks
           if (has_feature(AVX))
 	  {
             if (isHighQuality()) accels.add(BVH8::BVH8Triangle4SpatialSplit(this)); 
