@@ -16,6 +16,9 @@
 
 OPTION(ENABLE_INSTALLER "Switches between installer or ZIP file creation for 'make package'" ON)
 
+# never include rpath in our libraries when installing or creating packages
+SET(CMAKE_SKIP_INSTALL_RPATH ON)
+
 IF (NOT ENABLE_INSTALLER)
   SET(DOC_INSTALL_DIR doc)
   SET(TUTORIALS_INSTALL_DIR bin)

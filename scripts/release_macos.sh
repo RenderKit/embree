@@ -28,7 +28,6 @@ rm CMakeCache.txt # make sure to use default settings
 # set release settings
 cmake \
 -D COMPILER=ICC \
--D CMAKE_SKIP_INSTALL_RPATH=ON \
 -D TBB_ROOT=$TBB_PATH \
 -D USE_IMAGE_MAGICK=OFF \
 -D USE_LIBJPEG=OFF \
