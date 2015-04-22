@@ -823,6 +823,8 @@ namespace embree
       const mic_f inf        = mic_f(pos_inf);
       const mic_f zero       = mic_f::zero();
 
+      const unsigned int oldID = ray.primID;
+
       store16f(stack_dist,inf);
 
       const Node      * __restrict__ nodes = (Node    *)bvh->nodePtr();
@@ -924,33 +926,36 @@ namespace embree
 	  compactStack(stack_node,stack_dist,sindex,max_dist_xyz);
 	}
 
-      /* update primID/geomID and compute normals */
-      const SubdivPatch1& subdiv_patch = ((SubdivPatch1*)accel)[ray.primID];
-      ray.primID = subdiv_patch.prim;
-      ray.geomID = subdiv_patch.geom;
+      if (oldID != ray.primID)
+	{
+	  /* update primID/geomID and compute normals */
+	  const SubdivPatch1& subdiv_patch = ((SubdivPatch1*)accel)[ray.primID];
+	  ray.primID = subdiv_patch.prim;
+	  ray.geomID = subdiv_patch.geom;
 #if defined(RTCORE_RETURN_SUBDIV_NORMAL)
 
-      if (unlikely(!subdiv_patch.hasDisplacement()))
-	{
-	  const Vec3fa normal = subdiv_patch.normal(ray.v,ray.u);
-	  ray.Ng.x = normal.x;
-	  ray.Ng.y = normal.y;
-	  ray.Ng.z = normal.z;
-	}
+	  if (unlikely(!subdiv_patch.hasDisplacement()))
+	    {
+	      const Vec3fa normal = subdiv_patch.normal(ray.v,ray.u);
+	      ray.Ng.x = normal.x;
+	      ray.Ng.y = normal.y;
+	      ray.Ng.z = normal.z;
+	    }
 #endif
 
 #if FORCE_TRIANGLE_UV == 0
 
-      const Vec2f uv0 = subdiv_patch.getUV(0);
-      const Vec2f uv1 = subdiv_patch.getUV(1);
-      const Vec2f uv2 = subdiv_patch.getUV(2);
-      const Vec2f uv3 = subdiv_patch.getUV(3);
+	  const Vec2f uv0 = subdiv_patch.getUV(0);
+	  const Vec2f uv1 = subdiv_patch.getUV(1);
+	  const Vec2f uv2 = subdiv_patch.getUV(2);
+	  const Vec2f uv3 = subdiv_patch.getUV(3);
 	  
-      const float patch_u = bilinear_interpolate(uv0.x,uv1.x,uv2.x,uv3.x,ray.v,ray.u);
-      const float patch_v = bilinear_interpolate(uv0.y,uv1.y,uv2.y,uv3.y,ray.v,ray.u);
-      ray.u = patch_u;
-      ray.v = patch_v;
+	  const float patch_u = bilinear_interpolate(uv0.x,uv1.x,uv2.x,uv3.x,ray.v,ray.u);
+	  const float patch_v = bilinear_interpolate(uv0.y,uv1.y,uv2.y,uv3.y,ray.v,ray.u);
+	  ray.u = patch_u;
+	  ray.v = patch_v;
 #endif
+	}
 
     }
 

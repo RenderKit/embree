@@ -19,8 +19,6 @@
 
 #if defined(USE_PTEX)
 #include "Ptexture.h"
-#else
-#warning no ptex
 #endif
 
 #include <map>
