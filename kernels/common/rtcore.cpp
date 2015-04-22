@@ -169,14 +169,16 @@ namespace embree
 
     if (State::instance()->verbosity(1))
     {
-      const bool hasFTZ = _mm_getcsr() & /*FTZ*/ (1<<15);
-      const bool hasDAZ = _mm_getcsr() & /*DAZ*/ (1<<6);
       std::cout << "Embree Ray Tracing Kernels " << __EMBREE_VERSION__ << " (" << __DATE__ << ")" << std::endl;
       std::cout << "  Compiler : " << getCompilerName() << std::endl;
       std::cout << "  Platform : " << getPlatformName() << std::endl;
       std::cout << "  CPU      : " << stringOfCPUModel(getCPUModel()) << " (" << getCPUVendor() << ")" << std::endl;
       std::cout << "  ISA      : " << stringOfCPUFeatures(getCPUFeatures()) << std::endl;
+#if !defined(__MIC__)
+      const bool hasFTZ = _mm_getcsr() & /*FTZ*/ (1<<15);
+      const bool hasDAZ = _mm_getcsr() & /*DAZ*/ (1<<6);
       std::cout << "  MXCSR    : " << "FTZ=" << hasFTZ << ", DAZ=" << hasDAZ << std::endl;
+#endif
       std::cout << "  Config   : ";
 #if defined(TASKING_TBB)
       std::cout << "TBB ";
@@ -232,6 +234,7 @@ namespace embree
       State::instance()->print();
 
     /* check of FTZ and DAZ flags are set in CSR */
+#if !defined(__MIC__)
     const bool hasFTZ = _mm_getcsr() & /*FTZ*/ (1<<15);
     const bool hasDAZ = _mm_getcsr() & /*DAZ*/ (1<<6);
     if (!hasFTZ || !hasDAZ) {
@@ -245,6 +248,7 @@ namespace embree
                   << "           _mm_setcsr(_mm_getcsr() | /* FTZ */ (1<<15) | /* DAZ */ (1<<6));" << std::endl;
       }
     }
+#endif
 
 #if defined(TASKING_LOCKSTEP)
     TaskScheduler::create(g_numThreads);
@@ -378,7 +382,9 @@ namespace embree
     RayStreamLogger::rayStreamLogger.dumpGeometry(scene);
 #endif
 
+    /* perform scene build */
     ((Scene*)scene)->build(0,0);
+    
     RTCORE_CATCH_END;
   }
 
@@ -396,7 +402,19 @@ namespace embree
       throw_RTCError(RTC_INVALID_OPERATION,"MIC requires numThreads % 4 == 0 in rtcCommitThread");
 #endif
     
+    /* for best performance set FTZ and DAZ flags in the MXCSR control and status register */
+#if !defined(__MIC__)
+    unsigned int mxcsr = _mm_getcsr();
+    _mm_setcsr(mxcsr | /* FTZ */ (1<<15) | /* DAZ */ (1<<6));
+#endif
+    
+     /* perform scene build */
     ((Scene*)scene)->build(threadID,numThreads);
+
+ /* reset MXCSR register again */
+#if !defined(__MIC__)
+    _mm_setcsr(mxcsr);
+#endif
 
     RTCORE_CATCH_END;
   }
