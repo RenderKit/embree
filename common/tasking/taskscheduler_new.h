@@ -246,7 +246,7 @@ namespace embree
 
       assert(!active);
       active = true;
-      Thread thread(0,this);
+      Thread& thread = masterThread;
       threadLocal[0] = &thread;
       setThread(&thread);
       thread.tasks.push_right(thread,size,closure);
@@ -274,7 +274,7 @@ namespace embree
 
       assert(!active);
       active = true;
-      Thread thread(0,this);
+      Thread& thread = masterThread;
       threadLocal[0] = &thread;
       setThread(&thread);
 
@@ -376,6 +376,7 @@ namespace embree
     __dllexport2 static TaskSchedulerNew* global_instance();
 
   private:
+    Thread masterThread;
 	  static TaskSchedulerNew* g_instance;
 	  static __thread Thread* thread_local_thread;
 
