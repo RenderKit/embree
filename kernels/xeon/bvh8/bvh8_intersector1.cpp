@@ -15,8 +15,10 @@
 // ======================================================================== //
 
 #include "bvh8_intersector1.h"
-#include "geometry/triangle4_intersector1_moeller.h"
-#include "geometry/triangle8_intersector1_moeller.h"
+#include "geometry/triangle4.h"
+#include "geometry/triangle8.h"
+#include "geometry/intersector_iterators.h"
+#include "geometry/triangle_intersector_moeller.h"
 
 namespace embree
 { 
@@ -26,12 +28,12 @@ namespace embree
     void BVH8Intersector1<PrimitiveIntersector>::intersect(const BVH8* bvh, Ray& ray)
     {
       /*! perform per ray precalculations required by the primitive intersector */
-      Precalculations pre(ray);
+      Precalculations pre(ray,bvh);
 
       /*! stack state */
-      StackItemInt32<NodeRef> stack[stackSize];  //!< stack of nodes 
-      StackItemInt32<NodeRef>* stackPtr = stack+1;        //!< current stack pointer
-      StackItemInt32<NodeRef>* stackEnd = stack+stackSize;
+      StackItemT<NodeRef> stack[stackSize];  //!< stack of nodes 
+      StackItemT<NodeRef>* stackPtr = stack+1;        //!< current stack pointer
+      StackItemT<NodeRef>* stackEnd = stack+stackSize;
       stack[0].ptr = bvh->root;
       stack[0].dist = neg_inf;
       
@@ -184,7 +186,7 @@ namespace embree
     void BVH8Intersector1<PrimitiveIntersector>::occluded(const BVH8* bvh, Ray& ray)
     {
       /*! perform per ray precalculations required by the primitive intersector */
-      Precalculations pre(ray);
+      Precalculations pre(ray,bvh);
 
       /*! stack state */
       NodeRef stack[stackSize];  //!< stack of nodes that still need to get traversed
@@ -316,7 +318,7 @@ namespace embree
       AVX_ZERO_UPPER();
     }
 
-    DEFINE_INTERSECTOR1(BVH8Triangle4Intersector1Moeller,BVH8Intersector1<LeafIterator1<Triangle4Intersector1MoellerTrumbore<LeafMode> > >);
-    DEFINE_INTERSECTOR1(BVH8Triangle8Intersector1Moeller,BVH8Intersector1<LeafIterator1<Triangle8Intersector1MoellerTrumbore<LeafMode> > >);
+    DEFINE_INTERSECTOR1(BVH8Triangle4Intersector1Moeller,BVH8Intersector1<ArrayIntersector1<TriangleNIntersector1MoellerTrumbore<Triangle4 COMMA true> > >);
+    DEFINE_INTERSECTOR1(BVH8Triangle8Intersector1Moeller,BVH8Intersector1<ArrayIntersector1<TriangleNIntersector1MoellerTrumbore<Triangle8 COMMA true> > >);
   }
 }

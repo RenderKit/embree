@@ -36,15 +36,14 @@ namespace embree
     ////////////////////////////////////////////////////////////////////////////////
 
     __forceinline Vec4    ( )                  { }
+    __forceinline explicit Vec4( const T& a                                     ) : x(a), y(a), z(a), w(a) {}
+    __forceinline explicit Vec4( const T& x, const T& y, const T& z, const T& w ) : x(x), y(y), z(z), w(w) {}
+
     __forceinline Vec4    ( const Vec4& other ) { x = other.x; y = other.y; z = other.z; w = other.w; }
     __forceinline Vec4    ( const Vec3fa& other );
 
     template<typename T1> __forceinline Vec4( const Vec4<T1>& a ) : x(T(a.x)), y(T(a.y)), z(T(a.z)), w(T(a.w)) {}
     template<typename T1> __forceinline Vec4& operator =(const Vec4<T1>& other) { x = other.x; y = other.y; z = other.z; w = other.w; return *this; }
-
-    __forceinline explicit Vec4( const T& a                                     ) : x(a), y(a), z(a), w(a) {}
-    __forceinline explicit Vec4( const T& x, const T& y, const T& z, const T& w ) : x(x), y(y), z(z), w(w) {}
-    __forceinline explicit Vec4( const T* const a, const size_t stride = 1     ) : x(a[0]), y(a[stride]), z(a[2*stride]), w(a[3*stride]) {}
 
     ////////////////////////////////////////////////////////////////////////////////
     /// Constants
@@ -161,6 +160,22 @@ namespace embree
 #include "vec3ba.h" 
 #include "vec3ia.h" 
 #include "vec3fa.h" 
+#endif
+
+////////////////////////////////////////////////////////////////////////////////
+/// SSE / AVX / MIC specializations
+////////////////////////////////////////////////////////////////////////////////
+
+#if defined __SSE__
+#include "simd/sse.h"
+#endif
+
+#if defined __AVX__
+#include "simd/avx.h"
+#endif
+
+#if defined __MIC__
+#include "simd/mic.h"
 #endif
 
 namespace embree 

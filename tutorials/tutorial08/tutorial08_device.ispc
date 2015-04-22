@@ -17,10 +17,16 @@
 #include "../common/tutorial/tutorial_device.isph"
 
 /* configuration */
-#define PARALLEL_COMMIT
 #define MIN_EDGE_LEVEL 2.0f
 #define MAX_EDGE_LEVEL 64.0f
 #define LEVEL_FACTOR 64.0f
+
+#if defined(__XEON_PHI__)
+#define EDGE_LEVEL 64.0f
+#else
+#define EDGE_LEVEL 256.0f
+#endif
+
 
 /* scene data */
 RTCScene g_scene = NULL;
@@ -41,6 +47,7 @@ void error_handler(const uniform RTCError code, const uniform int8* uniform str)
   case RTC_INVALID_OPERATION: print("RTC_INVALID_OPERATION"); break;
   case RTC_OUT_OF_MEMORY    : print("RTC_OUT_OF_MEMORY"); break;
   case RTC_UNSUPPORTED_CPU  : print("RTC_UNSUPPORTED_CPU"); break;
+  case RTC_CANCELLED        : print("RTC_CANCELLED"); break;
   default                   : print("invalid error code"); break;
   }
   if (str) { 
@@ -51,14 +58,7 @@ void error_handler(const uniform RTCError code, const uniform int8* uniform str)
   abort();
 }
 
-/* rtcCommitThread called by all ISPC worker threads to enable parallel build */
-#if defined(PARALLEL_COMMIT)
-task void parallelCommit(RTCScene scene) {
-  rtcCommitThread (scene,threadIndex,threadCount); 
-}
-#endif
-
-uniform float cube_vertices[8][4] = 
+__aligned(16) uniform float cube_vertices[8][4] = 
 {
   { -1.0f, -1.0f, -1.0f, 0.0f },
   {  1.0f, -1.0f, -1.0f, 0.0f },
@@ -119,6 +119,10 @@ uniform unsigned int addCube (RTCScene scene_i)
   rtcSetBuffer(scene_i, geomID, RTC_VERTEX_BUFFER, cube_vertices, 0, sizeof(uniform Vec3fa  ));
   rtcSetBuffer(scene_i, geomID, RTC_INDEX_BUFFER,  cube_indices , 0, sizeof(uniform unsigned int));
   rtcSetBuffer(scene_i, geomID, RTC_FACE_BUFFER,   cube_faces,    0, sizeof(uniform unsigned int));
+
+  uniform float* uniform level = (uniform float* uniform) rtcMapBuffer(scene_i, geomID, RTC_LEVEL_BUFFER);
+  for (uniform size_t i=0; i<NUM_INDICES; i++) level[i] = EDGE_LEVEL;
+  rtcUnmapBuffer(scene_i, geomID, RTC_LEVEL_BUFFER);
 
   return geomID;
 }
@@ -186,6 +190,9 @@ export void device_init (uniform int8* uniform cfg)
 
   /* add ground plane */
   addGroundPlane(g_scene);
+
+  /* commit changes to scene */
+  rtcCommit (g_scene);
 
   /* set start render mode */
   renderPixel = renderPixelStandard;
@@ -256,7 +263,7 @@ task void renderTile(uniform int* uniform pixels,
   const uniform int y0 = tileY * TILE_SIZE_Y;
   const uniform int y1 = min(y0+TILE_SIZE_Y,height);
 
-  foreach (y = y0 ... y1, x = x0 ... x1)
+  foreach_tiled (y = y0 ... y1, x = x0 ... x1)
   {
     /* calculate pixel color */
     Vec3f color = renderPixel(x,y,vx,vy,vz,p);
@@ -283,18 +290,12 @@ export void device_render (uniform int* uniform pixels,
   updateEdgeLevelBuffer(g_scene,0,p);
     
   /* rebuild scene */
-#if !defined(PARALLEL_COMMIT)
   rtcCommit (g_scene);
-#else
-  launch[ getNumHWThreads() ] parallelCommit(g_scene); sync;
-#endif
   
   /* render image */
   const uniform int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   const uniform int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
   launch[numTilesX*numTilesY] renderTile(pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY); sync;
-
-  rtcDebug();
 }
 
 /* called by the C++ code for cleanup */

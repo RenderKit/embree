@@ -14,14 +14,16 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-PROJECT(embree)
-
-CMAKE_MINIMUM_REQUIRED(VERSION 2.8.12)
-
 SET(EMBREE_VERSION_MAJOR 2)
 SET(EMBREE_VERSION_MINOR 5)
-SET(EMBREE_VERSION_PATCH 0)
+SET(EMBREE_VERSION_PATCH 1)
 SET(EMBREE_VERSION_NOTE " (devel)")
+SET(EMBREE_VERSION ${EMBREE_VERSION_MAJOR}.${EMBREE_VERSION_MINOR}.${EMBREE_VERSION_PATCH})
+SET(CPACK_RPM_PACKAGE_RELEASE 1)
+
+PROJECT(embree${EMBREE_VERSION_MAJOR})
+
+CMAKE_MINIMUM_REQUIRED(VERSION 2.8.11)
 
 CONFIGURE_FILE(
   "${PROJECT_SOURCE_DIR}/kernels/version.h.in"
@@ -39,7 +41,6 @@ IF(COMMAND cmake_policy)
 ENDIF(COMMAND cmake_policy)
 
 MARK_AS_ADVANCED(CMAKE_BACKWARDS_COMPATIBILITY)
-MARK_AS_ADVANCED(CMAKE_INSTALL_PREFIX)
 MARK_AS_ADVANCED(EXECUTABLE_OUTPUT_PATH)
 MARK_AS_ADVANCED(LIBRARY_OUTPUT_PATH)
 
@@ -49,6 +50,11 @@ MARK_AS_ADVANCED(CMAKE_OSX_SYSROOT)
 MARK_AS_ADVANCED(GLUT_cocoa_LIBRARY)
 
 SET(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/common/cmake ${CMAKE_MODULE_PATH})
+
+##############################################################
+# Create Binary Packages
+##############################################################
+include(package)
 
 ##############################################################
 # Embree configuration
@@ -81,14 +87,23 @@ OPTION(RTCORE_STAT_COUNTERS "Enables statistic counters.")
 OPTION(RTCORE_BACKFACE_CULLING "Enables backface culling.")
 OPTION(RTCORE_INTERSECTION_FILTER "Enables intersection filter callback." ON)
 OPTION(RTCORE_BUFFER_STRIDE "Enables buffer strides." ON)
-OPTION(RTCORE_SPINLOCKS "Use spinning locks.")
-OPTION(RTCORE_TASKLOGGER "Allows creating scheduling diagram of tasks.")
 OPTION(RTCORE_EXPORT_ALL_SYMBOLS "Lets Embree library export all symbols.")
 OPTION(RTCORE_ENABLE_RAYSTREAM_LOGGER "Enables ray stream logger.")
-OPTION(RTCORE_RETURN_SUBDIV_NORMAL "Returns smooth subdivision surface normal in ray structure instead of triangle normal." OFF)
+OPTION(RTCORE_RETURN_SUBDIV_NORMAL "Returns smooth subdivision surface normal in ray structure instead of triangle normal.")
+
+SET(RTCORE_TASKING_SYSTEM "TBB" CACHE STRING "Selects tasking system")
+SET_PROPERTY(CACHE RTCORE_TASKING_SYSTEM PROPERTY STRINGS TBB INTERNAL)
+
+IF (RTCORE_TASKING_SYSTEM STREQUAL "TBB")
+  SET(TASKING_TBB ON)
+  FIND_PACKAGE(TBB REQUIRED)
+  INCLUDE_DIRECTORIES(${TBB_INCLUDE_DIRS})
+ELSE()
+  SET(TASKING_INTERNAL ON)
+ENDIF()
 
 CONFIGURE_FILE(
-  "${PROJECT_SOURCE_DIR}/common/sys/config.h.in"
+  "${PROJECT_SOURCE_DIR}/kernels/config.h.in"
   "${PROJECT_BINARY_DIR}/config.h"
 )
 
@@ -239,7 +254,6 @@ INCLUDE_DIRECTORIES_ISPC(${PROJECT_SOURCE_DIR})
 ##############################################################
 # Output paths
 ##############################################################
-
 SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
 SET(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
 SET(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
@@ -264,26 +278,29 @@ IF (ENABLE_TUTORIALS)
 ENDIF()
 
 ##############################################################
-# Install Headers
+# Documentation
 ##############################################################
 
-INSTALL(DIRECTORY include/embree2 DESTINATION include)
-
+FILE(GLOB DOC_FILES ${PROJECT_SOURCE_DIR}/embree-doc/docbin/*)
+INSTALL(FILES ${DOC_FILES} OPTIONAL DESTINATION ${DOC_INSTALL_DIR} COMPONENT documentation)
+INSTALL(FILES ${PROJECT_SOURCE_DIR}/LICENSE.txt DESTINATION ${DOC_INSTALL_DIR} COMPONENT documentation)
 
 # currently CMake does not support solution folders without projects
-# SOURCE_GROUP("doc" FILES README.md readme.pdf)
+# SOURCE_GROUP("Documentation" FILES README.md CHANGELOG.md LICENSE.txt readme.pdf)
 
-# install scripts
-IF (NOT WIN32)
-  IF (APPLE)
-    SET(SCRIPT_DIR install_macos)
-  ELSE()
-    SET(SCRIPT_DIR install_linux)
-  ENDIF()
-  CONFIGURE_FILE(
-    scripts/${SCRIPT_DIR}/install.sh
-    "${PROJECT_BINARY_DIR}/install.sh"
-    @ONLY
-  )
-  INSTALL(PROGRAMS "${PROJECT_BINARY_DIR}/install.sh" scripts/${SCRIPT_DIR}/paths.sh DESTINATION ./)
-ENDIF()
+##############################################################
+# Uninstall
+##############################################################
+
+configure_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/common/cmake/uninstall.cmake.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/uninstall.cmake"
+    IMMEDIATE @ONLY)
+
+add_custom_target(uninstall
+    COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/uninstall.cmake)
+
+##############################################################
+# Has to be last
+##############################################################
+INCLUDE(CPack)

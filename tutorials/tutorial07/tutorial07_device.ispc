@@ -18,13 +18,33 @@
 #include "../common/tutorial/scene_device.isph"
 //FIXME: re-enable rtcOccluded call
 
-#define PARALLEL_COMMIT
+#if 0
+#undef TILE_SIZE_X
+#undef TILE_SIZE_Y
+#define TILE_SIZE_X 4
+#define TILE_SIZE_Y 4
+#endif
 
 #if defined(__XEON_PHI__) // FIXME: gather of pointers not working in ISPC for Xeon Phi
 #define renderPixelTestEyeLight renderPixelStandard
 #else
 #define renderPixelPathTrace renderPixelStandard
 #endif
+
+//#define FORCE_FIXED_EDGE_TESSELLATION
+#define FIXED_EDGE_TESSELLATION_VALUE 8
+//#define FIXED_EDGE_TESSELLATION_VALUE 32
+
+#define MAX_EDGE_LEVEL 64.0f
+//#define MAX_EDGE_LEVEL 8.0f
+#define MIN_EDGE_LEVEL 4.0f
+#define ENABLE_DISPLACEMENTS 0
+#if ENABLE_DISPLACEMENTS
+#  define LEVEL_FACTOR 256.0f
+#else
+#  define LEVEL_FACTOR 64.0f
+#endif
+
 
 /* accumulation buffer */
 uniform Vec3fa* uniform g_accu = NULL;
@@ -36,6 +56,7 @@ uniform Vec3f g_accu_vy;
 uniform Vec3f g_accu_vz;
 uniform Vec3f g_accu_p;
 extern uniform bool g_changed;
+uniform bool g_subdiv_mode = false;
 
 /* light settings */
 extern uniform Vec3fa g_dirlight_direction;
@@ -64,6 +85,7 @@ void error_handler(const uniform RTCError code, const uniform int8* uniform str)
   case RTC_INVALID_OPERATION: print("RTC_INVALID_OPERATION"); break;
   case RTC_OUT_OF_MEMORY    : print("RTC_OUT_OF_MEMORY"); break;
   case RTC_UNSUPPORTED_CPU  : print("RTC_UNSUPPORTED_CPU"); break;
+  case RTC_CANCELLED        : print("RTC_CANCELLED"); break;
   default                   : print("invalid error code"); break;
   }
   if (str) { 
@@ -73,13 +95,6 @@ void error_handler(const uniform RTCError code, const uniform int8* uniform str)
   }
   abort();
 }
-
-/* rtcCommitThread called by all ISPC worker threads to enable parallel build */
-#if defined(PARALLEL_COMMIT)
-task void parallelCommit(RTCScene scene) {
-  rtcCommitThread (scene,threadIndex,threadCount); 
-}
-#endif
 
 /* render function to use */
 renderPixelFunc renderPixel;
@@ -106,7 +121,7 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
   //scene_in->numMeshes = 0;
 
   /* create scene */
-  RTCScene scene_out = rtcNewScene(RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT, RTC_INTERSECT_VARYING);
+  RTCScene scene_out = rtcNewScene(RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT, RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING);
 
   /* add all hair sets to the scene */
   for (uniform int i=0; i<scene_in->numHairSets; i++)
@@ -123,19 +138,58 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
   for (uniform int i=0; i<scene_in->numMeshes; i++)
   {
     uniform ISPCMesh* uniform mesh = scene_in->meshes[i];
-    uniform unsigned int geomID = rtcNewTriangleMesh (scene_out, RTC_GEOMETRY_STATIC, mesh->numTriangles, mesh->numVertices, mesh->positions2 ? 2 : 1);
-    rtcSetBuffer(scene_out,geomID,RTC_VERTEX_BUFFER,mesh->positions,0,sizeof(uniform Vertex));
-    if (mesh->positions2) rtcSetBuffer(scene_out,geomID,RTC_VERTEX_BUFFER1,mesh->positions2,0,sizeof(uniform Vertex));
-    rtcSetBuffer(scene_out,geomID,RTC_INDEX_BUFFER,mesh->triangles,0,sizeof(uniform ISPCTriangle));
-    rtcSetOcclusionFilterFunction(scene_out,geomID,(RTCFilterFuncVarying)&filterDispatch);
+   
+    if (mesh->numQuads)
+     {
+     g_subdiv_mode = true;
+
+      uniform size_t numPrimitives = mesh->numQuads;
+      uniform size_t numEdges      = mesh->numQuads*4;
+      mesh->edge_level             = uniform new uniform float[numEdges];
+      uniform int *uniform index_buffer = uniform new uniform int[numEdges];
+      
+      for (uniform size_t i=0; i<numEdges; i++) 
+	mesh->edge_level[i] = FIXED_EDGE_TESSELLATION_VALUE;
+      
+      /* create a triangle mesh */
+      uniform unsigned int geomID = rtcNewSubdivisionMesh (scene_out, RTC_GEOMETRY_STATIC, numPrimitives, numEdges, mesh->numVertices, 0, 0, 0);
+      mesh->geomID = geomID;
+
+      uniform unsigned int* faces = (uniform unsigned int*) rtcMapBuffer(scene_out, geomID, RTC_FACE_BUFFER);
+      for (uniform size_t i=0; i<mesh->numQuads    ; i++) faces[i] = 4;
+      
+      rtcUnmapBuffer(scene_out,geomID,RTC_FACE_BUFFER);
+
+      for (uniform size_t i=0; i<mesh->numQuads; i++)
+      	 {
+	   index_buffer[4*i+0] = mesh->quads[i].v0;
+	   index_buffer[4*i+1] = mesh->quads[i].v1;
+	   index_buffer[4*i+2] = mesh->quads[i].v2;
+	   index_buffer[4*i+3] = mesh->quads[i].v3;	   
+	 }
+
+      rtcSetBuffer(scene_out, geomID, RTC_VERTEX_BUFFER, mesh->positions , 0, sizeof(uniform Vec3fa  ));
+      rtcSetBuffer(scene_out, geomID, RTC_INDEX_BUFFER,  index_buffer    , 0, sizeof(uniform unsigned int));
+      rtcSetBuffer(scene_out, geomID, RTC_LEVEL_BUFFER,  mesh->edge_level, 0, sizeof(uniform float));
+      
+#if ENABLE_DISPLACEMENTS == 1
+      rtcSetDisplacementFunction(scene_out,geomID,(RTCDisplacementFunc)&displacementFunction,NULL);
+#endif
+     } 
+    else if (mesh->numTriangles)
+    {
+     uniform unsigned int geomID = rtcNewTriangleMesh (scene_out, RTC_GEOMETRY_STATIC, mesh->numTriangles, mesh->numVertices, mesh->positions2 ? 2 : 1);
+     rtcSetBuffer(scene_out,geomID,RTC_VERTEX_BUFFER,mesh->positions,0,sizeof(uniform Vertex));
+     if (mesh->positions2) rtcSetBuffer(scene_out,geomID,RTC_VERTEX_BUFFER1,mesh->positions2,0,sizeof(uniform Vertex));
+     rtcSetBuffer(scene_out,geomID,RTC_INDEX_BUFFER,mesh->triangles,0,sizeof(uniform ISPCTriangle));
+     rtcSetOcclusionFilterFunction(scene_out,geomID,(RTCFilterFuncVarying)&filterDispatch);
+    }
+  
   }
 
+
   /* commit changes to scene */
-#if !defined(PARALLEL_COMMIT)
   rtcCommit (scene_out);
-#else
-  launch[ getNumHWThreads() ] parallelCommit(scene_out); sync;
-#endif
 
   return scene_out;
 }
@@ -418,12 +472,26 @@ Vec3f renderPixelPathTrace(float x, float y, const uniform Vec3f& vx, const unif
     {
       int meshID = ray.geomID-g_ispc_scene->numHairSets;
       ISPCMesh* mesh = g_ispc_scene->meshes[meshID];
+      if (g_subdiv_mode == true)
+      	{
+        if (dot(ray.dir,ray.Ng) > 0) ray.Ng = neg(ray.Ng);
+        
+        /* calculate tangent space */
+        const Vec3f dz = normalize(ray.Ng);
+        const Vec3f dx = normalize(cross(dz,ray.dir));
+        const Vec3f dy = normalize(cross(dz,dx));
+        
+        /* generate isotropic BRDF */
+        AnisotropicBlinn__Constructor(&brdf,make_Vec3f(1.0f),make_Vec3f(0.0f),dx,1.0f,dy,1.0f,dz);
+        }
+      else
+        {
       ISPCTriangle* triangle = &mesh->triangles[ray.primID];
       OBJMaterial* material = (OBJMaterial*) &g_ispc_scene->materials[triangle->materialID];
       if (material->illum == 1)
       {
         /* calculate tangent space */
-        const Vec3f dx = normalize(make_Vec3f(mesh->normals[triangle->v0]));
+        const Vec3f dx = normalize(make_Vec3f(mesh->normals[triangle->v0]));	   
         const Vec3f dy = normalize(cross(ray.dir,dx));
         const Vec3f dz = normalize(cross(dy,dx));
         
@@ -443,6 +511,7 @@ Vec3f renderPixelPathTrace(float x, float y, const uniform Vec3f& vx, const unif
         
         /* generate isotropic BRDF */
         AnisotropicBlinn__Constructor(&brdf,make_Vec3f(1.0f),make_Vec3f(0.0f),dx,1.0f,dy,1.0f,dz);
+      }
       }
     }
     
@@ -558,7 +627,7 @@ task void renderTile(uniform int* uniform pixels,
   //int seed = tileY*numTilesX+tileX+programIndex + g_accu_count;
   int seed = (tileY*numTilesX+tileX+programIndex) * g_accu_count;
 
-  foreach (y = y0 ... y1, x = x0 ... x1)
+  foreach_tiled (y = y0 ... y1, x = x0 ... x1)
   {
    int seed = (y*width+x+programIndex) * g_accu_count;
 
@@ -622,7 +691,6 @@ export void device_render (uniform int* uniform pixels,
   enableFilterDispatch = renderPixel == renderPixelStandard; 
   launch[numTilesX*numTilesY] renderTile(pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY); sync;
   enableFilterDispatch = false;
-  rtcDebug();
 }
 
 /* called by the C++ code for cleanup */

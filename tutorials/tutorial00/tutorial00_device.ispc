@@ -16,8 +16,6 @@
 
 #include "../common/tutorial/tutorial_device.isph"
 
-#define PARALLEL_COMMIT
-
 /* scene data */
 RTCScene g_scene = NULL;
 uniform Vec3f* uniform colors = NULL;
@@ -35,6 +33,7 @@ void error_handler(const uniform RTCError code, const uniform int8* uniform str)
   case RTC_INVALID_OPERATION: print("RTC_INVALID_OPERATION"); break;
   case RTC_OUT_OF_MEMORY    : print("RTC_OUT_OF_MEMORY"); break;
   case RTC_UNSUPPORTED_CPU  : print("RTC_UNSUPPORTED_CPU"); break;
+  case RTC_CANCELLED        : print("RTC_CANCELLED"); break;
   default                   : print("invalid error code"); break;
   }
   if (str) { 
@@ -44,13 +43,6 @@ void error_handler(const uniform RTCError code, const uniform int8* uniform str)
   }
   abort();
 }
-
-/* rtcCommitThread called by all ISPC worker threads to enable parallel build */
-#if defined(PARALLEL_COMMIT)
-task void parallelCommit(RTCScene scene) {
-  rtcCommitThread (scene,threadIndex,threadCount); 
-}
-#endif
 
 /* adds a cube to the scene */
 uniform unsigned int addCube (RTCScene scene_i)
@@ -148,12 +140,7 @@ export void device_init (uniform int8* uniform cfg)
   addGroundPlane(g_scene);
 
   /* commit changes to scene */
-
-#if !defined(PARALLEL_COMMIT)
   rtcCommit (g_scene);
-#else
-  launch[ getNumHWThreads() ] parallelCommit(g_scene); sync;
-#endif
 
   /* set start render mode */
   renderPixel = renderPixelStandard;
@@ -251,14 +238,13 @@ task void renderTile(uniform int* uniform pixels,
   const uniform int y1 = min(y0+TILE_SIZE_Y,height);
 
   //unsigned int seed = tileY*numTilesX+tileX+programIndex;
-
   //seed = wang_hash( seed );
    
-  foreach (y = y0 ... y1, x = x0 ... x1)
+  foreach_tiled (y = y0 ... y1, x = x0 ... x1)
   {
-   unsigned int seed = y * width + x + programIndex;
-   rand_xorshift(seed);
-   rand_xorshift(seed);
+    //unsigned int seed = y * width + x + programIndex;
+    //rand_xorshift(seed);
+    //rand_xorshift(seed);
 
     /* calculate pixel color */
     Vec3f color = renderPixel(x,y,vx,vy,vz,p);
@@ -270,7 +256,7 @@ task void renderTile(uniform int* uniform pixels,
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
     unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
     unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
-    pixels[y*width+x] = (b << 16) + (g << 8) + r;
+    pixels[y*width+x] = (b << 16) + (g << 8) + r;  
   }
 }
 
@@ -287,7 +273,6 @@ export void device_render (uniform int* uniform pixels,
   const uniform int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   const uniform int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
   launch[numTilesX*numTilesY] renderTile(pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY); sync;
-  rtcDebug();
 }
 
 /* called by the C++ code for cleanup */

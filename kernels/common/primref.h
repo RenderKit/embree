@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "common/default.h"
+#include "default.h"
 
 namespace embree
 {
@@ -25,12 +25,33 @@ namespace embree
   {
     __forceinline PrimRef () {}
 
-    __forceinline PrimRef (const BBox3fa& bounds, unsigned geomID, unsigned primID) {
+#if defined(__AVX__)
+    __forceinline PrimRef(const PrimRef& v) { 
+      store8f((float*)this,load8f((float*)&v));
+    }
+    __forceinline void operator=(const PrimRef& v) { 
+      store8f((float*)this,load8f((float*)&v));
+    }
+#endif
+
+#if defined(__MIC__)
+      __forceinline PrimRef(const PrimRef& v) { 
+        compactustore16f_low(0xff,(float*)this,uload16f_low((float*)&v.lower));
+      }
+    
+    __forceinline void operator=(const PrimRef& v) { 
+      compactustore16f_low(0xff,(float*)this,uload16f_low((float*)&v.lower));
+    }
+#endif
+
+    __forceinline PrimRef (const BBox3fa& bounds, unsigned geomID, unsigned primID) 
+    {
       lower = bounds.lower; lower.a = geomID;
       upper = bounds.upper; upper.a = primID;
     }
 
-    __forceinline PrimRef (const BBox3fa& bounds, size_t id) {
+    __forceinline PrimRef (const BBox3fa& bounds, size_t id) 
+    {
 #if defined(__X86_64__)
       lower = bounds.lower; lower.u = id & 0xFFFFFFFF;
       upper = bounds.upper; upper.u = (id >> 32) & 0xFFFFFFFF;
@@ -45,18 +66,28 @@ namespace embree
       return lower+upper;
     }
     
+    /*! return the bounding box of the primitive */
     __forceinline const BBox3fa bounds() const {
       return BBox3fa(lower,upper);
     }
 
-    __forceinline size_t geomID() const { 
+#if defined(__MIC__)
+    __forceinline mic2f getBounds() const { 
+      return mic2f(broadcast4to16f((float*)&lower),broadcast4to16f((float*)&upper)); 
+    }
+#endif
+
+    /*! returns the geometry ID */
+    __forceinline unsigned geomID() const { 
       return lower.a;
     }
 
-    __forceinline size_t primID() const { 
+    /*! returns the primitive ID */
+    __forceinline unsigned primID() const { 
       return upper.a;
     }
 
+    /*! returns an size_t sized ID */
     __forceinline size_t ID() const { 
 #if defined(__X86_64__)
       return size_t(lower.u) + (size_t(upper.u) << 32);
@@ -65,39 +96,30 @@ namespace embree
 #endif
     }
 
-    __forceinline uint64 id64() const {
+    /*! special function for operator< */
+    __forceinline uint64 ID64() const {
       return (((uint64)primID()) << 32) + (uint64)geomID();
     }
-
-    friend __forceinline bool operator<(const PrimRef& p0, const PrimRef& p1) {
-      return p0.id64() < p1.id64();
-    }
     
-#if defined(__MIC__)
-    __forceinline void operator=(const PrimRef& v) { 
-      const mic_f p = uload16f_low((float*)&v.lower);
-      compactustore16f_low(0xff,(float*)this,p);            
-    };
+    /*! allows sorting the primrefs by ID */
+    friend __forceinline bool operator<(const PrimRef& p0, const PrimRef& p1) {
+      return p0.ID64() < p1.ID64();
+    }
 
-    __forceinline mic2f getBounds() const { return mic2f(broadcast4to16f((float*)&lower),broadcast4to16f((float*)&upper)); }
-
-#endif
+    /*! Outputs primitive reference to a stream. */
+    friend __forceinline std::ostream& operator<<(std::ostream& cout, const PrimRef& ref) {
+      return cout << "{ lower = " << ref.lower << ", upper = " << ref.upper << ", geomID = " << ref.geomID() << ", primID = " << ref.primID() << " }";
+    }
 
   public:
-    Vec3fa lower;
-    Vec3fa upper;
+    Vec3fa lower;     //!< lower bounds and geomID
+    Vec3fa upper;     //!< upper bounds and primID
   };
 
-  /*! Outputs primitive reference to a stream. */
-  inline std::ostream& operator<<(std::ostream& cout, const PrimRef& ref) {
-    return cout << "{ lower = " << ref.lower << ", upper = " << ref.upper << ", geomID = " << ref.geomID() << ", primID = " << ref.primID() << " }";
-  }
-
-
+  /*! fast exchange for PrimRefs */
   __forceinline void xchg(PrimRef& a, PrimRef& b)
   {
-#if defined(__AVX__) || defined(__AVX2__)
-
+#if defined(__AVX__)
     const avxf aa = load8f((float*)&a);
     const avxf bb = load8f((float*)&b);
     store8f((float*)&a,bb);
@@ -111,19 +133,4 @@ namespace embree
     std::swap(a,b);
 #endif
   }
-
-  __forceinline bool subset(const PrimRef& a, const PrimRef& b)
-  { 
-    for ( size_t i = 0 ; i < 3 ; i++ ) if ( a.lower[i] < b.lower[i] ) return false;
-    for ( size_t i = 0 ; i < 3 ; i++ ) if ( a.upper[i] > b.upper[i] ) return false;
-    return true; 
-  }
-
-
-  __forceinline float area( const PrimRef& a ) 
-  { 
-    const Vec3fa d = a.upper - a.lower; 
-    return 2.0f*(d.x*(d.y+d.z)+d.y*d.z); 
-  }
-
 }

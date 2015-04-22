@@ -18,6 +18,15 @@
 #define __RTCORE_H__
 
 #include <stddef.h>
+#include <sys/types.h>
+
+#if defined(_WIN32)
+#if defined(_M_X64)
+typedef long long ssize_t;
+#else
+typedef int ssize_t;
+#endif
+#endif
 
 #ifndef RTCORE_API
 #if defined(_WIN32) && !defined(ENABLE_STATIC_LIB)
@@ -31,6 +40,14 @@
 #  define RTCORE_ALIGN(...) __declspec(align(__VA_ARGS__))
 #else
 #  define RTCORE_ALIGN(...) __attribute__((aligned(__VA_ARGS__)))
+#endif
+
+#ifdef __GNUC__
+  #define RTCORE_DEPRECATED __attribute__((deprecated))
+#elif defined(_MSC_VER)
+  #define RTCORE_DEPRECATED __declspec(deprecated)
+#else
+  #define RTCORE_DEPRECATED
 #endif
 
 #include "rtcore_scene.h"
@@ -80,6 +97,7 @@ enum RTCError {
   RTC_INVALID_OPERATION = 3, //!< The operation is not allowed for the specified object.
   RTC_OUT_OF_MEMORY = 4,     //!< There is not enough memory left to execute the command.
   RTC_UNSUPPORTED_CPU = 5,   //!< The CPU is not supported as it does not support SSE2.
+  RTC_CANCELLED = 6,         //!< The user has cancelled the operation through the RTC_PROGRESS_MONITOR_FUNCTION callback
 };
 
 /*! \brief Returns the value of the per-thread error flag. 
@@ -90,16 +108,25 @@ enum RTCError {
 RTCORE_API RTCError rtcGetError();
 
 /*! \brief Type of error callback function. */
-typedef void (*RTC_ERROR_FUNCTION)(const RTCError code, const char* str);
+typedef void (*RTCErrorFunc)(const RTCError code, const char* str);
+RTCORE_DEPRECATED typedef RTCErrorFunc RTC_ERROR_FUNCTION;
 
 /*! \brief Sets a callback function that is called whenever an error occurs. */
-RTCORE_API void rtcSetErrorFunction(RTC_ERROR_FUNCTION func);
+RTCORE_API void rtcSetErrorFunction(RTCErrorFunc func);
+
+/*! \brief Type of memory consumption callback function. */
+typedef bool (*RTCMemoryMonitorFunc)(const ssize_t bytes, const bool post);
+RTCORE_DEPRECATED typedef RTCMemoryMonitorFunc RTC_MEMORY_MONITOR_FUNCTION;
+
+/*! \brief Sets the memory consumption callback function which is
+ *  called before or after the library allocates or frees memory. */
+RTCORE_API void rtcSetMemoryMonitorFunction(RTCMemoryMonitorFunc func);
 
 /*! \brief Implementation specific (do not call).
 
   This function is implementation specific and only for debugging
   purposes. Do not call it. */
-RTCORE_API void rtcDebug();
+RTCORE_API RTCORE_DEPRECATED void rtcDebug(); // FIXME: remove
 
 /*! \brief Helper to easily combing scene flags */
 inline RTCSceneFlags operator|(const RTCSceneFlags a, const RTCSceneFlags b) {

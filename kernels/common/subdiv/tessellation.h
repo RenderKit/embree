@@ -16,57 +16,12 @@
 
 #pragma once
 
+#define COMPACT 1
+
 namespace embree
 {
-  /* int->float lookup table for single axis of a regular grid, grid dimension would be (2^l+1)*(2^l+1) */
-  struct __aligned(64) RegularGridLookUpTables
-  {
-  private:
-    const static size_t MAX_SUBDIVISION_LEVEL = 8;
-    const static size_t MAX_TABLE_ENTRIES = 2*(((unsigned int)1 << MAX_SUBDIVISION_LEVEL)+1);
-    unsigned int offset[MAX_SUBDIVISION_LEVEL];
-    
-    float table[ MAX_TABLE_ENTRIES ];
-    
-  public:
-    
-    __forceinline float lookUp(const size_t level,
-			       const size_t index) const
-    {
-      assert(level < MAX_SUBDIVISION_LEVEL);
-      assert(offset[level]+index < MAX_TABLE_ENTRIES); 
-      return table[offset[level]+index];
-    }
-    
-    RegularGridLookUpTables()
-    {
-      size_t index = 0;
-      for (size_t l=0;l<MAX_SUBDIVISION_LEVEL;l++)
-      {
-	const unsigned int grid_size = (1 << l) + 1;
-	offset[l] = index;
-	for (size_t i=0;i<grid_size;i++)
-	  table[index++] = (float)i / (float)(grid_size-1);
-      }	
-      assert(index < MAX_TABLE_ENTRIES );
-      
-      /* for (size_t l=0;l<MAX_SUBDIVISION_LEVEL;l++) */
-      /*   { */
-      /*     DBG_PRINT(l); */
-      /*     const unsigned int grid_size = (1 << l) + 1; */
-      /*     DBG_PRINT(grid_size); */
-      
-      /*     for (size_t i=0;i<grid_size;i++) */
-      /*       { */
-      /* 	DBG_PRINT(i); */
-      /* 	DBG_PRINT(lookUp(l,i)); */
-      /*       } */
-      /*   }	 */
-    }
-  };
-    
   
-  __forceinline void stichGridEdges(const unsigned int low_rate,
+  __forceinline void stitchGridEdges(const unsigned int low_rate,
 				    const unsigned int high_rate,
 				    float * __restrict__ const uv_array,
 				    const unsigned int uv_array_step)
@@ -74,7 +29,7 @@ namespace embree
     assert(low_rate < high_rate);
     assert(high_rate >= 2);
     
-    const float inv_low_rate = 1.0f / (float)(low_rate-1);
+    const float inv_low_rate = rcp((float)(low_rate-1));
     const unsigned int dy = low_rate  - 1; 
     const unsigned int dx = high_rate - 1;
     
@@ -98,11 +53,11 @@ namespace embree
     }
   }
   
-  __forceinline void stichUVGrid(const float edge_levels[4],
-				 const unsigned int grid_u_res,
-				 const unsigned int grid_v_res,
-				 float * __restrict__ const u_array,
-				 float * __restrict__ const v_array)
+  __forceinline void stitchUVGrid(const float edge_levels[4],
+				  const unsigned int grid_u_res,
+				  const unsigned int grid_v_res,
+				  float * __restrict__ const u_array,
+				  float * __restrict__ const v_array)
   {
     const unsigned int int_edge_points0 = (unsigned int)edge_levels[0] + 1;
     const unsigned int int_edge_points1 = (unsigned int)edge_levels[1] + 1;
@@ -110,16 +65,16 @@ namespace embree
     const unsigned int int_edge_points3 = (unsigned int)edge_levels[3] + 1;
     
     if (unlikely(int_edge_points0 < grid_u_res))
-      stichGridEdges(int_edge_points0,grid_u_res,u_array,1);
+      stitchGridEdges(int_edge_points0,grid_u_res,u_array,1);
     
     if (unlikely(int_edge_points2 < grid_u_res))
-      stichGridEdges(int_edge_points2,grid_u_res,&u_array[(grid_v_res-1)*grid_u_res],1);
+      stitchGridEdges(int_edge_points2,grid_u_res,&u_array[(grid_v_res-1)*grid_u_res],1);
     
     if (unlikely(int_edge_points1 < grid_v_res))
-      stichGridEdges(int_edge_points1,grid_v_res,&v_array[grid_u_res-1],grid_u_res);
+      stitchGridEdges(int_edge_points1,grid_v_res,&v_array[grid_u_res-1],grid_u_res);
     
     if (unlikely(int_edge_points3 < grid_v_res))
-      stichGridEdges(int_edge_points3,grid_v_res,v_array,grid_u_res);  
+      stitchGridEdges(int_edge_points3,grid_v_res,v_array,grid_u_res);  
   }
   
   __forceinline void gridUVTessellator(const float edge_levels[4],
@@ -192,8 +147,8 @@ namespace embree
     const unsigned int grid_u_segments = grid_u_res-1;
     const unsigned int grid_v_segments = grid_v_res-1;
 
-    const float inv_grid_u_segments = 1.0f / (float)grid_u_segments;
-    const float inv_grid_v_segments = 1.0f / (float)grid_v_segments;
+    const float inv_grid_u_segments = rcp((float)grid_u_segments);
+    const float inv_grid_v_segments = rcp((float)grid_v_segments);
     
     /* initialize grid */
     unsigned int index = 0;

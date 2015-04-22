@@ -16,7 +16,7 @@
 
 IF (__XEON__)
   ADD_LIBRARY(simd STATIC sse.cpp)
-  SET_PROPERTY(TARGET simd PROPERTY FOLDER kernels)
+  SET_PROPERTY(TARGET simd PROPERTY FOLDER common)
 ELSE ()
   INCLUDE(icc_xeonphi)
   ADD_LIBRARY(simd_xeonphi STATIC mic_i.cpp mic_f.cpp mic_m.cpp)

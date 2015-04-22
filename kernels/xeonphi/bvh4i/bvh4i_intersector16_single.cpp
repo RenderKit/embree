@@ -31,13 +31,12 @@ namespace embree
     // ============================================================================================
     // ============================================================================================
 
-    template<typename LeafIntersector, bool ENABLE_COMPRESSED_BVH4I_NODES>
-    void BVH4iIntersector16Single<LeafIntersector,ENABLE_COMPRESSED_BVH4I_NODES>::intersect(mic_i* valid_i, BVH4i* bvh, Ray16& ray16)
+    template<typename LeafIntersector, bool ENABLE_COMPRESSED_BVH4I_NODES, bool ROBUST>
+    void BVH4iIntersector16Single<LeafIntersector,ENABLE_COMPRESSED_BVH4I_NODES,ROBUST>::intersect(mic_i* valid_i, BVH4i* bvh, Ray16& ray16)
     {
       /* near and node stack */
       __aligned(64) float   stack_dist[3*BVH4i::maxDepth+1];
       __aligned(64) NodeRef stack_node[3*BVH4i::maxDepth+1];
-
 
       /* setup */
       const mic_m m_valid    = *(mic_i*)valid_i != mic_i(0);
@@ -56,15 +55,16 @@ namespace embree
         {
 	  stack_node[1] = bvh->root;
 	  size_t sindex = 2;
-
-	  const mic_f org_xyz      = loadAOS4to16f(rayIndex,ray16.org.x,ray16.org.y,ray16.org.z);
 	  const mic_f dir_xyz      = loadAOS4to16f(rayIndex,ray16.dir.x,ray16.dir.y,ray16.dir.z);
+	  const mic_f org_xyz      = loadAOS4to16f(rayIndex,ray16.org.x,ray16.org.y,ray16.org.z);
 	  const mic_f rdir_xyz     = loadAOS4to16f(rayIndex,rdir16.x,rdir16.y,rdir16.z);
-	  const mic_f org_rdir_xyz = org_xyz * rdir_xyz;
+	  //const mic_f org_rdir_xyz = org_xyz * rdir_xyz;
 	  const mic_f min_dist_xyz = broadcast1to16f(&ray16.tnear[rayIndex]);
 	  mic_f       max_dist_xyz = broadcast1to16f(&ray16.tfar[rayIndex]);
 
 	  const unsigned int leaf_mask = BVH4I_LEAF_MASK;
+	  
+	  const Precalculations precalculations(org_xyz,rdir_xyz);
 
 	  while (1)
 	    {
@@ -72,16 +72,15 @@ namespace embree
 	      NodeRef curNode = stack_node[sindex-1];
 	      sindex--;
 
-	      traverse_single_intersect<ENABLE_COMPRESSED_BVH4I_NODES>(curNode,
-								      sindex,
-								      rdir_xyz,
-								      org_rdir_xyz,
-								      min_dist_xyz,
-								      max_dist_xyz,
-								      stack_node,
-								      stack_dist,
-								      nodes,
-								      leaf_mask);
+	      traverse_single_intersect<ENABLE_COMPRESSED_BVH4I_NODES,ROBUST>(curNode,
+									      sindex,
+									      precalculations,
+									      min_dist_xyz,
+									      max_dist_xyz,
+									      stack_node,
+									      stack_dist,
+									      nodes,
+									      leaf_mask);
 		   
 
 
@@ -113,8 +112,8 @@ namespace embree
 	}
     }
 
-    template<typename LeafIntersector,bool ENABLE_COMPRESSED_BVH4I_NODES>    
-    void BVH4iIntersector16Single<LeafIntersector,ENABLE_COMPRESSED_BVH4I_NODES>::occluded(mic_i* valid_i, BVH4i* bvh, Ray16& ray16)
+    template<typename LeafIntersector,bool ENABLE_COMPRESSED_BVH4I_NODES, bool ROBUST>    
+    void BVH4iIntersector16Single<LeafIntersector,ENABLE_COMPRESSED_BVH4I_NODES,ROBUST>::occluded(mic_i* valid_i, BVH4i* bvh, Ray16& ray16)
     {
       /* near and node stack */
       __aligned(64) NodeRef stack_node[3*BVH4i::maxDepth+1];
@@ -140,26 +139,27 @@ namespace embree
 	  const mic_f org_xyz      = loadAOS4to16f(rayIndex,ray16.org.x,ray16.org.y,ray16.org.z);
 	  const mic_f dir_xyz      = loadAOS4to16f(rayIndex,ray16.dir.x,ray16.dir.y,ray16.dir.z);
 	  const mic_f rdir_xyz     = loadAOS4to16f(rayIndex,rdir16.x,rdir16.y,rdir16.z);
-	  const mic_f org_rdir_xyz = org_xyz * rdir_xyz;
+	  //const mic_f org_rdir_xyz = org_xyz * rdir_xyz;
 	  const mic_f min_dist_xyz = broadcast1to16f(&ray16.tnear[rayIndex]);
 	  const mic_f max_dist_xyz = broadcast1to16f(&ray16.tfar[rayIndex]);
 	  const mic_i v_invalidNode(BVH4i::invalidNode);
 	  const unsigned int leaf_mask = BVH4I_LEAF_MASK;
+
+	  const Precalculations precalculations(org_xyz,rdir_xyz);
 
 	  while (1)
 	    {
 	      NodeRef curNode = stack_node[sindex-1];
 	      sindex--;
 
-	      traverse_single_occluded< ENABLE_COMPRESSED_BVH4I_NODES >(curNode,
-								       sindex,
-								       rdir_xyz,
-								       org_rdir_xyz,
-								       min_dist_xyz,
-								       max_dist_xyz,
-								       stack_node,
-								       nodes,
-								       leaf_mask);
+	      traverse_single_occluded< ENABLE_COMPRESSED_BVH4I_NODES,ROBUST >(curNode,
+									       sindex,
+									       precalculations,
+									       min_dist_xyz,
+									       max_dist_xyz,
+									       stack_node,
+									       nodes,
+									       leaf_mask);
 
 	      /* return if stack is empty */
 	      if (unlikely(curNode == BVH4i::invalidNode)) break;
@@ -196,16 +196,21 @@ namespace embree
 
     }
 
-    typedef BVH4iIntersector16Single< Triangle1LeafIntersector  < true >, false  > Triangle1Intersector16SingleMoellerFilter;
-    typedef BVH4iIntersector16Single< Triangle1LeafIntersector  < false >, false > Triangle1Intersector16SingleMoellerNoFilter;
-    typedef BVH4iIntersector16Single< Triangle1mcLeafIntersector< true >, true  > Triangle1mcIntersector16SingleMoellerFilter;
-    typedef BVH4iIntersector16Single< Triangle1mcLeafIntersector< false >, true > Triangle1mcIntersector16SingleMoellerNoFilter;
+    typedef BVH4iIntersector16Single< Triangle1LeafIntersector  < true >, false, false  > Triangle1Intersector16SingleMoellerFilter;
+    typedef BVH4iIntersector16Single< Triangle1LeafIntersector  < false >, false, false > Triangle1Intersector16SingleMoellerNoFilter;
+    typedef BVH4iIntersector16Single< Triangle1mcLeafIntersector< true >, true, false  > Triangle1mcIntersector16SingleMoellerFilter;
+    typedef BVH4iIntersector16Single< Triangle1mcLeafIntersector< false >, true, false > Triangle1mcIntersector16SingleMoellerNoFilter;
 
+    typedef BVH4iIntersector16Single< Triangle1LeafIntersectorRobust  < true >, false, true  > Triangle1Intersector16SingleMoellerFilterRobust;
+    typedef BVH4iIntersector16Single< Triangle1LeafIntersectorRobust  < false >, false, true > Triangle1Intersector16SingleMoellerNoFilterRobust;
 
     DEFINE_INTERSECTOR16    (BVH4iTriangle1Intersector16SingleMoeller          , Triangle1Intersector16SingleMoellerFilter);
     DEFINE_INTERSECTOR16    (BVH4iTriangle1Intersector16SingleMoellerNoFilter  , Triangle1Intersector16SingleMoellerNoFilter);
     DEFINE_INTERSECTOR16    (BVH4iTriangle1mcIntersector16SingleMoeller        , Triangle1mcIntersector16SingleMoellerFilter);
     DEFINE_INTERSECTOR16    (BVH4iTriangle1mcIntersector16SingleMoellerNoFilter, Triangle1mcIntersector16SingleMoellerNoFilter);
+
+    DEFINE_INTERSECTOR16    (BVH4iTriangle1Intersector16SingleMoellerRobust          , Triangle1Intersector16SingleMoellerFilterRobust);
+    DEFINE_INTERSECTOR16    (BVH4iTriangle1Intersector16SingleMoellerNoFilterRobust  , Triangle1Intersector16SingleMoellerNoFilterRobust);
 
     // ----------------------------------------------------------------------------------------------------------------
     // ----------------------------------------------------------------------------------------------------------------

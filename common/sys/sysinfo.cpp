@@ -16,7 +16,7 @@
 
 #include "sysinfo.h"
 #include "intrinsics.h"
-#include "stl/string.h"
+#include "string.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 /// All Platforms
@@ -61,10 +61,10 @@ namespace embree
     int icc_mayor = __INTEL_COMPILER / 100 % 100;
     int icc_minor = __INTEL_COMPILER % 100;
     std::string version = "Intel Compiler ";
-    version += std::stringOf(icc_mayor);
-    version += "." + std::stringOf(icc_minor);
+    version += std::to_string((long long)icc_mayor);
+    version += "." + std::to_string((long long)icc_minor);
 #if defined(__INTEL_COMPILER_UPDATE)
-    version += "." + std::stringOf(__INTEL_COMPILER_UPDATE);
+    version += "." + std::to_string((long long)__INTEL_COMPILER_UPDATE);
 #endif
     return version;
 #elif defined(__clang__)
@@ -72,7 +72,7 @@ namespace embree
 #elif defined (__GNUC__)
     return "GCC " __VERSION__;
 #elif defined(_MSC_VER)
-    std::string version = std::stringOf(_MSC_FULL_VER);
+    std::string version = std::to_string((long long)_MSC_FULL_VER);
     version.insert(4,".");
     version.insert(9,".");
     version.insert(2,".");
@@ -102,6 +102,7 @@ namespace embree
     __cpuid(out, 1);
     int family = ((out[0] >> 8) & 0x0F) + ((out[0] >> 20) & 0xFF);
     int model  = ((out[0] >> 4) & 0x0F) | ((out[0] >> 12) & 0xF0);
+    if (family ==  11) return CPU_KNC;
     if (family !=   6) return CPU_UNKNOWN;           // earlier than P6
     if (model == 0x0E) return CPU_CORE1;             // Core 1
     if (model == 0x0F) return CPU_CORE2;             // Core 2, 65 nm
@@ -113,7 +114,22 @@ namespace embree
     if (model == 0x2C) return CPU_CORE_NEHALEM;      // Core i7, Xeon
     if (model == 0x2E) return CPU_CORE_NEHALEM;      // Core i7, Xeon
     if (model == 0x2A) return CPU_CORE_SANDYBRIDGE;  // Core i7, SandyBridge
+    if (model == 0x2D) return CPU_CORE_SANDYBRIDGE;  // Core i7, SandyBridge
+    if (model == 0x45) return CPU_CORE_SANDYBRIDGE;  // Core i7, SandyBridge
+    // FIXME: add Haswell
     return CPU_UNKNOWN;
+  }
+
+  std::string stringOfCPUModel(CPUModel model)
+  {
+    switch (model) {
+    case CPU_KNC             : return "Knights Corner";
+    case CPU_CORE1           : return "Core1";
+    case CPU_CORE2           : return "Core2";
+    case CPU_CORE_NEHALEM    : return "Nehalem";
+    case CPU_CORE_SANDYBRIDGE: return "SandyBridge";
+    default                  : return "Unknown CPU";
+    }
   }
 
   /* cpuid[eax=0].ecx */
@@ -142,22 +158,23 @@ namespace embree
   static const int CPU_FEATURE_BIT_AVX2  = 1 << 5;
   static const int CPU_FEATURE_BIT_BMI2  = 1 << 8;
 
-  bool check_xcr0_ymm() 
+  __noinline bool check_xcr0_ymm() 
   {
-    int xcr0;
 #if defined (__WIN32__)
-
+    unsigned xcr0 = 0;
 #if defined(__INTEL_COMPILER) 
-    xcr0 = (int)_xgetbv(0);
+    xcr0 = _xgetbv(0);
 #elif (defined(_MSC_VER) && (_MSC_FULL_VER >= 160040219)) // min VS2010 SP1 compiler is required
-    xcr0 = (int)_xgetbv(0); 
+    xcr0 = _xgetbv(0); 
 #else
 #pragma message ("WARNING: AVX not supported by your compiler.")
     xcr0 = 0;
 #endif
+    return ((xcr0 & 6) == 6); /* checking if xmm and ymm state are enabled in XCR0 */
 
 #else
 
+    int xcr0 = 0;
 #if defined(__INTEL_COMPILER) 
     __asm__ ("xgetbv" : "=a" (xcr0) : "c" (0) : "%edx" );
 #elif ((__GNUC__ > 4) || (__GNUC__ == 4 && __GNUC_MINOR__ >= 4)) && (!defined(__MACOSX__) || defined(__TARGET_AVX__) || defined(__TARGET_AVX2__))
@@ -168,16 +185,16 @@ namespace embree
 #pragma message ("WARNING: AVX not supported by your compiler.")
     xcr0 = 0;
 #endif
-
-#endif
     return ((xcr0 & 6) == 6); /* checking if xmm and ymm state are enabled in XCR0 */
+#endif
   }
 
   int cpu_features = 0;
 
   int getCPUFeatures()
   {
-    if (cpu_features) return cpu_features;
+    if (cpu_features) 
+      return cpu_features;
     
     int info[4]; 
     __cpuid(info, 0x00000000);
@@ -224,7 +241,11 @@ namespace embree
 #endif
     return cpu_features;
   }
-  
+
+  void setCPUFeatures(int features) {
+    cpu_features = features;
+  }
+
   std::string stringOfCPUFeatures(int features)
   {
     std::string str;
@@ -246,6 +267,27 @@ namespace embree
     if (features & CPU_FEATURE_KNC   ) str += "KNC ";
     return str;
   }
+
+  bool hasISA(const int isa) 
+  {
+    int cpu_features = getCPUFeatures();
+    return (cpu_features & isa) == isa;
+  }
+  
+  std::string stringOfISA (int isa)
+  {
+    if (isa == SSE) return "SSE";
+    if (isa == SSE2) return "SSE2";
+    if (isa == SSE3) return "SSE3";
+    if (isa == SSSE3) return "SSSE3";
+    if (isa == SSE41) return "SSE4_1";
+    if (isa == SSE42) return "SSE4_2";
+    if (isa == AVX) return "AVX";
+    if (isa == AVXI) return "AVXI";
+    if (isa == AVX2) return "AVX2";
+    if (isa == KNC) return "KNC";
+    return "UNKNOWN";
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -261,7 +303,7 @@ namespace embree
 {
   std::string getExecutableFileName() {
     char filename[1024];
-    if (!GetModuleFileName(NULL, filename, sizeof(filename))) return std::string();
+    if (!GetModuleFileName(nullptr, filename, sizeof(filename))) return std::string();
     return std::string(filename);
   }
 
@@ -280,13 +322,6 @@ namespace embree
 #endif
   }
 
-  size_t getNumberOfCores() {
-    static int nCores = -1;
-    if (nCores == -1) nCores = getNumberOfLogicalThreads(); // FIXME: detect if hyperthreading is enabled
-    if (nCores ==  0) nCores = 1;
-    return nCores;
-  }
-
   int getTerminalWidth() 
   {
     HANDLE handle = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -294,6 +329,13 @@ namespace embree
     CONSOLE_SCREEN_BUFFER_INFO info = { 0 };
     GetConsoleScreenBufferInfo(handle, &info);
     return info.dwSize.X;
+  }
+
+  double getSeconds() {
+    LARGE_INTEGER freq, val;
+    QueryPerformanceFrequency(&freq);
+    QueryPerformanceCounter(&val);
+    return (double)val.QuadPart / (double)freq.QuadPart;
   }
 }
 #endif
@@ -350,10 +392,7 @@ namespace embree
 
 #include <unistd.h>
 #include <sys/ioctl.h>
-
-#if defined(__USE_NUMA__)
-#include <numa.h>
-#endif
+#include <sys/time.h>
 
 namespace embree
 {
@@ -363,18 +402,46 @@ namespace embree
     return nThreads;
   }
 
-  size_t getNumberOfCores() {
-    static int nCores = -1;
-    if (nCores == -1) nCores = sysconf(_SC_NPROCESSORS_CONF)/2; // FIXME: detect if hyperthreading is enabled
-    if (nCores ==  0) nCores = 1;
-    return nCores;
-  }
-
   int getTerminalWidth() 
   {
     struct winsize info;
     if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &info) < 0) return 80;
     return info.ws_col;
+  }
+
+#if defined(__MIC__)
+
+  static double getFrequencyInMHz()
+  {
+    struct timeval tvstart, tvstop;
+    unsigned long long int cycles[2];
+    
+    gettimeofday(&tvstart, nullptr);
+    cycles[0] = rdtsc();
+    gettimeofday(&tvstart, nullptr);
+    usleep(250000);
+    gettimeofday(&tvstop, nullptr);
+    cycles[1] = rdtsc();
+    gettimeofday(&tvstop, nullptr);
+  
+    const unsigned long microseconds = ((tvstop.tv_sec-tvstart.tv_sec)*1000000) + (tvstop.tv_usec-tvstart.tv_usec);
+    unsigned long mhz = (unsigned long) (cycles[1]-cycles[0]) / microseconds;
+
+    //std::cout << "MIC frequency is " << mhz << " MHz" << std::endl;
+    return (double)mhz;
+  }
+
+  static double micFrequency = getFrequencyInMHz();
+
+#endif
+
+  double getSeconds() {
+#if !defined(__MIC__)
+    struct timeval tp; gettimeofday(&tp,nullptr);
+    return double(tp.tv_sec) + double(tp.tv_usec)/1E6;
+#else
+    return double(rdtsc()) / double(micFrequency*1E6);
+#endif
   }
 }
 #endif

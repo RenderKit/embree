@@ -31,7 +31,10 @@ modelDir  = ''
 tutorial = 'tutorial03'
 statDir = 'stat'
 name = ''
-modelDir = '~/models/embree/benchmarking'
+if sys.platform == 'win32':
+  modelDir = '%HOMEPATH%/models/embree/benchmarking'
+else:
+  modelDir = '~/models/embree/benchmarking'
 
 ########################## rendering ##########################
 
@@ -48,7 +51,7 @@ def render(name,model):
     command += ' -c ' + modelDir + dash + model + '_tutorial.ecs'
     for arg in args:
       command += ' ' + arg
-    command += ' -size 1024 1024 -benchmark 4 8 > ' + logFile
+    command += ' -benchmark 4 8 > ' + logFile
     os.system(command)
 
 def renderLoop():
@@ -60,7 +63,7 @@ def renderLoop():
     fpsgain  [avgBase] = 0
     printHeader()
     for model in models:
-      sys.stdout.write('  ' + '{0:<20}'.format(model) + ' | ')
+      sys.stdout.write('  ' + '{0:<35}'.format(model) + ' | ')
       render(name,model)
       extract(name,model,'')
       printData(name,model)
@@ -87,7 +90,7 @@ def extract(name,model,prevname):
     logFile = open(logFileName, 'r')
     for line in logFile:
       if line.count('BENCHMARK_BUILD ') == 1:
-        numbers = map(float, line[16:].split(" "))
+        numbers = map(float, line[(line.index('BENCHMARK_BUILD ')+16):].split(" "))
         buildperf[base] = numbers[1]
         sah   [base] = numbers[2]
         memory[base] = numbers[3]
@@ -131,8 +134,8 @@ def printData(name,model):
   sys.stdout.write(line)
 
 def printHeader():
-  tableWidth = 40 + 60
-  line  = '  ' + '{0:<20}'.format('') + ' |     Memory      Build    SAH      Render'
+  tableWidth = 55 + 60
+  line  = '  ' + '{0:<35}'.format('') + ' |     Memory      Build    SAH      Render'
   print(line)
   line = ''
   while (len(line) < tableWidth): line = line + '-'
@@ -144,12 +147,12 @@ def printDataLoop():
   for model in models:
     print(model)
     for name in names:
-      sys.stdout.write('  ' + '{0:<20}'.format(name) + ' | ')
+      sys.stdout.write('  ' + '{0:<35}'.format(name) + ' | ')
       printData(name,model)
   if len(models) > 1:
     print('average')
     for name in names:
-      sys.stdout.write('  ' + '{0:<20}'.format(name) + ' | ')
+      sys.stdout.write('  ' + '{0:<35}'.format(name) + ' | ')
       printData(name,'average')
 
   print('')

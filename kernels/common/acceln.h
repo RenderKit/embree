@@ -20,6 +20,7 @@
 
 namespace embree
 {
+  /*! merges N acceleration structures together, by processing them in order */
   class AccelN : public Accel
   {
   public:
@@ -46,12 +47,10 @@ namespace embree
     void immutable();
     void build (size_t threadIndex, size_t threadCount);
     void select(bool filter4, bool filter8, bool filter16);
+    void clear ();
       
   public:
-    Accel* accels[16];
-    size_t N;
-
-    Accel* validAccels[16];
-    size_t M;
+    darray_t<Accel*,16> accels;
+    darray_t<Accel*,16> validAccels;
   };
 }

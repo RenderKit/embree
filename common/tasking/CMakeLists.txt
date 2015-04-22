@@ -14,30 +14,47 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-#IF (__XEON__)
-#
-#  ADD_LIBRARY(tasking STATIC
-#    taskscheduler.cpp
-#    taskscheduler_sys.cpp
-#    tasklogger.cpp
-#    tasksys.cpp
-#  )
+IF (__XEON__)
 
-#  TARGET_LINK_LIBRARIES(tasking sys)
-#  SET_PROPERTY(TARGET sys PROPERTY FOLDER kernels)
+  IF (TASKING_INTERNAL)
+    ADD_DEFINITIONS(-DTASKING_TBB_INTERNAL)
+  ENDIF()
 
-#ELSE ()
+  IF (TASKING_TBB)
+    ADD_DEFINITIONS(-DTASKING_TBB)
+  ENDIF()
+
+  ADD_LIBRARY(tasking STATIC
+    taskscheduler_tbb.cpp
+    tasksys.cpp
+  )
+
+  IF (TASKING_TBB)
+    TARGET_LINK_LIBRARIES(tasking sys ${TBB_LIBRARIES})
+  ELSE()
+    TARGET_LINK_LIBRARIES(tasking sys)
+  ENDIF()
+
+  SET_PROPERTY(TARGET sys PROPERTY FOLDER kernels)
+
+ELSE ()
+
+  #IF (TASKING_INTERNAL)
+    ADD_DEFINITIONS(-DTASKING_LOCKSTEP)
+  #ELSE()
+  #  ADD_DEFINITIONS(-DTASKING_TBB)
+  #  INCLUDE_DIRECTORIES(${TBB_INCLUDE_DIRS_MIC})
+  #  SET(ADDITIONAL_LIBRARIES ${TBB_LIBRARIES_MIC})
+  #ENDIF()
  
-#  INCLUDE(icc_xeonphi)
+  INCLUDE(icc_xeonphi)
 
-#  ADD_LIBRARY(tasking_xeonphi STATIC
-#    taskscheduler.cpp
-#    taskscheduler_sys.cpp
-#    taskscheduler_mic.cpp
-#    tasklogger.cpp
-#    tasksys.cpp
-#  )
+  ADD_LIBRARY(tasking_xeonphi STATIC
+    taskscheduler_tbb.cpp # FIXME: remove
+    taskscheduler_mic.cpp
+    tasksys.cpp
+  )
 
-#  TARGET_LINK_LIBRARIES(tasking_xeonphi sys_xeonphi)
+  TARGET_LINK_LIBRARIES(tasking_xeonphi sys_xeonphi)
 
-#ENDIF ()
+ENDIF ()

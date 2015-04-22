@@ -66,6 +66,22 @@ namespace embree
     static __forceinline ssef broadcast( const void* const a ) { return _mm_set1_ps(*(float*)a); }
 #endif
 
+    static __forceinline ssef load( const float* const a ) {
+      return _mm_load_ps(a); 
+    }
+
+    static __forceinline ssef loadu( const float* const a ) {
+      return _mm_loadu_ps((float*)a); 
+    }
+
+    static __forceinline ssef load_nt ( const float* ptr ) {
+#if defined (__SSE4_1__)
+    return _mm_castsi128_ps(_mm_stream_load_si128((__m128i*)ptr));
+#else
+    return _mm_load_ps(ptr); 
+#endif
+  }
+
 #if defined(__SSE4_1__)
     static __forceinline ssef load( const unsigned char* const ptr ) { 
       return _mm_cvtepi32_ps(_mm_cvtepu8_epi32(_mm_loadu_si128((__m128i*)ptr)));
@@ -77,9 +93,32 @@ namespace embree
     }
 #endif
 
-    static __forceinline ssef loadu( const void* const a ) { // FIXME: no void* pointer here, use float*
-      return _mm_loadu_ps((float*)a); 
+    static __forceinline void store ( ssef* ptr, const ssef& v ) {  
+      _mm_store_ps((float*)ptr,v); 
     }
+
+    static __forceinline void storeu ( float* ptr, const ssef& v ) {
+      _mm_storeu_ps(ptr,v);
+    }
+
+    static __forceinline void store_nt ( ssef* ptr, const ssef& v) 
+    {
+#if defined (__SSE4_1__)
+      _mm_stream_ps((float*)ptr,v);
+#else
+      _mm_store_ps((float*)ptr,v);
+#endif
+    }
+    
+    static __forceinline void store ( const sseb& mask, ssef* ptr, const ssef& f ) 
+    { 
+#if defined (__AVX__)
+      _mm_maskstore_ps((float*)ptr,(__m128i)mask,f);
+#else
+      *(ssef*)ptr = select(mask,f,*(ssef*)ptr);
+#endif
+    }
+   
 
     ////////////////////////////////////////////////////////////////////////////////
     /// Array Access
@@ -87,6 +126,14 @@ namespace embree
 
     __forceinline const float& operator []( const size_t i ) const { assert(i < 4); return f[i]; }
     __forceinline       float& operator []( const size_t i )       { assert(i < 4); return f[i]; }
+
+    friend __forceinline const ssef select( const sseb& m, const ssef& t, const ssef& f ) { 
+#if defined(__SSE4_1__)
+      return _mm_blendv_ps(f, t, m); 
+#else
+      return _mm_or_ps(_mm_and_ps(m, t), _mm_andnot_ps(m, f)); 
+#endif
+    }
   };
 
 
@@ -174,8 +221,8 @@ namespace embree
 #else
   __forceinline const ssef madd  ( const ssef& a, const ssef& b, const ssef& c) { return a*b+c; }
   __forceinline const ssef msub  ( const ssef& a, const ssef& b, const ssef& c) { return a*b-c; }
-  __forceinline const ssef nmadd ( const ssef& a, const ssef& b, const ssef& c) { return -a*b-c;}
-  __forceinline const ssef nmsub ( const ssef& a, const ssef& b, const ssef& c) { return c-a*b; }
+  __forceinline const ssef nmadd ( const ssef& a, const ssef& b, const ssef& c) { return -a*b+c;}
+  __forceinline const ssef nmsub ( const ssef& a, const ssef& b, const ssef& c) { return -a*b-c; }
 #endif
 
   ////////////////////////////////////////////////////////////////////////////////
@@ -222,26 +269,23 @@ namespace embree
   __forceinline const sseb operator <=( const ssef& a, const float& b ) { return a <= ssef(b); }
   __forceinline const sseb operator <=( const float& a, const ssef& b ) { return ssef(a) <= b; }
 
- __forceinline const ssef select( const sseb& m, const ssef& t, const ssef& f ) { 
-#if defined(__SSE4_1__)
-    return _mm_blendv_ps(f, t, m); 
-#else
-    return _mm_or_ps(_mm_and_ps(m, t), _mm_andnot_ps(m, f)); 
-#endif
- }
-
+  
 #if defined(__SSE4_1__) 
 #if defined(__clang__) || defined(_MSC_VER) && (!defined(__INTEL_COMPILER) || defined(_DEBUG))
-__forceinline const ssef select(const int mask, const ssef& t, const ssef& f) {
- return select(sseb(mask), t, f);
-}
+  __forceinline const ssef select(const int mask, const ssef& t, const ssef& f) {
+    return select(sseb(mask), t, f);
+  }
 #else
- __forceinline const ssef select(const int mask, const ssef& t, const ssef& f) {
-	 return _mm_blend_ps(f, t, mask);
- }
+  __forceinline const ssef select(const int mask, const ssef& t, const ssef& f) {
+    return _mm_blend_ps(f, t, mask);
+  }
 #endif
 #endif
-
+  
+  __forceinline bool isvalid ( const ssef& v ) {
+    return all((v > ssef(-FLT_LARGE)) & (v < ssef(+FLT_LARGE)));
+  }
+  
   ////////////////////////////////////////////////////////////////////////////////
   /// Rounding Functions
   ////////////////////////////////////////////////////////////////////////////////

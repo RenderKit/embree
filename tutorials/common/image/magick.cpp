@@ -28,7 +28,7 @@ namespace embree
   Ref<Image> loadMagick(const FileName& fileName)
   {
     Magick::Image image(fileName.c_str());
-    Image* out = new Image4c(image.columns(),image.rows(),fileName);
+    Image* out = new Image4uc(image.columns(),image.rows(),fileName);
     float rcpMaxRGB = 1.0f/float(MaxRGB);
     Magick::Pixels pixel_cache(image);
     Magick::PixelPacket* pixels = pixel_cache.get(0,0,out->width,out->height);

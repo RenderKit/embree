@@ -16,7 +16,7 @@
 
 #include "thread.h"
 #include "sysinfo.h"
-#include "sys/stl/string.h"
+#include "string.h"
 
 #include <iostream>
 #include <xmmintrin.h>
@@ -58,14 +58,14 @@ namespace embree
     groupAffinity.Reserved[0] = 0;
     groupAffinity.Reserved[1] = 0;
     groupAffinity.Reserved[2] = 0;
-    if (!SetThreadGroupAffinity(thread, &groupAffinity, NULL))
+    if (!SetThreadGroupAffinity(thread, &groupAffinity, nullptr))
       THROW_RUNTIME_ERROR("cannot set thread group affinity");
 
     PROCESSOR_NUMBER processorNumber;
     processorNumber.Group = group;
     processorNumber.Number = number;
     processorNumber.Reserved = 0;
-    if (!SetThreadIdealProcessorEx(thread, &processorNumber, NULL))
+    if (!SetThreadIdealProcessorEx(thread, &processorNumber, nullptr))
       THROW_RUNTIME_ERROR("cannot set ideal processor");
 #else
     if (!SetThreadAffinityMask(thread, DWORD_PTR(uint64(1) << affinity)))
@@ -95,7 +95,7 @@ namespace embree
     _mm_setcsr(_mm_getcsr() | /*FTZ:*/ (1<<15) | /*DAZ:*/ (1<<6));
     parg->f(parg->arg);
     delete parg;
-    return NULL;
+    return nullptr;
   }
 
 #if !defined(PTHREADS_WIN32)
@@ -103,15 +103,15 @@ namespace embree
   /*! creates a hardware thread running on specific core */
   thread_t createThread(thread_func f, void* arg, size_t stack_size, ssize_t threadID)
   {
-    HANDLE thread = CreateThread(NULL, stack_size, (LPTHREAD_START_ROUTINE)threadStartup, new ThreadStartupData(f,arg), 0, NULL);
-    if (thread == NULL) THROW_RUNTIME_ERROR("cannot create thread");
+    HANDLE thread = CreateThread(nullptr, stack_size, (LPTHREAD_START_ROUTINE)threadStartup, new ThreadStartupData(f,arg), 0, nullptr);
+    if (thread == nullptr) THROW_RUNTIME_ERROR("cannot create thread");
     if (threadID >= 0) setAffinity(thread, threadID);
     return thread_t(thread);
   }
 
   /*! the thread calling this function gets yielded */
   void yield() {
-    Sleep(0);
+    SwitchToThread();
   }
 
   /*! waits until the given thread has terminated */
@@ -222,37 +222,6 @@ namespace embree
 
 namespace embree
 {
-
-#if defined(__MIC__)
-
-  __forceinline void do_cpuid(unsigned int eax, unsigned int *p)
-  {
-    __asm __volatile("cpuid"
-		     : "=a" (p[0]), "=b" (p[1]), "=c" (p[2]), "=d" (p[3])
-		     :  "0" (eax));
-  }
-
-  void printThreadInfo()
-  {
-    pthread_t pth = pthread_self();
-
-    cpu_set_t cset;
-    CPU_ZERO(&cset);
-    int error = pthread_getaffinity_np(pth, sizeof(cset), &cset);
-    if (error != 0)
-      perror("pthread_getaffinity_np");
-
-    unsigned hw_ID = 0;
-    for (unsigned int j = 0; j < 256; j++)
-      if (CPU_ISSET(j, &cset))
-	hw_ID = j;
-	      
-    unsigned int regs[4];
-    do_cpuid(1, regs);
-    printf("tid %d on cpu %d APIC ID 0x%x\n",hw_ID, sched_getcpu(), (regs[1] & 0xFF800000) >> 24);    
-  }
-#endif
-
   struct ThreadStartupData 
   {
   public:
@@ -268,14 +237,14 @@ namespace embree
   {
     _mm_setcsr(_mm_getcsr() | /*FTZ:*/ (1<<15) | /*DAZ:*/ (1<<6));
 
-#if !defined(__LINUX__) || defined(__MIC__)
+#if !defined(__LINUX__)
     if (parg->affinity >= 0)
 	setAffinity(parg->affinity);
 #endif
 
     parg->f(parg->arg);
     delete parg;
-    return NULL;
+    return nullptr;
   }
 
   /*! creates a hardware thread running on specific core */
@@ -289,7 +258,7 @@ namespace embree
     pthread_attr_t attr;
     pthread_attr_init(&attr);
     if (stack_size > 0) pthread_attr_setstacksize (&attr, stack_size);
-    //DBG_PRINT( stack_size );
+
     /* set affinity */
 #if defined(__LINUX__)
     if (threadID >= 0) {
@@ -315,7 +284,7 @@ namespace embree
 
   /*! waits until the given thread has terminated */
   void join(thread_t tid) {
-    if (pthread_join(*(pthread_t*)tid, NULL) != 0)
+    if (pthread_join(*(pthread_t*)tid, nullptr) != 0)
       THROW_RUNTIME_ERROR("pthread_join");
     delete (pthread_t*)tid;
   }
@@ -328,8 +297,9 @@ namespace embree
 
   /*! creates thread local storage */
   tls_t createTls() {
+    static int cntr = 0;
     pthread_key_t* key = new pthread_key_t;
-    if (pthread_key_create(key,NULL) != 0)
+    if (pthread_key_create(key,nullptr) != 0)
       THROW_RUNTIME_ERROR("pthread_key_create");
 
     return tls_t(key);

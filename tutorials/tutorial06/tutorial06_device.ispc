@@ -21,7 +21,31 @@
 
 #define __device__
 
-#define PARALLEL_COMMIT
+#undef TILE_SIZE_X
+#undef TILE_SIZE_Y
+
+#define TILE_SIZE_X 4
+#define TILE_SIZE_Y 4
+
+#define FIX_SAMPLING 0
+#define SAMPLES_PER_PIXEL 1
+
+//#define FORCE_FIXED_EDGE_TESSELLATION
+#define FIXED_EDGE_TESSELLATION_VALUE 2
+//#define FIXED_EDGE_TESSELLATION_VALUE 32
+
+#define MAX_EDGE_LEVEL 64.0f
+//#define MAX_EDGE_LEVEL 8.0f
+#define MIN_EDGE_LEVEL 4.0f
+#define ENABLE_DISPLACEMENTS 0
+#if ENABLE_DISPLACEMENTS
+#  define LEVEL_FACTOR 256.0f
+#else
+#  define LEVEL_FACTOR 64.0f
+#endif
+
+uniform bool g_subdiv_mode = false;
+
 
 struct DifferentialGeometry
 {
@@ -155,6 +179,7 @@ inline varying Vec3f DistantLight__sample(const uniform ISPCDistantLight& light,
 {
   wi = UniformSampleCone(s.x,s.y,light.radHalfAngle,make_Vec3f((varying Vec3fa)neg(light.D)));
   tMax = 1e20f;
+
   return make_Vec3f(light.L);
 }
 
@@ -331,7 +356,7 @@ inline Vec3f DielectricLayerLambertian__eval(const varying DielectricLayerLamber
 {
   const float cosThetaO = dot(wo,dg.Ns);
   const float cosThetaI = dot(wi,dg.Ns);
-  if (cosThetaI <= 0.0f | cosThetaO <= 0.0f) return make_Vec3f(0.f);
+  if (cosThetaI <= 0.0f || cosThetaO <= 0.0f) return make_Vec3f(0.f);
 
   float cosThetaO1; 
   const Sample3f wo1 = refract(wo,dg.Ns,This->etait,cosThetaO,cosThetaO1);
@@ -439,6 +464,7 @@ __device__ Vec3f MirrorMaterial__sample(MirrorMaterial* uniform This, const BRDF
 
 __device__ void OBJMaterial__preprocess(uniform OBJMaterial* uniform material, BRDF& brdf, const Vec3f& wo, const DifferentialGeometry& dg, const Medium& medium)  
 {
+
     float d = material->d;
     //if (material->map_d) { d *= material->map_d.get(s,t); }
     brdf.Ka = make_Vec3f(material->Ka);
@@ -451,6 +477,7 @@ __device__ void OBJMaterial__preprocess(uniform OBJMaterial* uniform material, B
     //if (material->map_Ns) { brdf.Ns *= material->map_Ns.get(dg.st); }
     brdf.Kt = (1.0f-d)*make_Vec3f(material->Kt);
     brdf.Ni = material->Ni;
+
 }
 
 __device__ Vec3f OBJMaterial__eval(OBJMaterial* uniform material, const BRDF& brdf, const Vec3f& wo, const DifferentialGeometry& dg, const Vec3f& wi) 
@@ -547,7 +574,7 @@ __device__ Vec3f MetalMaterial__eval(MetalMaterial* uniform This, const BRDF& br
 
   const float cosThetaO = dot(wo,dg.Ns);
   const float cosThetaI = dot(wi,dg.Ns);
-  if (cosThetaI <= 0.0f | cosThetaO <= 0.0f) return make_Vec3f(0.f);
+  if (cosThetaI <= 0.0f || cosThetaO <= 0.0f) return make_Vec3f(0.f);
   const Vec3f wh = normalize(wi+wo);
   const float cosThetaH = dot(wh, dg.Ns);
   const float cosTheta = dot(wi, wh); // = dot(wo, wh);
@@ -706,6 +733,7 @@ inline void Material__preprocess(ISPCMaterial* uniform materials, int materialID
   {
     if (id < 0 || id >= numMaterials) continue;
   ISPCMaterial* uniform material = &materials[id];
+
   switch (material->ty) {
   case MATERIAL_OBJ  : OBJMaterial__preprocess  ((uniform OBJMaterial* uniform)  material,brdf,wo,dg,medium); break;
   case MATERIAL_METAL: MetalMaterial__preprocess((uniform MetalMaterial* uniform)material,brdf,wo,dg,medium); break;
@@ -785,13 +813,6 @@ void occlusionFilterReject(void* uniform ptr, RTCRay& ray) {
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
 }
 
-/* rtcCommitThread called by all ISPC worker threads to enable parallel build */
-#if defined(PARALLEL_COMMIT)
-task void parallelCommit(RTCScene scene) {
-  rtcCommitThread (scene,threadIndex,threadCount); 
-}
-#endif
-
 /* error reporting function */
 void error_handler(const uniform RTCError code, const uniform int8* uniform str)
 {
@@ -802,6 +823,7 @@ void error_handler(const uniform RTCError code, const uniform int8* uniform str)
   case RTC_INVALID_OPERATION: print("RTC_INVALID_OPERATION"); break;
   case RTC_OUT_OF_MEMORY    : print("RTC_OUT_OF_MEMORY"); break;
   case RTC_UNSUPPORTED_CPU  : print("RTC_UNSUPPORTED_CPU"); break;
+  case RTC_CANCELLED        : print("RTC_CANCELLED"); break;
   default                   : print("invalid error code"); break;
   }
   if (str) { 
@@ -849,6 +871,7 @@ void convertTriangleMeshes(uniform ISPCScene* uniform scene_in, RTCScene scene_o
   /* add all meshes to the scene */
   for (uniform int i=0; i<scene_in->numMeshes; i++)
   {
+
     /* get ith mesh */
     uniform ISPCMesh* uniform mesh = scene_in->meshes[i];
 
@@ -891,18 +914,72 @@ void convertTriangleMeshes(uniform ISPCScene* uniform scene_in, RTCScene scene_o
   }
 }
 
-void convertSubdivMeshes(uniform ISPCScene* uniform scene_in, RTCScene scene_out, uniform size_t numGeometries)
+inline uniform float updateEdgeLevel( uniform ISPCSubdivMesh* uniform mesh, const uniform Vec3fa& cam_pos, const uniform size_t e0, const uniform size_t e1)
+{
+  const uniform Vec3fa v0 = mesh->positions[mesh->position_indices[e0]];
+  const uniform Vec3fa v1 = mesh->positions[mesh->position_indices[e1]];
+  const uniform Vec3fa edge = v1-v0;
+  const uniform Vec3fa P = 0.5f*(v1+v0);
+  const uniform Vec3fa dist = cam_pos - P;
+  return max(min(LEVEL_FACTOR*(0.5f*length(edge)/length(dist)),MAX_EDGE_LEVEL),MIN_EDGE_LEVEL);
+}
+
+void updateEdgeLevelBuffer( uniform ISPCSubdivMesh* uniform mesh, const uniform Vec3fa& cam_pos, uniform size_t startID, uniform size_t endID )
+{
+  for (uniform size_t f=startID; f<endID;f++) {
+       uniform int e = mesh->face_offsets[f];
+       uniform int N = mesh->verticesPerFace[f];
+       if (N == 4) /* fast path for quads */
+         for (uniform size_t i=0; i<4; i++) 
+           mesh->subdivlevel[e+i] =  updateEdgeLevel(mesh,cam_pos,e+(i+0),e+(i+1)%4);
+       else if (N == 3) /* fast path for triangles */
+         for (uniform size_t i=0; i<3; i++) 
+           mesh->subdivlevel[e+i] =  updateEdgeLevel(mesh,cam_pos,e+(i+0),e+(i+1)%3);
+       else /* fast path for general polygons */
+        for (uniform size_t i=0; i<N; i++) 
+           mesh->subdivlevel[e+i] =  updateEdgeLevel(mesh,cam_pos,e+(i+0),e+(i+1)%N);              
+ }
+}
+
+#if defined(ISPC)
+task void updateEdgeLevelBufferTask( uniform ISPCSubdivMesh* uniform mesh, const uniform Vec3fa& cam_pos )
+{
+  const uniform size_t size = mesh->numFaces;
+  const uniform size_t startID = ((taskIndex+0)*size)/taskCount;
+  const uniform size_t endID   = ((taskIndex+1)*size)/taskCount;
+  updateEdgeLevelBuffer(mesh,cam_pos,startID,endID);
+}
+#endif
+
+void updateEdgeLevels(uniform ISPCScene* uniform scene_in, const uniform Vec3fa& cam_pos)
+{
+  for (uniform size_t g=0; g<scene_in->numSubdivMeshes; g++)
+  {
+    uniform ISPCSubdivMesh* uniform mesh = g_ispc_scene->subdiv[g];
+    uniform unsigned int geomID = mesh->geomID;
+#if defined(ISPC)
+      launch[ getNumHWThreads() ] updateEdgeLevelBufferTask(mesh,cam_pos); sync;	           
+#else
+      updateEdgeLevelBuffer(mesh,cam_pos,0,mesh->numFaces);
+#endif
+   rtcUpdateBuffer(g_scene,geomID,RTC_LEVEL_BUFFER);    
+  }
+}
+
+
+void convertSubdivMeshes(uniform ISPCScene* uniform scene_in, RTCScene scene_out, uniform size_t numGeometries, const uniform Vec3fa& cam_pos)
 {
   for (uniform size_t i=0; i<g_ispc_scene->numSubdivMeshes; i++)
   {
     uniform ISPCSubdivMesh* uniform mesh = g_ispc_scene->subdiv[i];
-    uniform unsigned int geomID = rtcNewSubdivisionMesh(scene_out, RTC_GEOMETRY_STATIC, mesh->numFaces, mesh->numEdges, mesh->numVertices, 
+    uniform unsigned int geomID = rtcNewSubdivisionMesh(scene_out, RTC_GEOMETRY_DYNAMIC, mesh->numFaces, mesh->numEdges, mesh->numVertices, 
 						mesh->numEdgeCreases, mesh->numVertexCreases, mesh->numHoles);
+    mesh->geomID = geomID;												
     assert(geomID < numGeometries);
     geomID_to_mesh[geomID] = mesh;
-    geomID_to_type[geomID] = 1;
+    geomID_to_type[geomID] = 1; //2
 
-    for (size_t i=0; i<mesh->numEdges; i++) mesh->subdivlevel[i] = 16;
+    for (size_t i=0; i<mesh->numEdges; i++) mesh->subdivlevel[i] = FIXED_EDGE_TESSELLATION_VALUE;
     rtcSetBuffer(scene_out, geomID, RTC_VERTEX_BUFFER, mesh->positions, 0, sizeof(uniform Vec3fa  ));
     rtcSetBuffer(scene_out, geomID, RTC_LEVEL_BUFFER,  mesh->subdivlevel, 0, sizeof(uniform float));
     rtcSetBuffer(scene_out, geomID, RTC_INDEX_BUFFER,  mesh->position_indices  , 0, sizeof(uniform unsigned int));
@@ -912,28 +989,38 @@ void convertSubdivMeshes(uniform ISPCScene* uniform scene_in, RTCScene scene_out
     rtcSetBuffer(scene_out, geomID, RTC_EDGE_CREASE_WEIGHT_BUFFER,   mesh->edge_crease_weights,   0, sizeof(uniform float));
     rtcSetBuffer(scene_out, geomID, RTC_VERTEX_CREASE_INDEX_BUFFER,  mesh->vertex_creases,        0, sizeof(uniform unsigned int));
     rtcSetBuffer(scene_out, geomID, RTC_VERTEX_CREASE_WEIGHT_BUFFER, mesh->vertex_crease_weights, 0, sizeof(uniform float));
+#if ENABLE_DISPLACEMENTS == 1
+      rtcSetDisplacementFunction(scene_out,geomID,(RTCDisplacementFunc)&displacementFunction,NULL);
+#endif
   }
 }      
 
 typedef void* uniform void_ptr;
 
-RTCScene convertScene(uniform ISPCScene* uniform scene_in)
-{
+RTCScene convertScene(uniform ISPCScene* uniform scene_in,const uniform Vec3fa& cam_org)
+{  
   uniform size_t numGeometries = scene_in->numMeshes + scene_in->numSubdivMeshes;
+
   geomID_to_mesh = uniform new void_ptr[numGeometries];
   geomID_to_type = uniform new uniform int[numGeometries];
 
   /* create scene */
-  RTCScene scene_out = rtcNewScene(RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT, RTC_INTERSECT_VARYING);
+  uniform int scene_flags = RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT;
+
+  if (g_subdiv_mode)   
+    scene_flags = RTC_SCENE_DYNAMIC | RTC_SCENE_INCOHERENT | RTC_SCENE_ROBUST;
+
+  RTCScene scene_out = rtcNewScene((RTCSceneFlags)scene_flags, RTC_INTERSECT_VARYING);
   convertTriangleMeshes(scene_in,scene_out,numGeometries);
-  convertSubdivMeshes(scene_in,scene_out,numGeometries);
+  convertSubdivMeshes(scene_in,scene_out,numGeometries,cam_org);
+
 
   /* commit changes to scene */
-#if !defined(PARALLEL_COMMIT)
+  progressStart();
+  rtcSetProgressMonitorFunction(scene_out,progressMonitor,NULL);
   rtcCommit (scene_out);
-#else
-  launch[ getNumHWThreads() ] parallelCommit(scene_out); sync;
-#endif
+  rtcSetProgressMonitorFunction(scene_out,NULL,NULL);
+  progressEnd();
 
   return scene_out;
 } // convertScene
@@ -1030,6 +1117,7 @@ inline Vec3f interpolate_normal(RTCRay& ray)
 
 Vec3f renderPixelFunction(float x, float y, rand_state& state, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p)
 {
+
   /* radiance accumulator and weight */
   Vec3f L = make_Vec3f(0.0f);
   Vec3f Lw = make_Vec3f(1.0f);
@@ -1063,7 +1151,7 @@ Vec3f renderPixelFunction(float x, float y, rand_state& state, const uniform Vec
       for (uniform size_t i=0; i<g_ispc_scene->numDistantLights; i++)
         L = L + Lw*DistantLight__eval(g_ispc_scene->distantLights[i],ray.dir); // FIXME: +=
 #endif
-
+      if (i==0) L = make_Vec3f(1.0f);	
       break;
     }
 
@@ -1076,24 +1164,32 @@ Vec3f renderPixelFunction(float x, float y, rand_state& state, const uniform Vec
     dg.Ns = face_forward(ray.dir,_Ns);
 
     /* shade all rays that hit something */
+   int materialID = 0;
+
 #if 0 // FIXME: pointer gather not implemented in ISPC for Xeon Phi
-    int materialID = 0;
     if (geomID_to_type[ray.geomID] == 0)
       materialID = ((ISPCMesh* uniform) geomID_to_mesh[ray.geomID])->triangles[ray.primID].materialID; 
-    else 
+    else if (geomID_to_type[ray.geomID] == 1)                             
       materialID = ((ISPCSubdivMesh* uniform) geomID_to_mesh[ray.geomID])->materialID; 
-#else
-    int materialID = 0;
+    else
+      materialID = ((ISPCMesh* uniform) geomID_to_mesh[ray.geomID])->meshMaterialID; 
+#else 
     foreach_unique (geomID in ray.geomID) {
-      if (geomID >= 0 && geomID < g_ispc_scene->numMeshes) { // FIXME: workaround for ISPC bug
+     //print("geomID %\n",geomID);
+     //print("geomID_to_type[geomID] %\n",geomID_to_type[geomID]);
+     //print("g_ispc_scene->numMeshes %\n",g_ispc_scene->numMeshes);
+
+      if (geomID >= 0 && geomID < g_ispc_scene->numMeshes+g_ispc_scene->numSubdivMeshes) { // FIXME: workaround for ISPC bug
 	if (geomID_to_type[geomID] == 0) 
 	  materialID = ((ISPCMesh* uniform) geomID_to_mesh[geomID])->triangles[ray.primID].materialID; 
-	else                             
+	else if (geomID_to_type[geomID] == 1)                             
 	  materialID = ((ISPCSubdivMesh* uniform) geomID_to_mesh[geomID])->materialID; 
+	else 
+	  materialID = ((ISPCMesh* uniform) geomID_to_mesh[geomID])->meshMaterialID;         
       }
     }
+    //print("materialID %\n",materialID);
 #endif
-
     /*! Compute  simple volumetric effect. */
     Vec3f c = make_Vec3f(1.0f);
     const Vec3f transmission = medium.transmission;
@@ -1105,29 +1201,32 @@ Vec3f renderPixelFunction(float x, float y, rand_state& state, const uniform Vec
     uniform int numMaterials = g_ispc_scene->numMaterials;
     //uniform ISPCMaterial* material = &g_ispc_scene->materials[materialID];
     uniform ISPCMaterial* uniform material_array = &g_ispc_scene->materials[0];
+
+
     Material__preprocess(material_array,materialID,numMaterials,brdf,wo,dg,medium);
+
 
     /* sample BRDF at hit point */
     Sample3f wi1;
     c = c * Material__sample(material_array,materialID,numMaterials,brdf,Lw, wo, dg, wi1, medium, make_Vec2f(frand(state),frand(state)));
 
+    
     /* iterate over ambient lights */
     for (uniform size_t i=0; i<g_ispc_scene->numAmbientLights; i++)
     {
-#if 1
       Vec3f L0 = make_Vec3f(0.0f);
       Sample3f wi0; float tMax0;
       Vec3f Ll0 = AmbientLight__sample(g_ispc_scene->ambientLights[i],dg,wi0,tMax0,make_Vec2f(frand(state),frand(state)));
+
       if (wi0.pdf > 0.0f) {
         RTCRay shadow = make_Ray(dg.P,wi0.v,0.001f,tMax0);
         rtcOccluded(g_scene,shadow);
         if (shadow.geomID == RTC_INVALID_GEOMETRY_ID) {
           L0 = Ll0/wi0.pdf*Material__eval(material_array,materialID,numMaterials,brdf,wo,dg,wi0.v);
         }
+
         L = L + Lw*L0;
       }
-#endif
-
 #if 0
       Vec3f L1 = make_Vec3f(0.0f);
       Vec3f Ll1 = AmbientLight__eval(g_ispc_scene->ambientLights[i],wi1.v);
@@ -1152,7 +1251,6 @@ Vec3f renderPixelFunction(float x, float y, rand_state& state, const uniform Vec
       }
 #endif
     }
-
     Sample3f wi; float tMax;
 
     /* iterate over point lights */
@@ -1181,14 +1279,14 @@ Vec3f renderPixelFunction(float x, float y, rand_state& state, const uniform Vec
     for (uniform size_t i=0; i<g_ispc_scene->numDistantLights; i++)
     {
       Vec3f Ll = DistantLight__sample(g_ispc_scene->distantLights[i],dg,wi,tMax,make_Vec2f(frand(state),frand(state)));
+
       if (wi.pdf <= 0.0f) continue;
       RTCRay shadow = make_Ray(dg.P,wi.v,0.001f,tMax);
       rtcOccluded(g_scene,shadow);
       if (shadow.geomID != RTC_INVALID_GEOMETRY_ID) continue;
       L = L + Lw*Ll/wi.pdf*Material__eval(material_array,materialID,numMaterials,brdf,wo,dg,wi.v); // FIXME: +=
     }
-
-    if (wi1.pdf <= 0.0f) break;
+    if (wi1.pdf <= 1E-4f /* 0.0f */) break;
     Lw = Lw*c/wi1.pdf; // FIXME: *=
 
     /* setup secondary ray */
@@ -1201,16 +1299,19 @@ Vec3f renderPixelFunction(float x, float y, rand_state& state, const uniform Vec
 Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p)
 {
   rand_state state;
+
+  Vec3f L = make_Vec3f(0.0f,0.0f,0.0f);
+
+  for (uniform int i=0; i<SAMPLES_PER_PIXEL; i++) {
+
   init_rand(state,
             253*x+35*y+152*g_accu_count+54,
             1253*x+345*y+1452*g_accu_count+564,
-            10253*x+3435*y+52*g_accu_count+13);
+            10253*x+3435*y+52*g_accu_count+13+i*1793);
 
-  Vec3f L = make_Vec3f(0.0f,0.0f,0.0f);
-  //for (uniform int i=0; i<16; i++) {
-  L = L + renderPixelFunction(x,y,state,vx,vy,vz,p); // FIXME: +=
-  //}
-  //L = L*(1.0f/16.0f);
+  L = L + renderPixelFunction(x,y,state,vx,vy,vz,p); 
+  }
+  L = L*(1.0f/SAMPLES_PER_PIXEL);
   return L;
 }
   
@@ -1233,10 +1334,8 @@ task void renderTile(uniform int* uniform pixels,
   const uniform int y0 = tileY * TILE_SIZE_Y;
   const uniform int y1 = min(y0+TILE_SIZE_Y,height);
 
-  foreach (y = y0 ... y1, x = x0 ... x1)
+  foreach_tiled (y = y0 ... y1, x = x0 ... x1)
   {
-    //if (x != 200 || y != 450) continue;
-
     /* calculate pixel color */
     Vec3f color = renderPixel(x,y,vx,vy,vz,p);
 
@@ -1261,9 +1360,22 @@ export void device_render (uniform int* uniform pixels,
                            const uniform Vec3f& vz, 
                            const uniform Vec3f& p)
 {
+  uniform Vec3fa cam_org = make_Vec3fa(p.x,p.y,p.z);
+
   /* create scene */
   if (g_scene == NULL)
-    g_scene = convertScene(g_ispc_scene);
+   {
+     if (g_ispc_scene->numSubdivMeshes > 0)
+       g_subdiv_mode = true;
+
+     g_scene = convertScene(g_ispc_scene,cam_org);
+
+#if !defined(FORCE_FIXED_EDGE_TESSELLATION)
+    if (g_subdiv_mode)
+      updateEdgeLevels(g_ispc_scene, cam_org);
+#endif
+
+   }
 
   /* create accumulator */
   if (g_accu_width != width || g_accu_height != height) {
@@ -1280,10 +1392,23 @@ export void device_render (uniform int* uniform pixels,
   camera_changed |= ne(g_accu_vy,vy); g_accu_vy = vy; // FIXME: use != operator
   camera_changed |= ne(g_accu_vz,vz); g_accu_vz = vz; // FIXME: use != operator
   camera_changed |= ne(g_accu_p,  p); g_accu_p  = p;  // FIXME: use != operator
+
+#if  FIX_SAMPLING == 0
   g_accu_count++;
+#endif
+
   if (camera_changed) {
     g_accu_count=0;
     memset(g_accu,0,width*height*sizeof(uniform Vec3fa));
+
+#if !defined(FORCE_FIXED_EDGE_TESSELLATION)
+    if (g_subdiv_mode)
+      {
+       updateEdgeLevels(g_ispc_scene, cam_org);
+       rtcCommit (g_scene);
+      }
+#endif
+
   }
 
   /* render image */

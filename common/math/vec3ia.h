@@ -44,7 +44,7 @@ namespace embree
     __forceinline Vec3ia( const Vec3ia& other ) : m128(other.m128) {}
     __forceinline Vec3ia& operator =(const Vec3ia& other) { m128 = other.m128; return *this; }
 
-    __forceinline Vec3ia( const int a ) : m128(_mm_set1_epi32(a)) {}
+    __forceinline explicit Vec3ia( const int a ) : m128(_mm_set1_epi32(a)) {}
     __forceinline explicit Vec3ia( const int x, const int y, const int z) : m128(_mm_set_epi32(z, z, y, x)) {}
     __forceinline explicit Vec3ia( const __m128 a ) : m128(_mm_cvtps_epi32(a)) {}
 
@@ -84,30 +84,30 @@ namespace embree
   ////////////////////////////////////////////////////////////////////////////////
 
   __forceinline const Vec3ia operator +( const Vec3ia& a, const Vec3ia& b ) { return _mm_add_epi32(a.m128, b.m128); }
-  __forceinline const Vec3ia operator +( const Vec3ia& a, const int        b ) { return a+Vec3ia(b); }
-  __forceinline const Vec3ia operator +( const int        a, const Vec3ia& b ) { return Vec3ia(a)+b; }
+  __forceinline const Vec3ia operator +( const Vec3ia& a, const int     b ) { return a+Vec3ia(b); }
+  __forceinline const Vec3ia operator +( const int     a, const Vec3ia& b ) { return Vec3ia(a)+b; }
 
   __forceinline const Vec3ia operator -( const Vec3ia& a, const Vec3ia& b ) { return _mm_sub_epi32(a.m128, b.m128); }
-  __forceinline const Vec3ia operator -( const Vec3ia& a, const int        b ) { return a-Vec3ia(b); }
-  __forceinline const Vec3ia operator -( const int        a, const Vec3ia& b ) { return Vec3ia(a)-b; }
+  __forceinline const Vec3ia operator -( const Vec3ia& a, const int     b ) { return a-Vec3ia(b); }
+  __forceinline const Vec3ia operator -( const int     a, const Vec3ia& b ) { return Vec3ia(a)-b; }
 
 #if defined(__SSE4_1__)
   __forceinline const Vec3ia operator *( const Vec3ia& a, const Vec3ia& b ) { return _mm_mullo_epi32(a.m128, b.m128); }
-  __forceinline const Vec3ia operator *( const Vec3ia& a, const int        b ) { return a * Vec3ia(b); }
-  __forceinline const Vec3ia operator *( const int        a, const Vec3ia& b ) { return Vec3ia(a) * b; }
+  __forceinline const Vec3ia operator *( const Vec3ia& a, const int     b ) { return a * Vec3ia(b); }
+  __forceinline const Vec3ia operator *( const int     a, const Vec3ia& b ) { return Vec3ia(a) * b; }
 #endif
 
   __forceinline const Vec3ia operator &( const Vec3ia& a, const Vec3ia& b ) { return _mm_and_si128(a.m128, b.m128); }
-  __forceinline const Vec3ia operator &( const Vec3ia& a, const int        b ) { return a & Vec3ia(b); }
-  __forceinline const Vec3ia operator &( const int        a, const Vec3ia& b ) { return Vec3ia(a) & b; }
+  __forceinline const Vec3ia operator &( const Vec3ia& a, const int     b ) { return a & Vec3ia(b); }
+  __forceinline const Vec3ia operator &( const int     a, const Vec3ia& b ) { return Vec3ia(a) & b; }
 
   __forceinline const Vec3ia operator |( const Vec3ia& a, const Vec3ia& b ) { return _mm_or_si128(a.m128, b.m128); }
-  __forceinline const Vec3ia operator |( const Vec3ia& a, const int        b ) { return a | Vec3ia(b); }
-  __forceinline const Vec3ia operator |( const int        a, const Vec3ia& b ) { return Vec3ia(a) | b; }
+  __forceinline const Vec3ia operator |( const Vec3ia& a, const int     b ) { return a | Vec3ia(b); }
+  __forceinline const Vec3ia operator |( const int     a, const Vec3ia& b ) { return Vec3ia(a) | b; }
 
   __forceinline const Vec3ia operator ^( const Vec3ia& a, const Vec3ia& b ) { return _mm_xor_si128(a.m128, b.m128); }
-  __forceinline const Vec3ia operator ^( const Vec3ia& a, const int        b ) { return a ^ Vec3ia(b); }
-  __forceinline const Vec3ia operator ^( const int        a, const Vec3ia& b ) { return Vec3ia(a) ^ b; }
+  __forceinline const Vec3ia operator ^( const Vec3ia& a, const int     b ) { return a ^ Vec3ia(b); }
+  __forceinline const Vec3ia operator ^( const int     a, const Vec3ia& b ) { return Vec3ia(a) ^ b; }
 
   __forceinline const Vec3ia operator <<( const Vec3ia& a, const int n ) { return _mm_slli_epi32(a.m128, n); }
   __forceinline const Vec3ia operator >>( const Vec3ia& a, const int n ) { return _mm_srai_epi32(a.m128, n); }
@@ -120,24 +120,24 @@ namespace embree
   ////////////////////////////////////////////////////////////////////////////////
 
   __forceinline Vec3ia& operator +=( Vec3ia& a, const Vec3ia& b ) { return a = a + b; }
-  __forceinline Vec3ia& operator +=( Vec3ia& a, const int32&     b ) { return a = a + b; }
+  __forceinline Vec3ia& operator +=( Vec3ia& a, const int32&  b ) { return a = a + b; }
   
   __forceinline Vec3ia& operator -=( Vec3ia& a, const Vec3ia& b ) { return a = a - b; }
-  __forceinline Vec3ia& operator -=( Vec3ia& a, const int32&     b ) { return a = a - b; }
+  __forceinline Vec3ia& operator -=( Vec3ia& a, const int32&  b ) { return a = a - b; }
   
 #if defined(__SSE4_1__)
   __forceinline Vec3ia& operator *=( Vec3ia& a, const Vec3ia& b ) { return a = a * b; }
-  __forceinline Vec3ia& operator *=( Vec3ia& a, const int32&     b ) { return a = a * b; }
+  __forceinline Vec3ia& operator *=( Vec3ia& a, const int32&  b ) { return a = a * b; }
 #endif
   
   __forceinline Vec3ia& operator &=( Vec3ia& a, const Vec3ia& b ) { return a = a & b; }
-  __forceinline Vec3ia& operator &=( Vec3ia& a, const int32&     b ) { return a = a & b; }
+  __forceinline Vec3ia& operator &=( Vec3ia& a, const int32&  b ) { return a = a & b; }
   
   __forceinline Vec3ia& operator |=( Vec3ia& a, const Vec3ia& b ) { return a = a | b; }
-  __forceinline Vec3ia& operator |=( Vec3ia& a, const int32&     b ) { return a = a | b; }
+  __forceinline Vec3ia& operator |=( Vec3ia& a, const int32&  b ) { return a = a | b; }
   
-  __forceinline Vec3ia& operator <<=( Vec3ia& a, const int32&    b ) { return a = a << b; }
-  __forceinline Vec3ia& operator >>=( Vec3ia& a, const int32&    b ) { return a = a >> b; }
+  __forceinline Vec3ia& operator <<=( Vec3ia& a, const int32& b ) { return a = a << b; }
+  __forceinline Vec3ia& operator >>=( Vec3ia& a, const int32& b ) { return a = a >> b; }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Reductions

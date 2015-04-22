@@ -17,10 +17,83 @@
 #pragma once
 
 #include "common/default.h"
+#include "common/primref.h"
 
 namespace embree
 {
 
+  class CentroidGeometryAABB
+  {
+  public:
+    mic_f centroid2_lower;
+    mic_f centroid2_upper;
+    mic_f geometry_lower;
+    mic_f geometry_upper;
+
+    __forceinline void reset() {
+      const mic_f p_inf( pos_inf );
+      const mic_f n_inf( neg_inf );
+      centroid2_lower = p_inf;
+      centroid2_upper = n_inf;
+      geometry_lower  = p_inf;
+      geometry_upper  = n_inf;
+    }
+
+
+    __forceinline void extend(const PrimRef& b) {
+      const mic2f b2 = b.getBounds();
+      const mic_f b_min = b2.x;
+      const mic_f b_max = b2.y;
+      const mic_f b_centroid2 = b_min + b_max;
+      centroid2_lower = min(centroid2_lower,b_centroid2);
+      centroid2_upper = max(centroid2_upper,b_centroid2);
+      geometry_lower  = min(geometry_lower,b_min);
+      geometry_upper  = max(geometry_upper,b_max);
+    }
+
+    __forceinline void extend(const mic_f &b_min,
+			      const mic_f &b_max) {
+      const mic_f b_centroid2 = b_min + b_max;
+      centroid2_lower = min(centroid2_lower,b_centroid2);
+      centroid2_upper = max(centroid2_upper,b_centroid2);
+      geometry_lower  = min(geometry_lower,b_min);
+      geometry_upper  = max(geometry_upper,b_max);
+    }
+
+    __forceinline void extend(const mic2f &b) {
+      const mic_f &b_min = b.x;
+      const mic_f &b_max = b.y;
+      const mic_f b_centroid2 = b_min + b_max;
+      centroid2_lower = min(centroid2_lower,b_centroid2);
+      centroid2_upper = max(centroid2_upper,b_centroid2);
+      geometry_lower  = min(geometry_lower,b_min);
+      geometry_upper  = max(geometry_upper,b_max);
+    }
+
+    __forceinline void extend(const CentroidGeometryAABB& c) {
+      centroid2_lower = min(centroid2_lower,c.centroid2_lower);
+      centroid2_upper = max(centroid2_upper,c.centroid2_upper);
+      geometry_lower  = min(geometry_lower,c.geometry_lower);
+      geometry_upper  = max(geometry_upper,c.geometry_upper);
+    };
+
+    __forceinline CentroidGeometryAABB& operator=(const CentroidGeometryAABB &c) 
+      { 
+	centroid2_lower = c.centroid2_lower;
+	centroid2_upper = c.centroid2_upper;
+	geometry_lower  = c.geometry_lower;
+	geometry_upper  = c.geometry_upper;      
+	return *this;
+      }
+
+    __forceinline friend std::ostream &operator<<(std::ostream &o, const CentroidGeometryAABB &cs)
+    {
+      o << "centroid2 = " << cs.centroid2_lower << " " << cs.centroid2_upper;
+      o << "geometry = " << cs.geometry_lower << " " << cs.geometry_upper;
+      return o;
+    };
+
+  };
 
   /* --------------------------------------------------------------- */
   /* --------------------- Centroid_Scene_AABB --------------------- */
@@ -31,6 +104,16 @@ namespace embree
   public:
     BBox3fa centroid2;
     BBox3fa geometry;
+
+    Centroid_Scene_AABB() {}
+
+    Centroid_Scene_AABB( const CentroidGeometryAABB &cg )
+      {
+	store4f(&centroid2.lower,cg.centroid2_lower);
+	store4f(&centroid2.upper,cg.centroid2_upper);
+	store4f(&geometry.lower,cg.geometry_lower);
+	store4f(&geometry.upper,cg.geometry_upper);	
+      }
 
     __forceinline void reset() {
 #if !defined(__MIC__)
@@ -51,10 +134,16 @@ namespace embree
       geometry.extend(b);
     }
 
+    __forceinline void extend(const PrimRef& b) {
+      centroid2.extend(b.center2());
+      geometry.extend(BBox3fa(b.lower,b.upper));
+    }
+
     __forceinline void extend(const Centroid_Scene_AABB& v) {
       centroid2.extend(v.centroid2);
       geometry.extend(v.geometry);
     }
+
 
     __forceinline void extend_atomic(const Centroid_Scene_AABB& v)
     {
@@ -100,6 +189,15 @@ namespace embree
       return o;
     };
 
+    __forceinline Centroid_Scene_AABB& operator=(const CentroidGeometryAABB &c) 
+      { 
+	store4f(&centroid2.lower,c.centroid2_lower);
+	store4f(&centroid2.upper,c.centroid2_upper);
+	store4f(&geometry.lower,c.geometry_lower);
+	store4f(&geometry.upper,c.geometry_upper);      
+	return *this;
+      }
+ 
   };
 
   /* --------------------------------------------------------------- */
@@ -129,7 +227,7 @@ namespace embree
     {
       begin       = _begin;
       end         = _end;
-      parentPtr   = NULL;
+      parentPtr   = nullptr;
       sArea       = area(bounds.geometry);
       flags       = BUILD_RECORD_NODE;
     }
@@ -142,6 +240,10 @@ namespace embree
 
     __forceinline unsigned int items() const {
       return end - begin;
+    }
+
+    __forceinline unsigned int size() const {
+      return items();
     }
 
     __forceinline float sceneArea() {
@@ -561,8 +663,8 @@ namespace embree
       const unsigned int currentIndex = localNodeID + localNodeIDs;
 
       if (unlikely(currentIndex >= maxNodes)) {
-	DBG_PRINT(currentIndex);
-	DBG_PRINT(maxNodes);	
+	PRINT(currentIndex);
+	PRINT(maxNodes);	
         FATAL("AtomicIDBlock: not enough nodes allocated");
       }
 #else
@@ -590,8 +692,8 @@ namespace embree
 
       /* did we exceed the pre-allocated memory? */
       if (unlikely(currentIndex + i >= maxNodes)) {
-	DBG_PRINT(currentIndex);
-	DBG_PRINT(maxNodes);
+	PRINT(currentIndex);
+	PRINT(maxNodes);
         FATAL("not enough nodes allocated");
       }
       

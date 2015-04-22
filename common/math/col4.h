@@ -56,6 +56,6 @@ namespace embree
   }
 
   /*! default template instantiations */
-  typedef Col4<unsigned char> Col4c;
+  typedef Col4<unsigned char> Col4uc;
   typedef Col4<float        > Col4f;
 }

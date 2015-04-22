@@ -28,7 +28,8 @@ struct Triangle { int v0, v1, v2; };
 
 #include "embree2/rtcore.h"
 #include "ray.h"
-#include "tasking/taskscheduler.h"
+
+#include "texture_loader.h"
 using namespace embree;
 
 /* returns time stamp counter */
@@ -104,5 +105,13 @@ struct Sample3f
 float noise(const Vec3fa& p);
 Vec3fa noise3D(const Vec3fa& p);
 
+/* draws progress bar */
+void progressStart();
+bool progressMonitor(void* ptr, const double dn);
+void progressEnd();
 
+float  getPtexTexel1f(void* ptex, int faceId, float u, float v);
+Vec3fa getPtexTexel3f(void* ptex, int faceId, float u, float v);
 
+Vec2f getTextureCoordinatesSubdivMesh(void* mesh, const unsigned int primID, const float u, const float v);
+Vec3fa getTextureTexel3f(void *texture,float u, float v);

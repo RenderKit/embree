@@ -127,14 +127,17 @@ namespace embree
            pixel2world.p);
     
     void* ptr = map();
-    Ref<Image> image = new Image4c(g_width, g_height, (Col4c*)ptr);
+    Ref<Image> image = new Image4uc(g_width, g_height, (Col4uc*)ptr);
     storeImage(image, fileName);
     unmap();
     cleanup();
   }
 
-  void main(int argc, char **argv) 
+  int main(int argc, char **argv) 
   {
+    /* for best performacne set FTZ and DAZ flags in MXCSR control and status register */
+    _mm_setcsr(_mm_getcsr() | /* FTZ */ (1<<15) | /* DAZ */ (1<<6));
+
     std::cout << " === Possible cmd line options: -lazy, -pregenerate, -cache === " << std::endl;
 
     /* set default camera */
@@ -145,7 +148,7 @@ namespace embree
     parseCommandLine(new ParseStream(new CommandLineStream(argc, argv)), FileName());
 
     /*! Set the thread count in the Embree configuration string. */
-    if (g_numThreads) g_rtcore += ",threads=" + std::stringOf(g_numThreads);
+    if (g_numThreads) g_rtcore += ",threads=" + std::to_string((long long)g_numThreads);
     g_rtcore += g_subdiv_mode;
 
     /*! Initialize Embree state. */
@@ -160,13 +163,14 @@ namespace embree
       initWindowState(argc,argv,tutorialName, g_width, g_height, g_fullscreen);
       enterWindowRunLoop();
     }
+    return 0;
   }
 }
 
 int main(int argc, char** argv) 
 {
   /*! Tutorial entry point. */
-  try { embree::main(argc, argv);  return(0); }
+  try { return embree::main(argc, argv); }
 
   /*! Known exception. */
   catch (const std::exception& e) { std::cout << "Error: " << e.what() << std::endl;  return(1); }

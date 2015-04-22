@@ -20,9 +20,9 @@
 #include "sys/ref.h"
 #include "sys/intrinsics.h"
 #include "sys/sysinfo.h"
-#include "sys/sync/atomic.h"
-#include "sys/stl/vector.h"
-#include "sys/stl/string.h"
+#include "sys/atomic.h"
+#include "sys/vector.h"
+#include "sys/string.h"
 
 #include "math/math.h"
 #include "math/vec2.h"

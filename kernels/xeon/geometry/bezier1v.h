@@ -16,21 +16,11 @@
 
 #pragma once
 
-#include "common/default.h"
 #include "primitive.h"
+#include "common/globals.h"
 
 namespace embree
 {
-#if defined(__SSE__) // FIXME: move to other place
-  extern ssef sse_coeff0[4];
-  extern ssef sse_coeff1[4];
-#endif
-
-#if defined(__AVX__)
-  extern avxf coeff0[4];
-  extern avxf coeff1[4];
-#endif
-
   struct BezierCurve3D // FIXME: to other file or remove
   {
     Vec3fa v0,v1,v2,v3;
@@ -135,6 +125,13 @@ namespace embree
 
   struct Bezier1v
   {
+    struct Type : public PrimitiveType 
+    {
+      Type ();
+      size_t size(const char* This) const;
+    };
+    static Type type;
+
   public:
 
     /*! Default constructor. */
@@ -149,18 +146,11 @@ namespace embree
     static __forceinline size_t blocks(size_t N) { return N; }
 
     /*! access hidden members */
-    template<bool list>
     __forceinline unsigned int primID() const { 
-      if (list) return prim & 0x7FFFFFFF; 
-      else      return prim;
+      return prim;
     }
-    template<bool list>
     __forceinline unsigned int geomID() const { 
       return geom; 
-    }
-    //__forceinline unsigned int mask  () const { return mask; } // FIXME: not implemented yet
-    __forceinline int last () const { 
-      return prim & 0x80000000; 
     }
 
     /*! fill from list */
@@ -182,6 +172,12 @@ namespace embree
       const Vec3fa& p2 = curves->vertex(id+2);
       const Vec3fa& p3 = curves->vertex(id+3);
       new (this) Bezier1v(p0,p1,p2,p3,0.0f,1.0f,geomID,primID,list && i>=end);
+    }
+
+    /*! fill triangle from triangle list */
+    __forceinline void fill(const Bezier1v* prims, size_t& i, size_t end, Scene* scene, const bool list) {
+      *this = prims[i];
+      i++;
     }
 
     /*! returns size of t range */
@@ -222,8 +218,8 @@ namespace embree
 #endif
       const Vec3fa lower(reduce_min(pi.x),reduce_min(pi.y),reduce_min(pi.z));
       const Vec3fa upper(reduce_max(pi.x),reduce_max(pi.y),reduce_max(pi.z));
-      const Vec3fa upper_r = reduce_max(abs(pi.w));
-      return enlarge(BBox3fa(min(lower,p3),max(upper,p3)),max(upper_r,p3.w));
+      const Vec3fa upper_r = Vec3fa(reduce_max(abs(pi.w)));
+      return enlarge(BBox3fa(min(lower,p3),max(upper,p3)),max(upper_r,Vec3fa(p3.w)));
 #else
       const BBox3fa b = merge(BBox3fa(p0),BBox3fa(p1),BBox3fa(p2),BBox3fa(p3));
       return enlarge(b,Vec3fa(b.upper.w));
@@ -246,8 +242,8 @@ namespace embree
 #endif
       const Vec3fa lower(reduce_min(pi.x),reduce_min(pi.y),reduce_min(pi.z));
       const Vec3fa upper(reduce_max(pi.x),reduce_max(pi.y),reduce_max(pi.z));
-      const Vec3fa upper_r = reduce_max(abs(pi.w));
-      return enlarge(BBox3fa(min(lower,b3),max(upper,b3)),max(upper_r,b3.w));
+      const Vec3fa upper_r = Vec3fa(reduce_max(abs(pi.w)));
+      return enlarge(BBox3fa(min(lower,b3),max(upper,b3)),max(upper_r,Vec3fa(b3.w)));
 #else
       const BBox3fa b = merge(BBox3fa(b0),BBox3fa(b1),BBox3fa(b2),BBox3fa(b3));
       return enlarge(b,Vec3fa(b.upper.w));
@@ -271,8 +267,8 @@ namespace embree
       const Vec3fa p30 = T0*p20 + T1*p21;
       
       const float t01 = T0*t0 + T1*t1;
-      const unsigned int geomID = this->geomID<0>();
-      const unsigned int primID = this->primID<0>();
+      const unsigned int geomID = this->geomID();
+      const unsigned int primID = this->primID();
       
       new (&left_o ) Bezier1v(p00,p10,p20,p30,t0,t01,geomID,primID,false);
       new (&right_o) Bezier1v(p30,p21,p12,p03,t01,t1,geomID,primID,false);
@@ -340,14 +336,23 @@ namespace embree
       return true;
     }
 
-    friend std::ostream& operator<<(std::ostream& cout, const Bezier1v& b) {
+    __forceinline uint64 id64() const {
+      return (((uint64)prim) << 32) + (uint64)geom;
+    }
+
+    friend __forceinline bool operator<(const Bezier1v& p0, const Bezier1v& p1) {
+      return p0.id64() < p1.id64();
+    }
+
+    friend std::ostream& operator<<(std::ostream& cout, const Bezier1v& b) 
+    {
       return std::cout << "Bezier1v { " << std::endl << 
         " p0 = " << b.p0 << ", " << std::endl <<
         " p1 = " << b.p1 << ", " << std::endl <<
         " p2 = " << b.p2 << ", " << std::endl <<
         " p3 = " << b.p3 << ",  " << std::endl <<
         " t0 = " << b.t0 << ",  t1 = " << b.t1 << ", " << std::endl <<
-        " geomID = " << b.geomID<1>() << ", primID = " << b.primID<1>() << std::endl << 
+        " geomID = " << b.geomID() << ", primID = " << b.primID() << std::endl << 
       "}";
     }
     
@@ -360,14 +365,6 @@ namespace embree
     unsigned geom;      //!< geometry ID
     unsigned prim;      //!< primitive ID
   };
-
-  struct Bezier1vType : public PrimitiveType 
-  {
-    static Bezier1vType type;
-    Bezier1vType ();
-    size_t blocks(size_t x) const;
-    size_t size(const char* This) const;
-  }; 
 
   typedef Bezier1v BezierPrim; // FIXME: rename to BezierRef
 }

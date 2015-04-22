@@ -116,13 +116,13 @@ namespace embree
       __forceinline void merge(const PrimInfo& other) 
       {
 	CentGeomBBox3fa::merge(other);
-	assert(begin == 0);
+	//assert(begin == 0);
 	end += other.end;
       }
 
-	  static __forceinline const PrimInfo merge(const PrimInfo& a, const PrimInfo& b) {
-		  PrimInfo r = a; r.merge(b); return r;
-	  }
+      static __forceinline const PrimInfo merge(const PrimInfo& a, const PrimInfo& b) {
+        PrimInfo r = a; r.merge(b); return r;
+      }
       
       /*! returns the number of primitives */
       __forceinline size_t size() const { 
@@ -148,5 +148,23 @@ namespace embree
     public:
       atomic_t begin,end;          //!< number of primitives
     };
+
+	struct PrimInfo2 
+          {
+            __forceinline PrimInfo2() {}
+
+            __forceinline PrimInfo2(EmptyTy) 
+              : left(empty), right(empty) {}
+            
+            __forceinline PrimInfo2(const PrimInfo& left, const PrimInfo& right)
+              : left(left), right(right) {}
+
+            static __forceinline const PrimInfo2 merge (const PrimInfo2& a, const PrimInfo2& b) {
+              return PrimInfo2(PrimInfo::merge(a.left,b.left),PrimInfo::merge(a.right,b.right));
+            }
+
+          public:
+            PrimInfo left,right;
+          };
   }
 }

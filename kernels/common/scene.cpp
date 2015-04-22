@@ -28,92 +28,94 @@
 namespace embree
 {
   Scene::Scene (RTCSceneFlags sflags, RTCAlgorithmFlags aflags)
-    : flags(sflags), aflags(aflags), numMappedBuffers(0), is_build(false), needTriangles(false), needVertices(false),
+    : flags(sflags), aflags(aflags), numMappedBuffers(0), is_build(false), modified(true), 
+      needTriangles(false), needTriangleVertices(false), needBezierVertices(false),
       numTriangles(0), numTriangles2(0), 
       numBezierCurves(0), numBezierCurves2(0), 
       numSubdivPatches(0), numSubdivPatches2(0), 
       numUserGeometries1(0), 
       numIntersectionFilters4(0), numIntersectionFilters8(0), numIntersectionFilters16(0),
-      commitCounter(0)
+      commitCounter(0), 
+      progress_monitor_function(nullptr), progress_monitor_ptr(nullptr), progress_monitor_counter(0)
   {
-#if !defined(__MIC__)
-    lockstep_scheduler.taskBarrier.init(TaskScheduler::getNumThreads());
-#else
+#if defined(TASKING_LOCKSTEP) 
     lockstep_scheduler.taskBarrier.init(MAX_MIC_THREADS);
+#elif defined(TASKING_TBB_INTERNAL)
+    scheduler = nullptr;
+#else
+    group = new tbb::task_group;
 #endif
-    if (g_scene_flags != -1)
-      flags = (RTCSceneFlags) g_scene_flags;
 
-    geometries.reserve(128);
+    if (State::instance()->scene_flags != -1)
+      flags = (RTCSceneFlags) State::instance()->scene_flags;
 
 #if defined(__MIC__)
+    needBezierVertices = true;
+
     accels.add( BVH4mb::BVH4mbTriangle1ObjectSplitBinnedSAH(this) );
-    accels.add( BVH4i::BVH4iVirtualGeometryBinnedSAH(this) );
-    accels.add( BVH4Hair::BVH4HairBinnedSAH(this) );
-    accels.add( BVH4i::BVH4iSubdivMeshBinnedSAH(this) );
+    accels.add( BVH4i::BVH4iVirtualGeometryBinnedSAH(this, isRobust()));
+    accels.add( BVH4Hair::BVH4HairBinnedSAH(this));
+    accels.add( BVH4i::BVH4iSubdivMeshBinnedSAH(this, isRobust() ));
 
-    if (g_verbose >= 1)
+    if (State::instance()->verbosity(1))
+    {
+      std::cout << "scene flags: static " << isStatic() << " compact = " << isCompact() << " high quality = " << isHighQuality() << " robust = " << isRobust() << std::endl;
+    }
+    
+    if (State::instance()->tri_accel == "default" || State::instance()->tri_accel == "bvh4i")   
+    {
+      if (State::instance()->tri_builder == "default") 
       {
-	std::cout << "scene flags: static " << isStatic() << " compact = " << isCompact() << " high quality = " << isHighQuality() << " robust = " << isRobust() << std::endl;
+        if (isStatic())
+        {
+          if (State::instance()->verbosity(1)) std::cout << "STATIC BUILDER MODE" << std::endl;
+          if ( isCompact() )
+            accels.add(BVH4i::BVH4iTriangle1MemoryConservativeBinnedSAH(this,isRobust()));		    
+          else if ( isHighQuality() )
+            accels.add(BVH4i::BVH4iTriangle1ObjectSplitBinnedSAH(this,isRobust()));
+          else
+            accels.add(BVH4i::BVH4iTriangle1ObjectSplitBinnedSAH(this,isRobust()));
+        }
+        else
+        {
+          if (State::instance()->verbosity(1)) std::cout << "DYNAMIC BUILDER MODE" << std::endl;
+          accels.add(BVH4i::BVH4iTriangle1ObjectSplitMorton(this,isRobust()));
+        }
       }
-
-    if (g_tri_accel == "default" || g_tri_accel == "bvh4i")   
+      else
       {
-	if (g_tri_builder == "default") 
-	  {
-	    if (isStatic())
-	      {
-		if (g_verbose >= 1) std::cout << "STATIC BUILDER MODE" << std::endl;
-		if ( isCompact() )
-		  accels.add(BVH4i::BVH4iTriangle1MemoryConservativeBinnedSAH(this));		    
-		else if ( isHighQuality() )
-		  accels.add(BVH4i::BVH4iTriangle1ObjectSplitBinnedSAH(this));
-		else
-		  accels.add(BVH4i::BVH4iTriangle1ObjectSplitBinnedSAH(this));
-	      }
-	    else
-	      {
-		if (g_verbose >= 1) std::cout << "DYNAMIC BUILDER MODE" << std::endl;
-		accels.add(BVH4i::BVH4iTriangle1ObjectSplitMorton(this));
-	      }
-	  }
-	else
-	  {
-	    if (g_tri_builder == "sah" || g_tri_builder == "bvh4i" || g_tri_builder == "bvh4i.sah") {
-	      accels.add(BVH4i::BVH4iTriangle1ObjectSplitBinnedSAH(this));
-	    }
-	    else if (g_tri_builder == "fast" || g_tri_builder == "morton") {
-	      accels.add(BVH4i::BVH4iTriangle1ObjectSplitMorton(this));
-	    }
-	    else if (g_tri_builder == "fast_enhanced" || g_tri_builder == "morton.enhanced") {
-	      accels.add(BVH4i::BVH4iTriangle1ObjectSplitEnhancedMorton(this));
-	    }
-	    else if (g_tri_builder == "high_quality" || g_tri_builder == "presplits") {
-	      accels.add(BVH4i::BVH4iTriangle1PreSplitsBinnedSAH(this));
-	    }
-	    else if (g_tri_builder == "compact" ||
-		     g_tri_builder == "memory_conservative") {
-	      accels.add(BVH4i::BVH4iTriangle1MemoryConservativeBinnedSAH(this));
-	    }
-	    else if (g_tri_builder == "morton64") {
-	      accels.add(BVH4i::BVH4iTriangle1ObjectSplitMorton64Bit(this));
-	    }
-
-	    else THROW_RUNTIME_ERROR("unknown builder "+g_tri_builder+" for BVH4i<Triangle1>");
-	  }
+        if (State::instance()->tri_builder == "sah" || State::instance()->tri_builder == "bvh4i" || State::instance()->tri_builder == "bvh4i.sah") {
+          accels.add(BVH4i::BVH4iTriangle1ObjectSplitBinnedSAH(this,isRobust()));
+        }
+        else if (State::instance()->tri_builder == "fast" || State::instance()->tri_builder == "morton") {
+          accels.add(BVH4i::BVH4iTriangle1ObjectSplitMorton(this,isRobust()));
+        }
+        else if (State::instance()->tri_builder == "fast_enhanced" || State::instance()->tri_builder == "morton.enhanced") {
+          accels.add(BVH4i::BVH4iTriangle1ObjectSplitEnhancedMorton(this,isRobust()));
+        }
+        else if (State::instance()->tri_builder == "high_quality" || State::instance()->tri_builder == "presplits") {
+          accels.add(BVH4i::BVH4iTriangle1PreSplitsBinnedSAH(this,isRobust()));
+        }
+        else if (State::instance()->tri_builder == "compact" ||
+                 State::instance()->tri_builder == "memory_conservative") {
+          accels.add(BVH4i::BVH4iTriangle1MemoryConservativeBinnedSAH(this,isRobust()));
+        }
+        else if (State::instance()->tri_builder == "morton64") {
+          accels.add(BVH4i::BVH4iTriangle1ObjectSplitMorton64Bit(this,isRobust()));
+        }
+        
+        else THROW_RUNTIME_ERROR("unknown builder "+State::instance()->tri_builder+" for BVH4i<Triangle1>");
       }
-    else THROW_RUNTIME_ERROR("unknown accel "+g_tri_accel);
-
-
+    }
+    else THROW_RUNTIME_ERROR("unknown accel "+State::instance()->tri_accel);
+    
 #else
     createTriangleAccel();
-    //accels.add(BVH4::BVH4Triangle1vMB(this));
     accels.add(BVH4::BVH4Triangle4vMB(this));
     accels.add(BVH4::BVH4UserGeometry(this));
     createHairAccel();
     accels.add(BVH4::BVH4OBBBezier1iMB(this,false));
     createSubdivAccel();
-
 #endif
   }
 
@@ -121,14 +123,14 @@ namespace embree
 
   void Scene::createTriangleAccel()
   {
-    if (g_tri_accel == "default") 
+    if (State::instance()->tri_accel == "default") 
     {
       if (isStatic()) {
         int mode =  2*(int)isCompact() + 1*(int)isRobust(); 
         switch (mode) {
         case /*0b00*/ 0: 
 #if defined (__TARGET_AVX__)
-          if (has_feature(AVX))
+          if (hasISA(AVX))
 	  {
             if (isHighQuality()) accels.add(BVH8::BVH8Triangle4SpatialSplit(this)); 
             else                 accels.add(BVH8::BVH8Triangle4ObjectSplit(this)); 
@@ -157,26 +159,24 @@ namespace embree
         }
       }
     }
-    else if (g_tri_accel == "bvh4.bvh4.triangle1")    accels.add(BVH4::BVH4BVH4Triangle1ObjectSplit(this));
-    else if (g_tri_accel == "bvh4.bvh4.triangle4")    accels.add(BVH4::BVH4BVH4Triangle4ObjectSplit(this));
-    else if (g_tri_accel == "bvh4.bvh4.triangle1v")   accels.add(BVH4::BVH4BVH4Triangle1vObjectSplit(this));
-    else if (g_tri_accel == "bvh4.bvh4.triangle4v")   accels.add(BVH4::BVH4BVH4Triangle4vObjectSplit(this));
-    else if (g_tri_accel == "bvh4.triangle1")         accels.add(BVH4::BVH4Triangle1(this));
-    else if (g_tri_accel == "bvh4.triangle4")         accels.add(BVH4::BVH4Triangle4(this));
-    else if (g_tri_accel == "bvh4.triangle1v")        accels.add(BVH4::BVH4Triangle1v(this));
-    else if (g_tri_accel == "bvh4.triangle4v")        accels.add(BVH4::BVH4Triangle4v(this));
-    else if (g_tri_accel == "bvh4.triangle4i")        accels.add(BVH4::BVH4Triangle4i(this));
+    else if (State::instance()->tri_accel == "bvh4.bvh4.triangle4")    accels.add(BVH4::BVH4BVH4Triangle4ObjectSplit(this));
+    else if (State::instance()->tri_accel == "bvh4.bvh4.triangle4v")   accels.add(BVH4::BVH4BVH4Triangle4vObjectSplit(this));
+    else if (State::instance()->tri_accel == "bvh4.bvh4.triangle4i")   accels.add(BVH4::BVH4BVH4Triangle4iObjectSplit(this));
+    else if (State::instance()->tri_accel == "bvh4.triangle4")         accels.add(BVH4::BVH4Triangle4(this));
+    else if (State::instance()->tri_accel == "bvh4.triangle4v")        accels.add(BVH4::BVH4Triangle4v(this));
+    else if (State::instance()->tri_accel == "bvh4.triangle4i")        accels.add(BVH4::BVH4Triangle4i(this));
 #if defined (__TARGET_AVX__)
-    else if (g_tri_accel == "bvh4.triangle8")         accels.add(BVH4::BVH4Triangle8(this));
-    else if (g_tri_accel == "bvh8.triangle4")         accels.add(BVH8::BVH8Triangle4(this));
-    else if (g_tri_accel == "bvh8.triangle8")         accels.add(BVH8::BVH8Triangle8(this));
+    else if (State::instance()->tri_accel == "bvh4.bvh4.triangle8")    accels.add(BVH4::BVH4BVH4Triangle8ObjectSplit(this));
+    else if (State::instance()->tri_accel == "bvh4.triangle8")         accels.add(BVH4::BVH4Triangle8(this));
+    else if (State::instance()->tri_accel == "bvh8.triangle4")         accels.add(BVH8::BVH8Triangle4(this));
+    else if (State::instance()->tri_accel == "bvh8.triangle8")         accels.add(BVH8::BVH8Triangle8(this));
 #endif
-    else THROW_RUNTIME_ERROR("unknown triangle acceleration structure "+g_tri_accel);
+    else THROW_RUNTIME_ERROR("unknown triangle acceleration structure "+State::instance()->tri_accel);
   }
 
   void Scene::createHairAccel()
   {
-    if (g_hair_accel == "default") 
+    if (State::instance()->hair_accel == "default") 
     {
       if (isStatic()) {
         int mode =  2*(int)isCompact() + 1*(int)isRobust(); 
@@ -198,31 +198,28 @@ namespace embree
         }
       }   
     }
-    else if (g_hair_accel == "bvh4.bezier1v"    ) accels.add(BVH4::BVH4Bezier1v(this));
-    else if (g_hair_accel == "bvh4.bezier1i"    ) accels.add(BVH4::BVH4Bezier1i(this));
-    else if (g_hair_accel == "bvh4obb.bezier1v" ) accels.add(BVH4::BVH4OBBBezier1v(this,false));
-    else if (g_hair_accel == "bvh4obb.bezier1i" ) accels.add(BVH4::BVH4OBBBezier1i(this,false));
-    else THROW_RUNTIME_ERROR("unknown hair acceleration structure "+g_hair_accel);
+    else if (State::instance()->hair_accel == "bvh4.bezier1v"    ) accels.add(BVH4::BVH4Bezier1v(this));
+    else if (State::instance()->hair_accel == "bvh4.bezier1i"    ) accels.add(BVH4::BVH4Bezier1i(this));
+    else if (State::instance()->hair_accel == "bvh4obb.bezier1v" ) accels.add(BVH4::BVH4OBBBezier1v(this,false));
+    else if (State::instance()->hair_accel == "bvh4obb.bezier1i" ) accels.add(BVH4::BVH4OBBBezier1i(this,false));
+    else THROW_RUNTIME_ERROR("unknown hair acceleration structure "+State::instance()->hair_accel);
   }
 
   void Scene::createSubdivAccel()
   {
-    if (g_subdiv_accel == "default") 
+    if (State::instance()->subdiv_accel == "default") 
     {
-      if (isIncoherent(flags)) {
-        if (isCompact()) accels.add(BVH4::BVH4SubdivGridLazy(this));
-        else             accels.add(BVH4::BVH4SubdivGridEager(this));
-      }
-      else {
+      if (isIncoherent(flags) && isStatic())
+        accels.add(BVH4::BVH4SubdivGridEager(this));
+      else
         accels.add(BVH4::BVH4SubdivPatch1Cached(this));
-      }
     }
-    else if (g_subdiv_accel == "bvh4.subdivpatch1"      ) accels.add(BVH4::BVH4SubdivPatch1(this));
-    else if (g_subdiv_accel == "bvh4.subdivpatch1cached") accels.add(BVH4::BVH4SubdivPatch1Cached(this));
-    else if (g_subdiv_accel == "bvh4.grid.adaptive"     ) accels.add(BVH4::BVH4SubdivGrid(this));
-    else if (g_subdiv_accel == "bvh4.grid.eager"        ) accels.add(BVH4::BVH4SubdivGridEager(this));
-    else if (g_subdiv_accel == "bvh4.grid.lazy"         ) accels.add(BVH4::BVH4SubdivGridLazy(this));
-    else THROW_RUNTIME_ERROR("unknown subdiv accel "+g_subdiv_accel);
+    else if (State::instance()->subdiv_accel == "bvh4.subdivpatch1"      ) accels.add(BVH4::BVH4SubdivPatch1(this));
+    else if (State::instance()->subdiv_accel == "bvh4.subdivpatch1cached") accels.add(BVH4::BVH4SubdivPatch1Cached(this));
+    else if (State::instance()->subdiv_accel == "bvh4.grid.adaptive"     ) accels.add(BVH4::BVH4SubdivGrid(this));
+    else if (State::instance()->subdiv_accel == "bvh4.grid.eager"        ) accels.add(BVH4::BVH4SubdivGridEager(this));
+    else if (State::instance()->subdiv_accel == "bvh4.grid.lazy"         ) accels.add(BVH4::BVH4SubdivGridLazy(this));
+    else THROW_RUNTIME_ERROR("unknown subdiv accel "+State::instance()->subdiv_accel);
   }
 
 #endif
@@ -231,6 +228,13 @@ namespace embree
   {
     for (size_t i=0; i<geometries.size(); i++)
       delete geometries[i];
+
+#if TASKING_TBB
+    delete group; group = nullptr;
+#endif
+  }
+
+  void Scene::clear() {
   }
 
   unsigned Scene::newUserGeometry (size_t items) 
@@ -247,12 +251,12 @@ namespace embree
   unsigned Scene::newTriangleMesh (RTCGeometryFlags gflags, size_t numTriangles, size_t numVertices, size_t numTimeSteps) 
   {
     if (isStatic() && (gflags != RTC_GEOMETRY_STATIC)) {
-      process_error(RTC_INVALID_OPERATION,"static scenes can only contain static geometries");
+      throw_RTCError(RTC_INVALID_OPERATION,"static scenes can only contain static geometries");
       return -1;
     }
 
     if (numTimeSteps == 0 || numTimeSteps > 2) {
-      process_error(RTC_INVALID_OPERATION,"only 1 or 2 time steps supported");
+      throw_RTCError(RTC_INVALID_OPERATION,"only 1 or 2 time steps supported");
       return -1;
     }
     
@@ -263,12 +267,12 @@ namespace embree
   unsigned Scene::newSubdivisionMesh (RTCGeometryFlags gflags, size_t numFaces, size_t numEdges, size_t numVertices, size_t numEdgeCreases, size_t numVertexCreases, size_t numHoles, size_t numTimeSteps) 
   {
     if (isStatic() && (gflags != RTC_GEOMETRY_STATIC)) {
-      process_error(RTC_INVALID_OPERATION,"static scenes can only contain static geometries");
+      throw_RTCError(RTC_INVALID_OPERATION,"static scenes can only contain static geometries");
       return -1;
     }
 
     if (numTimeSteps == 0 || numTimeSteps > 2) {
-      process_error(RTC_INVALID_OPERATION,"only 1 or 2 time steps supported");
+      throw_RTCError(RTC_INVALID_OPERATION,"only 1 or 2 time steps supported");
       return -1;
     }
     
@@ -280,12 +284,12 @@ namespace embree
   unsigned Scene::newBezierCurves (RTCGeometryFlags gflags, size_t numCurves, size_t numVertices, size_t numTimeSteps) 
   {
     if (isStatic() && (gflags != RTC_GEOMETRY_STATIC)) {
-      process_error(RTC_INVALID_OPERATION,"static scenes can only contain static geometries");
+      throw_RTCError(RTC_INVALID_OPERATION,"static scenes can only contain static geometries");
       return -1;
     }
 
     if (numTimeSteps == 0 || numTimeSteps > 2) {
-      process_error(RTC_INVALID_OPERATION,"only 1 or 2 time steps supported");
+      throw_RTCError(RTC_INVALID_OPERATION,"only 1 or 2 time steps supported");
       return -1;
     }
     
@@ -312,10 +316,79 @@ namespace embree
   {
     Lock<AtomicMutex> lock(geometriesMutex);
     usedIDs.push_back(geometry->id);
-    geometries[geometry->id] = NULL;
+    geometries[geometry->id] = nullptr;
     delete geometry;
   }
 
+  void Scene::updateInterface()
+  {
+    /* update bounds */
+    is_build = true;
+    bounds = accels.bounds;
+    intersectors = accels.intersectors;
+
+    /* enable only algorithms choosen by application */
+    if ((aflags & RTC_INTERSECT1) == 0) {
+      intersectors.intersector1.intersect = nullptr;
+      intersectors.intersector1.occluded = nullptr;
+    }
+    if ((aflags & RTC_INTERSECT4) == 0) {
+      intersectors.intersector4.intersect = nullptr;
+      intersectors.intersector4.occluded = nullptr;
+    }
+    if ((aflags & RTC_INTERSECT8) == 0) {
+      intersectors.intersector8.intersect = nullptr;
+      intersectors.intersector8.occluded = nullptr;
+    }
+    if ((aflags & RTC_INTERSECT16) == 0) {
+      intersectors.intersector16.intersect = nullptr;
+      intersectors.intersector16.occluded = nullptr;
+    }
+
+    /* update commit counter */
+    commitCounter++;
+  }
+
+  void Scene::build_task ()
+  {
+    progress_monitor_counter = 0;
+
+    /* select fast code path if no intersection filter is present */
+    accels.select(numIntersectionFilters4,numIntersectionFilters8,numIntersectionFilters16);
+  
+    /* build all hierarchies of this scene */
+    accels.build(0,0);
+    
+    /* make static geometry immutable */
+    if (isStatic()) 
+    {
+      accels.immutable();
+      for (size_t i=0; i<geometries.size(); i++)
+        if (geometries[i]) geometries[i]->immutable();
+    }
+
+    /* delete geometry that is scheduled for delete */
+    for (size_t i=0; i<geometries.size(); i++) // FIXME: this late deletion is inefficient in case of many geometries
+    {
+      Geometry* geom = geometries[i];
+      if (!geom) continue;
+      if (geom->isEnabled()) geom->clearModified(); // FIXME: should builders to this?
+      if (geom->isErasing()) remove(geom);
+    }
+
+    updateInterface();
+
+    if (State::instance()->verbosity(2)) {
+      std::cout << "created scene intersector" << std::endl;
+      accels.print(2);
+      std::cout << "selected scene intersector" << std::endl;
+      intersectors.print(2);
+    }
+
+    setModified(false);
+  }
+
+#if defined(TASKING_LOCKSTEP)
 
   void Scene::task_build_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) 
   {
@@ -325,34 +398,23 @@ namespace embree
 
   void Scene::build (size_t threadIndex, size_t threadCount) 
   {
-    /* all user worker threads properly enter and leave the tasking system */
     LockStepTaskScheduler::Init init(threadIndex,threadCount,&lockstep_scheduler);
     if (threadIndex != 0) return;
 
     /* allow only one build at a time */
-    Lock<MutexSys> lock(mutex);
+    Lock<MutexSys> lock(buildMutex);
 
-    if (isStatic() && isBuild()) {
-      process_error(RTC_INVALID_OPERATION,"static geometries cannot get committed twice");
-      return;
-    }
+    progress_monitor_counter = 0;
+
+    //if (isStatic() && isBuild()) {
+    //  throw_RTCError(RTC_INVALID_OPERATION,"static geometries cannot get committed twice");
+    //  return;
+    //}
 
     if (!ready()) {
-      process_error(RTC_INVALID_OPERATION,"not all buffers are unmapped");
+      throw_RTCError(RTC_INVALID_OPERATION,"not all buffers are unmapped");
       return;
     }
-
-    /* verify geometry in debug mode  */
-#if 0 && defined(DEBUG) // FIXME: enable
-    for (size_t i=0; i<geometries.size(); i++) {
-      if (geometries[i]) {
-        if (!geometries[i]->verify()) {
-          process_error(RTC_INVALID_OPERATION,"invalid geometry specified");
-          return;
-        }
-      }
-    }
-#endif
 
     /* select fast code path if no intersection filter is present */
     accels.select(numIntersectionFilters4,numIntersectionFilters8,numIntersectionFilters16);
@@ -365,7 +427,7 @@ namespace embree
     else
     {
       TaskScheduler::EventSync event;
-      new (&task) TaskScheduler::Task(&event,_task_build_parallel,this,TaskScheduler::getNumThreads(),NULL,NULL,"scene_build");
+      new (&task) TaskScheduler::Task(&event,_task_build_parallel,this,TaskScheduler::getNumThreads(),nullptr,nullptr,"scene_build");
       TaskScheduler::addTask(-1,TaskScheduler::GLOBAL_FRONT,&task);
       event.sync();
     }
@@ -379,46 +441,142 @@ namespace embree
     }
 
     /* delete geometry that is scheduled for delete */
-    for (size_t i=0; i<geometries.size(); i++) 
+    for (size_t i=0; i<geometries.size(); i++) // FIXME: this late deletion is inefficient in case of many geometries
     {
       Geometry* geom = geometries[i];
-      if (geom == NULL || geom->state != Geometry::ERASING) continue;
-      remove(geom);
+      if (!geom) continue;
+      if (geom->isEnabled()) geom->clearModified(); // FIXME: should builders to this?
+      if (geom->isErasing()) remove(geom);
     }
 
-    /* update bounds */
-    bounds = accels.bounds;
-    intersectors = accels.intersectors;
-    is_build = true;
+    updateInterface();
+    setModified(false);
 
-    /* enable only algorithms choosen by application */
-    if ((aflags & RTC_INTERSECT1) == 0) {
-      intersectors.intersector1.intersect = NULL;
-      intersectors.intersector1.occluded = NULL;
-    }
-    if ((aflags & RTC_INTERSECT4) == 0) {
-      intersectors.intersector4.intersect = NULL;
-      intersectors.intersector4.occluded = NULL;
-    }
-    if ((aflags & RTC_INTERSECT8) == 0) {
-      intersectors.intersector8.intersect = NULL;
-      intersectors.intersector8.occluded = NULL;
-    }
-    if ((aflags & RTC_INTERSECT16) == 0) {
-      intersectors.intersector16.intersect = NULL;
-      intersectors.intersector16.occluded = NULL;
-    }
-
-    if (g_verbose >= 2) {
+    if (State::instance()->verbosity(2)) {
       std::cout << "created scene intersector" << std::endl;
       accels.print(2);
       std::cout << "selected scene intersector" << std::endl;
       intersectors.print(2);
     }
-    
-    /* update commit counter */
-    commitCounter++;
   }
+
+#endif
+
+#if defined(TASKING_TBB_INTERNAL)
+
+  void Scene::build (size_t threadIndex, size_t threadCount) 
+  {
+    if (threadCount != 0) 
+    {
+      {
+        Lock<MutexSys> lock(buildMutex);
+        if (scheduler == nullptr) scheduler = new TaskSchedulerTBB(-1);
+      }
+      if (threadIndex > 0) {
+        scheduler->join();
+        return;
+      } else
+        scheduler->wait_for_threads(threadCount);
+    }
+
+    /* allow only one build at a time */
+    Lock<MutexSys> lock(buildMutex);
+
+    progress_monitor_counter = 0;
+
+    //if (isStatic() && isBuild()) {
+    //  throw_RTCError(RTC_INVALID_OPERATION,"static geometries cannot get committed twice");
+    //  return;
+    //}
+
+    if (!ready()) {
+      throw_RTCError(RTC_INVALID_OPERATION,"not all buffers are unmapped");
+      return;
+    }
+
+    if (threadCount) {
+      scheduler->spawn_root  ([&]() { build_task(); });
+      delete scheduler; scheduler = nullptr;
+    }
+    else {
+      TaskSchedulerTBB::spawn([&]() { build_task(); });
+    }
+  }
+
+#endif
+
+#if defined(TASKING_TBB)
+
+  void Scene::build (size_t threadIndex, size_t threadCount) 
+  {
+    /* let threads wait for build to finish in rtcCommitThread mode */
+    if (threadCount != 0) {
+      if (threadIndex > 0) {
+        group_barrier.wait(threadCount); // FIXME: use barrier that waits in condition
+        group->wait();
+        return;
+      }
+    }
+
+    /* try to obtain build lock */
+    TryLock<MutexSys> lock(buildMutex);
+
+    /* join hierarchy build */
+    if (!lock.isLocked()) {
+      group->wait();
+      while (!buildMutex.try_lock()) {
+        __pause_cpu();
+        yield();
+        group->wait();
+      }
+      buildMutex.unlock();
+      return;
+    }
+
+    if (!isModified()) {
+      return;
+    }
+
+    if (!ready()) {
+      throw_RTCError(RTC_INVALID_OPERATION,"not all buffers are unmapped");
+      return;
+    }
+
+    /* for best performance set FTZ and DAZ flags in the MXCSR control and status register */
+#if !defined(__MIC__)
+    unsigned int mxcsr = _mm_getcsr();
+    _mm_setcsr(mxcsr | /* FTZ */ (1<<15) | /* DAZ */ (1<<6));
+#endif
+    
+    try {
+    
+      tbb::task_group_context ctx( tbb::task_group_context::isolated, tbb::task_group_context::default_traits | tbb::task_group_context::fp_settings );
+      ctx.set_priority(tbb::priority_high);
+
+      group->run([&]{
+        tbb::parallel_for (size_t(0), size_t(1), [&] (size_t) { build_task(); }, ctx);
+      }); 
+      if (threadCount) group_barrier.wait(threadCount);
+      group->wait();
+
+      /* reset MXCSR register again */
+#if !defined(__MIC__)
+      _mm_setcsr(mxcsr);
+#endif
+    } 
+    catch (...) {
+
+       /* reset MXCSR register again */
+#if !defined(__MIC__)
+    _mm_setcsr(mxcsr);
+#endif
+
+      accels.clear();
+      updateInterface();
+      throw;
+    }
+  }
+#endif
 
   void Scene::write(std::ofstream& file)
   {
@@ -429,6 +587,27 @@ namespace embree
     for (size_t i=0; i<numGroups; i++) {
       if (geometries[i]) geometries[i]->write(file);
       else { int type = -1; file.write((char*)&type,sizeof(type)); }
+    }
+  }
+
+  void Scene::setProgressMonitorFunction(RTCProgressMonitorFunc func, void* ptr) 
+  {
+    static MutexSys mutex;
+    mutex.lock();
+    progress_monitor_function = func;
+    progress_monitor_ptr      = ptr;
+    mutex.unlock();
+  }
+
+  void Scene::progressMonitor(double dn)
+  {
+    if (progress_monitor_function) {
+      size_t n = atomic_t(dn) + atomic_add(&progress_monitor_counter, atomic_t(dn));
+      if (!progress_monitor_function(progress_monitor_ptr, n / (double(numPrimitives())))) {
+#if defined(TASKING_TBB)
+        throw_RTCError(RTC_CANCELLED,"progress monitor forced termination");
+#endif
+      }
     }
   }
 }

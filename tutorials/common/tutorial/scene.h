@@ -16,8 +16,8 @@
 
 #pragma once
 
-#include "sys/platform.h"
-#include "sys/stl/vector.h"
+//#include "sys/platform.h"
+#include "sys/vector.h"
 #include "math/vec2.h"
 #include "math/vec3.h"
 #include "math/affinespace.h"
@@ -25,8 +25,14 @@
 #include <vector>
 #include <memory>
 
+
 namespace embree
 {
+
+#if defined(USE_PTEX)
+  struct ptex_file;
+#endif
+
   /*! Scene representing the OBJ file */
   struct OBJScene  // FIXME: name Scene
   {
@@ -68,20 +74,21 @@ namespace embree
     {
       void set_motion_blur(const Mesh* other);
 
-      vector_t<Vec3fa> v;
-      vector_t<Vec3fa> v2;
-      vector_t<Vec3fa> vn;
+      avector<Vec3fa> v;
+      avector<Vec3fa> v2;
+      avector<Vec3fa> vn;
 
       std::vector<Vec2f> vt;
       std::vector<Triangle> triangles;
       std::vector<Quad> quads;
+      int meshMaterialID;
     };
 
     /*! Subdivision Mesh. */
     struct SubdivMesh 
     {
-      vector_t<Vec3fa> positions;            //!< vertex positions
-	  vector_t<Vec3fa> normals;              //!< face vertex normals
+      avector<Vec3fa> positions;            //!< vertex positions
+      avector<Vec3fa> normals;              //!< face vertex normals
       std::vector<Vec2f> texcoords;             //!< face texture coordinates
       std::vector<int> position_indices;        //!< position indices for all faces
       std::vector<int> normal_indices;          //!< normal indices for all faces
@@ -110,11 +117,32 @@ namespace embree
     {
       void set_motion_blur(const HairSet* other);
 
-      vector_t<Vec3fa> v;       //!< hair control points (x,y,z,r)
-      vector_t<Vec3fa> v2;       //!< hair control points (x,y,z,r)
+      avector<Vec3fa> v;       //!< hair control points (x,y,z,r)
+      avector<Vec3fa> v2;       //!< hair control points (x,y,z,r)
       std::vector<Hair> hairs;  //!< list of hairs
     };
-    
+
+    struct Texture {
+      enum {
+	RGBA8  = 1,
+	RGB8   = 2,
+	ALPHA8 = 4
+      };
+      
+      int width;
+      int height;    
+      int format;
+      int bytesPerTexel;
+      int width_mask;
+      int height_mask;
+
+    void *data;
+
+    Texture() : width(-1), height(-1), format(-1), bytesPerTexel(0), data(nullptr), width_mask(0), height_mask(0)
+      {
+      }
+    };
+
     enum MaterialTy { MATERIAL_OBJ, MATERIAL_THIN_DIELECTRIC, MATERIAL_METAL, MATERIAL_VELVET, MATERIAL_DIELECTRIC, MATERIAL_METALLIC_PAINT, MATERIAL_MATTE, MATERIAL_MIRROR, MATERIAL_REFLECTIVE_METAL };
 
     struct MatteMaterial
@@ -159,10 +187,23 @@ namespace embree
     {
     public:
       OBJMaterial ()
-      : ty(MATERIAL_OBJ), illum(0), d(1.f), Ns(1.f), Ni(1.f), Ka(0.f), Kd(1.f), Ks(0.f), Tf(1.f) {};
+      : ty(MATERIAL_OBJ), illum(0), d(1.f), Ns(1.f), Ni(1.f), Ka(0.f), Kd(1.f), Ks(0.f), Tf(0.0f), map_Kd(nullptr), map_Displ(nullptr)
+#if defined(USE_PTEX)
+	, ptex_Kd(nullptr)
+      , ptex_displ(nullptr) 
+#endif
+      {};
 
       OBJMaterial (float d, const Vec3fa& Kd, const Vec3fa& Ks, const float Ns)
-      : ty(MATERIAL_OBJ), illum(0), d(d), Ns(Ns), Ni(1.f), Ka(0.f), Kd(Kd), Ks(Ks), Tf(1.f) {};
+      : ty(MATERIAL_OBJ), illum(0), d(d), Ns(Ns), Ni(1.f), Ka(0.f), Kd(Kd), Ks(Ks), Tf(0.0f), map_Kd(nullptr), map_Displ(nullptr)
+#if defined(USE_PTEX)
+      , ptex_Kd(nullptr) 
+      , ptex_displ(nullptr) 
+#endif
+      {};
+
+      ~OBJMaterial() { // FIXME: destructor never called!
+      }
       
     public:
       int ty;
@@ -177,6 +218,13 @@ namespace embree
       Vec3fa Kd;              /*< diffuse reflectivity */
       Vec3fa Ks;              /*< specular reflectivity */
       Vec3fa Tf;              /*< transmission filter */
+
+      Texture* map_Kd;       /*< dummy */
+      Texture* map_Displ;       /*< dummy */
+#if defined(USE_PTEX)
+      ptex_file* ptex_Kd;
+      ptex_file* ptex_displ;
+#endif
     };
 
     struct MetalMaterial
@@ -341,13 +389,13 @@ namespace embree
     }
 
   public:
-    vector_t<Material> materials;                      //!< material list
+    avector<Material> materials;                      //!< material list
     std::vector<Mesh*> meshes;                         //!< list of meshes
     std::vector<HairSet*> hairsets;                    //!< list of hair sets
     std::vector<SubdivMesh*> subdiv;                  //!< list of subdivision meshes
-    vector_t<AmbientLight> ambientLights;           //!< list of ambient lights
-    vector_t<PointLight> pointLights;               //!< list of point lights
-    vector_t<DirectionalLight> directionalLights;   //!< list of directional lights
-    vector_t<DistantLight> distantLights;           //!< list of distant lights
+    avector<AmbientLight> ambientLights;           //!< list of ambient lights
+    avector<PointLight> pointLights;               //!< list of point lights
+    avector<DirectionalLight> directionalLights;   //!< list of directional lights
+    avector<DistantLight> distantLights;           //!< list of distant lights
   };
 }

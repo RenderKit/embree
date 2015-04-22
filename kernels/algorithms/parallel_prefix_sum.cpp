@@ -39,7 +39,7 @@ namespace embree
   
       /* dry run only counts */
       ParallelPrefixSumState<size_t> state;
-      size_t S0 = parallel_prefix_sum( state, size_t(0), size_t(N), size_t(1024), size_t(0), [&](const range<size_t>& r, const size_t sum) 
+      size_t S0 = parallel_prefix_sum( state, size_t(0), size_t(N), size_t(1024), size_t(0), [&](const range<size_t>& r, const size_t sum)  -> size_t
       {
         size_t s = 0;
 	for (size_t i=r.begin(); i<r.end(); i++)
@@ -49,7 +49,7 @@ namespace embree
       }, [](size_t v0, size_t v1) { return v0+v1; });
       
       /* final run calculates prefix sum */
-      size_t S1 = parallel_prefix_sum( state, size_t(0), size_t(N), size_t(1024), size_t(0), [&](const range<size_t>& r, const size_t sum) 
+      size_t S1 = parallel_prefix_sum( state, size_t(0), size_t(N), size_t(1024), size_t(0), [&](const range<size_t>& r, const size_t sum) -> size_t
       {
         size_t s = 0;
 	for (size_t i=r.begin(); i<r.end(); i++) {

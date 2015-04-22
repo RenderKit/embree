@@ -32,7 +32,7 @@ namespace embree
       return false;
     }
     char line[1024];
-    if(fgets(line, sizeof(line), file) == NULL) 
+    if(fgets(line, sizeof(line), file) == nullptr) 
       THROW_RUNTIME_ERROR("Error reading PPM file!");
     return true;
   }
@@ -62,7 +62,7 @@ namespace embree
     fgetc(file);
 
     /* create image and fill with data */
-    Ref<Image> img = new Image4c(width,height,fileName);
+    Ref<Image> img = new Image4uc(width,height,fileName);
 
     /* image in text format */
     if (!strcmp(type, "P3"))

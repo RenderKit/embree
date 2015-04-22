@@ -79,6 +79,8 @@ namespace embree
       const unsigned char *__restrict const ptr = (const unsigned char*)&code;
       return ptr[b];
     }
+
+    __forceinline operator unsigned int() const { return code; }
       
     __forceinline void operator=(const MortonID32Bit& v) {
       *(size_t*)this = *(size_t*)&v;
@@ -115,6 +117,8 @@ namespace embree
     /*! Destructor. */
     ~BVH4iBuilderMorton();
 
+    void clear() {}
+
     /*! creates the builder */
     static Builder* create (void* accel, void* geometry, bool tree_rotations) { 
       return new BVH4iBuilderMorton((BVH4i*)accel,geometry,tree_rotations);
@@ -142,7 +146,7 @@ namespace embree
     TASK_FUNCTION(BVH4iBuilderMorton,computeMortonCodes);
     
     /*! parallel sort of the morton codes */
-    TASK_FUNCTION(BVH4iBuilderMorton,radixsort);
+    TASK_FUNCTION(BVH4iBuilderMorton,radixsort_block);
 
     /*! builds top of the tree in parallel */
     TASK_FUNCTION(BVH4iBuilderMorton,createTopLevelTree);
@@ -227,7 +231,7 @@ namespace embree
     {
       const unsigned int currentIndex = atomicID.add(size);
       if (unlikely(currentIndex >= numAllocatedNodes)) {
-        FATAL("not enough nodes allocated");
+        THROW_RUNTIME_ERROR("not enough nodes allocated");
       }
       return currentIndex;
     }
@@ -298,6 +302,8 @@ namespace embree
 
     /*! Destructor. */
     ~BVH4iBuilderMorton64Bit();
+
+    void clear() {}
 
     /*! creates the builder */
     static Builder* create (void* accel, void* geometry) { 
@@ -408,7 +414,7 @@ namespace embree
     {
       const unsigned int currentIndex = atomicID.add(size);
       if (unlikely(currentIndex >= numAllocatedNodes)) {
-        FATAL("not enough nodes allocated");
+        THROW_RUNTIME_ERROR("not enough nodes allocated");
       }
       return currentIndex;
     }

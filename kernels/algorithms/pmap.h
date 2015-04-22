@@ -66,7 +66,7 @@ namespace embree
       /* generate key/value pairs */
       parallel_for( size_t(0), keys.size(), size_t(4*4096), [&](const range<size_t>& r) {
 	for (size_t i=r.begin(); i<r.end(); i++)
-	  vec[i] = KeyValue((Key)keys[i],values[i]);
+	  vec[i] = pmap<Key,Val>::KeyValue((Key)keys[i],values[i]);
       });
 
       /* perform parallel radix sort of the key/value pairs */
@@ -85,19 +85,19 @@ namespace embree
       /* generate key/value pairs */
       parallel_for( size_t(0), keys.size(), size_t(4*4096), [&](const range<size_t>& r) {
 	for (size_t i=r.begin(); i<r.end(); i++)
-	  vec[i] = KeyValue((Key)keys[i],values[i]);
+	  vec[i] = pmap<Key,Val>::KeyValue((Key)keys[i],values[i]);
       });
 
       /* perform parallel radix sort of the key/value pairs */
       radix_sort<KeyValue,Key>(vec.data(),temp.data(),keys.size());
     }
 
-    /*! Returns a pointer to the value associated with the specified key. The pointer will be NULL of the key is not contained in the map. */
+    /*! Returns a pointer to the value associated with the specified key. The pointer will be nullptr of the key is not contained in the map. */
     __forceinline const Val* lookup(const Key& key) const 
     {
       typename std::vector<KeyValue>::const_iterator i = std::lower_bound(vec.begin(), vec.end(), key);
-      if (i == vec.end()) return NULL;
-      if (i->key != key) return NULL;
+      if (i == vec.end()) return nullptr;
+      if (i->key != key) return nullptr;
       return &i->val;
     }
 

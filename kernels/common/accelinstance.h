@@ -28,18 +28,23 @@ namespace embree
       : accel(accel), builder(builder), Accel(intersectors) {}
 
     void immutable () {
-      delete builder; builder = NULL;
+      delete builder; builder = nullptr;
     }
 
     ~AccelInstance() {
-      delete builder; builder = NULL; // delete builder first!
-      delete accel;   accel = NULL;
+      delete builder; builder = nullptr;
+      delete accel;   accel = nullptr;
     }
 
   public:
     void build (size_t threadIndex, size_t threadCount) {
       if (builder) builder->build(threadIndex,threadCount);
       bounds = accel->bounds;
+    }
+
+    void clear() {
+      accel->clear();
+      builder->clear();
     }
 
   private:

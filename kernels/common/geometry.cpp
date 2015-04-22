@@ -19,146 +19,102 @@
 
 namespace embree
 {
-  Geometry::Geometry (Scene* parent, GeometryTy type, size_t numPrimitives, size_t numTimeSteps, RTCGeometryFlags flags) 
-    : parent(parent), type(type), numPrimitives(numPrimitives), numTimeSteps(numTimeSteps), id(0), flags(flags), state(ENABLING),
-      intersectionFilter1(NULL), occlusionFilter1(NULL),
-      intersectionFilter4(NULL), occlusionFilter4(NULL), ispcIntersectionFilter4(NULL), ispcOcclusionFilter4(NULL), 
-      intersectionFilter8(NULL), occlusionFilter8(NULL), ispcIntersectionFilter8(NULL), ispcOcclusionFilter8(NULL), 
-      intersectionFilter16(NULL), occlusionFilter16(NULL), ispcIntersectionFilter16(NULL), ispcOcclusionFilter16(NULL), 
-      userPtr(NULL)
+  Geometry::Geometry (Scene* parent, Type type, size_t numPrimitives, size_t numTimeSteps, RTCGeometryFlags flags) 
+    : parent(parent), type(type), numPrimitives(numPrimitives), numTimeSteps(numTimeSteps), id(0), flags(flags),
+      enabled(true), modified(true), erasing(false), mask(-1),
+      intersectionFilter1(nullptr), occlusionFilter1(nullptr),
+      intersectionFilter4(nullptr), occlusionFilter4(nullptr), ispcIntersectionFilter4(false), ispcOcclusionFilter4(false), 
+      intersectionFilter8(nullptr), occlusionFilter8(nullptr), ispcIntersectionFilter8(false), ispcOcclusionFilter8(false), 
+      intersectionFilter16(nullptr), occlusionFilter16(nullptr), ispcIntersectionFilter16(false), ispcOcclusionFilter16(false), 
+      userPtr(nullptr)
   {
     id = parent->add(this);
+    parent->setModified();
+  }
+
+  Geometry::~Geometry() {
+  }
+
+  void Geometry::write(std::ofstream& file) {
+    int type = -1; file.write((char*)&type,sizeof(type));
+  }
+
+  void Geometry::updateIntersectionFilters(bool enable)
+  {
+    if (enable) {
+      atomic_add(&parent->numIntersectionFilters4,(intersectionFilter4 != nullptr) + (occlusionFilter4 != nullptr));
+      atomic_add(&parent->numIntersectionFilters8,(intersectionFilter8 != nullptr) + (occlusionFilter8 != nullptr));
+      atomic_add(&parent->numIntersectionFilters16,(intersectionFilter16 != nullptr) + (occlusionFilter16 != nullptr));
+    } else {
+      atomic_sub(&parent->numIntersectionFilters4,(intersectionFilter4 != nullptr) + (occlusionFilter4 != nullptr));
+      atomic_sub(&parent->numIntersectionFilters8,(intersectionFilter8 != nullptr) + (occlusionFilter8 != nullptr));
+      atomic_sub(&parent->numIntersectionFilters16,(intersectionFilter16 != nullptr) + (occlusionFilter16 != nullptr));
+    }
   }
 
   void Geometry::enable () 
   {
-    if (parent->isStatic()) {
-      process_error(RTC_INVALID_OPERATION,"static geometries cannot get enabled");
+    if (parent->isStatic())
+      throw_RTCError(RTC_INVALID_OPERATION,"rtcEnable cannot get called in static scenes");
+
+    if (isEnabled() || isErasing()) 
       return;
-    }
 
-    if (isDisabled()) {
-      atomic_add(&parent->numIntersectionFilters4,(intersectionFilter4 != NULL) + (occlusionFilter4 != NULL));
-      atomic_add(&parent->numIntersectionFilters8,(intersectionFilter8 != NULL) + (occlusionFilter8 != NULL));
-      atomic_add(&parent->numIntersectionFilters16,(intersectionFilter16 != NULL) + (occlusionFilter16 != NULL));
-    }
-
-    switch (state) {
-    case ENABLING:
-      break;
-    case ENABLED:
-      break;
-    case MODIFIED:
-      break;
-    case DISABLING: 
-      state = MODIFIED;
-      enabling();
-      break;
-    case DISABLED: 
-      state = ENABLING;
-      enabling();
-      break;
-    case ERASING:
-      break;
-    }
+    updateIntersectionFilters(true);
+    parent->setModified();
+    enabled = true;
+    enabling();
   }
 
   void Geometry::update() 
   {
-    if (parent->isStatic()) {
-      process_error(RTC_INVALID_OPERATION,"static geometries cannot get updated");
-      return;
-    }
+    if (parent->isStatic())
+      throw_RTCError(RTC_INVALID_OPERATION,"rtcUpdate cannot get called in static scenes");
 
-    switch (state) {
-    case ENABLING:
-      break;
-    case ENABLED:
-      state = MODIFIED;
-      break;
-    case MODIFIED:
-      break;
-    case DISABLING: 
-      break;
-    case DISABLED: 
-      break;
-    case ERASING:
-      break;
-    }
+    if (isModified() || isErasing())
+      return;
+
+    parent->setModified();
+    modified = true;
   }
 
   void Geometry::disable () 
   {
-    if (parent->isStatic()) {
-      process_error(RTC_INVALID_OPERATION,"static geometries cannot get disabled");
+    if (parent->isStatic())
+      throw_RTCError(RTC_INVALID_OPERATION,"rtcDisable cannot get called in static scenes");
+
+    if (isDisabled() || isErasing()) 
       return;
-    }
 
-    if (isEnabled()) {
-      atomic_sub(&parent->numIntersectionFilters4,(intersectionFilter4 != NULL) + (occlusionFilter4 != NULL));
-      atomic_sub(&parent->numIntersectionFilters8,(intersectionFilter8 != NULL) + (occlusionFilter8 != NULL));
-      atomic_sub(&parent->numIntersectionFilters16,(intersectionFilter16 != NULL) + (occlusionFilter16 != NULL));
-    }
-
-    switch (state) {
-    case ENABLING:
-      state = DISABLED;
-      disabling();
-      break;
-    case ENABLED:
-      state = DISABLING;
-      disabling();
-      break;
-    case MODIFIED:
-      state = DISABLING;
-      disabling();
-      break;
-    case DISABLING: 
-      break;
-    case DISABLED: 
-      break;
-    case ERASING:
-      break;
-    }
+    updateIntersectionFilters(false);
+    parent->setModified();
+    enabled = false;
+    disabling();
   }
 
   void Geometry::erase () 
   {
-    if (parent->isStatic()) {
-      process_error(RTC_INVALID_OPERATION,"static geometries cannot get deleted");
-      return;
-    }
+    if (parent->isStatic())
+      throw_RTCError(RTC_INVALID_OPERATION,"rtcDeleteGeometry cannot get called in static scenes");
 
-    switch (state) {
-    case ENABLING:
-      state = ERASING;
-      disabling();
-      break;
-    case ENABLED:
-      state = ERASING;
-      disabling();
-      break;
-    case MODIFIED:
-      state = ERASING;
-      disabling();
-      break;
-    case DISABLING: 
-      state = ERASING;
-      break;
-    case DISABLED: 
-      state = ERASING;
-      break;
-    case ERASING:
-      break;
-    }
+    if (isErasing())
+      return;
+
+    parent->setModified();
+    erasing = true;
+
+    if (isDisabled())
+      return;
+    
+    updateIntersectionFilters(false);
+    enabled = false;
+    disabling();
   }
   
   void Geometry::setUserData (void* ptr)
   {
-    if (parent->isStatic() && parent->isBuild()) {
-      process_error(RTC_INVALID_OPERATION,"static geometries cannot get modified");
-      return;
-    }
+    if (parent->isStatic() && parent->isBuild())
+      throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
 
     userPtr = ptr;
   }
@@ -169,97 +125,107 @@ namespace embree
 
   void Geometry::setIntersectionFilterFunction (RTCFilterFunc filter, bool ispc) 
   {
-    if (type != TRIANGLE_MESH && type != BEZIER_CURVES) {
-      process_error(RTC_INVALID_OPERATION,"filter functions only supported for triangle meshes and hair geometries"); 
-      return;
-    }
+    if (parent->isStatic() && parent->isBuild())
+      throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
+
+    if (type != TRIANGLE_MESH && type != BEZIER_CURVES)
+      throw_RTCError(RTC_INVALID_OPERATION,"filter functions only supported for triangle meshes and hair geometries"); 
+    
     intersectionFilter1 = filter;
   }
     
   void Geometry::setIntersectionFilterFunction4 (RTCFilterFunc4 filter, bool ispc) 
   { 
-    if (type != TRIANGLE_MESH && type != BEZIER_CURVES) {
-      process_error(RTC_INVALID_OPERATION,"filter functions only supported for triangle meshes and hair geometries"); 
-      return;
-    }
-    atomic_sub(&parent->numIntersectionFilters4,intersectionFilter4 != NULL);
-    atomic_add(&parent->numIntersectionFilters4,filter != NULL);
+    if (parent->isStatic() && parent->isBuild())
+      throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
+
+    if (type != TRIANGLE_MESH && type != BEZIER_CURVES)
+      throw_RTCError(RTC_INVALID_OPERATION,"filter functions only supported for triangle meshes and hair geometries"); 
+
+    atomic_sub(&parent->numIntersectionFilters4,intersectionFilter4 != nullptr);
+    atomic_add(&parent->numIntersectionFilters4,filter != nullptr);
     intersectionFilter4 = filter;
-    if (ispc) ispcIntersectionFilter4 = (void*) filter; 
-    else      ispcIntersectionFilter4 = NULL;
+    ispcIntersectionFilter4 = ispc;
   }
     
   void Geometry::setIntersectionFilterFunction8 (RTCFilterFunc8 filter, bool ispc) 
   { 
-    if (type != TRIANGLE_MESH && type != BEZIER_CURVES) {
-      process_error(RTC_INVALID_OPERATION,"filter functions only supported for triangle meshes and hair geometries"); 
-      return;
-    }
-    atomic_sub(&parent->numIntersectionFilters8,intersectionFilter8 != NULL);
-    atomic_add(&parent->numIntersectionFilters8,filter != NULL);
+    if (parent->isStatic() && parent->isBuild())
+      throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
+    
+    if (type != TRIANGLE_MESH && type != BEZIER_CURVES)
+      throw_RTCError(RTC_INVALID_OPERATION,"filter functions only supported for triangle meshes and hair geometries"); 
+
+    atomic_sub(&parent->numIntersectionFilters8,intersectionFilter8 != nullptr);
+    atomic_add(&parent->numIntersectionFilters8,filter != nullptr);
     intersectionFilter8 = filter;
-    if (ispc) ispcIntersectionFilter8 = (void*) filter; 
-    else      ispcIntersectionFilter8 = NULL;
+    ispcIntersectionFilter8 = ispc;
   }
   
   void Geometry::setIntersectionFilterFunction16 (RTCFilterFunc16 filter, bool ispc) 
   { 
-    if (type != TRIANGLE_MESH && type != BEZIER_CURVES) {
-      process_error(RTC_INVALID_OPERATION,"filter functions only supported for triangle meshes and hair geometries"); 
-      return;
-    }
-    atomic_sub(&parent->numIntersectionFilters16,intersectionFilter16 != NULL);
-    atomic_add(&parent->numIntersectionFilters16,filter != NULL);
+    if (parent->isStatic() && parent->isBuild())
+      throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
+
+    if (type != TRIANGLE_MESH && type != BEZIER_CURVES)
+      throw_RTCError(RTC_INVALID_OPERATION,"filter functions only supported for triangle meshes and hair geometries"); 
+
+    atomic_sub(&parent->numIntersectionFilters16,intersectionFilter16 != nullptr);
+    atomic_add(&parent->numIntersectionFilters16,filter != nullptr);
     intersectionFilter16 = filter;
-    if (ispc) ispcIntersectionFilter16 = (void*) filter; 
-    else      ispcIntersectionFilter16 = NULL;
+    ispcIntersectionFilter16 = ispc;
   }
 
   void Geometry::setOcclusionFilterFunction (RTCFilterFunc filter, bool ispc) 
   {
-    if (type != TRIANGLE_MESH && type != BEZIER_CURVES) {
-      process_error(RTC_INVALID_OPERATION,"filter functions only supported for triangle meshes and hair geometries"); 
-      return;
-    }
+    if (parent->isStatic() && parent->isBuild())
+      throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
+
+    if (type != TRIANGLE_MESH && type != BEZIER_CURVES)
+      throw_RTCError(RTC_INVALID_OPERATION,"filter functions only supported for triangle meshes and hair geometries"); 
+
     occlusionFilter1 = filter;
   }
     
   void Geometry::setOcclusionFilterFunction4 (RTCFilterFunc4 filter, bool ispc) 
   { 
-    if (type != TRIANGLE_MESH && type != BEZIER_CURVES) {
-      process_error(RTC_INVALID_OPERATION,"filter functions only supported for triangle meshes and hair geometries"); 
-      return;
-    }
-    atomic_sub(&parent->numIntersectionFilters4,occlusionFilter4 != NULL);
-    atomic_add(&parent->numIntersectionFilters4,filter != NULL);
+    if (parent->isStatic() && parent->isBuild())
+      throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
+
+    if (type != TRIANGLE_MESH && type != BEZIER_CURVES)
+      throw_RTCError(RTC_INVALID_OPERATION,"filter functions only supported for triangle meshes and hair geometries"); 
+
+    atomic_sub(&parent->numIntersectionFilters4,occlusionFilter4 != nullptr);
+    atomic_add(&parent->numIntersectionFilters4,filter != nullptr);
     occlusionFilter4 = filter;
-    if (ispc) ispcOcclusionFilter4 = (void*) filter; 
-    else      ispcOcclusionFilter4 = NULL;
+    ispcOcclusionFilter4 = ispc;
   }
     
   void Geometry::setOcclusionFilterFunction8 (RTCFilterFunc8 filter, bool ispc) 
   { 
-    if (type != TRIANGLE_MESH && type != BEZIER_CURVES) {
-      process_error(RTC_INVALID_OPERATION,"filter functions only supported for triangle meshes and hair geometries"); 
-      return;
-    }
-    atomic_sub(&parent->numIntersectionFilters8,occlusionFilter8 != NULL);
-    atomic_add(&parent->numIntersectionFilters8,filter != NULL);
+    if (parent->isStatic() && parent->isBuild())
+      throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
+
+    if (type != TRIANGLE_MESH && type != BEZIER_CURVES)
+      throw_RTCError(RTC_INVALID_OPERATION,"filter functions only supported for triangle meshes and hair geometries"); 
+
+    atomic_sub(&parent->numIntersectionFilters8,occlusionFilter8 != nullptr);
+    atomic_add(&parent->numIntersectionFilters8,filter != nullptr);
     occlusionFilter8 = filter;
-    if (ispc) ispcOcclusionFilter8 = (void*) filter; 
-    else      ispcOcclusionFilter8 = NULL;
+    ispcOcclusionFilter8 = ispc;
   }
   
   void Geometry::setOcclusionFilterFunction16 (RTCFilterFunc16 filter, bool ispc) 
   { 
-    if (type != TRIANGLE_MESH && type != BEZIER_CURVES) {
-      process_error(RTC_INVALID_OPERATION,"filter functions only supported for triangle meshes and hair geometries"); 
-      return;
-    }
-    atomic_sub(&parent->numIntersectionFilters16,occlusionFilter16 != NULL);
-    atomic_add(&parent->numIntersectionFilters16,filter != NULL);
+    if (parent->isStatic() && parent->isBuild())
+      throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
+
+    if (type != TRIANGLE_MESH && type != BEZIER_CURVES) 
+      throw_RTCError(RTC_INVALID_OPERATION,"filter functions only supported for triangle meshes and hair geometries"); 
+
+    atomic_sub(&parent->numIntersectionFilters16,occlusionFilter16 != nullptr);
+    atomic_add(&parent->numIntersectionFilters16,filter != nullptr);
     occlusionFilter16 = filter;
-    if (ispc) ispcOcclusionFilter16 = (void*) filter; 
-    else      ispcOcclusionFilter16 = NULL;
+    ispcOcclusionFilter16 = ispc;
   }
 }

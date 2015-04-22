@@ -15,6 +15,7 @@
 // ======================================================================== //
 
 #include "bvh8_statistics.h"
+#include <sstream>
 
 namespace embree
 {
@@ -112,7 +113,7 @@ namespace embree
       for (size_t i=0; i<num; i++) {
         numPrims += bvh->primTy.size(tri+i*bvh->primTy.bytes);
       }
-      float sah = A * bvh->primTy.intCost * num;
+      float sah = A * BVH8::intCost * num;
       bvhSAH += sah;
       leafSAH += sah;
     }

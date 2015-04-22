@@ -15,7 +15,7 @@
 // ======================================================================== //
 
 #include "image.h"
-#include "sys/stl/string.h"
+#include "sys/string.h"
 
 #include <map>
 #include <iostream>
@@ -23,19 +23,24 @@
 namespace embree
 {
   /*! loads an image from a file with auto-detection of format */
-  Ref<Image> loadImageFromDisk(const FileName& fileName) try
+  Ref<Image> loadImageFromDisk(const FileName& fileName)
   {
-    std::string ext = std::strlwr(fileName.ext());
+    std::string ext = strlwr(fileName.ext());
 #ifdef USE_OPENEXR
     if (ext == "exr" ) return loadExr(fileName);
 #endif
+
+#ifdef USE_LIBPNG
+    if (ext == "png" ) return loadPNG(fileName);
+#endif
+
 #ifdef USE_IMAGEMAGICK
     if (ext == "bmp" ) return loadMagick(fileName);
     if (ext == "gif" ) return loadMagick(fileName);
-    if (ext == "png" ) return loadMagick(fileName);
     if (ext == "tga" ) return loadMagick(fileName);
     if (ext == "tif" ) return loadMagick(fileName);
     if (ext == "tiff") return loadMagick(fileName);
+    if (ext == "png" ) return loadMagick(fileName);
 #endif
 #ifdef USE_LIBJPEG
     if (ext == "jpg" ) return loadJPEG(fileName);
@@ -43,10 +48,6 @@ namespace embree
     if (ext == "pfm" ) return loadPFM(fileName);
     if (ext == "ppm" ) return loadPPM(fileName);
     THROW_RUNTIME_ERROR("image format " + ext + " not supported");
-  }
-  catch (const std::exception& e) {
-    std::cout << "cannot read file " << fileName << ": " << e.what() << std::endl;
-    return null;
   }
 
   /*! loads an image from a file with auto-detection of format */
@@ -64,7 +65,7 @@ namespace embree
   }
 
   /*! stores an image to file with auto-detection of format */
-  void storeImage(const Ref<Image>& img, const FileName& fileName) try
+  void storeImage(const Ref<Image>& img, const FileName& fileName)
   {
     std::string ext = strlwr(fileName.ext());
 #ifdef USE_OPENEXR
@@ -85,12 +86,9 @@ namespace embree
     if (ext == "tga" ) { storeTga(img, fileName);  return; }
     THROW_RUNTIME_ERROR("image format " + ext + " not supported");
   }
-  catch (const std::exception& e) {
-    std::cout << "cannot write file " << fileName << ": " << e.what() << std::endl;
-  }
 
   /*! template instantiations */
-  template class ImageT<Col3c>;
+  template class ImageT<Col3uc>;
   template class ImageT<Col3f>;
 
 }

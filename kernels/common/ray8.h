@@ -24,14 +24,23 @@ namespace embree
    *  precomputed reciprocal direction. */
   struct Ray8
   {
+    typedef avxb simdb;
+    typedef avxf simdf;
+    typedef avxi simdi;
+
     /*! Default construction does nothing. */
     __forceinline Ray8() {}
 
     /*! Constructs a ray from origin, direction, and ray segment. Near
      *  has to be smaller than far. */
-    __forceinline Ray8(const avx3f& org, const avx3f& dir, const avxf& tnear = zero, const avxf& tfar = inf, const avxf& time = zero, const avxi& mask = -1)
+    __forceinline Ray8(const avx3f& org, const avx3f& dir, 
+                       const avxf& tnear = zero, const avxf& tfar = inf, 
+                       const avxf& time = zero, const avxi& mask = -1)
       : org(org), dir(dir), tnear(tnear), tfar(tfar), geomID(-1), primID(-1), instID(-1), mask(mask), time(time)  {}
 
+    /*! returns the size of the ray */
+    static __forceinline size_t size() { return 8; }
+    
     /*! Tests if we hit something. */
     __forceinline operator avxb() const { return geomID != avxi(-1); }
 
@@ -82,8 +91,18 @@ namespace embree
 
   /*! Outputs ray to stream. */
   inline std::ostream& operator<<(std::ostream& cout, const Ray8& ray) {
-    return cout << "{ " << 
-      "org = " << ray.org << ", dir = " << ray.dir << ", near = " << ray.tnear << ", far = " << ray.tfar << ", time = " << ray.time << ", " <<
-      "instID = " << ray.instID << ", geomID = " << ray.geomID << ", primID = " << ray.primID <<  ", " << "u = " << ray.u <<  ", v = " << ray.v << ", Ng = " << ray.Ng << " }";
+    return cout << "{ " 
+                << "org = " << ray.org 
+                << ", dir = " << ray.dir 
+                << ", near = " << ray.tnear 
+                << ", far = " << ray.tfar 
+                << ", time = " << ray.time 
+                << ", instID = " << ray.instID 
+                << ", geomID = " << ray.geomID 
+                << ", primID = " << ray.primID 
+                <<  ", u = " << ray.u 
+                <<  ", v = " << ray.v 
+                << ", Ng = " << ray.Ng 
+                << " }";
   }
 }

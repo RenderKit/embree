@@ -66,7 +66,7 @@ namespace embree
     for (size_t i=0;i<256;i++)
       endCount[i] = startCount[i];
 
-    startCount[256] = NULL;
+    startCount[256] = nullptr;
 
     MortonID64Bit *m_current = morton;
     MortonID64Bit *m_end     = morton + size;
@@ -220,7 +220,7 @@ namespace embree
   __aligned(64) static double dt = 0.0f;
 
   BVH4iBuilderMorton64Bit::BVH4iBuilderMorton64Bit(BVH4i* bvh, void* geometry)
-    : bvh(bvh), scene((Scene*)geometry), morton(NULL), node(NULL), accel(NULL), numPrimitives(0), numGroups(0),numNodes(0), numAllocatedNodes(0), size_morton(0), size_node(0), size_accel(0), numPrimitivesOld(-1), topLevelItemThreshold(0), numBuildRecords(0)
+    : bvh(bvh), scene((Scene*)geometry), morton(nullptr), node(nullptr), accel(nullptr), numPrimitives(0), numGroups(0),numNodes(0), numAllocatedNodes(0), size_morton(0), size_node(0), size_accel(0), numPrimitivesOld(-1), topLevelItemThreshold(0), numBuildRecords(0)
   {
   }
 
@@ -240,8 +240,8 @@ namespace embree
     if (numPrimitivesOld != numPrimitives)
     {
       DBG(
-	  DBG_PRINT( numPrimitivesOld );
-	  DBG_PRINT( numPrimitives );
+	  PRINT( numPrimitivesOld );
+	  PRINT( numPrimitives );
 	  );
 
       numPrimitivesOld = numPrimitives;
@@ -273,7 +273,7 @@ namespace embree
 
       const size_t size_morton_tmp = numPrims * sizeof(MortonID64Bit) + additional_size;
 
-      size_node         = (double)((numNodes * MORTON_BVH4I_NODE_PREALLOC_FACTOR + minAllocNodes) * sizeNodeInBytes + additional_size) * g_memory_preallocation_factor;
+      size_node         = (double)((numNodes * MORTON_BVH4I_NODE_PREALLOC_FACTOR + minAllocNodes) * sizeNodeInBytes + additional_size) * State::instance()->memory_preallocation_factor;
       size_accel        = numPrims * sizeAccelInBytes + additional_size;
       numAllocatedNodes = size_node / sizeof(BVH4i::Node);
 
@@ -290,8 +290,8 @@ namespace embree
       size_morton = size_morton_tmp;
 
 #if DEBUG
-      DBG_PRINT( minAllocNodes );
-      DBG_PRINT( numNodes );
+      PRINT( minAllocNodes );
+      PRINT( numNodes );
 #endif
 
     }
@@ -302,9 +302,9 @@ namespace embree
     bvh->size_accel = size_accel;
 
 #if DEBUG
-    DBG_PRINT(bvh->size_node);
-    DBG_PRINT(bvh->size_accel);
-    DBG_PRINT(numAllocatedNodes);
+    PRINT(bvh->size_node);
+    PRINT(bvh->size_accel);
+    PRINT(numAllocatedNodes);
 #endif
 
   }
@@ -395,8 +395,8 @@ namespace embree
     const size_t currentIndex = alloc.get(1);
    
     /* init used/unused nodes */
-    mic_f init_lower = broadcast4to16f(&BVH4i::initQBVHNode[0]);
-    mic_f init_upper = broadcast4to16f(&BVH4i::initQBVHNode[1]);
+    mic_f init_lower = broadcast4to16f(&BVH4i::Node::initQBVHNode[0]);
+    mic_f init_upper = broadcast4to16f(&BVH4i::Node::initQBVHNode[1]);
 
     store16f_ngo((float*)&node[currentIndex].lower,init_lower);
     store16f_ngo((float*)&node[currentIndex].upper,init_upper);
@@ -541,8 +541,8 @@ namespace embree
     const size_t currentIndex = allocGlobalNode(1);    
 
     /* init used/unused nodes */
-    mic_f init_lower = broadcast4to16f(&BVH4i::initQBVHNode[0]);
-    mic_f init_upper = broadcast4to16f(&BVH4i::initQBVHNode[1]);
+    mic_f init_lower = broadcast4to16f(&BVH4i::Node::initQBVHNode[0]);
+    mic_f init_upper = broadcast4to16f(&BVH4i::Node::initQBVHNode[1]);
 
     store16f_ngo((float*)&node[currentIndex].lower,init_lower);
     store16f_ngo((float*)&node[currentIndex].upper,init_upper);
@@ -621,8 +621,8 @@ namespace embree
     const size_t currentIndex = alloc.get(1);    
 
     /* init used/unused nodes */
-    mic_f init_lower = broadcast4to16f(&BVH4i::initQBVHNode[0]);
-    mic_f init_upper = broadcast4to16f(&BVH4i::initQBVHNode[1]);
+    mic_f init_lower = broadcast4to16f(&BVH4i::Node::initQBVHNode[0]);
+    mic_f init_upper = broadcast4to16f(&BVH4i::Node::initQBVHNode[1]);
 
     store16f_ngo((float*)&node[currentIndex].lower,init_lower);
     store16f_ngo((float*)&node[currentIndex].upper,init_upper);
@@ -742,7 +742,7 @@ namespace embree
       FATAL("threadIndex != 0");
     }
 
-    if (unlikely(g_verbose >= 2))
+    if (unlikely(State::instance()->verbosity(2)))
       {
 	std::cout << "building BVH4i with 64-bit Morton builder (MIC)... " << std::flush;
       }
@@ -751,13 +751,13 @@ namespace embree
     numPrimitives = 0;       
     for (size_t i=0;i<scene->size();i++)
       {
-	if (unlikely(scene->get(i) == NULL)) continue;
-	if (unlikely((scene->get(i)->type != TRIANGLE_MESH))) continue;
+	if (unlikely(scene->get(i) == nullptr)) continue;
+	if (unlikely((scene->get(i)->type != Geometry::TRIANGLE_MESH))) continue;
 	if (unlikely(!scene->get(i)->isEnabled())) continue;
 	const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(i);
 	if (unlikely(mesh->numTimeSteps != 1)) continue;
 	numGroups++;
-	numPrimitives += mesh->numTriangles;
+	numPrimitives += mesh->size();
       }
 
     if (likely(numPrimitives == 0))
@@ -765,8 +765,8 @@ namespace embree
 	DBG(std::cout << "EMPTY SCENE BUILD" << std::endl);
 	bvh->root = BVH4i::invalidNode;
 	bvh->bounds = empty;
-	bvh->qbvh = NULL;
-	bvh->accel = NULL;
+	bvh->qbvh = nullptr;
+	bvh->accel = nullptr;
 	return;
       }
 
@@ -799,7 +799,7 @@ namespace embree
     std::cout << BVH4iStatistics<BVH4i::Node>(bvh).str();
 
 #else
-    DBG(DBG_PRINT(numPrimitives));
+    DBG(PRINT(numPrimitives));
 
 
     if (likely(numPrimitives > SINGLE_THREADED_BUILD_THRESHOLD && threadCount > 1))
@@ -819,7 +819,7 @@ namespace embree
 	build_main(0,1);
       }
 
-    if (g_verbose >= 2) {
+    if (State::instance()->verbosity(2)) {
       double perf = numPrimitives/dt*1E-6;
       std::cout << "[DONE] " << 1000.0f*dt << "ms (" << perf << " Mtris/s), primitives " << numPrimitives << std::endl;
       std::cout << BVH4iStatistics<BVH4i::Node>(bvh).str();
@@ -845,13 +845,13 @@ namespace embree
     size_t group = 0, skipped = 0;
     for (; group<numGroups; group++) 
     {       
-      if (unlikely(scene->get(group) == NULL)) continue;
-      if (scene->get(group)->type != TRIANGLE_MESH) continue;
+      if (unlikely(scene->get(group) == nullptr)) continue;
+      if (scene->get(group)->type != Geometry::TRIANGLE_MESH) continue;
       const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(group);
       if (unlikely(!mesh->isEnabled())) continue;
       if (unlikely(mesh->numTimeSteps != 1)) continue;
 
-      const size_t numTriangles = mesh->numTriangles;	
+      const size_t numTriangles = mesh->size();	
       if (skipped + numTriangles > startID) break;
       skipped += numTriangles;
     }
@@ -882,19 +882,19 @@ namespace embree
 
     for (size_t group = startGroup; group<numGroups; group++) 
     {       
-      if (unlikely(scene->get(group) == NULL)) continue;
-      if (unlikely(scene->get(group)->type != TRIANGLE_MESH)) continue;
+      if (unlikely(scene->get(group) == nullptr)) continue;
+      if (unlikely(scene->get(group)->type != Geometry::TRIANGLE_MESH)) continue;
       const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(group);
       if (unlikely(!mesh->isEnabled())) continue;
       if (unlikely(mesh->numTimeSteps != 1)) continue;
 
 
-      if (offset < mesh->numTriangles)
+      if (offset < mesh->size())
 	{
 	  const char* __restrict__ cptr_tri = (char*)&mesh->triangle(offset);
 	  const unsigned int stride = mesh->triangles.getBufferStride();
       
-	  for (size_t i=offset; i<mesh->numTriangles && currentID < endID; i++, currentID++,cptr_tri+=stride)	 
+	  for (size_t i=offset; i<mesh->size() && currentID < endID; i++, currentID++,cptr_tri+=stride)	 
 	    {
 	      const TriangleMesh::Triangle& tri = *(TriangleMesh::Triangle*)cptr_tri;
 	      prefetch<PFHINT_L1>(&tri + L1_PREFETCH_ITEMS);
@@ -945,15 +945,15 @@ namespace embree
 
     for (size_t group = thread_startGroup[threadID]; group<numGroups; group++) 
     {       
-      if (unlikely(scene->get(group) == NULL)) continue;
-      if (unlikely(scene->get(group)->type != TRIANGLE_MESH)) continue;
+      if (unlikely(scene->get(group) == nullptr)) continue;
+      if (unlikely(scene->get(group)->type != Geometry::TRIANGLE_MESH)) continue;
       const TriangleMesh* const mesh = scene->getTriangleMesh(group);
       if (unlikely(!mesh->isEnabled())) continue;
       if (unlikely(mesh->numTimeSteps != 1)) continue;
 
-      const size_t numTriangles = min(mesh->numTriangles-offset,endID-currentID);
+      const size_t numTriangles = min(mesh->size()-offset,endID-currentID);
        
-      if (offset < mesh->numTriangles)
+      if (offset < mesh->size())
 	{
 
 	  const char* __restrict__ cptr_tri = (char*)&mesh->triangle(offset);
@@ -1015,7 +1015,7 @@ namespace embree
 	store16i_ngo(dest,m64);	    
       }
 
-    //DBG_PRINT(__bsr(global_code));
+    //PRINT(__bsr(global_code));
   }
   
   void BVH4iBuilderMorton64Bit::radixsort(const size_t threadID, const size_t numThreads)
@@ -1229,7 +1229,7 @@ namespace embree
     /* start measurement */
     double t0 = 0.0f;
 #if !defined(PROFILE)
-    if (g_verbose >= 2) 
+    if (State::instance()->verbosity(2)) 
 #endif
       t0 = getSeconds();
 
@@ -1246,7 +1246,7 @@ namespace embree
     scene->lockstep_scheduler.dispatchTask( task_computeBounds, this, threadIndex, threadCount );
     TIMER(msec = getSeconds()-msec);    
     TIMER(std::cout << "task_computeBounds " << 1000. * msec << " ms" << std::endl << std::flush);
-    TIMER(DBG_PRINT(global_bounds));
+    TIMER(PRINT(global_bounds));
 
     /* compute morton codes */
     TIMER(msec = getSeconds());
@@ -1318,7 +1318,7 @@ namespace embree
     /* build sub-trees */
     scene->lockstep_scheduler.dispatchTask( task_recurseSubMortonTrees, this, threadIndex, threadCount );
 
-    DBG(DBG_PRINT(atomicID));
+    DBG(PRINT(atomicID));
 
     numNodes = atomicID;
 
@@ -1344,9 +1344,9 @@ namespace embree
     bvh->bounds = node->child(0).isLeaf() ? node->bounds(0) : rootBounds;
 
 #if DEBUG
-    DBG_PRINT( bvh->root );
-    DBG_PRINT( bvh->bounds );
-    DBG_PRINT(numNodes);
+    PRINT( bvh->root );
+    PRINT( bvh->bounds );
+    PRINT(numNodes);
 #endif
 
     TIMER(msec = getSeconds());
@@ -1366,7 +1366,7 @@ namespace embree
 
     /* stop measurement */
 #if !defined(PROFILE)
-    if (g_verbose >= 2) 
+    if (State::instance()->verbosity(2)) 
 #endif
       dt = getSeconds()-t0;
 

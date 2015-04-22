@@ -16,54 +16,62 @@
 
 #pragma once
 
-#include "common/default.h"
+#include "default.h"
+#include "accel.h"
 
 namespace embree
 {
+#define MODE_HIGH_QUALITY (1<<8)
+#define LeafMode 0 // FIXME: remove
+
+  /*! virtual interface for all hierarchy builders */
   class Builder : public RefCount {
   public:
-    Builder () : needAllThreads(false) {}
-    virtual void build(size_t threadIndex, size_t threadCount) = 0;
-  public:
-    bool needAllThreads;
+    /*! initiates the hierarchy builder */
+    virtual void build(size_t threadIndex = 0, size_t threadCount = 0) = 0;
+
+    /*! clears internal builder state */
+    virtual void clear() = 0;
   };
 
-  class Scene;
+  /*! virtual interface for progress monitor class */
+  struct BuildProgressMonitor {
+    virtual void operator() (size_t dn) = 0;
+  };
+
+  /*! build the progress monitor interface from a closure */
+  template<typename Closure>
+    struct ProgressMonitorClosure : BuildProgressMonitor
+  {
+  public:
+    ProgressMonitorClosure (const Closure& closure) : closure(closure) {}
+    void operator() (size_t dn) { closure(dn); }
+  private:
+    const Closure& closure;
+  };
+  template<typename Closure> __forceinline const ProgressMonitorClosure<Closure> BuildProgressMonitorFromClosure(const Closure& closure) {
+    return ProgressMonitorClosure<Closure>(closure);
+  }
+
+// FIXME: simplify ISA selection
+#define DECLARE_BUILDER(Accel,Mesh,Args,symbol)                         \
+  namespace isa   { extern Builder* symbol(Accel* accel, Mesh* scene, Args args); } \
+  namespace sse41 { extern Builder* symbol(Accel* accel, Mesh* scene, Args args); } \
+  namespace avx   { extern Builder* symbol(Accel* accel, Mesh* scene, Args args); } \
+  namespace avx2  { extern Builder* symbol(Accel* accel, Mesh* scene, Args args); } \
+  std::function<Builder* (Accel* accel, Mesh* mesh, Args args)> symbol;
+
   struct TriangleMesh;
-  struct UserGeometryBase;
-  struct BuildSource;
+  class Scene;
+  typedef void     (*createTriangleMeshAccelTy)(TriangleMesh* mesh, AccelData*& accel, Builder*& builder); 
 
-  typedef Builder* (*TriangleMeshBuilderFuncOld)(void* accel, TriangleMesh* mesh, const size_t minLeafSize, const size_t maxLeafSize);
-  typedef Builder* (*BuilderFunc)            (void* accel, BuildSource* source, Scene* scene, const size_t minLeafSize, const size_t maxLeafSize);
+  typedef Builder* (*BVH4BuilderTopLevelFunc  )(void* accel, Scene* scene, const createTriangleMeshAccelTy createTriangleMeshAccel);
 
-  typedef Builder* (*TriangleMeshBuilderFunc)(void* accel, TriangleMesh* mesh, size_t mode); 
-  typedef Builder* (*UserGeometryBuilderFunc)(void* accel, UserGeometryBase* mesh, size_t mode);
-  typedef Builder* (*SceneBuilderFunc)       (void* accel, Scene* scene, size_t mode);
-
-#define ADD_BUILDER(NAME,BUILDER,LEAFMIN,LEAFMAX)              \
-  builders.add(ISA,NAME,BUILDER,LEAFMIN,LEAFMAX);
-
-#define DECLARE_SCENE_BUILDER(symbol)                                         \
-  namespace isa   { extern Builder* symbol(void* accel, Scene* scene, size_t mode); } \
-  namespace sse41 { extern Builder* symbol(void* accel, Scene* scene, size_t mode); } \
-  namespace avx   { extern Builder* symbol(void* accel, Scene* scene, size_t mode); } \
-  namespace avx2  { extern Builder* symbol(void* accel, Scene* scene, size_t mode); } \
-  void symbol##_error() { std::cerr << "Error: builder " << TOSTRING(symbol) << " not supported no your CPU" << std::endl; } \
-  SceneBuilderFunc symbol = (SceneBuilderFunc) symbol##_error;
-
-#define DECLARE_TRIANGLEMESH_BUILDER(symbol)                            \
-  namespace isa   { extern Builder* symbol(void* accel, TriangleMesh* mesh, size_t mode); } \
-  namespace sse41 { extern Builder* symbol(void* accel, TriangleMesh* mesh, size_t mode); } \
-  namespace avx   { extern Builder* symbol(void* accel, TriangleMesh* mesh, size_t mode); } \
-  namespace avx2  { extern Builder* symbol(void* accel, TriangleMesh* mesh, size_t mode); } \
-  void symbol##_error() { std::cerr << "Error: builder " << TOSTRING(symbol) << " not supported no your CPU" << std::endl; } \
-  TriangleMeshBuilderFunc symbol = (TriangleMeshBuilderFunc) symbol##_error;
-
-#define DECLARE_USERGEOMETRY_BUILDER(symbol)                            \
-  namespace isa   { extern Builder* symbol(void* accel, UserGeometryBase* mesh, size_t mode); } \
-  namespace sse41 { extern Builder* symbol(void* accel, UserGeometryBase* mesh, size_t mode); } \
-  namespace avx   { extern Builder* symbol(void* accel, UserGeometryBase* mesh, size_t mode); } \
-  namespace avx2  { extern Builder* symbol(void* accel, UserGeometryBase* mesh, size_t mode); } \
-  void symbol##_error() { std::cerr << "Error: builder " << TOSTRING(symbol) << " not supported no your CPU" << std::endl; } \
-  UserGeometryBuilderFunc symbol = (UserGeometryBuilderFunc) symbol##_error;
+#define DECLARE_TOPLEVEL_BUILDER(symbol)                                         \
+  namespace isa   { extern Builder* symbol(void* accel, Scene* scene, const createTriangleMeshAccelTy createTriangleMeshAccel); } \
+  namespace sse41 { extern Builder* symbol(void* accel, Scene* scene, const createTriangleMeshAccelTy createTriangleMeshAccel); } \
+  namespace avx   { extern Builder* symbol(void* accel, Scene* scene, const createTriangleMeshAccelTy createTriangleMeshAccel); } \
+  namespace avx2  { extern Builder* symbol(void* accel, Scene* scene, const createTriangleMeshAccelTy createTriangleMeshAccel); } \
+  void symbol##_error() { throw_RTCError(RTC_UNSUPPORTED_CPU,"builder " TOSTRING(symbol) " not supported by your CPU"); } \
+  BVH4BuilderTopLevelFunc symbol = (BVH4BuilderTopLevelFunc) symbol##_error;
 }

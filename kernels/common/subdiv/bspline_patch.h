@@ -320,6 +320,10 @@ namespace embree
     __forceinline void init(const CatmullClarkPatch& patch)
     {
       assert( patch.isRegular() );
+      assert( patch.ring[0].hasValidPositions() );
+      assert( patch.ring[1].hasValidPositions() );
+      assert( patch.ring[2].hasValidPositions() );
+      assert( patch.ring[3].hasValidPositions() );
 
       if (unlikely(patch.ring[0].hasBorder())) 
         {

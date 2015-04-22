@@ -15,16 +15,11 @@
 // ======================================================================== //
 
 #include "raystream_log.h"
-#include "common/scene.h"
-#include "common/scene_triangle_mesh.h"
+#include "scene.h"
 #include "sys/filename.h"
-
-#define DBG(x) 
 
 namespace embree
 {
-  using namespace std;
-	 
   unsigned int getMask(int *ptr, const size_t width)
   {
     unsigned int mask = 0;
@@ -58,14 +53,14 @@ namespace embree
 
   RayStreamLogger::~RayStreamLogger()
   {
-    if (ray16)        { delete ray16;        ray16        = NULL; }
-    if (ray16_verify) { delete ray16_verify; ray16_verify = NULL; }
-    if (ray8)         { delete ray8;         ray8         = NULL; }
-    if (ray8_verify)  { delete ray8_verify;  ray8_verify  = NULL; }
-    if (ray4)         { delete ray4;         ray4         = NULL; }
-    if (ray4_verify)  { delete ray4_verify;  ray4_verify  = NULL; }
-    if (ray1)         { delete ray1;         ray1         = NULL; }
-    if (ray1_verify)  { delete ray1_verify;  ray1_verify  = NULL; }
+    if (ray16)        { delete ray16;        ray16        = nullptr; }
+    if (ray16_verify) { delete ray16_verify; ray16_verify = nullptr; }
+    if (ray8)         { delete ray8;         ray8         = nullptr; }
+    if (ray8_verify)  { delete ray8_verify;  ray8_verify  = nullptr; }
+    if (ray4)         { delete ray4;         ray4         = nullptr; }
+    if (ray4_verify)  { delete ray4_verify;  ray4_verify  = nullptr; }
+    if (ray1)         { delete ray1;         ray1         = nullptr; }
+    if (ray1_verify)  { delete ray1_verify;  ray1_verify  = nullptr; }
   }
 
   void RayStreamLogger::dumpGeometry(void* ptr)
@@ -74,9 +69,9 @@ namespace embree
     std::ofstream geometryData;
     std::string path(DEFAULT_PATH_BINARY_FILES);
     FileName geometry_filename = path + DEFAULT_FILENAME_GEOMETRY;
-    geometryData.open(geometry_filename.c_str(),ios::out | ios::binary);
-    geometryData.seekp(0, ios::beg);
-    if (!geometryData) FATAL("could not dump geometry data to file");
+    geometryData.open(geometry_filename.c_str(),std::ios::out | std::ios::binary);
+    geometryData.seekp(0, std::ios::beg);
+    if (!geometryData) THROW_RUNTIME_ERROR("could not dump geometry data to file");
     scene->write(geometryData);
     geometryData.close();
   }
@@ -212,7 +207,7 @@ namespace embree
 
 
  void RayStreamLogger::logRay1Intersect(void* scene, RTCRay& start, RTCRay& end)
-  {
+ {
     mutex.lock();
 
     LogRay1 logRay1;
@@ -235,7 +230,7 @@ namespace embree
     mutex.lock();
 
     LogRay1 logRay1;
-
+    
     logRay1.type  = RAY_OCCLUDED;
 
     /* ray before intersect */
@@ -250,5 +245,4 @@ namespace embree
   }
 
   RayStreamLogger RayStreamLogger::rayStreamLogger;
-
 };

@@ -52,7 +52,7 @@ namespace embree
         JSAMPARRAY scanline = (*cinfo->mem->alloc_sarray)((j_common_ptr) cinfo, JPOOL_IMAGE, bytes, 1);
 
         /*! Allocate storage for the decompressed image. */
-        unsigned char *image = (unsigned char *) malloc(cinfo->output_height * bytes);  if (image == NULL) return(NULL);
+        unsigned char *image = (unsigned char *) malloc(cinfo->output_height * bytes);  if (image == nullptr) return(nullptr);
 
         /*! Here we use the library state variable 'output_scanline' as the loop index. */
         while (cinfo->output_scanline < cinfo->output_height) jpeg_read_scanlines(cinfo, scanline, 1), memcpy(&image[(cinfo->output_scanline - 1) * bytes], scanline[0], bytes);
@@ -130,7 +130,7 @@ namespace embree
         unsigned char *rgb = decompress(&cinfo);  size_t width = cinfo.output_width;  size_t height = cinfo.output_height;
 
         /*! Allocate the Embree image. */
-        Ref<Image> image = new Image4c(width, height, filename);
+        Ref<Image> image = new Image4uc(width, height, filename);
 
         /*! Convert the image from unsigned char RGB to unsigned char RGBA. */
         for (size_t y=0, i=0 ; y < height ; y++) {

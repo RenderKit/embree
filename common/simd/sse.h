@@ -18,6 +18,7 @@
 
 #include "sys/platform.h"
 #include "sys/intrinsics.h"
+#include "math/constants.h"
 #include "sse_special.h"
 
 namespace embree 

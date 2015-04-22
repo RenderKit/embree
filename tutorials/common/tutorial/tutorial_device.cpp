@@ -15,6 +15,16 @@
 // ======================================================================== //
 
 #include "tutorial_device.h"
+#include "kernels/algorithms/parallel_for.h"
+#include "sys/sysinfo.h"
+#include "scene_device.h"
+
+#if defined(USE_PTEX)
+#include "Ptexture.h"
+#endif
+// #if defined(USE_PTEX)
+// #include "Ptexture.h"
+// #endif
 
 /* the scene to render */
 extern RTCScene g_scene;
@@ -23,7 +33,9 @@ extern RTCScene g_scene;
 unsigned int g_subdivision_levels = 0;
 
 /* intensity scaling for traversal cost visualization */
-float scale = 0.001f;
+//float scale = 0.001f;
+float scale = 1.0f / 1000000.0f;
+
 extern "C" bool g_changed = false;
 
 /* stores pointer to currently used rendePixel function */
@@ -82,7 +94,7 @@ Vec3fa renderPixelWireframe(float x, float y, const Vec3fa& vx, const Vec3fa& vy
   rtcIntersect(g_scene,ray);
 
   /* return black if nothing hit */
-  if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return Vec3fa(0.0f);
+  if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return Vec3fa(1.0f);
 
   /* calculate wireframe around triangles */
   const float border = 0.05f;
@@ -136,7 +148,10 @@ Vec3fa renderPixelNg(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const
 
   /* shade pixel */
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return Vec3fa(0.0f);
-  else return abs(normalize(Vec3fa(ray.Ng.x,ray.Ng.y,ray.Ng.z)));
+  else {
+    //if (dot(ray.dir,ray.Ng) > 0.0f) return Vec3fa(zero); else
+    return abs(normalize(Vec3fa(ray.Ng.x,ray.Ng.y,ray.Ng.z)));
+  }
 }
 
 Vec3fa randomColor(const int ID) 
@@ -210,7 +225,6 @@ Vec3fa renderPixelCycles(float x, float y, const Vec3fa& vx, const Vec3fa& vy, c
   int64 c0 = get_tsc();
   rtcIntersect(g_scene,ray);
   int64 c1 = get_tsc();
-  
   /* shade pixel */
   return Vec3fa((float)(c1-c0)*scale,0.0f,0.0f);
 }
@@ -238,6 +252,71 @@ Vec3fa renderPixelUV16(float x, float y, const Vec3fa& vx, const Vec3fa& vy, con
   /* shade pixel */
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return Vec3fa(0.0f);
   else return Vec3fa(ray.u,ray.v,1.0f-ray.u-ray.v);
+}
+
+/* renders a single pixel casting with ambient occlusion */
+Vec3fa renderPixelAmbientOcclusion(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
+{
+  /* initialize ray */
+  RTCRay ray;
+  ray.org = p;
+  ray.dir = normalize(x*vx + y*vy + vz);
+  ray.tnear = 0.0f;
+  ray.tfar = inf;
+  ray.geomID = RTC_INVALID_GEOMETRY_ID;
+  ray.primID = RTC_INVALID_GEOMETRY_ID;
+  ray.mask = -1;
+  ray.time = g_debug;
+
+  /* intersect ray with scene */
+  rtcIntersect(g_scene,ray);
+
+  /* shade pixel */
+  if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return Vec3fa(0.0f);
+
+  Vec3fa Ng = normalize(ray.Ng);
+  Vec3fa col = Vec3fa(min(1.f,.3f+.8f*abs(dot(Ng,normalize(ray.dir)))));
+
+  /* calculate hit point */
+  float intensity = 0;
+  Vec3fa hitPos = ray.org + ray.tfar * ray.dir;
+
+#define AMBIENT_OCCLUSION_SAMPLES 16
+  /* trace some ambient occlusion rays */
+  int seed = 34*x+12*y;
+  for (int i=0; i<AMBIENT_OCCLUSION_SAMPLES; i++) 
+     {
+      Vec3fa dir; 
+      const float oneOver10000f = 1.f/10000.f;
+      seed = 1103515245 * seed + 12345;
+      dir.x = (seed%10000)*oneOver10000f;
+      seed = 1103515245 * seed + 12345;
+      dir.y = (seed%10000)*oneOver10000f;
+      seed = 1103515245 * seed + 12345;
+      dir.z = (seed%10000)*oneOver10000f;
+    
+      /* initialize shadow ray */
+      RTCRay shadow;
+      shadow.org = hitPos;
+      shadow.dir = dir;
+      shadow.tnear = 0.001f;
+      shadow.tfar = inf;
+      shadow.geomID = RTC_INVALID_GEOMETRY_ID;
+      shadow.primID = RTC_INVALID_GEOMETRY_ID;
+      shadow.mask = -1;
+      shadow.time = 0;
+    
+      /* trace shadow ray */
+      rtcOccluded(g_scene,shadow);
+    
+      /* add light contribution */
+      if (shadow.geomID == RTC_INVALID_GEOMETRY_ID)
+        intensity += 1.0f;   
+     }
+  intensity *= 1.0f/AMBIENT_OCCLUSION_SAMPLES;
+
+  /* shade pixel */
+  return col * intensity;
 }
 
 /* returns the point seen through specified pixel */
@@ -312,24 +391,22 @@ extern "C" void device_key_pressed(int key)
     g_changed = true;
   }
   else if (key == GLUT_KEY_F9) {
-    if (renderPixel == renderPixelCycles) scale *= 1.1f;
+    if (renderPixel == renderPixelCycles) scale *= 2.0f;
+    PRINT(scale);
     renderPixel = renderPixelCycles;
     g_changed = true;
   }
   else if (key == GLUT_KEY_F10) {
-    if (renderPixel == renderPixelCycles) scale *= 0.9f;
+    if (renderPixel == renderPixelCycles) scale *= 0.5f;
+    PRINT(scale);
     renderPixel = renderPixelCycles;
     g_changed = true;
   }
   else if (key == GLUT_KEY_F11) {
-    if (g_subdivision_levels > 0)	
-      g_subdivision_levels--;
-    PRINT(g_subdivision_levels);
+    renderPixel = renderPixelAmbientOcclusion;
     g_changed = true;
   }
   else if (key == GLUT_KEY_F12) {
-    g_subdivision_levels++;
-    PRINT(g_subdivision_levels);
     g_changed = true;
   }
 
@@ -347,38 +424,28 @@ void renderTile(int taskIndex,
                 const int numTilesX, 
                 const int numTilesY);
 
-struct RenderTileTask
-{
-  RenderTileTask (int* pixels, const int width, const int height, const float time, 
-                  const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p, const int numTilesX, const int numTilesY)
-    : pixels(pixels), width(width), height(height), time(time), vx(vx), vy(vy), vz(vz), p(p), numTilesX(numTilesX), numTilesY(numTilesY) {}
-
-public:
-  int* pixels;
-  const int width;
-  const int height;
-  const float time;
-  const Vec3fa vx;
-  const Vec3fa vy;
-  const Vec3fa vz;
-  const Vec3fa p;
-  const int numTilesX;
-  const int numTilesY;
-};
-
-void renderTile_parallel(RenderTileTask* task, size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) {
-  renderTile(taskIndex,task->pixels,task->width,task->height,task->time,task->vx,task->vy,task->vz,task->p,task->numTilesX,task->numTilesY);
-}
-
 void launch_renderTile (int numTiles, 
                         int* pixels, const int width, const int height, const float time, 
                         const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p, const int numTilesX, const int numTilesY)
 {
-  TaskScheduler::EventSync event;
-  RenderTileTask parms(pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY);
-  TaskScheduler::Task task(&event,(TaskScheduler::runFunction)renderTile_parallel,&parms,numTiles,NULL,NULL,"render");
-  TaskScheduler::addTask(-1,TaskScheduler::GLOBAL_FRONT,&task);
-  event.sync();
+#if 1
+  atomic_t tileID = 0;
+  parallel_for(size_t(0),size_t(getNumberOfLogicalThreads()),[&] (const range<size_t>& r) {
+      for (size_t tid=r.begin(); tid<r.end(); tid++) {
+        while (true) {
+          size_t i = atomic_add(&tileID,1);
+          if (i >= numTiles) break;
+          renderTile(i,pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY);
+        }
+      }
+    });
+
+#else
+  parallel_for(size_t(0),size_t(numTiles),[&] (const range<size_t>& r) {
+      for (size_t i=r.begin(); i<r.end(); i++)
+        renderTile(i,pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY);
+    });
+#endif
 }
 
 typedef void (*animateSphereFunc) (int taskIndex, Vertex* vertices, 
@@ -387,31 +454,6 @@ typedef void (*animateSphereFunc) (int taskIndex, Vertex* vertices,
 				   const Vec3fa& pos, 
 				   const float r,
 				   const float f);
-
-struct AnimateSphereTask
-{
-  AnimateSphereTask (animateSphereFunc func,
-		     Vertex* vertices, 
-		     const float rcpNumTheta,
-		     const float rcpNumPhi,
-		     const Vec3fa& pos, 
-		     const float r,
-		     const float f)
-    : func(func), vertices(vertices), rcpNumTheta(rcpNumTheta), rcpNumPhi(rcpNumPhi), pos(pos), r(r), f(f) {}
-
-public:
-  animateSphereFunc func;
-  Vertex* vertices;
-  const float rcpNumTheta;
-  const float rcpNumPhi;
-  const Vec3fa pos;
-  const float r;
-  const float f;
-};
-
-void animateSphere_parallel(AnimateSphereTask* task, size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* event) {
-  task->func(taskIndex,task->vertices,task->rcpNumTheta,task->rcpNumPhi,task->pos,task->r,task->f);
-}
 
 void launch_animateSphere(animateSphereFunc func,
 			  int taskSize,
@@ -422,11 +464,10 @@ void launch_animateSphere(animateSphereFunc func,
 			  const float r,
 			  const float f)
 {
-  TaskScheduler::EventSync event;
-  AnimateSphereTask parms(func,vertices,rcpNumTheta,rcpNumPhi,pos,r,f);
-  TaskScheduler::Task task(&event,(TaskScheduler::runFunction)animateSphere_parallel,&parms,taskSize,NULL,NULL,"render");
-  TaskScheduler::addTask(-1,TaskScheduler::GLOBAL_FRONT,&task);
-  event.sync();
+  parallel_for(size_t(0),size_t(taskSize),[&] (const range<size_t>& m) {
+      for (size_t i=m.begin(); i<m.end(); i++)
+        func(i,vertices,rcpNumTheta,rcpNumPhi,pos,r,f);
+    });
 }
 
 static int p[513] = { 
@@ -586,4 +627,142 @@ Vec3fa noise3D(const Vec3fa& p)
   float y = noise(p.y+64.0f);
   float z = noise(p.z+192.0f);
   return Vec3fa(x,y,z);
+}
+
+/* draws progress bar */
+static int      progressWidth = 0;
+static atomic_t progressDots = 0;
+
+void progressStart() 
+{
+  progressDots = 0;
+  progressWidth = max(3,getTerminalWidth());
+  std::cout << "[" << std::flush;
+}
+
+bool progressMonitor(void* ptr, const double n)
+{
+  size_t olddots = progressDots;
+  size_t maxdots = progressWidth-2;
+  size_t newdots = max(olddots,min(size_t(maxdots),size_t(n*double(maxdots))));
+  if (atomic_cmpxchg(&progressDots,olddots,newdots) == olddots)
+    for (size_t i=olddots; i<newdots; i++) std::cout << "." << std::flush;
+  return true;
+}
+
+void progressEnd() {
+  std::cout << "]" << std::endl;
+}
+
+/*
+#endif
+float getPtexTexel1f(void* filter, int faceId, float u, float v)
+{
+  float result = zero;
+#if USE_PTEX
+  ((PtexFilter*)filter)->eval((float*)&result, 0, 1, faceId, v, u, 0, 0, 0, 0);
+#endif
+  return result;
+}
+
+Vec3fa getPtexTexel3f(void* filter, int faceId, float u, float v)
+{
+  Vec3fa result = zero;
+#if USE_PTEX
+  ((PtexFilter*)filter)->eval((float*)&result, 0, 3, faceId, v, u, 0, 0, 0, 0);
+#endif
+  return result;
+}
+#ifdef ./
+*/
+
+Vec3fa getPtexTexel3f(void* data, int faceId, float u, float v)
+{
+  Vec3fa result = zero;
+#if defined(USE_PTEX)
+  if (data) 
+    result = ((ptex_file*)data)->getNearest3f(faceId, u, v);
+#endif
+  return result;
+}
+
+float getPtexTexel1f(void* data, int faceId, float u, float v)
+{
+  float result = 0.0f;
+#if defined(USE_PTEX)
+  if (data) 
+    result = ((ptex_file*)data)->getNearest1f(faceId, u, v);
+#endif
+  return result;
+}
+
+Vec2f getTextureCoordinatesSubdivMesh(void* _mesh, const unsigned int primID, const float u, const float v)
+{
+  ISPCSubdivMesh *mesh = (ISPCSubdivMesh *)_mesh;
+  Vec2f st;
+  st.x = u;
+  st.y = v;
+  if (mesh && mesh->texcoord_indices)
+    {
+      assert(primID < mesh->numFaces);
+      const size_t face_offset = mesh->face_offsets[primID];
+      if (mesh->verticesPerFace[primID] == 3)
+	{
+	  const size_t t0 = mesh->texcoord_indices[face_offset+0];
+	  const size_t t1 = mesh->texcoord_indices[face_offset+1];
+	  const size_t t2 = mesh->texcoord_indices[face_offset+2];
+	  const Vec2f &txt0 = mesh->texcoords[t0];
+	  const Vec2f &txt1 = mesh->texcoords[t1];
+	  const Vec2f &txt2 = mesh->texcoords[t2];
+	  const float w = 1.0f - u - v;
+	  st = w * txt0 + u * txt1 + v * txt2;
+	}
+      else if (mesh->verticesPerFace[primID] == 4)
+	{
+	  const size_t t0 = mesh->texcoord_indices[face_offset+0];
+	  const size_t t1 = mesh->texcoord_indices[face_offset+1];
+	  const size_t t2 = mesh->texcoord_indices[face_offset+2];
+	  const size_t t3 = mesh->texcoord_indices[face_offset+3];
+	  const Vec2f &txt0 = mesh->texcoords[t0];
+	  const Vec2f &txt1 = mesh->texcoords[t1];
+	  const Vec2f &txt2 = mesh->texcoords[t2];
+	  const Vec2f &txt3 = mesh->texcoords[t3];
+	  const float u0 = u;
+	  const float v0 = v;
+	  const float u1 = 1.0f - u;
+	  const float v1 = 1.0f - v;
+	  st = u1*v1 * txt0 + u0*v1* txt1 + u0*v0 * txt2 + u1*v0* txt3;	  
+	}
+#if defined(_DEBUG)
+      else
+	PRINT("not supported");
+#endif
+    }
+  return st;
+}
+
+Vec3fa getTextureTexel3f(void *_texture,float s, float t)
+{
+  Texture *texture = (Texture*)_texture;
+  if (texture->format == RGBA8)
+    {
+      //u = max(min(u,1.0f),0.0f);
+      //v = max(min(v,1.0f),0.0f);
+     
+      int iu = (int)(s * (float)(texture->width));
+      if (texture->width_mask) 
+	iu &= texture->width_mask;
+      else
+	iu = min(iu,texture->width-1);
+      int iv = (int)(t * (float)(texture->height));
+      if (texture->height_mask) 
+	iv &= texture->height_mask;
+      else
+	iv = min(iv,texture->height-1);
+      unsigned char *t = (unsigned char*)texture->data + (iv * texture->width + iu) * 4; //texture->bytesPerTexel;
+      return Vec3fa(  (float)t[0] * 1.0f/255.0f, (float)t[1] * 1.0f/255.0f, (float)t[2] * 1.0f/255.0f );
+    }
+  
+  Vec3fa color(1.0f);
+  return color;
 }

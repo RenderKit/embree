@@ -16,8 +16,6 @@
 
 #include "../common/tutorial/tutorial_device.h"
 
-
-
 /* render function to use */
 renderPixelFunc renderPixel;
 
@@ -31,6 +29,7 @@ void error_handler(const RTCError code, const int8* str)
   case RTC_INVALID_OPERATION: printf("RTC_INVALID_OPERATION"); break;
   case RTC_OUT_OF_MEMORY    : printf("RTC_OUT_OF_MEMORY"); break;
   case RTC_UNSUPPORTED_CPU  : printf("RTC_UNSUPPORTED_CPU"); break;
+  case RTC_CANCELLED        : printf("RTC_CANCELLED"); break;
   default                   : printf("invalid error code"); break;
   }
   if (str) { 
@@ -122,8 +121,8 @@ unsigned int createGroundPlane (RTCScene scene)
 }
 
 /* scene data */
-RTCScene g_scene  = NULL;
-RTCScene g_scene1 = NULL;
+RTCScene g_scene  = nullptr;
+RTCScene g_scene1 = nullptr;
 
 unsigned int g_instance0 = -1;
 unsigned int g_instance1 = -1;
@@ -131,13 +130,6 @@ unsigned int g_instance2 = -1;
 unsigned int g_instance3 = -1;
 
 Vec3fa colors[4][4];
-
-/* rtcCommitThread called by all ISPC worker threads to enable parallel build */
-#if defined(PARALLEL_COMMIT)
-task void parallelCommit(RTCScene scene) {
-  rtcCommitThread (scene,threadIndex,threadCount); 
-}
-#endif
 
 /* called by the C++ code for initialization */
 extern "C" void device_init (int8* cfg)
@@ -157,12 +149,7 @@ extern "C" void device_init (int8* cfg)
   createTriangulatedSphere(g_scene1,Vec3fa(+1, 0, 0),0.5);
   createTriangulatedSphere(g_scene1,Vec3fa( 0, 0,-1),0.5);
   createTriangulatedSphere(g_scene1,Vec3fa(-1, 0, 0),0.5);
-
-#if !defined(PARALLEL_COMMIT)
   rtcCommit (g_scene1);
-#else
-  launch[ getNumHWThreads() ] parallelCommit(g_scene1); 
-#endif
 
   /* instantiate geometry */
   g_instance0 = rtcNewInstance(g_scene,g_scene1);
@@ -310,18 +297,12 @@ extern "C" void device_render (int* pixels,
   rtcUpdate(g_scene,g_instance1);
   rtcUpdate(g_scene,g_instance2);
   rtcUpdate(g_scene,g_instance3);
-#if !defined(PARALLEL_COMMIT)
   rtcCommit (g_scene);
-#else
-  launch[ getNumHWThreads() ] parallelCommit(g_scene); 
-#endif
-
 
   /* render all pixels */
   const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
   launch_renderTile(numTilesX*numTilesY,pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY); 
-  rtcDebug();
 }
 
 /* called by the C++ code for cleanup */

@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "embree2/rtcore.h"
+#include "common/default.h"
 #include "common/alloc.h"
 #include "common/accel.h"
 #include "common/scene.h"
@@ -37,22 +37,11 @@ namespace embree
     struct Node;
     struct NodeMB;
     struct UnalignedNode;
-    struct NodeSingleSpaceMB;
-    struct NodeDualSpaceMB;
-    struct NodeConeMB;
-#define BVH4HAIR_MB_VERSION 0
-
-#if BVH4HAIR_MB_VERSION == 0
-    typedef NodeSingleSpaceMB UnalignedNodeMB;
-#elif BVH4HAIR_MB_VERSION == 1
-    typedef NodeDualSpaceMB UnalignedNodeMB;
-#elif BVH4HAIR_MB_VERSION == 2
-    typedef NodeConeMB UnalignedNodeMB;
-#endif
+    struct UnalignedNodeMB;
 
     /*! branching width of the tree */
     static const size_t N = 4;
-
+    
     /*! Number of address bits the Node and primitives are aligned
         to. Maximally 2^alignment-1 many primitive blocks per leaf are
         supported. */
@@ -88,9 +77,9 @@ namespace embree
 
     /*! Cost of one traversal step. */
     static const int travCost = 1;
-    static const int travCostAligned = 2;
+    static const int travCostAligned = 1;
     static const int travCostUnaligned = 3; // FIXME: find best cost
-    static const int intCost = 6;
+    static const int intCost = 1; // set to 1 for statistics // FIXME: is this used? was 6;
 
     /*! Pointer that points to a node or a list of primitives */
     struct NodeRef
@@ -276,7 +265,7 @@ namespace embree
       }
 
       /*! Returns extent of bounds of specified child. */
-      __forceinline BBox3fa extend(size_t i) const {
+      __forceinline Vec3fa extend(size_t i) const {
 	return bounds(i).size();
       }
 
@@ -331,7 +320,7 @@ namespace embree
           const float round_up   = 1.0f+2.0f*float(ulp);
           const ssef tNear = max(tNearX,tNearY,tNearZ,tnear);
           const ssef tFar  = min(tFarX ,tFarY ,tFarZ ,tfar);
-          const sseb vmask = round_down*tNear <= round_up*tFar;
+          const sseb vmask = (round_down*tNear <= round_up*tFar);
           const size_t mask = movemask(vmask);
           dist = tNear;
           return mask;
@@ -518,7 +507,7 @@ namespace embree
       }
 
       /*! Returns extent of bounds of specified child. */
-      __forceinline BBox3fa extend0(size_t i) const {
+      __forceinline Vec3fa extend0(size_t i) const {
 	return bounds0(i).size();
       }
 
@@ -689,7 +678,7 @@ namespace embree
       }
 
       /*! Sets bounding box. */
-      __forceinline void set(size_t i, const NAABBox3fa& b) 
+      __forceinline void set(size_t i, const OBBox3fa& b) 
       {
         assert(i < N);
 
@@ -777,7 +766,7 @@ namespace embree
       AffineSpaceSSE3f naabb;   //!< non-axis aligned bounding boxes (bounds are [0,1] in specified space)
     };
 
-    struct NodeSingleSpaceMB : public BaseNode
+    struct UnalignedNodeMB : public BaseNode
     {
       struct Precalculations {
 	__forceinline Precalculations (const Ray& ray) {}
@@ -896,245 +885,6 @@ namespace embree
       BBoxSSE3f b1;
     };
 
-    struct NodeDualSpaceMB : public BaseNode
-    {
-      struct Precalculations {
-	__forceinline Precalculations (const Ray& ray) {}
-      };
-
-      /*! Clears the node. */
-      __forceinline void clear() 
-      {
-        space0 = space1 = one;
-        //t0s0.lower = t0s0.upper = Vec3fa(nan);
-        t1s0_t0s1.lower = t1s0_t0s1.upper = Vec3fa(nan);
-        //t1s1.lower = t1s1.upper = Vec3fa(nan);
-        BaseNode::clear();
-      }
-
-      static __forceinline AffineSpace3fa normalizeSpace(const AffineSpace3fa& other, const BBox3fa& bounds)
-      {
-	AffineSpace3fa space = other;
-        space.p -= bounds.lower;
-        space = AffineSpace3fa::scale(1.0f/max(Vec3fa(1E-19f),bounds.upper-bounds.lower))*space;
-	return space;
-      }
-
-      /*! Sets spaces. */
-      __forceinline void set(size_t i, const AffineSpace3fa& s0, const AffineSpace3fa& s1) 
-      {
-        assert(i < N);
-
-        space0.l.vx.x[i] = s0.l.vx.x; space0.l.vx.y[i] = s0.l.vx.y; space0.l.vx.z[i] = s0.l.vx.z; 
-        space0.l.vy.x[i] = s0.l.vy.x; space0.l.vy.y[i] = s0.l.vy.y; space0.l.vy.z[i] = s0.l.vy.z;
-        space0.l.vz.x[i] = s0.l.vz.x; space0.l.vz.y[i] = s0.l.vz.y; space0.l.vz.z[i] = s0.l.vz.z; 
-        space0.p   .x[i] = s0.p   .x; space0.p   .y[i] = s0.p   .y; space0.p   .z[i] = s0.p   .z; 
-
-        space1.l.vx.x[i] = s1.l.vx.x; space1.l.vx.y[i] = s1.l.vx.y; space1.l.vx.z[i] = s1.l.vx.z;
-        space1.l.vy.x[i] = s1.l.vy.x; space1.l.vy.y[i] = s1.l.vy.y; space1.l.vy.z[i] = s1.l.vy.z;
-        space1.l.vz.x[i] = s1.l.vz.x; space1.l.vz.y[i] = s1.l.vz.y; space1.l.vz.z[i] = s1.l.vz.z;
-        space1.p   .x[i] = s1.p   .x; space1.p   .y[i] = s1.p   .y; space1.p   .z[i] = s1.p   .z; 
-      }
-
-      /*! Sets bounding boxes. */
-      __forceinline void set(size_t i, const BBox3fa& a, const BBox3fa& b, const BBox3fa& c)
-      {
-        assert(i < N);
-
-        //t0s0.lower.x[i] = a.lower.x; t0s0.lower.y[i] = a.lower.y; t0s0.lower.z[i] = a.lower.z;
-        //t0s0.upper.x[i] = a.upper.x; t0s0.upper.y[i] = a.upper.y; t0s0.upper.z[i] = a.upper.z;
-
-        t1s0_t0s1.lower.x[i] = b.lower.x; t1s0_t0s1.lower.y[i] = b.lower.y; t1s0_t0s1.lower.z[i] = b.lower.z;
-        t1s0_t0s1.upper.x[i] = b.upper.x; t1s0_t0s1.upper.y[i] = b.upper.y; t1s0_t0s1.upper.z[i] = b.upper.z;
-
-        //t1s1.lower.x[i] = c.lower.x; t1s1.lower.y[i] = c.lower.y; t1s1.lower.z[i] = c.lower.z;
-        //t1s1.upper.x[i] = c.upper.x; t1s1.upper.y[i] = c.upper.y; t1s1.upper.z[i] = c.upper.z;
-      }
-
-      /*! Sets ID of child. */
-      __forceinline void set(size_t i, const NodeRef& childID) {
-        //Node::set(i,childID);
-	assert(i < N);
-	children[i] = childID;
-      }
-
-      /*! Returns bounds of specified child. */
-      __forceinline const BBox3fa bounds0(const size_t i) const { 
-        assert(i < N);
-        /*const Vec3fa lower(t0s0.lower.x[i],t0s0.lower.y[i],t0s0.lower.z[i]);
-        const Vec3fa upper(t0s0.upper.x[i],t0s0.upper.y[i],t0s0.upper.z[i]);
-        return BBox3fa(lower,upper);*/
-	return empty; // FIXME: not implemented yet
-      }
-
-      /*! Returns the extend of the bounds of the ith child */
-      __forceinline Vec3fa extend0(size_t i) const {
-        assert(i < N);
-        //return bounds0(i).size(); // FIXME: not implemented yet
-	return zero;
-      }
-
-      /*! Returns reference to specified child */
-      __forceinline       NodeRef& child(size_t i)       { assert(i<N); return children[i]; }
-      __forceinline const NodeRef& child(size_t i) const { assert(i<N); return children[i]; }
-
-      /*! intersect 4 OBBs with single ray */
-      __forceinline size_t intersect(const Precalculations& pre,
-				     const sse3f& ray_org, const sse3f& ray_dir, 
-				     const ssef& tnear, const ssef& tfar, const float time, ssef& dist)
-      {
-	const ssef t0 = ssef(1.0f)-time, t1 = time;
-	const sse3f t0s0_lower = zero;
-	const sse3f t0s0_upper = one;
-	const sse3f t1s1_lower = zero;
-	const sse3f t1s1_upper = one;
-
-	const AffineSpaceSSE3f xfm = t0*space0 + t1*space1;
-	const sse3f lower = t0*t0*t0s0_lower + t0*t1*t1s0_t0s1.lower + t1*t1*t1s1_lower;
-	const sse3f upper = t0*t0*t0s0_upper + t0*t1*t1s0_t0s1.upper + t1*t1*t1s1_upper;
-
-	const BBoxSSE3f bounds(lower,upper);
-	const sse3f dir = xfmVector(xfm,ray_dir);
-	const sse3f rdir = rcp_safe(dir); 
-	const sse3f org = xfmPoint(xfm,ray_org);
-	
-	const sse3f tLowerXYZ = (bounds.lower - org) * rdir;
-	const sse3f tUpperXYZ = (bounds.upper - org) * rdir;
-	
-#if defined(__SSE4_1__)
-	const ssef tNearX = mini(tLowerXYZ.x,tUpperXYZ.x);
-	const ssef tNearY = mini(tLowerXYZ.y,tUpperXYZ.y);
-	const ssef tNearZ = mini(tLowerXYZ.z,tUpperXYZ.z);
-	const ssef tFarX  = maxi(tLowerXYZ.x,tUpperXYZ.x);
-	const ssef tFarY  = maxi(tLowerXYZ.y,tUpperXYZ.y);
-	const ssef tFarZ  = maxi(tLowerXYZ.z,tUpperXYZ.z);
-	const ssef tNear  = max(tnear, tNearX,tNearY,tNearZ);
-	const ssef tFar   = min(tfar,  tFarX ,tFarY ,tFarZ );
-	const sseb vmask = tNear <= tFar;
-	dist = tNear;
-	return movemask(vmask);
-#else
-	const ssef tNearX = min(tLowerXYZ.x,tUpperXYZ.x);
-	const ssef tNearY = min(tLowerXYZ.y,tUpperXYZ.y);
-	const ssef tNearZ = min(tLowerXYZ.z,tUpperXYZ.z);
-	const ssef tFarX  = max(tLowerXYZ.x,tUpperXYZ.x);
-	const ssef tFarY  = max(tLowerXYZ.y,tUpperXYZ.y);
-	const ssef tFarZ  = max(tLowerXYZ.z,tUpperXYZ.z);
-	const ssef tNear = max(tnear, tNearX,tNearY,tNearZ);
-	const ssef tFar  = min(tfar,  tFarX ,tFarY ,tFarZ );
-	const sseb vmask = tNear <= tFar;
-	dist = tNear;
-	return movemask(vmask);
-#endif
-      }
-
-      __forceinline size_t intersect(const sse3f& ray_org, const sse3f& ray_dir, 
-				     const ssef& tnear, const ssef& tfar, const float time, ssef& dist) { return 0; }
-
-    public:
-      AffineSpaceSSE3f space0;   
-      AffineSpaceSSE3f space1;   
-      //BBoxSSE3f t0s0;
-      BBoxSSE3f t1s0_t0s1;
-      //BBoxSSE3f t1s1;
-    };  
-
-    
-    struct NodeConeMB : public BaseNode
-    {
-      struct Precalculations 
-      {
-	__forceinline Precalculations (const Ray& ray)
-	  : depth_scale(rsqrt(dot(ray.dir,ray.dir))), ray_space(frame(depth_scale*ray.dir).transposed()) {}
-	
-	float depth_scale;
-	LinearSpace3fa ray_space;
-      };
-
-      /*! Clears the node. */
-      __forceinline void clear() 
-      {
-	v0t0 = v0t1 = ssef(nan);
-	v1t0 = v1t1 = ssef(nan);
-	rt0 =  rt1 = float(nan);
-        BaseNode::clear();
-      }
-
-      /*! Sets bounding boxes. */
-      __forceinline void set(size_t i, const Vec3fa& v0t0, const Vec3fa& v0t1, const Vec3fa& v1t0, const Vec3fa& v1t1, const float rt0, const float rt1)
-      {
-        assert(i < N);
-	this->v0t0.x[i] = v0t0.x; this->v0t0.y[i] = v0t0.y; this->v0t0.z[i] = v0t0.z;
-	this->v0t1.x[i] = v0t1.x; this->v0t1.y[i] = v0t1.y; this->v0t1.z[i] = v0t1.z;
-	this->v1t0.x[i] = v1t0.x; this->v1t0.y[i] = v1t0.y; this->v1t0.z[i] = v1t0.z;
-	this->v1t1.x[i] = v1t1.x; this->v1t1.y[i] = v1t1.y; this->v1t1.z[i] = v1t1.z;
-	this->rt0[i] = rt0;
-	this->rt1[i] = rt1;
-      }
-
-      /*! Sets ID of child. */
-      __forceinline void set(size_t i, const NodeRef& childID) {
-        //Node::set(i,childID);
-	assert(i < N);
-	children[i] = childID;
-      }
-
-      /*! Returns bounds of specified child. */
-      __forceinline const BBox3fa bounds0(const size_t i) const { 
-        assert(i < N);
-        /*const Vec3fa lower(t0s0.lower.x[i],t0s0.lower.y[i],t0s0.lower.z[i]);
-        const Vec3fa upper(t0s0.upper.x[i],t0s0.upper.y[i],t0s0.upper.z[i]);
-        return BBox3fa(lower,upper);*/
-	return empty; // FIXME: not implemented yet
-      }
-
-      /*! Returns the extend of the bounds of the ith child */
-      __forceinline Vec3fa extend0(size_t i) const {
-        assert(i < N);
-        //return bounds0(i).size(); // FIXME: not implemented yet
-	return zero;
-      }
-
-      /*! Returns reference to specified child */
-      __forceinline       NodeRef& child(size_t i)       { assert(i<N); return children[i]; }
-      __forceinline const NodeRef& child(size_t i) const { assert(i<N); return children[i]; }
-
-      /*! intersect 4 OBBs with single ray */
-      __forceinline size_t intersect(const Precalculations& pre, 
-				     const sse3f& ray_org, const sse3f& ray_dir, 
-				     const ssef& tnear, const ssef& tfar, const float time, ssef& dist)
-      {
-	const ssef t0 = ssef(1.0f)-time, t1 = time;
-	const sse3f v0 = t0*v0t0 + t1*v0t1;
-	const sse3f v1 = t0*v1t0 + t1*v1t1;
-	const ssef  r  = t0*rt0 + t1*rt1;
-	const sse3f p0 = xfmVector(LinearSpaceSSE3f(pre.ray_space),v0-ray_org); 
-	const sse3f p1 = xfmVector(LinearSpaceSSE3f(pre.ray_space),v1-ray_org);
-	const sse3f v = p1-p0;
-	const sse3f w = -p0;
-	const ssef d0 = w.x*v.x + w.y*v.y;
-	const ssef d1 = v.x*v.x + v.y*v.y;
-	const ssef u = clamp(d0*rcp(d1),ssef(zero),ssef(one));
-	const sse3f p = p0 + u*v;
-	//const ssef t = p.z*pre.depth_scale;
-	const ssef d2 = p.x*p.x + p.y*p.y; 
-	//const ssef r = p.w;
-	const ssef r2 = r*r;
-	sseb valid = d2 <= r2; // & avxf(ray.tnear) < t & t < avxf(ray.tfar);*/
-
-	dist = 0.0f;
-	return movemask(valid);
-      }
-
-      __forceinline size_t intersect(const sse3f& ray_org, const sse3f& ray_dir, 
-				     const ssef& tnear, const ssef& tfar, const float time, ssef& dist) { return 0; }
-
-    public:
-      sse3f v0t0, v0t1;
-      sse3f v1t0, v1t1;
-      ssef rt0, rt1;
-    };  
-
     /*! swap the children of two nodes */
     __forceinline static void swap(Node* a, size_t i, Node* b, size_t j)
     {
@@ -1197,7 +947,6 @@ namespace embree
     ~BVH4 ();
 
     /*! BVH4 instantiations */
-    static Accel* BVH4Triangle1vMB(Scene* scene);
     static Accel* BVH4Triangle4vMB(Scene* scene);
 
     static Accel* BVH4Bezier1v(Scene* scene);
@@ -1207,10 +956,8 @@ namespace embree
     static Accel* BVH4OBBBezier1i(Scene* scene, bool highQuality);
     static Accel* BVH4OBBBezier1iMB(Scene* scene, bool highQuality);
 
-    static Accel* BVH4Triangle1(Scene* scene);
     static Accel* BVH4Triangle4(Scene* scene);
     static Accel* BVH4Triangle8(Scene* scene);
-    static Accel* BVH4Triangle1v(Scene* scene);
     static Accel* BVH4Triangle4v(Scene* scene);
     static Accel* BVH4Triangle4i(Scene* scene);
     static Accel* BVH4SubdivPatch1(Scene* scene);
@@ -1220,79 +967,53 @@ namespace embree
     static Accel* BVH4SubdivGridLazy(Scene* scene);
     static Accel* BVH4UserGeometry(Scene* scene);
     
-    static Accel* BVH4BVH4Triangle1Morton(Scene* scene);
-    static Accel* BVH4BVH4Triangle1ObjectSplit(Scene* scene);
     static Accel* BVH4BVH4Triangle4ObjectSplit(Scene* scene);
-    static Accel* BVH4BVH4Triangle1vObjectSplit(Scene* scene);
+    static Accel* BVH4BVH4Triangle8ObjectSplit(Scene* scene);
     static Accel* BVH4BVH4Triangle4vObjectSplit(Scene* scene);
     static Accel* BVH4BVH4Triangle4iObjectSplit(Scene* scene);
 
-    static Accel* BVH4Triangle1SpatialSplit(Scene* scene);
     static Accel* BVH4Triangle4SpatialSplit(Scene* scene);
     static Accel* BVH4Triangle8SpatialSplit(Scene* scene);
-    static Accel* BVH4Triangle1ObjectSplit(Scene* scene);
     static Accel* BVH4Triangle4ObjectSplit(Scene* scene);
     static Accel* BVH4Triangle8ObjectSplit(Scene* scene);
-    static Accel* BVH4Triangle1vObjectSplit(Scene* scene);
     static Accel* BVH4Triangle4vObjectSplit(Scene* scene);
     static Accel* BVH4Triangle4iObjectSplit(Scene* scene);
 
-    static Accel* BVH4Triangle1ObjectSplit(TriangleMesh* mesh);
     static Accel* BVH4Triangle4ObjectSplit(TriangleMesh* mesh);
-    static Accel* BVH4Triangle1vObjectSplit(TriangleMesh* mesh);
     static Accel* BVH4Triangle4vObjectSplit(TriangleMesh* mesh);
     static Accel* BVH4Triangle4Refit(TriangleMesh* mesh);
 
-    /*! initializes the acceleration structure */
-    void init ();
-    void init (size_t nodeSize, size_t numPrimitives, size_t numThreads);
+    /*! clears the acceleration structure */
+    void clear();
 
     /*! sets BVH members after build */
     void set (NodeRef root, const BBox3fa& bounds, size_t numPrimitives);
 
+    /*! prints statistics about the BVH */
+    void printStatistics();
+
     /*! Clears the barrier bits of a subtree. */
     void clearBarrier(NodeRef& node);
 
-    /*! Propagate bounds for time t0 and time t1 up the tree. */
-    std::pair<BBox3fa,BBox3fa> refit(Scene* scene, NodeRef node);
+    /*! lays out N large nodes of the BVH */
+    void layoutLargeNodes(size_t N);
+    NodeRef layoutLargeNodesRecursion(NodeRef& node);
 
-    LinearAllocatorPerThread alloc;
-
-    FastAllocator alloc2;
-
-    void *data_mem; /* additional memory, currently used for subdivpatch1cached memory */
-    size_t size_data_mem;
-
-    __forceinline Node* allocNode(LinearAllocatorPerThread::ThreadAllocator& thread) {
-      Node* node = (Node*) thread.malloc(sizeof(Node),1 << alignment); node->clear(); return node; // FIXME: why 16 bytes aligned and not 64 bytes?
+    /*! calculates the amount of bytes allocated */
+    size_t bytesAllocated() {
+      return alloc.getAllocatedBytes();
     }
 
-    __forceinline NodeMB* allocNodeMB(LinearAllocatorPerThread::ThreadAllocator& thread) {
-      NodeMB* node = (NodeMB*) thread.malloc(sizeof(NodeMB),1 << alignment); node->clear(); return node;
-    }
+    /*! called by all builders before build starts */
+    double preBuild(const char* builderName);
 
-    /*! allocates a new unaligned node */
-    __forceinline UnalignedNode* allocUnalignedNode(LinearAllocatorPerThread::ThreadAllocator& thread) {
-      UnalignedNode* node = (UnalignedNode*) thread.malloc(sizeof(UnalignedNode),1 << alignment); node->clear(); return node;
-    }
+    /*! called by all builders after build ended */
+    void postBuild(double t0);
 
-    /*! allocates a new unaligned node */
-    __forceinline UnalignedNodeMB* allocUnalignedNodeMB(LinearAllocatorPerThread::ThreadAllocator& thread) {
-      UnalignedNodeMB* node = (UnalignedNodeMB*) thread.malloc(sizeof(UnalignedNodeMB),1 << alignment); node->clear(); return node;
-    }
-
-    __forceinline char* allocPrimitiveBlocks(LinearAllocatorPerThread::ThreadAllocator& thread, size_t num) {
-      return (char*) thread.malloc(num*primTy.bytes,1 << alignment);
-    }
+  public:
 
     /*! Encodes a node */
-    static __forceinline NodeRef encodeNode2(Node* node) {  // FIXME: make all static
-      assert(!((size_t)node & align_mask)); 
-      return NodeRef((size_t) node);
-    }
-
-    /*! Encodes a node */
-    static __forceinline NodeRef encodeNode(void* node) {  // FIXME: template these functions
+    static __forceinline NodeRef encodeNode(Node* node) {
       assert(!((size_t)node & align_mask)); 
       return NodeRef((size_t) node);
     }
@@ -1310,12 +1031,13 @@ namespace embree
 
     /*! Encodes an unaligned motion blur node */
     static __forceinline NodeRef encodeNode(UnalignedNodeMB* node) { 
-      return NodeRef((size_t) node |  tyUnalignedNodeMB);
+      return NodeRef((size_t) node | tyUnalignedNodeMB);
     }
     
     /*! Encodes a leaf */
     static __forceinline NodeRef encodeLeaf(void* tri, size_t num) {
       assert(!((size_t)tri & align_mask)); 
+      assert(num <= maxLeafBlocks);
       return NodeRef((size_t)tri | (tyLeaf+min(num,(size_t)maxLeafBlocks)));
     }
 
@@ -1324,35 +1046,27 @@ namespace embree
       assert(!((size_t)ptr & align_mask)); 
       return NodeRef((size_t)ptr | (tyLeaf+ty));
     }
-    
-  public:
-    
-    /*! calculates the amount of bytes allocated */
-    size_t bytesAllocated() {
-      return alloc.bytes();
-    }
 
+    /*! bvh type information */
   public:
     const PrimitiveType& primTy;       //!< primitive type stored in the BVH
-    Scene* scene;                      //!< scene pointer
     bool listMode;                     //!< true if number of leaf items not encoded in NodeRef
-    NodeRef root;                      //!< Root node
-    size_t numPrimitives;
-    size_t numVertices;
 
-    /*! data arrays for fast builders */
+    /*! bvh data */
+  public:
+    NodeRef root;                      //!< Root node
+    FastAllocator alloc;               //!< allocator used to allocate nodes
+    Scene* scene;                      //!< scene pointer
+
+    /*! statistics data */
+  public:
+    size_t numPrimitives;              //!< number of primitives the BVH is build over
+    size_t numVertices;                //!< number of vertices the BVH references
+    
+    /*! data arrays for special builders */
   public:
     std::vector<BVH4*> objects;
+    void* data_mem;                   //!< additional memory, currently used for subdivpatch1cached memory
+    size_t size_data_mem;
   };
-
-   // FIXME: move the below code to somewhere else
-  typedef void (*createTriangleMeshAccelTy)(TriangleMesh* mesh, BVH4*& accel, Builder*& builder); 
-  typedef Builder* (*BVH4BuilderTopLevelFunc)(BVH4* accel, Scene* scene, const createTriangleMeshAccelTy createTriangleMeshAccel);
-
-#define DECLARE_TOPLEVEL_BUILDER(symbol)                                         \
-  namespace isa   { extern Builder* symbol(BVH4* accel, Scene* scene, const createTriangleMeshAccelTy createTriangleMeshAccel); } \
-  namespace sse41 { extern Builder* symbol(BVH4* accel, Scene* scene, const createTriangleMeshAccelTy createTriangleMeshAccel); } \
-  namespace avx   { extern Builder* symbol(BVH4* accel, Scene* scene, const createTriangleMeshAccelTy createTriangleMeshAccel); } \
-  namespace avx2  { extern Builder* symbol(BVH4* accel, Scene* scene, const createTriangleMeshAccelTy createTriangleMeshAccel); } \
-  BVH4BuilderTopLevelFunc symbol;
 }

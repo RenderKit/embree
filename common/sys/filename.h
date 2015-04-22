@@ -33,6 +33,12 @@ namespace embree
 
     /*! create a valid filename from a string */
     FileName (const std::string& filename);
+    
+    /*! returns path to home folder */
+    static FileName homeFolder();
+
+    /*! returns path to executable */
+    static FileName executableFolder();
 
     /*! auto convert into a string */
     operator std::string() const { return filename; }
@@ -73,11 +79,16 @@ namespace embree
     /*! removes the base from a filename (if possible) */
     FileName operator -( const FileName& base ) const;
 
+    /*! == operator */
+    friend bool operator==(const FileName& a, const FileName& b);
+
+    /*! != operator */
+    friend bool operator!=(const FileName& a, const FileName& b);
+
     /*! output operator */
     friend std::ostream& operator<<(std::ostream& cout, const FileName& filename);
-
+   
   private:
     std::string filename;
   };
-
 }

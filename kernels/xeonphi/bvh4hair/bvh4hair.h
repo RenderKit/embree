@@ -363,13 +363,12 @@ namespace embree
 
       }
 
-      __forceinline void setMatrix(const LinearSpace3fa &mat, BBox3fa &b, const size_t m)
-      {
-	FATAL("not implemented");
+      __forceinline void setMatrix(const LinearSpace3fa &mat, BBox3fa &b, const size_t m) {
+        NOT_IMPLEMENTED;
       }
-
     };
 
+    void clear() {}
 
     NodeRef root;                      //!< Root node (can also be a leaf).
 
@@ -391,15 +390,15 @@ namespace embree
     }
 
 
-  BVH4Hair(const PrimitiveType& primTy, void* geometry = NULL) : primTy(primTy), 
+  BVH4Hair(const PrimitiveType& primTy, void* geometry = nullptr) : primTy(primTy), 
       geometry(geometry), 
       root(emptyNode), 
-      accel(NULL),
+      accel(nullptr),
       size_node(0),
       size_accel(0)
       {	
 	assert( sizeof(UnalignedNode) == 192 );
-	unaligned_nodes = NULL;
+	unaligned_nodes = nullptr;
       }
 
     

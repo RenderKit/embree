@@ -18,6 +18,7 @@
 
 #include "sys/platform.h"
 #include "sys/intrinsics.h"
+#include "math/constants.h"
 //#include "sse_mic.h"
 
 #include <zmmintrin.h>
@@ -88,14 +89,6 @@ namespace embree
     _mm512_mask_prefetch_i32extscatter_ps(ptr,m_active,index,up,scale,mode);
   }
  
-  __forceinline void evictL1(const void * __restrict__  m) { 
-    _mm_clevict(m,_MM_HINT_T0); 
-  }
-
-  __forceinline void evictL2(const void * __restrict__  m) { 
-    _mm_clevict(m,_MM_HINT_T1); 
-  }
-
 
 #if !defined(_MM_SHUF_PERM)
 #define _MM_SHUF_PERM(e3, e2, e1, e0) ((_MM_PERM_ENUM)((e3)*64 + (e2)*16 + (e1)*4 + (e0)))

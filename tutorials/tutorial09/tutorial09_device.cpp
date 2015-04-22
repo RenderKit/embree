@@ -17,7 +17,6 @@
 #include "../common/tutorial/tutorial_device.h"
 
 /* configuration */
-
 #if defined(__XEON_PHI__)
 #define EDGE_LEVEL 64.0f
 #else
@@ -25,7 +24,7 @@
 #endif
 
 /* scene data */
-RTCScene g_scene = NULL;
+RTCScene g_scene = nullptr;
 
 /* render function to use */
 renderPixelFunc renderPixel;
@@ -43,6 +42,7 @@ void error_handler(const RTCError code, const int8* str)
   case RTC_INVALID_OPERATION: printf("RTC_INVALID_OPERATION"); break;
   case RTC_OUT_OF_MEMORY    : printf("RTC_OUT_OF_MEMORY"); break;
   case RTC_UNSUPPORTED_CPU  : printf("RTC_UNSUPPORTED_CPU"); break;
+  case RTC_CANCELLED        : printf("RTC_CANCELLED"); break;
   default                   : printf("invalid error code"); break;
   }
   if (str) { 
@@ -53,14 +53,7 @@ void error_handler(const RTCError code, const int8* str)
   abort();
 }
 
-/* rtcCommitThread called by all ISPC worker threads to enable parallel build */
-#if defined(PARALLEL_COMMIT)
-task void parallelCommit(RTCScene scene) {
-  rtcCommitThread (scene,threadIndex,threadCount); 
-}
-#endif
-
-float cube_vertices[8][4] = 
+__aligned(16) float cube_vertices[8][4] = 
 {
   { -1.0f, -1.0f, -1.0f, 0.0f },
   {  1.0f, -1.0f, -1.0f, 0.0f },
@@ -150,7 +143,7 @@ unsigned int addCube (RTCScene scene_i)
   for (size_t i=0; i<NUM_INDICES; i++) level[i] = EDGE_LEVEL;
   rtcUnmapBuffer(scene_i, geomID, RTC_LEVEL_BUFFER);
 
-  rtcSetDisplacementFunction(scene_i,geomID,(RTCDisplacementFunc)&displacementFunction,NULL);
+  rtcSetDisplacementFunction(scene_i,geomID,(RTCDisplacementFunc)&displacementFunction,nullptr);
 
   return geomID;
 }
@@ -197,11 +190,7 @@ extern "C" void device_init (int8* cfg)
   addGroundPlane(g_scene);
 
   /* commit changes to scene */
-#if !defined(PARALLEL_COMMIT)
   rtcCommit (g_scene);
-#else
-  launch[ getNumHWThreads() ] parallelCommit(g_scene); 
-#endif
 
   /* set start render mode */
   renderPixel = renderPixelStandard;
@@ -299,8 +288,6 @@ extern "C" void device_render (int* pixels,
   const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
   launch_renderTile(numTilesX*numTilesY,pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY); 
-
-  rtcDebug();
 }
 
 /* called by the C++ code for cleanup */

@@ -163,6 +163,7 @@ namespace embree
   ////////////////////////////////////////////////////////////////////////////////
 
   __forceinline mic_f madd (const mic_f& a, const mic_f& b, const mic_f& c) { return _mm512_fmadd_ps(a,b,c); }
+
   __forceinline mic_f msub (const mic_f& a, const mic_f& b, const mic_f& c) { return _mm512_fmsub_ps(a,b,c); }
   __forceinline mic_f nmadd (const mic_f& a, const mic_f& b, const mic_f& c) { return _mm512_fnmadd_ps(a,b,c); }
   __forceinline mic_f nmsub (const mic_f& a, const mic_f& b, const mic_f& c) { return _mm512_fnmsub_ps(a,b,c); }
@@ -173,6 +174,36 @@ namespace embree
   __forceinline mic_f msub213 (const mic_f& a, const mic_f& b, const mic_f& c) { return _mm512_fmsub_ps(a,b,c); }
   __forceinline mic_f msub231 (const mic_f& a, const mic_f& b, const mic_f& c) { return _mm512_fmsub_ps(c,b,a); }
   __forceinline mic_f msubr231(const mic_f& a, const mic_f& b, const mic_f& c) { return _mm512_fnmadd_ps(c,b,a); }
+
+
+  ////////////////////////////////////////////////////////////////////////////////
+  /// Operators with rounding
+  ////////////////////////////////////////////////////////////////////////////////
+
+  __forceinline mic_f madd_round_down (const mic_f& a, const mic_f& b, const mic_f& c) { return _mm512_fmadd_round_ps(a,b,c,_MM_FROUND_TO_NEG_INF); }
+
+  __forceinline mic_f madd_round_up (const mic_f& a, const mic_f& b, const mic_f& c) { return _mm512_fmadd_round_ps(a,b,c,_MM_FROUND_TO_POS_INF); }
+
+  __forceinline mic_f mul_round_down (const mic_f& a, const mic_f& b) { return _mm512_mul_round_ps(a,b,_MM_FROUND_TO_NEG_INF); }
+  __forceinline mic_f mul_round_up   (const mic_f& a, const mic_f& b) { return _mm512_mul_round_ps(a,b,_MM_FROUND_TO_POS_INF); }
+
+  __forceinline mic_f add_round_down (const mic_f& a, const mic_f& b) { return _mm512_add_round_ps(a,b,_MM_FROUND_TO_NEG_INF); }
+  __forceinline mic_f add_round_up   (const mic_f& a, const mic_f& b) { return _mm512_add_round_ps(a,b,_MM_FROUND_TO_POS_INF); }
+
+  __forceinline mic_f sub_round_down (const mic_f& a, const mic_f& b) { return _mm512_sub_round_ps(a,b,_MM_FROUND_TO_NEG_INF); }
+  __forceinline mic_f sub_round_up   (const mic_f& a, const mic_f& b) { return _mm512_sub_round_ps(a,b,_MM_FROUND_TO_POS_INF); }
+
+  __forceinline mic_f div_round_down (const mic_f& a, const mic_f& b) { return _mm512_div_round_ps(a,b,_MM_FROUND_TO_NEG_INF); }
+  __forceinline mic_f div_round_up   (const mic_f& a, const mic_f& b) { return _mm512_div_round_ps(a,b,_MM_FROUND_TO_POS_INF); }
+
+  __forceinline mic_f mask_msub_round_down (const mic_m& mask,const mic_f& a, const mic_f& b, const mic_f& c) { return _mm512_mask_fmsub_round_ps(a,mask,b,c,_MM_FROUND_TO_NEG_INF); }
+  __forceinline mic_f mask_msub_round_up   (const mic_m& mask,const mic_f& a, const mic_f& b, const mic_f& c) { return _mm512_mask_fmsub_round_ps(a,mask,b,c,_MM_FROUND_TO_POS_INF); }
+  
+  __forceinline mic_f mask_mul_round_down (const mic_m& mask,const mic_f& a, const mic_f& b, const mic_f& c) { return _mm512_mask_mul_round_ps(a,mask,b,c,_MM_FROUND_TO_NEG_INF); }
+  __forceinline mic_f mask_mul_round_up   (const mic_m& mask,const mic_f& a, const mic_f& b, const mic_f& c) { return _mm512_mask_mul_round_ps(a,mask,b,c,_MM_FROUND_TO_POS_INF); }
+
+  __forceinline mic_f mask_sub_round_down (const mic_m& mask,const mic_f& a, const mic_f& b, const mic_f& c) { return _mm512_mask_sub_round_ps(a,mask,b,c,_MM_FROUND_TO_NEG_INF); }
+  __forceinline mic_f mask_sub_round_up   (const mic_m& mask,const mic_f& a, const mic_f& b, const mic_f& c) { return _mm512_mask_sub_round_ps(a,mask,b,c,_MM_FROUND_TO_POS_INF); }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Assignment Operators
@@ -310,6 +341,11 @@ namespace embree
     return _mm512_castsi512_ps(_mm512_permutev_epi32(index,_mm512_castps_si512(v)));  
   }
 
+  __forceinline mic_f permute16f(__m512i index, mic_f v)
+  {
+    return _mm512_castsi512_ps(_mm512_permutev_epi32(index,_mm512_castps_si512(v)));  
+  }
+
   template<int i>
   __forceinline mic_f align_shift_right(const mic_f &a, const mic_f &b)
   {
@@ -335,8 +371,8 @@ namespace embree
 
   __forceinline float reduce_add(mic_f a) { return _mm512_reduce_add_ps(a); }
   __forceinline float reduce_mul(mic_f a) { return _mm512_reduce_mul_ps(a); }
-  __forceinline float reduce_min(mic_f a) { return _mm512_reduce_min_ps(a); }
-  __forceinline float reduce_max(mic_f a) { return _mm512_reduce_max_ps(a); }
+  __forceinline float reduce_min(mic_f a) { return _mm512_reduce_gmin_ps(a); }
+  __forceinline float reduce_max(mic_f a) { return _mm512_reduce_gmax_ps(a); }
 
   __forceinline mic_f vreduce_min2(mic_f x) {                      return min(x,swizzle(x,_MM_SWIZ_REG_BADC)); }
   __forceinline mic_f vreduce_min4(mic_f x) { x = vreduce_min2(x); return min(x,swizzle(x,_MM_SWIZ_REG_CDAB)); }
@@ -564,6 +600,12 @@ namespace embree
     return r;
   }
 
+  __forceinline mic_f uload16f(mic_f &r, const mic_m& mask, const float *const addr) {
+    r =_mm512_mask_extloadunpacklo_ps(r, mask,addr, _MM_UPCONV_PS_NONE, _MM_HINT_NONE);
+    r = _mm512_mask_extloadunpackhi_ps(r, mask, addr+16, _MM_UPCONV_PS_NONE, _MM_HINT_NONE);  
+    return r;
+  }
+
   __forceinline mic_f uload16f(const float *const addr) {
     mic_f r = mic_f::undefined();
     r =_mm512_extloadunpacklo_ps(r, addr, _MM_UPCONV_PS_NONE, _MM_HINT_NONE);
@@ -701,6 +743,19 @@ namespace embree
     f = select(0x4444,broadcast1to16f((float*)&z + index),f);
     return f;
   }
+
+  __forceinline mic_f gather16f_4f_unalign(const void *__restrict__ const ptr0,
+					   const void *__restrict__ const ptr1,
+					   const void *__restrict__ const ptr2,
+					   const void *__restrict__ const ptr3) 
+  {
+    mic_f v = permute<0>(uload16f((float*)ptr3));
+    v = align_shift_right<12>(v,permute<0>(uload16f((float*)ptr2)));
+    v = align_shift_right<12>(v,permute<0>(uload16f((float*)ptr1)));
+    v = align_shift_right<12>(v,permute<0>(uload16f((float*)ptr0)));
+    return v;
+  }
+
 
   __forceinline mic_f rcp_safe( const mic_f& a ) { return select(a != mic_f::zero(),_mm512_rcp23_ps(a),mic_f(1E-10f)); };
 

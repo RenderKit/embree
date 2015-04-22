@@ -33,15 +33,15 @@ namespace embree
   }
 
   template<typename Index, typename Value, typename Func, typename Reduction>
-    __forceinline Value parallel_reduce( const Index first, const Index last, const Index minStepSize, const Value& identity, const Func& func, const Reduction& reduction )
+    __noinline Value parallel_reduce_internal( Index taskCount, const Index first, const Index last, const Index minStepSize, const Value& identity, const Func& func, const Reduction& reduction )
   {
-    /* fast path for small number of iterations */
-    size_t taskCount = (last-first+minStepSize-1)/minStepSize;
-    if (taskCount == 1) {
-      return func(range<Index>(first,last));
-    }
+#if defined(__MIC__)
     const size_t maxTasks = 256;
-    taskCount = min(taskCount,LockStepTaskScheduler::instance()->getNumThreads(),maxTasks);
+#else
+    const size_t maxTasks = 64;
+#endif
+    const size_t threadCount = TaskSchedulerTBB::threadCount();
+    taskCount = min(taskCount,threadCount,maxTasks);
 
     /* parallel invokation of all tasks */
     Value values[maxTasks];
@@ -55,6 +55,27 @@ namespace embree
     Value v = identity;
     for (size_t i=0; i<taskCount; i++) v = reduction(v,values[i]);
     return v;
+  }
+
+  template<typename Index, typename Value, typename Func, typename Reduction>
+    __forceinline Value parallel_reduce( const Index first, const Index last, const Index minStepSize, const Value& identity, const Func& func, const Reduction& reduction )
+  {
+#if defined(TASKING_LOCKSTEP) || defined(TASKING_TBB_INTERNAL)
+
+    /* fast path for small number of iterations */
+    Index taskCount = (last-first+minStepSize-1)/minStepSize;
+    if (likely(taskCount == 1)) {
+      return func(range<Index>(first,last));
+    }
+    return parallel_reduce_internal(taskCount,first,last,minStepSize,identity,func,reduction);
+
+#else 
+    return tbb::parallel_reduce(tbb::blocked_range<Index>(first,last,minStepSize),identity,
+      [&](const tbb::blocked_range<Index>& r, const Value& start) { return reduction(start,func(range<Index>(r.begin(),r.end()))); },
+      reduction);
+    if (tbb::task::self().group()->is_group_execution_cancelled())
+      throw std::runtime_error("task group cancelled");
+#endif
   }
 
   template<typename Index, typename Value, typename Func, typename Reduction>

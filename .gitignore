@@ -4,3 +4,4 @@ x64
 *.suo
 *.ncb
 .*sw?
+.DS_Store

@@ -17,11 +17,9 @@
 #include "../common/tutorial/tutorial_device.h"
 #include "../common/tutorial/scene_device.h"
 
-
-
 /* scene data */
 extern "C" ISPCScene* g_ispc_scene;
-RTCScene g_scene = NULL;
+RTCScene g_scene = nullptr;
 
 /* render function to use */
 renderPixelFunc renderPixel;
@@ -36,6 +34,7 @@ void error_handler(const RTCError code, const int8* str)
   case RTC_INVALID_OPERATION: printf("RTC_INVALID_OPERATION"); break;
   case RTC_OUT_OF_MEMORY    : printf("RTC_OUT_OF_MEMORY"); break;
   case RTC_UNSUPPORTED_CPU  : printf("RTC_UNSUPPORTED_CPU"); break;
+  case RTC_CANCELLED        : printf("RTC_CANCELLED"); break;
   default                   : printf("invalid error code"); break;
   }
   if (str) { 
@@ -200,13 +199,6 @@ void renderTile(int taskIndex, int* pixels,
   }
 }
 
-/* rtcCommitThread called by all ISPC worker threads to enable parallel build */
-#if defined(PARALLEL_COMMIT)
-task void parallelCommit(RTCScene scene) {
-  rtcCommitThread (scene,threadIndex,threadCount); 
-}
-#endif
-
 /* called by the C++ code to render */
 extern "C" void device_render (int* pixels,
                            const int width,
@@ -218,21 +210,15 @@ extern "C" void device_render (int* pixels,
                            const Vec3fa& p)
 {
   /* create scene */
-  if (g_scene == NULL)
-  { 
+  if (g_scene == nullptr) { 
     g_scene = convertScene(g_ispc_scene);
-#if !defined(PARALLEL_COMMIT)
-  rtcCommit (g_scene);
-#else
-  launch[ getNumHWThreads() ] parallelCommit(g_scene); 
-#endif
+    rtcCommit (g_scene);
   }
 
   /* render image */
   const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
   launch_renderTile(numTilesX*numTilesY,pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY); 
-  rtcDebug();
 }
 
 /* called by the C++ code for cleanup */

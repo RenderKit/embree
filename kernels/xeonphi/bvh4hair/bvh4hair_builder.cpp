@@ -17,6 +17,7 @@
 #include "bvh4hair/bvh4hair_builder.h"
 #include "geometry/bezier1i.h"
 #include "bvh4hair/bvh4hair_statistics.h"
+#include "algorithms/parallel_partition.h"
 
 namespace embree
 {
@@ -31,17 +32,12 @@ namespace embree
 #define ENABLE_OBB_BVH4 1
 #define ENABLE_AABB_NODES 1
 
-#define BVH4HAIR_NODE_PREALLOC_FACTOR  0.7f
-#define INTERSECTION_COST              1.0f
+#define BVH4HAIR_NODE_PREALLOC_FACTOR  0.8f
 
 #define AABB_OBB_SWITCH_THRESHOLD      1.1f
 #define THRESHOLD_SWITCH
 
 #define TIMER(x)  
-
-#if defined(DEBUG)
-  extern AtomicMutex mtx;
-#endif
 
   static double dt = 0.0f;
 
@@ -68,11 +64,11 @@ namespace embree
     size_t numCurves = 0;       
     for (size_t i=0;i<scene->size();i++)
       {
-	if (unlikely(scene->get(i) == NULL)) continue;
-	if (unlikely((scene->get(i)->type != BEZIER_CURVES))) continue;
+	if (unlikely(scene->get(i) == nullptr)) continue;
+	if (unlikely((scene->get(i)->type != Geometry::BEZIER_CURVES))) continue;
 	if (unlikely(!scene->get(i)->isEnabled())) continue;
         BezierCurves* geom = (BezierCurves*) scene->getBezierCurves(i);
-	numCurves += geom->numCurves;
+	numCurves += geom->size();
       }
     return numCurves;	
   }
@@ -115,20 +111,19 @@ namespace embree
     // === find first group containing startID ===
     unsigned int g=0, numSkipped = 0;
     for (; g<numTotalGroups; g++) {       
-      if (unlikely(scene->get(g) == NULL)) continue;
-      if (unlikely((scene->get(g)->type != BEZIER_CURVES))) continue;
+      if (unlikely(scene->get(g) == nullptr)) continue;
+      if (unlikely((scene->get(g)->type != Geometry::BEZIER_CURVES))) continue;
       if (unlikely(!scene->get(g)->isEnabled())) continue;
       BezierCurves* geom = (BezierCurves*) scene->getBezierCurves(g);
-      const size_t numPrims = geom->numCurves;
+      const size_t numPrims = geom->size();
       if (numSkipped + numPrims > startID) break;
       numSkipped += numPrims;
     }
 
+    CentroidGeometryAABB bounds_cs;
+    bounds_cs.reset();
+
     /* start with first group containing startID */
-    mic_f bounds_scene_min((float)pos_inf);
-    mic_f bounds_scene_max((float)neg_inf);
-    mic_f bounds_centroid_min((float)pos_inf);
-    mic_f bounds_centroid_max((float)neg_inf);
 
     unsigned int num = 0;
     unsigned int currentID = startID;
@@ -136,25 +131,20 @@ namespace embree
 
     for (; g<numTotalGroups; g++) 
       {
-	if (unlikely(scene->get(g) == NULL)) continue;
-	if (unlikely((scene->get(g)->type != BEZIER_CURVES))) continue;
+	if (unlikely(scene->get(g) == nullptr)) continue;
+	if (unlikely((scene->get(g)->type != Geometry::BEZIER_CURVES))) continue;
 	if (unlikely(!scene->get(g)->isEnabled())) continue;
 
 	BezierCurves* geom = (BezierCurves*) scene->getBezierCurves(g);
 
-        size_t N = geom->numCurves;
+        size_t N = geom->size();
         for (unsigned int i=offset; i<N && currentID < endID; i++, currentID++)	 
         { 			    
 	  const mic2f b2 = geom->bounds_mic2f(i);
 	  const mic_f bmin = b2.x;
 	  const mic_f bmax = b2.y;
+	  bounds_cs.extend(bmin,bmax);	
           
-          bounds_scene_min = min(bounds_scene_min,bmin);
-          bounds_scene_max = max(bounds_scene_max,bmax);
-          const mic_f centroid2 = bmin+bmax;
-          bounds_centroid_min = min(bounds_centroid_min,centroid2);
-          bounds_centroid_max = max(bounds_centroid_max,centroid2);
-
 	  bptr[currentID].p = geom->fristVertexPtr(i); // FIXME: this does not support strides!!
           bptr[currentID].geomID = g;
           bptr[currentID].primID = i;
@@ -164,13 +154,8 @@ namespace embree
       }
 
     /* update global bounds */
-    Centroid_Scene_AABB bounds;
+    Centroid_Scene_AABB bounds (bounds_cs);
     
-    store4f(&bounds.centroid2.lower,bounds_centroid_min);
-    store4f(&bounds.centroid2.upper,bounds_centroid_max);
-    store4f(&bounds.geometry.lower,bounds_scene_min);
-    store4f(&bounds.geometry.upper,bounds_scene_max);
-
     global_bounds.extend_atomic(bounds);    
   }
 
@@ -200,21 +185,21 @@ namespace embree
       
     // === allocated memory for primrefs,nodes, and accel ===
     const size_t size_primrefs = numPrims * sizePrimRefInBytes + additional_size;
-    const size_t size_node     = (double)(numNodes * sizeNodeInBytes + additional_size) * g_memory_preallocation_factor;
+    const size_t size_node     = (double)(numNodes * sizeNodeInBytes + additional_size) * State::instance()->memory_preallocation_factor;
     const size_t size_accel    = numPrims * sizeAccelInBytes   + additional_size;
 
     numAllocated64BytesBlocks = size_node / sizeof(BVH4Hair::UnalignedNode); // FIXME: do memory handling in 64 byte blocks
-      
-#if DEBUG
-    DBG_PRINT(numAllocated64BytesBlocks);
-    DBG_PRINT(sizeNodeInBytes);
-    DBG_PRINT(sizePrimRefInBytes);
-    DBG_PRINT(sizeAccelInBytes);
 
-    DBG_PRINT(size_primrefs);
-    DBG_PRINT(size_node);
-    DBG_PRINT(size_accel);
-#endif
+    DBG(
+	PRINT(numAllocated64BytesBlocks);
+	PRINT(sizeNodeInBytes);
+	PRINT(sizePrimRefInBytes);
+	PRINT(sizeAccelInBytes);
+	
+	PRINT(size_primrefs);
+	PRINT(size_node);
+	PRINT(size_accel);
+	);
 
     prims = (Bezier1i                 *) os_malloc(size_primrefs); 
     node  = (BVH4Hair::UnalignedNode  *) os_malloc(size_node);
@@ -243,184 +228,18 @@ namespace embree
     const unsigned int startID = current.begin + ((threadID+0)*items/numThreads);
     const unsigned int endID   = current.begin + ((threadID+1)*items/numThreads);
 
-    const mic_f centroidMin = broadcast4to16f(&current.bounds.centroid2.lower);
-    const mic_f centroidMax = broadcast4to16f(&current.bounds.centroid2.upper);
-
-    const mic_f centroidBoundsMin_2 = centroidMin;
-    const mic_f centroidDiagonal_2  = centroidMax-centroidMin;
-    const mic_f scale = select(centroidDiagonal_2 != 0.0f,rcp(centroidDiagonal_2) * mic_f(16.0f * 0.99f),mic_f::zero());
+    const BinMapping mapping(current.bounds);  
 
     Bezier1i  *__restrict__ const tmp_prims = (Bezier1i*)accel;
 
-    fastbin_copy<Bezier1i,false>(prims,tmp_prims,startID,endID,centroidBoundsMin_2,scale,global_bin16[threadID]);    
+    fastbin<Bezier1i>(prims,startID,endID,mapping,global_bin16[threadID]);    
 
     scene->lockstep_scheduler.syncThreadsWithReduction( threadID, numThreads, reduceBinsParallel, global_bin16 );
     
     if (threadID == 0)
       {
-	const float voxelArea = area(current.bounds.geometry);
-
-	global_sharedData.split.cost = items * voxelArea * INTERSECTION_COST;;
-	
-	const Bin16 &bin16 = global_bin16[0];
-
-	for (size_t dim=0;dim<3;dim++)
-	  {
-	    if (unlikely(centroidDiagonal_2[dim] == 0.0f)) continue;
-
-	    const mic_f rArea = prefix_area_rl(bin16.min_x[dim],bin16.min_y[dim],bin16.min_z[dim],
-					       bin16.max_x[dim],bin16.max_y[dim],bin16.max_z[dim]);
-	    const mic_f lArea = prefix_area_lr(bin16.min_x[dim],bin16.min_y[dim],bin16.min_z[dim],
-					       bin16.max_x[dim],bin16.max_y[dim],bin16.max_z[dim]);
-	    const mic_i lnum  = prefix_count(bin16.count[dim]);
-
-	    const mic_i rnum    = mic_i(items) - lnum;
-	    const mic_i lblocks = (lnum + mic_i(3)) >> 2;
-	    const mic_i rblocks = (rnum + mic_i(3)) >> 2;
-	    const mic_m m_lnum  = lnum == 0;
-	    const mic_m m_rnum  = rnum == 0;
-	    const mic_f cost    = select(m_lnum|m_rnum,mic_f::inf(),lArea * mic_f(lblocks) + rArea * mic_f(rblocks) + voxelArea );
-
-	    if (lt(cost,mic_f(global_sharedData.split.cost)))
-	      {
-
-		const mic_f min_cost    = vreduce_min(cost); 
-		const mic_m m_pos       = min_cost == cost;
-		const unsigned long pos = bitscan64(m_pos);	    
-		
-		assert(pos < 15);
-		if (pos < 15)
-		  {
-		    global_sharedData.split.cost    = cost[pos];
-		    global_sharedData.split.pos     = pos+1;
-		    global_sharedData.split.dim     = dim;	    
-		    global_sharedData.split.numLeft = lnum[pos];
-		  }
-	      }
-	  }
+	global_sharedData.split = global_bin16[0].bestSplit(current,mapping.getValidDimMask());
       }
-  }
-
-
-  void BVH4HairBuilder::parallelPartitioning(BuildRecord& current,
-					  Bezier1i * __restrict__ l_source,
-					  Bezier1i * __restrict__ r_source,
-					  Bezier1i * __restrict__ l_dest,
-					  Bezier1i * __restrict__ r_dest,
-					  const Split &split,
-					  Centroid_Scene_AABB &local_left,
-					  Centroid_Scene_AABB &local_right)
-  {
-    const mic_f centroidMin = broadcast4to16f(&current.bounds.centroid2.lower);
-    const mic_f centroidMax = broadcast4to16f(&current.bounds.centroid2.upper);
-
-    const mic_f centroidBoundsMin_2 = centroidMin;
-    const mic_f centroidDiagonal_2  = centroidMax-centroidMin;
-    const mic_f scale = select(centroidDiagonal_2 != 0.0f,rcp(centroidDiagonal_2) * mic_f(16.0f * 0.99f),mic_f::zero());
- 
-    const unsigned int bestSplitDim = split.dim;
-    const unsigned int bestSplit    = split.pos;
-
-    const mic_f c = mic_f(centroidBoundsMin_2[bestSplitDim]);
-    const mic_f s = mic_f(scale[bestSplitDim]);
-
-    mic_f leftSceneBoundsMin((float)pos_inf);
-    mic_f leftSceneBoundsMax((float)neg_inf);
-    mic_f leftCentroidBoundsMin((float)pos_inf);
-    mic_f leftCentroidBoundsMax((float)neg_inf);
-
-    mic_f rightSceneBoundsMin((float)pos_inf);
-    mic_f rightSceneBoundsMax((float)neg_inf);
-    mic_f rightCentroidBoundsMin((float)pos_inf);
-    mic_f rightCentroidBoundsMax((float)neg_inf);
-
-    const mic_m dim_mask = mic_m::shift1[bestSplitDim];
-
-    for (;l_source<r_source;)
-      {
-	evictL1(l_source-2);	
-	    
-	prefetch<PFHINT_NT>(l_source+2);
-	prefetch<PFHINT_L2>(l_source + L2_PREFETCH_ITEMS + 4);
-
-	const mic2f b = l_source->getBounds();
-	const mic_f b_min = b.x;
-	const mic_f b_max = b.y;
-	// const mic_f b_min = broadcast4to16f(&l_source->lower);
-	// const mic_f b_max = broadcast4to16f(&l_source->upper);
-	const mic_f b_centroid2 = b_min + b_max;
-
-	if (likely(lt_split(b_min,b_max,dim_mask,c,s,mic_f(bestSplit)))) 
-	  {
-	    *l_dest++ = *l_source++;
-
-	    leftSceneBoundsMin = min(leftSceneBoundsMin,b_min);
-	    leftSceneBoundsMax = max(leftSceneBoundsMax,b_max);
-
-	    leftCentroidBoundsMin = min(leftCentroidBoundsMin,b_centroid2);
-	    leftCentroidBoundsMax = max(leftCentroidBoundsMax,b_centroid2);
-	    
-	  }
-	else
-	  {
-	    *r_dest++ = *l_source++;
-
-	    rightSceneBoundsMin = min(rightSceneBoundsMin,b_min);
-	    rightSceneBoundsMax = max(rightSceneBoundsMax,b_max);
-	    rightCentroidBoundsMin = min(rightCentroidBoundsMin,b_centroid2);
-	    rightCentroidBoundsMax = max(rightCentroidBoundsMax,b_centroid2);
-	  }
-      }
-    
-    store4f(&local_left.geometry.lower,leftSceneBoundsMin);
-    store4f(&local_left.geometry.upper,leftSceneBoundsMax);
-    store4f(&local_left.centroid2.lower,leftCentroidBoundsMin);
-    store4f(&local_left.centroid2.upper,leftCentroidBoundsMax);
-
-    store4f(&local_right.geometry.lower,rightSceneBoundsMin);
-    store4f(&local_right.geometry.upper,rightSceneBoundsMax);
-    store4f(&local_right.centroid2.lower,rightCentroidBoundsMin);
-    store4f(&local_right.centroid2.upper,rightCentroidBoundsMax);
-
-
-  }
-
-  void BVH4HairBuilder::parallelPartitioningGlobal(const size_t threadID, const size_t numThreads)
-  {
-    BuildRecord &current = global_sharedData.rec;
-
-    const unsigned int items = current.items();
-    const unsigned int startID = current.begin + ((threadID+0)*items/numThreads);
-    const unsigned int endID   = current.begin + ((threadID+1)*items/numThreads);
-   
- 
-    const unsigned int bestSplitDim     = global_sharedData.split.dim;
-    const unsigned int bestSplit        = global_sharedData.split.pos;
-    const unsigned int bestSplitNumLeft = global_sharedData.split.numLeft;
-
-
-    const mic_i lnum    = prefix_sum(global_bin16[threadID].thread_count[bestSplitDim]);
-    const unsigned int local_numLeft = lnum[bestSplit-1];
-    const unsigned int local_numRight = (endID-startID) - lnum[bestSplit-1];
- 
-    const unsigned int thread_start_left  = global_sharedData.lCounter.add(local_numLeft);
-    const unsigned int thread_start_right = global_sharedData.rCounter.add(local_numRight);
-
-    Bezier1i  *__restrict__ const tmp_prims = (Bezier1i*)accel;
-
-    Bezier1i * __restrict__ l_source = tmp_prims + startID;
-    Bezier1i * __restrict__ r_source = tmp_prims + endID;
-
-    Bezier1i * __restrict__ l_dest     = prims + current.begin + thread_start_left;
-    Bezier1i * __restrict__ r_dest     = prims + current.begin + thread_start_right + bestSplitNumLeft;
-
-    __aligned(64) Centroid_Scene_AABB local_left;
-    __aligned(64) Centroid_Scene_AABB local_right; // just one local
-
-    parallelPartitioning(current,l_source,r_source,l_dest,r_dest,global_sharedData.split,local_left,local_right);
-
-    global_sharedData.left.extend_atomic(local_left); 
-    global_sharedData.right.extend_atomic(local_right);  
   }
 
 
@@ -433,16 +252,9 @@ namespace embree
     const unsigned int startID = current.begin + ((localThreadID+0)*items/4);
     const unsigned int endID   = current.begin + ((localThreadID+1)*items/4);
     
-    const mic_f centroidMin = broadcast4to16f(&current.bounds.centroid2.lower);
-    const mic_f centroidMax = broadcast4to16f(&current.bounds.centroid2.upper);
+    const BinMapping mapping(current.bounds);
 
-    const mic_f centroidBoundsMin_2 = centroidMin;
-    const mic_f centroidDiagonal_2  = centroidMax-centroidMin;
-    const mic_f scale = select(centroidDiagonal_2 != 0.0f,rcp(centroidDiagonal_2) * mic_f(16.0f * 0.99f),mic_f::zero());
-
-    Bezier1i  *__restrict__ const tmp_prims = (Bezier1i*)accel;
-
-    fastbin_copy<Bezier1i,false>(prims,tmp_prims,startID,endID,centroidBoundsMin_2,scale,global_bin16[globalThreadID]);    
+    fastbin<Bezier1i>(prims,startID,endID,mapping,global_bin16[globalThreadID]);    
 
     localTaskScheduler[globalCoreID].syncThreads(localThreadID);
 
@@ -453,91 +265,9 @@ namespace embree
 	for (size_t i=1;i<4;i++)
 	  bin16.merge(global_bin16[globalThreadID+i]);
 
-	const float voxelArea = area(current.bounds.geometry);
-
-	local_sharedData[globalCoreID].split.cost = items * voxelArea * INTERSECTION_COST;	
-
-	for (size_t dim=0;dim<3;dim++)
-	  {
-	    if (unlikely(centroidDiagonal_2[dim] == 0.0f)) continue;
-
-	    const mic_f rArea = prefix_area_rl(bin16.min_x[dim],bin16.min_y[dim],bin16.min_z[dim],
-					       bin16.max_x[dim],bin16.max_y[dim],bin16.max_z[dim]);
-	    const mic_f lArea = prefix_area_lr(bin16.min_x[dim],bin16.min_y[dim],bin16.min_z[dim],
-					       bin16.max_x[dim],bin16.max_y[dim],bin16.max_z[dim]);
-	    const mic_i lnum  = prefix_count(bin16.count[dim]);
-
-	    const mic_i rnum    = mic_i(items) - lnum;
-	    const mic_i lblocks = (lnum + mic_i(3)) >> 2;
-	    const mic_i rblocks = (rnum + mic_i(3)) >> 2;
-	    const mic_m m_lnum  = lnum == 0;
-	    const mic_m m_rnum  = rnum == 0;
-	    const mic_f cost    = select(m_lnum|m_rnum,mic_f::inf(),lArea * mic_f(lblocks) + rArea * mic_f(rblocks) + voxelArea );
-
-	    if (lt(cost,mic_f(local_sharedData[globalCoreID].split.cost)))
-	      {
-
-		const mic_f min_cost    = vreduce_min(cost); 
-		const mic_m m_pos       = min_cost == cost;
-		const unsigned long pos = bitscan64(m_pos);	    
-
-		assert(pos < 15);
-		if (pos < 15)
-		  {
-		    local_sharedData[globalCoreID].split.cost    = cost[pos];
-		    local_sharedData[globalCoreID].split.pos     = pos+1;
-		    local_sharedData[globalCoreID].split.dim     = dim;	    
-		    local_sharedData[globalCoreID].split.numLeft = lnum[pos];
-		  }
-	      }
-	  }
+	local_sharedData[globalCoreID].split = bin16.bestSplit(current,mapping.getValidDimMask());
       }
 
-  }
-
-
-  void BVH4HairBuilder::parallelPartitioningLocal(const size_t localThreadID,const size_t globalThreadID)
-  {
-    const size_t threads = 4;
-    const size_t globalCoreID = globalThreadID/threads;
-
-    SharedBinningPartitionData &sd = local_sharedData[globalCoreID];    
-    BuildRecord &current = sd.rec;
-    Bin16 &bin16 = global_bin16[globalThreadID];
-
-    // ----------------------------------------------
-
-    const unsigned int items = current.items();
-    const unsigned int startID = current.begin + ((localThreadID+0)*items/threads);
-    const unsigned int endID   = current.begin + ((localThreadID+1)*items/threads);
-   
-    const unsigned int bestSplitDim     = sd.split.dim;
-    const unsigned int bestSplit        = sd.split.pos;
-    const unsigned int bestSplitNumLeft = sd.split.numLeft;
-
-    const mic_i lnum    = prefix_sum(bin16.thread_count[bestSplitDim]);
-    const unsigned int local_numLeft = lnum[bestSplit-1];
-    const unsigned int local_numRight = (endID-startID) - lnum[bestSplit-1];
- 
-    const unsigned int thread_start_left  = sd.lCounter.add(local_numLeft);
-    const unsigned int thread_start_right = sd.rCounter.add(local_numRight);
-
-    Bezier1i  *__restrict__ const tmp_prims = (Bezier1i*)accel;
-
-    Bezier1i * __restrict__ l_source = tmp_prims + startID;
-    Bezier1i * __restrict__ r_source = tmp_prims + endID;
-
-    Bezier1i * __restrict__ l_dest     = prims + current.begin + thread_start_left;
-    Bezier1i * __restrict__ r_dest     = prims + current.begin + thread_start_right + bestSplitNumLeft;
-
-    __aligned(64) Centroid_Scene_AABB local_left;
-    __aligned(64) Centroid_Scene_AABB local_right; 
-
-    parallelPartitioning(current,l_source,r_source,l_dest,r_dest,sd.split,local_left,local_right);
-
-    sd.left.extend_atomic(local_left); 
-    sd.right.extend_atomic(local_right);  
-    
   }
 
 
@@ -551,10 +281,10 @@ namespace embree
     const size_t totalNumPrimitives = getNumPrimitives();
 
 
-    DBG(DBG_PRINT(totalNumPrimitives));
+    DBG(PRINT(totalNumPrimitives));
 
     /* print builder name */
-    if (unlikely(g_verbose >= 2)) 
+    if (unlikely(State::instance()->verbosity(2))) 
       printBuilderName();
 
     if (likely(totalNumPrimitives == 0))
@@ -562,7 +292,7 @@ namespace embree
 	DBG(std::cout << "EMPTY SCENE BUILD" << std::endl);
 	bvh4hair->root = BVH4Hair::invalidNode;
 	bvh4hair->bounds = empty;
-	bvh4hair->accel = NULL;
+	bvh4hair->accel = nullptr;
 	return;
       }
 
@@ -584,7 +314,7 @@ namespace embree
 	build_main(0,1);
       }
 
-    if (g_verbose >= 2) {
+    if (State::instance()->verbosity(2)) {
       double perf = totalNumPrimitives/dt*1E-6;
       std::cout << "[DONE] " << 1000.0f*dt << "ms (" << perf << " Mtris/s), primitives " << numPrimitives << std::endl;
       std::cout << BVH4HairStatistics<BVH4Hair::UnalignedNode>(bvh4hair).str();
@@ -604,7 +334,7 @@ namespace embree
     /* start measurement */
     double t0 = 0.0f;
 #if !defined(PROFILE)
-    if (g_verbose >= 2) 
+    if (State::instance()->verbosity(2)) 
 #endif
       t0 = getSeconds();
 
@@ -660,7 +390,7 @@ namespace embree
     /* now process all created subtasks on multiple threads */    
     TIMER(msec = getSeconds());    
     scene->lockstep_scheduler.dispatchTask(task_buildSubTrees, this, threadIndex, threadCount );
-    DBG(DBG_PRINT(atomicID));
+    DBG(PRINT(atomicID));
     TIMER(msec = getSeconds()-msec);    
     TIMER(std::cout << "task_buildSubTrees " << 1000. * msec << " ms" << std::endl << std::flush);
 
@@ -674,7 +404,7 @@ namespace embree
     bvh4hair->accel            = prims;
 
     /* stop measurement */
-    if (g_verbose >= 2) 
+    if (State::instance()->verbosity(2)) 
       dt = getSeconds()-t0;
   }
 
@@ -706,7 +436,7 @@ namespace embree
 
    if (unlikely(mode == BUILD_TOP_LEVEL))
       {
-	DBG(DBG_PRINT("TOP_LEVEL"));
+	DBG(PRINT("TOP_LEVEL"));
 
 	if (current.items() >= BUILD_RECORD_PARALLEL_SPLIT_THRESHOLD && numThreads > 1)
 	  return splitParallelGlobal(current,left,right,threadID,numThreads);
@@ -739,60 +469,18 @@ namespace embree
       current.createLeaf();
       return false;
     }
-    
-    const mic_f centroidMin = broadcast4to16f(&current.bounds.centroid2.lower);
-    const mic_f centroidMax = broadcast4to16f(&current.bounds.centroid2.upper);
 
-    const mic_f centroidBoundsMin_2 = centroidMin;
-    const mic_f centroidDiagonal_2  = centroidMax-centroidMin;
-    const mic_f scale = select(centroidDiagonal_2 != 0.0f,rcp(centroidDiagonal_2) * mic_f(16.0f * 0.99f),mic_f::zero());
+    const BinMapping mapping(current.bounds);
 
     mic_f leftArea[3];
     mic_f rightArea[3];
     mic_i leftNum[3];
 
-    fastbin<Bezier1i>(prims,current.begin,current.end,centroidBoundsMin_2,scale,leftArea,rightArea,leftNum);
+    fastbin<Bezier1i>(prims,current.begin,current.end,mapping,leftArea,rightArea,leftNum);
 
-    const unsigned int items = current.items();
-    const float voxelArea = area(current.bounds.geometry);
-    Split split;
-    split.cost = items * voxelArea * INTERSECTION_COST;;
+    const Split split = getBestSplit(current,leftArea,rightArea,leftNum,mapping.getValidDimMask());
 
-    for (size_t dim = 0;dim < 3;dim++) 
-      {
-	if (unlikely(centroidDiagonal_2[dim] == 0.0f)) continue;
-
-	const mic_f rArea   = rightArea[dim]; // bin16.prefix_area_rl(dim);
-	const mic_f lArea   = leftArea[dim];  // bin16.prefix_area_lr(dim);      
-	const mic_i lnum    = leftNum[dim];   // bin16.prefix_count(dim);
-
-	const mic_i rnum    = mic_i(items) - lnum;
-	const mic_i lblocks = (lnum + mic_i(3)) >> 2;
-	const mic_i rblocks = (rnum + mic_i(3)) >> 2;
-	const mic_m m_lnum  = lnum == 0;
-	const mic_m m_rnum  = rnum == 0;
-	const mic_f cost    = select(m_lnum|m_rnum,mic_f::inf(),lArea * mic_f(lblocks) + rArea * mic_f(rblocks) + voxelArea );
-
-	if (lt(cost,mic_f(split.cost)))
-	  {
-
-	    const mic_f min_cost    = vreduce_min(cost); 
-	    const mic_m m_pos       = min_cost == cost;
-	    const unsigned long pos = bitscan64(m_pos);	    
-
-	    assert(pos < 15);
-
-	    if (pos < 15)
-	      {
-		split.cost    = cost[pos];
-		split.pos     = pos+1;
-		split.dim     = dim;	    
-		split.numLeft = lnum[pos];
-	      }
-	  }
-      };
-
-    if (unlikely(split.pos == -1)) 
+    if (unlikely(split.invalid())) 
       split_fallback(prims,current,leftChild,rightChild);
    // /* partitioning of items */
     else 
@@ -800,7 +488,8 @@ namespace embree
 	leftChild.bounds.reset();
 	rightChild.bounds.reset();
 
-	const unsigned int mid = partitionPrimitives<L2_PREFETCH_ITEMS>(prims ,current.begin, current.end-1, split.pos, split.dim, centroidBoundsMin_2, scale, leftChild.bounds, rightChild.bounds);
+	const BinPartitionMapping mapping(split,current.bounds);
+	const unsigned int mid = partitionPrimitives<Bezier1i,false>(&prims[current.begin] ,current.size(), mapping, leftChild.bounds, rightChild.bounds);
 
 	assert(area(leftChild.bounds.geometry) >= 0.0f);
 	//assert(current.begin + mid == current.begin + split.numLeft) // can happen
@@ -808,9 +497,9 @@ namespace embree
 	if (unlikely(current.begin + mid == current.begin || current.begin + mid == current.end)) 
 	  {
 	    std::cout << "WARNING: mid == current.begin || mid == current.end " << std::endl;
-	    DBG_PRINT(split);
-	    DBG_PRINT(current);
-	    DBG_PRINT(mid);
+	    PRINT(split);
+	    PRINT(current);
+	    PRINT(mid);
 	    split_fallback(prims,current,leftChild,rightChild);	    
 	  }
 	else
@@ -854,26 +543,34 @@ namespace embree
      
      scene->lockstep_scheduler.dispatchTask( task_parallelBinningGlobal, this, threadID, numThreads );
 
-     if (unlikely(global_sharedData.split.pos == -1)) 
+     if (unlikely(global_sharedData.split.invalid())) 
        split_fallback(prims,current,leftChild,rightChild);
      else
        {
 	 global_sharedData.left.reset();
 	 global_sharedData.right.reset();
 
-	 global_sharedData.lCounter.reset(0);
-	 global_sharedData.rCounter.reset(0); 
+	 const BinPartitionMapping mapping(global_sharedData.split,global_sharedData.rec.bounds);
 
-	 scene->lockstep_scheduler.dispatchTask( task_parallelPartitioningGlobal, this, threadID, numThreads );
+	 auto part = [&] (Bezier1i* const t_array,
+			  const size_t size) 
+	   {             
+	    return partitionPrimitives<Bezier1i,true>(t_array,size,mapping,global_sharedData.left,global_sharedData.right);
+	   };
 
-	 const unsigned int mid = current.begin + global_sharedData.split.numLeft;
+	 size_t mid_parallel = parallel_in_place_partitioning_static<Bezier1i>(&prims[current.begin],
+									       current.size(),
+									       part,
+									       scene->lockstep_scheduler);
+
+	const unsigned int mid = current.begin + mid_parallel;
 
 	if (unlikely(current.begin == mid || mid == current.end)) 
 	  {
 	    std::cout << "WARNING: mid == current.begin || mid == current.end " << std::endl;
-	    DBG_PRINT(global_sharedData.split);
-	    DBG_PRINT(current);
-	    DBG_PRINT(mid);
+	    PRINT(global_sharedData.split);
+	    PRINT(current);
+	    PRINT(mid);
 	    split_fallback(prims,current,leftChild,rightChild);	    
 	  }
 	else
@@ -916,7 +613,7 @@ namespace embree
 
     localTaskScheduler[globalCoreID].dispatchTask( task_parallelBinningLocal, this, localThreadID, globalThreadID );
 
-    if (unlikely(sd.split.pos == -1)) 
+    if (unlikely(sd.split.invalid())) 
       split_fallback(prims,current,leftChild,rightChild);
     else
       {
@@ -924,19 +621,27 @@ namespace embree
 	 sd.left.reset();
 	 sd.right.reset();
 
-	 sd.lCounter.reset(0);
-	 sd.rCounter.reset(0); 
+	 const BinPartitionMapping mapping(sd.split,sd.rec.bounds);
 
-	 localTaskScheduler[globalCoreID].dispatchTask( task_parallelPartitioningLocal, this, localThreadID, globalThreadID );
+	 auto part = [&] (Bezier1i* const t_array,
+			  const size_t size) 
+	   {               
+	    return partitionPrimitives<Bezier1i,true>(t_array,size,mapping,sd.left,sd.right);
+	   };
 
-	 const unsigned int mid = current.begin + sd.split.numLeft;
+	 size_t mid_parallel = parallel_in_place_partitioning_static<Bezier1i>(&prims[sd.rec.begin],
+									       current.size(),
+									       part,
+									       localTaskScheduler[globalCoreID]);
+	 const unsigned int mid = current.begin + mid_parallel;
+
 
 	 if (unlikely(mid == current.begin || mid == current.end)) 
 	   {
 	     std::cout << "WARNING: mid == current.begin || mid == current.end " << std::endl;
-	     DBG_PRINT(sd.split);
-	     DBG_PRINT(current);
-	     DBG_PRINT(mid);
+	     PRINT(sd.split);
+	     PRINT(current);
+	     PRINT(mid);
 	     split_fallback(prims,current,leftChild,rightChild);	    
 	   }
 	 else
@@ -1076,7 +781,7 @@ namespace embree
       recurse(children[i],alloc,mode,threadID,numThreads);
     }    
 
-    DBG(DBG_PRINT(*current_node));
+    DBG(PRINT(*current_node));
 
   }
 
@@ -1156,7 +861,7 @@ namespace embree
 
       /*! split best child into left and right child */
       __aligned(64) BuildRecordOBB left, right;
-      if (!splitSequentialOBB(children[bestChild],left,right,false)) 
+      if (!splitSequentialOBB(children[bestChild],left,right)) 
         continue;
       
       /* add new children left and right */
@@ -1238,10 +943,10 @@ namespace embree
   }
 
 
-  __forceinline bool BVH4HairBuilder::splitSequentialOBB(BuildRecordOBB& current, BuildRecordOBB& leftChild, BuildRecordOBB& rightChild, const bool binAABB)
+  __forceinline bool BVH4HairBuilder::splitSequentialOBB(BuildRecordOBB& current, BuildRecordOBB& leftChild, BuildRecordOBB& rightChild)
   {
     DBG(PING);
-    DBG(DBG_PRINT(current));
+    DBG(PRINT(current));
 
     //computeUnalignedSpace(current);
     //computeUnalignedSpaceBounds(current);
@@ -1254,17 +959,8 @@ namespace embree
 
 
     const unsigned int items = current.items();
-    const float voxelArea = area(current.bounds.geometry); 
-
-    Split split;
-    split.cost = items * voxelArea * INTERSECTION_COST;;
-    
-    const mic_f centroidMin = broadcast4to16f(&current.bounds.centroid2.lower);
-    const mic_f centroidMax = broadcast4to16f(&current.bounds.centroid2.upper);
-
-    const mic_f centroidBoundsMin_2 = centroidMin;
-    const mic_f centroidDiagonal_2  = centroidMax-centroidMin;
-    const mic_f scale = select(centroidDiagonal_2 != 0.0f,rcp(centroidDiagonal_2) * mic_f(16.0f * 0.99f),mic_f::zero());
+    const float voxelArea = area(current.bounds.geometry);     
+    const BinMapping mapping(current.bounds);
 
     mic_f leftArea[3];
     mic_f rightArea[3];
@@ -1273,81 +969,12 @@ namespace embree
 
     const mic3f cmat = convert(current.xfm);
     
-    fastbin_xfm<Bezier1i>(prims,cmat,current.begin,current.end,centroidBoundsMin_2,scale,leftArea,rightArea,leftNum);
+    fastbin_xfm<Bezier1i>(prims,cmat,current.begin,current.end,mapping,leftArea,rightArea,leftNum);
 
 
-    for (size_t dim = 0;dim < 3;dim++) 
-      {
-	if (unlikely(centroidDiagonal_2[dim] == 0.0f)) continue;
+    Split split = getBestSplit(current,leftArea,rightArea,leftNum,mapping.getValidDimMask());
 
-	const mic_f rArea   = rightArea[dim]; // bin16.prefix_area_rl(dim);
-	const mic_f lArea   = leftArea[dim];  // bin16.prefix_area_lr(dim);      
-	const mic_i lnum    = leftNum[dim];   // bin16.prefix_count(dim);
-
-	const mic_i rnum    = mic_i(items) - lnum;
-	const mic_i lblocks = (lnum + mic_i(3)) >> 2;
-	const mic_i rblocks = (rnum + mic_i(3)) >> 2;
-	const mic_m m_lnum  = lnum == 0;
-	const mic_m m_rnum  = rnum == 0;
-	const mic_f cost    = select(m_lnum|m_rnum,mic_f::inf(),lArea * mic_f(lblocks) + rArea * mic_f(rblocks) + voxelArea );
-
-	if (lt(cost,mic_f(split.cost)))
-	  {
-	    const mic_f min_cost    = vreduce_min(cost); 
-	    const mic_m m_pos       = min_cost == cost;
-	    const unsigned long pos = bitscan64(m_pos);	    
-	    assert(pos < 15);
-	    if (pos < 15)
-	      {
-		split.cost    = cost[pos];
-		split.pos     = pos+1;
-		split.dim     = dim;	    
-		split.numLeft = lnum[pos];
-	      }
-	  }
-      };
-
-    if (binAABB)
-      {
-	Split splitAABB;
-	splitAABB.cost = items * voxelArea * INTERSECTION_COST;
-
-	fastbin<Bezier1i>(prims,current.begin,current.end,centroidBoundsMin_2,scale,leftArea,rightArea,leftNum);
-
-	for (size_t dim = 0;dim < 3;dim++) 
-	  {
-	    if (unlikely(centroidDiagonal_2[dim] == 0.0f)) continue;
-
-	    const mic_f rArea   = rightArea[dim]; // bin16.prefix_area_rl(dim);
-	    const mic_f lArea   = leftArea[dim];  // bin16.prefix_area_lr(dim);      
-	    const mic_i lnum    = leftNum[dim];   // bin16.prefix_count(dim);
-
-	    const mic_i rnum    = mic_i(items) - lnum;
-	    const mic_i lblocks = (lnum + mic_i(3)) >> 2;
-	    const mic_i rblocks = (rnum + mic_i(3)) >> 2;
-	    const mic_m m_lnum  = lnum == 0;
-	    const mic_m m_rnum  = rnum == 0;
-	    const mic_f cost    = select(m_lnum|m_rnum,mic_f::inf(),lArea * mic_f(lblocks) + rArea * mic_f(rblocks) + voxelArea );
-
-	    if (lt(cost,mic_f(splitAABB.cost)))
-	      {
-		const mic_f min_cost    = vreduce_min(cost); 
-		const mic_m m_pos       = min_cost == cost;
-		const unsigned long pos = bitscan64(m_pos);	    
-		assert(pos < 15);
-		if (pos < 15)
-		  {
-		    splitAABB.cost    = cost[pos];
-		    splitAABB.pos     = pos+1;
-		    splitAABB.dim     = dim;	    
-		    splitAABB.numLeft = lnum[pos];
-		  }
-	      }
-	  };
-
-      }
-
-    if (unlikely(split.pos == -1)) 
+    if (unlikely(split.invalid())) 
       {
 	split_fallback(prims,current,leftChild,rightChild);
       }
@@ -1357,7 +984,8 @@ namespace embree
 	leftChild.bounds.reset();
 	rightChild.bounds.reset();
 
-	const unsigned int mid = partitionPrimitives_xfm<L2_PREFETCH_ITEMS>(prims,cmat,current.begin, current.end-1, split.pos, split.dim, centroidBoundsMin_2, scale, leftChild.bounds, rightChild.bounds);
+	const BinPartitionMapping mapping(split,current.bounds);
+	const unsigned int mid = partitionPrimitives_xfm<L2_PREFETCH_ITEMS>(prims,cmat,current.begin, current.end, mapping, leftChild.bounds, rightChild.bounds);
 
 	assert(area(leftChild.bounds.geometry) >= 0.0f);
 	assert(current.begin + mid == current.begin + split.numLeft);
@@ -1365,9 +993,9 @@ namespace embree
 	if (unlikely(current.begin + mid == current.begin || current.begin + mid == current.end)) 
 	  {
 	    std::cout << "WARNING: mid == current.begin || mid == current.end " << std::endl;
-	    DBG_PRINT(split);
-	    DBG_PRINT(current);
-	    DBG_PRINT(mid);
+	    PRINT(split);
+	    PRINT(current);
+	    PRINT(mid);
 	    split_fallback(prims,current,leftChild,rightChild);	    
 	  }
 	else
@@ -1415,13 +1043,7 @@ namespace embree
 
     current.PreQuantizeMatrix();
 
-#if 0
-    PING;
-    DBG_PRINT( current.xfm );
-    DBG_PRINT( current.xfm );
-
-#endif
-    DBG(DBG_PRINT(current.xfm));
+    DBG(PRINT(current.xfm));
   }
 
   __forceinline void BVH4HairBuilder::computeUnalignedSpaceBounds( BuildRecordOBB& current )
@@ -1465,10 +1087,10 @@ namespace embree
 		const Vec3fa xfm_v = xfmPoint(current.xfm,v);
 		if (disjoint(current.bounds.geometry,xfm_v))
 		  {
-		    DBG_PRINT(v);
-		    DBG_PRINT(xfm_v);
-		    DBG_PRINT(current.xfm);
-		    DBG_PRINT(current.bounds.geometry);
+		    PRINT(v);
+		    PRINT(xfm_v);
+		    PRINT(current.xfm);
+		    PRINT(current.bounds.geometry);
 		    exit(0);
 		  }
 	      }

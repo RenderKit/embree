@@ -17,7 +17,9 @@
 #pragma once
 
 #include "platform.h"
-#include "sync/mutex.h"
+#include "mutex.h"
+
+#include <vector>
 
 namespace embree
 {
@@ -64,18 +66,23 @@ namespace embree
   public:
 
     __forceinline ThreadLocalData (void* init) 
-      : ptr(NULL), init(init) {}
+      : ptr(nullptr), init(init) {}
 
-    __forceinline ~ThreadLocalData () 
+    __forceinline ~ThreadLocalData () {
+      clear();
+    }
+
+    __forceinline void clear() 
     {
-      if (ptr) destroyTls(ptr);
+      if (ptr) destroyTls(ptr); ptr = nullptr;
       for (size_t i=0; i<threads.size(); i++)
 	delete threads[i];
+      threads.clear();
     }
 
     /*! disallow copy */
-    ThreadLocalData(const ThreadLocalData&) = delete;
-    ThreadLocalData& operator=(const ThreadLocalData&) = delete;
+    //ThreadLocalData(const ThreadLocalData&) = delete;
+    //ThreadLocalData& operator=(const ThreadLocalData&) = delete;
 
     __forceinline void reset()
     {
@@ -85,12 +92,12 @@ namespace embree
     
     __forceinline Type* get() const
     {
-      if (ptr == NULL) {
+      if (ptr == nullptr) {
 	Lock<AtomicMutex> lock(mutex);
-	if (ptr == NULL) ptr = createTls();
+	if (ptr == nullptr) ptr = createTls();
       }
       Type* lptr = (Type*) getTls(ptr);
-      if (unlikely(lptr == NULL)) {
+      if (unlikely(lptr == nullptr)) {
 	setTls(ptr,lptr = new Type(init));
 	Lock<AtomicMutex> lock(mutex);
 	threads.push_back(lptr);

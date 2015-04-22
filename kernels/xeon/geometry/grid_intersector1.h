@@ -29,7 +29,7 @@ namespace embree
       typedef Grid::LazyLeaf Primitive;
       
       struct Precalculations {
-        __forceinline Precalculations (const Ray& ray) {}
+        __forceinline Precalculations (const Ray& ray, const void *ptr) {}
       };
       
       static __forceinline void intersect(const Precalculations& pre, Ray& ray, Primitive& prim, const Scene* scene, size_t& lazy_node) {
@@ -48,7 +48,7 @@ namespace embree
       
       struct Precalculations 
       {
-        __forceinline Precalculations (const Ray& ray) 
+        __forceinline Precalculations (const Ray& ray, const void *ptr) 
         {
 #if defined (__AVX__)
           
@@ -143,14 +143,14 @@ namespace embree
         const sse3f t000_start = shuffle<0,1,3,0>(p00), t000_end = shuffle<1,3,0,0>(p00);
         const sse3f e000 = t000_end - t000_start;
         const sse3f s000 = t000_end + t000_start;
-        const ssef  u000 = dot(cross(e000,s000),DDDD);
+        const ssef  u000 = dot(cross(s000,e000),DDDD);
         if (all(ge_mask(Vec3fa(u000),Vec3fa(0.0f))) || all(le_mask(Vec3fa(u000),Vec3fa(0.0f)))) 
           intersectFinish(ray, q00,q01,q10,u000,prim);
         
         const sse3f t001_start = shuffle<2,3,1,0>(p00), t001_end = shuffle<3,1,2,0>(p00);
         const sse3f e001 = t001_end - t001_start;
         const sse3f s001 = t001_end + t001_start;
-        const ssef  u001 = dot(cross(e001,s001),DDDD);
+        const ssef  u001 = dot(cross(s001,e001),DDDD);
         if (all(ge_mask(Vec3fa(u001),Vec3fa(0.0f))) || all(le_mask(Vec3fa(u001),Vec3fa(0.0f))))
           intersectFinish(ray,q11,q10,q01,u001,prim);
       }
@@ -174,7 +174,7 @@ namespace embree
         const avx3f t000_t100_start = shuffle<0,1,3,0>(p00_p10), t000_t100_end = shuffle<1,3,0,0>(p00_p10);
         const avx3f e000_e100 = t000_t100_end - t000_t100_start;
         const avx3f s000_s100 = t000_t100_end + t000_t100_start;
-        const avxf  u000_u100 = dot(cross(e000_e100,s000_s100),D8);
+        const avxf  u000_u100 = dot(cross(s000_s100,e000_e100),D8);
         if (all(ge_mask(Vec3fa(extract<0>(u000_u100)),Vec3fa(0.0f))) || all(le_mask(Vec3fa(extract<0>(u000_u100)),Vec3fa(0.0f)))) 
           intersectFinish(ray,q00,q01,q10,extract<0>(u000_u100),prim);
         if (all(ge_mask(Vec3fa(extract<1>(u000_u100)),Vec3fa(0.0f))) || all(le_mask(Vec3fa(extract<1>(u000_u100)),Vec3fa(0.0f)))) 
@@ -183,7 +183,7 @@ namespace embree
         const avx3f t001_t101_start = shuffle<2,3,1,0>(p00_p10), t001_t101_end = shuffle<3,1,2,0>(p00_p10);
         const avx3f e001_e101 = t001_t101_end - t001_t101_start;
         const avx3f s001_s101 = t001_t101_end + t001_t101_start;
-        const avxf  u001_u101 = dot(cross(e001_e101,s001_s101),D8);
+        const avxf  u001_u101 = dot(cross(s001_s101,e001_e101),D8);
         if (all(ge_mask(Vec3fa(extract<0>(u001_u101)),Vec3fa(0.0f))) || all(le_mask(Vec3fa(extract<0>(u001_u101)),Vec3fa(0.0f)))) 
           intersectFinish(ray,q11,q10,q01,extract<0>(u001_u101),prim);
         if (all(ge_mask(Vec3fa(extract<1>(u001_u101)),Vec3fa(0.0f))) || all(le_mask(Vec3fa(extract<1>(u001_u101)),Vec3fa(0.0f)))) 
@@ -324,14 +324,14 @@ namespace embree
         const sse3f t000_start = shuffle<0,1,3,0>(p00), t000_end = shuffle<1,3,0,0>(p00);
         const sse3f e000 = t000_end - t000_start;
         const sse3f s000 = t000_end + t000_start;
-        const ssef  u000 = dot(cross(e000,s000),DDDD);
+        const ssef  u000 = dot(cross(s000,e000),DDDD);
         if (all(ge_mask(Vec3fa(u000),Vec3fa(0.0f))) || all(le_mask(Vec3fa(u000),Vec3fa(0.0f)))) 
           if (occludedFinish(ray, q00,q01,q10,u000,prim)) return true;
         
         const sse3f t001_start = shuffle<2,3,1,0>(p00), t001_end = shuffle<3,1,2,0>(p00);
         const sse3f e001 = t001_end - t001_start;
         const sse3f s001 = t001_end + t001_start;
-        const ssef  u001 = dot(cross(e001,s001),DDDD);
+        const ssef  u001 = dot(cross(s001,e001),DDDD);
         if (all(ge_mask(Vec3fa(u001),Vec3fa(0.0f))) || all(le_mask(Vec3fa(u001),Vec3fa(0.0f))))
           if (occludedFinish(ray,q11,q10,q01,u001,prim)) return true;
         
@@ -357,7 +357,7 @@ namespace embree
         const avx3f t000_t100_start = shuffle<0,1,3,0>(p00_p10), t000_t100_end = shuffle<1,3,0,0>(p00_p10);
         const avx3f e000_e100 = t000_t100_end - t000_t100_start;
         const avx3f s000_s100 = t000_t100_end + t000_t100_start;
-        const avxf  u000_u100 = dot(cross(e000_e100,s000_s100),D8);
+        const avxf  u000_u100 = dot(cross(s000_s100,e000_e100),D8);
         if (all(ge_mask(Vec3fa(extract<0>(u000_u100)),Vec3fa(0.0f))) || all(le_mask(Vec3fa(extract<0>(u000_u100)),Vec3fa(0.0f)))) 
           if (occludedFinish(ray,q00,q01,q10,extract<0>(u000_u100),prim)) return true;
         if (all(ge_mask(Vec3fa(extract<1>(u000_u100)),Vec3fa(0.0f))) || all(le_mask(Vec3fa(extract<1>(u000_u100)),Vec3fa(0.0f)))) 
@@ -366,7 +366,7 @@ namespace embree
         const avx3f t001_t101_start = shuffle<2,3,1,0>(p00_p10), t001_t101_end = shuffle<3,1,2,0>(p00_p10);
         const avx3f e001_e101 = t001_t101_end - t001_t101_start;
         const avx3f s001_s101 = t001_t101_end + t001_t101_start;
-        const avxf  u001_u101 = dot(cross(e001_e101,s001_s101),D8);
+        const avxf  u001_u101 = dot(cross(s001_s101,e001_e101),D8);
         if (all(ge_mask(Vec3fa(extract<0>(u001_u101)),Vec3fa(0.0f))) || all(le_mask(Vec3fa(extract<0>(u001_u101)),Vec3fa(0.0f)))) 
           if (occludedFinish(ray,q11,q10,q01,extract<0>(u001_u101),prim)) return true;
         if (all(ge_mask(Vec3fa(extract<1>(u001_u101)),Vec3fa(0.0f))) || all(le_mask(Vec3fa(extract<1>(u001_u101)),Vec3fa(0.0f)))) 

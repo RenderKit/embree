@@ -58,9 +58,6 @@ namespace embree
     static const size_t maxBuildDepthLeaf = maxBuildDepth+6;
     static const size_t maxDepth = maxBuildDepth + maxBuildDepthLeaf;
     
-    /*! Cost of one traversal step. */
-    static const int travCost = 1;
-
     static const size_t hybridSIMDUtilSwitchThreshold = 7;
 
     /*! References a Node or list of Triangles */
@@ -217,6 +214,9 @@ namespace embree
 	return (unsigned int)m_box == (unsigned int)m_lane;
       }
 
+      struct Helper { float x,y,z; int a; }; 
+      static Helper initQBVHNode[4];
+
       __forceinline void setInvalid(size_t i) 
       {
 	lower[i].x = pos_inf;
@@ -245,8 +245,15 @@ namespace embree
 
       __forceinline void setInvalid() 
       {
+#if 1
+	mic_f lower = broadcast4to16f(&initQBVHNode[0]);
+	mic_f upper = broadcast4to16f(&initQBVHNode[1]);
+	store16f_ngo(((mic_f*)this)+0,lower); 
+	store16f_ngo(((mic_f*)this)+1,upper);             
+#else
 	for (size_t i=0;i<4;i++)
 	  setInvalid(i);
+#endif
       }
 
       __forceinline void setValid() 
@@ -313,7 +320,12 @@ namespace embree
 
       __forceinline mic_f decompress_lowerXYZ(const mic_f &s, const mic_f &d)  const
       {
-	return s + d * lowerXYZ();
+	return madd_round_down(d,lowerXYZ(),s);
+      }
+
+      __forceinline mic_f decompress_upperXYZ(const mic_f &s, const mic_f &d)  const
+      {	
+	return madd_round_up(d,upperXYZ(),s);
       }
 
       __forceinline mic_f upperXYZ()  const
@@ -340,10 +352,6 @@ namespace embree
         return BBox3fa(l,u);
       }
 
-      __forceinline mic_f decompress_upperXYZ(const mic_f &s, const mic_f &d)  const
-      {
-	return s + d * upperXYZ();
-      }
 
       __forceinline mic_f decompress_startXYZ() const
       {
@@ -371,8 +379,6 @@ namespace embree
 	const mic_f maxXYZ = select(0x7777,max(max(u0,u1),max(u2,u3)),mic_f::one());
 	const mic_f diffXYZ = maxXYZ - minXYZ;
 
-	const mic_f rcp_diffXYZ = mic_f(255.0f) / diffXYZ;
- 
 	const mic_f nlower = load16f(node.lower);
 	const mic_f nupper = load16f(node.upper);
 	const mic_m isInvalid = eq(0x7777,nlower,pos_inf);
@@ -380,11 +386,11 @@ namespace embree
 	const mic_f node_lowerXYZ = select(mic_m(0x7777) ^ isInvalid,nlower,minXYZ); 
 	const mic_f node_upperXYZ = select(mic_m(0x7777) ^ isInvalid,nupper,minXYZ); 
 
-	mic_f local_lowerXYZ = ((node_lowerXYZ - minXYZ) * rcp_diffXYZ) - 0.5f;
-	mic_f local_upperXYZ = ((node_upperXYZ - minXYZ) * rcp_diffXYZ) + 0.5f;
+	mic_f local_lowerXYZ = floor(( (node_lowerXYZ - minXYZ) * mic_f(255.0f) / diffXYZ) /* - 0.5f */);
+	mic_f local_upperXYZ =  ceil(( (node_upperXYZ - minXYZ) * mic_f(255.0f) / diffXYZ) /* + 0.5f */);
 
 	store4f(&start,minXYZ);
-	store4f(&diff ,diffXYZ * (1.0f/255.0f));
+	store4f(&diff ,mul_round_up(diffXYZ,(1.0f/255.0f)));
 	compactustore16f_low_uint8(0x7777,lower,local_lowerXYZ);
 	compactustore16f_low_uint8(0x7777,upper,local_upperXYZ);
 
@@ -403,14 +409,16 @@ namespace embree
 
 	if ( any(gt(0x7777,decompress_lower_XYZ,node_lowerXYZ)) ) 
 	   { 
-	     DBG_PRINT(node_lowerXYZ);  
-	     DBG_PRINT(decompress_lower_XYZ);  
+	     PRINT(node_lowerXYZ);  
+	     PRINT(decompress_lower_XYZ); 
+	     PRINT(decompress_lower_XYZ-node_lowerXYZ); 
 	   } 
 
 	if ( any(lt(0x7777,decompress_upper_XYZ,node_upperXYZ)) )
 	  {
-	    DBG_PRINT(node_upperXYZ);
-	    DBG_PRINT(decompress_upper_XYZ);
+	    PRINT(node_upperXYZ);
+	    PRINT(decompress_upper_XYZ);
+	    PRINT(decompress_upper_XYZ-node_upperXYZ);
 	  }
 #endif
       }
@@ -426,29 +434,32 @@ namespace embree
   public:
 
     /*! BVH4 default constructor. */
-    BVH4i (const PrimitiveType& primTy, void* geometry = NULL)
+    BVH4i (const PrimitiveType& primTy, void* geometry = nullptr)
       : primTy(primTy), 
       geometry(geometry), 
       root(emptyNode), 
-      qbvh(NULL), 
-      accel(NULL),
+      qbvh(nullptr), 
+      accel(nullptr),
       size_node(0),
       size_accel(0),
-      numAllocated64BytesBlocks(0)
+      numAllocated64BytesBlocks(0),
+      numPrimitives(0)
     {
     }
 
     ~BVH4i();
 
+    void clear() {}
+
     /*! BVH4i instantiations */
-    static Accel* BVH4iTriangle1ObjectSplitBinnedSAH(Scene* scene);
-    static Accel* BVH4iTriangle1ObjectSplitMorton(Scene* scene);
-    static Accel* BVH4iTriangle1ObjectSplitEnhancedMorton(Scene* scene);
-    static Accel* BVH4iTriangle1PreSplitsBinnedSAH(Scene* scene);
-    static Accel* BVH4iVirtualGeometryBinnedSAH(Scene* scene);
-    static Accel* BVH4iTriangle1MemoryConservativeBinnedSAH(Scene* scene);
-    static Accel* BVH4iTriangle1ObjectSplitMorton64Bit(Scene* scene);
-    static Accel* BVH4iSubdivMeshBinnedSAH(Scene* scene);
+    static Accel* BVH4iTriangle1ObjectSplitBinnedSAH(Scene* scene,bool robust);
+    static Accel* BVH4iTriangle1ObjectSplitMorton(Scene* scene,bool robust);
+    static Accel* BVH4iTriangle1ObjectSplitEnhancedMorton(Scene* scene,bool robust);
+    static Accel* BVH4iTriangle1PreSplitsBinnedSAH(Scene* scene,bool robust);
+    static Accel* BVH4iVirtualGeometryBinnedSAH(Scene* scene,bool robust);
+    static Accel* BVH4iTriangle1MemoryConservativeBinnedSAH(Scene* scene,bool robust);
+    static Accel* BVH4iTriangle1ObjectSplitMorton64Bit(Scene* scene,bool robust);
+    static Accel* BVH4iSubdivMeshBinnedSAH(Scene* scene,bool robust);
 
     /*! Calculates the SAH of the BVH */
     float sah ();
@@ -482,10 +493,7 @@ namespace embree
     
 
     size_t numAllocated64BytesBlocks;
-
-    struct Helper { float x,y,z; int a; }; 
-
-    static Helper initQBVHNode[4];
+    size_t numPrimitives;
 
     /*! swap the children of two nodes */
     __forceinline static void swap(Node* a, size_t i, Node* b, size_t j)

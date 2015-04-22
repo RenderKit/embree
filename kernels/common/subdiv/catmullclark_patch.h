@@ -23,7 +23,7 @@ namespace embree
   class __aligned(64) CatmullClarkPatch
   {
   public:
-    CatmullClark1Ring ring[4];
+    array_t<CatmullClark1Ring,4> ring;
 
     __forceinline CatmullClarkPatch () {}
 
@@ -31,6 +31,8 @@ namespace embree
     {
       for (size_t i=0; i<4; i++)
         ring[i].init(first_half_edge+i,vertices);
+
+      checkPositions();
     }
 
     __forceinline Vec3fa normal(const float uu, const float vv) const // FIXME: remove
@@ -88,7 +90,11 @@ namespace embree
 
     /*! returns true of the patch is a Gregory patch */
     __forceinline bool isGregoryOrFinal(const size_t depth) const {
-      return ring[0].isGregoryOrFinal(depth) && ring[1].isGregoryOrFinal(depth) && ring[2].isGregoryOrFinal(depth) && ring[3].isGregoryOrFinal(depth);
+      const bool ring0 = ring[0].isGregoryOrFinal(depth);
+      const bool ring1 = ring[1].isGregoryOrFinal(depth);
+      const bool ring2 = ring[2].isGregoryOrFinal(depth);
+      const bool ring3 = ring[3].isGregoryOrFinal(depth);
+      return ring0 && ring1 && ring2 && ring3;
     }
 
     static __forceinline void init_regular(const CatmullClark1Ring& p0,
@@ -96,6 +102,7 @@ namespace embree
 					   CatmullClark1Ring& dest0,
 					   CatmullClark1Ring& dest1) 
     {
+      assert(p1.face_valence > 2);
       dest1.vertex_level = dest0.vertex_level = p0.edge_level;
       dest1.face_valence = dest0.face_valence = 4;
       dest1.edge_valence = dest0.edge_valence = 8;
@@ -195,12 +202,14 @@ namespace embree
         dest.crease_weight[i] = 0.0f;
 
       //////////////////////////////
-      dest.eval_start_index       = (offset%8)>>1;
+      dest.eval_start_index       = (8-offset)>>1;
+      if (dest.eval_start_index >= dest.face_valence) dest.eval_start_index -= dest.face_valence;
+      assert( dest.eval_start_index < dest.face_valence );
       dest.eval_unique_identifier = 0;
       //////////////////////////////
     }
 
-    void subdivide(CatmullClarkPatch patch[4]) const
+    void subdivide(array_t<CatmullClarkPatch,4>& patch) const
     {
       ring[0].subdivide(patch[0].ring[0]);
       ring[1].subdivide(patch[1].ring[1]);
@@ -227,22 +236,26 @@ namespace embree
       patch[3].ring[2].edge_level = 0.5f*ring[2].edge_level;
       patch[3].ring[3].edge_level = 0.5f*ring[3].edge_level;
 
-      if (likely(ring[0].has_last_face()))
+      const bool regular0 = ring[0].has_last_face() && ring[1].face_valence > 2;
+      if (likely(regular0))
         init_regular(patch[0].ring[0],patch[1].ring[1],patch[0].ring[1],patch[1].ring[0]);
       else
         init_border(patch[0].ring[0],patch[1].ring[1],patch[0].ring[1],patch[1].ring[0]);
 
-      if (likely(ring[1].has_last_face()))
+      const bool regular1 = ring[1].has_last_face() && ring[2].face_valence > 2;
+      if (likely(regular1))
         init_regular(patch[1].ring[1],patch[2].ring[2],patch[1].ring[2],patch[2].ring[1]);
       else
         init_border(patch[1].ring[1],patch[2].ring[2],patch[1].ring[2],patch[2].ring[1]);
 
-      if (likely(ring[2].has_last_face()))
+      const bool regular2 = ring[2].has_last_face() && ring[3].face_valence > 2;
+      if (likely(regular2))
         init_regular(patch[2].ring[2],patch[3].ring[3],patch[2].ring[3],patch[3].ring[2]);
       else
         init_border(patch[2].ring[2],patch[3].ring[3],patch[2].ring[3],patch[3].ring[2]);
 
-      if (likely(ring[3].has_last_face()))
+      const bool regular3 = ring[3].has_last_face() && ring[0].face_valence > 2;
+      if (likely(regular3))
         init_regular(patch[3].ring[3],patch[0].ring[0],patch[3].ring[0],patch[0].ring[3]);
       else
         init_border(patch[3].ring[3],patch[0].ring[0],patch[3].ring[0],patch[0].ring[3]);
@@ -264,6 +277,86 @@ namespace embree
       init_regular(center,center_ring,2,patch[1].ring[3]);
       init_regular(center,center_ring,4,patch[2].ring[0]);
       init_regular(center,center_ring,6,patch[3].ring[1]);
+
+#if 0
+      PRINT("CHECK_RINGS");
+      std::cout.precision(10);
+
+      /* outer rings */
+      if (!equalRingEval(patch[0].ring[1],patch[1].ring[0]))
+        {
+          PRINT(patch[0].ring[1]);
+          PRINT(patch[1].ring[0]);          
+          THROW_RUNTIME_ERROR("equalRingEval(patch[0].ring[1],patch[1].ring[0])");
+        }
+
+      if (!equalRingEval(patch[1].ring[2],patch[2].ring[1]))
+        {
+          PRINT(patch[1].ring[2]);
+          PRINT(patch[2].ring[1]);          
+          THROW_RUNTIME_ERROR("equalRingEval(patch[1].ring[2],patch[2].ring[1])");
+        }
+
+      if (!equalRingEval(patch[2].ring[3],patch[3].ring[2]))
+        {
+          PRINT(patch[2].ring[3]);
+          PRINT(patch[3].ring[2]);          
+          THROW_RUNTIME_ERROR("equalRingEval(patch[2].ring[3],patch[3].ring[2])");
+        }
+      
+      if (!equalRingEval(patch[3].ring[0],patch[0].ring[3]))
+        {
+          PRINT(patch[3].ring[0]);
+          PRINT(patch[0].ring[3]);          
+          THROW_RUNTIME_ERROR("equalRingEval(patch[3].ring[0],patch[0].ring[3])");
+        }
+
+      /* inner rings */
+      
+      if (!equalRingEval(patch[0].ring[2],patch[1].ring[3])) 
+        { 
+          PRINT(patch[0].ring[2]); 
+          PRINT(patch[1].ring[3]);           
+          THROW_RUNTIME_ERROR("equalRingEval(patch[0].ring[2],patch[1].ring[3])"); 
+        } 
+
+      if (!equalRingEval(patch[1].ring[3],patch[2].ring[0])) 
+        { 
+          PRINT(patch[1].ring[3]); 
+          PRINT(patch[2].ring[0]);           
+          THROW_RUNTIME_ERROR("equalRingEval(patch[1].ring[3],patch[2].ring[0])"); 
+        } 
+
+      if (!equalRingEval(patch[2].ring[0],patch[3].ring[1])) 
+        { 
+          PRINT(patch[2].ring[0]); 
+          PRINT(patch[3].ring[1]);           
+          THROW_RUNTIME_ERROR("equalRingEval(patch[2].ring[0],patch[3].ring[1])"); 
+        } 
+
+      if (!equalRingEval(patch[3].ring[1],patch[0].ring[2])) 
+        { 
+          PRINT(patch[3].ring[1]); 
+          PRINT(patch[0].ring[2]);           
+          THROW_RUNTIME_ERROR("equalRingEval(patch[3].ring[1],patch[0].ring[2])"); 
+        }       
+#endif
+
+#if _DEBUG
+      patch[0].checkPositions();
+      patch[1].checkPositions();
+      patch[2].checkPositions();
+      patch[3].checkPositions();
+#endif
+    }
+
+    bool checkPositions() const
+    {
+      if( ring[0].hasValidPositions() &&
+	  ring[1].hasValidPositions() &&
+	  ring[2].hasValidPositions() &&
+	  ring[3].hasValidPositions() ) return true;
+      return false;
     }
 
     __forceinline void init( FinalQuad& quad ) const
@@ -288,7 +381,7 @@ namespace embree
   {
   public:
     static const size_t SIZE = SubdivMesh::MAX_VALENCE;
-    GeneralCatmullClark1Ring ring[SIZE];
+    array_t<GeneralCatmullClark1Ring,SIZE> ring;
     size_t N;
 
     __forceinline GeneralCatmullClarkPatch () 
@@ -319,6 +412,7 @@ namespace embree
 					   CatmullClark1Ring& dest0,
 					   CatmullClark1Ring& dest1) 
     {
+      assert(p1.face_valence > 2);
       dest1.vertex_level = dest0.vertex_level = p0.edge_level;
       dest1.face_valence = dest0.face_valence = 4;
       dest1.edge_valence = dest0.edge_valence = 8;
@@ -369,9 +463,10 @@ namespace embree
       dest1.crease_weight[2] = dest0.crease_weight[1] = p0.crease_weight[0];
     }
 
-    static __forceinline void init_regular(const Vec3fa_t &center, const Vec3fa_t center_ring[2*SIZE], const float vertex_level, const size_t N, const size_t offset, CatmullClark1Ring &dest)
+    static __forceinline void init_regular(const Vec3fa_t &center, const array_t<Vec3fa_t,2*SIZE>& center_ring, const float vertex_level, const size_t N, const size_t offset, CatmullClark1Ring &dest)
     {
       assert(N<CatmullClark1Ring::MAX_FACE_VALENCE);
+      assert(2*N<CatmullClark1Ring::MAX_EDGE_VALENCE);
       dest.vertex_level = vertex_level;
       dest.face_valence = N;
       dest.edge_valence = 2*N;
@@ -380,32 +475,44 @@ namespace embree
       dest.vertex_crease_weight = 0.0f;
       dest.noForcedSubdivision = true;
       for (size_t i=0; i<2*N; i++) 
-	dest.ring[i] = (Vec3fa_t)center_ring[(2*N+offset+i-1)%(2*N)];
+	{
+	  dest.ring[i] = (Vec3fa_t)center_ring[(2*N+offset+i-1)%(2*N)];
+	  assert( isvalid(dest.ring[i].x) );
+	  assert( isvalid(dest.ring[i].y) );
+	  assert( isvalid(dest.ring[i].z) );
+	}
       for (size_t i=0; i<N; i++) 
         dest.crease_weight[i] = 0.0f;
     }
  
-    void subdivide(CatmullClarkPatch patch[SIZE], size_t& N_o) const
+    __noinline void subdivide(array_t<CatmullClarkPatch,SIZE>& patch, size_t& N_o) const
     {
       N_o = N;
-
+      assert( N );
       for (size_t i=0; i<N; i++) {
         size_t ip1 = (i+1)%N; // FIXME: %
         ring[i].subdivide(patch[i].ring[0]);
         patch[i]  .ring[0].edge_level = 0.5f*ring[i].edge_level;
         patch[ip1].ring[3].edge_level = 0.5f*ring[i].edge_level;
-      }
 
+	assert( patch[i].ring[0].hasValidPositions() );
+
+      }
+      assert(N < 2*SIZE);
       Vec3fa_t center = Vec3fa_t(0.0f);
-      Vec3fa_t center_ring[2*SIZE];
+      array_t<Vec3fa_t,2*SIZE> center_ring;
       float center_vertex_level = 2.0f; // guarantees that irregular vertices get always isolated also for non-quads
 
       for (size_t i=0; i<N; i++)
       {
         size_t ip1 = (i+1)%N; // FIXME: %
         size_t im1 = (i+N-1)%N; // FIXME: %
-        if (likely(ring[i].has_last_face())) init_regular(patch[i].ring[0],patch[ip1].ring[0],patch[i].ring[1],patch[ip1].ring[3]); 
-        else                                 init_border (patch[i].ring[0],patch[ip1].ring[0],patch[i].ring[1],patch[ip1].ring[3]);
+        bool regular = ring[i].has_last_face() && ring[ip1].face_valence > 2;
+        if (likely(regular)) init_regular(patch[i].ring[0],patch[ip1].ring[0],patch[i].ring[1],patch[ip1].ring[3]); 
+        else                 init_border (patch[i].ring[0],patch[ip1].ring[0],patch[i].ring[1],patch[ip1].ring[3]);
+
+	assert( patch[i].ring[1].hasValidPositions() );
+	assert( patch[ip1].ring[3].hasValidPositions() );
 
 	float level = 0.25f*(ring[im1].edge_level+ring[ip1].edge_level);
         patch[i].ring[1].edge_level = patch[ip1].ring[2].edge_level = level;
@@ -419,6 +526,8 @@ namespace embree
 
       for (size_t i=0; i<N; i++) {
         init_regular(center,center_ring,center_vertex_level,N,2*i,patch[i].ring[2]);
+        
+	assert( patch[i].ring[2].hasValidPositions() );
       }
     }
 

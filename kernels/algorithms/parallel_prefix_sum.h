@@ -28,12 +28,55 @@ namespace embree
     Value sums  [MAX_TASKS];
   };
 
+#if 0  // FIXME: remove
+
+  template<typename Index, typename Value, typename Func, typename Reduction>
+  class ParallelScanBody 
+  {
+  public:
+    const Value& identity;
+    const Func& func;
+    const Reduction& reduction;
+    Value sum;
+
+  public:
+    ParallelScanBody ( const Value& identity, const Func& func, const Reduction& reduction ) 
+      : identity(identity), func(func), reduction(reduction), sum(identity) {}
+
+    ParallelScanBody ( ParallelScanBody& b, tbb::split ) 
+      : identity(b.identity), func(b.func), reduction(b.reduction), sum(identity) {}
+
+    void reverse_join( ParallelScanBody& a ) { 
+      sum = reduction(a.sum,sum);
+    }
+
+    void assign( ParallelScanBody& b ) { 
+      sum = b.sum; 
+    }
+
+    template<typename Tag>
+      void operator()( const tbb::blocked_range<Index>& r, Tag ) 
+      {
+	Value temp = sum;
+	sum = func(range<Index>(r.begin(),r.end()),temp);
+      }
+  };
+
+  template<typename Index, typename Value, typename Func, typename Reduction>
+    __forceinline Value parallel_prefix_sum( ParallelPrefixSumState<Value>& state, Index first, Index last, Index minStepSize, const Value& identity, const Func& func, const Reduction& reduction)
+  {
+    ParallelScanBody<Index,Value,Func,Reduction> body(identity,func,reduction);
+    tbb::parallel_scan( tbb::blocked_range<Index>(first,last), body );
+    return body.sum;
+  }
+
+#endif
+
   template<typename Index, typename Value, typename Func, typename Reduction>
     __forceinline Value parallel_prefix_sum( ParallelPrefixSumState<Value>& state, Index first, Index last, Index minStepSize, const Value& identity, const Func& func, const Reduction& reduction)
   {
     /* calculate number of tasks to use */
-    LockStepTaskScheduler* scheduler = LockStepTaskScheduler::instance();
-    const size_t numThreads = scheduler->getNumThreads();
+    const size_t numThreads = TaskSchedulerTBB::threadCount();
     const size_t numBlocks  = (last-first+minStepSize-1)/minStepSize;
     const size_t taskCount  = min(numThreads,numBlocks,size_t(ParallelPrefixSumState<Value>::MAX_TASKS));
 
@@ -46,8 +89,8 @@ namespace embree
     });
 
     /* calculate prefix sum */
-    Value sum=0;
-    for (size_t i=0; i<taskCount; i++)
+    Value sum=identity; // FIXME: optimize, initialize with first element
+    for (size_t i=0; i<taskCount; i++) 
     {
       const Value c = state.counts[i];
       state.sums[i] = sum;

@@ -23,9 +23,9 @@
 #include "sys/intrinsics.h"
 #include "sys/thread.h"
 #include "sys/sysinfo.h"
-#include "sys/sync/barrier.h"
-#include "sys/sync/mutex.h"
-#include "sys/sync/condition.h"
+#include "sys/barrier.h"
+#include "sys/mutex.h"
+#include "sys/condition.h"
 #include <vector>
 #include <iostream>
 #include <fstream>
@@ -72,7 +72,7 @@ namespace embree
 	  numOccludedRays += numRays;
 	}
       else
-	FATAL("unknown log ray type");
+	THROW_RUNTIME_ERROR("unknown log ray type");
       num4widePackets += (numRays+3)/4;
       num8widePackets += (numRays+7)/8;
     }
@@ -93,7 +93,7 @@ namespace embree
 	  numOccludedRays += numRays;
 	}
       else
-	FATAL("unknown log ray type");
+	THROW_RUNTIME_ERROR("unknown log ray type");
     }
 
     void add(RayStreamLogger::LogRay8 &r)
@@ -112,7 +112,7 @@ namespace embree
 	  numOccludedRays += numRays;
 	}
       else
-	FATAL("unknown log ray type");
+	THROW_RUNTIME_ERROR("unknown log ray type");
       num4widePackets += (numRays+3)/4;
     }
 
@@ -131,7 +131,7 @@ namespace embree
 	  numOccludedRays++;
 	}
       else
-	FATAL("unknown log ray type");
+	THROW_RUNTIME_ERROR("unknown log ray type");
       num4widePackets += 1;
       num8widePackets += 1;
     }
@@ -234,7 +234,8 @@ namespace embree
         if (tag == "") return;
 
         else if (tag == "-rtcore" && i+1<argc) {
-          g_rtcore += std::stringOf(',') + argv[++i];
+          g_rtcore += ",";
+	  g_rtcore += argv[++i];
         }
         /* rtcore configuration */
         else if (tag == "-check") {
@@ -288,7 +289,7 @@ namespace embree
     std::ifstream geometryData;
 
     geometryData.open(geometryFile.c_str(),std::ios::in | std::ios::binary);
-    if (!geometryData) { FATAL("could not open geometry data file"); }
+    if (!geometryData) { THROW_RUNTIME_ERROR("could not open geometry data file"); }
     geometryData.seekg(0, std::ios::beg);
     std::streampos begin = geometryData.tellg();
     geometryData.seekg(0, std::ios::end);
@@ -307,7 +308,7 @@ namespace embree
     std::ifstream rayStreamData;
 
     rayStreamData.open(rayStreamFile.c_str(),std::ios::in | std::ios::binary);
-    if (!rayStreamData) { FATAL("could not open raystream data file"); }
+    if (!rayStreamData) { THROW_RUNTIME_ERROR("could not open raystream data file"); }
     rayStreamData.seekg(0, std::ios::beg);
     std::streampos begin = rayStreamData.tellg();
     rayStreamData.seekg(0, std::ios::end);
@@ -337,7 +338,7 @@ namespace embree
 
     int magick = *(size_t*)g; g += sizeof(int);
     if (magick != 0x35238765LL) {
-      FATAL("invalid binary file");
+      THROW_RUNTIME_ERROR("invalid binary file");
     }
 
     int numGroups = *(int*)g; g += sizeof(int);
@@ -387,7 +388,7 @@ namespace embree
       }
 
       else {
-	FATAL("unknown geometry type");
+	THROW_RUNTIME_ERROR("unknown geometry type");
       }
     }
 
@@ -582,7 +583,7 @@ namespace embree
 
     DBG(
         g_mutex.lock();
-        DBG_PRINT(id);
+        PRINT(id);
         g_mutex.unlock();
         );
 
@@ -617,10 +618,10 @@ namespace embree
     parseCommandLine(argc,argv);
 
     /* perform tests */
-    DBG_PRINT(g_rtcore.c_str());
+    PRINT(g_rtcore.c_str());
     rtcInit(g_rtcore.c_str());
 
-    DBG_PRINT(g_threadCount);
+    PRINT(g_threadCount);
 
     /* binary file path */
     g_binaries_path += "/";
@@ -642,8 +643,8 @@ namespace embree
 
     if (g_simd_width != 0)
       {
-        rayStreamFileName = g_binaries_path + "ray" + std::stringOf(g_simd_width) + ".bin";
-        rayStreamVerifyFileName = g_binaries_path + "ray" + std::stringOf(g_simd_width) + "_verify.bin";
+        rayStreamFileName = g_binaries_path + "ray" + std::to_string((long long)g_simd_width) + ".bin";
+        rayStreamVerifyFileName = g_binaries_path + "ray" + std::to_string((long long)g_simd_width) + "_verify.bin";
       }
     else
       {
@@ -651,21 +652,21 @@ namespace embree
         for (size_t shift=0;shift<=4;shift++)
           {
             g_simd_width = (size_t)1 << shift;
-            rayStreamFileName = g_binaries_path + "ray" + std::stringOf(g_simd_width) + ".bin";
-            rayStreamVerifyFileName = g_binaries_path + "ray" + std::stringOf(g_simd_width) + "_verify.bin";
+            rayStreamFileName = g_binaries_path + "ray" + std::to_string((long long)g_simd_width) + ".bin";
+            rayStreamVerifyFileName = g_binaries_path + "ray" + std::to_string((long long)g_simd_width) + "_verify.bin";
             if (existsFile( rayStreamFileName )) break;
 
           }
       }
    
     if (g_simd_width == 0)
-      FATAL("no valid ray stream data files found");
+      THROW_RUNTIME_ERROR("no valid ray stream data files found");
 
-    DBG_PRINT( rayStreamFileName );
-    DBG_PRINT( rayStreamVerifyFileName );
+    PRINT( rayStreamFileName );
+    PRINT( rayStreamVerifyFileName );
 
-    if (!existsFile( rayStreamFileName )) FATAL("ray stream file does not exists!");
-    if (!existsFile( rayStreamVerifyFileName )) FATAL("ray stream verify file does not exists!");
+    if (!existsFile( rayStreamFileName )) THROW_RUNTIME_ERROR("ray stream file does not exists!");
+    if (!existsFile( rayStreamVerifyFileName )) THROW_RUNTIME_ERROR("ray stream verify file does not exists!");
 
 
     /* load ray stream data */
@@ -673,8 +674,8 @@ namespace embree
     size_t numLogRayStreamElements       = 0;
     size_t numLogRayStreamElementsVerify = 0;
 
-    void *raydata        = NULL;
-    void *raydata_verify = NULL;
+    void *raydata        = nullptr;
+    void *raydata_verify = nullptr;
 
     switch(g_simd_width)
       {
@@ -699,14 +700,14 @@ namespace embree
           raydata_verify = loadRayStreamData<RayStreamLogger::LogRay16>(rayStreamVerifyFileName, numLogRayStreamElementsVerify); 
         break;
       default:
-        FATAL("unknown SIMD width");
+        THROW_RUNTIME_ERROR("unknown SIMD width");
       }
 
     std::cout <<  "done" << std::endl << std::flush;
 
     if (g_check)
       if (numLogRayStreamElements != numLogRayStreamElementsVerify)
-        FATAL("numLogRayStreamElements != numLogRayStreamElementsVerify");
+        THROW_RUNTIME_ERROR("numLogRayStreamElements != numLogRayStreamElementsVerify");
 
     /* analyse ray stream data */
     std::cout << "analyse ray stream:" << std::endl << std::flush;    
@@ -730,7 +731,7 @@ namespace embree
     stats.print(g_simd_width);
 
 #if defined(RTCORE_ENABLE_RAYSTREAM_LOGGER)
-    FATAL("ray stream logger still active, must be disabled to run 'retrace'");
+    THROW_RUNTIME_ERROR("ray stream logger still active, must be disabled to run 'retrace'");
 #endif
 
 
@@ -751,7 +752,7 @@ namespace embree
 
 
     /* retrace ray packets */
-    DBG_PRINT( g_threadCount );
+    PRINT( g_threadCount );
 
     std::cout << "Retracing logged rays:" << std::endl << std::flush;
     

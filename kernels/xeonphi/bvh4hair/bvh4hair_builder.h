@@ -105,9 +105,9 @@ namespace embree
   BVH4HairBuilder(BVH4Hair* bvh, void* geometry) 
     : ParallelBinnedSAHBuilder(geometry),
       bvh4hair(bvh),
-      prims(NULL),
-      node(NULL),
-      accel(NULL),
+      prims(nullptr),
+      node(nullptr),
+      accel(nullptr),
       size_prims(0),
       size_nodes(0),
       size_accel(0),
@@ -169,16 +169,6 @@ namespace embree
     /*! perform parallel binning and splitting using only the threads per core*/
     bool splitParallelLocal(BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild, const size_t threadID);
 
-    /*! perform parallel splitting */
-    void parallelPartitioning(BuildRecord& current,
-			      Bezier1i * __restrict__ l_source,
-			      Bezier1i * __restrict__ r_source,
-			      Bezier1i * __restrict__ l_dest,
-			      Bezier1i * __restrict__ r_dest,
-			      const Split &split,
-			      Centroid_Scene_AABB &local_left,
-			      Centroid_Scene_AABB &local_right);			      
-
     void allocateMemoryPools(const size_t numPrims, const size_t numNodes);
 
     /*! recursive build functions */
@@ -190,16 +180,14 @@ namespace embree
     void recurseOBB(BuildRecordOBB& current, NodeAllocator& alloc, const size_t mode, const size_t threadID, const size_t numThreads);
 
     /*! perform sequential binning and splitting */
-    bool splitSequentialOBB(BuildRecordOBB& current, BuildRecordOBB& leftChild, BuildRecordOBB& rightChild, const bool binAABB = false);
+    bool splitSequentialOBB(BuildRecordOBB& current, BuildRecordOBB& leftChild, BuildRecordOBB& rightChild);
 
     void computeUnalignedSpace( BuildRecordOBB& current );
     void computeUnalignedSpaceBounds( BuildRecordOBB& current );
 
     TASK_FUNCTION(BVH4HairBuilder,computePrimRefsBezierCurves);
     TASK_FUNCTION(BVH4HairBuilder,parallelBinningGlobal);
-    TASK_FUNCTION(BVH4HairBuilder,parallelPartitioningGlobal);
     LOCAL_TASK_FUNCTION(BVH4HairBuilder,parallelBinningLocal);
-    LOCAL_TASK_FUNCTION(BVH4HairBuilder,parallelPartitioningLocal);
 
   };
 

@@ -18,169 +18,47 @@
 #include "xeon/bvh4/bvh4.h"
 #include "xeon/bvh4/bvh4_intersector1.h"
 
-#define TIMER(x)
+#define TIMER(x) 
 #define DBG(x) 
-
-
-#define PRE_ALLOC_BLOCKS 32
 
 namespace embree
 {
   namespace isa
   {  
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////
     
-    __thread PerThreadTessellationCache *SubdivPatch1CachedIntersector1::thread_cache = NULL;
-    SharedTessellationCache<SHARED_TESSELLATION_CACHE_ENTRIES,PRE_ALLOC_BLOCKS> sharedTessellationCache;
+    __thread LocalTessellationCacheThreadInfo* SubdivPatch1CachedIntersector1::localThreadInfo = nullptr;
 
-    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    /*! Returns BVH4 node reference for subtree over patch grid */
-    size_t SubdivPatch1CachedIntersector1::getSubtreeRootNode(Precalculations& pre, const SubdivPatch1Cached* const subdiv_patch, const void* geom)
+    void verifySubTreeBVH(const BVH4::NodeRef ref)
     {
-
-#if defined(SHARED_TESSELLATION_CACHE)      
-      DBG(DBG_PRINT(pre.rw_mtx));
-
-      if (likely(pre.rw_mtx != NULL))
-        {
-          DBG(DBG_PRINT("READ_UNLOCK"));          
-          pre.rw_mtx->read_unlock();
-          DBG(DBG_PRINT(pre.rw_mtx));
-        }
-#endif
-      
-      const unsigned int commitCounter = ((Scene*)geom)->commitCounter;
-      InputTagType tag = (InputTagType)subdiv_patch;
-
-      DBG(DBG_PRINT(tag));
-
-      TessellationCacheTag *t = sharedTessellationCache.getTag(tag);
-      /* read lock */
-      DBG(DBG_PRINT("READ_LOCK"));
-      t->read_lock();
-      DBG(DBG_PRINT(&t->mtx));
-      
-#if defined(SHARED_TESSELLATION_CACHE)      
-      /* remember read/write mutex */
-      pre.rw_mtx = t->getMutexPtr();
-#endif      
-
-      /* patch data not in cache? */
-      CACHE_STATS(SharedTessellationCacheStats::cache_accesses++);
-      
-      if (unlikely(!t->match(tag,commitCounter)))
-        {
-          CACHE_STATS(SharedTessellationCacheStats::cache_misses++);
-          
-          DBG(DBG_PRINT("CACHE_MISS"));                
-          
-          /* read unlock */
-          DBG(DBG_PRINT("READ_UNLOCK"));                          
-          t->read_unlock();
-          DBG(DBG_PRINT(&t->mtx));
-          
-
-          DBG(DBG_PRINT("PREFETCH"));                
-
-          subdiv_patch->prefetchData();
-
-          /* write lock */
-          DBG(DBG_PRINT("WRITE LOCK"));                          
-          t->write_lock();
-          DBG(DBG_PRINT(&t->mtx));
-
- 
-          /* update */
-          const unsigned int needed_blocks = subdiv_patch->grid_subtree_size_64b_blocks;
-          DBG(DBG_PRINT(needed_blocks));                          
-          
-          BVH4::Node* node = (BVH4::Node*)t->getPtr();
-          if (t->getNumBlocks() < needed_blocks)
-            {
-              DBG(DBG_PRINT("EXPAND DATA MEM"));                          
-              
-              if (node != NULL)
-                {
-                  DBG(DBG_PRINT("FREE PREVIOUS DATA MEM"));                                                              
-                  free_tessellation_cache_mem(node);                 
-                }
-                
-
-              DBG(DBG_PRINT("ALLOCATE PREVIOUS DATA MEM"));                                            
-              node = (BVH4::Node*)alloc_tessellation_cache_mem(needed_blocks);
-              
-              CACHE_STATS(SharedTessellationCacheStats::cache_evictions++);              
-
-              t->set(tag,commitCounter,(size_t)node,needed_blocks);
-            }
-          else
-            {
-              t->update(tag,commitCounter);
-              
-              assert(node != NULL);
-            }
-
-          DBG(DBG_PRINT("BUILD SUB TREE"));                                            
-          
-          size_t new_root = (size_t)buildSubdivPatchTree(*subdiv_patch,node,((Scene*)geom)->getSubdivMesh(subdiv_patch->geom));
-
-          
-          assert( new_root != BVH4::invalidNode);
-          
-          t->updateRootRef(new_root);
-
-          /* write unlock and read lock */
-          DBG(DBG_PRINT("WRITE UNLOCK READ LOCK"));                                                      
-          t->write_unlock_set_read_lock();
-          DBG(DBG_PRINT(&t->mtx));
-
-          DBG(DBG_PRINT(new_root));                                            
-          DBG(sharedTessellationCache.print());
-          
-          return new_root;
-        }
-      CACHE_STATS(SharedTessellationCacheStats::cache_hits++);              
-      
-      DBG(DBG_PRINT("CACHE HIT"));                                            
-
-      BVH4::NodeRef root = t->getRootRef();
-      DBG(DBG_PRINT(root));
-      DBG(sharedTessellationCache.print());
-      
-      return root;
-    }
-
-    void updateBVH4Refs(const BVH4::NodeRef &ref, const size_t old_ptr, const size_t new_ptr)
-    {
-      if (unlikely(ref == BVH4::emptyNode))
-        return;
-
-      assert(ref != BVH4::invalidNode);
+      assert(ref != BVH4::invalidNode );
 
       /* this is a leaf node */
       if (unlikely(ref.isLeaf()))
-          return;
-
+        return;
+      
       const BVH4::Node* node = ref.node();
       
       for (size_t i=0;i<4;i++)
-        {
-          const BVH4::NodeRef &child = node->child(i);
-          if (node->child(i) != BVH4::emptyNode)
-            {
-              if (child.isNode())
-                updateBVH4Refs(child,old_ptr,new_ptr);
+	{
+	  assert(node->child(i) != BVH4::emptyNode);
+	  
+	  BBox3fa bounds = node->bounds(i);
 
-              const size_t dest_offset = (size_t)&child - old_ptr;              
-              const size_t new_ref     = (size_t)child - old_ptr + new_ptr;
-              size_t *ptr = (size_t*)((char*)new_ptr + dest_offset);
-              *ptr = new_ref;    
-            }
-        }
+	  assert( std::isfinite(bounds.lower.x) );
+	  assert( std::isfinite(bounds.lower.y) );
+	  assert( std::isfinite(bounds.lower.z) );
+
+	  assert( std::isfinite(bounds.upper.x) );
+	  assert( std::isfinite(bounds.upper.y) );
+	  assert( std::isfinite(bounds.upper.z) );
+
+	  verifySubTreeBVH(node->child(i));
+	}
     }
-
 
     size_t countBlocks(const BVH4::NodeRef ref, const size_t range0, const size_t range1)
     {
@@ -203,166 +81,357 @@ namespace embree
 
       return 2 + size;
     }
-    
-    size_t SubdivPatch1CachedIntersector1::getSubtreeRootNodeFromCacheHierarchy(Precalculations& pre,
-                                                                                const SubdivPatch1Cached* const subdiv_patch,
-                                                                                const void* geom)
+
+    void updateBVH4Refs(const BVH4::NodeRef &ref, const size_t old_ptr, const size_t new_ptr)
     {
-      DBG(DBG_PRINT(pre.local_cache));                                            
-    
-      const unsigned int commitCounter = ((Scene*)geom)->commitCounter;
-      InputTagType tag = (InputTagType)subdiv_patch;
+      if (unlikely(ref == BVH4::emptyNode))
+        return;
 
-      //frDBG_PRINT( *subdiv_patch );
+      assert(ref != BVH4::invalidNode);
+
+      /* this is a leaf node */
+      if (unlikely(ref.isLeaf()))
+        return;
+
+      const BVH4::Node* node = ref.node();
       
-      DBG(DBG_PRINT((size_t)tag / 320));
-      BVH4::NodeRef root = pre.local_cache->lookup(tag,commitCounter);
-      root.prefetch(0);
-      CACHE_STATS(DistributedTessellationCacheStats::cache_accesses++);
-
-      if (unlikely(root == (size_t)-1)) /* L1 cache miss ? */
+      for (size_t i=0;i<4;i++)
         {
-          CACHE_STATS(DistributedTessellationCacheStats::cache_misses++);
-
-          DBG(DBG_PRINT("L1 CACHE MISS"));                                            
-
-          /* is data in L2 */
-          TessellationCacheTag *t_l2 = sharedTessellationCache.getTag(tag);
-          t_l2->read_lock();
-          CACHE_STATS(SharedTessellationCacheStats::cache_accesses++);
-      
-          if (unlikely(!t_l2->match(tag,commitCounter))) /* not in L2 either */
+          const BVH4::NodeRef &child = node->child(i);
+          if (node->child(i) != BVH4::emptyNode)
             {
-              DBG(DBG_PRINT("L2 CACHE MISS"));                                            
-              
-              subdiv_patch->prefetchData();
+              if (child.isNode())
+                updateBVH4Refs(child,old_ptr,new_ptr);
 
-              CACHE_STATS(SharedTessellationCacheStats::cache_misses++);
-              t_l2->read_unlock();
-              t_l2->write_lock();
-              /* update */
-              const unsigned int needed_blocks = subdiv_patch->grid_subtree_size_64b_blocks;
-              DBG(DBG_PRINT(needed_blocks));                          
-          
-              if (t_l2->getNumBlocks() < needed_blocks)
-                {
-                  DBG(DBG_PRINT("EXPAND L2 CACHE ENTRY"));                                            
-                  BVH4::Node* node = (BVH4::Node*)t_l2->getPtr();
-                  
-                  if (node != NULL) free_tessellation_cache_mem(node);                                 
-
-                  node = (BVH4::Node*)alloc_tessellation_cache_mem(needed_blocks);
-                  DBG(DBG_PRINT(node));
-              
-                  CACHE_STATS(SharedTessellationCacheStats::cache_evictions++);              
-
-                  t_l2->set(tag,commitCounter,(size_t)node,needed_blocks);
-                  assert(t_l2->getPtr() == node);
-                }
-              else
-                {
-                  DBG(DBG_PRINT("REUSE L2 CACHE ENTRY"));                                                              
-                  t_l2->update(tag,commitCounter);              
-                  assert(t_l2->getPtr() != NULL);
-                }
-              
-              BVH4::Node* node = (BVH4::Node*)t_l2->getPtr();
-              DBG(DBG_PRINT(node));
-             
-              size_t new_root = (size_t)buildSubdivPatchTree(*subdiv_patch,node,((Scene*)geom)->getSubdivMesh(subdiv_patch->geom));
-              DBG(DBG_PRINT(new_root));
-
-              const size_t l2_range0 = (size_t)node;
-              const size_t l2_range1 = ((size_t)node) + 64*needed_blocks;
-
-              size_t l2_blocks = countBlocks(BVH4::NodeRef(new_root),l2_range0,l2_range1);
-              assert( l2_blocks == needed_blocks );
-
-              assert( new_root != BVH4::invalidNode);          
-              t_l2->updateRootRef(new_root);
-              assert(t_l2->getRootRef() == new_root);
-              
-              /* get L1 cache tag to evict */
-              TessellationCacheTag &t_l1 = pre.local_cache->request(tag,commitCounter,needed_blocks);
-             
-              /* copy data to L1 */
-              DBG(DBG_PRINT("INIT FROM SHARED CACHE TAG"));                                                              
-
-              t_l1.update(tag,commitCounter);
-
-              DBG(DBG_PRINT("updateNodeRefs"));                                                              
-              DBG(DBG_PRINT(t_l2->getPtr()));
-              DBG(DBG_PRINT(t_l1.getPtr()));
-              assert(t_l1.getNumBlocks() >= needed_blocks);
-
-              memcpy(t_l1.getPtr(),t_l2->getPtr(),64*needed_blocks);
-              size_t t_l2_root = t_l2->getRootRef();
-              updateBVH4Refs(t_l2_root,(size_t)t_l2->getPtr(),(size_t)t_l1.getPtr());
-              t_l1.updateRootRef( ((size_t)t_l2_root - (size_t)t_l2->getPtr()) + (size_t)t_l1.getPtr() );
-              DBG(DBG_PRINT(t_l1.subtree_root));
-
-              DBG(t_l2->print());
-              DBG(t_l1.print());
-              const size_t l1_range0 = (size_t)t_l1.getPtr();
-              const size_t l1_range1 = l1_range0 + 64*needed_blocks;
-              size_t l1_blocks = countBlocks(BVH4::NodeRef(t_l1.getRootRef()),l1_range0,l1_range1);
-              
-              assert(l1_blocks >= needed_blocks);
-
-              DBG(pre.local_cache->print());
-              
-              /* return data from L1 */
-              assert( t_l1.match(tag,commitCounter));
-              BVH4::NodeRef l1_root = t_l1.getRootRef();
-              DBG(DBG_PRINT(l1_root));
-
-              /* write unlock */
-              t_l2->write_unlock();
-
-              return l1_root;          
-
-            }
-          else
-            {
-              DBG(DBG_PRINT("L2 CACHE HIT"));                                            
-              DBG(pre.local_cache->print());
-              
-              CACHE_STATS(SharedTessellationCacheStats::cache_hits++);
-              TessellationCacheTag &t_l1 = pre.local_cache->request(tag,commitCounter,t_l2->getNumBlocks());
-
-              DBG(t_l1.print());
-              
-              /* copy data to L1 */
-              DBG(DBG_PRINT("INIT FROM SHARED CACHE TAG"));
-              t_l1.update(tag,commitCounter);
-
-              DBG(DBG_PRINT("updateNodeRefs"));                                                                            
-              memcpy(t_l1.getPtr(),t_l2->getPtr(),64*t_l2->getNumBlocks());
-              size_t t_l2_root = t_l2->getRootRef();
-              updateBVH4Refs(t_l2_root,(size_t)t_l2->getPtr(),(size_t)t_l1.getPtr());
-              t_l1.updateRootRef( (size_t)t_l2_root - (size_t)t_l2->getPtr() + (size_t)t_l1.getPtr() );
-              DBG(DBG_PRINT(t_l1.subtree_root));
-
-              BVH4::NodeRef l1_root = t_l1.getRootRef();
-              
-              t_l2->read_unlock();
-
-              /* return data from L1 */
-              return l1_root;                        
+              const size_t dest_offset = (size_t)&child - old_ptr;              
+              const size_t new_ref     = (size_t)child - old_ptr + new_ptr;
+              size_t *ptr = (size_t*)((char*)new_ptr + dest_offset);
+              *ptr = new_ref;    
             }
         }
-      CACHE_STATS(DistributedTessellationCacheStats::cache_hits++);
-
-      DBG(DBG_PRINT("L1 CACHE HIT"));                                            
-      return root;          
     }
 
+    // void copyTessellationCacheTag(TessellationCacheTag *dest, TessellationCacheTag *source)
+    // {
+    //   assert( dest->getNumBlocks() >= source->getNumBlocks() );
+    //   const size_t needed_blocks = source->getNumBlocks();
+      
+    //   memcpy(dest->getPtr(),source->getPtr(),64*needed_blocks);
+    //   size_t source_root = source->getRootRef();
+    //   updateBVH4Refs(source_root,(size_t)source->getPtr(),(size_t)dest->getPtr());
+    //   dest->updateRootRef( ((size_t)source_root - (size_t)source->getPtr()) + (size_t)dest->getPtr() );
 
-    unsigned int save_id = (unsigned int)-1;
-    float save_x[16];
-    float save_y[16];
-    float save_z[16];
+    //   const size_t l1_range0 = (size_t)dest->getPtr();
+    //   const size_t l1_range1 = l1_range0 + 64*needed_blocks;
+    //   size_t l1_blocks = countBlocks(BVH4::NodeRef(dest->getRootRef()),l1_range0,l1_range1);
+              
+    //   assert(l1_blocks >= needed_blocks);              
+    // }
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    /* build lazy subtree over patch */
+    size_t SubdivPatch1CachedIntersector1::lazyBuildPatch(Precalculations &pre,
+							  SubdivPatch1Cached* const subdiv_patch, 
+							  const void* geom)
+    {
+      /* unlock previous patch */
+      if (pre.current_patch)
+	{
+	  SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(pre.threadID);
+	}
+
+      while(1)
+	{
+	  /* per thread lock */
+	  while(1)
+	    {
+	      unsigned int lock = SharedLazyTessellationCache::sharedLazyTessellationCache.lockThread(pre.threadID);	       
+	      if (unlikely(lock == 1))
+		{
+		  /* lock failed wait until sync phase is over */
+		  SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(pre.threadID);	       
+		  SharedLazyTessellationCache::sharedLazyTessellationCache.waitForUsersLessEqual(pre.threadID,0);
+		}
+	      else
+		break;
+	    }
+      
+	  static const size_t REF_TAG      = 1;
+	  static const size_t REF_TAG_MASK = (~REF_TAG) & 0xffffffff;
+
+	  /* fast path for cache hit */
+	  {
+	    CACHE_STATS(SharedTessellationCacheStats::cache_accesses++);
+	    const int64 subdiv_patch_root_ref    = subdiv_patch->root_ref; 
+	    
+	    if (likely(subdiv_patch_root_ref)) 
+	      {
+		const size_t subdiv_patch_root = (subdiv_patch_root_ref & REF_TAG_MASK) + (size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();
+		const size_t subdiv_patch_cache_index = subdiv_patch_root_ref >> 32;
+		
+		if (likely( SharedLazyTessellationCache::sharedLazyTessellationCache.validCacheIndex(subdiv_patch_cache_index) ))
+		  {
+		    CACHE_STATS(SharedTessellationCacheStats::cache_hits++);
+		    return subdiv_patch_root;
+		  }
+	      }
+	  }
+
+	  /* cache miss */
+	  CACHE_STATS(SharedTessellationCacheStats::cache_misses++);
+
+	  subdiv_patch->write_lock();
+	  {
+	    const int64 subdiv_patch_root_ref    = subdiv_patch->root_ref;
+	    const size_t subdiv_patch_cache_index = subdiv_patch_root_ref >> 32;
+
+	    /* do we still need to create the subtree data? */
+	    if (subdiv_patch_root_ref == 0 || !SharedLazyTessellationCache::sharedLazyTessellationCache.validCacheIndex(subdiv_patch_cache_index))
+	      {	      
+		size_t block_index = SharedLazyTessellationCache::sharedLazyTessellationCache.alloc(subdiv_patch->grid_subtree_size_64b_blocks);
+		if (block_index == (size_t)-1)
+		  {
+		    /* cannot allocate => flush the cache */
+		    subdiv_patch->write_unlock();
+		    SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(pre.threadID);		  
+		    SharedLazyTessellationCache::sharedLazyTessellationCache.resetCache();
+		    continue;
+		  }
+		BVH4::Node* node = (BVH4::Node*)SharedLazyTessellationCache::sharedLazyTessellationCache.getBlockPtr(block_index);
+#if COMPACT == 1
+                int64 new_root_ref = (int64)buildSubdivPatchTreeCompact(*subdiv_patch,node,((Scene*)geom)->getSubdivMesh(subdiv_patch->geom));                                
+
+#else                
+		size_t new_root_ref = (size_t)buildSubdivPatchTree(*subdiv_patch,node,((Scene*)geom)->getSubdivMesh(subdiv_patch->geom));
+#endif
+		new_root_ref -= (int64)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();                                
+		assert( new_root_ref <= 0xffffffff );
+		assert( !(new_root_ref & REF_TAG) );
+		new_root_ref |= REF_TAG;
+		new_root_ref |= (int64)SharedLazyTessellationCache::sharedLazyTessellationCache.getCurrentIndex() << 32; 
+		subdiv_patch->root_ref = new_root_ref;
+
+#if DEBUG
+		const size_t patchIndex = subdiv_patch - pre.array;
+		assert(patchIndex < pre.numPrimitives);
+		CACHE_STATS(SharedTessellationCacheStats::incPatchBuild(patchIndex,pre.numPrimitives));
+		//SharedTessellationCacheStats::newDeletePatchPtr(patchIndex,pre.numPrimitives,subdiv_patch->grid_subtree_size_64b_blocks*64);
+#endif
+	      }
+	  }
+	  subdiv_patch->write_unlock();
+	  SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(pre.threadID);		  
+	}
+      
+    }
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     
+    
+    BVH4::NodeRef SubdivPatch1CachedIntersector1::buildSubdivPatchTreeCompact(const SubdivPatch1Cached &patch,
+									      void *const lazymem,
+									      const SubdivMesh* const geom)
+    {      
+      TIMER(double msec = 0.0);
+      TIMER(msec = getSeconds());
+      TIMER(uint64 cycles = rdtsc());
+      assert( patch.grid_size_simd_blocks >= 1 );
+
+      const size_t array_elements = patch.grid_size_simd_blocks * 8;
+
+#if 0
+      PRINT( patch.grid_u_res );
+      PRINT( patch.grid_v_res );
+      PRINT( array_elements );
+      PRINT( patch.grid_size_simd_blocks );
+      PRINT( patch.grid_subtree_size_64b_blocks );
+#endif
+ 
+#if !defined(_MSC_VER) || defined(__INTEL_COMPILER)
+      __aligned(64) float grid_u[array_elements+16]; 
+      __aligned(64) float grid_v[array_elements+16];
+     
+#else
+#define MAX_GRID_SIZE 64*64
+      __aligned(64) float local_grid_u[MAX_GRID_SIZE];
+      __aligned(64) float local_grid_v[MAX_GRID_SIZE];
+	  float *const grid_u = (patch.grid_size_simd_blocks * 8 < MAX_GRID_SIZE) ? local_grid_u : (float*)_mm_malloc((array_elements + 16)*sizeof(float),64);
+	  float *const grid_v = (patch.grid_size_simd_blocks * 8 < MAX_GRID_SIZE) ? local_grid_v : (float*)_mm_malloc((array_elements + 16)*sizeof(float),64);
+#endif   
+      const size_t grid_offset = patch.grid_bvh_size_64b_blocks * 16;
+
+      float *const grid_x  = (float*)lazymem + grid_offset + 0 * array_elements;
+      float *const grid_y  = (float*)lazymem + grid_offset + 1 * array_elements;
+      float *const grid_z  = (float*)lazymem + grid_offset + 2 * array_elements;
+      int   *const grid_uv = (int*)  lazymem + grid_offset + 3 * array_elements;
+
+      assert( patch.grid_subtree_size_64b_blocks * 16 >= grid_offset + 4 * array_elements);
+
+      evalGrid(patch,grid_x,grid_y,grid_z,grid_u,grid_v,geom);
+
+      for (size_t i=0;i<array_elements;i++)
+        grid_uv[i] = (((int)(grid_v[i] * 65535.0f/2.0f)) << 16) | ((int)(grid_u[i] * 65535.0f/2.0f)); 
+      
+      BVH4::NodeRef subtree_root = 0;
+      unsigned int currentIndex = 0;
+      BBox3fa bounds = createSubTreeCompact( subtree_root,
+					     (float*)lazymem,
+					     patch,
+					     grid_x,
+					     array_elements,
+					     GridRange(0,patch.grid_u_res-1,0,patch.grid_v_res-1),
+					     currentIndex);
+
+      assert( std::isfinite(bounds.lower.x) );
+      assert( std::isfinite(bounds.lower.y) );
+      assert( std::isfinite(bounds.lower.z) );
+
+      assert( std::isfinite(bounds.upper.x) );
+      assert( std::isfinite(bounds.upper.y) );
+      assert( std::isfinite(bounds.upper.z) );
+
+      //PRINT(subtree_root);
+      
+      // for (size_t y=0;y<patch.grid_v_res;y++)
+      // 	for (size_t x=0;x<patch.grid_u_res;x++)
+      // 	  std::cout << "y " << y << " x " << x << " " << grid_x[y*patch.grid_u_res+x] << std::endl;
+      
+      assert(currentIndex == patch.grid_bvh_size_64b_blocks);
+
+      TIMER(cycles = rdtsc() - cycles);
+      TIMER(msec = getSeconds()-msec);            
+      TIMER(double throughput = 1.0 / (1000*msec));
+      TIMER(double throughput2 = (2300*1E3) / (double)cycles);
+
+      TIMER(PRINT(throughput));
+      TIMER(PRINT(throughput2));
+
+      TIMER(PRINT(1000*msec));
+      TIMER(PRINT(patch.grid_u_res));
+      TIMER(PRINT(patch.grid_v_res));
+      TIMER(PRINT(patch.grid_subtree_size_64b_blocks*64));
+
+#if defined(_MSC_VER) && !defined(__INTEL_COMPILER)
+	
+	  if (patch.grid_size_simd_blocks * 8 >= MAX_GRID_SIZE)
+	  {
+	    _mm_free(grid_u);
+		_mm_free(grid_v);
+	  }
+#endif
+      return subtree_root;
+    }
+
+    BBox3fa SubdivPatch1CachedIntersector1::createSubTreeCompact(BVH4::NodeRef &curNode,
+								 float *const lazymem,
+								 const SubdivPatch1Cached &patch,
+								 const float *const grid_array,
+								 const size_t grid_array_elements,
+								 const GridRange &range,
+								 unsigned int &localCounter)
+    {
+      if (range.hasLeafSize())
+	{
+	  const float *const grid_x_array = grid_array + 0 * grid_array_elements;
+	  const float *const grid_y_array = grid_array + 1 * grid_array_elements;
+	  const float *const grid_z_array = grid_array + 2 * grid_array_elements;
+
+	  /* compute the bounds just for the range! */
+	  BBox3fa bounds( empty );
+	  for (size_t v = range.v_start; v<=range.v_end; v++)
+	    for (size_t u = range.u_start; u<=range.u_end; u++)
+	      {
+		const float x = grid_x_array[ v * patch.grid_u_res + u];
+		const float y = grid_y_array[ v * patch.grid_u_res + u];
+		const float z = grid_z_array[ v * patch.grid_u_res + u];
+		bounds.extend( Vec3fa(x,y,z) );
+	      }
+	  unsigned int u_start = range.u_start;
+	  unsigned int v_start = range.v_start;
+
+	  const unsigned int u_end   = range.u_end;
+	  const unsigned int v_end   = range.v_end;
+
+          if (unlikely(u_end-u_start+1 < 3)) 
+	    { 
+	      const unsigned int delta_u = 3 - (u_end-u_start+1);
+	      if (u_start >= delta_u) 
+		u_start -= delta_u; 
+	      else
+		u_start = 0;
+	    }
+          if (unlikely(v_end-v_start+1 < 3)) 
+	    { 
+	      const unsigned int delta_v = 3 - (v_end-v_start+1);
+	      if (v_start >= delta_v) 
+		v_start -= delta_v; 
+	      else
+		v_start = 0;
+	    }
+
+	  const unsigned int u_size = u_end-u_start+1;
+	  const unsigned int v_size = v_end-v_start+1;
+        
+	  assert(u_size >= 1);
+	  assert(v_size >= 1);
+        
+	  const size_t grid_offset3x3    = v_start * patch.grid_u_res + u_start;
+
+
+	  size_t offset_bytes = (size_t)&grid_x_array[ grid_offset3x3 ] - (size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();
+          size_t value = (offset_bytes << 4) + (size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();
+          assert( (value & 2) == 0 );
+          //value -= (size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();
+	  curNode = BVH4::encodeTypedLeaf((void*)value,2);
+
+	  assert( std::isfinite(bounds.lower.x) );
+	  assert( std::isfinite(bounds.lower.y) );
+	  assert( std::isfinite(bounds.lower.z) );
+	  
+	  assert( std::isfinite(bounds.upper.x) );
+	  assert( std::isfinite(bounds.upper.y) );
+	  assert( std::isfinite(bounds.upper.z) );
+
+	  return bounds;
+	}
+      
+      
+      /* allocate new bvh4 node */
+      const size_t currentIndex = localCounter;
+      
+      /* 128 bytes == 2 x 64 bytes cachelines */
+      localCounter += 2; 
+      
+      BVH4::Node *node = (BVH4::Node *)&lazymem[currentIndex*16];
+      
+      curNode = BVH4::encodeNode( node );
+      
+      node->clear();
+      
+      GridRange r[4];
+      
+      const unsigned int children = range.splitIntoSubRanges(r);
+      
+      /* create four subtrees */
+      BBox3fa bounds( empty );
+      
+      for (unsigned int i=0;i<children;i++)
+	{
+	  BBox3fa bounds_subtree = createSubTreeCompact( node->child(i), 
+							 lazymem, 
+							 patch, 
+							 grid_array,
+							 grid_array_elements,
+							 r[i],						  
+							 localCounter);
+	  node->set(i, bounds_subtree);
+	  bounds.extend( bounds_subtree );
+	}
+      
+      return bounds;
+    }
 
     BVH4::NodeRef SubdivPatch1CachedIntersector1::buildSubdivPatchTree(const SubdivPatch1Cached &patch,
                                                                        void *const lazymem,
@@ -394,93 +463,6 @@ namespace embree
         
 #endif   
       evalGrid(patch,grid_x,grid_y,grid_z,grid_u,grid_v,geom);
-
-      
-
-      if (patch.prim == 0)
-        {
-          //DBG_PRINT(patch.prim);
-          //DBG_PRINT(patch.patch.v[0][3]);
-          //DBG_PRINT(patch.patch.v[1][3]);
-          //DBG_PRINT(patch.patch.v[2][3]);
-          //DBG_PRINT(patch.patch.v[3][3]);
-
-          for (size_t i=0;i<patch.grid_v_res;i++)
-            {
-              save_id = patch.prim;
-              save_x[i] = grid_x[patch.grid_u_res*i+(patch.grid_u_res-1)];
-              save_y[i] = grid_y[patch.grid_u_res*i+(patch.grid_u_res-1)];
-              save_z[i] = grid_z[patch.grid_u_res*i+(patch.grid_u_res-1)];             
-            }
-          
-          for (size_t i=0;i<patch.grid_v_res;i++)
-            {
-              const unsigned int x = *(unsigned int*)&grid_x[patch.grid_u_res*i+(patch.grid_u_res-1)];
-              const unsigned int y = *(unsigned int*)&grid_y[patch.grid_u_res*i+(patch.grid_u_res-1)];
-              const unsigned int z = *(unsigned int*)&grid_z[patch.grid_u_res*i+(patch.grid_u_res-1)];
-              const unsigned int u = *(unsigned int*)&grid_u[patch.grid_u_res*i+(patch.grid_u_res-1)];
-              const unsigned int v = *(unsigned int*)&grid_v[patch.grid_u_res*i+(patch.grid_u_res-1)];              
-              std::cout << i << " => " << x << "," << y << "," << z << "," << u << "," << v << std::endl;
-            }
-        }
-
-      if (patch.prim == 1)
-        {
-          //DBG_PRINT(patch.prim);
-          //DBG_PRINT(patch.patch.v[0][0]);
-          //DBG_PRINT(patch.patch.v[1][0]);
-          //DBG_PRINT(patch.patch.v[2][0]);
-          //DBG_PRINT(patch.patch.v[3][0]);
-
-          if (save_id == 0 && 0)
-            {
-              for (size_t i=0;i<patch.grid_v_res;i++)
-                {
-                  save_id = patch.prim;
-                  grid_x[patch.grid_u_res*i] = save_x[i];
-                  grid_y[patch.grid_u_res*i] = save_y[i];
-                  grid_z[patch.grid_u_res*i] = save_z[i];                  
-                }
-            }
-          
-          for (size_t i=0;i<patch.grid_v_res;i++)
-            {
-              const unsigned int x = *(unsigned int*)&grid_x[patch.grid_u_res*i];
-              const unsigned int y = *(unsigned int*)&grid_y[patch.grid_u_res*i];
-              const unsigned int z = *(unsigned int*)&grid_z[patch.grid_u_res*i];
-              const unsigned int u = *(unsigned int*)&grid_u[patch.grid_u_res*i];
-              const unsigned int v = *(unsigned int*)&grid_v[patch.grid_u_res*i];
-              
-              std::cout << i << " => " << x << "," << y << "," << z << "," << u << "," << v << std::endl;
-              
-            }
-        }
-      
-      //DBG_PRINT(*hit_patch);      
-      #if 0
-      DBG_PRINT("x");
-        {
-          for (size_t x=0;x<patch.grid_u_res;x++)
-            std::cout << grid_x[patch.grid_u_res*y+x] << " ";
-          cout << std::endl;
-        }
-
-      DBG_PRINT("y");
-      for (size_t y=0;y<patch.grid_v_res;y++)
-        {
-          for (size_t x=0;x<patch.grid_u_res;x++)
-            std::cout << grid_y[patch.grid_u_res*y+x] << " ";
-          cout << std::endl;
-        }
-
-      DBG_PRINT("z");      
-       for (size_t y=0;y<patch.grid_v_res;y++)
-        {
-          for (size_t x=0;x<patch.grid_u_res;x++)
-            std::cout << grid_z[patch.grid_u_res*y+x] << " ";
-          cout << std::endl;
-        }
-       #endif
      
       BVH4::NodeRef subtree_root = BVH4::encodeNode( (BVH4::Node*)lazymem);
       unsigned int currentIndex = 0;
@@ -498,13 +480,21 @@ namespace embree
         
       assert(currentIndex == patch.grid_subtree_size_64b_blocks);
 
-      TIMER(msec = getSeconds()-msec);            
+      TIMER(msec = getSeconds()-msec);    
+	{
+         TIMER(PRINT(1000*msec));
+         TIMER(PRINT(patch.grid_u_res));
+         TIMER(PRINT(patch.grid_v_res));
+         TIMER(PRINT(patch.grid_subtree_size_64b_blocks*64));
+        }
 
 #if defined(_MSC_VER) && !defined(__INTEL_COMPILER)
       _freea(ptr);
 #endif
       return subtree_root;
     }
+
+    
     
     
     BBox3fa SubdivPatch1CachedIntersector1::createSubTree(BVH4::NodeRef &curNode,
@@ -585,11 +575,11 @@ namespace embree
 		       leaf_v_array);
         
 #if 0
-	  DBG_PRINT("LEAF");
-	  DBG_PRINT(u_start);
-	  DBG_PRINT(v_start);
-	  DBG_PRINT(u_end);
-	  DBG_PRINT(v_end);
+	  PRINT("LEAF");
+	  PRINT(u_start);
+	  PRINT(v_start);
+	  PRINT(u_end);
+	  PRINT(v_end);
         
 	  for (unsigned int y=0;y<3;y++)
 	    for (unsigned int x=0;x<3;x++)
@@ -597,15 +587,12 @@ namespace embree
 			<< " ->  x = " << leaf_x_array[y][x] << " y = " << leaf_v_array[y][x] << " z = " << leaf_z_array[y][x]
 			<< "   u = " << leaf_u_array[y][x] << " v = " << leaf_v_array[y][x] << std::endl;
         
-	  DBG_PRINT( *qquad );
+	  PRINT( *qquad );
         
 #endif          
         
 	  BBox3fa bounds = qquad->bounds();
-          //bounds.lower -= 1E3f;
-          //bounds.upper += 1E3f;
-          
-	  curNode = BVH4::encodeLeaf(qquad,2);
+	  curNode = BVH4::encodeTypedLeaf(qquad,2);
         
 	  return bounds;
 	}
@@ -649,20 +636,13 @@ namespace embree
       
       return bounds;
     }
-    
-    void SubdivPatch1CachedIntersector1::createTessellationCache()
+
+
+
+    void SubdivPatch1CachedIntersector1::createLocalThreadInfo()
     {
-      PerThreadTessellationCache *cache = (PerThreadTessellationCache *)_mm_malloc(sizeof(PerThreadTessellationCache),64);
-      assert( (size_t)cache % 64 == 0 );
-      cache->init();	
-#if defined(DEBUG) && 0
-      static AtomicMutex mtx;
-      mtx.lock();
-      std::cout << "Enabling tessellation cache with " << cache->allocated64ByteBlocks() << " blocks = " << cache->allocated64ByteBlocks()*64 << " bytes as default size" << std::endl;
-      mtx.unlock();
-#endif
-      thread_cache = cache;
+      localThreadInfo = new LocalTessellationCacheThreadInfo( SharedLazyTessellationCache::sharedLazyTessellationCache.getNextRenderThreadID() );	      
     }
-    
+
   };
 }

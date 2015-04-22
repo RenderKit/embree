@@ -15,8 +15,8 @@
 // ======================================================================== //
 
 #include "network.h"
-#include "stl/string.h"
-#include "sync/mutex.h"
+#include "string.h"
+#include "mutex.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 /// Platforms supporting Socket interface
@@ -72,8 +72,8 @@ namespace embree
       }
 
       ~buffered_socket_t () {
-        delete[] ibuf; ibuf = NULL;
-        delete[] obuf; obuf = NULL;
+        delete[] ibuf; ibuf = nullptr;
+        delete[] obuf; obuf = nullptr;
       }
       
       SOCKET fd;               //!< file descriptor of the socket
@@ -95,7 +95,7 @@ namespace embree
       
       /*! perform DNS lookup */
       struct hostent* server = ::gethostbyname(host);
-      if (server == NULL) THROW_RUNTIME_ERROR("server "+std::string(host)+" not found");
+      if (server == nullptr) THROW_RUNTIME_ERROR("server "+std::string(host)+" not found");
       
       /*! perform connection */
       struct sockaddr_in serv_addr;
@@ -105,7 +105,7 @@ namespace embree
       memcpy((char*)&serv_addr.sin_addr.s_addr, (char*)server->h_addr, server->h_length);
       
       if (::connect(sockfd,(struct sockaddr*) &serv_addr,sizeof(serv_addr)) < 0)
-        THROW_RUNTIME_ERROR("connection to "+std::string(host)+":"+std::stringOf(port)+" failed");
+        THROW_RUNTIME_ERROR("connection to "+std::string(host)+":"+std::to_string((long long)port)+" failed");
 
       /*! enable TCP_NODELAY */
 #ifdef TCP_NODELAY
@@ -143,7 +143,7 @@ namespace embree
       serv_addr.sin_addr.s_addr = INADDR_ANY;
 
       if (::bind(sockfd, (struct sockaddr*) &serv_addr, sizeof(serv_addr)) < 0)
-        THROW_RUNTIME_ERROR("binding to port "+std::stringOf(port)+" failed");
+        THROW_RUNTIME_ERROR("binding to port "+std::to_string((long long)port)+" failed");
       
       /*! listen to port, up to 5 pending connections */
       if (::listen(sockfd,5) < 0)

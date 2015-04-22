@@ -15,13 +15,13 @@
 // ======================================================================== //
 
 #include "../common/tutorial/tutorial_device.h"
-#include "kernels/xeon/builders/bvh_builder_binned_sah.h"
-#include "kernels/xeon/builders/bvh_builder_center.h"
-#include "kernels/xeon/builders/priminfo.h"
+#include "kernels/common/alloc.h"
+#include "kernels/xeon/builders/bvh_builder_sah.h"
+#include "kernels/xeon/builders/bvh_builder_morton.h"
 
 /* scene data */
-RTCScene g_scene = NULL;
-Vec3fa* colors = NULL;
+RTCScene g_scene = nullptr;
+Vec3fa* colors = nullptr;
 
 /* render function to use */
 renderPixelFunc renderPixel;
@@ -36,6 +36,7 @@ void error_handler(const RTCError code, const int8* str)
   case RTC_INVALID_OPERATION: printf("RTC_INVALID_OPERATION"); break;
   case RTC_OUT_OF_MEMORY    : printf("RTC_OUT_OF_MEMORY"); break;
   case RTC_UNSUPPORTED_CPU  : printf("RTC_UNSUPPORTED_CPU"); break;
+  case RTC_CANCELLED        : printf("RTC_CANCELLED"); break;
   default                   : printf("invalid error code"); break;
   }
   if (str) { 
@@ -46,12 +47,15 @@ void error_handler(const RTCError code, const int8* str)
   abort();
 }
 
-/* rtcCommitThread called by all ISPC worker threads to enable parallel build */
-#if defined(PARALLEL_COMMIT)
-task void parallelCommit(RTCScene scene) {
-  rtcCommitThread (scene,threadIndex,threadCount); 
+/* These function called by the builder to signal progress and to
+ * report memory consumption. */
+namespace embree
+{
+  void memoryMonitor(ssize_t bytes, bool post)
+  {
+    // throw an exception here when nprims>0 to cancel the build operation
+  }
 }
-#endif
 
 struct Node
 {
@@ -65,7 +69,7 @@ struct InnerNode : public Node
 
   InnerNode() {
     bounds[0] = bounds[1] = empty;
-    children[0] = children[1] = NULL;
+    children[0] = children[1] = nullptr;
   }
   
   float sah() {
@@ -86,7 +90,7 @@ struct LeafNode : public Node
   }
 };
 
-void build_sah(std::vector<PrimRef>& prims, isa::PrimInfo& pinfo)
+void build_sah(avector<PrimRef>& prims, isa::PrimInfo& pinfo)
 {
   size_t N = pinfo.size();
 
@@ -100,34 +104,42 @@ void build_sah(std::vector<PrimRef>& prims, isa::PrimInfo& pinfo)
     
     allocator.reset();
 
-    Node* root = isa::bvh_builder_binned_sah<Node*>(
-
+    Node* root;
+    isa::BVHBuilderBinnedSAH::build<Node*>(
+      root,
       /* thread local allocator for fast allocations */
       [&] () -> FastAllocator::ThreadLocal* { 
         return allocator.threadLocal(); 
       },
 
       /* lambda function that creates BVH nodes */
-      [&](const isa::BuildRecord<Node*>& current, isa::BuildRecord<Node*>* children, const size_t N, FastAllocator::ThreadLocal* alloc)
+      [&](const isa::BVHBuilderBinnedSAH::BuildRecord& current, isa::BVHBuilderBinnedSAH::BuildRecord* children, const size_t N, FastAllocator::ThreadLocal* alloc) -> int
       {
         assert(N <= 2);
         InnerNode* node = new (alloc->malloc(sizeof(InnerNode))) InnerNode;
         for (size_t i=0; i<N; i++) {
-          node->bounds[i] = children[i].geomBounds;
-          children[i].parent = &node->children[i];
+          node->bounds[i] = children[i].pinfo.geomBounds;
+          children[i].parent = (size_t*) &node->children[i];
         }
-        *current.parent = node;
-        return node;
+        *current.parent = (size_t) node;
+	return 0;
       },
 
       /* lambda function that creates BVH leaves */
-      [&](const isa::BuildRecord<Node*>& current, PrimRef* prims, FastAllocator::ThreadLocal* alloc)
+      [&](const isa::BVHBuilderBinnedSAH::BuildRecord& current, FastAllocator::ThreadLocal* alloc) -> int
       {
-        assert(current.size() == 1);
-        Node* node = new (alloc->malloc(sizeof(LeafNode))) LeafNode(prims[current.begin].ID(),prims[current.begin].bounds());
-        *current.parent = node;
+        assert(current.prims.size() == 1);
+        Node* node = new (alloc->malloc(sizeof(LeafNode))) LeafNode(prims[current.prims.begin()].ID(),prims[current.prims.begin()].bounds());
+        *current.parent = (size_t) node;
+	return 0;
       },
-      prims.data(),pinfo,2,1024,1,1,1);
+
+      /* progress monitor function */
+      [&] (size_t dn) { 
+        // throw an exception here to cancel the build operation
+      },
+
+      prims.data(),pinfo,2,1024,1,1,1,1.0f,1.0f);
     
     double t1 = getSeconds();
 
@@ -135,12 +147,12 @@ void build_sah(std::vector<PrimRef>& prims, isa::PrimInfo& pinfo)
   }
 }
 
-void build_morton(std::vector<PrimRef>& prims, isa::PrimInfo& pinfo)
+void build_morton(avector<PrimRef>& prims, isa::PrimInfo& pinfo)
 {
   size_t N = pinfo.size();
   /* array for morton builder */
-  std::vector<isa::MortonID32Bit> morton_src(N);
-  std::vector<isa::MortonID32Bit> morton_tmp(N);
+  avector<isa::MortonID32Bit> morton_src(N);
+  avector<isa::MortonID32Bit> morton_tmp(N);
   for (size_t i=0; i<N; i++) 
     morton_src[i].index = i;
 
@@ -154,12 +166,14 @@ void build_morton(std::vector<PrimRef>& prims, isa::PrimInfo& pinfo)
     
     allocator.reset();
 
-    std::pair<Node*,BBox3fa> node_bounds = isa::bvh_builder_center<Node*>(
+    std::pair<Node*,BBox3fa> node_bounds = isa::bvh_builder_morton<Node*>(
 
       /* thread local allocator for fast allocations */
       [&] () -> FastAllocator::ThreadLocal* { 
         return allocator.threadLocal(); 
       },
+
+      BBox3fa(empty),
 
       /* lambda function that allocates BVH nodes */
       [&] ( isa::MortonBuildRecord<Node*>& current, isa::MortonBuildRecord<Node*>* children, size_t N, FastAllocator::ThreadLocal* alloc ) -> InnerNode*
@@ -200,6 +214,12 @@ void build_morton(std::vector<PrimRef>& prims, isa::PrimInfo& pinfo)
       [&] (const isa::MortonID32Bit& morton) -> BBox3fa {
         return prims[morton.index].bounds();
       },
+
+      /* progress monitor function */
+      [&] (size_t dn) { 
+        // throw an exception here to cancel the build operation
+      },
+
       morton_src.data(),morton_tmp.data(),prims.size(),2,1024,1,1);
 
     Node* root = node_bounds.first;
@@ -225,7 +245,7 @@ extern "C" void device_init (int8* cfg)
   /* create random bounding boxes */
   const size_t N = 2300000;
   isa::PrimInfo pinfo(empty);
-  std::vector<PrimRef> prims; // FIXME: does not support alignment
+  avector<PrimRef> prims; 
   for (size_t i=0; i<N; i++) {
     const Vec3fa p = 1000.0f*Vec3fa(drand48(),drand48(),drand48());
     const BBox3fa b = BBox3fa(p,p+Vec3fa(1.0f));
@@ -289,7 +309,6 @@ extern "C" void device_render (int* pixels,
   const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
   launch_renderTile(numTilesX*numTilesY,pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY); 
-  rtcDebug();
 }
 
 /* called by the C++ code for cleanup */

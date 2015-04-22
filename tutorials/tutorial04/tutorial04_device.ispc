@@ -16,8 +16,6 @@
 
 #include "../common/tutorial/tutorial_device.isph"
 
-#define PARALLEL_COMMIT
-
 /* render function to use */
 renderPixelFunc renderPixel;
 
@@ -31,6 +29,7 @@ void error_handler(const uniform RTCError code, const uniform int8* uniform str)
   case RTC_INVALID_OPERATION: print("RTC_INVALID_OPERATION"); break;
   case RTC_OUT_OF_MEMORY    : print("RTC_OUT_OF_MEMORY"); break;
   case RTC_UNSUPPORTED_CPU  : print("RTC_UNSUPPORTED_CPU"); break;
+  case RTC_CANCELLED        : print("RTC_CANCELLED"); break;
   default                   : print("invalid error code"); break;
   }
   if (str) { 
@@ -132,13 +131,6 @@ uniform unsigned int g_instance3 = -1;
 
 uniform Vec3f colors[4][4];
 
-/* rtcCommitThread called by all ISPC worker threads to enable parallel build */
-#if defined(PARALLEL_COMMIT)
-task void parallelCommit(RTCScene scene) {
-  rtcCommitThread (scene,threadIndex,threadCount); 
-}
-#endif
-
 /* called by the C++ code for initialization */
 export void device_init (uniform int8* uniform cfg)
 {
@@ -157,12 +149,7 @@ export void device_init (uniform int8* uniform cfg)
   createTriangulatedSphere(g_scene1,make_Vec3f(+1, 0, 0),0.5);
   createTriangulatedSphere(g_scene1,make_Vec3f( 0, 0,-1),0.5);
   createTriangulatedSphere(g_scene1,make_Vec3f(-1, 0, 0),0.5);
-
-#if !defined(PARALLEL_COMMIT)
   rtcCommit (g_scene1);
-#else
-  launch[ getNumHWThreads() ] parallelCommit(g_scene1); sync;
-#endif
 
   /* instantiate geometry */
   g_instance0 = rtcNewInstance(g_scene,g_scene1);
@@ -264,7 +251,7 @@ task void renderTile(uniform int* uniform pixels,
   const uniform int y0 = tileY * TILE_SIZE_Y;
   const uniform int y1 = min(y0+TILE_SIZE_Y,height);
 
-  foreach (y = y0 ... y1, x = x0 ... x1)
+  foreach_tiled (y = y0 ... y1, x = x0 ... x1)
   {
     /* calculate pixel color */
     Vec3f color = renderPixel(x,y,vx,vy,vz,p);
@@ -310,18 +297,12 @@ export void device_render (uniform int* uniform pixels,
   rtcUpdate(g_scene,g_instance1);
   rtcUpdate(g_scene,g_instance2);
   rtcUpdate(g_scene,g_instance3);
-#if !defined(PARALLEL_COMMIT)
   rtcCommit (g_scene);
-#else
-  launch[ getNumHWThreads() ] parallelCommit(g_scene); sync;
-#endif
-
 
   /* render all pixels */
   const uniform int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   const uniform int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
   launch[numTilesX*numTilesY] renderTile(pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY); sync;
-  rtcDebug();
 }
 
 /* called by the C++ code for cleanup */

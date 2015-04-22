@@ -26,8 +26,8 @@ namespace embree
 
   size_t BVH4iRotate::rotate(BVH4i* bvh, NodeRef parentRef, size_t depth, const bool onlyTopLevel)
   {
-    DBG( DBG_PRINT(parentRef) );
-    DBG( DBG_PRINT(depth) );
+    DBG( PRINT(parentRef) );
+    DBG( PRINT(depth) );
 
     assert(depth < BVH4i::maxBuildDepth);
 
@@ -66,8 +66,8 @@ namespace embree
 	childArea[i] = parent->halfAreaBounds( i );
 	if (childArea[i] != _childArea[4*i])
 	  FATAL("HERE");
-	DBG( DBG_PRINT(i) );
-	DBG( DBG_PRINT(childArea[i]) );
+	DBG( PRINT(i) );
+	DBG( PRINT(childArea[i]) );
 
       }
 
@@ -173,9 +173,9 @@ namespace embree
 	  {	  
 	    const float area_i = area0123[i] - childArea[c2];
 
-	    DBG( DBG_PRINT(i) );
-	    DBG( DBG_PRINT(area_i) );
-	    DBG( DBG_PRINT(bestArea) );
+	    DBG( PRINT(i) );
+	    DBG( PRINT(area_i) );
+	    DBG( PRINT(bestArea) );
 
 	    if ((depth+1)+cdepth[i] > BVH4i::maxBuildDepth) continue;
 	    if (i == c2) continue;
@@ -187,8 +187,8 @@ namespace embree
 	      bestChild2 = c2;
 	      bestChild2Child = pos[i];
 
-	      DBG( DBG_PRINT(bestChild1) );
-	      DBG( DBG_PRINT(bestChild2) );
+	      DBG( PRINT(bestChild1) );
+	      DBG( PRINT(bestChild2) );
 	    }
 	  
 	  }

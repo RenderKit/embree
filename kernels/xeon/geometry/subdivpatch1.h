@@ -20,7 +20,7 @@
 #include "common/subdiv/bspline_patch.h"
 #include "common/subdiv/gregory_patch.h"
 
-#define SUBDIVISION_LEVEL 3 // FIXME: removes
+#define SUBDIVISION_LEVEL 3 // FIXME: remove
 
 namespace embree
 {
@@ -29,7 +29,6 @@ namespace embree
     struct Type : public PrimitiveType 
     {
       Type ();
-      size_t blocks(size_t x) const; 
       size_t size(const char* This) const;
     };
     

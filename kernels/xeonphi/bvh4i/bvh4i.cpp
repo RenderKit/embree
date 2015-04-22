@@ -24,7 +24,7 @@
 namespace embree
 {
 
-  __aligned(64) BVH4i::Helper BVH4i::initQBVHNode[4] = { 
+  __aligned(64) BVH4i::Node::Helper BVH4i::Node::initQBVHNode[4] = { 
     { pos_inf, pos_inf, pos_inf,BVH4i::invalidNode},
     { neg_inf, neg_inf, neg_inf,BVH4i::invalidNode},
     { pos_inf, pos_inf, pos_inf,BVH4i::invalidNode},
@@ -35,11 +35,17 @@ namespace embree
   DECLARE_SYMBOL(Accel::Intersector1 ,BVH4iTriangle1Intersector1);
   DECLARE_SYMBOL(Accel::Intersector1 ,BVH4iTriangle1Intersector1NoFilter);
 
+  DECLARE_SYMBOL(Accel::Intersector1 ,BVH4iTriangle1Intersector1Robust);
+  DECLARE_SYMBOL(Accel::Intersector1 ,BVH4iTriangle1Intersector1NoFilterRobust);
+
   DECLARE_SYMBOL(Accel::Intersector16,BVH4iTriangle1Intersector16ChunkMoeller);
   DECLARE_SYMBOL(Accel::Intersector16,BVH4iTriangle1Intersector16ChunkMoellerNoFilter);
 
   DECLARE_SYMBOL(Accel::Intersector16,BVH4iTriangle1Intersector16SingleMoeller);
   DECLARE_SYMBOL(Accel::Intersector16,BVH4iTriangle1Intersector16SingleMoellerNoFilter);
+
+  DECLARE_SYMBOL(Accel::Intersector16,BVH4iTriangle1Intersector16SingleMoellerRobust);
+  DECLARE_SYMBOL(Accel::Intersector16,BVH4iTriangle1Intersector16SingleMoellerNoFilterRobust);
 
   DECLARE_SYMBOL(Accel::Intersector16,BVH4iTriangle1Intersector16HybridMoeller);
   DECLARE_SYMBOL(Accel::Intersector16,BVH4iTriangle1Intersector16HybridMoellerNoFilter);
@@ -80,11 +86,17 @@ namespace embree
     SELECT_SYMBOL_KNC(features,BVH4iTriangle1Intersector1);
     SELECT_SYMBOL_KNC(features,BVH4iTriangle1Intersector1NoFilter);
 
+    SELECT_SYMBOL_KNC(features,BVH4iTriangle1Intersector1Robust);
+    SELECT_SYMBOL_KNC(features,BVH4iTriangle1Intersector1NoFilterRobust);
+
     SELECT_SYMBOL_KNC(features,BVH4iTriangle1Intersector16ChunkMoeller);
     SELECT_SYMBOL_KNC(features,BVH4iTriangle1Intersector16ChunkMoellerNoFilter);
 
     SELECT_SYMBOL_KNC(features,BVH4iTriangle1Intersector16SingleMoeller);
     SELECT_SYMBOL_KNC(features,BVH4iTriangle1Intersector16SingleMoellerNoFilter);
+
+    SELECT_SYMBOL_KNC(features,BVH4iTriangle1Intersector16SingleMoellerRobust);
+    SELECT_SYMBOL_KNC(features,BVH4iTriangle1Intersector16SingleMoellerNoFilterRobust);
 
     SELECT_SYMBOL_KNC(features,BVH4iTriangle1Intersector16HybridMoeller);
     SELECT_SYMBOL_KNC(features,BVH4iTriangle1Intersector16HybridMoellerNoFilter);
@@ -119,75 +131,84 @@ namespace embree
   }
 
 
-  Accel::Intersectors BVH4iTriangle1Intersectors(BVH4i* bvh)
+  Accel::Intersectors BVH4iTriangle1Intersectors(BVH4i* bvh,bool robust)
   {
-
     Accel::Intersectors intersectors;
     intersectors.ptr = bvh;
-    intersectors.intersector1  = BVH4iTriangle1Intersector1;
-    if      (g_tri_traverser == "default" || g_tri_traverser == "hybrid") 
-      {
-	intersectors.intersector16          = BVH4iTriangle1Intersector16HybridMoeller;
-	intersectors.intersector16_filter   = BVH4iTriangle1Intersector16HybridMoeller;
-	intersectors.intersector16_nofilter = BVH4iTriangle1Intersector16HybridMoellerNoFilter;
-      }
-    else if (g_tri_traverser == "chunk"  ) 
-      {
-	intersectors.intersector16          = BVH4iTriangle1Intersector16ChunkMoeller;
-	intersectors.intersector16_filter   = BVH4iTriangle1Intersector16ChunkMoeller;
-	intersectors.intersector16_nofilter = BVH4iTriangle1Intersector16ChunkMoellerNoFilter;
+    intersectors.intersector1  = robust ? BVH4iTriangle1Intersector1Robust : BVH4iTriangle1Intersector1;
 
-      }
-    else if (g_tri_traverser == "single" ) 
+    if (robust)
       {
-	intersectors.intersector16          = BVH4iTriangle1Intersector16SingleMoeller;
-	intersectors.intersector16_filter   = BVH4iTriangle1Intersector16SingleMoeller;
-	intersectors.intersector16_nofilter = BVH4iTriangle1Intersector16SingleMoellerNoFilter;
-
+	intersectors.intersector16          = BVH4iTriangle1Intersector16SingleMoellerRobust;
+	intersectors.intersector16_filter   = BVH4iTriangle1Intersector16SingleMoellerRobust;
+	intersectors.intersector16_nofilter = BVH4iTriangle1Intersector16SingleMoellerNoFilterRobust;
       }
-    else if (g_tri_traverser == "test" ) 
+    else
       {
-	intersectors.intersector16          = BVH4iTriangle1Intersector16TestMoeller;
-	intersectors.intersector16_filter   = BVH4iTriangle1Intersector16TestMoeller;
-	intersectors.intersector16_nofilter = BVH4iTriangle1Intersector16TestMoellerNoFilter;
+	if      (State::instance()->tri_traverser == "default" || State::instance()->tri_traverser == "hybrid") 
+	  {
+	    intersectors.intersector16          = BVH4iTriangle1Intersector16HybridMoeller;
+	    intersectors.intersector16_filter   = BVH4iTriangle1Intersector16HybridMoeller;
+	    intersectors.intersector16_nofilter = BVH4iTriangle1Intersector16HybridMoellerNoFilter;
+	  }
+	else if (State::instance()->tri_traverser == "chunk"  ) 
+	  {
+	    intersectors.intersector16          = BVH4iTriangle1Intersector16ChunkMoeller;
+	    intersectors.intersector16_filter   = BVH4iTriangle1Intersector16ChunkMoeller;
+	    intersectors.intersector16_nofilter = BVH4iTriangle1Intersector16ChunkMoellerNoFilter;
 
+	  }
+	else if (State::instance()->tri_traverser == "single" ) 
+	  {
+	    intersectors.intersector16          = BVH4iTriangle1Intersector16SingleMoeller;
+	    intersectors.intersector16_filter   = BVH4iTriangle1Intersector16SingleMoeller;
+	    intersectors.intersector16_nofilter = BVH4iTriangle1Intersector16SingleMoellerNoFilter;
+
+	  }
+	else if (State::instance()->tri_traverser == "test" ) 
+	  {
+	    intersectors.intersector16          = BVH4iTriangle1Intersector16TestMoeller;
+	    intersectors.intersector16_filter   = BVH4iTriangle1Intersector16TestMoeller;
+	    intersectors.intersector16_nofilter = BVH4iTriangle1Intersector16TestMoellerNoFilter;
+
+	  }
+	else THROW_RUNTIME_ERROR("unknown traverser "+State::instance()->tri_traverser+" for BVH4i<Triangle1>");      
       }
-    else THROW_RUNTIME_ERROR("unknown traverser "+g_tri_traverser+" for BVH4i<Triangle1>");      
     return intersectors;
   }
 
-  Accel::Intersectors BVH4iTriangle1mcIntersectors(BVH4i* bvh)
+  Accel::Intersectors BVH4iTriangle1mcIntersectors(BVH4i* bvh,bool robust)
   {
     Accel::Intersectors intersectors;
     intersectors.ptr = bvh;
     intersectors.intersector1  = BVH4iTriangle1mcIntersector1; 
-    if      (g_tri_traverser == "default" || g_tri_traverser == "hybrid") 
+    if      (State::instance()->tri_traverser == "default" || State::instance()->tri_traverser == "hybrid") 
       {
 	intersectors.intersector16          = BVH4iTriangle1mcIntersector16HybridMoeller;
 	intersectors.intersector16_filter   = BVH4iTriangle1mcIntersector16HybridMoeller;
 	intersectors.intersector16_nofilter = BVH4iTriangle1mcIntersector16HybridMoellerNoFilter;
 
       }
-    else if (g_tri_traverser == "chunk"  ) 
+    else if (State::instance()->tri_traverser == "chunk"  ) 
       {
 	intersectors.intersector16          = BVH4iTriangle1mcIntersector16ChunkMoeller;
 	intersectors.intersector16_filter   = BVH4iTriangle1mcIntersector16ChunkMoeller;
 	intersectors.intersector16_nofilter = BVH4iTriangle1mcIntersector16ChunkMoellerNoFilter;
 
       }
-    else if (g_tri_traverser == "single" ) 
+    else if (State::instance()->tri_traverser == "single" ) 
       {
 	intersectors.intersector16          = BVH4iTriangle1mcIntersector16SingleMoeller;
 	intersectors.intersector16_filter   = BVH4iTriangle1mcIntersector16SingleMoeller;
 	intersectors.intersector16_nofilter = BVH4iTriangle1mcIntersector16SingleMoellerNoFilter;
 
       }
-    else THROW_RUNTIME_ERROR("unknown traverser "+g_tri_traverser+" for BVH4i<Triangle1>");      
+    else THROW_RUNTIME_ERROR("unknown traverser "+State::instance()->tri_traverser+" for BVH4i<Triangle1>");      
     return intersectors;
   }
 
 
-  Accel::Intersectors BVH4iVirtualGeometryIntersectors(BVH4i* bvh)
+  Accel::Intersectors BVH4iVirtualGeometryIntersectors(BVH4i* bvh, bool robust)
   {
     Accel::Intersectors intersectors;
     intersectors.ptr = bvh;
@@ -196,7 +217,7 @@ namespace embree
     return intersectors;
   }
 
-  Accel::Intersectors BVH4iSubdivMeshIntersectors(BVH4i* bvh)
+  Accel::Intersectors BVH4iSubdivMeshIntersectors(BVH4i* bvh, bool robust)
   {
     Accel::Intersectors intersectors;
     intersectors.ptr = bvh;
@@ -206,75 +227,73 @@ namespace embree
   }
 
 
-  Accel* BVH4i::BVH4iTriangle1ObjectSplitBinnedSAH(Scene* scene)
+  Accel* BVH4i::BVH4iTriangle1ObjectSplitBinnedSAH(Scene* scene, bool robust)
   { 
     BVH4i* accel = new BVH4i(SceneTriangle1::type,scene);   
     Builder* builder = BVH4iBuilder::create(accel,scene,BVH4iBuilder::BVH4I_BUILDER_DEFAULT);    
-    Accel::Intersectors intersectors = BVH4iTriangle1Intersectors(accel);
+    Accel::Intersectors intersectors = BVH4iTriangle1Intersectors(accel,robust);
     return new AccelInstance(accel,builder,intersectors);
   }
 
-  Accel* BVH4i::BVH4iTriangle1ObjectSplitMorton(Scene* scene)
+  Accel* BVH4i::BVH4iTriangle1ObjectSplitMorton(Scene* scene, bool robust)
   { 
     BVH4i* accel = new BVH4i(SceneTriangle1::type,scene);   
     Builder* builder = BVH4iBuilderMorton::create(accel,scene,false);  
-    Accel::Intersectors intersectors = BVH4iTriangle1Intersectors(accel);
+    Accel::Intersectors intersectors = BVH4iTriangle1Intersectors(accel,robust);
     return new AccelInstance(accel,builder,intersectors);
   }
 
-  Accel* BVH4i::BVH4iTriangle1ObjectSplitMorton64Bit(Scene* scene)
+  Accel* BVH4i::BVH4iTriangle1ObjectSplitMorton64Bit(Scene* scene, bool robust)
   { 
     BVH4i* accel = new BVH4i(SceneTriangle1::type,scene);   
     Builder* builder = BVH4iBuilderMorton64Bit::create(accel,scene);  
-    Accel::Intersectors intersectors = BVH4iTriangle1Intersectors(accel);
+    Accel::Intersectors intersectors = BVH4iTriangle1Intersectors(accel,robust);
     return new AccelInstance(accel,builder,intersectors);
   }
 
-  Accel* BVH4i::BVH4iTriangle1ObjectSplitEnhancedMorton(Scene* scene)
+  Accel* BVH4i::BVH4iTriangle1ObjectSplitEnhancedMorton(Scene* scene, bool robust)
   { 
     BVH4i* accel = new BVH4i(SceneTriangle1::type,scene);
     Builder* builder = BVH4iBuilderMorton::create(accel,scene,true);  
     
-    Accel::Intersectors intersectors = BVH4iTriangle1Intersectors(accel);
+    Accel::Intersectors intersectors = BVH4iTriangle1Intersectors(accel,robust);
     return new AccelInstance(accel,builder,intersectors);
   }
 
-  Accel* BVH4i::BVH4iTriangle1PreSplitsBinnedSAH(Scene* scene)
+  Accel* BVH4i::BVH4iTriangle1PreSplitsBinnedSAH(Scene* scene, bool robust)
   {
     BVH4i* accel = new BVH4i(SceneTriangle1::type,scene);
     
     Builder* builder = BVH4iBuilder::create(accel,scene,BVH4iBuilder::BVH4I_BUILDER_PRESPLITS);
     
-    Accel::Intersectors intersectors = BVH4iTriangle1Intersectors(accel);
+    Accel::Intersectors intersectors = BVH4iTriangle1Intersectors(accel,robust);
     return new AccelInstance(accel,builder,intersectors);    
   }
 
-
-  Accel* BVH4i::BVH4iTriangle1MemoryConservativeBinnedSAH(Scene* scene)
+  Accel* BVH4i::BVH4iTriangle1MemoryConservativeBinnedSAH(Scene* scene, bool robust)
   {
     BVH4i* accel = new BVH4i(SceneTriangle1::type,scene);
     
     Builder* builder = BVH4iBuilder::create(accel,scene,BVH4iBuilder::BVH4I_BUILDER_MEMORY_CONSERVATIVE);       
-    Accel::Intersectors intersectors = BVH4iTriangle1mcIntersectors(accel);
-    scene->needVertices = true;
+    Accel::Intersectors intersectors = BVH4iTriangle1mcIntersectors(accel,robust);
+    scene->needTriangleVertices = true;
 
     return new AccelInstance(accel,builder,intersectors);    
   }
 
-  Accel* BVH4i::BVH4iVirtualGeometryBinnedSAH(Scene* scene)
+  Accel* BVH4i::BVH4iVirtualGeometryBinnedSAH(Scene* scene, bool robust)
   {
     BVH4i* accel = new BVH4i(SceneTriangle1::type,scene);    
     Builder* builder = BVH4iBuilder::create(accel,scene,BVH4iBuilder::BVH4I_BUILDER_VIRTUAL_GEOMETRY);   
-    Accel::Intersectors intersectors = BVH4iVirtualGeometryIntersectors(accel);
+    Accel::Intersectors intersectors = BVH4iVirtualGeometryIntersectors(accel,robust);
     return new AccelInstance(accel,builder,intersectors);    
   }
 
-  Accel* BVH4i::BVH4iSubdivMeshBinnedSAH(Scene* scene)
+  Accel* BVH4i::BVH4iSubdivMeshBinnedSAH(Scene* scene, bool robust)
   {
     BVH4i* accel = new BVH4i(SceneTriangle1::type,scene);    
     Builder* builder = BVH4iBuilder::create(accel,scene,BVH4iBuilder::BVH4I_BUILDER_SUBDIV_MESH);   
-    Accel::Intersectors intersectors = BVH4iSubdivMeshIntersectors(accel);
-    scene->needVertices = true;
+    Accel::Intersectors intersectors = BVH4iSubdivMeshIntersectors(accel,robust);
     return new AccelInstance(accel,builder,intersectors);        
   }
 

@@ -57,13 +57,13 @@ namespace embree
     // === find first group containing startID ===
     unsigned int g=0, numSkipped = 0;
     for (; g<numGroups; g++) {       
-      if (unlikely(scene->get(g) == NULL)) continue;
-      if (unlikely(scene->get(g)->type != TRIANGLE_MESH)) continue;
+      if (unlikely(scene->get(g) == nullptr)) continue;
+      if (unlikely(scene->get(g)->type != Geometry::TRIANGLE_MESH)) continue;
       const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(g);
       if (unlikely(!mesh->isEnabled())) continue;
       if (unlikely(mesh->numTimeSteps == 1)) continue;
 
-      const size_t numTriangles = mesh->numTriangles;
+      const size_t numTriangles = mesh->size();
       if (numSkipped + numTriangles > startID) break;
       numSkipped += numTriangles;
     }
@@ -84,13 +84,13 @@ namespace embree
 
     for (; g<numGroups; g++) 
     {
-      if (unlikely(scene->get(g) == NULL)) continue;
-      if (unlikely(scene->get(g)->type != TRIANGLE_MESH)) continue;
+      if (unlikely(scene->get(g) == nullptr)) continue;
+      if (unlikely(scene->get(g)->type != Geometry::TRIANGLE_MESH)) continue;
       const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(g);
       if (unlikely(!mesh->isEnabled())) continue;
       if (unlikely(mesh->numTimeSteps == 1)) continue;
 
-      for (unsigned int i=offset; i<mesh->numTriangles && currentID < endID; i++, currentID++)	 
+      for (unsigned int i=offset; i<mesh->size() && currentID < endID; i++, currentID++)	 
       { 			    
 	const TriangleMesh::Triangle& tri = mesh->triangle(i);
 	prefetch<PFHINT_L2>(&tri + L2_PREFETCH_ITEMS);
@@ -155,7 +155,7 @@ namespace embree
     DBG(PING);
     size_t numPrimitivesOld = numPrimitives;
     numPrimitives = totalNumPrimitives;
-    DBG(DBG_PRINT(numPrimitives));
+    DBG(PRINT(numPrimitives));
 
 
     if (numPrimitivesOld != numPrimitives)
@@ -242,8 +242,8 @@ namespace embree
 	return leaf_bounds;
       }
 
-    mic_f node_lower_t1 = broadcast4to16f(&BVH4i::initQBVHNode[0]);
-    mic_f node_upper_t1 = broadcast4to16f(&BVH4i::initQBVHNode[1]);
+    mic_f node_lower_t1 = broadcast4to16f(&BVH4i::Node::initQBVHNode[0]);
+    mic_f node_upper_t1 = broadcast4to16f(&BVH4i::Node::initQBVHNode[1]);
     mic_m m_lane = 0xf;
 
     BVH4mb::Node *n = (BVH4mb::Node*)ref.node(node);
@@ -289,9 +289,9 @@ namespace embree
 	
 	if (bounds != n->bounds_t1(i))
 	  {
-	    DBG_PRINT(bounds);
-	    DBG_PRINT(n->bounds_t1(i));
-	    DBG_PRINT(ref);
+	    PRINT(bounds);
+	    PRINT(n->bounds_t1(i));
+	    PRINT(ref);
 	    FATAL("bounds don't match");
 	  }
 	parentBounds.extend( n->bounds_t1(i) );
@@ -348,8 +348,8 @@ namespace embree
 	return parentBounds;
       }
 
-    mic_f node_lower_t1 = broadcast4to16f(&BVH4i::initQBVHNode[0]);
-    mic_f node_upper_t1 = broadcast4to16f(&BVH4i::initQBVHNode[1]);
+    mic_f node_lower_t1 = broadcast4to16f(&BVH4i::Node::initQBVHNode[0]);
+    mic_f node_upper_t1 = broadcast4to16f(&BVH4i::Node::initQBVHNode[1]);
     mic_m m_lane = 0xf;
 
     BVH4mb::Node *n = (BVH4mb::Node*)ref.node(node);
@@ -413,7 +413,7 @@ namespace embree
 	TIMER(msec = getSeconds()-msec);    
 	TIMER(std::cout << "generate subtrees " << 1000. * msec << " ms" << std::endl << std::flush);
 
-	DBG(DBG_PRINT(subtrees));
+	DBG(PRINT(subtrees));
 
 	TIMER(msec = getSeconds());
 	// ------------------------
@@ -431,11 +431,11 @@ namespace embree
 
       }
 
-#if defined(DEBUG)
-    std::cout << "checking tree..." << std::flush;
-    check_tree(bvh->root);
-    std::cout << "done" << std::endl << std::flush;
-#endif
+    DBG(
+	std::cout << "checking tree..." << std::flush;
+	check_tree(bvh->root);
+	std::cout << "done" << std::endl << std::flush;
+	);
 
 
     TIMER(msec = getSeconds());

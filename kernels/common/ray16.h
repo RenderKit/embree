@@ -29,7 +29,9 @@ namespace embree
 
     /*! Constructs a ray from origin, direction, and ray segment. Near
      *  has to be smaller than far. */
-    __forceinline Ray16(const mic3f& org, const mic3f& dir, const mic_f& tnear = zero, const mic_f& tfar = inf, const mic_f& time = zero, const mic_i& mask = -1)
+    __forceinline Ray16(const mic3f& org, const mic3f& dir, 
+                        const mic_f& tnear = zero, const mic_f& tfar = inf, 
+                        const mic_f& time = zero, const mic_i& mask = -1)
       : org(org), dir(dir), tnear(tnear), tfar(tfar), geomID(-1), primID(-1), mask(mask), time(time) {}
 
     /*! Tests if we hit something. */
@@ -86,7 +88,6 @@ namespace embree
 
     }
 
-
     __forceinline void update(const mic_m &m_mask,
 			      const mic_f &new_t,
 			      const mic_f &new_u,
@@ -105,16 +106,23 @@ namespace embree
       store16f(m_mask,(float*)&Ng.z,new_gnormalz);
       store16i(m_mask,(int*)&geomID,new_geomID);
       store16i(m_mask,(int*)&primID,new_primID);     
-
-
     }
-			      
-
   };
 
   /*! Outputs ray to stream. */
   inline std::ostream& operator<<(std::ostream& cout, const Ray16& ray) {
-    return cout << "{ " << std::endl << "org = " << ray.org << std::endl << " dir = " << ray.dir << std::endl << " near = " << ray.tnear << std::endl << " far = " << ray.tfar << std::endl << " time = " << ray.time << std::endl << " " <<
-      "instID = " << ray.instID << std::endl << " geomID = " << ray.geomID << std::endl << " primID = " << ray.primID <<  std::endl << " " << "u = " << ray.u <<  std::endl << " v = " << ray.v << std::endl << " Ng = " << ray.Ng << " }";
+    return cout << "{ " << std::endl 
+                << "org = " << ray.org << std::endl 
+                << " dir = " << ray.dir << std::endl 
+                << " near = " << ray.tnear << std::endl 
+                << " far = " << ray.tfar << std::endl 
+                << " time = " << ray.time << std::endl 
+                << " instID = " << ray.instID << std::endl 
+                << " geomID = " << ray.geomID << std::endl 
+                << " primID = " << ray.primID <<  std::endl
+                << " u = " << ray.u <<  std::endl 
+                << " v = " << ray.v << std::endl 
+                << " Ng = " << ray.Ng 
+                << " }";
   }
 }

@@ -16,25 +16,31 @@
 
 #pragma once
 
-#include "common/default.h"
+#include "sys/platform.h"
 
 namespace embree
 {
   template<typename Ty>
     struct range 
     {
-      range (const Ty& begin) 
+      __forceinline range () {}
+
+      __forceinline range (const Ty& begin) 
       : _begin(begin), _end(begin+1) {}
       
-      range (const Ty& begin, const Ty& end) 
+      __forceinline range (const Ty& begin, const Ty& end) 
       : _begin(begin), _end(end) {}
       
       __forceinline Ty begin() const {
         return _begin;
       }
       
-    __forceinline Ty end() const {
+      __forceinline Ty end() const {
 	return _end;
+      }
+
+      __forceinline Ty size() const {
+        return _end - _begin;
       }
 
       friend std::ostream& operator<<(std::ostream& cout, const range& r) {

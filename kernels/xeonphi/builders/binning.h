@@ -21,6 +21,114 @@
 namespace embree
 {
 
+  struct Split 
+  {
+    __forceinline void reset()
+    {
+      dim = -1;
+      pos = -1;
+      numLeft = -1;
+      cost = pos_inf;
+    }
+
+    __forceinline Split () 
+    {
+      reset();
+    }
+
+    __forceinline Split (const float default_cost) 
+    {
+      reset();
+      cost = default_cost;
+    }
+
+    __forceinline bool   valid() const { return pos != -1; } 
+    __forceinline bool invalid() const { return pos == -1; } 
+
+    
+    /*! stream output */
+    friend std::ostream& operator<<(std::ostream& cout, const Split& split) {
+      return cout << "Split { " << 
+        "dim = " << split.dim << 
+        ", pos = " << split.pos << 
+        ", numLeft = " << split.numLeft <<
+        ", sah = " << split.cost << "}";
+    }
+
+  public:
+    int dim;
+    int pos;
+    int numLeft;
+    float cost;
+  };
+
+  struct BinMapping {
+    mic_f centroidDiagonal_2;
+    mic_f centroidBoundsMin_2;
+    mic_f scale;
+    __forceinline BinMapping(const Centroid_Scene_AABB &bounds) 
+    {
+      const mic_f centroidMin = broadcast4to16f(&bounds.centroid2.lower);
+      const mic_f centroidMax = broadcast4to16f(&bounds.centroid2.upper);
+      centroidDiagonal_2  = centroidMax-centroidMin;
+      centroidBoundsMin_2 = centroidMin;
+      scale               = select(centroidDiagonal_2 != 0.0f,rcp(centroidDiagonal_2) * mic_f(16.0f * 0.99f),mic_f::zero());      
+    }
+
+    __forceinline mic_i getBinID(const mic_f &centroid_2) const
+    {
+      return convert_uint32((centroid_2 - centroidBoundsMin_2)*scale);
+    }
+
+    __forceinline mic_m getValidDimMask() const
+    {
+      return (centroidDiagonal_2 > 0.0f) & (mic_m)0x7;
+    }
+    
+  };
+
+  struct BinPartitionMapping {
+
+    mic_f c;
+    mic_f s;
+    mic_f bestSplit_f;
+    mic_m dim_mask;
+
+     __forceinline BinPartitionMapping(const Split &split, const Centroid_Scene_AABB &bounds) 
+    {
+      const unsigned int bestSplitDim     = split.dim;
+      const unsigned int bestSplit        = split.pos;
+      const unsigned int bestSplitNumLeft = split.numLeft;
+      const mic_f centroidMin = broadcast4to16f(&bounds.centroid2.lower);
+      const mic_f centroidMax = broadcast4to16f(&bounds.centroid2.upper);      
+      const mic_f centroidBoundsMin_2 = centroidMin;
+      const mic_f centroidDiagonal_2  = centroidMax-centroidMin;
+      const mic_f scale = select(centroidDiagonal_2 != 0.0f,rcp(centroidDiagonal_2) * mic_f(16.0f * 0.99f),mic_f::zero());
+      c = mic_f(centroidBoundsMin_2[bestSplitDim]);
+      s = mic_f(scale[bestSplitDim]);
+      bestSplit_f = mic_f(bestSplit);
+      dim_mask = mic_m::shift1[bestSplitDim];      
+    }
+
+    __forceinline mic_m lt_split(const mic_f &b_min,
+				 const mic_f &b_max) const
+    {
+      const mic_f centroid_2 = b_min + b_max;
+      const mic_f binID = (centroid_2 - c)*s;
+      return lt(dim_mask,binID,bestSplit_f);    
+    }
+
+    __forceinline mic_m ge_split(const mic_f &b_min,
+				 const mic_f &b_max) const
+    {
+      const mic_f centroid_2 = b_min + b_max;
+      const mic_f binID = (centroid_2 - c)*s;
+      return ge(dim_mask,binID,bestSplit_f);    
+    }
+    
+  };
+
+  
 
   __aligned(64) static const int identity[16]         = { 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15 };
   __aligned(64) static const int reverse_identity[16] = { 15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0 };
@@ -80,28 +188,56 @@ namespace embree
     return prefix_sum(c);
   }
 
-  static __forceinline mic_m lt_split(const mic_f &b_min,
-				      const mic_f &b_max,
-				      const mic_m &dim_mask,
-				      const mic_f &c,
-				      const mic_f &s,
-				      const mic_f &bestSplit_f)
-  {
-    const mic_f centroid_2 = b_min + b_max;
-    const mic_f binID = (centroid_2 - c)*s;
-    return lt(dim_mask,binID,bestSplit_f);    
-  }
 
-  static __forceinline mic_m ge_split(const mic_f &b_min,
-				      const mic_f &b_max,
-				      const mic_m &dim_mask,
-				      const mic_f &c,
-				      const mic_f &s,
-				      const mic_f &bestSplit_f)
+  __forceinline Split getBestSplit(const BuildRecord& current,
+				   const mic_f leftArea[3],
+				   const mic_f rightArea[3],
+				   const mic_i leftNum[3],
+				   const mic_m &m_dim)
   {
-    const mic_f centroid_2 = b_min + b_max;
-    const mic_f binID = (centroid_2 - c)*s;
-    return ge(dim_mask,binID,bestSplit_f);    
+    const unsigned int items        = current.items();
+    const float voxelArea           = area(current.bounds.geometry);
+    //const mic_f centroidMin         = broadcast4to16f(&current.bounds.centroid2.lower);
+    //const mic_f centroidMax         = broadcast4to16f(&current.bounds.centroid2.upper);
+    //const mic_f centroidDiagonal_2  = centroidMax-centroidMin;
+
+    Split split( items * voxelArea );
+ 
+    long dim = -1;
+    while((dim = bitscan64(dim,m_dim)) != BITSCAN_NO_BIT_SET_64) 
+      {	    
+	//assert(centroidDiagonal_2[dim] > 0.0f);
+
+	const mic_f rArea   = rightArea[dim]; // bin16.prefix_area_rl(dim);
+	const mic_f lArea   = leftArea[dim];  // bin16.prefix_area_lr(dim);      
+	const mic_i lnum    = leftNum[dim];   // bin16.prefix_count(dim);
+
+	const mic_i rnum    = mic_i(items) - lnum;
+	const mic_i lblocks = (lnum + mic_i(3)) >> 2;
+	const mic_i rblocks = (rnum + mic_i(3)) >> 2;
+	const mic_m m_lnum  = lnum == 0;
+	const mic_m m_rnum  = rnum == 0;
+	const mic_f cost    = select(m_lnum|m_rnum,mic_f::inf(),lArea * mic_f(lblocks) + rArea * mic_f(rblocks) + voxelArea );
+
+	if (lt(cost,mic_f(split.cost)))
+	  {
+
+	    const mic_f min_cost    = vreduce_min(cost); 
+	    const mic_m m_pos       = min_cost == cost;
+	    const unsigned long pos = bitscan64(m_pos);	    
+
+	    assert(pos < 15);
+
+	    if (pos < 15)
+	      {
+		split.cost    = cost[pos];
+		split.pos     = pos+1;
+		split.dim     = dim;	    
+		split.numLeft = lnum[pos];
+	      }
+	  }
+      };
+    return split;
   }
 
 
@@ -109,8 +245,7 @@ namespace embree
   __forceinline void fastbin(const Primitive * __restrict__ const aabb,
 			     const unsigned int thread_start,
 			     const unsigned int thread_end,
-			     const mic_f &centroidBoundsMin_2,
-			     const mic_f &scale,
+			     const BinMapping &mapping,
 			     mic_f lArea[3],
 			     mic_f rArea[3],
 			     mic_i lNum[3])
@@ -162,7 +297,7 @@ namespace embree
 	const mic_f b_max = bounds.y;
 
 	const mic_f centroid_2 = b_min + b_max; 
-	const mic_i binID = convert_uint32((centroid_2 - centroidBoundsMin_2)*scale);
+	const mic_i binID = mapping.getBinID(centroid_2); // convert_uint32((centroid_2 - centroidBoundsMin_2)*scale);
 	// ------------------------------------------------------------------------      
 	assert(0 <= binID[0] && binID[0] < 16);
 	assert(0 <= binID[1] && binID[1] < 16);
@@ -211,7 +346,7 @@ namespace embree
 	const mic_f b_max = bounds.y;
 
 	const mic_f centroid_2 = b_min + b_max; 
-	const mic_i binID = convert_uint32((centroid_2 - centroidBoundsMin_2)*scale);
+	const mic_i binID = mapping.getBinID(centroid_2); // const mic_i binID = convert_uint32((centroid_2 - centroidBoundsMin_2)*scale);
 	// ------------------------------------------------------------------------      
 	assert(0 <= binID[0] && binID[0] < 16);
 	assert(0 <= binID[1] && binID[1] < 16);
@@ -275,7 +410,7 @@ namespace embree
 	    const mic_f b_max  = bounds.y;
 
 	    const mic_f centroid_2 = b_min + b_max;
-	    const mic_i binID = convert_uint32((centroid_2 - centroidBoundsMin_2)*scale);
+	    const mic_i binID = mapping.getBinID(centroid_2); // const mic_i binID = convert_uint32((centroid_2 - centroidBoundsMin_2)*scale);
 
 	    assert(0 <= binID[0] && binID[0] < 16);
 	    assert(0 <= binID[1] && binID[1] < 16);
@@ -345,8 +480,7 @@ namespace embree
 				 const mic3f &cmat,
 				 const unsigned int thread_start,
 				 const unsigned int thread_end,
-				 const mic_f &centroidBoundsMin_2,
-				 const mic_f &scale,
+				 const BinMapping &mapping,
 				 mic_f lArea[3],
 				 mic_f rArea[3],
 				 mic_i lNum[3])
@@ -414,7 +548,7 @@ namespace embree
 	const mic_f b_max  = bounds.y;
 
 	const mic_f centroid_2 = b_min + b_max;
-	const mic_i binID_noclamp = convert_uint32((centroid_2 - centroidBoundsMin_2)*scale);
+	const mic_i binID_noclamp = mapping.getBinID(centroid_2); // convert_uint32((centroid_2 - centroidBoundsMin_2)*scale);
 	const mic_i binID = min(max(binID_noclamp,mic_i::zero()),mic_i(15));
 	assert(0 <= binID[0] && binID[0] < 16);
 	assert(0 <= binID[1] && binID[1] < 16);
@@ -482,34 +616,19 @@ namespace embree
 						       const mic3f &cmat,
 						       const unsigned int begin,
 						       const unsigned int end,
-						       const unsigned int bestSplit,
-						       const unsigned int bestSplitDim,
-						       const mic_f &centroidBoundsMin_2,
-						       const mic_f &scale,
+						       const BinPartitionMapping &mapping,
 						       Centroid_Scene_AABB & local_left,
 						       Centroid_Scene_AABB & local_right)
     {
       assert(begin <= end);
 
       Primitive *__restrict__ l = aabb + begin;
-      Primitive *__restrict__ r = aabb + end;
+      Primitive *__restrict__ r = aabb + end - 1;
 
-      const mic_f c = mic_f(centroidBoundsMin_2[bestSplitDim]);
-      const mic_f s = mic_f(scale[bestSplitDim]);
-
-      mic_f left_centroidMinAABB = broadcast4to16f(&local_left.centroid2.lower);
-      mic_f left_centroidMaxAABB = broadcast4to16f(&local_left.centroid2.upper);
-      mic_f left_sceneMinAABB    = broadcast4to16f(&local_left.geometry.lower);
-      mic_f left_sceneMaxAABB    = broadcast4to16f(&local_left.geometry.upper);
-
-      mic_f right_centroidMinAABB = broadcast4to16f(&local_right.centroid2.lower);
-      mic_f right_centroidMaxAABB = broadcast4to16f(&local_right.centroid2.upper);
-      mic_f right_sceneMinAABB    = broadcast4to16f(&local_right.geometry.lower);
-      mic_f right_sceneMaxAABB    = broadcast4to16f(&local_right.geometry.upper);
-
-      const mic_f bestSplit_f = mic_f(bestSplit);
-
-      const mic_m dim_mask = mic_m::shift1[bestSplitDim];
+      CentroidGeometryAABB leftReduction;
+      CentroidGeometryAABB rightReduction;
+      leftReduction.reset();
+      rightReduction.reset();
 
       const mic_f c0 = cmat.x;
       const mic_f c1 = cmat.y;
@@ -517,71 +636,46 @@ namespace embree
 
       while(1)
 	{
-	  while (likely(l < r)) 
+	  while (likely(l <= r)) 
 	    {
 	      
 	      const mic2f bounds = l->getBounds(c0,c1,c2);
 	      const mic_f b_min  = bounds.x;
 	      const mic_f b_max  = bounds.y;
 
-	      prefetch<PFHINT_L1EX>(l+2);	  
-	      if (unlikely(ge_split(b_min,b_max,dim_mask,c,s,bestSplit_f))) break;
-	      prefetch<PFHINT_L2EX>(l + DISTANCE + 4);	  
-	      const mic_f centroid2 = b_min+b_max;
-	      left_centroidMinAABB = min(left_centroidMinAABB,centroid2);
-	      left_centroidMaxAABB = max(left_centroidMaxAABB,centroid2);
-	      left_sceneMinAABB    = min(left_sceneMinAABB,b_min);
-	      left_sceneMaxAABB    = max(left_sceneMaxAABB,b_max);
+	      prefetch<PFHINT_L1EX>(((char*)l)+4*64);
+	      if (unlikely(mapping.ge_split(b_min,b_max))) break;
+	      prefetch<PFHINT_L2EX>(((char*)l)+20*64);
+ 
+	      leftReduction.extend(b_min,b_max);
 	      ++l;
 	    }
-	  while (likely(l < r)) 
+	  while (likely(l <= r)) 
 	    {
 	      const mic2f bounds = r->getBounds(c0,c1,c2);
 	      const mic_f b_min  = bounds.x;
 	      const mic_f b_max  = bounds.y;
 
-	      prefetch<PFHINT_L1EX>(r-2);	  
-	      if (unlikely(lt_split(b_min,b_max,dim_mask,c,s,bestSplit_f))) break;
-	      prefetch<PFHINT_L2EX>(r - DISTANCE - 4);
-	      const mic_f centroid2 = b_min+b_max;
-	      right_centroidMinAABB = min(right_centroidMinAABB,centroid2);
-	      right_centroidMaxAABB = max(right_centroidMaxAABB,centroid2);
-	      right_sceneMinAABB    = min(right_sceneMinAABB,b_min);
-	      right_sceneMaxAABB    = max(right_sceneMaxAABB,b_max);
+	      prefetch<PFHINT_L1EX>(((char*)r)-4*64);	  
+	      if (unlikely(mapping.lt_split(b_min,b_max))) break;
+	      prefetch<PFHINT_L2EX>(((char*)r)-20*64);	  
+	      rightReduction.extend(b_min,b_max);
 	      --r;
 	    }
 
-	  if (unlikely(l == r)) {
-	    const mic2f bounds = r->getBounds(c0,c1,c2);
-	    const mic_f b_min  = bounds.x;
-	    const mic_f b_max  = bounds.y;
-
-	    if ( ge_split(b_min,b_max,dim_mask,c,s,bestSplit_f))
-	      {
-		const mic_f centroid2 = b_min+b_max;
-		right_centroidMinAABB = min(right_centroidMinAABB,centroid2);
-		right_centroidMaxAABB = max(right_centroidMaxAABB,centroid2);
-		right_sceneMinAABB    = min(right_sceneMinAABB,b_min);
-		right_sceneMaxAABB    = max(right_sceneMaxAABB,b_max);
-	      }
-	    else 
-	      l++; 
+	  if (unlikely(r<l)) {
 	    break;
 	  }
 
+	  rightReduction.extend(l->getBounds());
+	  leftReduction.extend(r->getBounds());
+
 	  xchg(*l,*r);
+	  l++; r--;
 	}
 
-
-      store4f(&local_left.centroid2.lower,left_centroidMinAABB);
-      store4f(&local_left.centroid2.upper,left_centroidMaxAABB);
-      store4f(&local_left.geometry.lower,left_sceneMinAABB);
-      store4f(&local_left.geometry.upper,left_sceneMaxAABB);
-
-      store4f(&local_right.centroid2.lower,right_centroidMinAABB);
-      store4f(&local_right.centroid2.upper,right_centroidMaxAABB);
-      store4f(&local_right.geometry.lower,right_sceneMinAABB);
-      store4f(&local_right.geometry.upper,right_sceneMaxAABB);
+      local_left  = Centroid_Scene_AABB( leftReduction );
+      local_right = Centroid_Scene_AABB( rightReduction );
 
       assert( aabb + begin <= l && l <= aabb + end);
       assert( aabb + begin <= r && r <= aabb + end);
@@ -699,8 +793,29 @@ namespace embree
 
 	  count[i] += b.count[i];
 	}
-
     } 
+
+
+    __forceinline Split bestSplit(const BuildRecord& current,const mic_m &m_dim) const
+    {
+      mic_f lArea[3];
+      mic_f rArea[3];
+      mic_i leftNum[3];
+
+      long dim = -1;
+      while((dim = bitscan64(dim,m_dim)) != BITSCAN_NO_BIT_SET_64) 
+	{	
+	  rArea[dim]   = prefix_area_rl(min_x[dim],min_y[dim],min_z[dim],
+					max_x[dim],max_y[dim],max_z[dim]);
+	  lArea[dim]   = prefix_area_lr(min_x[dim],min_y[dim],min_z[dim],
+					max_x[dim],max_y[dim],max_z[dim]);
+	  leftNum[dim] = prefix_count(count[dim]);
+	}    
+
+      return getBestSplit(current,lArea,rArea,leftNum,m_dim);
+      
+    }
+
 
   };
 
@@ -731,38 +846,28 @@ namespace embree
 #pragma unroll(3)
     for (unsigned int i=0;i<3;i++)
       {
-	DBG_PRINT(v.min_x[i]);
-	DBG_PRINT(v.min_y[i]);
-	DBG_PRINT(v.min_z[i]);
+	PRINT(v.min_x[i]);
+	PRINT(v.min_y[i]);
+	PRINT(v.min_z[i]);
 
-	DBG_PRINT(v.max_x[i]);
-	DBG_PRINT(v.max_y[i]);
-	DBG_PRINT(v.max_z[i]);
+	PRINT(v.max_x[i]);
+	PRINT(v.max_y[i]);
+	PRINT(v.max_z[i]);
 
-	DBG_PRINT(v.count[i]);
+	PRINT(v.count[i]);
       }
 
     return o;
   }
 
 
-
-  template<class Primitive, bool NGO_OPTIMIZATION>
-  __forceinline void fastbin_copy(const Primitive * __restrict__ const aabb,
-				  Primitive * __restrict__ const tmp_aabb,
-				  const unsigned int thread_start,
-				  const unsigned int thread_end,
-				  const mic_f &centroidBoundsMin_2,
-				  const mic_f &scale,
-				  Bin16 &bin16)
+  template<class Primitive>
+  __forceinline void fastbin(const Primitive * __restrict__ const aabb,
+			     const unsigned int thread_start,
+			     const unsigned int thread_end,
+			     const BinMapping &mapping,
+			     Bin16 &bin16)
   {
-
-    prefetch<PFHINT_NT>(&aabb[thread_start]);
-    prefetch<PFHINT_NT>(&aabb[thread_end-1]);
-
-    prefetch<PFHINT_L1EX>(&tmp_aabb[thread_start]);
-    prefetch<PFHINT_L1EX>(&tmp_aabb[thread_end-1]);
-
     const mic_f init_min = mic_f::inf();
     const mic_f init_max = mic_f::minus_inf();
     const mic_i zero     = mic_i::zero();
@@ -802,121 +907,6 @@ namespace embree
     unsigned int start = thread_start;
     unsigned int end   = thread_end;
 
-    if (start % 2 != 0)
-      {
-	const mic2f bounds = aabb[start].getBounds();
-	const mic_f b_min  = bounds.x;
-	const mic_f b_max  = bounds.y;
-
-	const mic_f centroid_2 = b_min + b_max; 
-	// const 
-mic_i binID = convert_uint32((centroid_2 - centroidBoundsMin_2)*scale);
-	// ------------------------------------------------------------------------      
-        
-        if (!(0 <= binID[0] && binID[0] < 16)) {
-          std::cout << "binning assertion workaround" << std::endl;
-          PRINT(binID);
-          PRINT(bounds);
-          PRINT(b_min);
-          PRINT(b_max);
-          PRINT(centroid_2);
-          PRINT(centroidBoundsMin_2);
-          PRINT(scale);
-          binID = max(binID,mic_i(0));
-          binID = min(binID,mic_i(15));
-        } else {
-          assert(0 <= binID[0] && binID[0] < 16);
-          assert(0 <= binID[1] && binID[1] < 16);
-          assert(0 <= binID[2] && binID[2] < 16);
-        }
-	// ------------------------------------------------------------------------      
-	const mic_i id = load16i(identity);
-	const mic_m m_update_x = eq(id,swAAAA(binID));
-	const mic_m m_update_y = eq(id,swBBBB(binID));
-	const mic_m m_update_z = eq(id,swCCCC(binID));
-	// ------------------------------------------------------------------------      
-	min_x0 = mask_min(m_update_x,min_x0,min_x0,swAAAA(b_min));
-	min_y0 = mask_min(m_update_x,min_y0,min_y0,swBBBB(b_min));
-	min_z0 = mask_min(m_update_x,min_z0,min_z0,swCCCC(b_min));
-	// ------------------------------------------------------------------------      
-	max_x0 = mask_max(m_update_x,max_x0,max_x0,swAAAA(b_max));
-	max_y0 = mask_max(m_update_x,max_y0,max_y0,swBBBB(b_max));
-	max_z0 = mask_max(m_update_x,max_z0,max_z0,swCCCC(b_max));
-	// ------------------------------------------------------------------------
-	min_x1 = mask_min(m_update_y,min_x1,min_x1,swAAAA(b_min));
-	min_y1 = mask_min(m_update_y,min_y1,min_y1,swBBBB(b_min));
-	min_z1 = mask_min(m_update_y,min_z1,min_z1,swCCCC(b_min));      
-	// ------------------------------------------------------------------------      
-	max_x1 = mask_max(m_update_y,max_x1,max_x1,swAAAA(b_max));
-	max_y1 = mask_max(m_update_y,max_y1,max_y1,swBBBB(b_max));
-	max_z1 = mask_max(m_update_y,max_z1,max_z1,swCCCC(b_max));
-	// ------------------------------------------------------------------------
-	min_x2 = mask_min(m_update_z,min_x2,min_x2,swAAAA(b_min));
-	min_y2 = mask_min(m_update_z,min_y2,min_y2,swBBBB(b_min));
-	min_z2 = mask_min(m_update_z,min_z2,min_z2,swCCCC(b_min));
-	// ------------------------------------------------------------------------      
-	max_x2 = mask_max(m_update_z,max_x2,max_x2,swAAAA(b_max));
-	max_y2 = mask_max(m_update_z,max_y2,max_y2,swBBBB(b_max));
-	max_z2 = mask_max(m_update_z,max_z2,max_z2,swCCCC(b_max));
-	// ------------------------------------------------------------------------
-	count0 = mask_add(m_update_x,count0,count0,mic_i::one());
-	count1 = mask_add(m_update_y,count1,count1,mic_i::one());
-	count2 = mask_add(m_update_z,count2,count2,mic_i::one());      
-	tmp_aabb[start] = aabb[start];
-	start++;	
-      }
-    assert(start % 2 == 0);
-
-    if (end % 2 != 0)
-      {
-	const mic2f bounds = aabb[end-1].getBounds();
-	const mic_f b_min  = bounds.x;
-	const mic_f b_max  = bounds.y;
-
-	const mic_f centroid_2 = b_min + b_max; 
-	const mic_i binID = convert_uint32((centroid_2 - centroidBoundsMin_2)*scale);
-	// ------------------------------------------------------------------------      
-	assert(0 <= binID[0] && binID[0] < 16);
-	assert(0 <= binID[1] && binID[1] < 16);
-	assert(0 <= binID[2] && binID[2] < 16);
-	// ------------------------------------------------------------------------      
-	const mic_i id = load16i(identity);
-	const mic_m m_update_x = eq(id,swAAAA(binID));
-	const mic_m m_update_y = eq(id,swBBBB(binID));
-	const mic_m m_update_z = eq(id,swCCCC(binID));
-	// ------------------------------------------------------------------------      
-	min_x0 = mask_min(m_update_x,min_x0,min_x0,swAAAA(b_min));
-	min_y0 = mask_min(m_update_x,min_y0,min_y0,swBBBB(b_min));
-	min_z0 = mask_min(m_update_x,min_z0,min_z0,swCCCC(b_min));
-	// ------------------------------------------------------------------------      
-	max_x0 = mask_max(m_update_x,max_x0,max_x0,swAAAA(b_max));
-	max_y0 = mask_max(m_update_x,max_y0,max_y0,swBBBB(b_max));
-	max_z0 = mask_max(m_update_x,max_z0,max_z0,swCCCC(b_max));
-	// ------------------------------------------------------------------------
-	min_x1 = mask_min(m_update_y,min_x1,min_x1,swAAAA(b_min));
-	min_y1 = mask_min(m_update_y,min_y1,min_y1,swBBBB(b_min));
-	min_z1 = mask_min(m_update_y,min_z1,min_z1,swCCCC(b_min));      
-	// ------------------------------------------------------------------------      
-	max_x1 = mask_max(m_update_y,max_x1,max_x1,swAAAA(b_max));
-	max_y1 = mask_max(m_update_y,max_y1,max_y1,swBBBB(b_max));
-	max_z1 = mask_max(m_update_y,max_z1,max_z1,swCCCC(b_max));
-	// ------------------------------------------------------------------------
-	min_x2 = mask_min(m_update_z,min_x2,min_x2,swAAAA(b_min));
-	min_y2 = mask_min(m_update_z,min_y2,min_y2,swBBBB(b_min));
-	min_z2 = mask_min(m_update_z,min_z2,min_z2,swCCCC(b_min));
-	// ------------------------------------------------------------------------      
-	max_x2 = mask_max(m_update_z,max_x2,max_x2,swAAAA(b_max));
-	max_y2 = mask_max(m_update_z,max_y2,max_y2,swBBBB(b_max));
-	max_z2 = mask_max(m_update_z,max_z2,max_z2,swCCCC(b_max));
-	// ------------------------------------------------------------------------
-	count0 = mask_add(m_update_x,count0,count0,mic_i::one());
-	count1 = mask_add(m_update_y,count1,count1,mic_i::one());
-	count2 = mask_add(m_update_z,count2,count2,mic_i::one());      
-	tmp_aabb[end-1] = aabb[end-1];
-	end--;	
-      }
-    assert(end % 2 == 0);
-
     const Primitive * __restrict__ aptr = aabb + start;
 
     prefetch<PFHINT_NT>(aptr);
@@ -925,72 +915,54 @@ mic_i binID = convert_uint32((centroid_2 - centroidBoundsMin_2)*scale);
     prefetch<PFHINT_L2>(aptr+6);
     prefetch<PFHINT_L2>(aptr+8);
 
-    Primitive * __restrict__ tmp_aptr   = tmp_aabb + start;
-
-    for (size_t j = start;j < end;j+=2,aptr+=2,tmp_aptr+=2)
+    for (size_t j = start;j < end;j++,aptr++)
       {
-	const mic_f twoAABBs = load16f(aptr);
-
 	prefetch<PFHINT_NT>(aptr+2);
 	prefetch<PFHINT_L2>(aptr+12);
 
-	if (NGO_OPTIMIZATION)
-	  {
-	    store16f_ngo(tmp_aptr,twoAABBs);
-	  }
-	else
-	  {
-	    tmp_aptr[0] = aptr[0]; 
-	    tmp_aptr[1] = aptr[1]; 
-	  }
+	const mic2f bounds = aptr->getBounds();
+	const mic_f b_min  = bounds.x;
+	const mic_f b_max  = bounds.y;
 
-#pragma unroll(2)
-	for (size_t i=0;i<2;i++)
-	  {
-	    const mic2f bounds = aptr[i].getBounds();
-	    const mic_f b_min  = bounds.x;
-	    const mic_f b_max  = bounds.y;
+	const mic_f centroid_2 = b_min + b_max; 
+	const mic_i binID = mapping.getBinID(centroid_2); // convert_uint32((centroid_2 - centroidBoundsMin_2)*scale);
 
-	    const mic_f centroid_2 = b_min + b_max; 
-	    const mic_i binID = convert_uint32((centroid_2 - centroidBoundsMin_2)*scale);
+	assert(0 <= binID[0] && binID[0] < 16); 
+	assert(0 <= binID[1] && binID[1] < 16); 
+	assert(0 <= binID[2] && binID[2] < 16); 
 
-	    assert(0 <= binID[0] && binID[0] < 16); 
-	    assert(0 <= binID[1] && binID[1] < 16); 
-	    assert(0 <= binID[2] && binID[2] < 16); 
+	const mic_i id = load16i(identity);
+	const mic_m m_update_x = eq(id,swAAAA(binID));
+	const mic_m m_update_y = eq(id,swBBBB(binID));
+	const mic_m m_update_z = eq(id,swCCCC(binID));
 
-	    const mic_i id = load16i(identity);
-	    const mic_m m_update_x = eq(id,swAAAA(binID));
-	    const mic_m m_update_y = eq(id,swBBBB(binID));
-	    const mic_m m_update_z = eq(id,swCCCC(binID));
-
-	    min_x0 = mask_min(m_update_x,min_x0,min_x0,swAAAA(b_min));
-	    min_y0 = mask_min(m_update_x,min_y0,min_y0,swBBBB(b_min));
-	    min_z0 = mask_min(m_update_x,min_z0,min_z0,swCCCC(b_min));
-	    // ------------------------------------------------------------------------      
-	    max_x0 = mask_max(m_update_x,max_x0,max_x0,swAAAA(b_max));
-	    max_y0 = mask_max(m_update_x,max_y0,max_y0,swBBBB(b_max));
-	    max_z0 = mask_max(m_update_x,max_z0,max_z0,swCCCC(b_max));
-	    // ------------------------------------------------------------------------
-	    min_x1 = mask_min(m_update_y,min_x1,min_x1,swAAAA(b_min));
-	    min_y1 = mask_min(m_update_y,min_y1,min_y1,swBBBB(b_min));
-	    min_z1 = mask_min(m_update_y,min_z1,min_z1,swCCCC(b_min));      
-	    // ------------------------------------------------------------------------      
-	    max_x1 = mask_max(m_update_y,max_x1,max_x1,swAAAA(b_max));
-	    max_y1 = mask_max(m_update_y,max_y1,max_y1,swBBBB(b_max));
-	    max_z1 = mask_max(m_update_y,max_z1,max_z1,swCCCC(b_max));
-	    // ------------------------------------------------------------------------
-	    min_x2 = mask_min(m_update_z,min_x2,min_x2,swAAAA(b_min));
-	    min_y2 = mask_min(m_update_z,min_y2,min_y2,swBBBB(b_min));
-	    min_z2 = mask_min(m_update_z,min_z2,min_z2,swCCCC(b_min));
-	    // ------------------------------------------------------------------------      
-	    max_x2 = mask_max(m_update_z,max_x2,max_x2,swAAAA(b_max));
-	    max_y2 = mask_max(m_update_z,max_y2,max_y2,swBBBB(b_max));
-	    max_z2 = mask_max(m_update_z,max_z2,max_z2,swCCCC(b_max));
-	    // ------------------------------------------------------------------------
-	    count0 = mask_add(m_update_x,count0,count0,mic_i::one());
-	    count1 = mask_add(m_update_y,count1,count1,mic_i::one());
-	    count2 = mask_add(m_update_z,count2,count2,mic_i::one());      
-	  }
+	min_x0 = mask_min(m_update_x,min_x0,min_x0,swAAAA(b_min));
+	min_y0 = mask_min(m_update_x,min_y0,min_y0,swBBBB(b_min));
+	min_z0 = mask_min(m_update_x,min_z0,min_z0,swCCCC(b_min));
+	// ------------------------------------------------------------------------      
+	max_x0 = mask_max(m_update_x,max_x0,max_x0,swAAAA(b_max));
+	max_y0 = mask_max(m_update_x,max_y0,max_y0,swBBBB(b_max));
+	max_z0 = mask_max(m_update_x,max_z0,max_z0,swCCCC(b_max));
+	// ------------------------------------------------------------------------
+	min_x1 = mask_min(m_update_y,min_x1,min_x1,swAAAA(b_min));
+	min_y1 = mask_min(m_update_y,min_y1,min_y1,swBBBB(b_min));
+	min_z1 = mask_min(m_update_y,min_z1,min_z1,swCCCC(b_min));      
+	// ------------------------------------------------------------------------      
+	max_x1 = mask_max(m_update_y,max_x1,max_x1,swAAAA(b_max));
+	max_y1 = mask_max(m_update_y,max_y1,max_y1,swBBBB(b_max));
+	max_z1 = mask_max(m_update_y,max_z1,max_z1,swCCCC(b_max));
+	// ------------------------------------------------------------------------
+	min_x2 = mask_min(m_update_z,min_x2,min_x2,swAAAA(b_min));
+	min_y2 = mask_min(m_update_z,min_y2,min_y2,swBBBB(b_min));
+	min_z2 = mask_min(m_update_z,min_z2,min_z2,swCCCC(b_min));
+	// ------------------------------------------------------------------------      
+	max_x2 = mask_max(m_update_z,max_x2,max_x2,swAAAA(b_max));
+	max_y2 = mask_max(m_update_z,max_y2,max_y2,swBBBB(b_max));
+	max_z2 = mask_max(m_update_z,max_z2,max_z2,swCCCC(b_max));
+	// ------------------------------------------------------------------------
+	count0 = mask_add(m_update_x,count0,count0,mic_i::one());
+	count1 = mask_add(m_update_y,count1,count1,mic_i::one());
+	count2 = mask_add(m_update_z,count2,count2,mic_i::one());      
       }
 
     bin16.prefetchL2EX();
@@ -1025,176 +997,77 @@ mic_i binID = convert_uint32((centroid_2 - centroidBoundsMin_2)*scale);
     bin16.thread_count[2] = count2;     
   }
 
-  template<class Primitive>
-  static __forceinline mic_m lt_split(const Primitive *__restrict__ const aabb,
-				      const unsigned int dim,
-				      const mic_f &c,
-				      const mic_f &s,
-				      const mic_f &bestSplit_f)
-  {
-    const mic2f b = aabb->getBounds();
-    const mic_f b_min = b.x;
-    const mic_f b_max = b.y;
-    const mic_f centroid_2 = b_min + b_max;
-    const mic_f binID = (centroid_2 - c)*s;
-    return lt(binID,bestSplit_f);    
-  }
-
-  template<class Primitive>
-  static __forceinline mic_m ge_split(const Primitive *__restrict__ const aabb,
-				      const unsigned int dim,
-				      const mic_f &c,
-				      const mic_f &s,
-				      const mic_f &bestSplit_f)
-  {
-    const mic2f b = aabb->getBounds();
-    const mic_f b_min = b.x;
-    const mic_f b_max = b.y;
-    const mic_f centroid_2 = b_min + b_max;
-    const mic_f binID = (centroid_2 - c)*s;
-    return ge(binID,bestSplit_f);    
-  }
-
-
-
-  template<unsigned int DISTANCE, class Primitive>
-    __forceinline unsigned int partitionPrimitives(Primitive *__restrict__ aabb,
-						   const unsigned int begin,
-						   const unsigned int end,
-						   const unsigned int bestSplit,
-						   const unsigned int bestSplitDim,
-						   const mic_f &centroidBoundsMin_2,
-						   const mic_f &scale,
-						   Centroid_Scene_AABB & local_left,
-						   Centroid_Scene_AABB & local_right)
+  template<class Primitive, bool EXTEND_ATOMIC>
+  __forceinline size_t partitionPrimitives(Primitive *__restrict__ const t_array,
+					   const size_t size,
+					   const BinPartitionMapping &mapping,
+					   Centroid_Scene_AABB & local_left,
+					   Centroid_Scene_AABB & local_right)
     {
-      assert(begin <= end);
+      CentroidGeometryAABB leftReduction;
+      CentroidGeometryAABB rightReduction;
+      leftReduction.reset();
+      rightReduction.reset();
 
-      Primitive *__restrict__ l = aabb + begin;
-      Primitive *__restrict__ r = aabb + end;
-
-      const mic_f c = mic_f(centroidBoundsMin_2[bestSplitDim]);
-      const mic_f s = mic_f(scale[bestSplitDim]);
-
-      mic_f left_centroidMinAABB = broadcast4to16f(&local_left.centroid2.lower);
-      mic_f left_centroidMaxAABB = broadcast4to16f(&local_left.centroid2.upper);
-      mic_f left_sceneMinAABB    = broadcast4to16f(&local_left.geometry.lower);
-      mic_f left_sceneMaxAABB    = broadcast4to16f(&local_left.geometry.upper);
-
-      mic_f right_centroidMinAABB = broadcast4to16f(&local_right.centroid2.lower);
-      mic_f right_centroidMaxAABB = broadcast4to16f(&local_right.centroid2.upper);
-      mic_f right_sceneMinAABB    = broadcast4to16f(&local_right.geometry.lower);
-      mic_f right_sceneMaxAABB    = broadcast4to16f(&local_right.geometry.upper);
-
-      const mic_f bestSplit_f = mic_f(bestSplit);
-
-      const mic_m dim_mask = mic_m::shift1[bestSplitDim];
+      Primitive* l = t_array;
+      Primitive* r = t_array + size - 1;
 
       while(1)
 	{
-	  while (likely(l < r)) 
+	  /* *l < pivot */
+	  while (likely(l <= r)) 
 	    {
-	      
 	      const mic2f bounds = l->getBounds();
 	      const mic_f b_min  = bounds.x;
 	      const mic_f b_max  = bounds.y;
+	      prefetch<PFHINT_L1EX>(((char*)l)+4*64);
 
-	      prefetch<PFHINT_L1EX>(l+2);	  
-	      if (unlikely(ge_split(b_min,b_max,dim_mask,c,s,bestSplit_f))) break;
-	      prefetch<PFHINT_L2EX>(l + DISTANCE + 4);	  
-	      const mic_f centroid2 = b_min+b_max;
-	      left_centroidMinAABB = min(left_centroidMinAABB,centroid2);
-	      left_centroidMaxAABB = max(left_centroidMaxAABB,centroid2);
-	      left_sceneMinAABB    = min(left_sceneMinAABB,b_min);
-	      left_sceneMaxAABB    = max(left_sceneMaxAABB,b_max);
+	      if (unlikely(mapping.ge_split(b_min,b_max))) break;
+
+	      prefetch<PFHINT_L2EX>(((char*)l)+20*64);
+
+	      leftReduction.extend(b_min,b_max);
 	      ++l;
 	    }
-	  while (likely(l < r)) 
+	  /* *r >= pivot) */
+	  while (likely(l <= r))
 	    {
 	      const mic2f bounds = r->getBounds();
 	      const mic_f b_min  = bounds.x;
 	      const mic_f b_max  = bounds.y;
+	      prefetch<PFHINT_L1EX>(((char*)r)-4*64);	  
 
-	      prefetch<PFHINT_L1EX>(r-2);	  
-	      if (unlikely(lt_split(b_min,b_max,dim_mask,c,s,bestSplit_f))) break;
-	      prefetch<PFHINT_L2EX>(r - DISTANCE - 4);
-	      const mic_f centroid2 = b_min+b_max;
-	      right_centroidMinAABB = min(right_centroidMinAABB,centroid2);
-	      right_centroidMaxAABB = max(right_centroidMaxAABB,centroid2);
-	      right_sceneMinAABB    = min(right_sceneMinAABB,b_min);
-	      right_sceneMaxAABB    = max(right_sceneMaxAABB,b_max);
+	      if (unlikely(mapping.lt_split(b_min,b_max))) break;
+	      prefetch<PFHINT_L2EX>(((char*)r)-20*64);	  
+
+	      rightReduction.extend(b_min,b_max);
 	      --r;
 	    }
 
-	  if (unlikely(l == r)) {
-	    const mic2f bounds = r->getBounds();
-	    const mic_f b_min  = bounds.x;
-	    const mic_f b_max  = bounds.y;
+	  if (r<l) break;
 
-	    if ( ge_split(b_min,b_max,dim_mask,c,s,bestSplit_f))
-	      {
-		const mic_f centroid2 = b_min+b_max;
-		right_centroidMinAABB = min(right_centroidMinAABB,centroid2);
-		right_centroidMaxAABB = max(right_centroidMaxAABB,centroid2);
-		right_sceneMinAABB    = min(right_sceneMinAABB,b_min);
-		right_sceneMaxAABB    = max(right_sceneMaxAABB,b_max);
-	      }
-	    else 
-	      l++; 
-	    break;
-	  }
+	  rightReduction.extend(l->getBounds());
+	  leftReduction.extend(r->getBounds());
 
 	  xchg(*l,*r);
+	  l++; r--;
+	}
+      
+      if (!EXTEND_ATOMIC)
+	{
+	  local_left  = Centroid_Scene_AABB( leftReduction );
+	  local_right = Centroid_Scene_AABB( rightReduction );
+	}
+      else
+	{
+	  Centroid_Scene_AABB update_left  = Centroid_Scene_AABB( leftReduction );
+	  Centroid_Scene_AABB update_right = Centroid_Scene_AABB( rightReduction );
+	  local_left.extend_atomic( update_left );
+	  local_right.extend_atomic( update_right );
 	}
 
-
-      store4f(&local_left.centroid2.lower,left_centroidMinAABB);
-      store4f(&local_left.centroid2.upper,left_centroidMaxAABB);
-      store4f(&local_left.geometry.lower,left_sceneMinAABB);
-      store4f(&local_left.geometry.upper,left_sceneMaxAABB);
-
-      store4f(&local_right.centroid2.lower,right_centroidMinAABB);
-      store4f(&local_right.centroid2.upper,right_centroidMaxAABB);
-      store4f(&local_right.geometry.lower,right_sceneMinAABB);
-      store4f(&local_right.geometry.upper,right_sceneMaxAABB);
-
-      assert( aabb + begin <= l && l <= aabb + end);
-      assert( aabb + begin <= r && r <= aabb + end);
-
-      return l - (aabb + begin);
+      return l - t_array;              
     }
-
-  struct Split 
-  {
-    __forceinline void reset()
-    {
-      dim = -1;
-      pos = -1;
-      numLeft = -1;
-      cost = pos_inf;
-    }
-
-    __forceinline Split () 
-    {
-      reset();
-    }
-    
-    /*! stream output */
-    friend std::ostream& operator<<(std::ostream& cout, const Split& split) {
-      return cout << "Split { " << 
-        "dim = " << split.dim << 
-        ", pos = " << split.pos << 
-        ", numLeft = " << split.numLeft <<
-        ", sah = " << split.cost << "}";
-    }
-
-  public:
-    int dim;
-    int pos;
-    int numLeft;
-    float cost;
-  };
-
 
 
     /* shared structure for multi-threaded binning and partitioning */
@@ -1204,8 +1077,6 @@ mic_i binID = convert_uint32((centroid_2 - centroidBoundsMin_2)*scale);
       __aligned(64) Centroid_Scene_AABB left;
       __aligned(64) Centroid_Scene_AABB right;
       __aligned(64) Split split;
-      __aligned(64) AlignedAtomicCounter32 lCounter;
-      __aligned(64) AlignedAtomicCounter32 rCounter;
     };
 
 };

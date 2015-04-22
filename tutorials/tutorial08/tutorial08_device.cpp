@@ -17,21 +17,19 @@
 #include "../common/tutorial/tutorial_device.h"
 
 /* configuration */
-
-#if 0
-#define MIN_EDGE_LEVEL 16.0f
-#define MAX_EDGE_LEVEL 16.0f
-#else
 #define MIN_EDGE_LEVEL 2.0f
 #define MAX_EDGE_LEVEL 64.0f
-#endif
-
 #define LEVEL_FACTOR 64.0f
 
-#define DBG(x) 
+#if defined(__XEON_PHI__)
+#define EDGE_LEVEL 64.0f
+#else
+#define EDGE_LEVEL 256.0f
+#endif
+
 
 /* scene data */
-RTCScene g_scene = NULL;
+RTCScene g_scene = nullptr;
 
 /* render function to use */
 renderPixelFunc renderPixel;
@@ -49,6 +47,7 @@ void error_handler(const RTCError code, const int8* str)
   case RTC_INVALID_OPERATION: printf("RTC_INVALID_OPERATION"); break;
   case RTC_OUT_OF_MEMORY    : printf("RTC_OUT_OF_MEMORY"); break;
   case RTC_UNSUPPORTED_CPU  : printf("RTC_UNSUPPORTED_CPU"); break;
+  case RTC_CANCELLED        : printf("RTC_CANCELLED"); break;
   default                   : printf("invalid error code"); break;
   }
   if (str) { 
@@ -59,14 +58,7 @@ void error_handler(const RTCError code, const int8* str)
   abort();
 }
 
-/* rtcCommitThread called by all ISPC worker threads to enable parallel build */
-#if defined(PARALLEL_COMMIT)
-task void parallelCommit(RTCScene scene) {
-  rtcCommitThread (scene,threadIndex,threadCount); 
-}
-#endif
-
-float cube_vertices[8][4] = 
+__aligned(16) float cube_vertices[8][4] = 
 {
   { -1.0f, -1.0f, -1.0f, 0.0f },
   {  1.0f, -1.0f, -1.0f, 0.0f },
@@ -128,6 +120,10 @@ unsigned int addCube (RTCScene scene_i)
   rtcSetBuffer(scene_i, geomID, RTC_VERTEX_BUFFER, cube_vertices, 0, sizeof(Vec3fa  ));
   rtcSetBuffer(scene_i, geomID, RTC_INDEX_BUFFER,  cube_indices , 0, sizeof(unsigned int));
   rtcSetBuffer(scene_i, geomID, RTC_FACE_BUFFER,   cube_faces,    0, sizeof(unsigned int));
+
+  float* level = (float*) rtcMapBuffer(scene_i, geomID, RTC_LEVEL_BUFFER);
+  for (size_t i=0; i<NUM_INDICES; i++) level[i] = EDGE_LEVEL;
+  rtcUnmapBuffer(scene_i, geomID, RTC_LEVEL_BUFFER);
 
   return geomID;
 }
@@ -196,6 +192,9 @@ extern "C" void device_init (int8* cfg)
   /* add ground plane */
   addGroundPlane(g_scene);
 
+  /* commit changes to scene */
+  rtcCommit (g_scene);
+
   /* set start render mode */
   renderPixel = renderPixelStandard;
 }
@@ -216,8 +215,6 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
   
   /* intersect ray with scene */
   rtcIntersect(g_scene,ray);
-  DBG( DBG_PRINT(ray) );
-  DBG( DBG_PRINT( ray.org + ray.tfar*ray.dir ) );
 
   /* shade pixels */
   Vec3fa color = Vec3fa(0.0f);
@@ -240,7 +237,7 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
     shadow.time = 0;
     
     /* trace shadow ray */
-    rtcOccluded(g_scene,shadow);
+     rtcOccluded(g_scene,shadow);
              
     /* add light contribution */
     if (shadow.geomID == RTC_INVALID_GEOMETRY_ID)
@@ -270,13 +267,7 @@ void renderTile(int taskIndex, int* pixels,
 
   for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)
   {
-    DBG(       std::cout.precision(10); );
-
-    DBG( x = 255; y = 512-2; );
-    
     Vec3fa color = renderPixel(x,y,vx,vy,vz,p);
-    DBG( DBG_PRINT(color) );
-    DBG( exit(0); );
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
@@ -300,18 +291,12 @@ extern "C" void device_render (int* pixels,
   updateEdgeLevelBuffer(g_scene,0,p);
     
   /* rebuild scene */
-#if !defined(PARALLEL_COMMIT)
   rtcCommit (g_scene);
-#else
-  launch[ getNumHWThreads() ] parallelCommit(g_scene); 
-#endif
   
   /* render image */
   const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
   launch_renderTile(numTilesX*numTilesY,pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY); 
-
-  rtcDebug();
 }
 
 /* called by the C++ code for cleanup */

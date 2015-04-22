@@ -19,8 +19,6 @@
 const int numPhi = 5;
 const int numTheta = 2*numPhi;
 
-//
-
 /* render function to use */
 renderPixelFunc renderPixel;
 
@@ -34,6 +32,7 @@ void error_handler(const RTCError code, const int8* str)
   case RTC_INVALID_OPERATION: printf("RTC_INVALID_OPERATION"); break;
   case RTC_OUT_OF_MEMORY    : printf("RTC_OUT_OF_MEMORY"); break;
   case RTC_UNSUPPORTED_CPU  : printf("RTC_UNSUPPORTED_CPU"); break;
+  case RTC_CANCELLED        : printf("RTC_CANCELLED"); break;
   default                   : printf("invalid error code"); break;
   }
   if (str) { 
@@ -317,24 +316,17 @@ unsigned int createGroundPlane (RTCScene scene)
 }
 
 /* scene data */
-RTCScene g_scene  = NULL;
-RTCScene g_scene0 = NULL;
-RTCScene g_scene1 = NULL;
-RTCScene g_scene2 = NULL;
+RTCScene g_scene  = nullptr;
+RTCScene g_scene0 = nullptr;
+RTCScene g_scene1 = nullptr;
+RTCScene g_scene2 = nullptr;
 
-Instance* g_instance0 = NULL;
-Instance* g_instance1 = NULL;
-Instance* g_instance2 = NULL;
-Instance* g_instance3 = NULL;
+Instance* g_instance0 = nullptr;
+Instance* g_instance1 = nullptr;
+Instance* g_instance2 = nullptr;
+Instance* g_instance3 = nullptr;
 
 Vec3fa colors[5][4];
-
-/* rtcCommitThread called by all ISPC worker threads to enable parallel build */
-#if defined(PARALLEL_COMMIT)
-task void parallelCommit(RTCScene scene) {
-  rtcCommitThread (scene,threadIndex,threadCount); 
-}
-#endif
 
 /* called by the C++ code for initialization */
 extern "C" void device_init (int8* cfg)
@@ -355,11 +347,7 @@ extern "C" void device_init (int8* cfg)
   spheres[1].p = Vec3fa(+1, 0, 0); spheres[1].r = 0.5f;
   spheres[2].p = Vec3fa( 0, 0,-1); spheres[2].r = 0.5f;
   spheres[3].p = Vec3fa(-1, 0, 0); spheres[3].r = 0.5f;
-#if !defined(PARALLEL_COMMIT)
   rtcCommit(g_scene0);
-#else
-  launch[ getNumHWThreads() ] parallelCommit(g_scene0); 
-#endif
 
   /* create scene with 4 triangulated spheres */
   g_scene1 = rtcNewScene(RTC_SCENE_STATIC,RTC_INTERSECT1);
@@ -367,11 +355,7 @@ extern "C" void device_init (int8* cfg)
   createTriangulatedSphere(g_scene1,Vec3fa(+1, 0, 0),0.5);
   createTriangulatedSphere(g_scene1,Vec3fa( 0, 0,-1),0.5);
   createTriangulatedSphere(g_scene1,Vec3fa(-1, 0, 0),0.5);
-#if !defined(PARALLEL_COMMIT)
   rtcCommit(g_scene1);
-#else
-  launch[ getNumHWThreads() ] parallelCommit(g_scene1); 
-#endif
 
   /* create scene with 2 triangulated and 2 analytical spheres */
   g_scene2 = rtcNewScene(RTC_SCENE_STATIC,RTC_INTERSECT1);
@@ -379,11 +363,7 @@ extern "C" void device_init (int8* cfg)
   createAnalyticalSphere  (g_scene2,Vec3fa(+1, 0, 0),0.5);
   createTriangulatedSphere(g_scene2,Vec3fa( 0, 0,-1),0.5);
   createAnalyticalSphere  (g_scene2,Vec3fa(-1, 0, 0),0.5);
-#if !defined(PARALLEL_COMMIT)
   rtcCommit(g_scene2);
-#else
-  launch[ getNumHWThreads() ] parallelCommit(g_scene2); 
-#endif
 
   /* instantiate geometry */
   createGroundPlane(g_scene);
@@ -523,17 +503,12 @@ extern "C" void device_render (int* pixels,
   updateInstance(g_scene,g_instance1);
   updateInstance(g_scene,g_instance2);
   updateInstance(g_scene,g_instance3);
-#if !defined(PARALLEL_COMMIT)
   rtcCommit (g_scene);
-#else
-  launch[ getNumHWThreads() ] parallelCommit(g_scene); 
-#endif
 
   /* render all pixels */
   const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
   launch_renderTile(numTilesX*numTilesY,pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY); 
-  rtcDebug();
 }
 
 /* called by the C++ code for cleanup */

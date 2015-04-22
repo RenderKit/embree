@@ -20,8 +20,6 @@
 #include "common/ray16.h"
 #include "geometry/filter.h"
 
-using namespace std;
-
 namespace embree
 {
   typedef LinearSpace3<mic3f> LinearSpace_mic3f;
@@ -171,7 +169,7 @@ namespace embree
       if (ENABLE_INTERSECTION_FILTER) 
 	{
 	  const Geometry* const gg = ((Scene*)geom)->get(curve_in.geomID);
-	  if (unlikely(gg->hasIntersectionFilter16())) 
+	  if (unlikely(gg->hasIntersectionFilter<mic_f>())) 
 	    {
 	      while(any(valid)) 
 		{
@@ -196,9 +194,6 @@ namespace embree
       mic_f P,T;
       eval(uu,p0123,P,T);
       assert( T != mic_f::zero() );
-      assert( isfinite(T[0]) );
-      assert( isfinite(T[1]) );
-      assert( isfinite(T[2]) );
 
       ray.update(1,k,mic_f(t[i]),mic_f(uu),mic_f::zero(),swAAAA(T),swBBBB(T),swCCCC(T),curve_in.geomID,curve_in.primID);
 
@@ -280,7 +275,7 @@ namespace embree
       if (ENABLE_INTERSECTION_FILTER) 
 	{
 	  const Geometry* const gg = ((Scene*)geom)->get(curve_in.geomID);
-	  if (likely(gg->hasOcclusionFilter16())) 
+	  if (likely(gg->hasOcclusionFilter<mic_f>())) 
 	    {
 	      while(any(valid)) 
 		{

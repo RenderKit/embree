@@ -14,18 +14,20 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include <map>
 #include "glutdisplay.h"
 #include "sys/filename.h"
+#include "sys/sysinfo.h"
 #include "lexers/streamfilters.h"
 #include "lexers/parsestream.h"
 #include "transport/transport_host.h"
+
+#include <map>
+#include <sstream>
 
 /* include GLUT for display */
 #if defined(__MACOSX__)
 #  include <OpenGL/gl.h>
 #  include <GLUT/glut.h>
-//#  include <ApplicationServices/ApplicationServices.h>
 #elif defined(__WIN32__)
 #  include <windows.h>
 #  include <GL/gl.h>   
@@ -95,6 +97,7 @@ namespace embree
       std::cout.precision(10);
       std::cout << "-vp " << g_camera.from.x    << " " << g_camera.from.y    << " " << g_camera.from.z    << " " << std::endl
                 << "-vi " << g_camera.to.x << " " << g_camera.to.y << " " << g_camera.to.z << " " << std::endl
+                << "-vd " << g_camera.to.x-g_camera.from.x << " " << g_camera.to.y-g_camera.from.y << " " << g_camera.to.z-g_camera.from.z << " " << std::endl
                 << "-vu " << g_camera.up.x     << " " << g_camera.up.y     << " " << g_camera.up.z     << " " << std::endl
                 << "-fov " << g_camera.fov << std::endl;
       break;
@@ -111,7 +114,9 @@ namespace embree
     case '\033': case 'q': case 'Q':
       cleanup();
       glutDestroyWindow(g_window);
-      exit(0);
+#if defined(__MACOSX__)
+      exit(1);
+#endif
       break;
     }
   }
@@ -198,6 +203,10 @@ namespace embree
 
   void displayFunc(void) 
   {
+    float dx = 0;
+    float dy = 5;
+
+
     AffineSpace3fa pixel2world = g_camera.pixel2world(g_width,g_height);
 
     /* render image using ISPC */
@@ -248,8 +257,11 @@ namespace embree
     glutPostRedisplay();
   }
 
-  void enterWindowRunLoop()
+  void enterWindowRunLoop(bool anim)
   {
+    if (anim)
+      g_camera.enableAnimMode();
+
     glutMainLoop();
   }
 

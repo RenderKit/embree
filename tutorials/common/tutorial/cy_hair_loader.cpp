@@ -50,7 +50,7 @@ namespace embree
   class cyHairFile
   {
   public:
-    cyHairFile() : segments(NULL), points(NULL), thickness(NULL), transparency(NULL), colors(NULL) {init(); }
+    cyHairFile() : segments(nullptr), points(nullptr), thickness(nullptr), transparency(nullptr), colors(nullptr) {init(); }
     ~cyHairFile() {
       if ( segments ) delete [] segments;
       if ( points ) delete [] points;
@@ -84,7 +84,7 @@ namespace embree
 
       FILE *file;
       file = fopen( filename, "rb" );
-      if ( file == NULL )
+      if ( file == nullptr )
         THROW_RUNTIME_ERROR("can't open file");
 
       size_t h = fread( &header, sizeof(cyHeader), 1, file );

@@ -26,13 +26,11 @@ namespace embree
   SubdivMesh::SubdivMesh (Scene* parent, RTCGeometryFlags flags, size_t numFaces, size_t numEdges, size_t numVertices, 
 			  size_t numEdgeCreases, size_t numVertexCreases, size_t numHoles, size_t numTimeSteps)
     : Geometry(parent,SUBDIV_MESH,numFaces,numTimeSteps,flags), 
-      mask(-1), 
-      numTimeSteps(numTimeSteps),
       numFaces(numFaces), 
       numEdges(numEdges), 
       numHalfEdges(0),
       numVertices(numVertices),
-      displFunc(NULL), 
+      displFunc(nullptr), 
       displBounds(empty),
       levelUpdate(false)
   {
@@ -50,50 +48,40 @@ namespace embree
     enabling();
   }
 
-  SubdivMesh::~SubdivMesh () {
-  }
-  
   void SubdivMesh::enabling() 
   { 
-    if (numTimeSteps == 1) { atomic_add(&parent->numSubdivPatches ,numFaces); }
-    else                   { atomic_add(&parent->numSubdivPatches2,numFaces); }
+    if (numTimeSteps == 1) atomic_add(&parent->numSubdivPatches ,numFaces); 
+    else                   atomic_add(&parent->numSubdivPatches2,numFaces); 
   }
   
   void SubdivMesh::disabling() 
   { 
-    if (numTimeSteps == 1) { atomic_add(&parent->numSubdivPatches ,-(ssize_t)numFaces); }
-    else                   { atomic_add(&parent->numSubdivPatches2, -(ssize_t)numFaces); }
+    if (numTimeSteps == 1) atomic_add(&parent->numSubdivPatches ,-(ssize_t)numFaces); 
+    else                   atomic_add(&parent->numSubdivPatches2,-(ssize_t)numFaces);
   }
 
   void SubdivMesh::setMask (unsigned mask) 
   {
-    if (parent->isStatic() && parent->isBuild()) {
-      process_error(RTC_INVALID_OPERATION,"static geometries cannot get modified");
-      return;
-    }
+    if (parent->isStatic() && parent->isBuild()) 
+      throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
+
     this->mask = mask; 
   }
 
   void SubdivMesh::setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride) 
   { 
-    if (parent->isStatic() && parent->isBuild()) {
-      process_error(RTC_INVALID_OPERATION,"static geometries cannot get modified");
-      return;
-    }
+    if (parent->isStatic() && parent->isBuild()) 
+      throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
 
     /* verify that all accesses are 4 bytes aligned */
-    if (((size_t(ptr) + offset) & 0x3) || (stride & 0x3)) {
-      process_error(RTC_INVALID_OPERATION,"data must be 4 bytes aligned");
-      return;
-    }
+    if (((size_t(ptr) + offset) & 0x3) || (stride & 0x3)) 
+      throw_RTCError(RTC_INVALID_OPERATION,"data must be 4 bytes aligned");
 
     /* verify that all vertex accesses are 16 bytes aligned */
 #if defined(__MIC__)
     if (type == RTC_VERTEX_BUFFER0 || type == RTC_VERTEX_BUFFER1) {
-      if (((size_t(ptr) + offset) & 0xF) || (stride & 0xF)) {
-        process_error(RTC_INVALID_OPERATION,"data must be 16 bytes aligned");
-        return;
-      }
+      if (((size_t(ptr) + offset) & 0xF) || (stride & 0xF))
+        throw_RTCError(RTC_INVALID_OPERATION,"data must be 16 bytes aligned");
     }
 #endif
 
@@ -124,17 +112,14 @@ namespace embree
       break;
 
     default: 
-      process_error(RTC_INVALID_ARGUMENT,"unknown buffer type");
-      break;
+      throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type");
     }
   }
 
   void* SubdivMesh::map(RTCBufferType type) 
   {
-    if (parent->isStatic() && parent->isBuild()) {
-      process_error(RTC_INVALID_OPERATION,"static geometries cannot get modified");
-      return NULL;
-    }
+    if (parent->isStatic() && parent->isBuild())
+      throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
 
     switch (type) {
     case RTC_INDEX_BUFFER                : return vertexIndices.map(parent->numMappedBuffers);
@@ -147,16 +132,14 @@ namespace embree
     case RTC_VERTEX_CREASE_INDEX_BUFFER  : return vertex_creases.map(parent->numMappedBuffers); 
     case RTC_VERTEX_CREASE_WEIGHT_BUFFER : return vertex_crease_weights.map(parent->numMappedBuffers); 
     case RTC_LEVEL_BUFFER                : return levels.map(parent->numMappedBuffers); 
-    default                              : process_error(RTC_INVALID_ARGUMENT,"unknown buffer type"); return NULL;
+    default                              : throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type"); return nullptr;
     }
   }
 
   void SubdivMesh::unmap(RTCBufferType type) 
   {
-    if (parent->isStatic() && parent->isBuild()) {
-      process_error(RTC_INVALID_OPERATION,"static geometries cannot get modified");
-      return;
-    }
+    if (parent->isStatic() && parent->isBuild())
+      throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
 
     switch (type) {
     case RTC_INDEX_BUFFER               : vertexIndices.unmap(parent->numMappedBuffers); break;
@@ -169,14 +152,14 @@ namespace embree
     case RTC_VERTEX_CREASE_INDEX_BUFFER : vertex_creases.unmap(parent->numMappedBuffers); break;
     case RTC_VERTEX_CREASE_WEIGHT_BUFFER: vertex_crease_weights.unmap(parent->numMappedBuffers); break;
     case RTC_LEVEL_BUFFER               : levels.unmap(parent->numMappedBuffers); break;
-    default                             : process_error(RTC_INVALID_ARGUMENT,"unknown buffer type"); break;
+    default                             : throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type"); break;
     }
   }
 
   void SubdivMesh::update ()
   {
-    vertexIndices.setModified(true); 
     faceVertices.setModified(true);
+    vertexIndices.setModified(true); 
     holes.setModified(true);
     vertices[0].setModified(true); 
     vertices[1].setModified(true); 
@@ -201,17 +184,16 @@ namespace embree
     case RTC_VERTEX_CREASE_INDEX_BUFFER : vertex_creases.setModified(true); break;
     case RTC_VERTEX_CREASE_WEIGHT_BUFFER: vertex_crease_weights.setModified(true); break;
     case RTC_LEVEL_BUFFER               : levels.setModified(true); break;
-    default                             : process_error(RTC_INVALID_ARGUMENT,"unknown buffer type"); break;
+    default                             : throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type"); break;
     }
     Geometry::update();
   }
 
   void SubdivMesh::setDisplacementFunction (RTCDisplacementFunc func, RTCBounds* bounds) 
   {
-    if (parent->isStatic() && parent->isBuild()) {
-      process_error(RTC_INVALID_OPERATION,"static geometries cannot get modified");
-      return;
-    }
+    if (parent->isStatic() && parent->isBuild())
+      throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
+
     this->displFunc   = func;
     if (bounds) this->displBounds = *(BBox3fa*)bounds; 
     else        this->displBounds = empty;
@@ -219,12 +201,20 @@ namespace embree
 
   void SubdivMesh::immutable () 
   {
-    bool freeVertices  = !parent->needVertices;
-    if (freeVertices ) vertices[0].free();
-    if (freeVertices ) vertices[1].free();
+    faceVertices.free();
+    vertexIndices.free();
+    vertices[0].free();
+    vertices[1].free();
+    edge_creases.free();
+    edge_crease_weights.free();
+    vertex_creases.free();
+    vertex_crease_weights.free();
+    levels.free();
+    holes.free();
   }
 
-  __forceinline uint64 pair64(unsigned int x, unsigned int y) {
+  __forceinline uint64 pair64(unsigned int x, unsigned int y) 
+  {
     if (x<y) std::swap(x,y);
     return (((uint64)x) << 32) | (uint64)y;
   }
@@ -265,14 +255,13 @@ namespace embree
 
 	  const unsigned int startVertex = vertexIndices[e+de];
 	  unsigned int nextIndex = de + 1;
-	  if (unlikely(nextIndex >= N)) nextIndex -=N; 
-	  const unsigned int endVertex   = vertexIndices[e + nextIndex]; 
-	  const uint64 key = Edge(startVertex,endVertex);
+	  if (unlikely(nextIndex >= N)) nextIndex -= N; 
+	  const unsigned int endVertex = vertexIndices[e + nextIndex]; 
+	  const uint64 key = SubdivMesh::Edge(startVertex,endVertex);
 	  
 	  float edge_level = 1.0f;
 	  if (levels) edge_level = levels[e+de];
-	  edge_level = clamp(edge_level,1.0f,4096.0f);
-	  assert( edge_level >= 0.0f );
+	  edge_level = clamp(edge_level,1.0f,4096.0f); // FIXME: do we want to limit edge level?
 	  
 	  edge->vtx_index              = startVertex;
 	  edge->next_half_edge_ofs     = (de == (N-1)) ? -(N-1) : +1;
@@ -283,9 +272,9 @@ namespace embree
 	  edge->edge_level             = edge_level;
 
 	  if (unlikely(holeSet.lookup(f))) 
-	    halfEdges1[e+de] = KeyHalfEdge(-1,edge);
+	    halfEdges1[e+de] = SubdivMesh::KeyHalfEdge(-1,edge);
 	  else
-	    halfEdges1[e+de] = KeyHalfEdge(key,edge);
+	    halfEdges1[e+de] = SubdivMesh::KeyHalfEdge(key,edge);
 	}
       }
     });
@@ -300,23 +289,32 @@ namespace embree
     parallel_for( size_t(0), numHalfEdges, size_t(4096), [&](const range<size_t>& r) 
 #endif
     {
+      /* skip if start of adjacent edges was not in our range */
       size_t e=r.begin();
-      if (e && (halfEdges1[e].key == halfEdges1[e-1].key)) {
+      if (e != 0 && (halfEdges1[e].key == halfEdges1[e-1].key)) {
 	const uint64 key = halfEdges1[e].key;
 	while (e<r.end() && halfEdges1[e].key == key) e++;
       }
 
+      /* process all adjacent edges starting in our range */
       while (e<r.end())
       {
 	const uint64 key = halfEdges1[e].key;
 	if (key == -1) break;
 	int N=1; while (e+N<numHalfEdges && halfEdges1[e+N].key == key) N++;
+
+        /* border edges are identified by not having an opposite edge set */
 	if (N == 1) {
 	}
+
+        /* standard edge shared between two faces */
 	else if (N == 2) {
 	  halfEdges1[e+0].edge->setOpposite(halfEdges1[e+1].edge);
 	  halfEdges1[e+1].edge->setOpposite(halfEdges1[e+0].edge);
-	} else {
+	}
+
+        /* non-manifold geometry is handled by keeping vertices fixed during subdivision */
+        else {
 	  for (size_t i=0; i<N; i++) {
 	    halfEdges1[e+i].edge->vertex_crease_weight = inf;
 	    halfEdges1[e+i].edge->next()->vertex_crease_weight = inf;
@@ -349,12 +347,12 @@ namespace embree
 	if (updateLevels) {
 	  float edge_level = 1.0f;
 	  if (levels) edge_level = levels[i];
-	  edge.edge_level = clamp(edge_level,1.0f,4096.0f);
+	  edge.edge_level = clamp(edge_level,1.0f,4096.0f); // FIXME: do we want to limit edge levels?
 	}
-	
+        
 	if (updateEdgeCreases) {
 	  const unsigned int endVertex   = edge.next()->vtx_index;
-	  const uint64 key = Edge(startVertex,endVertex);
+	  const uint64 key = SubdivMesh::Edge(startVertex,endVertex);
 	  edge.edge_crease_weight = edgeCreaseMap.lookup(key,0.0f);
 	}
 
@@ -370,7 +368,7 @@ namespace embree
 
     /* allocate half edge array */
     halfEdges.resize(numEdges);
-
+    
     /* calculate start edge of each face */
     faceStartEdge.resize(numFaces);
     if (faceVertices.isModified()) 
@@ -401,11 +399,9 @@ namespace embree
     update |= vertex_creases.isModified();
     update |= vertex_crease_weights.isModified(); 
     update |= levels.isModified();
-
+    
     /* check whether we can simply update the bvh in cached mode */
-    levelUpdate = false;
-    if (!(recalculate || edge_creases.size() != 0 || vertex_creases.size() !=0) && levels.isModified())
-      levelUpdate = true;
+    levelUpdate = !recalculate && edge_creases.size() == 0 && vertex_creases.size() == 0 && levels.isModified();
 
     /* now either recalculate or update the half edges */
     if (recalculate) calculateHalfEdges();
@@ -436,7 +432,7 @@ namespace embree
     double t1 = getSeconds();
 
     /* print statistics in verbose mode */
-    if (g_verbose >= 1) 
+    if (State::instance()->verbosity(2)) 
     {
       size_t numRegularFaces = 0;
       size_t numIrregularFaces = 0;
@@ -452,18 +448,34 @@ namespace embree
                 << "numRegularFaces = " << numRegularFaces << " (" << 100.0f * numRegularFaces / numFaces << "%), " 
                 << "numIrregularFaces " << numIrregularFaces << " (" << 100.0f * numIrregularFaces / numFaces << "%) " << std::endl;
     }
-
   }
 
   bool SubdivMesh::verify () 
   {
-    float range = sqrtf(0.5f*FLT_MAX);
+    if (numTimeSteps == 2 && vertices[0].size() != vertices[1].size())
+      return false;
+    
+    /*! verify vertex indices */
+    size_t ofs = 0;
+    for (size_t i=0; i<faceVertices.size(); i++) 
+    {
+      int valence = faceVertices[i];
+      for (size_t j=ofs; j<ofs+valence; j++) 
+      {
+        if (j >= vertexIndices.size())
+          return false;
+
+        if (vertexIndices[j] >= numVertices)
+          return false; 
+      }
+      ofs += valence;
+    }
+
+    /*! verify vertices */
     for (size_t j=0; j<numTimeSteps; j++) {
       BufferT<Vec3fa>& verts = vertices[j];
       for (size_t i=0; i<numVertices; i++) {
-        if (!(verts[i].x > -range && verts[i].x < range)) return false;
-	if (!(verts[i].y > -range && verts[i].y < range)) return false;
-	if (!(verts[i].z > -range && verts[i].z < range)) return false;
+        if (!isvalid(verts[i])) return false;
       }
     }
     return true;

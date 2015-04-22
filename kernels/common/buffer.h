@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "common/default.h"
+#include "default.h"
 
 namespace embree
 {
@@ -31,10 +31,6 @@ namespace embree
     /*! Buffer destruction */
     ~Buffer ();
       
-    /*! disallow copy */
-    Buffer(const Buffer&) = delete;
-    Buffer& operator=(const Buffer&) = delete;
-
   public:
     
     /*! initialized the buffer */
@@ -84,6 +80,7 @@ namespace embree
     }
 
   protected:
+    bool initialized;//!< true if buffer got initialized
     char* ptr;       //!< pointer to buffer data
     size_t bytes;    //!< size of buffer in bytes
     char* ptr_ofs;   //!< base pointer plus offset
@@ -118,8 +115,10 @@ namespace embree
 #endif
     }
 
+#if defined(__MIC__)
     __forceinline char* getPtr( size_t i = 0 ) const 
     {
+      assert(i<num);
 #if defined(RTCORE_BUFFER_STRIDE)
       return ptr_ofs + i*stride;
 #else
@@ -134,6 +133,7 @@ namespace embree
       return sizeof(T);
 #endif
     }
+#endif
   };
 
   /*! Implements a data stream inside a data buffer. */
@@ -152,7 +152,7 @@ namespace embree
 #if defined(__MIC__)
       return *(Vec3fa*)(ptr_ofs + i*stride);
 #else
-      return Vec3fa(ssef::loadu(ptr_ofs + i*stride));
+      return Vec3fa(ssef::loadu((float*)(ptr_ofs + i*stride)));
 #endif
 #else
       return *(Vec3fa*)(ptr_ofs + i*sizeof(Vec3fa));
@@ -161,6 +161,7 @@ namespace embree
 
     __forceinline char* getPtr( size_t i = 0 ) const 
     {
+      assert(i<num);
 #if defined(RTCORE_BUFFER_STRIDE)
       return ptr_ofs + i*stride;
 #else
@@ -168,6 +169,7 @@ namespace embree
 #endif
     }
 
+#if defined(__MIC__)
     __forceinline unsigned int getBufferStride() const {
 #if defined(RTCORE_BUFFER_STRIDE)
       return stride;
@@ -175,5 +177,6 @@ namespace embree
       return sizeof(Vec3fa);
 #endif
     }
+#endif
   };
 }

@@ -16,6 +16,12 @@
 
 IF (__XEON__)
 
+IF (TASKING_INTERNAL)
+  ADD_DEFINITIONS(-DTASKING_TBB_INTERNAL)
+ELSE()
+  ADD_DEFINITIONS(-DTASKING_TBB)
+ENDIF()
+
 IF (WIN32)
 # FindGLUT.cmake is broken for Windows in CMake until 3.0: does not support PATH
   FIND_PATH(GLUT_INCLUDE_DIR NAMES GL/glut.h PATHS ../freeglut/include)
@@ -44,16 +50,19 @@ ADD_LIBRARY(tutorial STATIC
     xml_loader.cpp
     obj_loader.cpp
     hair_loader.cpp
+    texture_loader.cpp
     cy_hair_loader.cpp)
-TARGET_LINK_LIBRARIES(tutorial sys lexers ${OPENGL_LIBRARIES} ${GLUT_LIBRARIES})
+TARGET_LINK_LIBRARIES(tutorial sys lexers ${OPENGL_LIBRARIES}
+${GLUT_LIBRARIES} ${PTEX_LIBRARIES})
 SET_PROPERTY(TARGET tutorial PROPERTY FOLDER tutorials/common)
 
 IF (WIN32)
-  GET_FILENAME_COMPONENT(GLUT_DIR ${GLUT_glut_LIBRARY} DIRECTORY)
+  GET_FILENAME_COMPONENT(GLUT_DIR ${GLUT_glut_LIBRARY} PATH)
   ADD_CUSTOM_COMMAND(TARGET tutorial POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different ${GLUT_DIR}/freeglut.dll $<TARGET_FILE_DIR:tutorial>
     COMMENT "Copy FreeGlut DLL" VERBATIM
   )
+  INSTALL(PROGRAMS ${GLUT_DIR}/freeglut.dll DESTINATION bin COMPONENT tutorials)
 ENDIF (WIN32)
 
 ADD_LIBRARY(tutorial_device STATIC tutorial_device.cpp)

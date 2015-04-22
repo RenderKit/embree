@@ -226,6 +226,10 @@ namespace embree
   __forceinline Vec3ba gt_mask( const Vec3fa_t& a, const Vec3fa_t& b ) { return _mm512_cmp_ps_mask(a,b,_MM_CMPINT_GT); }
   __forceinline Vec3ba ge_mask( const Vec3fa_t& a, const Vec3fa_t& b ) { return _mm512_cmp_ps_mask(a,b,_MM_CMPINT_GE); }
 
+  __forceinline bool isvalid ( const Vec3fa& v ) {
+    return all(gt_mask(v,Vec3fa_t(-FLT_LARGE)) & lt_mask(v,Vec3fa_t(+FLT_LARGE)));
+  }
+
  ////////////////////////////////////////////////////////////////////////////////
   /// Euclidian Space Operators
   ////////////////////////////////////////////////////////////////////////////////
@@ -242,9 +246,13 @@ namespace embree
     return c;
   }
 
-  __forceinline float   length   ( const Vec3fa_t& a )                   { return sqrt(dot(a,a)); }
-  __forceinline Vec3fa_t normalize( const Vec3fa_t& a )                   { return a*rsqrt(dot(a,a)); }
-  __forceinline float   distance ( const Vec3fa_t& a, const Vec3fa_t& b ) { return length(a-b); }
+  __forceinline float   length    ( const Vec3fa_t& a )                    { return sqrt(dot(a,a)); }
+  __forceinline Vec3fa_t normalize( const Vec3fa_t& a )                    { return a*rsqrt(dot(a,a)); }
+  __forceinline float   distance  ( const Vec3fa_t& a, const Vec3fa_t& b ) { return length(a-b); }
+  __forceinline float  halfArea   ( const Vec3fa& d )                    { return d.x*(d.y+d.z)+d.y*d.z; }
+  __forceinline float  area       ( const Vec3fa& d )                    { return 2.0f*halfArea(d); }
+  __forceinline Vec3fa_t reflect  ( const Vec3fa_t& V, const Vec3fa_t& N ) { return 2.0f*dot(V,N)*N-V; }
+  
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Select

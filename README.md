@@ -1,4 +1,4 @@
-% Embree: High Performance Ray Tracing Kernels 2.5.0 (devel)
+% Embree: High Performance Ray Tracing Kernels 2.5.0
 % Intel Corporation
 
 Embree Overview
@@ -9,18 +9,18 @@ developed at Intel. The target user of Embree are graphics application
 engineers that want to improve the performance of their application by
 leveraging the optimized ray tracing kernels of Embree. The kernels are
 optimized for photo-realistic rendering on the latest Intel® processors
-with support for SSE, AVX, AVX2, and the 16-wide Xeon Phi™ vector
-instructions. Embree supports runtime code selection to choose the
-traversal and build algorithms that best matches the instruction set of
-your CPU. We recommend using Embree through its API to get the highest
-benefit from future improvements. Embree is released as Open Source
-under the [Apache 2.0
+with support for SSE, AVX, AVX2, and the 16-wide Intel® Xeon Phi™
+coprocessor vector instructions. Embree supports runtime code selection
+to choose the traversal and build algorithms that best matches the
+instruction set of your CPU. We recommend using Embree through its API
+to get the highest benefit from future improvements. Embree is released
+as Open Source under the [Apache 2.0
 license](http://www.apache.org/licenses/LICENSE-2.0).
 
 Embree supports applications written with the Intel SPMD Programm
 Compiler (ISPC, <https://ispc.github.io/>) by also providing an ISPC
 interface to the core ray tracing algorithms. This makes it possible to
-write a renderer in ISPC that leverages SSE, AVX, AVX2, and Xeon Phi™
+write a renderer in ISPC that leverages SSE, AVX, AVX2, and Xeon Phi
 instructions without any code change. ISPC also supports runtime code
 selection, thus ISPC will select the best code path for your
 application, while Embree selects the optimal code path for the ray
@@ -31,7 +31,7 @@ Monte Carlo ray tracing algorithms) and coherent workloads (e.g. primary
 visibility and hard shadow rays). For standard CPUs, the single-ray
 traversal kernels in Embree provide the best performance for incoherent
 workloads and are very easy to integrate into existing rendering
-applications. For Xeon Phi™, a renderer written in ISPC using the
+applications. For Xeon Phi, a renderer written in ISPC using the
 default hybrid ray/packet traversal algorithms have shown to perform
 best, but requires writing the renderer in ISPC. In general for coherent
 workloads, ISPC outperforms the single ray mode on each platform. Embree
@@ -41,10 +41,8 @@ spatial index structure construction algorithms.
 In addition to the ray tracing kernels, Embree provides some tutorials
 to demonstrate how to use the [Embree API]. The example photorealistic
 renderer that was originally included in the Embree kernel package is
-now available in a separate GIT repository (see
-[Embree Example Renderer]). Please also check out the OSPRay Ray
-Tracing based Rendering Engine for High-Fidelity Visualization
-(<https://ospray.github.io/>) which builds on Embree.
+now available in a separate GIT repository (see [Embree Example
+Renderer]).
 
 Supported Platforms
 -------------------
@@ -52,7 +50,7 @@ Supported Platforms
 Embree supports Windows (32\ bit and 64\ bit), Linux (64\ bit) and Mac
 OS\ X (64\ bit). The code compiles with the Intel Compiler, GCC, CLANG
 and the Microsoft Compiler. Embree is tested with Intel
-Compiler 15.0.0, CLANG 3.4.2, GCC 4.8.2, and Visual Studio
+Compiler 15.0.2, CLANG 3.4.2, GCC 4.8.2, and Visual Studio
 12 2013. Using the Intel Compiler improves performance by
 approximately 10%.
 
@@ -60,10 +58,9 @@ Performance also varies across different operating systems. Embree is
 optimized for Intel CPUs supporting SSE, AVX, and AVX2 instructions,
 and requires at least a CPU with support for SSE2.
 
-The Xeon Phi™ version of Embree only works under Linux in 64\ bit mode.
-For compilation of the the Xeon Phi™ code the Intel Compiler is
-required. The host side code compiles with GCC, CLANG, and the Intel
-Compiler.
+The Xeon Phi version of Embree only works under Linux in 64\ bit mode.
+For compilation of the the Xeon Phi code the Intel Compiler is required.
+The host side code compiles with GCC, CLANG, and the Intel Compiler.
 
 Embree Support and Contact
 --------------------------
@@ -76,47 +73,261 @@ For questions please write us at <embree_support@intel.com>.
 To receive notifications of updates and new features of Embree please
 subscribe to the [Embree mailing
 list](https://groups.google.com/d/forum/embree/).
-
-For information about compiler optimizations, see our [Optimization
-Notice](http://software.intel.com/en-us/articles/optimization-notice#opt-en).
-
-Installation of Embree
-======================
-
-Windows
--------
-
-To install the Embree library on your system add the folder `lib/x64` to
-your `PATH`. To compile applications with Embree you also have to set
-the "Include Directories" path in Visual Studio to the `include/` folder
-of Embree.
-
-Before you can run the tutorials in the `bin/x64` folder you have to
-install the Embree library.
+Compiling Embree
+================
 
 Linux and Mac OS\ X
 -------------------
 
-To install the Embree library and Embree header files on your system
-type the following:
+To compile Embree you need a modern C++ compiler that supports C++11.
+Embree is tested with Intel® Compiler 15.0.2, CLANG 3.4.2, and GCC
+4.8.2. If the GCC that comes with your Fedora/Redhat/CentOS distribution
+is too old then you can run the provided script
+`scripts/install_linux_gcc.sh` to locally install a recent GCC into
+`$HOME/devtools-2`.
 
-    sudo ./install.sh
+Embree supports to use the Intel® Threading Building Blocks (TBB) as
+tasking system. For performance and flexibility reasons we recommend
+to use Embree with the Intel® Threading Building Blocks (TBB) and best
+also use TBB inside your application. Optionally you can disable TBB
+in Embree through the `RTCORE_TASKING_SYSTEM` CMake variable.
 
-Instead of installing the Embree library, you can also source the file
-`paths.sh`:
+Embree supported the Intel® SPMD Program Compiler (ISPC), which allows
+straight forward parallelization of an entire renderer. If you do not
+want to use ISPC then you can disable `ENABLE_ISPC_SUPPORT` in
+CMake. Otherwise, download and install the ISPC binaries (we have
+tested ISPC version 1.8.0) from
+[ispc.github.io](https://ispc.github.io/downloads.html). After
+installation, put the path to `ispc` permanently into your `PATH`
+environment variable or you need to correctly set the
+`ISPC_EXECUTABLE` variable during CMake configuration.
 
-    source ./paths.sh
+You additionally have to install CMake 2.8.11 or higher and the developer
+version of GLUT.
 
-Linking ISPC applications with Embree
--------------------------------------
+Under Mac OS\ X, all these dependencies can be installed
+using [MacPorts](http://www.macports.org/):
 
-The precompiled Embree library uses the multi-target mode of ISPC. For
-your ISPC application to properly link against Embree you also have to
-enable this mode. You can do this by specifying multiple targets when
-compiling your application with ISPC, e.g.:
+    sudo port install cmake tbb freeglut 
 
-    ispc --target sse2,sse4,avx,avx2 -o code.o code.ispc
+Depending on you Linux distribution you can install these dependencies
+using `yum` or `apt-get`.  Some of these packages might already be
+installed or might have slightly different names.
 
+Type the following to install the dependencies using `yum`:
+
+    sudo yum install cmake.x86_64
+    sudo yum install tbb.x86_64 tbb-devel.x86_64
+    sudo yum install freeglut.x86_64 freeglut-devel.x86_64
+    sudo yum install libXmu.x86_64 libXi.x86_64
+    sudo yum install libXmu-devel.x86_64 libXi-devel.x86_64
+
+Type the following to install the dependencies using `apt-get`:
+
+    sudo apt-get install cmake-curses-gui
+    sudo apt-get install libtbb-dev
+    sudo apt-get install freeglut3-dev
+    sudo apt-get install libxmu-dev libxi-dev
+
+Finally you can compile Embree using CMake. Create a build directory
+inside the Embree root directory and execute "ccmake .." inside this
+build directory.
+
+    mkdir build
+    cd build
+    ccmake ..
+
+This will open a configuration dialog where you can perform various
+configurations as described below. After having configured Embree, press
+c (for configure) and g (for generate) to generate a Makefile and leave
+the configuration. The code can be compiled by executing make.
+
+    make
+
+The executables will be generated inside the build folder. We recommend
+to finally install the Embree library and header files on your system:
+
+    sudo make install
+
+If you cannot install Embree on your system (e.g. when you don't have
+administrator rights) you need to add embree_root_directory/build to
+your `LD_LIBRARY_PATH` (and `SINK_LD_LIBRARY_PATH` in case you want to
+use Embree on Intel® Xeon Phi™ coprocessors).
+
+### Intel® Xeon Phi™ coprocessor
+
+Embree supports the Intel® Xeon Phi™ coprocessor under Linux. To compile
+Embree for Xeon Phi you need to enable the `XEON_PHI_ISA` option in
+CMake and have the Intel Compiler and the Intel® [Manycore Platform Software
+Stack](https://software.intel.com/en-us/articles/intel-manycore-platform-software-stack-mpss)
+(Intel® MPSS) installed.
+
+Enabling the buffer stride feature reduces performance for building
+spatial hierarchies on Xeon Phi. Under Xeon Phi the Intel® Threading
+Building Blocks (TBB) tasking system is not supported, and the
+implementation will always use some internal tasking system.
+
+Windows
+-------
+
+To compile Embree under Windows you need a recent version of Visual
+Studio that supports C++11. We have tested Visual Studio 2013, Visual
+Studio 2012, and Visual Studio 2010. Under Visual Studio 2013 you can
+enable AVX2 in CMake, however, Visual Studio 2012 supports at most
+AVX, and Visual Studio 2010 at most the SSE4.2 CMake configuration.
+
+Embree supports to use the Intel® Threading Building Blocks (TBB) as
+tasking system. For performance and flexibility reasons we recommend
+to use Embree with the Intel® Threading Building Blocks (TBB) and best
+also use TBB inside your application. Optionally you can disable TBB
+in Embree through the `RTCORE_TASKING_SYSTEM` CMake variable.
+
+Embree will either find the Intel® Threading Building Blocks (TBB)
+installation that comes with the Intel® Compiler, or you can install the
+binary distribution of TBB directly from
+[www.threadingbuildingblocks.org](https://www.threadingbuildingblocks.org/download)
+into a folder named tbb into your Embree root directory. You also have
+to make sure that the libraries tbb.dll and tbb_malloc.dll can be found when
+executing your Embree applications, e.g. by putting the path to these
+libraries into your `PATH` environment variable.
+
+Embree supported the Intel® SPMD Program Compiler (ISPC), which allows
+straight forward parallelization of an entire renderer. If you do not
+want to use ISPC then you can disable `ENABLE_ISPC_SUPPORT` in
+CMake. Otherwise, download and install the ISPC binaries (we have
+tested ISPC version 1.8.0) from
+[ispc.github.io](https://ispc.github.io/downloads.html). After
+installation, put the path to `ispc.exe` permanently into your `PATH`
+environment variable or you need to correctly set the
+`ISPC_EXECUTABLE` variable during CMake configuration.
+
+You additionally have to install [CMake](http://www.cmake.org/download/)
+(version 2.8.11 or higher). Note that you need a native Windows CMake
+installation, because CMake under Cygwin cannot generate solution files
+for Visual Studio.
+
+### Using the IDE
+
+Run `cmake-gui`, browse to the Embree sources, set the build directory
+and click Configure. Now you can select the Generator, e.g. "Visual
+Studio 12 2013" for a 32\ bit build or "Visual Studio 12 2013 Win64" for
+a 64\ bit build. Most configuration parameters described for the [Linux
+build](#linux-and-mac-osx) can be set under Windows as well. Finally,
+click "Generate" to create the Visual Studio solution files.
+
+  ------------------------- ------------------ ----------------------------
+  Option                    Description        Default
+  ------------------------- ------------------ ----------------------------
+  CMAKE_CONFIGURATION_TYPE  List of generated  Debug;Release;RelWithDebInfo
+                            configurations.
+
+  USE_STATIC_RUNTIME        Use the static     OFF
+                            version of the
+                            C/C++ runtime
+                            library.
+  ------------------------- ------------------ ----------------------------
+  : Windows-specific CMake build options for Embree.
+
+For compilation of Embree under Windows use the generated Visual Studio
+solution file `embree.sln`. The solution is by default setup to use the
+Microsoft Compiler. You can switch to the Intel Compiler by right
+clicking onto the solution in the Solution Explorer and then selecting
+the Intel Compiler. We recommend using 64\ bit mode and the Intel
+Compiler for best performance.
+
+To build Embree with support for the AVX2 instruction set you need at
+least Visual Studio 2013 Update\ 4. When switching to the Intel Compiler
+to build with AVX2 you currently need to manually *remove* the switch
+`/arch:AVX2` from the `embree_avx2` project, which can be found under
+Properties ⇒ C/C++ ⇒ All Options ⇒ Additional Options.
+
+To build all projects of the solution it is recommend to build the CMake
+utility project `ALL_BUILD`, which depends on all projects. Using "Build
+Solution" would also build all other CMake utility projects (such as
+`INSTALL`), which is usually not wanted.
+
+We recommend enabling syntax highlighting for the `.ispc` source and
+`.isph` header files. To do so open Visual Studio, go to Tools ⇒
+Options ⇒ Text Editor ⇒ File Extension and add the isph and ispc
+extension for the "Microsoft Visual C++" editor.
+
+### Using the Command Line
+
+Embree can also be configured and built without the IDE using the Visual
+Studio command prompt:
+
+    cd path\to\embree
+    mkdir build
+    cd build
+    cmake -G "Visual Studio 12 2013 Win64" ..
+    cmake --build . --config Release
+
+You can also build only some projects with the `--target` switch.
+Additional parameters after "`--`" will be passed to `msbuild`. For
+example, to build the Embree library in parallel use
+
+    cmake --build . --config Release --target embree -- /m
+
+
+CMake configuration
+-------------------
+
+The default CMake configuration in the configuration dialog should be
+appropriate for most usages. The following table describes all
+parameters that can be configured in CMake:
+
+  ---------------------------- -------------------------------- --------
+  Option                       Description                      Default
+  ---------------------------- -------------------------------- --------
+  CMAKE_BUILD_TYPE             Can be used to switch between    Release
+                               Debug mode (Debug), Release
+                               mode (Release), and Release
+                               mode with enabled assertions
+                               and debug symbols
+                               (RelWithDebInfo).
+
+  COMPILER                     Select either GCC, ICC, or       GCC
+                               CLANG as compiler.
+
+  ENABLE_ISPC_SUPPORT          Enables ISPC support of Embree.  ON
+
+  ENABLE_STATIC_LIB            Builds Embree as a static        OFF
+                               library.
+
+  ENABLE_TUTORIALS             Enables build of Embree          ON
+                               tutorials.
+
+  ENABLE_XEON_PHI_SUPPORT      Enables generation of the        OFF
+                               Xeon Phi version of Embree.
+
+  RTCORE_BACKFACE_CULLING      Enables backface culling, i.e.   OFF
+                               only surfaces facing a ray can
+                               be hit.
+
+  RTCORE_BUFFER_STRIDE         Enables the buffer stride        ON
+                               feature.
+
+  RTCORE_INTERSECTION_FILTER   Enables the intersection filter  ON
+                               feature.
+
+  RTCORE_RAY_MASK              Enables the ray masking feature. OFF
+
+  RTCORE_RETURN_SUBDIV_NORMAL  Instead of the triangle normal   OFF
+                               the ray returns a smooth normal
+                               based on evaluating the
+                               subdivision surface patch.
+
+  RTCORE_TASKING_SYSTEM        Chooses between Intel® Threading TBB
+                               Building Blocks (TBB) or an
+                               internal tasking system
+                               (INTERNAL).
+
+  XEON_ISA                     Select highest supported ISA on  AVX2
+                               Intel® Xeon® CPUs (SSE2, SSE3,
+                               SSSE3, SSE4.1, SSE4.2, AVX,
+                               AVX-I, or AVX2).
+  ---------------------------- -------------------------------- --------
+  : CMake build options for Embree.
 Embree API
 ==========
 
@@ -159,6 +370,11 @@ The `rtcInit` call initializes the ray tracing core. An optional
 configuration string can be passed through this function to configure
 implementation specific parameters. If this string is `NULL`, a default
 configuration is used, that is optimal for most usages.
+
+The threads calling the API functions should have at least 4MB of
+stack space allocated. Also every Intel® Threading Building Blocks
+(TBB) worker thread needs at least 4MB of stack space (which is the
+default for TBB).
 
 API calls that access geometries are only thread safe as long as
 different geometries are accessed. Accesses to one geometry have to get
@@ -248,7 +464,8 @@ function. In contrast the `rtcUpdate` function simply tags each buffer
 of some geometry as modified. If geometries got enabled, disabled,
 deleted, or modified an `rtcCommit` call has to get invoked before
 performing any ray queries for the scene, otherwise the effect of the
-ray query is undefined.
+ray query is undefined. During in `rtcCommit` call modifications to
+the scene are not allowed.
 
 A static scene is created by the `rtcNewScene` call with the
 `RTC_SCENE_STATIC` flag. Geometries can only be created and modified
@@ -257,6 +474,10 @@ access to any geometry of that static scene is invalid, including
 enabling, disabling, modifying, and deletion of geometries.
 Consequently, geometries that got created inside a static scene can only
 get deleted by deleting the entire scene.
+
+The modification of geometry, building of hierarchies using
+`rtcCommit`, and tracing of rays have always to happen separately,
+never at the same time.
 
 The following flags can be used to tune the used acceleration structure.
 These flags are only hints and may be ignored by the implementation.
@@ -281,12 +502,10 @@ The following flags can be used to tune the traversal algorithm that is
 used by Embree. These flags are only hints and may be ignored by the
 implementation.
 
-  ------------------ --------------------------------------------
   Scene Flag         Description
-  ------------------ --------------------------------------------
-  RTC_SCENE_ROBUST   Avoid optimizations that reduce arithmetic
-                     accuracy.
-  ------------------ --------------------------------------------
+  ------------------ ----------------------------------------------------
+  RTC_SCENE_ROBUST   Avoid optimizations that reduce arithmetic accuracy.
+  ------------------ ----------------------------------------------------
   : Traversal algorithm flags for `rtcNewScene`.
 
 The second argument of the `rtcNewScene` function are algorithm flags,
@@ -340,6 +559,13 @@ representation.
 For static scenes, geometry IDs are assigned sequentially starting at 0.
 This allows the application to use a fixed size array to map from
 geometry IDs to its own geometry representation.
+
+Alternatively the application can also use the `void rtcSetUserData
+(RTCScene scene, unsigned geomID, void* ptr)` function to set a
+pointer `ptr` to its own geometry representation, and later read out
+this pointer again using the `void* rtcGetUserData (RTCScene scene,
+unsigned geomID)` function.
+
 
 ### Triangle Meshes
 
@@ -513,8 +739,9 @@ motion blur, two vertex buffers (`RTC_VERTEX_BUFFER0` and
 The index buffer contains an array of 32\ bit indices pointing to the
 ID of the first of four control vertices, while the vertex buffer
 stores all control points in the form of a single precision position
-and radius stored in `x`, `y`, `z`, `r` order in memory. All buffers
-have to get unmapped before an `rtcCommit` call to the scene.
+and radius stored in `x`, `y`, `z`, `r` order in memory. The hair
+radii have to be greater or equal zero. All buffers have to get
+unmapped before an `rtcCommit` call to the scene.
 
 Like for triangle meshes, the user can also specify a geometry mask and
 additional flags that choose the strategy to handle that mesh in dynamic
@@ -530,7 +757,7 @@ The following example demonstrates how to create some hair geometry:
     // fill vertices here
     rtcUnmapBuffer(scene, geomID, RTC_VERTEX_BUFFER);
 
-    int* triangles = (int*) rtcMapBuffer(scene, geomID, RTC_INDEX_BUFFER);
+    int* curves = (int*) rtcMapBuffer(scene, geomID, RTC_INDEX_BUFFER);
     // fill indices here
     rtcUnmapBuffer(scene, geomID, RTC_INDEX_BUFFER);
 
@@ -637,9 +864,9 @@ the following way:
 
 One has to call `rtcCommit` on scene B before one calls `rtcCommit` on
 scene A. When modifying scene B one has to call `rtcModified` for all
-instances of that scene. If a ray hits the instance, then the geomID
-and primID members of the ray are set to the geometry ID and primitive
-ID of the primitive hit in scene B, and the instID member of the ray
+instances of that scene. If a ray hits the instance, then the `geomID`
+and `primID` members of the ray are set to the geometry ID and primitive
+ID of the primitive hit in scene B, and the `instID` member of the ray
 is set to the instance ID returned from the `rtcNewInstance` function.
 
 The `rtcSetTransform` call can be passed an affine transformation matrix
@@ -730,8 +957,9 @@ of 4, 8, or 16 rays, is 16, 32, and 64 bytes respectively, for the valid
 mask and the ray. To operate on packets of 4 rays, the CPU has to
 support SSE, to operate on packets of 8 rays, the CPU has to support
 AVX-256, and to operate on packets of 16 rays, the CPU has to support
-the Xeon Phi™ instructions. Additionally, the required ISA has to be
-enabled in Embree at compile time to use the desired packet size.
+the Intel® Xeon Phi™ coprocessor instructions. Additionally, the
+required ISA has to be enabled in Embree at compile time to use the
+desired packet size.
 
 Finding the closest hit distance is done through the `rtcIntersect`
 functions. These get the activity mask, the scene, and a ray as input.
@@ -805,7 +1033,7 @@ stride allows the application quite some freedom in the data layout of
 these buffers, however, some restrictions apply. Index buffers always
 store 32\ bit indices and vertex buffers always store single precision
 floating point data. The start address ptr+offset and stride always have
-to be aligned to 4 bytes on Xeon CPUs and 16 bytes on Xeon Phi™
+to be aligned to 4 bytes on Intel® Xeon® CPUs and 16 bytes on Xeon Phi
 accelerators, otherwise the `rtcSetBuffer` function will fail. For
 vertex buffers, the 4 bytes after the z-coordinate of the last vertex
 have to be readable memory, thus padding is required for some layouts.
@@ -945,7 +1173,7 @@ The API supports displacement mapping for subdivision meshes. A
 displacement function can be set for some subdivision mesh using the
 `rtcSetDisplacementFunction` API call.
 
-    void rtcSetDisplacementFunction(RTCScene, unsigned geomID, RTCDisplacementFunc, RTCBounds* bounds);
+    void rtcSetDisplacementFunction(RTCScene, unsigned geomID, RTCDisplacementFunc, RTCBounds*);
 
 A displacement function of NULL will delete an already set
 displacement function. The bounds parameter is optional. If NULL is
@@ -988,25 +1216,129 @@ mapping functions.
 Sharing Threads with Embree
 ---------------------------
 
-Embree supports using the application threads when building internal
-data structures, by using the
+On some implementations, Embree supports using the application threads
+when building internal data structures, by using the
 
     void rtcCommitThread(RTCScene, unsigned threadIndex, unsigned threadCount);
 
 API call to commit the scene. This function has to get called by all
 threads that want to cooperate in the scene commit. Each call is
 provided the scene to commit, the index of the calling thread in the
-range [0, `threadCount`-1], and the number of threads that will call into
-this commit operation for the scene. Multiple such scene commit
-operations can also be running at the same time, e.g. it is possible to
-commit many small scenes in parallel using one thread per commit
-operation. Subsequent commit operations for the same scene can use
-different number of threads or the Embree internal threads using the
+range [0, `threadCount`-1], and the number of threads that will call
+into this commit operation for the scene. All threads will return
+again from this function after the scene commit is finished.
 
-    void rtcCommitThread()
+Multiple such scene commit operations can also be running at the same
+time, e.g. it is possible to commit many small scenes in parallel
+using one thread per commit operation. Subsequent commit operations
+for the same scene can use different number of threads in the `void
+rtcCommitThread()` or use the Embree internal threads using the `void
+rtcCommit()` call.
 
-call.
+*Note:* When using Embree with the Intel® Threading Building Blocks
+(which is the default) sharing of threads is not possible through
+`rtcCommitThread`, as TBB will always generate its own set of
+threads. Thus when using TBB the `rtcCommitThread()` call will still
+function, but always use the TBB threads for hierarchy building. We
+recommend to also use TBB inside your application to share threads
+with the Embree library. When enabling the Embree internal tasking
+system the `rtcCommitThread()` feature will work as expected and use
+the application threads for hierarchy building.
 
+*Note:* On the Intel® Xeon Phi™ coprocessor the `rtcCommitThread()`
+feature is recommended to be used.
+
+Join Build Operation
+--------------------
+
+If `rtcCommit` is called multiple times from different TBB threads on
+the same scene, then all these threads will join the same scene build
+operation.
+
+This feature allows a flexible way to lazily create hierarchies during
+rendering. A thread reaching a not yet constructed sub-scene of a
+two-level scene, can generate the sub-scene geometry and call
+`rtcCommit` on that just generated scene. During construction, further
+threads reaching the not-yet-built scene, can join the build operation
+by also invoking `rtcCommit`. A thread that calls `rtcCommit` after
+the build finishes, will directly return from the `rtcCommit`
+call (even for static scenes).
+
+*Note:* This mode only works with the Intel® Threading Building Blocks
+ enabled as tasking system in Embree and your application. Embree will
+ tag the hierarchy build task as a high priority TBB task, which
+ guarantees that worker threads that join the build operation, will
+ only pick TBB build tasks and no TBB render tile tasks of your
+ application. For this reason, never make your application's render tile
+ task high priority in TBB.
+
+Memory Monitor Callback
+---------------------------
+
+Using the memory monitor callback mechanism, the application can track
+the memory consumption of Embree, and optionally terminate API calls
+that consume too much memory.
+
+The user provided memory monitor callback function has to have the
+following signature:
+
+    bool userMemoryCallbackFunction(const ssize_t bytes, const bool post);
+
+A single such callback function can be registered by
+calling `rtcSetMemoryMonitorFunction(myMemoryCallbackFunction)` and
+deregistered again by calling `rtcSetMemoryMonitorFunction(NULL)`.
+
+Once registered Embree will invoke the callback function before or after
+it allocates or frees important memory blocks. The callback function
+might  get called from multiple threads concurrently.
+
+The application can track the current memory usage of the Embree
+library by atomically accumulating the provided `bytes` input
+parameter. This parameter will be >0 for allocations and <0 for
+deallocations. The `post` input parameter is true if the callback
+function was invoked after the allocation or deallocation, otherwise
+it is false.
+
+Embree will continue its operation normally when returning true from
+the callback function. If false is returned, Embree will cancel the
+current operation with the RTC_OUT_OF_MEMORY error code. Cancelling
+will only happen when the callback was called for allocations (bytes >
+0), otherwise the cancel request will be ignored. If a callback that
+was invoked before the allocation happens (`post == false`) cancels
+the operation, then the `bytes` parameter should not get accumulated,
+as the allocation will never happen. If a callback that was called
+after the allocation happened (`post == true`) cancels the operation,
+then the `bytes` parameter should get accumulated, as the allocation
+properly happened. Issuing multiple cancel requests for the same
+operation is allowed.
+
+Progress Monitor Callback
+---------------------------
+
+The progress monitor callback mechanism can be used to report progress
+of hierarchy build operations and to cancel long lasting build
+operations.
+
+The user provided progress monitor callback function has to have the
+following signature:
+
+    bool userProgressCallbackFunction(void* userPtr, const double n);
+
+A single such callback function can be registered per scene by
+calling `rtcSetProgressMonitorFunction(scene,myProgressCallbackFunction,userPtr)` and
+deregistered again by calling `rtcSetProgressMonitorFunction(scene,NULL,NULL)`.
+
+Once registered Embree will invoke the callback function multiple
+times during hierarchy build operations of the scene, by providing the
+`userPtr` pointer that was set at registration time, and a double `n`
+in the range [0,1] estimating the completion amount of the
+operation. The callback function might get called from multiple
+threads concurrently.
+
+When returning `true` from the callback function, Embree will continue
+the build operation normally. When returning `false` Embree will
+cancel the build operation with the RTC_CANCELLED error code. Issuing
+multiple cancel requests for the same build operation is allowed.
 Embree Tutorials
 ================
 
@@ -1019,13 +1351,15 @@ version of the tutorial. To start the C++ version use the `tutorialXX`
 executables, to start the ISPC version use the `tutorialXX_ispc`
 executables.
 
-Under Linux Embree also comes with an ISPC version of all tutorials for
-the Intel® Xeon Phi™ coprocessor. The executables of this version of the
-tutorials are named `tutorialXX_xeonphi` and only work if a Xeon Phi
-coprocessor is present in the system. The Xeon Phi version of the
-tutorials get started on the host CPU, just like all other tutorials,
-and will connect automatically to one installed Xeon Phi coprocessor in
-the system.
+Under Linux Embree also comes with an ISPC version of all tutorials
+for the Intel® Xeon Phi™ coprocessor. The executables of this version
+of the tutorials are named `tutorialXX_xeonphi` and only work if a
+Xeon Phi coprocessor is present in the system. The Xeon Phi version of
+the tutorials get started on the host CPU, just like all other
+tutorials, and will connect automatically to one installed Xeon Phi
+coprocessor in the system. For the Intel® Xeon Phi™ coprocessor to
+find to Embree library you have to add the path to
+`libembree_xeonphi.so` to the `SINK_LD_LIBRARY_PATH` variable.
 
 For all tutorials, you can select an initial camera using the `-vp`
 (camera position), `-vi` (camera look-at point), `-vu` (camera up
@@ -1093,10 +1427,10 @@ c
 :   Prints camera parameters.
 
 ESC
-:   Exists the tutorial.
+:   Exits the tutorial.
 
 q
-:   Exists the tutorial.
+:   Exits the tutorial.
 
 Tutorial00
 ----------
@@ -1237,6 +1571,13 @@ This tutorial loads an .obj file and renders the mesh as a Catmull
 Clark subdivision surface object. The edge tessellation level is
 chosen adaptively based on the distance to the camera.
 
+Tutorial11
+----------
+
+This tutorial demonstrates how to use the templated hierarchy builders
+of Embree to build a bounding volume hierarchy with a user defined
+memory layout using a high quality SAH builder and very fast morton
+builder.
 [Embree API]: #embree-api
 [Embree Example Renderer]: https://embree.github.io/renderer.html
 [tutorial00]: #tutorial00
@@ -1246,3 +1587,4 @@ chosen adaptively based on the distance to the camera.
 [tutorial07]: #tutorial07
 [tutorial08]: #tutorial08
 [tutorial09]: #tutorial09
+[tutorial11]: #tutorial11

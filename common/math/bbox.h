@@ -53,7 +53,7 @@ namespace embree
       atomic_max_f32(&upper.z,other.upper.z);
     }
 
-    /*! computes the size of the box */
+    /*! tests if box is empty */
     __forceinline bool empty() const { for (int i=0; i<T::N; i++) if (lower[i] > upper[i]) return true; return false; }
 
     /*! computes the size of the box */
@@ -80,6 +80,11 @@ namespace embree
   }
 #endif
 
+  /*! tests if box is finite */
+  __forceinline bool isvalid( const BBox<Vec3fa>& v ) {
+    return all(gt_mask(v.lower,Vec3fa_t(-FLT_LARGE)) & lt_mask(v.upper,Vec3fa_t(+FLT_LARGE)));
+  }
+
   /*! test if point contained in box */
   __forceinline bool inside ( const BBox<Vec3fa>& b, const Vec3fa& p ) { return all(ge_mask(p,b.lower) & le_mask(p,b.upper)); }
 
@@ -95,10 +100,15 @@ namespace embree
   __forceinline float volume( const BBox<Vec3f>& b )  { return reduce_mul(b.size()); }
 
   /*! computes the surface area of a bounding box */
-  template<typename T> __forceinline const T area( const BBox<Vec2<T> >& b ) { const Vec2<T> d = size(b); return d.x*d.y; }
-  __forceinline float     area( const BBox<Vec3fa>& b ) { const Vec3fa d = b.size(); return 2.0f*(d.x*(d.y+d.z)+d.y*d.z); }
-  __forceinline float safeArea( const BBox<Vec3fa>& b ) { if (b.empty()) return 0.0f; else return area(b); }
-  __forceinline float halfArea( const BBox<Vec3fa>& b ) { const Vec3fa d = b.size(); return d.x*(d.y+d.z)+d.y*d.z; }
+  template<typename T> __forceinline const T area( const BBox<Vec2<T> >& b ) { const Vec2<T> d = b.size(); return d.x*d.y; }
+
+  template<typename T> __forceinline const T halfArea( const BBox<Vec3<T> >& b ) { return halfArea(b.size()); }
+  template<typename T> __forceinline const T     area( const BBox<Vec3<T> >& b ) { return 2.0f*halfArea(b); }
+
+  __forceinline float halfArea( const BBox<Vec3fa>& b ) { return halfArea(b.size()); }
+  __forceinline float     area( const BBox<Vec3fa>& b ) { return 2.0f*halfArea(b); }
+
+  template<typename Vec> __forceinline float safeArea( const BBox<Vec>& b ) { if (b.empty()) return 0.0f; else return area(b); }
 
   /*! merges bounding boxes and points */
   template<typename T> __forceinline const BBox<T> merge( const BBox<T>& a, const       T& b ) { return BBox<T>(min(a.lower, b    ), max(a.upper, b    )); }
@@ -121,38 +131,34 @@ namespace embree
   template<typename T> __forceinline BBox<T> operator *( const float& a, const BBox<T>& b ) { return BBox<T>(a*b.lower,a*b.upper); }
   template<typename T> __forceinline BBox<T> operator *( const     T& a, const BBox<T>& b ) { return BBox<T>(a*b.lower,a*b.upper); }
 
+  /*! translations */
   template<typename T> __forceinline BBox<T> operator +( const BBox<T>& a, const BBox<T>& b ) { return BBox<T>(a.lower+b.lower,a.upper+b.upper); }
   template<typename T> __forceinline BBox<T> operator -( const BBox<T>& a, const BBox<T>& b ) { return BBox<T>(a.lower-b.lower,a.upper-b.upper); }
+  template<typename T> __forceinline BBox<T> operator +( const BBox<T>& a, const      T & b ) { return BBox<T>(a.lower+b      ,a.upper+b      ); }
   template<typename T> __forceinline BBox<T> operator -( const BBox<T>& a, const      T & b ) { return BBox<T>(a.lower-b      ,a.upper-b      ); }
 
   /*! extension */
-  template<typename T> __forceinline BBox<T> enlarge(const BBox<T>& a, const T& b) { return BBox<T>(a.lower - b, a.upper +b); }
+  template<typename T> __forceinline BBox<T> enlarge(const BBox<T>& a, const T& b) { return BBox<T>(a.lower-b, a.upper+b); }
 
   /*! intersect bounding boxes */
   template<typename T> __forceinline const BBox<T> intersect( const BBox<T>& a, const BBox<T>& b ) { return BBox<T>(max(a.lower, b.lower), min(a.upper, b.upper)); }
   template<typename T> __forceinline const BBox<T> intersect( const BBox<T>& a, const BBox<T>& b, const BBox<T>& c ) { return intersect(a,intersect(b,c)); }
 
   /*! tests if bounding boxes (and points) are disjoint (empty intersection) */
-  template<typename T> __inline bool disjoint( const BBox<T>& a, const BBox<T>& b )
-  { const T d = min(a.upper, b.upper) - max(a.lower, b.lower); for ( size_t i = 0 ; i < T::N ; i++ ) if ( d[i] < typename T::Scalar(zero) ) return true; return false; }
-  template<typename T> __inline bool disjoint( const BBox<T>& a, const  T& b )
-  { const T d = min(a.upper, b)       - max(a.lower, b);       for ( size_t i = 0 ; i < T::N ; i++ ) if ( d[i] < typename T::Scalar(zero) ) return true; return false; }
-  template<typename T> __inline bool disjoint( const  T& a, const BBox<T>& b )
-  { const T d = min(a, b.upper)       - max(a, b.lower);       for ( size_t i = 0 ; i < T::N ; i++ ) if ( d[i] < typename T::Scalar(zero) ) return true; return false; }
+  template<typename T> __inline bool disjoint( const BBox<T>& a, const BBox<T>& b ) { return intersect(a,b).empty(); }
+  template<typename T> __inline bool disjoint( const BBox<T>& a, const       T& b ) { return disjoint(a,BBox<T>(b)); }
+  template<typename T> __inline bool disjoint( const       T& a, const BBox<T>& b ) { return disjoint(BBox<T>(a),b); }
 
   /*! tests if bounding boxes (and points) are conjoint (non-empty intersection) */
-  template<typename T> __inline bool conjoint( const BBox<T>& a, const BBox<T>& b )
-  { const T d = min(a.upper, b.upper) - max(a.lower, b.lower); for ( size_t i = 0 ; i < T::N ; i++ ) if ( d[i] < typename T::Scalar(zero) ) return false; return true; }
-  template<typename T> __inline bool conjoint( const BBox<T>& a, const  T& b )
-  { const T d = min(a.upper, b)       - max(a.lower, b);       for ( size_t i = 0 ; i < T::N ; i++ ) if ( d[i] < typename T::Scalar(zero) ) return false; return true; }
-  template<typename T> __inline bool conjoint( const  T& a, const BBox<T>& b )
-  { const T d = min(a, b.upper)       - max(a, b.lower);       for ( size_t i = 0 ; i < T::N ; i++ ) if ( d[i] < typename T::Scalar(zero) ) return false; return true; }
+  template<typename T> __inline bool conjoint( const BBox<T>& a, const BBox<T>& b ) { return !intersect(a,b).empty(); }
+  template<typename T> __inline bool conjoint( const BBox<T>& a, const       T& b ) { return conjoint(a,BBox<T>(b)); }
+  template<typename T> __inline bool conjoint( const       T& a, const BBox<T>& b ) { return conjoint(BBox<T>(a),b); }
 
   /*! subset relation */
   template<typename T> __inline bool subset( const BBox<T>& a, const BBox<T>& b )
   { 
-    for ( size_t i = 0 ; i < T::N ; i++ ) if ( a.lower[i] < b.lower[i] ) return false;
-    for ( size_t i = 0 ; i < T::N ; i++ ) if ( a.upper[i] > b.upper[i] ) return false;
+    for ( size_t i = 0; i < T::N; i++ ) if ( a.lower[i] < b.lower[i] ) return false;
+    for ( size_t i = 0; i < T::N; i++ ) if ( a.upper[i] > b.upper[i] ) return false;
     return true; 
   }
 

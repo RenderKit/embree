@@ -23,12 +23,20 @@ namespace embree
   // ====================================================================================================================
   // ====================================================================================================================
   // ====================================================================================================================
+  struct Precalculations {
+    __forceinline Precalculations(const mic_f &org_xyz,
+				  const mic_f &rdir_xyz) :
+    rdir_xyz(rdir_xyz), org_rdir_xyz(rdir_xyz * org_xyz), org_xyz(org_xyz) {}
+				  
+    const mic_f org_xyz;
+    const mic_f rdir_xyz;
+    const mic_f org_rdir_xyz;
+  };
 
-  template<bool DECOMPRESS_NODE>
+  template<bool DECOMPRESS_NODE,bool ROBUST>
   __forceinline void traverse_single_intersect(BVH4i::NodeRef &curNode,
 					       size_t &sindex,
-					       const mic_f &rdir_xyz,
-					       const mic_f &org_rdir_xyz,
+					       const Precalculations &calc,
 					       const mic_f &min_dist_xyz,
 					       const mic_f &max_dist_xyz,
 					       BVH4i::NodeRef *__restrict__ const stack_node,
@@ -37,9 +45,9 @@ namespace embree
 					       const unsigned int leaf_mask)
   {
     const mic_m m7777 = 0x7777; 
-    const mic_m m_rdir0 = lt(m7777,rdir_xyz,mic_f::zero());
-    const mic_m m_rdir1 = ge(m7777,rdir_xyz,mic_f::zero());
-
+    const mic_m m_rdir0 = lt(m7777,calc.rdir_xyz,mic_f::zero());
+    const mic_m m_rdir1 = ge(m7777,calc.rdir_xyz,mic_f::zero());
+    
     while (1) 
       {
 	/* test if this is a leaf node */
@@ -48,8 +56,8 @@ namespace embree
 
 	const BVH4i::Node* __restrict__ const node = curNode.node(nodes);
 
-	mic_f tLowerXYZ = select(m7777,rdir_xyz,min_dist_xyz); 
-	mic_f tUpperXYZ = select(m7777,rdir_xyz,max_dist_xyz);
+	mic_f tLowerXYZ = select(m7777,calc.rdir_xyz,min_dist_xyz); 
+	mic_f tUpperXYZ = select(m7777,calc.rdir_xyz,max_dist_xyz);
 	mic_m hitm = ~m7777; 
 
 	if (!DECOMPRESS_NODE)
@@ -62,28 +70,54 @@ namespace embree
 	    
 	    /* intersect single ray with 4 bounding boxes */
 
-	    tLowerXYZ = mask_msub(m_rdir1,tLowerXYZ,load16f(plower),org_rdir_xyz);
-	    tUpperXYZ = mask_msub(m_rdir0,tUpperXYZ,load16f(plower),org_rdir_xyz);
+	    if (ROBUST)
+	      {
+		const mic_f lower_org = load16f(plower) - calc.org_xyz;
+		const mic_f upper_org = load16f(pupper) - calc.org_xyz;
 
-	    tLowerXYZ = mask_msub(m_rdir0,tLowerXYZ,load16f(pupper),org_rdir_xyz);
-	    tUpperXYZ = mask_msub(m_rdir1,tUpperXYZ,load16f(pupper),org_rdir_xyz);
+		tLowerXYZ = mask_mul_round_down(m_rdir1,tLowerXYZ,lower_org,calc.rdir_xyz);
+		tUpperXYZ = mask_mul_round_up(  m_rdir0,tUpperXYZ,lower_org,calc.rdir_xyz);
+		tLowerXYZ = mask_mul_round_down(m_rdir0,tLowerXYZ,upper_org,calc.rdir_xyz);
+		tUpperXYZ = mask_mul_round_up(  m_rdir1,tUpperXYZ,upper_org,calc.rdir_xyz);
+	      }
+	    else
+	      {
+
+		tLowerXYZ = mask_msub(m_rdir1,tLowerXYZ,load16f(plower),calc.org_rdir_xyz);
+		tUpperXYZ = mask_msub(m_rdir0,tUpperXYZ,load16f(plower),calc.org_rdir_xyz);
+		tLowerXYZ = mask_msub(m_rdir0,tLowerXYZ,load16f(pupper),calc.org_rdir_xyz);
+		tUpperXYZ = mask_msub(m_rdir1,tUpperXYZ,load16f(pupper),calc.org_rdir_xyz);
+	      }
 	  }
 	else
 	  {
 	    BVH4i::QuantizedNode* __restrict__ const compressed_node = (BVH4i::QuantizedNode*)node;
 	    prefetch<PFHINT_L1>((char*)node + 0);
 		  
-	    //DBG_PRINT(*compressed_node);
+	    //PRINT(*compressed_node);
 	    const mic_f startXYZ = compressed_node->decompress_startXYZ();
 	    const mic_f diffXYZ  = compressed_node->decompress_diffXYZ();
 	    const mic_f clower   = compressed_node->decompress_lowerXYZ(startXYZ,diffXYZ);
 	    const mic_f cupper   = compressed_node->decompress_upperXYZ(startXYZ,diffXYZ);
 
-	    tLowerXYZ = mask_msub(m_rdir1,tLowerXYZ,clower,org_rdir_xyz);
-	    tUpperXYZ = mask_msub(m_rdir0,tUpperXYZ,clower,org_rdir_xyz);
+	    if (ROBUST)
+	      {
+		const mic_f lower_org = clower - calc.org_xyz;
+		const mic_f upper_org = cupper - calc.org_xyz;
 
-	    tLowerXYZ = mask_msub(m_rdir0,tLowerXYZ,cupper,org_rdir_xyz);
-	    tUpperXYZ = mask_msub(m_rdir1,tUpperXYZ,cupper,org_rdir_xyz);	    
+		tLowerXYZ = mask_mul_round_down(m_rdir1,tLowerXYZ,lower_org,calc.rdir_xyz);
+		tUpperXYZ = mask_mul_round_up(  m_rdir0,tUpperXYZ,lower_org,calc.rdir_xyz);
+		tLowerXYZ = mask_mul_round_down(m_rdir0,tLowerXYZ,upper_org,calc.rdir_xyz);
+		tUpperXYZ = mask_mul_round_up(  m_rdir1,tUpperXYZ,upper_org,calc.rdir_xyz);
+
+	      }
+	    else
+	      {
+		tLowerXYZ = mask_msub(m_rdir1,tLowerXYZ,clower,calc.org_rdir_xyz);
+		tUpperXYZ = mask_msub(m_rdir0,tUpperXYZ,clower,calc.org_rdir_xyz);
+		tLowerXYZ = mask_msub(m_rdir0,tLowerXYZ,cupper,calc.org_rdir_xyz);
+		tUpperXYZ = mask_msub(m_rdir1,tUpperXYZ,cupper,calc.org_rdir_xyz);	    
+	      }
 	  }
 
 	const mic_f tLower = tLowerXYZ;
@@ -101,7 +135,16 @@ namespace embree
 
 	const mic_f tNear = vreduce_max4(tLower);
 	const mic_f tFar  = vreduce_min4(tUpper);  
-	hitm = le(hitm,tNear,tFar);
+#if 0
+	if (ROBUST)
+	  {
+	    const float round_down = 1.0f-2.0f*float(ulp);
+	    const float round_up   = 1.0f+2.0f*float(ulp);
+	    hitm = le(hitm,mul_round_down(round_down,tNear),mul_round_up(round_up,tFar));
+	  }
+	else
+#endif
+	  hitm = le(hitm,tNear,tFar);
 		  
 	const mic_f tNear_pos = select(hitm,tNear,inf);
 
@@ -180,11 +223,10 @@ namespace embree
 
   }
 
-  template<bool DECOMPRESS_NODE>
+  template<bool DECOMPRESS_NODE,bool ROBUST>
   __forceinline void traverse_single_occluded(BVH4i::NodeRef &curNode,
 					      size_t &sindex,
-					      const mic_f &rdir_xyz,
-					      const mic_f &org_rdir_xyz,
+					      const Precalculations &calc,
 					      const mic_f &min_dist_xyz,
 					      const mic_f &max_dist_xyz,
 					      BVH4i::NodeRef *__restrict__ const stack_node,
@@ -192,8 +234,8 @@ namespace embree
 					      const unsigned int leaf_mask)
   {
     const mic_m m7777 = 0x7777; 
-    const mic_m m_rdir0 = lt(m7777,rdir_xyz,mic_f::zero());
-    const mic_m m_rdir1 = ge(m7777,rdir_xyz,mic_f::zero());
+    const mic_m m_rdir0 = lt(m7777,calc.rdir_xyz,mic_f::zero());
+    const mic_m m_rdir1 = ge(m7777,calc.rdir_xyz,mic_f::zero());
 
     while (1) 
       {
@@ -203,8 +245,8 @@ namespace embree
 
 	const BVH4i::Node* __restrict__ const node = curNode.node(nodes);
 
-	mic_f tLowerXYZ = select(m7777,rdir_xyz,min_dist_xyz); 
-	mic_f tUpperXYZ = select(m7777,rdir_xyz,max_dist_xyz);
+	mic_f tLowerXYZ = select(m7777,calc.rdir_xyz,min_dist_xyz); 
+	mic_f tUpperXYZ = select(m7777,calc.rdir_xyz,max_dist_xyz);
 	mic_m hitm = ~m7777; 
 
 	if (!DECOMPRESS_NODE)
@@ -217,11 +259,24 @@ namespace embree
 	    
 	    /* intersect single ray with 4 bounding boxes */
 
-	    tLowerXYZ = mask_msub(m_rdir1,tLowerXYZ,load16f(plower),org_rdir_xyz);
-	    tUpperXYZ = mask_msub(m_rdir0,tUpperXYZ,load16f(plower),org_rdir_xyz);
+	    if (ROBUST)
+	      {
+		const mic_f lower_org = load16f(plower) - calc.org_xyz;
+		const mic_f upper_org = load16f(pupper) - calc.org_xyz;
 
-	    tLowerXYZ = mask_msub(m_rdir0,tLowerXYZ,load16f(pupper),org_rdir_xyz);
-	    tUpperXYZ = mask_msub(m_rdir1,tUpperXYZ,load16f(pupper),org_rdir_xyz);
+		tLowerXYZ = mask_mul_round_down(m_rdir1,tLowerXYZ,lower_org,calc.rdir_xyz);
+		tUpperXYZ = mask_mul_round_up(  m_rdir0,tUpperXYZ,lower_org,calc.rdir_xyz);
+		tLowerXYZ = mask_mul_round_down(m_rdir0,tLowerXYZ,upper_org,calc.rdir_xyz);
+		tUpperXYZ = mask_mul_round_up(  m_rdir1,tUpperXYZ,upper_org,calc.rdir_xyz);
+	      }
+	    else
+	      {
+		tLowerXYZ = mask_msub(m_rdir1,tLowerXYZ,load16f(plower),calc.org_rdir_xyz);
+		tUpperXYZ = mask_msub(m_rdir0,tUpperXYZ,load16f(plower),calc.org_rdir_xyz);
+		tLowerXYZ = mask_msub(m_rdir0,tLowerXYZ,load16f(pupper),calc.org_rdir_xyz);
+		tUpperXYZ = mask_msub(m_rdir1,tUpperXYZ,load16f(pupper),calc.org_rdir_xyz);
+	      }
+
 	  }
 	else
 	  {
@@ -233,11 +288,24 @@ namespace embree
 	    const mic_f clower   = compressed_node->decompress_lowerXYZ(startXYZ,diffXYZ);
 	    const mic_f cupper   = compressed_node->decompress_upperXYZ(startXYZ,diffXYZ);
 
-	    tLowerXYZ = mask_msub(m_rdir1,tLowerXYZ,clower,org_rdir_xyz);
-	    tUpperXYZ = mask_msub(m_rdir0,tUpperXYZ,clower,org_rdir_xyz);
+	    if (ROBUST)
+	      {
+		const mic_f lower_org = clower - calc.org_xyz;
+		const mic_f upper_org = cupper - calc.org_xyz;
 
-	    tLowerXYZ = mask_msub(m_rdir0,tLowerXYZ,cupper,org_rdir_xyz);
-	    tUpperXYZ = mask_msub(m_rdir1,tUpperXYZ,cupper,org_rdir_xyz);	    
+		tLowerXYZ = mask_mul_round_down(m_rdir1,tLowerXYZ,lower_org,calc.rdir_xyz);
+		tUpperXYZ = mask_mul_round_up(  m_rdir0,tUpperXYZ,lower_org,calc.rdir_xyz);
+		tLowerXYZ = mask_mul_round_down(m_rdir0,tLowerXYZ,upper_org,calc.rdir_xyz);
+		tUpperXYZ = mask_mul_round_up(  m_rdir1,tUpperXYZ,upper_org,calc.rdir_xyz);
+
+	      }
+	    else
+	      {
+		tLowerXYZ = mask_msub(m_rdir1,tLowerXYZ,clower,calc.org_rdir_xyz);
+		tUpperXYZ = mask_msub(m_rdir0,tUpperXYZ,clower,calc.org_rdir_xyz);
+		tLowerXYZ = mask_msub(m_rdir0,tLowerXYZ,cupper,calc.org_rdir_xyz);
+		tUpperXYZ = mask_msub(m_rdir1,tUpperXYZ,cupper,calc.org_rdir_xyz);	    
+	      }
 	  }
 
 	const mic_f tLower = tLowerXYZ;
@@ -254,8 +322,18 @@ namespace embree
 
 	const mic_f tNear = vreduce_max4(tLower);
 	const mic_f tFar  = vreduce_min4(tUpper);  
-	hitm = le(hitm,tNear,tFar);
-		  
+
+#if 0
+	if (ROBUST)
+	  {
+	    const float round_down = 1.0f-2.0f*float(ulp);
+	    const float round_up   = 1.0f+2.0f*float(ulp);
+
+	    hitm = le(hitm,round_down*tNear,round_up*tFar);
+	  }
+	else
+#endif
+	  hitm = le(hitm,tNear,tFar);		  
 
 	const mic_f tNear_pos = select(hitm,tNear,inf);
 
@@ -265,7 +343,6 @@ namespace embree
 
 	/* if no child is hit, continue with early popped child */
 	const mic_i plower_node = load16i((int*)node);
-
 	if (unlikely(none(hitm))) continue;
 	sindex++;
         
@@ -590,32 +667,4 @@ namespace embree
     
   }
 
-
-  /* BVH4i::QuantizedNode* __restrict__ const node = (BVH4i::QuantizedNode*)curNode.node(nodes); */
-  /* prefetch<PFHINT_L1>((char*)node + 0); */
-
-  /* const float* __restrict const plower = (float*)node; */
-		  
-  /* const mic_f startXYZ = node->decompress_startXYZ(); */
-  /* const mic_f diffXYZ  = node->decompress_diffXYZ(); */
-  /* const mic_f lower   = node->decompress_lowerXYZ(startXYZ,diffXYZ); */
-  /* const mic_f upper   = node->decompress_upperXYZ(startXYZ,diffXYZ); */
-
-  /* mic_f tLowerXYZ = lower * rdir_xyz - org_rdir_xyz; */
-  /* mic_f tUpperXYZ = upper * rdir_xyz - org_rdir_xyz; */
-
-
-  /* BVH4i::QuantizedNode* __restrict__ const node = (BVH4i::QuantizedNode*)curNode.node(nodes); */
-  /* prefetch<PFHINT_L1>((char*)node + 0); */
-
-  /* const float* __restrict const plower = (float*)node; */
-		  
-  /* const mic_f startXYZ = node->decompress_startXYZ(); */
-  /* const mic_f diffXYZ  = node->decompress_diffXYZ(); */
-  /* const mic_f lower   = node->decompress_lowerXYZ(startXYZ,diffXYZ); */
-  /* const mic_f upper   = node->decompress_upperXYZ(startXYZ,diffXYZ); */
-
-  /* const mic_f tLowerXYZ = lower * rdir_xyz - org_rdir_xyz; */
-  /* const mic_f tUpperXYZ = upper * rdir_xyz - org_rdir_xyz; */
-  
 };

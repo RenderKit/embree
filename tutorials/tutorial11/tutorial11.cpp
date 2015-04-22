@@ -95,7 +95,7 @@ namespace embree
            pixel2world.p);
     
     void* ptr = map();
-    Ref<Image> image = new Image4c(g_width, g_height, (Col4c*)ptr);
+    Ref<Image> image = new Image4uc(g_width, g_height, (Col4uc*)ptr);
     storeImage(image, fileName);
     unmap();
   }
@@ -103,6 +103,9 @@ namespace embree
   /* main function in embree namespace */
   int main(int argc, char** argv) 
   {
+    /* for best performance set FTZ and DAZ flags in MXCSR control and status register */
+    _mm_setcsr(_mm_getcsr() | /* FTZ */ (1<<15) | /* DAZ */ (1<<6));
+
     /* set default camera */
     g_camera.from = Vec3fa(1.5f,1.5f,-1.5f);
     g_camera.to   = Vec3fa(0.0f,0.0f,0.0f);
@@ -113,7 +116,7 @@ namespace embree
     /* parse command line */  
     parseCommandLine(stream, FileName());
     if (g_numThreads) 
-      g_rtcore += ",threads=" + std::stringOf(g_numThreads);
+      g_rtcore += ",threads=" + std::to_string((long long)g_numThreads);
 
     /* initialize ray tracing core */
     init(g_rtcore.c_str());

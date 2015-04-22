@@ -18,6 +18,12 @@ INCLUDE_DIRECTORIES (${CMAKE_CURRENT_SOURCE_DIR}/../tutorials/common)
 
 IF (__XEON__)
 
+IF (TASKING_INTERNAL)
+  ADD_DEFINITIONS(-DTASKING_TBB_INTERNAL)
+ELSE()
+  ADD_DEFINITIONS(-DTASKING_TBB)
+ENDIF()
+
   IF (TARGET_SSE41)
     ADD_DEFINITIONS(-D__TARGET_SSE41__)
   ENDIF()
@@ -42,7 +48,19 @@ IF (__XEON__)
   TARGET_LINK_LIBRARIES(retrace sys simd embree)
   SET_PROPERTY(TARGET retrace PROPERTY FOLDER tests)
 
-  INSTALL(TARGETS verify benchmark retrace DESTINATION bin)
+  #IF (TASKING_TBB) # FIXME: remove test
+  #  FIND_PACKAGE(TBB REQUIRED)
+  #  ADD_EXECUTABLE(benchmark_tasking 
+  #    benchmark_tasking.cpp
+  #    ../../common/tasking/taskscheduler.cpp
+  #    ../../common/tasking/taskscheduler_sys.cpp
+  #    ../../common/tasking/taskscheduler_new.cpp
+  #  )             
+  #  TARGET_LINK_LIBRARIES(benchmark_tasking sys ${TBB_LIBRARIES})
+  #  SET_PROPERTY(TARGET benchmark_tasking PROPERTY FOLDER tests)
+  #ENDIF()
+
+  INSTALL(TARGETS verify benchmark retrace DESTINATION ${UTILITIES_INSTALL_DIR} COMPONENT utilities)
 
 ELSE ()
 
@@ -60,6 +78,18 @@ ELSE ()
   TARGET_LINK_LIBRARIES(retrace_xeonphi sys_xeonphi embree_xeonphi)
   SET_PROPERTY(TARGET retrace_xeonphi PROPERTY FOLDER tests)
 
-  INSTALL(TARGETS verify_xeonphi benchmark_xeonphi retrace_xeonphi DESTINATION bin)
+  #IF (TASKING_TBB) # FIXME: remove test
+  #  FIND_PACKAGE(TBB REQUIRED)
+  #  ADD_EXECUTABLE(benchmark_tasking_xeonphi 
+  #    benchmark_tasking.cpp
+  #    ../../common/tasking/taskscheduler.cpp
+  #    ../../common/tasking/taskscheduler_mic.cpp
+  #    ../../common/tasking/taskscheduler_new.cpp
+  #  )             
+  #  TARGET_LINK_LIBRARIES(benchmark_tasking_xeonphi sys_xeonphi ${TBB_LIBRARIES_MIC})
+  #  SET_PROPERTY(TARGET benchmark_tasking_xeonphi PROPERTY FOLDER tests)
+  #ENDIF()
+
+  INSTALL(TARGETS verify_xeonphi benchmark_xeonphi retrace_xeonphi DESTINATION ${UTILITIES_INSTALL_DIR} COMPONENT utilities_xeonphi)
 
 ENDIF()

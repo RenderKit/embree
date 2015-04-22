@@ -16,6 +16,7 @@
 
 #pragma once
 
+
 struct ISPCTriangle 
 {
   int v0;                /*< first triangle vertex */
@@ -29,7 +30,7 @@ struct ISPCQuad
   int v0;                /*< first triangle vertex */
   int v1;                /*< second triangle vertex */
   int v2;                /*< third triangle vertex */
-  int v4;                /*< fourth triangle vertex */
+  int v3;                /*< fourth triangle vertex */
 };
 
 struct ISPCHair
@@ -61,6 +62,7 @@ struct ISPCMesh
   int numTriangles;
   int numQuads;
   int geomID;
+  int meshMaterialID;
 };
 
 struct ISPCSubdivMesh
@@ -78,6 +80,7 @@ struct ISPCSubdivMesh
   float* edge_crease_weights;   //!< weight for each crease
   int* vertex_creases;          //!< indices of vertex creases
   float* vertex_crease_weights; //!< weight for each vertex crease
+  int *face_offsets;
   int numVertices;
   int numFaces;
   int numEdges;
@@ -137,6 +140,23 @@ struct MirrorMaterial
   Vec3fa reflectance;
 };
 
+enum TEXTURE_FORMAT {
+  RGBA8  = 1,
+  RGB8   = 2,
+  ALPHA8 = 4
+};
+
+struct Texture {      
+  int width;
+  int height;    
+  int format;
+  int bytesPerTexel;
+  int width_mask;
+  int height_mask;
+  void *data;
+};
+
+
 struct OBJMaterial
 {
   int ty;
@@ -151,14 +171,19 @@ struct OBJMaterial
   Vec3fa Kd;              /*< diffuse reflectivity */
   Vec3fa Ks;              /*< specular reflectivity */
   Vec3fa Kt;              /*< transmission filter */
-  Vec3fa v[2];
+
+  Texture* map_Kd;       /*< dummy */
+  Texture* map_Displ;       /*< dummy */
+#ifdef USE_PTEX
+  ptex_file *ptex_Kd;
+  ptex_file* ptex_displ;
+#endif
 };
 
 struct MetalMaterial
 {
   int ty;
   int align[3];
-
   Vec3fa reflectance;
   Vec3fa eta;
   Vec3fa k;
@@ -216,6 +241,11 @@ struct MetallicPaintMaterial
   float eta;
 };
 
+struct ISPCSubdivMeshKeyFrame {
+  ISPCSubdivMesh** subdiv;                   //!< list of subdiv meshes
+  int numSubdivMeshes;                       //!< number of subdiv meshes
+};
+
 struct ISPCScene {
 
   ISPCMesh** meshes;   //!< list of meshes
@@ -241,7 +271,8 @@ struct ISPCScene {
   ISPCSubdivMesh** subdiv;                   //!< list of subdiv meshes
   int numSubdivMeshes;                       //!< number of subdiv meshes
 
+  ISPCSubdivMeshKeyFrame** subdivMeshKeyFrames;
+  int numSubdivMeshKeyFrames;
 }; // ISPCScene
-
 
 

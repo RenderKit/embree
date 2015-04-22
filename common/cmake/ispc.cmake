@@ -24,7 +24,7 @@ IF (ENABLE_ISPC_SUPPORT)
 SET(ISPC_VERSION_REQUIRED "1.7.1")
 
 IF (NOT ISPC_EXECUTABLE)
-  FIND_PROGRAM(ISPC_EXECUTABLE ispc)
+  FIND_PROGRAM(ISPC_EXECUTABLE ispc DOC "Path to the ISPC executable.")
   IF (NOT ISPC_EXECUTABLE)
     MESSAGE(FATAL_ERROR "Intel SPMD Compiler (ISPC) not found. Disable ENABLE_ISPC_SUPPORT or install ISPC.")
   ELSE()
@@ -34,7 +34,8 @@ ENDIF()
 
 IF(NOT ISPC_VERSION)
   EXECUTE_PROCESS(COMMAND ${ISPC_EXECUTABLE} --version OUTPUT_VARIABLE ISPC_OUTPUT)
-  STRING(REGEX MATCH " [0-9]+[.][0-9]+[.][0-9]+ " ISPC_VERSION "${ISPC_OUTPUT}")
+  STRING(REGEX MATCH " ([0-9]+[.][0-9]+[.][0-9]+)(dev)? " DUMMY "${ISPC_OUTPUT}")
+  SET(ISPC_VERSION ${CMAKE_MATCH_1})
 
   IF (ISPC_VERSION VERSION_LESS ISPC_VERSION_REQUIRED)
     MESSAGE(FATAL_ERROR "Need at least version ${ISPC_VERSION_REQUIRED} of Intel SPMD Compiler (ISPC).")
@@ -45,7 +46,7 @@ IF(NOT ISPC_VERSION)
   MARK_AS_ADVANCED(ISPC_EXECUTABLE)
 ENDIF()
 
-GET_FILENAME_COMPONENT(ISPC_DIR ${ISPC_EXECUTABLE} DIRECTORY)
+GET_FILENAME_COMPONENT(ISPC_DIR ${ISPC_EXECUTABLE} PATH)
 
 SET(EMBREE_ISPC_ADDRESSING 32 CACHE INT "32vs64 bit addressing in ispc")
 MARK_AS_ADVANCED(EMBREE_ISPC_ADDRESSING)
@@ -85,7 +86,7 @@ MACRO (ispc_compile)
 
   FOREACH(src ${ARGN})
     GET_FILENAME_COMPONENT(fname ${src} NAME_WE)
-    GET_FILENAME_COMPONENT(dir ${src} DIRECTORY)
+    GET_FILENAME_COMPONENT(dir ${src} PATH)
 
     IF("${dir}" STREQUAL "")
       SET(outdir ${ISPC_TARGET_DIR})
@@ -134,7 +135,6 @@ MACRO (ispc_compile)
       -O3
       --target=${ISPC_TARGET_ARGS}
       --woff
-#      --wno-perf
       --opt=fast-math
       ${ISPC_ADDITIONAL_ARGS}
       -h ${outdirh}/${fname}_ispc.h
@@ -142,7 +142,7 @@ MACRO (ispc_compile)
       -o ${outdir}/${fname}.dev${ISPC_TARGET_EXT}
       ${CMAKE_CURRENT_SOURCE_DIR}/${src}
       DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${src} ${deps}
-      COMMENT "Building with Intel SPMD Compiler (ISPC): ${CMAKE_CURRENT_SOURCE_DIR}/${src}"
+      COMMENT "Building ISPC object ${outdir}/${fname}.dev${ISPC_TARGET_EXT}"
     )
 
     SET(ISPC_OBJECTS ${ISPC_OBJECTS} ${results})
@@ -170,8 +170,6 @@ MACRO (add_ispc_executable name)
       SET_SOURCE_FILES_PROPERTIES( ${src} PROPERTIES COMPILE_FLAGS -std=gnu++98 )
     ENDFOREACH()
   ENDIF()
-
-#  SET_TARGET_PROPERTIES(${name} PROPERTIES LINKER_LANGUAGE C)
 ENDMACRO()
 
 MACRO (add_ispc_library name type)
@@ -193,7 +191,6 @@ MACRO (add_ispc_library name type)
       SET_SOURCE_FILES_PROPERTIES( ${src} PROPERTIES COMPILE_FLAGS -std=gnu++98 )
     ENDFOREACH()
   ENDIF()
-#  SET_TARGET_PROPERTIES(${name} PROPERTIES LINKER_LANGUAGE C)
 ENDMACRO()
 
 ELSE (ENABLE_ISPC_SUPPORT)

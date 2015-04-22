@@ -44,7 +44,8 @@ namespace embree
       numNodes(0),
       numAllocated64BytesBlocks(0)
 	{
-    
+	  for (size_t i=0;i<MAX_MIC_CORES;i++)
+	    localTaskScheduler[i].setCoreID(i);
 	}
 
     virtual void build            (const size_t threadIndex, const size_t threadCount) = 0;
@@ -54,6 +55,8 @@ namespace embree
 
     virtual size_t getNumPrimitives() = 0;
     virtual void printBuilderName()   = 0;
+
+    void clear() {}
 
     virtual void buildSubTree(BuildRecord& current, 
 			      NodeAllocator& alloc, 

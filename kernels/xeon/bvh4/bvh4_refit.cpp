@@ -17,6 +17,11 @@
 #include "bvh4_refit.h"
 #include "bvh4_statistics.h"
 
+#include "geometry/triangle4.h"
+#include "geometry/triangle8.h"
+#include "geometry/triangle4v.h"
+#include "geometry/triangle4i.h"
+
 #include <algorithm>
 
 namespace embree
@@ -27,19 +32,22 @@ namespace embree
     
     __forceinline bool compare(const BVH4::NodeRef* a, const BVH4::NodeRef* b)
     {
-      int sa = *(size_t*)a->node();
-      int sb = *(size_t*)b->node();
+      int sa = *(size_t*)&a->node()->lower_x;
+      int sb = *(size_t*)&b->node()->lower_x;
       return sa < sb;
     }
     
-    BVH4Refit::BVH4Refit (BVH4* bvh, Builder* builder, TriangleMesh* mesh, bool listMode)
-      : builder(builder), listMode(listMode), mesh(mesh), primTy(bvh->primTy), bvh(bvh), scheduler(&mesh->parent->lockstep_scheduler) 
-    {
-      needAllThreads = builder->needAllThreads;
-    }
+    BVH4Refit::BVH4Refit (BVH4* bvh, Builder* builder, TriangleMesh* mesh, size_t mode)
+      : builder(builder), mesh(mesh), bvh(bvh) {}
 
     BVH4Refit::~BVH4Refit () {
       delete builder;
+    }
+
+    void BVH4Refit::clear()
+    {
+      if (builder) 
+        builder->clear();
     }
     
     void BVH4Refit::build(size_t threadIndex, size_t threadCount) 
@@ -47,19 +55,16 @@ namespace embree
       /* build initial BVH */
       if (builder) {
         builder->build(threadIndex,threadCount);
-        if (false) { //bvh->numPrimitives > 50000) { // FIXME: reactivate parallel refit
+        if (bvh->numPrimitives > 50000) {
           annotate_tree_sizes(bvh->root);
           calculate_refit_roots();
-          needAllThreads = false;
-        } else {
-          needAllThreads = false;
         }
-        delete builder; builder = NULL;
+        delete builder; builder = nullptr;
       }
       
       /* refit BVH */
       double t0 = 0.0;
-      if (g_verbose >= 2) {
+      if (State::instance()->verbosity(2)) {
         std::cout << "refitting BVH4 <" << bvh->primTy.name << "> ... " << std::flush;
         t0 = getSeconds();
       }
@@ -70,14 +75,22 @@ namespace embree
         refit_sequential(threadIndex,threadCount);
       }
       else {
-        scheduler->dispatchTask(threadIndex,threadCount,_task_refit_parallel,this,numRoots,"BVH4Refit::parallel");
-	bvh->bounds = recurse_top(bvh->root);
+        parallel_for(size_t(0), roots.size(), [&] (const range<size_t>& r)
+        {
+          for (size_t i=r.begin(); i<r.end(); i++) {
+            NodeRef& ref = *roots[i];
+            recurse_bottom(ref);
+            ref.setBarrier();
+          }
+        });
+        bvh->bounds = recurse_top(bvh->root);
       }
-      
-      if (g_verbose >= 2) {
+
+      if (State::instance()->verbosity(2)) 
+      {
         double t1 = getSeconds();
         std::cout << "[DONE]" << std::endl;
-        std::cout << "  dt = " << 1000.0f*(t1-t0) << "ms, perf = " << 1E-6*double(mesh->numTriangles)/(t1-t0) << " Mprim/s" << std::endl;
+        std::cout << "  dt = " << 1000.0f*(t1-t0) << "ms, perf = " << 1E-6*double(mesh->size())/(t1-t0) << " Mprim/s" << std::endl;
         std::cout << BVH4Statistics(bvh).str();
       }
     }
@@ -93,7 +106,7 @@ namespace embree
           if (child == BVH4::emptyNode) continue;
           n += annotate_tree_sizes(child); 
         }
-        *((size_t*)node) = n;
+        *((size_t*)&node->lower_x) = n;
         return n;
       }
       else
@@ -116,7 +129,7 @@ namespace embree
         std::pop_heap(roots.begin(), roots.end(), compare);
         BVH4::NodeRef* node = roots.back();
         roots.pop_back();
-        if (*(size_t*)node->node() < block_size) 
+        if (*(size_t*)&node->node()->lower_x < block_size) 
           break;
         
         for (size_t i=0; i<BVH4::N; i++) {
@@ -133,7 +146,7 @@ namespace embree
     {
       size_t num; char* tri = ref.leaf(num);
       if (unlikely(ref == BVH4::emptyNode)) return empty;
-      return bvh->primTy.update(tri,listMode ? -1 : num,mesh);
+      return update(tri,num,mesh);
     }
     
     __forceinline BBox3fa BVH4Refit::node_bounds(NodeRef& ref)
@@ -224,34 +237,23 @@ namespace embree
                     Vec3fa(upper_x,upper_y,upper_z));
     }
     
-    void BVH4Refit::task_refit_parallel(size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount) 
-    {
-      NodeRef& ref = *roots[taskIndex];
-      recurse_bottom(ref);
-      ref.setBarrier();
-    }
-    
     void BVH4Refit::refit_sequential(size_t threadIndex, size_t threadCount) {
       bvh->bounds = recurse_bottom(bvh->root);
     }
 
-    Builder* BVH4Triangle1MeshBuilderFast  (void* bvh, TriangleMesh* mesh, size_t mode);
-    Builder* BVH4Triangle4MeshBuilderFast  (void* bvh, TriangleMesh* mesh, size_t mode);
+    Builder* BVH4Triangle4MeshBuilderSAH  (void* bvh, TriangleMesh* mesh, size_t mode);
 #if defined(__AVX__)
-    Builder* BVH4Triangle8MeshBuilderFast  (void* bvh, TriangleMesh* mesh, size_t mode);
+    Builder* BVH4Triangle8MeshBuilderSAH  (void* bvh, TriangleMesh* mesh, size_t mode);
 #endif
-    Builder* BVH4Triangle1vMeshBuilderFast (void* bvh, TriangleMesh* mesh, size_t mode);
-    Builder* BVH4Triangle4vMeshBuilderFast (void* bvh, TriangleMesh* mesh, size_t mode);
-    Builder* BVH4Triangle4iMeshBuilderFast (void* bvh, TriangleMesh* mesh, size_t mode);
+    Builder* BVH4Triangle4vMeshBuilderSAH (void* bvh, TriangleMesh* mesh, size_t mode);
+    Builder* BVH4Triangle4iMeshBuilderSAH (void* bvh, TriangleMesh* mesh, size_t mode);
 
-    Builder* BVH4Triangle1MeshRefitFast (void* accel, TriangleMesh* mesh, size_t mode) { return new BVH4Refit((BVH4*)accel,BVH4Triangle1MeshBuilderFast(accel,mesh,mode),mesh,mode); }
-    Builder* BVH4Triangle4MeshRefitFast (void* accel, TriangleMesh* mesh, size_t mode) { return new BVH4Refit((BVH4*)accel,BVH4Triangle4MeshBuilderFast(accel,mesh,mode),mesh,mode); }
+    Builder* BVH4Triangle4MeshRefitSAH (void* accel, TriangleMesh* mesh, size_t mode) { return new BVH4RefitT<Triangle4>((BVH4*)accel,BVH4Triangle4MeshBuilderSAH(accel,mesh,mode),mesh,mode); }
 #if defined(__AVX__)
-    Builder* BVH4Triangle8MeshRefitFast (void* accel, TriangleMesh* mesh, size_t mode) { return new BVH4Refit((BVH4*)accel,BVH4Triangle8MeshBuilderFast(accel,mesh,mode),mesh,mode); }
+    Builder* BVH4Triangle8MeshRefitSAH (void* accel, TriangleMesh* mesh, size_t mode) { return new BVH4RefitT<Triangle8>((BVH4*)accel,BVH4Triangle8MeshBuilderSAH(accel,mesh,mode),mesh,mode); }
 #endif
-    Builder* BVH4Triangle1vMeshRefitFast (void* accel, TriangleMesh* mesh, size_t mode) { return new BVH4Refit((BVH4*)accel,BVH4Triangle1vMeshBuilderFast(accel,mesh,mode),mesh,mode); }
-    Builder* BVH4Triangle4vMeshRefitFast (void* accel, TriangleMesh* mesh, size_t mode) { return new BVH4Refit((BVH4*)accel,BVH4Triangle4vMeshBuilderFast(accel,mesh,mode),mesh,mode); }
-    Builder* BVH4Triangle4iMeshRefitFast (void* accel, TriangleMesh* mesh, size_t mode) { return new BVH4Refit((BVH4*)accel,BVH4Triangle4iMeshBuilderFast(accel,mesh,mode),mesh,mode); }
+    Builder* BVH4Triangle4vMeshRefitSAH (void* accel, TriangleMesh* mesh, size_t mode) { return new BVH4RefitT<Triangle4v>((BVH4*)accel,BVH4Triangle4vMeshBuilderSAH(accel,mesh,mode),mesh,mode); }
+    Builder* BVH4Triangle4iMeshRefitSAH (void* accel, TriangleMesh* mesh, size_t mode) { return new BVH4RefitT<Triangle4i>((BVH4*)accel,BVH4Triangle4iMeshBuilderSAH(accel,mesh,mode),mesh,mode); }
   }
 }
 

@@ -16,6 +16,7 @@
 
 #include "tutorial/tutorial.h"
 #include "tutorial/obj_loader.h"
+#include "tutorial/xml_loader.h"
 #include "image/image.h"
 
 namespace embree
@@ -166,7 +167,7 @@ namespace embree
     AffineSpace3fa pixel2world = g_camera.pixel2world(g_width,g_height);
     render(0.0f,pixel2world.l.vx,pixel2world.l.vy,pixel2world.l.vz,pixel2world.p);
     void* ptr = map();
-    Ref<Image> image = new Image4c(g_width, g_height, (Col4c*)ptr);
+    Ref<Image> image = new Image4uc(g_width, g_height, (Col4uc*)ptr);
     storeImage(image, fileName);
     unmap();
     cleanup();
@@ -175,19 +176,26 @@ namespace embree
   /* main function in embree namespace */
   int main(int argc, char** argv) 
   {
+    /* for best performance set FTZ and DAZ flags in MXCSR control and status register */
+    _mm_setcsr(_mm_getcsr() | /* FTZ */ (1<<15) | /* DAZ */ (1<<6));
+
     /* create stream for parsing */
     Ref<ParseStream> stream = new ParseStream(new CommandLineStream(argc, argv));
 
     /* parse command line */  
     parseCommandLine(stream, FileName());
     if (g_numThreads) 
-      g_rtcore += ",threads=" + std::stringOf(g_numThreads);
+      g_rtcore += ",threads=" + std::to_string((long long)g_numThreads);
     if (g_numBenchmarkFrames)
       g_rtcore += ",benchmark=1";
 
     /* load scene */
-    if (filename.str() != "")
+    if (strlwr(filename.ext()) == std::string("obj"))
       loadOBJ(filename,one,g_obj_scene);
+    else if (strlwr(filename.ext()) == std::string("xml"))
+      loadXML(filename,one,g_obj_scene);
+    else if (filename.ext() != "")
+      THROW_RUNTIME_ERROR("invalid scene type: "+strlwr(filename.ext()));
 
     /* initialize ray tracing core */
     init(g_rtcore.c_str());

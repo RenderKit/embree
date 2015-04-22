@@ -34,6 +34,19 @@ namespace embree
     virtual Color4 get(size_t x, size_t y) const = 0;
     virtual void   set(size_t x, size_t y, const Color4& c) = 0;
     void set(size_t x, size_t y, const Color& c) { set(x,y,Color4(c.r,c.g,c.b,1.0f)); }
+    void convertToRGBA8(unsigned char *dest)
+    {
+      for (size_t y=0;y<height;y++)
+	for (size_t x=0;x<width;x++)
+	  {
+	    size_t offset = 4 * (y * width + x);
+	    Color4 c = get(x,y);
+	    dest[offset+0] = (unsigned char)(c.r * 255.0f);
+	    dest[offset+1] = (unsigned char)(c.g * 255.0f);
+	    dest[offset+2] = (unsigned char)(c.b * 255.0f);
+	    dest[offset+3] = (unsigned char)(c.a * 255.0f);
+	  }
+    }
   public:
     size_t width,height;
     std::string name;
@@ -75,7 +88,7 @@ namespace embree
 
     /*! image destruction */
     virtual ~ImageT() {
-      if (data) free(data); data = NULL;
+      if (data) free(data); data = nullptr;
     }
     
     /*! returns pixel color */
@@ -96,7 +109,7 @@ namespace embree
     /*! returns and forgets about data pointer of image */
     __forceinline void* steal_ptr() {
       T* ptr = data;
-      data = NULL;
+      data = nullptr;
       return (void*)ptr;
     }
 
@@ -105,9 +118,9 @@ namespace embree
   };
   
   /*! Shortcuts for common image types. */
-  typedef ImageT<Col3c> Image3c;
+  typedef ImageT<Col3uc> Image3uc;
   typedef ImageT<Col3f> Image3f;
-  typedef ImageT<Col4c> Image4c;
+  typedef ImageT<Col4uc> Image4uc;
   typedef ImageT<Col4f> Image4f;
   
   /*! Generate a JPEG encoded image from a RGB8 buffer in memory. */
@@ -129,7 +142,7 @@ namespace embree
   Ref<Image> loadPFM(const FileName& fileName);
 
   /*! Loads image from PNG file. */
-//Ref<Image> loadPNG(const FileName& fileName);
+  Ref<Image> loadPNG(const FileName& fileName);
 
   /*! Loads image from PPM file. */
   Ref<Image> loadPPM(const FileName& fileName);

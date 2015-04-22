@@ -16,36 +16,30 @@
 
 #pragma once
 
+#include "geometry/primitive.h"
 #include "common/subdiv/subdivpatch1base.h"
-#include "kernels/xeon/geometry/primitive.h"
 
 namespace embree
 {
 
   struct __aligned(64) SubdivPatch1Cached : public SubdivPatch1Base
   {
-
-  SubdivPatch1Cached (const CatmullClarkPatch& ipatch,
-                      const unsigned int gID,
-                      const unsigned int pID,
-                      const SubdivMesh *const mesh,
-                      const Vec2f uv[4],
-                      const float edge_level[4]) : SubdivPatch1Base(ipatch,gID,pID,mesh,uv,edge_level)
-      {
-      }
-
     struct Type : public PrimitiveType 
     {
       Type ();
-      size_t blocks(size_t x) const; 
       size_t size(const char* This) const;
     };
-
+    
     static Type type;
 
-    /*! returns required number of primitive blocks for N primitives */
-    static __forceinline size_t blocks(size_t N) { return N; }
+  public:
 
+    /*! constructor for cached subdiv patch */
+    SubdivPatch1Cached (const CatmullClarkPatch& ipatch,
+                        const unsigned int gID,
+                        const unsigned int pID,
+                        const SubdivMesh *const mesh,
+                        const Vec2f uv[4],
+                        const float edge_level[4]) : SubdivPatch1Base(ipatch,gID,pID,mesh,uv,edge_level) {}
   };
-
-};
+}

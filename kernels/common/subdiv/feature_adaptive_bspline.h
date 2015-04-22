@@ -39,6 +39,7 @@ namespace embree
 #else
       int neighborSubdiv[GeneralCatmullClarkPatch::SIZE];
       const GeneralCatmullClarkPatch patch(h,vertices);
+      assert( patch.size() <= GeneralCatmullClarkPatch::SIZE);
       for (size_t i=0; i<patch.size(); i++) {
 	neighborSubdiv[i] = h->hasOpposite() ? h->opposite()->noRegularFace() : 0; h = h->next();
       }
@@ -59,7 +60,7 @@ namespace embree
 
       /* subdivide patch */
       size_t N;
-      CatmullClarkPatch patches[GeneralCatmullClarkPatch::SIZE]; 
+      array_t<CatmullClarkPatch,GeneralCatmullClarkPatch::SIZE> patches; 
       patch.subdivide(patches,N);
 
       /* check if subpatches need further subdivision */
@@ -132,11 +133,11 @@ namespace embree
 
     void subdivide(const CatmullClarkPatch& patch, int depth, const Vec2f uv[4], const int neighborSubdiv_i[4])
     {
-      if (depth == 0)
+      if (depth <= 1)
 	if (patch.isRegularOrFinal(depth))
 	  return tessellator(patch,uv,neighborSubdiv_i);
 
-      CatmullClarkPatch patches[4]; 
+      array_t<CatmullClarkPatch,4> patches; 
       patch.subdivide(patches);
 
       int neighborSubdiv[4];

@@ -14,11 +14,11 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#pragma once // FIXME: delete color files
+#pragma once
 
-#include "../sys/constants.h"
 #include "../simd/sse.h"
 
+#include "constants.h"
 #include "col3.h"
 #include "col4.h"
 
@@ -45,10 +45,10 @@ namespace embree
     __forceinline explicit Color4 (const float v) : m128(_mm_set1_ps(v)) {}
     __forceinline          Color4 (const float r, const float g, const float b, const float a) : m128(_mm_set_ps(a,b,g,r)) {}
 
-    __forceinline explicit Color4 ( const Col3c& other ) { m128 = _mm_mul_ps(_mm_set_ps(255.0f,other.b,other.g,other.r),_mm_set1_ps(one_over_255)); }
-    __forceinline explicit Color4 ( const Col3f& other ) { m128 = _mm_set_ps(1.0f,other.b,other.g,other.r); }
-    __forceinline explicit Color4 ( const Col4c& other ) { m128 = _mm_mul_ps(_mm_set_ps(other.a,other.b,other.g,other.r),_mm_set1_ps(one_over_255)); }
-    __forceinline explicit Color4 ( const Col4f& other ) { m128 = _mm_set_ps(other.a,other.b,other.g,other.r); }
+    __forceinline explicit Color4 ( const Col3uc& other ) { m128 = _mm_mul_ps(_mm_set_ps(255.0f,other.b,other.g,other.r),_mm_set1_ps(one_over_255)); }
+    __forceinline explicit Color4 ( const Col3f&  other ) { m128 = _mm_set_ps(1.0f,other.b,other.g,other.r); }
+    __forceinline explicit Color4 ( const Col4uc& other ) { m128 = _mm_mul_ps(_mm_set_ps(other.a,other.b,other.g,other.r),_mm_set1_ps(one_over_255)); }
+    __forceinline explicit Color4 ( const Col4f&  other ) { m128 = _mm_set_ps(other.a,other.b,other.g,other.r); }
 
     __forceinline Color4           ( const Color4& other ) : m128(other.m128) {}
     __forceinline Color4& operator=( const Color4& other ) { m128 = other.m128; return *this; }
@@ -62,8 +62,21 @@ namespace embree
 
     __forceinline void set(Col3f& d) const { d.r = r; d.g = g; d.b = b; }
     __forceinline void set(Col4f& d) const { d.r = r; d.g = g; d.b = b; d.a = a; }
-    __forceinline void set(Col3c& d) const { ssef s = clamp(ssef(m128))*255.0f; d.r = char(s[0]); d.g = char(s[1]); d.b = char(s[2]); }
-    __forceinline void set(Col4c& d) const { ssef s = clamp(ssef(m128))*255.0f; d.r = char(s[0]); d.g = char(s[1]); d.b = char(s[2]); d.a = char(s[3]); }
+    __forceinline void set(Col3uc& d) const 
+    {
+      ssef s = clamp(ssef(m128))*255.0f; 
+      d.r = (unsigned char)(s[0]); 
+      d.g = (unsigned char)(s[1]); 
+      d.b = (unsigned char)(s[2]); 
+    }
+    __forceinline void set(Col4uc& d) const 
+    {
+      ssef s = clamp(ssef(m128))*255.0f; 
+      d.r = (unsigned char)(s[0]); 
+      d.g = (unsigned char)(s[1]); 
+      d.b = (unsigned char)(s[2]); 
+      d.a = (unsigned char)(s[3]); 
+    }
 
     ////////////////////////////////////////////////////////////////////////////////
     /// Constants
@@ -111,8 +124,21 @@ namespace embree
 
     __forceinline void set(Col3f& d) const { d.r = r; d.g = g; d.b = b; }
     __forceinline void set(Col4f& d) const { d.r = r; d.g = g; d.b = b; d.a = 1.0f; }
-    __forceinline void set(Col3c& d) const { ssef s = clamp(ssef(m128))*255.0f; d.r = char(s[0]); d.g = char(s[1]); d.b = char(s[2]); }
-    __forceinline void set(Col4c& d) const { ssef s = clamp(ssef(m128))*255.0f; d.r = char(s[0]); d.g = char(s[1]); d.b = char(s[2]); d.a = 1.0f; }
+    __forceinline void set(Col3uc& d) const 
+    { 
+      ssef s = clamp(ssef(m128))*255.0f; 
+      d.r = (unsigned char)(s[0]); 
+      d.g = (unsigned char)(s[1]); 
+      d.b = (unsigned char)(s[2]); 
+    }
+    __forceinline void set(Col4uc& d) const 
+    { 
+      ssef s = clamp(ssef(m128))*255.0f; 
+      d.r = (unsigned char)(s[0]); 
+      d.g = (unsigned char)(s[1]); 
+      d.b = (unsigned char)(s[2]); 
+      d.a = 1.0f; 
+    }
 
     ////////////////////////////////////////////////////////////////////////////////
     /// Constants

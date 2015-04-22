@@ -99,11 +99,11 @@ namespace embree
     {
       g_atomic_cntr = g_num_mutex_locks;
       for (size_t i=1; i<numThreads; i++)
-	g_threads.push_back(createThread(benchmark_mutex_sys_thread,NULL,1000000,i));
-      setAffinity(0);
+	g_threads.push_back(createThread(benchmark_mutex_sys_thread,nullptr,1000000,i));
+      //setAffinity(0);
       
       double t0 = getSeconds();
-      benchmark_mutex_sys_thread(NULL);
+      benchmark_mutex_sys_thread(nullptr);
       double t1 = getSeconds();
       
       for (size_t i=0; i<g_threads.size(); i++)	join(g_threads[i]);
@@ -135,7 +135,7 @@ namespace embree
       g_barrier.init(numThreads);
       for (size_t i=1; i<numThreads; i++)
 	g_threads.push_back(createThread(benchmark_barrier_sys_thread,(void*)i,1000000,i));
-      setAffinity(0);
+      //setAffinity(0);
       
       g_barrier.wait();
       double t0 = getSeconds();
@@ -218,11 +218,11 @@ namespace embree
       g_barrier_active.init(numThreads);
       for (size_t i=1; i<numThreads; i++)
 	g_threads.push_back(createThread(benchmark_atomic_inc_thread,(void*)i,1000000,i));
-      setAffinity(0);
+      //setAffinity(0);
       
       g_barrier_active.wait(0,numThreads);
       double t0 = getSeconds();
-      benchmark_atomic_inc_thread(NULL);
+      benchmark_atomic_inc_thread(nullptr);
       double t1 = getSeconds();
       g_barrier_active.wait(0,numThreads);
       
@@ -265,7 +265,7 @@ namespace embree
       g_barrier_active.init(numThreads);
       for (size_t i=1; i<numThreads; i++)
 	g_threads.push_back(createThread(benchmark_osmalloc_thread,(void*)i,1000000,i));
-      setAffinity(0);
+      //setAffinity(0);
       
       g_barrier_active.wait(0,numThreads);
       double t0 = getSeconds();
@@ -281,7 +281,7 @@ namespace embree
     }
   };
 
-  char* benchmark_osmalloc::ptr = NULL;
+  char* benchmark_osmalloc::ptr = nullptr;
 
   class benchmark_bandwidth : public Benchmark
   {
@@ -316,7 +316,7 @@ namespace embree
       g_barrier_active.init(numThreads);
       for (size_t i=1; i<numThreads; i++)
 	g_threads.push_back(createThread(benchmark_bandwidth_thread,(void*)i,1000000,i));
-      setAffinity(0);
+      //setAffinity(0);
       
       g_barrier_active.wait(0,numThreads);
       double t0 = getSeconds();
@@ -332,7 +332,7 @@ namespace embree
     }
   };
 
-  char* benchmark_bandwidth::ptr = NULL;
+  char* benchmark_bandwidth::ptr = nullptr;
 
   RTCRay makeRay(Vec3f org, Vec3f dir) 
   {
@@ -484,7 +484,7 @@ namespace embree
 
     double run(size_t numThreads)
     {
-      rtcInit((g_rtcore+",threads="+std::stringOf(numThreads)).c_str());
+      rtcInit((g_rtcore+",threads="+std::to_string((long long)numThreads)).c_str());
 
       Mesh mesh; createSphereMesh (Vec3f(0,0,0), 1, numPhi, mesh);
       
@@ -523,7 +523,7 @@ namespace embree
   
     double run(size_t numThreads)
     {
-      rtcInit((g_rtcore+",threads="+std::stringOf(numThreads)).c_str());
+      rtcInit((g_rtcore+",threads="+std::to_string((long long)numThreads)).c_str());
 
       Mesh mesh; createSphereMesh (Vec3f(0,0,0), 1, numPhi, mesh);
       RTCScene scene = rtcNewScene(RTC_SCENE_DYNAMIC,aflags);
@@ -728,7 +728,7 @@ namespace embree
 #endif
 
 #if defined(__TARGET_AVX__) || defined(__TARGET_AVX2__)
-    if (has_feature(AVX)) {
+    if (hasISA(AVX)) {
       rtcore_coherent_intersect8(scene);
     }
 #endif
@@ -752,7 +752,7 @@ namespace embree
 #endif
 
 #if defined(__TARGET_AVX__) || defined(__TARGET_AVX2__)
-    if (has_feature(AVX)) {
+    if (hasISA(AVX)) {
       rtcore_incoherent_intersect8(scene,numbers,N);
     }
 #endif
@@ -771,9 +771,9 @@ namespace embree
 
   void create_benchmarks()
   {
-    benchmarks.push_back(new benchmark_mutex_sys());
-    benchmarks.push_back(new benchmark_barrier_sys());
-    benchmarks.push_back(new benchmark_barrier_active());
+    //benchmarks.push_back(new benchmark_mutex_sys());
+    //benchmarks.push_back(new benchmark_barrier_sys());
+    //benchmarks.push_back(new benchmark_barrier_active());
     benchmarks.push_back(new benchmark_atomic_inc());
     benchmarks.push_back(new benchmark_osmalloc());
     benchmarks.push_back(new benchmark_bandwidth());

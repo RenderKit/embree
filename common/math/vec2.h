@@ -16,8 +16,7 @@
 
 #pragma once
 
-#include "sys/platform.h"
-#include "math/math.h"
+#include "math.h"
 
 namespace embree
 {
@@ -37,14 +36,13 @@ namespace embree
     ////////////////////////////////////////////////////////////////////////////////
 
     __forceinline Vec2     ( )                  { }
+    __forceinline explicit Vec2( const T& a             ) : x(a), y(a) {}
+    __forceinline explicit Vec2( const T& x, const T& y ) : x(x), y(y) {}
+
     __forceinline Vec2     ( const Vec2& other ) { x = other.x; y = other.y; }
     template<typename T1> __forceinline Vec2( const Vec2<T1>& a ) : x(T(a.x)), y(T(a.y)) {}
     template<typename T1> __forceinline Vec2& operator =( const Vec2<T1>& other ) { x = other.x; y = other.y; return *this; }
-
-    __forceinline explicit Vec2( const T& a             ) : x(a), y(a) {}
-    __forceinline explicit Vec2( const T& x, const T& y ) : x(x), y(y) {}
-    __forceinline explicit Vec2( const T* const a, const ssize_t stride = 1 ) : x(a[0]), y(a[stride]) {}
-
+    
     ////////////////////////////////////////////////////////////////////////////////
     /// Constants
     ////////////////////////////////////////////////////////////////////////////////
@@ -118,11 +116,15 @@ namespace embree
   ////////////////////////////////////////////////////////////////////////////////
   /// Euclidian Space Operators
   ////////////////////////////////////////////////////////////////////////////////
-
+ 
   template<typename T> __forceinline T       dot      ( const Vec2<T>& a, const Vec2<T>& b ) { return a.x*b.x + a.y*b.y; }
   template<typename T> __forceinline T       length   ( const Vec2<T>& a )                   { return sqrt(dot(a,a)); }
   template<typename T> __forceinline Vec2<T> normalize( const Vec2<T>& a )                   { return a*rsqrt(dot(a,a)); }
   template<typename T> __forceinline T       distance ( const Vec2<T>& a, const Vec2<T>& b ) { return length(a-b); }
+
+  template<typename T> __forceinline Vec2<T> normalize_safe( const Vec2<T>& a ) { 
+    const T d = dot(a,a); return select(d == T( zero ),a, a*rsqrt(d) );
+  }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Select
@@ -132,8 +134,18 @@ namespace embree
     return Vec2<T>(select(s,t.x,f.x),select(s,t.y,f.y));
   }
 
+  template<typename T> __forceinline Vec2<T> select ( const Vec2<bool>& s, const Vec2<T>& t, const Vec2<T>& f ) {
+    return Vec2<T>(select(s.x,t.x,f.x),select(s.y,t.y,f.y));
+  }
+
   template<typename T> __forceinline Vec2<T> select ( const typename T::Mask& s, const Vec2<T>& t, const Vec2<T>& f ) {
     return Vec2<T>(select(s,t.x,f.x),select(s,t.y,f.y));
+  }
+
+  template<typename T> __forceinline int maxDim ( const Vec2<T>& a ) 
+  { 
+    if (a.x > a.y) return 0; 
+    else return 1;
   }
 
   ////////////////////////////////////////////////////////////////////////////////

@@ -17,7 +17,6 @@
 SET (__XEON__ 1)
 
 ADD_SUBDIRECTORY(image)
-ADD_SUBDIRECTORY(lexers)
 ADD_SUBDIRECTORY(transport)
 ADD_SUBDIRECTORY(tutorial)
   

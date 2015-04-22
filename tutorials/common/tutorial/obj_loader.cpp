@@ -15,12 +15,19 @@
 // ======================================================================== //
 
 #include "obj_loader.h"
+#include "texture_loader.h"
 
 #include <fstream>
 #include <iostream>
 #include <map>
 #include <vector>
 #include <string.h>
+
+#define FORCE_ONLY_QUADS 0
+
+#if defined(USE_PTEX)
+#include "Ptexture.h"
+#endif
 
 namespace embree
 {
@@ -31,6 +38,15 @@ namespace embree
     Vertex(int v) : v(v), vt(v), vn(v) {};
     Vertex(int v, int vt, int vn) : v(v), vt(vt), vn(vn) {};
   };
+
+  struct Crease {
+    float w;
+    int a, b;
+    Crease() : w(0), a(-1), b(-1) {};
+    Crease(float w, int a, int b) : w(w), a(a), b(b) {};
+  };
+
+
 
   static inline bool operator < ( const Vertex& a, const Vertex& b ) {
     if (a.v  != b.v)  return a.v  < b.v;
@@ -69,6 +85,14 @@ namespace embree
   static inline float getFloat(const char*& token) {
     token += strspn(token, " \t");
     float n = (float)atof(token);
+    token += strcspn(token, " \t\r");
+    return n;
+  }
+
+  /*! Read int from a string. */
+  static inline int getInt(const char*& token) {
+    token += strspn(token, " \t");
+    int n = (float)atoi(token);
     token += strcspn(token, " \t\r");
     return n;
   }
@@ -114,9 +138,14 @@ namespace embree
     bool subdivMode;
 
     /*! Geometry buffer. */
-    vector_t<Vec3fa> v;
-    vector_t<Vec3fa> vn;
+    avector<Vec3fa> v;
+    avector<Vec3fa> vn;
     std::vector<Vec2f> vt;
+    std::vector<Crease> ec;
+
+    std::vector<int> vc;    
+    std::vector<float> vcw; 
+
     std::vector<std::vector<Vertex> > curGroup;
     AffineSpace3f space;
 
@@ -189,11 +218,34 @@ namespace embree
 
         std::vector<Vertex> face;
         while (token[0]) {
-          face.push_back(getInt3(token));
+	  Vertex vtx = getInt3(token);
+          face.push_back(vtx);
           parseSepOpt(token);
         }
         curGroup.push_back(face);
         continue;
+      }
+
+      /*! parse edge crease */
+      if (token[0] == 'e' && token[1] == 'c' && isSep(token[2]))
+      {
+	parseSep(token += 2);
+	float w = getFloat(token);
+	parseSepOpt(token);
+	int a = fix_v(getInt(token));
+	parseSepOpt(token);
+	int b = fix_v(getInt(token));
+	parseSepOpt(token);
+	ec.push_back(Crease(w, a, b));
+
+	// HACK: EDGE CREASES FORCE VERTEX CREASES
+#if 1
+	vc.push_back(a);
+	vc.push_back(b);
+	vcw.push_back(w);
+	vcw.push_back(w);
+#endif
+	continue;
       }
 
       /*! use material */
@@ -216,13 +268,32 @@ namespace embree
     }
     flushFaceGroup();
 
-
     cin.close();
   }
 
   OBJLoader::~OBJLoader() {
   }
 
+#if defined(USE_PTEX)
+  PtexFilter* loadPtex(const FileName& fname)
+  {
+    Ptex::String error;
+    std::cout << "loading " << fname.str() << " ... " << std::flush;
+    PtexTexture* tex = PtexTexture::open(fname.c_str(),error);
+    if (tex)
+      std::cout << "[DONE]" << std::endl;
+    else {
+      std::cout << "[FAILED]" << std::endl;
+      THROW_RUNTIME_ERROR("cannot open ptex file: "+fname.str());
+    }
+    PtexFilter::Options opts(PtexFilter::f_point, 0, 1.0);
+    //PtexFilter::Options opts(PtexFilter::f_bicubic, 0, 1.0);
+    return PtexFilter::getFilter(tex, opts);
+  }
+#else
+  void* loadPtex(const FileName& fname) { return nullptr; }
+#endif
+  
   /* load material file */
   void OBJLoader::loadMTL(const FileName &fileName)
   {
@@ -269,8 +340,50 @@ namespace embree
       if (!strncmp(token, "Ns", 2)) { parseSep(token += 2);  model.materials[cur].obj().Ns = getFloat(token); continue; }
       if (!strncmp(token, "Ni", 2)) { parseSep(token += 2);  model.materials[cur].obj().Ni = getFloat(token); continue; }
 
+      if (!strncmp(token, "Ka_map", 6)) { continue; }
+      if (!strncmp(token, "Kd_map", 6) || !strncmp(token, "map_Kd", 6)) {
+        parseSep(token += 6);
+        //model.materials[cur].obj().map_Kd = loadPtex(path + FileName(token));
+        model.materials[cur].obj().map_Kd = loadTexture(path + FileName(token));
+        continue;
+      }
+
+#if defined(USE_PTEX)
+	  // need to convert ptex to linear textures
+	  if (!strncmp(token, "Kd_ptex", 7) || !strncmp(token, "ptex_Kd", 7)) {
+	    parseSep(token += 7);
+	    model.materials[cur].obj().ptex_Kd = loadPtexFile(path + FileName(token));
+	    continue;
+	  }
+#endif
+
+#if defined(USE_PTEX)
+	  // need to convert ptex to linear textures
+	  if (!strncmp(token, "displ_ptex", 10) || !strncmp(token, "ptex_displ", 10)) {
+	    parseSep(token += 10);
+	    model.materials[cur].obj().ptex_displ = loadPtexFile(path + FileName(token));
+	    continue;
+	  }
+#endif
+
+
+      if (!strncmp(token, "Ks_map", 6)) { continue; }
+      if (!strncmp(token, "Tf_map", 6)) { continue; }
+      if (!strncmp(token, "Displ_map", 9) || !strncmp(token, "map_Displ", 9)) {
+        parseSep(token += 9);
+        //model.materials[cur].obj().map_Displ = loadPtex(path + FileName(token));
+        model.materials[cur].obj().map_Displ = loadTexture(path + FileName(token));
+        continue;
+      }
+      
       if (!strncmp(token, "Ka", 2)) { parseSep(token += 2);  model.materials[cur].obj().Ka = getVec3f(token); continue; }
-      if (!strncmp(token, "Kd", 2)) { parseSep(token += 2);  model.materials[cur].obj().Kd = getVec3f(token); continue; }
+      if (!strncmp(token, "Kd", 2)) { parseSep(token += 2);  model.materials[cur].obj().Kd = getVec3f(token); 
+#if 0
+	if (model.materials[cur].obj().Kd == Vec3f(0,0,0))
+	  model.materials[cur].obj().Kd = Vec3f(1,1,1);
+#endif
+	continue; 
+      }
       if (!strncmp(token, "Ks", 2)) { parseSep(token += 2);  model.materials[cur].obj().Ks = getVec3f(token); continue; }
       if (!strncmp(token, "Tf", 2)) { parseSep(token += 2);  model.materials[cur].obj().Tf = getVec3f(token); continue; }
     }
@@ -326,69 +439,98 @@ namespace embree
   void OBJLoader::flushFaceGroup()
   {
     if (curGroup.empty()) return;
-    OBJScene::Mesh* mesh = new OBJScene::Mesh;
-    model.meshes.push_back(mesh);
-
-    // merge three indices into one
-    std::map<Vertex, uint32> vertexMap;
-    for (size_t j=0; j < curGroup.size(); j++)
-    {
-      /* iterate over all faces */
-      const std::vector<Vertex>& face = curGroup[j];
-
-      /* for subdivision test scenes */
-
-      if (subdivMode && face.size() == 4)
-	{
-	  /* only look at position indices here */
-	  uint32 v0 = face[0].v;
-	  uint32 v1 = face[1].v;
-	  uint32 v2 = face[2].v;
-	  uint32 v3 = face[3].v;
-
-	  // DBG_PRINT( v0 );
-	  // DBG_PRINT( v1 );
-	  // DBG_PRINT( v2 );
-	  // DBG_PRINT( v3 );
-
-	  mesh->quads.push_back(OBJScene::Quad(v0,v1,v2,v3));
-	  continue;
-	}
-
-      Vertex i0 = face[0], i1 = Vertex(-1), i2 = face[1];
-
-      /* triangulate the face with a triangle fan */
-      for (size_t k=2; k < face.size(); k++) {
-        i1 = i2; i2 = face[k];
-	uint32 v0,v1,v2;
-	if (subdivMode)
-	  {
-	    v0 = i0.v; 
-	    v1 = i1.v; 
-	    v2 = i2.v; 
-	  }
-	else
-	  {
-	    v0 = getVertex(vertexMap, mesh, i0);
-	    v1 = getVertex(vertexMap, mesh, i1);
-	    v2 = getVertex(vertexMap, mesh, i2);
-            assert(v0 < mesh->v.size());
-            assert(v1 < mesh->v.size());
-            assert(v2 < mesh->v.size());
-	  }
-	mesh->triangles.push_back(OBJScene::Triangle(v0,v1,v2,curMaterial));
-      }
-    }
-
-    /* use vertex array as it is in quad-only mode */
+    
     if (subdivMode)
       {
-	for (size_t i=0;i<v.size();i++)
+	OBJScene::SubdivMesh* mesh = new OBJScene::SubdivMesh;
+	model.subdiv.push_back(mesh);
+#if 0
+	PRINT(curGroup.size());
+	PRINT(v.size());
+	PRINT(vn.size());
+	PRINT(vt.size());
+#endif	
+
+	for (size_t i=0;i<v.size();i++)  mesh->positions.push_back(v[i]);
+	for (size_t i=0;i<vn.size();i++) mesh->normals.push_back(vn[i]);
+	for (size_t i=0;i<vt.size();i++) mesh->texcoords.push_back(vt[i]);
+	
+#if 1
+	for (size_t i=0;i<ec.size();++i) {
+	  if (ec[i].a < v.size() && ec[i].b < v.size())
+	    mesh->edge_creases.push_back(Vec2i(ec[i].a, ec[i].b));
+	  //mesh->edge_crease_weights.push_back(ec[i].w);
+	  mesh->edge_crease_weights.push_back(pos_inf);
+
+	}
+#endif
+
+	for (size_t i=0;i<vc.size();++i) 
+	  mesh->vertex_creases.push_back(vc[i]);
+	for (size_t i=0;i<vcw.size();++i) 
+	  mesh->vertex_crease_weights.push_back(pos_inf);	  
+	  //mesh->vertex_crease_weights.push_back(vcw[i]);	  
+
+	for (size_t j=0; j < curGroup.size(); j++)
 	  {
-	    mesh->v.push_back(v[i]);
+	    /* iterate over all faces */
+	    const std::vector<Vertex>& face = curGroup[j];
+
+#if FORCE_ONLY_QUADS == 1
+	    if ( face.size() == 4)
+#endif
+	      {
+		for (size_t i=0;i<face.size();i++)
+		  {
+		    mesh->position_indices.push_back(face[i].v);
+		    if (face[i].vt != -1)
+		      {
+			assert( face[i].vt < vt.size() );
+			mesh->texcoord_indices.push_back(face[i].vt);
+		      }
+		  }
+		if (mesh->texcoord_indices.size())
+		  {
+		    //PRINT( mesh->texcoord_indices.size() );
+		    //PRINT( mesh->position_indices.size() );
+
+		    //assert( mesh->texcoord_indices.size() == mesh->position_indices.size() );
+		  }
+		mesh->verticesPerFace.push_back(face.size());
+	      }
+            
+	    mesh->materialID = curMaterial;	
 	  }
       }
+    else
+      {
+	OBJScene::Mesh* mesh = new OBJScene::Mesh;
+	model.meshes.push_back(mesh);
 
+	// merge three indices into one
+	std::map<Vertex, uint32> vertexMap;
+	for (size_t j=0; j < curGroup.size(); j++)
+	  {
+	    /* iterate over all faces */
+	    const std::vector<Vertex>& face = curGroup[j];
+
+	    /* triangulate the face with a triangle fan */
+	    Vertex i0 = face[0], i1 = Vertex(-1), i2 = face[1];
+	    for (size_t k=2; k < face.size(); k++) {
+	      i1 = i2; i2 = face[k];
+	      uint32 v0,v1,v2;
+	      v0 = getVertex(vertexMap, mesh, i0);
+	      v1 = getVertex(vertexMap, mesh, i1);
+	      v2 = getVertex(vertexMap, mesh, i2);
+	      assert(v0 < mesh->v.size());
+	      assert(v1 < mesh->v.size());
+	      assert(v2 < mesh->v.size());
+	      mesh->triangles.push_back(OBJScene::Triangle(v0,v1,v2,curMaterial));
+	    }
+	  }
+
+	mesh->meshMaterialID = curMaterial;	
+      }
     curGroup.clear();
   }
 

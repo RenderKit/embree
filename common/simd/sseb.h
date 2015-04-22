@@ -71,7 +71,7 @@ namespace embree
   /// Unary Operators
   ////////////////////////////////////////////////////////////////////////////////
   
-  __forceinline const sseb operator !( const sseb& a ) { return _mm_xor_ps(a, sseb(True)); }
+  __forceinline const sseb operator !( const sseb& a ) { return _mm_xor_ps(a, sseb(embree::True)); }
   
   ////////////////////////////////////////////////////////////////////////////////
   /// Binary Operators

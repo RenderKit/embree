@@ -31,6 +31,7 @@ namespace embree
 
   /* configuration */
   static std::string g_rtcore = "";
+  static std::string g_subdiv_mode = "";
 
   /* output settings */
   static size_t g_width = 512;
@@ -60,8 +61,8 @@ namespace embree
   static float hairy_triangles_thickness = 0.1f;
   static int hairy_triangles_strands_per_triangle = 1;
 
-  Vec3fa offset = 0.0f;
-  Vec3fa offset_mb = 0.0f;
+  Vec3fa offset = zero;
+  Vec3fa offset_mb = zero;
 
   void addHairSegment(OBJScene::Mesh& mesh, int materialID, const Vec3fa& p0, const Vec3fa& p1)
   {
@@ -621,6 +622,17 @@ float noise(float x, float y, float z)
       else if (tag == "-threads")
         g_numThreads = cin->getInt();
 
+      /* subdivision mode */
+      else if (tag == "-cache") 
+	g_subdiv_mode = ",subdiv_accel=bvh4.subdivpatch1cached";
+
+      else if (tag == "-lazy") 
+	g_subdiv_mode = ",subdiv_accel=bvh4.grid.lazy";
+
+      else if (tag == "-pregenerate") 
+	g_subdiv_mode = ",subdiv_accel=bvh4.grid.eager";
+
+
       /* skip unknown command line parameter */
       else {
         std::cerr << "unknown command line parameter: " << tag << " ";
@@ -665,7 +677,7 @@ float noise(float x, float y, float z)
 	   pixel2world.p);
     
     void* ptr = map();
-    Ref<Image> image = new Image4c(g_width, g_height, (Col4c*)ptr);
+    Ref<Image> image = new Image4uc(g_width, g_height, (Col4uc*)ptr);
     storeImage(image, fileName);
     unmap();
     cleanup();
@@ -674,6 +686,9 @@ float noise(float x, float y, float z)
   /* main function in embree namespace */
   int main(int argc, char** argv) 
   {
+    /* for best performance set FTZ and DAZ flags in MXCSR control and status register */
+    _mm_setcsr(_mm_getcsr() | /* FTZ */ (1<<15) | /* DAZ */ (1<<6));
+
     g_camera.from = Vec3fa(3.21034f,0.320831f,-0.162478f);
     g_camera.to   = Vec3fa(2.57003f,0.524887f, 0.163145f);
 
@@ -687,18 +702,28 @@ float noise(float x, float y, float z)
     /* parse command line */  
     parseCommandLine(stream, FileName());
     if (g_numThreads) 
-      g_rtcore += ",threads=" + std::stringOf(g_numThreads);
+      g_rtcore += ",threads=" + std::to_string((long long)g_numThreads);
+
+    /* subdiv mode */
+    g_rtcore += g_subdiv_mode;
 
     /* initialize ray tracing core */
     init(g_rtcore.c_str());
 
     /* load scene */
     if (objFilename.str() != "" && objFilename.str() != "none") {
-      loadOBJ(objFilename,AffineSpace3f::translate(-offset),g_obj_scene);
-      if (objFilename2.str() != "")
-        loadOBJ(objFilename2,AffineSpace3f::translate(-offset_mb),g_obj_scene2);
+      if (g_subdiv_mode != "")
+	{
+	  std::cout << "enabling subdiv mode" << std::endl;
+	  loadOBJ(objFilename,one,g_obj_scene,true);	
+	}
+      else
+	{
+	  loadOBJ(objFilename,AffineSpace3f::translate(-offset),g_obj_scene);
+	  if (objFilename2.str() != "")
+	    loadOBJ(objFilename2,AffineSpace3f::translate(-offset_mb),g_obj_scene2);
+	}
     }
-
     /* load hair */
     if (hairFilename.str() != "" && hairFilename.str() != "none") {
       loadHair(hairFilename,g_obj_scene,offset);
@@ -722,13 +747,13 @@ float noise(float x, float y, float z)
     /* tessellate hair */
     if (tessellate_strips > 0) 
       tessellateHair(g_obj_scene);
-
     /* if scene is empty, create default scene */
-    if (g_obj_scene.meshes.size() + g_obj_scene.hairsets.size() == 0) 
-    {
-      addHairySphere(g_obj_scene,Vec3fa(0,1.5f,0),1.5f);
-      addGroundPlane(g_obj_scene,Vec3fa(-10,0,-10),Vec3fa(-10,0,+10),Vec3fa(+10,0,-10),Vec3fa(+10,0,+10));
-    }
+    if (g_subdiv_mode == "")
+      if (g_obj_scene.meshes.size() + g_obj_scene.hairsets.size() == 0) 
+	{
+	  addHairySphere(g_obj_scene,Vec3fa(0,1.5f,0),1.5f);
+	  addGroundPlane(g_obj_scene,Vec3fa(-10,0,-10),Vec3fa(-10,0,+10),Vec3fa(+10,0,-10),Vec3fa(+10,0,+10));
+	}
 
     /* send model */
     set_scene(&g_obj_scene);

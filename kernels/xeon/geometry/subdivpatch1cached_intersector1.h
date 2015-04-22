@@ -25,23 +25,10 @@
 #include "geometry/subdivpatch1cached.h"
 
 /* returns u,v based on individual triangles instead relative to original patch */
-#define FORCE_TRIANGLE_UV 1
-
-//#define SHARED_TESSELLATION_CACHE
-
-#define SHARED_TESSELLATION_CACHE_ENTRIES      1024
-#define DISTRIBUTED_TESSELLATION_CACHE_ENTRIES  128
-
-#if defined(DEBUG)
-#define CACHE_STATS(x) 
-#else
-#define CACHE_STATS(x) 
-#endif
+#define FORCE_TRIANGLE_UV 0
 
 namespace embree
 {
-  typedef AdaptiveTessellationCache<DISTRIBUTED_TESSELLATION_CACHE_ENTRIES> PerThreadTessellationCache;
-
   namespace isa
   {
 
@@ -50,70 +37,75 @@ namespace embree
     public:
       typedef SubdivPatch1Cached Primitive;
       
-      /*! Per thread tessellation cache */
-      static __thread PerThreadTessellationCache *thread_cache;
-      
+      /*! Per thread tessellation ref cache */
+      static __thread LocalTessellationCacheThreadInfo* localThreadInfo;
+
+
       /*! Creates per thread tessellation cache */
       static void createTessellationCache();
+      static void createLocalThreadInfo();
       
       /*! Precalculations for subdiv patch intersection */
       class Precalculations {
-	  public:
+      public:
         Vec3fa ray_rdir;
         Vec3fa ray_org_rdir;
-        SubdivPatch1Cached *current_patch;
-        SubdivPatch1Cached *hit_patch;
-        PerThreadTessellationCache *local_cache;
+        SubdivPatch1Cached   *current_patch;
+        SubdivPatch1Cached   *hit_patch;
+	unsigned int threadID;
         Ray &r;
-        
-#if defined(SHARED_TESSELLATION_CACHE)        
-        MultipleReaderSingleWriterMutex *rw_mtx;
+#if DEBUG
+	size_t numPrimitives;
+	SubdivPatch1Cached *array;
 #endif
         
-        __forceinline Precalculations (Ray& ray) : r(ray) 
+        __forceinline Precalculations (Ray& ray, const void *ptr) : r(ray) 
         {
           ray_rdir      = rcp_safe(ray.dir);
           ray_org_rdir  = ray.org*ray_rdir;
-          current_patch = NULL;
-          hit_patch     = NULL;
+          current_patch = nullptr;
+          hit_patch     = nullptr;
 
-#if defined(SHARED_TESSELLATION_CACHE)
-          rw_mtx = NULL;
+	  if (unlikely(!localThreadInfo))
+            createLocalThreadInfo();
+          threadID = localThreadInfo->id;
+
+#if DEBUG
+	  numPrimitives = ((BVH4*)ptr)->numPrimitives;
+	  array         = (SubdivPatch1Cached*)(((BVH4*)ptr)->data_mem);
 #endif
-          /*! Initialize per thread tessellation cache */
-          if (unlikely(!thread_cache))
-            createTessellationCache();
           
-          local_cache = thread_cache;
-          assert(local_cache != NULL);
         }
 
           /*! Final per ray computations like smooth normal, patch u,v, etc. */        
         __forceinline ~Precalculations() 
         {
-#if defined(SHARED_TESSELLATION_CACHE)
-          if (rw_mtx) rw_mtx->read_unlock();            
-#endif
-          if (unlikely(hit_patch != NULL))
+	  if (current_patch)
+            SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(threadID);
+          
+          if (unlikely(hit_patch != nullptr))
           {
 
 #if defined(RTCORE_RETURN_SUBDIV_NORMAL)
 	    if (likely(!hit_patch->hasDisplacement()))
 	      {		 
-		Vec3fa normal = hit_patch->normal(r.u,r.v);
+		Vec3fa normal = hit_patch->normal(r.v,r.u);
 		r.Ng = normal;
 	      }
 #endif
+
+#if FORCE_TRIANGLE_UV == 0
 	    const Vec2f uv0 = hit_patch->getUV(0);
 	    const Vec2f uv1 = hit_patch->getUV(1);
 	    const Vec2f uv2 = hit_patch->getUV(2);
 	    const Vec2f uv3 = hit_patch->getUV(3);
 	    
-	    const float patch_u = bilinear_interpolate(uv0.x,uv1.x,uv2.x,uv3.x,r.u,r.v);
-	    const float patch_v = bilinear_interpolate(uv0.y,uv1.y,uv2.y,uv3.y,r.u,r.v);
+	    const float patch_u = bilinear_interpolate(uv0.x,uv1.x,uv2.x,uv3.x,r.v,r.u);
+	    const float patch_v = bilinear_interpolate(uv0.y,uv1.y,uv2.y,uv3.y,r.v,r.u);
 
 	    r.u      = patch_u;
 	    r.v      = patch_v;
+#endif
             r.geomID = hit_patch->geom;
             r.primID = hit_patch->prim;
             
@@ -121,7 +113,415 @@ namespace embree
         }
         
       };
+
+
+      static __forceinline const Vec3<ssef> getV012(const float *const grid,
+						    const size_t offset0,
+						    const size_t offset1)
+      {
+	const ssef row_a0 = loadu4f(grid + offset0); 
+	const ssef row_b0 = loadu4f(grid + offset1);
+	const ssef row_a1 = shuffle<1,2,3,3>(row_a0);
+	const ssef row_b1 = shuffle<1,2,3,3>(row_b0);
+
+	Vec3<ssef> v;
+	v[0] = unpacklo( row_a0 , row_b0 );
+	v[1] = unpacklo( row_b0 , row_a1 );
+	v[2] = unpacklo( row_a1 , row_b1 );
+	return v;
+      }
+
+      static __forceinline Vec2<ssef> decodeUV(const ssef &uv)
+      {
+	const ssei i_uv = cast(uv);
+	const ssei i_u  = i_uv & 0xffff;
+	const ssei i_v  = i_uv >> 16;
+	const ssef u    = (ssef)i_u * ssef(2.0f/65535.0f);
+	const ssef v    = (ssef)i_v * ssef(2.0f/65535.0f);
+	return Vec2<ssef>(u,v);
+      }
+
+      static __forceinline void intersect1_precise_2x3(Ray& ray,
+						       const float *const grid_x,
+						       const float *const grid_y,
+						       const float *const grid_z,
+						       const float *const grid_uv,
+						       const size_t line_offset,
+						       const void* geom,
+						       Precalculations &pre)
+      {
+	const size_t offset0 = 0 * line_offset;
+	const size_t offset1 = 1 * line_offset;
+
+	const Vec3<ssef> tri012_x = getV012(grid_x,offset0,offset1);
+	const Vec3<ssef> tri012_y = getV012(grid_y,offset0,offset1);
+	const Vec3<ssef> tri012_z = getV012(grid_z,offset0,offset1);
+
+	const Vec3<ssef> v0_org(tri012_x[0],tri012_y[0],tri012_z[0]);
+	const Vec3<ssef> v1_org(tri012_x[1],tri012_y[1],tri012_z[1]);
+	const Vec3<ssef> v2_org(tri012_x[2],tri012_y[2],tri012_z[2]);
+        
+	const Vec3<ssef> O = ray.org;
+	const Vec3<ssef> D = ray.dir;
+        
+	const Vec3<ssef> v0 = v0_org - O;
+	const Vec3<ssef> v1 = v1_org - O;
+	const Vec3<ssef> v2 = v2_org - O;
+        
+	const Vec3<ssef> e0 = v2 - v0;
+	const Vec3<ssef> e1 = v0 - v1;	     
+	const Vec3<ssef> e2 = v1 - v2;	     
+        
+	/* calculate geometry normal and denominator */
+	const Vec3<ssef> Ng1 = cross(e1,e0);
+	const Vec3<ssef> Ng = Ng1+Ng1;
+	const ssef den = dot(Ng,D);
+	const ssef absDen = abs(den);
+	const ssef sgnDen = signmsk(den);
+        
+	sseb valid ( true );
+	/* perform edge tests */
+	const ssef U = dot(Vec3<ssef>(cross(v2+v0,e0)),D) ^ sgnDen;
+	valid &= U >= 0.0f;
+	if (likely(none(valid))) return;
+	const ssef V = dot(Vec3<ssef>(cross(v0+v1,e1)),D) ^ sgnDen;
+	valid &= V >= 0.0f;
+	if (likely(none(valid))) return;
+	const ssef W = dot(Vec3<ssef>(cross(v1+v2,e2)),D) ^ sgnDen;
+
+	valid &= W >= 0.0f;
+	if (likely(none(valid))) return;
+        
+	/* perform depth test */
+	const ssef _t = dot(v0,Ng) ^ sgnDen;
+	valid &= (_t >= absDen*ray.tnear) & (absDen*ray.tfar >= _t);
+	if (unlikely(none(valid))) return;
+        
+	/* perform backface culling */
+#if defined(RTCORE_BACKFACE_CULLING)
+	valid &= den > ssef(zero);
+	if (unlikely(none(valid))) return;
+#else
+	valid &= den != ssef(zero);
+	if (unlikely(none(valid))) return;
+#endif
+        
+	/* calculate hit information */
+	const ssef rcpAbsDen = rcp(absDen);
+	const ssef u =  U*rcpAbsDen;
+	const ssef v =  V*rcpAbsDen;
+	const ssef t = _t*rcpAbsDen;
+        
+#if FORCE_TRIANGLE_UV == 0
+	const Vec3<ssef> tri012_uv = getV012(grid_uv,offset0,offset1);	
+	const Vec2<ssef> uv0 = decodeUV(tri012_uv[0]);
+	const Vec2<ssef> uv1 = decodeUV(tri012_uv[1]);
+	const Vec2<ssef> uv2 = decodeUV(tri012_uv[2]);        
+	const Vec2<ssef> uv = u * uv1 + v * uv2 + (1.0f-u-v) * uv0;        
+	const ssef u_final = uv[1];
+	const ssef v_final = uv[0];        
+#else
+	const ssef u_final = u;
+	const ssef v_final = v;
+#endif
+	size_t i = select_min(valid,t);
+
+	/* update hit information */
+	pre.hit_patch = pre.current_patch;
+
+	ray.u         = u_final[i];
+	ray.v         = v_final[i];
+	ray.tfar      = t[i];
+	if (i % 2)
+	  {
+	    ray.Ng.x      = Ng.x[i];
+	    ray.Ng.y      = Ng.y[i];
+	    ray.Ng.z      = Ng.z[i];
+	  }
+	else
+	  {
+	    ray.Ng.x      = -Ng.x[i];
+	    ray.Ng.y      = -Ng.y[i];
+	    ray.Ng.z      = -Ng.z[i];	    
+	  }
+      };
+
+      static __forceinline bool occluded1_precise_2x3(Ray& ray,
+						      const float *const grid_x,
+						      const float *const grid_y,
+						      const float *const grid_z,
+						      const float *const grid_uv,
+						      const size_t line_offset,
+						      const void* geom)
+      {
+	const size_t offset0 = 0 * line_offset;
+	const size_t offset1 = 1 * line_offset;
+
+	const Vec3<ssef> tri012_x = getV012(grid_x,offset0,offset1);
+	const Vec3<ssef> tri012_y = getV012(grid_y,offset0,offset1);
+	const Vec3<ssef> tri012_z = getV012(grid_z,offset0,offset1);
+
+	const Vec3<ssef> v0_org(tri012_x[0],tri012_y[0],tri012_z[0]);
+	const Vec3<ssef> v1_org(tri012_x[1],tri012_y[1],tri012_z[1]);
+	const Vec3<ssef> v2_org(tri012_x[2],tri012_y[2],tri012_z[2]);
+        
+        const Vec3<ssef> O = ray.org;
+        const Vec3<ssef> D = ray.dir;
+        
+        const Vec3<ssef> v0 = v0_org - O;
+        const Vec3<ssef> v1 = v1_org - O;
+        const Vec3<ssef> v2 = v2_org - O;
+        
+        const Vec3<ssef> e0 = v2 - v0;
+        const Vec3<ssef> e1 = v0 - v1;	     
+        const Vec3<ssef> e2 = v1 - v2;	     
+        
+        /* calculate geometry normal and denominator */
+        const Vec3<ssef> Ng1 = cross(e1,e0);
+        const Vec3<ssef> Ng = Ng1+Ng1;
+        const ssef den = dot(Ng,D);
+        const ssef absDen = abs(den);
+        const ssef sgnDen = signmsk(den);
+        
+        sseb valid ( true );
+        /* perform edge tests */
+        const ssef U = dot(Vec3<ssef>(cross(v2+v0,e0)),D) ^ sgnDen;
+        valid &= U >= 0.0f;
+        if (likely(none(valid))) return false;
+        const ssef V = dot(Vec3<ssef>(cross(v0+v1,e1)),D) ^ sgnDen;
+        valid &= V >= 0.0f;
+        if (likely(none(valid))) return false;
+        const ssef W = dot(Vec3<ssef>(cross(v1+v2,e2)),D) ^ sgnDen;
+        valid &= W >= 0.0f;
+        if (likely(none(valid))) return false;
+        
+        /* perform depth test */
+        const ssef _t = dot(v0,Ng) ^ sgnDen;
+        valid &= (_t >= absDen*ray.tnear) & (absDen*ray.tfar >= _t);
+        if (unlikely(none(valid))) return false;
+        
+        /* perform backface culling */
+#if defined(RTCORE_BACKFACE_CULLING)
+        valid &= den > ssef(zero);
+        if (unlikely(none(valid))) return false;
+#else
+        valid &= den != ssef(zero);
+        if (unlikely(none(valid))) return false;
+#endif
+        return true;
+      };
+
+
+
+
+#if defined(__AVX__)
+
+      static __forceinline const Vec3<avxf> getV012(const float *const grid,
+						    const size_t offset0,
+						    const size_t offset1,
+						    const size_t offset2)
+      {
+	const ssef row_a0 = loadu4f(grid + offset0 + 0); 
+	const ssef row_b0 = loadu4f(grid + offset1 + 0);
+	const ssef row_c0 = loadu4f(grid + offset2 + 0);
+	const avxf row_ab = avxf( row_a0, row_b0 );
+	const avxf row_bc = avxf( row_b0, row_c0 );
+
+	const avxf row_ab_shuffle = shuffle<1,2,3,3>(row_ab);
+	const avxf row_bc_shuffle = shuffle<1,2,3,3>(row_bc);
+
+	Vec3<avxf> v;
+	v[0] = unpacklo(         row_ab , row_bc );
+	v[1] = unpacklo(         row_bc , row_ab_shuffle );
+	v[2] = unpacklo( row_ab_shuffle , row_bc_shuffle );
+	return v;
+      }
+
+      static __forceinline Vec2<avxf> decodeUV(const avxf &uv)
+      {
+	const avxi i_uv = cast(uv);
+	const avxi i_u  = i_uv & 0xffff;
+	const avxi i_v  = i_uv >> 16;
+	const avxf u    = (avxf)i_u * avxf(2.0f/65535.0f);
+	const avxf v    = (avxf)i_v * avxf(2.0f/65535.0f);
+	return Vec2<avxf>(u,v);
+      }
       
+      static __forceinline void intersect1_precise_3x3(Ray& ray,
+						       const float *const grid_x,
+						       const float *const grid_y,
+						       const float *const grid_z,
+						       const float *const grid_uv,
+						       const size_t line_offset,
+						       const void* geom,
+						       Precalculations &pre)
+      {
+	const size_t offset0 = 0 * line_offset;
+	const size_t offset1 = 1 * line_offset;
+	const size_t offset2 = 2 * line_offset;
+
+	const Vec3<avxf> tri012_x = getV012(grid_x,offset0,offset1,offset2);
+	const Vec3<avxf> tri012_y = getV012(grid_y,offset0,offset1,offset2);
+	const Vec3<avxf> tri012_z = getV012(grid_z,offset0,offset1,offset2);
+
+	const Vec3<avxf> v0_org(tri012_x[0],tri012_y[0],tri012_z[0]);
+	const Vec3<avxf> v1_org(tri012_x[1],tri012_y[1],tri012_z[1]);
+	const Vec3<avxf> v2_org(tri012_x[2],tri012_y[2],tri012_z[2]);
+        
+	const Vec3<avxf> O = ray.org;
+	const Vec3<avxf> D = ray.dir;
+        
+	const Vec3<avxf> v0 = v0_org - O;
+	const Vec3<avxf> v1 = v1_org - O;
+	const Vec3<avxf> v2 = v2_org - O;
+        
+	const Vec3<avxf> e0 = v2 - v0;
+	const Vec3<avxf> e1 = v0 - v1;	     
+	const Vec3<avxf> e2 = v1 - v2;	     
+        
+	/* calculate geometry normal and denominator */
+	const Vec3<avxf> Ng1 = cross(e1,e0);
+	const Vec3<avxf> Ng = Ng1+Ng1;
+	const avxf den = dot(Ng,D);
+	const avxf absDen = abs(den);
+	const avxf sgnDen = signmsk(den);
+        
+	avxb valid ( true );
+	/* perform edge tests */
+	const avxf U = dot(Vec3<avxf>(cross(v2+v0,e0)),D) ^ sgnDen;
+	valid &= U >= 0.0f;
+	if (likely(none(valid))) return;
+	const avxf V = dot(Vec3<avxf>(cross(v0+v1,e1)),D) ^ sgnDen;
+	valid &= V >= 0.0f;
+	if (likely(none(valid))) return;
+	const avxf W = dot(Vec3<avxf>(cross(v1+v2,e2)),D) ^ sgnDen;
+
+	valid &= W >= 0.0f;
+	if (likely(none(valid))) return;
+        
+	/* perform depth test */
+	const avxf _t = dot(v0,Ng) ^ sgnDen;
+	valid &= (_t >= absDen*ray.tnear) & (absDen*ray.tfar >= _t);
+	if (unlikely(none(valid))) return;
+        
+	/* perform backface culling */
+#if defined(RTCORE_BACKFACE_CULLING)
+	valid &= den > avxf(zero);
+	if (unlikely(none(valid))) return;
+#else
+	valid &= den != avxf(zero);
+	if (unlikely(none(valid))) return;
+#endif
+        
+	/* calculate hit information */
+	const avxf rcpAbsDen = rcp(absDen);
+	const avxf u =  U*rcpAbsDen;
+	const avxf v =  V*rcpAbsDen;
+	const avxf t = _t*rcpAbsDen;
+        
+#if FORCE_TRIANGLE_UV == 0
+	const Vec3<avxf> tri012_uv = getV012(grid_uv,offset0,offset1,offset2);	
+	const Vec2<avxf> uv0 = decodeUV(tri012_uv[0]);
+	const Vec2<avxf> uv1 = decodeUV(tri012_uv[1]);
+	const Vec2<avxf> uv2 = decodeUV(tri012_uv[2]);        
+	const Vec2<avxf> uv = u * uv1 + v * uv2 + (1.0f-u-v) * uv0;
+	const avxf u_final = uv[1];
+	const avxf v_final = uv[0];
+#else
+	const avxf u_final = u;
+	const avxf v_final = v;
+#endif
+        
+	size_t i = select_min(valid,t);
+
+        
+	/* update hit information */
+	pre.hit_patch = pre.current_patch;
+
+	ray.u         = u_final[i];
+	ray.v         = v_final[i];
+	ray.tfar      = t[i];
+	if (i % 2)
+	  {
+	    ray.Ng.x      = Ng.x[i];
+	    ray.Ng.y      = Ng.y[i];
+	    ray.Ng.z      = Ng.z[i];
+	  }
+	else
+	  {
+	    ray.Ng.x      = -Ng.x[i];
+	    ray.Ng.y      = -Ng.y[i];
+	    ray.Ng.z      = -Ng.z[i];	    
+	  }
+      };
+
+        static __forceinline bool occluded1_precise_3x3(Ray& ray,
+							const float *const grid_x,
+							const float *const grid_y,
+							const float *const grid_z,
+							const float *const grid_uv,
+							const size_t line_offset,
+							const void* geom)
+      {
+	const size_t offset0 = 0 * line_offset;
+	const size_t offset1 = 1 * line_offset;
+	const size_t offset2 = 2 * line_offset;
+
+	const Vec3<avxf> tri012_x = getV012(grid_x,offset0,offset1,offset2);
+	const Vec3<avxf> tri012_y = getV012(grid_y,offset0,offset1,offset2);
+	const Vec3<avxf> tri012_z = getV012(grid_z,offset0,offset1,offset2);
+
+	const Vec3<avxf> v0_org(tri012_x[0],tri012_y[0],tri012_z[0]);
+	const Vec3<avxf> v1_org(tri012_x[1],tri012_y[1],tri012_z[1]);
+	const Vec3<avxf> v2_org(tri012_x[2],tri012_y[2],tri012_z[2]);
+        
+        const Vec3<avxf> O = ray.org;
+        const Vec3<avxf> D = ray.dir;
+        
+        const Vec3<avxf> v0 = v0_org - O;
+        const Vec3<avxf> v1 = v1_org - O;
+        const Vec3<avxf> v2 = v2_org - O;
+        
+        const Vec3<avxf> e0 = v2 - v0;
+        const Vec3<avxf> e1 = v0 - v1;	     
+        const Vec3<avxf> e2 = v1 - v2;	     
+        
+        /* calculate geometry normal and denominator */
+        const Vec3<avxf> Ng1 = cross(e1,e0);
+        const Vec3<avxf> Ng = Ng1+Ng1;
+        const avxf den = dot(Ng,D);
+        const avxf absDen = abs(den);
+        const avxf sgnDen = signmsk(den);
+        
+        avxb valid ( true );
+        /* perform edge tests */
+        const avxf U = dot(Vec3<avxf>(cross(v2+v0,e0)),D) ^ sgnDen;
+        valid &= U >= 0.0f;
+        if (likely(none(valid))) return false;
+        const avxf V = dot(Vec3<avxf>(cross(v0+v1,e1)),D) ^ sgnDen;
+        valid &= V >= 0.0f;
+        if (likely(none(valid))) return false;
+        const avxf W = dot(Vec3<avxf>(cross(v1+v2,e2)),D) ^ sgnDen;
+        valid &= W >= 0.0f;
+        if (likely(none(valid))) return false;
+        
+        /* perform depth test */
+        const avxf _t = dot(v0,Ng) ^ sgnDen;
+        valid &= (_t >= absDen*ray.tnear) & (absDen*ray.tfar >= _t);
+        if (unlikely(none(valid))) return false;
+        
+        /* perform backface culling */
+#if defined(RTCORE_BACKFACE_CULLING)
+        valid &= den > avxf(zero);
+        if (unlikely(none(valid))) return false;
+#else
+        valid &= den != avxf(zero);
+        if (unlikely(none(valid))) return false;
+#endif
+        return true;
+      };
+
+#endif      
       
       /* intersect ray with Quad2x2 structure => 1 ray vs. 8 triangles */
       template<class M, class T>
@@ -164,7 +564,6 @@ namespace embree
         valid &= V >= 0.0f;        
         if (likely(none(valid))) return;
         const T W = dot(Vec3<T>(cross(v1+v2,e2)),D) ^ sgnDen;
-        
         valid &= W >= 0.0f;
         if (likely(none(valid))) return;
 
@@ -287,158 +686,18 @@ namespace embree
 #endif
         return true;
       };
+
+      static size_t lazyBuildPatch(Precalculations &pre, SubdivPatch1Cached* const subdiv_patch, const void* geom);                  
       
-
-      /* eval grid over patch and stich edges when required */      
-      static __forceinline void evalGrid(const SubdivPatch1Cached &patch,
-                                         float *__restrict__ const grid_x,
-                                         float *__restrict__ const grid_y,
-                                         float *__restrict__ const grid_z,
-                                         float *__restrict__ const grid_u,
-                                         float *__restrict__ const grid_v,
-                                         const SubdivMesh* const geom)
-      {
-        gridUVTessellator(patch.level,
-                          patch.grid_u_res,
-                          patch.grid_v_res,
-                          grid_u,
-                          grid_v);
-        
-        if (unlikely(patch.needsStiching()))
-          stichUVGrid(patch.level,patch.grid_u_res,patch.grid_v_res,grid_u,grid_v);
-        
-        const Vec2f uv0 = patch.getUV(0);
-        const Vec2f uv1 = patch.getUV(1);
-        const Vec2f uv2 = patch.getUV(2);
-        const Vec2f uv3 = patch.getUV(3);
-        
-#if defined(__AVX__)
-        for (size_t i=0;i<patch.grid_size_simd_blocks;i++)
-        {
-          avxf uu = load8f(&grid_u[8*i]);
-          avxf vv = load8f(&grid_v[8*i]);
-          avx3f vtx = patch.eval8(uu,vv);
-          
-          
-          if (unlikely(((SubdivMesh*)geom)->displFunc != NULL))
-          {
-            avx3f normal = patch.normal8(uu,vv);
-            normal = normalize_safe(normal) ;
-            
-	    const avxf patch_uu = bilinear_interpolate(uv0.x,uv1.x,uv2.x,uv3.x,uu,vv);
-	    const avxf patch_vv = bilinear_interpolate(uv0.y,uv1.y,uv2.y,uv3.y,uu,vv);
-            
-            ((SubdivMesh*)geom)->displFunc(((SubdivMesh*)geom)->userPtr,
-                                           patch.geom,
-                                           patch.prim,
-                                           (const float*)&patch_uu,
-                                           (const float*)&patch_vv,
-                                           (const float*)&normal.x,
-                                           (const float*)&normal.y,
-                                           (const float*)&normal.z,
-                                           (float*)&vtx.x,
-                                           (float*)&vtx.y,
-                                           (float*)&vtx.z,
-                                           8);
-          }
-          
-          *(avxf*)&grid_x[8*i] = vtx.x;
-          *(avxf*)&grid_y[8*i] = vtx.y;
-          *(avxf*)&grid_z[8*i] = vtx.z;        
-          *(avxf*)&grid_u[8*i] = uu;
-          *(avxf*)&grid_v[8*i] = vv;
-        }
-#else
-        for (size_t i=0;i<patch.grid_size_simd_blocks*2;i++) // 4-wide blocks for SSE
-        {
-          ssef uu = load4f(&grid_u[4*i]);
-          ssef vv = load4f(&grid_v[4*i]);
-          sse3f vtx = patch.eval4(uu,vv);
-          
-          
-          if (unlikely(((SubdivMesh*)geom)->displFunc != NULL))
-          {
-            sse3f normal = patch.normal4(uu,vv);
-            normal = normalize_safe(normal);
-
-	    const ssef patch_uu = bilinear_interpolate(uv0.x,uv1.x,uv2.x,uv3.x,uu,vv);
-	    const ssef patch_vv = bilinear_interpolate(uv0.y,uv1.y,uv2.y,uv3.y,uu,vv);
-            
-            ((SubdivMesh*)geom)->displFunc(((SubdivMesh*)geom)->userPtr,
-                                           patch.geom,
-                                           patch.prim,
-                                           (const float*)&patch_uu,
-                                           (const float*)&patch_vv,
-                                           (const float*)&normal.x,
-                                           (const float*)&normal.y,
-                                           (const float*)&normal.z,
-                                           (float*)&vtx.x,
-                                           (float*)&vtx.y,
-                                           (float*)&vtx.z,
-                                           4);
-          }
-          
-          *(ssef*)&grid_x[4*i] = vtx.x;
-          *(ssef*)&grid_y[4*i] = vtx.y;
-          *(ssef*)&grid_z[4*i] = vtx.z;        
-          *(ssef*)&grid_u[4*i] = uu;
-          *(ssef*)&grid_v[4*i] = vv;
-        }
-        
-#endif
-      }
-      
-      
-      /*! Returns BVH4 node reference for subtree over patch grid */
-      static __forceinline size_t getSubtreeRootNode(PerThreadTessellationCache *local_cache, const SubdivPatch1Cached* const subdiv_patch, const void* geom)
-      {
-        const unsigned int commitCounter = ((Scene*)geom)->commitCounter;
-        InputTagType tag = (InputTagType)subdiv_patch;
-        
-        BVH4::NodeRef root = local_cache->lookup(tag,commitCounter);
-        root.prefetch(0);
-        CACHE_STATS(DistributedTessellationCacheStats::cache_accesses++);
-
-        if (unlikely(root == (size_t)-1))
-        {
-          /* CACHE MISS */
-          CACHE_STATS(DistributedTessellationCacheStats::cache_misses++);
-
-          subdiv_patch->prefetchData();
-          const unsigned int blocks = subdiv_patch->grid_subtree_size_64b_blocks;
-          
-          TessellationCacheTag &t = local_cache->request(tag,commitCounter,blocks);
-
-          BVH4::Node* node = (BVH4::Node*)t.getPtr();
-          prefetchL1(((float*)node + 0*16));
-          prefetchL1(((float*)node + 1*16));
-          prefetchL1(((float*)node + 2*16));
-          prefetchL1(((float*)node + 3*16));
-          
-          size_t new_root = (size_t)buildSubdivPatchTree(*subdiv_patch,node,((Scene*)geom)->getSubdivMesh(subdiv_patch->geom));
-          assert( new_root != BVH4::invalidNode);
-          
-          t.updateRootRef(new_root);
-          
-          return new_root;
-        }        
-        /* CACHE HIT */
-        CACHE_STATS(DistributedTessellationCacheStats::cache_hits++);
-        return root;   
-      }
-
-
-      /*! Returns BVH4 node reference for subtree over patch grid */
-      static size_t getSubtreeRootNode(Precalculations& pre, const SubdivPatch1Cached* const subdiv_patch, const void* geom);
-
-
-      /*! Returns BVH4 node reference for subtree over patch grid */
-      static size_t getSubtreeRootNodeFromCacheHierarchy(Precalculations& pre, const SubdivPatch1Cached* const subdiv_patch, const void* geom);
-
       /*! Evaluates grid over patch and builds BVH4 tree over the grid. */
       static BVH4::NodeRef buildSubdivPatchTree(const SubdivPatch1Cached &patch,
                                                 void *const lazymem,
                                                 const SubdivMesh* const geom);
+
+      /*! Evaluates grid over patch and builds BVH4 tree over the grid. */
+      static BVH4::NodeRef buildSubdivPatchTreeCompact(const SubdivPatch1Cached &patch,
+						       void *const lazymem,
+						       const SubdivMesh* const geom);
       
       /*! Create BVH4 tree over grid. */
       static BBox3fa createSubTree(BVH4::NodeRef &curNode,
@@ -452,8 +711,18 @@ namespace embree
                                    const GridRange &range,
                                    unsigned int &localCounter,
                                    const SubdivMesh* const geom);
+
+      /*! Create BVH4 tree over grid. */
+      static BBox3fa createSubTreeCompact(BVH4::NodeRef &curNode,
+					  float *const lazymem,
+					  const SubdivPatch1Cached &patch,
+					  const float *const grid_array,
+					  const size_t grid_array_elements,
+					  const GridRange &range,
+					  unsigned int &localCounter);
       
-      
+
+        
       //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       
@@ -465,22 +734,41 @@ namespace embree
         
         if (likely(ty == 2))
         {
+
+#if COMPACT == 1          
+          const size_t dim_offset    = pre.current_patch->grid_size_simd_blocks * 8;
+          const size_t line_offset   = pre.current_patch->grid_u_res;
+          const size_t offset_bytes  = ((size_t)prim  - (size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr()) >> 4;   
+          const float *const grid_x  = (float*)(offset_bytes + (size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr());
+          const float *const grid_y  = grid_x + 1 * dim_offset;
+          const float *const grid_z  = grid_x + 2 * dim_offset;
+          const float *const grid_uv = grid_x + 3 * dim_offset;
 #if defined(__AVX__)
-          intersect1_precise<avxb,avxf>( ray, *(Quad2x2*)prim, (SubdivMesh*)geom,pre);
+	  intersect1_precise_3x3( ray, grid_x,grid_y,grid_z,grid_uv, line_offset, (SubdivMesh*)geom,pre);
 #else
-          intersect1_precise<sseb,ssef>( ray, *(Quad2x2*)prim, (SubdivMesh*)geom,pre,0);
-          intersect1_precise<sseb,ssef>( ray, *(Quad2x2*)prim, (SubdivMesh*)geom,pre,6);
+	  intersect1_precise_2x3( ray, grid_x            ,grid_y            ,grid_z            ,grid_uv            , line_offset, (SubdivMesh*)geom,pre);
+	  intersect1_precise_2x3( ray, grid_x+line_offset,grid_y+line_offset,grid_z+line_offset,grid_uv+line_offset, line_offset, (SubdivMesh*)geom,pre);
+#endif
+
+#else
+
+	  const Quad2x2 &q = *(Quad2x2*)prim;
+
+#if defined(__AVX__)
+          intersect1_precise<avxb,avxf>( ray, q, (SubdivMesh*)geom,pre);
+#else
+          intersect1_precise<sseb,ssef>( ray, q, (SubdivMesh*)geom,pre,0);
+          intersect1_precise<sseb,ssef>( ray, q, (SubdivMesh*)geom,pre,6);
+#endif
+
 #endif
         }
         else 
         {
-#if defined(SHARED_TESSELLATION_CACHE)
-          //lazy_node = getSubtreeRootNode(pre, prim, geom);
-          lazy_node = getSubtreeRootNodeFromCacheHierarchy(pre, prim, geom);          
-#else          
-          lazy_node = getSubtreeRootNode(pre.local_cache, prim, geom);
-#endif
+	  lazy_node = lazyBuildPatch(pre,(SubdivPatch1Cached*)prim, geom);
+	  assert(lazy_node);
           pre.current_patch = (SubdivPatch1Cached*)prim;
+          
         }             
         
       }
@@ -492,20 +780,43 @@ namespace embree
         
         if (likely(ty == 2))
         {
+
+#if COMPACT == 1          
+
+          const size_t dim_offset    = pre.current_patch->grid_size_simd_blocks * 8;
+          const size_t line_offset   = pre.current_patch->grid_u_res;
+          const size_t offset_bytes  = ((size_t)prim  - (size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr()) >> 4;   
+          const float *const grid_x  = (float*)(offset_bytes + (size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr());
+          const float *const grid_y  = grid_x + 1 * dim_offset;
+          const float *const grid_z  = grid_x + 2 * dim_offset;
+          const float *const grid_uv = grid_x + 3 * dim_offset;
+
 #if defined(__AVX__)
-          return occluded1_precise<avxb,avxf>( ray, *(Quad2x2*)prim, (SubdivMesh*)geom);
+	  return occluded1_precise_3x3( ray, grid_x,grid_y,grid_z,grid_uv, line_offset, (SubdivMesh*)geom);
 #else
-          if (occluded1_precise<sseb,ssef>( ray, *(Quad2x2*)prim, (SubdivMesh*)geom,0)) return true;
-          if (occluded1_precise<sseb,ssef>( ray, *(Quad2x2*)prim, (SubdivMesh*)geom,6)) return true;
+	  if (occluded1_precise_2x3( ray, grid_x            ,grid_y            ,grid_z            ,grid_uv            , line_offset, (SubdivMesh*)geom)) return true;
+	  if (occluded1_precise_2x3( ray, grid_x+line_offset,grid_y+line_offset,grid_z+line_offset,grid_uv+line_offset, line_offset, (SubdivMesh*)geom)) return true;
+#endif
+
+          
+#else
+
+#if defined(__AVX__)
+	  const Quad2x2 &q = *(Quad2x2*)prim;
+	  return occluded1_precise<avxb,avxf>( ray, q, (SubdivMesh*)geom);
+#else
+          const Quad2x2 &q = *(Quad2x2*)prim;
+          if (occluded1_precise<sseb,ssef>( ray, q, (SubdivMesh*)geom,0)) return true;
+          if (occluded1_precise<sseb,ssef>( ray, q, (SubdivMesh*)geom,6)) return true;
+#endif
+
 #endif
         }
         else 
         {
-          lazy_node = getSubtreeRootNode(pre.local_cache, prim, geom);        
+	  lazy_node = lazyBuildPatch(pre,(SubdivPatch1Cached*)prim, geom);
           pre.current_patch = (SubdivPatch1Cached*)prim;
         }             
-        
-        
         return false;
       }
       

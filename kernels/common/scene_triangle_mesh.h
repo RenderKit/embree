@@ -16,23 +16,34 @@
 
 #pragma once
 
-#include "common/geometry.h"
-#include "common/buffer.h"
+#include "geometry.h"
+#include "buffer.h"
 
 namespace embree
 {
   /*! Triangle Mesh */
   struct TriangleMesh : public Geometry
   {
-    static const GeometryTy geom_type = TRIANGLE_MESH;
+    /*! type of this geometry */
+    static const Geometry::Type geom_type = Geometry::TRIANGLE_MESH;
 
-    struct Triangle {
-      unsigned int v[3];
+    /*! triangle indices */
+    struct Triangle 
+    {
+      uint32 v[3];
+
+      /*! outputs triangle indices */
+      __forceinline friend std::ostream &operator<<(std::ostream& cout, const Triangle& t) {
+        return cout << "{ tri " << t.v[0] << ", " << t.v[1] << ", " << t.v[2] << " }";
+      }
     };
     
   public:
+
+    /*! triangle mesh construction */
     TriangleMesh (Scene* parent, RTCGeometryFlags flags, size_t numTriangles, size_t numVertices, size_t numTimeSteps); 
   
+    /*! writes the triangle mesh geometry to disk */
     void write(std::ofstream& file);
 
     /* geometry interface */
@@ -50,31 +61,30 @@ namespace embree
 
     /*! returns number of triangles */
     __forceinline size_t size() const {
-      return numTriangles;
+      return triangles.size();
+    }
+
+    /*! returns number of vertices */
+    __forceinline size_t numVertices() const {
+      return vertices[0].size();
     }
     
     /*! returns i'th triangle*/
     __forceinline const Triangle& triangle(size_t i) const {
-      assert(i < numTriangles);
       return triangles[i];
     }
 
     /*! returns i'th vertex of j'th timestep */
-    __forceinline const Vec3fa vertex(size_t i, size_t j = 0) const 
-    {
-      assert(i < numVertices);
-      assert(j < numTimeSteps);
+    __forceinline const Vec3fa vertex(size_t i, size_t j = 0) const {
       return vertices[j][i];
     }
 
     /*! returns i'th vertex of j'th timestep */
-    __forceinline const char* vertexPtr(size_t i, size_t j = 0) const 
-    {
-      assert(i < numVertices);
-      assert(j < numTimeSteps);
+    __forceinline const char* vertexPtr(size_t i, size_t j = 0) const {
       return vertices[j].getPtr(i);
     }
-    
+
+#if defined(__MIC__)    
     /*! returns the stride in bytes of the triangle buffer */
     __forceinline size_t getTriangleBufferStride() const {
       return triangles.getBufferStride();
@@ -84,31 +94,7 @@ namespace embree
     __forceinline size_t getVertexBufferStride() const {
       return vertices[0].getBufferStride();
     }
-
-    /*! check if the i'th primitive is valid */
-    __forceinline bool valid(size_t i, BBox3fa* bbox = NULL) const 
-    {
-      const Triangle& tri = triangle(i);
-      if (tri.v[0] >= numVertices) return false;
-      if (tri.v[1] >= numVertices) return false;
-      if (tri.v[2] >= numVertices) return false;
-
-      for (size_t j=0; j<numTimeSteps; j++) {
-	const Vec3fa v0 = vertex(tri.v[0],j);
-	const Vec3fa v1 = vertex(tri.v[1],j);
-	const Vec3fa v2 = vertex(tri.v[2],j);
-	if (!inFloatRange(v0) || !inFloatRange(v1) || !inFloatRange(v2))
-	  return false;
-      }
-
-      if (bbox) {
-	const Vec3fa v0 = vertex(tri.v[0]);
-	const Vec3fa v1 = vertex(tri.v[1]);
-	const Vec3fa v2 = vertex(tri.v[2]);
-	*bbox = BBox3fa(min(v0,v1,v2),max(v0,v1,v2));
-      }
-      return true;
-    }
+#endif
 
     /*! calculates the bounds of the i'th triangle */
     __forceinline BBox3fa bounds(size_t i) const 
@@ -120,15 +106,38 @@ namespace embree
       return BBox3fa(min(v0,v1,v2),max(v0,v1,v2));
     }
 
+    /*! check if the i'th primitive is valid */
+    __forceinline bool valid(size_t i, BBox3fa* bbox = nullptr) const 
+    {
+      const Triangle& tri = triangle(i);
+      if (tri.v[0] >= numVertices()) return false;
+      if (tri.v[1] >= numVertices()) return false;
+      if (tri.v[2] >= numVertices()) return false;
+
+      for (size_t j=0; j<numTimeSteps; j++) 
+      {
+        const Vec3fa v0 = vertex(tri.v[0],j);
+        const Vec3fa v1 = vertex(tri.v[1],j);
+        const Vec3fa v2 = vertex(tri.v[2],j);
+        if (!isvalid(v0) || !isvalid(v1) || !isvalid(v2))
+          return false;
+      }
+
+      if (bbox) 
+        *bbox = bounds(i);
+
+      return true;
+    }
+
 #if defined(__MIC__)
 
 
     template<unsigned int HINT=0>
       __forceinline mic3f getTriangleVertices(const Triangle &tri,const size_t dim=0) const 
       {
-	assert( tri.v[0] < numVertices );
-	assert( tri.v[1] < numVertices );
-	assert( tri.v[2] < numVertices );
+	assert( tri.v[0] < numVertices() );
+	assert( tri.v[1] < numVertices() );
+	assert( tri.v[2] < numVertices() );
 
 #if !defined(RTCORE_BUFFER_STRIDE)
 	
@@ -174,27 +183,12 @@ namespace embree
 
 	return mic3f(select(0x7777,v0,mic_f::zero()),select(0x7777,v1,mic_f::zero()),select(0x7777,v2,mic_f::zero()));
 #endif	
-	
-	
       }
     
 #endif
     
   public:
-    unsigned int mask;                //!< for masking out geometry
-    unsigned int numTimeSteps;        //!< number of time steps (1 or 2) // FIXME: remove
-    
-    BufferT<Triangle> triangles;      //!< array of triangles
-    size_t numTriangles;              //!< number of triangles
-    
-    BufferT<Vec3fa> vertices[2];    //!< vertex array
-    size_t numVertices;               //!< number of vertices
+    BufferT<Triangle> triangles;          //!< array of triangles
+    array_t<BufferT<Vec3fa>,2> vertices;  //!< vertex array
   };
-
-  __forceinline std::ostream &operator<<(std::ostream &o, const TriangleMesh::Triangle &t)
-  {
-    o << "tri " << t.v[0] << " " << t.v[1] << " " << t.v[2] << std::endl;
-    return o;
-  } 
-
 }

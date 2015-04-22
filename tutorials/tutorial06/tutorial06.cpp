@@ -27,6 +27,7 @@ namespace embree
   /* configuration */
   static std::string g_rtcore = "";
   static size_t g_numThreads = 0;
+  static std::string g_subdiv_mode = "";
 
   /* output settings */
   static size_t g_width = 512;
@@ -37,10 +38,14 @@ namespace embree
   static int g_numBenchmarkFrames = 0;
   static bool g_interactive = true;
   static bool g_only_subdivs = false;
-  
+  static bool g_anim_mode = false;
+  static bool g_loop_mode = false;
+  static FileName keyframeList = "";
+
   /* scene */
   OBJScene g_obj_scene;
   static FileName filename = "";
+  std::vector<OBJScene*> g_keyframes;
 
   static void parseCommandLine(Ref<ParseStream> cin, const FileName& path)
   {
@@ -82,6 +87,26 @@ namespace embree
         outFilename = cin->getFileName();
 	g_interactive = false;
       }
+
+      else if (tag == "-objlist") {
+        keyframeList = cin->getFileName();
+      }
+
+      /* subdivision mode */
+      else if (tag == "-cache") 
+	g_subdiv_mode = ",subdiv_accel=bvh4.subdivpatch1cached";
+
+      else if (tag == "-lazy") 
+	g_subdiv_mode = ",subdiv_accel=bvh4.grid.lazy";
+
+      else if (tag == "-pregenerate") 
+	g_subdiv_mode = ",subdiv_accel=bvh4.grid.eager";
+      
+      else if (tag == "-loop") 
+	g_loop_mode = true;
+
+      else if (tag == "-anim") 
+	g_anim_mode = true;
 
       /* number of frames to render in benchmark mode */
       else if (tag == "-benchmark") {
@@ -170,35 +195,111 @@ namespace embree
   void renderToFile(const FileName& fileName)
   {
     resize(g_width,g_height);
-    AffineSpace3fa pixel2world = g_camera.pixel2world(g_width,g_height);
-    render(0.0f,pixel2world.l.vx,pixel2world.l.vy,pixel2world.l.vz,pixel2world.p);
+    if (g_anim_mode) g_camera.anim = true;
+
+    do {
+      double msec = getSeconds();
+      AffineSpace3fa pixel2world = g_camera.pixel2world(g_width,g_height);
+      render(0.0f,pixel2world.l.vx,pixel2world.l.vy,pixel2world.l.vz,pixel2world.p);
+      msec = getSeconds() - msec;
+      std::cout << "render time " << 1.0/msec << " fps" << std::endl;
+
+    } while(g_loop_mode);
+
     void* ptr = map();
-    Ref<Image> image = new Image4c(g_width, g_height, (Col4c*)ptr);
+    Ref<Image> image = new Image4uc(g_width, g_height, (Col4uc*)ptr);
     storeImage(image, fileName);
     unmap();
     cleanup();
   }
 
+  void loadKeyFrameAnimation(FileName &fileName)
+  {
+    PRINT(fileName);
+    std::ifstream cin;
+    cin.open(fileName.c_str());
+    if (!cin.is_open()) {
+      std::cerr << "cannot open " << fileName.str() << std::endl;
+      return;
+    }
+    
+    FileName path;
+    path = fileName.path();
+
+    char line[10000];
+    memset(line, 0, sizeof(line));
+
+    int cur = 0;
+    while (cin.peek() != -1)
+    {
+      /* load next multiline */
+      char* pline = line;
+      while (true) {
+        cin.getline(pline, sizeof(line) - (pline - line) - 16, '\n');
+        ssize_t last = strlen(pline) - 1;
+        if (last < 0 || pline[last] != '\\') break;
+        pline += last;
+        *pline++ = ' ';
+      }
+      OBJScene *scene = new OBJScene;
+      FileName keyframe = path + FileName(line);
+      loadOBJ(keyframe,one,*scene,true);	
+      PRINT(keyframe);
+      if (g_obj_scene.subdiv.size() != scene->subdiv.size())
+	FATAL("#subdiv meshes differ");
+      for (size_t i=0;i<g_obj_scene.subdiv.size();i++)
+	if (g_obj_scene.subdiv[i]->positions.size() != scene->subdiv[i]->positions.size())
+	  FATAL("#positions differ");
+
+      g_keyframes.push_back(scene);
+    } 
+    cin.close();
+
+    
+  }
+
+
   /* main function in embree namespace */
   int main(int argc, char** argv) 
   {
+    /* for best performance set FTZ and DAZ flags in MXCSR control and status register */
+    _mm_setcsr(_mm_getcsr() | /* FTZ */ (1<<15) | /* DAZ */ (1<<6));
+
     /* create stream for parsing */
     Ref<ParseStream> stream = new ParseStream(new CommandLineStream(argc, argv));
 
     /* parse command line */  
     parseCommandLine(stream, FileName());
+    
     if (g_numThreads) 
-      g_rtcore += ",threads=" + std::stringOf(g_numThreads);
+      g_rtcore += ",threads=" + std::to_string((long long)g_numThreads);
     if (g_numBenchmarkFrames)
       g_rtcore += ",benchmark=1";
 
+     g_rtcore += g_subdiv_mode;
+
     /* load scene */
-    if (strlwr(filename.ext()) == std::string("obj"))
-      loadOBJ(filename,one,g_obj_scene);
+     if (strlwr(filename.ext()) == std::string("obj"))
+       {
+         if (g_subdiv_mode != "")
+           {
+             std::cout << "enabling subdiv mode" << std::endl;
+             loadOBJ(filename,one,g_obj_scene,true);	
+           }
+         else
+           loadOBJ(filename,one,g_obj_scene);
+       }
     else if (strlwr(filename.ext()) == std::string("xml"))
       loadXML(filename,one,g_obj_scene);
     else if (filename.ext() != "")
       THROW_RUNTIME_ERROR("invalid scene type: "+strlwr(filename.ext()));
+
+     /* load keyframes */
+
+     if (keyframeList.str() != "")
+       {
+	 loadKeyFrameAnimation(keyframeList);
+       }
 
     /* initialize ray tracing core */
     init(g_rtcore.c_str());
@@ -210,6 +311,10 @@ namespace embree
     /* send model */
     set_scene(&g_obj_scene);
     
+    /* send keyframes */
+    if (g_keyframes.size())
+      set_scene_keyframes(&*g_keyframes.begin(),g_keyframes.size());
+
     /* benchmark mode */
     if (g_numBenchmarkFrames)
       renderBenchmark(outFilename);
@@ -221,7 +326,8 @@ namespace embree
     /* interactive mode */
     if (g_interactive) {
       initWindowState(argc,argv,tutorialName, g_width, g_height, g_fullscreen);
-      enterWindowRunLoop();
+      enterWindowRunLoop(g_anim_mode);
+
     }
 
     return 0;

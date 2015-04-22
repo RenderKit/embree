@@ -94,13 +94,12 @@ namespace embree
     void checkBuildRecord(const BuildRecord &current);
     void checkLeafNode(const BVH4i::NodeRef &ref, const BBox3fa &bounds);
 
+    void createTriangle1AccelRange(const size_t startID, const size_t endID);
 
     TASK_FUNCTION(BVH4iBuilder,computePrimRefsTriangles);
     TASK_FUNCTION(BVH4iBuilder,createTriangle1Accel);
     TASK_FUNCTION(BVH4iBuilder,parallelBinningGlobal);
-    TASK_FUNCTION(BVH4iBuilder,parallelPartitioningGlobal);
     LOCAL_TASK_FUNCTION(BVH4iBuilder,parallelBinningLocal);
-    LOCAL_TASK_FUNCTION(BVH4iBuilder,parallelPartitioningLocal);
 
   public:
 
@@ -110,16 +109,6 @@ namespace embree
 
     /*! perform sequential binning and splitting */
     bool splitSequential(BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild);
-
-    /*! perform parallel splitting */
-    void parallelPartitioning(BuildRecord& current,
-			      PrimRef * __restrict__ l_source,
-			      PrimRef * __restrict__ r_source,
-			      PrimRef * __restrict__ l_dest,
-			      PrimRef * __restrict__ r_dest,
-			      const Split &split,
-			      Centroid_Scene_AABB &local_left,
-			      Centroid_Scene_AABB &local_right);			      
 			      
     /*! perform parallel binning and splitting using all threads on all cores*/
     bool splitParallelGlobal(BuildRecord& current, BuildRecord& leftChild, BuildRecord& rightChild, const size_t threadID, const size_t threads);
@@ -159,8 +148,8 @@ namespace embree
 				 BuildRecord *__restrict__ const br,
 				 const size_t numChildren)
     {
-      mic_f lower = broadcast4to16f(&BVH4i::initQBVHNode[0]);
-      mic_f upper = broadcast4to16f(&BVH4i::initQBVHNode[1]);
+      mic_f lower = broadcast4to16f(&BVH4i::Node::initQBVHNode[0]);
+      mic_f upper = broadcast4to16f(&BVH4i::Node::initQBVHNode[1]);
       BVH4i::Node &bvh = *(BVH4i::Node*)ptr;
 
       mic_m m_lane = 0xf;
@@ -195,17 +184,18 @@ namespace embree
   protected:
     size_t numMaxPrimitives;
     size_t numMaxPreSplits;
+    float averageBoxTriSAHRatio;
+
+    float PRESPLIT_AREA_THRESHOLD;
+    float PRESPLIT_MIN_AREA;
 
     __aligned(64) AlignedAtomicCounter32 dest0;
     __aligned(64) AlignedAtomicCounter32 dest1;
+    __aligned(64) float averageBoxSAH;
+    __aligned(64) float averageTriSAH;
 
-    static const size_t RADIX_BITS = 8;
-    static const size_t RADIX_BUCKETS = (1 << RADIX_BITS);
-    static const size_t RADIX_BUCKETS_MASK = (RADIX_BUCKETS-1);
-    __aligned(64) unsigned int radixCount[MAX_MIC_THREADS][RADIX_BUCKETS];
-
+    TASK_FUNCTION(BVH4iBuilderPreSplits,getAverageBoundsSAH);
     TASK_FUNCTION(BVH4iBuilderPreSplits,countAndComputePrimRefsPreSplits);
-    TASK_FUNCTION(BVH4iBuilderPreSplits,radixSortPreSplitIDs);
     TASK_FUNCTION(BVH4iBuilderPreSplits,computePrimRefsFromPreSplitIDs);
     
   };
@@ -257,14 +247,19 @@ namespace embree
   class BVH4iBuilderSubdivMesh : public BVH4iBuilder
   {
   protected:
-    void *org_accel;
     Scene::Iterator<SubdivMesh> iter;
     ParallelForForPrefixSumState<PrimInfo> pstate;
     bool fastUpdateMode;
     size_t fastUpdateMode_numFaces;
 
+    static const size_t MAX_SUBTREES = 2048;
+    static const size_t GENERATE_SUBTREES_MAX_TREE_DEPTH = 5;
+
+    size_t numSubTrees;
+    BVH4i::NodeRef subtree_refs[MAX_SUBTREES];
+
   public:
-    BVH4iBuilderSubdivMesh (BVH4i* bvh, void* geometry) : BVH4iBuilder(bvh,geometry),org_accel(NULL),fastUpdateMode(false),fastUpdateMode_numFaces(0)
+    BVH4iBuilderSubdivMesh (BVH4i* bvh, void* geometry) : BVH4iBuilder(bvh,geometry),fastUpdateMode(false),fastUpdateMode_numFaces(0)
       {}
 
     virtual void build            (const size_t threadIndex, const size_t threadCount);
@@ -275,10 +270,20 @@ namespace embree
     virtual void printBuilderName();
     virtual void finalize         (const size_t threadIndex, const size_t threadCount);
 
+    void extract_refit_subtrees(const BVH4i::NodeRef &ref, 
+				const size_t depth);
+
+    BBox3fa refit(const BVH4i::NodeRef &ref);
+
+    BBox3fa refit_top_level(const BVH4i::NodeRef &ref, 
+				const size_t depth);
+
   protected:
+    TASK_FUNCTION(BVH4iBuilderSubdivMesh,updatePatchTessellation);
     TASK_FUNCTION(BVH4iBuilderSubdivMesh,computePrimRefsSubdivMesh);
-    TASK_FUNCTION(BVH4iBuilderSubdivMesh,updateLeaves);
-    
+    TASK_FUNCTION(BVH4iBuilderSubdivMesh,updateLeaves);    
+    TASK_FUNCTION(BVH4iBuilderSubdivMesh,refitSubTrees);    
+
   };
 
 }

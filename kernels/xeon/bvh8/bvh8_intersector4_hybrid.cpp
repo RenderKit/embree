@@ -15,8 +15,10 @@
 // ======================================================================== //
 
 #include "bvh8_intersector4_hybrid.h"
-#include "geometry/triangle4_intersector4_moeller.h"
-#include "geometry/triangle8_intersector4_moeller.h"
+#include "geometry/triangle4.h"
+#include "geometry/triangle8.h"
+#include "geometry/intersector_iterators.h"
+#include "geometry/triangle_intersector_moeller.h"
 
 #define SWITCH_THRESHOLD 3
 
@@ -30,9 +32,9 @@ namespace embree
                                                                                  const ssef& ray_tnear, const ssef& ray_tfar)
     {
       /*! stack state */
-      StackItemInt32<NodeRef> stack[stackSizeSingle];  //!< stack of nodes 
-      StackItemInt32<NodeRef>* stackPtr = stack+1;        //!< current stack pointer
-      StackItemInt32<NodeRef>* stackEnd = stack+stackSizeSingle;
+      StackItemT<NodeRef> stack[stackSizeSingle];  //!< stack of nodes 
+      StackItemT<NodeRef>* stackPtr = stack+1;        //!< current stack pointer
+      StackItemT<NodeRef>* stackEnd = stack+stackSizeSingle;
       stack[0].ptr = root;
       stack[0].dist = neg_inf;
             
@@ -597,10 +599,10 @@ namespace embree
       AVX_ZERO_UPPER();
     }
     
-    DEFINE_INTERSECTOR4(BVH8Triangle4Intersector4HybridMoeller, BVH8Intersector4Hybrid<LeafIterator4_1<Triangle4Intersector4MoellerTrumbore<LeafMode COMMA true> > >);
-    DEFINE_INTERSECTOR4(BVH8Triangle4Intersector4HybridMoellerNoFilter, BVH8Intersector4Hybrid<LeafIterator4_1<Triangle4Intersector4MoellerTrumbore<LeafMode COMMA false> > >);
+    DEFINE_INTERSECTOR4(BVH8Triangle4Intersector4HybridMoeller, BVH8Intersector4Hybrid<ArrayIntersector4_1<TriangleNIntersectorMMoellerTrumbore<Ray4 COMMA Triangle4 COMMA true> > >);
+    DEFINE_INTERSECTOR4(BVH8Triangle4Intersector4HybridMoellerNoFilter, BVH8Intersector4Hybrid<ArrayIntersector4_1<TriangleNIntersectorMMoellerTrumbore<Ray4 COMMA Triangle4 COMMA false> > >);
 
-    DEFINE_INTERSECTOR4(BVH8Triangle8Intersector4HybridMoeller, BVH8Intersector4Hybrid<LeafIterator4_1<Triangle8Intersector4MoellerTrumbore<LeafMode COMMA true> > >);
-    DEFINE_INTERSECTOR4(BVH8Triangle8Intersector4HybridMoellerNoFilter, BVH8Intersector4Hybrid<LeafIterator4_1<Triangle8Intersector4MoellerTrumbore<LeafMode COMMA false> > >);
+    DEFINE_INTERSECTOR4(BVH8Triangle8Intersector4HybridMoeller, BVH8Intersector4Hybrid<ArrayIntersector4_1<TriangleNIntersectorMMoellerTrumbore<Ray4 COMMA Triangle8 COMMA true> > >);
+    DEFINE_INTERSECTOR4(BVH8Triangle8Intersector4HybridMoellerNoFilter, BVH8Intersector4Hybrid<ArrayIntersector4_1<TriangleNIntersectorMMoellerTrumbore<Ray4 COMMA Triangle8 COMMA false> > >);
   }
 }

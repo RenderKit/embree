@@ -14,6 +14,14 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
+#IF (TASKING_INTERNAL)
+  ADD_DEFINITIONS(-DTASKING_LOCKSTEP)
+#ELSE()
+#  ADD_DEFINITIONS(-DTASKING_TBB)
+#  INCLUDE_DIRECTORIES(${TBB_INCLUDE_DIRS_MIC})
+#  SET(ADDITIONAL_LIBRARIES ${TBB_LIBRARIES_MIC})
+#ENDIF()
+
 INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
 
 INCLUDE(icc_xeonphi)
@@ -22,16 +30,11 @@ ADD_DEFINITIONS(-D__TARGET_XEON_PHI__)
 
 ADD_ISPC_LIBRARY(embree_xeonphi ${EMBREE_LIB_TYPE}
 
-  ../../common/tasking/taskscheduler.cpp
-  ../../common/tasking/taskscheduler_sys.cpp
-  ../../common/tasking/taskscheduler_mic.cpp
-  ../../common/tasking/tasklogger.cpp
-  ../../common/tasking/tasksys.cpp
-
   ../common/stat.cpp 
   ../common/globals.cpp 
-  ../common/alloc.cpp 
   ../common/acceln.cpp
+  ../common/accelset.cpp
+  ../common/state.cpp
   ../common/rtcore.cpp 
   ../common/rtcore_ispc.cpp 
   ../common/rtcore_ispc.ispc 
@@ -39,6 +42,7 @@ ADD_ISPC_LIBRARY(embree_xeonphi ${EMBREE_LIB_TYPE}
   ../common/scene.cpp
   ../common/geometry.cpp
   ../common/scene_user_geometry.cpp
+  ../common/scene_instance.cpp
   ../common/scene_triangle_mesh.cpp
   ../common/scene_bezier_curves.cpp
   ../common/scene_subdiv_mesh.cpp
@@ -89,9 +93,8 @@ ADD_ISPC_LIBRARY(embree_xeonphi ${EMBREE_LIB_TYPE}
   bvh4hair/bvh4hair_intersector16_single.cpp
 )
 
-TARGET_LINK_LIBRARIES(embree_xeonphi sys_xeonphi simd_xeonphi)
-SET_TARGET_PROPERTIES(embree_xeonphi PROPERTIES
-  VERSION "${EMBREE_VERSION_MAJOR}.${EMBREE_VERSION_MINOR}.${EMBREE_VERSION_PATCH}"
-  SOVERSION ${EMBREE_VERSION_MAJOR}
-)
-INSTALL(TARGETS embree_xeonphi DESTINATION lib)
+TARGET_LINK_LIBRARIES(embree_xeonphi sys_xeonphi simd_xeonphi tasking_xeonphi lexers_xeonphi ${ADDITIONAL_LIBRARIES})
+
+SET_TARGET_PROPERTIES(embree_xeonphi PROPERTIES VERSION ${EMBREE_VERSION} SOVERSION ${EMBREE_VERSION_MAJOR})
+
+INSTALL(TARGETS embree_xeonphi LIBRARY DESTINATION lib COMPONENT libraries_xeonphi NAMELINK_SKIP)

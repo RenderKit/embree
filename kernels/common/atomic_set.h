@@ -32,10 +32,11 @@ namespace embree
     /*! set item */
     class item : public T
     {
+      ALIGNED_CLASS;
     public:
       
       /*! default constructor */
-      item () : next(NULL) {}
+      item () : next(nullptr) {}
 
     public:
       item* next;
@@ -48,7 +49,7 @@ namespace embree
 
       /*! default constructor */
      __forceinline  iterator () 
-        : root(NULL) {}
+        : root(nullptr) {}
 
       /*! initialize the iterator from a set */
       __forceinline iterator (atomic_set& other) 
@@ -67,7 +68,7 @@ namespace embree
       __forceinline bool try_take(item*& ptr) 
       {
         ptr = root;
-        if (ptr == NULL) return true;
+        if (ptr == nullptr) return true;
         return atomic_cmpxchg_ptr(&root,ptr,ptr->next) == ptr;
       }
   
@@ -126,16 +127,16 @@ namespace embree
   public:
 
      /*! default constructor */
-    __forceinline atomic_set () : root(NULL) {}
+    __forceinline atomic_set () : root(nullptr) {}
 
     /*! copy constructor */
     __forceinline atomic_set (const atomic_set& other) {
-      this->root = other.root; other.root = NULL;
+      this->root = other.root; other.root = nullptr;
     }
 
     /*! assignment operator */
     __forceinline atomic_set& operator=(const atomic_set& other) {
-      this->root = other.root; other.root = NULL;
+      this->root = other.root; other.root = nullptr;
       return *this;
     }
  
@@ -165,7 +166,7 @@ namespace embree
     /*! remove element from front of list */
     __forceinline item* take_unsafe()
     {
-      if (root == NULL) return NULL;
+      if (root == nullptr) return nullptr;
       item* cur = root;
       root = cur->next;
       return cur;
@@ -190,7 +191,7 @@ namespace embree
 
     __forceinline bool try_insert(item* ptr) 
     {
-      if (ptr == NULL) return true;
+      if (ptr == nullptr) return true;
       item* cur = root;
       ptr->next = cur;
       return atomic_cmpxchg_ptr(&root,cur,ptr) == cur;
@@ -199,7 +200,7 @@ namespace embree
     __forceinline bool try_take(item*& ptr) 
     {
       ptr = root;
-      if (ptr == NULL) return true;
+      if (ptr == nullptr) return true;
       return atomic_cmpxchg_ptr(&root,ptr,ptr->next) == ptr;
     }
 

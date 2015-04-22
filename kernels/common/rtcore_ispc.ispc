@@ -17,13 +17,16 @@
 #include "../../include/embree2/rtcore.isph" 
 
 #define size_tt int // FIXME: workaround of ISPC bug
+#define ssize_tt int // FIXME: workaround of ISPC bug
 
 extern "C" void ispcInit(const uniform int8* uniform cfg);
 extern "C" void ispcExit();
 extern "C" uniform RTCError ispcGetError ();
 extern "C" void ispcSetErrorFunction (void* uniform ptr);
+extern "C" void ispcSetMemoryMonitorFunction (void* uniform ptr);
 extern "C" void ispcDebug();
 extern "C" RTCScene ispcNewScene (uniform RTCSceneFlags flags, uniform RTCAlgorithmFlags aflags);
+extern "C" void ispcSetProgressMonitorFunction (RTCScene scene, void* uniform func, void* uniform ptr);
 extern "C" void ispcCommitScene (RTCScene scene);
 extern "C" void ispcCommitSceneThread (RTCScene scene, uniform unsigned int threadID, uniform unsigned int numThreads);
 extern "C" void ispcIntersect1 (RTCScene scene, uniform RTCRay1& ray);
@@ -111,6 +114,10 @@ void rtcSetErrorFunction(uniform RTC_ERROR_FUNCTION func) {
   ispcSetErrorFunction(func);
 }
 
+void rtcSetMemoryMonitorFunction(uniform RTC_MEMORY_MONITOR_FUNCTION func) {
+  ispcSetMemoryMonitorFunction(func);
+}
+
 void rtcDebug() {
   ispcDebug();
 }
@@ -126,6 +133,10 @@ RTCScene rtcNewScene (uniform RTCSceneFlags flags, uniform RTCAlgorithmFlags afl
       aflags = (uniform RTCAlgorithmFlags) ((aflags & ~RTC_INTERSECT_VARYING) | (1 << 3));
   }
   return ispcNewScene(flags,aflags);
+}
+
+void rtcSetProgressMonitorFunction(RTCScene scene, uniform RTC_PROGRESS_MONITOR_FUNCTION func, void* uniform ptr) {
+  ispcSetProgressMonitorFunction(scene,func,ptr);
 }
 
 void rtcCommit (RTCScene scene) {

@@ -17,17 +17,32 @@
 #pragma once
 
 #include "sys/platform.h"
-#include "sys/intrinsics.h"
+#include "constants.h"
 
-#define _USE_MATH_DEFINES
-#include <math.h>
-#include <cmath>
-#include <float.h>
 #include <emmintrin.h>
 #include <xmmintrin.h>
 
+#if defined(__WIN32__)
+#if (__MSV_VER <= 1700)
+namespace std
+{
+  __forceinline bool isinf ( const float x ) { return !_finite(x); }
+  __forceinline bool isnan ( const float x ) { return _isnan(x); }
+  __forceinline bool isfinite (const float x) { return _finite(x); }
+}
+#endif
+#endif
+
 namespace embree
 {
+  __forceinline int cast_f2i(float f) {
+    union { float f; int i; } v; v.f = f; return v.i;
+  }
+  
+  __forceinline float cast_i2f(int i) {
+    union { float f; int i; } v; v.i = i; return v.f;
+  }
+
 #if defined(__WIN32__)
   __forceinline bool finite ( const float x ) { return _finite(x) != 0; }
 #endif
@@ -130,28 +145,30 @@ namespace embree
   }
 #endif
 
-  __forceinline                    int min(int     a, int     b)                                       { return a<b? a:b; }
-  __forceinline                  int64 min(int64   a, int64   b)                                       { return a<b? a:b; }
-  __forceinline                 size_t min(size_t  a, size_t  b)                                       { return a<b? a:b; }
+  __forceinline     int min(int     a, int     b) { return a<b ? a:b; }
+  __forceinline   int64 min(int64   a, int64   b) { return a<b ? a:b; }
+  __forceinline  size_t min(size_t  a, size_t  b) { return a<b ? a:b; }
 #if !defined(__WIN32__)
-  __forceinline                ssize_t min(ssize_t a, ssize_t b)                                       { return a<b? a:b; }
+  __forceinline ssize_t min(ssize_t a, ssize_t b) { return a<b ? a:b; }
 #endif
-  __forceinline                  float min(float   a, float   b)                                       { return a<b? a:b; }
-  __forceinline                 double min(double  a, double  b)                                       { return a<b? a:b; }
-  template<typename T> __forceinline T min(const T& a, const T& b, const T& c)                         { return min(min(a,b),c); }
-  template<typename T> __forceinline T min(const T& a, const T& b, const T& c, const T& d)             { return min(min(a,b),min(c,d)); }
+  __forceinline   float min(float   a, float   b) { return a<b ? a:b; }
+  __forceinline  double min(double  a, double  b) { return a<b ? a:b; }
+
+  template<typename T> __forceinline T min(const T& a, const T& b, const T& c) { return min(min(a,b),c); }
+  template<typename T> __forceinline T min(const T& a, const T& b, const T& c, const T& d) { return min(min(a,b),min(c,d)); }
   template<typename T> __forceinline T min(const T& a, const T& b, const T& c, const T& d, const T& e) { return min(min(min(a,b),min(c,d)),e); }
 
-  __forceinline                    int max(int     a, int     b)                                       { return a<b? b:a; }
-  __forceinline                  int64 max(int64   a, int64   b)                                       { return a<b? b:a; }
-  __forceinline                 size_t max(size_t  a, size_t  b)                                       { return a<b? b:a; }
+  __forceinline     int max(int     a, int     b) { return a<b ? b:a; }
+  __forceinline   int64 max(int64   a, int64   b) { return a<b ? b:a; }
+  __forceinline  size_t max(size_t  a, size_t  b) { return a<b ? b:a; }
 #if !defined(__WIN32__)
-  __forceinline                ssize_t max(ssize_t a, ssize_t b)                                       { return a<b? b:a; }
+  __forceinline ssize_t max(ssize_t a, ssize_t b) { return a<b ? b:a; }
 #endif
-  __forceinline                  float max(float   a, float   b)                                       { return a<b? b:a; }
-  __forceinline                 double max(double  a, double  b)                                       { return a<b? b:a; }
-  template<typename T> __forceinline T max(const T& a, const T& b, const T& c)                         { return max(max(a,b),c); }
-  template<typename T> __forceinline T max(const T& a, const T& b, const T& c, const T& d)             { return max(max(a,b),max(c,d)); }
+  __forceinline   float max(float   a, float   b) { return a<b ? b:a; }
+  __forceinline  double max(double  a, double  b) { return a<b ? b:a; }
+
+  template<typename T> __forceinline T max(const T& a, const T& b, const T& c) { return max(max(a,b),c); }
+  template<typename T> __forceinline T max(const T& a, const T& b, const T& c, const T& d) { return max(max(a,b),max(c,d)); }
   template<typename T> __forceinline T max(const T& a, const T& b, const T& c, const T& d, const T& e) { return max(max(max(a,b),max(c,d)),e); }
 
   template<typename T> __forceinline T clamp(const T& x, const T& lower = T(zero), const T& upper = T(one)) { return max(min(x,upper),lower); }
@@ -170,16 +187,27 @@ namespace embree
 #else
   __forceinline float madd  ( const float a, const float b, const float c) { return a*b+c; }
   __forceinline float msub  ( const float a, const float b, const float c) { return a*b-c; }
-  __forceinline float nmadd ( const float a, const float b, const float c) { return -a*b-c;}
-  __forceinline float nmsub ( const float a, const float b, const float c) { return c-a*b; }
+  __forceinline float nmadd ( const float a, const float b, const float c) { return -a*b+c;}
+  __forceinline float nmsub ( const float a, const float b, const float c) { return -a*b-c; }
 #endif
 
   /*! random functions */
   template<typename T> T          random() { return T(0); }
+#if defined(_WIN32)
+  template<> __forceinline int    random() { return int(rand()) ^ (int(rand()) << 8) ^ (int(rand()) << 16); }
+  template<> __forceinline uint32 random() { return uint32(rand()) ^ (uint32(rand()) << 8) ^ (uint32(rand()) << 16); }
+#else
   template<> __forceinline int    random() { return int(rand()); }
-  template<> __forceinline uint32 random() { return uint32(rand()); }
+  template<> __forceinline uint32 random() { return uint32(rand()) ^ (uint32(rand()) << 16); }
+#endif
   template<> __forceinline float  random() { return random<uint32>()/float(RAND_MAX); }
   template<> __forceinline double random() { return random<uint32>()/double(RAND_MAX); }
+
+#if _WIN32
+  __forceinline double drand48() {
+    return double(rand())/double(RAND_MAX);
+  }
+#endif
 
   /*! selects */
   __forceinline bool  select(bool s, bool  t , bool f) { return s ? t : f; }
@@ -252,12 +280,4 @@ namespace embree
 
     return x | (y << 1) | (z << 2);
   }
-
-
-#if _WIN32
-  __forceinline double drand48() {
-    return double(rand())/double(RAND_MAX);
-  }
-#endif
-
 }

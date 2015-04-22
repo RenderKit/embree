@@ -15,12 +15,22 @@
 // ======================================================================== //
 
 #include "sys/platform.h"
-#include "tasking/taskscheduler.h"
+#include "kernels/algorithms/parallel_for.h" 
+
+#if defined(TASKING_LOCKSTEP)
+#include "tasking/taskscheduler_mic.h"
+#endif
+
+#if defined(TASKING_TBB_INTERNAL)
+#include "tasking/taskscheduler_tbb.h"
+#endif
 
 namespace embree
 {
   /* Signature of ispc-generated 'task' functions */
   typedef void (*TaskFuncType)(void* data, int threadIndex, int threadCount, int taskIndex, int taskCount);
+
+#if defined(TASKING_LOCKSTEP)
 
   struct ISPCTask
   {
@@ -49,18 +59,67 @@ namespace embree
     delete this;
   }
 
-  __dllexport void* ISPCAlloc(void** taskPtr, int64 size, int32 alignment) {
-    if (*taskPtr == NULL) *taskPtr = new TaskScheduler::EventSync;
-    return (char*)_mm_malloc(size,alignment);
+  extern "C" __dllexport void* ISPCAlloc(void** taskPtr, int64 size, int32 alignment) {
+    if (*taskPtr == nullptr) *taskPtr = new TaskScheduler::EventSync;
+    return (char*)_mm_malloc(size,alignment); 
   }
 
-  __dllexport void ISPCLaunch(void** taskPtr, void* func, void* data, int count) {      
+  extern "C" __dllexport void ISPCLaunch(void** taskPtr, void* func, void* data, int count) {      
     ISPCTask* ispcTask = new ISPCTask((TaskScheduler::Event*)(*taskPtr),(TaskFuncType)func,data,count);
     TaskScheduler::addTask(-1, TaskScheduler::GLOBAL_BACK, &ispcTask->task);
   }
   
-  __dllexport void ISPCSync(void* task) { // FIXME: for join other tasks would need threadIndex here
+  extern "C" __dllexport void ISPCSync(void* task) { // FIXME: for join other tasks would need threadIndex here
     ((TaskScheduler::EventSync*)task)->sync(); 
     delete (TaskScheduler::EventSync*)task;
   }
+
+#endif
+
+#if defined(TASKING_TBB) || defined(TASKING_TBB_INTERNAL)
+
+  extern "C" __dllexport void* ISPCAlloc(void** taskPtr, int64 size, int32 alignment) 
+  {
+    if (*taskPtr == nullptr) *taskPtr = new std::vector<void*>;
+    std::vector<void*>* lst = (std::vector<void*>*)(*taskPtr);
+    void* ptr = _mm_malloc(size,alignment);
+    lst->push_back(ptr);
+    return ptr;
+  }
+
+ extern "C" __dllexport void ISPCSync(void* task) 
+  {
+    std::vector<void*>* lst = (std::vector<void*>*)task;
+    for (size_t i=0; i<lst->size(); i++) _mm_free((*lst)[i]);
+    delete lst;
+  }
+
+#endif
+
+#if defined(TASKING_TBB)
+
+  extern "C" __dllexport void ISPCLaunch(void** taskPtr, void* func, void* data, int count) 
+  {      
+    parallel_for(size_t(0), size_t(count),[&] (const range<size_t>& r) {
+        const size_t threadIndex = tbb::task_arena::current_thread_index();
+        const size_t threadCount = tbb::task_scheduler_init::default_num_threads();
+        for (size_t i=r.begin(); i<r.end(); i++) ((TaskFuncType)func)(data,threadIndex,threadCount,i,count);
+      });
+  }
+#endif  
+ 
+
+#if defined(TASKING_TBB_INTERNAL)
+
+  extern "C" __dllexport void ISPCLaunch(void** taskPtr, void* func, void* data, int count) 
+  {      
+    parallel_for(size_t(0), size_t(count), [&] (const range<size_t>& r) {
+        const size_t threadIndex = TaskSchedulerTBB::thread()->threadIndex;
+        const size_t threadCount = TaskSchedulerTBB::threadCount();
+        for (size_t i=r.begin(); i<r.end(); i++) 
+          ((TaskFuncType)func)(data,threadIndex,threadCount,i,count);
+      });
+  }
+
+#endif
 }

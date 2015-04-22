@@ -73,6 +73,7 @@ Vec3f renderPixelUV(float x, float y, const uniform Vec3f& vx, const uniform Vec
 uniform unsigned int getNumHWThreads();
 
 #define ALIGNED_STRUCT
+#define __aligned(x) 
 
 struct Sample3f
 {
@@ -87,3 +88,8 @@ inline Sample3f make_Sample3f(const Vec3f v, const float pdf) { // FIXME: &
 /* noise functions */
 float noise(const Vec3fa& p);
 Vec3fa noise3D(const Vec3fa& p);
+
+/* draws progress bar */
+void progressStart();
+uniform bool progressMonitor(void* uniform ptr, const uniform double n);
+void progressEnd();

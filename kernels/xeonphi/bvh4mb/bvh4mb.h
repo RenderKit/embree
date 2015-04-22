@@ -86,10 +86,11 @@ namespace embree
   public:
 
     /*! BVH4 default constructor. */
-    BVH4mb (const PrimitiveType& primTy, void* geometry = NULL) : BVH4i(primTy,geometry)
+    BVH4mb (const PrimitiveType& primTy, void* geometry = nullptr) : BVH4i(primTy,geometry)
     {
     }
 
+    void clear() {}
 
     static Accel* BVH4mbTriangle1ObjectSplitBinnedSAH(Scene* scene);
 

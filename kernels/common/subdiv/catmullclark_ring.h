@@ -31,9 +31,10 @@ namespace embree
   {
     static const size_t MAX_FACE_VALENCE = SubdivMesh::MAX_RING_FACE_VALENCE;
     static const size_t MAX_EDGE_VALENCE = SubdivMesh::MAX_RING_EDGE_VALENCE;
-    
-    Vec3fa ring [MAX_EDGE_VALENCE];
-    float crease_weight[MAX_FACE_VALENCE];
+    static const size_t MAX_DEPTH_SUBDIVISION = 10;
+
+    array_t<Vec3fa,MAX_EDGE_VALENCE> ring ; // FIXME: also store size in these arrays for more accurate checks
+    array_t<float,MAX_FACE_VALENCE> crease_weight;
     
     int border_index;
     Vec3fa vtx;
@@ -131,9 +132,8 @@ namespace embree
       crease_weight[i/2] = p->edge_crease_weight;
       edge_level = vertex_level = p->edge_level;
       if (!p->hasOpposite()) crease_weight[i/2] = inf;
-
-
-      do // FIXME: assertions!?
+  
+      do
       {
         /* store first two vertices of face */
         p = p->next();
@@ -176,9 +176,11 @@ namespace embree
 
       edge_valence = i;
       face_valence = i >> 1;
+
+      assert( hasValidPositions() );
+
     }
-    
-    
+      
     __forceinline void subdivide(CatmullClark1Ring& dest) const
     {
       dest.noForcedSubdivision    = true;
@@ -215,12 +217,16 @@ namespace embree
       
       /* calculate new edge points */
       size_t num_creases = 0;
-      size_t crease_id[MAX_FACE_VALENCE];
+      array_t<size_t,MAX_FACE_VALENCE> crease_id;
       Vec3fa_t C = Vec3fa_t(0.0f);
       for (size_t i=0; i<face_valence; i++)
       {
-        // FIXME: NEED TO USE eval_start_index HERE !!!!"
-        size_t face_index = i;
+        ////////////////////////////////////////////////
+        size_t face_index = i + eval_start_index;
+        if (face_index >= face_valence) face_index -= face_valence;
+        ////////////////////////////////////////////////
+      
+        //size_t face_index = i;
         size_t index      = 2*face_index;
         size_t prev_index = face_index == 0 ? edge_valence-1 : 2*face_index-1;
         size_t next_index = 2*face_index+1;
@@ -308,8 +314,7 @@ namespace embree
      /* returns true if the vertex can be part of a dicable B-Spline patch or is a final Quad */
     __forceinline bool isRegularOrFinal(const size_t depth) const 
     {
-      if (depth < 10)
-      //if (vertex_level > 1.0f) 
+      if (depth < MAX_DEPTH_SUBDIVISION)
       {
 	if (border_index == -1) 
 	{
@@ -352,7 +357,7 @@ namespace embree
 	} 
 	else {
 	  if (face_valence == 2 && vertex_crease_weight > 1E5); // FIXME: use inf
-	  else if (face_valence == 3 && vertex_crease_weight == 0.0f);
+	  else if (face_valence == 3 && vertex_crease_weight == 0.0f); // FIXME: document
 	  else return false;
 	}
 
@@ -372,21 +377,29 @@ namespace embree
     /* returns true if the vertex can be part of a dicable gregory patch (using gregory patches) */
     __forceinline bool isGregoryOrFinal(const size_t depth) const 
     {
-      if (depth < 10)
-      //if (vertex_level > 1.0f) 
-      {
-	if (vertex_crease_weight > 0.0f) 
-	  return false;
-	
-	for (size_t i=1; i<face_valence; i++) 
-	  if (crease_weight[i] > 0.0f && (2*i != border_index) && (2*(i-1) != border_index)) 
-	    return false;
-	  
-       	if (crease_weight[0] > 0.0f && (2*(face_valence-1) != border_index)) 
-	  return false;
+      if (depth < MAX_DEPTH_SUBDIVISION && vertex_level > 1.0f )      
+	{
+          if (vertex_crease_weight == (float)pos_inf) return true;
 
-	if (!noForcedSubdivision)
-	  return false;
+	  if (vertex_crease_weight > 0.0f) 
+	      return false;
+	
+	  for (size_t i=1; i<face_valence; i++) 
+	    if (crease_weight[i] > 0.0f && (2*i != border_index) && (2*(i-1) != border_index)) 
+	      {
+		return false;
+	      }
+	  
+	  if (crease_weight[0] > 0.0f && (2*(face_valence-1) != border_index)) 
+	    {
+	      return false;
+	    }
+
+
+	  if (!noForcedSubdivision)
+	    {
+	      return false;
+	    }
       }
       return true;
     }
@@ -402,12 +415,15 @@ namespace embree
     /* computes the limit vertex */
     __forceinline Vec3fa getLimitVertex() const
     {
+      /* FIXME: is this correct ? */ 
+      if (unlikely(std::isinf(vertex_crease_weight)))
+        return vtx;
 
       /* border vertex rule */
       if (unlikely(border_index != -1))
       {
-	if (unlikely(std::isinf(vertex_crease_weight)))
-	  return vtx;
+	//if (unlikely(std::isinf(vertex_crease_weight)))
+        //return vtx;
 	
 	const unsigned int second_border_index = border_index+2 >= edge_valence ? 0 : border_index+2;
 	return (4.0f * vtx + (ring[border_index] + ring[second_border_index])) * 1.0f/6.0f;
@@ -442,11 +458,14 @@ namespace embree
     /* gets limit tangent in the direction of egde vtx -> ring[0] */
     __forceinline Vec3fa getLimitTangent() const 
     {
+      if (unlikely(std::isinf(vertex_crease_weight)))
+        return ring[0] - vtx;
+      
       /* border vertex rule */
       if (unlikely(border_index != -1))
       {
-	if (unlikely(std::isinf(vertex_crease_weight)))
-	  return ring[0] - vtx;
+	//if (unlikely(std::isinf(vertex_crease_weight)))
+        //return ring[0] - vtx;
 	
 	if (border_index != edge_valence-2 && face_valence != 2) {
 	  return ring[0] - vtx; 
@@ -495,12 +514,14 @@ namespace embree
     /* gets limit tangent in the direction of egde vtx -> ring[edge_valence-2] */
     __forceinline Vec3fa getSecondLimitTangent() const 
     {
-
+      if (unlikely(std::isinf(vertex_crease_weight)))
+        return ring[2] - vtx;
+ 
       /* border vertex rule */
       if (unlikely(border_index != -1))
       {
-        if (unlikely(std::isinf(vertex_crease_weight)))
-          return ring[2] - vtx;
+        //if (unlikely(std::isinf(vertex_crease_weight)))
+        //return ring[2] - vtx;
         
         //if (border_index == 0 && face_valence != 2) {
         if (border_index == edge_valence-2 && face_valence != 2) {
@@ -566,12 +587,22 @@ namespace embree
     __forceinline Vec3fa getEdgeCenter(const size_t index) const {
       return (vtx + ring[index*2]) * 0.5f;
     }
-    
+
+    bool hasValidPositions() const
+    {
+      for (size_t i=0; i<edge_valence; i++) {
+	if ( !isvalid(ring[i].x) ) return false;
+	if ( !isvalid(ring[i].y) ) return false;
+	if ( !isvalid(ring[i].z) ) return false;
+      }	
+      return true;
+    }
+
     friend __forceinline std::ostream &operator<<(std::ostream &o, const CatmullClark1Ring &c)
     {
       o << "vtx " << c.vtx << " size = " << c.edge_valence << ", " << 
 	"hard_edge = " << c.border_index << ", face_valence " << c.face_valence << 
-	", edge_level = " << c.edge_level << ", vertex_level = " << c.vertex_level << ", ring: " << std::endl;
+	", edge_level = " << c.edge_level << ", vertex_level = " << c.vertex_level << ", eval_start_index: " << c.eval_start_index << ", ring: " << std::endl;
       
       for (size_t i=0; i<c.edge_valence; i++) {
         o << i << " -> " << c.ring[i];
@@ -588,9 +619,9 @@ namespace embree
     static const size_t MAX_EDGE_VALENCE = SubdivMesh::MAX_RING_EDGE_VALENCE;
     
     Vec3fa vtx;
-    Vec3fa ring[MAX_EDGE_VALENCE]; 
-    int face_size[MAX_FACE_VALENCE];       // number of vertices-2 of nth face in ring
-    float crease_weight[MAX_FACE_VALENCE]; // FIXME: move into 4th component of ring entries
+    array_t<Vec3fa,MAX_EDGE_VALENCE> ring; 
+    array_t<int,MAX_FACE_VALENCE> face_size;       // number of vertices-2 of nth face in ring
+    array_t<float,MAX_FACE_VALENCE> crease_weight; // FIXME: move into 4th component of ring entries
     unsigned int face_valence;
     unsigned int edge_valence;
     int border_face;
@@ -608,6 +639,16 @@ namespace embree
     __forceinline bool has_second_face() const {
       return (border_face == -1) || (border_face >= 2);
     }
+
+    bool hasValidPositions() const
+    {
+      for (size_t i=0; i<edge_valence; i++) {
+	if ( !isvalid(ring[i].x) ) return false;
+	if ( !isvalid(ring[i].y) ) return false;
+	if ( !isvalid(ring[i].z) ) return false;
+      }	
+      return true;
+    }
     
     __forceinline void init(const SubdivMesh::HalfEdge* const h, const BufferT<Vec3fa>& vertices)
     {
@@ -621,7 +662,6 @@ namespace embree
       crease_weight[f] = p->edge_crease_weight;
       edge_level = vertex_level = p->edge_level;
       if (!p->hasOpposite()) crease_weight[f] = inf;
-      
       do 
       {
 	/* store first N-2 vertices of face */
@@ -638,7 +678,8 @@ namespace embree
 	face_size[f] = vn;
 	only_quads &= (vn == 2);
 	p = p_prev;
-	crease_weight[++f] = p->edge_crease_weight;
+	if (f+1 < MAX_FACE_VALENCE) //FIXME: is this right?
+	  crease_weight[++f] = p->edge_crease_weight;
 	vertex_level = max(vertex_level,p->edge_level);
 	
         /* continue with next face */
@@ -649,7 +690,7 @@ namespace embree
         else
         {
           /*! mark first border edge and store dummy vertex for face between the two border edges */
-	  assert(f < MAX_FACE_VALENCE);
+	  assert(f+1 < MAX_FACE_VALENCE);
           border_face = f;
 	  face_size[f] = 2;
           crease_weight[f] = inf; 
@@ -659,7 +700,8 @@ namespace embree
           e++;
 	  assert(e < MAX_EDGE_VALENCE);
           ring[e++] = vtx; // dummy vertex
-          crease_weight[++f] = inf;
+	  if (f+1 < MAX_FACE_VALENCE) //FIXME: is this right?
+	    crease_weight[++f] = inf;
 	  
           /*! goto other side of border */
           p = (SubdivMesh::HalfEdge*) h;
@@ -671,6 +713,8 @@ namespace embree
       
       edge_valence = e;
       face_valence = f;
+
+      assert( hasValidPositions() );
     }
     
     __forceinline void subdivide(CatmullClark1Ring& dest) const
@@ -694,7 +738,7 @@ namespace embree
       
       /* calculate new edge points */
       size_t num_creases = 0;
-      size_t crease_id[MAX_FACE_VALENCE];
+      array_t<size_t,MAX_FACE_VALENCE> crease_id;
       Vec3fa_t C = Vec3fa_t(0.0f);
       for (size_t i=0, j=0; i<face_valence; j+=face_size[i++])
       {
@@ -785,6 +829,8 @@ namespace embree
       for (size_t i=0; i<edge_valence; i++) dst.ring[i] = ring[i];
 
       dst.updateEvalStartIndex();
+
+      assert( dst.hasValidPositions() );
     }
     
     friend __forceinline std::ostream &operator<<(std::ostream &o, const GeneralCatmullClark1Ring &c)
@@ -801,4 +847,31 @@ namespace embree
       return o;
     } 
   };
+
+  __forceinline bool equalRingEval(CatmullClark1Ring& source, CatmullClark1Ring& dest) 
+    {
+      if (source.face_valence != dest.face_valence) return false;
+      if (source.edge_valence != dest.edge_valence) return false;
+      
+      size_t start_index_source = 2 * source.eval_start_index;
+      size_t start_index_dest   = 2 * dest.eval_start_index;
+      
+      for (size_t i=0;i<source.edge_valence;i++)
+        {
+          size_t index_source = (start_index_source + i) % source.edge_valence;
+          size_t index_dest   = (start_index_dest   + i) % source.edge_valence;          
+          if ( source.ring[index_source] != dest.ring[index_dest] )
+            {
+              PRINT(source.eval_start_index);
+              PRINT(dest.eval_start_index);              
+              PRINT(index_source);
+              PRINT(index_dest);
+              PRINT(source.ring[index_source]);
+              PRINT(dest.ring[index_dest]);
+              return false;              
+            }
+        }
+      return true;
+    }
+    
 }
