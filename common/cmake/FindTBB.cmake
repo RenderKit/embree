@@ -90,9 +90,9 @@ MARK_AS_ADVANCED(TBB_LIBRARY_MALLOC)
 
 IF (WIN32)
   INSTALL(PROGRAMS ${TBB_BINDIR}/tbb.dll ${TBB_BINDIR}/tbbmalloc.dll DESTINATION bin COMPONENT tutorials)
-  INSTALL(PROGRAMS ${TBB_BINDIR}/tbb.dll ${TBB_BINDIR}/tbbmalloc.dll DESTINATION lib COMPONENT library)
+  INSTALL(PROGRAMS ${TBB_BINDIR}/tbb.dll ${TBB_BINDIR}/tbbmalloc.dll DESTINATION lib COMPONENT libraries)
 ELSEIF (APPLE)
   # install TBB with libc++ linkage for MacOSX
   INSTALL(PROGRAMS ${TBB_ROOT}/lib/libc++/libtbb.dylib ${TBB_ROOT}/lib/libc++/libtbbmalloc.dylib DESTINATION bin COMPONENT tutorials)
-  INSTALL(PROGRAMS ${TBB_ROOT}/lib/libc++/libtbb.dylib ${TBB_ROOT}/lib/libc++/libtbbmalloc.dylib DESTINATION lib COMPONENT library)
+  INSTALL(PROGRAMS ${TBB_ROOT}/lib/libc++/libtbb.dylib ${TBB_ROOT}/lib/libc++/libtbbmalloc.dylib DESTINATION lib COMPONENT libraries)
 ENDIF()
