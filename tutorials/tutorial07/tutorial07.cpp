@@ -686,6 +686,9 @@ float noise(float x, float y, float z)
   /* main function in embree namespace */
   int main(int argc, char** argv) 
   {
+    /* for best performance set FTZ and DAZ flags in MXCSR control and status register */
+    _mm_setcsr(_mm_getcsr() | /* FTZ */ (1<<15) | /* DAZ */ (1<<6));
+
     g_camera.from = Vec3fa(3.21034f,0.320831f,-0.162478f);
     g_camera.to   = Vec3fa(2.57003f,0.524887f, 0.163145f);
 

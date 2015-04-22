@@ -15,10 +15,18 @@
 // ======================================================================== //
 
 #include <embree2/rtcore.h>
+#include <xmmintrin.h>
 
 int main(int argc, char* argv[])
 {
+  /* for best performance set FTZ and DAZ flags in MXCSR control and status register */
+  _mm_setcsr(_mm_getcsr() | /* FTZ */ (1<<15) | /* DAZ */ (1<<6));
+
+  /* initialize Embree */
   rtcInit("verbose=1");
+
+  /* cleanup Embree again */
   rtcExit();
+  
   return 0;
 }

@@ -166,14 +166,17 @@ namespace embree
     if (!(g_numThreads == 1 || (g_numThreads % 4) == 0))
       throw_RTCError(RTC_INVALID_OPERATION,"Xeon Phi supports only number of threads % 4 == 0, or threads == 1");
 #endif
-    
+
     if (State::instance()->verbosity(1))
     {
+      const bool hasFTZ = _mm_getcsr() & /*FTZ*/ (1<<15);
+      const bool hasDAZ = _mm_getcsr() & /*DAZ*/ (1<<6);
       std::cout << "Embree Ray Tracing Kernels " << __EMBREE_VERSION__ << " (" << __DATE__ << ")" << std::endl;
       std::cout << "  Compiler : " << getCompilerName() << std::endl;
       std::cout << "  Platform : " << getPlatformName() << std::endl;
       std::cout << "  CPU      : " << stringOfCPUModel(getCPUModel()) << " (" << getCPUVendor() << ")" << std::endl;
       std::cout << "  ISA      : " << stringOfCPUFeatures(getCPUFeatures()) << std::endl;
+      std::cout << "  MXCSR    : " << "FTZ=" << hasFTZ << ", DAZ=" << hasDAZ << std::endl;
       std::cout << "  Config   : ";
 #if defined(TASKING_TBB)
       std::cout << "TBB ";
@@ -228,6 +231,21 @@ namespace embree
     if (State::instance()->verbosity(2)) 
       State::instance()->print();
 
+    /* check of FTZ and DAZ flags are set in CSR */
+    const bool hasFTZ = _mm_getcsr() & /*FTZ*/ (1<<15);
+    const bool hasDAZ = _mm_getcsr() & /*DAZ*/ (1<<6);
+    if (!hasFTZ || !hasDAZ) {
+#if !defined(_DEBUG)
+      if (State::instance()->verbosity(1)) 
+#endif
+      {
+        std::cout << "WARNING: \"Flush to Zero\" or \"Denormals are Zero\" mode not enabled in the MXCSR control and status register. " << std::endl
+                  << "         This can have a severe performance impact. Please enable these modes for each application thread the following:" << std::endl
+                  << "           #include \"xmmintrin.h\"" << std::endl 
+                  << "           _mm_setcsr(_mm_getcsr() | /* FTZ */ (1<<15) | /* DAZ */ (1<<6));" << std::endl;
+      }
+    }
+
 #if defined(TASKING_LOCKSTEP)
     TaskScheduler::create(g_numThreads);
 #endif
@@ -237,7 +255,6 @@ namespace embree
 #endif
 
 #if defined(TASKING_TBB)
-    _mm_setcsr(_mm_getcsr() | /*FTZ:*/ (1<<15) | /*DAZ:*/ (1<<6)); // FIXME: this affects the application!
     if (g_numThreads == 0) {
       g_tbb_threads_initialized = false;
       g_numThreads = tbb::task_scheduler_init::default_num_threads();

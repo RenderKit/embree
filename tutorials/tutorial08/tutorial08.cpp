@@ -133,8 +133,11 @@ namespace embree
     cleanup();
   }
 
-  void main(int argc, char **argv) 
+  int main(int argc, char **argv) 
   {
+    /* for best performance set FTZ and DAZ flags in MXCSR control and status register */
+    _mm_setcsr(_mm_getcsr() | /* FTZ */ (1<<15) | /* DAZ */ (1<<6));
+
     std::cout << " === Possible cmd line options: -lazy, -pregenerate, -cache === " << std::endl;
 
     /* set default camera */
@@ -160,13 +163,14 @@ namespace embree
       initWindowState(argc,argv,tutorialName, g_width, g_height, g_fullscreen);
       enterWindowRunLoop();
     }
+    return 0;
   }
 }
 
 int main(int argc, char** argv) 
 {
   /*! Tutorial entry point. */
-  try { embree::main(argc, argv);  return(0); }
+  try { return embree::main(argc, argv); }
 
   /*! Known exception. */
   catch (const std::exception& e) { std::cout << "Error: " << e.what() << std::endl;  return(1); }
