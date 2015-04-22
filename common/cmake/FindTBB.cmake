@@ -35,6 +35,7 @@ IF (WIN32)
   ENDIF()
 
   SET(TBB_LIBDIR ${TBB_ROOT}/lib/${TBB_ARCH}/${TBB_VCVER})
+  SET(TBB_BINDIR ${TBB_ROOT}/bin/${TBB_ARCH}/${TBB_VCVER})
 
   FIND_PATH(TBB_INCLUDE_DIR tbb/task_scheduler_init.h PATHS ${TBB_ROOT}/include NO_DEFAULT_PATH)
   FIND_LIBRARY(TBB_LIBRARY tbb PATHS ${TBB_LIBDIR} NO_DEFAULT_PATH)
@@ -82,3 +83,16 @@ ENDIF()
 MARK_AS_ADVANCED(TBB_INCLUDE_DIR)
 MARK_AS_ADVANCED(TBB_LIBRARY)
 MARK_AS_ADVANCED(TBB_LIBRARY_MALLOC)
+
+##############################################################
+# Install TBB
+##############################################################
+
+IF (WIN32)
+  INSTALL(PROGRAMS ${TBB_BINDIR}/tbb.dll ${TBB_BINDIR}/tbbmalloc.dll DESTINATION bin COMPONENT tutorials)
+  INSTALL(PROGRAMS ${TBB_BINDIR}/tbb.dll ${TBB_BINDIR}/tbbmalloc.dll DESTINATION lib COMPONENT library)
+ELSEIF (APPLE)
+  # install TBB with libc++ linkage for MacOSX
+  INSTALL(PROGRAMS ${TBB_ROOT}/lib/libc++/libtbb.dylib ${TBB_ROOT}/lib/libc++/libtbbmalloc.dylib DESTINATION bin COMPONENT tutorials)
+  INSTALL(PROGRAMS ${TBB_ROOT}/lib/libc++/libtbb.dylib ${TBB_ROOT}/lib/libc++/libtbbmalloc.dylib DESTINATION lib COMPONENT library)
+ENDIF()

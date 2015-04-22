@@ -58,19 +58,6 @@ IF (ENABLE_INSTALLER)
 ENDIF()
 
 ##############################################################
-# Install TBB
-##############################################################
-
-IF (WIN32)
-  INSTALL(PROGRAMS ${TBB_LIBRARY} ${TBB_LIBRARY_MALLOC} DESTINATION bin COMPONENT tutorials)
-  INSTALL(PROGRAMS ${TBB_LIBRARY} ${TBB_LIBRARY_MALLOC} DESTINATION lib COMPONENT library)
-ELSEIF (APPLE)
-  # install TBB with libc++ linkage for MacOSX
-  INSTALL(PROGRAMS ${TBB_ROOT}/lib/libc++/libtbb.dylib ${TBB_ROOT}/lib/libc++/libtbbmalloc.dylib DESTINATION bin COMPONENT tutorials)
-  INSTALL(PROGRAMS ${TBB_ROOT}/lib/libc++/libtbb.dylib ${TBB_ROOT}/lib/libc++/libtbbmalloc.dylib DESTINATION lib COMPONENT library)
-ENDIF()
-
-##############################################################
 # CPack specific stuff
 ##############################################################
 
