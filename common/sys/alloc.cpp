@@ -36,7 +36,7 @@ namespace embree
   }
   
   void alignedFree(const void* ptr) {
-    _aligned_free((void*0ptr);
+    _aligned_free((void*)ptr);
   }
 
   // FIXME: implement large pages under Windows
