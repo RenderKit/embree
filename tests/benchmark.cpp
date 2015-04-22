@@ -906,6 +906,10 @@ namespace embree
   /* main function in embree namespace */
   int main(int argc, char** argv) 
   {
+    /* for best performance set FTZ and DAZ flags in MXCSR control and status register */
+    _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
+    _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
+
     create_benchmarks();
 
     /* parse command line */  
