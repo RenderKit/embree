@@ -123,7 +123,7 @@ namespace embree
   
   TaskSchedulerTBB::TaskSchedulerTBB(size_t numThreads, bool spinning)
     : threadCounter(numThreads), createThreads(true), terminate(false), anyTasksRunning(0), active(false), spinning(spinning),
-      task_set_function(nullptr)
+      task_set_function(nullptr), masterThread(0,this)
   {
     for (size_t i=0; i<MAX_THREADS; i++)
       threadLocal[i] = nullptr;
@@ -321,7 +321,7 @@ namespace embree
       if (executeTaskSet(thread))
         continue;
 #endif
-      
+
       /* work on available task */
       steal_loop(thread,
                  [&] () { return anyTasksRunning > 0; },
@@ -411,26 +411,27 @@ namespace embree
     for (size_t i=0; i<workingThreads; i++) 
       {
 	const size_t otherThreadIndex = thread_task_size[i].second;
-	if (!threadLocal[otherThreadIndex])
+        Thread* othread = threadLocal[otherThreadIndex];
+	if (!othread)
 	  continue;
       
-	if (threadLocal[otherThreadIndex]->tasks.steal(thread))
+	if (othread->tasks.steal(thread))
 	  return true;
       }    
     /* nothing found this time, do another round */
 
 #else	      
     for (size_t i=1; i<threadCount; i++) 
-      //for (size_t i=1; i<32; i++) 
     {
       __pause_cpu(32);
       size_t otherThreadIndex = threadIndex+i;
       if (otherThreadIndex >= threadCount) otherThreadIndex -= threadCount;
 
-      if (!threadLocal[otherThreadIndex])
+      Thread* othread = threadLocal[otherThreadIndex];
+      if (!othread)
         continue;
-      
-      if (threadLocal[otherThreadIndex]->tasks.steal(thread)) 
+
+      if (othread->tasks.steal(thread)) 
         return true;      
     }
 #endif	      
