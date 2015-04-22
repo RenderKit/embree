@@ -288,9 +288,12 @@ namespace embree
 
     
   }
-
-  void main(int argc, char **argv) 
+  
+  int main(int argc, char **argv) 
   {
+    /* for best performance set FTZ and DAZ flags in MXCSR control and status register */
+    _mm_setcsr(_mm_getcsr() | /* FTZ */ (1<<15) | /* DAZ */ (1<<6));
+
 #if defined(__USE_OPENSUBDIV__)
     mapKeyToFunction('t', toggleOpenSubdiv);
 #endif
@@ -345,16 +348,15 @@ namespace embree
       
       enterWindowRunLoop(g_anim_mode);
     }
-
+    return 0;
   }
-
 }
 
 
 int main(int argc, char** argv) {
 
   /*! Tutorial entry point. */
-  try { embree::main(argc, argv);  return(0); }
+  try { return embree::main(argc, argv); }
 
   /*! Known exception. */
   catch (const std::exception& e) { std::cout << "Error: " << e.what() << std::endl;  return(1); }

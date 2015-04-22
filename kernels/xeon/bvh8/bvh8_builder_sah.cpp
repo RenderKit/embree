@@ -33,9 +33,9 @@ namespace embree
   {
     typedef FastAllocator::ThreadLocal2 Allocator;
 
-    struct CreateAlloc
+    struct CreateBVH8Alloc
     {
-      __forceinline CreateAlloc (BVH8* bvh) : bvh(bvh) {}
+      __forceinline CreateBVH8Alloc (BVH8* bvh) : bvh(bvh) {}
       __forceinline Allocator* operator() () const { return bvh->alloc2.threadLocal2();  }
 
       BVH8* bvh;
@@ -64,9 +64,9 @@ namespace embree
     };
 
     template<typename Primitive>
-    struct CreateLeaf
+    struct CreateBVH8Leaf
     {
-      __forceinline CreateLeaf (BVH8* bvh, PrimRef* prims) : bvh(bvh), prims(prims) {}
+      __forceinline CreateBVH8Leaf (BVH8* bvh, PrimRef* prims) : bvh(bvh), prims(prims) {}
       
       __forceinline int operator() (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc)
       {
@@ -144,7 +144,7 @@ namespace embree
               pinfo = presplit<Mesh>(scene, pinfo, prims);
 	    BVH8::NodeRef root; 
             BVHBuilderBinnedSAH::build<BVH8::NodeRef>
-              (root,CreateAlloc(bvh),CreateBVH8Node(bvh),CreateLeaf<Primitive>(bvh,prims.data()), progress,
+              (root,CreateBVH8Alloc(bvh),CreateBVH8Node(bvh),CreateBVH8Leaf<Primitive>(bvh,prims.data()), progress,
                prims.data(),pinfo,BVH8::N,BVH8::maxBuildDepthLeaf,sahBlockSize,minLeafSize,maxLeafSize,BVH8::travCost,intCost);
 
             bvh->set(root,pinfo.geomBounds,pinfo.size());
@@ -208,9 +208,9 @@ namespace embree
     };
 
     template<typename Primitive>
-    struct CreateListLeaf
+    struct CreateBVH8ListLeaf
     {
-      __forceinline CreateListLeaf (BVH8* bvh) : bvh(bvh) {}
+      __forceinline CreateBVH8ListLeaf (BVH8* bvh) : bvh(bvh) {}
       
       __forceinline size_t operator() (BVHBuilderBinnedSpatialSAH::BuildRecord& current, Allocator* alloc) // FIXME: why are prims passed here but not for createNode
       {
@@ -360,7 +360,7 @@ namespace embree
 
 	    BVH8::NodeRef root;
             BVHBuilderBinnedSpatialSAH::build_reduce<BVH8::NodeRef>
-	      (root,CreateAlloc(bvh),size_t(0),CreateListBVH8Node(bvh),rotate,CreateListLeaf<Primitive>(bvh),
+	      (root,CreateBVH8Alloc(bvh),size_t(0),CreateListBVH8Node(bvh),rotate,CreateBVH8ListLeaf<Primitive>(bvh),
                [&] (const PrimRef& prim, int dim, float pos, PrimRef& left_o, PrimRef& right_o)
                {
                 TriangleMesh* mesh = (TriangleMesh*) scene->get(prim.geomID() & 0x00FFFFFF); 

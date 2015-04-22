@@ -262,6 +262,9 @@ namespace embree
   /* main function in embree namespace */
   int main(int argc, char** argv) 
   {
+    /* for best performance set FTZ and DAZ flags in MXCSR control and status register */
+    _mm_setcsr(_mm_getcsr() | /* FTZ */ (1<<15) | /* DAZ */ (1<<6));
+
     /* create stream for parsing */
     Ref<ParseStream> stream = new ParseStream(new CommandLineStream(argc, argv));
 

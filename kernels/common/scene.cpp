@@ -50,6 +50,8 @@ namespace embree
       flags = (RTCSceneFlags) State::instance()->scene_flags;
 
 #if defined(__MIC__)
+    needBezierVertices = true;
+
     accels.add( BVH4mb::BVH4mbTriangle1ObjectSplitBinnedSAH(this) );
     accels.add( BVH4i::BVH4iVirtualGeometryBinnedSAH(this, isRobust()));
     accels.add( BVH4Hair::BVH4HairBinnedSAH(this));
@@ -540,18 +542,37 @@ namespace embree
       return;
     }
 
+    /* for best performance set FTZ and DAZ flags in the MXCSR control and status register */
+#if !defined(__MIC__)
+    unsigned int mxcsr = _mm_getcsr();
+    _mm_setcsr(mxcsr | /* FTZ */ (1<<15) | /* DAZ */ (1<<6));
+#endif
+    
     try {
-      group->run([&]{ 
-          tbb::task::self().group()->set_priority(tbb::priority_high);
-          build_task();
-        }); 
+    
+      tbb::task_group_context ctx( tbb::task_group_context::isolated, tbb::task_group_context::default_traits | tbb::task_group_context::fp_settings );
+      ctx.set_priority(tbb::priority_high);
+
+      group->run([&]{
+        tbb::parallel_for (size_t(0), size_t(1), [&] (size_t) { build_task(); }, ctx);
+      }); 
       if (threadCount) group_barrier.wait(threadCount);
       group->wait();
+
+      /* reset MXCSR register again */
+#if !defined(__MIC__)
+      _mm_setcsr(mxcsr);
+#endif
     } 
     catch (...) {
+
+       /* reset MXCSR register again */
+#if !defined(__MIC__)
+    _mm_setcsr(mxcsr);
+#endif
+
       accels.clear();
       updateInterface();
-      // FIXME: clear cancelling state of task_group_context
       throw;
     }
   }

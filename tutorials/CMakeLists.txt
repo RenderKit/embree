@@ -17,7 +17,7 @@
 INCLUDE_DIRECTORIES     (${CMAKE_CURRENT_SOURCE_DIR}/common)
 INCLUDE_DIRECTORIES_ISPC(${CMAKE_CURRENT_SOURCE_DIR}/common)
 
-OPTION(TUTORIAL_USE_PTEX "Enables ptex texture support for tutorials.")
+#OPTION(TUTORIAL_USE_PTEX "Enables ptex texture support for tutorials.")
 
 IF (TUTORIAL_USE_PTEX)
   FIND_PACKAGE(Ptex REQUIRED)

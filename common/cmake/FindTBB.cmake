@@ -35,28 +35,31 @@ IF (WIN32)
   ENDIF()
 
   SET(TBB_LIBDIR ${TBB_ROOT}/lib/${TBB_ARCH}/${TBB_VCVER})
+  SET(TBB_BINDIR ${TBB_ROOT}/bin/${TBB_ARCH}/${TBB_VCVER})
 
-  FIND_PATH(TBB_INCLUDE_DIR tbb/task_scheduler_init.h PATHS ${TBB_ROOT}/include)
-  FIND_LIBRARY(TBB_LIBRARY tbb PATHS ${TBB_LIBDIR} NO_SYSTEM_ENVIRONMENT_PATH)
-  FIND_LIBRARY(TBB_LIBRARY_MALLOC tbbmalloc PATHS ${TBB_LIBDIR} NO_SYSTEM_ENVIRONMENT_PATH)
+  FIND_PATH(TBB_INCLUDE_DIR tbb/task_scheduler_init.h PATHS ${TBB_ROOT}/include NO_DEFAULT_PATH)
+  FIND_LIBRARY(TBB_LIBRARY tbb PATHS ${TBB_LIBDIR} NO_DEFAULT_PATH)
+  FIND_LIBRARY(TBB_LIBRARY_MALLOC tbbmalloc PATHS ${TBB_LIBDIR} NO_DEFAULT_PATH)
 
-  SET(TBB_DLLDIR ${TBB_ROOT}/../redist/${TBB_ARCH}/tbb/${TBB_VCVER})
-  INSTALL(PROGRAMS ${TBB_DLLDIR}/tbb.dll ${TBB_DLLDIR}/tbbmalloc.dll DESTINATION bin COMPONENT redist)
 ELSE ()
-  SET(TBB_ROOT /opt/intel/composerxe/tbb/ CACHE PATH "Root of TBB installation")
 
-  FIND_PATH(TBB_INCLUDE_DIR tbb/task_scheduler_init.h PATHS ${TBB_ROOT}/include)
+  FIND_PATH(TBB_ROOT include/tbb/task_scheduler_init.h
+    DOC "Root of TBB installation"
+    PATHS ${PROJECT_SOURCE_DIR}/tbb /opt/intel/composerxe/tbb
+  )
+
+  FIND_PATH(TBB_INCLUDE_DIR tbb/task_scheduler_init.h PATHS ${TBB_ROOT}/include NO_DEFAULT_PATH)
   IF (APPLE)
-    FIND_LIBRARY(TBB_LIBRARY tbb PATHS ${TBB_ROOT}/lib)
-    FIND_LIBRARY(TBB_LIBRARY_MALLOC tbbmalloc PATHS ${TBB_ROOT}/lib)
+    FIND_LIBRARY(TBB_LIBRARY tbb PATHS ${TBB_ROOT}/lib NO_DEFAULT_PATH)
+    FIND_LIBRARY(TBB_LIBRARY_MALLOC tbbmalloc PATHS ${TBB_ROOT}/lib NO_DEFAULT_PATH)
   ELSE()
     FIND_LIBRARY(TBB_LIBRARY tbb PATHS ${TBB_ROOT}/lib/intel64/gcc4.4)
     FIND_LIBRARY(TBB_LIBRARY_MALLOC tbbmalloc PATHS ${TBB_ROOT}/lib/intel64/gcc4.4)
   ENDIF()
 
-  FIND_PATH(TBB_INCLUDE_DIR_MIC tbb/task_scheduler_init.h NO_DEFAULT_PATH PATHS ${TBB_ROOT}/include)
-  FIND_LIBRARY(TBB_LIBRARY_MIC tbb NO_DEFAULT_PATH PATHS ${TBB_ROOT}/lib/mic)
-  FIND_LIBRARY(TBB_LIBRARY_MALLOC_MIC tbbmalloc NO_DEFAULT_PATH PATHS ${TBB_ROOT}/lib/mic)
+  FIND_PATH(TBB_INCLUDE_DIR_MIC tbb/task_scheduler_init.h PATHS ${TBB_ROOT}/include NO_DEFAULT_PATH)
+  FIND_LIBRARY(TBB_LIBRARY_MIC tbb PATHS ${TBB_ROOT}/lib/mic NO_DEFAULT_PATH)
+  FIND_LIBRARY(TBB_LIBRARY_MALLOC_MIC tbbmalloc PATHS ${TBB_ROOT}/lib/mic NO_DEFAULT_PATH)
 
   MARK_AS_ADVANCED(TBB_INCLUDE_DIR_MIC)
   MARK_AS_ADVANCED(TBB_LIBRARY_MIC)
@@ -80,3 +83,16 @@ ENDIF()
 MARK_AS_ADVANCED(TBB_INCLUDE_DIR)
 MARK_AS_ADVANCED(TBB_LIBRARY)
 MARK_AS_ADVANCED(TBB_LIBRARY_MALLOC)
+
+##############################################################
+# Install TBB
+##############################################################
+
+IF (WIN32)
+  INSTALL(PROGRAMS ${TBB_BINDIR}/tbb.dll ${TBB_BINDIR}/tbbmalloc.dll DESTINATION bin COMPONENT tutorials)
+  INSTALL(PROGRAMS ${TBB_BINDIR}/tbb.dll ${TBB_BINDIR}/tbbmalloc.dll DESTINATION lib COMPONENT libraries)
+ELSEIF (APPLE)
+  # install TBB with libc++ linkage for MacOSX
+  INSTALL(PROGRAMS ${TBB_ROOT}/lib/libc++/libtbb.dylib ${TBB_ROOT}/lib/libc++/libtbbmalloc.dylib DESTINATION bin COMPONENT tutorials)
+  INSTALL(PROGRAMS ${TBB_ROOT}/lib/libc++/libtbb.dylib ${TBB_ROOT}/lib/libc++/libtbbmalloc.dylib DESTINATION lib COMPONENT libraries)
+ENDIF()

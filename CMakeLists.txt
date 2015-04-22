@@ -31,21 +31,6 @@ CONFIGURE_FILE(
 )
 INCLUDE_DIRECTORIES("${PROJECT_BINARY_DIR}")
 
-
-IF (WIN32)
-  SET(DOC_INSTALL_DIR doc)
-  SET(TUTORIALS_INSTALL_DIR bin)
-  SET(UTILITIES_INSTALL_DIR bin)
-ELSEIF (APPLE)
-  SET(DOC_INSTALL_DIR ../Applications/embree-${EMBREE_VERSION}/documentation)
-  SET(TUTORIALS_INSTALL_DIR ../Applications/embree-${EMBREE_VERSION}/tutorials)
-  SET(UTILITIES_INSTALL_DIR ../Applications/embree-${EMBREE_VERSION}/tutorials)
-ELSE()
-  SET(DOC_INSTALL_DIR share/doc/embree-${EMBREE_VERSION})
-  SET(TUTORIALS_INSTALL_DIR bin)
-  SET(UTILITIES_INSTALL_DIR bin)
-ENDIF()
-
 IF(COMMAND cmake_policy)
   if (POLICY CMP0003)
     cmake_policy(SET CMP0003 NEW)
@@ -291,27 +276,6 @@ IF (ENABLE_TUTORIALS)
     ADD_SUBDIRECTORY(tests tests_xeonphi)
   ENDIF ()
 ENDIF()
-
-##############################################################
-# Install Headers
-##############################################################
-INSTALL(DIRECTORY include/embree2 DESTINATION include COMPONENT headers)
-
-##############################################################
-# Install Embree CMake Configuration
-##############################################################
-IF (WIN32)
-  CONFIGURE_FILE("common/cmake/embree-config-windows.cmake" "embree-config.cmake" @ONLY)
-ELSEIF (APPLE)
-  CONFIGURE_FILE("common/cmake/embree-config-macosx.cmake" "embree-config.cmake" @ONLY)
-ELSE()
-  CONFIGURE_FILE("common/cmake/embree-config-linux.cmake" "embree-config.cmake" @ONLY)
-ENDIF()
-
-CONFIGURE_FILE("common/cmake/embree-config-version.cmake" "embree-config-version.cmake" @ONLY)
-
-INSTALL(FILES "${PROJECT_BINARY_DIR}/embree-config.cmake" DESTINATION "lib/cmake/embree-${EMBREE_VERSION}" COMPONENT libraries)
-INSTALL(FILES "${PROJECT_BINARY_DIR}/embree-config-version.cmake" DESTINATION "lib/cmake/embree-${EMBREE_VERSION}" COMPONENT libraries)
 
 ##############################################################
 # Documentation

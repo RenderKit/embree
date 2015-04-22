@@ -19,8 +19,6 @@
 
 #if defined(USE_PTEX)
 #include "Ptexture.h"
-#else
-#warning no ptex
 #endif
 
 #include <map>
@@ -34,7 +32,6 @@ namespace embree
       x /= 2;
     return (x == 1);
   }
-#if defined(USE_PTEX)
 
   /*! read png texture from disk */
   OBJScene::Texture *loadTexture(const FileName& fileName)
@@ -54,7 +51,7 @@ namespace embree
     return texture;
   }
   
-  //ptex_file* loadPtexFile(const FileName &filename) { return nullptr; }
+#if defined(USE_PTEX)
 
   static std::map<std::string, ptex_file*> ptex_files;
 
@@ -147,9 +144,6 @@ namespace embree
 
 	assert(obj_face_id < tex->numFaces());
 	data->diffuse[obj_face_id].move_from(subtex);
-	//PRINT(data->diffuse[obj_face_id].w);
-	//PRINT(data->diffuse[obj_face_id].h);
-	//PRINT(obj_face_id);
 	ptex_face_id++;
 	obj_face_id++;
       }

@@ -14,19 +14,34 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include <embree2/rtcore.h>
-#include <xmmintrin.h>
+#pragma once
 
-int main(int argc, char* argv[])
+#include "object.h"
+#include "common/ray8.h"
+
+namespace embree
 {
-  /* for best performance set FTZ and DAZ flags in MXCSR control and status register */
-  _mm_setcsr(_mm_getcsr() | /* FTZ */ (1<<15) | /* DAZ */ (1<<6));
-
-  /* initialize Embree */
-  rtcInit("verbose=1");
-
-  /* cleanup Embree again */
-  rtcExit();
-  
-  return 0;
+  namespace isa
+  {
+    struct ObjectIntersector8
+    {
+      typedef Object Primitive;
+      
+      struct Precalculations {
+        __forceinline Precalculations (const avxb& valid, const Ray8& ray) {}
+      };
+      
+      static __forceinline void intersect(const avxb& valid_i, const Precalculations& pre, Ray8& ray, const Primitive& prim, Scene* scene) {
+        // FIXME: add ray mask test
+        prim.accel->intersect8(&valid_i,(RTCRay8&)ray,prim.item);
+      }
+      
+      static __forceinline avxb occluded(const avxb& valid_i, const Precalculations& pre, const Ray8& ray, const Primitive& prim, Scene* scene) 
+      {
+        // FIXME: add ray mask test
+        prim.accel->occluded8(&valid_i,(RTCRay8&)ray,prim.item);
+        return ray.geomID == 0;
+      }
+    };
+  }
 }

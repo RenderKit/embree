@@ -39,9 +39,9 @@ namespace embree
   {
     typedef FastAllocator::ThreadLocal2 Allocator;
 
-    struct CreateAlloc
+    struct CreateBVH4Alloc
     {
-      __forceinline CreateAlloc (BVH4* bvh) : bvh(bvh) {}
+      __forceinline CreateBVH4Alloc (BVH4* bvh) : bvh(bvh) {}
       __forceinline Allocator* operator() () const { return bvh->alloc.threadLocal2();  }
 
       BVH4* bvh;
@@ -66,9 +66,9 @@ namespace embree
     };
 
     template<typename Primitive>
-    struct CreateLeaf
+    struct CreateBVH4Leaf
     {
-      __forceinline CreateLeaf (BVH4* bvh, PrimRef* prims) : bvh(bvh), prims(prims) {}
+      __forceinline CreateBVH4Leaf (BVH4* bvh, PrimRef* prims) : bvh(bvh), prims(prims) {}
       
       __forceinline size_t operator() (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc)
       {
@@ -167,7 +167,7 @@ namespace embree
 
 	    BVH4::NodeRef root;
             BVHBuilderBinnedSAH::build_reduce<BVH4::NodeRef>
-	      (root,CreateAlloc(bvh),size_t(0),CreateBVH4Node(bvh),rotate,CreateLeaf<Primitive>(bvh,prims.data()),progress,
+	      (root,CreateBVH4Alloc(bvh),size_t(0),CreateBVH4Node(bvh),rotate,CreateBVH4Leaf<Primitive>(bvh,prims.data()),progress,
 	       prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,sahBlockSize,minLeafSize,maxLeafSize,BVH4::travCost,intCost);
 	    bvh->set(root,pinfo.geomBounds,pinfo.size());
 
@@ -240,9 +240,9 @@ namespace embree
     };
 
     template<typename Primitive>
-    struct CreateListLeaf
+    struct CreateBVH4ListLeaf
     {
-      __forceinline CreateListLeaf (BVH4* bvh) : bvh(bvh) {}
+      __forceinline CreateBVH4ListLeaf (BVH4* bvh) : bvh(bvh) {}
       
       __forceinline size_t operator() (BVHBuilderBinnedSpatialSAH::BuildRecord& current, Allocator* alloc)
       {
@@ -405,7 +405,7 @@ namespace embree
 
 	    BVH4::NodeRef root;
             BVHBuilderBinnedSpatialSAH::build_reduce<BVH4::NodeRef>
-	      (root,CreateAlloc(bvh),size_t(0),CreateListBVH4Node(bvh),rotate,CreateListLeaf<Primitive>(bvh),
+	      (root,CreateBVH4Alloc(bvh),size_t(0),CreateListBVH4Node(bvh),rotate,CreateBVH4ListLeaf<Primitive>(bvh),
                [&] (const PrimRef& prim, int dim, float pos, PrimRef& left_o, PrimRef& right_o)
                {
                 TriangleMesh* mesh = (TriangleMesh*) scene->get(prim.geomID() & 0x00FFFFFF); 
@@ -471,9 +471,9 @@ namespace embree
     };
 
     template<typename Primitive>
-    struct CreateLeafMB
+    struct CreateBVH4LeafMB
     {
-      __forceinline CreateLeafMB (BVH4* bvh, PrimRef* prims) : bvh(bvh), prims(prims) {}
+      __forceinline CreateBVH4LeafMB (BVH4* bvh, PrimRef* prims) : bvh(bvh), prims(prims) {}
       
       __forceinline std::pair<BBox3fa,BBox3fa> operator() (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc)
       {
@@ -555,7 +555,7 @@ namespace embree
               : createPrimRefArray<Mesh,2>(scene,prims,virtualprogress);
 	    BVH4::NodeRef root;
             BVHBuilderBinnedSAH::build_reduce<BVH4::NodeRef>
-	      (root,CreateAlloc(bvh),identity,CreateBVH4NodeMB(bvh),reduce,CreateLeafMB<Primitive>(bvh,prims.data()),progress,
+	      (root,CreateBVH4Alloc(bvh),identity,CreateBVH4NodeMB(bvh),reduce,CreateBVH4LeafMB<Primitive>(bvh,prims.data()),progress,
 	       prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,sahBlockSize,minLeafSize,maxLeafSize,BVH4::travCost,intCost);
 	    bvh->set(root,pinfo.geomBounds,pinfo.size());
             

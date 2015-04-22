@@ -12,7 +12,7 @@ set DESTDIR=
 mkdir build
 cd build
 del CMakeCache.txt rem make sure to use default settings
-cmake -D CMAKE_INSTALL_PREFIX=%destroot%\x64 -D COMPILER=ICC -G "Visual Studio 12 2013 Win64" ..
+cmake -D CMAKE_INSTALL_PREFIX=%destroot%\x64 -D COMPILER=ICC -D USE_IMAGE_MAGICK=OFF -D USE_LIBJPEG=OFF -D USE_LIBPNG=OFF -D USE_OPENEXR=OFF -G "Visual Studio 12 2013 Win64" ..
 ICProjConvert150 embree.sln /IC /s /f
 if %ERRORLEVEL%==9009 (
   echo Problems converting the project to ICC, aborting

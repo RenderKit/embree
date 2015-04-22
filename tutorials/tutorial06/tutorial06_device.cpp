@@ -856,6 +856,7 @@ void displacementFunction(void* ptr, unsigned int geomID, int unsigned primID,
                       float* pz,           /*!< z coordinates of points to displace (source and target) */
                       size_t N)
 {
+#if defined(USE_PTEX)
   ISPCSubdivMesh* mesh = (ISPCSubdivMesh*)geomID_to_mesh[geomID];
   int materialID = mesh->materialID;
   int numMaterials = g_ispc_scene->numMaterials;
@@ -869,6 +870,7 @@ void displacementFunction(void* ptr, unsigned int geomID, int unsigned primID,
 	py[i] += ny[i] * displ;
 	pz[i] += nz[i] * displ;
       }
+#endif
 }
 
 /* error reporting function */
