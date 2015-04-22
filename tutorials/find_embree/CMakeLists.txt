@@ -14,11 +14,11 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-PROJECT(embreeinfo)
+PROJECT(find_embree)
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8.11)
 
 FIND_PACKAGE(embree 2.0 REQUIRED)
 INCLUDE_DIRECTORIES(${EMBREE_INCLUDE_DIRS})
 
-ADD_EXECUTABLE(embreeinfo embreeinfo.cpp)
-TARGET_LINK_LIBRARIES(embreeinfo ${EMBREE_LIBRARY})
+ADD_EXECUTABLE(find_embree find_embree.cpp)
+TARGET_LINK_LIBRARIES(find_embree ${EMBREE_LIBRARY})
