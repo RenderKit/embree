@@ -223,7 +223,7 @@ namespace embree
 
   Accel* BVH8::BVH8Triangle4(Scene* scene)
   { 
-    BVH8* accel = new BVH8(Triangle4Type::type,scene);
+    BVH8* accel = new BVH8(Triangle4::type,scene);
     Accel::Intersectors intersectors= BVH8Triangle4Intersectors(accel);
     
     Builder* builder = nullptr;
@@ -238,7 +238,7 @@ namespace embree
 
   Accel* BVH8::BVH8Triangle4ObjectSplit(Scene* scene)
   {
-    BVH8* accel = new BVH8(Triangle4Type::type,scene);
+    BVH8* accel = new BVH8(Triangle4::type,scene);
     Accel::Intersectors intersectors= BVH8Triangle4Intersectors(accel);
     Builder* builder = BVH8Triangle4SceneBuilderSAH(accel,scene,0);
     return new AccelInstance(accel,builder,intersectors);
@@ -246,7 +246,7 @@ namespace embree
 
   Accel* BVH8::BVH8Triangle4SpatialSplit(Scene* scene)
   {
-    BVH8* accel = new BVH8(Triangle4Type::type,scene);
+    BVH8* accel = new BVH8(Triangle4::type,scene);
     Accel::Intersectors intersectors= BVH8Triangle4Intersectors(accel);
     Builder* builder = BVH8Triangle4SceneBuilderSpatialSAH(accel,scene,0);
     return new AccelInstance(accel,builder,intersectors);
@@ -254,7 +254,7 @@ namespace embree
 
   Accel* BVH8::BVH8Triangle8(Scene* scene)
   { 
-    BVH8* accel = new BVH8(Triangle8Type::type,scene);
+    BVH8* accel = new BVH8(Triangle8::type,scene);
     Accel::Intersectors intersectors= BVH8Triangle8Intersectors(accel);
     
     Builder* builder = nullptr;
@@ -269,7 +269,7 @@ namespace embree
 
   Accel* BVH8::BVH8Triangle8ObjectSplit(Scene* scene)
   {
-    BVH8* accel = new BVH8(Triangle8Type::type,scene);
+    BVH8* accel = new BVH8(Triangle8::type,scene);
     Accel::Intersectors intersectors= BVH8Triangle8Intersectors(accel);
     Builder* builder = BVH8Triangle8SceneBuilderSAH(accel,scene,0);
     return new AccelInstance(accel,builder,intersectors);
@@ -277,7 +277,7 @@ namespace embree
 
   Accel* BVH8::BVH8Triangle8SpatialSplit(Scene* scene)
   {
-    BVH8* accel = new BVH8(Triangle8Type::type,scene);
+    BVH8* accel = new BVH8(Triangle8::type,scene);
     Accel::Intersectors intersectors= BVH8Triangle8Intersectors(accel);
     Builder* builder = BVH8Triangle8SceneBuilderSpatialSAH(accel,scene,0);
     return new AccelInstance(accel,builder,intersectors);

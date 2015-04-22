@@ -14,22 +14,20 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "triangle4v.h"
-#include "common/scene.h"
+#pragma once
+
+#include "common/default.h"
 
 namespace embree
 {
-  Triangle4vType Triangle4vType::type;
-  TriangleMeshTriangle4v TriangleMeshTriangle4v::type;
+#if defined(__SSE__)
+  extern ssef sse_coeff0[4];
+  extern ssef sse_coeff1[4];
+#endif
 
-  Triangle4vType::Triangle4vType () 
-  : PrimitiveType("triangle4v",sizeof(Triangle4v),4,false,1) {} 
-  
-  size_t Triangle4vType::blocks(size_t x) const {
-    return (x+3)/4;
-  }
-  
-  size_t Triangle4vType::size(const char* This) const {
-    return ((Triangle4v*)This)->size();
-  }
+#if defined(__AVX__)
+  extern avxf coeff0[4];
+  extern avxf coeff1[4];
+#endif
 }
+

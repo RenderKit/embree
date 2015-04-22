@@ -137,7 +137,7 @@ namespace embree
 
                 
 		    const Geometry* const geom = scene->get(geomID);
-		    if (likely(!geom->hasIntersectionFilter16())) 
+		    if (likely(!geom->hasIntersectionFilter<mic_f>())) 
 		      {
 
 			compactustore16f_low(m_tri,&ray16.tfar[rayIndex],min_dist);
@@ -301,7 +301,7 @@ namespace embree
 		const mic_f gnormaly(normal[triIndex*4+2]);
 		const mic_f gnormalz(normal[triIndex*4+0]);
 
-		if (likely(!geom->hasOcclusionFilter16())) break;
+		if (likely(!geom->hasOcclusionFilter<mic_f>())) break;
                 
 		if (runOcclusionFilter16(geom,(Ray16&)ray16,rayIndex,u,v,min_dist,gnormalx,gnormaly,gnormalz,m_tri,geomID,primID)) 
 		  break;
@@ -416,7 +416,7 @@ namespace embree
 	      {
 
 		Geometry* geom = ((Scene*)scene)->get(tri.geomID());
-		if (unlikely(geom->hasIntersectionFilter16())) {
+		if (unlikely(geom->hasIntersectionFilter<mic_f>())) {
 		  runIntersectionFilter16(valid,geom,ray16,u,v,t,Ng,geomID,primID);
 		  continue;
 		}
@@ -508,7 +508,7 @@ namespace embree
 		const int geomID = tri.geomID();
 		const int primID = tri.primID();
 		const Geometry* geom = scene->get(geomID);
-		if (unlikely(geom->hasOcclusionFilter16()))
+		if (unlikely(geom->hasOcclusionFilter<mic_f>()))
 		  valid = runOcclusionFilter16(valid,geom,(Ray16&)ray16,u,v,t,Ng,geomID,primID);
 	      }
 	    /* update occlusion */

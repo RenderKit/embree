@@ -41,8 +41,6 @@ namespace embree
     __forceinline explicit avxf( const ssef& a                ) : m256(_mm256_insertf128_ps(_mm256_castps128_ps256(a),a,1)) {}
     __forceinline          avxf( const ssef& a, const ssef& b ) : m256(_mm256_insertf128_ps(_mm256_castps128_ps256(a),b,1)) {}
 
-    static __forceinline avxf load( const void* const ptr ) { return *(__m256*)ptr; }
-
     __forceinline explicit avxf( const char* const a ) : m256(_mm256_loadu_ps((const float*)a)) {}
     __forceinline          avxf( const float&       a ) : m256(_mm256_broadcast_ss(&a)) {}
     __forceinline          avxf( float a, float b) : m256(_mm256_set_ps(b, a, b, a, b, a, b, a)) {}
@@ -70,12 +68,42 @@ namespace embree
       return _mm256_broadcast_ss((float*)a); 
     }
 
+    static __forceinline const avxf broadcast4f(const void* ptr) { // FIXME: ssef input type?
+      return _mm256_broadcast_ps((__m128*)ptr); 
+    }
+
     static __forceinline avxf load( const unsigned char* const ptr ) { 
 #if defined(__AVX2__)
       return _mm256_cvtepi32_ps(_mm256_cvtepu8_epi32(_mm_loadu_si128((__m128i*)ptr)));
 #else
       return avxf(ssef::load(ptr),ssef::load(ptr+4));
 #endif
+    }
+      
+    static __forceinline avxf load( const float* const a) { 
+      return _mm256_load_ps(a); 
+    }
+    
+    static __forceinline void store(avxf* ptr, const avxf& f ) { 
+      return _mm256_store_ps((float*)ptr,f);
+    }
+    
+    static __forceinline void storeu(float* ptr, const avxf& f ) { 
+      return _mm256_storeu_ps(ptr,f);
+    }
+    
+    static __forceinline void store( const avxb& mask, avxf* ptr, const avxf& f ) { 
+      return _mm256_maskstore_ps((float*)ptr,(__m256i)mask,f);
+    }
+    
+#if defined (__AVX2__)
+    static __forceinline avxf load_nt(void* ptr) {
+      return _mm256_castsi256_ps(_mm256_stream_load_si256((__m256i*)ptr));
+    }
+#endif
+    
+    static __forceinline void store_nt(float* ptr, const avxf& v) {
+      _mm256_stream_ps(ptr,v);
     }
 
     ////////////////////////////////////////////////////////////////////////////////

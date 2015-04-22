@@ -95,9 +95,9 @@ namespace embree
       }
       return true;
     }
-    
-    __forceinline sseb runIntersectionFilter4(const sseb& valid, const Geometry* const geometry, Ray4& ray, 
-                                              const ssef& u, const ssef& v, const ssef& t, const sse3f& Ng, const int geomID, const int primID)
+
+    __forceinline sseb runIntersectionFilter(const sseb& valid, const Geometry* const geometry, Ray4& ray, 
+                                             const ssef& u, const ssef& v, const ssef& t, const sse3f& Ng, const int geomID, const int primID)
     {
       /* temporarily update hit information */
       const ssef ray_u = ray.u;           store4f(valid,&ray.u,u);
@@ -132,8 +132,8 @@ namespace embree
       return valid_passed;
     }
     
-    __forceinline sseb runOcclusionFilter4(const sseb& valid, const Geometry* const geometry, Ray4& ray, 
-                                           const ssef& u, const ssef& v, const ssef& t, const sse3f& Ng, const int geomID, const int primID)
+    __forceinline sseb runOcclusionFilter(const sseb& valid, const Geometry* const geometry, Ray4& ray, 
+                                          const ssef& u, const ssef& v, const ssef& t, const sse3f& Ng, const int geomID, const int primID)
     {
       /* temporarily update hit information */
       const ssef ray_tfar = ray.tfar; 
@@ -161,8 +161,8 @@ namespace embree
       return valid_passed;
     }
     
-    __forceinline bool runIntersectionFilter4(const Geometry* const geometry, Ray4& ray, const size_t k,
-                                              const float& u, const float& v, const float& t, const Vec3fa& Ng, const int geomID, const int primID)
+    __forceinline bool runIntersectionFilter(const Geometry* const geometry, Ray4& ray, const size_t k,
+                                             const float& u, const float& v, const float& t, const Vec3fa& Ng, const int geomID, const int primID)
     {
       /* temporarily update hit information */
       const ssef ray_u = ray.u;           ray.u[k] = u;
@@ -196,8 +196,8 @@ namespace embree
       return passed;
     }
     
-    __forceinline bool runOcclusionFilter4(const Geometry* const geometry, Ray4& ray, const size_t k,
-                                           const float& u, const float& v, const float& t, const Vec3fa& Ng, const int geomID, const int primID)
+    __forceinline bool runOcclusionFilter(const Geometry* const geometry, Ray4& ray, const size_t k,
+                                          const float& u, const float& v, const float& t, const Vec3fa& Ng, const int geomID, const int primID)
     {
       /* temporarily update hit information */
       const ssef ray_tfar = ray.tfar; 
@@ -228,8 +228,8 @@ namespace embree
     }
     
 #if defined(__AVX__)
-    __forceinline avxb runIntersectionFilter8(const avxb& valid, const Geometry* const geometry, Ray8& ray, 
-                                              const avxf& u, const avxf& v, const avxf& t, const avx3f& Ng, const int geomID, const int primID)
+    __forceinline avxb runIntersectionFilter(const avxb& valid, const Geometry* const geometry, Ray8& ray, 
+                                             const avxf& u, const avxf& v, const avxf& t, const avx3f& Ng, const int geomID, const int primID)
     {
       /* temporarily update hit information */
       const avxf ray_u = ray.u;           store8f(valid,&ray.u,u);
@@ -263,8 +263,8 @@ namespace embree
       return valid_passed;
     }
     
-    __forceinline avxb runOcclusionFilter8(const avxb& valid, const Geometry* const geometry, Ray8& ray, 
-                                           const avxf& u, const avxf& v, const avxf& t, const avx3f& Ng, const int geomID, const int primID)
+    __forceinline avxb runOcclusionFilter(const avxb& valid, const Geometry* const geometry, Ray8& ray, 
+                                          const avxf& u, const avxf& v, const avxf& t, const avx3f& Ng, const int geomID, const int primID)
     {
       /* temporarily update hit information */
       const avxf ray_tfar = ray.tfar; 
@@ -291,8 +291,8 @@ namespace embree
       return valid_passed;
     }
     
-    __forceinline bool runIntersectionFilter8(const Geometry* const geometry, Ray8& ray, const size_t k,
-                                              const float& u, const float& v, const float& t, const Vec3fa& Ng, const int geomID, const int primID)
+    __forceinline bool runIntersectionFilter(const Geometry* const geometry, Ray8& ray, const size_t k,
+                                             const float& u, const float& v, const float& t, const Vec3fa& Ng, const int geomID, const int primID)
     {
       /* temporarily update hit information */
       const avxf ray_u = ray.u;           ray.u[k] = u;
@@ -325,8 +325,8 @@ namespace embree
       return passed;
     }
     
-    __forceinline bool runOcclusionFilter8(const Geometry* const geometry, Ray8& ray, const size_t k,
-                                           const float& u, const float& v, const float& t, const Vec3fa& Ng, const int geomID, const int primID)
+    __forceinline bool runOcclusionFilter(const Geometry* const geometry, Ray8& ray, const size_t k,
+                                          const float& u, const float& v, const float& t, const Vec3fa& Ng, const int geomID, const int primID)
     {
       /* temporarily update hit information */
       const avxf ray_tfar = ray.tfar; 

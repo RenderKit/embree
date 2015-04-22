@@ -503,11 +503,11 @@ namespace embree
 
 	mic_m m_final  = lt(lt(m_valid,min_dist_xyz,t),t,max_dist_xyz);
 
-#if defined(RTCORE_RAY_MASK)
-	const mic_i rayMask(ray16.mask[rayIndex]);
-	const mic_i triMask = getTriMasks(tptr); 
-	const mic_m m_ray_mask = (rayMask & triMask) != mic_i::zero();
-	m_final &= m_ray_mask;	      
+#if defined(RTCORE_RAY_MASK) // FIXME: this is broken
+	//const mic_i rayMask(ray16.mask[rayIndex]);
+	//const mic_i triMask = getTriMasks(tptr); 
+	//const mic_m m_ray_mask = (rayMask & triMask) != mic_i::zero();
+	//m_final &= m_ray_mask;	      
 #endif
 
 	if (ENABLE_INTERSECTION_FILTER)

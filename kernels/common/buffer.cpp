@@ -19,7 +19,7 @@
 namespace embree
 {
   Buffer::Buffer () 
-    : ptr(nullptr), bytes(0), ptr_ofs(nullptr), stride(0), num(0), shared(false), mapped(false), modified(true) {}
+    : initialized(false), ptr(nullptr), bytes(0), ptr_ofs(nullptr), stride(0), num(0), shared(false), mapped(false), modified(true) {}
   
   Buffer::~Buffer () {
     free();
@@ -27,6 +27,7 @@ namespace embree
 
   void Buffer::init(size_t num_in, size_t stride_in) 
   {
+    initialized = true;
     ptr = nullptr;
     bytes = num_in*stride_in;
     ptr_ofs = nullptr;
@@ -39,6 +40,10 @@ namespace embree
 
   void Buffer::set(void* ptr_in, size_t ofs_in, size_t stride_in)
   {
+    /* report error if buffer is not existing */
+    if (!initialized)
+      throw_RTCError(RTC_INVALID_ARGUMENT,"invalid buffer specified");
+
 #if !defined(RTCORE_BUFFER_STRIDE)
     if (stride_in != stride) {
       throw_RTCError(RTC_INVALID_OPERATION,"buffer stride feature disabled at compile time and specified stride does not match default stride");
@@ -68,11 +73,13 @@ namespace embree
 
   void* Buffer::map(atomic_t& cntr)
   {
+    /* report error if buffer is not existing */
+    if (!initialized)
+      throw_RTCError(RTC_INVALID_ARGUMENT,"invalid buffer specified");
+
     /* report error if buffer is already mapped */
-    if (mapped) {
+    if (mapped)
       throw_RTCError(RTC_INVALID_OPERATION,"buffer is already mapped");
-      return nullptr;
-    }
 
     /* allocate buffer */
     if (!ptr && !shared && bytes)
@@ -87,10 +94,8 @@ namespace embree
   void Buffer::unmap(atomic_t& cntr)
   {
     /* report error if buffer not mapped */
-    if (!mapped) {
+    if (!mapped)
       throw_RTCError(RTC_INVALID_OPERATION,"buffer is not mapped");
-      return;
-    }
 
     /* unmap buffer */
     atomic_add(&cntr,-1); 

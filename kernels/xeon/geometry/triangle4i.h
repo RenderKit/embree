@@ -23,35 +23,54 @@ namespace embree
   /*! Stores 4 triangles from an indexed face set. */
   struct Triangle4i
   {
+    /*! virtual interface to query information about the triangle type */
+    struct Type : public PrimitiveType
+    {
+      Type ();
+      size_t size(const char* This) const;
+    };
+    static Type type;
+
+  public:
+
+    /*! returns maximal number of stored triangles */
+    static __forceinline size_t max_size() { return 4; }
+    
+     /*! returns required number of primitive blocks for N primitives */
+    static __forceinline size_t blocks(size_t N) { return (N+max_size()-1)/max_size(); }
+  
   public:
 
     /*! Default constructor. */
     __forceinline Triangle4i () {}
 
     /*! Construction from vertices and IDs. */
-    __forceinline Triangle4i (Vec3f* base[4], const ssei& v1, const ssei& v2, const ssei& geomIDs, const ssei& primIDs, const bool last)
-      : v1(v1), v2(v2), geomIDs(geomIDs | (last << 31)), primIDs(primIDs) // FIXME: use primID for list end tag
-      {
-        v0[0] = base[0];
-        v0[1] = base[1];
-        v0[2] = base[2];
-        v0[3] = base[3];
-      }
-
-    /*! Returns if the specified triangle is valid. */
-    __forceinline bool valid(const size_t i) const { 
-      assert(i<4); 
-      return geomIDs[i] != -1; 
+    __forceinline Triangle4i (Vec3f* base[4], const ssei& v1, const ssei& v2, const ssei& geomIDs, const ssei& primIDs)
+      : v1(v1), v2(v2), geomIDs(geomIDs), primIDs(primIDs) 
+    {
+      v0[0] = base[0];
+      v0[1] = base[1];
+      v0[2] = base[2];
+      v0[3] = base[3];
     }
 
     /*! Returns a mask that tells which triangles are valid. */
     __forceinline sseb valid() const { return primIDs != ssei(-1); }
-
+    
+    /*! Returns if the specified triangle is valid. */
+    __forceinline bool valid(const size_t i) const { assert(i<4); return geomIDs[i] != -1; }
+    
     /*! Returns the number of stored triangles. */
-    __forceinline size_t size() const { 
-      return __bsf(~movemask(valid()));
-    }
-
+    __forceinline size_t size() const { return __bsf(~movemask(valid())); }
+    
+    /*! returns the geometry IDs */
+    __forceinline ssei geomID() const { return geomIDs; }
+    __forceinline int geomID(const size_t i) const { assert(i<4); return geomIDs[i]; }
+    
+    /*! returns the primitive IDs */
+    __forceinline ssei primID() const { return primIDs; }
+    __forceinline int primID(const size_t i) const { assert(i<4); return primIDs[i]; }
+    
     /*! calculate the bounds of the triangles */
     __forceinline const BBox3fa bounds() const 
     {
@@ -68,38 +87,7 @@ namespace embree
       }
       return bounds;
     }
-
-    /*! returns required number of primitive blocks for N primitives */
-    static __forceinline size_t blocks(size_t N) { return (N+3)/4; }
-
-    /*! checks if this is the last triangle in the list */
-    __forceinline int last() const { 
-      return geomIDs[0] & 0x80000000; 
-    }
     
-    /*! returns the geometry IDs */
-    template<bool list>
-    __forceinline ssei geomID() const { 
-      if (list) return geomIDs & 0x7FFFFFFF; 
-      else      return geomIDs;
-    }
-    template<bool list>
-    __forceinline int geomID(const size_t i) const { 
-      assert(i<4); 
-      if (list) return geomIDs[i] & 0x7FFFFFFF; 
-      else      return geomIDs[i];
-    }
-
-    /*! returns the primitive IDs */
-    template<bool list>
-    __forceinline ssei primID() const { 
-      return primIDs; 
-    }
-    template<bool list>
-    __forceinline int primID(const size_t i) const { 
-      assert(i<4); return primIDs[i]; 
-    }
-
     /*! fill triangle from triangle list */
     __forceinline void fill(atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, Scene* scene, const bool list)
     {
@@ -130,9 +118,9 @@ namespace embree
 	if (prims) prim = *prims; 
       }
       
-      new (this) Triangle4i(v0,v1,v2,geomID,primID,list && !prims); // FIXME: use non temporal store
+      new (this) Triangle4i(v0,v1,v2,geomID,primID); // FIXME: use non temporal store
     }
-
+    
     /*! fill triangle from triangle list */
     __forceinline void fill(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, const bool list)
     {
@@ -163,21 +151,21 @@ namespace embree
 	if (begin<end) prim = &prims[begin];
       }
       
-      new (this) Triangle4i(v0,v1,v2,geomID,primID,list && begin>=end); // FIXME: use non temporal store
+      new (this) Triangle4i(v0,v1,v2,geomID,primID); // FIXME: use non temporal store
     }
-
+    
     /*! updates the primitive */
     __forceinline BBox3fa update(TriangleMesh* mesh)
     {
       BBox3fa bounds = empty;
-      ssei vgeomID = -1, vprimID = -1, vmask = -1;
+      ssei vgeomID = -1, vprimID = -1;
       sse3f v0 = zero, v1 = zero, v2 = zero;
       
       for (size_t i=0; i<4; i++)
       {
-        if (primID<0>(i) == -1) break;
-        const unsigned geomId = geomID<0>(i);
-        const unsigned primId = primID<0>(i);
+        if (primID(i) == -1) break;
+        const unsigned geomId = geomID(i);
+        const unsigned primId = primID(i);
         const TriangleMesh::Triangle& tri = mesh->triangle(primId);
         const Vec3fa p0 = mesh->vertex(tri.v[0]);
         const Vec3fa p1 = mesh->vertex(tri.v[1]);
@@ -186,27 +174,12 @@ namespace embree
       }
       return bounds;
     }
-
+    
   public:
-    const Vec3f* v0[4];  //!< Pointer to 1st vertex.
-    ssei v1;             //!< Offset to 2nd vertex.
-    ssei v2;             //!< Offset to 3rd vertex.
-    ssei geomIDs;        //!< ID of mesh.
-    ssei primIDs;        //!< ID of primitive inside mesh.
-  };
-
-  /*! virtual interface to query information about the triangle type */
-  struct Triangle4iType : public PrimitiveType
-  {
-    static Triangle4iType type;
-
-    Triangle4iType ();
-    size_t blocks(size_t x) const;
-    size_t size(const char* This) const;
-  };
-
-  struct TriangleMeshTriangle4i : public Triangle4iType
-  {
-    static TriangleMeshTriangle4i type;
+    const Vec3f* v0[4];  //!< Pointer to 1st vertex
+    ssei v1;             //!< Offset to 2nd vertex
+    ssei v2;             //!< Offset to 3rd vertex
+    ssei geomIDs;        //!< geometry ID of mesh
+    ssei primIDs;        //!< primitive ID of primitive inside mesh
   };
 }

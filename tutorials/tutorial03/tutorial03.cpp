@@ -16,6 +16,7 @@
 
 #include "tutorial/tutorial.h"
 #include "tutorial/obj_loader.h"
+#include "tutorial/xml_loader.h"
 #include "image/image.h"
 
 namespace embree
@@ -186,8 +187,12 @@ namespace embree
       g_rtcore += ",benchmark=1";
 
     /* load scene */
-    if (filename.str() != "")
+    if (strlwr(filename.ext()) == std::string("obj"))
       loadOBJ(filename,one,g_obj_scene);
+    else if (strlwr(filename.ext()) == std::string("xml"))
+      loadXML(filename,one,g_obj_scene);
+    else if (filename.ext() != "")
+      THROW_RUNTIME_ERROR("invalid scene type: "+strlwr(filename.ext()));
 
     /* initialize ray tracing core */
     init(g_rtcore.c_str());

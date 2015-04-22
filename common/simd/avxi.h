@@ -70,6 +70,32 @@ namespace embree
       return _mm256_cvtepu8_epi32(_mm_load_si128((__m128i*)ptr));
     }
 
+      static __forceinline const avxi load(const int* const i) { 
+        return _mm256_load_si256((__m256i*)i); 
+      }
+
+    static __forceinline const avxi uload(const int* const i) { 
+      return _mm256_loadu_si256((__m256i*)i); 
+    }
+    
+    static __forceinline void store(void* ptr, const avxi& i ) { 
+      _mm256_store_si256((__m256i*)ptr,i);
+    }
+    
+    static __forceinline void store( const avxb &mask, void *ptr, const avxi& i ) { 
+      _mm256_maskstore_epi32((int*)ptr,mask,i);
+    }
+    
+#if defined (__AVX2__)
+    static __forceinline avxi load_nt(void* ptr) {
+      return _mm256_stream_load_si256((__m256i*)ptr);
+    }
+#endif
+
+    static __forceinline void store_nt(void* ptr, const avxi& v) {
+      _mm256_stream_ps((float*)ptr,_mm256_castsi256_ps(v));
+    }
+    
     ////////////////////////////////////////////////////////////////////////////////
     /// Array Access
     ////////////////////////////////////////////////////////////////////////////////

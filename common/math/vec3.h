@@ -230,6 +230,11 @@ namespace embree
 
 namespace embree 
 { 
+  template<typename Out, typename In>
+    __forceinline Vec3<Out> broadcast(const Vec3<In>& a, const size_t k) {
+    return Vec3<Out>(Out(a.x[k]),Out(a.y[k]),Out(a.z[k]));
+  }
+
   template<> __forceinline Vec3<float>::Vec3( const Vec3fa& a ) { x = a.x; y = a.y; z = a.z; }
 
 #if defined (__SSE__)
@@ -237,6 +242,11 @@ namespace embree
     const ssef v = ssef(a); x = shuffle<0,0,0,0>(v); y = shuffle<1,1,1,1>(v); z = shuffle<2,2,2,2>(v); 
   }
   __forceinline Vec3<ssef> broadcast4f( const Vec3<ssef>& a, const size_t k ) {  
+    return Vec3<ssef>(ssef::broadcast(&a.x[k]), ssef::broadcast(&a.y[k]), ssef::broadcast(&a.z[k]));
+  }
+
+  template<>
+    __forceinline Vec3<ssef> broadcast<ssef,ssef>( const Vec3<ssef>& a, const size_t k ) {  
     return Vec3<ssef>(ssef::broadcast(&a.x[k]), ssef::broadcast(&a.y[k]), ssef::broadcast(&a.z[k]));
   }
 
@@ -257,6 +267,15 @@ namespace embree
     return Vec3<avxf>(avxf::broadcast(&a.x[k]), avxf::broadcast(&a.y[k]), avxf::broadcast(&a.z[k]));
   }
   __forceinline Vec3<avxf> broadcast8f( const Vec3<avxf>& a, const size_t k ) {  
+    return Vec3<avxf>(avxf::broadcast(&a.x[k]), avxf::broadcast(&a.y[k]), avxf::broadcast(&a.z[k]));
+  }
+
+  template<>
+    __forceinline Vec3<avxf> broadcast<avxf,ssef>( const Vec3<ssef>& a, const size_t k ) {  
+    return Vec3<avxf>(avxf::broadcast(&a.x[k]), avxf::broadcast(&a.y[k]), avxf::broadcast(&a.z[k]));
+  }
+  template<>
+    __forceinline Vec3<avxf> broadcast<avxf,avxf>( const Vec3<avxf>& a, const size_t k ) {  
     return Vec3<avxf>(avxf::broadcast(&a.x[k]), avxf::broadcast(&a.y[k]), avxf::broadcast(&a.z[k]));
   }
 

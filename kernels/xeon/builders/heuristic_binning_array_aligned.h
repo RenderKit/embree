@@ -48,10 +48,10 @@ namespace embree
           for (size_t i=pinfo.begin; i<pinfo.end; i++) // FIXME: parallelize
           {
             Bezier1v& prim = prims[i];
-            const size_t geomID = prim.geomID<0>();
+            const size_t geomID = prim.geomID();
             const BezierCurves* curves = scene->getBezierCurves(geomID);
-            bounds0.extend(curves->bounds(prim.primID<0>(),0));
-            bounds1.extend(curves->bounds(prim.primID<0>(),1));
+            bounds0.extend(curves->bounds(prim.primID(),0));
+            bounds1.extend(curves->bounds(prim.primID(),1));
           }
           return std::pair<BBox3fa,BBox3fa>(bounds0,bounds1);
         }

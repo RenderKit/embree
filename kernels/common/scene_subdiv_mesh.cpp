@@ -26,7 +26,6 @@ namespace embree
   SubdivMesh::SubdivMesh (Scene* parent, RTCGeometryFlags flags, size_t numFaces, size_t numEdges, size_t numVertices, 
 			  size_t numEdgeCreases, size_t numVertexCreases, size_t numHoles, size_t numTimeSteps)
     : Geometry(parent,SUBDIV_MESH,numFaces,numTimeSteps,flags), 
-      mask(-1), 
       numFaces(numFaces), 
       numEdges(numEdges), 
       numHalfEdges(0),

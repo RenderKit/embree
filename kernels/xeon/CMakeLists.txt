@@ -84,21 +84,10 @@ ADD_ISPC_LIBRARY(embree ${EMBREE_LIB_TYPE}
   ../common/subdiv/subdivpatch1base.cpp
 
   geometry/primitive.cpp
-  geometry/bezier1v.cpp
-  geometry/bezier1i.cpp
-  geometry/triangle1.cpp
-  geometry/triangle4.cpp
-  geometry/triangle1v.cpp
-  geometry/triangle4v.cpp
-  geometry/triangle4v_mb.cpp
-  geometry/triangle4i.cpp
-  geometry/subdivpatch1.cpp
-  geometry/virtual_accel.cpp
   geometry/instance_intersector1.cpp
   geometry/instance_intersector4.cpp
   geometry/subdivpatch1_intersector1.cpp
   geometry/subdivpatch1cached_intersector1.cpp		
-  geometry/subdivpatch1cached.cpp
   builders/primrefgen.cpp
 
   bvh4/bvh4.cpp
@@ -144,7 +133,7 @@ ENDIF ()
 IF (TARGET_AVX)
   ADD_LIBRARY(embree_avx STATIC
 
-    geometry/triangle8.cpp
+    geometry/primitive.cpp
     geometry/instance_intersector1.cpp
     geometry/instance_intersector4.cpp
     geometry/instance_intersector8.cpp
