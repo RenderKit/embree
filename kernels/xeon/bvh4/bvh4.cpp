@@ -292,7 +292,6 @@ namespace embree
   void BVH4::printStatistics()
   {
     std::cout << BVH4Statistics(this).str();
-    std::cout << "  "; alloc.print_statistics();
   }	
 
   void BVH4::clearBarrier(NodeRef& node)
@@ -394,7 +393,10 @@ namespace embree
     
     if (State::instance()->verbosity(2))
       printStatistics();
-    
+
+    if (State::instance()->verbosity(2))
+      alloc.print_statistics();
+
     /* benchmark mode */
     if (State::instance()->benchmark) {
       BVH4Statistics stat(this);

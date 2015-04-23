@@ -326,11 +326,22 @@ namespace embree
       size_t bytesReserved = getReservedBytes();
       size_t bytesUsed = getUsedBytes();
       size_t bytesWasted = getWastedBytes();
-      printf("allocated = %3.2fMB, reserved = %3.2fMB, used = %3.2fMB (%3.2f%%), wasted = %3.2fMB (%3.2f%%), free = %3.2fMB (%3.2f%%)\n",
+      printf("  allocated = %3.2fMB, reserved = %3.2fMB, used = %3.2fMB (%3.2f%%), wasted = %3.2fMB (%3.2f%%), free = %3.2fMB (%3.2f%%)\n",
 	     1E-6f*bytesAllocated, 1E-6f*bytesReserved,
 	     1E-6f*bytesUsed, 100.0f*bytesUsed/bytesAllocated,
 	     1E-6f*bytesWasted, 100.0f*bytesWasted/bytesAllocated,
 	     1E-6f*bytesFree, 100.0f*bytesFree/bytesAllocated);
+      
+      if (State::instance()->verbosity(3)) 
+      {
+        std::cout << "  used blocks = ";
+        if (usedBlocks) usedBlocks->print();
+        std::cout << "[END]" << std::endl;
+        
+        std::cout << "  free blocks = ";
+        if (freeBlocks) freeBlocks->print();
+        std::cout << "[END]" << std::endl;
+      }
     }
 
   private:
@@ -422,6 +433,11 @@ namespace embree
 
       size_t getFreeBytes() const {
 	return max(allocEnd,size_t(cur))-cur;
+      }
+
+      void print() const {
+        std::cout << "[" << cur << ", " << max(size_t(cur),allocEnd) << ", " << reserveEnd << "] ";
+        if (next) next->print();
       }
 
     public:
