@@ -28,6 +28,13 @@
 #include "../kernels/common/default.h"
 #include <vector>
 
+#if !defined(_MM_SET_DENORMALS_ZERO_MODE)
+#define _MM_DENORMALS_ZERO_ON   (0x0040)
+#define _MM_DENORMALS_ZERO_OFF  (0x0000)
+#define _MM_DENORMALS_ZERO_MASK (0x0040)
+#define _MM_SET_DENORMALS_ZERO_MODE(x) (_mm_setcsr((_mm_getcsr() & ~_MM_DENORMALS_ZERO_MASK) | (x)))
+#endif
+
 #define DEFAULT_STACK_SIZE 4*1024*1024
 //#define DEFAULT_STACK_SIZE 2*1024*1024
 //#define DEFAULT_STACK_SIZE 512*1024

@@ -22,6 +22,13 @@
 #include "../kernels/common/default.h"
 #include <vector>
 
+#if !defined(_MM_SET_DENORMALS_ZERO_MODE)
+#define _MM_DENORMALS_ZERO_ON   (0x0040)
+#define _MM_DENORMALS_ZERO_OFF  (0x0000)
+#define _MM_DENORMALS_ZERO_MASK (0x0040)
+#define _MM_SET_DENORMALS_ZERO_MODE(x) (_mm_setcsr((_mm_getcsr() & ~_MM_DENORMALS_ZERO_MASK) | (x)))
+#endif
+
 namespace embree
 {
   RTCAlgorithmFlags aflags = (RTCAlgorithmFlags) (RTC_INTERSECT1 | RTC_INTERSECT4 | RTC_INTERSECT8 | RTC_INTERSECT16);
