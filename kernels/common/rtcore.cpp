@@ -162,6 +162,18 @@ namespace embree
     if (State::instance()->tessellation_cache_size)
       resizeTessellationCache( State::instance()->tessellation_cache_size );
 
+    /*! enable some floating point exceptions to catch bugs */
+    if (State::instance()->float_exceptions)
+    {
+      int exceptions = 0;
+      exceptions |= _MM_MASK_INVALID;
+      exceptions |= _MM_MASK_DENORM;
+      exceptions |= _MM_MASK_DIV_ZERO;
+      exceptions |= _MM_MASK_OVERFLOW;
+      exceptions |= _MM_MASK_UNDERFLOW;
+      _MM_SET_EXCEPTION_MASK(exceptions);
+    }
+
 #if defined(__MIC__) // FIXME: put into State::verify function
     if (!(g_numThreads == 1 || (g_numThreads % 4) == 0))
       throw_RTCError(RTC_INVALID_OPERATION,"Xeon Phi supports only number of threads % 4 == 0, or threads == 1");

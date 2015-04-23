@@ -131,7 +131,10 @@ namespace embree
         else if (isa == "avxi") setCPUFeatures(AVXI);
         else if (isa == "avx2") setCPUFeatures(AVX2);
       }
-      
+
+      else if (tok == Token::Id("float_exceptions") && cin->trySymbol("=")) 
+        float_exceptions = cin->get().Int();
+
       else if ((tok == Token::Id("tri_accel") || tok == Token::Id("accel")) && cin->trySymbol("="))
         tri_accel = cin->get().Identifier();
       else if ((tok == Token::Id("tri_builder") || tok == Token::Id("builder")) && cin->trySymbol("="))
