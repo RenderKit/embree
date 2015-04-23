@@ -81,6 +81,7 @@ namespace embree
     std::string subdiv_accel;              //!< acceleration structure to use for subdivision surfaces
 
   public:
+    bool float_exceptions;                 //!< enable floating point exceptions
     int scene_flags;                       //!< scene flags to use
     size_t verbose;                        //!< verbosity of output
     //size_t numThreads;                   //!< number of threads to use in builders
