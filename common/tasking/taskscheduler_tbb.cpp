@@ -158,14 +158,22 @@ namespace embree
 #endif
 
 #if TASKING_TBB
-  __dllexport size_t TaskSchedulerTBB::threadCount()
-  {
-    return g_numThreads;
+   __dllexport size_t TaskSchedulerTBB::threadIndex() {
+     return tbb::task_arena::current_thread_index();
+   }
+  __dllexport size_t TaskSchedulerTBB::threadCount() {
+    return g_numThreads; // FIXME: possible to return number of thread through TBB call?
     //return tbb::task_scheduler_init::default_num_threads();
   }
 #endif
 
 #if TASKING_TBB_INTERNAL
+  __dllexport size_t TaskSchedulerTBB::threadCount() 
+  {
+    Thread* thread = TaskSchedulerTBB::thread();
+    if (thread) return thread->threadIndex;
+    else        return 0;
+  }
   __dllexport size_t TaskSchedulerTBB::threadCount() 
   {
     Thread* thread = TaskSchedulerTBB::thread();

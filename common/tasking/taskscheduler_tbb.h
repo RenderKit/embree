@@ -341,9 +341,12 @@ namespace embree
     /* work on spawned subtasks and wait until all have finished */
     __dllexport static void wait();
 
-    /* work on spawned subtasks and wait until all have finished */
-    __dllexport static size_t threadCount();
+    /* returns the index of the current thread */
+    __dllexport static size_t threadIndex();
 
+    /* returns the total number of threads */
+    __dllexport static size_t threadCount();
+    
     __dllexport static Thread* thread();
     __dllexport static void setThread(Thread* thread);
 
