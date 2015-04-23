@@ -165,12 +165,13 @@ namespace embree
     /*! enable some floating point exceptions to catch bugs */
     if (State::instance()->float_exceptions)
     {
-      int exceptions = 0;
-      exceptions |= _MM_MASK_INVALID;
-      exceptions |= _MM_MASK_DENORM;
-      exceptions |= _MM_MASK_DIV_ZERO;
-      exceptions |= _MM_MASK_OVERFLOW;
-      exceptions |= _MM_MASK_UNDERFLOW;
+      int exceptions = _MM_MASK_MASK;
+      //exceptions &= ~_MM_MASK_INVALID;
+      exceptions &= ~_MM_MASK_DENORM;
+      exceptions &= ~_MM_MASK_DIV_ZERO;
+      //exceptions &= ~_MM_MASK_OVERFLOW;
+      //exceptions &= ~_MM_MASK_UNDERFLOW;
+      //exceptions &= ~_MM_MASK_INEXACT;
       _MM_SET_EXCEPTION_MASK(exceptions);
     }
 
