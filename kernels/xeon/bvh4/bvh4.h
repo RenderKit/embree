@@ -146,7 +146,7 @@ namespace embree
       }
 
       /*! Sets the barrier bit. */
-      __forceinline void setBarrier() { ptr |= barrier_mask; }
+      __forceinline void setBarrier() { assert(!isBarrier()); ptr |= barrier_mask; }
       
       /*! Clears the barrier bit. */
       __forceinline void clearBarrier() { ptr &= ~barrier_mask; }
@@ -183,15 +183,25 @@ namespace embree
       __forceinline int isUnalignedNodeMB(int types) const { return (types == 0x1000) || ((types & 0x1000) && isUnalignedNodeMB()); }
 
       /*! returns base node pointer */
-      __forceinline BaseNode* baseNode(int types) { 
+      __forceinline BaseNode* baseNode(int types) 
+      { 
 	assert(!isLeaf()); 
-	if (types == 0x1) return (BaseNode*)ptr; 
-	else              return (BaseNode*)(ptr & ~(size_t)align_mask); 
+	if (types == 0x1) { 
+          assert((ptr & (size_t)align_mask) == 0); 
+          return (BaseNode*)ptr; 
+        }
+	else  
+          return (BaseNode*)(ptr & ~(size_t)align_mask); 
       }
-      __forceinline const BaseNode* baseNode(int types) const { 
+      __forceinline const BaseNode* baseNode(int types) const 
+      { 
 	assert(!isLeaf()); 
-	if (types == 0x1) return (const BaseNode*)ptr; 
-	else              return (const BaseNode*)(ptr & ~(size_t)align_mask); 
+	if (types == 0x1) { 
+          assert((ptr & (size_t)align_mask) == 0); 
+          return (const BaseNode*)ptr; 
+        }
+	else
+          return (const BaseNode*)(ptr & ~(size_t)align_mask); 
       }
 
       /*! returns node pointer */
@@ -239,7 +249,7 @@ namespace embree
       __forceinline const NodeRef& child(size_t i) const { assert(i<N); return children[i]; }
 
       /*! verifies the node */
-      __forceinline bool verify() const  // FIXME: call in statistics
+      __forceinline bool verify() const  // FIXME: implement tree verify
       {
 	for (size_t i=0; i<BVH4::N; i++) {
 	  if (child(i) == BVH4::emptyNode) {
