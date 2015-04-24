@@ -92,6 +92,33 @@ namespace embree
       BVH4* bvh;
     };
 
+    /*! Builder interface to create Node */
+    struct CreateNode
+    {
+      __forceinline CreateNode (BVH4* bvh) : bvh(bvh) {}
+      
+      template<typename BuildRecord>
+      __forceinline Node* operator() (const BuildRecord& current, BuildRecord* children, const size_t N, FastAllocator::ThreadLocal2* alloc) 
+      {
+        Node* node = (Node*) alloc->alloc0.malloc(sizeof(Node)); node->clear();
+        for (size_t i=0; i<N; i++) {
+          node->set(i,children[i].bounds());
+          children[i].parent = (size_t*)&node->child(i);
+        }
+        *current.parent = bvh->encodeNode(node);
+	return node;
+      }
+
+      BVH4* bvh;
+    };
+
+    struct NoRotate
+    {
+      __forceinline size_t operator() (BVH4::Node* node, const size_t* counts, const size_t N) {
+        return 0;
+      }
+    };
+
     /*! Pointer that points to a node or a list of primitives */
     struct NodeRef
     {
