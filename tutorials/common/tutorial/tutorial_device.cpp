@@ -281,7 +281,7 @@ Vec3fa renderPixelAmbientOcclusion(float x, float y, const Vec3fa& vx, const Vec
   float intensity = 0;
   Vec3fa hitPos = ray.org + ray.tfar * ray.dir;
 
-#define AMBIENT_OCCLUSION_SAMPLES 16
+#define AMBIENT_OCCLUSION_SAMPLES 64
   /* trace some ambient occlusion rays */
   int seed = 34*x+12*y;
   for (int i=0; i<AMBIENT_OCCLUSION_SAMPLES; i++) 
