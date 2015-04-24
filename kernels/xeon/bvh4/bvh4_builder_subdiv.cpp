@@ -94,7 +94,7 @@ namespace embree
         const PrimInfo pinfo = createPrimRefArray<SubdivMesh,1>(scene,prims,virtualprogress);
         BVH4::NodeRef root;
         BVHBuilderBinnedSAH::build_reduce<BVH4::NodeRef>
-          (root,BVH4::CreateAlloc(bvh),size_t(0),BVH4::CreateNode(bvh),NoRotate(),CreateBVH4SubdivLeaf<SubdivPatch1>(bvh,prims.data()),virtualprogress,
+          (root,BVH4::CreateAlloc(bvh),size_t(0),BVH4::CreateNode(bvh),BVH4::NoRotate(),CreateBVH4SubdivLeaf<SubdivPatch1>(bvh,prims.data()),virtualprogress,
            prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,1,1,1,1.0f,1.0f);
         bvh->set(root,pinfo.geomBounds,pinfo.size());
 
@@ -225,7 +225,7 @@ namespace embree
         
         BVH4::NodeRef root;
         BVHBuilderBinnedSAH::build_reduce<BVH4::NodeRef>
-          (root,BVH4::CreateAlloc(bvh),size_t(0),BVH4::CreateNode(bvh),NoRotate(),
+          (root,BVH4::CreateAlloc(bvh),size_t(0),BVH4::CreateNode(bvh),BVH4::NoRotate(),
            [&] (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) -> int {
             if (current.pinfo.size() != 1) THROW_RUNTIME_ERROR("bvh4_builder_subdiv: internal error");
             *current.parent = (size_t) prims[current.prims.begin()].ID();
@@ -348,7 +348,7 @@ namespace embree
         
         BVH4::NodeRef root;
         BVHBuilderBinnedSAH::build_reduce<BVH4::NodeRef>
-          (root,BVH4::CreateAlloc(bvh),size_t(0),BVH4::CreateNode(bvh),NoRotate(),
+          (root,BVH4::CreateAlloc(bvh),size_t(0),BVH4::CreateNode(bvh),BVH4::NoRotate(),
            [&] (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) -> int {
              if (current.pinfo.size() != 1) THROW_RUNTIME_ERROR("bvh4_builder_subdiv: internal error");
              *current.parent = (size_t) prims[current.prims.begin()].ID();
@@ -471,7 +471,7 @@ namespace embree
         
         BVH4::NodeRef root;
         BVHBuilderBinnedSAH::build_reduce<BVH4::NodeRef>
-          (root,BVH4::CreateAlloc(bvh),size_t(0),BVH4::CreateNode(bvh),NoRotate(),
+          (root,BVH4::CreateAlloc(bvh),size_t(0),BVH4::CreateNode(bvh),BVH4::NoRotate(),
            [&] (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) -> int {
             assert(current.pinfo.size() == 1);
             BVH4::NodeRef node = prims[current.prims.begin()].ID();
@@ -969,7 +969,7 @@ namespace embree
 
 	    BVH4::NodeRef root;
             BVHBuilderBinnedSAH::build_reduce<BVH4::NodeRef>
-	      (root,BVH4::CreateAlloc(bvh),size_t(0),BVH4::CreateNode(bvh),NoRotate(),
+	      (root,BVH4::CreateAlloc(bvh),size_t(0),BVH4::CreateNode(bvh),BVH4::NoRotate(),
 	       [&] (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) -> int {
 		size_t items = current.pinfo.size();
 		assert(items == 1);
