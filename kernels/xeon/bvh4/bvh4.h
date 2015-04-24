@@ -81,6 +81,17 @@ namespace embree
     static const int travCostUnaligned = 3; // FIXME: find best cost
     static const int intCost = 1; // set to 1 for statistics // FIXME: is this used? was 6;
 
+    /*! Builder interface to create allocator */
+    struct CreateAlloc
+    {      
+    public:
+      __forceinline CreateAlloc (BVH4* bvh) : bvh(bvh) {}
+      __forceinline FastAllocator::ThreadLocal2* operator() () const { return bvh->alloc.threadLocal2();  }
+    
+    private:
+      BVH4* bvh;
+    };
+
     /*! Pointer that points to a node or a list of primitives */
     struct NodeRef
     {
