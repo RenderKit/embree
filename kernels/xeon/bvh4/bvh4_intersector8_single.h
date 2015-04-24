@@ -17,7 +17,7 @@
 #pragma once
 
 #include "bvh4.h"
-#include "bvh4_intersect_node.h"
+#include "bvh4_intersector_node.h"
 
 #include "common/ray8.h"
 #include "common/stack_item.h"

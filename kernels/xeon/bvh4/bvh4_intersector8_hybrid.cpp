@@ -16,7 +16,7 @@
 
 #include "bvh4_intersector8_hybrid.h"
 #include "bvh4_intersector8_single.h"
-#include "bvh4_intersect_node.h"
+#include "bvh4_intersector_node.h"
 
 #include "geometry/triangle4.h"
 #include "geometry/triangle4v.h"

@@ -15,7 +15,7 @@
 // ======================================================================== //
 
 #include "bvh4_intersector4_chunk.h"
-#include "bvh4_intersect_node.h"
+#include "bvh4_intersector_node.h"
 
 #include "geometry/triangle4.h"
 #include "geometry/triangle4i.h"
