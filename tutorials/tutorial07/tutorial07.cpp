@@ -687,7 +687,8 @@ float noise(float x, float y, float z)
   int main(int argc, char** argv) 
   {
     /* for best performance set FTZ and DAZ flags in MXCSR control and status register */
-    _mm_setcsr(_mm_getcsr() | /* FTZ */ (1<<15) | /* DAZ */ (1<<6));
+    _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
+    _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
 
     g_camera.from = Vec3fa(3.21034f,0.320831f,-0.162478f);
     g_camera.to   = Vec3fa(2.57003f,0.524887f, 0.163145f);

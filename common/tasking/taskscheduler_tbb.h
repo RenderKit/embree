@@ -249,7 +249,7 @@ namespace embree
 
       assert(!active);
       active = true;
-      Thread thread(0,this);
+      Thread& thread = masterThread;
       threadLocal[0] = &thread;
       setThread(&thread);
       thread.tasks.push_right(thread,size,closure);
@@ -277,7 +277,7 @@ namespace embree
 
       assert(!active);
       active = true;
-      Thread thread(0,this);
+      Thread& thread = masterThread;
       threadLocal[0] = &thread;
       setThread(&thread);
 
@@ -341,9 +341,12 @@ namespace embree
     /* work on spawned subtasks and wait until all have finished */
     __dllexport static void wait();
 
-    /* work on spawned subtasks and wait until all have finished */
-    __dllexport static size_t threadCount();
+    /* returns the index of the current thread */
+    __dllexport static size_t threadIndex();
 
+    /* returns the total number of threads */
+    __dllexport static size_t threadCount();
+    
     __dllexport static Thread* thread();
     __dllexport static void setThread(Thread* thread);
 
@@ -379,9 +382,9 @@ namespace embree
     __dllexport static TaskSchedulerTBB* global_instance();
 
   private:
-	  static TaskSchedulerTBB* g_instance;
-	  static __thread Thread* thread_local_thread;
-
+    Thread masterThread;
+    static TaskSchedulerTBB* g_instance;
+    static __thread Thread* thread_local_thread;
   };
 };
 

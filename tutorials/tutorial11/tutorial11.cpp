@@ -104,7 +104,8 @@ namespace embree
   int main(int argc, char** argv) 
   {
     /* for best performance set FTZ and DAZ flags in MXCSR control and status register */
-    _mm_setcsr(_mm_getcsr() | /* FTZ */ (1<<15) | /* DAZ */ (1<<6));
+    _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
+    _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
 
     /* set default camera */
     g_camera.from = Vec3fa(1.5f,1.5f,-1.5f);
