@@ -53,6 +53,23 @@ namespace embree
   
 #if defined(USE_PTEX)
 
+  PtexFilter* loadPtex(const FileName& fname)
+  {
+    Ptex::String error;
+    std::cout << "loading " << fname.str() << " ... " << std::flush;
+    PtexTexture* tex = PtexTexture::open(fname.c_str(),error);
+    if (tex)
+      std::cout << "[DONE]" << std::endl;
+    else {
+      std::cout << "[FAILED]" << std::endl;
+      THROW_RUNTIME_ERROR("cannot open ptex file: "+fname.str());
+    }
+    PtexFilter::Options opts(PtexFilter::f_point, 0, 1.0);
+    //PtexFilter::Options opts(PtexFilter::f_bicubic, 0, 1.0);
+    return PtexFilter::getFilter(tex, opts);
+  }
+
+
   static std::map<std::string, ptex_file*> ptex_files;
 
   ptex_file::ptex_file(FileName filename, int faces) 
@@ -88,12 +105,8 @@ namespace embree
     const int32_t *vertices_per_face = 0;
     int geom_faces = 0;
     metadata->getValue("PtexFaceVertCounts", vertices_per_face, geom_faces);
-    //PRINT(geom_faces);
-    //PRINT(vertices_per_face);
-    //PRINT(tex->numFaces());
 
     data = new ptex_file(filename, tex->numFaces());
-    //PRINT(data);
     assert(sizeof(uchar3) == 4);
     float px[3];
     int ptex_face_id = 0;
@@ -111,9 +124,6 @@ namespace embree
 	Ptex::Res res = fi.res;
 			  
 	face_texture<uchar3> subtex(res.u(), res.v());
-	//PRINT(subtex.w);
-	//PRINT(subtex.h);
-
 	if (nchan == 3)
 	  {
 	    for (int vi = 0; vi < subtex.h; vi++) {
@@ -153,13 +163,6 @@ namespace embree
       }
     }
     std::cout << "[DONE]" << std::endl;
-
-    /*
-      PtexFilter::Options opts(PtexFilter::f_point, 0, 1.0);
-      //PtexFilter::Options opts(PtexFilter::f_bicubic, 0, 1.0);
-      return PtexFilter::getFilter(tex, opts);
-    */
-
     return data;
   }
 #endif

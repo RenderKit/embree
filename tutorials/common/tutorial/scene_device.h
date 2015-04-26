@@ -143,7 +143,9 @@ struct MirrorMaterial
 enum TEXTURE_FORMAT {
   RGBA8  = 1,
   RGB8   = 2,
-  ALPHA8 = 4
+  ALPHA8 = 3,
+  PTEX_RGBA8 = 4,
+  PTEX_DISPL = 5,
 };
 
 struct Texture {      
@@ -174,10 +176,6 @@ struct OBJMaterial
 
   Texture* map_Kd;       /*< dummy */
   Texture* map_Displ;       /*< dummy */
-#ifdef USE_PTEX
-  ptex_file *ptex_Kd;
-  ptex_file* ptex_displ;
-#endif
 };
 
 struct MetalMaterial
