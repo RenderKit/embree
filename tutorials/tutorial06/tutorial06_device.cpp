@@ -1239,15 +1239,17 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
     /* invoke environment lights if nothing hit */
     if (ray.geomID == RTC_INVALID_GEOMETRY_ID) 
     {
+#if 0
       /* iterate over all ambient lights */
       for (size_t i=0; i<g_ispc_scene->numAmbientLights; i++)
         L = L + Lw*AmbientLight__eval(g_ispc_scene->ambientLights[i],ray.dir); // FIXME: +=
-
+#endif
+#if 0
       /* iterate over all distant lights */
       for (size_t i=0; i<g_ispc_scene->numDistantLights; i++)
         L = L + Lw*DistantLight__eval(g_ispc_scene->distantLights[i],ray.dir); // FIXME: +=
-
-      //if (i==0) L = Vec3fa(1.0f);	
+#endif
+      if (i==0) L = Vec3fa(1.0f);	
       break;
     }
 

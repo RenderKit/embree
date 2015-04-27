@@ -199,6 +199,15 @@ struct ISPCSubdivMeshKeyFrame {
         materials = new OBJScene::Material[numMaterials];
         memcpy(materials,materials_in,numMaterials*sizeof(OBJScene::Material));
 
+	/* no texture support for Xeon Phi */
+	for (size_t i=0;i<numMaterials;i++)
+	  if (materials[i].ty == OBJScene::MATERIAL_OBJ)
+	  {
+	     OBJScene::OBJMaterial *objm = ( OBJScene::OBJMaterial*)&materials[i];
+	     objm->map_Kd    = NULL;
+	     objm->map_Displ = NULL;
+	  }
+	
         ambientLights = new OBJScene::AmbientLight[numAmbientLights];
         memcpy(ambientLights,ambientLights_in,numAmbientLights*sizeof(OBJScene::AmbientLight));
 

@@ -892,6 +892,7 @@ void displacementFunction(void* uniform ptr, uniform unsigned int geomID, unifor
                       uniform size_t N)
 {
 #if defined(USE_PTEX)
+d
   uniform ISPCSubdivMesh* uniform mesh = (uniform ISPCSubdivMesh* uniform)geomID_to_mesh[geomID];
   uniform int materialID = mesh->materialID;
   uniform int numMaterials = g_ispc_scene->numMaterials;
