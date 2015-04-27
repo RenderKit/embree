@@ -654,31 +654,9 @@ void progressEnd() {
   std::cout << "]" << std::endl;
 }
 
-/*
-#endif
-float getPtexTexel1f(void* filter, int faceId, float u, float v)
+Vec3f getPtexTexel3f(void* data, const int faceId, const float u, const float v)
 {
-  float result = zero;
-#if USE_PTEX
-  ((PtexFilter*)filter)->eval((float*)&result, 0, 1, faceId, v, u, 0, 0, 0, 0);
-#endif
-  return result;
-}
-
-Vec3fa getPtexTexel3f(void* filter, int faceId, float u, float v)
-{
-  Vec3fa result = zero;
-#if USE_PTEX
-  ((PtexFilter*)filter)->eval((float*)&result, 0, 3, faceId, v, u, 0, 0, 0, 0);
-#endif
-  return result;
-}
-#ifdef ./
-*/
-
-Vec3fa getPtexTexel3f(void* data, int faceId, float u, float v)
-{
-  Vec3fa result = zero;
+  Vec3f result = zero;
 #if defined(USE_PTEX)
   if (data) 
     result = ((ptex_file*)data)->getNearest3f(faceId, u, v);
@@ -686,7 +664,7 @@ Vec3fa getPtexTexel3f(void* data, int faceId, float u, float v)
   return result;
 }
 
-float getPtexTexel1f(void* data, int faceId, float u, float v)
+float getPtexTexel1f(void* data, const int faceId, const float u, const float v)
 {
   float result = 0.0f;
 #if defined(USE_PTEX)
@@ -741,7 +719,7 @@ Vec2f getTextureCoordinatesSubdivMesh(void* _mesh, const unsigned int primID, co
   return st;
 }
 
-Vec3fa getTextureTexel3f(void *_texture,float s, float t)
+Vec3f  getTextureTexel3f(void *_texture,const float s, const float t)
 {
   Texture *texture = (Texture*)_texture;
   if (texture->format == RGBA8)
@@ -760,9 +738,9 @@ Vec3fa getTextureTexel3f(void *_texture,float s, float t)
       else
 	iv = min(iv,texture->height-1);
       unsigned char *t = (unsigned char*)texture->data + (iv * texture->width + iu) * 4; //texture->bytesPerTexel;
-      return Vec3fa(  (float)t[0] * 1.0f/255.0f, (float)t[1] * 1.0f/255.0f, (float)t[2] * 1.0f/255.0f );
+      return Vec3f(  (float)t[0] * 1.0f/255.0f, (float)t[1] * 1.0f/255.0f, (float)t[2] * 1.0f/255.0f );
     }
   
-  Vec3fa color(1.0f);
+  Vec3f color(1.0f);
   return color;
 }

@@ -93,3 +93,9 @@ Vec3fa noise3D(const Vec3fa& p);
 void progressStart();
 uniform bool progressMonitor(void* uniform ptr, const uniform double n);
 void progressEnd();
+
+float  getPtexTexel1f(void* uniform ptex, int faceId, float u, float v);
+Vec3f  getPtexTexel3f(void* uniform ptex, int faceId, float u, float v);
+
+Vec2f  getTextureCoordinatesSubdivMesh(void* uniform mesh, const unsigned int primID, const float u, const float v);
+Vec3f  getTextureTexel3f(void * uniform texture, float u, float v);

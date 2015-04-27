@@ -30,25 +30,25 @@
 #define FIX_SAMPLING 0
 #define SAMPLES_PER_PIXEL 1
 
+#define ENABLE_TEXTURING 1
+#define ENABLE_OCCLUSION_FILTER 0
+#define ENABLE_DISPLACEMENTS 0
+
 //#define FORCE_FIXED_EDGE_TESSELLATION
 #define FIXED_EDGE_TESSELLATION_VALUE 2
 //#define FIXED_EDGE_TESSELLATION_VALUE 32
 
-#define MAX_EDGE_LEVEL 64.0f
-//#define MAX_EDGE_LEVEL 8.0f
-#define MIN_EDGE_LEVEL 4.0f
-#define ENABLE_DISPLACEMENTS 0
-#if ENABLE_DISPLACEMENTS
-#  define LEVEL_FACTOR 256.0f
-#else
-#  define LEVEL_FACTOR 64.0f
-#endif
+#define MAX_EDGE_LEVEL 128.0f
+#define MIN_EDGE_LEVEL   4.0f
+#define LEVEL_FACTOR    64.0f
 
 uniform bool g_subdiv_mode = false;
 
-
 struct DifferentialGeometry
 {
+  int geomID;
+  int primID;
+  float u,v;
   Vec3f P;
   Vec3f Ng;
   Vec3f Ns;
@@ -471,6 +471,15 @@ __device__ void OBJMaterial__preprocess(uniform OBJMaterial* uniform material, B
     //if (material->map_Ka) { brdf.Ka *= material->map_Ka->get(dg.st); }
     brdf.Kd = d * make_Vec3f(material->Kd);  
     //if (material->map_Kd) brdf.Kd *= material->map_Kd->get(dg.st);  
+
+#if ENABLE_TEXTURING == 1
+    if (material->map_Kd) 
+      {
+	brdf.Kd = getTextureTexel3f(material->map_Kd,dg.u,dg.v);	
+        //brdf.Kd = d * getPtexTexel3f(material->ptex_Kd, ray.primID, ray.v, ray.u);
+      }
+#endif
+
     brdf.Ks = d * make_Vec3f(material->Ks);  
     //if (material->map_Ks) brdf.Ks *= material->map_Ks->get(dg.st); 
     brdf.Ns = material->Ns;  
@@ -809,9 +818,11 @@ uniform int* uniform geomID_to_type = NULL;
 renderPixelFunc renderPixel;
 
 /* occlusion filter function */
+#if ENABLE_OCCLUSION_FILTER == 1
 void occlusionFilterReject(void* uniform ptr, RTCRay& ray) {
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
 }
+#endif
 
 /* error reporting function */
 void error_handler(const uniform RTCError code, const uniform int8* uniform str)
@@ -866,6 +877,36 @@ export void device_init (uniform int8* uniform cfg)
 
 } // device_init
 
+
+void displacementFunction(void* uniform ptr, uniform unsigned int geomID, uniform int unsigned primID, 
+                      const uniform float* uniform u,      /*!< u coordinates (source) */
+                      const uniform float* uniform v,      /*!< v coordinates (source) */
+                      const uniform float* uniform nx,     /*!< x coordinates of normal at point to displace (source) */
+                      const uniform float* uniform ny,     /*!< y coordinates of normal at point to displace (source) */
+                      const uniform float* uniform nz,     /*!< z coordinates of normal at point to displace (source) */
+                      uniform float* uniform px,           /*!< x coordinates of points to displace (source and target) */
+                      uniform float* uniform py,           /*!< y coordinates of points to displace (source and target) */
+                      uniform float* uniform pz,           /*!< z coordinates of points to displace (source and target) */
+                      uniform size_t N)
+{
+#if defined(USE_PTEX)
+  uniform ISPCSubdivMesh* uniform mesh = (uniform ISPCSubdivMesh* uniform)geomID_to_mesh[geomID];
+  uniform int materialID = mesh->materialID;
+  uniform int numMaterials = g_ispc_scene->numMaterials;
+  uniform OBJMaterial* uniform material = (uniform OBJMaterial* uniform)&g_ispc_scene->materials[materialID];
+  if (material->map_Displ)
+    for (size_t i=0;i<N;i++) 
+      {
+	const float displ = getPtexTexel1f(material->map_Displ, primID, v[i], u[i]);
+	assert( isfinite(displ));
+	px[i] += nx[i] * displ;
+	py[i] += ny[i] * displ;
+	pz[i] += nz[i] * displ;
+      }
+#endif
+
+}
+
 void convertTriangleMeshes(uniform ISPCScene* uniform scene_in, RTCScene scene_out, uniform size_t numGeometries)
 {
   /* add all meshes to the scene */
@@ -909,8 +950,12 @@ void convertTriangleMeshes(uniform ISPCScene* uniform scene_in, RTCScene scene_o
       else 
 	allTransparent = false;
     }
+
+#if ENABLE_OCCLUSION_FILTER == 1
     if (allTransparent)
       rtcSetOcclusionFilterFunction(scene_out,geomID,(RTCFilterFuncVarying)&occlusionFilterReject);
+#endif
+
   }
 }
 
@@ -994,6 +1039,9 @@ void convertSubdivMeshes(uniform ISPCScene* uniform scene_in, RTCScene scene_out
 #endif
   }
 }      
+
+
+
 
 typedef void* uniform void_ptr;
 
@@ -1157,6 +1205,10 @@ Vec3f renderPixelFunction(float x, float y, rand_state& state, const uniform Vec
 
     /* compute differential geometry */
     DifferentialGeometry dg;
+    dg.geomID = ray.geomID;
+    dg.primID = ray.primID;
+    dg.u = ray.u;
+    dg.v = ray.v;
     dg.P  = ray.org+ray.tfar*ray.dir;
     dg.Ng = face_forward(ray.dir,normalize(ray.Ng));
     //Vec3f _Ns = interpolate_normal(ray);

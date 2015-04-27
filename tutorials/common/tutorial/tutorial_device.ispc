@@ -565,3 +565,23 @@ uniform bool progressMonitor(void* uniform ptr, const uniform double n) {
 
 void progressEnd() {
 }
+
+float  getPtexTexel1f(void* uniform ptex, int faceId, float u, float v)
+{
+ return 0.0f;
+}
+
+Vec3f getPtexTexel3f(void* uniform ptex, int faceId, float u, float v)
+{
+ return make_Vec3f(0.0f,0.0f,0.0f);
+}
+
+Vec2f getTextureCoordinatesSubdivMesh(void* uniform mesh, const unsigned int primID, const float u, const float v)
+{
+ return make_Vec2f(0.0f,0.0f);
+}
+
+Vec3f getTextureTexel3f(void *uniform texture, float u, float v)
+{
+ return make_Vec3f(0.0f,0.0f,0.0f);
+}

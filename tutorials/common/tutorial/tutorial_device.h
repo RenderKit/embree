@@ -110,8 +110,8 @@ void progressStart();
 bool progressMonitor(void* ptr, const double dn);
 void progressEnd();
 
-float  getPtexTexel1f(void* ptex, int faceId, float u, float v);
-Vec3fa getPtexTexel3f(void* ptex, int faceId, float u, float v);
+float  getPtexTexel1f(void* ptex, const int faceId, const float u, const float v);
+Vec3f  getPtexTexel3f(void* ptex, const int faceId, const float u, const float v);
 
 Vec2f getTextureCoordinatesSubdivMesh(void* mesh, const unsigned int primID, const float u, const float v);
-Vec3fa getTextureTexel3f(void *texture,float u, float v);
+Vec3f  getTextureTexel3f(void *texture,const float u, const float v);
