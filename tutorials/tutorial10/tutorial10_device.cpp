@@ -183,10 +183,10 @@ void displacementFunction(void* ptr, unsigned int geomID, int unsigned primID,
   int materialID = mesh->materialID;
   int numMaterials = g_ispc_scene->numMaterials;
   OBJMaterial* material = (OBJMaterial*)&g_ispc_scene->materials[materialID];
-  if (material->ptex_displ)
+  if (material->map_Displ)
     for (size_t i=0;i<N;i++) // N == 1
       {
-	const float displ = getPtexTexel1f(material->ptex_displ, primID, v[i], u[i]);
+	const float displ = getPtexTexel1f(material->map_Displ, primID, v[i], u[i]);
 	assert( isfinite(displ));
 	px[i] += nx[i] * displ;
 	py[i] += ny[i] * displ;
@@ -399,30 +399,12 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
     {
       Vec2f st = getTextureCoordinatesSubdivMesh(mesh,ray.primID,ray.u,ray.v);      
       color *= getTextureTexel3f(material->map_Kd,st.x,st.y);
+      //color *= getPtexTexel3f(material->map_Kd, ray.primID, ray.v, ray.u);
     }
-#if defined(USE_PTEX)
-  if (material->ptex_Kd) {
-    //int prim_id = ray.primID;
-    //int offset = mesh->face_offsets[prim_id];
-    // int verts = mesh->verticesPerFace[prim_id];
-//       std::cout << "PTEX hit ID=" << prim_id << "  ";
-//       for (int i = 0; i < verts; ++i)
-// 	 		std::cout << "  " << mesh->positions[mesh->position_indices[offset+i]];
-//       std::cout << std::endl;
-    color *= getPtexTexel3f(material->ptex_Kd, ray.primID, ray.v, ray.u);
-    //float d = getPtexTexel1f(material->ptex_Kd, ray.primID, ray.v, ray.u);
-    //color = Vec3fa(d);
-
-  }
-#endif
 #endif      
-#if 0
-    color = rndColor(ray.geomID);
-#else
   /* apply ambient light */
   Vec3fa Ng = normalize(ray.Ng);
   color = color*abs(dot(ray.dir,Ng));   
-#endif
   return color;
 }
 
