@@ -568,18 +568,30 @@ void progressEnd() {
 
 float  getPtexTexel1f(void* uniform _texture, int faceId, float u, float v)
 {
+  float value = 0.0f;
   uniform Texture *uniform texture = (uniform Texture *uniform)_texture;
   if (texture->format == PTEX_FLOAT32)
     {
-      uniform Texture ** uniform face_texture = (uniform Texture **uniform )texture->data;
-      //return getTextureTexel1f(face_texture[faceId],u,v);
+     uniform Texture ** uniform face_texture = (uniform Texture **uniform )texture->data;
+     foreach_unique (id in faceId) {
+      value += getTextureTexel1f(face_texture[id],u,v);
+     }
     }
-  return 0.0f;
+  return value;
 }
 
 Vec3f getPtexTexel3f(void* uniform _texture, int faceId, float u, float v)
 {
- return make_Vec3f(0.0f,0.0f,0.0f);
+ Vec3f value = make_Vec3f(0.0f,0.0f,0.0f);
+  uniform Texture *uniform texture = (uniform Texture *uniform)_texture;
+  if (texture->format == PTEX_RGBA8)
+    {
+     uniform Texture ** uniform face_texture = (uniform Texture **uniform )texture->data;
+     foreach_unique (id in faceId) {
+      value = value + getTextureTexel3f(face_texture[id],u,v);
+     }
+    }
+  return value;
 }
 
 Vec2f getTextureCoordinatesSubdivMesh(void* uniform _mesh, const unsigned int primID, const float u, const float v)
@@ -630,7 +642,7 @@ Vec2f getTextureCoordinatesSubdivMesh(void* uniform _mesh, const unsigned int pr
 float getTextureTexel1f(void *uniform _texture, float s, float t)
 {
   uniform Texture * uniform texture = (Texture*)_texture;
-  if (texture->format == FLOAT32)
+  if (texture && texture->format == FLOAT32)
     { 
       const float u = min(max(s,0.0f),1.0f);
       const float v = min(max(t,0.0f),1.0f);
@@ -639,13 +651,14 @@ float getTextureTexel1f(void *uniform _texture, float s, float t)
       uniform float *uniform data = (uniform float *uniform)texture->data;
       return data[vi*texture->width + ui];
     }
+ return 0.0f;
 }
 
 
 Vec3f getTextureTexel3f(void *uniform _texture, float s, float t)
 {
   uniform Texture * uniform texture = (Texture*)_texture;
-  if (texture->format == RGBA8)
+  if (texture && texture->format == RGBA8)
     {
       //u = max(min(u,1.0f),0.0f);
       //v = max(min(v,1.0f),0.0f);
@@ -664,7 +677,6 @@ Vec3f getTextureTexel3f(void *uniform _texture, float s, float t)
       const int offset = (iv * texture->width + iu) * 4;
       uniform unsigned int8 * uniform t = (uniform unsigned int8* uniform)texture->data;
 
-      //texture->bytesPerTexel;
       const unsigned int8  r = t[offset+0];
       const unsigned int8  g = t[offset+1];
       const unsigned int8  b = t[offset+2];
@@ -672,6 +684,5 @@ Vec3f getTextureTexel3f(void *uniform _texture, float s, float t)
       return make_Vec3f(  (float)r * 1.0f/255.0f, (float)g * 1.0f/255.0f, (float)b * 1.0f/255.0f );
     }
   
-  Vec3f color = make_Vec3f(1.0f,1.0f,1.0f);
-  return color;
+  return make_Vec3f(0.0f,0.0f,0.0f);
 }
