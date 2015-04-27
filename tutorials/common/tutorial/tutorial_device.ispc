@@ -576,12 +576,81 @@ Vec3f getPtexTexel3f(void* uniform ptex, int faceId, float u, float v)
  return make_Vec3f(0.0f,0.0f,0.0f);
 }
 
-Vec2f getTextureCoordinatesSubdivMesh(void* uniform mesh, const unsigned int primID, const float u, const float v)
+Vec2f getTextureCoordinatesSubdivMesh(void* uniform _mesh, const unsigned int primID, const float u, const float v)
 {
- return make_Vec2f(0.0f,0.0f);
+  uniform ISPCSubdivMesh *uniform mesh = (uniform ISPCSubdivMesh *uniform )_mesh;
+  Vec2f st;
+  st.x = u;
+  st.y = v;
+  if (mesh && mesh->texcoord_indices)
+    {
+      assert(primID < mesh->numFaces);
+      const size_t face_offset = mesh->face_offsets[primID];
+      if (mesh->verticesPerFace[primID] == 3)
+	{
+	  const size_t t0 = mesh->texcoord_indices[face_offset+0];
+	  const size_t t1 = mesh->texcoord_indices[face_offset+1];
+	  const size_t t2 = mesh->texcoord_indices[face_offset+2];
+	  const Vec2f txt0 = mesh->texcoords[t0];
+	  const Vec2f txt1 = mesh->texcoords[t1];
+	  const Vec2f txt2 = mesh->texcoords[t2];
+	  const float w = 1.0f - u - v;
+	  st = w * txt0 + u * txt1 + v * txt2;
+	}
+      else if (mesh->verticesPerFace[primID] == 4)
+	{
+	  const size_t t0 = mesh->texcoord_indices[face_offset+0];
+	  const size_t t1 = mesh->texcoord_indices[face_offset+1];
+	  const size_t t2 = mesh->texcoord_indices[face_offset+2];
+	  const size_t t3 = mesh->texcoord_indices[face_offset+3];
+	  const Vec2f txt0 = mesh->texcoords[t0];
+	  const Vec2f txt1 = mesh->texcoords[t1];
+	  const Vec2f txt2 = mesh->texcoords[t2];
+	  const Vec2f txt3 = mesh->texcoords[t3];
+	  const float u0 = u;
+	  const float v0 = v;
+	  const float u1 = 1.0f - u;
+	  const float v1 = 1.0f - v;
+	  st = u1*v1 * txt0 + u0*v1* txt1 + u0*v0 * txt2 + u1*v0* txt3;	  
+	}
+#if defined(_DEBUG)
+      else
+	PRINT("not supported");
+#endif
+    }
+  return st;
 }
 
-Vec3f getTextureTexel3f(void *uniform texture, float u, float v)
+Vec3f getTextureTexel3f(void *uniform _texture, float s, float t)
 {
- return make_Vec3f(0.0f,0.0f,0.0f);
+  uniform Texture * uniform texture = (Texture*)_texture;
+  if (texture->format == RGBA8)
+    {
+      //u = max(min(u,1.0f),0.0f);
+      //v = max(min(v,1.0f),0.0f);
+     
+      int iu = (int)(s * (float)(texture->width));
+      if (texture->width_mask) 
+	iu &= texture->width_mask;
+      else
+	iu = min(iu,texture->width-1);
+      int iv = (int)(t * (float)(texture->height));
+      if (texture->height_mask) 
+	iv &= texture->height_mask;
+      else
+	iv = min(iv,texture->height-1);
+
+      const int offset = (iv * texture->width + iu) * 4;
+      uniform unsigned int8 * uniform t = (uniform unsigned int8* uniform)texture->data;
+
+      //texture->bytesPerTexel;
+      const unsigned int8  r = t[offset+0];
+      const unsigned int8  g = t[offset+1];
+      const unsigned int8  b = t[offset+2];
+
+      return make_Vec3f(  (float)r * 1.0f/255.0f, (float)g * 1.0f/255.0f, (float)b * 1.0f/255.0f );
+    }
+  
+  Vec3f color = make_Vec3f(1.0f,1.0f,1.0f);
+  return color;
 }

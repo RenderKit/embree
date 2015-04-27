@@ -29,7 +29,8 @@ struct Triangle { int v0, v1, v2; };
 #include "embree2/rtcore.h"
 #include "ray.h"
 
-#include "texture_loader.h"
+//FIXME:
+#include "texture_loader.h" 
 using namespace embree;
 
 /* returns time stamp counter */

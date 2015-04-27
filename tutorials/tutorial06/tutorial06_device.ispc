@@ -41,8 +41,10 @@
 #define MAX_EDGE_LEVEL 128.0f
 #define MIN_EDGE_LEVEL   4.0f
 #define LEVEL_FACTOR    64.0f
+#define MAX_PATH_LENGTH  8
 
 uniform bool g_subdiv_mode = false;
+uniform unsigned int keyframeID = 0;
 
 struct DifferentialGeometry
 {
@@ -996,6 +998,29 @@ task void updateEdgeLevelBufferTask( uniform ISPCSubdivMesh* uniform mesh, const
 }
 #endif
 
+void updateKeyFrame(uniform ISPCScene* uniform scene_in)
+{
+  for (uniform size_t g=0; g<scene_in->numSubdivMeshes; g++)
+  {
+    uniform ISPCSubdivMesh* uniform mesh = g_ispc_scene->subdiv[g];
+    uniform unsigned int geomID = mesh->geomID;
+
+    if (g_ispc_scene->subdivMeshKeyFrames)
+      {
+	uniform ISPCSubdivMeshKeyFrame *uniform keyframe      = g_ispc_scene->subdivMeshKeyFrames[keyframeID];
+	uniform ISPCSubdivMesh         *uniform keyframe_mesh = keyframe->subdiv[g];
+	rtcSetBuffer(g_scene, geomID, RTC_VERTEX_BUFFER, keyframe_mesh->positions, 0, sizeof(Vec3fa  ));
+	rtcUpdateBuffer(g_scene,geomID,RTC_VERTEX_BUFFER);    
+      }
+  }
+
+  keyframeID++;
+  if (keyframeID >= g_ispc_scene->numSubdivMeshKeyFrames)
+    keyframeID = 0;
+
+}
+
+
 void updateEdgeLevels(uniform ISPCScene* uniform scene_in, const uniform Vec3fa& cam_pos)
 {
   for (uniform size_t g=0; g<scene_in->numSubdivMeshes; g++)
@@ -1010,6 +1035,7 @@ void updateEdgeLevels(uniform ISPCScene* uniform scene_in, const uniform Vec3fa&
    rtcUpdateBuffer(g_scene,geomID,RTC_LEVEL_BUFFER);    
   }
 }
+
 
 
 void convertSubdivMeshes(uniform ISPCScene* uniform scene_in, RTCScene scene_out, uniform size_t numGeometries, const uniform Vec3fa& cam_pos)
@@ -1175,7 +1201,7 @@ Vec3f renderPixelFunction(float x, float y, rand_state& state, const uniform Vec
   RTCRay ray = make_Ray(p,normalize(x*vx + y*vy + vz),0.0f,inf);
 
   /* iterative path tracer loop */
-  for (uniform int i=0; i<8; i++)
+  for (uniform int i=0; i<MAX_PATH_LENGTH; i++)
   {
     /* terminate if contribution too low */
     if (max(Lw.x,max(Lw.y,Lw.z)) < 0.01f)
@@ -1221,8 +1247,15 @@ Vec3f renderPixelFunction(float x, float y, rand_state& state, const uniform Vec
 #if 0 // FIXME: pointer gather not implemented in ISPC for Xeon Phi
     if (geomID_to_type[ray.geomID] == 0)
       materialID = ((ISPCMesh* uniform) geomID_to_mesh[ray.geomID])->triangles[ray.primID].materialID; 
-    else if (geomID_to_type[ray.geomID] == 1)                             
+    else if (geomID_to_type[ray.geomID] == 1)       
+     {                      
       materialID = ((ISPCSubdivMesh* uniform) geomID_to_mesh[ray.geomID])->materialID; 
+#if ENABLE_TEXTURING == 1
+	const Vec2f st = getTextureCoordinatesSubdivMesh((ISPCSubdivMesh*) geomID_to_mesh[ray.geomID],ray.primID,ray.u,ray.v);
+	dg.u = st.x;
+	dg.v = st.y;
+#endif
+     }
     else
       materialID = ((ISPCMesh* uniform) geomID_to_mesh[ray.geomID])->meshMaterialID; 
 #else 
@@ -1234,8 +1267,16 @@ Vec3f renderPixelFunction(float x, float y, rand_state& state, const uniform Vec
       if (geomID >= 0 && geomID < g_ispc_scene->numMeshes+g_ispc_scene->numSubdivMeshes) { // FIXME: workaround for ISPC bug
 	if (geomID_to_type[geomID] == 0) 
 	  materialID = ((ISPCMesh* uniform) geomID_to_mesh[geomID])->triangles[ray.primID].materialID; 
-	else if (geomID_to_type[geomID] == 1)                             
-	  materialID = ((ISPCSubdivMesh* uniform) geomID_to_mesh[geomID])->materialID; 
+	else if (geomID_to_type[geomID] == 1)                
+         {             
+ 	  materialID = ((ISPCSubdivMesh* uniform) geomID_to_mesh[geomID])->materialID; 
+#if ENABLE_TEXTURING == 1
+	  const Vec2f st = getTextureCoordinatesSubdivMesh((ISPCSubdivMesh*) geomID_to_mesh[geomID],ray.primID,ray.u,ray.v);
+	  dg.u = st.x;
+	  dg.v = st.y;
+#endif
+
+         }
 	else 
 	  materialID = ((ISPCMesh* uniform) geomID_to_mesh[geomID])->meshMaterialID;         
       }
@@ -1444,6 +1485,13 @@ export void device_render (uniform int* uniform pixels,
   camera_changed |= ne(g_accu_vy,vy); g_accu_vy = vy; // FIXME: use != operator
   camera_changed |= ne(g_accu_vz,vz); g_accu_vz = vz; // FIXME: use != operator
   camera_changed |= ne(g_accu_p,  p); g_accu_p  = p;  // FIXME: use != operator
+
+  if (g_ispc_scene->numSubdivMeshKeyFrames)
+    {
+      updateKeyFrame(g_ispc_scene);
+      rtcCommit(g_scene);
+      g_changed = true;
+    }
 
 #if  FIX_SAMPLING == 0
   g_accu_count++;

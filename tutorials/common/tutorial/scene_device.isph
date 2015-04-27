@@ -148,13 +148,13 @@ enum TEXTURE_FORMAT {
 };
 
 struct Texture {      
-  int width;
-  int height;    
-  int format;
-  int bytesPerTexel;
-  int width_mask;
-  int height_mask;
-  void *data;
+  uniform int width;
+  uniform int height;    
+  uniform int format;
+  uniform int bytesPerTexel;
+  uniform int width_mask;
+  uniform int height_mask;
+  void *uniform data;
 };
 
 struct OBJMaterial
