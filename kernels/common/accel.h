@@ -152,6 +152,9 @@ namespace embree
       Intersectors() 
         : ptr(nullptr) {}
 
+      Intersectors (ErrorFunc error) 
+        : ptr(nullptr), intersector1(error), intersector4(error), intersector8(error), intersector16(error) {}
+
       void print(size_t ident) 
       {
         if (intersector1.name) {

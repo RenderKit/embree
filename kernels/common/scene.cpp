@@ -27,6 +27,13 @@
 
 namespace embree
 {
+  /* error raising rtcIntersect and rtcOccluded functions */
+  void missing_rtcCommit()     { throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed"); }
+  void invalid_rtcIntersect1() { throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersect and rtcOccluded not enabled"); }
+  void invalid_rtcIntersect4() { throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersect4 and rtcOccluded4 not enabled"); }
+  void invalid_rtcIntersect8() { throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersect8 and rtcOccluded8 not enabled"); }
+  void invalid_rtcIntersect16() { throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersect16 and rtcOccluded16 not enabled"); }
+
   Scene::Scene (RTCSceneFlags sflags, RTCAlgorithmFlags aflags)
     : flags(sflags), aflags(aflags), numMappedBuffers(0), is_build(false), modified(true), 
       needTriangles(false), needTriangleVertices(false), needBezierVertices(false),
@@ -45,6 +52,8 @@ namespace embree
 #else
     group = new tbb::task_group;
 #endif
+
+    intersectors = Accel::Intersectors(missing_rtcCommit);
 
     if (State::instance()->scene_flags != -1)
       flags = (RTCSceneFlags) State::instance()->scene_flags;
@@ -319,11 +328,6 @@ namespace embree
     geometries[geometry->id] = nullptr;
     delete geometry;
   }
-
-  void invalid_rtcIntersect1() { throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersect and rtcOccluded not enabled"); }
-  void invalid_rtcIntersect4() { throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersect4 and rtcOccluded4 not enabled"); }
-  void invalid_rtcIntersect8() { throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersect8 and rtcOccluded8 not enabled"); }
-  void invalid_rtcIntersect16() { throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersect16 and rtcOccluded16 not enabled"); }
 
   void Scene::updateInterface()
   {
