@@ -120,9 +120,9 @@ namespace embree
     struct Texture {
 
       enum {
-	RGBA8  = 1,
-	RGB8   = 2,
-	ALPHA8 = 3,
+	RGBA8      = 1,
+	RGB8       = 2,
+	FLOAT32    = 3,
 	PTEX_RGBA8 = 4,
 	PTEX_DISPL = 5,
       };

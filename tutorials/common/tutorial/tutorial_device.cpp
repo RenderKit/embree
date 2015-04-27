@@ -719,6 +719,21 @@ Vec2f getTextureCoordinatesSubdivMesh(void* _mesh, const unsigned int primID, co
   return st;
 }
 
+float getTextureTexel1f(void *_texture, const float s, const float t)
+{
+  Texture *texture = (Texture*)_texture;
+  if (texture->format == FLOAT32)
+    {
+      const float u = min(max(s,0.0f),1.0f);
+      const float v = min(max(t,0.0f),1.0f);
+      const int ui  = min((int)floorf((texture->width-1)*u),texture->width-1);
+      const int vi  = min((int)floorf((texture->height-1)*v),texture->height-1);
+      float *data   = (float *)texture->data;
+      return data[vi*texture->width + ui];
+    }
+  return 1.0f;
+}
+
 Vec3f  getTextureTexel3f(void *_texture,const float s, const float t)
 {
   Texture *texture = (Texture*)_texture;

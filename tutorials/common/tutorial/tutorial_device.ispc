@@ -621,6 +621,21 @@ Vec2f getTextureCoordinatesSubdivMesh(void* uniform _mesh, const unsigned int pr
   return st;
 }
 
+float getTextureTexel1f(void *uniform _texture, float s, float t)
+{
+  uniform Texture * uniform texture = (Texture*)_texture;
+  if (texture->format == FLOAT32)
+    { 
+      const float u = min(max(s,0.0f),1.0f);
+      const float v = min(max(t,0.0f),1.0f);
+      const int ui  = min((int)floor((texture->width-1)*u),texture->width-1);
+      const int vi  = min((int)floor((texture->height-1)*v),texture->height-1);
+      uniform float *uniform data = (uniform float *uniform)texture->data;
+      return data[vi*texture->width + ui];
+    }
+}
+
+
 Vec3f getTextureTexel3f(void *uniform _texture, float s, float t)
 {
   uniform Texture * uniform texture = (Texture*)_texture;
