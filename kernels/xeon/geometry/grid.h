@@ -524,7 +524,9 @@ namespace embree
           if (!mesh->displBounds.empty() && !inside(mesh->displBounds,P1-P0))
             THROW_RUNTIME_ERROR("displacement out of bounds");
 #endif
-          P[y*width+x] = P1;
+          P[y*width+x].x = P1.x;
+          P[y*width+x].y = P1.y;
+          P[y*width+x].z = P1.z;
         }
       }
     }
