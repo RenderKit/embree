@@ -320,6 +320,11 @@ namespace embree
     delete geometry;
   }
 
+  void invalid_rtcIntersect1() { throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersect and rtcOccluded not enabled"); }
+  void invalid_rtcIntersect4() { throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersect4 and rtcOccluded4 not enabled"); }
+  void invalid_rtcIntersect8() { throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersect8 and rtcOccluded8 not enabled"); }
+  void invalid_rtcIntersect16() { throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersect16 and rtcOccluded16 not enabled"); }
+
   void Scene::updateInterface()
   {
     /* update bounds */
@@ -328,22 +333,10 @@ namespace embree
     intersectors = accels.intersectors;
 
     /* enable only algorithms choosen by application */
-    if ((aflags & RTC_INTERSECT1) == 0) {
-      intersectors.intersector1.intersect = nullptr;
-      intersectors.intersector1.occluded = nullptr;
-    }
-    if ((aflags & RTC_INTERSECT4) == 0) {
-      intersectors.intersector4.intersect = nullptr;
-      intersectors.intersector4.occluded = nullptr;
-    }
-    if ((aflags & RTC_INTERSECT8) == 0) {
-      intersectors.intersector8.intersect = nullptr;
-      intersectors.intersector8.occluded = nullptr;
-    }
-    if ((aflags & RTC_INTERSECT16) == 0) {
-      intersectors.intersector16.intersect = nullptr;
-      intersectors.intersector16.occluded = nullptr;
-    }
+    if ((aflags & RTC_INTERSECT1) == 0) intersectors.intersector1 = Accel::Intersector1(&invalid_rtcIntersect1);
+    if ((aflags & RTC_INTERSECT4) == 0) intersectors.intersector4 = Accel::Intersector4(&invalid_rtcIntersect4);
+    if ((aflags & RTC_INTERSECT8) == 0) intersectors.intersector8 = Accel::Intersector8(&invalid_rtcIntersect8);
+    if ((aflags & RTC_INTERSECT16) == 0) intersectors.intersector16 = Accel::Intersector16(&invalid_rtcIntersect16);
 
     /* update commit counter */
     commitCounter++;
