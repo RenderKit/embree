@@ -19,13 +19,6 @@
 #include "sys/sysinfo.h"
 #include "scene_device.h"
 
-#if defined(USE_PTEX)
-#include "Ptexture.h"
-#endif
-// #if defined(USE_PTEX)
-// #include "Ptexture.h"
-// #endif
-
 /* the scene to render */
 extern RTCScene g_scene;
 
@@ -654,24 +647,28 @@ void progressEnd() {
   std::cout << "]" << std::endl;
 }
 
-Vec3f getPtexTexel3f(void* data, const int faceId, const float u, const float v)
+Vec3f getPtexTexel3f(void* _texture, const int faceId, const float u, const float v)
 {
-  Vec3f result = zero;
-#if defined(USE_PTEX)
-  if (data) 
-    result = ((ptex_file*)data)->getNearest3f(faceId, u, v);
-#endif
-  return result;
+  Texture *texture = (Texture*)_texture;
+  if (texture->format == PTEX_RGBA8)
+    {
+      assert(faceId < texture->faceTextures);
+      Texture **face_texture = (Texture **)texture->data;
+      return getTextureTexel3f(face_texture[faceId],u,v);
+    }
+  return zero;
 }
 
-float getPtexTexel1f(void* data, const int faceId, const float u, const float v)
+float getPtexTexel1f(void* _texture, const int faceId, const float u, const float v)
 {
-  float result = 0.0f;
-#if defined(USE_PTEX)
-  if (data) 
-    result = ((ptex_file*)data)->getNearest1f(faceId, u, v);
-#endif
-  return result;
+  Texture *texture = (Texture*)_texture;
+  if (texture->format == PTEX_FLOAT32)
+    {
+      assert(faceId < texture->faceTextures);
+      Texture **face_texture = (Texture **)texture->data;
+      return getTextureTexel1f(face_texture[faceId],u,v);
+    }
+  return 0.0f;
 }
 
 Vec2f getTextureCoordinatesSubdivMesh(void* _mesh, const unsigned int primID, const float u, const float v)
@@ -680,7 +677,7 @@ Vec2f getTextureCoordinatesSubdivMesh(void* _mesh, const unsigned int primID, co
   Vec2f st;
   st.x = u;
   st.y = v;
-  if (mesh && mesh->texcoord_indices)
+  if (mesh && mesh->texcoord_indices && mesh->texcoords)
     {
       assert(primID < mesh->numFaces);
       const size_t face_offset = mesh->face_offsets[primID];
@@ -722,7 +719,7 @@ Vec2f getTextureCoordinatesSubdivMesh(void* _mesh, const unsigned int primID, co
 float getTextureTexel1f(void *_texture, const float s, const float t)
 {
   Texture *texture = (Texture*)_texture;
-  if (texture->format == FLOAT32)
+  if (likely(texture && texture->format == FLOAT32))
     {
       const float u = min(max(s,0.0f),1.0f);
       const float v = min(max(t,0.0f),1.0f);
@@ -731,13 +728,13 @@ float getTextureTexel1f(void *_texture, const float s, const float t)
       float *data   = (float *)texture->data;
       return data[vi*texture->width + ui];
     }
-  return 1.0f;
+  return 0.0f;
 }
 
 Vec3f  getTextureTexel3f(void *_texture,const float s, const float t)
 {
   Texture *texture = (Texture*)_texture;
-  if (texture->format == RGBA8)
+  if (likely(texture && texture->format == RGBA8))
     {
       //u = max(min(u,1.0f),0.0f);
       //v = max(min(v,1.0f),0.0f);
@@ -754,8 +751,6 @@ Vec3f  getTextureTexel3f(void *_texture,const float s, const float t)
 	iv = min(iv,texture->height-1);
       unsigned char *t = (unsigned char*)texture->data + (iv * texture->width + iu) * 4; //texture->bytesPerTexel;
       return Vec3f(  (float)t[0] * 1.0f/255.0f, (float)t[1] * 1.0f/255.0f, (float)t[2] * 1.0f/255.0f );
-    }
-  
-  Vec3f color(1.0f);
-  return color;
+    }  
+  return Vec3f(0.0f);;
 }

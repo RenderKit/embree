@@ -566,12 +566,18 @@ uniform bool progressMonitor(void* uniform ptr, const uniform double n) {
 void progressEnd() {
 }
 
-float  getPtexTexel1f(void* uniform ptex, int faceId, float u, float v)
+float  getPtexTexel1f(void* uniform _texture, int faceId, float u, float v)
 {
- return 0.0f;
+  uniform Texture *uniform texture = (uniform Texture *uniform)_texture;
+  if (texture->format == PTEX_FLOAT32)
+    {
+      uniform Texture ** uniform face_texture = (uniform Texture **uniform )texture->data;
+      //return getTextureTexel1f(face_texture[faceId],u,v);
+    }
+  return 0.0f;
 }
 
-Vec3f getPtexTexel3f(void* uniform ptex, int faceId, float u, float v)
+Vec3f getPtexTexel3f(void* uniform _texture, int faceId, float u, float v)
 {
  return make_Vec3f(0.0f,0.0f,0.0f);
 }

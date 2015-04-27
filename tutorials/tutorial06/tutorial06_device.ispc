@@ -31,6 +31,8 @@
 #define SAMPLES_PER_PIXEL 1
 
 #define ENABLE_TEXTURING 1
+#define ENABLE_TEXTURE_COORDINDATES 1
+
 #define ENABLE_OCCLUSION_FILTER 0
 #define ENABLE_DISPLACEMENTS 0
 
@@ -892,7 +894,6 @@ void displacementFunction(void* uniform ptr, uniform unsigned int geomID, unifor
                       uniform size_t N)
 {
 #if defined(USE_PTEX)
-d
   uniform ISPCSubdivMesh* uniform mesh = (uniform ISPCSubdivMesh* uniform)geomID_to_mesh[geomID];
   uniform int materialID = mesh->materialID;
   uniform int numMaterials = g_ispc_scene->numMaterials;
@@ -1255,6 +1256,9 @@ Vec3f renderPixelFunction(float x, float y, rand_state& state, const uniform Vec
 	const Vec2f st = getTextureCoordinatesSubdivMesh((ISPCSubdivMesh*) geomID_to_mesh[ray.geomID],ray.primID,ray.u,ray.v);
 	dg.u = st.x;
 	dg.v = st.y;
+#else
+	dg.u = ray.u;
+	dg.v = ray.v;	
 #endif
      }
     else
@@ -1271,7 +1275,7 @@ Vec3f renderPixelFunction(float x, float y, rand_state& state, const uniform Vec
 	else if (geomID_to_type[geomID] == 1)                
          {             
  	  materialID = ((ISPCSubdivMesh* uniform) geomID_to_mesh[geomID])->materialID; 
-#if ENABLE_TEXTURING == 1
+#if ENABLE_TEXTURE_COORDINDATES == 1
 	  const Vec2f st = getTextureCoordinatesSubdivMesh((ISPCSubdivMesh*) geomID_to_mesh[geomID],ray.primID,ray.u,ray.v);
 	  dg.u = st.x;
 	  dg.v = st.y;

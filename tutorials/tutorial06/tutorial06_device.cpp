@@ -32,17 +32,16 @@
 //#define SAMPLES_PER_PIXEL 8
 
 #define ENABLE_TEXTURING 1
+#define ENABLE_TEXTURE_COORDINATES 0
 #define ENABLE_OCCLUSION_FILTER 0
+#define ENABLE_DISPLACEMENTS 1
 
 //#define FORCE_FIXED_EDGE_TESSELLATION
 #define FIXED_EDGE_TESSELLATION_VALUE 16
-//#define FIXED_EDGE_TESSELLATION_VALUE 32
 
 #define MAX_EDGE_LEVEL 128.0f
 #define MIN_EDGE_LEVEL 4.0f
-//#define MIN_EDGE_LEVEL 4.0f
 
-#define ENABLE_DISPLACEMENTS 1
 
 #define LEVEL_FACTOR 64.0f
 
@@ -482,8 +481,8 @@ void OBJMaterial__preprocess(OBJMaterial* material, BRDF& brdf, const Vec3fa& wo
 #if ENABLE_TEXTURING == 1
     if (material->map_Kd) 
       {
-	brdf.Kd = getTextureTexel3f(material->map_Kd,dg.u,dg.v);	
-        //brdf.Kd = d * getPtexTexel3f(material->ptex_Kd, ray.primID, ray.v, ray.u);
+	//brdf.Kd = getTextureTexel3f(material->map_Kd,dg.u,dg.v);	
+        brdf.Kd = d * getPtexTexel3f(material->map_Kd, ray.primID, ray.v, ray.u);
       }
 #endif
     //if (material->map_Kd) brdf.Kd *= material->map_Kd->get(dg.st);  
@@ -843,7 +842,6 @@ void displacementFunction(void* ptr, unsigned int geomID, int unsigned primID,
                       float* pz,           /*!< z coordinates of points to displace (source and target) */
                       size_t N)
 {
-#if defined(USE_PTEX)
   ISPCSubdivMesh* mesh = (ISPCSubdivMesh*)geomID_to_mesh[geomID];
   int materialID = mesh->materialID;
   int numMaterials = g_ispc_scene->numMaterials;
@@ -857,7 +855,6 @@ void displacementFunction(void* ptr, unsigned int geomID, int unsigned primID,
 	py[i] += ny[i] * displ;
 	pz[i] += nz[i] * displ;
       }
-#endif
 }
 
 /* error reporting function */
@@ -1276,10 +1273,13 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
     else if (geomID_to_type[ray.geomID] == 1)                             
       {
 	materialID = ((ISPCSubdivMesh*) geomID_to_mesh[ray.geomID])->materialID; 
-#if ENABLE_TEXTURING == 1
+#if ENABLE_TEXTURE_COORDINATES == 1
 	const Vec2f st = getTextureCoordinatesSubdivMesh((ISPCSubdivMesh*) geomID_to_mesh[ray.geomID],ray.primID,ray.u,ray.v);
 	dg.u = st.x;
 	dg.v = st.y;
+#else
+	dg.u = ray.u;
+	dg.v = ray.v;	
 #endif
       }
     else

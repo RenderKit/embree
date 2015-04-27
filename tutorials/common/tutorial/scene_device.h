@@ -141,18 +141,21 @@ struct MirrorMaterial
 };
 
 enum TEXTURE_FORMAT {
-  RGBA8      = 1,
-  RGB8       = 2,
-  FLOAT32    = 3,
-  PTEX_RGBA8 = 4,
-  PTEX_DISPL = 5,
+  RGBA8        = 1,
+  RGB8         = 2,
+  FLOAT32      = 3,
+  PTEX_RGBA8   = 4,
+  PTEX_FLOAT32 = 5
 };
 
 struct Texture {      
   int width;
   int height;    
   int format;
-  int bytesPerTexel;
+  union {
+    int bytesPerTexel;
+    int faceTextures;
+  };
   int width_mask;
   int height_mask;
   void *data;
