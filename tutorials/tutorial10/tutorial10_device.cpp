@@ -23,7 +23,7 @@
 #define TILE_SIZE_X 4
 #define TILE_SIZE_Y 4
 
-#define SPP 16
+#define SPP 1
 //#define SPP 4
 
 //#define FORCE_FIXED_EDGE_TESSELLATION
