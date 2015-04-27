@@ -238,14 +238,13 @@ void renderTile(int taskIndex, int* pixels,
   const int y1 = min(y0+TILE_SIZE_Y,height);
 
   //unsigned int seed = tileY*numTilesX+tileX+0;
-
   //seed = wang_hash( seed );
    
   for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)
   {
-   unsigned int seed = y * width + x + 0;
-   rand_xorshift(seed);
-   rand_xorshift(seed);
+    //unsigned int seed = y * width + x + 0;
+    //rand_xorshift(seed);
+    //rand_xorshift(seed);
 
     /* calculate pixel color */
     Vec3fa color = renderPixel(x,y,vx,vy,vz,p);
@@ -257,7 +256,7 @@ void renderTile(int taskIndex, int* pixels,
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
     unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
     unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
-    pixels[y*width+x] = (b << 16) + (g << 8) + r;
+    pixels[y*width+x] = (b << 16) + (g << 8) + r;  
   }
 }
 

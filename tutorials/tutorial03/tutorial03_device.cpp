@@ -42,7 +42,7 @@ void error_handler(const RTCError code, const int8* str)
     while (*str) putchar(*str++); 
     printf(")\n"); 
   }
-  abort();
+  exit(1);
 }
 
 Vec3fa renderPixelEyeLight(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p);

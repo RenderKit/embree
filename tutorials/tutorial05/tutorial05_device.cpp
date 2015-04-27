@@ -41,7 +41,7 @@ void error_handler(const RTCError code, const int8* str)
     while (*str) putchar(*str++); 
     printf(")\n"); 
   }
-  abort();
+  exit(1);
 }
 
 /* extended ray structure that includes total transparency along the ray */
