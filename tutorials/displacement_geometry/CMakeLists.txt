@@ -17,5 +17,5 @@
 INCLUDE(CMakeDependentOption)
 
 INCLUDE(tutorial)
-ADD_TUTORIAL(tutorial09)
+ADD_TUTORIAL(displacement_geometry)
 

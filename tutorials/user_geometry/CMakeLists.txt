@@ -15,4 +15,4 @@
 ## ======================================================================== ##
 
 INCLUDE(tutorial)
-ADD_TUTORIAL(tutorial02)
+ADD_TUTORIAL(user_geometry)

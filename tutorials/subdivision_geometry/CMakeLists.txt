@@ -17,4 +17,4 @@
 # INCLUDE(CMakeDependentOption)
 
 INCLUDE(tutorial)
-ADD_TUTORIAL(tutorial08)
+ADD_TUTORIAL(subdivision_geometry)

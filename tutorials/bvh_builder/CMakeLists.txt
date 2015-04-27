@@ -26,4 +26,4 @@ ELSE()
 ENDIF()
 
 INCLUDE(tutorial)
-ADD_TUTORIAL(tutorial11)
+ADD_TUTORIAL(bvh_builder)

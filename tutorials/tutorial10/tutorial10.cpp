@@ -41,10 +41,12 @@ namespace embree
   static bool g_interactive = true;
   static bool g_loop_mode = false;
   static bool g_anim_mode = false;
+  static FileName keyframeList = "";
 
   /* scene */
   OBJScene g_obj_scene;
   static FileName filename = "";
+  std::vector<OBJScene*> g_keyframes;
 
   static std::string getParameterString(Ref<ParseStream> &cin, std::string &term) {
 
@@ -83,6 +85,11 @@ namespace embree
 		  g_interactive = false;
 		  outFilename = cin->getFileName();
 	  }
+
+      else if (term == "-objlist") {
+        keyframeList = cin->getFileName();
+      }
+
       
       /*! Embree configuration. */
       else if (term == "-rtcore") g_rtcore = cin->getString();
@@ -147,7 +154,7 @@ namespace embree
     } while(g_loop_mode);
  
     void* ptr = map();
-    Ref<Image> image = new Image4c(g_width, g_height, (Col4c*)ptr);
+    Ref<Image> image = new Image4uc(g_width, g_height, (Col4uc*)ptr);
     storeImage(image, fileName);
     unmap();
     cleanup();
@@ -165,7 +172,7 @@ namespace embree
     size_t numTheta = 2*numPhi;
     subdiv_mesh->positions.resize( numTheta*(numPhi+1) );
 
-    //vector_t<Vec3fa> vertices(numTheta*(numPhi+1));
+    //avector<Vec3fa> vertices(numTheta*(numPhi+1));
     //std::vector<int> indices;
     //std::vector<int> faces;
     //std::vector<int> offsets;
@@ -237,18 +244,67 @@ namespace embree
     
   }
 
-  void main(int argc, char **argv) 
+  void loadKeyFrameAnimation(FileName &fileName)
   {
+    PRINT(fileName);
+    std::ifstream cin;
+    cin.open(fileName.c_str());
+    if (!cin.is_open()) {
+      std::cerr << "cannot open " << fileName.str() << std::endl;
+      return;
+    }
+    
+    FileName path;
+    path = fileName.path();
+
+    char line[10000];
+    memset(line, 0, sizeof(line));
+
+    int cur = 0;
+    while (cin.peek() != -1)
+    {
+      /* load next multiline */
+      char* pline = line;
+      while (true) {
+        cin.getline(pline, sizeof(line) - (pline - line) - 16, '\n');
+        ssize_t last = strlen(pline) - 1;
+        if (last < 0 || pline[last] != '\\') break;
+        pline += last;
+        *pline++ = ' ';
+      }
+      OBJScene *scene = new OBJScene;
+      FileName keyframe = path + FileName(line);
+      loadOBJ(keyframe,one,*scene,true);	
+      PRINT(keyframe);
+      if (g_obj_scene.subdiv.size() != scene->subdiv.size())
+	FATAL("#subdiv meshes differ");
+      for (size_t i=0;i<g_obj_scene.subdiv.size();i++)
+	if (g_obj_scene.subdiv[i]->positions.size() != scene->subdiv[i]->positions.size())
+	  FATAL("#positions differ");
+
+      g_keyframes.push_back(scene);
+    } 
+    cin.close();
+
+    
+  }
+  
+  int main(int argc, char **argv) 
+  {
+    /* for best performance set FTZ and DAZ flags in MXCSR control and status register */
+    _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
+    _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
+
 #if defined(__USE_OPENSUBDIV__)
     mapKeyToFunction('t', toggleOpenSubdiv);
 #endif
-	std::cout << " === Possible cmd line options: -lazy, -pregenerate, -cache === " << std::endl;
+    std::cout << " === Possible cmd line options: -lazy, -pregenerate, -cache === " << std::endl;
 
     /*! Parse command line options. */  
     parseCommandLine(new ParseStream(new CommandLineStream(argc, argv)), FileName());
 
     /*! Set the thread count in the Embree configuration string. */
-    if (g_numThreads) g_rtcore += ",threads=" + std::stringOf(g_numThreads);
+    if (g_numThreads) g_rtcore += ",threads=" + std::to_string((long long)g_numThreads);
 
     g_rtcore += g_subdiv_mode;
 
@@ -265,12 +321,24 @@ namespace embree
 	//THROW_RUNTIME_ERROR("invalid scene type: "+strlwr(filename.ext()));
       }
 
+     /* load keyframes */
+
+     if (keyframeList.str() != "")
+       {
+	 PRINT(keyframeList.str());
+	 loadKeyFrameAnimation(keyframeList);
+       }
+
     /*! Initialize Embree state. */
     init(g_rtcore.c_str());
 
     /* send model */
     set_scene(&g_obj_scene);
         
+    /* send keyframes */
+    if (g_keyframes.size())
+      set_scene_keyframes(&*g_keyframes.begin(),g_keyframes.size());
+
     /* render to disk */
     if (outFilename.str() != "")
       renderToFile(outFilename);
@@ -278,18 +346,18 @@ namespace embree
     /* interactive mode */
     if (g_interactive) {
       initWindowState(argc,argv,tutorialName, g_width, g_height, g_fullscreen);
-
+      
       enterWindowRunLoop(g_anim_mode);
     }
-
+    return 0;
   }
-
 }
+
 
 int main(int argc, char** argv) {
 
   /*! Tutorial entry point. */
-  try { embree::main(argc, argv);  return(0); }
+  try { return embree::main(argc, argv); }
 
   /*! Known exception. */
   catch (const std::exception& e) { std::cout << "Error: " << e.what() << std::endl;  return(1); }

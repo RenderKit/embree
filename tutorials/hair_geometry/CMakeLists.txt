@@ -15,4 +15,4 @@
 ## ======================================================================== ##
 
 INCLUDE(tutorial)
-ADD_TUTORIAL(tutorial07)
+ADD_TUTORIAL(hair_geometry)

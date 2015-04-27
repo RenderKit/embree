@@ -15,4 +15,4 @@
 ## ======================================================================== ##
 
 INCLUDE(tutorial)
-ADD_TUTORIAL(tutorial04)
+ADD_TUTORIAL(instanced_geometry)

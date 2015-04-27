@@ -23,28 +23,29 @@
 #define TILE_SIZE_X 4
 #define TILE_SIZE_Y 4
 
+#define SPP 16
 //#define SPP 4
-#define SPP 1
 
 //#define FORCE_FIXED_EDGE_TESSELLATION
-#define FIXED_EDGE_TESSELLATION_VALUE 1
-//#define FIXED_EDGE_TESSELLATION_VALUE 63
+//#define FIXED_EDGE_TESSELLATION_VALUE 4
+#define FIXED_EDGE_TESSELLATION_VALUE 63
 
-#define MAX_EDGE_LEVEL 64.0f
-//#define MAX_EDGE_LEVEL 8.0f
-#define MIN_EDGE_LEVEL 4.0f
-#define ENABLE_DISPLACEMENTS 0
-#if ENABLE_DISPLACEMENTS
-#  define LEVEL_FACTOR 256.0f
-#else
-#  define LEVEL_FACTOR 64.0f
-#endif
+#define ENABLE_TEXTURING 1
+
+#define MAX_EDGE_LEVEL 128.0f
+#define MIN_EDGE_LEVEL 8.0f
+//#define MIN_EDGE_LEVEL 4.0f
+
+#define ENABLE_DISPLACEMENTS 1
+#define LEVEL_FACTOR 64.0f
 
 /* scene data */
 extern "C" ISPCScene* g_ispc_scene;
-RTCScene g_scene = NULL;
-RTCScene g_embree_scene = NULL;
-RTCScene g_osd_scene = NULL;
+RTCScene g_scene = nullptr;
+RTCScene g_embree_scene = nullptr;
+RTCScene g_osd_scene = nullptr;
+void** geomID_to_mesh = nullptr;
+unsigned int keyframeID = 0;
 
 /* render function to use */
 renderPixelFunc renderPixel;
@@ -125,6 +126,31 @@ task void updateEdgeLevelBufferTask( ISPCSubdivMesh* mesh, const Vec3fa& cam_pos
 }
 #endif
 
+void updateKeyFrame(ISPCScene* scene_in)
+{
+  for (size_t g=0; g<scene_in->numSubdivMeshes; g++)
+  {
+    ISPCSubdivMesh* mesh = g_ispc_scene->subdiv[g];
+    unsigned int geomID = mesh->geomID;
+
+    if (g_ispc_scene->subdivMeshKeyFrames)
+      {
+	ISPCSubdivMeshKeyFrame *keyframe = g_ispc_scene->subdivMeshKeyFrames[keyframeID];
+	ISPCSubdivMesh *keyframe_mesh = keyframe->subdiv[g];
+	rtcSetBuffer(g_scene, geomID, RTC_VERTEX_BUFFER, keyframe_mesh->positions, 0, sizeof(Vec3fa  ));
+	rtcUpdateBuffer(g_scene,geomID,RTC_VERTEX_BUFFER);    
+      }
+    
+    //updateEdgeLevelBuffer(mesh,cam_pos,0,mesh->numFaces);
+    //rtcUpdateBuffer(g_scene,geomID,RTC_LEVEL_BUFFER);    
+  }
+
+  keyframeID++;
+  if (keyframeID >= g_ispc_scene->numSubdivMeshKeyFrames)
+    keyframeID = 0;
+
+}
+
 void updateEdgeLevels(ISPCScene* scene_in, const Vec3fa& cam_pos)
 {
   for (size_t g=0; g<scene_in->numSubdivMeshes; g++)
@@ -152,28 +178,26 @@ void displacementFunction(void* ptr, unsigned int geomID, int unsigned primID,
                       float* pz,           /*!< z coordinates of points to displace (source and target) */
                       size_t N)
 {
-#if 0
-  for (size_t i = 0; i<N; i++) {
-    const Vec3fa dP = 0.02f*Vec3fa(sin(100.0f*px[i]+0.5f),sin(100.0f*pz[i]+1.5f),cos(100.0f*py[i]));
-    px[i] += dP.x; py[i] += dP.y; pz[i] += dP.z;
-  }
-#else
-  for (size_t i = 0; i<N; i++) {
-    const Vec3fa P = Vec3fa(px[i],py[i],pz[i]);
-    const Vec3fa nor = Vec3fa(nx[i],ny[i],nz[i]);
-    float dN = 0.0f;
-    for (float freq = 1.0f; freq<40.0f; freq*= 2) {
-      float n = abs(noise(freq*P));
-      dN += 1.4f*n*n/freq;
-    }
-    const Vec3fa dP = dN*nor;
-    px[i] += dP.x; py[i] += dP.y; pz[i] += dP.z;
-  }
+#if defined(USE_PTEX)
+  ISPCSubdivMesh* mesh = (ISPCSubdivMesh*)geomID_to_mesh[geomID];
+  int materialID = mesh->materialID;
+  int numMaterials = g_ispc_scene->numMaterials;
+  OBJMaterial* material = (OBJMaterial*)&g_ispc_scene->materials[materialID];
+  if (material->ptex_displ)
+    for (size_t i=0;i<N;i++) // N == 1
+      {
+	const float displ = getPtexTexel1f(material->ptex_displ, primID, v[i], u[i]);
+	assert( isfinite(displ));
+	px[i] += nx[i] * displ;
+	py[i] += ny[i] * displ;
+	pz[i] += nz[i] * displ;
+      }
 #endif
 }
 
 void convertScene(ISPCScene* scene_in, const Vec3fa& p)
 {
+  geomID_to_mesh = new void*[scene_in->numSubdivMeshes];
   
   /* add all subdiv meshes to the scene */
   for (size_t i=0; i<scene_in->numSubdivMeshes; i++)
@@ -190,6 +214,9 @@ void convertScene(ISPCScene* scene_in, const Vec3fa& p)
     unsigned int geomID = rtcNewSubdivisionMesh(g_scene, RTC_GEOMETRY_STATIC, mesh->numFaces, mesh->numEdges, mesh->numVertices, 
 							mesh->numEdgeCreases, mesh->numVertexCreases, mesh->numHoles);
     mesh->geomID = geomID;
+    assert(geomID < scene_in->numSubdivMeshes);
+
+    geomID_to_mesh[geomID] = mesh;
 
     for (size_t i = 0; i < mesh->numEdges; i++) mesh->subdivlevel[i] = FIXED_EDGE_TESSELLATION_VALUE;
 
@@ -205,7 +232,7 @@ void convertScene(ISPCScene* scene_in, const Vec3fa& p)
     if (mesh->vertex_crease_weights) rtcSetBuffer(g_scene, geomID, RTC_VERTEX_CREASE_WEIGHT_BUFFER, mesh->vertex_crease_weights, 0, sizeof(float));
 
 #if ENABLE_DISPLACEMENTS == 1
-    rtcSetDisplacementFunction(g_scene, geomID, (RTCDisplacementFunc)&displacementFunction,NULL);
+    rtcSetDisplacementFunction(g_scene, geomID, (RTCDisplacementFunc)&displacementFunction,nullptr);
 #endif
 
    /* generate face offset table for faster edge level updates */
@@ -264,7 +291,7 @@ private:
 
 RTCScene constructSceneOpenSubdiv() 
 {
-  if (!g_ispc_scene) return NULL;
+  if (!g_ispc_scene) return nullptr;
 
   typedef Far::TopologyRefinerFactoryBase::TopologyDescriptor Descriptor;
 
@@ -355,10 +382,40 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
   
   /* shade background black */
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID) 
-    return Vec3fa(0.0f,0.0f,1.0f);
+    return Vec3fa(1.0f,1.0f,1.0f);
   
   /* shade all rays that hit something */
   Vec3fa color = Vec3fa(1.0f);
+
+
+  //Vec3fa color = Vec3fa((float)ray.primID / 10 + 0.2f);
+  //Vec3fa color = rndColor(ray.primID);
+  ISPCSubdivMesh* mesh = (ISPCSubdivMesh*)geomID_to_mesh[ray.geomID];
+  int materialID = mesh->materialID;
+  int numMaterials = g_ispc_scene->numMaterials;
+  OBJMaterial* material = (OBJMaterial*)&g_ispc_scene->materials[materialID];
+#if ENABLE_TEXTURING == 1
+  if (material->map_Kd) 
+    {
+      Vec2f st = getTextureCoordinatesSubdivMesh(mesh,ray.primID,ray.u,ray.v);      
+      color *= getTextureTexel3f(material->map_Kd,st.x,st.y);
+    }
+#if defined(USE_PTEX)
+  if (material->ptex_Kd) {
+    //int prim_id = ray.primID;
+    //int offset = mesh->face_offsets[prim_id];
+    // int verts = mesh->verticesPerFace[prim_id];
+//       std::cout << "PTEX hit ID=" << prim_id << "  ";
+//       for (int i = 0; i < verts; ++i)
+// 	 		std::cout << "  " << mesh->positions[mesh->position_indices[offset+i]];
+//       std::cout << std::endl;
+    color *= getPtexTexel3f(material->ptex_Kd, ray.primID, ray.v, ray.u);
+    //float d = getPtexTexel1f(material->ptex_Kd, ray.primID, ray.v, ray.u);
+    //color = Vec3fa(d);
+
+  }
+#endif
+#endif      
 #if 0
     color = rndColor(ray.geomID);
 #else
@@ -434,7 +491,7 @@ void renderTile(int taskIndex, int* pixels,
 extern "C" void toggleOpenSubdiv(int key, int x, int y)
 {
 #if defined(__USE_OPENSUBDIV__)
-  if (g_osd_scene == NULL) {
+  if (g_osd_scene == nullptr) {
     g_osd_scene = constructSceneOpenSubdiv();
     g_embree_scene = g_scene;
   }
@@ -458,7 +515,7 @@ extern "C" void device_render (int* pixels,
    Vec3fa cam_org = Vec3fa(p.x,p.y,p.z);
 
    /* create scene */
-   if (g_scene == NULL)
+   if (g_scene == nullptr)
   { 
     g_scene = rtcNewScene(RTC_SCENE_DYNAMIC,RTC_INTERSECT1);
     convertScene(g_ispc_scene,cam_org);
@@ -471,10 +528,17 @@ extern "C" void device_render (int* pixels,
     rtcCommit (g_scene);
   }
 
+   if (g_ispc_scene->numSubdivMeshKeyFrames)
+     {
+       updateKeyFrame(g_ispc_scene);
+      rtcCommit(g_scene);
+     }
+
 #if !defined(FORCE_FIXED_EDGE_TESSELLATION)
   {
     if ((p.x != old_p.x || p.y != old_p.y || p.z != old_p.z))
     {
+
       old_p = p;
       updateEdgeLevels(g_ispc_scene, cam_org);
       rtcCommit (g_scene);

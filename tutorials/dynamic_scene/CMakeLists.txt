@@ -15,4 +15,4 @@
 ## ======================================================================== ##
 
 INCLUDE(tutorial)
-ADD_TUTORIAL(tutorial01)
+ADD_TUTORIAL(dynamic_scene)

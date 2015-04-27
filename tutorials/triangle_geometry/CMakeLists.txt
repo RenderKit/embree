@@ -15,4 +15,4 @@
 ## ======================================================================== ##
 
 INCLUDE(tutorial)
-ADD_TUTORIAL(tutorial00)
+ADD_TUTORIAL(triangle_geometry)

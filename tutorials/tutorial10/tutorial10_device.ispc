@@ -27,7 +27,7 @@
 #define SPP 1
 
 //#define FORCE_FIXED_EDGE_TESSELLATION
-#define FIXED_EDGE_TESSELLATION_VALUE 1
+#define FIXED_EDGE_TESSELLATION_VALUE 3
 //#define FIXED_EDGE_TESSELLATION_VALUE 63
 
 #define MAX_EDGE_LEVEL 64.0f
@@ -187,7 +187,7 @@ void convertScene(uniform ISPCScene* uniform scene_in, const uniform Vec3fa& p)
     print("numVertexCreases %\n",mesh->numVertexCreases);
     print("numHoles %\n",mesh->numHoles);
 #endif
-    uniform unsigned int geomID = rtcNewSubdivisionMesh(g_scene, RTC_GEOMETRY_STATIC, mesh->numFaces, mesh->numEdges, mesh->numVertices, 
+    uniform unsigned int geomID = rtcNewSubdivisionMesh(g_scene, RTC_GEOMETRY_DYNAMIC, mesh->numFaces, mesh->numEdges, mesh->numVertices, 
 							mesh->numEdgeCreases, mesh->numVertexCreases, mesh->numHoles);
     mesh->geomID = geomID;
 

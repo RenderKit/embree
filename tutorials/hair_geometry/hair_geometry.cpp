@@ -27,7 +27,7 @@ extern "C" embree::Vec3fa g_ambient_intensity = embree::Vec3fa(1.0f);
 namespace embree
 {
   /* name of the tutorial */
-  const char* tutorialName = "tutorial07";
+  const char* tutorialName = "hair_geometry";
 
   /* configuration */
   static std::string g_rtcore = "";

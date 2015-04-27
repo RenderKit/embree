@@ -20,7 +20,7 @@
 namespace embree
 {
   /* name of the tutorial */
-  const char* tutorialName = "tutorial05";
+  const char* tutorialName = "intersection_filter";
 
   /* configuration */
   static std::string g_rtcore = "";
