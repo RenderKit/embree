@@ -29,12 +29,11 @@
 
 #define FIX_SAMPLING 0
 #define SAMPLES_PER_PIXEL 1
-//#define SAMPLES_PER_PIXEL 8
 
-#define ENABLE_TEXTURING 1
+#define ENABLE_TEXTURING 0
 #define ENABLE_TEXTURE_COORDINATES 0
 #define ENABLE_OCCLUSION_FILTER 0
-#define ENABLE_DISPLACEMENTS 1
+#define ENABLE_DISPLACEMENTS 0
 
 //#define FORCE_FIXED_EDGE_TESSELLATION
 #define FIXED_EDGE_TESSELLATION_VALUE 16
@@ -482,7 +481,7 @@ void OBJMaterial__preprocess(OBJMaterial* material, BRDF& brdf, const Vec3fa& wo
     if (material->map_Kd) 
       {
 	//brdf.Kd = getTextureTexel3f(material->map_Kd,dg.u,dg.v);	
-        brdf.Kd = d * getPtexTexel3f(material->map_Kd, ray.primID, ray.v, ray.u);
+        brdf.Kd = d * getPtexTexel3f(material->map_Kd, dg.primID, dg.v, dg.u);
       }
 #endif
     //if (material->map_Kd) brdf.Kd *= material->map_Kd->get(dg.st);  

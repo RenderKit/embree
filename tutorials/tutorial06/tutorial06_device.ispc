@@ -30,15 +30,13 @@
 #define FIX_SAMPLING 0
 #define SAMPLES_PER_PIXEL 1
 
-#define ENABLE_TEXTURING 1
-#define ENABLE_TEXTURE_COORDINDATES 1
-
+#define ENABLE_TEXTURING 0
+#define ENABLE_TEXTURE_COORDINDATES 0
 #define ENABLE_OCCLUSION_FILTER 0
 #define ENABLE_DISPLACEMENTS 0
 
 //#define FORCE_FIXED_EDGE_TESSELLATION
-#define FIXED_EDGE_TESSELLATION_VALUE 2
-//#define FIXED_EDGE_TESSELLATION_VALUE 32
+#define FIXED_EDGE_TESSELLATION_VALUE 4
 
 #define MAX_EDGE_LEVEL 128.0f
 #define MIN_EDGE_LEVEL   4.0f
@@ -479,8 +477,11 @@ __device__ void OBJMaterial__preprocess(uniform OBJMaterial* uniform material, B
 #if ENABLE_TEXTURING == 1
     if (material->map_Kd) 
       {
-	brdf.Kd = getTextureTexel3f(material->map_Kd,dg.u,dg.v);	
-        //brdf.Kd = d * getPtexTexel3f(material->ptex_Kd, ray.primID, ray.v, ray.u);
+#if ENABLE_PTEX == 1
+        brdf.Kd = d * getPtexTexel3f(material->map_Kd, dg.primID, dg.v, dg.u);
+#else
+        brdf.Kd = getTextureTexel3f(material->map_Kd,dg.u,dg.v);	
+#endif
       }
 #endif
 
@@ -893,7 +894,6 @@ void displacementFunction(void* uniform ptr, uniform unsigned int geomID, unifor
                       uniform float* uniform pz,           /*!< z coordinates of points to displace (source and target) */
                       uniform size_t N)
 {
-#if defined(USE_PTEX)
   uniform ISPCSubdivMesh* uniform mesh = (uniform ISPCSubdivMesh* uniform)geomID_to_mesh[geomID];
   uniform int materialID = mesh->materialID;
   uniform int numMaterials = g_ispc_scene->numMaterials;
@@ -902,13 +902,10 @@ void displacementFunction(void* uniform ptr, uniform unsigned int geomID, unifor
     for (size_t i=0;i<N;i++) 
       {
 	const float displ = getPtexTexel1f(material->map_Displ, primID, v[i], u[i]);
-	assert( isfinite(displ));
 	px[i] += nx[i] * displ;
 	py[i] += ny[i] * displ;
 	pz[i] += nz[i] * displ;
       }
-#endif
-
 }
 
 void convertTriangleMeshes(uniform ISPCScene* uniform scene_in, RTCScene scene_out, uniform size_t numGeometries)

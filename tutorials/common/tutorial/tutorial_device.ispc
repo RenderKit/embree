@@ -658,6 +658,7 @@ float getTextureTexel1f(void *uniform _texture, float s, float t)
 Vec3f getTextureTexel3f(void *uniform _texture, float s, float t)
 {
   uniform Texture * uniform texture = (Texture*)_texture;
+  
   if (texture && texture->format == RGBA8)
     {
       //u = max(min(u,1.0f),0.0f);
@@ -673,7 +674,6 @@ Vec3f getTextureTexel3f(void *uniform _texture, float s, float t)
 	iv &= texture->height_mask;
       else
 	iv = min(iv,texture->height-1);
-
       const int offset = (iv * texture->width + iu) * 4;
       uniform unsigned int8 * uniform t = (uniform unsigned int8* uniform)texture->data;
 
