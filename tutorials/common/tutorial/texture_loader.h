@@ -32,9 +32,6 @@ namespace embree
   /*! read texture from disk */
   OBJScene::Texture *loadTexture(const FileName& fileName);
    
-  //! we only instantiate this in the cpp file, so beware.
-  template<typename T> struct face_texture;
-
   //! maybe we don't want this type.
   struct uchar3 { unsigned char x, y, z, w; };
 

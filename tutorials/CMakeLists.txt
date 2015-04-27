@@ -17,7 +17,7 @@
 INCLUDE_DIRECTORIES     (${CMAKE_CURRENT_SOURCE_DIR}/common)
 INCLUDE_DIRECTORIES_ISPC(${CMAKE_CURRENT_SOURCE_DIR}/common)
 
-#OPTION(TUTORIAL_USE_PTEX "Enables ptex texture support for tutorials.") # FIXME: remove Ptex support
+OPTION(TUTORIAL_USE_PTEX "Enables ptex texture support for tutorials.") # FIXME: remove Ptex support
 
 IF (TUTORIAL_USE_PTEX)
   FIND_PACKAGE(Ptex REQUIRED)
@@ -38,7 +38,6 @@ ADD_SUBDIRECTORY(tutorial06)
 ADD_SUBDIRECTORY(hair_geometry)
 ADD_SUBDIRECTORY(subdivision_geometry)
 ADD_SUBDIRECTORY(displacement_geometry)
-ADD_SUBDIRECTORY(tutorial10)
 IF (TASKING_TBB OR TASKING_TBB_INTERNAL)
   ADD_SUBDIRECTORY(bvh_builder)
 ENDIF()

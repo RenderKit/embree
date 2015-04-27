@@ -32,6 +32,7 @@
 //#define SAMPLES_PER_PIXEL 8
 
 #define ENABLE_TEXTURING 1
+#define ENABLE_OCCLUSION_FILTER 0
 
 //#define FORCE_FIXED_EDGE_TESSELLATION
 #define FIXED_EDGE_TESSELLATION_VALUE 16
@@ -477,28 +478,14 @@ void OBJMaterial__preprocess(OBJMaterial* material, BRDF& brdf, const Vec3fa& wo
     brdf.Ka = Vec3fa(material->Ka);
     //if (material->map_Ka) { brdf.Ka *= material->map_Ka->get(dg.st); }
     brdf.Kd = d * Vec3fa(material->Kd);  
-    //if (material->map_Kd_ptex) brdf.Kd *= getPtexTexel3f(material->map_Kd_ptex,dg.primID,dg.u,dg.v);
 
 #if ENABLE_TEXTURING == 1
     if (material->map_Kd) 
       {
 	brdf.Kd = getTextureTexel3f(material->map_Kd,dg.u,dg.v);	
+        //brdf.Kd = d * getPtexTexel3f(material->ptex_Kd, ray.primID, ray.v, ray.u);
       }
 #endif
-#if defined(USE_PTEX)
-  if (material->ptex_Kd) {
-    //      int prim_id = ray.primID;
-    //      int offset = mesh->face_offsets[prim_id];
-    //      int verts = mesh->verticesPerFace[prim_id];
-//       std::cout << "PTEX hit ID=" << prim_id << "  ";
-//       for (int i = 0; i < verts; ++i)
-// 	 		std::cout << "  " << mesh->positions[mesh->position_indices[offset+i]];
-//       std::cout << std::endl;
-
-    brdf.Kd = d * getPtexTexel3f(material->ptex_Kd, ray.primID, ray.v, ray.u);
-  }
-#endif
-
     //if (material->map_Kd) brdf.Kd *= material->map_Kd->get(dg.st);  
     brdf.Ks = d * Vec3fa(material->Ks);  
     //if (material->map_Ks) brdf.Ks *= material->map_Ks->get(dg.st); 
@@ -838,7 +825,7 @@ int* geomID_to_type = nullptr;
 /* render function to use */
 renderPixelFunc renderPixel;
 
-#if 0
+#if ENABLE_OCCLUSION_FILTER == 1
 /* occlusion filter function */
 void occlusionFilterReject(void* ptr, RTCRay& ray) {
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
@@ -861,10 +848,10 @@ void displacementFunction(void* ptr, unsigned int geomID, int unsigned primID,
   int materialID = mesh->materialID;
   int numMaterials = g_ispc_scene->numMaterials;
   OBJMaterial* material = (OBJMaterial*)&g_ispc_scene->materials[materialID];
-  if (material->ptex_displ)
-    for (size_t i=0;i<N;i++) // N == 1
+  if (material->map_Displ)
+    for (size_t i=0;i<N;i++) 
       {
-	const float displ = getPtexTexel1f(material->ptex_displ, primID, v[i], u[i]);
+	const float displ = getPtexTexel1f(material->map_Displ, primID, v[i], u[i]);
 	assert( isfinite(displ));
 	px[i] += nx[i] * displ;
 	py[i] += ny[i] * displ;
@@ -979,7 +966,7 @@ void convertTriangleMeshes(ISPCScene* scene_in, RTCScene scene_out, size_t numGe
       else 
 	allTransparent = false;
     }
-#if 0
+#if ENABLE_OCCLUSION_FILTER == 1
     if (allTransparent)
       rtcSetOcclusionFilterFunction(scene_out,geomID,(RTCFilterFunc)&occlusionFilterReject);
 #endif
@@ -1252,18 +1239,15 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
     /* invoke environment lights if nothing hit */
     if (ray.geomID == RTC_INVALID_GEOMETRY_ID) 
     {
-#if 0
       /* iterate over all ambient lights */
       for (size_t i=0; i<g_ispc_scene->numAmbientLights; i++)
         L = L + Lw*AmbientLight__eval(g_ispc_scene->ambientLights[i],ray.dir); // FIXME: +=
-#endif
 
-#if 0
       /* iterate over all distant lights */
       for (size_t i=0; i<g_ispc_scene->numDistantLights; i++)
         L = L + Lw*DistantLight__eval(g_ispc_scene->distantLights[i],ray.dir); // FIXME: +=
-#endif
-      if (i==0) L = Vec3fa(1.0f);	
+
+      //if (i==0) L = Vec3fa(1.0f);	
       break;
     }
 
@@ -1300,9 +1284,6 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
       materialID = ((ISPCMesh*) geomID_to_mesh[ray.geomID])->meshMaterialID; 
 #else 
     foreach_unique (geomID in ray.geomID) {
-     //printf("geomID %\n",geomID);
-     //printf("geomID_to_type[geomID] %\n",geomID_to_type[geomID]);
-     //printf("g_ispc_scene->numMeshes %\n",g_ispc_scene->numMeshes);
 
       if (geomID >= 0 && geomID < g_ispc_scene->numMeshes+g_ispc_scene->numSubdivMeshes) { // FIXME: workaround for ISPC bug
 	if (geomID_to_type[geomID] == 0) 
