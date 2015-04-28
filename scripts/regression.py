@@ -211,7 +211,7 @@ def compileLoop(OS):
 def render(OS, compiler, platform, build, isa, tasking, tutorial, args, scene, flags):
   sys.stdout.write("  "+tutorial)
   if scene != '': sys.stdout.write(' '+scene)
-  if flags != '': sys.stdout.write(' '+flags)
+  if flags != '' and flags != 'default': sys.stdout.write(' '+flags)
   sys.stdout.flush()
   base = configName(OS, compiler, platform, build, isa, tasking, tutorial, scene, flags)
   logFile = testDir + dash + base + '.log'
@@ -225,7 +225,6 @@ def render(OS, compiler, platform, build, isa, tasking, tutorial, args, scene, f
       command += '-rtcore verbose=2'
     if flags != "": 
       command += ",flags=" + flags
-    if scene != "":
       command += ' -size 1024 1024 -o ' + imageFile
     command += ' > ' + logFile
     ret = os.system(command)
@@ -260,9 +259,9 @@ def processConfiguration(OS, compiler, platform, build, isa, tasking, models):
 
     render(OS, compiler, platform, build, isa, tasking, 'bvh_builder', '', '', '')
     for ty in ['','_ispc']:
-      render(OS, compiler, platform, build, isa, tasking, 'triangle_geometry'+ty, '', '', '')
-      render(OS, compiler, platform, build, isa, tasking, 'dynamic_scene'+ty, '', '', '')
-      render(OS, compiler, platform, build, isa, tasking, 'user_geometry'+ty, '', '', '')
+      render(OS, compiler, platform, build, isa, tasking, 'triangle_geometry'+ty, '', '', 'default')
+      render(OS, compiler, platform, build, isa, tasking, 'dynamic_scene'+ty, '', '', 'default')
+      render(OS, compiler, platform, build, isa, tasking, 'user_geometry'+ty, '', '', 'default')
       for model in models:
         render_viewer(OS, compiler, platform, build, isa, tasking, ty, model, 'static')
         render_viewer(OS, compiler, platform, build, isa, tasking, ty, model, 'dynamic')
@@ -270,30 +269,30 @@ def processConfiguration(OS, compiler, platform, build, isa, tasking, models):
         render_viewer(OS, compiler, platform, build, isa, tasking, ty, model, 'robust')
         render_viewer(OS, compiler, platform, build, isa, tasking, ty, model, 'compact')
 
-      render(OS, compiler, platform, build, isa, tasking, 'instanced_geometry'+ty, '', '', '')
-      render(OS, compiler, platform, build, isa, tasking, 'intersection_filter'+ty, '', '', '')
+      render(OS, compiler, platform, build, isa, tasking, 'instanced_geometry'+ty, '', '', 'default')
+      render(OS, compiler, platform, build, isa, tasking, 'intersection_filter'+ty, '', '', 'default')
 
       for model in models:
-        render_pathtracer(OS, compiler, platform, build, isa, tasking, ty, model, '')
+        render_pathtracer(OS, compiler, platform, build, isa, tasking, ty, model, 'default')
 
-      render(OS, compiler, platform, build, isa, tasking, 'hair_geometry'+ty, '', '', '')
-      render_hair_geometry(OS, compiler, platform, build, isa, tasking, ty, 'tighten', '')
+      render(OS, compiler, platform, build, isa, tasking, 'hair_geometry'+ty, '', '', 'default')
+      render_hair_geometry(OS, compiler, platform, build, isa, tasking, ty, 'tighten', 'default')
       if platform == "x64" and OS != 'macosx': # not enough memory on MacOSX test machine:
-        render_hair_geometry(OS, compiler, platform, build, isa, tasking, ty, 'sophie', '')
-        render_hair_geometry(OS, compiler, platform, build, isa, tasking, ty, 'sophie_mblur', '')
+        render_hair_geometry(OS, compiler, platform, build, isa, tasking, ty, 'sophie', 'default')
+        render_hair_geometry(OS, compiler, platform, build, isa, tasking, ty, 'sophie_mblur', 'default')
 
-      render(OS, compiler, platform, build, isa, tasking, 'subdivision_geometry'+ty, '', '', '')
-      render(OS, compiler, platform, build, isa, tasking, 'displacement_geometry'+ty, '', '', '')
+      render(OS, compiler, platform, build, isa, tasking, 'subdivision_geometry'+ty, '', '', 'default')
+      render(OS, compiler, platform, build, isa, tasking, 'displacement_geometry'+ty, '', '', 'default')
     
-      render_tutorial10(OS, compiler, platform, build, isa, tasking, ty, 'subdiv0', '')
-      render_tutorial10(OS, compiler, platform, build, isa, tasking, ty, 'subdiv1', '')
-      render_tutorial10(OS, compiler, platform, build, isa, tasking, ty, 'subdiv2', '')
-      render_tutorial10(OS, compiler, platform, build, isa, tasking, ty, 'subdiv3', '')
-      render_tutorial10(OS, compiler, platform, build, isa, tasking, ty, 'subdiv4', '')
-      render_tutorial10(OS, compiler, platform, build, isa, tasking, ty, 'subdiv5', '')
-      render_tutorial10(OS, compiler, platform, build, isa, tasking, ty, 'subdiv6', '')
-      render_tutorial10(OS, compiler, platform, build, isa, tasking, ty, 'bigguy', '')
-      render_tutorial10(OS, compiler, platform, build, isa, tasking, ty, 'cupid', '')
+      render_tutorial10(OS, compiler, platform, build, isa, tasking, ty, 'subdiv0', 'default')
+      render_tutorial10(OS, compiler, platform, build, isa, tasking, ty, 'subdiv1', 'default')
+      render_tutorial10(OS, compiler, platform, build, isa, tasking, ty, 'subdiv2', 'default')
+      render_tutorial10(OS, compiler, platform, build, isa, tasking, ty, 'subdiv3', 'default')
+      render_tutorial10(OS, compiler, platform, build, isa, tasking, ty, 'subdiv4', 'default')
+      render_tutorial10(OS, compiler, platform, build, isa, tasking, ty, 'subdiv5', 'default')
+      render_tutorial10(OS, compiler, platform, build, isa, tasking, ty, 'subdiv6', 'default')
+      render_tutorial10(OS, compiler, platform, build, isa, tasking, ty, 'bigguy', 'default')
+      render_tutorial10(OS, compiler, platform, build, isa, tasking, ty, 'cupid', 'default')
 			    
 def renderLoop(OS):
     for compiler in compilers:
