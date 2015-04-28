@@ -22,7 +22,7 @@
 namespace embree
 {
   /* name of the tutorial */
-  const char* tutorialName = "tutorial06";
+  const char* tutorialName = "pathtracer";
 
   /* configuration */
   static std::string g_rtcore = "";
