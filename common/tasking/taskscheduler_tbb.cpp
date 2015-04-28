@@ -168,7 +168,7 @@ namespace embree
 #endif
 
 #if TASKING_TBB_INTERNAL
-  __dllexport size_t TaskSchedulerTBB::threadCount() 
+  __dllexport size_t TaskSchedulerTBB::threadIndex() 
   {
     Thread* thread = TaskSchedulerTBB::thread();
     if (thread) return thread->threadIndex;
