@@ -34,8 +34,8 @@ ELSEIF (APPLE)
   SET(UTILITIES_INSTALL_DIR ../Applications/embree-${EMBREE_VERSION}/tutorials)
 ELSE()
   SET(DOC_INSTALL_DIR share/doc/embree-${EMBREE_VERSION})
-  SET(TUTORIALS_INSTALL_DIR bin)
-  SET(UTILITIES_INSTALL_DIR bin)
+  SET(TUTORIALS_INSTALL_DIR bin/embree-${EMBREE_VERSION})
+  SET(UTILITIES_INSTALL_DIR bin/embree-${EMBREE_VERSION})
 ENDIF()
 
 ##############################################################
