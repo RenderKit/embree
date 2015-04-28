@@ -185,6 +185,14 @@ namespace embree
 
     /* parse command line */  
     parseCommandLine(stream, FileName());
+
+    /* load default scene if none specified */
+    if (filename.ext() == "") {
+      FileName file = FileName::executableFolder() + FileName("models/cornell_box.ecs");
+      parseCommandLine(new ParseStream(new LineCommentFilter(file, "#")), file.path());
+    }
+
+    /* configure number of threads */
     if (g_numThreads) 
       g_rtcore += ",threads=" + std::to_string((long long)g_numThreads);
     if (g_numBenchmarkFrames)

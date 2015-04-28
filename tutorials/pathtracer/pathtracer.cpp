@@ -271,40 +271,43 @@ namespace embree
 
     /* parse command line */  
     parseCommandLine(stream, FileName());
-    
+
+    /* load default scene if none specified */
+    if (filename.ext() == "") {
+      FileName file = FileName::executableFolder() + FileName("models/cornell_box.ecs");
+      parseCommandLine(new ParseStream(new LineCommentFilter(file, "#")), file.path());
+    }
+
+    /* configure number of threads */
     if (g_numThreads) 
       g_rtcore += ",threads=" + std::to_string((long long)g_numThreads);
     if (g_numBenchmarkFrames)
       g_rtcore += ",benchmark=1";
 
-     g_rtcore += g_subdiv_mode;
+    g_rtcore += g_subdiv_mode;
 
     /* load scene */
-     if (strlwr(filename.ext()) == std::string("obj"))
-       {
-         if (g_subdiv_mode != "")
-           {
-             std::cout << "enabling subdiv mode" << std::endl;
-             loadOBJ(filename,one,g_obj_scene,true);	
-           }
-         else
-           loadOBJ(filename,one,g_obj_scene);
-       }
+    if (strlwr(filename.ext()) == std::string("obj"))
+    {
+      if (g_subdiv_mode != "") {
+        std::cout << "enabling subdiv mode" << std::endl;
+        loadOBJ(filename,one,g_obj_scene,true);	
+      }
+      else
+        loadOBJ(filename,one,g_obj_scene);
+    }
     else if (strlwr(filename.ext()) == std::string("xml"))
       loadXML(filename,one,g_obj_scene);
     else if (filename.ext() != "")
       THROW_RUNTIME_ERROR("invalid scene type: "+strlwr(filename.ext()));
-
-     /* load keyframes */
-
-     if (keyframeList.str() != "")
-       {
-	 loadKeyFrameAnimation(keyframeList);
-       }
-
+    
+    /* load keyframes */
+    if (keyframeList.str() != "")
+      loadKeyFrameAnimation(keyframeList);
+    
     /* initialize ray tracing core */
     init(g_rtcore.c_str());
-
+    
     /* convert triangle meshes to subdiv meshes */
     if (g_only_subdivs)
       g_obj_scene.convert_to_subdiv();

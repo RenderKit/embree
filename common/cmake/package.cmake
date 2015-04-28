@@ -44,6 +44,11 @@ ENDIF()
 INSTALL(DIRECTORY include/embree2 DESTINATION include COMPONENT headers)
 
 ##############################################################
+# Install Models
+##############################################################
+INSTALL(DIRECTORY tutorials/models DESTINATION "${TUTORIALS_INSTALL_DIR}" COMPONENT tutorials)
+
+##############################################################
 # Install Embree CMake Configuration
 ##############################################################
 IF (WIN32)
