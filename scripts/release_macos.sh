@@ -23,9 +23,16 @@ TBB_PATH=$PWD/tbb
 
 mkdir -p build
 cd build
-rm CMakeCache.txt # make sure to use default settings
 
-# set release settings
+# create version.h
+rm CMakeCache.txt # make sure to use default settings
+cmake ..
+
+# make docu after cmake to have correct version.h
+make -C ../embree-doc docbin
+
+# create installers
+rm CMakeCache.txt # make sure to use default settings
 cmake \
 -D COMPILER=ICC \
 -D TBB_ROOT=$TBB_PATH \
@@ -33,17 +40,24 @@ cmake \
 -D USE_LIBJPEG=OFF \
 -D USE_LIBPNG=OFF \
 -D USE_OPENEXR=OFF \
+-D CMAKE_SKIP_INSTALL_RPATH=OFF \
+-D ENABLE_INSTALLER=ON \
 ..
-
-# make docu after cmake to have correct version.h
-make -C ../embree-doc docbin
-
-# create installers
-cmake -D ENABLE_INSTALLER=ON ..
 make -j 8 package
 
 # create ZIP files
-cmake -D ENABLE_INSTALLER=OFF ..
+rm CMakeCache.txt # make sure to use default settings
+cmake \
+-D COMPILER=ICC \
+-D TBB_ROOT=$TBB_PATH \
+-D USE_IMAGE_MAGICK=OFF \
+-D USE_LIBJPEG=OFF \
+-D USE_LIBPNG=OFF \
+-D USE_OPENEXR=OFF \
+-D CMAKE_SKIP_INSTALL_RPATH=ON \
+-D ENABLE_INSTALLER=OFF \
+..
+
 make -j 8 package
 
 #make -j 8 preinstall
