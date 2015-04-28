@@ -128,8 +128,6 @@ namespace embree
 	profile(2,20,numPrimitives,[&] (ProfileTimer& timer)
         {
 #endif
-          //bvh->alloc.init(0,0); // FIXME: this improves initial build time significantly but reduces rendering performance slightly
-          //bvh->alloc.init(4*1024*1024,4*1024*1024);
           bvh->alloc.init_estimate(numSplitPrimitives*sizeof(PrimRef));
 	    prims.resize(numSplitPrimitives);
             auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
@@ -316,7 +314,7 @@ namespace embree
 	profile(2,20,numPrimitives,[&] (ProfileTimer& timer)
         {
 #endif
-	    bvh->alloc.init(numSplitPrimitives*sizeof(PrimRef),numSplitPrimitives*sizeof(BVH4::Node));  // FIXME: better estimate
+	    bvh->alloc.init_estimate(numSplitPrimitives*sizeof(PrimRef)); 
 	    //prims.resize(numSplitPrimitives);
 	    //PrimInfo pinfo = mesh ? createPrimRefArray<Mesh>(mesh,prims) : createPrimRefArray<Mesh,1>(scene,prims);
             PrimRefList prims;
@@ -504,7 +502,7 @@ namespace embree
 	    
 	    if (State::instance()->verbosity(1)) t0 = getSeconds();
 	    
-	    bvh->alloc.init(numPrimitives*sizeof(PrimRef),numPrimitives*sizeof(BVH4::NodeMB));  // FIXME: better estimate
+	    bvh->alloc.init_estimate(numPrimitives*sizeof(PrimRef));
 	    prims.resize(numPrimitives);
             auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
             auto virtualprogress = BuildProgressMonitorFromClosure(progress);

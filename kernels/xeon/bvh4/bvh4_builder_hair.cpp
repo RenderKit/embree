@@ -53,7 +53,7 @@ namespace embree
         //profile(1,5,numPrimitives,[&] (ProfileTimer& timer) {
         
         /* create primref array */
-        bvh->alloc.init(numPrimitives*sizeof(Primitive));
+        bvh->alloc.init_estimate(numPrimitives*sizeof(Primitive));
         prims.resize(numPrimitives);
         const PrimInfo pinfo = createBezierRefArray<1>(scene,prims,virtualprogress);
         
@@ -145,7 +145,7 @@ namespace embree
         //profile(1,5,numPrimitives,[&] (ProfileTimer& timer) {
 
         /* create primref array */
-        bvh->alloc.init(numPrimitives*sizeof(Primitive));
+        bvh->alloc.init_estimate(numPrimitives*sizeof(Primitive));
         prims.resize(numPrimitives);
         const PrimInfo pinfo = createBezierRefArray<2>(scene,prims,virtualprogress);
         
