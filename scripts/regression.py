@@ -221,31 +221,31 @@ def render(OS, compiler, platform, build, isa, tasking, tutorial, args, scene, f
   else:
     if OS == 'windows': command = 'build' + '\\' + build + '\\' + tutorial + ' ' + args + ' '
     else:               command = 'build' + '/' + tutorial + ' ' + args + ' '
-    if tutorial == 'regression':
-      command += '-regressions 2000 '
-    if tutorial[0:8] == 'tutorial':
+    if tutorial != 'verify' and tutorial != 'benchmark':
       command += '-rtcore verbose=2'
-      if flags != "": command += ",flags=" + flags
+    if flags != "": 
+      command += ",flags=" + flags
+    if scene != "":
       command += ' -size 1024 1024 -o ' + imageFile
     command += ' > ' + logFile
     ret = os.system(command)
     if ret == 0: sys.stdout.write(" [passed]\n")
     else       : sys.stdout.write(" [failed]\n")
 
-def render_tutorial03(OS, compiler, platform, build, isa, tasking, ty, scene, flags):
-  render(OS,compiler,platform,build,isa,tasking,"tutorial03"+ty," -c " + modelDir + dash + scene + dash + scene + '_regression.ecs ',scene,flags)
+def render_viewer(OS, compiler, platform, build, isa, tasking, ty, scene, flags):
+  render(OS,compiler,platform,build,isa,tasking,"viewer"+ty," -c " + modelDir + dash + scene + dash + scene + '_regression.ecs ',scene,flags)
 
-def render_tutorial06(OS, compiler, platform, build, isa, tasking, ty, scene, flags):
-  render(OS,compiler,platform,build,isa,tasking,"tutorial06"+ty," -c " + modelDir + dash + scene + dash + scene + '_regression.ecs ',scene,flags)
+def render_pathtracer(OS, compiler, platform, build, isa, tasking, ty, scene, flags):
+  render(OS,compiler,platform,build,isa,tasking,"pathtracer"+ty," -c " + modelDir + dash + scene + dash + scene + '_regression.ecs ',scene,flags)
 
-def render_tutorial07(OS, compiler, platform, build, isa, tasking, ty, scene, flags):
-  render(OS,compiler,platform,build,isa,tasking,"tutorial07"+ty," -c " + modelDir + dash + scene + dash + scene + '_regression.ecs ',scene,flags)
+def render_hair_geometry(OS, compiler, platform, build, isa, tasking, ty, scene, flags):
+  render(OS,compiler,platform,build,isa,tasking,"hair_geometry"+ty," -c " + modelDir + dash + scene + dash + scene + '_regression.ecs ',scene,flags)
 
 def render_tutorial10(OS, compiler, platform, build, isa, tasking, ty, scene, flags):
   if scene[0:6] == 'subdiv':
-    render(OS,compiler,platform,build,isa,tasking,"tutorial10"+ty," -i tutorials/tutorial10/" + scene + '.xml',scene,flags)
+    render(OS,compiler,platform,build,isa,tasking,"pathtracer"+ty," -i tutorials/pathtracer/" + scene + '.xml',scene,flags)
   else:
-    render(OS,compiler,platform,build,isa,tasking,"tutorial10"+ty," -c " + modelDir + dash + scene + dash + scene + '_regression.ecs ',scene,flags)
+    render(OS,compiler,platform,build,isa,tasking,"pathtracer"+ty," -c " + modelDir + dash + scene + dash + scene + '_regression.ecs ',scene,flags)
 
 def processConfiguration(OS, compiler, platform, build, isa, tasking, models):
   sys.stdout.write('compiling configuration ' + compiler + ' ' + platform + ' ' + build + ' ' + isa + ' ' + tasking)
@@ -258,32 +258,32 @@ def processConfiguration(OS, compiler, platform, build, isa, tasking, models):
     render(OS, compiler, platform, build, isa, tasking, 'verify', '', '', '')
     render(OS, compiler, platform, build, isa, tasking, 'benchmark', '', '', '')
 
-    render(OS, compiler, platform, build, isa, tasking, 'tutorial11', '', '', '')
+    render(OS, compiler, platform, build, isa, tasking, 'bvh_builder', '', '', '')
     for ty in ['','_ispc']:
-      render(OS, compiler, platform, build, isa, tasking, 'tutorial00'+ty, '', '', '')
-      render(OS, compiler, platform, build, isa, tasking, 'tutorial01'+ty, '', '', '')
-      render(OS, compiler, platform, build, isa, tasking, 'tutorial02'+ty, '', '', '')
+      render(OS, compiler, platform, build, isa, tasking, 'triangle_geometry'+ty, '', '', '')
+      render(OS, compiler, platform, build, isa, tasking, 'dynamic_scene'+ty, '', '', '')
+      render(OS, compiler, platform, build, isa, tasking, 'user_geometry'+ty, '', '', '')
       for model in models:
-        render_tutorial03(OS, compiler, platform, build, isa, tasking, ty, model, 'static')
-        render_tutorial03(OS, compiler, platform, build, isa, tasking, ty, model, 'dynamic')
-        render_tutorial03(OS, compiler, platform, build, isa, tasking, ty, model, 'high_quality')
-        render_tutorial03(OS, compiler, platform, build, isa, tasking, ty, model, 'robust')
-        render_tutorial03(OS, compiler, platform, build, isa, tasking, ty, model, 'compact')
+        render_viewer(OS, compiler, platform, build, isa, tasking, ty, model, 'static')
+        render_viewer(OS, compiler, platform, build, isa, tasking, ty, model, 'dynamic')
+        render_viewer(OS, compiler, platform, build, isa, tasking, ty, model, 'high_quality')
+        render_viewer(OS, compiler, platform, build, isa, tasking, ty, model, 'robust')
+        render_viewer(OS, compiler, platform, build, isa, tasking, ty, model, 'compact')
 
-      render(OS, compiler, platform, build, isa, tasking, 'tutorial04'+ty, '', '', '')
-      render(OS, compiler, platform, build, isa, tasking, 'tutorial05'+ty, '', '', '')
+      render(OS, compiler, platform, build, isa, tasking, 'instanced_geometry'+ty, '', '', '')
+      render(OS, compiler, platform, build, isa, tasking, 'intersection_filter'+ty, '', '', '')
 
       for model in models:
-        render_tutorial06(OS, compiler, platform, build, isa, tasking, ty, model, '')
+        render_pathtracer(OS, compiler, platform, build, isa, tasking, ty, model, '')
 
-      render(OS, compiler, platform, build, isa, tasking, 'tutorial07'+ty, '', '', '')
-      render_tutorial07(OS, compiler, platform, build, isa, tasking, ty, 'tighten', '')
+      render(OS, compiler, platform, build, isa, tasking, 'hair_geometry'+ty, '', '', '')
+      render_hair_geometry(OS, compiler, platform, build, isa, tasking, ty, 'tighten', '')
       if platform == "x64" and OS != 'macosx': # not enough memory on MacOSX test machine:
-        render_tutorial07(OS, compiler, platform, build, isa, tasking, ty, 'sophie', '')
-        render_tutorial07(OS, compiler, platform, build, isa, tasking, ty, 'sophie_mblur', '')
+        render_hair_geometry(OS, compiler, platform, build, isa, tasking, ty, 'sophie', '')
+        render_hair_geometry(OS, compiler, platform, build, isa, tasking, ty, 'sophie_mblur', '')
 
-      render(OS, compiler, platform, build, isa, tasking, 'tutorial08'+ty, '', '', '')
-      render(OS, compiler, platform, build, isa, tasking, 'tutorial09'+ty, '', '', '')
+      render(OS, compiler, platform, build, isa, tasking, 'subdivision_geometry'+ty, '', '', '')
+      render(OS, compiler, platform, build, isa, tasking, 'displacement_geometry'+ty, '', '', '')
     
       render_tutorial10(OS, compiler, platform, build, isa, tasking, ty, 'subdiv0', '')
       render_tutorial10(OS, compiler, platform, build, isa, tasking, ty, 'subdiv1', '')
