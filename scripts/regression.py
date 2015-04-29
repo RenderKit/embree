@@ -80,10 +80,10 @@ builds_unix = ['RelWithDebInfo']
 #builds_unix = ['RelWithDebInfo', 'Debug']
 builds = []
 
-#ISAs_win  = ['SSE2']
-ISAs_win  = ['SSE2', 'SSE4.2', 'AVX', 'AVX2']
-#ISAs_unix = ['AVX2']
-ISAs_unix = ['SSE2', 'SSE4.2', 'AVX', 'AVX2']
+ISAs_win  = ['AVX2']
+#ISAs_win  = ['SSE2', 'SSE4.2', 'AVX', 'AVX2']
+ISAs_unix = ['AVX2']
+#ISAs_unix = ['SSE2', 'SSE4.2', 'AVX', 'AVX2']
 ISAs = []
 
 supported_configurations = [
@@ -100,8 +100,10 @@ supported_configurations = [
   ]
 
 models = {}
-models['Win32'] = [ 'conference', 'sponza', 'headlight', 'crown', 'bentley' ]
-models['x64'  ] = [ 'conference', 'sponza', 'headlight', 'crown', 'bentley', 'xyz_dragon', 'powerplant' ]
+models['Win32'] = [ 'crown' ]
+models['x64'  ] = [ 'crown' ]
+#models['Win32'] = [ 'conference', 'sponza', 'headlight', 'crown', 'bentley' ]
+#models['x64'  ] = [ 'conference', 'sponza', 'headlight', 'crown', 'bentley', 'xyz_dragon', 'powerplant' ]
 
 modelDir  = ''
 testDir = ''
