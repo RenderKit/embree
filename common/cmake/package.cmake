@@ -49,6 +49,20 @@ INSTALL(DIRECTORY include/embree2 DESTINATION include COMPONENT headers)
 INSTALL(DIRECTORY tutorials/models DESTINATION "${TUTORIALS_INSTALL_DIR}" COMPONENT tutorials)
 
 ##############################################################
+# Install Documentation
+##############################################################
+
+#FILE(GLOB DOC_FILES ${PROJECT_SOURCE_DIR}/embree-doc/docbin/*)
+#INSTALL(FILES ${DOC_FILES} OPTIONAL DESTINATION ${DOC_INSTALL_DIR} COMPONENT documentation)
+INSTALL(FILES ${PROJECT_SOURCE_DIR}/LICENSE.txt DESTINATION ${DOC_INSTALL_DIR} COMPONENT documentation)
+INSTALL(FILES ${PROJECT_SOURCE_DIR}/CHANGELOG.md DESTINATION ${DOC_INSTALL_DIR} COMPONENT documentation)
+INSTALL(FILES ${PROJECT_SOURCE_DIR}/README.md DESTINATION ${DOC_INSTALL_DIR} COMPONENT documentation)
+INSTALL(FILES ${PROJECT_SOURCE_DIR}/readme.pdf DESTINATION ${DOC_INSTALL_DIR} COMPONENT documentation)
+
+# currently CMake does not support solution folders without projects
+# SOURCE_GROUP("Documentation" FILES README.md CHANGELOG.md LICENSE.txt readme.pdf)
+
+##############################################################
 # Install Embree CMake Configuration
 ##############################################################
 IF (WIN32)
