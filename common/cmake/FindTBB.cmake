@@ -14,12 +14,19 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-IF (WIN32)
-  FIND_PATH(TBB_ROOT include/tbb/task_scheduler_init.h
+FIND_PATH(TBB_ROOT include/tbb/task_scheduler_init.h
     DOC "Root of TBB installation"
-    PATHS ${PROJECT_SOURCE_DIR}/tbb "C:/Program Files (x86)/Intel/Composer XE/tbb"
-  )
+    PATHS ${PROJECT_SOURCE_DIR}/tbb 
+          "C:/Program Files (x86)/Intel/Composer XE/tbb" 
+          /opt/intel/composerxe/tbb 
+          NO_DEFAULT_PATH
+)
+UNSET(TBB_INCLUDE_DIR CACHE)
+UNSET(TBB_LIBRARY)
+UNSET(TBB_LIBRARY_MALLOC)
 
+IF (WIN32)
+  
   IF (CMAKE_SIZEOF_VOID_P EQUAL 8)
     SET(TBB_ARCH intel64)
   ELSE()
@@ -43,11 +50,6 @@ IF (WIN32)
 
 ELSE ()
 
-  FIND_PATH(TBB_ROOT include/tbb/task_scheduler_init.h
-    DOC "Root of TBB installation"
-    PATHS ${PROJECT_SOURCE_DIR}/tbb /opt/intel/composerxe/tbb
-  )
-
   IF (APPLE)
     IF (ENABLE_INSTALLER)
       FIND_PATH(TBB_INCLUDE_DIR tbb/task_scheduler_init.h)
@@ -60,8 +62,8 @@ ELSE ()
     ENDIF()
   ELSE()
     FIND_PATH(TBB_INCLUDE_DIR tbb/task_scheduler_init.h PATHS ${TBB_ROOT}/include NO_DEFAULT_PATH)
-    FIND_LIBRARY(TBB_LIBRARY tbb PATHS ${TBB_ROOT}/lib/intel64/gcc4.4)
-    FIND_LIBRARY(TBB_LIBRARY_MALLOC tbbmalloc PATHS ${TBB_ROOT}/lib/intel64/gcc4.4)
+    FIND_LIBRARY(TBB_LIBRARY tbb PATHS ${TBB_ROOT}/lib ${TBB_ROOT}/lib64 ${TBB_ROOT}/lib/intel64/gcc4.4 NO_DEFAULT_PATH)
+    FIND_LIBRARY(TBB_LIBRARY_MALLOC tbbmalloc PATHS ${TBB_ROOT}/lib ${TBB_ROOT}/lib64 ${TBB_ROOT}/lib/intel64/gcc4.4 NO_DEFAULT_PATH)
   ENDIF()
 
   FIND_PATH(TBB_INCLUDE_DIR_MIC tbb/task_scheduler_init.h PATHS ${TBB_ROOT}/include NO_DEFAULT_PATH)
