@@ -60,7 +60,8 @@ dash = '/'
 compilers_win = ['V120']
 #compilers_win = ['ICC']
 #compilers_win  = ['V120', 'ICC']
-compilers_win  = ['V110', 'V120', 'ICC']
+#compilers_win  = ['V110', 'V120', 'ICC']
+compilers_win  = ['V110', 'V120']
 compilers_unix = ['ICC']
 #compilers_unix = ['GCC', 'CLANG']
 #compilers_unix = ['GCC', 'CLANG', 'ICC']
@@ -135,7 +136,7 @@ def compile(OS,compiler,platform,build,isa,tasking):
       generator = 'Visual Studio 12 2013'
     elif (compiler == 'ICC'):
       generator = 'Visual Studio 12 2013'
-      full_compiler = '"Intel C++ Compiler XE 14.0" '
+      full_compiler = '"Intel C++ Compiler XE 15.0" '
     else:
       sys.stderr.write('unknown compiler: ' + compiler + '\n')
       sys.exit(1)

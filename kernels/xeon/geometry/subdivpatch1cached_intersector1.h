@@ -58,7 +58,7 @@ namespace embree
         SubdivPatch1Cached   *hit_patch;
 	unsigned int threadID;
         Ray &r;
-#if DEBUG
+#if _DEBUG
 	size_t numPrimitives;
 	SubdivPatch1Cached *array;
 #endif
@@ -74,7 +74,7 @@ namespace embree
             createLocalThreadInfo();
           threadID = localThreadInfo->id;
 
-#if DEBUG
+#if _DEBUG
 	  numPrimitives = ((BVH4*)ptr)->numPrimitives;
 	  array         = (SubdivPatch1Cached*)(((BVH4*)ptr)->data_mem);
 #endif

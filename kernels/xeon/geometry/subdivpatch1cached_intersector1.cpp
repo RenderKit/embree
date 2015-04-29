@@ -214,7 +214,7 @@ namespace embree
 		new_root_ref |= (int64)SharedLazyTessellationCache::sharedLazyTessellationCache.getCurrentIndex() << 32; 
 		subdiv_patch->root_ref = new_root_ref;
 
-#if DEBUG
+#if _DEBUG
 		const size_t patchIndex = subdiv_patch - pre.array;
 		assert(patchIndex < pre.numPrimitives);
 		CACHE_STATS(SharedTessellationCacheStats::incPatchBuild(patchIndex,pre.numPrimitives));
