@@ -53,7 +53,7 @@ namespace embree
   SharedLazyTessellationCache::SharedLazyTessellationCache()
   {
     size                   = DEFAULT_TESSELLATION_CACHE_SIZE;
-#if !defined(_MSC_VER)
+#if defined(_MSC_VER)
     data                   = (float*)os_malloc(size);
 #else
     data                   = (float*)os_reserve(size);
