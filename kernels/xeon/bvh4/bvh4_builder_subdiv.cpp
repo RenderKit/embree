@@ -951,7 +951,7 @@ namespace embree
           std::cout << "# " << vertex_index << " normals " << (double)vertex_index * sizeof(Vec3fa) / 1024.0 / 1024.0f << " MB " << std::endl;
           std::cout << "# " << numTotalTriangles << " numTotalTriangles" << std::endl;
  
-          exit(0);
+          //exit(0);
         }
 
 #endif
