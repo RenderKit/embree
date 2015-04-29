@@ -197,7 +197,7 @@ Vec3fa renderPixelGeomIDPrimID(float x, float y, const Vec3fa& vx, const Vec3fa&
 
   /* shade pixel */
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return Vec3fa(0.0f);
-  else return randomColor(ray.geomID ^ ray.primID);
+  else return randomColor(ray.geomID ^ ray.primID)*Vec3fa(embree::abs(dot(ray.dir,normalize(ray.Ng))));
 }
 
 /* vizualizes the traversal cost of a pixel */

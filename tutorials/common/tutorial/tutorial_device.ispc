@@ -179,7 +179,7 @@ Vec3f renderPixelGeomIDPrimID(float x, float y, const uniform Vec3f& vx, const u
 
   /* shade pixel */
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return make_Vec3f(0.0f);
-  else return randomColor(ray.geomID ^ ray.primID);
+  else return randomColor(ray.geomID ^ ray.primID)*make_Vec3f(abs(dot(ray.dir,normalize(ray.Ng))));
 }
 
 /* vizualizes the traversal cost of a pixel */
