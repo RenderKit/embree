@@ -17,11 +17,7 @@
 #include "../common/tutorial/tutorial_device.isph"
 
 /* configuration */
-#if defined(__XEON_PHI__)
-#define EDGE_LEVEL 64.0f
-#else
 #define EDGE_LEVEL 256.0f
-#endif
 
 /* scene data */
 RTCScene g_scene = NULL;
@@ -237,7 +233,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const unifo
     
     /* add light contribution */
     if (shadow.geomID == RTC_INVALID_GEOMETRY_ID)
-      color = color + diffuse*clamp(-dot(lightDir,normalize(ray.Ng)),0.0f,1.0f); // FIXME: +=
+      color = color + diffuse*clamp(-(dot(lightDir,normalize(ray.Ng))),0.0f,1.0f); // FIXME: +=
   }
   return color;
 }
