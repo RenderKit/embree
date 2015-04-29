@@ -173,9 +173,10 @@ namespace embree
 	  prefetch<PFHINT_L1EX>(&ray16.geomID);
 	  prefetch<PFHINT_L1EX>(&ray16.primID);
 
-	  const mic_f gnormalx(Ng.x[index]);
-	  const mic_f gnormaly(Ng.y[index]);
-	  const mic_f gnormalz(Ng.z[index]);
+	  const mic_m m_neg = 0b0101010101010101;
+	  const mic_f gnormalx(select(m_neg,mic_f(-Ng.x),mic_f(Ng.x)));
+	  const mic_f gnormaly(select(m_neg,mic_f(-Ng.y),mic_f(Ng.y)));
+	  const mic_f gnormalz(select(m_neg,mic_f(-Ng.z),mic_f(Ng.z)));
 		  
 	  compactustore16f_low(m_tri,&ray16.tfar[rayIndex],min_dist);
 	  compactustore16f_low(m_tri,&ray16.u[rayIndex],u_final); 
@@ -324,9 +325,10 @@ namespace embree
                 
 	  assert( countbits(m_tri) == 1);
 
-	  const mic_f gnormalx(Ng.x[index]);
-	  const mic_f gnormaly(Ng.y[index]);
-	  const mic_f gnormalz(Ng.z[index]);
+	  const mic_m m_neg = 0b0101010101010101;
+	  const mic_f gnormalx(select(m_neg,mic_f(-Ng.x),mic_f(Ng.x)));
+	  const mic_f gnormaly(select(m_neg,mic_f(-Ng.y),mic_f(Ng.y)));
+	  const mic_f gnormalz(select(m_neg,mic_f(-Ng.z),mic_f(Ng.z)));
 		  
 	  compactustore16f_low(m_tri,&ray.tfar,min_dist);
 	  compactustore16f_low(m_tri,&ray.u,u_final); 
@@ -481,9 +483,11 @@ namespace embree
 	prefetch<PFHINT_L1EX>(&ray16.geomID);
 	prefetch<PFHINT_L1EX>(&ray16.primID);
 
-	const mic_f gnormalx(normal.x[index]);
-	const mic_f gnormaly(normal.y[index]);
-	const mic_f gnormalz(normal.z[index]);
+	const mic_m m_neg = 0b0101010101010101;
+	const mic_f gnormalx(select(m_neg,mic_f(-normal.x),mic_f(normal.x)));
+	const mic_f gnormaly(select(m_neg,mic_f(-normal.y),mic_f(normal.y)));
+	const mic_f gnormalz(select(m_neg,mic_f(-normal.z),mic_f(normal.z)));
+
 		  
 	compactustore16f_low(m_tri,&ray16.tfar[rayIndex],min_dist);
 	compactustore16f_low(m_tri,&ray16.u[rayIndex],u_final); 
@@ -586,9 +590,10 @@ namespace embree
 	prefetch<PFHINT_L1EX>(&ray16.geomID);
 	prefetch<PFHINT_L1EX>(&ray16.primID);
 
-	const mic_f gnormalx(Ng.x[index]);
-	const mic_f gnormaly(Ng.y[index]);
-	const mic_f gnormalz(Ng.z[index]);
+	const mic_m m_neg = 0b0101010101010101;
+	const mic_f gnormalx(select(m_neg,mic_f(-Ng.x),mic_f(Ng.x)));
+	const mic_f gnormaly(select(m_neg,mic_f(-Ng.y),mic_f(Ng.y)));
+	const mic_f gnormalz(select(m_neg,mic_f(-Ng.z),mic_f(Ng.z)));
 		  
 	compactustore16f_low(m_tri,&ray16.tfar[rayIndex],min_dist);
 	compactustore16f_low(m_tri,&ray16.u[rayIndex],u_final); 
