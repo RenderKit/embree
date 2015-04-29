@@ -16,26 +16,28 @@
 
 IF (__XEON__)
 
-  IF (TASKING_INTERNAL)
-    ADD_DEFINITIONS(-DTASKING_TBB_INTERNAL)
-  ENDIF()
+# FIXME: have to add these CPP files directly in libembree as otherwise under VS2012, globals of the tasking system exist twice
 
-  IF (TASKING_TBB)
-    ADD_DEFINITIONS(-DTASKING_TBB)
-  ENDIF()
+#  IF (TASKING_INTERNAL)
+#    ADD_DEFINITIONS(-DTASKING_TBB_INTERNAL)
+#  ENDIF()
 
-  ADD_LIBRARY(tasking STATIC
-    taskscheduler_tbb.cpp
-    tasksys.cpp
-  )
+#  IF (TASKING_TBB)
+#    ADD_DEFINITIONS(-DTASKING_TBB)
+#  ENDIF()
 
-  IF (TASKING_TBB)
-    TARGET_LINK_LIBRARIES(tasking sys ${TBB_LIBRARIES})
-  ELSE()
-    TARGET_LINK_LIBRARIES(tasking sys)
-  ENDIF()
+#  ADD_LIBRARY(tasking STATIC
+#    taskscheduler_tbb.cpp
+#    tasksys.cpp
+#  )
 
-  SET_PROPERTY(TARGET sys PROPERTY FOLDER kernels)
+#  IF (TASKING_TBB)
+#    TARGET_LINK_LIBRARIES(tasking sys ${TBB_LIBRARIES})
+#  ELSE()
+#    TARGET_LINK_LIBRARIES(tasking sys)
+#  ENDIF()
+
+#  SET_PROPERTY(TARGET tasking PROPERTY FOLDER kernels)
 
 ELSE ()
 
