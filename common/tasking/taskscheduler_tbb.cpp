@@ -159,7 +159,11 @@ namespace embree
 
 #if TASKING_TBB
    __dllexport size_t TaskSchedulerTBB::threadIndex() {
+#if TBB_INTERFACE_VERSION_MAJOR < 8
+     return tbb::task_arena::current_slot();
+#else
      return tbb::task_arena::current_thread_index();
+#endif
    }
   __dllexport size_t TaskSchedulerTBB::threadCount() {
     return g_numThreads; // FIXME: possible to return number of thread through TBB call?

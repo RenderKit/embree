@@ -7,6 +7,8 @@
 
 #destdir=`readlink -f "$1"`
 
+TBB_PATH=$PWD/tbb
+
 mkdir -p build
 cd build
 rm CMakeCache.txt # make sure to use default settings
@@ -14,6 +16,7 @@ rm CMakeCache.txt # make sure to use default settings
 # set release settings
 cmake \
 -D COMPILER=ICC \
+-D TBB_ROOT=$TBB_PATH \
 -D ENABLE_XEON_PHI_SUPPORT=ON \
 -D USE_IMAGE_MAGICK=OFF \
 -D USE_LIBJPEG=OFF \
