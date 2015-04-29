@@ -36,7 +36,7 @@
 #define ENABLE_DISPLACEMENTS 0
 
 //#define FORCE_FIXED_EDGE_TESSELLATION
-#define FIXED_EDGE_TESSELLATION_VALUE 16
+#define FIXED_EDGE_TESSELLATION_VALUE 4
 
 #define MAX_EDGE_LEVEL 128.0f
 #define MIN_EDGE_LEVEL 4.0f
@@ -480,8 +480,8 @@ void OBJMaterial__preprocess(OBJMaterial* material, BRDF& brdf, const Vec3fa& wo
 #if ENABLE_TEXTURING == 1
     if (material->map_Kd) 
       {
-	//brdf.Kd = getTextureTexel3f(material->map_Kd,dg.u,dg.v);	
-        brdf.Kd = d * getPtexTexel3f(material->map_Kd, dg.primID, dg.v, dg.u);
+	brdf.Kd = getTextureTexel3f(material->map_Kd,dg.u,dg.v);	
+        //brdf.Kd = d * getPtexTexel3f(material->map_Kd, dg.primID, dg.v, dg.u);
       }
 #endif
     //if (material->map_Kd) brdf.Kd *= material->map_Kd->get(dg.st);  
@@ -1559,7 +1559,7 @@ extern "C" void device_render (int* pixels,
   const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
   launch_renderTile(numTilesX*numTilesY,pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY); 
-  rtcDebug();
+  //rtcDebug();
 } // device_render
 
 /* called by the C++ code for cleanup */

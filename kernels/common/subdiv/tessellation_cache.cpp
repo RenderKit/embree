@@ -22,13 +22,13 @@ namespace embree
   SharedLazyTessellationCache SharedLazyTessellationCache::sharedLazyTessellationCache;
 
   void resizeTessellationCache(const size_t new_size)
-  {
+  {    
     if (new_size <= 1024 * 1024)
       THROW_RUNTIME_ERROR("tessellation cache size is too small");
 
-    if (SharedLazyTessellationCache::sharedLazyTessellationCache.getSize() != new_size) {
-      SharedLazyTessellationCache::sharedLazyTessellationCache.realloc(new_size);
-    }
+    if (SharedLazyTessellationCache::MAX_TESSELLATION_CACHE_SIZE >= new_size &&
+	SharedLazyTessellationCache::sharedLazyTessellationCache.getSize() != new_size) 
+      SharedLazyTessellationCache::sharedLazyTessellationCache.realloc(new_size);    
   }
 
   void clearTessellationCache()
