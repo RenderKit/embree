@@ -278,17 +278,6 @@ IF (ENABLE_TUTORIALS)
 ENDIF()
 
 ##############################################################
-# Documentation
-##############################################################
-
-FILE(GLOB DOC_FILES ${PROJECT_SOURCE_DIR}/embree-doc/docbin/*)
-INSTALL(FILES ${DOC_FILES} OPTIONAL DESTINATION ${DOC_INSTALL_DIR} COMPONENT documentation)
-INSTALL(FILES ${PROJECT_SOURCE_DIR}/LICENSE.txt DESTINATION ${DOC_INSTALL_DIR} COMPONENT documentation)
-
-# currently CMake does not support solution folders without projects
-# SOURCE_GROUP("Documentation" FILES README.md CHANGELOG.md LICENSE.txt readme.pdf)
-
-##############################################################
 # Uninstall
 ##############################################################
 

@@ -22,7 +22,8 @@ cmake \
 ..
 
 # make docu after cmake to have correct version.h
-make -C ../embree-doc docbin
+#make -C ../embree-doc doc
+#cp ../embree-doc/doc/* ..
 
 # create installers
 cmake -D ENABLE_INSTALLER=ON ..
