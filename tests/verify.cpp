@@ -3102,10 +3102,11 @@ namespace embree
 #endif
 #endif
 
+#endif
+
     POSITIVE("regression_static",         rtcore_regression(rtcore_regression_static_thread,0));
     POSITIVE("regression_dynamic",        rtcore_regression(rtcore_regression_dynamic_thread,0));
 
-#endif
 
 #if defined(TASKING_TBB) || defined(TASKING_TBB_INTERNAL)
     POSITIVE("regression_static_user_threads", rtcore_regression(rtcore_regression_static_thread,1));
