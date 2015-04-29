@@ -57,7 +57,7 @@ dash = '/'
 
 ########################## configuration ##########################
 
-#compilers_win = ['V120']
+compilers_win = ['V120']
 #compilers_win = ['ICC']
 #compilers_win  = ['V120', 'ICC']
 compilers_win  = ['V110', 'V120', 'ICC']
@@ -127,8 +127,26 @@ def compile(OS,compiler,platform,build,isa,tasking):
 
   if OS == 'windows':
 
+    # generate CMake generator name
     full_compiler = compiler
-    if (compiler == 'ICC'): full_compiler = '"Intel C++ Compiler XE 14.0" '
+    if (compiler == 'V110'):
+	  generator = 'Visual Studio 12 2012'
+    elif (compiler == 'V120'):
+      generator = 'Visual Studio 12 2013'
+    elif (compiler == 'ICC'):
+      generator = 'Visual Studio 12 2013'
+      full_compiler = '"Intel C++ Compiler XE 14.0" '
+    else:
+      sys.stderr.write('unknown compiler: ' + compiler + '\n')
+      sys.exit(1)
+
+    if (platform == 'Win32'):
+      generator += ''
+    elif (platform == 'x64'):
+	  generator += ' Win64'
+    else:
+      sys.stderr.write('unknown platform: ' + platform + '\n')
+      sys.exit(1)
 
     # generate build directory
     if os.path.exists('build'):
@@ -137,11 +155,11 @@ def compile(OS,compiler,platform,build,isa,tasking):
         sys.stdout.write("Cannot delete build folder!")
         return ret
     else:	
-      os.system('mkdir build')
+      os.system('mkdir build')	
 
     # generate solution files using cmake
     command = 'cmake -L '
-    command += ' -G "Visual Studio 12 2013"'
+    command += ' -G "' + generator + '"'
     command += ' -T ' + full_compiler
     command += ' -A ' + platform
     command += ' -D COMPILER=' + compiler
@@ -164,7 +182,7 @@ def compile(OS,compiler,platform,build,isa,tasking):
     if ret != 0: return ret
 
     # compile Embree
-    command =  'msbuild build\embree.sln' + ' /m /nologo /p:Platform=' + platform + ' /p:Configuration=' + build + ' /t:rebuild /verbosity:n' 
+    command =  'msbuild build\embree2.sln' + ' /m /nologo /p:Platform=' + platform + ' /p:Configuration=' + build + ' /t:rebuild /verbosity:n' 
     os.system('echo ' + command + ' >> ' + logFile)
     return os.system(command + ' >> ' + logFile)
   
