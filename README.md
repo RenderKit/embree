@@ -73,6 +73,150 @@ For questions please write us at <embree_support@intel.com>.
 To receive notifications of updates and new features of Embree please
 subscribe to the [Embree mailing
 list](https://groups.google.com/d/forum/embree/).
+Installation of Embree
+======================
+
+This section describes how to install Embree. You can download the
+referenced installers from the embree webpage
+[https://embree.github.com/](https://embree.github.com/).
+
+Windows Installer
+-----------------
+
+You can install the 64\ bit version of the Embree library using the
+Windows installer application
+`embree-2.5.1.x64.exe`. This will install the 64
+bit Embree version by default in `Program Files\Intel\Embree
+2.5.1`. To install the 32\ bit Embree library use the
+`embree-2.5.1.win32.exe` installer. This will
+install the 32\ bit Embree version by default in `Program
+Files\Intel\Embree 2.5.1` on 32\ bit systems and `Program
+Files (x86)\Intel\Embree 2.5.1` on 64\ bit systems.
+
+You have to set the path to the `lib` folder manually to your `PATH`
+environment variable for applications to find Embree. To compile
+applications with Embree you also have to set the `Include
+Directories` path in Visual Studio to the `include` folder of the
+Embree installation.
+
+To uninstall Embree again open `Programs and Features` by clicking the
+`Start button`, clicking `Control Panel`, clicking `Programs`, and
+then clicking `Programs and Features`. Select `Embree
+2.5.1` and uninstall it.
+
+Windows ZIP File
+-----------------
+
+Embree is also delivered as a ZIP file
+`embree-2.5.1.x64.windows.zip`. After unpacking this ZIP
+file you should set the path to the `lib` folder manually to your
+`PATH` environment variable for applications to find Embree. To
+compile applications with Embree you also have to set the `Include
+Directories` path in Visual Studio to the `include` folder of the
+Embree installation.
+
+If you plan to ship Embree with your application, best use the Embree
+version from this ZIP file.
+
+Linux RPMs
+----------
+
+Use the provided RPMs to install Embree on your Linux system:
+
+    sudo rpm --install embree-devel-2.5.1.x86_64.rpm
+    sudo rpm --install embree-examples-2.5.1.x86_64.rpm
+
+To also install the Intel® Xeon Phi™ version of Embree additionally
+install the following Xeon Phi™ RPMs:
+
+    sudo rpm --install embree-devel_xeonphi-2.5.1.x86_64.rpm
+    sudo rpm --install embree-examples_xeonphi-2.5.1.x86_64.rpm
+
+You also have to install the Intel® Threading Building Blocks (TBB)
+either using `yum`:
+
+    sudo yum install tbb.x86_64 tbb-devel.x86_64
+
+or via `apt-get`:
+
+    sudo apt-get install libtbb-dev
+
+Under Linux Embree is installed by default in the `/usr/lib` and
+`/usr/include` directories. This way applications will find Embree
+automatically. The Embree tutorials are installed into the
+`/usr/bin/embree-2.5.1` folder. Specify the full path to
+the tutorials to start them.
+
+To uninstall Embree again just execute the following:
+
+    sudo rpm --erase embree-devel-2.5.1.x86_64
+    sudo rpm --erase embree-examples-2.5.1.x86_64
+
+If you also installed the Xeon Phi™ RPMs you have to uninstall them
+too:
+
+    sudo rpm --erase embree-devel_xeonphi-2.5.1.x86_64
+    sudo rpm --erase embree-examples_xeonphi-2.5.1.x86_64
+
+Linux tar.gz files
+------------------
+
+The Linux version of Embree is also delivered as a tar.gz file
+`embree-2.5.1.x64.linux.tar.gz`. Unpack this file using
+`tar` and source the provided `embree-vars.sh` to setup the
+environment properly:
+
+    tar xzf embree-2.5.1.x64.linux.tar.gz
+    source embree-2.5.1.x64.linux/embree-vars.sh
+
+If you want to ship Embree with your application best use the Embree
+version provided through the tar.gz file.
+
+Mac OS\ X PKG Installer
+-----------------------
+
+To install the Embree library on your Mac\ OS\ X system use the
+provided package installer inside
+`embree-2.5.1.x86_64.dmg`. This will install Embree
+by default into `/usr/lib` and `/usr/include` directories. This way
+applications will find Embree automatically. The Embree tutorials are
+installed into the `/Applications/embree-2.5.1` folder.
+
+You also have to install the Intel® Threading Building Blocks (TBB)
+using [MacPorts](http://www.macports.org/):
+
+    sudo port install tbb
+
+To uninstall Embree again execute the uninstaller script
+`/Applications/embree-2.5.1/uninstall.command`.
+
+Mac\ OS\ X tar.gz file
+---------------------
+
+The Mac\ OS\ X version of Embree is also delivered as a tar.gz file
+`embree-2.5.1.x64.macosx.tar.gz`. Unpack this file using
+`tar` and source the provided `embree-vars.sh` to setup the
+environment properly:
+
+    tar xzf embree-2.5.1.x64.macosx.tar.gz
+    source embree-2.5.1.x64.macosx/embree-vars.sh
+
+If you want to ship Embree with your application please use the Embree
+library of the provided tar.gz file. The library name of that Embree
+library does not contain any global path and also links against TBB
+without global path. This ensures that the Embree (and TBB) library
+that you put next to your application executable is used.
+
+Linking ISPC applications with Embree
+-------------------------------------
+
+The precompiled Embree library uses the multi-target mode of ISPC. For
+your ISPC application to properly link against Embree you also have to
+enable this mode. You can do this by specifying multiple targets when
+compiling your application with ISPC, e.g.:
+
+    ispc --target sse2,sse4,avx,avx2 -o code.o code.ispc
+
 Compiling Embree
 ================
 
@@ -338,116 +482,6 @@ parameters that can be configured in CMake:
                                AVX-I, or AVX2).
   ---------------------------- -------------------------------- --------
   : CMake build options for Embree.
-Installation of Embree
-======================
-
-Windows
--------
-
-To install the 64\ bit version of the Embree library use the provided
-Windows installer application
-`embree-2.5.1.x64.windows.exe`. This will install the 64
-bit Embree version by default in `Program Files\Intel\Embree
-2.5.1`. To install the 32\ bit Embree library use the
-`embree-2.5.1.win32.windows.exe` installer. This will
-install the 32\ bit Embree version by default in `Program
-Files\Intel\Embree 2.5.1` on 32\ bit systems and `Program
-Files (x86)\Intel\Embree 2.5.1` on 64\ bit systems.
-
-You have to set the path to the `lib` folder manually to your `PATH`
-environment variable for applications to find Embree. To compile
-applications with Embree you also have to set the `Include
-Directories` path in Visual Studio to the `include` folder of the
-Embree installation.
-
-To uninstall Embree again open `Programs and Features` by clicking the
-`Start button`, clicking `Control Panel`, clicking `Programs`, and
-then clicking `Programs and Features`. Select `Embree
-2.5.1` and uninstall it.
-
-If you want to ship Embree with your application please use the Embree
-version of the provided ZIP file
-`embree-2.5.1.x64.windows.zip`.
-
-Linux
------
-
-Use the provided RPMs to install Embree on your system:
-
-    sudo rpm --install embree-devel-2.5.1.x86_64.linux.rpm
-    sudo rpm --install embree-examples-2.5.1.x86_64.linux.rpm
-
-To also install the Intel® Xeon Phi™ version of Embree additionally
-install the following Xeon Phi™ RPMs:
-
-    sudo rpm --install embree-devel_xeonphi-2.5.1.x86_64.linux.rpm
-    sudo rpm --install embree-examples_xeonphi-2.5.1.x86_64.linux.rpm
-
-You also have to install the Intel® Threading Building Blocks (TBB)
-either using `yum`:
-
-    sudo yum install tbb.x86_64 tbb-devel.x86_64
-
-or via `apt-get`:
-
-    sudo apt-get install libtbb-dev
-
-
-Under Linux Embree is installed by default in the `/usr/lib` and
-`/usr/include` directories. This way applications will find Embree
-automatically. The Embree tutorials are installed into the
-`/usr/bin/embree-2.5.1` folder.
-
-To uninstall Embree again just execute the following:
-
-    sudo rpm --erase embree-devel-2.5.1.x86_64
-    sudo rpm --erase embree-examples-2.5.1.x86_64
-
-If you also installed the Xeon Phi™ RPMs you have to uninstall them
-too:
-
-    sudo rpm --erase embree-devel_xeonphi-2.5.1.x86_64
-    sudo rpm --erase embree-examples_xeonphi-2.5.1.x86_64
-
-If you want to ship Embree with your application please use the Embree
-version of the provided tgz file
-`embree-2.5.1.x64.linux.tar.gz`.
-
-Mac OS\ X
----------
-
-To install the Embree library on your Mac\ OS\ X system use the
-provided package installer inside
-`embree-2.5.1.x86_64.macosx.dmg`. This will install Embree
-by default into `/usr/lib` and `/usr/include` directories. This way
-applications will find Embree automatically. The Embree tutorials are
-installed into the `/Applications/embree-2.5.1` folder.
-
-You also have to install the Intel® Threading Building Blocks (TBB)
-using [MacPorts](http://www.macports.org/):
-
-    sudo port install tbb
-
-To uninstall Embree again execute the uninstaller script
-`/Applications/embree-2.5.1/uninstall.command`.
-
-If you want to ship Embree with your application please use the Embree
-version of the provided tar.gz file
-`embree-2.5.1.x64.macosx.tar.gz`. The library name of that
-library does not contain the global path `/usr/lib` and links against
-`libtbb.dylib` and `libtbb_malloc.dylib`, such that you can put these
-files including TBB next to your application executable.
-
-Linking ISPC applications with Embree
--------------------------------------
-
-The precompiled Embree library uses the multi-target mode of ISPC. For
-your ISPC application to properly link against Embree you also have to
-enable this mode. You can do this by specifying multiple targets when
-compiling your application with ISPC, e.g.:
-
-    ispc --target sse2,sse4,avx,avx2 -o code.o code.ispc
-
 Embree API
 ==========
 
