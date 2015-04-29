@@ -61,9 +61,9 @@ dash = '/'
 #compilers_win = ['ICC']
 #compilers_win  = ['V120', 'ICC']
 compilers_win  = ['V110', 'V120', 'ICC']
-#compilers_unix = ['ICC']
+compilers_unix = ['ICC']
 #compilers_unix = ['GCC', 'CLANG']
-compilers_unix = ['GCC', 'CLANG', 'ICC']
+#compilers_unix = ['GCC', 'CLANG', 'ICC']
 compilers      = []
 
 #platforms_win  = ['Win32']
@@ -226,7 +226,8 @@ def render(OS, compiler, platform, build, isa, tasking, tutorial, args, scene, f
     if tutorial != 'verify' and tutorial != 'benchmark':
       command += '-rtcore verbose=2'
     if flags != "": 
-      command += ",flags=" + flags
+      if flags != "default":
+        command += ",flags=" + flags
       command += ' -size 1024 1024 -o ' + imageFile
     command += ' > ' + logFile
     ret = os.system(command)
@@ -255,7 +256,7 @@ def processConfiguration(OS, compiler, platform, build, isa, tasking, models):
   if ret != 0: sys.stdout.write(" [failed]\n")
   else:        
     sys.stdout.write(" [passed]\n")
-                    
+
     render(OS, compiler, platform, build, isa, tasking, 'verify', '', '', '')
     render(OS, compiler, platform, build, isa, tasking, 'benchmark', '', '', '')
 
