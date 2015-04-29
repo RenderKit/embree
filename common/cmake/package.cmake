@@ -63,6 +63,19 @@ INSTALL(FILES ${PROJECT_SOURCE_DIR}/readme.pdf DESTINATION ${DOC_INSTALL_DIR} CO
 # SOURCE_GROUP("Documentation" FILES README.md CHANGELOG.md LICENSE.txt readme.pdf)
 
 ##############################################################
+# Install scripts to set embree paths
+##############################################################
+
+IF (NOT ENABLE_INSTALLER)
+  IF (WIN32)
+  ELSEIF(APPLE)
+    INSTALL(FILES ${PROJECT_SOURCE_DIR}/scripts/install_macosx/embree-vars.sh DESTINATION "." COMPONENT libraries)
+  ELSE()
+    INSTALL(FILES ${PROJECT_SOURCE_DIR}/scripts/install_linux/embree-vars.sh DESTINATION "." COMPONENT libraries)
+  ENDIF()
+ENDIF()
+
+##############################################################
 # Install Embree CMake Configuration
 ##############################################################
 IF (WIN32)
@@ -70,7 +83,7 @@ IF (WIN32)
 ELSEIF (APPLE)
   CONFIGURE_FILE(common/cmake/embree-config-macosx.cmake embree-config.cmake @ONLY)
   IF (ENABLE_INSTALLER)
-    CONFIGURE_FILE(scripts/install_macos/uninstall.command uninstall.command @ONLY)
+    CONFIGURE_FILE(scripts/install_macosx/uninstall.command uninstall.command @ONLY)
     INSTALL(PROGRAMS "${PROJECT_BINARY_DIR}/uninstall.command" DESTINATION ${APPLICATION_INSTALL_DIR} COMPONENT libraries)
   ENDIF()
 ELSE()
