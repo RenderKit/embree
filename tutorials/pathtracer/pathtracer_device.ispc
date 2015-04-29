@@ -31,7 +31,7 @@
 #define SAMPLES_PER_PIXEL 1
 
 #define ENABLE_TEXTURING 0
-#define ENABLE_TEXTURE_COORDINDATES 0
+#define ENABLE_TEXTURE_COORDINATES 0
 #define ENABLE_OCCLUSION_FILTER 0
 #define ENABLE_DISPLACEMENTS 0
 
@@ -1083,7 +1083,7 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in,const uniform Vec3fa& 
   if (g_subdiv_mode)   
     scene_flags = RTC_SCENE_DYNAMIC | RTC_SCENE_INCOHERENT | RTC_SCENE_ROBUST;
 
-  RTCScene scene_out = rtcNewScene((RTCSceneFlags)scene_flags, RTC_INTERSECT_VARYING | RTC_INTERSECT_UNIFORM);
+  RTCScene scene_out = rtcNewScene((RTCSceneFlags)scene_flags, RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING);
   convertTriangleMeshes(scene_in,scene_out,numGeometries);
   convertSubdivMeshes(scene_in,scene_out,numGeometries,cam_org);
 
@@ -1272,7 +1272,7 @@ Vec3f renderPixelFunction(float x, float y, rand_state& state, const uniform Vec
 	else if (geomID_to_type[geomID] == 1)                
          {             
  	  materialID = ((ISPCSubdivMesh* uniform) geomID_to_mesh[geomID])->materialID; 
-#if ENABLE_TEXTURE_COORDINDATES == 1
+#if ENABLE_TEXTURE_COORDINATES == 1
 	  const Vec2f st = getTextureCoordinatesSubdivMesh((ISPCSubdivMesh*) geomID_to_mesh[geomID],ray.primID,ray.u,ray.v);
 	  dg.u = st.x;
 	  dg.v = st.y;

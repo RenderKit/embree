@@ -30,5 +30,5 @@
 ./viewer
 ./viewer_ispc
 
-./tutorial06
-./tutorial06_ispc
+./pathtracer
+./pathtracer_ispc
