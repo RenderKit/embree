@@ -67,7 +67,7 @@ namespace embree
   class TBBAffinity: public tbb::task_scheduler_observer
   {
     void on_scheduler_entry( bool ) {
-      setAffinity(tbb::task_arena::current_thread_index());
+      setAffinity(TaskSchedulerTBB::threadIndex());
     }
   } tbb_affinity;
 #endif

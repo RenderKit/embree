@@ -21,7 +21,7 @@
 #include "tasking/taskscheduler_mic.h"
 #endif
 
-#if defined(TASKING_TBB_INTERNAL)
+#if defined(TASKING_TBB_INTERNAL) || defined(TASKING_TBB)
 #include "tasking/taskscheduler_tbb.h"
 #endif
 
@@ -101,8 +101,8 @@ namespace embree
   extern "C" __dllexport void ISPCLaunch(void** taskPtr, void* func, void* data, int count) 
   {      
     parallel_for(size_t(0), size_t(count),[&] (const range<size_t>& r) {
-        const size_t threadIndex = tbb::task_arena::current_thread_index();
-        const size_t threadCount = tbb::task_scheduler_init::default_num_threads();
+        const size_t threadIndex = TaskSchedulerTBB::threadIndex();
+        const size_t threadCount = TaskSchedulerTBB::threadCount();
         for (size_t i=r.begin(); i<r.end(); i++) ((TaskFuncType)func)(data,threadIndex,threadCount,i,count);
       });
   }
@@ -114,7 +114,7 @@ namespace embree
   extern "C" __dllexport void ISPCLaunch(void** taskPtr, void* func, void* data, int count) 
   {      
     parallel_for(size_t(0), size_t(count), [&] (const range<size_t>& r) {
-        const size_t threadIndex = TaskSchedulerTBB::thread()->threadIndex;
+        const size_t threadIndex = TaskSchedulerTBB::threadIndex();
         const size_t threadCount = TaskSchedulerTBB::threadCount();
         for (size_t i=r.begin(); i<r.end(); i++) 
           ((TaskFuncType)func)(data,threadIndex,threadCount,i,count);
