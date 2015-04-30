@@ -57,7 +57,7 @@ dash = '/'
 
 ########################## configuration ##########################
 
-compilers_win = ['V120']
+#compilers_win = ['V120']
 #compilers_win = ['ICC']
 #compilers_win  = ['V120', 'ICC']
 #compilers_win  = ['V110', 'V120', 'ICC']
@@ -81,8 +81,8 @@ builds_unix = ['RelWithDebInfo']
 #builds_unix = ['RelWithDebInfo', 'Debug']
 builds = []
 
-ISAs_win  = ['AVX2']
-#ISAs_win  = ['SSE2', 'SSE4.2', 'AVX', 'AVX2']
+#ISAs_win  = ['AVX2']
+ISAs_win  = ['SSE2', 'SSE4.2', 'AVX', 'AVX2']
 #ISAs_unix = ['AVX2']
 ISAs_unix = ['SSE2', 'SSE4.2', 'AVX', 'AVX2']
 ISAs = []
@@ -101,7 +101,7 @@ supported_configurations = [
   ]
 
 models = {}
-models['Win32'] = [ 'crown' ]
+models['Win32'] = [ 'conference' ]
 models['x64'  ] = [ 'crown' ]
 #models['Win32'] = [ 'conference', 'sponza', 'headlight', 'crown', 'bentley' ]
 #models['x64'  ] = [ 'conference', 'sponza', 'headlight', 'crown', 'bentley', 'xyz_dragon', 'powerplant' ]
@@ -131,7 +131,7 @@ def compile(OS,compiler,platform,build,isa,tasking):
     # generate CMake generator name
     full_compiler = compiler
     if (compiler == 'V110'):
-	  generator = 'Visual Studio 12 2012'
+	  generator = 'Visual Studio 11 2012'
     elif (compiler == 'V120'):
       generator = 'Visual Studio 12 2013'
     elif (compiler == 'ICC'):
