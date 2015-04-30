@@ -161,7 +161,7 @@ namespace embree
   __noinline bool check_xcr0_ymm() 
   {
 #if defined (__WIN32__)
-    unsigned xcr0 = 0;
+    int64 xcr0 = 0; // int64 is workaround for compiler bug under VS2013, Win32
 #if defined(__INTEL_COMPILER) 
     xcr0 = _xgetbv(0);
 #elif (defined(_MSC_VER) && (_MSC_FULL_VER >= 160040219)) // min VS2010 SP1 compiler is required
