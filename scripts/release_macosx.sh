@@ -26,39 +26,31 @@ cd build
 
 # create version.h
 rm CMakeCache.txt # make sure to use default settings
-cmake ..
+cmake \
+-D COMPILER=ICC \
+-D CMAKE_INSTALL_PREFIX=/opt/local \
+-D TBB_ROOT=$TBB_PATH \
+-D USE_IMAGE_MAGICK=OFF \
+-D USE_LIBJPEG=OFF \
+-D USE_LIBPNG=OFF \
+-D USE_OPENEXR=OFF \
+..
+make -j 8 preinstall
 
 # make docu after cmake to have correct version.h
 #make -C ../embree-doc doc
 #cp ../embree-doc/doc/* ..
 
 # create installers
-rm CMakeCache.txt # make sure to use default settings
 cmake \
--D COMPILER=ICC \
--D TBB_ROOT=$TBB_PATH \
--D USE_IMAGE_MAGICK=OFF \
--D USE_LIBJPEG=OFF \
--D USE_LIBPNG=OFF \
--D USE_OPENEXR=OFF \
--D CMAKE_SKIP_INSTALL_RPATH=OFF \
 -D ENABLE_INSTALLER=ON \
 ..
 make -j 8 package
 
 # create ZIP files
-rm CMakeCache.txt # make sure to use default settings
 cmake \
--D COMPILER=ICC \
--D TBB_ROOT=$TBB_PATH \
--D USE_IMAGE_MAGICK=OFF \
--D USE_LIBJPEG=OFF \
--D USE_LIBPNG=OFF \
--D USE_OPENEXR=OFF \
--D CMAKE_SKIP_INSTALL_RPATH=ON \
 -D ENABLE_INSTALLER=OFF \
 ..
-
 make -j 8 package
 
 #make -j 8 preinstall
