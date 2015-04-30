@@ -123,23 +123,28 @@ Linux RPMs
 
 Use the provided RPMs to install Embree on your Linux system:
 
-    sudo rpm --install embree-devel-2.5.1.x86_64.rpm
-    sudo rpm --install embree-examples-2.5.1.x86_64.rpm
+    sudo rpm --install embree-devel-2.5.1-1.x86_64.rpm
+    sudo rpm --install embree-examples-2.5.1-1.x86_64.rpm
 
 To also install the Intel® Xeon Phi™ version of Embree additionally
 install the following Xeon Phi™ RPMs:
 
-    sudo rpm --install embree-devel_xeonphi-2.5.1.x86_64.rpm
-    sudo rpm --install embree-examples_xeonphi-2.5.1.x86_64.rpm
+    sudo rpm --install embree-devel_xeonphi-2.5.1-1.x86_64.rpm
+    sudo rpm --install embree-examples_xeonphi-2.5.1-1.x86_64.rpm
 
-You also have to install the Intel® Threading Building Blocks (TBB)
-either using `yum`:
+You also have to install the Intel® Threading Building Blocks (TBB) of
+at least version 4.3 either using `yum`:
 
     sudo yum install tbb.x86_64 tbb-devel.x86_64
 
 or via `apt-get`:
 
     sudo apt-get install libtbb-dev
+
+Alternatively you can download the latest TBB version from
+[https://www.threadingbuildingblocks.org/download](https://www.threadingbuildingblocks.org/download)
+and set the `LD_LIBRARY_PATH` environment variable to point
+to the TBB library.
 
 Under Linux Embree is installed by default in the `/usr/lib` and
 `/usr/include` directories. This way applications will find Embree
@@ -149,14 +154,14 @@ the tutorials to start them.
 
 To uninstall Embree again just execute the following:
 
-    sudo rpm --erase embree-devel-2.5.1.x86_64
-    sudo rpm --erase embree-examples-2.5.1.x86_64
+    sudo rpm --erase embree-devel-2.5.1-1.x86_64
+    sudo rpm --erase embree-examples-2.5.1-1.x86_64
 
 If you also installed the Xeon Phi™ RPMs you have to uninstall them
 too:
 
-    sudo rpm --erase embree-devel_xeonphi-2.5.1.x86_64
-    sudo rpm --erase embree-examples_xeonphi-2.5.1.x86_64
+    sudo rpm --erase embree-devel_xeonphi-2.5.1-1.x86_64
+    sudo rpm --erase embree-examples_xeonphi-2.5.1-1.x86_64
 
 Linux tar.gz files
 ------------------
@@ -172,25 +177,30 @@ environment properly:
 If you want to ship Embree with your application best use the Embree
 version provided through the tar.gz file.
 
-Mac OS\ X PKG Installer
+Mac OS X PKG Installer
 -----------------------
 
 To install the Embree library on your Mac\ OS\ X system use the
 provided package installer inside
-`embree-2.5.1.x86_64.dmg`. This will install Embree
-by default into `/usr/lib` and `/usr/include` directories. This way
-applications will find Embree automatically. The Embree tutorials are
-installed into the `/Applications/embree-2.5.1` folder.
+`embree-2.5.1.x86_64.dmg`. This will install Embree by
+default into `/opt/local/lib` and `/opt/local/include`
+directories. The Embree tutorials are installed into the
+`/Applications/embree-2.5.1` folder.
 
 You also have to install the Intel® Threading Building Blocks (TBB)
 using [MacPorts](http://www.macports.org/):
 
     sudo port install tbb
 
+Alternatively you can download the latest TBB version from
+[https://www.threadingbuildingblocks.org/download](https://www.threadingbuildingblocks.org/download)
+and set the `DYLD_LIBRARY_PATH` environment variable to point
+to the TBB library.
+
 To uninstall Embree again execute the uninstaller script
 `/Applications/embree-2.5.1/uninstall.command`.
 
-Mac\ OS\ X tar.gz file
+Mac OS X tar.gz file
 ---------------------
 
 The Mac\ OS\ X version of Embree is also delivered as a tar.gz file
