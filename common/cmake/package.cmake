@@ -220,7 +220,7 @@ ELSE()
   IF (ENABLE_INSTALLER)
 
     SET(CPACK_GENERATOR RPM)
-    SET(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_FILE_NAME}.x86_64")
+    SET(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_FILE_NAME}-${CPACK_RPM_PACKAGE_RELEASE}.x86_64")
     SET(CPACK_COMPONENTS_ALL libraries headers documentation tutorials utilities libraries_xeonphi tutorials_xeonphi utilities_xeonphi)
     SET(CPACK_RPM_COMPONENT_INSTALL ON)
     SET(CPACK_RPM_PACKAGE_LICENSE "ASL 2.0") # Apache Software License, Version 2.0
