@@ -5,6 +5,7 @@ Version History
 
 - On dual socket workstations, the initial BVH build performance almost
    doubled through a better memory allocation scheme.
+- Reduced memory usage for subdivision surface objects with crease features
 - rtcCommit performance is robust against unset "flush to zero" and
   "denormals are zero" flags. However, enabling these flags in your
   application is still recommended.
