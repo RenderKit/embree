@@ -101,7 +101,7 @@ supported_configurations = [
   ]
 
 models = {}
-models['Win32'] = [ 'crown' ]
+models['Win32'] = [ 'conference' ]
 models['x64'  ] = [ 'crown' ]
 #models['Win32'] = [ 'conference', 'sponza', 'headlight', 'crown', 'bentley' ]
 #models['x64'  ] = [ 'conference', 'sponza', 'headlight', 'crown', 'bentley', 'xyz_dragon', 'powerplant' ]
