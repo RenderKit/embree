@@ -200,7 +200,6 @@ IF (ISA GREATER 8)
   SET(TARGET_AVX512  ON)
 ENDIF ()
 
-
 SET(CONFIGURATION_TYPES "Debug;Release;RelWithDebInfo")
 
 ##############################################################
