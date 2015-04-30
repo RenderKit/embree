@@ -62,9 +62,9 @@ dash = '/'
 #compilers_win  = ['V120', 'ICC']
 #compilers_win  = ['V110', 'V120', 'ICC']
 compilers_win  = ['V110', 'V120']
-compilers_unix = ['ICC']
+#compilers_unix = ['ICC']
 #compilers_unix = ['GCC', 'CLANG']
-#compilers_unix = ['GCC', 'CLANG', 'ICC']
+compilers_unix = ['GCC', 'CLANG', 'ICC']
 compilers      = []
 
 #platforms_win  = ['Win32']
@@ -83,8 +83,8 @@ builds = []
 
 #ISAs_win  = ['AVX2']
 ISAs_win  = ['SSE2', 'SSE4.2', 'AVX', 'AVX2']
-ISAs_unix = ['AVX2']
-#ISAs_unix = ['SSE2', 'SSE4.2', 'AVX', 'AVX2']
+#ISAs_unix = ['AVX2']
+ISAs_unix = ['SSE2', 'SSE4.2', 'AVX', 'AVX2']
 ISAs = []
 
 supported_configurations = [

@@ -41,22 +41,22 @@ IF (__XEON__)
 
 ELSE ()
 
-  #IF (TASKING_INTERNAL)
-    ADD_DEFINITIONS(-DTASKING_LOCKSTEP)
-  #ELSE()
-  #  ADD_DEFINITIONS(-DTASKING_TBB)
-  #  INCLUDE_DIRECTORIES(${TBB_INCLUDE_DIRS_MIC})
-  #  SET(ADDITIONAL_LIBRARIES ${TBB_LIBRARIES_MIC})
-  #ENDIF()
+#  #IF (TASKING_INTERNAL)
+#    ADD_DEFINITIONS(-DTASKING_LOCKSTEP)
+#  #ELSE()
+#  #  ADD_DEFINITIONS(-DTASKING_TBB)
+#  #  INCLUDE_DIRECTORIES(${TBB_INCLUDE_DIRS_MIC})
+#  #  SET(ADDITIONAL_LIBRARIES ${TBB_LIBRARIES_MIC})
+#  #ENDIF()
  
-  INCLUDE(icc_xeonphi)
+#  INCLUDE(icc_xeonphi)
 
-  ADD_LIBRARY(tasking_xeonphi STATIC
-    taskscheduler_tbb.cpp # FIXME: remove
-    taskscheduler_mic.cpp
-    tasksys.cpp
-  )
+#  ADD_LIBRARY(tasking_xeonphi STATIC
+#    taskscheduler_tbb.cpp # FIXME: remove
+#    taskscheduler_mic.cpp
+#    tasksys.cpp
+#  )
 
-  TARGET_LINK_LIBRARIES(tasking_xeonphi sys_xeonphi)
+#  TARGET_LINK_LIBRARIES(tasking_xeonphi sys_xeonphi)
 
 ENDIF ()
