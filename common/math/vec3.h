@@ -145,6 +145,8 @@ namespace embree
   template<typename T> __forceinline T       distance ( const Vec3<T>& a, const Vec3<T>& b ) { return length(a-b); }
   template<typename T> __forceinline Vec3<T> cross    ( const Vec3<T>& a, const Vec3<T>& b ) { return Vec3<T>(msub(a.y,b.z,a.z*b.y), msub(a.z,b.x,a.x*b.z), msub(a.x,b.y,a.y*b.x)); }
 
+  template<typename T> __forceinline T       sum      ( const Vec3<T>& a )                   { return a.x+a.y+a.z; }
+
   template<typename T> __forceinline      T  halfArea ( const Vec3<T>& d )                  { return d.x*(d.y+d.z)+d.y*d.z; }
   template<typename T> __forceinline      T  area     ( const Vec3<T>& d )                  { return 2.0f*halfArea(d); }
   template<typename T> __forceinline Vec3<T> reflect  ( const Vec3<T>& V, const Vec3fa& N ) { return 2.0f*dot(V,N)*N-V; }

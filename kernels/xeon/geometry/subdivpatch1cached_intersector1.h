@@ -349,7 +349,9 @@ namespace embree
 	const avxf v    = (avxf)i_v * avxf(2.0f/65535.0f);
 	return Vec2<avxf>(u,v);
       }
-      
+     
+#define ENABLE_NORMALIZED_INTERSECTION 0
+ 
       static __forceinline void intersect1_precise_3x3(Ray& ray,
 						       const float *const grid_x,
 						       const float *const grid_y,
@@ -371,17 +373,19 @@ namespace embree
 	const Vec3<avxf> v1_org(tri012_x[1],tri012_y[1],tri012_z[1]);
 	const Vec3<avxf> v2_org(tri012_x[2],tri012_y[2],tri012_z[2]);
         
+
+#if ENABLE_NORMALIZED_INTERSECTION == 0
 	const Vec3<avxf> O = ray.org;
 	const Vec3<avxf> D = ray.dir;
-        
+
 	const Vec3<avxf> v0 = v0_org - O;
 	const Vec3<avxf> v1 = v1_org - O;
 	const Vec3<avxf> v2 = v2_org - O;
-        
+
 	const Vec3<avxf> e0 = v2 - v0;
 	const Vec3<avxf> e1 = v0 - v1;	     
 	const Vec3<avxf> e2 = v1 - v2;	     
-        
+
 	/* calculate geometry normal and denominator */
 	const Vec3<avxf> Ng1 = cross(e1,e0);
 	const Vec3<avxf> Ng = Ng1+Ng1;
@@ -398,6 +402,38 @@ namespace embree
 	valid &= V >= 0.0f;
 	if (likely(none(valid))) return;
 	const avxf W = dot(Vec3<avxf>(cross(v1+v2,e2)),D) ^ sgnDen;
+
+#else
+        const Vec3<avxf> ray_rdir(pre.ray_rdir.x,pre.ray_rdir.y,pre.ray_rdir.z);
+        const Vec3<avxf> ray_org_rdir(pre.ray_org_rdir.x,pre.ray_org_rdir.y,pre.ray_org_rdir.z);
+
+	const Vec3<avxf> v0 = v0_org * ray_rdir - ray_org_rdir;
+	const Vec3<avxf> v1 = v1_org * ray_rdir - ray_org_rdir;
+	const Vec3<avxf> v2 = v2_org * ray_rdir - ray_org_rdir;
+
+	const Vec3<avxf> e0 = v2 - v0;
+	const Vec3<avxf> e1 = v0 - v1;	     
+	const Vec3<avxf> e2 = v1 - v2;	     
+
+	/* calculate geometry normal and denominator */
+	const Vec3<avxf> Ng1 = cross(e1,e0);
+	Vec3<avxf> Ng = Ng1+Ng1;
+	const avxf den = sum(Ng);
+	const avxf absDen = abs(den);
+	const avxf sgnDen = signmsk(den);
+        
+	avxb valid ( true );
+	/* perform edge tests */
+	const avxf U = sum(Vec3<avxf>(cross(v2+v0,e0))) ^ sgnDen;
+	valid &= U >= 0.0f;
+	if (likely(none(valid))) return;
+	const avxf V = sum(Vec3<avxf>(cross(v0+v1,e1))) ^ sgnDen;
+	valid &= V >= 0.0f;
+	if (likely(none(valid))) return;
+	const avxf W = sum(Vec3<avxf>(cross(v1+v2,e2))) ^ sgnDen;
+
+#endif        
+
 
 	valid &= W >= 0.0f;
 	if (likely(none(valid))) return;
@@ -437,7 +473,7 @@ namespace embree
         
 	size_t i = select_min(valid,t);
 
-        
+	
 	/* update hit information */
 	pre.hit_patch = pre.current_patch;
 
