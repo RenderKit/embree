@@ -262,7 +262,7 @@ version of GLUT.
 Under Mac OS\ X, all these dependencies can be installed
 using [MacPorts](http://www.macports.org/):
 
-    sudo port install cmake tbb freeglut 
+    sudo port install cmake tbb freeglut
 
 Depending on you Linux distribution you can install these dependencies
 using `yum` or `apt-get`.  Some of these packages might already be
@@ -307,7 +307,7 @@ and type:
 
 If you keep the default `CMAKE_INSTALL_PREFIX` of `/usr/local` then
 you have to make sure the path `/usr/local/lib` is in your
-`LD_LIBRARY_PATH`. 
+`LD_LIBRARY_PATH`.
 
 You can also uninstall Embree again by executing:
 
@@ -593,7 +593,7 @@ Possible error codes returned by `rtcGetError` are:
 
   RTC_UNSUPPORTED_CPU     The CPU is not supported as it does not
                           support SSE2.
-  
+
   RTC_CANCELLED           The operation got cancelled
                           by an Memory Monitor Callback or
                           Progress Monitor Callback function.
@@ -814,7 +814,8 @@ buffers have to get unmapped before an `rtcCommit` call to the scene.
     // fill triangle indices here
     rtcUnmapBuffer(scene, geomID, RTC_INDEX_BUFFER);
 
-Also see [tutorial00] for an example of how to create triangle meshes.
+Also see tutorial [Triangle Geometry] for an example of how to create
+triangle meshes.
 
 ### Subdivision Surfaces
 
@@ -897,7 +898,8 @@ Like for triangle meshes, the user can also specify a geometry mask
 and additional flags that choose the strategy to handle that
 subdivision mesh in dynamic scenes.
 
-Also see [tutorial08] for an example of how to create subdivision surfaces.
+Also see tutorial [Subdivision Geometry] for an example of how to create
+subdivision surfaces.
 
 ### Hair Geometry
 
@@ -947,7 +949,7 @@ The following example demonstrates how to create some hair geometry:
     // fill indices here
     rtcUnmapBuffer(scene, geomID, RTC_INDEX_BUFFER);
 
-Also see [tutorial07] for an example of how to create and use hair
+Also see tutorial [Hair] for an example of how to create and use hair
 geometry.
 
 ### User Defined Geometry
@@ -1023,8 +1025,8 @@ Also the user occluded function should return without modifying the ray
 structure if the user geometry is missed. If the geometry is hit, it
 should set the `geomID` member of the ray to 0.
 
-See [tutorial02] for an example of how to use the user defined
-geometries.
+See tutorial [User Geometry] for an example of how to use the user
+defined geometries.
 
 ### Instances
 
@@ -1080,7 +1082,8 @@ ignore the last row of the matrix.
 The transformation passed to `rtcSetTransform` transforms from the local
 space of the instantiated scene to world space.
 
-See [tutorial04] for an example of how to use instances.
+See tutorial [Instanced Geometry] for an example of how to use
+instances.
 
 Ray Queries
 -----------
@@ -1185,7 +1188,7 @@ the `rtcOccluded` functions. Initialization has to be done as for
 geometry ID (`geomID`) will get set to 0. Other hit information of the
 ray is undefined after calling `rtcOccluded`.
 
-See [tutorial00] for an example of how to trace rays.
+See tutorial [Triangle Geometry] for an example of how to trace rays.
 
 Buffer Sharing
 --------------
@@ -1352,7 +1355,8 @@ using the following API functions:
     void rtcSetOcclusionFilterFunction8 (RTCScene, unsigned geomID, RTCFilterFunc8 );
     void rtcSetOcclusionFilterFunction16(RTCScene, unsigned geomID, RTCFilterFunc16);
 
-See [tutorial05] for an example of how to use the filter functions.
+See tutorial [Intersection Filter] for an example of how to use the
+filter functions.
 
 Displacement Mapping Functions
 ------------------------------
@@ -1398,8 +1402,8 @@ The displacement mapping functions might get called during the
 `rtcCommit` call, or lazily during the `rtcIntersect` or
 `rtcOccluded` calls.
 
-Also see [tutorial09] for an example of how to use the displacement
-mapping functions.
+Also see tutorial [Displacement Geometry] for an example of how to use
+the displacement mapping functions.
 
 Sharing Threads with Embree
 ---------------------------
@@ -1624,7 +1628,7 @@ q
 :   Exits the tutorial.
 
 Triangle Geometry
-----------------
+-----------------
 
 ![](images/triangle_geometry.jpg)
 
@@ -1677,7 +1681,7 @@ work:
     ./tutorial03 -i model.obj
 
 Instanced Geometry
------------------
+------------------
 
 ![](images/instanced_geometry.jpg)
 
@@ -1688,7 +1692,7 @@ hit sphere, to demonstrate how the same geometry, instanced in different
 ways can be distinguished.
 
 Intersection Filter
----------------
+-------------------
 
 ![](images/intersection_filter.jpg)
 
@@ -1712,8 +1716,8 @@ this tutorial to work:
 
     ./tutorial06 -i model.obj -ambientlight 1 1 1
 
-Hair Geometry
-------------
+Hair
+----
 
 ![](images/hair_geometry.jpg)
 
@@ -1721,7 +1725,7 @@ This tutorial demonstrates the use of the hair geometry to render a
 hairball.
 
 Subdivision Geometry
--------------------
+--------------------
 
 ![](images/subdivision_geometry.jpg)
 
@@ -1745,7 +1749,7 @@ handling dynamic scenes where only the edge tessellation levels are
 changing per frame.
 
 Displacement Geometry
---------------------
+---------------------
 
 ![](images/displacement_geometry.jpg)
 
@@ -1754,7 +1758,7 @@ surfaces with procedural displacement mapping using a constant edge
 tessellation level.
 
 BVH Builder
-----------
+-----------
 
 This tutorial demonstrates how to use the templated hierarchy builders
 of Embree to build a bounding volume hierarchy with a user defined
@@ -1773,11 +1777,11 @@ X.Y.Z\lib\cmake\embree-X.Y.Z`.
 
 [Embree API]: #embree-api
 [Embree Example Renderer]: https://embree.github.io/renderer.html
-[tutorial00]: #tutorial00
-[tutorial02]: #tutorial02
-[tutorial04]: #tutorial04
-[tutorial05]: #tutorial05
-[tutorial07]: #tutorial07
-[tutorial08]: #tutorial08
-[tutorial09]: #tutorial09
-[tutorial11]: #tutorial11
+[Triangle Geometry]: #triangle-geometry
+[User Geometry]: #user-geometry
+[Instanced Geometry]: #instanced-geometry
+[Intersection Filter]: #intersection-filter
+[Hair]: #hair
+[Subdivision Geometry]: #subdivision-geometry
+[Displacement Geometry]: #displacement-geometry
+[BVH Builder]: #bvh-builder
