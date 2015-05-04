@@ -17,6 +17,7 @@
 #include "bvh8_intersector1.h"
 #include "geometry/triangle4.h"
 #include "geometry/triangle8.h"
+#include "geometry/trianglepairs8.h"
 #include "geometry/intersector_iterators.h"
 #include "geometry/triangle_intersector_moeller.h"
 
@@ -320,5 +321,7 @@ namespace embree
 
     DEFINE_INTERSECTOR1(BVH8Triangle4Intersector1Moeller,BVH8Intersector1<ArrayIntersector1<TriangleNIntersector1MoellerTrumbore<Triangle4 COMMA true> > >);
     DEFINE_INTERSECTOR1(BVH8Triangle8Intersector1Moeller,BVH8Intersector1<ArrayIntersector1<TriangleNIntersector1MoellerTrumbore<Triangle8 COMMA true> > >);
+    DEFINE_INTERSECTOR1(BVH8TrianglePairs8Intersector1Moeller,BVH8Intersector1<ArrayIntersector1<TrianglePairsNIntersector1MoellerTrumbore<TrianglePairs8 COMMA true> > >);
+
   }
 }

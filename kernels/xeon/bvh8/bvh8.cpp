@@ -18,6 +18,7 @@
 #include "bvh8_statistics.h"
 #include "geometry/triangle4.h"
 #include "geometry/triangle8.h"
+#include "geometry/trianglepairs8.h"
 #include "common/accelinstance.h"
 
 namespace embree
@@ -36,8 +37,11 @@ namespace embree
   DECLARE_SYMBOL(Accel::Intersector8,BVH8Triangle8Intersector8HybridMoeller);
   DECLARE_SYMBOL(Accel::Intersector8,BVH8Triangle8Intersector8HybridMoellerNoFilter);
 
+  DECLARE_SYMBOL(Accel::Intersector1,BVH8TrianglePairs8Intersector1Moeller);
+
   DECLARE_BUILDER(void,Scene,size_t,BVH8Triangle4SceneBuilderSAH);
   DECLARE_BUILDER(void,Scene,size_t,BVH8Triangle8SceneBuilderSAH);
+  DECLARE_BUILDER(void,Scene,size_t,BVH8TrianglePairs8SceneBuilderSAH);
 
   DECLARE_BUILDER(void,Scene,size_t,BVH8Triangle4SceneBuilderSpatialSAH);
   DECLARE_BUILDER(void,Scene,size_t,BVH8Triangle8SceneBuilderSpatialSAH);
@@ -49,6 +53,7 @@ namespace embree
     /* select builders */
     SELECT_SYMBOL_AVX(features,BVH8Triangle4SceneBuilderSAH);
     SELECT_SYMBOL_AVX(features,BVH8Triangle8SceneBuilderSAH);
+    SELECT_SYMBOL_AVX(features,BVH8TrianglePairs8SceneBuilderSAH);
     
     SELECT_SYMBOL_AVX(features,BVH8Triangle4SceneBuilderSpatialSAH);
     SELECT_SYMBOL_AVX(features,BVH8Triangle8SceneBuilderSpatialSAH);
@@ -56,6 +61,7 @@ namespace embree
     /* select intersectors1 */
     SELECT_SYMBOL_AVX_AVX2(features,BVH8Triangle4Intersector1Moeller);
     SELECT_SYMBOL_AVX_AVX2(features,BVH8Triangle8Intersector1Moeller);
+    SELECT_SYMBOL_AVX_AVX2(features,BVH8TrianglePairs8Intersector1Moeller);
 
     /* select intersectors4 */
     SELECT_SYMBOL_AVX_AVX2(features,BVH8Triangle4Intersector4HybridMoeller);
@@ -221,6 +227,19 @@ namespace embree
     return intersectors;
   }
 
+  Accel::Intersectors BVH8TrianglePairs8Intersectors(BVH8* bvh)
+  {
+    Accel::Intersectors intersectors;
+    intersectors.ptr = bvh;
+    intersectors.intersector1 = BVH8Triangle8Intersector1Moeller;
+    intersectors.intersector4_filter   = nullptr;
+    intersectors.intersector4_nofilter = nullptr;
+    intersectors.intersector8_filter   = nullptr;
+    intersectors.intersector8_nofilter = nullptr;
+    intersectors.intersector16         = nullptr;
+    return intersectors;
+  }
+
   Accel* BVH8::BVH8Triangle4(Scene* scene)
   { 
     BVH8* accel = new BVH8(Triangle4::type,scene);
@@ -262,6 +281,18 @@ namespace embree
     else if (State::instance()->tri_builder == "binned_sah2" ) builder = BVH8Triangle8SceneBuilderSAH(accel,scene,0);
     else if (State::instance()->tri_builder == "binned_sah2_spatial" ) builder = BVH8Triangle8SceneBuilderSpatialSAH(accel,scene,0);
     else if (State::instance()->tri_builder == "binned_sah2_presplit" ) builder = BVH8Triangle8SceneBuilderSAH(accel,scene,MODE_HIGH_QUALITY);
+    else THROW_RUNTIME_ERROR("unknown builder "+State::instance()->tri_builder+" for BVH8<Triangle8>");
+    
+    return new AccelInstance(accel,builder,intersectors);
+  }
+
+  Accel* BVH8::BVH8TrianglePairs8(Scene* scene)
+  { 
+    BVH8* accel = new BVH8(TrianglePairs8::type,scene);
+    Accel::Intersectors intersectors = BVH8TrianglePairs8Intersectors(accel);
+    
+    Builder* builder = nullptr;
+    if      (State::instance()->tri_builder == "default"     ) builder = BVH8TrianglePairs8SceneBuilderSAH(accel,scene,0);
     else THROW_RUNTIME_ERROR("unknown builder "+State::instance()->tri_builder+" for BVH8<Triangle8>");
     
     return new AccelInstance(accel,builder,intersectors);

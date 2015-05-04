@@ -179,6 +179,8 @@ namespace embree
     else if (State::instance()->tri_accel == "bvh4.triangle8")         accels.add(BVH4::BVH4Triangle8(this));
     else if (State::instance()->tri_accel == "bvh8.triangle4")         accels.add(BVH8::BVH8Triangle4(this));
     else if (State::instance()->tri_accel == "bvh8.triangle8")         accels.add(BVH8::BVH8Triangle8(this));
+    else if (State::instance()->tri_accel == "bvh8.trianglepairs8")    accels.add(BVH8::BVH8TrianglePairs8(this));
+
 #endif
     else THROW_RUNTIME_ERROR("unknown triangle acceleration structure "+State::instance()->tri_accel);
   }
