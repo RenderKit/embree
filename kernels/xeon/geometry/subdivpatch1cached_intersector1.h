@@ -27,6 +27,8 @@
 /* returns u,v based on individual triangles instead relative to original patch */
 #define FORCE_TRIANGLE_UV 0
 
+#define ENABLE_NORMALIZED_INTERSECTION 1
+
 #if FORCE_TRIANGLE_UV
 #  pragma message("WARNING: FORCE_TRIANGLE_UV is enabled")
 #endif
@@ -54,6 +56,9 @@ namespace embree
       public:
         Vec3fa ray_rdir;
         Vec3fa ray_org_rdir;
+#if ENABLE_NORMALIZED_INTERSECTION == 1
+	Vec3fa ray_dir_scale;
+#endif
         SubdivPatch1Cached   *current_patch;
         SubdivPatch1Cached   *hit_patch;
 	unsigned int threadID;
@@ -67,6 +72,10 @@ namespace embree
         {
           ray_rdir      = rcp_safe(ray.dir);
           ray_org_rdir  = ray.org*ray_rdir;
+#if ENABLE_NORMALIZED_INTERSECTION == 1
+	  ray_dir_scale = Vec3fa(ray.dir.y*ray.dir.z,ray.dir.z*ray.dir.x,ray.dir.x*ray.dir.y);
+#endif
+
           current_patch = nullptr;
           hit_patch     = nullptr;
 
@@ -350,7 +359,6 @@ namespace embree
 	return Vec2<avxf>(u,v);
       }
      
-#define ENABLE_NORMALIZED_INTERSECTION 0
  
       static __forceinline void intersect1_precise_3x3(Ray& ray,
 						       const float *const grid_x,
@@ -480,6 +488,10 @@ namespace embree
 	ray.u         = u_final[i];
 	ray.v         = v_final[i];
 	ray.tfar      = t[i];
+
+#if ENABLE_NORMALIZED_INTERSECTION == 1
+	Ng = Ng * Vec3<avxf>(pre.ray_dir_scale.x,pre.ray_dir_scale.y,pre.ray_dir_scale.z);
+#endif
 	if (i % 2)
 	  {
 	    ray.Ng.x      = Ng.x[i];
