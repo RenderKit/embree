@@ -19,6 +19,7 @@ FIND_PATH(TBB_ROOT include/tbb/task_scheduler_init.h
     PATHS ${PROJECT_SOURCE_DIR}/tbb 
           "C:/Program Files (x86)/Intel/Composer XE/tbb" 
           /opt/intel/composerxe/tbb 
+          /share/apps/intel/2015.1.133/tbb
           NO_DEFAULT_PATH
 )
 UNSET(TBB_INCLUDE_DIR CACHE)
