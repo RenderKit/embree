@@ -18,6 +18,7 @@
 
 const uniform int numPhi = 20;
 const uniform int numTheta = 2*numPhi;
+const uniform int numSpheres = 64;
 
 /* render function to use */
 renderPixelFunc renderPixel;
@@ -240,8 +241,8 @@ export void device_init (uniform int8* uniform cfg)
 
   /* instantiate geometry */
   createGroundPlane(g_scene);
-  for (uniform size_t i=0; i<16; i++) {
-    uniform float a = 2.0*M_PI*(uniform float)i/(uniform float)16.0f;
+  for (uniform size_t i=0; i<numSpheres; i++) {
+    uniform float a = 2.0*M_PI*(uniform float)i/(uniform float)numSpheres;
     createLazyObject(g_scene,i,10.0f*make_Vec3f(cosf(a),0,sinf(a)),1);
   }
   rtcCommit (g_scene);

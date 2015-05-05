@@ -18,6 +18,7 @@
 
 const int numPhi = 20;
 const int numTheta = 2*numPhi;
+const int numSpheres = 64;
 
 /* render function to use */
 renderPixelFunc renderPixel;
@@ -240,8 +241,8 @@ extern "C" void device_init (int8* cfg)
 
   /* instantiate geometry */
   createGroundPlane(g_scene);
-  for (size_t i=0; i<16; i++) {
-    float a = 2.0*float(pi)*(float)i/(float)16.0f;
+  for (size_t i=0; i<numSpheres; i++) {
+    float a = 2.0*float(pi)*(float)i/(float)numSpheres;
     createLazyObject(g_scene,i,10.0f*Vec3fa(cosf(a),0,sinf(a)),1);
   }
   rtcCommit (g_scene);
