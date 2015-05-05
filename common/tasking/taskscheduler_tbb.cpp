@@ -120,6 +120,77 @@ namespace embree
     if (left >= right) return 0;
     return tasks[left].N;
   }
+
+  struct MyThread2
+  {
+    MyThread2 (size_t threadIndex, size_t threadCount, TaskSchedulerTBB::ThreadPool* threadPool)
+      : threadIndex(threadIndex), threadCount(threadCount), threadPool(threadPool) {}
+    
+    size_t threadIndex;
+    size_t threadCount;
+    TaskSchedulerTBB::ThreadPool* threadPool;
+  };
+
+  void threadPoolFunction(void* ptr) try 
+  {
+    MyThread2 thread = *(MyThread2*) ptr;
+    thread.threadPool->thread_loop();
+    delete (MyThread2*) ptr;
+  }
+  catch (const std::exception& e) {
+    std::cout << "Error: " << e.what() << std::endl; // FIXME: propagate to main thread
+    exit(1);
+  }
+
+  TaskSchedulerTBB::ThreadPool::ThreadPool(size_t numThreads)
+    : terminate(false)
+  {
+    for (size_t t=1; t<numThreads; t++) {
+      threads.push_back(createThread((thread_func)threadPoolFunction,new MyThread2(t,numThreads,this),4*1024*1024,t));
+    }
+  }
+
+  TaskSchedulerTBB::ThreadPool::~ThreadPool()
+  {
+    /* signal threads to terminate */
+    mutex.lock();
+    terminate = true;
+    mutex.unlock();
+    condition.notify_all();
+
+    /* wait for threads to terminate */
+    for (size_t i=0; i<threads.size(); i++) 
+      embree::join(threads[i]);
+  }
+
+  void TaskSchedulerTBB::ThreadPool::add(TaskSchedulerTBB* scheduler)
+  {
+    mutex.lock();
+    schedulers.push(scheduler);
+    mutex.unlock();
+    condition.notify_all();
+  }
+
+  void TaskSchedulerTBB::ThreadPool::thread_loop()
+  {
+    while (!terminate)
+    {
+      TaskSchedulerTBB* scheduler = NULL;
+      ssize_t threadIndex = -1;
+      {
+        Lock<MutexSys> lock(mutex);
+        condition.wait(mutex, [&] () { return schedulers.size(); });
+        if (terminate) break;
+        scheduler = schedulers.front();
+        threadIndex = scheduler->allocThreadIndex();
+        if (threadIndex < 0) {
+          schedulers.pop();
+          continue;
+        }
+      }
+      scheduler->thread_loop(threadIndex);
+    }
+  }
   
   TaskSchedulerTBB::TaskSchedulerTBB(size_t numThreads, bool spinning)
     : threadCounter(numThreads), createThreads(true), terminate(false), anyTasksRunning(0), active(false), spinning(spinning),
@@ -263,6 +334,13 @@ namespace embree
     for (size_t i=0; i<threads.size(); i++) 
       //threads[i].join();
       embree::join(threads[i]);
+  }
+
+  ssize_t TaskSchedulerTBB::allocThreadIndex()
+  {
+    size_t threadIndex = atomic_add(&threadCounter,1);
+    assert(threadIndex < MAX_THREADS);
+    return threadIndex;
   }
 
   void TaskSchedulerTBB::join()

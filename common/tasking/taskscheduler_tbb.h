@@ -217,7 +217,28 @@ namespace embree
       Task* task;                      //!< current active task
       TaskSchedulerTBB* scheduler;     //!< pointer to task scheduler
     };
-    
+
+    /*! pool of worker threads */
+    struct ThreadPool
+    {
+      ThreadPool (size_t numThreads = 0);
+      ~ThreadPool ();
+
+      __dllexport void startThreads();
+      void thread_loop();
+
+      void add(TaskSchedulerTBB* scheduler);
+      
+    private:
+      volatile bool terminate;
+      std::vector<thread_t> threads;
+
+    private:
+      MutexSys mutex;
+      ConditionSys condition;
+      std::queue<TaskSchedulerTBB*> schedulers;
+    };
+
     TaskSchedulerTBB (size_t numThreads = 0, bool spinning = false);
     ~TaskSchedulerTBB ();
 
@@ -226,6 +247,8 @@ namespace embree
     
     /*! lets new worker threads join the tasking system */
     void join();
+
+    ssize_t allocThreadIndex();
 
     /*! wait for some number of threads available (threadCount includes main thread) */
     void wait_for_threads(size_t threadCount);
