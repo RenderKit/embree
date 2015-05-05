@@ -16,7 +16,7 @@
 
 #include "../common/tutorial/tutorial_device.isph"
 
-const uniform int numPhi = 5;
+const uniform int numPhi = 20;
 const uniform int numTheta = 2*numPhi;
 
 /* render function to use */
@@ -43,12 +43,20 @@ void error_handler(const uniform RTCError code, const uniform int8* uniform str)
   abort();
 }
 
+enum LazyState 
+{
+  LAZY_INVALID = 0,
+  LAZY_CREATE = 1,
+  LAZY_COMMIT = 2,
+  LAZY_VALID = 3
+};
+
 /* representation for our lazy geometry */
 struct LazyGeometry 
 {
   ALIGNED_STRUCT
   uniform unsigned int geometry;
-  uniform int state;
+  uniform LazyState state;
   RTCScene object;
   uniform int userID;
   Vec3f center;
@@ -123,22 +131,26 @@ uniform unsigned int createTriangulatedSphere (RTCScene scene, const uniform Vec
 
 void lazyCreate(uniform LazyGeometry* uniform instance)
 {
-  if (atomic_compare_exchange_global(&instance->state,0,1) == 0) 
+  /* one thread will switch the object from state 0 to 1 and create the geometry */
+  if (atomic_compare_exchange_global((uniform int32*)&instance->state,LAZY_INVALID,LAZY_CREATE) == 0) 
   {
+    print("creating sphere %i\n",instance->userID);
     instance->object = rtcNewScene(RTC_SCENE_STATIC,RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING);
     createTriangulatedSphere(instance->object,instance->center,instance->radius);
+
+    /* now switch to state 2 (hierarchy build) */
     memory_barrier();
-    instance->state = 2;
+    instance->state = LAZY_COMMIT;
   } else {
-    while (atomic_compare_exchange_global(&instance->state,10,11) != 2);
+    while (atomic_compare_exchange_global((uniform int32*)&instance->state,10,11) < LAZY_COMMIT);
   }
   rtcCommit(instance->object);
-  atomic_compare_exchange_global(&instance->state,2,3);
+  atomic_compare_exchange_global((uniform int32*)&instance->state,LAZY_COMMIT,LAZY_VALID);
 }
 
 void instanceIntersectFunc(uniform LazyGeometry* uniform instance, varying RTCRay& ray, uniform size_t item)
 {
-  if (instance->state != 3)
+  if (instance->state != LAZY_VALID)
     lazyCreate(instance);
 
   const int geomID = ray.geomID;
@@ -150,7 +162,7 @@ void instanceIntersectFunc(uniform LazyGeometry* uniform instance, varying RTCRa
 
 void instanceOccludedFunc(uniform LazyGeometry* uniform instance, varying RTCRay& ray, uniform size_t item) 
 {
-  if (instance->state != 3)
+  if (instance->state != LAZY_VALID)
     lazyCreate(instance);
 
   rtcOccluded(instance->object,ray);
@@ -160,7 +172,7 @@ void instanceOccludedFunc(uniform LazyGeometry* uniform instance, varying RTCRay
 uniform LazyGeometry* uniform createLazyObject (RTCScene scene, uniform int userID, const uniform Vec3f& center, const uniform float radius)
 {
   uniform LazyGeometry* uniform instance = uniform new uniform LazyGeometry;
-  instance->state = 0;
+  instance->state = LAZY_INVALID;
   instance->object = NULL;
   instance->userID = userID;
   instance->center = center;
@@ -199,11 +211,6 @@ uniform unsigned int createGroundPlane (RTCScene scene)
 /* scene data */
 RTCScene g_scene  = NULL;
 
-uniform LazyGeometry* uniform g_instance0 = NULL;
-uniform LazyGeometry* uniform g_instance1 = NULL;
-uniform LazyGeometry* uniform g_instance2 = NULL;
-uniform LazyGeometry* uniform g_instance3 = NULL;
-
 /* called by the C++ code for initialization */
 export void device_init (uniform int8* uniform cfg)
 {
@@ -218,10 +225,10 @@ export void device_init (uniform int8* uniform cfg)
 
   /* instantiate geometry */
   createGroundPlane(g_scene);
-  g_instance0 = createLazyObject(g_scene,0,make_Vec3f(0,0,0),1);
-  g_instance1 = createLazyObject(g_scene,1,make_Vec3f(0,1,0),1);
-  g_instance2 = createLazyObject(g_scene,2,make_Vec3f(0,2,0),1);
-  g_instance3 = createLazyObject(g_scene,3,make_Vec3f(0,3,0),1);
+  for (uniform size_t i=0; i<16; i++) {
+    uniform float a = 2.0*M_PI*(uniform float)i/(uniform float)16.0f;
+    createLazyObject(g_scene,i,10.0f*make_Vec3f(cosf(a),0,sinf(a)),1);
+  }
   rtcCommit (g_scene);
 
   /* set start render mode */
