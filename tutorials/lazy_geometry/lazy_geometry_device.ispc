@@ -43,25 +43,22 @@ void error_handler(const uniform RTCError code, const uniform int8* uniform str)
   abort();
 }
 
-// ======================================================================== //
-//                         User defined instancing                          //
-// ======================================================================== //
-
-struct Instance 
+/* representation for our lazy geometry */
+struct LazyGeometry 
 {
   ALIGNED_STRUCT
   uniform unsigned int geometry;
   uniform int state;
   RTCScene object;
   uniform int userID;
-  Vec3f lower;
-  Vec3f upper;
+  Vec3f center;
+  float radius;
 };
 
-void instanceBoundsFunc(const uniform Instance* uniform instance, uniform size_t item, uniform RTCBounds* uniform bounds_o)
+void instanceBoundsFunc(const uniform LazyGeometry* uniform instance, uniform size_t item, uniform RTCBounds* uniform bounds_o)
 {
-  uniform Vec3f lower = instance->lower;
-  uniform Vec3f upper = instance->upper;
+  uniform Vec3f lower = instance->center-make_Vec3f(instance->radius);
+  uniform Vec3f upper = instance->center+make_Vec3f(instance->radius);
   bounds_o->lower_x = lower.x;
   bounds_o->lower_y = lower.y;
   bounds_o->lower_z = lower.z;
@@ -124,13 +121,12 @@ uniform unsigned int createTriangulatedSphere (RTCScene scene, const uniform Vec
   return mesh;
 }
 
-void lazyCreate(uniform Instance* uniform instance)
+void lazyCreate(uniform LazyGeometry* uniform instance)
 {
   if (atomic_compare_exchange_global(&instance->state,0,1) == 0) 
   {
     instance->object = rtcNewScene(RTC_SCENE_STATIC,RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING);
-    uniform Vec3f center = 0.5f*(instance->lower+instance->upper);
-    createTriangulatedSphere(instance->object,center,0.5);
+    createTriangulatedSphere(instance->object,instance->center,instance->radius);
     memory_barrier();
     instance->state = 2;
   } else {
@@ -140,7 +136,7 @@ void lazyCreate(uniform Instance* uniform instance)
   atomic_compare_exchange_global(&instance->state,2,3);
 }
 
-void instanceIntersectFunc(uniform Instance* uniform instance, varying RTCRay& ray, uniform size_t item)
+void instanceIntersectFunc(uniform LazyGeometry* uniform instance, varying RTCRay& ray, uniform size_t item)
 {
   if (instance->state != 3)
     lazyCreate(instance);
@@ -152,7 +148,7 @@ void instanceIntersectFunc(uniform Instance* uniform instance, varying RTCRay& r
   else ray.instID = instance->userID;
 }
 
-void instanceOccludedFunc(uniform Instance* uniform instance, varying RTCRay& ray, uniform size_t item) 
+void instanceOccludedFunc(uniform LazyGeometry* uniform instance, varying RTCRay& ray, uniform size_t item) 
 {
   if (instance->state != 3)
     lazyCreate(instance);
@@ -161,14 +157,14 @@ void instanceOccludedFunc(uniform Instance* uniform instance, varying RTCRay& ra
 }
 
 
-uniform Instance* uniform createLazyObject (RTCScene scene, uniform int userID, const uniform Vec3f& lower, const uniform Vec3f& upper)
+uniform LazyGeometry* uniform createLazyObject (RTCScene scene, uniform int userID, const uniform Vec3f& center, const uniform float radius)
 {
-  uniform Instance* uniform instance = uniform new uniform Instance;
+  uniform LazyGeometry* uniform instance = uniform new uniform LazyGeometry;
   instance->state = 0;
   instance->object = NULL;
   instance->userID = userID;
-  instance->lower = lower;
-  instance->upper = upper;
+  instance->center = center;
+  instance->radius = radius;
   instance->geometry = rtcNewUserGeometry(scene,1);
   rtcSetUserData(scene,instance->geometry,instance);
   rtcSetBoundsFunction(scene,instance->geometry,(RTCBoundsFunc)&instanceBoundsFunc);
@@ -202,16 +198,11 @@ uniform unsigned int createGroundPlane (RTCScene scene)
 
 /* scene data */
 RTCScene g_scene  = NULL;
-//RTCScene g_scene0 = NULL;
-//RTCScene g_scene1 = NULL;
-//RTCScene g_scene2 = NULL;
 
-uniform Instance* uniform g_instance0 = NULL;
-uniform Instance* uniform g_instance1 = NULL;
-uniform Instance* uniform g_instance2 = NULL;
-uniform Instance* uniform g_instance3 = NULL;
-
-uniform Vec3f colors[5][4];
+uniform LazyGeometry* uniform g_instance0 = NULL;
+uniform LazyGeometry* uniform g_instance1 = NULL;
+uniform LazyGeometry* uniform g_instance2 = NULL;
+uniform LazyGeometry* uniform g_instance3 = NULL;
 
 /* called by the C++ code for initialization */
 export void device_init (uniform int8* uniform cfg)
@@ -225,54 +216,13 @@ export void device_init (uniform int8* uniform cfg)
   /* create scene */
   g_scene = rtcNewScene(RTC_SCENE_STATIC,RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING);
 
-  /* create scene with 4 triangulated spheres */
-  //g_scene0 = rtcNewScene(RTC_SCENE_STATIC,RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING);
-  //createTriangulatedSphere(g_scene0,make_Vec3f( 0, 0,+1),0.5);
-  //rtcCommit(g_scene0);
-
-  /* create scene with 4 triangulated spheres */
-  //g_scene1 = rtcNewScene(RTC_SCENE_STATIC,RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING);
-  //createTriangulatedSphere(g_scene1,make_Vec3f(+1, 0, 0),0.5);
-  //rtcCommit(g_scene1);
-
-  /* create scene with 4 triangulated spheres */
-  //g_scene2 = rtcNewScene(RTC_SCENE_STATIC,RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING);
-  //createTriangulatedSphere(g_scene2,make_Vec3f( 0, 0,-1),0.5);
-  //rtcCommit(g_scene2);
-
   /* instantiate geometry */
   createGroundPlane(g_scene);
-  g_instance0 = createLazyObject(g_scene,0,make_Vec3f(-2,-2,-6),make_Vec3f(+2,+2,-2));
-  g_instance1 = createLazyObject(g_scene,1,make_Vec3f(-2,-2,-2),make_Vec3f(+2,+2,+2));
-  g_instance2 = createLazyObject(g_scene,2,make_Vec3f(-2,-2,+2),make_Vec3f(+2,+2,+6));
-  g_instance3 = createLazyObject(g_scene,3,make_Vec3f(-2,-2,+6),make_Vec3f(+2,+2,+10));
+  g_instance0 = createLazyObject(g_scene,0,make_Vec3f(0,0,0),1);
+  g_instance1 = createLazyObject(g_scene,1,make_Vec3f(0,1,0),1);
+  g_instance2 = createLazyObject(g_scene,2,make_Vec3f(0,2,0),1);
+  g_instance3 = createLazyObject(g_scene,3,make_Vec3f(0,3,0),1);
   rtcCommit (g_scene);
-
-  /* set all colors */
-  colors[0][0] = make_Vec3f(0.25,0,0);
-  colors[0][1] = make_Vec3f(0.50,0,0);
-  colors[0][2] = make_Vec3f(0.75,0,0);
-  colors[0][3] = make_Vec3f(1.00,0,0);
-
-  colors[1][0] = make_Vec3f(0,0.25,0);
-  colors[1][1] = make_Vec3f(0,0.50,0);
-  colors[1][2] = make_Vec3f(0,0.75,0);
-  colors[1][3] = make_Vec3f(0,1.00,0);
-
-  colors[2][0] = make_Vec3f(0,0,0.25);
-  colors[2][1] = make_Vec3f(0,0,0.50);
-  colors[2][2] = make_Vec3f(0,0,0.75);
-  colors[2][3] = make_Vec3f(0,0,1.00);
-
-  colors[3][0] = make_Vec3f(0.25,0.25,0);
-  colors[3][1] = make_Vec3f(0.50,0.50,0);
-  colors[3][2] = make_Vec3f(0.75,0.75,0);
-  colors[3][3] = make_Vec3f(1.00,1.00,0);
-
-  colors[4][0] = make_Vec3f(1.0,1.0,1.0);
-  colors[4][1] = make_Vec3f(1.0,1.0,1.0);
-  colors[4][2] = make_Vec3f(1.0,1.0,1.0);
-  colors[4][3] = make_Vec3f(1.0,1.0,1.0);
 
   /* set start render mode */
   renderPixel = renderPixelStandard;
@@ -300,9 +250,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const unifo
   Vec3f color = make_Vec3f(0.0f);
   if (ray.geomID != RTC_INVALID_GEOMETRY_ID) 
   {
-    Vec3f diffuse = make_Vec3f(0.0f);
-    if (ray.instID == 0) diffuse = colors[ray.instID][ray.primID];
-    else                 diffuse = colors[ray.instID][ray.geomID];
+    Vec3f diffuse = make_Vec3f(1.0f);
     color = color + diffuse*0.5; // FIXME: +=
     Vec3f lightDir = normalize(make_Vec3f(-1,-1,-1));
     
@@ -379,8 +327,5 @@ export void device_render (uniform int* uniform pixels,
 export void device_cleanup ()
 {
   rtcDeleteScene (g_scene);
-  //rtcDeleteScene (g_scene0);
-  //rtcDeleteScene (g_scene1);
-  //rtcDeleteScene (g_scene2);
   rtcExit();
 }
