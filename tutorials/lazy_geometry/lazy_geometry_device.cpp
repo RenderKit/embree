@@ -43,12 +43,13 @@ void error_handler(const RTCError code, const int8* str)
   exit(1);
 }
 
+/* state of the lazy geometry */
 enum LazyState 
 {
-  LAZY_INVALID = 0,
-  LAZY_CREATE = 1,
-  LAZY_COMMIT = 2,
-  LAZY_VALID = 3
+  LAZY_INVALID = 0,   // the geometry is not yet created
+  LAZY_CREATE = 1,    // one thread is creating the geometry
+  LAZY_COMMIT = 2,    // possible multiple threads are committing the geometry
+  LAZY_VALID = 3      // the geometry is created
 };
 
 /* representation for our lazy geometry */
@@ -131,28 +132,41 @@ unsigned int createTriangulatedSphere (RTCScene scene, const Vec3fa& p, float r)
 
 void lazyCreate(LazyGeometry* instance)
 {
-  /* one thread will switch the object from state 0 to 1 and create the geometry */
+  /* one thread will switch the object from the LAZY_INVALID state to the LAZY_CREATE state */
   if (atomic_cmpxchg((int32*)&instance->state,LAZY_INVALID,LAZY_CREATE) == 0) 
   {
+    /* create the geometry */
     printf("creating sphere %i\n",instance->userID);
     instance->object = rtcNewScene(RTC_SCENE_STATIC,RTC_INTERSECT1);
     createTriangulatedSphere(instance->object,instance->center,instance->radius);
 
-    /* now switch to state 2 (hierarchy build) */
+    /* now switch to the LAZY_COMMIT state */
     __memory_barrier();
     instance->state = LAZY_COMMIT;
-  } else {
-    while (atomic_cmpxchg((int32*)&instance->state,10,11) < LAZY_COMMIT);
+  } 
+  else 
+  {
+    /* wait until the geometry got created */
+    while (atomic_cmpxchg((int32*)&instance->state,10,11) < LAZY_COMMIT) {
+      // instead of actively spinning here, best use a condition to let the thread sleep, or let it help in the creation stage
+    }
   }
+
+  /* multiple threads might enter the rtcCommit function to jointly
+   * build the internal data structures */
   rtcCommit(instance->object);
+  
+  /* switch to LAZY_VALID state */
   atomic_cmpxchg((int32*)&instance->state,LAZY_COMMIT,LAZY_VALID);
 }
 
 void instanceIntersectFunc(LazyGeometry* instance, RTCRay& ray, size_t item)
 {
+  /* create the object if it is not yet created */
   if (instance->state != LAZY_VALID)
     lazyCreate(instance);
 
+  /* trace ray inside object */
   const int geomID = ray.geomID;
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
   rtcIntersect(instance->object,ray);
@@ -162,12 +176,13 @@ void instanceIntersectFunc(LazyGeometry* instance, RTCRay& ray, size_t item)
 
 void instanceOccludedFunc(LazyGeometry* instance, RTCRay& ray, size_t item) 
 {
+  /* create the object if it is not yet created */
   if (instance->state != LAZY_VALID)
     lazyCreate(instance);
 
+  /* trace ray inside object */
   rtcOccluded(instance->object,ray);
 }
-
 
 LazyGeometry* createLazyObject (RTCScene scene, int userID, const Vec3fa& center, const float radius)
 {
