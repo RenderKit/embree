@@ -318,6 +318,8 @@ void renderTile(int taskIndex, int* pixels,
   }
 }
 
+Vec3fa old_p; 
+
 /* called by the C++ code to render */
 extern "C" void device_render (int* pixels,
                            const int width,
@@ -338,11 +340,16 @@ extern "C" void device_render (int* pixels,
     if (g_subdiv_mode)
       updateEdgeLevels(g_ispc_scene, cam_org);
 #endif
-
+    old_p = p;
     rtcCommit (g_scene);
   }
 
   bool camera_changed = g_changed; g_changed = false;
+  if ((p.x != old_p.x || p.y != old_p.y || p.z != old_p.z))
+    {
+     camera_changed = true;
+     old_p = p;
+    } 
 
   if (camera_changed) {
 #if !defined(FORCE_FIXED_EDGE_TESSELLATION)
