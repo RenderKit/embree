@@ -39,6 +39,7 @@ ADD_SUBDIRECTORY(hair_geometry)
 ADD_SUBDIRECTORY(subdivision_geometry)
 ADD_SUBDIRECTORY(displacement_geometry)
 ADD_SUBDIRECTORY(bvh_builder)
+ADD_SUBDIRECTORY(lazy_geometry)
 
 IF (ENABLE_XEON_PHI_SUPPORT)
   SET (__XEON__ 0)
