@@ -147,6 +147,88 @@ namespace embree
   }
 #endif
 
+  void print_info()
+  {
+    std::cout << "Embree Ray Tracing Kernels " << __EMBREE_VERSION__ << " (" << __DATE__ << ")" << std::endl;
+    std::cout << "  Compiler : " << getCompilerName() << std::endl;
+    std::cout << "  Platform : " << getPlatformName() << std::endl;
+    std::cout << "  CPU      : " << stringOfCPUModel(getCPUModel()) << " (" << getCPUVendor() << ")" << std::endl;
+    std::cout << "  ISA      : " << stringOfCPUFeatures(getCPUFeatures()) << std::endl;
+#if !defined(__MIC__)
+    const bool hasFTZ = _mm_getcsr() & _MM_FLUSH_ZERO_ON;
+    const bool hasDAZ = _mm_getcsr() & _MM_DENORMALS_ZERO_ON;
+    std::cout << "  MXCSR    : " << "FTZ=" << hasFTZ << ", DAZ=" << hasDAZ << std::endl;
+#endif
+    std::cout << "  Config   : ";
+#if defined(TASKING_TBB)
+    std::cout << "TBB ";
+#endif
+#if defined(__TARGET_SSE41__)
+    std::cout << "SSE4.1 ";
+#endif
+#if defined(__TARGET_SSE42__)
+    std::cout << "SSE4.2 ";
+#endif
+#if defined(__TARGET_AVX__)
+    std::cout << "AVX ";
+#endif
+#if defined(__TARGET_AVX2__)
+    std::cout << "AVX2 ";
+#endif
+#if defined(__TARGET_AVX512__)
+    std::cout << "AVX512 ";
+#endif
+#if defined(TASKING_TBB_INTERNAL)
+    std::cout << "internal_tasking_system ";
+#endif
+#if defined(TASKING_LOCKSTEP)
+    std::cout << "internal_tasking_system ";
+#endif
+#if defined(RTCORE_RAY_MASK)
+    std::cout << "raymasks ";
+#endif
+#if defined (RTCORE_BACKFACE_CULLING)
+    std::cout << "backfaceculling ";
+#endif
+#if defined(RTCORE_INTERSECTION_FILTER)
+    std::cout << "intersection_filter ";
+#endif
+#if defined(RTCORE_BUFFER_STRIDE)
+    std::cout << "bufferstride ";
+#endif
+    std::cout << std::endl;
+
+    /* check of FTZ and DAZ flags are set in CSR */
+#if !defined(__MIC__)
+    if (!hasFTZ || !hasDAZ) {
+#if !defined(_DEBUG)
+      if (State::instance()->verbosity(1)) 
+#endif
+      {
+        std::cout << std::endl;
+        std::cout << "================================================================================" << std::endl;
+        std::cout << "WARNING: \"Flush to Zero\" or \"Denormals are Zero\" mode not enabled " << std::endl 
+                  << "         in the MXCSR control and status register. This can have a severe " << std::endl
+                  << "         performance impact. Please enable these modes for each application " << std::endl
+                  << "         thread the following way:" << std::endl
+                  << std::endl 
+                  << "           #include \"xmmintrin.h\"" << std::endl 
+                  << "           #include \"pmmintrin.h\"" << std::endl 
+                  << std::endl 
+                  << "           _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);" << std::endl 
+                  << "           _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);" << std::endl;
+        std::cout << "================================================================================" << std::endl;
+        std::cout << std::endl;
+      }
+    }
+#endif
+
+#if defined (__MIC__) && defined(RTCORE_BUFFER_STRIDE)
+    if (State::instance()->verbosity(1))
+      std::cout << "  WARNING: enabled 'bufferstride' support will lower BVH build performance" << std::endl;
+#endif
+  }
+
   RTCORE_API void rtcInit(const char* cfg) 
   {
     RTCORE_CATCH_BEGIN;
@@ -187,46 +269,9 @@ namespace embree
       throw_RTCError(RTC_INVALID_OPERATION,"Xeon Phi supports only number of threads % 4 == 0, or threads == 1");
 #endif
 
+    /* print info header */
     if (State::instance()->verbosity(1))
-    {
-      std::cout << "Embree Ray Tracing Kernels " << __EMBREE_VERSION__ << " (" << __DATE__ << ")" << std::endl;
-      std::cout << "  Compiler : " << getCompilerName() << std::endl;
-      std::cout << "  Platform : " << getPlatformName() << std::endl;
-      std::cout << "  CPU      : " << stringOfCPUModel(getCPUModel()) << " (" << getCPUVendor() << ")" << std::endl;
-      std::cout << "  ISA      : " << stringOfCPUFeatures(getCPUFeatures()) << std::endl;
-#if !defined(__MIC__)
-      const bool hasFTZ = _mm_getcsr() & _MM_FLUSH_ZERO_ON;
-      const bool hasDAZ = _mm_getcsr() & _MM_DENORMALS_ZERO_ON;
-      std::cout << "  MXCSR    : " << "FTZ=" << hasFTZ << ", DAZ=" << hasDAZ << std::endl;
-#endif
-      std::cout << "  Config   : ";
-#if defined(TASKING_TBB)
-      std::cout << "TBB ";
-#endif
-#if defined(TASKING_TBB_INTERNAL)
-      std::cout << "internal_tasking_system ";
-#endif
-#if defined(TASKING_LOCKSTEP)
-      std::cout << "internal_tasking_system ";
-#endif
-#if defined(RTCORE_RAY_MASK)
-      std::cout << "raymasks ";
-#endif
-#if defined (RTCORE_BACKFACE_CULLING)
-      std::cout << "backfaceculling ";
-#endif
-#if defined(RTCORE_INTERSECTION_FILTER)
-      std::cout << "intersection_filter ";
-#endif
-#if defined(RTCORE_BUFFER_STRIDE)
-      std::cout << "bufferstride ";
-#endif
-      std::cout << std::endl;
-
-#if defined (__MIC__) && defined(RTCORE_BUFFER_STRIDE)
-      std::cout << "  WARNING: enabled 'bufferstride' support will lower BVH build performance" << std::endl;
-#endif
-    }
+      print_info();
 
     /* CPU has to support at least SSE2 */
 #if !defined (__MIC__)
@@ -252,27 +297,6 @@ namespace embree
 
     if (State::instance()->verbosity(2)) 
       State::instance()->print();
-
-    /* check of FTZ and DAZ flags are set in CSR */
-#if !defined(__MIC__)
-    const bool hasFTZ = _mm_getcsr() & _MM_FLUSH_ZERO_ON;
-    const bool hasDAZ = _mm_getcsr() & _MM_DENORMALS_ZERO_ON;
-    if (!hasFTZ || !hasDAZ) {
-#if !defined(_DEBUG)
-      if (State::instance()->verbosity(1)) 
-#endif
-      {
-        std::cout << "WARNING: \"Flush to Zero\" or \"Denormals are Zero\" mode not enabled in the MXCSR control and status register. " << std::endl
-                  << "         This can have a severe performance impact. Please enable these modes for each application thread the following way:" << std::endl
-                  << std::endl 
-                  << "           #include \"xmmintrin.h\"" << std::endl 
-                  << "           #include \"pmmintrin.h\"" << std::endl 
-                  << std::endl 
-                  << "           _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);" << std::endl 
-                  << "           _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);" << std::endl;
-      }
-    }
-#endif
 
 #if defined(TASKING_LOCKSTEP)
     TaskScheduler::create(g_numThreads);
