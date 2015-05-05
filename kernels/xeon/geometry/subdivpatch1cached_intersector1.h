@@ -27,7 +27,7 @@
 /* returns u,v based on individual triangles instead relative to original patch */
 #define FORCE_TRIANGLE_UV 0
 
-#define ENABLE_NORMALIZED_INTERSECTION 1
+#define ENABLE_NORMALIZED_INTERSECTION 0
 
 #if FORCE_TRIANGLE_UV
 #  pragma message("WARNING: FORCE_TRIANGLE_UV is enabled")
