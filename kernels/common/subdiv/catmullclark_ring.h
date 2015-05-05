@@ -757,22 +757,30 @@ namespace embree
 
       /* calculate face points */
       Vec3fa_t S = Vec3fa_t(0.0f);
-      for (size_t f=0, v=0; f<face_valence; v+=face_size[f++]) {
+      for (size_t face=0, v=eval_start_vertex_index; face<face_valence; face++) {
         ////////////////////////////////////////////////
-        size_t face_index = (f + eval_start_face_index)%face_valence;
+        size_t f = (face + eval_start_face_index)%face_valence;
         ////////////////////////////////////////////////
 
         Vec3fa_t F = vtx;
         for (size_t k=v; k<=v+face_size[f]; k++) F += ring[k%edge_valence]; // FIXME: optimize
         S += dest.ring[2*f+1] = F/float(face_size[f]+2);
+        v+=face_size[f];
+        ////////////////////////////////////////////////        
+        v%=edge_valence;
+        ////////////////////////////////////////////////
       }
       
       /* calculate new edge points */
       size_t num_creases = 0;
       array_t<size_t,MAX_FACE_VALENCE> crease_id;
       Vec3fa_t C = Vec3fa_t(0.0f);
-      for (size_t i=0, j=0; i<face_valence; j+=face_size[i++])
+      for (size_t face=0, j=eval_start_vertex_index; face<face_valence; face++)
       {
+        ////////////////////////////////////////////////
+        size_t i = (face + eval_start_face_index)%face_valence;
+        ////////////////////////////////////////////////
+        
         const Vec3fa_t v = vtx + ring[j];
         Vec3fa_t f = dest.ring[2*i+1];
         if (i == 0) f += dest.ring[dest.edge_valence-1]; 
@@ -796,6 +804,10 @@ namespace embree
             dest.ring[2*i] = w1*((v+f)*0.25f) + w0*(v*0.5f);
           }
         }
+        j+=face_size[i];
+        ////////////////////////////////////////////////                
+        j%=edge_valence;
+        ////////////////////////////////////////////////                
       }
       
       /* compute new vertex using smooth rule */
