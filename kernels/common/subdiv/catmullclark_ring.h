@@ -661,11 +661,14 @@ namespace embree
       eval_start_face_index   = (unsigned int)-1;
       eval_start_vertex_index = (unsigned int)-1;
 
-      for (size_t f=0, v=0; f<face_valence; v+=face_size[f++]) 
-	if (*(unsigned int*)&ring[v].a < eval_unique_identifier) { 
-	  eval_unique_identifier = *(unsigned int*)&ring[v].a; 
-	  eval_start_face_index   = f;
-	  eval_start_vertex_index = v; 
+      for (size_t f=0, v=0; f<face_valence; v+=face_size[f++])
+        {
+          assert(v < edge_valence);
+          if (*(unsigned int*)&ring[v].a < eval_unique_identifier) { 
+            eval_unique_identifier = *(unsigned int*)&ring[v].a; 
+            eval_start_face_index   = f;
+            eval_start_vertex_index = v; 
+          }
         }
     }
     
@@ -730,11 +733,12 @@ namespace embree
 	
       } while (p != h); 
       
-      updateEvalStartIndex();
-
+ 
       edge_valence = e;
       face_valence = f;
 
+      updateEvalStartIndex();
+     
       assert( hasValidPositions() );
     }
     
