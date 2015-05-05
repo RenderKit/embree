@@ -620,8 +620,8 @@ namespace embree
     
     Vec3fa vtx;
     array_t<Vec3fa,MAX_EDGE_VALENCE> ring; 
-    array_t<int,MAX_FACE_VALENCE> face_size;       // number of vertices-2 of nth face in ring
-    array_t<float,MAX_FACE_VALENCE> crease_weight; // FIXME: move into 4th component of ring entries
+    array_t<int   ,MAX_FACE_VALENCE> face_size;     // number of vertices-2 of nth face in ring
+    array_t<float ,MAX_FACE_VALENCE> crease_weight; // FIXME: move into 4th component of ring entries
     unsigned int face_valence;
     unsigned int edge_valence;
     int border_face;
@@ -629,8 +629,12 @@ namespace embree
     float vertex_level;                      //!< maximal level of adjacent edges
     float edge_level; // level of first edge
     bool only_quads;
+    unsigned int eval_start_face_index;
+    unsigned int eval_start_vertex_index;
+    unsigned int eval_unique_identifier;
 
-    GeneralCatmullClark1Ring() {}
+
+    GeneralCatmullClark1Ring() : eval_start_face_index(0), eval_start_vertex_index(0), eval_unique_identifier(0) {}
     
     __forceinline bool has_last_face() const {
       return border_face != face_valence-1;
@@ -648,6 +652,21 @@ namespace embree
 	if ( !isvalid(ring[i].z) ) return false;
       }	
       return true;
+    }
+    
+    /* need unique starting index for limit/tangent eval to guarantee bit-wise identical results */
+    __forceinline void updateEvalStartIndex()
+    {
+      eval_unique_identifier  = (unsigned int)-1;      
+      eval_start_face_index   = (unsigned int)-1;
+      eval_start_vertex_index = (unsigned int)-1;
+
+      for (size_t f=0, v=0; f<face_valence; v+=face_size[f++]) 
+	if (*(unsigned int*)&ring[v].a < eval_unique_identifier) { 
+	  eval_unique_identifier = *(unsigned int*)&ring[v].a; 
+	  eval_start_face_index   = f;
+	  eval_start_vertex_index = v; 
+        }
     }
     
     __forceinline void init(const SubdivMesh::HalfEdge* const h, const BufferT<Vec3fa>& vertices)
@@ -711,6 +730,8 @@ namespace embree
 	
       } while (p != h); 
       
+      updateEvalStartIndex();
+
       edge_valence = e;
       face_valence = f;
 
@@ -725,12 +746,18 @@ namespace embree
       dest.face_valence = face_valence;
       dest.edge_valence = 2*face_valence;
       dest.border_index = border_face == -1 ? -1 : 2*border_face; // FIXME:
-      dest.vertex_crease_weight   = max(0.0f,vertex_crease_weight-1.0f);
+      dest.vertex_crease_weight    = max(0.0f,vertex_crease_weight-1.0f);
+      dest.eval_start_index        = eval_start_face_index;
+      dest.eval_unique_identifier  = eval_unique_identifier;
       assert(dest.face_valence <= CatmullClark1Ring::MAX_FACE_VALENCE);
 
       /* calculate face points */
       Vec3fa_t S = Vec3fa_t(0.0f);
       for (size_t f=0, v=0; f<face_valence; v+=face_size[f++]) {
+        ////////////////////////////////////////////////
+        size_t face_index = (f + eval_start_face_index)%face_valence;
+        ////////////////////////////////////////////////
+
         Vec3fa_t F = vtx;
         for (size_t k=v; k<=v+face_size[f]; k++) F += ring[k%edge_valence]; // FIXME: optimize
         S += dest.ring[2*f+1] = F/float(face_size[f]+2);
