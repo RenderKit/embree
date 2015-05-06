@@ -266,9 +266,8 @@ namespace embree
       if (!joinMode) threadPool->startThreads();
       //startThreads();
 
-      assert(!active);
-      active = true;
       Thread thread(0,this);
+      assert(threadLocal[0] == nullptr);
       threadLocal[0] = &thread;
       setThread(&thread);
       thread.tasks.push_right(thread,size,closure);
@@ -293,7 +292,6 @@ namespace embree
       
       threadLocal[0] = nullptr;
       setThread(nullptr);
-      active = false;
     }
 
     /* spawn a new task at the top of the threads task stack */
@@ -351,9 +349,7 @@ namespace embree
     std::vector<thread_t> threads;
     Thread* threadLocal[MAX_THREADS];
     volatile atomic_t threadCounter;
-    volatile bool terminate;
     volatile atomic_t anyTasksRunning;
-    volatile bool active;
     bool joinMode;
     
     MutexSys mutex;

@@ -202,7 +202,7 @@ namespace embree
   }
   
   TaskSchedulerTBB::TaskSchedulerTBB(bool joinMode)
-    : threadCounter(0), terminate(false), anyTasksRunning(0), active(false), joinMode(joinMode)
+    : threadCounter(0), anyTasksRunning(0), joinMode(joinMode)
   {
     for (size_t i=0; i<MAX_THREADS; i++)
       threadLocal[i] = nullptr;
@@ -247,7 +247,7 @@ namespace embree
 
   __dllexport TaskSchedulerTBB* TaskSchedulerTBB::instance() 
   {
-    if (g_instance == NULL) g_instance = new TaskSchedulerTBB(g_numThreads);
+    if (g_instance == NULL) g_instance = new TaskSchedulerTBB;
     return g_instance;
   }
 
@@ -259,27 +259,6 @@ namespace embree
 
   void TaskSchedulerTBB::destroy() {
     delete threadPool; threadPool = nullptr;
-  }
-
-  struct MyThread
-  {
-    MyThread (size_t threadIndex, size_t threadCount, TaskSchedulerTBB* scheduler)
-      : threadIndex(threadIndex), threadCount(threadCount), scheduler(scheduler) {}
-    
-    size_t threadIndex;
-    size_t threadCount;
-    TaskSchedulerTBB* scheduler;
-  };
-
-  void threadFunction(void* ptr) try 
-  {
-    MyThread thread = *(MyThread*) ptr;
-    thread.scheduler->thread_loop(thread.threadIndex);
-    delete (MyThread*) ptr;
-  }
-  catch (const std::exception& e) {
-    std::cout << "Error: " << e.what() << std::endl;
-    exit(1);
   }
 
   ssize_t TaskSchedulerTBB::allocThreadIndex()
@@ -313,7 +292,6 @@ namespace embree
 	  thread_local_thread = thread;
   }
 
-  /* work on spawned subtasks and wait until all have finished */
   __dllexport void TaskSchedulerTBB::wait() 
   {
     Thread* thread = TaskSchedulerTBB::thread();
@@ -340,10 +318,8 @@ namespace embree
                  });
     }
 
-    /* decrement threadCount again */
-    atomic_add(&threadCounter,-1);
-
     /* wait for all threads to terminate */
+    atomic_add(&threadCounter,-1);
     while (threadCounter > 0)
       yield();
 
