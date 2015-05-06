@@ -133,7 +133,11 @@ namespace embree
   }
 
   TaskSchedulerTBB::ThreadPool::ThreadPool(size_t numThreads)
-    : numThreads(numThreads), running(false), terminate(false) {}
+    : numThreads(numThreads), running(false), terminate(false) 
+  {
+    if (this->numThreads == 0)
+      this->numThreads = getNumberOfLogicalThreads();
+  }
 
   __dllexport void TaskSchedulerTBB::ThreadPool::startThreads()
   {
@@ -292,13 +296,13 @@ namespace embree
     exit(1);
   }
 
-  __dllexport void TaskSchedulerTBB::startThreads()
+  /*__dllexport void TaskSchedulerTBB::startThreads()
   {
     createThreads = false;
     for (size_t t=1; t<threadCounter; t++) {
       threads.push_back(createThread((thread_func)threadFunction,new MyThread(t,threadCounter,this),4*1024*1024,t));
     }
-  }
+    }*/
 
   void TaskSchedulerTBB::terminateThreadLoop()
   {
@@ -319,6 +323,7 @@ namespace embree
     threadLocal[0] = nullptr;
   }
 
+#if 0
   void TaskSchedulerTBB::destroyThreads() 
   {
     /* wait for threads to terminate */
@@ -326,6 +331,7 @@ namespace embree
       //threads[i].join();
       embree::join(threads[i]);
   }
+#endif
 
   ssize_t TaskSchedulerTBB::allocThreadIndex()
   {

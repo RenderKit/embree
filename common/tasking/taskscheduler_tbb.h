@@ -272,7 +272,7 @@ namespace embree
     template<typename Closure>
     __noinline void spawn_root(const Closure& closure, size_t size = 1) // important: has to be noinline as it allocates thread structure on stack
     {
-      if (createThreads)
+      if (createThreads) 
         threadPool->startThreads();
         //startThreads();
 
@@ -287,8 +287,8 @@ namespace embree
         Lock<MutexSys> lock(mutex);
 	atomic_add(&anyTasksRunning,+1);
       }
-      //if (!spinning) condition.notify_all();
       threadPool->add(this);
+      if (!spinning) condition.notify_all();
       while (thread.tasks.execute_local(thread,nullptr));
       atomic_add(&anyTasksRunning,-1);
 
