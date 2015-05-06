@@ -201,8 +201,8 @@ namespace embree
     }
   }
   
-  TaskSchedulerTBB::TaskSchedulerTBB(bool joinMode)
-    : threadCounter(0), anyTasksRunning(0), joinMode(joinMode)
+  TaskSchedulerTBB::TaskSchedulerTBB()
+    : threadCounter(0), anyTasksRunning(0)
   {
     for (size_t i=0; i<MAX_THREADS; i++)
       threadLocal[i] = nullptr;
@@ -288,8 +288,11 @@ namespace embree
     return thread_local_thread;
   }
 
-  __dllexport void TaskSchedulerTBB::setThread(Thread* thread) {
-	  thread_local_thread = thread;
+  __dllexport TaskSchedulerTBB::Thread* TaskSchedulerTBB::swapThread(Thread* thread) 
+  {
+    Thread* old = thread_local_thread;
+    thread_local_thread = thread;
+    return old;
   }
 
   __dllexport void TaskSchedulerTBB::wait() 

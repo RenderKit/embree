@@ -247,7 +247,7 @@ namespace embree
       std::list<TaskSchedulerTBB*> schedulers;
     };
 
-    TaskSchedulerTBB (bool joinMode = false);
+    TaskSchedulerTBB ();
     ~TaskSchedulerTBB ();
 
     /*! initializes the task scheduler */
@@ -276,31 +276,31 @@ namespace embree
 
     /* spawn a new task at the top of the threads task stack */
     template<typename Closure>
-    __noinline void spawn_root(const Closure& closure, size_t size = 1) // important: has to be noinline as it allocates thread structure on stack
+    __noinline void spawn_root(const Closure& closure, size_t size = 1, bool useThreadPool = true) // important: has to be noinline as it allocates thread structure on stack
     {
-      if (!joinMode) threadPool->startThreads();
+      if (useThreadPool) threadPool->startThreads();
       
       Thread thread(0,this);
       assert(threadLocal[0] == nullptr);
       threadLocal[0] = &thread;
-      setThread(&thread);
+      Thread* oldThread = swapThread(&thread);
       thread.tasks.push_right(thread,size,closure);
       {
 	//std::unique_lock<std::mutex> lock(mutex);
         Lock<MutexSys> lock(mutex);
         atomic_add(&threadCounter,+1);
 	atomic_add(&anyTasksRunning,+1);
-        if (joinMode) condition.notify_all();
+        condition.notify_all();
       }
       
-      if (!joinMode) threadPool->add(this);
+      if (useThreadPool) threadPool->add(this);
 
       while (thread.tasks.execute_local(thread,nullptr));
       atomic_add(&anyTasksRunning,-2); // sets anyTasksRunning to -1 at the end
-      if (!joinMode) threadPool->remove(this);
+      if (useThreadPool) threadPool->remove(this);
       
       threadLocal[0] = nullptr;
-      setThread(nullptr);
+      swapThread(oldThread);
 
       /* wait for all threads to terminate */
       atomic_add(&threadCounter,-1);
@@ -356,7 +356,7 @@ namespace embree
     __dllexport static Thread* thread();
 
     /* sets the thread local task list of this worker thread */
-    __dllexport static void setThread(Thread* thread);
+    __dllexport static Thread* swapThread(Thread* thread);
 
     /*! returns the taskscheduler object to be used by the master thread */
     __dllexport static TaskSchedulerTBB* instance();
@@ -365,7 +365,6 @@ namespace embree
     Thread* threadLocal[MAX_THREADS];
     volatile atomic_t threadCounter;
     volatile atomic_t anyTasksRunning;
-    bool joinMode;
     MutexSys mutex;
     ConditionSys condition;
 

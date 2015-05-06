@@ -48,7 +48,8 @@ namespace embree
 #if defined(TASKING_LOCKSTEP) 
     lockstep_scheduler.taskBarrier.init(MAX_MIC_THREADS);
 #elif defined(TASKING_TBB_INTERNAL)
-    scheduler = nullptr;
+    //scheduler = nullptr;
+    scheduler = new TaskSchedulerTBB;
 #else
     group = new tbb::task_group;
 #endif
@@ -383,7 +384,7 @@ namespace embree
       std::cout << "selected scene intersector" << std::endl;
       intersectors.print(2);
     }
-
+    
     setModified(false);
   }
 
@@ -465,12 +466,14 @@ namespace embree
 
   void Scene::build (size_t threadIndex, size_t threadCount) 
   {
+    assert(scheduler->threadLocal[0] == nullptr);
+    //{
+    //  Lock<MutexSys> lock(buildMutex);
+      //if (scheduler == nullptr) scheduler = new TaskSchedulerTBB(threadCount != 0);
+    //}
+
     if (threadCount != 0) 
     {
-      {
-        Lock<MutexSys> lock(buildMutex);
-        if (scheduler == nullptr) scheduler = new TaskSchedulerTBB(true);
-      }
       if (threadIndex > 0) {
         scheduler->join();
         return;
@@ -478,8 +481,21 @@ namespace embree
         scheduler->wait_for_threads(threadCount);
     }
 
-    /* allow only one build at a time */
-    Lock<MutexSys> lock(buildMutex);
+    ///* allow only one build at a time */
+    //Lock<MutexSys> lock(buildMutex);
+
+    /* try to obtain build lock */
+    TryLock<MutexSys> lock(buildMutex);
+
+    /* join hierarchy build */
+    if (!lock.isLocked()) {
+      scheduler->join();
+      return;
+    }
+
+    if (!isModified()) {
+      return;
+    }
 
     progress_monitor_counter = 0;
 
@@ -493,13 +509,13 @@ namespace embree
       return;
     }
 
-    if (threadCount) {
-      scheduler->spawn_root  ([&]() { build_task(); });
-      delete scheduler; scheduler = nullptr;
-    }
-    else {
-      TaskSchedulerTBB::spawn([&]() { build_task(); });
-    }
+    //if (threadCount) {
+    scheduler->spawn_root  ([&]() { build_task(); }, 1, threadCount == 0);
+      //delete scheduler; scheduler = nullptr;
+      //}
+      //else {
+      //TaskSchedulerTBB::spawn([&]() { build_task(); });
+      //}
   }
 
 #endif
