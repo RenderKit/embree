@@ -152,9 +152,12 @@ namespace embree
 
   TaskSchedulerTBB::ThreadPool::~ThreadPool()
   {
-    /* signal threads to terminate */
+    /* leave all taskschedulers */
     mutex.lock();
     terminate = true;
+    //for (std::list<TaskSchedulerTBB*>::iterator it = schedulers.begin(); it != schedulers.end(); it = schedulers.erase(it)) {
+    //  (*it)->terminateThreadLoop();
+    //}
     mutex.unlock();
     condition.notify_all();
 
@@ -190,7 +193,7 @@ namespace embree
       ssize_t threadIndex = -1;
       {
         Lock<MutexSys> lock(mutex);
-        condition.wait(mutex, [&] () { return schedulers.size(); });
+        condition.wait(mutex, [&] () { return terminate || schedulers.size(); });
         if (terminate) break;
         scheduler = schedulers.front();
         threadIndex = scheduler->allocThreadIndex();
@@ -226,8 +229,10 @@ namespace embree
   
   TaskSchedulerTBB::~TaskSchedulerTBB() 
   {
+    assert(threadCounter == 0);
+
     /* let all threads leave the thread loop */
-    terminateThreadLoop();
+    //terminateThreadLoop();
 
     /* destroy all threads that we created */
     //destroyThreads();
@@ -319,7 +324,7 @@ namespace embree
   void TaskSchedulerTBB::terminateThreadLoop()
   {
     /* decrement threadCount again */
-    atomic_add(&threadCounter,-1);
+    //atomic_add(&threadCounter,-1);
 
     /* signal threads to terminate */
     mutex.lock();
@@ -328,11 +333,11 @@ namespace embree
     condition.notify_all();
 
     /* wait for all threads to terminate */
-    if (createThreads == false) // wait if we either are in user thread mode, or already created threads
-      while (threadCounter > 0) 
-        yield();
+    //if (createThreads == false) // wait if we either are in user thread mode, or already created threads
+    //  while (threadCounter > 0) 
+    //    yield();
 
-    threadLocal[0] = nullptr;
+    //threadLocal[0] = nullptr;
   }
 
 #if 0
@@ -397,23 +402,23 @@ namespace embree
     /* main thread loop */
     while (anyTasksRunning )
     {
-      auto predicate = [&] () { return anyTasksRunning; };
+      //auto predicate = [&] () { return anyTasksRunning; };
 
       /* all threads are either spinning ... */
-      if (spinning) 
+      /*if (spinning) 
       {
 	while (!predicate())
           __pause_cpu(32);
-      }
+          }*/
       
       /* ... or waiting inside some condition variable */
-      else
+      /*else
       {
         //std::unique_lock<std::mutex> lock(mutex);
         Lock<MutexSys> lock(mutex);
         condition.wait(mutex, predicate);
-      }
-      if (terminate) break;
+        }
+        if (terminate) break;*/
 
       /* special static load balancing for top level task sets */
 #if TASKSCHEDULER_STATIC_LOAD_BALANCING
