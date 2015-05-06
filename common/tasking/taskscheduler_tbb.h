@@ -299,13 +299,13 @@ namespace embree
       atomic_add(&anyTasksRunning,-1);
       if (!joinMode) threadPool->remove(this);
       
+      threadLocal[0] = nullptr;
+      setThread(nullptr);
+
       /* wait for all threads to terminate */
       atomic_add(&threadCounter,-1);
       while (threadCounter > 0)
         yield();
-      
-      threadLocal[0] = nullptr;
-      setThread(nullptr);
     }
 
     /* spawn a new task at the top of the threads task stack */

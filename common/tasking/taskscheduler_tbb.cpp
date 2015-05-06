@@ -318,12 +318,12 @@ namespace embree
                  });
     }
 
+    threadLocal[threadIndex] = nullptr;
+
     /* wait for all threads to terminate */
     atomic_add(&threadCounter,-1);
     while (threadCounter > 0)
       yield();
-
-    threadLocal[threadIndex] = nullptr;
   }
 
   bool TaskSchedulerTBB::steal_from_other_threads(Thread& thread)
