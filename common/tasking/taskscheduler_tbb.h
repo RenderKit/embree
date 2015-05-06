@@ -245,7 +245,7 @@ namespace embree
       std::list<TaskSchedulerTBB*> schedulers;
     };
 
-    TaskSchedulerTBB (size_t numThreads = 0, bool spinning = false);
+    TaskSchedulerTBB (bool joinMode = false);
     ~TaskSchedulerTBB ();
 
     static void create(size_t numThreads);
@@ -274,9 +274,8 @@ namespace embree
     template<typename Closure>
     __noinline void spawn_root(const Closure& closure, size_t size = 1) // important: has to be noinline as it allocates thread structure on stack
     {
-      if (createThreads) 
-        threadPool->startThreads();
-        //startThreads();
+      if (!joinMode) threadPool->startThreads();
+      //startThreads();
 
       assert(!active);
       active = true;
@@ -291,11 +290,11 @@ namespace embree
 	atomic_add(&anyTasksRunning,+1); // FIXME: does no longer have to be atomic
       }
       
-      threadPool->add(this);
+      if (!joinMode) threadPool->add(this);
       //if (!spinning) condition.notify_all();
       while (thread.tasks.execute_local(thread,nullptr));
       atomic_add(&anyTasksRunning,-1);
-      threadPool->remove(this);
+      if (!joinMode) threadPool->remove(this);
       
       /* wait for all threads to terminate */
       atomic_add(&threadCounter,-1);
@@ -311,9 +310,8 @@ namespace embree
     template<typename Closure>
     __noinline void spawn_root(const Closure& closure, size_t begin, size_t end, size_t blockSize) // important: has to be noinline as it allocates thread structure on stack
     {
-      if (createThreads)
-        threadPool->startThreads();
-	//startThreads();
+      threadPool->startThreads();
+      //startThreads();
 
       assert(!active);
       active = true;
@@ -402,8 +400,8 @@ namespace embree
     volatile bool terminate;
     volatile atomic_t anyTasksRunning;
     volatile bool active;
-    bool createThreads;
-    bool spinning;
+    bool joinMode;
+    //bool spinning;
 
     //std::mutex mutex;        
     //std::condition_variable condition;

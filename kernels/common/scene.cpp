@@ -469,7 +469,7 @@ namespace embree
     {
       {
         Lock<MutexSys> lock(buildMutex);
-        if (scheduler == nullptr) scheduler = new TaskSchedulerTBB(-1);
+        if (scheduler == nullptr) scheduler = new TaskSchedulerTBB(true);
       }
       if (threadIndex > 0) {
         scheduler->join();

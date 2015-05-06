@@ -206,25 +206,12 @@ namespace embree
     }
   }
   
-  TaskSchedulerTBB::TaskSchedulerTBB(size_t numThreads, bool spinning)
-    : threadCounter(0), createThreads(true), terminate(false), anyTasksRunning(0), active(false), spinning(spinning),
+  TaskSchedulerTBB::TaskSchedulerTBB(bool joinMode)
+    : threadCounter(0), terminate(false), anyTasksRunning(0), active(false), joinMode(joinMode),
       task_set_function(nullptr), masterThread(0,this)
   {
     for (size_t i=0; i<MAX_THREADS; i++)
       threadLocal[i] = nullptr;
-
-    if (numThreads == -1) {
-      //threadCounter = 1;
-      createThreads = false;
-    }
-    else if (numThreads == 0) {
-#if defined(__MIC__)
-      //threadCounter = getNumberOfLogicalThreads()-4;
-#else
-      //threadCounter = getNumberOfLogicalThreads();
-#endif
-    }
-    //task_set_barrier.init(threadCounter);
   }
   
   TaskSchedulerTBB::~TaskSchedulerTBB() 
@@ -366,7 +353,7 @@ namespace embree
 
   void TaskSchedulerTBB::wait_for_threads(size_t threadCount)
   {
-    while (threadCounter < threadCount)
+    while (threadCounter < threadCount-1)
       __pause_cpu();
   }
 
