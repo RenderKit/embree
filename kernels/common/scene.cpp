@@ -49,7 +49,7 @@ namespace embree
     lockstep_scheduler.taskBarrier.init(MAX_MIC_THREADS);
 #elif defined(TASKING_TBB_INTERNAL)
     //scheduler = nullptr;
-    scheduler = new TaskSchedulerTBB;
+    scheduler = new TaskSchedulerTBB; // FIXME: should not be created for every scene
 #else
     group = new tbb::task_group;
 #endif
