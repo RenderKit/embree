@@ -23,6 +23,8 @@
 //#include "tasking/taskscheduler.h"
 #include "../../kernels/algorithms/range.h"
 
+#include <queue>
+
 #if !defined(TASKING_TBB_INTERNAL)
 #define NOMINMAX
 #define __TBB_NO_IMPLICIT_LINKAGE 1
