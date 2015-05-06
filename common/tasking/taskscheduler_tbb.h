@@ -23,7 +23,7 @@
 //#include "tasking/taskscheduler.h"
 #include "../../kernels/algorithms/range.h"
 
-#include <queue>
+#include <list>
 
 #if !defined(TASKING_TBB_INTERNAL)
 #define NOMINMAX
@@ -230,6 +230,8 @@ namespace embree
       void thread_loop();
 
       __dllexport void add(TaskSchedulerTBB* scheduler);
+      __dllexport void remove(TaskSchedulerTBB* scheduler);
+      size_t size() const { return numThreads; }
       
     private:
       size_t numThreads;
@@ -240,7 +242,7 @@ namespace embree
     private:
       MutexSys mutex;
       ConditionSys condition;
-      std::queue<TaskSchedulerTBB*> schedulers;
+      std::list<TaskSchedulerTBB*> schedulers;
     };
 
     TaskSchedulerTBB (size_t numThreads = 0, bool spinning = false);
@@ -285,13 +287,21 @@ namespace embree
       {
 	//std::unique_lock<std::mutex> lock(mutex);
         Lock<MutexSys> lock(mutex);
-	atomic_add(&anyTasksRunning,+1);
+        atomic_add(&threadCounter,+1);
+	atomic_add(&anyTasksRunning,+1); // FIXME: does no longer have to be atomic
       }
+      
       threadPool->add(this);
-      if (!spinning) condition.notify_all();
+      //if (!spinning) condition.notify_all();
       while (thread.tasks.execute_local(thread,nullptr));
       atomic_add(&anyTasksRunning,-1);
-
+      threadPool->remove(this);
+      
+      /* wait for all threads to terminate */
+      atomic_add(&threadCounter,-1);
+      while (threadCounter > 0)
+        yield();
+      
       threadLocal[0] = nullptr;
       setThread(nullptr);
       active = false;

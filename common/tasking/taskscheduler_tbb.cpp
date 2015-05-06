@@ -166,9 +166,20 @@ namespace embree
   __dllexport void TaskSchedulerTBB::ThreadPool::add(TaskSchedulerTBB* scheduler)
   {
     mutex.lock();
-    schedulers.push(scheduler);
+    schedulers.push_back(scheduler);
     mutex.unlock();
     condition.notify_all();
+  }
+
+  __dllexport void TaskSchedulerTBB::ThreadPool::remove(TaskSchedulerTBB* scheduler)
+  {
+    Lock<MutexSys> lock(mutex);
+    for (std::list<TaskSchedulerTBB*>::iterator it = schedulers.begin(); it != schedulers.end(); it++) {
+      if (scheduler == *it) {
+        schedulers.erase(it);
+        return;
+      }
+    }
   }
 
   void TaskSchedulerTBB::ThreadPool::thread_loop()
@@ -184,7 +195,7 @@ namespace embree
         scheduler = schedulers.front();
         threadIndex = scheduler->allocThreadIndex();
         if (threadIndex < 0) {
-          schedulers.pop();
+          schedulers.pop_front();
           continue;
         }
       }
@@ -193,24 +204,24 @@ namespace embree
   }
   
   TaskSchedulerTBB::TaskSchedulerTBB(size_t numThreads, bool spinning)
-    : threadCounter(numThreads), createThreads(true), terminate(false), anyTasksRunning(0), active(false), spinning(spinning),
+    : threadCounter(0), createThreads(true), terminate(false), anyTasksRunning(0), active(false), spinning(spinning),
       task_set_function(nullptr), masterThread(0,this)
   {
     for (size_t i=0; i<MAX_THREADS; i++)
       threadLocal[i] = nullptr;
 
     if (numThreads == -1) {
-      threadCounter = 1;
+      //threadCounter = 1;
       createThreads = false;
     }
     else if (numThreads == 0) {
 #if defined(__MIC__)
-      threadCounter = getNumberOfLogicalThreads()-4;
+      //threadCounter = getNumberOfLogicalThreads()-4;
 #else
-      threadCounter = getNumberOfLogicalThreads();
+      //threadCounter = getNumberOfLogicalThreads();
 #endif
     }
-    task_set_barrier.init(threadCounter);
+    //task_set_barrier.init(threadCounter);
   }
   
   TaskSchedulerTBB::~TaskSchedulerTBB() 
@@ -251,9 +262,10 @@ namespace embree
   }
   __dllexport size_t TaskSchedulerTBB::threadCount() 
   {
-    Thread* thread = TaskSchedulerTBB::thread();
-    if (thread) return thread->scheduler->threadCounter;
-    else        return g_instance->threadCounter;
+    //Thread* thread = TaskSchedulerTBB::thread();
+    //if (thread) return thread->scheduler->threadCounter;
+    //else        return g_instance->threadCounter;
+    return threadPool->size();
   }
 #endif
 
@@ -371,7 +383,7 @@ namespace embree
     while (thread->tasks.execute_local(*thread,thread->task)) {};
   }
 
-  void TaskSchedulerTBB::thread_loop(size_t threadIndex) try 
+  void TaskSchedulerTBB::thread_loop(size_t threadIndex)
   {
 #if defined(__MIC__)
     setAffinity(threadIndex);
@@ -383,9 +395,9 @@ namespace embree
     thread_local_thread = &thread;
 
     /* main thread loop */
-    while (!terminate)
+    while (anyTasksRunning )
     {
-      auto predicate = [&] () { return anyTasksRunning || terminate; };
+      auto predicate = [&] () { return anyTasksRunning; };
 
       /* all threads are either spinning ... */
       if (spinning) 
@@ -427,12 +439,6 @@ namespace embree
       yield();
 
     threadLocal[threadIndex] = nullptr;
-  }
-  catch (const std::exception& e) 
-  {
-    std::cout << "Error: " << e.what() << std::endl; // FIXME: propagate to main thread
-    threadLocal[threadIndex] = nullptr;
-    exit(1);
   }
 
   __dllexport bool TaskSchedulerTBB::executeTaskSet(Thread& thread)
