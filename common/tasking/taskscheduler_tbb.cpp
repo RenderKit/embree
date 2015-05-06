@@ -293,6 +293,9 @@ namespace embree
   {
     size_t threadIndex = atomic_add(&threadCounter,1);
     assert(threadIndex < MAX_THREADS);
+    mutex.lock();
+    condition.wait(mutex, [&] () { return anyTasksRunning; });
+    mutex.unlock();
     thread_loop(threadIndex);
   }
 

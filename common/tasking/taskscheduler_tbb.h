@@ -280,7 +280,8 @@ namespace embree
       }
       
       if (!joinMode) threadPool->add(this);
-      //if (!spinning) condition.notify_all();
+      else condition.notify_all();
+
       while (thread.tasks.execute_local(thread,nullptr));
       atomic_add(&anyTasksRunning,-1);
       if (!joinMode) threadPool->remove(this);
