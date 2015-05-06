@@ -202,7 +202,7 @@ namespace embree
   }
   
   TaskSchedulerTBB::TaskSchedulerTBB()
-    : threadCounter(0), anyTasksRunning(0)
+    : threadCounter(0), anyTasksRunning(0), hasRootTask(false)
   {
     for (size_t i=0; i<MAX_THREADS; i++)
       threadLocal[i] = nullptr;
@@ -273,9 +273,14 @@ namespace embree
     mutex.lock();
     size_t threadIndex = atomic_add(&threadCounter,1);
     assert(threadIndex < MAX_THREADS);
-    condition.wait(mutex, [&] () { return anyTasksRunning != 0; });
+    //condition.wait(mutex, [&] () { return anyTasksRunning != 0; });
+    condition.wait(mutex, [&] () { return hasRootTask; });
     mutex.unlock();
     thread_loop(threadIndex);
+  }
+
+  void TaskSchedulerTBB::reset() {
+    hasRootTask = false;
   }
 
   void TaskSchedulerTBB::wait_for_threads(size_t threadCount)

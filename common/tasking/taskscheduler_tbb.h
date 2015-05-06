@@ -258,6 +258,7 @@ namespace embree
     
     /*! lets new worker threads join the tasking system */
     void join();
+    void reset();
 
     /*! let a worker thread allocate a thread index */
     ssize_t allocThreadIndex();
@@ -289,13 +290,14 @@ namespace embree
         Lock<MutexSys> lock(mutex);
         atomic_add(&threadCounter,+1);
 	atomic_add(&anyTasksRunning,+1);
+        hasRootTask = true;
         condition.notify_all();
       }
       
       if (useThreadPool) threadPool->add(this);
 
       while (thread.tasks.execute_local(thread,nullptr));
-      atomic_add(&anyTasksRunning,-2); // sets anyTasksRunning to -1 at the end
+      atomic_add(&anyTasksRunning,-1);
       if (useThreadPool) threadPool->remove(this);
       
       threadLocal[0] = nullptr;
@@ -306,7 +308,8 @@ namespace embree
       while (threadCounter > 0)
         yield();
 
-      anyTasksRunning = 0;
+      //assert(anyTasksRunning == -1);
+      //anyTasksRunning = 0;
     }
 
     /* spawn a new task at the top of the threads task stack */
@@ -364,6 +367,7 @@ namespace embree
     Thread* threadLocal[MAX_THREADS];
     volatile atomic_t threadCounter;
     volatile atomic_t anyTasksRunning;
+    volatile bool hasRootTask;
     MutexSys mutex;
     ConditionSys condition;
 

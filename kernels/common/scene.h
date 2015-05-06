@@ -153,8 +153,14 @@ namespace embree
     /* determines if scene is modified */
     __forceinline bool isModified() const { return modified; }
 
-    /* sets modified flag */
-    __forceinline void setModified(bool f = true) { modified = f; }
+ /* sets modified flag */
+    __forceinline void setModified(bool f = true) 
+    { 
+#if defined(TASKING_TBB_INTERNAL)
+      if (f) scheduler->reset();
+#endif
+      modified = f; 
+    }
 
     /* get mesh by ID */
     __forceinline       Geometry* get(size_t i)       { assert(i < geometries.size()); return geometries[i]; }
