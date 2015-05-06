@@ -302,7 +302,7 @@ namespace embree
     {
       Thread* thread = TaskSchedulerTBB::thread();
       if (likely(thread != nullptr)) thread->tasks.push_right(*thread,size,closure);
-      else                           global_instance()->spawn_root(closure,size);
+      else                           instance()->spawn_root(closure,size);
     }
 
     /* spawn a new task at the top of the threads task stack */
@@ -335,9 +335,17 @@ namespace embree
 
     /* returns the total number of threads */
     __dllexport static size_t threadCount();
-    
+
+  private:
+
+    /* returns the thread local task list of this worker thread */
     __dllexport static Thread* thread();
+
+    /* sets the thread local task list of this worker thread */
     __dllexport static void setThread(Thread* thread);
+
+    /*! returns the taskscheduler object to be used by the master thread */
+    __dllexport static TaskSchedulerTBB* instance();
 
   private:
     std::vector<thread_t> threads;
@@ -350,8 +358,6 @@ namespace embree
     
     MutexSys mutex;
     ConditionSys condition;
-
-    __dllexport static TaskSchedulerTBB* global_instance();
 
   private:
     static size_t globalNumThreads;

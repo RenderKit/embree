@@ -245,7 +245,7 @@ namespace embree
   }
 #endif
 
-  __dllexport TaskSchedulerTBB* TaskSchedulerTBB::global_instance() 
+  __dllexport TaskSchedulerTBB* TaskSchedulerTBB::instance() 
   {
     if (g_instance == NULL) g_instance = new TaskSchedulerTBB(g_numThreads);
     return g_instance;
