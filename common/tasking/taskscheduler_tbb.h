@@ -53,9 +53,9 @@ namespace embree
   {
     ALIGNED_STRUCT;
 
-    static const size_t MAX_THREADS = 1024;
-    static const size_t TASK_STACK_SIZE = 1024;
-    static const size_t CLOSURE_STACK_SIZE = 256*1024;
+    static const size_t MAX_THREADS = 1024;               // FIXME: there should be no maximal number of threads
+    static const size_t TASK_STACK_SIZE = 1024;           //!< task structure stack
+    static const size_t CLOSURE_STACK_SIZE = 256*1024;    //!< stack for task closures
 
     struct Thread;
     
@@ -220,12 +220,20 @@ namespace embree
       ThreadPool (size_t numThreads = 0);
       ~ThreadPool ();
 
+      /*! starts the threads */
       __dllexport void startThreads();
-      void thread_loop();
 
+      /*! adds a task scheduler object for scheduling */
       __dllexport void add(TaskSchedulerTBB* scheduler);
+
+      /*! remove the task scheduler object again */
       __dllexport void remove(TaskSchedulerTBB* scheduler);
+
+      /*! returns number of threads of the thread pool */
       size_t size() const { return numThreads; }
+
+      /*! main loop for all threads */
+      void thread_loop();
       
     private:
       size_t numThreads;
@@ -242,18 +250,25 @@ namespace embree
     TaskSchedulerTBB (bool joinMode = false);
     ~TaskSchedulerTBB ();
 
+    /*! initializes the task scheduler */
     static void create(size_t numThreads);
+
+    /*! destroys the task scheduler again */
     static void destroy();
     
     /*! lets new worker threads join the tasking system */
     void join();
 
+    /*! let a worker thread allocate a thread index */
     ssize_t allocThreadIndex();
 
     /*! wait for some number of threads available (threadCount includes main thread) */
     void wait_for_threads(size_t threadCount);
 
+    /*! thread loop for all worker threads */
     void thread_loop(size_t threadIndex);
+
+    /*! steals a task from a different thread */
     bool steal_from_other_threads(Thread& thread);
 
     template<typename Predicate, typename Body>
@@ -264,8 +279,7 @@ namespace embree
     __noinline void spawn_root(const Closure& closure, size_t size = 1) // important: has to be noinline as it allocates thread structure on stack
     {
       if (!joinMode) threadPool->startThreads();
-      //startThreads();
-
+      
       Thread thread(0,this);
       assert(threadLocal[0] == nullptr);
       threadLocal[0] = &thread;
@@ -346,17 +360,14 @@ namespace embree
     __dllexport static TaskSchedulerTBB* instance();
 
   private:
-    std::vector<thread_t> threads;
     Thread* threadLocal[MAX_THREADS];
     volatile atomic_t threadCounter;
     volatile atomic_t anyTasksRunning;
     bool joinMode;
-    
     MutexSys mutex;
     ConditionSys condition;
 
   private:
-    static size_t globalNumThreads;
     static __thread TaskSchedulerTBB* g_instance;
     static __thread Thread* thread_local_thread;
     __dllexport static ThreadPool* threadPool;
