@@ -23,11 +23,11 @@
 #include "taskscheduler_mic.h"
 #endif
 
-#define SORTED_STEALING 0
-
 namespace embree
 {
   size_t g_numThreads = 0;                              //!< number of threads to use in builders
+  __thread TaskSchedulerTBB* TaskSchedulerTBB::g_instance = nullptr;
+  __thread TaskSchedulerTBB::Thread* TaskSchedulerTBB::thread_local_thread = nullptr;
   __dllexport TaskSchedulerTBB::ThreadPool* TaskSchedulerTBB::threadPool = nullptr;
 
   template<typename Predicate, typename Body>
@@ -46,9 +46,7 @@ namespace embree
             body();
           }
         }
-#if !defined(__MIC__)
         yield();
-#endif
       }
     }
   }
@@ -155,9 +153,6 @@ namespace embree
     /* leave all taskschedulers */
     mutex.lock();
     terminate = true;
-    //for (std::list<TaskSchedulerTBB*>::iterator it = schedulers.begin(); it != schedulers.end(); it = schedulers.erase(it)) {
-    //  (*it)->terminateThreadLoop();
-    //}
     mutex.unlock();
     condition.notify_all();
 
@@ -217,12 +212,6 @@ namespace embree
   TaskSchedulerTBB::~TaskSchedulerTBB() 
   {
     assert(threadCounter == 0);
-
-    /* let all threads leave the thread loop */
-    //terminateThreadLoop();
-
-    /* destroy all threads that we created */
-    //destroyThreads();
   }
 
 #if TASKING_LOCKSTEP
@@ -252,16 +241,10 @@ namespace embree
     if (thread) return thread->threadIndex;
     else        return 0;
   }
-  __dllexport size_t TaskSchedulerTBB::threadCount() 
-  {
-    //Thread* thread = TaskSchedulerTBB::thread();
-    //if (thread) return thread->scheduler->threadCounter;
-    //else        return g_instance->threadCounter;
+  __dllexport size_t TaskSchedulerTBB::threadCount() {
     return threadPool->size();
   }
 #endif
-
-  __thread TaskSchedulerTBB* TaskSchedulerTBB::g_instance = nullptr;
 
   __dllexport TaskSchedulerTBB* TaskSchedulerTBB::global_instance() 
   {
@@ -300,43 +283,6 @@ namespace embree
     exit(1);
   }
 
-  /*__dllexport void TaskSchedulerTBB::startThreads()
-  {
-    createThreads = false;
-    for (size_t t=1; t<threadCounter; t++) {
-      threads.push_back(createThread((thread_func)threadFunction,new MyThread(t,threadCounter,this),4*1024*1024,t));
-    }
-    }*/
-
-  void TaskSchedulerTBB::terminateThreadLoop()
-  {
-    /* decrement threadCount again */
-    //atomic_add(&threadCounter,-1);
-
-    /* signal threads to terminate */
-    mutex.lock();
-    terminate = true;
-    mutex.unlock();
-    condition.notify_all();
-
-    /* wait for all threads to terminate */
-    //if (createThreads == false) // wait if we either are in user thread mode, or already created threads
-    //  while (threadCounter > 0) 
-    //    yield();
-
-    //threadLocal[0] = nullptr;
-  }
-
-#if 0
-  void TaskSchedulerTBB::destroyThreads() 
-  {
-    /* wait for threads to terminate */
-    for (size_t i=0; i<threads.size(); i++) 
-      //threads[i].join();
-      embree::join(threads[i]);
-  }
-#endif
-
   ssize_t TaskSchedulerTBB::allocThreadIndex()
   {
     size_t threadIndex = atomic_add(&threadCounter,1);
@@ -357,8 +303,6 @@ namespace embree
       __pause_cpu();
   }
 
-  __thread TaskSchedulerTBB::Thread* TaskSchedulerTBB::thread_local_thread = nullptr;
-
   __dllexport TaskSchedulerTBB::Thread* TaskSchedulerTBB::thread() {
     return thread_local_thread;
   }
@@ -377,10 +321,6 @@ namespace embree
 
   void TaskSchedulerTBB::thread_loop(size_t threadIndex)
   {
-#if defined(__MIC__)
-    setAffinity(threadIndex);
-#endif
-
     /* allocate thread structure */
     Thread thread(threadIndex,this);
     threadLocal[threadIndex] = &thread;
@@ -389,31 +329,6 @@ namespace embree
     /* main thread loop */
     while (anyTasksRunning )
     {
-      //auto predicate = [&] () { return anyTasksRunning; };
-
-      /* all threads are either spinning ... */
-      /*if (spinning) 
-      {
-	while (!predicate())
-          __pause_cpu(32);
-          }*/
-      
-      /* ... or waiting inside some condition variable */
-      /*else
-      {
-        //std::unique_lock<std::mutex> lock(mutex);
-        Lock<MutexSys> lock(mutex);
-        condition.wait(mutex, predicate);
-        }
-        if (terminate) break;*/
-
-      /* special static load balancing for top level task sets */
-#if TASKSCHEDULER_STATIC_LOAD_BALANCING
-      if (executeTaskSet(thread))
-        continue;
-#endif
-
-      /* work on available task */
       steal_loop(thread,
                  [&] () { return anyTasksRunning > 0; },
                  [&] () { 
@@ -461,51 +376,6 @@ namespace embree
     const size_t threadIndex = thread.threadIndex;
     const size_t threadCount = this->threadCounter;
 
-#if SORTED_STEALING == 1
-    size_t workingThreads = 0;
-    std::pair<size_t,size_t> thread_task_size[MAX_THREADS];
-
-    /* find thread with largest estimated size left */
-    for (size_t i=1; i<threadCount; i++) 
-      {
-	size_t otherThreadIndex = threadIndex+i;
-	if (otherThreadIndex >= threadCount) otherThreadIndex -= threadCount;
-
-	if (!threadLocal[otherThreadIndex])
-	  continue;
-
-	const size_t task_size = threadLocal[otherThreadIndex]->tasks.getTaskSizeAtLeft(); /* we steal from the left side */
-
-	thread_task_size[workingThreads++] = std::pair<size_t,size_t>(task_size,otherThreadIndex);
-      }
-
-    /* sort thread/size pairs based on size */
-    std::sort(thread_task_size,
-	      &thread_task_size[workingThreads],
-	      [](const std::pair<size_t,size_t> & a, const std::pair<size_t,size_t> & b) -> bool
-	      { 
-		return a.first > b.first; 
-	      });
-
-    /*
-    if (threadIndex == 0)
-      for (size_t i=0;i<workingThreads;i++)
-	std::cout << "thread_task_size " << thread_task_size[i].first << " " << thread_task_size[i].second << std::endl;
-    */
-
-    for (size_t i=0; i<workingThreads; i++) 
-      {
-	const size_t otherThreadIndex = thread_task_size[i].second;
-        Thread* othread = threadLocal[otherThreadIndex];
-	if (!othread)
-	  continue;
-      
-	if (othread->tasks.steal(thread))
-	  return true;
-      }    
-    /* nothing found this time, do another round */
-
-#else	      
     for (size_t i=1; i<threadCount; i++) 
     {
       __pause_cpu(32);
@@ -519,8 +389,6 @@ namespace embree
       if (othread->tasks.steal(thread)) 
         return true;      
     }
-#endif	      
-
 
     return false;
   }

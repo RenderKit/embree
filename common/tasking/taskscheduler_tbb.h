@@ -35,12 +35,6 @@
 #include "sys/mutex.h"
 #include "sys/condition.h"
 
-#if defined(__MIC__)
-#define TASKSCHEDULER_STATIC_LOAD_BALANCING 1
-#else
-#define TASKSCHEDULER_STATIC_LOAD_BALANCING 0
-#endif
-
 namespace embree
 {
 #if !defined(TASKING_TBB_INTERNAL)
@@ -259,10 +253,6 @@ namespace embree
     /*! wait for some number of threads available (threadCount includes main thread) */
     void wait_for_threads(size_t threadCount);
 
-    __dllexport void startThreads();
-    void terminateThreadLoop();
-    void destroyThreads();
-
     void thread_loop(size_t threadIndex);
     bool steal_from_other_threads(Thread& thread);
     __dllexport bool executeTaskSet(Thread& thread);
@@ -356,14 +346,6 @@ namespace embree
     template<typename Closure>
     static void spawn(const size_t begin, const size_t end, const size_t blockSize, const Closure& closure) 
     {
-#if TASKSCHEDULER_STATIC_LOAD_BALANCING
-      Thread* thread = TaskSchedulerTBB::thread();
-      if (thread == nullptr) {
-        global_instance()->spawn_root(closure,begin,end,blockSize);
-        return;
-      }
-#endif
-
       spawn(end-begin, [=,&closure]() 
         {
 	  if (end-begin <= blockSize) {
