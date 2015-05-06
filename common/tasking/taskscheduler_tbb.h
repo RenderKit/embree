@@ -255,7 +255,6 @@ namespace embree
 
     void thread_loop(size_t threadIndex);
     bool steal_from_other_threads(Thread& thread);
-    __dllexport bool executeTaskSet(Thread& thread);
 
     template<typename Predicate, typename Body>
       static void steal_loop(Thread& thread, const Predicate& pred, const Body& body);
@@ -291,37 +290,6 @@ namespace embree
       while (threadCounter > 0)
         yield();
       
-      threadLocal[0] = nullptr;
-      setThread(nullptr);
-      active = false;
-    }
-
-    /* spawn a new task at the top of the threads task stack */
-    template<typename Closure>
-    __noinline void spawn_root(const Closure& closure, size_t begin, size_t end, size_t blockSize) // important: has to be noinline as it allocates thread structure on stack
-    {
-      threadPool->startThreads();
-      //startThreads();
-
-      assert(!active);
-      active = true;
-      Thread& thread = masterThread;
-      threadLocal[0] = &thread;
-      setThread(&thread);
-
-      ClosureTaskSetFunction<Closure> func(closure,begin,end,blockSize);
-      task_set_function = &func;
-      __memory_barrier();
-      
-      {
-        Lock<MutexSys> lock(mutex);
-	atomic_add(&anyTasksRunning,+1);
-      }
-      //if (!spinning) condition.notify_all();
-      threadPool->add(this);
-      executeTaskSet(thread);
-      //atomic_add(&anyTasksRunning,-1);
-
       threadLocal[0] = nullptr;
       setThread(nullptr);
       active = false;
@@ -370,12 +338,7 @@ namespace embree
     __dllexport static Thread* thread();
     __dllexport static void setThread(Thread* thread);
 
-    //__forceinline static TaskSchedulerTBB* instance() {
-    //  return thread()->scheduler;
-    //}
-
   private:
-    //std::vector<std::thread> threads;
     std::vector<thread_t> threads;
     Thread* threadLocal[MAX_THREADS];
     volatile atomic_t threadCounter;
@@ -383,21 +346,9 @@ namespace embree
     volatile atomic_t anyTasksRunning;
     volatile bool active;
     bool joinMode;
-    //bool spinning;
-
-    //std::mutex mutex;        
-    //std::condition_variable condition;
+    
     MutexSys mutex;
     ConditionSys condition;
-
-    /* special toplevel taskset optimization */
-  private:
-#if defined(__MIC__)
-    __aligned(64) QuadTreeBarrier task_set_barrier;
-#else
-    __aligned(64) LinearBarrierActive task_set_barrier;
-#endif
-    TaskSetFunction* volatile task_set_function;
 
     __dllexport static TaskSchedulerTBB* global_instance();
 

@@ -203,7 +203,7 @@ namespace embree
   
   TaskSchedulerTBB::TaskSchedulerTBB(bool joinMode)
     : threadCounter(0), terminate(false), anyTasksRunning(0), active(false), joinMode(joinMode),
-      task_set_function(nullptr), masterThread(0,this)
+      masterThread(0,this)
   {
     for (size_t i=0; i<MAX_THREADS; i++)
       threadLocal[i] = nullptr;
@@ -346,29 +346,6 @@ namespace embree
       yield();
 
     threadLocal[threadIndex] = nullptr;
-  }
-
-  __dllexport bool TaskSchedulerTBB::executeTaskSet(Thread& thread)
-  {
-    if (task_set_function)
-    {
-      const size_t threadIndex = thread.threadIndex;
-      const size_t threadCount = this->threadCounter;
-      TaskSetFunction* function = task_set_function;
-      task_set_barrier.wait(threadIndex,threadCount);
-      if (threadIndex == 0) {
-        task_set_function = nullptr;
-        atomic_add(&anyTasksRunning,-1);
-      }
-      const size_t task_set_size = function->end-function->begin;
-      const size_t begin = function->begin+(threadIndex+0)*task_set_size/threadCount;
-      const size_t end   = function->begin+(threadIndex+1)*task_set_size/threadCount;
-      const size_t bs = function->blockSize;
-      for (size_t i=begin; i<end; i+=bs) function->execute(range<size_t>(i,min(i+bs,end)));
-      task_set_barrier.wait(threadIndex,threadCount); // FIXME: should also steal here! 
-      return true;
-    }
-    return false;
   }
 
   bool TaskSchedulerTBB::steal_from_other_threads(Thread& thread)
