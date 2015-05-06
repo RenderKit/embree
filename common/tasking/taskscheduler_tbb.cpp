@@ -270,10 +270,10 @@ namespace embree
 
   void TaskSchedulerTBB::join()
   {
+    mutex.lock();
     size_t threadIndex = atomic_add(&threadCounter,1);
     assert(threadIndex < MAX_THREADS);
-    mutex.lock();
-    condition.wait(mutex, [&] () { return anyTasksRunning; });
+    condition.wait(mutex, [&] () { return anyTasksRunning != 0; });
     mutex.unlock();
     thread_loop(threadIndex);
   }
@@ -307,7 +307,7 @@ namespace embree
     thread_local_thread = &thread;
 
     /* main thread loop */
-    while (anyTasksRunning )
+    while (anyTasksRunning > 0)
     {
       steal_loop(thread,
                  [&] () { return anyTasksRunning > 0; },

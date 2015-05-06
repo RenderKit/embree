@@ -289,14 +289,14 @@ namespace embree
 	//std::unique_lock<std::mutex> lock(mutex);
         Lock<MutexSys> lock(mutex);
         atomic_add(&threadCounter,+1);
-	atomic_add(&anyTasksRunning,+1); // FIXME: does no longer have to be atomic
+	atomic_add(&anyTasksRunning,+1);
+        if (joinMode) condition.notify_all();
       }
       
       if (!joinMode) threadPool->add(this);
-      else condition.notify_all();
 
       while (thread.tasks.execute_local(thread,nullptr));
-      atomic_add(&anyTasksRunning,-1);
+      atomic_add(&anyTasksRunning,-2); // sets anyTasksRunning to -1 at the end
       if (!joinMode) threadPool->remove(this);
       
       threadLocal[0] = nullptr;
@@ -306,6 +306,8 @@ namespace embree
       atomic_add(&threadCounter,-1);
       while (threadCounter > 0)
         yield();
+
+      anyTasksRunning = 0;
     }
 
     /* spawn a new task at the top of the threads task stack */
