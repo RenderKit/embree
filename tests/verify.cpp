@@ -2990,6 +2990,8 @@ namespace embree
   /* main function in embree namespace */
   int main(int argc, char** argv) 
   {
+    const Vec3fa pos = Vec3fa(148376.0f,1234.0f,-223423.0f);
+
     /* for best performance set FTZ and DAZ flags in MXCSR control and status register */
     _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
     _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
@@ -3010,6 +3012,7 @@ namespace embree
     //POSITIVE("regression_dynamic_memory_monitor",        rtcore_regression_memory_monitor(rtcore_regression_dynamic_thread));
     //POSITIVE("regression_garbage_geom",   rtcore_regression_garbage());
     //exit(1);
+
 
 #if 1
 
@@ -3040,7 +3043,6 @@ namespace embree
 
     rtcore_build();
 
-    const Vec3fa pos = Vec3fa(148376.0f,1234.0f,-223423.0f);
 
 #if defined(RTCORE_RAY_MASK)
     rtcore_ray_masks_all();
