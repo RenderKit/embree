@@ -202,8 +202,7 @@ namespace embree
   }
   
   TaskSchedulerTBB::TaskSchedulerTBB(bool joinMode)
-    : threadCounter(0), terminate(false), anyTasksRunning(0), active(false), joinMode(joinMode),
-      masterThread(0,this)
+    : threadCounter(0), terminate(false), anyTasksRunning(0), active(false), joinMode(joinMode)
   {
     for (size_t i=0; i<MAX_THREADS; i++)
       threadLocal[i] = nullptr;
