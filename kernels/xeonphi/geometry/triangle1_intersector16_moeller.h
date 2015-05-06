@@ -636,7 +636,7 @@ namespace embree
 	const mic_f e2 = v1 - v2;	     
 
 	const mic_f Ng1     = lcross_xyz(e1,e0);
-	const mic_f Ng      = Ng1+Ng1;
+	mic_f Ng            = Ng1+Ng1;
 	const mic_f den     = lsum3_xyz(Ng);	      
 	const mic_f rcp_den = rcp(den);
 
@@ -669,6 +669,10 @@ namespace embree
 	const mic_m m_ray_mask = (rayMask & triMask) != mic_i::zero();
 	m_final &= m_ray_mask;	      
 #endif
+
+	/* correct normal */
+	Ng *= swizzle(dir_xyz * swizzle(dir_xyz,_MM_SWIZ_REG_DACB),_MM_SWIZ_REG_DACB);
+
 
 	//////////////////////////////////////////////////////////////////////////////////////////////////
 
