@@ -229,9 +229,11 @@ namespace embree
       __dllexport void startThreads();
       void thread_loop();
 
-      void add(TaskSchedulerTBB* scheduler);
+      __dllexport void add(TaskSchedulerTBB* scheduler);
       
     private:
+      size_t numThreads;
+      bool running;
       volatile bool terminate;
       std::vector<thread_t> threads;
 
@@ -271,7 +273,8 @@ namespace embree
     __noinline void spawn_root(const Closure& closure, size_t size = 1) // important: has to be noinline as it allocates thread structure on stack
     {
       if (createThreads)
-	startThreads();
+        threadPool->startThreads();
+        //startThreads();
 
       assert(!active);
       active = true;
@@ -285,7 +288,7 @@ namespace embree
 	atomic_add(&anyTasksRunning,+1);
       }
       //if (!spinning) condition.notify_all();
-      if (!spinning) condition.notify_all();
+      threadPool->add(this);
       while (thread.tasks.execute_local(thread,nullptr));
       atomic_add(&anyTasksRunning,-1);
 
@@ -299,7 +302,8 @@ namespace embree
     __noinline void spawn_root(const Closure& closure, size_t begin, size_t end, size_t blockSize) // important: has to be noinline as it allocates thread structure on stack
     {
       if (createThreads)
-	startThreads();
+        threadPool->startThreads();
+	//startThreads();
 
       assert(!active);
       active = true;
@@ -312,11 +316,11 @@ namespace embree
       __memory_barrier();
       
       {
-	//std::unique_lock<std::mutex> lock(mutex);
         Lock<MutexSys> lock(mutex);
 	atomic_add(&anyTasksRunning,+1);
       }
-      if (!spinning) condition.notify_all();
+      //if (!spinning) condition.notify_all();
+      threadPool->add(this);
       executeTaskSet(thread);
       //atomic_add(&anyTasksRunning,-1);
 
@@ -376,9 +380,9 @@ namespace embree
     __dllexport static Thread* thread();
     __dllexport static void setThread(Thread* thread);
 
-    __forceinline static TaskSchedulerTBB* instance() {
-      return thread()->scheduler;
-    }
+    //__forceinline static TaskSchedulerTBB* instance() {
+    //  return thread()->scheduler;
+    //}
 
   private:
     //std::vector<std::thread> threads;
@@ -409,8 +413,10 @@ namespace embree
 
   private:
     Thread masterThread;
-    static TaskSchedulerTBB* g_instance;
+    static size_t globalNumThreads;
+    static __thread TaskSchedulerTBB* g_instance;
     static __thread Thread* thread_local_thread;
+    __dllexport static ThreadPool* threadPool;
   };
 };
 

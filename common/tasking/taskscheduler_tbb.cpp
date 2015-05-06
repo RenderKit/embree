@@ -28,7 +28,8 @@
 namespace embree
 {
   size_t g_numThreads = 0;                              //!< number of threads to use in builders
-  
+  __dllexport TaskSchedulerTBB::ThreadPool* TaskSchedulerTBB::threadPool = nullptr;
+
   template<typename Predicate, typename Body>
   __forceinline void TaskSchedulerTBB::steal_loop(Thread& thread, const Predicate& pred, const Body& body)
   {
@@ -121,21 +122,10 @@ namespace embree
     return tasks[left].N;
   }
 
-  struct MyThread2
-  {
-    MyThread2 (size_t threadIndex, size_t threadCount, TaskSchedulerTBB::ThreadPool* threadPool)
-      : threadIndex(threadIndex), threadCount(threadCount), threadPool(threadPool) {}
-    
-    size_t threadIndex;
-    size_t threadCount;
-    TaskSchedulerTBB::ThreadPool* threadPool;
-  };
-
   void threadPoolFunction(void* ptr) try 
   {
-    MyThread2 thread = *(MyThread2*) ptr;
-    thread.threadPool->thread_loop();
-    delete (MyThread2*) ptr;
+    TaskSchedulerTBB::ThreadPool* pool = (TaskSchedulerTBB::ThreadPool*) ptr;
+    pool->thread_loop();
   }
   catch (const std::exception& e) {
     std::cout << "Error: " << e.what() << std::endl; // FIXME: propagate to main thread
@@ -143,10 +133,16 @@ namespace embree
   }
 
   TaskSchedulerTBB::ThreadPool::ThreadPool(size_t numThreads)
-    : terminate(false)
+    : numThreads(numThreads), running(false), terminate(false) {}
+
+  __dllexport void TaskSchedulerTBB::ThreadPool::startThreads()
   {
-    for (size_t t=1; t<numThreads; t++) {
-      threads.push_back(createThread((thread_func)threadPoolFunction,new MyThread2(t,numThreads,this),4*1024*1024,t));
+    if (!running) 
+    {
+      running = true;
+      for (size_t t=1; t<numThreads; t++) {
+        threads.push_back(createThread((thread_func)threadPoolFunction,this,4*1024*1024,t));
+      }
     }
   }
 
@@ -163,7 +159,7 @@ namespace embree
       embree::join(threads[i]);
   }
 
-  void TaskSchedulerTBB::ThreadPool::add(TaskSchedulerTBB* scheduler)
+  __dllexport void TaskSchedulerTBB::ThreadPool::add(TaskSchedulerTBB* scheduler)
   {
     mutex.lock();
     schedulers.push(scheduler);
@@ -219,7 +215,7 @@ namespace embree
     terminateThreadLoop();
 
     /* destroy all threads that we created */
-    destroyThreads();
+    //destroyThreads();
   }
 
 #if TASKING_LOCKSTEP
@@ -257,24 +253,22 @@ namespace embree
   }
 #endif
 
-  TaskSchedulerTBB* TaskSchedulerTBB::g_instance = nullptr;
+  __thread TaskSchedulerTBB* TaskSchedulerTBB::g_instance = nullptr;
 
-  __dllexport TaskSchedulerTBB* TaskSchedulerTBB::global_instance() {
+  __dllexport TaskSchedulerTBB* TaskSchedulerTBB::global_instance() 
+  {
+    if (g_instance == NULL) g_instance = new TaskSchedulerTBB(g_numThreads);
     return g_instance;
   }
 
   void TaskSchedulerTBB::create(size_t numThreads)
   {
-    if (g_instance) THROW_RUNTIME_ERROR("Embree threads already running.");
-#if __MIC__
-    g_instance = new TaskSchedulerTBB(numThreads,true);
-#else
-    g_instance = new TaskSchedulerTBB(numThreads,false);
-#endif
+    if (threadPool) THROW_RUNTIME_ERROR("Embree threads already running.");
+    threadPool = new TaskSchedulerTBB::ThreadPool(numThreads);
   }
 
   void TaskSchedulerTBB::destroy() {
-    delete g_instance; g_instance = nullptr;
+    delete threadPool; threadPool = nullptr;
   }
 
   struct MyThread
@@ -301,9 +295,6 @@ namespace embree
   __dllexport void TaskSchedulerTBB::startThreads()
   {
     createThreads = false;
-    //for (size_t i=1; i<threadCounter; i++) {
-    //  threads.push_back(std::thread([i,this]() { thread_loop(i); }));
-    //}
     for (size_t t=1; t<threadCounter; t++) {
       threads.push_back(createThread((thread_func)threadFunction,new MyThread(t,threadCounter,this),4*1024*1024,t));
     }
