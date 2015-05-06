@@ -466,7 +466,6 @@ namespace embree
 
   void Scene::build (size_t threadIndex, size_t threadCount) 
   {
-    assert(scheduler->threadLocal[0] == nullptr);
     //{
     //  Lock<MutexSys> lock(buildMutex);
       //if (scheduler == nullptr) scheduler = new TaskSchedulerTBB(threadCount != 0);
@@ -490,6 +489,8 @@ namespace embree
     /* join hierarchy build */
     if (!lock.isLocked()) {
       scheduler->join();
+      //buildMutex.lock();
+      //buildMutex.unlock();
       return;
     }
 

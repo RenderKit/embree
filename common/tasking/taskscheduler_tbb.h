@@ -286,7 +286,6 @@ namespace embree
       Thread* oldThread = swapThread(&thread);
       thread.tasks.push_right(thread,size,closure);
       {
-	//std::unique_lock<std::mutex> lock(mutex);
         Lock<MutexSys> lock(mutex);
         atomic_add(&threadCounter,+1);
 	atomic_add(&anyTasksRunning,+1);

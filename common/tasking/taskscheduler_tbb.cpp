@@ -307,7 +307,7 @@ namespace embree
     /* allocate thread structure */
     Thread thread(threadIndex,this);
     threadLocal[threadIndex] = &thread;
-    thread_local_thread = &thread;
+    Thread* oldThread = swapThread(&thread);
 
     /* main thread loop */
     while (anyTasksRunning > 0)
@@ -322,6 +322,7 @@ namespace embree
     }
 
     threadLocal[threadIndex] = nullptr;
+    swapThread(oldThread);
 
     /* wait for all threads to terminate */
     atomic_add(&threadCounter,-1);
