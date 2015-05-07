@@ -633,21 +633,20 @@ namespace embree
     Vec3fa vtx;
     array_t<Vec3fa,MAX_EDGE_VALENCE> ring; 
     array_t<Face,MAX_FACE_VALENCE> faces;
-    //array_t<int   ,MAX_FACE_VALENCE> face_size;     // number of vertices-2 of nth face in ring
-    //array_t<float ,MAX_FACE_VALENCE> crease_weight; 
     unsigned int face_valence;
     unsigned int edge_valence;
     int border_face;
     float vertex_crease_weight;
     float vertex_level;                      //!< maximal level of adjacent edges
     float edge_level; // level of first edge
-    bool only_quads;
+    bool only_quads;  // true if all faces are quads
     unsigned int eval_start_face_index;
     unsigned int eval_start_vertex_index;
     unsigned int eval_unique_identifier;
 
 
-    GeneralCatmullClark1Ring() : eval_start_face_index(0), eval_start_vertex_index(0), eval_unique_identifier(0) {}
+    GeneralCatmullClark1Ring() 
+      : eval_start_face_index(0), eval_start_vertex_index(0), eval_unique_identifier(0) {}
     
     __forceinline bool has_last_face() const {
       return border_face != face_valence-1;
@@ -705,10 +704,8 @@ namespace embree
 	size_t vn = 0;
 	SubdivMesh::HalfEdge* p_prev = p->prev();
         for (SubdivMesh::HalfEdge* v = p->next(); v!=p_prev; v=v->next()) {
-          ring[e] = (Vec3fa_t) vertices[ v->getStartVertexIndex() ];
-          *(unsigned int*)&ring[e].a = v->getStartVertexIndex();
-          e++;
-	  vn++;
+          ring[e++] = Vec3fa (vertices[ v->getStartVertexIndex() ], v->getStartVertexIndex());
+          vn++;
 	}
 	faces[f++] = Face(vn,crease_weight);
 	only_quads &= (vn == 2);
